@@ -1,0 +1,110 @@
+// ============================================================
+//  FILE:    supabase/functions/_shared/oddsapi.ts
+//  TYPE:    Shared library - imported by functions, NOT deployed on its own
+//  DEPLOY:  (none - do not deploy _shared files)
+// ============================================================
+// Shared server-side library for the cron jobs. Holds the odds-API calls,
+// de-vig math, per-outcome pricing, and post-game grading.
+const KEY = Deno.env.get("ODDS_API_KEY") ?? "";
+const BASE = "https://api.the-odds-api.com/v4";
+
+export async function fetchOdds(sport: string, regions: string, markets: string) {
+  const u = `${BASE}/sports/${sport}/odds/?apiKey=${KEY}&regions=${regions}&markets=${markets}&oddsFormat=decimal&dateFormat=iso`;
+  const r = await fetch(u);
+  return { data: r.ok ? await r.json() : [], quota: r.headers.get("x-requests-remaining") ?? "", ok: r.ok };
+}
+export async function fetchScores(sport: string, daysFrom = 2) {
+  const u = `${BASE}/sports/${sport}/scores/?apiKey=${KEY}&daysFrom=${daysFrom}&dateFormat=iso`;
+  const r = await fetch(u);
+  return { data: r.ok ? await r.json() : [], ok: r.ok };
+}
+export async function fetchActiveSports(): Promise<string[]> {
+  const r = await fetch(`${BASE}/sports/?apiKey=${KEY}`);
+  if (!r.ok) return [];
+  return (await r.json()).filter((s: any) => s.active && !s.has_outrights).map((s: any) => s.key);
+}
+
+// ---- de-vig (Shin default) ----
+function bisect(f: (x: number) => number, lo: number, hi: number, it = 80) {
+  let fl = f(lo);
+  for (let i = 0; i < it; i++) { const m = (lo + hi) / 2, fm = f(m); if (Math.abs(fm) < 1e-10) return m; if ((fl < 0) === (fm < 0)) { lo = m; fl = fm; } else hi = m; }
+  return (lo + hi) / 2;
+}
+export function devig(decs: number[], method = "shin"): number[] {
+  const q = decs.map((d) => 1 / d), S = q.reduce((a, b) => a + b, 0);
+  if (method === "multiplicative") return q.map((x) => x / S);
+  if (method === "power") { const k = bisect((k) => q.reduce((a, x) => a + Math.pow(x, k), 0) - 1, 0.5, 6); return q.map((x) => Math.pow(x, k)); }
+  const fair = (z: number) => q.map((qi) => (Math.sqrt(z * z + 4 * (1 - z) * qi * qi / S) - z) / (2 * (1 - z)));
+  try { const z = bisect((z) => fair(z).reduce((a, b) => a + b, 0) - 1, 1e-6, 0.5); return fair(z); }
+  catch { return q.map((x) => x / S); }
+}
+const median = (a: number[]) => { a = [...a].sort((x, y) => x - y); const n = a.length, h = n >> 1; return n % 2 ? a[h] : (a[h - 1] + a[h]) / 2; };
+
+export interface Outcome {
+  event_id: string; sport_key: string; sport_title: string; commence_time: string;
+  home_team: string; away_team: string; market: string; selection: string; point: number | null;
+  best_dec: number; best_book: string; sharp_fair: number; consensus_fair: number; edge: number; n_books: number; is_plus_ev: boolean;
+}
+
+// price EVERY outcome of every market (full board), not just +EV ones
+export function priceEvent(ev: any, method: string, sharpBook: string): Outcome[] {
+  const out: Outcome[] = [];
+  const mkts: Record<string, Record<string, any>> = {};
+  for (const bk of ev.bookmakers ?? []) {
+    const isSharp = sharpBook && bk.key.toLowerCase().includes(sharpBook);
+    for (const mk of bk.markets ?? []) {
+      const decs = mk.outcomes.map((o: any) => o.price);
+      if (decs.length < 2 || decs.some((d: number) => !d || d <= 1)) continue;
+      const fair = devig(decs, method);
+      mk.outcomes.forEach((o: any, i: number) => {
+        const pt = o.point ?? null;
+        const okey = o.name + (pt != null ? "|" + pt : "");
+        mkts[mk.key] = mkts[mk.key] ?? {};
+        const slot = mkts[mk.key][okey] ?? (mkts[mk.key][okey] = { name: o.name, point: pt, fairs: [], sharp: null, best: { dec: 0, book: "" } });
+        slot.fairs.push(fair[i]); if (isSharp) slot.sharp = fair[i];
+        if (o.price > slot.best.dec) slot.best = { dec: o.price, book: bk.title };
+      });
+    }
+  }
+  for (const mk in mkts) for (const okey in mkts[mk]) {
+    const s = mkts[mk][okey];
+    const cons = median(s.fairs), sharp = s.sharp ?? cons, edge = sharp * s.best.dec - 1;
+    out.push({
+      event_id: ev.id, sport_key: ev.sport_key, sport_title: ev.sport_title, commence_time: ev.commence_time,
+      home_team: ev.home_team, away_team: ev.away_team, market: mk, selection: s.name, point: s.point,
+      best_dec: s.best.dec, best_book: s.best.book, sharp_fair: sharp, consensus_fair: cons, edge,
+      n_books: s.fairs.length, is_plus_ev: edge > 0,
+    });
+  }
+  return out;
+}
+
+export const sigKey = (o: { event_id: string; market: string; selection: string; point: number | null }) =>
+  `${o.event_id}|${o.market}|${o.selection}|${o.point ?? ""}`;
+
+// ---- grade an outcome given the final score ----
+export function grade(market: string, selection: string, point: number | null,
+  home: string, away: string, hs: number, as: number): "win" | "loss" | "push" | null {
+  if (hs == null || as == null) return null;
+  if (market === "h2h") {
+    if (hs === as) return "push";
+    const winner = hs > as ? home : away;
+    return selection === winner ? "win" : "loss";
+  }
+  if (market === "spreads") {
+    const teamScore = selection === home ? hs : selection === away ? as : null;
+    const oppScore = selection === home ? as : selection === away ? hs : null;
+    if (teamScore == null || point == null) return null;
+    const m = teamScore - oppScore! + point;
+    return m > 0 ? "win" : m === 0 ? "push" : "loss";
+  }
+  if (market === "totals") {
+    if (point == null) return null;
+    const total = hs + as;
+    if (total === point) return "push";
+    const over = total > point;
+    if (/over/i.test(selection)) return over ? "win" : "loss";
+    if (/under/i.test(selection)) return over ? "loss" : "win";
+  }
+  return null;
+}
