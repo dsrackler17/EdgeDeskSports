@@ -89,6 +89,7 @@ textarea{min-height:110px;font-family:'JetBrains Mono',monospace;resize:vertical
     <p class="lede">Auto-collected by your background jobs, de-vigged vs the sharp line, ranked by edge × what's been beating the close. Refreshes on its own.</p>
     <div class="lead" id="leadWrap"><h3>★ Top 10 today</h3><div id="leadList"></div></div>
     <div class="filters">
+      <div class="fld"><label>Scope</label><select id="fScope"><option value="majors">US majors</option><option value="all">All sports</option></select></div>
       <div class="fld"><label>Books</label><select id="fBooks"><option value="trusted">Trusted only</option><option value="all">All books</option></select></div>
       <div class="fld"><label>Sport</label><select id="fSport"><option value="">All sports</option></select></div>
       <div class="fld"><label>Min EV %</label><input type="number" id="fMinev" value="2" step="0.5"></div>
@@ -221,9 +222,10 @@ async function loadEdges(){
 /* legit US-regulated / sharp books — everything else (offshore) is treated as noise-prone */
 var TRUSTED=['draftkings','fanduel','betmgm','caesars','espn bet','espnbet','fanatics','betrivers','hard rock','hardrock','bet365','pinnacle','circa','fliff','ballybet','wynn','superbook'];
 function isTrusted(book){var b=(book||'').toLowerCase();for(var i=0;i<TRUSTED.length;i++)if(b.indexOf(TRUSTED[i])>=0)return true;return false;}
+function isUSMajor(k){k=(k||'').toLowerCase();return k.indexOf('americanfootball')===0||k.indexOf('basketball')===0||k.indexOf('baseball')===0||k.indexOf('icehockey')===0;}
 function renderEdges(){
-  var minev=+$('fMinev').value||0, sport=$('fSport').value, mode=$('fBooks').value;
-  var list=EDGES.filter(function(e){return e.edge*100>=minev&&(!sport||e.sport_title===sport);});
+  var minev=+$('fMinev').value||0, sport=$('fSport').value, mode=$('fBooks').value, scope=$('fScope').value;
+  var list=EDGES.filter(function(e){var ok=e.edge*100>=minev&&(!sport||e.sport_title===sport);if(scope==='majors')ok=ok&&isUSMajor(e.sport_key);return ok;});
   if(mode==='trusted'){
     // 1) best price must be at a legit book (kills stale offshore lines)
     // 2) market must have real liquidity (>=5 books quoting) — kills thin combat/obscure markets
@@ -244,7 +246,7 @@ function renderEdges(){
   }
   var f=$('feed');
   if(!list.length){
-    f.innerHTML='<div class="empty"><b>No edges at trusted books right now.</b><br>Trusted-only filters to legit US books with real liquidity. If it stays empty, either games haven\'t been priced yet or there\'s nothing clean on the board — switch Books to <b>All</b> to see the raw feed (including stale offshore lines).</div>';
+    f.innerHTML='<div class="empty"><b>No edges in this view right now.</b><br>You\'re filtered to US majors at trusted books with real liquidity. If it\'s empty, either those games aren\'t priced yet or the board is clean — widen <b>Scope</b> to All sports or <b>Books</b> to All to see more.</div>';
     return;
   }
   f.innerHTML='';
@@ -257,7 +259,7 @@ function renderEdges(){
     c.querySelector('button').onclick=function(){trackSignal(e,am);};f.appendChild(c);
   });
 }
-$('fSport').onchange=renderEdges;$('fMinev').oninput=renderEdges;$('fBooks').onchange=renderEdges;
+$('fSport').onchange=renderEdges;$('fMinev').oninput=renderEdges;$('fBooks').onchange=renderEdges;$('fScope').onchange=renderEdges;
 
 /* ===== Record (auto-graded) ===== */
 var WEIGHT_ROWS=[],CALIB=[];
