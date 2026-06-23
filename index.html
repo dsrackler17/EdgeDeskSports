@@ -119,6 +119,9 @@ textarea{min-height:110px;font-family:'JetBrains Mono',monospace;resize:vertical
 .flbanner{font-size:11px;font-family:'JetBrains Mono',monospace;border-radius:9px;padding:9px 12px;margin-bottom:12px;border:1px solid}
 .flbanner.demo{color:var(--warn);border-color:rgba(217,154,43,.35);background:rgba(217,154,43,.06)}
 .flbanner.live{color:var(--pos);border-color:rgba(47,180,124,.35);background:rgba(47,180,124,.05)}
+.flwatch-h{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--dim);font-weight:600;margin:22px 0 10px;font-family:'JetBrains Mono',monospace}
+.flwatch{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:13px 15px;margin-bottom:9px}
+.flwatch .ftitle{margin-bottom:6px}
 </style>
 </head>
 <body>
@@ -151,6 +154,7 @@ textarea{min-height:110px;font-family:'JetBrains Mono',monospace;resize:vertical
     <div class="flbanner demo" id="flBanner">Checking pipeline for live futures boards…</div>
     <div class="flchips" id="flChips"></div>
     <div class="feed" id="flFeed"><div class="empty">Scanning boards…</div></div>
+    <div id="flBoards"></div>
   </section>
 
   <!-- RECORD -->
@@ -502,17 +506,19 @@ function flRun(boards){FL.faults=[];boards.forEach(function(b){FL_DETECTORS.forE
   FL.faults.sort(function(a,b){return(b.sev.n-a.sev.n)||(b.edge-a.edge);});}
 
 async function loadFaults(){
+  var grouped=[];
   try{
     var boards=await sbGet('boards?select=*&active=eq.true&limit=2000');
     var elig=[];try{elig=await sbGet('eligibility?select=*');}catch(e){}
-    if(boards&&boards.length){FL.live=true;flRun(flGroup(boards,elig));}
-    else{FL.live=false;flRun(FL_SAMPLE);}
-  }catch(e){FL.live=false;flRun(FL_SAMPLE);}
+    if(boards&&boards.length){FL.live=true;grouped=flGroup(boards,elig);flRun(grouped);}
+    else{FL.live=false;grouped=FL_SAMPLE;flRun(FL_SAMPLE);}
+  }catch(e){FL.live=false;grouped=FL_SAMPLE;flRun(FL_SAMPLE);}
+  FL.boards=grouped;
   var ban=$('flBanner');
-  if(FL.live){ban.className='flbanner live';ban.textContent='\u25cf LIVE \u2014 scanning '+FL.faults.length+' fault(s) on captured futures boards.';}
-  else{ban.className='flbanner demo';ban.textContent='\u25b2 DEMO DATA \u2014 pipeline isn\u2019t emitting futures boards yet. Populate the boards + eligibility tables (see contract in source) to go live.';}
+  if(FL.live){ban.className='flbanner live';ban.textContent='\u25cf LIVE \u2014 scanning '+grouped.length+' board(s), '+FL.faults.length+' fault(s) flagged.';}
+  else{ban.className='flbanner demo';ban.textContent='\u25b2 DEMO DATA \u2014 pipeline isn\u2019t emitting boards yet. Deploy capture_boards (key stays server-side) to go live.';}
   $('flFresh').textContent=FL.live?('updated '+ago(Date.now())):'demo';
-  flChips();flRender();
+  flChips();flRender();flRenderBoards();
 }
 function flChips(){var c={};FL.faults.forEach(function(f){c[f.cls]=(c[f.cls]||0)+1;});
   var keys=['all'].concat(Object.keys(c));
@@ -535,6 +541,29 @@ function flRender(){var feed=$('flFeed');
     el.querySelector('.fhd').onclick=function(){el.classList.toggle('open');};
     feed.appendChild(el);
   });
+}
+
+/* ===== live boards under watch (visible feed even when clean) ===== */
+function flRenderBoards(){
+  var host=$('flBoards');
+  if(!FL.live||!FL.boards||!FL.boards.length){host.innerHTML='';return;}
+  var faulted={};FL.faults.forEach(function(f){if(f.title)faulted[f.title.split(':')[0]]=1;});
+  var cards=FL.boards.map(function(b){
+    var has=faulted[b.board]?'<span class="ftag" style="color:var(--warn)">\u26a0 fault above</span>':'<span class="ftag" style="color:var(--pos)">clean</span>';
+    if(b.entries&&b.entries.length){
+      var d=flDevig(b.entries),top=d.field.slice().sort(function(x,y){return y.fair-x.fair;}).slice(0,3);
+      var rows=top.map(function(t){return'<div class="frow"><span class="fl">'+t.name+(t.dead?' \u26d4':'')+'</span><span class="fv">'+flPct(t.fair)+'</span></div>';}).join('');
+      return'<div class="flwatch"><div class="fmeta"><span class="ftag lg">'+b.league+'</span><span class="ftag cls">'+b.entries.length+' teams</span><span class="ftag" style="color:var(--dim)">vig '+((d.over-1)*100).toFixed(0)+'%</span>'+has+'</div><div class="ftitle" style="font-size:14px">'+b.board+'</div>'+rows+'</div>';
+    }
+    if(b.nested&&b.nested.length){var t=b.nested[0];
+      return'<div class="flwatch"><div class="fmeta"><span class="ftag lg">'+b.league+'</span><span class="ftag cls">correlated pair</span>'+has+'</div><div class="ftitle" style="font-size:14px">'+b.board+'</div><div class="frow"><span class="fl">'+t.name+' win</span><span class="fv">'+flAm(t.winOdds)+'</span></div><div class="frow"><span class="fl">'+t.name+' qualify</span><span class="fv">'+flAm(t.qualOdds)+'</span></div></div>';
+    }
+    if(b.trigger){
+      return'<div class="flwatch"><div class="fmeta"><span class="ftag lg">'+b.league+'</span><span class="ftag cls">stale watch</span>'+has+'</div><div class="ftitle" style="font-size:14px">'+b.board+'</div><div class="fqual" style="border:none;padding-top:6px">'+(b.lastMoveDays||0)+'d since move</div></div>';
+    }
+    return'';
+  }).filter(Boolean).join('');
+  host.innerHTML='<div class="flwatch-h">Boards under watch \u2014 live de-vig from your captured feed</div>'+cards;
 }
 
 /* ===== init + live auto-refresh ===== */
