@@ -72,6 +72,53 @@ textarea{min-height:110px;font-family:'JetBrains Mono',monospace;resize:vertical
 .bottomnav button.on{color:var(--accent)}.bottomnav .ic{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:2}
 .foot{position:fixed;bottom:var(--nav);left:0;right:0;background:var(--surface2);border-top:1px solid var(--border);font-size:10px;color:var(--faint);text-align:center;padding:5px 10px;padding-bottom:env(safe-area-inset-bottom);z-index:25}.foot b{color:var(--warn)}
 @media(min-width:760px){.filters{grid-template-columns:repeat(4,1fr)}.kpis{grid-template-columns:repeat(4,1fr)}}
+/* ===== faultline ===== */
+.flchips{display:flex;gap:7px;overflow-x:auto;padding-bottom:4px;margin-bottom:12px;-webkit-overflow-scrolling:touch}
+.flchip{flex:none;font-size:11px;font-weight:600;letter-spacing:.02em;color:var(--dim);background:transparent;border:1px solid var(--border);border-radius:20px;padding:6px 12px;cursor:pointer;font-family:'JetBrains Mono',monospace;white-space:nowrap}
+.flchip.on{background:var(--surface2);border-color:var(--accent);color:var(--text)}
+.flchip .n{color:var(--accent);margin-left:5px}
+.fault{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;position:relative}
+.fault::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--accent)}
+.fault[data-sev=critical]::before{background:var(--neg)}
+.fault[data-sev=high]::before{background:var(--warn)}
+.fhd{display:flex;gap:11px;padding:13px 14px 13px 16px;cursor:pointer;align-items:flex-start}
+.fhd .grow{flex:1;min-width:0}
+.fmeta{display:flex;align-items:center;gap:6px;margin-bottom:7px;flex-wrap:wrap}
+.ftag{font-size:8.5px;text-transform:uppercase;letter-spacing:.05em;font-weight:600;border-radius:4px;padding:2px 6px;border:1px solid var(--border);font-family:'JetBrains Mono',monospace}
+.ftag.cls{color:var(--accent);border-color:rgba(77,141,255,.4)}
+.ftag.lg{color:var(--dim);background:var(--surface2)}
+.ftag.sv-critical{color:var(--neg);border-color:rgba(226,96,68,.45);background:rgba(226,96,68,.08)}
+.ftag.sv-high{color:var(--warn);border-color:rgba(217,154,43,.4);background:rgba(217,154,43,.07)}
+.ftag.sv-medium{color:var(--accent);border-color:rgba(77,141,255,.4)}
+.ftitle{font-weight:700;font-size:15px;line-height:1.28}
+.ffind{color:var(--dim);font-size:12.5px;margin-top:5px;line-height:1.5}.ffind b{color:var(--text);font-weight:600}
+.fmag{flex:none;text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:5px;min-width:74px}
+.fmag .mn{font-family:'JetBrains Mono',monospace;font-weight:700;font-size:22px;line-height:1}
+.fmag .ml{font-size:8px;text-transform:uppercase;letter-spacing:.08em;color:var(--faint)}
+.fmag .me{font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;color:var(--warn)}
+.fault[data-sev=critical] .fmag .me{color:var(--neg)}
+.fbar{display:flex;gap:2px}.fbar i{width:5px;height:11px;background:var(--border);border-radius:1px}
+.fault[data-sev=critical] .fbar i.on{background:var(--neg)}.fault[data-sev=high] .fbar i.on{background:var(--warn)}.fault[data-sev=medium] .fbar i.on{background:var(--accent)}
+.fbody{display:none;border-top:1px solid var(--border);padding:14px 16px}
+.fault.open .fbody{display:block}.fault.open .fchev{transform:rotate(90deg)}
+.fchev{color:var(--faint);font-family:'JetBrains Mono',monospace;font-size:11px;transition:.16s;align-self:center}
+.frcpt{border-left:2px solid rgba(217,154,43,.5);padding:1px 0 1px 12px;margin-bottom:14px}
+.fault[data-sev=critical] .frcpt{border-color:rgba(226,96,68,.5)}
+.frcpt .rk{font-size:8.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--accent);font-weight:700;margin-bottom:5px}
+.frcpt p{font-size:12.5px;color:var(--text);line-height:1.6;margin:0}
+.fwork{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border);border:1px solid var(--border);border-radius:9px;overflow:hidden;margin-bottom:12px}
+.fcell{background:var(--surface2);padding:11px 12px}
+.fcell .ck{font-size:8.5px;letter-spacing:.05em;text-transform:uppercase;color:var(--faint);font-weight:600;margin-bottom:7px;font-family:'JetBrains Mono',monospace}
+.frow{display:flex;justify-content:space-between;gap:8px;padding:4px 0;font-size:12px;font-family:'JetBrains Mono',monospace}
+.frow+.frow{border-top:1px dashed var(--border)}.frow .fl{color:var(--dim);font-family:'Inter',sans-serif}
+.frow .fv.up{color:var(--warn)}.fault[data-sev=critical] .frow .fv.up{color:var(--neg)}.frow .fv.dn{color:var(--accent)}
+.frow.tot{border-top:1px solid var(--faint);font-weight:700}.frow.tot .fl{color:var(--text)}
+.fqual{display:flex;gap:14px;flex-wrap:wrap;font-size:10.5px;color:var(--dim);border-top:1px dashed var(--border);padding-top:10px;font-family:'JetBrains Mono',monospace}
+.fconf{display:inline-flex;align-items:center;gap:5px}.fconf .bd{width:7px;height:7px;border-radius:50%}
+.fconf.high .bd{background:var(--pos)}.fconf.medium .bd{background:var(--warn)}.fconf.low .bd{background:var(--neg)}
+.flbanner{font-size:11px;font-family:'JetBrains Mono',monospace;border-radius:9px;padding:9px 12px;margin-bottom:12px;border:1px solid}
+.flbanner.demo{color:var(--warn);border-color:rgba(217,154,43,.35);background:rgba(217,154,43,.06)}
+.flbanner.live{color:var(--pos);border-color:rgba(47,180,124,.35);background:rgba(47,180,124,.05)}
 </style>
 </head>
 <body>
@@ -95,6 +142,15 @@ textarea{min-height:110px;font-family:'JetBrains Mono',monospace;resize:vertical
       <div class="fld"><label>Min EV %</label><input type="number" id="fMinev" value="2" step="0.5"></div>
     </div>
     <div class="feed" id="feed"><div class="empty">Loading edges…</div></div>
+  </section>
+
+  <!-- FAULTS (Faultline) -->
+  <section id="v-faults" class="view hide">
+    <div class="row-between"><h2 style="margin:0">Faultline</h2><span class="spacer"></span><span class="freshness" id="flFresh">—</span></div>
+    <p class="lede">Structural mispricings — errors from the <b style="color:var(--text);font-weight:600">rules and internal math of the market</b>, not from a model. Each fault ships with a receipt you can verify.</p>
+    <div class="flbanner demo" id="flBanner">Checking pipeline for live futures boards…</div>
+    <div class="flchips" id="flChips"></div>
+    <div class="feed" id="flFeed"><div class="empty">Scanning boards…</div></div>
   </section>
 
   <!-- RECORD -->
@@ -163,6 +219,7 @@ textarea{min-height:110px;font-family:'JetBrains Mono',monospace;resize:vertical
 
 <nav class="bottomnav">
   <button data-v="edges" class="on"><svg class="ic" viewBox="0 0 24 24"><polyline points="3 17 9 11 13 15 21 7"/><polyline points="15 7 21 7 21 13"/></svg>Edges</button>
+  <button data-v="faults"><svg class="ic" viewBox="0 0 24 24"><path d="M3 12h4l2-7 4 14 2-7h6"/></svg>Faults</button>
   <button data-v="record"><svg class="ic" viewBox="0 0 24 24"><path d="M4 19V5"/><rect x="7" y="11" width="3" height="8"/><rect x="13" y="7" width="3" height="12"/><rect x="19" y="14" width="2" height="5"/></svg>Record</button>
   <button data-v="ledger"><svg class="ic" viewBox="0 0 24 24"><path d="M4 5h16v14H4z"/><path d="M4 10h16"/><path d="M9 5v14"/></svg>Ledger</button>
   <button data-v="devig"><svg class="ic" viewBox="0 0 24 24"><path d="M12 3v18"/><path d="M5 8l7-5 7 5"/><path d="M5 8v8l7 5 7-5V8"/></svg>De-vig</button>
@@ -189,7 +246,7 @@ GE.devig=function(decs,method){var q=decs.map(function(d){return 1/d;}),S=q.redu
 function $(id){return document.getElementById(id);}
 
 /* ===== nav ===== */
-function show(v){var s=document.querySelectorAll('.view');for(var i=0;i<s.length;i++)s[i].classList.toggle('hide',s[i].id!=='v-'+v);var b=document.querySelectorAll('.bottomnav button');for(var j=0;j<b.length;j++)b[j].classList.toggle('on',b[j].dataset.v===v);window.scrollTo(0,0);if(v==='record')loadRecord();if(v==='edges')loadEdges();}
+function show(v){var s=document.querySelectorAll('.view');for(var i=0;i<s.length;i++)s[i].classList.toggle('hide',s[i].id!=='v-'+v);var b=document.querySelectorAll('.bottomnav button');for(var j=0;j<b.length;j++)b[j].classList.toggle('on',b[j].dataset.v===v);window.scrollTo(0,0);if(v==='record')loadRecord();if(v==='edges')loadEdges();if(v==='faults')loadFaults();}
 var navs=document.querySelectorAll('.bottomnav button');for(var n=0;n<navs.length;n++)navs[n].onclick=(function(b){return function(){show(b.dataset.v);};})(navs[n]);
 
 /* ===== learned weights ===== */
@@ -315,9 +372,175 @@ $('dvRun').onclick=function(){var odds=$('dvIn').value.split(/[\n,]+/).map(funct
   h+='</tbody></table></div><p class="muted mono" style="font-size:12px;margin-top:8px">overround '+((over-1)*100).toFixed(1)+'%</p>';$('dvOut').innerHTML=h;
 };
 
+/* ===== FAULTLINE — structural mispricing engine =====
+   Reads live futures boards + eligibility from Supabase; computes faults
+   client-side (the detector logic IS the moat). Falls back to labeled
+   demo data when the pipeline isn't emitting boards yet.
+
+   SCHEMA CONTRACT (capture job must populate):
+   table boards     : board_id, league, board_name, market_type, selection,
+                      american(int), active(bool), last_move_at(ts),
+                      peer_overround(numeric|null), pair_id(text|null),
+                      pair_role('win'|'qualify'|null), trigger_note(text|null)
+   table eligibility: league, selection, board_match(text), reason, ineligible_until
+   Group boards rows by board_id -> entries[]; join eligibility on
+   (league, selection) to mark dead legs.
+================================================================= */
+var FL={faults:[],filter:'all',live:false};
+function flImpl(a){return 1/GE.amToDec(a);}
+function flPct(x){return(x*100).toFixed(1)+'%';}
+function flAm(a){return a>0?'+'+a:''+a;}
+function flDevig(entries){var raw=entries.map(function(e){return Object.assign({},e,{p:flImpl(e.odds)});});
+  var over=raw.reduce(function(s,e){return s+e.p;},0);
+  return{over:over,field:raw.map(function(e){return Object.assign({},e,{fair:e.p/over});})};}
+
+/* --- detectors --- */
+function flDead(b){
+  var dead=(b.entries||[]).filter(function(e){return e.dead;});if(!dead.length)return null;
+  var naive=flDevig(b.entries),live=flDevig(b.entries.filter(function(e){return !e.dead;}));
+  var rows=live.field.map(function(lf){var nv=naive.field.find(function(n){return n.name===lf.name;}).fair;
+    return{name:lf.name,naive:nv,corrected:lf.fair,delta:lf.fair-nv};}).sort(function(a,b){return b.corrected-a.corrected;});
+  var top=rows[0],deadP=dead.reduce(function(s,d){return s+flImpl(d.odds)/naive.over;},0),edge=top.delta;
+  return{cls:'Dead Money',league:b.league,
+    title:b.board+': '+dead.map(function(d){return d.name;}).join(', ')+' is structurally ineligible',
+    finding:'Book prices <b>'+dead[0].name+'</b> at <b>'+flAm(dead[0].odds)+'</b> on a board it cannot win ('+dead[0].reason+'). That phantom probability inflates the field — every live team is <b>underpriced</b>.',
+    edge:edge,conf:'high',
+    receipt:dead[0].name+' carries '+flPct(deadP)+' of implied probability on a title it is ineligible to win through '+dead[0].until+'. Naive de-vig divides by an overround that includes that dead money, suppressing every live team. Strip the dead leg, re-normalize, and '+top.name+'\u2019s fair price rises from '+flPct(top.naive)+' to '+flPct(top.corrected)+' (+'+(edge*100).toFixed(1)+' pts). The edge is the live favorites priced off an inflated denominator \u2014 not a bet on the dead team.',
+    work:{left:{k:'Field as listed \u00b7 '+(naive.over*100).toFixed(1)+'%',rows:naive.field.slice(0,5).map(function(f){return{l:f.name+(f.dead?' \u26d4':''),v:flPct(f.fair),c:f.dead?'dn':''};})},
+      right:{k:'Corrected \u00b7 '+(live.over*100).toFixed(1)+'%',rows:rows.slice(0,4).map(function(r){return{l:r.name,v:flPct(r.corrected),c:r.delta>0.004?'up':''};}).concat([{l:'phantom skimmed',v:flPct(deadP),c:'dn',tot:1}])}},
+    qual:'Eligibility table maintained manually \u00b7 verify status before sizing'};
+}
+function flIncon(b){
+  if(!b.nested)return null;
+  for(var i=0;i<b.nested.length;i++){var t=b.nested[i],pW=flImpl(t.winOdds),pQ=flImpl(t.qualOdds);
+    if(pW>pQ+0.002){var arb=pW-pQ;
+      return{cls:'Logical Inconsistency',league:b.league,
+        title:b.board+': '+t.name+' priced to win more often than to qualify',
+        finding:'<b>'+t.name+'</b> to '+t.winLabel+' sits at <b>'+flAm(t.winOdds)+'</b> ('+flPct(pW)+') while to '+t.qualLabel+' sits at <b>'+flAm(t.qualOdds)+'</b> ('+flPct(pQ)+'). Winning requires qualifying \u2014 structurally impossible, not a disagreement.',
+        edge:arb,conf:'high',
+        receipt:'A team cannot '+t.winLabel+' without first '+t.qualLabel+', so P(win) \u2264 P(qualify) must always hold. The book has it inverted by '+(arb*100).toFixed(1)+' pts \u2014 a desk error across two screens that aren\u2019t being reconciled. The correlated pair is the receipt regardless of which leg moved.',
+        work:{left:{k:'Posted prices',rows:[{l:'to '+t.qualLabel,v:flAm(t.qualOdds)+' \u00b7 '+flPct(pQ)},{l:'to '+t.winLabel,v:flAm(t.winOdds)+' \u00b7 '+flPct(pW)}]},
+          right:{k:'Constraint',rows:[{l:'required',v:'P(win)\u2264P(qual)'},{l:'observed',v:'P(win)>P(qual)',c:'up'},{l:'violation',v:'+'+(arb*100).toFixed(1)+' pts',c:'up',tot:1}]}},
+        qual:'Hard logical flag \u00b7 model-independent \u00b7 confirm both lines current'};
+    }}
+  return null;
+}
+function flStale(b){
+  if(!b.lastMoveDays||!b.trigger||b.lastMoveDays<14)return null;
+  var edge=Math.min(0.06,b.lastMoveDays/700+0.02);
+  return{cls:'Stale Futures',league:b.league,
+    title:b.board+': board unmoved '+b.lastMoveDays+'d through a roster event',
+    finding:'Leader line hasn\u2019t moved in <b>'+b.lastMoveDays+' days</b> despite '+b.trigger+'. The fault is staleness <b>against a trigger</b>, not staleness alone.',
+    edge:edge,conf:'medium',
+    receipt:b.trigger+' should move this number. It hasn\u2019t in '+b.lastMoveDays+' days, which on a low-handle board usually means no one at the desk has revisited it. Staleness with a named, material trigger is a window before the reprice \u2014 it decays the moment the board updates.',
+    work:{left:{k:'Board state',rows:[{l:'days since move',v:b.lastMoveDays+'d',c:'up'},{l:'handle tier',v:b.handle||'low'},{l:'books',v:b.books||'2\u20133'}]},
+      right:{k:'Trigger',rows:[{l:'event',v:'logged'},{l:'exp. direction',v:b.dir||'shorten'},{l:'repriced?',v:'no',c:'up',tot:1}]}},
+    qual:'Event-driven \u00b7 time-sensitive \u00b7 re-check freshness at placement'};
+}
+function flOver(b){
+  if(b.peerOverround==null||!b.entries)return null;
+  var d=flDevig(b.entries),gap=d.over-b.peerOverround;if(Math.abs(gap)<0.06)return null;
+  var soft=gap<0,edge=Math.min(0.05,Math.abs(gap)*0.35);
+  return{cls:'Overround Anomaly',league:b.league,
+    title:b.board+': vig '+(d.over*100).toFixed(0)+'% vs '+(b.peerOverround*100).toFixed(0)+'% peer band',
+    finding:'Book margin sits '+(soft?'<b>below</b>':'<b>above</b>')+' comparable boards by '+(Math.abs(gap)*100).toFixed(0)+' pts \u2014 '+(soft?'a thin, loosely-priced market the book hasn\u2019t tightened.':'an unusually wide market signalling book uncertainty.'),
+    edge:edge,conf:soft?'medium':'low',
+    receipt:'Peer boards of this type clear around '+(b.peerOverround*100).toFixed(0)+'% overround; this one is at '+(d.over*100).toFixed(0)+'%. '+(soft?'A margin this thin means loose pricing and more exploitable legs.':'A margin this wide usually means the book is protecting against its own uncertainty.')+' A screening signal, not a standalone bet.',
+    work:{left:{k:'This board',rows:[{l:'overround',v:(d.over*100).toFixed(1)+'%',c:'up'},{l:'legs',v:b.entries.length}]},
+      right:{k:'Peer band',rows:[{l:'typical',v:(b.peerOverround*100).toFixed(1)+'%'},{l:'deviation',v:(gap>0?'+':'')+(gap*100).toFixed(1)+' pts',c:'up',tot:1}]}},
+    qual:'Screening signal \u00b7 pair with a leg-level read'};
+}
+var FL_DETECTORS=[flDead,flIncon,flStale,flOver];
+
+/* --- severity (class-aware: screening classes capped at medium) --- */
+function flSev(f){var e=f.edge;
+  if(f.cls==='Logical Inconsistency')return{k:'critical',n:Math.min(10,8+Math.round(e*40))};
+  if(f.cls==='Dead Money'){var n=e>=0.045?8:e>=0.03?7:6;return{k:'high',n:n};}
+  /* Stale + Overround are screening signals, not standalone edges — cap at medium */
+  return{k:'medium',n:e>=0.045?5:e>=0.025?4:3};}
+
+/* --- sample fallback (clearly labeled in UI) --- */
+var FL_SAMPLE=[
+  {league:'CFB',board:'Mountain Conference \u2014 Title',entries:[
+    {name:'Granite State',odds:110},{name:'Rio Vista',odds:240},{name:'Fort Hadley',odds:450},
+    {name:'Western Cascade',odds:800,dead:true,reason:'FCS-to-FBS transition, ineligible for the conference title game',until:'2028'},
+    {name:'Calder Tech',odds:1200},{name:'Lakemont',odds:2000}]},
+  {league:'CFB',board:'Sunbelt Region \u2014 Correlated Pair',nested:[
+    {name:'Bramwell State',qualLabel:'make title game',qualOdds:250,winLabel:'win conference',winOdds:220}]},
+  {league:'CBB',board:'Summit League \u2014 Reg. Season Title',lastMoveDays:34,
+    trigger:'a logged transfer-portal exit by the projected leader\u2019s lead guard',handle:'low',books:'2\u20133',dir:'lengthen'},
+  {league:'CBB',board:'Patriot Group \u2014 Tournament Winner',peerOverround:1.30,entries:[
+    {name:'Ashford',odds:240},{name:'Belmont Cliffs',odds:350},{name:'Carrow U',odds:420},
+    {name:'Deane College',odds:500},{name:'Ellsworth',odds:650},{name:'Fairhaven',odds:750}]}
+];
+
+/* --- group live Supabase rows into board objects --- */
+function flGroup(rows,elig){
+  var byId={};rows.forEach(function(r){var id=r.board_id;
+    if(!byId[id])byId[id]={league:r.league,board:r.board_name,_rows:[],
+      peerOverround:r.peer_overround!=null?+r.peer_overround:null,
+      lastMoveDays:null,trigger:r.trigger_note||null};
+    byId[id]._rows.push(r);});
+  function deadFor(league,sel){return elig.find(function(e){return e.league===league&&e.selection===sel;});}
+  return Object.keys(byId).map(function(id){var b=byId[id],rs=b._rows;
+    var pairs=rs.filter(function(r){return r.pair_id;});
+    if(pairs.length){ // correlated nested market
+      var grp={};pairs.forEach(function(r){grp[r.pair_id]=grp[r.pair_id]||{name:r.selection};
+        if(r.pair_role==='win'){grp[r.pair_id].winOdds=r.american;grp[r.pair_id].winLabel=r.market_type;}
+        else{grp[r.pair_id].qualOdds=r.american;grp[r.pair_id].qualLabel=r.market_type;}});
+      b.nested=Object.keys(grp).map(function(k){return grp[k];}).filter(function(x){return x.winOdds!=null&&x.qualOdds!=null;});
+    }
+    var ent=rs.filter(function(r){return !r.pair_id;});
+    if(ent.length)b.entries=ent.map(function(r){var d=deadFor(r.league,r.selection);
+      return{name:r.selection,odds:r.american,dead:!!d,reason:d?d.reason:'',until:d?d.ineligible_until:''};});
+    // staleness from oldest last_move_at when a trigger exists
+    if(b.trigger){var oldest=rs.reduce(function(m,r){var t=r.last_move_at?new Date(r.last_move_at).getTime():Date.now();return Math.min(m,t);},Date.now());
+      b.lastMoveDays=Math.floor((Date.now()-oldest)/86400000);}
+    return b;});
+}
+function flRun(boards){FL.faults=[];boards.forEach(function(b){FL_DETECTORS.forEach(function(d){var f=d(b);if(f){f.sev=flSev(f);FL.faults.push(f);}});});
+  FL.faults.sort(function(a,b){return(b.sev.n-a.sev.n)||(b.edge-a.edge);});}
+
+async function loadFaults(){
+  try{
+    var boards=await sbGet('boards?select=*&active=eq.true&limit=2000');
+    var elig=[];try{elig=await sbGet('eligibility?select=*');}catch(e){}
+    if(boards&&boards.length){FL.live=true;flRun(flGroup(boards,elig));}
+    else{FL.live=false;flRun(FL_SAMPLE);}
+  }catch(e){FL.live=false;flRun(FL_SAMPLE);}
+  var ban=$('flBanner');
+  if(FL.live){ban.className='flbanner live';ban.textContent='\u25cf LIVE \u2014 scanning '+FL.faults.length+' fault(s) on captured futures boards.';}
+  else{ban.className='flbanner demo';ban.textContent='\u25b2 DEMO DATA \u2014 pipeline isn\u2019t emitting futures boards yet. Populate the boards + eligibility tables (see contract in source) to go live.';}
+  $('flFresh').textContent=FL.live?('updated '+ago(Date.now())):'demo';
+  flChips();flRender();
+}
+function flChips(){var c={};FL.faults.forEach(function(f){c[f.cls]=(c[f.cls]||0)+1;});
+  var keys=['all'].concat(Object.keys(c));
+  $('flChips').innerHTML=keys.map(function(k){var n=k==='all'?FL.faults.length:c[k];
+    return'<button class="flchip'+(FL.filter===k?' on':'')+'" data-f="'+k+'">'+(k==='all'?'All':k)+'<span class="n">'+n+'</span></button>';}).join('');
+  var ch=$('flChips').querySelectorAll('.flchip');for(var i=0;i<ch.length;i++)ch[i].onclick=(function(el){return function(){FL.filter=el.dataset.f;flChips();flRender();};})(ch[i]);}
+function flRender(){var feed=$('flFeed');
+  var list=FL.filter==='all'?FL.faults:FL.faults.filter(function(f){return f.cls===FL.filter;});
+  if(!list.length){feed.innerHTML='<div class="empty"><b>No faults in this class.</b><br>A clean board is the correct result, not a failure. Structural errors are rare \u2014 a scanner that flags everything flags nothing.</div>';return;}
+  feed.innerHTML='';
+  list.forEach(function(f){var beads='';for(var j=0;j<10;j++)beads+='<i class="'+(j<f.sev.n?'on':'')+'"></i>';
+    function tbl(w){function side(s){return'<div class="fcell"><div class="ck">'+s.k+'</div>'+s.rows.map(function(r){return'<div class="frow'+(r.tot?' tot':'')+'"><span class="fl">'+r.l+'</span><span class="fv '+(r.c||'')+'">'+r.v+'</span></div>';}).join('')+'</div>';}
+      return'<div class="fwork">'+side(w.left)+side(w.right)+'</div>';}
+    var el=document.createElement('div');el.className='fault';el.setAttribute('data-sev',f.sev.k);
+    el.innerHTML='<div class="fhd"><div class="grow"><div class="fmeta"><span class="ftag lg">'+f.league+'</span><span class="ftag cls">'+f.cls+'</span><span class="ftag sv-'+f.sev.k+'">'+f.sev.k+'</span></div>'+
+      '<div class="ftitle">'+f.title+'</div><div class="ffind">'+f.finding+'</div></div>'+
+      '<div class="fmag"><div class="mn">'+f.sev.n.toFixed(1)+'</div><div class="ml">magnitude</div><div class="fbar">'+beads+'</div><div class="me">+'+(f.edge*100).toFixed(1)+' pts</div><span class="fchev">\u25b6</span></div></div>'+
+      '<div class="fbody"><div class="frcpt"><div class="rk">The Receipt</div><p>'+f.receipt+'</p></div>'+tbl(f.work)+
+      '<div class="fqual"><span class="fconf '+f.conf+'"><span class="bd"></span>confidence: <b>'+f.conf+'</b></span><span>'+f.qual+'</span></div></div>';
+    el.querySelector('.fhd').onclick=function(){el.classList.toggle('open');};
+    feed.appendChild(el);
+  });
+}
+
 /* ===== init + live auto-refresh ===== */
 renderLedger();$('dvRun').click();loadEdges();
-setInterval(function(){var on=!$('v-edges').classList.contains('hide');if(on)loadEdges();},60000);
+setInterval(function(){var on=!$('v-edges').classList.contains('hide');if(on)loadEdges();
+  if(!$('v-faults').classList.contains('hide'))loadFaults();},60000);
 </script>
 </body>
 </html>
