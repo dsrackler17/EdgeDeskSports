@@ -122,6 +122,18 @@ textarea{min-height:110px;font-family:'JetBrains Mono',monospace;resize:vertical
 .flwatch-h{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--dim);font-weight:600;margin:22px 0 10px;font-family:'JetBrains Mono',monospace}
 .flwatch{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:13px 15px;margin-bottom:9px}
 .flwatch .ftitle{margin-bottom:6px}
+/* ===== news ===== */
+.newsalert-h{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--warn);font-weight:700;margin:4px 0 9px;font-family:'JetBrains Mono',monospace;display:flex;align-items:center;gap:7px}
+.newsitem{background:var(--surface);border:1px solid var(--border);border-radius:11px;padding:12px 14px;margin-bottom:8px;display:block}
+.newsitem.alert{border-color:rgba(217,154,43,.4);background:linear-gradient(180deg,rgba(217,154,43,.05),var(--surface))}
+.newsitem .nt{font-weight:600;font-size:14px;line-height:1.35;color:var(--text)}
+.newsitem .nm{display:flex;align-items:center;gap:8px;margin-top:6px;flex-wrap:wrap;font-size:10.5px;color:var(--dim);font-family:'JetBrains Mono',monospace}
+.ncat{font-size:8.5px;text-transform:uppercase;letter-spacing:.04em;border:1px solid var(--border);border-radius:4px;padding:2px 6px;color:var(--dim)}
+.ncat.eligibility{color:var(--warn);border-color:rgba(217,154,43,.4)}
+.ncat.realignment{color:var(--accent);border-color:rgba(77,141,255,.4)}
+.nteam{font-size:8.5px;border-radius:4px;padding:2px 6px;background:rgba(217,154,43,.12);color:var(--warn);font-family:'JetBrains Mono',monospace}
+.newssec-h{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--dim);font-weight:600;margin:18px 0 9px;font-family:'JetBrains Mono',monospace}
+.footlink{cursor:pointer;text-decoration:underline;text-underline-offset:2px}
 </style>
 </head>
 <body>
@@ -205,6 +217,14 @@ textarea{min-height:110px;font-family:'JetBrains Mono',monospace;resize:vertical
     <div id="dvOut" style="margin-top:14px"></div>
   </section>
 
+  <!-- NEWS -->
+  <section id="v-news" class="view hide">
+    <div class="row-between"><h2 style="margin:0">News</h2><span class="spacer"></span><span class="freshness" id="newsFresh">—</span></div>
+    <p class="lede">Early-warning for your moat. Items that touch a tracked team or a structural rule surface as <b style="color:var(--warn);font-weight:600">Moat Alerts</b> — they may mean an eligibility row needs updating.</p>
+    <div class="flbanner demo" id="newsBanner">Checking feed…</div>
+    <div id="newsFeed"><div class="empty">Loading news…</div></div>
+  </section>
+
   <!-- TERMS -->
   <section id="v-terms" class="view hide terms">
     <h2>Terms &amp; disclaimer</h2>
@@ -219,7 +239,7 @@ textarea{min-height:110px;font-family:'JetBrains Mono',monospace;resize:vertical
   </section>
 </main>
 
-<div class="foot"><b>Research tool only — not betting advice.</b> Signals can be wrong. 21+. 1-800-GAMBLER.</div>
+<div class="foot"><b class="footlink" onclick="show('terms')">Research tool only — not betting advice.</b> Signals can be wrong. 21+. 1-800-GAMBLER.</div>
 
 <nav class="bottomnav">
   <button data-v="edges" class="on"><svg class="ic" viewBox="0 0 24 24"><polyline points="3 17 9 11 13 15 21 7"/><polyline points="15 7 21 7 21 13"/></svg>Edges</button>
@@ -227,7 +247,7 @@ textarea{min-height:110px;font-family:'JetBrains Mono',monospace;resize:vertical
   <button data-v="record"><svg class="ic" viewBox="0 0 24 24"><path d="M4 19V5"/><rect x="7" y="11" width="3" height="8"/><rect x="13" y="7" width="3" height="12"/><rect x="19" y="14" width="2" height="5"/></svg>Record</button>
   <button data-v="ledger"><svg class="ic" viewBox="0 0 24 24"><path d="M4 5h16v14H4z"/><path d="M4 10h16"/><path d="M9 5v14"/></svg>Ledger</button>
   <button data-v="devig"><svg class="ic" viewBox="0 0 24 24"><path d="M12 3v18"/><path d="M5 8l7-5 7 5"/><path d="M5 8v8l7 5 7-5V8"/></svg>De-vig</button>
-  <button data-v="terms"><svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8h.01M11 12h1v4h1"/></svg>Terms</button>
+  <button data-v="news"><svg class="ic" viewBox="0 0 24 24"><path d="M4 5h16v14H4z"/><path d="M8 9h8M8 13h8M8 17h5"/></svg>News</button>
 </nav>
 
 <script>
@@ -250,7 +270,7 @@ GE.devig=function(decs,method){var q=decs.map(function(d){return 1/d;}),S=q.redu
 function $(id){return document.getElementById(id);}
 
 /* ===== nav ===== */
-function show(v){var s=document.querySelectorAll('.view');for(var i=0;i<s.length;i++)s[i].classList.toggle('hide',s[i].id!=='v-'+v);var b=document.querySelectorAll('.bottomnav button');for(var j=0;j<b.length;j++)b[j].classList.toggle('on',b[j].dataset.v===v);window.scrollTo(0,0);if(v==='record')loadRecord();if(v==='edges')loadEdges();if(v==='faults')loadFaults();}
+function show(v){var s=document.querySelectorAll('.view');for(var i=0;i<s.length;i++)s[i].classList.toggle('hide',s[i].id!=='v-'+v);var b=document.querySelectorAll('.bottomnav button');for(var j=0;j<b.length;j++)b[j].classList.toggle('on',b[j].dataset.v===v);window.scrollTo(0,0);if(v==='record')loadRecord();if(v==='edges')loadEdges();if(v==='faults')loadFaults();if(v==='news')loadNews();}
 var navs=document.querySelectorAll('.bottomnav button');for(var n=0;n<navs.length;n++)navs[n].onclick=(function(b){return function(){show(b.dataset.v);};})(navs[n]);
 
 /* ===== learned weights ===== */
@@ -566,10 +586,41 @@ function flRenderBoards(){
   host.innerHTML='<div class="flwatch-h">Boards under watch \u2014 live de-vig from your captured feed</div>'+cards;
 }
 
+/* ===== news feed (moat early-warning) ===== */
+var NEWS_SAMPLE=[
+  {title:'North Dakota State to join Mountain West in 2026, ineligible for conference title game through 2027',summary:'Under the two-year FBS transition rule, the 10-time FCS champion cannot win the Mountain West Championship in 2026 or 2027; the school is petitioning the NCAA for a waiver.',source:'sample',category:'eligibility',relevant:true,matched_teams:['North Dakota State'],published_at:'2026-02-09T12:00:00Z',url:'#'},
+  {title:'Sacramento State joins MAC for 2026, barred from MAC championship for first two seasons',summary:'The Hornets move up to the FBS as a football-only MAC member and are ineligible for the conference title game in 2026 and 2027.',source:'sample',category:'eligibility',relevant:true,matched_teams:['Sacramento State'],published_at:'2026-02-16T12:00:00Z',url:'#'},
+  {title:'Conference USA finalizes 2026 schedule as Delaware, Missouri State enter year two',summary:'Both newcomers remain in the two-year transition window and are not eligible for the CUSA championship game this season.',source:'sample',category:'realignment',relevant:true,matched_teams:['Delaware','Missouri State'],published_at:'2026-05-01T12:00:00Z',url:'#'},
+];
+function newsCard(n,alert){
+  var when=n.published_at?ago(new Date(n.published_at).getTime()):'';
+  var teams=(n.matched_teams||[]).map(function(t){return'<span class="nteam">'+t+'</span>';}).join('');
+  var href=(n.url&&n.url!=='#')?(' href="'+n.url+'" target="_blank" rel="noopener"'):'';
+  return'<a class="newsitem'+(alert?' alert':'')+'"'+href+'><div class="nt">'+n.title+'</div><div class="nm"><span class="ncat '+(n.category||'general')+'">'+(n.category||'general')+'</span>'+teams+'<span>'+(n.source||'')+'</span>'+(when?'<span>· '+when+'</span>':'')+'</div></a>';
+}
+function renderNews(rows){
+  var feed=$('newsFeed');
+  if(!rows||!rows.length){feed.innerHTML='<div class="empty">No news yet. Deploy capture_news to populate the daily feed.</div>';return;}
+  var alerts=rows.filter(function(n){return n.relevant;}),rest=rows.filter(function(n){return !n.relevant;});
+  var html='';
+  if(alerts.length){html+='<div class="newsalert-h">\u25c6 Moat Alerts \u2014 may need an eligibility update</div>'+alerts.map(function(n){return newsCard(n,true);}).join('');}
+  if(rest.length){html+='<div class="newssec-h">All college news</div>'+rest.slice(0,40).map(function(n){return newsCard(n,false);}).join('');}
+  feed.innerHTML=html;
+}
+async function loadNews(){
+  var rows=[],live=false;
+  try{rows=await sbGet('news?select=*&order=published_at.desc&limit=80');if(rows&&rows.length)live=true;}catch(e){}
+  var ban=$('newsBanner');
+  if(live){ban.className='flbanner live';ban.textContent='\u25cf LIVE \u2014 '+rows.length+' items, '+rows.filter(function(n){return n.relevant;}).length+' moat alert(s).';$('newsFresh').textContent='updated '+ago(Date.now());}
+  else{rows=NEWS_SAMPLE;ban.className='flbanner demo';ban.textContent='\u25b2 SAMPLE \u2014 deploy capture_news for the live daily feed.';$('newsFresh').textContent='sample';}
+  renderNews(rows);
+}
+
 /* ===== init + live auto-refresh ===== */
 renderLedger();$('dvRun').click();loadEdges();
 setInterval(function(){var on=!$('v-edges').classList.contains('hide');if(on)loadEdges();
-  if(!$('v-faults').classList.contains('hide'))loadFaults();},60000);
+  if(!$('v-faults').classList.contains('hide'))loadFaults();
+  if(!$('v-news').classList.contains('hide'))loadNews();},60000);
 </script>
 </body>
 </html>
