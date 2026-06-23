@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>EdgeDesk — Admin</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0d0f13;--surface:#13161c;--surface2:#191d25;--border:#262c36;--text:#e7eaf0;--dim:#8a93a2;--faint:#5b6472;--accent:#4d8dff;--pos:#2fb47c;--neg:#e26044;--warn:#d99a2b}
+*{box-sizing:border-box;margin:0}
+body{background:var(--bg);color:var(--text);font-family:'Inter',system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+.mono{font-family:'JetBrains Mono',monospace}
+.wrap{max-width:780px;margin:0 auto;padding:0 16px}
+a{color:var(--accent);text-decoration:none}
+header{border-bottom:1px solid var(--border);background:rgba(13,15,19,.92);position:sticky;top:0;z-index:10;backdrop-filter:blur(8px)}
+.hd{display:flex;align-items:center;gap:9px;padding:13px 0}
+.logo{font-weight:800;font-size:16px;display:flex;align-items:center;gap:8px}
+.logo .mk{width:10px;height:16px;background:linear-gradient(180deg,var(--accent),#7db0ff);border-radius:2px;transform:skewX(-12deg)}
+.tag{font-size:9px;letter-spacing:.05em;text-transform:uppercase;color:var(--warn);border:1px solid var(--warn);border-radius:13px;padding:2px 7px;font-weight:600}
+.sp{flex:1}
+.who{font-size:11px;color:var(--dim);font-family:'JetBrains Mono',monospace}
+h2{font-size:12px;letter-spacing:.07em;text-transform:uppercase;color:var(--dim);margin:0 0 4px;font-weight:600}
+.lede{color:var(--dim);font-size:13px;margin:0 0 14px}
+.tabs{display:flex;gap:7px;margin:16px 0}
+.tab{font-size:12px;font-weight:600;color:var(--dim);background:transparent;border:1px solid var(--border);border-radius:8px;padding:8px 14px;cursor:pointer;font-family:inherit}
+.tab.on{background:var(--surface2);border-color:var(--accent);color:var(--text)}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:14px}
+.card h3{font-size:14px;margin:0 0 12px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.grid .full{grid-column:1/-1}
+@media(max-width:560px){.grid{grid-template-columns:1fr}}
+.fld{display:flex;flex-direction:column;gap:5px}
+.fld label{font-size:10px;text-transform:uppercase;letter-spacing:.04em;color:var(--faint)}
+input,select{width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:9px;padding:11px;font-size:15px;font-family:'Inter',sans-serif}
+input.mono{font-family:'JetBrains Mono',monospace}
+input:focus,select:focus{outline:2px solid var(--accent);outline-offset:-1px}
+.btn{background:var(--accent);color:#06122b;border:none;border-radius:9px;font-family:inherit;font-weight:700;font-size:14px;padding:11px 16px;cursor:pointer}
+.btn:active{transform:scale(.99)}.btn:disabled{opacity:.5}
+.btn.sm{padding:7px 11px;font-size:12px}
+.btn.ghost{background:transparent;color:var(--text);border:1px solid var(--border)}
+.btn.danger{background:transparent;color:var(--neg);border:1px solid rgba(226,96,68,.4)}
+.btn.full{width:100%}
+.rowline{display:flex;gap:8px;align-items:center;padding:9px 0;border-bottom:1px solid rgba(38,44,54,.7);font-size:13px}
+.rowline:last-child{border:none}
+.rowline .g{flex:1;min-width:0}
+.rowline .nm{font-weight:600}
+.rowline .meta{font-size:11px;color:var(--dim);font-family:'JetBrains Mono',monospace;margin-top:2px}
+.pill{font-size:9px;text-transform:uppercase;letter-spacing:.04em;border:1px solid var(--border);border-radius:5px;padding:2px 6px;color:var(--dim);flex:none}
+.entryrows{margin:10px 0}
+.entryrow{display:grid;grid-template-columns:1fr 110px 36px;gap:8px;margin-bottom:7px}
+.entryrow input{padding:9px}
+.msg{font-size:12.5px;border-radius:8px;padding:9px 12px;margin-top:10px;font-family:'JetBrains Mono',monospace;display:none}
+.msg.err{display:block;color:var(--neg);background:rgba(226,96,68,.08);border:1px solid rgba(226,96,68,.3)}
+.msg.ok{display:block;color:var(--pos);background:rgba(47,180,124,.07);border:1px solid rgba(47,180,124,.3)}
+.gate{max-width:380px;margin:60px auto;text-align:center}
+.gate h1{font-size:22px;font-weight:800;margin-bottom:6px}
+.gate p{color:var(--dim);font-size:13px;margin-bottom:18px}
+.hide{display:none!important}
+.note{font-size:11px;color:var(--faint);margin-top:8px;line-height:1.5}
+.toggle{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--dim);margin:4px 0 10px;cursor:pointer}
+.toggle input{width:auto}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+</style>
+</head>
+<body>
+
+<!-- AUTH GATE -->
+<div id="gate" class="gate hide">
+  <h1>EdgeDesk Admin</h1>
+  <p>Sign in to maintain eligibility and conference boards.</p>
+  <div class="fld" style="text-align:left;margin-bottom:10px"><label>Email</label><input id="gEmail" type="email" autocomplete="email"></div>
+  <div class="fld" style="text-align:left;margin-bottom:14px"><label>Password</label><input id="gPass" type="password" autocomplete="current-password"></div>
+  <button class="btn full" id="gBtn">Log in</button>
+  <div class="msg" id="gMsg"></div>
+</div>
+
+<!-- APP -->
+<div id="app" class="hide">
+<header><div class="wrap hd">
+  <span class="logo"><span class="mk"></span>EdgeDesk</span>
+  <span class="tag">admin</span>
+  <span class="sp"></span>
+  <span class="who" id="who"></span>
+  <button class="btn ghost sm" id="logout" style="margin-left:10px">Log out</button>
+</div></header>
+
+<main class="wrap" style="padding:16px 16px 60px">
+  <div class="tabs">
+    <button class="tab on" data-t="elig">Eligibility</button>
+    <button class="tab" data-t="boards">Conference boards</button>
+  </div>
+
+  <!-- ELIGIBILITY -->
+  <section id="t-elig">
+    <h2>Eligibility table <span class="mono" style="color:var(--warn);font-weight:400;text-transform:none;font-size:11px">— the moat. Keep it verified.</span></h2>
+    <p class="lede">Teams that can't win a board they're priced on. Each row arms the Dead Money detector. Only add cases you've verified.</p>
+    <div class="card">
+      <h3 style="margin-top:0">Add eligibility flag</h3>
+      <div class="grid">
+        <div class="fld"><label>League</label><select id="e_league"><option>CFB</option><option>CBB</option></select></div>
+        <div class="fld"><label>Team (exact board name)</label><input id="e_sel" placeholder="Western Cascade"></div>
+        <div class="fld full"><label>Reason (shown in the receipt)</label><input id="e_reason" placeholder="FBS transition — ineligible for the conference title game"></div>
+        <div class="fld"><label>Ineligible until</label><input id="e_until" class="mono" placeholder="2028"></div>
+        <div class="fld"><label>Board match (optional)</label><input id="e_match" placeholder="Mountain"></div>
+      </div>
+      <button class="btn full" id="e_add" style="margin-top:12px">Save flag</button>
+      <div class="msg" id="e_msg"></div>
+      <p class="note">Team must match the spelling used on the board exactly, or the join won't fire.</p>
+    </div>
+    <div class="card">
+      <h3 style="margin-top:0">Current flags</h3>
+      <div id="e_list"><p class="lede">Loading…</p></div>
+    </div>
+  </section>
+
+  <!-- BOARDS -->
+  <section id="t-boards" class="hide">
+    <h2>Conference boards <span class="mono" style="color:var(--dim);font-weight:400;text-transform:none;font-size:11px">— not on any affordable API</span></h2>
+    <p class="lede">Hand-enter the boards The Odds API doesn't carry. Standard board arms Dead Money + Overround; a correlated pair arms Logical Inconsistency.</p>
+
+    <div class="card">
+      <h3 style="margin-top:0">Standard board <span style="color:var(--dim);font-weight:400;font-size:11px">(win-conference outrights)</span></h3>
+      <div class="grid">
+        <div class="fld"><label>League</label><select id="b_league"><option>CFB</option><option>CBB</option></select></div>
+        <div class="fld"><label>Book</label><input id="b_book" placeholder="draftkings"></div>
+        <div class="fld full"><label>Board name</label><input id="b_name" placeholder="Mountain West — Title"></div>
+        <div class="fld"><label>Market type</label><input id="b_market" class="mono" value="win_conf"></div>
+        <div class="fld"><label>Peer overround (arms Overround)</label><input id="b_peer" class="mono" placeholder="1.18" inputmode="decimal"></div>
+      </div>
+      <div class="entryrows" id="b_rows">
+        <div style="display:grid;grid-template-columns:1fr 110px 36px;gap:8px;font-size:10px;color:var(--faint);text-transform:uppercase;letter-spacing:.04em;margin-bottom:5px">
+          <span>Team</span><span>Am. odds</span><span></span>
+        </div>
+      </div>
+      <button class="btn ghost sm" id="b_addrow">+ Add team</button>
+      <button class="btn full" id="b_save" style="margin-top:12px">Save board</button>
+      <div class="msg" id="b_msg"></div>
+    </div>
+
+    <div class="card">
+      <h3 style="margin-top:0">Correlated pair <span style="color:var(--dim);font-weight:400;font-size:11px">(arms Logical Inconsistency)</span></h3>
+      <div class="grid">
+        <div class="fld"><label>League</label><select id="c_league"><option>CFB</option><option>CBB</option></select></div>
+        <div class="fld"><label>Book</label><input id="c_book" placeholder="draftkings"></div>
+        <div class="fld full"><label>Board name</label><input id="c_name" placeholder="Sun Belt — Correlated"></div>
+        <div class="fld full"><label>Team</label><input id="c_sel" placeholder="App State"></div>
+        <div class="fld"><label>Win conf odds</label><input id="c_win" class="mono" placeholder="220" inputmode="numeric"></div>
+        <div class="fld"><label>Make title odds</label><input id="c_qual" class="mono" placeholder="250" inputmode="numeric"></div>
+      </div>
+      <button class="btn full" id="c_save" style="margin-top:12px">Save pair</button>
+      <div class="msg" id="c_msg"></div>
+      <p class="note">Books rarely post both legs, so these are rare — but each one is a critical-severity fault when the math inverts.</p>
+    </div>
+
+    <div class="card">
+      <h3 style="margin-top:0">Active boards</h3>
+      <div id="b_list"><p class="lede">Loading…</p></div>
+    </div>
+  </section>
+</main>
+</div>
+
+<script>
+const SB_URL="https://iattxbkbufslbauoumga.supabase.co";
+const SB_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlhdHR4YmtidWZzbGJhdW91bWdhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE2MzY4MDUsImV4cCI6MjA5NzIxMjgwNX0.Mly5G587o5IFRnEigU2wRp9buWEk3dFwH9RNPJK7Uo8";
+
+/* session (set by landing.html login, or by the gate below) */
+function session(){try{return JSON.parse(localStorage.getItem('edgedesk_session')||'null');}catch(e){return null;}}
+function token(){const s=session();return s&&s.access_token;}
+function userEmail(){const s=session();return s&&s.user&&s.user.email;}
+
+/* authed PostgREST helpers — writes carry the user's bearer so RLS sees auth.uid() */
+function authHeaders(extra){return Object.assign({apikey:SB_KEY,Authorization:"Bearer "+token(),"Content-Type":"application/json"},extra||{});}
+async function sbSelect(q){const r=await fetch(SB_URL+"/rest/v1/"+q,{headers:authHeaders()});if(r.status===401)return gateOut();if(!r.ok)throw new Error("read "+r.status);return r.json();}
+async function sbWrite(path,method,body,prefer){const r=await fetch(SB_URL+"/rest/v1/"+path,{method:method,headers:authHeaders(prefer?{Prefer:prefer}:null),body:body?JSON.stringify(body):undefined});if(r.status===401){gateOut();throw new Error("session expired");}if(!r.ok)throw new Error((await r.text())||("write "+r.status));return r;}
+function msg(id,t,kind){const m=document.getElementById(id);if(!t){m.className='msg';return;}m.className='msg '+(kind||'err');m.textContent=t;}
+
+/* ---- auth gate ---- */
+function showGate(){document.getElementById('gate').classList.remove('hide');document.getElementById('app').classList.add('hide');}
+function showApp(){document.getElementById('gate').classList.add('hide');document.getElementById('app').classList.remove('hide');document.getElementById('who').textContent=userEmail()||'';loadElig();loadBoards();}
+function gateOut(){localStorage.removeItem('edgedesk_session');showGate();}
+document.getElementById('gBtn').onclick=async function(){
+  const email=document.getElementById('gEmail').value.trim(),pass=document.getElementById('gPass').value;
+  if(!email||!pass){msg('gMsg','Enter email and password.');return;}
+  this.disabled=true;
+  try{
+    const r=await fetch(SB_URL+"/auth/v1/token?grant_type=password",{method:"POST",headers:{'Content-Type':'application/json',apikey:SB_KEY},body:JSON.stringify({email,password:pass})});
+    const d=await r.json();
+    if(!r.ok||!d.access_token){msg('gMsg',d.msg||d.error_description||'Login failed.');this.disabled=false;return;}
+    localStorage.setItem('edgedesk_session',JSON.stringify(d));showApp();
+  }catch(e){msg('gMsg','Network error.');this.disabled=false;}
+};
+document.getElementById('logout').onclick=gateOut;
+
+/* ---- tabs ---- */
+document.querySelectorAll('.tab').forEach(t=>t.onclick=()=>{
+  document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('on',x===t));
+  document.getElementById('t-elig').classList.toggle('hide',t.dataset.t!=='elig');
+  document.getElementById('t-boards').classList.toggle('hide',t.dataset.t!=='boards');
+});
+
+/* ---- eligibility ---- */
+async function loadElig(){
+  try{const rows=await sbSelect("eligibility?select=*&order=league.asc");
+    const el=document.getElementById('e_list');
+    if(!rows||!rows.length){el.innerHTML='<p class="lede">No flags yet.</p>';return;}
+    el.innerHTML=rows.map(r=>`<div class="rowline"><span class="pill">${r.league}</span><div class="g"><div class="nm">${r.selection}</div><div class="meta">${r.reason}${r.ineligible_until?' · until '+r.ineligible_until:''}${r.board_match?' · board~'+r.board_match:''}</div></div><button class="btn danger sm" data-del='${encodeURIComponent(JSON.stringify({league:r.league,selection:r.selection}))}'>✕</button></div>`).join('');
+    el.querySelectorAll('[data-del]').forEach(b=>b.onclick=async()=>{
+      const k=JSON.parse(decodeURIComponent(b.dataset.del));
+      try{await sbWrite(`eligibility?league=eq.${encodeURIComponent(k.league)}&selection=eq.${encodeURIComponent(k.selection)}`,"DELETE",null,"return=minimal");loadElig();}catch(e){alert(e.message);}
+    });
+  }catch(e){document.getElementById('e_list').innerHTML='<p class="lede" style="color:var(--neg)">'+e.message+'</p>';}
+}
+document.getElementById('e_add').onclick=async function(){
+  const row={league:document.getElementById('e_league').value,selection:document.getElementById('e_sel').value.trim(),reason:document.getElementById('e_reason').value.trim(),ineligible_until:document.getElementById('e_until').value.trim()||null,board_match:document.getElementById('e_match').value.trim()||null};
+  if(!row.selection||!row.reason){msg('e_msg','Team and reason are required.');return;}
+  this.disabled=true;
+  try{await sbWrite("eligibility?on_conflict=league,selection","POST",[row],"resolution=merge-duplicates,return=minimal");
+    msg('e_msg','Saved.','ok');document.getElementById('e_sel').value='';document.getElementById('e_reason').value='';loadElig();
+  }catch(e){msg('e_msg',e.message);}finally{this.disabled=false;}
+};
+
+/* ---- boards: standard ---- */
+function slug(s){return s.toLowerCase().replace(/[^a-z0-9]+/g,'_').replace(/^_|_$/g,'');}
+function addTeamRow(team,odds){
+  const wrap=document.getElementById('b_rows');
+  const div=document.createElement('div');div.className='entryrow';
+  div.innerHTML=`<input placeholder="Team" value="${team||''}"><input class="mono" placeholder="+800" inputmode="numeric" value="${odds||''}"><button class="btn danger sm">✕</button>`;
+  div.querySelector('button').onclick=()=>div.remove();
+  wrap.appendChild(div);
+}
+document.getElementById('b_addrow').onclick=()=>addTeamRow();
+document.getElementById('b_save').onclick=async function(){
+  const name=document.getElementById('b_name').value.trim(),book=document.getElementById('b_book').value.trim().toLowerCase(),league=document.getElementById('b_league').value,market=document.getElementById('b_market').value.trim()||'win_conf',peer=document.getElementById('b_peer').value.trim();
+  if(!name||!book){msg('b_msg','Board name and book are required.');return;}
+  const rows=[...document.querySelectorAll('#b_rows .entryrow')].map(r=>{const i=r.querySelectorAll('input');return{team:i[0].value.trim(),odds:parseInt(i[1].value,10)};}).filter(r=>r.team&&!isNaN(r.odds));
+  if(rows.length<2){msg('b_msg','Add at least two teams with odds.');return;}
+  const board_id=slug(name)+'_'+slug(book);
+  const now=new Date().toISOString();
+  const payload=rows.map(r=>({board_id,league,board_name:name+' ('+book+')',market_type:market,selection:r.team,american:r.odds,book,active:true,last_move_at:now,peer_overround:peer?parseFloat(peer):null,updated_at:now}));
+  this.disabled=true;
+  try{await sbWrite("boards?on_conflict=board_id,selection","POST",payload,"resolution=merge-duplicates,return=minimal");
+    msg('b_msg','Board saved ('+rows.length+' teams).','ok');
+    document.getElementById('b_rows').querySelectorAll('.entryrow').forEach(e=>e.remove());document.getElementById('b_name').value='';loadBoards();
+  }catch(e){msg('b_msg',e.message);}finally{this.disabled=false;}
+};
+
+/* ---- boards: correlated pair ---- */
+document.getElementById('c_save').onclick=async function(){
+  const name=document.getElementById('c_name').value.trim(),book=document.getElementById('c_book').value.trim().toLowerCase(),league=document.getElementById('c_league').value,sel=document.getElementById('c_sel').value.trim();
+  const win=parseInt(document.getElementById('c_win').value,10),qual=parseInt(document.getElementById('c_qual').value,10);
+  if(!name||!book||!sel||isNaN(win)||isNaN(qual)){msg('c_msg','All fields required.');return;}
+  const board_id=slug(name)+'_'+slug(book)+'_corr';const pair_id=slug(sel);const now=new Date().toISOString();
+  const payload=[
+    {board_id,league,board_name:name+' ('+book+')',market_type:'win conference',selection:sel,american:win,book,active:true,last_move_at:now,pair_id,pair_role:'win',updated_at:now},
+    {board_id,league,board_name:name+' ('+book+')',market_type:'make title game',selection:sel,american:qual,book,active:true,last_move_at:now,pair_id,pair_role:'qualify',updated_at:now}
+  ];
+  this.disabled=true;
+  try{await sbWrite("boards?on_conflict=board_id,selection","POST",payload,"resolution=merge-duplicates,return=minimal");
+    msg('c_msg','Pair saved. Faultline will flag it if P(win) > P(qualify).','ok');
+    document.getElementById('c_sel').value='';document.getElementById('c_win').value='';document.getElementById('c_qual').value='';loadBoards();
+  }catch(e){msg('c_msg',e.message);}finally{this.disabled=false;}
+};
+
+/* ---- list / deactivate boards ---- */
+async function loadBoards(){
+  try{const rows=await sbSelect("boards?select=board_id,board_name,league,selection,american,active&active=eq.true&order=board_id.asc");
+    const el=document.getElementById('b_list');
+    if(!rows||!rows.length){el.innerHTML='<p class="lede">No active boards yet.</p>';return;}
+    const groups={};rows.forEach(r=>{(groups[r.board_id]=groups[r.board_id]||{name:r.board_name,league:r.league,n:0}).n++;});
+    el.innerHTML=Object.keys(groups).map(id=>{const g=groups[id];
+      return `<div class="rowline"><span class="pill">${g.league}</span><div class="g"><div class="nm">${g.name}</div><div class="meta">${id} · ${g.n} selections</div></div><button class="btn danger sm" data-board="${id}">deactivate</button></div>`;
+    }).join('');
+    el.querySelectorAll('[data-board]').forEach(b=>b.onclick=async()=>{
+      if(!confirm('Deactivate this board?'))return;
+      try{await sbWrite(`boards?board_id=eq.${encodeURIComponent(b.dataset.board)}`,"PATCH",{active:false},"return=minimal");loadBoards();}catch(e){alert(e.message);}
+    });
+  }catch(e){document.getElementById('b_list').innerHTML='<p class="lede" style="color:var(--neg)">'+e.message+'</p>';}
+}
+
+/* ---- init ---- */
+addTeamRow();addTeamRow();addTeamRow();
+if(token())showApp();else showGate();
+</script>
+</body>
+</html>
