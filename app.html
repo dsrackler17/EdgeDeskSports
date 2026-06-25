@@ -188,6 +188,8 @@ textarea{min-height:110px;font-family:'JetBrains Mono',monospace;resize:vertical
 .refreshbtn{background:var(--surface2);border:1px solid var(--border);color:var(--dim);border-radius:7px;min-width:30px;height:30px;cursor:pointer;font-size:16px;line-height:1;margin-left:8px;flex:none}
 .refreshbtn:hover{color:var(--text);border-color:var(--accent)}
 .refreshbtn:active{transform:rotate(180deg);transition:transform .25s}
+.refreshbtn.spinning{animation:rspin .6s linear infinite;color:var(--accent);border-color:var(--accent)}
+@keyframes rspin{to{transform:rotate(360deg)}}
 .signout{margin-left:8px;background:transparent;border:1px solid var(--border);color:var(--dim);border-radius:7px;padding:5px 10px;font-size:11px;cursor:pointer;font-family:'JetBrains Mono',monospace}
 .signout:hover{color:var(--text);border-color:var(--neg)}
 /* ===== quick add (tap to log, mobile-clean) ===== */
@@ -242,7 +244,7 @@ textarea{min-height:110px;font-family:'JetBrains Mono',monospace;resize:vertical
 <main>
   <!-- EDGES -->
   <section id="v-edges" class="view">
-    <div class="row-between"><h2 style="margin:0">Top edges</h2><span class="spacer"></span><span class="freshness" id="fresh">—</span><button class="refreshbtn" title="Refresh" onclick="loadEdges()">&#8635;</button></div>
+    <div class="row-between"><h2 style="margin:0">Top edges</h2><span class="spacer"></span><span class="freshness" id="fresh">—</span><button class="refreshbtn" title="Refresh" data-refresh="edges">&#8635;</button></div>
     <p class="lede">The best live edges on games in your window — positive after the sharp fair line, with the liquidity to mean something. Ranked by edge × how this kind of signal has beaten the close. Tap any row for the receipt.</p>
     <div id="edgeStale" class="stalebanner hide"></div>
     <div class="lead" id="leadWrap"><h3 id="t10title">★ Top edges — this week</h3><div id="leadList"></div></div>
@@ -262,7 +264,7 @@ textarea{min-height:110px;font-family:'JetBrains Mono',monospace;resize:vertical
 
   <!-- FAULTS (Faultline) -->
   <section id="v-faults" class="view hide">
-    <div class="row-between"><h2 style="margin:0">Faultline</h2><span class="spacer"></span><span class="freshness" id="flFresh">—</span><button class="refreshbtn" title="Refresh" onclick="loadFaults()">&#8635;</button></div>
+    <div class="row-between"><h2 style="margin:0">Faultline</h2><span class="spacer"></span><span class="freshness" id="flFresh">—</span><button class="refreshbtn" title="Refresh" data-refresh="faults">&#8635;</button></div>
     <p class="lede">Structural mispricings — errors from the <b style="color:var(--text);font-weight:600">rules and internal math of the market</b>, not from a model. Each fault ships with a receipt you can verify.</p>
     <div class="flbanner demo" id="flBanner">Checking pipeline for live futures boards…</div>
     <div class="flchips" id="flChips"></div>
@@ -272,7 +274,7 @@ textarea{min-height:110px;font-family:'JetBrains Mono',monospace;resize:vertical
 
   <!-- BOARDS (all real odds, one place) -->
   <section id="v-boards" class="view hide">
-    <div class="row-between"><h2 style="margin:0">Boards</h2><span class="spacer"></span><span class="freshness" id="bdFresh">—</span><button class="refreshbtn" title="Refresh" onclick="loadBoards()">&#8635;</button></div>
+    <div class="row-between"><h2 style="margin:0">Boards</h2><span class="spacer"></span><span class="freshness" id="bdFresh">—</span><button class="refreshbtn" title="Refresh" data-refresh="boards">&#8635;</button></div>
     <p class="lede">Every real outright market in one place — conference titles you enter by hand and the championship boards pulled automatically. Raw book odds, favorites first. Teams that can't win are flagged.</p>
     <div id="mlbWatch"></div>
     <div id="trapRadar"></div>
@@ -295,7 +297,7 @@ textarea{min-height:110px;font-family:'JetBrains Mono',monospace;resize:vertical
 
   <!-- LEDGER -->
   <section id="v-ledger" class="view hide">
-    <div class="row-between"><h2 style="margin:0">Ledger</h2><span class="spacer"></span><span class="freshness" id="mktFresh">—</span><button class="refreshbtn" title="Refresh" onclick="loadMarket()">&#8635;</button></div>
+    <div class="row-between"><h2 style="margin:0">Ledger</h2><span class="spacer"></span><span class="freshness" id="mktFresh">—</span><button class="refreshbtn" title="Refresh" data-refresh="ledger">&#8635;</button></div>
     <p class="lede">The market's moves tracked automatically, plus the bets you log by hand. The auto feed shows where lines went and flags moves that touch a structural fault.</p>
     <div class="flbanner demo" id="mktBanner">Checking market…</div>
     <h3 style="margin:18px 0 9px">Market activity <span style="font-weight:400;color:var(--dim);font-size:12px">&mdash; line moves on watched boards</span></h3>
@@ -318,7 +320,7 @@ textarea{min-height:110px;font-family:'JetBrains Mono',monospace;resize:vertical
 
   <!-- NEWS -->
   <section id="v-news" class="view hide">
-    <div class="row-between"><h2 style="margin:0">News</h2><span class="spacer"></span><span class="freshness" id="newsFresh">—</span><button class="refreshbtn" title="Refresh" onclick="loadNews()">&#8635;</button></div>
+    <div class="row-between"><h2 style="margin:0">News</h2><span class="spacer"></span><span class="freshness" id="newsFresh">—</span><button class="refreshbtn" title="Refresh" data-refresh="news">&#8635;</button></div>
     <p class="lede">Early-warning for your moat. Items that touch a tracked team or a structural rule surface as <b style="color:var(--warn);font-weight:600">Moat Alerts</b> — they may mean an eligibility row needs updating.</p>
     <div class="flbanner demo" id="newsBanner">Checking feed…</div>
     <div id="newsFeed"><div class="empty">Loading news…</div></div>
@@ -338,7 +340,7 @@ textarea{min-height:110px;font-family:'JetBrains Mono',monospace;resize:vertical
   </section>
 </main>
 
-<div class="foot"><b class="footlink" onclick="show('terms')">Research tool only — not betting advice.</b> Signals can be wrong. 21+. 1-800-GAMBLER. <span style="color:var(--accent);opacity:.7">· build r9 (clean-edge record)</span></div>
+<div class="foot"><b class="footlink" onclick="show('terms')">Research tool only — not betting advice.</b> Signals can be wrong. 21+. 1-800-GAMBLER.</div>
 
 <nav class="bottomnav">
   <button data-v="edges" class="on"><svg class="ic" viewBox="0 0 24 24"><polyline points="3 17 9 11 13 15 21 7"/><polyline points="15 7 21 7 21 13"/></svg>Edges</button>
@@ -1163,6 +1165,15 @@ async function loadMarket(){
   renderQuickAdd();
 }
 renderLedger();loadEdges();
+/* refresh buttons — wired in JS (not inline) with a visible spin so they never feel dead */
+(function(){var REF={edges:loadEdges,faults:loadFaults,boards:loadBoards,ledger:loadMarket,news:loadNews};
+  var btns=document.querySelectorAll('.refreshbtn');
+  for(var i=0;i<btns.length;i++){(function(btn){var fn=REF[btn.getAttribute('data-refresh')];
+    btn.addEventListener('click',function(){if(!fn||btn.classList.contains('spinning'))return;
+      btn.classList.add('spinning');
+      Promise.resolve().then(fn).catch(function(){}).then(function(){setTimeout(function(){btn.classList.remove('spinning');},500);});
+    });})(btns[i]);}
+})();
 function edSignOut(){try{localStorage.removeItem('edgedesk_session');}catch(e){}location.replace('./index.html');}
 setInterval(function(){var on=!$('v-edges').classList.contains('hide');if(on)loadEdges();
   if(!$('v-faults').classList.contains('hide'))loadFaults();
