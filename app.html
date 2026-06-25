@@ -53,6 +53,23 @@ textarea{min-height:110px;font-family:'JetBrains Mono',monospace;resize:vertical
 .lead-sel{font-weight:600;font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .lead-meta{font-size:10.5px;color:var(--dim);font-family:'JetBrains Mono',monospace;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .lead-ev{font-family:'JetBrains Mono',monospace;font-weight:700;font-size:15px;color:var(--pos);flex:none}
+.stalebanner{border-radius:12px;padding:11px 14px;margin-bottom:14px;font-size:12.5px;font-weight:600;line-height:1.45;border:1px solid;font-family:'Inter',sans-serif}
+.stalebanner.red{color:#ffb4a6;background:rgba(226,96,68,.12);border-color:rgba(226,96,68,.6)}
+.stalebanner.amber{color:var(--warn);background:rgba(217,154,43,.1);border-color:rgba(217,154,43,.45)}
+.stalebanner .sb-sub{font-weight:400;color:var(--dim);font-size:11px;margin-top:3px}
+.lead.stale{opacity:.45;filter:grayscale(.4)}
+.t10item{border-bottom:1px solid rgba(38,44,54,.7)}.t10item:last-child{border-bottom:none}
+.t10item .lead-row{border-bottom:none;cursor:pointer}
+.rchev{color:var(--faint);font-family:'JetBrains Mono',monospace;font-size:12px;transition:.16s;flex:none;width:14px;text-align:center}
+.t10item.open .rchev{transform:rotate(90deg)}
+.receipt{display:none;padding:2px 6px 14px 32px}.t10item.open .receipt{display:block}
+.rcpt-grid{display:flex;flex-wrap:wrap;gap:8px 16px;margin-bottom:9px}
+.rcpt-c{display:flex;flex-direction:column;gap:1px}
+.rcpt-c .k{font-size:8.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--faint);font-family:'JetBrains Mono',monospace}
+.rcpt-c .v{font-size:12.5px;color:var(--text);font-family:'JetBrains Mono',monospace}
+.mv-steam{color:var(--pos)}.mv-drift{color:var(--neg)}.mv-flat{color:var(--dim)}
+.trec{font-size:11.5px;line-height:1.45;padding:8px 10px;border-radius:8px;background:var(--surface2);border:1px solid var(--border);margin-bottom:9px}
+.trec b{color:var(--text)}.trec.thin{color:var(--dim)}.trec .rate{font-family:'JetBrains Mono',monospace;font-weight:700;color:var(--pos)}
 .feed{display:flex;flex-direction:column;gap:9px}
 .signal{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:13px}
 .signal.hot{border-color:rgba(47,180,124,.5)}
@@ -195,12 +212,13 @@ textarea{min-height:110px;font-family:'JetBrains Mono',monospace;resize:vertical
 <main>
   <!-- EDGES -->
   <section id="v-edges" class="view">
-    <div class="row-between"><h2 style="margin:0">Top 10 edges</h2><span class="spacer"></span><span class="freshness" id="fresh">—</span><button class="refreshbtn" title="Refresh" onclick="loadEdges()">&#8635;</button></div>
-    <p class="lede">A live top 10 of the best edges on games in your window, ranked by edge × what's been beating the close. No minimum — it always shows the best 10 available, high EV or not. Refreshes on its own.</p>
-    <div class="lead" id="leadWrap"><h3 id="t10title">★ Top 10 — this week</h3><div id="leadList"></div></div>
+    <div class="row-between"><h2 style="margin:0">Top edges</h2><span class="spacer"></span><span class="freshness" id="fresh">—</span><button class="refreshbtn" title="Refresh" onclick="loadEdges()">&#8635;</button></div>
+    <p class="lede">The best live edges on games in your window — positive after the sharp fair line, with the liquidity to mean something. Ranked by edge × how this kind of signal has beaten the close. Tap any row for the receipt.</p>
+    <div id="edgeStale" class="stalebanner hide"></div>
+    <div class="lead" id="leadWrap"><h3 id="t10title">★ Top edges — this week</h3><div id="leadList"></div></div>
     <div class="filters">
       <div class="fld"><label>Window</label><select id="fScope"><option value="week">This week</option><option value="day">Today</option></select></div>
-      <div class="fld"><label>Books</label><select id="fBooks"><option value="all">All books</option><option value="trusted">Trusted only</option></select></div>
+      <div class="fld"><label>Books</label><select id="fBooks"><option value="trusted">US-regulated</option><option value="all">All books</option></select></div>
       <div class="fld"><label>Sport</label><select id="fSport"><option value="">All sports</option></select></div>
       <div class="fld"><label>Min EV %</label><input type="number" id="fMinev" value="0" step="0.5"></div>
     </div>
@@ -328,22 +346,61 @@ function mktLabel(m){return m==='h2h'?'ML':m==='spreads'?'Spread':m==='totals'?'
 function selLabel(r){return r.selection+(r.point!=null?(' '+(r.point>0?'+':'')+r.point):'');}
 function whenLabel(iso){try{return new Date(iso).toLocaleString([], {weekday:'short',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});}catch(e){return'';}}
 function ago(ms){var s=Math.floor((Date.now()-ms)/1000);if(s<0)s=0;if(s<60)return s+'s ago';var m=Math.floor(s/60);if(m<60)return m+'m ago';var h=Math.floor(m/60);if(h<24)return h+'h ago';return Math.floor(h/24)+'d ago';}
+/* ===== freshness guard + quality bar + track-record for the Top edges list ===== */
+var REAL_FLOOR=0.005;                 // <0.5% after the fair line = noise, not an edge
+var MINBOOKS=3;                       // need >=3 books quoting for a fair line to mean anything
+var STALE_AMBER_MIN=45, STALE_RED_MIN=120;   // ~30-min capture cadence; behind at 45m, down at 2h
+var SLICE=null, SLICE_AT=0;
+function setStale(latest){
+  var b=$('edgeStale'),lw=$('leadWrap');if(!b)return;
+  if(!latest){b.className='stalebanner red';b.innerHTML='\u26d4 No data loaded \u2014 the capture pipeline hasn\u2019t reported. Nothing below is current; do not trust it.';if(lw)lw.classList.add('stale');return;}
+  var mins=(Date.now()-latest)/60000;
+  if(mins>=STALE_RED_MIN){b.className='stalebanner red';b.innerHTML='\u26d4 STALE \u2014 last updated '+ago(latest)+'. The capture pipeline is down, so these are old prices. Do not bet off this list.<div class="sb-sub">Healthy refresh is every ~30 min. Fix capture before trusting anything here.</div>';if(lw)lw.classList.add('stale');}
+  else if(mins>=STALE_AMBER_MIN){b.className='stalebanner amber';b.innerHTML='\u26a0 Running behind \u2014 last updated '+ago(latest)+'. A capture cycle was missed; prices may have moved.';if(lw)lw.classList.remove('stale');}
+  else{b.className='stalebanner hide';b.innerHTML='';if(lw)lw.classList.remove('stale');}
+}
+async function loadSliceStats(){
+  if(SLICE&&(Date.now()-SLICE_AT)<300000)return;            // cache 5 min
+  try{
+    var g=await sbGet('signals?select=sport_title,market,beat_close,clv&graded_at=not.is.null&beat_close=not.is.null&limit=5000');
+    var m={};function add(k,r){var s=m[k]||(m[k]={n:0,beat:0,clv:0});s.n++;if(r.beat_close)s.beat++;s.clv+=r.clv||0;}
+    g.forEach(function(r){add('all',r);if(r.sport_title)add('s|'+r.sport_title,r);if(r.sport_title&&r.market)add('sm|'+r.sport_title+'|'+r.market,r);});
+    SLICE=m;SLICE_AT=Date.now();
+  }catch(e){SLICE=SLICE||{};}
+}
+function sliceStat(e){
+  if(!SLICE)return null;
+  var keys=['sm|'+e.sport_title+'|'+e.market,'s|'+e.sport_title,'all'];
+  for(var i=0;i<keys.length;i++){var s=SLICE[keys[i]];if(s&&s.n>=15)return{rate:s.beat/s.n,clv:s.clv/s.n,n:s.n,fine:i===0};}
+  var any=(SLICE['s|'+e.sport_title]&&SLICE['s|'+e.sport_title].n)||(SLICE['all']&&SLICE['all'].n)||0;
+  return{rate:null,n:any,fine:false};
+}
+function moveLabel(e){
+  if(!e.first_best_dec||!e.best_dec)return null;
+  var d=(e.best_dec-e.first_best_dec)/e.first_best_dec;
+  if(d<=-0.02)return{cls:'mv-steam',txt:'steaming (market backing it)'};
+  if(d>=0.02)return{cls:'mv-drift',txt:'drifting (market fading it)'};
+  return{cls:'mv-flat',txt:'flat since first seen'};
+}
 async function loadEdges(){
   try{
     await loadWeights();
     var nowIso=new Date().toISOString();
     var horizonIso=new Date(Date.now()+7*24*3600*1000).toISOString();
-    EDGES=await sbGet('signals?select=event_id,sport_title,sport_key,market,selection,point,best_dec,best_book,sharp_fair,edge,n_books,commence_time,home_team,away_team,last_seen_at&commence_time=gte.'+nowIso+'&commence_time=lte.'+horizonIso+'&is_plus_ev=eq.true&order=edge.desc&limit=600');
+    EDGES=await sbGet('signals?select=event_id,sport_title,sport_key,market,selection,point,best_dec,first_best_dec,best_book,sharp_fair,edge,n_books,commence_time,home_team,away_team,last_seen_at&commence_time=gte.'+nowIso+'&commence_time=lte.'+horizonIso+'&is_plus_ev=eq.true&order=edge.desc&limit=600');
     $('dbPill').textContent='DB ✓';$('dbPill').className='pill ok';
     // sport filter options
     var sportsSet={};EDGES.forEach(function(e){if(e.sport_title)sportsSet[e.sport_title]=1;});
     var cur=$('fSport').value;var opts='<option value="">All sports</option>'+Object.keys(sportsSet).sort().map(function(s){return'<option value="'+s+'">'+s+'</option>';}).join('');$('fSport').innerHTML=opts;$('fSport').value=cur;
     // freshness
     var latest=0;EDGES.forEach(function(e){var t=e.last_seen_at?new Date(e.last_seen_at).getTime():0;if(t>latest)latest=t;});
+    window.__edgeLatest=latest;
     $('fresh').textContent=latest?('updated '+ago(latest)):'—';
+    setStale(latest);
+    await loadSliceStats();
     renderEdges();
     renderQuickAdd();
-  }catch(e){$('dbPill').textContent='DB error';$('dbPill').className='pill err';$('feed').innerHTML='<div class="empty">Could not reach the database: '+e.message+'</div>';$('leadWrap').classList.add('hide');}
+  }catch(e){$('dbPill').textContent='DB error';$('dbPill').className='pill err';setStale(0);$('feed').innerHTML='<div class="empty">Could not reach the database: '+e.message+'</div>';$('leadWrap').classList.add('hide');}
 }
 /* ===== BOARDS tab: MLB elimination watch + all real odds, de-vigged ===== */
 function flImpl(a){return a>=0?100/(a+100):-a/(-a+100);}
@@ -419,12 +476,13 @@ function renderEdges(){
   var nowMs=Date.now();
   var endDay=new Date();endDay.setHours(23,59,59,999);
   var horizon=win==='day'?endDay.getTime():nowMs+7*864e5;
-  $('t10title').textContent=win==='day'?'\u2605 Top 10 \u2014 today':'\u2605 Top 10 \u2014 this week';
+  var floor=Math.max(REAL_FLOOR, minev/100);
   var list=EDGES.filter(function(e){
     if(sport&&e.sport_title!==sport)return false;
-    if(e.edge*100<minev)return false;
+    if((e.edge||0)<floor)return false;                              // noise floor: must clear a real, vig-aware bar
+    if((e.n_books||0)<MINBOOKS)return false;                        // need liquidity for the fair line to mean anything
     var ct=e.commence_time?new Date(e.commence_time).getTime():0;
-    if(!ct||ct>horizon||ct<nowMs-3600e3)return false;           // inside window, not already underway >1h
+    if(!ct||ct>horizon||ct<nowMs-3600e3)return false;               // inside window, not already underway >1h
     return true;
   });
   if(mode==='trusted')list=list.filter(function(e){return isTrusted(e.best_book)&&(e.n_books||0)>=5;});
@@ -434,20 +492,51 @@ function renderEdges(){
   list.forEach(function(e){e._w=sigWeight(e);e._we=e.edge*e._w;});
   list.sort(function(a,b){return b._we-a._we;});
   var top=list.slice(0,10);
-  var lead=$('leadList'),f=$('feed');
+  window.T10=top;
+  var lead=$('leadList'),f=$('feed'),lw=$('leadWrap');
+  var winLbl=win==='day'?'today':'this week';
+  // title reflects the true count, never pads to a round number
+  $('t10title').textContent='\u2605 '+(top.length>=10?'Top 10':(top.length+' edge'+(top.length===1?'':'s')))+' \u2014 '+winLbl;
   if(!top.length){
-    $('leadWrap').classList.add('hide');
-    f.innerHTML='<div class="empty"><b>Nothing priced in this window yet.</b><br>No games with live edges in your '+(win==='day'?'day':'week')+' window right now. Try <b>This week</b>, change <b>Sport</b>, or check back after the next capture.</div>';
+    lw.classList.add('hide');
+    var down=!window.__edgeLatest||((Date.now()-window.__edgeLatest)/60000>=STALE_RED_MIN);
+    f.innerHTML=down
+      ?'<div class="empty"><b>No live edges to show.</b><br>The data is stale or the pipeline is down \u2014 see the banner above. Nothing here would be current.</div>'
+      :'<div class="empty"><b>No edges clear the bar in your '+winLbl+' window.</b><br>That\u2019s a clean board, not a bug \u2014 nothing priced right now beats the sharp fair line by enough to flag. Try <b>All books</b>, a wider <b>Window</b>, or check back after the next capture.</div>';
     return;
   }
-  $('leadWrap').classList.remove('hide');
+  lw.classList.remove('hide');
   f.innerHTML='';
-  lead.innerHTML=top.map(function(e,i){
-    var am=GE.decToAm(e.best_dec),od=am>0?'+'+am:am;
-    var tags=(e.edge>0.06?' <span class="suspect">\u26a0 verify</span>':'')+(isTrusted(e.best_book)?'':' <span class="suspect">offshore</span>');
-    return'<div class="lead-row"><span class="rank">'+(i+1)+'</span><div class="lead-mid"><div class="lead-sel">'+selLabel(e)+tags+'</div><div class="lead-meta">'+mktLabel(e.market)+' \u00b7 '+(e.away_team||'')+' @ '+(e.home_team||'')+' \u00b7 '+whenLabel(e.commence_time)+' \u00b7 '+e.best_book+' '+od+'</div></div><span class="lead-ev">+'+(e.edge*100).toFixed(1)+'%</span></div>';
-  }).join('');
+  lead.innerHTML=top.map(function(e,i){return edgeRow(e,i);}).join('');
 }
+function edgeRow(e,i){
+  var am=GE.decToAm(e.best_dec),od=am>0?'+'+am:am;
+  var tags=(e.edge>0.06?' <span class="suspect">\u26a0 verify</span>':'')+(isTrusted(e.best_book)?'':' <span class="suspect">offshore</span>');
+  var fairAm=GE.decToAm(1/Math.max(0.0001,e.sharp_fair)),fairOd=fairAm>0?'+'+fairAm:fairAm;
+  var mv=moveLabel(e),st=sliceStat(e),trec;
+  if(st&&st.rate!=null){
+    trec='<div class="trec">Signals like this \u2014 <b>'+(e.sport_title||'')+(st.fine?' \u00b7 '+mktLabel(e.market):'')+'</b> \u2014 have beaten the close <span class="rate">'+(st.rate*100).toFixed(0)+'%</span> over <b>'+st.n+'</b> graded, avg CLV '+(st.clv>=0?'+':'')+(st.clv*100).toFixed(1)+'%.</div>';
+  }else{
+    trec='<div class="trec thin">Track record still building for this slice'+(st&&st.n?' (only '+st.n+' graded so far)':'')+'. The figure above is a pre-game estimate, not yet proven against closing lines.</div>';
+  }
+  var mvHtml=mv?'<div class="rcpt-c"><span class="k">movement</span><span class="v '+mv.cls+'">'+mv.txt+'</span></div>':'';
+  return'<div class="t10item" id="t10_'+i+'">'+
+    '<div class="lead-row" onclick="toggleRcpt('+i+')"><span class="rank">'+(i+1)+'</span>'+
+      '<div class="lead-mid"><div class="lead-sel">'+selLabel(e)+tags+'</div>'+
+      '<div class="lead-meta">'+mktLabel(e.market)+' \u00b7 '+(e.away_team||'')+' @ '+(e.home_team||'')+' \u00b7 '+whenLabel(e.commence_time)+'</div></div>'+
+      '<span class="lead-ev">+'+(e.edge*100).toFixed(1)+'%</span><span class="rchev">\u203a</span></div>'+
+    '<div class="receipt">'+
+      '<div class="rcpt-grid">'+
+        '<div class="rcpt-c"><span class="k">best price</span><span class="v">'+e.best_book+' '+od+'</span></div>'+
+        '<div class="rcpt-c"><span class="k">sharp fair</span><span class="v">'+fairOd+' \u00b7 '+(e.sharp_fair*100).toFixed(1)+'%</span></div>'+
+        '<div class="rcpt-c"><span class="k">books quoting</span><span class="v">'+(e.n_books||0)+'</span></div>'+
+        mvHtml+
+      '</div>'+trec+
+      '<button class="btn ghost sm" onclick="__t10track('+i+')">Track this</button>'+
+    '</div></div>';
+}
+window.toggleRcpt=function(i){var el=$('t10_'+i);if(el)el.classList.toggle('open');};
+window.__t10track=function(i){var e=(window.T10||[])[i];if(e)trackSignal(e,GE.decToAm(e.best_dec));};
 $('fSport').onchange=renderEdges;$('fMinev').oninput=renderEdges;$('fBooks').onchange=renderEdges;$('fScope').onchange=renderEdges;
 
 /* ===== Record (auto-graded) ===== */
