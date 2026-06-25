@@ -138,6 +138,9 @@ textarea{min-height:110px;font-family:'JetBrains Mono',monospace;resize:vertical
 .mkt-sel{font-weight:600;font-size:14px}
 .mkt-meta{font-size:10px;color:var(--dim);font-family:'JetBrains Mono',monospace;margin-top:3px}
 .mkt-move{text-align:right;font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:600;white-space:nowrap}
+.refreshbtn{background:var(--surface2);border:1px solid var(--border);color:var(--dim);border-radius:7px;min-width:30px;height:30px;cursor:pointer;font-size:16px;line-height:1;margin-left:8px;flex:none}
+.refreshbtn:hover{color:var(--text);border-color:var(--accent)}
+.refreshbtn:active{transform:rotate(180deg);transition:transform .25s}
 </style>
 </head>
 <body>
@@ -151,7 +154,7 @@ textarea{min-height:110px;font-family:'JetBrains Mono',monospace;resize:vertical
 <main>
   <!-- EDGES -->
   <section id="v-edges" class="view">
-    <div class="row-between"><h2 style="margin:0">Today's edges</h2><span class="spacer"></span><span class="freshness" id="fresh">—</span></div>
+    <div class="row-between"><h2 style="margin:0">Today's edges</h2><span class="spacer"></span><span class="freshness" id="fresh">—</span><button class="refreshbtn" title="Refresh" onclick="loadEdges()">&#8635;</button></div>
     <p class="lede">Auto-collected by your background jobs, de-vigged vs the sharp line, ranked by edge × what's been beating the close. Refreshes on its own.</p>
     <div class="lead" id="leadWrap"><h3>★ Today's top 5</h3><div id="leadList"></div></div>
     <div class="filters">
@@ -166,7 +169,7 @@ textarea{min-height:110px;font-family:'JetBrains Mono',monospace;resize:vertical
 
   <!-- FAULTS (Faultline) -->
   <section id="v-faults" class="view hide">
-    <div class="row-between"><h2 style="margin:0">Faultline</h2><span class="spacer"></span><span class="freshness" id="flFresh">—</span></div>
+    <div class="row-between"><h2 style="margin:0">Faultline</h2><span class="spacer"></span><span class="freshness" id="flFresh">—</span><button class="refreshbtn" title="Refresh" onclick="loadFaults()">&#8635;</button></div>
     <p class="lede">Structural mispricings — errors from the <b style="color:var(--text);font-weight:600">rules and internal math of the market</b>, not from a model. Each fault ships with a receipt you can verify.</p>
     <div class="flbanner demo" id="flBanner">Checking pipeline for live futures boards…</div>
     <div class="flchips" id="flChips"></div>
@@ -189,7 +192,7 @@ textarea{min-height:110px;font-family:'JetBrains Mono',monospace;resize:vertical
 
   <!-- LEDGER -->
   <section id="v-ledger" class="view hide">
-    <div class="row-between"><h2 style="margin:0">Ledger</h2><span class="spacer"></span><span class="freshness" id="mktFresh">—</span></div>
+    <div class="row-between"><h2 style="margin:0">Ledger</h2><span class="spacer"></span><span class="freshness" id="mktFresh">—</span><button class="refreshbtn" title="Refresh" onclick="loadMarket()">&#8635;</button></div>
     <p class="lede">The market's moves tracked automatically, plus the bets you log by hand. The auto feed shows where lines went and flags moves that touch a structural fault.</p>
     <div class="flbanner demo" id="mktBanner">Checking market…</div>
     <h3 style="margin:18px 0 9px">Market activity <span style="font-weight:400;color:var(--dim);font-size:12px">&mdash; line moves on watched boards</span></h3>
@@ -228,7 +231,7 @@ textarea{min-height:110px;font-family:'JetBrains Mono',monospace;resize:vertical
 
   <!-- NEWS -->
   <section id="v-news" class="view hide">
-    <div class="row-between"><h2 style="margin:0">News</h2><span class="spacer"></span><span class="freshness" id="newsFresh">—</span></div>
+    <div class="row-between"><h2 style="margin:0">News</h2><span class="spacer"></span><span class="freshness" id="newsFresh">—</span><button class="refreshbtn" title="Refresh" onclick="loadNews()">&#8635;</button></div>
     <p class="lede">Early-warning for your moat. Items that touch a tracked team or a structural rule surface as <b style="color:var(--warn);font-weight:600">Moat Alerts</b> — they may mean an eligibility row needs updating.</p>
     <div class="flbanner demo" id="newsBanner">Checking feed…</div>
     <div id="newsFeed"><div class="empty">Loading news…</div></div>
@@ -308,27 +311,28 @@ async function loadEdges(){
     var latest=0;EDGES.forEach(function(e){var t=e.last_seen_at?new Date(e.last_seen_at).getTime():0;if(t>latest)latest=t;});
     $('fresh').textContent=latest?('updated '+ago(latest)):'—';
     renderEdges();
-    loadGolf();
+    loadFutures();
   }catch(e){$('dbPill').textContent='DB error';$('dbPill').className='pill err';$('feed').innerHTML='<div class="empty">Could not reach the database: '+e.message+'</div>';$('leadWrap').classList.add('hide');}
 }
-/* ===== golf futures (outright board, de-vig with longshot caution) ===== */
-async function loadGolf(){
+/* ===== futures boards (all captured outright boards, de-vigged in one place) ===== */
+async function loadFutures(){
   var host=$('golfPanel');if(!host)return;
-  var rows=[];try{rows=await sbGet("boards?select=*&active=eq.true&board_id=like.golf*&order=american.asc&limit=400");}catch(e){host.innerHTML='';return;}
+  var rows=[];try{rows=await sbGet("boards?select=*&active=eq.true&order=board_name.asc&limit=5000");}catch(e){host.innerHTML='';return;}
   if(!rows||!rows.length){host.innerHTML='';return;}
-  // group by board_id (book), de-vig each proportionally
-  var books={};rows.forEach(function(r){(books[r.board_id]=books[r.board_id]||{name:r.board_name,rows:[]}).rows.push(r);});
+  var boards={};rows.forEach(function(r){(boards[r.board_id]=boards[r.board_id]||{name:r.board_name,league:r.league,rows:[]}).rows.push(r);});
   function impl(a){return a>=0?100/(a+100):-a/(-a+100);}
-  var cards=Object.keys(books).map(function(bid){
-    var b=books[bid];var over=b.rows.reduce(function(s,r){return s+impl(r.american);},0);
+  var ids=Object.keys(boards).sort(function(a,b){return (boards[a].name||'').localeCompare(boards[b].name||'');});
+  var cards=ids.map(function(bid){
+    var b=boards[bid];var over=b.rows.reduce(function(s,r){return s+impl(r.american);},0);
     var top=b.rows.map(function(r){return{name:r.selection,am:r.american,fair:impl(r.american)/over};})
-      .sort(function(x,y){return y.fair-x.fair;}).slice(0,8);
+      .sort(function(x,y){return y.fair-x.fair;}).slice(0,6);
+    var big=b.rows.length>40;
     var rowsHtml=top.map(function(t){var od=t.am>0?'+'+t.am:t.am;
       return'<div class="frow"><span class="fl">'+t.name+'</span><span class="fv">'+od+' \u00b7 '+(t.fair*100).toFixed(1)+'%</span></div>';}).join('');
-    return'<div class="flwatch"><div class="fmeta"><span class="ftag lg">GOLF</span><span class="ftag cls">'+b.rows.length+' field</span><span class="ftag" style="color:var(--dim)">vig '+((over-1)*100).toFixed(0)+'%</span></div><div class="ftitle" style="font-size:14px">'+b.name+'</div>'+rowsHtml+'</div>';
+    var caveat=big?'<div style="font-size:10.5px;color:var(--dim);padding-top:6px">\u26a0 large field \u2014 de-vig overstates longshots; trust the top of the board, not the tail</div>':'';
+    return'<div class="flwatch"><div class="fmeta"><span class="ftag lg">'+(b.league||'')+'</span><span class="ftag cls">'+b.rows.length+' field</span><span class="ftag" style="color:var(--dim)">vig '+((over-1)*100).toFixed(0)+'%</span></div><div class="ftitle" style="font-size:14px">'+b.name+'</div>'+rowsHtml+caveat+'</div>';
   }).join('');
-  host.innerHTML='<div class="flwatch-h">Golf \u2014 The Open (de-vigged outright board)</div>'+cards+
-    '<div class="empty" style="text-align:left;font-size:11.5px;padding:10px 13px">\u26a0 Big-field caveat: proportional de-vig overstates longshot probabilities on a 156-player field. Treat the favorites as the reliable read and longshot "value" with heavy skepticism. For real golf edges, use strokes-gained splits, not this board alone.</div>';
+  host.innerHTML='<div class="flwatch-h">Futures boards \u2014 every captured outright, de-vigged, in one place</div>'+cards;
 }
 /* legit US-regulated / sharp books — everything else (offshore) is treated as noise-prone */
 var TRUSTED=['draftkings','fanduel','betmgm','caesars','espn bet','espnbet','fanatics','betrivers','hard rock','hardrock','bet365','pinnacle','circa','fliff','ballybet','wynn','superbook'];
