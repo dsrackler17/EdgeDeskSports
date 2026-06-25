@@ -630,7 +630,7 @@ function renderEdges(){
     if(!ct||ct>horizon||ct<nowMs-3600e3)return false;               // inside window, not already underway >1h
     return true;
   });
-  if(mode==='trusted')list=list.filter(function(e){return isTrusted(e.best_book)&&(e.n_books||0)>=5;});
+  if(mode==='trusted')list=list.filter(function(e){return isTrusted(e.best_book)&&(e.n_books||0)>=4;});
   // always drop both-sides-of-a-market pairs (a vig artifact, not a real edge)
   var cnt={};list.forEach(function(e){var k=e.event_id+'|'+e.market;cnt[k]=(cnt[k]||0)+1;});
   list=list.filter(function(e){return cnt[e.event_id+'|'+e.market]<2;});
@@ -659,9 +659,44 @@ function renderEdges(){
       var ep=(nm.edge*100);
       funnel+='<div class="sb-sub" style="margin-top:6px;font-family:\'JetBrains Mono\',monospace">sharpest line on the board: <b>'+(nm.sport_title||'')+' \u00b7 '+(nm.selection||'')+'</b> at '+(ep>=0?'+':'')+ep.toFixed(2)+'% vs fair ('+(nm.best_book||'')+', '+(nm.n_books||0)+' books)'+(ep<0?' \u2014 below fair, so nothing clears. The scan ran; the board is just efficient.':'')+'</div>';
     }
+    // PROMOTE the best positive in-window line into a real, loggable card when the
+    // strict list is empty — so we never say "no edges" while a genuine +EV line exists.
+    // It's shown with the exact reason it missed the strict bar (usually book count).
+    var near=null;
+    (function(){
+      var nowMs2=Date.now();
+      var cand=(window.D5_POOL||[]).filter(function(e){
+        if(sport&&e.sport_title!==sport)return false;
+        if((e.edge||0)<=0)return false;                                  // must be genuinely positive
+        var ls=e.last_seen_at?new Date(e.last_seen_at).getTime():0;
+        if(!ls||ls<staleCut)return false;                               // live only
+        var ct=e.commence_time?new Date(e.commence_time).getTime():0;
+        if(!ct||ct>horizon||ct<nowMs2-3600e3)return false;             // in window
+        return true;
+      });
+      cand.sort(function(a,b){return b.edge-a.edge;});
+      near=cand[0]||null;
+    })();
+    var nearHtml='';
+    if(near){
+      var nb=near.n_books||0;
+      var reason=nb<MINBOOKS?('only '+nb+' book'+(nb===1?'':'s')+' quoting'):
+                 (mode==='trusted'&&nb<4?('only '+nb+' books \u2014 below the US-regulated bar'):
+                 (mode==='trusted'&&!isTrusted(near.best_book)?'best price is an offshore book':'just under the strict bar'));
+      window.__NEAR=near;
+      var nam=GE.decToAm(near.best_dec),nod=nam>0?'+'+nam:nam;
+      nearHtml='<div class="lead" style="margin-top:14px;border-color:rgba(217,154,43,.3)">'+
+        '<h3 style="color:var(--warn)">\u25c9 Closest to the bar \u2014 positive, but didn\u2019t clear</h3>'+
+        '<p class="sidenote">This line is genuinely +EV, it just missed the strict filter ('+reason+'). Shown so you can see it and decide for yourself \u2014 verify before trusting, and tap + to log it to your ledger.</p>'+
+        '<div class="lead-row"><span class="rank">1</span><div class="lead-mid">'+
+        '<div class="lead-sel">'+selLabel(near)+(isTrusted(near.best_book)?'':' <span class="suspect">offshore</span>')+'</div>'+
+        '<div class="lead-meta">'+(near.sport_title||'')+' \u00b7 '+mktLabel(near.market)+' \u00b7 '+(near.away_team||'')+' @ '+(near.home_team||'')+' \u00b7 '+whenLabel(near.commence_time)+' \u00b7 '+near.best_book+' '+nod+' \u00b7 '+nb+' books</div></div>'+
+        '<span class="lead-ev">+'+(near.edge*100).toFixed(2)+'%</span>'+
+        '<button class="btn ghost sm dadd" onclick="__nearTrack()">+</button></div></div>';
+    }
     f.innerHTML=down
       ?'<div class="empty"><b>No live edges to show.</b><br>The data is stale or the pipeline is down \u2014 see the banner above. Nothing here would be current.'+funnel+'</div>'
-      :'<div class="empty"><b>No edges clear the bar in your '+winLbl+' window.</b><br>Capture is live (last run '+ago(window.__edgeLatest)+'). Try <b>All books</b> or a wider <b>Window</b> \u2014 or it\u2019s a clean board.'+funnel+'</div>';
+      :'<div class="empty"><b>Nothing clears the strict bar in your '+winLbl+' window.</b><br>Capture is live (last run '+ago(window.__edgeLatest)+'). The strict list wants real liquidity behind the fair line; '+(near?'the closest positive line is shown below.':'right now it\u2019s a clean board.')+' Try <b>All books</b> or a wider <b>Window</b> for more.'+funnel+'</div>'+nearHtml;
     return;
   }
   lw.classList.remove('hide');
@@ -696,6 +731,7 @@ function edgeRow(e,i){
 }
 window.toggleRcpt=function(i){var el=$('t10_'+i);if(el)el.classList.toggle('open');};
 window.__t10track=function(i){var e=(window.T10||[])[i];if(e)trackSignal(e,GE.decToAm(e.best_dec));};
+window.__nearTrack=function(){var e=window.__NEAR;if(e)trackSignal(e,GE.decToAm(e.best_dec));};
 /* wider-net "today" list: best live edges for today regardless of floor/book — research watchlist, always populated when games are live */
 function renderDaily(){
   var host=$('dailyList'),wrap=$('dailyWrap');if(!host||!wrap)return;
