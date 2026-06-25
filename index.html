@@ -153,7 +153,7 @@ textarea{min-height:110px;font-family:'JetBrains Mono',monospace;resize:vertical
   <section id="v-edges" class="view">
     <div class="row-between"><h2 style="margin:0">Today's edges</h2><span class="spacer"></span><span class="freshness" id="fresh">—</span></div>
     <p class="lede">Auto-collected by your background jobs, de-vigged vs the sharp line, ranked by edge × what's been beating the close. Refreshes on its own.</p>
-    <div class="lead" id="leadWrap"><h3>★ Top 10 today</h3><div id="leadList"></div></div>
+    <div class="lead" id="leadWrap"><h3>★ Today's top 5</h3><div id="leadList"></div></div>
     <div class="filters">
       <div class="fld"><label>Scope</label><select id="fScope"><option value="majors">US majors</option><option value="all">All sports</option></select></div>
       <div class="fld"><label>Books</label><select id="fBooks"><option value="trusted">Trusted only</option><option value="all">All books</option></select></div>
@@ -161,6 +161,7 @@ textarea{min-height:110px;font-family:'JetBrains Mono',monospace;resize:vertical
       <div class="fld"><label>Min EV %</label><input type="number" id="fMinev" value="2" step="0.5"></div>
     </div>
     <div class="feed" id="feed"><div class="empty">Loading edges…</div></div>
+    <div id="golfPanel"></div>
   </section>
 
   <!-- FAULTS (Faultline) -->
@@ -307,7 +308,27 @@ async function loadEdges(){
     var latest=0;EDGES.forEach(function(e){var t=e.last_seen_at?new Date(e.last_seen_at).getTime():0;if(t>latest)latest=t;});
     $('fresh').textContent=latest?('updated '+ago(latest)):'—';
     renderEdges();
+    loadGolf();
   }catch(e){$('dbPill').textContent='DB error';$('dbPill').className='pill err';$('feed').innerHTML='<div class="empty">Could not reach the database: '+e.message+'</div>';$('leadWrap').classList.add('hide');}
+}
+/* ===== golf futures (outright board, de-vig with longshot caution) ===== */
+async function loadGolf(){
+  var host=$('golfPanel');if(!host)return;
+  var rows=[];try{rows=await sbGet("boards?select=*&active=eq.true&board_id=like.golf*&order=american.asc&limit=400");}catch(e){host.innerHTML='';return;}
+  if(!rows||!rows.length){host.innerHTML='';return;}
+  // group by board_id (book), de-vig each proportionally
+  var books={};rows.forEach(function(r){(books[r.board_id]=books[r.board_id]||{name:r.board_name,rows:[]}).rows.push(r);});
+  function impl(a){return a>=0?100/(a+100):-a/(-a+100);}
+  var cards=Object.keys(books).map(function(bid){
+    var b=books[bid];var over=b.rows.reduce(function(s,r){return s+impl(r.american);},0);
+    var top=b.rows.map(function(r){return{name:r.selection,am:r.american,fair:impl(r.american)/over};})
+      .sort(function(x,y){return y.fair-x.fair;}).slice(0,8);
+    var rowsHtml=top.map(function(t){var od=t.am>0?'+'+t.am:t.am;
+      return'<div class="frow"><span class="fl">'+t.name+'</span><span class="fv">'+od+' \u00b7 '+(t.fair*100).toFixed(1)+'%</span></div>';}).join('');
+    return'<div class="flwatch"><div class="fmeta"><span class="ftag lg">GOLF</span><span class="ftag cls">'+b.rows.length+' field</span><span class="ftag" style="color:var(--dim)">vig '+((over-1)*100).toFixed(0)+'%</span></div><div class="ftitle" style="font-size:14px">'+b.name+'</div>'+rowsHtml+'</div>';
+  }).join('');
+  host.innerHTML='<div class="flwatch-h">Golf \u2014 The Open (de-vigged outright board)</div>'+cards+
+    '<div class="empty" style="text-align:left;font-size:11.5px;padding:10px 13px">\u26a0 Big-field caveat: proportional de-vig overstates longshot probabilities on a 156-player field. Treat the favorites as the reliable read and longshot "value" with heavy skepticism. For real golf edges, use strokes-gained splits, not this board alone.</div>';
 }
 /* legit US-regulated / sharp books — everything else (offshore) is treated as noise-prone */
 var TRUSTED=['draftkings','fanduel','betmgm','caesars','espn bet','espnbet','fanatics','betrivers','hard rock','hardrock','bet365','pinnacle','circa','fliff','ballybet','wynn','superbook'];
@@ -330,7 +351,7 @@ function renderEdges(){
   if(!list.length){$('leadWrap').classList.add('hide');}
   else{
     $('leadWrap').classList.remove('hide');
-    lead.innerHTML=list.slice(0,10).map(function(e,i){var am=GE.decToAm(e.best_dec),od=am>0?'+'+am:am;
+    lead.innerHTML=list.slice(0,5).map(function(e,i){var am=GE.decToAm(e.best_dec),od=am>0?'+'+am:am;
       return'<div class="lead-row"><span class="rank">'+(i+1)+'</span><div class="lead-mid"><div class="lead-sel">'+selLabel(e)+'</div><div class="lead-meta">'+mktLabel(e.market)+' · '+e.best_book+' '+od+' · '+(e.away_team||'')+' @ '+(e.home_team||'')+'</div></div><span class="lead-ev">+'+(e.edge*100).toFixed(1)+'%</span></div>';
     }).join('');
   }
