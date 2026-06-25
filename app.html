@@ -195,14 +195,14 @@ textarea{min-height:110px;font-family:'JetBrains Mono',monospace;resize:vertical
 <main>
   <!-- EDGES -->
   <section id="v-edges" class="view">
-    <div class="row-between"><h2 style="margin:0">Today's edges</h2><span class="spacer"></span><span class="freshness" id="fresh">—</span><button class="refreshbtn" title="Refresh" onclick="loadEdges()">&#8635;</button></div>
-    <p class="lede">Auto-collected by your background jobs, de-vigged vs the sharp line, ranked by edge × what's been beating the close. Refreshes on its own.</p>
-    <div class="lead" id="leadWrap"><h3>★ Today's top 5</h3><div id="leadList"></div></div>
+    <div class="row-between"><h2 style="margin:0">Top 10 edges</h2><span class="spacer"></span><span class="freshness" id="fresh">—</span><button class="refreshbtn" title="Refresh" onclick="loadEdges()">&#8635;</button></div>
+    <p class="lede">A live top 10 of the best edges on games in your window, ranked by edge × what's been beating the close. No minimum — it always shows the best 10 available, high EV or not. Refreshes on its own.</p>
+    <div class="lead" id="leadWrap"><h3 id="t10title">★ Top 10 — this week</h3><div id="leadList"></div></div>
     <div class="filters">
-      <div class="fld"><label>Scope</label><select id="fScope"><option value="majors">US majors</option><option value="all">All sports</option></select></div>
-      <div class="fld"><label>Books</label><select id="fBooks"><option value="trusted">Trusted only</option><option value="all">All books</option></select></div>
+      <div class="fld"><label>Window</label><select id="fScope"><option value="week">This week</option><option value="day">Today</option></select></div>
+      <div class="fld"><label>Books</label><select id="fBooks"><option value="all">All books</option><option value="trusted">Trusted only</option></select></div>
       <div class="fld"><label>Sport</label><select id="fSport"><option value="">All sports</option></select></div>
-      <div class="fld"><label>Min EV %</label><input type="number" id="fMinev" value="2" step="0.5"></div>
+      <div class="fld"><label>Min EV %</label><input type="number" id="fMinev" value="0" step="0.5"></div>
     </div>
     <div class="feed" id="feed"><div class="empty">Loading edges…</div></div>
   </section>
@@ -332,7 +332,7 @@ async function loadEdges(){
   try{
     await loadWeights();
     var nowIso=new Date().toISOString();
-    var horizonIso=new Date(Date.now()+3*24*3600*1000).toISOString();
+    var horizonIso=new Date(Date.now()+7*24*3600*1000).toISOString();
     EDGES=await sbGet('signals?select=event_id,sport_title,sport_key,market,selection,point,best_dec,best_book,sharp_fair,edge,n_books,commence_time,home_team,away_team,last_seen_at&commence_time=gte.'+nowIso+'&commence_time=lte.'+horizonIso+'&is_plus_ev=eq.true&order=edge.desc&limit=600');
     $('dbPill').textContent='DB ✓';$('dbPill').className='pill ok';
     // sport filter options
@@ -415,40 +415,38 @@ var TRUSTED=['draftkings','fanduel','betmgm','caesars','espn bet','espnbet','fan
 function isTrusted(book){var b=(book||'').toLowerCase();for(var i=0;i<TRUSTED.length;i++)if(b.indexOf(TRUSTED[i])>=0)return true;return false;}
 function isUSMajor(k){k=(k||'').toLowerCase();return k.indexOf('americanfootball')===0||k.indexOf('basketball')===0||k.indexOf('baseball')===0||k.indexOf('icehockey')===0;}
 function renderEdges(){
-  var minev=+$('fMinev').value||0, sport=$('fSport').value, mode=$('fBooks').value, scope=$('fScope').value;
-  var list=EDGES.filter(function(e){var ok=e.edge*100>=minev&&(!sport||e.sport_title===sport);if(scope==='majors')ok=ok&&isUSMajor(e.sport_key);return ok;});
-  if(mode==='trusted'){
-    // 1) best price must be at a legit book (kills stale offshore lines)
-    // 2) market must have real liquidity (>=5 books quoting) — kills thin combat/obscure markets
-    list=list.filter(function(e){return isTrusted(e.best_book)&&(e.n_books||0)>=5;});
-    // 3) drop both-sides-of-a-market contradictions (both flagged = noise, not edge)
-    var cnt={};list.forEach(function(e){var k=e.event_id+'|'+e.market;cnt[k]=(cnt[k]||0)+1;});
-    list=list.filter(function(e){return cnt[e.event_id+'|'+e.market]<2;});
-  }
+  var minev=+$('fMinev').value||0, sport=$('fSport').value, mode=$('fBooks').value, win=$('fScope').value;
+  var nowMs=Date.now();
+  var endDay=new Date();endDay.setHours(23,59,59,999);
+  var horizon=win==='day'?endDay.getTime():nowMs+7*864e5;
+  $('t10title').textContent=win==='day'?'\u2605 Top 10 \u2014 today':'\u2605 Top 10 \u2014 this week';
+  var list=EDGES.filter(function(e){
+    if(sport&&e.sport_title!==sport)return false;
+    if(e.edge*100<minev)return false;
+    var ct=e.commence_time?new Date(e.commence_time).getTime():0;
+    if(!ct||ct>horizon||ct<nowMs-3600e3)return false;           // inside window, not already underway >1h
+    return true;
+  });
+  if(mode==='trusted')list=list.filter(function(e){return isTrusted(e.best_book)&&(e.n_books||0)>=5;});
+  // always drop both-sides-of-a-market pairs (a vig artifact, not a real edge)
+  var cnt={};list.forEach(function(e){var k=e.event_id+'|'+e.market;cnt[k]=(cnt[k]||0)+1;});
+  list=list.filter(function(e){return cnt[e.event_id+'|'+e.market]<2;});
   list.forEach(function(e){e._w=sigWeight(e);e._we=e.edge*e._w;});
   list.sort(function(a,b){return b._we-a._we;});
-  var lead=$('leadList');
-  if(!list.length){$('leadWrap').classList.add('hide');}
-  else{
-    $('leadWrap').classList.remove('hide');
-    lead.innerHTML=list.slice(0,5).map(function(e,i){var am=GE.decToAm(e.best_dec),od=am>0?'+'+am:am;
-      return'<div class="lead-row"><span class="rank">'+(i+1)+'</span><div class="lead-mid"><div class="lead-sel">'+selLabel(e)+'</div><div class="lead-meta">'+mktLabel(e.market)+' · '+e.best_book+' '+od+' · '+(e.away_team||'')+' @ '+(e.home_team||'')+'</div></div><span class="lead-ev">+'+(e.edge*100).toFixed(1)+'%</span></div>';
-    }).join('');
-  }
-  var f=$('feed');
-  if(!list.length){
-    f.innerHTML='<div class="empty"><b>No edges in this view right now.</b><br>You\'re filtered to US majors at trusted books with real liquidity. If it\'s empty, either those games aren\'t priced yet or the board is clean — widen <b>Scope</b> to All sports or <b>Books</b> to All to see more.</div>';
+  var top=list.slice(0,10);
+  var lead=$('leadList'),f=$('feed');
+  if(!top.length){
+    $('leadWrap').classList.add('hide');
+    f.innerHTML='<div class="empty"><b>Nothing priced in this window yet.</b><br>No games with live edges in your '+(win==='day'?'day':'week')+' window right now. Try <b>This week</b>, change <b>Sport</b>, or check back after the next capture.</div>';
     return;
   }
+  $('leadWrap').classList.remove('hide');
   f.innerHTML='';
-  list.forEach(function(e,i){var am=GE.decToAm(e.best_dec),od=am>0?'+'+am:am;var wtxt=Math.abs(e._w-1)>0.01?'<span class="wchip">×'+e._w.toFixed(2)+'</span>':'';
-    var suspect=(e.edge>0.06)?'<span class="suspect">⚠ high — verify</span>':'';var trust=isTrusted(e.best_book)?'':'<span class="suspect">offshore</span>';
-    var c=document.createElement('div');c.className='signal'+(i===0?' hot':'');
-    c.innerHTML='<div class="sig-top"><span class="sport">'+(e.sport_title||'')+'</span><span class="sigtag">signal · not advice</span>'+suspect+trust+wtxt+'<span class="ev">+'+(e.edge*100).toFixed(1)+'%</span></div>'+
-      '<div class="sig-sel">'+selLabel(e)+'</div><div class="sig-meta">'+mktLabel(e.market)+' · '+(e.away_team||'')+' @ '+(e.home_team||'')+' · '+whenLabel(e.commence_time)+'</div>'+
-      '<div class="sig-row"><span><span class="k">best price</span>'+e.best_book+' '+od+'</span><span><span class="k">fair</span>'+(e.sharp_fair*100).toFixed(1)+'%</span><span><span class="k">books</span>'+(e.n_books||0)+'</span><span class="grow"></span><button class="btn ghost sm">Track</button></div>';
-    c.querySelector('button').onclick=function(){trackSignal(e,am);};f.appendChild(c);
-  });
+  lead.innerHTML=top.map(function(e,i){
+    var am=GE.decToAm(e.best_dec),od=am>0?'+'+am:am;
+    var tags=(e.edge>0.06?' <span class="suspect">\u26a0 verify</span>':'')+(isTrusted(e.best_book)?'':' <span class="suspect">offshore</span>');
+    return'<div class="lead-row"><span class="rank">'+(i+1)+'</span><div class="lead-mid"><div class="lead-sel">'+selLabel(e)+tags+'</div><div class="lead-meta">'+mktLabel(e.market)+' \u00b7 '+(e.away_team||'')+' @ '+(e.home_team||'')+' \u00b7 '+whenLabel(e.commence_time)+' \u00b7 '+e.best_book+' '+od+'</div></div><span class="lead-ev">+'+(e.edge*100).toFixed(1)+'%</span></div>';
+  }).join('');
 }
 $('fSport').onchange=renderEdges;$('fMinev').oninput=renderEdges;$('fBooks').onchange=renderEdges;$('fScope').onchange=renderEdges;
 
