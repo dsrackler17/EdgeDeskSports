@@ -155,6 +155,18 @@ textarea{min-height:110px;font-family:'JetBrains Mono',monospace;resize:vertical
 .refreshbtn:active{transform:rotate(180deg);transition:transform .25s}
 .signout{margin-left:8px;background:transparent;border:1px solid var(--border);color:var(--dim);border-radius:7px;padding:5px 10px;font-size:11px;cursor:pointer;font-family:'JetBrains Mono',monospace}
 .signout:hover{color:var(--text);border-color:var(--neg)}
+/* ===== quick add (tap to log, mobile-clean) ===== */
+.quickadd{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px;margin-bottom:12px}
+.qa-h{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--accent);font-weight:600;font-family:'JetBrains Mono',monospace;margin-bottom:9px}
+.qarow{display:flex;align-items:center;gap:10px;width:100%;text-align:left;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:12px 13px;margin-bottom:7px;cursor:pointer;color:var(--text);font-family:inherit}
+.qarow:last-child{margin-bottom:0}
+.qarow:active{border-color:var(--accent);background:rgba(77,141,255,.10)}
+.qa-l{flex:1;min-width:0}
+.qa-sel{font-weight:600;font-size:14.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.qa-meta{font-size:11px;color:var(--dim);font-family:'JetBrains Mono',monospace;margin-top:3px}
+.qa-ev{font-family:'JetBrains Mono',monospace;font-weight:700;color:var(--pos);font-size:13px;flex:none}
+.qa-plus{flex:none;width:30px;height:30px;border-radius:9px;background:var(--accent);color:#fff;font-size:20px;font-weight:700;display:flex;align-items:center;justify-content:center}
+.betcard .brow .btn.sm{min-height:34px;padding:0 14px}
 </style>
 </head>
 <body>
@@ -212,19 +224,17 @@ textarea{min-height:110px;font-family:'JetBrains Mono',monospace;resize:vertical
     <div class="flbanner demo" id="mktBanner">Checking market…</div>
     <h3 style="margin:18px 0 9px">Market activity <span style="font-weight:400;color:var(--dim);font-size:12px">&mdash; line moves on watched boards</span></h3>
     <div id="mktFeed"><div class="empty">Loading market…</div></div>
-    <h3 style="margin:24px 0 9px">Your bets <span style="font-weight:400;color:var(--dim);font-size:12px">&mdash; logged by hand, saved on this device</span></h3>
+    <h3 style="margin:24px 0 9px">Your bets <span style="font-weight:400;color:var(--dim);font-size:12px">&mdash; tap an edge to log, then Win/Loss to settle. Saved on this device.</span></h3>
     <div class="kpis" id="clvKpis"></div>
+    <div class="quickadd"><div class="qa-h">Quick add &mdash; one tap, no typing</div><div id="qaList"><div class="empty" style="padding:10px">Loading today's edges…</div></div></div>
     <div id="betlist"></div>
-    <div class="card">
-      <h3 style="margin-top:0">Log a bet</h3>
+    <button class="btn ghost full" id="lg_toggle" style="margin-top:10px">+ Log a custom bet</button>
+    <div class="card hide" id="lg_form" style="margin-top:8px">
       <div class="filters">
-        <div class="fld"><label>Sport</label><input id="lg_sport" placeholder="NFL"></div>
-        <div class="fld"><label>Book</label><input id="lg_book" placeholder="DraftKings"></div>
-        <div class="fld full"><label>Selection</label><input id="lg_sel" placeholder="Bills ML"></div>
-        <div class="fld"><label>Odds (Am.)</label><input type="number" id="lg_odds" value="110"></div>
-        <div class="fld"><label>Stake $</label><input type="number" id="lg_stake" value="25"></div>
-        <div class="fld"><label>Fair %</label><input type="number" id="lg_model" value="50" step="0.1"></div>
-        <button class="btn full" id="lg_add">Log bet</button>
+        <div class="fld full"><label>What did you bet?</label><input id="lg_sel" placeholder="Bills ML"></div>
+        <div class="fld"><label>Odds (American)</label><input type="number" id="lg_odds" placeholder="-110"></div>
+        <div class="fld"><label>Stake $ <span style="color:var(--faint)">(optional)</span></label><input type="number" id="lg_stake" placeholder=""></div>
+        <button class="btn full" id="lg_add">Log it</button>
       </div>
     </div>
   </section>
@@ -327,6 +337,7 @@ async function loadEdges(){
     $('fresh').textContent=latest?('updated '+ago(latest)):'—';
     renderEdges();
     loadFutures();
+    renderQuickAdd();
   }catch(e){$('dbPill').textContent='DB error';$('dbPill').className='pill err';$('feed').innerHTML='<div class="empty">Could not reach the database: '+e.message+'</div>';$('leadWrap').classList.add('hide');}
 }
 /* ===== futures boards (all captured outright boards, de-vigged in one place) ===== */
@@ -418,16 +429,26 @@ $('sliceType').onchange=renderSlice;$('recRefresh').onclick=loadRecord;
 function bets(){try{return JSON.parse(localStorage.getItem('edgedesk_bets')||'[]');}catch(e){return[];}}
 function saveBets(b){localStorage.setItem('edgedesk_bets',JSON.stringify(b));}
 function trackSignal(e,am){var b=bets();b.unshift({id:'b'+Date.now(),ts:new Date().toISOString(),sport:e.sport_title,sel:selLabel(e),book:e.best_book,odds:am,stake:null,model:e.sharp_fair*100,closeFair:null,result:null});saveBets(b);show('ledger');renderLedger();}
-$('lg_add').onclick=function(){var b=bets();b.unshift({id:'b'+Date.now(),ts:new Date().toISOString(),sport:$('lg_sport').value,sel:$('lg_sel').value,book:$('lg_book').value,odds:+$('lg_odds').value,stake:+$('lg_stake').value,model:+$('lg_model').value,closeFair:null,result:null});saveBets(b);renderLedger();};
+$('lg_toggle').onclick=function(){$('lg_form').classList.toggle('hide');};
+$('lg_add').onclick=function(){var sel=($('lg_sel').value||'').trim(),od=+$('lg_odds').value;if(!sel||!od)return;var st=$('lg_stake').value?+$('lg_stake').value:null;var b=bets();b.unshift({id:'b'+Date.now(),ts:new Date().toISOString(),sport:'',sel:sel,book:'',odds:od,stake:st,model:null,closeFair:null,result:null});saveBets(b);$('lg_sel').value='';$('lg_odds').value='';$('lg_stake').value='';$('lg_form').classList.add('hide');renderLedger();};
+window.__qlog=function(i){var e=(window.QA_LIST||[])[i];if(!e)return;trackSignal(e,GE.decToAm(e.best_dec));};
+function renderQuickAdd(){var host=$('qaList');if(!host)return;
+  var src=(typeof EDGES!=='undefined'&&EDGES?EDGES:[]).filter(function(e){return e.best_dec&&e.selection;}).slice();
+  src.sort(function(a,b){return b.edge-a.edge;});src=src.slice(0,6);window.QA_LIST=src;
+  if(!src.length){host.innerHTML='<div class="empty" style="padding:10px">No edges loaded yet. Open the Edges tab to pull today\u2019s board, then come back.</div>';return;}
+  host.innerHTML=src.map(function(e,i){var am=GE.decToAm(e.best_dec),od=am>0?'+'+am:am;
+    return'<button class="qarow" onclick="__qlog('+i+')"><div class="qa-l"><div class="qa-sel">'+selLabel(e)+'</div><div class="qa-meta">'+(e.sport_title||'')+' \u00b7 '+e.best_book+' '+od+'</div></div><span class="qa-ev">+'+(e.edge*100).toFixed(1)+'%</span><span class="qa-plus">+</span></button>';
+  }).join('');
+}
 window.__settle=function(id,won){var b=bets();var r=b.find(function(x){return x.id===id;});if(r){var cf=$('cf_'+id);r.closeFair=cf&&cf.value?+cf.value:null;r.result=won?'win':'loss';var dec=GE.amToDec(r.odds);r.pnl=won?(r.stake||0)*(dec-1):-(r.stake||0);}saveBets(b);renderLedger();};
 window.__del=function(id){saveBets(bets().filter(function(x){return x.id!==id;}));renderLedger();};
-function renderLedger(){var rows=bets(),list=$('betlist');if(!rows.length){list.innerHTML='<div class="empty">No bets yet. Track an edge or log one below.</div>';$('clvKpis').innerHTML='';return;}
+function renderLedger(){renderQuickAdd();var rows=bets(),list=$('betlist');if(!rows.length){list.innerHTML='<div class="empty">No bets yet. Tap a Quick add edge above, or log a custom bet.</div>';$('clvKpis').innerHTML='';return;}
   var beats=[],pnl=0,stake=0,settled=0;list.innerHTML='';
   rows.forEach(function(b){var dec=GE.amToDec(b.odds),beat='—';if(b.closeFair){var bc=dec/(1/(b.closeFair/100))-1;beat=(bc>=0?'+':'')+(bc*100).toFixed(1)+'%';beats.push(bc);}if(b.result){settled++;if(b.stake){stake+=b.stake;pnl+=b.pnl||0;}}var od=b.odds>0?'+'+b.odds:b.odds;
     var card=document.createElement('div');card.className='betcard';
     card.innerHTML='<div class="bt"><span class="bsel">'+(b.sel||'—')+'</span><span class="grow" style="flex:1"></span><span class="mono '+(beat[0]==='+'?'pos':beat==='—'?'muted':'neg')+'">'+beat+'</span></div>'+
       '<div class="bmeta">'+(b.sport||'')+' · '+(b.book||'')+' · '+od+' · '+(b.stake?'$'+b.stake:'no stake')+'</div>'+
-      '<div class="brow">'+(b.result?('<span class="mono '+(b.result==='win'?'pos':'neg')+'">'+b.result.toUpperCase()+(b.pnl!=null?' '+(b.pnl>=0?'+$':'-$')+Math.abs(b.pnl).toFixed(0):'')+'</span>'):('<input type="number" step="0.1" id="cf_'+b.id+'" placeholder="close fair %"><button class="btn ghost sm" onclick="__settle(\''+b.id+'\',true)">win</button><button class="btn ghost sm" onclick="__settle(\''+b.id+'\',false)">loss</button>'))+
+      '<div class="brow">'+(b.result?('<span class="mono '+(b.result==='win'?'pos':'neg')+'">'+b.result.toUpperCase()+(b.pnl!=null?' '+(b.pnl>=0?'+$':'-$')+Math.abs(b.pnl).toFixed(0):'')+'</span>'):('<button class="btn ghost sm" onclick="__settle(\''+b.id+'\',true)">Win</button><button class="btn ghost sm" onclick="__settle(\''+b.id+'\',false)">Loss</button>'))+
       '<span class="grow" style="flex:1"></span><button class="btn ghost sm" onclick="__del(\''+b.id+'\')">✕</button></div>';
     list.appendChild(card);
   });
@@ -683,6 +704,7 @@ async function loadMarket(){
     return '<div class="mktrow"><div class="mkt-l"><div class="mkt-sel">'+m.selection+'</div><div class="mkt-meta">'+(m.board_name||'')+bk+'</div></div>'+
       '<div class="mkt-move"><span class="'+cls+'">'+amStr(m.old_price)+' '+arrow+' '+amStr(m.new_price)+'</span><div class="mkt-meta">'+when+'</div></div></div>';
   }).join('');
+  renderQuickAdd();
 }
 renderLedger();$('dvRun').click();loadEdges();
 function edSignOut(){try{localStorage.removeItem('edgedesk_session');}catch(e){}location.replace('./index.html');}
