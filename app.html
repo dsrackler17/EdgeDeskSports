@@ -734,17 +734,18 @@ var WEIGHT_ROWS=[],CALIB=[];
 async function loadRecord(){
   try{
     var total=await sbCount('');var graded=await sbCount('graded_at=not.is.null');
-    // The track record must measure the EDGES the product surfaces, not every priced selection
-    // on the board (that just measures the book's vig). edge>0 = what we actually flagged.
     var gradedEdges=await sbCount('graded_at=not.is.null&edge=gt.0');
-    var g=await sbGet('signals?select=clv,result,beat_close&graded_at=not.is.null&edge=gt.0&limit=5000');
+    // CLEAN edges only: real floor, liquid, and capped to exclude stale-line garbage
+    // (a 30-60% "edge" is a dead price, not a signal — it poisons the record).
+    var EDGEQ='edge=gte.0.005&edge=lte.0.1&n_books=gte.3';
+    var g=await sbGet('signals?select=clv,result,beat_close&graded_at=not.is.null&'+EDGEQ+'&limit=5000');
     var w=0,l=0,clv=0,beat=0,n=g.length;g.forEach(function(r){if(r.result==='win')w++;else if(r.result==='loss')l++;clv+=r.clv||0;if(r.beat_close)beat++;});
     var hit=(w+l)?w/(w+l):null;
     WEIGHT_ROWS=await sbGet('model_weights?select=*');WEIGHTS={book:{},sport:{},market:{},edge_bucket:{},ttk_bucket:{}};WEIGHT_ROWS.forEach(function(r){WEIGHTS[r.slice_type]=WEIGHTS[r.slice_type]||{};WEIGHTS[r.slice_type][r.slice_value]=r.weight;});
     CALIB=await sbGet('calibration?select=*');
     $('dbPill').textContent='DB ✓';$('dbPill').className='pill ok';
     // CLV time series (the proof layer) — cumulative CLV over the flagged edges only
-    try{var series=await sbGet('signals?select=clv,graded_at&graded_at=not.is.null&edge=gt.0&clv=not.is.null&order=graded_at.asc&limit=5000');renderClvHero(series,n?clv/n:null,n?beat/n:null);}catch(_){renderClvHero([],null,null);}
+    try{var series=await sbGet('signals?select=clv,graded_at&graded_at=not.is.null&'+EDGEQ+'&clv=not.is.null&order=graded_at.asc&limit=5000');renderClvHero(series,n?clv/n:null,n?beat/n:null);}catch(_){renderClvHero([],null,null);}
     function kpi(nv,lb){return'<div class="kpi"><div class="n">'+nv+'</div><div class="l">'+lb+'</div></div>';}
     $('recKpis').innerHTML=kpi(total,'captured')+kpi(gradedEdges+' / '+graded,'edges graded')+kpi(hit!=null?(hit*100).toFixed(0)+'%':'—','edge hit rate')+kpi(n?((clv/n>=0?'+':'')+(clv/n*100).toFixed(1)+'%'):'—','edge avg CLV')+kpi(n?(beat/n*100).toFixed(0)+'%':'—','edges beat close');
     renderSlice();renderCalib();
@@ -753,8 +754,15 @@ async function loadRecord(){
 }
 function renderClvHero(series,avgClv,beatRate){
   var host=$('clvChart');if(!host)return;
+  var MIN_SAMPLE=30;   // below this, CLV is noise — don't dress a handful of edges up as proof
   if(!series||!series.length){
-    host.innerHTML='<div class="clvhero"><div class="clvhero-h"><span class="big muted">\u2014</span><span class="lbl">cumulative CLV</span></div><div class="cap"><b style="color:var(--text)">This is the proof layer.</b> As games grade, this plots your cumulative closing-line value. A line that climbs means your signals beat the close \u2014 the one thing that can\u2019t be faked and the only thing that justifies trusting (or selling) them. Nothing to plot yet; it fills in as the pipeline grades results.</div></div>';
+    host.innerHTML='<div class="clvhero"><div class="clvhero-h"><span class="big muted">\u2014</span><span class="lbl">edge CLV</span></div><div class="cap"><b style="color:var(--text)">This is the proof layer.</b> As flagged edges grade, this plots their cumulative closing-line value. A line that climbs means the edges beat the close \u2014 the one thing that can\u2019t be faked. Nothing graded yet; it fills in as the pipeline runs.</div></div>';
+    return;
+  }
+  if(series.length<MIN_SAMPLE){
+    var a=avgClv!=null?(avgClv>=0?'+':'')+(avgClv*100).toFixed(1)+'%':'\u2014';
+    host.innerHTML='<div class="clvhero"><div class="clvhero-h"><span class="big" style="color:var(--warn)">'+series.length+'</span><span class="lbl">clean edges graded \u00b7 building</span></div>'+
+      '<div class="cap"><b style="color:var(--text)">Not a track record yet.</b> Only '+series.length+' clean edges have graded \u2014 far too few to mean anything (running avg '+a+', pure noise at this n). A real CLV read needs ~'+MIN_SAMPLE+'+ graded edges. This stays a sample-size notice, not a curve, until then \u2014 showing a 3-point line as proof would be lying. Let the clean pipeline accumulate.</div></div>';
     return;
   }
   var W=700,H=150,pad=6;
