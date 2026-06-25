@@ -282,7 +282,7 @@ textarea{min-height:110px;font-family:'JetBrains Mono',monospace;resize:vertical
   <!-- RECORD -->
   <section id="v-record" class="view hide">
     <h2>Track record <span class="muted" style="font-weight:400;font-size:11px;text-transform:none">— auto-graded, no manual entry</span></h2>
-    <p class="lede">Every priced selection is captured, the closing line is snapshotted, and it's graded after the game. This is what's actually working.</p>
+    <p class="lede">The closing-line record of the <b style="color:var(--text);font-weight:600">edges the system flagged</b> &mdash; not every priced selection. Each flagged edge is captured, the closing line is snapshotted, and it's graded after the game. This is whether the picks beat the close.</p>
     <div id="clvChart"></div>
     <div class="kpis" id="recKpis"></div>
     <h3>What's working <span class="muted" style="font-weight:400;font-size:11px">— sorted by weight</span></h3>
@@ -734,16 +734,19 @@ var WEIGHT_ROWS=[],CALIB=[];
 async function loadRecord(){
   try{
     var total=await sbCount('');var graded=await sbCount('graded_at=not.is.null');
-    var g=await sbGet('signals?select=clv,result,beat_close&graded_at=not.is.null&limit=5000');
+    // The track record must measure the EDGES the product surfaces, not every priced selection
+    // on the board (that just measures the book's vig). edge>0 = what we actually flagged.
+    var gradedEdges=await sbCount('graded_at=not.is.null&edge=gt.0');
+    var g=await sbGet('signals?select=clv,result,beat_close&graded_at=not.is.null&edge=gt.0&limit=5000');
     var w=0,l=0,clv=0,beat=0,n=g.length;g.forEach(function(r){if(r.result==='win')w++;else if(r.result==='loss')l++;clv+=r.clv||0;if(r.beat_close)beat++;});
     var hit=(w+l)?w/(w+l):null;
     WEIGHT_ROWS=await sbGet('model_weights?select=*');WEIGHTS={book:{},sport:{},market:{},edge_bucket:{},ttk_bucket:{}};WEIGHT_ROWS.forEach(function(r){WEIGHTS[r.slice_type]=WEIGHTS[r.slice_type]||{};WEIGHTS[r.slice_type][r.slice_value]=r.weight;});
     CALIB=await sbGet('calibration?select=*');
     $('dbPill').textContent='DB ✓';$('dbPill').className='pill ok';
-    // CLV time series (the proof layer) — cumulative closing-line value over graded signals
-    try{var series=await sbGet('signals?select=clv,graded_at&graded_at=not.is.null&clv=not.is.null&order=graded_at.asc&limit=5000');renderClvHero(series,n?clv/n:null,n?beat/n:null);}catch(_){renderClvHero([],null,null);}
+    // CLV time series (the proof layer) — cumulative CLV over the flagged edges only
+    try{var series=await sbGet('signals?select=clv,graded_at&graded_at=not.is.null&edge=gt.0&clv=not.is.null&order=graded_at.asc&limit=5000');renderClvHero(series,n?clv/n:null,n?beat/n:null);}catch(_){renderClvHero([],null,null);}
     function kpi(nv,lb){return'<div class="kpi"><div class="n">'+nv+'</div><div class="l">'+lb+'</div></div>';}
-    $('recKpis').innerHTML=kpi(total,'captured')+kpi(graded,'graded')+kpi(hit!=null?(hit*100).toFixed(0)+'%':'—','hit rate')+kpi(n?((clv/n>=0?'+':'')+(clv/n*100).toFixed(1)+'%'):'—','avg CLV')+kpi(n?(beat/n*100).toFixed(0)+'%':'—','beat close');
+    $('recKpis').innerHTML=kpi(total,'captured')+kpi(gradedEdges+' / '+graded,'edges graded')+kpi(hit!=null?(hit*100).toFixed(0)+'%':'—','edge hit rate')+kpi(n?((clv/n>=0?'+':'')+(clv/n*100).toFixed(1)+'%'):'—','edge avg CLV')+kpi(n?(beat/n*100).toFixed(0)+'%':'—','edges beat close');
     renderSlice();renderCalib();
     if(total===0)$('recKpis').insertAdjacentHTML('afterend','<div class="empty" style="margin:8px 0">No data yet. The capture job logs signals continuously; grades fill in after games finish.</div>');
   }catch(e){$('dbPill').textContent='DB error';$('dbPill').className='pill err';$('recKpis').innerHTML='<div class="empty">Could not reach the database: '+e.message+'</div>';}
@@ -771,8 +774,8 @@ function renderClvHero(series,avgClv,beatRate){
     '<path d="'+area+'" fill="'+col+'" opacity="0.10"/>'+
     '<polyline points="'+pts+'" fill="none" stroke="'+col+'" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/></svg>';
   var headline=(total>=0?'+':'')+(total*100).toFixed(1)+' pts';
-  host.innerHTML='<div class="clvhero"><div class="clvhero-h"><span class="big" style="color:'+col+'">'+headline+'</span><span class="lbl">cumulative CLV \u00b7 '+N+' graded</span></div>'+svg+
-    '<div class="cap"><b style="color:var(--text)">The proof layer.</b> Cumulative closing-line value across every graded signal'+(avgClv!=null?' \u00b7 avg '+(avgClv>=0?'+':'')+(avgClv*100).toFixed(1)+'% / bet':'')+(beatRate!=null?' \u00b7 beat the close '+(beatRate*100).toFixed(0)+'%':'')+'. A rising line is the only honest evidence the signals are real \u2014 outcomes are noise, this is the signal.</div></div>';
+  host.innerHTML='<div class="clvhero"><div class="clvhero-h"><span class="big" style="color:'+col+'">'+headline+'</span><span class="lbl">edge CLV \u00b7 '+N+' graded</span></div>'+svg+
+    '<div class="cap"><b style="color:var(--text)">The proof layer.</b> Cumulative closing-line value across the flagged edges'+(avgClv!=null?' \u00b7 avg '+(avgClv>=0?'+':'')+(avgClv*100).toFixed(1)+'% / edge':'')+(beatRate!=null?' \u00b7 beat the close '+(beatRate*100).toFixed(0)+'%':'')+'. A rising line is the only honest evidence the edges are real \u2014 and it\u2019s only as trustworthy as the close calc behind it (your price vs the actual closing price, not the no-vig fair).</div></div>';
 }
 function renderSlice(){var t=$('sliceType').value,rows=WEIGHT_ROWS.filter(function(r){return r.slice_type===t;}).sort(function(a,b){return(b.weight||0)-(a.weight||0);});
   $('sliceTbl').querySelector('tbody').innerHTML=rows.length?rows.map(function(r){return'<tr><td>'+r.slice_value+'</td><td>'+(r.n||0)+'</td><td>'+(r.hit_rate!=null?(r.hit_rate*100).toFixed(0)+'%':'—')+'</td><td class="'+((r.avg_clv||0)>=0?'pos':'neg')+'">'+(r.avg_clv!=null?((r.avg_clv>=0?'+':'')+(r.avg_clv*100).toFixed(1)+'%'):'—')+'</td><td>'+(r.beat_close_rate!=null?(r.beat_close_rate*100).toFixed(0)+'%':'—')+'</td><td class="'+((r.weight||1)>=1?'pos':'neg')+'">×'+(r.weight||1).toFixed(2)+'</td></tr>';}).join(''):'<tr><td colspan="6" class="muted" style="text-align:center;padding:16px">No graded data yet.</td></tr>';}
