@@ -228,8 +228,8 @@ textarea{min-height:110px;font-family:'JetBrains Mono',monospace;resize:vertical
     </div>
     <div class="feed" id="feed"><div class="empty">Loading edges…</div></div>
     <div class="lead side hide" id="dailyWrap">
-      <h3 id="d5title">☆ Today's 5 to watch — wider net</h3>
-      <p class="sidenote">Lower bar than the list above: today's best live edges regardless of size or book, offshore included. Live only — nothing stale. For research; verify before trusting. Tap + to log one.</p>
+      <h3 id="d5title">☆ Top 5 — wider net · this week</h3>
+      <p class="sidenote">Lower bar than the list above: the best live edges in your window regardless of size or book, offshore included. Live only — nothing stale. For research; verify before trusting. Tap + to log one.</p>
       <div id="dailyList"></div>
     </div>
   </section>
@@ -555,14 +555,18 @@ window.__t10track=function(i){var e=(window.T10||[])[i];if(e)trackSignal(e,GE.de
 /* wider-net "today" list: best live edges for today regardless of floor/book — research watchlist, always populated when games are live */
 function renderDaily(){
   var host=$('dailyList'),wrap=$('dailyWrap');if(!host||!wrap)return;
+  var win=$('fScope').value, sport=$('fSport').value;
   var nowMs=Date.now(),endDay=new Date();endDay.setHours(23,59,59,999);
+  var horizon=win==='day'?endDay.getTime():nowMs+7*864e5;
   var staleCut=nowMs-EDGE_MAX_AGE_MIN*60000;
+  if($('d5title'))$('d5title').textContent='\u2606 Top 5 \u2014 wider net \u00b7 '+(win==='day'?'today':'this week');
   var list=EDGES.filter(function(e){
+    if(sport&&e.sport_title!==sport)return false;
     var ls=e.last_seen_at?new Date(e.last_seen_at).getTime():0;
     if(!ls||ls<staleCut)return false;                              // live only — no zombies
-    if((e.edge||0)<=0)return false;                                // still a positive edge, just no floor
+    if((e.edge||0)<=0)return false;                                // any positive edge, no floor
     var ct=e.commence_time?new Date(e.commence_time).getTime():0;
-    if(!ct||ct>endDay.getTime()||ct<nowMs-3600e3)return false;     // today, not already underway >1h
+    if(!ct||ct>horizon||ct<nowMs-3600e3)return false;             // in window, not already underway >1h
     return true;
   });
   var cnt={};list.forEach(function(e){var k=e.event_id+'|'+e.market;cnt[k]=(cnt[k]||0)+1;});
@@ -578,7 +582,8 @@ function renderDaily(){
   }).join('');
 }
 window.__d5track=function(i){var e=(window.D5||[])[i];if(e)trackSignal(e,GE.decToAm(e.best_dec));};
-$('fSport').onchange=renderEdges;$('fMinev').oninput=renderEdges;$('fBooks').onchange=renderEdges;$('fScope').onchange=renderEdges;
+function refreshEdges(){renderEdges();renderDaily();}
+$('fSport').onchange=refreshEdges;$('fMinev').oninput=refreshEdges;$('fBooks').onchange=refreshEdges;$('fScope').onchange=refreshEdges;
 
 /* ===== Record (auto-graded) ===== */
 var WEIGHT_ROWS=[],CALIB=[];
