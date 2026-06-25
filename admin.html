@@ -97,7 +97,7 @@ input:focus,select:focus{outline:2px solid var(--accent);outline-offset:-1px}
     <div class="card">
       <h3 style="margin-top:0">Add eligibility flag</h3>
       <div class="grid">
-        <div class="fld"><label>League</label><select id="e_league"><option>CFB</option><option>CBB</option></select></div>
+        <div class="fld"><label>League</label><select id="e_league"><option>CFB</option><option>CBB</option><option>MLB</option></select></div>
         <div class="fld"><label>Team (exact board name)</label><input id="e_sel" placeholder="Western Cascade"></div>
         <div class="fld full"><label>Reason (shown in the receipt)</label><input id="e_reason" placeholder="FBS transition — ineligible for the conference title game"></div>
         <div class="fld"><label>Ineligible until</label><input id="e_until" class="mono" placeholder="2028"></div>
@@ -121,7 +121,7 @@ input:focus,select:focus{outline:2px solid var(--accent);outline-offset:-1px}
     <div class="card">
       <h3 style="margin-top:0">Standard board <span style="color:var(--dim);font-weight:400;font-size:11px">(win-conference outrights)</span></h3>
       <div class="grid">
-        <div class="fld"><label>League</label><select id="b_league"><option>CFB</option><option>CBB</option></select></div>
+        <div class="fld"><label>League</label><select id="b_league"><option>CFB</option><option>CBB</option><option>MLB</option></select></div>
         <div class="fld"><label>Book</label><input id="b_book" placeholder="draftkings"></div>
         <div class="fld full"><label>Board name</label><input id="b_name" placeholder="Mountain West — Title"></div>
         <div class="fld"><label>Market type</label><input id="b_market" class="mono" value="win_conf"></div>
@@ -140,7 +140,7 @@ input:focus,select:focus{outline:2px solid var(--accent);outline-offset:-1px}
     <div class="card">
       <h3 style="margin-top:0">Correlated pair <span style="color:var(--dim);font-weight:400;font-size:11px">(arms Logical Inconsistency)</span></h3>
       <div class="grid">
-        <div class="fld"><label>League</label><select id="c_league"><option>CFB</option><option>CBB</option></select></div>
+        <div class="fld"><label>League</label><select id="c_league"><option>CFB</option><option>CBB</option><option>MLB</option></select></div>
         <div class="fld"><label>Book</label><input id="c_book" placeholder="draftkings"></div>
         <div class="fld full"><label>Board name</label><input id="c_name" placeholder="Sun Belt — Correlated"></div>
         <div class="fld full"><label>Team</label><input id="c_sel" placeholder="App State"></div>
@@ -164,7 +164,7 @@ input:focus,select:focus{outline:2px solid var(--accent);outline-offset:-1px}
 const SB_URL="https://iattxbkbufslbauoumga.supabase.co";
 const SB_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlhdHR4YmtidWZzbGJhdW91bWdhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE2MzY4MDUsImV4cCI6MjA5NzIxMjgwNX0.Mly5G587o5IFRnEigU2wRp9buWEk3dFwH9RNPJK7Uo8";
 
-/* session (set by landing.html login, or by the gate below) */
+/* session (set by index.html login, or by the gate below) */
 function session(){try{return JSON.parse(localStorage.getItem('edgedesk_session')||'null');}catch(e){return null;}}
 function token(){const s=session();return s&&s.access_token;}
 function userEmail(){const s=session();return s&&s.user&&s.user.email;}
