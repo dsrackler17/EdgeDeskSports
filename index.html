@@ -187,7 +187,7 @@ footer{border-top:1px solid var(--border);background:var(--surface);padding:34px
       <span class="ey">Structural mispricing engine</span>
       <h1>The market breaks its <span class="frac">own rules</span>. We find where.</h1>
       <p class="sub">Every other tool runs <b>model vs. line</b>, its guess against the book's. EdgeDesk runs <b>structure vs. line</b>: it catches errors built into the rules and math of the market itself. The mispricings a better model can't find, and a competitor can't copy.</p>
-      <p class="sub" style="font-size:15px;opacity:.85">College football, college basketball, and MLB, so the desk runs year round. The faults rotate with the calendar: titles and transitions in fall and winter, pennant races and elimination dead money through the summer.</p>
+      <p class="sub" style="font-size:15px;opacity:.85">MLB and WNBA live now, with college football and college basketball rolling in for their seasons, so the desk runs year round. The faults rotate with the calendar: titles and transitions in fall and winter, pennant races and elimination dead money through the summer.</p>
       <div class="cta">
         <button class="btn primary lg" onclick="openAuth('signup')">Start free</button>
         <a class="btn ghost lg" href="#proof">See a real fault →</a>
@@ -266,15 +266,15 @@ footer{border-top:1px solid var(--border);background:var(--surface);padding:34px
     <div class="shead">
       <span class="ey">What it scans for</span>
       <h2>Six classes of structural fault.</h2>
-      <p>Each one fires on the rules and internal math of the market, not a forecast. Severity reflects how defensible the fault is, not how big the number looks.</p>
+      <p>Four scan live today; two more are on the way. Each one fires on the rules and internal math of the market, not a forecast. Severity reflects how defensible the fault is, not how big the number looks.</p>
     </div>
     <div class="cls-grid">
       <div class="clscard"><span class="sev hi"></span><div class="num">01</div><div class="nm">Dead Money</div><p>A team priced live on a board it cannot win: eligibility, transition rules, a postseason ban, or mathematical elimination from a pennant race. Phantom probability inflates the field; the live teams are underpriced.</p></div>
       <div class="clscard"><span class="sev cr"></span><div class="num">02</div><div class="nm">Logical Inconsistency</div><p>Nested markets must obey order: win ≤ qualify, win-title ≤ make-playoff. When a book inverts that across two screens, it's not a disagreement. It's impossible.</p></div>
       <div class="clscard"><span class="sev md"></span><div class="num">03</div><div class="nm">Stale Futures</div><p>An obscure board that hasn't moved after a real trigger: a transfer, an injury, a coaching change. Staleness against a named event is a window before the reprice.</p></div>
       <div class="clscard"><span class="sev md"></span><div class="num">04</div><div class="nm">Overround Anomaly</div><p>A board whose total vig sits well outside its peer band: thin, loosely-priced markets the book hasn't tightened. A screening signal, not a standalone bet.</p></div>
-      <div class="clscard"><span class="sev md"></span><div class="num">05</div><div class="nm">Dead-Heat / Top-N</div><p>Top-N markets where the number of qualifiers and dead-heat rules make a posted price structurally off the true settlement math.</p></div>
-      <div class="clscard"><span class="sev md"></span><div class="num">06</div><div class="nm">Structural Asymmetry</div><p>Scheduling, rest, tiebreaker and bid-thief spots the book is slow to price, heaviest in college conference tournaments.</p></div>
+      <div class="clscard"><span class="sev md"></span><div class="num">05</div><div class="nm">Dead-Heat / Top-N <span style="font-size:9px;letter-spacing:.04em;color:var(--faint);border:1px solid var(--border);border-radius:4px;padding:1px 5px;vertical-align:middle">soon</span></div><p>Top-N markets where the number of qualifiers and dead-heat rules make a posted price structurally off the true settlement math.</p></div>
+      <div class="clscard"><span class="sev md"></span><div class="num">06</div><div class="nm">Structural Asymmetry <span style="font-size:9px;letter-spacing:.04em;color:var(--faint);border:1px solid var(--border);border-radius:4px;padding:1px 5px;vertical-align:middle">soon</span></div><p>Scheduling, rest, tiebreaker and bid-thief spots the book is slow to price, heaviest in college conference tournaments.</p></div>
     </div>
   </div>
 </section>
@@ -377,6 +377,12 @@ function closeAuth(){document.getElementById('authModal').classList.remove('on')
 function msg(t,kind){var m=document.getElementById('authMsg');if(!t){m.className='auth-msg';m.textContent='';return;}m.className='auth-msg '+(kind||'err');m.textContent=t;}
 document.getElementById('authModal').addEventListener('click',function(e){if(e.target===this)closeAuth();});
 document.addEventListener('keydown',function(e){if(e.key==='Escape')closeAuth();});
+/* Enter submits from either field (no <form>, so wire it explicitly) */
+['aEmail','aPass'].forEach(function(id){
+  document.getElementById(id).addEventListener('keydown',function(e){
+    if(e.key==='Enter'){e.preventDefault();if(!document.getElementById('authSubmit').disabled)submitAuth();}
+  });
+});
 
 async function submitAuth(){
   var email=document.getElementById('aEmail').value.trim(),pass=document.getElementById('aPass').value;
