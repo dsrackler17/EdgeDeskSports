@@ -458,7 +458,16 @@ function renderAllBoards(rows,elig,model){
   if(!rows||!rows.length){host.innerHTML='<div class="empty"><b>No boards captured yet.</b><br>Run capture_boards, or enter a conference board in admin. They\u2019ll all show here.</div>';return;}
   var dead={};(elig||[]).forEach(function(e){dead[((e.league||'').toUpperCase())+'|'+e.selection]=e.reason||'ineligible';});
   var MO={};(model||[]).forEach(function(m){MO[nrm(m.team)]={p:(m.win_prob!=null?+m.win_prob:null),reach:(m.reach_prob!=null?+m.reach_prob:null),fair:m.fair_american,iters:m.iterations};});
+  // Boards mix short names ("Alabama") and full mascot names ("Alabama Crimson Tide");
+  // CFBD emits the short form. Match exact first, then longest model key that the board
+  // name starts with (so "alabamacrimsontide" finds "alabama", and "ohiostatebuckeyes"
+  // prefers "ohiostate" over "ohio"). Aliases (UConn=Connecticut) still need manual rows.
+  var MO_KEYS=Object.keys(MO).sort(function(a,b){return b.length-a.length;});
+  function moLookup(sel){var k=nrm(sel);if(MO[k])return MO[k];
+    for(var i=0;i<MO_KEYS.length;i++){var mk=MO_KEYS[i];if(mk.length>=4&&k.indexOf(mk)===0)return MO[mk];}
+    return null;}
   var hasModel=Object.keys(MO).length>0;
+  var matched=0;
   var boards={};rows.forEach(function(r){(boards[r.board_id]=boards[r.board_id]||{name:r.board_name,league:r.league,rows:[]}).rows.push(r);});
   var ids=Object.keys(boards).sort(function(a,b){return (boards[a].name||'').localeCompare(boards[b].name||'');});
   var cards=ids.map(function(bid){
@@ -468,8 +477,9 @@ function renderAllBoards(rows,elig,model){
     var top=sorted.slice(0,8),shown={};top.forEach(function(t){shown[t.selection]=1;});
     sorted.forEach(function(t){if(dead[L+'|'+t.selection]&&!shown[t.selection]){top.push(t);shown[t.selection]=1;}}); // always surface a flagged team
     var rowsHtml=top.map(function(t){var od=t.american>0?'+'+t.american:t.american;var isDead=dead[L+'|'+t.selection];
-      var mo=MO[nrm(t.selection)];var mline='';
+      var mo=moLookup(t.selection);var mline='';
       if(mo&&mo.p!=null){
+        matched++;
         var mf=(mo.fair>0?'+':'')+mo.fair;
         var gap=mo.p-flImpl(t.american);
         var tag=(!isDead&&gap>=0.02)?'<span class="medge">+'+(gap*100).toFixed(1)+'% edge</span>':'';
@@ -480,8 +490,17 @@ function renderAllBoards(rows,elig,model){
     var more=b.rows.length>top.length?'<div style="font-size:10.5px;color:var(--faint);padding-top:5px">+'+(b.rows.length-top.length)+' more priced</div>':'';
     return'<div class="flwatch"><div class="fmeta"><span class="ftag lg">'+(b.league||'')+'</span><span class="ftag cls">'+b.rows.length+' priced</span></div><div class="ftitle" style="font-size:14px">'+b.name+'</div>'+rowsHtml+more+'</div>';
   }).join('');
+  var modelN=(model||[]).length;
+  var diag;
+  if(modelN===0){
+    diag='<div class="flbanner demo" style="margin-bottom:10px">\u25b2 Monte Carlo: <b>0 model rows reached the app</b>. Either model_odds is empty (run <b>model_conf_odds</b>) or anon can\u2019t read it (missing RLS select policy). Boards below are raw book odds only.</div>';
+  } else if(matched===0){
+    diag='<div class="flbanner demo" style="margin-bottom:10px">\u25b2 Monte Carlo: <b>'+modelN+' model teams loaded</b> but <b>0 matched</b> the board names above \u2014 a name-matching gap (e.g. CFBD vs book spelling). Sim ran; it\u2019s just not joining.</div>';
+  } else {
+    diag='<div class="flbanner live" style="margin-bottom:10px">\u25cf Monte Carlo: '+modelN+' model teams loaded, '+matched+' matched on these boards \u2014 win % \u00b7 reach % shown inline.</div>';
+  }
   var hdr=hasModel?'All boards \u2014 book odds vs EdgeDesk Monte Carlo (win % \u00b7 reach %)':'All boards \u2014 raw book odds, every market in one place';
-  host.innerHTML='<div class="flwatch-h">'+hdr+'</div>'+cards;
+  host.innerHTML='<div class="flwatch-h">'+hdr+'</div>'+diag+cards;
 }
 /* legit US-regulated / sharp books — everything else (offshore) is treated as noise-prone */
 var TRUSTED=['draftkings','fanduel','betmgm','caesars','espn bet','espnbet','fanatics','betrivers','hard rock','hardrock','bet365','pinnacle','circa','fliff','ballybet','wynn','superbook'];
@@ -519,9 +538,14 @@ function renderEdges(){
   if(!top.length){
     lw.classList.add('hide');
     var down=!window.__edgeLatest||((Date.now()-window.__edgeLatest)/60000>=STALE_RED_MIN);
+    // filtering funnel — shows exactly where the rows went, so empty is explainable not mysterious
+    var nLoaded=EDGES.length;
+    var nWin=EDGES.filter(function(e){if(sport&&e.sport_title!==sport)return false;if((e.edge||0)<=0)return false;var ct=e.commence_time?new Date(e.commence_time).getTime():0;return ct&&ct<=horizon&&ct>=nowMs-3600e3;}).length;
+    var nFresh=EDGES.filter(function(e){if(sport&&e.sport_title!==sport)return false;if((e.edge||0)<=0)return false;var ct=e.commence_time?new Date(e.commence_time).getTime():0;if(!(ct&&ct<=horizon&&ct>=nowMs-3600e3))return false;var ls=e.last_seen_at?new Date(e.last_seen_at).getTime():0;return ls&&ls>=staleCut;}).length;
+    var funnel='<div class="sb-sub" style="margin-top:8px;font-family:\'JetBrains Mono\',monospace">pipeline: '+nLoaded+' positive-edge rows in DB \u2192 '+nWin+' in your '+winLbl+' window \u2192 '+nFresh+' freshly priced (&lt;'+EDGE_MAX_AGE_MIN+'m) \u2192 0 after liquidity/book filters'+(nLoaded===0?' \u00b7 <b>signals table returned 0 rows \u2014 capture isn\u2019t writing game edges</b>':'')+'</div>';
     f.innerHTML=down
-      ?'<div class="empty"><b>No live edges to show.</b><br>The data is stale or the pipeline is down \u2014 see the banner above. Nothing here would be current.</div>'
-      :'<div class="empty"><b>No fresh edges in your '+winLbl+' window.</b><br>Capture is live (last run '+ago(window.__edgeLatest)+'), there\u2019s just nothing right now that beats the sharp fair line by enough on a freshly-priced market. Stale prices are hidden on purpose. Try <b>All books</b> or a wider <b>Window</b> \u2014 or it\u2019s simply a clean board.</div>';
+      ?'<div class="empty"><b>No live edges to show.</b><br>The data is stale or the pipeline is down \u2014 see the banner above. Nothing here would be current.'+funnel+'</div>'
+      :'<div class="empty"><b>No edges clear the bar in your '+winLbl+' window.</b><br>Capture is live (last run '+ago(window.__edgeLatest)+'). Try <b>All books</b> or a wider <b>Window</b> \u2014 or it\u2019s a clean board.'+funnel+'</div>';
     return;
   }
   lw.classList.remove('hide');
