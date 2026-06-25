@@ -397,7 +397,7 @@ async function loadEdges(){
     await loadWeights();
     var nowIso=new Date().toISOString();
     var horizonIso=new Date(Date.now()+7*24*3600*1000).toISOString();
-    EDGES=await sbGet('signals?select=event_id,sport_title,sport_key,market,selection,point,best_dec,first_best_dec,best_book,sharp_fair,edge,n_books,commence_time,home_team,away_team,last_seen_at&commence_time=gte.'+nowIso+'&commence_time=lte.'+horizonIso+'&is_plus_ev=eq.true&order=edge.desc&limit=600');
+    EDGES=await sbGet('signals?select=event_id,sport_title,sport_key,market,selection,point,best_dec,first_best_dec,best_book,sharp_fair,edge,n_books,commence_time,home_team,away_team,last_seen_at&commence_time=gte.'+nowIso+'&commence_time=lte.'+horizonIso+'&edge=gt.0&order=edge.desc&limit=600');
     $('dbPill').textContent='DB ✓';$('dbPill').className='pill ok';
     // sport filter options
     var sportsSet={};EDGES.forEach(function(e){if(e.sport_title)sportsSet[e.sport_title]=1;});
