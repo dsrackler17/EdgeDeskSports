@@ -146,7 +146,7 @@ textarea{min-height:110px;font-family:'JetBrains Mono',monospace;resize:vertical
 .frow+.frow{border-top:1px dashed var(--border)}.frow .fl{color:var(--dim);font-family:'Inter',sans-serif}
 .frow .fv.up{color:var(--warn)}.fault[data-sev=critical] .frow .fv.up{color:var(--neg)}.frow .fv.dn{color:var(--accent)}
 .frow.tot{border-top:1px solid var(--faint);font-weight:700}.frow.tot .fl{color:var(--text)}
-.mfair{display:block;font-family:'JetBrains Mono',monospace;font-size:9.5px;color:var(--faint);margin-top:2px}.medge{color:var(--pos);font-weight:700;margin-left:5px}
+.mfair{display:block;font-family:'JetBrains Mono',monospace;font-size:9.5px;color:var(--faint);margin-top:2px}.medge{color:var(--pos);font-weight:700;margin-left:5px}.mwin{color:var(--accent);font-weight:700}
 .fqual{display:flex;gap:14px;flex-wrap:wrap;font-size:10.5px;color:var(--dim);border-top:1px dashed var(--border);padding-top:10px;font-family:'JetBrains Mono',monospace}
 .fconf{display:inline-flex;align-items:center;gap:5px}.fconf .bd{width:7px;height:7px;border-radius:50%}
 .fconf.high .bd{background:var(--pos)}.fconf.medium .bd{background:var(--warn)}.fconf.low .bd{background:var(--neg)}
@@ -229,7 +229,7 @@ textarea{min-height:110px;font-family:'JetBrains Mono',monospace;resize:vertical
     <div class="feed" id="feed"><div class="empty">Loading edges…</div></div>
     <div class="lead side hide" id="dailyWrap">
       <h3 id="d5title">☆ Top 5 — wider net · this week</h3>
-      <p class="sidenote">Lower bar than the list above: the best live edges in your window regardless of size or book, offshore included. Live only — nothing stale. For research; verify before trusting. Tap + to log one.</p>
+      <p class="sidenote">Lower bar than the list above: the best edges in your window regardless of size or book, offshore included. Shows as long as capture is live; any row priced over an hour ago is labelled with its age so you can see exactly how fresh each line is. For research; verify before trusting. Tap + to log one.</p>
       <div id="dailyList"></div>
     </div>
   </section>
@@ -457,7 +457,7 @@ function renderAllBoards(rows,elig,model){
   var host=$('allBoards');if(!host)return;
   if(!rows||!rows.length){host.innerHTML='<div class="empty"><b>No boards captured yet.</b><br>Run capture_boards, or enter a conference board in admin. They\u2019ll all show here.</div>';return;}
   var dead={};(elig||[]).forEach(function(e){dead[((e.league||'').toUpperCase())+'|'+e.selection]=e.reason||'ineligible';});
-  var MO={};(model||[]).forEach(function(m){MO[nrm(m.team)]={p:+m.win_prob,fair:m.fair_american};});
+  var MO={};(model||[]).forEach(function(m){MO[nrm(m.team)]={p:(m.win_prob!=null?+m.win_prob:null),reach:(m.reach_prob!=null?+m.reach_prob:null),fair:m.fair_american,iters:m.iterations};});
   var hasModel=Object.keys(MO).length>0;
   var boards={};rows.forEach(function(r){(boards[r.board_id]=boards[r.board_id]||{name:r.board_name,league:r.league,rows:[]}).rows.push(r);});
   var ids=Object.keys(boards).sort(function(a,b){return (boards[a].name||'').localeCompare(boards[b].name||'');});
@@ -469,14 +469,18 @@ function renderAllBoards(rows,elig,model){
     sorted.forEach(function(t){if(dead[L+'|'+t.selection]&&!shown[t.selection]){top.push(t);shown[t.selection]=1;}}); // always surface a flagged team
     var rowsHtml=top.map(function(t){var od=t.american>0?'+'+t.american:t.american;var isDead=dead[L+'|'+t.selection];
       var mo=MO[nrm(t.selection)];var mline='';
-      if(mo){var mf=mo.fair>0?'+'+mo.fair:mo.fair;var gap=mo.p-flImpl(t.american);
-        var tag=(!isDead&&gap>=0.02)?'<span class="medge">+'+(gap*100).toFixed(1)+'%</span>':'';
-        mline='<span class="mfair">model '+mf+tag+'</span>';}
+      if(mo&&mo.p!=null){
+        var mf=(mo.fair>0?'+':'')+mo.fair;
+        var gap=mo.p-flImpl(t.american);
+        var tag=(!isDead&&gap>=0.02)?'<span class="medge">+'+(gap*100).toFixed(1)+'% edge</span>':'';
+        var reachTxt=(mo.reach!=null)?' \u00b7 reach '+(mo.reach*100).toFixed(0)+'%':'';
+        mline='<span class="mfair"><b class="mwin">win '+(mo.p*100).toFixed(1)+'%</b>'+reachTxt+' \u00b7 fair '+mf+tag+'</span>';
+      }
       return'<div class="frow"><span class="fl">'+t.selection+(isDead?' <span class="elim">\u26d4 can\u2019t win</span>':'')+mline+'</span><span class="fv">'+od+'</span></div>';}).join('');
     var more=b.rows.length>top.length?'<div style="font-size:10.5px;color:var(--faint);padding-top:5px">+'+(b.rows.length-top.length)+' more priced</div>':'';
     return'<div class="flwatch"><div class="fmeta"><span class="ftag lg">'+(b.league||'')+'</span><span class="ftag cls">'+b.rows.length+' priced</span></div><div class="ftitle" style="font-size:14px">'+b.name+'</div>'+rowsHtml+more+'</div>';
   }).join('');
-  var hdr=hasModel?'All boards \u2014 book odds vs EdgeDesk model fair':'All boards \u2014 raw book odds, every market in one place';
+  var hdr=hasModel?'All boards \u2014 book odds vs EdgeDesk Monte Carlo (win % \u00b7 reach %)':'All boards \u2014 raw book odds, every market in one place';
   host.innerHTML='<div class="flwatch-h">'+hdr+'</div>'+cards;
 }
 /* legit US-regulated / sharp books — everything else (offshore) is treated as noise-prone */
@@ -555,16 +559,22 @@ window.__t10track=function(i){var e=(window.T10||[])[i];if(e)trackSignal(e,GE.de
 /* wider-net "today" list: best live edges for today regardless of floor/book — research watchlist, always populated when games are live */
 function renderDaily(){
   var host=$('dailyList'),wrap=$('dailyWrap');if(!host||!wrap)return;
+  wrap.classList.remove('hide');                                   // wider-net section is always visible; it explains itself when empty
   var win=$('fScope').value, sport=$('fSport').value;
   var nowMs=Date.now(),endDay=new Date();endDay.setHours(23,59,59,999);
   var horizon=win==='day'?endDay.getTime():nowMs+7*864e5;
-  var staleCut=nowMs-EDGE_MAX_AGE_MIN*60000;
   if($('d5title'))$('d5title').textContent='\u2606 Top 5 \u2014 wider net \u00b7 '+(win==='day'?'today':'this week');
+  // Pipeline-alive gate (not a per-row 90-min wall): when capture is healthy, show the best in-window
+  // positive edges and label each row's price age, so nothing is hidden or passed off as fresher than it is.
+  // Only when capture itself is down do we suppress old rows as zombies.
+  var hb=window.__edgeLatest||0;
+  var pipelineDown=!hb||((nowMs-hb)/60000>=STALE_RED_MIN);
+  var staleCut=nowMs-EDGE_MAX_AGE_MIN*60000;
   var list=EDGES.filter(function(e){
     if(sport&&e.sport_title!==sport)return false;
-    var ls=e.last_seen_at?new Date(e.last_seen_at).getTime():0;
-    if(!ls||ls<staleCut)return false;                              // live only — no zombies
     if((e.edge||0)<=0)return false;                                // any positive edge, no floor
+    var ls=e.last_seen_at?new Date(e.last_seen_at).getTime():0;
+    if(pipelineDown){ if(!ls||ls<staleCut)return false; }          // capture down → no zombies
     var ct=e.commence_time?new Date(e.commence_time).getTime():0;
     if(!ct||ct>horizon||ct<nowMs-3600e3)return false;             // in window, not already underway >1h
     return true;
@@ -573,11 +583,18 @@ function renderDaily(){
   list=list.filter(function(e){return cnt[e.event_id+'|'+e.market]<2;});   // one side of a market only
   list.sort(function(a,b){return b.edge-a.edge;});
   var top=list.slice(0,5);window.D5=top;
-  if(!top.length){wrap.classList.add('hide');return;}
-  wrap.classList.remove('hide');
+  if(!top.length){
+    host.innerHTML=pipelineDown
+      ?'<div class="empty" style="padding:14px">Capture is down or stale \u2014 see the banner up top. Holding the wider-net list until prices are live again rather than show old numbers.</div>'
+      :'<div class="empty" style="padding:14px">No positive edges in your '+(win==='day'?'today':'this week')+' window right now. Capture is live \u2014 the board is just clean. Try <b>All books</b> or widen the <b>Window</b>.</div>';
+    return;
+  }
   host.innerHTML=top.map(function(e,i){
     var am=GE.decToAm(e.best_dec),od=am>0?'+'+am:am;
-    var tags=(e.edge>0.06?' <span class="suspect">\u26a0 verify</span>':'')+(isTrusted(e.best_book)?'':' <span class="suspect">offshore</span>');
+    var ls=e.last_seen_at?new Date(e.last_seen_at).getTime():0;
+    var ageMin=ls?Math.floor((nowMs-ls)/60000):null;
+    var ageTag=(ageMin!=null&&ageMin>=EDGE_MAX_AGE_MIN)?' <span class="suspect">priced '+ago(ls)+'</span>':'';
+    var tags=(e.edge>0.06?' <span class="suspect">\u26a0 verify</span>':'')+(isTrusted(e.best_book)?'':' <span class="suspect">offshore</span>')+ageTag;
     return'<div class="lead-row"><span class="rank">'+(i+1)+'</span><div class="lead-mid"><div class="lead-sel">'+selLabel(e)+tags+'</div><div class="lead-meta">'+(e.sport_title||'')+' \u00b7 '+mktLabel(e.market)+' \u00b7 '+(e.away_team||'')+' @ '+(e.home_team||'')+' \u00b7 '+whenLabel(e.commence_time)+' \u00b7 '+e.best_book+' '+od+'</div></div><span class="lead-ev">+'+(e.edge*100).toFixed(1)+'%</span><button class="btn ghost sm dadd" onclick="__d5track('+i+')">+</button></div>';
   }).join('');
 }
