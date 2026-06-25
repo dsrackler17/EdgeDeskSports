@@ -408,6 +408,9 @@ async function loadEdges(){
     window.__edgeLatest=hb;
     $('fresh').textContent=hb?('captured '+ago(hb)):'—';
     setStale(hb);
+    // sharpest in-window line regardless of sign — proves the scanner ran and shows how close the board is to a play
+    window.__bestNearMiss=null;
+    try{var nm=await sbGet('signals?select=sport_title,selection,edge,best_book,n_books&commence_time=gte.'+nowIso+'&commence_time=lte.'+horizonIso+'&edge=not.is.null&order=edge.desc.nullslast&limit=1');if(nm&&nm[0])window.__bestNearMiss=nm[0];}catch(_){}
     await loadSliceStats();
     renderEdges();
     renderDaily();
@@ -543,6 +546,11 @@ function renderEdges(){
     var nWin=EDGES.filter(function(e){if(sport&&e.sport_title!==sport)return false;if((e.edge||0)<=0)return false;var ct=e.commence_time?new Date(e.commence_time).getTime():0;return ct&&ct<=horizon&&ct>=nowMs-3600e3;}).length;
     var nFresh=EDGES.filter(function(e){if(sport&&e.sport_title!==sport)return false;if((e.edge||0)<=0)return false;var ct=e.commence_time?new Date(e.commence_time).getTime():0;if(!(ct&&ct<=horizon&&ct>=nowMs-3600e3))return false;var ls=e.last_seen_at?new Date(e.last_seen_at).getTime():0;return ls&&ls>=staleCut;}).length;
     var funnel='<div class="sb-sub" style="margin-top:8px;font-family:\'JetBrains Mono\',monospace">pipeline: '+nLoaded+' positive-edge rows in DB \u2192 '+nWin+' in your '+winLbl+' window \u2192 '+nFresh+' freshly priced (&lt;'+EDGE_MAX_AGE_MIN+'m) \u2192 0 after liquidity/book filters'+(nLoaded===0?' \u00b7 <b>signals table returned 0 rows \u2014 capture isn\u2019t writing game edges</b>':'')+'</div>';
+    var nm=window.__bestNearMiss;
+    if(nm&&nm.edge!=null){
+      var ep=(nm.edge*100);
+      funnel+='<div class="sb-sub" style="margin-top:6px;font-family:\'JetBrains Mono\',monospace">sharpest line on the board: <b>'+(nm.sport_title||'')+' \u00b7 '+(nm.selection||'')+'</b> at '+(ep>=0?'+':'')+ep.toFixed(2)+'% vs fair ('+(nm.best_book||'')+', '+(nm.n_books||0)+' books)'+(ep<0?' \u2014 below fair, so nothing clears. The scan ran; the board is just efficient.':'')+'</div>';
+    }
     f.innerHTML=down
       ?'<div class="empty"><b>No live edges to show.</b><br>The data is stale or the pipeline is down \u2014 see the banner above. Nothing here would be current.'+funnel+'</div>'
       :'<div class="empty"><b>No edges clear the bar in your '+winLbl+' window.</b><br>Capture is live (last run '+ago(window.__edgeLatest)+'). Try <b>All books</b> or a wider <b>Window</b> \u2014 or it\u2019s a clean board.'+funnel+'</div>';
