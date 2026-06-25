@@ -1205,13 +1205,19 @@ async function loadMarket(){
   renderQuickAdd();
 }
 renderLedger();loadEdges();
-/* refresh buttons — wired in JS (not inline) with a visible spin so they never feel dead */
+/* refresh buttons — wired in JS (not inline) with a visible spin so they never feel dead.
+   The spin is hard-capped: it ALWAYS stops within ~900ms whether the fetch resolves,
+   rejects, or hangs — so a slow Supabase call can never leave the button stuck spinning. */
 (function(){var REF={edges:loadEdges,faults:loadFaults,boards:loadBoards,ledger:loadMarket,news:loadNews};
   var btns=document.querySelectorAll('.refreshbtn');
   for(var i=0;i<btns.length;i++){(function(btn){var fn=REF[btn.getAttribute('data-refresh')];
     btn.addEventListener('click',function(){if(!fn||btn.classList.contains('spinning'))return;
       btn.classList.add('spinning');
-      Promise.resolve().then(fn).catch(function(){}).then(function(){setTimeout(function(){btn.classList.remove('spinning');},500);});
+      var stopped=false;
+      function stop(){if(stopped)return;stopped=true;btn.classList.remove('spinning');}
+      // fire the refresh; whatever it does, the spin stops on its own timer regardless
+      try{Promise.resolve().then(fn).catch(function(){});}catch(e){}
+      setTimeout(stop,900);   // guaranteed stop — spin can never hang
     });})(btns[i]);}
 })();
 function edSignOut(){try{localStorage.removeItem('edgedesk_session');}catch(e){}location.replace('./index.html');}
