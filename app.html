@@ -475,9 +475,14 @@ function renderAllBoards(rows,elig,model){
   });
   var NAT_KEYS=Object.keys(MO_NAT).sort(function(a,b){return b.length-a.length;});
   var CONF_KEYS=Object.keys(MO_CONF).sort(function(a,b){return b.length-a.length;});
-  // exact match, then longest model key the board name starts with (mascot-tolerant)
-  function lookIn(map,keys,sel){var k=nrm(sel);if(map[k])return map[k];
-    for(var i=0;i<keys.length;i++){var mk=keys[i];if(mk.length>=4&&k.indexOf(mk)===0)return map[mk];}return null;}
+  // exact match, then (only where names carry mascots — national boards) the longest model
+  // key the board name starts with, but never let "Oregon" swallow "Oregon State". Conference
+  // boards use clean short names, so they match exact-only — that stops Miami (OH)->Miami (FL).
+  function lookIn(map,keys,sel,prefixOk){var k=nrm(sel);if(map[k])return map[k];
+    if(!prefixOk)return null;
+    for(var i=0;i<keys.length;i++){var mk=keys[i];
+      if(mk.length>=4&&k.indexOf(mk)===0&&k.slice(mk.length).indexOf('state')!==0)return map[mk];}
+    return null;}
   var hasModel=(NAT_KEYS.length+CONF_KEYS.length)>0;
   var matched=0;
   var boards={};rows.forEach(function(r){(boards[r.board_id]=boards[r.board_id]||{name:r.board_name,league:r.league,rows:[]}).rows.push(r);});
@@ -495,7 +500,7 @@ function renderAllBoards(rows,elig,model){
     var top=sorted.slice(0,8),shown={};top.forEach(function(t){shown[t.selection]=1;});
     sorted.forEach(function(t){if(dead[L+'|'+t.selection]&&!shown[t.selection]){top.push(t);shown[t.selection]=1;}}); // always surface a flagged team
     var rowsHtml=top.map(function(t){var od=t.american>0?'+'+t.american:t.american;var isDead=dead[L+'|'+t.selection];
-      var mo=lookIn(pickMap,pickKeys,t.selection);var mline='';
+      var mo=lookIn(pickMap,pickKeys,t.selection,useNat);var mline='';
       if(mo&&mo.p!=null){
         matched++;
         var mf=(mo.fair>0?'+':'')+mo.fair;
