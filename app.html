@@ -4,6 +4,18 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>EdgeDesk</title>
+<script>
+/* login gate — runs before render. Logged-out or expired sessions go to the landing page.
+   NOTE: this is a UX funnel, not a data paywall. The anon key still reads public data;
+   real monetization needs RLS + a subscription check (see Stripe pattern). */
+(function(){
+  try{
+    var s=JSON.parse(localStorage.getItem('edgedesk_session')||'null');
+    var ok=s&&s.access_token&&(!s.expires_at||(+s.expires_at*1000)>Date.now());
+    if(!ok){ location.replace('./index.html'); }
+  }catch(e){ location.replace('./index.html'); }
+})();
+</script>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#0d0f13;--surface:#13161c;--surface2:#191d25;--border:#262c36;--text:#e7eaf0;--dim:#8a93a2;--faint:#5b6472;--accent:#4d8dff;--pos:#2fb47c;--neg:#e26044;--warn:#d99a2b;--gold:#e3b84d;--nav:62px}
@@ -141,6 +153,8 @@ textarea{min-height:110px;font-family:'JetBrains Mono',monospace;resize:vertical
 .refreshbtn{background:var(--surface2);border:1px solid var(--border);color:var(--dim);border-radius:7px;min-width:30px;height:30px;cursor:pointer;font-size:16px;line-height:1;margin-left:8px;flex:none}
 .refreshbtn:hover{color:var(--text);border-color:var(--accent)}
 .refreshbtn:active{transform:rotate(180deg);transition:transform .25s}
+.signout{margin-left:8px;background:transparent;border:1px solid var(--border);color:var(--dim);border-radius:7px;padding:5px 10px;font-size:11px;cursor:pointer;font-family:'JetBrains Mono',monospace}
+.signout:hover{color:var(--text);border-color:var(--neg)}
 </style>
 </head>
 <body>
@@ -149,6 +163,7 @@ textarea{min-height:110px;font-family:'JetBrains Mono',monospace;resize:vertical
   <span class="tag">research</span>
   <span class="spacer"></span>
   <span class="pill" id="dbPill">DB …</span>
+  <button class="signout" title="Sign out" onclick="edSignOut()">Sign out</button>
 </div></header>
 
 <main>
@@ -670,6 +685,7 @@ async function loadMarket(){
   }).join('');
 }
 renderLedger();$('dvRun').click();loadEdges();
+function edSignOut(){try{localStorage.removeItem('edgedesk_session');}catch(e){}location.replace('./index.html');}
 setInterval(function(){var on=!$('v-edges').classList.contains('hide');if(on)loadEdges();
   if(!$('v-faults').classList.contains('hide'))loadFaults();
   if(!$('v-news').classList.contains('hide'))loadNews();},60000);
