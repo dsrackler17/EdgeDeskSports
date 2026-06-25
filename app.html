@@ -70,6 +70,10 @@ textarea{min-height:110px;font-family:'JetBrains Mono',monospace;resize:vertical
 .mv-steam{color:var(--pos)}.mv-drift{color:var(--neg)}.mv-flat{color:var(--dim)}
 .trec{font-size:11.5px;line-height:1.45;padding:8px 10px;border-radius:8px;background:var(--surface2);border:1px solid var(--border);margin-bottom:9px}
 .trec b{color:var(--text)}.trec.thin{color:var(--dim)}.trec .rate{font-family:'JetBrains Mono',monospace;font-weight:700;color:var(--pos)}
+.lead.side{background:linear-gradient(180deg,rgba(77,141,255,.06),transparent);border-color:rgba(77,141,255,.28);margin-top:16px}
+.lead.side h3{color:var(--accent)}
+.sidenote{font-size:10.5px;color:var(--dim);line-height:1.45;margin:0 0 8px}
+.dadd{flex:none;min-width:30px;padding:5px 9px;font-size:14px;line-height:1}
 .feed{display:flex;flex-direction:column;gap:9px}
 .signal{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:13px}
 .signal.hot{border-color:rgba(47,180,124,.5)}
@@ -223,6 +227,11 @@ textarea{min-height:110px;font-family:'JetBrains Mono',monospace;resize:vertical
       <div class="fld"><label>Min EV %</label><input type="number" id="fMinev" value="0" step="0.5"></div>
     </div>
     <div class="feed" id="feed"><div class="empty">Loading edges…</div></div>
+    <div class="lead side hide" id="dailyWrap">
+      <h3 id="d5title">☆ Today's 5 to watch — wider net</h3>
+      <p class="sidenote">Lower bar than the list above: today's best live edges regardless of size or book, offshore included. Live only — nothing stale. For research; verify before trusting. Tap + to log one.</p>
+      <div id="dailyList"></div>
+    </div>
   </section>
 
   <!-- FAULTS (Faultline) -->
@@ -348,6 +357,7 @@ function whenLabel(iso){try{return new Date(iso).toLocaleString([], {weekday:'sh
 function ago(ms){var s=Math.floor((Date.now()-ms)/1000);if(s<0)s=0;if(s<60)return s+'s ago';var m=Math.floor(s/60);if(m<60)return m+'m ago';var h=Math.floor(m/60);if(h<24)return h+'h ago';return Math.floor(h/24)+'d ago';}
 /* ===== freshness guard + quality bar + track-record for the Top edges list ===== */
 var REAL_FLOOR=0.005;                 // <0.5% after the fair line = noise, not an edge
+var EDGE_MAX_AGE_MIN=90;              // an edge not re-priced in 90 min is a zombie (capture isn't covering it) — drop it
 var MINBOOKS=3;                       // need >=3 books quoting for a fair line to mean anything
 var STALE_AMBER_MIN=45, STALE_RED_MIN=120;   // ~30-min capture cadence; behind at 45m, down at 2h
 var SLICE=null, SLICE_AT=0;
@@ -392,13 +402,15 @@ async function loadEdges(){
     // sport filter options
     var sportsSet={};EDGES.forEach(function(e){if(e.sport_title)sportsSet[e.sport_title]=1;});
     var cur=$('fSport').value;var opts='<option value="">All sports</option>'+Object.keys(sportsSet).sort().map(function(s){return'<option value="'+s+'">'+s+'</option>';}).join('');$('fSport').innerHTML=opts;$('fSport').value=cur;
-    // freshness
-    var latest=0;EDGES.forEach(function(e){var t=e.last_seen_at?new Date(e.last_seen_at).getTime():0;if(t>latest)latest=t;});
-    window.__edgeLatest=latest;
-    $('fresh').textContent=latest?('updated '+ago(latest)):'—';
-    setStale(latest);
+    // freshness = the capture HEARTBEAT (most recent signal of ANY kind), not the age of the displayed edges.
+    // keying off displayed edges falsely reads "down" when capture is live but the in-window edges are old.
+    var hb=0;try{var h=await sbGet('signals?select=last_seen_at&last_seen_at=not.is.null&order=last_seen_at.desc.nullslast&limit=1');if(h&&h[0]&&h[0].last_seen_at)hb=new Date(h[0].last_seen_at).getTime();}catch(_){}
+    window.__edgeLatest=hb;
+    $('fresh').textContent=hb?('captured '+ago(hb)):'—';
+    setStale(hb);
     await loadSliceStats();
     renderEdges();
+    renderDaily();
     renderQuickAdd();
   }catch(e){$('dbPill').textContent='DB error';$('dbPill').className='pill err';setStale(0);$('feed').innerHTML='<div class="empty">Could not reach the database: '+e.message+'</div>';$('leadWrap').classList.add('hide');}
 }
@@ -477,10 +489,13 @@ function renderEdges(){
   var endDay=new Date();endDay.setHours(23,59,59,999);
   var horizon=win==='day'?endDay.getTime():nowMs+7*864e5;
   var floor=Math.max(REAL_FLOOR, minev/100);
+  var staleCut=nowMs-EDGE_MAX_AGE_MIN*60000;
   var list=EDGES.filter(function(e){
     if(sport&&e.sport_title!==sport)return false;
     if((e.edge||0)<floor)return false;                              // noise floor: must clear a real, vig-aware bar
     if((e.n_books||0)<MINBOOKS)return false;                        // need liquidity for the fair line to mean anything
+    var ls=e.last_seen_at?new Date(e.last_seen_at).getTime():0;
+    if(!ls||ls<staleCut)return false;                               // drop zombies capture no longer re-prices
     var ct=e.commence_time?new Date(e.commence_time).getTime():0;
     if(!ct||ct>horizon||ct<nowMs-3600e3)return false;               // inside window, not already underway >1h
     return true;
@@ -502,7 +517,7 @@ function renderEdges(){
     var down=!window.__edgeLatest||((Date.now()-window.__edgeLatest)/60000>=STALE_RED_MIN);
     f.innerHTML=down
       ?'<div class="empty"><b>No live edges to show.</b><br>The data is stale or the pipeline is down \u2014 see the banner above. Nothing here would be current.</div>'
-      :'<div class="empty"><b>No edges clear the bar in your '+winLbl+' window.</b><br>That\u2019s a clean board, not a bug \u2014 nothing priced right now beats the sharp fair line by enough to flag. Try <b>All books</b>, a wider <b>Window</b>, or check back after the next capture.</div>';
+      :'<div class="empty"><b>No fresh edges in your '+winLbl+' window.</b><br>Capture is live (last run '+ago(window.__edgeLatest)+'), there\u2019s just nothing right now that beats the sharp fair line by enough on a freshly-priced market. Stale prices are hidden on purpose. Try <b>All books</b> or a wider <b>Window</b> \u2014 or it\u2019s simply a clean board.</div>';
     return;
   }
   lw.classList.remove('hide');
@@ -537,6 +552,32 @@ function edgeRow(e,i){
 }
 window.toggleRcpt=function(i){var el=$('t10_'+i);if(el)el.classList.toggle('open');};
 window.__t10track=function(i){var e=(window.T10||[])[i];if(e)trackSignal(e,GE.decToAm(e.best_dec));};
+/* wider-net "today" list: best live edges for today regardless of floor/book — research watchlist, always populated when games are live */
+function renderDaily(){
+  var host=$('dailyList'),wrap=$('dailyWrap');if(!host||!wrap)return;
+  var nowMs=Date.now(),endDay=new Date();endDay.setHours(23,59,59,999);
+  var staleCut=nowMs-EDGE_MAX_AGE_MIN*60000;
+  var list=EDGES.filter(function(e){
+    var ls=e.last_seen_at?new Date(e.last_seen_at).getTime():0;
+    if(!ls||ls<staleCut)return false;                              // live only — no zombies
+    if((e.edge||0)<=0)return false;                                // still a positive edge, just no floor
+    var ct=e.commence_time?new Date(e.commence_time).getTime():0;
+    if(!ct||ct>endDay.getTime()||ct<nowMs-3600e3)return false;     // today, not already underway >1h
+    return true;
+  });
+  var cnt={};list.forEach(function(e){var k=e.event_id+'|'+e.market;cnt[k]=(cnt[k]||0)+1;});
+  list=list.filter(function(e){return cnt[e.event_id+'|'+e.market]<2;});   // one side of a market only
+  list.sort(function(a,b){return b.edge-a.edge;});
+  var top=list.slice(0,5);window.D5=top;
+  if(!top.length){wrap.classList.add('hide');return;}
+  wrap.classList.remove('hide');
+  host.innerHTML=top.map(function(e,i){
+    var am=GE.decToAm(e.best_dec),od=am>0?'+'+am:am;
+    var tags=(e.edge>0.06?' <span class="suspect">\u26a0 verify</span>':'')+(isTrusted(e.best_book)?'':' <span class="suspect">offshore</span>');
+    return'<div class="lead-row"><span class="rank">'+(i+1)+'</span><div class="lead-mid"><div class="lead-sel">'+selLabel(e)+tags+'</div><div class="lead-meta">'+(e.sport_title||'')+' \u00b7 '+mktLabel(e.market)+' \u00b7 '+(e.away_team||'')+' @ '+(e.home_team||'')+' \u00b7 '+whenLabel(e.commence_time)+' \u00b7 '+e.best_book+' '+od+'</div></div><span class="lead-ev">+'+(e.edge*100).toFixed(1)+'%</span><button class="btn ghost sm dadd" onclick="__d5track('+i+')">+</button></div>';
+  }).join('');
+}
+window.__d5track=function(i){var e=(window.D5||[])[i];if(e)trackSignal(e,GE.decToAm(e.best_dec));};
 $('fSport').onchange=renderEdges;$('fMinev').oninput=renderEdges;$('fBooks').onchange=renderEdges;$('fScope').onchange=renderEdges;
 
 /* ===== Record (auto-graded) ===== */
