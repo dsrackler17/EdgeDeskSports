@@ -202,6 +202,32 @@ textarea{min-height:110px;font-family:'JetBrains Mono',monospace;resize:vertical
 .qa-ev{font-family:'JetBrains Mono',monospace;font-weight:700;color:var(--pos);font-size:13px;flex:none}
 .qa-plus{flex:none;width:30px;height:30px;border-radius:9px;background:var(--accent);color:#fff;font-size:20px;font-weight:700;display:flex;align-items:center;justify-content:center}
 .betcard .brow .btn.sm{min-height:34px;padding:0 14px}
+/* ===== trap radar ===== */
+.trap{background:linear-gradient(180deg,rgba(226,96,68,.07),transparent);border:1px solid rgba(226,96,68,.28);border-radius:14px;padding:12px;margin-bottom:16px}
+.trap h3{margin:0 0 4px;color:var(--neg);font-size:12px;letter-spacing:.06em;text-transform:uppercase;display:flex;align-items:center;gap:7px}
+.trap-note{font-size:10.5px;color:var(--dim);line-height:1.5;margin:0 0 10px}
+.traprow{display:flex;align-items:center;gap:10px;padding:10px 4px;border-bottom:1px solid rgba(38,44,54,.7)}
+.traprow:last-child{border-bottom:none}
+.trap-mid{flex:1;min-width:0}
+.trap-sel{font-weight:600;font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.trap-meta{font-size:10.5px;color:var(--dim);font-family:'JetBrains Mono',monospace;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px}
+.trap-meta b{color:var(--text)}
+.trap-prem{font-family:'JetBrains Mono',monospace;font-weight:700;font-size:16px;color:var(--neg);flex:none;text-align:right}
+.trap-prem .pl{display:block;font-size:8px;letter-spacing:.06em;text-transform:uppercase;color:var(--faint);font-weight:600}
+.pubchip{font-size:8px;text-transform:uppercase;letter-spacing:.04em;color:var(--warn);border:1px solid rgba(217,154,43,.4);border-radius:4px;padding:1px 5px;margin-left:6px}
+/* ===== CLV hero chart ===== */
+.clvhero{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:14px 14px 8px;margin:4px 0 16px}
+.clvhero-h{display:flex;align-items:baseline;gap:10px;margin-bottom:10px;flex-wrap:wrap}
+.clvhero-h .big{font-family:'JetBrains Mono',monospace;font-size:26px;font-weight:700;line-height:1}
+.clvhero-h .lbl{font-size:11px;color:var(--dim);text-transform:uppercase;letter-spacing:.05em}
+.clvhero svg{display:block;width:100%;height:auto}
+.clvhero .cap{font-size:11px;color:var(--faint);line-height:1.5;margin-top:6px}
+/* ===== live CLV on bets ===== */
+.liveclv{font-size:11px;font-family:'JetBrains Mono',monospace;margin-top:6px;display:flex;align-items:center;gap:6px}
+.liveclv .dot{width:6px;height:6px;border-radius:50%}
+.liveclv.up{color:var(--pos)}.liveclv.up .dot{background:var(--pos)}
+.liveclv.dn{color:var(--neg)}.liveclv.dn .dot{background:var(--neg)}
+.liveclv.flat{color:var(--dim)}.liveclv.flat .dot{background:var(--faint)}
 </style>
 </head>
 <body>
@@ -249,6 +275,7 @@ textarea{min-height:110px;font-family:'JetBrains Mono',monospace;resize:vertical
     <div class="row-between"><h2 style="margin:0">Boards</h2><span class="spacer"></span><span class="freshness" id="bdFresh">—</span><button class="refreshbtn" title="Refresh" onclick="loadBoards()">&#8635;</button></div>
     <p class="lede">Every real outright market in one place — conference titles you enter by hand and the championship boards pulled automatically. Raw book odds, favorites first. Teams that can't win are flagged.</p>
     <div id="mlbWatch"></div>
+    <div id="trapRadar"></div>
     <div id="allBoards"><div class="empty">Loading boards…</div></div>
   </section>
 
@@ -256,6 +283,7 @@ textarea{min-height:110px;font-family:'JetBrains Mono',monospace;resize:vertical
   <section id="v-record" class="view hide">
     <h2>Track record <span class="muted" style="font-weight:400;font-size:11px;text-transform:none">— auto-graded, no manual entry</span></h2>
     <p class="lede">Every priced selection is captured, the closing line is snapshotted, and it's graded after the game. This is what's actually working.</p>
+    <div id="clvChart"></div>
     <div class="kpis" id="recKpis"></div>
     <h3>What's working <span class="muted" style="font-weight:400;font-size:11px">— sorted by weight</span></h3>
     <div class="fld" style="margin-bottom:10px"><select id="sliceType"><option value="book">By book</option><option value="sport">By sport</option><option value="market">By market</option><option value="edge_bucket">By edge size</option><option value="ttk_bucket">By time to kickoff</option></select></div>
@@ -430,6 +458,7 @@ async function loadBoards(){
   try{model=await sbGet("model_odds?select=*&limit=5000");}catch(e){model=[];}
   $('bdFresh').textContent=rows.length?('updated '+ago(Date.now())):'no boards';
   renderEliminator(rows,elig);
+  renderTrapRadar(rows,elig,model);
   renderAllBoards(rows,elig,model);
 }
 /* match a board selection to a model row by normalized team name (unique across conferences) */
@@ -458,6 +487,58 @@ function renderEliminator(rows,elig){
     ?'<div class="elimbanner dead">\u26d4 '+live+' ineligible team'+(live>1?'s':'')+' currently priced \u2014 live Dead Money fault'+(live>1?'s':'')+'. The Faults tab has the receipt.</div>'
     :'<div class="elimbanner ok">\u25cf 0 dead-money faults live right now \u2014 nothing ineligible is currently priced. The moat stays loaded and fires the moment a flagged team appears on a board.</div>';
   host.innerHTML='<div class="flwatch-h">Eliminator \u2014 who can\u2019t win, by sport</div>'+banner+'<div class="elim-grid">'+blocks+'</div>';
+}
+/* ===== TRAP RADAR — where the crowd overpays =====
+   The mirror of edge-finding. De-vig each board to the book's own fair, compare to the
+   model, and surface MARQUEE (public-money) teams the market prices ABOVE the model.
+   A large positive premium on a blue-blood is the classic public-money inflation — a fade
+   lean. Honestly: a big gap can also mean the model is too low, so this is a research
+   signal to investigate the crowd, never an auto-fade. */
+var MARQUEE=['alabama','ohiostate','texas','notredame','michigan','georgia','usc','lsu','florida','tennessee','oklahoma','pennstate','clemson','miami','texasam','oregon','nebraska','auburn','floridastate','wisconsin','colorado',
+ 'newyorkyankees','losangelesdodgers','bostonredsox','chicagocubs','atlantabraves','newyorkmets','losangelesangels','stlouiscardinals','sanfranciscogiants','philadelphiaphillies','sandiegopadres','houstonastros',
+ 'dallascowboys','kansascitychiefs','philadelphiaeagles','sanfrancisco49ers','greenbaypackers','pittsburghsteelers','buffalobills','newenglandpatriots','baltimoreravens','detroitlions','miamidolphins','chicagobears',
+ 'usa','brazil','argentina','england','germany','france','spain'].reduce(function(o,k){o[k]=1;return o;},{});
+function isMarquee(sel){var k=nrm(sel);if(MARQUEE[k])return true;
+  for(var m in MARQUEE){if(m.length>=4&&k.indexOf(m)===0&&k.slice(m.length).indexOf('state')!==0)return true;}return false;}
+var TRAP_MIN=0.03;   // book de-vigged prob must exceed model by >= 3 points to flag
+function renderTrapRadar(rows,elig,model){
+  var host=$('trapRadar');if(!host)return;
+  if(!rows||!rows.length||!model||!model.length){host.innerHTML='';return;}
+  var dead={};(elig||[]).forEach(function(e){dead[((e.league||'').toUpperCase())+'|'+e.selection]=1;});
+  var NAT={},CONF={};(model||[]).forEach(function(m){if(m.win_prob==null)return;var c=(m.conference||'').toLowerCase();
+    var rec={p:+m.win_prob};(c.indexOf('cfp')>=0||c.indexOf('national')>=0||c.indexOf('playoff')>=0?NAT:CONF)[nrm(m.team)]=rec;});
+  var NK=Object.keys(NAT).sort(function(a,b){return b.length-a.length;});
+  var CK=Object.keys(CONF).sort(function(a,b){return b.length-a.length;});
+  function look(map,keys,sel,pfx){var k=nrm(sel);if(map[k])return map[k];if(!pfx)return null;
+    for(var i=0;i<keys.length;i++){var mk=keys[i];if(mk.length>=4&&k.indexOf(mk)===0&&k.slice(mk.length).indexOf('state')!==0)return map[mk];}return null;}
+  var boards={};rows.forEach(function(r){(boards[r.board_id]=boards[r.board_id]||{name:r.board_name,league:r.league,rows:[]}).rows.push(r);});
+  var traps=[];
+  Object.keys(boards).forEach(function(bid){var b=boards[bid];var L=(b.league||'').toUpperCase();
+    var nmn=(b.name||'').toLowerCase();
+    var useNat=(L==='CFB')&&(b.rows.length>40||/cfp|playoff|national/.test(nmn));
+    var map=useNat?NAT:CONF,keys=useNat?NK:CK;
+    // de-vig this board to the book's own fair (multiplicative)
+    var imp=b.rows.map(function(r){return flImpl(r.american);});
+    var over=imp.reduce(function(a,x){return a+x;},0)||1;
+    b.rows.forEach(function(r,i){
+      if(dead[L+'|'+r.selection])return;
+      if(!isMarquee(r.selection))return;
+      var mo=look(map,keys,r.selection,useNat);if(!mo||mo.p==null)return;
+      var bookFair=imp[i]/over;                 // book's de-vigged probability
+      var prem=bookFair-mo.p;                    // crowd minus model
+      if(prem>=TRAP_MIN)traps.push({sel:r.selection,board:b.name,league:b.league,am:r.american,bookFair:bookFair,modelP:mo.p,prem:prem});
+    });
+  });
+  if(!traps.length){host.innerHTML='';return;}
+  traps.sort(function(a,b){return b.prem-a.prem;});
+  traps=traps.slice(0,8);
+  host.innerHTML='<div class="trap"><h3>\u26a0 Trap Radar \u2014 where the crowd overpays</h3>'+
+    '<p class="trap-note">Marquee teams the market prices <b style="color:var(--text)">above</b> the model \u2014 the classic public-money premium, a fade lean. A big gap can also mean the model is low, so treat each as a prompt to check the crowd, not an auto-fade. CLV is the only proof a fade was right.</p>'+
+    traps.map(function(t){var od=t.am>0?'+'+t.am:t.am;
+      return'<div class="traprow"><div class="trap-mid"><div class="trap-sel">'+t.sel+'<span class="pubchip">public</span></div>'+
+        '<div class="trap-meta">'+t.board+' \u00b7 '+od+' \u00b7 market <b>'+(t.bookFair*100).toFixed(1)+'%</b> vs model <b>'+(t.modelP*100).toFixed(1)+'%</b></div></div>'+
+        '<div class="trap-prem">+'+(t.prem*100).toFixed(1)+'<span class="pl">overpay</span></div></div>';
+    }).join('')+'</div>';
 }
 /* all captured boards, de-vigged, with dead-money flags */
 function renderAllBoards(rows,elig,model){
@@ -659,11 +740,39 @@ async function loadRecord(){
     WEIGHT_ROWS=await sbGet('model_weights?select=*');WEIGHTS={book:{},sport:{},market:{},edge_bucket:{},ttk_bucket:{}};WEIGHT_ROWS.forEach(function(r){WEIGHTS[r.slice_type]=WEIGHTS[r.slice_type]||{};WEIGHTS[r.slice_type][r.slice_value]=r.weight;});
     CALIB=await sbGet('calibration?select=*');
     $('dbPill').textContent='DB ✓';$('dbPill').className='pill ok';
+    // CLV time series (the proof layer) — cumulative closing-line value over graded signals
+    try{var series=await sbGet('signals?select=clv,graded_at&graded_at=not.is.null&clv=not.is.null&order=graded_at.asc&limit=5000');renderClvHero(series,n?clv/n:null,n?beat/n:null);}catch(_){renderClvHero([],null,null);}
     function kpi(nv,lb){return'<div class="kpi"><div class="n">'+nv+'</div><div class="l">'+lb+'</div></div>';}
     $('recKpis').innerHTML=kpi(total,'captured')+kpi(graded,'graded')+kpi(hit!=null?(hit*100).toFixed(0)+'%':'—','hit rate')+kpi(n?((clv/n>=0?'+':'')+(clv/n*100).toFixed(1)+'%'):'—','avg CLV')+kpi(n?(beat/n*100).toFixed(0)+'%':'—','beat close');
     renderSlice();renderCalib();
     if(total===0)$('recKpis').insertAdjacentHTML('afterend','<div class="empty" style="margin:8px 0">No data yet. The capture job logs signals continuously; grades fill in after games finish.</div>');
   }catch(e){$('dbPill').textContent='DB error';$('dbPill').className='pill err';$('recKpis').innerHTML='<div class="empty">Could not reach the database: '+e.message+'</div>';}
+}
+function renderClvHero(series,avgClv,beatRate){
+  var host=$('clvChart');if(!host)return;
+  if(!series||!series.length){
+    host.innerHTML='<div class="clvhero"><div class="clvhero-h"><span class="big muted">\u2014</span><span class="lbl">cumulative CLV</span></div><div class="cap"><b style="color:var(--text)">This is the proof layer.</b> As games grade, this plots your cumulative closing-line value. A line that climbs means your signals beat the close \u2014 the one thing that can\u2019t be faked and the only thing that justifies trusting (or selling) them. Nothing to plot yet; it fills in as the pipeline grades results.</div></div>';
+    return;
+  }
+  var W=700,H=150,pad=6;
+  var cum=[],s=0;series.forEach(function(r){s+=(+r.clv||0);cum.push(s);});
+  var N=cum.length,total=cum[N-1];
+  var mn=Math.min(0,Math.min.apply(null,cum)),mx=Math.max(0,Math.max.apply(null,cum));
+  var rng=(mx-mn)||1;
+  function X(i){return N<=1?W/2:(i/(N-1))*(W-2*pad)+pad;}
+  function Y(v){return H-pad-((v-mn)/rng)*(H-2*pad);}
+  var pts=cum.map(function(v,i){return X(i).toFixed(1)+','+Y(v).toFixed(1);}).join(' ');
+  var zeroY=Y(0).toFixed(1);
+  var col=total>=0?'var(--pos)':'var(--neg)';
+  var line=cum.map(function(v,i){return 'L'+X(i).toFixed(1)+','+Y(v).toFixed(1);}).join(' ');
+  var area='M'+X(0).toFixed(1)+','+zeroY+' '+line+' L'+X(N-1).toFixed(1)+','+zeroY+' Z';
+  var svg='<svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">'+
+    '<line x1="'+pad+'" y1="'+zeroY+'" x2="'+(W-pad)+'" y2="'+zeroY+'" stroke="var(--border)" stroke-width="1" stroke-dasharray="3 3"/>'+
+    '<path d="'+area+'" fill="'+col+'" opacity="0.10"/>'+
+    '<polyline points="'+pts+'" fill="none" stroke="'+col+'" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/></svg>';
+  var headline=(total>=0?'+':'')+(total*100).toFixed(1)+' pts';
+  host.innerHTML='<div class="clvhero"><div class="clvhero-h"><span class="big" style="color:'+col+'">'+headline+'</span><span class="lbl">cumulative CLV \u00b7 '+N+' graded</span></div>'+svg+
+    '<div class="cap"><b style="color:var(--text)">The proof layer.</b> Cumulative closing-line value across every graded signal'+(avgClv!=null?' \u00b7 avg '+(avgClv>=0?'+':'')+(avgClv*100).toFixed(1)+'% / bet':'')+(beatRate!=null?' \u00b7 beat the close '+(beatRate*100).toFixed(0)+'%':'')+'. A rising line is the only honest evidence the signals are real \u2014 outcomes are noise, this is the signal.</div></div>';
 }
 function renderSlice(){var t=$('sliceType').value,rows=WEIGHT_ROWS.filter(function(r){return r.slice_type===t;}).sort(function(a,b){return(b.weight||0)-(a.weight||0);});
   $('sliceTbl').querySelector('tbody').innerHTML=rows.length?rows.map(function(r){return'<tr><td>'+r.slice_value+'</td><td>'+(r.n||0)+'</td><td>'+(r.hit_rate!=null?(r.hit_rate*100).toFixed(0)+'%':'—')+'</td><td class="'+((r.avg_clv||0)>=0?'pos':'neg')+'">'+(r.avg_clv!=null?((r.avg_clv>=0?'+':'')+(r.avg_clv*100).toFixed(1)+'%'):'—')+'</td><td>'+(r.beat_close_rate!=null?(r.beat_close_rate*100).toFixed(0)+'%':'—')+'</td><td class="'+((r.weight||1)>=1?'pos':'neg')+'">×'+(r.weight||1).toFixed(2)+'</td></tr>';}).join(''):'<tr><td colspan="6" class="muted" style="text-align:center;padding:16px">No graded data yet.</td></tr>';}
@@ -732,6 +841,30 @@ async function autoSettle(){
     return changed;
   }finally{AUTOSETTLE_BUSY=false;}
 }
+/* live CLV: for unsettled tracked bets, compare your locked price to the CURRENT best line.
+   If the line shortened since you logged, the market is moving your way — CLV building. */
+var LIVECLV_BUSY=false;
+async function refreshLiveCLV(){
+  if(LIVECLV_BUSY)return false;LIVECLV_BUSY=true;
+  try{
+    var rows=bets(),changed=false;
+    var pending=rows.filter(function(b){return !b.result&&b.event_id&&b.market&&b.selection&&b.odds;});
+    for(var i=0;i<pending.length;i++){var b=pending[i];
+      try{
+        var q='signals?select=best_dec,last_seen_at&event_id=eq.'+encodeURIComponent(b.event_id)
+          +'&market=eq.'+encodeURIComponent(b.market)+'&selection=eq.'+encodeURIComponent(b.selection)
+          +'&best_dec=not.is.null&order=last_seen_at.desc.nullslast&limit=1';
+        var g=await sbGet(q);
+        if(g&&g[0]&&g[0].best_dec){var curDec=+g[0].best_dec,betDec=GE.amToDec(b.odds);
+          var live=betDec/curDec-1;              // >0 => you locked a better price than the current best
+          if(b.liveClv==null||Math.abs((b.liveClv||0)-live)>1e-6){b.liveClv=live;changed=true;}
+        }
+      }catch(_){}
+    }
+    if(changed)saveBets(rows);
+    return changed;
+  }finally{LIVECLV_BUSY=false;}
+}
 function clvOf(b){
   if(b.clv!=null)return b.clv;                                            // graded signal (auto)
   if(b.closeFair){var dec=GE.amToDec(b.odds);return dec/(1/(b.closeFair/100))-1;}  // legacy manual
@@ -757,8 +890,14 @@ function renderLedger(){renderQuickAdd();var rows=bets(),list=$('betlist');if(!r
       statusHtml='<button class="btn ghost sm" onclick="__settle(\''+b.id+'\',true)">Win</button><button class="btn ghost sm" onclick="__settle(\''+b.id+'\',false)">Loss</button>';
     }
     var card=document.createElement('div');card.className='betcard';
+    var liveHtml='';
+    if(!b.result&&b.liveClv!=null){
+      var lv=b.liveClv,lc=lv>0.002?'up':lv<-0.002?'dn':'flat';
+      var ltxt=lv>0.002?('line moved +'+(lv*100).toFixed(1)+'% your way since you logged'):lv<-0.002?('line moved '+(lv*100).toFixed(1)+'% against you'):'line flat since you logged';
+      liveHtml='<div class="liveclv '+lc+'"><span class="dot"></span>'+ltxt+'</div>';
+    }
     card.innerHTML='<div class="bt"><span class="bsel">'+(b.sel||'\u2014')+'</span><span class="grow" style="flex:1"></span><span class="mono '+(beat[0]==='+'?'pos':beat==='\u2014'?'muted':'neg')+'">'+beat+'</span></div>'+
-      '<div class="bmeta">'+(b.sport||'')+' \u00b7 '+(b.book||'')+' \u00b7 '+od+' \u00b7 '+(b.stake?'$'+b.stake:'no stake')+'</div>'+
+      '<div class="bmeta">'+(b.sport||'')+' \u00b7 '+(b.book||'')+' \u00b7 '+od+' \u00b7 '+(b.stake?'$'+b.stake:'no stake')+'</div>'+liveHtml+
       '<div class="brow">'+statusHtml+'<span class="grow" style="flex:1"></span><button class="btn ghost sm" onclick="__del(\''+b.id+'\')">\u2715</button></div>';
     list.appendChild(card);
   });
@@ -993,6 +1132,8 @@ async function loadNews(){
 /* ===== auto market ledger (reads board_moves) ===== */
 async function loadMarket(){
   function amStr(a){return (a>0?'+':'')+a;}
+  // settle finished bets + refresh live CLV first, regardless of whether the market feed has rows
+  await autoSettle();await refreshLiveCLV();renderLedger();
   var rows=[],live=false;
   try{rows=await sbGet('board_moves?select=*&order=moved_at.desc&limit=60');if(rows&&rows.length)live=true;}catch(e){}
   var ban=$('mktBanner');
@@ -1009,15 +1150,13 @@ async function loadMarket(){
       '<div class="mkt-move"><span class="'+cls+'">'+amStr(m.old_price)+' '+arrow+' '+amStr(m.new_price)+'</span><div class="mkt-meta">'+when+'</div></div></div>';
   }).join('');
   renderQuickAdd();
-  await autoSettle();          // grade any finished tracked bets straight from the signals table
-  renderLedger();
 }
 renderLedger();loadEdges();
 function edSignOut(){try{localStorage.removeItem('edgedesk_session');}catch(e){}location.replace('./index.html');}
 setInterval(function(){var on=!$('v-edges').classList.contains('hide');if(on)loadEdges();
   if(!$('v-faults').classList.contains('hide'))loadFaults();
   if(!$('v-news').classList.contains('hide'))loadNews();
-  if(!$('v-ledger').classList.contains('hide'))autoSettle().then(function(c){if(c)renderLedger();});},60000);
+  if(!$('v-ledger').classList.contains('hide'))autoSettle().then(refreshLiveCLV).then(function(){renderLedger();});},60000);
 </script>
 </body>
 </html>
