@@ -943,18 +943,22 @@ async function loadRecord(){
     // (a 30-60% "edge" is a dead price, not a signal — it poisons the record).
     var EDGEQ='edge=gte.0.005&edge=lte.0.1&n_books=gte.3';
     var g=await sbGet('signals?select=clv,result,beat_close&graded_at=not.is.null&'+EDGEQ+'&limit=5000');
-    var w=0,l=0,clv=0,beat=0,n=g.length,clvArr=[],clvPos=0;
-    g.forEach(function(r){if(r.result==='win')w++;else if(r.result==='loss')l++;clv+=r.clv||0;if(r.beat_close)beat++;if(r.clv!=null){clvArr.push(+r.clv);if(r.clv>0)clvPos++;}});
-    var med=null;if(clvArr.length){var _s=clvArr.slice().sort(function(a,b){return a-b;});var _m=Math.floor(_s.length/2);med=_s.length%2?_s[_m]:(_s[_m-1]+_s[_m])/2;}
-    var posRate=clvArr.length?clvPos/clvArr.length:null;   // raw clv>0 rate — what beat_close SHOULD equal
+    var w=0,l=0,clvSum=0,beat=0,n=g.length,clvArr=[],clvPos=0;
+    g.forEach(function(r){if(r.result==='win')w++;else if(r.result==='loss')l++;
+      if(r.clv!=null){clvArr.push(+r.clv);clvSum+=+r.clv;if(r.clv>0)clvPos++;if(r.beat_close)beat++;}});   // all CLV stats over the SAME clv-present subset
+    var nCLV=clvArr.length;
+    var med=null;if(nCLV){var _s=clvArr.slice().sort(function(a,b){return a-b;});var _m=Math.floor(_s.length/2);med=_s.length%2?_s[_m]:(_s[_m-1]+_s[_m])/2;}
+    var avgCLV=nCLV?clvSum/nCLV:null;
+    var posRate=nCLV?clvPos/nCLV:null;    // raw clv>0 rate
+    var beatRate=nCLV?beat/nCLV:null;     // stored beat_close over the SAME denominator — must now track posRate
     var hit=(w+l)?w/(w+l):null;
     WEIGHT_ROWS=await sbGet('model_weights?select=*');WEIGHTS={book:{},sport:{},market:{},edge_bucket:{},ttk_bucket:{}};WEIGHT_ROWS.forEach(function(r){WEIGHTS[r.slice_type]=WEIGHTS[r.slice_type]||{};WEIGHTS[r.slice_type][r.slice_value]=r.weight;});
     CALIB=await sbGet('calibration?select=*');
     $('dbPill').textContent='DB ✓';$('dbPill').className='pill ok';
     // CLV time series (the proof layer) — cumulative CLV over the flagged edges only
-    try{var series=await sbGet('signals?select=clv,graded_at&graded_at=not.is.null&'+EDGEQ+'&clv=not.is.null&order=graded_at.asc&limit=5000');renderClvHero(series,n?clv/n:null,n?beat/n:null,med,posRate);}catch(_){renderClvHero([],null,null,null,null);}
+    try{var series=await sbGet('signals?select=clv,graded_at&graded_at=not.is.null&'+EDGEQ+'&clv=not.is.null&order=graded_at.asc&limit=5000');renderClvHero(series,avgCLV,beatRate,med,posRate);}catch(_){renderClvHero([],null,null,null,null);}
     function kpi(nv,lb){return'<div class="kpi"><div class="n">'+nv+'</div><div class="l">'+lb+'</div></div>';}
-    $('recKpis').innerHTML=kpi(total,'captured')+kpi(gradedEdges+' / '+graded,'edges graded')+kpi(hit!=null?(hit*100).toFixed(0)+'%':'—','edge hit rate')+kpi(n?((clv/n>=0?'+':'')+(clv/n*100).toFixed(1)+'%'):'—','edge avg CLV')+kpi(med!=null?((med>=0?'+':'')+(med*100).toFixed(1)+'%'):'—','edge median CLV')+kpi(posRate!=null?(posRate*100).toFixed(0)+'%':'—','CLV+ rate · clv>0')+kpi(n?(beat/n*100).toFixed(0)+'%':'—','edges beat close');
+    $('recKpis').innerHTML=kpi(total,'captured')+kpi(gradedEdges+' / '+graded,'edges graded')+kpi(hit!=null?(hit*100).toFixed(0)+'%':'—','edge hit rate')+kpi(avgCLV!=null?((avgCLV>=0?'+':'')+(avgCLV*100).toFixed(1)+'%'):'—','edge avg CLV')+kpi(med!=null?((med>=0?'+':'')+(med*100).toFixed(1)+'%'):'—','edge median CLV')+kpi(posRate!=null?(posRate*100).toFixed(0)+'%':'—','CLV+ rate · clv>0')+kpi(beatRate!=null?(beatRate*100).toFixed(0)+'%':'—','edges beat close');
     renderSlice();renderCalib();
     if(total===0)$('recKpis').insertAdjacentHTML('afterend','<div class="empty" style="margin:8px 0">No data yet. The capture job logs signals continuously; grades fill in after games finish.</div>');
   }catch(e){$('dbPill').textContent='DB error';$('dbPill').className='pill err';$('recKpis').innerHTML='<div class="empty">Could not reach the database: '+e.message+'</div>';}
