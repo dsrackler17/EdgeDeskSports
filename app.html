@@ -63,6 +63,30 @@ textarea{min-height:110px;font-family:'JetBrains Mono',monospace;resize:vertical
 .rchev{color:var(--faint);font-family:'JetBrains Mono',monospace;font-size:12px;transition:.16s;flex:none;width:14px;text-align:center}
 .t10item.open .rchev{transform:rotate(90deg)}
 .receipt{display:none;padding:2px 6px 14px 32px}.t10item.open .receipt{display:block}
+/* ===== rich game-detail panel ===== */
+.gd-match{display:flex;align-items:center;gap:10px;padding:10px 0 12px;border-bottom:1px solid var(--border);margin-bottom:11px}
+.gd-team{flex:1;min-width:0}
+.gd-team .nm{font-size:14px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gd-team .rl{font-size:9px;text-transform:uppercase;letter-spacing:.05em;color:var(--faint);margin-top:2px}
+.gd-team.pick .nm{color:var(--pos)}
+.gd-vs{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--faint);flex:none}
+.gd-when{font-size:10.5px;color:var(--dim);font-family:'JetBrains Mono',monospace;text-align:right;flex:none}
+.gd-when .cd{color:var(--warn);font-weight:700}
+.gd-sec{font-size:9px;text-transform:uppercase;letter-spacing:.06em;color:var(--faint);font-weight:700;margin:12px 0 7px;font-family:'JetBrains Mono',monospace}
+.gd-line{display:flex;justify-content:space-between;gap:10px;padding:6px 0;font-size:12.5px;font-family:'JetBrains Mono',monospace;border-bottom:1px dashed rgba(38,44,54,.6)}
+.gd-line:last-child{border-bottom:none}
+.gd-line .l{color:var(--dim);font-family:'Inter',sans-serif}
+.gd-line .v{color:var(--text)}
+.gd-line .v.up{color:var(--pos)}.gd-line .v.dn{color:var(--neg)}.gd-line .v.mut{color:var(--faint)}
+.gd-verdict{border-radius:9px;padding:10px 12px;margin:12px 0 4px;font-size:12px;line-height:1.5;border:1px solid}
+.gd-verdict.good{color:var(--pos);border-color:rgba(47,180,124,.35);background:rgba(47,180,124,.06)}
+.gd-verdict.ok{color:var(--warn);border-color:rgba(217,154,43,.35);background:rgba(217,154,43,.06)}
+.gd-verdict.weak{color:var(--dim);border-color:var(--border);background:var(--surface2)}
+.gd-verdict b{color:var(--text)}
+.gd-bars{display:flex;gap:5px;margin-top:8px}
+.gd-bar{flex:1;text-align:center;padding:7px 4px;border-radius:7px;background:var(--surface2);border:1px solid var(--border)}
+.gd-bar .bn{font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:700}
+.gd-bar .bl{font-size:8px;text-transform:uppercase;letter-spacing:.04em;color:var(--faint);margin-top:2px}
 .rcpt-grid{display:flex;flex-wrap:wrap;gap:8px 16px;margin-bottom:9px}
 .rcpt-c{display:flex;flex-direction:column;gap:1px}
 .rcpt-c .k{font-size:8.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--faint);font-family:'JetBrains Mono',monospace}
@@ -445,6 +469,8 @@ async function loadEdges(){
     // pool of the sharpest lines on the board (any sign) so the wider-net Top 5 is populated every day
     window.D5_POOL=[];
     try{var pool=await sbGet('signals?select=event_id,sport_title,sport_key,market,selection,point,best_dec,best_book,edge,n_books,commence_time,home_team,away_team,last_seen_at&commence_time=gte.'+nowIso+'&commence_time=lte.'+horizonIso+'&edge=not.is.null&order=edge.desc.nullslast&limit=40');window.D5_POOL=pool||[];}catch(_){window.D5_POOL=[];}
+    // team CONTEXT (records/form) for the detail view — display only, never touches edge math
+    try{var gs=await sbGet('game_stats?select=*');window.GSTATS={};(gs||[]).forEach(function(r){window.GSTATS[r.team_norm]=r;});}catch(_){window.GSTATS=window.GSTATS||{};}
     await loadSliceStats();
     renderEdges();
     renderDaily();
@@ -703,6 +729,47 @@ function renderEdges(){
   f.innerHTML='';
   lead.innerHTML=top.map(function(e,i){return edgeRow(e,i);}).join('');
 }
+/* ===== game-detail helpers (all derived from real signal data) ===== */
+function timeToGame(iso){
+  if(!iso)return null;var ms=new Date(iso).getTime()-Date.now();
+  if(ms<0)return{txt:'in progress / started',soon:true};
+  var h=Math.floor(ms/3600000),m=Math.floor((ms%3600000)/60000);
+  if(h<1)return{txt:m+'m to first pitch',soon:true};
+  if(h<24)return{txt:h+'h '+m+'m out',soon:h<3};
+  return{txt:Math.floor(h/24)+'d '+(h%24)+'h out',soon:false};
+}
+/* honest read: combines edge size, book trust, liquidity, freshness into a verdict.
+   deliberately conservative — a thin/stale/offshore edge is NOT dressed up as strong. */
+function edgeVerdict(e){
+  var edge=e.edge||0,nb=e.n_books||0,trusted=isTrusted(e.best_book);
+  var ls=e.last_seen_at?new Date(e.last_seen_at).getTime():0;
+  var staleMin=ls?(Date.now()-ls)/60000:999;
+  var reasons=[];
+  var tier;
+  if(edge>=0.03&&trusted&&nb>=5&&staleMin<45){tier='good';reasons.push('clears the bar with real liquidity behind it');}
+  else if(edge>0&&trusted&&nb>=4){tier='ok';reasons.push('genuinely +EV at a US book');}
+  else{tier='weak';reasons.push('positive but thin');}
+  if(!trusted)reasons.push('best price is offshore \u2014 structurally less trustworthy');
+  if(nb<4)reasons.push('only '+nb+' book'+(nb===1?'':'s')+' quoting the fair line');
+  if(staleMin>=45)reasons.push('last re-priced '+Math.round(staleMin)+'m ago \u2014 verify it\u2019s still live');
+  if(edge>0.06)reasons.push('edge this big on a game line is often a stale/erroneous price \u2014 confirm before trusting');
+  return{tier:tier,text:reasons.join('; ')+'.'};
+}
+/* team CONTEXT lookup — normalized-name match into game_stats (display only) */
+function nrmTeam(s){return (s||'').toLowerCase().replace(/[^a-z0-9]/g,'');}
+function teamStat(name){var g=window.GSTATS||{};return g[nrmTeam(name)]||null;}
+function teamFormRows(e){
+  var h=teamStat(e.home_team),a=teamStat(e.away_team);
+  if(!h&&!a)return '';   // no stats loaded / not MLB — show nothing rather than fake it
+  function cell(t,s){
+    if(!s)return '<div class="gd-line"><span class="l">'+t+'</span><span class="v mut">no data</span></div>';
+    var rec=(s.wins!=null&&s.losses!=null)?(s.wins+'-'+s.losses):'\u2014';
+    var rd=s.run_diff!=null?(', '+(s.run_diff>=0?'+':'')+s.run_diff+' diff'):'';
+    var extra=[];if(s.last10)extra.push('L10 '+s.last10);if(s.streak)extra.push(s.streak);
+    return '<div class="gd-line"><span class="l">'+t+'</span><span class="v">'+rec+rd+(extra.length?' \u00b7 '+extra.join(' \u00b7 '):'')+'</span></div>';
+  }
+  return '<div class="gd-sec">Team form</div>'+cell((e.away_team||'Away'),a)+cell((e.home_team||'Home'),h);
+}
 function edgeRow(e,i){
   var am=GE.decToAm(e.best_dec),od=am>0?'+'+am:am;
   var tags=(e.edge>0.06?' <span class="suspect">\u26a0 verify</span>':'')+(isTrusted(e.best_book)?'':' <span class="suspect">offshore</span>');
@@ -714,19 +781,45 @@ function edgeRow(e,i){
     trec='<div class="trec thin">Track record still building for this slice'+(st&&st.n?' (only '+st.n+' graded so far)':'')+'. The figure above is a pre-game estimate, not yet proven against closing lines.</div>';
   }
   var mvHtml=mv?'<div class="rcpt-c"><span class="k">movement</span><span class="v '+mv.cls+'">'+mv.txt+'</span></div>':'';
+  var pick=e.selection;var isHomePick=(e.home_team&&pick&&pick.indexOf(e.home_team)>=0);
+  var isAwayPick=(e.away_team&&pick&&pick.indexOf(e.away_team)>=0);
+  var ttg=timeToGame(e.commence_time);var vd=edgeVerdict(e);
+  var impPrice=(1/e.best_dec*100),impFair=(e.sharp_fair*100),gap=impFair-impPrice;
+  // matchup header — highlights which side the edge is on
+  var match='<div class="gd-match">'+
+    '<div class="gd-team'+(isAwayPick?' pick':'')+'"><div class="nm">'+(e.away_team||'\u2014')+'</div><div class="rl">away'+(isAwayPick?' \u00b7 the pick':'')+'</div></div>'+
+    '<span class="gd-vs">@</span>'+
+    '<div class="gd-team'+(isHomePick?' pick':'')+'"><div class="nm">'+(e.home_team||'\u2014')+'</div><div class="rl">home'+(isHomePick?' \u00b7 the pick':'')+'</div></div>'+
+    '<div class="gd-when">'+whenLabel(e.commence_time)+(ttg?'<br><span class="'+(ttg.soon?'cd':'')+'">'+ttg.txt+'</span>':'')+'</div></div>';
+  // the market read
+  var marketRead='<div class="gd-sec">The market \u00b7 '+mktLabel(e.market)+'</div>'+
+    '<div class="gd-line"><span class="l">Your pick</span><span class="v">'+selLabel(e)+'</span></div>'+
+    '<div class="gd-line"><span class="l">Best price</span><span class="v">'+e.best_book+' '+od+(isTrusted(e.best_book)?'':' \u00b7 offshore')+'</span></div>'+
+    '<div class="gd-line"><span class="l">Sharp fair line</span><span class="v">'+fairOd+'</span></div>'+
+    '<div class="gd-line"><span class="l">Price implies</span><span class="v mut">'+impPrice.toFixed(1)+'% to win</span></div>'+
+    '<div class="gd-line"><span class="l">Sharp fair implies</span><span class="v">'+impFair.toFixed(1)+'% to win</span></div>'+
+    '<div class="gd-line"><span class="l">Your edge</span><span class="v up">+'+(e.edge*100).toFixed(2)+'% \u00b7 '+gap.toFixed(1)+' pts of value</span></div>';
+  // three key stat bars
+  var bars='<div class="gd-bars">'+
+    '<div class="gd-bar"><div class="bn '+(e.edge>=0.03?'pos':'')+'">+'+(e.edge*100).toFixed(1)+'%</div><div class="bl">edge</div></div>'+
+    '<div class="gd-bar"><div class="bn">'+(e.n_books||0)+'</div><div class="bl">books</div></div>'+
+    '<div class="gd-bar"><div class="bn">'+(mv?mv.txt.split(' ')[0]:'flat')+'</div><div class="bl">line move</div></div></div>';
+  // liquidity + movement + timing detail
+  var detail='<div class="gd-sec">The context</div>'+
+    '<div class="gd-line"><span class="l">Books quoting the fair line</span><span class="v">'+(e.n_books||0)+(e.n_books>=5?' \u00b7 deep':e.n_books>=4?' \u00b7 ok':' \u00b7 thin')+'</span></div>'+
+    (mv?'<div class="gd-line"><span class="l">Since first seen</span><span class="v '+(mv.cls==='mv-steam'?'up':mv.cls==='mv-drift'?'dn':'mut')+'">'+mv.txt+'</span></div>':'')+
+    '<div class="gd-line"><span class="l">Last re-priced</span><span class="v'+((e.last_seen_at&&(Date.now()-new Date(e.last_seen_at).getTime())/60000>45)?' dn':'')+'">'+(e.last_seen_at?ago(new Date(e.last_seen_at).getTime()):'unknown')+'</span></div>'+
+    (ttg?'<div class="gd-line"><span class="l">Game starts</span><span class="v">'+ttg.txt+'</span></div>':'');
+  // the honest verdict
+  var verdict='<div class="gd-verdict '+vd.tier+'"><b>'+(vd.tier==='good'?'\u25c9 Worth a real look':vd.tier==='ok'?'\u25c9 Legit, but modest':'\u25c9 Marginal \u2014 verify first')+'.</b> '+vd.text+'</div>';
   return'<div class="t10item" id="t10_'+i+'">'+
     '<div class="lead-row" onclick="toggleRcpt('+i+')"><span class="rank">'+(i+1)+'</span>'+
       '<div class="lead-mid"><div class="lead-sel">'+selLabel(e)+tags+'</div>'+
       '<div class="lead-meta">'+mktLabel(e.market)+' \u00b7 '+(e.away_team||'')+' @ '+(e.home_team||'')+' \u00b7 '+whenLabel(e.commence_time)+'</div></div>'+
       '<span class="lead-ev">+'+(e.edge*100).toFixed(1)+'%</span><span class="rchev">\u203a</span></div>'+
     '<div class="receipt">'+
-      '<div class="rcpt-grid">'+
-        '<div class="rcpt-c"><span class="k">best price</span><span class="v">'+e.best_book+' '+od+'</span></div>'+
-        '<div class="rcpt-c"><span class="k">sharp fair</span><span class="v">'+fairOd+' \u00b7 '+(e.sharp_fair*100).toFixed(1)+'%</span></div>'+
-        '<div class="rcpt-c"><span class="k">books quoting</span><span class="v">'+(e.n_books||0)+'</span></div>'+
-        mvHtml+
-      '</div>'+trec+
-      '<button class="btn ghost sm" onclick="__t10track('+i+')">Track this</button>'+
+      match+bars+marketRead+detail+teamFormRows(e)+verdict+trec+
+      '<button class="btn ghost sm" onclick="__t10track('+i+')" style="margin-top:10px">Track this to my ledger</button>'+
     '</div></div>';
 }
 window.toggleRcpt=function(i){var el=$('t10_'+i);if(el)el.classList.toggle('open');};
