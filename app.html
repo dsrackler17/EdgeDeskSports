@@ -18,7 +18,7 @@
 </script>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
-:root{--bg:#0d0f13;--surface:#13161c;--surface2:#191d25;--border:#262c36;--text:#e7eaf0;--dim:#8a93a2;--faint:#5b6472;--accent:#4d8dff;--pos:#2fb47c;--neg:#e26044;--warn:#d99a2b;--gold:#e3b84d;--nav:62px}
+:root{--bg:#0d0f13;--surface:#13161c;--surface2:#191d25;--border:#262c36;--text:#e7eaf0;--dim:#8a93a2;--faint:#5b6472;--accent:#4d8dff;--pos:#2fb47c;--neg:#e26044;--warn:#d99a2b;--gold:#e3b84d;--mdl:#9b8cff;--nav:62px}
 *{box-sizing:border-box}html,body{margin:0}
 body{background:var(--bg);color:var(--text);font-family:'Inter',system-ui,sans-serif;-webkit-font-smoothing:antialiased;-webkit-tap-highlight-color:transparent}
 .mono{font-family:'JetBrains Mono',monospace}a{color:var(--accent);text-decoration:none}.hide{display:none!important}
@@ -83,6 +83,11 @@ textarea{min-height:110px;font-family:'JetBrains Mono',monospace;resize:vertical
 .gd-verdict.ok{color:var(--warn);border-color:rgba(217,154,43,.35);background:rgba(217,154,43,.06)}
 .gd-verdict.weak{color:var(--dim);border-color:var(--border);background:var(--surface2)}
 .gd-verdict b{color:var(--text)}
+.gd-sec.model{color:var(--mdl);display:flex;align-items:center;gap:8px}
+.gd-sec.model .unproven{color:var(--warn);border:1px solid rgba(217,154,43,.5);border-radius:4px;padding:1px 6px;font-size:8px;letter-spacing:.05em}
+.gd-line .v.mdl{color:var(--mdl)}
+.gd-modelnote{font-size:10.5px;color:var(--dim);line-height:1.5;margin:8px 0 2px;padding:8px 10px;border-left:2px solid var(--mdl);background:rgba(155,140,255,.05);border-radius:0 6px 6px 0}
+.gd-modelnote b{color:var(--text)}
 .gd-bars{display:flex;gap:5px;margin-top:8px}
 .gd-bar{flex:1;text-align:center;padding:7px 4px;border-radius:7px;background:var(--surface2);border:1px solid var(--border)}
 .gd-bar .bn{font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:700}
@@ -471,6 +476,9 @@ async function loadEdges(){
     try{var pool=await sbGet('signals?select=event_id,sport_title,sport_key,market,selection,point,best_dec,best_book,edge,n_books,commence_time,home_team,away_team,last_seen_at&commence_time=gte.'+nowIso+'&commence_time=lte.'+horizonIso+'&edge=not.is.null&order=edge.desc.nullslast&limit=40');window.D5_POOL=pool||[];}catch(_){window.D5_POOL=[];}
     // team CONTEXT (records/form) for the detail view — display only, never touches edge math
     try{var gs=await sbGet('game_stats?select=*');window.GSTATS={};(gs||[]).forEach(function(r){window.GSTATS[r.team_norm]=r;});}catch(_){window.GSTATS=window.GSTATS||{};}
+    // EdgeDesk MODEL fair (me-vs-market) — display only, UNPROVEN, keyed to match model_predictions.
+    // NEVER touches e.edge, sorting, filters, or the verify tags. A separate engine, shown side by side.
+    try{var mp=await sbGet('model_predictions?select=event_id,market,selection,point,model_prob,model_fair_american,model_edge,model_version&sport_key=eq.baseball_mlb&commence_time=gte.'+nowIso+'&commence_time=lte.'+horizonIso+'&order=created_at.asc&limit=1500');window.MODELP={};(mp||[]).forEach(function(r){window.MODELP[modelKey(r.event_id,r.market,r.selection,r.point)]=r;});}catch(_){window.MODELP=window.MODELP||{};}
     await loadSliceStats();
     renderEdges();
     renderDaily();
@@ -770,6 +778,29 @@ function teamFormRows(e){
   }
   return '<div class="gd-sec">Team form</div>'+cell((e.away_team||'Away'),a)+cell((e.home_team||'Home'),h);
 }
+/* ===== EdgeDesk model (me-vs-market) — DISPLAY ONLY, UNPROVEN =====
+   Keys mirror the backend grader's keyOf() exactly so rows line up.
+   This never feeds e.edge, the sort, the filters, the verdict, or the tags.
+   It is shown beside the sharp line as research, flagged unproven, counted nowhere. */
+function mMatch(s){var n=(s||'').toLowerCase().replace(/[^a-z0-9]/g,'');return n.indexOf('athletics')>=0?'athletics':n;}
+function modelKey(ev,market,sel,point){
+  if(market==='totals')return ev+'|totals|'+(((sel||'').toLowerCase().indexOf('over')>=0)?'over':'under')+'|'+(point==null?'':point);
+  return ev+'|h2h|'+mMatch(sel);
+}
+function modelFor(e){var m=window.MODELP||{};return e&&e.event_id?(m[modelKey(e.event_id,e.market,e.selection,e.point)]||null):null;}
+function modelBlock(e){
+  var m=modelFor(e);if(!m||m.model_prob==null)return '';
+  var p=(+m.model_prob)*100;
+  var fa=m.model_fair_american;var faOd=(fa>0?'+':'')+fa;
+  var sharpP=(e.sharp_fair!=null)?e.sharp_fair*100:null;
+  var gap=(sharpP!=null)?(p-sharpP):null;                     // model vs sharp, in points (research only)
+  var gapHtml=(gap==null)?'':'<div class="gd-line"><span class="l">Model vs sharp</span><span class="v '+(gap>=0?'up':'dn')+'">'+(gap>=0?'+':'')+gap.toFixed(1)+' pts</span></div>';
+  return '<div class="gd-sec model">EdgeDesk model <span class="unproven">unproven</span></div>'+
+    '<div class="gd-line"><span class="l">Model fair line</span><span class="v mdl">'+faOd+'</span></div>'+
+    '<div class="gd-line"><span class="l">Model implies</span><span class="v mdl">'+p.toFixed(1)+'% to win</span></div>'+
+    gapHtml+
+    '<div class="gd-modelnote">EdgeDesk\u2019s own win-probability model ('+(m.model_version||'model')+'), shown for research beside the market. It is <b>not</b> a proven edge and is counted <b>nowhere</b> \u2014 it graduates only once its own graded CLV beats the close. Until then, trust the <b>sharp fair line</b> above, not this.</div>';
+}
 function edgeRow(e,i){
   var am=GE.decToAm(e.best_dec),od=am>0?'+'+am:am;
   var tags=(e.edge>0.06?' <span class="suspect">\u26a0 verify</span>':'')+(isTrusted(e.best_book)?'':' <span class="suspect">offshore</span>');
@@ -818,7 +849,7 @@ function edgeRow(e,i){
       '<div class="lead-meta">'+mktLabel(e.market)+' \u00b7 '+(e.away_team||'')+' @ '+(e.home_team||'')+' \u00b7 '+whenLabel(e.commence_time)+'</div></div>'+
       '<span class="lead-ev">+'+(e.edge*100).toFixed(1)+'%</span><span class="rchev">\u203a</span></div>'+
     '<div class="receipt">'+
-      match+bars+marketRead+detail+teamFormRows(e)+verdict+trec+
+      match+bars+marketRead+modelBlock(e)+detail+teamFormRows(e)+verdict+trec+
       '<button class="btn ghost sm" onclick="__t10track('+i+')" style="margin-top:10px">Track this to my ledger</button>'+
     '</div></div>';
 }
