@@ -82,6 +82,7 @@ textarea{min-height:110px;font-family:'JetBrains Mono',monospace;resize:vertical
 .gd-verdict.good{color:var(--pos);border-color:rgba(47,180,124,.35);background:rgba(47,180,124,.06)}
 .gd-verdict.ok{color:var(--warn);border-color:rgba(217,154,43,.35);background:rgba(217,154,43,.06)}
 .gd-verdict.weak{color:var(--dim);border-color:var(--border);background:var(--surface2)}
+.gd-verdict.fade{color:var(--neg);border-color:rgba(226,96,68,.4);background:rgba(226,96,68,.07)}
 .gd-verdict b{color:var(--text)}
 .gd-sec.model{color:var(--mdl);display:flex;align-items:center;gap:8px}
 .gd-sec.model .unproven{color:var(--warn);border:1px solid rgba(217,154,43,.5);border-radius:4px;padding:1px 6px;font-size:8px;letter-spacing:.05em}
@@ -748,7 +749,7 @@ function timeToGame(iso){
 }
 /* honest read: combines edge size, book trust, liquidity, freshness into a verdict.
    deliberately conservative — a thin/stale/offshore edge is NOT dressed up as strong. */
-function edgeVerdict(e){
+function edgeVerdict(e,st){
   var edge=e.edge||0,nb=e.n_books||0,trusted=isTrusted(e.best_book);
   var ls=e.last_seen_at?new Date(e.last_seen_at).getTime():0;
   var staleMin=ls?(Date.now()-ls)/60000:999;
@@ -761,7 +762,28 @@ function edgeVerdict(e){
   if(nb<4)reasons.push('only '+nb+' book'+(nb===1?'':'s')+' quoting the fair line');
   if(staleMin>=45)reasons.push('last re-priced '+Math.round(staleMin)+'m ago \u2014 verify it\u2019s still live');
   if(edge>0.06)reasons.push('edge this big on a game line is often a stale/erroneous price \u2014 confirm before trusting');
-  return{tier:tier,text:reasons.join('; ')+'.'};
+  /* CLV history has the FINAL say: placement value is not closing value. If this SLICE
+     has a real graded sample and the market reliably erases it by close, the badge must
+     say so and lose its green stamp \u2014 no matter how clean the placement math looks.
+     This is the one place the receipt could otherwise sell hope; it can't anymore. */
+  var headline=null;
+  if(st&&st.rate!=null&&st.n>=40){
+    var beat=st.rate,clv=st.clv;
+    var beatPct=(beat*100).toFixed(0)+'%',clvPct=(clv>=0?'+':'')+(clv*100).toFixed(1)+'%';
+    if(beat<0.50&&clv<0){
+      tier='fade';
+      headline='\u25c9 Fades by close \u2014 placement +EV only';
+      reasons.unshift('this signal class beats the close just '+beatPct+' over '+st.n+' graded (avg CLV '+clvPct+') \u2014 the market reliably takes the value back. +EV at the bet slip is not +EV at the close');
+    }else if(beat<0.54||clv<0.003){
+      if(tier==='good')tier='ok';
+      reasons.push('slice history is only middling ('+beatPct+' beat close, avg CLV '+clvPct+' over '+st.n+') \u2014 modest at best, not a lock');
+    }else{
+      reasons.push('and the slice has held up: '+beatPct+' beat close over '+st.n+' graded, avg CLV '+clvPct);
+    }
+  }else if(st&&st.n){
+    reasons.push('slice CLV still unproven (only '+st.n+' graded) \u2014 treat this as a hypothesis, not a proven edge');
+  }
+  return{tier:tier,headline:headline,text:reasons.join('; ')+'.'};
 }
 /* team CONTEXT lookup — normalized-name match into game_stats (display only) */
 function nrmTeam(s){return (s||'').toLowerCase().replace(/[^a-z0-9]/g,'');}
@@ -814,7 +836,7 @@ function edgeRow(e,i){
   var mvHtml=mv?'<div class="rcpt-c"><span class="k">movement</span><span class="v '+mv.cls+'">'+mv.txt+'</span></div>':'';
   var pick=e.selection;var isHomePick=(e.home_team&&pick&&pick.indexOf(e.home_team)>=0);
   var isAwayPick=(e.away_team&&pick&&pick.indexOf(e.away_team)>=0);
-  var ttg=timeToGame(e.commence_time);var vd=edgeVerdict(e);
+  var ttg=timeToGame(e.commence_time);var vd=edgeVerdict(e,st);
   var impPrice=(1/e.best_dec*100),impFair=(e.sharp_fair*100),gap=impFair-impPrice;
   // matchup header — highlights which side the edge is on
   var match='<div class="gd-match">'+
@@ -841,8 +863,9 @@ function edgeRow(e,i){
     (mv?'<div class="gd-line"><span class="l">Since first seen</span><span class="v '+(mv.cls==='mv-steam'?'up':mv.cls==='mv-drift'?'dn':'mut')+'">'+mv.txt+'</span></div>':'')+
     '<div class="gd-line"><span class="l">Last re-priced</span><span class="v'+((e.last_seen_at&&(Date.now()-new Date(e.last_seen_at).getTime())/60000>45)?' dn':'')+'">'+(e.last_seen_at?ago(new Date(e.last_seen_at).getTime()):'unknown')+'</span></div>'+
     (ttg?'<div class="gd-line"><span class="l">Game starts</span><span class="v">'+ttg.txt+'</span></div>':'');
-  // the honest verdict
-  var verdict='<div class="gd-verdict '+vd.tier+'"><b>'+(vd.tier==='good'?'\u25c9 Worth a real look':vd.tier==='ok'?'\u25c9 Legit, but modest':'\u25c9 Marginal \u2014 verify first')+'.</b> '+vd.text+'</div>';
+  // the honest verdict — CLV history can override the headline entirely
+  var vHead=vd.headline||(vd.tier==='good'?'\u25c9 Worth a real look':vd.tier==='ok'?'\u25c9 Legit, but modest':vd.tier==='fade'?'\u25c9 Fades by close \u2014 placement +EV only':'\u25c9 Marginal \u2014 verify first');
+  var verdict='<div class="gd-verdict '+vd.tier+'"><b>'+vHead+'.</b> '+vd.text+'</div>';
   return'<div class="t10item" id="t10_'+i+'">'+
     '<div class="lead-row" onclick="toggleRcpt('+i+')"><span class="rank">'+(i+1)+'</span>'+
       '<div class="lead-mid"><div class="lead-sel">'+selLabel(e)+tags+'</div>'+
