@@ -474,7 +474,7 @@ async function loadEdges(){
     try{var nm=await sbGet('signals?select=sport_title,selection,edge,best_book,n_books&commence_time=gte.'+nowIso+'&commence_time=lte.'+horizonIso+'&edge=not.is.null&order=edge.desc.nullslast&limit=1');if(nm&&nm[0])window.__bestNearMiss=nm[0];}catch(_){}
     // pool of the sharpest lines on the board (any sign) so the wider-net Top 5 is populated every day
     window.D5_POOL=[];
-    try{var pool=await sbGet('signals?select=event_id,sport_title,sport_key,market,selection,point,best_dec,best_book,edge,n_books,commence_time,home_team,away_team,last_seen_at&commence_time=gte.'+nowIso+'&commence_time=lte.'+horizonIso+'&edge=not.is.null&order=edge.desc.nullslast&limit=40');window.D5_POOL=pool||[];}catch(_){window.D5_POOL=[];}
+    try{var pool=await sbGet('signals?select=event_id,sport_title,sport_key,market,selection,point,best_dec,first_best_dec,sharp_fair,best_book,edge,n_books,commence_time,home_team,away_team,last_seen_at&commence_time=gte.'+nowIso+'&commence_time=lte.'+horizonIso+'&edge=not.is.null&order=edge.desc.nullslast&limit=40');window.D5_POOL=pool||[];}catch(_){window.D5_POOL=[];}
     // team CONTEXT (records/form) for the detail view — display only, never touches edge math
     try{var gs=await sbGet('game_stats?select=*');window.GSTATS={};(gs||[]).forEach(function(r){window.GSTATS[r.team_norm]=r;});}catch(_){window.GSTATS=window.GSTATS||{};}
     // EdgeDesk MODEL fair (me-vs-market) — display only, UNPROVEN, keyed to match model_predictions.
@@ -720,14 +720,16 @@ function renderEdges(){
                  (mode==='trusted'&&!isTrusted(near.best_book)?'best price is an offshore book':'just under the strict bar'));
       window.__NEAR=near;
       var nam=GE.decToAm(near.best_dec),nod=nam>0?'+'+nam:nam;
-      nearHtml='<div class="lead" style="margin-top:14px;border-color:rgba(217,154,43,.3)">'+
-        '<h3 style="color:var(--warn)">\u25c9 Closest to the bar \u2014 positive, but didn\u2019t clear</h3>'+
-        '<p class="sidenote">This line is genuinely +EV, it just missed the strict filter ('+reason+'). Shown so you can see it and decide for yourself \u2014 verify before trusting, and tap + to log it to your ledger.</p>'+
-        '<div class="lead-row"><span class="rank">1</span><div class="lead-mid">'+
+      var nmHeader='<span class="rank">1</span><div class="lead-mid">'+
         '<div class="lead-sel">'+selLabel(near)+(isTrusted(near.best_book)?'':' <span class="suspect">offshore</span>')+'</div>'+
         '<div class="lead-meta">'+(near.sport_title||'')+' \u00b7 '+mktLabel(near.market)+' \u00b7 '+(near.away_team||'')+' @ '+(near.home_team||'')+' \u00b7 '+whenLabel(near.commence_time)+' \u00b7 '+near.best_book+' '+nod+' \u00b7 '+nb+' books</div></div>'+
         '<span class="lead-ev">+'+(near.edge*100).toFixed(2)+'%</span>'+
-        '<button class="btn ghost sm dadd" onclick="__nearTrack()">+</button></div></div>';
+        '<button class="btn ghost sm dadd" onclick="event.stopPropagation();__trackId(\'nm_0\')">+</button>';
+      nearHtml='<div class="lead" style="margin-top:14px;border-color:rgba(217,154,43,.3)">'+
+        '<h3 style="color:var(--warn)">\u25c9 Closest to the bar \u2014 positive, but didn\u2019t clear</h3>'+
+        '<p class="sidenote">This line is genuinely +EV, it just missed the strict filter ('+reason+'). Tap the row for the full read \u2014 sharp fair, how it\u2019s moving, and its CLV history \u2014 or + to log it. Verify before trusting.</p>'+
+        expandItem(near,'nm_0',nmHeader)+
+        '</div>';
     }
     f.innerHTML=down
       ?'<div class="empty"><b>No live edges to show.</b><br>The data is stale or the pipeline is down \u2014 see the banner above. Nothing here would be current.'+funnel+'</div>'
@@ -757,7 +759,8 @@ function edgeVerdict(e,st){
   var tier;
   if(edge>=0.03&&trusted&&nb>=5&&staleMin<45){tier='good';reasons.push('clears the bar with real liquidity behind it');}
   else if(edge>0&&trusted&&nb>=4){tier='ok';reasons.push('genuinely +EV at a US book');}
-  else{tier='weak';reasons.push('positive but thin');}
+  else if(edge>0){tier='weak';reasons.push('positive but thin');}
+  else{tier='weak';reasons.push('below fair \u2014 negative expected value at the best price; shown for research, not as a play');}
   if(!trusted)reasons.push('best price is offshore \u2014 structurally less trustworthy');
   if(nb<4)reasons.push('only '+nb+' book'+(nb===1?'':'s')+' quoting the fair line');
   if(staleMin>=45)reasons.push('last re-priced '+Math.round(staleMin)+'m ago \u2014 verify it\u2019s still live');
@@ -823,60 +826,71 @@ function modelBlock(e){
     gapHtml+
     '<div class="gd-modelnote">EdgeDesk\u2019s own win-probability model ('+(m.model_version||'model')+'), shown for research beside the market. It is <b>not</b> a proven edge and is counted <b>nowhere</b> \u2014 it graduates only once its own graded CLV beats the close. Until then, trust the <b>sharp fair line</b> above, not this.</div>';
 }
-function edgeRow(e,i){
+/* ===== ONE shared receipt, used by Top edges, Top 5, and the near-miss card =====
+   Every edge that appears anywhere is now tappable and shows the same full read:
+   market vs sharp fair, the CLV-history verdict, the model line (MLB), and which
+   way the line is going. domid namespaces each card so toggles never collide. */
+function receiptHTML(e){
   var am=GE.decToAm(e.best_dec),od=am>0?'+'+am:am;
-  var tags=(e.edge>0.06?' <span class="suspect">\u26a0 verify</span>':'')+(isTrusted(e.best_book)?'':' <span class="suspect">offshore</span>');
-  var fairAm=GE.decToAm(1/Math.max(0.0001,e.sharp_fair)),fairOd=fairAm>0?'+'+fairAm:fairAm;
+  var haveFair=(e.sharp_fair!=null);
+  var fairAm=haveFair?GE.decToAm(1/Math.max(0.0001,e.sharp_fair)):null,fairOd=fairAm!=null?(fairAm>0?'+'+fairAm:fairAm):'\u2014';
   var mv=moveLabel(e),st=sliceStat(e),trec;
   if(st&&st.rate!=null){
     trec='<div class="trec">Signals like this \u2014 <b>'+(e.sport_title||'')+(st.fine?' \u00b7 '+mktLabel(e.market):'')+'</b> \u2014 have beaten the close <span class="rate">'+(st.rate*100).toFixed(0)+'%</span> over <b>'+st.n+'</b> graded, avg CLV '+(st.clv>=0?'+':'')+(st.clv*100).toFixed(1)+'%.</div>';
   }else{
     trec='<div class="trec thin">Track record still building for this slice'+(st&&st.n?' (only '+st.n+' graded so far)':'')+'. The figure above is a pre-game estimate, not yet proven against closing lines.</div>';
   }
-  var mvHtml=mv?'<div class="rcpt-c"><span class="k">movement</span><span class="v '+mv.cls+'">'+mv.txt+'</span></div>':'';
   var pick=e.selection;var isHomePick=(e.home_team&&pick&&pick.indexOf(e.home_team)>=0);
   var isAwayPick=(e.away_team&&pick&&pick.indexOf(e.away_team)>=0);
   var ttg=timeToGame(e.commence_time);var vd=edgeVerdict(e,st);
-  var impPrice=(1/e.best_dec*100),impFair=(e.sharp_fair*100),gap=impFair-impPrice;
-  // matchup header — highlights which side the edge is on
+  var impPrice=(1/e.best_dec*100),impFair=(haveFair?e.sharp_fair*100:null),gap=(haveFair?impFair-impPrice:null);
+  var edgePct=(e.edge!=null?e.edge*100:null),neg=(edgePct!=null&&edgePct<0);
   var match='<div class="gd-match">'+
     '<div class="gd-team'+(isAwayPick?' pick':'')+'"><div class="nm">'+(e.away_team||'\u2014')+'</div><div class="rl">away'+(isAwayPick?' \u00b7 the pick':'')+'</div></div>'+
     '<span class="gd-vs">@</span>'+
     '<div class="gd-team'+(isHomePick?' pick':'')+'"><div class="nm">'+(e.home_team||'\u2014')+'</div><div class="rl">home'+(isHomePick?' \u00b7 the pick':'')+'</div></div>'+
     '<div class="gd-when">'+whenLabel(e.commence_time)+(ttg?'<br><span class="'+(ttg.soon?'cd':'')+'">'+ttg.txt+'</span>':'')+'</div></div>';
-  // the market read
+  var edgeVal=(edgePct!=null?((edgePct>=0?'+':'')+edgePct.toFixed(2)+'%'+(gap!=null?' \u00b7 '+(gap>=0?'+':'')+gap.toFixed(1)+' pts of value':'')):'\u2014');
   var marketRead='<div class="gd-sec">The market \u00b7 '+mktLabel(e.market)+'</div>'+
     '<div class="gd-line"><span class="l">Your pick</span><span class="v">'+selLabel(e)+'</span></div>'+
     '<div class="gd-line"><span class="l">Best price</span><span class="v">'+e.best_book+' '+od+(isTrusted(e.best_book)?'':' \u00b7 offshore')+'</span></div>'+
     '<div class="gd-line"><span class="l">Sharp fair line</span><span class="v">'+fairOd+'</span></div>'+
     '<div class="gd-line"><span class="l">Price implies</span><span class="v mut">'+impPrice.toFixed(1)+'% to win</span></div>'+
-    '<div class="gd-line"><span class="l">Sharp fair implies</span><span class="v">'+impFair.toFixed(1)+'% to win</span></div>'+
-    '<div class="gd-line"><span class="l">Your edge</span><span class="v up">+'+(e.edge*100).toFixed(2)+'% \u00b7 '+gap.toFixed(1)+' pts of value</span></div>';
-  // three key stat bars
+    '<div class="gd-line"><span class="l">Sharp fair implies</span><span class="v">'+(haveFair?impFair.toFixed(1)+'% to win':'\u2014')+'</span></div>'+
+    '<div class="gd-line"><span class="l">'+(neg?'Below fair by':'Your edge')+'</span><span class="v '+(neg?'dn':'up')+'">'+edgeVal+'</span></div>';
   var bars='<div class="gd-bars">'+
-    '<div class="gd-bar"><div class="bn '+(e.edge>=0.03?'pos':'')+'">+'+(e.edge*100).toFixed(1)+'%</div><div class="bl">edge</div></div>'+
+    '<div class="gd-bar"><div class="bn '+(e.edge>=0.03?'pos':'')+'">'+(edgePct!=null?(edgePct>=0?'+':'')+edgePct.toFixed(1)+'%':'\u2014')+'</div><div class="bl">edge</div></div>'+
     '<div class="gd-bar"><div class="bn">'+(e.n_books||0)+'</div><div class="bl">books</div></div>'+
     '<div class="gd-bar"><div class="bn">'+(mv?mv.txt.split(' ')[0]:'flat')+'</div><div class="bl">line move</div></div></div>';
-  // liquidity + movement + timing detail
   var detail='<div class="gd-sec">The context</div>'+
     '<div class="gd-line"><span class="l">Books quoting the fair line</span><span class="v">'+(e.n_books||0)+(e.n_books>=5?' \u00b7 deep':e.n_books>=4?' \u00b7 ok':' \u00b7 thin')+'</span></div>'+
     (mv?'<div class="gd-line"><span class="l">Since first seen</span><span class="v '+(mv.cls==='mv-steam'?'up':mv.cls==='mv-drift'?'dn':'mut')+'">'+mv.txt+'</span></div>':'')+
     '<div class="gd-line"><span class="l">Last re-priced</span><span class="v'+((e.last_seen_at&&(Date.now()-new Date(e.last_seen_at).getTime())/60000>45)?' dn':'')+'">'+(e.last_seen_at?ago(new Date(e.last_seen_at).getTime()):'unknown')+'</span></div>'+
     (ttg?'<div class="gd-line"><span class="l">Game starts</span><span class="v">'+ttg.txt+'</span></div>':'');
-  // the honest verdict — CLV history can override the headline entirely
   var vHead=vd.headline||(vd.tier==='good'?'\u25c9 Worth a real look':vd.tier==='ok'?'\u25c9 Legit, but modest':vd.tier==='fade'?'\u25c9 Fades by close \u2014 placement +EV only':'\u25c9 Marginal \u2014 verify first');
   var verdict='<div class="gd-verdict '+vd.tier+'"><b>'+vHead+'.</b> '+vd.text+'</div>';
-  return'<div class="t10item" id="t10_'+i+'">'+
-    '<div class="lead-row" onclick="toggleRcpt('+i+')"><span class="rank">'+(i+1)+'</span>'+
-      '<div class="lead-mid"><div class="lead-sel">'+selLabel(e)+tags+'</div>'+
-      '<div class="lead-meta">'+mktLabel(e.market)+' \u00b7 '+(e.away_team||'')+' @ '+(e.home_team||'')+' \u00b7 '+whenLabel(e.commence_time)+'</div></div>'+
-      '<span class="lead-ev">+'+(e.edge*100).toFixed(1)+'%</span><span class="rchev">\u203a</span></div>'+
-    '<div class="receipt">'+
-      match+bars+marketRead+modelBlock(e)+detail+teamFormRows(e)+verdict+trec+
-      '<button class="btn ghost sm" onclick="__t10track('+i+')" style="margin-top:10px">Track this to my ledger</button>'+
+  return match+bars+marketRead+modelBlock(e)+detail+teamFormRows(e)+verdict+trec;
+}
+/* wrap any edge into a tappable card with the shared receipt */
+function expandItem(e,domid,headerInner){
+  window.RCPT=window.RCPT||{};window.RCPT[domid]=e;
+  return '<div class="t10item" id="'+domid+'">'+
+    '<div class="lead-row" onclick="toggleRcptId(\''+domid+'\')">'+headerInner+'<span class="rchev">\u203a</span></div>'+
+    '<div class="receipt">'+receiptHTML(e)+
+      '<button class="btn ghost sm" onclick="__trackId(\''+domid+'\')" style="margin-top:10px">Track this to my ledger</button>'+
     '</div></div>';
 }
+window.toggleRcptId=function(id){var el=$(id);if(el)el.classList.toggle('open');};
+window.__trackId=function(id){var e=(window.RCPT||{})[id];if(e)trackSignal(e,GE.decToAm(e.best_dec));};
 window.toggleRcpt=function(i){var el=$('t10_'+i);if(el)el.classList.toggle('open');};
+function edgeRow(e,i){
+  var tags=(e.edge>0.06?' <span class="suspect">\u26a0 verify</span>':'')+(isTrusted(e.best_book)?'':' <span class="suspect">offshore</span>');
+  var header='<span class="rank">'+(i+1)+'</span>'+
+    '<div class="lead-mid"><div class="lead-sel">'+selLabel(e)+tags+'</div>'+
+    '<div class="lead-meta">'+mktLabel(e.market)+' \u00b7 '+(e.away_team||'')+' @ '+(e.home_team||'')+' \u00b7 '+whenLabel(e.commence_time)+'</div></div>'+
+    '<span class="lead-ev">+'+(e.edge*100).toFixed(1)+'%</span>';
+  return expandItem(e,'t10_'+i,header);
+}
 window.__t10track=function(i){var e=(window.T10||[])[i];if(e)trackSignal(e,GE.decToAm(e.best_dec));};
 window.__nearTrack=function(){var e=window.__NEAR;if(e)trackSignal(e,GE.decToAm(e.best_dec));};
 /* wider-net "today" list: best live edges for today regardless of floor/book — research watchlist, always populated when games are live */
@@ -911,7 +925,8 @@ function renderDaily(){
     var ls=e.last_seen_at?new Date(e.last_seen_at).getTime():0;
     var ageTag=(ls&&(nowMs-ls)/60000>=EDGE_MAX_AGE_MIN)?' <span class="suspect">priced '+ago(ls)+'</span>':'';
     var tags=(e.edge>0.06?' <span class="suspect">\u26a0 verify</span>':'')+(isTrusted(e.best_book)?'':' <span class="suspect">offshore</span>')+(pos?'':' <span class="suspect">below fair</span>')+ageTag;
-    return'<div class="lead-row"><span class="rank">'+(i+1)+'</span><div class="lead-mid"><div class="lead-sel">'+selLabel(e)+tags+'</div><div class="lead-meta">'+(e.sport_title||'')+' \u00b7 '+mktLabel(e.market)+' \u00b7 '+(e.away_team||'')+' @ '+(e.home_team||'')+' \u00b7 '+whenLabel(e.commence_time)+' \u00b7 '+e.best_book+' '+od+'</div></div><span class="lead-ev"'+evStyle+'>'+evTxt+'</span><button class="btn ghost sm dadd" onclick="__d5track('+i+')">+</button></div>';
+    var header='<span class="rank">'+(i+1)+'</span><div class="lead-mid"><div class="lead-sel">'+selLabel(e)+tags+'</div><div class="lead-meta">'+(e.sport_title||'')+' \u00b7 '+mktLabel(e.market)+' \u00b7 '+(e.away_team||'')+' @ '+(e.home_team||'')+' \u00b7 '+whenLabel(e.commence_time)+' \u00b7 '+e.best_book+' '+od+'</div></div><span class="lead-ev"'+evStyle+'>'+evTxt+'</span><button class="btn ghost sm dadd" onclick="event.stopPropagation();__trackId(\'d5_'+i+'\')">+</button>';
+    return expandItem(e,'d5_'+i,header);
   }).join('');
 }
 window.__d5track=function(i){var e=(window.D5||[])[i];if(e)trackSignal(e,GE.decToAm(e.best_dec));};
