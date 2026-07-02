@@ -186,6 +186,29 @@ textarea{min-height:110px;font-family:'JetBrains Mono',monospace;resize:vertical
 .flwatch-h{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--dim);font-weight:600;margin:22px 0 10px;font-family:'JetBrains Mono',monospace}
 .flwatch{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:13px 15px;margin-bottom:9px}
 .flwatch .ftitle{margin-bottom:6px}
+/* ===== look-inside: tap a team/golfer to read the fundamentals ===== */
+.finside{margin:12px 0 4px;border-top:1px dashed var(--border);padding-top:11px}
+.fi-h{font-size:9px;letter-spacing:.06em;text-transform:uppercase;color:var(--faint);font-weight:700;margin-bottom:8px;font-family:'JetBrains Mono',monospace}
+.fi-chips{display:flex;flex-wrap:wrap;gap:6px}
+.fichip{font-size:11.5px;font-weight:600;color:var(--text);background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:6px 10px;cursor:pointer;font-family:'Inter',sans-serif}
+.fichip.on{border-color:var(--accent);color:var(--accent);background:rgba(77,141,255,.08)}
+.fi-tap{cursor:pointer;border-bottom:1px dotted var(--faint)}
+.fi-tap.on{color:var(--accent);border-bottom-color:var(--accent)}
+.fi-detail{display:none;margin-top:9px}.fi-detail.on{display:block}
+.fi-card{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:11px 12px}
+.fi-name{font-size:13px;font-weight:700;color:var(--text);margin-bottom:8px}
+.fi-sub{font-size:9.5px;font-weight:500;color:var(--faint);font-family:'JetBrains Mono',monospace;margin-left:5px;text-transform:uppercase;letter-spacing:.04em}
+.fi-stat{display:flex;justify-content:space-between;gap:10px;padding:5px 0;font-family:'JetBrains Mono',monospace;font-size:12px;border-top:1px dashed var(--border)}
+.fi-stat:first-of-type{border-top:none}.fi-stat .fl{color:var(--dim);font-family:'Inter',sans-serif}
+.fi-stat .fv.up{color:var(--pos)}.fi-stat .fv.dn{color:var(--neg)}.fi-stat .fv.mut{color:var(--faint)}
+.fi-player{padding:7px 0;border-top:1px dashed var(--border)}.fi-player:first-of-type{border-top:none}
+.fi-p-top{display:flex;align-items:center;gap:8px}
+.fi-p-nm{font-size:13px;font-weight:600;color:var(--text)}
+.fi-p-pos{font-size:8.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--accent);border:1px solid rgba(77,141,255,.4);border-radius:4px;padding:1px 5px;font-family:'JetBrains Mono',monospace}
+.fi-p-stat{font-size:11px;color:var(--dim);font-family:'JetBrains Mono',monospace;margin-top:3px}
+.fi-foot{font-size:10px;color:var(--faint);line-height:1.5;margin-top:9px;padding-top:8px;border-top:1px dashed var(--border)}
+.fi-empty{font-size:11.5px;color:var(--dim);line-height:1.55;padding:10px 11px;background:var(--surface2);border:1px dashed var(--border);border-radius:9px}
+.fi-empty .mono{color:var(--warn)}
 .elimbanner{font-size:11.5px;font-family:'JetBrains Mono',monospace;border-radius:9px;padding:10px 12px;margin-bottom:10px;border:1px solid;line-height:1.5}
 .elimbanner.ok{color:var(--pos);border-color:rgba(47,180,124,.32);background:rgba(47,180,124,.05)}
 .elimbanner.dead{color:var(--neg);border-color:rgba(226,96,68,.4);background:rgba(226,96,68,.07)}
@@ -1259,8 +1282,65 @@ function flGroup(rows,elig){
       b.lastMoveDays=Math.floor((Date.now()-oldest)/86400000);}
     return b;});
 }
-function flRun(boards){FL.faults=[];boards.forEach(function(b){FL_DETECTORS.forEach(function(d){var f=d(b);if(f){f.sev=flSev(f);FL.faults.push(f);}});});
+function flRun(boards){FL.faults=[];boards.forEach(function(b){FL_DETECTORS.forEach(function(d){var f=d(b);if(f){f.sev=flSev(f);f._board=b;FL.faults.push(f);}});});
   FL.faults.sort(function(a,b){return(b.sev.n-a.sev.n)||(b.edge-a.edge);});}
+
+/* ===== look-inside data: rosters (CFB) + season SG (golf) =====
+   Read-only from Supabase; empty states are honest — no fabricated players/stats.
+   SCHEMA CONTRACT (capture jobs must populate; frontend never invents data):
+   table player_stats : league(text), team(text), player(text), position(text|null),
+                        stat_line(text|null e.g. '1,240 yds · 11 TD'), rank(int|null, 1=best)
+   table golf_stats   : player(text), sg_total, sg_ott, sg_app, sg_arg, sg_putt (numeric|null),
+                        rounds(int|null), made_cut_pct(numeric|null), season(text|null)
+   Joined to boards by normalized name via nrm(). If a table/row is absent the panel
+   says so and names which table to fill — same discipline as the rest of the app. */
+var FL_DETAIL={players:{},golf:{}};
+async function loadFaultDetail(){
+  FL_DETAIL={players:{},golf:{}};
+  try{var p=await sbGet('player_stats?select=*&limit=8000');
+    (p||[]).forEach(function(r){var k=(r.league||'').toUpperCase()+'|'+nrm(r.team);(FL_DETAIL.players[k]=FL_DETAIL.players[k]||[]).push(r);});}catch(e){}
+  try{var g=await sbGet('golf_stats?select=*&limit=3000');
+    (g||[]).forEach(function(r){FL_DETAIL.golf[nrm(r.player||r.name)]=r;});}catch(e){}
+}
+function flEsc(s){return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function flIsGolf(league){var L=(league||'').toUpperCase();return L.indexOf('GOLF')>=0||L==='PGA'||L==='LIV'||L==='DPWT'||L==='PGA TOUR'||L==='LPGA';}
+/* the clickable names for a fault: live board entries (or the golfers / correlated-pair team) */
+function flFaultTeams(f){var b=f._board;if(!b)return [];
+  if(b.entries&&b.entries.length)return b.entries.map(function(e){return{name:e.name,dead:!!e.dead};});
+  if(b.nested&&b.nested.length)return b.nested.map(function(n){return{name:n.name,dead:false};});
+  return [];}
+/* build the detail card for one name — roster (CFB) or season SG (golf) */
+function flTeamDetailHTML(league,name){
+  if(flIsGolf(league)){
+    var g=FL_DETAIL.golf[nrm(name)];
+    if(!g)return '<div class="fi-empty">No season stats for <b>'+flEsc(name)+'</b> yet. Populate <span class="mono">golf_stats</span> (DataGolf SG splits) to read this player.</div>';
+    function sg(v){return v==null||v===''?'\u2014':((+v>=0?'+':'')+(+v).toFixed(2));}
+    var rows=[['SG: Total',g.sg_total],['SG: Off-the-tee',g.sg_ott],['SG: Approach',g.sg_app],['SG: Around green',g.sg_arg],['SG: Putting',g.sg_putt]]
+      .map(function(r){var v=r[1],cls=(v==null||v==='')?'mut':(+v>=0?'up':'dn');
+        return '<div class="fi-stat"><span class="fl">'+r[0]+'</span><span class="fv '+cls+'">'+sg(v)+'</span></div>';}).join('');
+    var meta=[];if(g.rounds!=null)meta.push(g.rounds+' rds');if(g.made_cut_pct!=null)meta.push((+g.made_cut_pct).toFixed(0)+'% cuts');if(g.season)meta.push(g.season);
+    return '<div class="fi-card"><div class="fi-name">'+flEsc(name)+(meta.length?'<span class="fi-sub">'+meta.join(' \u00b7 ')+'</span>':'')+'</div>'+rows+
+      '<div class="fi-foot">Strokes-gained, season to date \u2014 positive means better than field. Use it to judge whether the price is pointing the right way, not as a standalone signal.</div></div>';
+  }
+  var L=(league||'').toUpperCase(),ps=(FL_DETAIL.players[L+'|'+nrm(name)]||[]).slice();
+  if(!ps.length)return '<div class="fi-empty">No roster for <b>'+flEsc(name)+'</b> yet. Populate <span class="mono">player_stats</span> (CFBD roster) to read this team.</div>';
+  ps.sort(function(a,b){var ra=a.rank!=null?+a.rank:999,rb=b.rank!=null?+b.rank:999;return ra-rb;});ps=ps.slice(0,3);
+  var body=ps.map(function(p){return '<div class="fi-player"><div class="fi-p-top"><span class="fi-p-nm">'+flEsc(p.player||p.name||'\u2014')+'</span>'+(p.position?'<span class="fi-p-pos">'+flEsc(p.position)+'</span>':'')+'</div>'+(p.stat_line?'<div class="fi-p-stat">'+flEsc(p.stat_line)+'</div>':'')+'</div>';}).join('');
+  return '<div class="fi-card"><div class="fi-name">'+flEsc(name)+'<span class="fi-sub">top '+ps.length+'</span></div>'+body+
+    '<div class="fi-foot">Top contributors this season. A thin top end, a key injury, or a soft roster is your tell on whether the structural edge is also the right side.</div></div>';
+}
+/* toggle a shared detail panel; clears active state on every tap wired to the same panel */
+window.flPeek=function(btn,panelId,league,name){
+  var p=document.getElementById(panelId);if(!p)return;
+  var open=p.classList.contains('on')&&p.getAttribute('data-cur')===name;
+  var taps=document.querySelectorAll('[data-panel="'+panelId+'"]');for(var i=0;i<taps.length;i++)taps[i].classList.remove('on');
+  if(open){p.classList.remove('on');p.removeAttribute('data-cur');p.innerHTML='';return;}
+  if(btn)btn.classList.add('on');
+  p.innerHTML=flTeamDetailHTML(league,name);p.classList.add('on');p.setAttribute('data-cur',name);
+};
+function flBindTaps(scope){var t=scope.querySelectorAll('.fi-tap,.fichip');for(var i=0;i<t.length;i++){(function(btn){
+  btn.addEventListener('click',function(ev){ev.stopPropagation();flPeek(btn,btn.getAttribute('data-panel'),btn.getAttribute('data-lg'),btn.getAttribute('data-nm'));});
+})(t[i]);}}
 
 async function loadFaults(){
   var grouped=[];
@@ -1271,6 +1351,7 @@ async function loadFaults(){
     else{FL.live=false;grouped=FL_SAMPLE;flRun(FL_SAMPLE);}
   }catch(e){FL.live=false;grouped=FL_SAMPLE;flRun(FL_SAMPLE);}
   FL.boards=grouped;
+  await loadFaultDetail();
   var ban=$('flBanner');
   if(FL.live){ban.className='flbanner live';ban.textContent='\u25cf LIVE \u2014 scanning '+grouped.length+' board(s), '+FL.faults.length+' fault(s) flagged.';}
   else{ban.className='flbanner demo';ban.textContent='\u25b2 DEMO DATA \u2014 pipeline isn\u2019t emitting boards yet. Deploy capture_boards (key stays server-side) to go live.';}
@@ -1286,16 +1367,21 @@ function flRender(){var feed=$('flFeed');
   var list=FL.filter==='all'?FL.faults:FL.faults.filter(function(f){return f.cls===FL.filter;});
   if(!list.length){feed.innerHTML='<div class="empty"><b>No faults in this class.</b><br>A clean board is the correct result, not a failure. Structural errors are rare \u2014 a scanner that flags everything flags nothing.</div>';return;}
   feed.innerHTML='';
-  list.forEach(function(f){var beads='';for(var j=0;j<10;j++)beads+='<i class="'+(j<f.sev.n?'on':'')+'"></i>';
+  list.forEach(function(f,i){var beads='';for(var j=0;j<10;j++)beads+='<i class="'+(j<f.sev.n?'on':'')+'"></i>';
     function tbl(w){function side(s){return'<div class="fcell"><div class="ck">'+s.k+'</div>'+s.rows.map(function(r){return'<div class="frow'+(r.tot?' tot':'')+'"><span class="fl">'+r.l+'</span><span class="fv '+(r.c||'')+'">'+r.v+'</span></div>';}).join('')+'</div>';}
       return'<div class="fwork">'+side(w.left)+side(w.right)+'</div>';}
+    var teams=flFaultTeams(f),panel='fi_'+i,inside='';
+    if(teams.length){var golf=flIsGolf(f.league);
+      var chips=teams.map(function(t){return '<button class="fichip" data-panel="'+panel+'" data-lg="'+flEsc(f.league)+'" data-nm="'+flEsc(t.name)+'">'+flEsc(t.name)+(t.dead?' \u26d4':'')+'</button>';}).join('');
+      inside='<div class="finside"><div class="fi-h">Look inside \u2014 tap a '+(golf?'golfer':'team')+' to check the fundamentals</div><div class="fi-chips">'+chips+'</div><div class="fi-detail" id="'+panel+'"></div></div>';}
     var el=document.createElement('div');el.className='fault';el.setAttribute('data-sev',f.sev.k);
     el.innerHTML='<div class="fhd"><div class="grow"><div class="fmeta"><span class="ftag lg">'+f.league+'</span><span class="ftag cls">'+f.cls+'</span><span class="ftag sv-'+f.sev.k+'">'+f.sev.k+'</span></div>'+
       '<div class="ftitle">'+f.title+'</div><div class="ffind">'+f.finding+'</div></div>'+
       '<div class="fmag"><div class="mn">'+f.sev.n.toFixed(1)+'</div><div class="ml">magnitude</div><div class="fbar">'+beads+'</div><div class="me">+'+(f.edge*100).toFixed(1)+' pts</div><span class="fchev">\u25b6</span></div></div>'+
-      '<div class="fbody"><div class="frcpt"><div class="rk">The Receipt</div><p>'+f.receipt+'</p></div>'+tbl(f.work)+
+      '<div class="fbody"><div class="frcpt"><div class="rk">The Receipt</div><p>'+f.receipt+'</p></div>'+tbl(f.work)+inside+
       '<div class="fqual"><span class="fconf '+f.conf+'"><span class="bd"></span>confidence: <b>'+f.conf+'</b></span><span>'+f.qual+'</span></div></div>';
     el.querySelector('.fhd').onclick=function(){el.classList.toggle('open');};
+    flBindTaps(el);
     feed.appendChild(el);
   });
 }
@@ -1305,15 +1391,17 @@ function flRenderBoards(){
   var host=$('flBoards');
   if(!FL.live||!FL.boards||!FL.boards.length){host.innerHTML='';return;}
   var faulted={};FL.faults.forEach(function(f){if(f.title)faulted[f.title.split(':')[0]]=1;});
-  var cards=FL.boards.map(function(b){
+  var cards=FL.boards.map(function(b,bi){
     var has=faulted[b.board]?'<span class="ftag" style="color:var(--warn)">\u26a0 fault above</span>':'<span class="ftag" style="color:var(--pos)">clean</span>';
+    var panel='bwd_'+bi;
+    function tap(nm){return '<span class="fi-tap" data-panel="'+panel+'" data-lg="'+flEsc(b.league)+'" data-nm="'+flEsc(nm)+'">'+flEsc(nm)+'</span>';}
     if(b.entries&&b.entries.length){
       var d=flDevig(b.entries),top=d.field.slice().sort(function(x,y){return y.fair-x.fair;}).slice(0,3);
-      var rows=top.map(function(t){return'<div class="frow"><span class="fl">'+t.name+(t.dead?' \u26d4':'')+'</span><span class="fv">'+flPct(t.fair)+'</span></div>';}).join('');
-      return'<div class="flwatch"><div class="fmeta"><span class="ftag lg">'+b.league+'</span><span class="ftag cls">'+b.entries.length+' teams</span><span class="ftag" style="color:var(--dim)">vig '+((d.over-1)*100).toFixed(0)+'%</span>'+has+'</div><div class="ftitle" style="font-size:14px">'+b.board+'</div>'+rows+'</div>';
+      var rows=top.map(function(t){return'<div class="frow"><span class="fl">'+tap(t.name)+(t.dead?' \u26d4':'')+'</span><span class="fv">'+flPct(t.fair)+'</span></div>';}).join('');
+      return'<div class="flwatch"><div class="fmeta"><span class="ftag lg">'+b.league+'</span><span class="ftag cls">'+b.entries.length+' teams</span><span class="ftag" style="color:var(--dim)">vig '+((d.over-1)*100).toFixed(0)+'%</span>'+has+'</div><div class="ftitle" style="font-size:14px">'+b.board+'</div>'+rows+'<div class="fi-detail" id="'+panel+'"></div></div>';
     }
     if(b.nested&&b.nested.length){var t=b.nested[0];
-      return'<div class="flwatch"><div class="fmeta"><span class="ftag lg">'+b.league+'</span><span class="ftag cls">correlated pair</span>'+has+'</div><div class="ftitle" style="font-size:14px">'+b.board+'</div><div class="frow"><span class="fl">'+t.name+' win</span><span class="fv">'+flAm(t.winOdds)+'</span></div><div class="frow"><span class="fl">'+t.name+' qualify</span><span class="fv">'+flAm(t.qualOdds)+'</span></div></div>';
+      return'<div class="flwatch"><div class="fmeta"><span class="ftag lg">'+b.league+'</span><span class="ftag cls">correlated pair</span>'+has+'</div><div class="ftitle" style="font-size:14px">'+b.board+'</div><div class="frow"><span class="fl">'+tap(t.name)+' win</span><span class="fv">'+flAm(t.winOdds)+'</span></div><div class="frow"><span class="fl">'+tap(t.name)+' qualify</span><span class="fv">'+flAm(t.qualOdds)+'</span></div><div class="fi-detail" id="'+panel+'"></div></div>';
     }
     if(b.trigger){
       return'<div class="flwatch"><div class="fmeta"><span class="ftag lg">'+b.league+'</span><span class="ftag cls">stale watch</span>'+has+'</div><div class="ftitle" style="font-size:14px">'+b.board+'</div><div class="fqual" style="border:none;padding-top:6px">'+(b.lastMoveDays||0)+'d since move</div></div>';
@@ -1321,6 +1409,7 @@ function flRenderBoards(){
     return'';
   }).filter(Boolean).join('');
   host.innerHTML='<div class="flwatch-h">Boards under watch \u2014 live de-vig from your captured feed</div>'+cards;
+  flBindTaps(host);
 }
 
 /* ===== news feed (moat early-warning) ===== */
