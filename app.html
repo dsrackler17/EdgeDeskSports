@@ -1378,10 +1378,20 @@ function flMatchRoster(L,name){
 }
 async function loadFaultDetail(){
   FL_DETAIL={players:{},golf:{}};
-  try{var p=await sbGet('player_stats?select=*&limit=8000');
-    (p||[]).forEach(function(r){var k=(r.league||'').toUpperCase()+'|'+flNormTeam(r.team);(FL_DETAIL.players[k]=FL_DETAIL.players[k]||[]).push(r);});}catch(e){}
-  try{var g=await sbGet('golf_stats?select=*&limit=3000');
-    (g||[]).forEach(function(r){FL_DETAIL.golf[flNormTeam(r.player||r.name)]=r;});}catch(e){}
+  // only the leagues actually on the boards under watch, so the Faults tab stays light
+  var lgs={};(FL.boards||[]).forEach(function(b){if(b.league)lgs[(b.league||'').toUpperCase()]=1;});
+  var lglist=Object.keys(lgs);
+  try{
+    var q='stats_players?select=league,team,player,position,stat_line,lead_val';
+    if(lglist.length)q+='&league=in.('+lglist.join(',')+')';
+    var p=await stFetchAll(q);
+    (p||[]).forEach(function(r){var k=(r.league||'').toUpperCase()+'|'+flNormTeam(r.team);(FL_DETAIL.players[k]=FL_DETAIL.players[k]||[]).push(r);});
+  }catch(e){}
+  if(!Object.keys(FL_DETAIL.players).length){ // fall back to thin table if rich isn't populated
+    try{var tp=await stFetchAll('player_stats?select=league,team,player,position,stat_line,rank');
+      (tp||[]).forEach(function(r){var k=(r.league||'').toUpperCase()+'|'+flNormTeam(r.team);(FL_DETAIL.players[k]=FL_DETAIL.players[k]||[]).push(r);});}catch(e){}
+  }
+  try{var g=await stFetchAll('golf_stats?select=*');(g||[]).forEach(function(r){FL_DETAIL.golf[flNormTeam(r.player||r.name)]=r;});}catch(e){}
 }
 function flEsc(s){return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 function flIsGolf(league){var L=(league||'').toUpperCase();return L.indexOf('GOLF')>=0||L==='PGA'||L==='LIV'||L==='DPWT'||L==='PGA TOUR'||L==='LPGA';}
@@ -1404,11 +1414,12 @@ function flTeamDetailHTML(league,name){
       '<div class="fi-foot">Strokes-gained, season to date \u2014 positive means better than field. Use it to judge whether the price is pointing the right way, not as a standalone signal.</div></div>';
   }
   var L=(league||'').toUpperCase(),key=flMatchRoster(L,name),ps=(key?FL_DETAIL.players[key]:[]).slice();
-  if(!ps.length)return '<div class="fi-empty">No roster for <b>'+flEsc(name)+'</b> yet. Populate <span class="mono">player_stats</span> (CFBD roster) to read this team.</div>';
-  ps.sort(function(a,b){var ra=a.rank!=null?+a.rank:999,rb=b.rank!=null?+b.rank:999;return ra-rb;});ps=ps.slice(0,3);
+  if(!ps.length)return '<div class="fi-empty">No player data for <b>'+flEsc(name)+'</b> yet. It fills in once <span class="mono">capture_stats</span> has run for this sport.</div>';
+  ps.sort(function(a,b){var la=(a.lead_val!=null?+a.lead_val:(a.rank!=null?-a.rank:0)),lb=(b.lead_val!=null?+b.lead_val:(b.rank!=null?-b.rank:0));return lb-la;});
+  ps=ps.slice(0,8);
   var body=ps.map(function(p){return '<div class="fi-player"><div class="fi-p-top"><span class="fi-p-nm">'+flEsc(p.player||p.name||'\u2014')+'</span>'+(p.position?'<span class="fi-p-pos">'+flEsc(p.position)+'</span>':'')+'</div>'+(p.stat_line?'<div class="fi-p-stat">'+flEsc(p.stat_line)+'</div>':'')+'</div>';}).join('');
-  return '<div class="fi-card"><div class="fi-name">'+flEsc(name)+'<span class="fi-sub">top '+ps.length+'</span></div>'+body+
-    '<div class="fi-foot">Top contributors this season. A thin top end, a key injury, or a soft roster is your tell on whether the structural edge is also the right side.</div></div>';
+  return '<div class="fi-card"><div class="fi-name">'+flEsc(name)+'<span class="fi-sub">who\u2019s on this side</span></div>'+body+
+    '<div class="fi-foot">The players behind this side, for context only \u2014 not a recommendation. Sanity-check the fundamentals yourself; whether the price is actually right is decided by the closing line, not this.</div></div>';
 }
 /* toggle a shared detail panel; clears active state on every tap wired to the same panel */
 window.flPeek=function(btn,panelId,league,name){
