@@ -229,6 +229,19 @@ textarea{min-height:110px;font-family:'JetBrains Mono',monospace;resize:vertical
 .st-pos{font-size:8.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--accent);border:1px solid rgba(77,141,255,.4);border-radius:4px;padding:1px 5px;font-family:'JetBrains Mono',monospace;flex:none}
 .st-stat{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--text);flex:none;text-align:right}
 .stteamhdr{font-size:13px;font-weight:700;color:var(--text);margin:2px 0 9px;font-family:'Inter',sans-serif}
+.stitem{margin-bottom:7px}
+.strow.tap{cursor:pointer}
+.st-chev{color:var(--faint);font-family:'JetBrains Mono',monospace;font-size:13px;transition:.16s;flex:none;margin-left:2px}
+.stitem.open .st-chev{transform:rotate(90deg)}
+.st-detail{display:none;background:var(--surface2);border:1px solid var(--border);border-top:none;border-radius:0 0 11px 11px;margin:-7px 0 7px;padding:11px 13px}
+.stitem.open .st-detail{display:block}
+.stitem.open .strow{border-radius:11px 11px 0 0;border-bottom-color:transparent}
+.st-catblk{margin-bottom:11px}.st-catblk:last-child{margin-bottom:0}
+.st-cathdr{font-size:9px;letter-spacing:.06em;text-transform:uppercase;color:var(--accent);font-weight:700;margin-bottom:7px;font-family:'JetBrains Mono',monospace}
+.st-grid{display:flex;flex-wrap:wrap;gap:6px 14px}
+.st-cell{display:flex;flex-direction:column;gap:1px;min-width:52px}
+.st-cl{font-size:8.5px;letter-spacing:.04em;color:var(--faint);font-family:'JetBrains Mono',monospace;text-transform:uppercase}
+.st-cv{font-size:13px;color:var(--text);font-family:'JetBrains Mono',monospace;font-weight:500}
 .elimbanner{font-size:11.5px;font-family:'JetBrains Mono',monospace;border-radius:9px;padding:10px 12px;margin-bottom:10px;border:1px solid;line-height:1.5}
 .elimbanner.ok{color:var(--pos);border-color:rgba(47,180,124,.32);background:rgba(47,180,124,.05)}
 .elimbanner.dead{color:var(--neg);border-color:rgba(226,96,68,.4);background:rgba(226,96,68,.07)}
@@ -1515,74 +1528,109 @@ async function loadMarket(){
   renderQuickAdd();
 }
 
-/* ===== Stats section — browse teams, search players, scan leaders =====
-   Reads player_stats (same table the Look-inside panel uses). Sport-agnostic: it renders
-   whatever leagues exist in the data, so CFB works now and WNBA/MLB/CBB/NFL appear as their
-   writers populate the table. stat_line is a display string; leaders sort on its leading
-   number. This is a fundamentals browser, not a graded signal — the edge still lives in CLV. */
-var ST={rows:[],byLeague:{},league:null,mode:'teams',team:null,q:'',pos:'',at:0};
+/* ===== Stats section — browse teams, search players, scan category leaders =====
+   Reads stats_players (rich: full per-player breakdown + per-category values). Falls back to
+   the thin player_stats if the rich table isn't populated yet, so CFB still lists. Sport-agnostic:
+   renders whatever leagues exist. Fundamentals to sanity-check direction — the edge lives in CLV. */
+var ST={rows:[],byLeague:{},league:null,mode:'teams',team:null,q:'',pos:'',cat:'',rich:false,open:{},at:0};
 var ST_LABEL={CFB:'CFB',NFL:'NFL',MLB:'MLB',WNBA:'WNBA',CBB:'CBB',NBA:'NBA'};
 function stLeadNum(s){if(!s)return -1;var m=String(s).replace(/,/g,'').match(/-?\d+(\.\d+)?/);return m?parseFloat(m[0]):-1;}
+function stEsc(s){return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function stKey(r){return (r.league||'')+'|'+(r.team||'')+'|'+(r.player||'');}
 async function loadStats(force){
   if(!force&&ST.rows.length&&(Date.now()-ST.at)<300000){renderStats();return;}
   try{
-    var rows=await sbGet('player_stats?select=league,team,player,position,stat_line,rank&limit=20000');
-    ST.rows=rows||[];ST.at=Date.now();
-    ST.byLeague={};ST.rows.forEach(function(r){var L=(r.league||'').toUpperCase();(ST.byLeague[L]=ST.byLeague[L]||[]).push(r);});
+    var rows=[],rich=false;
+    try{rows=await sbGet('stats_players?select=league,team,player,position,stat_line,lead_cat,lead_val,cats,leads&limit=40000');if(rows&&rows.length)rich=true;}catch(_){}
+    if(!rich){try{rows=await sbGet('player_stats?select=league,team,player,position,stat_line,rank&limit=20000');}catch(__){rows=[];}}
+    ST.rich=rich;ST.rows=rows||[];ST.at=Date.now();ST.open={};
+    ST.byLeague={};ST.rows.forEach(function(r){r._lv=(r.lead_val!=null?+r.lead_val:stLeadNum(r.stat_line));var L=(r.league||'').toUpperCase();(ST.byLeague[L]=ST.byLeague[L]||[]).push(r);});
     var leagues=Object.keys(ST.byLeague).sort();
     if(!ST.league||leagues.indexOf(ST.league)<0)ST.league=leagues.indexOf('CFB')>=0?'CFB':(leagues[0]||null);
-    $('stFresh').textContent=ST.rows.length?('updated '+ago(Date.now())):'no data';
+    $('stFresh').textContent=ST.rows.length?((ST.rich?'':'basic \u00b7 ')+'updated '+ago(Date.now())):'no data';
     renderStats();
   }catch(e){$('stBody').innerHTML='<div class="empty">Could not reach the database: '+e.message+'</div>';}
 }
 function stTeams(L){var t={};(ST.byLeague[L]||[]).forEach(function(r){if(r.team)t[r.team]=1;});return Object.keys(t).sort();}
 function stPositions(L){var p={};(ST.byLeague[L]||[]).forEach(function(r){if(r.position)p[r.position]=1;});return Object.keys(p).sort();}
+/* union of category names across a league, with a friendly label from the cats breakdown */
+function stCats(L){var m={};(ST.byLeague[L]||[]).forEach(function(r){
+  if(r.leads)for(var k in r.leads){if(m[k]==null)m[k]=stCatLabel(r,k);}
+});return m;}
+function stCatLabel(r,name){if(r.cats)for(var i=0;i<r.cats.length;i++)if((r.cats[i].name||'')===name)return r.cats[i].label||name;return name.charAt(0).toUpperCase()+name.slice(1);}
 function renderStats(){
   var leagues=Object.keys(ST.byLeague).sort();
   var chips=$('stLeagues');
   if(!leagues.length){chips.innerHTML='';$('stControls').innerHTML='';
-    $('stBody').innerHTML='<div class="empty"><b>No player stats yet.</b><br>Run the stats writer (ESPN) to populate <span class="mono">player_stats</span>. CFB fills first; other leagues appear as their writers run.</div>';return;}
+    $('stBody').innerHTML='<div class="empty"><b>No player stats yet.</b><br>Run <span class="mono">capture_stats</span> (ESPN) to populate the tables. CFB fills first; WNBA / MLB / CBB / NFL appear as each sport\u2019s run completes.</div>';return;}
   chips.innerHTML=leagues.map(function(L){return '<button class="stchip'+(L===ST.league?' on':'')+'" data-l="'+L+'">'+(ST_LABEL[L]||L)+'<span class="n">'+(ST.byLeague[L].length)+'</span></button>';}).join('');
-  var cs=chips.querySelectorAll('.stchip');for(var i=0;i<cs.length;i++)cs[i].onclick=(function(el){return function(){ST.league=el.getAttribute('data-l');ST.team=null;ST.q='';ST.pos='';renderStats();};})(cs[i]);
+  var cs=chips.querySelectorAll('.stchip');for(var i=0;i<cs.length;i++)cs[i].onclick=(function(el){return function(){ST.league=el.getAttribute('data-l');ST.team=null;ST.q='';ST.pos='';ST.cat='';ST.open={};renderStats();};})(cs[i]);
   var seg=$('stSeg').querySelectorAll('button');for(var j=0;j<seg.length;j++){seg[j].classList.toggle('on',seg[j].getAttribute('data-m')===ST.mode);
-    seg[j].onclick=(function(el){return function(){ST.mode=el.getAttribute('data-m');renderStats();};})(seg[j]);}
+    seg[j].onclick=(function(el){return function(){ST.mode=el.getAttribute('data-m');ST.open={};renderStats();};})(seg[j]);}
   var L=ST.league,ctrl=$('stControls'),body=$('stBody');
   if(ST.mode==='teams'){
     var teams=stTeams(L);if(!ST.team||teams.indexOf(ST.team)<0)ST.team=teams[0]||null;
-    ctrl.innerHTML='<select class="stsearch" id="stTeamSel">'+teams.map(function(t){return '<option'+(t===ST.team?' selected':'')+'>'+t+'</option>';}).join('')+'</select>';
-    var sel=$('stTeamSel');if(sel)sel.onchange=function(){ST.team=sel.value;renderStats();};
-    var players=(ST.byLeague[L]||[]).filter(function(r){return r.team===ST.team;}).slice()
-      .sort(function(a,b){return (a.rank!=null?a.rank:99)-(b.rank!=null?b.rank:99);});
-    body.innerHTML='<div class="stteamhdr">'+(ST.team||'')+' \u00b7 '+players.length+' player'+(players.length===1?'':'s')+'</div>'+
-      (players.length?players.map(stPlayerRow).join(''):'<div class="empty">No players for this team.</div>');
+    ctrl.innerHTML='<select class="stsearch" id="stTeamSel">'+teams.map(function(t){return '<option'+(t===ST.team?' selected':'')+'>'+stEsc(t)+'</option>';}).join('')+'</select>';
+    var sel=$('stTeamSel');if(sel)sel.onchange=function(){ST.team=sel.value;ST.open={};renderStats();};
+    var players=(ST.byLeague[L]||[]).filter(function(r){return r.team===ST.team;}).slice().sort(function(a,b){return b._lv-a._lv;});
+    body.innerHTML='<div class="stteamhdr">'+stEsc(ST.team||'')+' \u00b7 '+players.length+' player'+(players.length===1?'':'s')+'</div>'+
+      (players.length?players.map(function(r){return stPlayerRow(r,false);}).join(''):'<div class="empty">No players for this team.</div>');
+    stBindRows(body);
   }else if(ST.mode==='players'){
-    ctrl.innerHTML='<input class="stsearch" id="stQ" placeholder="Search a player in '+(ST_LABEL[L]||L)+'\u2026" value="'+(ST.q||'').replace(/"/g,'&quot;')+'">';
+    ctrl.innerHTML='<input class="stsearch" id="stQ" placeholder="Search a player in '+(ST_LABEL[L]||L)+'\u2026" value="'+stEsc(ST.q||'')+'">';
     var q=$('stQ');if(q){q.oninput=function(){ST.q=q.value;stRenderPlayerResults();};setTimeout(function(){q.focus();},0);}
     stRenderPlayerResults();
   }else{
-    var poss=stPositions(L);
-    ctrl.innerHTML='<select class="stsearch" id="stPos"><option value="">All positions</option>'+poss.map(function(p){return '<option value="'+p+'"'+(p===ST.pos?' selected':'')+'>'+p+'</option>';}).join('')+'</select>';
-    var ps=$('stPos');if(ps)ps.onchange=function(){ST.pos=ps.value;renderStats();};
-    var list=(ST.byLeague[L]||[]).filter(function(r){return !ST.pos||r.position===ST.pos;}).slice()
-      .sort(function(a,b){return stLeadNum(b.stat_line)-stLeadNum(a.stat_line);}).slice(0,40);
-    body.innerHTML=list.length?list.map(function(r,i){return stLeaderRow(r,i);}).join(''):'<div class="empty">No players for this filter.</div>';
+    // Leaders: rich -> category picker (real per-category values); thin -> position filter
+    if(ST.rich){
+      var cats=stCats(L),names=Object.keys(cats).sort(function(a,b){return (a==='passing'?-3:a==='batting'?-3:a==='scoring'?-3:0)-(b==='passing'?-3:b==='batting'?-3:b==='scoring'?-3:0)||a.localeCompare(b);});
+      if(!ST.cat||names.indexOf(ST.cat)<0)ST.cat=names[0]||'';
+      ctrl.innerHTML='<select class="stsearch" id="stCat">'+names.map(function(n){return '<option value="'+stEsc(n)+'"'+(n===ST.cat?' selected':'')+'>'+stEsc(cats[n])+'</option>';}).join('')+'</select>';
+      var cse=$('stCat');if(cse)cse.onchange=function(){ST.cat=cse.value;renderStats();};
+      var lst=(ST.byLeague[L]||[]).filter(function(r){return r.leads&&r.leads[ST.cat]!=null;}).slice()
+        .sort(function(a,b){return (+b.leads[ST.cat])-(+a.leads[ST.cat]);}).slice(0,50);
+      body.innerHTML=lst.length?lst.map(function(r,i){return stLeaderRow(r,i,(+r.leads[ST.cat]).toLocaleString());}).join(''):'<div class="empty">No leaders in this category.</div>';
+    }else{
+      var poss=stPositions(L);
+      ctrl.innerHTML='<select class="stsearch" id="stPos"><option value="">All positions</option>'+poss.map(function(p){return '<option value="'+stEsc(p)+'"'+(p===ST.pos?' selected':'')+'>'+stEsc(p)+'</option>';}).join('')+'</select>';
+      var ps=$('stPos');if(ps)ps.onchange=function(){ST.pos=ps.value;renderStats();};
+      var list=(ST.byLeague[L]||[]).filter(function(r){return !ST.pos||r.position===ST.pos;}).slice().sort(function(a,b){return b._lv-a._lv;}).slice(0,50);
+      body.innerHTML=list.length?list.map(function(r,i){return stLeaderRow(r,i,r.stat_line||'');}).join(''):'<div class="empty">No players for this filter.</div>';
+    }
   }
 }
 function stRenderPlayerResults(){
   var L=ST.league,body=$('stBody'),q=(ST.q||'').trim().toLowerCase();
   if(q.length<1){body.innerHTML='<div class="empty">Type a name to search '+(ST_LABEL[L]||L)+' players.</div>';return;}
-  var list=(ST.byLeague[L]||[]).filter(function(r){return (r.player||'').toLowerCase().indexOf(q)>=0;})
-    .sort(function(a,b){return stLeadNum(b.stat_line)-stLeadNum(a.stat_line);}).slice(0,40);
+  var list=(ST.byLeague[L]||[]).filter(function(r){return (r.player||'').toLowerCase().indexOf(q)>=0;}).sort(function(a,b){return b._lv-a._lv;}).slice(0,40);
   body.innerHTML=list.length?list.map(function(r){return stPlayerRow(r,true);}).join(''):'<div class="empty">No match in '+(ST_LABEL[L]||L)+'.</div>';
+  stBindRows(body);
 }
+/* a tappable player row that expands into the full stat card (rich rows only) */
 function stPlayerRow(r,showTeam){
-  return '<div class="strow"><div class="st-mid"><div class="st-nm">'+(r.player||'\u2014')+(r.position?' <span class="st-pos">'+r.position+'</span>':'')+'</div>'+
-    '<div class="st-meta">'+(showTeam&&r.team?r.team+' \u00b7 ':'')+(r.stat_line||'')+'</div></div></div>';
+  var k=stKey(r),hasDetail=!!(r.cats&&r.cats.length),open=!!ST.open[k];
+  return '<div class="stitem'+(open?' open':'')+'" data-k="'+stEsc(k)+'">'+
+    '<div class="strow'+(hasDetail?' tap':'')+'"><div class="st-mid"><div class="st-nm">'+stEsc(r.player||'\u2014')+(r.position?' <span class="st-pos">'+stEsc(r.position)+'</span>':'')+'</div>'+
+      '<div class="st-meta">'+(showTeam&&r.team?stEsc(r.team)+' \u00b7 ':'')+stEsc(r.stat_line||'')+'</div></div>'+(hasDetail?'<span class="st-chev">\u203a</span>':'')+'</div>'+
+    (hasDetail?'<div class="st-detail">'+stDetail(r)+'</div>':'')+'</div>';
 }
-function stLeaderRow(r,i){
-  return '<div class="strow"><span class="st-rank">'+(i+1)+'</span><div class="st-mid"><div class="st-nm">'+(r.player||'\u2014')+(r.position?' <span class="st-pos">'+r.position+'</span>':'')+'</div>'+
-    '<div class="st-meta">'+(r.team||'')+'</div></div><span class="st-stat">'+(r.stat_line||'')+'</span></div>';
+function stLeaderRow(r,i,val){
+  var k=stKey(r),hasDetail=!!(r.cats&&r.cats.length),open=!!ST.open[k];
+  return '<div class="stitem'+(open?' open':'')+'" data-k="'+stEsc(k)+'">'+
+    '<div class="strow'+(hasDetail?' tap':'')+'"><span class="st-rank">'+(i+1)+'</span><div class="st-mid"><div class="st-nm">'+stEsc(r.player||'\u2014')+(r.position?' <span class="st-pos">'+stEsc(r.position)+'</span>':'')+'</div>'+
+      '<div class="st-meta">'+stEsc(r.team||'')+'</div></div><span class="st-stat">'+stEsc(val||'')+'</span>'+(hasDetail?'<span class="st-chev">\u203a</span>':'')+'</div>'+
+    (hasDetail?'<div class="st-detail">'+stDetail(r)+'</div>':'')+'</div>';
 }
+function stDetail(r){
+  if(!r.cats||!r.cats.length)return '<div class="fi-empty">Full breakdown fills in after <span class="mono">capture_stats</span> runs.</div>';
+  return r.cats.map(function(c){
+    var chips=(c.stats||[]).map(function(s){return '<div class="st-cell"><span class="st-cl">'+stEsc(s.label)+'</span><span class="st-cv">'+stEsc(s.display)+'</span></div>';}).join('');
+    return '<div class="st-catblk"><div class="st-cathdr">'+stEsc(c.label||c.name)+'</div><div class="st-grid">'+chips+'</div></div>';
+  }).join('');
+}
+function stBindRows(scope){var taps=scope.querySelectorAll('.strow.tap');for(var i=0;i<taps.length;i++){(function(row){
+  row.addEventListener('click',function(){var item=row.parentNode,k=item.getAttribute('data-k');ST.open[k]=!ST.open[k];item.classList.toggle('open',!!ST.open[k]);});
+})(taps[i]);}}
 
 renderLedger();loadEdges();
 /* refresh buttons — wired in JS (not inline) with a visible spin so they never feel dead.
