@@ -1295,10 +1295,28 @@ function flRun(boards){FL.faults=[];boards.forEach(function(b){FL_DETECTORS.forE
    Joined to boards by normalized name via nrm(). If a table/row is absent the panel
    says so and names which table to fill — same discipline as the rest of the app. */
 var FL_DETAIL={players:{},golf:{}};
+/* team-name matching between Odds-API board names (mascot-suffixed, e.g. "Texas Tech Red
+   Raiders") and CFBD school names in player_stats ("Texas Tech"). Accent-folded so CFBD
+   "San José State" matches board "San Jose State". Resolver: exact -> longest-prefix
+   (floor 3, which disambiguates State/Tech correctly) -> alias map for genuine name
+   differences. Extend FL_ALIAS (board-acronym -> CFBD-name, both normalized) as needed. */
+var FL_ALIAS={ 'utsa':'utsanantonio', 'umass':'massachusetts', 'ulmonroe':'louisianamonroe' };
+function flFold(s){return (s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'');}
+function flNormTeam(s){return flFold(s).toLowerCase().replace(/[^a-z0-9]/g,'');}
+function flMatchRoster(L,name){
+  var P=FL_DETAIL.players,bn=flNormTeam(name);
+  if(P[L+'|'+bn])return L+'|'+bn;                                  // exact
+  var best=null,bestLen=0,pre=L+'|';                              // longest CFBD name that prefixes the board name
+  for(var k in P){if(k.indexOf(pre)!==0)continue;var s=k.slice(pre.length);
+    if(s.length>=3&&bn.indexOf(s)===0&&s.length>bestLen){best=k;bestLen=s.length;}}
+  if(best)return best;
+  for(var a in FL_ALIAS){if(bn.indexOf(a)===0&&P[L+'|'+FL_ALIAS[a]])return L+'|'+FL_ALIAS[a];} // alias
+  return null;
+}
 async function loadFaultDetail(){
   FL_DETAIL={players:{},golf:{}};
   try{var p=await sbGet('player_stats?select=*&limit=8000');
-    (p||[]).forEach(function(r){var k=(r.league||'').toUpperCase()+'|'+nrm(r.team);(FL_DETAIL.players[k]=FL_DETAIL.players[k]||[]).push(r);});}catch(e){}
+    (p||[]).forEach(function(r){var k=(r.league||'').toUpperCase()+'|'+flNormTeam(r.team);(FL_DETAIL.players[k]=FL_DETAIL.players[k]||[]).push(r);});}catch(e){}
   try{var g=await sbGet('golf_stats?select=*&limit=3000');
     (g||[]).forEach(function(r){FL_DETAIL.golf[nrm(r.player||r.name)]=r;});}catch(e){}
 }
@@ -1322,7 +1340,7 @@ function flTeamDetailHTML(league,name){
     return '<div class="fi-card"><div class="fi-name">'+flEsc(name)+(meta.length?'<span class="fi-sub">'+meta.join(' \u00b7 ')+'</span>':'')+'</div>'+rows+
       '<div class="fi-foot">Strokes-gained, season to date \u2014 positive means better than field. Use it to judge whether the price is pointing the right way, not as a standalone signal.</div></div>';
   }
-  var L=(league||'').toUpperCase(),ps=(FL_DETAIL.players[L+'|'+nrm(name)]||[]).slice();
+  var L=(league||'').toUpperCase(),key=flMatchRoster(L,name),ps=(key?FL_DETAIL.players[key]:[]).slice();
   if(!ps.length)return '<div class="fi-empty">No roster for <b>'+flEsc(name)+'</b> yet. Populate <span class="mono">player_stats</span> (CFBD roster) to read this team.</div>';
   ps.sort(function(a,b){var ra=a.rank!=null?+a.rank:999,rb=b.rank!=null?+b.rank:999;return ra-rb;});ps=ps.slice(0,3);
   var body=ps.map(function(p){return '<div class="fi-player"><div class="fi-p-top"><span class="fi-p-nm">'+flEsc(p.player||p.name||'\u2014')+'</span>'+(p.position?'<span class="fi-p-pos">'+flEsc(p.position)+'</span>':'')+'</div>'+(p.stat_line?'<div class="fi-p-stat">'+flEsc(p.stat_line)+'</div>':'')+'</div>';}).join('');
