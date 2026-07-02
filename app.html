@@ -209,6 +209,26 @@ textarea{min-height:110px;font-family:'JetBrains Mono',monospace;resize:vertical
 .fi-foot{font-size:10px;color:var(--faint);line-height:1.5;margin-top:9px;padding-top:8px;border-top:1px dashed var(--border)}
 .fi-empty{font-size:11.5px;color:var(--dim);line-height:1.55;padding:10px 11px;background:var(--surface2);border:1px dashed var(--border);border-radius:9px}
 .fi-empty .mono{color:var(--warn)}
+/* ===== Stats section ===== */
+.stchips{display:flex;gap:7px;overflow-x:auto;padding-bottom:4px;margin-bottom:11px;-webkit-overflow-scrolling:touch}
+.stchip{flex:none;font-size:11px;font-weight:700;letter-spacing:.03em;color:var(--dim);background:transparent;border:1px solid var(--border);border-radius:20px;padding:6px 13px;cursor:pointer;font-family:'JetBrains Mono',monospace;white-space:nowrap}
+.stchip.on{background:var(--surface2);border-color:var(--accent);color:var(--text)}
+.stchip .n{color:var(--accent);margin-left:5px;font-weight:500}
+.stseg{display:flex;gap:0;border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-bottom:12px}
+.stseg button{flex:1;background:var(--surface2);border:none;border-right:1px solid var(--border);color:var(--dim);font-family:inherit;font-weight:600;font-size:12.5px;padding:10px 6px;cursor:pointer}
+.stseg button:last-child{border-right:none}
+.stseg button.on{background:rgba(77,141,255,.12);color:var(--accent)}
+#stControls{margin-bottom:12px}
+.stsearch{width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:10px;padding:12px;font-size:15px;font-family:'Inter',sans-serif}
+.stsearch:focus{outline:2px solid var(--accent);outline-offset:-1px}
+.strow{display:flex;align-items:center;gap:11px;background:var(--surface);border:1px solid var(--border);border-radius:11px;padding:11px 13px;margin-bottom:7px}
+.st-rank{font-family:'JetBrains Mono',monospace;font-weight:700;font-size:13px;color:var(--accent);width:22px;text-align:center;flex:none}
+.st-mid{flex:1;min-width:0}
+.st-nm{font-weight:600;font-size:14.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.st-meta{font-size:11px;color:var(--dim);font-family:'JetBrains Mono',monospace;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.st-pos{font-size:8.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--accent);border:1px solid rgba(77,141,255,.4);border-radius:4px;padding:1px 5px;font-family:'JetBrains Mono',monospace;flex:none}
+.st-stat{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--text);flex:none;text-align:right}
+.stteamhdr{font-size:13px;font-weight:700;color:var(--text);margin:2px 0 9px;font-family:'Inter',sans-serif}
 .elimbanner{font-size:11.5px;font-family:'JetBrains Mono',monospace;border-radius:9px;padding:10px 12px;margin-bottom:10px;border:1px solid;line-height:1.5}
 .elimbanner.ok{color:var(--pos);border-color:rgba(47,180,124,.32);background:rgba(47,180,124,.05)}
 .elimbanner.dead{color:var(--neg);border-color:rgba(226,96,68,.4);background:rgba(226,96,68,.07)}
@@ -379,6 +399,16 @@ textarea{min-height:110px;font-family:'JetBrains Mono',monospace;resize:vertical
     <div id="newsFeed"><div class="empty">Loading news…</div></div>
   </section>
 
+  <!-- STATS -->
+  <section id="v-stats" class="view hide">
+    <div class="row-between"><h2 style="margin:0">Stats</h2><span class="spacer"></span><span class="freshness" id="stFresh">—</span><button class="refreshbtn" title="Refresh" onclick="loadStats(true)">&#8635;</button></div>
+    <p class="lede">The players and teams behind the boards — browse a roster, search a player, or scan the leaders. Fundamentals to sanity-check direction; the edge itself still lives in CLV.</p>
+    <div class="stchips" id="stLeagues"></div>
+    <div class="stseg" id="stSeg"><button data-m="teams" class="on">Teams</button><button data-m="players">Players</button><button data-m="leaders">Leaders</button></div>
+    <div id="stControls"></div>
+    <div id="stBody"><div class="empty">Loading…</div></div>
+  </section>
+
   <!-- TERMS -->
   <section id="v-terms" class="view hide terms">
     <h2>Terms &amp; disclaimer</h2>
@@ -400,6 +430,7 @@ textarea{min-height:110px;font-family:'JetBrains Mono',monospace;resize:vertical
   <button data-v="faults"><svg class="ic" viewBox="0 0 24 24"><path d="M3 12h4l2-7 4 14 2-7h6"/></svg>Faults</button>
   <button data-v="boards"><svg class="ic" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="1"/><path d="M3 9h18M3 14h18M9 4v16"/></svg>Boards</button>
   <button data-v="record"><svg class="ic" viewBox="0 0 24 24"><path d="M4 19V5"/><rect x="7" y="11" width="3" height="8"/><rect x="13" y="7" width="3" height="12"/><rect x="19" y="14" width="2" height="5"/></svg>Record</button>
+  <button data-v="stats"><svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.5"/><path d="M5 20c0-3.5 3-6 7-6s7 2.5 7 6"/></svg>Stats</button>
   <button data-v="ledger"><svg class="ic" viewBox="0 0 24 24"><path d="M4 5h16v14H4z"/><path d="M4 10h16"/><path d="M9 5v14"/></svg>Ledger</button>
   <button data-v="news"><svg class="ic" viewBox="0 0 24 24"><path d="M4 5h16v14H4z"/><path d="M8 9h8M8 13h8M8 17h5"/></svg>News</button>
 </nav>
@@ -424,7 +455,7 @@ GE.devig=function(decs,method){var q=decs.map(function(d){return 1/d;}),S=q.redu
 function $(id){return document.getElementById(id);}
 
 /* ===== nav ===== */
-function show(v){var s=document.querySelectorAll('.view');for(var i=0;i<s.length;i++)s[i].classList.toggle('hide',s[i].id!=='v-'+v);var b=document.querySelectorAll('.bottomnav button');for(var j=0;j<b.length;j++)b[j].classList.toggle('on',b[j].dataset.v===v);window.scrollTo(0,0);if(v==='record')loadRecord();if(v==='edges')loadEdges();if(v==='faults')loadFaults();if(v==='boards')loadBoards();if(v==='news')loadNews();if(v==='ledger')loadMarket();}
+function show(v){var s=document.querySelectorAll('.view');for(var i=0;i<s.length;i++)s[i].classList.toggle('hide',s[i].id!=='v-'+v);var b=document.querySelectorAll('.bottomnav button');for(var j=0;j<b.length;j++)b[j].classList.toggle('on',b[j].dataset.v===v);window.scrollTo(0,0);if(v==='record')loadRecord();if(v==='edges')loadEdges();if(v==='faults')loadFaults();if(v==='boards')loadBoards();if(v==='news')loadNews();if(v==='ledger')loadMarket();if(v==='stats')loadStats();}
 var navs=document.querySelectorAll('.bottomnav button');for(var n=0;n<navs.length;n++)navs[n].onclick=(function(b){return function(){show(b.dataset.v);};})(navs[n]);
 
 /* ===== learned weights ===== */
@@ -1483,6 +1514,76 @@ async function loadMarket(){
   }).join('');
   renderQuickAdd();
 }
+
+/* ===== Stats section — browse teams, search players, scan leaders =====
+   Reads player_stats (same table the Look-inside panel uses). Sport-agnostic: it renders
+   whatever leagues exist in the data, so CFB works now and WNBA/MLB/CBB/NFL appear as their
+   writers populate the table. stat_line is a display string; leaders sort on its leading
+   number. This is a fundamentals browser, not a graded signal — the edge still lives in CLV. */
+var ST={rows:[],byLeague:{},league:null,mode:'teams',team:null,q:'',pos:'',at:0};
+var ST_LABEL={CFB:'CFB',NFL:'NFL',MLB:'MLB',WNBA:'WNBA',CBB:'CBB',NBA:'NBA'};
+function stLeadNum(s){if(!s)return -1;var m=String(s).replace(/,/g,'').match(/-?\d+(\.\d+)?/);return m?parseFloat(m[0]):-1;}
+async function loadStats(force){
+  if(!force&&ST.rows.length&&(Date.now()-ST.at)<300000){renderStats();return;}
+  try{
+    var rows=await sbGet('player_stats?select=league,team,player,position,stat_line,rank&limit=20000');
+    ST.rows=rows||[];ST.at=Date.now();
+    ST.byLeague={};ST.rows.forEach(function(r){var L=(r.league||'').toUpperCase();(ST.byLeague[L]=ST.byLeague[L]||[]).push(r);});
+    var leagues=Object.keys(ST.byLeague).sort();
+    if(!ST.league||leagues.indexOf(ST.league)<0)ST.league=leagues.indexOf('CFB')>=0?'CFB':(leagues[0]||null);
+    $('stFresh').textContent=ST.rows.length?('updated '+ago(Date.now())):'no data';
+    renderStats();
+  }catch(e){$('stBody').innerHTML='<div class="empty">Could not reach the database: '+e.message+'</div>';}
+}
+function stTeams(L){var t={};(ST.byLeague[L]||[]).forEach(function(r){if(r.team)t[r.team]=1;});return Object.keys(t).sort();}
+function stPositions(L){var p={};(ST.byLeague[L]||[]).forEach(function(r){if(r.position)p[r.position]=1;});return Object.keys(p).sort();}
+function renderStats(){
+  var leagues=Object.keys(ST.byLeague).sort();
+  var chips=$('stLeagues');
+  if(!leagues.length){chips.innerHTML='';$('stControls').innerHTML='';
+    $('stBody').innerHTML='<div class="empty"><b>No player stats yet.</b><br>Run the stats writer (ESPN) to populate <span class="mono">player_stats</span>. CFB fills first; other leagues appear as their writers run.</div>';return;}
+  chips.innerHTML=leagues.map(function(L){return '<button class="stchip'+(L===ST.league?' on':'')+'" data-l="'+L+'">'+(ST_LABEL[L]||L)+'<span class="n">'+(ST.byLeague[L].length)+'</span></button>';}).join('');
+  var cs=chips.querySelectorAll('.stchip');for(var i=0;i<cs.length;i++)cs[i].onclick=(function(el){return function(){ST.league=el.getAttribute('data-l');ST.team=null;ST.q='';ST.pos='';renderStats();};})(cs[i]);
+  var seg=$('stSeg').querySelectorAll('button');for(var j=0;j<seg.length;j++){seg[j].classList.toggle('on',seg[j].getAttribute('data-m')===ST.mode);
+    seg[j].onclick=(function(el){return function(){ST.mode=el.getAttribute('data-m');renderStats();};})(seg[j]);}
+  var L=ST.league,ctrl=$('stControls'),body=$('stBody');
+  if(ST.mode==='teams'){
+    var teams=stTeams(L);if(!ST.team||teams.indexOf(ST.team)<0)ST.team=teams[0]||null;
+    ctrl.innerHTML='<select class="stsearch" id="stTeamSel">'+teams.map(function(t){return '<option'+(t===ST.team?' selected':'')+'>'+t+'</option>';}).join('')+'</select>';
+    var sel=$('stTeamSel');if(sel)sel.onchange=function(){ST.team=sel.value;renderStats();};
+    var players=(ST.byLeague[L]||[]).filter(function(r){return r.team===ST.team;}).slice()
+      .sort(function(a,b){return (a.rank!=null?a.rank:99)-(b.rank!=null?b.rank:99);});
+    body.innerHTML='<div class="stteamhdr">'+(ST.team||'')+' \u00b7 '+players.length+' player'+(players.length===1?'':'s')+'</div>'+
+      (players.length?players.map(stPlayerRow).join(''):'<div class="empty">No players for this team.</div>');
+  }else if(ST.mode==='players'){
+    ctrl.innerHTML='<input class="stsearch" id="stQ" placeholder="Search a player in '+(ST_LABEL[L]||L)+'\u2026" value="'+(ST.q||'').replace(/"/g,'&quot;')+'">';
+    var q=$('stQ');if(q){q.oninput=function(){ST.q=q.value;stRenderPlayerResults();};setTimeout(function(){q.focus();},0);}
+    stRenderPlayerResults();
+  }else{
+    var poss=stPositions(L);
+    ctrl.innerHTML='<select class="stsearch" id="stPos"><option value="">All positions</option>'+poss.map(function(p){return '<option value="'+p+'"'+(p===ST.pos?' selected':'')+'>'+p+'</option>';}).join('')+'</select>';
+    var ps=$('stPos');if(ps)ps.onchange=function(){ST.pos=ps.value;renderStats();};
+    var list=(ST.byLeague[L]||[]).filter(function(r){return !ST.pos||r.position===ST.pos;}).slice()
+      .sort(function(a,b){return stLeadNum(b.stat_line)-stLeadNum(a.stat_line);}).slice(0,40);
+    body.innerHTML=list.length?list.map(function(r,i){return stLeaderRow(r,i);}).join(''):'<div class="empty">No players for this filter.</div>';
+  }
+}
+function stRenderPlayerResults(){
+  var L=ST.league,body=$('stBody'),q=(ST.q||'').trim().toLowerCase();
+  if(q.length<1){body.innerHTML='<div class="empty">Type a name to search '+(ST_LABEL[L]||L)+' players.</div>';return;}
+  var list=(ST.byLeague[L]||[]).filter(function(r){return (r.player||'').toLowerCase().indexOf(q)>=0;})
+    .sort(function(a,b){return stLeadNum(b.stat_line)-stLeadNum(a.stat_line);}).slice(0,40);
+  body.innerHTML=list.length?list.map(function(r){return stPlayerRow(r,true);}).join(''):'<div class="empty">No match in '+(ST_LABEL[L]||L)+'.</div>';
+}
+function stPlayerRow(r,showTeam){
+  return '<div class="strow"><div class="st-mid"><div class="st-nm">'+(r.player||'\u2014')+(r.position?' <span class="st-pos">'+r.position+'</span>':'')+'</div>'+
+    '<div class="st-meta">'+(showTeam&&r.team?r.team+' \u00b7 ':'')+(r.stat_line||'')+'</div></div></div>';
+}
+function stLeaderRow(r,i){
+  return '<div class="strow"><span class="st-rank">'+(i+1)+'</span><div class="st-mid"><div class="st-nm">'+(r.player||'\u2014')+(r.position?' <span class="st-pos">'+r.position+'</span>':'')+'</div>'+
+    '<div class="st-meta">'+(r.team||'')+'</div></div><span class="st-stat">'+(r.stat_line||'')+'</span></div>';
+}
+
 renderLedger();loadEdges();
 /* refresh buttons — wired in JS (not inline) with a visible spin so they never feel dead.
    The spin is hard-capped: it ALWAYS stops within ~900ms whether the fetch resolves,
