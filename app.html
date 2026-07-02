@@ -1537,9 +1537,8 @@ var ST_LABEL={CFB:'CFB',NFL:'NFL',MLB:'MLB',WNBA:'WNBA',CBB:'CBB',NBA:'NBA'};
 /* friendly names + preferred order for the Leaders category picker, per sport family */
 var ST_CATLABEL={points:'Points (PPG)',rebounds:'Rebounds (RPG)',assists:'Assists (APG)',minutes:'Minutes (MPG)',steals:'Steals (SPG)',blocks:'Blocks (BPG)',threes:'3PM per game',
   passing:'Passing yards',rushing:'Rushing yards',receiving:'Receiving yards',
-  avg:'Batting avg',ops:'OPS',hr:'Home runs',rbi:'RBI',sb:'Stolen bases',era:'ERA',whip:'WHIP',strikeouts:'Strikeouts',wins:'Wins'};
-var ST_CATORDER=['points','passing','rushing','receiving','hr','rbi','era','whip','strikeouts','wins','rebounds','assists','avg','ops','threes','steals','blocks','minutes','sb'];
-var ST_ASC={era:1,whip:1};  /* lower is better — sort these leaderboards ascending */
+  avg:'Batting avg',ops:'OPS',hr:'Home runs',rbi:'RBI',sb:'Stolen bases',era:'ERA',strikeouts:'Strikeouts',wins:'Wins'};
+var ST_CATORDER=['points','passing','rushing','receiving','avg','ops','era','rebounds','assists','hr','rbi','strikeouts','wins','threes','steals','blocks','minutes','sb'];
 function stFmt(v){v=+v;if(!isFinite(v))return '';return (v%1===0)?v.toLocaleString():v.toFixed(1);}
 function stLeadNum(s){if(!s)return -1;var m=String(s).replace(/,/g,'').match(/-?\d+(\.\d+)?/);return m?parseFloat(m[0]):-1;}
 function stEsc(s){return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
@@ -1595,7 +1594,7 @@ function renderStats(){
       ctrl.innerHTML='<select class="stsearch" id="stCat">'+names.map(function(n){return '<option value="'+stEsc(n)+'"'+(n===ST.cat?' selected':'')+'>'+stEsc(cats[n])+'</option>';}).join('')+'</select>';
       var cse=$('stCat');if(cse)cse.onchange=function(){ST.cat=cse.value;renderStats();};
       var lst=(ST.byLeague[L]||[]).filter(function(r){return r.leads&&r.leads[ST.cat]!=null;}).slice()
-        .sort(function(a,b){var d=(+a.leads[ST.cat])-(+b.leads[ST.cat]);return ST_ASC[ST.cat]?d:-d;}).slice(0,50);
+        .sort(function(a,b){return (+b.leads[ST.cat])-(+a.leads[ST.cat]);}).slice(0,50);
       body.innerHTML=lst.length?lst.map(function(r,i){return stLeaderRow(r,i,stFmt(r.leads[ST.cat]));}).join(''):'<div class="empty">No leaders in this category.</div>';
       stBindRows(body);
     }else{
