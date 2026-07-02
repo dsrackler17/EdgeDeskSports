@@ -1404,14 +1404,26 @@ function flFaultTeams(f){var b=f._board;if(!b)return [];
 function flTeamDetailHTML(league,name){
   if(flIsGolf(league)){
     var g=FL_DETAIL.golf[flNormTeam(name)];
-    if(!g)return '<div class="fi-empty">No season stats for <b>'+flEsc(name)+'</b> yet. Populate <span class="mono">golf_stats</span> (DataGolf SG splits) to read this player.</div>';
-    function sg(v){return v==null||v===''?'\u2014':((+v>=0?'+':'')+(+v).toFixed(2));}
-    var rows=[['SG: Total',g.sg_total],['SG: Off-the-tee',g.sg_ott],['SG: Approach',g.sg_app],['SG: Around green',g.sg_arg],['SG: Putting',g.sg_putt]]
-      .map(function(r){var v=r[1],cls=(v==null||v==='')?'mut':(+v>=0?'up':'dn');
-        return '<div class="fi-stat"><span class="fl">'+r[0]+'</span><span class="fv '+cls+'">'+sg(v)+'</span></div>';}).join('');
-    var meta=[];if(g.rounds!=null)meta.push(g.rounds+' rds');if(g.made_cut_pct!=null)meta.push((+g.made_cut_pct).toFixed(0)+'% cuts');if(g.season)meta.push(g.season);
-    return '<div class="fi-card"><div class="fi-name">'+flEsc(name)+(meta.length?'<span class="fi-sub">'+meta.join(' \u00b7 ')+'</span>':'')+'</div>'+rows+
-      '<div class="fi-foot">Strokes-gained, season to date \u2014 positive means better than field. Use it to judge whether the price is pointing the right way, not as a standalone signal.</div></div>';
+    if(!g)return '<div class="fi-empty">No golf data for <b>'+flEsc(name)+'</b> yet. Run <span class="mono">capture_golf</span> to pull the current field.</div>';
+    function grow(l,v,cls){return '<div class="fi-stat"><span class="fl">'+l+'</span><span class="fv '+(cls||'')+'">'+flEsc(String(v))+'</span></div>';}
+    // ESPN tournament standing (preferred)
+    if(g.position||g.score){
+      var rows='';
+      if(g.position)rows+=grow('Position',g.position,'up');
+      if(g.score)rows+=grow('Score',g.score,(String(g.score).indexOf('-')===0?'up':(g.score==='E'?'':'dn')));
+      if(g.country)rows+=grow('Country',g.country);
+      return '<div class="fi-card"><div class="fi-name">'+flEsc(name)+(g.tournament?'<span class="fi-sub">'+flEsc(g.tournament)+'</span>':'')+'</div>'+rows+
+        '<div class="fi-foot">Current / most recent tournament standing \u2014 context only, not a recommendation. Where the price should be is decided by the closing line, not this.</div></div>';
+    }
+    // legacy SG (manual DataGolf paste)
+    if(g.sg_total!=null){
+      function sg(v){return v==null||v===''?'\u2014':((+v>=0?'+':'')+(+v).toFixed(2));}
+      var srows=[['SG: Total',g.sg_total],['SG: Off-the-tee',g.sg_ott],['SG: Approach',g.sg_app],['SG: Around green',g.sg_arg],['SG: Putting',g.sg_putt]]
+        .map(function(r){var v=r[1],cls=(v==null||v==='')?'mut':(+v>=0?'up':'dn');return grow(r[0],sg(v),cls);}).join('');
+      return '<div class="fi-card"><div class="fi-name">'+flEsc(name)+'</div>'+srows+
+        '<div class="fi-foot">Strokes-gained, season to date \u2014 context only, not a recommendation. The closing line decides where the price should be.</div></div>';
+    }
+    return '<div class="fi-empty">No golf data for <b>'+flEsc(name)+'</b> yet.</div>';
   }
   var L=(league||'').toUpperCase(),key=flMatchRoster(L,name),ps=(key?FL_DETAIL.players[key]:[]).slice();
   if(!ps.length)return '<div class="fi-empty">No player data for <b>'+flEsc(name)+'</b> yet. It fills in once <span class="mono">capture_stats</span> has run for this sport.</div>';
