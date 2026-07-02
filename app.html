@@ -220,6 +220,9 @@ textarea{min-height:110px;font-family:'JetBrains Mono',monospace;resize:vertical
 .stseg button.on{background:rgba(77,141,255,.12);color:var(--accent)}
 #stControls{margin-bottom:12px}
 .stsearch{width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:10px;padding:12px;font-size:15px;font-family:'Inter',sans-serif}
+.stctlrow{display:flex;gap:8px}.stctlrow .stsearch{flex:1}
+.stdir{flex:none;background:var(--surface2);border:1px solid var(--border);color:var(--dim);border-radius:10px;padding:0 14px;font-family:'JetBrains Mono',monospace;font-weight:600;font-size:12px;cursor:pointer;white-space:nowrap}
+.stdir:hover{color:var(--accent);border-color:var(--accent)}
 .stsearch:focus{outline:2px solid var(--accent);outline-offset:-1px}
 .strow{display:flex;align-items:center;gap:11px;background:var(--surface);border:1px solid var(--border);border-radius:11px;padding:11px 13px;margin-bottom:7px}
 .st-rank{font-family:'JetBrains Mono',monospace;font-weight:700;font-size:13px;color:var(--accent);width:22px;text-align:center;flex:none}
@@ -1548,7 +1551,7 @@ async function loadMarket(){
    Reads stats_players (rich: full per-player breakdown + per-category values). Falls back to
    the thin player_stats if the rich table isn't populated yet, so CFB still lists. Sport-agnostic:
    renders whatever leagues exist. Fundamentals to sanity-check direction — the edge lives in CLV. */
-var ST={rows:[],byLeague:{},league:null,mode:'leaders',team:null,q:'',pos:'',cat:'',rich:false,open:{},at:0,view:'home'};
+var ST={rows:[],byLeague:{},league:null,mode:'leaders',team:null,q:'',pos:'',cat:'',rich:false,open:{},at:0,view:'home',dir:'best'};
 /* sport tiles for the landing screen — order = betting appeal, not alphabetical */
 var ST_SPORTS=['CFB','NFL','MLB','WNBA','CBB'];
 var SPORT_META={CFB:{name:'College Football',c:'#e8823b'},NFL:{name:'NFL',c:'#4d8dff'},MLB:{name:'MLB',c:'#e05a5a'},WNBA:{name:'WNBA',c:'#f06ec0'},CBB:{name:"Men's College Hoops",c:'#5b8def'}};
@@ -1622,10 +1625,14 @@ function renderStats(){
     if(ST.rich){
       var cats=stCats(L),names=Object.keys(cats).sort(function(a,b){var ia=ST_CATORDER.indexOf(a),ib=ST_CATORDER.indexOf(b);ia=ia<0?99:ia;ib=ib<0?99:ib;return ia-ib||a.localeCompare(b);});
       if(!ST.cat||names.indexOf(ST.cat)<0)ST.cat=names[0]||'';
-      ctrl.innerHTML='<select class="stsearch" id="stCat">'+names.map(function(n){return '<option value="'+stEsc(n)+'"'+(n===ST.cat?' selected':'')+'>'+stEsc(cats[n])+'</option>';}).join('')+'</select>';
+      ctrl.innerHTML='<div class="stctlrow"><select class="stsearch" id="stCat">'+names.map(function(n){return '<option value="'+stEsc(n)+'"'+(n===ST.cat?' selected':'')+'>'+stEsc(cats[n])+'</option>';}).join('')+'</select>'+
+        '<button class="stdir" id="stDir" title="Toggle order">'+(ST.dir==='best'?'Best \u2193':'Worst \u2191')+'</button></div>';
       var cse=$('stCat');if(cse)cse.onchange=function(){ST.cat=cse.value;renderStats();};
+      var db=$('stDir');if(db)db.onclick=function(){ST.dir=(ST.dir==='best'?'worst':'best');renderStats();};
+      // "best" = higher value, except ERA/WHIP where lower is better; "worst" flips it
+      var lowGood=!!ST_ASC[ST.cat],bestFirst=(ST.dir==='best');
       var lst=(ST.byLeague[L]||[]).filter(function(r){return r.leads&&r.leads[ST.cat]!=null;}).slice()
-        .sort(function(a,b){var d=(+a.leads[ST.cat])-(+b.leads[ST.cat]);return ST_ASC[ST.cat]?d:-d;}).slice(0,50);
+        .sort(function(a,b){var d=(+a.leads[ST.cat])-(+b.leads[ST.cat]);var asc=(lowGood===bestFirst);return asc?d:-d;}).slice(0,50);
       body.innerHTML=lst.length?lst.map(function(r,i){return stLeaderRow(r,i,stFmt(r.leads[ST.cat]));}).join(''):'<div class="empty">No leaders in this category.</div>';
       stBindRows(body);
     }else{
