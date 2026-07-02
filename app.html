@@ -1563,12 +1563,22 @@ function stFmt(v){v=+v;if(!isFinite(v))return '';return (v%1===0)?v.toLocaleStri
 function stLeadNum(s){if(!s)return -1;var m=String(s).replace(/,/g,'').match(/-?\d+(\.\d+)?/);return m?parseFloat(m[0]):-1;}
 function stEsc(s){return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 function stKey(r){return (r.league||'')+'|'+(r.team||'')+'|'+(r.player||'');}
+async function stFetchAll(tableSelect){
+  var all=[],page=0,PAGE=1000;
+  for(;page<60;page++){
+    var batch=await sbGet(tableSelect+'&order=league,team&limit='+PAGE+'&offset='+(page*PAGE));
+    if(!batch||!batch.length)break;
+    all=all.concat(batch);
+    if(batch.length<PAGE)break;
+  }
+  return all;
+}
 async function loadStats(force){
   if(!force&&ST.rows.length&&(Date.now()-ST.at)<300000){renderStats();return;}
   try{
     var rows=[],rich=false;
-    try{rows=await sbGet('stats_players?select=league,team,player,position,stat_line,lead_cat,lead_val,cats,leads&limit=40000');if(rows&&rows.length)rich=true;}catch(_){}
-    if(!rich){try{rows=await sbGet('player_stats?select=league,team,player,position,stat_line,rank&limit=20000');}catch(__){rows=[];}}
+    try{rows=await stFetchAll('stats_players?select=league,team,player,position,stat_line,lead_cat,lead_val,cats,leads');if(rows&&rows.length)rich=true;}catch(_){}
+    if(!rich){try{rows=await stFetchAll('player_stats?select=league,team,player,position,stat_line,rank');}catch(__){rows=[];}}
     ST.rich=rich;ST.rows=rows||[];ST.at=Date.now();ST.open={};
     ST.byLeague={};ST.rows.forEach(function(r){r._lv=(r.lead_val!=null?+r.lead_val:stLeadNum(r.stat_line));var L=(r.league||'').toUpperCase();(ST.byLeague[L]=ST.byLeague[L]||[]).push(r);});
     var leagues=Object.keys(ST.byLeague).sort();
