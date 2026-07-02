@@ -1295,18 +1295,18 @@ function flRun(boards){FL.faults=[];boards.forEach(function(b){FL_DETECTORS.forE
    Joined to boards by normalized name via nrm(). If a table/row is absent the panel
    says so and names which table to fill — same discipline as the rest of the app. */
 var FL_DETAIL={players:{},golf:{}};
-/* team-name matching between Odds-API board names (mascot-suffixed, e.g. "Texas Tech Red
-   Raiders") and CFBD school names in player_stats ("Texas Tech"). Accent-folded so CFBD
-   "San José State" matches board "San Jose State". Resolver: exact -> longest-prefix
-   (floor 3, which disambiguates State/Tech correctly) -> alias map for genuine name
-   differences. Extend FL_ALIAS (board-acronym -> CFBD-name, both normalized) as needed. */
+/* team-name matching between Odds-API board names (mascot-suffixed, e.g. "Ohio State
+   Buckeyes") and the school names in player_stats ("Ohio State"). Accent-folded so
+   "San José State" matches "San Jose State". Resolver: exact -> longest-prefix (floor 3,
+   which disambiguates State/Tech correctly) -> alias map for genuine name differences.
+   Extend FL_ALIAS (board-acronym -> stored-name, both normalized) as new mismatches appear. */
 var FL_ALIAS={ 'utsa':'utsanantonio', 'umass':'massachusetts', 'ulmonroe':'louisianamonroe' };
 function flFold(s){return (s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'');}
 function flNormTeam(s){return flFold(s).toLowerCase().replace(/[^a-z0-9]/g,'');}
 function flMatchRoster(L,name){
   var P=FL_DETAIL.players,bn=flNormTeam(name);
   if(P[L+'|'+bn])return L+'|'+bn;                                  // exact
-  var best=null,bestLen=0,pre=L+'|';                              // longest CFBD name that prefixes the board name
+  var best=null,bestLen=0,pre=L+'|';                              // longest stored name that prefixes the board name
   for(var k in P){if(k.indexOf(pre)!==0)continue;var s=k.slice(pre.length);
     if(s.length>=3&&bn.indexOf(s)===0&&s.length>bestLen){best=k;bestLen=s.length;}}
   if(best)return best;
