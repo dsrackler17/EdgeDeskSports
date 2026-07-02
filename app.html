@@ -186,6 +186,8 @@ textarea{min-height:110px;font-family:'JetBrains Mono',monospace;resize:vertical
 .flwatch-h{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--dim);font-weight:600;margin:22px 0 10px;font-family:'JetBrains Mono',monospace}
 .flwatch{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:13px 15px;margin-bottom:9px}
 .flwatch .ftitle{margin-bottom:6px}
+.golfnow{font-size:11px;color:var(--accent);font-family:'JetBrains Mono',monospace;margin:0 0 9px;line-height:1.4}
+.golfnow-sub{color:var(--faint)}
 /* ===== look-inside: tap a team/golfer to read the fundamentals ===== */
 .finside{margin:12px 0 4px;border-top:1px dashed var(--border);padding-top:11px}
 .fi-h{font-size:9px;letter-spacing:.06em;text-transform:uppercase;color:var(--faint);font-weight:700;margin-bottom:8px;font-family:'JetBrains Mono',monospace}
@@ -1395,6 +1397,8 @@ async function loadFaultDetail(){
 }
 function flEsc(s){return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 function flIsGolf(league){var L=(league||'').toUpperCase();return L.indexOf('GOLF')>=0||L==='PGA'||L==='LIV'||L==='DPWT'||L==='PGA TOUR'||L==='LPGA';}
+/* the live tournament currently in golf_stats (what capture_golf last pulled) */
+function flGolfEvent(){for(var k in FL_DETAIL.golf){var g=FL_DETAIL.golf[k];if(g&&g.tournament)return g.tournament;}return '';}
 /* the clickable names for a fault: live board entries (or the golfers / correlated-pair team) */
 function flFaultTeams(f){var b=f._board;if(!b)return [];
   if(b.entries&&b.entries.length)return b.entries.map(function(e){return{name:e.name,dead:!!e.dead};});
@@ -1502,7 +1506,9 @@ function flRenderBoards(){
     if(b.entries&&b.entries.length){
       var d=flDevig(b.entries),top=d.field.slice().sort(function(x,y){return y.fair-x.fair;}).slice(0,3);
       var rows=top.map(function(t){return'<div class="frow"><span class="fl">'+tap(t.name)+(t.dead?' \u26d4':'')+'</span><span class="fv">'+flPct(t.fair)+'</span></div>';}).join('');
-      return'<div class="flwatch"><div class="fmeta"><span class="ftag lg">'+b.league+'</span><span class="ftag cls">'+b.entries.length+' teams</span><span class="ftag" style="color:var(--dim)">vig '+((d.over-1)*100).toFixed(0)+'%</span>'+has+'</div><div class="ftitle" style="font-size:14px">'+b.board+'</div>'+rows+'<div class="fi-detail" id="'+panel+'"></div></div>';
+      var golfNow=(flIsGolf(b.league)?flGolfEvent():'');
+      var liveTag=golfNow?'<div class="golfnow">\u26f3 Live now: '+flEsc(golfNow)+'<span class="golfnow-sub"> \u2014 field/scores are from this event; the board above is a futures market for a different tournament</span></div>':'';
+      return'<div class="flwatch"><div class="fmeta"><span class="ftag lg">'+b.league+'</span><span class="ftag cls">'+b.entries.length+' teams</span><span class="ftag" style="color:var(--dim)">vig '+((d.over-1)*100).toFixed(0)+'%</span>'+has+'</div><div class="ftitle" style="font-size:14px">'+b.board+'</div>'+liveTag+rows+'<div class="fi-detail" id="'+panel+'"></div></div>';
     }
     if(b.nested&&b.nested.length){var t=b.nested[0];
       return'<div class="flwatch"><div class="fmeta"><span class="ftag lg">'+b.league+'</span><span class="ftag cls">correlated pair</span>'+has+'</div><div class="ftitle" style="font-size:14px">'+b.board+'</div><div class="frow"><span class="fl">'+tap(t.name)+' win</span><span class="fv">'+flAm(t.winOdds)+'</span></div><div class="frow"><span class="fl">'+tap(t.name)+' qualify</span><span class="fv">'+flAm(t.qualOdds)+'</span></div><div class="fi-detail" id="'+panel+'"></div></div>';
