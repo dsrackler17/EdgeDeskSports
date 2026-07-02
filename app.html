@@ -1318,7 +1318,7 @@ async function loadFaultDetail(){
   try{var p=await sbGet('player_stats?select=*&limit=8000');
     (p||[]).forEach(function(r){var k=(r.league||'').toUpperCase()+'|'+flNormTeam(r.team);(FL_DETAIL.players[k]=FL_DETAIL.players[k]||[]).push(r);});}catch(e){}
   try{var g=await sbGet('golf_stats?select=*&limit=3000');
-    (g||[]).forEach(function(r){FL_DETAIL.golf[nrm(r.player||r.name)]=r;});}catch(e){}
+    (g||[]).forEach(function(r){FL_DETAIL.golf[flNormTeam(r.player||r.name)]=r;});}catch(e){}
 }
 function flEsc(s){return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 function flIsGolf(league){var L=(league||'').toUpperCase();return L.indexOf('GOLF')>=0||L==='PGA'||L==='LIV'||L==='DPWT'||L==='PGA TOUR'||L==='LPGA';}
@@ -1330,7 +1330,7 @@ function flFaultTeams(f){var b=f._board;if(!b)return [];
 /* build the detail card for one name — roster (CFB) or season SG (golf) */
 function flTeamDetailHTML(league,name){
   if(flIsGolf(league)){
-    var g=FL_DETAIL.golf[nrm(name)];
+    var g=FL_DETAIL.golf[flNormTeam(name)];
     if(!g)return '<div class="fi-empty">No season stats for <b>'+flEsc(name)+'</b> yet. Populate <span class="mono">golf_stats</span> (DataGolf SG splits) to read this player.</div>';
     function sg(v){return v==null||v===''?'\u2014':((+v>=0?'+':'')+(+v).toFixed(2));}
     var rows=[['SG: Total',g.sg_total],['SG: Off-the-tee',g.sg_ott],['SG: Approach',g.sg_app],['SG: Around green',g.sg_arg],['SG: Putting',g.sg_putt]]
