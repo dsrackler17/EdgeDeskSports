@@ -211,6 +211,17 @@ textarea{min-height:110px;font-family:'JetBrains Mono',monospace;resize:vertical
 .calibtbl{width:100%;border-collapse:collapse;margin:4px 0 8px;font-size:12px}
 .calibtbl th{text-align:left;color:var(--faint);font-weight:500;font-size:10px;text-transform:uppercase;padding:4px 8px;border-bottom:1px solid var(--border)}
 .calibtbl td{padding:5px 8px;border-bottom:1px solid var(--border);font-family:'JetBrains Mono',monospace}
+.pr-list{display:flex;flex-direction:column}
+.pr-row{display:flex;align-items:center;gap:11px;padding:10px 4px;border-bottom:1px solid var(--border)}
+.pr-rk{min-width:22px;color:var(--faint);font-family:'JetBrains Mono',monospace;font-size:11px;text-align:right}
+.pr-nm{flex:1;min-width:0}
+.pr-p{font-weight:600;color:var(--text);font-size:13.5px}
+.pr-t{font-size:10.5px;color:var(--faint);font-family:'JetBrains Mono',monospace;margin-top:1px}
+.pr-v{text-align:right;margin-right:4px}
+.pr-line{display:block;font-size:11px;color:var(--dim);font-family:'JetBrains Mono',monospace}
+.pr-proj{display:block;font-size:10px;color:var(--faint);font-family:'JetBrains Mono',monospace;margin-top:1px}
+.pr-over{min-width:44px;text-align:right;font-family:'JetBrains Mono',monospace;font-weight:700;font-size:14px}
+.pr-over.up{color:var(--pos)}.pr-over.dn{color:var(--neg)}
 .gf-win{color:var(--accent);font-family:'JetBrains Mono',monospace;font-size:10px;margin-right:6px}
 /* ===== look-inside: tap a team/golfer to read the fundamentals ===== */
 .finside{margin:12px 0 4px;border-top:1px dashed var(--border);padding-top:11px}
@@ -467,6 +478,14 @@ textarea{min-height:110px;font-family:'JetBrains Mono',monospace;resize:vertical
     <div id="stBody"><div class="empty">Loading…</div></div>
   </section>
 
+  <section id="v-props" class="view hide">
+    <div class="row-between"><h2 style="margin:0">Props</h2><span class="spacer"></span><span class="freshness" id="prFresh">—</span><button class="refreshbtn" title="Refresh" onclick="loadProps(true)">&#8635;</button></div>
+    <p class="lede">Model projections for player props &mdash; per-game rate with modeled variance. <b style="color:var(--warn)">Projections, not lines, not edges.</b> An edge only exists once these beat a real book's closing number; until then it's research to sanity-check, never a call.</p>
+    <div class="stchips" id="prSports"></div>
+    <div id="prControls"></div>
+    <div id="prBody"><div class="empty">Loading…</div></div>
+  </section>
+
   <!-- TERMS -->
   <section id="v-terms" class="view hide terms">
     <h2>Terms &amp; disclaimer</h2>
@@ -489,6 +508,7 @@ textarea{min-height:110px;font-family:'JetBrains Mono',monospace;resize:vertical
   <button data-v="boards"><svg class="ic" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="1"/><path d="M3 9h18M3 14h18M9 4v16"/></svg>Boards</button>
   <button data-v="record"><svg class="ic" viewBox="0 0 24 24"><path d="M4 19V5"/><rect x="7" y="11" width="3" height="8"/><rect x="13" y="7" width="3" height="12"/><rect x="19" y="14" width="2" height="5"/></svg>Record</button>
   <button data-v="stats"><svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.5"/><path d="M5 20c0-3.5 3-6 7-6s7 2.5 7 6"/></svg>Stats</button>
+  <button data-v="props"><svg class="ic" viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-6M22 20H2"/></svg>Props</button>
   <button data-v="ledger"><svg class="ic" viewBox="0 0 24 24"><path d="M4 5h16v14H4z"/><path d="M4 10h16"/><path d="M9 5v14"/></svg>Ledger</button>
   <button data-v="news"><svg class="ic" viewBox="0 0 24 24"><path d="M4 5h16v14H4z"/><path d="M8 9h8M8 13h8M8 17h5"/></svg>News</button>
 </nav>
@@ -513,7 +533,7 @@ GE.devig=function(decs,method){var q=decs.map(function(d){return 1/d;}),S=q.redu
 function $(id){return document.getElementById(id);}
 
 /* ===== nav ===== */
-function show(v){var s=document.querySelectorAll('.view');for(var i=0;i<s.length;i++)s[i].classList.toggle('hide',s[i].id!=='v-'+v);var b=document.querySelectorAll('.bottomnav button');for(var j=0;j<b.length;j++)b[j].classList.toggle('on',b[j].dataset.v===v);window.scrollTo(0,0);if(v==='record')loadRecord();if(v==='edges')loadEdges();if(v==='faults')loadFaults();if(v==='boards')loadBoards();if(v==='news')loadNews();if(v==='ledger')loadMarket();if(v==='stats')loadStats();}
+function show(v){var s=document.querySelectorAll('.view');for(var i=0;i<s.length;i++)s[i].classList.toggle('hide',s[i].id!=='v-'+v);var b=document.querySelectorAll('.bottomnav button');for(var j=0;j<b.length;j++)b[j].classList.toggle('on',b[j].dataset.v===v);window.scrollTo(0,0);if(v==='record')loadRecord();if(v==='edges')loadEdges();if(v==='faults')loadFaults();if(v==='boards')loadBoards();if(v==='news')loadNews();if(v==='ledger')loadMarket();if(v==='stats')loadStats();if(v==='props')loadProps();}
 var navs=document.querySelectorAll('.bottomnav button');for(var n=0;n<navs.length;n++)navs[n].onclick=(function(b){return function(){show(b.dataset.v);};})(navs[n]);
 
 /* ===== learned weights ===== */
@@ -1771,6 +1791,44 @@ async function loadStats(force){
     $('stFresh').textContent=ST.rows.length?((ST.rich?'':'basic \u00b7 ')+'updated '+ago(Date.now())):'no data';
     renderStats();
   }catch(e){$('stBody').innerHTML='<div class="empty">Could not reach the database: '+e.message+'</div>';}
+}
+/* ===== PROPS tab — browsable player-prop projection board (model, not lines) ===== */
+var PR={rows:[],sport:null,market:null,dir:'proj',at:0};
+var PR_MKT={points:'Points',rebounds:'Rebounds',assists:'Assists',threes:'3-Pointers',hr:'Home runs',rbi:'RBI',strikeouts:'Strikeouts'};
+var PR_ORDER=['points','rebounds','assists','threes','hr','rbi','strikeouts'];
+async function loadProps(force){
+  if(!force&&PR.rows.length&&(Date.now()-PR.at)<300000){renderProps();return;}
+  try{
+    var rows=await stFetchAll('model_props?select=sport,player,team,position,market,proj,line,p_over,dist','sport,player');
+    PR.rows=rows||[];PR.at=Date.now();
+    $('prFresh').textContent=PR.rows.length?('updated '+ago(Date.now())):'no projections';
+    renderProps();
+  }catch(e){$('prBody').innerHTML='<div class="empty">Could not reach the database: '+e.message+'</div>';}
+}
+function prSports(){var s={};PR.rows.forEach(function(r){if(r.sport)s[(r.sport||'').toUpperCase()]=1;});return Object.keys(s).sort();}
+function prMarkets(L){var m={};PR.rows.forEach(function(r){if((r.sport||'').toUpperCase()===L)m[r.market]=1;});
+  return Object.keys(m).sort(function(a,b){var ia=PR_ORDER.indexOf(a),ib=PR_ORDER.indexOf(b);return (ia<0?99:ia)-(ib<0?99:ib);});}
+function renderProps(){
+  if(!PR.rows.length){$('prSports').innerHTML='';$('prControls').innerHTML='';
+    $('prBody').innerHTML='<div class="empty"><b>No projections yet.</b><br>Run <span class="mono">model_props</span> to populate MLB + WNBA player projections.</div>';return;}
+  var sports=prSports();if(!PR.sport||sports.indexOf(PR.sport)<0)PR.sport=sports[0];
+  $('prSports').innerHTML=sports.map(function(s){return '<button class="stchip'+(s===PR.sport?' on':'')+'" data-s="'+s+'">'+(ST_LABEL[s]||s)+'</button>';}).join('');
+  var sc=$('prSports').querySelectorAll('.stchip');for(var i=0;i<sc.length;i++)sc[i].onclick=(function(el){return function(){PR.sport=el.getAttribute('data-s');PR.market=null;renderProps();};})(sc[i]);
+  var markets=prMarkets(PR.sport);if(!PR.market||markets.indexOf(PR.market)<0)PR.market=markets[0];
+  $('prControls').innerHTML='<div class="stctlrow"><select class="stsearch" id="prMkt">'+markets.map(function(m){return '<option value="'+m+'"'+(m===PR.market?' selected':'')+'>'+(PR_MKT[m]||m)+'</option>';}).join('')+'</select>'+
+    '<button class="stdir" id="prDir">'+(PR.dir==='proj'?'By projection':'By over %')+'</button></div>';
+  var ms=$('prMkt');if(ms)ms.onchange=function(){PR.market=ms.value;renderProps();};
+  var db=$('prDir');if(db)db.onclick=function(){PR.dir=(PR.dir==='proj'?'over':'proj');renderProps();};
+  var list=PR.rows.filter(function(r){return (r.sport||'').toUpperCase()===PR.sport&&r.market===PR.market;}).slice()
+    .sort(function(a,b){return PR.dir==='proj'?(+b.proj-+a.proj):(+b.p_over-+a.p_over);}).slice(0,100);
+  $('prBody').innerHTML=list.length?('<div class="pr-list">'+list.map(function(r,i){
+    var ov=+r.p_over,cls=ov>=52?'up':(ov<=48?'dn':'');
+    return '<div class="pr-row"><span class="pr-rk">'+(i+1)+'</span><div class="pr-nm"><div class="pr-p">'+stEsc(r.player)+'</div><div class="pr-t">'+stEsc(r.team||'')+(r.position?' \u00b7 '+stEsc(r.position):'')+'</div></div>'+
+      '<div class="pr-v"><span class="pr-line">'+(PR_MKT[r.market]||r.market)+' o'+r.line+'</span><span class="pr-proj">'+(+r.proj).toFixed(1)+' proj</span></div>'+
+      '<span class="pr-over '+cls+'">'+ov.toFixed(0)+'%</span></div>';
+  }).join('')+'</div>'+
+  '<div class="model-warn" style="margin-top:10px">Season-rate projections with modeled variance (Poisson for counts, Normal for points). Not market prices, not matchup-adjusted, and not CLV-validated. Research to sanity-check \u2014 an edge only exists once these beat a real closing line.</div>')
+  :'<div class="empty">No projections in this market.</div>';
 }
 function stTeams(L){var t={};(ST.byLeague[L]||[]).forEach(function(r){if(r.team)t[r.team]=1;});return Object.keys(t).sort();}
 function stPositions(L){var p={};(ST.byLeague[L]||[]).forEach(function(r){if(r.position)p[r.position]=1;});return Object.keys(p).sort();}
