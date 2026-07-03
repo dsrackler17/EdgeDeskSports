@@ -1731,6 +1731,7 @@ async function loadMarket(){
    Reads stats_players (rich: full per-player breakdown + per-category values). Falls back to
    the thin player_stats if the rich table isn't populated yet, so CFB still lists. Sport-agnostic:
    renders whatever leagues exist. Fundamentals to sanity-check direction — the edge lives in CLV. */
+var ST_PROPS={};
 var ST={rows:[],byLeague:{},league:null,mode:'leaders',team:null,q:'',pos:'',cat:'',rich:false,open:{},at:0,view:'home',dir:'best'};
 /* sport tiles for the landing screen — order = betting appeal, not alphabetical */
 var ST_SPORTS=['CFB','NFL','MLB','WNBA','CBB'];
@@ -1763,6 +1764,7 @@ async function loadStats(force){
     try{rows=await stFetchAll('stats_players?select=league,team,player,position,stat_line,lead_cat,lead_val,cats,leads','league,team');if(rows&&rows.length)rich=true;}catch(_){}
     if(!rich){try{rows=await stFetchAll('player_stats?select=league,team,player,position,stat_line,rank','league,team');}catch(__){rows=[];}}
     ST.rich=rich;ST.rows=rows||[];ST.at=Date.now();ST.open={};
+    try{var pp=await stFetchAll('model_props?select=sport,player,market,proj,line,p_over,dist','sport,player');ST_PROPS={};(pp||[]).forEach(function(p){var k=(p.sport||'').toUpperCase()+'|'+p.player;(ST_PROPS[k]=ST_PROPS[k]||[]).push(p);});}catch(_){ST_PROPS={};}
     ST.byLeague={};ST.rows.forEach(function(r){r._lv=(r.lead_val!=null?+r.lead_val:stLeadNum(r.stat_line));var L=(r.league||'').toUpperCase();(ST.byLeague[L]=ST.byLeague[L]||[]).push(r);});
     var leagues=Object.keys(ST.byLeague).sort();
     if(!ST.league||leagues.indexOf(ST.league)<0)ST.league=leagues.indexOf('CFB')>=0?'CFB':(leagues[0]||null);
@@ -1860,11 +1862,25 @@ function stLeaderRow(r,i,val){
     (hasDetail?'<div class="st-detail">'+stDetail(r)+'</div>':'')+'</div>';
 }
 function stDetail(r){
-  if(!r.cats||!r.cats.length)return '<div class="fi-empty">Full breakdown fills in after <span class="mono">capture_stats</span> runs.</div>';
-  return r.cats.map(function(c){
-    var chips=(c.stats||[]).map(function(s){return '<div class="st-cell"><span class="st-cl">'+stEsc(s.label)+'</span><span class="st-cv">'+stEsc(s.display)+'</span></div>';}).join('');
-    return '<div class="st-catblk"><div class="st-cathdr">'+stEsc(c.label||c.name)+'</div><div class="st-grid">'+chips+'</div></div>';
-  }).join('');
+  var breakdown=(!r.cats||!r.cats.length)?'<div class="fi-empty">Full breakdown fills in after <span class="mono">capture_stats</span> runs.</div>':
+    r.cats.map(function(c){
+      var chips=(c.stats||[]).map(function(s){return '<div class="st-cell"><span class="st-cl">'+stEsc(s.label)+'</span><span class="st-cv">'+stEsc(s.display)+'</span></div>';}).join('');
+      return '<div class="st-catblk"><div class="st-cathdr">'+stEsc(c.label||c.name)+'</div><div class="st-grid">'+chips+'</div></div>';
+    }).join('');
+  // model prop projections (MLB/WNBA), if any
+  var props='';
+  var pk=(r.league||'').toUpperCase()+'|'+r.player;
+  var pl=(typeof ST_PROPS!=='undefined'&&ST_PROPS[pk])?ST_PROPS[pk]:null;
+  if(pl&&pl.length){
+    var ML={points:'Points',rebounds:'Rebounds',assists:'Assists',threes:'3-Pointers',hr:'Home runs',rbi:'RBI',strikeouts:'Strikeouts'};
+    var order=['points','rebounds','assists','threes','hr','rbi','strikeouts'];
+    pl=pl.slice().sort(function(a,b){var ia=order.indexOf(a.market),ib=order.indexOf(b.market);return (ia<0?99:ia)-(ib<0?99:ib);});
+    var rows=pl.map(function(p){var ov=+p.p_over;var cls=ov>=52?'up':(ov<=48?'dn':'');
+      return '<div class="st-cell"><span class="st-cl">'+(ML[p.market]||p.market)+' o'+p.line+'</span><span class="st-cv '+cls+'">'+(+p.proj).toFixed(1)+' proj \u00b7 '+ov.toFixed(0)+'%</span></div>';}).join('');
+    props='<div class="st-catblk"><div class="st-cathdr">EdgeDesk projections \u2014 model, not a line</div><div class="st-grid">'+rows+'</div>'+
+      '<div class="model-warn">Season-rate projection with modeled variance (Poisson/Normal). Not a market price and not CLV-validated \u2014 research, not a call.</div></div>';
+  }
+  return breakdown+props;
 }
 function stBindRows(scope){var taps=scope.querySelectorAll('.strow.tap');for(var i=0;i<taps.length;i++){(function(row){
   row.addEventListener('click',function(){var item=row.parentNode,k=item.getAttribute('data-k');ST.open[k]=!ST.open[k];item.classList.toggle('open',!!ST.open[k]);});
