@@ -205,6 +205,12 @@ textarea{min-height:110px;font-family:'JetBrains Mono',monospace;resize:vertical
 .gtf-hd{font-family:'JetBrains Mono',monospace;font-weight:700;font-size:12.5px;color:var(--accent);letter-spacing:.02em}
 .gtf-sub{font-size:11px;color:var(--dim);margin:5px 0 8px;line-height:1.45}
 .model-warn{font-size:10px;color:var(--warn);margin-top:6px;line-height:1.4;font-family:'JetBrains Mono',monospace}
+.mc-stat{background:var(--surface2);border:1px solid var(--border);border-radius:9px;padding:9px 13px}
+.mc-n{font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;color:var(--text)}
+.mc-l{font-size:10px;color:var(--faint);text-transform:uppercase;letter-spacing:.03em;margin-top:2px}
+.calibtbl{width:100%;border-collapse:collapse;margin:4px 0 8px;font-size:12px}
+.calibtbl th{text-align:left;color:var(--faint);font-weight:500;font-size:10px;text-transform:uppercase;padding:4px 8px;border-bottom:1px solid var(--border)}
+.calibtbl td{padding:5px 8px;border-bottom:1px solid var(--border);font-family:'JetBrains Mono',monospace}
 .gf-win{color:var(--accent);font-family:'JetBrains Mono',monospace;font-size:10px;margin-right:6px}
 /* ===== look-inside: tap a team/golfer to read the fundamentals ===== */
 .finside{margin:12px 0 4px;border-top:1px dashed var(--border);padding-top:11px}
@@ -1109,6 +1115,26 @@ function renderClvHero(series,avgClv,beatRate,med,posRate){
     '<div class="cap"><b style="color:var(--text)">The proof layer.</b> Cumulative closing-line value across the flagged edges'+(avgClv!=null?' \u00b7 avg '+(avgClv>=0?'+':'')+(avgClv*100).toFixed(1)+'%':'')+(med!=null?' \u00b7 median '+(med>=0?'+':'')+(med*100).toFixed(1)+'%':'')+(beatRate!=null?' \u00b7 beat close '+(beatRate*100).toFixed(0)+'%':'')+'. A rising line is the only honest evidence the edges are real \u2014 and it\u2019s only as trustworthy as the close calc behind it.'+
     (mismatch?'<br><b style="color:var(--warn)">\u26a0 Close-calc check: stored beat-close ('+(beatRate*100).toFixed(0)+'%) disagrees with the raw clv&gt;0 rate ('+(posRate*100).toFixed(0)+'%) \u2014 the settle job\u2019s beat_close is computed inconsistently with clv. Fix settle before trusting these.</b>':'')+
     (!mismatch&&med!=null&&avgClv!=null&&med<0&&avgClv>0?'<br><span style="color:var(--warn)">Note: avg is positive but median is negative \u2014 the CLV is outlier-driven, not broad-based. Fragile; needs a bigger sample.</span>':'')+'</div></div>';
+  loadModelCalib(host);
+}
+/* MODEL CALIBRATION — were the model's probabilities true? (Brier + reliability), sibling of CLV */
+async function loadModelCalib(host){
+  if(!host)return;
+  var brier=[],calib=[];
+  try{brier=await sbGet('model_brier?select=*');}catch(e){}
+  try{calib=await sbGet('model_calibration?select=*&market=eq.cut&order=bucket.asc');}catch(e){}
+  var card='<div class="clvhero" style="margin-top:14px"><div class="clvhero-h"><span class="big" style="color:var(--dim)">Model calibration</span><span class="lbl">were the probabilities true?</span></div>';
+  if(!brier.length){
+    card+='<div class="cap">The honest cousin of CLV: CLV asks <i>did it beat the market</i>; calibration asks <i>was the probability even real</i> \u2014 does a 30% call hit ~30% of the time. Every model prediction is now archived and graded against what actually happened. <b style="color:var(--text)">Collecting \u2014 no graded events yet.</b> Golf grades one event a week, so a trustworthy reliability read is a season away. It builds honestly from zero.</div></div>';
+  }else{
+    card+='<div style="display:flex;gap:14px;flex-wrap:wrap;margin:6px 0 8px">'+brier.map(function(b){return '<div class="mc-stat"><div class="mc-n">'+(+b.brier).toFixed(3)+'</div><div class="mc-l">'+flEsc(b.sport)+' Brier \u00b7 '+b.graded+' graded</div></div>';}).join('')+'</div>';
+    if(calib.length){
+      card+='<table class="calibtbl"><thead><tr><th>Model said</th><th>Actually happened</th><th>n</th></tr></thead><tbody>'+
+        calib.map(function(r){var pred=+r.avg_pred,obs=+r.observed,off=Math.abs(pred-obs);return '<tr><td>'+pred.toFixed(0)+'%</td><td class="'+(off<=8?'pos':'neg')+'">'+obs.toFixed(0)+'%</td><td>'+r.n+'</td></tr>';}).join('')+'</tbody></table>';
+    }
+    card+='<div class="cap">Lower Brier = better-calibrated. When "actually happened" tracks "model said," the probabilities are honest; when they diverge, the model is over/under-confident. This is make-cut (the most reliable market). Context only \u2014 a calibrated model still isn\u2019t proven until it beats the close.</div></div>';
+  }
+  host.insertAdjacentHTML('beforeend',card);
 }
 function renderSlice(){var t=$('sliceType').value,rows=WEIGHT_ROWS.filter(function(r){return r.slice_type===t;}).sort(function(a,b){return(b.weight||0)-(a.weight||0);});
   $('sliceTbl').querySelector('tbody').innerHTML=rows.length?rows.map(function(r){return'<tr><td>'+r.slice_value+'</td><td>'+(r.n||0)+'</td><td>'+(r.hit_rate!=null?(r.hit_rate*100).toFixed(0)+'%':'—')+'</td><td class="'+((r.avg_clv||0)>=0?'pos':'neg')+'">'+(r.avg_clv!=null?((r.avg_clv>=0?'+':'')+(r.avg_clv*100).toFixed(1)+'%'):'—')+'</td><td>'+(r.beat_close_rate!=null?(r.beat_close_rate*100).toFixed(0)+'%':'—')+'</td><td class="'+((r.weight||1)>=1?'pos':'neg')+'">×'+(r.weight||1).toFixed(2)+'</td></tr>';}).join(''):'<tr><td colspan="6" class="muted" style="text-align:center;padding:16px">No graded data yet.</td></tr>';}
