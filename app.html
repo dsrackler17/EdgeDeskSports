@@ -209,6 +209,17 @@ textarea{min-height:110px;font-family:'JetBrains Mono',monospace;resize:vertical
 .fi-eng-k{font-family:'JetBrains Mono',monospace;font-size:9.5px;color:var(--dim);background:var(--surface2);border:1px solid var(--border);border-radius:5px;padding:2px 7px}
 .fi-eng-k.warn{color:var(--warn);border-color:var(--warn)}
 .relia{width:100%;max-width:340px;margin:8px auto 4px;display:block}
+.xw{margin:6px 0 2px;border:1px solid var(--border);border-radius:8px;overflow:hidden}
+.xw-h{padding:7px 10px;font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;color:var(--accent);cursor:pointer;background:var(--surface2)}
+.xw-body{display:none;padding:4px 10px 8px}
+.xw.open .xw-body{display:block}
+.xw-row{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px;padding:5px 0;border-bottom:1px solid var(--border)}
+.xw-l{font-size:11.5px;color:var(--text);min-width:120px}
+.xw-v{font-family:'JetBrains Mono',monospace;font-size:11.5px;font-weight:600;color:var(--accent)}
+.xw-n{font-size:10px;color:var(--faint);flex:1}
+.xw-est{font-size:8.5px;color:var(--warn);border:1px solid var(--warn);border-radius:3px;padding:0 3px;vertical-align:middle}
+.xw-foot{font-size:9.5px;color:var(--faint);margin-top:6px;line-height:1.4;font-family:'JetBrains Mono',monospace}
+.pr-x:not(:empty){padding:0 4px 8px}
 .mc-stat{background:var(--surface2);border:1px solid var(--border);border-radius:9px;padding:9px 13px}
 .mc-n{font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;color:var(--text)}
 .mc-l{font-size:10px;color:var(--faint);text-transform:uppercase;letter-spacing:.03em;margin-top:2px}
@@ -1486,6 +1497,35 @@ async function loadFaultDetail(){
 }
 function flEsc(s){return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 function flIsGolf(league){var L=(league||'').toUpperCase();return L.indexOf('GOLF')>=0||L==='PGA'||L==='LIV'||L==='DPWT'||L==='PGA TOUR'||L==='LPGA';}
+/* "here's why" — decompose a golf projection into its REAL drivers (no fabricated factors) */
+function xrow(label,val,note,est){return '<div class="xw-row"><span class="xw-l">'+flEsc(label)+(est?' <span class="xw-est">est</span>':'')+'</span><span class="xw-v">'+flEsc(val)+'</span>'+(note?'<span class="xw-n">'+flEsc(note)+'</span>':'')+'</div>';}
+function golfExplain(g,m){
+  var raw=parseFloat(g.scoring_avg),reg=(m.skill_avg!=null?+m.skill_avg:null),fld=(m.field_avg!=null?+m.field_avg:null),ev=(g.events!=null?+g.events:null);
+  var rows='';
+  if(reg!=null&&fld!=null){var edge=(fld-reg);
+    rows+=xrow('Field-relative skill',(edge>=0?'+':'')+edge.toFixed(1)+' str/rnd',edge>=0?'better than the '+fld.toFixed(1)+' field avg':'below the '+fld.toFixed(1)+' field avg');}
+  if(isFinite(raw)&&reg!=null){var moved=Math.abs(raw-reg)>0.05;
+    rows+=xrow('Skill input',reg.toFixed(1)+' scoring avg',moved?('regressed from '+raw.toFixed(1)+' raw'+(ev!=null?' \u00b7 '+ev+' events':'')):'raw season average'+(ev!=null?' \u00b7 '+ev+' events':''),false);}
+  if(ev!=null){var trust=ev>=15?'high sample':(ev>=6?'moderate sample':'thin sample \u2014 pulled hard toward field');
+    rows+=xrow('Sample confidence',ev+' events',trust);}
+  rows+=xrow('Make cut',(+m.make_cut_pct).toFixed(0)+'%','most reliable output');
+  rows+=xrow('Win variance','high','win% is longshot-heavy; trust it least',true);
+  if(m.imputed)rows+=xrow('Inputs','estimated','no clean scoring avg \u2014 imputed from rank',true);
+  if(!rows)return '';
+  return '<div class="xw"><div class="xw-h" onclick="this.parentNode.classList.toggle(\'open\')">Why this number \u25be</div><div class="xw-body">'+rows+
+    '<div class="xw-foot">Every line traces to a real model input \u2014 skill, field strength, sample size, simulation. Factors marked <span class="xw-est">est</span> are modeled assumptions, not measured.</div></div></div>';
+}
+/* "here's why" for a prop projection */
+function propExplain(p){
+  var rows='';
+  rows+=xrow('Per-game rate',(+p.proj).toFixed(2),'season average \u2014 the projection mean');
+  rows+=xrow('Line',p.line,'natural half-point near the rate');
+  if(p.dist==='poisson')rows+=xrow('Distribution','Poisson','counting stat; variance = mean',true);
+  else rows+=xrow('Distribution','Normal','points; sd \u2248 35% of mean assumed',true);
+  rows+=xrow('Over probability',(+p.p_over).toFixed(0)+'%','P(actual > line) under that distribution');
+  return '<div class="xw"><div class="xw-h" onclick="this.parentNode.classList.toggle(\'open\')">Why this number \u25be</div><div class="xw-body">'+rows+
+    '<div class="xw-foot">The mean is the player\u2019s real rate; the over% depends on the <span class="xw-est">assumed</span> variance shape (no game logs yet). Not matchup-adjusted, not a market line.</div></div></div>';
+}
 /* the live tournament currently in golf_stats (what capture_golf last pulled) */
 function flGolfEvent(){for(var k in FL_DETAIL.golf){var g=FL_DETAIL.golf[k];if(g&&g.tournament)return g.tournament;}return '';}
 /* ===== GOLF FIELD (shared by Boards expander + Faults top-of-field) ===== */
@@ -1540,7 +1580,7 @@ function golfDetailHTML(g){
     modelBlock='<div class="fi-sec">EdgeDesk model projection</div>'+
       grow('Win',(+m.win_pct).toFixed(1)+'%')+grow('Top 10',(+m.top10_pct).toFixed(0)+'%')+
       grow('Top 20',(+m.top20_pct).toFixed(0)+'%')+grow('Make cut',(+m.make_cut_pct).toFixed(0)+'%')+
-      grow('Model fair',mf)+engine+
+      grow('Model fair',mf)+engine+golfExplain(g,m)+
       '<div class="model-warn">Monte Carlo off ESPN season scoring average, regressed toward the field by sample size. Not a market price and not CLV-validated \u2014 make-cut is the most reliable line, win% the least. Research, not a call.</div>';
   }
   var recent='';
@@ -1848,14 +1888,20 @@ function renderProps(){
   var db=$('prDir');if(db)db.onclick=function(){PR.dir=(PR.dir==='proj'?'over':'proj');renderProps();};
   var list=PR.rows.filter(function(r){return (r.sport||'').toUpperCase()===PR.sport&&r.market===PR.market;}).slice()
     .sort(function(a,b){return PR.dir==='proj'?(+b.proj-+a.proj):(+b.p_over-+a.p_over);}).slice(0,100);
+  PR._list=list;
   $('prBody').innerHTML=list.length?('<div class="pr-list">'+list.map(function(r,i){
     var ov=+r.p_over,cls=ov>=52?'up':(ov<=48?'dn':'');
-    return '<div class="pr-row"><span class="pr-rk">'+(i+1)+'</span><div class="pr-nm"><div class="pr-p">'+stEsc(r.player)+'</div><div class="pr-t">'+stEsc(r.team||'')+(r.position?' \u00b7 '+stEsc(r.position):'')+'</div></div>'+
+    return '<div class="pr-item"><div class="pr-row" data-i="'+i+'"><span class="pr-rk">'+(i+1)+'</span><div class="pr-nm"><div class="pr-p">'+stEsc(r.player)+'</div><div class="pr-t">'+stEsc(r.team||'')+(r.position?' \u00b7 '+stEsc(r.position):'')+'</div></div>'+
       '<div class="pr-v"><span class="pr-line">'+(PR_MKT[r.market]||r.market)+' o'+r.line+'</span><span class="pr-proj">'+(+r.proj).toFixed(1)+' proj</span></div>'+
-      '<span class="pr-over '+cls+'">'+ov.toFixed(0)+'%</span></div>';
+      '<span class="pr-over '+cls+'">'+ov.toFixed(0)+'%</span></div><div class="pr-x" id="prx-'+i+'"></div></div>';
   }).join('')+'</div>'+
   '<div class="model-warn" style="margin-top:10px">Season-rate projections with modeled variance (Poisson for counts, Normal for points). Not market prices, not matchup-adjusted, and not CLV-validated. Research to sanity-check \u2014 an edge only exists once these beat a real closing line.</div>')
   :'<div class="empty">No projections in this market.</div>';
+  var prows=$('prBody').querySelectorAll('.pr-row');
+  for(var pi=0;pi<prows.length;pi++){(function(row){row.onclick=function(){
+    var idx=+row.getAttribute('data-i');var det=$('prx-'+idx);if(!det)return;
+    if(det.innerHTML){det.innerHTML='';return;}det.innerHTML=propExplain(PR._list[idx]);
+  };})(prows[pi]);}
 }
 function stTeams(L){var t={};(ST.byLeague[L]||[]).forEach(function(r){if(r.team)t[r.team]=1;});return Object.keys(t).sort();}
 function stPositions(L){var p={};(ST.byLeague[L]||[]).forEach(function(r){if(r.position)p[r.position]=1;});return Object.keys(p).sort();}
