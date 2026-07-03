@@ -188,6 +188,7 @@ textarea{min-height:110px;font-family:'JetBrains Mono',monospace;resize:vertical
 .flwatch .ftitle{margin-bottom:6px}
 .golfnow{font-size:11px;color:var(--accent);font-family:'JetBrains Mono',monospace;margin:0 0 9px;line-height:1.4}
 .golfnow-sub{color:var(--faint)}
+.fi-sec{font-size:10px;text-transform:uppercase;letter-spacing:.05em;color:var(--dim);font-weight:600;margin:9px 0 4px;font-family:'JetBrains Mono',monospace}
 /* ===== look-inside: tap a team/golfer to read the fundamentals ===== */
 .finside{margin:12px 0 4px;border-top:1px dashed var(--border);padding-top:11px}
 .fi-h{font-size:9px;letter-spacing:.06em;text-transform:uppercase;color:var(--faint);font-weight:700;margin-bottom:8px;font-family:'JetBrains Mono',monospace}
@@ -1393,7 +1394,7 @@ async function loadFaultDetail(){
     try{var tp=await stFetchAll('player_stats?select=league,team,player,position,stat_line,rank','league,team');
       (tp||[]).forEach(function(r){var k=(r.league||'').toUpperCase()+'|'+flNormTeam(r.team);(FL_DETAIL.players[k]=FL_DETAIL.players[k]||[]).push(r);});}catch(e){}
   }
-  try{var g=await stFetchAll('golf_stats?select=*','player');(g||[]).forEach(function(r){FL_DETAIL.golf[flNormTeam(r.player||r.name)]=r;});}catch(e){}
+  try{var g=await sbGet('golf_stats?select=*&limit=1000');(g||[]).forEach(function(r){FL_DETAIL.golf[flNormTeam(r.player||r.name)]=r;});}catch(e){}
 }
 function flEsc(s){return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 function flIsGolf(league){var L=(league||'').toUpperCase();return L.indexOf('GOLF')>=0||L==='PGA'||L==='LIV'||L==='DPWT'||L==='PGA TOUR'||L==='LPGA';}
@@ -1410,14 +1411,27 @@ function flTeamDetailHTML(league,name){
     var g=FL_DETAIL.golf[flNormTeam(name)];
     if(!g)return '<div class="fi-empty">No golf data for <b>'+flEsc(name)+'</b> yet. Run <span class="mono">capture_golf</span> to pull the current field.</div>';
     function grow(l,v,cls){return '<div class="fi-stat"><span class="fl">'+l+'</span><span class="fv '+(cls||'')+'">'+flEsc(String(v))+'</span></div>';}
-    // ESPN tournament standing (preferred)
-    if(g.position||g.score){
+    // ESPN tournament standing + season detail (preferred)
+    if(g.position||g.score||g.tour_rank!=null){
       var rows='';
       if(g.position)rows+=grow('Position',g.position,'up');
       if(g.score)rows+=grow('Score',g.score,(String(g.score).indexOf('-')===0?'up':(g.score==='E'?'':'dn')));
       if(g.country)rows+=grow('Country',g.country);
-      return '<div class="fi-card"><div class="fi-name">'+flEsc(name)+(g.tournament?'<span class="fi-sub">'+flEsc(g.tournament)+'</span>':'')+'</div>'+rows+
-        '<div class="fi-foot">Current / most recent tournament standing \u2014 context only, not a recommendation. Where the price should be is decided by the closing line, not this.</div></div>';
+      var seas='';
+      if(g.tour_rank!=null)seas+=grow('Tour rank (money)','#'+g.tour_rank);
+      if(g.scoring_avg&&g.scoring_avg!=='--')seas+=grow('Scoring avg',g.scoring_avg);
+      if(g.wins!=null)seas+=grow('Wins',g.wins,(+g.wins>0?'up':''));
+      if(g.top10s!=null)seas+=grow('Top 10s',g.top10s);
+      if(g.rank_driving!=null)seas+=grow('Driving rank','#'+g.rank_driving);
+      if(g.rank_gir!=null)seas+=grow('Greens-in-reg rank','#'+g.rank_gir);
+      if(g.earnings&&g.earnings!=='--')seas+=grow('Earnings',g.earnings);
+      var seasBlock=seas?'<div class="fi-sec">Season (PGA Tour)</div>'+seas:'';
+      var recent='';
+      try{var rc=(typeof g.recent==='string')?JSON.parse(g.recent):g.recent;
+        if(rc&&rc.length)recent='<div class="fi-sec">Recent finishes</div>'+rc.slice(0,5).map(function(e){return grow(e.event||'\u2014',(e.finish||''));}).join('');
+      }catch(e){}
+      return '<div class="fi-card"><div class="fi-name">'+flEsc(name)+(g.tournament?'<span class="fi-sub">'+flEsc(g.tournament)+'</span>':'')+'</div>'+rows+seasBlock+recent+
+        '<div class="fi-foot">Field standing + season fundamentals \u2014 context only, not a recommendation. Where the price should be is decided by the closing line, not this.</div></div>';
     }
     // legacy SG (manual DataGolf paste)
     if(g.sg_total!=null){
