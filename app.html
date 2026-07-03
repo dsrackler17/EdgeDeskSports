@@ -189,6 +189,21 @@ textarea{min-height:110px;font-family:'JetBrains Mono',monospace;resize:vertical
 .golfnow{font-size:11px;color:var(--accent);font-family:'JetBrains Mono',monospace;margin:0 0 9px;line-height:1.4}
 .golfnow-sub{color:var(--faint)}
 .fi-sec{font-size:10px;text-transform:uppercase;letter-spacing:.05em;color:var(--dim);font-weight:600;margin:9px 0 4px;font-family:'JetBrains Mono',monospace}
+/* golf field expander + list */
+.gf-exp{margin-top:9px;padding:9px 11px;background:var(--surface2);border:1px solid var(--border);border-radius:9px;color:var(--accent);font-family:'JetBrains Mono',monospace;font-size:11.5px;font-weight:600;cursor:pointer}
+.gf-exp:hover{border-color:var(--accent)}.gf-exp.open{border-color:var(--accent);background:rgba(93,141,239,.06)}
+.gf-list{margin-top:6px}
+.gf-row{display:flex;align-items:center;gap:9px;padding:7px 4px;border-bottom:1px solid var(--border);cursor:pointer;font-size:12.5px}
+.gf-row:hover{background:var(--surface2)}
+.gf-pos{min-width:34px;color:var(--faint);font-family:'JetBrains Mono',monospace;font-size:11px}
+.gf-nm{flex:1;color:var(--text);font-weight:500}
+.gf-rk{color:var(--dim);font-family:'JetBrains Mono',monospace;font-size:10px}
+.gf-sc{font-family:'JetBrains Mono',monospace;font-weight:600;min-width:34px;text-align:right}
+.gf-sc.up{color:var(--pos)}.gf-sc.dn{color:var(--neg)}
+.gf-st{font-size:9px;color:var(--neg);border:1px solid var(--neg);border-radius:4px;padding:0 4px;margin-left:5px;font-family:'JetBrains Mono',monospace}
+.gtf-card{border:1px solid var(--accent);border-radius:13px;padding:14px;margin-bottom:14px;background:rgba(93,141,239,.04)}
+.gtf-hd{font-family:'JetBrains Mono',monospace;font-weight:700;font-size:12.5px;color:var(--accent);letter-spacing:.02em}
+.gtf-sub{font-size:11px;color:var(--dim);margin:5px 0 8px;line-height:1.45}
 /* ===== look-inside: tap a team/golfer to read the fundamentals ===== */
 .finside{margin:12px 0 4px;border-top:1px dashed var(--border);padding-top:11px}
 .fi-h{font-size:9px;letter-spacing:.06em;text-transform:uppercase;color:var(--faint);font-weight:700;margin-bottom:8px;font-family:'JetBrains Mono',monospace}
@@ -582,6 +597,7 @@ async function loadBoards(){
   try{rows=await sbGet("boards?select=*&active=eq.true&order=board_name.asc&limit=5000");}catch(e){rows=[];}
   try{elig=await sbGet("eligibility?select=*");}catch(e){elig=[];}
   try{model=await sbGet("model_odds?select=*&limit=5000");}catch(e){model=[];}
+  await loadGolfField();
   $('bdFresh').textContent=rows.length?('updated '+ago(Date.now())):'no boards';
   renderEliminator(rows,elig);
   renderTrapRadar(rows,elig,model);
@@ -719,7 +735,9 @@ function renderAllBoards(rows,elig,model){
       }
       return'<div class="frow"><span class="fl">'+t.selection+(isDead?' <span class="elim">\u26d4 can\u2019t win</span>':'')+mline+'</span><span class="fv">'+od+'</span></div>';}).join('');
     var more=b.rows.length>top.length?'<div style="font-size:10.5px;color:var(--faint);padding-top:5px">+'+(b.rows.length-top.length)+' more priced</div>':'';
-    return'<div class="flwatch"><div class="fmeta"><span class="ftag lg">'+(b.league||'')+'</span><span class="ftag cls">'+b.rows.length+' priced</span></div><div class="ftitle" style="font-size:14px">'+b.name+'</div>'+rowsHtml+more+'</div>';
+    var golfExp=((b.league||'').toUpperCase()==='GOLF'&&GOLF_FIELD.length)?
+      '<div class="gf-exp" onclick="toggleGolfField(this)">\u26f3 Full field \u2014 '+GOLF_FIELD.length+' actually playing'+(golfCurrentEvent()?' at '+flEsc(golfCurrentEvent()):'')+' \u203a</div><div class="gf-wrap" data-open="0"></div>':'';
+    return'<div class="flwatch"><div class="fmeta"><span class="ftag lg">'+(b.league||'')+'</span><span class="ftag cls">'+b.rows.length+' priced</span></div><div class="ftitle" style="font-size:14px">'+b.name+'</div>'+rowsHtml+more+golfExp+'</div>';
   }).join('');
   var modelN=(model||[]).length;
   var diag;
@@ -1400,6 +1418,57 @@ function flEsc(s){return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').repl
 function flIsGolf(league){var L=(league||'').toUpperCase();return L.indexOf('GOLF')>=0||L==='PGA'||L==='LIV'||L==='DPWT'||L==='PGA TOUR'||L==='LPGA';}
 /* the live tournament currently in golf_stats (what capture_golf last pulled) */
 function flGolfEvent(){for(var k in FL_DETAIL.golf){var g=FL_DETAIL.golf[k];if(g&&g.tournament)return g.tournament;}return '';}
+/* ===== GOLF FIELD (shared by Boards expander + Faults top-of-field) ===== */
+var GOLF_FIELD=[];
+async function loadGolfField(){try{var g=await sbGet('golf_stats?select=*&limit=1000');GOLF_FIELD=(g||[]).filter(function(r){return r.tournament;});}catch(e){GOLF_FIELD=[];}}
+function golfScoreN(s){if(s==null)return 999;var t=String(s).trim();if(t==='E')return 0;var n=parseFloat(t.replace('+',''));return isFinite(n)?n:999;}
+function golfFieldSorted(){return GOLF_FIELD.slice().sort(function(a,b){return golfScoreN(a.score)-golfScoreN(b.score);});}
+function golfCurrentEvent(){for(var i=0;i<GOLF_FIELD.length;i++)if(GOLF_FIELD[i].tournament)return GOLF_FIELD[i].tournament;return '';}
+function golfFieldRowHTML(g,i){
+  var st=(g.status&&g.status!=='active')?' <span class="gf-st">'+flEsc(g.status)+'</span>':'';
+  var rk=(g.tour_rank!=null)?'<span class="gf-rk">#'+g.tour_rank+'</span>':'';
+  var sc=g.score?'<span class="gf-sc '+(String(g.score).indexOf('-')===0?'up':(g.score==='E'?'':'dn'))+'">'+flEsc(g.score)+'</span>':'';
+  return '<div class="gf-row" data-gi="'+i+'"><span class="gf-pos">'+flEsc(g.position||'-')+'</span><span class="gf-nm">'+flEsc(g.player)+st+'</span>'+rk+sc+'</div><div class="gf-det" id="gfd-'+i+'"></div>';
+}
+function golfFieldHTML(){
+  var f=golfFieldSorted();if(!f.length)return '<div class="fi-empty">No field loaded \u2014 run <span class="mono">capture_golf</span>.</div>';
+  return '<div class="gf-list">'+f.map(function(g,i){return golfFieldRowHTML(g,i);}).join('')+'</div>';
+}
+function golfDetailHTML(g){
+  if(!g)return '<div class="fi-empty">No data.</div>';
+  function grow(l,v,cls){return '<div class="fi-stat"><span class="fl">'+l+'</span><span class="fv '+(cls||'')+'">'+flEsc(String(v))+'</span></div>';}
+  var rows='';
+  if(g.position)rows+=grow('Position',g.position,'up');
+  if(g.score)rows+=grow('Score',g.score,(String(g.score).indexOf('-')===0?'up':(g.score==='E'?'':'dn')));
+  if(g.status&&g.status!=='active')rows+=grow('Status',g.status,'dn');
+  if(g.country)rows+=grow('Country',g.country);
+  var seas='';
+  if(g.tour_rank!=null)seas+=grow('Tour rank (money)','#'+g.tour_rank);
+  if(g.scoring_avg&&g.scoring_avg!=='--')seas+=grow('Scoring avg',g.scoring_avg);
+  if(g.wins!=null)seas+=grow('Wins',g.wins,(+g.wins>0?'up':''));
+  if(g.top10s!=null)seas+=grow('Top 10s',g.top10s);
+  if(g.rank_driving!=null)seas+=grow('Driving rank','#'+g.rank_driving);
+  if(g.rank_gir!=null)seas+=grow('Greens-in-reg rank','#'+g.rank_gir);
+  if(g.earnings&&g.earnings!=='--')seas+=grow('Earnings',g.earnings);
+  var seasBlock=seas?'<div class="fi-sec">Season (PGA Tour)</div>'+seas:'';
+  var recent='';
+  try{var rc=(typeof g.recent==='string')?JSON.parse(g.recent):g.recent;if(rc&&rc.length)recent='<div class="fi-sec">Recent finishes</div>'+rc.slice(0,5).map(function(e){return grow(e.event||'\u2014',(e.finish||''));}).join('');}catch(e){}
+  return '<div class="fi-card" style="margin:4px 0 8px">'+rows+seasBlock+recent+
+    '<div class="fi-foot">Context only, not a recommendation. The closing line decides where the price should be.</div></div>';
+}
+function bindGolfField(host){
+  var rows=host.querySelectorAll('.gf-row'),sorted=golfFieldSorted();
+  for(var i=0;i<rows.length;i++){(function(row){row.onclick=function(){
+    var idx=+row.getAttribute('data-gi');var det=host.querySelector('#gfd-'+idx);if(!det)return;
+    if(det.innerHTML){det.innerHTML='';return;}
+    det.innerHTML=golfDetailHTML(sorted[idx]);
+  };})(rows[i]);}
+}
+function toggleGolfField(el){
+  var wrap=el.nextElementSibling;if(!wrap)return;
+  if(wrap.getAttribute('data-open')==='1'){wrap.innerHTML='';wrap.setAttribute('data-open','0');el.classList.remove('open');return;}
+  wrap.innerHTML=golfFieldHTML();wrap.setAttribute('data-open','1');el.classList.add('open');bindGolfField(wrap);
+}
 /* the clickable names for a fault: live board entries (or the golfers / correlated-pair team) */
 function flFaultTeams(f){var b=f._board;if(!b)return [];
   if(b.entries&&b.entries.length)return b.entries.map(function(e){return{name:e.name,dead:!!e.dead};});
@@ -1474,6 +1543,7 @@ async function loadFaults(){
   }catch(e){FL.live=false;grouped=FL_SAMPLE;flRun(FL_SAMPLE);}
   FL.boards=grouped;
   await loadFaultDetail();
+  await loadGolfField();
   var ban=$('flBanner');
   if(FL.live){ban.className='flbanner live';ban.textContent='\u25cf LIVE \u2014 scanning '+grouped.length+' board(s), '+FL.faults.length+' fault(s) flagged.';}
   else{ban.className='flbanner demo';ban.textContent='\u25b2 DEMO DATA \u2014 pipeline isn\u2019t emitting boards yet. Deploy capture_boards (key stays server-side) to go live.';}
@@ -1513,6 +1583,20 @@ function flRenderBoards(){
   var host=$('flBoards');
   if(!FL.live||!FL.boards||!FL.boards.length){host.innerHTML='';return;}
   var faulted={};FL.faults.forEach(function(f){if(f.title)faulted[f.title.split(':')[0]]=1;});
+  // GOLF — who's genuinely at the top of this week's field (research nobody else surfaces)
+  var golfTop='';
+  var gf=golfFieldSorted().filter(function(g){return !g.status||g.status==='active';}).slice(0,12);
+  if(gf.length){
+    var ev=golfCurrentEvent();
+    var rows=gf.map(function(g,i){
+      var sc=g.score?'<span class="gf-sc '+(String(g.score).indexOf('-')===0?'up':(g.score==='E'?'':'dn'))+'">'+flEsc(g.score)+'</span>':'';
+      var rk=(g.tour_rank!=null)?'<span class="gf-rk">rank #'+g.tour_rank+'</span>':'';
+      return '<div class="gf-row" data-gi="'+i+'"><span class="gf-pos">'+flEsc(g.position||('-'))+'</span><span class="gf-nm">'+flEsc(g.player)+'</span>'+rk+sc+'</div><div class="gf-det" id="gtf-'+i+'"></div>';
+    }).join('');
+    golfTop='<div class="gtf-card"><div class="gtf-hd">\u26f3 TOP OF THE FIELD \u2014 who\u2019s actually contending'+(ev?' at '+flEsc(ev):'')+'</div>'+
+      '<div class="gtf-sub">The live leaderboard of who\u2019s really playing this week \u2014 not the futures board. Tap a name for their season fundamentals. Context only, not a call.</div>'+
+      '<div class="gf-list" id="gtfList">'+rows+'</div></div>';
+  }
   var cards=FL.boards.map(function(b,bi){
     var has=faulted[b.board]?'<span class="ftag" style="color:var(--warn)">\u26a0 fault above</span>':'<span class="ftag" style="color:var(--pos)">clean</span>';
     var panel='bwd_'+bi;
@@ -1532,8 +1616,16 @@ function flRenderBoards(){
     }
     return'';
   }).filter(Boolean).join('');
-  host.innerHTML='<div class="flwatch-h">Boards under watch \u2014 live de-vig from your captured feed</div>'+cards;
+  host.innerHTML=golfTop+'<div class="flwatch-h">Boards under watch \u2014 live de-vig from your captured feed</div>'+cards;
   flBindTaps(host);
+  var gl=$('gtfList');
+  if(gl){var gfs=golfFieldSorted().filter(function(g){return !g.status||g.status==='active';}).slice(0,12);
+    var grows=gl.querySelectorAll('.gf-row');
+    for(var gi=0;gi<grows.length;gi++){(function(row){row.onclick=function(){
+      var idx=+row.getAttribute('data-gi');var det=gl.querySelector('#gtf-'+idx);if(!det)return;
+      if(det.innerHTML){det.innerHTML='';return;}det.innerHTML=golfDetailHTML(gfs[idx]);
+    };})(grows[gi]);}
+  }
 }
 
 /* ===== news feed (moat early-warning) ===== */
