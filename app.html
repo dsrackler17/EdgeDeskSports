@@ -205,6 +205,10 @@ textarea{min-height:110px;font-family:'JetBrains Mono',monospace;resize:vertical
 .gtf-hd{font-family:'JetBrains Mono',monospace;font-weight:700;font-size:12.5px;color:var(--accent);letter-spacing:.02em}
 .gtf-sub{font-size:11px;color:var(--dim);margin:5px 0 8px;line-height:1.45}
 .model-warn{font-size:10px;color:var(--warn);margin-top:6px;line-height:1.4;font-family:'JetBrains Mono',monospace}
+.fi-eng{display:flex;flex-wrap:wrap;gap:6px;margin:7px 0 2px}
+.fi-eng-k{font-family:'JetBrains Mono',monospace;font-size:9.5px;color:var(--dim);background:var(--surface2);border:1px solid var(--border);border-radius:5px;padding:2px 7px}
+.fi-eng-k.warn{color:var(--warn);border-color:var(--warn)}
+.relia{width:100%;max-width:340px;margin:8px auto 4px;display:block}
 .mc-stat{background:var(--surface2);border:1px solid var(--border);border-radius:9px;padding:9px 13px}
 .mc-n{font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;color:var(--text)}
 .mc-l{font-size:10px;color:var(--faint);text-transform:uppercase;letter-spacing:.03em;margin-top:2px}
@@ -1142,19 +1146,35 @@ async function loadModelCalib(host){
   if(!host)return;
   var brier=[],calib=[];
   try{brier=await sbGet('model_brier?select=*');}catch(e){}
-  try{calib=await sbGet('model_calibration?select=*&market=eq.cut&order=bucket.asc');}catch(e){}
-  var card='<div class="clvhero" style="margin-top:14px"><div class="clvhero-h"><span class="big" style="color:var(--dim)">Model calibration</span><span class="lbl">were the probabilities true?</span></div>';
-  if(!brier.length){
-    card+='<div class="cap">The honest cousin of CLV: CLV asks <i>did it beat the market</i>; calibration asks <i>was the probability even real</i> \u2014 does a 30% call hit ~30% of the time. Every model prediction is now archived and graded against what actually happened. <b style="color:var(--text)">Collecting \u2014 no graded events yet.</b> Golf grades one event a week, so a trustworthy reliability read is a season away. It builds honestly from zero.</div></div>';
+  try{calib=await sbGet('model_calibration?select=*&order=bucket.asc');}catch(e){}
+  var graded=brier.reduce(function(a,b){return a+(+b.graded||0);},0);
+  var card='<div class="clvhero" style="margin-top:14px"><div class="clvhero-h"><span class="big" style="color:'+(graded?'var(--accent)':'var(--dim)')+'">'+(graded||'\u2014')+'</span><span class="lbl">model calibration \u00b7 predictions graded</span></div>';
+  // reliability chart: perfect calibration = diagonal; plot (predicted, observed) per bucket
+  card+=reliabilitySVG(calib);
+  if(!graded){
+    card+='<div class="cap">The honest cousin of CLV: CLV asks <i>did it beat the market</i>; calibration asks <i>was the probability even real</i> \u2014 does a 30% call hit ~30% of the time. Points on the diagonal = perfectly calibrated. Every model prediction is archived and graded against what actually happened. <b style="color:var(--text)">Building from zero</b> \u2014 it fills in as games and events grade, and it will show the truth even where the model is wrong.</div></div>';
   }else{
-    card+='<div style="display:flex;gap:14px;flex-wrap:wrap;margin:6px 0 8px">'+brier.map(function(b){return '<div class="mc-stat"><div class="mc-n">'+(+b.brier).toFixed(3)+'</div><div class="mc-l">'+flEsc(b.sport)+' Brier \u00b7 '+b.graded+' graded</div></div>';}).join('')+'</div>';
-    if(calib.length){
-      card+='<table class="calibtbl"><thead><tr><th>Model said</th><th>Actually happened</th><th>n</th></tr></thead><tbody>'+
-        calib.map(function(r){var pred=+r.avg_pred,obs=+r.observed,off=Math.abs(pred-obs);return '<tr><td>'+pred.toFixed(0)+'%</td><td class="'+(off<=8?'pos':'neg')+'">'+obs.toFixed(0)+'%</td><td>'+r.n+'</td></tr>';}).join('')+'</tbody></table>';
-    }
-    card+='<div class="cap">Lower Brier = better-calibrated. When "actually happened" tracks "model said," the probabilities are honest; when they diverge, the model is over/under-confident. This is make-cut (the most reliable market). Context only \u2014 a calibrated model still isn\u2019t proven until it beats the close.</div></div>';
+    card+='<div style="display:flex;gap:14px;flex-wrap:wrap;margin:8px 0">'+brier.map(function(b){return '<div class="mc-stat"><div class="mc-n">'+(+b.brier).toFixed(3)+'</div><div class="mc-l">'+flEsc(b.sport)+' Brier \u00b7 '+b.graded+' graded</div></div>';}).join('')+'</div>';
+    card+='<div class="cap">Each dot is a probability band: x = what the model said, y = how often it actually happened. On the diagonal = honest; above = model was under-confident, below = over-confident. Lower Brier = better. Context only \u2014 a calibrated model still isn\u2019t proven until it beats the close.</div></div>';
   }
   host.insertAdjacentHTML('beforeend',card);
+}
+function reliabilitySVG(calib){
+  var W=340,H=240,P=34,plot=W-P*2;
+  function X(p){return P+(p/100)*plot;}
+  function Y(p){return (H-P)-(p/100)*(H-P*2);}
+  var grid='';for(var g=0;g<=100;g+=25){grid+='<line x1="'+X(g)+'" y1="'+Y(0)+'" x2="'+X(g)+'" y2="'+Y(100)+'" stroke="var(--border)" stroke-width="1"/>'+
+    '<line x1="'+X(0)+'" y1="'+Y(g)+'" x2="'+X(100)+'" y2="'+Y(g)+'" stroke="var(--border)" stroke-width="1"/>'+
+    '<text x="'+X(g)+'" y="'+(H-P+14)+'" fill="var(--faint)" font-size="9" text-anchor="middle" font-family="JetBrains Mono">'+g+'</text>'+
+    '<text x="'+(P-8)+'" y="'+(Y(g)+3)+'" fill="var(--faint)" font-size="9" text-anchor="end" font-family="JetBrains Mono">'+g+'</text>';}
+  var diag='<line x1="'+X(0)+'" y1="'+Y(0)+'" x2="'+X(100)+'" y2="'+Y(100)+'" stroke="var(--dim)" stroke-width="1.5" stroke-dasharray="4 4"/>';
+  var pts='';
+  (calib||[]).forEach(function(r){var pred=+r.avg_pred,obs=+r.observed,n=+r.n;if(!isFinite(pred)||!isFinite(obs))return;
+    var rad=Math.max(3,Math.min(9,Math.sqrt(n)));var off=Math.abs(pred-obs);var col=off<=8?'var(--pos)':(off<=18?'var(--warn)':'var(--neg)');
+    pts+='<circle cx="'+X(pred)+'" cy="'+Y(obs)+'" r="'+rad+'" fill="'+col+'" fill-opacity="0.55" stroke="'+col+'" stroke-width="1.5"/>';});
+  return '<svg class="relia" viewBox="0 0 '+W+' '+H+'" xmlns="http://www.w3.org/2000/svg">'+grid+diag+pts+
+    '<text x="'+(W/2)+'" y="'+(H-4)+'" fill="var(--faint)" font-size="9.5" text-anchor="middle" font-family="JetBrains Mono">model said (%)</text>'+
+    '<text x="12" y="'+(H/2)+'" fill="var(--faint)" font-size="9.5" text-anchor="middle" font-family="JetBrains Mono" transform="rotate(-90 12 '+(H/2)+')">actually happened (%)</text>'+'</svg>';
 }
 function renderSlice(){var t=$('sliceType').value,rows=WEIGHT_ROWS.filter(function(r){return r.slice_type===t;}).sort(function(a,b){return(b.weight||0)-(a.weight||0);});
   $('sliceTbl').querySelector('tbody').innerHTML=rows.length?rows.map(function(r){return'<tr><td>'+r.slice_value+'</td><td>'+(r.n||0)+'</td><td>'+(r.hit_rate!=null?(r.hit_rate*100).toFixed(0)+'%':'—')+'</td><td class="'+((r.avg_clv||0)>=0?'pos':'neg')+'">'+(r.avg_clv!=null?((r.avg_clv>=0?'+':'')+(r.avg_clv*100).toFixed(1)+'%'):'—')+'</td><td>'+(r.beat_close_rate!=null?(r.beat_close_rate*100).toFixed(0)+'%':'—')+'</td><td class="'+((r.weight||1)>=1?'pos':'neg')+'">×'+(r.weight||1).toFixed(2)+'</td></tr>';}).join(''):'<tr><td colspan="6" class="muted" style="text-align:center;padding:16px">No graded data yet.</td></tr>';}
@@ -1510,11 +1530,18 @@ function golfDetailHTML(g){
   var m=g.model;
   if(m&&m.win_pct!=null){
     var mf=(m.model_fair!=null)?((m.model_fair>0?'+':'')+m.model_fair):'\u2014';
+    var sims=m.sims?(+m.sims).toLocaleString():'\u2014';
+    var rawAvg=parseFloat(g.scoring_avg),regAvg=(m.skill_avg!=null?+m.skill_avg:null),ev=(g.events!=null?g.events:null);
+    var engine='<div class="fi-eng"><span class="fi-eng-k">'+sims+' sims</span>';
+    if(isFinite(rawAvg)&&regAvg!=null){var moved=Math.abs(rawAvg-regAvg)>0.05;
+      engine+='<span class="fi-eng-k">skill '+regAvg.toFixed(1)+(moved?' \u2190 '+rawAvg.toFixed(1)+' raw'+(ev!=null?' \u00b7 '+ev+' events (Bayesian regressed)':''):'')+'</span>';}
+    if(m.imputed)engine+='<span class="fi-eng-k warn">inputs estimated</span>';
+    engine+='</div>';
     modelBlock='<div class="fi-sec">EdgeDesk model projection</div>'+
       grow('Win',(+m.win_pct).toFixed(1)+'%')+grow('Top 10',(+m.top10_pct).toFixed(0)+'%')+
       grow('Top 20',(+m.top20_pct).toFixed(0)+'%')+grow('Make cut',(+m.make_cut_pct).toFixed(0)+'%')+
-      grow('Model fair',mf)+
-      '<div class="model-warn">Season-form Monte Carlo off ESPN scoring average'+(m.imputed?' (some inputs estimated)':'')+'. Not a market price and not CLV-validated \u2014 make-cut is the most reliable line, win% the least. Research, not a call.</div>';
+      grow('Model fair',mf)+engine+
+      '<div class="model-warn">Monte Carlo off ESPN season scoring average, regressed toward the field by sample size. Not a market price and not CLV-validated \u2014 make-cut is the most reliable line, win% the least. Research, not a call.</div>';
   }
   var recent='';
   try{var rc=(typeof g.recent==='string')?JSON.parse(g.recent):g.recent;if(rc&&rc.length)recent='<div class="fi-sec">Recent finishes</div>'+rc.slice(0,5).map(function(e){return grow(e.event||'\u2014',(e.finish||''));}).join('');}catch(e){}
