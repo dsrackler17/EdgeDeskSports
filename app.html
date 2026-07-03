@@ -736,11 +736,10 @@ function renderAllBoards(rows,elig,model){
       return'<div class="frow"><span class="fl">'+t.selection+(isDead?' <span class="elim">\u26d4 can\u2019t win</span>':'')+mline+'</span><span class="fv">'+od+'</span></div>';}).join('');
     var more=b.rows.length>top.length?'<div style="font-size:10.5px;color:var(--faint);padding-top:5px">+'+(b.rows.length-top.length)+' more priced</div>':'';
     var gEvt=((b.league||'').toUpperCase()==='GOLF'&&GOLF_FIELD.length)?golfCurrentEvent():'';
-    var bTitle=gEvt?('\u26f3 '+flEsc(gEvt)):flEsc(b.name);
-    var futNote=gEvt?'<div class="golfnow"><span class="golfnow-sub">Odds shown are <b>'+flEsc(b.name)+'</b> \u2014 winner futures. Full field below is who\u2019s actually playing '+flEsc(gEvt)+' this week.</span></div>':'';
+    var futNote=gEvt?'<div class="golfnow"><span class="golfnow-sub">These are <b>'+flEsc(b.name)+'</b> winner futures. A different event is live this week \u2014 see Full field for who\u2019s actually playing '+flEsc(gEvt)+'.</span></div>':'';
     var golfExp=((b.league||'').toUpperCase()==='GOLF'&&GOLF_FIELD.length)?
       '<div class="gf-exp" onclick="toggleGolfField(this)">\u26f3 Full field \u2014 '+GOLF_FIELD.length+' actually playing'+(golfCurrentEvent()?' at '+flEsc(golfCurrentEvent()):'')+' \u203a</div><div class="gf-wrap" data-open="0"></div>':'';
-    return'<div class="flwatch"><div class="fmeta"><span class="ftag lg">'+(b.league||'')+'</span><span class="ftag cls">'+b.rows.length+' priced</span></div><div class="ftitle" style="font-size:14px">'+bTitle+'</div>'+futNote+rowsHtml+more+golfExp+'</div>';
+    return'<div class="flwatch"><div class="fmeta"><span class="ftag lg">'+(b.league||'')+'</span><span class="ftag cls">'+b.rows.length+' priced</span></div><div class="ftitle" style="font-size:14px">'+flEsc(b.name)+'</div>'+rowsHtml+more+futNote+golfExp+'</div>';
   }).join('');
   var modelN=(model||[]).length;
   var diag;
@@ -1608,9 +1607,8 @@ function flRenderBoards(){
       var d=flDevig(b.entries),top=d.field.slice().sort(function(x,y){return y.fair-x.fair;}).slice(0,3);
       var rows=top.map(function(t){return'<div class="frow"><span class="fl">'+tap(t.name)+(t.dead?' \u26d4':'')+'</span><span class="fv">'+flPct(t.fair)+'</span></div>';}).join('');
       var golfEvt=(flIsGolf(b.league)?flGolfEvent():'');
-      var gTitle=golfEvt?('\u26f3 '+flEsc(golfEvt)):flEsc(b.board);
-      var liveTag=golfEvt?'<div class="golfnow"><span class="golfnow-sub">Live this week. Odds below are <b>'+flEsc(b.board)+'</b> \u2014 winner futures for a later event; field &amp; scores are '+flEsc(golfEvt)+'.</span></div>':'';
-      return'<div class="flwatch"><div class="fmeta"><span class="ftag lg">'+b.league+'</span><span class="ftag cls">'+b.entries.length+' teams</span><span class="ftag" style="color:var(--dim)">vig '+((d.over-1)*100).toFixed(0)+'%</span>'+has+'</div><div class="ftitle" style="font-size:14px">'+gTitle+'</div>'+liveTag+rows+'<div class="fi-detail" id="'+panel+'"></div></div>';
+      var liveTag=golfEvt?'<div class="golfnow"><span class="golfnow-sub">Odds above are <b>'+flEsc(b.board)+'</b> (winner futures). Different event live this week \u2014 tap Full field for who\u2019s actually playing '+flEsc(golfEvt)+'.</span></div>':'';
+      return'<div class="flwatch"><div class="fmeta"><span class="ftag lg">'+b.league+'</span><span class="ftag cls">'+b.entries.length+' teams</span><span class="ftag" style="color:var(--dim)">vig '+((d.over-1)*100).toFixed(0)+'%</span>'+has+'</div><div class="ftitle" style="font-size:14px">'+flEsc(b.board)+'</div>'+rows+liveTag+'<div class="fi-detail" id="'+panel+'"></div></div>';
     }
     if(b.nested&&b.nested.length){var t=b.nested[0];
       return'<div class="flwatch"><div class="fmeta"><span class="ftag lg">'+b.league+'</span><span class="ftag cls">correlated pair</span>'+has+'</div><div class="ftitle" style="font-size:14px">'+b.board+'</div><div class="frow"><span class="fl">'+tap(t.name)+' win</span><span class="fv">'+flAm(t.winOdds)+'</span></div><div class="frow"><span class="fl">'+tap(t.name)+' qualify</span><span class="fv">'+flAm(t.qualOdds)+'</span></div><div class="fi-detail" id="'+panel+'"></div></div>';
