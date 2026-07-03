@@ -204,6 +204,8 @@ textarea{min-height:110px;font-family:'JetBrains Mono',monospace;resize:vertical
 .gtf-card{border:1px solid var(--accent);border-radius:13px;padding:14px;margin-bottom:14px;background:rgba(93,141,239,.04)}
 .gtf-hd{font-family:'JetBrains Mono',monospace;font-weight:700;font-size:12.5px;color:var(--accent);letter-spacing:.02em}
 .gtf-sub{font-size:11px;color:var(--dim);margin:5px 0 8px;line-height:1.45}
+.model-warn{font-size:10px;color:var(--warn);margin-top:6px;line-height:1.4;font-family:'JetBrains Mono',monospace}
+.gf-win{color:var(--accent);font-family:'JetBrains Mono',monospace;font-size:10px;margin-right:6px}
 /* ===== look-inside: tap a team/golfer to read the fundamentals ===== */
 .finside{margin:12px 0 4px;border-top:1px dashed var(--border);padding-top:11px}
 .fi-h{font-size:9px;letter-spacing:.06em;text-transform:uppercase;color:var(--faint);font-weight:700;margin-bottom:8px;font-family:'JetBrains Mono',monospace}
@@ -1422,15 +1424,20 @@ function flIsGolf(league){var L=(league||'').toUpperCase();return L.indexOf('GOL
 function flGolfEvent(){for(var k in FL_DETAIL.golf){var g=FL_DETAIL.golf[k];if(g&&g.tournament)return g.tournament;}return '';}
 /* ===== GOLF FIELD (shared by Boards expander + Faults top-of-field) ===== */
 var GOLF_FIELD=[];
-async function loadGolfField(){try{var g=await sbGet('golf_stats?select=*&limit=1000');GOLF_FIELD=(g||[]).filter(function(r){return r.tournament;});}catch(e){GOLF_FIELD=[];}}
+async function loadGolfField(){
+  try{var g=await sbGet('golf_stats?select=*&limit=1000');GOLF_FIELD=(g||[]).filter(function(r){return r.tournament;});}catch(e){GOLF_FIELD=[];}
+  try{var m=await sbGet('model_golf?select=*&limit=1000');var mm={};(m||[]).forEach(function(r){mm[r.player]=r;});
+    GOLF_FIELD.forEach(function(g){if(mm[g.player])g.model=mm[g.player];});}catch(e){}
+}
 function golfScoreN(s){if(s==null)return 999;var t=String(s).trim();if(t==='E')return 0;var n=parseFloat(t.replace('+',''));return isFinite(n)?n:999;}
 function golfFieldSorted(){return GOLF_FIELD.slice().sort(function(a,b){return golfScoreN(a.score)-golfScoreN(b.score);});}
 function golfCurrentEvent(){for(var i=0;i<GOLF_FIELD.length;i++)if(GOLF_FIELD[i].tournament)return GOLF_FIELD[i].tournament;return '';}
 function golfFieldRowHTML(g,i){
   var st=(g.status&&g.status!=='active')?' <span class="gf-st">'+flEsc(g.status)+'</span>':'';
   var rk=(g.tour_rank!=null)?'<span class="gf-rk">#'+g.tour_rank+'</span>':'';
+  var mw=(g.model&&g.model.win_pct!=null)?'<span class="gf-win">model '+(+g.model.win_pct).toFixed(1)+'%</span>':'';
   var sc=g.score?'<span class="gf-sc '+(String(g.score).indexOf('-')===0?'up':(g.score==='E'?'':'dn'))+'">'+flEsc(g.score)+'</span>':'';
-  return '<div class="gf-row" data-gi="'+i+'"><span class="gf-pos">'+flEsc(g.position||'-')+'</span><span class="gf-nm">'+flEsc(g.player)+st+'</span>'+rk+sc+'</div><div class="gf-det" id="gfd-'+i+'"></div>';
+  return '<div class="gf-row" data-gi="'+i+'"><span class="gf-pos">'+flEsc(g.position||'-')+'</span><span class="gf-nm">'+flEsc(g.player)+st+'</span>'+mw+rk+sc+'</div><div class="gf-det" id="gfd-'+i+'"></div>';
 }
 function golfFieldHTML(){
   var f=golfFieldSorted();if(!f.length)return '<div class="fi-empty">No field loaded \u2014 run <span class="mono">capture_golf</span>.</div>';
@@ -1453,9 +1460,19 @@ function golfDetailHTML(g){
   if(g.rank_gir!=null)seas+=grow('Greens-in-reg rank','#'+g.rank_gir);
   if(g.earnings&&g.earnings!=='--')seas+=grow('Earnings',g.earnings);
   var seasBlock=seas?'<div class="fi-sec">Season (PGA Tour)</div>'+seas:'';
+  var modelBlock='';
+  var m=g.model;
+  if(m&&m.win_pct!=null){
+    var mf=(m.model_fair!=null)?((m.model_fair>0?'+':'')+m.model_fair):'\u2014';
+    modelBlock='<div class="fi-sec">EdgeDesk model projection</div>'+
+      grow('Win',(+m.win_pct).toFixed(1)+'%')+grow('Top 10',(+m.top10_pct).toFixed(0)+'%')+
+      grow('Top 20',(+m.top20_pct).toFixed(0)+'%')+grow('Make cut',(+m.make_cut_pct).toFixed(0)+'%')+
+      grow('Model fair',mf)+
+      '<div class="model-warn">Season-form Monte Carlo off ESPN scoring average'+(m.imputed?' (some inputs estimated)':'')+'. Not a market price and not CLV-validated \u2014 make-cut is the most reliable line, win% the least. Research, not a call.</div>';
+  }
   var recent='';
   try{var rc=(typeof g.recent==='string')?JSON.parse(g.recent):g.recent;if(rc&&rc.length)recent='<div class="fi-sec">Recent finishes</div>'+rc.slice(0,5).map(function(e){return grow(e.event||'\u2014',(e.finish||''));}).join('');}catch(e){}
-  return '<div class="fi-card" style="margin:4px 0 8px">'+rows+seasBlock+recent+
+  return '<div class="fi-card" style="margin:4px 0 8px">'+rows+seasBlock+modelBlock+recent+
     '<div class="fi-foot">Context only, not a recommendation. The closing line decides where the price should be.</div></div>';
 }
 function bindGolfField(host){
