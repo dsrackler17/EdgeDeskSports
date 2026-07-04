@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
@@ -15,8 +15,6 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',system-ui,sans-s
 a{color:inherit;text-decoration:none}
 .wrap{max-width:1080px;margin:0 auto;padding:0 22px}
 .ey{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--accent);font-weight:500}
-
-/* nav */
 nav{position:sticky;top:0;z-index:40;background:rgba(13,15,19,.86);backdrop-filter:blur(10px);border-bottom:1px solid var(--border)}
 .nav-in{display:flex;align-items:center;gap:12px;padding:13px 0}
 .logo{font-weight:800;font-size:17px;display:flex;align-items:center;gap:9px;letter-spacing:-.01em}
@@ -32,8 +30,6 @@ nav{position:sticky;top:0;z-index:40;background:rgba(13,15,19,.86);backdrop-filt
 .btn.ghost:hover{border-color:var(--faint)}
 .btn.lg{font-size:15px;padding:13px 22px}
 @media(max-width:640px){.nlink.hideS{display:none}}
-
-/* hero */
 .hero{position:relative;padding:64px 0 30px;overflow:hidden}
 .crack{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:0}
 .crack path{fill:none;stroke-linecap:round}
@@ -50,8 +46,6 @@ h1 .frac::after{content:"";position:absolute;left:-2%;right:-2%;top:54%;height:2
 .sub b{color:var(--text);font-weight:600}
 .cta{display:flex;gap:11px;margin-top:26px;flex-wrap:wrap}
 .microcta{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--faint);margin-top:14px;letter-spacing:.02em}
-
-/* proof fault card (reused look) */
 .proof{background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden;position:relative;box-shadow:0 24px 60px -30px rgba(0,0,0,.8)}
 .proof::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--warn)}
 .proof-tag{position:absolute;top:12px;right:12px;font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--faint);border:1px solid var(--border);border-radius:5px;padding:3px 7px}
@@ -72,14 +66,10 @@ h1 .frac::after{content:"";position:absolute;left:-2%;right:-2%;top:54%;height:2
 .pmr.tot{border-top:1px solid var(--faint);margin-top:3px;padding-top:6px;font-weight:700}.pmr.tot .l{color:var(--text)}
 .proof-rcpt{padding:13px 19px;border-top:1px solid var(--border);font-size:12px;color:var(--text);line-height:1.6}
 .proof-rcpt .rk{font-family:'JetBrains Mono',monospace;font-size:8.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--accent);font-weight:700;margin-bottom:5px}
-
-/* sections */
 section.band{padding:62px 0;border-top:1px solid var(--border)}
 .shead{max-width:60ch}
 .shead h2{font-size:clamp(24px,3.4vw,34px);font-weight:800;letter-spacing:-.02em;line-height:1.1;margin-top:12px}
 .shead p{color:var(--dim);margin-top:12px;font-size:15.5px}
-
-/* compare */
 .cmp{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:32px}
 @media(max-width:720px){.cmp{grid-template-columns:1fr}}
 .cmp-card{border:1px solid var(--border);border-radius:13px;padding:20px;background:var(--surface)}
@@ -93,8 +83,6 @@ section.band{padding:62px 0;border-top:1px solid var(--border)}
 .cmp-card li{font-size:13.5px;color:var(--dim);display:flex;gap:9px;align-items:flex-start}
 .cmp-card li::before{content:"";flex:none;width:6px;height:6px;border-radius:50%;margin-top:7px;background:var(--faint)}
 .cmp-card.us li::before{background:var(--accent)}
-
-/* classes grid */
 .cls-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:13px;margin-top:32px}
 @media(max-width:820px){.cls-grid{grid-template-columns:1fr 1fr}}
 @media(max-width:540px){.cls-grid{grid-template-columns:1fr}}
@@ -104,8 +92,6 @@ section.band{padding:62px 0;border-top:1px solid var(--border)}
 .clscard p{font-size:13px;color:var(--dim);line-height:1.55}
 .clscard .sev{position:absolute;top:16px;right:16px;width:8px;height:8px;border-radius:50%}
 .sev.hi{background:var(--warn)}.sev.cr{background:var(--neg)}.sev.md{background:var(--accent)}
-
-/* trust */
 .trust{display:grid;grid-template-columns:1.1fr .9fr;gap:36px;align-items:center;margin-top:14px}
 @media(max-width:820px){.trust{grid-template-columns:1fr;gap:26px}}
 .trust h2{font-size:clamp(24px,3.4vw,32px);font-weight:800;letter-spacing:-.02em;line-height:1.12}
@@ -116,31 +102,26 @@ section.band{padding:62px 0;border-top:1px solid var(--border)}
 .lkpis{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1px;background:var(--border)}
 .lk{background:var(--surface2);padding:15px 14px}
 .lk .n{font-family:'JetBrains Mono',monospace;font-size:22px;font-weight:700}
-.lk .n.pos{color:var(--pos)}
+.lk .n.pos{color:var(--pos)}.lk .n.neg{color:var(--neg)}.lk .n.warnc{color:var(--warn)}
 .lk .l{font-size:10px;color:var(--dim);text-transform:uppercase;letter-spacing:.04em;margin-top:3px}
 .lnote{padding:12px 16px;font-size:11px;color:var(--faint);font-family:'JetBrains Mono',monospace;border-top:1px solid var(--border)}
-
-/* honest */
+.pbar{height:7px;background:var(--surface2);border-radius:5px;overflow:hidden;margin:12px 0}
+.pbar>i{display:block;height:100%;background:var(--accent)}
+.relia{width:100%;max-width:320px;margin:6px auto 2px;display:block}
 .honest{border:1px solid rgba(217,154,43,.3);background:rgba(217,154,43,.04);border-radius:14px;padding:24px;margin-top:14px}
 .honest h3{font-size:15px;color:var(--warn);font-weight:700;margin-bottom:12px;display:flex;align-items:center;gap:9px}
 .honest ul{list-style:none;display:flex;flex-direction:column;gap:10px}
 .honest li{font-size:14px;color:var(--dim);line-height:1.55;display:flex;gap:10px}
 .honest li b{color:var(--text);font-weight:600}
 .honest li::before{content:"\2014";color:var(--warn);flex:none}
-
-/* final cta */
 .final{text-align:center;padding:72px 0}
 .final h2{font-size:clamp(26px,4vw,40px);font-weight:800;letter-spacing:-.025em;line-height:1.08;max-width:18ch;margin:0 auto}
 .final p{color:var(--dim);margin:16px auto 0;max-width:48ch;font-size:16px}
 .final .cta{justify-content:center}
-
-/* footer */
 footer{border-top:1px solid var(--border);background:var(--surface);padding:34px 0 44px}
 .foot-grid{display:flex;justify-content:space-between;gap:24px;flex-wrap:wrap;font-size:12.5px;color:var(--faint);line-height:1.7}
 .foot-grid a{color:var(--dim)}.foot-grid a:hover{color:var(--text)}
 .rg{color:var(--dim);font-weight:600}
-
-/* auth modal */
 .modal{position:fixed;inset:0;z-index:80;background:rgba(7,9,12,.78);backdrop-filter:blur(4px);display:none;align-items:center;justify-content:center;padding:20px}
 .modal.on{display:flex}
 .sheet{width:100%;max-width:400px;background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:26px 24px;position:relative}
@@ -169,6 +150,7 @@ footer{border-top:1px solid var(--border);background:var(--surface);padding:34px
     <span class="logo"><span class="mk"></span>EdgeDesk <small>research</small></span>
     <span class="nav-sp"></span>
     <a class="nlink hideS" href="#different">How it works</a>
+    <a class="nlink hideS" href="#proof-record">Track record</a>
     <a class="nlink hideS" href="#classes">Fault types</a>
     <button class="btn ghost" onclick="openAuth('login')">Log in</button>
     <button class="btn primary" onclick="openAuth('signup')">Sign up</button>
@@ -260,6 +242,37 @@ footer{border-top:1px solid var(--border);background:var(--surface);padding:34px
   </div>
 </section>
 
+<!-- ===== LIVE PUBLIC PROOF ===== -->
+<section class="band" id="proof-record">
+  <div class="wrap">
+    <span class="ey">Proof, not picks</span>
+    <div class="trust">
+      <div>
+        <h2>We don't sell you hope. We show you the record — live and public.</h2>
+        <p>Most bettors lose, so a tool that sells the <b>feeling</b> of winning is a churn machine. EdgeDesk doesn't tell you what to bet. It tracks two things in the open: <b>closing-line value</b> (did our flags beat the market) and <b>calibration</b> (were our probabilities honest).</p>
+        <p>This block is <b>live</b> — pulled from the same database the app runs on, auto-graded, nothing hand-entered. It stays in a "building" state until there's a large enough sample to prove anything, because a thin record shown as proof would be the opposite of honest. When it earns it, the receipts unlock here for anyone, no login.</p>
+        <p class="mono" style="font-size:12px;color:var(--faint)">CLV asks: did we beat the close? · Calibration asks: were the odds real? · A model graduates only once it beats the close over sample.</p>
+      </div>
+
+      <!-- LIVE record card (self-gating) -->
+      <div class="ledger" id="liveProof" aria-label="Live public track record">
+        <div class="ledger-hd"><span class="dot"></span>Live public record · auto-graded · no login</div>
+        <div id="proofInner" style="padding:16px"><div class="lnote" style="border:none;padding:0">Loading the live record…</div></div>
+      </div>
+    </div>
+
+    <div class="honest">
+      <h3>◆ What EdgeDesk is, and isn't</h3>
+      <ul>
+        <li><b>It's a research tool</b>, not a sportsbook, tipster, or financial advisor. It surfaces statistical and structural signals from public market data.</li>
+        <li><b>No guarantees.</b> Flagged faults are estimates, structure-detection is not a prediction of outcomes, and every market carries high variance. You can lose money.</li>
+        <li><b>You decide.</b> EdgeDesk never tells you what to bet. You're responsible for your decisions and for the laws where you are.</li>
+        <li><b>21+.</b> If gambling stops being fun, stop. Help is available at 1-800-GAMBLER.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
 <!-- CLASSES -->
 <section class="band" id="classes">
   <div class="wrap">
@@ -275,39 +288,6 @@ footer{border-top:1px solid var(--border);background:var(--surface);padding:34px
       <div class="clscard"><span class="sev md"></span><div class="num">04</div><div class="nm">Overround Anomaly</div><p>A board whose total vig sits well outside its peer band: thin, loosely-priced markets the book hasn't tightened. A screening signal, not a standalone bet.</p></div>
       <div class="clscard"><span class="sev md"></span><div class="num">05</div><div class="nm">Dead-Heat / Top-N <span style="font-size:9px;letter-spacing:.04em;color:var(--faint);border:1px solid var(--border);border-radius:4px;padding:1px 5px;vertical-align:middle">soon</span></div><p>Top-N markets where the number of qualifiers and dead-heat rules make a posted price structurally off the true settlement math.</p></div>
       <div class="clscard"><span class="sev md"></span><div class="num">06</div><div class="nm">Structural Asymmetry <span style="font-size:9px;letter-spacing:.04em;color:var(--faint);border:1px solid var(--border);border-radius:4px;padding:1px 5px;vertical-align:middle">soon</span></div><p>Scheduling, rest, tiebreaker and bid-thief spots the book is slow to price, heaviest in college conference tournaments.</p></div>
-    </div>
-  </div>
-</section>
-
-<!-- TRUST -->
-<section class="band">
-  <div class="wrap">
-    <span class="ey">Proof, not picks</span>
-    <div class="trust">
-      <div>
-        <h2>We don't sell you hope. We show you the record.</h2>
-        <p>Most bettors lose, so a tool that sells the <b>feeling</b> of winning is a churn machine. EdgeDesk doesn't tell you what to bet. It surfaces structural faults, and it tracks the closing-line value of every flagged selection in the open.</p>
-        <p>The number that matters isn't last week's win. It's <b>did the line move our way after we flagged it</b>, then captured, snapshotted at close, auto-graded, and shown whether it helps the pitch or hurts it. That's the only honest reason to pull out a card.</p>
-      </div>
-      <div class="ledger" aria-label="Track record sample">
-        <div class="ledger-hd"><span class="dot"></span>Verified track record · auto-graded</div>
-        <div class="lkpis">
-          <div class="lk"><div class="n pos">+2.3%</div><div class="l">avg CLV</div></div>
-          <div class="lk"><div class="n">63%</div><div class="l">beat close</div></div>
-          <div class="lk"><div class="n mono">1,140</div><div class="l">flags graded</div></div>
-        </div>
-        <div class="lnote">▲ illustrative. Your live record builds from the first scan, public and unedited</div>
-      </div>
-    </div>
-
-    <div class="honest">
-      <h3>◆ What EdgeDesk is, and isn't</h3>
-      <ul>
-        <li><b>It's a research tool</b>, not a sportsbook, tipster, or financial advisor. It surfaces statistical and structural signals from public market data.</li>
-        <li><b>No guarantees.</b> Flagged faults are estimates, structure-detection is not a prediction of outcomes, and every market carries high variance. You can lose money.</li>
-        <li><b>You decide.</b> EdgeDesk never tells you what to bet. You're responsible for your decisions and for the laws where you are.</li>
-        <li><b>21+.</b> If gambling stops being fun, stop. Help is available at 1-800-GAMBLER.</li>
-      </ul>
     </div>
   </div>
 </section>
@@ -331,7 +311,7 @@ footer{border-top:1px solid var(--border);background:var(--surface);padding:34px
     <div>
       <div class="rg">Responsible gambling</div>
       <div>21+ · 1-800-GAMBLER · ncpgambling.org</div>
-      <div style="margin-top:10px"><a href="#different">How it works</a> · <a href="#classes">Fault types</a></div>
+      <div style="margin-top:10px"><a href="#different">How it works</a> · <a href="#proof-record">Track record</a> · <a href="#classes">Fault types</a></div>
       <div style="margin-top:10px;color:var(--faint)">© <span id="yr"></span> Rackler Tech Ventures LLC</div>
     </div>
   </div>
@@ -355,14 +335,62 @@ footer{border-top:1px solid var(--border);background:var(--surface);padding:34px
 <script>
 document.getElementById('yr').textContent=new Date().getFullYear();
 
-/* ===== Supabase auth (GoTrue) =====
-   anon key is public-safe. Requires Email provider enabled in Supabase.
-   On success, stores session and sends the user to the app (app.html). */
 var SB_URL="https://iattxbkbufslbauoumga.supabase.co";
 var SB_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlhdHR4YmtidWZzbGJhdW91bWdhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE2MzY4MDUsImV4cCI6MjA5NzIxMjgwNX0.Mly5G587o5IFRnEigU2wRp9buWEk3dFwH9RNPJK7Uo8";
 var APP_URL="./app.html";
 var authMode='signup';
 
+/* ===== LIVE PUBLIC PROOF (reads the same DB the app runs on; self-gates on sample) ===== */
+async function sbGet(q){var r=await fetch(SB_URL+'/rest/v1/'+q,{headers:{apikey:SB_KEY,Authorization:'Bearer '+SB_KEY}});if(!r.ok)throw new Error(r.status);return r.json();}
+function reliaMini(calib){
+  var W=300,H=170,P=26,plot=W-P*2;
+  function X(p){return P+(p/100)*plot;}function Y(p){return (H-P)-(p/100)*(H-P*2);}
+  var g='';for(var v=0;v<=100;v+=50){g+='<line x1="'+X(v)+'" y1="'+Y(0)+'" x2="'+X(v)+'" y2="'+Y(100)+'" stroke="#262c36"/>'+'<line x1="'+X(0)+'" y1="'+Y(v)+'" x2="'+X(100)+'" y2="'+Y(v)+'" stroke="#262c36"/>';}
+  var diag='<line x1="'+X(0)+'" y1="'+Y(0)+'" x2="'+X(100)+'" y2="'+Y(100)+'" stroke="#8a93a2" stroke-width="1.4" stroke-dasharray="4 4"/>';
+  var pts='';(calib||[]).forEach(function(r){var pr=+r.avg_pred,ob=+r.observed,n=+r.n;if(!isFinite(pr)||!isFinite(ob))return;var rad=Math.max(3,Math.min(8,Math.sqrt(n)));var off=Math.abs(pr-ob);var col=off<=8?'#2fb47c':(off<=18?'#d99a2b':'#e26044');pts+='<circle cx="'+X(pr)+'" cy="'+Y(ob)+'" r="'+rad+'" fill="'+col+'" fill-opacity="0.55" stroke="'+col+'" stroke-width="1.4"/>';});
+  return '<svg class="relia" viewBox="0 0 '+W+' '+H+'">'+g+diag+pts+'</svg>';
+}
+async function loadLiveProof(){
+  var inner=document.getElementById('proofInner');if(!inner)return;
+  try{
+    var gate=(await sbGet('public_proof_gate?select=*'))[0]||{total_graded:0,show_publicly:false,threshold:200};
+    if(!gate.show_publicly){
+      var pct=Math.min(100,Math.round((gate.total_graded/gate.threshold)*100));
+      inner.innerHTML='<div style="font-family:JetBrains Mono,monospace;font-size:12px;color:var(--warn);font-weight:700;letter-spacing:.04em">BUILDING THE RECORD</div>'+
+        '<div style="font-family:JetBrains Mono,monospace;font-size:22px;font-weight:700;margin-top:8px">'+gate.total_graded+' <span style="color:var(--faint);font-size:14px">/ '+gate.threshold+' graded</span></div>'+
+        '<div class="pbar"><i style="width:'+pct+'%"></i></div>'+
+        '<div style="font-size:12px;color:var(--dim);line-height:1.55;margin-top:6px">Every model prediction and flagged edge is archived and graded automatically against real results. This unlocks the full public audit \u2014 CLV, calibration, model versions \u2014 once the sample is large enough to actually prove something. It fills in on its own. No cherry-picking, no reset.</div>';
+      return;
+    }
+    // CLV
+    var clvHtml='';
+    try{
+      var rows=await sbGet('signals?select=clv&graded_at=not.is.null&edge=gte.0.005&edge=lte.0.1&n_books=gte.3&clv=not.is.null&limit=100000');
+      var n=rows.length;
+      if(n){var sum=rows.reduce(function(a,r){return a+(+r.clv||0);},0),avg=sum/n;
+        var sorted=rows.map(function(r){return +r.clv||0;}).sort(function(a,b){return a-b;}),med=sorted[Math.floor(n/2)];
+        var beat=rows.filter(function(r){return (+r.clv||0)>0;}).length/n;
+        clvHtml='<div class="lkpis"><div class="lk"><div class="n '+(avg>=0?'pos':'neg')+'">'+(avg>=0?'+':'')+(avg*100).toFixed(2)+'%</div><div class="l">avg CLV</div></div>'+
+          '<div class="lk"><div class="n '+(med>=0?'pos':'neg')+'">'+(med>=0?'+':'')+(med*100).toFixed(2)+'%</div><div class="l">median CLV</div></div>'+
+          '<div class="lk"><div class="n">'+(beat*100).toFixed(0)+'%</div><div class="l">beat close · n='+n+'</div></div></div>'+
+          ((avg>0&&med<0)?'<div class="lnote" style="color:var(--warn)">▲ avg positive, median negative — outlier-driven, still fragile. Shown, not hidden.</div>':'<div class="lnote">▲ closing-line value across flagged edges, auto-graded, unedited</div>');
+      }
+    }catch(e){}
+    // calibration mini
+    var calHtml='';
+    try{var calib=await sbGet('model_calibration?select=*&order=bucket.asc');var brier=await sbGet('model_brier?select=*');
+      if(calib.length||brier.length){calHtml='<div style="padding:14px 16px;border-top:1px solid var(--border)"><div style="font-family:JetBrains Mono,monospace;font-size:10px;color:var(--dim);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">Calibration · model said vs happened</div>'+reliaMini(calib)+
+        (brier.length?'<div style="font-family:JetBrains Mono,monospace;font-size:11px;color:var(--faint);text-align:center">'+brier.map(function(b){return esc(b.sport)+' Brier '+(+b.brier).toFixed(3);}).join(' · ')+'</div>':'')+'</div>';}
+    }catch(e){}
+    inner.innerHTML=clvHtml+calHtml||'<div class="lnote" style="border:none">Record is live but empty right now — it fills as flags grade.</div>';
+  }catch(e){
+    inner.innerHTML='<div class="lnote" style="border:none">Couldn\u2019t reach the live record just now.</div>';
+  }
+}
+function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+loadLiveProof();
+
+/* ===== auth ===== */
 function openAuth(mode){authMode=mode;var su=mode==='signup';
   document.getElementById('authTitle').textContent=su?'Create your account':'Welcome back';
   document.getElementById('authLede').textContent=su?'Free to start. Scan live boards for structural faults.':'Log in to your EdgeDesk scanner.';
@@ -377,7 +405,6 @@ function closeAuth(){document.getElementById('authModal').classList.remove('on')
 function msg(t,kind){var m=document.getElementById('authMsg');if(!t){m.className='auth-msg';m.textContent='';return;}m.className='auth-msg '+(kind||'err');m.textContent=t;}
 document.getElementById('authModal').addEventListener('click',function(e){if(e.target===this)closeAuth();});
 document.addEventListener('keydown',function(e){if(e.key==='Escape')closeAuth();});
-/* Enter submits from either field (no <form>, so wire it explicitly) */
 ['aEmail','aPass'].forEach(function(id){
   document.getElementById(id).addEventListener('keydown',function(e){
     if(e.key==='Enter'){e.preventDefault();if(!document.getElementById('authSubmit').disabled)submitAuth();}
@@ -394,10 +421,10 @@ async function submitAuth(){
     var r=await fetch(SB_URL+path,{method:'POST',headers:{'Content-Type':'application/json',apikey:SB_KEY},body:JSON.stringify({email:email,password:pass})});
     var d=await r.json();
     if(!r.ok){msg(d.msg||d.error_description||d.error||'Something went wrong. Try again.');btn.disabled=false;btn.textContent=old;return;}
-    if(d.access_token){ // logged in
+    if(d.access_token){
       try{localStorage.setItem('edgedesk_session',JSON.stringify(d));}catch(e){}
       msg('Signed in, opening your scanner…','ok');setTimeout(function(){window.location.href=APP_URL;},700);
-    }else{ // signup with email confirmation required
+    }else{
       msg('Check your email to confirm, then log in.','ok');btn.disabled=false;btn.textContent=old;
     }
   }catch(e){msg('Network error. Check your connection and retry.');btn.disabled=false;btn.textContent=old;}
