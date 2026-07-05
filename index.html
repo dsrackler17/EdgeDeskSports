@@ -312,6 +312,7 @@ footer{border-top:1px solid var(--border);background:var(--surface);padding:34px
       <div class="rg">Responsible gambling</div>
       <div>21+ · 1-800-GAMBLER · ncpgambling.org</div>
       <div style="margin-top:10px"><a href="#different">How it works</a> · <a href="#proof-record">Track record</a> · <a href="#classes">Fault types</a></div>
+      <div style="margin-top:8px"><a href="/terms.html">Terms</a> · <a href="/privacy.html">Privacy</a> · <a href="/disclaimer.html">Disclaimer</a></div>
       <div style="margin-top:10px;color:var(--faint)">© <span id="yr"></span> Rackler Tech Ventures LLC</div>
     </div>
   </div>
@@ -325,7 +326,11 @@ footer{border-top:1px solid var(--border);background:var(--surface);padding:34px
     <p class="ld" id="authLede">Free to start. Scan live boards for structural faults.</p>
     <div class="fld"><label for="aEmail">Email</label><input id="aEmail" type="email" autocomplete="email" placeholder="you@email.com"></div>
     <div class="fld"><label for="aPass">Password</label><input id="aPass" type="password" autocomplete="current-password" placeholder="••••••••"></div>
-    <button class="btn primary lg authbtn" id="authSubmit" onclick="submitAuth()">Sign up</button>
+    <label id="consentRow" style="display:flex;gap:9px;align-items:flex-start;margin:4px 0 6px;cursor:pointer;font-size:12px;color:var(--dim);line-height:1.45">
+      <input type="checkbox" id="aConsent" style="margin-top:2px;flex:none;width:16px;height:16px;accent-color:var(--accent);cursor:pointer">
+      <span>I confirm I am <b style="color:var(--text)">21+</b>, that betting is legal where I am, and that I agree to the <a href="/terms.html" target="_blank" style="color:var(--accent)">Terms</a> and <a href="/privacy.html" target="_blank" style="color:var(--accent)">Privacy Policy</a>. EdgeDesk is a research tool, not betting advice; I am responsible for my own decisions.</span>
+    </label>
+    <button class="btn primary lg authbtn" id="authSubmit" onclick="submitAuth()" disabled>Sign up</button>
     <div class="auth-msg" id="authMsg"></div>
     <div class="auth-toggle" id="authToggle"></div>
     <p class="auth-legal">By continuing you confirm you're 21+ and that betting is legal where you are. EdgeDesk is a research tool, not betting advice. 1-800-GAMBLER.</p>
@@ -396,6 +401,11 @@ function openAuth(mode){authMode=mode;var su=mode==='signup';
   document.getElementById('authLede').textContent=su?'Free to start. Scan live boards for structural faults.':'Log in to your EdgeDesk scanner.';
   document.getElementById('authSubmit').textContent=su?'Sign up':'Log in';
   document.getElementById('aPass').autocomplete=su?'new-password':'current-password';
+  // consent checkbox: required for signup, hidden for login. reset each open.
+  var cr=document.getElementById('consentRow'),cb=document.getElementById('aConsent'),sb=document.getElementById('authSubmit');
+  cb.checked=false;
+  cr.style.display=su?'flex':'none';
+  sb.disabled=su?true:false;   // signup starts disabled until box is checked; login always enabled
   document.getElementById('authToggle').innerHTML=su
     ? 'Already have an account? <button onclick="openAuth(\'login\')">Log in</button>'
     : 'New here? <button onclick="openAuth(\'signup\')">Sign up</button>';
@@ -410,15 +420,24 @@ document.addEventListener('keydown',function(e){if(e.key==='Escape')closeAuth();
     if(e.key==='Enter'){e.preventDefault();if(!document.getElementById('authSubmit').disabled)submitAuth();}
   });
 });
+/* signup button unlocks only when the consent box is checked */
+document.getElementById('aConsent').addEventListener('change',function(){
+  if(authMode==='signup')document.getElementById('authSubmit').disabled=!this.checked;
+});
 
 async function submitAuth(){
   var email=document.getElementById('aEmail').value.trim(),pass=document.getElementById('aPass').value;
   if(!email||!pass){msg('Enter your email and password.');return;}
   if(pass.length<6){msg('Password must be at least 6 characters.');return;}
+  if(authMode==='signup'&&!document.getElementById('aConsent').checked){msg('Please confirm you are 21+ and agree to the Terms to continue.');return;}
+  var consentAt=new Date().toISOString();
   var btn=document.getElementById('authSubmit');btn.disabled=true;var old=btn.textContent;btn.textContent='…';
   var path=authMode==='signup'?'/auth/v1/signup':'/auth/v1/token?grant_type=password';
+  var payload={email:email,password:pass};
+  // log the affirmation with the signup so there's a timestamped record of consent
+  if(authMode==='signup')payload.data={consent_21plus:true,consent_terms:true,consent_at:consentAt,consent_version:'2026-07'};
   try{
-    var r=await fetch(SB_URL+path,{method:'POST',headers:{'Content-Type':'application/json',apikey:SB_KEY},body:JSON.stringify({email:email,password:pass})});
+    var r=await fetch(SB_URL+path,{method:'POST',headers:{'Content-Type':'application/json',apikey:SB_KEY},body:JSON.stringify(payload)});
     var d=await r.json();
     if(!r.ok){msg(d.msg||d.error_description||d.error||'Something went wrong. Try again.');btn.disabled=false;btn.textContent=old;return;}
     if(d.access_token){
