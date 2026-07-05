@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>EdgeDesk: Find where the market breaks its own rules</title>
-<meta name="description" content="EdgeDesk Faultline finds structural mispricings in sports betting markets. It flags errors that come from the rules and math of the market, not a model. Research tool, not advice.">
+<meta name="description" content="EdgeDesk finds bad lines in sports betting markets and tracks whether they actually beat the market. A research tool, not betting advice.">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#0d0f13;--surface:#13161c;--surface2:#191d25;--border:#262c36;--text:#e7eaf0;--dim:#8a93a2;--faint:#5b6472;--accent:#4d8dff;--accent2:#7db0ff;--pos:#2fb47c;--neg:#e26044;--warn:#d99a2b;--gold:#e3b84d}
@@ -43,6 +43,8 @@ h1{font-size:clamp(34px,5.4vw,58px);line-height:1.02;font-weight:800;letter-spac
 h1 .frac{position:relative;display:inline-block;color:var(--accent)}
 h1 .frac::after{content:"";position:absolute;left:-2%;right:-2%;top:54%;height:2px;background:linear-gradient(90deg,transparent,var(--warn),var(--neg),transparent);opacity:.85}
 .sub{color:var(--dim);font-size:clamp(15px,2vw,18px);margin-top:20px;max-width:36ch}
+.hook{font-size:clamp(18px,2.6vw,23px);font-weight:700;color:var(--text);margin-top:14px;letter-spacing:-.01em}
+.hook::after{content:"";display:block;width:44px;height:3px;background:linear-gradient(90deg,var(--accent),transparent);border-radius:2px;margin-top:12px}
 .sub b{color:var(--text);font-weight:600}
 .cta{display:flex;gap:11px;margin-top:26px;flex-wrap:wrap}
 .microcta{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--faint);margin-top:14px;letter-spacing:.02em}
@@ -168,6 +170,7 @@ footer{border-top:1px solid var(--border);background:var(--surface);padding:34px
     <div>
       <span class="ey">Structural mispricing engine</span>
       <h1>The market breaks its <span class="frac">own rules</span>. We find where.</h1>
+      <p class="hook">Finds bad lines. Shows you the receipts.</p>
       <p class="sub">Every other tool runs <b>model vs. line</b>, its guess against the book's. EdgeDesk runs <b>structure vs. line</b>: it catches errors built into the rules and math of the market itself. The mispricings a better model can't find, and a competitor can't copy.</p>
       <p class="sub" style="font-size:15px;opacity:.85">MLB and WNBA live now, with college football and college basketball rolling in for their seasons, so the desk runs year round. The faults rotate with the calendar: titles and transitions in fall and winter, pennant races and elimination dead money through the summer.</p>
       <div class="cta">
@@ -248,10 +251,10 @@ footer{border-top:1px solid var(--border);background:var(--surface);padding:34px
     <span class="ey">Proof, not picks</span>
     <div class="trust">
       <div>
-        <h2>We don't sell you hope. We show you the record — live and public.</h2>
-        <p>Most bettors lose, so a tool that sells the <b>feeling</b> of winning is a churn machine. EdgeDesk doesn't tell you what to bet. It tracks two things in the open: <b>closing-line value</b> (did our flags beat the market) and <b>calibration</b> (were our probabilities honest).</p>
-        <p>This block is <b>live</b> — pulled from the same database the app runs on, auto-graded, nothing hand-entered. It stays in a "building" state until there's a large enough sample to prove anything, because a thin record shown as proof would be the opposite of honest. When it earns it, the receipts unlock here for anyone, no login.</p>
-        <p class="mono" style="font-size:12px;color:var(--faint)">CLV asks: did we beat the close? · Calibration asks: were the odds real? · A model graduates only once it beats the close over sample.</p>
+        <h2>We don't sell you hope. We show you the record, live and public.</h2>
+        <p>Most bettors lose, so a tool that sells the <b>feeling</b> of winning is a churn machine. EdgeDesk doesn't tell you what to bet. It tracks two things out in the open: did our flagged bets actually beat the market, and were our numbers actually honest.</p>
+        <p>This block is <b>live</b>. It reads from the same database the app runs on, graded automatically, with nothing entered by hand. It stays in a building state until there's a large enough sample to prove anything, because showing a thin record as proof would be the opposite of honest. Once it earns it, the receipts unlock here for anyone, no login.</p>
+        <p class="mono" style="font-size:12px;color:var(--faint)">Did we beat the closing line? Were the odds real? A model only earns trust once it beats the market over a real sample.</p>
       </div>
 
       <!-- LIVE record card (self-gating) -->
@@ -278,7 +281,7 @@ footer{border-top:1px solid var(--border);background:var(--surface);padding:34px
   <div class="wrap">
     <div class="shead">
       <span class="ey">What it scans for</span>
-      <h2>Six classes of structural fault.</h2>
+      <h2>Six kinds of mistakes the market makes.</h2>
       <p>Four scan live today; two more are on the way. Each one fires on the rules and internal math of the market, not a forecast. Severity reflects how defensible the fault is, not how big the number looks.</p>
     </div>
     <div class="cls-grid">
@@ -323,7 +326,7 @@ footer{border-top:1px solid var(--border);background:var(--surface);padding:34px
   <div class="sheet">
     <button class="x" onclick="closeAuth()" aria-label="Close">×</button>
     <h3 id="authTitle">Create your account</h3>
-    <p class="ld" id="authLede">Free to start. Scan live boards for structural faults.</p>
+    <p class="ld" id="authLede">Free to start. Find bad lines and see if they actually hold up.</p>
     <div class="fld"><label for="aEmail">Email</label><input id="aEmail" type="email" autocomplete="email" placeholder="you@email.com"></div>
     <div class="fld"><label for="aPass">Password</label><input id="aPass" type="password" autocomplete="current-password" placeholder="••••••••"></div>
     <label id="consentRow" style="display:flex;gap:9px;align-items:flex-start;margin:4px 0 6px;cursor:pointer;font-size:12px;color:var(--dim);line-height:1.45">
@@ -364,7 +367,7 @@ async function loadLiveProof(){
       inner.innerHTML='<div style="font-family:JetBrains Mono,monospace;font-size:12px;color:var(--warn);font-weight:700;letter-spacing:.04em">BUILDING THE RECORD</div>'+
         '<div style="font-family:JetBrains Mono,monospace;font-size:22px;font-weight:700;margin-top:8px">'+gate.total_graded+' <span style="color:var(--faint);font-size:14px">/ '+gate.threshold+' graded</span></div>'+
         '<div class="pbar"><i style="width:'+pct+'%"></i></div>'+
-        '<div style="font-size:12px;color:var(--dim);line-height:1.55;margin-top:6px">Every model prediction and flagged edge is archived and graded automatically against real results. This unlocks the full public audit \u2014 CLV, calibration, model versions \u2014 once the sample is large enough to actually prove something. It fills in on its own. No cherry-picking, no reset.</div>';
+        '<div style="font-size:12px;color:var(--dim);line-height:1.55;margin-top:6px">Every flagged bet and model call is saved and graded automatically against what really happened. The full public record unlocks here once the sample is large enough to actually prove something. It fills in on its own. No cherry-picking, no reset.</div>';
       return;
     }
     // CLV
@@ -378,7 +381,7 @@ async function loadLiveProof(){
         clvHtml='<div class="lkpis"><div class="lk"><div class="n '+(avg>=0?'pos':'neg')+'">'+(avg>=0?'+':'')+(avg*100).toFixed(2)+'%</div><div class="l">avg CLV</div></div>'+
           '<div class="lk"><div class="n '+(med>=0?'pos':'neg')+'">'+(med>=0?'+':'')+(med*100).toFixed(2)+'%</div><div class="l">median CLV</div></div>'+
           '<div class="lk"><div class="n">'+(beat*100).toFixed(0)+'%</div><div class="l">beat close · n='+n+'</div></div></div>'+
-          ((avg>0&&med<0)?'<div class="lnote" style="color:var(--warn)">▲ avg positive, median negative — outlier-driven, still fragile. Shown, not hidden.</div>':'<div class="lnote">▲ closing-line value across flagged edges, auto-graded, unedited</div>');
+          ((avg>0&&med<0)?'<div class="lnote" style="color:var(--warn)">▲ avg positive, median negative. Driven by a few outliers, still fragile. Shown, not hidden.</div>':'<div class="lnote">▲ closing-line value across flagged edges, auto-graded, unedited</div>');
       }
     }catch(e){}
     // calibration mini
@@ -387,7 +390,7 @@ async function loadLiveProof(){
       if(calib.length||brier.length){calHtml='<div style="padding:14px 16px;border-top:1px solid var(--border)"><div style="font-family:JetBrains Mono,monospace;font-size:10px;color:var(--dim);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">Calibration · model said vs happened</div>'+reliaMini(calib)+
         (brier.length?'<div style="font-family:JetBrains Mono,monospace;font-size:11px;color:var(--faint);text-align:center">'+brier.map(function(b){return esc(b.sport)+' Brier '+(+b.brier).toFixed(3);}).join(' · ')+'</div>':'')+'</div>';}
     }catch(e){}
-    inner.innerHTML=clvHtml+calHtml||'<div class="lnote" style="border:none">Record is live but empty right now — it fills as flags grade.</div>';
+    inner.innerHTML=clvHtml+calHtml||'<div class="lnote" style="border:none">Record is live but empty right now. It fills as bets grade.</div>';
   }catch(e){
     inner.innerHTML='<div class="lnote" style="border:none">Couldn\u2019t reach the live record just now.</div>';
   }
@@ -398,7 +401,7 @@ loadLiveProof();
 /* ===== auth ===== */
 function openAuth(mode){authMode=mode;var su=mode==='signup';
   document.getElementById('authTitle').textContent=su?'Create your account':'Welcome back';
-  document.getElementById('authLede').textContent=su?'Free to start. Scan live boards for structural faults.':'Log in to your EdgeDesk scanner.';
+  document.getElementById('authLede').textContent=su?'Free to start. Find bad lines and see if they actually hold up.':'Log in to your EdgeDesk scanner.';
   document.getElementById('authSubmit').textContent=su?'Sign up':'Log in';
   document.getElementById('aPass').autocomplete=su?'new-password':'current-password';
   // consent checkbox: required for signup, hidden for login. reset each open.
@@ -466,7 +469,7 @@ async function submitAuth(){
       if(em.indexOf('invalid login')>=0||em.indexOf('invalid')>=0&&em.indexOf('credential')>=0){msg('Wrong email or password. Check them and try again, or use "Forgot password?"');}
       else if(em.indexOf('not confirmed')>=0||em.indexOf('email not confirmed')>=0||em.indexOf('confirm')>=0){var m=document.getElementById('authMsg');m.className='auth-msg err';m.innerHTML='Please confirm your email first. <button onclick="resendConfirm()" style="color:var(--accent);background:none;border:none;font-weight:600;cursor:pointer;text-decoration:underline">Resend email</button>';}
       else if(em.indexOf('already registered')>=0||em.indexOf('already been registered')>=0){msg('That email is already registered. Try logging in instead.');}
-      else if(em.indexOf('weak')>=0||em.indexOf('password')>=0&&em.indexOf('short')>=0){msg('Password is too weak — use at least 6 characters.');}
+      else if(em.indexOf('weak')>=0||em.indexOf('password')>=0&&em.indexOf('short')>=0){msg('Password is too weak. Use at least 6 characters.');}
       else msg(d.msg||d.error_description||d.error||'Something went wrong. Try again.');
       btn.disabled=false;btn.textContent=old;return;
     }
