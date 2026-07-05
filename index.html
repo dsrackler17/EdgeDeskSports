@@ -408,10 +408,32 @@ function openAuth(mode){authMode=mode;var su=mode==='signup';
   sb.disabled=su?true:false;   // signup starts disabled until box is checked; login always enabled
   document.getElementById('authToggle').innerHTML=su
     ? 'Already have an account? <button onclick="openAuth(\'login\')">Log in</button>'
-    : 'New here? <button onclick="openAuth(\'signup\')">Sign up</button>';
+    : 'New here? <button onclick="openAuth(\'signup\')">Sign up</button>'+
+      '<div style="margin-top:9px"><button onclick="forgotPassword()" style="color:var(--dim)">Forgot password?</button></div>';
   msg('');document.getElementById('authModal').classList.add('on');
   setTimeout(function(){document.getElementById('aEmail').focus();},50);}
 function closeAuth(){document.getElementById('authModal').classList.remove('on');}
+/* email a password-reset link */
+async function forgotPassword(){
+  var email=document.getElementById('aEmail').value.trim();
+  if(!email){msg('Enter your email above first, then tap "Forgot password?"');return;}
+  msg('Sending reset link…','ok');
+  try{
+    await fetch(SB_URL+'/auth/v1/recover',{method:'POST',headers:{'Content-Type':'application/json',apikey:SB_KEY},body:JSON.stringify({email:email})});
+    // always show success (don't reveal whether an account exists)
+    msg('If an account exists for '+email+', a reset link is on its way. Check your inbox.','ok');
+  }catch(e){msg('Network error. Try again.');}
+}
+/* resend the signup confirmation email */
+async function resendConfirm(){
+  var email=document.getElementById('aEmail').value.trim();
+  if(!email){msg('Enter your email above first.');return;}
+  msg('Resending confirmation…','ok');
+  try{
+    await fetch(SB_URL+'/auth/v1/resend',{method:'POST',headers:{'Content-Type':'application/json',apikey:SB_KEY},body:JSON.stringify({type:'signup',email:email})});
+    msg('Confirmation email resent to '+email+'. Check your inbox and spam.','ok');
+  }catch(e){msg('Network error. Try again.');}
+}
 function msg(t,kind){var m=document.getElementById('authMsg');if(!t){m.className='auth-msg';m.textContent='';return;}m.className='auth-msg '+(kind||'err');m.textContent=t;}
 document.getElementById('authModal').addEventListener('click',function(e){if(e.target===this)closeAuth();});
 document.addEventListener('keydown',function(e){if(e.key==='Escape')closeAuth();});
@@ -439,7 +461,15 @@ async function submitAuth(){
   try{
     var r=await fetch(SB_URL+path,{method:'POST',headers:{'Content-Type':'application/json',apikey:SB_KEY},body:JSON.stringify(payload)});
     var d=await r.json();
-    if(!r.ok){msg(d.msg||d.error_description||d.error||'Something went wrong. Try again.');btn.disabled=false;btn.textContent=old;return;}
+    if(!r.ok){
+      var em=(d.msg||d.error_description||d.error||'').toLowerCase();
+      if(em.indexOf('invalid login')>=0||em.indexOf('invalid')>=0&&em.indexOf('credential')>=0){msg('Wrong email or password. Check them and try again, or use "Forgot password?"');}
+      else if(em.indexOf('not confirmed')>=0||em.indexOf('email not confirmed')>=0||em.indexOf('confirm')>=0){var m=document.getElementById('authMsg');m.className='auth-msg err';m.innerHTML='Please confirm your email first. <button onclick="resendConfirm()" style="color:var(--accent);background:none;border:none;font-weight:600;cursor:pointer;text-decoration:underline">Resend email</button>';}
+      else if(em.indexOf('already registered')>=0||em.indexOf('already been registered')>=0){msg('That email is already registered. Try logging in instead.');}
+      else if(em.indexOf('weak')>=0||em.indexOf('password')>=0&&em.indexOf('short')>=0){msg('Password is too weak — use at least 6 characters.');}
+      else msg(d.msg||d.error_description||d.error||'Something went wrong. Try again.');
+      btn.disabled=false;btn.textContent=old;return;
+    }
     if(d.access_token){
       try{localStorage.setItem('edgedesk_session',JSON.stringify(d));}catch(e){}
       msg('Signed in, opening your scanner…','ok');setTimeout(function(){window.location.href=APP_URL;},700);

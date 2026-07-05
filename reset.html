@@ -1,0 +1,71 @@
+<!doctype html><html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Reset password — EdgeDesk</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0d0f13;--surface:#13161c;--surface2:#191d25;--border:#262c36;--text:#e7eaf0;--dim:#8a93a2;--faint:#5b6472;--accent:#4d8dff;--accent2:#7db0ff;--pos:#2fb47c;--neg:#e26044}
+*{box-sizing:border-box;margin:0}body{background:var(--bg);color:var(--text);font-family:'Inter',system-ui,sans-serif;-webkit-font-smoothing:antialiased;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
+.mk{width:11px;height:18px;background:linear-gradient(180deg,var(--accent),var(--accent2));border-radius:2px;transform:skewX(-12deg)}
+.logo{font-weight:800;font-size:17px;display:flex;align-items:center;gap:9px;justify-content:center;margin-bottom:20px}
+.sheet{width:100%;max-width:400px;background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:28px 26px}
+h1{font-size:20px;font-weight:800;letter-spacing:-.01em;margin-bottom:4px}
+.ld{color:var(--dim);font-size:13px;margin-bottom:18px}
+.fld{display:flex;flex-direction:column;gap:6px;margin-bottom:12px}
+.fld label{font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:var(--faint);font-family:'JetBrains Mono',monospace}
+input{width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:9px;padding:12px;font-size:15px;font-family:'Inter',sans-serif}
+input:focus{outline:2px solid var(--accent);outline-offset:-1px}
+.btn{width:100%;font-family:'Inter',sans-serif;font-weight:700;font-size:15px;border-radius:9px;padding:13px;cursor:pointer;border:1px solid var(--accent);background:var(--accent);color:#06122b;transition:.15s}
+.btn:hover{background:var(--accent2)}
+.btn:disabled{opacity:.6;cursor:default}
+.msg{font-size:12.5px;border-radius:8px;padding:9px 12px;margin-top:12px;display:none;font-family:'JetBrains Mono',monospace}
+.msg.err{display:block;color:var(--neg);background:rgba(226,96,68,.08);border:1px solid rgba(226,96,68,.3)}
+.msg.ok{display:block;color:var(--pos);background:rgba(47,180,124,.08);border:1px solid rgba(47,180,124,.3)}
+.back{text-align:center;margin-top:16px;font-size:13px}
+.back a{color:var(--accent);text-decoration:none;font-weight:600}
+</style></head><body>
+<div class="sheet">
+  <div class="logo"><span class="mk"></span>EdgeDesk</div>
+  <div id="content">
+    <h1>Set a new password</h1>
+    <p class="ld" id="lede">Enter a new password for your account.</p>
+    <div class="fld"><label for="p1">New password</label><input id="p1" type="password" autocomplete="new-password" placeholder="At least 6 characters"></div>
+    <div class="fld"><label for="p2">Confirm password</label><input id="p2" type="password" autocomplete="new-password" placeholder="Re-enter password"></div>
+    <button class="btn" id="btn" onclick="doReset()">Update password</button>
+    <div class="msg" id="msg"></div>
+    <div class="back"><a href="/index.html">&larr; Back to login</a></div>
+  </div>
+</div>
+<script>
+var SB_URL="https://iattxbkbufslbauoumga.supabase.co";
+var SB_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlhdHR4YmtidWZzbGJhdW91bWdhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE2MzY4MDUsImV4cCI6MjA5NzIxMjgwNX0.Mly5G587o5IFRnEigU2wRp9buWEk3dFwH9RNPJK7Uo8";
+function msg(t,k){var m=document.getElementById('msg');if(!t){m.className='msg';return;}m.className='msg '+(k||'err');m.textContent=t;}
+/* Supabase sends the recovery token in the URL hash: #access_token=...&type=recovery */
+var accessToken=null;
+(function(){
+  var h=location.hash?location.hash.substring(1):'';
+  var p=new URLSearchParams(h);
+  accessToken=p.get('access_token');
+  var type=p.get('type');
+  var err=p.get('error_description')||p.get('error');
+  if(err){document.getElementById('content').innerHTML='<h1>Link problem</h1><p class="ld">'+err.replace(/\+/g,' ')+'</p><div class="back"><a href="/index.html">Back to login</a> · request a new reset link there.</div>';return;}
+  if(!accessToken||type!=='recovery'){
+    document.getElementById('content').innerHTML='<h1>Invalid or expired link</h1><p class="ld">This password-reset link is missing, invalid, or has expired. Request a new one from the login page.</p><div class="back"><a href="/index.html">Back to login</a></div>';
+  }
+})();
+['p1','p2'].forEach(function(id){var el=document.getElementById(id);if(el)el.addEventListener('keydown',function(e){if(e.key==='Enter'){e.preventDefault();doReset();}});});
+async function doReset(){
+  var p1=document.getElementById('p1').value,p2=document.getElementById('p2').value;
+  if(!p1||!p2){msg('Enter and confirm your new password.');return;}
+  if(p1.length<6){msg('Password must be at least 6 characters.');return;}
+  if(p1!==p2){msg('Passwords do not match.');return;}
+  if(!accessToken){msg('Reset link is invalid or expired. Request a new one.');return;}
+  var btn=document.getElementById('btn');btn.disabled=true;var old=btn.textContent;btn.textContent='Updating…';
+  try{
+    var r=await fetch(SB_URL+'/auth/v1/user',{method:'PUT',headers:{'Content-Type':'application/json',apikey:SB_KEY,Authorization:'Bearer '+accessToken},body:JSON.stringify({password:p1})});
+    var d=await r.json();
+    if(!r.ok){msg(d.msg||d.error_description||d.error||'Could not reset password. The link may have expired — request a new one.');btn.disabled=false;btn.textContent=old;return;}
+    document.getElementById('content').innerHTML='<h1>Password updated</h1><p class="ld">Your password has been changed. You can now log in with your new password.</p><a class="btn" href="/index.html">Go to login</a>';
+  }catch(e){msg('Network error. Try again.');btn.disabled=false;btn.textContent=old;}
+}
+</script>
+</body></html>
