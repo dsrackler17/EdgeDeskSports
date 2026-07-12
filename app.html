@@ -501,6 +501,15 @@ textarea{min-height:110px;font-family:'JetBrains Mono',monospace;resize:vertical
     <div id="prBody"><div class="empty">Loading…</div></div>
   </section>
 
+  <!-- UFC (research dataset) -->
+  <section id="v-ufc" class="view hide">
+    <div class="row-between"><h2 style="margin:0">UFC research</h2><span class="spacer"></span><span class="freshness" id="ufcFresh">—</span><button class="refreshbtn" title="Refresh" onclick="loadUFC(true)">&#8635;</button></div>
+    <p class="lede">Historical fighter and fight database &mdash; <b style="color:var(--warn)">descriptive research only, never a prediction</b>. Browse a fighter for their record, dimensions, and full fight history with the de-vigged <b>consensus</b> closing probability of each bout. This is a backtest substrate, not a CLV record.</p>
+    <div class="flbanner demo" id="ufcBanner">Loading UFC dataset…</div>
+    <input class="stsearch" id="ufcQ" placeholder="Search a fighter…" style="margin-bottom:12px">
+    <div id="ufcBody"><div class="empty">Loading…</div></div>
+  </section>
+
   <!-- TERMS -->
   <section id="v-terms" class="view hide terms">
     <h2>Terms &amp; disclaimer</h2>
@@ -524,6 +533,7 @@ textarea{min-height:110px;font-family:'JetBrains Mono',monospace;resize:vertical
   <button data-v="record"><svg class="ic" viewBox="0 0 24 24"><path d="M4 19V5"/><rect x="7" y="11" width="3" height="8"/><rect x="13" y="7" width="3" height="12"/><rect x="19" y="14" width="2" height="5"/></svg>Record</button>
   <button data-v="stats"><svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.5"/><path d="M5 20c0-3.5 3-6 7-6s7 2.5 7 6"/></svg>Stats</button>
   <button data-v="props"><svg class="ic" viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-6M22 20H2"/></svg>Props</button>
+  <button data-v="ufc"><svg class="ic" viewBox="0 0 24 24"><path d="M6 4l4 5-4 5 4 5M18 4l-4 5 4 5-4 5M10 9h4M10 15h4"/></svg>UFC</button>
   <button data-v="ledger"><svg class="ic" viewBox="0 0 24 24"><path d="M4 5h16v14H4z"/><path d="M4 10h16"/><path d="M9 5v14"/></svg>Ledger</button>
   <button data-v="news"><svg class="ic" viewBox="0 0 24 24"><path d="M4 5h16v14H4z"/><path d="M8 9h8M8 13h8M8 17h5"/></svg>News</button>
 </nav>
@@ -533,6 +543,10 @@ textarea{min-height:110px;font-family:'JetBrains Mono',monospace;resize:vertical
 var SB_URL="https://iattxbkbufslbauoumga.supabase.co";
 var SB_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlhdHR4YmtidWZzbGJhdW91bWdhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE2MzY4MDUsImV4cCI6MjA5NzIxMjgwNX0.Mly5G587o5IFRnEigU2wRp9buWEk3dFwH9RNPJK7Uo8";
 async function sbGet(q){var r=await fetch(SB_URL+"/rest/v1/"+q,{headers:{apikey:SB_KEY,authorization:"Bearer "+SB_KEY}});if(!r.ok)throw new Error("db "+r.status);return r.json();}
+/* reads the isolated `ufc` research schema (descriptive-only dataset). Requires the
+   ufc schema to be exposed under Supabase > API settings > Exposed schemas. */
+async function sbGetUfc(q){var r=await fetch(SB_URL+"/rest/v1/"+q,{headers:{apikey:SB_KEY,authorization:"Bearer "+SB_KEY,"accept-profile":"ufc"}});if(!r.ok)throw new Error("db "+r.status);return r.json();}
+async function ufcFetchAll(sel,ord){var all=[],p=0,PAGE=1000;for(;p<20;p++){var b=await sbGetUfc(sel+'&order='+(ord||'full_name')+'&limit='+PAGE+'&offset='+(p*PAGE));if(!b||!b.length)break;all=all.concat(b);if(b.length<PAGE)break;}return all;}
 async function sbCount(filter){var r=await fetch(SB_URL+"/rest/v1/signals?select=id&limit=1"+(filter?"&"+filter:""),{headers:{apikey:SB_KEY,authorization:"Bearer "+SB_KEY,prefer:"count=exact"}});var cr=r.headers.get("content-range")||"0-0/0";return parseInt(cr.split("/")[1])||0;}
 
 /* ===== engine ===== */
@@ -548,7 +562,7 @@ GE.devig=function(decs,method){var q=decs.map(function(d){return 1/d;}),S=q.redu
 function $(id){return document.getElementById(id);}
 
 /* ===== nav ===== */
-function show(v){var s=document.querySelectorAll('.view');for(var i=0;i<s.length;i++)s[i].classList.toggle('hide',s[i].id!=='v-'+v);var b=document.querySelectorAll('.bottomnav button');for(var j=0;j<b.length;j++)b[j].classList.toggle('on',b[j].dataset.v===v);window.scrollTo(0,0);if(v==='record')loadRecord();if(v==='edges')loadEdges();if(v==='faults')loadFaults();if(v==='boards')loadBoards();if(v==='news')loadNews();if(v==='ledger')loadMarket();if(v==='stats')loadStats();if(v==='props')loadProps();}
+function show(v){var s=document.querySelectorAll('.view');for(var i=0;i<s.length;i++)s[i].classList.toggle('hide',s[i].id!=='v-'+v);var b=document.querySelectorAll('.bottomnav button');for(var j=0;j<b.length;j++)b[j].classList.toggle('on',b[j].dataset.v===v);window.scrollTo(0,0);if(v==='record')loadRecord();if(v==='edges')loadEdges();if(v==='faults')loadFaults();if(v==='boards')loadBoards();if(v==='news')loadNews();if(v==='ledger')loadMarket();if(v==='stats')loadStats();if(v==='props')loadProps();if(v==='ufc')loadUFC();}
 var navs=document.querySelectorAll('.bottomnav button');for(var n=0;n<navs.length;n++)navs[n].onclick=(function(b){return function(){show(b.dataset.v);};})(navs[n]);
 
 /* ===== learned weights ===== */
@@ -1822,9 +1836,9 @@ async function loadMarket(){
 var ST_PROPS={};
 var ST={rows:[],byLeague:{},league:null,mode:'leaders',team:null,q:'',pos:'',cat:'',rich:false,open:{},at:0,view:'home',dir:'best'};
 /* sport tiles for the landing screen — order = betting appeal, not alphabetical */
-var ST_SPORTS=['CFB','NFL','MLB','WNBA','CBB'];
-var SPORT_META={CFB:{name:'College Football',c:'#e8823b'},NFL:{name:'NFL',c:'#4d8dff'},MLB:{name:'MLB',c:'#e05a5a'},WNBA:{name:'WNBA',c:'#f06ec0'},CBB:{name:"Men's College Hoops",c:'#5b8def'}};
-var ST_LABEL={CFB:'CFB',NFL:'NFL',MLB:'MLB',WNBA:'WNBA',CBB:'CBB',NBA:'NBA'};
+var ST_SPORTS=['CFB','NFL','MLB','WNBA','CBB','UFC'];
+var SPORT_META={CFB:{name:'College Football',c:'#e8823b'},NFL:{name:'NFL',c:'#4d8dff'},MLB:{name:'MLB',c:'#e05a5a'},WNBA:{name:'WNBA',c:'#f06ec0'},CBB:{name:"Men's College Hoops",c:'#5b8def'},UFC:{name:'UFC (fighters)',c:'#e0533a'}};
+var ST_LABEL={CFB:'CFB',NFL:'NFL',MLB:'MLB',WNBA:'WNBA',CBB:'CBB',NBA:'NBA',UFC:'UFC'};
 /* friendly names + preferred order for the Leaders category picker, per sport family */
 var ST_CATLABEL={points:'Points (PPG)',rebounds:'Rebounds (RPG)',assists:'Assists (APG)',minutes:'Minutes (MPG)',steals:'Steals (SPG)',blocks:'Blocks (BPG)',threes:'3PM per game',
   passing:'Passing yards',rushing:'Rushing yards',receiving:'Receiving yards',
@@ -1853,6 +1867,13 @@ async function loadStats(force){
     if(!rich){try{rows=await stFetchAll('player_stats?select=league,team,player,position,stat_line,rank','league,team');}catch(__){rows=[];}}
     ST.rich=rich;ST.rows=rows||[];ST.at=Date.now();ST.open={};
     try{var pp=await stFetchAll('model_props?select=sport,player,market,proj,line,p_over,dist','sport,player');ST_PROPS={};(pp||[]).forEach(function(p){var k=(p.sport||'').toUpperCase()+'|'+p.player;(ST_PROPS[k]=ST_PROPS[k]||[]).push(p);});}catch(_){ST_PROPS={};}
+    // UFC fighters from the ufc research schema, injected as a 'UFC' league so they
+    // browse alongside the other sports (division as team, stance as position, record as stat_line).
+    try{var uf=await ufcFetchAll('fighters?select=full_name,division,stance,reach_inches,wins,losses,draws','full_name');
+      (uf||[]).forEach(function(x){ST.rows.push({league:'UFC',team:(x.division||'UFC'),player:x.full_name,position:x.stance||'',
+        stat_line:((x.wins!=null&&x.losses!=null)?(x.wins+'-'+x.losses+'-'+(x.draws!=null?x.draws:0)):'')+(x.reach_inches!=null?' \u00b7 '+x.reach_inches+'" reach':''),
+        lead_val:(x.wins!=null?+x.wins:0)});});
+    }catch(_){}
     ST.byLeague={};ST.rows.forEach(function(r){r._lv=(r.lead_val!=null?+r.lead_val:stLeadNum(r.stat_line));var L=(r.league||'').toUpperCase();(ST.byLeague[L]=ST.byLeague[L]||[]).push(r);});
     var leagues=Object.keys(ST.byLeague).sort();
     if(!ST.league||leagues.indexOf(ST.league)<0)ST.league=leagues.indexOf('CFB')>=0?'CFB':(leagues[0]||null);
@@ -2017,6 +2038,88 @@ function stDetail(r){
 function stBindRows(scope){var taps=scope.querySelectorAll('.strow.tap');for(var i=0;i<taps.length;i++){(function(row){
   row.addEventListener('click',function(){var item=row.parentNode,k=item.getAttribute('data-k');ST.open[k]=!ST.open[k];item.classList.toggle('open',!!ST.open[k]);});
 })(taps[i]);}}
+
+/* ===== UFC research tab — reads the isolated ufc.* schema, descriptive only =====
+   Browse fighters (record, dimensions, stance) and expand for full fight history
+   with each bout's de-vigged CONSENSUS closing probability. These odds are NOT
+   Pinnacle and NOT a CLV record — pinnacle_close/CLV fill only from live capture. */
+var UFC={fighters:[],byId:{},fights:{},open:{},at:0};
+async function loadUFC(force){
+  if(!force&&UFC.fighters.length&&(Date.now()-UFC.at)<300000){renderUFC();return;}
+  var ban=$('ufcBanner');
+  try{
+    var f=await ufcFetchAll('fighters?select=fighter_id,full_name,nickname,division,stance,height_inches,reach_inches,age,wins,losses,draws,pro_record','full_name');
+    UFC.fighters=f||[];UFC.byId={};UFC.fighters.forEach(function(x){UFC.byId[x.fighter_id]=x;});
+    UFC.at=Date.now();UFC.open={};
+    if(!UFC.fighters.length){ban.className='flbanner demo';ban.textContent='\u25b2 UFC schema reachable but empty \u2014 run the Kaggle backfill (load_ufc.py) to populate ufc.fighters / fighter_fights.';}
+    else{ban.className='flbanner live';ban.textContent='\u25cf '+UFC.fighters.length+' fighters loaded \u00b7 consensus odds (not Pinnacle) \u00b7 descriptive research only.';}
+    $('ufcFresh').textContent=UFC.fighters.length?('loaded '+ago(Date.now())):'empty';
+    renderUFC();
+  }catch(e){
+    ban.className='flbanner demo';ban.textContent='\u25b2 ufc schema not reachable \u2014 expose the ufc schema under Supabase > API settings > Exposed schemas.';
+    $('ufcBody').innerHTML='<div class="empty">Could not reach the ufc schema: '+e.message+'</div>';
+  }
+}
+function ufcResultFor(fight,fid){
+  if(fight.winner===fid)return{t:'W',c:'pos'};
+  if(fight.winner==='draw')return{t:'D',c:'muted'};
+  if(fight.winner==='nc')return{t:'NC',c:'muted'};
+  if(fight.winner)return{t:'L',c:'neg'};
+  return{t:'\u2014',c:'muted'};
+}
+async function ufcLoadFights(fid){
+  if(UFC.fights[fid])return UFC.fights[fid];
+  try{
+    var rows=await sbGetUfc('fighter_fights?select=opponent_id,date,weight_class,winner,method,round,time,odds_close,closing_probability,went_distance,title_fight&fighter_id=eq.'+encodeURIComponent(fid)+'&order=date.desc.nullslast&limit=120');
+    UFC.fights[fid]=rows||[];
+  }catch(_){UFC.fights[fid]=[];}
+  return UFC.fights[fid];
+}
+function ufcFightsHTML(fid,rows){
+  if(!rows.length)return '<div class="fi-empty">No fight history rows for this fighter.</div>';
+  var body=rows.map(function(g){
+    var res=ufcResultFor(g,fid);
+    var opp=(UFC.byId[g.opponent_id]&&UFC.byId[g.opponent_id].full_name)||g.opponent_id||'\u2014';
+    var when=g.date||'';
+    var cp=(g.closing_probability!=null)?(+g.closing_probability*100).toFixed(1)+'% consensus':'no odds';
+    var od=(g.odds_close!=null)?(' \u00b7 '+(+g.odds_close).toFixed(2)+' dec'):'';
+    var meth=[g.method,(g.round?'R'+g.round:''),g.time].filter(Boolean).join(' ');
+    var tb=g.title_fight?' <span class="st-pos">TITLE</span>':'';
+    return '<div class="gd-line"><span class="l"><b class="'+res.c+'">'+res.t+'</b> vs '+stEsc(opp)+tb+'<br><span style="color:var(--faint);font-size:10.5px">'+stEsc(when)+' \u00b7 '+stEsc(g.weight_class||'')+' \u00b7 '+stEsc(meth||'')+'</span></span>'+
+      '<span class="v mut">'+cp+od+'</span></div>';
+  }).join('');
+  return '<div class="fi-card" style="margin-top:8px">'+body+
+    '<div class="fi-foot">Closing probability is the de-vigged <b>consensus</b> two-way price (dataset), not Pinnacle and not a CLV measurement. History for research only.</div></div>';
+}
+window.ufcToggle=async function(fid){
+  UFC.open[fid]=!UFC.open[fid];
+  var det=$('ufcdet-'+fid),item=$('ufcitem-'+fid);
+  if(!det)return;
+  if(item)item.classList.toggle('open',!!UFC.open[fid]);
+  if(UFC.open[fid]){det.innerHTML='<div class="fi-empty">Loading fights…</div>';var rows=await ufcLoadFights(fid);det.innerHTML=ufcFightsHTML(fid,rows);}
+  else det.innerHTML='';
+};
+function renderUFC(){
+  var body=$('ufcBody');if(!body)return;
+  if(!UFC.fighters.length){body.innerHTML='<div class="empty">No fighters loaded yet.</div>';return;}
+  var q=($('ufcQ')&&$('ufcQ').value||'').trim().toLowerCase();
+  var list=UFC.fighters.slice();
+  if(q)list=list.filter(function(x){return (x.full_name||'').toLowerCase().indexOf(q)>=0;});
+  list.sort(function(a,b){return (b.wins||0)-(a.wins||0);});
+  list=list.slice(0,300);
+  body.innerHTML=list.map(function(x){
+    var rec=(x.pro_record||((x.wins!=null?x.wins:'')+'-'+(x.losses!=null?x.losses:'')+'-'+(x.draws!=null?x.draws:0)));
+    var meta=[x.division,x.stance,(x.reach_inches!=null?x.reach_inches+'" reach':''),(x.height_inches!=null?x.height_inches+'" tall':'')].filter(Boolean).join(' \u00b7 ');
+    var open=!!UFC.open[x.fighter_id];
+    return '<div class="stitem'+(open?' open':'')+'" id="ufcitem-'+x.fighter_id+'">'+
+      '<div class="strow tap" onclick="ufcToggle(\''+x.fighter_id+'\')"><div class="st-mid"><div class="st-nm">'+stEsc(x.full_name||'\u2014')+(x.nickname?' <span class="st-pos">'+stEsc(x.nickname)+'</span>':'')+'</div>'+
+        '<div class="st-meta">'+stEsc(rec)+(meta?' \u00b7 '+stEsc(meta):'')+'</div></div><span class="st-chev">\u203a</span></div>'+
+      '<div class="st-detail"'+(open?'':' style="display:none"')+' id="ufcdet-'+x.fighter_id+'"></div></div>';
+  }).join('');
+  // re-open any expanded rows' content
+  list.forEach(function(x){if(UFC.open[x.fighter_id]){var det=$('ufcdet-'+x.fighter_id);if(det&&UFC.fights[x.fighter_id])det.innerHTML=ufcFightsHTML(x.fighter_id,UFC.fights[x.fighter_id]);}});
+}
+(function(){var q=$('ufcQ');if(q)q.oninput=function(){renderUFC();};})();
 
 renderLedger();loadEdges();
 /* refresh buttons — wired in JS (not inline) with a visible spin so they never feel dead.
