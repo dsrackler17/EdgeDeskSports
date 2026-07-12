@@ -506,6 +506,10 @@ textarea{min-height:110px;font-family:'JetBrains Mono',monospace;resize:vertical
     <div class="row-between"><h2 style="margin:0">UFC research</h2><span class="spacer"></span><span class="freshness" id="ufcFresh">—</span><button class="refreshbtn" title="Refresh" onclick="loadUFC(true)">&#8635;</button></div>
     <p class="lede">Historical fighter and fight database &mdash; <b style="color:var(--warn)">descriptive research only, never a prediction</b>. Browse a fighter for their record, dimensions, and full fight history with the de-vigged <b>consensus</b> closing probability of each bout. This is a backtest substrate, not a CLV record.</p>
     <div class="flbanner demo" id="ufcBanner">Loading UFC dataset…</div>
+    <div style="display:flex;gap:8px;margin-bottom:12px">
+      <button id="ufcTabResearch" onclick="ufcSetMode('research')" style="flex:0 0 auto;padding:8px 16px;border-radius:9px;border:1px solid rgba(255,255,255,.14);background:var(--accent,#5d8def);color:#fff;font-size:13px;cursor:pointer">Research</button>
+      <button id="ufcTabLive" onclick="ufcSetMode('live')" style="flex:0 0 auto;padding:8px 16px;border-radius:9px;border:1px solid rgba(255,255,255,.14);background:transparent;color:var(--faint);font-size:13px;cursor:pointer">Live Fight Center</button>
+    </div>
     <input class="stsearch" id="ufcQ" placeholder="Search a fighter…" style="margin-bottom:12px">
     <div id="ufcBody"><div class="empty">Loading…</div></div>
   </section>
@@ -2204,6 +2208,86 @@ function renderUFC(){
   list.forEach(function(x){if(UFC.open[x.fighter_id]){var det=$('ufcdet-'+x.fighter_id);if(det){det.style.display='';det.innerHTML=ufcStatGridHTML(x)+(UFC.fights[x.fighter_id]?ufcFightsHTML(x.fighter_id,UFC.fights[x.fighter_id]):'<div class="fi-empty">Tap the row to load fights.</div>');}}});
 }
 (function(){var q=$('ufcQ');if(q)q.oninput=function(){renderUFC();};})();
+
+/* ===== UFC Live Fight Center =====
+   Reads live event/fight state from ufc.live_events + ufc.live_fights, which a
+   server-side poller (ufc_live edge function) fills from ESPN. Pre-fight context
+   (finish rate, streaks, tendencies) comes from the REAL loaded fighter data.
+   Two slots are HONESTLY GATED and render "not active" until the pipeline exists:
+     - model probability  -> requires a UFC model (none yet; frozen by design)
+     - CLV from pre-fight  -> requires live capture + pre-fight Pinnacle fair
+   These never show a fabricated number. When the pipeline is deployed they light up. */
+UFC.mode='research';UFC.liveAt=0;UFC.liveTimer=null;
+window.ufcSetMode=function(m){
+  UFC.mode=m;
+  var r=$('ufcTabResearch'),l=$('ufcTabLive'),q=$('ufcQ');
+  if(r&&l){
+    var on='background:var(--accent,#5d8def);color:#fff',off='background:transparent;color:var(--faint)';
+    r.style.cssText=r.style.cssText.replace(/background:[^;]*;color:[^;]*/,m==='research'?on:off);
+    l.style.cssText=l.style.cssText.replace(/background:[^;]*;color:[^;]*/,m==='live'?on:off);
+  }
+  if(q)q.style.display=(m==='live')?'none':'';
+  if(UFC.liveTimer){clearInterval(UFC.liveTimer);UFC.liveTimer=null;}
+  if(m==='live'){loadUFCLive();UFC.liveTimer=setInterval(function(){if(UFC.mode==='live'&&!document.hidden)loadUFCLive();},20000);}
+  else renderUFC();
+};
+async function loadUFCLive(){
+  var body=$('ufcBody');if(!body)return;
+  var ev=[],fx=[];
+  try{ev=await sbGetUfc('live_events?select=event_id,name,status,start_time&status=in.(pre,in)&order=start_time.asc&limit=1');}catch(e){
+    body.innerHTML=ufcLiveShellHTML(null,[])+'<div class="empty" style="margin-top:10px">Live source not reachable. Deploy the <b>ufc_live</b> poller and create the live tables (ufc_live.sql). Until then, the Live Center has no event to show.</div>';
+    return;
+  }
+  if(!ev||!ev.length){body.innerHTML=ufcLiveShellHTML(null,[]);return;}
+  var e=ev[0];
+  try{fx=await sbGetUfc('live_fights?select=fight_id,red_name,blue_name,red_fighter_id,blue_fighter_id,status,round,clock,red_strikes,blue_strikes,red_td,blue_td,red_kd,blue_kd,red_win_prob,weight_class,is_main,red_odds,blue_odds&event_id=eq.'+encodeURIComponent(e.event_id)+'&order=is_main.desc,fight_id.asc&limit=30');}catch(_){fx=[];}
+  body.innerHTML=ufcLiveShellHTML(e,fx||[]);
+  UFC.liveAt=Date.now();$('ufcFresh').textContent='live \u00b7 '+ago(Date.now());
+}
+function ufcWinProbBar(p){
+  if(p==null)return '<div style="font-size:11px;color:var(--faint)">live win prob \u2014 not provided by source</div>';
+  var pct=Math.max(0,Math.min(100,Math.round(+p*100)));
+  return '<div style="margin-top:6px"><div style="display:flex;justify-content:space-between;font-size:10.5px;color:var(--faint)"><span>red '+pct+'%</span><span>blue '+(100-pct)+'%</span></div>'+
+    '<div style="height:8px;border-radius:5px;background:#3a4152;overflow:hidden;margin-top:3px"><div style="height:100%;width:'+pct+'%;background:var(--accent,#5d8def)"></div></div></div>';
+}
+function ufcTend(fid){
+  var x=UFC.byId[fid];if(!x||!x.d)return '';
+  var d=x.d;var bits=[];
+  if(d.finish_rate!=null)bits.push(ufcPct(d.finish_rate)+' finish');
+  if(d.win_streak)bits.push('W'+d.win_streak);
+  if(d.average_fight_time!=null)bits.push(Math.round(+d.average_fight_time/60)+'m avg');
+  return bits.length?('<span style="color:var(--faint);font-size:10.5px">'+bits.join(' \u00b7 ')+'</span>'):'';
+}
+function ufcLiveFightCard(g){
+  var live=(g.status==='live'||g.status==='in');
+  var fin=(g.status==='final'||g.status==='post');
+  var badge=live?'<span style="color:#e0533a;font-weight:700">\u25cf R'+(g.round||'?')+' '+(g.clock||'')+'</span>'
+            :(fin?'<span style="color:var(--faint)">FINAL</span>':'<span style="color:var(--faint)">upcoming</span>');
+  function stat(l,a,b){return '<div style="display:grid;grid-template-columns:1fr auto 1fr;gap:6px;padding:3px 0;font-size:12px"><span style="text-align:left">'+(a==null?'\u2014':a)+'</span><span style="color:var(--faint);font-size:10px;text-align:center">'+l+'</span><span style="text-align:right">'+(b==null?'\u2014':b)+'</span></div>';}
+  var mainTag=g.is_main?' <span class="st-pos">MAIN</span>':'';
+  return '<div class="fi-card" style="margin-bottom:12px">'+
+    '<div class="gd-line" style="font-weight:700"><span class="l">'+stEsc(g.red_name||'Red')+'</span><span class="v" style="text-align:center">'+badge+mainTag+'</span><span class="v" style="text-align:right">'+stEsc(g.blue_name||'Blue')+'</span></div>'+
+    '<div class="gd-line" style="padding-top:0;padding-bottom:6px"><span class="l">'+ufcTend(g.red_fighter_id)+'</span><span class="v">'+stEsc(g.weight_class||'')+'</span><span class="v" style="text-align:right">'+ufcTend(g.blue_fighter_id)+'</span></div>'+
+    stat('sig strikes',g.red_strikes,g.blue_strikes)+
+    stat('takedowns',g.red_td,g.blue_td)+
+    stat('knockdowns',g.red_kd,g.blue_kd)+
+    ufcWinProbBar(g.red_win_prob)+
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px">'+
+      '<div style="padding:6px 8px;border:1px dashed rgba(255,255,255,.14);border-radius:8px;font-size:10.5px;color:var(--faint)">EdgeDesk model prob<br><b style="color:var(--warn)">not active</b> \u2014 needs UFC model</div>'+
+      '<div style="padding:6px 8px;border:1px dashed rgba(255,255,255,.14);border-radius:8px;font-size:10.5px;color:var(--faint)">Pre-fight CLV<br><b style="color:var(--warn)">not active</b> \u2014 needs live capture</div>'+
+    '</div>'+
+    ((g.red_odds!=null||g.blue_odds!=null)?'<div class="gd-line" style="margin-top:6px"><span class="l" style="color:var(--faint);font-size:10.5px">book odds (dataset)</span><span class="v mono">'+(g.red_odds!=null?(+g.red_odds).toFixed(2):'\u2014')+' / '+(g.blue_odds!=null?(+g.blue_odds).toFixed(2):'\u2014')+'</span></div>':'')+
+    '</div>';
+}
+function ufcLiveShellHTML(e,fx){
+  var head;
+  if(!e){head='<div class="flbanner demo">\u25cb No live or upcoming UFC event on the board right now. When a card is live (or the ufc_live poller is running), fights appear here in real time.</div>';}
+  else{var st=e.status==='in'?'<span style="color:#e0533a;font-weight:700">\u25cf LIVE</span>':'<span style="color:var(--faint)">upcoming</span>';head='<div class="flbanner live">'+st+' \u00b7 '+stEsc(e.name||'UFC event')+'</div>';}
+  var cards=fx.map(ufcLiveFightCard).join('');
+  return head+
+    '<p class="lede" style="margin-top:10px">Live round, clock, strikes, takedowns and knockdowns stream from the fight-state poller. Pre-fight tendencies are computed from EdgeDesk\u2019s loaded history. <b style="color:var(--warn)">Model probability and CLV are gated</b> \u2014 they stay inactive until the UFC model and live Pinnacle capture are deployed, so nothing here is a fabricated number.</p>'+
+    (cards||(e?'<div class="empty">Event found but no fights loaded yet for it.</div>':''));
+}
 
 renderLedger();loadEdges();
 /* refresh buttons — wired in JS (not inline) with a visible spin so they never feel dead.
