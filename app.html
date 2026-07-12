@@ -2221,11 +2221,11 @@ UFC.mode='research';UFC.liveAt=0;UFC.liveTimer=null;
 window.ufcSetMode=function(m){
   UFC.mode=m;
   var r=$('ufcTabResearch'),l=$('ufcTabLive'),q=$('ufcQ');
-  if(r&&l){
-    var on='background:var(--accent,#5d8def);color:#fff',off='background:transparent;color:var(--faint)';
-    r.style.cssText=r.style.cssText.replace(/background:[^;]*;color:[^;]*/,m==='research'?on:off);
-    l.style.cssText=l.style.cssText.replace(/background:[^;]*;color:[^;]*/,m==='live'?on:off);
-  }
+  var base='flex:0 0 auto;padding:9px 18px;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;transition:all .15s;';
+  var on=base+'background:var(--accent,#5d8def);color:#fff;border:1px solid var(--accent,#5d8def);box-shadow:0 3px 12px rgba(93,141,239,.4)';
+  var off=base+'background:transparent;color:var(--faint);border:1px solid rgba(255,255,255,.14)';
+  if(r)r.style.cssText=(m==='research'?on:off);
+  if(l)l.style.cssText=(m==='live'?on:off);
   if(q)q.style.display=(m==='live')?'none':'';
   if(UFC.liveTimer){clearInterval(UFC.liveTimer);UFC.liveTimer=null;}
   if(m==='live'){loadUFCLive();UFC.liveTimer=setInterval(function(){if(UFC.mode==='live'&&!document.hidden)loadUFCLive();},20000);}
@@ -2245,47 +2245,70 @@ async function loadUFCLive(){
   UFC.liveAt=Date.now();$('ufcFresh').textContent='live \u00b7 '+ago(Date.now());
 }
 function ufcWinProbBar(p){
-  if(p==null)return '<div style="font-size:11px;color:var(--faint)">live win prob \u2014 not provided by source</div>';
+  if(p==null)return '<div style="font-size:11px;color:var(--faint);text-align:center;margin-top:8px">live win probability \u2014 not provided by source</div>';
   var pct=Math.max(0,Math.min(100,Math.round(+p*100)));
-  return '<div style="margin-top:6px"><div style="display:flex;justify-content:space-between;font-size:10.5px;color:var(--faint)"><span>red '+pct+'%</span><span>blue '+(100-pct)+'%</span></div>'+
-    '<div style="height:8px;border-radius:5px;background:#3a4152;overflow:hidden;margin-top:3px"><div style="height:100%;width:'+pct+'%;background:var(--accent,#5d8def)"></div></div></div>';
+  return '<div style="margin-top:10px"><div style="display:flex;justify-content:space-between;font-size:10.5px;color:var(--faint);margin-bottom:3px"><span style="color:#e0533a">red '+pct+'%</span><span style="color:#5d8def">'+(100-pct)+'% blue</span></div>'+
+    '<div style="height:9px;border-radius:6px;background:#5d8def;overflow:hidden"><div style="height:100%;width:'+pct+'%;background:#e0533a"></div></div></div>';
 }
-function ufcTend(fid){
-  var x=UFC.byId[fid];if(!x||!x.d)return '';
-  var d=x.d;var bits=[];
-  if(d.finish_rate!=null)bits.push(ufcPct(d.finish_rate)+' finish');
+function ufcChips(fid){
+  var x=UFC.byId[fid];
+  if(!x||!x.d)return '<span style="font-size:10px;color:var(--faint2,#6b7280)">no DB history</span>';
+  var d=x.d,bits=[];
+  if(d.finish_rate!=null)bits.push(ufcPct(d.finish_rate)+' fin');
   if(d.win_streak)bits.push('W'+d.win_streak);
+  else if(d.loss_streak)bits.push('L'+d.loss_streak);
   if(d.average_fight_time!=null)bits.push(Math.round(+d.average_fight_time/60)+'m avg');
-  return bits.length?('<span style="color:var(--faint);font-size:10.5px">'+bits.join(' \u00b7 ')+'</span>'):'';
+  if(d.activity_last365!=null)bits.push(d.activity_last365+'/yr');
+  return bits.map(function(b){return '<span style="display:inline-block;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.07);border-radius:6px;padding:2px 7px;margin:3px 4px 0 0;font-size:10px;color:var(--faint)">'+b+'</span>';}).join('');
 }
 function ufcLiveFightCard(g){
   var live=(g.status==='live'||g.status==='in');
   var fin=(g.status==='final'||g.status==='post');
-  var badge=live?'<span style="color:#e0533a;font-weight:700">\u25cf R'+(g.round||'?')+' '+(g.clock||'')+'</span>'
-            :(fin?'<span style="color:var(--faint)">FINAL</span>':'<span style="color:var(--faint)">upcoming</span>');
-  function stat(l,a,b){return '<div style="display:grid;grid-template-columns:1fr auto 1fr;gap:6px;padding:3px 0;font-size:12px"><span style="text-align:left">'+(a==null?'\u2014':a)+'</span><span style="color:var(--faint);font-size:10px;text-align:center">'+l+'</span><span style="text-align:right">'+(b==null?'\u2014':b)+'</span></div>';}
-  var mainTag=g.is_main?' <span class="st-pos">MAIN</span>':'';
-  return '<div class="fi-card" style="margin-bottom:12px">'+
-    '<div class="gd-line" style="font-weight:700"><span class="l">'+stEsc(g.red_name||'Red')+'</span><span class="v" style="text-align:center">'+badge+mainTag+'</span><span class="v" style="text-align:right">'+stEsc(g.blue_name||'Blue')+'</span></div>'+
-    '<div class="gd-line" style="padding-top:0;padding-bottom:6px"><span class="l">'+ufcTend(g.red_fighter_id)+'</span><span class="v">'+stEsc(g.weight_class||'')+'</span><span class="v" style="text-align:right">'+ufcTend(g.blue_fighter_id)+'</span></div>'+
-    stat('sig strikes',g.red_strikes,g.blue_strikes)+
-    stat('takedowns',g.red_td,g.blue_td)+
-    stat('knockdowns',g.red_kd,g.blue_kd)+
-    ufcWinProbBar(g.red_win_prob)+
-    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px">'+
-      '<div style="padding:6px 8px;border:1px dashed rgba(255,255,255,.14);border-radius:8px;font-size:10.5px;color:var(--faint)">EdgeDesk model prob<br><b style="color:var(--warn)">not active</b> \u2014 needs UFC model</div>'+
-      '<div style="padding:6px 8px;border:1px dashed rgba(255,255,255,.14);border-radius:8px;font-size:10.5px;color:var(--faint)">Pre-fight CLV<br><b style="color:var(--warn)">not active</b> \u2014 needs live capture</div>'+
-    '</div>'+
-    ((g.red_odds!=null||g.blue_odds!=null)?'<div class="gd-line" style="margin-top:6px"><span class="l" style="color:var(--faint);font-size:10.5px">book odds (dataset)</span><span class="v mono">'+(g.red_odds!=null?(+g.red_odds).toFixed(2):'\u2014')+' / '+(g.blue_odds!=null?(+g.blue_odds).toFixed(2):'\u2014')+'</span></div>':'')+
+  var badge=live?'<span style="display:inline-flex;align-items:center;gap:5px;background:rgba(224,83,58,.15);color:#e0533a;font-weight:700;font-size:11px;padding:3px 9px;border-radius:20px">\u25cf R'+(g.round||'?')+(g.clock?' '+g.clock:'')+' LIVE</span>'
+            :(fin?'<span style="background:rgba(255,255,255,.06);color:var(--faint);font-size:11px;padding:3px 9px;border-radius:20px">FINAL</span>':'<span style="background:rgba(93,141,239,.12);color:#5d8def;font-size:11px;padding:3px 9px;border-radius:20px">UPCOMING</span>');
+  function stat(l,a,b){
+    var an=(a==null?0:+a),bn=(b==null?0:+b);
+    return '<div style="display:grid;grid-template-columns:1fr auto 1fr;gap:10px;padding:5px 0;font-size:13px;align-items:center">'+
+      '<span style="text-align:right;font-weight:'+(an>bn?'700':'400')+';color:'+(an>bn?'#e0533a':'inherit')+'">'+(a==null?'\u2014':a)+'</span>'+
+      '<span style="color:var(--faint);font-size:10px;text-align:center;min-width:78px">'+l+'</span>'+
+      '<span style="text-align:left;font-weight:'+(bn>an?'700':'400')+';color:'+(bn>an?'#5d8def':'inherit')+'">'+(b==null?'\u2014':b)+'</span></div>';
+  }
+  var mainTag=g.is_main?'<span style="background:rgba(232,130,59,.15);color:#e8823b;font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px">MAIN</span>':'';
+  var head='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">'+
+    '<span style="color:var(--faint);font-size:11px">'+stEsc(g.weight_class||'')+'</span>'+
+    '<span style="display:flex;gap:6px;align-items:center">'+badge+mainTag+'</span></div>';
+  var names='<div style="display:grid;grid-template-columns:1fr auto 1fr;gap:8px;align-items:start;margin-bottom:2px">'+
+    '<div style="text-align:left"><div style="font-weight:700;font-size:15px;color:#e0533a">'+stEsc(g.red_name||'Red')+'</div><div style="margin-top:2px">'+ufcChips(g.red_fighter_id)+'</div></div>'+
+    '<div style="color:var(--faint);font-size:11px;font-weight:600;padding-top:3px">vs</div>'+
+    '<div style="text-align:right"><div style="font-weight:700;font-size:15px;color:#5d8def">'+stEsc(g.blue_name||'Blue')+'</div><div style="margin-top:2px">'+ufcChips(g.blue_fighter_id)+'</div></div></div>';
+  var statsBlock='';
+  if(live||fin){
+    statsBlock='<div style="border-top:1px solid rgba(255,255,255,.06);margin-top:10px;padding-top:6px">'+
+      stat('sig strikes',g.red_strikes,g.blue_strikes)+
+      stat('takedowns',g.red_td,g.blue_td)+
+      stat('knockdowns',g.red_kd,g.blue_kd)+
+      ufcWinProbBar(g.red_win_prob)+'</div>';
+  }else{
+    statsBlock='<div style="border-top:1px solid rgba(255,255,255,.06);margin-top:10px;padding-top:8px;text-align:center;font-size:11px;color:var(--faint2,#6b7280)">Live strikes, takedowns &amp; knockdowns begin at first bell</div>';
+  }
+  var gated='<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px">'+
+      '<div style="padding:7px 9px;border:1px dashed rgba(255,255,255,.14);border-radius:8px;font-size:10.5px;color:var(--faint)">EdgeDesk model prob<br><b style="color:var(--warn)">not active</b> \u2014 needs UFC model</div>'+
+      '<div style="padding:7px 9px;border:1px dashed rgba(255,255,255,.14);border-radius:8px;font-size:10.5px;color:var(--faint)">Pre-fight CLV<br><b style="color:var(--warn)">not active</b> \u2014 needs live capture</div>'+
     '</div>';
+  var odds=(g.red_odds!=null||g.blue_odds!=null)?'<div style="display:flex;justify-content:space-between;margin-top:8px;font-size:10.5px;color:var(--faint)"><span>book odds (dataset, not Pinnacle)</span><span class="mono">'+(g.red_odds!=null?(+g.red_odds).toFixed(2):'\u2014')+' / '+(g.blue_odds!=null?(+g.blue_odds).toFixed(2):'\u2014')+'</span></div>':'';
+  return '<div class="fi-card" style="margin-bottom:12px;'+(live?'border:1px solid rgba(224,83,58,.35)':'')+'">'+head+names+statsBlock+gated+odds+'</div>';
 }
 function ufcLiveShellHTML(e,fx){
   var head;
   if(!e){head='<div class="flbanner demo">\u25cb No live or upcoming UFC event on the board right now. When a card is live (or the ufc_live poller is running), fights appear here in real time.</div>';}
-  else{var st=e.status==='in'?'<span style="color:#e0533a;font-weight:700">\u25cf LIVE</span>':'<span style="color:var(--faint)">upcoming</span>';head='<div class="flbanner live">'+st+' \u00b7 '+stEsc(e.name||'UFC event')+'</div>';}
+  else{
+    var st=e.status==='in'?'<span style="color:#e0533a;font-weight:700">\u25cf LIVE NOW</span>':'<span style="color:#5d8def;font-weight:600">UPCOMING</span>';
+    var when=e.start_time?(' \u00b7 '+new Date(e.start_time).toLocaleDateString(undefined,{weekday:'short',month:'short',day:'numeric'})):'';
+    head='<div class="flbanner live" style="font-size:13px">'+st+' \u00b7 '+stEsc(e.name||'UFC event')+when+'</div>';
+  }
   var cards=fx.map(ufcLiveFightCard).join('');
   return head+
-    '<p class="lede" style="margin-top:10px">Live round, clock, strikes, takedowns and knockdowns stream from the fight-state poller. Pre-fight tendencies are computed from EdgeDesk\u2019s loaded history. <b style="color:var(--warn)">Model probability and CLV are gated</b> \u2014 they stay inactive until the UFC model and live Pinnacle capture are deployed, so nothing here is a fabricated number.</p>'+
+    '<p class="lede" style="margin-top:10px">Red vs blue corners, weight class, and the live round/clock stream from the fight-state poller. Pre-fight tendencies (finish rate, streaks, activity) are computed from EdgeDesk\u2019s loaded history \u2014 fighters not in the database show \u201cno DB history.\u201d <b style="color:var(--warn)">Model probability and CLV stay gated</b> until the UFC model and live Pinnacle capture are deployed, so nothing here is a fabricated number.</p>'+
     (cards||(e?'<div class="empty">Event found but no fights loaded yet for it.</div>':''));
 }
 
