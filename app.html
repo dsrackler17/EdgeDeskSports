@@ -18,7 +18,7 @@
 </script>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
-:root{--bg:#0d0f13;--surface:#13161c;--surface2:#191d25;--border:#262c36;--text:#e7eaf0;--dim:#8a93a2;--faint:#5b6472;--accent:#4d8dff;--pos:#2fb47c;--neg:#e26044;--warn:#d99a2b;--gold:#e3b84d;--nav:62px}
+:root{--bg:#0d0f13;--surface:#13161c;--surface2:#191d25;--border:#262c36;--text:#e7eaf0;--dim:#8a93a2;--faint:#5b6472;--accent:#4d8dff;--pos:#2fb47c;--neg:#e26044;--warn:#d99a2b;--gold:#e3b84d;--mdl:#9b8cff;--nav:62px}
 *{box-sizing:border-box}html,body{margin:0}
 body{background:var(--bg);color:var(--text);font-family:'Inter',system-ui,sans-serif;-webkit-font-smoothing:antialiased;-webkit-tap-highlight-color:transparent}
 .mono{font-family:'JetBrains Mono',monospace}a{color:var(--accent);text-decoration:none}.hide{display:none!important}
@@ -63,6 +63,36 @@ textarea{min-height:110px;font-family:'JetBrains Mono',monospace;resize:vertical
 .rchev{color:var(--faint);font-family:'JetBrains Mono',monospace;font-size:12px;transition:.16s;flex:none;width:14px;text-align:center}
 .t10item.open .rchev{transform:rotate(90deg)}
 .receipt{display:none;padding:2px 6px 14px 32px}.t10item.open .receipt{display:block}
+/* ===== rich game-detail panel ===== */
+.gd-match{display:flex;align-items:center;gap:10px;padding:10px 0 12px;border-bottom:1px solid var(--border);margin-bottom:11px}
+.gd-team{flex:1;min-width:0}
+.gd-team .nm{font-size:14px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gd-team .rl{font-size:9px;text-transform:uppercase;letter-spacing:.05em;color:var(--faint);margin-top:2px}
+.gd-team.pick .nm{color:var(--pos)}
+.gd-vs{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--faint);flex:none}
+.gd-when{font-size:10.5px;color:var(--dim);font-family:'JetBrains Mono',monospace;text-align:right;flex:none}
+.gd-when .cd{color:var(--warn);font-weight:700}
+.gd-sec{font-size:9px;text-transform:uppercase;letter-spacing:.06em;color:var(--faint);font-weight:700;margin:12px 0 7px;font-family:'JetBrains Mono',monospace}
+.gd-line{display:flex;justify-content:space-between;gap:10px;padding:6px 0;font-size:12.5px;font-family:'JetBrains Mono',monospace;border-bottom:1px dashed rgba(38,44,54,.6)}
+.gd-line:last-child{border-bottom:none}
+.gd-line .l{color:var(--dim);font-family:'Inter',sans-serif}
+.gd-line .v{color:var(--text)}
+.gd-line .v.up{color:var(--pos)}.gd-line .v.dn{color:var(--neg)}.gd-line .v.mut{color:var(--faint)}
+.gd-verdict{border-radius:9px;padding:10px 12px;margin:12px 0 4px;font-size:12px;line-height:1.5;border:1px solid}
+.gd-verdict.good{color:var(--pos);border-color:rgba(47,180,124,.35);background:rgba(47,180,124,.06)}
+.gd-verdict.ok{color:var(--warn);border-color:rgba(217,154,43,.35);background:rgba(217,154,43,.06)}
+.gd-verdict.weak{color:var(--dim);border-color:var(--border);background:var(--surface2)}
+.gd-verdict.fade{color:var(--neg);border-color:rgba(226,96,68,.4);background:rgba(226,96,68,.07)}
+.gd-verdict b{color:var(--text)}
+.gd-sec.model{color:var(--mdl);display:flex;align-items:center;gap:8px}
+.gd-sec.model .unproven{color:var(--warn);border:1px solid rgba(217,154,43,.5);border-radius:4px;padding:1px 6px;font-size:8px;letter-spacing:.05em}
+.gd-line .v.mdl{color:var(--mdl)}
+.gd-modelnote{font-size:10.5px;color:var(--dim);line-height:1.5;margin:8px 0 2px;padding:8px 10px;border-left:2px solid var(--mdl);background:rgba(155,140,255,.05);border-radius:0 6px 6px 0}
+.gd-modelnote b{color:var(--text)}
+.gd-bars{display:flex;gap:5px;margin-top:8px}
+.gd-bar{flex:1;text-align:center;padding:7px 4px;border-radius:7px;background:var(--surface2);border:1px solid var(--border)}
+.gd-bar .bn{font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:700}
+.gd-bar .bl{font-size:8px;text-transform:uppercase;letter-spacing:.04em;color:var(--faint);margin-top:2px}
 .rcpt-grid{display:flex;flex-wrap:wrap;gap:8px 16px;margin-bottom:9px}
 .rcpt-c{display:flex;flex-direction:column;gap:1px}
 .rcpt-c .k{font-size:8.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--faint);font-family:'JetBrains Mono',monospace}
@@ -146,7 +176,7 @@ textarea{min-height:110px;font-family:'JetBrains Mono',monospace;resize:vertical
 .frow+.frow{border-top:1px dashed var(--border)}.frow .fl{color:var(--dim);font-family:'Inter',sans-serif}
 .frow .fv.up{color:var(--warn)}.fault[data-sev=critical] .frow .fv.up{color:var(--neg)}.frow .fv.dn{color:var(--accent)}
 .frow.tot{border-top:1px solid var(--faint);font-weight:700}.frow.tot .fl{color:var(--text)}
-.mfair{display:block;font-family:'JetBrains Mono',monospace;font-size:9.5px;color:var(--faint);margin-top:2px}.medge{color:var(--pos);font-weight:700;margin-left:5px}
+.mfair{display:block;font-family:'JetBrains Mono',monospace;font-size:9.5px;color:var(--faint);margin-top:2px}.medge{color:var(--pos);font-weight:700;margin-left:5px}.mwin{color:var(--accent);font-weight:700}
 .fqual{display:flex;gap:14px;flex-wrap:wrap;font-size:10.5px;color:var(--dim);border-top:1px dashed var(--border);padding-top:10px;font-family:'JetBrains Mono',monospace}
 .fconf{display:inline-flex;align-items:center;gap:5px}.fconf .bd{width:7px;height:7px;border-radius:50%}
 .fconf.high .bd{background:var(--pos)}.fconf.medium .bd{background:var(--warn)}.fconf.low .bd{background:var(--neg)}
@@ -156,6 +186,133 @@ textarea{min-height:110px;font-family:'JetBrains Mono',monospace;resize:vertical
 .flwatch-h{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--dim);font-weight:600;margin:22px 0 10px;font-family:'JetBrains Mono',monospace}
 .flwatch{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:13px 15px;margin-bottom:9px}
 .flwatch .ftitle{margin-bottom:6px}
+.golfnow{font-size:11px;color:var(--accent);font-family:'JetBrains Mono',monospace;margin:0 0 9px;line-height:1.4}
+.golfnow-sub{color:var(--faint)}
+.fi-sec{font-size:10px;text-transform:uppercase;letter-spacing:.05em;color:var(--dim);font-weight:600;margin:9px 0 4px;font-family:'JetBrains Mono',monospace}
+/* golf field expander + list */
+.gf-exp{margin-top:9px;padding:9px 11px;background:var(--surface2);border:1px solid var(--border);border-radius:9px;color:var(--accent);font-family:'JetBrains Mono',monospace;font-size:11.5px;font-weight:600;cursor:pointer}
+.gf-exp:hover{border-color:var(--accent)}.gf-exp.open{border-color:var(--accent);background:rgba(93,141,239,.06)}
+.gf-list{margin-top:6px}
+.gf-row{display:flex;align-items:center;gap:9px;padding:7px 4px;border-bottom:1px solid var(--border);cursor:pointer;font-size:12.5px}
+.gf-row:hover{background:var(--surface2)}
+.gf-pos{min-width:34px;color:var(--faint);font-family:'JetBrains Mono',monospace;font-size:11px}
+.gf-nm{flex:1;color:var(--text);font-weight:500}
+.gf-rk{color:var(--dim);font-family:'JetBrains Mono',monospace;font-size:10px}
+.gf-sc{font-family:'JetBrains Mono',monospace;font-weight:600;min-width:34px;text-align:right}
+.gf-sc.up{color:var(--pos)}.gf-sc.dn{color:var(--neg)}
+.gf-st{font-size:9px;color:var(--neg);border:1px solid var(--neg);border-radius:4px;padding:0 4px;margin-left:5px;font-family:'JetBrains Mono',monospace}
+.gtf-card{border:1px solid var(--accent);border-radius:13px;padding:14px;margin-bottom:14px;background:rgba(93,141,239,.04)}
+.gtf-hd{font-family:'JetBrains Mono',monospace;font-weight:700;font-size:12.5px;color:var(--accent);letter-spacing:.02em}
+.gtf-sub{font-size:11px;color:var(--dim);margin:5px 0 8px;line-height:1.45}
+.model-warn{font-size:10px;color:var(--warn);margin-top:6px;line-height:1.4;font-family:'JetBrains Mono',monospace}
+.fi-eng{display:flex;flex-wrap:wrap;gap:6px;margin:7px 0 2px}
+.fi-eng-k{font-family:'JetBrains Mono',monospace;font-size:9.5px;color:var(--dim);background:var(--surface2);border:1px solid var(--border);border-radius:5px;padding:2px 7px}
+.fi-eng-k.warn{color:var(--warn);border-color:var(--warn)}
+.relia{width:100%;max-width:340px;margin:8px auto 4px;display:block}
+.xw{margin:6px 0 2px;border:1px solid var(--border);border-radius:8px;overflow:hidden}
+.xw-h{padding:7px 10px;font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;color:var(--accent);cursor:pointer;background:var(--surface2)}
+.xw-body{display:none;padding:4px 10px 8px}
+.xw.open .xw-body{display:block}
+.xw-row{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px;padding:5px 0;border-bottom:1px solid var(--border)}
+.xw-l{font-size:11.5px;color:var(--text);min-width:120px}
+.xw-v{font-family:'JetBrains Mono',monospace;font-size:11.5px;font-weight:600;color:var(--accent)}
+.xw-n{font-size:10px;color:var(--faint);flex:1}
+.xw-est{font-size:8.5px;color:var(--warn);border:1px solid var(--warn);border-radius:3px;padding:0 3px;vertical-align:middle}
+.xw-foot{font-size:9.5px;color:var(--faint);margin-top:6px;line-height:1.4;font-family:'JetBrains Mono',monospace}
+.pr-x:not(:empty){padding:0 4px 8px}
+.mc-stat{background:var(--surface2);border:1px solid var(--border);border-radius:9px;padding:9px 13px}
+.mc-n{font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;color:var(--text)}
+.mc-l{font-size:10px;color:var(--faint);text-transform:uppercase;letter-spacing:.03em;margin-top:2px}
+.calibtbl{width:100%;border-collapse:collapse;margin:4px 0 8px;font-size:12px}
+.calibtbl th{text-align:left;color:var(--faint);font-weight:500;font-size:10px;text-transform:uppercase;padding:4px 8px;border-bottom:1px solid var(--border)}
+.calibtbl td{padding:5px 8px;border-bottom:1px solid var(--border);font-family:'JetBrains Mono',monospace}
+.pr-list{display:flex;flex-direction:column}
+.pr-row{display:flex;align-items:center;gap:11px;padding:10px 4px;border-bottom:1px solid var(--border)}
+.pr-rk{min-width:22px;color:var(--faint);font-family:'JetBrains Mono',monospace;font-size:11px;text-align:right}
+.pr-nm{flex:1;min-width:0}
+.pr-p{font-weight:600;color:var(--text);font-size:13.5px}
+.pr-t{font-size:10.5px;color:var(--faint);font-family:'JetBrains Mono',monospace;margin-top:1px}
+.pr-v{text-align:right;margin-right:4px}
+.pr-line{display:block;font-size:11px;color:var(--dim);font-family:'JetBrains Mono',monospace}
+.pr-proj{display:block;font-size:10px;color:var(--faint);font-family:'JetBrains Mono',monospace;margin-top:1px}
+.pr-over{min-width:44px;text-align:right;font-family:'JetBrains Mono',monospace;font-weight:700;font-size:14px}
+.pr-over.up{color:var(--pos)}.pr-over.dn{color:var(--neg)}
+.gf-win{color:var(--accent);font-family:'JetBrains Mono',monospace;font-size:10px;margin-right:6px}
+/* ===== look-inside: tap a team/golfer to read the fundamentals ===== */
+.finside{margin:12px 0 4px;border-top:1px dashed var(--border);padding-top:11px}
+.fi-h{font-size:9px;letter-spacing:.06em;text-transform:uppercase;color:var(--faint);font-weight:700;margin-bottom:8px;font-family:'JetBrains Mono',monospace}
+.fi-chips{display:flex;flex-wrap:wrap;gap:6px}
+.fichip{font-size:11.5px;font-weight:600;color:var(--text);background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:6px 10px;cursor:pointer;font-family:'Inter',sans-serif}
+.fichip.on{border-color:var(--accent);color:var(--accent);background:rgba(77,141,255,.08)}
+.fi-tap{cursor:pointer;border-bottom:1px dotted var(--faint)}
+.fi-tap.on{color:var(--accent);border-bottom-color:var(--accent)}
+.fi-detail{display:none;margin-top:9px}.fi-detail.on{display:block}
+.fi-card{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:11px 12px}
+.fi-name{font-size:13px;font-weight:700;color:var(--text);margin-bottom:8px}
+.fi-sub{font-size:9.5px;font-weight:500;color:var(--faint);font-family:'JetBrains Mono',monospace;margin-left:5px;text-transform:uppercase;letter-spacing:.04em}
+.fi-stat{display:flex;justify-content:space-between;gap:10px;padding:5px 0;font-family:'JetBrains Mono',monospace;font-size:12px;border-top:1px dashed var(--border)}
+.fi-stat:first-of-type{border-top:none}.fi-stat .fl{color:var(--dim);font-family:'Inter',sans-serif}
+.fi-stat .fv.up{color:var(--pos)}.fi-stat .fv.dn{color:var(--neg)}.fi-stat .fv.mut{color:var(--faint)}
+.fi-player{padding:7px 0;border-top:1px dashed var(--border)}.fi-player:first-of-type{border-top:none}
+.fi-p-top{display:flex;align-items:center;gap:8px}
+.fi-p-nm{font-size:13px;font-weight:600;color:var(--text)}
+.fi-p-pos{font-size:8.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--accent);border:1px solid rgba(77,141,255,.4);border-radius:4px;padding:1px 5px;font-family:'JetBrains Mono',monospace}
+.fi-p-stat{font-size:11px;color:var(--dim);font-family:'JetBrains Mono',monospace;margin-top:3px}
+.fi-foot{font-size:10px;color:var(--faint);line-height:1.5;margin-top:9px;padding-top:8px;border-top:1px dashed var(--border)}
+.fi-empty{font-size:11.5px;color:var(--dim);line-height:1.55;padding:10px 11px;background:var(--surface2);border:1px dashed var(--border);border-radius:9px}
+.fi-empty .mono{color:var(--warn)}
+/* ===== Stats section ===== */
+.stchips{display:flex;gap:7px;overflow-x:auto;padding-bottom:4px;margin-bottom:11px;-webkit-overflow-scrolling:touch}
+.stchip{flex:none;font-size:11px;font-weight:700;letter-spacing:.03em;color:var(--dim);background:transparent;border:1px solid var(--border);border-radius:20px;padding:6px 13px;cursor:pointer;font-family:'JetBrains Mono',monospace;white-space:nowrap}
+.stchip.on{background:var(--surface2);border-color:var(--accent);color:var(--text)}
+.stchip .n{color:var(--accent);margin-left:5px;font-weight:500}
+.stseg{display:flex;gap:0;border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-bottom:12px}
+.stseg button{flex:1;background:var(--surface2);border:none;border-right:1px solid var(--border);color:var(--dim);font-family:inherit;font-weight:600;font-size:12.5px;padding:10px 6px;cursor:pointer}
+.stseg button:last-child{border-right:none}
+.stseg button.on{background:rgba(77,141,255,.12);color:var(--accent)}
+#stControls{margin-bottom:12px}
+.stsearch{width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:10px;padding:12px;font-size:15px;font-family:'Inter',sans-serif}
+.stctlrow{display:flex;gap:8px}.stctlrow .stsearch{flex:1}
+.stdir{flex:none;background:var(--surface2);border:1px solid var(--border);color:var(--dim);border-radius:10px;padding:0 14px;font-family:'JetBrains Mono',monospace;font-weight:600;font-size:12px;cursor:pointer;white-space:nowrap}
+.stdir:hover{color:var(--accent);border-color:var(--accent)}
+.stsearch:focus{outline:2px solid var(--accent);outline-offset:-1px}
+.strow{display:flex;align-items:center;gap:11px;background:var(--surface);border:1px solid var(--border);border-radius:11px;padding:11px 13px;margin-bottom:7px}
+.st-rank{font-family:'JetBrains Mono',monospace;font-weight:700;font-size:13px;color:var(--accent);width:22px;text-align:center;flex:none}
+.st-mid{flex:1;min-width:0}
+.st-nm{font-weight:600;font-size:14.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.st-meta{font-size:11px;color:var(--dim);font-family:'JetBrains Mono',monospace;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.st-pos{font-size:8.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--accent);border:1px solid rgba(77,141,255,.4);border-radius:4px;padding:1px 5px;font-family:'JetBrains Mono',monospace;flex:none}
+.st-stat{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--text);flex:none;text-align:right}
+.stteamhdr{font-size:13px;font-weight:700;color:var(--text);margin:2px 0 9px;font-family:'Inter',sans-serif}
+/* landing tiles */
+.sptiles{display:grid;grid-template-columns:1fr 1fr;gap:11px}
+.sptile{position:relative;text-align:left;background:var(--surface2);border:1px solid var(--border);border-left:3px solid var(--tc);border-radius:14px;padding:16px 15px 14px;cursor:pointer;overflow:hidden;transition:.14s}
+.sptile:hover{border-color:var(--tc);transform:translateY(-1px)}
+.sptile::after{content:'';position:absolute;top:-30px;right:-30px;width:90px;height:90px;border-radius:50%;background:var(--tc);opacity:.10}
+.sptile-code{font-family:'JetBrains Mono',monospace;font-weight:700;font-size:22px;letter-spacing:-.01em;color:var(--tc)}
+.sptile-name{font-size:12.5px;font-weight:600;color:var(--text);margin-top:3px;line-height:1.2}
+.sptile-n{font-size:10px;color:var(--faint);font-family:'JetBrains Mono',monospace;margin-top:8px;text-transform:uppercase;letter-spacing:.04em}
+.sptile.off{cursor:default;opacity:.42;border-left-color:var(--border)}
+.sptile.off:hover{transform:none;border-color:var(--border)}
+.sptile.off .sptile-code{color:var(--faint)}
+.stbar{display:flex;align-items:center;gap:12px;margin-bottom:13px}
+.stback{background:var(--surface2);border:1px solid var(--border);color:var(--dim);border-radius:9px;padding:7px 12px;font-family:'Inter',sans-serif;font-weight:600;font-size:12.5px;cursor:pointer}
+.stback:hover{color:var(--text);border-color:var(--accent)}
+.stbar-sport{font-family:'JetBrains Mono',monospace;font-weight:700;font-size:16px;color:var(--tc)}
+.stbar-n{font-size:10px;color:var(--faint);font-weight:500;margin-left:7px;letter-spacing:.04em}
+.stitem{margin-bottom:7px}
+.strow.tap{cursor:pointer}
+.st-chev{color:var(--faint);font-family:'JetBrains Mono',monospace;font-size:13px;transition:.16s;flex:none;margin-left:2px}
+.stitem.open .st-chev{transform:rotate(90deg)}
+.st-detail{display:none;background:var(--surface2);border:1px solid var(--border);border-top:none;border-radius:0 0 11px 11px;margin:-7px 0 7px;padding:11px 13px}
+.stitem.open .st-detail{display:block}
+.stitem.open .strow{border-radius:11px 11px 0 0;border-bottom-color:transparent}
+.st-catblk{margin-bottom:11px}.st-catblk:last-child{margin-bottom:0}
+.st-cathdr{font-size:9px;letter-spacing:.06em;text-transform:uppercase;color:var(--accent);font-weight:700;margin-bottom:7px;font-family:'JetBrains Mono',monospace}
+.st-grid{display:flex;flex-wrap:wrap;gap:6px 14px}
+.st-cell{display:flex;flex-direction:column;gap:1px;min-width:52px}
+.st-cl{font-size:8.5px;letter-spacing:.04em;color:var(--faint);font-family:'JetBrains Mono',monospace;text-transform:uppercase}
+.st-cv{font-size:13px;color:var(--text);font-family:'JetBrains Mono',monospace;font-weight:500}
 .elimbanner{font-size:11.5px;font-family:'JetBrains Mono',monospace;border-radius:9px;padding:10px 12px;margin-bottom:10px;border:1px solid;line-height:1.5}
 .elimbanner.ok{color:var(--pos);border-color:rgba(47,180,124,.32);background:rgba(47,180,124,.05)}
 .elimbanner.dead{color:var(--neg);border-color:rgba(226,96,68,.4);background:rgba(226,96,68,.07)}
@@ -188,6 +345,8 @@ textarea{min-height:110px;font-family:'JetBrains Mono',monospace;resize:vertical
 .refreshbtn{background:var(--surface2);border:1px solid var(--border);color:var(--dim);border-radius:7px;min-width:30px;height:30px;cursor:pointer;font-size:16px;line-height:1;margin-left:8px;flex:none}
 .refreshbtn:hover{color:var(--text);border-color:var(--accent)}
 .refreshbtn:active{transform:rotate(180deg);transition:transform .25s}
+.refreshbtn.spinning{animation:rspin .6s linear infinite;color:var(--accent);border-color:var(--accent)}
+@keyframes rspin{to{transform:rotate(360deg)}}
 .signout{margin-left:8px;background:transparent;border:1px solid var(--border);color:var(--dim);border-radius:7px;padding:5px 10px;font-size:11px;cursor:pointer;font-family:'JetBrains Mono',monospace}
 .signout:hover{color:var(--text);border-color:var(--neg)}
 /* ===== quick add (tap to log, mobile-clean) ===== */
@@ -202,6 +361,32 @@ textarea{min-height:110px;font-family:'JetBrains Mono',monospace;resize:vertical
 .qa-ev{font-family:'JetBrains Mono',monospace;font-weight:700;color:var(--pos);font-size:13px;flex:none}
 .qa-plus{flex:none;width:30px;height:30px;border-radius:9px;background:var(--accent);color:#fff;font-size:20px;font-weight:700;display:flex;align-items:center;justify-content:center}
 .betcard .brow .btn.sm{min-height:34px;padding:0 14px}
+/* ===== trap radar ===== */
+.trap{background:linear-gradient(180deg,rgba(226,96,68,.07),transparent);border:1px solid rgba(226,96,68,.28);border-radius:14px;padding:12px;margin-bottom:16px}
+.trap h3{margin:0 0 4px;color:var(--neg);font-size:12px;letter-spacing:.06em;text-transform:uppercase;display:flex;align-items:center;gap:7px}
+.trap-note{font-size:10.5px;color:var(--dim);line-height:1.5;margin:0 0 10px}
+.traprow{display:flex;align-items:center;gap:10px;padding:10px 4px;border-bottom:1px solid rgba(38,44,54,.7)}
+.traprow:last-child{border-bottom:none}
+.trap-mid{flex:1;min-width:0}
+.trap-sel{font-weight:600;font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.trap-meta{font-size:10.5px;color:var(--dim);font-family:'JetBrains Mono',monospace;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px}
+.trap-meta b{color:var(--text)}
+.trap-prem{font-family:'JetBrains Mono',monospace;font-weight:700;font-size:16px;color:var(--neg);flex:none;text-align:right}
+.trap-prem .pl{display:block;font-size:8px;letter-spacing:.06em;text-transform:uppercase;color:var(--faint);font-weight:600}
+.pubchip{font-size:8px;text-transform:uppercase;letter-spacing:.04em;color:var(--warn);border:1px solid rgba(217,154,43,.4);border-radius:4px;padding:1px 5px;margin-left:6px}
+/* ===== CLV hero chart ===== */
+.clvhero{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:14px 14px 8px;margin:4px 0 16px}
+.clvhero-h{display:flex;align-items:baseline;gap:10px;margin-bottom:10px;flex-wrap:wrap}
+.clvhero-h .big{font-family:'JetBrains Mono',monospace;font-size:26px;font-weight:700;line-height:1}
+.clvhero-h .lbl{font-size:11px;color:var(--dim);text-transform:uppercase;letter-spacing:.05em}
+.clvhero svg{display:block;width:100%;height:auto}
+.clvhero .cap{font-size:11px;color:var(--faint);line-height:1.5;margin-top:6px}
+/* ===== live CLV on bets ===== */
+.liveclv{font-size:11px;font-family:'JetBrains Mono',monospace;margin-top:6px;display:flex;align-items:center;gap:6px}
+.liveclv .dot{width:6px;height:6px;border-radius:50%}
+.liveclv.up{color:var(--pos)}.liveclv.up .dot{background:var(--pos)}
+.liveclv.dn{color:var(--neg)}.liveclv.dn .dot{background:var(--neg)}
+.liveclv.flat{color:var(--dim)}.liveclv.flat .dot{background:var(--faint)}
 </style>
 </head>
 <body>
@@ -216,7 +401,7 @@ textarea{min-height:110px;font-family:'JetBrains Mono',monospace;resize:vertical
 <main>
   <!-- EDGES -->
   <section id="v-edges" class="view">
-    <div class="row-between"><h2 style="margin:0">Top edges</h2><span class="spacer"></span><span class="freshness" id="fresh">—</span><button class="refreshbtn" title="Refresh" onclick="loadEdges()">&#8635;</button></div>
+    <div class="row-between"><h2 style="margin:0">Top edges</h2><span class="spacer"></span><span class="freshness" id="fresh">—</span><button class="refreshbtn" title="Refresh" data-refresh="edges">&#8635;</button></div>
     <p class="lede">The best live edges on games in your window — positive after the sharp fair line, with the liquidity to mean something. Ranked by edge × how this kind of signal has beaten the close. Tap any row for the receipt.</p>
     <div id="edgeStale" class="stalebanner hide"></div>
     <div class="lead" id="leadWrap"><h3 id="t10title">★ Top edges — this week</h3><div id="leadList"></div></div>
@@ -229,14 +414,14 @@ textarea{min-height:110px;font-family:'JetBrains Mono',monospace;resize:vertical
     <div class="feed" id="feed"><div class="empty">Loading edges…</div></div>
     <div class="lead side hide" id="dailyWrap">
       <h3 id="d5title">☆ Top 5 — wider net · this week</h3>
-      <p class="sidenote">Lower bar than the list above: the best live edges in your window regardless of size or book, offshore included. Live only — nothing stale. For research; verify before trusting. Tap + to log one.</p>
+      <p class="sidenote">The five sharpest lines on the board in your window, every day. When something clears the sharp fair line it shows green as a real edge; when the board is efficient these are simply the closest-to-fair prices, labelled below fair and shown for research, not as plays. Tap + to log one to your CLV ledger.</p>
       <div id="dailyList"></div>
     </div>
   </section>
 
   <!-- FAULTS (Faultline) -->
   <section id="v-faults" class="view hide">
-    <div class="row-between"><h2 style="margin:0">Faultline</h2><span class="spacer"></span><span class="freshness" id="flFresh">—</span><button class="refreshbtn" title="Refresh" onclick="loadFaults()">&#8635;</button></div>
+    <div class="row-between"><h2 style="margin:0">Faultline</h2><span class="spacer"></span><span class="freshness" id="flFresh">—</span><button class="refreshbtn" title="Refresh" data-refresh="faults">&#8635;</button></div>
     <p class="lede">Structural mispricings — errors from the <b style="color:var(--text);font-weight:600">rules and internal math of the market</b>, not from a model. Each fault ships with a receipt you can verify.</p>
     <div class="flbanner demo" id="flBanner">Checking pipeline for live futures boards…</div>
     <div class="flchips" id="flChips"></div>
@@ -246,16 +431,18 @@ textarea{min-height:110px;font-family:'JetBrains Mono',monospace;resize:vertical
 
   <!-- BOARDS (all real odds, one place) -->
   <section id="v-boards" class="view hide">
-    <div class="row-between"><h2 style="margin:0">Boards</h2><span class="spacer"></span><span class="freshness" id="bdFresh">—</span><button class="refreshbtn" title="Refresh" onclick="loadBoards()">&#8635;</button></div>
+    <div class="row-between"><h2 style="margin:0">Boards</h2><span class="spacer"></span><span class="freshness" id="bdFresh">—</span><button class="refreshbtn" title="Refresh" data-refresh="boards">&#8635;</button></div>
     <p class="lede">Every real outright market in one place — conference titles you enter by hand and the championship boards pulled automatically. Raw book odds, favorites first. Teams that can't win are flagged.</p>
     <div id="mlbWatch"></div>
+    <div id="trapRadar"></div>
     <div id="allBoards"><div class="empty">Loading boards…</div></div>
   </section>
 
   <!-- RECORD -->
   <section id="v-record" class="view hide">
     <h2>Track record <span class="muted" style="font-weight:400;font-size:11px;text-transform:none">— auto-graded, no manual entry</span></h2>
-    <p class="lede">Every priced selection is captured, the closing line is snapshotted, and it's graded after the game. This is what's actually working.</p>
+    <p class="lede">The closing-line record of the <b style="color:var(--text);font-weight:600">edges the system flagged</b> &mdash; not every priced selection. Each flagged edge is captured, the closing line is snapshotted, and it's graded after the game. This is whether the picks beat the close.</p>
+    <div id="clvChart"></div>
     <div class="kpis" id="recKpis"></div>
     <h3>What's working <span class="muted" style="font-weight:400;font-size:11px">— sorted by weight</span></h3>
     <div class="fld" style="margin-bottom:10px"><select id="sliceType"><option value="book">By book</option><option value="sport">By sport</option><option value="market">By market</option><option value="edge_bucket">By edge size</option><option value="ttk_bucket">By time to kickoff</option></select></div>
@@ -267,12 +454,12 @@ textarea{min-height:110px;font-family:'JetBrains Mono',monospace;resize:vertical
 
   <!-- LEDGER -->
   <section id="v-ledger" class="view hide">
-    <div class="row-between"><h2 style="margin:0">Ledger</h2><span class="spacer"></span><span class="freshness" id="mktFresh">—</span><button class="refreshbtn" title="Refresh" onclick="loadMarket()">&#8635;</button></div>
+    <div class="row-between"><h2 style="margin:0">Ledger</h2><span class="spacer"></span><span class="freshness" id="mktFresh">—</span><button class="refreshbtn" title="Refresh" data-refresh="ledger">&#8635;</button></div>
     <p class="lede">The market's moves tracked automatically, plus the bets you log by hand. The auto feed shows where lines went and flags moves that touch a structural fault.</p>
     <div class="flbanner demo" id="mktBanner">Checking market…</div>
     <h3 style="margin:18px 0 9px">Market activity <span style="font-weight:400;color:var(--dim);font-size:12px">&mdash; line moves on watched boards</span></h3>
     <div id="mktFeed"><div class="empty">Loading market…</div></div>
-    <h3 style="margin:24px 0 9px">Your bets <span style="font-weight:400;color:var(--dim);font-size:12px">&mdash; tap an edge to log, then Win/Loss to settle. Saved on this device.</span></h3>
+    <h3 style="margin:24px 0 9px">Your bets <span style="font-weight:400;color:var(--dim);font-size:12px">&mdash; tap an edge to log; it settles itself once the game is graded. Custom bets settle by hand. Saved on this device.</span></h3>
     <div class="kpis" id="clvKpis"></div>
     <div class="quickadd"><div class="qa-h">Quick add &mdash; one tap, no typing</div><div id="qaList"><div class="empty" style="padding:10px">Loading today's edges…</div></div></div>
     <div id="betlist"></div>
@@ -280,19 +467,38 @@ textarea{min-height:110px;font-family:'JetBrains Mono',monospace;resize:vertical
     <div class="card hide" id="lg_form" style="margin-top:8px">
       <div class="filters">
         <div class="fld full"><label>What did you bet?</label><input id="lg_sel" placeholder="Bills ML"></div>
-        <div class="fld"><label>Odds (American)</label><input type="number" id="lg_odds" placeholder="-110"></div>
-        <div class="fld"><label>Stake $ <span style="color:var(--faint)">(optional)</span></label><input type="number" id="lg_stake" placeholder=""></div>
+        <div class="fld"><label>Odds (American)</label><input type="text" inputmode="text" id="lg_odds" placeholder="-110 or +150"></div>
+        <div class="fld"><label>Stake $ <span style="color:var(--faint)">(optional)</span></label><input type="number" inputmode="decimal" id="lg_stake" placeholder=""></div>
         <button class="btn full" id="lg_add">Log it</button>
+        <div class="fld full"><div id="lg_err" class="sidenote" style="color:var(--neg);margin:2px 0 0;display:none"></div></div>
       </div>
     </div>
   </section>
 
   <!-- NEWS -->
   <section id="v-news" class="view hide">
-    <div class="row-between"><h2 style="margin:0">News</h2><span class="spacer"></span><span class="freshness" id="newsFresh">—</span><button class="refreshbtn" title="Refresh" onclick="loadNews()">&#8635;</button></div>
+    <div class="row-between"><h2 style="margin:0">News</h2><span class="spacer"></span><span class="freshness" id="newsFresh">—</span><button class="refreshbtn" title="Refresh" data-refresh="news">&#8635;</button></div>
     <p class="lede">Early-warning for your moat. Items that touch a tracked team or a structural rule surface as <b style="color:var(--warn);font-weight:600">Moat Alerts</b> — they may mean an eligibility row needs updating.</p>
     <div class="flbanner demo" id="newsBanner">Checking feed…</div>
     <div id="newsFeed"><div class="empty">Loading news…</div></div>
+  </section>
+
+  <!-- STATS -->
+  <section id="v-stats" class="view hide">
+    <div class="row-between"><h2 style="margin:0">Stats</h2><span class="spacer"></span><span class="freshness" id="stFresh">—</span><button class="refreshbtn" title="Refresh" onclick="loadStats(true)">&#8635;</button></div>
+    <p class="lede">The players and teams behind the boards — browse a roster, search a player, or scan the leaders. Fundamentals to sanity-check direction; the edge itself still lives in CLV.</p>
+    <div class="stchips" id="stLeagues"></div>
+    <div class="stseg" id="stSeg"><button data-m="teams" class="on">Teams</button><button data-m="players">Players</button><button data-m="leaders">Leaders</button></div>
+    <div id="stControls"></div>
+    <div id="stBody"><div class="empty">Loading…</div></div>
+  </section>
+
+  <section id="v-props" class="view hide">
+    <div class="row-between"><h2 style="margin:0">Props</h2><span class="spacer"></span><span class="freshness" id="prFresh">—</span><button class="refreshbtn" title="Refresh" onclick="loadProps(true)">&#8635;</button></div>
+    <p class="lede">Model projections for player props &mdash; per-game rate with modeled variance. <b style="color:var(--warn)">Projections, not lines, not edges.</b> An edge only exists once these beat a real book's closing number; until then it's research to sanity-check, never a call.</p>
+    <div class="stchips" id="prSports"></div>
+    <div id="prControls"></div>
+    <div id="prBody"><div class="empty">Loading…</div></div>
   </section>
 
   <!-- TERMS -->
@@ -316,6 +522,8 @@ textarea{min-height:110px;font-family:'JetBrains Mono',monospace;resize:vertical
   <button data-v="faults"><svg class="ic" viewBox="0 0 24 24"><path d="M3 12h4l2-7 4 14 2-7h6"/></svg>Faults</button>
   <button data-v="boards"><svg class="ic" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="1"/><path d="M3 9h18M3 14h18M9 4v16"/></svg>Boards</button>
   <button data-v="record"><svg class="ic" viewBox="0 0 24 24"><path d="M4 19V5"/><rect x="7" y="11" width="3" height="8"/><rect x="13" y="7" width="3" height="12"/><rect x="19" y="14" width="2" height="5"/></svg>Record</button>
+  <button data-v="stats"><svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.5"/><path d="M5 20c0-3.5 3-6 7-6s7 2.5 7 6"/></svg>Stats</button>
+  <button data-v="props"><svg class="ic" viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-6M22 20H2"/></svg>Props</button>
   <button data-v="ledger"><svg class="ic" viewBox="0 0 24 24"><path d="M4 5h16v14H4z"/><path d="M4 10h16"/><path d="M9 5v14"/></svg>Ledger</button>
   <button data-v="news"><svg class="ic" viewBox="0 0 24 24"><path d="M4 5h16v14H4z"/><path d="M8 9h8M8 13h8M8 17h5"/></svg>News</button>
 </nav>
@@ -340,7 +548,7 @@ GE.devig=function(decs,method){var q=decs.map(function(d){return 1/d;}),S=q.redu
 function $(id){return document.getElementById(id);}
 
 /* ===== nav ===== */
-function show(v){var s=document.querySelectorAll('.view');for(var i=0;i<s.length;i++)s[i].classList.toggle('hide',s[i].id!=='v-'+v);var b=document.querySelectorAll('.bottomnav button');for(var j=0;j<b.length;j++)b[j].classList.toggle('on',b[j].dataset.v===v);window.scrollTo(0,0);if(v==='record')loadRecord();if(v==='edges')loadEdges();if(v==='faults')loadFaults();if(v==='boards')loadBoards();if(v==='news')loadNews();if(v==='ledger')loadMarket();}
+function show(v){var s=document.querySelectorAll('.view');for(var i=0;i<s.length;i++)s[i].classList.toggle('hide',s[i].id!=='v-'+v);var b=document.querySelectorAll('.bottomnav button');for(var j=0;j<b.length;j++)b[j].classList.toggle('on',b[j].dataset.v===v);window.scrollTo(0,0);if(v==='record')loadRecord();if(v==='edges')loadEdges();if(v==='faults')loadFaults();if(v==='boards')loadBoards();if(v==='news')loadNews();if(v==='ledger')loadMarket();if(v==='stats')loadStats();if(v==='props')loadProps();}
 var navs=document.querySelectorAll('.bottomnav button');for(var n=0;n<navs.length;n++)navs[n].onclick=(function(b){return function(){show(b.dataset.v);};})(navs[n]);
 
 /* ===== learned weights ===== */
@@ -408,6 +616,17 @@ async function loadEdges(){
     window.__edgeLatest=hb;
     $('fresh').textContent=hb?('captured '+ago(hb)):'—';
     setStale(hb);
+    // sharpest in-window line regardless of sign — proves the scanner ran and shows how close the board is to a play
+    window.__bestNearMiss=null;
+    try{var nm=await sbGet('signals?select=sport_title,selection,edge,best_book,n_books&commence_time=gte.'+nowIso+'&commence_time=lte.'+horizonIso+'&edge=not.is.null&order=edge.desc.nullslast&limit=1');if(nm&&nm[0])window.__bestNearMiss=nm[0];}catch(_){}
+    // pool of the sharpest lines on the board (any sign) so the wider-net Top 5 is populated every day
+    window.D5_POOL=[];
+    try{var pool=await sbGet('signals?select=event_id,sport_title,sport_key,market,selection,point,best_dec,first_best_dec,sharp_fair,best_book,edge,n_books,commence_time,home_team,away_team,last_seen_at&commence_time=gte.'+nowIso+'&commence_time=lte.'+horizonIso+'&edge=not.is.null&order=edge.desc.nullslast&limit=40');window.D5_POOL=pool||[];}catch(_){window.D5_POOL=[];}
+    // team CONTEXT (records/form) for the detail view — display only, never touches edge math
+    try{var gs=await sbGet('game_stats?select=*');window.GSTATS={};(gs||[]).forEach(function(r){window.GSTATS[r.team_norm]=r;});}catch(_){window.GSTATS=window.GSTATS||{};}
+    // EdgeDesk MODEL fair (me-vs-market) — display only, UNPROVEN, keyed to match model_predictions.
+    // NEVER touches e.edge, sorting, filters, or the verify tags. A separate engine, shown side by side.
+    try{var mp=await sbGet('model_predictions?select=event_id,market,selection,point,model_prob,model_fair_american,model_edge,model_version&sport_key=eq.baseball_mlb&commence_time=gte.'+nowIso+'&commence_time=lte.'+horizonIso+'&order=created_at.asc&limit=1500');window.MODELP={};(mp||[]).forEach(function(r){window.MODELP[modelKey(r.event_id,r.market,r.selection,r.point)]=r;});}catch(_){window.MODELP=window.MODELP||{};}
     await loadSliceStats();
     renderEdges();
     renderDaily();
@@ -421,8 +640,10 @@ async function loadBoards(){
   try{rows=await sbGet("boards?select=*&active=eq.true&order=board_name.asc&limit=5000");}catch(e){rows=[];}
   try{elig=await sbGet("eligibility?select=*");}catch(e){elig=[];}
   try{model=await sbGet("model_odds?select=*&limit=5000");}catch(e){model=[];}
+  await loadGolfField();
   $('bdFresh').textContent=rows.length?('updated '+ago(Date.now())):'no boards';
   renderEliminator(rows,elig);
+  renderTrapRadar(rows,elig,model);
   renderAllBoards(rows,elig,model);
 }
 /* match a board selection to a model row by normalized team name (unique across conferences) */
@@ -452,32 +673,128 @@ function renderEliminator(rows,elig){
     :'<div class="elimbanner ok">\u25cf 0 dead-money faults live right now \u2014 nothing ineligible is currently priced. The moat stays loaded and fires the moment a flagged team appears on a board.</div>';
   host.innerHTML='<div class="flwatch-h">Eliminator \u2014 who can\u2019t win, by sport</div>'+banner+'<div class="elim-grid">'+blocks+'</div>';
 }
+/* ===== TRAP RADAR — where the crowd overpays =====
+   The mirror of edge-finding. De-vig each board to the book's own fair, compare to the
+   model, and surface MARQUEE (public-money) teams the market prices ABOVE the model.
+   A large positive premium on a blue-blood is the classic public-money inflation — a fade
+   lean. Honestly: a big gap can also mean the model is too low, so this is a research
+   signal to investigate the crowd, never an auto-fade. */
+var MARQUEE=['alabama','ohiostate','texas','notredame','michigan','georgia','usc','lsu','florida','tennessee','oklahoma','pennstate','clemson','miami','texasam','oregon','nebraska','auburn','floridastate','wisconsin','colorado',
+ 'newyorkyankees','losangelesdodgers','bostonredsox','chicagocubs','atlantabraves','newyorkmets','losangelesangels','stlouiscardinals','sanfranciscogiants','philadelphiaphillies','sandiegopadres','houstonastros',
+ 'dallascowboys','kansascitychiefs','philadelphiaeagles','sanfrancisco49ers','greenbaypackers','pittsburghsteelers','buffalobills','newenglandpatriots','baltimoreravens','detroitlions','miamidolphins','chicagobears',
+ 'usa','brazil','argentina','england','germany','france','spain'].reduce(function(o,k){o[k]=1;return o;},{});
+function isMarquee(sel){var k=nrm(sel);if(MARQUEE[k])return true;
+  for(var m in MARQUEE){if(m.length>=4&&k.indexOf(m)===0&&k.slice(m.length).indexOf('state')!==0)return true;}return false;}
+var TRAP_MIN=0.03;   // book de-vigged prob must exceed model by >= 3 points to flag
+function renderTrapRadar(rows,elig,model){
+  var host=$('trapRadar');if(!host)return;
+  if(!rows||!rows.length||!model||!model.length){host.innerHTML='';return;}
+  var dead={};(elig||[]).forEach(function(e){dead[((e.league||'').toUpperCase())+'|'+e.selection]=1;});
+  var NAT={},CONF={};(model||[]).forEach(function(m){if(m.win_prob==null)return;var c=(m.conference||'').toLowerCase();
+    var rec={p:+m.win_prob};(c.indexOf('cfp')>=0||c.indexOf('national')>=0||c.indexOf('playoff')>=0?NAT:CONF)[nrm(m.team)]=rec;});
+  var NK=Object.keys(NAT).sort(function(a,b){return b.length-a.length;});
+  var CK=Object.keys(CONF).sort(function(a,b){return b.length-a.length;});
+  function look(map,keys,sel,pfx){var k=nrm(sel);if(map[k])return map[k];if(!pfx)return null;
+    for(var i=0;i<keys.length;i++){var mk=keys[i];if(mk.length>=4&&k.indexOf(mk)===0&&k.slice(mk.length).indexOf('state')!==0)return map[mk];}return null;}
+  var boards={};rows.forEach(function(r){(boards[r.board_id]=boards[r.board_id]||{name:r.board_name,league:r.league,rows:[]}).rows.push(r);});
+  var traps=[];
+  Object.keys(boards).forEach(function(bid){var b=boards[bid];var L=(b.league||'').toUpperCase();
+    var nmn=(b.name||'').toLowerCase();
+    var useNat=(L==='CFB')&&(b.rows.length>40||/cfp|playoff|national/.test(nmn));
+    var map=useNat?NAT:CONF,keys=useNat?NK:CK;
+    // de-vig this board to the book's own fair (multiplicative)
+    var imp=b.rows.map(function(r){return flImpl(r.american);});
+    var over=imp.reduce(function(a,x){return a+x;},0)||1;
+    b.rows.forEach(function(r,i){
+      if(dead[L+'|'+r.selection])return;
+      if(!isMarquee(r.selection))return;
+      var mo=look(map,keys,r.selection,useNat);if(!mo||mo.p==null)return;
+      var bookFair=imp[i]/over;                 // book's de-vigged probability
+      var prem=bookFair-mo.p;                    // crowd minus model
+      if(prem>=TRAP_MIN)traps.push({sel:r.selection,board:b.name,league:b.league,am:r.american,bookFair:bookFair,modelP:mo.p,prem:prem});
+    });
+  });
+  if(!traps.length){host.innerHTML='';return;}
+  traps.sort(function(a,b){return b.prem-a.prem;});
+  traps=traps.slice(0,8);
+  host.innerHTML='<div class="trap"><h3>\u26a0 Trap Radar \u2014 where the crowd overpays</h3>'+
+    '<p class="trap-note">Marquee teams the market prices <b style="color:var(--text)">above</b> the model \u2014 the classic public-money premium, a fade lean. A big gap can also mean the model is low, so treat each as a prompt to check the crowd, not an auto-fade. CLV is the only proof a fade was right.</p>'+
+    traps.map(function(t){var od=t.am>0?'+'+t.am:t.am;
+      return'<div class="traprow"><div class="trap-mid"><div class="trap-sel">'+t.sel+'<span class="pubchip">public</span></div>'+
+        '<div class="trap-meta">'+t.board+' \u00b7 '+od+' \u00b7 market <b>'+(t.bookFair*100).toFixed(1)+'%</b> vs model <b>'+(t.modelP*100).toFixed(1)+'%</b></div></div>'+
+        '<div class="trap-prem">+'+(t.prem*100).toFixed(1)+'<span class="pl">overpay</span></div></div>';
+    }).join('')+'</div>';
+}
 /* all captured boards, de-vigged, with dead-money flags */
 function renderAllBoards(rows,elig,model){
   var host=$('allBoards');if(!host)return;
   if(!rows||!rows.length){host.innerHTML='<div class="empty"><b>No boards captured yet.</b><br>Run capture_boards, or enter a conference board in admin. They\u2019ll all show here.</div>';return;}
   var dead={};(elig||[]).forEach(function(e){dead[((e.league||'').toUpperCase())+'|'+e.selection]=e.reason||'ineligible';});
-  var MO={};(model||[]).forEach(function(m){MO[nrm(m.team)]={p:+m.win_prob,fair:m.fair_american};});
-  var hasModel=Object.keys(MO).length>0;
+  // model_odds carries two kinds of rows: national title (conference='CFP National')
+  // and conference title (conference=<actual>). A team's national % and conference %
+  // are different numbers, so match by BOARD context, not just name.
+  var MO_NAT={},MO_CONF={};
+  (model||[]).forEach(function(m){
+    var rec={p:(m.win_prob!=null?+m.win_prob:null),reach:(m.reach_prob!=null?+m.reach_prob:null),fair:m.fair_american,iters:m.iterations};
+    var c=(m.conference||'').toLowerCase();
+    if(c.indexOf('cfp')>=0||c.indexOf('national')>=0||c.indexOf('playoff')>=0)MO_NAT[nrm(m.team)]=rec;
+    else MO_CONF[nrm(m.team)]=rec;
+  });
+  var NAT_KEYS=Object.keys(MO_NAT).sort(function(a,b){return b.length-a.length;});
+  var CONF_KEYS=Object.keys(MO_CONF).sort(function(a,b){return b.length-a.length;});
+  // exact match, then (only where names carry mascots — national boards) the longest model
+  // key the board name starts with, but never let "Oregon" swallow "Oregon State". Conference
+  // boards use clean short names, so they match exact-only — that stops Miami (OH)->Miami (FL).
+  function lookIn(map,keys,sel,prefixOk){var k=nrm(sel);if(map[k])return map[k];
+    if(!prefixOk)return null;
+    for(var i=0;i<keys.length;i++){var mk=keys[i];
+      if(mk.length>=4&&k.indexOf(mk)===0&&k.slice(mk.length).indexOf('state')!==0)return map[mk];}
+    return null;}
+  var hasModel=(NAT_KEYS.length+CONF_KEYS.length)>0;
+  var matched=0;
   var boards={};rows.forEach(function(r){(boards[r.board_id]=boards[r.board_id]||{name:r.board_name,league:r.league,rows:[]}).rows.push(r);});
   var ids=Object.keys(boards).sort(function(a,b){return (boards[a].name||'').localeCompare(boards[b].name||'');});
   var cards=ids.map(function(bid){
     var b=boards[bid];var L=(b.league||'').toUpperCase();
+    // national CFB boards (CFP/playoff/championship, big field) use national-title model;
+    // conference boards use conference-title model. Heuristic: CFB board with >40 teams = national.
+    var nm=(b.name||'').toLowerCase();
+    var useNat=(L==='CFB')&&(b.rows.length>40||/cfp|playoff|national/.test(nm));
+    var pickMap=useNat?MO_NAT:MO_CONF, pickKeys=useNat?NAT_KEYS:CONF_KEYS;
+    var reachLbl=useNat?'reach CFP':'reach final';
     // favorites first: shorter price = lower implied; sort by implied desc (used only to order, not shown)
     var sorted=b.rows.slice().sort(function(x,y){return flImpl(y.american)-flImpl(x.american);});
     var top=sorted.slice(0,8),shown={};top.forEach(function(t){shown[t.selection]=1;});
     sorted.forEach(function(t){if(dead[L+'|'+t.selection]&&!shown[t.selection]){top.push(t);shown[t.selection]=1;}}); // always surface a flagged team
     var rowsHtml=top.map(function(t){var od=t.american>0?'+'+t.american:t.american;var isDead=dead[L+'|'+t.selection];
-      var mo=MO[nrm(t.selection)];var mline='';
-      if(mo){var mf=mo.fair>0?'+'+mo.fair:mo.fair;var gap=mo.p-flImpl(t.american);
-        var tag=(!isDead&&gap>=0.02)?'<span class="medge">+'+(gap*100).toFixed(1)+'%</span>':'';
-        mline='<span class="mfair">model '+mf+tag+'</span>';}
+      var mo=lookIn(pickMap,pickKeys,t.selection,useNat);var mline='';
+      if(mo&&mo.p!=null){
+        matched++;
+        var mf=(mo.fair>0?'+':'')+mo.fair;
+        var gap=mo.p-flImpl(t.american);
+        var tag=(!isDead&&gap>=0.02)?'<span class="medge">+'+(gap*100).toFixed(1)+'% edge</span>':'';
+        var reachTxt=(mo.reach!=null)?' \u00b7 '+reachLbl+' '+(mo.reach*100).toFixed(0)+'%':'';
+        mline='<span class="mfair"><b class="mwin">win '+(mo.p*100).toFixed(1)+'%</b>'+reachTxt+' \u00b7 fair '+mf+tag+'</span>';
+      }
       return'<div class="frow"><span class="fl">'+t.selection+(isDead?' <span class="elim">\u26d4 can\u2019t win</span>':'')+mline+'</span><span class="fv">'+od+'</span></div>';}).join('');
     var more=b.rows.length>top.length?'<div style="font-size:10.5px;color:var(--faint);padding-top:5px">+'+(b.rows.length-top.length)+' more priced</div>':'';
-    return'<div class="flwatch"><div class="fmeta"><span class="ftag lg">'+(b.league||'')+'</span><span class="ftag cls">'+b.rows.length+' priced</span></div><div class="ftitle" style="font-size:14px">'+b.name+'</div>'+rowsHtml+more+'</div>';
+    var gEvt=((b.league||'').toUpperCase()==='GOLF'&&GOLF_FIELD.length)?golfCurrentEvent():'';
+    var futNote=gEvt?'<div class="golfnow"><span class="golfnow-sub">These are <b>'+flEsc(b.name)+'</b> winner futures. A different event is live this week \u2014 see Full field for who\u2019s actually playing '+flEsc(gEvt)+'.</span></div>':'';
+    var golfExp=((b.league||'').toUpperCase()==='GOLF'&&GOLF_FIELD.length)?
+      '<div class="gf-exp" onclick="toggleGolfField(this)">\u26f3 Full field \u2014 '+GOLF_FIELD.length+' actually playing'+(golfCurrentEvent()?' at '+flEsc(golfCurrentEvent()):'')+' \u203a</div><div class="gf-wrap" data-open="0"></div>':'';
+    return'<div class="flwatch"><div class="fmeta"><span class="ftag lg">'+(b.league||'')+'</span><span class="ftag cls">'+b.rows.length+' priced</span></div><div class="ftitle" style="font-size:14px">'+flEsc(b.name)+'</div>'+rowsHtml+more+futNote+golfExp+'</div>';
   }).join('');
-  var hdr=hasModel?'All boards \u2014 book odds vs EdgeDesk model fair':'All boards \u2014 raw book odds, every market in one place';
-  host.innerHTML='<div class="flwatch-h">'+hdr+'</div>'+cards;
+  var modelN=(model||[]).length;
+  var diag;
+  if(modelN===0){
+    diag='<div class="flbanner demo" style="margin-bottom:10px">\u25b2 Monte Carlo: <b>0 model rows reached the app</b>. Either model_odds is empty (run <b>model_conf_odds</b>) or anon can\u2019t read it (missing RLS select policy). Boards below are raw book odds only.</div>';
+  } else if(matched===0){
+    diag='<div class="flbanner demo" style="margin-bottom:10px">\u25b2 Monte Carlo: <b>'+modelN+' model teams loaded</b> but <b>0 matched</b> the board names above \u2014 a name-matching gap (e.g. CFBD vs book spelling). Sim ran; it\u2019s just not joining.</div>';
+  } else {
+    diag='<div class="flbanner live" style="margin-bottom:10px">\u25cf Monte Carlo: '+modelN+' model teams loaded, '+matched+' matched on these boards \u2014 win % \u00b7 reach % shown inline.</div>';
+  }
+  var hdr=hasModel?'All boards \u2014 book odds vs EdgeDesk Monte Carlo (win % \u00b7 reach %)':'All boards \u2014 raw book odds, every market in one place';
+  host.innerHTML='<div class="flwatch-h">'+hdr+'</div>'+diag+cards;
 }
 /* legit US-regulated / sharp books — everything else (offshore) is treated as noise-prone */
 var TRUSTED=['draftkings','fanduel','betmgm','caesars','espn bet','espnbet','fanatics','betrivers','hard rock','hardrock','bet365','pinnacle','circa','fliff','ballybet','wynn','superbook'];
@@ -500,7 +817,7 @@ function renderEdges(){
     if(!ct||ct>horizon||ct<nowMs-3600e3)return false;               // inside window, not already underway >1h
     return true;
   });
-  if(mode==='trusted')list=list.filter(function(e){return isTrusted(e.best_book)&&(e.n_books||0)>=5;});
+  if(mode==='trusted')list=list.filter(function(e){return isTrusted(e.best_book)&&(e.n_books||0)>=4;});
   // always drop both-sides-of-a-market pairs (a vig artifact, not a real edge)
   var cnt={};list.forEach(function(e){var k=e.event_id+'|'+e.market;cnt[k]=(cnt[k]||0)+1;});
   list=list.filter(function(e){return cnt[e.event_id+'|'+e.market]<2;});
@@ -515,70 +832,253 @@ function renderEdges(){
   if(!top.length){
     lw.classList.add('hide');
     var down=!window.__edgeLatest||((Date.now()-window.__edgeLatest)/60000>=STALE_RED_MIN);
+    // filtering funnel — shows exactly where the rows went, so empty is explainable not mysterious
+    var nLoaded=EDGES.length;
+    var nWin=EDGES.filter(function(e){if(sport&&e.sport_title!==sport)return false;if((e.edge||0)<=0)return false;var ct=e.commence_time?new Date(e.commence_time).getTime():0;return ct&&ct<=horizon&&ct>=nowMs-3600e3;}).length;
+    var nFresh=EDGES.filter(function(e){if(sport&&e.sport_title!==sport)return false;if((e.edge||0)<=0)return false;var ct=e.commence_time?new Date(e.commence_time).getTime():0;if(!(ct&&ct<=horizon&&ct>=nowMs-3600e3))return false;var ls=e.last_seen_at?new Date(e.last_seen_at).getTime():0;return ls&&ls>=staleCut;}).length;
+    var poolN=(window.D5_POOL||[]).length;
+    var zeroNote=nLoaded===0?(poolN>0
+      ? ' \u00b7 <b>capture is live and pricing '+poolN+' line(s) \u2014 just none are +EV right now (clean board)</b>'
+      : ' \u00b7 <b>signals table returned 0 rows \u2014 capture isn\u2019t writing game rows at all</b>'):'';
+    var funnel='<div class="sb-sub" style="margin-top:8px;font-family:\'JetBrains Mono\',monospace">pipeline: '+nLoaded+' positive-edge rows in DB \u2192 '+nWin+' in your '+winLbl+' window \u2192 '+nFresh+' freshly priced (&lt;'+EDGE_MAX_AGE_MIN+'m) \u2192 0 after liquidity/book filters'+zeroNote+'</div>';
+    var nm=window.__bestNearMiss;
+    if(nm&&nm.edge!=null){
+      var ep=(nm.edge*100);
+      funnel+='<div class="sb-sub" style="margin-top:6px;font-family:\'JetBrains Mono\',monospace">sharpest line on the board: <b>'+(nm.sport_title||'')+' \u00b7 '+(nm.selection||'')+'</b> at '+(ep>=0?'+':'')+ep.toFixed(2)+'% vs fair ('+(nm.best_book||'')+', '+(nm.n_books||0)+' books)'+(ep<0?' \u2014 below fair, so nothing clears. The scan ran; the board is just efficient.':'')+'</div>';
+    }
+    // PROMOTE the best positive in-window line into a real, loggable card when the
+    // strict list is empty — so we never say "no edges" while a genuine +EV line exists.
+    // It's shown with the exact reason it missed the strict bar (usually book count).
+    var near=null;
+    (function(){
+      var nowMs2=Date.now();
+      var cand=(window.D5_POOL||[]).filter(function(e){
+        if(sport&&e.sport_title!==sport)return false;
+        if((e.edge||0)<=0)return false;                                  // must be genuinely positive
+        var ls=e.last_seen_at?new Date(e.last_seen_at).getTime():0;
+        if(!ls||ls<staleCut)return false;                               // live only
+        var ct=e.commence_time?new Date(e.commence_time).getTime():0;
+        if(!ct||ct>horizon||ct<nowMs2-3600e3)return false;             // in window
+        return true;
+      });
+      cand.sort(function(a,b){return b.edge-a.edge;});
+      near=cand[0]||null;
+    })();
+    var nearHtml='';
+    if(near){
+      var nb=near.n_books||0;
+      var reason=nb<MINBOOKS?('only '+nb+' book'+(nb===1?'':'s')+' quoting'):
+                 (mode==='trusted'&&nb<4?('only '+nb+' books \u2014 below the US-regulated bar'):
+                 (mode==='trusted'&&!isTrusted(near.best_book)?'best price is an offshore book':'just under the strict bar'));
+      window.__NEAR=near;
+      var nam=GE.decToAm(near.best_dec),nod=nam>0?'+'+nam:nam;
+      var nmHeader='<span class="rank">1</span><div class="lead-mid">'+
+        '<div class="lead-sel">'+selLabel(near)+(isTrusted(near.best_book)?'':' <span class="suspect">offshore</span>')+'</div>'+
+        '<div class="lead-meta">'+(near.sport_title||'')+' \u00b7 '+mktLabel(near.market)+' \u00b7 '+(near.away_team||'')+' @ '+(near.home_team||'')+' \u00b7 '+whenLabel(near.commence_time)+' \u00b7 '+near.best_book+' '+nod+' \u00b7 '+nb+' books</div></div>'+
+        '<span class="lead-ev">+'+(near.edge*100).toFixed(2)+'%</span>'+
+        '<button class="btn ghost sm dadd" onclick="event.stopPropagation();__trackId(\'nm_0\')">+</button>';
+      nearHtml='<div class="lead" style="margin-top:14px;border-color:rgba(217,154,43,.3)">'+
+        '<h3 style="color:var(--warn)">\u25c9 Closest to the bar \u2014 positive, but didn\u2019t clear</h3>'+
+        '<p class="sidenote">This line is genuinely +EV, it just missed the strict filter ('+reason+'). Tap the row for the full read \u2014 sharp fair, how it\u2019s moving, and its CLV history \u2014 or + to log it. Verify before trusting.</p>'+
+        expandItem(near,'nm_0',nmHeader)+
+        '</div>';
+    }
     f.innerHTML=down
-      ?'<div class="empty"><b>No live edges to show.</b><br>The data is stale or the pipeline is down \u2014 see the banner above. Nothing here would be current.</div>'
-      :'<div class="empty"><b>No fresh edges in your '+winLbl+' window.</b><br>Capture is live (last run '+ago(window.__edgeLatest)+'), there\u2019s just nothing right now that beats the sharp fair line by enough on a freshly-priced market. Stale prices are hidden on purpose. Try <b>All books</b> or a wider <b>Window</b> \u2014 or it\u2019s simply a clean board.</div>';
+      ?'<div class="empty"><b>No live edges to show.</b><br>The data is stale or the pipeline is down \u2014 see the banner above. Nothing here would be current.'+funnel+'</div>'
+      :'<div class="empty"><b>Nothing clears the strict bar in your '+winLbl+' window.</b><br>Capture is live (last run '+ago(window.__edgeLatest)+'). The strict list wants real liquidity behind the fair line; '+(near?'the closest positive line is shown below.':'right now it\u2019s a clean board.')+' Try <b>All books</b> or a wider <b>Window</b> for more.'+funnel+'</div>'+nearHtml;
     return;
   }
   lw.classList.remove('hide');
   f.innerHTML='';
   lead.innerHTML=top.map(function(e,i){return edgeRow(e,i);}).join('');
 }
-function edgeRow(e,i){
+/* ===== game-detail helpers (all derived from real signal data) ===== */
+function timeToGame(iso){
+  if(!iso)return null;var ms=new Date(iso).getTime()-Date.now();
+  if(ms<0)return{txt:'in progress / started',soon:true};
+  var h=Math.floor(ms/3600000),m=Math.floor((ms%3600000)/60000);
+  if(h<1)return{txt:m+'m to first pitch',soon:true};
+  if(h<24)return{txt:h+'h '+m+'m out',soon:h<3};
+  return{txt:Math.floor(h/24)+'d '+(h%24)+'h out',soon:false};
+}
+/* honest read: combines edge size, book trust, liquidity, freshness into a verdict.
+   deliberately conservative — a thin/stale/offshore edge is NOT dressed up as strong. */
+function edgeVerdict(e,st){
+  var edge=e.edge||0,nb=e.n_books||0,trusted=isTrusted(e.best_book);
+  var ls=e.last_seen_at?new Date(e.last_seen_at).getTime():0;
+  var staleMin=ls?(Date.now()-ls)/60000:999;
+  var reasons=[];
+  var tier;
+  if(edge>=0.03&&trusted&&nb>=5&&staleMin<45){tier='good';reasons.push('clears the bar with real liquidity behind it');}
+  else if(edge>0&&trusted&&nb>=4){tier='ok';reasons.push('genuinely +EV at a US book');}
+  else if(edge>0){tier='weak';reasons.push('positive but thin');}
+  else{tier='weak';reasons.push('below fair \u2014 negative expected value at the best price; shown for research, not as a play');}
+  if(!trusted)reasons.push('best price is offshore \u2014 structurally less trustworthy');
+  if(nb<4)reasons.push('only '+nb+' book'+(nb===1?'':'s')+' quoting the fair line');
+  if(staleMin>=45)reasons.push('last re-priced '+Math.round(staleMin)+'m ago \u2014 verify it\u2019s still live');
+  if(edge>0.06)reasons.push('edge this big on a game line is often a stale/erroneous price \u2014 confirm before trusting');
+  /* CLV history has the FINAL say: placement value is not closing value. If this SLICE
+     has a real graded sample and the market reliably erases it by close, the badge must
+     say so and lose its green stamp \u2014 no matter how clean the placement math looks.
+     This is the one place the receipt could otherwise sell hope; it can't anymore. */
+  var headline=null;
+  if(st&&st.rate!=null&&st.n>=40){
+    var beat=st.rate,clv=st.clv;
+    var beatPct=(beat*100).toFixed(0)+'%',clvPct=(clv>=0?'+':'')+(clv*100).toFixed(1)+'%';
+    if(beat<0.50&&clv<0){
+      tier='fade';
+      headline='\u25c9 Fades by close \u2014 placement +EV only';
+      reasons.unshift('this signal class beats the close just '+beatPct+' over '+st.n+' graded (avg CLV '+clvPct+') \u2014 the market reliably takes the value back. +EV at the bet slip is not +EV at the close');
+    }else if(beat<0.54||clv<0.003){
+      if(tier==='good')tier='ok';
+      reasons.push('slice history is only middling ('+beatPct+' beat close, avg CLV '+clvPct+' over '+st.n+') \u2014 modest at best, not a lock');
+    }else{
+      reasons.push('and the slice has held up: '+beatPct+' beat close over '+st.n+' graded, avg CLV '+clvPct);
+    }
+  }else if(st&&st.n){
+    reasons.push('slice CLV still unproven (only '+st.n+' graded) \u2014 treat this as a hypothesis, not a proven edge');
+  }
+  return{tier:tier,headline:headline,text:reasons.join('; ')+'.'};
+}
+/* team CONTEXT lookup — normalized-name match into game_stats (display only) */
+function nrmTeam(s){return (s||'').toLowerCase().replace(/[^a-z0-9]/g,'');}
+function teamStat(name){var g=window.GSTATS||{};return g[nrmTeam(name)]||null;}
+function teamFormRows(e){
+  var h=teamStat(e.home_team),a=teamStat(e.away_team);
+  if(!h&&!a)return '';   // no stats loaded / not MLB — show nothing rather than fake it
+  function cell(t,s){
+    if(!s)return '<div class="gd-line"><span class="l">'+t+'</span><span class="v mut">no data</span></div>';
+    var rec=(s.wins!=null&&s.losses!=null)?(s.wins+'-'+s.losses):'\u2014';
+    var rd=s.run_diff!=null?(', '+(s.run_diff>=0?'+':'')+s.run_diff+' diff'):'';
+    var extra=[];if(s.last10)extra.push('L10 '+s.last10);if(s.streak)extra.push(s.streak);
+    return '<div class="gd-line"><span class="l">'+t+'</span><span class="v">'+rec+rd+(extra.length?' \u00b7 '+extra.join(' \u00b7 '):'')+'</span></div>';
+  }
+  return '<div class="gd-sec">Team form</div>'+cell((e.away_team||'Away'),a)+cell((e.home_team||'Home'),h);
+}
+/* ===== EdgeDesk model (me-vs-market) — DISPLAY ONLY, UNPROVEN =====
+   Keys mirror the backend grader's keyOf() exactly so rows line up.
+   This never feeds e.edge, the sort, the filters, the verdict, or the tags.
+   It is shown beside the sharp line as research, flagged unproven, counted nowhere. */
+function mMatch(s){var n=(s||'').toLowerCase().replace(/[^a-z0-9]/g,'');return n.indexOf('athletics')>=0?'athletics':n;}
+function modelKey(ev,market,sel,point){
+  if(market==='totals')return ev+'|totals|'+(((sel||'').toLowerCase().indexOf('over')>=0)?'over':'under')+'|'+(point==null?'':point);
+  return ev+'|h2h|'+mMatch(sel);
+}
+function modelFor(e){var m=window.MODELP||{};return e&&e.event_id?(m[modelKey(e.event_id,e.market,e.selection,e.point)]||null):null;}
+function modelBlock(e){
+  var m=modelFor(e);if(!m||m.model_prob==null)return '';
+  var p=(+m.model_prob)*100;
+  var fa=m.model_fair_american;var faOd=(fa>0?'+':'')+fa;
+  var sharpP=(e.sharp_fair!=null)?e.sharp_fair*100:null;
+  var gap=(sharpP!=null)?(p-sharpP):null;                     // model vs sharp, in points (research only)
+  var gapHtml=(gap==null)?'':'<div class="gd-line"><span class="l">Model vs sharp</span><span class="v '+(gap>=0?'up':'dn')+'">'+(gap>=0?'+':'')+gap.toFixed(1)+' pts</span></div>';
+  return '<div class="gd-sec model">EdgeDesk model <span class="unproven">unproven</span></div>'+
+    '<div class="gd-line"><span class="l">Model fair line</span><span class="v mdl">'+faOd+'</span></div>'+
+    '<div class="gd-line"><span class="l">Model implies</span><span class="v mdl">'+p.toFixed(1)+'% to win</span></div>'+
+    gapHtml+
+    '<div class="gd-modelnote">EdgeDesk\u2019s own win-probability model ('+(m.model_version||'model')+'), shown for research beside the market. It is <b>not</b> a proven edge and is counted <b>nowhere</b> \u2014 it graduates only once its own graded CLV beats the close. Until then, trust the <b>sharp fair line</b> above, not this.</div>';
+}
+/* ===== ONE shared receipt, used by Top edges, Top 5, and the near-miss card =====
+   Every edge that appears anywhere is now tappable and shows the same full read:
+   market vs sharp fair, the CLV-history verdict, the model line (MLB), and which
+   way the line is going. domid namespaces each card so toggles never collide. */
+function receiptHTML(e){
   var am=GE.decToAm(e.best_dec),od=am>0?'+'+am:am;
-  var tags=(e.edge>0.06?' <span class="suspect">\u26a0 verify</span>':'')+(isTrusted(e.best_book)?'':' <span class="suspect">offshore</span>');
-  var fairAm=GE.decToAm(1/Math.max(0.0001,e.sharp_fair)),fairOd=fairAm>0?'+'+fairAm:fairAm;
+  var haveFair=(e.sharp_fair!=null);
+  var fairAm=haveFair?GE.decToAm(1/Math.max(0.0001,e.sharp_fair)):null,fairOd=fairAm!=null?(fairAm>0?'+'+fairAm:fairAm):'\u2014';
   var mv=moveLabel(e),st=sliceStat(e),trec;
   if(st&&st.rate!=null){
     trec='<div class="trec">Signals like this \u2014 <b>'+(e.sport_title||'')+(st.fine?' \u00b7 '+mktLabel(e.market):'')+'</b> \u2014 have beaten the close <span class="rate">'+(st.rate*100).toFixed(0)+'%</span> over <b>'+st.n+'</b> graded, avg CLV '+(st.clv>=0?'+':'')+(st.clv*100).toFixed(1)+'%.</div>';
   }else{
     trec='<div class="trec thin">Track record still building for this slice'+(st&&st.n?' (only '+st.n+' graded so far)':'')+'. The figure above is a pre-game estimate, not yet proven against closing lines.</div>';
   }
-  var mvHtml=mv?'<div class="rcpt-c"><span class="k">movement</span><span class="v '+mv.cls+'">'+mv.txt+'</span></div>':'';
-  return'<div class="t10item" id="t10_'+i+'">'+
-    '<div class="lead-row" onclick="toggleRcpt('+i+')"><span class="rank">'+(i+1)+'</span>'+
-      '<div class="lead-mid"><div class="lead-sel">'+selLabel(e)+tags+'</div>'+
-      '<div class="lead-meta">'+mktLabel(e.market)+' \u00b7 '+(e.away_team||'')+' @ '+(e.home_team||'')+' \u00b7 '+whenLabel(e.commence_time)+'</div></div>'+
-      '<span class="lead-ev">+'+(e.edge*100).toFixed(1)+'%</span><span class="rchev">\u203a</span></div>'+
-    '<div class="receipt">'+
-      '<div class="rcpt-grid">'+
-        '<div class="rcpt-c"><span class="k">best price</span><span class="v">'+e.best_book+' '+od+'</span></div>'+
-        '<div class="rcpt-c"><span class="k">sharp fair</span><span class="v">'+fairOd+' \u00b7 '+(e.sharp_fair*100).toFixed(1)+'%</span></div>'+
-        '<div class="rcpt-c"><span class="k">books quoting</span><span class="v">'+(e.n_books||0)+'</span></div>'+
-        mvHtml+
-      '</div>'+trec+
-      '<button class="btn ghost sm" onclick="__t10track('+i+')">Track this</button>'+
+  var pick=e.selection;var isHomePick=(e.home_team&&pick&&pick.indexOf(e.home_team)>=0);
+  var isAwayPick=(e.away_team&&pick&&pick.indexOf(e.away_team)>=0);
+  var ttg=timeToGame(e.commence_time);var vd=edgeVerdict(e,st);
+  var impPrice=(1/e.best_dec*100),impFair=(haveFair?e.sharp_fair*100:null),gap=(haveFair?impFair-impPrice:null);
+  var edgePct=(e.edge!=null?e.edge*100:null),neg=(edgePct!=null&&edgePct<0);
+  var match='<div class="gd-match">'+
+    '<div class="gd-team'+(isAwayPick?' pick':'')+'"><div class="nm">'+(e.away_team||'\u2014')+'</div><div class="rl">away'+(isAwayPick?' \u00b7 the pick':'')+'</div></div>'+
+    '<span class="gd-vs">@</span>'+
+    '<div class="gd-team'+(isHomePick?' pick':'')+'"><div class="nm">'+(e.home_team||'\u2014')+'</div><div class="rl">home'+(isHomePick?' \u00b7 the pick':'')+'</div></div>'+
+    '<div class="gd-when">'+whenLabel(e.commence_time)+(ttg?'<br><span class="'+(ttg.soon?'cd':'')+'">'+ttg.txt+'</span>':'')+'</div></div>';
+  var edgeVal=(edgePct!=null?((edgePct>=0?'+':'')+edgePct.toFixed(2)+'%'+(gap!=null?' \u00b7 '+(gap>=0?'+':'')+gap.toFixed(1)+' pts of value':'')):'\u2014');
+  var marketRead='<div class="gd-sec">The market \u00b7 '+mktLabel(e.market)+'</div>'+
+    '<div class="gd-line"><span class="l">Your pick</span><span class="v">'+selLabel(e)+'</span></div>'+
+    '<div class="gd-line"><span class="l">Best price</span><span class="v">'+e.best_book+' '+od+(isTrusted(e.best_book)?'':' \u00b7 offshore')+'</span></div>'+
+    '<div class="gd-line"><span class="l">Sharp fair line</span><span class="v">'+fairOd+'</span></div>'+
+    '<div class="gd-line"><span class="l">Price implies</span><span class="v mut">'+impPrice.toFixed(1)+'% to win</span></div>'+
+    '<div class="gd-line"><span class="l">Sharp fair implies</span><span class="v">'+(haveFair?impFair.toFixed(1)+'% to win':'\u2014')+'</span></div>'+
+    '<div class="gd-line"><span class="l">'+(neg?'Below fair by':'Your edge')+'</span><span class="v '+(neg?'dn':'up')+'">'+edgeVal+'</span></div>';
+  var bars='<div class="gd-bars">'+
+    '<div class="gd-bar"><div class="bn '+(e.edge>=0.03?'pos':'')+'">'+(edgePct!=null?(edgePct>=0?'+':'')+edgePct.toFixed(1)+'%':'\u2014')+'</div><div class="bl">edge</div></div>'+
+    '<div class="gd-bar"><div class="bn">'+(e.n_books||0)+'</div><div class="bl">books</div></div>'+
+    '<div class="gd-bar"><div class="bn">'+(mv?mv.txt.split(' ')[0]:'flat')+'</div><div class="bl">line move</div></div></div>';
+  var detail='<div class="gd-sec">The context</div>'+
+    '<div class="gd-line"><span class="l">Books quoting the fair line</span><span class="v">'+(e.n_books||0)+(e.n_books>=5?' \u00b7 deep':e.n_books>=4?' \u00b7 ok':' \u00b7 thin')+'</span></div>'+
+    (mv?'<div class="gd-line"><span class="l">Since first seen</span><span class="v '+(mv.cls==='mv-steam'?'up':mv.cls==='mv-drift'?'dn':'mut')+'">'+mv.txt+'</span></div>':'')+
+    '<div class="gd-line"><span class="l">Last re-priced</span><span class="v'+((e.last_seen_at&&(Date.now()-new Date(e.last_seen_at).getTime())/60000>45)?' dn':'')+'">'+(e.last_seen_at?ago(new Date(e.last_seen_at).getTime()):'unknown')+'</span></div>'+
+    (ttg?'<div class="gd-line"><span class="l">Game starts</span><span class="v">'+ttg.txt+'</span></div>':'');
+  var vHead=vd.headline||(vd.tier==='good'?'\u25c9 Worth a real look':vd.tier==='ok'?'\u25c9 Legit, but modest':vd.tier==='fade'?'\u25c9 Fades by close \u2014 placement +EV only':'\u25c9 Marginal \u2014 verify first');
+  var verdict='<div class="gd-verdict '+vd.tier+'"><b>'+vHead+'.</b> '+vd.text+'</div>';
+  return match+bars+marketRead+modelBlock(e)+detail+teamFormRows(e)+verdict+trec;
+}
+/* wrap any edge into a tappable card with the shared receipt */
+function expandItem(e,domid,headerInner){
+  window.RCPT=window.RCPT||{};window.RCPT[domid]=e;
+  return '<div class="t10item" id="'+domid+'">'+
+    '<div class="lead-row" onclick="toggleRcptId(\''+domid+'\')">'+headerInner+'<span class="rchev">\u203a</span></div>'+
+    '<div class="receipt">'+receiptHTML(e)+
+      '<button class="btn ghost sm" onclick="__trackId(\''+domid+'\')" style="margin-top:10px">Track this to my ledger</button>'+
     '</div></div>';
 }
+window.toggleRcptId=function(id){var el=$(id);if(el)el.classList.toggle('open');};
+window.__trackId=function(id){var e=(window.RCPT||{})[id];if(e)trackSignal(e,GE.decToAm(e.best_dec));};
 window.toggleRcpt=function(i){var el=$('t10_'+i);if(el)el.classList.toggle('open');};
+function edgeRow(e,i){
+  var tags=(e.edge>0.06?' <span class="suspect">\u26a0 verify</span>':'')+(isTrusted(e.best_book)?'':' <span class="suspect">offshore</span>');
+  var header='<span class="rank">'+(i+1)+'</span>'+
+    '<div class="lead-mid"><div class="lead-sel">'+selLabel(e)+tags+'</div>'+
+    '<div class="lead-meta">'+mktLabel(e.market)+' \u00b7 '+(e.away_team||'')+' @ '+(e.home_team||'')+' \u00b7 '+whenLabel(e.commence_time)+'</div></div>'+
+    '<span class="lead-ev">+'+(e.edge*100).toFixed(1)+'%</span>';
+  return expandItem(e,'t10_'+i,header);
+}
 window.__t10track=function(i){var e=(window.T10||[])[i];if(e)trackSignal(e,GE.decToAm(e.best_dec));};
+window.__nearTrack=function(){var e=window.__NEAR;if(e)trackSignal(e,GE.decToAm(e.best_dec));};
 /* wider-net "today" list: best live edges for today regardless of floor/book — research watchlist, always populated when games are live */
 function renderDaily(){
   var host=$('dailyList'),wrap=$('dailyWrap');if(!host||!wrap)return;
+  wrap.classList.remove('hide');
   var win=$('fScope').value, sport=$('fSport').value;
   var nowMs=Date.now(),endDay=new Date();endDay.setHours(23,59,59,999);
   var horizon=win==='day'?endDay.getTime():nowMs+7*864e5;
-  var staleCut=nowMs-EDGE_MAX_AGE_MIN*60000;
-  if($('d5title'))$('d5title').textContent='\u2606 Top 5 \u2014 wider net \u00b7 '+(win==='day'?'today':'this week');
-  var list=EDGES.filter(function(e){
+  if($('d5title'))$('d5title').textContent='\u2606 Top 5 \u2014 sharpest on the board \u00b7 '+(win==='day'?'today':'this week');
+  var pool=(window.D5_POOL||[]).filter(function(e){
     if(sport&&e.sport_title!==sport)return false;
-    var ls=e.last_seen_at?new Date(e.last_seen_at).getTime():0;
-    if(!ls||ls<staleCut)return false;                              // live only — no zombies
-    if((e.edge||0)<=0)return false;                                // any positive edge, no floor
+    if(!(e.best_dec&&e.selection&&e.edge!=null))return false;
     var ct=e.commence_time?new Date(e.commence_time).getTime():0;
-    if(!ct||ct>horizon||ct<nowMs-3600e3)return false;             // in window, not already underway >1h
-    return true;
+    return ct&&ct<=horizon&&ct>=nowMs-3600e3;                     // in window, not already underway >1h
   });
-  var cnt={};list.forEach(function(e){var k=e.event_id+'|'+e.market;cnt[k]=(cnt[k]||0)+1;});
-  list=list.filter(function(e){return cnt[e.event_id+'|'+e.market]<2;});   // one side of a market only
-  list.sort(function(a,b){return b.edge-a.edge;});
-  var top=list.slice(0,5);window.D5=top;
-  if(!top.length){wrap.classList.add('hide');return;}
-  wrap.classList.remove('hide');
-  host.innerHTML=top.map(function(e,i){
+  var cnt={};pool.forEach(function(e){var k=e.event_id+'|'+e.market;cnt[k]=(cnt[k]||0)+1;});
+  pool=pool.filter(function(e){return cnt[e.event_id+'|'+e.market]<2;});   // one side of a market only
+  pool.sort(function(a,b){return b.edge-a.edge;});
+  var top=pool.slice(0,5);window.D5=top;
+  if(!top.length){
+    host.innerHTML='<div class="empty" style="padding:14px">Nothing on the board in your '+(win==='day'?'today':'this week')+' window yet \u2014 capture hasn\u2019t priced any games here. Widen <b>Window</b> or check capture scope.</div>';
+    return;
+  }
+  var anyPos=top.some(function(e){return e.edge>0;});
+  var note=anyPos?'':'<div class="sidenote" style="margin:0 0 8px;color:var(--warn)">No +EV on the board right now \u2014 these are the sharpest available, all below fair. Shown for research, not as plays.</div>';
+  host.innerHTML=note+top.map(function(e,i){
     var am=GE.decToAm(e.best_dec),od=am>0?'+'+am:am;
-    var tags=(e.edge>0.06?' <span class="suspect">\u26a0 verify</span>':'')+(isTrusted(e.best_book)?'':' <span class="suspect">offshore</span>');
-    return'<div class="lead-row"><span class="rank">'+(i+1)+'</span><div class="lead-mid"><div class="lead-sel">'+selLabel(e)+tags+'</div><div class="lead-meta">'+(e.sport_title||'')+' \u00b7 '+mktLabel(e.market)+' \u00b7 '+(e.away_team||'')+' @ '+(e.home_team||'')+' \u00b7 '+whenLabel(e.commence_time)+' \u00b7 '+e.best_book+' '+od+'</div></div><span class="lead-ev">+'+(e.edge*100).toFixed(1)+'%</span><button class="btn ghost sm dadd" onclick="__d5track('+i+')">+</button></div>';
+    var pos=e.edge>0;
+    var evTxt=(pos?'+':'')+(e.edge*100).toFixed(pos?1:2)+'%';
+    var evStyle=pos?'':' style="color:var(--neg)"';
+    var ls=e.last_seen_at?new Date(e.last_seen_at).getTime():0;
+    var ageTag=(ls&&(nowMs-ls)/60000>=EDGE_MAX_AGE_MIN)?' <span class="suspect">priced '+ago(ls)+'</span>':'';
+    var tags=(e.edge>0.06?' <span class="suspect">\u26a0 verify</span>':'')+(isTrusted(e.best_book)?'':' <span class="suspect">offshore</span>')+(pos?'':' <span class="suspect">below fair</span>')+ageTag;
+    var header='<span class="rank">'+(i+1)+'</span><div class="lead-mid"><div class="lead-sel">'+selLabel(e)+tags+'</div><div class="lead-meta">'+(e.sport_title||'')+' \u00b7 '+mktLabel(e.market)+' \u00b7 '+(e.away_team||'')+' @ '+(e.home_team||'')+' \u00b7 '+whenLabel(e.commence_time)+' \u00b7 '+e.best_book+' '+od+'</div></div><span class="lead-ev"'+evStyle+'>'+evTxt+'</span><button class="btn ghost sm dadd" onclick="event.stopPropagation();__trackId(\'d5_'+i+'\')">+</button>';
+    return expandItem(e,'d5_'+i,header);
   }).join('');
 }
 window.__d5track=function(i){var e=(window.D5||[])[i];if(e)trackSignal(e,GE.decToAm(e.best_dec));};
@@ -590,25 +1090,102 @@ var WEIGHT_ROWS=[],CALIB=[];
 async function loadRecord(){
   try{
     var total=await sbCount('');var graded=await sbCount('graded_at=not.is.null');
-    var g=await sbGet('signals?select=clv,result,beat_close&graded_at=not.is.null&limit=5000');
-    var w=0,l=0,clv=0,beatStored=0,clvPos=0,nCLV=0,n=g.length;
-    g.forEach(function(r){if(r.result==='win')w++;else if(r.result==='loss')l++;clv+=r.clv||0;
-      if(r.clv!=null){nCLV++;if(r.clv>0)clvPos++;if(r.beat_close)beatStored++;}});
+    var gradedEdges=await sbCount('graded_at=not.is.null&edge=gt.0');
+    // CLEAN edges only: real floor, liquid, and capped to exclude stale-line garbage
+    // (a 30-60% "edge" is a dead price, not a signal — it poisons the record).
+    var EDGEQ='edge=gte.0.005&edge=lte.0.1&n_books=gte.3';
+    var g=await sbGet('signals?select=clv,result,beat_close&graded_at=not.is.null&'+EDGEQ+'&limit=5000');
+    var w=0,l=0,clvSum=0,beat=0,n=g.length,clvArr=[],clvPos=0;
+    g.forEach(function(r){if(r.result==='win')w++;else if(r.result==='loss')l++;
+      if(r.clv!=null){clvArr.push(+r.clv);clvSum+=+r.clv;if(r.clv>0)clvPos++;if(r.beat_close)beat++;}});   // all CLV stats over the SAME clv-present subset
+    var nCLV=clvArr.length;
+    var med=null;if(nCLV){var _s=clvArr.slice().sort(function(a,b){return a-b;});var _m=Math.floor(_s.length/2);med=_s.length%2?_s[_m]:(_s[_m-1]+_s[_m])/2;}
+    var avgCLV=nCLV?clvSum/nCLV:null;
+    var posRate=nCLV?clvPos/nCLV:null;    // raw clv>0 rate
+    var beatRate=nCLV?beat/nCLV:null;     // stored beat_close over the SAME denominator — must now track posRate
     var hit=(w+l)?w/(w+l):null;
-    // beat-close IS clv>0 by definition — derive it, never trust the stored column.
-    // beatStored is kept only to detect backend drift until settle+backfill land.
-    var beatRate=nCLV?clvPos/nCLV:null;
-    var beatStoredRate=nCLV?beatStored/nCLV:null;
-    var driftWarn=(beatRate!=null&&beatStoredRate!=null&&Math.abs(beatRate-beatStoredRate)>=0.1);
     WEIGHT_ROWS=await sbGet('model_weights?select=*');WEIGHTS={book:{},sport:{},market:{},edge_bucket:{},ttk_bucket:{}};WEIGHT_ROWS.forEach(function(r){WEIGHTS[r.slice_type]=WEIGHTS[r.slice_type]||{};WEIGHTS[r.slice_type][r.slice_value]=r.weight;});
     CALIB=await sbGet('calibration?select=*');
     $('dbPill').textContent='DB ✓';$('dbPill').className='pill ok';
+    // CLV time series (the proof layer) — cumulative CLV over the flagged edges only
+    try{var series=await sbGet('signals?select=clv,graded_at&graded_at=not.is.null&'+EDGEQ+'&clv=not.is.null&order=graded_at.asc&limit=5000');renderClvHero(series,avgCLV,beatRate,med,posRate);}catch(_){renderClvHero([],null,null,null,null);}
     function kpi(nv,lb){return'<div class="kpi"><div class="n">'+nv+'</div><div class="l">'+lb+'</div></div>';}
-    $('recKpis').innerHTML=kpi(total,'captured')+kpi(graded,'graded')+kpi(hit!=null?(hit*100).toFixed(0)+'%':'—','hit rate')+kpi(nCLV?((clv/nCLV>=0?'+':'')+(clv/nCLV*100).toFixed(1)+'%'):'—','avg CLV')+kpi(beatRate!=null?(beatRate*100).toFixed(0)+'%':'—','beat close');
-    if(driftWarn)$('recKpis').insertAdjacentHTML('afterend','<div class="empty" style="margin:8px 0;color:var(--warn);border-color:rgba(217,154,43,.45)">\u26a0 Stored beat_close ('+(beatStoredRate*100).toFixed(0)+'%) disagrees with the raw clv&gt;0 rate ('+(beatRate*100).toFixed(0)+'%). Deploy the fixed settle function and run the backfill \u2014 the KPI above already shows the correct derived number.</div>');
+    $('recKpis').innerHTML=kpi(total,'captured')+kpi(gradedEdges+' / '+graded,'edges graded')+kpi(hit!=null?(hit*100).toFixed(0)+'%':'—','edge hit rate')+kpi(avgCLV!=null?((avgCLV>=0?'+':'')+(avgCLV*100).toFixed(1)+'%'):'—','edge avg CLV')+kpi(med!=null?((med>=0?'+':'')+(med*100).toFixed(1)+'%'):'—','edge median CLV')+kpi(posRate!=null?(posRate*100).toFixed(0)+'%':'—','CLV+ rate · clv>0')+kpi(beatRate!=null?(beatRate*100).toFixed(0)+'%':'—','edges beat close');
     renderSlice();renderCalib();
     if(total===0)$('recKpis').insertAdjacentHTML('afterend','<div class="empty" style="margin:8px 0">No data yet. The capture job logs signals continuously; grades fill in after games finish.</div>');
   }catch(e){$('dbPill').textContent='DB error';$('dbPill').className='pill err';$('recKpis').innerHTML='<div class="empty">Could not reach the database: '+e.message+'</div>';}
+}
+function renderClvHero(series,avgClv,beatRate,med,posRate){
+  var host=$('clvChart');if(!host)return;
+  var MIN_SAMPLE=30;   // below this, CLV is noise — don't dress a handful of edges up as proof
+  if(!series||!series.length){
+    host.innerHTML='<div class="clvhero"><div class="clvhero-h"><span class="big muted">\u2014</span><span class="lbl">edge CLV</span></div><div class="cap"><b style="color:var(--text)">This is the proof layer.</b> As flagged edges grade, this plots their cumulative closing-line value. A line that climbs means the edges beat the close \u2014 the one thing that can\u2019t be faked. Nothing graded yet; it fills in as the pipeline runs.</div></div>';
+    return;
+  }
+  if(series.length<MIN_SAMPLE){
+    var a=avgClv!=null?(avgClv>=0?'+':'')+(avgClv*100).toFixed(1)+'%':'\u2014';
+    host.innerHTML='<div class="clvhero"><div class="clvhero-h"><span class="big" style="color:var(--warn)">'+series.length+'</span><span class="lbl">clean edges graded \u00b7 building</span></div>'+
+      '<div class="cap"><b style="color:var(--text)">Not a track record yet.</b> Only '+series.length+' clean edges have graded \u2014 far too few to mean anything (running avg '+a+', pure noise at this n). A real CLV read needs ~'+MIN_SAMPLE+'+ graded edges. This stays a sample-size notice, not a curve, until then \u2014 showing a 3-point line as proof would be lying. Let the clean pipeline accumulate.</div></div>';
+    return;
+  }
+  var W=700,H=150,pad=6;
+  var cum=[],s=0;series.forEach(function(r){s+=(+r.clv||0);cum.push(s);});
+  var N=cum.length,total=cum[N-1];
+  var mn=Math.min(0,Math.min.apply(null,cum)),mx=Math.max(0,Math.max.apply(null,cum));
+  var rng=(mx-mn)||1;
+  function X(i){return N<=1?W/2:(i/(N-1))*(W-2*pad)+pad;}
+  function Y(v){return H-pad-((v-mn)/rng)*(H-2*pad);}
+  var pts=cum.map(function(v,i){return X(i).toFixed(1)+','+Y(v).toFixed(1);}).join(' ');
+  var zeroY=Y(0).toFixed(1);
+  var col=total>=0?'var(--pos)':'var(--neg)';
+  var line=cum.map(function(v,i){return 'L'+X(i).toFixed(1)+','+Y(v).toFixed(1);}).join(' ');
+  var area='M'+X(0).toFixed(1)+','+zeroY+' '+line+' L'+X(N-1).toFixed(1)+','+zeroY+' Z';
+  var svg='<svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">'+
+    '<line x1="'+pad+'" y1="'+zeroY+'" x2="'+(W-pad)+'" y2="'+zeroY+'" stroke="var(--border)" stroke-width="1" stroke-dasharray="3 3"/>'+
+    '<path d="'+area+'" fill="'+col+'" opacity="0.10"/>'+
+    '<polyline points="'+pts+'" fill="none" stroke="'+col+'" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/></svg>';
+  var headline=(total>=0?'+':'')+(total*100).toFixed(1)+' pts';
+  var mismatch=(posRate!=null&&beatRate!=null&&Math.abs(posRate-beatRate)>=0.1);
+  host.innerHTML='<div class="clvhero"><div class="clvhero-h"><span class="big" style="color:'+col+'">'+headline+'</span><span class="lbl">edge CLV \u00b7 '+N+' graded</span></div>'+svg+
+    '<div class="cap"><b style="color:var(--text)">The proof layer.</b> Cumulative closing-line value across the flagged edges'+(avgClv!=null?' \u00b7 avg '+(avgClv>=0?'+':'')+(avgClv*100).toFixed(1)+'%':'')+(med!=null?' \u00b7 median '+(med>=0?'+':'')+(med*100).toFixed(1)+'%':'')+(beatRate!=null?' \u00b7 beat close '+(beatRate*100).toFixed(0)+'%':'')+'. A rising line is the only honest evidence the edges are real \u2014 and it\u2019s only as trustworthy as the close calc behind it.'+
+    (mismatch?'<br><b style="color:var(--warn)">\u26a0 Close-calc check: stored beat-close ('+(beatRate*100).toFixed(0)+'%) disagrees with the raw clv&gt;0 rate ('+(posRate*100).toFixed(0)+'%) \u2014 the settle job\u2019s beat_close is computed inconsistently with clv. Fix settle before trusting these.</b>':'')+
+    (!mismatch&&med!=null&&avgClv!=null&&med<0&&avgClv>0?'<br><span style="color:var(--warn)">Note: avg is positive but median is negative \u2014 the CLV is outlier-driven, not broad-based. Fragile; needs a bigger sample.</span>':'')+'</div></div>';
+  loadModelCalib(host);
+}
+/* MODEL CALIBRATION — were the model's probabilities true? (Brier + reliability), sibling of CLV */
+async function loadModelCalib(host){
+  if(!host)return;
+  var brier=[],calib=[];
+  try{brier=await sbGet('model_brier?select=*');}catch(e){}
+  try{calib=await sbGet('model_calibration?select=*&order=bucket.asc');}catch(e){}
+  var graded=brier.reduce(function(a,b){return a+(+b.graded||0);},0);
+  var card='<div class="clvhero" style="margin-top:14px"><div class="clvhero-h"><span class="big" style="color:'+(graded?'var(--accent)':'var(--dim)')+'">'+(graded||'\u2014')+'</span><span class="lbl">model calibration \u00b7 predictions graded</span></div>';
+  // reliability chart: perfect calibration = diagonal; plot (predicted, observed) per bucket
+  card+=reliabilitySVG(calib);
+  if(!graded){
+    card+='<div class="cap">The honest cousin of CLV: CLV asks <i>did it beat the market</i>; calibration asks <i>was the probability even real</i> \u2014 does a 30% call hit ~30% of the time. Points on the diagonal = perfectly calibrated. Every model prediction is archived and graded against what actually happened. <b style="color:var(--text)">Building from zero</b> \u2014 it fills in as games and events grade, and it will show the truth even where the model is wrong.</div></div>';
+  }else{
+    card+='<div style="display:flex;gap:14px;flex-wrap:wrap;margin:8px 0">'+brier.map(function(b){return '<div class="mc-stat"><div class="mc-n">'+(+b.brier).toFixed(3)+'</div><div class="mc-l">'+flEsc(b.sport)+' Brier \u00b7 '+b.graded+' graded</div></div>';}).join('')+'</div>';
+    card+='<div class="cap">Each dot is a probability band: x = what the model said, y = how often it actually happened. On the diagonal = honest; above = model was under-confident, below = over-confident. Lower Brier = better. Context only \u2014 a calibrated model still isn\u2019t proven until it beats the close.</div></div>';
+  }
+  host.insertAdjacentHTML('beforeend',card);
+}
+function reliabilitySVG(calib){
+  var W=340,H=240,P=34,plot=W-P*2;
+  function X(p){return P+(p/100)*plot;}
+  function Y(p){return (H-P)-(p/100)*(H-P*2);}
+  var grid='';for(var g=0;g<=100;g+=25){grid+='<line x1="'+X(g)+'" y1="'+Y(0)+'" x2="'+X(g)+'" y2="'+Y(100)+'" stroke="var(--border)" stroke-width="1"/>'+
+    '<line x1="'+X(0)+'" y1="'+Y(g)+'" x2="'+X(100)+'" y2="'+Y(g)+'" stroke="var(--border)" stroke-width="1"/>'+
+    '<text x="'+X(g)+'" y="'+(H-P+14)+'" fill="var(--faint)" font-size="9" text-anchor="middle" font-family="JetBrains Mono">'+g+'</text>'+
+    '<text x="'+(P-8)+'" y="'+(Y(g)+3)+'" fill="var(--faint)" font-size="9" text-anchor="end" font-family="JetBrains Mono">'+g+'</text>';}
+  var diag='<line x1="'+X(0)+'" y1="'+Y(0)+'" x2="'+X(100)+'" y2="'+Y(100)+'" stroke="var(--dim)" stroke-width="1.5" stroke-dasharray="4 4"/>';
+  var pts='';
+  (calib||[]).forEach(function(r){var pred=+r.avg_pred,obs=+r.observed,n=+r.n;if(!isFinite(pred)||!isFinite(obs))return;
+    var rad=Math.max(3,Math.min(9,Math.sqrt(n)));var off=Math.abs(pred-obs);var col=off<=8?'var(--pos)':(off<=18?'var(--warn)':'var(--neg)');
+    pts+='<circle cx="'+X(pred)+'" cy="'+Y(obs)+'" r="'+rad+'" fill="'+col+'" fill-opacity="0.55" stroke="'+col+'" stroke-width="1.5"/>';});
+  return '<svg class="relia" viewBox="0 0 '+W+' '+H+'" xmlns="http://www.w3.org/2000/svg">'+grid+diag+pts+
+    '<text x="'+(W/2)+'" y="'+(H-4)+'" fill="var(--faint)" font-size="9.5" text-anchor="middle" font-family="JetBrains Mono">model said (%)</text>'+
+    '<text x="12" y="'+(H/2)+'" fill="var(--faint)" font-size="9.5" text-anchor="middle" font-family="JetBrains Mono" transform="rotate(-90 12 '+(H/2)+')">actually happened (%)</text>'+'</svg>';
 }
 function renderSlice(){var t=$('sliceType').value,rows=WEIGHT_ROWS.filter(function(r){return r.slice_type===t;}).sort(function(a,b){return(b.weight||0)-(a.weight||0);});
   $('sliceTbl').querySelector('tbody').innerHTML=rows.length?rows.map(function(r){return'<tr><td>'+r.slice_value+'</td><td>'+(r.n||0)+'</td><td>'+(r.hit_rate!=null?(r.hit_rate*100).toFixed(0)+'%':'—')+'</td><td class="'+((r.avg_clv||0)>=0?'pos':'neg')+'">'+(r.avg_clv!=null?((r.avg_clv>=0?'+':'')+(r.avg_clv*100).toFixed(1)+'%'):'—')+'</td><td>'+(r.beat_close_rate!=null?(r.beat_close_rate*100).toFixed(0)+'%':'—')+'</td><td class="'+((r.weight||1)>=1?'pos':'neg')+'">×'+(r.weight||1).toFixed(2)+'</td></tr>';}).join(''):'<tr><td colspan="6" class="muted" style="text-align:center;padding:16px">No graded data yet.</td></tr>';}
@@ -619,9 +1196,21 @@ $('sliceType').onchange=renderSlice;$('recRefresh').onclick=loadRecord;
 /* ===== manual ledger (localStorage) ===== */
 function bets(){try{return JSON.parse(localStorage.getItem('edgedesk_bets')||'[]');}catch(e){return[];}}
 function saveBets(b){localStorage.setItem('edgedesk_bets',JSON.stringify(b));}
-function trackSignal(e,am){var b=bets();b.unshift({id:'b'+Date.now(),ts:new Date().toISOString(),sport:e.sport_title,sel:selLabel(e),book:e.best_book,odds:am,stake:null,model:e.sharp_fair*100,closeFair:null,result:null});saveBets(b);show('ledger');renderLedger();}
+function trackSignal(e,am){var b=bets();b.unshift({id:'b'+Date.now(),ts:new Date().toISOString(),sport:e.sport_title,sel:selLabel(e),book:e.best_book,odds:am,stake:null,model:(e.sharp_fair!=null?e.sharp_fair*100:null),closeFair:null,result:null,
+  event_id:e.event_id,market:e.market,selection:e.selection,point:(e.point!=null?e.point:null),commence:e.commence_time,sharp_fair:(e.sharp_fair!=null?e.sharp_fair:null),auto:!!e.event_id});saveBets(b);show('ledger');renderLedger();}
 $('lg_toggle').onclick=function(){$('lg_form').classList.toggle('hide');};
-$('lg_add').onclick=function(){var sel=($('lg_sel').value||'').trim(),od=+$('lg_odds').value;if(!sel||!od)return;var st=$('lg_stake').value?+$('lg_stake').value:null;var b=bets();b.unshift({id:'b'+Date.now(),ts:new Date().toISOString(),sport:'',sel:sel,book:'',odds:od,stake:st,model:null,closeFair:null,result:null});saveBets(b);$('lg_sel').value='';$('lg_odds').value='';$('lg_stake').value='';$('lg_form').classList.add('hide');renderLedger();};
+function parseAmOdds(s){s=(s||'').toString().trim().replace(/^\+/,'');var n=parseFloat(s);if(!isFinite(n)||n===0)return null;n=Math.round(n);if(Math.abs(n)<100)return null;return n;}
+$('lg_add').onclick=function(){
+  var err=$('lg_err');function fail(m){if(err){err.textContent=m;err.style.display='block';}}
+  var sel=($('lg_sel').value||'').trim();
+  var od=parseAmOdds($('lg_odds').value);
+  if(!sel)return fail('Add what you bet \u2014 e.g. "Bills ML".');
+  if(od===null)return fail('Enter American odds \u2014 e.g. -110 or +150 (\u2265100 or \u2264-100).');
+  if(err)err.style.display='none';
+  var st=$('lg_stake').value?+$('lg_stake').value:null;
+  var b=bets();b.unshift({id:'b'+Date.now(),ts:new Date().toISOString(),sport:'',sel:sel,book:'',odds:od,stake:st,model:null,closeFair:null,result:null,auto:false});
+  saveBets(b);$('lg_sel').value='';$('lg_odds').value='';$('lg_stake').value='';$('lg_form').classList.add('hide');renderLedger();
+};
 window.__qlog=function(i){var e=(window.QA_LIST||[])[i];if(!e)return;trackSignal(e,GE.decToAm(e.best_dec));};
 function renderQuickAdd(){var host=$('qaList');if(!host)return;
   var src=(typeof EDGES!=='undefined'&&EDGES?EDGES:[]).filter(function(e){return e.best_dec&&e.selection;}).slice();
@@ -631,21 +1220,103 @@ function renderQuickAdd(){var host=$('qaList');if(!host)return;
     return'<button class="qarow" onclick="__qlog('+i+')"><div class="qa-l"><div class="qa-sel">'+selLabel(e)+'</div><div class="qa-meta">'+(e.sport_title||'')+' \u00b7 '+e.best_book+' '+od+'</div></div><span class="qa-ev">+'+(e.edge*100).toFixed(1)+'%</span><span class="qa-plus">+</span></button>';
   }).join('');
 }
-window.__settle=function(id,won){var b=bets();var r=b.find(function(x){return x.id===id;});if(r){var cf=$('cf_'+id);r.closeFair=cf&&cf.value?+cf.value:null;r.result=won?'win':'loss';var dec=GE.amToDec(r.odds);r.pnl=won?(r.stake||0)*(dec-1):-(r.stake||0);}saveBets(b);renderLedger();};
+window.__settle=function(id,won){var b=bets();var r=b.find(function(x){return x.id===id;});if(r){r.result=won?'win':'loss';var dec=GE.amToDec(r.odds);r.pnl=won?(r.stake||0)*(dec-1):-(r.stake||0);r.manual=true;}saveBets(b);renderLedger();};
 window.__del=function(id){saveBets(bets().filter(function(x){return x.id!==id;}));renderLedger();};
+
+/* auto-settle: any tracked bet with event linkage whose game is over gets graded
+   straight from the signals table (result + CLV) — no manual Win/Loss needed.
+   Custom free-text bets have no event link, so those still settle by hand. */
+var AUTOSETTLE_BUSY=false;
+async function autoSettle(){
+  if(AUTOSETTLE_BUSY)return false;AUTOSETTLE_BUSY=true;
+  try{
+    var rows=bets(),changed=false,now=Date.now();
+    var pending=rows.filter(function(b){return !b.result&&b.event_id&&b.market&&b.selection&&b.commence&&new Date(b.commence).getTime()<now;});
+    for(var i=0;i<pending.length;i++){var b=pending[i];
+      try{
+        var q='signals?select=result,clv,beat_close,graded_at'
+          +'&event_id=eq.'+encodeURIComponent(b.event_id)
+          +'&market=eq.'+encodeURIComponent(b.market)
+          +'&selection=eq.'+encodeURIComponent(b.selection)
+          +'&graded_at=not.is.null&order=graded_at.desc.nullslast&limit=1';
+        var g=await sbGet(q);
+        if(g&&g[0]&&g[0].result){var r=g[0];
+          var res=(r.result==='win'||r.result==='loss'||r.result==='push')?r.result:null;
+          if(res){b.result=res;var dec=GE.amToDec(b.odds);
+            b.pnl=res==='win'?(b.stake||0)*(dec-1):res==='loss'?-(b.stake||0):0;
+            if(r.clv!=null)b.clv=+r.clv;
+            if(r.beat_close!=null)b.beat_close=!!r.beat_close;
+            b.autoSettled=true;changed=true;}
+        }
+      }catch(_){}
+    }
+    if(changed)saveBets(rows);
+    return changed;
+  }finally{AUTOSETTLE_BUSY=false;}
+}
+/* live CLV: for unsettled tracked bets, compare your locked price to the CURRENT best line.
+   If the line shortened since you logged, the market is moving your way — CLV building. */
+var LIVECLV_BUSY=false;
+async function refreshLiveCLV(){
+  if(LIVECLV_BUSY)return false;LIVECLV_BUSY=true;
+  try{
+    var rows=bets(),changed=false;
+    var pending=rows.filter(function(b){return !b.result&&b.event_id&&b.market&&b.selection&&b.odds;});
+    for(var i=0;i<pending.length;i++){var b=pending[i];
+      try{
+        var q='signals?select=best_dec,last_seen_at&event_id=eq.'+encodeURIComponent(b.event_id)
+          +'&market=eq.'+encodeURIComponent(b.market)+'&selection=eq.'+encodeURIComponent(b.selection)
+          +'&best_dec=not.is.null&order=last_seen_at.desc.nullslast&limit=1';
+        var g=await sbGet(q);
+        if(g&&g[0]&&g[0].best_dec){var curDec=+g[0].best_dec,betDec=GE.amToDec(b.odds);
+          var live=betDec/curDec-1;              // >0 => you locked a better price than the current best
+          if(b.liveClv==null||Math.abs((b.liveClv||0)-live)>1e-6){b.liveClv=live;changed=true;}
+        }
+      }catch(_){}
+    }
+    if(changed)saveBets(rows);
+    return changed;
+  }finally{LIVECLV_BUSY=false;}
+}
+function clvOf(b){
+  if(b.clv!=null)return b.clv;                                            // graded signal (auto)
+  if(b.closeFair){var dec=GE.amToDec(b.odds);return dec/(1/(b.closeFair/100))-1;}  // legacy manual
+  return null;
+}
 function renderLedger(){renderQuickAdd();var rows=bets(),list=$('betlist');if(!rows.length){list.innerHTML='<div class="empty">No bets yet. Tap a Quick add edge above, or log a custom bet.</div>';$('clvKpis').innerHTML='';return;}
   var beats=[],pnl=0,stake=0,settled=0;list.innerHTML='';
-  rows.forEach(function(b){var dec=GE.amToDec(b.odds),beat='—';if(b.closeFair){var bc=dec/(1/(b.closeFair/100))-1;beat=(bc>=0?'+':'')+(bc*100).toFixed(1)+'%';beats.push(bc);}if(b.result){settled++;if(b.stake){stake+=b.stake;pnl+=b.pnl||0;}}var od=b.odds>0?'+'+b.odds:b.odds;
+  rows.forEach(function(b){var dec=GE.amToDec(b.odds);
+    var cv=clvOf(b),beat='\u2014';
+    if(cv!=null){beat=(cv>=0?'+':'')+(cv*100).toFixed(1)+'%';beats.push(cv);}
+    if(b.result&&b.result!=='push'){settled++;if(b.stake){stake+=b.stake;pnl+=b.pnl||0;}}
+    var od=b.odds>0?'+'+b.odds:b.odds;
+    var gameDone=b.commence?new Date(b.commence).getTime()<Date.now():false;
+    var statusHtml;
+    if(b.result){
+      var badge=b.autoSettled?' <span class="alive">auto</span>':'';
+      statusHtml='<span class="mono '+(b.result==='win'?'pos':b.result==='push'?'muted':'neg')+'">'+b.result.toUpperCase()+(b.pnl!=null&&b.result!=='push'?' '+(b.pnl>=0?'+$':'-$')+Math.abs(b.pnl).toFixed(0):'')+'</span>'+badge;
+    } else if(b.auto&&!gameDone){
+      statusHtml='<span class="muted" style="font-size:11px;font-family:\'JetBrains Mono\',monospace">\u23f3 settles automatically after the game</span>';
+    } else if(b.auto&&gameDone){
+      statusHtml='<span class="muted" style="font-size:11px;font-family:\'JetBrains Mono\',monospace">\u23f3 awaiting grade</span><span class="grow" style="flex:1"></span><button class="btn ghost sm" onclick="__settle(\''+b.id+'\',true)">Win</button><button class="btn ghost sm" onclick="__settle(\''+b.id+'\',false)">Loss</button>';
+    } else {
+      statusHtml='<button class="btn ghost sm" onclick="__settle(\''+b.id+'\',true)">Win</button><button class="btn ghost sm" onclick="__settle(\''+b.id+'\',false)">Loss</button>';
+    }
     var card=document.createElement('div');card.className='betcard';
-    card.innerHTML='<div class="bt"><span class="bsel">'+(b.sel||'—')+'</span><span class="grow" style="flex:1"></span><span class="mono '+(beat[0]==='+'?'pos':beat==='—'?'muted':'neg')+'">'+beat+'</span></div>'+
-      '<div class="bmeta">'+(b.sport||'')+' · '+(b.book||'')+' · '+od+' · '+(b.stake?'$'+b.stake:'no stake')+'</div>'+
-      '<div class="brow">'+(b.result?('<span class="mono '+(b.result==='win'?'pos':'neg')+'">'+b.result.toUpperCase()+(b.pnl!=null?' '+(b.pnl>=0?'+$':'-$')+Math.abs(b.pnl).toFixed(0):'')+'</span>'):('<button class="btn ghost sm" onclick="__settle(\''+b.id+'\',true)">Win</button><button class="btn ghost sm" onclick="__settle(\''+b.id+'\',false)">Loss</button>'))+
-      '<span class="grow" style="flex:1"></span><button class="btn ghost sm" onclick="__del(\''+b.id+'\')">✕</button></div>';
+    var liveHtml='';
+    if(!b.result&&b.liveClv!=null){
+      var lv=b.liveClv,lc=lv>0.002?'up':lv<-0.002?'dn':'flat';
+      var ltxt=lv>0.002?('line moved +'+(lv*100).toFixed(1)+'% your way since you logged'):lv<-0.002?('line moved '+(lv*100).toFixed(1)+'% against you'):'line flat since you logged';
+      liveHtml='<div class="liveclv '+lc+'"><span class="dot"></span>'+ltxt+'</div>';
+    }
+    card.innerHTML='<div class="bt"><span class="bsel">'+(b.sel||'\u2014')+'</span><span class="grow" style="flex:1"></span><span class="mono '+(beat[0]==='+'?'pos':beat==='\u2014'?'muted':'neg')+'">'+beat+'</span></div>'+
+      '<div class="bmeta">'+(b.sport||'')+' \u00b7 '+(b.book||'')+' \u00b7 '+od+' \u00b7 '+(b.stake?'$'+b.stake:'no stake')+'</div>'+liveHtml+
+      '<div class="brow">'+statusHtml+'<span class="grow" style="flex:1"></span><button class="btn ghost sm" onclick="__del(\''+b.id+'\')">\u2715</button></div>';
     list.appendChild(card);
   });
   var avg=beats.length?beats.reduce(function(a,b){return a+b;},0)/beats.length*100:null;var posPct=beats.length?beats.filter(function(x){return x>0;}).length/beats.length*100:null;var roi=settled&&stake?pnl/stake*100:null;
   function kpi(nv,l){return'<div class="kpi"><div class="n">'+nv+'</div><div class="l">'+l+'</div></div>';}
-  $('clvKpis').innerHTML=kpi(rows.length,'bets')+kpi(avg!=null?(avg>=0?'+':'')+avg.toFixed(1)+'%':'—','avg beat close')+kpi(posPct!=null?posPct.toFixed(0)+'%':'—','+CLV rate')+kpi(roi!=null?(roi>=0?'+':'')+roi.toFixed(1)+'%':'—','ROI settled');
+  $('clvKpis').innerHTML=kpi(rows.length,'bets')+kpi(avg!=null?(avg>=0?'+':'')+avg.toFixed(1)+'%':'\u2014','avg CLV')+kpi(posPct!=null?posPct.toFixed(0)+'%':'\u2014','+CLV rate')+kpi(roi!=null?(roi>=0?'+':'')+roi.toFixed(1)+'%':'\u2014','ROI settled');
 }
 
 /* ===== faultline ===== */
@@ -776,8 +1447,223 @@ function flGroup(rows,elig){
       b.lastMoveDays=Math.floor((Date.now()-oldest)/86400000);}
     return b;});
 }
-function flRun(boards){FL.faults=[];boards.forEach(function(b){FL_DETECTORS.forEach(function(d){var f=d(b);if(f){f.sev=flSev(f);FL.faults.push(f);}});});
+function flRun(boards){FL.faults=[];boards.forEach(function(b){FL_DETECTORS.forEach(function(d){var f=d(b);if(f){f.sev=flSev(f);f._board=b;FL.faults.push(f);}});});
   FL.faults.sort(function(a,b){return(b.sev.n-a.sev.n)||(b.edge-a.edge);});}
+
+/* ===== look-inside data: rosters (CFB) + season SG (golf) =====
+   Read-only from Supabase; empty states are honest — no fabricated players/stats.
+   SCHEMA CONTRACT (capture jobs must populate; frontend never invents data):
+   table player_stats : league(text), team(text), player(text), position(text|null),
+                        stat_line(text|null e.g. '1,240 yds · 11 TD'), rank(int|null, 1=best)
+   table golf_stats   : player(text), sg_total, sg_ott, sg_app, sg_arg, sg_putt (numeric|null),
+                        rounds(int|null), made_cut_pct(numeric|null), season(text|null)
+   Joined to boards by normalized name via nrm(). If a table/row is absent the panel
+   says so and names which table to fill — same discipline as the rest of the app. */
+var FL_DETAIL={players:{},golf:{}};
+/* team-name matching between Odds-API board names (mascot-suffixed, e.g. "Ohio State
+   Buckeyes") and the school names in player_stats ("Ohio State"). Accent-folded so
+   "San José State" matches "San Jose State". Resolver: exact -> longest-prefix (floor 3,
+   which disambiguates State/Tech correctly) -> alias map for genuine name differences.
+   Extend FL_ALIAS (board-acronym -> stored-name, both normalized) as new mismatches appear. */
+var FL_ALIAS={ 'utsa':'utsanantonio', 'umass':'massachusetts', 'ulmonroe':'louisianamonroe' };
+function flFold(s){return (s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'');}
+function flNormTeam(s){return flFold(s).toLowerCase().replace(/[^a-z0-9]/g,'');}
+function flMatchRoster(L,name){
+  var P=FL_DETAIL.players,bn=flNormTeam(name);
+  if(P[L+'|'+bn])return L+'|'+bn;                                  // exact
+  var best=null,bestLen=0,pre=L+'|';                              // longest stored name that prefixes the board name
+  for(var k in P){if(k.indexOf(pre)!==0)continue;var s=k.slice(pre.length);
+    if(s.length>=3&&bn.indexOf(s)===0&&s.length>bestLen){best=k;bestLen=s.length;}}
+  if(best)return best;
+  for(var a in FL_ALIAS){if(bn.indexOf(a)===0&&P[L+'|'+FL_ALIAS[a]])return L+'|'+FL_ALIAS[a];} // alias
+  return null;
+}
+async function loadFaultDetail(){
+  FL_DETAIL={players:{},golf:{}};
+  // only the leagues actually on the boards under watch, so the Faults tab stays light
+  var lgs={};(FL.boards||[]).forEach(function(b){if(b.league)lgs[(b.league||'').toUpperCase()]=1;});
+  var lglist=Object.keys(lgs);
+  try{
+    var q='stats_players?select=league,team,player,position,stat_line,lead_val';
+    if(lglist.length)q+='&league=in.('+lglist.join(',')+')';
+    var p=await stFetchAll(q,'league,team');
+    (p||[]).forEach(function(r){var k=(r.league||'').toUpperCase()+'|'+flNormTeam(r.team);(FL_DETAIL.players[k]=FL_DETAIL.players[k]||[]).push(r);});
+  }catch(e){}
+  if(!Object.keys(FL_DETAIL.players).length){ // fall back to thin table if rich isn't populated
+    try{var tp=await stFetchAll('player_stats?select=league,team,player,position,stat_line,rank','league,team');
+      (tp||[]).forEach(function(r){var k=(r.league||'').toUpperCase()+'|'+flNormTeam(r.team);(FL_DETAIL.players[k]=FL_DETAIL.players[k]||[]).push(r);});}catch(e){}
+  }
+  try{var g=await sbGet('golf_stats?select=*&limit=1000');(g||[]).forEach(function(r){FL_DETAIL.golf[flNormTeam(r.player||r.name)]=r;});}catch(e){}
+}
+function flEsc(s){return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function flIsGolf(league){var L=(league||'').toUpperCase();return L.indexOf('GOLF')>=0||L==='PGA'||L==='LIV'||L==='DPWT'||L==='PGA TOUR'||L==='LPGA';}
+/* "here's why" — decompose a golf projection into its REAL drivers (no fabricated factors) */
+function xrow(label,val,note,est){return '<div class="xw-row"><span class="xw-l">'+flEsc(label)+(est?' <span class="xw-est">est</span>':'')+'</span><span class="xw-v">'+flEsc(val)+'</span>'+(note?'<span class="xw-n">'+flEsc(note)+'</span>':'')+'</div>';}
+function golfExplain(g,m){
+  var raw=parseFloat(g.scoring_avg),reg=(m.skill_avg!=null?+m.skill_avg:null),fld=(m.field_avg!=null?+m.field_avg:null),ev=(g.events!=null?+g.events:null);
+  var rows='';
+  if(reg!=null&&fld!=null){var edge=(fld-reg);
+    rows+=xrow('Field-relative skill',(edge>=0?'+':'')+edge.toFixed(1)+' str/rnd',edge>=0?'better than the '+fld.toFixed(1)+' field avg':'below the '+fld.toFixed(1)+' field avg');}
+  if(isFinite(raw)&&reg!=null){var moved=Math.abs(raw-reg)>0.05;
+    rows+=xrow('Skill input',reg.toFixed(1)+' scoring avg',moved?('regressed from '+raw.toFixed(1)+' raw'+(ev!=null?' \u00b7 '+ev+' events':'')):'raw season average'+(ev!=null?' \u00b7 '+ev+' events':''),false);}
+  if(ev!=null){var trust=ev>=15?'high sample':(ev>=6?'moderate sample':'thin sample \u2014 pulled hard toward field');
+    rows+=xrow('Sample confidence',ev+' events',trust);}
+  rows+=xrow('Make cut',(+m.make_cut_pct).toFixed(0)+'%','most reliable output');
+  rows+=xrow('Win variance','high','win% is longshot-heavy; trust it least',true);
+  if(m.imputed)rows+=xrow('Inputs','estimated','no clean scoring avg \u2014 imputed from rank',true);
+  if(!rows)return '';
+  return '<div class="xw"><div class="xw-h" onclick="this.parentNode.classList.toggle(\'open\')">Why this number \u25be</div><div class="xw-body">'+rows+
+    '<div class="xw-foot">Every line traces to a real model input \u2014 skill, field strength, sample size, simulation. Factors marked <span class="xw-est">est</span> are modeled assumptions, not measured.</div></div></div>';
+}
+/* "here's why" for a prop projection */
+function propExplain(p){
+  var rows='';
+  rows+=xrow('Per-game rate',(+p.proj).toFixed(2),'season average \u2014 the projection mean');
+  rows+=xrow('Line',p.line,'natural half-point near the rate');
+  if(p.dist==='poisson')rows+=xrow('Distribution','Poisson','counting stat; variance = mean',true);
+  else rows+=xrow('Distribution','Normal','points; sd \u2248 35% of mean assumed',true);
+  rows+=xrow('Over probability',(+p.p_over).toFixed(0)+'%','P(actual > line) under that distribution');
+  return '<div class="xw"><div class="xw-h" onclick="this.parentNode.classList.toggle(\'open\')">Why this number \u25be</div><div class="xw-body">'+rows+
+    '<div class="xw-foot">The mean is the player\u2019s real rate; the over% depends on the <span class="xw-est">assumed</span> variance shape (no game logs yet). Not matchup-adjusted, not a market line.</div></div></div>';
+}
+/* the live tournament currently in golf_stats (what capture_golf last pulled) */
+function flGolfEvent(){for(var k in FL_DETAIL.golf){var g=FL_DETAIL.golf[k];if(g&&g.tournament)return g.tournament;}return '';}
+/* ===== GOLF FIELD (shared by Boards expander + Faults top-of-field) ===== */
+var GOLF_FIELD=[];
+async function loadGolfField(){
+  try{var g=await sbGet('golf_stats?select=*&limit=1000');GOLF_FIELD=(g||[]).filter(function(r){return r.tournament;});}catch(e){GOLF_FIELD=[];}
+  try{var m=await sbGet('model_golf?select=*&limit=1000');var mm={};(m||[]).forEach(function(r){mm[r.player]=r;});
+    GOLF_FIELD.forEach(function(g){if(mm[g.player])g.model=mm[g.player];});}catch(e){}
+}
+function golfScoreN(s){if(s==null)return 999;var t=String(s).trim();if(t==='E')return 0;var n=parseFloat(t.replace('+',''));return isFinite(n)?n:999;}
+function golfFieldSorted(){return GOLF_FIELD.slice().sort(function(a,b){return golfScoreN(a.score)-golfScoreN(b.score);});}
+function golfCurrentEvent(){for(var i=0;i<GOLF_FIELD.length;i++)if(GOLF_FIELD[i].tournament)return GOLF_FIELD[i].tournament;return '';}
+function golfFieldRowHTML(g,i){
+  var st=(g.status&&g.status!=='active')?' <span class="gf-st">'+flEsc(g.status)+'</span>':'';
+  var rk=(g.tour_rank!=null)?'<span class="gf-rk">#'+g.tour_rank+'</span>':'';
+  var mw=(g.model&&g.model.win_pct!=null)?'<span class="gf-win">model '+(+g.model.win_pct).toFixed(1)+'%</span>':'';
+  var sc=g.score?'<span class="gf-sc '+(String(g.score).indexOf('-')===0?'up':(g.score==='E'?'':'dn'))+'">'+flEsc(g.score)+'</span>':'';
+  return '<div class="gf-row" data-gi="'+i+'"><span class="gf-pos">'+flEsc(g.position||'-')+'</span><span class="gf-nm">'+flEsc(g.player)+st+'</span>'+mw+rk+sc+'</div><div class="gf-det" id="gfd-'+i+'"></div>';
+}
+function golfFieldHTML(){
+  var f=golfFieldSorted();if(!f.length)return '<div class="fi-empty">No field loaded \u2014 run <span class="mono">capture_golf</span>.</div>';
+  return '<div class="gf-list">'+f.map(function(g,i){return golfFieldRowHTML(g,i);}).join('')+'</div>';
+}
+function golfDetailHTML(g){
+  if(!g)return '<div class="fi-empty">No data.</div>';
+  function grow(l,v,cls){return '<div class="fi-stat"><span class="fl">'+l+'</span><span class="fv '+(cls||'')+'">'+flEsc(String(v))+'</span></div>';}
+  var rows='';
+  if(g.position)rows+=grow('Position',g.position,'up');
+  if(g.score)rows+=grow('Score',g.score,(String(g.score).indexOf('-')===0?'up':(g.score==='E'?'':'dn')));
+  if(g.status&&g.status!=='active')rows+=grow('Status',g.status,'dn');
+  if(g.country)rows+=grow('Country',g.country);
+  var seas='';
+  if(g.tour_rank!=null)seas+=grow('Tour rank (money)','#'+g.tour_rank);
+  if(g.scoring_avg&&g.scoring_avg!=='--')seas+=grow('Scoring avg',g.scoring_avg);
+  if(g.wins!=null)seas+=grow('Wins',g.wins,(+g.wins>0?'up':''));
+  if(g.top10s!=null)seas+=grow('Top 10s',g.top10s);
+  if(g.rank_driving!=null)seas+=grow('Driving rank','#'+g.rank_driving);
+  if(g.rank_gir!=null)seas+=grow('Greens-in-reg rank','#'+g.rank_gir);
+  if(g.earnings&&g.earnings!=='--')seas+=grow('Earnings',g.earnings);
+  var seasBlock=seas?'<div class="fi-sec">Season (PGA Tour)</div>'+seas:'';
+  var modelBlock='';
+  var m=g.model;
+  if(m&&m.win_pct!=null){
+    var mf=(m.model_fair!=null)?((m.model_fair>0?'+':'')+m.model_fair):'\u2014';
+    var sims=m.sims?(+m.sims).toLocaleString():'\u2014';
+    var rawAvg=parseFloat(g.scoring_avg),regAvg=(m.skill_avg!=null?+m.skill_avg:null),ev=(g.events!=null?g.events:null);
+    var engine='<div class="fi-eng"><span class="fi-eng-k">'+sims+' sims</span>';
+    if(isFinite(rawAvg)&&regAvg!=null){var moved=Math.abs(rawAvg-regAvg)>0.05;
+      engine+='<span class="fi-eng-k">skill '+regAvg.toFixed(1)+(moved?' \u2190 '+rawAvg.toFixed(1)+' raw'+(ev!=null?' \u00b7 '+ev+' events (Bayesian regressed)':''):'')+'</span>';}
+    if(m.imputed)engine+='<span class="fi-eng-k warn">inputs estimated</span>';
+    engine+='</div>';
+    modelBlock='<div class="fi-sec">EdgeDesk model projection</div>'+
+      grow('Win',(+m.win_pct).toFixed(1)+'%')+grow('Top 10',(+m.top10_pct).toFixed(0)+'%')+
+      grow('Top 20',(+m.top20_pct).toFixed(0)+'%')+grow('Make cut',(+m.make_cut_pct).toFixed(0)+'%')+
+      grow('Model fair',mf)+engine+golfExplain(g,m)+
+      '<div class="model-warn">Monte Carlo off ESPN season scoring average, regressed toward the field by sample size. Not a market price and not CLV-validated \u2014 make-cut is the most reliable line, win% the least. Research, not a call.</div>';
+  }
+  var recent='';
+  try{var rc=(typeof g.recent==='string')?JSON.parse(g.recent):g.recent;if(rc&&rc.length)recent='<div class="fi-sec">Recent finishes</div>'+rc.slice(0,5).map(function(e){return grow(e.event||'\u2014',(e.finish||''));}).join('');}catch(e){}
+  return '<div class="fi-card" style="margin:4px 0 8px">'+rows+seasBlock+modelBlock+recent+
+    '<div class="fi-foot">Context only, not a recommendation. The closing line decides where the price should be.</div></div>';
+}
+function bindGolfField(host){
+  var rows=host.querySelectorAll('.gf-row'),sorted=golfFieldSorted();
+  for(var i=0;i<rows.length;i++){(function(row){row.onclick=function(){
+    var idx=+row.getAttribute('data-gi');var det=host.querySelector('#gfd-'+idx);if(!det)return;
+    if(det.innerHTML){det.innerHTML='';return;}
+    det.innerHTML=golfDetailHTML(sorted[idx]);
+  };})(rows[i]);}
+}
+function toggleGolfField(el){
+  var wrap=el.nextElementSibling;if(!wrap)return;
+  if(wrap.getAttribute('data-open')==='1'){wrap.innerHTML='';wrap.setAttribute('data-open','0');el.classList.remove('open');return;}
+  wrap.innerHTML=golfFieldHTML();wrap.setAttribute('data-open','1');el.classList.add('open');bindGolfField(wrap);
+}
+/* the clickable names for a fault: live board entries (or the golfers / correlated-pair team) */
+function flFaultTeams(f){var b=f._board;if(!b)return [];
+  if(b.entries&&b.entries.length)return b.entries.map(function(e){return{name:e.name,dead:!!e.dead};});
+  if(b.nested&&b.nested.length)return b.nested.map(function(n){return{name:n.name,dead:false};});
+  return [];}
+/* build the detail card for one name — roster (CFB) or season SG (golf) */
+function flTeamDetailHTML(league,name){
+  if(flIsGolf(league)){
+    var g=FL_DETAIL.golf[flNormTeam(name)];
+    if(!g)return '<div class="fi-empty">No golf data for <b>'+flEsc(name)+'</b> yet. Run <span class="mono">capture_golf</span> to pull the current field.</div>';
+    function grow(l,v,cls){return '<div class="fi-stat"><span class="fl">'+l+'</span><span class="fv '+(cls||'')+'">'+flEsc(String(v))+'</span></div>';}
+    // ESPN tournament standing + season detail (preferred)
+    if(g.position||g.score||g.tour_rank!=null){
+      var rows='';
+      if(g.position)rows+=grow('Position',g.position,'up');
+      if(g.score)rows+=grow('Score',g.score,(String(g.score).indexOf('-')===0?'up':(g.score==='E'?'':'dn')));
+      if(g.country)rows+=grow('Country',g.country);
+      var seas='';
+      if(g.tour_rank!=null)seas+=grow('Tour rank (money)','#'+g.tour_rank);
+      if(g.scoring_avg&&g.scoring_avg!=='--')seas+=grow('Scoring avg',g.scoring_avg);
+      if(g.wins!=null)seas+=grow('Wins',g.wins,(+g.wins>0?'up':''));
+      if(g.top10s!=null)seas+=grow('Top 10s',g.top10s);
+      if(g.rank_driving!=null)seas+=grow('Driving rank','#'+g.rank_driving);
+      if(g.rank_gir!=null)seas+=grow('Greens-in-reg rank','#'+g.rank_gir);
+      if(g.earnings&&g.earnings!=='--')seas+=grow('Earnings',g.earnings);
+      var seasBlock=seas?'<div class="fi-sec">Season (PGA Tour)</div>'+seas:'';
+      var recent='';
+      try{var rc=(typeof g.recent==='string')?JSON.parse(g.recent):g.recent;
+        if(rc&&rc.length)recent='<div class="fi-sec">Recent finishes</div>'+rc.slice(0,5).map(function(e){return grow(e.event||'\u2014',(e.finish||''));}).join('');
+      }catch(e){}
+      return '<div class="fi-card"><div class="fi-name">'+flEsc(name)+(g.tournament?'<span class="fi-sub">'+flEsc(g.tournament)+'</span>':'')+'</div>'+rows+seasBlock+recent+
+        '<div class="fi-foot">Field standing + season fundamentals \u2014 context only, not a recommendation. Where the price should be is decided by the closing line, not this.</div></div>';
+    }
+    // legacy SG (manual DataGolf paste)
+    if(g.sg_total!=null){
+      function sg(v){return v==null||v===''?'\u2014':((+v>=0?'+':'')+(+v).toFixed(2));}
+      var srows=[['SG: Total',g.sg_total],['SG: Off-the-tee',g.sg_ott],['SG: Approach',g.sg_app],['SG: Around green',g.sg_arg],['SG: Putting',g.sg_putt]]
+        .map(function(r){var v=r[1],cls=(v==null||v==='')?'mut':(+v>=0?'up':'dn');return grow(r[0],sg(v),cls);}).join('');
+      return '<div class="fi-card"><div class="fi-name">'+flEsc(name)+'</div>'+srows+
+        '<div class="fi-foot">Strokes-gained, season to date \u2014 context only, not a recommendation. The closing line decides where the price should be.</div></div>';
+    }
+    return '<div class="fi-empty">No golf data for <b>'+flEsc(name)+'</b> yet.</div>';
+  }
+  var L=(league||'').toUpperCase(),key=flMatchRoster(L,name),ps=(key?FL_DETAIL.players[key]:[]).slice();
+  if(!ps.length)return '<div class="fi-empty">No player data for <b>'+flEsc(name)+'</b> yet. It fills in once <span class="mono">capture_stats</span> has run for this sport.</div>';
+  ps.sort(function(a,b){var la=(a.lead_val!=null?+a.lead_val:(a.rank!=null?-a.rank:0)),lb=(b.lead_val!=null?+b.lead_val:(b.rank!=null?-b.rank:0));return lb-la;});
+  ps=ps.slice(0,8);
+  var body=ps.map(function(p){return '<div class="fi-player"><div class="fi-p-top"><span class="fi-p-nm">'+flEsc(p.player||p.name||'\u2014')+'</span>'+(p.position?'<span class="fi-p-pos">'+flEsc(p.position)+'</span>':'')+'</div>'+(p.stat_line?'<div class="fi-p-stat">'+flEsc(p.stat_line)+'</div>':'')+'</div>';}).join('');
+  return '<div class="fi-card"><div class="fi-name">'+flEsc(name)+'<span class="fi-sub">who\u2019s on this side</span></div>'+body+
+    '<div class="fi-foot">The players behind this side, for context only \u2014 not a recommendation. Sanity-check the fundamentals yourself; whether the price is actually right is decided by the closing line, not this.</div></div>';
+}
+/* toggle a shared detail panel; clears active state on every tap wired to the same panel */
+window.flPeek=function(btn,panelId,league,name){
+  var p=document.getElementById(panelId);if(!p)return;
+  var open=p.classList.contains('on')&&p.getAttribute('data-cur')===name;
+  var taps=document.querySelectorAll('[data-panel="'+panelId+'"]');for(var i=0;i<taps.length;i++)taps[i].classList.remove('on');
+  if(open){p.classList.remove('on');p.removeAttribute('data-cur');p.innerHTML='';return;}
+  if(btn)btn.classList.add('on');
+  p.innerHTML=flTeamDetailHTML(league,name);p.classList.add('on');p.setAttribute('data-cur',name);
+};
+function flBindTaps(scope){var t=scope.querySelectorAll('.fi-tap,.fichip');for(var i=0;i<t.length;i++){(function(btn){
+  btn.addEventListener('click',function(ev){ev.stopPropagation();flPeek(btn,btn.getAttribute('data-panel'),btn.getAttribute('data-lg'),btn.getAttribute('data-nm'));});
+})(t[i]);}}
 
 async function loadFaults(){
   var grouped=[];
@@ -788,6 +1674,8 @@ async function loadFaults(){
     else{FL.live=false;grouped=FL_SAMPLE;flRun(FL_SAMPLE);}
   }catch(e){FL.live=false;grouped=FL_SAMPLE;flRun(FL_SAMPLE);}
   FL.boards=grouped;
+  await loadFaultDetail();
+  await loadGolfField();
   var ban=$('flBanner');
   if(FL.live){ban.className='flbanner live';ban.textContent='\u25cf LIVE \u2014 scanning '+grouped.length+' board(s), '+FL.faults.length+' fault(s) flagged.';}
   else{ban.className='flbanner demo';ban.textContent='\u25b2 DEMO DATA \u2014 pipeline isn\u2019t emitting boards yet. Deploy capture_boards (key stays server-side) to go live.';}
@@ -803,16 +1691,21 @@ function flRender(){var feed=$('flFeed');
   var list=FL.filter==='all'?FL.faults:FL.faults.filter(function(f){return f.cls===FL.filter;});
   if(!list.length){feed.innerHTML='<div class="empty"><b>No faults in this class.</b><br>A clean board is the correct result, not a failure. Structural errors are rare \u2014 a scanner that flags everything flags nothing.</div>';return;}
   feed.innerHTML='';
-  list.forEach(function(f){var beads='';for(var j=0;j<10;j++)beads+='<i class="'+(j<f.sev.n?'on':'')+'"></i>';
+  list.forEach(function(f,i){var beads='';for(var j=0;j<10;j++)beads+='<i class="'+(j<f.sev.n?'on':'')+'"></i>';
     function tbl(w){function side(s){return'<div class="fcell"><div class="ck">'+s.k+'</div>'+s.rows.map(function(r){return'<div class="frow'+(r.tot?' tot':'')+'"><span class="fl">'+r.l+'</span><span class="fv '+(r.c||'')+'">'+r.v+'</span></div>';}).join('')+'</div>';}
       return'<div class="fwork">'+side(w.left)+side(w.right)+'</div>';}
+    var teams=flFaultTeams(f),panel='fi_'+i,inside='';
+    if(teams.length){var golf=flIsGolf(f.league);
+      var chips=teams.map(function(t){return '<button class="fichip" data-panel="'+panel+'" data-lg="'+flEsc(f.league)+'" data-nm="'+flEsc(t.name)+'">'+flEsc(t.name)+(t.dead?' \u26d4':'')+'</button>';}).join('');
+      inside='<div class="finside"><div class="fi-h">Look inside \u2014 tap a '+(golf?'golfer':'team')+' to check the fundamentals</div><div class="fi-chips">'+chips+'</div><div class="fi-detail" id="'+panel+'"></div></div>';}
     var el=document.createElement('div');el.className='fault';el.setAttribute('data-sev',f.sev.k);
     el.innerHTML='<div class="fhd"><div class="grow"><div class="fmeta"><span class="ftag lg">'+f.league+'</span><span class="ftag cls">'+f.cls+'</span><span class="ftag sv-'+f.sev.k+'">'+f.sev.k+'</span></div>'+
       '<div class="ftitle">'+f.title+'</div><div class="ffind">'+f.finding+'</div></div>'+
       '<div class="fmag"><div class="mn">'+f.sev.n.toFixed(1)+'</div><div class="ml">magnitude</div><div class="fbar">'+beads+'</div><div class="me">+'+(f.edge*100).toFixed(1)+' pts</div><span class="fchev">\u25b6</span></div></div>'+
-      '<div class="fbody"><div class="frcpt"><div class="rk">The Receipt</div><p>'+f.receipt+'</p></div>'+tbl(f.work)+
+      '<div class="fbody"><div class="frcpt"><div class="rk">The Receipt</div><p>'+f.receipt+'</p></div>'+tbl(f.work)+inside+
       '<div class="fqual"><span class="fconf '+f.conf+'"><span class="bd"></span>confidence: <b>'+f.conf+'</b></span><span>'+f.qual+'</span></div></div>';
     el.querySelector('.fhd').onclick=function(){el.classList.toggle('open');};
+    flBindTaps(el);
     feed.appendChild(el);
   });
 }
@@ -822,22 +1715,49 @@ function flRenderBoards(){
   var host=$('flBoards');
   if(!FL.live||!FL.boards||!FL.boards.length){host.innerHTML='';return;}
   var faulted={};FL.faults.forEach(function(f){if(f.title)faulted[f.title.split(':')[0]]=1;});
-  var cards=FL.boards.map(function(b){
+  // GOLF — who's genuinely at the top of this week's field (research nobody else surfaces)
+  var golfTop='';
+  var gf=golfFieldSorted().filter(function(g){return !/WD|CUT|DQ/i.test(g.status||'');}).slice(0,12);
+  if(gf.length){
+    var ev=golfCurrentEvent();
+    var rows=gf.map(function(g,i){
+      var sc=g.score?'<span class="gf-sc '+(String(g.score).indexOf('-')===0?'up':(g.score==='E'?'':'dn'))+'">'+flEsc(g.score)+'</span>':'';
+      var rk=(g.tour_rank!=null)?'<span class="gf-rk">rank #'+g.tour_rank+'</span>':'';
+      return '<div class="gf-row" data-gi="'+i+'"><span class="gf-pos">'+flEsc(g.position||('-'))+'</span><span class="gf-nm">'+flEsc(g.player)+'</span>'+rk+sc+'</div><div class="gf-det" id="gtf-'+i+'"></div>';
+    }).join('');
+    golfTop='<div class="gtf-card"><div class="gtf-hd">\u26f3 TOP OF THE FIELD \u2014 who\u2019s actually contending'+(ev?' at '+flEsc(ev):'')+'</div>'+
+      '<div class="gtf-sub">The live leaderboard of who\u2019s really playing this week \u2014 not the futures board. Tap a name for their season fundamentals. Context only, not a call.</div>'+
+      '<div class="gf-list" id="gtfList">'+rows+'</div></div>';
+  }
+  var cards=FL.boards.map(function(b,bi){
     var has=faulted[b.board]?'<span class="ftag" style="color:var(--warn)">\u26a0 fault above</span>':'<span class="ftag" style="color:var(--pos)">clean</span>';
+    var panel='bwd_'+bi;
+    function tap(nm){return '<span class="fi-tap" data-panel="'+panel+'" data-lg="'+flEsc(b.league)+'" data-nm="'+flEsc(nm)+'">'+flEsc(nm)+'</span>';}
     if(b.entries&&b.entries.length){
       var d=flDevig(b.entries),top=d.field.slice().sort(function(x,y){return y.fair-x.fair;}).slice(0,3);
-      var rows=top.map(function(t){return'<div class="frow"><span class="fl">'+t.name+(t.dead?' \u26d4':'')+'</span><span class="fv">'+flPct(t.fair)+'</span></div>';}).join('');
-      return'<div class="flwatch"><div class="fmeta"><span class="ftag lg">'+b.league+'</span><span class="ftag cls">'+b.entries.length+' teams</span><span class="ftag" style="color:var(--dim)">vig '+((d.over-1)*100).toFixed(0)+'%</span>'+has+'</div><div class="ftitle" style="font-size:14px">'+b.board+'</div>'+rows+'</div>';
+      var rows=top.map(function(t){return'<div class="frow"><span class="fl">'+tap(t.name)+(t.dead?' \u26d4':'')+'</span><span class="fv">'+flPct(t.fair)+'</span></div>';}).join('');
+      var golfEvt=(flIsGolf(b.league)?flGolfEvent():'');
+      var liveTag=golfEvt?'<div class="golfnow"><span class="golfnow-sub">Odds above are <b>'+flEsc(b.board)+'</b> (winner futures). Different event live this week \u2014 tap Full field for who\u2019s actually playing '+flEsc(golfEvt)+'.</span></div>':'';
+      return'<div class="flwatch"><div class="fmeta"><span class="ftag lg">'+b.league+'</span><span class="ftag cls">'+b.entries.length+' teams</span><span class="ftag" style="color:var(--dim)">vig '+((d.over-1)*100).toFixed(0)+'%</span>'+has+'</div><div class="ftitle" style="font-size:14px">'+flEsc(b.board)+'</div>'+rows+liveTag+'<div class="fi-detail" id="'+panel+'"></div></div>';
     }
     if(b.nested&&b.nested.length){var t=b.nested[0];
-      return'<div class="flwatch"><div class="fmeta"><span class="ftag lg">'+b.league+'</span><span class="ftag cls">correlated pair</span>'+has+'</div><div class="ftitle" style="font-size:14px">'+b.board+'</div><div class="frow"><span class="fl">'+t.name+' win</span><span class="fv">'+flAm(t.winOdds)+'</span></div><div class="frow"><span class="fl">'+t.name+' qualify</span><span class="fv">'+flAm(t.qualOdds)+'</span></div></div>';
+      return'<div class="flwatch"><div class="fmeta"><span class="ftag lg">'+b.league+'</span><span class="ftag cls">correlated pair</span>'+has+'</div><div class="ftitle" style="font-size:14px">'+b.board+'</div><div class="frow"><span class="fl">'+tap(t.name)+' win</span><span class="fv">'+flAm(t.winOdds)+'</span></div><div class="frow"><span class="fl">'+tap(t.name)+' qualify</span><span class="fv">'+flAm(t.qualOdds)+'</span></div><div class="fi-detail" id="'+panel+'"></div></div>';
     }
     if(b.trigger){
       return'<div class="flwatch"><div class="fmeta"><span class="ftag lg">'+b.league+'</span><span class="ftag cls">stale watch</span>'+has+'</div><div class="ftitle" style="font-size:14px">'+b.board+'</div><div class="fqual" style="border:none;padding-top:6px">'+(b.lastMoveDays||0)+'d since move</div></div>';
     }
     return'';
   }).filter(Boolean).join('');
-  host.innerHTML='<div class="flwatch-h">Boards under watch \u2014 live de-vig from your captured feed</div>'+cards;
+  host.innerHTML=golfTop+'<div class="flwatch-h">Boards under watch \u2014 live de-vig from your captured feed</div>'+cards;
+  flBindTaps(host);
+  var gl=$('gtfList');
+  if(gl){var gfs=golfFieldSorted().filter(function(g){return !/WD|CUT|DQ/i.test(g.status||'');}).slice(0,12);
+    var grows=gl.querySelectorAll('.gf-row');
+    for(var gi=0;gi<grows.length;gi++){(function(row){row.onclick=function(){
+      var idx=+row.getAttribute('data-gi');var det=gl.querySelector('#gtf-'+idx);if(!det)return;
+      if(det.innerHTML){det.innerHTML='';return;}det.innerHTML=golfDetailHTML(gfs[idx]);
+    };})(grows[gi]);}
+  }
 }
 
 /* ===== news feed (moat early-warning) ===== */
@@ -874,6 +1794,8 @@ async function loadNews(){
 /* ===== auto market ledger (reads board_moves) ===== */
 async function loadMarket(){
   function amStr(a){return (a>0?'+':'')+a;}
+  // settle finished bets + refresh live CLV first, regardless of whether the market feed has rows
+  await autoSettle();await refreshLiveCLV();renderLedger();
   var rows=[],live=false;
   try{rows=await sbGet('board_moves?select=*&order=moved_at.desc&limit=60');if(rows&&rows.length)live=true;}catch(e){}
   var ban=$('mktBanner');
@@ -891,11 +1813,231 @@ async function loadMarket(){
   }).join('');
   renderQuickAdd();
 }
+
+/* ===== Stats section — browse teams, search players, scan category leaders =====
+   Reads stats_players (rich: full per-player breakdown + per-category values). Falls back to
+   the thin player_stats if the rich table isn't populated yet, so CFB still lists. Sport-agnostic:
+   renders whatever leagues exist. Fundamentals to sanity-check direction — the edge lives in CLV. */
+var ST_PROPS={};
+var ST={rows:[],byLeague:{},league:null,mode:'leaders',team:null,q:'',pos:'',cat:'',rich:false,open:{},at:0,view:'home',dir:'best'};
+/* sport tiles for the landing screen — order = betting appeal, not alphabetical */
+var ST_SPORTS=['CFB','NFL','MLB','WNBA','CBB'];
+var SPORT_META={CFB:{name:'College Football',c:'#e8823b'},NFL:{name:'NFL',c:'#4d8dff'},MLB:{name:'MLB',c:'#e05a5a'},WNBA:{name:'WNBA',c:'#f06ec0'},CBB:{name:"Men's College Hoops",c:'#5b8def'}};
+var ST_LABEL={CFB:'CFB',NFL:'NFL',MLB:'MLB',WNBA:'WNBA',CBB:'CBB',NBA:'NBA'};
+/* friendly names + preferred order for the Leaders category picker, per sport family */
+var ST_CATLABEL={points:'Points (PPG)',rebounds:'Rebounds (RPG)',assists:'Assists (APG)',minutes:'Minutes (MPG)',steals:'Steals (SPG)',blocks:'Blocks (BPG)',threes:'3PM per game',
+  passing:'Passing yards',rushing:'Rushing yards',receiving:'Receiving yards',
+  avg:'Batting avg',ops:'OPS',hr:'Home runs',rbi:'RBI',sb:'Stolen bases',era:'ERA',whip:'WHIP',strikeouts:'Strikeouts',wins:'Wins'};
+var ST_CATORDER=['points','passing','rushing','receiving','hr','rbi','era','whip','strikeouts','wins','rebounds','assists','avg','ops','threes','steals','blocks','minutes','sb'];
+var ST_ASC={era:1,whip:1};  /* lower is better — sort these leaderboards ascending */
+function stFmt(v){v=+v;if(!isFinite(v))return '';return (v%1===0)?v.toLocaleString():v.toFixed(1);}
+function stLeadNum(s){if(!s)return -1;var m=String(s).replace(/,/g,'').match(/-?\d+(\.\d+)?/);return m?parseFloat(m[0]):-1;}
+function stEsc(s){return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function stKey(r){return (r.league||'')+'|'+(r.team||'')+'|'+(r.player||'');}
+async function stFetchAll(tableSelect,orderBy){
+  var all=[],page=0,PAGE=1000,ord=orderBy||'player';
+  for(;page<60;page++){
+    var batch=await sbGet(tableSelect+'&order='+ord+'&limit='+PAGE+'&offset='+(page*PAGE));
+    if(!batch||!batch.length)break;
+    all=all.concat(batch);
+    if(batch.length<PAGE)break;
+  }
+  return all;
+}
+async function loadStats(force){
+  if(!force&&ST.rows.length&&(Date.now()-ST.at)<300000){renderStats();return;}
+  try{
+    var rows=[],rich=false;
+    try{rows=await stFetchAll('stats_players?select=league,team,player,position,stat_line,lead_cat,lead_val,cats,leads','league,team');if(rows&&rows.length)rich=true;}catch(_){}
+    if(!rich){try{rows=await stFetchAll('player_stats?select=league,team,player,position,stat_line,rank','league,team');}catch(__){rows=[];}}
+    ST.rich=rich;ST.rows=rows||[];ST.at=Date.now();ST.open={};
+    try{var pp=await stFetchAll('model_props?select=sport,player,market,proj,line,p_over,dist','sport,player');ST_PROPS={};(pp||[]).forEach(function(p){var k=(p.sport||'').toUpperCase()+'|'+p.player;(ST_PROPS[k]=ST_PROPS[k]||[]).push(p);});}catch(_){ST_PROPS={};}
+    ST.byLeague={};ST.rows.forEach(function(r){r._lv=(r.lead_val!=null?+r.lead_val:stLeadNum(r.stat_line));var L=(r.league||'').toUpperCase();(ST.byLeague[L]=ST.byLeague[L]||[]).push(r);});
+    var leagues=Object.keys(ST.byLeague).sort();
+    if(!ST.league||leagues.indexOf(ST.league)<0)ST.league=leagues.indexOf('CFB')>=0?'CFB':(leagues[0]||null);
+    $('stFresh').textContent=ST.rows.length?((ST.rich?'':'basic \u00b7 ')+'updated '+ago(Date.now())):'no data';
+    renderStats();
+  }catch(e){$('stBody').innerHTML='<div class="empty">Could not reach the database: '+e.message+'</div>';}
+}
+/* ===== PROPS tab — browsable player-prop projection board (model, not lines) ===== */
+var PR={rows:[],sport:null,market:null,dir:'proj',at:0};
+var PR_MKT={points:'Points',rebounds:'Rebounds',assists:'Assists',threes:'3-Pointers',hr:'Home runs',rbi:'RBI',strikeouts:'Strikeouts'};
+var PR_ORDER=['points','rebounds','assists','threes','hr','rbi','strikeouts'];
+async function loadProps(force){
+  if(!force&&PR.rows.length&&(Date.now()-PR.at)<300000){renderProps();return;}
+  try{
+    var rows=await stFetchAll('model_props?select=sport,player,team,position,market,proj,line,p_over,dist','sport,player');
+    PR.rows=rows||[];PR.at=Date.now();
+    $('prFresh').textContent=PR.rows.length?('updated '+ago(Date.now())):'no projections';
+    renderProps();
+  }catch(e){$('prBody').innerHTML='<div class="empty">Could not reach the database: '+e.message+'</div>';}
+}
+function prSports(){var s={};PR.rows.forEach(function(r){if(r.sport)s[(r.sport||'').toUpperCase()]=1;});return Object.keys(s).sort();}
+function prMarkets(L){var m={};PR.rows.forEach(function(r){if((r.sport||'').toUpperCase()===L)m[r.market]=1;});
+  return Object.keys(m).sort(function(a,b){var ia=PR_ORDER.indexOf(a),ib=PR_ORDER.indexOf(b);return (ia<0?99:ia)-(ib<0?99:ib);});}
+function renderProps(){
+  if(!PR.rows.length){$('prSports').innerHTML='';$('prControls').innerHTML='';
+    $('prBody').innerHTML='<div class="empty"><b>No projections yet.</b><br>Run <span class="mono">model_props</span> to populate MLB + WNBA player projections.</div>';return;}
+  var sports=prSports();if(!PR.sport||sports.indexOf(PR.sport)<0)PR.sport=sports[0];
+  $('prSports').innerHTML=sports.map(function(s){return '<button class="stchip'+(s===PR.sport?' on':'')+'" data-s="'+s+'">'+(ST_LABEL[s]||s)+'</button>';}).join('');
+  var sc=$('prSports').querySelectorAll('.stchip');for(var i=0;i<sc.length;i++)sc[i].onclick=(function(el){return function(){PR.sport=el.getAttribute('data-s');PR.market=null;renderProps();};})(sc[i]);
+  var markets=prMarkets(PR.sport);if(!PR.market||markets.indexOf(PR.market)<0)PR.market=markets[0];
+  $('prControls').innerHTML='<div class="stctlrow"><select class="stsearch" id="prMkt">'+markets.map(function(m){return '<option value="'+m+'"'+(m===PR.market?' selected':'')+'>'+(PR_MKT[m]||m)+'</option>';}).join('')+'</select>'+
+    '<button class="stdir" id="prDir">'+(PR.dir==='proj'?'By projection':'By over %')+'</button></div>';
+  var ms=$('prMkt');if(ms)ms.onchange=function(){PR.market=ms.value;renderProps();};
+  var db=$('prDir');if(db)db.onclick=function(){PR.dir=(PR.dir==='proj'?'over':'proj');renderProps();};
+  var list=PR.rows.filter(function(r){return (r.sport||'').toUpperCase()===PR.sport&&r.market===PR.market;}).slice()
+    .sort(function(a,b){return PR.dir==='proj'?(+b.proj-+a.proj):(+b.p_over-+a.p_over);}).slice(0,100);
+  PR._list=list;
+  $('prBody').innerHTML=list.length?('<div class="pr-list">'+list.map(function(r,i){
+    var ov=+r.p_over,cls=ov>=52?'up':(ov<=48?'dn':'');
+    return '<div class="pr-item"><div class="pr-row" data-i="'+i+'"><span class="pr-rk">'+(i+1)+'</span><div class="pr-nm"><div class="pr-p">'+stEsc(r.player)+'</div><div class="pr-t">'+stEsc(r.team||'')+(r.position?' \u00b7 '+stEsc(r.position):'')+'</div></div>'+
+      '<div class="pr-v"><span class="pr-line">'+(PR_MKT[r.market]||r.market)+' o'+r.line+'</span><span class="pr-proj">'+(+r.proj).toFixed(1)+' proj</span></div>'+
+      '<span class="pr-over '+cls+'">'+ov.toFixed(0)+'%</span></div><div class="pr-x" id="prx-'+i+'"></div></div>';
+  }).join('')+'</div>'+
+  '<div class="model-warn" style="margin-top:10px">Season-rate projections with modeled variance (Poisson for counts, Normal for points). Not market prices, not matchup-adjusted, and not CLV-validated. Research to sanity-check \u2014 an edge only exists once these beat a real closing line.</div>')
+  :'<div class="empty">No projections in this market.</div>';
+  var prows=$('prBody').querySelectorAll('.pr-row');
+  for(var pi=0;pi<prows.length;pi++){(function(row){row.onclick=function(){
+    var idx=+row.getAttribute('data-i');var det=$('prx-'+idx);if(!det)return;
+    if(det.innerHTML){det.innerHTML='';return;}det.innerHTML=propExplain(PR._list[idx]);
+  };})(prows[pi]);}
+}
+function stTeams(L){var t={};(ST.byLeague[L]||[]).forEach(function(r){if(r.team)t[r.team]=1;});return Object.keys(t).sort();}
+function stPositions(L){var p={};(ST.byLeague[L]||[]).forEach(function(r){if(r.position)p[r.position]=1;});return Object.keys(p).sort();}
+/* union of category names across a league, with a friendly label from the cats breakdown */
+function stCats(L){var m={};(ST.byLeague[L]||[]).forEach(function(r){
+  if(r.leads)for(var k in r.leads){if(m[k]==null)m[k]=stCatLabel(r,k);}
+});return m;}
+function stCatLabel(r,name){if(ST_CATLABEL[name])return ST_CATLABEL[name];if(r&&r.cats)for(var i=0;i<r.cats.length;i++)if((r.cats[i].name||'')===name)return r.cats[i].label||name;return name.charAt(0).toUpperCase()+name.slice(1);}
+function renderStats(){
+  var leagues=Object.keys(ST.byLeague);
+  if(!ST.rows.length){$('stLeagues').innerHTML='';$('stSeg').style.display='none';$('stControls').innerHTML='';
+    $('stBody').innerHTML='<div class="empty"><b>No player stats yet.</b><br>Run <span class="mono">capture_stats</span> for each sport to populate the tables.</div>';return;}
+  if(ST.view!=='sport'){ renderStatsHome(); return; }
+  // ---- inside a sport ----
+  var L=ST.league,bar=$('stLeagues'),ctrl=$('stControls'),body=$('stBody');
+  $('stSeg').style.display='';
+  bar.innerHTML='<div class="stbar"><button class="stback" id="stBack">&#8249; All sports</button><span class="stbar-sport" style="--tc:'+((SPORT_META[L]||{}).c||'var(--accent)')+'">'+((SPORT_META[L]||{}).name||L)+'<span class="stbar-n">'+(ST.byLeague[L]||[]).length+'</span></span></div>';
+  var back=$('stBack');if(back)back.onclick=function(){ST.view='home';ST.open={};renderStats();};
+  var seg=$('stSeg').querySelectorAll('button');for(var j=0;j<seg.length;j++){seg[j].classList.toggle('on',seg[j].getAttribute('data-m')===ST.mode);
+    seg[j].onclick=(function(el){return function(){ST.mode=el.getAttribute('data-m');ST.open={};renderStats();};})(seg[j]);}
+  if(ST.mode==='teams'){
+    var teams=stTeams(L);if(!ST.team||teams.indexOf(ST.team)<0)ST.team=teams[0]||null;
+    ctrl.innerHTML='<select class="stsearch" id="stTeamSel">'+teams.map(function(t){return '<option'+(t===ST.team?' selected':'')+'>'+stEsc(t)+'</option>';}).join('')+'</select>';
+    var sel=$('stTeamSel');if(sel)sel.onchange=function(){ST.team=sel.value;ST.open={};renderStats();};
+    var players=(ST.byLeague[L]||[]).filter(function(r){return r.team===ST.team;}).slice().sort(function(a,b){return b._lv-a._lv;});
+    body.innerHTML='<div class="stteamhdr">'+stEsc(ST.team||'')+' \u00b7 '+players.length+' player'+(players.length===1?'':'s')+'</div>'+
+      (players.length?players.map(function(r){return stPlayerRow(r,false);}).join(''):'<div class="empty">No players for this team.</div>');
+    stBindRows(body);
+  }else if(ST.mode==='players'){
+    ctrl.innerHTML='<input class="stsearch" id="stQ" placeholder="Search a player in '+(ST_LABEL[L]||L)+'\u2026" value="'+stEsc(ST.q||'')+'">';
+    var q=$('stQ');if(q){q.oninput=function(){ST.q=q.value;stRenderPlayerResults();};setTimeout(function(){q.focus();},0);}
+    stRenderPlayerResults();
+  }else{
+    if(ST.rich){
+      var cats=stCats(L),names=Object.keys(cats).sort(function(a,b){var ia=ST_CATORDER.indexOf(a),ib=ST_CATORDER.indexOf(b);ia=ia<0?99:ia;ib=ib<0?99:ib;return ia-ib||a.localeCompare(b);});
+      if(!ST.cat||names.indexOf(ST.cat)<0)ST.cat=names[0]||'';
+      ctrl.innerHTML='<div class="stctlrow"><select class="stsearch" id="stCat">'+names.map(function(n){return '<option value="'+stEsc(n)+'"'+(n===ST.cat?' selected':'')+'>'+stEsc(cats[n])+'</option>';}).join('')+'</select>'+
+        '<button class="stdir" id="stDir" title="Toggle order">'+(ST.dir==='best'?'Best \u2193':'Worst \u2191')+'</button></div>';
+      var cse=$('stCat');if(cse)cse.onchange=function(){ST.cat=cse.value;renderStats();};
+      var db=$('stDir');if(db)db.onclick=function(){ST.dir=(ST.dir==='best'?'worst':'best');renderStats();};
+      // "best" = higher value, except ERA/WHIP where lower is better; "worst" flips it
+      var lowGood=!!ST_ASC[ST.cat],bestFirst=(ST.dir==='best');
+      var lst=(ST.byLeague[L]||[]).filter(function(r){return r.leads&&r.leads[ST.cat]!=null;}).slice()
+        .sort(function(a,b){var d=(+a.leads[ST.cat])-(+b.leads[ST.cat]);var asc=(lowGood===bestFirst);return asc?d:-d;}).slice(0,50);
+      body.innerHTML=lst.length?lst.map(function(r,i){return stLeaderRow(r,i,stFmt(r.leads[ST.cat]));}).join(''):'<div class="empty">No leaders in this category.</div>';
+      stBindRows(body);
+    }else{
+      var poss=stPositions(L);
+      ctrl.innerHTML='<select class="stsearch" id="stPos"><option value="">All positions</option>'+poss.map(function(p){return '<option value="'+stEsc(p)+'"'+(p===ST.pos?' selected':'')+'>'+stEsc(p)+'</option>';}).join('')+'</select>';
+      var ps=$('stPos');if(ps)ps.onchange=function(){ST.pos=ps.value;renderStats();};
+      var list=(ST.byLeague[L]||[]).filter(function(r){return !ST.pos||r.position===ST.pos;}).slice().sort(function(a,b){return b._lv-a._lv;}).slice(0,50);
+      body.innerHTML=list.length?list.map(function(r,i){return stLeaderRow(r,i,r.stat_line||'');}).join(''):'<div class="empty">No players for this filter.</div>';
+    }
+  }
+}
+/* landing screen: big sport tiles (active ones first, empties shown muted) */
+function renderStatsHome(){
+  $('stSeg').style.display='none';$('stControls').innerHTML='';$('stLeagues').innerHTML='';
+  var tiles=ST_SPORTS.map(function(L){
+    var n=(ST.byLeague[L]||[]).length,meta=SPORT_META[L]||{name:L,c:'var(--accent)'},on=n>0;
+    return '<button class="sptile'+(on?'':' off')+'" data-l="'+L+'" style="--tc:'+meta.c+'"'+(on?'':' disabled')+'>'+
+      '<div class="sptile-code">'+L+'</div><div class="sptile-name">'+meta.name+'</div>'+
+      '<div class="sptile-n">'+(on?n+' players':'no data yet')+'</div></button>';
+  }).join('');
+  $('stBody').innerHTML='<div class="sptiles">'+tiles+'</div>';
+  var ts=$('stBody').querySelectorAll('.sptile:not(.off)');
+  for(var i=0;i<ts.length;i++)ts[i].onclick=(function(el){return function(){ST.league=el.getAttribute('data-l');ST.view='sport';ST.mode='leaders';ST.cat='';ST.team=null;ST.q='';ST.pos='';ST.open={};renderStats();};})(ts[i]);
+}
+function stRenderPlayerResults(){
+  var L=ST.league,body=$('stBody'),q=(ST.q||'').trim().toLowerCase();
+  if(q.length<1){body.innerHTML='<div class="empty">Type a name to search '+(ST_LABEL[L]||L)+' players.</div>';return;}
+  var list=(ST.byLeague[L]||[]).filter(function(r){return (r.player||'').toLowerCase().indexOf(q)>=0;}).sort(function(a,b){return b._lv-a._lv;}).slice(0,40);
+  body.innerHTML=list.length?list.map(function(r){return stPlayerRow(r,true);}).join(''):'<div class="empty">No match in '+(ST_LABEL[L]||L)+'.</div>';
+  stBindRows(body);
+}
+/* a tappable player row that expands into the full stat card (rich rows only) */
+function stPlayerRow(r,showTeam){
+  var k=stKey(r),hasDetail=!!(r.cats&&r.cats.length),open=!!ST.open[k];
+  return '<div class="stitem'+(open?' open':'')+'" data-k="'+stEsc(k)+'">'+
+    '<div class="strow'+(hasDetail?' tap':'')+'"><div class="st-mid"><div class="st-nm">'+stEsc(r.player||'\u2014')+(r.position?' <span class="st-pos">'+stEsc(r.position)+'</span>':'')+'</div>'+
+      '<div class="st-meta">'+(showTeam&&r.team?stEsc(r.team)+' \u00b7 ':'')+stEsc(r.stat_line||'')+'</div></div>'+(hasDetail?'<span class="st-chev">\u203a</span>':'')+'</div>'+
+    (hasDetail?'<div class="st-detail">'+stDetail(r)+'</div>':'')+'</div>';
+}
+function stLeaderRow(r,i,val){
+  var k=stKey(r),hasDetail=!!(r.cats&&r.cats.length),open=!!ST.open[k];
+  return '<div class="stitem'+(open?' open':'')+'" data-k="'+stEsc(k)+'">'+
+    '<div class="strow'+(hasDetail?' tap':'')+'"><span class="st-rank">'+(i+1)+'</span><div class="st-mid"><div class="st-nm">'+stEsc(r.player||'\u2014')+(r.position?' <span class="st-pos">'+stEsc(r.position)+'</span>':'')+'</div>'+
+      '<div class="st-meta">'+stEsc(r.team||'')+'</div></div><span class="st-stat">'+stEsc(val||'')+'</span>'+(hasDetail?'<span class="st-chev">\u203a</span>':'')+'</div>'+
+    (hasDetail?'<div class="st-detail">'+stDetail(r)+'</div>':'')+'</div>';
+}
+function stDetail(r){
+  var breakdown=(!r.cats||!r.cats.length)?'<div class="fi-empty">Full breakdown fills in after <span class="mono">capture_stats</span> runs.</div>':
+    r.cats.map(function(c){
+      var chips=(c.stats||[]).map(function(s){return '<div class="st-cell"><span class="st-cl">'+stEsc(s.label)+'</span><span class="st-cv">'+stEsc(s.display)+'</span></div>';}).join('');
+      return '<div class="st-catblk"><div class="st-cathdr">'+stEsc(c.label||c.name)+'</div><div class="st-grid">'+chips+'</div></div>';
+    }).join('');
+  // model prop projections (MLB/WNBA), if any
+  var props='';
+  var pk=(r.league||'').toUpperCase()+'|'+r.player;
+  var pl=(typeof ST_PROPS!=='undefined'&&ST_PROPS[pk])?ST_PROPS[pk]:null;
+  if(pl&&pl.length){
+    var ML={points:'Points',rebounds:'Rebounds',assists:'Assists',threes:'3-Pointers',hr:'Home runs',rbi:'RBI',strikeouts:'Strikeouts'};
+    var order=['points','rebounds','assists','threes','hr','rbi','strikeouts'];
+    pl=pl.slice().sort(function(a,b){var ia=order.indexOf(a.market),ib=order.indexOf(b.market);return (ia<0?99:ia)-(ib<0?99:ib);});
+    var rows=pl.map(function(p){var ov=+p.p_over;var cls=ov>=52?'up':(ov<=48?'dn':'');
+      return '<div class="st-cell"><span class="st-cl">'+(ML[p.market]||p.market)+' o'+p.line+'</span><span class="st-cv '+cls+'">'+(+p.proj).toFixed(1)+' proj \u00b7 '+ov.toFixed(0)+'%</span></div>';}).join('');
+    props='<div class="st-catblk"><div class="st-cathdr">EdgeDesk projections \u2014 model, not a line</div><div class="st-grid">'+rows+'</div>'+
+      '<div class="model-warn">Season-rate projection with modeled variance (Poisson/Normal). Not a market price and not CLV-validated \u2014 research, not a call.</div></div>';
+  }
+  return breakdown+props;
+}
+function stBindRows(scope){var taps=scope.querySelectorAll('.strow.tap');for(var i=0;i<taps.length;i++){(function(row){
+  row.addEventListener('click',function(){var item=row.parentNode,k=item.getAttribute('data-k');ST.open[k]=!ST.open[k];item.classList.toggle('open',!!ST.open[k]);});
+})(taps[i]);}}
+
 renderLedger();loadEdges();
+/* refresh buttons — wired in JS (not inline) with a visible spin so they never feel dead.
+   The spin is hard-capped: it ALWAYS stops within ~900ms whether the fetch resolves,
+   rejects, or hangs — so a slow Supabase call can never leave the button stuck spinning. */
+(function(){var REF={edges:loadEdges,faults:loadFaults,boards:loadBoards,ledger:loadMarket,news:loadNews};
+  var btns=document.querySelectorAll('.refreshbtn');
+  for(var i=0;i<btns.length;i++){(function(btn){var fn=REF[btn.getAttribute('data-refresh')];
+    btn.addEventListener('click',function(){if(!fn||btn.classList.contains('spinning'))return;
+      btn.classList.add('spinning');
+      var stopped=false;
+      function stop(){if(stopped)return;stopped=true;btn.classList.remove('spinning');}
+      // fire the refresh; whatever it does, the spin stops on its own timer regardless
+      try{Promise.resolve().then(fn).catch(function(){});}catch(e){}
+      setTimeout(stop,900);   // guaranteed stop — spin can never hang
+    });})(btns[i]);}
+})();
 function edSignOut(){try{localStorage.removeItem('edgedesk_session');}catch(e){}location.replace('./index.html');}
 setInterval(function(){var on=!$('v-edges').classList.contains('hide');if(on)loadEdges();
   if(!$('v-faults').classList.contains('hide'))loadFaults();
-  if(!$('v-news').classList.contains('hide'))loadNews();},60000);
+  if(!$('v-news').classList.contains('hide'))loadNews();
+  if(!$('v-ledger').classList.contains('hide'))autoSettle().then(refreshLiveCLV).then(function(){renderLedger();});},60000);
 </script>
 </body>
 </html>
