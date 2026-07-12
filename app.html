@@ -1095,27 +1095,28 @@ async function loadRecord(){
     // (a 30-60% "edge" is a dead price, not a signal — it poisons the record).
     var EDGEQ='edge=gte.0.005&edge=lte.0.1&n_books=gte.3';
     var g=await sbGet('signals?select=clv,result,beat_close&graded_at=not.is.null&'+EDGEQ+'&limit=5000');
-    var w=0,l=0,clvSum=0,beat=0,n=g.length,clvArr=[],clvPos=0;
+    var w=0,l=0,clvSum=0,beatStored=0,n=g.length,clvArr=[],clvPos=0;
     g.forEach(function(r){if(r.result==='win')w++;else if(r.result==='loss')l++;
-      if(r.clv!=null){clvArr.push(+r.clv);clvSum+=+r.clv;if(r.clv>0)clvPos++;if(r.beat_close)beat++;}});   // all CLV stats over the SAME clv-present subset
+      if(r.clv!=null){clvArr.push(+r.clv);clvSum+=+r.clv;if(r.clv>0)clvPos++;if(r.beat_close)beatStored++;}});   // all CLV stats over the SAME clv-present subset
     var nCLV=clvArr.length;
     var med=null;if(nCLV){var _s=clvArr.slice().sort(function(a,b){return a-b;});var _m=Math.floor(_s.length/2);med=_s.length%2?_s[_m]:(_s[_m-1]+_s[_m])/2;}
     var avgCLV=nCLV?clvSum/nCLV:null;
-    var posRate=nCLV?clvPos/nCLV:null;    // raw clv>0 rate
-    var beatRate=nCLV?beat/nCLV:null;     // stored beat_close over the SAME denominator — must now track posRate
+    var posRate=nCLV?clvPos/nCLV:null;              // raw clv>0 rate — the honest number
+    var beatRate=posRate;                            // beat-close IS clv>0 by definition; derive it, never trust a stored copy
+    var beatStoredRate=nCLV?beatStored/nCLV:null;    // stored column, kept ONLY to detect backend drift until settle+backfill land
     var hit=(w+l)?w/(w+l):null;
     WEIGHT_ROWS=await sbGet('model_weights?select=*');WEIGHTS={book:{},sport:{},market:{},edge_bucket:{},ttk_bucket:{}};WEIGHT_ROWS.forEach(function(r){WEIGHTS[r.slice_type]=WEIGHTS[r.slice_type]||{};WEIGHTS[r.slice_type][r.slice_value]=r.weight;});
     CALIB=await sbGet('calibration?select=*');
     $('dbPill').textContent='DB ✓';$('dbPill').className='pill ok';
     // CLV time series (the proof layer) — cumulative CLV over the flagged edges only
-    try{var series=await sbGet('signals?select=clv,graded_at&graded_at=not.is.null&'+EDGEQ+'&clv=not.is.null&order=graded_at.asc&limit=5000');renderClvHero(series,avgCLV,beatRate,med,posRate);}catch(_){renderClvHero([],null,null,null,null);}
+    try{var series=await sbGet('signals?select=clv,graded_at&graded_at=not.is.null&'+EDGEQ+'&clv=not.is.null&order=graded_at.asc&limit=5000');renderClvHero(series,avgCLV,beatRate,med,posRate,beatStoredRate);}catch(_){renderClvHero([],null,null,null,null,null);}
     function kpi(nv,lb){return'<div class="kpi"><div class="n">'+nv+'</div><div class="l">'+lb+'</div></div>';}
     $('recKpis').innerHTML=kpi(total,'captured')+kpi(gradedEdges+' / '+graded,'edges graded')+kpi(hit!=null?(hit*100).toFixed(0)+'%':'—','edge hit rate')+kpi(avgCLV!=null?((avgCLV>=0?'+':'')+(avgCLV*100).toFixed(1)+'%'):'—','edge avg CLV')+kpi(med!=null?((med>=0?'+':'')+(med*100).toFixed(1)+'%'):'—','edge median CLV')+kpi(posRate!=null?(posRate*100).toFixed(0)+'%':'—','CLV+ rate · clv>0')+kpi(beatRate!=null?(beatRate*100).toFixed(0)+'%':'—','edges beat close');
     renderSlice();renderCalib();
     if(total===0)$('recKpis').insertAdjacentHTML('afterend','<div class="empty" style="margin:8px 0">No data yet. The capture job logs signals continuously; grades fill in after games finish.</div>');
   }catch(e){$('dbPill').textContent='DB error';$('dbPill').className='pill err';$('recKpis').innerHTML='<div class="empty">Could not reach the database: '+e.message+'</div>';}
 }
-function renderClvHero(series,avgClv,beatRate,med,posRate){
+function renderClvHero(series,avgClv,beatRate,med,posRate,beatStoredRate){
   var host=$('clvChart');if(!host)return;
   var MIN_SAMPLE=30;   // below this, CLV is noise — don't dress a handful of edges up as proof
   if(!series||!series.length){
@@ -1145,7 +1146,7 @@ function renderClvHero(series,avgClv,beatRate,med,posRate){
     '<path d="'+area+'" fill="'+col+'" opacity="0.10"/>'+
     '<polyline points="'+pts+'" fill="none" stroke="'+col+'" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/></svg>';
   var headline=(total>=0?'+':'')+(total*100).toFixed(1)+' pts';
-  var mismatch=(posRate!=null&&beatRate!=null&&Math.abs(posRate-beatRate)>=0.1);
+  var mismatch=(posRate!=null&&beatStoredRate!=null&&Math.abs(posRate-beatStoredRate)>=0.1);
   host.innerHTML='<div class="clvhero"><div class="clvhero-h"><span class="big" style="color:'+col+'">'+headline+'</span><span class="lbl">edge CLV \u00b7 '+N+' graded</span></div>'+svg+
     '<div class="cap"><b style="color:var(--text)">The proof layer.</b> Cumulative closing-line value across the flagged edges'+(avgClv!=null?' \u00b7 avg '+(avgClv>=0?'+':'')+(avgClv*100).toFixed(1)+'%':'')+(med!=null?' \u00b7 median '+(med>=0?'+':'')+(med*100).toFixed(1)+'%':'')+(beatRate!=null?' \u00b7 beat close '+(beatRate*100).toFixed(0)+'%':'')+'. A rising line is the only honest evidence the edges are real \u2014 and it\u2019s only as trustworthy as the close calc behind it.'+
     (mismatch?'<br><b style="color:var(--warn)">\u26a0 Close-calc check: stored beat-close ('+(beatRate*100).toFixed(0)+'%) disagrees with the raw clv&gt;0 rate ('+(posRate*100).toFixed(0)+'%) \u2014 the settle job\u2019s beat_close is computed inconsistently with clv. Fix settle before trusting these.</b>':'')+
