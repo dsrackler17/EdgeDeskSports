@@ -512,6 +512,9 @@ textarea{min-height:110px;font-family:'JetBrains Mono',monospace;resize:vertical
     </div>
     <input class="stsearch" id="ufcQ" placeholder="Search a fighter…" style="margin-bottom:12px">
     <div id="ufcBody"><div class="empty">Loading…</div></div>
+    <div id="ufcModal" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.72);overflow-y:auto" onclick="if(event.target===this)ufcCloseProfile()">
+      <div id="ufcModalCard" style="max-width:580px;margin:24px auto;background:#0f141b;border:1px solid rgba(255,255,255,.12);border-radius:16px;padding:18px;position:relative"></div>
+    </div>
   </section>
 
   <!-- TERMS -->
@@ -2250,6 +2253,72 @@ function ufcWinProbBar(p){
   return '<div style="margin-top:10px"><div style="display:flex;justify-content:space-between;font-size:10.5px;color:var(--faint);margin-bottom:3px"><span style="color:#e0533a">red '+pct+'%</span><span style="color:#5d8def">'+(100-pct)+'% blue</span></div>'+
     '<div style="height:9px;border-radius:6px;background:#5d8def;overflow:hidden"><div style="height:100%;width:'+pct+'%;background:#e0533a"></div></div></div>';
 }
+/* ===== Fighter profile modal — REAL data only; style/matchup honestly gated ===== */
+function ufcFinishedLosses(fid,fights){
+  if(!fights)return null;
+  var losses=fights.filter(function(g){return g.winner&&g.winner!==fid&&g.winner!=='draw'&&g.winner!=='nc';});
+  var finished=losses.filter(function(g){return /ko|tko|sub/i.test(g.method||'');});
+  return {total:losses.length,finished:finished.length};
+}
+function ufcKV(k,v){return '<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.05);font-size:12.5px"><span style="color:var(--faint)">'+k+'</span><span class="mono">'+(v==null?'\u2014':v)+'</span></div>';}
+function ufcProfileHTML(x,fights){
+  var d=x.d||{},c=x.c||{};
+  var rec=ufcRec(x);
+  var close='<button onclick="ufcCloseProfile()" style="position:absolute;top:12px;right:14px;background:transparent;border:none;color:var(--faint);font-size:22px;cursor:pointer;line-height:1">\u00d7</button>';
+  var header='<div style="padding-right:30px"><div style="font-size:20px;font-weight:800">'+stEsc(x.full_name||'\u2014')+(x.nickname?' <span style="color:var(--faint);font-size:13px;font-weight:500">\u201c'+stEsc(x.nickname)+'\u201d</span>':'')+'</div>'+
+    '<div style="color:var(--faint);font-size:12.5px;margin-top:3px">'+[rec,x.division,x.stance,(x.age!=null?x.age+' yrs':''),(x.reach_inches!=null?x.reach_inches+'" reach':''),(x.height_inches!=null?x.height_inches+'" tall':'')].filter(Boolean).join(' \u00b7 ')+'</div></div>';
+
+  var tend='<div style="margin-top:14px;font-size:11px;letter-spacing:.05em;color:var(--faint);text-transform:uppercase">Tendencies (computed from fight history)</div><div style="margin-top:4px">'+
+    ufcKV('Finish rate',ufcPct(d.finish_rate))+
+    ufcKV('Finish rate (last 5)',ufcPct(d.finish_rate_last5))+
+    ufcKV('Current streak',(d.win_streak?('W'+d.win_streak):(d.loss_streak?('L'+d.loss_streak):'\u2014')))+
+    ufcKV('Fights (last 365d)',d.activity_last365!=null?d.activity_last365:'\u2014')+
+    ufcKV('Title-fight bouts',d.title_fight_experience!=null?d.title_fight_experience:'\u2014')+
+    ufcKV('Avg fight time',d.average_fight_time!=null?Math.round(+d.average_fight_time/60)+' min':'\u2014')+
+    '</div>';
+
+  var sos='<div style="margin-top:14px;font-size:11px;letter-spacing:.05em;color:var(--faint);text-transform:uppercase">Strength of schedule</div><div style="margin-top:4px">'+
+    ufcKV('Avg opponent win %',ufcPct(d.opponent_average_win_pct))+
+    ufcKV('Avg opponent reach',d.average_opponent_reach!=null?(+d.average_opponent_reach).toFixed(1)+'"':'\u2014')+
+    ufcKV('Avg opponent age',d.average_opponent_age!=null?(+d.average_opponent_age).toFixed(1):'\u2014')+
+    '</div>';
+
+  // style reads from REAL fields only (finish, subs, accuracy, durability from fights)
+  var fl=ufcFinishedLosses(x.fighter_id,fights);
+  var durability=(fl&&fl.total>0)?(Math.round((1-fl.finished/fl.total)*100)+'% ('+fl.finished+'/'+fl.total+' losses by finish)'):(fl?'never finished':'\u2014');
+  var style='<div style="margin-top:14px;font-size:11px;letter-spacing:.05em;color:var(--faint);text-transform:uppercase">Style signals (real)</div><div style="margin-top:4px">'+
+    ufcKV('Finisher lean',d.finish_rate!=null?(d.finish_rate>=0.5?'finisher':'goes the distance')+' ('+ufcPct(d.finish_rate)+')':'\u2014')+
+    ufcKV('Submission threat',c.submission_avg!=null?(+c.submission_avg).toFixed(1)+' sub att/fight':'\u2014')+
+    ufcKV('Striking accuracy',ufcPct(c.striking_accuracy))+
+    ufcKV('Takedown accuracy',ufcPct(c.takedown_accuracy))+
+    ufcKV('Durability (survives)',fights?durability:'\u2026')+
+    '</div>';
+
+  var gated='<div style="margin-top:14px;padding:12px;border:1px dashed rgba(255,255,255,.16);border-radius:10px">'+
+    '<div style="font-size:12px;font-weight:600;color:var(--warn)">Fighter type &amp; stylistic matchup \u2014 not active</div>'+
+    '<div style="font-size:11px;color:var(--faint);margin-top:4px">A striker / wrestler / grappler classifier and a matchup read need UFCStats per-minute microstats (SLpM, control time, takedown defense, strike location) that aren\u2019t in the loaded dataset. Rather than guess a style from data we don\u2019t have, this stays gated until those stats are ingested.</div></div>';
+
+  var hist=fights?('<div style="margin-top:14px;font-size:11px;letter-spacing:.05em;color:var(--faint);text-transform:uppercase">Fight history</div>'+ufcFightsHTML(x.fighter_id,fights)):'<div class="fi-empty" style="margin-top:14px">Loading fights\u2026</div>';
+
+  return close+header+tend+sos+style+gated+hist;
+}
+function ufcProfileNotInDB(fid){
+  return '<button onclick="ufcCloseProfile()" style="position:absolute;top:12px;right:14px;background:transparent;border:none;color:var(--faint);font-size:22px;cursor:pointer">\u00d7</button>'+
+    '<div style="font-size:17px;font-weight:700">'+stEsc((fid||'').replace(/-/g,' '))+'</div>'+
+    '<div class="empty" style="margin-top:12px">This fighter isn\u2019t in EdgeDesk\u2019s historical database (debut or newer than the 2010\u20132026 dataset), so there are no computed tendencies to show \u2014 only the live card. Not a bug: a fighter with no loaded history genuinely has no stats to compute.</div>';
+}
+window.ufcProfile=async function(fid){
+  if(!fid)return;
+  var m=$('ufcModal'),card=$('ufcModalCard');if(!m||!card)return;
+  m.style.display='block';document.body.style.overflow='hidden';m.scrollTop=0;
+  var x=UFC.byId[fid];
+  if(!x){card.innerHTML=ufcProfileNotInDB(fid);return;}
+  card.innerHTML=ufcProfileHTML(x,null);
+  var fights=await ufcLoadFights(fid);
+  card.innerHTML=ufcProfileHTML(x,fights);
+};
+window.ufcCloseProfile=function(){var m=$('ufcModal');if(m)m.style.display='none';document.body.style.overflow='';};
+
 function ufcChips(fid){
   var x=UFC.byId[fid];
   if(!x||!x.d)return '<span style="font-size:10px;color:var(--faint2,#6b7280)">no DB history</span>';
@@ -2278,9 +2347,9 @@ function ufcLiveFightCard(g){
     '<span style="color:var(--faint);font-size:11px">'+stEsc(g.weight_class||'')+'</span>'+
     '<span style="display:flex;gap:6px;align-items:center">'+badge+mainTag+'</span></div>';
   var names='<div style="display:grid;grid-template-columns:1fr auto 1fr;gap:8px;align-items:start;margin-bottom:2px">'+
-    '<div style="text-align:left"><div style="font-weight:700;font-size:15px;color:#e0533a">'+stEsc(g.red_name||'Red')+'</div><div style="margin-top:2px">'+ufcChips(g.red_fighter_id)+'</div></div>'+
+    '<div style="text-align:left"><div onclick="ufcProfile(\''+(g.red_fighter_id||'')+'\')" style="font-weight:700;font-size:15px;color:#e0533a;cursor:pointer">'+stEsc(g.red_name||'Red')+' <span style="font-size:10px;opacity:.55">\u2197</span></div><div style="margin-top:2px">'+ufcChips(g.red_fighter_id)+'</div></div>'+
     '<div style="color:var(--faint);font-size:11px;font-weight:600;padding-top:3px">vs</div>'+
-    '<div style="text-align:right"><div style="font-weight:700;font-size:15px;color:#5d8def">'+stEsc(g.blue_name||'Blue')+'</div><div style="margin-top:2px">'+ufcChips(g.blue_fighter_id)+'</div></div></div>';
+    '<div style="text-align:right"><div onclick="ufcProfile(\''+(g.blue_fighter_id||'')+'\')" style="font-weight:700;font-size:15px;color:#5d8def;cursor:pointer">'+stEsc(g.blue_name||'Blue')+' <span style="font-size:10px;opacity:.55">\u2197</span></div><div style="margin-top:2px">'+ufcChips(g.blue_fighter_id)+'</div></div></div>';
   var statsBlock='';
   if(live||fin){
     statsBlock='<div style="border-top:1px solid rgba(255,255,255,.06);margin-top:10px;padding-top:6px">'+
