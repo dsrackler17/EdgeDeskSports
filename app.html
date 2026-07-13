@@ -2060,8 +2060,10 @@ async function loadUFC(force){
     // merge computed metrics (real, from the fights you loaded) and the few real career stats
     try{var dm=await ufcFetchAll('fighter_derived_metrics?select=fighter_id,finish_rate,finish_rate_last5,win_streak,loss_streak,days_since_last_fight,activity_last365,title_fight_experience,average_opponent_reach,average_opponent_age,average_round_finished,average_fight_time,opponent_average_win_pct','fighter_id');
       (dm||[]).forEach(function(x){if(UFC.byId[x.fighter_id])UFC.byId[x.fighter_id].d=x;});}catch(_){}
-    try{var cs=await ufcFetchAll('fighter_career_stats?select=fighter_id,striking_accuracy,takedown_accuracy,submission_avg','fighter_id');
+    try{var cs=await ufcFetchAll('fighter_career_stats?select=fighter_id,slpm,sapm,striking_accuracy,striking_defense,takedown_avg,takedown_accuracy,takedown_defense,submission_avg,knockdown_avg,control_time_avg','fighter_id');
       (cs||[]).forEach(function(x){if(UFC.byId[x.fighter_id])UFC.byId[x.fighter_id].c=x;});}catch(_){}
+    try{var sm=await ufcFetchAll('fighter_style_metrics?select=fighter_id,primary_style,distance_striker,pressure_striker,counter_striker,wrestler,submission_specialist,grappler,high_output,power_striker,durability_score,finisher','fighter_id');
+      (sm||[]).forEach(function(x){if(UFC.byId[x.fighter_id])UFC.byId[x.fighter_id].s=x;});}catch(_){}
     var ds={};UFC.fighters.forEach(function(x){if(x.division)ds[x.division]=1;});UFC.divs=Object.keys(ds).sort();
     UFC.at=Date.now();UFC.open={};UFC.cmp=[];
     if(!UFC.fighters.length){ban.className='flbanner demo';ban.textContent='\u25b2 UFC schema reachable but empty \u2014 run the Kaggle backfill to populate ufc.fighters / fighter_fights.';}
@@ -2173,6 +2175,7 @@ function ufcCmpHTML(){
       '<span class="v" style="text-align:center;color:var(--faint)">head to head</span>'+
       '<span class="v" style="text-align:right">'+stEsc(B.full_name||'')+'</span></div>'+
     rows+
+    ufcMatchupHTML(A,B)+
     '<div class="fi-foot">Green = better on that row. No prediction \u2014 descriptive comparison of loaded stats only. <a href="#" onclick="ufcCmpClear();return false" style="color:var(--accent)">clear</a></div></div>';
 }
 function ufcControlsHTML(){
@@ -2286,21 +2289,68 @@ function ufcProfileHTML(x,fights){
   // style reads from REAL fields only (finish, subs, accuracy, durability from fights)
   var fl=ufcFinishedLosses(x.fighter_id,fights);
   var durability=(fl&&fl.total>0)?(Math.round((1-fl.finished/fl.total)*100)+'% ('+fl.finished+'/'+fl.total+' losses by finish)'):(fl?'never finished':'\u2014');
-  var style='<div style="margin-top:14px;font-size:11px;letter-spacing:.05em;color:var(--faint);text-transform:uppercase">Style signals (real)</div><div style="margin-top:4px">'+
-    ufcKV('Finisher lean',d.finish_rate!=null?(d.finish_rate>=0.5?'finisher':'goes the distance')+' ('+ufcPct(d.finish_rate)+')':'\u2014')+
-    ufcKV('Submission threat',c.submission_avg!=null?(+c.submission_avg).toFixed(1)+' sub att/fight':'\u2014')+
+  var style='<div style="margin-top:14px;font-size:11px;letter-spacing:.05em;color:var(--faint);text-transform:uppercase">Career microstats (UFCStats)</div><div style="margin-top:4px">'+
+    ufcKV('Sig. strikes/min (SLpM)',c.slpm!=null?(+c.slpm).toFixed(2):'\u2014')+
+    ufcKV('Sig. strikes absorbed/min',c.sapm!=null?(+c.sapm).toFixed(2):'\u2014')+
     ufcKV('Striking accuracy',ufcPct(c.striking_accuracy))+
-    ufcKV('Takedown accuracy',ufcPct(c.takedown_accuracy))+
-    ufcKV('Durability (survives)',fights?durability:'\u2026')+
+    ufcKV('Striking defense',ufcPct(c.striking_defense))+
+    ufcKV('Takedowns/15min',c.takedown_avg!=null?(+c.takedown_avg).toFixed(2):'\u2014')+
+    ufcKV('Takedown defense',ufcPct(c.takedown_defense))+
+    ufcKV('Control time/round',c.control_time_avg!=null?Math.round(+c.control_time_avg)+'s':'\u2014')+
+    ufcKV('Submission att/15min',c.submission_avg!=null?(+c.submission_avg).toFixed(2):'\u2014')+
+    ufcKV('Knockdowns/15min',c.knockdown_avg!=null?(+c.knockdown_avg).toFixed(2):'\u2014')+
     '</div>';
 
-  var gated='<div style="margin-top:14px;padding:12px;border:1px dashed rgba(255,255,255,.16);border-radius:10px">'+
-    '<div style="font-size:12px;font-weight:600;color:var(--warn)">Fighter type &amp; stylistic matchup \u2014 not active</div>'+
-    '<div style="font-size:11px;color:var(--faint);margin-top:4px">A striker / wrestler / grappler classifier and a matchup read need UFCStats per-minute microstats (SLpM, control time, takedown defense, strike location) that aren\u2019t in the loaded dataset. Rather than guess a style from data we don\u2019t have, this stays gated until those stats are ingested.</div></div>';
+  var styleBox=ufcStyleProfileHTML(x);
 
   var hist=fights?('<div style="margin-top:14px;font-size:11px;letter-spacing:.05em;color:var(--faint);text-transform:uppercase">Fight history</div>'+ufcFightsHTML(x.fighter_id,fights)):'<div class="fi-empty" style="margin-top:14px">Loading fights\u2026</div>';
 
-  return close+header+tend+sos+style+gated+hist;
+  return close+header+tend+sos+styleBox+style+hist;
+}
+function ufcStyleBar(label,v){
+  if(v==null)return '';
+  var pct=Math.max(0,Math.min(100,Math.round(+v*100)));
+  var col=pct>=66?'#e0533a':(pct>=33?'#e8a13b':'#5d8def');
+  return '<div style="margin:5px 0"><div style="display:flex;justify-content:space-between;font-size:10.5px;color:var(--faint)"><span>'+label+'</span><span>'+pct+'</span></div>'+
+    '<div style="height:6px;border-radius:4px;background:rgba(255,255,255,.07);overflow:hidden"><div style="height:100%;width:'+pct+'%;background:'+col+'"></div></div></div>';
+}
+function ufcStyleProfileHTML(x){
+  var s=x.s;
+  if(!s)return '<div style="margin-top:14px;padding:12px;border:1px dashed rgba(255,255,255,.16);border-radius:10px;font-size:11px;color:var(--faint)">Style profile not computed for this fighter yet (no UFCStats microstats). Run the ufcstats_sync + refresh_style_metrics to populate.</div>';
+  var tag=s.primary_style?'<span style="background:rgba(224,83,58,.16);color:#e0533a;font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px">'+stEsc(s.primary_style)+'</span>':'';
+  return '<div style="margin-top:14px;font-size:11px;letter-spacing:.05em;color:var(--faint);text-transform:uppercase">Fighter style (percentile vs all fighters)</div>'+
+    '<div style="margin-top:6px;margin-bottom:6px">'+tag+'</div>'+
+    ufcStyleBar('Distance striking',s.distance_striker)+
+    ufcStyleBar('Volume / output',s.high_output)+
+    ufcStyleBar('Power (knockdowns)',s.power_striker)+
+    ufcStyleBar('Wrestling',s.wrestler)+
+    ufcStyleBar('Submissions',s.submission_specialist)+
+    ufcStyleBar('Grappling control',s.grappler)+
+    ufcStyleBar('Durability (str. defense)',s.durability_score);
+}
+function ufcMatchupHTML(a,b){
+  // stylistic matchup read from REAL percentile scores — describes contrasts, not a prediction
+  if(!a||!a.s||!b||!b.s)return '';
+  var sa=a.s,sb=b.s,notes=[];
+  function gap(key,label,hi){var d=(+(sa[key]||0))-(+(sb[key]||0));if(Math.abs(d)>=0.25){var who=d>0?a:b;notes.push(stEsc((who.full_name||'').split(' ').slice(-1)[0])+' has the '+label+' edge');}}
+  gap('wrestler','wrestling');
+  gap('distance_striker','distance-striking');
+  gap('high_output','volume');
+  gap('power_striker','power');
+  gap('submission_specialist','submission');
+  gap('durability_score','durability');
+  // grappler vs striker clash
+  var clash='';
+  var aGrap=(+(sa.wrestler||0)+ +(sa.grappler||0))/2, bStrike=(+(sb.high_output||0)+ +(sb.distance_striker||0))/2;
+  var bGrap=(+(sb.wrestler||0)+ +(sb.grappler||0))/2, aStrike=(+(sa.high_output||0)+ +(sa.distance_striker||0))/2;
+  if(aGrap>0.6&&bStrike>0.6)clash='Classic grappler-vs-striker: '+stEsc(a.full_name)+' will look to take it to the mat, '+stEsc(b.full_name)+' to keep it standing.';
+  else if(bGrap>0.6&&aStrike>0.6)clash='Classic grappler-vs-striker: '+stEsc(b.full_name)+' will look to take it to the mat, '+stEsc(a.full_name)+' to keep it standing.';
+  if(!notes.length&&!clash)return '<div class="fi-foot">Stylistically similar fighters \u2014 no major axis separates them by the data.</div>';
+  return '<div style="margin-top:10px;padding:10px;border:1px solid rgba(93,141,239,.35);border-radius:10px">'+
+    '<div style="font-size:11px;font-weight:700;color:#5d8def;margin-bottom:4px">Stylistic matchup</div>'+
+    (clash?'<div style="font-size:11.5px;margin-bottom:5px">'+clash+'</div>':'')+
+    (notes.length?'<div style="font-size:11px;color:var(--faint)">'+notes.join(' \u00b7 ')+'</div>':'')+
+    '<div class="fi-foot" style="margin-top:6px">Descriptive contrast of career percentiles \u2014 not a prediction of the result.</div></div>';
 }
 function ufcProfileNotInDB(fid){
   return '<button onclick="ufcCloseProfile()" style="position:absolute;top:12px;right:14px;background:transparent;border:none;color:var(--faint);font-size:22px;cursor:pointer">\u00d7</button>'+
@@ -2323,6 +2373,7 @@ function ufcChips(fid){
   var x=UFC.byId[fid];
   if(!x||!x.d)return '<span style="font-size:10px;color:var(--faint2,#6b7280)">no DB history</span>';
   var d=x.d,bits=[];
+  if(x.s&&x.s.primary_style)bits.push(x.s.primary_style);
   if(d.finish_rate!=null)bits.push(ufcPct(d.finish_rate)+' fin');
   if(d.win_streak)bits.push('W'+d.win_streak);
   else if(d.loss_streak)bits.push('L'+d.loss_streak);
