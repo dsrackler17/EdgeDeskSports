@@ -533,6 +533,18 @@ textarea{min-height:110px;font-family:'JetBrains Mono',monospace;resize:vertical
 
 <div class="foot"><b class="footlink" onclick="show('terms')">Research tool only — not betting advice.</b> Signals can be wrong. 21+. 1-800-GAMBLER.</div>
 
+  <!-- CFB (College Football research) -->
+  <section id="v-cfb" class="view hide">
+    <div class="row-between"><h2 style="margin:0">CFB</h2><span class="spacer"></span><span class="freshness" id="cfbFresh">&mdash;</span><button class="refreshbtn" title="Refresh" onclick="loadCFB(true)">&#8635;</button></div>
+    <p class="lede">College football matchups first &mdash; tap a game for the side-by-side, tap a team for the deep dive. <b style="color:var(--warn)">Research context, not edges.</b> SP+, records and season stats sanity-check direction; the edge itself still lives in CLV. Lines shown are consensus book numbers, not Pinnacle.</p>
+    <div class="flbanner demo" id="cfbBanner">Loading CFB dataset&hellip;</div>
+    <input class="stsearch" id="cfbQ" placeholder="Search a team&hellip;" style="margin-bottom:12px;display:none" oninput="renderCFB()">
+    <div id="cfbBody"><div class="empty">Loading&hellip;</div></div>
+    <div id="cfbModal" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.72);overflow-y:auto" onclick="if(event.target===this)cfbCloseTeam()">
+      <div id="cfbModalCard" style="max-width:600px;margin:24px auto;background:#0f141b;border:1px solid rgba(255,255,255,.12);border-radius:16px;padding:18px;position:relative"></div>
+    </div>
+  </section>
+
 <nav class="bottomnav">
   <button data-v="edges" class="on"><svg class="ic" viewBox="0 0 24 24"><polyline points="3 17 9 11 13 15 21 7"/><polyline points="15 7 21 7 21 13"/></svg>Edges</button>
   <button data-v="faults"><svg class="ic" viewBox="0 0 24 24"><path d="M3 12h4l2-7 4 14 2-7h6"/></svg>Faults</button>
@@ -540,6 +552,7 @@ textarea{min-height:110px;font-family:'JetBrains Mono',monospace;resize:vertical
   <button data-v="record"><svg class="ic" viewBox="0 0 24 24"><path d="M4 19V5"/><rect x="7" y="11" width="3" height="8"/><rect x="13" y="7" width="3" height="12"/><rect x="19" y="14" width="2" height="5"/></svg>Record</button>
   <button data-v="stats"><svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.5"/><path d="M5 20c0-3.5 3-6 7-6s7 2.5 7 6"/></svg>Stats</button>
   <button data-v="props"><svg class="ic" viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-6M22 20H2"/></svg>Props</button>
+  <button data-v="cfb"><svg class="ic" viewBox="0 0 24 24"><ellipse cx="12" cy="12" rx="9" ry="5.5"/><path d="M8 12h8M11 10v4M13 10v4"/></svg>CFB</button>
   <button data-v="ufc"><svg class="ic" viewBox="0 0 24 24"><path d="M6 4l4 5-4 5 4 5M18 4l-4 5 4 5-4 5M10 9h4M10 15h4"/></svg>UFC</button>
   <button data-v="ledger"><svg class="ic" viewBox="0 0 24 24"><path d="M4 5h16v14H4z"/><path d="M4 10h16"/><path d="M9 5v14"/></svg>Ledger</button>
   <button data-v="news"><svg class="ic" viewBox="0 0 24 24"><path d="M4 5h16v14H4z"/><path d="M8 9h8M8 13h8M8 17h5"/></svg>News</button>
@@ -569,7 +582,7 @@ GE.devig=function(decs,method){var q=decs.map(function(d){return 1/d;}),S=q.redu
 function $(id){return document.getElementById(id);}
 
 /* ===== nav ===== */
-function show(v){var s=document.querySelectorAll('.view');for(var i=0;i<s.length;i++)s[i].classList.toggle('hide',s[i].id!=='v-'+v);var b=document.querySelectorAll('.bottomnav button');for(var j=0;j<b.length;j++)b[j].classList.toggle('on',b[j].dataset.v===v);window.scrollTo(0,0);if(v==='record')loadRecord();if(v==='edges')loadEdges();if(v==='faults')loadFaults();if(v==='boards')loadBoards();if(v==='news')loadNews();if(v==='ledger')loadMarket();if(v==='stats')loadStats();if(v==='props')loadProps();if(v==='ufc')loadUFC();}
+function show(v){var s=document.querySelectorAll('.view');for(var i=0;i<s.length;i++)s[i].classList.toggle('hide',s[i].id!=='v-'+v);var b=document.querySelectorAll('.bottomnav button');for(var j=0;j<b.length;j++)b[j].classList.toggle('on',b[j].dataset.v===v);window.scrollTo(0,0);if(v==='record')loadRecord();if(v==='edges')loadEdges();if(v==='faults')loadFaults();if(v==='boards')loadBoards();if(v==='news')loadNews();if(v==='ledger')loadMarket();if(v==='stats')loadStats();if(v==='props')loadProps();if(v==='ufc')loadUFC();if(v==='cfb')loadCFB();}
 var navs=document.querySelectorAll('.bottomnav button');for(var n=0;n<navs.length;n++)navs[n].onclick=(function(b){return function(){show(b.dataset.v);};})(navs[n]);
 
 /* ===== learned weights ===== */
@@ -2453,6 +2466,245 @@ setInterval(function(){var on=!$('v-edges').classList.contains('hide');if(on)loa
   if(!$('v-faults').classList.contains('hide'))loadFaults();
   if(!$('v-news').classList.contains('hide'))loadNews();
   if(!$('v-ledger').classList.contains('hide'))autoSettle().then(refreshLiveCLV).then(function(){renderLedger();});},60000);
+
+/* ===== CFB module (injected) ===== */
+/* ================= CFB (College Football) =================
+   Reads the ISOLATED `cfb` schema, fed by the cfb_ingest edge function from the
+   CollegeFootballData API (verified-real source; free tier = 1000 calls/mo).
+   Requires the cfb schema to be exposed under Supabase > API settings > Exposed schemas
+   (same as the ufc schema). Matchups-first -> tap a game for the side-by-side
+   comparison -> tap a team for the deep dive.
+   HONESTLY GATED: per-play / drive data is NOT ingested (per-game CFBD calls blow the
+   free-tier budget); the deep dive uses season aggregates + SP+ + records + form + roster.
+   Lines shown are consensus book numbers for context, NOT Pinnacle and NOT an EdgeDesk edge. */
+var CFB={teams:[],byId:{},byName:{},games:[],ratings:{},records:{},stats:{},ranks:{},recruit:{},lines:{},at:0,seg:'upcoming',open:{},qualSeason:null};
+var CFB_BTN='flex:0 0 auto;padding:8px 14px;border-radius:9px;border:1px solid rgba(255,255,255,.18);background:transparent;color:var(--fg,#e8eef7);font-size:12.5px;cursor:pointer';
+
+async function sbGetCfb(q){var r=await fetch(SB_URL+"/rest/v1/"+q,{headers:{apikey:SB_KEY,authorization:"Bearer "+SB_KEY,"accept-profile":"cfb"}});if(!r.ok)throw new Error("db "+r.status);return r.json();}
+async function cfbFetchAll(sel,ord){var all=[],p=0,PAGE=1000;for(;p<25;p++){var b=await sbGetCfb(sel+'&order='+(ord||'team')+'&limit='+PAGE+'&offset='+(p*PAGE));if(!b||!b.length)break;all=all.concat(b);if(b.length<PAGE)break;}return all;}
+
+function cfbEsc(s){return encodeURIComponent(s==null?'':s);}
+function cfbLc(s){return (s==null?'':s).toLowerCase();}
+function cfbSp(name){return CFB.ratings[cfbLc(name)]||null;}
+function cfbRecStr(name){var r=CFB.records[cfbLc(name)];if(!r)return '';return (r.total_wins!=null?r.total_wins:0)+'-'+(r.total_losses!=null?r.total_losses:0)+(r.total_ties?'-'+r.total_ties:'');}
+function cfbIsUpcoming(g){if(g.completed)return false;if(!g.start_date)return false;return new Date(g.start_date).getTime()>=Date.now()-3*3600*1000;}
+
+async function loadCFB(force){
+  if(!force&&CFB.games.length&&(Date.now()-CFB.at)<300000){renderCFB();return;}
+  var ban=$('cfbBanner');
+  try{
+    var teams=await cfbFetchAll('teams?select=team_id,school,mascot,abbreviation,conference,classification,color,logo','school');
+    CFB.teams=teams||[];CFB.byId={};CFB.byName={};
+    CFB.teams.forEach(function(t){CFB.byId[t.team_id]=t;CFB.byName[cfbLc(t.school)]=t;});
+
+    var games=await cfbFetchAll('games?select=game_id,season,week,season_type,start_date,completed,neutral_site,conference_game,venue,home_id,home_team,home_conference,home_points,home_pregame_elo,away_id,away_team,away_conference,away_points,away_pregame_elo,excitement,notes','start_date.desc.nullslast');
+    CFB.games=games||[];
+
+    var rt=await cfbFetchAll('ratings?select=season,team,conference,rating,ranking,offense_rating,offense_ranking,defense_rating,defense_ranking,special_teams_rating,sos','season.desc.nullslast');
+    var rSeason=null;rt.forEach(function(r){if(r.season!=null&&(rSeason==null||r.season>rSeason))rSeason=r.season;});
+    CFB.qualSeason=rSeason;CFB.ratings={};
+    rt.forEach(function(r){if(r.season===rSeason)CFB.ratings[cfbLc(r.team)]=r;});
+
+    var rec=await cfbFetchAll('records?select=season,team,total_wins,total_losses,total_ties,conf_wins,conf_losses','team');
+    CFB.records={};rec.forEach(function(r){var k=cfbLc(r.team);if(!CFB.records[k]||r.season>CFB.records[k].season)CFB.records[k]=r;});
+
+    var rk=await cfbFetchAll('rankings?select=season,week,season_type,poll,team,rank,points','rank.asc');
+    var maxWk={};rk.forEach(function(r){if(r.poll!=='AP Top 25')return;var key=r.season+'|'+r.season_type;if(maxWk[key]==null||r.week>maxWk[key])maxWk[key]=r.week;});
+    CFB.ranks={};rk.forEach(function(r){if(r.poll!=='AP Top 25')return;if(r.week===maxWk[r.season+'|'+r.season_type])CFB.ranks[cfbLc(r.team)]=r;});
+
+    var stats=await cfbFetchAll('team_season_stats?select=season,team,stat_name,stat_value','team');
+    CFB.stats={};stats.forEach(function(s){var k=cfbLc(s.team);(CFB.stats[k]=CFB.stats[k]||{})[s.stat_name]=s.stat_value;});
+
+    var recr=await cfbFetchAll('recruiting?select=year,team,rank,points','team');
+    CFB.recruit={};recr.forEach(function(r){var k=cfbLc(r.team);if(!CFB.recruit[k]||r.year>CFB.recruit[k].year)CFB.recruit[k]=r;});
+
+    var lines=await cfbFetchAll('lines?select=game_id,provider,spread,over_under,home_moneyline,away_moneyline','game_id');
+    CFB.lines={};lines.forEach(function(l){(CFB.lines[l.game_id]=CFB.lines[l.game_id]||[]).push(l);});
+
+    CFB.at=Date.now();CFB.open={};
+    if(!CFB.games.length){ban.className='flbanner demo';ban.textContent='\u25b2 cfb schema reachable but empty \u2014 run the cfb_ingest edge function to populate cfb.games / cfb.ratings.';}
+    else{var up=CFB.games.filter(cfbIsUpcoming).length;ban.className='flbanner live';ban.textContent='\u25cf '+CFB.teams.length+' FBS teams \u00b7 '+CFB.games.length+' games \u00b7 '+up+' upcoming \u00b7 SP+ & records from '+(CFB.qualSeason||'\u2014')+' \u00b7 research context, edge still lives in CLV.';}
+    $('cfbFresh').textContent=CFB.games.length?('loaded '+ago(Date.now())):'empty';
+    if(CFB.seg==='upcoming'&&!CFB.games.filter(cfbIsUpcoming).length)CFB.seg='recent';
+    renderCFB();
+  }catch(e){
+    ban.className='flbanner demo';ban.textContent='\u25b2 cfb schema not reachable \u2014 expose the cfb schema under Supabase > API settings, then run cfb_ingest.';
+    $('cfbBody').innerHTML='<div class="empty">Could not reach the cfb schema: '+e.message+'</div>';
+  }
+}
+
+function cfbSegHTML(){
+  var segs=[['upcoming','Upcoming'],['recent','Recent'],['teams','Teams']];
+  return '<div class="stseg" style="margin-bottom:12px">'+segs.map(function(s){return '<button'+(CFB.seg===s[0]?' class="on"':'')+' onclick="cfbSetSeg(\''+s[0]+'\')">'+s[1]+'</button>';}).join('')+'</div>';
+}
+window.cfbSetSeg=function(s){CFB.seg=s;var q=$('cfbQ');if(q)q.style.display=(s==='teams')?'':'none';renderCFB();};
+
+function renderCFB(){
+  var body=$('cfbBody');if(!body)return;
+  if(!CFB.games.length&&!CFB.teams.length){body.innerHTML='<div class="empty">No CFB data loaded yet.</div>';return;}
+  var seg=cfbSegHTML();
+  if(CFB.seg==='teams'){body.innerHTML=seg+cfbTeamsHTML();return;}
+  var up=CFB.games.filter(cfbIsUpcoming);
+  var recent=CFB.games.filter(function(g){return g.completed;});
+  var rows,note='';
+  if(CFB.seg==='upcoming'){
+    up.sort(function(a,b){return new Date(a.start_date)-new Date(b.start_date);});
+    if(!up.length)note='<div class="sidenote" style="margin-bottom:10px">No upcoming games in the schedule yet \u2014 the current season may not be posted. Switch to <b>Recent</b> for completed results, or re-run cfb_ingest with the new season.</div>';
+    rows=up.slice(0,150).map(cfbGameRow).join('');
+  }else{
+    recent.sort(function(a,b){return new Date(b.start_date)-new Date(a.start_date);});
+    rows=recent.slice(0,150).map(cfbGameRow).join('');
+  }
+  body.innerHTML=seg+note+(rows||'<div class="empty">No games to show.</div>');
+}
+
+function cfbGameRow(g){
+  var open=!!CFB.open['g'+g.game_id];
+  var d=g.start_date?new Date(g.start_date):null;
+  var when=d?(d.toLocaleDateString(undefined,{month:'short',day:'numeric'})+(g.completed?'':' '+d.toLocaleTimeString(undefined,{hour:'numeric',minute:'2-digit'}))):'';
+  var score=g.completed?(' <span class="mono">'+(g.away_points!=null?g.away_points:'')+'\u2013'+(g.home_points!=null?g.home_points:'')+'</span>'):'';
+  var aSp=cfbSp(g.away_team),hSp=cfbSp(g.home_team),edge='';
+  if(aSp&&hSp&&aSp.rating!=null&&hSp.rating!=null){var diff=hSp.rating-aSp.rating;var fav=(diff>=0?g.home_team:g.away_team)||'';edge='<span class="st-pos">SP+ '+fav.split(' ')[0]+' '+(diff>=0?'+':'')+diff.toFixed(1)+'</span>';}
+  var meta=[when,(g.week!=null?'Wk '+g.week:''),(g.conference_game?'conf':''),(g.neutral_site?'neutral':'')].filter(Boolean).join(' \u00b7 ');
+  return '<div class="stitem'+(open?' open':'')+'" id="cfbitem-'+g.game_id+'">'+
+    '<div class="strow tap" onclick="cfbToggle(\''+g.game_id+'\')"><div class="st-mid">'+
+      '<div class="st-nm">'+stEsc(g.away_team||'\u2014')+' <span style="color:var(--faint)">@</span> '+stEsc(g.home_team||'\u2014')+score+'</div>'+
+      '<div class="st-meta">'+stEsc(meta)+(edge?' \u00b7 '+edge:'')+'</div></div>'+
+      '<span class="st-chev">\u203a</span></div>'+
+    '<div class="st-detail"'+(open?'':' style="display:none"')+' id="cfbdet-'+g.game_id+'"></div></div>';
+}
+window.cfbToggle=function(gid){
+  CFB.open['g'+gid]=!CFB.open['g'+gid];
+  var det=$('cfbdet-'+gid),item=$('cfbitem-'+gid);
+  if(!det)return;if(item)item.classList.toggle('open',!!CFB.open['g'+gid]);
+  if(CFB.open['g'+gid]){det.style.display='';det.innerHTML=cfbCompareHTML(gid);}
+  else{det.style.display='none';det.innerHTML='';}
+};
+
+function cfbCmpRow(label,a,b,better){
+  return '<div style="display:grid;grid-template-columns:1fr auto 1fr;gap:8px;padding:7px 10px;align-items:center;border-bottom:1px solid rgba(255,255,255,.06)">'+
+    '<span class="'+(better==='a'?'pos':'')+'" style="text-align:left;font-size:12.5px">'+a+'</span>'+
+    '<span style="color:var(--faint);font-size:10.5px;text-align:center;white-space:nowrap">'+label+'</span>'+
+    '<span class="'+(better==='b'?'pos':'')+'" style="text-align:right;font-size:12.5px">'+b+'</span></div>';
+}
+/* season-total stat rows to surface in the comparison (skip any the source didn't provide) */
+var CFB_STATCFG=[
+  ['totalYards','Total yards',true],
+  ['rushingYards','Rushing yards',true],
+  ['netPassingYards','Passing yards',true],
+  ['firstDowns','First downs',true],
+  ['thirdDownConversions','3rd-down conv',true],
+  ['turnovers','Turnovers',false],
+  ['sacks','Sacks',true],
+  ['interceptions','Interceptions',true]
+];
+function cfbStatRows(aStat,hStat){
+  var out='';
+  CFB_STATCFG.forEach(function(c){
+    var av=aStat[c[0]],hv=hStat[c[0]];
+    if(av==null&&hv==null)return;
+    var better='';
+    if(av!=null&&hv!=null&&+av!==+hv)better=(c[2]?(+av>+hv):(+av<+hv))?'a':'b';
+    out+=cfbCmpRow(c[1],av!=null?(''+(+av)):'\u2014',hv!=null?(''+(+hv)):'\u2014',better);
+  });
+  return out;
+}
+function cfbLineHTML(g){
+  var ls=CFB.lines[g.game_id]||[];if(!ls.length)return '';
+  var l=ls[0];for(var i=0;i<ls.length;i++){if((ls[i].provider||'').toLowerCase().indexOf('consensus')>=0){l=ls[i];break;}}
+  var parts=[];
+  if(l.spread!=null)parts.push('spread '+(l.spread>0?'+':'')+l.spread);
+  if(l.over_under!=null)parts.push('O/U '+l.over_under);
+  if(!parts.length)return '';
+  return '<div class="gd-line"><span class="l">book line ('+stEsc(l.provider||'consensus')+')</span><span class="v mut">'+stEsc(parts.join(' \u00b7 '))+'</span></div>';
+}
+function cfbGameById(gid){for(var i=0;i<CFB.games.length;i++){if(String(CFB.games[i].game_id)===String(gid))return CFB.games[i];}return null;}
+function cfbCompareHTML(gid){
+  var g=cfbGameById(gid);if(!g)return '<div class="fi-empty">Game not found.</div>';
+  var A=g.away_team,H=g.home_team,aSp=cfbSp(A)||{},hSp=cfbSp(H)||{};
+  var aStat=CFB.stats[cfbLc(A)]||{},hStat=CFB.stats[cfbLc(H)]||{};
+  var aRec=CFB.recruit[cfbLc(A)]||{},hRec=CFB.recruit[cfbLc(H)]||{};
+  function bt(x,y,hi){if(x==null||y==null)return '';if(hi===false)return (+x<+y)?'a':((+y<+x)?'b':'');return (+x>+y)?'a':((+y>+x)?'b':'');}
+  function spCell(v,r){return v!=null?(v.toFixed(1)+(r!=null?' (#'+r+')':'')):'\u2014';}
+  var rows=''+
+    cfbCmpRow('record',cfbRecStr(A)||'\u2014',cfbRecStr(H)||'\u2014','')+
+    cfbCmpRow('SP+ overall',spCell(aSp.rating,aSp.ranking),spCell(hSp.rating,hSp.ranking),bt(aSp.rating,hSp.rating))+
+    cfbCmpRow('SP+ offense',spCell(aSp.offense_rating,aSp.offense_ranking),spCell(hSp.offense_rating,hSp.offense_ranking),bt(aSp.offense_rating,hSp.offense_rating))+
+    cfbCmpRow('SP+ defense',spCell(aSp.defense_rating,aSp.defense_ranking),spCell(hSp.defense_rating,hSp.defense_ranking),bt(aSp.defense_rating,hSp.defense_rating,false))+
+    cfbCmpRow('Elo (pregame)',g.away_pregame_elo!=null?g.away_pregame_elo:'\u2014',g.home_pregame_elo!=null?g.home_pregame_elo:'\u2014',bt(g.away_pregame_elo,g.home_pregame_elo))+
+    cfbStatRows(aStat,hStat)+
+    cfbCmpRow('recruiting rank',aRec.rank!=null?'#'+aRec.rank:'\u2014',hRec.rank!=null?'#'+hRec.rank:'\u2014',bt(aRec.rank,hRec.rank,false));
+  return '<div class="fi-card" style="margin-top:8px">'+
+    '<div class="gd-line" style="font-weight:700"><span class="l">'+stEsc(A||'')+'</span><span class="v" style="text-align:center;color:var(--faint)">'+(g.completed?'final':'matchup')+'</span><span class="v" style="text-align:right">'+stEsc(H||'')+'</span></div>'+
+    rows+cfbLineHTML(g)+
+    '<div style="display:flex;gap:8px;padding:9px 10px 4px">'+
+      '<button onclick="cfbOpenTeam(\''+cfbEsc(A)+'\')" style="'+CFB_BTN+';flex:1">'+stEsc(A||'')+' \u203a</button>'+
+      '<button onclick="cfbOpenTeam(\''+cfbEsc(H)+'\')" style="'+CFB_BTN+';flex:1">'+stEsc(H||'')+' \u203a</button></div>'+
+    '<div class="fi-foot">Green = better on that row. SP+ is CollegeFootballData\u2019s opponent-adjusted rating ('+(CFB.qualSeason||'')+' season) \u2014 research context, <b>not</b> a betting edge. Lines are consensus book numbers, <b>not Pinnacle</b>. Per-play data is gated on the free CFBD tier.</div></div>';
+}
+
+function cfbTeamsHTML(){
+  var q=($('cfbQ')&&$('cfbQ').value||'').trim().toLowerCase();
+  var list=CFB.teams.slice();
+  list.sort(function(a,b){var ra=(cfbSp(a.school)||{}).ranking,rb=(cfbSp(b.school)||{}).ranking;ra=ra==null?9999:ra;rb=rb==null?9999:rb;return ra-rb;});
+  if(q)list=list.filter(function(t){return cfbLc(t.school).indexOf(q)>=0;});
+  var rows=list.map(function(t){
+    var sp=cfbSp(t.school)||{},rec=cfbRecStr(t.school);
+    var meta=[t.conference,(rec||''),(sp.rating!=null?'SP+ '+sp.rating.toFixed(1)+(sp.ranking!=null?' (#'+sp.ranking+')':''):'')].filter(Boolean).join(' \u00b7 ');
+    return '<div class="stitem"><div class="strow tap" onclick="cfbOpenTeam(\''+cfbEsc(t.school)+'\')"><div class="st-mid"><div class="st-nm">'+stEsc(t.school||'\u2014')+'</div><div class="st-meta">'+stEsc(meta)+'</div></div><span class="st-chev">\u203a</span></div></div>';
+  }).join('');
+  return rows||'<div class="empty">No teams.</div>';
+}
+
+function cfbRecent(name){
+  var lc=cfbLc(name);
+  var gs=CFB.games.filter(function(g){return g.completed&&(cfbLc(g.home_team)===lc||cfbLc(g.away_team)===lc);});
+  gs.sort(function(a,b){return new Date(b.start_date)-new Date(a.start_date);});
+  return gs.slice(0,5);
+}
+function cfbTeamHeadHTML(name){
+  var sp=cfbSp(name)||{},rec=cfbRecStr(name),t=CFB.byName[cfbLc(name)]||{},rank=CFB.ranks[cfbLc(name)];
+  var badge=rank?(' <span class="st-pos">AP #'+rank.rank+'</span>'):'';
+  return '<button onclick="cfbCloseTeam()" style="position:absolute;top:12px;right:14px;background:transparent;border:none;color:var(--faint);font-size:22px;cursor:pointer">\u00d7</button>'+
+    '<div class="st-nm" style="font-size:18px">'+stEsc(name||'')+badge+'</div>'+
+    '<div class="st-meta" style="margin-bottom:10px">'+stEsc([t.conference,rec?rec+' ('+(CFB.qualSeason||'')+')':''].filter(Boolean).join(' \u00b7 '))+'</div>'+
+    '<div class="fi-card"><div class="gd-line"><span class="l">SP+ overall</span><span class="v mono">'+(sp.rating!=null?sp.rating.toFixed(1)+(sp.ranking!=null?' \u00b7 #'+sp.ranking:''):'\u2014')+'</span></div>'+
+    '<div class="gd-line"><span class="l">SP+ offense</span><span class="v mono">'+(sp.offense_rating!=null?sp.offense_rating.toFixed(1)+(sp.offense_ranking!=null?' \u00b7 #'+sp.offense_ranking:''):'\u2014')+'</span></div>'+
+    '<div class="gd-line"><span class="l">SP+ defense</span><span class="v mono">'+(sp.defense_rating!=null?sp.defense_rating.toFixed(1)+(sp.defense_ranking!=null?' \u00b7 #'+sp.defense_ranking:''):'\u2014')+'</span></div></div>';
+}
+function cfbTeamBodyHTML(name,roster){
+  var lc=cfbLc(name),rec=cfbRecent(name);
+  var form=rec.map(function(g){
+    var home=cfbLc(g.home_team)===lc;
+    var us=home?g.home_points:g.away_points,them=home?g.away_points:g.home_points;
+    var opp=home?g.away_team:g.home_team;
+    var res=(us!=null&&them!=null)?(us>them?{t:'W',c:'pos'}:(us<them?{t:'L',c:'neg'}:{t:'T',c:'muted'})):{t:'\u2014',c:'muted'};
+    return '<div class="gd-line"><span class="l"><b class="'+res.c+'">'+res.t+'</b> '+(home?'vs':'@')+' '+stEsc(opp||'')+'</span><span class="v mut">'+(us!=null?us:'')+'\u2013'+(them!=null?them:'')+'</span></div>';
+  }).join('');
+  var st=CFB.stats[lc]||{};
+  var statRows=CFB_STATCFG.map(function(c){var v=st[c[0]];return v==null?'':'<div class="gd-line"><span class="l">'+c[1]+'</span><span class="v mono">'+(+v)+'</span></div>';}).join('');
+  var recr=CFB.recruit[lc];
+  var recrRow=recr?'<div class="gd-line"><span class="l">recruiting rank ('+recr.year+')</span><span class="v mono">#'+recr.rank+(recr.points!=null?' \u00b7 '+(+recr.points).toFixed(1)+' pts':'')+'</span></div>':'';
+  var byPos={};(roster||[]).forEach(function(p){var k=p.position||'\u2014';(byPos[k]=byPos[k]||[]).push(p);});
+  var posKeys=Object.keys(byPos).sort();
+  var rosterHtml=posKeys.length?posKeys.map(function(k){
+    var players=byPos[k].map(function(p){var nm=[p.first_name,p.last_name].filter(Boolean).join(' ');return (p.jersey!=null?'#'+p.jersey+' ':'')+stEsc(nm);}).join(', ');
+    return '<div class="gd-line"><span class="l">'+stEsc(k)+'</span><span class="v" style="text-align:right;font-size:11px;color:var(--dim)">'+players+'</span></div>';
+  }).join(''):'<div class="fi-empty">No roster rows loaded.</div>';
+  return (form?'<div class="fi-card" style="margin-top:10px"><div class="gd-line" style="font-weight:600"><span class="l">recent form</span><span class="v mut">last '+rec.length+'</span></div>'+form+'</div>':'')+
+    (statRows||recrRow?'<div class="fi-card" style="margin-top:10px"><div class="gd-line" style="font-weight:600"><span class="l">season totals</span><span class="v mut">'+(CFB.qualSeason||'')+'</span></div>'+statRows+recrRow+'</div>':'')+
+    '<div class="fi-card" style="margin-top:10px"><div class="gd-line" style="font-weight:600"><span class="l">roster</span><span class="v mut">'+((roster||[]).length)+' players</span></div>'+rosterHtml+'</div>'+
+    '<div class="fi-foot">Season totals and SP+ are '+(CFB.qualSeason||'the latest')+'-season aggregates from CollegeFootballData \u2014 descriptive research, not a prediction and not an edge. Per-play / drive data is gated on the free CFBD tier.</div>';
+}
+window.cfbCloseTeam=function(){var m=$('cfbModal');if(m)m.style.display='none';};
+window.cfbOpenTeam=async function(name){
+  name=decodeURIComponent(name);
+  var m=$('cfbModal'),card=$('cfbModalCard');if(!m||!card)return;
+  m.style.display='';card.innerHTML=cfbTeamHeadHTML(name)+'<div class="fi-empty">Loading roster\u2026</div>';
+  var roster=[];try{roster=await sbGetCfb('roster?select=first_name,last_name,position,jersey,year,height,weight&team=eq.'+encodeURIComponent(name)+'&order=position,last_name&limit=200');}catch(_){}
+  card.innerHTML=cfbTeamHeadHTML(name)+cfbTeamBodyHTML(name,roster);
+};
+
 </script>
 </body>
 </html>
