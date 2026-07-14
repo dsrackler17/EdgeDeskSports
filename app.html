@@ -387,6 +387,28 @@ textarea{min-height:110px;font-family:'JetBrains Mono',monospace;resize:vertical
 .liveclv.up{color:var(--pos)}.liveclv.up .dot{background:var(--pos)}
 .liveclv.dn{color:var(--neg)}.liveclv.dn .dot{background:var(--neg)}
 .liveclv.flat{color:var(--dim)}.liveclv.flat .dot{background:var(--faint)}
+
+/* multi-engine Edges: methodology badges + filter chips */
+.ebadge{display:inline-block;font-family:'JetBrains Mono',monospace;font-size:8.5px;font-weight:700;letter-spacing:.04em;padding:2px 6px;border-radius:5px;vertical-align:middle;margin-right:6px;border:1px solid transparent;white-space:nowrap}
+.ebadge.market{color:#f0c674;background:rgba(217,154,43,.12);border-color:rgba(217,154,43,.42)}
+.ebadge.model{color:#8fb3ff;background:rgba(93,141,239,.12);border-color:rgba(93,141,239,.42)}
+.ebadge.consensus{color:#7fd4b0;background:rgba(47,180,124,.12);border-color:rgba(47,180,124,.38)}
+.ebadge .st{opacity:.8}
+.efilters{display:flex;gap:8px;flex-wrap:wrap;margin:2px 0 12px}
+.echip{font-size:11.5px;font-weight:600;padding:6px 12px;border-radius:8px;border:1px solid var(--border);background:var(--surface2);color:var(--dim);cursor:pointer;display:flex;align-items:center;gap:6px}
+.echip .dot{width:8px;height:8px;border-radius:2px;background:currentColor;opacity:.9}
+.echip.on.market{color:#f0c674;border-color:rgba(217,154,43,.5);background:rgba(217,154,43,.1)}
+.echip.on.model{color:#8fb3ff;border-color:rgba(93,141,239,.5);background:rgba(93,141,239,.1)}
+.echip.on.consensus{color:#7fd4b0;border-color:rgba(47,180,124,.45);background:rgba(47,180,124,.1)}
+.echip.off{opacity:.45}
+.engine-sec{margin-top:18px}
+.engine-h{display:flex;align-items:center;gap:6px;margin:0 0 4px;font-size:13px;font-weight:700}
+.engine-sub{font-size:11px;color:var(--faint);margin:0 0 10px}
+.mdlrow{border:1px solid var(--border);border-radius:10px;padding:11px 12px;margin-bottom:8px;background:var(--surface2)}
+.mdlrow .top{display:flex;align-items:center;gap:8px}
+.mdlrow .sel{font-weight:600;font-size:13px;flex:1}
+.mdlrow .ev{font-family:'JetBrains Mono',monospace;font-weight:700;color:var(--pos)}
+.mdlrow .meta{font-size:10.5px;color:var(--faint);margin-top:4px;font-family:'JetBrains Mono',monospace}
 </style>
 </head>
 <body>
@@ -405,6 +427,7 @@ textarea{min-height:110px;font-family:'JetBrains Mono',monospace;resize:vertical
     <p class="lede">The best live edges on games in your window — positive after the sharp fair line, with the liquidity to mean something. Ranked by edge × how this kind of signal has beaten the close. Tap any row for the receipt.</p>
     <div id="edgeStale" class="stalebanner hide"></div>
     <div class="lead" id="leadWrap"><h3 id="t10title">★ Top edges — this week</h3><div id="leadList"></div></div>
+    <div class="efilters" id="engineFilters"></div>
     <div class="filters">
       <div class="fld"><label>Window</label><select id="fScope"><option value="week">This week</option><option value="day">Today</option></select></div>
       <div class="fld"><label>Books</label><select id="fBooks"><option value="trusted">US-regulated</option><option value="all">All books</option></select></div>
@@ -412,6 +435,8 @@ textarea{min-height:110px;font-family:'JetBrains Mono',monospace;resize:vertical
       <div class="fld"><label>Min EV %</label><input type="number" id="fMinev" value="0" step="0.5"></div>
     </div>
     <div class="feed" id="feed"><div class="empty">Loading edges…</div></div>
+    <div class="engine-sec" id="modelSec"><div class="engine-h"><span class="ebadge model">MODEL <span class="st">★★★★☆</span></span>Model edge</div><div class="engine-sub">Proprietary prediction models vs the market — independent of Pinnacle, <b>unproven</b>, counted nowhere in CLV.</div><div id="modelFeed"><div class="empty">—</div></div></div>
+    <div class="engine-sec" id="consensusSec"><div class="engine-h"><span class="ebadge consensus">CONSENSUS <span class="st">★★★★☆</span></span>Consensus edge</div><div class="engine-sub">Cross-book disagreement &amp; outliers from per-book price arrays.</div><div id="consensusFeed"><div class="empty">—</div></div></div>
     <div class="lead side hide" id="dailyWrap">
       <h3 id="d5title">☆ Top 5 — wider net · this week</h3>
       <p class="sidenote">The five sharpest lines on the board in your window, every day. When something clears the sharp fair line it shows green as a real edge; when the board is efficient these are simply the closest-to-fair prices, labelled below fair and shown for research, not as plays. Tap + to log one to your CLV ledger.</p>
@@ -670,10 +695,12 @@ async function loadEdges(){
     // EdgeDesk MODEL fair (me-vs-market) — display only, UNPROVEN, keyed to match model_predictions.
     // NEVER touches e.edge, sorting, filters, or the verify tags. A separate engine, shown side by side.
     try{var mp=await sbGet('model_predictions?select=event_id,market,selection,point,model_prob,model_fair_american,model_edge,model_version&sport_key=eq.baseball_mlb&commence_time=gte.'+nowIso+'&commence_time=lte.'+horizonIso+'&order=created_at.asc&limit=1500');window.MODELP={};(mp||[]).forEach(function(r){window.MODELP[modelKey(r.event_id,r.market,r.selection,r.point)]=r;});}catch(_){window.MODELP=window.MODELP||{};}
+    try{var me=await sbGet('model_predictions?select=event_id,sport_key,market,selection,point,model_prob,model_fair_american,model_edge,model_version,commence_time&model_edge=gt.0&commence_time=gte.'+nowIso+'&commence_time=lte.'+horizonIso+'&order=model_edge.desc.nullslast&limit=400');window.MODEL_EDGES=me||[];}catch(_){window.MODEL_EDGES=[];}
     await loadSliceStats();
     renderEdges();
     renderDaily();
     renderQuickAdd();
+    renderEngineSections();
   }catch(e){$('dbPill').textContent='DB error';$('dbPill').className='pill err';setStale(0);$('feed').innerHTML='<div class="empty">Could not reach the database: '+e.message+'</div>';$('leadWrap').classList.add('hide');}
 }
 /* ===== BOARDS tab: MLB elimination watch + all real odds, de-vigged ===== */
@@ -1081,7 +1108,7 @@ window.toggleRcpt=function(i){var el=$('t10_'+i);if(el)el.classList.toggle('open
 function edgeRow(e,i){
   var tags=(e.edge>0.06?' <span class="suspect">\u26a0 verify</span>':'')+(isTrusted(e.best_book)?'':' <span class="suspect">offshore</span>');
   var header='<span class="rank">'+(i+1)+'</span>'+
-    '<div class="lead-mid"><div class="lead-sel">'+selLabel(e)+tags+'</div>'+
+    '<div class="lead-mid"><div class="lead-sel"><span class="ebadge market">MARKET</span>'+selLabel(e)+tags+'</div>'+
     '<div class="lead-meta">'+mktLabel(e.market)+' \u00b7 '+(e.away_team||'')+' @ '+(e.home_team||'')+' \u00b7 '+whenLabel(e.commence_time)+'</div></div>'+
     '<span class="lead-ev">+'+(e.edge*100).toFixed(1)+'%</span>';
   return expandItem(e,'t10_'+i,header);
@@ -1125,7 +1152,7 @@ function renderDaily(){
   }).join('');
 }
 window.__d5track=function(i){var e=(window.D5||[])[i];if(e)trackSignal(e,GE.decToAm(e.best_dec));};
-function refreshEdges(){renderEdges();renderDaily();}
+function refreshEdges(){renderEdges();renderDaily();renderModelEngine();renderConsensusEngine();}
 $('fSport').onchange=refreshEdges;$('fMinev').oninput=refreshEdges;$('fBooks').onchange=refreshEdges;$('fScope').onchange=refreshEdges;
 
 /* ===== Record (auto-graded) ===== */
@@ -2713,6 +2740,90 @@ window.cfbOpenTeam=async function(name){
   var roster=[];try{roster=await sbGetCfb('roster?select=first_name,last_name,position,jersey,year,height,weight&team=eq.'+encodeURIComponent(name)+'&order=position,last_name&limit=200');}catch(_){}
   card.innerHTML=cfbTeamHeadHTML(name)+cfbTeamBodyHTML(name,roster);
 };
+
+
+/* ===== multi-engine Edges module (injected) ===== */
+/* ===== Multi-engine Edges =====================================================
+   Separate, labeled edge engines. NEVER blended into a composite.
+     MARKET    (gold standard) — Pinnacle-anchored, de-vigged, CLV-backed. signals feed. Untouched.
+     MODEL     — proprietary model vs market (model_predictions). Independent of Pinnacle. UNPROVEN, counted nowhere.
+     CONSENSUS — cross-book disagreement from per-book price arrays. DORMANT until per-book capture exists.
+   Default order MARKET -> MODEL -> CONSENSUS. Filter chips toggle any combination.
+   ============================================================================ */
+var EDGE_ENGINES={market:true,model:true,consensus:true};
+
+function engineStars(n){var s='';for(var i=0;i<5;i++)s+=(i<n?'\u2605':'\u2606');return s;}
+
+function renderEngineChips(){
+  var host=$('engineFilters');if(!host)return;
+  var defs=[['market','MARKET'],['model','MODEL'],['consensus','CONSENSUS']];
+  host.innerHTML=defs.map(function(d){
+    var on=EDGE_ENGINES[d[0]];
+    return '<button class="echip '+d[0]+(on?' on':' off')+'" onclick="toggleEngine(\''+d[0]+'\')"><span class="dot"></span>'+d[1]+'</button>';
+  }).join('');
+}
+
+window.toggleEngine=function(k){
+  EDGE_ENGINES[k]=!EDGE_ENGINES[k];
+  renderEngineChips();
+  if(k==='market'){
+    var on=EDGE_ENGINES.market;
+    ['leadWrap','feed','dailyWrap'].forEach(function(id){var el=$(id);if(el)el.style.display=on?'':'none';});
+    if(on){renderEdges();renderDaily();}
+  }else if(k==='model'){
+    var ms=$('modelSec');if(ms)ms.style.display=EDGE_ENGINES.model?'':'none';
+    renderModelEngine();
+  }else if(k==='consensus'){
+    var cs=$('consensusSec');if(cs)cs.style.display=EDGE_ENGINES.consensus?'':'none';
+    renderConsensusEngine();
+  }
+};
+
+/* implied win prob from american odds */
+function mImplWin(fa){if(fa==null)return null;fa=+fa;return fa>0?100/(fa+100):(-fa)/(-fa+100);}
+
+function renderModelEngine(){
+  var host=$('modelFeed');if(!host)return;
+  var minev=+($('fMinev')?$('fMinev').value:0)||0;
+  var rows=(window.MODEL_EDGES||[]).slice().filter(function(m){
+    if(m.model_edge==null)return false;
+    var ev=(Math.abs(+m.model_edge)<=1?+m.model_edge*100:+m.model_edge);
+    return ev>=minev;
+  });
+  rows.sort(function(a,b){return (+b.model_edge||0)-(+a.model_edge||0);});
+  rows=rows.slice(0,40);
+  if(!rows.length){
+    host.innerHTML='<div class="empty" style="padding:12px">No model edges in your window. This engine lights up for any sport loaded into <b>model_predictions</b> \u2014 MLB today; CFB, golf and props when their models exist. It is independent of Pinnacle and never dilutes a MARKET edge.</div>';
+    return;
+  }
+  host.innerHTML=rows.map(function(m){
+    var ev=(Math.abs(+m.model_edge)<=1?+m.model_edge*100:+m.model_edge);
+    var pw=mImplWin(m.model_fair_american);
+    var fa=(m.model_fair_american!=null)?((+m.model_fair_american>0?'+':'')+m.model_fair_american):'\u2014';
+    var meta=[(m.sport_key||''),(m.market||''),(m.model_version||'model'),(pw!=null?(pw*100).toFixed(1)+'% model':'')].filter(Boolean).join(' \u00b7 ');
+    return '<div class="mdlrow"><div class="top"><span class="ebadge model">MODEL <span class="st">'+engineStars(4)+'</span></span>'+
+      '<span class="sel">'+stEsc(m.selection||'\u2014')+'</span><span class="ev">+'+ev.toFixed(1)+'%</span></div>'+
+      '<div class="meta">fair '+fa+' \u00b7 '+stEsc(meta)+'</div></div>';
+  }).join('')+
+  '<div class="engine-sub" style="margin-top:8px">Model win-probability vs the book\u2019s implied price. <b>Unproven</b> \u2014 counted nowhere in CLV; graduates only once its own graded CLV beats the close.</div>';
+}
+
+function renderConsensusEngine(){
+  var host=$('consensusFeed');if(!host)return;
+  var rows=(window.CONSENSUS_EDGES||[]);
+  if(!rows.length){
+    host.innerHTML='<div class="empty" style="padding:12px">CONSENSUS is architected but <b>dormant</b>. It needs the full <b>per-book price array</b> per selection to flag cross-book disagreement and outliers. Your scanner currently stores best price + book count (<span class="mono">n_books</span>), not the per-book distribution. Capture per-book quotes into a <span class="mono">book_quotes</span> source and this engine activates \u2014 no UI change required.</div>';
+    return;
+  }
+  host.innerHTML=rows.slice(0,40).map(function(c){
+    var ev=(c.edge!=null?(Math.abs(+c.edge)<=1?+c.edge*100:+c.edge):0);
+    return '<div class="mdlrow"><div class="top"><span class="ebadge consensus">CONSENSUS <span class="st">'+engineStars(4)+'</span></span>'+
+      '<span class="sel">'+stEsc(c.selection||'\u2014')+'</span><span class="ev">+'+ev.toFixed(1)+'%</span></div>'+
+      '<div class="meta">'+stEsc((c.market||'')+' \u00b7 '+(c.n_books||0)+' books \u00b7 best '+(c.best_book||''))+'</div></div>';
+  }).join('');
+}
+
+function renderEngineSections(){renderEngineChips();renderModelEngine();renderConsensusEngine();}
 
 </script>
 </body>
