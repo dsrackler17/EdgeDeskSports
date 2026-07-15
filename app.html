@@ -475,6 +475,91 @@ textarea{min-height:110px;font-family:'JetBrains Mono',monospace;resize:vertical
 .rsharp .h{font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;color:#f0c674;margin-bottom:5px}
 .rsharp p{margin:0 0 6px;font-size:10.5px;line-height:1.5;color:var(--dim)}
 .rsharp p:last-child{margin-bottom:0}
+
+/* ===== Settings ===== */
+.set-wrap{display:grid;grid-template-columns:212px 1fr;gap:18px;align-items:start}
+.set-nav{position:sticky;top:12px;display:flex;flex-direction:column;gap:2px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:6px}
+.set-nav-i{text-align:left;background:transparent;border:none;color:var(--dim);font-size:12.5px;font-weight:500;padding:8px 10px;border-radius:8px;cursor:pointer;transition:background .14s,color .14s}
+.set-nav-i:hover{background:var(--surface2);color:var(--text)}
+.set-nav-i.on{background:rgba(77,141,255,.12);color:var(--accent);font-weight:600}
+.set-panel{min-width:0}
+.set-panel-h{font-size:17px;font-weight:700;margin:0 0 12px}
+.set-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:12px}
+.set-card-h{font-size:13px;font-weight:700;margin-bottom:2px}
+.set-card-s{font-size:11.5px;color:var(--faint);margin-bottom:10px}
+.set-row{display:flex;align-items:center;gap:12px;padding:9px 0;border-bottom:1px solid rgba(255,255,255,.045)}
+.set-row:last-child{border-bottom:none}
+.set-row-l{flex:1;min-width:0}
+.set-row-c{flex:0 0 auto;display:flex;align-items:center;gap:8px}
+.set-lbl{display:block;font-size:12.5px;color:var(--text)}
+.set-hint{display:block;font-size:10.5px;color:var(--faint);margin-top:2px;line-height:1.4}
+.set-val{font-size:12px;color:var(--dim)}
+.set-val.pos{color:var(--pos)}
+.set-in{background:var(--bg);border:1px solid var(--border);border-radius:7px;color:var(--text);padding:6px 9px;font-size:12.5px;font-family:inherit;min-width:190px}
+.set-in:focus{outline:none;border-color:var(--accent)}
+.set-in:disabled{color:var(--faint);cursor:not-allowed}
+.set-sel{background:var(--bg);border:1px solid var(--border);border-radius:7px;color:var(--text);padding:6px 9px;font-size:12.5px;font-family:inherit}
+.set-ta{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:7px;color:var(--text);padding:9px;font-size:12.5px;font-family:inherit;resize:vertical;margin-top:8px}
+.set-ta:focus{outline:none;border-color:var(--accent)}
+.set-act{display:flex;align-items:center;gap:10px;margin-top:11px}
+.set-msg{font-size:11.5px;color:var(--faint)}
+.set-msg.pos{color:var(--pos)}.set-msg.neg{color:var(--neg)}
+.set-note{font-size:11px;color:var(--faint);line-height:1.55;margin-top:9px;padding-top:9px;border-top:1px solid rgba(255,255,255,.05)}
+.set-tog{width:38px;height:21px;border-radius:11px;border:1px solid var(--border);background:var(--bg);position:relative;cursor:pointer;transition:background .16s,border-color .16s;padding:0}
+.set-tog i{position:absolute;top:2px;left:2px;width:15px;height:15px;border-radius:50%;background:var(--faint);transition:transform .16s,background .16s}
+.set-tog.on{background:rgba(77,141,255,.2);border-color:var(--accent)}
+.set-tog.on i{transform:translateX(17px);background:var(--accent)}
+.set-range{width:150px;accent-color:var(--accent)}
+.set-rv{font-family:'JetBrains Mono',monospace;font-size:11.5px;color:var(--accent);min-width:34px;text-align:right}
+.set-chks{display:flex;flex-wrap:wrap;gap:8px}
+.set-chk{display:flex;align-items:center;gap:6px;background:var(--bg);border:1px solid var(--border);border-radius:7px;padding:6px 10px;cursor:pointer;font-size:12px}
+.set-chk input{accent-color:var(--accent);cursor:pointer}
+.set-prof{display:flex;align-items:center;gap:12px;padding-bottom:12px;border-bottom:1px solid rgba(255,255,255,.045);margin-bottom:4px}
+.set-av{width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,var(--accent),#7b6cff);color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex:none}
+.set-av.lg{width:46px;height:46px;font-size:15px}
+.set-prof-n{font-size:13.5px;font-weight:600}
+.set-prof-e{font-size:11.5px;color:var(--faint);font-family:'JetBrains Mono',monospace}
+.set-gate{background:var(--surface);border:1px dashed var(--border);border-radius:12px;padding:14px;margin-bottom:12px}
+.set-gate-h{font-size:13px;font-weight:700;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.set-gate-tag{font-family:'JetBrains Mono',monospace;font-size:8px;font-weight:700;letter-spacing:.06em;padding:2px 5px;border-radius:3px;border:1px solid rgba(217,154,43,.4);color:var(--warn);background:rgba(217,154,43,.09)}
+.set-gate p{margin:7px 0 0;font-size:11.5px;line-height:1.6;color:var(--faint)}
+.set-links{display:flex;gap:14px;flex-wrap:wrap}
+.set-links a{font-size:12px;color:var(--accent);text-decoration:none}
+.set-links a:hover{text-decoration:underline}
+.set-ship-i{display:flex;gap:8px;font-size:11.5px;color:var(--dim);padding:5px 0;line-height:1.5}
+.set-ship-i span{color:var(--pos);font-weight:700;flex:none}
+.set-prov-i{display:flex;flex-direction:column;gap:1px;padding:7px 0;border-bottom:1px solid rgba(255,255,255,.045)}
+.set-prov-i:last-child{border-bottom:none}
+.set-prov-i b{font-size:12px;font-weight:600}
+.set-prov-i span{font-size:10.5px;color:var(--faint)}
+/* avatar menu */
+.edav-wrap{position:relative;margin-left:8px}
+.edav{width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,var(--accent),#7b6cff);color:#fff;border:none;font-size:10.5px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.avmenu{position:absolute;top:36px;right:0;min-width:172px;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:5px;z-index:9998;display:none;box-shadow:0 10px 30px rgba(0,0,0,.5)}
+.avmenu.open{display:block}
+.avmenu-h{padding:8px 10px 9px;border-bottom:1px solid var(--border);margin-bottom:4px}
+.avmenu-h b{display:block;font-size:12px}
+.avmenu-h span{display:block;font-size:10px;color:var(--faint);font-family:'JetBrains Mono',monospace;overflow:hidden;text-overflow:ellipsis}
+.avmenu button{display:block;width:100%;text-align:left;background:transparent;border:none;color:var(--dim);font-size:12px;padding:7px 10px;border-radius:6px;cursor:pointer;font-family:inherit}
+.avmenu button:hover{background:var(--surface2);color:var(--text)}
+.avmenu button.danger:hover{color:var(--neg)}
+.avmenu hr{border:none;border-top:1px solid var(--border);margin:4px 0}
+/* density / motion / text prefs */
+body.ed-compact .set-card,body.ed-compact .card{padding:9px}
+body.ed-compact .set-row{padding:6px 0}
+body.ed-compact .lead-row,body.ed-compact .mdlhead{padding:7px 9px}
+body.ed-reduce-motion *{transition:none!important;animation:none!important;scroll-behavior:auto!important}
+body.ed-large-text{font-size:17px}
+body.ed-large-text .set-lbl,body.ed-large-text .lead-sel{font-size:14px}
+@media(max-width:860px){
+  .set-wrap{grid-template-columns:1fr;gap:10px}
+  .set-nav{position:sticky;top:0;z-index:20;flex-direction:row;overflow-x:auto;gap:4px;padding:6px;-webkit-overflow-scrolling:touch}
+  .set-nav-i{white-space:nowrap;flex:0 0 auto;font-size:12px}
+  .set-in{min-width:0;width:100%}
+  .set-row{flex-direction:column;align-items:flex-start;gap:6px}
+  .set-row-c{width:100%}
+  .set-sel,.set-range{width:100%}
+}
 </style>
 </head>
 <body>
@@ -483,7 +568,19 @@ textarea{min-height:110px;font-family:'JetBrains Mono',monospace;resize:vertical
   <span class="tag">research</span>
   <span class="spacer"></span>
   <span class="pill" id="dbPill">DB …</span>
-  <button class="signout" title="Sign out" onclick="edSignOut()">Sign out</button>
+  <div class="edav-wrap">
+    <button class="edav" id="edAv" title="Account" onclick="__toggleAvMenu(event)">?</button>
+    <div class="avmenu" id="avMenu" onclick="event.stopPropagation()">
+      <div class="avmenu-h"><b id="avName">Account</b><span id="avMail"></span></div>
+      <button onclick="__avGo('account')">Profile</button>
+      <button onclick="__avGo('edge')">Settings</button>
+      <button onclick="__avGo('subscription')">Billing</button>
+      <button onclick="__avGo('feedback')">Release notes</button>
+      <button onclick="__avGo('feedback')">Feedback</button>
+      <button onclick="__avGo('about')">Help &amp; support</button>
+      <hr><button class="danger" onclick="edSignOut()">Log out</button>
+    </div>
+  </div>
 </div></header>
 
 <main>
@@ -640,6 +737,12 @@ textarea{min-height:110px;font-family:'JetBrains Mono',monospace;resize:vertical
     </div>
   </section>
 
+  <!-- SETTINGS -->
+  <section id="v-settings" class="view hide">
+    <div class="row-between"><h2 style="margin:0">Settings</h2></div>
+    <div class="set-wrap"><div class="set-nav" id="setNav"></div><div class="set-panel" id="setPanel"></div></div>
+  </section>
+
 <nav class="bottomnav">
   <button data-v="edges" class="on"><svg class="ic" viewBox="0 0 24 24"><polyline points="3 17 9 11 13 15 21 7"/><polyline points="15 7 21 7 21 13"/></svg>Edges</button>
   <button data-v="faults"><svg class="ic" viewBox="0 0 24 24"><path d="M3 12h4l2-7 4 14 2-7h6"/></svg>Faults</button>
@@ -674,7 +777,8 @@ GE.devig=function(decs,method){var q=decs.map(function(d){return 1/d;}),S=q.redu
 function $(id){return document.getElementById(id);}
 
 /* ===== nav ===== */
-function show(v){if(v==='research'){researchGo(RESEARCH_SUB);return;}var s=document.querySelectorAll('.view');for(var i=0;i<s.length;i++)s[i].classList.toggle('hide',s[i].id!=='v-'+v);var b=document.querySelectorAll('.bottomnav button');for(var j=0;j<b.length;j++)b[j].classList.toggle('on',b[j].dataset.v===v);window.scrollTo(0,0);if(v==='record')loadRecord();if(v==='edges')loadEdges();if(v==='faults')loadFaults();if(v==='boards')loadBoards();if(v==='news')loadNews();if(v==='ledger')loadMarket();if(v==='stats')loadStats();if(v==='props')loadProps();if(v==='ufc')loadUFC();if(v==='cfb')loadCFB();}
+function show(v){if(v==='research'){researchGo(RESEARCH_SUB);return;}var s=document.querySelectorAll('.view');for(var i=0;i<s.length;i++)s[i].classList.toggle('hide',s[i].id!=='v-'+v);var b=document.querySelectorAll('.bottomnav button');for(var j=0;j<b.length;j++)b[j].classList.toggle('on',b[j].dataset.v===v);window.scrollTo(0,0);try{if(v!=='settings'){var _pp=prefs();_pp.lastTab=v;localStorage.setItem('edgedesk_prefs',JSON.stringify(_pp));}}catch(_){}
+  if(v==='record')loadRecord();if(v==='edges')loadEdges();if(v==='faults')loadFaults();if(v==='boards')loadBoards();if(v==='news')loadNews();if(v==='ledger')loadMarket();if(v==='stats')loadStats();if(v==='props')loadProps();if(v==='ufc')loadUFC();if(v==='cfb')loadCFB();if(v==='settings')loadSettings();}
 var RESEARCH_SUB='cfb';
 window.researchGo=function(sub){
   if(['cfb','ufc','stats','props'].indexOf(sub)<0)sub='cfb';
@@ -945,6 +1049,7 @@ function renderEdges(){
   var floor=Math.max(REAL_FLOOR, minev/100);
   var staleCut=nowMs-EDGE_MAX_AGE_MIN*60000;
   var list=EDGES.filter(function(e){
+    if(!prefAllows(e))return false;
     if(sport&&e.sport_title!==sport)return false;
     if((e.edge||0)<floor)return false;                              // noise floor: must clear a real, vig-aware bar
     if((e.n_books||0)<MINBOOKS)return false;                        // need liquidity for the fair line to mean anything
@@ -3315,6 +3420,8 @@ function renderConsensusEngine(){
   var staleCut=nowMs-EDGE_MAX_AGE_MIN*60000;
   var floor=Math.max(REAL_FLOOR,minev/100);
   var list=pool.filter(function(e){
+    if(!prefAllows(e))return false;
+    if(prefs().hideResearchOnly&&e.sharp_fair!=null&&e.consensus_fair!=null&&Math.abs(e.sharp_fair-e.consensus_fair)<1e-9)return false;
     if(sport&&e.sport_title!==sport)return false;
     if((e.n_books||0)<MINBOOKS)return false;
     var ls=e.last_seen_at?new Date(e.last_seen_at).getTime():0;
@@ -3369,6 +3476,352 @@ function renderConsensusEngine(){
 }
 function renderEngineSections(){renderEngineChips();renderModelEngine();renderConsensusEngine();}
 
+
+/* ===== Settings module (injected) ===== */
+/* ============================================================================
+   SETTINGS — config-driven. Adding a section = one SETTINGS_SECTIONS entry +
+   one render function. No page redesign required.
+
+   HONESTY RULE: anything not actually implemented renders through setGate() as
+   an explicit "not available" card. No dead toggles, no placeholder invoices,
+   no fake plan badges. If a control is shown as live, it does something.
+   ============================================================================ */
+var ED_VERSION='1.4.0';
+
+/* ---------- prefs store ---------- */
+var PREF_DEFAULTS={
+  sports:{},                 /* {} = all. keyed by sport_title */
+  minEdge:0, hideNoSharp:false, hideResearchOnly:false, onlyPositive:true,
+  books:'trusted', window:'week',
+  defaultTab:'edges', rememberTab:true, lastTab:'edges',
+  compact:false, reduceMotion:false, largeText:false
+};
+function prefs(){
+  try{var p=JSON.parse(localStorage.getItem('edgedesk_prefs')||'{}');
+    var o={};for(var k in PREF_DEFAULTS)o[k]=(p[k]!==undefined?p[k]:PREF_DEFAULTS[k]);return o;
+  }catch(e){return JSON.parse(JSON.stringify(PREF_DEFAULTS));}
+}
+function savePrefs(p){try{localStorage.setItem('edgedesk_prefs',JSON.stringify(p));}catch(e){}applyPrefs();}
+function setPref(k,v){var p=prefs();p[k]=v;savePrefs(p);}
+window.__setPref=function(k,v){setPref(k,v);renderSettings();};
+window.__setPrefSport=function(name,on){var p=prefs();p.sports=p.sports||{};p.sports[name]=!!on;savePrefs(p);
+  if(!$('v-edges').classList.contains('hide')){renderEdges();renderConsensusEngine();}};
+
+/* prefs -> live app. These are the real filters, not decoration. */
+function applyPrefs(){
+  var p=prefs();
+  document.body.classList.toggle('ed-compact',!!p.compact);
+  document.body.classList.toggle('ed-reduce-motion',!!p.reduceMotion);
+  document.body.classList.toggle('ed-large-text',!!p.largeText);
+  var m=$('fMinev'); if(m&&+m.value!==+p.minEdge){m.value=p.minEdge;}
+  var b=$('fBooks');  if(b&&b.value!==p.books){b.value=p.books;}
+  var w=$('fScope');  if(w&&w.value!==p.window){w.value=p.window;}
+}
+/* shared row filter applied to BOTH the market feed and the consensus feed */
+function prefAllows(e){
+  var p=prefs();
+  var st=e.sport_title||'';
+  if(p.sports&&Object.keys(p.sports).length){
+    var any=false;for(var k in p.sports){if(p.sports[k])any=true;}
+    if(any&&!p.sports[st])return false;
+  }
+  if(p.hideNoSharp){
+    var noSharp=(e.sharp_fair!=null&&e.consensus_fair!=null&&Math.abs(e.sharp_fair-e.consensus_fair)<1e-9);
+    if(noSharp)return false;
+  }
+  return true;
+}
+
+/* ---------- auth (real, via the Supabase session already in localStorage) ---------- */
+function edSession(){try{return JSON.parse(localStorage.getItem('edgedesk_session')||'null');}catch(e){return null;}}
+function edUser(){
+  var s=edSession(); if(!s||!s.access_token)return null;
+  if(s.user&&s.user.email)return s.user;
+  try{
+    var b=s.access_token.split('.')[1].replace(/-/g,'+').replace(/_/g,'/');
+    var p=JSON.parse(decodeURIComponent(escape(atob(b))));
+    return {id:p.sub,email:p.email,user_metadata:p.user_metadata||{}};
+  }catch(e){return null;}
+}
+function edInitials(){
+  var u=edUser(); if(!u||!u.email)return '?';
+  var n=(u.user_metadata&&u.user_metadata.display_name)||u.email;
+  var parts=String(n).replace(/@.*/,'').split(/[._\-\s]+/).filter(Boolean);
+  return ((parts[0]||'?')[0]+(parts[1]?parts[1][0]:'')).toUpperCase();
+}
+async function edAuthPut(body){
+  var s=edSession(); if(!s)throw new Error('no session');
+  var r=await fetch(SB_URL+'/auth/v1/user',{method:'PUT',
+    headers:{apikey:SB_KEY,authorization:'Bearer '+s.access_token,'content-type':'application/json'},
+    body:JSON.stringify(body)});
+  var j=null;try{j=await r.json();}catch(_){}
+  if(!r.ok)throw new Error((j&&(j.msg||j.error_description||j.message))||('auth '+r.status));
+  return j;
+}
+window.__savePw=async function(){
+  var a=$('setPw1').value,b=$('setPw2').value,msg=$('setPwMsg');
+  if(!a||a.length<8){msg.className='set-msg neg';msg.textContent='Password must be at least 8 characters.';return;}
+  if(a!==b){msg.className='set-msg neg';msg.textContent='Passwords do not match.';return;}
+  msg.className='set-msg';msg.textContent='Saving\u2026';
+  try{await edAuthPut({password:a});msg.className='set-msg pos';msg.textContent='Password updated.';
+    $('setPw1').value='';$('setPw2').value='';
+  }catch(e){msg.className='set-msg neg';msg.textContent=e.message;}
+};
+window.__saveName=async function(){
+  var v=$('setName').value.trim(),msg=$('setNameMsg');
+  msg.className='set-msg';msg.textContent='Saving\u2026';
+  try{await edAuthPut({data:{display_name:v}});
+    var s=edSession();if(s&&s.user){s.user.user_metadata=s.user.user_metadata||{};s.user.user_metadata.display_name=v;
+      localStorage.setItem('edgedesk_session',JSON.stringify(s));}
+    msg.className='set-msg pos';msg.textContent='Saved.';renderAvatar();
+  }catch(e){msg.className='set-msg neg';msg.textContent=e.message;}
+};
+window.__exportData=function(){
+  var payload={exported_at:new Date().toISOString(),version:ED_VERSION,
+    account:(edUser()||{}).email||null,prefs:prefs(),ledger:bets()};
+  var blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});
+  var a=document.createElement('a');a.href=URL.createObjectURL(blob);
+  a.download='edgedesk-data-'+new Date().toISOString().slice(0,10)+'.json';a.click();
+  setTimeout(function(){URL.revokeObjectURL(a.href);},1000);
+};
+
+/* ---------- reusable gate: honest "not built" card ---------- */
+function setGate(title,body,tag){
+  return '<div class="set-gate"><div class="set-gate-h"><span class="set-gate-tag">'+(tag||'NOT AVAILABLE')+'</span>'+stEsc(title)+'</div>'+
+    '<p>'+body+'</p></div>';
+}
+function setCard(title,sub,body){
+  return '<div class="set-card"><div class="set-card-h">'+stEsc(title)+'</div>'+
+    (sub?'<div class="set-card-s">'+sub+'</div>':'')+body+'</div>';
+}
+function setRow(label,control,hint){
+  return '<div class="set-row"><div class="set-row-l"><span class="set-lbl">'+stEsc(label)+'</span>'+
+    (hint?'<span class="set-hint">'+hint+'</span>':'')+'</div><div class="set-row-c">'+control+'</div></div>';
+}
+function setToggle(k,on){
+  return '<button class="set-tog'+(on?' on':'')+'" onclick="__setPref(\''+k+'\','+(!on)+')"><i></i></button>';
+}
+
+/* ---------- sections ---------- */
+function renderSetAccount(){
+  var u=edUser()||{};
+  var name=(u.user_metadata&&u.user_metadata.display_name)||'';
+  var out=setCard('Profile','Your identity across EdgeDesk.',
+    '<div class="set-prof"><div class="set-av lg">'+edInitials()+'</div>'+
+    '<div class="set-prof-i"><div class="set-prof-n">'+stEsc(name||(u.email||'\u2014'))+'</div>'+
+    '<div class="set-prof-e">'+stEsc(u.email||'not signed in')+'</div></div></div>'+
+    setRow('Display name','<input class="set-in" id="setName" value="'+stEsc(name)+'" placeholder="Your name">')+
+    '<div class="set-act"><button class="btn sm" onclick="__saveName()">Save</button><span class="set-msg" id="setNameMsg"></span></div>'+
+    setRow('Email','<input class="set-in" value="'+stEsc(u.email||'')+'" disabled>','Contact support to change your email')
+  );
+  out+=setCard('Password','Minimum 8 characters.',
+    setRow('New password','<input class="set-in" id="setPw1" type="password" placeholder="\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022">')+
+    setRow('Confirm','<input class="set-in" id="setPw2" type="password" placeholder="\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022">')+
+    '<div class="set-act"><button class="btn sm" onclick="__savePw()">Update password</button><span class="set-msg" id="setPwMsg"></span></div>'
+  );
+  out+=setCard('Session',null,
+    setRow('Signed in as','<span class="set-val">'+stEsc(u.email||'\u2014')+'</span>')+
+    '<div class="set-act"><button class="btn ghost sm" onclick="edSignOut()">Sign out</button></div>'
+  );
+  out+=setGate('Two-factor authentication','EdgeDesk does not have 2FA enrolment built yet. Your account is protected by email and password only. This section will activate when TOTP enrolment ships.');
+  out+=setGate('Connected login providers','Only email/password sign-in is wired today. No OAuth providers are connected, so there is nothing to list or revoke.');
+  out+=setGate('Active devices','Supabase does not expose a per-device session list to the browser client, so EdgeDesk cannot show your active devices or sign them out individually. Signing out here clears this browser only. A full device list needs a server-side session registry.');
+  return out;
+}
+
+function renderSetSub(){
+  return setGate('Billing is not connected',
+    'EdgeDesk has <b>no payment processor wired</b>. There is no Stripe integration, no plan record, and no billing state to read \u2014 so plan, price, renewal date, invoices, payment method, upgrade and cancel would all be invented numbers. They are deliberately not shown.',
+    'NOT BUILT')+
+  setCard('What access looks like today','Everything on EdgeDesk is currently open to any signed-in account.',
+    setRow('Plan','<span class="set-val">Free \u00b7 unrestricted</span>')+
+    setRow('Cost','<span class="set-val">$0.00</span>')+
+    setRow('Restrictions','<span class="set-val">None</span>','No RLS subscription gate exists yet')+
+    '<div class="set-note">The login screen is a UX funnel, not a paywall \u2014 the anon key still reads public data. Real monetization needs an RLS subscription check plus a payment processor. Until that exists, this page will not display a plan you are not actually on.</div>'
+  );
+}
+
+function renderSetEdge(){
+  var p=prefs();
+  /* sports list comes from what capture ACTUALLY covers, read live from the data */
+  var live={};(window.EDGES||[]).concat(window.CONS_POOL||[]).forEach(function(e){if(e.sport_title)live[e.sport_title]=true;});
+  var liveList=Object.keys(live).sort();
+  var sportsHtml=liveList.length?liveList.map(function(s){
+    var on=!p.sports||!Object.keys(p.sports).length||p.sports[s];
+    return '<label class="set-chk"><input type="checkbox" '+(on?'checked':'')+' onchange="__setPrefSport(\''+stEsc(s)+'\',this.checked)"><span>'+stEsc(s)+'</span></label>';
+  }).join(''):'<div class="set-note">No sports in the current window yet \u2014 load the Edges tab first.</div>';
+
+  var out=setCard('Sports','Only sports your capture actually scans can be filtered. This list is read from live data, not hardcoded.',
+    '<div class="set-chks">'+sportsHtml+'</div>'+
+    '<div class="set-note">Capture scope is <b>MLB, WNBA, MMA and NCAAF</b>. NFL, NBA, NHL and Golf outrights are <b>not</b> in the market scanner, so they are not listed \u2014 a toggle for them would do nothing.</div>');
+
+  out+=setCard('Thresholds','These write straight through to the Edges filters.',
+    setRow('Minimum edge','<input class="set-range" type="range" min="0" max="10" step="0.5" value="'+p.minEdge+'" oninput="$(\'setMinLbl\').textContent=this.value+\'%\'" onchange="__setPref(\'minEdge\',+this.value);if($(\'fMinev\')){$(\'fMinev\').value=+this.value;refreshEdges();}"><span class="set-rv" id="setMinLbl">'+p.minEdge+'%</span>',
+      'Applies to MARKET and CONSENSUS alike')+
+    setRow('Books','<select class="set-sel" onchange="__setPref(\'books\',this.value);if($(\'fBooks\')){$(\'fBooks\').value=this.value;refreshEdges();}">'+
+      '<option value="trusted"'+(p.books==='trusted'?' selected':'')+'>US-regulated only</option>'+
+      '<option value="all"'+(p.books==='all'?' selected':'')+'>All books</option></select>')+
+    setRow('Default window','<select class="set-sel" onchange="__setPref(\'window\',this.value);if($(\'fScope\')){$(\'fScope\').value=this.value;refreshEdges();}">'+
+      '<option value="day"'+(p.window==='day'?' selected':'')+'>Today</option>'+
+      '<option value="week"'+(p.window==='week'?' selected':'')+'>This week</option></select>'));
+
+  out+=setCard('Signal quality',null,
+    setRow('Hide rows with no sharp quote',setToggle('hideNoSharp',p.hideNoSharp),
+      'Removes selections Pinnacle never priced \u2014 where the MARKET number silently fell back to the consensus median')+
+    setRow('Hide research-only consensus',setToggle('hideResearchOnly',p.hideResearchOnly),
+      'Hides the CONSENSUS engine when no sharp reference exists'));
+
+  out+=setCard('Startup',null,
+    setRow('Default landing page','<select class="set-sel" onchange="__setPref(\'defaultTab\',this.value)">'+
+      ['edges','faults','boards','record','research','ledger','news'].map(function(t){
+        return '<option value="'+t+'"'+(p.defaultTab===t?' selected':'')+'>'+t.charAt(0).toUpperCase()+t.slice(1)+'</option>';}).join('')+'</select>')+
+    setRow('Remember last opened tab',setToggle('rememberTab',p.rememberTab),'Overrides the default landing page'));
+
+  out+=setGate('Odds format','Every price in EdgeDesk renders through a single American-odds formatter. Adding decimal and fractional means routing all display paths through a shared converter \u2014 a real change, not a setting. It is not shown as a dropdown because switching it today would change nothing.');
+  out+=setGate('Favorite teams','Nothing in the app filters or sorts by team yet, so a favourites list would have no effect on what you see.');
+  return out;
+}
+
+function renderSetNotif(){
+  return setGate('No notification delivery exists',
+    'EdgeDesk has <b>no email sender, no push service and no device tokens</b>. Toggling alerts here would store a preference that nothing reads and nothing sends \u2014 so the switches are not shown. Wiring this needs a delivery provider plus a worker that watches for new edges.',
+    'NOT BUILT')+
+  setCard('What you can rely on today',null,
+    setRow('In-app refresh','<span class="set-val pos">Live</span>','Edges re-price on the capture cron and the tab refreshes every 60s')+
+    setRow('Email alerts','<span class="set-val">Not available</span>')+
+    setRow('Push notifications','<span class="set-val">Not available</span>')+
+    setRow('Weekly recap','<span class="set-val">Not available</span>'));
+}
+
+function renderSetDisplay(){
+  var p=prefs();
+  return setCard('Theme',null,
+    setRow('Appearance','<span class="set-val">Dark</span>','EdgeDesk is dark-only; there is no light theme to switch to'))+
+  setCard('Density & motion','These take effect immediately.',
+    setRow('Compact mode',setToggle('compact',p.compact),'Tightens padding across cards and rows')+
+    setRow('Reduce motion',setToggle('reduceMotion',p.reduceMotion),'Disables transitions and spinners')+
+    setRow('Large text',setToggle('largeText',p.largeText),'Increases base font size'));
+}
+
+function renderSetPrivacy(){
+  return setCard('Your data',null,
+    setRow('Download account data','<button class="btn ghost sm" onclick="__exportData()">Export JSON</button>',
+      'Your ledger and preferences are stored in this browser \u2014 this exports exactly what EdgeDesk holds locally')+
+    setRow('Ledger storage','<span class="set-val">This browser only</span>','Bets live in localStorage; clearing site data erases them'))+
+  setCard('Legal',null,
+    '<div class="set-links"><a href="./terms.html">Terms of Service</a><a href="./privacy.html">Privacy Policy</a><a href="./disclaimer.html">Disclaimer</a></div>')+
+  setGate('Login history','No auth event log is recorded, so there is no sign-in history to show.')+
+  setGate('API tokens','There is no public EdgeDesk API, so there are no tokens to issue or revoke.')+
+  setGate('Delete account','Account deletion needs a server-side admin call \u2014 the browser client cannot delete its own auth user. Until that endpoint exists, this button would do nothing. Email support to have an account removed.');
+}
+
+var FEEDBACK_CATS=['Bug Report','Feature Request','General Feedback','Success Story','Suggestion'];
+function renderSetFeedback(){
+  var out=setCard('Send feedback','Every submission is stored and reviewed.',
+    setRow('Category','<select class="set-sel" id="fbCat">'+FEEDBACK_CATS.map(function(c){return '<option>'+c+'</option>';}).join('')+'</select>')+
+    setRow('Priority','<select class="set-sel" id="fbPri"><option>Low</option><option selected>Normal</option><option>High</option></select>')+
+    setRow('Title','<input class="set-in" id="fbTitle" placeholder="Short summary">')+
+    '<textarea class="set-ta" id="fbBody" rows="5" placeholder="What happened, what you expected, and anything that would help reproduce it."></textarea>'+
+    '<div class="set-act"><button class="btn sm" onclick="__submitFeedback()">Submit</button><span class="set-msg" id="fbMsg"></span></div>');
+  out+=setCard('Recently shipped','Version '+ED_VERSION+'.',
+    '<div class="set-ship">'+
+    ['CFB research tab \u2014 CollegeFootballData ingestion, matchup comparison, team deep dive',
+     'Research tab \u2014 CFB, UFC, Stats and Props grouped under one nav entry',
+     'Multi-engine Edges \u2014 MARKET, MODEL and CONSENSUS as separate labelled engines',
+     'Consensus Insight \u2014 deterministic plain-English read on every consensus card',
+     'Research Receipt \u2014 reason codes, data confidence, qualification checklist',
+     'Per-book capture \u2014 book_quotes persists the full price array at zero extra API cost',
+     'Clickable ledger \u2014 entry snapshot and CLV receipt on every logged bet'
+    ].map(function(s){return '<div class="set-ship-i"><span>\u2713</span>'+stEsc(s)+'</div>';}).join('')+'</div>');
+  out+=setGate('Public roadmap','There is no roadmap board wired to real data. Rather than publish a hardcoded list that drifts out of date, this stays empty until it reads from something real.');
+  return out;
+}
+window.__submitFeedback=async function(){
+  var msg=$('fbMsg'),t=$('fbTitle').value.trim(),b=$('fbBody').value.trim();
+  if(!t||!b){msg.className='set-msg neg';msg.textContent='Title and description are required.';return;}
+  msg.className='set-msg';msg.textContent='Sending\u2026';
+  var u=edUser()||{};
+  try{
+    var s=edSession();
+    var r=await fetch(SB_URL+'/rest/v1/feedback',{method:'POST',
+      headers:{apikey:SB_KEY,authorization:'Bearer '+((s&&s.access_token)||SB_KEY),'content-type':'application/json',prefer:'return=minimal'},
+      body:JSON.stringify([{user_email:u.email||null,category:$('fbCat').value,priority:$('fbPri').value,
+        title:t,body:b,app_version:ED_VERSION,user_agent:navigator.userAgent.slice(0,300)}])});
+    if(!r.ok)throw new Error('submit failed ('+r.status+')');
+    $('fbTitle').value='';$('fbBody').value='';
+    msg.className='set-msg pos';msg.textContent='Thank you. Every submission is reviewed and helps shape EdgeDesk.';
+  }catch(e){msg.className='set-msg neg';msg.textContent=e.message+' \u2014 run feedback.sql if the table is missing.';}
+};
+
+function renderSetAbout(){
+  var cap=window.__edgeLatest?ago(window.__edgeLatest):'unknown';
+  var db=$('dbPill')?$('dbPill').textContent:'';
+  return setCard('Version',null,
+    setRow('EdgeDesk','<span class="set-val mono">v'+ED_VERSION+'</span>')+
+    setRow('Build','<span class="set-val mono">single-file \u00b7 GitHub Pages</span>')+
+    setRow('Backend','<span class="set-val mono">Supabase \u00b7 Postgres + Edge Functions</span>'))+
+  setCard('System status','Read from this session, not a status page.',
+    setRow('Database','<span class="set-val '+(db.indexOf('\u2713')>=0?'pos':'')+'">'+stEsc(db||'\u2014')+'</span>')+
+    setRow('Last capture','<span class="set-val">'+stEsc(cap)+'</span>','Market scanner heartbeat'))+
+  setCard('Data providers',null,
+    '<div class="set-prov">'+
+    [['The Odds API','Market prices and book quotes \u00b7 commercial use permitted'],
+     ['Pinnacle (via Odds API)','Sharp reference for de-vigged fair lines'],
+     ['CollegeFootballData','CFB research data \u00b7 free tier'],
+     ['MLB Stats API','Official MLB schedule and results'],
+     ['UFCStats','Fighter microstats \u00b7 research only']
+    ].map(function(p){return '<div class="set-prov-i"><b>'+stEsc(p[0])+'</b><span>'+stEsc(p[1])+'</span></div>';}).join('')+'</div>')+
+  setCard('Support',null,
+    '<div class="set-links"><a href="./terms.html">Terms</a><a href="./privacy.html">Privacy</a><a href="./disclaimer.html">Disclaimer</a></div>'+
+    '<div class="set-note">Rackler Tech Ventures LLC. Research tool only \u2014 not betting advice. 21+. 1-800-GAMBLER.</div>');
+}
+
+/* ---------- config-driven shell ---------- */
+var SETTINGS_SECTIONS=[
+  {id:'account',      label:'Account',           render:renderSetAccount},
+  {id:'subscription', label:'Subscription',      render:renderSetSub},
+  {id:'edge',         label:'Edge Preferences',  render:renderSetEdge},
+  {id:'notifications',label:'Notifications',     render:renderSetNotif},
+  {id:'display',      label:'Display',           render:renderSetDisplay},
+  {id:'privacy',      label:'Privacy & Security',render:renderSetPrivacy},
+  {id:'feedback',     label:'Feedback',          render:renderSetFeedback},
+  {id:'about',        label:'About',             render:renderSetAbout}
+];
+var SET_ACTIVE='account';
+window.setGo=function(id){SET_ACTIVE=id;renderSettings();
+  var el=$('setPanel');if(el&&window.innerWidth<860)el.scrollIntoView({behavior:prefs().reduceMotion?'auto':'smooth',block:'start'});};
+function renderSettings(){
+  var nav=$('setNav'),panel=$('setPanel');if(!nav||!panel)return;
+  nav.innerHTML=SETTINGS_SECTIONS.map(function(s){
+    return '<button class="set-nav-i'+(SET_ACTIVE===s.id?' on':'')+'" onclick="setGo(\''+s.id+'\')">'+stEsc(s.label)+'</button>';
+  }).join('');
+  var sec=null;for(var i=0;i<SETTINGS_SECTIONS.length;i++)if(SETTINGS_SECTIONS[i].id===SET_ACTIVE)sec=SETTINGS_SECTIONS[i];
+  if(!sec)sec=SETTINGS_SECTIONS[0];
+  panel.innerHTML='<div class="set-panel-h">'+stEsc(sec.label)+'</div>'+sec.render();
+}
+function loadSettings(){renderSettings();}
+
+/* ---------- avatar menu ---------- */
+function renderAvatar(){var a=$('edAv');if(a)a.textContent=edInitials();}
+window.__toggleAvMenu=function(ev){
+  if(ev)ev.stopPropagation();
+  var m=$('avMenu');if(!m)return;
+  m.classList.toggle('open');
+};
+window.__avGo=function(sec){
+  var m=$('avMenu');if(m)m.classList.remove('open');
+  show('settings');SET_ACTIVE=sec;renderSettings();
+};
+document.addEventListener('click',function(){var m=$('avMenu');if(m)m.classList.remove('open');});
+
+/* settings boot: apply prefs, paint avatar, honour landing-page pref */
+try{applyPrefs();renderAvatar();
+  var _u=edUser();if(_u){var _n=$('avName'),_m=$('avMail');
+    if(_n)_n.textContent=(_u.user_metadata&&_u.user_metadata.display_name)||(_u.email||'Account').split('@')[0];
+    if(_m)_m.textContent=_u.email||'';}
+  var _p=prefs();var _t=_p.rememberTab?(_p.lastTab||_p.defaultTab):_p.defaultTab;
+  if(_t&&_t!=='edges'&&$('v-'+_t))show(_t);
+}catch(_e){}
 </script>
 </body>
 </html>
