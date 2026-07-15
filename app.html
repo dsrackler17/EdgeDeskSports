@@ -673,7 +673,7 @@ async function loadEdges(){
     await loadWeights();
     var nowIso=new Date().toISOString();
     var horizonIso=new Date(Date.now()+7*24*3600*1000).toISOString();
-    EDGES=await sbGet('signals?select=event_id,sport_title,sport_key,market,selection,point,best_dec,first_best_dec,best_book,sharp_fair,edge,n_books,commence_time,home_team,away_team,last_seen_at&commence_time=gte.'+nowIso+'&commence_time=lte.'+horizonIso+'&edge=gt.0&order=edge.desc&limit=600');
+    EDGES=await sbGet('signals?select=event_id,sport_title,sport_key,market,selection,point,best_dec,first_best_dec,best_book,sharp_fair,consensus_fair,edge,n_books,commence_time,home_team,away_team,last_seen_at&commence_time=gte.'+nowIso+'&commence_time=lte.'+horizonIso+'&edge=gt.0&order=edge.desc&limit=600');
     $('dbPill').textContent='DB ✓';$('dbPill').className='pill ok';
     // sport filter options
     var sportsSet={};EDGES.forEach(function(e){if(e.sport_title)sportsSet[e.sport_title]=1;});
@@ -696,6 +696,7 @@ async function loadEdges(){
     // NEVER touches e.edge, sorting, filters, or the verify tags. A separate engine, shown side by side.
     try{var mp=await sbGet('model_predictions?select=event_id,market,selection,point,model_prob,model_fair_american,model_edge,model_version&sport_key=eq.baseball_mlb&commence_time=gte.'+nowIso+'&commence_time=lte.'+horizonIso+'&order=created_at.asc&limit=1500');window.MODELP={};(mp||[]).forEach(function(r){window.MODELP[modelKey(r.event_id,r.market,r.selection,r.point)]=r;});}catch(_){window.MODELP=window.MODELP||{};}
     try{var me=await sbGet('model_predictions?select=event_id,sport_key,market,selection,point,model_prob,model_fair_american,model_edge,model_version,commence_time&model_edge=gt.0&commence_time=gte.'+nowIso+'&commence_time=lte.'+horizonIso+'&order=model_edge.desc.nullslast&limit=400');window.MODEL_EDGES=me||[];}catch(_){window.MODEL_EDGES=[];}
+    try{var cq=await sbGet('signals?select=event_id,sport_title,sport_key,market,selection,point,best_dec,best_book,sharp_fair,consensus_fair,edge,n_books,commence_time,home_team,away_team,last_seen_at&consensus_fair=not.is.null&n_books=gte.'+MINBOOKS+'&commence_time=gte.'+nowIso+'&commence_time=lte.'+horizonIso+'&limit=900');window.CONS_POOL=cq||[];}catch(_){window.CONS_POOL=[];}
     await loadSliceStats();
     renderEdges();
     renderDaily();
@@ -2808,21 +2809,66 @@ function renderModelEngine(){
   '<div class="engine-sub" style="margin-top:8px">Model win-probability vs the book\u2019s implied price. <b>Unproven</b> \u2014 counted nowhere in CLV; graduates only once its own graded CLV beats the close.</div>';
 }
 
+function consEdgeOf(e){
+  /* CONSENSUS = best available price vs the MULTI-BOOK no-vig median fair.
+     Independent of Pinnacle by construction. consensus_fair is computed in capture
+     as median(per-book de-vigged fairs) and has been stored on every signals row
+     all along — this engine reads it, it does not invent it. */
+  if(!e||e.consensus_fair==null||e.best_dec==null)return null;
+  var v=e.consensus_fair*e.best_dec-1;
+  return isFinite(v)?v:null;
+}
 function renderConsensusEngine(){
   var host=$('consensusFeed');if(!host)return;
-  var rows=(window.CONSENSUS_EDGES||[]);
-  if(!rows.length){
-    host.innerHTML='<div class="empty" style="padding:12px">CONSENSUS is architected but <b>dormant</b>. It needs the full <b>per-book price array</b> per selection to flag cross-book disagreement and outliers. Your scanner currently stores best price + book count (<span class="mono">n_books</span>), not the per-book distribution. Capture per-book quotes into a <span class="mono">book_quotes</span> source and this engine activates \u2014 no UI change required.</div>';
+  var pool=window.CONS_POOL||[];
+  if(!pool.length){
+    host.innerHTML='<div class="empty" style="padding:12px">No priced selections in your window yet \u2014 capture hasn\u2019t written rows with a multi-book fair. This engine reads <span class="mono">consensus_fair</span> (median of the per-book de-vigged fairs) straight off <span class="mono">signals</span>.</div>';
     return;
   }
-  host.innerHTML=rows.slice(0,40).map(function(c){
-    var ev=(c.edge!=null?(Math.abs(+c.edge)<=1?+c.edge*100:+c.edge):0);
-    return '<div class="mdlrow"><div class="top"><span class="ebadge consensus">CONSENSUS <span class="st">'+engineStars(4)+'</span></span>'+
-      '<span class="sel">'+stEsc(c.selection||'\u2014')+'</span><span class="ev">+'+ev.toFixed(1)+'%</span></div>'+
-      '<div class="meta">'+stEsc((c.market||'')+' \u00b7 '+(c.n_books||0)+' books \u00b7 best '+(c.best_book||''))+'</div></div>';
-  }).join('');
+  var minev=+($('fMinev')?$('fMinev').value:0)||0;
+  var sport=$('fSport')?$('fSport').value:'';
+  var mode=$('fBooks')?$('fBooks').value:'trusted';
+  var win=$('fScope')?$('fScope').value:'week';
+  var nowMs=Date.now();
+  var endDay=new Date();endDay.setHours(23,59,59,999);
+  var horizon=win==='day'?endDay.getTime():nowMs+7*864e5;
+  var staleCut=nowMs-EDGE_MAX_AGE_MIN*60000;
+  var floor=Math.max(REAL_FLOOR,minev/100);
+  var list=pool.filter(function(e){
+    if(sport&&e.sport_title!==sport)return false;
+    if((e.n_books||0)<MINBOOKS)return false;
+    var ls=e.last_seen_at?new Date(e.last_seen_at).getTime():0;
+    if(!ls||ls<staleCut)return false;
+    var ct=e.commence_time?new Date(e.commence_time).getTime():0;
+    if(!ct||ct>horizon||ct<nowMs-3600e3)return false;
+    var ce=consEdgeOf(e);
+    if(ce==null||ce<floor)return false;
+    if(ce>0.15)return false;                                  // same implausible-edge kill as capture's MAX_PLAUSIBLE_EDGE
+    e._ce=ce;
+    return true;
+  });
+  if(mode==='trusted')list=list.filter(function(e){return isTrusted(e.best_book)&&(e.n_books||0)>=4;});
+  var cnt={};list.forEach(function(e){var k=e.event_id+'|'+e.market;cnt[k]=(cnt[k]||0)+1;});
+  list=list.filter(function(e){return cnt[e.event_id+'|'+e.market]<2;});   // both sides = vig artifact
+  list.sort(function(a,b){return b._ce-a._ce;});
+  var top=list.slice(0,15);
+  window.CONSENSUS_EDGES=top;
+  if(!top.length){
+    host.innerHTML='<div class="empty" style="padding:12px">Scanned <b>'+pool.length+'</b> priced selection'+(pool.length===1?'':'s')+' in your window \u2014 none clear the bar against the multi-book consensus fair right now. The board agrees with itself; that\u2019s a clean board, not a gap.</div>';
+    return;
+  }
+  host.innerHTML=top.map(function(e){
+    var am=GE.decToAm(e.best_dec),od=am>0?'+'+am:am;
+    var noSharp=(e.sharp_fair!=null&&e.consensus_fair!=null&&Math.abs(e.sharp_fair-e.consensus_fair)<1e-9);
+    var flag=noSharp?' <span class="suspect">no sharp quote</span>':'';
+    var mkt=(e.edge!=null)?('MARKET '+(e.edge>=0?'+':'')+(e.edge*100).toFixed(2)+'%'):'MARKET \u2014';
+    var meta=[(e.sport_title||''),mktLabel(e.market),((e.away_team||'')+' @ '+(e.home_team||'')),whenLabel(e.commence_time),(e.best_book||'')+' '+od,(e.n_books||0)+' books',mkt].filter(Boolean).join(' \u00b7 ');
+    return '<div class="mdlrow"><div class="top"><span class="ebadge consensus">CONSENSUS '+engineStars(4)+'</span>'+
+      '<span class="sel">'+stEsc(selLabel(e))+flag+'</span><span class="ev">+'+(e._ce*100).toFixed(2)+'%</span></div>'+
+      '<div class="meta">'+stEsc(meta)+'</div></div>';
+  }).join('')+
+  '<div class="engine-sub" style="margin-top:8px">Best available price vs the <b>median de-vigged fair across '+MINBOOKS+'+ books</b> \u2014 no Pinnacle anchor, so this is market <i>disagreement</i>, not sharp proof. Rows tagged <span class="suspect">no sharp quote</span> are ones Pinnacle never priced, meaning that row\u2019s MARKET number fell back to this same consensus and is <b>not</b> independently sharp-anchored.</div>';
 }
-
 function renderEngineSections(){renderEngineChips();renderModelEngine();renderConsensusEngine();}
 
 </script>
