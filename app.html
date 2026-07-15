@@ -532,6 +532,13 @@ textarea{min-height:110px;font-family:'JetBrains Mono',monospace;resize:vertical
 .set-prov-i:last-child{border-bottom:none}
 .set-prov-i b{font-size:12px;font-weight:600}
 .set-prov-i span{font-size:10.5px;color:var(--faint)}
+.set-p{margin:0 0 9px;font-size:12.5px;line-height:1.62;color:var(--dim)}
+.set-p:last-child{margin-bottom:0}
+.set-p b{color:var(--text);font-weight:600}
+.set-use-i{display:flex;flex-direction:column;gap:2px;padding:9px 0;border-bottom:1px solid rgba(255,255,255,.045)}
+.set-use-i:last-child{border-bottom:none}
+.set-use-i b{font-size:12.5px;font-weight:600;color:var(--text)}
+.set-use-i span{font-size:11.5px;color:var(--faint);line-height:1.55}
 /* avatar menu */
 .edav-wrap{position:relative;margin-left:8px}
 .edav{width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,var(--accent),#7b6cff);color:#fff;border:none;font-size:10.5px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center}
@@ -3756,24 +3763,36 @@ window.__submitFeedback=async function(){
 function renderSetAbout(){
   var cap=window.__edgeLatest?ago(window.__edgeLatest):'unknown';
   var db=$('dbPill')?$('dbPill').textContent:'';
-  return setCard('Version',null,
-    setRow('EdgeDesk','<span class="set-val mono">v'+ED_VERSION+'</span>')+
-    setRow('Build','<span class="set-val mono">single-file \u00b7 GitHub Pages</span>')+
-    setRow('Backend','<span class="set-val mono">Supabase \u00b7 Postgres + Edge Functions</span>'))+
-  setCard('System status','Read from this session, not a status page.',
-    setRow('Database','<span class="set-val '+(db.indexOf('\u2713')>=0?'pos':'')+'">'+stEsc(db||'\u2014')+'</span>')+
-    setRow('Last capture','<span class="set-val">'+stEsc(cap)+'</span>','Market scanner heartbeat'))+
-  setCard('Data providers',null,
-    '<div class="set-prov">'+
-    [['The Odds API','Market prices and book quotes \u00b7 commercial use permitted'],
-     ['Pinnacle (via Odds API)','Sharp reference for de-vigged fair lines'],
-     ['CollegeFootballData','CFB research data \u00b7 free tier'],
-     ['MLB Stats API','Official MLB schedule and results'],
-     ['UFCStats','Fighter microstats \u00b7 research only']
-    ].map(function(p){return '<div class="set-prov-i"><b>'+stEsc(p[0])+'</b><span>'+stEsc(p[1])+'</span></div>';}).join('')+'</div>')+
-  setCard('Support',null,
+  var out=setCard('What EdgeDesk is',null,
+    '<p class="set-p">EdgeDesk is a <b>sports betting research terminal</b>. It continuously prices the full board across the sports it covers, removes the bookmaker margin to estimate a fair line, and surfaces the places where the market disagrees \u2014 either with a sharp reference or with itself.</p>'+
+    '<p class="set-p">It is a measurement tool, not a tipping service. EdgeDesk does not predict winners, does not tell you what to bet, and does not sell picks. It shows you market structure and the evidence behind it, and leaves the decision with you.</p>');
+
+  out+=setCard('What it is for',null,
+    '<div class="set-use">'+
+    [['Find where price disagrees with fair value','Every selection is compared against a de-vigged fair line and the best price actually available to you.'],
+     ['Know why a signal exists','Signals are separated by methodology and labelled. You always know whether a number came from a sharp reference, a model, or cross-book disagreement \u2014 they are never blended into one score.'],
+     ['Prove whether an edge was real','Anything you log is graded against the closing line. Closing line value is the only honest proof that a price was good \u2014 results are noise over small samples.'],
+     ['Research the matchup behind the number','Team, fighter and season context sits alongside the market read, so a price can be sanity-checked rather than taken on faith.']
+    ].map(function(u){return '<div class="set-use-i"><b>'+stEsc(u[0])+'</b><span>'+stEsc(u[1])+'</span></div>';}).join('')+'</div>');
+
+  out+=setCard('How to read it',null,
+    '<div class="set-use">'+
+    [['Edges','Live signals in the current window, grouped by engine and ranked within each.'],
+     ['Research','Matchup and team context for the sports covered.'],
+     ['Ledger','Log a price and EdgeDesk tracks it to the close, then grades it.'],
+     ['Record','Your graded track record \u2014 the number that actually matters.']
+    ].map(function(u){return '<div class="set-use-i"><b>'+stEsc(u[0])+'</b><span>'+stEsc(u[1])+'</span></div>';}).join('')+'</div>'+
+    '<div class="set-note">A signal is a starting point for research, never an instruction. Prices move, models are wrong, and a clean board with nothing on it is a normal and correct outcome.</div>');
+
+  out+=setCard('Status','Read live from this session.',
+    setRow('Data connection','<span class="set-val '+(db.indexOf('\u2713')>=0?'pos':'')+'">'+stEsc(db||'\u2014')+'</span>')+
+    setRow('Last market scan','<span class="set-val">'+stEsc(cap)+'</span>')+
+    setRow('Version','<span class="set-val mono">v'+ED_VERSION+'</span>','Quote this when contacting support'));
+
+  out+=setCard('Legal',null,
     '<div class="set-links"><a href="./terms.html">Terms</a><a href="./privacy.html">Privacy</a><a href="./disclaimer.html">Disclaimer</a></div>'+
-    '<div class="set-note">Rackler Tech Ventures LLC. Research tool only \u2014 not betting advice. 21+. 1-800-GAMBLER.</div>');
+    '<div class="set-note">Market data is sourced from licensed commercial providers and official league feeds. Rackler Tech Ventures LLC. Research tool only \u2014 not betting advice. 21+. 1-800-GAMBLER.</div>');
+  return out;
 }
 
 /* ---------- config-driven shell ---------- */
