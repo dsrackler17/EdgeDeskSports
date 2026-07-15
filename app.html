@@ -409,6 +409,23 @@ textarea{min-height:110px;font-family:'JetBrains Mono',monospace;resize:vertical
 .mdlrow .sel{font-weight:600;font-size:13px;flex:1}
 .mdlrow .ev{font-family:'JetBrains Mono',monospace;font-weight:700;color:var(--pos)}
 .mdlrow .meta{font-size:10.5px;color:var(--faint);margin-top:4px;font-family:'JetBrains Mono',monospace}
+
+/* clickable ledger rows + consensus receipts */
+.betcard .bhead{cursor:pointer}
+.betcard .brcpt{display:none;margin-top:10px;padding-top:10px;border-top:1px solid var(--border)}
+.betcard.open .brcpt{display:block}
+.betcard.open .rchev{transform:rotate(90deg)}
+.betcard .rchev{display:inline-block}
+.mdlitem{border:1px solid var(--border);border-radius:10px;margin-bottom:8px;background:var(--surface2);overflow:hidden}
+.mdlitem .mdlhead{cursor:pointer;padding:11px 12px}
+.mdlitem .mdlrcpt{display:none;padding:0 12px 12px}
+.mdlitem.open .mdlrcpt{display:block}
+.mdlitem.open .rchev{transform:rotate(90deg)}
+.bqtbl{width:100%;border-collapse:collapse;margin-top:6px;font-family:'JetBrains Mono',monospace;font-size:11px}
+.bqtbl td{padding:4px 6px;border-bottom:1px solid rgba(255,255,255,.05)}
+.bqtbl td:nth-child(2),.bqtbl td:nth-child(3){text-align:right}
+.bqtbl tr.sharpbk td{color:#f0c674}
+.bqtbl tr.bestbk td{color:var(--pos);font-weight:700}
 </style>
 </head>
 <body>
@@ -1355,6 +1372,46 @@ function clvOf(b){
   if(b.closeFair){var dec=GE.amToDec(b.odds);return dec/(1/(b.closeFair/100))-1;}  // legacy manual
   return null;
 }
+window.__toggleBet=function(el){var c=el.closest('.betcard');if(c)c.classList.toggle('open');};
+/* Receipt for a logged bet. Reads ONLY what was stored at entry — no re-derivation,
+   no fabrication. Manual bets carry less and degrade honestly. */
+function ledgerReceiptHTML(b){
+  var dec=GE.amToDec(b.odds);
+  var od=b.odds>0?'+'+b.odds:b.odds;
+  var priceImp=(dec&&dec>1)?(1/dec*100):null;
+  var sf=(b.sharp_fair!=null)?b.sharp_fair:(b.model!=null?b.model/100:null);
+  var sfImp=(sf!=null)?sf*100:null;
+  var entryEdge=(sf!=null&&dec>1)?(sf*dec-1):null;
+  var cv=clvOf(b);
+  var L=function(l,v,cls){return '<div class="gd-line"><span class="l">'+l+'</span><span class="v '+(cls||'')+'">'+v+'</span></div>';};
+  var out='<div class="gd-sec">What you logged</div>'+
+    L('Selection',stEsc(b.sel||'\u2014'))+
+    L('Book &amp; price',stEsc((b.book||'\u2014')+' '+od))+
+    L('Stake',b.stake?('$'+b.stake):'not set','mut')+
+    L('Logged',b.ts?ago(new Date(b.ts).getTime()):'\u2014','mut');
+  if(b.commence)out+=L('Game',whenLabel(b.commence),'mut');
+  out+='<div class="gd-sec">The read at entry</div>'+
+    L('Your price implies',priceImp!=null?priceImp.toFixed(1)+'%':'\u2014','mut')+
+    L('Sharp fair implied',sfImp!=null?sfImp.toFixed(1)+'%':'\u2014')+
+    L('Edge at entry',entryEdge!=null?((entryEdge>=0?'+':'')+(entryEdge*100).toFixed(2)+'%'):'\u2014',entryEdge!=null?(entryEdge>=0?'up':'dn'):'mut');
+  out+='<div class="gd-sec">Closing line value</div>';
+  if(cv!=null){
+    out+=L('CLV',(cv>=0?'+':'')+(cv*100).toFixed(2)+'%',cv>=0?'up':'dn')+
+      L('Beat the close?',cv>0?'yes':'no',cv>0?'up':'dn');
+  }else if(b.liveClv!=null){
+    out+=L('Line since you logged',(b.liveClv>=0?'+':'')+(b.liveClv*100).toFixed(2)+'%',b.liveClv>=0?'up':'dn')+
+      '<div class="gd-modelnote">Not graded yet \u2014 this is live line movement, <b>not</b> final CLV. CLV is fixed once the closing line is captured.</div>';
+  }else{
+    out+='<div class="gd-modelnote">No CLV yet. '+(b.auto?'This bet grades automatically once the closing line is captured after the game.':'Logged manually with no linked event, so it can\u2019t be auto-graded against a closing line.')+'</div>';
+  }
+  if(b.result){
+    out+='<div class="gd-sec">Result</div>'+
+      L('Outcome',b.result.toUpperCase(),b.result==='win'?'up':b.result==='push'?'mut':'dn')+
+      (b.pnl!=null&&b.result!=='push'?L('P&amp;L',(b.pnl>=0?'+$':'-$')+Math.abs(b.pnl).toFixed(2),b.pnl>=0?'up':'dn'):'');
+  }
+  out+='<div class="gd-modelnote">CLV is the proof, not the result. A winning bet with negative CLV was luck; a losing bet with positive CLV was still the right price.</div>';
+  return out;
+}
 function renderLedger(){renderQuickAdd();var rows=bets(),list=$('betlist');if(!rows.length){list.innerHTML='<div class="empty">No bets yet. Tap a Quick add edge above, or log a custom bet.</div>';$('clvKpis').innerHTML='';return;}
   var beats=[],pnl=0,stake=0,settled=0;list.innerHTML='';
   rows.forEach(function(b){var dec=GE.amToDec(b.odds);
@@ -1381,8 +1438,10 @@ function renderLedger(){renderQuickAdd();var rows=bets(),list=$('betlist');if(!r
       var ltxt=lv>0.002?('line moved +'+(lv*100).toFixed(1)+'% your way since you logged'):lv<-0.002?('line moved '+(lv*100).toFixed(1)+'% against you'):'line flat since you logged';
       liveHtml='<div class="liveclv '+lc+'"><span class="dot"></span>'+ltxt+'</div>';
     }
-    card.innerHTML='<div class="bt"><span class="bsel">'+(b.sel||'\u2014')+'</span><span class="grow" style="flex:1"></span><span class="mono '+(beat[0]==='+'?'pos':beat==='\u2014'?'muted':'neg')+'">'+beat+'</span></div>'+
-      '<div class="bmeta">'+(b.sport||'')+' \u00b7 '+(b.book||'')+' \u00b7 '+od+' \u00b7 '+(b.stake?'$'+b.stake:'no stake')+'</div>'+liveHtml+
+    card.innerHTML='<div class="bhead" onclick="__toggleBet(this)">'+
+      '<div class="bt"><span class="bsel">'+(b.sel||'\u2014')+'</span><span class="grow" style="flex:1"></span><span class="mono '+(beat[0]==='+'?'pos':beat==='\u2014'?'muted':'neg')+'">'+beat+'</span><span class="rchev">\u203a</span></div>'+
+      '<div class="bmeta">'+(b.sport||'')+' \u00b7 '+(b.book||'')+' \u00b7 '+od+' \u00b7 '+(b.stake?'$'+b.stake:'no stake')+'</div></div>'+liveHtml+
+      '<div class="brcpt">'+ledgerReceiptHTML(b)+'</div>'+
       '<div class="brow">'+statusHtml+'<span class="grow" style="flex:1"></span><button class="btn ghost sm" onclick="__del(\''+b.id+'\')">\u2715</button></div>';
     list.appendChild(card);
   });
@@ -2818,6 +2877,64 @@ function consEdgeOf(e){
   var v=e.consensus_fair*e.best_dec-1;
   return isFinite(v)?v:null;
 }
+/* sig_key must match capture's: `${event_id}|${market}|${selection}|${point ?? ""}` */
+function consKey(e){return (e.event_id||'')+'|'+(e.market||'')+'|'+(e.selection||'')+'|'+(e.point!=null?e.point:'');}
+window.__toggleCons=function(id){
+  var el=$(id);if(!el)return;
+  el.classList.toggle('open');
+  if(el.classList.contains('open'))consLoadBooks(id);
+};
+/* Per-book distribution — the actual "why" behind a consensus edge.
+   Reads book_quotes, which capture populates from the bookmakers[] array it was
+   already fetching. Degrades honestly if that capture build isn't deployed yet. */
+async function consLoadBooks(id){
+  var host=$('bq-'+id);if(!host||host.getAttribute('data-loaded'))return;
+  host.setAttribute('data-loaded','1');
+  var e=(window.RCPT_C||{})[id];if(!e)return;
+  try{
+    var rows=await sbGet('book_quotes?select=book_title,dec,fair,is_sharp&sig_key=eq.'+encodeURIComponent(consKey(e))+'&order=dec.desc&limit=40');
+    if(!rows||!rows.length){
+      host.innerHTML='<div class="gd-modelnote">No per-book rows for this selection yet. <b>book_quotes</b> fills on the next capture run once the updated capture function is deployed \u2014 it persists the per-book array the scanner already fetches (zero extra API calls).</div>';
+      return;
+    }
+    var best=rows[0].dec;
+    host.innerHTML='<table class="bqtbl"><tbody>'+rows.map(function(r){
+      var cls=(r.is_sharp?'sharpbk':(r.dec===best?'bestbk':''));
+      var am=GE.decToAm(r.dec),od=am>0?'+'+am:am;
+      return '<tr class="'+cls+'"><td>'+stEsc(r.book_title||'\u2014')+(r.is_sharp?' \u2605':'')+'</td><td>'+od+'</td><td>'+(r.fair!=null?(r.fair*100).toFixed(1)+'%':'\u2014')+'</td></tr>';
+    }).join('')+'</tbody></table>'+
+    '<div class="gd-modelnote">Every book\u2019s price for this selection and its own de-vigged fair. <b>Green</b> = best available. <b>\u2605 gold</b> = the sharp book. The consensus fair is the median of the fair column.</div>';
+  }catch(_){
+    host.innerHTML='<div class="gd-modelnote">Per-book breakdown unavailable \u2014 the <b>book_quotes</b> table isn\u2019t reachable yet. Run book_quotes.sql and deploy the updated capture function.</div>';
+  }
+}
+function receiptConsHTML(e,did){
+  var dec=e.best_dec,am=GE.decToAm(dec),od=am>0?'+'+am:am;
+  var priceImp=(dec&&dec>1)?(1/dec*100):null;
+  var consImp=(e.consensus_fair!=null)?e.consensus_fair*100:null;
+  var sharpImp=(e.sharp_fair!=null)?e.sharp_fair*100:null;
+  var noSharp=(e.sharp_fair!=null&&e.consensus_fair!=null&&Math.abs(e.sharp_fair-e.consensus_fair)<1e-9);
+  var L=function(l,v,cls){return '<div class="gd-line"><span class="l">'+l+'</span><span class="v '+(cls||'')+'">'+v+'</span></div>';};
+  var out='<div class="gd-sec">The market \u00b7 '+mktLabel(e.market)+'</div>'+
+    L('Your pick',stEsc(selLabel(e)))+
+    L('Best price',stEsc((e.best_book||'')+' '+od)+(isTrusted(e.best_book)?'':' \u00b7 offshore'))+
+    L('Price implies',priceImp!=null?priceImp.toFixed(1)+'% to win':'\u2014','mut')+
+    '<div class="gd-sec">Consensus \u00b7 '+(e.n_books||0)+' books</div>'+
+    L('Consensus fair implies',consImp!=null?consImp.toFixed(1)+'% to win':'\u2014')+
+    L('Consensus edge',(e._ce!=null?('+'+(e._ce*100).toFixed(2)+'%'):'\u2014'),'up');
+  out+='<div class="gd-sec">Against the sharp anchor</div>';
+  if(noSharp){
+    out+='<div class="gd-modelnote" style="color:var(--warn)">\u26a0 <b>Pinnacle never quoted this selection.</b> With no sharp price, this row\u2019s MARKET edge fell back to the same consensus median you see above \u2014 so the two engines are reading the identical number here. Treat this as consensus disagreement only, <b>not</b> sharp-anchored proof.</div>';
+  }else{
+    out+=L('Sharp fair implies',sharpImp!=null?sharpImp.toFixed(1)+'% to win':'\u2014')+
+      L('MARKET edge',(e.edge!=null?((e.edge>=0?'+':'')+(e.edge*100).toFixed(2)+'%'):'\u2014'),(e.edge!=null&&e.edge>=0)?'up':'dn')+
+      '<div class="gd-modelnote">Shown side by side, never merged. If MARKET is negative while CONSENSUS is positive, the soft books disagree with Pinnacle \u2014 and Pinnacle is usually right. That gap is the whole reason these are separate engines.</div>';
+  }
+  out+='<div class="gd-sec">Per-book prices</div><div id="bq-'+did+'"><div class="fi-empty">Loading per-book breakdown\u2026</div></div>';
+  out+='<button class="btn ghost sm" onclick="event.stopPropagation();__trackCons(\''+did+'\')" style="margin-top:10px">Track this to my ledger</button>';
+  return out;
+}
+window.__trackCons=function(id){var e=(window.RCPT_C||{})[id];if(e)trackSignal(e,GE.decToAm(e.best_dec));};
 function renderConsensusEngine(){
   var host=$('consensusFeed');if(!host)return;
   var pool=window.CONS_POOL||[];
@@ -2857,15 +2974,19 @@ function renderConsensusEngine(){
     host.innerHTML='<div class="empty" style="padding:12px">Scanned <b>'+pool.length+'</b> priced selection'+(pool.length===1?'':'s')+' in your window \u2014 none clear the bar against the multi-book consensus fair right now. The board agrees with itself; that\u2019s a clean board, not a gap.</div>';
     return;
   }
-  host.innerHTML=top.map(function(e){
+  host.innerHTML=top.map(function(e,i){
     var am=GE.decToAm(e.best_dec),od=am>0?'+'+am:am;
     var noSharp=(e.sharp_fair!=null&&e.consensus_fair!=null&&Math.abs(e.sharp_fair-e.consensus_fair)<1e-9);
     var flag=noSharp?' <span class="suspect">no sharp quote</span>':'';
     var mkt=(e.edge!=null)?('MARKET '+(e.edge>=0?'+':'')+(e.edge*100).toFixed(2)+'%'):'MARKET \u2014';
     var meta=[(e.sport_title||''),mktLabel(e.market),((e.away_team||'')+' @ '+(e.home_team||'')),whenLabel(e.commence_time),(e.best_book||'')+' '+od,(e.n_books||0)+' books',mkt].filter(Boolean).join(' \u00b7 ');
-    return '<div class="mdlrow"><div class="top"><span class="ebadge consensus">CONSENSUS '+engineStars(4)+'</span>'+
-      '<span class="sel">'+stEsc(selLabel(e))+flag+'</span><span class="ev">+'+(e._ce*100).toFixed(2)+'%</span></div>'+
-      '<div class="meta">'+stEsc(meta)+'</div></div>';
+    var did='ce_'+(e.event_id||'')+'_'+i;
+    window.RCPT_C=window.RCPT_C||{};window.RCPT_C[did]=e;
+    return '<div class="mdlitem" id="'+did+'"><div class="mdlhead" onclick="__toggleCons(\''+did+'\')">'+
+      '<div class="top"><span class="ebadge consensus">CONSENSUS '+engineStars(4)+'</span>'+
+      '<span class="sel">'+stEsc(selLabel(e))+flag+'</span><span class="ev">+'+(e._ce*100).toFixed(2)+'%</span><span class="rchev">\u203a</span></div>'+
+      '<div class="meta">'+stEsc(meta)+'</div></div>'+
+      '<div class="mdlrcpt">'+receiptConsHTML(e,did)+'</div></div>';
   }).join('')+
   '<div class="engine-sub" style="margin-top:8px">Best available price vs the <b>median de-vigged fair across '+MINBOOKS+'+ books</b> \u2014 no Pinnacle anchor, so this is market <i>disagreement</i>, not sharp proof. Rows tagged <span class="suspect">no sharp quote</span> are ones Pinnacle never priced, meaning that row\u2019s MARKET number fell back to this same consensus and is <b>not</b> independently sharp-anchored.</div>';
 }
