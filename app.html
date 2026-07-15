@@ -433,6 +433,48 @@ textarea{min-height:110px;font-family:'JetBrains Mono',monospace;resize:vertical
 .citxt{margin:0;font-size:12px;line-height:1.55;color:var(--dim)}
 .citxt .hi{color:var(--fg);font-weight:600}
 .cifoot{margin-top:7px;font-size:9.5px;color:var(--faint);font-family:'JetBrains Mono',monospace}
+
+/* Research Receipt — institutional research layer */
+.rr{border-top:1px solid rgba(255,255,255,.055);margin-top:2px}
+.rr-sec{font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:700;letter-spacing:.09em;color:var(--faint);text-transform:uppercase;margin:12px 0 6px;padding-bottom:4px;border-bottom:1px solid rgba(255,255,255,.05)}
+.rr-sec:first-child{margin-top:0}
+.rcodes{display:flex;flex-wrap:wrap;gap:5px;padding:8px 12px 0}
+.rcode{font-family:'JetBrains Mono',monospace;font-size:9.5px;font-weight:600;letter-spacing:.02em;padding:3px 7px;border-radius:4px;border:1px solid rgba(127,212,176,.32);color:#7fd4b0;background:rgba(47,180,124,.08);white-space:nowrap}
+.rcode.warn{border-color:rgba(217,154,43,.4);color:#f0c674;background:rgba(217,154,43,.08)}
+.rcode.neut{border-color:rgba(255,255,255,.14);color:var(--dim);background:transparent}
+.rconf-top{display:flex;align-items:baseline;gap:8px;margin-bottom:6px}
+.rconf-n{font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:700;color:var(--fg);line-height:1}
+.rconf-d{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--faint)}
+.rconf-st{margin-left:auto;font-size:11px;color:#f0c674;letter-spacing:1px}
+.rpartial{font-family:'JetBrains Mono',monospace;font-size:8px;font-weight:700;letter-spacing:.06em;padding:2px 5px;border-radius:3px;border:1px solid rgba(217,154,43,.4);color:#f0c674;background:rgba(217,154,43,.1)}
+.rbar{height:5px;border-radius:3px;background:rgba(255,255,255,.07);overflow:hidden;margin-bottom:9px}
+.rbar>i{display:block;height:100%;border-radius:3px;background:linear-gradient(90deg,#2fb47c,#7fd4b0)}
+.rbar.mid>i{background:linear-gradient(90deg,#d99a2b,#f0c674)}
+.rbar.low>i{background:linear-gradient(90deg,#c0483f,#e08a82)}
+.rcomp{display:grid;grid-template-columns:1fr auto;gap:2px 10px;font-family:'JetBrains Mono',monospace;font-size:10px;padding:3px 0;border-bottom:1px solid rgba(255,255,255,.04)}
+.rcomp .cn{color:var(--dim)}
+.rcomp .cv{color:var(--fg);text-align:right}
+.rcomp .cnote{grid-column:1/-1;color:var(--faint);font-size:9px}
+.rcomp.na .cn,.rcomp.na .cv{color:var(--faint);opacity:.75}
+.rsnap{display:grid;grid-template-columns:1fr auto;gap:1px 10px;font-family:'JetBrains Mono',monospace;font-size:10.5px}
+.rsnap .k{color:var(--faint);padding:3px 0}
+.rsnap .v{color:var(--fg);text-align:right;padding:3px 0}
+.rchk{font-family:'JetBrains Mono',monospace;font-size:10.5px;padding:3px 0;display:flex;gap:7px;align-items:flex-start}
+.rchk .m{width:9px;flex:none;font-weight:700}
+.rchk.ok .m{color:var(--pos)}.rchk.no .m{color:var(--neg)}
+.rchk.ok .t{color:var(--dim)}.rchk.no .t{color:var(--faint)}
+.rverdict{margin-top:8px;padding:7px 9px;border-radius:6px;font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;letter-spacing:.05em;text-align:center}
+.rverdict.research{background:rgba(217,154,43,.1);border:1px solid rgba(217,154,43,.34);color:#f0c674}
+.rverdict.qualified{background:rgba(47,180,124,.1);border:1px solid rgba(127,212,176,.34);color:#7fd4b0}
+.rtl{display:flex;align-items:flex-end;gap:2px;height:26px;margin:4px 0 6px}
+.rtl>i{flex:1;background:rgba(93,141,239,.5);border-radius:1px 1px 0 0;min-height:2px}
+.rtl>i.now{background:#7fd4b0}
+.rtl-lbl{display:flex;justify-content:space-between;font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--faint)}
+.rnote{font-size:10px;line-height:1.5;color:var(--faint);margin-top:6px}
+.rsharp{border:1px solid rgba(217,154,43,.3);background:rgba(217,154,43,.06);border-radius:7px;padding:9px 10px;margin-top:4px}
+.rsharp .h{font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;color:#f0c674;margin-bottom:5px}
+.rsharp p{margin:0 0 6px;font-size:10.5px;line-height:1.5;color:var(--dim)}
+.rsharp p:last-child{margin-bottom:0}
 </style>
 </head>
 <body>
@@ -720,7 +762,7 @@ async function loadEdges(){
     // NEVER touches e.edge, sorting, filters, or the verify tags. A separate engine, shown side by side.
     try{var mp=await sbGet('model_predictions?select=event_id,market,selection,point,model_prob,model_fair_american,model_edge,model_version&sport_key=eq.baseball_mlb&commence_time=gte.'+nowIso+'&commence_time=lte.'+horizonIso+'&order=created_at.asc&limit=1500');window.MODELP={};(mp||[]).forEach(function(r){window.MODELP[modelKey(r.event_id,r.market,r.selection,r.point)]=r;});}catch(_){window.MODELP=window.MODELP||{};}
     try{var me=await sbGet('model_predictions?select=event_id,sport_key,market,selection,point,model_prob,model_fair_american,model_edge,model_version,commence_time&model_edge=gt.0&commence_time=gte.'+nowIso+'&commence_time=lte.'+horizonIso+'&order=model_edge.desc.nullslast&limit=400');window.MODEL_EDGES=me||[];}catch(_){window.MODEL_EDGES=[];}
-    try{var cq=await sbGet('signals?select=event_id,sport_title,sport_key,market,selection,point,best_dec,best_book,sharp_fair,consensus_fair,edge,n_books,commence_time,home_team,away_team,last_seen_at&consensus_fair=not.is.null&n_books=gte.'+MINBOOKS+'&commence_time=gte.'+nowIso+'&commence_time=lte.'+horizonIso+'&limit=900');window.CONS_POOL=cq||[];}catch(_){window.CONS_POOL=[];}
+    try{var cq=await sbGet('signals?select=event_id,sport_title,sport_key,market,selection,point,best_dec,first_best_dec,first_seen_at,best_book,sharp_fair,consensus_fair,edge,n_books,commence_time,home_team,away_team,last_seen_at&consensus_fair=not.is.null&n_books=gte.'+MINBOOKS+'&commence_time=gte.'+nowIso+'&commence_time=lte.'+horizonIso+'&limit=900');window.CONS_POOL=cq||[];}catch(_){window.CONS_POOL=[];}
     await loadSliceStats();
     renderEdges();
     renderDaily();
@@ -2918,58 +2960,6 @@ function consStats(e){
   return {n:n,mean:mean,sd:sd,best:best,second:second,gap:gap,z:z,
           minImpl:minImpl,maxImpl:maxImpl,band:maxImpl-minImpl,sharp:sharp};
 }
-/* buildConsensusInsight(consensusData) -> deterministic 1-2 sentence string. */
-function buildConsensusInsight(e){
-  if(!e)return '';
-  var sel=stEsc(selLabel(e));
-  var book=stEsc(e.best_book||'the leading book');
-  var noSharp=(e.sharp_fair!=null&&e.consensus_fair!=null&&Math.abs(e.sharp_fair-e.consensus_fair)<1e-9);
-  var mktEdge=(e.edge!=null)?e.edge:null;
-  var s=consStats(e);
-  var s1='',s2='';
-
-  if(s){
-    var sdpp=s.sd*100, gappp=s.gap*100, bandpp=s.band*100;
-    var others=s.n-1;
-    /* An outlier must clear BOTH an absolute floor and be large vs the spread.
-       A z-score alone is useless here: in a tightly-grouped market sd collapses
-       toward zero and every best price scores as a false outlier. */
-    var isOutlier=(gappp>=1.0)&&(gappp>=1.5*sdpp);
-    var disp=(sdpp>=2.5)?'high':(sdpp>=1.0)?'moderate':'low';
-
-    if(isOutlier){
-      s1='<span class="hi">'+book+'</span> is a statistical outlier against '+numWord(others)+' other sportsbook'+(others===1?'':'s')+
-         ' on '+sel+', posting a price '+gappp.toFixed(1)+' points of implied probability clear of the next-best quote.';
-    }else if(disp==='high'){
-      s1='Books remain split on '+sel+', with quotes spread across a '+bandpp.toFixed(1)+'-point band and <span class="hi">'+book+'</span> at the top of that range.';
-    }else if(disp==='low'){
-      s1='The '+numWord(s.n)+'-book market is tightly grouped on '+sel+', with <span class="hi">'+book+'</span> posting the strongest available price by a narrow margin.';
-    }else{
-      s1='<span class="hi">'+book+'</span> is offering one of the strongest prices on '+sel+' while the remaining '+numWord(others)+' book'+(others===1?'':'s')+' are clustered lower.';
-    }
-
-    if(noSharp){
-      s2='No Pinnacle reference exists for this market, so this is displayed as research only.';
-    }else if(mktEdge!=null&&mktEdge<0){
-      s2='Pinnacle prices this below fair, so the disagreement sits with the soft books rather than the sharp line.';
-    }else if(disp==='high'){
-      s2='Above-average cross-book disagreement is the primary driver of this consensus gap.';
-    }else if(isOutlier){
-      s2='A single quote standing this far from the pack is the main contributor to the gap; a stale or mispriced line is the common cause.';
-    }else{
-      s2='Cross-book disagreement here is modest, so the gap reflects price shopping more than a structural split.';
-    }
-  }else{
-    var nb=e.n_books||0;
-    s1='<span class="hi">'+book+'</span> holds the best available price on '+sel+' across '+numWord(nb)+' book'+(nb===1?'':'s')+' quoting this market.';
-    if(noSharp){
-      s2='No Pinnacle reference exists for this market, so this is displayed as research only.';
-    }else{
-      s2='Per-book dispersion is unavailable until <span class="mono">book_quotes</span> is populated; this gap is measured against the '+numWord(nb)+'-book median fair.';
-    }
-  }
-  return '<p class="citxt">'+s1+' '+s2+'</p>';
-}
 /* Batch-load the per-book arrays for the visible set in ONE query, keyed by
    event_id (escape-safe). Cached across renders. Insights repaint in place. */
 async function consEnrich(top){
@@ -2987,10 +2977,294 @@ async function consEnrich(top){
   renderConsensusInsights();
 }
 function renderConsensusInsights(){
-  (window.CONSENSUS_EDGES||[]).forEach(function(e,i){
-    var host=$('ci-ce_'+(e.event_id||'')+'_'+i);
-    if(host)host.innerHTML=buildConsensusInsight(e);
+  var cov=window.__consCov||{};
+  var top=window.CONSENSUS_EDGES||[];
+  top.forEach(function(e,i){
+    var did='ce_'+(e.event_id||'')+'_'+i;
+    var cb=cov[e.sport_title||'']||0;
+    var ctx=researchCtx(e,{engine:'consensus',rank:i+1,poolSize:top.length,
+      coverage:(cb>0?Math.min(1,(e.n_books||0)/cb):null)});
+    window.RCTX=window.RCTX||{};window.RCTX[did]=ctx;
+    var ih=$('ci-'+did);   if(ih)ih.innerHTML=buildConsensusInsight(ctx);
+    var rh=$('rc-'+did);   if(rh)rh.innerHTML=reasonCodesHTML(ctx);
+    var el=$(did);
+    if(el){var body=el.querySelector('.mdlrcpt');
+      if(body&&!el.classList.contains('open')){
+        body.innerHTML='<div class="rr-sec" style="margin-top:10px">Research Receipt</div>'+buildResearchReceipt(ctx,did);
+      }}
   });
+}
+/* ============================================================================
+   RESEARCH RECEIPT — deterministic institutional research layer.
+   NO LLM. NO external calls. NO randomness. NO invented data.
+   Same inputs ALWAYS produce identical output.
+
+   Every function takes a normalized `ctx` (see researchCtx) so the same layer
+   can be reused by the Market, Model, Simulation, Props, Golf, CFB and UFC
+   engines — they only need to supply the ctx fields they actually have.
+   Anything not measurable is reported as unavailable, never scored, never faked.
+   ============================================================================ */
+
+/* Normalized research context. `engine` selects vocabulary; everything else is data. */
+function researchCtx(e,opts){
+  opts=opts||{};
+  var s=consStats(e);
+  var lastMs=e.last_seen_at?new Date(e.last_seen_at).getTime():null;
+  var firstMs=e.first_seen_at?new Date(e.first_seen_at).getTime():null;
+  var hb=window.__edgeLatest||null;
+  return {
+    engine:opts.engine||'consensus',
+    raw:e, stats:s,
+    selection:selLabel(e), sport:e.sport_title||'', market:e.market||'',
+    book:e.best_book||'', trusted:isTrusted(e.best_book),
+    nBooks:e.n_books||0,
+    quoteDec:e.best_dec!=null?e.best_dec:null,
+    firstDec:e.first_best_dec!=null?e.first_best_dec:null,
+    consFair:e.consensus_fair!=null?e.consensus_fair:null,
+    sharpFair:e.sharp_fair!=null?e.sharp_fair:null,
+    hasSharp:!(e.sharp_fair!=null&&e.consensus_fair!=null&&Math.abs(e.sharp_fair-e.consensus_fair)<1e-9),
+    gap:e._ce!=null?e._ce:null,
+    marketEdge:e.edge!=null?e.edge:null,
+    ageMin:lastMs?((Date.now()-lastMs)/60000):null,
+    firstSeenMs:firstMs, lastSeenMs:lastMs,
+    hbAgeMin:hb?((Date.now()-hb)/60000):null,
+    commence:e.commence_time||null,
+    coverage:(opts.coverage!=null?opts.coverage:null),
+    rank:(opts.rank!=null?opts.rank:null), poolSize:(opts.poolSize!=null?opts.poolSize:null)
+  };
+}
+
+/* ---- SECTION 1: Consensus Insight ---------------------------------------
+   1-2 sentences. Describes MARKET STRUCTURE only. Never mentions probability,
+   never predicts, never advises.                                            */
+function buildConsensusInsight(ctx){
+  if(!ctx)return '';
+  var sel=stEsc(ctx.selection), book=stEsc(ctx.book||'the leading book');
+  var s=ctx.stats, s1='', s2='';
+  var topGap=(ctx.rank!=null&&ctx.rank<=3&&(ctx.poolSize||0)>=5);
+
+  if(s){
+    var sdpp=s.sd*100, gappp=s.gap*100, bandpp=s.band*100, others=s.n-1;
+    var isOutlier=(gappp>=1.0)&&(gappp>=1.5*sdpp);
+    var disp=(sdpp>=2.5)?'high':(sdpp>=1.0)?'moderate':'low';
+    if(isOutlier){
+      s1='<span class="hi">'+book+'</span> is quoting '+sel+' materially away from the rest of the market, standing '+gappp.toFixed(1)+' points clear of the next-best of '+numWord(others)+' other book'+(others===1?'':'s')+'.';
+    }else if(disp==='high'){
+      s1=numWord(s.n).charAt(0).toUpperCase()+numWord(s.n).slice(1)+' sportsbooks remain split on '+sel+', spread across a '+bandpp.toFixed(1)+'-point band with <span class="hi">'+book+'</span> at the top of that range.';
+    }else if(disp==='low'){
+      s1='The market remains tightly grouped on '+sel+', with <span class="hi">'+book+'</span> posting the strongest available quote by a narrow margin.';
+    }else{
+      s1='<span class="hi">'+book+'</span> is posting one of the strongest available quotes on '+sel+' while the remaining '+numWord(others)+' book'+(others===1?'':'s')+' are clustered lower.';
+    }
+    if(!ctx.hasSharp){
+      s2='No Pinnacle reference exists for this market, so this appears as Consensus Research rather than a verified Market Edge.';
+    }else if(ctx.marketEdge!=null&&ctx.marketEdge<0){
+      s2='Pinnacle prices this below fair, so the disagreement sits with the soft books rather than the sharp line.';
+    }else if(topGap){
+      s2='This is currently one of the widest consensus disagreements on the board.';
+    }else if(disp==='high'){
+      s2='Elevated cross-book dispersion is the primary driver of this signal.';
+    }else if(isOutlier){
+      s1=s1; s2='A single quote standing this far from the cluster is the main contributor; a stale or mispriced line is the common cause.';
+    }else{
+      s2='Cross-book disagreement here is modest, so the signal reflects price shopping more than a structural split.';
+    }
+  }else{
+    var nb=ctx.nBooks;
+    s1='<span class="hi">'+book+'</span> holds the strongest available quote on '+sel+' across '+numWord(nb)+' book'+(nb===1?'':'s')+' reporting this market.';
+    s2=(!ctx.hasSharp)
+      ? 'No Pinnacle reference exists for this market, so this appears as Consensus Research rather than a verified Market Edge.'
+      : 'Per-book dispersion is unavailable until <span class="mono">book_quotes</span> is populated; this signal is measured against the '+numWord(nb)+'-book median.';
+  }
+  return '<p class="citxt">'+s1+' '+s2+'</p>';
+}
+
+/* ---- SECTION 2: Reason Codes -------------------------------------------- */
+function buildReasonCodes(ctx){
+  var out=[],s=ctx.stats;
+  if(s){
+    var sdpp=s.sd*100,gappp=s.gap*100;
+    if((gappp>=1.0)&&(gappp>=1.5*sdpp))out.push({t:'Book Outlier',c:'warn'});
+    if(sdpp>=2.5)out.push({t:'High Dispersion',c:''});
+    else if(sdpp<1.0)out.push({t:'Low Dispersion',c:'neut'});
+    if(sdpp<1.0)out.push({t:'Market Cluster',c:'neut'});
+    if((1/s.best.dec)<s.mean)out.push({t:'Quote Above Average',c:''});
+  }
+  if(ctx.gap!=null&&ctx.gap>=0.03)out.push({t:'Strong Consensus Gap',c:''});
+  if(ctx.ageMin!=null&&ctx.ageMin<30)out.push({t:'Fresh Pricing',c:''});
+  if(ctx.nBooks>=5)out.push({t:'Multiple Books',c:''});
+  if(!ctx.hasSharp)out.push({t:'Awaiting Sharp Reference',c:'warn'});
+  var q=buildQualificationChecklist(ctx);
+  if(q.qualified)out.push({t:'Consensus Qualified',c:''});
+  return out;
+}
+function reasonCodesHTML(ctx){
+  var codes=buildReasonCodes(ctx);
+  if(!codes.length)return '';
+  return '<div class="rcodes">'+codes.map(function(c){
+    return '<span class="rcode '+(c.c||'')+'">\u2713 '+stEsc(c.t)+'</span>';
+  }).join('')+'</div>';
+}
+
+/* ---- SECTION 3: Research Confidence -------------------------------------
+   DATA QUALITY ONLY. Components that cannot be measured from available data
+   are marked unavailable and EXCLUDED from the score (weights renormalize).
+   Nothing is estimated or filled in.                                        */
+function buildResearchConfidence(ctx){
+  var comps=[],s=ctx.stats;
+  var nb=ctx.nBooks||0;
+  comps.push({name:'Book Count',weight:25,
+    score:nb>=8?100:nb>=7?92:nb>=6?85:nb>=5?75:nb>=4?60:nb>=3?40:0,
+    note:nb+' book'+(nb===1?'':'s')+' reporting',available:true});
+  var age=ctx.ageMin;
+  comps.push({name:'Price Freshness',weight:20,
+    score:age==null?0:(age<15?100:age<30?90:age<45?75:age<60?60:age<90?40:0),
+    note:age==null?'no capture timestamp':('quote priced '+Math.round(age)+'m ago'),available:age!=null});
+  comps.push({name:'Dispersion Reliability',weight:20,
+    score:!s?0:(s.n>=6?100:s.n>=5?90:s.n>=4?75:s.n>=3?60:0),
+    note:s?('per-book array present, '+s.n+' quotes'):'per-book array not loaded',available:!!s});
+  comps.push({name:'Quote Quality',weight:15,score:ctx.trusted?100:50,
+    note:ctx.trusted?'US-regulated book':'offshore book',available:true});
+  var cov=ctx.coverage;
+  comps.push({name:'Market Coverage',weight:10,score:cov==null?0:Math.round(cov*100),
+    note:cov==null?'no sport baseline':(Math.round(cov*100)+'% of the deepest book count seen on this sport'),
+    available:cov!=null});
+  var hb=ctx.hbAgeMin;
+  comps.push({name:'Latency',weight:10,
+    score:hb==null?0:(hb<20?100:hb<40?85:hb<70?65:hb<120?40:0),
+    note:hb==null?'no capture heartbeat':('capture last ran '+Math.round(hb)+'m ago'),available:hb!=null});
+  comps.push({name:'Consensus Stability',weight:0,score:null,
+    note:'unavailable \u2014 requires capture tick history (CAPTURE_TICKS is off, and ticks do not record consensus_fair)',
+    available:false});
+  var tw=0,acc=0;
+  comps.forEach(function(c){if(c.available&&c.weight>0){tw+=c.weight;acc+=c.weight*c.score;}});
+  var score=tw>0?Math.round(acc/tw):0;
+  return {score:score,stars:(score>=90?5:score>=75?4:score>=60?3:score>=40?2:1),
+          components:comps,weightUsed:tw};
+}
+function researchConfidenceHTML(ctx){
+  var r=buildResearchConfidence(ctx);
+  var cls=r.score>=75?'':r.score>=50?'mid':'low';
+  var st='';for(var i=0;i<5;i++)st+=(i<r.stars?'\u2605':'\u2606');
+  var partial=(r.weightUsed<100);
+  var rows=r.components.map(function(c){
+    return '<div class="rcomp'+(c.available?'':' na')+'"><span class="cn">'+stEsc(c.name)+'</span>'+
+      '<span class="cv">'+(c.available&&c.weight>0?(c.score+' / 100'):'n/a')+'</span>'+
+      '<span class="cnote">'+stEsc(c.note)+'</span></div>';
+  }).join('');
+  return '<div class="rconf-top"><span class="rconf-n">'+r.score+'</span><span class="rconf-d">/ 100</span>'+
+    (partial?'<span class="rpartial">PARTIAL \u00b7 '+r.weightUsed+'% MEASURED</span>':'')+
+    '<span class="rconf-st">'+st+'</span></div>'+
+    '<div class="rbar '+cls+'"><i style="width:'+Math.max(2,r.score)+'%"></i></div>'+rows+
+    '<div class="rnote">Measures confidence in the research signal, not confidence that a wager will win. '+
+    (partial?('Scored on '+r.weightUsed+' of 100 weight \u2014 unmeasurable components are excluded rather than estimated, so this score reflects only what could be checked.'):'All measurable components available.')+'</div>';
+}
+
+/* ---- SECTION 4: Market Snapshot ----------------------------------------- */
+function buildMarketSnapshot(ctx){
+  var rows=[];
+  var am=(ctx.quoteDec!=null)?GE.decToAm(ctx.quoteDec):null;
+  var consAm=(ctx.consFair!=null&&ctx.consFair>0)?GE.decToAm(1/ctx.consFair):null;
+  rows.push(['Books Compared',String(ctx.nBooks||0)]);
+  rows.push(['Selected Sportsbook',(ctx.book||'\u2014')+(ctx.trusted?'':' (offshore)')]);
+  rows.push(['Consensus Price',consAm!=null?((consAm>0?'+':'')+consAm):'\u2014']);
+  rows.push(['Displayed Quote',am!=null?((am>0?'+':'')+am):'\u2014']);
+  rows.push(['Consensus Gap',ctx.gap!=null?('+'+(ctx.gap*100).toFixed(2)+'%'):'\u2014']);
+  rows.push(['Market Edge',ctx.marketEdge!=null?(((ctx.marketEdge>=0?'+':'')+(ctx.marketEdge*100).toFixed(2))+'%'):'n/a']);
+  rows.push(['Sharp Reference',ctx.hasSharp?'Yes':'No']);
+  rows.push(['Generated',ctx.lastSeenMs?ago(ctx.lastSeenMs):'\u2014']);
+  return rows;
+}
+function marketSnapshotHTML(ctx){
+  return '<div class="rsnap">'+buildMarketSnapshot(ctx).map(function(r){
+    return '<span class="k">'+stEsc(r[0])+'</span><span class="v">'+stEsc(r[1])+'</span>';
+  }).join('')+'</div>';
+}
+
+/* ---- SECTION 5: Why This Qualified -------------------------------------- */
+function buildQualificationChecklist(ctx){
+  var items=[],s=ctx.stats;
+  var gapOk=(ctx.gap!=null&&ctx.gap>=REAL_FLOOR);
+  items.push({ok:gapOk,label:gapOk?('Consensus gap clears the '+(REAL_FLOOR*100).toFixed(1)+'% floor'):'Consensus gap below floor'});
+  var bOk=(ctx.nBooks>=MINBOOKS);
+  items.push({ok:bOk,label:(bOk?numWord(ctx.nBooks)+' books reporting':'Only '+numWord(ctx.nBooks)+' books reporting (needs '+MINBOOKS+')')});
+  var fOk=(ctx.ageMin!=null&&ctx.ageMin<EDGE_MAX_AGE_MIN);
+  items.push({ok:fOk,label:fOk?'Fresh pricing':'Stale pricing (not re-priced within '+EDGE_MAX_AGE_MIN+'m)'});
+  var capOk=(ctx.gap!=null&&ctx.gap<=0.15);
+  items.push({ok:capOk,label:capOk?'Gap within plausible range':'Gap exceeds plausible range'});
+  var qOk=ctx.trusted;
+  items.push({ok:qOk,label:qOk?'Quote from a US-regulated book':'Quote from an offshore book'});
+  items.push({ok:ctx.hasSharp,label:ctx.hasSharp?'Pinnacle reference available':'No Pinnacle reference'});
+  if(ctx.hasSharp){
+    var fair=(ctx.sharpFair!=null);
+    items.push({ok:fair,label:fair?'De-vigged fair line calculated':'Fair line unavailable'});
+    var pos=(ctx.marketEdge!=null&&ctx.marketEdge>0);
+    items.push({ok:pos,label:pos?'Positive EV against the sharp fair':'Not positive against the sharp fair'});
+  }
+  var qualified=gapOk&&bOk&&fOk&&capOk;
+  var marketEdgeQualified=qualified&&ctx.hasSharp&&(ctx.marketEdge!=null&&ctx.marketEdge>0);
+  return {items:items,qualified:qualified,marketEdgeQualified:marketEdgeQualified,
+          verdict:marketEdgeQualified?'Qualified Market Edge':'Consensus Research \u2014 research only'};
+}
+function qualificationHTML(ctx){
+  var q=buildQualificationChecklist(ctx);
+  return q.items.map(function(i){
+    return '<div class="rchk '+(i.ok?'ok':'no')+'"><span class="m">'+(i.ok?'\u2713':'\u2717')+'</span><span class="t">'+stEsc(i.label)+'</span></div>';
+  }).join('')+
+  '<div class="rverdict '+(q.marketEdgeQualified?'qualified':'research')+'">'+stEsc(q.verdict)+'</div>';
+}
+
+/* ---- SECTION 6: Timeline ------------------------------------------------
+   Built ONLY from the write-once entry snapshot (first_best_dec / first_seen_at)
+   versus the current quote. That is two real captures, not a simulated curve.
+   A full sparkline needs signal_ticks, which is off by default AND does not
+   record consensus_fair — so it is honestly reported as unavailable.        */
+function buildTimeline(ctx){
+  if(ctx.firstDec==null||ctx.quoteDec==null||!ctx.firstSeenMs)return null;
+  var a=GE.decToAm(ctx.firstDec), b=GE.decToAm(ctx.quoteDec);
+  var moved=(ctx.quoteDec-ctx.firstDec);
+  return {points:[{t:ctx.firstSeenMs,dec:ctx.firstDec,am:a,label:'first capture'},
+                  {t:ctx.lastSeenMs,dec:ctx.quoteDec,am:b,label:'current'}],
+          moved:moved, pct:(ctx.firstDec>0?((ctx.quoteDec/ctx.firstDec)-1):0)};
+}
+function timelineHTML(ctx){
+  var tl=buildTimeline(ctx);
+  if(!tl)return '<div class="rnote">No historical captures yet.</div>';
+  var p=tl.points, lo=Math.min(p[0].dec,p[1].dec), hi=Math.max(p[0].dec,p[1].dec);
+  var rng=(hi-lo)||1;
+  var bars=p.map(function(x,i){
+    var h=8+Math.round(((x.dec-lo)/rng)*18);
+    return '<i class="'+(i===p.length-1?'now':'')+'" style="height:'+h+'px"></i>';
+  }).join('');
+  var dir=tl.moved>0?'lengthened':tl.moved<0?'shortened':'unchanged';
+  return '<div class="rtl">'+bars+'</div>'+
+    '<div class="rtl-lbl"><span>'+((p[0].am>0?'+':'')+p[0].am)+' \u00b7 '+ago(p[0].t)+'</span>'+
+    '<span>'+((p[1].am>0?'+':'')+p[1].am)+' \u00b7 current</span></div>'+
+    '<div class="rnote">Quote has '+dir+' '+Math.abs(tl.pct*100).toFixed(1)+'% since first capture. Only two captures are recorded per selection; a full series requires <span class="mono">CAPTURE_TICKS</span> enabled and <span class="mono">consensus_fair</span> added to the tick row.</div>';
+}
+
+/* ---- SECTION 7: Sharp Explanation (conditional) ------------------------- */
+function buildSharpExplanation(ctx){
+  if(ctx.hasSharp)return '';
+  return '<div class="rsharp"><div class="h">WHY ISN\u2019T THIS A MARKET EDGE?</div>'+
+    '<p>Because Pinnacle (or another supported sharp reference) does not currently provide a usable pricing anchor for this market.</p>'+
+    '<p>Consensus Research identifies pricing disagreement across sportsbooks but does not calculate a de-vigged fair price.</p>'+
+    '<p>This signal is shown for research only.</p></div>';
+}
+
+/* ---- composer ----------------------------------------------------------- */
+function buildResearchReceipt(ctx,did){
+  var out='<div class="rr">';
+  out+='<div class="rr-sec">Research Confidence</div>'+researchConfidenceHTML(ctx);
+  out+='<div class="rr-sec">Market Snapshot</div>'+marketSnapshotHTML(ctx);
+  out+='<div class="rr-sec">Why This Qualified</div>'+qualificationHTML(ctx);
+  out+='<div class="rr-sec">Market Timeline</div>'+timelineHTML(ctx);
+  var sh=buildSharpExplanation(ctx);
+  if(sh)out+='<div class="rr-sec">Sharp Reference</div>'+sh;
+  out+='<div class="rr-sec">Per-Book Prices</div><div id="bq-'+did+'"><div class="fi-empty">Loading per-book breakdown\u2026</div></div>';
+  out+='<button class="btn ghost sm" onclick="event.stopPropagation();__trackCons(\''+did+'\')" style="margin-top:11px">Track this to my ledger</button>';
+  out+='</div>';
+  return out;
 }
 function consKey(e){return (e.event_id||'')+'|'+(e.market||'')+'|'+(e.selection||'')+'|'+(e.point!=null?e.point:'');}
 window.__toggleCons=function(id){
@@ -3022,32 +3296,7 @@ async function consLoadBooks(id){
     host.innerHTML='<div class="gd-modelnote">Per-book breakdown unavailable \u2014 the <b>book_quotes</b> table isn\u2019t reachable yet. Run book_quotes.sql and deploy the updated capture function.</div>';
   }
 }
-function receiptConsHTML(e,did){
-  var dec=e.best_dec,am=GE.decToAm(dec),od=am>0?'+'+am:am;
-  var priceImp=(dec&&dec>1)?(1/dec*100):null;
-  var consImp=(e.consensus_fair!=null)?e.consensus_fair*100:null;
-  var sharpImp=(e.sharp_fair!=null)?e.sharp_fair*100:null;
-  var noSharp=(e.sharp_fair!=null&&e.consensus_fair!=null&&Math.abs(e.sharp_fair-e.consensus_fair)<1e-9);
-  var L=function(l,v,cls){return '<div class="gd-line"><span class="l">'+l+'</span><span class="v '+(cls||'')+'">'+v+'</span></div>';};
-  var out='<div class="gd-sec">The market \u00b7 '+mktLabel(e.market)+'</div>'+
-    L('Your pick',stEsc(selLabel(e)))+
-    L('Best price',stEsc((e.best_book||'')+' '+od)+(isTrusted(e.best_book)?'':' \u00b7 offshore'))+
-    L('Price implies',priceImp!=null?priceImp.toFixed(1)+'% to win':'\u2014','mut')+
-    '<div class="gd-sec">Consensus \u00b7 '+(e.n_books||0)+' books</div>'+
-    L('Consensus fair implies',consImp!=null?consImp.toFixed(1)+'% to win':'\u2014')+
-    L('Consensus edge',(e._ce!=null?('+'+(e._ce*100).toFixed(2)+'%'):'\u2014'),'up');
-  out+='<div class="gd-sec">Against the sharp anchor</div>';
-  if(noSharp){
-    out+='<div class="gd-modelnote" style="color:var(--warn)">\u26a0 <b>Pinnacle never quoted this selection.</b> With no sharp price, this row\u2019s MARKET edge fell back to the same consensus median you see above \u2014 so the two engines are reading the identical number here. Treat this as consensus disagreement only, <b>not</b> sharp-anchored proof.</div>';
-  }else{
-    out+=L('Sharp fair implies',sharpImp!=null?sharpImp.toFixed(1)+'% to win':'\u2014')+
-      L('MARKET edge',(e.edge!=null?((e.edge>=0?'+':'')+(e.edge*100).toFixed(2)+'%'):'\u2014'),(e.edge!=null&&e.edge>=0)?'up':'dn')+
-      '<div class="gd-modelnote">Shown side by side, never merged. If MARKET is negative while CONSENSUS is positive, the soft books disagree with Pinnacle \u2014 and Pinnacle is usually right. That gap is the whole reason these are separate engines.</div>';
-  }
-  out+='<div class="gd-sec">Per-book prices</div><div id="bq-'+did+'"><div class="fi-empty">Loading per-book breakdown\u2026</div></div>';
-  out+='<button class="btn ghost sm" onclick="event.stopPropagation();__trackCons(\''+did+'\')" style="margin-top:10px">Track this to my ledger</button>';
-  return out;
-}
+/* receiptConsHTML retired — superseded by buildResearchReceipt(ctx,did) */
 window.__trackCons=function(id){var e=(window.RCPT_C||{})[id];if(e)trackSignal(e,GE.decToAm(e.best_dec));};
 function renderConsensusEngine(){
   var host=$('consensusFeed');if(!host)return;
@@ -3088,6 +3337,10 @@ function renderConsensusEngine(){
     host.innerHTML='<div class="empty" style="padding:12px">Scanned <b>'+pool.length+'</b> priced selection'+(pool.length===1?'':'s')+' in your window \u2014 none clear the bar against the multi-book consensus fair right now. The board agrees with itself; that\u2019s a clean board, not a gap.</div>';
     return;
   }
+    /* deepest book count seen per sport in this pool = the coverage baseline.
+     Real, deterministic, derived from the pool itself. No invented denominator. */
+  var covBase={};pool.forEach(function(e){var k=e.sport_title||'';if(!covBase[k]||e.n_books>covBase[k])covBase[k]=e.n_books||0;});
+  window.__consCov=covBase;
   host.innerHTML=top.map(function(e,i){
     var am=GE.decToAm(e.best_dec),od=am>0?'+'+am:am;
     var noSharp=(e.sharp_fair!=null&&e.consensus_fair!=null&&Math.abs(e.sharp_fair-e.consensus_fair)<1e-9);
@@ -3096,14 +3349,20 @@ function renderConsensusEngine(){
     var meta=[(e.sport_title||''),mktLabel(e.market),((e.away_team||'')+' @ '+(e.home_team||'')),whenLabel(e.commence_time),(e.best_book||'')+' '+od,(e.n_books||0)+' books',mkt].filter(Boolean).join(' \u00b7 ');
     var did='ce_'+(e.event_id||'')+'_'+i;
     window.RCPT_C=window.RCPT_C||{};window.RCPT_C[did]=e;
+    var cb=covBase[e.sport_title||'']||0;
+    var ctx=researchCtx(e,{engine:'consensus',rank:i+1,poolSize:top.length,
+      coverage:(cb>0?Math.min(1,(e.n_books||0)/cb):null)});
+    window.RCTX=window.RCTX||{};window.RCTX[did]=ctx;
     return '<div class="mdlitem" id="'+did+'"><div class="mdlhead" onclick="__toggleCons(\''+did+'\')">'+
       '<div class="top"><span class="ebadge consensus">CONSENSUS '+engineStars(4)+'</span>'+
       '<span class="sel">'+stEsc(selLabel(e))+flag+'</span><span class="ev">+'+(e._ce*100).toFixed(2)+'%</span><span class="rchev">\u203a</span></div>'+
       '<div class="meta">'+stEsc(meta)+'</div></div>'+
       '<div class="cinsight"><div class="cih">CONSENSUS INSIGHT</div>'+
-      '<div id="ci-'+did+'">'+buildConsensusInsight(e)+'</div>'+
+      '<div id="ci-'+did+'">'+buildConsensusInsight(ctx)+'</div>'+
       '<div class="cifoot">\u24d8 Generated from live cross-book pricing. Describes market structure, not a prediction.</div></div>'+
-      '<div class="mdlrcpt">'+receiptConsHTML(e,did)+'</div></div>';
+      '<div id="rc-'+did+'">'+reasonCodesHTML(ctx)+'</div>'+
+      '<div class="mdlrcpt" style="padding:0 12px 12px"><div class="rr-sec" style="margin-top:10px">Research Receipt</div>'+
+      buildResearchReceipt(ctx,did)+'</div></div>';
   }).join('')+
   '<div class="engine-sub" style="margin-top:8px">Best available price vs the <b>median de-vigged fair across '+MINBOOKS+'+ books</b> \u2014 no Pinnacle anchor, so this is market <i>disagreement</i>, not sharp proof. Rows tagged <span class="suspect">no sharp quote</span> are ones Pinnacle never priced, meaning that row\u2019s MARKET number fell back to this same consensus and is <b>not</b> independently sharp-anchored.</div>';
   consEnrich(top);
