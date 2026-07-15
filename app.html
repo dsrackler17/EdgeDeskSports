@@ -426,6 +426,13 @@ textarea{min-height:110px;font-family:'JetBrains Mono',monospace;resize:vertical
 .bqtbl td:nth-child(2),.bqtbl td:nth-child(3){text-align:right}
 .bqtbl tr.sharpbk td{color:#f0c674}
 .bqtbl tr.bestbk td{color:var(--pos);font-weight:700}
+
+/* Consensus Insight — deterministic, rule-generated from cross-book pricing */
+.cinsight{padding:9px 12px 11px;border-top:1px solid rgba(255,255,255,.055)}
+.cih{font-size:9.5px;font-weight:700;letter-spacing:.07em;color:#7fd4b0;font-family:'JetBrains Mono',monospace;margin-bottom:5px}
+.citxt{margin:0;font-size:12px;line-height:1.55;color:var(--dim)}
+.citxt .hi{color:var(--fg);font-weight:600}
+.cifoot{margin-top:7px;font-size:9.5px;color:var(--faint);font-family:'JetBrains Mono',monospace}
 </style>
 </head>
 <body>
@@ -2878,6 +2885,113 @@ function consEdgeOf(e){
   return isFinite(v)?v:null;
 }
 /* sig_key must match capture's: `${event_id}|${market}|${selection}|${point ?? ""}` */
+/* ===== Consensus Insight =====================================================
+   DETERMINISTIC rule engine. No LLM, no inference, no randomness, no network.
+   Same inputs ALWAYS produce the same string. Every clause is derived from
+   numbers already computed by the consensus engine or from book_quotes rows.
+   It describes MARKET STRUCTURE only — never predicts an outcome, never implies
+   profit, never advises a bet.
+   ============================================================================ */
+function numWord(n){
+  var w=['zero','one','two','three','four','five','six','seven','eight','nine','ten','eleven','twelve'];
+  return (n>=0&&n<=12&&n===Math.floor(n))?w[n]:String(n);
+}
+/* Per-book distribution stats. Returns null when the per-book array isn't loaded,
+   so the caller degrades to signals-only inputs instead of inventing numbers. */
+function consStats(e){
+  var q=e&&e._bq;
+  if(!q||q.length<2)return null;
+  var rows=q.filter(function(r){return r&&r.dec>1;});
+  if(rows.length<2)return null;
+  var impl=rows.map(function(r){return 1/r.dec;});                 // vig-inclusive implied prob per book
+  var n=rows.length;
+  var mean=impl.reduce(function(a,b){return a+b;},0)/n;
+  var varc=impl.reduce(function(a,b){return a+(b-mean)*(b-mean);},0)/n;
+  var sd=Math.sqrt(varc);
+  var sorted=rows.slice().sort(function(a,b){return b.dec-a.dec;}); // best price first
+  var best=sorted[0], second=sorted[1];
+  var bestImpl=1/best.dec, secondImpl=1/second.dec;
+  var gap=secondImpl-bestImpl;                                     // >0 => best stands clear of the pack
+  var z=sd>1e-9?((bestImpl-mean)/sd):0;                            // <0 => best is cheaper than the mean
+  var minImpl=Math.min.apply(null,impl), maxImpl=Math.max.apply(null,impl);
+  var sharp=null;for(var i=0;i<rows.length;i++){if(rows[i].is_sharp){sharp=rows[i];break;}}
+  return {n:n,mean:mean,sd:sd,best:best,second:second,gap:gap,z:z,
+          minImpl:minImpl,maxImpl:maxImpl,band:maxImpl-minImpl,sharp:sharp};
+}
+/* buildConsensusInsight(consensusData) -> deterministic 1-2 sentence string. */
+function buildConsensusInsight(e){
+  if(!e)return '';
+  var sel=stEsc(selLabel(e));
+  var book=stEsc(e.best_book||'the leading book');
+  var noSharp=(e.sharp_fair!=null&&e.consensus_fair!=null&&Math.abs(e.sharp_fair-e.consensus_fair)<1e-9);
+  var mktEdge=(e.edge!=null)?e.edge:null;
+  var s=consStats(e);
+  var s1='',s2='';
+
+  if(s){
+    var sdpp=s.sd*100, gappp=s.gap*100, bandpp=s.band*100;
+    var others=s.n-1;
+    /* An outlier must clear BOTH an absolute floor and be large vs the spread.
+       A z-score alone is useless here: in a tightly-grouped market sd collapses
+       toward zero and every best price scores as a false outlier. */
+    var isOutlier=(gappp>=1.0)&&(gappp>=1.5*sdpp);
+    var disp=(sdpp>=2.5)?'high':(sdpp>=1.0)?'moderate':'low';
+
+    if(isOutlier){
+      s1='<span class="hi">'+book+'</span> is a statistical outlier against '+numWord(others)+' other sportsbook'+(others===1?'':'s')+
+         ' on '+sel+', posting a price '+gappp.toFixed(1)+' points of implied probability clear of the next-best quote.';
+    }else if(disp==='high'){
+      s1='Books remain split on '+sel+', with quotes spread across a '+bandpp.toFixed(1)+'-point band and <span class="hi">'+book+'</span> at the top of that range.';
+    }else if(disp==='low'){
+      s1='The '+numWord(s.n)+'-book market is tightly grouped on '+sel+', with <span class="hi">'+book+'</span> posting the strongest available price by a narrow margin.';
+    }else{
+      s1='<span class="hi">'+book+'</span> is offering one of the strongest prices on '+sel+' while the remaining '+numWord(others)+' book'+(others===1?'':'s')+' are clustered lower.';
+    }
+
+    if(noSharp){
+      s2='No Pinnacle reference exists for this market, so this is displayed as research only.';
+    }else if(mktEdge!=null&&mktEdge<0){
+      s2='Pinnacle prices this below fair, so the disagreement sits with the soft books rather than the sharp line.';
+    }else if(disp==='high'){
+      s2='Above-average cross-book disagreement is the primary driver of this consensus gap.';
+    }else if(isOutlier){
+      s2='A single quote standing this far from the pack is the main contributor to the gap; a stale or mispriced line is the common cause.';
+    }else{
+      s2='Cross-book disagreement here is modest, so the gap reflects price shopping more than a structural split.';
+    }
+  }else{
+    var nb=e.n_books||0;
+    s1='<span class="hi">'+book+'</span> holds the best available price on '+sel+' across '+numWord(nb)+' book'+(nb===1?'':'s')+' quoting this market.';
+    if(noSharp){
+      s2='No Pinnacle reference exists for this market, so this is displayed as research only.';
+    }else{
+      s2='Per-book dispersion is unavailable until <span class="mono">book_quotes</span> is populated; this gap is measured against the '+numWord(nb)+'-book median fair.';
+    }
+  }
+  return '<p class="citxt">'+s1+' '+s2+'</p>';
+}
+/* Batch-load the per-book arrays for the visible set in ONE query, keyed by
+   event_id (escape-safe). Cached across renders. Insights repaint in place. */
+async function consEnrich(top){
+  window.__consBQ=window.__consBQ||{};
+  var cache=window.__consBQ;
+  top.forEach(function(e){var k=consKey(e);if(cache[k])e._bq=cache[k];});
+  var need=[];
+  top.forEach(function(e){if(!e._bq&&e.event_id&&need.indexOf(e.event_id)<0)need.push(e.event_id);});
+  if(!need.length){renderConsensusInsights();return;}
+  try{
+    var rows=await sbGet('book_quotes?select=sig_key,book_title,dec,fair,is_sharp&event_id=in.('+need.slice(0,25).join(',')+')&limit=3000');
+    (rows||[]).forEach(function(r){(cache[r.sig_key]=cache[r.sig_key]||[]).push(r);});
+    top.forEach(function(e){var k=consKey(e);if(cache[k])e._bq=cache[k];});
+  }catch(_){ /* book_quotes not deployed yet -> signals-only insight stands */ }
+  renderConsensusInsights();
+}
+function renderConsensusInsights(){
+  (window.CONSENSUS_EDGES||[]).forEach(function(e,i){
+    var host=$('ci-ce_'+(e.event_id||'')+'_'+i);
+    if(host)host.innerHTML=buildConsensusInsight(e);
+  });
+}
 function consKey(e){return (e.event_id||'')+'|'+(e.market||'')+'|'+(e.selection||'')+'|'+(e.point!=null?e.point:'');}
 window.__toggleCons=function(id){
   var el=$(id);if(!el)return;
@@ -2986,9 +3100,13 @@ function renderConsensusEngine(){
       '<div class="top"><span class="ebadge consensus">CONSENSUS '+engineStars(4)+'</span>'+
       '<span class="sel">'+stEsc(selLabel(e))+flag+'</span><span class="ev">+'+(e._ce*100).toFixed(2)+'%</span><span class="rchev">\u203a</span></div>'+
       '<div class="meta">'+stEsc(meta)+'</div></div>'+
+      '<div class="cinsight"><div class="cih">CONSENSUS INSIGHT</div>'+
+      '<div id="ci-'+did+'">'+buildConsensusInsight(e)+'</div>'+
+      '<div class="cifoot">\u24d8 Generated from live cross-book pricing. Describes market structure, not a prediction.</div></div>'+
       '<div class="mdlrcpt">'+receiptConsHTML(e,did)+'</div></div>';
   }).join('')+
   '<div class="engine-sub" style="margin-top:8px">Best available price vs the <b>median de-vigged fair across '+MINBOOKS+'+ books</b> \u2014 no Pinnacle anchor, so this is market <i>disagreement</i>, not sharp proof. Rows tagged <span class="suspect">no sharp quote</span> are ones Pinnacle never priced, meaning that row\u2019s MARKET number fell back to this same consensus and is <b>not</b> independently sharp-anchored.</div>';
+  consEnrich(top);
 }
 function renderEngineSections(){renderEngineChips();renderModelEngine();renderConsensusEngine();}
 
