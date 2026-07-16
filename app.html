@@ -626,6 +626,9 @@ body.ed-large-text .set-lbl,body.ed-large-text .lead-sel{font-size:14px}
 .fi-brief .bh{font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:700;letter-spacing:.06em;color:var(--mdl);text-transform:uppercase;margin-bottom:6px}
 .fi-brief .bt{font-size:12.5px;line-height:1.6;color:var(--text);white-space:pre-wrap}
 .fi-brief .bf{font-size:10px;color:var(--faint);margin-top:7px;line-height:1.5}
+.fi-brief .bs{margin-top:8px;padding-top:7px;border-top:1px solid rgba(155,140,255,.22)}
+.fi-brief .bs a{display:block;font-size:10.5px;color:var(--accent);margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fi-brief .bsh{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--faint);letter-spacing:.05em;text-transform:uppercase}
 </style>
 </head>
 <body>
@@ -2132,33 +2135,51 @@ function flFaultTeams(f){var b=f._board;if(!b)return [];
    labeled as generated, and the facts it was given are listed underneath so the
    text can be checked against them line by line.
    ========================================================================== */
-window.__brief=async function(league,name,domid){
+window.__brief=async function(league,name,domid,fresh){
   var host=$(domid);if(!host)return;
-  host.innerHTML='<div class="fi-brief"><div class="bh">Generating\u2026</div></div>';
+  host.innerHTML='<div class="fi-brief"><div class="bh">Claude is looking '+flEsc(name)+' up\u2026</div>'+
+    '<div class="bt" style="color:var(--dim);font-size:11.5px">Searching the web, then reading it against your board price. Takes a few seconds.</div></div>';
   try{
     var t=await edToken();
-    var r=await fetch(SB_URL+'/functions/v1/team_brief',{method:'POST',
+    var r=await fetch(SB_URL+'/functions/v1/team_brief'+(fresh?'?fresh=1':''),{method:'POST',
       headers:{apikey:SB_KEY,authorization:'Bearer '+t,'Content-Type':'application/json'},
       body:JSON.stringify({league:league,team:name})});
     var d=await r.json();
     if(!r.ok||d.ok===false)throw new Error(d.error||('brief '+r.status));
-    var src=d.facts?Object.keys(d.facts).filter(function(k){return k!=='league'&&k!=='team';}):[];
+
+    /* Sources are not decoration. They are the only reason a generated
+       paragraph is allowed on a page that otherwise never guesses: every claim
+       traces to a page Claude actually opened, and the reader can go check it. */
+    var srcs=(d.sources||[]);
+    var srcHtml=srcs.length
+      ? '<div class="bs"><div class="bsh">Sources Claude read \u00b7 '+srcs.length+'</div>'+
+        srcs.slice(0,6).map(function(x){
+          return '<a href="'+flEsc(x.url)+'" target="_blank" rel="noopener noreferrer">'+flEsc(x.title||x.url)+'</a>';
+        }).join('')+'</div>'
+      : '<div class="bs"><div class="bsh">No web sources cited</div></div>';
+
+    var used=d.facts?Object.keys(d.facts).filter(function(k){return k.charAt(0)!=='_';}):[];
     host.innerHTML='<div class="fi-brief">'+
-      '<div class="bh">'+(d.generated?'AI brief \u00b7 generated':'No data')+'</div>'+
-      '<div class="bt">'+flEsc(d.brief||'')+'</div>'+
-      (d.generated?'<div class="bf">Written by a model from stored rows only ('+
-        (src.length?flEsc(src.join(', ')):'none')+'), at temperature 0 and cached, so the same facts always produce this same text. '+
-        'It can only rephrase those rows \u2014 it has no other knowledge of this team and cannot look anything up. Verify before trusting.</div>':'')+
+      '<div class="bh">AI brief \u00b7 '+(d.cached?'cached':'live')+
+        (d.searches?' \u00b7 '+d.searches+' search'+(d.searches===1?'':'es'):'')+'</div>'+
+      '<div class="bt">'+flEsc(d.brief||'')+'</div>'+srcHtml+
+      '<div class="bf">Written by Claude from the pages above plus your own rows ('+
+        (used.length?flEsc(used.join(', ')):'none held')+'). Generated text, not a de-vig: '+
+        'it can be wrong in ways the rest of this app cannot. The links are there so you can check it. '+
+        'Not a prediction and not advice. '+
+        '<button onclick="__brief(\''+flEsc(league).replace(/'/g,"\\'")+'\',\''+flEsc(name).replace(/'/g,"\\'")+
+        '\',\''+domid+'\',1)" style="background:none;border:none;color:var(--accent);font-family:inherit;font-size:10px;font-weight:600;cursor:pointer;padding:0;text-decoration:underline">Re-run fresh</button></div>'+
     '</div>';
   }catch(e){
     host.innerHTML='<div class="fi-brief"><div class="bh">Unavailable</div><div class="bt">'+
-      flEsc(String(e.message||e))+'</div><div class="bf">Needs the team_brief function deployed with ANTHROPIC_API_KEY set.</div></div>';
+      flEsc(String(e.message||e))+'</div><div class="bf">Needs team_brief deployed with ANTHROPIC_API_KEY set. '+
+      'Add <span class="mono">?debug=1</span> to the function URL to see which lookup failed.</div></div>';
   }
 };
 function flBriefBtn(league,name){
   var id='br_'+flNormTeam(name).replace(/[^a-z0-9]/g,'');
   return '<div style="margin-top:9px"><button class="btn ghost sm" onclick="__brief(\''+
-    flEsc(league).replace(/'/g,"\\'")+'\',\''+flEsc(name).replace(/'/g,"\\'")+'\',\''+id+'\')">Generate AI brief</button>'+
+    flEsc(league).replace(/'/g,"\\'")+'\',\''+flEsc(name).replace(/'/g,"\\'")+'\',\''+id+'\')">Look this team up</button>'+
     '<div id="'+id+'"></div></div>';
 }
 
