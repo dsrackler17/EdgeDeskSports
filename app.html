@@ -413,6 +413,11 @@ textarea{min-height:110px;font-family:'JetBrains Mono',monospace;resize:vertical
 .mdlrow .sel{font-weight:600;font-size:13px;flex:1}
 .mdlrow .ev{font-family:'JetBrains Mono',monospace;font-weight:700;color:var(--pos)}
 .mdlrow .meta{font-size:10.5px;color:var(--faint);margin-top:4px;font-family:'JetBrains Mono',monospace}
+.lead-ev.mdl{color:var(--mdl)}
+.gd-line .v.mdl{color:var(--mdl)}
+.mdl-warn{border:1px solid rgba(155,140,255,.35);background:rgba(155,140,255,.07);border-radius:9px;padding:9px 11px;margin-top:10px;font-size:11.5px;line-height:1.55;color:var(--dim)}
+.mdl-warn b{color:var(--mdl)}
+.gd-nodata{font-size:11.5px;color:var(--faint);line-height:1.5;padding:6px 0}
 
 /* clickable ledger rows + consensus receipts */
 .betcard .bhead{cursor:pointer}
@@ -907,7 +912,12 @@ async function loadWeights(){try{var w=await sbGet('model_weights?select=*');WEI
 /* ===== live edges (read from signals) ===== */
 var EDGES=[];
 function mktLabel(m){return m==='h2h'?'ML':m==='spreads'?'Spread':m==='totals'?'Total':m;}
-function selLabel(r){return r.selection+(r.point!=null?(' '+(r.point>0?'+':'')+r.point):'');}
+function selLabel(r){
+  if(r.point==null)return r.selection;
+  /* a total of 8.5 is a number, not a handicap: only spreads carry a sign */
+  if(r.market==='totals')return r.selection+' '+r.point;
+  return r.selection+' '+(r.point>0?'+':'')+r.point;
+}
 function whenLabel(iso){try{return new Date(iso).toLocaleString([], {weekday:'short',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});}catch(e){return'';}}
 function ago(ms){var s=Math.floor((Date.now()-ms)/1000);if(s<0)s=0;if(s<60)return s+'s ago';var m=Math.floor(s/60);if(m<60)return m+'m ago';var h=Math.floor(m/60);if(h<24)return h+'h ago';return Math.floor(h/24)+'d ago';}
 /* ===== freshness guard + quality bar + track-record for the Top edges list ===== */
@@ -974,8 +984,9 @@ async function loadEdges(){
     // EdgeDesk MODEL fair (me-vs-market) — display only, UNPROVEN, keyed to match model_predictions.
     // NEVER touches e.edge, sorting, filters, or the verify tags. A separate engine, shown side by side.
     try{var mp=await sbGet('model_predictions?select=event_id,market,selection,point,model_prob,model_fair_american,model_edge,model_version&sport_key=eq.baseball_mlb&commence_time=gte.'+nowIso+'&commence_time=lte.'+horizonIso+'&order=created_at.asc&limit=1500');window.MODELP={};(mp||[]).forEach(function(r){window.MODELP[modelKey(r.event_id,r.market,r.selection,r.point)]=r;});}catch(_){window.MODELP=window.MODELP||{};}
-    try{var me=await sbGet('model_predictions?select=event_id,sport_key,market,selection,point,model_prob,model_fair_american,model_edge,model_version,commence_time&model_edge=gt.0&commence_time=gte.'+nowIso+'&commence_time=lte.'+horizonIso+'&order=model_edge.desc.nullslast&limit=400');window.MODEL_EDGES=me||[];}catch(_){window.MODEL_EDGES=[];}
+    try{var me=await sbGet('model_predictions?select=*&model_edge=gt.0&commence_time=gte.'+nowIso+'&commence_time=lte.'+horizonIso+'&order=model_edge.desc.nullslast&limit=400');window.MODEL_EDGES=me||[];}catch(_){window.MODEL_EDGES=[];}
     try{var cq=await sbGet('signals?select=event_id,sport_title,sport_key,market,selection,point,best_dec,first_best_dec,first_seen_at,best_book,sharp_fair,consensus_fair,edge,n_books,commence_time,home_team,away_team,last_seen_at&consensus_fair=not.is.null&n_books=gte.'+MINBOOKS+'&commence_time=gte.'+nowIso+'&commence_time=lte.'+horizonIso+'&limit=900');window.CONS_POOL=cq||[];}catch(_){window.CONS_POOL=[];}
+    await resolveModelMeta();
     await loadSliceStats();
     renderEdges();
     renderDaily();
@@ -3113,30 +3124,214 @@ window.toggleEngine=function(k){
 /* implied win prob from american odds */
 function mImplWin(fa){if(fa==null)return null;fa=+fa;return fa>0?100/(fa+100):(-fa)/(-fa+100);}
 
+/* ===== MODEL engine ==========================================================
+   model_predictions stores an event_id and nothing a human can read. Rendering
+   it raw produced rows like "Under \u00b7 baseball_mlb" \u2014 no teams, no start time,
+   no price, and nothing to tap. The teams and the book price the model is being
+   compared against live on `signals`, so they are joined here by event_id and
+   by the same modelKey() the MODEL-fair overlay already uses.
+
+   Nothing is invented. If a row cannot be matched to a signals row, the card
+   says the market price was not stored rather than showing a plausible number.
+   ============================================================================ */
+window.EVMETA={};
+window.SIGKEY={};
+
+function prettySport(k){
+  if(!k)return '';
+  var map={baseball_mlb:'MLB',basketball_wnba:'WNBA',basketball_nba:'NBA',
+    americanfootball_ncaaf:'NCAAF',americanfootball_nfl:'NFL',icehockey_nhl:'NHL',
+    mma_mixed_martial_arts:'MMA'};
+  if(map[k])return map[k];
+  var p=String(k).split('_');
+  return p[p.length-1].toUpperCase();
+}
+
+function indexSignalRows(rows){
+  (rows||[]).forEach(function(r){
+    if(!r||!r.event_id)return;
+    if(!window.EVMETA[r.event_id]&&(r.home_team||r.away_team)){
+      window.EVMETA[r.event_id]={home_team:r.home_team,away_team:r.away_team,
+        commence_time:r.commence_time,sport_title:r.sport_title,sport_key:r.sport_key};
+    }
+    /* modelKey() folds every non-totals market into "|h2h|", so a spreads row
+       and a moneyline row on the same team collide. Indexing spreads here would
+       quietly attach a -1.5 price to a moneyline prediction. Only index the two
+       markets the key can actually tell apart. */
+    if(r.selection&&(r.market==='h2h'||r.market==='totals')){
+      var k=modelKey(r.event_id,r.market,r.selection,r.point);
+      var prev=window.SIGKEY[k];
+      /* keep the best price seen for this selection */
+      if(!prev||(r.best_dec&&prev.best_dec&&r.best_dec>prev.best_dec))window.SIGKEY[k]=r;
+    }
+  });
+}
+
+async function resolveModelMeta(){
+  window.EVMETA={};window.SIGKEY={};
+  indexSignalRows(window.EDGES);
+  indexSignalRows(window.CONS_POOL);
+  indexSignalRows(window.D5_POOL);
+  var seen={},need=[];
+  (window.MODEL_EDGES||[]).forEach(function(m){
+    if(!m||!m.event_id)return;
+    if(window.EVMETA[m.event_id]||seen[m.event_id])return;
+    seen[m.event_id]=1;need.push(m.event_id);
+  });
+  /* only the event_ids the pools did not already cover, 80 at a time */
+  for(var i=0;i<need.length;i+=80){
+    var ids=need.slice(i,i+80).map(function(id){return '"'+String(id).replace(/"/g,'')+'"';}).join(',');
+    try{
+      var rows=await sbGet('signals?select=event_id,sport_title,sport_key,market,selection,point,'+
+        'best_dec,best_book,sharp_fair,edge,n_books,home_team,away_team,commence_time,last_seen_at'+
+        '&event_id=in.('+ids+')&limit=2000');
+      indexSignalRows(rows);
+    }catch(_){}
+  }
+}
+
+function modelEvOf(m){
+  var v=+m.model_edge;
+  if(!isFinite(v))return null;
+  return Math.abs(v)<=1?v*100:v;
+}
+
+/* The price the model is being measured against. A matched signals row is the
+   truth: it is what the scanner actually saw, with the book name attached.
+   Otherwise fall back to whatever price column model_predictions happens to
+   carry, and if there is none, say so. */
+function modelBookPrice(m,sig){
+  if(sig&&sig.best_dec>1)return {book:sig.best_book,dec:+sig.best_dec,src:'signals'};
+  var decF=['best_dec','market_dec','book_dec','price_dec'];
+  for(var i=0;i<decF.length;i++){
+    if(m[decF[i]]!=null&&+m[decF[i]]>1)return {book:m.best_book||m.book||m.bookmaker||null,dec:+m[decF[i]],src:'model'};
+  }
+  var amF=['best_american','market_american','book_american','price_american','american','odds_american'];
+  for(var j=0;j<amF.length;j++){
+    if(m[amF[j]]!=null&&isFinite(+m[amF[j]])&&Math.abs(+m[amF[j]])>=100)
+      return {book:m.best_book||m.book||m.bookmaker||null,dec:GE.amToDec(+m[amF[j]]),src:'model'};
+  }
+  return null;
+}
+
+function modelMeta(m){
+  var meta=window.EVMETA[m.event_id]||{};
+  return {
+    home:m.home_team||meta.home_team||null,
+    away:m.away_team||meta.away_team||null,
+    when:m.commence_time||meta.commence_time||null,
+    sport:meta.sport_title||prettySport(m.sport_key)
+  };
+}
+
+function modelReceiptHTML(m){
+  var d=modelMeta(m);
+  var sig=window.SIGKEY[modelKey(m.event_id,m.market,m.selection,m.point)]||null;
+  var px=modelBookPrice(m,sig);
+  var ev=modelEvOf(m);
+  var prob=(m.model_prob!=null&&isFinite(+m.model_prob))?(+m.model_prob<=1?+m.model_prob:+m.model_prob/100):null;
+  var fa=(m.model_fair_american!=null)?((+m.model_fair_american>0?'+':'')+m.model_fair_american):'\u2014';
+  var pick=m.selection||'';
+  var isHome=(d.home&&pick&&pick.indexOf(d.home)>=0), isAway=(d.away&&pick&&pick.indexOf(d.away)>=0);
+  var ttg=d.when?timeToGame(d.when):null;
+
+  var match='<div class="gd-match">'+
+    '<div class="gd-team'+(isAway?' pick':'')+'"><div class="nm">'+stEsc(d.away||'\u2014')+'</div><div class="rl">away'+(isAway?' \u00b7 the pick':'')+'</div></div>'+
+    '<span class="gd-vs">@</span>'+
+    '<div class="gd-team'+(isHome?' pick':'')+'"><div class="nm">'+stEsc(d.home||'\u2014')+'</div><div class="rl">home'+(isHome?' \u00b7 the pick':'')+'</div></div>'+
+    '<div class="gd-when">'+(d.when?whenLabel(d.when):'start time unknown')+(ttg?'<br><span class="'+(ttg.soon?'cd':'')+'">'+ttg.txt+'</span>':'')+'</div></div>';
+
+  var modelRead='<div class="gd-sec">The model \u00b7 '+stEsc(m.model_version||'model')+'</div>'+
+    '<div class="gd-line"><span class="l">Its pick</span><span class="v">'+stEsc(selLabel(m))+'</span></div>'+
+    '<div class="gd-line"><span class="l">Model win probability</span><span class="v mdl">'+(prob!=null?(prob*100).toFixed(1)+'%':'\u2014')+'</span></div>'+
+    '<div class="gd-line"><span class="l">Model fair line</span><span class="v mdl">'+fa+'</span></div>';
+
+  var marketRead,bars;
+  if(px&&px.dec>1){
+    var am=GE.decToAm(px.dec), od=(am>0?'+':'')+am;
+    var impl=1/px.dec;
+    var gapPts=(prob!=null)?(prob-impl)*100:null;
+    var evAt=(prob!=null)?(prob*px.dec-1)*100:null;
+    marketRead='<div class="gd-sec">The market \u00b7 '+mktLabel(m.market)+'</div>'+
+      '<div class="gd-line"><span class="l">Best price</span><span class="v">'+(px.book?stEsc(px.book)+' ':'')+od+(px.book&&!isTrusted(px.book)?' \u00b7 offshore':'')+'</span></div>'+
+      '<div class="gd-line"><span class="l">Price implies</span><span class="v mut">'+(impl*100).toFixed(1)+'% to win</span></div>'+
+      (gapPts!=null?'<div class="gd-line"><span class="l">Model minus market</span><span class="v '+(gapPts>=0?'up':'dn')+'">'+(gapPts>=0?'+':'')+gapPts.toFixed(1)+' pts</span></div>':'')+
+      (evAt!=null?'<div class="gd-line"><span class="l">EV at this price</span><span class="v '+(evAt>=0?'up':'dn')+'">'+(evAt>=0?'+':'')+evAt.toFixed(1)+'%</span></div>':'')+
+      (sig&&sig.sharp_fair!=null?'<div class="gd-line"><span class="l">Pinnacle sharp fair</span><span class="v">'+GE.decToAm(1/Math.max(0.0001,sig.sharp_fair))+'</span></div>':'')+
+      (sig&&sig.edge!=null?'<div class="gd-line"><span class="l">MARKET edge on this line</span><span class="v '+(sig.edge>=0?'up':'dn')+'">'+(sig.edge>=0?'+':'')+(sig.edge*100).toFixed(2)+'%</span></div>':'');
+    bars='<div class="gd-bars">'+
+      '<div class="gd-bar"><div class="bn">'+(ev!=null?(ev>=0?'+':'')+ev.toFixed(1)+'%':'\u2014')+'</div><div class="bl">model edge</div></div>'+
+      '<div class="gd-bar"><div class="bn">'+(prob!=null?(prob*100).toFixed(0)+'%':'\u2014')+'</div><div class="bl">model</div></div>'+
+      '<div class="gd-bar"><div class="bn">'+(sig&&sig.n_books?sig.n_books:'\u2014')+'</div><div class="bl">books</div></div></div>';
+  }else{
+    marketRead='<div class="gd-sec">The market \u00b7 '+mktLabel(m.market)+'</div>'+
+      '<div class="gd-nodata">No market price is stored on this prediction, and no live line on the board matches this exact selection right now. '+
+      'The headline number is whatever the model wrote at prediction time \u2014 EdgeDesk will not reconstruct the price it was measured against.</div>';
+    bars='<div class="gd-bars">'+
+      '<div class="gd-bar"><div class="bn">'+(ev!=null?(ev>=0?'+':'')+ev.toFixed(1)+'%':'\u2014')+'</div><div class="bl">model edge</div></div>'+
+      '<div class="gd-bar"><div class="bn">'+(prob!=null?(prob*100).toFixed(0)+'%':'\u2014')+'</div><div class="bl">model</div></div>'+
+      '<div class="gd-bar"><div class="bn">\u2014</div><div class="bl">books</div></div></div>';
+  }
+
+  var warn='<div class="mdl-warn"><b>This is not a MARKET edge.</b> It is a proprietary model disagreeing with a book, '+
+    'with no Pinnacle anchor behind it. It is <b>unproven</b>: it is counted nowhere in CLV and nothing on the Record page '+
+    'includes it. It graduates only if its own graded CLV beats the close over a real sample. Treat it as research.</div>';
+
+  return match+bars+modelRead+marketRead+warn;
+}
+
+/* MODEL rows expand like MARKET rows, but into their own receipt: the shared one
+   assumes a Pinnacle sharp_fair that a model row does not have. */
+function modelExpandItem(m,domid,headerInner){
+  window.MRCPT=window.MRCPT||{};window.MRCPT[domid]=m;
+  var sig=window.SIGKEY[modelKey(m.event_id,m.market,m.selection,m.point)]||null;
+  var track=(sig&&sig.best_dec>1)
+    ? '<button class="btn ghost sm" onclick="__mdlTrack(\''+domid+'\')" style="margin-top:10px">Track this line to my ledger</button>'
+    : '<div class="gd-nodata" style="margin-top:8px">No live board price for this selection, so there is nothing to log at a real number.</div>';
+  return '<div class="t10item" id="'+domid+'">'+
+    '<div class="lead-row" onclick="toggleRcptId(\''+domid+'\')">'+headerInner+'<span class="rchev">\u203a</span></div>'+
+    '<div class="receipt">'+modelReceiptHTML(m)+track+'</div></div>';
+}
+/* logs the MARKET line for the same selection \u2014 the model call itself has no
+   price of its own to bet at. */
+window.__mdlTrack=function(id){
+  var m=(window.MRCPT||{})[id];if(!m)return;
+  var sig=window.SIGKEY[modelKey(m.event_id,m.market,m.selection,m.point)];
+  if(sig&&sig.best_dec)trackSignal(sig,GE.decToAm(sig.best_dec));
+};
+
+function modelRow(m,i){
+  var ev=modelEvOf(m);
+  var d=modelMeta(m);
+  var matchup=(d.away&&d.home)?(stEsc(d.away)+' @ '+stEsc(d.home))
+    :'<span style="color:var(--faint)">matchup not on the live board</span>';
+  var when=d.when?whenLabel(d.when):'time unknown';
+  var header='<span class="rank">'+(i+1)+'</span>'+
+    '<div class="lead-mid"><div class="lead-sel"><span class="ebadge model">MODEL</span>'+stEsc(selLabel(m))+'</div>'+
+    '<div class="lead-meta">'+(d.sport?stEsc(d.sport)+' \u00b7 ':'')+mktLabel(m.market)+' \u00b7 '+matchup+' \u00b7 '+when+'</div></div>'+
+    '<span class="lead-ev mdl">'+(ev!=null?(ev>=0?'+':'')+ev.toFixed(1)+'%':'\u2014')+'</span>';
+  return modelExpandItem(m,'mdl_'+i,header);
+}
+
 function renderModelEngine(){
   var host=$('modelFeed');if(!host)return;
   var minev=+($('fMinev')?$('fMinev').value:0)||0;
+  var sportSel=$('fSport')?$('fSport').value:'';
   var rows=(window.MODEL_EDGES||[]).slice().filter(function(m){
     if(m.model_edge==null)return false;
-    var ev=(Math.abs(+m.model_edge)<=1?+m.model_edge*100:+m.model_edge);
-    return ev>=minev;
+    var ev=modelEvOf(m);
+    if(ev==null||ev<minev)return false;
+    if(sportSel){var d=modelMeta(m);if(d.sport!==sportSel)return false;}
+    return true;
   });
-  rows.sort(function(a,b){return (+b.model_edge||0)-(+a.model_edge||0);});
+  rows.sort(function(a,b){return (modelEvOf(b)||0)-(modelEvOf(a)||0);});
   rows=rows.slice(0,40);
   if(!rows.length){
     host.innerHTML='<div class="empty" style="padding:12px">No model edges in your window. This engine lights up for any sport loaded into <b>model_predictions</b> \u2014 MLB today; CFB, golf and props when their models exist. It is independent of Pinnacle and never dilutes a MARKET edge.</div>';
     return;
   }
-  host.innerHTML=rows.map(function(m){
-    var ev=(Math.abs(+m.model_edge)<=1?+m.model_edge*100:+m.model_edge);
-    var pw=mImplWin(m.model_fair_american);
-    var fa=(m.model_fair_american!=null)?((+m.model_fair_american>0?'+':'')+m.model_fair_american):'\u2014';
-    var meta=[(m.sport_key||''),(m.market||''),(m.model_version||'model'),(pw!=null?(pw*100).toFixed(1)+'% model':'')].filter(Boolean).join(' \u00b7 ');
-    return '<div class="mdlrow"><div class="top"><span class="ebadge model">MODEL <span class="st">'+engineStars(4)+'</span></span>'+
-      '<span class="sel">'+stEsc(m.selection||'\u2014')+'</span><span class="ev">+'+ev.toFixed(1)+'%</span></div>'+
-      '<div class="meta">fair '+fa+' \u00b7 '+stEsc(meta)+'</div></div>';
-  }).join('')+
-  '<div class="engine-sub" style="margin-top:8px">Model win-probability vs the book\u2019s implied price. <b>Unproven</b> \u2014 counted nowhere in CLV; graduates only once its own graded CLV beats the close.</div>';
+  host.innerHTML=rows.map(function(m,i){return modelRow(m,i);}).join('')+
+  '<div class="engine-sub" style="margin-top:8px">Model win-probability vs the book\u2019s implied price. Tap any row for the full read. <b>Unproven</b> \u2014 counted nowhere in CLV; graduates only once its own graded CLV beats the close.</div>';
 }
 
 function consEdgeOf(e){
