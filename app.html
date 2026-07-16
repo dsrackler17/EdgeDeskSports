@@ -622,6 +622,10 @@ body.ed-large-text .set-lbl,body.ed-large-text .lead-sel{font-size:14px}
 .pl-acts button{background:none;border:none;color:var(--faint);font-family:'JetBrains Mono',monospace;font-size:10.5px;font-weight:600;cursor:pointer;padding:0}
 .pl-acts button.on{color:var(--accent)}
 .pl-note{font-size:11.5px;color:var(--faint);line-height:1.5}
+.fi-brief{margin-top:10px;border:1px solid rgba(155,140,255,.3);background:rgba(155,140,255,.06);border-radius:9px;padding:10px 11px}
+.fi-brief .bh{font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:700;letter-spacing:.06em;color:var(--mdl);text-transform:uppercase;margin-bottom:6px}
+.fi-brief .bt{font-size:12.5px;line-height:1.6;color:var(--text);white-space:pre-wrap}
+.fi-brief .bf{font-size:10px;color:var(--faint);margin-top:7px;line-height:1.5}
 </style>
 </head>
 <body>
@@ -1748,6 +1752,106 @@ function renderLedger(){renderQuickAdd();var rows=bets(),list=$('betlist');if(!r
    (league, selection) to mark dead legs.
 ================================================================= */
 var FL={faults:[],filter:'all',live:false};
+window.RANKS={};          /* league -> [{rank,team,team_norm,poll}] */
+window.RANK_POLL='';
+
+/* Board selections and poll schools are written by two different vendors, so
+   they never match on a raw string. Normalise both sides the same way and keep
+   an explicit alias list for the ones no rule fixes. Unmatched teams are
+   REPORTED, never quietly dropped, because a silent miss looks identical to
+   "the market agrees with the poll". */
+var TEAM_ALIAS={
+  olemiss:'mississippi', usc:'southerncalifornia', ucf:'centralflorida',
+  smu:'southernmethodist', tcu:'texaschristian', lsu:'louisianast',
+  pitt:'pittsburgh', uconn:'connecticut', unlv:'nevadalasvegas',
+  miamifl:'miami', miamiohio:'miamioh', texasam:'texasandm', ncstate:'northcarolinast'
+};
+function flNormPoll(s){
+  var n=(s||'').toLowerCase().replace(/&/g,'and').replace(/[^a-z0-9]/g,'')
+    .replace(/^university(of)?/,'').replace(/state$/,'st');
+  return TEAM_ALIAS[n]||n;
+}
+
+async function loadRankings(){
+  window.RANKS={};window.RANK_POLL='';
+  try{
+    var r=await sbGet('rankings_current?select=league,poll,rank,team,team_norm,week,season&order=rank.asc&limit=400');
+    if(!r||!r.length)return;
+    /* one poll only. AP and Coaches disagree with each other, and blending two
+       polls into an average invents a ranking nobody published. */
+    var prefer=['AP Top 25','Coaches Poll','Playoff Committee Rankings'];
+    var polls={};r.forEach(function(x){polls[x.poll]=1;});
+    for(var i=0;i<prefer.length;i++)if(polls[prefer[i]]){window.RANK_POLL=prefer[i];break;}
+    if(!window.RANK_POLL)window.RANK_POLL=Object.keys(polls)[0];
+    r.filter(function(x){return x.poll===window.RANK_POLL;}).forEach(function(x){
+      (window.RANKS[x.league]=window.RANKS[x.league]||[]).push({
+        rank:+x.rank,team:x.team,norm:flNormPoll(x.team_norm||x.team),week:x.week,season:x.season});
+    });
+  }catch(_){}
+}
+
+/* ===== Poll vs Money ========================================================
+   Both inputs are PUBLISHED numbers: a voted poll and a de-vigged title board.
+   Nothing is modelled. No strength of schedule, no power rating, no estimate of
+   "how good a team really is" — that is a MODEL opinion and it does not belong
+   in Faultline.
+
+   The claim is only ever: the voters and the money disagree about this team by
+   this many places, and here are both numbers. That is checkable by anyone.
+   ========================================================================== */
+var POLL_GAP_MIN=8;
+function flPoll(b){
+  var ranks=(window.RANKS||{})[b.league];
+  if(!ranks||!ranks.length)return null;
+  if(!b.entries||b.entries.length<8)return null;
+
+  var live=b.entries.filter(function(e){return !e.dead;});
+  if(live.length<8)return null;
+  var d=flDevig(live);
+  var field=d.field.slice().sort(function(x,y){return y.fair-x.fair;});
+  var mrank={},i;
+  for(i=0;i<field.length;i++)mrank[flNormPoll(field[i].name)]={rank:i+1,fair:field[i].fair,odds:field[i].odds,name:field[i].name};
+
+  var rows=[],unmatched=0;
+  ranks.forEach(function(p){
+    var m=mrank[p.norm];
+    if(!m){unmatched++;return;}
+    rows.push({team:p.team,poll:p.rank,market:m.rank,gap:m.rank-p.rank,fair:m.fair,odds:m.odds});
+  });
+  if(!rows.length)return null;
+
+  /* positive gap = money ranks them WORSE than the voters do */
+  var over=rows.filter(function(r){return r.gap>=POLL_GAP_MIN;}).sort(function(a,b){return b.gap-a.gap;});
+  var under=rows.filter(function(r){return r.gap<=-POLL_GAP_MIN;}).sort(function(a,b){return a.gap-b.gap;});
+  if(!over.length&&!under.length)return null;
+
+  var lead=over[0]||under[0];
+  var dir=lead.gap>0;
+  var title=b.board+': the money has '+lead.team+' '+Math.abs(lead.gap)+' places '+(dir?'below':'above')+' the '+window.RANK_POLL;
+
+  return {
+    cls:'Poll vs Money',league:b.league,
+    title:title,
+    finding:'<b>'+flEsc(lead.team)+'</b> is <b>#'+lead.poll+'</b> in the '+window.RANK_POLL+
+      ' but prices <b>#'+lead.market+'</b> of '+field.length+' on this title board at <b>'+flAm(lead.odds)+'</b> ('+flPct(lead.fair)+
+      ' de-vigged). '+(dir?'The voters rate them well above where the money does.':'The money rates them well above the voters.'),
+    edge:0,noEdge:true,magText:(lead.gap>0?'+':'')+lead.gap,magLabel:'rank gap',
+    conf:'medium',
+    receipt:'Two published numbers disagree. The '+window.RANK_POLL+' has '+lead.team+' at #'+lead.poll+
+      '. Ranking this board by de-vigged win probability puts them #'+lead.market+' of '+field.length+
+      ', a gap of '+Math.abs(lead.gap)+' places. EdgeDesk is not claiming either number is right and is not modelling this team: '+
+      'a poll is a vote and a futures board is a low-handle market with '+((d.over-1)*100).toFixed(0)+
+      '% of margin baked in. This is a place to look, not an edge. It becomes one only if a real price beats a sharp fair line.',
+    work:{
+      left:{k:window.RANK_POLL+' \u00b7 voters',rows:(over.concat(under)).slice(0,5).map(function(r){
+        return{l:r.team,v:'#'+r.poll};})},
+      right:{k:'This board \u00b7 de-vigged',rows:(over.concat(under)).slice(0,5).map(function(r){
+        return{l:'#'+r.market+' \u00b7 '+flPct(r.fair),v:(r.gap>0?'+':'')+r.gap,c:r.gap>0?'dn':'up'};})}
+    },
+    qual:'Poll vs market disagreement \u00b7 no model \u00b7 '+rows.length+' of '+ranks.length+
+      ' ranked teams matched to this board'+(unmatched?' \u00b7 '+unmatched+' unmatched by name':'')
+  };
+}
 function flImpl(a){return 1/GE.amToDec(a);}
 function flPct(x){return(x*100).toFixed(1)+'%';}
 function flAm(a){return a>0?'+'+a:''+a;}
@@ -1811,10 +1915,12 @@ function flOver(b){
       right:{k:'Peer band',rows:[{l:'typical',v:(b.peerOverround*100).toFixed(1)+'%'},{l:'deviation',v:(gap>0?'+':'')+(gap*100).toFixed(1)+' pts',c:'up',tot:1}]}},
     qual:'Screening signal \u00b7 pair with a leg-level read'};
 }
-var FL_DETECTORS=[flDead,flIncon,flStale,flOver];
+var FL_DETECTORS=[flDead,flIncon,flStale,flOver,flPoll];
 
 /* --- severity (class-aware: screening classes capped at medium) --- */
 function flSev(f){var e=f.edge;
+  /* a poll disagreement is a place to look, not an arb: hard-cap at medium */
+  if(f.cls==='Poll vs Money')return{k:'medium',n:Math.min(6,3+Math.round(Math.abs(+f.magText||0)/6))};
   if(f.cls==='Logical Inconsistency')return{k:'critical',n:Math.min(10,8+Math.round(e*40))};
   if(f.cls==='Dead Money'){var n=e>=0.045?8:e>=0.03?7:6;return{k:'high',n:n};}
   /* Stale + Overround are screening signals, not standalone edges — cap at medium */
@@ -2019,6 +2125,43 @@ function flFaultTeams(f){var b=f._board;if(!b)return [];
   if(b.nested&&b.nested.length)return b.nested.map(function(n){return{name:n.name,dead:false};});
   return [];}
 /* build the detail card for one name — roster (CFB) or season SG (golf) */
+/* ===== AI brief ==============================================================
+   The button is deliberately opt-in. Every other number on this page is derived
+   locally and cannot be wrong in a new way; this one is generated, costs money,
+   and is only as good as the rows behind it. So it renders on request, it is
+   labeled as generated, and the facts it was given are listed underneath so the
+   text can be checked against them line by line.
+   ========================================================================== */
+window.__brief=async function(league,name,domid){
+  var host=$(domid);if(!host)return;
+  host.innerHTML='<div class="fi-brief"><div class="bh">Generating\u2026</div></div>';
+  try{
+    var t=await edToken();
+    var r=await fetch(SB_URL+'/functions/v1/team_brief',{method:'POST',
+      headers:{apikey:SB_KEY,authorization:'Bearer '+t,'Content-Type':'application/json'},
+      body:JSON.stringify({league:league,team:name})});
+    var d=await r.json();
+    if(!r.ok||d.ok===false)throw new Error(d.error||('brief '+r.status));
+    var src=d.facts?Object.keys(d.facts).filter(function(k){return k!=='league'&&k!=='team';}):[];
+    host.innerHTML='<div class="fi-brief">'+
+      '<div class="bh">'+(d.generated?'AI brief \u00b7 generated':'No data')+'</div>'+
+      '<div class="bt">'+flEsc(d.brief||'')+'</div>'+
+      (d.generated?'<div class="bf">Written by a model from stored rows only ('+
+        (src.length?flEsc(src.join(', ')):'none')+'), at temperature 0 and cached, so the same facts always produce this same text. '+
+        'It can only rephrase those rows \u2014 it has no other knowledge of this team and cannot look anything up. Verify before trusting.</div>':'')+
+    '</div>';
+  }catch(e){
+    host.innerHTML='<div class="fi-brief"><div class="bh">Unavailable</div><div class="bt">'+
+      flEsc(String(e.message||e))+'</div><div class="bf">Needs the team_brief function deployed with ANTHROPIC_API_KEY set.</div></div>';
+  }
+};
+function flBriefBtn(league,name){
+  var id='br_'+flNormTeam(name).replace(/[^a-z0-9]/g,'');
+  return '<div style="margin-top:9px"><button class="btn ghost sm" onclick="__brief(\''+
+    flEsc(league).replace(/'/g,"\\'")+'\',\''+flEsc(name).replace(/'/g,"\\'")+'\',\''+id+'\')">Generate AI brief</button>'+
+    '<div id="'+id+'"></div></div>';
+}
+
 function flTeamDetailHTML(league,name){
   if(flIsGolf(league)){
     var g=FL_DETAIL.golf[flNormTeam(name)];
@@ -2071,7 +2214,7 @@ window.flPeek=function(btn,panelId,league,name){
   var taps=document.querySelectorAll('[data-panel="'+panelId+'"]');for(var i=0;i<taps.length;i++)taps[i].classList.remove('on');
   if(open){p.classList.remove('on');p.removeAttribute('data-cur');p.innerHTML='';return;}
   if(btn)btn.classList.add('on');
-  p.innerHTML=flTeamDetailHTML(league,name);p.classList.add('on');p.setAttribute('data-cur',name);
+  p.innerHTML=flTeamDetailHTML(league,name)+flBriefBtn(league,name);p.classList.add('on');p.setAttribute('data-cur',name);
 };
 function flBindTaps(scope){var t=scope.querySelectorAll('.fi-tap,.fichip');for(var i=0;i<t.length;i++){(function(btn){
   btn.addEventListener('click',function(ev){ev.stopPropagation();flPeek(btn,btn.getAttribute('data-panel'),btn.getAttribute('data-lg'),btn.getAttribute('data-nm'));});
@@ -2086,6 +2229,8 @@ async function loadFaults(){
     else{FL.live=false;grouped=FL_SAMPLE;flRun(FL_SAMPLE);}
   }catch(e){FL.live=false;grouped=FL_SAMPLE;flRun(FL_SAMPLE);}
   FL.boards=grouped;
+  await loadRankings();
+  if(FL.live)flRun(grouped);   /* re-run now that polls are in */
   await loadFaultDetail();
   await loadGolfField();
   var ban=$('flBanner');
@@ -2113,7 +2258,7 @@ function flRender(){var feed=$('flFeed');
     var el=document.createElement('div');el.className='fault';el.setAttribute('data-sev',f.sev.k);
     el.innerHTML='<div class="fhd"><div class="grow"><div class="fmeta"><span class="ftag lg">'+f.league+'</span><span class="ftag cls">'+f.cls+'</span><span class="ftag sv-'+f.sev.k+'">'+f.sev.k+'</span></div>'+
       '<div class="ftitle">'+f.title+'</div><div class="ffind">'+f.finding+'</div></div>'+
-      '<div class="fmag"><div class="mn">'+f.sev.n.toFixed(1)+'</div><div class="ml">magnitude</div><div class="fbar">'+beads+'</div><div class="me">+'+(f.edge*100).toFixed(1)+' pts</div><span class="fchev">\u25b6</span></div></div>'+
+      '<div class="fmag"><div class="mn">'+f.sev.n.toFixed(1)+'</div><div class="ml">'+(f.magLabel||'magnitude')+'</div><div class="fbar">'+beads+'</div><div class="me">'+(f.noEdge?flEsc(f.magText||'\u2014'):'+'+(f.edge*100).toFixed(1)+' pts')+'</div><span class="fchev">\u25b6</span></div></div>'+
       '<div class="fbody"><div class="frcpt"><div class="rk">The Receipt</div><p>'+f.receipt+'</p></div>'+tbl(f.work)+inside+
       '<div class="fqual"><span class="fconf '+f.conf+'"><span class="bd"></span>confidence: <b>'+f.conf+'</b></span><span>'+f.qual+'</span></div></div>';
     el.querySelector('.fhd').onclick=function(){el.classList.toggle('open');};
