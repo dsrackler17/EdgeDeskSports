@@ -11,8 +11,12 @@
 (function(){
   try{
     var s=JSON.parse(localStorage.getItem('edgedesk_session')||'null');
-    var ok=s&&s.access_token&&(!s.expires_at||(+s.expires_at*1000)>Date.now());
-    if(!ok){ location.replace('./index.html'); }
+    /* An expired access_token is NOT logged out — it's refreshable. Evicting on
+       expiry logged people out roughly hourly. Only a session with no token and
+       no refresh_token is genuinely dead. */
+    var live=s&&s.access_token&&(!s.expires_at||(+s.expires_at*1000)>Date.now());
+    var renewable=s&&s.refresh_token;
+    if(!live&&!renewable){ location.replace('./index.html'); }
   }catch(e){ location.replace('./index.html'); }
 })();
 </script>
@@ -764,10 +768,53 @@ body.ed-large-text .set-lbl,body.ed-large-text .lead-sel{font-size:14px}
 /* ===== Supabase (read-only; anon key is public-safe, RLS allows select) ===== */
 var SB_URL="https://iattxbkbufslbauoumga.supabase.co";
 var SB_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlhdHR4YmtidWZzbGJhdW91bWdhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE2MzY4MDUsImV4cCI6MjA5NzIxMjgwNX0.Mly5G587o5IFRnEigU2wRp9buWEk3dFwH9RNPJK7Uo8";
-async function sbGet(q){var r=await fetch(SB_URL+"/rest/v1/"+q,{headers:{apikey:SB_KEY,authorization:"Bearer "+SB_KEY}});if(!r.ok)throw new Error("db "+r.status);return r.json();}
+/* ===== session token =====================================================
+   Reads MUST carry the user's access_token, not the anon key: auth.uid() is what
+   every RLS policy keys on, and it is NULL for an anon bearer. Anon is kept only
+   as a fallback for a signed-out reader of public tables.
+   Access tokens expire (~1h) and there was no refresh, so tokens are renewed here
+   ~2 min before expiry. A single in-flight refresh is shared to avoid a stampede
+   when several loaders fire at once. */
+var _edRefreshing=null;
+async function edRefreshSession(){
+  var s=edSession(); if(!s||!s.refresh_token)return null;
+  try{
+    var r=await fetch(SB_URL+'/auth/v1/token?grant_type=refresh_token',{method:'POST',
+      headers:{apikey:SB_KEY,'content-type':'application/json'},
+      body:JSON.stringify({refresh_token:s.refresh_token})});
+    if(!r.ok)return null;
+    var d=await r.json();
+    if(d&&d.access_token){try{localStorage.setItem('edgedesk_session',JSON.stringify(d));}catch(e){}return d;}
+  }catch(e){}
+  return null;
+}
+async function edToken(){
+  var s=edSession();
+  if(!s||!s.access_token)return SB_KEY;
+  var exp=s.expires_at?(+s.expires_at*1000):0;
+  if(exp&&(exp-Date.now())<120000){
+    if(!_edRefreshing)_edRefreshing=edRefreshSession().then(function(v){_edRefreshing=null;return v;});
+    var n=await _edRefreshing;
+    if(n&&n.access_token)return n.access_token;
+  }
+  return s.access_token;
+}
+async function sbFetch(q,extra){
+  var t=await edToken();
+  var h={apikey:SB_KEY,authorization:"Bearer "+t};
+  if(extra)for(var k in extra)h[k]=extra[k];
+  var r=await fetch(SB_URL+"/rest/v1/"+q,{headers:h});
+  if(r.status===401){                     // token rejected — refresh once, retry once
+    var n=await edRefreshSession();
+    if(n&&n.access_token){h.authorization="Bearer "+n.access_token;r=await fetch(SB_URL+"/rest/v1/"+q,{headers:h});}
+  }
+  if(!r.ok)throw new Error("db "+r.status);
+  return r.json();
+}
+async function sbGet(q){return sbFetch(q);}
 /* reads the isolated `ufc` research schema (descriptive-only dataset). Requires the
    ufc schema to be exposed under Supabase > API settings > Exposed schemas. */
-async function sbGetUfc(q){var r=await fetch(SB_URL+"/rest/v1/"+q,{headers:{apikey:SB_KEY,authorization:"Bearer "+SB_KEY,"accept-profile":"ufc"}});if(!r.ok)throw new Error("db "+r.status);return r.json();}
+async function sbGetUfc(q){return sbFetch(q,{"accept-profile":"ufc"});}
 async function ufcFetchAll(sel,ord){var all=[],p=0,PAGE=1000;for(;p<20;p++){var b=await sbGetUfc(sel+'&order='+(ord||'full_name')+'&limit='+PAGE+'&offset='+(p*PAGE));if(!b||!b.length)break;all=all.concat(b);if(b.length<PAGE)break;}return all;}
 async function sbCount(filter){var r=await fetch(SB_URL+"/rest/v1/signals?select=id&limit=1"+(filter?"&"+filter:""),{headers:{apikey:SB_KEY,authorization:"Bearer "+SB_KEY,prefer:"count=exact"}});var cr=r.headers.get("content-range")||"0-0/0";return parseInt(cr.split("/")[1])||0;}
 
@@ -1132,7 +1179,14 @@ function renderEdges(){
         expandItem(near,'nm_0',nmHeader)+
         '</div>';
     }
-    f.innerHTML=down
+    /* A locked-out user reads zero rows exactly like an efficient market reads zero
+       rows. Telling them "it's a clean board" would be a lie: the board isn't clean,
+       they aren't entitled to it. Check entitlement BEFORE the clean-board copy.
+       window.SUB: undefined = still loading, null = signed in but not subscribed. */
+    var _locked=(window.SUB===null&&window.PAYWALL_LIVE===true);
+    f.innerHTML=_locked
+      ?'<div class="empty"><b>Your subscription isn\u2019t active.</b><br>Live edges are part of the EdgeDesk Research Terminal. This isn\u2019t an empty board \u2014 it\u2019s a locked one.<div style="margin-top:11px"><a class="btn sm" href="./index.html#pricing" style="text-decoration:none">See the plan</a></div></div>'
+      :down
       ?'<div class="empty"><b>No live edges to show.</b><br>The data is stale or the pipeline is down \u2014 see the banner above. Nothing here would be current.'+funnel+'</div>'
       :'<div class="empty"><b>Nothing clears the strict bar in your '+winLbl+' window.</b><br>Capture is live (last run '+ago(window.__edgeLatest)+'). The strict list wants real liquidity behind the fair line; '+(near?'the closest positive line is shown below.':'right now it\u2019s a clean board.')+' Try <b>All books</b> or a wider <b>Window</b> for more.'+funnel+'</div>'+nearHtml;
     return;
@@ -2719,6 +2773,7 @@ renderLedger();loadEdges();
     });})(btns[i]);}
 })();
 function edSignOut(){try{localStorage.removeItem('edgedesk_session');}catch(e){}location.replace('./index.html');}
+setInterval(function(){try{edToken();}catch(_){}},10*60*1000);   // keep the session alive
 setInterval(function(){var on=!$('v-edges').classList.contains('hide');if(on)loadEdges();
   if(!$('v-faults').classList.contains('hide'))loadFaults();
   if(!$('v-news').classList.contains('hide'))loadNews();
@@ -2737,7 +2792,7 @@ setInterval(function(){var on=!$('v-edges').classList.contains('hide');if(on)loa
 var CFB={teams:[],byId:{},byName:{},games:[],ratings:{},records:{},stats:{},ranks:{},recruit:{},lines:{},at:0,seg:'upcoming',open:{},qualSeason:null};
 var CFB_BTN='flex:0 0 auto;padding:8px 14px;border-radius:9px;border:1px solid rgba(255,255,255,.18);background:transparent;color:var(--fg,#e8eef7);font-size:12.5px;cursor:pointer';
 
-async function sbGetCfb(q){var r=await fetch(SB_URL+"/rest/v1/"+q,{headers:{apikey:SB_KEY,authorization:"Bearer "+SB_KEY,"accept-profile":"cfb"}});if(!r.ok)throw new Error("db "+r.status);return r.json();}
+async function sbGetCfb(q){return sbFetch(q,{"accept-profile":"cfb"});}
 async function cfbFetchAll(sel,ord){var all=[],p=0,PAGE=1000;for(;p<25;p++){var b=await sbGetCfb(sel+'&order='+(ord||'team')+'&limit='+PAGE+'&offset='+(p*PAGE));if(!b||!b.length)break;all=all.concat(b);if(b.length<PAGE)break;}return all;}
 
 function cfbEsc(s){return encodeURIComponent(s==null?'':s);}
@@ -3636,16 +3691,66 @@ function renderSetAccount(){
   return out;
 }
 
+/* Stripe customer portal login link. Create it at:
+   Stripe Dashboard > Settings > Billing > Customer portal > enable + copy link.
+   California ARL requires SAME-MEDIUM cancellation: a subscription bought online
+   must be cancellable online. Leave this empty and the UI says so honestly
+   rather than pretending a self-serve cancel exists. */
+var STRIPE_PORTAL_URL="";
+var SUB_PRICE_DISPLAY="$24.99";
+/* Flip to true ONLY after paywall.sql STEP 2 has run and you have verified the
+   gate. It exists so the "your subscription isn't active" empty state can never
+   appear while the data is in fact still free — telling a free user they're
+   locked out when they aren't is the same lie in the opposite direction. */
+var PAYWALL_LIVE=false;
+window.PAYWALL_LIVE=PAYWALL_LIVE;
+
+async function loadSubStatus(){
+  try{
+    var rows=await sbGet('subscriptions?select=status,current_period_end,cancel_at_period_end,stripe_customer_id&limit=1');
+    window.SUB=(rows&&rows[0])||null;
+  }catch(e){ window.SUB=undefined; }   // undefined = couldn't read; null = no subscription
+  if(SET_ACTIVE==='subscription')renderSettings();
+}
+function subStatusLabel(s){
+  return ({active:'Active',trialing:'Trial',past_due:'Payment failed',canceled:'Cancelled',
+           incomplete:'Incomplete',unpaid:'Unpaid'})[s]||s||'\u2014';
+}
 function renderSetSub(){
-  return setGate('Billing is not connected',
-    'EdgeDesk has <b>no payment processor wired</b>. There is no Stripe integration, no plan record, and no billing state to read \u2014 so plan, price, renewal date, invoices, payment method, upgrade and cancel would all be invented numbers. They are deliberately not shown.',
-    'NOT BUILT')+
-  setCard('What access looks like today','Everything on EdgeDesk is currently open to any signed-in account.',
-    setRow('Plan','<span class="set-val">Free \u00b7 unrestricted</span>')+
-    setRow('Cost','<span class="set-val">$0.00</span>')+
-    setRow('Restrictions','<span class="set-val">None</span>','No RLS subscription gate exists yet')+
-    '<div class="set-note">The login screen is a UX funnel, not a paywall \u2014 the anon key still reads public data. Real monetization needs an RLS subscription check plus a payment processor. Until that exists, this page will not display a plan you are not actually on.</div>'
+  var sub=window.SUB;
+  if(sub===undefined){
+    return setCard('Subscription',null,'<div class="set-note">Checking your subscription\u2026 if this persists, the <span class="mono">subscriptions</span> table may not exist yet \u2014 run subscriptions.sql.</div>');
+  }
+  var out='';
+  if(!sub){
+    out+=setCard('No active subscription','You are signed in but not subscribed.',
+      setRow('Plan','<span class="set-val">None</span>')+
+      setRow('Price','<span class="set-val">'+SUB_PRICE_DISPLAY+' / month</span>','Renews monthly until cancelled')+
+      '<div class="set-act"><a class="btn sm" href="./index.html#subscribe" style="text-decoration:none">Subscribe</a></div>'+
+      '<div class="set-note">Subscribing takes you through the automatic renewal terms before any payment is collected.</div>');
+    return out;
+  }
+  var active=(sub.status==='active'||sub.status==='trialing');
+  var end=sub.current_period_end?new Date(sub.current_period_end):null;
+  var endStr=end?end.toLocaleDateString(undefined,{month:'long',day:'numeric',year:'numeric'}):'\u2014';
+  out+=setCard('Subscription',null,
+    setRow('Plan','<span class="set-val">EdgeDesk Research Terminal</span>')+
+    setRow('Status','<span class="set-val '+(active?'pos':'')+'">'+stEsc(subStatusLabel(sub.status))+'</span>')+
+    setRow('Price','<span class="set-val">'+SUB_PRICE_DISPLAY+' / month</span>')+
+    setRow(sub.cancel_at_period_end?'Access ends':'Renews on','<span class="set-val">'+stEsc(endStr)+'</span>',
+      sub.cancel_at_period_end?'Cancelled \u2014 no further charges':'You will be charged '+SUB_PRICE_DISPLAY+' on this date')
   );
+  if(sub.status==='past_due'){
+    out+='<div class="set-gate" style="border-color:rgba(226,96,68,.4)"><div class="set-gate-h"><span class="set-gate-tag" style="border-color:rgba(226,96,68,.5);color:var(--neg);background:rgba(226,96,68,.1)">ACTION NEEDED</span>Payment failed</div>'+
+      '<p>Your most recent payment did not go through. Update your card to keep access.</p></div>';
+  }
+  out+=setCard('Manage','Cancel anytime. Cancellation stops all future charges and access continues to the end of the period you have paid for.',
+    STRIPE_PORTAL_URL
+      ? '<div class="set-act"><a class="btn ghost sm" href="'+STRIPE_PORTAL_URL+'" target="_blank" rel="noopener" style="text-decoration:none">Manage or cancel subscription</a></div>'+
+        '<div class="set-note">Opens the secure billing portal where you can cancel or update your payment method.</div>'
+      : '<div class="set-note" style="border:none;padding-top:0"><b style="color:var(--warn)">Self-serve cancellation is not wired yet.</b> The Stripe customer portal link has not been configured, so this button would go nowhere. Until it is, cancellation requests are handled by email. California law requires that a subscription bought online can be cancelled online \u2014 this must be connected before charging customers.</div>'
+  );
+  return out;
 }
 
 function renderSetEdge(){
@@ -3834,7 +3939,7 @@ window.__avGo=function(sec){
 document.addEventListener('click',function(){var m=$('avMenu');if(m)m.classList.remove('open');});
 
 /* settings boot: apply prefs, paint avatar, honour landing-page pref */
-try{applyPrefs();renderAvatar();
+try{applyPrefs();renderAvatar();loadSubStatus();
   var _u=edUser();if(_u){var _n=$('avName'),_m=$('avMail');
     if(_n)_n.textContent=(_u.user_metadata&&_u.user_metadata.display_name)||(_u.email||'Account').split('@')[0];
     if(_m)_m.textContent=_u.email||'';}
