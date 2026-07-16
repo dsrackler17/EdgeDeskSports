@@ -433,7 +433,12 @@ function reliaMini(calib){
 async function loadLiveProof(){
   var inner=document.getElementById('proofInner');if(!inner)return;
   try{
-    var gate=(await sbGet('public_proof_gate?select=*'))[0]||{total_graded:0,show_publicly:false,threshold:200};
+    /* The gate view is what enforces the "building the record" promise. If it is
+       missing or unreachable, fall back to the building state rather than the
+       error state: a visitor should see an honest 0/200 counter, not a broken
+       block. Run public_proof.sql to create it. */
+    var gate={total_graded:0,show_publicly:false,threshold:200};
+    try{ var g=(await sbGet('public_proof_gate?select=*'))[0]; if(g)gate=g; }catch(_g){}
     if(!gate.show_publicly){
       var pct=Math.min(100,Math.round((gate.total_graded/gate.threshold)*100));
       inner.innerHTML='<div style="font-family:JetBrains Mono,monospace;font-size:12px;color:var(--warn);font-weight:700;letter-spacing:.04em">BUILDING THE RECORD</div>'+
@@ -445,11 +450,14 @@ async function loadLiveProof(){
     // CLV
     var clvHtml='';
     try{
-      var rows=await sbGet('signals?select=clv&graded_at=not.is.null&edge=gte.0.005&edge=lte.0.1&n_books=gte.3&clv=not.is.null&limit=100000');
-      var n=rows.length;
-      if(n){var sum=rows.reduce(function(a,r){return a+(+r.clv||0);},0),avg=sum/n;
-        var sorted=rows.map(function(r){return +r.clv||0;}).sort(function(a,b){return a-b;}),med=sorted[Math.floor(n/2)];
-        var beat=rows.filter(function(r){return (+r.clv||0)>0;}).length/n;
+      /* Reads the aggregate view, NOT signals. Two reasons:
+         1. paywall.sql restricts signals to subscribers — a logged-out visitor
+            would get zero rows and the public record would silently go dark.
+         2. this used to pull up to 100,000 rows into the browser to compute an
+            average. The database does it in one row. */
+      var pr=(await sbGet('public_proof_clv?select=*'))[0]||null;
+      var n=pr?(+pr.n||0):0;
+      if(n){var avg=+pr.avg_clv||0, med=+pr.median_clv||0, beat=+pr.beat_rate||0;
         clvHtml='<div class="lkpis"><div class="lk"><div class="n '+(avg>=0?'pos':'neg')+'">'+(avg>=0?'+':'')+(avg*100).toFixed(2)+'%</div><div class="l">avg CLV</div></div>'+
           '<div class="lk"><div class="n '+(med>=0?'pos':'neg')+'">'+(med>=0?'+':'')+(med*100).toFixed(2)+'%</div><div class="l">median CLV</div></div>'+
           '<div class="lk"><div class="n">'+(beat*100).toFixed(0)+'%</div><div class="l">beat close · n='+n+'</div></div></div>'+
