@@ -177,8 +177,8 @@ footer{border-top:1px solid var(--border);background:var(--surface);padding:34px
     <a class="nlink hideS" href="#different">How it works</a>
     <a class="nlink hideS" href="#proof-record">Track record</a>
     <a class="nlink hideS" href="#classes">Fault types</a>
-    <button class="btn ghost" onclick="openAuth('login')">Log in</button>
-    <button class="btn primary" onclick="openAuth('signup')">Sign up</button>
+    <button class="btn ghost" id="navLogin" onclick="openAuth('login')">Log in</button>
+    <button class="btn primary" id="navSignup" onclick="openAuth('signup')">Sign up</button>
   </div>
 </nav>
 
@@ -204,7 +204,7 @@ Every recommendation is tracked. Every result is archived. Every edge is measure
       <div class="cta">
         <p class="hero-trust">
   No locks. No guarantees. Just transparent research backed by real market data.
-</p> <button class="btn primary lg" onclick="openAuth('signup')">Start free</button>
+</p> <button class="btn primary lg" id="heroStart" onclick="openAuth('signup')">Start free</button>
         <a class="btn ghost lg" href="#proof">See a real fault →</a>
       </div>
       <p class="microcta">Free trial • Research platform, not betting advice • 21+</p>
@@ -342,11 +342,11 @@ Every recommendation is tracked. Every result is archived. Every edge is measure
         <li><b>Closing line value tracking</b> on everything you log</li>
         <li><b>Matchup research</b> alongside the market read</li>
       </ul>
-      <button class="btn primary lg" style="width:100%" onclick="startSubscribe()">Subscribe</button>
+      <button class="btn primary lg" style="width:100%" id="subBtn" onclick="startSubscribe()">Subscribe</button>
       <div class="psub">Research and analytics only. EdgeDesk does not accept wagers, hold funds, or provide betting advice.</div>
     </div>
     <div class="cta" style="margin-top:16px">
-      <button class="btn ghost lg" onclick="openAuth('login')">Log in</button>
+      <button class="btn ghost lg" id="btmLogin" onclick="openAuth('login')">Log in</button>
     </div>
   </div>
 </section>
@@ -499,15 +499,48 @@ function sessionValid(){var s=edSession();return !!(s&&s.access_token&&(!s.expir
 
 /* Subscribe entry point. An account must exist FIRST — without a user id there is
    nothing to attach the payment to. */
-function startSubscribe(){
-  if(!sessionValid()){ pendingSubscribe=true; openAuth('signup'); return; }
-  openArl();
+async function startSubscribe(){
+  var btn=document.getElementById('subBtn');
+  if(sessionValid()){ openArl(); return; }
+  /* An expired access_token is not a logged-out user. Refresh before demanding
+     they sign in again — otherwise anyone returning after an hour is bounced
+     back to a signup form they already completed. */
+  var s=edSession();
+  if(s&&s.refresh_token){
+    if(btn){btn.disabled=true;btn.textContent='\u2026';}
+    var n=await edRefresh();
+    if(btn){btn.disabled=false;btn.textContent='Subscribe';}
+    if(n){ openArl(); return; }
+  }
+  setPendingSub(true);
+  openAuth(s?'login':'signup');
 }
 var pendingSubscribe=false;
 
+/* The intent has to outlive a page load. With email confirmation ON, signup
+   returns no access_token: the visitor leaves for their inbox, clicks the link,
+   and lands back here. Without a stored flag the subscribe intent is gone and
+   they are staring at a generic page with no idea how to pay. */
+function setPendingSub(v){pendingSubscribe=!!v;try{v?localStorage.setItem('edgedesk_pending_sub','1'):localStorage.removeItem('edgedesk_pending_sub');}catch(e){}}
+function getPendingSub(){try{return localStorage.getItem('edgedesk_pending_sub')==='1';}catch(e){return false;}}
+
+async function edRefresh(){
+  var s=edSession(); if(!s||!s.refresh_token)return null;
+  try{
+    var r=await fetch(SB_URL+'/auth/v1/token?grant_type=refresh_token',{method:'POST',
+      headers:{apikey:SB_KEY,'Content-Type':'application/json'},
+      body:JSON.stringify({refresh_token:s.refresh_token})});
+    if(!r.ok)return null;
+    var d=await r.json();
+    if(d&&d.access_token){try{localStorage.setItem('edgedesk_session',JSON.stringify(d));}catch(e){}return d;}
+  }catch(e){}
+  return null;
+}
+function edSignOut(){try{localStorage.removeItem('edgedesk_session');localStorage.removeItem('edgedesk_pending_sub');}catch(e){}location.reload();}
+
 function openArl(){
   var u=edUserFromSession();
-  if(!u||!u.id){ pendingSubscribe=true; openAuth('signup'); return; }
+  if(!u||!u.id){ setPendingSub(true); openAuth('signup'); return; }
   document.getElementById('arlWho').textContent='Signed in as '+(u.email||'your account')+'.';
   var cb=document.getElementById('arlAgree'), sb=document.getElementById('arlSubmit');
   cb.checked=false; sb.disabled=true;
@@ -553,6 +586,13 @@ async function confirmArl(){
   window.location.href=url;
 }
 
+/* The whole reason "Subscribe" went nowhere: #arlSubmit ships disabled in the
+   markup and nothing ever unlocked it. The consent box is the only thing that
+   may unlock it (ARL requires express affirmative consent), so wire it here. */
+document.getElementById('arlAgree').addEventListener('change',function(){
+  document.getElementById('arlSubmit').disabled=!this.checked;
+});
+document.getElementById('arlModal').addEventListener('click',function(e){if(e.target===this)closeArl();});
 document.addEventListener('keydown',function(e){if(e.key==='Escape')closeArl();});
 
 /* ===== auth ===== */
@@ -632,14 +672,42 @@ async function submitAuth(){
     }
     if(d.access_token){
       try{localStorage.setItem('edgedesk_session',JSON.stringify(d));}catch(e){}
-      if(pendingSubscribe){pendingSubscribe=false;msg('Account ready — confirming your subscription…','ok');
-        setTimeout(function(){closeAuth();openArl();},500);return;}
-      msg('Signed in, opening your scanner…','ok');setTimeout(function(){window.location.href=APP_URL;},700);
+      if(pendingSubscribe||getPendingSub()){setPendingSub(false);pendingSubscribe=true;
+        msg('Account ready \u2014 confirming your subscription\u2026','ok');
+        setTimeout(function(){closeAuth();openArl();},400);return;}
+      msg('Signed in, opening your scanner\u2026','ok');setTimeout(function(){window.location.href=APP_URL;},700);
     }else{
-      msg('Check your email to confirm, then log in.','ok');btn.disabled=false;btn.textContent=old;
+      /* No token means email confirmation is on. Keep the flag set so the click
+         from the confirmation email resumes checkout instead of dead-ending. */
+      if(pendingSubscribe)setPendingSub(true);
+      msg(pendingSubscribe
+        ? 'Account created. Confirm your email ('+email+'), then come back and tap Subscribe \u2014 checkout picks up where you left off.'
+        : 'Check your email to confirm, then log in.','ok');
+      btn.disabled=false;btn.textContent=old;
     }
   }catch(e){msg('Network error. Check your connection and retry.');btn.disabled=false;btn.textContent=old;}
 }
+
+/* ===== boot =====
+   Two jobs: stop showing "Sign up" to someone already signed in, and resume a
+   checkout that was interrupted by email confirmation. */
+(async function bootAuthState(){
+  var s=edSession();
+  if(s&&(s.access_token||s.refresh_token)){
+    var u=edUserFromSession()||{};
+    var lg=document.getElementById('navLogin');
+    if(lg){lg.textContent='Sign out';lg.onclick=edSignOut;}
+    var su=document.getElementById('navSignup');
+    if(su){su.textContent='Open scanner';su.onclick=function(){window.location.href=APP_URL;};}
+    var hs=document.getElementById('heroStart');
+    if(hs){hs.textContent='Open scanner \u2192';hs.onclick=function(){window.location.href=APP_URL;};}
+    var bl=document.getElementById('btmLogin');
+    if(bl){bl.textContent=(u.email?'Signed in as '+u.email:'Open scanner');bl.onclick=function(){window.location.href=APP_URL;};}
+  }
+  if(!getPendingSub())return;
+  if(sessionValid()){pendingSubscribe=true;setTimeout(openArl,300);return;}
+  if(s&&s.refresh_token){var n=await edRefresh();if(n){pendingSubscribe=true;setTimeout(openArl,300);}}
+})();
 </script>
 </body>
 </html>
