@@ -2160,13 +2160,14 @@ window.__brief=async function(league,name,domid,fresh){
 
     var used=d.facts?Object.keys(d.facts).filter(function(k){return k.charAt(0)!=='_';}):[];
     host.innerHTML='<div class="fi-brief">'+
-      '<div class="bh">AI brief \u00b7 '+(d.cached?'cached':'live')+
-        (d.searches?' \u00b7 '+d.searches+' search'+(d.searches===1?'':'es'):'')+'</div>'+
+      '<div class="bh">AI brief \u00b7 '+(d.cached?'cached \u00b7 free':'live')+
+        (d.searches?' \u00b7 '+d.searches+' search'+(d.searches===1?'':'es'):'')+
+        (d.est_cost_usd?' \u00b7 ~$'+(+d.est_cost_usd).toFixed(3):'')+'</div>'+
       '<div class="bt">'+flEsc(d.brief||'')+'</div>'+srcHtml+
       '<div class="bf">Written by Claude from the pages above plus your own rows ('+
         (used.length?flEsc(used.join(', ')):'none held')+'). Generated text, not a de-vig: '+
         'it can be wrong in ways the rest of this app cannot. The links are there so you can check it. '+
-        'Not a prediction and not advice. '+
+        'Not a prediction and not advice. Cached for 24h per team, so taps after the first are free. '+
         '<button onclick="__brief(\''+flEsc(league).replace(/'/g,"\\'")+'\',\''+flEsc(name).replace(/'/g,"\\'")+
         '\',\''+domid+'\',1)" style="background:none;border:none;color:var(--accent);font-family:inherit;font-size:10px;font-weight:600;cursor:pointer;padding:0;text-decoration:underline">Re-run fresh</button></div>'+
     '</div>';
