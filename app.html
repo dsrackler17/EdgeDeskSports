@@ -571,6 +571,52 @@ body.ed-large-text .set-lbl,body.ed-large-text .lead-sel{font-size:14px}
   .set-row-c{width:100%}
   .set-sel,.set-range{width:100%}
 }
+
+/* ===== Pulse (social) ===== */
+.bottomnav button{padding:8px 0;font-size:8.5px;gap:2px}
+.pl-seg{display:flex;gap:6px;margin-bottom:10px}
+.pl-seg button{flex:1;background:var(--surface);border:1px solid var(--border);color:var(--dim);font-family:inherit;font-size:11.5px;font-weight:600;padding:7px 4px;border-radius:8px;cursor:pointer}
+.pl-seg button.on{background:var(--surface2);border-color:var(--accent);color:var(--accent)}
+.pl-ev{display:flex;align-items:center;gap:10px;background:var(--surface);border:1px solid var(--border);border-radius:11px;padding:10px 12px;margin-bottom:7px;cursor:pointer}
+.pl-ev:active{background:var(--surface2)}
+.pl-ev-l{min-width:0;flex:1}
+.pl-lg{font-family:'JetBrains Mono',monospace;font-size:8.5px;font-weight:700;letter-spacing:.06em;color:var(--faint);text-transform:uppercase}
+.pl-mt{font-size:13.5px;font-weight:600;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pl-tm{font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--dim);margin-top:3px;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.pl-dot{width:6px;height:6px;border-radius:50%;background:var(--neg);flex:none;animation:plp 1.6s infinite}
+@keyframes plp{0%,100%{opacity:1}50%{opacity:.25}}
+.pl-edge{color:var(--pos);font-weight:700}
+.pl-cnt{flex:none;text-align:center;min-width:44px}
+.pl-cnt .n{font-family:'JetBrains Mono',monospace;font-size:15px;font-weight:700;color:var(--text)}
+.pl-cnt .n.z{color:var(--faint);font-weight:400}
+.pl-cnt .l{font-size:8.5px;color:var(--faint);text-transform:uppercase;letter-spacing:.04em}
+.pl-back{background:none;border:none;color:var(--accent);font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer;padding:0 0 8px}
+.pl-head{background:var(--surface);border:1px solid var(--border);border-radius:11px;padding:12px;margin-bottom:11px}
+.pl-head .m{font-size:16px;font-weight:700}
+.pl-comp{background:var(--surface);border:1px solid var(--border);border-radius:11px;padding:10px;margin-bottom:12px}
+.pl-comp textarea{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:inherit;font-size:13.5px;padding:9px;resize:vertical;min-height:62px}
+.pl-comp textarea:focus{outline:none;border-color:var(--accent)}
+.pl-sent{display:flex;gap:5px;flex-wrap:wrap;margin:8px 0}
+.pl-sent button{background:var(--surface2);border:1px solid var(--border);color:var(--dim);font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;padding:5px 9px;border-radius:20px;cursor:pointer}
+.pl-sent button.on{border-color:var(--accent);color:var(--accent);background:rgba(77,141,255,.1)}
+.pl-crow{display:flex;align-items:center;gap:9px}
+.pl-ct{font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--faint);flex:1}
+.pl-ct.over{color:var(--neg)}
+.pl-post{display:flex;gap:9px;padding:11px 0;border-bottom:1px solid var(--border)}
+.pl-av{width:29px;height:29px;border-radius:50%;flex:none;background:var(--surface2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:var(--dim)}
+.pl-b{flex:1;min-width:0}
+.pl-h{display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+.pl-hn{font-size:12.5px;font-weight:700}
+.pl-hn.me{color:var(--accent)}
+.pl-ht{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--faint)}
+.pl-tag{font-family:'JetBrains Mono',monospace;font-size:8.5px;font-weight:700;letter-spacing:.05em;padding:2px 6px;border-radius:4px;text-transform:uppercase}
+.pl-tag.home,.pl-tag.over{background:rgba(47,180,124,.12);color:var(--pos)}
+.pl-tag.away,.pl-tag.under{background:rgba(226,96,68,.12);color:var(--neg)}
+.pl-tx{font-size:13.5px;line-height:1.5;margin-top:4px;white-space:pre-wrap;word-wrap:break-word;overflow-wrap:anywhere}
+.pl-acts{display:flex;gap:14px;margin-top:6px}
+.pl-acts button{background:none;border:none;color:var(--faint);font-family:'JetBrains Mono',monospace;font-size:10.5px;font-weight:600;cursor:pointer;padding:0}
+.pl-acts button.on{color:var(--accent)}
+.pl-note{font-size:11.5px;color:var(--faint);line-height:1.5}
 </style>
 </head>
 <body>
@@ -749,6 +795,13 @@ body.ed-large-text .set-lbl,body.ed-large-text .lead-sel{font-size:14px}
   </section>
 
   <!-- SETTINGS -->
+  <!-- PULSE (social) -->
+  <section id="v-social" class="view hide">
+    <div class="row-between"><h2 style="margin:0">Pulse</h2><span class="spacer"></span><span class="freshness" id="plFresh">—</span><button class="refreshbtn" title="Refresh" onclick="loadSocial(true)">&#8635;</button></div>
+    <p class="lede">Every event the scanner is currently pricing, and a room for each one. Talk structure, post your read, argue with someone. <b style="color:var(--warn);font-weight:600">Posts are opinions from other users, not EdgeDesk research</b> — nothing here is graded, and none of it is an edge until CLV says it is.</p>
+    <div id="plBody"><div class="empty">Loading board…</div></div>
+  </section>
+
   <section id="v-settings" class="view hide">
     <div class="row-between"><h2 style="margin:0">Settings</h2></div>
     <div class="set-wrap"><div class="set-nav" id="setNav"></div><div class="set-panel" id="setPanel"></div></div>
@@ -762,6 +815,7 @@ body.ed-large-text .set-lbl,body.ed-large-text .lead-sel{font-size:14px}
   <button data-v="research"><svg class="ic" viewBox="0 0 24 24"><path d="M12 3l9 5-9 5-9-5 9-5z"/><path d="M3 13l9 5 9-5"/></svg>Research</button>
   <button data-v="ledger"><svg class="ic" viewBox="0 0 24 24"><path d="M4 5h16v14H4z"/><path d="M4 10h16"/><path d="M9 5v14"/></svg>Ledger</button>
   <button data-v="news"><svg class="ic" viewBox="0 0 24 24"><path d="M4 5h16v14H4z"/><path d="M8 9h8M8 13h8M8 17h5"/></svg>News</button>
+  <button data-v="social"><svg class="ic" viewBox="0 0 24 24"><path d="M21 12a8 8 0 0 1-11.6 7.1L3 21l1.9-6.4A8 8 0 1 1 21 12z"/></svg>Pulse</button>
 </nav>
 
 <script>
@@ -832,7 +886,8 @@ function $(id){return document.getElementById(id);}
 
 /* ===== nav ===== */
 function show(v){if(v==='research'){researchGo(RESEARCH_SUB);return;}var s=document.querySelectorAll('.view');for(var i=0;i<s.length;i++)s[i].classList.toggle('hide',s[i].id!=='v-'+v);var b=document.querySelectorAll('.bottomnav button');for(var j=0;j<b.length;j++)b[j].classList.toggle('on',b[j].dataset.v===v);window.scrollTo(0,0);try{if(v!=='settings'){var _pp=prefs();_pp.lastTab=v;localStorage.setItem('edgedesk_prefs',JSON.stringify(_pp));}}catch(_){}
-  if(v==='record')loadRecord();if(v==='edges')loadEdges();if(v==='faults')loadFaults();if(v==='boards')loadBoards();if(v==='news')loadNews();if(v==='ledger')loadMarket();if(v==='stats')loadStats();if(v==='props')loadProps();if(v==='ufc')loadUFC();if(v==='cfb')loadCFB();if(v==='settings')loadSettings();}
+  if(v==='record')loadRecord();if(v==='edges')loadEdges();if(v==='faults')loadFaults();if(v==='boards')loadBoards();if(v==='news')loadNews();if(v==='ledger')loadMarket();if(v==='stats')loadStats();if(v==='props')loadProps();if(v==='ufc')loadUFC();if(v==='cfb')loadCFB();if(v==='settings')loadSettings();
+  if(v==='social')loadSocial();else plStop();}
 var RESEARCH_SUB='cfb';
 window.researchGo=function(sub){
   if(['cfb','ufc','stats','props'].indexOf(sub)<0)sub='cfb';
@@ -3785,8 +3840,8 @@ function renderSetEdge(){
 
   out+=setCard('Startup',null,
     setRow('Default landing page','<select class="set-sel" onchange="__setPref(\'defaultTab\',this.value)">'+
-      ['edges','faults','boards','record','research','ledger','news'].map(function(t){
-        return '<option value="'+t+'"'+(p.defaultTab===t?' selected':'')+'>'+t.charAt(0).toUpperCase()+t.slice(1)+'</option>';}).join('')+'</select>')+
+      ['edges','faults','boards','record','research','ledger','news','social'].map(function(t){
+        return '<option value="'+t+'"'+(p.defaultTab===t?' selected':'')+'>'+(t==='social'?'Pulse':t.charAt(0).toUpperCase()+t.slice(1))+'</option>';}).join('')+'</select>')+
     setRow('Remember last opened tab',setToggle('rememberTab',p.rememberTab),'Overrides the default landing page'));
 
   out+=setGate('Odds format','Every price in EdgeDesk renders through a single American-odds formatter. Adding decimal and fractional means routing all display paths through a shared converter \u2014 a real change, not a setting. It is not shown as a dropdown because switching it today would change nothing.');
@@ -3924,6 +3979,331 @@ function renderSettings(){
   panel.innerHTML='<div class="set-panel-h">'+stEsc(sec.label)+'</div>'+sec.render();
 }
 function loadSettings(){renderSettings();}
+
+
+/* ===================================================================
+   PULSE — per-event conversation
+   -------------------------------------------------------------------
+   The board is derived from `signals`, which is the same table the
+   scanner prices off. That is deliberate: the room list can only ever
+   contain events EdgeDesk actually has a market for, so there is no
+   second event source to drift out of sync and nothing invented to
+   fill the grid.
+
+   There is no live score here. EdgeDesk has no licensed score feed for
+   every sport it prices, so the status line reports the one thing that
+   is known for certain — scheduled start, and how long ago it passed.
+   A fabricated scoreline would be worse than no scoreline.
+
+   Requires social_schema.sql. Without it the board still renders and
+   the composer says so plainly instead of failing silently.
+   =================================================================== */
+var PL={events:[],counts:{},sport:'all',sort:'soon',ev:null,posts:[],likes:{},mine:{},sent:'none',timer:null,tableOk:true,loaded:0};
+
+function plStop(){if(PL.timer){clearInterval(PL.timer);PL.timer=null;}}
+
+function plStatus(iso){
+  var t=new Date(iso).getTime(), now=Date.now();
+  if(!isFinite(t))return {live:false,txt:'\u2014'};
+  if(t>now){
+    var mins=Math.round((t-now)/60000);
+    if(mins<60)return {live:false,txt:'in '+mins+'m'};
+    if(mins<1440)return {live:false,txt:'in '+Math.round(mins/60)+'h'};
+    return {live:false,txt:new Date(t).toLocaleDateString(undefined,{weekday:'short'})+' '+new Date(t).toLocaleTimeString(undefined,{hour:'numeric',minute:'2-digit'})};
+  }
+  return {live:true,txt:'started '+ago(t)};
+}
+
+async function plLoadEvents(){
+  var now=Date.now();
+  var from=new Date(now-6*3600e3).toISOString();
+  var to=new Date(now+96*3600e3).toISOString();
+  var rows=await sbGet('signals?select=event_id,sport_title,sport_key,home_team,away_team,commence_time,edge'+
+    '&commence_time=gte.'+from+'&commence_time=lte.'+to+'&order=commence_time.asc&limit=3000');
+  var m={};
+  (rows||[]).forEach(function(r){
+    if(!r.event_id||!r.commence_time)return;
+    var e=m[r.event_id];
+    if(!e)e=m[r.event_id]={event_id:r.event_id,sport_title:r.sport_title||'\u2014',sport_key:r.sport_key,
+      home_team:r.home_team,away_team:r.away_team,commence_time:r.commence_time,mkts:0,best:null};
+    e.mkts++;
+    var ed=+r.edge;
+    if(isFinite(ed)&&(e.best===null||ed>e.best))e.best=ed;
+  });
+  var out=[];for(var k in m)out.push(m[k]);
+  return out;
+}
+
+async function plLoadCounts(){
+  try{
+    var r=await sbGet('social_event_counts?select=event_id,n,last_at');
+    var m={};(r||[]).forEach(function(x){m[x.event_id]={n:+x.n||0,last_at:x.last_at};});
+    PL.tableOk=true;return m;
+  }catch(e){PL.tableOk=false;return {};}
+}
+
+async function loadSocial(force){
+  plStop();
+  if(PL.ev){plRenderThread();return;}
+  var box=$('plBody');if(!box)return;
+  if(force||!PL.events.length||(Date.now()-PL.loaded)>60000){
+    box.innerHTML='<div class="empty">Loading board\u2026</div>';
+    try{
+      var res=await Promise.all([plLoadEvents(),plLoadCounts()]);
+      PL.events=res[0];PL.counts=res[1];PL.loaded=Date.now();
+    }catch(e){
+      box.innerHTML='<div class="empty">Couldn\u2019t reach the board. Pull to refresh.</div>';return;
+    }
+  }
+  plRenderBoard();
+}
+
+function plRenderBoard(){
+  var box=$('plBody');if(!box)return;
+  var f=$('plFresh');if(f)f.textContent=PL.loaded?ago(PL.loaded):'\u2014';
+
+  var sports=[];var seen={};
+  PL.events.forEach(function(e){if(e.sport_title&&!seen[e.sport_title]){seen[e.sport_title]=1;sports.push(e.sport_title);}});
+  sports.sort();
+
+  var chips='<div class="stchips"><button class="stchip'+(PL.sport==='all'?' on':'')+'" onclick="plSport(\'all\')">All \u00b7 '+PL.events.length+'</button>';
+  sports.forEach(function(sp){
+    var n=PL.events.filter(function(e){return e.sport_title===sp;}).length;
+    chips+='<button class="stchip'+(PL.sport===sp?' on':'')+'" onclick="plSport(\''+stEsc(sp).replace(/\'/g,"\\'")+'\')">'+stEsc(sp)+' \u00b7 '+n+'</button>';
+  });
+  chips+='</div>';
+
+  var seg='<div class="pl-seg">'+
+    '<button class="'+(PL.sort==='soon'?'on':'')+'" onclick="plSort(\'soon\')">Soonest</button>'+
+    '<button class="'+(PL.sort==='talk'?'on':'')+'" onclick="plSort(\'talk\')">Most talked</button>'+
+    '<button class="'+(PL.sort==='edge'?'on':'')+'" onclick="plSort(\'edge\')">Biggest edge</button>'+
+    '</div>';
+
+  var list=PL.events.filter(function(e){return PL.sport==='all'||e.sport_title===PL.sport;});
+  var self=PL;
+  list.sort(function(a,b){
+    if(self.sort==='talk'){
+      var an=(self.counts[a.event_id]||{}).n||0, bn=(self.counts[b.event_id]||{}).n||0;
+      if(bn!==an)return bn-an;
+    }
+    if(self.sort==='edge'){
+      var ae=a.best===null?-99:a.best, be=b.best===null?-99:b.best;
+      if(be!==ae)return be-ae;
+    }
+    return new Date(a.commence_time)-new Date(b.commence_time);
+  });
+
+  var gate='';
+  if(!PL.tableOk){
+    gate='<div class="flbanner demo" style="margin-bottom:10px">Conversation tables aren\u2019t installed yet \u2014 run <span class="mono">social_schema.sql</span>. The board below is live; the rooms will open the moment the tables exist.</div>';
+  }
+
+  if(!list.length){
+    box.innerHTML=gate+chips+seg+'<div class="empty">No priced events in the next four days. Rooms appear as soon as the scanner has a market.</div>';
+    return;
+  }
+
+  var html='';
+  list.forEach(function(e){
+    var st=plStatus(e.commence_time);
+    var c=(PL.counts[e.event_id]||{}).n||0;
+    var mt=(e.away_team&&e.home_team)?(stEsc(e.away_team)+' @ '+stEsc(e.home_team)):stEsc(e.home_team||e.away_team||e.event_id);
+    var edge=(e.best!==null&&isFinite(e.best)&&e.best>0)?'<span class="pl-edge">+'+(e.best*100).toFixed(1)+'% best edge</span>':'';
+    html+='<div class="pl-ev" onclick="plOpen(\''+e.event_id+'\')">'+
+      '<div class="pl-ev-l">'+
+        '<div class="pl-lg">'+stEsc(e.sport_title)+'</div>'+
+        '<div class="pl-mt">'+mt+'</div>'+
+        '<div class="pl-tm">'+(st.live?'<span class="pl-dot"></span>':'')+st.txt+
+          '<span style="color:var(--faint)">\u00b7 '+e.mkts+' market'+(e.mkts===1?'':'s')+'</span>'+edge+'</div>'+
+      '</div>'+
+      '<div class="pl-cnt"><div class="n'+(c?'':' z')+'">'+c+'</div><div class="l">posts</div></div>'+
+    '</div>';
+  });
+  box.innerHTML=gate+chips+seg+html;
+}
+
+window.plSport=function(sp){PL.sport=sp;plRenderBoard();};
+window.plSort=function(k){PL.sort=k;plRenderBoard();};
+
+window.plOpen=function(id){
+  var e=null;for(var i=0;i<PL.events.length;i++)if(PL.events[i].event_id===id)e=PL.events[i];
+  if(!e)return;
+  PL.ev=e;PL.sent='none';PL.posts=[];PL.likes={};PL.mine={};
+  plRenderThread();
+  plFetchPosts();
+  plStop();
+  PL.timer=setInterval(function(){if(PL.ev)plFetchPosts(true);},20000);
+};
+window.plBack=function(){plStop();PL.ev=null;plRenderBoard();window.scrollTo(0,0);};
+
+function plRenderThread(){
+  var box=$('plBody'),e=PL.ev;if(!box||!e)return;
+  var st=plStatus(e.commence_time);
+  var mt=(e.away_team&&e.home_team)?(stEsc(e.away_team)+' @ '+stEsc(e.home_team)):stEsc(e.home_team||e.away_team||e.event_id);
+  var opts=[['none','No lean'],['away',(e.away_team||'Away')],['home',(e.home_team||'Home')],['over','Over'],['under','Under']];
+  var sent='';
+  opts.forEach(function(o){
+    sent+='<button class="'+(PL.sent===o[0]?'on':'')+'" onclick="plSent(\''+o[0]+'\')">'+stEsc(String(o[1]).slice(0,16))+'</button>';
+  });
+
+  var comp;
+  if(!PL.tableOk){
+    comp='<div class="pl-comp"><div class="pl-note">Posting isn\u2019t live yet \u2014 <span class="mono">social_schema.sql</span> hasn\u2019t been run on this project, so there is nowhere to store a post. Rather than accept text and drop it, the composer stays off.</div></div>';
+  }else{
+    comp='<div class="pl-comp">'+
+      '<textarea id="plText" maxlength="500" placeholder="What do you see in this number?" oninput="plCount()"></textarea>'+
+      '<div class="pl-sent">'+sent+'</div>'+
+      '<div class="pl-crow"><span class="pl-ct" id="plCt">0 / 500</span>'+
+      '<button class="btn sm" onclick="plSend()" id="plSendBtn">Post</button></div>'+
+      '<div class="set-msg" id="plMsg" style="margin-top:7px"></div></div>';
+  }
+
+  box.innerHTML='<button class="pl-back" onclick="plBack()">\u2190 All events</button>'+
+    '<div class="pl-head"><div class="pl-lg">'+stEsc(e.sport_title)+'</div>'+
+      '<div class="m">'+mt+'</div>'+
+      '<div class="pl-tm" style="margin-top:5px">'+(st.live?'<span class="pl-dot"></span>':'')+st.txt+
+      '<span style="color:var(--faint)">\u00b7 '+e.mkts+' market'+(e.mkts===1?'':'s')+' priced</span>'+
+      ((e.best!==null&&isFinite(e.best)&&e.best>0)?'<span class="pl-edge">+'+(e.best*100).toFixed(1)+'% best edge</span>':'')+'</div>'+
+      '<div class="pl-note" style="margin-top:7px">Scheduled start, not a live clock \u2014 EdgeDesk has no licensed score feed for this sport.</div></div>'+
+    comp+
+    '<div id="plPosts"><div class="empty">Loading posts\u2026</div></div>';
+}
+
+window.plSent=function(k){PL.sent=k;
+  var b=document.querySelectorAll('.pl-sent button');
+  var order=['none','away','home','over','under'];
+  for(var i=0;i<b.length;i++)b[i].classList.toggle('on',order[i]===k);
+};
+window.plCount=function(){
+  var t=$('plText'),c=$('plCt');if(!t||!c)return;
+  var n=t.value.length;c.textContent=n+' / 500';c.classList.toggle('over',n>500);
+};
+
+async function plFetchPosts(quiet){
+  var e=PL.ev;if(!e)return;
+  if(!PL.tableOk){var pb0=$('plPosts');if(pb0)pb0.innerHTML='<div class="empty">No conversation yet.</div>';return;}
+  try{
+    PL.posts=await sbGet('social_posts?select=id,event_id,handle,user_id,body,sentiment,created_at,deleted_at'+
+      '&event_id=eq.'+encodeURIComponent(e.event_id)+'&deleted_at=is.null&order=created_at.desc&limit=200');
+    var ids=PL.posts.map(function(p){return p.id;});
+    if(ids.length){
+      try{
+        var lk=await sbGet('social_likes?select=post_id,user_id&post_id=in.('+ids.join(',')+')');
+        var uid=(edUser()||{}).id,c={},m={};
+        (lk||[]).forEach(function(r){c[r.post_id]=(c[r.post_id]||0)+1;if(r.user_id===uid)m[r.post_id]=1;});
+        PL.likes=c;PL.mine=m;
+      }catch(_){PL.likes={};PL.mine={};}
+    }else{PL.likes={};PL.mine={};}
+    plRenderPosts();
+  }catch(err){
+    PL.tableOk=false;
+    if(!quiet)plRenderThread();
+  }
+}
+
+function plRenderPosts(){
+  var box=$('plPosts');if(!box)return;
+  if(!PL.posts.length){
+    box.innerHTML='<div class="empty">Nobody has posted on this one yet. Go first.</div>';return;
+  }
+  var uid=(edUser()||{}).id;
+  var e=PL.ev||{};
+  var lbl={home:(e.home_team||'Home'),away:(e.away_team||'Away'),over:'Over',under:'Under'};
+  var html='';
+  PL.posts.forEach(function(p){
+    var mine=p.user_id===uid;
+    var tag=(p.sentiment&&p.sentiment!=='none')?'<span class="pl-tag '+p.sentiment+'">'+stEsc(String(lbl[p.sentiment]||p.sentiment).slice(0,18))+'</span>':'';
+    var n=PL.likes[p.id]||0;
+    var liked=!!PL.mine[p.id];
+    html+='<div class="pl-post">'+
+      '<div class="pl-av">'+stEsc((p.handle||'?').slice(0,2).toUpperCase())+'</div>'+
+      '<div class="pl-b">'+
+        '<div class="pl-h"><span class="pl-hn'+(mine?' me':'')+'">@'+stEsc(p.handle||'trader')+'</span>'+
+          '<span class="pl-ht">'+ago(new Date(p.created_at).getTime())+'</span>'+tag+'</div>'+
+        '<div class="pl-tx">'+stEsc(p.body)+'</div>'+
+        '<div class="pl-acts">'+
+          '<button class="'+(liked?'on':'')+'" onclick="plLike('+p.id+')">'+(liked?'\u2665':'\u2661')+' '+n+'</button>'+
+          (mine?'<button onclick="plDelete('+p.id+')">Delete</button>'
+               :'<button onclick="plReport('+p.id+')">Report</button>')+
+        '</div>'+
+      '</div>'+
+    '</div>';
+  });
+  box.innerHTML=html;
+}
+
+async function plWrite(path,method,body,extra){
+  var t=await edToken();
+  var h={apikey:SB_KEY,authorization:'Bearer '+t,'Content-Type':'application/json'};
+  if(extra)for(var k in extra)h[k]=extra[k];
+  var r=await fetch(SB_URL+'/rest/v1/'+path,{method:method,headers:h,body:body?JSON.stringify(body):undefined});
+  if(!r.ok){
+    var msg='';try{var j=await r.json();msg=j.message||j.hint||j.details||'';}catch(_){}
+    throw new Error(msg||('db '+r.status));
+  }
+  return r;
+}
+
+window.plSend=async function(){
+  var t=$('plText'),m=$('plMsg'),b=$('plSendBtn');
+  if(!t||!PL.ev)return;
+  var body=(t.value||'').trim();
+  if(!body){m.className='set-msg neg';m.textContent='Write something first.';return;}
+  if(body.length>500){m.className='set-msg neg';m.textContent='500 characters max.';return;}
+  var u=edUser();
+  if(!u||!u.id){m.className='set-msg neg';m.textContent='Session expired. Sign in again to post.';return;}
+  b.disabled=true;var old=b.textContent;b.textContent='\u2026';
+  m.className='set-msg';m.textContent='';
+  try{
+    /* user_id and handle are overwritten by the DB trigger from auth.uid();
+       sending user_id here only satisfies the RLS WITH CHECK. */
+    await plWrite('social_posts','POST',[{event_id:PL.ev.event_id,user_id:u.id,handle:'pending',body:body,sentiment:PL.sent||'none'}],{Prefer:'return=minimal'});
+    t.value='';PL.sent='none';plCount();plSent('none');
+    m.className='set-msg pos';m.textContent='Posted.';
+    setTimeout(function(){if($('plMsg'))$('plMsg').textContent='';},1800);
+    PL.counts[PL.ev.event_id]={n:((PL.counts[PL.ev.event_id]||{}).n||0)+1,last_at:new Date().toISOString()};
+    await plFetchPosts(true);
+  }catch(err){
+    m.className='set-msg neg';
+    m.textContent=/relation|does not exist|schema cache/i.test(err.message)
+      ? 'Conversation tables are missing \u2014 run social_schema.sql.'
+      : err.message;
+  }
+  b.disabled=false;b.textContent=old;
+};
+
+window.plLike=async function(id){
+  var u=edUser();if(!u||!u.id)return;
+  try{
+    if(PL.mine[id]){
+      await plWrite('social_likes?post_id=eq.'+id+'&user_id=eq.'+u.id,'DELETE',null);
+      delete PL.mine[id];PL.likes[id]=Math.max(0,(PL.likes[id]||1)-1);
+    }else{
+      await plWrite('social_likes','POST',[{post_id:id,user_id:u.id}],{Prefer:'return=minimal'});
+      PL.mine[id]=1;PL.likes[id]=(PL.likes[id]||0)+1;
+    }
+    plRenderPosts();
+  }catch(e){}
+};
+
+window.plDelete=async function(id){
+  if(!confirm('Delete this post? The thread keeps its shape; your text is removed.'))return;
+  try{
+    await plWrite('social_posts?id=eq.'+id,'PATCH',{deleted_at:new Date().toISOString()},{Prefer:'return=minimal'});
+    if(PL.ev&&PL.counts[PL.ev.event_id])PL.counts[PL.ev.event_id].n=Math.max(0,PL.counts[PL.ev.event_id].n-1);
+    plFetchPosts(true);
+  }catch(e){alert(e.message);}
+};
+
+window.plReport=async function(id){
+  var why=prompt('What\u2019s wrong with this post? (optional)');
+  if(why===null)return;
+  var u=edUser();if(!u||!u.id)return;
+  try{
+    await plWrite('social_reports','POST',[{post_id:id,user_id:u.id,reason:(why||'').slice(0,300)}],{Prefer:'return=minimal'});
+    alert('Reported. It goes into the moderation queue.');
+  }catch(e){alert(/duplicate/i.test(e.message)?'You already reported this post.':e.message);}
+};
 
 /* ---------- avatar menu ---------- */
 function renderAvatar(){var a=$('edAv');if(a)a.textContent=edInitials();}
