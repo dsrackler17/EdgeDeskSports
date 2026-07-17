@@ -451,6 +451,10 @@ textarea{min-height:110px;font-family:'JetBrains Mono',monospace;resize:vertical
 .rcode{font-family:'JetBrains Mono',monospace;font-size:9.5px;font-weight:600;letter-spacing:.02em;padding:3px 7px;border-radius:4px;border:1px solid rgba(127,212,176,.32);color:#7fd4b0;background:rgba(47,180,124,.08);white-space:nowrap}
 .rcode.warn{border-color:rgba(217,154,43,.4);color:#f0c674;background:rgba(217,154,43,.08)}
 .rcode.neut{border-color:rgba(255,255,255,.14);color:var(--dim);background:transparent}
+.cbasis{font-size:10px;line-height:1.55;color:var(--dim);padding:6px 12px 2px;margin:0}
+.cbasis b{color:var(--text)}
+.cbasis.warn b{color:#f0c674}
+.cbasis.good b{color:#7fd4b0}
 .rconf-top{display:flex;align-items:baseline;gap:8px;margin-bottom:6px}
 .rconf-n{font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:700;color:var(--fg);line-height:1}
 .rconf-d{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--faint)}
@@ -1573,7 +1577,7 @@ $('sliceType').onchange=renderSlice;$('recRefresh').onclick=loadRecord;
 /* ===== manual ledger (localStorage) ===== */
 function bets(){try{return JSON.parse(localStorage.getItem('edgedesk_bets')||'[]');}catch(e){return[];}}
 function saveBets(b){localStorage.setItem('edgedesk_bets',JSON.stringify(b));}
-function trackSignal(e,am){var b=bets();b.unshift({id:'b'+Date.now(),ts:new Date().toISOString(),sport:e.sport_title,sel:selLabel(e),book:e.best_book,odds:am,stake:null,model:(e.sharp_fair!=null?e.sharp_fair*100:null),closeFair:null,result:null,
+function trackSignal(e,am){var b=bets();var __basis=(e.sharp_fair!=null&&(e.consensus_fair==null||Math.abs(e.sharp_fair-e.consensus_fair)>=1e-9))?'Sharp-anchored':(e.consensus_fair!=null?'Consensus (no sharp anchor)':'Unverified');b.unshift({id:'b'+Date.now(),ts:new Date().toISOString(),sport:e.sport_title,sel:selLabel(e),book:e.best_book,odds:am,stake:null,model:(e.sharp_fair!=null?e.sharp_fair*100:null),closeFair:null,result:null,basis:__basis,
   event_id:e.event_id,market:e.market,selection:e.selection,point:(e.point!=null?e.point:null),commence:e.commence_time,sharp_fair:(e.sharp_fair!=null?e.sharp_fair:null),auto:!!e.event_id});saveBets(b);show('ledger');renderLedger();}
 $('lg_toggle').onclick=function(){$('lg_form').classList.toggle('hide');};
 function parseAmOdds(s){s=(s||'').toString().trim().replace(/^\+/,'');var n=parseFloat(s);if(!isFinite(n)||n===0)return null;n=Math.round(n);if(Math.abs(n)<100)return null;return n;}
@@ -1682,6 +1686,8 @@ function ledgerReceiptHTML(b){
     L('Your price implies',priceImp!=null?priceImp.toFixed(1)+'%':'\u2014','mut')+
     L('Sharp fair implied',sfImp!=null?sfImp.toFixed(1)+'%':'\u2014')+
     L('Edge at entry',entryEdge!=null?((entryEdge>=0?'+':'')+(entryEdge*100).toFixed(2)+'%'):'\u2014',entryEdge!=null?(entryEdge>=0?'up':'dn'):'mut');
+  if(b.basis)out+=L('Line basis',stEsc(b.basis),b.basis.indexOf('Sharp')>=0?'':'mut');
+  if(b.basis&&b.basis.indexOf('Sharp')<0)out+='<div class="gd-modelnote">Logged without a sharp anchor \u2014 the entry number came from book consensus. Weight this row accordingly when you read its CLV.</div>';
   out+='<div class="gd-sec">Closing line value</div>';
   if(cv!=null){
     out+=L('CLV',(cv>=0?'+':'')+(cv*100).toFixed(2)+'%',cv>=0?'up':'dn')+
@@ -3542,7 +3548,7 @@ function consStats(e){
   var minImpl=Math.min.apply(null,impl), maxImpl=Math.max.apply(null,impl);
   var sharp=null;for(var i=0;i<rows.length;i++){if(rows[i].is_sharp){sharp=rows[i];break;}}
   return {n:n,mean:mean,sd:sd,best:best,second:second,gap:gap,z:z,
-          minImpl:minImpl,maxImpl:maxImpl,band:maxImpl-minImpl,sharp:sharp};
+          minImpl:minImpl,maxImpl:maxImpl,band:maxImpl-minImpl,sharp:sharp,rows:rows,impl:impl};
 }
 /* Batch-load the per-book arrays for the visible set in ONE query, keyed by
    event_id (escape-safe). Cached across renders. Insights repaint in place. */
@@ -3621,6 +3627,70 @@ function researchCtx(e,opts){
 /* ---- SECTION 1: Consensus Insight ---------------------------------------
    1-2 sentences. Describes MARKET STRUCTURE only. Never mentions probability,
    never predicts, never advises.                                            */
+/* ===== Line-basis + outlier classifiers ==================================
+   DETERMINISTIC. Same inputs always produce the same verdict. Answer the two
+   questions the CLV grade later depends on, so a weak signal can't be mistaken
+   for a sharp one when it is graded:
+   (1) Is the fair line SHARP-ANCHORED, real CONSENSUS, or SOFT consensus — a
+       thin market where books clone each other, giving a number that looks
+       reasonable but has no independent information behind it.
+   (2) Is a cross-book disagreement CORROBORATED by enough books, or is it a
+       lone-book OUTLIER — usually a slow line or a book taking a position,
+       treated more strictly on lower-liquidity leagues.                     */
+var LIQUID_SPORTS=['baseball_mlb','basketball_nba','americanfootball_nfl','icehockey_nhl'];
+function isLiquidLeague(e){
+  var k=((e&&(e.sport_key||e.sport_title))||'').toLowerCase();
+  for(var i=0;i<LIQUID_SPORTS.length;i++)if(k.indexOf(LIQUID_SPORTS[i])>=0)return true;
+  return /\b(mlb|nba|nfl|nhl)\b/.test(k);
+}
+/* Books sharing an identical de-vigged fair are almost certainly pulling the
+   same feed (cloning), so they count once. This is the number that matters,
+   not the raw book count. */
+function effectiveBooks(s){
+  if(!s||!s.rows)return null;
+  var seen={},n=0;
+  s.rows.forEach(function(r){
+    var key=Math.round((r.fair!=null?r.fair:1/r.dec)*2000);   // 0.05% buckets
+    if(!seen[key]){seen[key]=1;n++;}
+  });
+  return n;
+}
+function lineBasis(ctx){
+  var hasRealSharp=(ctx.sharpFair!=null&&(ctx.consFair==null||Math.abs(ctx.sharpFair-ctx.consFair)>=1e-9));
+  if(hasRealSharp)return {basis:'sharp',label:'Sharp-anchored',tone:'good',
+    why:'Pinnacle prices this market and its fair line differs from the book median, so the number has a sharp reference behind it.'};
+  var s=ctx.stats, eff=effectiveBooks(s), nb=ctx.nBooks||0;
+  var cloned=(eff!=null&&nb>=4&&eff<=Math.ceil(nb/2));
+  var thin=(eff!=null?eff<3:nb<4);
+  if(thin||cloned){
+    return {basis:'soft',label:'Soft consensus',tone:'warn',eff:eff,
+      why:(cloned
+        ? (nb+' books quote this but only '+eff+' distinct prices \u2014 the rest are cloning a shared feed, so the consensus has little independent information behind it.')
+        : ('Only '+(eff!=null?eff:nb)+' independent quote'+((eff!=null?eff:nb)===1?'':'s')+' and no Pinnacle anchor \u2014 too thin for the median to mean much.'))};
+  }
+  return {basis:'consensus',label:'Consensus',tone:'',eff:eff,
+    why:(eff!=null?eff:nb)+' independent books agree closely enough for the median to be a usable read, but there is no sharp anchor to verify it against.'};
+}
+/* When the best price stands clear of the pack (an outlier), how many OTHER
+   books sit near that same extreme? A lone book is noise; 3+ (2+ on liquid
+   leagues) clustered at the extreme is a broad-based, real disagreement. */
+function outlierVerdict(ctx){
+  var s=ctx.stats;if(!s||!s.rows)return null;
+  var bestImpl=1/s.best.dec;
+  var ref=(ctx.consFair!=null?ctx.consFair:s.mean);      // the median the consensus edge is measured against
+  var devpp=(ref-bestImpl)*100;                          // how far the best price sits below that median
+  if(devpp<1.0)return null;                              // <1pt away from the median = not a disagreement worth judging
+  var band=0.0075, near=0;
+  s.rows.forEach(function(r){ if((1/r.dec)<=bestImpl+band) near++; });     // books sitting at the same extreme (incl. best)
+  var corrob=near-1;                                                       // other books backing it up
+  var need=isLiquidLeague(ctx.raw)?1:2;                  // liquid: 2+ books total; lower-tier: 3+ books total
+  var confirmed=(corrob>=need);
+  return {isOutlier:true,corrob:corrob,need:need,confirmed:confirmed,liquid:isLiquidLeague(ctx.raw),
+    label:confirmed?('Corroborated \u00d7'+near):'Single-book outlier',tone:confirmed?'':'warn',
+    why:confirmed
+      ? (near+' books sit at this extreme, so the disagreement is broad-based rather than one stale quote.')
+      : ('Only this book sits here; the rest stay back with the pack. On '+(isLiquidLeague(ctx.raw)?'a liquid league this still reads as a slow line or a book taking a position.':'a lower-liquidity league this is usually a slow line or a book taking a position, not a real edge.'))};
+}
 function buildConsensusInsight(ctx){
   if(!ctx)return '';
   var sel=stEsc(ctx.selection), book=stEsc(ctx.book||'the leading book');
@@ -3660,7 +3730,11 @@ function buildConsensusInsight(ctx){
       ? 'No Pinnacle reference exists for this market, so this appears as Consensus Research rather than a verified Market Edge.'
       : 'Per-book dispersion is unavailable until <span class="mono">book_quotes</span> is populated; this signal is measured against the '+numWord(nb)+'-book median.';
   }
-  return '<p class="citxt">'+s1+' '+s2+'</p>';
+  var lb=lineBasis(ctx), ov=outlierVerdict(ctx);
+  var basisTxt='<b>'+stEsc(lb.label)+'.</b> '+lb.why+(ov?' '+ov.why:'');
+  var toneCls=(ov&&!ov.confirmed)?'warn':(lb.tone==='warn'?'warn':(lb.tone==='good'?'good':''));
+  return '<p class="citxt">'+s1+' '+s2+'</p>'+
+         '<p class="cbasis '+toneCls+'">'+basisTxt+'</p>';
 }
 
 /* ---- SECTION 2: Reason Codes -------------------------------------------- */
@@ -3668,7 +3742,6 @@ function buildReasonCodes(ctx){
   var out=[],s=ctx.stats;
   if(s){
     var sdpp=s.sd*100,gappp=s.gap*100;
-    if((gappp>=1.0)&&(gappp>=1.5*sdpp))out.push({t:'Book Outlier',c:'warn'});
     if(sdpp>=2.5)out.push({t:'High Dispersion',c:''});
     else if(sdpp<1.0)out.push({t:'Low Dispersion',c:'neut'});
     if(sdpp<1.0)out.push({t:'Market Cluster',c:'neut'});
@@ -3677,7 +3750,12 @@ function buildReasonCodes(ctx){
   if(ctx.gap!=null&&ctx.gap>=0.03)out.push({t:'Strong Consensus Gap',c:''});
   if(ctx.ageMin!=null&&ctx.ageMin<30)out.push({t:'Fresh Pricing',c:''});
   if(ctx.nBooks>=5)out.push({t:'Multiple Books',c:''});
-  if(!ctx.hasSharp)out.push({t:'Awaiting Sharp Reference',c:'warn'});
+  var __lb=lineBasis(ctx);
+  if(__lb.basis==='sharp')out.push({t:'Sharp Anchored',c:''});
+  else if(__lb.basis==='soft')out.push({t:'Soft Consensus',c:'warn'});
+  else out.push({t:'Consensus Only',c:'neut'});
+  var __ov=outlierVerdict(ctx);
+  if(__ov)out.push({t:(__ov.confirmed?__ov.label:'Single-Book Outlier'),c:(__ov.confirmed?'':'warn')});
   var q=buildQualificationChecklist(ctx);
   if(q.qualified)out.push({t:'Consensus Qualified',c:''});
   return out;
@@ -3755,7 +3833,9 @@ function buildMarketSnapshot(ctx){
   rows.push(['Displayed Quote',am!=null?((am>0?'+':'')+am):'\u2014']);
   rows.push(['Consensus Gap',ctx.gap!=null?('+'+(ctx.gap*100).toFixed(2)+'%'):'\u2014']);
   rows.push(['Market Edge',ctx.marketEdge!=null?(((ctx.marketEdge>=0?'+':'')+(ctx.marketEdge*100).toFixed(2))+'%'):'n/a']);
-  rows.push(['Sharp Reference',ctx.hasSharp?'Yes':'No']);
+  var __lb=lineBasis(ctx), __ov=outlierVerdict(ctx);
+  rows.push(['Line basis',__lb.label]);
+  rows.push(['Disagreement',__ov?(__ov.confirmed?('corroborated \u00d7'+(__ov.corrob+1)):'single-book outlier'):(ctx.hasSharp?'sharp-referenced':'consensus only')]);
   rows.push(['Generated',ctx.lastSeenMs?ago(ctx.lastSeenMs):'\u2014']);
   return rows;
 }
