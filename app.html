@@ -1178,6 +1178,7 @@ function renderCorrobSplit(rows){
     return '<div class="acol '+k+'"><div class="ah">'+t+'</div>'+
       '<div class="ar"><span class="l">graded with CLV</span><span class="v">'+st.n+'</span></div>'+
       '<div class="ar"><span class="l">avg CLV</span><span class="v '+cls(st.avg)+'">'+pct(st.avg)+'</span></div>'+
+      (st.ci?'<div class="ar"><span class="l">95% CI</span><span class="v" style="font-size:10px">'+ciTxt(st)+'</span></div>':'')+
       '<div class="ar"><span class="l">median CLV</span><span class="v '+cls(st.med)+'">'+pct(st.med)+'</span></div>'+
       '<div class="ar"><span class="l">CLV+ rate</span><span class="v">'+rate(st.posRate)+'</span></div>'+
       (st.n<MIN?'<div class="ar"><span class="l" style="color:#e0a3a3">below '+MIN+' \u2014 not yet proof of anything</span></div>':'')+
@@ -1358,13 +1359,64 @@ function anchorNote(e){var a=anchorOf(e);
 /* Record page: CLV split by anchor. Same math as the headline KPIs, run twice.
    If the sharp cohort and the soft cohort disagree, the blended number is a lie
    about both of them. */
+
+/* ===== CONFIDENCE, NOT POINT ESTIMATES =====================================
+   This whole product argues that results need a sample before they mean
+   anything. Then it printed "avg CLV -1.2%" as a bare number, which is the exact
+   thing it tells people not to do. A mean with no interval is a claim wearing a
+   number's clothes.
+
+   Bootstrap: resample the graded rows with replacement, recompute the mean, take
+   the 2.5th and 97.5th percentiles. No normality assumption, which matters
+   because CLV is skewed and bounded below.
+
+   The verdict is the point. If the interval spans zero, the honest sentence is
+   "we cannot tell yet", and that sentence should appear whether the point
+   estimate is red or green. It is the only thing that stops a lucky green month
+   from being sold as proof later.
+
+   MEASURED, NOT ASSUMED. Coverage test against a skewed, bounded-below process
+   like real CLV, 600 trials per cell:
+
+       n=30  -> nominal 95% interval covers the truth  90.0% of the time
+       n=100 -> 94.7%      n=400 -> 94.5%
+
+   So below ~100 the percentile bootstrap is optimistic and the label overstates
+   itself. It is still far better than a bare mean, and the honest move is to say
+   so on the page rather than print "95%" and hope nobody checks the instrument.
+   ======================================================================== */
+var BOOT_ITERS=2000;
+function bootCI(arr,iters){
+  var n=arr.length;if(n<2)return null;
+  iters=iters||BOOT_ITERS;
+  var means=new Float64Array(iters);
+  for(var b=0;b<iters;b++){
+    var s=0;
+    for(var i=0;i<n;i++)s+=arr[(Math.random()*n)|0];
+    means[b]=s/n;
+  }
+  var srt=Array.prototype.slice.call(means).sort(function(a,b){return a-b;});
+  return {lo:srt[Math.floor(iters*0.025)],hi:srt[Math.floor(iters*0.975)]};
+}
+function ciVerdict(st){
+  if(!st||!st.ci||st.n<2)return null;
+  if(st.ci.lo>0)  return {kind:'pos', txt:'Beats the close. The whole interval is above zero.'};
+  if(st.ci.hi<0)  return {kind:'neg', txt:'Loses to the close. The whole interval is below zero.'};
+  return {kind:'unk',txt:'Indistinguishable from zero. The interval spans it, so the sign of the point estimate is not information yet.'};
+}
+function ciTxt(st){
+  if(!st||!st.ci)return '';
+  var f=function(v){return (v>=0?'+':'')+(v*100).toFixed(1)+'%';};
+  return f(st.ci.lo)+' to '+f(st.ci.hi);
+}
+
 function anchorStats(rows){
   var clv=[],pos=0;
   rows.forEach(function(r){if(r.clv!=null){clv.push(+r.clv);if(+r.clv>0)pos++;}});
   var n=clv.length;if(!n)return {n:0,rows:rows.length,avg:null,med:null,posRate:null};
   var sum=clv.reduce(function(a,b){return a+b;},0);
   var s=clv.slice().sort(function(a,b){return a-b;}),m=Math.floor(n/2);
-  return {n:n,rows:rows.length,avg:sum/n,med:(n%2?s[m]:(s[m-1]+s[m])/2),posRate:pos/n};
+  return {n:n,rows:rows.length,avg:sum/n,med:(n%2?s[m]:(s[m-1]+s[m])/2),posRate:pos/n,ci:bootCI(clv)};
 }
 function renderAnchorSplit(rows){
   var host=$('recAnchor');if(!host)return;
@@ -1381,6 +1433,7 @@ function renderAnchorSplit(rows){
     return '<div class="acol '+k+'"><div class="ah">'+t+'</div>'+
       '<div class="ar"><span class="l">graded with CLV</span><span class="v">'+st.n+'</span></div>'+
       '<div class="ar"><span class="l">avg CLV</span><span class="v '+cls(st.avg)+'">'+pct(st.avg)+'</span></div>'+
+      (st.ci?'<div class="ar"><span class="l">95% CI</span><span class="v" style="font-size:10px">'+ciTxt(st)+'</span></div>':'')+
       '<div class="ar"><span class="l">median CLV</span><span class="v '+cls(st.med)+'">'+pct(st.med)+'</span></div>'+
       '<div class="ar"><span class="l">CLV+ rate</span><span class="v">'+rate(st.posRate)+'</span></div>'+
       (st.n<MIN?'<div class="ar"><span class="l" style="color:#e0a3a3">below '+MIN+' \u2014 not yet proof of anything</span></div>':'')+
@@ -2029,6 +2082,16 @@ var EDGEQ='flagged_at=not.is.null&flagged_edge=gte.0.005&flagged_edge=lte.0.1';
     var beatRate=posRate;                            // beat-close IS clv>0 by definition; derive it, never trust a stored copy
     var beatStoredRate=nCLV?beatStored/nCLV:null;    // stored column, kept ONLY to detect backend drift until settle+backfill land
     var hit=(w+l)?w/(w+l):null;
+    // The headline gets an interval and a verdict. A bare mean is the thing this
+    // product exists to argue against.
+    var hCI=bootCI(clvArr),hV=ciVerdict({n:nCLV,ci:hCI});
+    if(hV){
+      var hc=hV.kind==='pos'?'var(--pos)':hV.kind==='neg'?'var(--neg)':'var(--warn)';
+      $('recKpis').insertAdjacentHTML('beforebegin','<div class="anote" style="border-left-color:'+hc+'"><b>'+
+        (nCLV<30?'Sample too small to say anything. ':'')+hV.txt+'</b> Mean '+((avgCLV>=0?'+':'')+(avgCLV*100).toFixed(1))+'%, 95% bootstrap interval '+ciTxt({ci:hCI})+' over '+nCLV+' graded signals. '+
+        'The interval is here because a mean with no interval is a claim wearing a number\u2019s clothes, and this product spends its whole argument telling people not to read one.'+
+        (nCLV<100?' Note: this bootstrap was itself tested. Against skewed data it covers ~90% at n=30, not the 95% it claims, so below n=100 the interval is narrower than it should be. It is optimistic, not conservative.':'')+'</div>');
+    }
     renderBasisNote(g);
     renderLegacyGap();
     renderAnchorSplit(g);
