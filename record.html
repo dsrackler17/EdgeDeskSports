@@ -184,7 +184,28 @@ async function sbGet(q){
 /* EDGEQ and MIN_SAMPLE are copied verbatim from app.html. If they drift, this
    page and the terminal will publish two different track records and one of them
    will be a lie. Change both or neither. */
-var EDGEQ='edge=gte.0.005&edge=lte.0.1&n_books=gte.3';
+/* Filter on WHETHER THE ROW WAS EVER A SIGNAL, not on its live edge.
+
+   The old filter was: edge=gte.0.005&edge=lte.0.1&n_books=gte.3
+   `edge` is the last value capture wrote before the event, i.e. the edge AT
+   CLOSE. So the record selected on the closing edge and measured CLV from the
+   opening price. Closing sharp fair 0.47 in both:
+
+     Row A: opens 2.00 -> 2.20.  final edge +0.034 -> INCLUDED.  CLV -0.060
+     Row B: opens 2.20 -> 2.00.  final edge -0.060 -> EXCLUDED.  CLV +0.034
+
+   It admitted rows whose price rose and rejected rows whose price fell, then
+   measured CLV from the price before the rise. It included negative-CLV rows and
+   discarded positive-CLV ones, by construction. That is not a bias that nudges a
+   number, it is a machine for manufacturing a negative record.
+
+   flagged_at is set once, at the pass where the row first crossed the threshold,
+   and frozen. It cannot respond to what happened afterwards, which is the whole
+   point: a selection rule that can see the future is not a selection rule.
+
+   This empties the record until rows priced after capture v3 settle. It cannot
+   be backfilled. An empty honest record beats a full dishonest one. */
+var EDGEQ='flagged_at=not.is.null&flagged_edge=gte.0.005&flagged_edge=lte.0.1';
 var MIN_SAMPLE=30;
 
 /* Grades on first_has_sharp, never has_sharp. CLV is computed from the entry
