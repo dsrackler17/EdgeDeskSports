@@ -1,0 +1,376 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>EdgeDesk Record: our closing line value, unedited</title>
+<meta name="description" content="EdgeDesk's live closing line value, published outside the paywall with no login. Split by anchor and corroboration. It updates whether we like the direction or not.">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<!-- NO LOGIN GATE. That is the entire point of this file.
+     app.html redirects logged-out visitors to index.html. Its own gate comment
+     says "this is a UX funnel, not a data paywall — the anon key still reads
+     public data." So the record was always readable; it was just behind a door.
+     The curriculum page and episode 1 both promise the record is public, outside
+     the paywall, updating whether we like it or not. This is what makes that true.
+     Do not add a gate to this file. -->
+<style>
+:root{--bg:#0d0f13;--surface:#13161c;--surface2:#191d25;--border:#262c36;--text:#e7eaf0;--dim:#8a93a2;--faint:#5b6472;--accent:#4d8dff;--accent2:#7db0ff;--pos:#2fb47c;--neg:#e26044;--warn:#d99a2b;--gold:#e3b84d}
+*{box-sizing:border-box;margin:0}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:'Inter',system-ui,sans-serif;-webkit-font-smoothing:antialiased;line-height:1.55;overflow-x:hidden}
+.mono{font-family:'JetBrains Mono',monospace}
+a{color:inherit;text-decoration:none}
+.wrap{max-width:1080px;margin:0 auto;padding:0 22px}
+.ey{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--accent);font-weight:500}
+.btn{font-family:'Inter',sans-serif;font-weight:700;font-size:14px;border-radius:9px;padding:9px 16px;cursor:pointer;border:1px solid transparent;transition:.15s}
+.btn.primary{background:var(--accent);color:#06122b;border-color:var(--accent)}
+.btn.ghost{background:transparent;color:var(--text);border-color:var(--border)}
+.btn.ghost:hover{border-color:var(--faint)}
+nav{position:sticky;top:0;z-index:40;background:rgba(13,15,19,.86);backdrop-filter:blur(12px);border-bottom:1px solid var(--border)}
+.nav-in{display:flex;align-items:center;gap:14px;height:60px}
+.logo{font-weight:800;font-size:17px;letter-spacing:-.02em;display:flex;align-items:center;gap:8px}
+.logo small{font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:500;color:var(--faint);letter-spacing:.14em;text-transform:uppercase}
+.mk{width:9px;height:9px;border-radius:2px;background:var(--accent);display:inline-block}
+.nav-sp{flex:1}
+.nlink{font-size:14px;color:var(--dim);font-weight:500}
+.nlink:hover{color:var(--text)}
+@media(max-width:760px){.hideS{display:none}}
+.hero{padding:62px 0 34px;border-bottom:1px solid var(--border)}
+h1{font-size:clamp(28px,4.6vw,46px);line-height:1.07;letter-spacing:-.035em;font-weight:800;margin:14px 0 0;max-width:20ch}
+.lede{font-size:clamp(15px,2vw,17px);color:var(--dim);max-width:62ch;margin-top:16px;line-height:1.62}
+.sec{padding:40px 0;border-bottom:1px solid var(--border)}
+h2{font-size:clamp(19px,2.6vw,26px);letter-spacing:-.025em;font-weight:800;margin:10px 0 0}
+.sub{color:var(--dim);max-width:68ch;margin-top:11px;font-size:14px;line-height:1.62}
+.pill{font-family:'JetBrains Mono',monospace;font-size:10px;padding:3px 9px;border-radius:20px;border:1px solid var(--border);color:var(--faint)}
+.pill.ok{color:var(--pos);border-color:rgba(47,180,124,.4)}
+.pill.err{color:var(--neg);border-color:rgba(226,96,68,.4)}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(132px,1fr));gap:9px;margin-top:22px}
+.kpi{border:1px solid var(--border);border-radius:9px;padding:12px;background:var(--surface)}
+.kpi .n{font-family:'JetBrains Mono',monospace;font-size:19px;font-weight:700;letter-spacing:-.02em}
+.kpi .l{font-size:10.5px;color:var(--faint);margin-top:3px}
+.clvhero{border:1px solid var(--border);border-radius:12px;padding:20px;background:var(--surface);margin-top:20px}
+.clvhero-h{display:flex;align-items:baseline;gap:11px;flex-wrap:wrap}
+.clvhero .big{font-family:'JetBrains Mono',monospace;font-size:38px;font-weight:700;letter-spacing:-.03em}
+.clvhero .big.muted{color:var(--faint)}
+.clvhero .lbl{font-size:12px;color:var(--faint)}
+.clvhero .cap{font-size:12.5px;color:var(--dim);margin-top:12px;line-height:1.6;max-width:76ch}
+.asplit{border:1px solid var(--border);border-radius:10px;padding:14px;margin:12px 0;background:var(--surface2)}
+.asplit-h{font-size:12.5px;font-weight:700;margin-bottom:2px}
+.asplit-sub{font-size:11px;color:var(--faint);margin-bottom:11px;line-height:1.55}
+.asplit-sub b{color:var(--dim)}
+.asplit-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.acol{border:1px solid var(--border);border-radius:8px;padding:11px}
+.acol.sharp{border-color:rgba(217,154,43,.3)}
+.acol.soft{border-color:rgba(200,80,80,.3)}
+.acol .ah{font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:700;letter-spacing:.04em;margin-bottom:7px}
+.acol.sharp .ah{color:#f0c674}
+.acol.soft .ah{color:#e0a3a3}
+.acol .ar{display:flex;justify-content:space-between;font-size:11px;padding:2.5px 0}
+.acol .ar .l{color:var(--faint)}
+.acol .ar .v{font-family:'JetBrains Mono',monospace}
+.acol .ar .v.up{color:var(--pos)}
+.acol .ar .v.dn{color:#e0a3a3}
+.asplit-read{font-size:11px;color:var(--faint);line-height:1.55;margin-top:10px;padding-top:10px;border-top:1px solid var(--border)}
+.asplit-read b{color:var(--text)}
+.bias-t{width:100%;border-collapse:collapse;font-size:11px}
+.bias-t th{font-family:'JetBrains Mono',monospace;font-size:8.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--faint);text-align:right;padding:4px 6px;border-bottom:1px solid var(--border);font-weight:700}
+.bias-t th:first-child{text-align:left}
+.bias-t td{padding:4px 6px;border-bottom:1px solid rgba(38,44,54,.5);text-align:right;font-family:'JetBrains Mono',monospace}
+.bias-t td:first-child{text-align:left;font-family:'Inter',sans-serif}
+.bias-t td.up{color:var(--pos)}
+.bias-t td.dn{color:#e0a3a3}
+.bias-t td.thin{color:var(--faint)}
+.empty{border:1px dashed var(--border);border-radius:9px;padding:16px;color:var(--faint);font-size:12.5px;line-height:1.6}
+.admit{background:var(--surface);border:1px solid rgba(226,96,68,.32);border-radius:12px;padding:22px;margin-top:8px}
+.admit h3{font-size:16px;font-weight:800;letter-spacing:-.02em}
+.admit p{color:var(--dim);font-size:13.5px;line-height:1.65;margin-top:10px;max-width:72ch}
+.admit p b{color:var(--text)}
+footer{padding:36px 0 52px;color:var(--faint);font-size:12.5px}
+.foot-grid{display:flex;justify-content:space-between;gap:26px;flex-wrap:wrap}
+.rg{color:var(--dim);font-weight:600;margin-bottom:5px}
+footer a:hover{color:var(--text)}
+@media(max-width:560px){.asplit-grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="wrap nav-in">
+    <a class="logo" href="/index.html"><span class="mk"></span>EdgeDesk <small>record</small></a>
+    <span class="nav-sp"></span>
+    <a class="nlink hideS" href="/curriculum.html">Curriculum</a>
+    <span class="pill" id="dbPill">loading</span>
+    <a class="btn ghost" href="/index.html">The terminal</a>
+  </div>
+</nav>
+
+<section class="hero">
+  <div class="wrap">
+    <span class="ey">Public · No login · Updates on its own</span>
+    <h1>Our record, whether we like it or not</h1>
+    <p class="lede">This is the only claim EdgeDesk makes that can be independently checked, so it lives outside the paywall with no account required. It is closing line value: did the prices we flagged beat the number the market settled on. It is not a win rate, because a win rate at this sample proves nothing.</p>
+  </div>
+</section>
+
+<section class="sec">
+  <div class="wrap">
+    <span class="ey">The proof layer</span>
+    <h2>Closing line value</h2>
+    <div id="clvChart"></div>
+    <div class="kpis" id="recKpis"></div>
+  </div>
+</section>
+
+<section class="sec">
+  <div class="wrap">
+    <span class="ey">Segments</span>
+    <h2>The same number, split two ways</h2>
+    <p class="sub">A blended figure can hide two opposite results inside it. Both splits below exist from the start, published before the numbers arrived, so the cohorts cannot be chosen after the fact to flatter the answer.</p>
+    <div id="recAnchor"></div>
+    <div id="recCorrob"></div>
+  </div>
+</section>
+
+<section class="sec">
+  <div class="wrap">
+    <span class="ey">Method check</span>
+    <h2>Does de-vigging even recover a probability?</h2>
+    <p class="sub">Raised by a stranger on r/algobetting, and correct: a posted price is not probability plus vig. Part of it is where the book expects money to land. Stripping the overround to 100% removes the margin and leaves the shading. If de-vigging recovered truth, every book's de-vigged number would agree with Pinnacle's on the same selection. This measures whether they do.</p>
+    <div id="recBias"></div>
+  </div>
+</section>
+
+<section class="sec">
+  <div class="wrap">
+    <span class="ey">The admission</span>
+    <div class="admit">
+      <h3>What this page is for</h3>
+      <p>Every competitor shows you a record after they already know how it ends. This one is wired directly to the database and renders whatever is in it. <b>There is no edit step between the pipeline and this page.</b></p>
+      <p>If the number above is negative, that is the number. We are not going to explain it away here, and we are not going to quietly swap the metric for one that looks better. <b>If it stays red, EdgeDesk has not proven itself and you should not pay for it.</b></p>
+      <p>The reason to publish this is not modesty. It is that closing line value is the only measurement in this industry that cannot be faked, and a tool that argues CLV is the only proof would be worthless if it hid its own.</p>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap foot-grid">
+    <div>
+      <span class="logo" style="font-size:15px"><span class="mk"></span>EdgeDesk</span>
+      <div style="margin-top:8px;max-width:32ch">Structural mispricing research. Not betting advice. Signals can be wrong.</div>
+    </div>
+    <div>
+      <div class="rg">Responsible gambling</div>
+      <div>21+ · 1-800-GAMBLER · ncpgambling.org</div>
+      <div style="margin-top:10px"><a href="/index.html#different">How it works</a> · <a href="/record.html">Record</a> · <a href="/curriculum.html">Curriculum</a></div>
+      <div style="margin-top:8px"><a href="/terms.html">Terms</a> · <a href="/privacy.html">Privacy</a> · <a href="/disclaimer.html">Disclaimer</a></div>
+      <div style="margin-top:10px;color:var(--faint)">© <span id="yr"></span> Rackler Tech Ventures LLC</div>
+    </div>
+  </div>
+</footer>
+
+<script>
+/* Anon key. Public by design and already shipped in app.html — it reads public
+   tables only and every RLS policy keys on auth.uid(), which is NULL here. */
+var SB_URL="https://iattxbkbufslbauoumga.supabase.co";
+var SB_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlhdHR4YmtidWZzbGJhdW91bWdhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE2MzY4MDUsImV4cCI6MjA5NzIxMjgwNX0.Mly5G587o5IFRnEigU2wRp9buWEk3dFwH9RNPJK7Uo8";
+function $(id){return document.getElementById(id);}
+async function sbGet(q){
+  var r=await fetch(SB_URL+"/rest/v1/"+q,{headers:{apikey:SB_KEY,authorization:"Bearer "+SB_KEY}});
+  if(!r.ok)throw new Error("HTTP "+r.status);
+  return await r.json();
+}
+
+/* EDGEQ and MIN_SAMPLE are copied verbatim from app.html. If they drift, this
+   page and the terminal will publish two different track records and one of them
+   will be a lie. Change both or neither. */
+var EDGEQ='edge=gte.0.005&edge=lte.0.1&n_books=gte.3';
+var MIN_SAMPLE=30;
+
+/* Grades on first_has_sharp, never has_sharp. CLV is computed from the entry
+   price, so the anchor question is about the moment of pricing. Rows written
+   before capture recorded it return 'unknown' and are quarantined, not guessed:
+   the old inference (sharp_fair === consensus_fair) was wrong on ~1/n of odd
+   boards because the consensus median IS an actual book's number when the count
+   is odd, so real Pinnacle rows got called soft. */
+function anchorEntry(r){
+  if(!r||r.sharp_fair==null)return 'none';
+  if(r.first_has_sharp===true)return 'sharp';
+  if(r.first_has_sharp===false)return 'soft';
+  return 'unknown';
+}
+function stats(rows){
+  var clv=[],pos=0;
+  rows.forEach(function(r){if(r.clv!=null){clv.push(+r.clv);if(+r.clv>0)pos++;}});
+  var n=clv.length;if(!n)return {n:0,rows:rows.length,avg:null,med:null,posRate:null};
+  var sum=clv.reduce(function(a,b){return a+b;},0);
+  var s=clv.slice().sort(function(a,b){return a-b;}),m=Math.floor(n/2);
+  return {n:n,rows:rows.length,avg:sum/n,med:(n%2?s[m]:(s[m-1]+s[m])/2),posRate:pos/n};
+}
+function pct(v){return v==null?'\u2014':((v>=0?'+':'')+(v*100).toFixed(1)+'%');}
+function rate(v){return v==null?'\u2014':(v*100).toFixed(0)+'%';}
+function cls(v){return v==null?'':(v>=0?'up':'dn');}
+function col(k,t,st){
+  return '<div class="acol '+k+'"><div class="ah">'+t+'</div>'+
+    '<div class="ar"><span class="l">graded with CLV</span><span class="v">'+st.n+'</span></div>'+
+    '<div class="ar"><span class="l">avg CLV</span><span class="v '+cls(st.avg)+'">'+pct(st.avg)+'</span></div>'+
+    '<div class="ar"><span class="l">median CLV</span><span class="v '+cls(st.med)+'">'+pct(st.med)+'</span></div>'+
+    '<div class="ar"><span class="l">CLV+ rate</span><span class="v">'+rate(st.posRate)+'</span></div>'+
+    (st.n<MIN_SAMPLE?'<div class="ar"><span class="l" style="color:#e0a3a3">below '+MIN_SAMPLE+' \u2014 not yet proof of anything</span></div>':'')+
+    '</div>';
+}
+
+function renderAnchorSplit(rows){
+  rows=rows||[];
+  var sharp=stats(rows.filter(function(r){return anchorEntry(r)==='sharp';}));
+  var soft =stats(rows.filter(function(r){var k=anchorEntry(r);return k==='soft'||k==='none';}));
+  var unk  =stats(rows.filter(function(r){return anchorEntry(r)==='unknown';}));
+  if(!sharp.rows&&!soft.rows&&!unk.rows){$('recAnchor').innerHTML='';return;}
+  var read;
+  if(sharp.n<MIN_SAMPLE||soft.n<MIN_SAMPLE)
+    read='Neither cohort has a sample worth reading. The split is published now, empty, so the two can never be quietly averaged into one number that describes neither.';
+  else if(sharp.med>soft.med)
+    read='The sharp-anchored cohort grades better than the soft-consensus one. That is the expected direction: the Pinnacle anchor is doing work and the soft rows dilute the blended figure above.';
+  else if(sharp.med<soft.med)
+    read='The soft-consensus cohort grades better than the sharp-anchored one. That is not good news. It more likely means the sharp cohort is catching lagging books that correct toward Pinnacle by close, while the soft cohort measures itself against a median it helped set.';
+  else
+    read='The cohorts grade the same. Either the anchor adds nothing, or the fallback fires on boards where Pinnacle would have agreed anyway.';
+  var unkNote=unk.rows?'<div class="asplit-read"><b>'+unk.rows+' graded rows have an unknown entry anchor.</b> They were priced before capture recorded it. They are not guessed into either column and they sit out permanently. The cohort cannot grow.</div>':'';
+  $('recAnchor').innerHTML='<div class="asplit"><div class="asplit-h">CLV by anchor</div>'+
+    '<div class="asplit-sub">Every graded edge is one of two things: a fair line de-vigged off a real Pinnacle quote, or the multi-book median standing in because Pinnacle never quoted it. Split on the anchor as it stood <b>when the row was priced</b>, because CLV is measured from the entry price.</div>'+
+    '<div class="asplit-grid">'+col('sharp','SHARP ANCHORED \u00b7 pinnacle',sharp)+col('soft','SOFT CONSENSUS \u00b7 fallback',soft)+'</div>'+
+    '<div class="asplit-read">'+read+'</div>'+unkNote+'</div>';
+}
+
+function renderCorrobSplit(rows){
+  rows=rows||[];
+  var known=rows.filter(function(r){return r.first_corrob_n!=null;});
+  var unknown=rows.length-known.length;
+  if(!known.length){
+    $('recCorrob').innerHTML='<div class="asplit"><div class="asplit-h">CLV by corroboration</div>'+
+      '<div class="asplit-sub">No graded row carries an entry corroboration count yet. It cannot be backfilled: it depends on the per-book board at the instant of pricing, and those instants have already been overwritten. This fills in as new signals settle. Nothing is estimated.</div></div>';
+    return;
+  }
+  var lone=stats(known.filter(function(r){return r.first_corrob_n===1;}));
+  var corr=stats(known.filter(function(r){return r.first_corrob_n>=3;}));
+  var read;
+  if(lone.n<MIN_SAMPLE||corr.n<MIN_SAMPLE)
+    read='Not enough graded rows in both cohorts to read yet. Published empty so the answer cannot be back-fitted once the numbers arrive.';
+  else if(lone.med<corr.med)
+    read='<b>Lone-book rows grade worse than corroborated ones.</b> That is the predicted result and it names the loss: one book off the sharp number is a slow line, it corrects toward Pinnacle by close, and the edge was never there to take.';
+  else if(lone.med>corr.med)
+    read='<b>Lone-book rows grade better than corroborated ones.</b> That contradicts the theory and it is not being explained away here. Either the threshold is mis-set, or lone books are genuinely early rather than slow.';
+  else
+    read='The cohorts grade the same, so corroboration is not separating anything and is not the reason for the blended number.';
+  $('recCorrob').innerHTML='<div class="asplit"><div class="asplit-h">CLV by corroboration</div>'+
+    '<div class="asplit-sub">How many books independently disagreed with the sharp number <b>at the moment of pricing</b>. One book is usually a slow line. Three or more is a disagreement several books held at once.'+
+    (unknown?' '+unknown+' rows predate the column. Excluded, not guessed.':'')+'</div>'+
+    '<div class="asplit-grid">'+col('soft','LONE BOOK \u00b7 1',lone)+col('sharp','CORROBORATED \u00b7 3+',corr)+'</div>'+
+    '<div class="asplit-read">'+read+'</div></div>';
+}
+
+/* Reads the book_bias view, which aggregates every captured quote server-side.
+   The fav/dog split is the design: a shading book pushes the popular side and
+   pulls the other, so a blended average cancels to ~0 and hides it. */
+async function renderBookBias(){
+  var host=$('recBias');
+  try{
+    var rows=await sbGet('book_bias?select=book_title,is_fav,n,mean_dev&order=n.desc&limit=200');
+    if(!rows||!rows.length){
+      host.innerHTML='<div class="empty">No paired quotes yet. This needs selections where Pinnacle and at least one other book both priced the same outcome.</div>';return;
+    }
+    var by={};
+    rows.forEach(function(r){
+      by[r.book_title]=by[r.book_title]||{book:r.book_title,fav:null,dog:null,nFav:0,nDog:0};
+      if(r.is_fav){by[r.book_title].fav=+r.mean_dev;by[r.book_title].nFav=+r.n;}
+      else{by[r.book_title].dog=+r.mean_dev;by[r.book_title].nDog=+r.n;}
+    });
+    var list=Object.keys(by).map(function(k){return by[k];})
+      .sort(function(a,b){return (b.nFav+b.nDog)-(a.nFav+a.nDog);});
+    var MINP=30;
+    function pp(v){return v==null?'\u2014':((v>=0?'+':'')+(v*100).toFixed(2));}
+    function cc(v,n){if(v==null||n<MINP)return 'thin';return v>=0?'up':'dn';}
+    var body=list.map(function(r){
+      return '<tr><td>'+r.book+'</td><td class="'+cc(r.fav,r.nFav)+'">'+pp(r.fav)+'</td><td class="thin">'+r.nFav+'</td>'+
+        '<td class="'+cc(r.dog,r.nDog)+'">'+pp(r.dog)+'</td><td class="thin">'+r.nDog+'</td></tr>';
+    }).join('');
+    var flips=list.filter(function(r){return r.nFav>=MINP&&r.nDog>=MINP&&r.fav>0&&r.dog<0;});
+    var verdict;
+    if(!list.some(function(r){return r.nFav>=MINP&&r.nDog>=MINP;}))
+      verdict='No book yet has '+MINP+' paired selections on both sides. Nothing here is readable.';
+    else if(flips.length)
+      verdict='<b>'+flips.map(function(r){return r.book;}).join(', ')+'</b> price favourites above Pinnacle and longshots below it. That sign flip is what shading looks like from outside. It means de-vigging that book to 100% does not land where de-vigging Pinnacle lands, so at most one of them can be the probability.';
+    else
+      verdict='No book in this sample flips sign between favourites and longshots. That is weak evidence against heavy shading, and it is <b>not</b> evidence that any de-vigged number is true. A book can shade in a direction this cannot see, and a whole board can tilt the same way at once, Pinnacle included.';
+    host.innerHTML='<div class="asplit"><div class="asplit-h">Book bias probe</div>'+
+      '<div class="asplit-sub">Signed de-vigged gap versus Pinnacle on the same selection, in probability points. Split by side, because the average hides it.</div>'+
+      '<table class="bias-t"><thead><tr><th>Book</th><th>Fav</th><th>n</th><th>Dog</th><th>n</th></tr></thead><tbody>'+body+'</tbody></table>'+
+      '<div class="asplit-read">'+verdict+'</div></div>';
+  }catch(e){
+    host.innerHTML='<div class="empty">The book_bias view is not reachable yet. It ships in signals_anchor.sql. Nothing is estimated in its place.</div>';
+  }
+}
+
+function renderClvHero(series,avg,med,posRate){
+  var host=$('clvChart');
+  if(!series||!series.length){
+    host.innerHTML='<div class="clvhero"><div class="clvhero-h"><span class="big muted">\u2014</span><span class="lbl">edge CLV</span></div><div class="cap"><b style="color:var(--text)">Nothing graded yet.</b> As flagged edges settle, this plots their cumulative closing line value. A line that climbs means the edges beat the close, which is the one thing that cannot be faked.</div></div>';
+    return;
+  }
+  if(series.length<MIN_SAMPLE){
+    host.innerHTML='<div class="clvhero"><div class="clvhero-h"><span class="big" style="color:var(--warn)">'+series.length+'</span><span class="lbl">clean edges graded \u00b7 building</span></div>'+
+      '<div class="cap"><b style="color:var(--text)">Not a track record yet.</b> Only '+series.length+' clean edges have graded, far too few to mean anything (running average '+pct(avg)+', which is noise at this n). A real read needs about '+MIN_SAMPLE+'+. This stays a sample-size notice rather than a curve until then, because drawing a line through a handful of points and calling it proof is exactly the thing this page exists to refuse.</div></div>';
+    return;
+  }
+  var cum=0,pts=series.map(function(r,i){cum+=+r.clv;return {x:i,y:cum};});
+  var W=900,H=180,P=8;
+  var ys=pts.map(function(p){return p.y;}),mn=Math.min.apply(null,ys.concat([0])),mx=Math.max.apply(null,ys.concat([0]));
+  var rng=(mx-mn)||1;
+  var X=function(i){return P+(i/(pts.length-1||1))*(W-2*P);};
+  var Y=function(v){return H-P-((v-mn)/rng)*(H-2*P);};
+  var d=pts.map(function(p,i){return (i?'L':'M')+X(p.x).toFixed(1)+' '+Y(p.y).toFixed(1);}).join(' ');
+  var zero=Y(0),up=cum>=0;
+  host.innerHTML='<div class="clvhero"><div class="clvhero-h">'+
+    '<span class="big" style="color:'+(up?'var(--pos)':'var(--neg)')+'">'+pct(avg)+'</span>'+
+    '<span class="lbl">average CLV over '+series.length+' graded edges \u00b7 median '+pct(med)+' \u00b7 '+rate(posRate)+' beat the close</span></div>'+
+    '<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;height:auto;margin-top:14px" preserveAspectRatio="none">'+
+      '<line x1="'+P+'" x2="'+(W-P)+'" y1="'+zero.toFixed(1)+'" y2="'+zero.toFixed(1)+'" stroke="#5b6472" stroke-width="1" stroke-dasharray="3 3"/>'+
+      '<path d="'+d+'" fill="none" stroke="'+(up?'#2fb47c':'#e26044')+'" stroke-width="2"/>'+
+    '</svg>'+
+    '<div class="cap">Cumulative closing line value across every clean flagged edge, oldest to newest. The dashed line is break-even. '+
+    (up?'Above it means the flagged prices beat where the market settled.':'<b style="color:var(--text)">Below it means the flagged prices did not beat the close.</b> That is the current state and it is published for the same reason it would be if it were green.')+'</div></div>';
+}
+
+function kpi(n,l){return'<div class="kpi"><div class="n">'+n+'</div><div class="l">'+l+'</div></div>';}
+
+async function load(){
+  try{
+    var g=await sbGet('signals?select=clv,result,beat_close,sharp_fair,consensus_fair,first_has_sharp,first_corrob_n,n_books&graded_at=not.is.null&'+EDGEQ+'&limit=5000');
+    var w=0,l=0,clvArr=[],clvSum=0,clvPos=0;
+    g.forEach(function(r){
+      if(r.result==='win')w++;else if(r.result==='loss')l++;
+      if(r.clv!=null){clvArr.push(+r.clv);clvSum+=+r.clv;if(r.clv>0)clvPos++;}
+    });
+    var nCLV=clvArr.length;
+    var med=null;if(nCLV){var s=clvArr.slice().sort(function(a,b){return a-b;}),m=Math.floor(s.length/2);med=s.length%2?s[m]:(s[m-1]+s[m])/2;}
+    var avg=nCLV?clvSum/nCLV:null;
+    var posRate=nCLV?clvPos/nCLV:null;
+    var hit=(w+l)?w/(w+l):null;
+    $('recKpis').innerHTML=kpi(g.length,'edges graded')+kpi(nCLV,'with CLV')+
+      kpi(hit!=null?(hit*100).toFixed(0)+'%':'\u2014','hit rate')+
+      kpi(pct(avg),'avg CLV')+kpi(pct(med),'median CLV')+kpi(rate(posRate),'beat the close');
+    var series=await sbGet('signals?select=clv,graded_at&graded_at=not.is.null&'+EDGEQ+'&clv=not.is.null&order=graded_at.asc&limit=5000');
+    renderClvHero(series,avg,med,posRate);
+    renderAnchorSplit(g);
+    renderCorrobSplit(g);
+    renderBookBias();
+    $('dbPill').textContent='live';$('dbPill').className='pill ok';
+  }catch(e){
+    $('dbPill').textContent='db error';$('dbPill').className='pill err';
+    $('recKpis').innerHTML='<div class="empty">Could not reach the database: '+e.message+'. This page shows nothing rather than showing something made up.</div>';
+  }
+}
+$('yr').textContent=new Date().getFullYear();
+load();
+</script>
+</body>
+</html>
