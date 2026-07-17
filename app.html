@@ -748,6 +748,7 @@ body.ed-large-text .set-lbl,body.ed-large-text .lead-sel{font-size:14px}
     <p class="lede">The closing-line record of the <b style="color:var(--text);font-weight:600">edges the system flagged</b> &mdash; not every priced selection. Each flagged edge is captured, the closing line is snapshotted, and it's graded after the game. This is whether the picks beat the close.</p>
     <div id="clvChart"></div>
     <div class="kpis" id="recKpis"></div>
+    <div id="recBasis"></div>
     <div id="recAnchor"></div>
     <div id="recCorrob"></div>
     <div id="recBias"></div>
@@ -1198,6 +1199,67 @@ function renderCorrobSplit(rows){
     '<div class="asplit-grid">'+col('soft','LONE BOOK \u00b7 1',lone)+col('sharp','CORROBORATED \u00b7 3+',corr)+'</div>'+
     '<div class="asplit-grid" style="margin-top:8px">'+col('soft','THIN \u00b7 2',thin)+col('sharp','ALIGNED \u00b7 0',alig)+'</div>'+
     '<div class="asplit-read">'+read+'</div></div>';
+}
+
+/* ===== WHICH PRICE IS CLV MEASURED FROM? ====================================
+   Raised on r/algobetting: "make sure CLV uses the timestamp of YOUR bet vs
+   close, not open-to-close. Open CLV looks prettier and lies more."
+
+   Traced through the pipeline, he is describing this codebase. capture prices
+   the FULL board every pass, so a selection is inserted the first time it
+   appears anywhere, usually with no edge. first_best_dec is written on that pass
+   and frozen. close computes CLV from the entry price. Entry price is
+   first_best_dec. So CLV here is open-to-close.
+
+   The direction is the interesting part and it is not the one he assumed. A row
+   becomes a signal LATER, when a soft book's price drifts out and an edge
+   appears, so flagged price > open price. CLV is computed from the smaller
+   number: the scanner is charged the opening price for a signal it did not emit
+   until the price improved. That UNDERSTATES CLV rather than flattering it.
+
+   This panel does not argue that. It measures it. Both prices are on the row, so
+   the gap is arithmetic, not a theory:
+
+       understatement per row = 1/first_best_dec - 1/flagged_best_dec
+
+   in probability points. If that is close to the size of the negative CLV in the
+   KPIs above, then open-to-close IS the negative CLV and lone books are a
+   sideshow. ========================================================== */
+function renderBasisNote(rows){
+  var host=$('recBasis');if(!host)return;
+  rows=rows||[];
+  var pairs=rows.filter(function(r){return r.flagged_best_dec!=null&&r.first_best_dec!=null
+    &&+r.flagged_best_dec>1&&+r.first_best_dec>1;});
+  if(!pairs.length){
+    host.innerHTML='<div class="anote"><b>CLV below is measured open-to-close, which is wrong.</b> '+
+      'capture prices the whole board every pass, so a row is recorded the first time it appears \u2014 usually before it is a signal at all. CLV is computed from that first-seen price, which is the open, not from the price this tool actually offered you when it flagged. '+
+      'capture v3 records the flag price; no graded row carries one yet. It cannot be backfilled: the moment has passed. The number above stands as-is until then rather than being quietly adjusted.</div>';
+    return;
+  }
+  var gap=0,hi=0,lo=0,same=0;
+  pairs.forEach(function(r){
+    var f=+r.first_best_dec,g=+r.flagged_best_dec;
+    gap+=(1/f-1/g);
+    if(g>f)hi++;else if(g<f)lo++;else same++;
+  });
+  var avg=gap/pairs.length;
+  var dir=(hi>lo*1.5)?'higher':(lo>hi*1.5)?'lower':'mixed';
+  var read;
+  if(dir==='higher')
+    read='<b>The flag price beats the open on '+hi+' of '+pairs.length+' rows.</b> That is the predicted direction: a row becomes a signal because the price drifted out, so measuring from the open charges this scanner for a price it never offered. Every graded CLV above is understated by roughly '+(avg*100).toFixed(2)+' probability points. Compare that to the average CLV in the KPIs. If they are the same size, open-to-close is the whole story and the negative record is an artefact of measurement, not of edge.';
+  else if(dir==='lower')
+    read='<b>The flag price is worse than the open on '+lo+' of '+pairs.length+' rows</b>, which contradicts the prediction. Rows appear to be flagging after the price has already moved against them, meaning this scanner is late rather than early. That is a worse problem than the one being measured and it will not be explained away here.';
+  else
+    read='Flag price and open price disagree in both directions about equally ('+hi+' higher, '+lo+' lower, '+same+' identical). Open-to-close is adding noise rather than bias, so it is not the explanation for the record above. Look elsewhere.';
+  host.innerHTML='<div class="asplit"><div class="asplit-h">What CLV is measured from</div>'+
+    '<div class="asplit-sub">CLV should be measured from the price this tool offered when it flagged, not from the price at first sighting. Those are different numbers and only one of them was ever available to you. '+pairs.length+' graded rows carry both.</div>'+
+    '<div class="acol soft"><div class="ah">OPEN vs FLAG PRICE</div>'+
+    '<div class="ar"><span class="l">rows with both prices</span><span class="v">'+pairs.length+'</span></div>'+
+    '<div class="ar"><span class="l">flag price better than open</span><span class="v">'+hi+'</span></div>'+
+    '<div class="ar"><span class="l">flag price worse than open</span><span class="v">'+lo+'</span></div>'+
+    '<div class="ar"><span class="l">identical</span><span class="v">'+same+'</span></div>'+
+    '<div class="ar"><span class="l">avg CLV thrown away per row</span><span class="v '+(avg>0?'dn':'up')+'">'+(avg>=0?'-':'+')+Math.abs(avg*100).toFixed(2)+' pts</span></div>'+
+    '</div><div class="asplit-read">'+read+'</div></div>';
 }
 
 function renderBookBias(){
@@ -1920,7 +1982,7 @@ async function loadRecord(){
     // CLEAN edges only: real floor, liquid, and capped to exclude stale-line garbage
     // (a 30-60% "edge" is a dead price, not a signal — it poisons the record).
     var EDGEQ='edge=gte.0.005&edge=lte.0.1&n_books=gte.3';
-    var g=await sbGet('signals?select=clv,result,beat_close,sharp_fair,consensus_fair,first_has_sharp,first_corrob_n,first_corrob_ref,n_books&graded_at=not.is.null&'+EDGEQ+'&limit=5000');
+    var g=await sbGet('signals?select=clv,result,beat_close,sharp_fair,consensus_fair,first_has_sharp,first_corrob_n,first_corrob_ref,n_books,first_best_dec,flagged_best_dec,flagged_at,flagged_corrob_n&graded_at=not.is.null&'+EDGEQ+'&limit=5000');
     var w=0,l=0,clvSum=0,beatStored=0,n=g.length,clvArr=[],clvPos=0;
     g.forEach(function(r){if(r.result==='win')w++;else if(r.result==='loss')l++;
       if(r.clv!=null){clvArr.push(+r.clv);clvSum+=+r.clv;if(r.clv>0)clvPos++;if(r.beat_close)beatStored++;}});   // all CLV stats over the SAME clv-present subset
@@ -1931,6 +1993,7 @@ async function loadRecord(){
     var beatRate=posRate;                            // beat-close IS clv>0 by definition; derive it, never trust a stored copy
     var beatStoredRate=nCLV?beatStored/nCLV:null;    // stored column, kept ONLY to detect backend drift until settle+backfill land
     var hit=(w+l)?w/(w+l):null;
+    renderBasisNote(g);
     renderAnchorSplit(g);
     renderCorrobSplit(g);
     renderBookBias();
