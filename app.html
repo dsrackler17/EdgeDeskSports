@@ -970,10 +970,26 @@ async function sbCount(filter){var r=await fetch(SB_URL+"/rest/v1/signals?select
    heuristic is not used as a fallback anywhere, because a rule that is wrong 1/n
    of the time is worse than an honest gap: a gap you discount, a wrong label you
    trust. The unknown cohort drains on its own as capture re-upserts the board. */
-function anchorOf(e){
+/* scope='live'  -> has_sharp        : what the board says on the latest pass. Badges.
+   scope='entry' -> first_has_sharp  : what was true when the row was priced. Grading.
+
+   Grading MUST use entry. CLV is computed from first_best_dec, so "did the anchor
+   predict CLV" is a question about the moment of pricing. Reading the live column
+   there would grade a row against a board it never saw. */
+function anchorOf(e,scope){
   if(!e||e.sharp_fair==null)
     return {kind:'none',label:'NO FAIR',short:'no fair line',
       why:'No fair line is stored on this row at all. Nothing here is anchored to anything.'};
+  if(scope==='entry'){
+    if(e.first_has_sharp===true)
+      return {kind:'sharp',label:'SHARP ANCHORED',short:'sharp anchored',
+        why:'Pinnacle quoted this selection when it was first priced. Recorded by capture at entry and frozen.'};
+    if(e.first_has_sharp===false)
+      return {kind:'soft',label:'SOFT CONSENSUS',short:'soft consensus',
+        why:'Pinnacle did not quote this selection when it was first priced, so the entry fair line was the multi-book median.'};
+    return {kind:'unknown',label:'ANCHOR UNKNOWN',short:'unknown anchor',
+      why:'This row was priced before capture recorded the entry anchor. It cannot be backfilled and is not guessed.'};
+  }
   if(e.has_sharp===true)
     return {kind:'sharp',label:'SHARP ANCHORED',short:'sharp anchored',
       why:'Pinnacle quoted this selection and the fair line is de-vigged off its price. Recorded by capture at price time, not inferred here. This is the only anchor EdgeDesk counts as sharp.'};
@@ -986,6 +1002,7 @@ function anchorOf(e){
 /* Only known-soft and no-fair are soft. Unknown is not evidence of anything and
    is never filtered on. */
 function isSoftAnchor(e){var k=anchorOf(e).kind;return k==='soft'||k==='none';}
+function entryCorrobN(e){return (e&&e.first_corrob_n!=null)?e.first_corrob_n:null;}
 
 /* ===== MULTI-BOOK CORROBORATION =============================================
    A single book disagreeing with the sharp number is almost never information.
@@ -1141,17 +1158,17 @@ function bookBiasProbe(){
 function renderCorrobSplit(rows){
   var host=$('recCorrob');if(!host)return;
   rows=rows||[];
-  var known=rows.filter(function(r){return r.corrob_n!=null;});
+  var known=rows.filter(function(r){return entryCorrobN(r)!=null;});
   var unknown=rows.length-known.length;
   if(!known.length){
     host.innerHTML='<div class="asplit"><div class="asplit-h">CLV by corroboration</div>'+
-      '<div class="asplit-sub">No graded row carries a corroboration count yet. capture v2 records it at price time; rows graded before that deploy cannot have it backfilled, because it depends on the per-book board as it stood at the moment of pricing and that moment is gone. This fills in as new signals grade. Nothing is estimated here.</div></div>';
+      '<div class="asplit-sub">No graded row carries an entry corroboration count yet, which is expected until signals priced after the capture v2 deploy start settling. It cannot be backfilled: it depends on the per-book board at the instant of pricing, and book_quotes is upserted on (sig_key, book_key), so every one of those instants has already been overwritten by a later pass. Waiting on real data is the only honest option. Nothing is estimated here.</div></div>';
     return;
   }
-  var lone=anchorStats(known.filter(function(r){return r.corrob_n===1;}));
-  var thin=anchorStats(known.filter(function(r){return r.corrob_n===2;}));
-  var corr=anchorStats(known.filter(function(r){return r.corrob_n>=3;}));
-  var alig=anchorStats(known.filter(function(r){return r.corrob_n===0;}));
+  var lone=anchorStats(known.filter(function(r){return entryCorrobN(r)===1;}));
+  var thin=anchorStats(known.filter(function(r){return entryCorrobN(r)===2;}));
+  var corr=anchorStats(known.filter(function(r){return entryCorrobN(r)>=3;}));
+  var alig=anchorStats(known.filter(function(r){return entryCorrobN(r)===0;}));
   var MIN=30;
   function pct(v){return v==null?'\u2014':((v>=0?'+':'')+(v*100).toFixed(1)+'%');}
   function rate(v){return v==null?'\u2014':(v*100).toFixed(0)+'%';}
@@ -1176,8 +1193,8 @@ function renderCorrobSplit(rows){
     read='The cohorts grade the same, which means corroboration is not separating anything and is not the reason for the blended number. Look elsewhere.';
   }
   host.innerHTML='<div class="asplit"><div class="asplit-h">CLV by corroboration</div>'+
-    '<div class="asplit-sub">How many books independently disagreed with the sharp number when this was priced. One book is usually a slow line. Three or more is a disagreement several books held at once. This is the leading suspect for the negative CLV above and this split is what settles it.'+
-    (unknown?' '+unknown+' graded rows predate capture v2 and carry no count. They are excluded, not guessed.':'')+'</div>'+
+    '<div class="asplit-sub">How many books independently disagreed with the sharp number <b>at the moment this was priced</b>. One book is usually a slow line that corrects toward Pinnacle by close. Three or more is a disagreement several books held at once. This is the leading suspect for the negative CLV above, and this split is what settles it.'+
+    (unknown?' '+unknown+' graded rows predate capture v2 and carry no entry count. Excluded, not guessed, and not backfillable.':'')+'</div>'+
     '<div class="asplit-grid">'+col('soft','LONE BOOK \u00b7 1',lone)+col('sharp','CORROBORATED \u00b7 3+',corr)+'</div>'+
     '<div class="asplit-grid" style="margin-top:8px">'+col('soft','THIN \u00b7 2',thin)+col('sharp','ALIGNED \u00b7 0',alig)+'</div>'+
     '<div class="asplit-read">'+read+'</div></div>';
@@ -1275,9 +1292,9 @@ function anchorStats(rows){
 function renderAnchorSplit(rows){
   var host=$('recAnchor');if(!host)return;
   rows=rows||[];
-  var sharp=anchorStats(rows.filter(function(r){return anchorOf(r).kind==='sharp';}));
-  var soft =anchorStats(rows.filter(function(r){return anchorOf(r).kind==='soft'||anchorOf(r).kind==='none';}));
-  var unk  =anchorStats(rows.filter(function(r){return anchorOf(r).kind==='unknown';}));
+  var sharp=anchorStats(rows.filter(function(r){return anchorOf(r,'entry').kind==='sharp';}));
+  var soft =anchorStats(rows.filter(function(r){var k=anchorOf(r,'entry').kind;return k==='soft'||k==='none';}));
+  var unk  =anchorStats(rows.filter(function(r){return anchorOf(r,'entry').kind==='unknown';}));
   if(!sharp.rows&&!soft.rows&&!unk.rows){host.innerHTML='';return;}
   var MIN=30;
   function pct(v){return v==null?'\u2014':((v>=0?'+':'')+(v*100).toFixed(1)+'%');}
@@ -1304,11 +1321,11 @@ function renderAnchorSplit(rows){
   }
   var unkNote='';
   if(unk.rows){
-    unkNote='<div class="asplit-read"><b>'+unk.rows+' graded rows have an unknown anchor.</b> They were priced before capture recorded whether Pinnacle quoted them. They are not guessed into either column: the old rule for guessing it mislabelled roughly 1 in n real Pinnacle rows as soft, so every split published before that migration was wrong in the direction of understating the sharp cohort. These rows sit out. The cohort cannot grow and drains as new graded rows arrive.'+
+    unkNote='<div class="asplit-read"><b>'+unk.rows+' graded rows have an unknown entry anchor.</b> They were priced before capture recorded it. They are not guessed into either column: the old rule for guessing it mislabelled roughly 1 in n real Pinnacle rows as soft, so every split published before that migration understated the sharp cohort. These rows sit out permanently. The cohort cannot grow, and every row graded from the deploy onward lands in a real column.'+
       (unk.n?' Their blended CLV, for reference only: '+pct(unk.avg)+' over '+unk.n+'.':'')+'</div>';
   }
   host.innerHTML='<div class="asplit"><div class="asplit-h">CLV by anchor</div>'+
-    '<div class="asplit-sub">Every graded edge above is one of two things: a fair line de-vigged off a real Pinnacle quote, or the multi-book median standing in because no Pinnacle quote was captured. Grading them as one pool is how you fool yourself. They are split here permanently.</div>'+
+    '<div class="asplit-sub">Every graded edge above is one of two things: a fair line de-vigged off a real Pinnacle quote, or the multi-book median standing in because no Pinnacle quote was captured. Grading them as one pool is how you fool yourself. Split on the anchor as it stood <b>when the row was priced</b>, because CLV is measured from the entry price and a row has to be graded against the board it actually saw.</div>'+
     '<div class="asplit-grid">'+col('sharp','SHARP ANCHORED \u00b7 pinnacle',sharp)+col('soft','SOFT CONSENSUS \u00b7 fallback',soft)+'</div>'+
     '<div class="asplit-read">'+read+'</div>'+unkNote+'</div>';
 }
@@ -1903,7 +1920,7 @@ async function loadRecord(){
     // CLEAN edges only: real floor, liquid, and capped to exclude stale-line garbage
     // (a 30-60% "edge" is a dead price, not a signal — it poisons the record).
     var EDGEQ='edge=gte.0.005&edge=lte.0.1&n_books=gte.3';
-    var g=await sbGet('signals?select=clv,result,beat_close,sharp_fair,consensus_fair,has_sharp,corrob_n,corrob_ref,n_books&graded_at=not.is.null&'+EDGEQ+'&limit=5000');
+    var g=await sbGet('signals?select=clv,result,beat_close,sharp_fair,consensus_fair,first_has_sharp,first_corrob_n,first_corrob_ref,n_books&graded_at=not.is.null&'+EDGEQ+'&limit=5000');
     var w=0,l=0,clvSum=0,beatStored=0,n=g.length,clvArr=[],clvPos=0;
     g.forEach(function(r){if(r.result==='win')w++;else if(r.result==='loss')l++;
       if(r.clv!=null){clvArr.push(+r.clv);clvSum+=+r.clv;if(r.clv>0)clvPos++;if(r.beat_close)beatStored++;}});   // all CLV stats over the SAME clv-present subset
