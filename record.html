@@ -117,6 +117,7 @@ footer a:hover{color:var(--text)}
     <span class="ey">The proof layer</span>
     <h2>Closing line value</h2>
     <div id="clvChart"></div>
+    <div id="recBasis"></div>
     <div class="kpis" id="recKpis"></div>
   </div>
 </section>
@@ -217,6 +218,35 @@ function col(k,t,st){
     '<div class="ar"><span class="l">CLV+ rate</span><span class="v">'+rate(st.posRate)+'</span></div>'+
     (st.n<MIN_SAMPLE?'<div class="ar"><span class="l" style="color:#e0a3a3">below '+MIN_SAMPLE+' \u2014 not yet proof of anything</span></div>':'')+
     '</div>';
+}
+
+/* CLV must be measured from the price the tool OFFERED, not the price at first
+   sighting. capture prices the whole board, so first_best_dec is the open. This
+   panel measures the gap rather than asserting it: both prices sit on the row. */
+function renderBasisNote(rows){
+  var host=$('recBasis');if(!host)return;
+  rows=rows||[];
+  var pairs=rows.filter(function(r){return r.flagged_best_dec!=null&&r.first_best_dec!=null&&+r.flagged_best_dec>1&&+r.first_best_dec>1;});
+  if(!pairs.length){
+    host.innerHTML='<div class="asplit"><div class="asplit-h">What CLV is measured from</div>'+
+      '<div class="asplit-sub"><b>The number above is measured open-to-close, which is wrong, and it is published anyway.</b> Capture records a selection the first time it appears on any board, usually before it is a signal at all. CLV is currently computed from that first-seen price rather than from the price EdgeDesk actually offered when it flagged. The flag price is now being recorded; no graded row carries one yet, and it cannot be backfilled because the moment has passed. The figure stands unadjusted until real rows arrive.</div></div>';
+    return;
+  }
+  var gap=0,hi=0,lo=0,same=0;
+  pairs.forEach(function(r){var f=+r.first_best_dec,g=+r.flagged_best_dec;gap+=(1/f-1/g);if(g>f)hi++;else if(g<f)lo++;else same++;});
+  var avg=gap/pairs.length;
+  var read;
+  if(hi>lo*1.5)read='<b>The flag price beats the open on '+hi+' of '+pairs.length+' rows.</b> Rows become signals because a price drifted out, so measuring from the open charges this scanner for a price it never offered. Every CLV above is understated by roughly '+(avg*100).toFixed(2)+' probability points.';
+  else if(lo>hi*1.5)read='<b>The flag price is worse than the open on '+lo+' of '+pairs.length+' rows.</b> That contradicts the prediction: signals are firing after the price has already moved against them, which means this scanner is late. That is a worse problem than the one being measured.';
+  else read='Flag and open prices disagree in both directions about equally. Open-to-close is adding noise rather than bias, so it does not explain the record above.';
+  host.innerHTML='<div class="asplit"><div class="asplit-h">What CLV is measured from</div>'+
+    '<div class="asplit-sub">CLV should be measured from the price offered at the moment of flagging, not at first sighting. '+pairs.length+' graded rows carry both.</div>'+
+    '<div class="acol soft"><div class="ah">OPEN vs FLAG PRICE</div>'+
+    '<div class="ar"><span class="l">flag better than open</span><span class="v">'+hi+'</span></div>'+
+    '<div class="ar"><span class="l">flag worse than open</span><span class="v">'+lo+'</span></div>'+
+    '<div class="ar"><span class="l">identical</span><span class="v">'+same+'</span></div>'+
+    '<div class="ar"><span class="l">avg CLV thrown away per row</span><span class="v '+(avg>0?'dn':'up')+'">'+(avg>=0?'-':'+')+Math.abs(avg*100).toFixed(2)+' pts</span></div>'+
+    '</div><div class="asplit-read">'+read+'</div></div>';
 }
 
 function renderAnchorSplit(rows){
@@ -344,7 +374,7 @@ function kpi(n,l){return'<div class="kpi"><div class="n">'+n+'</div><div class="
 
 async function load(){
   try{
-    var g=await sbGet('signals?select=clv,result,beat_close,sharp_fair,consensus_fair,first_has_sharp,first_corrob_n,n_books&graded_at=not.is.null&'+EDGEQ+'&limit=5000');
+    var g=await sbGet('signals?select=clv,result,beat_close,sharp_fair,consensus_fair,first_has_sharp,first_corrob_n,n_books,first_best_dec,flagged_best_dec&graded_at=not.is.null&'+EDGEQ+'&limit=5000');
     var w=0,l=0,clvArr=[],clvSum=0,clvPos=0;
     g.forEach(function(r){
       if(r.result==='win')w++;else if(r.result==='loss')l++;
@@ -360,6 +390,7 @@ async function load(){
       kpi(pct(avg),'avg CLV')+kpi(pct(med),'median CLV')+kpi(rate(posRate),'beat the close');
     var series=await sbGet('signals?select=clv,graded_at&graded_at=not.is.null&'+EDGEQ+'&clv=not.is.null&order=graded_at.asc&limit=5000');
     renderClvHero(series,avg,med,posRate);
+    renderBasisNote(g);
     renderAnchorSplit(g);
     renderCorrobSplit(g);
     renderBookBias();
