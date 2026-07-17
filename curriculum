@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>EdgeDesk Curriculum: How betting markets actually work</title>
+<meta name="description" content="A free 19-episode course on sports betting markets. Odds, vig, de-vigging, limits, expected value, variance, and closing line value. No picks. Ever.">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0d0f13;--surface:#13161c;--surface2:#191d25;--border:#262c36;--text:#e7eaf0;--dim:#8a93a2;--faint:#5b6472;--accent:#4d8dff;--accent2:#7db0ff;--pos:#2fb47c;--neg:#e26044;--warn:#d99a2b;--gold:#e3b84d}
+*{box-sizing:border-box;margin:0}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:'Inter',system-ui,sans-serif;-webkit-font-smoothing:antialiased;line-height:1.55;overflow-x:hidden}
+.mono{font-family:'JetBrains Mono',monospace}
+a{color:inherit;text-decoration:none}
+.wrap{max-width:1080px;margin:0 auto;padding:0 22px}
+.ey{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--accent);font-weight:500}
+.btn{font-family:'Inter',sans-serif;font-weight:700;font-size:14px;border-radius:9px;padding:9px 16px;cursor:pointer;border:1px solid transparent;transition:.15s}
+.btn.primary{background:var(--accent);color:#06122b;border-color:var(--accent)}
+.btn.primary:hover{background:var(--accent2)}
+.btn.ghost{background:transparent;color:var(--text);border-color:var(--border)}
+.btn.ghost:hover{border-color:var(--faint)}
+.btn.lg{font-size:15px;padding:13px 22px}
+
+nav{position:sticky;top:0;z-index:40;background:rgba(13,15,19,.86);backdrop-filter:blur(12px);border-bottom:1px solid var(--border)}
+.nav-in{display:flex;align-items:center;gap:14px;height:60px}
+.logo{font-weight:800;font-size:17px;letter-spacing:-.02em;display:flex;align-items:center;gap:8px}
+.logo small{font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:500;color:var(--faint);letter-spacing:.14em;text-transform:uppercase}
+.mk{width:9px;height:9px;border-radius:2px;background:var(--accent);display:inline-block}
+.nav-sp{flex:1}
+.nlink{font-size:14px;color:var(--dim);font-weight:500}
+.nlink:hover{color:var(--text)}
+@media(max-width:760px){.hideS{display:none}}
+
+.hero{padding:74px 0 40px;border-bottom:1px solid var(--border)}
+h1{font-size:clamp(30px,5.2vw,52px);line-height:1.06;letter-spacing:-.035em;font-weight:800;margin:14px 0 0;max-width:19ch}
+.lede{font-size:clamp(15px,2vw,18px);color:var(--dim);max-width:60ch;margin-top:18px;line-height:1.62}
+.creed{margin-top:26px;border-left:2px solid var(--accent);padding:2px 0 2px 16px;font-size:17px;font-weight:600;max-width:44ch;line-height:1.5}
+.heroacts{display:flex;gap:10px;flex-wrap:wrap;margin-top:28px}
+
+.sec{padding:56px 0;border-bottom:1px solid var(--border)}
+h2{font-size:clamp(21px,3vw,30px);letter-spacing:-.025em;font-weight:800;margin:10px 0 0}
+.sub{color:var(--dim);max-width:66ch;margin-top:12px;font-size:15px;line-height:1.62}
+
+.mod{margin-top:34px}
+.mod-h{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;padding-bottom:10px;border-bottom:1px solid var(--border)}
+.mod-n{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--accent);letter-spacing:.16em;font-weight:700}
+.mod-t{font-size:19px;font-weight:800;letter-spacing:-.02em}
+.mod-d{color:var(--faint);font-size:13px}
+
+.ep{display:grid;grid-template-columns:44px 1fr auto;gap:16px;align-items:start;padding:15px 0;border-bottom:1px solid var(--border)}
+.ep-n{font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--faint);font-weight:700;padding-top:2px}
+.ep-t{font-weight:600;font-size:15.5px;letter-spacing:-.01em}
+.ep-d{color:var(--dim);font-size:13.5px;margin-top:4px;line-height:1.55;max-width:74ch}
+.ep-s{font-family:'JetBrains Mono',monospace;font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;padding:3px 8px;border-radius:5px;border:1px solid var(--border);color:var(--faint);white-space:nowrap;align-self:center}
+.ep-s.live{color:var(--pos);border-color:rgba(47,180,124,.4);background:rgba(47,180,124,.08)}
+.ep-s.next{color:var(--accent);border-color:rgba(77,141,255,.4);background:rgba(77,141,255,.08)}
+.tag{display:inline-block;font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:.06em;padding:1px 6px;border-radius:4px;margin-left:7px;vertical-align:middle;border:1px solid rgba(217,154,43,.4);color:var(--warn);background:rgba(217,154,43,.08)}
+@media(max-width:640px){.ep{grid-template-columns:32px 1fr;gap:11px}.ep-s{grid-column:2;justify-self:start;margin-top:7px}}
+
+.pledge{background:var(--surface);border:1px solid var(--border);border-radius:13px;padding:26px}
+.pl{display:flex;gap:12px;padding:11px 0;border-bottom:1px solid var(--border);align-items:flex-start}
+.pl:last-child{border-bottom:0;padding-bottom:0}
+.pl .x{font-family:'JetBrains Mono',monospace;color:var(--accent);font-size:13px;font-weight:700;padding-top:2px}
+.pl .b{font-size:14.5px;line-height:1.6}
+.pl .b b{font-weight:700}
+
+.admit{background:var(--surface);border:1px solid rgba(226,96,68,.32);border-radius:13px;padding:26px;margin-top:30px}
+.admit h3{font-size:17px;font-weight:800;letter-spacing:-.02em}
+.admit p{color:var(--dim);font-size:14.5px;line-height:1.65;margin-top:11px;max-width:70ch}
+.admit p b{color:var(--text)}
+
+footer{padding:40px 0 56px;color:var(--faint);font-size:12.5px}
+.foot-grid{display:flex;justify-content:space-between;gap:26px;flex-wrap:wrap}
+.rg{color:var(--dim);font-weight:600;margin-bottom:5px}
+footer a:hover{color:var(--text)}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="wrap nav-in">
+    <a class="logo" href="/index.html"><span class="mk"></span>EdgeDesk <small>curriculum</small></a>
+    <span class="nav-sp"></span>
+    <a class="nlink hideS" href="#syllabus">Syllabus</a>
+    <a class="nlink hideS" href="#pledge">The pledge</a>
+    <a class="nlink hideS" href="/record.html">Track record</a>
+    <a class="btn ghost" href="/index.html">The terminal</a>
+  </div>
+</nav>
+
+<section class="hero">
+  <div class="wrap">
+    <span class="ey">Free · 19 episodes · No picks</span>
+    <h1>How betting markets actually work</h1>
+    <p class="lede">A course, in order, on the machinery underneath every number a sportsbook shows you. Where the price comes from, what it means, why it moves, and the only measurement that can tell you whether you have an edge before your bankroll tells you first.</p>
+    <div class="creed">We don't tell people what to bet. We teach them how betting markets work.</div>
+    <div class="heroacts">
+      <a class="btn primary lg" href="#syllabus">See the syllabus</a>
+      <a class="btn ghost lg" href="/record.html">Our record, unedited</a>
+    </div>
+  </div>
+</section>
+
+<section class="sec">
+  <div class="wrap">
+    <span class="ey">Why this exists</span>
+    <h2>Results are a terrible teacher</h2>
+    <p class="sub">You need roughly a thousand bets to distinguish an excellent bettor from a break-even one, and that is at a confidence level a statistician would call weak. Three bets a day, that's eleven months. The entire time you are learning, you are paying the vig on every bet. The feedback loop is longer than the bankroll.</p>
+    <p class="sub">This is why advice like "stay disciplined" and "manage your bankroll" doesn't fix anything. It tells you how to lose slower. It doesn't tell you how to know whether you are any good. That question has an answer, it resolves in hours instead of years, and it is what this course is about.</p>
+  </div>
+</section>
+
+<section class="sec" id="syllabus">
+  <div class="wrap">
+    <span class="ey">Syllabus</span>
+    <h2>Nineteen episodes, in order</h2>
+    <p class="sub">Each one assumes the one before it. You can skip around, but the reason it's ordered is that most betting education fails by teaching conclusions before the machinery that produces them. Episodes marked <span class="tag">contrarian</span> argue against something this channel or the wider betting world takes for granted.</p>
+
+    <div class="mod">
+      <div class="mod-h"><span class="mod-n">MODULE 01</span><span class="mod-t">The Price</span><span class="mod-d">What a number actually means</span></div>
+      <div class="ep"><div class="ep-n">01</div><div><div class="ep-t">Why Most Sports Bettors Lose</div><div class="ep-d">It isn't discipline. You hit 60% last season and it proves nothing, and the arithmetic of why is the foundation of everything else here.</div></div><div class="ep-s next">Next</div></div>
+      <div class="ep"><div class="ep-n">02</div><div><div class="ep-t">How to Read Odds: Every Price Is a Probability</div><div class="ep-d">American, decimal, fractional. Three costumes for the same thing. Converting a price to a probability in your head is the single highest-leverage skill in this course.</div></div><div class="ep-s">Planned</div></div>
+      <div class="ep"><div class="ep-n">03</div><div><div class="ep-t">The Vig</div><div class="ep-d">Why the two sides add up to more than 100%, where the extra goes, and why break-even at -110 is 52.38% instead of 50%.</div></div><div class="ep-s">Planned</div></div>
+      <div class="ep"><div class="ep-n">04</div><div><div class="ep-t">De-vigging: Getting to the Real Number</div><div class="ep-d">Stripping the book's margin out of a price to recover what it actually thinks. Once you can do this, you can compare any two books on earth.</div></div><div class="ep-s">Planned</div></div>
+    </div>
+
+    <div class="mod">
+      <div class="mod-h"><span class="mod-n">MODULE 02</span><span class="mod-t">The Market</span><span class="mod-d">Where the number comes from</span></div>
+      <div class="ep"><div class="ep-n">05</div><div><div class="ep-t">Who Sets the Line, and Why It Moves</div><div class="ep-d">Lines are not predictions. Openers, originators, copiers, and what a line move is actually responding to. Rarely what you think.</div></div><div class="ep-s">Planned</div></div>
+      <div class="ep"><div class="ep-n">06</div><div><div class="ep-t">Limits: The Number Nobody Talks About</div><div class="ep-d">The keystone of the whole course. A price means nothing without the size behind it. Three books at a $50 max and three at $10k look identical on a screen and are not remotely the same information. This episode explains sharp books, soft books, and getting limited, all at once, before any of them are named.</div></div><div class="ep-s">Planned</div></div>
+      <div class="ep"><div class="ep-n">07</div><div><div class="ep-t">Sharp Books vs Soft Books</div><div class="ep-d">Two completely different businesses that happen to use the same word. One sells a price. The other sells entertainment and manages who it lets in.</div></div><div class="ep-s">Planned</div></div>
+      <div class="ep"><div class="ep-n">08</div><div><div class="ep-t">Why Pinnacle</div><div class="ep-d">By this point it's a conclusion you can derive rather than a claim you have to accept. Low margin, high limits, moves on money instead of opinion.</div></div><div class="ep-s">Planned</div></div>
+    </div>
+
+    <div class="mod">
+      <div class="mod-h"><span class="mod-n">MODULE 03</span><span class="mod-t">Edge</span><span class="mod-d">How you would know if you had one</span></div>
+      <div class="ep"><div class="ep-n">09</div><div><div class="ep-t">Expected Value</div><div class="ep-d">The object everything else is a shadow of. What you're owed on average, why it's invisible in the short run, and why it has to come before CLV rather than after it.</div></div><div class="ep-s">Planned</div></div>
+      <div class="ep"><div class="ep-n">10</div><div><div class="ep-t">Variance: Why 60% Means Nothing</div><div class="ep-d">How long it really takes to know anything from results, worked out properly. The reason every win-rate screenshot you have ever seen is unfalsifiable.</div></div><div class="ep-s">Planned</div></div>
+      <div class="ep"><div class="ep-n">11</div><div><div class="ep-t">What Closing Line Value Actually Is</div><div class="ep-d">A measurement that resolves in hours instead of years, and works on bets that lost.</div></div><div class="ep-s">Planned</div></div>
+      <div class="ep"><div class="ep-n">12</div><div><div class="ep-t">Why CLV Is the Only Proof</div><div class="ep-d">The closing line is the most efficient price anyone will ever offer you. Beating it consistently is the one claim in this industry that cannot be faked.</div></div><div class="ep-s">Planned</div></div>
+      <div class="ep"><div class="ep-n">13</div><div><div class="ep-t">The Case Against CLV<span class="tag">contrarian</span></div><div class="ep-d">The strongest argument against the thing this channel is built on, made properly and without strawmen. It's necessary but not sufficient. It's unmeasurable where no credible close exists. It can be gamed by betting into your own closing line. You should hear this from us rather than from someone with something to sell.</div></div><div class="ep-s">Planned</div></div>
+    </div>
+
+    <div class="mod">
+      <div class="mod-h"><span class="mod-n">MODULE 04</span><span class="mod-t">Practice</span><span class="mod-d">Using it</span></div>
+      <div class="ep"><div class="ep-n">14</div><div><div class="ep-t">Why Line Shopping Works</div><div class="ep-d">The only edge available to everyone, requiring no model, no information, and no talent. Most people still don't do it.</div></div><div class="ep-s">Planned</div></div>
+      <div class="ep"><div class="ep-n">15</div><div><div class="ep-t">Spotting Fake Edges</div><div class="ep-d">Why +2 to 4% at a major US book is plausible and +8% offshore is a stale price, a limit you'll never get filled at, or a mistake in your own arithmetic.</div></div><div class="ep-s">Planned</div></div>
+      <div class="ep"><div class="ep-n">16</div><div><div class="ep-t">Dead Markets</div><div class="ep-d">When a board's numbers don't add up to a coherent market at all. Ineligible teams still priced, overrounds that make the whole pool unbettable, and formats that aren't really betting markets wearing the costume of one.</div></div><div class="ep-s">Planned</div></div>
+      <div class="ep"><div class="ep-n">17</div><div><div class="ep-t">Why Sportsbooks Limit Winners</div><div class="ep-d">Not a conspiracy and not personal. Once you understand limits and the two business models, restricting winning accounts is the obviously rational move, and the shape of the whole retail industry follows from it.</div></div><div class="ep-s">Planned</div></div>
+      <div class="ep"><div class="ep-n">18</div><div><div class="ep-t">Where Edge Actually Lives</div><div class="ep-d">Everything up to here explains why the obvious places are picked clean. This is the honest map of what's left, and it's smaller and more boring than anyone selling you a system will admit.</div></div><div class="ep-s">Planned</div></div>
+      <div class="ep"><div class="ep-n">19</div><div><div class="ep-t">Building a CLV Log</div><div class="ep-d">How to actually measure yourself, starting in a spreadsheet, because that's where we started and it's where you should. The only episode where the tool is the subject.</div></div><div class="ep-s">Planned</div></div>
+    </div>
+  </div>
+</section>
+
+<section class="sec" id="pledge">
+  <div class="wrap">
+    <span class="ey">The pledge</span>
+    <h2>What this channel will never do</h2>
+    <p class="sub">Not principles. Constraints. Each one is here because breaking it would make the education worse, and the education is the entire product.</p>
+    <div class="pledge" style="margin-top:24px">
+      <div class="pl"><span class="x">01</span><span class="b"><b>No picks.</b> Not in a video, not in the description, not in a Discord, not as a bonus. A pick teaches you nothing and leaves you needing another one tomorrow. That's a subscription to someone's opinion, not an education.</span></div>
+      <div class="pl"><span class="x">02</span><span class="b"><b>No win-rate claims we can't show you the arithmetic for.</b> Every number in every episode gets worked on screen. If we paste in a finished graphic, we're asking for trust instead of demonstrating it.</span></div>
+      <div class="pl"><span class="x">03</span><span class="b"><b>Our record is public and unedited.</b> No login, no account, no paywall, at <a href="/record.html" style="color:var(--accent)">/record.html</a>. It is wired straight to the database with no edit step, and it updates whether we like the direction or not. It's the only claim we make that can be independently checked, so it's the one that has to stay visible.</span></div>
+      <div class="pl"><span class="x">04</span><span class="b"><b>The product stays off camera until episode 11.</b> Showing a tool to people who can't yet evaluate it is how people get sold things. You should be able to judge it by the time you see it.</span></div>
+      <div class="pl"><span class="x">05</span><span class="b"><b>We publish the arguments against us.</b> Episode 13 attacks the foundation of this entire channel. When someone finds a real hole, it becomes an episode, not a deleted comment.</span></div>
+    </div>
+
+    <div class="admit">
+      <h3>The part we'd cut if we were selling you something</h3>
+      <p><b>Right now, EdgeDesk's own scanner does not beat the closing line.</b> Its CLV is negative to flat. By the standard this entire course argues is the only one that matters, the tool has not proven itself.</p>
+      <p>We have a specific technical theory about why, and it's an episode later in the series. The number is on the record page, outside the paywall, and it updates on its own. If it turns green, you'll see it. If it stays red, you'll see that too.</p>
+      <p>Everyone else in this industry shows you a record after they already know how it ends. <b>This is an experiment running in the open, and it might fail.</b></p>
+      <div style="margin-top:20px"><a class="btn ghost" href="/record.html">See the record</a></div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap foot-grid">
+    <div>
+      <span class="logo" style="font-size:15px"><span class="mk"></span>EdgeDesk</span>
+      <div style="margin-top:8px;max-width:32ch">Structural mispricing research. Not betting advice. Signals can be wrong.</div>
+    </div>
+    <div>
+      <div class="rg">Responsible gambling</div>
+      <div>21+ · 1-800-GAMBLER · ncpgambling.org</div>
+      <div style="margin-top:10px"><a href="/index.html#different">How it works</a> · <a href="/record.html">Track record</a> · <a href="/curriculum.html">Curriculum</a></div>
+      <div style="margin-top:8px"><a href="/terms.html">Terms</a> · <a href="/privacy.html">Privacy</a> · <a href="/disclaimer.html">Disclaimer</a></div>
+      <div style="margin-top:10px;color:var(--faint)">© <span id="yr"></span> Rackler Tech Ventures LLC</div>
+    </div>
+  </div>
+</footer>
+
+<script>document.getElementById('yr').textContent=new Date().getFullYear();</script>
+</body>
+</html>
