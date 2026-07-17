@@ -1225,6 +1225,21 @@ function renderCorrobSplit(rows){
    in probability points. If that is close to the size of the negative CLV in the
    KPIs above, then open-to-close IS the negative CLV and lone books are a
    sideshow. ========================================================== */
+/* The old record, recomputed under the old rule, shown next to nothing so the
+   difference is visible rather than asserted. Reads the biased filter on
+   purpose. This is the number EdgeDesk published, and it was wrong. */
+async function renderLegacyGap(){
+  var host=$('recBasis');if(!host)return;
+  try{
+    var old=await sbGet('signals?select=clv&graded_at=not.is.null&clv=not.is.null&edge=gte.0.005&edge=lte.0.1&n_books=gte.3&limit=5000');
+    if(!old||!old.length)return;
+    var s=0;old.forEach(function(r){s+=+r.clv;});
+    var avg=s/old.length;
+    host.insertAdjacentHTML('beforeend','<div class="anote"><b>The number this page used to show: '+
+      ((avg>=0?'+':'')+(avg*100).toFixed(1))+'% over '+old.length+' rows.</b> It was produced by selecting on the closing edge and measuring from the opening price, which admits rows whose price rose and rejects rows whose price fell. It is left here because deleting an old published number quietly is worse than showing it and saying it was wrong.</div>');
+  }catch(_){}
+}
+
 function renderBasisNote(rows){
   var host=$('recBasis');if(!host)return;
   rows=rows||[];
@@ -1981,7 +1996,28 @@ async function loadRecord(){
     var gradedEdges=await sbCount('graded_at=not.is.null&edge=gt.0');
     // CLEAN edges only: real floor, liquid, and capped to exclude stale-line garbage
     // (a 30-60% "edge" is a dead price, not a signal — it poisons the record).
-    var EDGEQ='edge=gte.0.005&edge=lte.0.1&n_books=gte.3';
+    /* Filter on WHETHER THE ROW WAS EVER A SIGNAL, not on its live edge.
+
+   The old filter was: edge=gte.0.005&edge=lte.0.1&n_books=gte.3
+   `edge` is the last value capture wrote before the event, i.e. the edge AT
+   CLOSE. So the record selected on the closing edge and measured CLV from the
+   opening price. Closing sharp fair 0.47 in both:
+
+     Row A: opens 2.00 -> 2.20.  final edge +0.034 -> INCLUDED.  CLV -0.060
+     Row B: opens 2.20 -> 2.00.  final edge -0.060 -> EXCLUDED.  CLV +0.034
+
+   It admitted rows whose price rose and rejected rows whose price fell, then
+   measured CLV from the price before the rise. It included negative-CLV rows and
+   discarded positive-CLV ones, by construction. That is not a bias that nudges a
+   number, it is a machine for manufacturing a negative record.
+
+   flagged_at is set once, at the pass where the row first crossed the threshold,
+   and frozen. It cannot respond to what happened afterwards, which is the whole
+   point: a selection rule that can see the future is not a selection rule.
+
+   This empties the record until rows priced after capture v3 settle. It cannot
+   be backfilled. An empty honest record beats a full dishonest one. */
+var EDGEQ='flagged_at=not.is.null&flagged_edge=gte.0.005&flagged_edge=lte.0.1';
     var g=await sbGet('signals?select=clv,result,beat_close,sharp_fair,consensus_fair,first_has_sharp,first_corrob_n,first_corrob_ref,n_books,first_best_dec,flagged_best_dec,flagged_at,flagged_corrob_n&graded_at=not.is.null&'+EDGEQ+'&limit=5000');
     var w=0,l=0,clvSum=0,beatStored=0,n=g.length,clvArr=[],clvPos=0;
     g.forEach(function(r){if(r.result==='win')w++;else if(r.result==='loss')l++;
@@ -1994,6 +2030,7 @@ async function loadRecord(){
     var beatStoredRate=nCLV?beatStored/nCLV:null;    // stored column, kept ONLY to detect backend drift until settle+backfill land
     var hit=(w+l)?w/(w+l):null;
     renderBasisNote(g);
+    renderLegacyGap();
     renderAnchorSplit(g);
     renderCorrobSplit(g);
     renderBookBias();
