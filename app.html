@@ -398,6 +398,53 @@ textarea{min-height:110px;font-family:'JetBrains Mono',monospace;resize:vertical
 .ebadge.model{color:#8fb3ff;background:rgba(93,141,239,.12);border-color:rgba(93,141,239,.42)}
 .ebadge.consensus{color:#7fd4b0;background:rgba(47,180,124,.12);border-color:rgba(47,180,124,.38)}
 .ebadge .st{opacity:.8}
+/* anchor provenance: where a fair line actually came from */
+.abadge{display:inline-block;font-family:'JetBrains Mono',monospace;font-size:8px;font-weight:700;letter-spacing:.04em;padding:2px 5px;border-radius:4px;vertical-align:middle;margin-left:6px;border:1px solid transparent;white-space:nowrap}
+.abadge.sharp{color:#f0c674;background:rgba(217,154,43,.1);border-color:rgba(217,154,43,.35)}
+.abadge.soft{color:#e0a3a3;background:rgba(200,80,80,.1);border-color:rgba(200,80,80,.4)}
+.abadge.none,.abadge.unknown{color:var(--faint);background:rgba(120,120,120,.1);border-color:rgba(120,120,120,.35)}
+.cbadge{display:inline-block;font-family:'JetBrains Mono',monospace;font-size:8px;font-weight:700;letter-spacing:.04em;padding:2px 5px;border-radius:4px;vertical-align:middle;margin-left:5px;border:1px solid transparent;white-space:nowrap}
+.cbadge.corroborated{color:#7fd4b0;background:rgba(47,180,124,.1);border-color:rgba(47,180,124,.38)}
+.cbadge.thin{color:#f0c674;background:rgba(217,154,43,.1);border-color:rgba(217,154,43,.38)}
+.cbadge.lone{color:#e0a3a3;background:rgba(200,80,80,.1);border-color:rgba(200,80,80,.4)}
+.cbadge.aligned,.cbadge.unavailable,.cbadge.unloaded{color:var(--faint);background:transparent;border-color:rgba(120,120,120,.3)}
+.lbadge{display:inline-block;font-family:'JetBrains Mono',monospace;font-size:8px;font-weight:700;letter-spacing:.04em;padding:2px 5px;border-radius:4px;vertical-align:middle;margin-left:5px;border:1px solid transparent;white-space:nowrap}
+.lbadge.high{color:#e0a3a3;background:rgba(200,80,80,.12);border-color:rgba(200,80,80,.45)}
+.lbadge.elevated{color:#f0c674;background:rgba(217,154,43,.1);border-color:rgba(217,154,43,.38)}
+.lbadge.moderate,.lbadge.low{color:var(--faint);background:transparent;border-color:rgba(120,120,120,.3)}
+.bias{border:1px solid var(--border);border-radius:10px;padding:12px;margin:10px 0;background:var(--surface2)}
+.bias-h{font-size:12px;font-weight:700;margin-bottom:2px}
+.bias-sub{font-size:10.5px;color:var(--faint);margin-bottom:10px;line-height:1.5}
+.bias-t{width:100%;border-collapse:collapse;font-size:11px}
+.bias-t th{font-family:'JetBrains Mono',monospace;font-size:8.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--faint);text-align:right;padding:4px 6px;border-bottom:1px solid var(--border);font-weight:700}
+.bias-t th:first-child{text-align:left}
+.bias-t td{padding:4px 6px;border-bottom:1px solid rgba(38,44,54,.5);text-align:right;font-family:'JetBrains Mono',monospace}
+.bias-t td:first-child{text-align:left;font-family:'Inter',sans-serif}
+.bias-t td.up{color:var(--pos,#2fb47c)}
+.bias-t td.dn{color:#e0a3a3}
+.bias-t td.thin{color:var(--faint)}
+.bias-v{font-size:10.5px;color:var(--faint);line-height:1.5;margin-top:9px;padding-top:9px;border-top:1px solid var(--border)}
+.bias-v b{color:var(--text)}
+.anote{font-size:10.5px;line-height:1.5;color:var(--faint);border-left:2px solid rgba(200,80,80,.45);padding:6px 0 6px 9px;margin:8px 0 2px}
+.anote.sharp{border-left-color:rgba(217,154,43,.45)}
+.anote b{color:var(--text)}
+.asplit{border:1px solid var(--border);border-radius:10px;padding:12px;margin:10px 0;background:var(--surface2)}
+.asplit-h{font-size:12px;font-weight:700;margin-bottom:2px}
+.asplit-sub{font-size:10.5px;color:var(--faint);margin-bottom:10px;line-height:1.5}
+.asplit-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.acol{border:1px solid var(--border);border-radius:8px;padding:10px}
+.acol.sharp{border-color:rgba(217,154,43,.3)}
+.acol.soft{border-color:rgba(200,80,80,.3)}
+.acol .ah{font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:700;letter-spacing:.04em;margin-bottom:7px}
+.acol.sharp .ah{color:#f0c674}
+.acol.soft .ah{color:#e0a3a3}
+.acol .ar{display:flex;justify-content:space-between;font-size:11px;padding:2.5px 0}
+.acol .ar .l{color:var(--faint)}
+.acol .ar .v{font-family:'JetBrains Mono',monospace}
+.acol .ar .v.up{color:var(--pos,#2fb47c)}
+.acol .ar .v.dn{color:#e0a3a3}
+.asplit-read{font-size:10.5px;color:var(--faint);line-height:1.5;margin-top:9px;padding-top:9px;border-top:1px solid var(--border)}
+@media(max-width:560px){.asplit-grid{grid-template-columns:1fr}}
 .efilters{display:flex;gap:8px;flex-wrap:wrap;margin:2px 0 12px}
 .echip{font-size:11.5px;font-weight:600;padding:6px 12px;border-radius:8px;border:1px solid var(--border);background:var(--surface2);color:var(--dim);cursor:pointer;display:flex;align-items:center;gap:6px}
 .echip .dot{width:8px;height:8px;border-radius:2px;background:currentColor;opacity:.9}
@@ -451,10 +498,6 @@ textarea{min-height:110px;font-family:'JetBrains Mono',monospace;resize:vertical
 .rcode{font-family:'JetBrains Mono',monospace;font-size:9.5px;font-weight:600;letter-spacing:.02em;padding:3px 7px;border-radius:4px;border:1px solid rgba(127,212,176,.32);color:#7fd4b0;background:rgba(47,180,124,.08);white-space:nowrap}
 .rcode.warn{border-color:rgba(217,154,43,.4);color:#f0c674;background:rgba(217,154,43,.08)}
 .rcode.neut{border-color:rgba(255,255,255,.14);color:var(--dim);background:transparent}
-.cbasis{font-size:10px;line-height:1.55;color:var(--dim);padding:6px 12px 2px;margin:0}
-.cbasis b{color:var(--text)}
-.cbasis.warn b{color:#f0c674}
-.cbasis.good b{color:#7fd4b0}
 .rconf-top{display:flex;align-items:baseline;gap:8px;margin-bottom:6px}
 .rconf-n{font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:700;color:var(--fg);line-height:1}
 .rconf-d{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--faint)}
@@ -705,6 +748,9 @@ body.ed-large-text .set-lbl,body.ed-large-text .lead-sel{font-size:14px}
     <p class="lede">The closing-line record of the <b style="color:var(--text);font-weight:600">edges the system flagged</b> &mdash; not every priced selection. Each flagged edge is captured, the closing line is snapshotted, and it's graded after the game. This is whether the picks beat the close.</p>
     <div id="clvChart"></div>
     <div class="kpis" id="recKpis"></div>
+    <div id="recAnchor"></div>
+    <div id="recCorrob"></div>
+    <div id="recBias"></div>
     <h3>What's working <span class="muted" style="font-weight:400;font-size:11px">— sorted by weight</span></h3>
     <div class="fld" style="margin-bottom:10px"><select id="sliceType"><option value="book">By book</option><option value="sport">By sport</option><option value="market">By market</option><option value="edge_bucket">By edge size</option><option value="ttk_bucket">By time to kickoff</option></select></div>
     <div class="tblwrap"><table class="tbl" id="sliceTbl"><thead><tr><th>Slice</th><th>n</th><th>Hit</th><th>CLV</th><th>Beat</th><th>Weight</th></tr></thead><tbody></tbody></table></div>
@@ -888,6 +934,385 @@ async function sbGetUfc(q){return sbFetch(q,{"accept-profile":"ufc"});}
 async function ufcFetchAll(sel,ord){var all=[],p=0,PAGE=1000;for(;p<20;p++){var b=await sbGetUfc(sel+'&order='+(ord||'full_name')+'&limit='+PAGE+'&offset='+(p*PAGE));if(!b||!b.length)break;all=all.concat(b);if(b.length<PAGE)break;}return all;}
 async function sbCount(filter){var r=await fetch(SB_URL+"/rest/v1/signals?select=id&limit=1"+(filter?"&"+filter:""),{headers:{apikey:SB_KEY,authorization:"Bearer "+SB_KEY,prefer:"count=exact"}});var cr=r.headers.get("content-range")||"0-0/0";return parseInt(cr.split("/")[1])||0;}
 
+/* ===== ANCHOR PROVENANCE =====================================================
+   One source of truth for the question "what is this fair line actually
+   anchored to?"
+
+   Capture writes sharp_fair = consensus_fair when no Pinnacle quote exists for
+   a selection. Downstream that fallback was invisible: the row still said
+   "Sharp fair line", still shipped a MARKET edge, and still graded into the
+   same CLV pool as a genuinely Pinnacle-anchored row. Four separate places in
+   this file re-derived the tell with a bare 1e-9 compare, so a row could be
+   treated as soft by one check and sharp by another.
+
+   The fallback number is not the problem. Not knowing which rows are built on
+   it is. Every consumer asks this function now, and the Record page segments
+   its CLV on it, so a soft cohort can never quietly launder itself into the
+   sharp track record.
+   ============================================================================ */
+/* Reads signals.has_sharp, which capture persists from the one place the fact
+   exists: `s.sharp != null`, before the ?? fallback collapses it.
+
+   This used to be inferred as sharp_fair === consensus_fair. That rule is wrong
+   on a measurable fraction of rows, because cons = median(s.fairs) and median()
+   on an odd-length array returns an ACTUAL ELEMENT. When Pinnacle is the middle
+   book, sharp === cons bit-for-bit and a real Pinnacle row was called soft.
+   Simulated against capture's math, 200k trials per bucket:
+
+       n_books=3 -> 33.5% false soft    n_books=5 -> 19.9%
+       n_books=7 -> 14.3%               n_books=9 -> 11.1%
+       even n_books -> 0.0%
+
+   Exactly 1/n on odd boards, hitting hardest on the most central, most ordinary
+   Pinnacle rows. Every anchor split produced before that migration is junk.
+
+   Rows written before the column existed return 'unknown', not a guess. The old
+   heuristic is not used as a fallback anywhere, because a rule that is wrong 1/n
+   of the time is worse than an honest gap: a gap you discount, a wrong label you
+   trust. The unknown cohort drains on its own as capture re-upserts the board. */
+function anchorOf(e){
+  if(!e||e.sharp_fair==null)
+    return {kind:'none',label:'NO FAIR',short:'no fair line',
+      why:'No fair line is stored on this row at all. Nothing here is anchored to anything.'};
+  if(e.has_sharp===true)
+    return {kind:'sharp',label:'SHARP ANCHORED',short:'sharp anchored',
+      why:'Pinnacle quoted this selection and the fair line is de-vigged off its price. Recorded by capture at price time, not inferred here. This is the only anchor EdgeDesk counts as sharp.'};
+  if(e.has_sharp===false)
+    return {kind:'soft',label:'SOFT CONSENSUS',short:'soft consensus',
+      why:'Pinnacle did not quote this selection, so the fair line fell back to the multi-book no-vig median. On a thin board where several books clone the same number, that median looks reasonable and carries no independent information. Treat this as a screening signal, not a sharp read.'};
+  return {kind:'unknown',label:'ANCHOR UNKNOWN',short:'unknown anchor',
+    why:'This row was priced before capture recorded whether Pinnacle quoted it. It is not being guessed: the old rule for guessing it was wrong on roughly 1 in n rows and mislabelled real Pinnacle rows as soft. Unknown is the honest answer. It resolves on the next capture pass.'};
+}
+/* Only known-soft and no-fair are soft. Unknown is not evidence of anything and
+   is never filtered on. */
+function isSoftAnchor(e){var k=anchorOf(e).kind;return k==='soft'||k==='none';}
+
+/* ===== MULTI-BOOK CORROBORATION =============================================
+   A single book disagreeing with the sharp number is almost never information.
+   It is a slow line, a stuck price, or one trader taking a position, and it
+   corrects toward the sharp book by close. That is the exact shape of a signal
+   that looks +EV at placement and grades negative on CLV.
+
+   So the question is never "is this price better than fair", it is "how many
+   books independently say the same thing". This measures disagreement on
+   DE-VIGGED fairs, not on posted prices: a book with thin margin offers a
+   better price without holding a different opinion, and that difference is vig,
+   not information.
+
+   What this cannot see: limits. Three books at $50 max and three books at
+   $10k are identical in this feed, and the second is worth vastly more. The
+   Odds API does not carry limit data, so corroboration is reported on book
+   count alone and the gap is stated rather than papered over.
+   ============================================================================ */
+var CORROB_MATERIAL=0.01;   /* 1.0 point of de-vigged probability */
+var CORROB_MIN=3;           /* books needed before a disagreement is not noise */
+function _med(a){var s=a.slice().sort(function(x,y){return x-y;}),m=Math.floor(s.length/2);
+  return s.length%2?s[m]:(s[m-1]+s[m])/2;}
+function corroboration(e){
+  /* Stored by capture at price time. Authoritative, because it is the value the
+     row is graded against. The browser recomputation below reads whatever quotes
+     happen to be cached now, which is a different moment and a different sample,
+     so a badge built from it can disagree with the grade it is supposed to
+     explain. When capture has spoken, capture wins. */
+  if(e&&e.corrob_n!=null){
+    var n=e.corrob_n,ref=(e.corrob_ref==='pinnacle'?'Pinnacle':'pack median'),
+        tot=e.n_books||0,lv=(e.corrob_levels!=null?e.corrob_levels:null);
+    var o={n:tot,better:n,levels:(lv==null?0:lv),ref:null,refSrc:ref,books:[],stored:true};
+    if(n>=CORROB_MIN){o.kind='corroborated';o.label='CORROBORATED \u00b7 '+n;
+      o.why=n+' books independently price this at least '+(CORROB_MATERIAL*100).toFixed(1)+' point below the '+ref+' fair, recorded at price time. A disagreement that many books hold at once is more likely information than a stuck line. It is not proof: books sharing a pricing feed go slow together and look identical from here. Limits would separate the two and are not in the feed.';}
+    else if(n===2){o.kind='thin';o.label='THIN \u00b7 2';
+      o.why='Only 2 books disagree with the '+ref+' fair by a material margin. Under the '+CORROB_MIN+'-book bar. Treat as a watch, not a read.';}
+    else if(n===1){o.kind='lone';o.label='LONE BOOK';
+      o.why='One book prices this away from the '+ref+' fair while the rest agree with it. A lone outlier is usually a slow line or one trader with a position, and it corrects toward the sharp number by close. This is the classic shape of an edge that is real at placement and gone at the bell, and it is the leading suspect for this scanner\u2019s negative CLV.';}
+    else{o.kind='aligned';o.label='ALIGNED';
+      o.why='No book disagrees with the '+ref+' fair by a material margin. Whatever gap shows against the best price is margin, not opinion.';}
+    if(e.corrob_ref==='median')
+      o.why+=' Recorded against the median rather than Pinnacle, which means the reference is the same books being tested against it and the outliers drag it toward themselves. This count understates by construction.';
+    if(o.kind==='corroborated'&&lv===1)
+      o.why+=' Caveat: all '+n+' sit at one identical price, which is what a copied line looks like as well as what an efficient one does.';
+    return o;
+  }
+  var q=e&&e._bq;
+  if(!q||!q.length)
+    return {kind:'unloaded',label:'BOOKS \u2014',n:0,better:0,levels:0,ref:null,refSrc:null,
+      why:'Per-book quotes are not loaded for this row, so whether anyone else agrees with this price is unknown. Nothing is assumed either way.'};
+  var rows=q.filter(function(r){return r&&r.dec>1&&r.fair!=null;});
+  if(rows.length<CORROB_MIN)
+    return {kind:'unavailable',label:'BOOKS '+rows.length,n:rows.length,better:0,levels:0,ref:null,refSrc:null,
+      why:'Only '+rows.length+' book'+(rows.length===1?'':'s')+' with a de-vigged fair on this selection. Below '+CORROB_MIN+' there is no pack to disagree with, so corroboration is not measurable here.'};
+  var sharp=null;for(var i=0;i<rows.length;i++){if(rows[i].is_sharp){sharp=rows[i];break;}}
+  var ref,refSrc;
+  if(sharp){ref=+sharp.fair;refSrc='Pinnacle';}
+  else{ref=_med(rows.map(function(r){return +r.fair;}));refSrc='pack median';}
+  var lower=rows.filter(function(r){return (ref-(+r.fair))>=CORROB_MATERIAL;});
+  var levels={};lower.forEach(function(r){levels[(+r.dec).toFixed(3)]=1;});
+  var nLevels=Object.keys(levels).length;
+  var allLevels={};rows.forEach(function(r){allLevels[(+r.fair).toFixed(4)]=1;});
+  var out={n:rows.length,better:lower.length,levels:nLevels,
+    distinctFairs:Object.keys(allLevels).length,ref:ref,refSrc:refSrc,
+    books:lower.map(function(r){return r.book_title||'?';})};
+  if(lower.length>=CORROB_MIN){out.kind='corroborated';out.label='CORROBORATED \u00b7 '+lower.length;
+    out.why=lower.length+' of '+rows.length+' books independently price this at least '+(CORROB_MATERIAL*100).toFixed(1)+' point below the '+refSrc+' fair. A disagreement that many books hold at once is more likely information than a stuck line. It is not proof: books that share a pricing feed go slow together, and that looks identical from here. Limits would separate the two and are not in the feed.';}
+  else if(lower.length===2){out.kind='thin';out.label='THIN \u00b7 2';
+    out.why='Only 2 of '+rows.length+' books disagree with the '+refSrc+' fair by a material margin. Under the '+CORROB_MIN+'-book bar. Treat as a watch, not a read.';}
+  else if(lower.length===1){out.kind='lone';out.label='LONE BOOK';
+    out.why='Exactly one book ('+(out.books[0]||'?')+') prices this away from the '+refSrc+' fair while the other '+(rows.length-1)+' agree with it. A lone outlier is usually a slow line or one trader with a position, and it corrects toward the sharp number by close. This is the classic shape of an edge that is real at placement and gone at the bell.';}
+  else{out.kind='aligned';out.label='ALIGNED';
+    out.why='No book disagrees with the '+refSrc+' fair by a material margin. Whatever gap shows against the best price is margin, not opinion. There is no disagreement here to weight.';}
+  if(out.kind==='corroborated'&&nLevels===1)
+    out.why+=' Caveat: all '+lower.length+' sit at one identical price, which is what a copied line looks like as well as what an efficient one does.';
+  return out;
+}
+/* ===== WHAT A FAIR LINE IS, AND IS NOT ======================================
+   Raised on r/algobetting and it is the strongest objection anyone has made:
+   a posted price is not probability plus vig. It is probability, plus vig, plus
+   whatever the book is doing about where it expects the money to land. Stripping
+   105% back to 100% removes the margin. It does not remove the shading. What
+   comes out the other side is not truth, it is an estimate under an assumption.
+
+   This is not fixable with better arithmetic. Shin already assumes some of the
+   overround comes from informed money rather than uniform margin, which is why
+   it is the default here, but it still cannot separate a book's opinion from a
+   book's positioning. Nothing can, from prices alone.
+
+   Two things follow, and both are built rather than argued:
+     1. Every fair line in this app says out loud that it is a model output.
+     2. bookBiasProbe() measures the symptom. If de-vig recovered truth, every
+        book's de-vigged number would agree with Pinnacle's. Systematic
+        disagreement, in a consistent direction, is shading showing itself.
+   ========================================================================= */
+var DEVIG_METHOD='Shin';
+function fairModelNote(e){
+  var a=anchorOf(e);
+  if(a.kind==='none')return '';
+  return '<div class="anote"><b>The fair line is a model output, not a fact.</b> '+
+    'It is '+(a.kind==='sharp'?'Pinnacle\u2019s price':'the multi-book median')+
+    ' with the overround stripped out under the '+DEVIG_METHOD+' method. That removes the book\u2019s margin. '+
+    'It does not remove the book\u2019s positioning: part of any posted price is where the book expects money to land, '+
+    'and no de-vig can separate that from what the book actually believes. '+
+    (a.kind==='sharp'
+      ? 'Pinnacle is the anchor here because it shades least, moving on money rather than opinion. Least is not zero.'
+      : 'With no sharp quote on this selection, the median carries the pooled positioning of every book in it.')+
+    ' Treat this number as the best available estimate under a stated assumption, and nothing more.</div>';
+}
+
+/* Turns the objection into a measurement. For every selection where Pinnacle and
+   another book both have a de-vigged fair, take the signed difference and split
+   it by whether the selection is the favourite or the longshot.
+
+   The split is the entire point. A shading book pushes the popular side and pulls
+   the other, so averaging across all selections cancels it out to roughly zero
+   and hides exactly what you are looking for. Split, it shows up as a sign flip.
+
+   Reads on Pinnacle-paired rows only, from whatever is already cached. No fetch,
+   no extrapolation, and the sample is printed so it can be distrusted. */
+var BIAS_MIN_PAIRS=8;
+function bookBiasProbe(){
+  var cache=window.__consBQ||{},acc={},keys=Object.keys(cache),pairs=0,sel=0;
+  keys.forEach(function(k){
+    var rows=(cache[k]||[]).filter(function(r){return r&&r.fair!=null&&r.dec>1;});
+    if(rows.length<2)return;
+    var pinn=null;
+    for(var i=0;i<rows.length;i++){if(rows[i].is_sharp){pinn=rows[i];break;}}
+    if(!pinn)return;
+    var pf=+pinn.fair;
+    if(!(pf>0&&pf<1))return;
+    sel++;
+    var side=pf>=0.5?'fav':'dog';
+    rows.forEach(function(r){
+      if(r.is_sharp)return;
+      var b=r.book_title||'?';
+      acc[b]=acc[b]||{fav:[],dog:[]};
+      acc[b][side].push((+r.fair)-pf);
+      pairs++;
+    });
+  });
+  function mean(a){if(!a.length)return null;return a.reduce(function(x,y){return x+y;},0)/a.length;}
+  var out=Object.keys(acc).map(function(b){
+    return {book:b,nFav:acc[b].fav.length,nDog:acc[b].dog.length,
+      fav:mean(acc[b].fav),dog:mean(acc[b].dog),n:acc[b].fav.length+acc[b].dog.length};
+  }).filter(function(r){return r.n>0;}).sort(function(a,b){return b.n-a.n;});
+  return {rows:out,pairs:pairs,selections:sel};
+}
+/* The other half of the grading question, and the one with a live suspect.
+   If the negative CLV is concentrated in corrob_n=1, then lone-book rows are the
+   loss and the fix is to stop shipping them as MARKET edges. That is a testable
+   claim now rather than a story about the data. */
+function renderCorrobSplit(rows){
+  var host=$('recCorrob');if(!host)return;
+  rows=rows||[];
+  var known=rows.filter(function(r){return r.corrob_n!=null;});
+  var unknown=rows.length-known.length;
+  if(!known.length){
+    host.innerHTML='<div class="asplit"><div class="asplit-h">CLV by corroboration</div>'+
+      '<div class="asplit-sub">No graded row carries a corroboration count yet. capture v2 records it at price time; rows graded before that deploy cannot have it backfilled, because it depends on the per-book board as it stood at the moment of pricing and that moment is gone. This fills in as new signals grade. Nothing is estimated here.</div></div>';
+    return;
+  }
+  var lone=anchorStats(known.filter(function(r){return r.corrob_n===1;}));
+  var thin=anchorStats(known.filter(function(r){return r.corrob_n===2;}));
+  var corr=anchorStats(known.filter(function(r){return r.corrob_n>=3;}));
+  var alig=anchorStats(known.filter(function(r){return r.corrob_n===0;}));
+  var MIN=30;
+  function pct(v){return v==null?'\u2014':((v>=0?'+':'')+(v*100).toFixed(1)+'%');}
+  function rate(v){return v==null?'\u2014':(v*100).toFixed(0)+'%';}
+  function cls(v){return v==null?'':(v>=0?'up':'dn');}
+  function col(k,t,st){
+    return '<div class="acol '+k+'"><div class="ah">'+t+'</div>'+
+      '<div class="ar"><span class="l">graded with CLV</span><span class="v">'+st.n+'</span></div>'+
+      '<div class="ar"><span class="l">avg CLV</span><span class="v '+cls(st.avg)+'">'+pct(st.avg)+'</span></div>'+
+      '<div class="ar"><span class="l">median CLV</span><span class="v '+cls(st.med)+'">'+pct(st.med)+'</span></div>'+
+      '<div class="ar"><span class="l">CLV+ rate</span><span class="v">'+rate(st.posRate)+'</span></div>'+
+      (st.n<MIN?'<div class="ar"><span class="l" style="color:#e0a3a3">below '+MIN+' \u2014 not yet proof of anything</span></div>':'')+
+      '</div>';
+  }
+  var read;
+  if(lone.n<MIN||corr.n<MIN){
+    read='Not enough graded rows in both cohorts to read yet. The split exists from the start so the answer cannot be back-fitted once the numbers are in.';
+  }else if(lone.med!=null&&corr.med!=null&&lone.med<corr.med){
+    read='<b>Lone-book rows are grading worse than corroborated ones.</b> That is the predicted result and it names the loss: a single book off the sharp number is a slow line, it corrects toward Pinnacle by close, and the edge was never there to take. If this holds, lone rows should stop shipping as MARKET edges entirely.';
+  }else if(lone.med!=null&&corr.med!=null&&lone.med>corr.med){
+    read='<b>Lone-book rows are grading better than corroborated ones.</b> That contradicts the theory and it should not be explained away. Either the material threshold is mis-set, or the lone books are genuinely early rather than slow, or the corroborated rows are books moving together because they share a feed rather than because they know something.';
+  }else{
+    read='The cohorts grade the same, which means corroboration is not separating anything and is not the reason for the blended number. Look elsewhere.';
+  }
+  host.innerHTML='<div class="asplit"><div class="asplit-h">CLV by corroboration</div>'+
+    '<div class="asplit-sub">How many books independently disagreed with the sharp number when this was priced. One book is usually a slow line. Three or more is a disagreement several books held at once. This is the leading suspect for the negative CLV above and this split is what settles it.'+
+    (unknown?' '+unknown+' graded rows predate capture v2 and carry no count. They are excluded, not guessed.':'')+'</div>'+
+    '<div class="asplit-grid">'+col('soft','LONE BOOK \u00b7 1',lone)+col('sharp','CORROBORATED \u00b7 3+',corr)+'</div>'+
+    '<div class="asplit-grid" style="margin-top:8px">'+col('soft','THIN \u00b7 2',thin)+col('sharp','ALIGNED \u00b7 0',alig)+'</div>'+
+    '<div class="asplit-read">'+read+'</div></div>';
+}
+
+function renderBookBias(){
+  var host=$('recBias');if(!host)return;
+  var p=bookBiasProbe();
+  if(!p.selections){
+    host.innerHTML='<div class="bias"><div class="bias-h">Book bias probe</div>'+
+      '<div class="bias-sub">No per-book quotes cached yet. Open the Edges or Consensus tab to load a board, then come back. Nothing is estimated here from an empty sample.</div></div>';
+    return;
+  }
+  function pp(v){return v==null?'\u2014':((v>=0?'+':'')+(v*100).toFixed(2));}
+  function cl(v,n){if(v==null)return 'thin';if(n<BIAS_MIN_PAIRS)return 'thin';return v>=0?'up':'dn';}
+  var body=p.rows.map(function(r){
+    return '<tr><td>'+r.book+'</td>'+
+      '<td class="'+cl(r.fav,r.nFav)+'">'+pp(r.fav)+'</td><td class="thin">'+r.nFav+'</td>'+
+      '<td class="'+cl(r.dog,r.nDog)+'">'+pp(r.dog)+'</td><td class="thin">'+r.nDog+'</td></tr>';
+  }).join('');
+  var flips=p.rows.filter(function(r){
+    return r.nFav>=BIAS_MIN_PAIRS&&r.nDog>=BIAS_MIN_PAIRS&&r.fav!=null&&r.dog!=null&&r.fav>0&&r.dog<0;});
+  var verdict;
+  if(!p.rows.some(function(r){return r.nFav>=BIAS_MIN_PAIRS&&r.nDog>=BIAS_MIN_PAIRS;})){
+    verdict='No book yet has '+BIAS_MIN_PAIRS+' paired selections on both sides. Nothing here is readable. Load more of a board before drawing any conclusion from it.';
+  }else if(flips.length){
+    verdict='<b>'+flips.map(function(r){return r.book;}).join(', ')+'</b> price favourites above Pinnacle and longshots below it. That sign flip is what shading looks like from the outside. It means de-vigging that book to 100% does not land on the same number as de-vigging Pinnacle to 100%, so at most one of them can be the probability. Edges sourced from a book with a flip are partly measuring its positioning rather than a real disagreement.';
+  }else{
+    verdict='No book in this sample flips sign between favourites and longshots. That is weak evidence against heavy shading on this board, and it is not evidence that any de-vigged number is true. A book can shade in a direction this probe cannot see, and a whole board can be tilted the same way at once.';
+  }
+  host.innerHTML='<div class="bias"><div class="bias-h">Book bias probe</div>'+
+    '<div class="bias-sub">If stripping the vig recovered real probability, every book\u2019s de-vigged number would agree with Pinnacle\u2019s. Signed gap in probability points, versus Pinnacle, on the same selection. Split by side, because a shading book pushes one and pulls the other and the average hides it. '+
+    p.pairs+' paired quotes across '+p.selections+' selections currently cached.</div>'+
+    '<table class="bias-t"><thead><tr><th>Book</th><th>Fav</th><th>n</th><th>Dog</th><th>n</th></tr></thead><tbody>'+body+'</tbody></table>'+
+    '<div class="bias-v">'+verdict+'</div></div>';
+}
+
+/* ===== LIMIT EXPOSURE ======================================================
+   Raised on r/algobetting: you will not keep accounts long if you only bet where
+   books disagree with Pinnacle.
+
+   That is correct, and it is not a criticism this tool can engineer around,
+   because it describes what the tool does. Every MARKET edge here is by
+   construction a soft book disagreeing with Pinnacle. Bet the list and the
+   pattern you produce is the exact pattern a risk desk is built to find. Worse,
+   the rows that look best are the most legible ones: a lone book, materially off
+   the sharp number, is both the biggest edge on the board and the loudest
+   possible signal about how you pick.
+
+   This cannot be fixed. It can be told to you.
+   ========================================================================= */
+function isSharpBook(b){return /pinnacle/i.test(String(b||''));}
+function limitExposure(e){
+  var a=anchorOf(e),c=corroboration(e),soft=!isSharpBook(e.best_book);
+  if(a.kind!=='sharp'||!soft)
+    return {kind:'low',label:'',
+      why:'This row is not the classic shape. Either there is no Pinnacle quote behind it, or the best price is Pinnacle itself, so taking it says little about how you choose.'};
+  if(c.kind==='lone')
+    return {kind:'high',label:'LEGIBLE',
+      why:'Taking this is about as loud as a bet gets. One book, materially off Pinnacle, while every other book agrees with Pinnacle. A risk desk does not need to see the result: the price you took is the whole tell, and it is the same tell every time you take one of these. This row being the best-looking on the board and the most legible on the board is not a coincidence. It is the same fact.'};
+  if(c.kind==='corroborated')
+    return {kind:'moderate',label:'',
+      why:'Several books hold this price, so taking it is less distinctive than a lone outlier. You are still buying against Pinnacle, which is the pattern, but you are not the only person who could have found it.'};
+  return {kind:'elevated',label:'LEGIBLE',
+    why:'A soft book\u2019s price against the sharp number, without enough corroboration to make it look like anything else. This is the pattern a risk desk is built to find, and it is legible from the prices you take whether the bets win or lose.'};
+}
+function limitBadge(e){var l=limitExposure(e);
+  return l.label?' <span class="lbadge '+l.kind+'">'+l.label+'</span>':'';}
+function limitNote(e){var l=limitExposure(e);
+  if(l.kind==='low')return '';
+  return '<div class="anote'+(l.kind==='high'?'':' sharp')+'"><b>Account legibility: '+l.kind+'.</b> '+l.why+
+    ' EdgeDesk is a research tool and does not know where or whether you bet. This is a note about what the pattern looks like from the other side of it, not advice.</div>';}
+
+function corrobBadge(e){var c=corroboration(e);
+  if(c.kind==='unloaded')return '';
+  return ' <span class="cbadge '+c.kind+'">'+c.label+'</span>';}
+function corrobNote(e){var c=corroboration(e);
+  if(c.kind==='unloaded')return '';
+  return '<div class="anote '+(c.kind==='corroborated'?'sharp':'')+'"><b>'+c.label+'.</b> '+c.why+'</div>';}
+function anchorBadge(e){var a=anchorOf(e);return ' <span class="abadge '+a.kind+'">'+a.label+'</span>';}
+function anchorNote(e){var a=anchorOf(e);
+  return '<div class="anote '+(a.kind==='sharp'?'sharp':'')+'"><b>'+a.label+'.</b> '+a.why+'</div>';}
+
+/* Record page: CLV split by anchor. Same math as the headline KPIs, run twice.
+   If the sharp cohort and the soft cohort disagree, the blended number is a lie
+   about both of them. */
+function anchorStats(rows){
+  var clv=[],pos=0;
+  rows.forEach(function(r){if(r.clv!=null){clv.push(+r.clv);if(+r.clv>0)pos++;}});
+  var n=clv.length;if(!n)return {n:0,rows:rows.length,avg:null,med:null,posRate:null};
+  var sum=clv.reduce(function(a,b){return a+b;},0);
+  var s=clv.slice().sort(function(a,b){return a-b;}),m=Math.floor(n/2);
+  return {n:n,rows:rows.length,avg:sum/n,med:(n%2?s[m]:(s[m-1]+s[m])/2),posRate:pos/n};
+}
+function renderAnchorSplit(rows){
+  var host=$('recAnchor');if(!host)return;
+  rows=rows||[];
+  var sharp=anchorStats(rows.filter(function(r){return anchorOf(r).kind==='sharp';}));
+  var soft =anchorStats(rows.filter(function(r){return anchorOf(r).kind==='soft'||anchorOf(r).kind==='none';}));
+  var unk  =anchorStats(rows.filter(function(r){return anchorOf(r).kind==='unknown';}));
+  if(!sharp.rows&&!soft.rows&&!unk.rows){host.innerHTML='';return;}
+  var MIN=30;
+  function pct(v){return v==null?'\u2014':((v>=0?'+':'')+(v*100).toFixed(1)+'%');}
+  function rate(v){return v==null?'\u2014':(v*100).toFixed(0)+'%';}
+  function cls(v){return v==null?'':(v>=0?'up':'dn');}
+  function col(k,t,st){
+    return '<div class="acol '+k+'"><div class="ah">'+t+'</div>'+
+      '<div class="ar"><span class="l">graded with CLV</span><span class="v">'+st.n+'</span></div>'+
+      '<div class="ar"><span class="l">avg CLV</span><span class="v '+cls(st.avg)+'">'+pct(st.avg)+'</span></div>'+
+      '<div class="ar"><span class="l">median CLV</span><span class="v '+cls(st.med)+'">'+pct(st.med)+'</span></div>'+
+      '<div class="ar"><span class="l">CLV+ rate</span><span class="v">'+rate(st.posRate)+'</span></div>'+
+      (st.n<MIN?'<div class="ar"><span class="l" style="color:#e0a3a3">below '+MIN+' \u2014 not yet proof of anything</span></div>':'')+
+      '</div>';
+  }
+  var read;
+  if(sharp.n<MIN||soft.n<MIN){
+    read='Neither cohort has a sample worth reading yet. The split is here from the start so the two never get averaged together into one number that describes neither.';
+  }else if(sharp.med!=null&&soft.med!=null&&sharp.med>soft.med){
+    read='The sharp-anchored cohort is grading better than the soft-consensus cohort. That is the expected direction: it means the Pinnacle anchor is doing work, and the soft rows are diluting the blended figure above. Consider whether soft rows should ship as MARKET edges at all.';
+  }else if(sharp.med!=null&&soft.med!=null&&sharp.med<soft.med){
+    read='The soft-consensus cohort is grading better than the sharp-anchored one. Do not celebrate this. It more likely means the sharp cohort is catching lagging soft books that correct toward Pinnacle by close, while the soft cohort is measuring itself against a median it helped set. Check the soft rows for self-reference before trusting the number.';
+  }else{
+    read='The two cohorts are grading the same. Either the anchor is not adding information, or the soft fallback is firing on boards where Pinnacle would have agreed anyway.';
+  }
+  var unkNote='';
+  if(unk.rows){
+    unkNote='<div class="asplit-read"><b>'+unk.rows+' graded rows have an unknown anchor.</b> They were priced before capture recorded whether Pinnacle quoted them. They are not guessed into either column: the old rule for guessing it mislabelled roughly 1 in n real Pinnacle rows as soft, so every split published before that migration was wrong in the direction of understating the sharp cohort. These rows sit out. The cohort cannot grow and drains as new graded rows arrive.'+
+      (unk.n?' Their blended CLV, for reference only: '+pct(unk.avg)+' over '+unk.n+'.':'')+'</div>';
+  }
+  host.innerHTML='<div class="asplit"><div class="asplit-h">CLV by anchor</div>'+
+    '<div class="asplit-sub">Every graded edge above is one of two things: a fair line de-vigged off a real Pinnacle quote, or the multi-book median standing in because no Pinnacle quote was captured. Grading them as one pool is how you fool yourself. They are split here permanently.</div>'+
+    '<div class="asplit-grid">'+col('sharp','SHARP ANCHORED \u00b7 pinnacle',sharp)+col('soft','SOFT CONSENSUS \u00b7 fallback',soft)+'</div>'+
+    '<div class="asplit-read">'+read+'</div>'+unkNote+'</div>';
+}
+
 /* ===== engine ===== */
 var GE={};
 GE.amToDec=function(a){return a>0?a/100+1:100/(-a)+1;};
@@ -973,7 +1398,7 @@ async function loadEdges(){
     await loadWeights();
     var nowIso=new Date().toISOString();
     var horizonIso=new Date(Date.now()+7*24*3600*1000).toISOString();
-    EDGES=await sbGet('signals?select=event_id,sport_title,sport_key,market,selection,point,best_dec,first_best_dec,best_book,sharp_fair,consensus_fair,edge,n_books,commence_time,home_team,away_team,last_seen_at&commence_time=gte.'+nowIso+'&commence_time=lte.'+horizonIso+'&edge=gt.0&order=edge.desc&limit=600');
+    EDGES=await sbGet('signals?select=event_id,sport_title,sport_key,market,selection,point,best_dec,first_best_dec,best_book,sharp_fair,consensus_fair,edge,n_books,commence_time,home_team,away_team,last_seen_at,has_sharp,corrob_n,corrob_ref,corrob_levels,is_fav&commence_time=gte.'+nowIso+'&commence_time=lte.'+horizonIso+'&edge=gt.0&order=edge.desc&limit=600');
     $('dbPill').textContent='DB ✓';$('dbPill').className='pill ok';
     // sport filter options
     var sportsSet={};EDGES.forEach(function(e){if(e.sport_title)sportsSet[e.sport_title]=1;});
@@ -989,14 +1414,14 @@ async function loadEdges(){
     try{var nm=await sbGet('signals?select=sport_title,selection,edge,best_book,n_books&commence_time=gte.'+nowIso+'&commence_time=lte.'+horizonIso+'&edge=not.is.null&order=edge.desc.nullslast&limit=1');if(nm&&nm[0])window.__bestNearMiss=nm[0];}catch(_){}
     // pool of the sharpest lines on the board (any sign) so the wider-net Top 5 is populated every day
     window.D5_POOL=[];
-    try{var pool=await sbGet('signals?select=event_id,sport_title,sport_key,market,selection,point,best_dec,first_best_dec,sharp_fair,best_book,edge,n_books,commence_time,home_team,away_team,last_seen_at&commence_time=gte.'+nowIso+'&commence_time=lte.'+horizonIso+'&edge=not.is.null&order=edge.desc.nullslast&limit=40');window.D5_POOL=pool||[];}catch(_){window.D5_POOL=[];}
+    try{var pool=await sbGet('signals?select=event_id,sport_title,sport_key,market,selection,point,best_dec,first_best_dec,sharp_fair,best_book,edge,n_books,commence_time,home_team,away_team,last_seen_at,has_sharp,corrob_n,corrob_ref,corrob_levels,is_fav&commence_time=gte.'+nowIso+'&commence_time=lte.'+horizonIso+'&edge=not.is.null&order=edge.desc.nullslast&limit=40');window.D5_POOL=pool||[];}catch(_){window.D5_POOL=[];}
     // team CONTEXT (records/form) for the detail view — display only, never touches edge math
     try{var gs=await sbGet('game_stats?select=*');window.GSTATS={};(gs||[]).forEach(function(r){window.GSTATS[r.team_norm]=r;});}catch(_){window.GSTATS=window.GSTATS||{};}
     // EdgeDesk MODEL fair (me-vs-market) — display only, UNPROVEN, keyed to match model_predictions.
     // NEVER touches e.edge, sorting, filters, or the verify tags. A separate engine, shown side by side.
     try{var mp=await sbGet('model_predictions?select=event_id,market,selection,point,model_prob,model_fair_american,model_edge,model_version&sport_key=eq.baseball_mlb&commence_time=gte.'+nowIso+'&commence_time=lte.'+horizonIso+'&order=created_at.asc&limit=1500');window.MODELP={};(mp||[]).forEach(function(r){window.MODELP[modelKey(r.event_id,r.market,r.selection,r.point)]=r;});}catch(_){window.MODELP=window.MODELP||{};}
     try{var me=await sbGet('model_predictions?select=*&model_edge=gt.0&commence_time=gte.'+nowIso+'&commence_time=lte.'+horizonIso+'&order=model_edge.desc.nullslast&limit=400');window.MODEL_EDGES=me||[];}catch(_){window.MODEL_EDGES=[];}
-    try{var cq=await sbGet('signals?select=event_id,sport_title,sport_key,market,selection,point,best_dec,first_best_dec,first_seen_at,best_book,sharp_fair,consensus_fair,edge,n_books,commence_time,home_team,away_team,last_seen_at&consensus_fair=not.is.null&n_books=gte.'+MINBOOKS+'&commence_time=gte.'+nowIso+'&commence_time=lte.'+horizonIso+'&limit=900');window.CONS_POOL=cq||[];}catch(_){window.CONS_POOL=[];}
+    try{var cq=await sbGet('signals?select=event_id,sport_title,sport_key,market,selection,point,best_dec,first_best_dec,first_seen_at,best_book,sharp_fair,consensus_fair,edge,n_books,commence_time,home_team,away_team,last_seen_at,has_sharp,corrob_n,corrob_ref,corrob_levels,is_fav&consensus_fair=not.is.null&n_books=gte.'+MINBOOKS+'&commence_time=gte.'+nowIso+'&commence_time=lte.'+horizonIso+'&limit=900');window.CONS_POOL=cq||[];}catch(_){window.CONS_POOL=[];}
     await resolveModelMeta();
     await loadSliceStats();
     renderEdges();
@@ -1271,6 +1696,7 @@ function renderEdges(){
   lw.classList.remove('hide');
   f.innerHTML='';
   lead.innerHTML=top.map(function(e,i){return edgeRow(e,i);}).join('');
+  mktEnrich(top);
 }
 /* ===== game-detail helpers (all derived from real signal data) ===== */
 function timeToGame(iso){
@@ -1376,6 +1802,7 @@ function receiptHTML(e){
   var isAwayPick=(e.away_team&&pick&&pick.indexOf(e.away_team)>=0);
   var ttg=timeToGame(e.commence_time);var vd=edgeVerdict(e,st);
   var impPrice=(1/e.best_dec*100),impFair=(haveFair?e.sharp_fair*100:null),gap=(haveFair?impFair-impPrice:null);
+  var _a=anchorOf(e);
   var edgePct=(e.edge!=null?e.edge*100:null),neg=(edgePct!=null&&edgePct<0);
   var match='<div class="gd-match">'+
     '<div class="gd-team'+(isAwayPick?' pick':'')+'"><div class="nm">'+(e.away_team||'\u2014')+'</div><div class="rl">away'+(isAwayPick?' \u00b7 the pick':'')+'</div></div>'+
@@ -1386,9 +1813,9 @@ function receiptHTML(e){
   var marketRead='<div class="gd-sec">The market \u00b7 '+mktLabel(e.market)+'</div>'+
     '<div class="gd-line"><span class="l">Your pick</span><span class="v">'+selLabel(e)+'</span></div>'+
     '<div class="gd-line"><span class="l">Best price</span><span class="v">'+e.best_book+' '+od+(isTrusted(e.best_book)?'':' \u00b7 offshore')+'</span></div>'+
-    '<div class="gd-line"><span class="l">Sharp fair line</span><span class="v">'+fairOd+'</span></div>'+
+    '<div class="gd-line"><span class="l">'+(_a.kind==='sharp'?'Sharp fair line \u00b7 Pinnacle':'Fair line \u00b7 '+_a.short)+'</span><span class="v">'+fairOd+'</span></div>'+
     '<div class="gd-line"><span class="l">Price implies</span><span class="v mut">'+impPrice.toFixed(1)+'% to win</span></div>'+
-    '<div class="gd-line"><span class="l">Sharp fair implies</span><span class="v">'+(haveFair?impFair.toFixed(1)+'% to win':'\u2014')+'</span></div>'+
+    '<div class="gd-line"><span class="l">'+(_a.kind==='sharp'?'Sharp fair implies':'Fair line implies')+'</span><span class="v">'+(haveFair?impFair.toFixed(1)+'% to win':'\u2014')+'</span></div>'+
     '<div class="gd-line"><span class="l">'+(neg?'Below fair by':'Your edge')+'</span><span class="v '+(neg?'dn':'up')+'">'+edgeVal+'</span></div>';
   var bars='<div class="gd-bars">'+
     '<div class="gd-bar"><div class="bn '+(e.edge>=0.03?'pos':'')+'">'+(edgePct!=null?(edgePct>=0?'+':'')+edgePct.toFixed(1)+'%':'\u2014')+'</div><div class="bl">edge</div></div>'+
@@ -1401,16 +1828,18 @@ function receiptHTML(e){
     (ttg?'<div class="gd-line"><span class="l">Game starts</span><span class="v">'+ttg.txt+'</span></div>':'');
   var vHead=vd.headline||(vd.tier==='good'?'\u25c9 Worth a real look':vd.tier==='ok'?'\u25c9 Legit, but modest':vd.tier==='fade'?'\u25c9 Fades by close \u2014 placement +EV only':'\u25c9 Marginal \u2014 verify first');
   var verdict='<div class="gd-verdict '+vd.tier+'"><b>'+vHead+'.</b> '+vd.text+'</div>';
-  return match+bars+marketRead+modelBlock(e)+detail+teamFormRows(e)+verdict+trec;
+  return match+bars+marketRead+anchorNote(e)+fairModelNote(e)+corrobNote(e)+limitNote(e)+modelBlock(e)+detail+teamFormRows(e)+verdict+trec;
 }
 /* wrap any edge into a tappable card with the shared receipt */
+function receiptInner(e,domid){
+  return receiptHTML(e)+
+    '<button class="btn ghost sm" onclick="__trackId(\''+domid+'\')" style="margin-top:10px">Track this to my ledger</button>';
+}
 function expandItem(e,domid,headerInner){
   window.RCPT=window.RCPT||{};window.RCPT[domid]=e;
   return '<div class="t10item" id="'+domid+'">'+
     '<div class="lead-row" onclick="toggleRcptId(\''+domid+'\')">'+headerInner+'<span class="rchev">\u203a</span></div>'+
-    '<div class="receipt">'+receiptHTML(e)+
-      '<button class="btn ghost sm" onclick="__trackId(\''+domid+'\')" style="margin-top:10px">Track this to my ledger</button>'+
-    '</div></div>';
+    '<div class="receipt">'+receiptInner(e,domid)+'</div></div>';
 }
 window.toggleRcptId=function(id){var el=$(id);if(el)el.classList.toggle('open');};
 window.__trackId=function(id){var e=(window.RCPT||{})[id];if(e)trackSignal(e,GE.decToAm(e.best_dec));};
@@ -1418,7 +1847,7 @@ window.toggleRcpt=function(i){var el=$('t10_'+i);if(el)el.classList.toggle('open
 function edgeRow(e,i){
   var tags=(e.edge>0.06?' <span class="suspect">\u26a0 verify</span>':'')+(isTrusted(e.best_book)?'':' <span class="suspect">offshore</span>');
   var header='<span class="rank">'+(i+1)+'</span>'+
-    '<div class="lead-mid"><div class="lead-sel"><span class="ebadge market">MARKET</span>'+selLabel(e)+tags+'</div>'+
+    '<div class="lead-mid"><div class="lead-sel"><span class="ebadge market">MARKET</span>'+selLabel(e)+anchorBadge(e)+'<span class="corrslot" id="cs_t10_'+i+'">'+corrobBadge(e)+limitBadge(e)+'</span>'+tags+'</div>'+
     '<div class="lead-meta">'+mktLabel(e.market)+' \u00b7 '+(e.away_team||'')+' @ '+(e.home_team||'')+' \u00b7 '+whenLabel(e.commence_time)+'</div></div>'+
     '<span class="lead-ev">+'+(e.edge*100).toFixed(1)+'%</span>';
   return expandItem(e,'t10_'+i,header);
@@ -1474,7 +1903,7 @@ async function loadRecord(){
     // CLEAN edges only: real floor, liquid, and capped to exclude stale-line garbage
     // (a 30-60% "edge" is a dead price, not a signal — it poisons the record).
     var EDGEQ='edge=gte.0.005&edge=lte.0.1&n_books=gte.3';
-    var g=await sbGet('signals?select=clv,result,beat_close&graded_at=not.is.null&'+EDGEQ+'&limit=5000');
+    var g=await sbGet('signals?select=clv,result,beat_close,sharp_fair,consensus_fair,has_sharp,corrob_n,corrob_ref,n_books&graded_at=not.is.null&'+EDGEQ+'&limit=5000');
     var w=0,l=0,clvSum=0,beatStored=0,n=g.length,clvArr=[],clvPos=0;
     g.forEach(function(r){if(r.result==='win')w++;else if(r.result==='loss')l++;
       if(r.clv!=null){clvArr.push(+r.clv);clvSum+=+r.clv;if(r.clv>0)clvPos++;if(r.beat_close)beatStored++;}});   // all CLV stats over the SAME clv-present subset
@@ -1485,6 +1914,9 @@ async function loadRecord(){
     var beatRate=posRate;                            // beat-close IS clv>0 by definition; derive it, never trust a stored copy
     var beatStoredRate=nCLV?beatStored/nCLV:null;    // stored column, kept ONLY to detect backend drift until settle+backfill land
     var hit=(w+l)?w/(w+l):null;
+    renderAnchorSplit(g);
+    renderCorrobSplit(g);
+    renderBookBias();
     WEIGHT_ROWS=await sbGet('model_weights?select=*');WEIGHTS={book:{},sport:{},market:{},edge_bucket:{},ttk_bucket:{}};WEIGHT_ROWS.forEach(function(r){WEIGHTS[r.slice_type]=WEIGHTS[r.slice_type]||{};WEIGHTS[r.slice_type][r.slice_value]=r.weight;});
     CALIB=await sbGet('calibration?select=*');
     $('dbPill').textContent='DB ✓';$('dbPill').className='pill ok';
@@ -1577,8 +2009,8 @@ $('sliceType').onchange=renderSlice;$('recRefresh').onclick=loadRecord;
 /* ===== manual ledger (localStorage) ===== */
 function bets(){try{return JSON.parse(localStorage.getItem('edgedesk_bets')||'[]');}catch(e){return[];}}
 function saveBets(b){localStorage.setItem('edgedesk_bets',JSON.stringify(b));}
-function trackSignal(e,am){var b=bets();var __basis=(e.sharp_fair!=null&&(e.consensus_fair==null||Math.abs(e.sharp_fair-e.consensus_fair)>=1e-9))?'Sharp-anchored':(e.consensus_fair!=null?'Consensus (no sharp anchor)':'Unverified');b.unshift({id:'b'+Date.now(),ts:new Date().toISOString(),sport:e.sport_title,sel:selLabel(e),book:e.best_book,odds:am,stake:null,model:(e.sharp_fair!=null?e.sharp_fair*100:null),closeFair:null,result:null,basis:__basis,
-  event_id:e.event_id,market:e.market,selection:e.selection,point:(e.point!=null?e.point:null),commence:e.commence_time,sharp_fair:(e.sharp_fair!=null?e.sharp_fair:null),auto:!!e.event_id});saveBets(b);show('ledger');renderLedger();}
+function trackSignal(e,am){var b=bets();b.unshift({id:'b'+Date.now(),ts:new Date().toISOString(),sport:e.sport_title,sel:selLabel(e),book:e.best_book,odds:am,stake:null,model:(e.sharp_fair!=null?e.sharp_fair*100:null),closeFair:null,result:null,
+  event_id:e.event_id,market:e.market,selection:e.selection,point:(e.point!=null?e.point:null),commence:e.commence_time,sharp_fair:(e.sharp_fair!=null?e.sharp_fair:null),consensus_fair:(e.consensus_fair!=null?e.consensus_fair:null),anchor:anchorOf(e).kind,auto:!!e.event_id});saveBets(b);show('ledger');renderLedger();}
 $('lg_toggle').onclick=function(){$('lg_form').classList.toggle('hide');};
 function parseAmOdds(s){s=(s||'').toString().trim().replace(/^\+/,'');var n=parseFloat(s);if(!isFinite(n)||n===0)return null;n=Math.round(n);if(Math.abs(n)<100)return null;return n;}
 $('lg_add').onclick=function(){
@@ -1686,8 +2118,6 @@ function ledgerReceiptHTML(b){
     L('Your price implies',priceImp!=null?priceImp.toFixed(1)+'%':'\u2014','mut')+
     L('Sharp fair implied',sfImp!=null?sfImp.toFixed(1)+'%':'\u2014')+
     L('Edge at entry',entryEdge!=null?((entryEdge>=0?'+':'')+(entryEdge*100).toFixed(2)+'%'):'\u2014',entryEdge!=null?(entryEdge>=0?'up':'dn'):'mut');
-  if(b.basis)out+=L('Line basis',stEsc(b.basis),b.basis.indexOf('Sharp')>=0?'':'mut');
-  if(b.basis&&b.basis.indexOf('Sharp')<0)out+='<div class="gd-modelnote">Logged without a sharp anchor \u2014 the entry number came from book consensus. Weight this row accordingly when you read its CLV.</div>';
   out+='<div class="gd-sec">Closing line value</div>';
   if(cv!=null){
     out+=L('CLV',(cv>=0?'+':'')+(cv*100).toFixed(2)+'%',cv>=0?'up':'dn')+
@@ -3548,23 +3978,61 @@ function consStats(e){
   var minImpl=Math.min.apply(null,impl), maxImpl=Math.max.apply(null,impl);
   var sharp=null;for(var i=0;i<rows.length;i++){if(rows[i].is_sharp){sharp=rows[i];break;}}
   return {n:n,mean:mean,sd:sd,best:best,second:second,gap:gap,z:z,
-          minImpl:minImpl,maxImpl:maxImpl,band:maxImpl-minImpl,sharp:sharp,rows:rows,impl:impl};
+          minImpl:minImpl,maxImpl:maxImpl,band:maxImpl-minImpl,sharp:sharp};
 }
 /* Batch-load the per-book arrays for the visible set in ONE query, keyed by
    event_id (escape-safe). Cached across renders. Insights repaint in place. */
-async function consEnrich(top){
+/* Shared per-book loader for BOTH engines. Returns true only if a fetch landed,
+   so callers can repaint once without re-entering.
+
+   Events are tracked as fetched, not rows. The old version keyed `need` on
+   event_id but guarded on `!e._bq`, so an event whose OTHER selections were
+   already cached got re-fetched and its quotes pushed into the same arrays a
+   second time. Duplicated quotes inflate n and shrink sd: the dispersion math
+   read a copy of a book as a second book agreeing with it. */
+async function bqLoad(rows){
   window.__consBQ=window.__consBQ||{};
-  var cache=window.__consBQ;
-  top.forEach(function(e){var k=consKey(e);if(cache[k])e._bq=cache[k];});
+  window.__bqEv=window.__bqEv||{};
+  var cache=window.__consBQ,seen=window.__bqEv;
+  rows.forEach(function(e){var k=consKey(e);if(cache[k])e._bq=cache[k];});
   var need=[];
-  top.forEach(function(e){if(!e._bq&&e.event_id&&need.indexOf(e.event_id)<0)need.push(e.event_id);});
-  if(!need.length){renderConsensusInsights();return;}
+  rows.forEach(function(e){
+    if(!e.event_id||seen[e.event_id])return;
+    if(need.indexOf(e.event_id)<0)need.push(e.event_id);
+  });
+  if(!need.length)return false;
+  need=need.slice(0,25);
   try{
-    var rows=await sbGet('book_quotes?select=sig_key,book_title,dec,fair,is_sharp&event_id=in.('+need.slice(0,25).join(',')+')&limit=3000');
-    (rows||[]).forEach(function(r){(cache[r.sig_key]=cache[r.sig_key]||[]).push(r);});
-    top.forEach(function(e){var k=consKey(e);if(cache[k])e._bq=cache[k];});
-  }catch(_){ /* book_quotes not deployed yet -> signals-only insight stands */ }
+    var q=await sbGet('book_quotes?select=sig_key,book_title,dec,fair,is_sharp&event_id=in.('+need.join(',')+')&limit=3000');
+    need.forEach(function(id){seen[id]=1;});
+    (q||[]).forEach(function(r){(cache[r.sig_key]=cache[r.sig_key]||[]).push(r);});
+    rows.forEach(function(e){var k=consKey(e);if(cache[k])e._bq=cache[k];});
+    return true;
+  }catch(_){ /* book_quotes not deployed yet -> signals-only insight stands */
+    need.forEach(function(id){seen[id]=1;});
+    return false;
+  }
+}
+async function consEnrich(top){
+  await bqLoad(top);
   renderConsensusInsights();
+}
+/* MARKET rows are the ones that grade into CLV, so they get the same per-book
+   read. Repaints the badge slot and any closed receipt in place; never
+   re-renders the list, so it cannot loop and cannot collapse an open card. */
+async function mktEnrich(top){
+  if(!top||!top.length)return;
+  var got=await bqLoad(top);
+  if(!got)return;
+  top.forEach(function(e,i){
+    var slot=$('cs_t10_'+i);
+    if(slot)slot.innerHTML=corrobBadge(e)+limitBadge(e);
+    var el=$('t10_'+i);
+    if(el&&!el.classList.contains('open')){
+      var body=el.querySelector('.receipt');
+      if(body)body.innerHTML=receiptInner(e,'t10_'+i);
+    }
+  });
 }
 function renderConsensusInsights(){
   var cov=window.__consCov||{};
@@ -3575,6 +4043,7 @@ function renderConsensusInsights(){
     var ctx=researchCtx(e,{engine:'consensus',rank:i+1,poolSize:top.length,
       coverage:(cb>0?Math.min(1,(e.n_books||0)/cb):null)});
     window.RCTX=window.RCTX||{};window.RCTX[did]=ctx;
+    var cs=$('cs_'+did);   if(cs)cs.innerHTML=corrobBadge(e);
     var ih=$('ci-'+did);   if(ih)ih.innerHTML=buildConsensusInsight(ctx);
     var rh=$('rc-'+did);   if(rh)rh.innerHTML=reasonCodesHTML(ctx);
     var el=$(did);
@@ -3612,7 +4081,9 @@ function researchCtx(e,opts){
     firstDec:e.first_best_dec!=null?e.first_best_dec:null,
     consFair:e.consensus_fair!=null?e.consensus_fair:null,
     sharpFair:e.sharp_fair!=null?e.sharp_fair:null,
-    hasSharp:!(e.sharp_fair!=null&&e.consensus_fair!=null&&Math.abs(e.sharp_fair-e.consensus_fair)<1e-9),
+    hasSharp:(anchorOf(e).kind==='sharp'),
+    anchor:anchorOf(e).kind,
+    corrob:corroboration(e),
     gap:e._ce!=null?e._ce:null,
     marketEdge:e.edge!=null?e.edge:null,
     ageMin:lastMs?((Date.now()-lastMs)/60000):null,
@@ -3627,70 +4098,6 @@ function researchCtx(e,opts){
 /* ---- SECTION 1: Consensus Insight ---------------------------------------
    1-2 sentences. Describes MARKET STRUCTURE only. Never mentions probability,
    never predicts, never advises.                                            */
-/* ===== Line-basis + outlier classifiers ==================================
-   DETERMINISTIC. Same inputs always produce the same verdict. Answer the two
-   questions the CLV grade later depends on, so a weak signal can't be mistaken
-   for a sharp one when it is graded:
-   (1) Is the fair line SHARP-ANCHORED, real CONSENSUS, or SOFT consensus — a
-       thin market where books clone each other, giving a number that looks
-       reasonable but has no independent information behind it.
-   (2) Is a cross-book disagreement CORROBORATED by enough books, or is it a
-       lone-book OUTLIER — usually a slow line or a book taking a position,
-       treated more strictly on lower-liquidity leagues.                     */
-var LIQUID_SPORTS=['baseball_mlb','basketball_nba','americanfootball_nfl','icehockey_nhl'];
-function isLiquidLeague(e){
-  var k=((e&&(e.sport_key||e.sport_title))||'').toLowerCase();
-  for(var i=0;i<LIQUID_SPORTS.length;i++)if(k.indexOf(LIQUID_SPORTS[i])>=0)return true;
-  return /\b(mlb|nba|nfl|nhl)\b/.test(k);
-}
-/* Books sharing an identical de-vigged fair are almost certainly pulling the
-   same feed (cloning), so they count once. This is the number that matters,
-   not the raw book count. */
-function effectiveBooks(s){
-  if(!s||!s.rows)return null;
-  var seen={},n=0;
-  s.rows.forEach(function(r){
-    var key=Math.round((r.fair!=null?r.fair:1/r.dec)*2000);   // 0.05% buckets
-    if(!seen[key]){seen[key]=1;n++;}
-  });
-  return n;
-}
-function lineBasis(ctx){
-  var hasRealSharp=(ctx.sharpFair!=null&&(ctx.consFair==null||Math.abs(ctx.sharpFair-ctx.consFair)>=1e-9));
-  if(hasRealSharp)return {basis:'sharp',label:'Sharp-anchored',tone:'good',
-    why:'Pinnacle prices this market and its fair line differs from the book median, so the number has a sharp reference behind it.'};
-  var s=ctx.stats, eff=effectiveBooks(s), nb=ctx.nBooks||0;
-  var cloned=(eff!=null&&nb>=4&&eff<=Math.ceil(nb/2));
-  var thin=(eff!=null?eff<3:nb<4);
-  if(thin||cloned){
-    return {basis:'soft',label:'Soft consensus',tone:'warn',eff:eff,
-      why:(cloned
-        ? (nb+' books quote this but only '+eff+' distinct prices \u2014 the rest are cloning a shared feed, so the consensus has little independent information behind it.')
-        : ('Only '+(eff!=null?eff:nb)+' independent quote'+((eff!=null?eff:nb)===1?'':'s')+' and no Pinnacle anchor \u2014 too thin for the median to mean much.'))};
-  }
-  return {basis:'consensus',label:'Consensus',tone:'',eff:eff,
-    why:(eff!=null?eff:nb)+' independent books agree closely enough for the median to be a usable read, but there is no sharp anchor to verify it against.'};
-}
-/* When the best price stands clear of the pack (an outlier), how many OTHER
-   books sit near that same extreme? A lone book is noise; 3+ (2+ on liquid
-   leagues) clustered at the extreme is a broad-based, real disagreement. */
-function outlierVerdict(ctx){
-  var s=ctx.stats;if(!s||!s.rows)return null;
-  var bestImpl=1/s.best.dec;
-  var ref=(ctx.consFair!=null?ctx.consFair:s.mean);      // the median the consensus edge is measured against
-  var devpp=(ref-bestImpl)*100;                          // how far the best price sits below that median
-  if(devpp<1.0)return null;                              // <1pt away from the median = not a disagreement worth judging
-  var band=0.0075, near=0;
-  s.rows.forEach(function(r){ if((1/r.dec)<=bestImpl+band) near++; });     // books sitting at the same extreme (incl. best)
-  var corrob=near-1;                                                       // other books backing it up
-  var need=isLiquidLeague(ctx.raw)?1:2;                  // liquid: 2+ books total; lower-tier: 3+ books total
-  var confirmed=(corrob>=need);
-  return {isOutlier:true,corrob:corrob,need:need,confirmed:confirmed,liquid:isLiquidLeague(ctx.raw),
-    label:confirmed?('Corroborated \u00d7'+near):'Single-book outlier',tone:confirmed?'':'warn',
-    why:confirmed
-      ? (near+' books sit at this extreme, so the disagreement is broad-based rather than one stale quote.')
-      : ('Only this book sits here; the rest stay back with the pack. On '+(isLiquidLeague(ctx.raw)?'a liquid league this still reads as a slow line or a book taking a position.':'a lower-liquidity league this is usually a slow line or a book taking a position, not a real edge.'))};
-}
 function buildConsensusInsight(ctx){
   if(!ctx)return '';
   var sel=stEsc(ctx.selection), book=stEsc(ctx.book||'the leading book');
@@ -3730,18 +4137,24 @@ function buildConsensusInsight(ctx){
       ? 'No Pinnacle reference exists for this market, so this appears as Consensus Research rather than a verified Market Edge.'
       : 'Per-book dispersion is unavailable until <span class="mono">book_quotes</span> is populated; this signal is measured against the '+numWord(nb)+'-book median.';
   }
-  var lb=lineBasis(ctx), ov=outlierVerdict(ctx);
-  var basisTxt='<b>'+stEsc(lb.label)+'.</b> '+lb.why+(ov?' '+ov.why:'');
-  var toneCls=(ov&&!ov.confirmed)?'warn':(lb.tone==='warn'?'warn':(lb.tone==='good'?'good':''));
-  return '<p class="citxt">'+s1+' '+s2+'</p>'+
-         '<p class="cbasis '+toneCls+'">'+basisTxt+'</p>';
+  return '<p class="citxt">'+s1+' '+s2+'</p>';
 }
 
 /* ---- SECTION 2: Reason Codes -------------------------------------------- */
 function buildReasonCodes(ctx){
   var out=[],s=ctx.stats;
+  /* Corroboration leads. A lone outlier is a warning, not a feature, so it is
+     no longer possible for a row to wear a neutral "Book Outlier" tag while
+     being the single slow line the pack is about to correct. */
+  var c=ctx.corrob;
+  if(c&&c.kind==='corroborated')out.push({t:'Corroborated \u00b7 '+c.better+' books',c:''});
+  else if(c&&c.kind==='thin')out.push({t:'Thin Corroboration \u00b7 2 books',c:'warn'});
+  else if(c&&c.kind==='lone')out.push({t:'Lone Book \u2014 likely noise',c:'warn'});
+  else if(c&&c.kind==='aligned')out.push({t:'No Material Disagreement',c:'neut'});
+  else if(c&&c.kind==='unavailable')out.push({t:'Corroboration Unmeasurable',c:'neut'});
+  if(c&&c.better>=CORROB_MIN&&c.levels===1)out.push({t:'Single Price Level',c:'warn'});
   if(s){
-    var sdpp=s.sd*100,gappp=s.gap*100;
+    var sdpp=s.sd*100;
     if(sdpp>=2.5)out.push({t:'High Dispersion',c:''});
     else if(sdpp<1.0)out.push({t:'Low Dispersion',c:'neut'});
     if(sdpp<1.0)out.push({t:'Market Cluster',c:'neut'});
@@ -3750,12 +4163,7 @@ function buildReasonCodes(ctx){
   if(ctx.gap!=null&&ctx.gap>=0.03)out.push({t:'Strong Consensus Gap',c:''});
   if(ctx.ageMin!=null&&ctx.ageMin<30)out.push({t:'Fresh Pricing',c:''});
   if(ctx.nBooks>=5)out.push({t:'Multiple Books',c:''});
-  var __lb=lineBasis(ctx);
-  if(__lb.basis==='sharp')out.push({t:'Sharp Anchored',c:''});
-  else if(__lb.basis==='soft')out.push({t:'Soft Consensus',c:'warn'});
-  else out.push({t:'Consensus Only',c:'neut'});
-  var __ov=outlierVerdict(ctx);
-  if(__ov)out.push({t:(__ov.confirmed?__ov.label:'Single-Book Outlier'),c:(__ov.confirmed?'':'warn')});
+  if(!ctx.hasSharp)out.push({t:'Awaiting Sharp Reference',c:'warn'});
   var q=buildQualificationChecklist(ctx);
   if(q.qualified)out.push({t:'Consensus Qualified',c:''});
   return out;
@@ -3785,6 +4193,17 @@ function buildResearchConfidence(ctx){
   comps.push({name:'Dispersion Reliability',weight:20,
     score:!s?0:(s.n>=6?100:s.n>=5?90:s.n>=4?75:s.n>=3?60:0),
     note:s?('per-book array present, '+s.n+' quotes'):'per-book array not loaded',available:!!s});
+  var cr=ctx.corrob;
+  var crAvail=!!(cr&&cr.kind!=='unloaded'&&cr.kind!=='unavailable');
+  comps.push({name:'Disagreement Corroboration',weight:20,
+    score:!crAvail?0:(cr.kind==='corroborated'?(cr.better>=5?100:cr.better>=4?90:80)
+      :cr.kind==='thin'?45:cr.kind==='lone'?10:35),
+    note:!crAvail?(cr&&cr.kind==='unavailable'?('only '+cr.n+' books with a de-vigged fair \u2014 no pack to measure against'):'per-book array not loaded')
+      :(cr.better+' of '+cr.n+' books disagree with the '+cr.refSrc+' fair by \u2265'+(CORROB_MATERIAL*100).toFixed(1)+' pt'),
+    available:crAvail});
+  comps.push({name:'Book Limits',weight:0,score:null,
+    note:'unavailable \u2014 the odds feed carries no limit data, so three $50 books and three $10k books are indistinguishable here',
+    available:false});
   comps.push({name:'Quote Quality',weight:15,score:ctx.trusted?100:50,
     note:ctx.trusted?'US-regulated book':'offshore book',available:true});
   var cov=ctx.coverage;
@@ -3833,9 +4252,7 @@ function buildMarketSnapshot(ctx){
   rows.push(['Displayed Quote',am!=null?((am>0?'+':'')+am):'\u2014']);
   rows.push(['Consensus Gap',ctx.gap!=null?('+'+(ctx.gap*100).toFixed(2)+'%'):'\u2014']);
   rows.push(['Market Edge',ctx.marketEdge!=null?(((ctx.marketEdge>=0?'+':'')+(ctx.marketEdge*100).toFixed(2))+'%'):'n/a']);
-  var __lb=lineBasis(ctx), __ov=outlierVerdict(ctx);
-  rows.push(['Line basis',__lb.label]);
-  rows.push(['Disagreement',__ov?(__ov.confirmed?('corroborated \u00d7'+(__ov.corrob+1)):'single-book outlier'):(ctx.hasSharp?'sharp-referenced':'consensus only')]);
+  rows.push(['Sharp Reference',ctx.hasSharp?'Yes':'No']);
   rows.push(['Generated',ctx.lastSeenMs?ago(ctx.lastSeenMs):'\u2014']);
   return rows;
 }
@@ -3859,6 +4276,15 @@ function buildQualificationChecklist(ctx){
   var qOk=ctx.trusted;
   items.push({ok:qOk,label:qOk?'Quote from a US-regulated book':'Quote from an offshore book'});
   items.push({ok:ctx.hasSharp,label:ctx.hasSharp?'Pinnacle reference available':'No Pinnacle reference'});
+  var cq=ctx.corrob;
+  if(cq&&cq.kind!=='unloaded'){
+    var cOk=(cq.kind==='corroborated');
+    items.push({ok:cOk,label:cOk?(numWord(cq.better)+' books corroborate the disagreement')
+      :cq.kind==='lone'?'Lone book \u2014 disagreement not corroborated'
+      :cq.kind==='thin'?'Only two books corroborate (needs '+CORROB_MIN+')'
+      :cq.kind==='aligned'?'No material disagreement to corroborate'
+      :'Corroboration unmeasurable (only '+cq.n+' books with fairs)'});
+  }
   if(ctx.hasSharp){
     var fair=(ctx.sharpFair!=null);
     items.push({ok:fair,label:fair?'De-vigged fair line calculated':'Fair line unavailable'});
@@ -3980,7 +4406,7 @@ function renderConsensusEngine(){
   var floor=Math.max(REAL_FLOOR,minev/100);
   var list=pool.filter(function(e){
     if(!prefAllows(e))return false;
-    if(prefs().hideResearchOnly&&e.sharp_fair!=null&&e.consensus_fair!=null&&Math.abs(e.sharp_fair-e.consensus_fair)<1e-9)return false;
+    if(prefs().hideResearchOnly&&isSoftAnchor(e))return false;
     if(sport&&e.sport_title!==sport)return false;
     if((e.n_books||0)<MINBOOKS)return false;
     var ls=e.last_seen_at?new Date(e.last_seen_at).getTime():0;
@@ -4009,8 +4435,7 @@ function renderConsensusEngine(){
   window.__consCov=covBase;
   host.innerHTML=top.map(function(e,i){
     var am=GE.decToAm(e.best_dec),od=am>0?'+'+am:am;
-    var noSharp=(e.sharp_fair!=null&&e.consensus_fair!=null&&Math.abs(e.sharp_fair-e.consensus_fair)<1e-9);
-    var flag=noSharp?' <span class="suspect">no sharp quote</span>':'';
+    var flag=anchorBadge(e)+'<span class="corrslot" id="cs_'+('ce_'+(e.event_id||'')+'_'+i)+'">'+corrobBadge(e)+'</span>';
     var mkt=(e.edge!=null)?('MARKET '+(e.edge>=0?'+':'')+(e.edge*100).toFixed(2)+'%'):'MARKET \u2014';
     var meta=[(e.sport_title||''),mktLabel(e.market),((e.away_team||'')+' @ '+(e.home_team||'')),whenLabel(e.commence_time),(e.best_book||'')+' '+od,(e.n_books||0)+' books',mkt].filter(Boolean).join(' \u00b7 ');
     var did='ce_'+(e.event_id||'')+'_'+i;
@@ -4084,10 +4509,7 @@ function prefAllows(e){
     var any=false;for(var k in p.sports){if(p.sports[k])any=true;}
     if(any&&!p.sports[st])return false;
   }
-  if(p.hideNoSharp){
-    var noSharp=(e.sharp_fair!=null&&e.consensus_fair!=null&&Math.abs(e.sharp_fair-e.consensus_fair)<1e-9);
-    if(noSharp)return false;
-  }
+  if(p.hideNoSharp&&isSoftAnchor(e))return false;
   return true;
 }
 
@@ -4171,7 +4593,7 @@ function renderSetAccount(){
     '<div class="set-prof-e">'+stEsc(u.email||'not signed in')+'</div></div></div>'+
     setRow('Display name','<input class="set-in" id="setName" value="'+stEsc(name)+'" placeholder="Your name">')+
     '<div class="set-act"><button class="btn sm" onclick="__saveName()">Save</button><span class="set-msg" id="setNameMsg"></span></div>'+
-    setRow('Email','<input class="set-in" value="'+stEsc(u.email||'')+'" disabled>','Contact <a href="mailto:support@edgedesksports.com">support@edgedesksports.com</a> to change your email')
+    setRow('Email','<input class="set-in" value="'+stEsc(u.email||'')+'" disabled>','Contact support to change your email')
   );
   out+=setCard('Password','Minimum 8 characters.',
     setRow('New password','<input class="set-in" id="setPw1" type="password" placeholder="\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022">')+
@@ -4245,7 +4667,7 @@ function renderSetSub(){
     STRIPE_PORTAL_URL
       ? '<div class="set-act"><a class="btn ghost sm" href="'+STRIPE_PORTAL_URL+'" target="_blank" rel="noopener" style="text-decoration:none">Manage or cancel subscription</a></div>'+
         '<div class="set-note">Opens the secure billing portal where you can cancel or update your payment method.</div>'
-      : '<div class="set-note" style="border:none;padding-top:0"><b style="color:var(--warn)">Self-serve cancellation is not wired yet.</b> The Stripe customer portal link has not been configured, so this button would go nowhere. Until it is, cancellation requests are handled by email at <a href="mailto:support@edgedesksports.com">support@edgedesksports.com</a>. California law requires that a subscription bought online can be cancelled online \u2014 this must be connected before charging customers.</div>'
+      : '<div class="set-note" style="border:none;padding-top:0"><b style="color:var(--warn)">Self-serve cancellation is not wired yet.</b> The Stripe customer portal link has not been configured, so this button would go nowhere. Until it is, cancellation requests are handled by email. California law requires that a subscription bought online can be cancelled online \u2014 this must be connected before charging customers.</div>'
   );
   return out;
 }
@@ -4275,7 +4697,7 @@ function renderSetEdge(){
       '<option value="week"'+(p.window==='week'?' selected':'')+'>This week</option></select>'));
 
   out+=setCard('Signal quality',null,
-    setRow('Hide rows with no sharp quote',setToggle('hideNoSharp',p.hideNoSharp),
+    setRow('Hide soft-consensus rows (no Pinnacle quote)',setToggle('hideNoSharp',p.hideNoSharp),
       'Removes selections Pinnacle never priced \u2014 where the MARKET number silently fell back to the consensus median')+
     setRow('Hide research-only consensus',setToggle('hideResearchOnly',p.hideResearchOnly),
       'Hides the CONSENSUS engine when no sharp reference exists'));
@@ -4321,7 +4743,7 @@ function renderSetPrivacy(){
     '<div class="set-links"><a href="./terms.html">Terms of Service</a><a href="./privacy.html">Privacy Policy</a><a href="./disclaimer.html">Disclaimer</a></div>')+
   setGate('Login history','No auth event log is recorded, so there is no sign-in history to show.')+
   setGate('API tokens','There is no public EdgeDesk API, so there are no tokens to issue or revoke.')+
-  setGate('Delete account','Account deletion needs a server-side admin call \u2014 the browser client cannot delete its own auth user. Until that endpoint exists, this button would do nothing. Email <a href="mailto:support@edgedesksports.com">support@edgedesksports.com</a> to have an account removed.');
+  setGate('Delete account','Account deletion needs a server-side admin call \u2014 the browser client cannot delete its own auth user. Until that endpoint exists, this button would do nothing. Email support to have an account removed.');
 }
 
 var FEEDBACK_CATS=['Bug Report','Feature Request','General Feedback','Success Story','Suggestion'];
@@ -4331,8 +4753,7 @@ function renderSetFeedback(){
     setRow('Priority','<select class="set-sel" id="fbPri"><option>Low</option><option selected>Normal</option><option>High</option></select>')+
     setRow('Title','<input class="set-in" id="fbTitle" placeholder="Short summary">')+
     '<textarea class="set-ta" id="fbBody" rows="5" placeholder="What happened, what you expected, and anything that would help reproduce it."></textarea>'+
-    '<div class="set-act"><button class="btn sm" onclick="__submitFeedback()">Submit</button><span class="set-msg" id="fbMsg"></span></div>'+
-    '<div class="set-note">Prefer email? Send feedback directly to <a href="mailto:davis@edgedesksports.com">davis@edgedesksports.com</a> — read and replied to personally.</div>');
+    '<div class="set-act"><button class="btn sm" onclick="__submitFeedback()">Submit</button><span class="set-msg" id="fbMsg"></span></div>');
   out+=setCard('Recently shipped','Version '+ED_VERSION+'.',
     '<div class="set-ship">'+
     ['CFB research tab \u2014 CollegeFootballData ingestion, matchup comparison, team deep dive',
@@ -4391,10 +4812,6 @@ function renderSetAbout(){
     setRow('Data connection','<span class="set-val '+(db.indexOf('\u2713')>=0?'pos':'')+'">'+stEsc(db||'\u2014')+'</span>')+
     setRow('Last market scan','<span class="set-val">'+stEsc(cap)+'</span>')+
     setRow('Version','<span class="set-val mono">v'+ED_VERSION+'</span>','Quote this when contacting support'));
-
-  out+=setCard('Contact',null,
-    setRow('Feedback / general contact','<a href="mailto:davis@edgedesksports.com">davis@edgedesksports.com</a>')+
-    setRow('Support (billing, account, cancellations)','<a href="mailto:support@edgedesksports.com">support@edgedesksports.com</a>'));
 
   out+=setCard('Legal',null,
     '<div class="set-links"><a href="./terms.html">Terms</a><a href="./privacy.html">Privacy</a><a href="./disclaimer.html">Disclaimer</a></div>'+
