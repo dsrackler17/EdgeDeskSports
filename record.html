@@ -96,11 +96,11 @@ footer a:hover{color:var(--text)}
 
 <nav>
   <div class="wrap nav-in">
-    <a class="logo" href="/index.html"><span class="mk"></span>EdgeDesk <small>record</small></a>
+    <a class="logo" href="./index.html"><span class="mk"></span>EdgeDesk <small>record</small></a>
     <span class="nav-sp"></span>
-    <a class="nlink hideS" href="/curriculum.html">Curriculum</a>
+    <a class="nlink hideS" href="./curriculum.html">Curriculum</a>
     <span class="pill" id="dbPill">loading</span>
-    <a class="btn ghost" href="/index.html">The terminal</a>
+    <a class="btn ghost" href="./index.html">The terminal</a>
   </div>
 </nav>
 
@@ -162,8 +162,8 @@ footer a:hover{color:var(--text)}
     <div>
       <div class="rg">Responsible gambling</div>
       <div>21+ · 1-800-GAMBLER · ncpgambling.org</div>
-      <div style="margin-top:10px"><a href="/index.html#different">How it works</a> · <a href="/record.html">Record</a> · <a href="/curriculum.html">Curriculum</a></div>
-      <div style="margin-top:8px"><a href="/terms.html">Terms</a> · <a href="/privacy.html">Privacy</a> · <a href="/disclaimer.html">Disclaimer</a></div>
+      <div style="margin-top:10px"><a href="./index.html#different">How it works</a> · <a href="./record.html">Record</a> · <a href="./curriculum.html">Curriculum</a></div>
+      <div style="margin-top:8px"><a href="./terms.html">Terms</a> · <a href="./privacy.html">Privacy</a> · <a href="./disclaimer.html">Disclaimer</a></div>
       <div style="margin-top:10px;color:var(--faint)">© <span id="yr"></span> Rackler Tech Ventures LLC</div>
     </div>
   </div>
@@ -177,7 +177,15 @@ var SB_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI
 function $(id){return document.getElementById(id);}
 async function sbGet(q){
   var r=await fetch(SB_URL+"/rest/v1/"+q,{headers:{apikey:SB_KEY,authorization:"Bearer "+SB_KEY}});
-  if(!r.ok)throw new Error("HTTP "+r.status);
+  if(!r.ok){
+    var d='';try{d=(await r.json()).message||'';}catch(_){}
+    var e=new Error("HTTP "+r.status+(d?': '+d:''));
+    e.status=r.status; e.detail=d;
+    /* PostgREST 42703 = column does not exist. On this page that means a
+       migration has not run yet, which is a deploy state, not an outage. */
+    e.missingColumn=(r.status===400&&/column .* does not exist|42703/i.test(d));
+    throw e;
+  }
   return await r.json();
 }
 
@@ -445,9 +453,40 @@ function renderClvHero(series,avg,med,posRate){
 
 function kpi(n,l){return'<div class="kpi"><div class="n">'+n+'</div><div class="l">'+l+'</div></div>';}
 
+/* Shown when the corrected basis is not deployed yet. The old number is real:
+   it is what this page published. It is also measured with a method proven
+   broken, so it appears with that stamped on it rather than deleted. Deleting a
+   published number quietly is worse than showing it and saying it was wrong. */
+async function legacyFallback(){
+  var g=await sbGet('signals?select=clv,result&graded_at=not.is.null&clv=not.is.null&edge=gte.0.005&edge=lte.0.1&n_books=gte.3&limit=5000');
+  var clv=g.map(function(r){return +r.clv;});
+  var avg=clv.length?clv.reduce(function(a,b){return a+b;},0)/clv.length:null;
+  var ci=clv.length>1?bootCI(clv):null;
+  $('clvChart').innerHTML='<div class="clvhero"><div class="clvhero-h">'+
+    '<span class="big" style="color:var(--warn)">'+pct(avg)+'</span>'+
+    '<span class="lbl">measured with a method we know is broken</span></div>'+
+    '<div class="cap"><b style="color:var(--text)">This number is not trustworthy and it is ours.</b> '+
+    'It is computed from the price at first sighting, which is the opening price, not the price EdgeDesk offered when it flagged. '+
+    'A simulation of a market with <b>no line movement and a scanner with no skill</b> shows this method reporting \u22123.0% where the true answer is +1.7%. It manufactures a negative record out of nothing. '+
+    (ci?'95% interval '+((ci.lo>=0?'+':'')+(ci.lo*100).toFixed(1))+'% to '+((ci.hi>=0?'+':'')+(ci.hi*100).toFixed(1))+'% over '+clv.length+' rows. ':'')+
+    'The corrected measurement records the flag price instead. It cannot be backfilled, so this page rebuilds from zero as new signals settle. '+
+    'It is left up, labelled, because it is what we published.</div></div>';
+  $('recKpis').innerHTML=kpi(g.length,'graded (old basis)')+kpi(pct(avg),'avg CLV \u00b7 unreliable')+kpi('rebuilding','corrected basis');
+  $('dbPill').textContent='old basis';$('dbPill').className='pill';
+  $('recAnchor').innerHTML='';$('recCorrob').innerHTML='';
+  renderBookBias();
+}
+
 async function load(){
   try{
-    var g=await sbGet('signals?select=clv,result,beat_close,sharp_fair,consensus_fair,first_has_sharp,first_corrob_n,n_books,first_best_dec,flagged_best_dec&graded_at=not.is.null&'+EDGEQ+'&limit=5000');
+    var g;
+    try{
+      g=await sbGet('signals?select=clv,result,beat_close,sharp_fair,consensus_fair,first_has_sharp,first_corrob_n,n_books,first_best_dec,flagged_best_dec&graded_at=not.is.null&'+EDGEQ+'&limit=5000');
+    }catch(err){
+      // Migration not deployed. Show the old number with its warning, not a 400.
+      if(err.missingColumn){ await legacyFallback(); return; }
+      throw err;
+    }
     var w=0,l=0,clvArr=[],clvSum=0,clvPos=0;
     g.forEach(function(r){
       if(r.result==='win')w++;else if(r.result==='loss')l++;
@@ -478,7 +517,9 @@ async function load(){
     $('dbPill').textContent='live';$('dbPill').className='pill ok';
   }catch(e){
     $('dbPill').textContent='db error';$('dbPill').className='pill err';
-    $('recKpis').innerHTML='<div class="empty">Could not reach the database: '+e.message+'. This page shows nothing rather than showing something made up.</div>';
+    $('clvChart').innerHTML='';
+    $('recKpis').innerHTML='<div class="empty"><b style="color:var(--text)">This page could not reach its database.</b><br>'+
+      e.message+'<br><br>It is showing nothing rather than showing something made up. That is the intended behaviour, and the record will be here when the connection is.</div>';
   }
 }
 $('yr').textContent=new Date().getFullYear();
