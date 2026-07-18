@@ -2046,7 +2046,6 @@ var WEIGHT_ROWS=[],CALIB=[];
 async function loadRecord(){
   try{
     var total=await sbCount('');var graded=await sbCount('graded_at=not.is.null');
-    var gradedEdges=await sbCount('graded_at=not.is.null&edge=gt.0');
     // CLEAN edges only: real floor, liquid, and capped to exclude stale-line garbage
     // (a 30-60% "edge" is a dead price, not a signal — it poisons the record).
     /* Filter on WHETHER THE ROW WAS EVER A SIGNAL, not on its live edge.
@@ -2070,8 +2069,24 @@ async function loadRecord(){
 
    This empties the record until rows priced after capture v3 settle. It cannot
    be backfilled. An empty honest record beats a full dishonest one. */
-var EDGEQ='flagged_at=not.is.null&flagged_edge=gte.0.005&flagged_edge=lte.0.1';
-    var g=await sbGet('signals?select=clv,result,beat_close,sharp_fair,consensus_fair,first_has_sharp,first_corrob_n,first_corrob_ref,n_books,first_best_dec,flagged_best_dec,flagged_at,flagged_corrob_n&graded_at=not.is.null&'+EDGEQ+'&limit=5000');
+/* SELECTION POOL. None of these select on closing-edge direction (the old
+   edge=gt.0 bias); each is picked only for data-completeness, never outcome.
+   Take the tightest pool that actually holds graded rows, fall back honestly,
+   and label which one is live so an empty flagged pipeline can never
+   masquerade as a record and can never leave the tab stuck on blanks. */
+    var FLAG_STRICT='flagged_at=not.is.null&flagged_edge=gte.0.005&flagged_edge=lte.0.1';
+    var FLAG_ANY='flagged_at=not.is.null';
+    var CLV_ANY='clv=not.is.null';
+    var nStrict=await sbCount('graded_at=not.is.null&'+FLAG_STRICT);
+    var nFlagAny=await sbCount('graded_at=not.is.null&'+FLAG_ANY);
+    var nClvAny=await sbCount('graded_at=not.is.null&'+CLV_ANY);
+    var EDGEQ,poolLabel,poolKind,gradedEdges;
+    if(nStrict>0){EDGEQ=FLAG_STRICT;poolLabel='flagged edges';poolKind='strict';gradedEdges=nStrict;}
+    else if(nFlagAny>0){EDGEQ=FLAG_ANY;poolLabel='flagged edges \u00b7 edge-magnitude band off';poolKind='flagany';gradedEdges=nFlagAny;}
+    else if(nClvAny>0){EDGEQ=CLV_ANY;poolLabel='all graded rows with CLV \u2014 provisional, NOT the flagged-edge record';poolKind='clvany';gradedEdges=nClvAny;}
+    else{EDGEQ=FLAG_STRICT;poolLabel='no graded row carries CLV yet';poolKind='empty';gradedEdges=0;}
+    var recFunnel='Pool funnel \u00b7 graded '+graded+' \u2192 flagged_at set '+nFlagAny+' \u2192 flagged & 0.5\u20139.9% '+nStrict+' \u2192 CLV present '+nClvAny+'. Live pool: '+poolLabel+'.';
+    var g=poolKind==='empty'?[]:await sbGet('signals?select=clv,result,beat_close,sharp_fair,consensus_fair,first_has_sharp,first_corrob_n,first_corrob_ref,n_books,first_best_dec,flagged_best_dec,flagged_at,flagged_corrob_n&graded_at=not.is.null&'+EDGEQ+'&limit=5000');
     var w=0,l=0,clvSum=0,beatStored=0,n=g.length,clvArr=[],clvPos=0;
     g.forEach(function(r){if(r.result==='win')w++;else if(r.result==='loss')l++;
       if(r.clv!=null){clvArr.push(+r.clv);clvSum+=+r.clv;if(r.clv>0)clvPos++;if(r.beat_close)beatStored++;}});   // all CLV stats over the SAME clv-present subset
@@ -2103,6 +2118,9 @@ var EDGEQ='flagged_at=not.is.null&flagged_edge=gte.0.005&flagged_edge=lte.0.1';
     // CLV time series (the proof layer) — cumulative CLV over the flagged edges only
     try{var series=await sbGet('signals?select=clv,graded_at&graded_at=not.is.null&'+EDGEQ+'&clv=not.is.null&order=graded_at.asc&limit=5000');renderClvHero(series,avgCLV,beatRate,med,posRate,beatStoredRate);}catch(_){renderClvHero([],null,null,null,null,null);}
     function kpi(nv,lb){return'<div class="kpi"><div class="n">'+nv+'</div><div class="l">'+lb+'</div></div>';}
+    var _fCol=poolKind==='strict'?'var(--pos)':poolKind==='empty'?'var(--neg)':'var(--warn)';
+    var _fWhy=poolKind==='clvany'?' No graded row has flagged_at set, so these are computed over every graded row with a CLV. That means capture v3 (which stamps flagged_at / flagged_edge) has not written any row that has since graded. Deploy or verify it and this promotes itself back to the strict flagged pool on its own.':poolKind==='flagany'?' flagged_at is set but flagged_edge is null or outside the 0.5\u20139.9% band, so the strict filter caught nothing. Check the scale flagged_edge is written on.':poolKind==='empty'?' The settle job is not writing clv on graded rows. That is a backend fix, not a frontend one.':'';
+    $('recKpis').insertAdjacentHTML('beforebegin','<div class="anote" style="border-left-color:'+_fCol+'"><b>'+recFunnel+'</b>'+_fWhy+'</div>');
     $('recKpis').innerHTML=kpi(total,'captured')+kpi(gradedEdges+' / '+graded,'edges graded')+kpi(hit!=null?(hit*100).toFixed(0)+'%':'—','edge hit rate')+kpi(avgCLV!=null?((avgCLV>=0?'+':'')+(avgCLV*100).toFixed(1)+'%'):'—','edge avg CLV')+kpi(med!=null?((med>=0?'+':'')+(med*100).toFixed(1)+'%'):'—','edge median CLV')+kpi(posRate!=null?(posRate*100).toFixed(0)+'%':'—','CLV+ rate · clv>0')+kpi(beatRate!=null?(beatRate*100).toFixed(0)+'%':'—','edges beat close');
     renderSlice();renderCalib();
     if(total===0)$('recKpis').insertAdjacentHTML('afterend','<div class="empty" style="margin:8px 0">No data yet. The capture job logs signals continuously; grades fill in after games finish.</div>');
