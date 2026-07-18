@@ -752,6 +752,9 @@ body.ed-large-text .set-lbl,body.ed-large-text .lead-sel{font-size:14px}
     <div id="recAnchor"></div>
     <div id="recCorrob"></div>
     <div id="recBias"></div>
+    <div id="recSport"></div>
+    <div id="recTtc"></div>
+    <div id="recPrice"></div>
     <h3>What's working <span class="muted" style="font-weight:400;font-size:11px">— sorted by weight</span></h3>
     <div class="fld" style="margin-bottom:10px"><select id="sliceType"><option value="book">By book</option><option value="sport">By sport</option><option value="market">By market</option><option value="edge_bucket">By edge size</option><option value="ttk_bucket">By time to kickoff</option></select></div>
     <div class="tblwrap"><table class="tbl" id="sliceTbl"><thead><tr><th>Slice</th><th>n</th><th>Hit</th><th>CLV</th><th>Beat</th><th>Weight</th></tr></thead><tbody></tbody></table></div>
@@ -1276,6 +1279,93 @@ function renderBasisNote(rows){
     '<div class="ar"><span class="l">identical</span><span class="v">'+same+'</span></div>'+
     '<div class="ar"><span class="l">avg CLV thrown away per row</span><span class="v '+(avg>0?'dn':'up')+'">'+(avg>=0?'-':'+')+Math.abs(avg*100).toFixed(2)+' pts</span></div>'+
     '</div><div class="asplit-read">'+read+'</div></div>';
+}
+
+/* ===== Record splits added: sport / time-to-close / price region =====
+   All computed from the same graded pool g, reusing anchorStats + bootCI so the
+   sample-size honesty (MIN=30, CIs) is identical to the anchor and corrob cuts. */
+function clvColHTML(title,st,accent){
+  function pct(v){return v==null?'\u2014':((v>=0?'+':'')+(v*100).toFixed(1)+'%');}
+  function rate(v){return v==null?'\u2014':(v*100).toFixed(0)+'%';}
+  function cls(v){return v==null?'':(v>=0?'up':'dn');}
+  var MIN=30;
+  return '<div class="acol"><div class="ah" style="color:'+(accent||'var(--faint)')+'">'+title+'</div>'+
+    '<div class="ar"><span class="l">graded with CLV</span><span class="v">'+st.n+'</span></div>'+
+    '<div class="ar"><span class="l">avg CLV</span><span class="v '+cls(st.avg)+'">'+pct(st.avg)+'</span></div>'+
+    (st.ci?'<div class="ar"><span class="l">95% CI</span><span class="v" style="font-size:10px">'+ciTxt(st)+'</span></div>':'')+
+    '<div class="ar"><span class="l">median CLV</span><span class="v '+cls(st.med)+'">'+pct(st.med)+'</span></div>'+
+    '<div class="ar"><span class="l">CLV+ rate</span><span class="v">'+rate(st.posRate)+'</span></div>'+
+    (st.n<MIN?'<div class="ar"><span class="l" style="color:#e0a3a3">below '+MIN+' \u2014 not proof yet</span></div>':'')+
+    '</div>';
+}
+function accentFor(st){return (st.n>=30&&st.avg!=null)?(st.avg>=0?'#2fb47c':'#e0a3a3'):'var(--faint)';}
+function _mp(v){return v==null?'\u2014':((v>=0?'+':'')+(v*100).toFixed(1)+'%');}
+
+function renderSportSplit(rows){
+  var host=$('recSport');if(!host)return;rows=rows||[];
+  var by={};rows.forEach(function(r){var s=r.sport_title||'Unknown';(by[s]=by[s]||[]).push(r);});
+  var tiles=Object.keys(by).map(function(s){return {s:s,st:anchorStats(by[s])};}).filter(function(o){return o.st.rows;});
+  if(!tiles.length){host.innerHTML='';return;}
+  tiles.sort(function(a,b){return b.st.n-a.st.n;});
+  var cells=tiles.map(function(o){return clvColHTML(String(o.s).toUpperCase(),o.st,accentFor(o.st));}).join('');
+  var big=tiles.filter(function(o){return o.st.n>=30&&o.st.med!=null;});
+  var read;
+  if(!big.length){read='No single sport has 30 graded edges with CLV yet. The split is here from the start so a blended number never lets one sport launder another.';}
+  else{
+    var byMed=big.slice().sort(function(a,b){return b.st.med-a.st.med;});
+    var best=byMed[0],worst=byMed[byMed.length-1];
+    read='Sports close on different clocks and different liquidity, so their CLV is not one comparable pool. Best-grading with a real sample: '+best.s+' (median '+_mp(best.st.med)+'). Weakest: '+worst.s+' (median '+_mp(worst.st.med)+'). If one sport drags the blended figure, that is the first place to look before trusting or discarding the whole scanner.';
+  }
+  host.innerHTML='<div class="asplit"><div class="asplit-h">CLV by sport</div>'+
+    '<div class="asplit-sub">The blended CLV above averages sports that behave nothing alike. Football six hours out is a different animal from tennis at the bell. Split so a strong sport can\u2019t hide a weak one.</div>'+
+    '<div class="asplit-grid">'+cells+'</div>'+
+    '<div class="asplit-read">'+read+'</div></div>';
+}
+
+function _ttcHours(r){
+  if(!r.commence_time||!r.flagged_at)return null;
+  var c=new Date(r.commence_time).getTime(),f=new Date(r.flagged_at).getTime();
+  if(!c||!f||isNaN(c)||isNaN(f))return null;
+  return (c-f)/3600000;
+}
+function renderTtcSplit(rows){
+  var host=$('recTtc');if(!host)return;rows=rows||[];
+  var b={late:[],mid:[],day:[],early:[]},unk=0;
+  rows.forEach(function(r){var h=_ttcHours(r);
+    if(h==null){unk++;return;}
+    if(h<=1)b.late.push(r);else if(h<=6)b.mid.push(r);else if(h<=24)b.day.push(r);else b.early.push(r);});
+  var late=anchorStats(b.late),mid=anchorStats(b.mid),day=anchorStats(b.day),early=anchorStats(b.early);
+  if(!late.rows&&!mid.rows&&!day.rows&&!early.rows){host.innerHTML='';return;}
+  var cells=clvColHTML('\u2264 1H TO CLOSE',late,accentFor(late))+clvColHTML('1\u20136H',mid,accentFor(mid))+
+            clvColHTML('6\u201324H',day,accentFor(day))+clvColHTML('> 24H \u00b7 EARLY',early,accentFor(early));
+  var read;
+  if(early.n<30||late.n<30){read='Not enough graded edges in the early and late buckets to compare them yet. The shape to watch: a real edge beats the close most when priced early (ahead of the move) and converges toward zero near the bell (little line left to beat). Positive CLV concentrated late, or negative CLV early, is the warning sign.';}
+  else if(early.med>late.med){read='Early edges are grading better than late ones \u2014 the expected shape of a real edge. You are pricing ahead of the move, and by the bell there is little line left to beat. The number to defend is the early bucket.';}
+  else if(early.med<late.med){read='Late edges are grading better than early ones. Be suspicious: it can mean the early flags are getting run over by later sharp money (wrong side of the move) while the late flags only catch books that already agree with the close. Check the early bucket before trusting the blended figure.';}
+  else{read='Early and late buckets grade about the same. Either time-to-close is not informative here, or the sample is still too thin to separate them.';}
+  var unkNote=unk?'<div class="asplit-read" style="color:var(--faint)">'+unk+' graded rows are missing a kickoff or flag time and sit out of this cut.</div>':'';
+  var gap='<div class="asplit-read" style="color:var(--faint)"><b>What this record still can\u2019t answer, honestly:</b> whether a different de-vig (multiplicative or power vs the Shin default) would flip CLV sign on short prices. That needs the raw two-way price stored at the moment of the flag, not just the finished fair probability, and no graded row carries it yet. And CLV here is measured against the flagged price\u2019s availability, not book limits \u2014 getting run to a $20 limit is not captured. Both are capture-side changes, not something to estimate on this screen.</div>';
+  host.innerHTML='<div class="asplit"><div class="asplit-h">CLV by time-to-close</div>'+
+    '<div class="asplit-sub">Hours from when the edge was flagged to kickoff. CLV is always measured from the flagged price to the close, so this asks <b>when</b> in the line\u2019s life the edge was caught \u2014 not a different price. Football hours out behaves nothing like tennis at the bell.</div>'+
+    '<div class="asplit-grid">'+cells+'</div>'+
+    '<div class="asplit-read">'+read+'</div>'+unkNote+gap+'</div>';
+}
+
+function renderPriceSplit(rows){
+  var host=$('recPrice');if(!host)return;rows=rows||[];
+  var short=[],mid=[],long=[];
+  rows.forEach(function(r){
+    var d=(r.flagged_best_dec!=null)?+r.flagged_best_dec:((r.first_best_dec!=null)?+r.first_best_dec:null);
+    if(d==null||isNaN(d))return;
+    if(d<=1.5)short.push(r);else if(d<=2.5)mid.push(r);else long.push(r);});
+  var s=anchorStats(short),m=anchorStats(mid),l=anchorStats(long);
+  if(!s.rows&&!m.rows&&!l.rows){host.innerHTML='';return;}
+  var cells=clvColHTML('SHORT \u00b7 dec \u2264 1.50',s,accentFor(s))+clvColHTML('MID \u00b7 1.50\u20132.50',m,accentFor(m))+clvColHTML('LONG \u00b7 dec > 2.50',l,accentFor(l));
+  var read='De-vig method choice moves the fair probability most on short prices, so that is exactly where CLV sign is least stable. If your record lives or dies on the short-price bucket, treat it with extra skepticism until you can compare methods on the raw two-way price. On long prices the method barely matters and the number is more trustworthy.';
+  host.innerHTML='<div class="asplit"><div class="asplit-h">CLV by price region</div>'+
+    '<div class="asplit-sub">The flagged decimal price, bucketed. This is where the multiplicative-vs-Shin-vs-power question bites: on short favorites a method change can move fair prob enough to flip CLV sign. This cut shows how much of the record rides on that fragile region.</div>'+
+    '<div class="asplit-grid">'+cells+'</div>'+
+    '<div class="asplit-read">'+read+'</div></div>';
 }
 
 function renderBookBias(){
@@ -2086,7 +2176,7 @@ async function loadRecord(){
     else if(nClvAny>0){EDGEQ=CLV_ANY;poolLabel='all graded rows with CLV \u2014 provisional, NOT the flagged-edge record';poolKind='clvany';gradedEdges=nClvAny;}
     else{EDGEQ=FLAG_STRICT;poolLabel='no graded row carries CLV yet';poolKind='empty';gradedEdges=0;}
     var recFunnel='Pool funnel \u00b7 graded '+graded+' \u2192 flagged_at set '+nFlagAny+' \u2192 flagged & 0.5\u20139.9% '+nStrict+' \u2192 CLV present '+nClvAny+'. Live pool: '+poolLabel+'.';
-    var g=poolKind==='empty'?[]:await sbGet('signals?select=clv,result,beat_close,sharp_fair,consensus_fair,first_has_sharp,first_corrob_n,first_corrob_ref,n_books,first_best_dec,flagged_best_dec,flagged_at,flagged_corrob_n&graded_at=not.is.null&'+EDGEQ+'&limit=5000');
+    var g=poolKind==='empty'?[]:await sbGet('signals?select=clv,result,beat_close,sharp_fair,consensus_fair,first_has_sharp,first_corrob_n,first_corrob_ref,n_books,first_best_dec,flagged_best_dec,flagged_at,flagged_corrob_n,sport_title,market,commence_time&graded_at=not.is.null&'+EDGEQ+'&limit=5000');
     var w=0,l=0,clvSum=0,beatStored=0,n=g.length,clvArr=[],clvPos=0;
     g.forEach(function(r){if(r.result==='win')w++;else if(r.result==='loss')l++;
       if(r.clv!=null){clvArr.push(+r.clv);clvSum+=+r.clv;if(r.clv>0)clvPos++;if(r.beat_close)beatStored++;}});   // all CLV stats over the SAME clv-present subset
@@ -2112,6 +2202,9 @@ async function loadRecord(){
     renderAnchorSplit(g);
     renderCorrobSplit(g);
     renderBookBias();
+    renderSportSplit(g);
+    renderTtcSplit(g);
+    renderPriceSplit(g);
     WEIGHT_ROWS=await sbGet('model_weights?select=*');WEIGHTS={book:{},sport:{},market:{},edge_bucket:{},ttk_bucket:{}};WEIGHT_ROWS.forEach(function(r){WEIGHTS[r.slice_type]=WEIGHTS[r.slice_type]||{};WEIGHTS[r.slice_type][r.slice_value]=r.weight;});
     CALIB=await sbGet('calibration?select=*');
     $('dbPill').textContent='DB ✓';$('dbPill').className='pill ok';
