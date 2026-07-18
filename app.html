@@ -755,6 +755,9 @@ body.ed-large-text .set-lbl,body.ed-large-text .lead-sel{font-size:14px}
     <div id="recSport"></div>
     <div id="recTtc"></div>
     <div id="recPrice"></div>
+    <div id="recCal"></div>
+    <div id="recMethod"></div>
+    <div id="recEthos"></div>
     <h3>What's working <span class="muted" style="font-weight:400;font-size:11px">— sorted by weight</span></h3>
     <div class="fld" style="margin-bottom:10px"><select id="sliceType"><option value="book">By book</option><option value="sport">By sport</option><option value="market">By market</option><option value="edge_bucket">By edge size</option><option value="ttk_bucket">By time to kickoff</option></select></div>
     <div class="tblwrap"><table class="tbl" id="sliceTbl"><thead><tr><th>Slice</th><th>n</th><th>Hit</th><th>CLV</th><th>Beat</th><th>Weight</th></tr></thead><tbody></tbody></table></div>
@@ -932,6 +935,7 @@ async function sbFetch(q,extra){
   return r.json();
 }
 async function sbGet(q){return sbFetch(q);}
+async function sbGetAll(q,page,maxPages){page=page||1000;maxPages=maxPages||10;var out=[],off=0;for(var i=0;i<maxPages;i++){var b=await sbGet(q+'&limit='+page+'&offset='+off);if(!b||!b.length)break;out=out.concat(b);if(b.length<page)break;off+=page;}return out;}
 /* reads the isolated `ufc` research schema (descriptive-only dataset). Requires the
    ufc schema to be exposed under Supabase > API settings > Exposed schemas. */
 async function sbGetUfc(q){return sbFetch(q,{"accept-profile":"ufc"});}
@@ -1366,6 +1370,132 @@ function renderPriceSplit(rows){
     '<div class="asplit-sub">The flagged decimal price, bucketed. This is where the multiplicative-vs-Shin-vs-power question bites: on short favorites a method change can move fair prob enough to flip CLV sign. This cut shows how much of the record rides on that fragile region.</div>'+
     '<div class="asplit-grid">'+cells+'</div>'+
     '<div class="asplit-read">'+read+'</div></div>';
+}
+
+/* ===== Anchor QC: calibration / reliability of the de-vigged Pinnacle close =====
+   Tests the anchor itself, not the flagged edges, so it uses ALL graded rows with
+   a closing sharp fair and a settled win/loss. Well-calibrated + monotone = the
+   anchor is trustworthy; deviations mark where the fair (and the filter built on
+   it) is weakest. Push excluded. */
+function _clamp(p,e){e=e||1e-6;return p<e?e:(p>1-e?1-e:p);}
+function renderCalibration(rows){
+  var host=$('recCal');if(!host)return;rows=rows||[];
+  var dat=[];
+  rows.forEach(function(r){
+    var p=+r.closing_sharp_fair, y=(r.result==='win')?1:(r.result==='loss')?0:null;
+    if(y==null||isNaN(p)||p<=0||p>=1)return;
+    dat.push({p:p,y:y,sport:r.sport_title||'Unknown'});
+  });
+  var N=dat.length;
+  if(!N){host.innerHTML='<div class="asplit"><div class="asplit-h">Anchor calibration \u00b7 de-vigged Pinnacle close</div><div class="asplit-sub">No graded rows carry a closing sharp fair and a settled result yet. This fills as rows grade.</div></div>';return;}
+  // buckets of 10%
+  var B=[];for(var i=0;i<10;i++)B.push({lo:i/10,hi:(i+1)/10,n:0,sp:0,sy:0});
+  var base=0;
+  dat.forEach(function(d){var k=Math.min(9,Math.floor(d.p*10));B[k].n++;B[k].sp+=d.p;B[k].sy+=d.y;base+=d.y;});
+  base/=N;
+  var brier=0,ll=0,brRef=0;
+  dat.forEach(function(d){brier+=(d.p-d.y)*(d.p-d.y);var pc=_clamp(d.p);ll+=-(d.y*Math.log(pc)+(1-d.y)*Math.log(1-pc));brRef+=(base-d.y)*(base-d.y);});
+  brier/=N;ll/=N;brRef/=N;
+  var bss=brRef>0?(1-brier/brRef):null; // Brier skill vs predicting the base rate
+  var ece=0,filled=[];
+  B.forEach(function(b){if(b.n){var pred=b.sp/b.n,act=b.sy/b.n;ece+=Math.abs(act-pred)*b.n/N;filled.push({lo:b.lo,hi:b.hi,n:b.n,pred:pred,act:act});}});
+  // monotonicity across filled buckets (actual should not fall as predicted rises)
+  var inv=0;for(var j=1;j<filled.length;j++){if(filled[j].act < filled[j-1].act - 0.02)inv++;}
+  var monoTxt=inv===0?'monotone \u2713':inv+' reversal'+(inv>1?'s':'');
+  // favourite / longshot cut
+  function agg(f){var n=0,sp=0,sy=0;dat.forEach(function(d){if(f(d.p)){n++;sp+=d.p;sy+=d.y;}});return n?{n:n,pred:sp/n,act:sy/n}:null;}
+  var fav=agg(function(p){return p>=0.65;}),lng=agg(function(p){return p<=0.35;});
+  function sp1(v){return((v>=0?'+':'')+(v*100).toFixed(1)+'pp');}
+  var flRead;
+  if(!fav||!lng||fav.n<50||lng.n<50){flRead='Not enough graded rows at the favourite (\u226565%) and longshot (\u226435%) ends to read favourite\u2013longshot bias yet.';}
+  else{
+    var favG=fav.act-fav.pred,lngG=lng.act-lng.pred;
+    flRead='Favourite\u2013longshot check. Favourites (\u226565% fair): actual '+ (fav.act*100).toFixed(1)+'% vs fair '+(fav.pred*100).toFixed(1)+'% ('+sp1(favG)+'). Longshots (\u226435%): actual '+(lng.act*100).toFixed(1)+'% vs fair '+(lng.pred*100).toFixed(1)+'% ('+sp1(lngG)+'). '+
+      (favG>0.01&&lngG<-0.01?'Classic favourite\u2013longshot bias is present even after Shin: favourites win more than the fair says, longshots less. Your short-price fairs are running rich; a stronger Shin z would pull them in.'
+       :Math.abs(favG)<0.015&&Math.abs(lngG)<0.015?'Both ends are within noise of the fair \u2014 Shin is doing its job on the extremes, no obvious favourite\u2013longshot residue.'
+       :'The ends do not show the textbook favourite\u2013longshot pattern; read alongside the bucket table before adjusting z.');
+  }
+  // bucket table
+  function cls(v){return v>=0?'up':'dn';}
+  var tbl='<div style="display:grid;grid-template-columns:auto 1fr 1fr auto;gap:2px 10px;font-size:11px;align-items:center;margin:6px 0">'+
+    '<div class="l" style="opacity:.6">fair</div><div class="l" style="opacity:.6">predicted</div><div class="l" style="opacity:.6">actual</div><div class="l" style="opacity:.6">n</div>';
+  filled.forEach(function(b){var gap=b.act-b.pred;
+    tbl+='<div class="mono">'+(b.lo*100).toFixed(0)+'\u2013'+(b.hi*100).toFixed(0)+'%</div>'+
+      '<div class="mono">'+(b.pred*100).toFixed(1)+'%</div>'+
+      '<div class="mono '+cls(gap)+'">'+(b.act*100).toFixed(1)+'%</div>'+
+      '<div class="mono" style="opacity:.6">'+b.n+'</div>';});
+  tbl+='</div>';
+  var kpi=function(v,l){return '<div class="acol" style="min-width:0"><div class="ah">'+l+'</div><div class="ar"><span class="v">'+v+'</span></div></div>';};
+  var kpis='<div class="asplit-grid">'+
+    kpi(brier.toFixed(4),'Brier (lower better)')+
+    kpi(ll.toFixed(4),'log-loss')+
+    kpi(bss==null?'\u2014':(bss>=0?'+':'')+(bss*100).toFixed(1)+'%','Brier skill vs base rate')+
+    kpi((ece*100).toFixed(2)+'%','ECE (calibration error)')+
+    kpi(monoTxt,'ordering')+
+    kpi(N,'graded sample')+'</div>';
+  // per-sport mini
+  var bysp={};dat.forEach(function(d){(bysp[d.sport]=bysp[d.sport]||[]).push(d);});
+  var spRows=Object.keys(bysp).map(function(s){var a=bysp[s];if(a.length<50)return null;var br=0,e=0,nn=a.length,sp=0,sy=0;var bb=[];for(var i=0;i<10;i++)bb.push({n:0,sp:0,sy:0});a.forEach(function(d){br+=(d.p-d.y)*(d.p-d.y);var k=Math.min(9,Math.floor(d.p*10));bb[k].n++;bb[k].sp+=d.p;bb[k].sy+=d.y;});br/=nn;bb.forEach(function(b){if(b.n)e+=Math.abs(b.sy/b.n-b.sp/b.n)*b.n/nn;});return {s:s,n:nn,br:br,e:e};}).filter(Boolean).sort(function(a,b){return a.br-b.br;});
+  var spHtml=spRows.length?'<div class="asplit-read"><b>By sport</b> (n\u226550): '+spRows.map(function(o){return o.s+' \u00b7 Brier '+o.br.toFixed(3)+' \u00b7 ECE '+(o.e*100).toFixed(1)+'% \u00b7 n '+o.n;}).join(' &nbsp;|&nbsp; ')+'</div>':'';
+  var verdict = (ece<0.03&&inv===0)?'The anchor is well calibrated and correctly ordered \u2014 the de-vigged Pinnacle close is behaving as a truth-proxy should, which is the validation the whole stack rests on.'
+    : (inv>0)?'Ordering breaks in places (higher fair not always winning more). Small reversals at these sample sizes are usually noise; persistent ones are where the anchor or de-vig is weakest.'
+    : 'Calibration error is above 3% \u2014 the fair is systematically off in some buckets. Read the table for which region, then suspect de-vig method or capture timing there.';
+  host.innerHTML='<div class="asplit"><div class="asplit-h">Anchor calibration \u00b7 de-vigged Pinnacle close</div>'+
+    '<div class="asplit-sub">The reliability test from the trade: bucket every graded pick by its closing sharp fair, compare to how often it actually won, check the ordering holds. This grades the anchor itself \u2014 pass and the fair is a real truth-proxy, fail and you\u2019ve found where your filter is weakest.</div>'+
+    kpis+
+    '<div style="display:flex;gap:14px;flex-wrap:wrap;align-items:flex-start">'+calSvg(filled)+'<div style="flex:1;min-width:180px">'+tbl+'</div></div>'+
+    '<div class="asplit-read">'+verdict+'</div>'+
+    '<div class="asplit-read">'+flRead+'</div>'+spHtml+'</div>';
+}
+function calSvg(filled){
+  var W=180,H=180,pad=22;if(!filled||!filled.length)return '';
+  function X(v){return pad+v*(W-2*pad);}
+  function Y(v){return H-pad-v*(H-2*pad);}
+  var s='<svg width="'+W+'" height="'+H+'" viewBox="0 0 '+W+' '+H+'" style="flex:none">';
+  s+='<rect x="'+pad+'" y="'+pad+'" width="'+(W-2*pad)+'" height="'+(H-2*pad)+'" fill="none" stroke="#2a2f3a"/>';
+  s+='<line x1="'+X(0)+'" y1="'+Y(0)+'" x2="'+X(1)+'" y2="'+Y(1)+'" stroke="#4a5160" stroke-dasharray="3 3"/>';
+  var mx=Math.max.apply(null,filled.map(function(b){return b.n;}));
+  filled.forEach(function(b){var r=3+4*Math.sqrt(b.n/mx);var col=(b.act-b.pred)>=0?'#2fb47c':'#e0776b';s+='<circle cx="'+X(b.pred).toFixed(1)+'" cy="'+Y(b.act).toFixed(1)+'" r="'+r.toFixed(1)+'" fill="'+col+'" fill-opacity="0.85"/>';});
+  s+='<text x="'+(W/2)+'" y="'+(H-6)+'" fill="#6b7280" font-size="9" text-anchor="middle">predicted (fair)</text>';
+  s+='<text x="10" y="'+(H/2)+'" fill="#6b7280" font-size="9" text-anchor="middle" transform="rotate(-90 10 '+(H/2)+')">actual</text>';
+  s+='</svg>';return s;
+}
+
+/* ===== De-vig engine (two-way) for method-disagreement. Real math, ready now;
+   the panel self-gates until capture stores the raw two-way Pinnacle price. ===== */
+function devigMult(qs){var s=qs.reduce(function(a,b){return a+b;},0);return qs.map(function(q){return q/s;});}
+function devigPower(qs){var lo=0.5,hi=12;function sum(k){return qs.reduce(function(a,q){return a+Math.pow(q,k);},0);}for(var i=0;i<60;i++){var m=(lo+hi)/2;if(sum(m)>1)lo=m;else hi=m;}var k=(lo+hi)/2;return qs.map(function(q){return Math.pow(q,k);});}
+function devigShin(qs){var O=qs.reduce(function(a,b){return a+b;},0);function P(z){return qs.map(function(q){return (Math.sqrt(z*z+4*(1-z)*q*q/O)-z)/(2*(1-z));});}function sum(z){return P(z).reduce(function(a,b){return a+b;},0);}var lo=0,hi=0.9;for(var i=0;i<80;i++){var m=(lo+hi)/2;if(sum(m)>1)lo=m;else hi=m;}return P((lo+hi)/2);}
+function methodFairBetSide(d1,d2){var qs=[1/d1,1/d2];var m=devigMult(qs)[0],p=devigPower(qs)[0],s=devigShin(qs)[0];var mn=Math.min(m,p,s),mx=Math.max(m,p,s);return {mult:m,power:p,shin:s,spread:mx-mn};}
+async function renderMethodSensitivity(){
+  var host=$('recMethod');if(!host)return;
+  var rows=null;
+  try{ rows=await sbGet('signals?select=pin_dec,pin_opp_dec,flagged_best_dec,first_best_dec,sport_title&graded_at=not.is.null&pin_dec=not.is.null&pin_opp_dec=not.is.null&limit=5000'); }
+  catch(_){ rows=null; }
+  if(!rows||!rows.length){
+    host.innerHTML='<div class="asplit"><div class="asplit-h">De-vig method disagreement \u00b7 short prices</div>'+
+      '<div class="asplit-sub">Fair under Shin vs multiplicative vs power, per signal. Where they disagree most (short favourites) is where CLV sign is least stable and the fair least trustworthy.</div>'+
+      '<div class="asplit-read" style="color:var(--faint)"><b>Gated \u2014 engine ready, data not.</b> This needs the raw two-way Pinnacle price stored at the flag (<span class="mono">pin_dec</span> / <span class="mono">pin_opp_dec</span>); no graded row carries it yet, so nothing is computed rather than faked. Run <span class="mono">add_raw_price_cols.sql</span>, then have capture write both sides. It lights up on its own once populated.</div></div>';
+    return;
+  }
+  var short=[],mid=[],lng=[],all=[];var FLAG=0.015;
+  rows.forEach(function(r){var d1=+r.pin_dec,d2=+r.pin_opp_dec;if(isNaN(d1)||isNaN(d2)||d1<=1||d2<=1)return;var mf=methodFairBetSide(d1,d2);all.push(mf.spread);if(mf.spread>=FLAG){/*flag*/}var bucket=(d1<=1.5)?short:(d1<=2.5)?mid:lng;bucket.push(mf.spread);});
+  function stat(a){if(!a.length)return null;var m=a.reduce(function(x,y){return x+y;},0)/a.length;var f=a.filter(function(v){return v>=FLAG;}).length/a.length;return {n:a.length,avg:m,flag:f};}
+  var sA=stat(short),mA=stat(mid),lA=stat(lng),tot=stat(all);
+  function col(t,st){if(!st)return '<div class="acol"><div class="ah">'+t+'</div><div class="ar"><span class="l">n</span><span class="v">0</span></div></div>';return '<div class="acol"><div class="ah">'+t+'</div><div class="ar"><span class="l">signals</span><span class="v">'+st.n+'</span></div><div class="ar"><span class="l">avg method spread</span><span class="v">'+(st.avg*100).toFixed(2)+'pp</span></div><div class="ar"><span class="l">flagged \u2265'+(FLAG*100)+'pp</span><span class="v">'+(st.flag*100).toFixed(0)+'%</span></div></div>';}
+  var read='As predicted by the theory, method choice bites hardest on short prices: if the short bucket carries the widest spread, treat any CLV that lives there with extra skepticism until you settle on a method. Long prices barely move across methods and are the more trustworthy fairs.';
+  host.innerHTML='<div class="asplit"><div class="asplit-h">De-vig method disagreement \u00b7 short prices</div>'+
+    '<div class="asplit-sub">Bet-side fair computed three ways (Shin \u00b7 multiplicative \u00b7 power) from the raw two-way Pinnacle price; the spread is how much your fair depends on the method. Bucketed by price.</div>'+
+    '<div class="asplit-grid">'+col('SHORT \u00b7 \u22641.50',sA)+col('MID \u00b7 1.50\u20132.50',mA)+col('LONG \u00b7 >2.50',lA)+col('ALL',tot)+'</div>'+
+    '<div class="asplit-read">'+read+'</div></div>';
+}
+
+/* ===== #4 epistemics: the stance, stated plainly where the proof lives ===== */
+function renderEthos(){
+  var host=$('recEthos');if(!host)return;
+  host.innerHTML='<div class="asplit" style="border-color:#2a2f3a">'+
+    '<div class="asplit-h">The stance</div>'+
+    '<div class="asplit-sub">Graded in the open, no manual entry. CLV is the only proof of edge; a de-vigged fair is an estimate, never truth, so it is tested (calibration above) rather than trusted. Nothing is claimed publicly until the flagged record clears a real sample, and there is no pick to sell \u2014 the record either beats the close or it doesn\u2019t. Signals can be wrong; this is a research tool, not betting advice.</div></div>';
 }
 
 function renderBookBias(){
@@ -2205,6 +2335,10 @@ async function loadRecord(){
     renderSportSplit(g);
     renderTtcSplit(g);
     renderPriceSplit(g);
+    try{ var calRows=await sbGetAll('signals?select=closing_sharp_fair,result,sport_title&graded_at=not.is.null&closing_sharp_fair=not.is.null&result=in.(win,loss)',1000,12); renderCalibration(calRows); }
+    catch(_c){ renderCalibration([]); }
+    renderMethodSensitivity();
+    renderEthos();
     WEIGHT_ROWS=await sbGet('model_weights?select=*');WEIGHTS={book:{},sport:{},market:{},edge_bucket:{},ttk_bucket:{}};WEIGHT_ROWS.forEach(function(r){WEIGHTS[r.slice_type]=WEIGHTS[r.slice_type]||{};WEIGHTS[r.slice_type][r.slice_value]=r.weight;});
     CALIB=await sbGet('calibration?select=*');
     $('dbPill').textContent='DB ✓';$('dbPill').className='pill ok';
