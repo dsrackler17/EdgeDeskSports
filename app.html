@@ -876,6 +876,9 @@ body.ed-large-text .set-lbl,body.ed-large-text .lead-sel{font-size:14px}
     <div class="set-wrap"><div class="set-nav" id="setNav"></div><div class="set-panel" id="setPanel"></div></div>
   </section>
 
+  <!-- ADDED: BET DISCIPLINE view -->
+  <section id="v-discipline" class="view hide"></section>
+
 <nav class="bottomnav">
   <button data-v="edges" class="on"><svg class="ic" viewBox="0 0 24 24"><polyline points="3 17 9 11 13 15 21 7"/><polyline points="15 7 21 7 21 13"/></svg>Edges</button>
   <button data-v="faults"><svg class="ic" viewBox="0 0 24 24"><path d="M3 12h4l2-7 4 14 2-7h6"/></svg>Faults</button>
@@ -885,6 +888,8 @@ body.ed-large-text .set-lbl,body.ed-large-text .lead-sel{font-size:14px}
   <button data-v="ledger"><svg class="ic" viewBox="0 0 24 24"><path d="M4 5h16v14H4z"/><path d="M4 10h16"/><path d="M9 5v14"/></svg>Ledger</button>
   <button data-v="news"><svg class="ic" viewBox="0 0 24 24"><path d="M4 5h16v14H4z"/><path d="M8 9h8M8 13h8M8 17h5"/></svg>News</button>
   <button data-v="social"><svg class="ic" viewBox="0 0 24 24"><path d="M21 12a8 8 0 0 1-11.6 7.1L3 21l1.9-6.4A8 8 0 1 1 21 12z"/></svg>Pulse</button>
+  <!-- ADDED: BET DISCIPLINE tab -->
+  <button data-v="discipline"><svg class="ic" viewBox="0 0 24 24"><path d="M12 3l7 4v5c0 4-3 7-7 9-4-2-7-5-7-9V7z"/><path d="M9 12l2 2 4-4"/></svg>Discipline</button>
 </nav>
 
 <script>
@@ -1694,7 +1699,7 @@ function $(id){return document.getElementById(id);}
 
 /* ===== nav ===== */
 function show(v){if(v==='research'){researchGo(RESEARCH_SUB);return;}var s=document.querySelectorAll('.view');for(var i=0;i<s.length;i++)s[i].classList.toggle('hide',s[i].id!=='v-'+v);var b=document.querySelectorAll('.bottomnav button');for(var j=0;j<b.length;j++)b[j].classList.toggle('on',b[j].dataset.v===v);window.scrollTo(0,0);try{if(v!=='settings'){var _pp=prefs();_pp.lastTab=v;localStorage.setItem('edgedesk_prefs',JSON.stringify(_pp));}}catch(_){}
-  if(v==='record')loadRecord();if(v==='edges')loadEdges();if(v==='faults')loadFaults();if(v==='boards')loadBoards();if(v==='news')loadNews();if(v==='ledger')loadMarket();if(v==='stats')loadStats();if(v==='props')loadProps();if(v==='ufc')loadUFC();if(v==='cfb')loadCFB();if(v==='settings')loadSettings();
+  if(v==='record')loadRecord();if(v==='edges')loadEdges();if(v==='faults')loadFaults();if(v==='boards')loadBoards();if(v==='news')loadNews();if(v==='ledger')loadMarket();if(v==='stats')loadStats();if(v==='props')loadProps();if(v==='ufc')loadUFC();if(v==='cfb')loadCFB();if(v==='settings')loadSettings();if(v==='discipline')loadDiscipline();/*ADDED*/
   if(v==='social')loadSocial();else plStop();}
 var RESEARCH_SUB='cfb';
 window.researchGo=function(sub){
@@ -5615,6 +5620,427 @@ try{applyPrefs();renderAvatar();loadSubStatus();
   var _p=prefs();var _t=_p.rememberTab?(_p.lastTab||_p.defaultTab):_p.defaultTab;
   if(_t&&_t!=='edges'&&$('v-'+_t))show(_t);
 }catch(_e){}
+
+/* ================= ADDED: BET DISCIPLINE ENGINE (window.Discipline) ================= */
+/* =============================================================================
+ * EdgeDesk · Bet Discipline · discipline-engine.js
+ * Self-contained behavioral engine in the app.html idiom (ES5-ish, `var`, no build).
+ * Attaches `window.Discipline`; also exports under CommonJS so it can be unit-tested
+ * in Node. Every scoring formula mirrors migrations/003_functions.sql exactly, so a
+ * client-side preview and the server-certified score agree to the integer.
+ *
+ * Sections:
+ *   A. math + odds helpers          E. bias + chase detectors
+ *   B. Discipline Score (pure)      F. nudge generator
+ *   C. rule engine / friction       G. "would past you approve?"
+ *   D. Supabase read/write glue      H. exports
+ * All user-facing copy is evidence-led and non-judgmental by design.
+ * ========================================================================== */
+(function (root) {
+  'use strict';
+
+  /* ---- A. math + odds helpers -------------------------------------------- */
+  function amToDec(a) { a = +a; return a > 0 ? 1 + a / 100 : 1 + 100 / -a; }
+  function impliedProb(a) { a = +a; return a > 0 ? 100 / (a + 100) : -a / (-a + 100); }
+  function clv(betOdds, closeOdds) {           // % you beat the close by (fair-prob basis)
+    var pb = impliedProb(betOdds), pc = impliedProb(closeOdds);
+    return pc === 0 ? 0 : (pc - pb) / pb * 100;
+  }
+  function mean(xs) { return xs.length ? xs.reduce(function (s, x) { return s + x; }, 0) / xs.length : 0; }
+  function stddevPop(xs) {
+    if (!xs.length) return 0;
+    var m = mean(xs);
+    return Math.sqrt(mean(xs.map(function (x) { return (x - m) * (x - m); })));
+  }
+  function clamp(x, lo, hi) { return Math.max(lo, Math.min(hi, x)); }
+  function unitsOf(b, baseUnit) {
+    if (b.stake_units != null) return +b.stake_units;
+    if (b.bankroll_at) return b.stake / b.bankroll_at / baseUnit;
+    return 0;
+  }
+
+  var WEIGHTS = { bankroll: 0.25, ev: 0.20, consistency: 0.15, clv: 0.15, commitment: 0.15, chase: 0.10 };
+  var BREACH_PENALTY = { daily: 8, weekly: 12, monthly: 20, max_unit: 10, sport_exposure: 6 };
+  var CHASE_PENALTY = { loss_chasing: 15, stake_escalation: 15, low_edge_revenge: 10, tilt_window: 8, rapid_fire: 8, sport_switching: 6 };
+
+  function bandFor(s) {
+    return s >= 90 ? 'excellent' : s >= 75 ? 'strong' : s >= 60 ? 'fair' : s >= 40 ? 'at_risk' : 'off_process';
+  }
+
+  /* ---- B. Discipline Score (pure — same inputs the SQL function reads) ----
+   * ds = {
+   *   bets:[{stake,edge_pct,ev_pct,stake_units,bankroll_at}],
+   *   breaches:[{type:'daily'|'weekly'|'monthly'|'max_unit'|'sport_exposure', locked:bool}],
+   *   clvClosing:[{clv_pct}],
+   *   ruleChecks:int,           // decision_logs whose rules_triggered fired
+   *   overrides:[{was_locked}],
+   *   behaviorEvents:[{kind}],
+   *   skipsNeg:int              // documented passes on flagged -EV bets
+   * }
+   * opts = {minEdge, baseUnit} */
+  function score(ds, opts) {
+    ds = ds || {}; opts = opts || {};
+    var minEdge = opts.minEdge || 0, baseUnit = opts.baseUnit || 0.01;
+    var bets = ds.bets || [];
+    var n = bets.length;
+
+    if (n === 0) {   // restraint is never a failure — neutral baseline
+      return {
+        score: 100, band: 'excellent', n_bets: 0,
+        components: { bankroll: 100, ev: 100, consistency: 100, clv: 100, commitment: 100, chase: 100 },
+        restraint: 0, details: { note: 'no_activity' }
+      };
+    }
+
+    // (1) bankroll adherence
+    var penalty = (ds.breaches || []).reduce(function (s, b) {
+      return s + (BREACH_PENALTY[b.type] || 0) * (b.locked ? 2 : 1);
+    }, 0);
+    var cBank = Math.max(0, 100 - penalty);
+
+    // (2) EV quality — stake-weighted
+    var totStake = 0, evStake = 0;
+    bets.forEach(function (b) {
+      totStake += b.stake;
+      if ((b.edge_pct != null ? b.edge_pct : -1) >= minEdge && (b.ev_pct != null ? b.ev_pct : -1) > 0) evStake += b.stake;
+    });
+    var cEv = 100 * (totStake > 0 ? evStake / totStake : 1);
+
+    // (3) stake consistency — variance of unit size AND absolute over-sizing.
+    // Two factors so a lone huge bet (cv=0) still can't score 100.
+    var us = bets.map(function (b) { return unitsOf(b, baseUnit); });
+    var mu = mean(us), cv = mu === 0 ? 0 : stddevPop(us) / mu;
+    var CEIL = 4, K = 8;   // sane fractional-Kelly ceiling; gentle penalty slope
+    var avgExcess = mean(us.map(function (u) { return Math.max(0, u - CEIL); }));
+    var fVar = Math.max(0, 1 - cv / 0.6);
+    var fSize = Math.max(0, 1 - avgExcess / K);
+    var cCons = 100 * fVar * fSize;
+
+    // (4) CLV
+    var cl = ds.clvClosing || [], cClv = 40;
+    if (cl.length) {
+      var beat = mean(cl.map(function (r) { return r.clv_pct > 0 ? 1 : 0; }));
+      var avg = mean(cl.map(function (r) { return r.clv_pct; }));
+      cClv = clamp(50 + 25 * (2 * beat - 1) + 6 * clamp(avg, -2.5, 2.5), 0, 100);
+    }
+
+    // (5) commitment adherence — override rate over checks that fired
+    var ovr = (ds.overrides || []).reduce(function (s, o) { return s + (o.was_locked ? 2 : 1); }, 0);
+    var checks = ds.ruleChecks || 0;
+    var ovrRate = clamp(checks === 0 ? 0 : ovr / checks, 0, 1);
+    var cCommit = 100 * Math.pow(1 - ovrRate, 1.3);
+
+    // (6) chase / tilt avoidance
+    var chasePen = (ds.behaviorEvents || []).reduce(function (s, e) { return s + (CHASE_PENALTY[e.kind] || 0); }, 0);
+    var cChase = Math.max(0, 100 - chasePen);
+
+    // restraint bonus (capped)
+    var restraint = Math.min(4, 0.5 * (ds.skipsNeg || 0));
+
+    var weighted = WEIGHTS.bankroll * cBank + WEIGHTS.ev * cEv + WEIGHTS.consistency * cCons
+      + WEIGHTS.clv * cClv + WEIGHTS.commitment * cCommit + WEIGHTS.chase * cChase;
+    var final = Math.round(Math.min(100, weighted + restraint));
+
+    return {
+      score: final, band: bandFor(final), n_bets: n, restraint: +restraint.toFixed(2),
+      components: {
+        bankroll: +cBank.toFixed(2), ev: +cEv.toFixed(2), consistency: +cCons.toFixed(2),
+        clv: +cClv.toFixed(2), commitment: +cCommit.toFixed(2), chase: +cChase.toFixed(2)
+      },
+      details: { cv: +cv.toFixed(4), override_rate: +ovrRate.toFixed(4), n_clv: cl.length, min_edge: minEdge }
+    };
+  }
+
+  /* ---- C. rule engine / decision friction --------------------------------
+   * commitments: [{rule_type, threshold, params, scope, enabled, locked}]
+   * rules:       [{name, predicate:{field,op,value}, action}]
+   * ctx: today's running state {dailyStaked, weeklyStaked, monthlyStaked, betsToday, sportExposure:{}}
+   * returns {violations:[{code,label,locked,severity}], action:'skip'|'warn'|'allow'} */
+  function evaluateBet(bet, commitments, rules, ctx) {
+    commitments = commitments || []; rules = rules || []; ctx = ctx || {};
+    var v = [];
+    function hit(code, label, locked, sev) { v.push({ code: code, label: label, locked: !!locked, severity: sev || 'warning' }); }
+
+    commitments.forEach(function (c) {
+      if (c.enabled === false) return;
+      var t = +c.threshold;
+      switch (c.rule_type) {
+        case 'daily_bankroll_limit':   if ((ctx.dailyStaked || 0) + bet.stake > t) hit(c.rule_type, 'Daily bankroll limit', c.locked); break;
+        case 'weekly_bankroll_limit':  if ((ctx.weeklyStaked || 0) + bet.stake > t) hit(c.rule_type, 'Weekly bankroll limit', c.locked); break;
+        case 'monthly_bankroll_limit': if ((ctx.monthlyStaked || 0) + bet.stake > t) hit(c.rule_type, 'Monthly bankroll limit', c.locked); break;
+        case 'max_unit_size':          if ((bet.stake_units || 0) > t) hit(c.rule_type, 'Max unit size', c.locked); break;
+        case 'max_stake_amount':       if (bet.stake > t) hit(c.rule_type, 'Max stake amount', c.locked); break;
+        case 'max_daily_bets':         if ((ctx.betsToday || 0) + 1 > t) hit(c.rule_type, 'Max bets per day', c.locked); break;
+        case 'max_parlay_legs':        if ((bet.parlay_legs || 1) > t) hit(c.rule_type, 'Max parlay legs', c.locked); break;
+        case 'max_odds':               if (bet.odds_american > t) hit(c.rule_type, 'Max odds', c.locked); break;
+        case 'min_edge':               if ((bet.edge_pct != null ? bet.edge_pct : -1) < t) hit(c.rule_type, 'Minimum edge', c.locked); break;
+        case 'min_confidence':         if ((bet.confidence != null ? bet.confidence : -1) < t) hit(c.rule_type, 'Minimum confidence', c.locked); break;
+        case 'no_live':                if (bet.bet_type === 'live') hit(c.rule_type, 'No live betting', c.locked); break;
+        case 'no_futures':             if (bet.bet_type === 'future') hit(c.rule_type, 'No futures', c.locked); break;
+        case 'no_sgp':                 if (bet.bet_type === 'sgp') hit(c.rule_type, 'No same-game parlays', c.locked); break;
+        case 'max_exposure_per_sport': if (((ctx.sportExposure || {})[bet.sport] || 0) + bet.stake > t) hit(c.rule_type, 'Max exposure · ' + bet.sport, c.locked); break;
+        case 'allowed_sports':         if (arr(c.params).indexOf(bet.sport) < 0) hit(c.rule_type, 'Sport not on your list', c.locked); break;
+        case 'allowed_books':          if (arr(c.params).indexOf(bet.book) < 0) hit(c.rule_type, 'Book not on your list', c.locked); break;
+        case 'allowed_markets':        if (arr(c.params).indexOf(bet.market) < 0) hit(c.rule_type, 'Market not on your list', c.locked); break;
+        case 'allowed_bet_types':      if (arr(c.params).indexOf(bet.bet_type) < 0) hit(c.rule_type, 'Bet type not on your list', c.locked); break;
+        case 'time_restriction':       if (inHours(bet.placed_at, c.params)) hit(c.rule_type, 'Outside your betting hours', c.locked); break;
+        case 'loss_streak_restriction':if ((ctx.lossStreak || 0) >= (c.params && c.params.streak || 3)) hit(c.rule_type, 'Loss-streak stop active', c.locked); break;
+      }
+    });
+
+    rules.forEach(function (r) {
+      if (r.enabled === false) return;
+      if (!predicate(bet, r.predicate)) return;
+      if (r.action === 'block') hit('custom:' + r.name, r.name, false, 'warning');
+      else if (r.action === 'warn') hit('custom:' + r.name, r.name, false, 'notice');
+    });
+
+    var blocking = v.some(function (x) { return x.severity === 'warning'; });
+    return { violations: v, action: blocking ? 'skip' : (v.length ? 'warn' : 'allow') };
+  }
+  function arr(p) { return (p && (p.list || p.values)) || []; }
+  function inHours(iso, params) {
+    if (!params || params.after == null) return false;
+    var h = new Date(iso || Date.now()).getHours();
+    return h >= params.after || (params.before != null && h < params.before);
+  }
+  function predicate(bet, p) {
+    if (!p) return false;
+    var x = bet[p.field];
+    switch (p.op) {
+      case 'lte': return x <= p.value; case 'gte': return x >= p.value;
+      case 'lt': return x < p.value;   case 'gt': return x > p.value;
+      case 'eq': return x === p.value; case 'ne': return x !== p.value;
+      case 'in': return (p.value || []).indexOf(x) >= 0;
+      case 'nin': return (p.value || []).indexOf(x) < 0;
+      default: return false;
+    }
+  }
+
+  /* ---- D. Supabase glue (uses the app's sbFetch when present) ------------- */
+  function hasSb() { return typeof root.sbFetch === 'function'; }
+  function loadScoreInputs(userId, windowDays) {
+    // Convenience loader: pulls the arrays `score()` needs. Falls back to [] offline.
+    if (!hasSb()) return Promise.resolve({ bets: [] });
+    var since = new Date(Date.now() - (windowDays || 30) * 864e5).toISOString();
+    var f = root.sbFetch;
+    return Promise.all([
+      f('bet_history?select=stake,edge_pct,ev_pct,stake_units,bankroll_at,placed_at&placed_at=gte.' + since),
+      f('discipline_events?select=event_type,payload&event_type=like.breach_*&occurred_at=gte.' + since),
+      f('clv_history?select=clv_pct&is_closing=eq.true'),
+      f('discipline_overrides?select=was_locked&created_at=gte.' + since),
+      f('behavior_events?select=kind&occurred_at=gte.' + since),
+      f('decision_logs?select=decision,ev_pct,rules_triggered&decided_at=gte.' + since)
+    ]).then(function (r) {
+      var decisions = r[5] || [];
+      return {
+        bets: r[0] || [],
+        breaches: (r[1] || []).map(function (e) {
+          return { type: e.event_type.replace('breach_', '').replace('_limit', ''), locked: e.payload && e.payload.locked };
+        }),
+        clvClosing: r[2] || [],
+        overrides: r[3] || [],
+        behaviorEvents: r[4] || [],
+        ruleChecks: decisions.filter(function (d) { return d.rules_triggered && d.rules_triggered.length; }).length,
+        skipsNeg: decisions.filter(function (d) { return d.decision === 'skip' && (d.ev_pct || 0) < 0; }).length
+      };
+    });
+  }
+
+  /* ---- E. bias + chase detectors -----------------------------------------
+   * Each returns null or a behavior_event {kind, headline, evidence, severity}.
+   * `history` = recent bets newest-first; `cand` = the bet under consideration. */
+  function median(xs) { if (!xs.length) return 0; var s = xs.slice().sort(function (a, b) { return a - b; }); var m = s.length >> 1; return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2; }
+  function recentLossStreak(history) { var k = 0; for (var i = 0; i < history.length; i++) { if (history[i].result === 'loss') k++; else break; } return k; }
+  function recentWinStreak(history) { var k = 0; for (var i = 0; i < history.length; i++) { if (history[i].result === 'win') k++; else break; } return k; }
+
+  var Detect = {
+    stakeEscalation: function (cand, history, baseUnit) {
+      var med = median(history.slice(0, 10).map(function (b) { return unitsOf(b, baseUnit); }));
+      var u = unitsOf(cand, baseUnit), losses = recentLossStreak(history);
+      if (med > 0 && u >= 1.5 * med && losses >= 2) {
+        var pct = Math.round((u / med - 1) * 100);
+        return { kind: 'stake_escalation', severity: 'warning',
+          headline: 'You’ve increased your stake by ' + pct + '% after ' + losses + ' consecutive losses. Historically this pattern has produced negative ROI — this may indicate loss-chasing.',
+          evidence: { median_units: +med.toFixed(2), candidate_units: +u.toFixed(2), loss_streak: losses } };
+      }
+      return null;
+    },
+    lossChasing: function (cand, history, baseUnit) {
+      if (recentLossStreak(history) >= 3 && unitsOf(cand, baseUnit) > median(history.slice(0, 6).map(function (b) { return unitsOf(b, baseUnit); }))) {
+        return { kind: 'loss_chasing', severity: 'critical',
+          headline: 'This is a larger bet placed into a 3+ loss streak. Recovering losses faster than your edge allows is the most common way disciplined bankrolls unravel.',
+          evidence: { loss_streak: recentLossStreak(history) } };
+      }
+      return null;
+    },
+    hotHand: function (cand, history, baseUnit) {
+      if (recentWinStreak(history) >= 3 && unitsOf(cand, baseUnit) > 1.3 * median(history.slice(0, 6).map(function (b) { return unitsOf(b, baseUnit); }))) {
+        return { kind: 'hot_hand', severity: 'notice',
+          headline: 'This wager is larger following a win streak. Past results don’t change this bet’s edge — size it on the number, not the streak.',
+          evidence: { win_streak: recentWinStreak(history) } };
+      }
+      return null;
+    },
+    lowEdgeRevenge: function (cand, history, minEdge) {
+      if ((cand.edge_pct != null ? cand.edge_pct : 0) < minEdge && recentLossStreak(history) >= 1) {
+        return { kind: 'low_edge_revenge', severity: 'warning',
+          headline: 'This bet is below your minimum edge and follows a loss. It appears driven by the previous result rather than a measurable edge.',
+          evidence: { edge: cand.edge_pct, min_edge: minEdge } };
+      }
+      return null;
+    },
+    tiltWindow: function (cand, history) {
+      var h = new Date(cand.placed_at || Date.now()).getHours();
+      if ((h >= 0 && h <= 5) && recentLossStreak(history) >= 1) {
+        return { kind: 'tilt_window', severity: 'notice',
+          headline: 'Late-night bet after a loss. Your ROI in this window has historically trailed your daytime ROI.',
+          evidence: { hour: h } };
+      }
+      return null;
+    },
+    rapidFire: function (cand, history) {
+      var lim = new Date((cand.placed_at ? +new Date(cand.placed_at) : Date.now()) - 10 * 6e4);
+      var n = history.filter(function (b) { return new Date(b.placed_at) >= lim; }).length;
+      if (n >= 3) return { kind: 'rapid_fire', severity: 'warning',
+        headline: n + ' bets in the last 10 minutes. Rapid-fire betting is a reliable tilt signal — consider a short pause.',
+        evidence: { bets_10min: n } };
+      return null;
+    },
+    sportSwitching: function (cand, history) {
+      var recent = history.slice(0, 6).map(function (b) { return b.sport; }).concat(cand.sport);
+      var distinct = recent.filter(function (s, i) { return recent.indexOf(s) === i; }).length;
+      if (distinct >= 4) return { kind: 'sport_switching', severity: 'notice',
+        headline: 'You’ve moved across ' + distinct + ' sports quickly. Chasing action across markets often signals boredom-betting rather than edge.',
+        evidence: { distinct_sports: distinct } };
+      return null;
+    }
+  };
+
+  // Run all statistical detectors; returns an array of behavior_events.
+  function detectBehaviors(cand, history, opts) {
+    opts = opts || {}; var out = [];
+    [Detect.stakeEscalation(cand, history, opts.baseUnit || 0.01),
+     Detect.lossChasing(cand, history, opts.baseUnit || 0.01),
+     Detect.hotHand(cand, history, opts.baseUnit || 0.01),
+     Detect.lowEdgeRevenge(cand, history, opts.minEdge || 0),
+     Detect.tiltWindow(cand, history),
+     Detect.rapidFire(cand, history),
+     Detect.sportSwitching(cand, history)].forEach(function (e) { if (e) out.push(e); });
+    return out;
+  }
+
+  /* ---- F. nudge generator (restraint-first; never encourages betting) ----- */
+  function generateNudges(state) {
+    state = state || {}; var out = [];
+    if (state.atExposureCap) out.push({ kind: 'restraint', body: 'You’ve reached your planned bankroll exposure for today. That’s the plan working.' });
+    if ((state.betsToday || 0) >= 4) out.push({ kind: 'warning', body: 'Historically your ROI declines after your fourth bet of the day.' });
+    if (state.noEdgesToday) out.push({ kind: 'restraint', body: 'No positive-EV opportunities cleared your filters today. Waiting is a valid, profitable choice.' });
+    if (state.skippedNegThisWeek) out.push({ kind: 'milestone', body: 'You’ve avoided ' + state.skippedNegThisWeek + ' negative-EV bets this week.' });
+    if (state.scoreDeltaPct > 0) out.push({ kind: 'milestone', body: 'Your Discipline Score has improved ' + state.scoreDeltaPct + '% this month.' });
+    if (state.identifiedBest) out.push({ kind: 'restraint', body: 'You’ve already identified today’s highest-value opportunities.' });
+    return out;
+  }
+
+  /* ---- G. "would past you approve?" --------------------------------------- */
+  function oddsBucket(a) { a = +a; return a <= -200 ? 'heavy_fav' : a < 100 ? 'fav' : a < 200 ? 'dog' : 'big_dog'; }
+  function edgeBucket(e) { return e == null ? 'na' : e < 0 ? 'neg' : e < 2 ? 'thin' : e < 5 ? 'solid' : 'strong'; }
+  function wouldPastYouApprove(cand, history) {
+    var sim = history.filter(function (b) {
+      return b.sport === cand.sport && b.market === cand.market
+        && oddsBucket(b.odds_american) === oddsBucket(cand.odds_american)
+        && edgeBucket(b.edge_pct) === edgeBucket(cand.edge_pct)
+        && (b.result === 'win' || b.result === 'loss' || b.result === 'push');
+    });
+    if (!sim.length) return { n: 0, recommendation: 'no_history', note: 'No comparable past bets to learn from.' };
+    var stake = sim.reduce(function (s, b) { return s + b.stake; }, 0);
+    var ret = sim.reduce(function (s, b) { return s + (b.payout || 0); }, 0);
+    var roi = stake ? (ret - stake) / stake * 100 : 0;
+    var avgEdge = mean(sim.map(function (b) { return b.edge_pct || 0; }));
+    var miniScore = Math.round(clamp(50 + roi + (avgEdge - 1) * 5, 0, 100));
+    return {
+      n: sim.length, roi: +roi.toFixed(1), avgEdge: +avgEdge.toFixed(2), miniScore: miniScore,
+      recommendation: (roi < -5 || avgEdge < 1) ? 'skip' : 'proceed'
+    };
+  }
+
+  /* ---- H. exports --------------------------------------------------------- */
+  var API = {
+    WEIGHTS: WEIGHTS, bandFor: bandFor,
+    amToDec: amToDec, impliedProb: impliedProb, clv: clv,
+    score: score, evaluateBet: evaluateBet,
+    detectBehaviors: detectBehaviors, Detect: Detect,
+    generateNudges: generateNudges, wouldPastYouApprove: wouldPastYouApprove,
+    loadScoreInputs: loadScoreInputs
+  };
+  root.Discipline = API;
+  if (typeof module !== 'undefined' && module.exports) module.exports = API;
+})(typeof window !== 'undefined' ? window : globalThis);
+
+/* ================= ADDED: BET DISCIPLINE DASHBOARD RENDERER ================= */
+/* ============================================================================
+ * ADDED FEATURE · BET DISCIPLINE — dashboard renderer  (label: BET DISCIPLINE)
+ * Uses window.Discipline (injected above) + the app's existing sbFetch/$ helpers.
+ * Fails soft: if the discipline_* tables aren't deployed yet, shows a setup card.
+ * ========================================================================== */
+function discBand(b){return (b==='excellent'||b==='strong')?'var(--pos)':(b==='fair')?'var(--warn)':'var(--neg)';}
+function discBar(label,val,color){
+  var w=Math.max(0,Math.min(100,val));
+  return '<div style="margin:8px 0"><div style="display:flex;justify-content:space-between;font-size:11px;color:var(--dim);margin-bottom:3px">'
+    +'<span>'+label+'</span><span class="mono" style="color:'+color+'">'+Math.round(val)+'</span></div>'
+    +'<div style="height:6px;background:var(--surface2);border-radius:4px;overflow:hidden">'
+    +'<div style="height:100%;width:'+w+'%;background:'+color+'"></div></div></div>';
+}
+function discCardHTML(s){
+  var c=s.components, col=discBand(s.band);
+  var comps=[['Bankroll',c.bankroll],['Positive EV',c.ev],['Consistency',c.consistency],
+             ['CLV',c.clv],['Commitment',c.commitment],['Chase-free',c.chase]];
+  var bars=comps.map(function(p){return discBar(p[0],p[1],'var(--accent)');}).join('');
+  var note=s.details&&s.details.note==='no_activity'
+    ? '<p class="cap">No bets in the last 30 days. Restraint is never a discipline failure — this is a perfect baseline.</p>' : '';
+  return '<div class="clvhero"><div class="clvhero-h">'
+    +'<span class="big" style="color:'+col+'">'+s.score+'</span><span class="lbl">Discipline Score · '+s.band.replace('_',' ')+'</span>'
+    +'<span class="spacer"></span><span class="pill">'+s.n_bets+' bets · 30d</span></div>'
+    +bars+note+'</div>';
+}
+async function discRenderNudges(inputs){
+  var state={skippedNegThisWeek:inputs.skipsNeg||0, noEdgesToday:!(inputs.bets&&inputs.bets.length)};
+  var ns=(window.Discipline?Discipline.generateNudges(state):[]);
+  if(!ns.length)return '';
+  return '<h3>Nudges</h3>'+ns.map(function(n){
+    return '<div class="clvhero" style="padding:10px 12px"><p class="cap" style="margin:0">'+n.body+'</p></div>';
+  }).join('');
+}
+async function discRenderProjections(){
+  try{
+    var proj=await sbGet('game_projections?select=game_id,home_win_prob,confidence,category_scores&order=confidence.desc&limit=8');
+    if(!proj||!proj.length)return '<h3>Model projections</h3><div class="empty">No projections yet. Deploy the prediction engine (migration 010 + project-game Edge Function).</div>';
+    var rows=proj.map(function(p){
+      return '<div class="clvhero" style="padding:10px 12px"><div class="clvhero-h">'
+        +'<span class="big" style="font-size:20px">'+Math.round(p.home_win_prob*100)+'%</span>'
+        +'<span class="lbl">'+p.game_id+'</span><span class="spacer"></span>'
+        +'<span class="pill ok">conf '+p.confidence+'</span></div></div>';
+    }).join('');
+    return '<h3>Model projections <span style="font-size:10px;color:var(--faint)">reads game_projections</span></h3>'+rows;
+  }catch(e){ return ''; }
+}
+window.loadDiscipline=async function(){
+  var el=document.getElementById('v-discipline'); if(!el)return;
+  el.innerHTML='<div class="row-between"><h2 style="margin:0">Bet Discipline</h2></div>'
+    +'<p class="lede">Process over outcome. If there are zero good bets today, placing zero is the winning move.</p>'
+    +'<div id="discBody"><div class="empty">Loading…</div></div>';
+  var body=document.getElementById('discBody');
+  try{
+    var inputs=await Discipline.loadScoreInputs(undefined,30);
+    var s=Discipline.score(inputs,{minEdge:1,baseUnit:0.01});
+    var html=discCardHTML(s)+(await discRenderNudges(inputs))+(await discRenderProjections());
+    body.innerHTML=html;
+  }catch(e){
+    body.innerHTML='<div class="clvhero"><div class="clvhero-h"><span class="lbl" style="color:var(--warn)">Setup required</span></div>'
+      +'<p class="cap">The Bet Discipline tables aren’t reachable yet. Run migrations 001–003 in Supabase (and 010 for model projections), then reload.<br><span class="mono" style="color:var(--faint)">'+(e&&e.message?e.message:e)+'</span></p></div>';
+  }
+};
+
 </script>
 </body>
 </html>
