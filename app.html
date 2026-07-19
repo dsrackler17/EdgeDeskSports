@@ -5977,25 +5977,107 @@ try{applyPrefs();renderAvatar();loadSubStatus();
   if (typeof module !== 'undefined' && module.exports) module.exports = API;
 })(typeof window !== 'undefined' ? window : globalThis);
 
-/* ================= ADDED: BET DISCIPLINE DASHBOARD RENDERER ================= */
+/* ================= ADDED: BET DISCIPLINE DASHBOARD + WRITE-SIDE ================= */
 /* ============================================================================
- * ADDED FEATURE · BET DISCIPLINE — dashboard renderer  (label: BET DISCIPLINE)
- * Uses window.Discipline (injected above) + the app's existing sbFetch/$ helpers.
- * Fails soft: if the discipline_* tables aren't deployed yet, shows a setup card.
+ * ADDED FEATURE · BET DISCIPLINE — dashboard + write-side  (label: BET DISCIPLINE)
+ * Uses window.Discipline (injected above) + the app's existing sbFetch/sbGet/$/
+ * edToken/SB_URL/SB_KEY helpers. Fails soft if the discipline_* tables aren't
+ * deployed yet (shows a setup card).
  * ========================================================================== */
+
+/* ---- write helper: POST/PATCH through the user's token (RLS-scoped) ---- */
+async function sbWrite(table,row,method){
+  var t=await edToken();
+  var r=await fetch(SB_URL+'/rest/v1/'+table,{
+    method:method||'POST',
+    headers:{apikey:SB_KEY,authorization:'Bearer '+t,'Content-Type':'application/json',Prefer:'return=representation'},
+    body:JSON.stringify(row)});
+  if(r.status===401){var n=await edRefreshSession();if(n&&n.access_token){
+    r=await fetch(SB_URL+'/rest/v1/'+table,{method:method||'POST',
+      headers:{apikey:SB_KEY,authorization:'Bearer '+n.access_token,'Content-Type':'application/json',Prefer:'return=representation'},
+      body:JSON.stringify(row)});}}
+  if(!r.ok)throw new Error('write '+table+' '+r.status);
+  var j=await r.json();return Array.isArray(j)?j[0]:j;
+}
+
+/* ---- map a limit-violation code to its discipline_events breach type ---- */
+var DISC_BREACH={daily_bankroll_limit:'breach_daily_limit',weekly_bankroll_limit:'breach_weekly_limit',
+  monthly_bankroll_limit:'breach_monthly_limit',max_unit_size:'breach_max_unit',max_exposure_per_sport:'breach_sport_exposure'};
+
+/* ---- EdgeDeskDiscipline: the client API bet-placement code calls ---- */
+window.EdgeDeskDiscipline={
+  async loadCommitments(){
+    var [cs,locks]=await Promise.all([
+      sbGet('commitments?select=*&enabled=eq.true'),
+      sbGet('precommitment_locks?select=commitment_id&status=eq.active')
+    ]);
+    var locked={};(locks||[]).forEach(function(l){locked[l.commitment_id]=true;});
+    return (cs||[]).map(function(c){return {rule_type:c.rule_type,threshold:c.threshold,params:c.params,scope:c.scope,enabled:true,locked:!!locked[c.id]};});
+  },
+  async loadRules(){return (await sbGet('discipline_rules?select=name,rule_type,predicate,action,enabled&enabled=eq.true'))||[];},
+  async todayContext(){
+    var since=new Date();since.setHours(0,0,0,0);
+    var day=await sbGet('bet_history?select=stake,sport,placed_at&placed_at=gte.'+since.toISOString());
+    var wStart=new Date(Date.now()-7*864e5).toISOString();
+    var week=await sbGet('bet_history?select=stake&placed_at=gte.'+wStart);
+    var exp={};(day||[]).forEach(function(b){exp[b.sport]=(exp[b.sport]||0)+ +b.stake;});
+    var recent=await sbGet('bet_history?select=result&order=placed_at.desc&limit=10');
+    var ls=0;(recent||[]).some(function(b){if(b.result==='loss'){ls++;return false;}return true;});
+    return {dailyStaked:(day||[]).reduce(function(s,b){return s+ +b.stake;},0),betsToday:(day||[]).length,
+      weeklyStaked:(week||[]).reduce(function(s,b){return s+ +b.stake;},0),sportExposure:exp,lossStreak:ls};
+  },
+  /* run the friction + bias checks BEFORE a bet is placed */
+  async precheck(bet){
+    var [commitments,rules,ctx,history]=await Promise.all([
+      this.loadCommitments(),this.loadRules(),this.todayContext(),
+      sbGet('bet_history?select=stake,stake_units,edge_pct,result,sport,market,odds_american,placed_at&order=placed_at.desc&limit=25')
+    ]);
+    var evalr=Discipline.evaluateBet(bet,commitments,rules,ctx);
+    var behaviors=Discipline.detectBehaviors(bet,history||[],{minEdge:1,baseUnit:0.01});
+    return {violations:evalr.violations,action:evalr.action,behaviors:behaviors,ctx:ctx};
+  },
+  /* record a placed bet (optionally an override) + all its side-logs */
+  async record(decision,bet,pre){
+    pre=pre||{violations:[],behaviors:[]};
+    var betRow=null;
+    if(decision!=='skip'){
+      betRow=await sbWrite('bet_history',{sport:bet.sport,market:bet.market,book:bet.book,bet_type:bet.bet_type||'single',
+        parlay_legs:bet.parlay_legs||1,odds_american:bet.odds_american,edge_pct:bet.edge_pct,ev_pct:bet.ev_pct,
+        confidence:bet.confidence,stake:bet.stake,stake_units:bet.stake_units,bankroll_at:bet.bankroll_at});
+    }
+    var isOverride=decision==='override';
+    await sbWrite('decision_logs',{decision:decision==='skip'?'skip':(isOverride?'override':'place'),
+      bet_id:betRow?betRow.id:null,sport:bet.sport,edge_pct:bet.edge_pct,ev_pct:bet.ev_pct,proposed_stake:bet.stake,
+      est_money_preserved:decision==='skip'?bet.stake:null,
+      rules_triggered:(pre.violations||[]).map(function(v){return v.code;})});
+    if(isOverride){
+      var locked=(pre.violations||[]).some(function(v){return v.locked;});
+      await sbWrite('discipline_overrides',{bet_id:betRow?betRow.id:null,
+        rules_violated:(pre.violations||[]).map(function(v){return v.code;}),was_locked:locked});
+      // breach events feed the bankroll-adherence score component
+      for(var i=0;i<(pre.violations||[]).length;i++){var v=pre.violations[i];var et=DISC_BREACH[v.code];
+        if(et)await sbWrite('discipline_events',{event_type:et,weight:1,payload:{locked:!!v.locked,rule:v.code}});}
+    }
+    for(var j=0;j<(pre.behaviors||[]).length;j++){var b=pre.behaviors[j];
+      await sbWrite('behavior_events',{kind:b.kind,bet_id:betRow?betRow.id:null,payload:b.evidence||{}});}
+    return betRow;
+  }
+};
+
+/* ---------- dashboard rendering ---------- */
 function discBand(b){return (b==='excellent'||b==='strong')?'var(--pos)':(b==='fair')?'var(--warn)':'var(--neg)';}
-function discBar(label,val,color){
+function discBar(label,val){
   var w=Math.max(0,Math.min(100,val));
   return '<div style="margin:8px 0"><div style="display:flex;justify-content:space-between;font-size:11px;color:var(--dim);margin-bottom:3px">'
-    +'<span>'+label+'</span><span class="mono" style="color:'+color+'">'+Math.round(val)+'</span></div>'
+    +'<span>'+label+'</span><span class="mono" style="color:var(--accent)">'+Math.round(val)+'</span></div>'
     +'<div style="height:6px;background:var(--surface2);border-radius:4px;overflow:hidden">'
-    +'<div style="height:100%;width:'+w+'%;background:'+color+'"></div></div></div>';
+    +'<div style="height:100%;width:'+w+'%;background:var(--accent)"></div></div></div>';
 }
 function discCardHTML(s){
   var c=s.components, col=discBand(s.band);
   var comps=[['Bankroll',c.bankroll],['Positive EV',c.ev],['Consistency',c.consistency],
              ['CLV',c.clv],['Commitment',c.commitment],['Chase-free',c.chase]];
-  var bars=comps.map(function(p){return discBar(p[0],p[1],'var(--accent)');}).join('');
+  var bars=comps.map(function(p){return discBar(p[0],p[1]);}).join('');
   var note=s.details&&s.details.note==='no_activity'
     ? '<p class="cap">No bets in the last 30 days. Restraint is never a discipline failure — this is a perfect baseline.</p>' : '';
   return '<div class="clvhero"><div class="clvhero-h">'
@@ -6003,7 +6085,7 @@ function discCardHTML(s){
     +'<span class="spacer"></span><span class="pill">'+s.n_bets+' bets · 30d</span></div>'
     +bars+note+'</div>';
 }
-async function discRenderNudges(inputs){
+function discRenderNudges(inputs){
   var state={skippedNegThisWeek:inputs.skipsNeg||0, noEdgesToday:!(inputs.bets&&inputs.bets.length)};
   var ns=(window.Discipline?Discipline.generateNudges(state):[]);
   if(!ns.length)return '';
@@ -6013,7 +6095,7 @@ async function discRenderNudges(inputs){
 }
 async function discRenderProjections(){
   try{
-    var proj=await sbGet('game_projections?select=game_id,home_win_prob,confidence,category_scores&order=confidence.desc&limit=8');
+    var proj=await sbGet('game_projections?select=game_id,home_win_prob,confidence&order=confidence.desc&limit=8');
     if(!proj||!proj.length)return '<h3>Model projections</h3><div class="empty">No projections yet. Deploy the prediction engine (migration 010 + project-game Edge Function).</div>';
     var rows=proj.map(function(p){
       return '<div class="clvhero" style="padding:10px 12px"><div class="clvhero-h">'
@@ -6024,6 +6106,49 @@ async function discRenderProjections(){
     return '<h3>Model projections <span style="font-size:10px;color:var(--faint)">reads game_projections</span></h3>'+rows;
   }catch(e){ return ''; }
 }
+
+/* ---- "Record a bet" form: runs precheck (friction) then logs the decision ---- */
+function discFormHTML(){
+  var i='background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:8px;font-family:inherit;font-size:13px;width:100%';
+  return '<h3>Record a bet</h3><div class="clvhero"><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">'
+    +'<input id="dfSport" placeholder="Sport (e.g. MLB)" style="'+i+'">'
+    +'<input id="dfStake" type="number" placeholder="Stake $" style="'+i+'">'
+    +'<input id="dfOdds" type="number" placeholder="Odds (e.g. -110)" style="'+i+'">'
+    +'<input id="dfEdge" type="number" step="0.1" placeholder="Edge %" style="'+i+'">'
+    +'</div><button onclick="discCheck()" class="refreshbtn" style="margin-top:10px;width:100%;padding:10px">Check this bet</button>'
+    +'<div id="dfResult"></div></div>';
+}
+window.discCheck=async function(){
+  var bank=50; // placeholder bankroll fallback if no profile
+  try{var pf=await sbGet('discipline_profiles?select=bankroll,base_unit_pct&limit=1');if(pf&&pf[0]){bank=+pf[0].bankroll||bank;}}catch(_){}
+  var stake=+($('dfStake').value||0);
+  var bet={sport:($('dfSport').value||'').toUpperCase()||'MLB',stake:stake,odds_american:+($('dfOdds').value||0),
+    edge_pct:+($('dfEdge').value||0),ev_pct:+($('dfEdge').value||0),bet_type:'single',parlay_legs:1,
+    bankroll_at:bank,stake_units:bank?stake/bank/0.01:0,placed_at:new Date().toISOString()};
+  window._discBet=bet;
+  var out=$('dfResult');out.innerHTML='<p class="cap">Checking…</p>';
+  try{
+    var pre=await EdgeDeskDiscipline.precheck(bet);window._discPre=pre;
+    var vio=pre.violations.map(function(v){return '<div style="color:'+(v.severity==='warning'?'var(--neg)':'var(--warn)')+';font-size:12px">• '+v.label+(v.locked?' (locked)':'')+'</div>';}).join('');
+    var beh=pre.behaviors.map(function(b){return '<div class="cap" style="margin:4px 0">⚠ '+b.headline+'</div>';}).join('');
+    var clean=!pre.violations.length&&!pre.behaviors.length;
+    var actions;
+    if(clean){ actions='<button onclick="discDo(\'place\')" class="refreshbtn" style="width:100%;padding:10px;margin-top:8px">Place bet</button>'; }
+    else{ // choice architecture: Skip is primary + prominent, Override is secondary/quiet
+      actions='<button onclick="discDo(\'skip\')" class="refreshbtn" style="width:100%;padding:12px;margin-top:8px;background:var(--pos);border-color:var(--pos)">Skip bet (recommended)</button>'
+        +'<button onclick="discDo(\'override\')" style="width:100%;padding:8px;margin-top:6px;background:none;border:1px solid var(--border);color:var(--faint);border-radius:8px;font-size:12px">Override &amp; place anyway</button>';
+    }
+    out.innerHTML=(vio||beh?('<div style="margin-top:10px">'+vio+beh+'</div>'):'<p class="cap" style="color:var(--pos);margin-top:10px">Clears your rules. No bias flags.</p>')+actions;
+  }catch(e){ out.innerHTML='<p class="cap" style="color:var(--warn)">Setup required — deploy migrations 001–003. ('+(e.message||e)+')</p>'; }
+};
+window.discDo=async function(decision){
+  var out=$('dfResult');out.innerHTML='<p class="cap">Saving…</p>';
+  try{ await EdgeDeskDiscipline.record(decision,window._discBet,window._discPre);
+    out.innerHTML='<p class="cap" style="color:var(--pos)">Logged '+decision+'. Refreshing score…</p>';
+    setTimeout(loadDiscipline,600);
+  }catch(e){ out.innerHTML='<p class="cap" style="color:var(--warn)">'+(e.message||e)+'</p>'; }
+};
+
 window.loadDiscipline=async function(){
   var el=document.getElementById('v-discipline'); if(!el)return;
   el.innerHTML='<div class="row-between"><h2 style="margin:0">Bet Discipline</h2></div>'
@@ -6033,11 +6158,11 @@ window.loadDiscipline=async function(){
   try{
     var inputs=await Discipline.loadScoreInputs(undefined,30);
     var s=Discipline.score(inputs,{minEdge:1,baseUnit:0.01});
-    var html=discCardHTML(s)+(await discRenderNudges(inputs))+(await discRenderProjections());
-    body.innerHTML=html;
+    body.innerHTML=discCardHTML(s)+discFormHTML()+discRenderNudges(inputs)+(await discRenderProjections());
   }catch(e){
     body.innerHTML='<div class="clvhero"><div class="clvhero-h"><span class="lbl" style="color:var(--warn)">Setup required</span></div>'
-      +'<p class="cap">The Bet Discipline tables aren’t reachable yet. Run migrations 001–003 in Supabase (and 010 for model projections), then reload.<br><span class="mono" style="color:var(--faint)">'+(e&&e.message?e.message:e)+'</span></p></div>';
+      +'<p class="cap">The Bet Discipline tables aren’t reachable yet. Run migrations 001–003 in Supabase (and 010 for model projections), then reload.<br><span class="mono" style="color:var(--faint)">'+(e&&e.message?e.message:e)+'</span></p></div>'
+      +discFormHTML();
   }
 };
 
