@@ -677,6 +677,58 @@ body.ed-large-text .set-lbl,body.ed-large-text .lead-sel{font-size:14px}
 .fi-brief .bs a{display:block;font-size:10.5px;color:var(--accent);margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .fi-brief .bsh{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--faint);letter-spacing:.05em;text-transform:uppercase}
 </style>
+<style id="eqs-style">
+/* Edge Quality Score card -- matches EdgeDesk dark terminal tokens */
+.eqs{border:1px solid var(--border);border-radius:10px;padding:12px 13px;margin:10px 0;background:var(--surface2)}
+.eqs-top{display:flex;align-items:center;gap:14px;margin-bottom:11px}
+.eqs-score{display:flex;align-items:baseline;gap:2px;font-family:'JetBrains Mono',monospace}
+.eqs-num{font-size:30px;font-weight:700;line-height:1;color:var(--text)}
+.eqs-den{font-size:13px;color:var(--faint)}
+.eqs.g-A .eqs-num{color:var(--pos)}
+.eqs.g-B .eqs-num{color:var(--accent)}
+.eqs.g-C .eqs-num{color:var(--warn)}
+.eqs.g-PASS .eqs-num{color:var(--neg)}
+.eqs-verdict{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.eqs-grade{font-weight:700;font-size:14px;padding:2px 10px;border-radius:6px;border:1px solid var(--border);color:var(--dim)}
+.eqs.g-A .eqs-grade{color:var(--pos);border-color:var(--pos)}
+.eqs.g-B .eqs-grade{color:var(--accent);border-color:var(--accent)}
+.eqs.g-C .eqs-grade{color:var(--warn);border-color:var(--warn)}
+.eqs.g-PASS .eqs-grade{color:var(--neg);border-color:var(--neg)}
+.eqs-dec{font-weight:700;font-size:12px;letter-spacing:.06em;padding:3px 11px;border-radius:6px}
+.d-BET{color:#0d0f13;background:var(--pos)}
+.d-WATCH{color:#0d0f13;background:var(--warn)}
+.d-PASS{color:#fff;background:var(--neg)}
+.eqs-prov{font-size:10.5px;color:var(--warn);border:1px dashed var(--warn);padding:1px 7px;border-radius:5px}
+.eqs-bd{display:flex;flex-direction:column;gap:6px;margin-bottom:9px}
+.eqs-row{display:grid;grid-template-columns:96px minmax(0,1fr) 66px 40px;align-items:center;gap:9px;font-size:12px}
+.eqs-k{color:var(--dim)}
+.eqs-v{color:var(--text);font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.eqs-track{height:5px;background:var(--border);border-radius:3px;overflow:hidden}
+.eqs-fill{display:block;height:100%;background:var(--accent)}
+.eqs-pt{font-family:'JetBrains Mono',monospace;text-align:right;color:var(--text);font-size:12px}
+.eqs-pt i{color:var(--faint);font-style:normal}
+.eqs-move{display:flex;align-items:center;gap:8px;font-size:12px;font-family:'JetBrains Mono',monospace;padding:8px 0;border-top:1px solid var(--border);border-bottom:1px solid var(--border);margin-bottom:9px}
+.eqs-move b{color:var(--text)}
+.eqs-mk{color:var(--faint);font-size:10px;text-transform:uppercase;letter-spacing:.04em}
+.eqs-arrow{color:var(--dim)}
+.eqs-tag{margin-left:auto;padding:2px 9px;border-radius:5px;font-size:11px}
+.eqs-tag.up{color:var(--pos);background:rgba(47,180,124,.12)}
+.eqs-tag.dn{color:var(--neg);background:rgba(226,96,68,.12)}
+.eqs-tag.mut{color:var(--dim);background:var(--surface)}
+.eqs-ex{display:flex;gap:16px;flex-wrap:wrap}
+.eqs-col{flex:1;min-width:180px}
+.eqs-h{font-size:11px;font-weight:700;letter-spacing:.06em;margin-bottom:4px}
+.eqs-h.up{color:var(--pos)}
+.eqs-h.dn{color:var(--neg)}
+.eqs-ex ul{margin:0;padding-left:16px}
+.eqs-ex li{font-size:11px;color:var(--dim);margin:2px 0;line-height:1.42}
+@media(max-width:560px){
+  .eqs-row{grid-template-columns:80px minmax(0,1fr) 40px;grid-auto-rows:auto}
+  .eqs-row .eqs-track{grid-column:1 / -1;order:5}
+  .eqs-num{font-size:26px}
+}
+
+</style>
 </head>
 <body>
 <header class="appbar"><div class="appbar-in">
@@ -2160,6 +2212,131 @@ function modelBlock(e){
    Every edge that appears anywhere is now tappable and shows the same full read:
    market vs sharp fair, the CLV-history verdict, the model line (MLB), and which
    way the line is going. domid namespaces each card so toggles never collide. */
+/* ===== Edge Quality Score + Bet Decision (injected, MARKET-only) =============
+   Deterministic quality meter on a SINGLE MARKET signal. Combines only inputs
+   already computed from `signals`: raw edge, signal-class CLV history (beat-close
+   rate + avg CLV via sliceStat), book count, open->current movement (moveLabel),
+   and sharp-anchor availability (anchorOf). It NEVER blends MODEL or CONSENSUS,
+   never predicts a game outcome, and exposes every component's contribution so
+   the score is auditable. Unproven CLV history caps the score below A by design:
+   placement +EV is not proven closing value.
+   ============================================================================ */
+function eqsClamp(x,a,b){return Math.max(a,Math.min(b,x));}
+function eqsCompute(e){
+  var st=(typeof sliceStat==='function')?sliceStat(e):null;
+  var mv=(typeof moveLabel==='function')?moveLabel(e):null;
+  var a=(typeof anchorOf==='function')?anchorOf(e):{kind:'unknown',short:'unknown anchor'};
+  var edge=+e.edge||0, nb=+e.n_books||0;
+  var parts=[];
+
+  /* 1) signal-class CLV history (max 34) -- the heaviest input, per the CLV thesis */
+  var clvProven=false, clvFade=false, clvPts=0, clvVal;
+  if(st&&st.rate!=null&&st.n>=40){
+    clvProven=true; var r=st.rate, c=st.clv;
+    if(r<0.50&&c<0){clvFade=true; clvPts=3; clvVal=(r*100).toFixed(0)+'% beat close &middot; fades';}
+    else{
+      var rp=eqsClamp((r-0.50)/0.12,0,1)*28;
+      var cp=eqsClamp(c/0.02,0,1)*6;
+      clvPts=Math.round(rp+cp);
+      clvVal=(r*100).toFixed(0)+'% beat, CLV '+(c>=0?'+':'')+(c*100).toFixed(1)+'% (n'+st.n+')';
+    }
+  }else if(st&&st.rate!=null&&st.n>=15){
+    clvPts=Math.round(eqsClamp((st.rate-0.50)/0.12,0,1)*18);
+    clvVal=(st.rate*100).toFixed(0)+'% beat &middot; thin (n'+st.n+')';
+  }else{
+    clvPts=0; clvVal='unproven'+(st&&st.n?' (n'+st.n+')':'');
+  }
+  parts.push({k:'CLV history',v:clvVal,p:clvPts,m:34});
+
+  /* 2) sharp anchor availability (max 20) */
+  var ap=a.kind==='sharp'?20:a.kind==='soft'?8:a.kind==='unknown'?4:0;
+  parts.push({k:'Sharp anchor',v:a.short,p:ap,m:20});
+
+  /* 3) book confirmation (max 16) */
+  var bp=nb>=6?16:nb>=5?13:nb>=4?10:nb>=3?6:2;
+  parts.push({k:'Book confirm',v:nb+' book'+(nb===1?'':'s'),p:bp,m:16});
+
+  /* 4) raw edge (max 16) -- oversized edges are a stale-price flag, not rewarded */
+  var ep; if(edge<=0)ep=0; else if(edge>0.06)ep=8;
+  else ep=Math.round(eqsClamp(edge/0.03,0,1)*14+eqsClamp((edge-0.03)/0.03,0,1)*2);
+  parts.push({k:'Raw edge',v:(edge>=0?'+':'')+(edge*100).toFixed(2)+'%',p:ep,m:16});
+
+  /* 5) line movement (max 14) */
+  var ls=e.last_seen_at?new Date(e.last_seen_at).getTime():0;
+  var stale=ls?((Date.now()-ls)/60000)>=45:true;
+  var mvk=mv?mv.cls:'mv-flat';
+  var mp=mvk==='mv-steam'?14:mvk==='mv-drift'?3:(stale?4:8);
+  parts.push({k:'Line movement',v:(mv?mv.txt.split(' ')[0]:'flat')+((mvk==='mv-flat'&&stale)?' &middot; stale':''),p:mp,m:14});
+
+  var raw=parts.reduce(function(s,p){return s+p.p;},0);
+  var provisional=!clvProven;
+  var score=eqsClamp(Math.round(provisional?Math.min(raw,66):raw),0,100);
+
+  var hardPass=(edge<=0)||(nb<3)||clvFade;
+  var grade=hardPass?'PASS':(score>=75?'A':score>=60?'B':score>=45?'C':'PASS');
+  var decision;
+  if(hardPass||grade==='PASS')decision='PASS';
+  else if(clvProven&&!clvFade&&st.rate>=0.54&&st.clv>=0.003&&edge>0&&score>=62&&a.kind!=='none')decision='BET';
+  else decision='WATCH';
+
+  /* explainability -- every clause is a true fact about this row, not a prediction */
+  var why=[], risk=[];
+  if(edge>0)why.push('Positive expected value ('+(edge>=0?'+':'')+(edge*100).toFixed(2)+'%) at the best price');
+  if(nb>=5)why.push(nb+' books confirm the price');
+  if(a.kind==='sharp')why.push('Pinnacle sharp anchor confirms the fair line');
+  if(clvProven&&!clvFade&&st.rate>=0.54)why.push('This signal class beat the close '+(st.rate*100).toFixed(0)+'% over '+st.n+' graded');
+  if(mvk==='mv-steam')why.push('Line steaming toward the pick (market backing it)');
+  if(a.kind!=='sharp')risk.push('No Pinnacle anchor '+(a.kind==='soft'?'&mdash; fair line is multi-book consensus':a.kind==='none'?'&mdash; no fair line stored':'&mdash; anchor not yet recorded'));
+  if(nb<4)risk.push('Only '+nb+' book'+(nb===1?'':'s')+' quoting &mdash; thin liquidity');
+  if(clvFade)risk.push('This class fades by close ('+(st.rate*100).toFixed(0)+'% beat, avg CLV '+(st.clv>=0?'+':'')+(st.clv*100).toFixed(1)+'%)');
+  else if(!clvProven)risk.push('Signal-class CLV unproven'+(st&&st.n?' (only '+st.n+' graded)':'')+' &mdash; treat as a hypothesis');
+  if(edge>0.06)risk.push('Edge this large often signals a stale or erroneous price');
+  if(stale)risk.push('Last re-priced over 45m ago &mdash; verify it is still live');
+  if(mvk==='mv-drift')risk.push('Line drifting away &mdash; market fading it');
+
+  /* movement timeline */
+  var GEok=(typeof GE!=='undefined'&&GE&&typeof GE.decToAm==='function');
+  var openAm=(e.first_best_dec&&GEok)?GE.decToAm(e.first_best_dec):null;
+  var curAm=(e.best_dec&&GEok)?GE.decToAm(e.best_dec):null;
+  var read=mvk==='mv-steam'?(a.kind==='sharp'?'sharp support':'market support')
+          :mvk==='mv-drift'?'market resistance (fading)'
+          :(stale?'stale number':'flat &mdash; no move yet');
+
+  return {score:score,grade:grade,decision:decision,provisional:provisional,
+    parts:parts,why:why,risk:risk,open:openAm,cur:curAm,read:read};
+}
+function eqsBar(p,m){var pc=Math.round(100*p/(m||1));return '<span class="eqs-track"><span class="eqs-fill" style="width:'+eqsClamp(pc,0,100)+'%"></span></span>';}
+function eqsCardHTML(e,q){
+  if(!q)q=eqsCompute(e);
+  var od=function(a){return a==null?'&mdash;':(a>0?'+'+a:''+a);};
+  var bd=q.parts.map(function(p){
+    return '<div class="eqs-row"><span class="eqs-k">'+p.k+'</span>'+
+      '<span class="eqs-v">'+p.v+'</span>'+eqsBar(p.p,p.m)+
+      '<span class="eqs-pt">'+p.p+'<i>/'+p.m+'</i></span></div>';
+  }).join('');
+  var whyHtml=q.why.length?('<div class="eqs-col"><div class="eqs-h up">WHY BET</div><ul>'+q.why.map(function(x){return '<li>'+x+'</li>';}).join('')+'</ul></div>'):'';
+  var riskHtml=q.risk.length?('<div class="eqs-col"><div class="eqs-h dn">RISKS</div><ul>'+q.risk.map(function(x){return '<li>'+x+'</li>';}).join('')+'</ul></div>'):'';
+  var tagCls=(q.read.indexOf('support')>=0?'up':(q.read.indexOf('resistance')>=0||q.read.indexOf('stale')>=0)?'dn':'mut');
+  var move='<div class="eqs-move"><span class="eqs-mk">open</span><b>'+od(q.open)+'</b>'+
+    '<span class="eqs-arrow">&rarr;</span><span class="eqs-mk">now</span><b>'+od(q.cur)+'</b>'+
+    '<span class="eqs-tag '+tagCls+'">'+q.read+'</span></div>';
+  return '<div class="gd-sec">Edge Quality</div>'+
+    '<div class="eqs g-'+q.grade+'">'+
+      '<div class="eqs-top">'+
+        '<div class="eqs-score"><span class="eqs-num">'+q.score+'</span><span class="eqs-den">/100</span></div>'+
+        '<div class="eqs-verdict">'+
+          '<span class="eqs-grade">'+q.grade+'</span>'+
+          '<span class="eqs-dec d-'+q.decision+'">'+q.decision+'</span>'+
+          (q.provisional?'<span class="eqs-prov">provisional &middot; CLV unproven</span>':'')+
+        '</div>'+
+      '</div>'+
+      '<div class="eqs-bd">'+bd+'</div>'+
+      move+
+      '<div class="eqs-ex">'+whyHtml+riskHtml+'</div>'+
+    '</div>';
+}
+/* ===== end Edge Quality module ============================================== */
+
 function receiptHTML(e){
   var am=GE.decToAm(e.best_dec),od=am>0?'+'+am:am;
   var haveFair=(e.sharp_fair!=null);
@@ -2200,7 +2377,7 @@ function receiptHTML(e){
     (ttg?'<div class="gd-line"><span class="l">Game starts</span><span class="v">'+ttg.txt+'</span></div>':'');
   var vHead=vd.headline||(vd.tier==='good'?'\u25c9 Worth a real look':vd.tier==='ok'?'\u25c9 Legit, but modest':vd.tier==='fade'?'\u25c9 Fades by close \u2014 placement +EV only':'\u25c9 Marginal \u2014 verify first');
   var verdict='<div class="gd-verdict '+vd.tier+'"><b>'+vHead+'.</b> '+vd.text+'</div>';
-  return match+bars+marketRead+anchorNote(e)+fairModelNote(e)+corrobNote(e)+limitNote(e)+modelBlock(e)+detail+teamFormRows(e)+verdict+trec;
+  return match+bars+eqsCardHTML(e)+marketRead+anchorNote(e)+fairModelNote(e)+corrobNote(e)+limitNote(e)+modelBlock(e)+detail+teamFormRows(e)+verdict+trec;
 }
 /* wrap any edge into a tappable card with the shared receipt */
 function receiptInner(e,domid){
