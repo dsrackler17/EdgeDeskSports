@@ -729,6 +729,112 @@ body.ed-large-text .set-lbl,body.ed-large-text .lead-sel{font-size:14px}
 }
 
 </style>
+<style id="recdash-style">
+/* ===== Records dashboard (v2) ===== */
+.recpane{animation:rfade .18s ease}
+@keyframes rfade{from{opacity:.4;transform:translateY(3px)}to{opacity:1;transform:none}}
+.rec-note{font-size:10.5px;line-height:1.5;color:var(--faint);border-left:2px solid rgba(217,154,43,.5);padding:6px 0 6px 9px;margin:8px 0 10px}
+.rec-note b{color:var(--text)}
+.rec-count{font-size:11px;color:var(--faint);font-family:'JetBrains Mono',monospace;margin:0 0 10px}
+.rkpis{display:grid;grid-template-columns:repeat(2,1fr);gap:9px;margin:4px 0 6px}
+@media(min-width:560px){.rkpis{grid-template-columns:repeat(3,1fr)}}
+@media(min-width:820px){.rkpis{grid-template-columns:repeat(4,1fr)}}
+.rkpi{background:var(--surface2);border:1px solid var(--border);border-radius:11px;padding:11px 12px;transition:border-color .15s ease}
+.rkpi:hover{border-color:rgba(77,141,255,.45)}
+.rkpi .n{font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;line-height:1.15;word-break:break-word}
+.rkpi .l{font-size:9.5px;color:var(--dim);text-transform:uppercase;letter-spacing:.03em;margin-top:3px}
+.rkpi .s{font-size:9px;color:var(--faint);margin-top:2px;line-height:1.4}
+.rtag{display:inline-block;font-size:8.5px;padding:1px 5px;border-radius:4px;border:1px solid var(--border);color:var(--faint);vertical-align:2px;margin-left:5px;letter-spacing:.04em;font-family:'Inter',sans-serif;font-weight:600}
+.rtag.sim{color:var(--warn);border-color:rgba(217,154,43,.4)}
+.rtag.small{color:var(--neg);border-color:rgba(226,96,68,.4)}
+.rpos{color:var(--pos)}.rneg{color:var(--neg)}.rmut{color:var(--dim)}
+.rsports{display:grid;grid-template-columns:1fr;gap:9px;margin:8px 0 14px}
+@media(min-width:640px){.rsports{grid-template-columns:1fr 1fr}}
+.rsport{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px 13px;transition:transform .12s ease,border-color .15s ease}
+.rsport:hover{border-color:rgba(77,141,255,.4);transform:translateY(-1px)}
+.rsport-h{display:flex;align-items:center;gap:8px;margin-bottom:9px}
+.rsport-h b{font-size:13px}
+.rsport-h .n{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--faint);margin-left:auto}
+.rsport-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:7px 6px}
+.rsport .m .v{font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:700}
+.rsport .m .k{font-size:8.5px;color:var(--faint);text-transform:uppercase;letter-spacing:.03em;margin-top:1px}
+.rcharts{display:grid;grid-template-columns:1fr;gap:10px}
+@media(min-width:820px){.rcharts{grid-template-columns:1fr 1fr}}
+.rchart{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px 12px 9px;transition:border-color .15s ease}
+.rchart:hover{border-color:rgba(77,141,255,.3)}
+.rchart h4{margin:0 0 2px;font-size:12.5px}
+.rchart .sub{font-size:10px;color:var(--faint);margin-bottom:8px;line-height:1.45}
+.rchart svg{display:block;width:100%;height:auto}
+.rchart .scrollx{overflow-x:auto;-webkit-overflow-scrolling:touch}
+.rchart .bnote{font-size:10.5px;color:var(--faint);border:1px dashed var(--border);border-radius:8px;padding:10px;line-height:1.5}
+.rfilters{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:11px;margin-bottom:12px}
+.rfilters .fgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+@media(min-width:760px){.rfilters .fgrid{grid-template-columns:repeat(4,1fr)}}
+.rfilters .full{grid-column:1/-1}
+.rfilters label{font-size:9px;text-transform:uppercase;letter-spacing:.04em;color:var(--faint);display:block;margin-bottom:4px}
+.rfilters select,.rfilters input{padding:8px 9px;font-size:13px;border-radius:8px}
+.rf-actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:10px;align-items:center}
+.rf-head{display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none}
+.rf-head h4{margin:0;font-size:12px}
+.rf-head .chev{margin-left:auto;color:var(--faint);transition:transform .15s ease;font-size:11px}
+.rf-head.open .chev{transform:rotate(180deg)}
+.rf-body{margin-top:10px}
+.rbtn{background:transparent;border:1px solid var(--border);color:var(--text);border-radius:8px;padding:7px 11px;font-family:'Inter',sans-serif;font-weight:600;font-size:12px;cursor:pointer;transition:border-color .13s ease,color .13s ease}
+.rbtn:hover{border-color:var(--accent);color:var(--accent)}
+.rbtn:active{transform:scale(.98)}
+.rbtn.acc{background:var(--accent);color:#06122b;border-color:var(--accent)}
+.rbtn.acc:hover{color:#06122b;filter:brightness(1.08)}
+.rbtn.warn{border-color:rgba(217,154,43,.5);color:var(--warn)}
+.rtblwrap{border:1px solid var(--border);border-radius:10px;overflow:auto;max-height:72vh;position:relative;background:var(--surface)}
+.rtbl{width:100%;border-collapse:separate;border-spacing:0;font-family:'JetBrains Mono',monospace;font-size:11px;min-width:980px}
+.rtbl th{position:sticky;top:0;background:var(--surface2);z-index:2;text-align:right;color:var(--faint);font-size:9px;text-transform:uppercase;padding:8px 7px;border-bottom:1px solid var(--border);white-space:nowrap;cursor:pointer;user-select:none}
+.rtbl th.on{color:var(--accent)}
+.rtbl th .rz{position:absolute;right:-3px;top:0;bottom:0;width:7px;cursor:col-resize;z-index:3}
+.rtbl th:first-child,.rtbl td:first-child{text-align:left}
+.rtbl td{text-align:right;padding:7px;border-bottom:1px solid rgba(38,44,54,.55);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:220px}
+.rtbl tr.rrow{cursor:pointer;transition:background .1s ease}
+.rtbl tr.rrow:hover td{background:rgba(77,141,255,.05)}
+.rtbl tr.rrow.open td{background:rgba(77,141,255,.07)}
+.rtbl tr.rdet>td{white-space:normal;text-align:left;background:var(--surface2);padding:0;max-width:none}
+.rdetail{padding:12px 13px;display:grid;grid-template-columns:1fr;gap:4px 18px;font-family:'Inter',sans-serif;font-size:11.5px}
+@media(min-width:640px){.rdetail{grid-template-columns:1fr 1fr}}
+@media(min-width:900px){.rdetail{grid-template-columns:1fr 1fr 1fr}}
+.rdetail .dh{grid-column:1/-1;font-size:10px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--dim);margin-top:4px}
+.rdetail .dr{display:flex;justify-content:space-between;gap:10px;border-bottom:1px dashed rgba(38,44,54,.6);padding:3.5px 0}
+.rdetail .dk{color:var(--faint)}
+.rdetail .dv{font-family:'JetBrains Mono',monospace;text-align:right}
+.rdetail .dfoot{grid-column:1/-1;font-size:10px;color:var(--faint);line-height:1.55;border-top:1px solid var(--border);padding-top:8px;margin-top:6px}
+.rpager{display:flex;align-items:center;gap:8px;margin-top:10px;flex-wrap:wrap}
+.rpager .info{font-size:11px;color:var(--faint);font-family:'JetBrains Mono',monospace;margin-right:auto}
+.rpager select{width:auto;padding:6px 8px;font-size:12px;border-radius:8px}
+.rexport{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:0 0 10px}
+.rexport .grp{display:flex;gap:5px;align-items:center;border:1px solid var(--border);border-radius:9px;padding:5px 7px;background:var(--surface)}
+.rexport .gl{font-size:9px;color:var(--faint);text-transform:uppercase;letter-spacing:.04em;margin-right:2px;font-family:'JetBrains Mono',monospace}
+.rexport .rbtn{padding:5px 9px;font-size:11px}
+.rskel{height:74px;border-radius:11px;background:linear-gradient(90deg,var(--surface2) 25%,#1e232d 50%,var(--surface2) 75%);background-size:200% 100%;animation:rsh 1.1s infinite linear;border:1px solid var(--border)}
+@keyframes rsh{from{background-position:200% 0}to{background-position:-200% 0}}
+.rempty{padding:34px 18px;text-align:center;color:var(--dim);border:1px dashed var(--border);border-radius:12px;font-size:13px;line-height:1.6;margin:8px 0}
+.rempty .big{font-size:22px;margin-bottom:6px}
+.rempty b{color:var(--text)}
+.rempty .rbtn{margin-top:10px}
+.rheatwrap{overflow-x:auto}
+.rheat{display:grid;gap:3px;font-family:'JetBrains Mono',monospace;font-size:9px;min-width:520px}
+.rheat .hh{color:var(--faint);display:flex;align-items:center;justify-content:center;padding:2px}
+.rheat .hl{color:var(--faint);display:flex;align-items:center;padding-right:4px;justify-content:flex-end}
+.rheat .hc{height:24px;border-radius:5px;display:flex;align-items:center;justify-content:center;color:var(--text);border:1px solid rgba(38,44,54,.5)}
+.rstat{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px 13px;margin-bottom:10px}
+.rstat h4{margin:0 0 8px;font-size:12.5px}
+.rstat .rr{display:flex;justify-content:space-between;gap:10px;font-size:12px;padding:4px 0;border-bottom:1px dashed rgba(38,44,54,.55)}
+.rstat .rr:last-child{border-bottom:none}
+.rstat .rk{color:var(--dim)}
+.rstat .rv{font-family:'JetBrains Mono',monospace;text-align:right}
+.rstat .sub{font-size:10px;color:var(--faint);line-height:1.5;margin-top:8px}
+.rstats2{display:grid;grid-template-columns:1fr;gap:10px}
+@media(min-width:760px){.rstats2{grid-template-columns:1fr 1fr}}
+#recSeg{position:sticky;top:calc(env(safe-area-inset-top) + 54px);z-index:15;background:var(--bg)}
+@media(max-width:640px){.rtbl{font-size:10.5px}.rtbl td{padding:6px 5px}.rtbl th{padding:7px 5px}}
+</style>
+
 </head>
 <body>
 <header class="appbar"><div class="appbar-in">
@@ -796,26 +902,96 @@ body.ed-large-text .set-lbl,body.ed-large-text .lead-sel{font-size:14px}
 
   <!-- RECORD -->
   <section id="v-record" class="view hide">
-    <h2>Track record <span class="muted" style="font-weight:400;font-size:11px;text-transform:none">— auto-graded, no manual entry</span></h2>
-    <p class="lede">The closing-line record of the <b style="color:var(--text);font-weight:600">edges the system flagged</b> &mdash; not every priced selection. Each flagged edge is captured, the closing line is snapshotted, and it's graded after the game. This is whether the picks beat the close.</p>
-    <div id="clvChart"></div>
-    <div class="kpis" id="recKpis"></div>
-    <div id="recBasis"></div>
-    <div id="recAnchor"></div>
-    <div id="recCorrob"></div>
-    <div id="recBias"></div>
-    <div id="recSport"></div>
-    <div id="recTtc"></div>
-    <div id="recPrice"></div>
-    <div id="recCal"></div>
-    <div id="recMethod"></div>
-    <div id="recEthos"></div>
-    <h3>What's working <span class="muted" style="font-weight:400;font-size:11px">— sorted by weight</span></h3>
-    <div class="fld" style="margin-bottom:10px"><select id="sliceType"><option value="book">By book</option><option value="sport">By sport</option><option value="market">By market</option><option value="edge_bucket">By edge size</option><option value="ttk_bucket">By time to kickoff</option></select></div>
-    <div class="tblwrap"><table class="tbl" id="sliceTbl"><thead><tr><th>Slice</th><th>n</th><th>Hit</th><th>CLV</th><th>Beat</th><th>Weight</th></tr></thead><tbody></tbody></table></div>
-    <h3>Calibration <span class="muted" style="font-weight:400;font-size:11px">— flagged vs realized</span></h3>
-    <div class="tblwrap"><table class="tbl" id="calibTbl"><thead><tr><th>Edge bucket</th><th>n</th><th>Pred</th><th>Win%</th><th>CLV</th></tr></thead><tbody></tbody></table></div>
-    <button class="btn ghost sm" id="recRefresh" style="margin-top:14px">Refresh</button>
+    <div class="row-between"><h2 style="margin:0">Records</h2><span class="spacer"></span><span class="freshness" id="recFresh">&#8212;</span><button class="refreshbtn" title="Refresh" id="recRefresh">&#8635;</button></div>
+    <p class="lede">The auto-graded closing-line record of the <b style="color:var(--text);font-weight:600">edges the system flagged</b>. Entry prices are frozen at flag time, the close is snapshotted, and every row grades itself after the game. Nothing here is typed in by hand and nothing is estimated.</p>
+
+    <div class="stseg" id="recSeg">
+      <button data-rt="overview" class="on">Overview</button>
+      <button data-rt="charts">Charts</button>
+      <button data-rt="bets">Bets</button>
+      <button data-rt="analytics">Analytics</button>
+      <button data-rt="proof">Proof</button>
+    </div>
+
+    <!-- shared filter bar -->
+    <div class="rfilters" id="recFilters">
+      <div class="rf-head" id="rfHead"><h4>Filters</h4><span id="rfSummary" style="font-size:10px;color:var(--faint);font-family:'JetBrains Mono',monospace"></span><span class="chev">&#9660;</span></div>
+      <div class="rf-body hide" id="rfBody">
+        <div class="fgrid">
+          <div><label>From (kickoff)</label><input type="date" id="rfFrom"></div>
+          <div><label>To (kickoff)</label><input type="date" id="rfTo"></div>
+          <div><label>Sport</label><select id="rfSport"><option value="">All sports</option></select></div>
+          <div><label>Bet type</label><select id="rfMkt"><option value="">All markets</option></select></div>
+          <div><label>Sportsbook</label><select id="rfBook"><option value="">All books</option></select></div>
+          <div><label>Result</label><select id="rfRes"><option value="">All results</option><option value="win">Win</option><option value="loss">Loss</option><option value="push">Push</option></select></div>
+          <div><label>Min edge %</label><input type="number" step="0.1" id="rfEdge" placeholder="e.g. 1.5"></div>
+          <div><label>Min CLV %</label><input type="number" step="0.1" id="rfClv" placeholder="e.g. 0"></div>
+          <div><label>Min odds (American)</label><input type="text" inputmode="text" id="rfOdds" placeholder="-150 or +120"></div>
+          <div class="full"><label>Search (team, selection, book, market, sport, date)</label><input type="search" id="rfQ" placeholder="Search graded signals&hellip;"></div>
+        </div>
+        <div class="rf-actions">
+          <select id="rfSaved" style="width:auto;padding:7px 9px;font-size:12px;border-radius:8px"><option value="">Saved filters&hellip;</option></select>
+          <button class="rbtn" id="rfSave">Save</button>
+          <button class="rbtn" id="rfDel">Delete</button>
+          <span class="spacer"></span>
+          <button class="rbtn warn" id="rfReset">Reset filters</button>
+        </div>
+      </div>
+    </div>
+    <div class="rec-count" id="recCount"></div>
+
+    <!-- OVERVIEW -->
+    <div class="recpane" id="rec-p-overview">
+      <div id="recPoolNote"></div>
+      <div class="rkpis" id="recHero"><div class="rskel"></div><div class="rskel"></div><div class="rskel"></div><div class="rskel"></div></div>
+      <div id="recSimNote"></div>
+      <h3 style="margin:16px 0 8px">Performance by sport</h3>
+      <div class="rsports" id="recSportCards"></div>
+    </div>
+
+    <!-- CHARTS -->
+    <div class="recpane hide" id="rec-p-charts">
+      <div class="rcharts" id="recChartsHost"><div class="rskel" style="height:180px"></div><div class="rskel" style="height:180px"></div></div>
+    </div>
+
+    <!-- BETS TABLE -->
+    <div class="recpane hide" id="rec-p-bets">
+      <div class="rexport" id="recExport">
+        <div class="grp"><span class="gl">Filtered</span><button class="rbtn" data-ex="csv-flt">CSV</button><button class="rbtn" data-ex="json-flt">JSON</button><button class="rbtn" data-ex="xls-flt">Excel</button></div>
+        <div class="grp"><span class="gl">All</span><button class="rbtn" data-ex="csv-all">CSV</button><button class="rbtn" data-ex="json-all">JSON</button><button class="rbtn" data-ex="xls-all">Excel</button></div>
+      </div>
+      <div class="rtblwrap" id="recTblWrap"><table class="rtbl" id="recTbl"><thead></thead><tbody></tbody></table></div>
+      <div class="rpager" id="recPager"></div>
+      <div class="rec-note" style="margin-top:12px">Odds are the frozen flag price where capture stored one, otherwise the first-seen price and marked. Close is the de-vigged sharp fair at close, not a book quote. Stake, notes and confidence scores are not captured by the pipeline, so they are not shown or invented. Sim P/L is a flat 1 unit simulation, not money.</div>
+    </div>
+
+    <!-- ANALYTICS -->
+    <div class="recpane hide" id="rec-p-analytics">
+      <div id="recAdvHost"><div class="rskel" style="height:140px"></div></div>
+    </div>
+
+    <!-- PROOF (legacy honest layer, unchanged renderers) -->
+    <div class="recpane hide" id="rec-p-proof">
+      <div id="recProofTop">
+        <div id="clvChart"></div>
+        <div class="kpis" id="recKpis"></div>
+      </div>
+      <div id="recBasis"></div>
+      <div id="recAnchor"></div>
+      <div id="recCorrob"></div>
+      <div id="recBias"></div>
+      <div id="recSport"></div>
+      <div id="recTtc"></div>
+      <div id="recPrice"></div>
+      <div id="recCal"></div>
+      <div id="recMethod"></div>
+      <div id="recEthos"></div>
+      <h3>What's working <span class="muted" style="font-weight:400;font-size:11px">&mdash; sorted by weight</span></h3>
+      <div class="fld" style="margin-bottom:10px"><select id="sliceType"><option value="book">By book</option><option value="sport">By sport</option><option value="market">By market</option><option value="edge_bucket">By edge size</option><option value="ttk_bucket">By time to kickoff</option></select></div>
+      <div class="tblwrap"><table class="tbl" id="sliceTbl"><thead><tr><th>Slice</th><th>n</th><th>Hit</th><th>CLV</th><th>Beat</th><th>Weight</th></tr></thead><tbody></tbody></table></div>
+      <h3>Calibration <span class="muted" style="font-weight:400;font-size:11px">&mdash; flagged vs realized</span></h3>
+      <div class="tblwrap"><table class="tbl" id="calibTbl"><thead><tr><th>Edge bucket</th><th>n</th><th>Pred</th><th>Win%</th><th>CLV</th></tr></thead><tbody></tbody></table></div>
+    </div>
   </section>
 
   <!-- LEDGER -->
@@ -2445,7 +2621,7 @@ $('fSport').onchange=refreshEdges;$('fMinev').oninput=refreshEdges;$('fBooks').o
 
 /* ===== Record (auto-graded) ===== */
 var WEIGHT_ROWS=[],CALIB=[];
-async function loadRecord(){
+async function loadRecordProof(){
   try{
     var total=await sbCount('');var graded=await sbCount('graded_at=not.is.null');
     // CLEAN edges only: real floor, liquid, and capped to exclude stale-line garbage
@@ -2612,6 +2788,730 @@ function renderSlice(){var t=$('sliceType').value,rows=WEIGHT_ROWS.filter(functi
 function renderCalib(){var order=['<0%','0-2%','2-4%','4-7%','7%+'],rows=CALIB.slice().sort(function(a,b){return order.indexOf(a.edge_bucket)-order.indexOf(b.edge_bucket);});
   $('calibTbl').querySelector('tbody').innerHTML=rows.length?rows.map(function(r){return'<tr><td>'+r.edge_bucket+'</td><td>'+(r.n||0)+'</td><td>'+(r.predicted_edge!=null?(r.predicted_edge*100).toFixed(1)+'%':'—')+'</td><td>'+(r.realized_winrate!=null?(r.realized_winrate*100).toFixed(0)+'%':'—')+'</td><td class="'+((r.realized_clv||0)>=0?'pos':'neg')+'">'+(r.realized_clv!=null?((r.realized_clv>=0?'+':'')+(r.realized_clv*100).toFixed(1)+'%'):'—')+'</td></tr>';}).join(''):'<tr><td colspan="5" class="muted" style="text-align:center;padding:16px">No graded data yet.</td></tr>';}
 $('sliceType').onchange=renderSlice;$('recRefresh').onclick=loadRecord;
+
+/* ===================================================================== */
+/* ===== Records dashboard v2 ==========================================
+   Everything on this screen derives from graded rows already in Supabase.
+   Rules (non-negotiable):
+   - No value is fabricated. A field the pipeline never stored renders as
+     "not captured", never as a guess.
+   - Money-shaped figures (profit, ROI, bankroll, streak sizes in units)
+     are a FLAT 1u SIMULATION at the frozen entry price and are labeled
+     as such everywhere they appear. No stakes exist in the data.
+   - The staged pool selector (strict flagged -> flagged-any -> clv-any
+     -> empty) is identical to the Proof layer so this dashboard can never
+     show a prettier pool than the proof does.
+   ===================================================================== */
+var REC={rows:[],flt:[],loaded:false,loading:false,proofDone:false,
+  pool:{kind:'',label:'',funnel:''},tab:'overview',
+  sort:{k:'_gts',d:-1},page:0,per:25,dirty:{charts:true,analytics:true},open:{},colW:{}};
+var REC_MIN=30; /* below this, everything gets a small-sample tag */
+
+/* ---- tiny format helpers (records only, prefixed to avoid collisions) ---- */
+function recNum(v){return v==null||isNaN(v)?null:+v;}
+function recDecOf(r){var d=recNum(r.flagged_best_dec);if(d!=null&&d>1)return d;d=recNum(r.first_best_dec);return (d!=null&&d>1)?d:null;}
+function recDecIsFlag(r){var d=recNum(r.flagged_best_dec);return d!=null&&d>1;}
+function recAm(d){if(d==null||!(d>1))return null;return d>=2?('+'+Math.round((d-1)*100)):String(Math.round(-100/(d-1)));}
+function recAm2Dec(s){s=String(s||'').trim();if(!s)return null;var a=+s;if(isNaN(a)||a===0)return null;if(Math.abs(a)<100&&a>1)return a;/* already decimal-ish */return a>0?1+a/100:1+100/(-a);}
+function recProfitOf(r){var d=recDecOf(r);if(d==null)return null;if(r.result==='win')return d-1;if(r.result==='loss')return -1;if(r.result==='push')return 0;return null;}
+function recCloseFairDec(r){var p=recNum(r.closing_sharp_fair);return (p!=null&&p>0&&p<1)?1/p:null;}
+function recEdgeOf(r){var e=recNum(r.flagged_edge);return e;}
+function recU(v,dp){if(v==null||isNaN(v))return '\u2014';dp=dp==null?2:dp;return (v>=0?'+':'')+v.toFixed(dp)+'u';}
+function recPc(v,dp){if(v==null||isNaN(v))return '\u2014';dp=dp==null?1:dp;return (v>=0?'+':'')+(v*100).toFixed(dp)+'%';}
+function recPc0(v,dp){if(v==null||isNaN(v))return '\u2014';dp=dp==null?1:dp;return (v*100).toFixed(dp)+'%';}
+function recCls(v){return v==null||isNaN(v)?'rmut':(v>0?'rpos':(v<0?'rneg':'rmut'));}
+function recD(ts){if(!ts)return '\u2014';var d=new Date(ts);if(isNaN(d))return '\u2014';return (d.getMonth()+1)+'/'+d.getDate()+'/'+String(d.getFullYear()).slice(2);}
+function recDT(ts){if(!ts)return '\u2014';var d=new Date(ts);if(isNaN(d))return '\u2014';return d.toLocaleString([],{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});}
+function recEsc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function recMean(a){if(!a.length)return null;var s=0;for(var i=0;i<a.length;i++)s+=a[i];return s/a.length;}
+function recPearson(xs,ys){var n=xs.length;if(n<3)return null;var mx=recMean(xs),my=recMean(ys),sxy=0,sxx=0,syy=0;for(var i=0;i<n;i++){var dx=xs[i]-mx,dy=ys[i]-my;sxy+=dx*dy;sxx+=dx*dx;syy+=dy*dy;}if(!sxx||!syy)return null;return sxy/Math.sqrt(sxx*syy);}
+function recDownload(name,mime,content){try{var blob=new Blob([content],{type:mime});var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();setTimeout(function(){URL.revokeObjectURL(a.href);a.remove();},400);}catch(e){alert('Export failed: '+e.message);}}
+function recEmptyHTML(kind,body,retry){
+  var icon=kind==='error'?'\u26a0':kind==='offline'?'\u26d4':kind==='search'?'\u2315':kind==='loading'?'\u23f3':'\u25cb';
+  return '<div class="rempty"><div class="big">'+icon+'</div>'+body+(retry?'<br><button class="rbtn acc" onclick="loadRecord(true)">Retry</button>':'')+'</div>';
+}
+
+/* ---- data load ---- */
+var REC_COLS='id,event_id,sport_title,sport_key,market,selection,point,home_team,away_team,best_book,commence_time,first_seen_at,flagged_at,graded_at,first_best_dec,flagged_best_dec,best_dec,flagged_edge,edge,clv,result,beat_close,sharp_fair,consensus_fair,closing_sharp_fair,first_has_sharp,has_sharp,first_corrob_n,first_corrob_ref,n_books,pin_dec,pin_opp_dec,is_fav';
+
+async function loadRecord(force){
+  if(REC.loading)return;
+  if(REC.loaded&&!force){recRenderAll();return;}
+  REC.loading=true;
+  $('recHero').innerHTML='<div class="rskel"></div><div class="rskel"></div><div class="rskel"></div><div class="rskel"></div>';
+  $('recSportCards').innerHTML='';$('recPoolNote').innerHTML='';$('recSimNote').innerHTML='';
+  $('recCount').textContent='Loading graded signals\u2026';
+  if(!navigator.onLine){
+    $('recHero').innerHTML='';
+    $('recPoolNote').innerHTML=recEmptyHTML('offline','<b>You are offline.</b><br>The record reads live from the database and nothing is cached as truth. Reconnect and retry.',true);
+    $('recCount').textContent='';
+    REC.loading=false;
+    window.addEventListener('online',function _r(){window.removeEventListener('online',_r);loadRecord(true);});
+    return;
+  }
+  try{
+    var total,graded,nStrict,nFlagAny,nClvAny;
+    var FLAG_STRICT='flagged_at=not.is.null&flagged_edge=gte.0.005&flagged_edge=lte.0.1';
+    var FLAG_ANY='flagged_at=not.is.null';
+    var CLV_ANY='clv=not.is.null';
+    var counts=await Promise.all([sbCount(''),sbCount('graded_at=not.is.null'),
+      sbCount('graded_at=not.is.null&'+FLAG_STRICT),sbCount('graded_at=not.is.null&'+FLAG_ANY),sbCount('graded_at=not.is.null&'+CLV_ANY)]);
+    total=counts[0];graded=counts[1];nStrict=counts[2];nFlagAny=counts[3];nClvAny=counts[4];
+    var EDGEQ,poolLabel,poolKind;
+    if(nStrict>0){EDGEQ=FLAG_STRICT;poolLabel='flagged edges';poolKind='strict';}
+    else if(nFlagAny>0){EDGEQ=FLAG_ANY;poolLabel='flagged edges, edge-magnitude band off';poolKind='flagany';}
+    else if(nClvAny>0){EDGEQ=CLV_ANY;poolLabel='all graded rows with CLV. Provisional, NOT the flagged-edge record';poolKind='clvany';}
+    else{EDGEQ=FLAG_STRICT;poolLabel='no graded row carries CLV yet';poolKind='empty';}
+    REC.pool={kind:poolKind,label:poolLabel,
+      funnel:'Pool funnel: graded '+graded+' \u2192 flagged_at set '+nFlagAny+' \u2192 flagged & 0.5\u20139.9% '+nStrict+' \u2192 CLV present '+nClvAny+'. Live pool: '+poolLabel+'.',
+      total:total,graded:graded};
+    var rows=poolKind==='empty'?[]:await sbGetAll('signals?select='+REC_COLS+'&graded_at=not.is.null&'+EDGEQ+'&order=graded_at.asc',1000,12);
+    rows.forEach(function(r){
+      r._dec=recDecOf(r);r._am=recAm(r._dec);r._flagPrice=recDecIsFlag(r);
+      r._profit=recProfitOf(r);r._edge=recEdgeOf(r);
+      r._closeDec=recCloseFairDec(r);r._closeAm=recAm(r._closeDec);
+      r._gts=r.graded_at?new Date(r.graded_at).getTime():0;
+      r._cts=r.commence_time?new Date(r.commence_time).getTime():r._gts;
+      r._game=(r.away_team&&r.home_team)?(r.away_team+' @ '+r.home_team):(r.home_team||r.away_team||'');
+      r._anchor=r.first_has_sharp===true?'sharp':(r.first_has_sharp===false?'soft':(r.has_sharp===true?'sharp*':(r.has_sharp===false?'soft*':'?')));
+      r._clv=recNum(r.clv);
+      r._q=((r.selection||'')+' '+r._game+' '+(r.sport_title||'')+' '+(r.market||'')+' '+(r.best_book||'')+' '+(r.result||'')+' '+recD(r.commence_time)).toLowerCase();
+    });
+    REC.rows=rows;REC.loaded=true;REC.dirty={charts:true,analytics:true};REC.open={};
+    recBuildFilterOptions();
+    $('dbPill').textContent='DB \u2713';$('dbPill').className='pill ok';
+    var t=new Date();$('recFresh').textContent=rows.length+' graded \u00b7 '+t.getHours()+':'+('0'+t.getMinutes()).slice(-2);
+    if(force){REC.proofDone=false;recProofReset();if(REC.tab==='proof'){REC.proofDone=true;loadRecordProof();}}
+    recApplyFilters();
+  }catch(e){
+    $('dbPill').textContent='DB error';$('dbPill').className='pill err';
+    $('recHero').innerHTML='';
+    $('recPoolNote').innerHTML=recEmptyHTML('error','<b>Could not reach the database.</b><br>'+recEsc(e.message)+'<br>Nothing is shown rather than something stale.',true);
+    $('recCount').textContent='';
+  }finally{REC.loading=false;}
+}
+
+/* ---- filter options built from real data only ---- */
+function recBuildFilterOptions(){
+  function fill(id,vals,label){
+    var sel=$(id);if(!sel)return;var cur=sel.value;
+    var opts='<option value="">'+label+'</option>';
+    vals.forEach(function(v){opts+='<option value="'+recEsc(v)+'">'+recEsc(v)+'</option>';});
+    sel.innerHTML=opts;
+    if(vals.indexOf(cur)>=0)sel.value=cur;
+  }
+  function uniq(key){var m={};REC.rows.forEach(function(r){var v=r[key];if(v)m[v]=1;});return Object.keys(m).sort();}
+  fill('rfSport',uniq('sport_title'),'All sports');
+  fill('rfMkt',uniq('market'),'All markets');
+  fill('rfBook',uniq('best_book'),'All books');
+  recLoadSavedList();
+}
+
+function recFilterState(){
+  return {from:$('rfFrom').value,to:$('rfTo').value,sport:$('rfSport').value,mkt:$('rfMkt').value,
+    book:$('rfBook').value,res:$('rfRes').value,edge:$('rfEdge').value,clv:$('rfClv').value,
+    odds:$('rfOdds').value,q:$('rfQ').value};
+}
+function recSetFilterState(s){
+  s=s||{};$('rfFrom').value=s.from||'';$('rfTo').value=s.to||'';$('rfSport').value=s.sport||'';
+  $('rfMkt').value=s.mkt||'';$('rfBook').value=s.book||'';$('rfRes').value=s.res||'';
+  $('rfEdge').value=s.edge||'';$('rfClv').value=s.clv||'';$('rfOdds').value=s.odds||'';$('rfQ').value=s.q||'';
+}
+function recFilterActiveCount(){var s=recFilterState(),n=0;for(var k in s)if(s[k])n++;return n;}
+
+function recApplyFilters(){
+  var s=recFilterState();
+  var fromT=s.from?new Date(s.from+'T00:00:00').getTime():null;
+  var toT=s.to?new Date(s.to+'T23:59:59').getTime():null;
+  var minE=s.edge!==''?(+s.edge)/100:null;if(minE!=null&&isNaN(minE))minE=null;
+  var minC=s.clv!==''?(+s.clv)/100:null;if(minC!=null&&isNaN(minC))minC=null;
+  var minD=recAm2Dec(s.odds);
+  var q=(s.q||'').trim().toLowerCase();
+  REC.flt=REC.rows.filter(function(r){
+    if(fromT!=null&&(!r._cts||r._cts<fromT))return false;
+    if(toT!=null&&(!r._cts||r._cts>toT))return false;
+    if(s.sport&&r.sport_title!==s.sport)return false;
+    if(s.mkt&&r.market!==s.mkt)return false;
+    if(s.book&&r.best_book!==s.book)return false;
+    if(s.res&&r.result!==s.res)return false;
+    if(minE!=null&&(r._edge==null||r._edge<minE))return false;
+    if(minC!=null&&(r._clv==null||r._clv<minC))return false;
+    if(minD!=null&&(r._dec==null||r._dec<minD))return false;
+    if(q&&r._q.indexOf(q)<0)return false;
+    return true;
+  });
+  REC.page=0;REC.open={};REC.dirty={charts:true,analytics:true};
+  var na=recFilterActiveCount();
+  $('rfSummary').textContent=na?na+' active':'';
+  $('recCount').textContent=REC.flt.length+' of '+REC.rows.length+' graded signals'+(na?' match the filters':'')+' \u00b7 pool: '+REC.pool.label;
+  recRenderAll();
+}
+
+/* ---- saved filters (localStorage, this device) ---- */
+function recSavedAll(){try{return JSON.parse(localStorage.getItem('edgedesk_rec_filters')||'{}');}catch(e){return{};}}
+function recLoadSavedList(){
+  var all=recSavedAll(),sel=$('rfSaved');if(!sel)return;var cur=sel.value;
+  var h='<option value="">Saved filters\u2026</option>';
+  Object.keys(all).sort().forEach(function(k){h+='<option value="'+recEsc(k)+'">'+recEsc(k)+'</option>';});
+  sel.innerHTML=h;if(all[cur]!=null)sel.value=cur;
+}
+function recSaveFilter(){
+  var name=prompt('Name this filter set:');if(!name)return;
+  var all=recSavedAll();all[name]=recFilterState();
+  localStorage.setItem('edgedesk_rec_filters',JSON.stringify(all));
+  recLoadSavedList();$('rfSaved').value=name;
+}
+function recDeleteFilter(){
+  var sel=$('rfSaved');if(!sel.value)return;
+  var all=recSavedAll();delete all[sel.value];
+  localStorage.setItem('edgedesk_rec_filters',JSON.stringify(all));
+  recLoadSavedList();
+}
+
+/* ---- stats over a row set (flat 1u sim, labeled) ---- */
+function recStats(rows){
+  var w=0,l=0,p=0,profit=0,staked=0,clv=[],edges=[],decs=[],maxW=null,maxL=null;
+  var curStk=0,curKind=null,bestW=0,bestL=0,runK=null,runN=0;
+  var seq=rows.slice().sort(function(a,b){return a._gts-b._gts;});
+  seq.forEach(function(r){
+    if(r.result==='win')w++;else if(r.result==='loss')l++;else if(r.result==='push')p++;
+    var pr=r._profit;
+    if(pr!=null){profit+=pr;staked++;if(maxW==null||pr>maxW)maxW=pr;if(maxL==null||pr<maxL)maxL=pr;}
+    if(r._clv!=null)clv.push(r._clv);
+    if(r._edge!=null)edges.push(r._edge);
+    if(r._dec!=null)decs.push(r._dec);
+    if(r.result==='win'||r.result==='loss'){
+      if(r.result===runK)runN++;else{runK=r.result;runN=1;}
+      if(runK==='win'&&runN>bestW)bestW=runN;
+      if(runK==='loss'&&runN>bestL)bestL=runN;
+      curKind=runK;curStk=runN;
+    }
+  });
+  var n=rows.length,wl=w+l;
+  var clvPos=0;clv.forEach(function(v){if(v>0)clvPos++;});
+  return {n:n,w:w,l:l,p:p,
+    winPct:wl?w/wl:null,
+    profit:staked?profit:null,staked:staked,
+    roi:staked?profit/staked:null,
+    avgClv:recMean(clv),nClv:clv.length,clvPosRate:clv.length?clvPos/clv.length:null,
+    avgEdge:recMean(edges),nEdge:edges.length,
+    avgDec:recMean(decs),
+    maxWin:maxW,maxLoss:maxL,
+    curStreak:curStk?{k:curKind,n:curStk}:null,bestW:bestW,bestL:bestL};
+}
+
+/* ---- render orchestrator ---- */
+function recRenderAll(){
+  if(!REC.loaded)return;
+  recRenderOverview();
+  recRenderTable();
+  if(REC.tab==='charts'&&REC.dirty.charts)recRenderCharts();
+  if(REC.tab==='analytics'&&REC.dirty.analytics)recRenderAnalytics();
+}
+
+/* ---- overview: pool note + hero KPIs + sport cards ---- */
+function recRenderOverview(){
+  var st=recStats(REC.flt);
+  var pk=REC.pool.kind;
+  var col=pk==='strict'?'var(--pos)':pk==='empty'?'var(--neg)':'var(--warn)';
+  var why=pk==='clvany'?' No graded row has flagged_at set, so everything below is computed over every graded row with a CLV. Deploy capture v3 and this promotes itself back to the strict flagged pool on its own.':pk==='flagany'?' flagged_at is set but flagged_edge is null or outside the 0.5\u20139.9% band, so the strict filter caught nothing. Check the scale flagged_edge is written on.':pk==='empty'?' The settle job is not writing clv on graded rows. That is a backend fix, not a frontend one.':'';
+  $('recPoolNote').innerHTML='<div class="rec-note" style="border-left-color:'+col+'"><b>'+recEsc(REC.pool.funnel)+'</b>'+why+'</div>';
+  if(pk==='empty'||!REC.rows.length){
+    $('recHero').innerHTML='';
+    $('recSimNote').innerHTML=recEmptyHTML('empty','<b>No graded signals yet.</b><br>The capture job logs signals continuously and grades fill in after games finish. An empty honest record beats a full dishonest one; this page fills itself as the pipeline runs.');
+    $('recSportCards').innerHTML='';
+    return;
+  }
+  if(!REC.flt.length){
+    $('recHero').innerHTML='';
+    $('recSimNote').innerHTML=recEmptyHTML('search','<b>No graded signals match these filters.</b><br>'+REC.rows.length+' rows exist in the live pool.<br><button class="rbtn warn" onclick="recResetFilters()">Reset filters</button>');
+    $('recSportCards').innerHTML='';
+    return;
+  }
+  var small=st.n<REC_MIN;
+  var simTag='<span class="rtag sim">sim 1u</span>';
+  var smallTag=small?'<span class="rtag small">n&lt;'+REC_MIN+'</span>':'';
+  function k(n,l,s,cls){return '<div class="rkpi"><div class="n '+(cls||'')+'">'+n+'</div><div class="l">'+l+'</div>'+(s?'<div class="s">'+s+'</div>':'')+'</div>';}
+  var streak=st.curStreak?(st.curStreak.n+(st.curStreak.k==='win'?'W':'L')):'\u2014';
+  var streakCls=st.curStreak?(st.curStreak.k==='win'?'rpos':'rneg'):'rmut';
+  var avgAm=st.avgDec!=null?recAm(st.avgDec):null;
+  $('recHero').innerHTML=
+    k(st.w+'-'+st.l+(st.p?'-'+st.p:''),'record'+(smallTag?' '+smallTag:''),'win-loss'+(st.p?'-push':'')+' \u00b7 auto-graded')+
+    k(st.winPct!=null?recPc0(st.winPct,1):'\u2014','win %','of '+(st.w+st.l)+' decided')+
+    k(recU(st.profit),'profit'+simTag,'flat 1u at frozen entry price',recCls(st.profit))+
+    k(st.roi!=null?recPc(st.roi,1):'\u2014','roi'+simTag,'sim profit \u00f7 '+st.staked+' priced bets',recCls(st.roi))+
+    k(st.avgClv!=null?recPc(st.avgClv,2):'\u2014','avg clv','over '+st.nClv+' rows with CLV \u00b7 the number that matters',recCls(st.avgClv))+
+    k(String(st.n),'graded signals','in the current filter')+
+    k(st.avgEdge!=null?recPc(st.avgEdge,2):'\u2014','avg edge at flag',st.nEdge?st.nEdge+' rows carry a frozen flag edge':'not captured in this pool',recCls(st.avgEdge))+
+    k(st.avgEdge!=null?recPc(st.avgEdge,2)+'/1u':'\u2014','ev per bet'+simTag,'equals avg flag edge vs de-vigged fair; unproven until CLV agrees',recCls(st.avgEdge))+
+    k(streak,'current streak','wins or losses in a row',streakCls)+
+    k(st.bestW?st.bestW+'W':'\u2014','longest win streak','','rpos')+
+    k(st.bestL?st.bestL+'L':'\u2014','longest losing streak','','rneg')+
+    k(avgAm!=null?avgAm:'\u2014','avg odds',st.avgDec!=null?'dec '+st.avgDec.toFixed(2):'')+
+    k(st.maxWin!=null?recU(st.maxWin):'\u2014','largest win'+simTag,'','rpos')+
+    k(st.maxLoss!=null?recU(st.maxLoss):'\u2014','largest loss'+simTag,'','rneg');
+  $('recSimNote').innerHTML='<div class="rec-note"><b>What the money-shaped numbers are.</b> No stakes are recorded anywhere in this pipeline. Profit, ROI, streak sizes, largest win and loss are a flat 1 unit simulation at the frozen entry price of each flagged edge. They show what the flags would have done at even sizing; they are not a bankroll and not betting advice. CLV remains the only proof of edge.'+(small?' At n='+st.n+' every figure above is noise, not signal.':'')+'</div>';
+  recRenderSportCards();
+}
+
+function recRenderSportCards(){
+  var by={};
+  REC.flt.forEach(function(r){var s=r.sport_title||'Unknown';(by[s]=by[s]||[]).push(r);});
+  var keys=Object.keys(by);
+  if(!keys.length){$('recSportCards').innerHTML='';return;}
+  keys.sort(function(a,b){return by[b].length-by[a].length;});
+  $('recSportCards').innerHTML=keys.map(function(s){
+    var st=recStats(by[s]);
+    function m(v,kk,cls){return '<div class="m"><div class="v '+(cls||'')+'">'+v+'</div><div class="k">'+kk+'</div></div>';}
+    return '<div class="rsport"><div class="rsport-h"><b>'+recEsc(s)+'</b>'+(st.n<REC_MIN?'<span class="rtag small">n&lt;'+REC_MIN+'</span>':'')+'<span class="n">'+st.n+' graded</span></div><div class="rsport-grid">'+
+      m(st.w+'-'+st.l+(st.p?'-'+st.p:''),'record')+
+      m(recU(st.profit),'profit \u00b7 sim',recCls(st.profit))+
+      m(st.roi!=null?recPc(st.roi,1):'\u2014','roi \u00b7 sim',recCls(st.roi))+
+      m(st.avgEdge!=null?recPc(st.avgEdge,1):'\u2014','avg edge',recCls(st.avgEdge))+
+      m(st.avgClv!=null?recPc(st.avgClv,1):'\u2014','avg clv',recCls(st.avgClv))+
+      m(st.winPct!=null?recPc0(st.winPct,0):'\u2014','win rate')+
+      '</div></div>';
+  }).join('')+
+  '<div class="rec-note" style="grid-column:1/-1;margin:0">Only sports with graded rows in the live pool appear. A sport the pipeline has not graded is absent, not zeroed.</div>';
+}
+
+/* ---- SVG chart helpers (dependency-free, matches terminal style) ---- */
+function rxLine(vals,opt){
+  opt=opt||{};var W=opt.w||700,H=opt.h||170,pl=44,pr=10,pt=12,pb=20;
+  if(!vals||vals.length<2)return null;
+  var mn=Math.min.apply(null,vals),mx=Math.max.apply(null,vals);
+  if(opt.zero!==false){mn=Math.min(0,mn);mx=Math.max(0,mx);}
+  var rng=(mx-mn)||1,N=vals.length;
+  function X(i){return pl+(N<=1?0:(i/(N-1))*(W-pl-pr));}
+  function Y(v){return (H-pb)-((v-mn)/rng)*(H-pt-pb);}
+  var fmt=opt.fmt||function(v){return v.toFixed(1);};
+  var pts='';
+  for(var i=0;i<N;i++){var c=X(i).toFixed(1)+','+Y(vals[i]).toFixed(1);pts+=(i?' ':'')+c;}
+  var last=vals[N-1],col=opt.col||(last>=0?'var(--pos)':'var(--neg)');
+  var z=Y(Math.max(mn,Math.min(mx,0))).toFixed(1);
+  var area='M'+X(0).toFixed(1)+','+z+' L '+pts+' L '+X(N-1).toFixed(1)+','+z+' Z';
+  var ax='';[mn,mx].forEach(function(v){ax+='<text x="'+(pl-5)+'" y="'+(Y(v)+3).toFixed(1)+'" fill="var(--faint)" font-size="9" text-anchor="end" font-family="JetBrains Mono">'+fmt(v)+'</text>';});
+  return '<svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">'+
+    '<line x1="'+pl+'" y1="'+z+'" x2="'+(W-pr)+'" y2="'+z+'" stroke="var(--border)" stroke-width="1" stroke-dasharray="3 3"/>'+
+    '<path d="'+area+'" fill="'+col+'" opacity="0.10"/>'+
+    '<polyline points="'+pts+'" fill="none" stroke="'+col+'" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"/>'+
+    ax+
+    '<text x="'+(W-pr)+'" y="'+(Y(last)-5).toFixed(1)+'" fill="'+col+'" font-size="10" font-weight="700" text-anchor="end" font-family="JetBrains Mono">'+fmt(last)+'</text>'+
+    '</svg>';
+}
+function rxBars(items,opt){
+  opt=opt||{};var n=items.length;if(!n)return null;
+  var bw=48,W=Math.max(320,n*bw+40),H=opt.h||180,pt=18,pb=34,pl=8,pr=8;
+  var mx=0,mn=0;items.forEach(function(it){if(it.v>mx)mx=it.v;if(it.v<mn)mn=it.v;});
+  var rng=(mx-mn)||1;
+  function Y(v){return pt+(mx-v)/rng*(H-pt-pb);}
+  var z=Y(0),fmt=opt.fmt||function(v){return v.toFixed(1);};
+  var b='';
+  items.forEach(function(it,i){
+    var x=pl+i*bw+6,w=bw-12,y0=Y(Math.max(0,it.v)),h=Math.abs(Y(it.v)-z)||1;
+    var col=it.v>=0?'var(--pos)':'var(--neg)';
+    b+='<rect x="'+x+'" y="'+y0.toFixed(1)+'" width="'+w+'" height="'+h.toFixed(1)+'" rx="3" fill="'+col+'" opacity="0.75"><title>'+recEsc(it.l)+': '+fmt(it.v)+'</title></rect>';
+    b+='<text x="'+(x+w/2)+'" y="'+(it.v>=0?y0-4:y0+h+10).toFixed(1)+'" fill="var(--dim)" font-size="8.5" text-anchor="middle" font-family="JetBrains Mono">'+fmt(it.v)+'</text>';
+    var lab=String(it.l);if(lab.length>7)lab=lab.slice(0,7)+'\u2026';
+    b+='<text x="'+(x+w/2)+'" y="'+(H-8)+'" fill="var(--faint)" font-size="8.5" text-anchor="middle" font-family="JetBrains Mono"><title>'+recEsc(it.l)+'</title>'+recEsc(lab)+'</text>';
+  });
+  return '<div class="scrollx"><svg viewBox="0 0 '+W+' '+H+'" style="min-width:'+Math.min(W,700)+'px" xmlns="http://www.w3.org/2000/svg">'+
+    '<line x1="'+pl+'" y1="'+z.toFixed(1)+'" x2="'+(W-pr)+'" y2="'+z.toFixed(1)+'" stroke="var(--border)" stroke-width="1"/>'+b+'</svg></div>';
+}
+function recRoll(rows,win,fn){
+  var out=[];if(rows.length<win)return out;
+  for(var i=win;i<=rows.length;i++)out.push(fn(rows.slice(i-win,i)));
+  return out;
+}
+function recMonthKey(ts){var d=new Date(ts);return d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2);}
+function recWeekKey(ts){var d=new Date(ts);var day=(d.getDay()+6)%7;d.setDate(d.getDate()-day);return (d.getMonth()+1)+'/'+d.getDate();}
+function recGroupSum(rows,keyFn,valFn){
+  var m={},order=[];
+  rows.forEach(function(r){var k=keyFn(r);if(k==null)return;if(!(k in m)){m[k]={sum:0,n:0};order.push(k);}var v=valFn(r);if(v!=null){m[k].sum+=v;m[k].n++;}});
+  return order.map(function(k){return {l:k,sum:m[k].sum,n:m[k].n};});
+}
+
+/* ---- charts pane ---- */
+function recChartCard(title,sub,inner,n){
+  var tag=(n!=null&&n<REC_MIN)?' <span class="rtag small">n='+n+' \u00b7 noise</span>':'';
+  return '<div class="rchart"><h4>'+title+tag+'</h4><div class="sub">'+sub+'</div>'+
+    (inner||'<div class="bnote">Not enough graded rows in this filter to draw this honestly. It fills in as the pipeline grades more.</div>')+'</div>';
+}
+function recRenderCharts(){
+  REC.dirty.charts=false;
+  var host=$('recChartsHost');if(!host)return;
+  var rows=REC.flt.slice().sort(function(a,b){return a._gts-b._gts;});
+  if(!rows.length){host.innerHTML=recEmptyHTML(REC.rows.length?'search':'empty','<b>Nothing to chart.</b><br>'+(REC.rows.length?'No graded signals match the current filters.':'No graded signals exist yet; charts draw themselves as rows grade.'));return;}
+  var priced=rows.filter(function(r){return r._profit!=null;});
+  var pcF=function(v){return (v>=0?'+':'')+(v*100).toFixed(1)+'%';};
+  var uF=function(v){return (v>=0?'+':'')+v.toFixed(1)+'u';};
+  var h='';
+  /* 1 bankroll growth (cumulative sim units) */
+  var cum=[],s=0;priced.forEach(function(r){s+=r._profit;cum.push(s);});
+  h+=recChartCard('Bankroll growth <span class="rtag sim">sim 1u</span>','Cumulative flat 1u profit in graded order. A simulation of even sizing at the frozen entry price, not a bankroll.',cum.length>1?rxLine(cum,{fmt:uF}):null,priced.length);
+  /* 2 profit by month */
+  var pm=recGroupSum(priced,function(r){return recMonthKey(r._gts);},function(r){return r._profit;});
+  h+=recChartCard('Profit over time <span class="rtag sim">sim 1u</span>','Sim units won or lost per calendar month of grading.',pm.length?rxBars(pm.map(function(g){return {l:g.l,v:g.sum};}),{fmt:uF}):null,priced.length);
+  /* 3 monthly ROI */
+  h+=recChartCard('Monthly ROI <span class="rtag sim">sim 1u</span>','Sim profit divided by bets graded that month.',pm.length?rxBars(pm.map(function(g){return {l:g.l,v:g.n?g.sum/g.n:0};}),{fmt:pcF}):null,priced.length);
+  /* 4 weekly ROI */
+  var pw=recGroupSum(priced,function(r){return recWeekKey(r._gts);},function(r){return r._profit;}).slice(-16);
+  h+=recChartCard('Weekly ROI <span class="rtag sim">sim 1u</span>','Last 16 graded weeks (week starting Monday).',pw.length?rxBars(pw.map(function(g){return {l:g.l,v:g.n?g.sum/g.n:0};}),{fmt:pcF}):null,priced.length);
+  /* 5 CLV trend */
+  var withClv=rows.filter(function(r){return r._clv!=null;});
+  var wC=withClv.length>=50?25:Math.max(3,Math.floor(withClv.length/3));
+  var clvRoll=recRoll(withClv,wC,function(w){return recMean(w.map(function(r){return r._clv;}));});
+  h+=recChartCard('CLV trend','Rolling average CLV (window '+wC+') in graded order. The only line on this page that is proof rather than simulation.',clvRoll.length>1?rxLine(clvRoll,{fmt:pcF}):null,withClv.length);
+  /* 6 win rate trend */
+  var decided=rows.filter(function(r){return r.result==='win'||r.result==='loss';});
+  var wW=decided.length>=50?25:Math.max(3,Math.floor(decided.length/3));
+  var wrRoll=recRoll(decided,wW,function(w){var wn=0;w.forEach(function(r){if(r.result==='win')wn++;});return wn/w.length;});
+  h+=recChartCard('Win rate trend','Rolling win rate over decided bets. Win rate alone means nothing without the odds; read it next to avg odds and CLV.',wrRoll.length>1?rxLine(wrRoll,{fmt:function(v){return (v*100).toFixed(0)+'%';},zero:false,col:'var(--accent)'}):null,decided.length);
+  /* 7 profit by sport */
+  var ps=recGroupSum(priced,function(r){return r.sport_title||'?';},function(r){return r._profit;});
+  h+=recChartCard('Profit by sport <span class="rtag sim">sim 1u</span>','Sim units by sport in the current filter.',ps.length?rxBars(ps.map(function(g){return {l:g.l,v:g.sum};}),{fmt:uF}):null,priced.length);
+  /* 8 profit by bet type */
+  var pt=recGroupSum(priced,function(r){return r.market||'?';},function(r){return r._profit;});
+  h+=recChartCard('Profit by bet type <span class="rtag sim">sim 1u</span>','Sim units by market.',pt.length?rxBars(pt.map(function(g){return {l:g.l,v:g.sum};}),{fmt:uF}):null,priced.length);
+  /* 9/10 rolling ROI */
+  var r50=recRoll(priced,50,function(w){return recMean(w.map(function(r){return r._profit;}));});
+  h+=recChartCard('Rolling 50-bet ROI <span class="rtag sim">sim 1u</span>','Average sim profit per bet over a sliding 50-bet window.'+(priced.length<50?' Needs 50 priced bets; '+priced.length+' exist in this filter.':''),r50.length>1?rxLine(r50,{fmt:pcF}):null,priced.length);
+  var r100=recRoll(priced,100,function(w){return recMean(w.map(function(r){return r._profit;}));});
+  h+=recChartCard('Rolling 100-bet ROI <span class="rtag sim">sim 1u</span>','Average sim profit per bet over a sliding 100-bet window.'+(priced.length<100?' Needs 100 priced bets; '+priced.length+' exist in this filter.':''),r100.length>1?rxLine(r100,{fmt:pcF}):null,priced.length);
+  host.innerHTML=h;
+}
+
+/* ---- bets table ---- */
+var REC_COLDEF=[
+  {k:'_cts',l:'Date',f:function(r){return recD(r.commence_time);}},
+  {k:'sport_title',l:'Sport',f:function(r){return recEsc(r.sport_title||'\u2014');}},
+  {k:'_game',l:'Game',f:function(r){return recEsc(r._game||'\u2014');}},
+  {k:'selection',l:'Selection',f:function(r){return recEsc((r.selection||'\u2014')+(r.point!=null?' '+r.point:''));}},
+  {k:'market',l:'Type',f:function(r){return recEsc(r.market||'\u2014');}},
+  {k:'best_book',l:'Book',f:function(r){return recEsc(r.best_book||'\u2014');}},
+  {k:'_dec',l:'Odds',f:function(r){return r._am!=null?(r._am+(r._flagPrice?'':'\u2020')):'\u2014';}},
+  {k:'_closeDec',l:'Close*',f:function(r){return r._closeAm!=null?r._closeAm:'\u2014';}},
+  {k:'_clv',l:'CLV',f:function(r){return '<span class="'+recCls(r._clv)+'">'+recPc(r._clv,1)+'</span>';}},
+  {k:'_edge',l:'Edge',f:function(r){return '<span class="'+recCls(r._edge)+'">'+recPc(r._edge,1)+'</span>';}},
+  {k:'_profit',l:'Sim P/L',f:function(r){return '<span class="'+recCls(r._profit)+'">'+recU(r._profit)+'</span>';}},
+  {k:'result',l:'Result',f:function(r){var v=r.result||'\u2014';var c=v==='win'?'rpos':v==='loss'?'rneg':'rmut';return '<span class="'+c+'">'+recEsc(v)+'</span>';}},
+  {k:'_anchor',l:'Anchor',f:function(r){var a=r._anchor;var c=a.indexOf('sharp')===0?'rpos':a==='?'?'rmut':'rneg';return '<span class="'+c+'">'+recEsc(a)+'</span>';}}
+];
+function recSortRows(){
+  var k=REC.sort.k,d=REC.sort.d;
+  var arr=REC.flt.slice();
+  arr.sort(function(a,b){
+    var x=a[k],y=b[k];
+    var xs=typeof x==='string',ys=typeof y==='string';
+    if(x==null&&y==null)return 0;if(x==null)return 1;if(y==null)return -1;
+    if(xs||ys){x=String(x).toLowerCase();y=String(y).toLowerCase();return x<y?-d:x>y?d:0;}
+    return (x-y)*d;
+  });
+  return arr;
+}
+function recRenderTable(){
+  var thead=$('recTbl').querySelector('thead'),tbody=$('recTbl').querySelector('tbody');
+  if(!REC.flt.length){
+    thead.innerHTML='';
+    tbody.innerHTML='<tr><td style="max-width:none">'+recEmptyHTML(REC.rows.length?'search':'empty','<b>'+(REC.rows.length?'No graded signals match these filters.':'No graded signals yet.')+'</b><br>'+(REC.rows.length?'<button class="rbtn warn" onclick="recResetFilters()">Reset filters</button>':'The table fills itself as flagged edges grade.'))+'</td></tr>';
+    $('recPager').innerHTML='';
+    return;
+  }
+  thead.innerHTML='<tr>'+REC_COLDEF.map(function(c,i){
+    var on=REC.sort.k===c.k;
+    var arrow=on?(REC.sort.d>0?' \u25b4':' \u25be'):'';
+    var wst=REC.colW[c.k]?' style="min-width:'+REC.colW[c.k]+'px"':'';
+    return '<th data-ck="'+c.k+'" class="'+(on?'on':'')+'"'+wst+'>'+c.l+arrow+'<span class="rz" data-ci="'+i+'"></span></th>';
+  }).join('')+'</tr>';
+  var rows=recSortRows();
+  var total=rows.length,per=REC.per,pages=Math.max(1,Math.ceil(total/per));
+  if(REC.page>=pages)REC.page=pages-1;
+  var start=REC.page*per,slice=rows.slice(start,start+per);
+  tbody.innerHTML=slice.map(function(r){
+    var open=REC.open[r.id];
+    var tds=REC_COLDEF.map(function(c){return '<td>'+c.f(r)+'</td>';}).join('');
+    return '<tr class="rrow'+(open?' open':'')+'" data-rid="'+recEsc(r.id)+'">'+tds+'</tr>'+
+      (open?'<tr class="rdet"><td colspan="'+REC_COLDEF.length+'">'+recDetailHTML(r)+'</td></tr>':'');
+  }).join('');
+  var info=(start+1)+'\u2013'+Math.min(start+per,total)+' of '+total;
+  var pg='<span class="info">'+info+'</span>';
+  pg+='<button class="rbtn" data-pg="prev"'+(REC.page===0?' disabled':'')+'>&larr; Prev</button>';
+  pg+='<span style="font-size:11px;color:var(--dim);font-family:JetBrains Mono">'+(REC.page+1)+' / '+pages+'</span>';
+  pg+='<button class="rbtn" data-pg="next"'+(REC.page>=pages-1?' disabled':'')+'>Next &rarr;</button>';
+  pg+='<select id="recPer"><option value="25"'+(per===25?' selected':'')+'>25</option><option value="50"'+(per===50?' selected':'')+'>50</option><option value="100"'+(per===100?' selected':'')+'>100</option></select>';
+  $('recPager').innerHTML=pg;
+  var perSel=$('recPer');if(perSel)perSel.onchange=function(){REC.per=+this.value;REC.page=0;recRenderTable();};
+}
+function recDetailHTML(r){
+  function dr(k,v){return '<div class="dr"><span class="dk">'+k+'</span><span class="dv">'+v+'</span></div>';}
+  function pc(v,dp){return v==null?'not captured':recPc(v,dp==null?2:dp);}
+  var entryProb=r._dec?1/r._dec:null;
+  var fair=recNum(r.sharp_fair),cons=recNum(r.consensus_fair),closeFair=recNum(r.closing_sharp_fair);
+  var move=(recNum(r.first_best_dec)&&recNum(r.best_dec))?('dec '+(+r.first_best_dec).toFixed(2)+' \u2192 '+(+r.best_dec).toFixed(2)):null;
+  var corrob=(r.first_corrob_n!=null)?(r.first_corrob_n+' books'+(r.first_corrob_ref?' vs '+recEsc(r.first_corrob_ref):'')):null;
+  var pin=(recNum(r.pin_dec)&&recNum(r.pin_opp_dec))?((+r.pin_dec).toFixed(2)+' / '+(+r.pin_opp_dec).toFixed(2)):null;
+  var why=r._edge!=null
+    ?'Flagged because the best available price implied '+(entryProb!=null?(entryProb*100).toFixed(1)+'%':'?')+' while the de-vigged '+(r._anchor.indexOf('sharp')===0?'Pinnacle':'reference')+' fair said '+(fair!=null?(fair*100).toFixed(1)+'%':(cons!=null?(cons*100).toFixed(1)+'% (consensus)':'?'))+'. That gap, frozen at flag time, is the edge. No model, no opinion.'
+    :'This row predates capture v3, so no frozen flag edge exists for it. The reason-at-flag cannot be reconstructed honestly and is not guessed.';
+  return '<div class="rdetail">'+
+    '<div class="dh">Prices</div>'+
+    dr('entry price',r._am!=null?(r._am+' (dec '+r._dec.toFixed(2)+')'+(r._flagPrice?' \u00b7 frozen at flag':' \u00b7 first-seen, pre-v3')):'not captured')+
+    dr('entry implied prob',entryProb!=null?(entryProb*100).toFixed(1)+'%':'not captured')+
+    dr('close fair price*',r._closeAm!=null?(r._closeAm+' (dec '+r._closeDec.toFixed(2)+')'):'not captured')+
+    dr('line move since first capture',move||'not captured')+
+    dr('pinnacle two-way at grade',pin||'not captured')+
+    '<div class="dh">Probabilities</div>'+
+    dr('sharp fair at capture',pc(fair,1))+
+    dr('consensus fair at capture',pc(cons,1))+
+    dr('closing sharp fair',pc(closeFair,1))+
+    '<div class="dh">Verdict</div>'+
+    dr('edge at flag','<span class="'+recCls(r._edge)+'">'+pc(r._edge)+'</span>')+
+    dr('clv','<span class="'+recCls(r._clv)+'">'+pc(r._clv)+'</span>')+
+    dr('beat close',r.beat_close===true?'<span class="rpos">yes</span>':r.beat_close===false?'<span class="rneg">no</span>':'\u2014')+
+    dr('result',recEsc(r.result||'\u2014'))+
+    dr('sim p/l \u00b7 flat 1u','<span class="'+recCls(r._profit)+'">'+recU(r._profit)+'</span>')+
+    '<div class="dh">Context</div>'+
+    dr('anchor',recEsc(r._anchor)+(r._anchor==='?'?' \u00b7 pre-migration row, honestly unknown':''))+
+    dr('corroboration at first capture',corrob||'not captured')+
+    dr('books pricing it',r.n_books!=null?r.n_books:'\u2014')+
+    dr('first seen',recDT(r.first_seen_at))+
+    dr('flagged',recDT(r.flagged_at))+
+    dr('kickoff',recDT(r.commence_time))+
+    dr('graded',recDT(r.graded_at))+
+    '<div class="dfoot"><b style="color:var(--text)">Why this was flagged:</b> '+why+'<br><b style="color:var(--text)">Not captured, so not shown:</b> stake, book limits, steam tick history, research notes, confidence scores. \u2020 marks an entry price taken at first sighting because the row predates capture v3. * close is the de-vigged sharp fair, not a book quote.</div>'+
+    '</div>';
+}
+
+/* ---- analytics pane ---- */
+function recRenderAnalytics(){
+  REC.dirty.analytics=false;
+  var host=$('recAdvHost');if(!host)return;
+  var rows=REC.flt;
+  if(!rows.length){host.innerHTML=recEmptyHTML(REC.rows.length?'search':'empty','<b>Nothing to analyze.</b><br>'+(REC.rows.length?'No graded signals match the current filters.':'Analytics build themselves as graded rows accumulate.'));return;}
+  var priced=rows.filter(function(r){return r._profit!=null;});
+  var MINSEG=10;
+  function best(list){var ok=list.filter(function(g){return g.n>=MINSEG;});if(!ok.length)return null;ok.sort(function(a,b){return b.sum-a.sum;});return {best:ok[0],worst:ok[ok.length-1]};}
+  function segLabel(g){return recEsc(g.l)+' ('+recU(g.sum)+' \u00b7 '+g.n+' bets)';}
+  var bySport=best(recGroupSum(priced,function(r){return r.sport_title||'?';},function(r){return r._profit;}));
+  var byBook=best(recGroupSum(priced,function(r){return r.best_book||'?';},function(r){return r._profit;}));
+  var byRange=best(recGroupSum(priced,function(r){return r._dec<=1.5?'short \u2264 1.50':(r._dec<=2.5?'mid 1.50\u20132.50':'long > 2.50');},function(r){return r._profit;}));
+  var mkts=recGroupSum(rows,function(r){return r.market||'?';},function(){return 1;});
+  mkts.sort(function(a,b){return b.n-a.n;});
+  var upset=null;priced.forEach(function(r){if(r.result==='win'&&(upset==null||r._dec>upset._dec))upset=r;});
+  var hiClv=null,loClv=null;rows.forEach(function(r){if(r._clv==null)return;if(hiClv==null||r._clv>hiClv._clv)hiClv=r;if(loClv==null||r._clv<loClv._clv)loClv=r;});
+  var st=recStats(rows);
+  function rr(k,v){return '<div class="rr"><span class="rk">'+k+'</span><span class="rv">'+v+'</span></div>';}
+  var na='not enough data (min '+MINSEG+' bets per slice)';
+  var h='<div class="rstats2">';
+  h+='<div class="rstat"><h4>Where the sim profit lives <span class="rtag sim">sim 1u</span></h4>'+
+    rr('most profitable sport',bySport?segLabel(bySport.best):na)+
+    rr('worst sport',bySport?segLabel(bySport.worst):na)+
+    rr('most profitable book',byBook?segLabel(byBook.best):na)+
+    rr('worst book',byBook?segLabel(byBook.worst):na)+
+    rr('best odds range',byRange?segLabel(byRange.best):na)+
+    rr('worst odds range',byRange?segLabel(byRange.worst):na)+
+    rr('most flagged bet type',mkts.length?recEsc(mkts[0].l)+' ('+mkts[0].n+')':'\u2014')+
+    '<div class="sub">Book slices name where the best price sat when flagged; they say nothing about a book being beatable, only where value surfaced. Slices under '+MINSEG+' bets are refused, not shown.</div></div>';
+  h+='<div class="rstat"><h4>Outliers</h4>'+
+    rr('biggest upset won',upset?recEsc(upset.selection||upset._game)+' at '+upset._am+' ('+recD(upset.commence_time)+')':'\u2014')+
+    rr('highest clv',hiClv?'<span class="rpos">'+recPc(hiClv._clv,1)+'</span> \u00b7 '+recEsc(hiClv.selection||hiClv._game):'\u2014')+
+    rr('lowest clv',loClv?'<span class="rneg">'+recPc(loClv._clv,1)+'</span> \u00b7 '+recEsc(loClv.selection||loClv._game):'\u2014')+
+    rr('avg stake','1u flat \u00b7 by construction (no stakes recorded)')+
+    rr('avg edge at flag',st.avgEdge!=null?recPc(st.avgEdge,2):'not captured in this pool')+
+    rr('avg ev per bet',st.avgEdge!=null?recPc(st.avgEdge,2)+'/1u':'\u2014')+
+    rr('units per bet <span class="rtag sim">sim</span>',st.roi!=null?recPc(st.roi,2):'\u2014')+
+    '<div class="sub">EV per bet equals the average frozen flag edge against the de-vigged fair. It is an estimate at flag time, proven or disproven only by CLV.</div></div>';
+  /* correlations */
+  var exy=[],cxy=[];
+  priced.forEach(function(r){if(r._edge!=null)exy.push([r._edge,r._profit]);if(r._clv!=null)cxy.push([r._clv,r._profit]);});
+  var rE=exy.length>=3?recPearson(exy.map(function(p){return p[0];}),exy.map(function(p){return p[1];})):null;
+  var rC=cxy.length>=3?recPearson(cxy.map(function(p){return p[0];}),cxy.map(function(p){return p[1];})):null;
+  h+='<div class="rstat"><h4>Does the thesis hold in this sample?</h4>'+
+    rr('corr(edge at flag, sim profit)',rE!=null?rE.toFixed(3)+' \u00b7 n='+exy.length:'\u2014')+
+    rr('corr(clv, sim profit)',rC!=null?rC.toFixed(3)+' \u00b7 n='+cxy.length:'\u2014')+
+    '<div class="sub">Single-bet outcomes are dominated by variance, so both correlations are expected to be weak at small n. The claim to test over time: CLV correlates with profit and edge-at-flag correlates with CLV. If neither holds at a real sample size, the scanner is wrong and this page will say so.'+((exy.length<REC_MIN&&cxy.length<REC_MIN)?' At the current n these numbers are noise.':'')+'</div></div>';
+  /* profit by weekday */
+  var wd=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  var pd=recGroupSum(priced,function(r){return wd[new Date(r._cts).getDay()];},function(r){return r._profit;});
+  var pdMap={};pd.forEach(function(g){pdMap[g.l]=g;});
+  var wdBars=wd.filter(function(d){return pdMap[d];}).map(function(d){return {l:d,v:pdMap[d].sum};});
+  h+='<div class="rstat"><h4>Profit by weekday <span class="rtag sim">sim 1u</span></h4>'+(wdBars.length?rxBars(wdBars,{h:150,fmt:function(v){return (v>=0?'+':'')+v.toFixed(1);}}):'<div class="sub">No priced rows.</div>')+'<div class="sub">Bucketed by kickoff day.</div></div>';
+  /* profit by time of day */
+  var tb=recGroupSum(priced,function(r){var hh=new Date(r._cts).getHours();return hh<12?'am':(hh<17?'aft':(hh<21?'eve':'late'));},function(r){return r._profit;});
+  var tOrder={am:0,aft:1,eve:2,late:3};tb.sort(function(a,b){return tOrder[a.l]-tOrder[b.l];});
+  h+='<div class="rstat"><h4>Profit by time of day <span class="rtag sim">sim 1u</span></h4>'+(tb.length?rxBars(tb.map(function(g){return {l:g.l,v:g.sum};}),{h:150,fmt:function(v){return (v>=0?'+':'')+v.toFixed(1);}}):'<div class="sub">No priced rows.</div>')+'<div class="sub">Local kickoff time: am before 12, aft 12\u20135, eve 5\u20139, late after 9.</div></div>';
+  h+='</div>';
+  /* heatmap month x weekday */
+  var months=[],mSeen={};
+  priced.forEach(function(r){var k=recMonthKey(r._cts);if(!mSeen[k]){mSeen[k]=1;months.push(k);}});
+  months.sort();
+  if(months.length){
+    var cell={};priced.forEach(function(r){var k=recMonthKey(r._cts)+'|'+new Date(r._cts).getDay();cell[k]=(cell[k]||0)+r._profit;});
+    var maxAbs=0;for(var ck in cell)if(Math.abs(cell[ck])>maxAbs)maxAbs=Math.abs(cell[ck]);
+    var hm='<div class="rheat" style="grid-template-columns:56px repeat('+months.length+',minmax(52px,1fr))">';
+    hm+='<div class="hh"></div>'+months.map(function(m){return '<div class="hh">'+m.slice(2)+'</div>';}).join('');
+    for(var d=0;d<7;d++){
+      hm+='<div class="hl">'+wd[d]+'</div>';
+      months.forEach(function(m){
+        var v=cell[m+'|'+d];
+        if(v==null){hm+='<div class="hc" style="background:var(--surface2);color:var(--faint)">\u00b7</div>';return;}
+        var a=maxAbs?Math.min(0.75,0.12+0.63*Math.abs(v)/maxAbs):0.12;
+        var bg=v>=0?'rgba(47,180,124,'+a.toFixed(2)+')':'rgba(226,96,68,'+a.toFixed(2)+')';
+        hm+='<div class="hc" style="background:'+bg+'" title="'+m+' '+wd[d]+': '+recU(v)+'">'+(v>=0?'+':'')+v.toFixed(1)+'</div>';
+      });
+    }
+    hm+='</div>';
+    h+='<div class="rstat"><h4>Profit heatmap \u00b7 month \u00d7 weekday <span class="rtag sim">sim 1u</span></h4><div class="rheatwrap">'+hm+'</div><div class="sub">Empty cells mean no graded bets, not zero profit.</div></div>';
+  }
+  /* profit by month table */
+  var pmT=recGroupSum(priced,function(r){return recMonthKey(r._gts);},function(r){return r._profit;});
+  if(pmT.length){
+    h+='<div class="rstat"><h4>Profit by month <span class="rtag sim">sim 1u</span></h4>'+pmT.map(function(g){
+      return rr(g.l,'<span class="'+recCls(g.sum)+'">'+recU(g.sum)+'</span> \u00b7 '+g.n+' bets \u00b7 roi '+recPc(g.n?g.sum/g.n:null,1));
+    }).join('')+'</div>';
+  }
+  host.innerHTML=h;
+}
+
+/* ---- exports (client-side only, from rows already loaded) ---- */
+var REC_EXPORT_FIELDS=[
+  ['id','id'],['graded_at','graded_at'],['commence_time','kickoff'],['first_seen_at','first_seen_at'],['flagged_at','flagged_at'],
+  ['sport_title','sport'],['sport_key','sport_key'],['market','bet_type'],['selection','selection'],['point','point'],
+  ['home_team','home_team'],['away_team','away_team'],['best_book','sportsbook'],
+  ['_dec','entry_price_decimal'],['_am','entry_price_american'],['_flagPriceTxt','entry_price_basis'],
+  ['best_dec','last_seen_price_decimal'],['first_best_dec','first_seen_price_decimal'],['flagged_best_dec','flag_price_decimal'],
+  ['flagged_edge','edge_at_flag'],['edge','edge_at_close'],
+  ['sharp_fair','sharp_fair_at_capture'],['consensus_fair','consensus_fair_at_capture'],['closing_sharp_fair','closing_sharp_fair'],
+  ['_closeDec','close_fair_decimal'],['clv','clv'],['beat_close','beat_close'],['result','result'],
+  ['_profit','sim_profit_units_flat1u'],['_anchor','anchor'],['first_corrob_n','corroborating_books_at_capture'],
+  ['first_corrob_ref','corroboration_reference'],['n_books','books_pricing'],['pin_dec','pinnacle_price_decimal'],['pin_opp_dec','pinnacle_opposite_decimal'],
+  ['event_id','event_id']
+];
+function recExportRows(scope){
+  var src=scope==='all'?REC.rows:REC.flt;
+  return src.map(function(r){
+    var o={};
+    REC_EXPORT_FIELDS.forEach(function(f){
+      var v;
+      if(f[0]==='_flagPriceTxt')v=r._dec==null?null:(r._flagPrice?'frozen_at_flag':'first_seen_pre_v3');
+      else v=r[f[0]];
+      o[f[1]]=(v===undefined?null:v);
+    });
+    return o;
+  });
+}
+function recCSV(objs){
+  if(!objs.length)return '';
+  var keys=REC_EXPORT_FIELDS.map(function(f){return f[1];});
+  function cell(v){
+    if(v==null)return '';
+    var s=String(v);
+    if(/[",\r\n]/.test(s))s='"'+s.replace(/"/g,'""')+'"';
+    return s;
+  }
+  var lines=[keys.join(',')];
+  objs.forEach(function(o){lines.push(keys.map(function(k){return cell(o[k]);}).join(','));});
+  return '\uFEFF'+lines.join('\r\n');
+}
+function recXLS(objs){
+  var keys=REC_EXPORT_FIELDS.map(function(f){return f[1];});
+  function xe(v){return String(v==null?'':v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+  var rows='<Row>'+keys.map(function(k){return '<Cell><Data ss:Type="String">'+xe(k)+'</Data></Cell>';}).join('')+'</Row>';
+  objs.forEach(function(o){
+    rows+='<Row>'+keys.map(function(k){
+      var v=o[k];
+      var num=(typeof v==='number'&&isFinite(v));
+      return '<Cell><Data ss:Type="'+(num?'Number':'String')+'">'+xe(v)+'</Data></Cell>';
+    }).join('')+'</Row>';
+  });
+  return '<?xml version="1.0"?><?mso-application progid="Excel.Sheet"?>'+
+    '<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">'+
+    '<Worksheet ss:Name="EdgeDesk Record"><Table>'+rows+'</Table></Worksheet></Workbook>';
+}
+function recExport(kind){
+  var parts=kind.split('-'),fmt=parts[0],scope=parts[1];
+  var objs=recExportRows(scope);
+  if(!objs.length){alert('Nothing to export'+(scope==='flt'?' with the current filters.':'.'));return;}
+  var stamp=new Date().toISOString().slice(0,10);
+  var base='edgedesk_record_'+scope+'_'+stamp;
+  if(fmt==='csv')recDownload(base+'.csv','text/csv;charset=utf-8',recCSV(objs));
+  else if(fmt==='json')recDownload(base+'.json','application/json',JSON.stringify(objs,null,2));
+  else if(fmt==='xls')recDownload(base+'.xls','application/vnd.ms-excel',recXLS(objs));
+}
+
+/* ---- sub-tab switching + proof lazy load ---- */
+function recProofReset(){
+  var t=$('recProofTop');if(!t)return;
+  var junk=t.querySelectorAll('.anote,.empty');
+  for(var i=0;i<junk.length;i++)junk[i].parentNode.removeChild(junk[i]);
+  var k=$('recKpis');if(k)k.innerHTML='';
+  var c=$('clvChart');if(c)c.innerHTML='';
+  ['recBasis','recAnchor','recCorrob','recBias','recSport','recTtc','recPrice','recCal','recMethod','recEthos'].forEach(function(id){var el=$(id);if(el)el.innerHTML='';});
+}
+function recGo(tab){
+  REC.tab=tab;
+  var seg=$('recSeg').querySelectorAll('button');
+  for(var i=0;i<seg.length;i++)seg[i].classList.toggle('on',seg[i].dataset.rt===tab);
+  ['overview','charts','bets','analytics','proof'].forEach(function(t){
+    var p=$('rec-p-'+t);if(p)p.classList.toggle('hide',t!==tab);
+  });
+  if(tab==='proof'&&!REC.proofDone){REC.proofDone=true;recProofReset();loadRecordProof();}
+  if(tab==='charts'&&REC.loaded&&REC.dirty.charts)recRenderCharts();
+  if(tab==='analytics'&&REC.loaded&&REC.dirty.analytics)recRenderAnalytics();
+}
+
+/* ---- wiring (single delegated listeners, no per-row handlers) ---- */
+(function recWire(){
+  $('recSeg').addEventListener('click',function(e){var b=e.target.closest('button');if(b&&b.dataset.rt)recGo(b.dataset.rt);});
+  $('rfHead').addEventListener('click',function(){$('rfBody').classList.toggle('hide');$('rfHead').classList.toggle('open');});
+  var deb=null;
+  function onChange(){recApplyFilters();}
+  ['rfFrom','rfTo','rfSport','rfMkt','rfBook','rfRes'].forEach(function(id){$(id).addEventListener('change',onChange);});
+  ['rfEdge','rfClv','rfOdds','rfQ'].forEach(function(id){
+    $(id).addEventListener('input',function(){clearTimeout(deb);deb=setTimeout(onChange,220);});
+  });
+  $('rfReset').addEventListener('click',recResetFilters);
+  $('rfSave').addEventListener('click',recSaveFilter);
+  $('rfDel').addEventListener('click',recDeleteFilter);
+  $('rfSaved').addEventListener('change',function(){
+    var all=recSavedAll();
+    if(this.value&&all[this.value]){recSetFilterState(all[this.value]);recApplyFilters();}
+  });
+  $('recExport').addEventListener('click',function(e){var b=e.target.closest('button');if(b&&b.dataset.ex)recExport(b.dataset.ex);});
+  $('recPager').addEventListener('click',function(e){
+    var b=e.target.closest('button');if(!b||b.disabled)return;
+    if(b.dataset.pg==='prev'&&REC.page>0){REC.page--;recRenderTable();}
+    if(b.dataset.pg==='next'){REC.page++;recRenderTable();}
+  });
+  var tbl=$('recTbl');
+  tbl.querySelector('tbody').addEventListener('click',function(e){
+    var tr=e.target.closest('tr.rrow');if(!tr)return;
+    var id=tr.dataset.rid;
+    REC.open[id]=!REC.open[id];
+    recRenderTable();
+  });
+  /* header: sort on click, resize on the .rz handle */
+  var rz=null;
+  tbl.querySelector('thead').addEventListener('mousedown',function(e){
+    var h=e.target.closest('.rz');if(!h)return;
+    e.preventDefault();e.stopPropagation();
+    var th=h.parentNode;
+    rz={k:th.dataset.ck,x:e.clientX,w:th.offsetWidth};
+    function mv(ev){if(!rz)return;REC.colW[rz.k]=Math.max(46,rz.w+(ev.clientX-rz.x));var el=tbl.querySelector('th[data-ck="'+rz.k+'"]');if(el)el.style.minWidth=REC.colW[rz.k]+'px';}
+    function up(){rz=null;document.removeEventListener('mousemove',mv);document.removeEventListener('mouseup',up);}
+    document.addEventListener('mousemove',mv);document.addEventListener('mouseup',up);
+  });
+  tbl.querySelector('thead').addEventListener('click',function(e){
+    if(e.target.closest('.rz'))return;
+    var th=e.target.closest('th');if(!th||!th.dataset.ck)return;
+    if(REC.sort.k===th.dataset.ck)REC.sort.d*=-1;else{REC.sort.k=th.dataset.ck;REC.sort.d=-1;}
+    REC.page=0;recRenderTable();
+  });
+})();
+function recResetFilters(){recSetFilterState({});$('rfSaved').value='';recApplyFilters();}
+/* ===== end Records dashboard v2 ===== */
+
+
 
 /* ===== manual ledger (localStorage) ===== */
 function bets(){try{return JSON.parse(localStorage.getItem('edgedesk_bets')||'[]');}catch(e){return[];}}
