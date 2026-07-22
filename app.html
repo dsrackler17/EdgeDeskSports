@@ -835,6 +835,73 @@ body.ed-large-text .set-lbl,body.ed-large-text .lead-sel{font-size:14px}
 @media(max-width:640px){.rtbl{font-size:10.5px}.rtbl td{padding:6px 5px}.rtbl th{padding:7px 5px}}
 </style>
 
+<style id="vnext-style">
+/* ===== vNext: edge card chips ===== */
+.echips{display:flex;flex-wrap:wrap;gap:4px;margin-top:5px}
+.ec{font-size:10px;line-height:1;padding:3px 6px;border-radius:5px;border:1px solid var(--border);color:var(--dim);background:var(--surface2);font-family:'JetBrains Mono',monospace;white-space:nowrap}
+.ec.up{color:var(--pos);border-color:rgba(61,220,151,.35)}
+.ec.dn{color:var(--neg);border-color:rgba(255,92,92,.35)}
+.ec.mut{color:var(--faint)}
+.ec.eg{font-weight:700;letter-spacing:.3px}
+.ec.eg.g-A{color:var(--pos);border-color:rgba(61,220,151,.5)}
+.ec.eg.g-B{color:var(--accent);border-color:rgba(94,160,255,.5)}
+.ec.eg.g-C{color:var(--warn);border-color:rgba(217,154,43,.5)}
+.ec.eg.g-PASS{color:var(--faint)}
+.ec.d-BET{color:var(--pos);font-weight:700;border-color:rgba(61,220,151,.5)}
+.ec.d-WATCH{color:var(--warn);font-weight:600}
+.ec.d-PASS{color:var(--faint)}
+/* ===== vNext: market pulse ===== */
+.mpulse{background:var(--surface);border:1px solid var(--border);border-radius:12px;margin-top:13px;overflow:hidden}
+.mpulse-h{display:flex;align-items:center;gap:8px;padding:11px 14px;cursor:pointer;user-select:none;font-weight:700;font-size:13.5px}
+.mpulse-h .chev{margin-left:auto;color:var(--faint);transition:transform .15s ease}
+.mpulse.open .chev{transform:rotate(90deg)}
+.mpulse-bd{display:none;padding:0 14px 12px}
+.mpulse.open .mpulse-bd{display:block}
+.mp-note{font-size:11px;color:var(--faint);margin:0 0 9px;line-height:1.45}
+.mp-sec{font-size:10.5px;letter-spacing:.6px;text-transform:uppercase;color:var(--dim);margin:11px 0 6px;font-weight:700}
+.mp-row{display:flex;align-items:baseline;gap:8px;padding:5px 0;border-bottom:1px solid var(--border);font-size:12px}
+.mp-row:last-child{border-bottom:0}
+.mp-sel{color:var(--text);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mp-meta{color:var(--faint);font-size:10.5px;white-space:nowrap}
+.mp-val{margin-left:auto;font-family:'JetBrains Mono',monospace;font-size:11.5px;white-space:nowrap}
+.mp-val.up{color:var(--pos)}.mp-val.dn{color:var(--neg)}.mp-val.mut{color:var(--faint)}
+.mp-sum{display:flex;flex-wrap:wrap;gap:6px}
+.mp-stat{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:7px 10px;min-width:86px}
+.mp-stat .n{font-family:'JetBrains Mono',monospace;font-size:15px;font-weight:700;color:var(--text)}
+.mp-stat .l{font-size:9.5px;color:var(--faint);text-transform:uppercase;letter-spacing:.5px;margin-top:2px}
+/* ===== vNext: portfolio ===== */
+.pfl{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:13px 14px;margin:0 0 13px}
+.pfl-h{font-weight:700;font-size:13.5px;margin-bottom:3px}
+.pfl-sub{font-size:11px;color:var(--faint);margin:0 0 10px;line-height:1.45}
+.pfl-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(128px,1fr));gap:7px}
+.pfl-cell{background:var(--surface2);border:1px solid var(--border);border-radius:9px;padding:8px 10px}
+.pfl-cell .n{font-family:'JetBrains Mono',monospace;font-size:15px;font-weight:700;color:var(--text)}
+.pfl-cell .n.up{color:var(--pos)}.pfl-cell .n.dn{color:var(--neg)}.pfl-cell .n.wr{color:var(--warn)}
+.pfl-cell .l{font-size:9.5px;color:var(--faint);text-transform:uppercase;letter-spacing:.5px;margin-top:2px}
+.pfl-sec{font-size:10.5px;letter-spacing:.6px;text-transform:uppercase;color:var(--dim);margin:12px 0 6px;font-weight:700}
+.pfl-bar{display:flex;align-items:center;gap:8px;padding:4px 0;font-size:12px}
+.pfl-bar .k{color:var(--dim);min-width:92px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pfl-bar .track{flex:1;height:6px;background:var(--surface2);border-radius:4px;overflow:hidden}
+.pfl-bar .fill{height:100%;background:var(--accent);border-radius:4px}
+.pfl-bar .v{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text);white-space:nowrap}
+.pfl-conc{display:flex;align-items:center;gap:10px;margin-top:4px}
+.pfl-conc .track{flex:1;height:8px;background:var(--surface2);border-radius:5px;overflow:hidden}
+.pfl-conc .fill{height:100%;border-radius:5px}
+.pfl-conc .fill.lo{background:var(--pos)}.pfl-conc .fill.md{background:var(--warn)}.pfl-conc .fill.hi{background:var(--neg)}
+.pfl-note{font-size:10.5px;color:var(--faint);margin-top:8px;line-height:1.45}
+/* ===== vNext: global polish ===== */
+.t10item,.card,.flwatch,.rsport,.rkpi,.rchart{transition:border-color .15s ease}
+.t10item:hover,.flwatch:hover{border-color:rgba(94,160,255,.45)}
+.lead-row{transition:background-color .12s ease}
+.lead-row:hover{background:rgba(255,255,255,.025)}
+.btn,.refreshbtn,.rbtn,.stseg span,.rseg span{transition:background-color .12s ease,border-color .12s ease,color .12s ease}
+.refreshbtn:hover{color:var(--accent);border-color:var(--accent)}
+.rrow{transition:background-color .1s ease}
+button:focus-visible,select:focus-visible,input:focus-visible,a:focus-visible{outline:2px solid var(--accent);outline-offset:1px;border-radius:4px}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{transition-duration:.01ms!important;animation-duration:.01ms!important;animation-iteration-count:1!important}}
+@media (max-width:520px){.pfl-grid{grid-template-columns:repeat(2,1fr)}.mp-stat{min-width:72px;flex:1}}
+</style>
+
 </head>
 <body>
 <header class="appbar"><div class="appbar-in">
@@ -871,6 +938,7 @@ body.ed-large-text .set-lbl,body.ed-large-text .lead-sel{font-size:14px}
       <div class="fld"><label>Sport</label><select id="fSport"><option value="">All sports</option></select></div>
       <div class="fld"><label>Min EV %</label><input type="number" id="fMinev" value="0" step="0.5"></div>
     </div>
+    <div id="mktPulse" class="mpulse hide"></div>
     <div class="feed" id="feed"><div class="empty">Loading edges…</div></div>
     <div class="engine-sec" id="modelSec"><div class="engine-h"><span class="ebadge model">MODEL <span class="st">★★★★☆</span></span>Model edge</div><div class="engine-sub">Proprietary prediction models vs the market — independent of Pinnacle, <b>unproven</b>, counted nowhere in CLV.</div><div id="modelFeed"><div class="empty">—</div></div></div>
     <div class="engine-sec" id="consensusSec"><div class="engine-h"><span class="ebadge consensus">CONSENSUS <span class="st">★★★★☆</span></span>Consensus edge</div><div class="engine-sub">Cross-book disagreement &amp; outliers from per-book price arrays.</div><div id="consensusFeed"><div class="empty">—</div></div></div>
@@ -1002,6 +1070,7 @@ body.ed-large-text .set-lbl,body.ed-large-text .lead-sel{font-size:14px}
     <h3 style="margin:18px 0 9px">Market activity <span style="font-weight:400;color:var(--dim);font-size:12px">&mdash; line moves on watched boards</span></h3>
     <div id="mktFeed"><div class="empty">Loading market…</div></div>
     <h3 style="margin:24px 0 9px">Your bets <span style="font-weight:400;color:var(--dim);font-size:12px">&mdash; tap an edge to log; it settles itself once the game is graded. Custom bets settle by hand. Saved on this device.</span></h3>
+    <div id="portfolio" class="hide"></div>
     <div class="kpis" id="clvKpis"></div>
     <div class="quickadd"><div class="qa-h">Quick add &mdash; one tap, no typing</div><div id="qaList"><div class="empty" style="padding:10px">Loading today's edges…</div></div></div>
     <div id="betlist"></div>
@@ -2573,7 +2642,7 @@ function edgeRow(e,i){
   var tags=(e.edge>0.06?' <span class="suspect">\u26a0 verify</span>':'')+(isTrusted(e.best_book)?'':' <span class="suspect">offshore</span>');
   var header='<span class="rank">'+(i+1)+'</span>'+
     '<div class="lead-mid"><div class="lead-sel"><span class="ebadge market">MARKET</span>'+selLabel(e)+anchorBadge(e)+'<span class="corrslot" id="cs_t10_'+i+'">'+corrobBadge(e)+limitBadge(e)+'</span>'+tags+'</div>'+
-    '<div class="lead-meta">'+mktLabel(e.market)+' \u00b7 '+(e.away_team||'')+' @ '+(e.home_team||'')+' \u00b7 '+whenLabel(e.commence_time)+'</div></div>'+
+    '<div class="lead-meta">'+mktLabel(e.market)+' \u00b7 '+(e.away_team||'')+' @ '+(e.home_team||'')+' \u00b7 '+whenLabel(e.commence_time)+'</div>'+edgeChips(e)+'</div>'+
     '<span class="lead-ev">+'+(e.edge*100).toFixed(1)+'%</span>';
   return expandItem(e,'t10_'+i,header);
 }
@@ -7242,6 +7311,171 @@ window.loadDiscipline=async function(){
       +discFormHTML();
   }
 };
+
+
+/* ===================================================================== */
+/* ===== vNext layer: card chips, market pulse, portfolio ============== */
+/* Deterministic only. Every value traces to signals rows already loaded */
+/* or to the local ledger. Nothing here queries anything new, invents a  */
+/* number, or touches edge math, sorting, filters, or the proof layer.   */
+/* ===================================================================== */
+
+/* ---- compact chip strip for a collapsed edge card ---- */
+function vnOd(a){return a==null?'\u2014':(a>0?'+'+a:''+a);}
+function edgeChips(e){
+  try{
+    var q=eqsCompute(e);
+    var mv=(typeof moveLabel==='function')?moveLabel(e):null;
+    var st=(typeof sliceStat==='function')?sliceStat(e):null;
+    var fair=(e.sharp_fair!=null)?GE.decToAm(1/Math.max(0.0001,e.sharp_fair)):null;
+    var am=(e.best_dec!=null)?GE.decToAm(e.best_dec):null;
+    var mvCls=mv?mv.cls:'mv-flat';
+    var mvTxt=mvCls==='mv-steam'?'\u2193 steam':mvCls==='mv-drift'?'\u2191 drift':'\u2192 flat';
+    var hist,histCls;
+    if(st&&st.rate!=null&&st.n>=40){hist=(st.rate*100).toFixed(0)+'% beat \u00b7 n'+st.n;histCls=st.rate>=0.54?'up':(st.rate<0.5?'dn':'');}
+    else if(st&&st.rate!=null&&st.n>=15){hist=(st.rate*100).toFixed(0)+'% beat \u00b7 thin n'+st.n;histCls='mut';}
+    else{hist='CLV unproven';histCls='mut';}
+    return '<div class="echips">'+
+      '<span class="ec eg g-'+q.grade+'" title="Edge Quality '+q.score+'/100. Deterministic score from CLV history, sharp anchor, book count, edge size and line movement. Open the receipt for each part\u2019s contribution.">'+q.grade+' \u00b7 '+q.score+'</span>'+
+      '<span class="ec d-'+q.decision+'" title="Rule-based read from the same inputs. BET requires a proven signal-class CLV record; WATCH means the placement math is fine but the class is unproven.">'+q.decision+'</span>'+
+      '<span class="ec" title="Best available price vs the de-vigged sharp fair line">'+vnOd(am)+' vs fair '+vnOd(fair)+'</span>'+
+      '<span class="ec '+(mvCls==='mv-steam'?'up':mvCls==='mv-drift'?'dn':'mut')+'" title="Price direction since first capture. Steam = shortening toward the pick (market backing it); drift = lengthening away.">'+mvTxt+'</span>'+
+      '<span class="ec mut" title="Books quoting this line. The fair estimate means more with more books behind it.">'+(e.n_books||0)+' bk</span>'+
+      '<span class="ec '+histCls+'" title="How this signal class (sport/market slice) has actually done against the closing line over graded signals. The only proof that placement value survives to close.">'+hist+'</span>'+
+    '</div>';
+  }catch(_){return '';}
+}
+
+/* ---- Market Pulse: intelligence panel from rows already in memory ---- */
+/* Movement is honestly two snapshots per line (first capture vs now).   */
+/* Tick-level history is not stored; the panel says so instead of faking */
+/* a timeline.                                                           */
+function vnPulseState(){try{return localStorage.getItem('edgedesk_pulse_open')!=='0';}catch(_){return true;}}
+window.__togglePulse=function(){var el=$('mktPulse');if(!el)return;el.classList.toggle('open');
+  try{localStorage.setItem('edgedesk_pulse_open',el.classList.contains('open')?'1':'0');}catch(_){}};
+function renderMarketPulse(){
+  var host=$('mktPulse');if(!host)return;
+  var nowMs=Date.now();
+  var win=$('fScope')?$('fScope').value:'week';
+  var sport=$('fSport')?$('fSport').value:'';
+  var endDay=new Date();endDay.setHours(23,59,59,999);
+  var horizon=win==='day'?endDay.getTime():nowMs+7*864e5;
+  var staleCut=nowMs-((typeof EDGE_MAX_AGE_MIN!=='undefined'?EDGE_MAX_AGE_MIN:120)*60000);
+  /* union of the strict pool and the wider board pool, deduped, fresh + in-window */
+  var seen={},all=[];
+  (EDGES||[]).concat(window.D5_POOL||[]).forEach(function(e){
+    if(!e||!e.event_id)return;
+    var k=e.event_id+'|'+e.market+'|'+(e.selection||'')+'|'+(e.point==null?'':e.point);
+    if(seen[k])return;seen[k]=1;
+    if(sport&&e.sport_title!==sport)return;
+    var ct=e.commence_time?new Date(e.commence_time).getTime():0;
+    if(!ct||ct>horizon||ct<nowMs-3600e3)return;
+    var ls=e.last_seen_at?new Date(e.last_seen_at).getTime():0;
+    if(!ls||ls<staleCut)return;
+    all.push(e);
+  });
+  if(!all.length){host.classList.add('hide');return;}
+  host.classList.remove('hide');
+  /* movers: biggest % price change first capture -> now */
+  var movers=all.filter(function(e){return e.first_best_dec&&e.best_dec&&e.first_best_dec>1&&e.best_dec>1;})
+    .map(function(e){return{e:e,pct:(e.best_dec-e.first_best_dec)/e.first_best_dec};})
+    .filter(function(m){return Math.abs(m.pct)>=0.005;})
+    .sort(function(a,b){return Math.abs(b.pct)-Math.abs(a.pct);}).slice(0,5);
+  /* disagreement: consensus fair vs sharp fair, in probability points */
+  var dis=all.filter(function(e){return e.sharp_fair!=null&&e.consensus_fair!=null;})
+    .map(function(e){return{e:e,gap:(e.consensus_fair-e.sharp_fair)*100};})
+    .filter(function(d){return Math.abs(d.gap)>=1;})
+    .sort(function(a,b){return Math.abs(b.gap)-Math.abs(a.gap);}).slice(0,4);
+  var pos=all.filter(function(e){return (e.edge||0)>0;}).length;
+  var bks=all.map(function(e){return e.n_books||0;}).sort(function(a,b){return a-b;});
+  var medBk=bks.length?bks[Math.floor(bks.length/2)]:0;
+  var sharpN=all.filter(function(e){return e.has_sharp;}).length;
+  var mHtml=movers.length?movers.map(function(m){
+    var e=m.e,a0=GE.decToAm(e.first_best_dec),a1=GE.decToAm(e.best_dec);
+    var toward=m.pct<0; /* decimal shrinking = price shortening = market moving toward this side */
+    return '<div class="mp-row"><span class="mp-sel">'+selLabel(e)+'</span><span class="mp-meta">'+(e.sport_title||'')+' \u00b7 '+mktLabel(e.market)+' \u00b7 '+vnOd(a0)+' \u2192 '+vnOd(a1)+'</span><span class="mp-val '+(toward?'up':'dn')+'">'+(toward?'\u2193 ':'\u2191 ')+(Math.abs(m.pct)*100).toFixed(1)+'%</span></div>';
+  }).join(''):'<div class="mp-row"><span class="mp-sel mut" style="color:var(--faint)">No line has moved \u22650.5% since first capture in this window.</span></div>';
+  var dHtml=dis.length?dis.map(function(d){
+    var e=d.e;
+    return '<div class="mp-row"><span class="mp-sel">'+selLabel(e)+'</span><span class="mp-meta">'+(e.sport_title||'')+' \u00b7 consensus '+(e.consensus_fair*100).toFixed(1)+'% vs Pinnacle '+(e.sharp_fair*100).toFixed(1)+'%</span><span class="mp-val '+(d.gap>0?'up':'dn')+'">'+(d.gap>0?'+':'')+d.gap.toFixed(1)+' pts</span></div>';
+  }).join(''):'<div class="mp-row"><span class="mp-sel" style="color:var(--faint)">Books and Pinnacle agree within 1 point everywhere the comparison exists.</span></div>';
+  host.innerHTML='<div class="mpulse-h" onclick="__togglePulse()">\u26a1 Market pulse <span style="font-weight:400;color:var(--faint);font-size:11px">'+all.length+' live lines \u00b7 '+(win==='day'?'today':'this week')+'</span><span class="chev">\u203a</span></div>'+
+    '<div class="mpulse-bd">'+
+      '<p class="mp-note">Movement here is two real snapshots per line: the price at first capture vs the price now. Tick-by-tick history is not stored yet, so no intraday timeline is drawn. Everything below is read from the same rows as the feed.</p>'+
+      '<div class="mp-sum">'+
+        '<div class="mp-stat"><div class="n">'+all.length+'</div><div class="l">live lines</div></div>'+
+        '<div class="mp-stat"><div class="n" style="color:var(--pos)">'+pos+'</div><div class="l">priced +EV</div></div>'+
+        '<div class="mp-stat"><div class="n">'+medBk+'</div><div class="l">median books</div></div>'+
+        '<div class="mp-stat"><div class="n">'+sharpN+'</div><div class="l">pinnacle quoted</div></div>'+
+      '</div>'+
+      '<div class="mp-sec">Biggest moves since first capture</div>'+mHtml+
+      '<div class="mp-sec">Consensus vs sharp disagreement</div>'+dHtml+
+    '</div>';
+  if(vnPulseState())host.classList.add('open');
+}
+
+/* ---- Portfolio: exposure read of the local ledger ---- */
+/* Stakes are optional in the ledger. Dollar figures only ever sum what  */
+/* was actually entered; the count of unstaked bets is always shown next */
+/* to them so a partial sum can't masquerade as total exposure.          */
+function renderPortfolio(){
+  var host=$('portfolio');if(!host)return;
+  var rows=(typeof bets==='function')?bets():[];
+  if(!rows.length){host.innerHTML='';host.classList.add('hide');return;}
+  host.classList.remove('hide');
+  var pend=rows.filter(function(b){return b.result==null||b.result==='pending';});
+  var todayEnd=new Date();todayEnd.setHours(23,59,59,999);
+  var todayStart=new Date();todayStart.setHours(0,0,0,0);
+  var today=pend.filter(function(b){if(!b.commence)return false;var t=new Date(b.commence).getTime();return t>=todayStart.getTime()&&t<=todayEnd.getTime();});
+  var staked=pend.filter(function(b){return b.stake!=null&&isFinite(+b.stake)&&+b.stake>0;});
+  var stakeSum=staked.reduce(function(s,b){return s+(+b.stake);},0);
+  var fav=pend.filter(function(b){return (+b.odds||0)<0;}).length;
+  var dog=pend.filter(function(b){return (+b.odds||0)>0;}).length;
+  var bySport={};pend.forEach(function(b){var k=(b.sport||'').trim()||'manual / unlabeled';bySport[k]=bySport[k]||{n:0,usd:0,usdN:0};bySport[k].n++;if(b.stake!=null&&+b.stake>0){bySport[k].usd+=+b.stake;bySport[k].usdN++;}});
+  var sportKeys=Object.keys(bySport).sort(function(a,b){return bySport[b].n-bySport[a].n;});
+  var maxShare=pend.length?(bySport[sportKeys[0]].n/pend.length):0;
+  var concCls=maxShare>=0.7?'hi':maxShare>=0.45?'md':'lo';
+  var concTxt=maxShare>=0.7?'concentrated':maxShare>=0.45?'leaning on one sport':'spread out';
+  var anchored=pend.filter(function(b){return b.anchor==='sharp';}).length;
+  var cells=
+    '<div class="pfl-cell"><div class="n">'+pend.length+'</div><div class="l">pending bets</div></div>'+
+    '<div class="pfl-cell"><div class="n">'+today.length+'</div><div class="l">start today</div></div>'+
+    '<div class="pfl-cell"><div class="n">'+pend.length+'u</div><div class="l">sim 1u exposure</div></div>'+
+    '<div class="pfl-cell"><div class="n'+(staked.length?'':' wr')+'">'+(staked.length?('$'+stakeSum.toFixed(0)):'\u2014')+'</div><div class="l">$ staked \u00b7 '+staked.length+' of '+pend.length+' have stakes</div></div>'+
+    '<div class="pfl-cell"><div class="n">'+fav+' / '+dog+'</div><div class="l">favorites / dogs</div></div>'+
+    '<div class="pfl-cell"><div class="n">'+anchored+' of '+pend.length+'</div><div class="l">pinnacle-anchored</div></div>';
+  var barMax=sportKeys.length?bySport[sportKeys[0]].n:1;
+  var sportBars=sportKeys.slice(0,6).map(function(k){var v=bySport[k];
+    return '<div class="pfl-bar"><span class="k">'+flEsc(k)+'</span><span class="track"><span class="fill" style="width:'+Math.round(100*v.n/barMax)+'%"></span></span><span class="v">'+v.n+(v.usdN?' \u00b7 $'+v.usd.toFixed(0):'')+'</span></div>';
+  }).join('');
+  host.innerHTML='<div class="pfl">'+
+    '<div class="pfl-h">Your book right now</div>'+
+    '<p class="pfl-sub">Read from the bets you logged on this device. Dollar figures sum only the stakes you actually entered; the sim column counts every pending bet at a flat 1 unit so partial stake entry can\u2019t distort exposure.</p>'+
+    '<div class="pfl-grid">'+cells+'</div>'+
+    (sportKeys.length?'<div class="pfl-sec">Pending by sport</div>'+sportBars:'')+
+    '<div class="pfl-sec">Concentration</div>'+
+    '<div class="pfl-conc"><span class="track"><span class="fill '+concCls+'" style="width:'+Math.round(maxShare*100)+'%"></span></span><span class="v" style="font-family:\'JetBrains Mono\',monospace;font-size:11px">'+Math.round(maxShare*100)+'% in '+(sportKeys[0]?flEsc(sportKeys[0]):'\u2014')+'</span></div>'+
+    '<div class="pfl-note">'+concTxt.charAt(0).toUpperCase()+concTxt.slice(1)+': the bar is the share of pending bets in your most-bet sport. Descriptive, not a risk model; there is no honest way to score portfolio risk without stake sizes on every bet.</div>'+
+  '</div>';
+}
+
+/* ---- wire in without touching existing declarations ---- */
+(function(){
+  if(typeof renderEdges==='function'){
+    var __re0=renderEdges;
+    renderEdges=function(){__re0();try{renderMarketPulse();}catch(_){}};
+  }
+  if(typeof renderLedger==='function'){
+    var __rl0=renderLedger;
+    renderLedger=function(){try{renderPortfolio();}catch(_){}return __rl0();};
+  }
+  if(typeof loadMarket==='function'){
+    var __lm0=loadMarket;
+    loadMarket=function(){try{renderPortfolio();}catch(_){}return __lm0.apply(this,arguments);};
+  }
+  try{renderPortfolio();}catch(_){}
+})();
+/* ===== end vNext layer ===== */
 
 </script>
 </body>
