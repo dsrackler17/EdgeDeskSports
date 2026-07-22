@@ -7755,7 +7755,6 @@ BQE.register({id:'variance',label:'Variance (price-based)',run:function(e){
  {id:'offense',label:'Offensive matchup',src:'team batting metrics feed',wants:'wRC+, OPS, splits vs handedness'},
  {id:'defense',label:'Defense',src:'team fielding metrics feed',wants:'DRS, OAA, framing'},
  {id:'park',label:'Park factor',src:'park factors table',wants:'run environment per venue'},
- {id:'weather',label:'Weather',src:'weather API keyed to venue + first pitch',wants:'wind, temp, precipitation'},
  {id:'lineups',label:'Confirmed lineups',src:'lineup feed at release',wants:'scratches, rest days, platoons'}
 ].forEach(function(s){BQE.register({id:s.id,label:s.label,na:true,run:function(){return{na:true,src:s.src,wants:s.wants};}});});
 
@@ -8164,6 +8163,148 @@ async function pgPollForSub(){
   pgShow(pgLockedHTML(''));
 })();
 /* ===== end paywall gate ===== */
+
+
+/* ===================================================================== */
+/* ===== Weather (live) ================================================ */
+/* Reads event_weather, which weather_sync keys on signals.event_id.     */
+/* Weather feeds the VARIANCE read only. It never touches edge, the fair */
+/* line, or CLV: wind changes the run distribution, not the price you    */
+/* are beating.                                                          */
+/* ===================================================================== */
+window.WX={};
+var WX_STALE_H=6;   /* a forecast older than this is not shown as current */
+
+async function loadWeather(ids){
+  try{
+    if(!ids||!ids.length)return;
+    var uniq=[];for(var i=0;i<ids.length;i++)if(ids[i]&&uniq.indexOf(ids[i])<0)uniq.push(ids[i]);
+    if(!uniq.length)return;
+    var out=[];
+    for(var s=0;s<uniq.length;s+=60){                    /* keep the URL sane */
+      var chunk=uniq.slice(s,s+60).map(encodeURIComponent).join(',');
+      var rows=await sbGet('event_weather?select=*&event_id=in.('+chunk+')');
+      out=out.concat(rows||[]);
+    }
+    out.forEach(function(r){window.WX[r.event_id]=r;});
+  }catch(_){ /* no weather is a fine outcome; the module says so */ }
+}
+
+function wxCompass(d){
+  if(d==null)return '\u2014';
+  var n=['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'];
+  return n[Math.round(((d%360)+360)%360/22.5)%16];
+}
+function wxAgeH(r){
+  if(!r||!r.fetched_at)return null;
+  return (Date.now()-new Date(r.fetched_at).getTime())/3600000;
+}
+
+BQE.register({
+  id:'weather', label:'Weather',
+  applies:function(e){return e.sport_key==='baseball_mlb';},
+  run:function(e){
+    var r=window.WX[e.event_id];
+    if(!r)return{delta:0,verdict:'no reading for this game',
+      lines:[['Status','No forecast row for this event yet','mut']],
+      src:'event_weather, written hourly by weather_sync from api.weather.gov (National Weather Service). A missing row means the sync has not covered this game.'};
+
+    var age=wxAgeH(r);
+    if(age!=null&&age>WX_STALE_H)return{delta:0,verdict:'forecast is stale, not used',
+      lines:[['Last fetched',age.toFixed(1)+'h ago','dn'],['Effect','ignored rather than shown as current','mut']],
+      src:'Stale forecasts are refused. A six-hour-old wind reading next to a live line is worse than no reading.'};
+
+    var roof=(r.roof||'open');
+    if(roof==='fixed')return{delta:0,verdict:'indoors, weather neutral',
+      lines:[['Venue',(r.park_name||'')+' (fixed roof)','mut']],
+      src:'Fixed-roof park: outdoor conditions do not reach the field.'};
+
+    var d=0,notes=[];
+    var lines=[];
+    lines.push(['Venue',(r.park_name||'\u2014')+(roof==='retractable'?' (retractable roof)':''),roof==='retractable'?'mut':'']);
+    if(r.temp_f!=null)lines.push(['Temperature',Math.round(r.temp_f)+'\u00b0F'+(r.humidity_pct!=null?' \u00b7 '+r.humidity_pct+'% humidity':''),'']);
+
+    /* wind: direction relative to center field is the whole story */
+    if(r.wind_mph!=null){
+      var wtxt=Math.round(r.wind_mph)+' mph from '+wxCompass(r.wind_dir_deg);
+      if(r.wind_vs_cf_deg==null){
+        lines.push(['Wind',wtxt,'']);
+        lines.push(['Out or in','not calibrated for this park','mut']);
+        notes.push('park has no center-field bearing set, so the out/in read is withheld');
+      }else{
+        var a=Math.abs(r.wind_vs_cf_deg);
+        var dir=a<45?'blowing out to center':a>135?'blowing in from center':'cross wind';
+        lines.push(['Wind',wtxt+' \u00b7 '+dir,'']);
+        if(a<45){                       /* out: carry increases, run variance up */
+          if(r.wind_mph>=15){d-=6;notes.push('strong wind out, fly-ball variance up');}
+          else if(r.wind_mph>=10){d-=3;notes.push('wind out, mild variance bump');}
+        }else if(a>135){                /* in: suppresses carry */
+          if(r.wind_mph>=15){d+=2;notes.push('strong wind in, run environment suppressed');}
+        }
+      }
+    }
+    if(r.temp_f!=null){
+      if(r.temp_f>=95){d-=2;notes.push('extreme heat, ball carries further');}
+      else if(r.temp_f<=45){d-=2;notes.push('cold, ball carries less and pitchers grip differently');}
+    }
+    if(r.precip_prob!=null){
+      lines.push(['Precipitation',r.precip_prob+'% chance',r.precip_prob>=50?'dn':'mut']);
+      if(r.precip_prob>=50){d-=3;notes.push('rain risk, delay or postponement in play');}
+    }
+    if(roof==='retractable'){
+      lines.push(['Caveat','roof state at first pitch is not published, so this may not reach the field','mut']);
+      d=Math.round(d/2);
+      notes.push('halved: retractable roof may be closed');
+    }
+    /* Weather changes the RUN ENVIRONMENT. That lands almost entirely on totals;
+       a moneyline is far less affected because conditions hit both teams alike.
+       Applying a totals-sized penalty to an h2h price would be invented precision. */
+    var wt=(e.market==='totals')?1:(e.market==='spreads')?0.4:0.2;
+    var raw=d;
+    d=Math.max(-8,Math.min(3,Math.round(d*wt)));
+    if(r.forecast_for)lines.push(['Forecast hour',recDT?recDT(r.forecast_for):r.forecast_for,'mut']);
+
+    return{delta:d,
+      verdict:notes.length?notes[0]:'nothing notable',
+      lines:lines,
+      src:'National Weather Service hourly forecast (api.weather.gov) for '+(r.park_name||'the venue')+', matched to first pitch and refreshed hourly. Affects the variance read only \u2014 never the edge, the fair line, or CLV.'+(wt<1?' Scaled to '+Math.round(wt*100)+'% of the raw read because weather moves '+mktLabel(e.market)+' far less than totals; raw '+raw+', applied '+d+'.':'')};
+  }
+});
+
+/* fetch weather for whatever MLB events are currently loaded */
+async function wxSync(){
+  try{
+    var ids=(window.EDGES||[]).concat(window.D5_POOL||[])
+      .filter(function(e){return e&&e.sport_key==='baseball_mlb'&&e.event_id;})
+      .map(function(e){return e.event_id;});
+    if(!ids.length)return false;
+    var before=Object.keys(window.WX).length;
+    await loadWeather(ids);
+    if(Object.keys(window.WX).length===before)return true;   /* nothing new, but we did run */
+    (window.EDGES||[]).concat(window.D5_POOL||[]).forEach(function(e){if(e)delete e.__bqv;});
+    if(typeof renderEdges==='function')renderEdges();
+    return true;
+  }catch(_){return false;}
+}
+
+/* Two entry points on purpose. loadEdges() is already in flight by the time this
+   module parses, so wrapping it alone would miss the very first load - which is
+   the only load most sessions ever do. The poller covers that first population;
+   the wrapper covers every refresh after it. */
+(function(){
+  if(typeof loadEdges==='function'){
+    var __le0=loadEdges;
+    loadEdges=async function(){var r=await __le0.apply(this,arguments);await wxSync();return r;};
+  }
+  var tries=0;
+  (function poll(){
+    if(++tries>50)return;                                    /* ~15s then give up quietly */
+    var have=((window.EDGES||[]).concat(window.D5_POOL||[])).some(function(e){return e&&e.sport_key==='baseball_mlb';});
+    if(have){wxSync();return;}
+    setTimeout(poll,300);
+  })();
+})();
+/* ===== end weather ===== */
 
 </script>
 </body>
