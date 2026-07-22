@@ -178,7 +178,7 @@ footer{border-top:1px solid var(--border);background:var(--surface);padding:34px
     <a class="nlink hideS" href="#proof-record">Track record</a>
     <a class="nlink hideS" href="#classes">Fault types</a>
     <button class="btn ghost" id="navLogin" onclick="openAuth('login')">Log in</button>
-    <button class="btn primary" id="navSignup" onclick="openAuth('signup')">Sign up</button>
+    <button class="btn primary" id="navSignup" onclick="startSubscribe()">Get access</button>
   </div>
 </nav>
 
@@ -204,7 +204,7 @@ Every recommendation is tracked. Every result is archived. Every edge is measure
       <div class="cta">
         <p class="hero-trust">
   No locks. No guarantees. Just transparent research backed by real market data.
-</p> <button class="btn primary lg" id="heroStart" onclick="openAuth('signup')">Start free</button>
+</p> <button class="btn primary lg" id="heroStart" onclick="startSubscribe()">Get access \u2014 $24.99/mo</button>
         <a class="btn ghost lg" href="#proof">See a real fault →</a>
       </div>
       <p class="microcta">Free trial • Research platform, not betting advice • 21+</p>
@@ -599,7 +599,7 @@ document.addEventListener('keydown',function(e){if(e.key==='Escape')closeArl();}
 /* ===== auth ===== */
 function openAuth(mode){authMode=mode;var su=mode==='signup';
   document.getElementById('authTitle').textContent=su?'Create your account':'Welcome back';
-  document.getElementById('authLede').textContent=su?'Free to start. Find bad lines and see if they actually hold up.':'Log in to your EdgeDesk scanner.';
+  document.getElementById('authLede').textContent=su?'Step 1 of 2. Create your account, then activate your subscription to open the terminal.':'Log in to your EdgeDesk scanner.';
   document.getElementById('authSubmit').textContent=su?'Sign up':'Log in';
   document.getElementById('aPass').autocomplete=su?'new-password':'current-password';
   // consent checkbox: required for signup, hidden for login. reset each open.
@@ -676,12 +676,18 @@ async function submitAuth(){
       if(pendingSubscribe||getPendingSub()){setPendingSub(false);pendingSubscribe=true;
         msg('Account ready \u2014 confirming your subscription\u2026','ok');
         setTimeout(function(){closeAuth();openArl();},400);return;}
+      /* An account alone does not open the terminal. New signups go straight to
+         checkout; returning logins go to the app, where the paywall gate decides. */
+      if(authMode==='signup'){
+        msg('Account created \u2014 next, activate your subscription.','ok');
+        setTimeout(function(){closeAuth();openArl();},400);return;}
       msg('Signed in, opening your scanner\u2026','ok');setTimeout(function(){window.location.href=APP_URL;},700);
     }else{
       /* No token means email confirmation is on. Keep the flag set so the click
          from the confirmation email resumes checkout instead of dead-ending. */
       if(pendingSubscribe)setPendingSub(true);
-      msg(pendingSubscribe
+      if(authMode==='signup')setPendingSub(true);
+      msg(authMode==='signup'
         ? 'Account created. Confirm your email ('+email+'), then come back and tap Subscribe \u2014 checkout picks up where you left off.'
         : 'Check your email to confirm, then log in.','ok');
       btn.disabled=false;btn.textContent=old;
