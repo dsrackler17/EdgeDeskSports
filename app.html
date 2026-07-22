@@ -1005,6 +1005,8 @@ button:focus-visible,select:focus-visible,input:focus-visible,a:focus-visible{ou
 </style>
 
 <style id="paygate-style">
+#pgWarn{background:rgba(217,154,43,.12);border-bottom:1px solid rgba(217,154,43,.4);color:var(--text);font-size:12.5px;line-height:1.5;padding:10px 14px;text-align:center}
+#pgWarn a{color:var(--warn);font-weight:600;text-decoration:underline}
 #payGate{position:fixed;inset:0;z-index:9999;background:var(--bg);display:none;overflow-y:auto;padding:calc(env(safe-area-inset-top) + 28px) 18px 40px}
 #payGate.on{display:block}
 .pg-wrap{max-width:460px;margin:0 auto}
@@ -1033,6 +1035,7 @@ button:focus-visible,select:focus-visible,input:focus-visible,a:focus-visible{ou
 
 </head>
 <body>
+<div id="pgWarn" class="hide"></div>
 <div id="payGate"><div class="pg-wrap"><div class="pg-brand"><i></i>EdgeDesk</div><div class="pg-card"></div></div></div>
 
 <header class="appbar"><div class="appbar-in">
@@ -8038,14 +8041,49 @@ var PG_STRIPE_LINK='https://buy.stripe.com/cNi00ifmaaeNePk2mC8IU09';
 var PG_SUPPORT='support@edgedesksports.com';
 var PG_POLL_MS=2500, PG_POLL_MAX=24;      /* ~60s of webhook grace */
 
+/* How long past_due keeps access. Stripe's smart retries run roughly a week and
+   frequently succeed - expired cards and temporary holds are routine - so cutting
+   someone off on the first failed charge locks out a customer Stripe is still
+   collecting from. The real cutoff is Stripe's own status machine: when retries
+   exhaust it moves the subscription to canceled/unpaid and the webhook writes
+   that, closing the gate. This window is only a backstop in case that final
+   event is ever missed. */
+var PG_GRACE_DAYS=21;
+
 function pgEntitled(sub){
   if(!sub)return false;
-  if(['active','trialing'].indexOf(sub.status)<0)return false;
-  if(sub.current_period_end){
-    var t=new Date(sub.current_period_end).getTime();
-    if(isFinite(t)&&t<Date.now())return false;   /* lapsed row left behind */
+  var ok=['active','trialing'];
+  if(ok.indexOf(sub.status)>=0){
+    if(sub.current_period_end){
+      var t=new Date(sub.current_period_end).getTime();
+      if(isFinite(t)&&t<Date.now())return false;   /* lapsed row left behind */
+    }
+    return true;
   }
-  return true;
+  /* Card failed but Stripe has not given up. Keep access, warn loudly. */
+  if(sub.status==='past_due'){
+    if(!sub.current_period_end)return true;        /* no expiry known: fail open */
+    var p=new Date(sub.current_period_end).getTime();
+    if(!isFinite(p))return true;
+    return (Date.now()-p) < PG_GRACE_DAYS*864e5;
+  }
+  return false;   /* canceled, unpaid, incomplete: no access */
+}
+function pgPastDue(sub){return !!(sub&&sub.status==='past_due');}
+
+/* Non-blocking warning for a customer we are still letting in on a failed card.
+   Blocking them would be wrong; saying nothing would be worse - they would learn
+   about it when access vanished. */
+function pgWarnBar(sub){
+  var el=$('pgWarn'); if(!el)return;
+  if(!pgPastDue(sub)){el.classList.add('hide');return;}
+  var portal=(typeof STRIPE_PORTAL_URL!=='undefined'&&STRIPE_PORTAL_URL)?STRIPE_PORTAL_URL:'';
+  el.innerHTML='<b>Your last payment did not go through.</b> You still have full access while '+
+    'the card is retried, but it will stop if the payment keeps failing. '+
+    (portal
+      ? '<a href="'+portal+'" target="_blank" rel="noopener">Update your payment method</a>'
+      : 'Email <a href="mailto:'+PG_SUPPORT+'">'+PG_SUPPORT+'</a> to sort it out')+'.';
+  el.classList.remove('hide');
 }
 function pgIsOwner(){var u=(typeof edUser==='function')?edUser():null;return !!(u&&u.id===PG_OWNER_ID);}
 
@@ -8084,8 +8122,17 @@ function pgCheckoutURL(){
 
 function pgLockedHTML(note){
   var u=(typeof edUser==='function')?edUser():null;
-  return '<h1 class="pg-h">Your subscription isn\u2019t active</h1>'+
-    '<p class="pg-p">You\u2019re signed in'+(u&&u.email?' as <b>'+stEsc(u.email)+'</b>':'')+', but the terminal needs an active subscription. This is a locked board, not an empty one.</p>'+
+  var s=window.SUB;
+  var failed=!!(s&&(s.status==='past_due'||s.status==='unpaid'));
+  var canceled=!!(s&&s.status==='canceled');
+  var head=failed?'Your payment didn\u2019t go through'
+          :canceled?'Your subscription has ended'
+          :'Your subscription isn\u2019t active';
+  var body=failed?'We kept your access open while the card was retried, but the payment never cleared.'
+          :canceled?'Your subscription was cancelled, so the terminal is closed. You can restart it any time.'
+          :'You\u2019re signed in'+(u&&u.email?' as <b>'+stEsc(u.email)+'</b>':'')+', but the terminal needs an active subscription. This is a locked board, not an empty one.';
+  return '<h1 class="pg-h">'+head+'</h1>'+
+    '<p class="pg-p">'+body+'</p>'+
     (note?'<div class="pg-status">'+note+'</div>':'')+
     '<div class="pg-price"><span class="n">'+SUB_PRICE_DISPLAY+'</span><span class="per">per month, cancel anytime</span></div>'+
     '<ul class="pg-list">'+
@@ -8113,7 +8160,7 @@ function pgPendingHTML(n){
 async function pgRecheck(){
   var m=$('pgMsg'); if(m){m.className='pg-msg mut';m.innerHTML='<span class="pg-spin"></span>Checking\u2026';}
   var st=await pgCheck();
-  if(st==='ok'){pgHide();pgOnUnlock();return;}
+  if(st==='ok'){pgHide();pgWarnBar(window.SUB);pgOnUnlock();return;}
   if(m){
     m.className='pg-msg err';
     m.textContent=st==='unknown'
@@ -8137,6 +8184,7 @@ async function pgPollForSub(){
     var st=await pgCheck();
     if(st==='ok'){
       try{localStorage.removeItem('edgedesk_pending_sub');}catch(_){}
+      pgWarnBar(window.SUB);
       pgHide(); pgOnUnlock(); return true;
     }
     await new Promise(function(r){setTimeout(r,PG_POLL_MS);});
@@ -8155,6 +8203,7 @@ async function pgPollForSub(){
   var st=await pgCheck();
   if(st==='ok'){
     try{localStorage.removeItem('edgedesk_pending_sub');}catch(_){}
+    pgWarnBar(window.SUB);
     return;
   }
   if(st==='unknown')return;                  /* fail open; RLS still governs data */
