@@ -948,6 +948,62 @@ button:focus-visible,select:focus-visible,input:focus-visible,a:focus-visible{ou
 .bq-rec .rw{font-size:11px;color:var(--dim);line-height:1.45}
 </style>
 
+<style id="bq2-style">
+/* ===== Bet Thesis card ===== */
+.bqt{background:rgba(255,255,255,.028);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);border:1px solid var(--border);border-radius:12px;padding:13px 14px;margin-top:12px}
+.bqt-top{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.bqt-title{font-size:10.5px;letter-spacing:.7px;text-transform:uppercase;color:var(--dim);font-weight:700;width:100%}
+.bqt-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(108px,1fr));gap:7px;margin-top:10px}
+.bqt-cell{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:7px 9px}
+.bqt-cell .n{font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:700;color:var(--text)}
+.bqt-cell .n.up{color:var(--pos)}.bqt-cell .n.dn{color:var(--neg)}.bqt-cell .n.mut{color:var(--faint)}
+.bqt-cell .l{font-size:9px;color:var(--faint);text-transform:uppercase;letter-spacing:.5px;margin-top:2px}
+.bqt-sum{font-size:11.5px;color:var(--dim);margin-top:10px;line-height:1.5}
+.bqt-sum b{color:var(--text)}
+.bqt-fa{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:11px}
+@media (max-width:520px){.bqt-fa{grid-template-columns:1fr}}
+.bqt-fa .h{font-size:10px;letter-spacing:.6px;text-transform:uppercase;font-weight:700;margin-bottom:5px}
+.bqt-fa .h.up{color:var(--pos)}.bqt-fa .h.dn{color:var(--neg)}
+.bqt-fa ul{margin:0;padding:0;list-style:none}
+.bqt-fa li{font-size:11.5px;color:var(--dim);padding:2.5px 0;line-height:1.4}
+.bqt-fa li::before{margin-right:6px;font-weight:700}
+.bqt-fa .for li::before{content:'\2713';color:var(--pos)}
+.bqt-fa .agn li::before{content:'\2717';color:var(--neg)}
+/* ===== confidence gauge ===== */
+.bq-gauge{margin-top:11px}
+.bq-gauge .lbl{display:flex;justify-content:space-between;font-size:10px;color:var(--faint);margin-bottom:4px}
+.bq-gtrack{position:relative;height:10px;background:var(--surface2);border:1px solid var(--border);border-radius:6px}
+.bq-gfill{position:absolute;left:0;top:0;bottom:0;border-radius:6px;background:linear-gradient(90deg,rgba(255,92,92,.7),rgba(217,154,43,.75) 45%,rgba(61,220,151,.8))}
+.bq-gcap{position:absolute;top:-3px;bottom:-3px;width:2px;background:var(--warn)}
+.bq-gmark{position:absolute;top:-4px;bottom:-4px;width:3px;background:var(--text);border-radius:2px}
+/* ===== delta mini-bars in module headers ===== */
+.bq-mini{width:52px;height:5px;background:var(--surface2);border-radius:3px;position:relative;overflow:hidden;flex:none}
+.bq-mini i{position:absolute;top:0;bottom:0}
+.bq-mini i.up{left:50%;background:var(--pos)}
+.bq-mini i.dn{right:50%;background:var(--neg)}
+.bq-mini::after{content:'';position:absolute;left:50%;top:0;bottom:0;width:1px;background:var(--border)}
+/* ===== edge anatomy ===== */
+.bq-anat{margin-top:4px}
+.bq-arow{display:flex;align-items:center;gap:9px;padding:4px 0;font-size:11.5px}
+.bq-arow .k{color:var(--dim);min-width:118px}
+.bq-arow .track{flex:1;height:9px;background:var(--surface2);border:1px solid var(--border);border-radius:5px;overflow:hidden;position:relative}
+.bq-arow .fill{height:100%;border-radius:4px}
+.bq-arow .fill.px{background:var(--accent);opacity:.75}
+.bq-arow .fill.fr{background:var(--gold);opacity:.8}
+.bq-arow .fill.gp{background:var(--pos)}
+.bq-arow .fill.gn{background:var(--neg)}
+.bq-arow .v{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text);min-width:56px;text-align:right}
+/* ===== historical validation emphasis ===== */
+.bq-hv{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:6px;margin:4px 0 2px}
+.bq-hv .c{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:6px 8px}
+.bq-hv .c .n{font-family:'JetBrains Mono',monospace;font-size:13.5px;font-weight:700;color:var(--text)}
+.bq-hv .c .n.up{color:var(--pos)}.bq-hv .c .n.dn{color:var(--neg)}.bq-hv .c .n.mut{color:var(--faint)}
+.bq-hv .c .l{font-size:8.5px;color:var(--faint);text-transform:uppercase;letter-spacing:.5px;margin-top:2px}
+/* ===== recommendation extras ===== */
+.bq-recx{margin-top:7px;font-size:11px;color:var(--dim);line-height:1.55}
+.bq-recx b{color:var(--text);font-family:'JetBrains Mono',monospace}
+</style>
+
 </head>
 <body>
 <header class="appbar"><div class="appbar-in">
@@ -2668,7 +2724,7 @@ function receiptHTML(e){
     (ttg?'<div class="gd-line"><span class="l">Game starts</span><span class="v">'+ttg.txt+'</span></div>':'');
   var vHead=vd.headline||(vd.tier==='good'?'\u25c9 Worth a real look':vd.tier==='ok'?'\u25c9 Legit, but modest':vd.tier==='fade'?'\u25c9 Fades by close \u2014 placement +EV only':'\u25c9 Marginal \u2014 verify first');
   var verdict='<div class="gd-verdict '+vd.tier+'"><b>'+vHead+'.</b> '+vd.text+'</div>';
-  return match+bars+eqsCardHTML(e)+marketRead+anchorNote(e)+fairModelNote(e)+corrobNote(e)+limitNote(e)+modelBlock(e)+bqCardHTML(e)+detail+teamFormRows(e)+verdict+trec;
+  return match+bars+bqThesisHTML(e)+eqsCardHTML(e)+marketRead+anchorNote(e)+fairModelNote(e)+corrobNote(e)+limitNote(e)+modelBlock(e)+bqCardHTML(e)+detail+teamFormRows(e)+verdict+trec;
 }
 /* wrap any edge into a tappable card with the shared receipt */
 function receiptInner(e,domid){
@@ -7759,6 +7815,184 @@ function bqCardHTML(e){
   }catch(_){return '';}
 }
 /* ===== end Bet Quality Analysis ===== */
+
+
+/* ===================================================================== */
+/* ===== Bet Thesis & report upgrade =================================== */
+/* Adds a summary thesis card at the top of every receipt and upgrades   */
+/* the Bet Quality card into a full report: confidence gauge, delta      */
+/* bars, honest edge anatomy, expanded historical validation, and a      */
+/* recommendation with a computable expiry price. All from the same      */
+/* modules; nothing new is estimated. An "edge breakdown" attributing   */
+/* percentages to pitching/bullpen/etc is NOT rendered anywhere: no      */
+/* attribution model exists, so decomposition stops at what is real,     */
+/* which is price implied vs fair implied.                               */
+/* ===================================================================== */
+
+/* memoize bqCompute per row for one render pass (thesis + card share it) */
+(function(){
+  var __bq0=bqCompute;
+  bqCompute=function(e){
+    if(e&&e.__bqv&&(Date.now()-(e.__bqvT||0))<15000)return e.__bqv;
+    var q=__bq0(e);
+    if(e){e.__bqv=q;e.__bqvT=Date.now();}
+    return q;
+  };
+})();
+
+function bqFairAm(e){return (e.sharp_fair!=null)?GE.decToAm(1/Math.max(0.0001,e.sharp_fair)):(e.consensus_fair!=null?GE.decToAm(1/Math.max(0.0001,e.consensus_fair)):null);}
+function bqFairP(e){return e.sharp_fair!=null?e.sharp_fair:(e.consensus_fair!=null?e.consensus_fair:null);}
+
+/* price at which the edge stops clearing the noise floor: dec_min=(1+floor)/fairP */
+function bqExpiry(e){
+  var fp=bqFairP(e);if(fp==null||!(e.best_dec>1))return null;
+  var floor=(typeof REAL_FLOOR!=='undefined')?REAL_FLOOR:0.005;
+  var decMin=(1+floor)/fp;
+  if(decMin<=1)return null;
+  return{floorAm:GE.decToAm(decMin),fairAm:GE.decToAm(1/fp),floorPct:floor*100};
+}
+
+function bqForAgainst(q){
+  var fw=[],ag=[];
+  q.results.forEach(function(r){
+    if(r.na)return;
+    var d=r.delta||0;
+    if(d>0)fw.push(r.verdict.charAt(0).toUpperCase()+r.verdict.slice(1));
+    else if(d<0)ag.push(r.verdict.charAt(0).toUpperCase()+r.verdict.slice(1));
+  });
+  if(q.unproven)ag.push('Signal-class CLV record still unproven');
+  if(q.hardFail)ag.unshift('Hard fail: '+(q.why[0]||'gate not met'));
+  return{fw:fw,ag:ag};
+}
+
+function bqGaugeHTML(q){
+  return '<div class="bq-gauge" title="Confidence = 50 + the sum of every module delta below, clamped 0 to 100.'+(q.unproven?' The amber tick is the 66 cap that holds until this signal class proves itself against closing lines.':'')+'">'+
+    '<div class="lbl"><span>0</span><span>confidence</span><span>100</span></div>'+
+    '<div class="bq-gtrack"><div class="bq-gfill" style="width:'+q.conf+'%"></div>'+
+    (q.unproven?'<div class="bq-gcap" style="left:66%"></div>':'')+
+    '<div class="bq-gmark" style="left:calc('+q.conf+'% - 1px)"></div></div></div>';
+}
+
+function bqMini(d){
+  var w=Math.min(26,Math.abs(d)*26/15);
+  if(!d)return '<span class="bq-mini"></span>';
+  return '<span class="bq-mini"><i class="'+(d>0?'up':'dn')+'" style="width:'+w+'px"></i></span>';
+}
+
+/* honest decomposition: where the single edge number actually comes from */
+function bqAnatomyHTML(e){
+  var fp=bqFairP(e);
+  if(fp==null||!(e.best_dec>1))return '';
+  var imp=1/e.best_dec, gap=(fp-imp)*100, edge=(e.edge!=null?e.edge*100:fp*e.best_dec*100-100);
+  var basis=(e.sharp_fair!=null)?'de-vigged Pinnacle':'multi-book consensus';
+  var mx=Math.max(fp,imp)*100*1.15;
+  var bar=function(k,v,cls,txt){return '<div class="bq-arow"><span class="k">'+k+'</span><span class="track"><span class="fill '+cls+'" style="width:'+Math.max(2,Math.min(100,v/mx*100))+'%"></span></span><span class="v">'+txt+'</span></div>';};
+  return '<div class="bq-anat">'+
+    bar('Price implies',imp*100,'px',(imp*100).toFixed(1)+'%')+
+    bar('Fair implies',fp*100,'fr',(fp*100).toFixed(1)+'%')+
+    bar('Probability gap',Math.abs(gap),gap>=0?'gp':'gn',(gap>=0?'+':'')+gap.toFixed(1)+' pts')+
+    '<div class="bq-src">The whole edge is this one gap: your price implies '+(imp*100).toFixed(1)+'%, the '+basis+' fair implies '+(fp*100).toFixed(1)+'%, and edge = fair \u00d7 price \u2212 1 = '+(edge>=0?'+':'')+edge.toFixed(2)+'%. It is not attributed to pitching, bullpen or weather because no attribution model exists \u2014 splitting it that way would be invented precision.</div></div>';
+}
+
+function bqHistHTML(e){
+  var st=(typeof sliceStat==='function')?sliceStat(e):null;
+  var c=function(n,l,cls){return '<div class="c"><div class="n '+(cls||'')+'">'+n+'</div><div class="l">'+l+'</div></div>';};
+  if(st&&st.rate!=null&&st.n>=15){
+    var lvl=st.n>=40?(st.rate>=0.54?'High':st.rate<0.5?'Negative':'Middling'):'Building';
+    return '<div class="bq-hv">'+
+      c(st.n,'graded sample')+
+      c((st.rate*100).toFixed(0)+'%','beat closing line',st.n>=40?(st.rate>=0.54?'up':st.rate<0.5?'dn':''):'mut')+
+      c((st.clv>=0?'+':'')+(st.clv*100).toFixed(1)+'%','avg CLV',st.clv>=0?'up':'dn')+
+      c(lvl,'validation'+(st.fine?' \u00b7 fine slice':''),lvl==='High'?'up':lvl==='Negative'?'dn':'mut')+
+    '</div><div class="bq-src">Every graded signal in this sport'+(st.fine?'/market':'')+' slice, entry price vs its closing fair line. ROI and average closing price are not computed per slice yet, so they are not shown.</div>';
+  }
+  return '<div class="bq-hv">'+c((st&&st.n)||0,'graded sample','mut')+c('\u2014','beat closing line','mut')+c('\u2014','avg CLV','mut')+c('Building','validation','mut')+
+    '</div><div class="bq-src">Fewer than 15 graded signals in this slice \u2014 nothing here is validated yet, and that is stated instead of estimated.</div>';
+}
+
+/* thesis card: the whole read in one glance, before the detail */
+function bqThesisHTML(e){
+  try{
+    var q=bqCompute(e);
+    var st=(typeof sliceStat==='function')?sliceStat(e):null;
+    var starHtml='';for(var i=1;i<=5;i++)starHtml+='<span class="'+(i<=q.stars?'':'off')+'">\u2605</span>';
+    var tierCls=q.tier==='Elite'?'t-elite':q.tier==='Strong'?'t-strong':q.tier==='Average'?'t-avg':q.tier==='High Variance'?'t-var':'t-avoid';
+    var am=(e.best_dec>1)?GE.decToAm(e.best_dec):null;
+    var fairAm=bqFairAm(e);
+    var edge=e.edge!=null?e.edge*100:null;
+    var fa=bqForAgainst(q);
+    var tops=q.results.filter(function(r){return !r.na&&(r.delta||0)!==0;})
+      .sort(function(a,b){return Math.abs(b.delta)-Math.abs(a.delta);}).slice(0,3)
+      .map(function(r){return '<b>'+r.verdict+'</b>';});
+    var hist=(st&&st.rate!=null&&st.n>=15)
+      ? st.n+' similar graded \u00b7 '+(st.rate*100).toFixed(0)+'% beat close \u00b7 avg CLV '+(st.clv>=0?'+':'')+(st.clv*100).toFixed(1)+'%'
+      : 'validation building \u00b7 '+((st&&st.n)||0)+' graded in this slice';
+    return '<div class="bqt">'+
+      '<div class="bqt-title">Bet Thesis</div>'+
+      '<div class="bqt-top"><span class="bq-stars">'+starHtml+'</span><span class="bq-tier '+tierCls+'">'+q.tier+'</span>'+
+        '<div class="bq-conf"><span class="n">'+q.conf+'</span><span class="d"> / 100</span></div></div>'+
+      bqGaugeHTML(q)+
+      '<div class="bqt-grid">'+
+        '<div class="bqt-cell"><div class="n">'+q.stake+'</div><div class="l">sizing read</div></div>'+
+        '<div class="bqt-cell"><div class="n">'+vnOd(am)+'</div><div class="l">current price</div></div>'+
+        '<div class="bqt-cell"><div class="n">'+vnOd(fairAm)+'</div><div class="l">fair price'+(e.sharp_fair!=null?' \u00b7 pinnacle':' \u00b7 consensus')+'</div></div>'+
+        '<div class="bqt-cell"><div class="n '+(edge!=null&&edge>0?'up':'dn')+'">'+(edge!=null?((edge>=0?'+':'')+edge.toFixed(2)+'%'):'\u2014')+'</div><div class="l">market edge</div></div>'+
+      '</div>'+
+      '<div class="bqt-sum"><b>Historical validation:</b> '+hist+'.'+(tops.length?' Driven by '+tops.join(', ')+'.':'')+'</div>'+
+      '<div class="bqt-fa">'+
+        '<div class="for"><div class="h up">Reasons to like it</div><ul>'+(fa.fw.length?fa.fw.map(function(x){return '<li>'+x+'</li>';}).join(''):'<li style="color:var(--faint)">none measurable right now</li>')+'</ul></div>'+
+        '<div class="agn"><div class="h dn">Reasons for caution</div><ul>'+(fa.ag.length?fa.ag.map(function(x){return '<li>'+x+'</li>';}).join(''):'<li style="color:var(--faint)">no measured negatives</li>')+'</ul></div>'+
+      '</div>'+
+    '</div>';
+  }catch(_){return '';}
+}
+
+/* full report card: replaces the earlier renderer, same engine underneath */
+function bqCardHTML(e){
+  try{
+    var q=bqCompute(e);
+    var starHtml='';for(var i=1;i<=5;i++)starHtml+='<span class="'+(i<=q.stars?'':'off')+'">\u2605</span>';
+    var tierCls=q.tier==='Elite'?'t-elite':q.tier==='Strong'?'t-strong':q.tier==='Average'?'t-avg':q.tier==='High Variance'?'t-var':'t-avoid';
+    var tiers=['1.00 Unit','0.75 Units','0.50 Units','Research Only','Pass'];
+    var stakes=tiers.map(function(t){return '<span class="bq-stake'+(t===q.stake?' on'+(t==='Pass'?' pass':''):'')+'">'+t+'</span>';}).join('');
+    var mods=q.results.map(function(r){
+      if(r.na)return '<div class="bq-mod bq-na"><div class="bq-mh" onclick="__bqToggle(this)"><span class="nm">'+r.label+'</span><span class="sum">not connected</span>'+bqMini(0)+'<span class="bq-delta zero">0</span><span class="chev">\u203a</span></div>'+
+        '<div class="bq-mb"><div class="bq-line"><span class="k">Status</span><span class="v mut">No data source connected. Contributes exactly zero \u2014 never estimated.</span></div>'+
+        '<div class="bq-line"><span class="k">Would evaluate</span><span class="v mut">'+r.wants+'</span></div>'+
+        '<div class="bq-src">Planned source: '+r.src+'. When connected it plugs into this registry with a delta and an explanation \u2014 no redesign.</div></div></div>';
+      var d=r.delta||0;
+      var lines=(r.lines||[]).map(function(l){return '<div class="bq-line"><span class="k">'+l[0]+'</span><span class="v '+(l[2]||'')+'">'+l[1]+'</span></div>';}).join('');
+      var extra=r.id==='clv'?bqHistHTML(e):'';
+      return '<div class="bq-mod'+(r.id==='clv'?' open':'')+'"><div class="bq-mh" onclick="__bqToggle(this)"><span class="nm">'+(r.id==='clv'?'Historical validation':r.label)+'</span><span class="sum">'+r.verdict+'</span>'+bqMini(d)+
+        '<span class="bq-delta '+(d>0?'up':d<0?'dn':'zero')+'">'+(d>0?'+':'')+d+'</span><span class="chev">\u203a</span></div>'+
+        '<div class="bq-mb">'+extra+lines+'<div class="bq-src">'+r.src+'</div></div></div>';
+    }).join('');
+    var recCls=q.stake==='Pass'?'r-pass':(q.stake==='1.00 Unit'||q.stake==='0.75 Units')?'r-bet':'r-research';
+    var recV=q.stake==='Pass'?'\u2715 Pass':(recCls==='r-bet'?'\u2713 Bet-grade':'\u25c9 Research Only');
+    var ex=bqExpiry(e);var exHtml='';
+    if(ex&&!q.hardFail){
+      exHtml='<div class="bq-recx">Reference: fair is <b>'+vnOd(ex.fairAm)+'</b>. The read expires if the price shortens past <b>'+vnOd(ex.floorAm)+'</b> \u2014 below that the edge no longer clears the '+ex.floorPct.toFixed(1)+'% noise floor. No closing line is predicted; fair is the reference, not a forecast.</div>';
+    }
+    return '<div class="gd-sec">Bet Quality \u00b7 full report</div>'+
+      '<div class="bq">'+
+        '<div class="bq-top">'+
+          '<span class="bq-stars">'+starHtml+'</span>'+
+          '<span class="bq-tier '+tierCls+'">'+q.tier+'</span>'+
+          '<div class="bq-conf"><span class="n">'+q.conf+'</span><span class="d"> / 100 confidence</span></div>'+
+        '</div>'+
+        bqGaugeHTML(q)+
+        (q.capped?'<div class="bq-cap">\u26a0 Capped at 66: this signal class has not yet proven it beats closing lines. Nothing here is Elite until it has.</div>':'')+
+        '<div class="bq-stakes">'+stakes+'</div>'+
+        '<div class="bq-stakenote">Illustrative sizing on a 1-unit-max scale, driven only by the modules below. Educational framing \u2014 EdgeDesk teaches how markets work; it does not tell you what to bet.</div>'+
+        '<div class="gd-sec" style="margin-top:12px">Edge anatomy \u00b7 where the number comes from</div>'+bqAnatomyHTML(e)+
+        '<div class="bq-mods">'+mods+'</div>'+
+        '<div class="bq-rec '+recCls+'"><span class="rv">'+recV+'</span><span class="rw">'+q.why.join('; ')+'.</span></div>'+
+        exHtml+
+        '<div class="bq-note">Validation layer only: nothing here alters the market edge, the model, sorting, or the CLV proof. Every adjustment above is expandable to its inputs and named source; anything unmeasurable shows as not connected instead of being guessed.</div>'+
+      '</div>';
+  }catch(_){return '';}
+}
+/* ===== end Bet Thesis & report upgrade ===== */
 
 </script>
 </body>
