@@ -8302,7 +8302,9 @@ async function pgPollForSub(){
 
 /* ===================================================================== */
 /* ===== Weather (live) ================================================ */
-/* Reads event_weather, which weather_sync keys on signals.event_id.     */
+/* Reads venue_weather, written every 30 min by the venue_weather edge   */
+/* function from the NWS raw gridpoint (api.weather.gov). One generic    */
+/* engine for every league; this module only consumes MLB rows.          */
 /* Weather feeds the VARIANCE read only. It never touches edge, the fair */
 /* line, or CLV: wind changes the run distribution, not the price you    */
 /* are beating.                                                          */
@@ -8318,7 +8320,7 @@ async function loadWeather(ids){
     var out=[];
     for(var s=0;s<uniq.length;s+=60){                    /* keep the URL sane */
       var chunk=uniq.slice(s,s+60).map(encodeURIComponent).join(',');
-      var rows=await sbGet('event_weather?select=*&event_id=in.('+chunk+')');
+      var rows=await sbGet('venue_weather?select=*&event_id=in.('+chunk+')');
       out=out.concat(rows||[]);
     }
     out.forEach(function(r){window.WX[r.event_id]=r;});
@@ -8342,51 +8344,63 @@ BQE.register({
     var r=window.WX[e.event_id];
     if(!r)return{delta:0,verdict:'no reading for this game',
       lines:[['Status','No forecast row for this event yet','mut']],
-      src:'event_weather, written hourly by weather_sync from api.weather.gov (National Weather Service). A missing row means the sync has not covered this game.'};
+      src:'venue_weather, written every 30 minutes by the venue_weather engine from api.weather.gov (National Weather Service). A missing row means the sync has not covered this game.'};
 
     var age=wxAgeH(r);
     if(age!=null&&age>WX_STALE_H)return{delta:0,verdict:'forecast is stale, not used',
       lines:[['Last fetched',age.toFixed(1)+'h ago','dn'],['Effect','ignored rather than shown as current','mut']],
       src:'Stale forecasts are refused. A six-hour-old wind reading next to a live line is worse than no reading.'};
 
-    var roof=(r.roof||'open');
-    if(roof==='fixed')return{delta:0,verdict:'indoors, weather neutral',
-      lines:[['Venue',(r.park_name||'')+' (fixed roof)','mut']],
-      src:'Fixed-roof park: outdoor conditions do not reach the field.'};
+    if(r.is_dome)return{delta:0,verdict:'indoors, weather neutral',
+      lines:[['Venue',(r.venue_name||'')+' (dome)','mut']],
+      src:'Dome: outdoor conditions do not reach the field.'};
 
     var d=0,notes=[];
     var lines=[];
-    lines.push(['Venue',(r.park_name||'\u2014')+(roof==='retractable'?' (retractable roof)':''),roof==='retractable'?'mut':'']);
-    if(r.temp_f!=null)lines.push(['Temperature',Math.round(r.temp_f)+'\u00b0F'+(r.humidity_pct!=null?' \u00b7 '+r.humidity_pct+'% humidity':''),'']);
+    lines.push(['Venue',(r.venue_name||'\u2014')+(r.is_retractable?' (retractable roof)':''),r.is_retractable?'mut':'']);
+    if(r.temp_f!=null)lines.push(['Temperature',Math.round(r.temp_f)+'\u00b0F'+(r.humidity_pct!=null?' \u00b7 '+Math.round(r.humidity_pct)+'% humidity':''),'']);
 
-    /* wind: direction relative to center field is the whole story */
+    /* wind: direction relative to the field axis is the whole story.
+       wind_relative_angle: 0 = blowing straight out, +/-180 = straight in,
+       positive = toward right field. Components are precomputed server side
+       from true-degree NWS wind, not the old 22.5-degree compass rose. */
     if(r.wind_mph!=null){
-      var wtxt=Math.round(r.wind_mph)+' mph from '+wxCompass(r.wind_dir_deg);
-      if(r.wind_vs_cf_deg==null){
+      var wtxt=Math.round(r.wind_mph)+' mph from '+(r.wind_dir_deg!=null?r.wind_dir_deg+'\u00b0 ('+wxCompass(r.wind_dir_deg)+')':'\u2014');
+      if(r.wind_relative_angle==null){
         lines.push(['Wind',wtxt,'']);
         lines.push(['Out or in','not calibrated for this park','mut']);
-        notes.push('park has no center-field bearing set, so the out/in read is withheld');
+        notes.push('park has no field bearing set, so the out/in read is withheld');
       }else{
-        var a=Math.abs(r.wind_vs_cf_deg);
-        var dir=a<45?'blowing out to center':a>135?'blowing in from center':'cross wind';
+        var out=r.wind_component_out!=null?r.wind_component_out:0;
+        var dir=r.wind_class==='Tailwind'?'blowing out':
+                r.wind_class==='Headwind'?'blowing in':
+                r.wind_class==='Crosswind Right'?'crosswind toward right field':'crosswind toward left field';
         lines.push(['Wind',wtxt+' \u00b7 '+dir,'']);
-        if(a<45){                       /* out: carry increases, run variance up */
-          if(r.wind_mph>=15){d-=6;notes.push('strong wind out, fly-ball variance up');}
-          else if(r.wind_mph>=10){d-=3;notes.push('wind out, mild variance bump');}
-        }else if(a>135){                /* in: suppresses carry */
-          if(r.wind_mph>=15){d+=2;notes.push('strong wind in, run environment suppressed');}
-        }
+        lines.push(['Out component',(out>=0?'+':'')+out.toFixed(1)+' mph along the axis','mut']);
+        if(out>=10){d-=6;notes.push('strong wind out, fly-ball variance up');}
+        else if(out>=6){d-=3;notes.push('wind out, mild variance bump');}
+        else if(out<=-10){d+=2;notes.push('strong wind in, run environment suppressed');}
+        if(r.crosswind_class==='Strong'){notes.push('strong crosswind may reduce HR distance');}
       }
+      if(r.wind_gust_mph!=null&&r.wind_gust_mph>=r.wind_mph+10){
+        lines.push(['Gusts','to '+Math.round(r.wind_gust_mph)+' mph','dn']);
+        notes.push('gusts add variance beyond the sustained read');
+      }
+    }
+    if(r.air_density_index!=null){
+      lines.push(['Air density',r.air_density_index.toFixed(2)+' \u00b7 '+(r.air_density_class||''),'mut']);
+      if(r.air_density_index<=0.92){d-=2;notes.push('thin air, ball carries further');}
+      else if(r.air_density_index>=1.07){d+=1;notes.push('heavy air suppresses carry');}
     }
     if(r.temp_f!=null){
       if(r.temp_f>=95){d-=2;notes.push('extreme heat, ball carries further');}
       else if(r.temp_f<=45){d-=2;notes.push('cold, ball carries less and pitchers grip differently');}
     }
     if(r.precip_prob!=null){
-      lines.push(['Precipitation',r.precip_prob+'% chance',r.precip_prob>=50?'dn':'mut']);
+      lines.push(['Precipitation',Math.round(r.precip_prob)+'% chance',r.precip_prob>=50?'dn':'mut']);
       if(r.precip_prob>=50){d-=3;notes.push('rain risk, delay or postponement in play');}
     }
-    if(roof==='retractable'){
+    if(r.is_retractable){
       lines.push(['Caveat','roof state at first pitch is not published, so this may not reach the field','mut']);
       d=Math.round(d/2);
       notes.push('halved: retractable roof may be closed');
@@ -8402,7 +8416,7 @@ BQE.register({
     return{delta:d,
       verdict:notes.length?notes[0]:'nothing notable',
       lines:lines,
-      src:'National Weather Service hourly forecast (api.weather.gov) for '+(r.park_name||'the venue')+', matched to first pitch and refreshed hourly. Affects the variance read only \u2014 never the edge, the fair line, or CLV.'+(wt<1?' Scaled to '+Math.round(wt*100)+'% of the raw read because weather moves '+mktLabel(e.market)+' far less than totals; raw '+raw+', applied '+d+'.':'')};
+      src:'National Weather Service raw gridpoint forecast (api.weather.gov) for '+(r.venue_name||'the venue')+', matched to first pitch and refreshed every 30 minutes. Wind in true degrees; out/in split uses the OSM-derived field bearing. Affects the variance read only \u2014 never the edge, the fair line, or CLV.'+(wt<1?' Scaled to '+Math.round(wt*100)+'% of the raw read because weather moves '+mktLabel(e.market)+' far less than totals; raw '+raw+', applied '+d+'.':'')};
   }
 });
 
