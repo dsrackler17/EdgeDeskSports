@@ -2201,7 +2201,7 @@ async function loadEdges(){
     await loadWeights();
     var nowIso=new Date().toISOString();
     var horizonIso=new Date(Date.now()+7*24*3600*1000).toISOString();
-    EDGES=await sbGet('signals?select=event_id,sport_title,sport_key,market,selection,point,best_dec,first_best_dec,best_book,sharp_fair,consensus_fair,edge,n_books,commence_time,home_team,away_team,last_seen_at,has_sharp,corrob_n,corrob_ref,corrob_levels,is_fav&commence_time=gte.'+nowIso+'&commence_time=lte.'+horizonIso+'&edge=gt.0&order=edge.desc&limit=600');
+    EDGES=await sbGet('signals?select=event_id,sport_title,sport_key,market,selection,point,best_dec,first_best_dec,best_book,sharp_fair,consensus_fair,edge,n_books,n_books_eff,commence_time,home_team,away_team,last_seen_at,has_sharp,corrob_n,corrob_ref,corrob_levels,is_fav&commence_time=gte.'+nowIso+'&commence_time=lte.'+horizonIso+'&edge=gt.0&order=edge.desc&limit=600');
     $('dbPill').textContent='DB ✓';$('dbPill').className='pill ok';
     // sport filter options
     var sportsSet={};EDGES.forEach(function(e){if(e.sport_title)sportsSet[e.sport_title]=1;});
@@ -2217,14 +2217,14 @@ async function loadEdges(){
     try{var nm=await sbGet('signals?select=sport_title,selection,edge,best_book,n_books&commence_time=gte.'+nowIso+'&commence_time=lte.'+horizonIso+'&edge=not.is.null&order=edge.desc.nullslast&limit=1');if(nm&&nm[0])window.__bestNearMiss=nm[0];}catch(_){}
     // pool of the sharpest lines on the board (any sign) so the wider-net Top 5 is populated every day
     window.D5_POOL=[];
-    try{var pool=await sbGet('signals?select=event_id,sport_title,sport_key,market,selection,point,best_dec,first_best_dec,sharp_fair,best_book,edge,n_books,commence_time,home_team,away_team,last_seen_at,has_sharp,corrob_n,corrob_ref,corrob_levels,is_fav&commence_time=gte.'+nowIso+'&commence_time=lte.'+horizonIso+'&edge=not.is.null&order=edge.desc.nullslast&limit=40');window.D5_POOL=pool||[];}catch(_){window.D5_POOL=[];}
+    try{var pool=await sbGet('signals?select=event_id,sport_title,sport_key,market,selection,point,best_dec,first_best_dec,sharp_fair,best_book,edge,n_books,n_books_eff,commence_time,home_team,away_team,last_seen_at,has_sharp,corrob_n,corrob_ref,corrob_levels,is_fav&commence_time=gte.'+nowIso+'&commence_time=lte.'+horizonIso+'&edge=not.is.null&order=edge.desc.nullslast&limit=40');window.D5_POOL=pool||[];}catch(_){window.D5_POOL=[];}
     // team CONTEXT (records/form) for the detail view — display only, never touches edge math
     try{var gs=await sbGet('game_stats?select=*');window.GSTATS={};(gs||[]).forEach(function(r){window.GSTATS[r.team_norm]=r;});}catch(_){window.GSTATS=window.GSTATS||{};}
     // EdgeDesk MODEL fair (me-vs-market) — display only, UNPROVEN, keyed to match model_predictions.
     // NEVER touches e.edge, sorting, filters, or the verify tags. A separate engine, shown side by side.
     try{var mp=await sbGet('model_predictions?select=event_id,market,selection,point,model_prob,model_fair_american,model_edge,model_version&sport_key=eq.baseball_mlb&commence_time=gte.'+nowIso+'&commence_time=lte.'+horizonIso+'&order=created_at.asc&limit=1500');window.MODELP={};(mp||[]).forEach(function(r){window.MODELP[modelKey(r.event_id,r.market,r.selection,r.point)]=r;});}catch(_){window.MODELP=window.MODELP||{};}
     try{var me=await sbGet('model_predictions?select=*&model_edge=gt.0&commence_time=gte.'+nowIso+'&commence_time=lte.'+horizonIso+'&order=model_edge.desc.nullslast&limit=400');window.MODEL_EDGES=me||[];}catch(_){window.MODEL_EDGES=[];}
-    try{var cq=await sbGet('signals?select=event_id,sport_title,sport_key,market,selection,point,best_dec,first_best_dec,first_seen_at,best_book,sharp_fair,consensus_fair,edge,n_books,commence_time,home_team,away_team,last_seen_at,has_sharp,corrob_n,corrob_ref,corrob_levels,is_fav&consensus_fair=not.is.null&n_books=gte.'+MINBOOKS+'&commence_time=gte.'+nowIso+'&commence_time=lte.'+horizonIso+'&limit=900');window.CONS_POOL=cq||[];}catch(_){window.CONS_POOL=[];}
+    try{var cq=await sbGet('signals?select=event_id,sport_title,sport_key,market,selection,point,best_dec,first_best_dec,first_seen_at,best_book,sharp_fair,consensus_fair,edge,n_books,n_books_eff,commence_time,home_team,away_team,last_seen_at,has_sharp,corrob_n,corrob_ref,corrob_levels,is_fav&consensus_fair=not.is.null&n_books=gte.'+MINBOOKS+'&commence_time=gte.'+nowIso+'&commence_time=lte.'+horizonIso+'&limit=900');window.CONS_POOL=cq||[];}catch(_){window.CONS_POOL=[];}
     await resolveModelMeta();
     await loadSliceStats();
     renderEdges();
@@ -2601,11 +2601,35 @@ function modelBlock(e){
    placement +EV is not proven closing value.
    ============================================================================ */
 function eqsClamp(x,a,b){return Math.max(a,Math.min(b,x));}
+/* ---- effective book count ------------------------------------------------
+   n_books counts bookmakers. n_books_eff counts INDEPENDENT pricing sources,
+   collapsing books that share an owner or a feed (mapping lives in the
+   book_families table, applied by capture). Six clones are not six opinions,
+   and every liquidity read here should be against the number of real sources.
+
+   null means the row was captured before the column existed. In that case we
+   fall back to the raw count and SAY SO rather than pretending we know.       */
+function nbRaw(e){return (e&&e.n_books!=null)?(+e.n_books||0):0;}
+function nbEff(e){return (e&&e.n_books_eff!=null)?(+e.n_books_eff||0):null;}
+function nbUse(e){var x=nbEff(e);return x==null?nbRaw(e):x;}
+function nbLabel(e){
+  var r=nbRaw(e),x=nbEff(e);
+  if(x==null)return r+' book'+(r===1?'':'s');
+  if(x===r)return r+' book'+(r===1?'':'s')+', all independent';
+  return x+' independent source'+(x===1?'':'s')+' across '+r+' book'+(r===1?'':'s');
+}
+function nbNote(e){
+  var r=nbRaw(e),x=nbEff(e);
+  if(x==null)return 'Independent-source count not yet computed for this row, so this uses the raw book count. Treat it as an upper bound.';
+  if(x===r)return 'No two of these books share a known owner or pricing feed.';
+  return (r-x)+' of these '+r+' books collapse into others they share an owner or pricing feed with, so the line has '+x+' real source'+(x===1?'':'s')+' behind it, not '+r+'.';
+}
+
 function eqsCompute(e){
   var st=(typeof sliceStat==='function')?sliceStat(e):null;
   var mv=(typeof moveLabel==='function')?moveLabel(e):null;
   var a=(typeof anchorOf==='function')?anchorOf(e):{kind:'unknown',short:'unknown anchor'};
-  var edge=+e.edge||0, nb=+e.n_books||0;
+  var edge=+e.edge||0, nb=nbUse(e);
   var parts=[];
 
   /* 1) signal-class CLV history (max 34) -- the heaviest input, per the CLV thesis */
@@ -2633,7 +2657,7 @@ function eqsCompute(e){
 
   /* 3) book confirmation (max 16) */
   var bp=nb>=6?16:nb>=5?13:nb>=4?10:nb>=3?6:2;
-  parts.push({k:'Book confirm',v:nb+' book'+(nb===1?'':'s'),p:bp,m:16});
+  parts.push({k:'Book confirm',v:nbLabel(e),p:bp,m:16});
 
   /* 4) raw edge (max 16) -- oversized edges are a stale-price flag, not rewarded */
   var ep; if(edge<=0)ep=0; else if(edge>0.06)ep=8;
@@ -2747,10 +2771,10 @@ function receiptHTML(e){
     '<div class="gd-line"><span class="l">'+(neg?'Below fair by':'Your edge')+'</span><span class="v '+(neg?'dn':'up')+'">'+edgeVal+'</span></div>';
   var bars='<div class="gd-bars">'+
     '<div class="gd-bar"><div class="bn '+(e.edge>=0.03?'pos':'')+'">'+(edgePct!=null?(edgePct>=0?'+':'')+edgePct.toFixed(1)+'%':'\u2014')+'</div><div class="bl">edge</div></div>'+
-    '<div class="gd-bar"><div class="bn">'+(e.n_books||0)+'</div><div class="bl">books</div></div>'+
+    '<div class="gd-bar"><div class="bn">'+nbUse(e)+'</div><div class="bl">'+((nbEff(e)!=null&&nbEff(e)<nbRaw(e))?'sources of '+nbRaw(e)+' books':'books')+'</div></div>'+
     '<div class="gd-bar"><div class="bn">'+(mv?mv.txt.split(' ')[0]:'flat')+'</div><div class="bl">line move</div></div></div>';
   var detail='<div class="gd-sec">The context</div>'+
-    '<div class="gd-line"><span class="l">Books quoting the fair line</span><span class="v">'+(e.n_books||0)+(e.n_books>=5?' \u00b7 deep':e.n_books>=4?' \u00b7 ok':' \u00b7 thin')+'</span></div>'+
+    '<div class="gd-line"><span class="l">Books quoting the fair line</span><span class="v">'+nbLabel(e)+(nbUse(e)>=5?' \u00b7 deep':nbUse(e)>=4?' \u00b7 ok':' \u00b7 thin')+'</span></div>'+'<div class="gd-line"><span class="l">Source independence</span><span class="v" style="color:var(--faint)">'+nbNote(e)+'</span></div>'+
     (mv?'<div class="gd-line"><span class="l">Since first seen</span><span class="v '+(mv.cls==='mv-steam'?'up':mv.cls==='mv-drift'?'dn':'mut')+'">'+mv.txt+'</span></div>':'')+
     '<div class="gd-line"><span class="l">Last re-priced</span><span class="v'+((e.last_seen_at&&(Date.now()-new Date(e.last_seen_at).getTime())/60000>45)?' dn':'')+'">'+(e.last_seen_at?ago(new Date(e.last_seen_at).getTime()):'unknown')+'</span></div>'+
     (ttg?'<div class="gd-line"><span class="l">Game starts</span><span class="v">'+ttg.txt+'</span></div>':'');
@@ -3035,7 +3059,7 @@ function recEmptyHTML(kind,body,retry){
 }
 
 /* ---- data load ---- */
-var REC_COLS='id,event_id,sport_title,sport_key,market,selection,point,home_team,away_team,best_book,commence_time,first_seen_at,flagged_at,graded_at,first_best_dec,flagged_best_dec,best_dec,flagged_edge,edge,clv,result,beat_close,sharp_fair,consensus_fair,closing_sharp_fair,first_has_sharp,has_sharp,first_corrob_n,first_corrob_ref,n_books,pin_dec,pin_opp_dec,is_fav';
+var REC_COLS='id,event_id,sport_title,sport_key,market,selection,point,home_team,away_team,best_book,commence_time,first_seen_at,flagged_at,graded_at,first_best_dec,flagged_best_dec,best_dec,flagged_edge,edge,clv,result,beat_close,sharp_fair,consensus_fair,closing_sharp_fair,first_has_sharp,has_sharp,first_corrob_n,first_corrob_ref,n_books,n_books_eff,pin_dec,pin_opp_dec,is_fav';
 
 async function loadRecord(force){
   if(REC.loading)return;
@@ -7474,7 +7498,7 @@ function edgeChips(e){
       '<span class="ec d-'+q.decision+'" title="Rule-based read from the same inputs. BET requires a proven signal-class CLV record; WATCH means the placement math is fine but the class is unproven.">'+q.decision+'</span>'+
       '<span class="ec" title="Best available price vs the de-vigged sharp fair line">'+vnOd(am)+' vs fair '+vnOd(fair)+'</span>'+
       '<span class="ec '+(mvCls==='mv-steam'?'up':mvCls==='mv-drift'?'dn':'mut')+'" title="Price direction since first capture. Steam = shortening toward the pick (market backing it); drift = lengthening away.">'+mvTxt+'</span>'+
-      '<span class="ec mut" title="Books quoting this line. The fair estimate means more with more books behind it.">'+(e.n_books||0)+' bk</span>'+
+      '<span class="ec mut" title="Independent pricing sources behind this line. '+nbNote(e)+'">'+nbUse(e)+' src'+((nbEff(e)!=null&&nbEff(e)<nbRaw(e))?'/'+nbRaw(e)+'bk':'')+'</span>'+
       '<span class="ec '+histCls+'" title="How this signal class (sport/market slice) has actually done against the closing line over graded signals. The only proof that placement value survives to close.">'+hist+'</span>'+
     '</div>';
   }catch(_){return '';}
@@ -7694,12 +7718,19 @@ BQE.register({id:'clv',label:'Signal-class CLV record',run:function(e){
 
 /* ---- 5. Liquidity & corroboration ---- */
 BQE.register({id:'liq',label:'Liquidity & corroboration',run:function(e){
-  var nb=e.n_books||0,cn=e.corrob_n||0;
+  /* Scored on INDEPENDENT sources, not raw book count. A line quoted by six books
+     that are three operators wearing six names carries three opinions, and the
+     old scoring paid it as though it carried six. */
+  var raw=nbRaw(e), eff=nbEff(e), nb=nbUse(e), cn=e.corrob_n||0;
   var d=(nb>=6?4:nb>=5?3:nb>=4?1:nb>=3?-2:-6)+(cn>=2?2:cn>=1?1:0);
-  return{delta:Math.max(-6,Math.min(6,d)),verdict:nb+' books \u00b7 '+cn+' corroborating',
-    lines:[['Books quoting',nb+(nb>=5?' \u00b7 deep':nb>=4?' \u00b7 ok':' \u00b7 thin'),nb>=5?'up':nb<4?'dn':''],
-           ['Corroboration',cn+' book'+(cn===1?'':'s')+' within range of the flag price',cn>=1?'up':'mut']],
-    src:'Book count and corroboration stored on the signal row at capture.'};
+  var lines=[['Independent sources',nb+(nb>=5?' \u00b7 deep':nb>=4?' \u00b7 ok':' \u00b7 thin'),nb>=5?'up':nb<4?'dn':'']];
+  if(eff!=null&&eff<raw)lines.push(['Raw book count',raw+' \u00b7 '+(raw-eff)+' collapsed as related','mut']);
+  else if(eff==null)lines.push(['Raw book count',raw+' \u00b7 independence not yet computed','mut']);
+  lines.push(['Corroboration',cn+' book'+(cn===1?'':'s')+' within range of the flag price',cn>=1?'up':'mut']);
+  return{delta:Math.max(-6,Math.min(6,d)),verdict:nbLabel(e)+' \u00b7 '+cn+' corroborating',
+    lines:lines,
+    src:'Book count and corroboration stored on the signal row at capture. '+nbNote(e)+
+        ' Corroboration itself is still counted per book, so books sharing a feed can corroborate each other and that count is an upper bound too.'};
 }});
 
 /* ---- 6. Line movement ---- */
@@ -7778,7 +7809,7 @@ function bqCompute(e){
   var conf=Math.max(0,Math.min(100,50+sum));
   var capped=false;
   if(unproven&&conf>66){conf=66;capped=true;}
-  var edge=e.edge||0,nb=e.n_books||0;
+  var edge=e.edge||0,nb=nbUse(e);
   var hardFail=edge<=0||nb<3||fade;
   var tier,stars;
   if(hardFail){tier='Avoid';stars=1;}
@@ -7797,7 +7828,7 @@ function bqCompute(e){
   var why=[];
   if(fade)why.push('this signal class reliably fades by close \u2014 placement value does not survive');
   else if(edge<=0)why.push('the price is at or below fair \u2014 no edge to size');
-  else if(nb<3)why.push('too few books behind the fair line');
+  else if(nb<3)why.push('too few independent sources behind the fair line ('+nbLabel(e)+')');
   else{
     results.filter(function(r){return !r.na&&(r.delta||0)!==0;})
       .sort(function(a,b){return Math.abs(b.delta)-Math.abs(a.delta);}).slice(0,4)
