@@ -7554,7 +7554,7 @@ function edgeChips(e){
       '<span class="ec" title="Best available price vs the de-vigged sharp fair line">'+vnOd(am)+' vs fair '+vnOd(fair)+'</span>'+
       '<span class="ec '+(mvCls==='mv-steam'?'up':mvCls==='mv-drift'?'dn':'mut')+'" title="Price direction since first capture. Steam = shortening toward the pick (market backing it); drift = lengthening away.">'+mvTxt+'</span>'+
       '<span class="ec mut" title="Independent pricing sources behind this line. '+nbNote(e)+'">'+nbUse(e)+' src'+((nbEff(e)!=null&&nbEff(e)<nbRaw(e))?'/'+nbRaw(e)+'bk':'')+'</span>'+
-      '<span class="ec '+histCls+'" title="How this signal class (sport/market slice) has actually done against the closing line over graded signals. The only proof that placement value survives to close.">'+hist+'</span>'+
+      '<span class="ec '+histCls+'" title="How this signal class (sport/market slice) has actually done against the closing line over graded signals. The only proof that placement value survives to close.">'+hist+'</span>'+(typeof wxChip==='function'?wxChip(e):'')+
     '</div>';
   }catch(_){return '';}
 }
@@ -8335,6 +8335,34 @@ function wxCompass(d){
 function wxAgeH(r){
   if(!r||!r.fetched_at)return null;
   return (Date.now()-new Date(r.fetched_at).getTime())/3600000;
+}
+
+/* Compact chip for the edge card lists. Facts only: temperature and the wind
+   component along the field axis. Dome and uncalibrated states say so instead
+   of showing something that is not known. This chip NEVER carries a score:
+   weather feeds the variance read in the receipt, not the edge. */
+function wxChip(e){
+  try{
+    if(e.sport_key!=='baseball_mlb')return '';
+    var r=window.WX[e.event_id];if(!r)return '';
+    var age=wxAgeH(r);if(age!=null&&age>WX_STALE_H)return '';
+    if(r.is_dome)return '<span class="ec mut" title="Dome: outdoor conditions do not reach the field. Weather feeds the variance read only, never the edge or the fair line.">dome</span>';
+    var parts=[];
+    if(r.temp_f!=null)parts.push(Math.round(r.temp_f)+'\u00b0');
+    if(r.wind_mph!=null){
+      if(r.wind_component_out!=null){
+        var o=r.wind_component_out,c=Math.abs(r.wind_component_cross||0);
+        if(Math.abs(o)>=4)parts.push(Math.round(Math.abs(o))+(o>0?' out':' in'));
+        else if(c>=4)parts.push(Math.round(c)+' cross');
+        else parts.push(Math.round(r.wind_mph)+'mph');
+      }else parts.push(Math.round(r.wind_mph)+'mph');
+    }
+    if(!parts.length)return '';
+    var cls='mut';
+    var txt=parts.join(' \u00b7 ');
+    if(r.precip_prob!=null&&r.precip_prob>=50){cls='dn';txt+=' \u00b7 '+Math.round(r.precip_prob)+'% rain';}
+    return '<span class="ec '+cls+'" title="NWS forecast at first pitch. Out/in is the wind component along the OSM-derived field axis'+(r.wind_component_out==null?' (this park has no calibrated bearing yet, so only raw wind is shown)':'')+'. Feeds the variance read in the receipt only \u2014 never the edge, the fair line, or CLV.'+(r.is_retractable?' Retractable roof: conditions may not reach the field.':'')+'">'+txt+'</span>';
+  }catch(_){return '';}
 }
 
 BQE.register({
