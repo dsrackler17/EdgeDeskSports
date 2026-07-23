@@ -2887,18 +2887,21 @@ async function loadRecordProof(){
    Take the tightest pool that actually holds graded rows, fall back honestly,
    and label which one is live so an empty flagged pipeline can never
    masquerade as a record and can never leave the tab stuck on blanks. */
+    var FLAG_CLV='flagged_at=not.is.null&clv=not.is.null';
     var FLAG_STRICT='flagged_at=not.is.null&flagged_edge=gte.0.005&flagged_edge=lte.0.1';
     var FLAG_ANY='flagged_at=not.is.null';
     var CLV_ANY='clv=not.is.null';
-    var nStrict=await sbCount('graded_at=not.is.null&'+FLAG_STRICT);
-    var nFlagAny=await sbCount('graded_at=not.is.null&'+FLAG_ANY);
-    var nClvAny=await sbCount('graded_at=not.is.null&'+CLV_ANY);
+    var _c=await Promise.all([sbCount('graded_at=not.is.null&'+FLAG_STRICT),sbCount('graded_at=not.is.null&'+FLAG_ANY),
+      sbCount('graded_at=not.is.null&'+CLV_ANY),sbCount('graded_at=not.is.null&'+FLAG_CLV)]);
+    var nStrict=_c[0],nFlagAny=_c[1],nClvAny=_c[2],nFlagClv=_c[3];
     var EDGEQ,poolLabel,poolKind,gradedEdges;
-    if(nStrict>0){EDGEQ=FLAG_STRICT;poolLabel='flagged edges';poolKind='strict';gradedEdges=nStrict;}
+    if(nFlagClv>0){EDGEQ=FLAG_CLV;poolLabel='flagged signals with a scored close';poolKind='flagclv';gradedEdges=nFlagClv;}
+    else if(nStrict>0){EDGEQ=FLAG_STRICT;poolLabel='flagged edges, none scored against a close yet';poolKind='strict';gradedEdges=nStrict;}
     else if(nFlagAny>0){EDGEQ=FLAG_ANY;poolLabel='flagged edges \u00b7 edge-magnitude band off';poolKind='flagany';gradedEdges=nFlagAny;}
     else if(nClvAny>0){EDGEQ=CLV_ANY;poolLabel='all graded rows with CLV \u2014 provisional, NOT the flagged-edge record';poolKind='clvany';gradedEdges=nClvAny;}
     else{EDGEQ=FLAG_STRICT;poolLabel='no graded row carries CLV yet';poolKind='empty';gradedEdges=0;}
-    var recFunnel='Pool funnel \u00b7 graded '+graded+' \u2192 flagged_at set '+nFlagAny+' \u2192 flagged & 0.5\u20139.9% '+nStrict+' \u2192 CLV present '+nClvAny+'. Live pool: '+poolLabel+'.';
+    var recFunnel='Pool funnel \u00b7 graded '+graded+' \u2192 flagged '+nFlagAny+' \u2192 flagged & 0.5\u20139.9% '+nStrict+' \u2192 flagged AND scored against a close '+nFlagClv+'. Live pool: '+poolLabel+' ('+gradedEdges+').'+
+      (nFlagAny>nFlagClv?' The '+(nFlagAny-nFlagClv)+' flagged rows without CLV are mostly alternate lines Pinnacle does not quote at close, so there is no sharp closing price to score them against.':'');
     var g=poolKind==='empty'?[]:await sbGet('signals?select=clv,result,beat_close,sharp_fair,consensus_fair,first_has_sharp,first_corrob_n,first_corrob_ref,n_books,first_best_dec,flagged_best_dec,flagged_at,flagged_corrob_n,sport_title,market,commence_time&graded_at=not.is.null&'+EDGEQ+'&limit=5000');
     var w=0,l=0,clvSum=0,beatStored=0,n=g.length,clvArr=[],clvPos=0;
     g.forEach(function(r){if(r.result==='win')w++;else if(r.result==='loss')l++;
@@ -3086,19 +3089,29 @@ async function loadRecord(force){
   }
   try{
     var total,graded,nStrict,nFlagAny,nClvAny;
+    var nFlagClv;
+    /* TIGHTEST POOL FIRST: flagged AND carrying a real CLV. A flagged row with no
+       CLV is not part of a CLV record, and counting it as one inflates the
+       headline against a number computed over a much smaller subset. Most flagged
+       rows are alternate lines Pinnacle never quotes at close, so they can never
+       be scored - that attrition is shown in the funnel rather than hidden. */
+    var FLAG_CLV='flagged_at=not.is.null&clv=not.is.null';
     var FLAG_STRICT='flagged_at=not.is.null&flagged_edge=gte.0.005&flagged_edge=lte.0.1';
     var FLAG_ANY='flagged_at=not.is.null';
     var CLV_ANY='clv=not.is.null';
     var counts=await Promise.all([sbCount(''),sbCount('graded_at=not.is.null'),
-      sbCount('graded_at=not.is.null&'+FLAG_STRICT),sbCount('graded_at=not.is.null&'+FLAG_ANY),sbCount('graded_at=not.is.null&'+CLV_ANY)]);
-    total=counts[0];graded=counts[1];nStrict=counts[2];nFlagAny=counts[3];nClvAny=counts[4];
+      sbCount('graded_at=not.is.null&'+FLAG_STRICT),sbCount('graded_at=not.is.null&'+FLAG_ANY),
+      sbCount('graded_at=not.is.null&'+CLV_ANY),sbCount('graded_at=not.is.null&'+FLAG_CLV)]);
+    total=counts[0];graded=counts[1];nStrict=counts[2];nFlagAny=counts[3];nClvAny=counts[4];nFlagClv=counts[5];
     var EDGEQ,poolLabel,poolKind;
-    if(nStrict>0){EDGEQ=FLAG_STRICT;poolLabel='flagged edges';poolKind='strict';}
+    if(nFlagClv>0){EDGEQ=FLAG_CLV;poolLabel='flagged signals with a scored close';poolKind='flagclv';}
+    else if(nStrict>0){EDGEQ=FLAG_STRICT;poolLabel='flagged edges, none scored against a close yet';poolKind='strict';}
     else if(nFlagAny>0){EDGEQ=FLAG_ANY;poolLabel='flagged edges, edge-magnitude band off';poolKind='flagany';}
     else if(nClvAny>0){EDGEQ=CLV_ANY;poolLabel='all graded rows with CLV. Provisional, NOT the flagged-edge record';poolKind='clvany';}
     else{EDGEQ=FLAG_STRICT;poolLabel='no graded row carries CLV yet';poolKind='empty';}
     REC.pool={kind:poolKind,label:poolLabel,
-      funnel:'Pool funnel: graded '+graded+' \u2192 flagged_at set '+nFlagAny+' \u2192 flagged & 0.5\u20139.9% '+nStrict+' \u2192 CLV present '+nClvAny+'. Live pool: '+poolLabel+'.',
+      funnel:'Pool funnel: graded '+graded+' \u2192 flagged '+nFlagAny+' \u2192 flagged & 0.5\u20139.9% '+nStrict+' \u2192 flagged AND scored against a close '+nFlagClv+'. Live pool: '+poolLabel+' ('+nFlagClv+').'+
+        (nFlagAny>nFlagClv?' The '+(nFlagAny-nFlagClv)+' flagged rows with no CLV are mostly alternate lines Pinnacle does not quote at close; with no sharp closing price there is nothing honest to score them against, so they are excluded rather than scored against a consensus median.':''),
       total:total,graded:graded};
     var rows=poolKind==='empty'?[]:await sbGetAll('signals?select='+REC_COLS+'&graded_at=not.is.null&'+EDGEQ+'&order=graded_at.asc',1000,12);
     rows.forEach(function(r){
@@ -6366,7 +6379,7 @@ function renderSetAccount(){
    refuses any URL that is not a billing.stripe.com portal link, so the button
    hides rather than double-charging someone. Get the real one from
    Stripe > Settings > Billing > Customer portal > no-code login link. */
-var STRIPE_PORTAL_URL="";
+var STRIPE_PORTAL_URL="https://billing.stripe.com/p/login/9B64gy5LA3QpcHc8L08IU00";
 
 function stripePortalHref(){
   var u=(typeof STRIPE_PORTAL_URL==='string')?STRIPE_PORTAL_URL.trim():'';
