@@ -1384,7 +1384,22 @@ async function sbGetAll(q,page,maxPages){page=page||1000;maxPages=maxPages||10;v
    ufc schema to be exposed under Supabase > API settings > Exposed schemas. */
 async function sbGetUfc(q){return sbFetch(q,{"accept-profile":"ufc"});}
 async function ufcFetchAll(sel,ord){var all=[],p=0,PAGE=1000;for(;p<20;p++){var b=await sbGetUfc(sel+'&order='+(ord||'full_name')+'&limit='+PAGE+'&offset='+(p*PAGE));if(!b||!b.length)break;all=all.concat(b);if(b.length<PAGE)break;}return all;}
-async function sbCount(filter){var r=await fetch(SB_URL+"/rest/v1/signals?select=id&limit=1"+(filter?"&"+filter:""),{headers:{apikey:SB_KEY,authorization:"Bearer "+SB_KEY,prefer:"count=exact"}});var cr=r.headers.get("content-range")||"0-0/0";return parseInt(cr.split("/")[1])||0;}
+async function sbCount(filter){
+  /* MUST carry the user's access_token, not the anon key. `signals` is gated by
+     RLS on has_active_sub(), and anon has no policy at all, so an anon-keyed
+     count returns 200 with a range of 0-0/0 - a silent zero, not an error. That
+     is how every counter on the Record tab read 0 while the table held 10,667
+     graded rows. A count that cannot see the data must not report "none". */
+  var tok=await edToken();
+  var r=await fetch(SB_URL+"/rest/v1/signals?select=id&limit=1"+(filter?"&"+filter:""),
+    {headers:{apikey:SB_KEY,authorization:"Bearer "+tok,prefer:"count=exact"}});
+  if(!r.ok)throw new Error("count "+r.status+" "+(await r.text()).slice(0,140));
+  var cr=r.headers.get("content-range");
+  if(!cr)throw new Error("count: no content-range header");
+  var n=parseInt(cr.split("/")[1]);
+  if(isNaN(n))throw new Error("count: unparseable range "+cr);
+  return n;
+}
 
 /* ===== ANCHOR PROVENANCE =====================================================
    One source of truth for the question "what is this fair line actually
