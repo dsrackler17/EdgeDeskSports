@@ -6357,7 +6357,25 @@ function renderSetAccount(){
    California ARL requires SAME-MEDIUM cancellation: a subscription bought online
    must be cancellable online. Leave this empty and the UI says so honestly
    rather than pretending a self-serve cancel exists. */
-var STRIPE_PORTAL_URL="https://buy.stripe.com/cNi00ifmaaeNePk2mC8IU09";
+/* The Stripe CUSTOMER PORTAL link. This is NOT the payment link.
+   Correct shape:  https://billing.stripe.com/p/login/xxxxxxxx
+   Wrong (danger): https://buy.stripe.com/...   <- that is checkout
+
+   Putting a checkout link here sends a subscriber who clicks "cancel" into a
+   SECOND purchase and bills them twice for the same product. The guard below
+   refuses any URL that is not a billing.stripe.com portal link, so the button
+   hides rather than double-charging someone. Get the real one from
+   Stripe > Settings > Billing > Customer portal > no-code login link. */
+var STRIPE_PORTAL_URL="";
+
+function stripePortalHref(){
+  var u=(typeof STRIPE_PORTAL_URL==='string')?STRIPE_PORTAL_URL.trim():'';
+  if(!u)return '';
+  if(/^https:\/\/billing\.stripe\.com\//i.test(u))return u;
+  try{console.error('STRIPE_PORTAL_URL is not a Stripe billing-portal link and has been ignored. '+
+    'A checkout link here would double-bill anyone trying to cancel. Got: '+u);}catch(_){}
+  return '';
+}
 var SUB_PRICE_DISPLAY="$24.99";
 /* Flip to true ONLY after paywall.sql STEP 2 has run and you have verified the
    gate. It exists so the "your subscription isn't active" empty state can never
@@ -6405,9 +6423,10 @@ function renderSetSub(){
     out+='<div class="set-gate" style="border-color:rgba(226,96,68,.4)"><div class="set-gate-h"><span class="set-gate-tag" style="border-color:rgba(226,96,68,.5);color:var(--neg);background:rgba(226,96,68,.1)">ACTION NEEDED</span>Payment failed</div>'+
       '<p>Your most recent payment did not go through. Update your card to keep access.</p></div>';
   }
+  var __portal=stripePortalHref();
   out+=setCard('Manage','Cancel anytime. Cancellation stops all future charges and access continues to the end of the period you have paid for.',
-    STRIPE_PORTAL_URL
-      ? '<div class="set-act"><a class="btn ghost sm" href="'+STRIPE_PORTAL_URL+'" target="_blank" rel="noopener" style="text-decoration:none">Manage or cancel subscription</a></div>'+
+    __portal
+      ? '<div class="set-act"><a class="btn ghost sm" href="'+__portal+'" target="_blank" rel="noopener" style="text-decoration:none">Manage or cancel subscription</a></div>'+
         '<div class="set-note">Opens the secure billing portal where you can cancel or update your payment method.</div>'
       : '<div class="set-note" style="border:none;padding-top:0"><b style="color:var(--warn)">Self-serve cancellation is not wired yet.</b> The Stripe customer portal link has not been configured, so this button would go nowhere. Until it is, cancellation requests are handled by email. California law requires that a subscription bought online can be cancelled online \u2014 this must be connected before charging customers.</div>'
   );
@@ -8116,7 +8135,7 @@ function pgPastDue(sub){return !!(sub&&sub.status==='past_due');}
 function pgWarnBar(sub){
   var el=$('pgWarn'); if(!el)return;
   if(!pgPastDue(sub)){el.classList.add('hide');return;}
-  var portal=(typeof STRIPE_PORTAL_URL!=='undefined'&&STRIPE_PORTAL_URL)?STRIPE_PORTAL_URL:'';
+  var portal=(typeof stripePortalHref==='function')?stripePortalHref():'';
   el.innerHTML='<b>Your last payment did not go through.</b> You still have full access while '+
     'the card is retried, but it will stop if the payment keeps failing. '+
     (portal
