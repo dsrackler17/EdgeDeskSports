@@ -2243,6 +2243,8 @@ async function loadEdges(){
     try{var pool=await sbGet('signals?select=event_id,sport_title,sport_key,market,selection,point,best_dec,first_best_dec,sharp_fair,best_book,edge,n_books,n_books_eff,commence_time,home_team,away_team,last_seen_at,has_sharp,corrob_n,corrob_ref,corrob_levels,is_fav&commence_time=gte.'+nowIso+'&commence_time=lte.'+horizonIso+'&edge=not.is.null&order=edge.desc.nullslast&limit=40');window.D5_POOL=pool||[];}catch(_){window.D5_POOL=[];}
     // team CONTEXT (records/form) for the detail view — display only, never touches edge math
     try{var gs=await sbGet('game_stats?select=*');window.GSTATS={};(gs||[]).forEach(function(r){window.GSTATS[r.team_norm]=r;});}catch(_){window.GSTATS=window.GSTATS||{};}
+    // MLB schedule context (probables, records, local first pitch) — display only
+    await loadMlbSched();
     // EdgeDesk MODEL fair (me-vs-market) — display only, UNPROVEN, keyed to match model_predictions.
     // NEVER touches e.edge, sorting, filters, or the verify tags. A separate engine, shown side by side.
     try{var mp=await sbGet('model_predictions?select=event_id,market,selection,point,model_prob,model_fair_american,model_edge,model_version&sport_key=eq.baseball_mlb&commence_time=gte.'+nowIso+'&commence_time=lte.'+horizonIso+'&order=created_at.asc&limit=1500');window.MODELP={};(mp||[]).forEach(function(r){window.MODELP[modelKey(r.event_id,r.market,r.selection,r.point)]=r;});}catch(_){window.MODELP=window.MODELP||{};}
@@ -2763,6 +2765,42 @@ function eqsCardHTML(e,q){
 }
 /* ===== end Edge Quality module ============================================== */
 
+/* ===== MLB schedule context: probable pitchers, records, local first pitch (Phase 1) ===== */
+window.MLBG={};
+function mlbNorm(x){return String(x||'').toLowerCase().replace(/[^a-z0-9]/g,'');}
+async function loadMlbSched(){
+  try{
+    var fmt=new Intl.DateTimeFormat('en-CA',{timeZone:'America/New_York',year:'numeric',month:'2-digit',day:'2-digit'});
+    var d1=fmt.format(new Date()),d2=fmt.format(new Date(Date.now()+86400000));
+    var rows=await sbGet('mlb_game_cards?select=game_date,start_time,start_time_local,venue_tz,venue,status,doubleheader,game_number,series_game_number,games_in_series,away_team_name,away_record,away_pitcher_name,away_pitcher_throws,home_team_name,home_record,home_pitcher_name,home_pitcher_throws&game_date=in.('+d1+','+d2+')');
+    var m={};(rows||[]).forEach(function(g){
+      m[mlbNorm(g.away_team_name)+'|'+mlbNorm(g.home_team_name)+'|'+(g.game_date||'')]=g;
+      var k=mlbNorm(g.away_team_name)+'|'+mlbNorm(g.home_team_name);
+      if(!m[k]||new Date(g.start_time)<new Date(m[k].start_time))m[k]=g; /* doubleheader: base key = earliest game */
+    });
+    window.MLBG=m;
+  }catch(_){window.MLBG=window.MLBG||{};}
+}
+function mlbLookup(e){
+  if(!e||e.sport_key!=='baseball_mlb'||!e.away_team||!e.home_team)return null;
+  var m=window.MLBG||{};var base=mlbNorm(e.away_team)+'|'+mlbNorm(e.home_team);
+  if(e.commence_time){var d=String(e.commence_time).slice(0,10);if(m[base+'|'+d])return m[base+'|'+d];}
+  return m[base]||null;
+}
+function mlbPitcherTxt(nm,th){return nm?(nm+(th?' ('+th+')':'')):'TBD';}
+function mlbSchedHTML(g){
+  if(!g)return '';
+  var fp=g.start_time_local?(g.start_time_local+' local'):'';
+  var series=(g.series_game_number&&g.games_in_series)?('Game '+g.series_game_number+' of '+g.games_in_series):'';
+  var dh=(g.doubleheader&&g.doubleheader!=='N')?('DH game '+(g.game_number||1)):'';
+  var when=[fp,series,dh].filter(Boolean).join(' \u00b7 ');
+  return '<div class="gd-sec">The matchup \u00b7 MLB schedule</div>'+
+    '<div class="gd-line"><span class="l">'+(g.away_team_name||'Away')+' starter</span><span class="v">'+mlbPitcherTxt(g.away_pitcher_name,g.away_pitcher_throws)+'</span></div>'+
+    '<div class="gd-line"><span class="l">'+(g.home_team_name||'Home')+' starter</span><span class="v">'+mlbPitcherTxt(g.home_pitcher_name,g.home_pitcher_throws)+'</span></div>'+
+    (when?'<div class="gd-line"><span class="l">First pitch</span><span class="v mut">'+when+'</span></div>':'')+
+    ((g.status&&g.status!=='Scheduled')?'<div class="gd-line"><span class="l">Status</span><span class="v">'+g.status+'</span></div>':'');
+}
+/* ===== end MLB schedule context ===== */
 function receiptHTML(e){
   var am=GE.decToAm(e.best_dec),od=am>0?'+'+am:am;
   var haveFair=(e.sharp_fair!=null);
@@ -2778,11 +2816,12 @@ function receiptHTML(e){
   var ttg=timeToGame(e.commence_time);var vd=edgeVerdict(e,st);
   var impPrice=(1/e.best_dec*100),impFair=(haveFair?e.sharp_fair*100:null),gap=(haveFair?impFair-impPrice:null);
   var _a=anchorOf(e);
+  var MG=mlbLookup(e);
   var edgePct=(e.edge!=null?e.edge*100:null),neg=(edgePct!=null&&edgePct<0);
   var match='<div class="gd-match">'+
-    '<div class="gd-team'+(isAwayPick?' pick':'')+'"><div class="nm">'+(e.away_team||'\u2014')+'</div><div class="rl">away'+(isAwayPick?' \u00b7 the pick':'')+'</div></div>'+
+    '<div class="gd-team'+(isAwayPick?' pick':'')+'"><div class="nm">'+(e.away_team||'\u2014')+'</div><div class="rl">away'+(MG&&MG.away_record?' \\u00b7 '+MG.away_record:'')+(isAwayPick?' \u00b7 the pick':'')+'</div></div>'+
     '<span class="gd-vs">@</span>'+
-    '<div class="gd-team'+(isHomePick?' pick':'')+'"><div class="nm">'+(e.home_team||'\u2014')+'</div><div class="rl">home'+(isHomePick?' \u00b7 the pick':'')+'</div></div>'+
+    '<div class="gd-team'+(isHomePick?' pick':'')+'"><div class="nm">'+(e.home_team||'\u2014')+'</div><div class="rl">home'+(MG&&MG.home_record?' \\u00b7 '+MG.home_record:'')+(isHomePick?' \u00b7 the pick':'')+'</div></div>'+
     '<div class="gd-when">'+whenLabel(e.commence_time)+(ttg?'<br><span class="'+(ttg.soon?'cd':'')+'">'+ttg.txt+'</span>':'')+'</div></div>';
   var edgeVal=(edgePct!=null?((edgePct>=0?'+':'')+edgePct.toFixed(2)+'%'+(gap!=null?' \u00b7 '+(gap>=0?'+':'')+gap.toFixed(1)+' pts of value':'')):'\u2014');
   var marketRead='<div class="gd-sec">The market \u00b7 '+mktLabel(e.market)+'</div>'+
@@ -2803,7 +2842,7 @@ function receiptHTML(e){
     (ttg?'<div class="gd-line"><span class="l">Game starts</span><span class="v">'+ttg.txt+'</span></div>':'');
   var vHead=vd.headline||(vd.tier==='good'?'\u25c9 Worth a real look':vd.tier==='ok'?'\u25c9 Legit, but modest':vd.tier==='fade'?'\u25c9 Fades by close \u2014 placement +EV only':'\u25c9 Marginal \u2014 verify first');
   var verdict='<div class="gd-verdict '+vd.tier+'"><b>'+vHead+'.</b> '+vd.text+'</div>';
-  return match+bars+bqThesisHTML(e)+eqsCardHTML(e)+marketRead+anchorNote(e)+fairModelNote(e)+corrobNote(e)+limitNote(e)+modelBlock(e)+bqCardHTML(e)+detail+teamFormRows(e)+verdict+trec;
+  return match+mlbSchedHTML(MG)+bars+bqThesisHTML(e)+eqsCardHTML(e)+marketRead+anchorNote(e)+fairModelNote(e)+corrobNote(e)+limitNote(e)+modelBlock(e)+bqCardHTML(e)+detail+teamFormRows(e)+verdict+trec;
 }
 /* wrap any edge into a tappable card with the shared receipt */
 function receiptInner(e,domid){
