@@ -2772,7 +2772,7 @@ async function loadMlbSched(){
   try{
     var fmt=new Intl.DateTimeFormat('en-CA',{timeZone:'America/New_York',year:'numeric',month:'2-digit',day:'2-digit'});
     var d1=fmt.format(new Date()),d2=fmt.format(new Date(Date.now()+86400000));
-    var rows=await sbGet('mlb_game_cards?select=game_date,start_time,start_time_local,venue_tz,venue,status,doubleheader,game_number,series_game_number,games_in_series,away_team_name,away_record,away_pitcher_name,away_pitcher_throws,home_team_name,home_record,home_pitcher_name,home_pitcher_throws&game_date=in.('+d1+','+d2+')');
+    var rows=await sbGet('mlb_game_cards?select=game_date,start_time,start_time_local,venue_tz,venue,status,doubleheader,game_number,series_game_number,games_in_series,away_team_name,away_record,away_division,away_division_rank,away_games_back,away_road_record,away_streak,away_pitcher_name,away_pitcher_throws,home_team_name,home_record,home_division,home_division_rank,home_games_back,home_home_record,home_streak,home_pitcher_name,home_pitcher_throws,park_factor,hr_factor,run_factor&game_date=in.('+d1+','+d2+')');
     var m={};(rows||[]).forEach(function(g){
       m[mlbNorm(g.away_team_name)+'|'+mlbNorm(g.home_team_name)+'|'+(g.game_date||'')]=g;
       var k=mlbNorm(g.away_team_name)+'|'+mlbNorm(g.home_team_name);
@@ -2788,6 +2788,23 @@ function mlbLookup(e){
   return m[base]||null;
 }
 function mlbPitcherTxt(nm,th){return nm?(nm+(th?' ('+th+')':'')):'TBD';}
+function mlbOrd(n){n=parseInt(n,10);if(!n)return '';var sf=['th','st','nd','rd'],v=n%100;return n+(sf[(v-20)%10]||sf[v]||sf[0]);}
+function mlbStandTxt(div,rank,gb,rec,recLbl,streak){
+  var p=[];
+  if(rank)p.push(mlbOrd(rank)+(div?' '+div:''));
+  if(gb&&gb!=='-'&&parseFloat(gb)>0)p.push(gb+' GB');
+  if(rec)p.push(rec+' '+recLbl);
+  if(streak)p.push(streak);
+  return p.join(' \u00b7 ');
+}
+function mlbParkTxt(g){
+  if(!g.venue)return '';
+  var f=[];
+  if(g.park_factor!=null)f.push('park '+g.park_factor);
+  if(g.hr_factor!=null)f.push('HR '+g.hr_factor);
+  if(g.run_factor!=null)f.push('runs '+g.run_factor);
+  return g.venue+(f.length?' \u00b7 '+f.join(' \u00b7 '):'');
+}
 function mlbSchedHTML(g){
   if(!g)return '';
   var fp=g.start_time_local?(g.start_time_local+' local'):'';
@@ -2798,6 +2815,9 @@ function mlbSchedHTML(g){
     '<div class="gd-line"><span class="l">'+(g.away_team_name||'Away')+' starter</span><span class="v">'+mlbPitcherTxt(g.away_pitcher_name,g.away_pitcher_throws)+'</span></div>'+
     '<div class="gd-line"><span class="l">'+(g.home_team_name||'Home')+' starter</span><span class="v">'+mlbPitcherTxt(g.home_pitcher_name,g.home_pitcher_throws)+'</span></div>'+
     (when?'<div class="gd-line"><span class="l">First pitch</span><span class="v mut">'+when+'</span></div>':'')+
+    (function(){var a=mlbStandTxt(g.away_division,g.away_division_rank,g.away_games_back,g.away_road_record,'road',g.away_streak);return a?'<div class="gd-line"><span class="l">'+(g.away_team_name||'Away')+'</span><span class="v mut">'+a+'</span></div>':'';})()+
+    (function(){var h=mlbStandTxt(g.home_division,g.home_division_rank,g.home_games_back,g.home_home_record,'home',g.home_streak);return h?'<div class="gd-line"><span class="l">'+(g.home_team_name||'Home')+'</span><span class="v mut">'+h+'</span></div>':'';})()+
+    (function(){var pk=mlbParkTxt(g);return pk?'<div class="gd-line"><span class="l">Ballpark</span><span class="v mut">'+pk+'</span></div>':'';})()+
     ((g.status&&g.status!=='Scheduled')?'<div class="gd-line"><span class="l">Status</span><span class="v">'+g.status+'</span></div>':'');
 }
 /* ===== end MLB schedule context ===== */
