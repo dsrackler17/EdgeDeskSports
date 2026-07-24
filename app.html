@@ -1698,7 +1698,7 @@ function renderCorrobSplit(rows){
 async function renderLegacyGap(){
   var host=$('recBasis');if(!host)return;
   try{
-    var old=await sbGet('signals?select=clv&graded_at=not.is.null&clv=not.is.null&edge=gte.0.005&edge=lte.0.1&n_books=gte.3&limit=5000');
+    var old=await sbGet('signals?select=clv&graded_at=not.is.null&clv=not.is.null&clv_excluded_reason=is.null&edge=gte.0.005&edge=lte.0.1&n_books=gte.3&limit=5000');
     if(!old||!old.length)return;
     var s=0;old.forEach(function(r){s+=+r.clv;});
     var avg=s/old.length;
@@ -2199,7 +2199,7 @@ function setStale(latest){
 async function loadSliceStats(){
   if(SLICE&&(Date.now()-SLICE_AT)<300000)return;            // cache 5 min
   try{
-    var g=await sbGet('signals?select=sport_title,market,beat_close,clv&graded_at=not.is.null&beat_close=not.is.null&limit=5000');
+    var g=await sbGet('signals?select=sport_title,market,beat_close,clv&graded_at=not.is.null&beat_close=not.is.null&clv_excluded_reason=is.null&limit=5000');
     var m={};function add(k,r){var s=m[k]||(m[k]={n:0,beat:0,clv:0});s.n++;if(r.beat_close)s.beat++;s.clv+=r.clv||0;}
     g.forEach(function(r){add('all',r);if(r.sport_title)add('s|'+r.sport_title,r);if(r.sport_title&&r.market)add('sm|'+r.sport_title+'|'+r.market,r);});
     SLICE=m;SLICE_AT=Date.now();
@@ -2902,10 +2902,10 @@ async function loadRecordProof(){
    Take the tightest pool that actually holds graded rows, fall back honestly,
    and label which one is live so an empty flagged pipeline can never
    masquerade as a record and can never leave the tab stuck on blanks. */
-    var FLAG_CLV='flagged_at=not.is.null&clv=not.is.null';
+    var FLAG_CLV='flagged_at=not.is.null&clv=not.is.null&clv_excluded_reason=is.null';
     var FLAG_STRICT='flagged_at=not.is.null&flagged_edge=gte.0.005&flagged_edge=lte.0.1';
     var FLAG_ANY='flagged_at=not.is.null';
-    var CLV_ANY='clv=not.is.null';
+    var CLV_ANY='clv=not.is.null&clv_excluded_reason=is.null';
     var _c=await Promise.all([sbCount('graded_at=not.is.null&'+FLAG_STRICT),sbCount('graded_at=not.is.null&'+FLAG_ANY),
       sbCount('graded_at=not.is.null&'+CLV_ANY),sbCount('graded_at=not.is.null&'+FLAG_CLV)]);
     var nStrict=_c[0],nFlagAny=_c[1],nClvAny=_c[2],nFlagClv=_c[3];
@@ -2917,7 +2917,7 @@ async function loadRecordProof(){
     else{EDGEQ=FLAG_STRICT;poolLabel='no graded row carries CLV yet';poolKind='empty';gradedEdges=0;}
     var recFunnel='Pool funnel \u00b7 graded '+graded+' \u2192 flagged '+nFlagAny+' \u2192 flagged & 0.5\u20139.9% '+nStrict+' \u2192 flagged AND scored against a close '+nFlagClv+'. Live pool: '+poolLabel+' ('+gradedEdges+').'+
       (nFlagAny>nFlagClv?' The '+(nFlagAny-nFlagClv)+' flagged rows without CLV are mostly alternate lines Pinnacle does not quote at close, so there is no sharp closing price to score them against.':'');
-    var g=poolKind==='empty'?[]:await sbGet('signals?select=clv,result,beat_close,sharp_fair,consensus_fair,first_has_sharp,first_corrob_n,first_corrob_ref,n_books,first_best_dec,flagged_best_dec,flagged_at,flagged_corrob_n,sport_title,market,commence_time&graded_at=not.is.null&'+EDGEQ+'&limit=5000');
+    var g=poolKind==='empty'?[]:await sbGet('signals?select=clv,result,beat_close,clv_excluded_reason,sharp_fair,consensus_fair,first_has_sharp,first_corrob_n,first_corrob_ref,n_books,first_best_dec,flagged_best_dec,flagged_at,flagged_corrob_n,sport_title,market,commence_time&graded_at=not.is.null&'+EDGEQ+'&limit=5000');
     var w=0,l=0,clvSum=0,beatStored=0,n=g.length,clvArr=[],clvPos=0;
     g.forEach(function(r){if(r.result==='win')w++;else if(r.result==='loss')l++;
       if(r.clv!=null){clvArr.push(+r.clv);clvSum+=+r.clv;if(r.clv>0)clvPos++;if(r.beat_close)beatStored++;}});   // all CLV stats over the SAME clv-present subset
@@ -2954,7 +2954,7 @@ async function loadRecordProof(){
     CALIB=await sbGet('calibration?select=*');
     $('dbPill').textContent='DB ✓';$('dbPill').className='pill ok';
     // CLV time series (the proof layer) — cumulative CLV over the flagged edges only
-    try{var series=await sbGet('signals?select=clv,graded_at&graded_at=not.is.null&'+EDGEQ+'&clv=not.is.null&order=graded_at.asc&limit=5000');renderClvHero(series,avgCLV,beatRate,med,posRate,beatStoredRate);}catch(_){renderClvHero([],null,null,null,null,null);}
+    try{var series=await sbGet('signals?select=clv,graded_at&graded_at=not.is.null&'+EDGEQ+'&clv=not.is.null&clv_excluded_reason=is.null&order=graded_at.asc&limit=5000');renderClvHero(series,avgCLV,beatRate,med,posRate,beatStoredRate);}catch(_){renderClvHero([],null,null,null,null,null);}
     function kpi(nv,lb){return'<div class="kpi"><div class="n">'+nv+'</div><div class="l">'+lb+'</div></div>';}
     var _fCol=poolKind==='strict'?'var(--pos)':poolKind==='empty'?'var(--neg)':'var(--warn)';
     var _fWhy=poolKind==='clvany'?' No graded row has flagged_at set, so these are computed over every graded row with a CLV. That means capture v3 (which stamps flagged_at / flagged_edge) has not written any row that has since graded. Deploy or verify it and this promotes itself back to the strict flagged pool on its own.':poolKind==='flagany'?' flagged_at is set but flagged_edge is null or outside the 0.5\u20139.9% band, so the strict filter caught nothing. Check the scale flagged_edge is written on.':poolKind==='empty'?' The settle job is not writing clv on graded rows. That is a backend fix, not a frontend one.':'';
@@ -3110,10 +3110,10 @@ async function loadRecord(force){
        headline against a number computed over a much smaller subset. Most flagged
        rows are alternate lines Pinnacle never quotes at close, so they can never
        be scored - that attrition is shown in the funnel rather than hidden. */
-    var FLAG_CLV='flagged_at=not.is.null&clv=not.is.null';
+    var FLAG_CLV='flagged_at=not.is.null&clv=not.is.null&clv_excluded_reason=is.null';
     var FLAG_STRICT='flagged_at=not.is.null&flagged_edge=gte.0.005&flagged_edge=lte.0.1';
     var FLAG_ANY='flagged_at=not.is.null';
-    var CLV_ANY='clv=not.is.null';
+    var CLV_ANY='clv=not.is.null&clv_excluded_reason=is.null';
     var counts=await Promise.all([sbCount(''),sbCount('graded_at=not.is.null'),
       sbCount('graded_at=not.is.null&'+FLAG_STRICT),sbCount('graded_at=not.is.null&'+FLAG_ANY),
       sbCount('graded_at=not.is.null&'+CLV_ANY),sbCount('graded_at=not.is.null&'+FLAG_CLV)]);
