@@ -5365,7 +5365,7 @@ var CFB_BTN='flex:0 0 auto;padding:8px 14px;border-radius:9px;border:1px solid r
 
 /* ===== WTA research (isolated wta schema; descriptive-only, edge lives in CLV) ===== */
 async function sbGetWta(q){return sbFetch(q,{"accept-profile":"wta"});}
-var WTA={research:[],watch:[],meta:{},slate:null,hidden:0,at:0,seg:'research'};
+var WTA={research:[],watch:[],day:[],meta:{},slate:null,hidden:0,at:0,seg:'research'};
 function wtaPct(w,l){return (w+l)?Math.round(w/(w+l)*100):0;}
 var WTA_TIER={elite:{n:5,label:'Elite research'},strong:{n:4,label:'Strong'},watch:{n:3,label:'Worth watching'}};
 function wtaStars(n){var s='';for(var i=0;i<5;i++)s+=(i<n?'\u2605':'\u2606');return s;}
@@ -5380,6 +5380,7 @@ async function loadWTA(force){
     var slate=null;rows.forEach(function(r){if(!slate||r.slate_date>slate)slate=r.slate_date;});
     WTA.slate=slate;
     var day=rows.filter(function(r){return r.slate_date===slate;});
+    WTA.day=day;
     WTA.hidden=day.filter(function(r){return r.grade==='hidden';}).length;
     WTA.research=day.filter(function(r){return r.grade!=='hidden';});
     WTA.watch=await sbGetWta('watchlist?select=*&order=reliability.desc,rank.asc&limit=100');
@@ -5432,8 +5433,24 @@ function wtaCard(r){
       wtaChip('Gap',c.gap||0,20)+wtaChip('Dominance',c.dominance||0,30)+wtaChip('Upset',c.upset||0,20)+
       wtaChip('Surface',c.surface||0,15)+wtaChip('Form',c.form||0,15)+'</div>'+
     '<ul style="margin:0 0 8px;padding-left:18px;font-size:12.5px;color:var(--text);line-height:1.5">'+lines+'</ul>'+
+    wtaRatesLine(r.rates)+
+    wtaDisqLine(r.disqualifiers)+
     '<div class="sidenote">Rankings as of '+(r.ranking_as_of||'\u2014')+'. Historical records, not a prediction. Proven only by CLV.</div>'+
   '</div>';
+}
+function wtaRatesLine(rt){
+  if(!rt||!rt.matches)return '';
+  return '<div class="st-meta" style="margin:0 0 8px">Favorite match quality ('+rt.window+', '+rt.matches+' matches): '+
+    'retires '+rt.ret_pct+'% \u00b7 tiebreak '+rt.tb_pct+'% \u00b7 3-set '+rt.three_set_pct+'%</div>';
+}
+function wtaDisqLine(dq){
+  if(!dq||!dq.length)return '';
+  var chips=dq.map(function(d){return '<span style="display:inline-block;font-size:10px;color:var(--warn);border:1px solid rgba(217,154,43,.35);background:rgba(217,154,43,.06);border-radius:6px;padding:2px 7px;margin:0 5px 5px 0">'+stEsc(d.label)+'</span>';}).join('');
+  return '<div style="margin:0 0 8px">'+chips+'</div>';
+}
+function wtaTodayRow(pid){
+  for(var i=0;i<WTA.day.length;i++){var r=WTA.day[i];if(r.fav_id===pid||r.dog_id===pid)return r;}
+  return null;
 }
 function wtaWatchRow(p){
   var edges=p.surface_edge||{};
@@ -5445,12 +5462,33 @@ function wtaWatchRow(p){
     '<div class="st-meta">reliability '+Math.round((p.reliability||0)*100)+'% \u00b7 '+(p.appearances||0)+' slates'+(ek?(' \u00b7 '+ek):'')+'</div>'+
   '</div></div>';
 }
+function wtaSlateStatusRow(p,r){
+  var isFav=r.fav_id===p.player_id;
+  var opp=isFav?r.dog_name:r.fav_name;var oppRank=isFav?r.dog_rank:r.fav_rank;
+  var dot='\u25cf',col,reason;
+  if(!isFav){dot='\u25cb';col='var(--dim)';reason='on slate as the underdog vs #'+oppRank+' '+stEsc(opp);}
+  else if(r.grade==='elite'||r.grade==='strong'){col='var(--pos)';reason='qualifies \u00b7 '+r.grade+' '+r.research_score+' vs #'+oppRank+' '+stEsc(opp);}
+  else{col='var(--neg)';var dq=(r.disqualifiers&&r.disqualifiers[0])?r.disqualifiers[0].label:('score '+r.research_score+' below the 70 threshold');reason='does not qualify \u00b7 '+stEsc(dq);}
+  return '<div class="strow"><div class="st-mid">'+
+    '<div class="st-nm"><span style="color:'+col+'">'+dot+'</span> '+stEsc(p.full_name)+' <span class="muted">#'+(p.rank!=null?p.rank:'\u2014')+'</span></div>'+
+    '<div class="st-meta">'+reason+'</div></div></div>';
+}
 function renderWTA(){
   var body=$('wtaBody');if(!body)return;
   if(WTA.seg==='watchlist'){
     if(!WTA.watch.length){body.innerHTML='<div class="empty">Watchlist builds itself as slates are researched. Nothing to show until wta_research has run a few times.</div>';return;}
-    body.innerHTML='<div class="sidenote" style="margin-bottom:10px">Built automatically from measured research reliability, not hardcoded. Reliability = share of a player\u2019s researched matches graded strong or better.</div>'+
-      WTA.watch.map(wtaWatchRow).join('');
+    var onSlate=[],offSlate=[];
+    WTA.watch.forEach(function(p){var r=wtaTodayRow(p.player_id);if(r)onSlate.push({p:p,r:r});else offSlate.push(p);});
+    var html='';
+    if(onSlate.length){
+      html+='<div class="sidenote" style="margin-bottom:8px">On today\u2019s slate ('+(WTA.slate||'\u2014')+'). Green qualifies, red does not, with the reason the engine computed:</div>';
+      html+=onSlate.map(function(o){return wtaSlateStatusRow(o.p,o.r);}).join('');
+    }
+    if(offSlate.length){
+      html+='<div class="sidenote" style="margin:14px 0 8px">Not on today\u2019s slate \u00b7 standing reliability (share of researched matches graded strong or better):</div>';
+      html+=offSlate.map(wtaWatchRow).join('');
+    }
+    body.innerHTML=html||'<div class="empty">No watchlist players yet.</div>';
     return;
   }
   if(!WTA.research.length){
