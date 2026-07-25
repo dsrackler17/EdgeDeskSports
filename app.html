@@ -1255,7 +1255,7 @@ button:focus-visible,select:focus-visible,input:focus-visible,a:focus-visible{ou
 
   <!-- STATS -->
   <section id="v-stats" class="view hide">
-    <div class="stseg research-sub" style="margin-bottom:12px"><button data-sub="cfb" onclick="researchGo('cfb')">CFB</button><button data-sub="ufc" onclick="researchGo('ufc')">UFC</button><button data-sub="stats" onclick="researchGo('stats')">Stats</button><button data-sub="props" onclick="researchGo('props')">Props</button></div>
+    <div class="stseg research-sub" style="margin-bottom:12px"><button data-sub="cfb" onclick="researchGo('cfb')">CFB</button><button data-sub="ufc" onclick="researchGo('ufc')">UFC</button><button data-sub="wta" onclick="researchGo('wta')">WTA</button><button data-sub="stats" onclick="researchGo('stats')">Stats</button><button data-sub="props" onclick="researchGo('props')">Props</button></div>
     <div class="row-between"><h2 style="margin:0">Stats</h2><span class="spacer"></span><span class="freshness" id="stFresh">—</span><button class="refreshbtn" title="Refresh" onclick="loadStats(true)">&#8635;</button></div>
     <p class="lede">The players and teams behind the boards — browse a roster, search a player, or scan the leaders. Fundamentals to sanity-check direction; the edge itself still lives in CLV.</p>
     <div class="stchips" id="stLeagues"></div>
@@ -1265,7 +1265,7 @@ button:focus-visible,select:focus-visible,input:focus-visible,a:focus-visible{ou
   </section>
 
   <section id="v-props" class="view hide">
-    <div class="stseg research-sub" style="margin-bottom:12px"><button data-sub="cfb" onclick="researchGo('cfb')">CFB</button><button data-sub="ufc" onclick="researchGo('ufc')">UFC</button><button data-sub="stats" onclick="researchGo('stats')">Stats</button><button data-sub="props" onclick="researchGo('props')">Props</button></div>
+    <div class="stseg research-sub" style="margin-bottom:12px"><button data-sub="cfb" onclick="researchGo('cfb')">CFB</button><button data-sub="ufc" onclick="researchGo('ufc')">UFC</button><button data-sub="wta" onclick="researchGo('wta')">WTA</button><button data-sub="stats" onclick="researchGo('stats')">Stats</button><button data-sub="props" onclick="researchGo('props')">Props</button></div>
     <div class="row-between"><h2 style="margin:0">Props</h2><span class="spacer"></span><span class="freshness" id="prFresh">—</span><button class="refreshbtn" title="Refresh" onclick="loadProps(true)">&#8635;</button></div>
     <p class="lede">Model projections for player props &mdash; per-game rate with modeled variance. <b style="color:var(--warn)">Projections, not lines, not edges.</b> An edge only exists once these beat a real book's closing number; until then it's research to sanity-check, never a call.</p>
     <div class="stchips" id="prSports"></div>
@@ -1275,7 +1275,7 @@ button:focus-visible,select:focus-visible,input:focus-visible,a:focus-visible{ou
 
   <!-- UFC (research dataset) -->
   <section id="v-ufc" class="view hide">
-    <div class="stseg research-sub" style="margin-bottom:12px"><button data-sub="cfb" onclick="researchGo('cfb')">CFB</button><button data-sub="ufc" onclick="researchGo('ufc')">UFC</button><button data-sub="stats" onclick="researchGo('stats')">Stats</button><button data-sub="props" onclick="researchGo('props')">Props</button></div>
+    <div class="stseg research-sub" style="margin-bottom:12px"><button data-sub="cfb" onclick="researchGo('cfb')">CFB</button><button data-sub="ufc" onclick="researchGo('ufc')">UFC</button><button data-sub="wta" onclick="researchGo('wta')">WTA</button><button data-sub="stats" onclick="researchGo('stats')">Stats</button><button data-sub="props" onclick="researchGo('props')">Props</button></div>
     <div class="row-between"><h2 style="margin:0">UFC research</h2><span class="spacer"></span><span class="freshness" id="ufcFresh">—</span><button class="refreshbtn" title="Refresh" onclick="loadUFC(true)">&#8635;</button></div>
     <p class="lede">Historical fighter and fight database &mdash; <b style="color:var(--warn)">descriptive research only, never a prediction</b>. Browse a fighter for their record, dimensions, and full fight history with the de-vigged <b>consensus</b> closing probability of each bout. This is a backtest substrate, not a CLV record.</p>
     <div class="flbanner demo" id="ufcBanner">Loading UFC dataset…</div>
@@ -1308,7 +1308,7 @@ button:focus-visible,select:focus-visible,input:focus-visible,a:focus-visible{ou
 
   <!-- CFB (College Football research) -->
   <section id="v-cfb" class="view hide">
-    <div class="stseg research-sub" style="margin-bottom:12px"><button data-sub="cfb" onclick="researchGo('cfb')">CFB</button><button data-sub="ufc" onclick="researchGo('ufc')">UFC</button><button data-sub="stats" onclick="researchGo('stats')">Stats</button><button data-sub="props" onclick="researchGo('props')">Props</button></div>
+    <div class="stseg research-sub" style="margin-bottom:12px"><button data-sub="cfb" onclick="researchGo('cfb')">CFB</button><button data-sub="ufc" onclick="researchGo('ufc')">UFC</button><button data-sub="wta" onclick="researchGo('wta')">WTA</button><button data-sub="stats" onclick="researchGo('stats')">Stats</button><button data-sub="props" onclick="researchGo('props')">Props</button></div>
     <div class="row-between"><h2 style="margin:0">CFB</h2><span class="spacer"></span><span class="freshness" id="cfbFresh">&mdash;</span><button class="refreshbtn" title="Refresh" onclick="loadCFB(true)">&#8635;</button></div>
     <p class="lede">College football matchups first &mdash; tap a game for the side-by-side, tap a team for the deep dive. <b style="color:var(--warn)">Research context, not edges.</b> SP+, records and season stats sanity-check direction; the edge itself still lives in CLV. Lines shown are consensus book numbers, not Pinnacle.</p>
     <div class="flbanner demo" id="cfbBanner">Loading CFB dataset&hellip;</div>
@@ -1317,6 +1317,16 @@ button:focus-visible,select:focus-visible,input:focus-visible,a:focus-visible{ou
     <div id="cfbModal" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.72);overflow-y:auto" onclick="if(event.target===this)cfbCloseTeam()">
       <div id="cfbModalCard" style="max-width:600px;margin:24px auto;background:#0f141b;border:1px solid rgba(255,255,255,.12);border-radius:16px;padding:18px;position:relative"></div>
     </div>
+  </section>
+
+  <!-- WTA (research engine) -->
+  <section id="v-wta" class="view hide">
+    <div class="stseg research-sub" style="margin-bottom:12px"><button data-sub="cfb" onclick="researchGo('cfb')">CFB</button><button data-sub="ufc" onclick="researchGo('ufc')">UFC</button><button data-sub="wta" onclick="researchGo('wta')">WTA</button><button data-sub="stats" onclick="researchGo('stats')">Stats</button><button data-sub="props" onclick="researchGo('props')">Props</button></div>
+    <div class="row-between"><h2 style="margin:0">WTA</h2><span class="spacer"></span><span class="freshness" id="wtaFresh">—</span><button class="refreshbtn" title="Refresh" onclick="loadWTA(true)">&#8635;</button></div>
+    <p class="lede">Automated match research, not picks. EdgeDesk asks <b>which matches deserve attention</b>, grades the evidence, and hands the decision back to you. <b style="color:var(--warn)">Research context, not edges.</b> Records are historical; the edge still lives in CLV against Pinnacle.</p>
+    <div class="flbanner demo" id="wtaBanner">Loading WTA research…</div>
+    <div class="stseg" id="wtaSeg" style="margin-bottom:12px"><button class="on" onclick="wtaSetSeg('research')">Today’s research</button><button onclick="wtaSetSeg('watchlist')">Watchlist</button></div>
+    <div id="wtaBody"><div class="empty">Loading…</div></div>
   </section>
 
   <!-- SETTINGS -->
@@ -2177,11 +2187,11 @@ function $(id){return document.getElementById(id);}
 
 /* ===== nav ===== */
 function show(v){if(v==='research'){researchGo(RESEARCH_SUB);return;}var s=document.querySelectorAll('.view');for(var i=0;i<s.length;i++)s[i].classList.toggle('hide',s[i].id!=='v-'+v);var b=document.querySelectorAll('.bottomnav button');for(var j=0;j<b.length;j++)b[j].classList.toggle('on',b[j].dataset.v===v);window.scrollTo(0,0);try{if(v!=='settings'){var _pp=prefs();_pp.lastTab=v;localStorage.setItem('edgedesk_prefs',JSON.stringify(_pp));}}catch(_){}
-  if(v==='record')loadRecord();if(v==='edges')loadEdges();if(v==='faults')loadFaults();if(v==='boards')loadBoards();if(v==='news')loadNews();if(v==='ledger')loadMarket();if(v==='stats')loadStats();if(v==='props')loadProps();if(v==='ufc')loadUFC();if(v==='cfb')loadCFB();if(v==='settings')loadSettings();if(v==='discipline')loadDiscipline();/*ADDED*/
+  if(v==='record')loadRecord();if(v==='edges')loadEdges();if(v==='faults')loadFaults();if(v==='boards')loadBoards();if(v==='news')loadNews();if(v==='ledger')loadMarket();if(v==='stats')loadStats();if(v==='props')loadProps();if(v==='ufc')loadUFC();if(v==='cfb')loadCFB();if(v==='wta')loadWTA();if(v==='settings')loadSettings();if(v==='discipline')loadDiscipline();/*ADDED*/
   if(v==='social')loadSocial();else plStop();}
 var RESEARCH_SUB='cfb';
 window.researchGo=function(sub){
-  if(['cfb','ufc','stats','props'].indexOf(sub)<0)sub='cfb';
+  if(['cfb','ufc','wta','stats','props'].indexOf(sub)<0)sub='cfb';
   RESEARCH_SUB=sub;
   show(sub);
   var b=document.querySelectorAll('.bottomnav button');for(var j=0;j<b.length;j++)b[j].classList.toggle('on',b[j].dataset.v==='research');
@@ -5352,6 +5362,104 @@ setInterval(function(){var on=!$('v-edges').classList.contains('hide');if(on)loa
    Lines shown are consensus book numbers for context, NOT Pinnacle and NOT an EdgeDesk edge. */
 var CFB={teams:[],byId:{},byName:{},games:[],ratings:{},records:{},stats:{},ranks:{},recruit:{},lines:{},at:0,seg:'upcoming',open:{},qualSeason:null};
 var CFB_BTN='flex:0 0 auto;padding:8px 14px;border-radius:9px;border:1px solid rgba(255,255,255,.18);background:transparent;color:var(--fg,#e8eef7);font-size:12.5px;cursor:pointer';
+
+/* ===== WTA research (isolated wta schema; descriptive-only, edge lives in CLV) ===== */
+async function sbGetWta(q){return sbFetch(q,{"accept-profile":"wta"});}
+var WTA={research:[],watch:[],meta:{},slate:null,hidden:0,at:0,seg:'research'};
+function wtaPct(w,l){return (w+l)?Math.round(w/(w+l)*100):0;}
+var WTA_TIER={elite:{n:5,label:'Elite research'},strong:{n:4,label:'Strong'},watch:{n:3,label:'Worth watching'}};
+function wtaStars(n){var s='';for(var i=0;i<5;i++)s+=(i<n?'\u2605':'\u2606');return s;}
+
+async function loadWTA(force){
+  if(!force&&WTA.at&&(Date.now()-WTA.at)<300000){renderWTA();return;}
+  var ban=$('wtaBanner');
+  try{
+    var meta=await sbGetWta('meta?select=key,value');
+    WTA.meta={};meta.forEach(function(m){WTA.meta[m.key]=m.value;});
+    var rows=await sbGetWta('daily_research?select=*&order=slate_date.desc,research_score.desc&limit=400');
+    var slate=null;rows.forEach(function(r){if(!slate||r.slate_date>slate)slate=r.slate_date;});
+    WTA.slate=slate;
+    var day=rows.filter(function(r){return r.slate_date===slate;});
+    WTA.hidden=day.filter(function(r){return r.grade==='hidden';}).length;
+    WTA.research=day.filter(function(r){return r.grade!=='hidden';});
+    WTA.watch=await sbGetWta('watchlist?select=*&order=reliability.desc,rank.asc&limit=100');
+    WTA.at=Date.now();
+    var lr=WTA.meta['last_research'];
+    $('wtaFresh').textContent=lr?('built '+ago(new Date(lr).getTime())):'\u2014';
+    if(!rows.length){
+      ban.className='flbanner demo';
+      ban.textContent='\u25b2 wta schema reachable but empty \u2014 run wta_ingest, then wta_research. Nothing is shown until a real slate lands.';
+    }else{
+      ban.className='flbanner live';
+      ban.textContent='\u25cf '+WTA.research.length+' matches worth research \u00b7 slate '+(slate||'\u2014')+
+        ' \u00b7 rankings as of '+(WTA.meta['ranking_as_of']||'\u2014')+' \u00b7 research context, edge still lives in CLV.';
+    }
+    renderWTA();
+  }catch(e){
+    ban.className='flbanner demo';
+    ban.textContent='\u25b2 wta schema not reachable \u2014 run wta_schema.sql and expose the wta schema under Supabase > API settings.';
+    $('wtaBody').innerHTML='<div class="empty">Could not reach the wta schema: '+stEsc(e.message)+'</div>';
+  }
+}
+window.wtaSetSeg=function(s){
+  WTA.seg=s;
+  var b=$('wtaSeg').querySelectorAll('button');
+  b[0].classList.toggle('on',s==='research');b[1].classList.toggle('on',s==='watchlist');
+  renderWTA();
+};
+
+function wtaChip(label,val,max){
+  var pc=Math.max(0,Math.min(100,Math.round((val/max)*100)));
+  return '<span style="display:inline-flex;flex-direction:column;gap:3px;min-width:64px">'+
+    '<span style="font-size:8px;text-transform:uppercase;letter-spacing:.04em;color:var(--faint)">'+label+'</span>'+
+    '<span style="font-family:\'JetBrains Mono\',monospace;font-size:11px;color:var(--text)">'+val.toFixed(1)+'<span style="color:var(--faint)">/'+max+'</span></span>'+
+    '<span style="height:3px;border-radius:2px;background:var(--surface2)"><span style="display:block;height:3px;border-radius:2px;width:'+pc+'%;background:var(--accent)"></span></span></span>';
+}
+function wtaCard(r){
+  var t=WTA_TIER[r.grade]||WTA_TIER.watch;var c=r.components||{};
+  var surf=r.surface?stEsc(r.surface):'surface n/a';
+  var price=(r.fav_dec?(' \u00b7 fav '+(+r.fav_dec).toFixed(2)):'');
+  var lines=(r.summary||[]).map(function(x){return '<li style="margin:2px 0">'+stEsc(x)+'</li>';}).join('');
+  return '<div class="card">'+
+    '<div class="row-between" style="align-items:flex-start">'+
+      '<div style="font-size:14.5px"><b>'+stEsc(r.fav_name)+'</b> <span class="muted">#'+r.fav_rank+'</span> '+
+        '<span style="color:var(--faint)">vs</span> <b>'+stEsc(r.dog_name)+'</b> <span class="muted">#'+r.dog_rank+'</span></div>'+
+      '<div style="text-align:right;flex:none"><div style="color:var(--gold);font-size:13px;letter-spacing:1px">'+wtaStars(t.n)+'</div>'+
+        '<div style="font-family:\'JetBrains Mono\',monospace;font-size:11px;color:var(--dim)">'+t.label+' \u00b7 '+r.research_score+'</div></div>'+
+    '</div>'+
+    '<div class="st-meta" style="margin:4px 0 10px">'+stEsc(r.tourney_title||'')+' \u00b7 '+surf+' \u00b7 gap '+r.rank_gap+price+'</div>'+
+    '<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px">'+
+      wtaChip('Gap',c.gap||0,20)+wtaChip('Dominance',c.dominance||0,30)+wtaChip('Upset',c.upset||0,20)+
+      wtaChip('Surface',c.surface||0,15)+wtaChip('Form',c.form||0,15)+'</div>'+
+    '<ul style="margin:0 0 8px;padding-left:18px;font-size:12.5px;color:var(--text);line-height:1.5">'+lines+'</ul>'+
+    '<div class="sidenote">Rankings as of '+(r.ranking_as_of||'\u2014')+'. Historical records, not a prediction. Proven only by CLV.</div>'+
+  '</div>';
+}
+function wtaWatchRow(p){
+  var edges=p.surface_edge||{};
+  var ek=Object.keys(edges).filter(function(k){return k!=='all'&&k!=='Unknown';})
+    .sort(function(a,b){return edges[b]-edges[a];}).slice(0,3)
+    .map(function(k){return k+' '+Math.round(edges[k]*100)+'%';}).join(' \u00b7 ');
+  return '<div class="strow"><div class="st-mid">'+
+    '<div class="st-nm">'+stEsc(p.full_name)+' <span class="muted">#'+(p.rank!=null?p.rank:'\u2014')+'</span></div>'+
+    '<div class="st-meta">reliability '+Math.round((p.reliability||0)*100)+'% \u00b7 '+(p.appearances||0)+' slates'+(ek?(' \u00b7 '+ek):'')+'</div>'+
+  '</div></div>';
+}
+function renderWTA(){
+  var body=$('wtaBody');if(!body)return;
+  if(WTA.seg==='watchlist'){
+    if(!WTA.watch.length){body.innerHTML='<div class="empty">Watchlist builds itself as slates are researched. Nothing to show until wta_research has run a few times.</div>';return;}
+    body.innerHTML='<div class="sidenote" style="margin-bottom:10px">Built automatically from measured research reliability, not hardcoded. Reliability = share of a player\u2019s researched matches graded strong or better.</div>'+
+      WTA.watch.map(wtaWatchRow).join('');
+    return;
+  }
+  if(!WTA.research.length){
+    body.innerHTML='<div class="empty">No matches cleared the research threshold for this slate'+(WTA.hidden?(' ('+WTA.hidden+' reviewed, none above 70)'):'')+'. That is the honest answer for a quiet day, not a bug.</div>';
+    return;
+  }
+  var note=WTA.hidden?('<div class="sidenote" style="margin-bottom:8px">'+WTA.research.length+' shown \u00b7 '+WTA.hidden+' reviewed and hidden below the 70 threshold.</div>'):'';
+  body.innerHTML=note+WTA.research.map(wtaCard).join('');
+}
 
 async function sbGetCfb(q){return sbFetch(q,{"accept-profile":"cfb"});}
 async function cfbFetchAll(sel,ord){var all=[],p=0,PAGE=1000;for(;p<25;p++){var b=await sbGetCfb(sel+'&order='+(ord||'team')+'&limit='+PAGE+'&offset='+(p*PAGE));if(!b||!b.length)break;all=all.concat(b);if(b.length<PAGE)break;}return all;}
