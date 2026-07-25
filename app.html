@@ -75,6 +75,23 @@ textarea{min-height:110px;font-family:'JetBrains Mono',monospace;resize:vertical
 .rchev{color:var(--faint);font-family:'JetBrains Mono',monospace;font-size:12px;transition:.16s;flex:none;width:14px;text-align:center}
 .t10item.open .rchev{transform:rotate(90deg)}
 .receipt{display:none;padding:2px 6px 14px 32px}.t10item.open .receipt{display:block}
+.receipt.open{display:block}
+.mdl-card{border:1px solid var(--line,rgba(255,255,255,.08));border-radius:10px;padding:0;margin:0 0 10px;overflow:hidden;background:rgba(255,255,255,.015)}
+.mdl-card-h{display:flex;justify-content:space-between;align-items:baseline;gap:10px;padding:10px 12px;border-bottom:1px solid var(--line,rgba(255,255,255,.06))}
+.mdl-card-match{font-weight:600;font-size:13px;color:var(--text)}
+.mdl-card-when{font-size:10px;color:var(--dim);font-family:'JetBrains Mono',monospace;white-space:nowrap}
+.mdl-mkt{padding:9px 12px;border-bottom:1px solid var(--line,rgba(255,255,255,.04));cursor:pointer}
+.mdl-mkt:last-child{border-bottom:none}
+.mdl-mkt.uncertain{cursor:default;background:rgba(217,154,43,.04)}
+.mdl-mkt-top{display:flex;align-items:center;gap:8px}
+.mdl-mkt-name{font-size:10px;letter-spacing:.06em;color:var(--dim);text-transform:uppercase;min-width:52px}
+.mdl-pick{font-weight:600;font-size:12.5px;color:var(--text)}
+.mdl-tag{font-size:9.5px;letter-spacing:.04em;color:var(--mdl);border:1px solid rgba(155,140,255,.4);border-radius:4px;padding:1px 6px;white-space:nowrap}
+.mdl-tag.warn{color:var(--warn);border-color:rgba(217,154,43,.5)}
+.mdl-stars{color:var(--mdl);letter-spacing:1px}
+.mdl-mkt-sub{font-size:10px;color:var(--dim);margin:3px 0 0;padding-left:60px;font-family:'JetBrains Mono',monospace}
+.mdl-mkt .rchev{margin-left:auto;color:var(--faint);transition:transform .15s}
+.mdl-mkt .receipt.open+.rchev,.mdl-mkt .rchev{}
 /* ===== rich game-detail panel ===== */
 .gd-match{display:flex;align-items:center;gap:10px;padding:10px 0 12px;border-bottom:1px solid var(--border);margin-bottom:11px}
 .gd-team{flex:1;min-width:0}
@@ -5778,32 +5795,6 @@ window.__mdlTrack=function(id){
   if(sig&&sig.best_dec)trackSignal(sig,GE.decToAm(sig.best_dec));
 };
 
-function modelRow(m,i){
-  var d=modelMeta(m);
-  var matchup=(d.away&&d.home)?(stEsc(d.away)+' @ '+stEsc(d.home))
-    :'<span style="color:var(--faint)">matchup not on the live board</span>';
-  var when=d.when?whenLabel(d.when):'time unknown';
-  var R=m.__resolved||{};
-  /* Suppressed market: render a non-expanding "Model Uncertain" notice in
-     place of the two contradictory picks. */
-  if(m.__uncertain){
-    return '<div class="t10item"><div class="lead-row" style="cursor:default">'+
-      '<span class="rank">'+(i+1)+'</span>'+
-      '<div class="lead-mid"><div class="lead-sel"><span class="ebadge model" style="color:var(--warn);border-color:rgba(217,154,43,.5);background:rgba(217,154,43,.1)">\u26a0 MODEL UNCERTAIN</span></div>'+
-      '<div class="lead-meta">'+(d.sport?stEsc(d.sport)+' \u00b7 ':'')+mktLabel(m.market)+' \u00b7 '+matchup+' \u00b7 '+when+'</div>'+
-      '<div class="model-warn">Both sides scored positive within '+MODEL_CONFLICT.tieThreshold.toFixed(1)+'% ('+stEsc(R.suppressed_side||'')+', \u0394 '+(R.edge_difference!=null?R.edge_difference.toFixed(2):'?')+'%). No coherent lean \u2014 suppressed.</div></div></div></div>';
-  }
-  var ev=modelEvOf(m);
-  var pickTag=R.conflict_detected
-    ? '<span class="ebadge" style="color:var(--ok);border-color:rgba(74,222,128,.45);background:rgba(74,222,128,.1);margin-left:6px">\u2713 PICK</span>'
-    : '';
-  var header='<span class="rank">'+(i+1)+'</span>'+
-    '<div class="lead-mid"><div class="lead-sel"><span class="ebadge model">MODEL</span>'+stEsc(selLabel(m))+pickTag+'</div>'+
-    '<div class="lead-meta">'+(d.sport?stEsc(d.sport)+' \u00b7 ':'')+mktLabel(m.market)+' \u00b7 '+matchup+' \u00b7 '+when+
-      (R.conflict_detected?' \u00b7 beat '+stEsc(R.suppressed_side||'other side')+' by '+(R.edge_difference!=null?R.edge_difference.toFixed(2):'?')+'%':'')+'</div></div>'+
-    '<span class="lead-ev mdl">'+(ev!=null?(ev>=0?'+':'')+ev.toFixed(1)+'%':'\u2014')+'</span>';
-  return modelExpandItem(m,'mdl_'+i,header);
-}
 
 /* ===== Model conflict resolution ============================================
    Sits BETWEEN model generation (window.MODEL_EDGES, raw model_predictions
@@ -5825,7 +5816,24 @@ function modelRow(m,i){
    percent) at which two opposing positive edges are treated as a tie and both
    suppressed. Default 1.0.
    ========================================================================== */
-var MODEL_CONFLICT = { tieThreshold: 1.0 };
+/* Confidence tiers by edge DIFFERENCE between the two sides (EV points).
+   uncertainMax is the ceiling for suppression: below it, the model cannot
+   separate the sides and we show nothing. Everything above shows the stronger
+   side with a tier label — no green authority, since the model is unproven. */
+var MODEL_CONFLICT = {
+  uncertainMax: 0.5,   // diff < 0.5% -> Model Uncertain, suppress both
+  tiers: [             // first match wins; checked high-to-low
+    { min: 3.0, key:'strong', label:'Strong lean',  stars:'\u2605\u2605\u2605' },
+    { min: 1.5, key:'pick',   label:'Preferred side', stars:'\u2605\u2605' },
+    { min: 0.5, key:'lean',   label:'Slight lean',  stars:'\u2605' }
+  ]
+};
+/* Map an edge difference to its tier object, or null if it is uncertain. */
+function modelTier(diff){
+  if(diff==null||diff<MODEL_CONFLICT.uncertainMax)return null;
+  for(var i=0;i<MODEL_CONFLICT.tiers.length;i++)if(diff>=MODEL_CONFLICT.tiers[i].min)return MODEL_CONFLICT.tiers[i];
+  return MODEL_CONFLICT.tiers[MODEL_CONFLICT.tiers.length-1];
+}
 
 /* Identify a market INSTANCE within a game. Two sides of the same bet must
    share this key; different lines (Total 8.5 vs Total 9.5) must NOT, or we'd
@@ -5885,7 +5893,7 @@ function resolveOneMarket(rows){
 
   /* Near-tie -> the model contradicts itself with no clear lean. Suppress ALL
      sides, mark uncertain. */
-  if(diff < MODEL_CONFLICT.tieThreshold){
+  if(diff < MODEL_CONFLICT.uncertainMax){
     var dec=ranked.map(function(m){
       return {row:m, conflict:true, resolved:false,
               penalty:null, otherEv:modelEvOf(runnerUp===m?top:runnerUp),
@@ -5894,18 +5902,18 @@ function resolveOneMarket(rows){
     return {winner:null, uncertain:true, diff:diff, decisions:dec};
   }
 
-  /* Clear winner -> show the top side. Confidence penalty scales with how
-     close the loser was: a side that barely beat its opposite is shakier than
-     one that dominated. Penalty in [0,1], 0 = ran away with it. */
-  var penalty=Math.max(0, 1 - (diff / (MODEL_CONFLICT.tieThreshold*3)));
+  /* Clear separation -> show the top side, labeled by confidence TIER (a
+     function of how far it beat its opposite). No tier gets the market
+     engine's authority; the strongest is still just "Strong lean". */
+  var tier=modelTier(diff);
   var decisions=ranked.map(function(m,idx){
     return idx===0
-      ? {row:m, conflict:true, resolved:true, penalty:penalty,
+      ? {row:m, conflict:true, resolved:true, tier:tier,
          otherEv:modelEvOf(runnerUp), diff:diff, reason:null}
-      : {row:m, conflict:true, resolved:false, penalty:null,
+      : {row:m, conflict:true, resolved:false, tier:null,
          otherEv:modelEvOf(top), diff:diff, reason:'weaker_side'};
   });
-  return {winner:top, diff:diff, penalty:penalty, decisions:decisions};
+  return {winner:top, diff:diff, tier:tier, decisions:decisions};
 }
 
 /* Top-level: take the raw positive-EV model rows, return the resolved set to
@@ -5950,7 +5958,9 @@ function resolveModelConflicts(rawRows){
         suppressed_side: (function(){var l=res.decisions.find(function(d){return d.resolved===false;});return l?selLabel(l.row):null;})(),
         suppression_reason: null,
         edge_difference: (res.diff!=null?+res.diff.toFixed(2):null),
-        confidence_penalty: (wd.penalty!=null?+wd.penalty.toFixed(2):0)
+        tier: (wd.tier?wd.tier.key:null),
+        tier_label: (wd.tier?wd.tier.label:null),
+        tier_stars: (wd.tier?wd.tier.stars:null)
       };
       out.push(w);
     } else if(res.uncertain){
@@ -5967,7 +5977,7 @@ function resolveModelConflicts(rawRows){
           suppressed_side:res.decisions.map(function(d){return selLabel(d.row);}).join(' / '),
           suppression_reason:'model_uncertain',
           edge_difference:(res.diff!=null?+res.diff.toFixed(2):null),
-          confidence_penalty:1
+          tier:null, tier_label:null, tier_stars:null
         }
       });
     }
@@ -5997,28 +6007,80 @@ function renderModelEngine(){
      out. It returns at most one row per market instance (a resolved pick or a
      "Model Uncertain" placeholder), each carrying __resolved metadata. */
   var resolved=resolveModelConflicts(window.MODEL_EDGES||[]);
-  /* User filters (min EV, sport) apply to the RESOLVED set. Uncertain
-     placeholders always pass the EV filter so a suppressed market stays
-     visible rather than vanishing. */
-  var rows=resolved.filter(function(m){
+  /* Apply user filters to the RESOLVED set. Uncertain markets always survive
+     the EV filter so a suppressed market stays visible rather than vanishing. */
+  var kept=resolved.filter(function(m){
     if(sportSel){var d=modelMeta(m);if(d.sport!==sportSel)return false;}
     if(m.__uncertain)return true;
     var ev=modelEvOf(m);
     if(ev==null||ev<minev)return false;
     return true;
   });
-  /* picks first (by EV), uncertain markets after */
-  rows.sort(function(a,b){
-    if(a.__uncertain!==b.__uncertain)return a.__uncertain?1:-1;
-    return (modelEvOf(b)||0)-(modelEvOf(a)||0);
-  });
-  rows=rows.slice(0,40);
-  if(!rows.length){
+  if(!kept.length){
     host.innerHTML='<div class="empty" style="padding:12px">No model edges in your window. This engine lights up for any sport loaded into <b>model_predictions</b> \u2014 MLB today; CFB, golf and props when their models exist. It is independent of Pinnacle and never dilutes a MARKET edge.</div>';
     return;
   }
-  host.innerHTML=rows.map(function(m,i){return modelRow(m,i);}).join('')+
-  '<div class="engine-sub" style="margin-top:8px">Model win-probability vs the book\u2019s implied price. Tap any row for the full read. <b>Unproven</b> \u2014 counted nowhere in CLV; graduates only once its own graded CLV beats the close.</div>';
+  /* ONE CARD PER GAME. Group resolved markets by event, order games by their
+     single best pick EV (uncertain-only games sink to the bottom). */
+  var byGame={};
+  kept.forEach(function(m){(byGame[m.event_id]=byGame[m.event_id]||[]).push(m);});
+  var games=Object.keys(byGame).map(function(id){
+    var mkts=byGame[id];
+    var best=mkts.reduce(function(x,m){var e=m.__uncertain?-1:(modelEvOf(m)||0);return e>x?e:x;},-1);
+    return {id:id, mkts:mkts, best:best};
+  }).sort(function(a,b){return b.best-a.best;}).slice(0,24);
+
+  var gi=0;
+  host.innerHTML=games.map(function(g){return modelGameCard(g.mkts, gi++);}).join('')+
+  '<div class="engine-sub" style="margin-top:8px">One card per game; each market shows the model\u2019s preferred side or \u201cuncertain\u201d when it can\u2019t separate them. <b>Unproven</b> \u2014 counted nowhere in CLV; a lean is research, not a call, until its own graded CLV beats the close.</div>';
+}
+
+/* Render one game as a card: a header (matchup + time) then one line per
+   resolved market. Deliberately NO green authority \u2014 the strongest tier is
+   still just a muted "Strong lean", because the model is on probation. */
+function modelGameCard(mkts, gi){
+  var d=modelMeta(mkts[0]);
+  var matchup=(d.away&&d.home)?(stEsc(d.away)+' @ '+stEsc(d.home))
+    :'<span style="color:var(--faint)">matchup not on the live board</span>';
+  var when=d.when?whenLabel(d.when):'time unknown';
+  var ttg=d.when?timeToGame(d.when):null;
+  /* market order: ML, spread, total, then the rest */
+  var ord={h2h:0,spreads:1,totals:2};
+  mkts=mkts.slice().sort(function(a,b){return (ord[a.market]==null?9:ord[a.market])-(ord[b.market]==null?9:ord[b.market]);});
+  var lines=mkts.map(function(m,k){return modelMarketLine(m,gi,k);}).join('');
+  return '<div class="mdl-card">'+
+    '<div class="mdl-card-h"><div class="mdl-card-match">'+matchup+'</div>'+
+      '<div class="mdl-card-when">'+(d.sport?stEsc(d.sport)+' \u00b7 ':'')+(d.when?whenLabel(d.when):'start time unknown')+(ttg?' \u00b7 '+ttg.txt:'')+'</div></div>'+
+    lines+'</div>';
+}
+
+/* One market row inside a game card. Resolved -> preferred side + tier +
+   beaten side. Uncertain -> amber "can\u2019t separate" note. Expands to the
+   full model receipt (resolved side only). */
+function modelMarketLine(m,gi,k){
+  var R=m.__resolved||{};
+  var mk=mktLabel(m.market);
+  if(m.__uncertain){
+    return '<div class="mdl-mkt uncertain">'+
+      '<div class="mdl-mkt-top"><span class="mdl-mkt-name">'+mk+'</span>'+
+        '<span class="mdl-tag warn">\u26a0 Model uncertain</span></div>'+
+      '<div class="mdl-mkt-sub">Can\u2019t separate the sides ('+stEsc(R.suppressed_side||'')+', \u0394 '+(R.edge_difference!=null?R.edge_difference.toFixed(2):'?')+'%). No lean shown.</div></div>';
+  }
+  var ev=modelEvOf(m);
+  var domid='mdl_'+gi+'_'+k;
+  window.MRCPT=window.MRCPT||{};window.MRCPT[domid]=m;
+  var stars=R.tier_stars?('<span class="mdl-stars">'+R.tier_stars+'</span>'):'';
+  var tagLabel=R.tier_label||'Preferred side';
+  var beat=R.conflict_detected&&R.suppressed_side
+    ? '<div class="mdl-mkt-sub">beat '+stEsc(R.suppressed_side)+' by '+(R.edge_difference!=null?R.edge_difference.toFixed(2):'?')+'% \u00b7 EV '+(ev!=null?(ev>=0?'+':'')+ev.toFixed(1)+'%':'\u2014')+'</div>'
+    : '<div class="mdl-mkt-sub">EV '+(ev!=null?(ev>=0?'+':'')+ev.toFixed(1)+'%':'\u2014')+' \u00b7 no opposing edge</div>';
+  return '<div class="mdl-mkt" onclick="toggleRcptId(\''+domid+'\')">'+
+    '<div class="mdl-mkt-top"><span class="mdl-mkt-name">'+mk+'</span>'+
+      '<span class="mdl-pick">'+stEsc(selLabel(m))+'</span>'+
+      '<span class="mdl-tag">'+stars+' '+stEsc(tagLabel)+'</span>'+
+      '<span class="rchev">\u203a</span></div>'+
+    beat+
+    '<div class="receipt" id="'+domid+'">'+modelReceiptHTML(m)+'</div></div>';
 }
 
 function consEdgeOf(e){
