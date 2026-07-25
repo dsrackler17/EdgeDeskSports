@@ -1379,6 +1379,13 @@ async function sbFetch(q,extra){
   return r.json();
 }
 async function sbGet(q){return sbFetch(q);}
+async function sbPost(table,rows){
+  var t=await edToken();
+  var h={apikey:SB_KEY,authorization:"Bearer "+t,"content-type":"application/json",prefer:"return=minimal"};
+  var r=await fetch(SB_URL+"/rest/v1/"+table,{method:"POST",headers:h,body:JSON.stringify(rows)});
+  if(!r.ok)throw new Error("db "+r.status);
+  return true;
+}
 async function sbGetAll(q,page,maxPages){page=page||1000;maxPages=maxPages||10;var out=[],off=0;for(var i=0;i<maxPages;i++){var b=await sbGet(q+'&limit='+page+'&offset='+off);if(!b||!b.length)break;out=out.concat(b);if(b.length<page)break;off+=page;}return out;}
 /* reads the isolated `ufc` research schema (descriptive-only dataset). Requires the
    ufc schema to be exposed under Supabase > API settings > Exposed schemas. */
@@ -5772,30 +5779,239 @@ window.__mdlTrack=function(id){
 };
 
 function modelRow(m,i){
-  var ev=modelEvOf(m);
   var d=modelMeta(m);
   var matchup=(d.away&&d.home)?(stEsc(d.away)+' @ '+stEsc(d.home))
     :'<span style="color:var(--faint)">matchup not on the live board</span>';
   var when=d.when?whenLabel(d.when):'time unknown';
+  var R=m.__resolved||{};
+  /* Suppressed market: render a non-expanding "Model Uncertain" notice in
+     place of the two contradictory picks. */
+  if(m.__uncertain){
+    return '<div class="t10item"><div class="lead-row" style="cursor:default">'+
+      '<span class="rank">'+(i+1)+'</span>'+
+      '<div class="lead-mid"><div class="lead-sel"><span class="ebadge model" style="color:var(--warn);border-color:rgba(217,154,43,.5);background:rgba(217,154,43,.1)">\u26a0 MODEL UNCERTAIN</span></div>'+
+      '<div class="lead-meta">'+(d.sport?stEsc(d.sport)+' \u00b7 ':'')+mktLabel(m.market)+' \u00b7 '+matchup+' \u00b7 '+when+'</div>'+
+      '<div class="model-warn">Both sides scored positive within '+MODEL_CONFLICT.tieThreshold.toFixed(1)+'% ('+stEsc(R.suppressed_side||'')+', \u0394 '+(R.edge_difference!=null?R.edge_difference.toFixed(2):'?')+'%). No coherent lean \u2014 suppressed.</div></div></div></div>';
+  }
+  var ev=modelEvOf(m);
+  var pickTag=R.conflict_detected
+    ? '<span class="ebadge" style="color:var(--ok);border-color:rgba(74,222,128,.45);background:rgba(74,222,128,.1);margin-left:6px">\u2713 PICK</span>'
+    : '';
   var header='<span class="rank">'+(i+1)+'</span>'+
-    '<div class="lead-mid"><div class="lead-sel"><span class="ebadge model">MODEL</span>'+stEsc(selLabel(m))+'</div>'+
-    '<div class="lead-meta">'+(d.sport?stEsc(d.sport)+' \u00b7 ':'')+mktLabel(m.market)+' \u00b7 '+matchup+' \u00b7 '+when+'</div></div>'+
+    '<div class="lead-mid"><div class="lead-sel"><span class="ebadge model">MODEL</span>'+stEsc(selLabel(m))+pickTag+'</div>'+
+    '<div class="lead-meta">'+(d.sport?stEsc(d.sport)+' \u00b7 ':'')+mktLabel(m.market)+' \u00b7 '+matchup+' \u00b7 '+when+
+      (R.conflict_detected?' \u00b7 beat '+stEsc(R.suppressed_side||'other side')+' by '+(R.edge_difference!=null?R.edge_difference.toFixed(2):'?')+'%':'')+'</div></div>'+
     '<span class="lead-ev mdl">'+(ev!=null?(ev>=0?'+':'')+ev.toFixed(1)+'%':'\u2014')+'</span>';
   return modelExpandItem(m,'mdl_'+i,header);
+}
+
+/* ===== Model conflict resolution ============================================
+   Sits BETWEEN model generation (window.MODEL_EDGES, raw model_predictions
+   rows) and the UI (renderModelEngine). The model scores every selection
+   independently, so it can hand us both sides of one market as positive EV —
+   D-backs ML +6.8% AND Nationals ML +5.9%. Showing both destroys trust: the
+   model cannot coherently like both teams to win.
+
+   This layer groups signals by (game, market instance) and picks at most ONE
+   side per market:
+     - clear winner  -> show the stronger side, penalize confidence by how
+                        close the loser was
+     - near-tie      -> show NOTHING, mark the market "Model Uncertain"
+   Every decision (including suppressions) is returned as metadata and pushed
+   to window.MODEL_CONFLICTS for logging. No filtering logic lives in the UI;
+   the UI consumes resolved output only.
+
+   Config: MODEL_CONFLICT.tieThreshold is the max EV gap (in EV points, i.e.
+   percent) at which two opposing positive edges are treated as a tie and both
+   suppressed. Default 1.0.
+   ========================================================================== */
+var MODEL_CONFLICT = { tieThreshold: 1.0 };
+
+/* Identify a market INSTANCE within a game. Two sides of the same bet must
+   share this key; different lines (Total 8.5 vs Total 9.5) must NOT, or we'd
+   wrongly treat Over 8.5 and Under 9.5 as opposites.
+     - h2h:     one market per game
+     - spreads: keyed by |point| (the same run line, e.g. 1.5, both sides)
+     - totals:  keyed by point (the same total number, over vs under)
+     - team totals / props: keyed by selection's subject + point, since each
+       player/team line is its own market with its own two sides */
+function conflictMarketKey(m){
+  var ev = m.event_id, mk = m.market, pt = (m.point==null?'':Math.abs(+m.point));
+  if(mk==='h2h') return ev+'|h2h';
+  if(mk==='spreads') return ev+'|spread|'+pt;
+  if(mk==='totals') return ev+'|total|'+pt;
+  /* team_totals / player_props: subject is everything in the selection except
+     the Over/Under word, so "Aaron Judge Over 1.5" and "...Under 1.5" pair up */
+  var subj=(m.selection||'').replace(/\b(over|under)\b/ig,'').trim().toLowerCase();
+  return ev+'|'+mk+'|'+subj+'|'+pt;
+}
+
+/* Which SIDE of its market a selection is. Opposite sides must return
+   different values; this is what lets us detect a both-sides-positive clash.
+   For h2h/spreads the two teams are the sides; for over/under the word is. */
+function conflictSide(m){
+  var mk=m.market, sel=(m.selection||'').toLowerCase();
+  if(mk==='totals'||/\b(over|under)\b/.test(sel))
+    return sel.indexOf('over')>=0?'over':'under';
+  return mMatch(m.selection);   // team name, normalized (unique per game)
+}
+
+/* Resolve one market instance (array of positive-EV rows that share a market
+   key). Returns { winner, decisions[] } where winner is the row to display or
+   null, and decisions carries per-row metadata for logging + confidence. */
+function resolveOneMarket(rows){
+  /* Collapse to the best EV per side first: the model may emit a side more
+     than once (line shopping), and a market's "strength" is its best price. */
+  var bySide={};
+  rows.forEach(function(m){
+    var s=conflictSide(m), ev=modelEvOf(m);
+    if(ev==null)return;
+    if(!bySide[s]||ev>modelEvOf(bySide[s]))bySide[s]=m;
+  });
+  var sides=Object.keys(bySide);
+
+  /* Single side present -> no conflict, show it, full confidence. */
+  if(sides.length<=1){
+    var only=sides.length?bySide[sides[0]]:null;
+    return {winner:only, decisions: only?[{row:only,conflict:false,resolved:true,
+      penalty:0, otherEv:null, diff:null, reason:null}]:[]};
+  }
+
+  /* Two (or more) opposing sides are BOTH positive EV. Rank by EV. */
+  var ranked=sides.map(function(s){return bySide[s];})
+                  .sort(function(a,b){return modelEvOf(b)-modelEvOf(a);});
+  var top=ranked[0], runnerUp=ranked[1];
+  var diff=modelEvOf(top)-modelEvOf(runnerUp);
+
+  /* Near-tie -> the model contradicts itself with no clear lean. Suppress ALL
+     sides, mark uncertain. */
+  if(diff < MODEL_CONFLICT.tieThreshold){
+    var dec=ranked.map(function(m){
+      return {row:m, conflict:true, resolved:false,
+              penalty:null, otherEv:modelEvOf(runnerUp===m?top:runnerUp),
+              diff:diff, reason:'model_uncertain'};
+    });
+    return {winner:null, uncertain:true, diff:diff, decisions:dec};
+  }
+
+  /* Clear winner -> show the top side. Confidence penalty scales with how
+     close the loser was: a side that barely beat its opposite is shakier than
+     one that dominated. Penalty in [0,1], 0 = ran away with it. */
+  var penalty=Math.max(0, 1 - (diff / (MODEL_CONFLICT.tieThreshold*3)));
+  var decisions=ranked.map(function(m,idx){
+    return idx===0
+      ? {row:m, conflict:true, resolved:true, penalty:penalty,
+         otherEv:modelEvOf(runnerUp), diff:diff, reason:null}
+      : {row:m, conflict:true, resolved:false, penalty:null,
+         otherEv:modelEvOf(top), diff:diff, reason:'weaker_side'};
+  });
+  return {winner:top, diff:diff, penalty:penalty, decisions:decisions};
+}
+
+/* Top-level: take the raw positive-EV model rows, return the resolved set to
+   render (one row per market instance, each tagged with resolution metadata),
+   and record every conflict for research. Pure transform, no DOM, no network. */
+function resolveModelConflicts(rawRows){
+  var groups={};
+  (rawRows||[]).forEach(function(m){
+    if(!m||!m.event_id)return;
+    if(modelEvOf(m)==null)return;
+    var k=conflictMarketKey(m);
+    (groups[k]=groups[k]||[]).push(m);
+  });
+
+  var out=[], conflicts=[];
+  Object.keys(groups).forEach(function(k){
+    var res=resolveOneMarket(groups[k]);
+
+    /* A market with >1 side that reached resolution is a conflict worth
+       logging once: side_a = stronger (or first), side_b = the other. */
+    if(res.decisions.length>1){
+      var d0=res.decisions[0], d1=res.decisions[1];
+      conflicts.push({
+        game_id: d0.row.event_id,
+        market: d0.row.market,
+        side_a: selLabel(d0.row),
+        side_b: selLabel(d1.row),
+        edge_a: modelEvOf(d0.row),
+        edge_b: modelEvOf(d1.row),
+        difference: (res.diff!=null?+res.diff.toFixed(4):null),
+        resolution: res.uncertain?'model_uncertain':'kept_stronger',
+        created_at: new Date().toISOString()
+      });
+    }
+
+    if(res.winner){
+      /* stamp resolution metadata onto the row the UI will render */
+      var w=res.winner, wd=res.decisions.find(function(d){return d.row===w;})||{};
+      w.__resolved={
+        conflict_detected: !!wd.conflict,
+        resolved_side: selLabel(w),
+        suppressed_side: (function(){var l=res.decisions.find(function(d){return d.resolved===false;});return l?selLabel(l.row):null;})(),
+        suppression_reason: null,
+        edge_difference: (res.diff!=null?+res.diff.toFixed(2):null),
+        confidence_penalty: (wd.penalty!=null?+wd.penalty.toFixed(2):0)
+      };
+      out.push(w);
+    } else if(res.uncertain){
+      /* emit a synthetic "Model Uncertain" placeholder so the market is
+         visibly acknowledged rather than silently dropped */
+      var a=res.decisions[0].row;
+      out.push({
+        __uncertain:true, event_id:a.event_id, market:a.market,
+        point:a.point, sport_key:a.sport_key,
+        home_team:a.home_team, away_team:a.away_team, commence_time:a.commence_time,
+        model_version:a.model_version,
+        __resolved:{
+          conflict_detected:true, resolved_side:null,
+          suppressed_side:res.decisions.map(function(d){return selLabel(d.row);}).join(' / '),
+          suppression_reason:'model_uncertain',
+          edge_difference:(res.diff!=null?+res.diff.toFixed(2):null),
+          confidence_penalty:1
+        }
+      });
+    }
+  });
+
+  window.MODEL_CONFLICTS=conflicts;
+  /* fire-and-forget research log; never blocks or breaks the UI */
+  if(conflicts.length)logModelConflicts(conflicts);
+  return out;
+}
+
+/* Persist suppressed/resolved conflicts for later calibration. Best-effort:
+   if the table isn't deployed or the insert fails, the UI is unaffected. */
+function logModelConflicts(conflicts){
+  try{
+    if(typeof sbPost!=='function')return;   /* no writer available -> skip */
+    sbPost('model_conflicts', conflicts).catch(function(){});
+  }catch(_){}
 }
 
 function renderModelEngine(){
   var host=$('modelFeed');if(!host)return;
   var minev=+($('fMinev')?$('fMinev').value:0)||0;
   var sportSel=$('fSport')?$('fSport').value:'';
-  var rows=(window.MODEL_EDGES||[]).slice().filter(function(m){
-    if(m.model_edge==null)return false;
+  /* CONFLICT RESOLUTION happens FIRST, on the full positive-EV set, so the
+     resolver can see both sides of every market before anything is filtered
+     out. It returns at most one row per market instance (a resolved pick or a
+     "Model Uncertain" placeholder), each carrying __resolved metadata. */
+  var resolved=resolveModelConflicts(window.MODEL_EDGES||[]);
+  /* User filters (min EV, sport) apply to the RESOLVED set. Uncertain
+     placeholders always pass the EV filter so a suppressed market stays
+     visible rather than vanishing. */
+  var rows=resolved.filter(function(m){
+    if(sportSel){var d=modelMeta(m);if(d.sport!==sportSel)return false;}
+    if(m.__uncertain)return true;
     var ev=modelEvOf(m);
     if(ev==null||ev<minev)return false;
-    if(sportSel){var d=modelMeta(m);if(d.sport!==sportSel)return false;}
     return true;
   });
-  rows.sort(function(a,b){return (modelEvOf(b)||0)-(modelEvOf(a)||0);});
+  /* picks first (by EV), uncertain markets after */
+  rows.sort(function(a,b){
+    if(a.__uncertain!==b.__uncertain)return a.__uncertain?1:-1;
+    return (modelEvOf(b)||0)-(modelEvOf(a)||0);
+  });
   rows=rows.slice(0,40);
   if(!rows.length){
     host.innerHTML='<div class="empty" style="padding:12px">No model edges in your window. This engine lights up for any sport loaded into <b>model_predictions</b> \u2014 MLB today; CFB, golf and props when their models exist. It is independent of Pinnacle and never dilutes a MARKET edge.</div>';
