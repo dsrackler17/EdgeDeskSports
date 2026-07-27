@@ -1119,13 +1119,6 @@ button:focus-visible,select:focus-visible,input:focus-visible,a:focus-visible{ou
   </section>
 
   <!-- BOARDS (all real odds, one place) -->
-  <section id="v-boards" class="view hide">
-    <div class="row-between"><h2 style="margin:0">Boards</h2><span class="spacer"></span><span class="freshness" id="bdFresh">—</span><button class="refreshbtn" title="Refresh" data-refresh="boards">&#8635;</button></div>
-    <p class="lede">Every real outright market in one place — conference titles you enter by hand and the championship boards pulled automatically. Raw book odds, favorites first. Teams that can't win are flagged.</p>
-    <div id="mlbWatch"></div>
-    <div id="trapRadar"></div>
-    <div id="allBoards"><div class="empty">Loading boards…</div></div>
-  </section>
 
   <!-- RECORD -->
   <section id="v-record" class="view hide">
@@ -1348,7 +1341,7 @@ button:focus-visible,select:focus-visible,input:focus-visible,a:focus-visible{ou
 <nav class="bottomnav">
   <button data-v="edges" class="on"><svg class="ic" viewBox="0 0 24 24"><polyline points="3 17 9 11 13 15 21 7"/><polyline points="15 7 21 7 21 13"/></svg>Edges</button>
   <button data-v="faults"><svg class="ic" viewBox="0 0 24 24"><path d="M3 12h4l2-7 4 14 2-7h6"/></svg>Faults</button>
-  <button data-v="boards"><svg class="ic" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="1"/><path d="M3 9h18M3 14h18M9 4v16"/></svg>Boards</button>
+  
   <button data-v="record"><svg class="ic" viewBox="0 0 24 24"><path d="M4 19V5"/><rect x="7" y="11" width="3" height="8"/><rect x="13" y="7" width="3" height="12"/><rect x="19" y="14" width="2" height="5"/></svg>Record</button>
   <button data-v="research"><svg class="ic" viewBox="0 0 24 24"><path d="M12 3l9 5-9 5-9-5 9-5z"/><path d="M3 13l9 5 9-5"/></svg>Research</button>
   <button data-v="ledger"><svg class="ic" viewBox="0 0 24 24"><path d="M4 5h16v14H4z"/><path d="M4 10h16"/><path d="M9 5v14"/></svg>Ledger</button>
@@ -2186,7 +2179,7 @@ GE.devig=function(decs,method){var q=decs.map(function(d){return 1/d;}),S=q.redu
 function $(id){return document.getElementById(id);}
 
 /* ===== nav ===== */
-function show(v){if(v==='research'){researchGo(RESEARCH_SUB);return;}var s=document.querySelectorAll('.view');for(var i=0;i<s.length;i++)s[i].classList.toggle('hide',s[i].id!=='v-'+v);var b=document.querySelectorAll('.bottomnav button');for(var j=0;j<b.length;j++)b[j].classList.toggle('on',b[j].dataset.v===v);window.scrollTo(0,0);try{if(v!=='settings'){var _pp=prefs();_pp.lastTab=v;localStorage.setItem('edgedesk_prefs',JSON.stringify(_pp));}}catch(_){}
+function show(v){if(v==='research'){researchGo(RESEARCH_SUB);return;}if(v==='boards')v='faults';var s=document.querySelectorAll('.view');for(var i=0;i<s.length;i++)s[i].classList.toggle('hide',s[i].id!=='v-'+v);var b=document.querySelectorAll('.bottomnav button');for(var j=0;j<b.length;j++)b[j].classList.toggle('on',b[j].dataset.v===v);window.scrollTo(0,0);try{if(v!=='settings'){var _pp=prefs();_pp.lastTab=v;localStorage.setItem('edgedesk_prefs',JSON.stringify(_pp));}}catch(_){}
   if(v==='record')loadRecord();if(v==='edges')loadEdges();if(v==='faults')loadFaults();if(v==='boards')loadBoards();if(v==='news')loadNews();if(v==='ledger')loadMarket();if(v==='stats')loadStats();if(v==='props')loadProps();if(v==='ufc')loadUFC();if(v==='cfb')loadCFB();if(v==='wta')loadWTA();if(v==='settings')loadSettings();if(v==='discipline')loadDiscipline();/*ADDED*/
   if(v==='social')loadSocial();else plStop();}
 var RESEARCH_SUB='cfb';
@@ -2294,17 +2287,7 @@ async function loadEdges(){
 }
 /* ===== BOARDS tab: MLB elimination watch + all real odds, de-vigged ===== */
 function flImpl(a){return a>=0?100/(a+100):-a/(-a+100);}
-async function loadBoards(){
-  var rows=[],elig=[],model=[];
-  try{rows=await sbGet("boards?select=*&active=eq.true&order=board_name.asc&limit=5000");}catch(e){rows=[];}
-  try{elig=await sbGet("eligibility?select=*");}catch(e){elig=[];}
-  try{model=await sbGet("model_odds?select=*&limit=5000");}catch(e){model=[];}
-  await loadGolfField();
-  $('bdFresh').textContent=rows.length?('updated '+ago(Date.now())):'no boards';
-  renderEliminator(rows,elig);
-  renderTrapRadar(rows,elig,model);
-  renderAllBoards(rows,elig,model);
-}
+async function loadBoards(){ /* Boards merged into Faults - route any stray call */ show('faults'); }
 /* match a board selection to a model row by normalized team name (unique across conferences) */
 function nrm(s){return (s||'').toLowerCase().replace(/\(fl\)/g,'').replace(/[^a-z0-9]/g,'');}
 /* ===== ELIMINATOR — who can't win, by sport (MLB / Golf / CFB / NCAAB) ===== */
@@ -3449,16 +3432,15 @@ function recRenderOverview(){
   recRenderSportCards();
 }
 
-var REC_SPORT_ROSTER=[{title:'MLB',name:'MLB'},{title:'WNBA',name:'WNBA'},{title:'NCAAF',name:'College Football'},{title:'NFL',name:'NFL'},{title:'NCAAB',name:'College Basketball'}];
-function recSportLiveHas(title){var pools=[].concat(window.EDGES||[],window.CONS_POOL||[],window.D5_POOL||[]);for(var i=0;i<pools.length;i++){if(pools[i]&&pools[i].sport_title===title)return true;}return false;}
 function recRenderSportCards(){
   var by={};
   REC.flt.forEach(function(r){var s=r.sport_title||'Unknown';(by[s]=by[s]||[]).push(r);});
   var keys=Object.keys(by);
+  if(!keys.length){$('recSportCards').innerHTML='';return;}
   keys.sort(function(a,b){return by[b].length-by[a].length;});
-  function m(v,kk,cls){return '<div class="m"><div class="v '+(cls||'')+'">'+v+'</div><div class="k">'+kk+'</div></div>';}
-  var live=keys.map(function(s){
+  $('recSportCards').innerHTML=keys.map(function(s){
     var st=recStats(by[s]);
+    function m(v,kk,cls){return '<div class="m"><div class="v '+(cls||'')+'">'+v+'</div><div class="k">'+kk+'</div></div>';}
     return '<div class="rsport"><div class="rsport-h"><b>'+recEsc(s)+'</b>'+(st.n<REC_MIN?'<span class="rtag small">n&lt;'+REC_MIN+'</span>':'')+'<span class="n">'+st.n+' graded</span></div><div class="rsport-grid">'+
       m(st.w+'-'+st.l+(st.p?'-'+st.p:''),'record')+
       m(recU(st.profit),'profit \u00b7 sim',recCls(st.profit))+
@@ -3467,26 +3449,8 @@ function recRenderSportCards(){
       m(st.avgClv!=null?recPc(st.avgClv,1):'\u2014','avg clv',recCls(st.avgClv))+
       m(st.winPct!=null?recPc0(st.winPct,0):'\u2014','win rate')+
       '</div></div>';
-  }).join('');
-  /* pending cards: sports the pipeline is configured for but has not graded yet.
-     STATUS ONLY - never a fabricated record. Keyed off REC.rows (the full graded
-     pool), not the filtered view, so a filtered-out sport is not mislabelled.
-     "on the board" vs "out of season" is derived from live captured signals held
-     in memory, not a hardcoded calendar. A card flips to a real record on its own
-     the moment its first flag grades. Suppressed when a specific sport is filtered. */
-  var everGraded={};(REC.rows||[]).forEach(function(r){if(r.sport_title)everGraded[r.sport_title]=1;});
-  var sportFilter='';try{var _el=document.getElementById('rfSport');if(_el)sportFilter=_el.value||'';}catch(_e){}
-  var pending=sportFilter?'':REC_SPORT_ROSTER.filter(function(x){return !everGraded[x.title];}).map(function(x){
-    var onBoard=recSportLiveHas(x.title);
-    var pill=onBoard?'on the board':'out of season';
-    var msg=onBoard
-      ?'Live signals are being priced now. Nothing has finished and graded yet; this card fills itself the moment the first game does.'
-      :'Armed and waiting for the season. No games are priced yet. Capture and grading are already wired, so a real record appears automatically once the season starts.';
-    return '<div class="rsport" style="opacity:.72"><div class="rsport-h"><b>'+recEsc(x.name)+'</b><span class="rtag small">'+pill+'</span><span class="n">0 graded</span></div>'+
-      '<div class="rsport-pending" style="font-size:12.5px;color:var(--dim);line-height:1.5;padding:4px 2px 2px">'+msg+'</div></div>';
-  }).join('');
-  var note='<div class="rec-note" style="grid-column:1/-1;margin:0">Sports with graded rows show a live, auto-graded record. Sports still waiting on their season show a status card and never a zeroed record; each flips automatically when the pipeline grades its first flag.</div>';
-  $('recSportCards').innerHTML=live+pending+note;
+  }).join('')+
+  '<div class="rec-note" style="grid-column:1/-1;margin:0">Only sports with graded rows in the live pool appear. A sport the pipeline has not graded is absent, not zeroed.</div>';
 }
 
 /* ---- SVG chart helpers (dependency-free, matches terminal style) ---- */
@@ -4663,7 +4627,7 @@ function flRenderBoards(){
     }).join('');
     golfTop='<div class="gtf-card"><div class="gtf-hd">\u26f3 TOP OF THE FIELD \u2014 who\u2019s actually contending'+(ev?' at '+flEsc(ev):'')+'</div>'+
       '<div class="gtf-sub">The live leaderboard of who\u2019s really playing this week \u2014 not the futures board. Tap a name for their season fundamentals. Context only, not a call.</div>'+
-      '<div class="gf-list" id="gtfList">'+rows+'</div></div>';
+      '<div class="gf-list" id="gtfList">'+rows+'</div>'+(GOLF_FIELD.length?'<div class="gf-exp" onclick="toggleGolfField(this)">\u26f3 Full field \u2014 '+GOLF_FIELD.length+' actually playing'+(ev?' at '+flEsc(ev):'')+' \u203a</div><div class="gf-wrap" data-open="0"></div>':'')+'</div>';
   }
   var cards=FL.boards.map(function(b,bi){
     var has=faulted[b.board]?'<span class="ftag" style="color:var(--warn)">\u26a0 fault above</span>':'<span class="ftag" style="color:var(--pos)">clean</span>';
