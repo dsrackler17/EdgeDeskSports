@@ -5383,10 +5383,10 @@ async function loadWTA(force){
     WTA.day=day;
     WTA.hidden=day.filter(function(r){return r.grade==='hidden';}).length;
     WTA.research=day.filter(function(r){return r.grade!=='hidden';});
-    WTA.watch=await sbGetWta('watchlist?select=*&order=reliability.desc,rank.asc&limit=100');
+    WTA.watch=await sbGetWta('watchlist?select=*&order=beat_close_rate.desc.nullslast,clv_avg.desc.nullslast,reliability.desc,rank.asc&limit=100');
     WTA.at=Date.now();
-    var lr=WTA.meta['last_research'];
-    $('wtaFresh').textContent=lr?('built '+ago(new Date(lr).getTime())):'\u2014';
+    var lr=(WTA.meta['last_research']||WTA.meta['wta_research_last']||'').split(' ')[0];
+    $('wtaFresh').textContent=(lr&&!isNaN(new Date(lr).getTime()))?('built '+ago(new Date(lr).getTime())):'\u2014';
     if(!rows.length){
       ban.className='flbanner demo';
       ban.textContent='\u25b2 wta schema reachable but empty \u2014 run wta_ingest, then wta_research. Nothing is shown until a real slate lands.';
@@ -5457,9 +5457,18 @@ function wtaWatchRow(p){
   var ek=Object.keys(edges).filter(function(k){return k!=='all'&&k!=='Unknown';})
     .sort(function(a,b){return edges[b]-edges[a];}).slice(0,3)
     .map(function(k){return k+' '+Math.round(edges[k]*100)+'%';}).join(' \u00b7 ');
+  var clv;
+  if(p.clv_events&&p.clv_events>0){
+    var av=(p.clv_avg!=null)?((p.clv_avg>0?'+':'')+(p.clv_avg*100).toFixed(1)+'%'):'\u2014';
+    var col=(p.clv_avg>0)?'var(--pos)':((p.clv_avg<0)?'var(--neg)':'var(--dim)');
+    clv='<div class="st-meta" style="color:'+col+'">CLV vs close '+av+' avg over '+p.clv_events+' graded \u00b7 beat close '+Math.round((p.beat_close_rate||0)*100)+'% \u2014 the only real edge signal</div>';
+  }else{
+    clv='<div class="st-meta" style="color:var(--faint)">No CLV yet \u2014 reliability is research attention, not an edge</div>';
+  }
   return '<div class="strow"><div class="st-mid">'+
     '<div class="st-nm">'+stEsc(p.full_name)+' <span class="muted">#'+(p.rank!=null?p.rank:'\u2014')+'</span></div>'+
     '<div class="st-meta">reliability '+Math.round((p.reliability||0)*100)+'% \u00b7 '+(p.appearances||0)+' slates'+(ek?(' \u00b7 '+ek):'')+'</div>'+
+    clv+
   '</div></div>';
 }
 function wtaSlateStatusRow(p,r){
@@ -5472,6 +5481,13 @@ function wtaSlateStatusRow(p,r){
   return '<div class="strow"><div class="st-mid">'+
     '<div class="st-nm"><span style="color:'+col+'">'+dot+'</span> '+stEsc(p.full_name)+' <span class="muted">#'+(p.rank!=null?p.rank:'\u2014')+'</span></div>'+
     '<div class="st-meta">'+reason+'</div></div></div>';
+}
+function wtaBelowRow(r){
+  var dq=(r.disqualifiers&&r.disqualifiers[0])?r.disqualifiers[0].label:('score '+r.research_score+' below the 70 threshold');
+  return '<div class="strow"><div class="st-mid">'+
+    '<div class="st-nm"><b>'+stEsc(r.fav_name)+'</b> <span class="muted">#'+(r.fav_rank!=null?r.fav_rank:'\u2014')+'</span> <span style="color:var(--faint)">vs</span> <b>'+stEsc(r.dog_name)+'</b> <span class="muted">#'+(r.dog_rank!=null?r.dog_rank:'\u2014')+'</span></div>'+
+    '<div class="st-meta">score '+r.research_score+' \u00b7 '+stEsc(dq)+'</div>'+
+  '</div></div>';
 }
 function renderWTA(){
   var body=$('wtaBody');if(!body)return;
@@ -5492,7 +5508,12 @@ function renderWTA(){
     return;
   }
   if(!WTA.research.length){
-    body.innerHTML='<div class="empty">No matches cleared the research threshold for this slate'+(WTA.hidden?(' ('+WTA.hidden+' reviewed, none above 70)'):'')+'. That is the honest answer for a quiet day, not a bug.</div>';
+    if(!WTA.day.length){
+      body.innerHTML='<div class="empty">No WTA slate has been ingested yet. The pipeline (wta_ingest \u2192 wta_odds \u2192 wta_close \u2192 wta_research) has not produced data. Nothing here is real until it has run.</div>';
+      return;
+    }
+    body.innerHTML='<div class="sidenote" style="margin-bottom:8px">'+WTA.day.length+' matches on this slate ('+(WTA.slate||'\u2014')+'). None cleared the research grade (70). Shown for transparency \u2014 not recommendations, and none is an edge. The edge only lives in CLV against the close.</div>'+
+      WTA.day.slice().sort(function(a,b){return (b.research_score||0)-(a.research_score||0);}).map(wtaBelowRow).join('');
     return;
   }
   var note=WTA.hidden?('<div class="sidenote" style="margin-bottom:8px">'+WTA.research.length+' shown \u00b7 '+WTA.hidden+' reviewed and hidden below the 70 threshold.</div>'):'';
