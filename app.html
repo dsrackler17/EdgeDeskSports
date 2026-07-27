@@ -3449,15 +3449,16 @@ function recRenderOverview(){
   recRenderSportCards();
 }
 
+var REC_SPORT_ROSTER=[{title:'MLB',name:'MLB'},{title:'WNBA',name:'WNBA'},{title:'NCAAF',name:'College Football'},{title:'NFL',name:'NFL'},{title:'NCAAB',name:'College Basketball'}];
+function recSportLiveHas(title){var pools=[].concat(window.EDGES||[],window.CONS_POOL||[],window.D5_POOL||[]);for(var i=0;i<pools.length;i++){if(pools[i]&&pools[i].sport_title===title)return true;}return false;}
 function recRenderSportCards(){
   var by={};
   REC.flt.forEach(function(r){var s=r.sport_title||'Unknown';(by[s]=by[s]||[]).push(r);});
   var keys=Object.keys(by);
-  if(!keys.length){$('recSportCards').innerHTML='';return;}
   keys.sort(function(a,b){return by[b].length-by[a].length;});
-  $('recSportCards').innerHTML=keys.map(function(s){
+  function m(v,kk,cls){return '<div class="m"><div class="v '+(cls||'')+'">'+v+'</div><div class="k">'+kk+'</div></div>';}
+  var live=keys.map(function(s){
     var st=recStats(by[s]);
-    function m(v,kk,cls){return '<div class="m"><div class="v '+(cls||'')+'">'+v+'</div><div class="k">'+kk+'</div></div>';}
     return '<div class="rsport"><div class="rsport-h"><b>'+recEsc(s)+'</b>'+(st.n<REC_MIN?'<span class="rtag small">n&lt;'+REC_MIN+'</span>':'')+'<span class="n">'+st.n+' graded</span></div><div class="rsport-grid">'+
       m(st.w+'-'+st.l+(st.p?'-'+st.p:''),'record')+
       m(recU(st.profit),'profit \u00b7 sim',recCls(st.profit))+
@@ -3466,8 +3467,26 @@ function recRenderSportCards(){
       m(st.avgClv!=null?recPc(st.avgClv,1):'\u2014','avg clv',recCls(st.avgClv))+
       m(st.winPct!=null?recPc0(st.winPct,0):'\u2014','win rate')+
       '</div></div>';
-  }).join('')+
-  '<div class="rec-note" style="grid-column:1/-1;margin:0">Only sports with graded rows in the live pool appear. A sport the pipeline has not graded is absent, not zeroed.</div>';
+  }).join('');
+  /* pending cards: sports the pipeline is configured for but has not graded yet.
+     STATUS ONLY - never a fabricated record. Keyed off REC.rows (the full graded
+     pool), not the filtered view, so a filtered-out sport is not mislabelled.
+     "on the board" vs "out of season" is derived from live captured signals held
+     in memory, not a hardcoded calendar. A card flips to a real record on its own
+     the moment its first flag grades. Suppressed when a specific sport is filtered. */
+  var everGraded={};(REC.rows||[]).forEach(function(r){if(r.sport_title)everGraded[r.sport_title]=1;});
+  var sportFilter='';try{var _el=document.getElementById('rfSport');if(_el)sportFilter=_el.value||'';}catch(_e){}
+  var pending=sportFilter?'':REC_SPORT_ROSTER.filter(function(x){return !everGraded[x.title];}).map(function(x){
+    var onBoard=recSportLiveHas(x.title);
+    var pill=onBoard?'on the board':'out of season';
+    var msg=onBoard
+      ?'Live signals are being priced now. Nothing has finished and graded yet; this card fills itself the moment the first game does.'
+      :'Armed and waiting for the season. No games are priced yet. Capture and grading are already wired, so a real record appears automatically once the season starts.';
+    return '<div class="rsport" style="opacity:.72"><div class="rsport-h"><b>'+recEsc(x.name)+'</b><span class="rtag small">'+pill+'</span><span class="n">0 graded</span></div>'+
+      '<div class="rsport-pending" style="font-size:12.5px;color:var(--dim);line-height:1.5;padding:4px 2px 2px">'+msg+'</div></div>';
+  }).join('');
+  var note='<div class="rec-note" style="grid-column:1/-1;margin:0">Sports with graded rows show a live, auto-graded record. Sports still waiting on their season show a status card and never a zeroed record; each flips automatically when the pipeline grades its first flag.</div>';
+  $('recSportCards').innerHTML=live+pending+note;
 }
 
 /* ---- SVG chart helpers (dependency-free, matches terminal style) ---- */
