@@ -3430,8 +3430,37 @@ function recRenderOverview(){
     k(st.maxLoss!=null?recU(st.maxLoss):'\u2014','largest loss'+simTag,'','rneg');
   $('recSimNote').innerHTML='<div class="rec-note"><b>What the money-shaped numbers are.</b> No stakes are recorded anywhere in this pipeline. Profit, ROI, streak sizes, largest win and loss are a flat 1 unit simulation at the frozen entry price of each flagged edge. They show what the flags would have done at even sizing; they are not a bankroll and not betting advice. CLV remains the only proof of edge.'+(small?' At n='+st.n+' every figure above is noise, not signal.':'')+'</div>';
   recRenderSportCards();
+  recStatusCards();
 }
 
+async function recStatusCards(){
+  try{
+    var rows=await sbGetAll('signals?select=sport_title,clv,graded_at,clv_excluded_reason&flagged_at=not.is.null');
+    if(!rows||!rows.length)return;
+    var by={};
+    rows.forEach(function(r){
+      var s=r.sport_title||'Unknown';var o=by[s]||(by[s]={flagged:0,scored:0});
+      o.flagged++;
+      if(r.clv!=null&&!r.clv_excluded_reason)o.scored++;
+    });
+    // sports already shown as real (graded) cards should NOT get a status card.
+    var shown={};(REC.flt||[]).forEach(function(r){if(r.sport_title)shown[r.sport_title]=1;});
+    var pend=Object.keys(by).filter(function(s){return !shown[s]&&by[s].flagged>0;});
+    if(!pend.length)return;
+    pend.sort(function(a,b){return by[b].flagged-by[a].flagged;});
+    var html=pend.map(function(s){
+      var o=by[s];var label,sub;
+      if(o.scored>0){label=o.scored+' scored \u00b7 awaiting results';sub='Flagged edges with a Pinnacle close, waiting on the match to settle. Fills the record automatically once graded.';}
+      else{label=o.flagged+' flagged \u00b7 awaiting close';sub='Signals flagged but no scored Pinnacle close yet. No CLV until a sharp close lands.';}
+      return '<div class="rsport" style="opacity:.72"><div class="rsport-h"><b>'+recEsc(s)+'</b><span class="rtag small">awaiting</span><span class="n">'+o.flagged+' flagged</span></div>'+
+        '<div style="font-size:12.5px;color:var(--dim);line-height:1.5;padding:4px 2px 2px"><b>'+label+'</b><br>'+sub+'</div></div>';
+    }).join('');
+    var box=document.getElementById('recSportCards');if(!box)return;
+    var note=box.querySelector('.rec-note');
+    if(note)note.insertAdjacentHTML('beforebegin',html);
+    else box.insertAdjacentHTML('beforeend',html);
+  }catch(e){}
+}
 function recRenderSportCards(){
   var by={};
   REC.flt.forEach(function(r){var s=r.sport_title||'Unknown';(by[s]=by[s]||[]).push(r);});
