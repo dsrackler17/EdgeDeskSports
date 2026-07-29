@@ -3824,7 +3824,8 @@ async function wewLoad(host){
   }
   try{ WEW.model=await sbGet('where_edge_model?select=*'); }catch(e){ WEW.model=null; }
   WEW.loaded=true;
-  host.innerHTML=wewRender();
+  try{ host.innerHTML=wewRender(); }
+  catch(e){ host.innerHTML='<div class="wew-empty"><b>Where EdgeDesk Wins render error.</b><br>'+recEsc(String(e&&e.message||e))+'</div>'; if(window.console)console.error('WEW render',e); }
 }
 
 function wewRender(){
@@ -3864,9 +3865,15 @@ function recRenderAnalytics(){
   REC.dirty.analytics=false;
   var host=$('recAdvHost');if(!host)return;
   /* Where EdgeDesk Wins: independent CLV-first analytics, mounted above the sim stats */
-  var wewHost=$('wewHost');
-  if(!wewHost){wewHost=document.createElement('div');wewHost.id='wewHost';host.parentNode.insertBefore(wewHost,host);}
-  wewLoad(wewHost);
+  try{
+    var wewHost=$('wewHost');
+    if(!wewHost){wewHost=document.createElement('div');wewHost.id='wewHost';
+      if(host.parentNode)host.parentNode.insertBefore(wewHost,host);else host.insertAdjacentElement('beforebegin',wewHost);}
+    wewLoad(wewHost);
+  }catch(_wewErr){
+    var wh=$('wewHost');if(wh)wh.innerHTML='<div class="wew-empty"><b>Where EdgeDesk Wins failed to mount.</b><br>'+String(_wewErr&&_wewErr.message||_wewErr)+'</div>';
+    if(window.console)console.error('WEW mount',_wewErr);
+  }
   var rows=REC.flt;
   if(!rows.length){host.innerHTML=recEmptyHTML(REC.rows.length?'search':'empty','<b>Nothing to analyze.</b><br>'+(REC.rows.length?'No graded signals match the current filters.':'Analytics build themselves as graded rows accumulate.'));return;}
   var priced=rows.filter(function(r){return r._profit!=null;});
