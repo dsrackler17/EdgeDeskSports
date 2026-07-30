@@ -3072,8 +3072,12 @@ async function loadRecordProof(){
     else{EDGEQ=FLAG_STRICT;poolLabel='no graded row carries CLV yet';poolKind='empty';gradedEdges=0;}
     var recFunnel='Pool funnel \u00b7 graded '+graded+' \u2192 flagged '+nFlagAny+' \u2192 flagged & 0.5\u20139.9% '+nStrict+' \u2192 flagged AND scored against a close '+nFlagClv+'. Live pool: '+poolLabel+' ('+gradedEdges+').'+
       (nFlagAny>nFlagClv?' The '+(nFlagAny-nFlagClv)+' flagged rows without CLV are mostly alternate lines Pinnacle does not quote at close, so there is no sharp closing price to score them against.':'');
-    var g=poolKind==='empty'?[]:await sbGet('signals?select=clv,result,beat_close,clv_excluded_reason,sharp_fair,consensus_fair,first_has_sharp,first_corrob_n,first_corrob_ref,n_books,first_best_dec,flagged_best_dec,flagged_at,flagged_corrob_n,sport_title,market,commence_time&graded_at=not.is.null&'+EDGEQ+'&limit=5000');
-    var w=0,l=0,clvSum=0,beatStored=0,n=g.length,clvArr=[],clvPos=0;
+    var g=poolKind==='empty'?[]:await sbGet('signals?select=clv,result,beat_close,clv_excluded_reason,sharp_fair,consensus_fair,first_has_sharp,first_corrob_n,first_corrob_ref,n_books,first_best_dec,flagged_best_dec,flagged_at,flagged_corrob_n,sport_title,sport_key,market,commence_time&graded_at=not.is.null&'+EDGEQ+'&limit=5000');
+    var w=0,l=0,clvSum=0,beatStored=0,clvArr=[],clvPos=0;
+    /* tennis spreads/totals are not gradeable (set scores vs game lines): keep them
+       out of every counted stat here, same rule as recStats. */
+    g=g.filter(function(r){return !((r.sport_key||'').indexOf('tennis_')===0 && (r.market==='spreads'||r.market==='totals'));});
+    var n=g.length;
     g.forEach(function(r){if(r.result==='win')w++;else if(r.result==='loss')l++;
       if(r.clv!=null){clvArr.push(+r.clv);clvSum+=+r.clv;if(r.clv>0)clvPos++;if(r.beat_close)beatStored++;}});   // all CLV stats over the SAME clv-present subset
     var nCLV=clvArr.length;
@@ -3101,7 +3105,7 @@ async function loadRecordProof(){
     renderSportSplit(g);
     renderTtcSplit(g);
     renderPriceSplit(g);
-    try{ var calRows=await sbGetAll('signals?select=closing_sharp_fair,result,sport_title&graded_at=not.is.null&closing_sharp_fair=not.is.null&result=in.(win,loss)',1000,12); renderCalibration(calRows); }
+    try{ var calRows=await sbGetAll('signals?select=closing_sharp_fair,result,sport_title,sport_key,market&graded_at=not.is.null&closing_sharp_fair=not.is.null&result=in.(win,loss)&not.and=(sport_key.like.tennis_*,market.in.(spreads,totals))',1000,12); renderCalibration(calRows); }
     catch(_c){ renderCalibration([]); }
     renderMethodSensitivity();
     renderEthos();
@@ -3284,9 +3288,18 @@ async function loadRecord(force){
         (nFlagAny>nFlagClv?' The '+(nFlagAny-nFlagClv)+' flagged rows with no CLV are mostly alternate lines Pinnacle does not quote at close; with no sharp closing price there is nothing honest to score them against, so they are excluded rather than scored against a consensus median.':''),
       total:total,graded:graded};
     var rows=poolKind==='empty'?[]:await sbGetAll('signals?select='+REC_COLS+'&graded_at=not.is.null&'+EDGEQ+'&order=graded_at.asc',1000,12);
+    /* Tennis spreads/totals are not gradeable against the Odds API scores feed:
+       it returns SET counts while these markets are denominated in GAMES. We do
+       NOT hide these rows (that would look like a vanished bet). Instead we tag
+       them so they stay visible with an explicit status and are excluded from all
+       statistics (win/loss %, ROI, calibration, CLV). See _unsupported below. */
+    rows.forEach(function(r){
+      r._unsupported=((r.sport_key||'').indexOf('tennis_')===0 && (r.market==='spreads'||r.market==='totals'));
+    });
     rows.forEach(function(r){
       r._dec=recDecOf(r);r._am=recAm(r._dec);r._flagPrice=recDecIsFlag(r);
       r._profit=recProfitOf(r);r._edge=recEdgeOf(r);
+      if(r._unsupported){r._profit=null;}   // never contribute to ROI/bankroll/profit charts
       r._closeDec=recCloseFairDec(r);r._closeAm=recAm(r._closeDec);
       r._gts=r.graded_at?new Date(r.graded_at).getTime():0;
       r._cts=r.commence_time?new Date(r.commence_time).getTime():r._gts;
@@ -3392,6 +3405,7 @@ function recStats(rows){
   var curStk=0,curKind=null,bestW=0,bestL=0,runK=null,runN=0;
   var seq=rows.slice().sort(function(a,b){return a._gts-b._gts;});
   seq.forEach(function(r){
+    if(r._unsupported)return;   // tennis game-market rows: shown in table, excluded from all stats
     if(r.result==='win')w++;else if(r.result==='loss')l++;else if(r.result==='push')p++;
     var pr=r._profit;
     if(pr!=null){profit+=pr;staked++;if(maxW==null||pr>maxW)maxW=pr;if(maxL==null||pr<maxL)maxL=pr;}
@@ -3641,7 +3655,7 @@ var REC_COLDEF=[
   {k:'_clv',l:'CLV',f:function(r){return '<span class="'+recCls(r._clv)+'">'+recPc(r._clv,1)+'</span>';}},
   {k:'_edge',l:'Edge',f:function(r){return '<span class="'+recCls(r._edge)+'">'+recPc(r._edge,1)+'</span>';}},
   {k:'_profit',l:'Sim P/L',f:function(r){return '<span class="'+recCls(r._profit)+'">'+recU(r._profit)+'</span>';}},
-  {k:'result',l:'Result',f:function(r){var v=r.result||'\u2014';var c=v==='win'?'rpos':v==='loss'?'rneg':'rmut';return '<span class="'+c+'">'+recEsc(v)+'</span>';}},
+  {k:'result',l:'Result',f:function(r){if(r._unsupported)return '<span class="rmut" title="Odds API returns set scores; this market is priced in games. Not scored.">\u26a0 unsupported</span>';var v=r.result||'\u2014';var c=v==='win'?'rpos':v==='loss'?'rneg':'rmut';return '<span class="'+c+'">'+recEsc(v)+'</span>';}},
   {k:'_anchor',l:'Anchor',f:function(r){var a=r._anchor;var c=a.indexOf('sharp')===0?'rpos':a==='?'?'rmut':'rneg';return '<span class="'+c+'">'+recEsc(a)+'</span>';}}
 ];
 function recSortRows(){
@@ -3715,7 +3729,7 @@ function recDetailHTML(r){
     dr('edge at flag','<span class="'+recCls(r._edge)+'">'+pc(r._edge)+'</span>')+
     dr('clv','<span class="'+recCls(r._clv)+'">'+pc(r._clv)+'</span>')+
     dr('beat close',r.beat_close===true?'<span class="rpos">yes</span>':r.beat_close===false?'<span class="rneg">no</span>':'\u2014')+
-    dr('result',recEsc(r.result||'\u2014'))+
+    dr('result',r._unsupported?'\u26a0 unsupported (set scores vs game line \u2014 not scored)':recEsc(r.result||'\u2014'))+
     dr('sim p/l \u00b7 flat 1u','<span class="'+recCls(r._profit)+'">'+recU(r._profit)+'</span>')+
     '<div class="dh">Context</div>'+
     dr('anchor',recEsc(r._anchor)+(r._anchor==='?'?' \u00b7 pre-migration row, honestly unknown':''))+
