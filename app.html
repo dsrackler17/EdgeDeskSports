@@ -2295,10 +2295,10 @@ async function loadEdges(){
     $('dbPill').textContent='DB ✓';$('dbPill').className='pill ok';
     // sport filter options — every sport with a LIVE line in the window, not just the positive-edge (EDGES) set.
     // old code keyed this off EDGES (edge>0), which silently dropped MLB/WNBA whenever they had no positive edge live.
-    var sportsSet={};EDGES.forEach(function(e){if(e.sport_title)sportsSet[e.sport_title]=1;});
+    var sportsSet={};EDGES.forEach(function(e){var L=evSportLabel(e);if(L)sportsSet[L]=1;});
     try{
-      var sp=await sbGetAll('signals?select=sport_title&commence_time=gte.'+nowIso+'&commence_time=lte.'+horizonIso+'&sport_title=not.is.null&order=sport_title.asc',1000,8);
-      (sp||[]).forEach(function(r){if(r.sport_title)sportsSet[r.sport_title]=1;});
+      var sp=await sbGetAll('signals?select=sport_title,sport_key&commence_time=gte.'+nowIso+'&commence_time=lte.'+horizonIso+'&order=sport_key.asc',1000,8);
+      (sp||[]).forEach(function(r){var L=evSportLabel(r);if(L)sportsSet[L]=1;});
     }catch(_){}
     var cur=$('fSport').value;var opts='<option value="">All sports</option>'+Object.keys(sportsSet).sort().map(function(s){return'<option value="'+s+'">'+s+'</option>';}).join('');$('fSport').innerHTML=opts;$('fSport').value=cur;
     // freshness = the capture HEARTBEAT (most recent signal of ANY kind), not the age of the displayed edges.
@@ -2487,6 +2487,9 @@ function renderAllBoards(rows,elig,model){
 var TRUSTED=['draftkings','fanduel','betmgm','caesars','espn bet','espnbet','fanatics','betrivers','hard rock','hardrock','bet365','pinnacle','circa','fliff','ballybet','wynn','superbook'];
 function isTrusted(book){var b=(book||'').toLowerCase();for(var i=0;i<TRUSTED.length;i++)if(b.indexOf(TRUSTED[i])>=0)return true;return false;}
 function isUSMajor(k){k=(k||'').toLowerCase();return k.indexOf('americanfootball')===0||k.indexOf('basketball')===0||k.indexOf('baseball')===0||k.indexOf('icehockey')===0;}
+// canonical display label for a signal row — prefer the human title, fall back to a pretty sport_key.
+// this keeps a captured sport (e.g. MLB written with sport_key but no sport_title) visible in the filter.
+function evSportLabel(e){if(!e)return '';return e.sport_title||prettySport(e.sport_key);}
 function renderEdges(){
   var minev=+$('fMinev').value||0, sport=$('fSport').value, mode=$('fBooks').value, win=$('fScope').value;
   var nowMs=Date.now();
@@ -2496,7 +2499,7 @@ function renderEdges(){
   var staleCut=nowMs-EDGE_MAX_AGE_MIN*60000;
   var list=EDGES.filter(function(e){
     if(!prefAllows(e))return false;
-    if(sport&&e.sport_title!==sport)return false;
+    if(sport&&evSportLabel(e)!==sport)return false;
     if((e.edge||0)<floor)return false;                              // noise floor: must clear a real, vig-aware bar
     if((e.n_books||0)<MINBOOKS)return false;                        // need liquidity for the fair line to mean anything
     var ls=e.last_seen_at?new Date(e.last_seen_at).getTime():0;
@@ -2522,8 +2525,8 @@ function renderEdges(){
     var down=!window.__edgeLatest||((Date.now()-window.__edgeLatest)/60000>=STALE_RED_MIN);
     // filtering funnel — shows exactly where the rows went, so empty is explainable not mysterious
     var nLoaded=EDGES.length;
-    var nWin=EDGES.filter(function(e){if(sport&&e.sport_title!==sport)return false;if((e.edge||0)<=0)return false;var ct=e.commence_time?new Date(e.commence_time).getTime():0;return ct&&ct<=horizon&&ct>=nowMs-3600e3;}).length;
-    var nFresh=EDGES.filter(function(e){if(sport&&e.sport_title!==sport)return false;if((e.edge||0)<=0)return false;var ct=e.commence_time?new Date(e.commence_time).getTime():0;if(!(ct&&ct<=horizon&&ct>=nowMs-3600e3))return false;var ls=e.last_seen_at?new Date(e.last_seen_at).getTime():0;return ls&&ls>=staleCut;}).length;
+    var nWin=EDGES.filter(function(e){if(sport&&evSportLabel(e)!==sport)return false;if((e.edge||0)<=0)return false;var ct=e.commence_time?new Date(e.commence_time).getTime():0;return ct&&ct<=horizon&&ct>=nowMs-3600e3;}).length;
+    var nFresh=EDGES.filter(function(e){if(sport&&evSportLabel(e)!==sport)return false;if((e.edge||0)<=0)return false;var ct=e.commence_time?new Date(e.commence_time).getTime():0;if(!(ct&&ct<=horizon&&ct>=nowMs-3600e3))return false;var ls=e.last_seen_at?new Date(e.last_seen_at).getTime():0;return ls&&ls>=staleCut;}).length;
     var poolN=(window.D5_POOL||[]).length;
     var zeroNote=nLoaded===0?(poolN>0
       ? ' \u00b7 <b>capture is live and pricing '+poolN+' line(s) \u2014 just none are +EV right now (clean board)</b>'
@@ -2541,7 +2544,7 @@ function renderEdges(){
     (function(){
       var nowMs2=Date.now();
       var cand=(window.D5_POOL||[]).filter(function(e){
-        if(sport&&e.sport_title!==sport)return false;
+        if(sport&&evSportLabel(e)!==sport)return false;
         if((e.edge||0)<=0)return false;                                  // must be genuinely positive
         var ls=e.last_seen_at?new Date(e.last_seen_at).getTime():0;
         if(!ls||ls<staleCut)return false;                               // live only
@@ -2998,7 +3001,7 @@ function renderDaily(){
   var horizon=win==='day'?endDay.getTime():nowMs+7*864e5;
   if($('d5title'))$('d5title').textContent='\u2606 Top 5 \u2014 sharpest on the board \u00b7 '+(win==='day'?'today':'this week');
   var pool=(window.D5_POOL||[]).filter(function(e){
-    if(sport&&e.sport_title!==sport)return false;
+    if(sport&&evSportLabel(e)!==sport)return false;
     if(!(e.best_dec&&e.selection&&e.edge!=null))return false;
     var ct=e.commence_time?new Date(e.commence_time).getTime():0;
     return ct&&ct<=horizon&&ct>=nowMs-3600e3;                     // in window, not already underway >1h
@@ -6932,7 +6935,7 @@ function renderConsensusEngine(){
   var list=pool.filter(function(e){
     if(!prefAllows(e))return false;
     if(prefs().hideResearchOnly&&isSoftAnchor(e))return false;
-    if(sport&&e.sport_title!==sport)return false;
+    if(sport&&evSportLabel(e)!==sport)return false;
     if((e.n_books||0)<MINBOOKS)return false;
     var ls=e.last_seen_at?new Date(e.last_seen_at).getTime():0;
     if(!ls||ls<staleCut)return false;
@@ -8335,7 +8338,7 @@ function renderMarketPulse(){
     if(!e||!e.event_id)return;
     var k=e.event_id+'|'+e.market+'|'+(e.selection||'')+'|'+(e.point==null?'':e.point);
     if(seen[k])return;seen[k]=1;
-    if(sport&&e.sport_title!==sport)return;
+    if(sport&&evSportLabel(e)!==sport)return;
     var ct=e.commence_time?new Date(e.commence_time).getTime():0;
     if(!ct||ct>horizon||ct<nowMs-3600e3)return;
     var ls=e.last_seen_at?new Date(e.last_seen_at).getTime():0;
