@@ -4395,13 +4395,17 @@ function flPoll(b){
   var lead=over[0]||under[0];
   var dir=lead.gap>0;
   var title=b.board+': the money has '+lead.team+' '+Math.abs(lead.gap)+' places '+(dir?'below':'above')+' the '+pollName;
+  // the biggest handful of disagreements on this board, not just the lead one
+  var topGaps=over.concat(under).sort(function(a,b){return Math.abs(b.gap)-Math.abs(a.gap);}).slice(0,3);
+  var gapsLine=topGaps.map(function(r){return flEsc(r.team)+' <b>'+(r.gap>0?'+':'')+r.gap+'</b>';}).join(' \u00b7 ');
 
   return {
     cls:'Poll vs Money',league:b.league,
     title:title,
     finding:'<b>'+flEsc(lead.team)+'</b> is <b>#'+lead.poll+'</b> in the '+pollName+
       ' but prices <b>#'+lead.market+'</b> of '+field.length+' on this title board at <b>'+flAm(lead.odds)+'</b> ('+flPct(lead.fair)+
-      ' de-vigged). '+(dir?'The voters rate them well above where the money does.':'The money rates them well above the voters.'),
+      ' de-vigged). '+(dir?'The voters rate them well above where the money does.':'The money rates them well above the voters.')+
+      (topGaps.length>1?'<br><span style="color:var(--faint)">Biggest gaps on this board: '+gapsLine+'</span>':''),
     edge:0,noEdge:true,magText:(lead.gap>0?'+':'')+lead.gap,magLabel:'rank gap',
     conf:'medium',
     receipt:'Two published numbers disagree. The '+pollName+' has '+lead.team+' at #'+lead.poll+
@@ -4560,6 +4564,27 @@ var FL_DETAIL={players:{},golf:{}};
 var FL_ALIAS={ 'utsa':'utsanantonio', 'umass':'massachusetts', 'ulmonroe':'louisianamonroe' };
 function flFold(s){return (s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'');}
 function flNormTeam(s){return flFold(s).toLowerCase().replace(/[^a-z0-9]/g,'');}
+
+/* keep only in-season, live-event boards. GOLF: only the tournament being played
+   right now (drops far-out majors). Team leagues: only inside their season months
+   (drops e.g. an NFL Super Bowl board in July). Off-scope leagues are dropped. */
+var FL_SEASON_MONTHS={MLB:[3,4,5,6,7,8,9,10,11],WNBA:[5,6,7,8,9,10],
+  NFL:[9,10,11,12,1,2],NBA:[10,11,12,1,2,3,4,5,6],CFB:[8,9,10,11,12,1],
+  CBB:[11,12,1,2,3,4],NHL:[10,11,12,1,2,3,4,5,6]};
+var FL_DROP_LEAGUES={SOCCER:1,WC:1,OTHER:1};
+function flBoardMatchesEvent(boardName,ev){
+  var bn=String(boardName||'').split('\u00b7')[0];
+  var a=bn.toLowerCase().replace(/[^a-z0-9]/g,''),b=String(ev||'').toLowerCase().replace(/[^a-z0-9]/g,'');
+  return !!a&&!!b&&(a.indexOf(b)>=0||b.indexOf(a)>=0);
+}
+function flKeepBoard(r,liveGolfEvent){
+  var lg=String(r.league||'').toUpperCase();
+  if(FL_DROP_LEAGUES[lg])return false;
+  if(lg==='GOLF')return !!liveGolfEvent&&flBoardMatchesEvent(r.board_name,liveGolfEvent);
+  var m=FL_SEASON_MONTHS[lg];
+  if(m){var mo=new Date().getUTCMonth()+1;if(m.indexOf(mo)<0)return false;}
+  return true;
+}
 function flMatchRoster(L,name){
   var P=FL_DETAIL.players,bn=flNormTeam(name);
   if(P[L+'|'+bn])return L+'|'+bn;                                  // exact
@@ -4821,14 +4846,21 @@ async function loadFaults(){
     // GOLF dead money: eligibility comes straight from golf_stats.status (CUT/WD/DQ), the same
     // leaderboard the field card reads. A golfer a book still prices on the winner board after
     // missing the cut or withdrawing is dead money. No manual rows, no fabricated data.
+    var liveGolfEvent='';
     try{
       var gstat=await sbGet('golf_stats?select=player,status,tournament&status=not.is.null&limit=1000');
       (gstat||[]).forEach(function(r){
+        if(!liveGolfEvent&&r.tournament)liveGolfEvent=r.tournament;
         var st=String(r.status||'').toUpperCase();
         var reason=/WD|WITHDRAW/.test(st)?'Withdrawn':(/DQ|DISQUAL/.test(st)?'Disqualified':(/CUT|MC/.test(st)?'Missed the cut':''));
         if(reason&&r.player)elig.push({league:'GOLF',selection:r.player,reason:reason,ineligible_until:r.tournament||'this event'});
       });
     }catch(e){}
+    // show only in-season, live-event boards. off-season team futures (an NFL board
+    // in July) and far-out majors (The Masters this week) are real but clutter the
+    // live view. golf shows only the tournament actually being played; team leagues
+    // show only inside their season window. tune SEASON_MONTHS / DROP as needed.
+    boards=(boards||[]).filter(function(r){return flKeepBoard(r,liveGolfEvent);});
     if(boards&&boards.length){FL.live=true;grouped=flGroup(boards,elig);flRun(grouped);}
     else{FL.live=false;grouped=FL_SAMPLE;flRun(FL_SAMPLE);}
   }catch(e){FL.live=false;grouped=FL_SAMPLE;flRun(FL_SAMPLE);}
@@ -4890,7 +4922,9 @@ function flRenderBoards(){
       '<div class="gtf-sub">The live leaderboard of who\u2019s really playing this week \u2014 not the futures board. Tap a name for their season fundamentals. Context only, not a call.</div>'+
       '<div class="gf-list" id="gtfList">'+rows+'</div>'+(GOLF_FIELD.length?'<div class="gf-exp" onclick="toggleGolfField(this)">\u26f3 Full field \u2014 '+GOLF_FIELD.length+' actually playing'+(ev?' at '+flEsc(ev):'')+' \u203a</div><div class="gf-wrap" data-open="0"></div>':'')+'</div>';
   }
-  var cards=FL.boards.map(function(b,bi){
+  var cards=FL.boards.slice().sort(function(a,b){
+    return (faulted[b.board]?1:0)-(faulted[a.board]?1:0);
+  }).map(function(b,bi){
     var has=faulted[b.board]?'<span class="ftag" style="color:var(--warn)">\u26a0 fault above</span>':'<span class="ftag" style="color:var(--pos)">clean</span>';
     var panel='bwd_'+bi;
     function tap(nm){return '<span class="fi-tap" data-panel="'+panel+'" data-lg="'+flEsc(b.league)+'" data-nm="'+flEsc(nm)+'">'+flEsc(nm)+'</span>';}
