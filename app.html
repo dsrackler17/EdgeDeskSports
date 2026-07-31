@@ -4313,7 +4313,7 @@ function renderLedger(){renderQuickAdd();var rows=bets(),list=$('betlist');if(!r
 ================================================================= */
 var FL={faults:[],filter:'all',live:false};
 window.RANKS={};          /* league -> [{rank,team,team_norm,poll}] */
-window.RANK_POLL='';
+window.RANK_POLL={};        /* league -> chosen published poll/ranking name */
 
 /* Board selections and poll schools are written by two different vendors, so
    they never match on a raw string. Normalise both sides the same way and keep
@@ -4333,19 +4333,25 @@ function flNormPoll(s){
 }
 
 async function loadRankings(){
-  window.RANKS={};window.RANK_POLL='';
+  window.RANKS={};window.RANK_POLL={};
   try{
-    var r=await sbGet('rankings_current?select=league,poll,rank,team,team_norm,week,season&order=rank.asc&limit=400');
+    var r=await sbGet('rankings_current?select=league,poll,rank,team,team_norm,week,season&order=rank.asc&limit=800');
     if(!r||!r.length)return;
-    /* one poll only. AP and Coaches disagree with each other, and blending two
-       polls into an average invents a ranking nobody published. */
+    /* one poll PER LEAGUE. AP and Coaches disagree with each other, and blending
+       two polls into an average invents a ranking nobody published. Different
+       leagues carry different published rankings (CFB a voted poll, MLB the
+       standings), so the choice is made within each league, never once globally. */
     var prefer=['AP Top 25','Coaches Poll','Playoff Committee Rankings'];
-    var polls={};r.forEach(function(x){polls[x.poll]=1;});
-    for(var i=0;i<prefer.length;i++)if(polls[prefer[i]]){window.RANK_POLL=prefer[i];break;}
-    if(!window.RANK_POLL)window.RANK_POLL=Object.keys(polls)[0];
-    r.filter(function(x){return x.poll===window.RANK_POLL;}).forEach(function(x){
-      (window.RANKS[x.league]=window.RANKS[x.league]||[]).push({
-        rank:+x.rank,team:x.team,norm:flNormPoll(x.team_norm||x.team),week:x.week,season:x.season});
+    var byLg={};r.forEach(function(x){(byLg[x.league]=byLg[x.league]||[]).push(x);});
+    Object.keys(byLg).forEach(function(lg){
+      var rl=byLg[lg],polls={};rl.forEach(function(x){polls[x.poll]=1;});
+      var chosen='';for(var i=0;i<prefer.length;i++)if(polls[prefer[i]]){chosen=prefer[i];break;}
+      if(!chosen)chosen=Object.keys(polls)[0];
+      window.RANK_POLL[lg]=chosen;
+      rl.filter(function(x){return x.poll===chosen;}).forEach(function(x){
+        (window.RANKS[lg]=window.RANKS[lg]||[]).push({
+          rank:+x.rank,team:x.team,norm:flNormPoll(x.team_norm||x.team),week:x.week,season:x.season});
+      });
     });
   }catch(_){}
 }
@@ -4363,6 +4369,7 @@ var POLL_GAP_MIN=8;
 function flPoll(b){
   var ranks=(window.RANKS||{})[b.league];
   if(!ranks||!ranks.length)return null;
+  var pollName=(window.RANK_POLL&&window.RANK_POLL[b.league])||'the ranking';
   if(!b.entries||b.entries.length<8)return null;
 
   var live=b.entries.filter(function(e){return !e.dead;});
@@ -4387,23 +4394,23 @@ function flPoll(b){
 
   var lead=over[0]||under[0];
   var dir=lead.gap>0;
-  var title=b.board+': the money has '+lead.team+' '+Math.abs(lead.gap)+' places '+(dir?'below':'above')+' the '+window.RANK_POLL;
+  var title=b.board+': the money has '+lead.team+' '+Math.abs(lead.gap)+' places '+(dir?'below':'above')+' the '+pollName;
 
   return {
     cls:'Poll vs Money',league:b.league,
     title:title,
-    finding:'<b>'+flEsc(lead.team)+'</b> is <b>#'+lead.poll+'</b> in the '+window.RANK_POLL+
+    finding:'<b>'+flEsc(lead.team)+'</b> is <b>#'+lead.poll+'</b> in the '+pollName+
       ' but prices <b>#'+lead.market+'</b> of '+field.length+' on this title board at <b>'+flAm(lead.odds)+'</b> ('+flPct(lead.fair)+
       ' de-vigged). '+(dir?'The voters rate them well above where the money does.':'The money rates them well above the voters.'),
     edge:0,noEdge:true,magText:(lead.gap>0?'+':'')+lead.gap,magLabel:'rank gap',
     conf:'medium',
-    receipt:'Two published numbers disagree. The '+window.RANK_POLL+' has '+lead.team+' at #'+lead.poll+
+    receipt:'Two published numbers disagree. The '+pollName+' has '+lead.team+' at #'+lead.poll+
       '. Ranking this board by de-vigged win probability puts them #'+lead.market+' of '+field.length+
       ', a gap of '+Math.abs(lead.gap)+' places. EdgeDesk is not claiming either number is right and is not modelling this team: '+
       'a poll is a vote and a futures board is a low-handle market with '+((d.over-1)*100).toFixed(0)+
       '% of margin baked in. This is a place to look, not an edge. It becomes one only if a real price beats a sharp fair line.',
     work:{
-      left:{k:window.RANK_POLL+' \u00b7 voters',rows:(over.concat(under)).slice(0,5).map(function(r){
+      left:{k:pollName+' \u00b7 voters',rows:(over.concat(under)).slice(0,5).map(function(r){
         return{l:r.team,v:'#'+r.poll};})},
       right:{k:'This board \u00b7 de-vigged',rows:(over.concat(under)).slice(0,5).map(function(r){
         return{l:'#'+r.market+' \u00b7 '+flPct(r.fair),v:(r.gap>0?'+':'')+r.gap,c:r.gap>0?'dn':'up'};})}
