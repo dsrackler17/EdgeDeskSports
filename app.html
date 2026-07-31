@@ -2489,7 +2489,11 @@ function isTrusted(book){var b=(book||'').toLowerCase();for(var i=0;i<TRUSTED.le
 function isUSMajor(k){k=(k||'').toLowerCase();return k.indexOf('americanfootball')===0||k.indexOf('basketball')===0||k.indexOf('baseball')===0||k.indexOf('icehockey')===0;}
 // canonical display label for a signal row — prefer the human title, fall back to a pretty sport_key.
 // this keeps a captured sport (e.g. MLB written with sport_key but no sport_title) visible in the filter.
-function evSportLabel(e){if(!e)return '';return e.sport_title||prettySport(e.sport_key);}
+function evSportLabel(e){if(!e)return '';
+  var k=(e.sport_key||'');
+  if(k.indexOf('tennis_atp')===0)return 'ATP';
+  if(k.indexOf('tennis_wta')===0)return 'WTA';
+  return e.sport_title||prettySport(e.sport_key);}
 function renderEdges(){
   var minev=+$('fMinev').value||0, sport=$('fSport').value, mode=$('fBooks').value, win=$('fScope').value;
   var nowMs=Date.now();
@@ -2535,7 +2539,7 @@ function renderEdges(){
     var nm=window.__bestNearMiss;
     if(nm&&nm.edge!=null){
       var ep=(nm.edge*100);
-      funnel+='<div class="sb-sub" style="margin-top:6px;font-family:\'JetBrains Mono\',monospace">sharpest line on the board: <b>'+(nm.sport_title||'')+' \u00b7 '+(nm.selection||'')+'</b> at '+(ep>=0?'+':'')+ep.toFixed(2)+'% vs fair ('+(nm.best_book||'')+', '+(nm.n_books||0)+' books)'+(ep<0?' \u2014 below fair, so nothing clears. The scan ran; the board is just efficient.':'')+'</div>';
+      funnel+='<div class="sb-sub" style="margin-top:6px;font-family:\'JetBrains Mono\',monospace">sharpest line on the board: <b>'+evSportLabel(nm)+' \u00b7 '+(nm.selection||'')+'</b> at '+(ep>=0?'+':'')+ep.toFixed(2)+'% vs fair ('+(nm.best_book||'')+', '+(nm.n_books||0)+' books)'+(ep<0?' \u2014 below fair, so nothing clears. The scan ran; the board is just efficient.':'')+'</div>';
     }
     // PROMOTE the best positive in-window line into a real, loggable card when the
     // strict list is empty — so we never say "no edges" while a genuine +EV line exists.
@@ -2565,7 +2569,7 @@ function renderEdges(){
       var nam=GE.decToAm(near.best_dec),nod=nam>0?'+'+nam:nam;
       var nmHeader='<span class="rank">1</span><div class="lead-mid">'+
         '<div class="lead-sel">'+selLabel(near)+(isTrusted(near.best_book)?'':' <span class="suspect">offshore</span>')+'</div>'+
-        '<div class="lead-meta">'+(near.sport_title||'')+' \u00b7 '+mktLabel(near.market)+' \u00b7 '+(near.away_team||'')+' @ '+(near.home_team||'')+' \u00b7 '+whenLabel(near.commence_time)+' \u00b7 '+near.best_book+' '+nod+' \u00b7 '+nb+' books</div></div>'+
+        '<div class="lead-meta">'+evSportLabel(near)+' \u00b7 '+mktLabel(near.market)+' \u00b7 '+(near.away_team||'')+' @ '+(near.home_team||'')+' \u00b7 '+whenLabel(near.commence_time)+' \u00b7 '+near.best_book+' '+nod+' \u00b7 '+nb+' books</div></div>'+
         '<span class="lead-ev">+'+(near.edge*100).toFixed(2)+'%</span>'+
         '<button class="btn ghost sm dadd" onclick="event.stopPropagation();__trackId(\'nm_0\')">+</button>';
       nearHtml='<div class="lead" style="margin-top:14px;border-color:rgba(217,154,43,.3)">'+
@@ -2931,7 +2935,7 @@ function receiptHTML(e){
   var fairAm=haveFair?GE.decToAm(1/Math.max(0.0001,e.sharp_fair)):null,fairOd=fairAm!=null?(fairAm>0?'+'+fairAm:fairAm):'\u2014';
   var mv=moveLabel(e),st=sliceStat(e),trec;
   if(st&&st.rate!=null){
-    trec='<div class="trec">Signals like this \u2014 <b>'+(e.sport_title||'')+(st.fine?' \u00b7 '+mktLabel(e.market):'')+'</b> \u2014 have beaten the close <span class="rate">'+(st.rate*100).toFixed(0)+'%</span> over <b>'+st.n+'</b> graded, avg CLV '+(st.clv>=0?'+':'')+(st.clv*100).toFixed(1)+'%.</div>';
+    trec='<div class="trec">Signals like this \u2014 <b>'+evSportLabel(e)+(st.fine?' \u00b7 '+mktLabel(e.market):'')+'</b> \u2014 have beaten the close <span class="rate">'+(st.rate*100).toFixed(0)+'%</span> over <b>'+st.n+'</b> graded, avg CLV '+(st.clv>=0?'+':'')+(st.clv*100).toFixed(1)+'%.</div>';
   }else{
     trec='<div class="trec thin">Track record still building for this slice'+(st&&st.n?' (only '+st.n+' graded so far)':'')+'. The figure above is a pre-game estimate, not yet proven against closing lines.</div>';
   }
@@ -3024,7 +3028,7 @@ function renderDaily(){
     var ls=e.last_seen_at?new Date(e.last_seen_at).getTime():0;
     var ageTag=(ls&&(nowMs-ls)/60000>=EDGE_MAX_AGE_MIN)?' <span class="suspect">priced '+ago(ls)+'</span>':'';
     var tags=(e.edge>0.06?' <span class="suspect">\u26a0 verify</span>':'')+(isTrusted(e.best_book)?'':' <span class="suspect">offshore</span>')+(pos?'':' <span class="suspect">below fair</span>')+ageTag;
-    var header='<span class="rank">'+(i+1)+'</span><div class="lead-mid"><div class="lead-sel">'+selLabel(e)+tags+'</div><div class="lead-meta">'+(e.sport_title||'')+' \u00b7 '+mktLabel(e.market)+' \u00b7 '+(e.away_team||'')+' @ '+(e.home_team||'')+' \u00b7 '+whenLabel(e.commence_time)+' \u00b7 '+e.best_book+' '+od+'</div></div><span class="lead-ev"'+evStyle+'>'+evTxt+'</span><button class="btn ghost sm dadd" onclick="event.stopPropagation();__trackId(\'d5_'+i+'\')">+</button>';
+    var header='<span class="rank">'+(i+1)+'</span><div class="lead-mid"><div class="lead-sel">'+selLabel(e)+tags+'</div><div class="lead-meta">'+evSportLabel(e)+' \u00b7 '+mktLabel(e.market)+' \u00b7 '+(e.away_team||'')+' @ '+(e.home_team||'')+' \u00b7 '+whenLabel(e.commence_time)+' \u00b7 '+e.best_book+' '+od+'</div></div><span class="lead-ev"'+evStyle+'>'+evTxt+'</span><button class="btn ghost sm dadd" onclick="event.stopPropagation();__trackId(\'d5_'+i+'\')">+</button>';
     return expandItem(e,'d5_'+i,header);
   }).join('');
 }
@@ -4147,7 +4151,7 @@ function renderQuickAdd(){var host=$('qaList');if(!host)return;
   src.sort(function(a,b){return b.edge-a.edge;});src=src.slice(0,6);window.QA_LIST=src;
   if(!src.length){host.innerHTML='<div class="empty" style="padding:10px">No edges loaded yet. Open the Edges tab to pull today\u2019s board, then come back.</div>';return;}
   host.innerHTML=src.map(function(e,i){var am=GE.decToAm(e.best_dec),od=am>0?'+'+am:am;
-    return'<button class="qarow" onclick="__qlog('+i+')"><div class="qa-l"><div class="qa-sel">'+selLabel(e)+'</div><div class="qa-meta">'+(e.sport_title||'')+' \u00b7 '+e.best_book+' '+od+'</div></div><span class="qa-ev">+'+(e.edge*100).toFixed(1)+'%</span><span class="qa-plus">+</span></button>';
+    return'<button class="qarow" onclick="__qlog('+i+')"><div class="qa-l"><div class="qa-sel">'+selLabel(e)+'</div><div class="qa-meta">'+evSportLabel(e)+' \u00b7 '+e.best_book+' '+od+'</div></div><span class="qa-ev">+'+(e.edge*100).toFixed(1)+'%</span><span class="qa-plus">+</span></button>';
   }).join('');
 }
 window.__settle=function(id,won){var b=bets();var r=b.find(function(x){return x.id===id;});if(r){r.result=won?'win':'loss';var dec=GE.amToDec(r.odds);r.pnl=won?(r.stake||0)*(dec-1):-(r.stake||0);r.manual=true;}saveBets(b);renderLedger();};
@@ -4504,7 +4508,14 @@ function flGroup(rows,elig){
       peerOverround:r.peer_overround!=null?+r.peer_overround:null,
       lastMoveDays:null,trigger:r.trigger_note||null};
     byId[id]._rows.push(r);});
-  function deadFor(league,sel){return elig.find(function(e){return e.league===league&&e.selection===sel;});}
+  function deadFor(league,sel){
+    var hit=elig.find(function(e){return e.league===league&&e.selection===sel;});
+    if(hit)return hit;
+    // golf leaderboard names may differ in spacing/case from the winner board; match normalized
+    if((league||'').toUpperCase()==='GOLF'){var ns=flNormTeam(sel);
+      return elig.find(function(e){return (e.league||'').toUpperCase()==='GOLF'&&flNormTeam(e.selection)===ns;});}
+    return null;
+  }
   return Object.keys(byId).map(function(id){var b=byId[id],rs=b._rows;
     var pairs=rs.filter(function(r){return r.pair_id;});
     if(pairs.length){ // correlated nested market
@@ -4800,6 +4811,17 @@ async function loadFaults(){
   try{
     var boards=await sbGet('boards?select=*&active=eq.true&limit=2000');
     var elig=[];try{elig=await sbGet('eligibility?select=*');}catch(e){}
+    // GOLF dead money: eligibility comes straight from golf_stats.status (CUT/WD/DQ), the same
+    // leaderboard the field card reads. A golfer a book still prices on the winner board after
+    // missing the cut or withdrawing is dead money. No manual rows, no fabricated data.
+    try{
+      var gstat=await sbGet('golf_stats?select=player,status,tournament&status=not.is.null&limit=1000');
+      (gstat||[]).forEach(function(r){
+        var st=String(r.status||'').toUpperCase();
+        var reason=/WD|WITHDRAW/.test(st)?'Withdrawn':(/DQ|DISQUAL/.test(st)?'Disqualified':(/CUT|MC/.test(st)?'Missed the cut':''));
+        if(reason&&r.player)elig.push({league:'GOLF',selection:r.player,reason:reason,ineligible_until:r.tournament||'this event'});
+      });
+    }catch(e){}
     if(boards&&boards.length){FL.live=true;grouped=flGroup(boards,elig);flRun(grouped);}
     else{FL.live=false;grouped=FL_SAMPLE;flRun(FL_SAMPLE);}
   }catch(e){FL.live=false;grouped=FL_SAMPLE;flRun(FL_SAMPLE);}
@@ -6965,7 +6987,7 @@ function renderConsensusEngine(){
     var am=GE.decToAm(e.best_dec),od=am>0?'+'+am:am;
     var flag=anchorBadge(e)+'<span class="corrslot" id="cs_'+('ce_'+(e.event_id||'')+'_'+i)+'">'+corrobBadge(e)+'</span>';
     var mkt=(e.edge!=null)?('MARKET '+(e.edge>=0?'+':'')+(e.edge*100).toFixed(2)+'%'):'MARKET \u2014';
-    var meta=[(e.sport_title||''),mktLabel(e.market),((e.away_team||'')+' @ '+(e.home_team||'')),whenLabel(e.commence_time),(e.best_book||'')+' '+od,(e.n_books||0)+' books',mkt].filter(Boolean).join(' \u00b7 ');
+    var meta=[evSportLabel(e),mktLabel(e.market),((e.away_team||'')+' @ '+(e.home_team||'')),whenLabel(e.commence_time),(e.best_book||'')+' '+od,(e.n_books||0)+' books',mkt].filter(Boolean).join(' \u00b7 ');
     var did='ce_'+(e.event_id||'')+'_'+i;
     window.RCPT_C=window.RCPT_C||{};window.RCPT_C[did]=e;
     var cb=covBase[e.sport_title||'']||0;
@@ -8364,11 +8386,11 @@ function renderMarketPulse(){
   var mHtml=movers.length?movers.map(function(m){
     var e=m.e,a0=GE.decToAm(e.first_best_dec),a1=GE.decToAm(e.best_dec);
     var toward=m.pct<0; /* decimal shrinking = price shortening = market moving toward this side */
-    return '<div class="mp-row"><span class="mp-sel">'+selLabel(e)+'</span><span class="mp-meta">'+(e.sport_title||'')+' \u00b7 '+mktLabel(e.market)+' \u00b7 '+vnOd(a0)+' \u2192 '+vnOd(a1)+'</span><span class="mp-val '+(toward?'up':'dn')+'">'+(toward?'\u2193 ':'\u2191 ')+(Math.abs(m.pct)*100).toFixed(1)+'%</span></div>';
+    return '<div class="mp-row"><span class="mp-sel">'+selLabel(e)+'</span><span class="mp-meta">'+evSportLabel(e)+' \u00b7 '+mktLabel(e.market)+' \u00b7 '+vnOd(a0)+' \u2192 '+vnOd(a1)+'</span><span class="mp-val '+(toward?'up':'dn')+'">'+(toward?'\u2193 ':'\u2191 ')+(Math.abs(m.pct)*100).toFixed(1)+'%</span></div>';
   }).join(''):'<div class="mp-row"><span class="mp-sel mut" style="color:var(--faint)">No line has moved \u22650.5% since first capture in this window.</span></div>';
   var dHtml=dis.length?dis.map(function(d){
     var e=d.e;
-    return '<div class="mp-row"><span class="mp-sel">'+selLabel(e)+'</span><span class="mp-meta">'+(e.sport_title||'')+' \u00b7 consensus '+(e.consensus_fair*100).toFixed(1)+'% vs Pinnacle '+(e.sharp_fair*100).toFixed(1)+'%</span><span class="mp-val '+(d.gap>0?'up':'dn')+'">'+(d.gap>0?'+':'')+d.gap.toFixed(1)+' pts</span></div>';
+    return '<div class="mp-row"><span class="mp-sel">'+selLabel(e)+'</span><span class="mp-meta">'+evSportLabel(e)+' \u00b7 consensus '+(e.consensus_fair*100).toFixed(1)+'% vs Pinnacle '+(e.sharp_fair*100).toFixed(1)+'%</span><span class="mp-val '+(d.gap>0?'up':'dn')+'">'+(d.gap>0?'+':'')+d.gap.toFixed(1)+' pts</span></div>';
   }).join(''):'<div class="mp-row"><span class="mp-sel" style="color:var(--faint)">Books and Pinnacle agree within 1 point everywhere the comparison exists.</span></div>';
   host.innerHTML='<div class="mpulse-h" onclick="__togglePulse()">\u26a1 Market pulse <span style="font-weight:400;color:var(--faint);font-size:11px">'+all.length+' live lines \u00b7 '+(win==='day'?'today':'this week')+'</span><span class="chev">\u203a</span></div>'+
     '<div class="mpulse-bd">'+
