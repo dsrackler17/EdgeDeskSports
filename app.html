@@ -4348,10 +4348,13 @@ function rcptTimeline(r){
   /* fair line flag -> close */
   var yFlagFair=flagFair!=null?Y(flagFair):yC;
   s+='<polyline points="'+xF+','+yFlagFair+' '+xC+','+yC+'" fill="none" stroke="'+col+'" stroke-width="2.5" stroke-linecap="round"/>';
-  /* nodes */
-  function node(x,y,c){return '<circle cx="'+x+'" cy="'+y+'" r="4.5" fill="var(--bg)" stroke="'+c+'" stroke-width="2.5"/>';}
-  if(flagFair!=null)s+=node(xF,yFlagFair,col);
-  s+=node(xC,yC,col);
+  /* nodes (with hover detail: timestamp, price, movement) */
+  var mvPts=(closeFair-entry)*100;
+  var flagTip='FLAG \u00b7 '+recDT(r.flagged_at||r.first_seen_at)+' \u00b7 your price '+(entry*100).toFixed(1)+'%'+(flagFair!=null?' \u00b7 sharp fair '+(flagFair*100).toFixed(1)+'%':'')+(r.best_book?' \u00b7 '+r.best_book:'');
+  var closeTip='CLOSE \u00b7 '+recDT(r.graded_at||r.commence_time)+' \u00b7 sharp fair '+(closeFair*100).toFixed(1)+'% \u00b7 moved '+Math.abs(mvPts).toFixed(1)+' pts '+(mvPts>=0?'toward':'away from')+' your side';
+  function node(x,y,c,tip){var t='<title>'+recEsc(tip)+'</title>';return '<circle cx="'+x+'" cy="'+y+'" r="11" fill="transparent" style="cursor:help">'+t+'</circle><circle cx="'+x+'" cy="'+y+'" r="4.5" fill="var(--bg)" stroke="'+c+'" stroke-width="2.5" style="cursor:help">'+t+'</circle>';}
+  if(flagFair!=null)s+=node(xF,yFlagFair,col,flagTip);
+  s+=node(xC,yC,col,closeTip);
   /* arrow on close node */
   var up=closeFair>=entry;
   s+='<text x="'+xC+'" y="'+(up?yC-9:yC+16)+'" fill="'+col+'" font-size="12" font-weight="700" text-anchor="middle" font-family="JetBrains Mono">'+(up?'\u25b2':'\u25bc')+'</text>';
@@ -4877,6 +4880,8 @@ function recCheckHash(){
       if(e.key==='Escape'){recCloseReceipt();e.preventDefault();}
       else if(e.key==='ArrowRight'){recReceiptNav(1);e.preventDefault();}
       else if(e.key==='ArrowLeft'){recReceiptNav(-1);e.preventDefault();}
+      else if((e.key==='f'||e.key==='F')&&RCPT.cur){e.preventDefault();var fb=$('rcptFav');if(fb)fb.click();}
+      else if((e.key==='s'||e.key==='S')&&RCPT.cur){e.preventDefault();rcptAction('copy');}
       return;
     }
     /* only when the Records > Bets table is the active surface */
