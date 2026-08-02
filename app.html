@@ -900,6 +900,152 @@ body.ed-large-text .set-lbl,body.ed-large-text .lead-sel{font-size:14px}
 @media(max-width:640px){.rtbl{font-size:10.5px}.rtbl td{padding:6px 5px}.rtbl th{padding:7px 5px}}
 </style>
 
+<style id="rcpt-style">
+/* ===== Signal Receipt drawer (frontend-only redesign) ===== */
+.rfav{cursor:pointer;color:var(--faint);font-size:12px;line-height:1;transition:color .12s ease,transform .12s ease;display:inline-block;padding:0 2px}
+.rfav:hover{color:var(--gold);transform:scale(1.18)}
+.rfav.on{color:var(--gold)}
+.rtbl tr.rrow.kbfocus td{background:rgba(77,141,255,.14);box-shadow:inset 2px 0 0 var(--accent)}
+.rtbl tr.rrow td:first-child{padding-right:2px}
+.spill{display:inline-block;font-family:'Inter',sans-serif;font-weight:600;font-size:9.5px;letter-spacing:.03em;text-transform:uppercase;padding:2px 7px;border-radius:999px;border:1px solid}
+.spill.won{color:var(--pos);border-color:rgba(47,180,124,.45);background:rgba(47,180,124,.08)}
+.spill.lost{color:var(--neg);border-color:rgba(226,96,68,.45);background:rgba(226,96,68,.08)}
+.spill.push{color:var(--dim);border-color:var(--border);background:rgba(138,147,162,.06)}
+.spill.pend{color:var(--warn);border-color:rgba(217,154,43,.45);background:rgba(217,154,43,.08)}
+.spill.uns{color:var(--faint);border-color:var(--border)}
+
+/* backdrop + panel */
+#recBack{position:fixed;inset:0;background:rgba(6,8,12,.62);backdrop-filter:blur(3px);opacity:0;pointer-events:none;transition:opacity .22s ease;z-index:60}
+#recBack.on{opacity:1;pointer-events:auto}
+#recDrawer{position:fixed;top:0;right:0;height:100vh;height:100dvh;width:min(580px,100vw);background:var(--bg);border-left:1px solid var(--border);box-shadow:-24px 0 60px rgba(0,0,0,.5);transform:translateX(100%);transition:transform .26s cubic-bezier(.22,.61,.36,1);z-index:61;display:flex;flex-direction:column;will-change:transform}
+#recDrawer.on{transform:none}
+body.rcpt-lock{overflow:hidden}
+
+/* header */
+.rcpt-top{display:flex;align-items:center;gap:8px;padding:12px 14px calc(12px);border-bottom:1px solid var(--border);background:rgba(19,22,28,.9);backdrop-filter:blur(8px);flex:none}
+.rcpt-x{background:var(--surface2);border:1px solid var(--border);color:var(--text);width:34px;height:34px;border-radius:9px;font-size:18px;line-height:1;cursor:pointer;flex:none;transition:border-color .12s,color .12s}
+.rcpt-x:hover{border-color:var(--accent);color:var(--accent)}
+.rcpt-nav{display:flex;gap:5px;margin-left:2px}
+.rcpt-nav button{background:var(--surface2);border:1px solid var(--border);color:var(--dim);width:30px;height:34px;border-radius:8px;font-size:13px;cursor:pointer;font-family:'JetBrains Mono',monospace;transition:border-color .12s,color .12s}
+.rcpt-nav button:hover:not(:disabled){border-color:var(--accent);color:var(--accent)}
+.rcpt-nav button:disabled{opacity:.35;cursor:default}
+.rcpt-pos{font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--faint);align-self:center;margin:0 2px}
+.rcpt-tools{display:flex;gap:5px;margin-left:auto;align-items:center;position:relative}
+.rcpt-tool{background:transparent;border:1px solid var(--border);color:var(--dim);height:34px;min-width:34px;padding:0 8px;border-radius:8px;font-size:13px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:5px;transition:border-color .12s,color .12s}
+.rcpt-tool:hover{border-color:var(--accent);color:var(--accent)}
+.rcpt-tool.on{border-color:var(--gold);color:var(--gold)}
+.rcpt-menu{position:absolute;top:40px;right:0;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:5px;min-width:172px;box-shadow:0 16px 40px rgba(0,0,0,.5);z-index:5;display:none}
+.rcpt-menu.on{display:block;animation:rfade .14s ease}
+.rcpt-menu button{display:flex;width:100%;gap:9px;align-items:center;background:transparent;border:none;color:var(--text);font-family:'Inter',sans-serif;font-size:12.5px;padding:8px 9px;border-radius:7px;cursor:pointer;text-align:left}
+.rcpt-menu button:hover{background:var(--surface2);color:var(--accent)}
+.rcpt-menu .mi{width:15px;text-align:center;color:var(--faint);font-family:'JetBrains Mono',monospace;font-size:12px}
+.rcpt-menu .sep{height:1px;background:var(--border);margin:4px 2px}
+
+/* scroll body */
+.rcpt-body{overflow-y:auto;overflow-x:hidden;padding:14px 14px calc(28px + env(safe-area-inset-bottom));flex:1;-webkit-overflow-scrolling:touch;scroll-behavior:smooth}
+.rcpt-toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(10px);background:var(--surface2);border:1px solid var(--border);color:var(--text);font-size:12.5px;padding:9px 15px;border-radius:10px;box-shadow:0 10px 30px rgba(0,0,0,.5);opacity:0;pointer-events:none;transition:opacity .18s,transform .18s;z-index:70}
+.rcpt-toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* header identity */
+.rcpt-idh{display:flex;align-items:center;gap:11px;margin-bottom:12px}
+.rcpt-mono{display:flex;flex:none}
+.rcpt-mono .mm{width:34px;height:34px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;font-weight:700;font-size:12px;color:#0a0d13;border:2px solid var(--bg)}
+.rcpt-mono .mm+.mm{margin-left:-11px}
+.rcpt-idmeta{min-width:0;flex:1}
+.rcpt-game{font-size:16px;font-weight:700;line-height:1.2;letter-spacing:-.01em}
+.rcpt-sub{font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--dim);margin-top:3px;display:flex;flex-wrap:wrap;gap:5px 9px}
+.rcpt-sub .dot{color:var(--faint)}
+
+/* verdict hero */
+.rcpt-hero{border-radius:14px;padding:15px 16px;margin-bottom:13px;position:relative;overflow:hidden;border:1px solid var(--border)}
+.rcpt-hero.beat{background:linear-gradient(135deg,rgba(47,180,124,.16),rgba(47,180,124,.03));border-color:rgba(47,180,124,.4)}
+.rcpt-hero.miss{background:linear-gradient(135deg,rgba(226,96,68,.15),rgba(226,96,68,.03));border-color:rgba(226,96,68,.4)}
+.rcpt-hero.none{background:linear-gradient(135deg,rgba(138,147,162,.1),transparent);border-color:var(--border)}
+.rcpt-hero-lab{font-size:9.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--dim);font-weight:600}
+.rcpt-hero-big{font-family:'JetBrains Mono',monospace;font-weight:700;font-size:30px;line-height:1.05;margin:4px 0 2px;letter-spacing:-.02em}
+.rcpt-hero.beat .rcpt-hero-big{color:var(--pos)}
+.rcpt-hero.miss .rcpt-hero-big{color:var(--neg)}
+.rcpt-hero.none .rcpt-hero-big{color:var(--dim);font-size:20px}
+.rcpt-hero-tag{font-family:'Inter';font-size:12.5px;color:var(--text);font-weight:600}
+.rcpt-hero-chips{display:flex;gap:7px;margin-top:11px;flex-wrap:wrap}
+.rcpt-hchip{font-family:'JetBrains Mono',monospace;font-size:11px;padding:4px 9px;border-radius:8px;background:rgba(0,0,0,.22);border:1px solid var(--border);display:flex;gap:6px;align-items:center}
+.rcpt-hchip b{font-weight:700}
+
+/* plain english note */
+.rcpt-note{font-size:12.5px;line-height:1.6;color:var(--text);background:var(--surface);border:1px solid var(--border);border-left:2px solid var(--accent);border-radius:10px;padding:11px 13px;margin-bottom:13px}
+.rcpt-note b{font-weight:600}
+
+/* sections */
+.rcpt-sec{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px 13px;margin-bottom:11px}
+.rcpt-sec-h{display:flex;align-items:center;gap:8px;font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--dim);margin-bottom:10px}
+.rcpt-sec-h .n{font-family:'JetBrains Mono',monospace;color:var(--faint);font-size:10px}
+.rcpt-sec-h .sp{margin-left:auto;font-weight:500;letter-spacing:0;text-transform:none}
+.rcpt-kv{display:flex;justify-content:space-between;gap:12px;padding:5px 0;border-bottom:1px dashed rgba(38,44,54,.6);font-size:12px}
+.rcpt-kv:last-child{border-bottom:none}
+.rcpt-k{color:var(--faint);display:flex;align-items:center;gap:5px}
+.rcpt-v{font-family:'JetBrains Mono',monospace;text-align:right;color:var(--text)}
+.rcpt-v .mut{color:var(--faint)}
+.rcpt-grid2{display:grid;grid-template-columns:1fr 1fr;gap:0 16px}
+@media(max-width:430px){.rcpt-grid2{grid-template-columns:1fr}}
+
+/* viz */
+.rcpt-viz{margin:3px 0 2px}
+.rcpt-viz svg{display:block;width:100%;height:auto;overflow:visible}
+.rcpt-vcap{font-size:10px;color:var(--faint);line-height:1.5;margin-top:7px}
+
+/* timeline */
+.rcpt-tl{position:relative;padding:6px 2px 2px}
+.rcpt-tl svg{overflow:visible}
+
+/* info tooltip */
+.rcpt-info{display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;border-radius:50%;border:1px solid var(--border);color:var(--faint);font-size:9px;font-family:'JetBrains Mono',monospace;cursor:help;position:relative;flex:none}
+.rcpt-info:hover,.rcpt-info:focus{color:var(--accent);border-color:var(--accent)}
+.rcpt-info:hover::after,.rcpt-info:focus::after{content:attr(data-tip);position:absolute;bottom:120%;left:50%;transform:translateX(-50%);width:210px;background:#05070b;border:1px solid var(--border);border-radius:8px;padding:8px 10px;font-size:10.5px;line-height:1.5;color:var(--dim);font-family:'Inter',sans-serif;text-align:left;z-index:9;box-shadow:0 10px 30px rgba(0,0,0,.6);pointer-events:none}
+.rcpt-info:hover::before,.rcpt-info:focus::before{content:'';position:absolute;bottom:120%;left:50%;transform:translateX(-50%) translateY(6px);border:5px solid transparent;border-top-color:var(--border);z-index:9}
+
+/* cohort mini list */
+.rcpt-cohort{display:flex;flex-direction:column;gap:0}
+.rcpt-crow{display:flex;align-items:center;gap:9px;padding:6px 0;border-bottom:1px dashed rgba(38,44,54,.55);font-size:11px}
+.rcpt-crow:last-child{border-bottom:none}
+.rcpt-crow .cg{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--dim)}
+.rcpt-crow .cclv{font-family:'JetBrains Mono',monospace;font-weight:700;flex:none;width:52px;text-align:right}
+.rcpt-crow .cres{font-family:'JetBrains Mono',monospace;flex:none;width:36px;text-align:right}
+.rcpt-statline{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:10px}
+.rcpt-stat{flex:1;min-width:74px;background:var(--surface2);border:1px solid var(--border);border-radius:9px;padding:8px 9px;text-align:center}
+.rcpt-stat .sn{font-family:'JetBrains Mono',monospace;font-weight:700;font-size:15px;line-height:1.1}
+.rcpt-stat .sl{font-size:8.5px;text-transform:uppercase;letter-spacing:.03em;color:var(--faint);margin-top:3px}
+
+/* impact rows */
+.rcpt-imp{display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px dashed rgba(38,44,54,.55);font-size:12px}
+.rcpt-imp:last-child{border-bottom:none}
+.rcpt-imp .il{color:var(--faint);flex:1}
+.rcpt-imp .iv{font-family:'JetBrains Mono',monospace;display:flex;align-items:center;gap:7px}
+.rcpt-imp .iarr{color:var(--faint)}
+
+/* trust badges */
+.rcpt-badges{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:11px}
+.rcpt-tb{font-size:9.5px;font-family:'JetBrains Mono',monospace;color:var(--pos);border:1px solid rgba(47,180,124,.35);background:rgba(47,180,124,.06);border-radius:7px;padding:3px 7px;display:flex;align-items:center;gap:5px}
+.rcpt-tb.neutral{color:var(--dim);border-color:var(--border);background:transparent}
+
+.rcpt-foot{font-size:10px;color:var(--faint);line-height:1.6;border-top:1px solid var(--border);padding-top:11px;margin-top:6px}
+.rcpt-foot b{color:var(--dim)}
+
+@media(prefers-reduced-motion:reduce){
+  #recDrawer,#recBack,.rcpt-toast{transition:none}
+  .rcpt-body{scroll-behavior:auto}
+  .recpane{animation:none}
+}
+
+/* mobile: bottom sheet */
+@media(max-width:640px){
+  #recDrawer{top:auto;bottom:0;right:0;height:94vh;height:94dvh;width:100vw;border-left:none;border-top:1px solid var(--border);border-radius:18px 18px 0 0;transform:translateY(100%);box-shadow:0 -24px 60px rgba(0,0,0,.55)}
+  #recDrawer.on{transform:none}
+  .rcpt-top{border-radius:18px 18px 0 0}
+  .rcpt-grab{position:absolute;top:6px;left:50%;transform:translateX(-50%);width:38px;height:4px;border-radius:3px;background:var(--border)}
+  .rcpt-pos{display:none}
+  .rcpt-hero-big{font-size:26px}
+}
+</style>
 <style id="vnext-style">
 /* ===== vNext: edge card chips ===== */
 .echips{display:flex;flex-wrap:wrap;gap:4px;margin-top:5px}
@@ -3326,6 +3472,7 @@ async function loadRecord(force){
     var t=new Date();$('recFresh').textContent=rows.length+' graded \u00b7 '+t.getHours()+':'+('0'+t.getMinutes()).slice(-2);
     if(force){REC.proofDone=false;recProofReset();if(REC.tab==='proof'){REC.proofDone=true;loadRecordProof();}}
     recApplyFilters();
+    try{recCheckHash();}catch(_){}
   }catch(e){
     $('dbPill').textContent='DB error';$('dbPill').className='pill err';
     $('recHero').innerHTML='';
@@ -3383,7 +3530,7 @@ function recApplyFilters(){
     if(q&&r._q.indexOf(q)<0)return false;
     return true;
   });
-  REC.page=0;REC.open={};REC.dirty={charts:true,analytics:true};
+  REC.page=0;REC.open={};REC.dirty={charts:true,analytics:true};REC.kbIdx=null;
   var na=recFilterActiveCount();
   $('rfSummary').textContent=na?na+' active':'';
   $('recCount').textContent=REC.flt.length+' of '+REC.rows.length+' graded signals'+(na?' match the filters':'')+' \u00b7 pool: '+REC.pool.label;
@@ -3656,23 +3803,24 @@ function recRenderCharts(){
 
 /* ---- bets table ---- */
 var REC_COLDEF=[
-  {k:'_cts',l:'Date',f:function(r){return recD(r.commence_time);}},
-  {k:'sport_title',l:'Sport',f:function(r){return recEsc(r.sport_title||'\u2014');}},
-  {k:'_game',l:'Game',f:function(r){return recEsc(r._game||'\u2014');}},
-  {k:'selection',l:'Selection',f:function(r){return recEsc((r.selection||'\u2014')+(r.point!=null?' '+r.point:''));}},
-  {k:'market',l:'Type',f:function(r){return recEsc(r.market||'\u2014');}},
-  {k:'best_book',l:'Book',f:function(r){return recEsc(r.best_book||'\u2014');}},
-  {k:'_dec',l:'Odds',f:function(r){return r._am!=null?(r._am+(r._flagPrice?'':'\u2020')):'\u2014';}},
-  {k:'_closeDec',l:'Close*',f:function(r){return r._closeAm!=null?r._closeAm:'\u2014';}},
-  {k:'_clv',l:'CLV',f:function(r){return '<span class="'+recCls(r._clv)+'">'+recPc(r._clv,1)+'</span>';}},
-  {k:'_edge',l:'Edge',f:function(r){return '<span class="'+recCls(r._edge)+'">'+recPc(r._edge,1)+'</span>';}},
-  {k:'_profit',l:'Sim P/L',f:function(r){return '<span class="'+recCls(r._profit)+'">'+recU(r._profit)+'</span>';}},
-  {k:'result',l:'Result',f:function(r){if(r._unsupported)return '<span class="rmut" title="Odds API returns set scores; this market is priced in games. Not scored.">\u26a0 unsupported</span>';var v=r.result||'\u2014';var c=v==='win'?'rpos':v==='loss'?'rneg':'rmut';return '<span class="'+c+'">'+recEsc(v)+'</span>';}},
-  {k:'_anchor',l:'Anchor',f:function(r){var a=r._anchor;var c=a.indexOf('sharp')===0?'rpos':a==='?'?'rmut':'rneg';return '<span class="'+c+'">'+recEsc(a)+'</span>';}}
+  {k:'_fav',l:'\u2605',t:'Pinned favourites. Tap the star to pin a receipt; pins sort to the top and are saved on this device.',f:function(r){var on=recIsFav(r.id);return '<span class="rfav'+(on?' on':'')+'" data-fav="'+recEsc(r.id)+'" role="button" tabindex="0" aria-label="'+(on?'Unpin':'Pin')+' receipt" title="'+(on?'Unpin':'Pin')+'">'+(on?'\u2605':'\u2606')+'</span>';}},
+  {k:'_cts',l:'Date',t:'Kickoff date of the game.',f:function(r){return recD(r.commence_time);}},
+  {k:'sport_title',l:'Sport',t:'Sport / league the signal was priced in.',f:function(r){return recEsc(r.sport_title||'\u2014');}},
+  {k:'_game',l:'Game',t:'Away @ Home.',f:function(r){return recEsc(r._game||'\u2014');}},
+  {k:'market',l:'Market',t:'Bet type: moneyline (ML), spread or total.',f:function(r){return recEsc(recMkt(r.market));}},
+  {k:'selection',l:'Selection',t:'The side that was flagged.',f:function(r){return recEsc((r.selection||'\u2014')+(r.point!=null?' '+r.point:''));}},
+  {k:'best_book',l:'Book',t:'Sportsbook offering the best price at flag.',f:function(r){return recEsc(r.best_book||'\u2014');}},
+  {k:'_dec',l:'Entry',t:'Frozen entry odds. \u2020 = first-seen price on rows that predate flag-price capture.',f:function(r){return r._am!=null?(r._am+(r._flagPrice?'':'\u2020')):'\u2014';}},
+  {k:'_closeDec',l:'Close*',t:'De-vigged sharp fair price at close \u2014 not a book quote.',f:function(r){return r._closeAm!=null?r._closeAm:'\u2014';}},
+  {k:'_clv',l:'CLV',t:'Closing Line Value: whether the frozen entry beat the sharp closing market. The one proven number here.',f:function(r){return '<span class="'+recCls(r._clv)+'">'+recPc(r._clv,1)+'</span>';}},
+  {k:'_edge',l:'Edge',t:'Edge at flag: entry price vs the de-vigged fair, frozen at flag time.',f:function(r){return '<span class="'+recCls(r._edge)+'">'+recPc(r._edge,1)+'</span>';}},
+  {k:'_profit',l:'Profit',t:'Flat 1-unit simulated profit/loss. A simulation, not money.',f:function(r){return '<span class="'+recCls(r._profit)+'">'+recU(r._profit)+'</span>';}},
+  {k:'_stat',l:'Status',t:'Settlement status of the graded signal.',f:function(r){return recStatusPill(r);}}
 ];
 function recSortRows(){
   var k=REC.sort.k,d=REC.sort.d;
   var arr=REC.flt.slice();
+  for(var s=0;s<arr.length;s++){arr[s]._fav=recIsFav(arr[s].id)?1:0;arr[s]._stat=recStatRank(arr[s]);}
   arr.sort(function(a,b){
     var x=a[k],y=b[k];
     var xs=typeof x==='string',ys=typeof y==='string';
@@ -3694,17 +3842,17 @@ function recRenderTable(){
     var on=REC.sort.k===c.k;
     var arrow=on?(REC.sort.d>0?' \u25b4':' \u25be'):'';
     var wst=REC.colW[c.k]?' style="min-width:'+REC.colW[c.k]+'px"':'';
-    return '<th data-ck="'+c.k+'" class="'+(on?'on':'')+'"'+wst+'>'+c.l+arrow+'<span class="rz" data-ci="'+i+'"></span></th>';
+    var tt=c.t?' title="'+recEsc(c.t)+'"':'';
+    return '<th data-ck="'+c.k+'" class="'+(on?'on':'')+'"'+wst+tt+'>'+c.l+arrow+'<span class="rz" data-ci="'+i+'"></span></th>';
   }).join('')+'</tr>';
   var rows=recSortRows();
   var total=rows.length,per=REC.per,pages=Math.max(1,Math.ceil(total/per));
   if(REC.page>=pages)REC.page=pages-1;
   var start=REC.page*per,slice=rows.slice(start,start+per);
-  tbody.innerHTML=slice.map(function(r){
-    var open=REC.open[r.id];
+  tbody.innerHTML=slice.map(function(r,li){
+    var gi=start+li,kb=(REC.kbIdx===gi)?' kbfocus':'';
     var tds=REC_COLDEF.map(function(c){return '<td>'+c.f(r)+'</td>';}).join('');
-    return '<tr class="rrow'+(open?' open':'')+'" data-rid="'+recEsc(r.id)+'">'+tds+'</tr>'+
-      (open?'<tr class="rdet"><td colspan="'+REC_COLDEF.length+'">'+recDetailHTML(r)+'</td></tr>':'');
+    return '<tr class="rrow'+kb+'" data-rid="'+recEsc(r.id)+'" tabindex="0" role="button" aria-label="Open receipt">'+tds+'</tr>';
   }).join('');
   var info=(start+1)+'\u2013'+Math.min(start+per,total)+' of '+total;
   var pg='<span class="info">'+info+'</span>';
@@ -4099,10 +4247,16 @@ function recGo(tab){
   });
   var tbl=$('recTbl');
   tbl.querySelector('tbody').addEventListener('click',function(e){
+    var star=e.target.closest('.rfav');
+    if(star){e.stopPropagation();recToggleFav(star.getAttribute('data-fav'));recRenderTable();return;}
     var tr=e.target.closest('tr.rrow');if(!tr)return;
-    var id=tr.dataset.rid;
-    REC.open[id]=!REC.open[id];
-    recRenderTable();
+    recOpenReceipt(tr.dataset.rid);
+  });
+  tbl.querySelector('tbody').addEventListener('keydown',function(e){
+    if(e.key!=='Enter'&&e.key!==' ')return;
+    var star=e.target.closest('.rfav');
+    if(star){e.preventDefault();recToggleFav(star.getAttribute('data-fav'));recRenderTable();return;}
+    var tr=e.target.closest('tr.rrow');if(tr){e.preventDefault();recOpenReceipt(tr.dataset.rid);}
   });
   /* header: sort on click, resize on the .rz handle */
   var rz=null;
@@ -4123,6 +4277,627 @@ function recGo(tab){
   });
 })();
 function recResetFilters(){recSetFilterState({});$('rfSaved').value='';recApplyFilters();}
+
+/* =====================================================================
+   Signal Receipt drawer  —  frontend-only. No new API calls: every
+   section is computed from REC.rows (already loaded) or from fields on
+   the row itself. Nothing is invented; fields the pipeline never
+   captured are shown as "not captured" rather than estimated.
+   ===================================================================== */
+var RCPT={order:[],idx:-1,cur:null};
+
+/* ---- favorites (this device) ---- */
+function recFavs(){try{return JSON.parse(localStorage.getItem('edgedesk_rec_favs')||'[]');}catch(e){return[];}}
+function recIsFav(id){return recFavs().indexOf(String(id))>=0;}
+function recToggleFav(id){id=String(id);var f=recFavs();var i=f.indexOf(id);if(i>=0)f.splice(i,1);else f.unshift(id);localStorage.setItem('edgedesk_rec_favs',JSON.stringify(f));return i<0;}
+
+/* ---- small derivations (math on captured data, not new data) ---- */
+function recImplied(r){return (r._dec&&r._dec>1)?1/r._dec:null;}
+function recFairProb(r){var f=recNum(r.sharp_fair);if(f!=null)return {p:f,src:'sharp Pinnacle fair'};var c=recNum(r.consensus_fair);if(c!=null)return {p:c,src:'consensus fair'};return {p:null,src:null};}
+function recEV(r){var fp=recFairProb(r).p;if(fp==null||!(r._dec>1))return null;return fp*r._dec-1;}   /* modeled EV per 1u at the frozen price */
+function recFavSide(r){if(r.is_fav===true)return true;if(r.is_fav===false)return false;return r._dec!=null?(r._dec<2):null;}
+function recRowById(id){for(var i=0;i<REC.rows.length;i++)if(String(REC.rows[i].id)===String(id))return REC.rows[i];return null;}
+function recMkt(m){return mktLabel(m||'')||recEsc(m||'\u2014');}
+function recTeamInit(name){name=String(name||'').trim();if(!name)return '?';var p=name.split(/\s+/);if(p.length===1)return p[0].slice(0,2).toUpperCase();return (p[0][0]+p[p.length-1][0]).toUpperCase();}
+function recHue(str){var h=0;str=String(str||'');for(var i=0;i<str.length;i++)h=(h*31+str.charCodeAt(i))%360;return h;}
+function recMono(name){var hue=recHue(name);return '<span class="mm" style="background:hsl('+hue+',52%,58%)" title="'+recEsc(name)+'">'+recEsc(recTeamInit(name))+'</span>';}
+
+function recStatusPill(r){
+  if(r._unsupported)return '<span class="spill uns" title="Odds API returns set scores; this market is priced in games. Not scored.">\u26a0 n/a</span>';
+  var v=r.result;
+  if(v==='win')return '<span class="spill won">Won</span>';
+  if(v==='loss')return '<span class="spill lost">Lost</span>';
+  if(v==='push')return '<span class="spill push">Push</span>';
+  return '<span class="spill pend">Pending</span>';
+}
+function recStatRank(r){if(r._unsupported)return -1;return r.result==='win'?3:r.result==='push'?2:r.result==='loss'?1:0;}
+
+/* ---- info glyph (hover explains any metric) ---- */
+function recTip(text){return '<span class="rcpt-info" tabindex="0" data-tip="'+recEsc(text)+'">?</span>';}
+
+/* ============================ visualizations ============================ */
+
+/* Price & CLV timeline: our locked entry-implied probability vs where the
+   sharp fair line actually went from flag to close. Fair ending ABOVE our
+   locked line == we beat the close. This is CLV, drawn. */
+function rcptTimeline(r){
+  var entry=recImplied(r);
+  var flagFair=recNum(r.sharp_fair); if(flagFair==null)flagFair=recNum(r.consensus_fair);
+  var closeFair=recNum(r.closing_sharp_fair);
+  if(entry==null||closeFair==null){
+    return '<div class="rcpt-vcap">A movement timeline needs the frozen entry price and a de-vigged sharp fair at close. '+
+      (entry==null?'No entry price was captured for this row. ':'')+
+      (closeFair==null?'No sharp closing fair was captured, so there is nothing to chart against. ':'')+'It is left blank rather than drawn from a guess.</div>';
+  }
+  var W=520,H=150,pl=8,pr=8,pt=30,pb=26;
+  var vals=[entry,closeFair]; if(flagFair!=null)vals.push(flagFair);
+  var mn=Math.min.apply(null,vals),mx=Math.max.apply(null,vals);
+  var pad=Math.max(0.03,(mx-mn)*0.35); mn-=pad; mx+=pad; if(mx>1)mx=1; if(mn<0)mn=0;
+  var rng=(mx-mn)||1;
+  function Y(p){return (H-pb)-((p-mn)/rng)*(H-pt-pb);}
+  var xF=pl+52, xC=W-pr-52;
+  var beat=r.beat_close===true||(r.beat_close==null&&closeFair>entry);
+  var col=beat?'var(--pos)':(closeFair<entry?'var(--neg)':'var(--dim)');
+  var yE=Y(entry), yC=Y(closeFair);
+  var s='<svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg">';
+  /* gap shading between our locked line and the fair endpoint */
+  s+='<rect x="'+xC+'" y="'+Math.min(yE,yC)+'" width="6" height="'+Math.abs(yE-yC)+'" fill="'+col+'" opacity="0.28"/>';
+  /* our locked entry-implied line (dashed, flat) */
+  s+='<line x1="'+xF+'" y1="'+yE+'" x2="'+xC+'" y2="'+yE+'" stroke="var(--accent)" stroke-width="1.5" stroke-dasharray="4 3"/>';
+  s+='<text x="'+xF+'" y="'+(yE<pt+14?yE+14:yE-7)+'" fill="var(--accent)" font-size="9.5" font-family="JetBrains Mono">your price '+(entry*100).toFixed(1)+'%</text>';
+  /* fair line flag -> close */
+  var yFlagFair=flagFair!=null?Y(flagFair):yC;
+  s+='<polyline points="'+xF+','+yFlagFair+' '+xC+','+yC+'" fill="none" stroke="'+col+'" stroke-width="2.5" stroke-linecap="round"/>';
+  /* nodes */
+  function node(x,y,c){return '<circle cx="'+x+'" cy="'+y+'" r="4.5" fill="var(--bg)" stroke="'+c+'" stroke-width="2.5"/>';}
+  if(flagFair!=null)s+=node(xF,yFlagFair,col);
+  s+=node(xC,yC,col);
+  /* arrow on close node */
+  var up=closeFair>=entry;
+  s+='<text x="'+xC+'" y="'+(up?yC-9:yC+16)+'" fill="'+col+'" font-size="12" font-weight="700" text-anchor="middle" font-family="JetBrains Mono">'+(up?'\u25b2':'\u25bc')+'</text>';
+  /* axis labels */
+  s+='<text x="'+xF+'" y="'+(H-8)+'" fill="var(--faint)" font-size="9" text-anchor="middle" font-family="JetBrains Mono">FLAG</text>';
+  s+='<text x="'+xC+'" y="'+(H-8)+'" fill="var(--faint)" font-size="9" text-anchor="middle" font-family="JetBrains Mono">CLOSE</text>';
+  s+='<text x="'+xC+'" y="'+(up?yC-22:yC+28)+'" fill="'+col+'" font-size="9.5" text-anchor="middle" font-family="JetBrains Mono">fair '+(closeFair*100).toFixed(1)+'%</text>';
+  s+='<text x="'+W/2+'" y="14" fill="var(--dim)" font-size="9.5" text-anchor="middle" font-family="Inter">'+(beat?'sharp fair moved toward your side':'sharp fair moved away from your side')+'</text>';
+  s+='</svg>';
+  return s;
+}
+
+/* grouped win-probability comparison: your price vs fair@flag vs fair@close */
+function rcptProbBars(r){
+  var items=[];
+  var e=recImplied(r); if(e!=null)items.push({l:'Your price',v:e,c:'var(--accent)'});
+  var ff=recNum(r.sharp_fair); if(ff==null)ff=recNum(r.consensus_fair);
+  if(ff!=null)items.push({l:'Fair @ flag',v:ff,c:'var(--gold)'});
+  var cf=recNum(r.closing_sharp_fair); if(cf!=null)items.push({l:'Fair @ close',v:cf,c:'var(--mdl)'});
+  if(items.length<2)return '';
+  var W=520,H=118,pl=8,pr=8,pt=8,pb=24,n=items.length;
+  var mx=Math.max.apply(null,items.map(function(i){return i.v;}))*1.15; if(mx>1)mx=1;
+  var bw=(W-pl-pr)/n, iw=Math.min(120,bw*0.62);
+  var s='<svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg">';
+  items.forEach(function(it,i){
+    var cx=pl+bw*i+bw/2, h=(it.v/mx)*(H-pt-pb), x=cx-iw/2, y=(H-pb)-h;
+    s+='<rect x="'+x+'" y="'+y+'" width="'+iw+'" height="'+Math.max(1,h)+'" rx="4" fill="'+it.c+'" opacity="0.8"/>';
+    s+='<text x="'+cx+'" y="'+(y-4)+'" fill="'+it.c+'" font-size="10.5" font-weight="700" text-anchor="middle" font-family="JetBrains Mono">'+(it.v*100).toFixed(1)+'%</text>';
+    s+='<text x="'+cx+'" y="'+(H-8)+'" fill="var(--faint)" font-size="9" text-anchor="middle" font-family="JetBrains Mono">'+it.l+'</text>';
+  });
+  s+='</svg>';
+  return s;
+}
+
+/* edge gauge (semicircle) — magnitude of the frozen flag edge */
+function rcptGauge(r){
+  var e=r._edge; if(e==null)return '';
+  var cap=0.10, v=Math.max(-cap,Math.min(cap,e));
+  var frac=(v+cap)/(2*cap);           /* 0..1 across the arc */
+  var W=200,H=118,cx=W/2,cy=104,rad=82;
+  function pt(f){var a=Math.PI*(1-f);return [cx+rad*Math.cos(a),cy-rad*Math.sin(a)];}
+  var s='<svg viewBox="0 0 '+W+' '+H+'" xmlns="http://www.w3.org/2000/svg">';
+  var a0=pt(0),a1=pt(1);
+  s+='<path d="M'+a0[0].toFixed(1)+','+a0[1].toFixed(1)+' A'+rad+','+rad+' 0 0 1 '+a1[0].toFixed(1)+','+a1[1].toFixed(1)+'" fill="none" stroke="var(--border)" stroke-width="10" stroke-linecap="round"/>';
+  var half=pt(0.5);
+  var col=e>=0?'var(--pos)':'var(--neg)';
+  var arcStart=e>=0?0.5:frac, arcEnd=e>=0?frac:0.5;
+  var pS=pt(arcStart),pE=pt(arcEnd);
+  var large=Math.abs(arcEnd-arcStart)>0.5?1:0;
+  s+='<path d="M'+pS[0].toFixed(1)+','+pS[1].toFixed(1)+' A'+rad+','+rad+' 0 '+large+' 1 '+pE[0].toFixed(1)+','+pE[1].toFixed(1)+'" fill="none" stroke="'+col+'" stroke-width="10" stroke-linecap="round"/>';
+  var np=pt(frac);
+  s+='<line x1="'+cx+'" y1="'+cy+'" x2="'+np[0].toFixed(1)+'" y2="'+np[1].toFixed(1)+'" stroke="'+col+'" stroke-width="2.5"/>';
+  s+='<circle cx="'+cx+'" cy="'+cy+'" r="4" fill="'+col+'"/>';
+  s+='<text x="'+cx+'" y="72" fill="'+col+'" font-size="21" font-weight="700" text-anchor="middle" font-family="JetBrains Mono">'+recPc(e,1)+'</text>';
+  s+='<text x="'+cx+'" y="90" fill="var(--faint)" font-size="9" text-anchor="middle" font-family="Inter">edge at flag</text>';
+  s+='<text x="12" y="112" fill="var(--faint)" font-size="8" font-family="JetBrains Mono">-10%</text>';
+  s+='<text x="'+(W-12)+'" y="112" fill="var(--faint)" font-size="8" text-anchor="end" font-family="JetBrains Mono">+10%</text>';
+  s+='</svg>';
+  return s;
+}
+
+/* profit meter: where this settled between -1u and the max it could return */
+function rcptMeter(r){
+  var p=r._profit; if(p==null)return '';
+  var maxUp=(r._dec>1)?(r._dec-1):1;
+  var lo=-1,hi=Math.max(0.2,maxUp),rng=hi-lo;
+  var W=520,H=58,pl=10,pr=10,y=26,bh=12;
+  function X(v){return pl+((v-lo)/rng)*(W-pl-pr);}
+  var col=p>0?'var(--pos)':p<0?'var(--neg)':'var(--dim)';
+  var s='<svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">';
+  s+='<rect x="'+pl+'" y="'+y+'" width="'+(W-pl-pr)+'" height="'+bh+'" rx="6" fill="var(--surface2)" stroke="var(--border)"/>';
+  var x0=X(0),xp=X(p);
+  s+='<rect x="'+Math.min(x0,xp)+'" y="'+y+'" width="'+Math.abs(xp-x0)+'" height="'+bh+'" rx="6" fill="'+col+'" opacity="0.8"/>';
+  s+='<line x1="'+x0+'" y1="'+(y-4)+'" x2="'+x0+'" y2="'+(y+bh+4)+'" stroke="var(--faint)" stroke-width="1" stroke-dasharray="2 2"/>';
+  s+='<text x="'+X(lo)+'" y="'+(y-6)+'" fill="var(--faint)" font-size="9" font-family="JetBrains Mono">-1.00u</text>';
+  s+='<text x="'+X(hi)+'" y="'+(y-6)+'" fill="var(--faint)" font-size="9" text-anchor="end" font-family="JetBrains Mono">+'+hi.toFixed(2)+'u</text>';
+  s+='<text x="'+xp+'" y="'+(y+bh+16)+'" fill="'+col+'" font-size="11" font-weight="700" text-anchor="middle" font-family="JetBrains Mono">'+recU(p)+'</text>';
+  s+='</svg>';
+  return s;
+}
+
+/* distribution of cohort CLV with this signal marked */
+function rcptHist(vals,mark){
+  vals=vals.filter(function(v){return v!=null&&!isNaN(v);});
+  if(vals.length<4)return '';
+  var mn=Math.min.apply(null,vals),mx=Math.max.apply(null,vals);
+  mn=Math.min(mn,mark!=null?mark:mn);mx=Math.max(mx,mark!=null?mark:mx);
+  if(mn===mx){mn-=0.01;mx+=0.01;}
+  var BINS=11,rng=mx-mn,counts=new Array(BINS).fill(0);
+  vals.forEach(function(v){var b=Math.min(BINS-1,Math.floor((v-mn)/rng*BINS));counts[b]++;});
+  var cmax=Math.max.apply(null,counts)||1;
+  var W=520,H=110,pl=8,pr=8,pt=8,pb=22,bw=(W-pl-pr)/BINS;
+  var zeroBin=Math.min(BINS-1,Math.max(0,Math.floor((0-mn)/rng*BINS)));
+  var s='<svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg">';
+  for(var i=0;i<BINS;i++){
+    var h=(counts[i]/cmax)*(H-pt-pb),x=pl+i*bw+1.5,y=(H-pb)-h;
+    var binLo=mn+rng*i/BINS,binHi=mn+rng*(i+1)/BINS;
+    var pos=(binLo+binHi)/2>=0;
+    s+='<rect x="'+x+'" y="'+y+'" width="'+(bw-3)+'" height="'+Math.max(1,h)+'" rx="2" fill="'+(pos?'var(--pos)':'var(--neg)')+'" opacity="0.5"/>';
+  }
+  /* zero line */
+  var zx=pl+(zeroBin+ (0-(mn+rng*zeroBin/BINS))/(rng/BINS))*bw;
+  s+='<line x1="'+zx.toFixed(1)+'" y1="'+pt+'" x2="'+zx.toFixed(1)+'" y2="'+(H-pb)+'" stroke="var(--border)" stroke-width="1" stroke-dasharray="3 2"/>';
+  if(mark!=null){
+    var mx2=pl+((mark-mn)/rng)*(W-pl-pr);
+    mx2=Math.max(pl,Math.min(W-pr,mx2));
+    s+='<line x1="'+mx2.toFixed(1)+'" y1="'+(pt-2)+'" x2="'+mx2.toFixed(1)+'" y2="'+(H-pb)+'" stroke="var(--accent)" stroke-width="2"/>';
+    s+='<text x="'+mx2.toFixed(1)+'" y="'+(H-8)+'" fill="var(--accent)" font-size="9" text-anchor="middle" font-family="JetBrains Mono">this bet</text>';
+  }
+  s+='<text x="'+pl+'" y="'+(H-8)+'" fill="var(--faint)" font-size="8.5" font-family="JetBrains Mono">'+(mn*100).toFixed(1)+'%</text>';
+  s+='<text x="'+(W-pr)+'" y="'+(H-8)+'" fill="var(--faint)" font-size="8.5" text-anchor="end" font-family="JetBrains Mono">'+(mx*100).toFixed(1)+'%</text>';
+  s+='</svg>';
+  return s;
+}
+
+/* ============================ cohorts & impact ============================ */
+function recSimilar(r){
+  var favSide=recFavSide(r),e=r._edge,d=r._dec;
+  function tier(useBands){
+    return REC.rows.filter(function(x){
+      if(String(x.id)===String(r.id))return false;
+      if(x.sport_title!==r.sport_title)return false;
+      if(x.market!==r.market)return false;
+      if(favSide!=null&&recFavSide(x)!==favSide)return false;
+      if(useBands){
+        if(e!=null&&x._edge!=null&&Math.abs(x._edge-e)>0.015)return false;
+        if(d!=null&&x._dec!=null&&Math.abs(x._dec-d)>0.7)return false;
+      }
+      return true;
+    });
+  }
+  var tight=tier(true);
+  if(tight.length>=6)return {rows:tight,stats:recStats(tight),tier:'same sport, market, side, edge band \u00b1 1.5% and a comparable price'};
+  var loose=tier(false);
+  if(loose.length>=4)return {rows:loose,stats:recStats(loose),tier:'same sport, market and favourite/underdog side'};
+  var m=REC.rows.filter(function(x){return String(x.id)!==String(r.id)&&x.sport_title===r.sport_title&&x.market===r.market;});
+  return {rows:m,stats:recStats(m),tier:'same sport and market'};
+}
+
+function recImpact(r){
+  var all=REC.rows.slice().sort(function(a,b){return a._gts-b._gts;});
+  var idx=-1;for(var i=0;i<all.length;i++){if(String(all[i].id)===String(r.id)){idx=i;break;}}
+  if(idx<0)return null;
+  function seg(pred){
+    var before=[],after=[];
+    for(var j=0;j<=idx;j++){var x=all[j];if(pred(x)){after.push(x);if(j<idx)before.push(x);}}
+    return {before:recStats(before),after:recStats(after)};
+  }
+  return {
+    overall:seg(function(){return true;}),
+    sport:seg(function(x){return x.sport_title===r.sport_title;}),
+    market:seg(function(x){return x.market===r.market;})
+  };
+}
+
+/* ============================ receipt HTML ============================ */
+function recReceiptHTML(r){
+  var entry=recImplied(r), fair=recFairProb(r), closeFair=recNum(r.closing_sharp_fair);
+  var ev=recEV(r);
+  var beat=r.beat_close===true, missed=r.beat_close===false, clvKnown=r._clv!=null;
+
+  /* verdict hero */
+  var heroCls=clvKnown?(r._clv>0?'beat':'miss'):'none';
+  var heroBig=clvKnown?recPc(r._clv,1):'CLV not scored';
+  var heroLab=clvKnown?(r._clv>0?'Beat the closing line':'Missed the closing line'):'No sharp closing price captured';
+  var resChip=recStatusPill(r);
+  var hero='<div class="rcpt-hero '+heroCls+'">'+
+    '<div class="rcpt-hero-lab">Closing line value '+recTip('CLV measures whether your frozen entry price beat the sharp market at close. It is the one number here that is proof, not simulation.')+'</div>'+
+    '<div class="rcpt-hero-big">'+heroBig+'</div>'+
+    '<div class="rcpt-hero-tag">'+heroLab+'</div>'+
+    '<div class="rcpt-hero-chips">'+
+      '<span class="rcpt-hchip">'+resChip+'</span>'+
+      '<span class="rcpt-hchip">P/L <b class="'+recCls(r._profit)+'">'+recU(r._profit)+'</b></span>'+
+      '<span class="rcpt-hchip">Edge <b class="'+recCls(r._edge)+'">'+recPc(r._edge,1)+'</b></span>'+
+      (ev!=null?'<span class="rcpt-hchip">EV <b class="'+recCls(ev)+'">'+recU(ev)+'</b></span>':'')+
+    '</div></div>';
+
+  /* plain-english note */
+  var moveTxt='';
+  if(entry!=null&&closeFair!=null){
+    var pts=(closeFair-entry)*100;
+    moveTxt=' The sharp fair line closed '+Math.abs(pts).toFixed(1)+' points '+(pts>=0?'above':'below')+' your entry, so the market moved '+(pts>=0?'toward':'away from')+' your position.';
+  }
+  var note='<div class="rcpt-note">This '+recEsc(r.sport_title||'')+' '+recEsc(recMkt(r.market).toLowerCase())+' on <b>'+recEsc((r.selection||'the selection'))+(r.point!=null?' '+r.point:'')+'</b> was flagged with a '+
+    (r._edge!=null?'<b>'+recPc(r._edge,1)+'</b> edge':'flag-time edge that predates capture')+' at '+(r._am!=null?'<b>'+recEsc(r._am)+'</b>':'the frozen price')+'.'+moveTxt+' '+
+    (r._unsupported?'This market is priced in games while the scores feed reports sets, so it is shown but never scored.':(r.result==='win'?'The bet won.':r.result==='loss'?'The bet lost.':r.result==='push'?'The bet pushed.':'The bet is not yet settled.'))+'</div>';
+
+  /* selection */
+  var sel='<div class="rcpt-sec"><div class="rcpt-sec-h"><span class="n">01</span>Selection</div>'+
+    '<div class="rcpt-grid2">'+
+      kv('Selection',recEsc((r.selection||'\u2014')+(r.point!=null?' '+r.point:'')))+
+      kv('Market',recEsc(recMkt(r.market)))+
+      kv('Entry odds',(r._am!=null?r._am+' <span class="mut">('+r._dec.toFixed(2)+')</span>':'not captured'),'The price frozen when the edge was flagged.')+
+      kv('Entry basis',r._dec==null?'\u2014':(r._flagPrice?'frozen at flag':'first-seen (pre-v3)'),'Frozen means the exact flag price was stored. First-seen rows predate flag-price capture and use the first price the scanner saw.')+
+      kv('Sportsbook',recEsc(r.best_book||'\u2014'))+
+      kv('Implied prob',entry!=null?(entry*100).toFixed(1)+'%':'\u2014','What the entry price implies, before removing the book\u2019s margin.')+
+      kv('Captured',recDT(r.first_seen_at))+
+      kv('Flagged',recDT(r.flagged_at))+
+    '</div></div>';
+
+  /* price & CLV */
+  var priceSec='<div class="rcpt-sec"><div class="rcpt-sec-h"><span class="n">02</span>Price movement &amp; CLV<span class="sp">'+(beat?'<span class="rpos">beat close</span>':missed?'<span class="rneg">missed close</span>':'unscored')+'</span></div>'+
+    '<div class="rcpt-viz rcpt-tl">'+rcptTimeline(r)+'</div>'+
+    '<div class="rcpt-grid2" style="margin-top:8px">'+
+      kv('Your entry',entry!=null?(entry*100).toFixed(1)+'%':'\u2014')+
+      kv('Fair at close',closeFair!=null?(closeFair*100).toFixed(1)+'%':'not captured')+
+      kv('CLV',clvHtml(r._clv),'Entry price implied prob vs the de-vigged sharp fair at close. Positive means you locked value the market later took back.')+
+      kv('Beat close',r.beat_close===true?'<span class="rpos">yes</span>':r.beat_close===false?'<span class="rneg">no</span>':'\u2014')+
+      kv('Modeled EV',ev!=null?'<span class="'+recCls(ev)+'">'+recU(ev)+'</span>':'\u2014','Fair win prob \u00d7 decimal price \u2212 1. A modeled expectation from the frozen edge, not a realized result.')+
+      kv('Line move',(recNum(r.first_best_dec)&&recNum(r.best_dec))?((+r.first_best_dec).toFixed(2)+' \u2192 '+(+r.best_dec).toFixed(2)):'not captured','First-seen decimal price to last-seen decimal price.')+
+    '</div>'+
+    '<div class="rcpt-vcap">The blue dashed line is the price you locked; the coloured line is the sharp fair moving from flag to close. Fair finishing above your line is closing-line value in your favour.</div></div>';
+
+  /* win-prob compare + gauge/meter */
+  var probBars=rcptProbBars(r);
+  var vizSec='<div class="rcpt-sec"><div class="rcpt-sec-h"><span class="n">03</span>Signal gauges</div>'+
+    (probBars?'<div class="rcpt-viz">'+probBars+'</div><div class="rcpt-vcap">Win-probability comparison: the price you took against the sharp fair at flag and at close.</div>':'')+
+    '<div class="rcpt-grid2" style="margin-top:6px;align-items:center">'+
+      '<div class="rcpt-viz">'+rcptGauge(r)+'</div>'+
+      '<div class="rcpt-viz">'+rcptProfitBlock(r)+'</div>'+
+    '</div></div>';
+
+  /* market snapshot (only what was captured) */
+  var pin=(recNum(r.pin_dec)&&recNum(r.pin_opp_dec))?((+r.pin_dec).toFixed(2)+' / '+(+r.pin_opp_dec).toFixed(2)):null;
+  var mkt='<div class="rcpt-sec"><div class="rcpt-sec-h"><span class="n">04</span>Market snapshot</div>'+
+    '<div class="rcpt-grid2">'+
+      kv('Sharp fair'+ (fair.src?' ':''),fair.p!=null?(fair.p*100).toFixed(1)+'%':'not captured','De-vigged Pinnacle fair probability at capture. The anchor everything is scored against.')+
+      kv('Consensus fair',recNum(r.consensus_fair)!=null?(recNum(r.consensus_fair)*100).toFixed(1)+'%':'not captured','Cross-book median fair, used when no Pinnacle quote was captured.')+
+      kv('Closing sharp fair',closeFair!=null?(closeFair*100).toFixed(1)+'%':'not captured')+
+      kv('Pinnacle two-way',pin||'not captured','Both sides of the Pinnacle price at grade time, where the raw quote was stored.')+
+      kv('Best book',recEsc(r.best_book||'\u2014')+(r._am!=null?' @ '+r._am:''))+
+      kv('Books pricing it',r.n_books!=null?String(r.n_books):'\u2014','How many books were quoting this market.')+
+      kv('Corroboration',(r.first_corrob_n!=null)?(r.first_corrob_n+' books'+(r.first_corrob_ref?' vs '+recEsc(r.first_corrob_ref):'')):'not captured','Independent books agreeing with the sharp number at the moment of pricing.')+
+      kv('Anchor',recEsc(r._anchor),'Whether the fair was anchored to a real Pinnacle quote (sharp) or a consensus median (soft).')+
+    '</div>'+
+    '<div class="rcpt-vcap">Per-book DraftKings / FanDuel / Caesars / BetMGM prices are not frozen on graded rows \u2014 the pipeline stores the best price, the Pinnacle two-way and the fair anchors, so those are what is shown rather than a reconstructed board.</div></div>';
+
+  /* game result */
+  var settle=r._unsupported?'This market is denominated in games while the scores feed returns set counts, so it cannot be graded and is excluded from every statistic.'
+    :r.result==='win'?'Graded a win: the selection covered at the frozen price, returning '+(r._dec>1?(r._dec-1).toFixed(2)+'u on a 1u stake.':'the flat unit.')
+    :r.result==='loss'?'Graded a loss: the selection did not cover, \u22121.00u on a 1u stake.'
+    :r.result==='push'?'Graded a push: stake returned, 0.00u.'
+    :'Not yet settled.';
+  var result='<div class="rcpt-sec"><div class="rcpt-sec-h"><span class="n">05</span>Game result</div>'+
+    '<div class="rcpt-grid2">'+
+      kv('Status',recStatusPill(r))+
+      kv('Sim P/L \u00b7 flat 1u','<span class="'+recCls(r._profit)+'">'+recU(r._profit)+'</span>')+
+      kv('Kickoff',recDT(r.commence_time))+
+      kv('Graded',recDT(r.graded_at))+
+    '</div>'+
+    '<div class="rcpt-vcap">'+settle+' The pipeline records the outcome, not the box score \u2014 final scores are not captured, so none is shown.</div></div>';
+
+  /* performance impact */
+  var imp=recImpact(r);
+  var impact='';
+  if(imp){
+    impact='<div class="rcpt-sec"><div class="rcpt-sec-h"><span class="n">06</span>Performance impact<span class="sp">its mark on the record</span></div>'+
+      impRow('Overall record',imp.overall)+
+      impRow('This sport',imp.sport)+
+      impRow('This market',imp.market)+
+      '<div class="rcpt-vcap">How the running record stood the moment before this bet graded versus just after. Records are decided W\u2013L; ROI is the flat 1u simulation.</div></div>';
+  }
+
+  /* similar signals */
+  var sim=recSimilar(r),ss=sim.stats;
+  var cohortRows=sim.rows.slice().sort(function(a,b){return b._gts-a._gts;}).slice(0,6);
+  var clvVals=sim.rows.map(function(x){return x._clv;});
+  var hist=rcptHist(clvVals,r._clv);
+  var small=ss.n<REC_MIN;
+  var similar='<div class="rcpt-sec"><div class="rcpt-sec-h"><span class="n">07</span>Similar signals'+(small?' <span class="rtag small">n&lt;'+REC_MIN+'</span>':'')+'<span class="sp">'+ss.n+' matched</span></div>';
+  if(!sim.rows.length){
+    similar+='<div class="rcpt-vcap">No other graded signal in the pool matches this one\u2019s sport and market yet. This fills in as more rows grade.</div>';
+  }else{
+    similar+='<div class="rcpt-statline">'+
+      stat(ss.w+'\u2013'+ss.l,'record')+
+      stat(ss.winPct!=null?(ss.winPct*100).toFixed(0)+'%':'\u2014','win rate',recCls(ss.winPct!=null?ss.winPct-0.5:null))+
+      stat(recPc(ss.avgClv,1),'avg clv',recCls(ss.avgClv))+
+      stat(ss.roi!=null?recPc(ss.roi,1):'\u2014','sim roi',recCls(ss.roi))+
+    '</div>';
+    if(hist)similar+='<div class="rcpt-viz">'+hist+'</div><div class="rcpt-vcap">CLV distribution across matching signals, with this one marked. Matched on '+sim.tier+'.</div>';
+    similar+='<div class="rcpt-cohort" style="margin-top:8px">'+cohortRows.map(function(x){
+      return '<div class="rcpt-crow" data-open="'+recEsc(x.id)+'"><span class="cg">'+recD(x.commence_time)+' \u00b7 '+recEsc(x.selection||'')+'</span>'+
+        '<span class="cclv '+recCls(x._clv)+'">'+recPc(x._clv,1)+'</span>'+
+        '<span class="cres">'+(x.result==='win'?'<span class="rpos">W</span>':x.result==='loss'?'<span class="rneg">L</span>':'<span class="rmut">\u00b7</span>')+'</span></div>';
+    }).join('')+'</div>';
+  }
+  similar+='</div>';
+
+  /* trust / provenance */
+  var badges='<div class="rcpt-badges">'+
+    '<span class="rcpt-tb">\u2713 auto-graded</span>'+
+    '<span class="rcpt-tb">\u2713 no manual edits</span>'+
+    '<span class="rcpt-tb'+(r._flagPrice?'':' neutral')+'">'+(r._flagPrice?'\u2713 entry frozen at flag':'\u2020 entry = first-seen')+'</span>'+
+    (fair.p!=null?'<span class="rcpt-tb">\u2713 sharp-anchored</span>':'<span class="rcpt-tb neutral">consensus-anchored</span>')+
+  '</div>';
+  var prov='<div class="rcpt-sec"><div class="rcpt-sec-h"><span class="n">08</span>Provenance</div>'+badges+
+    '<div class="rcpt-grid2">'+
+      kv('Captured',recDT(r.first_seen_at))+
+      kv('Flagged',recDT(r.flagged_at))+
+      kv('Kickoff',recDT(r.commence_time))+
+      kv('Settled',recDT(r.graded_at))+
+      kv('Closing odds source','de-vigged sharp close')+
+      kv('Settlement source','auto-grade job')+
+      kv('Signal id','<span class="mut">'+recEsc(String(r.id).slice(0,12))+'</span>')+
+      kv('Event id','<span class="mut">'+recEsc(String(r.event_id||'\u2014').slice(0,12))+'</span>')+
+    '</div></div>';
+
+  var foot='<div class="rcpt-foot"><b>Not captured, so not shown:</b> stake, book limits and steam history, per-book price arrays, final score, and any research note or confidence score. '+
+    '\u2020 marks an entry taken at first sighting on rows that predate flag-price capture. * the close is the de-vigged sharp fair, not a book quote. Sim P/L is a flat 1-unit simulation, not money.</div>';
+
+  return hero+note+sel+priceSec+vizSec+mkt+result+impact+similar+prov+foot;
+
+  /* ---- local builders ---- */
+  function kv(k,v,tip){return '<div class="rcpt-kv"><span class="rcpt-k">'+k+(tip?recTip(tip):'')+'</span><span class="rcpt-v">'+v+'</span></div>';}
+  function clvHtml(v){return v==null?'<span class="mut">not scored</span>':'<span class="'+recCls(v)+'">'+recPc(v,2)+'</span>';}
+  function stat(n,l,cls){return '<div class="rcpt-stat"><div class="sn '+(cls||'')+'">'+n+'</div><div class="sl">'+l+'</div></div>';}
+  function impRow(label,seg){
+    var b=seg.before,a=seg.after;
+    var recB=b.w+'\u2013'+b.l,recA=a.w+'\u2013'+a.l;
+    var roiB=b.roi!=null?recPc(b.roi,1):'\u2014',roiA=a.roi!=null?recPc(a.roi,1):'\u2014';
+    return '<div class="rcpt-imp"><span class="il">'+label+'</span>'+
+      '<span class="iv"><span class="rmut">'+recB+'</span><span class="iarr">\u2192</span><b>'+recA+'</b>'+
+      '<span class="rmut" style="margin-left:6px">ROI</span><span class="rmut">'+roiB+'</span><span class="iarr">\u2192</span><b class="'+recCls(a.roi)+'">'+roiA+'</b></span></div>';
+  }
+  function rcptProfitBlock(r){return rcptMeter(r);}
+}
+
+/* ============================ drawer control ============================ */
+function recEnsureDrawer(){
+  if($('recDrawer'))return;
+  var back=document.createElement('div');back.id='recBack';back.addEventListener('click',recCloseReceipt);
+  var dw=document.createElement('div');dw.id='recDrawer';dw.setAttribute('role','dialog');dw.setAttribute('aria-label','Signal receipt');
+  dw.innerHTML='<div class="rcpt-top"><div class="rcpt-grab"></div>'+
+    '<button class="rcpt-x" id="rcptX" aria-label="Close receipt">\u00d7</button>'+
+    '<div class="rcpt-nav"><button id="rcptPrev" title="Previous signal (\u2190)">\u2039</button><button id="rcptNext" title="Next signal (\u2192)">\u203a</button></div>'+
+    '<span class="rcpt-pos" id="rcptPos"></span>'+
+    '<div class="rcpt-tools">'+
+      '<button class="rcpt-tool" id="rcptFav" title="Pin favourite">\u2606</button>'+
+      '<button class="rcpt-tool" id="rcptShare" title="Copy shareable link">\u21ac</button>'+
+      '<button class="rcpt-tool" id="rcptMore" title="More">\u22ef</button>'+
+      '<div class="rcpt-menu" id="rcptMenu">'+
+        '<button data-act="copy"><span class="mi">\u2318</span>Copy receipt link</button>'+
+        '<button data-act="summary"><span class="mi">\u201c</span>Copy text summary</button>'+
+        '<div class="sep"></div>'+
+        '<button data-act="csv"><span class="mi">\u2193</span>Export row (CSV)</button>'+
+        '<button data-act="json"><span class="mi">\u2193</span>Export row (JSON)</button>'+
+        '<div class="sep"></div>'+
+        '<button data-act="png"><span class="mi">\u25a3</span>Download image (PNG)</button>'+
+        '<button data-act="print"><span class="mi">\u2399</span>Print receipt</button>'+
+      '</div>'+
+    '</div></div>'+
+    '<div class="rcpt-body" id="rcptBody"></div>';
+  document.body.appendChild(back);document.body.appendChild(dw);
+  var toast=document.createElement('div');toast.className='rcpt-toast';toast.id='rcptToast';document.body.appendChild(toast);
+
+  $('rcptX').addEventListener('click',recCloseReceipt);
+  $('rcptPrev').addEventListener('click',function(){recReceiptNav(-1);});
+  $('rcptNext').addEventListener('click',function(){recReceiptNav(1);});
+  $('rcptFav').addEventListener('click',function(){if(!RCPT.cur)return;var on=recToggleFav(RCPT.cur.id);this.classList.toggle('on',on);this.textContent=on?'\u2605':'\u2606';recRenderTable();});
+  $('rcptShare').addEventListener('click',rcptCopyLink);
+  $('rcptMore').addEventListener('click',function(e){e.stopPropagation();$('rcptMenu').classList.toggle('on');});
+  $('rcptMenu').addEventListener('click',function(e){var b=e.target.closest('button');if(!b)return;this.classList.remove('on');rcptAction(b.dataset.act);});
+  document.addEventListener('click',function(){var m=$('rcptMenu');if(m)m.classList.remove('on');});
+  /* delegate: click a similar-signal row to jump to it */
+  $('rcptBody').addEventListener('click',function(e){var c=e.target.closest('[data-open]');if(c)recOpenReceipt(c.getAttribute('data-open'));});
+  /* mobile swipe between receipts */
+  var sx=0,sy=0,st=0;
+  dw.addEventListener('touchstart',function(e){if(e.touches.length!==1)return;sx=e.touches[0].clientX;sy=e.touches[0].clientY;st=Date.now();},{passive:true});
+  dw.addEventListener('touchend',function(e){
+    if(!e.changedTouches.length)return;var dx=e.changedTouches[0].clientX-sx,dy=e.changedTouches[0].clientY-sy;
+    if(Date.now()-st<600&&Math.abs(dx)>60&&Math.abs(dx)>Math.abs(dy)*1.6){recReceiptNav(dx<0?1:-1);}
+  },{passive:true});
+}
+
+function recOpenReceipt(id){
+  var r=recRowById(id);if(!r)return;
+  recEnsureDrawer();
+  /* order = current filtered + sorted list so prev/next matches the table */
+  RCPT.order=recSortRows().map(function(x){return String(x.id);});
+  RCPT.idx=RCPT.order.indexOf(String(id));
+  RCPT.cur=r;
+  var body=$('rcptBody');
+  /* identity header lives inside body top */
+  body.innerHTML=recIdentityHTML(r)+recReceiptHTML(r);
+  body.scrollTop=0;
+  var favBtn=$('rcptFav');favBtn.classList.toggle('on',recIsFav(id));favBtn.textContent=recIsFav(id)?'\u2605':'\u2606';
+  var n=RCPT.order.length,pos=RCPT.idx+1;
+  $('rcptPos').textContent=pos+' / '+n;
+  $('rcptPrev').disabled=RCPT.idx<=0;$('rcptNext').disabled=RCPT.idx>=n-1;
+  $('recBack').classList.add('on');$('recDrawer').classList.add('on');document.body.classList.add('rcpt-lock');
+  try{history.replaceState(null,'',location.pathname+location.search+'#receipt='+encodeURIComponent(id));}catch(_){}
+}
+function recIdentityHTML(r){
+  return '<div class="rcpt-idh"><span class="rcpt-mono">'+recMono(r.away_team||'')+recMono(r.home_team||'')+'</span>'+
+    '<div class="rcpt-idmeta"><div class="rcpt-game">'+recEsc(r._game||r.selection||'\u2014')+'</div>'+
+    '<div class="rcpt-sub"><span>'+recEsc(r.sport_title||'\u2014')+'</span><span class="dot">\u00b7</span><span>'+recEsc(recMkt(r.market))+'</span><span class="dot">\u00b7</span><span>'+recDT(r.commence_time)+'</span></div></div></div>';
+}
+function recCloseReceipt(){
+  var d=$('recDrawer');if(!d)return;
+  $('recBack').classList.remove('on');d.classList.remove('on');document.body.classList.remove('rcpt-lock');
+  RCPT.cur=null;
+  try{history.replaceState(null,'',location.pathname+location.search);}catch(_){}
+}
+function recReceiptNav(dir){
+  if(!RCPT.order.length)return;
+  var ni=RCPT.idx+dir;if(ni<0||ni>=RCPT.order.length)return;
+  recOpenReceipt(RCPT.order[ni]);
+}
+
+/* ---- toast ---- */
+var _rcptToastT=null;
+function rcptToast(msg){var t=$('rcptToast');if(!t)return;t.textContent=msg;t.classList.add('on');clearTimeout(_rcptToastT);_rcptToastT=setTimeout(function(){t.classList.remove('on');},1900);}
+
+/* ---- actions menu ---- */
+function rcptAction(act){
+  var r=RCPT.cur;if(!r)return;
+  if(act==='copy')return rcptCopyLink();
+  if(act==='summary')return rcptCopySummary(r);
+  if(act==='csv'||act==='json')return rcptExportRow(r,act);
+  if(act==='print')return rcptPrint(r);
+  if(act==='png')return rcptPng();
+}
+function rcptCopyLink(){
+  var r=RCPT.cur;if(!r)return;
+  var url=location.href.split('#')[0]+'#receipt='+encodeURIComponent(r.id);
+  rcptCopy(url,'Link copied');
+}
+function rcptCopySummary(r){
+  var lines=[
+    (r._game||r.selection||'')+'  \u2014  '+(r.sport_title||'')+' '+recMkt(r.market),
+    'Selection: '+(r.selection||'')+(r.point!=null?' '+r.point:'')+' @ '+(r._am||'\u2014')+' ('+(r.best_book||'')+')',
+    'Edge at flag: '+recPc(r._edge,1)+'   CLV: '+(r._clv!=null?recPc(r._clv,2):'not scored')+'   Beat close: '+(r.beat_close===true?'yes':r.beat_close===false?'no':'\u2014'),
+    'Result: '+(r.result||'pending')+'   Sim P/L (1u): '+recU(r._profit),
+    'Flagged '+recDT(r.flagged_at)+'  \u00b7  graded '+recDT(r.graded_at),
+    'Auto-graded from the frozen entry price and de-vigged sharp close. Not financial advice.'
+  ];
+  rcptCopy(lines.join('\n'),'Summary copied');
+}
+function rcptCopy(text,okMsg){
+  function done(){rcptToast(okMsg);}
+  if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(text).then(done,function(){fallback();});}
+  else fallback();
+  function fallback(){try{var ta=document.createElement('textarea');ta.value=text;ta.style.position='fixed';ta.style.opacity='0';document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();done();}catch(e){rcptToast('Copy failed');}}
+}
+function rcptExportRow(r,fmt){
+  var o={};REC_EXPORT_FIELDS.forEach(function(f){var v;if(f[0]==='_flagPriceTxt')v=r._dec==null?null:(r._flagPrice?'frozen_at_flag':'first_seen_pre_v3');else v=r[f[0]];o[f[1]]=(v===undefined?null:v);});
+  var stamp=new Date().toISOString().slice(0,10),base='edgedesk_receipt_'+String(r.id).slice(0,10)+'_'+stamp;
+  if(fmt==='csv')recDownload(base+'.csv','text/csv;charset=utf-8',recCSV([o]));
+  else recDownload(base+'.json','application/json',JSON.stringify(o,null,2));
+  rcptToast(fmt.toUpperCase()+' downloaded');
+}
+function rcptPrint(r){
+  var w=window.open('','_blank');if(!w){rcptToast('Pop-up blocked');return;}
+  w.document.write(rcptPrintHTML(r));w.document.close();
+  setTimeout(function(){try{w.focus();w.print();}catch(e){}},250);
+}
+function rcptPng(){
+  var node=$('recDrawer');if(!node)return;
+  function run(){
+    rcptToast('Rendering image\u2026');
+    window.html2canvas(node,{backgroundColor:'#0d0f13',scale:2,useCORS:true,windowWidth:node.scrollWidth}).then(function(canvas){
+      canvas.toBlob(function(b){if(!b){rcptToast('Image failed');return;}var a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='edgedesk_receipt_'+String(RCPT.cur?RCPT.cur.id:'x').slice(0,10)+'.png';document.body.appendChild(a);a.click();setTimeout(function(){URL.revokeObjectURL(a.href);a.remove();},400);rcptToast('Image saved');});
+    },function(){rcptToast('Image failed \u2014 try Print');});
+  }
+  if(window.html2canvas)return run();
+  rcptToast('Loading renderer\u2026');
+  var s=document.createElement('script');s.src='https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
+  s.onload=run;s.onerror=function(){rcptToast('Renderer unavailable \u2014 use Print to save as PDF/PNG');};
+  document.head.appendChild(s);
+}
+
+/* self-contained light-theme print sheet (does not depend on app CSS vars) */
+function rcptPrintHTML(r){
+  function row(k,v){return '<tr><td class="k">'+k+'</td><td class="v">'+v+'</td></tr>';}
+  var ev=recEV(r),entry=recImplied(r),closeFair=recNum(r.closing_sharp_fair);
+  var css='body{font:13px/1.5 -apple-system,Segoe UI,Roboto,sans-serif;color:#111;margin:32px;max-width:640px}'+
+    'h1{font-size:19px;margin:0 0 2px}.sub{color:#666;font-size:12px;margin-bottom:16px}'+
+    '.verdict{font-size:24px;font-weight:700;margin:6px 0}'+
+    '.pos{color:#1a7f4b}.neg{color:#b23b22}.mut{color:#888}'+
+    'h2{font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:#888;border-bottom:1px solid #ddd;padding-bottom:4px;margin:20px 0 6px}'+
+    'table{width:100%;border-collapse:collapse}td{padding:3px 0;vertical-align:top}td.k{color:#666;width:52%}td.v{text-align:right;font-family:ui-monospace,Menlo,monospace}'+
+    '.foot{color:#999;font-size:10px;margin-top:22px;border-top:1px solid #ddd;padding-top:8px}';
+  var clvCls=r._clv==null?'mut':r._clv>0?'pos':'neg';
+  return '<!doctype html><html><head><meta charset="utf-8"><title>EdgeDesk receipt</title><style>'+css+'</style></head><body>'+
+    '<h1>'+recEsc(r._game||r.selection||'')+'</h1>'+
+    '<div class="sub">'+recEsc(r.sport_title||'')+' \u00b7 '+recEsc(recMkt(r.market))+' \u00b7 '+recDT(r.commence_time)+'</div>'+
+    '<div class="verdict '+clvCls+'">'+(r._clv!=null?recPc(r._clv,1)+' CLV':'CLV not scored')+'</div>'+
+    '<h2>Selection</h2><table>'+
+      row('Selection',recEsc((r.selection||'')+(r.point!=null?' '+r.point:'')))+
+      row('Entry odds',(r._am||'\u2014')+(r._dec?' ('+r._dec.toFixed(2)+')':''))+
+      row('Sportsbook',recEsc(r.best_book||'\u2014'))+
+      row('Entry basis',r._flagPrice?'frozen at flag':'first-seen (pre-v3)')+
+    '</table>'+
+    '<h2>Edge &amp; value</h2><table>'+
+      row('Edge at flag',recPc(r._edge,1))+
+      row('Your implied prob',entry!=null?(entry*100).toFixed(1)+'%':'\u2014')+
+      row('Fair at close',closeFair!=null?(closeFair*100).toFixed(1)+'%':'not captured')+
+      row('CLV',r._clv!=null?recPc(r._clv,2):'not scored')+
+      row('Beat close',r.beat_close===true?'yes':r.beat_close===false?'no':'\u2014')+
+      row('Modeled EV (1u)',ev!=null?recU(ev):'\u2014')+
+    '</table>'+
+    '<h2>Result</h2><table>'+
+      row('Status',r._unsupported?'unsupported':(r.result||'pending'))+
+      row('Sim P/L (flat 1u)',recU(r._profit))+
+      row('Flagged',recDT(r.flagged_at))+
+      row('Graded',recDT(r.graded_at))+
+    '</table>'+
+    '<div class="foot">Auto-graded by EdgeDesk from the frozen entry price and the de-vigged sharp closing fair. Stake, book limits and final scores are not captured. Sim P/L is a flat 1-unit simulation, not money. Not financial advice.</div>'+
+    '</body></html>';
+}
+
+/* deep link: open a receipt named in the URL hash once the pool is loaded */
+function recCheckHash(){
+  var m=(location.hash||'').match(/receipt=([^&]+)/);
+  if(m&&REC.loaded){var id=decodeURIComponent(m[1]);if(recRowById(id))recOpenReceipt(id);}
+}
+
+/* keyboard: table row nav + drawer nav */
+(function recKeys(){
+  document.addEventListener('keydown',function(e){
+    var drawerOpen=$('recDrawer')&&$('recDrawer').classList.contains('on');
+    if(drawerOpen){
+      if(e.key==='Escape'){recCloseReceipt();e.preventDefault();}
+      else if(e.key==='ArrowRight'){recReceiptNav(1);e.preventDefault();}
+      else if(e.key==='ArrowLeft'){recReceiptNav(-1);e.preventDefault();}
+      return;
+    }
+    /* only when the Records > Bets table is the active surface */
+    if($('v-record').classList.contains('hide')||REC.tab!=='bets'||!REC.flt.length)return;
+    var tag=(e.target.tagName||'').toLowerCase();
+    if(tag==='input'||tag==='select'||tag==='textarea')return;
+    var ordered=recSortRows();
+    if(e.key==='ArrowDown'||e.key==='ArrowUp'){
+      e.preventDefault();
+      if(REC.kbIdx==null||REC.kbIdx<0)REC.kbIdx=0;
+      else REC.kbIdx=Math.max(0,Math.min(ordered.length-1,REC.kbIdx+(e.key==='ArrowDown'?1:-1)));
+      REC.page=Math.floor(REC.kbIdx/REC.per);
+      recRenderTable();
+      var row=$('recTbl').querySelector('tr.rrow.kbfocus');if(row&&row.scrollIntoView)row.scrollIntoView({block:'nearest'});
+    }else if(e.key==='Enter'&&REC.kbIdx!=null&&ordered[REC.kbIdx]){
+      e.preventDefault();recOpenReceipt(ordered[REC.kbIdx].id);
+    }
+  });
+})();
+window.addEventListener('hashchange',function(){try{recCheckHash();}catch(_){}}); 
+
 /* ===== end Records dashboard v2 ===== */
 
 
