@@ -2639,6 +2639,7 @@ function evSportLabel(e){if(!e)return '';
   var k=(e.sport_key||'');
   if(k.indexOf('tennis_atp')===0)return 'ATP';
   if(k.indexOf('tennis_wta')===0)return 'WTA';
+  if(k.indexOf('americanfootball_nfl')===0)return 'NFL'; // roll preseason (americanfootball_nfl_preseason) in with regular season
   return e.sport_title||prettySport(e.sport_key);}
 function renderEdges(){
   var minev=+$('fMinev').value||0, sport=$('fSport').value, mode=$('fBooks').value, win=$('fScope').value;
