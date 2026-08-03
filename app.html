@@ -10368,5 +10368,193 @@ async function wxSync(){
 })();
 </script>
 
+<style id="dmodal-css">
+.dc-row{cursor:pointer}
+.disco-card .dc-row:hover{background:rgba(255,255,255,.02)}
+.dmodal{position:fixed;inset:0;z-index:80;background:rgba(6,8,11,.72);backdrop-filter:blur(3px);display:flex;align-items:flex-start;justify-content:center;padding:5vh 14px;overflow-y:auto}
+.dmodal.hide{display:none!important}
+.dmodal-card{background:var(--surface);border:1px solid var(--border);border-radius:16px;width:100%;max-width:580px;position:relative;box-shadow:0 20px 60px rgba(0,0,0,.5)}
+.dmodal-x{position:absolute;top:10px;right:12px;background:transparent;border:0;color:var(--dim);font-size:22px;line-height:1;cursor:pointer;padding:4px 8px}
+.dmodal-x:hover{color:var(--text)}
+.dmodal-bd{padding:16px 16px 18px}
+.dm-load{padding:36px 12px;text-align:center;color:var(--dim);font-size:13px}
+.dm-h{padding-right:26px;margin-bottom:12px}
+.dm-sel{font-size:16px;font-weight:700;line-height:1.25}
+.dm-sub{font-size:11px;color:var(--dim);font-family:'JetBrains Mono',monospace;margin-top:4px}
+.dm-lc{display:inline-block;font-family:'JetBrains Mono',monospace;font-size:8.5px;font-weight:700;letter-spacing:.03em;padding:2px 6px;border-radius:4px;border:1px solid transparent;text-transform:uppercase;margin-bottom:8px}
+.dm-lc.new{color:var(--accent);background:rgba(77,141,255,.12);border-color:rgba(77,141,255,.4)}
+.dm-lc.steam{color:var(--pos);background:rgba(47,180,124,.12);border-color:rgba(47,180,124,.4)}
+.dm-lc.improving{color:#7fd4b0;background:rgba(47,180,124,.1);border-color:rgba(47,180,124,.35)}
+.dm-lc.closing{color:var(--warn);background:rgba(217,154,43,.12);border-color:rgba(217,154,43,.42)}
+.dm-lc.fair{color:var(--dim);background:var(--surface2);border-color:var(--border)}
+.dm-lc.missed{color:var(--neg);background:rgba(226,96,68,.1);border-color:rgba(226,96,68,.35)}
+.dm-cols{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:12px 0}
+.dm-col{background:var(--surface2);border:1px solid var(--border);border-radius:11px;padding:11px}
+.dm-col .k{font-size:9px;text-transform:uppercase;letter-spacing:.05em;color:var(--faint);font-weight:700}
+.dm-col .price{font-family:'JetBrains Mono',monospace;font-size:22px;font-weight:800;margin-top:5px;line-height:1}
+.dm-col .edge{font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:700;margin-top:4px}
+.dm-col .edge.pos{color:var(--pos)}.dm-col .edge.neg{color:var(--neg)}
+.dm-col .book{font-size:10px;color:var(--dim);margin-top:6px;font-family:'JetBrains Mono',monospace}
+.dm-delta{text-align:center;font-size:11px;color:var(--dim);font-family:'JetBrains Mono',monospace;margin:-2px 0 12px}
+.dm-sec{border-top:1px solid var(--border);padding-top:11px;margin-top:12px}
+.dm-sec h5{margin:0 0 8px;font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--dim);font-weight:700}
+.dm-kv{display:flex;justify-content:space-between;font-size:12px;padding:3px 0;font-family:'JetBrains Mono',monospace}
+.dm-kv .v{font-weight:700}
+.dm-anchor{display:inline-block;font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:700;padding:2px 6px;border-radius:4px;margin-top:6px}
+.dm-anchor.sharp{color:var(--pos);background:rgba(47,180,124,.12);border:1px solid rgba(47,180,124,.4)}
+.dm-anchor.soft{color:var(--warn);background:rgba(217,154,43,.1);border:1px solid rgba(217,154,43,.4)}
+.dm-books{display:flex;flex-direction:column;gap:2px}
+.dm-book{display:flex;justify-content:space-between;align-items:center;font-size:11.5px;padding:4px 0;font-family:'JetBrains Mono',monospace;border-top:1px solid rgba(255,255,255,.03)}
+.dm-book:first-child{border-top:0}
+.dm-book .bk{color:var(--text)}.dm-book .bk .sharp{color:var(--pos);font-size:8px;margin-left:5px}
+.dm-book .bp{color:var(--dim)}
+.dm-note{font-size:10.5px;color:var(--faint);font-family:'JetBrains Mono',monospace;line-height:1.5}
+.dm-spark{margin-top:4px}
+.dm-res{display:inline-block;font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;padding:3px 8px;border-radius:5px}
+.dm-res.win{color:var(--pos);background:rgba(47,180,124,.12)}.dm-res.loss{color:var(--neg);background:rgba(226,96,68,.12)}.dm-res.push{color:var(--dim);background:var(--surface2)}
+</style>
+<script>
+/* ============================================================================
+   MARKET-EVOLUTION DETAIL PANEL
+   Click any discovery row -> a drawer showing how this specific line evolved:
+   open vs now, the fair lines + anchor, the movement path, per-book prices, and
+   CLV/result once graded. Reads the row's own key (the replay span's data-key),
+   so it needs no change to the discovery module. Fail-soft: any error shows a
+   message, never breaks the page.
+   ========================================================================== */
+(function(){
+  function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
+  function tms(iso){ try{var t=new Date(iso).getTime();return isFinite(t)?t:0;}catch(_){return 0;} }
+  function fmtE(x){ return (x==null||!isFinite(x))?'—':((x>=0?'+':'')+(x*100).toFixed(1)+'%'); }
+  function am(dec){ try{ if(typeof GE==='undefined'||!GE||!GE.decToAm||!dec||dec<=1) return '—'; var a=GE.decToAm(dec); return a>0?'+'+a:''+a; }catch(_){return'—';} }
+  function probAm(p){ return (p&&p>0&&p<1)?am(1/p):'—'; }        // fair prob -> fair american
+  function agoS(ms){ try{ return (typeof ago==='function')? ago(ms) : ''; }catch(_){return'';} }
+  function lbl(e){ try{ return evSportLabel(e)||e.sport_title||''; }catch(_){ return e.sport_title||''; } }
+  function mkt(m){ try{ return mktLabel(m); }catch(_){ return m; } }
+  function whenL(iso){ try{ return whenLabel(iso); }catch(_){ return ''; } }
+
+  function lifecycle(r){
+    var o=(r.first_edge!=null?r.first_edge:r.edge), c=(r.edge!=null?r.edge:0);
+    var age=(Date.now()-tms(r.first_seen_at))/60000, removed=(o>0)?(o-c)/o:0;
+    var FL=(typeof REAL_FLOOR!=='undefined')?REAL_FLOOR:0.005;
+    if(o>0&&c<=0) return {k:'missed',t:'Missed'};
+    if(c>o+0.005&&c>FL) return {k:'improving',t:'Improving'};
+    if(Math.abs(c)<=FL) return {k:'fair',t:'Fair'};
+    if(o>0&&c>0&&removed>=0.5) return {k:'closing',t:'Closing'};
+    if(o>0&&c<o&&c>FL) return {k:'steam',t:'Steaming'};
+    if(age<=60) return {k:'new',t:'New'};
+    return {k:'fair',t:'Live'};
+  }
+
+  function sparkline(ticks){
+    if(!ticks||ticks.length<2){
+      var n=ticks?ticks.length:0;
+      return '<div class="dm-note">Movement path is collecting — '+n+' snapshot'+(n===1?'':'s')+' so far. It fills in as capture records more passes of this line.</div>';
+    }
+    var ys=ticks.map(function(t){return (t.edge!=null?t.edge:0)*100;});
+    var lo=Math.min.apply(null,ys),hi=Math.max.apply(null,ys),span=(hi-lo)||1;
+    var W=520,H=60,n=ys.length;
+    var pts=ys.map(function(y,i){var x=(i/(n-1))*W;var yy=H-4-((y-lo)/span)*(H-8);return x.toFixed(1)+','+yy.toFixed(1);}).join(' ');
+    var up=ys[n-1]>=ys[0], col=up?'var(--pos)':'var(--neg)';
+    return '<svg class="dm-spark" width="100%" viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" height="'+H+'">'
+      +'<polyline points="'+pts+'" fill="none" stroke="'+col+'" stroke-width="2"/></svg>'
+      +'<div class="dm-note">'+n+' snapshots · opened '+ys[0].toFixed(1)+'% edge \u2192 now '+ys[n-1].toFixed(1)+'%</div>';
+  }
+
+  function render(r,books,ticks){
+    var st=lifecycle(r);
+    var o=(r.first_edge!=null?r.first_edge:r.edge), c=r.edge, removed=(o>0)?(o-c)/o:0;
+    var sel=(r.selection&&r.selection!==r.home_team&&r.selection!==r.away_team)?(r.selection+'  \u00b7  '):'';
+    var head='<div class="dm-h"><span class="dm-lc '+st.k+'">'+st.t+'</span>'
+      +'<div class="dm-sel">'+esc(sel+((r.away_team||'')+' @ '+(r.home_team||'')))+'</div>'
+      +'<div class="dm-sub">'+esc(lbl(r)+' \u00b7 '+mkt(r.market)+(r.point!=null?' '+r.point:'')+' \u00b7 '+whenL(r.commence_time))+'</div></div>';
+
+    var cols='<div class="dm-cols">'
+      +'<div class="dm-col"><div class="k">Opened</div><div class="price">'+am(r.first_best_dec)+'</div>'
+        +'<div class="edge '+(o>=0?'pos':'neg')+'">'+fmtE(o)+' edge</div>'
+        +'<div class="book">'+esc(r.first_best_book||'')+(r.first_seen_at?' \u00b7 '+agoS(tms(r.first_seen_at)):'')+'</div></div>'
+      +'<div class="dm-col"><div class="k">Now</div><div class="price">'+am(r.best_dec)+'</div>'
+        +'<div class="edge '+((c||0)>=0?'pos':'neg')+'">'+fmtE(c)+' edge</div>'
+        +'<div class="book">'+esc(r.best_book||'')+(r.last_seen_at?' \u00b7 '+agoS(tms(r.last_seen_at)):'')+'</div></div>'
+      +'</div>';
+    var delta='<div class="dm-delta">'+(o>0?('market has removed '+Math.round(removed*100)+'% of the opening edge'):'no positive opening edge to track')+'</div>';
+
+    var anchor=r.has_sharp
+      ? '<span class="dm-anchor sharp">SHARP ANCHORED \u00b7 Pinnacle quoted this</span>'
+      : '<span class="dm-anchor soft">SOFT CONSENSUS \u00b7 no sharp quote, consensus median used</span>';
+    var fair='<div class="dm-sec"><h5>Fair line</h5>'
+      +'<div class="dm-kv"><span>Sharp fair</span><span class="v">'+probAm(r.sharp_fair)+'</span></div>'
+      +'<div class="dm-kv"><span>Consensus fair</span><span class="v">'+probAm(r.consensus_fair)+'</span></div>'
+      +'<div class="dm-kv"><span>Books quoting</span><span class="v">'+(r.n_books||0)+'</span></div>'
+      +anchor+'</div>';
+
+    var move='<div class="dm-sec"><h5>Movement</h5>'+sparkline(ticks)+'</div>';
+
+    var bkHtml;
+    if(books&&books.length){
+      bkHtml=books.map(function(b){
+        return '<div class="dm-book"><span class="bk">'+esc(b.book_title||'')+(b.is_sharp?'<span class="sharp">SHARP</span>':'')+'</span>'
+          +'<span class="bp">'+am(b.dec)+'  \u00b7  fair '+probAm(b.fair)+'</span></div>';
+      }).join('');
+    } else {
+      bkHtml='<div class="dm-note">Per-book snapshot isn\u2019t stored for this line yet. book_quotes holds the latest pass only; it appears once capture has priced this selection with the per-book write on.</div>';
+    }
+    var booksSec='<div class="dm-sec"><h5>Books ('+(books?books.length:0)+')</h5><div class="dm-books">'+bkHtml+'</div></div>';
+
+    var clv;
+    if(r.graded_at){
+      var res=(r.result||'').toLowerCase();
+      clv='<div class="dm-sec"><h5>Result &amp; CLV</h5>'
+        +'<div class="dm-kv"><span>Result</span><span class="v"><span class="dm-res '+(res||'push')+'">'+esc((r.result||'\u2014').toUpperCase())+'</span></span></div>'
+        +'<div class="dm-kv"><span>CLV</span><span class="v">'+fmtE(r.clv)+'</span></div>'
+        +'<div class="dm-kv"><span>Beat close</span><span class="v">'+(r.beat_close==null?'\u2014':(r.beat_close?'yes':'no'))+'</span></div>'
+        +'<div class="dm-kv"><span>Closing sharp fair</span><span class="v">'+probAm(r.closing_sharp_fair)+'</span></div></div>';
+    } else {
+      clv='<div class="dm-sec"><h5>Result &amp; CLV</h5><div class="dm-note">Not graded yet \u2014 this scores after the game from the de-vigged sharp closing fair. CLV is only counted when Pinnacle quoted a closing price.</div></div>';
+    }
+
+    return head+cols+delta+fair+move+booksSec+clv;
+  }
+
+  function overlay(){
+    var o=document.getElementById('dmodal');
+    if(o) return o;
+    o=document.createElement('div'); o.id='dmodal'; o.className='dmodal hide';
+    o.innerHTML='<div class="dmodal-card"><button class="dmodal-x" data-close="1" aria-label="Close">\u00d7</button><div class="dmodal-bd" id="dmodalBd"></div></div>';
+    document.body.appendChild(o);
+    o.addEventListener('click',function(e){ if(e.target===o||e.target.getAttribute('data-close')==='1') o.classList.add('hide'); });
+    return o;
+  }
+
+  async function openDetail(key){
+    var o=overlay(), bd=document.getElementById('dmodalBd');
+    o.classList.remove('hide');
+    bd.innerHTML='<div class="dm-load">loading\u2026</div>';
+    var row=null, books=[], ticks=[];
+    try{
+      var r=await sbGet('signals?select=event_id,sport_title,sport_key,market,selection,point,home_team,away_team,commence_time,first_seen_at,last_seen_at,first_best_dec,first_best_book,first_edge,best_dec,best_book,edge,sharp_fair,consensus_fair,has_sharp,n_books,result,clv,beat_close,closing_sharp_fair,graded_at&sig_key=eq.'+key+'&limit=1');
+      row=r&&r[0];
+    }catch(_){}
+    if(!row){ bd.innerHTML='<div class="dm-load">Could not load this line.</div>'; return; }
+    try{ books=(await sbGet('book_quotes?select=book_title,dec,fair,is_sharp&sig_key=eq.'+key+'&order=dec.desc&limit=40'))||[]; }catch(_){ books=[]; }
+    try{ ticks=(await sbGet('signal_ticks?select=edge,best_dec,created_at&sig_key=eq.'+key+'&order=created_at.asc&limit=300'))||[]; }catch(_){ ticks=[]; }
+    bd.innerHTML=render(row,books,ticks);
+  }
+
+  // row click -> detail (but let the inline "replay" link do its own thing)
+  document.addEventListener('click',function(ev){
+    var t=ev.target;
+    if(!t||!t.closest) return;
+    if(t.closest('.dc-replay')) return;                 // replay handled by the discovery module
+    var row=t.closest('.dc-row');
+    if(!row) return;
+    var rep=row.querySelector('.dc-replay[data-key]');
+    if(rep){ ev.preventDefault(); openDetail(rep.getAttribute('data-key')); }
+  });
+  // Esc closes
+  document.addEventListener('keydown',function(e){ if(e.key==='Escape'){ var o=document.getElementById('dmodal'); if(o) o.classList.add('hide'); } });
+})();
+</script>
+
 </body>
 </html>
