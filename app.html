@@ -2477,7 +2477,7 @@ async function loadEdges(){
   try{
     await loadWeights();
     var nowIso=new Date().toISOString();
-    var horizonIso=new Date(Date.now()+14*24*3600*1000).toISOString(); // widened so far-out openers (NFL/CFB) load; per-sport horizon applied at render
+    var horizonIso=new Date(Date.now()+14*24*3600*1000).toISOString(); // widened so far-out openers load; per-sport horizon applied at render
     EDGES=await sbGet('signals?select=event_id,sport_title,sport_key,market,selection,point,best_dec,first_best_dec,best_book,sharp_fair,consensus_fair,edge,n_books,n_books_eff,commence_time,home_team,away_team,last_seen_at,has_sharp,corrob_n,corrob_ref,corrob_levels,is_fav&commence_time=gte.'+nowIso+'&commence_time=lte.'+horizonIso+'&edge=gt.0&order=edge.desc&limit=600');
     $('dbPill').textContent='DB ✓';$('dbPill').className='pill ok';
     // sport filter options — every sport with a LIVE line in the window, not just the positive-edge (EDGES) set.
@@ -2680,7 +2680,7 @@ function evSportLabel(e){if(!e)return '';
   var k=(e.sport_key||'');
   if(k.indexOf('tennis_atp')===0)return 'ATP';
   if(k.indexOf('tennis_wta')===0)return 'WTA';
-  if(k.indexOf('americanfootball_nfl')===0)return 'NFL'; // roll preseason (americanfootball_nfl_preseason) in with regular season
+  if(k.indexOf('americanfootball_nfl')===0)return 'NFL'; // roll preseason in with regular season
   return e.sport_title||prettySport(e.sport_key);}
 function renderEdges(){
   var minev=+$('fMinev').value||0, sport=$('fSport').value, mode=$('fBooks').value, win=$('fScope').value;
@@ -4906,247 +4906,7 @@ function rcptPrintHTML(r){
       row('Graded',recDT(r.graded_at))+
     '</table>'+
     '<div class="foot">Auto-graded by EdgeDesk from the frozen entry price and the de-vigged sharp closing fair. Stake, book limits and final scores are not captured. Sim P/L is a flat 1-unit simulation, not money. Not financial advice.</div>'+
-    '<script>
-/* ============================================================================
-   MARKET DISCOVERY — executive summary above the edge table.
-   Self-contained + fail-soft: any throw hides the panel and leaves the board
-   untouched. Reads first_* (open) vs current straight off `signals`; no schema
-   change required to render. Replay reads signal_ticks and shows an honest
-   "accruing" state until capture (CAPTURE_TICKS on) has recorded a series.
-   Answers "what changed since I last looked?" — not "what are today's picks?"
-   ========================================================================== */
-(function(){
-  var HORIZON_MAX_D = 14;            // widest lookahead we load (covers NFL/CFB openers)
-  var FRESH_MIN     = 180;          // "fresh opener" = first detected within this many minutes
-  var POOL_TTL_MS   = 45000;        // cache the opened-positive pool briefly across filter toggles
-  var LV_KEY        = 'edgedesk_lastvisit';
-  window.__disco = window.__disco || { pool:[], ts:0, loading:null, lvSession:null };
-
-  // sport-aware horizon (days). NFL/CFB open ~2wk out; MLB is daily. Keyed off sport_key.
-  window.sportHorizonDays = function(e){
-    var k=((e&&e.sport_key)||'').toLowerCase();
-    if(k.indexOf('americanfootball_nfl')===0)  return 14;
-    if(k.indexOf('americanfootball_ncaaf')===0) return 14;
-    if(k.indexOf('basketball_nba')===0)  return 7;
-    if(k.indexOf('basketball_wnba')===0) return 7;
-    if(k.indexOf('baseball_mlb')===0)    return 3;
-    if(k.indexOf('icehockey_nhl')===0)   return 7;
-    if(k.indexOf('tennis_')===0)         return 5;
-    if(k.indexOf('golf_')===0)           return 14;
-    return 7;
-  };
-
-  function tms(iso){ try{var t=new Date(iso).getTime(); return isFinite(t)?t:0;}catch(_){return 0;} }
-  function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
-  function fmtE(x){ return (x>=0?'+':'')+(x*100).toFixed(1)+'%'; }
-  function amStr(dec){ try{ if(typeof GE==='undefined'||!GE||!GE.decToAm||!dec) return ''; var a=GE.decToAm(dec); return a>0?'+'+a:''+a; }catch(_){return'';} }
-  function label(e){ try{ return evSportLabel(e)||''; }catch(_){ return e.sport_title||''; } }
-
-  // one row's opening-vs-current facts
-  function facts(e){
-    var o=(e.first_edge!=null?e.first_edge:e.edge), c=(e.edge!=null?e.edge:0);
-    var od=e.first_best_dec||e.best_dec||0, cd=e.best_dec||0;
-    var age=(Date.now()-tms(e.first_seen_at))/60000;
-    var removed = (o>0)?(o-c)/o:0;               // fraction of opening edge the market has taken back
-    return { o:o, c:c, od:od, cd:cd, age:age, removed:removed };
-  }
-  // lifecycle stage: NEW -> STEAMING -> FAIR/CLOSING -> MISSED, or IMPROVING off-branch
-  function lifecycle(f){
-    if(f.o>0 && f.c<=0)                                 return {k:'missed',    t:'Missed'};
-    if(f.c > f.o+0.005 && f.c>REAL_FLOOR)               return {k:'improving', t:'Improving'};
-    if(Math.abs(f.c)<=REAL_FLOOR)                       return {k:'fair',      t:'Fair'};
-    if(f.o>0 && f.c>0 && f.removed>=0.5)                return {k:'closing',   t:'Closing'};
-    if(f.o>0 && f.c<f.o && f.c>REAL_FLOOR)              return {k:'steam',     t:'Steaming'};
-    if(f.age<=60)                                       return {k:'new',       t:'New'};
-    return {k:'fair', t:'Live'};
-  }
-
-  async function loadPool(){
-    var d=window.__disco, now=Date.now();
-    if(d.pool.length && (now-d.ts)<POOL_TTL_MS) return d.pool;
-    if(d.loading) return d.loading;
-    var nowIso=new Date().toISOString();
-    var hzIso=new Date(now+HORIZON_MAX_D*864e5).toISOString();
-    // every line that OPENED positive in the horizon, regardless of current sign.
-    // that's the discovery universe: steam, improving and missed all live here.
-    var q='signals?select=event_id,sport_title,sport_key,market,selection,point,best_dec,first_best_dec,first_best_book,best_book,edge,first_edge,sharp_fair,n_books,commence_time,home_team,away_team,first_seen_at,last_seen_at'
-      +'&first_edge=gt.0&commence_time=gte.'+nowIso+'&commence_time=lte.'+hzIso
-      +'&order=first_seen_at.desc&limit=800';
-    d.loading=(async function(){
-      try{ var rows=await sbGet(q); d.pool=rows||[]; }
-      catch(_){ d.pool=[]; }
-      d.ts=Date.now(); d.loading=null; return d.pool;
-    })();
-    return d.loading;
-  }
-
-  // pool filtered by the current Sport dropdown + each row's sport-aware horizon,
-  // excluding games already underway >1h.
-  function scope(pool){
-    var sport=''; try{ sport=$('fSport').value; }catch(_){}
-    var now=Date.now();
-    return pool.filter(function(e){
-      if(sport && label(e)!==sport) return false;
-      var ct=tms(e.commence_time);
-      if(!ct) return false;
-      if(ct > now + window.sportHorizonDays(e)*864e5) return false;
-      if(ct < now - 3600e3) return false;
-      return true;
-    });
-  }
-
-  function rowHtml(e, moveHtml){
-    var f=facts(e), st=lifecycle(f);
-    var sel=(e.away_team||'')+' @ '+(e.home_team||'');
-    if(e.selection && e.selection!==e.home_team && e.selection!==e.away_team) sel=e.selection+'  ·  '+sel;
-    var meta=label(e)+' · '+mktLabel(e.market)+' · '+(function(){try{return whenLabel(e.commence_time);}catch(_){return'';}})();
-    var key=encodeURIComponent(consKey(e));
-    return '<div class="dc-row">'
-      + '<div class="dc-mid"><div class="dc-sel"><span class="lc '+st.k+'">'+st.t+'</span>'+esc(sel)+'</div>'
-      + '<div class="dc-meta">'+esc(meta)+'</div>'
-      + '<span class="dc-replay" data-key="'+key+'">▸ replay</span>'
-      + '<div class="dc-sparkwrap" data-spark="'+key+'"></div></div>'
-      + '<div class="dc-move">'+moveHtml+'</div></div>';
-  }
-  function edgeMove(e){ var f=facts(e); var dir=f.c>=f.o?'up':'down';
-    return '<div class="dc-move '+dir+'"><span class="a">'+fmtE(f.o)+'</span><br><span class="b">'+fmtE(f.c)+'</span></div>'; }
-  function priceMove(e){ var f=facts(e); var dir=f.cd<f.od?'down':'up';   // price dropping = steam
-    return '<div class="dc-move '+dir+'"><span class="a">'+amStr(f.od)+'</span><br><span class="b">'+amStr(f.cd)+'</span></div>'; }
-  function removedMove(e){ var f=facts(e);
-    return '<div class="dc-move down"><span class="b">'+Math.round(f.removed*100)+'%</span><br><span class="a">removed</span></div>'; }
-
-  function card(title, badge, rows, moveFn, emptyMsg){
-    var body = rows.length
-      ? rows.map(function(e){ return rowHtml(e, moveFn(e)); }).join('')
-      : '<div class="dc-empty">'+esc(emptyMsg)+'</div>';
-    return '<div class="disco-card"><h4>'+badge+' '+esc(title)+'<span class="cnt">'+rows.length+'</span></h4>'+body+'</div>';
-  }
-
-  function heroHtml(pool){
-    var d=window.__disco;
-    var lv=d.lvSession; if(lv==null){ lv=+localStorage.getItem(LV_KEY)||0; d.lvSession=lv; }
-    var newOpen = pool.filter(function(e){ return tms(e.first_seen_at) > lv; });
-    // headline: which sport just opened the most since last visit
-    var bySport={}; newOpen.forEach(function(e){ var L=label(e)||'—'; bySport[L]=(bySport[L]||0)+1; });
-    var topSport='', topN=0; Object.keys(bySport).forEach(function(k){ if(bySport[k]>topN){topN=bySport[k];topSport=k;} });
-    var steam=0,impr=0,missed=0;
-    pool.forEach(function(e){ var st=lifecycle(facts(e)); if(st.k==='steam')steam++; else if(st.k==='improving')impr++; else if(st.k==='missed')missed++; });
-    var hl = (lv===0) ? 'first visit — baseline set'
-           : (topN>0 ? topSport+' lines just opened' : 'quiet since your last visit');
-    function stat(n,l,cls){ return '<div class="dh-stat '+cls+'"><div class="n">'+n+'</div><div class="l">'+l+'</div></div>'; }
-    return '<div class="disco-hero"><h3>Since your last visit <span class="hl">'+esc(hl)+'</span></h3>'
-      + '<div class="dh-stats">'
-      + stat(newOpen.length,'new openers','acc')
-      + stat(steam,'steaming now','pos')
-      + stat(impr,'improving now','pos')
-      + stat(missed,'expired','neg')
-      + '</div></div>';
-  }
-
-  function healthHtml(pool){
-    var midnight=new Date(); midnight.setHours(0,0,0,0); var m=midnight.getTime();
-    var openersToday=0, sumO=0, nO=0, sumC=0, nC=0, opened=0, steam=0, impr=0, closing=0;
-    pool.forEach(function(e){ var f=facts(e), st=lifecycle(f);
-      if(tms(e.first_seen_at)>=m) openersToday++;
-      if(f.o>0){ sumO+=f.o; nO++; opened++; }
-      if(f.c>0){ sumC+=f.c; nC++; }
-      if(st.k==='steam')steam++; if(st.k==='improving')impr++; if(st.k==='closing')closing++;
-    });
-    var avgO=nO?fmtE(sumO/nO):'—', avgC=nC?fmtE(sumC/nC):'—';
-    var confirmed=opened?Math.round((steam/opened)*100):0;
-    function stat(n,l,cls){ return '<div class="dh-stat '+(cls||'')+'"><div class="n">'+n+'</div><div class="l">'+l+'</div></div>'; }
-    return '<div class="disco-card"><h4>Market Health</h4><div class="dh-stats">'
-      + stat(openersToday,'openers today','acc')
-      + stat(avgO,'avg edge @ open','')
-      + stat(avgC,'avg remaining','')
-      + stat(confirmed+'%','confirmed by market','pos')
-      + stat(impr,'improving','pos')
-      + stat(closing,'closing fast','warn')
-      + '</div></div>';
-  }
-
-  window.renderDiscovery = async function(){
-    var host=$('discovery'); if(!host) return;
-    try{
-      var pool=await loadPool();
-      var p=scope(pool);
-      if(!p.length){ host.classList.add('hide'); host.innerHTML=''; return; }
-
-      var byRemoved=function(a,b){ return facts(b).removed-facts(a).removed; };
-      var fresh   = p.filter(function(e){return facts(e).age<=FRESH_MIN;})
-                     .sort(function(a,b){return tms(b.first_seen_at)-tms(a.first_seen_at);}).slice(0,6);
-      var steam   = p.filter(function(e){var f=facts(e);return f.o>=0.02 && f.c<f.o && f.removed>=0.3 && f.c>=-0.01;})
-                     .sort(byRemoved).slice(0,6);
-      var improving = p.filter(function(e){var f=facts(e);return f.c>f.o+0.005 && f.c>REAL_FLOOR;})
-                     .sort(function(a,b){return (facts(b).c-facts(b).o)-(facts(a).c-facts(a).o);}).slice(0,6);
-      var closing = p.filter(function(e){var f=facts(e);return f.c>0 && f.o>0 && f.c<f.o*0.5 && f.c>=REAL_FLOOR;})
-                     .sort(byRemoved).slice(0,6);
-      var movers  = p.slice().sort(function(a,b){var fa=facts(a),fb=facts(b);return Math.abs(fb.cd-fb.od)-Math.abs(fa.cd-fa.od);}).slice(0,6);
-      var missed  = p.filter(function(e){var f=facts(e);return f.o>=0.03 && f.c<=0;})
-                     .sort(function(a,b){return facts(b).o-facts(a).o;}).slice(0,6);
-
-      var html = heroHtml(p)
-        + '<div class="disco-grid">'
-        + card('Fresh Openers','🟢', fresh, edgeMove, 'No lines opened in the last '+Math.round(FRESH_MIN/60)+'h in this scope.')
-        + card('Steam Confirmed','✓', steam, removedMove, 'Nothing has moved toward our fair line yet.')
-        + card('Improving','📈', improving, edgeMove, 'No edge is strengthening right now.')
-        + card('Closing Soon','⏳', closing, removedMove, 'Nothing is decaying fast in this scope.')
-        + card('Market Movers','⚡', movers, priceMove, 'No price movement captured yet.')
-        + card('Missed','—', missed, edgeMove, 'No opened-soft lines have gone to zero. Good — you are early.')
-        + '</div>'
-        + healthHtml(p)
-        + '<div class="disco-note">Opening vs current, off the sharp fair line. Preseason and other soft markets open the most and hold the least — research, not a play. Replay fills in as capture records the tick series.</div>';
-      host.innerHTML=html;
-      host.classList.remove('hide');
-    }catch(_e){ host.classList.add('hide'); }
-  };
-
-  // Replay: inline edge/price sparkline from signal_ticks. Honest empty state
-  // until the series accrues (needs CAPTURE_TICKS on + signal_ticks.created_at).
-  async function replay(key, wrap){
-    if(wrap.getAttribute('data-open')==='1'){ wrap.innerHTML=''; wrap.removeAttribute('data-open'); return; }
-    wrap.setAttribute('data-open','1');
-    wrap.innerHTML='<div class="note">loading…</div>';
-    var rows=null;
-    try{ rows=await sbGet('signal_ticks?select=edge,best_dec,created_at&sig_key=eq.'+key+'&order=created_at.asc&limit=300'); }catch(_){ rows=null; }
-    if(!rows || rows.length<2){
-      var n=rows?rows.length:0;
-      wrap.innerHTML='<div class="note">collecting — '+n+' snapshot'+(n===1?'':'s')+' so far. Replay lights up once capture has recorded a few passes of this line.</div>';
-      return;
-    }
-    var ys=rows.map(function(r){return (r.edge!=null?r.edge:0)*100;});
-    var lo=Math.min.apply(null,ys), hi=Math.max.apply(null,ys), span=(hi-lo)||1;
-    var W=220,H=34,n=ys.length;
-    var pts=ys.map(function(y,i){ var x=(i/(n-1))*W; var yy=H-2-((y-lo)/span)*(H-4); return x.toFixed(1)+','+yy.toFixed(1); }).join(' ');
-    var last=ys[n-1], first=ys[0], up=last>=first;
-    var col=up?'var(--pos)':'var(--neg)';
-    wrap.innerHTML='<svg class="dc-spark" width="'+W+'" height="'+H+'" viewBox="0 0 '+W+' '+H+'">'
-      + '<polyline points="'+pts+'" fill="none" stroke="'+col+'" stroke-width="1.5"/></svg>'
-      + '<div class="note">'+n+' snapshots · opened '+first.toFixed(1)+'% → now '+last.toFixed(1)+'%</div>';
-  }
-
-  // delegated click for replay toggles
-  document.addEventListener('click', function(ev){
-    var t=ev.target;
-    if(t && t.classList && t.classList.contains('dc-replay')){
-      var key=t.getAttribute('data-key');
-      var wrap=t.parentNode.querySelector('[data-spark="'+key+'"]');
-      if(wrap) replay(key, wrap);
-    }
-  });
-
-  // wrap renderEdges so discovery re-renders on every board render / filter change
-  if(typeof window.renderEdges==='function' && !window.__discoWrapped){
-    var _orig=window.renderEdges;
-    window.renderEdges=function(){ var r=_orig.apply(this,arguments); try{ window.renderDiscovery(); }catch(_e){} return r; };
-    window.__discoWrapped=true;
-  }
-  // persist this visit as the new baseline (once), a beat after first paint so the hero reads the delta first
-  setTimeout(function(){ try{ window.renderDiscovery(); localStorage.setItem(LV_KEY, Date.now()); }catch(_e){} }, 1200);
-})();
-</script>
-
-</body></html>';
+    '</body></html>';
 }
 
 /* deep link: open a receipt named in the URL hash once the pool is loaded */
@@ -10368,5 +10128,245 @@ async function wxSync(){
 /* ===== end weather ===== */
 
 </script>
+<script>
+/* ============================================================================
+   MARKET DISCOVERY — executive summary above the edge table.
+   Self-contained + fail-soft: any throw hides the panel and leaves the board
+   untouched. Reads first_* (open) vs current straight off `signals`; no schema
+   change required to render. Replay reads signal_ticks and shows an honest
+   "accruing" state until capture (CAPTURE_TICKS on) has recorded a series.
+   Answers "what changed since I last looked?" — not "what are today's picks?"
+   ========================================================================== */
+(function(){
+  var HORIZON_MAX_D = 14;            // widest lookahead we load (covers NFL/CFB openers)
+  var FRESH_MIN     = 180;          // "fresh opener" = first detected within this many minutes
+  var POOL_TTL_MS   = 45000;        // cache the opened-positive pool briefly across filter toggles
+  var LV_KEY        = 'edgedesk_lastvisit';
+  window.__disco = window.__disco || { pool:[], ts:0, loading:null, lvSession:null };
+
+  // sport-aware horizon (days). NFL/CFB open ~2wk out; MLB is daily. Keyed off sport_key.
+  window.sportHorizonDays = function(e){
+    var k=((e&&e.sport_key)||'').toLowerCase();
+    if(k.indexOf('americanfootball_nfl')===0)  return 14;
+    if(k.indexOf('americanfootball_ncaaf')===0) return 14;
+    if(k.indexOf('basketball_nba')===0)  return 7;
+    if(k.indexOf('basketball_wnba')===0) return 7;
+    if(k.indexOf('baseball_mlb')===0)    return 3;
+    if(k.indexOf('icehockey_nhl')===0)   return 7;
+    if(k.indexOf('tennis_')===0)         return 5;
+    if(k.indexOf('golf_')===0)           return 14;
+    return 7;
+  };
+
+  function tms(iso){ try{var t=new Date(iso).getTime(); return isFinite(t)?t:0;}catch(_){return 0;} }
+  function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
+  function fmtE(x){ return (x>=0?'+':'')+(x*100).toFixed(1)+'%'; }
+  function amStr(dec){ try{ if(typeof GE==='undefined'||!GE||!GE.decToAm||!dec) return ''; var a=GE.decToAm(dec); return a>0?'+'+a:''+a; }catch(_){return'';} }
+  function label(e){ try{ return evSportLabel(e)||''; }catch(_){ return e.sport_title||''; } }
+
+  // one row's opening-vs-current facts
+  function facts(e){
+    var o=(e.first_edge!=null?e.first_edge:e.edge), c=(e.edge!=null?e.edge:0);
+    var od=e.first_best_dec||e.best_dec||0, cd=e.best_dec||0;
+    var age=(Date.now()-tms(e.first_seen_at))/60000;
+    var removed = (o>0)?(o-c)/o:0;               // fraction of opening edge the market has taken back
+    return { o:o, c:c, od:od, cd:cd, age:age, removed:removed };
+  }
+  // lifecycle stage: NEW -> STEAMING -> FAIR/CLOSING -> MISSED, or IMPROVING off-branch
+  function lifecycle(f){
+    if(f.o>0 && f.c<=0)                                 return {k:'missed',    t:'Missed'};
+    if(f.c > f.o+0.005 && f.c>REAL_FLOOR)               return {k:'improving', t:'Improving'};
+    if(Math.abs(f.c)<=REAL_FLOOR)                       return {k:'fair',      t:'Fair'};
+    if(f.o>0 && f.c>0 && f.removed>=0.5)                return {k:'closing',   t:'Closing'};
+    if(f.o>0 && f.c<f.o && f.c>REAL_FLOOR)              return {k:'steam',     t:'Steaming'};
+    if(f.age<=60)                                       return {k:'new',       t:'New'};
+    return {k:'fair', t:'Live'};
+  }
+
+  async function loadPool(){
+    var d=window.__disco, now=Date.now();
+    if(d.pool.length && (now-d.ts)<POOL_TTL_MS) return d.pool;
+    if(d.loading) return d.loading;
+    var nowIso=new Date().toISOString();
+    var hzIso=new Date(now+HORIZON_MAX_D*864e5).toISOString();
+    // every line that OPENED positive in the horizon, regardless of current sign.
+    // that's the discovery universe: steam, improving and missed all live here.
+    var q='signals?select=event_id,sport_title,sport_key,market,selection,point,best_dec,first_best_dec,first_best_book,best_book,edge,first_edge,sharp_fair,n_books,commence_time,home_team,away_team,first_seen_at,last_seen_at'
+      +'&first_edge=gt.0&commence_time=gte.'+nowIso+'&commence_time=lte.'+hzIso
+      +'&order=first_seen_at.desc&limit=800';
+    d.loading=(async function(){
+      try{ var rows=await sbGet(q); d.pool=rows||[]; }
+      catch(_){ d.pool=[]; }
+      d.ts=Date.now(); d.loading=null; return d.pool;
+    })();
+    return d.loading;
+  }
+
+  // pool filtered by the current Sport dropdown + each row's sport-aware horizon,
+  // excluding games already underway >1h.
+  function scope(pool){
+    var sport=''; try{ sport=$('fSport').value; }catch(_){}
+    var now=Date.now();
+    return pool.filter(function(e){
+      if(sport && label(e)!==sport) return false;
+      var ct=tms(e.commence_time);
+      if(!ct) return false;
+      if(ct > now + window.sportHorizonDays(e)*864e5) return false;
+      if(ct < now - 3600e3) return false;
+      return true;
+    });
+  }
+
+  function rowHtml(e, moveHtml){
+    var f=facts(e), st=lifecycle(f);
+    var sel=(e.away_team||'')+' @ '+(e.home_team||'');
+    if(e.selection && e.selection!==e.home_team && e.selection!==e.away_team) sel=e.selection+'  ·  '+sel;
+    var meta=label(e)+' · '+mktLabel(e.market)+' · '+(function(){try{return whenLabel(e.commence_time);}catch(_){return'';}})();
+    var key=encodeURIComponent(consKey(e));
+    return '<div class="dc-row">'
+      + '<div class="dc-mid"><div class="dc-sel"><span class="lc '+st.k+'">'+st.t+'</span>'+esc(sel)+'</div>'
+      + '<div class="dc-meta">'+esc(meta)+'</div>'
+      + '<span class="dc-replay" data-key="'+key+'">▸ replay</span>'
+      + '<div class="dc-sparkwrap" data-spark="'+key+'"></div></div>'
+      + '<div class="dc-move">'+moveHtml+'</div></div>';
+  }
+  function edgeMove(e){ var f=facts(e); var dir=f.c>=f.o?'up':'down';
+    return '<div class="dc-move '+dir+'"><span class="a">'+fmtE(f.o)+'</span><br><span class="b">'+fmtE(f.c)+'</span></div>'; }
+  function priceMove(e){ var f=facts(e); var dir=f.cd<f.od?'down':'up';   // price dropping = steam
+    return '<div class="dc-move '+dir+'"><span class="a">'+amStr(f.od)+'</span><br><span class="b">'+amStr(f.cd)+'</span></div>'; }
+  function removedMove(e){ var f=facts(e);
+    return '<div class="dc-move down"><span class="b">'+Math.round(f.removed*100)+'%</span><br><span class="a">removed</span></div>'; }
+
+  function card(title, badge, rows, moveFn, emptyMsg){
+    var body = rows.length
+      ? rows.map(function(e){ return rowHtml(e, moveFn(e)); }).join('')
+      : '<div class="dc-empty">'+esc(emptyMsg)+'</div>';
+    return '<div class="disco-card"><h4>'+badge+' '+esc(title)+'<span class="cnt">'+rows.length+'</span></h4>'+body+'</div>';
+  }
+
+  function heroHtml(pool){
+    var d=window.__disco;
+    var lv=d.lvSession; if(lv==null){ lv=+localStorage.getItem(LV_KEY)||0; d.lvSession=lv; }
+    var newOpen = pool.filter(function(e){ return tms(e.first_seen_at) > lv; });
+    // headline: which sport just opened the most since last visit
+    var bySport={}; newOpen.forEach(function(e){ var L=label(e)||'—'; bySport[L]=(bySport[L]||0)+1; });
+    var topSport='', topN=0; Object.keys(bySport).forEach(function(k){ if(bySport[k]>topN){topN=bySport[k];topSport=k;} });
+    var steam=0,impr=0,missed=0;
+    pool.forEach(function(e){ var st=lifecycle(facts(e)); if(st.k==='steam')steam++; else if(st.k==='improving')impr++; else if(st.k==='missed')missed++; });
+    var hl = (lv===0) ? 'first visit — baseline set'
+           : (topN>0 ? topSport+' lines just opened' : 'quiet since your last visit');
+    function stat(n,l,cls){ return '<div class="dh-stat '+cls+'"><div class="n">'+n+'</div><div class="l">'+l+'</div></div>'; }
+    return '<div class="disco-hero"><h3>Since your last visit <span class="hl">'+esc(hl)+'</span></h3>'
+      + '<div class="dh-stats">'
+      + stat(newOpen.length,'new openers','acc')
+      + stat(steam,'steaming now','pos')
+      + stat(impr,'improving now','pos')
+      + stat(missed,'expired','neg')
+      + '</div></div>';
+  }
+
+  function healthHtml(pool){
+    var midnight=new Date(); midnight.setHours(0,0,0,0); var m=midnight.getTime();
+    var openersToday=0, sumO=0, nO=0, sumC=0, nC=0, opened=0, steam=0, impr=0, closing=0;
+    pool.forEach(function(e){ var f=facts(e), st=lifecycle(f);
+      if(tms(e.first_seen_at)>=m) openersToday++;
+      if(f.o>0){ sumO+=f.o; nO++; opened++; }
+      if(f.c>0){ sumC+=f.c; nC++; }
+      if(st.k==='steam')steam++; if(st.k==='improving')impr++; if(st.k==='closing')closing++;
+    });
+    var avgO=nO?fmtE(sumO/nO):'—', avgC=nC?fmtE(sumC/nC):'—';
+    var confirmed=opened?Math.round((steam/opened)*100):0;
+    function stat(n,l,cls){ return '<div class="dh-stat '+(cls||'')+'"><div class="n">'+n+'</div><div class="l">'+l+'</div></div>'; }
+    return '<div class="disco-card"><h4>Market Health</h4><div class="dh-stats">'
+      + stat(openersToday,'openers today','acc')
+      + stat(avgO,'avg edge @ open','')
+      + stat(avgC,'avg remaining','')
+      + stat(confirmed+'%','confirmed by market','pos')
+      + stat(impr,'improving','pos')
+      + stat(closing,'closing fast','warn')
+      + '</div></div>';
+  }
+
+  window.renderDiscovery = async function(){
+    var host=$('discovery'); if(!host) return;
+    try{
+      var pool=await loadPool();
+      var p=scope(pool);
+      if(!p.length){ host.classList.add('hide'); host.innerHTML=''; return; }
+
+      var byRemoved=function(a,b){ return facts(b).removed-facts(a).removed; };
+      var fresh   = p.filter(function(e){return facts(e).age<=FRESH_MIN;})
+                     .sort(function(a,b){return tms(b.first_seen_at)-tms(a.first_seen_at);}).slice(0,6);
+      var steam   = p.filter(function(e){var f=facts(e);return f.o>=0.02 && f.c<f.o && f.removed>=0.3 && f.c>=-0.01;})
+                     .sort(byRemoved).slice(0,6);
+      var improving = p.filter(function(e){var f=facts(e);return f.c>f.o+0.005 && f.c>REAL_FLOOR;})
+                     .sort(function(a,b){return (facts(b).c-facts(b).o)-(facts(a).c-facts(a).o);}).slice(0,6);
+      var closing = p.filter(function(e){var f=facts(e);return f.c>0 && f.o>0 && f.c<f.o*0.5 && f.c>=REAL_FLOOR;})
+                     .sort(byRemoved).slice(0,6);
+      var movers  = p.slice().sort(function(a,b){var fa=facts(a),fb=facts(b);return Math.abs(fb.cd-fb.od)-Math.abs(fa.cd-fa.od);}).slice(0,6);
+      var missed  = p.filter(function(e){var f=facts(e);return f.o>=0.03 && f.c<=0;})
+                     .sort(function(a,b){return facts(b).o-facts(a).o;}).slice(0,6);
+
+      var html = heroHtml(p)
+        + '<div class="disco-grid">'
+        + card('Fresh Openers','🟢', fresh, edgeMove, 'No lines opened in the last '+Math.round(FRESH_MIN/60)+'h in this scope.')
+        + card('Steam Confirmed','✓', steam, removedMove, 'Nothing has moved toward our fair line yet.')
+        + card('Improving','📈', improving, edgeMove, 'No edge is strengthening right now.')
+        + card('Closing Soon','⏳', closing, removedMove, 'Nothing is decaying fast in this scope.')
+        + card('Market Movers','⚡', movers, priceMove, 'No price movement captured yet.')
+        + card('Missed','—', missed, edgeMove, 'No opened-soft lines have gone to zero. Good — you are early.')
+        + '</div>'
+        + healthHtml(p)
+        + '<div class="disco-note">Opening vs current, off the sharp fair line. Preseason and other soft markets open the most and hold the least — research, not a play. Replay fills in as capture records the tick series.</div>';
+      host.innerHTML=html;
+      host.classList.remove('hide');
+    }catch(_e){ host.classList.add('hide'); }
+  };
+
+  // Replay: inline edge/price sparkline from signal_ticks. Honest empty state
+  // until the series accrues (needs CAPTURE_TICKS on + signal_ticks.created_at).
+  async function replay(key, wrap){
+    if(wrap.getAttribute('data-open')==='1'){ wrap.innerHTML=''; wrap.removeAttribute('data-open'); return; }
+    wrap.setAttribute('data-open','1');
+    wrap.innerHTML='<div class="note">loading…</div>';
+    var rows=null;
+    try{ rows=await sbGet('signal_ticks?select=edge,best_dec,created_at&sig_key=eq.'+key+'&order=created_at.asc&limit=300'); }catch(_){ rows=null; }
+    if(!rows || rows.length<2){
+      var n=rows?rows.length:0;
+      wrap.innerHTML='<div class="note">collecting — '+n+' snapshot'+(n===1?'':'s')+' so far. Replay lights up once capture has recorded a few passes of this line.</div>';
+      return;
+    }
+    var ys=rows.map(function(r){return (r.edge!=null?r.edge:0)*100;});
+    var lo=Math.min.apply(null,ys), hi=Math.max.apply(null,ys), span=(hi-lo)||1;
+    var W=220,H=34,n=ys.length;
+    var pts=ys.map(function(y,i){ var x=(i/(n-1))*W; var yy=H-2-((y-lo)/span)*(H-4); return x.toFixed(1)+','+yy.toFixed(1); }).join(' ');
+    var last=ys[n-1], first=ys[0], up=last>=first;
+    var col=up?'var(--pos)':'var(--neg)';
+    wrap.innerHTML='<svg class="dc-spark" width="'+W+'" height="'+H+'" viewBox="0 0 '+W+' '+H+'">'
+      + '<polyline points="'+pts+'" fill="none" stroke="'+col+'" stroke-width="1.5"/></svg>'
+      + '<div class="note">'+n+' snapshots · opened '+first.toFixed(1)+'% → now '+last.toFixed(1)+'%</div>';
+  }
+
+  // delegated click for replay toggles
+  document.addEventListener('click', function(ev){
+    var t=ev.target;
+    if(t && t.classList && t.classList.contains('dc-replay')){
+      var key=t.getAttribute('data-key');
+      var wrap=t.parentNode.querySelector('[data-spark="'+key+'"]');
+      if(wrap) replay(key, wrap);
+    }
+  });
+
+  // wrap renderEdges so discovery re-renders on every board render / filter change
+  if(typeof window.renderEdges==='function' && !window.__discoWrapped){
+    var _orig=window.renderEdges;
+    window.renderEdges=function(){ var r=_orig.apply(this,arguments); try{ window.renderDiscovery(); }catch(_e){} return r; };
+    window.__discoWrapped=true;
+  }
+  // persist this visit as the new baseline (once), a beat after first paint so the hero reads the delta first
+  setTimeout(function(){ try{ window.renderDiscovery(); localStorage.setItem(LV_KEY, Date.now()); }catch(_e){} }, 1200);
+})();
+</script>
+
 </body>
 </html>
