@@ -1475,7 +1475,7 @@ button:focus-visible,select:focus-visible,input:focus-visible,a:focus-visible{ou
 
   <!-- STATS -->
   <section id="v-stats" class="view hide">
-    <div class="stseg research-sub" style="margin-bottom:12px"><button data-sub="cfb" onclick="researchGo('cfb')">CFB</button><button data-sub="ufc" onclick="researchGo('ufc')">UFC</button><button data-sub="wta" onclick="researchGo('wta')">WTA</button><button data-sub="stats" onclick="researchGo('stats')">Stats</button><button data-sub="props" onclick="researchGo('props')">Props</button></div>
+    <div class="stseg research-sub" style="margin-bottom:12px"><button data-sub="cfb" onclick="researchGo('cfb')">CFB</button><button data-sub="ufc" onclick="researchGo('ufc')">UFC</button><button data-sub="wta" onclick="researchGo('wta')">WTA</button><button data-sub="stats" onclick="researchGo('stats')">Stats</button><button data-sub="props" onclick="researchGo('props')">Props</button><button data-sub="lab" onclick="researchGo('lab')">Lab</button></div>
     <div class="row-between"><h2 style="margin:0">Stats</h2><span class="spacer"></span><span class="freshness" id="stFresh">—</span><button class="refreshbtn" title="Refresh" onclick="loadStats(true)">&#8635;</button></div>
     <p class="lede">The players and teams behind the boards — browse a roster, search a player, or scan the leaders. Fundamentals to sanity-check direction; the edge itself still lives in CLV.</p>
     <div class="stchips" id="stLeagues"></div>
@@ -1485,7 +1485,7 @@ button:focus-visible,select:focus-visible,input:focus-visible,a:focus-visible{ou
   </section>
 
   <section id="v-props" class="view hide">
-    <div class="stseg research-sub" style="margin-bottom:12px"><button data-sub="cfb" onclick="researchGo('cfb')">CFB</button><button data-sub="ufc" onclick="researchGo('ufc')">UFC</button><button data-sub="wta" onclick="researchGo('wta')">WTA</button><button data-sub="stats" onclick="researchGo('stats')">Stats</button><button data-sub="props" onclick="researchGo('props')">Props</button></div>
+    <div class="stseg research-sub" style="margin-bottom:12px"><button data-sub="cfb" onclick="researchGo('cfb')">CFB</button><button data-sub="ufc" onclick="researchGo('ufc')">UFC</button><button data-sub="wta" onclick="researchGo('wta')">WTA</button><button data-sub="stats" onclick="researchGo('stats')">Stats</button><button data-sub="props" onclick="researchGo('props')">Props</button><button data-sub="lab" onclick="researchGo('lab')">Lab</button></div>
     <div class="row-between"><h2 style="margin:0">Props</h2><span class="spacer"></span><span class="freshness" id="prFresh">—</span><button class="refreshbtn" title="Refresh" onclick="loadProps(true)">&#8635;</button></div>
     <p class="lede">Model projections for player props &mdash; per-game rate with modeled variance. <b style="color:var(--warn)">Projections, not lines, not edges.</b> An edge only exists once these beat a real book's closing number; until then it's research to sanity-check, never a call.</p>
     <div class="stchips" id="prSports"></div>
@@ -1495,7 +1495,7 @@ button:focus-visible,select:focus-visible,input:focus-visible,a:focus-visible{ou
 
   <!-- UFC (research dataset) -->
   <section id="v-ufc" class="view hide">
-    <div class="stseg research-sub" style="margin-bottom:12px"><button data-sub="cfb" onclick="researchGo('cfb')">CFB</button><button data-sub="ufc" onclick="researchGo('ufc')">UFC</button><button data-sub="wta" onclick="researchGo('wta')">WTA</button><button data-sub="stats" onclick="researchGo('stats')">Stats</button><button data-sub="props" onclick="researchGo('props')">Props</button></div>
+    <div class="stseg research-sub" style="margin-bottom:12px"><button data-sub="cfb" onclick="researchGo('cfb')">CFB</button><button data-sub="ufc" onclick="researchGo('ufc')">UFC</button><button data-sub="wta" onclick="researchGo('wta')">WTA</button><button data-sub="stats" onclick="researchGo('stats')">Stats</button><button data-sub="props" onclick="researchGo('props')">Props</button><button data-sub="lab" onclick="researchGo('lab')">Lab</button></div>
     <div class="row-between"><h2 style="margin:0">UFC research</h2><span class="spacer"></span><span class="freshness" id="ufcFresh">—</span><button class="refreshbtn" title="Refresh" onclick="loadUFC(true)">&#8635;</button></div>
     <p class="lede">Historical fighter and fight database &mdash; <b style="color:var(--warn)">descriptive research only, never a prediction</b>. Browse a fighter for their record, dimensions, and full fight history with the de-vigged <b>consensus</b> closing probability of each bout. This is a backtest substrate, not a CLV record.</p>
     <div class="flbanner demo" id="ufcBanner">Loading UFC dataset…</div>
@@ -1528,7 +1528,7 @@ button:focus-visible,select:focus-visible,input:focus-visible,a:focus-visible{ou
 
   <!-- CFB (College Football research) -->
   <section id="v-cfb" class="view hide">
-    <div class="stseg research-sub" style="margin-bottom:12px"><button data-sub="cfb" onclick="researchGo('cfb')">CFB</button><button data-sub="ufc" onclick="researchGo('ufc')">UFC</button><button data-sub="wta" onclick="researchGo('wta')">WTA</button><button data-sub="stats" onclick="researchGo('stats')">Stats</button><button data-sub="props" onclick="researchGo('props')">Props</button></div>
+    <div class="stseg research-sub" style="margin-bottom:12px"><button data-sub="cfb" onclick="researchGo('cfb')">CFB</button><button data-sub="ufc" onclick="researchGo('ufc')">UFC</button><button data-sub="wta" onclick="researchGo('wta')">WTA</button><button data-sub="stats" onclick="researchGo('stats')">Stats</button><button data-sub="props" onclick="researchGo('props')">Props</button><button data-sub="lab" onclick="researchGo('lab')">Lab</button></div>
     <div class="row-between"><h2 style="margin:0">CFB</h2><span class="spacer"></span><span class="freshness" id="cfbFresh">&mdash;</span><button class="refreshbtn" title="Refresh" onclick="loadCFB(true)">&#8635;</button></div>
     <p class="lede">College football matchups first &mdash; tap a game for the side-by-side, tap a team for the deep dive. <b style="color:var(--warn)">Research context, not edges.</b> SP+, records and season stats sanity-check direction; the edge itself still lives in CLV. Lines shown are consensus book numbers, not Pinnacle.</p>
     <div class="flbanner demo" id="cfbBanner">Loading CFB dataset&hellip;</div>
@@ -1541,7 +1541,7 @@ button:focus-visible,select:focus-visible,input:focus-visible,a:focus-visible{ou
 
   <!-- WTA (research engine) -->
   <section id="v-wta" class="view hide">
-    <div class="stseg research-sub" style="margin-bottom:12px"><button data-sub="cfb" onclick="researchGo('cfb')">CFB</button><button data-sub="ufc" onclick="researchGo('ufc')">UFC</button><button data-sub="wta" onclick="researchGo('wta')">WTA</button><button data-sub="stats" onclick="researchGo('stats')">Stats</button><button data-sub="props" onclick="researchGo('props')">Props</button></div>
+    <div class="stseg research-sub" style="margin-bottom:12px"><button data-sub="cfb" onclick="researchGo('cfb')">CFB</button><button data-sub="ufc" onclick="researchGo('ufc')">UFC</button><button data-sub="wta" onclick="researchGo('wta')">WTA</button><button data-sub="stats" onclick="researchGo('stats')">Stats</button><button data-sub="props" onclick="researchGo('props')">Props</button><button data-sub="lab" onclick="researchGo('lab')">Lab</button></div>
     <div class="row-between"><h2 style="margin:0">WTA</h2><span class="spacer"></span><span class="freshness" id="wtaFresh">—</span><button class="refreshbtn" title="Refresh" onclick="loadWTA(true)">&#8635;</button></div>
     <p class="lede">Automated match research, not picks. EdgeDesk asks <b>which matches deserve attention</b>, grades the evidence, and hands the decision back to you. <b style="color:var(--warn)">Research context, not edges.</b> Records are historical; the edge still lives in CLV against Pinnacle.</p>
     <div class="flbanner demo" id="wtaBanner">Loading WTA research…</div>
@@ -1551,6 +1551,11 @@ button:focus-visible,select:focus-visible,input:focus-visible,a:focus-visible{ou
 
   <!-- SETTINGS -->
   <!-- PULSE (social) -->
+    <section id="v-lab" class="view hide">
+    <div class="stseg research-sub" style="margin-bottom:12px"><button data-sub="cfb" onclick="researchGo('cfb')">CFB</button><button data-sub="ufc" onclick="researchGo('ufc')">UFC</button><button data-sub="wta" onclick="researchGo('wta')">WTA</button><button data-sub="stats" onclick="researchGo('stats')">Stats</button><button data-sub="props" onclick="researchGo('props')">Props</button><button data-sub="lab" onclick="researchGo('lab')">Lab</button></div>
+    <div class="lab-lede">TILT DATA LABS &middot; research library. An idea moves exploratory &rarr; validating &rarr; promoted &rarr; active only by clearing closing-line value, never by assertion. Nothing here is a bet.</div>
+    <div id="labHost"></div>
+  </section>
   <section id="v-social" class="view hide">
     <div class="row-between"><h2 style="margin:0">Pulse</h2><span class="spacer"></span><span class="freshness" id="plFresh">—</span><button class="refreshbtn" title="Refresh" onclick="loadSocial(true)">&#8635;</button></div>
     <p class="lede">Every event the scanner is currently pricing, and a room for each one. Talk structure, post your read, argue with someone. <b style="color:var(--warn);font-weight:600">Posts are opinions from other users, not EdgeDesk research</b> — nothing here is graded, and none of it is an edge until CLV says it is.</p>
@@ -2407,11 +2412,11 @@ function $(id){return document.getElementById(id);}
 
 /* ===== nav ===== */
 function show(v){if(v==='research'){researchGo(RESEARCH_SUB);return;}if(v==='boards')v='faults';var s=document.querySelectorAll('.view');for(var i=0;i<s.length;i++)s[i].classList.toggle('hide',s[i].id!=='v-'+v);var b=document.querySelectorAll('.bottomnav button');for(var j=0;j<b.length;j++)b[j].classList.toggle('on',b[j].dataset.v===v);window.scrollTo(0,0);try{if(v!=='settings'){var _pp=prefs();_pp.lastTab=v;localStorage.setItem('edgedesk_prefs',JSON.stringify(_pp));}}catch(_){}
-  if(v==='record')loadRecord();if(v==='edges')loadEdges();if(v==='faults')loadFaults();if(v==='boards')loadBoards();if(v==='news')loadNews();if(v==='ledger')loadMarket();if(v==='stats')loadStats();if(v==='props')loadProps();if(v==='ufc')loadUFC();if(v==='cfb')loadCFB();if(v==='wta')loadWTA();if(v==='settings')loadSettings();if(v==='discipline')loadDiscipline();/*ADDED*/
+  if(v==='record')loadRecord();if(v==='edges')loadEdges();if(v==='faults')loadFaults();if(v==='boards')loadBoards();if(v==='news')loadNews();if(v==='ledger')loadMarket();if(v==='stats')loadStats();if(v==='props')loadProps();if(v==='ufc')loadUFC();if(v==='cfb')loadCFB();if(v==='lab')loadLab();if(v==='wta')loadWTA();if(v==='settings')loadSettings();if(v==='discipline')loadDiscipline();/*ADDED*/
   if(v==='social')loadSocial();else plStop();}
 var RESEARCH_SUB='cfb';
 window.researchGo=function(sub){
-  if(['cfb','ufc','wta','stats','props'].indexOf(sub)<0)sub='cfb';
+  if(['cfb','ufc','wta','stats','props','lab'].indexOf(sub)<0)sub='cfb';
   RESEARCH_SUB=sub;
   show(sub);
   var b=document.querySelectorAll('.bottomnav button');for(var j=0;j<b.length;j++)b[j].classList.toggle('on',b[j].dataset.v==='research');
@@ -10653,6 +10658,159 @@ async function wxSync(){
 
     return '<div class="cfa-card">'+head+drv+why+obs+par+hid+lim+pending+clv+
       '<div class="cfa-foot">Classification is computed from stored drivers, not chosen by the model. No confidence score. CLV is flag price to close, same book. Research context, not a bet.</div></div>';
+  };
+})();
+</script>
+
+<!-- ============================================================
+     EdgeDesk :: Research Lab (TILT DATA LABS)
+     Renders public.research_notes + note_validations. Read-only.
+     Status is computed server-side by the transition gate; this only
+     displays it and the promotion checklist. Prefixed lab / .lab-.
+     ============================================================ -->
+<style>
+.lab-lede{color:var(--dim);font-size:13px;line-height:1.55;border:1px solid var(--border);
+  border-radius:10px;padding:11px 13px;background:rgba(155,140,255,.04);margin-bottom:14px}
+.lab-empty{color:var(--faint);font-size:13px;padding:18px 4px}
+.lab-card{border:1px solid var(--border);border-radius:14px;background:var(--surface);
+  padding:0 0 4px;margin:0 0 16px;overflow:hidden}
+.lab-top{display:flex;align-items:center;gap:9px;padding:12px 15px;border-bottom:1px solid var(--border)}
+.lab-no{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--faint);font-weight:700}
+.lab-sport{font-family:'JetBrains Mono',monospace;font-size:10.5px;letter-spacing:.05em;text-transform:uppercase;
+  color:var(--dim);border:1px solid var(--border);border-radius:5px;padding:2px 7px}
+.lab-badge{margin-left:auto;font-family:'JetBrains Mono',monospace;font-weight:700;font-size:11px;
+  letter-spacing:.05em;border-radius:6px;padding:3px 10px;border:1px solid;display:inline-flex;align-items:center;gap:6px}
+.lab-badge .dot{width:7px;height:7px;border-radius:50%}
+.lab-badge.exp{color:var(--dim);border-color:var(--border)} .lab-badge.exp .dot{background:var(--dim)}
+.lab-badge.val{color:var(--warn);border-color:rgba(217,154,43,.5);background:rgba(217,154,43,.08)} .lab-badge.val .dot{background:var(--warn)}
+.lab-badge.prom{color:var(--accent);border-color:rgba(77,141,255,.5);background:rgba(77,141,255,.08)} .lab-badge.prom .dot{background:var(--accent)}
+.lab-badge.act{color:var(--pos);border-color:rgba(47,180,124,.5);background:rgba(47,180,124,.1)} .lab-badge.act .dot{background:var(--pos)}
+.lab-badge.ret{color:var(--neg);border-color:rgba(226,96,68,.45);background:rgba(226,96,68,.07)} .lab-badge.ret .dot{background:var(--neg)}
+.lab-body{padding:14px 15px}
+.lab-title{margin:0 0 6px;font-size:19px;letter-spacing:-.01em;font-weight:700}
+.lab-hyp{color:var(--dim);font-size:13.5px;font-style:italic;margin:0 0 12px;line-height:1.5}
+.lab-sum{color:var(--text);font-size:13.5px;line-height:1.6;margin:0 0 14px}
+.lab-metrics{display:flex;gap:1px;background:var(--border);border-radius:9px;overflow:hidden;margin:0 0 12px}
+.lab-metrics>div{background:var(--surface);flex:1;padding:9px 12px}
+.lab-metrics .k{font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:.05em;text-transform:uppercase;color:var(--faint)}
+.lab-metrics .v{font-family:'JetBrains Mono',monospace;font-size:15px;color:var(--text);margin-top:3px}
+.lab-stat{border:1px solid rgba(217,154,43,.4);background:rgba(217,154,43,.05);border-radius:10px;padding:11px 13px;margin:0 0 12px}
+.lab-stat h5{margin:0 0 6px;font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--warn);font-weight:700}
+.lab-stat .row{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--dim);line-height:1.7}
+.lab-stat .row b{color:var(--text);font-weight:600}
+.lab-qt{width:100%;border-collapse:collapse;font-family:'JetBrains Mono',monospace;font-size:12px;margin:0 0 12px}
+.lab-qt th,.lab-qt td{text-align:right;padding:6px 9px;border-bottom:1px solid var(--border)}
+.lab-qt th:first-child,.lab-qt td:first-child{text-align:left;color:var(--dim)}
+.lab-qt thead th{color:var(--faint);font-weight:500;font-size:10px;text-transform:uppercase;letter-spacing:.05em}
+.lab-qt tr.hi td{color:var(--accent)}
+.lab-h6{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.07em;text-transform:uppercase;color:var(--dim);margin:0 0 6px;font-weight:600}
+.lab-lim{margin:0 0 14px;padding-left:18px} .lab-lim li{color:var(--dim);font-size:12.5px;line-height:1.55;margin:2px 0}
+.lab-gate{border:1px solid var(--border);border-radius:10px;padding:12px 13px;background:var(--bg)}
+.lab-gate .msg{color:var(--dim);font-size:12.5px;line-height:1.55;margin:0 0 10px}
+.lab-check{display:flex;align-items:center;gap:9px;font-family:'JetBrains Mono',monospace;font-size:12px;padding:5px 0}
+.lab-check .mk{width:15px;text-align:center;font-weight:700}
+.lab-check .mk.pass{color:var(--pos)} .lab-check .mk.fail{color:var(--neg)} .lab-check .mk.pend{color:var(--faint)}
+.lab-check .lbl{color:var(--dim)} .lab-check .val{margin-left:auto;color:var(--text)}
+.lab-evi{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--dim);line-height:1.6}
+.lab-evi b{color:var(--text)}
+.lab-foot{font-size:11px;color:var(--faint);padding:10px 15px 12px;border-top:1px solid var(--border);line-height:1.5}
+</style>
+<script>
+(function(){
+  function esc(s){return window.stEsc?stEsc(s):String(s==null?'':s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+  function arr(v){return Array.isArray(v)?v:[];}
+  function num(v){return v==null||v===''?null:+v;}
+  var META={exploratory:{c:'exp',l:'EXPLORATORY'},validating:{c:'val',l:'VALIDATING'},
+    promoted:{c:'prom',l:'PROMOTED'},active:{c:'act',l:'ACTIVE'},retired:{c:'ret',l:'RETIRED'}};
+
+  function checkRow(pass,label,val){
+    var mk=pass===true?'<span class="mk pass">\u2713</span>':pass===false?'<span class="mk fail">\u2717</span>':'<span class="mk pend">\u25cb</span>';
+    return '<div class="lab-check">'+mk+'<span class="lbl">'+esc(label)+'</span><span class="val">'+esc(val)+'</span></div>';
+  }
+
+  function gatePanel(n,vals){
+    // choose the governing validation: the one that promoted it, else the latest
+    var v=null;
+    if(n.promoted_by){ v=vals.filter(function(x){return x.id===n.promoted_by;})[0]; }
+    if(!v&&vals.length){ v=vals[vals.length-1]; }
+    if(!v){ return '<div class="lab-gate"><div class="msg">No validation registered yet. This idea is exploratory: attach a hypothesis and a frozen bar (sample, CLV threshold, holdout) to begin validating.</div></div>'; }
+
+    var st=num(v.sample_target), sa=num(v.sample_actual);
+    var th=num(v.clv_threshold), cm=num(v.clv_measured), hc=num(v.holdout_clv);
+    var ho=v.holdout_split||{};
+    var hoLbl=(ho.train||ho.test)?(' (train '+esc(ho.train||'?')+' / test '+esc(ho.test||'?')+')'):'';
+    var rows=
+      checkRow(sa==null?null:(sa>=st), 'Sample \u2265 '+ (st!=null?st:'\u2014'), sa==null?'not run':(sa+' / '+st))+
+      checkRow(cm==null?null:(cm>th), 'CLV > '+ (th!=null?th+'%':'\u2014'), cm==null?'not run':((cm>=0?'+':'')+cm+'%'))+
+      checkRow(hc==null?null:(hc>th), 'Holdout CLV > '+(th!=null?th+'%':'\u2014')+hoLbl, hc==null?'not run':((hc>=0?'+':'')+hc+'%'));
+
+    var msg;
+    if(n.status==='validating') msg='Historical support only. Promotion is blocked until a closing-line study clears all three, measured entry to close.';
+    else if(n.status==='promoted'||n.status==='active') msg='Promoted via Validation #'+esc(v.seq)+'. Every condition below cleared its pre-registered bar.';
+    else if(n.status==='retired') msg='Retired: '+esc(n.retired_reason||'no reason recorded')+'.';
+    else msg='Not yet in validation.';
+
+    var evi='';
+    if(n.status==='promoted'||n.status==='active'){
+      evi='<div class="lab-evi" style="margin-top:10px">Promoted '+esc((n.promoted_at||'').slice(0,10))+
+          (n.activated_at?' \u00b7 active '+esc(n.activated_at.slice(0,10)):'')+'</div>';
+    }
+    return '<div class="lab-gate"><div class="msg">'+msg+'</div>'+rows+evi+'</div>';
+  }
+
+  function labCard(n,vals){
+    var m=META[n.status]||META.exploratory;
+    var f=n.findings||{}, hm=f.headline_metric||{}, sr=f.statistical_review||{};
+    var no='#'+String(n.note_no==null?'':n.note_no).padStart(3,'0');
+
+    var metrics='';
+    if(hm.value!=null){
+      metrics='<div class="lab-metrics">'+
+        '<div><div class="k">Headline</div><div class="v">'+esc(hm.value)+'</div></div>'+
+        '<div><div class="k">Sample</div><div class="v">'+esc(hm.sample!=null?('n='+hm.sample):'\u2014')+'</div></div>'+
+        '<div><div class="k">Baseline</div><div class="v">'+esc(hm.baseline||'\u2014')+'</div></div></div>';
+    }
+    var stat='';
+    if(sr.effect_size!=null||sr.p_value!=null){
+      stat='<div class="lab-stat"><h5>Reading the statistics</h5>'+
+        '<div class="row">effect size <b>'+esc(sr.effect_size||'\u2014')+'</b>'+
+        (sr.standard_error?' \u00b7 SE <b>'+esc(sr.standard_error)+'</b>':'')+
+        (sr.p_value?' \u00b7 p <b>'+esc(sr.p_value)+'</b>':'')+'</div>'+
+        (sr.comparisons_made?'<div class="row">this is <b>1 of '+esc(sr.comparisons_made)+'</b> cells examined \u2014 weigh accordingly</div>':'')+
+        '</div>';
+    }
+    var qt='';
+    if(arr(f.by_quarter).length){
+      qt='<table class="lab-qt"><thead><tr><th>Quarter</th><th>Win rate</th><th>n</th></tr></thead><tbody>'+
+        f.by_quarter.map(function(q){return '<tr'+(q.q==='Q4'?' class="hi"':'')+'><td>'+esc(q.q)+'</td><td>'+esc(q.rate)+'%</td><td>'+esc(q.n)+'</td></tr>';}).join('')+
+        '</tbody></table>';
+    }
+    var lim=arr(n.limitations).length?'<div class="lab-h6">Limitations</div><ul class="lab-lim">'+n.limitations.map(function(x){return '<li>'+esc(x)+'</li>';}).join('')+'</ul>':'';
+
+    return '<div class="lab-card">'+
+      '<div class="lab-top"><span class="lab-no">'+no+'</span><span class="lab-sport">'+esc(n.sport)+'</span>'+
+        '<span class="lab-badge '+m.c+'"><span class="dot"></span>'+m.l+'</span></div>'+
+      '<div class="lab-body">'+
+        '<h3 class="lab-title">'+esc(n.title)+'</h3>'+
+        (n.hypothesis?'<div class="lab-hyp">'+esc(n.hypothesis)+'</div>':'')+
+        (n.summary?'<p class="lab-sum">'+esc(n.summary)+'</p>':'')+
+        metrics+stat+qt+lim+
+        '<div class="lab-h6">Promotion status</div>'+gatePanel(n,vals)+
+      '</div>'+
+      '<div class="lab-foot">Status is set by the validation gate, not by hand. Promotion requires positive CLV over the registered threshold, the registered sample, and a positive holdout. Research context, not a bet.</div>'+
+      '</div>';
+  }
+
+  window.loadLab=async function(){
+    var host=document.getElementById('labHost'); if(!host)return;
+    host.innerHTML='<div class="lab-empty">Loading research notes\u2026</div>';
+    try{
+      var notes=await sbGet('research_notes?select=*&order=note_no.asc');
+      var vals=await sbGet('note_validations?select=*&order=seq.asc');
+      var by={}; (vals||[]).forEach(function(v){(by[v.note_id]=by[v.note_id]||[]).push(v);});
+      window.LAB={notes:notes,vals:by};
+      host.innerHTML=(notes&&notes.length)?notes.map(function(n){return labCard(n,by[n.id]||[]);}).join(''):'<div class="lab-empty">No research notes yet. Submissions enter as exploratory and only reach the model by clearing CLV.</div>';
+    }catch(e){ host.innerHTML='<div class="lab-empty">Could not load research notes. Confirm the research_notes table is migrated and the public schema is exposed.</div>'; }
   };
 })();
 </script>
