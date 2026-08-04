@@ -6661,6 +6661,10 @@ async function loadCFB(force){
 
     var lines=await cfbFetchAll('lines?select=game_id,provider,spread,over_under,home_moneyline,away_moneyline','game_id');
     CFB.lines={};lines.forEach(function(l){(CFB.lines[l.game_id]=CFB.lines[l.game_id]||[]).push(l);});
+    try{
+      var aflags=await cfbFetchAll('analyst_flags?select=game_id,classification,undervalued_side,sp_plus_implied_spread,market_spread,sp_disagreement_points,elo_implied_spread,elo_disagreement_points,second_order_win_gap,third_down_delta,net_ypg_delta,corroborator_count,conflict,reference_provider,flag_spread,flag_total,close_at,spread_clv_points,ml_clv_prob,available_inputs,missing_inputs,why,observable_factors,partial_factors,hidden_factors,data_limitations,thresholds_version','game_id');
+      CFB.flags={};aflags.forEach(function(f){CFB.flags[f.game_id]=f;});
+    }catch(e){CFB.flags=CFB.flags||{};}
 
     CFB.at=Date.now();CFB.open={};
     if(!CFB.games.length){ban.className='flbanner demo';ban.textContent='\u25b2 cfb schema reachable but empty \u2014 run the cfb_ingest edge function to populate cfb.games / cfb.ratings.';}
@@ -6777,7 +6781,7 @@ function cfbCompareHTML(gid){
     cfbCmpRow('recruiting rank',aRec.rank!=null?'#'+aRec.rank:'\u2014',hRec.rank!=null?'#'+hRec.rank:'\u2014',bt(aRec.rank,hRec.rank,false));
   return '<div class="fi-card" style="margin-top:8px">'+
     '<div class="gd-line" style="font-weight:700"><span class="l">'+stEsc(A||'')+'</span><span class="v" style="text-align:center;color:var(--faint)">'+(g.completed?'final':'matchup')+'</span><span class="v" style="text-align:right">'+stEsc(H||'')+'</span></div>'+
-    rows+cfbLineHTML(g)+
+    rows+cfbLineHTML(g)+cfbAnalystHTML(gid)+
     '<div style="display:flex;gap:8px;padding:9px 10px 4px">'+
       '<button onclick="cfbOpenTeam(\''+cfbEsc(A)+'\')" style="'+CFB_BTN+';flex:1">'+stEsc(A||'')+' \u203a</button>'+
       '<button onclick="cfbOpenTeam(\''+cfbEsc(H)+'\')" style="'+CFB_BTN+';flex:1">'+stEsc(H||'')+' \u203a</button></div>'+
@@ -10553,6 +10557,101 @@ async function wxSync(){
   });
   // Esc closes
   document.addEventListener('keydown',function(e){ if(e.key==='Escape'){ var o=document.getElementById('dmodal'); if(o) o.classList.add('hide'); } });
+})();
+</script>
+
+<!-- ============================================================
+     EdgeDesk :: CFB Analyst card
+     Renders cfb.analyst_flags into the CFB game detail. Deterministic
+     classification is computed server-side; this only displays it.
+     Identifiers prefixed cfa / cfbAnalyst. Reads window.CFB.flags (loadCFB).
+     ============================================================ -->
+<style>
+.cfa-card{border:1px solid var(--border);border-radius:12px;margin:10px 0 2px;overflow:hidden;background:rgba(155,140,255,.04)}
+.cfa-h{display:flex;align-items:center;gap:9px;padding:10px 12px;border-bottom:1px solid var(--border)}
+.cfa-h .cfa-t{font-size:10px;letter-spacing:.07em;text-transform:uppercase;color:var(--dim);font-weight:600}
+.cfa-badge{font-family:'JetBrains Mono',monospace;font-weight:700;font-size:11px;letter-spacing:.04em;border-radius:6px;padding:3px 9px;border:1px solid}
+.cfa-badge.investigate{color:var(--pos);border-color:rgba(47,180,124,.5);background:rgba(47,180,124,.1)}
+.cfa-badge.monitor{color:var(--warn);border-color:rgba(217,154,43,.5);background:rgba(217,154,43,.08)}
+.cfa-badge.pass{color:var(--dim);border-color:var(--border)}
+.cfa-badge.data_insufficient{color:var(--faint);border-color:var(--border)}
+.cfa-uv{margin-left:auto;font-size:10.5px;color:var(--dim);font-family:'JetBrains Mono',monospace}
+.cfa-drv{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)}
+.cfa-drv>div{background:var(--surface);padding:8px 12px}
+.cfa-drv .k{font-size:9.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--faint)}
+.cfa-drv .v{font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--text);margin-top:2px}
+.cfa-sec{padding:9px 12px;border-top:1px solid var(--border)}
+.cfa-sec h5{margin:0 0 5px;font-size:9.5px;letter-spacing:.05em;text-transform:uppercase;color:var(--dim);font-weight:600}
+.cfa-sec .why{font-size:12.5px;line-height:1.5;color:var(--text)}
+.cfa-list{margin:0;padding-left:16px}
+.cfa-list li{font-size:11.5px;line-height:1.5;color:var(--dim);margin:1px 0}
+.cfa-clv{display:flex;gap:14px;padding:9px 12px;border-top:1px solid var(--border);font-family:'JetBrains Mono',monospace;font-size:12px}
+.cfa-clv .pos{color:var(--pos)}.cfa-clv .neg{color:var(--neg)}
+.cfa-none{padding:10px 12px;font-size:11.5px;color:var(--faint)}
+.cfa-foot{padding:8px 12px;border-top:1px solid var(--border);font-size:10px;color:var(--faint);line-height:1.45}
+</style>
+<script>
+(function(){
+  function n(x){return x==null?null:+x;}
+  function pts(x){x=n(x);return x==null?'\u2014':(x>0?'+':'')+x.toFixed(1);}
+  function ypg(x){x=n(x);return x==null?'\u2014':(x>0?'+':'')+Math.round(x)+' yd/g';}
+  function pct(x){x=n(x);return x==null?'\u2014':(x>0?'+':'')+(x*100).toFixed(1)+'%';}
+  function esc(s){return (window.stEsc?stEsc(s):String(s==null?'':s));}
+  function list(arr){
+    if(!arr||!arr.length)return '<div class="cfa-none">\u2014</div>';
+    return '<ul class="cfa-list">'+arr.map(function(x){return '<li>'+esc(x)+'</li>';}).join('')+'</ul>';
+  }
+  function arr(v){ if(Array.isArray(v))return v; if(typeof v==='string'){try{var p=JSON.parse(v);return Array.isArray(p)?p:[];}catch(e){return [];}} return []; }
+
+  window.cfbAnalystHTML=function(gid){
+    var F=(window.CFB&&CFB.flags)?CFB.flags[gid]:null;
+    if(!F){
+      return '<div class="cfa-card"><div class="cfa-h"><span class="cfa-t">Analyst pass</span>'+
+             '<span class="cfa-badge pass">NOT RUN</span></div>'+
+             '<div class="cfa-none">No analyst pass on record for this game yet.</div></div>';
+    }
+    var cls=(F.classification||'PASS').toLowerCase();
+    var uv=F.undervalued_side?('undervalued: '+esc(F.undervalued_side)):'';
+    var head='<div class="cfa-h"><span class="cfa-t">Analyst pass</span>'+
+      '<span class="cfa-badge '+cls+'">'+esc(F.classification||'PASS')+'</span>'+
+      (uv?'<span class="cfa-uv">'+uv+'</span>':'')+'</div>';
+
+    if(F.classification==='DATA_INSUFFICIENT'){
+      return '<div class="cfa-card">'+head+
+        '<div class="cfa-none">Primary inputs missing (SP+ or a reference line). Not classified.</div>'+
+        '<div class="cfa-sec"><h5>Data limitations</h5>'+list(arr(F.missing_inputs))+'</div></div>';
+    }
+
+    var drv='<div class="cfa-drv">'+
+      '<div><div class="k">SP+ disagreement</div><div class="v">'+pts(F.sp_disagreement_points)+'</div></div>'+
+      '<div><div class="k">Elo disagreement</div><div class="v">'+pts(F.elo_disagreement_points)+'</div></div>'+
+      '<div><div class="k">SP+ implied / market</div><div class="v">'+pts(F.sp_plus_implied_spread)+' / '+pts(F.market_spread)+'</div></div>'+
+      '<div><div class="k">2nd-order win gap</div><div class="v">'+pts(F.second_order_win_gap)+'</div></div>'+
+      '<div><div class="k">Net yds/game \u0394</div><div class="v">'+ypg(F.net_ypg_delta)+'</div></div>'+
+      '<div><div class="k">3rd-down \u0394</div><div class="v">'+pct(F.third_down_delta)+'</div></div>'+
+      '<div><div class="k">Corroborators</div><div class="v">'+(F.corroborator_count==null?'\u2014':F.corroborator_count)+(F.conflict?' \u00b7 conflict':'')+'</div></div>'+
+      '<div><div class="k">Reference book</div><div class="v">'+esc(F.reference_provider||'\u2014')+'</div></div>'+
+      '</div>';
+
+    var why=F.why?'<div class="cfa-sec"><h5>Why</h5><div class="why">'+esc(F.why)+'</div></div>':'';
+    var obs=(F.why?'<div class="cfa-sec"><h5>Observable</h5>'+list(arr(F.observable_factors))+'</div>':'');
+    var par=(F.why?'<div class="cfa-sec"><h5>Partially observable</h5>'+list(arr(F.partial_factors))+'</div>':'');
+    var hid=(F.why?'<div class="cfa-sec"><h5>Mostly hidden risks</h5>'+list(arr(F.hidden_factors))+'</div>':'');
+    var lim='<div class="cfa-sec"><h5>Data limitations</h5>'+list(arr(F.why?F.data_limitations:F.missing_inputs))+'</div>';
+    var pending=(!F.why?'<div class="cfa-none">Explanation pending.</div>':'');
+
+    var clv='';
+    if(F.close_at||F.spread_clv_points!=null){
+      var s=n(F.spread_clv_points), m=n(F.ml_clv_prob);
+      clv='<div class="cfa-clv">'+
+        '<span>spread CLV <b class="'+(s>0?'pos':(s<0?'neg':''))+'">'+(s==null?'\u2014':(s>0?'+':'')+s.toFixed(1)+' pt')+'</b></span>'+
+        '<span>ML CLV <b class="'+(m>0?'pos':(m<0?'neg':''))+'">'+(m==null?'\u2014':(m>0?'+':'')+(m*100).toFixed(1)+'%')+'</b></span>'+
+        '</div>';
+    }
+
+    return '<div class="cfa-card">'+head+drv+why+obs+par+hid+lim+pending+clv+
+      '<div class="cfa-foot">Classification is computed from stored drivers, not chosen by the model. No confidence score. CLV is flag price to close, same book. Research context, not a bet.</div></div>';
+  };
 })();
 </script>
 
