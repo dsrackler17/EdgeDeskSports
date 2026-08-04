@@ -2681,6 +2681,8 @@ function evSportLabel(e){if(!e)return '';
   if(k.indexOf('tennis_atp')===0)return 'ATP';
   if(k.indexOf('tennis_wta')===0)return 'WTA';
   if(k.indexOf('americanfootball_nfl')===0)return 'NFL'; // roll preseason in with regular season
+  if(k.indexOf('americanfootball_ncaaf')===0)return 'CFB';
+  if(k.indexOf('basketball_ncaab')===0)return 'CBB';
   return e.sport_title||prettySport(e.sport_key);}
 function renderEdges(){
   var minev=+$('fMinev').value||0, sport=$('fSport').value, mode=$('fBooks').value, win=$('fScope').value;
