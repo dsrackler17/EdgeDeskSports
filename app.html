@@ -3112,17 +3112,30 @@ function mlbSchedHTML(g){
   var series=(g.series_game_number&&g.games_in_series)?('Game '+g.series_game_number+' of '+g.games_in_series):'';
   var dh=(g.doubleheader&&g.doubleheader!=='N')?('DH game '+(g.game_number||1)):'';
   var when=[fp,series,dh].filter(Boolean).join(' \u00b7 ');
-  return '<div class="gd-sec">The matchup \u00b7 MLB schedule</div>'+
-    '<div class="gd-line"><span class="l">'+(g.away_team_name||'Away')+' starter</span><span class="v">'+mlbPitcherTxt(g.away_pitcher_name,g.away_pitcher_throws)+'</span></div>'+
-    '<div class="gd-line"><span class="l">'+(g.home_team_name||'Home')+' starter</span><span class="v">'+mlbPitcherTxt(g.home_pitcher_name,g.home_pitcher_throws)+'</span></div>'+
-    (when?'<div class="gd-line"><span class="l">First pitch</span><span class="v mut">'+when+'</span></div>':'')+
-    (function(){var a=mlbStandTxt(g.away_division,g.away_division_rank,g.away_games_back,g.away_road_record,'road',g.away_streak);return a?'<div class="gd-line"><span class="l">'+(g.away_team_name||'Away')+'</span><span class="v mut">'+a+'</span></div>':'';})()+
-    (function(){var h=mlbStandTxt(g.home_division,g.home_division_rank,g.home_games_back,g.home_home_record,'home',g.home_streak);return h?'<div class="gd-line"><span class="l">'+(g.home_team_name||'Home')+'</span><span class="v mut">'+h+'</span></div>':'';})()+
-    (function(){var pk=mlbParkTxt(g);return pk?'<div class="gd-line"><span class="l">Ballpark</span><span class="v mut">'+pk+'</span></div>':'';})()+
-    (function(){var wx=mlbWxTxt(g);return wx?'<div class="gd-line"><span class="l">Weather</span><span class="v mut">'+wx+'</span></div>':'';})()+
-    (function(){var t=mlbPenTxt(g.away_team_id);return t?'<div class="gd-line"><span class="l">'+(g.away_team_name||'Away')+' bullpen</span><span class="v mut">'+t+'</span></div>':'';})()+
-    (function(){var t=mlbPenTxt(g.home_team_id);return t?'<div class="gd-line"><span class="l">'+(g.home_team_name||'Home')+' bullpen</span><span class="v mut">'+t+'</span></div>':'';})()+
-    ((g.status&&g.status!=='Scheduled')?'<div class="gd-line"><span class="l">Status</span><span class="v">'+g.status+'</span></div>':'');
+  function ln(l,v,c){return v?'<div class="gd-line"><span class="l">'+l+'</span><span class="v'+(c?' '+c:'')+'">'+v+'</span></div>':'';}
+  var aN=g.away_team_name||'Away', hN=g.home_team_name||'Home';
+  var obs=''
+    +ln(aN+' starter', mlbPitcherTxt(g.away_pitcher_name,g.away_pitcher_throws))
+    +ln(hN+' starter', mlbPitcherTxt(g.home_pitcher_name,g.home_pitcher_throws))
+    +ln('First pitch', when, 'mut')
+    +ln(aN, mlbStandTxt(g.away_division,g.away_division_rank,g.away_games_back,g.away_road_record,'road',g.away_streak),'mut')
+    +ln(hN, mlbStandTxt(g.home_division,g.home_division_rank,g.home_games_back,g.home_home_record,'home',g.home_streak),'mut')
+    +ln('Ballpark', mlbParkTxt(g),'mut')
+    +ln('Weather', mlbWxTxt(g),'mut')
+    +ln(aN+' bullpen usage', mlbPenTxt(g.away_team_id),'mut')
+    +ln(hN+' bullpen usage', mlbPenTxt(g.home_team_id),'mut')
+    +ln('Status', (g.status&&g.status!=='Scheduled')?g.status:'', '');
+  if(!obs)return '';
+  var head='<div class="cfa-h"><span class="cfa-t">Matchup context</span>'
+    +'<span class="cfa-badge observed">OBSERVED</span>'
+    +'<span class="cfa-uv">Tier 0 \u00b7 facts</span></div>';
+  var observed='<div class="cfa-sec"><h5>Observed</h5>'+obs+'</div>';
+  var est='<div class="cfa-sec"><h5>Estimated metrics <span class="cfa-badge soon">COMING SOON</span></h5>'
+    +'<div class="cfa-none">Third-party modeled inputs \u2014 pitcher xERA / FIP / SIERA, Stuff+, opponent wRC+ and platoon splits, defense OAA / DRS. Not in the data yet; needs a Statcast / FanGraphs feed. Will show with source + version, as estimates, never as truth.</div></div>';
+  var res='<div class="cfa-sec"><h5>EdgeDesk research <span class="cfa-badge exp">EXPERIMENTAL</span></h5>'
+    +'<div class="cfa-none">Computed matchup components \u2014 pitcher fit, bullpen edge, defense edge. Empty until each clears incremental CLV over the existing edge on a preregistered holdout. Nothing appears here before it graduates.</div></div>';
+  var foot='<div class="cfa-foot">Observed facts only \u2014 handedness, park, weather, bullpen usage, standings, series. No grade, no confidence, no platoon or fatigue rating: shown, not scored. Estimated and research tiers stay inactive until their data and validation exist. Research context, not a bet.</div>';
+  return '<div class="cfa-card mlb-mc">'+head+observed+est+res+foot+'</div>';
 }
 /* ===== end MLB schedule context ===== */
 function receiptHTML(e){
@@ -10582,6 +10595,9 @@ async function wxSync(){
 .cfa-badge.monitor{color:var(--warn);border-color:rgba(217,154,43,.5);background:rgba(217,154,43,.08)}
 .cfa-badge.pass{color:var(--dim);border-color:var(--border)}
 .cfa-badge.data_insufficient{color:var(--faint);border-color:var(--border)}
+.cfa-badge.observed{color:var(--dim);border-color:var(--border)}
+.cfa-badge.soon{color:var(--faint);border-color:var(--border);opacity:.85;font-size:8.5px;padding:1px 6px;margin-left:6px}
+.cfa-badge.exp{color:var(--warn);border-color:rgba(217,154,43,.5);background:rgba(217,154,43,.08);font-size:8.5px;padding:1px 6px;margin-left:6px}
 .cfa-uv{margin-left:auto;font-size:10.5px;color:var(--dim);font-family:'JetBrains Mono',monospace}
 .cfa-drv{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)}
 .cfa-drv>div{background:var(--surface);padding:8px 12px}
