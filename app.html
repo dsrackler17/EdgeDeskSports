@@ -3132,10 +3132,15 @@ function mlbSchedHTML(g){
   var observed='<div class="cfa-sec"><h5>Observed</h5>'+obs+'</div>';
   var est='<div class="cfa-sec"><h5>Estimated metrics <span class="cfa-badge soon">COMING SOON</span></h5>'
     +'<div class="cfa-none">Third-party modeled inputs \u2014 pitcher xERA / FIP / SIERA, Stuff+, opponent wRC+ and platoon splits, defense OAA / DRS. Not in the data yet; needs a Statcast / FanGraphs feed. Will show with source + version, as estimates, never as truth.</div></div>';
-  var res='<div class="cfa-sec"><h5>EdgeDesk research <span class="cfa-badge exp">EXPERIMENTAL</span></h5>'
+  var res='<div class="cfa-sec"><h5>Research Models <span class="cfa-badge exp">EXPERIMENTAL</span></h5>'
     +'<div class="cfa-none">Computed matchup components \u2014 pitcher fit, bullpen edge, defense edge. Empty until each clears incremental CLV over the existing edge on a preregistered holdout. Nothing appears here before it graduates.</div></div>';
+  var lim='<div class="cfa-sec"><h5>Known limitations</h5><ul class="cfa-list">'
+    +'<li>Probable starters only \u2014 no confirmed lineups; handedness is the starter, not the batting order.</li>'
+    +'<li>Bullpen row shows flagged high-use arms and closer status; a quiet row means nothing flagged, not a full pen readout.</li>'
+    +'<li>No pitch-limit, injury, or rest-days data in the pipeline.</li>'
+    +'</ul></div>';
   var foot='<div class="cfa-foot">Observed facts only \u2014 handedness, park, weather, bullpen usage, standings, series. No grade, no confidence, no platoon or fatigue rating: shown, not scored. Estimated and research tiers stay inactive until their data and validation exist. Research context, not a bet.</div>';
-  return '<div class="cfa-card mlb-mc">'+head+observed+est+res+foot+'</div>';
+  return '<div class="cfa-card mlb-mc">'+head+observed+est+res+lim+foot+'</div>';
 }
 /* ===== end MLB schedule context ===== */
 function receiptHTML(e){
