@@ -11253,7 +11253,7 @@ async function wxSync(){
     ['What changed?','whatchanged',''],['Check my bet','checkbet',''],['Compare…','compare','']
   ];
   var ACTIONS_EMPTY=[
-    ['Best bets today','bestbets','hot'],['Compare edges','compare',''],['How this works','help','']
+    ['Scan slate','scanslate','hot'],['Best bets today','bestbets',''],['Compare edges','compare',''],['How this works','help','']
   ];
   function renderActions(){
     var host=$id('edaiActions'); if(!host)return;
@@ -11440,13 +11440,176 @@ async function wxSync(){
       +'<p>I will never invent odds, injuries, stats or closing prices. If EdgeDesk doesn\u2019t have it, I say so. And a well-reasoned PASS is a successful answer.</p>');
   }
 
+  /* ======================= SLATE SCAN (deterministic; reuses evidence()) =======================
+     Stage 1: score the whole board with the app's own evidence() engine, one best side per game,
+     rank by a Research Priority (evidence composite + model-agreement), bucket EDGE/RESEARCH/WATCH.
+     Games with no signal but a MODEL projection surface as RESEARCH LEAD, never as an edge.
+     Stage 2 (opt-in): the already-scored shortlist is handed to the AI (mode 'slate') to interpret.
+     The LLM never scores or ranks — it only reads the deterministic output. */
+  function statusCls(s){ return s==='EDGE'?'v-bet':(s==='RESEARCH'||s==='RESEARCH LEAD')?'v-lean':'v-pass'; }
+
+  function scanModelIdx(){
+    var idx={};
+    try{
+      (window.MODEL_EDGES||[]).forEach(function(m){
+        if(!m||!m.event_id)return; var me=n(m.model_edge); if(me==null||me<=0)return;
+        var prev=idx[m.event_id];
+        if(!prev || me>(n(prev.model_edge)||0)) idx[m.event_id]=m;
+      });
+    }catch(_){}
+    return idx;
+  }
+
+  function biggestQuestion(x){
+    if(x.staleM>=STALE_MIN) return 'Is this line still live? It has not re-priced in '+Math.round(x.staleM)+'m.';
+    if(x.remaining!=null && x.remaining<0.5 && x.detEdge>0) return 'Has the edge survived the move? Only '+Math.round(x.remaining*100)+'% of the detection edge remains.';
+    if(!x.trusted && x.nb<4) return 'Is this price real? Only '+x.nb+' book'+(x.nb===1?'':'s')+' and the best number is offshore.';
+    if(!x.sharp) return 'No Pinnacle confirmation. Is the fair line trustworthy here?';
+    if(x.curEdge!=null && x.curEdge>0.06) return 'This edge is unusually large. Is it a stale or bad price?';
+    return 'Does the current price still justify the edge?';
+  }
+
+  function scanGames(){
+    var pool=[].concat(window.EDGES||[], window.D5_POOL||[]);
+    var midx=scanModelIdx();
+    var bySig={};
+    pool.forEach(function(e){
+      if(!e||!e.event_id||!e.best_dec)return;
+      var k=e.event_id+'|'+e.market+'|'+e.selection;
+      var prev=bySig[k];
+      var t=e.last_seen_at?new Date(e.last_seen_at).getTime():0;
+      var pt=prev&&prev.last_seen_at?new Date(prev.last_seen_at).getTime():0;
+      if(!prev||t>pt) bySig[k]=e;
+    });
+    var byGame={};
+    Object.keys(bySig).forEach(function(k){
+      var e=bySig[k]; var x; try{ x=evidence(e); }catch(_){ return; }
+      var g=byGame[e.event_id];
+      if(!g || x.score>g.x.score) byGame[e.event_id]={x:x};
+    });
+    return Object.keys(byGame).map(function(id){
+      var x=byGame[id].x, agree=!!midx[id];
+      var priority=Math.max(0,Math.min(100, x.score + (agree?5:0)));
+      var status = (x.verdict==='BET')?'EDGE':(x.verdict==='LEAN')?'RESEARCH':'WATCH';
+      var reasons=(x.reasonsFor||[]).slice(0,4);
+      if(agree) reasons=reasons.concat(['MODEL engine also projects an edge in this game']).slice(0,5);
+      return {id:id, x:x, e:x.e, priority:priority, status:status, agree:agree, reasons:reasons, question:biggestQuestion(x)};
+    }).sort(function(a,b){return b.priority-a.priority;});
+  }
+
+  function leadGames(coveredIds){
+    var midx=scanModelIdx(), leads=[];
+    Object.keys(midx).forEach(function(id){
+      if(coveredIds[id])return;
+      var m=midx[id], me=n(m.model_edge)||0;
+      var priority=Math.max(10,Math.min(55, Math.round(me/0.08*45)+10));
+      leads.push({id:id, m:m, priority:priority, status:'RESEARCH LEAD',
+        matchup:(m.away_team||'')+' @ '+(m.home_team||''),
+        sport:(typeof evSportLabel==='function'?evSportLabel(m):(m.sport_title||m.sport_key||'')),
+        reasons:['MODEL projects '+pct(me)+' here, but no market signal yet'],
+        question:'Does a book price this yet? No EdgeDesk signal to quantify it — research lead only.'});
+    });
+    return leads.sort(function(a,b){return b.priority-a.priority;}).slice(0,4);
+  }
+
+  function scanHead(t){ return '<div style="font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--dim);font-weight:600;margin:12px 2px 6px">'+esc(t)+'</div>'; }
+
+  function scanCard(g, rank, idx){
+    var x=g.x, e=g.e, ev=x.evNow, matchup=(e.away_team||'')+' @ '+(e.home_team||'');
+    var sub=sportL(e)+' · '+selL(e)+' '+amStr(x.curAm)+' · '+mktL(e.market)+' · '+pct(x.curEdge)+(ev!=null?' · EV '+pct(ev):'');
+    var conf=(x.sharp?'sharp':'no-sharp')+' · '+x.nb+'bk'+(x.remaining!=null&&x.detEdge>0?' · '+Math.round(x.remaining*100)+'% edge left':'');
+    var reasons=g.reasons.map(function(r){return '<li>'+esc(r)+'</li>';}).join('');
+    return '<div class="edai-card" style="margin-bottom:8px">'
+      +'<div class="edai-vhead"><span class="edai-verdict '+statusCls(g.status)+'">'+g.status+'</span>'
+      +'<div style="min-width:0"><div class="edai-vsel">'+(rank?('#'+rank+'  '):'')+esc(matchup)+'</div>'
+      +'<div class="edai-vsub">'+sub+'</div></div>'
+      +'<span style="margin-left:auto;text-align:right"><div class="mono" style="font-size:16px;font-weight:700">'+g.priority+'</div><div style="font-size:9px;color:var(--faint)">PRIORITY</div></span></div>'
+      +(reasons?'<ul style="margin:8px 0 4px;padding-left:18px;font-size:12px;color:var(--dim)">'+reasons+'</ul>':'')
+      +'<div style="font-size:11px;color:var(--faint);margin:2px 0 6px">'+esc(conf)+'</div>'
+      +'<div style="font-size:12px;color:var(--text);margin:2px 0 8px"><b>Biggest question:</b> '+esc(g.question)+'</div>'
+      +'<button class="edai-qa hot" onclick="EDAI.analyzeScan('+idx+')">Analyze game</button></div>';
+  }
+
+  function leadCard(g){
+    var reasons=g.reasons.map(function(r){return '<li>'+esc(r)+'</li>';}).join('');
+    return '<div class="edai-card" style="margin-bottom:8px">'
+      +'<div class="edai-vhead"><span class="edai-verdict '+statusCls(g.status)+'">'+g.status+'</span>'
+      +'<div style="min-width:0"><div class="edai-vsel">'+esc(g.matchup)+'</div>'
+      +'<div class="edai-vsub">'+esc(g.sport)+' · model-only, no market signal</div></div>'
+      +'<span style="margin-left:auto;text-align:right"><div class="mono" style="font-size:16px;font-weight:700">'+g.priority+'</div><div style="font-size:9px;color:var(--faint)">PRIORITY</div></span></div>'
+      +(reasons?'<ul style="margin:8px 0 4px;padding-left:18px;font-size:12px;color:var(--dim)">'+reasons+'</ul>':'')
+      +'<div style="font-size:12px;color:var(--text);margin:2px 0 4px"><b>Biggest question:</b> '+esc(g.question)+'</div>'
+      +'<div class="edai-src" style="border:none;margin-top:2px">No EdgeDesk signal to analyze yet — a lead, not a quantified edge.</div></div>';
+  }
+
+  function scanSlate(auto){
+    var games=scanGames();
+    var covered={}; games.forEach(function(g){covered[g.id]=1;});
+    var leads=leadGames(covered);
+    window.__EDAI_SCAN = games.map(function(g){return g.e;});
+    window.__EDAI_SCAN_TOP = games.slice(0,5);
+    if(!auto) push('u','What should I look at?');
+    if(!games.length && !leads.length){
+      push('a','<p>The board is empty right now — no positive-edge signals in the window, and no model leads either. That is a real answer: nothing to research yet. Rescan once the board populates.</p>'
+        +'<button class="edai-qa" onclick="EDAI.scanSlate()">Rescan</button>');
+      return;
+    }
+    var edges=games.filter(function(g){return g.status==='EDGE';}).length;
+    var top=games.slice(0,3), next=games.slice(3,6), rest=games.slice(6);
+    var html='<div class="edai-card" style="padding:12px 12px 4px"><div class="edai-vsel" style="margin-bottom:2px">I\u2019ve scanned the board.</div>'
+      +'<div class="edai-vsub">'+games.length+' game'+(games.length===1?'':'s')+' with signals · '+edges+' quantified edge'+(edges===1?'':'s')
+      +(leads.length?' · '+leads.length+' model lead'+(leads.length===1?'':'s'):'')+' · ranked by research priority, not raw edge.</div></div>';
+    if(top.length){ html+=scanHead('Top opportunities'); top.forEach(function(g,i){ html+=scanCard(g,i+1,i); }); }
+    if(next.length){ html+=scanHead('Worth watching'); next.forEach(function(g,i){ html+=scanCard(g,i+4,i+3); }); }
+    if(leads.length){ html+=scanHead('Research leads (model only)'); leads.forEach(function(g){ html+=leadCard(g); }); }
+    if(rest.length){
+      html+=scanHead('Low priority ('+rest.length+')');
+      html+='<div class="edai-card" style="padding:8px 12px;font-size:12px;color:var(--dim)">'
+        +rest.slice(0,12).map(function(g){return esc((g.e.away_team||'')+' @ '+(g.e.home_team||''))+' — '+g.status+' '+g.priority;}).join('<br>')
+        +(rest.length>12?'<br>+'+(rest.length-12)+' more':'')
+        +'<div style="margin-top:6px;color:var(--faint)">No meaningful quantitative discrepancy right now, or the price/data does not justify research time.</div></div>';
+    }
+    if(top.length){
+      var s0=top[0].e;
+      html+='<div class="edai-card" style="padding:10px 12px;margin-top:8px"><b>Start with '+esc((s0.away_team||'')+' @ '+(s0.home_team||''))+'.</b> Highest combination of edge, price survival and confirmation. The board above is EdgeDesk\u2019s own deterministic math — tap AI read for a written take on the shortlist.</div>'
+        +'<div style="display:flex;gap:8px;margin-top:6px"><button class="edai-qa hot" onclick="EDAI.slateAI()">AI read of the shortlist</button><button class="edai-qa" onclick="EDAI.scanSlate()">Rescan</button></div>';
+    }
+    push('a', html);
+  }
+
+  function slateAI(){
+    var top=(window.__EDAI_SCAN_TOP||[]);
+    if(!top.length){ push('a','<p>Nothing scored yet. Hit <b>Scan slate</b> first.</p>'); return; }
+    var cand=top.map(function(g,i){ var x=g.x, e=g.e;
+      return {rank:i+1, game:(e.away_team||'')+' @ '+(e.home_team||''), sport:sportL(e), market:mktL(e.market), selection:selL(e),
+        priority:g.priority, status:g.status, current:x.curAm, fair:x.fairAm, fair_src:x.fairSrc,
+        edge:x.curEdge, ev:x.evNow, remaining:x.remaining,
+        confirmation:{has_sharp:x.sharp,n_books:x.nb,corrob:x.corr,book:x.book,trusted:x.trusted},
+        stale_min:Math.round(x.staleM), biggest_question:g.question, reasons:g.reasons};
+    });
+    runSlate(cand);
+  }
+  async function runSlate(cand){
+    BUSY=true; push('u','Give me a read on the shortlist.'); thinking(true);
+    var res=await askAI('slate','Which of these deserve my attention and where should I start?',null,cand);
+    thinking(false);
+    var d=push('a',res.html);
+    if(res.src&&d){ var s=document.createElement('div'); s.className='edai-src'; s.textContent=res.src; d.appendChild(s); }
+    BUSY=false;
+  }
+
+  function analyzeScan(i){ var e=(window.__EDAI_SCAN||[])[i]; if(e){ window.EDAI.loadSignal(e,true); setTimeout(function(){ window.EDAI.action('analyze'); },60); } }
+
   /* ======================= PUBLIC API ======================= */
   window.EDAI = {
     open:function(){ $id('edaiScrim').classList.add('open'); $id('edaiPanel').classList.add('open'); $id('edaiFab').classList.add('hide');
-      renderActions(); if(!$id('edaiLog').children.length) emptyState(); },
+      renderActions(); if(!$id('edaiLog').children.length){ try{ scanSlate(true); }catch(_){ emptyState(); } } },
     close:function(){ $id('edaiScrim').classList.remove('open'); $id('edaiPanel').classList.remove('open'); $id('edaiFab').classList.remove('hide'); },
     unload:function(){ LOADED=null; $id('edaiLoaded').classList.add('hide'); renderActions(); },
     loadFrom:function(i){ var e=(window.__EDAI_BB||[])[i]; if(e) window.EDAI.loadSignal(e,true); },
+    scanSlate:function(){ return scanSlate(); },
+    slateAI:function(){ return slateAI(); },
+    analyzeScan:function(i){ return analyzeScan(i); },
 
     // load a signal into focus (from a card, Best Bets, or click-through)
     loadSignal:async function(e, announce){
@@ -11461,6 +11624,7 @@ async function wxSync(){
     },
 
     action:function(mode){
+      if(mode==='scanslate')return scanSlate();
       if(mode==='bestbets')return bestBets();
       if(mode==='compare')return compare();
       if(mode==='checkbet')return checkBet();
