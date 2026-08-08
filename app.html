@@ -3184,7 +3184,7 @@ function receiptHTML(e){
     (ttg?'<div class="gd-line"><span class="l">Game starts</span><span class="v">'+ttg.txt+'</span></div>':'');
   var vHead=vd.headline||(vd.tier==='good'?'\u25c9 Worth a real look':vd.tier==='ok'?'\u25c9 Legit, but modest':vd.tier==='fade'?'\u25c9 Fades by close \u2014 placement +EV only':'\u25c9 Marginal \u2014 verify first');
   var verdict='<div class="gd-verdict '+vd.tier+'"><b>'+vHead+'.</b> '+vd.text+'</div>';
-  return match+mlbSchedHTML(MG)+bars+bqThesisHTML(e)+eqsCardHTML(e)+marketRead+anchorNote(e)+fairModelNote(e)+corrobNote(e)+limitNote(e)+modelBlock(e)+bqCardHTML(e)+detail+teamFormRows(e)+verdict+trec;
+  return match+mlbSchedHTML(MG)+bars+bqThesisHTML(e)+(window.ED_COVERAGE?ED_COVERAGE.chipHTML(e):'')+eqsCardHTML(e)+marketRead+anchorNote(e)+fairModelNote(e)+corrobNote(e)+limitNote(e)+modelBlock(e)+bqCardHTML(e)+(window.ED_COVERAGE?ED_COVERAGE.cardHTML(e):'')+detail+teamFormRows(e)+verdict+trec;
 }
 /* wrap any edge into a tappable card with the shared receipt */
 function receiptInner(e,domid){
@@ -10159,6 +10159,517 @@ async function wxSync(){
 /* ===== end weather ===== */
 
 </script>
+<style>
+/* ===================================================================== */
+/* Market Coverage / Market Attention Intelligence                        */
+/* Reuses EdgeDesk tokens (--surface/--border/--dim/--faint/--accent/     */
+/* --mdl/--gold). A measurement + research layer only: it never alters    */
+/* edge, fair line, EV, EQS, model, sorting, filters, or CLV. Styled to   */
+/* sit beside Bet Quality without competing with it.                      */
+/* ===================================================================== */
+.mcov{background:rgba(255,255,255,.022);border:1px solid var(--border);border-radius:12px;padding:13px 14px;margin-top:6px}
+.mcov-un{font-size:12px;color:var(--faint);font-family:'JetBrains Mono',monospace}
+.mcov-top{display:flex;gap:12px;align-items:flex-start}
+.mcov-badge{flex:none;display:flex;flex-direction:column;align-items:center;justify-content:center;min-width:78px;padding:9px 8px;border-radius:10px;border:1px solid var(--border);background:var(--surface)}
+.mcov-badge .lbl{font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:.06em;font-weight:700;color:var(--faint)}
+.mcov-badge .score{font-family:'JetBrains Mono',monospace;font-size:22px;font-weight:700;line-height:1.05;margin-top:2px;color:var(--text)}
+.mcov-badge .score i{font-size:10px;font-weight:400;color:var(--faint);font-style:normal}
+.mcov-badge.vlow{border-color:rgba(91,100,114,.5)}.mcov-badge.vlow .lbl{color:var(--faint)}
+.mcov-badge.low{border-color:rgba(138,147,162,.45)}.mcov-badge.low .lbl{color:var(--dim)}
+.mcov-badge.norm{border-color:rgba(77,141,255,.45)}.mcov-badge.norm .lbl{color:var(--accent)}
+.mcov-badge.high{border-color:rgba(155,140,255,.5)}.mcov-badge.high .lbl{color:var(--mdl)}
+.mcov-badge.marq{border-color:rgba(227,184,77,.55)}.mcov-badge.marq .lbl{color:var(--gold)}
+.mcov-say{font-size:12px;line-height:1.5;color:var(--dim)}
+.mcov-expl{margin:10px 0 2px;padding-left:2px;list-style:none;display:flex;flex-direction:column;gap:4px}
+.mcov-expl li{position:relative;padding:0 0 0 15px;font-size:12px;color:var(--text)}
+.mcov-expl li:before{content:'';position:absolute;left:2px;top:7px;width:5px;height:5px;border-radius:50%;background:var(--mdl)}
+.mcov-toggle{margin-top:10px;font-size:11px;font-weight:700;letter-spacing:.03em;color:var(--dim);cursor:pointer;user-select:none;display:inline-flex;align-items:center;gap:5px}
+.mcov-toggle .chev{display:inline-block;transition:transform .15s}
+.mcov.open .mcov-toggle .chev{transform:rotate(90deg)}
+.mcov-body{display:none;margin-top:10px}
+.mcov.open .mcov-body{display:block}
+.mcov-tbl{border-top:1px solid var(--border)}
+.mcov-line{display:grid;grid-template-columns:120px 1fr 62px;gap:8px;align-items:center;padding:7px 0;border-bottom:1px dashed rgba(38,44,54,.6);font-size:11.5px}
+.mcov-line .k{color:var(--dim);font-weight:600}
+.mcov-line .rd{color:var(--text);font-size:11px;line-height:1.35}
+.mcov-line .rd .mut{color:var(--faint)}
+.mcov-line .rv{font-family:'JetBrains Mono',monospace;text-align:right;font-weight:700;font-size:11px;color:var(--text)}
+.mcov-line .rv.na{color:var(--faint);font-weight:400}
+.mcov-line.na .k{color:var(--faint)}
+.mcov-inputs{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--faint);margin-top:9px}
+.mcov-note{font-size:10.5px;color:var(--faint);line-height:1.5;margin-top:11px;border-top:1px dashed var(--border);padding-top:9px}
+/* compact chip shown near the top of a CFB/CBB receipt */
+.mcov-chip{display:inline-flex;align-items:center;gap:8px;margin:10px 0 2px;padding:6px 10px;border:1px solid var(--border);border-radius:20px;background:var(--surface)}
+.mcov-chip .mcov-k{font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:.06em;color:var(--faint);font-weight:700}
+.mcov-chip .mcov-cls{font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;letter-spacing:.04em;padding:1px 7px;border-radius:12px;border:1px solid var(--border)}
+.mcov-chip .mcov-cls.vlow{color:var(--faint)}.mcov-chip .mcov-cls.low{color:var(--dim)}
+.mcov-chip .mcov-cls.norm{color:var(--accent);border-color:rgba(77,141,255,.4)}
+.mcov-chip .mcov-cls.high{color:var(--mdl);border-color:rgba(155,140,255,.4)}
+.mcov-chip .mcov-cls.marq{color:var(--gold);border-color:rgba(227,184,77,.45)}
+.mcov-chip .mcov-n{font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:700;color:var(--text)}
+.mcov-chip .mcov-n i{font-size:9px;color:var(--faint);font-style:normal}
+/* AI panel block */
+.mcov-ai{border-top:1px solid var(--border);padding:11px 13px}
+.mcov-ai .hd{display:flex;align-items:center;gap:8px;font-size:10px;text-transform:uppercase;letter-spacing:.05em;color:var(--faint);margin-bottom:6px}
+.mcov-ai .cls{font-family:'JetBrains Mono',monospace;font-weight:700;padding:1px 7px;border-radius:10px;border:1px solid var(--border)}
+.mcov-ai .cls.vlow{color:var(--faint)}.mcov-ai .cls.low{color:var(--dim)}.mcov-ai .cls.norm{color:var(--accent)}.mcov-ai .cls.high{color:var(--mdl)}.mcov-ai .cls.marq{color:var(--gold)}
+.mcov-ai .bd{font-size:11.5px;color:var(--dim);line-height:1.5}
+/* Coverage Research (Lab) */
+.mcov-research{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:15px;margin-top:12px}
+.mcov-research h4{margin:0 0 3px;font-size:14px}
+.mcov-research .sub{font-size:11.5px;color:var(--dim);line-height:1.5;margin:0 0 12px}
+.mcov-seg{display:inline-flex;border:1px solid var(--border);border-radius:9px;overflow:hidden;margin-bottom:12px}
+.mcov-seg button{background:var(--surface2);color:var(--dim);border:none;border-right:1px solid var(--border);padding:6px 13px;font-family:inherit;font-size:12px;font-weight:600;cursor:pointer}
+.mcov-seg button:last-child{border-right:none}
+.mcov-seg button.on{background:var(--accent);color:#06122b}
+.mcov-status{display:flex;align-items:center;gap:9px;flex-wrap:wrap;padding:10px 12px;border:1px solid var(--border);border-radius:11px;background:rgba(255,255,255,.02);margin-bottom:13px}
+.mcov-status .flag{font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;letter-spacing:.04em;padding:3px 9px;border-radius:8px;border:1px solid var(--border)}
+.mcov-status .flag.untested,.mcov-status .flag.early{color:var(--faint)}
+.mcov-status .flag.none{color:var(--dim)}
+.mcov-status .flag.possible{color:var(--mdl);border-color:rgba(155,140,255,.4)}
+.mcov-status .flag.supported{color:var(--pos);border-color:rgba(47,180,124,.4)}
+.mcov-status .flag.rejected{color:var(--neg);border-color:rgba(226,96,68,.4)}
+.mcov-status .why{font-size:11.5px;color:var(--dim);line-height:1.45}
+.mcov-rtbl{width:100%;border-collapse:collapse;font-size:11.5px;font-family:'JetBrains Mono',monospace}
+.mcov-rtbl th{text-align:right;font-weight:600;color:var(--faint);font-size:9.5px;text-transform:uppercase;letter-spacing:.04em;padding:6px 8px;border-bottom:1px solid var(--border)}
+.mcov-rtbl th:first-child,.mcov-rtbl td:first-child{text-align:left}
+.mcov-rtbl td{text-align:right;padding:7px 8px;border-bottom:1px dashed rgba(38,44,54,.55);color:var(--text)}
+.mcov-rtbl td.pos{color:var(--pos)}.mcov-rtbl td.neg{color:var(--neg)}.mcov-rtbl td.mut{color:var(--faint)}
+.mcov-rtbl tr .bkt{display:inline-flex;align-items:center;gap:6px}
+.mcov-rtbl tr .dot{width:8px;height:8px;border-radius:2px;flex:none}
+.mcov-rtbl .samp{font-size:9.5px;padding:1px 6px;border-radius:8px;border:1px solid var(--border);color:var(--faint)}
+.mcov-rtbl .samp.dev{color:var(--dim)}.mcov-rtbl .samp.est{color:var(--accent);border-color:rgba(77,141,255,.35)}
+.mcov-rfoot{font-size:10.5px;color:var(--faint);line-height:1.5;margin-top:11px}
+.mcov-empty{font-size:12px;color:var(--dim);line-height:1.5;padding:6px 2px}
+</style>
+<script>
+/* =====================================================================
+   ED_COVERAGE — Market Coverage / Market Attention Intelligence
+   ---------------------------------------------------------------------
+   PURPOSE. Turn "lower-attention college markets may be priced differently"
+   into a MEASURED, testable variable — never a betting rule. This module
+   measures attention, displays it transparently, and logs it against CLV so
+   history (not the model, not today's edge) decides whether the hypothesis
+   holds.
+
+   HARD BOUNDARIES (by design):
+     - Reads only frozen fields already on the `signals` row. Adds no schema,
+       no API dependency, invents nothing.
+     - Contributes ZERO to edge / fair line / EV / EQS / model / CLV / sort /
+       filters / Bet Quality confidence. It is a sibling of those layers, not
+       an input to them.
+     - Applies to CFB and CBB only. Every other sport → not shown (unavailable).
+     - Unavailable inputs are named as unavailable, never estimated.
+
+   Because the score is a pure function of capture-frozen inputs (teams,
+   market, kickoff/tip time, book count, sport), recomputing it for a historical
+   row is deterministic and stable — it reproduces the value that was true at
+   capture, which is exactly the "freeze, never overwrite" behavior the ledger
+   already relies on. If a server-side market_coverage_score column is added
+   later, compute() will prefer the stored value.
+   ===================================================================== */
+window.ED_COVERAGE=(function(){
+  var VERSION='1.0.0';
+
+  function sportCode(e){
+    var k=((e&&e.sport_key)||'')+''; k=k.toLowerCase();
+    if(k.indexOf('americanfootball_ncaaf')===0)return 'CFB';
+    if(k.indexOf('basketball_ncaab')===0)return 'CBB';
+    return null;
+  }
+  function applies(e){return !!sportCode(e);}
+  function nrmT(s){return String(s||'').toLowerCase().replace(/[^a-z0-9]/g,'');}
+  function esc(s){return (typeof recEsc==='function')?recEsc(s):String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+
+  /* Curated, static, editorial program-prominence lists. This is BRAND
+     prominence, deliberately NOT current quality — a storied program having a
+     bad year is still a high-attention TV draw, which is the whole distinction
+     the feature exists to make. No records, win rates, or edges feed this.
+     Same spirit (and same auditability) as the app's existing MARQUEE list.
+     Edit freely; every match is shown in "Why this score?". */
+  var PROM_CFB=['alabama','ohiostate','texas','notredame','michigan','georgia','usc','lsu','florida','tennessee','oklahoma','pennstate','clemson','miami','texasam','oregon','nebraska','auburn','floridastate','wisconsin','colorado','washington','oklahomastate','oregonstate','michiganstate','ucla','arkansas','texastech','iowa','utah','olemiss','mississippi'];
+  var PROM_CBB=['duke','kansas','northcarolina','kentucky','ucla','indiana','michiganstate','villanova','gonzaga','louisville','arizona','uconn','connecticut','syracuse','michigan','ohiostate','texas','florida','marquette','georgetown','memphis','houston','baylor','purdue','wisconsin','illinois','tennessee','alabama'];
+
+  function promHit(list,name){
+    var k=nrmT(name); if(!k)return false;
+    for(var i=0;i<list.length;i++){var m=list[i];
+      if(k===m)return true;
+      if(m.length>=4 && k.indexOf(m)===0){
+        var rest=k.slice(m.length);
+        /* don't let "texas" swallow "texas state", "michigan" swallow "michigan
+           state" — unless the state variant is itself an explicit key above */
+        if(rest.indexOf('state')!==0)return true;
+      }
+    }
+    return false;
+  }
+
+  /* ---- component: program prominence (available, curated) ---- */
+  function cProminence(e){
+    var code=sportCode(e), list=code==='CFB'?PROM_CFB:PROM_CBB;
+    if(!e.home_team && !e.away_team)return {available:false,read:'team names not on the row'};
+    var ph=promHit(list,e.home_team), pa=promHit(list,e.away_team);
+    var n=(ph?1:0)+(pa?1:0);
+    var v=n===2?1.0:n===1?0.55:0.15;
+    var read=n===2?'Both are high-profile programs':n===1?'One high-profile program, one not':'Neither is a marquee program';
+    return {available:true,value:v,read:read};
+  }
+  /* ---- component: market availability (available) ---- */
+  function nbOf(e){
+    var eff=e.n_books_eff, raw=e.n_books;
+    if(eff!=null && !isNaN(eff))return +eff;
+    if(raw!=null && !isNaN(raw))return +raw;
+    return null;
+  }
+  function cAvailability(e){
+    var nb=nbOf(e);
+    if(nb==null)return {available:false,read:'book count not stored'};
+    var v=nb>=10?1.0:nb>=8?0.82:nb>=6?0.62:nb>=5?0.5:nb>=4?0.35:nb>=3?0.22:0.1;
+    var read=nb+' book'+(nb===1?'':'s')+' pricing this market'+(nb>=8?' \u00b7 deep':nb>=4?' \u00b7 moderate':' \u00b7 thin');
+    return {available:true,value:v,read:read};
+  }
+  /* ---- component: scheduled window (available, derived heuristic) ---- */
+  function slotET(iso){
+    if(!iso)return null;
+    var d=new Date(iso); if(isNaN(d))return null;
+    try{
+      var wd=d.toLocaleString('en-US',{timeZone:'America/New_York',weekday:'short'});
+      var hh=+d.toLocaleString('en-US',{timeZone:'America/New_York',hour12:false,hour:'2-digit'});
+      if(isNaN(hh))return null;
+      return {wd:wd,hh:hh};
+    }catch(_){return null;}
+  }
+  function cWindow(e){
+    var s=slotET(e.commence_time);
+    if(!s)return {available:false,read:'kickoff/tip time not stored'};
+    var code=sportCode(e), weekend=(s.wd==='Sat'||s.wd==='Sun');
+    var prime=s.hh>=19 && s.hh<=23, aft=s.hh>=12 && s.hh<19;
+    var v,why;
+    if(code==='CFB'){
+      if(weekend&&prime){v=0.9;why='weekend primetime window';}
+      else if(weekend&&aft){v=0.7;why='weekend afternoon window';}
+      else if(s.wd==='Fri'&&prime){v=0.55;why='Friday-night window';}
+      else if(!weekend){v=0.35;why='midweek window (typically lower attention)';}
+      else{v=0.45;why='off-peak weekend window';}
+    }else{
+      if(weekend&&aft){v=0.8;why='weekend afternoon window';}
+      else if(prime){v=0.7;why=(weekend?'weekend':'weeknight')+' evening window';}
+      else if(s.hh>=23||s.hh<9){v=0.25;why='late/early window (lower attention)';}
+      else{v=0.5;why='daytime window';}
+    }
+    var hh2=('0'+s.hh).slice(-2);
+    return {available:true,value:v,read:why+' \u00b7 '+s.wd+' '+hh2+':00 ET (derived from tip time, not a TV listing)'};
+  }
+  /* ---- component: market type (available, minor) ---- */
+  function cMarket(e){
+    var m=(e.market||'').toLowerCase();
+    if(!m)return {available:false,read:'market type missing'};
+    var v=m==='h2h'?0.7:m==='spreads'?0.65:m==='totals'?0.5:0.5;
+    var lbl=m==='h2h'?'Moneyline':m==='spreads'?'Spread':m==='totals'?'Total':m;
+    return {available:true,value:v,read:lbl+' \u2014 mainstream market',minor:true};
+  }
+
+  var WEIGHTS={prominence:0.50,availability:0.30,window:0.15,market:0.05};
+
+  /* structural attention inputs EdgeDesk does not have — always shown as
+     unavailable so the score is never mistaken for complete. Never fabricated. */
+  var STRUCT=[
+    ['National ranking','no AP/Coaches poll data stored on the signal'],
+    ['National broadcast','no TV/network designation in the feed'],
+    ['Rivalry','no rivalry table connected'],
+    ['Conference prestige','not reliably stored at game grain'],
+    ['Market handle','provider does not expose betting volume']
+  ];
+
+  function classify(s){
+    if(s==null)return {key:'unknown',label:'UNAVAILABLE'};
+    if(s<=25)return {key:'vlow',label:'VERY LOW'};
+    if(s<=45)return {key:'low',label:'LOW'};
+    if(s<=65)return {key:'norm',label:'NORMAL'};
+    if(s<=80)return {key:'high',label:'HIGH'};
+    return {key:'marq',label:'MARQUEE'};
+  }
+
+  function compute(e){
+    if(!applies(e))return {applies:false};
+    /* forward-compat: prefer a server-frozen value if one is ever added */
+    var stored=(e.market_coverage_score!=null && !isNaN(e.market_coverage_score))?Math.round(+e.market_coverage_score):null;
+    var comps=[
+      {id:'prominence',label:'Program prominence',w:WEIGHTS.prominence,r:cProminence(e)},
+      {id:'availability',label:'Market availability',w:WEIGHTS.availability,r:cAvailability(e)},
+      {id:'window',label:'Scheduled window',w:WEIGHTS.window,r:cWindow(e)},
+      {id:'market',label:'Market type',w:WEIGHTS.market,r:cMarket(e)}
+    ];
+    var num=0,den=0,avail=[],unavail=[];
+    comps.forEach(function(c){
+      if(c.r.available){num+=c.r.value*c.w;den+=c.w;avail.push(c);}
+      else unavail.push(c);
+    });
+    var score=stored!=null?stored:(den>0?Math.round(100*num/den):null);
+    return {applies:true,version:VERSION,sport:sportCode(e),score:score,cls:classify(score),
+      comps:comps,available:avail,unavailable:unavail,struct:STRUCT,
+      inputs_used:avail.length,inputs_total:comps.length,stored:stored!=null};
+  }
+
+  function explanation(q){
+    if(!q.applies)return [];
+    return q.available.filter(function(c){return !c.r.minor;}).map(function(c){return c.r.read;});
+  }
+  function coverageWord(q){
+    var k=q.cls.key;
+    return k==='vlow'||k==='low'?'less':k==='high'||k==='marq'?'more':'about typical';
+  }
+  function bucketWord(v){return v>=0.75?'High':v>=0.45?'Moderate':'Low';}
+
+  /* ---------- public: AI packet ---------- */
+  function packet(e){
+    var q=compute(e);
+    if(!q.applies)return null;
+    return {
+      score:q.score,
+      classification:q.cls.label,
+      components:q.comps.map(function(c){return {name:c.label,available:c.r.available,read:c.r.read,weight:c.w,value:c.r.available?+c.r.value.toFixed(2):null};}),
+      available_inputs:q.available.map(function(c){return c.label;}),
+      unavailable_inputs:q.unavailable.map(function(c){return c.label;}).concat(q.struct.map(function(s){return s[0];})),
+      explanation:explanation(q),
+      guidance:'Market Coverage is contextual evidence only. It is a hypothesis-testing variable and must never be treated as proof of an edge. Do not recommend a wager solely because coverage is low. Explain how the coverage level affects the amount of market scrutiny that may reasonably be expected, while preserving the distinction between attention and pricing efficiency. CLV \u2014 not coverage \u2014 is the validation variable.'
+    };
+  }
+
+  /* ---------- public: ledger snapshot (frozen coverage fields for a row) ---------- */
+  function ledgerFields(e){
+    var q=compute(e);
+    if(!q.applies)return null;
+    var comp={};
+    q.comps.forEach(function(c){comp[c.id]=c.r.available?+c.r.value.toFixed(3):null;});
+    return {
+      market_coverage_score:q.score,
+      market_coverage_class:q.cls.label,
+      market_coverage_components:comp,
+      market_coverage_version:q.version,
+      market_coverage_captured_at:new Date().toISOString()
+    };
+  }
+
+  /* ---------- public: compact chip (top of receipt) ---------- */
+  function chipHTML(e){
+    try{
+      var q=compute(e);
+      if(!q.applies||q.score==null)return '';
+      return '<div class="mcov-chip"><span class="mcov-k">MARKET COVERAGE</span>'+
+        '<span class="mcov-cls '+q.cls.key+'">'+q.cls.label+'</span>'+
+        '<span class="mcov-n">'+q.score+'<i>/100</i></span></div>';
+    }catch(_){return '';}
+  }
+
+  /* ---------- public: full card (signal detail) ---------- */
+  function cardHTML(e){
+    try{
+      var q=compute(e);
+      if(!q.applies)return '';
+      if(q.score==null)
+        return '<div class="gd-sec">Market Coverage</div><div class="mcov"><div class="mcov-un">Coverage: unavailable \u2014 no scorable coverage inputs are stored for this row.</div></div>';
+      var rows=q.comps.map(function(c){
+        var read=c.r.available?esc(c.r.read):'<span class="mut">unavailable \u2014 '+esc(c.r.read||'not connected')+'</span>';
+        var val=c.r.available?bucketWord(c.r.value):'\u2014';
+        return '<div class="mcov-line'+(c.r.available?'':' na')+'"><span class="k">'+esc(c.label)+'</span><span class="rd">'+read+'</span><span class="rv '+(c.r.available?'':'na')+'">'+val+'</span></div>';
+      }).join('');
+      var struct=q.struct.map(function(s){
+        return '<div class="mcov-line na"><span class="k">'+esc(s[0])+'</span><span class="rd mut">unavailable \u2014 '+esc(s[1])+'</span><span class="rv na">\u2014</span></div>';
+      }).join('');
+      var expl=explanation(q).map(function(t){return '<li>'+esc(t)+'</li>';}).join('');
+      return '<div class="gd-sec">Market Coverage</div>'+
+        '<div class="mcov">'+
+          '<div class="mcov-top">'+
+            '<div class="mcov-badge '+q.cls.key+'"><span class="lbl">'+q.cls.label+'</span><span class="score">'+q.score+'<i>/100</i></span></div>'+
+            '<div class="mcov-say">This matchup appears to receive '+coverageWord(q)+' market attention than a marquee game. That does not imply inefficiency \u2014 it is a research variable to be validated against EdgeDesk\u2019s historical CLV, not a reason to bet or pass.</div>'+
+          '</div>'+
+          (expl?'<ul class="mcov-expl">'+expl+'</ul>':'')+
+          '<div class="mcov-toggle" onclick="__mcovToggle(this)">Why this score? <span class="chev">\u203a</span></div>'+
+          '<div class="mcov-body">'+
+            '<div class="mcov-tbl">'+rows+struct+'</div>'+
+            '<div class="mcov-inputs">'+q.inputs_used+' of '+q.inputs_total+' scored inputs available \u00b7 '+q.struct.length+' structural inputs not connected (never fabricated)'+(q.stored?' \u00b7 server-frozen value':'')+'</div>'+
+          '</div>'+
+          '<div class="mcov-note">Attention only \u2014 not a bet signal. Coverage never changes the edge, fair line, EV, EQS, model, sort, or CLV. Low coverage is not "bet"; high coverage is not "pass". EdgeDesk logs this against closing lines so history can test whether low-attention markets actually price differently. CLV is the proof; coverage is the hypothesis.</div>'+
+        '</div>';
+    }catch(_){return '';}
+  }
+
+  /* ---------- public: AI-panel block (visible context, offline-safe) ---------- */
+  function snapshotBlock(e){
+    try{
+      var q=compute(e);
+      if(!q.applies||q.score==null)return '';
+      var ex=explanation(q).slice(0,3).join(' \u00b7 ');
+      return '<div class="mcov-ai"><div class="hd">Market Coverage <span class="cls '+q.cls.key+'">'+q.cls.label+' '+q.score+'/100</span></div>'+
+        '<div class="bd">'+esc(ex||'derived from available attention inputs')+'. Contextual only \u2014 does not move the edge or the verdict; CLV validates, coverage is the hypothesis.</div></div>';
+    }catch(_){return '';}
+  }
+
+  /* ===================================================================
+     Coverage Research (Lab) — the longitudinal test. Reads graded CFB/CBB
+     rows off `signals`, buckets them by the SAME coverage function, and asks
+     whether low-attention markets actually earned better CLV. Descriptive
+     numbers always show; a confident CONCLUSION is gated behind sample size.
+     =================================================================== */
+  var SAMP={INSUF:25,DEV:50,EST:100};
+  var BUCKETS=[
+    {key:'vlow',label:'Very Low',color:'var(--faint)',test:function(s){return s<=25;}},
+    {key:'low',label:'Low',color:'var(--dim)',test:function(s){return s>25&&s<=45;}},
+    {key:'norm',label:'Normal',color:'var(--accent)',test:function(s){return s>45&&s<=65;}},
+    {key:'high',label:'High',color:'var(--mdl)',test:function(s){return s>65&&s<=80;}},
+    {key:'marq',label:'Marquee',color:'var(--gold)',test:function(s){return s>80;}}
+  ];
+  function num(v){return (v==null||isNaN(v))?null:+v;}
+  function mean(a){if(!a.length)return null;var s=0;for(var i=0;i<a.length;i++)s+=a[i];return s/a.length;}
+  function median(a){if(!a.length)return null;var s=a.slice().sort(function(x,y){return x-y;});var m=Math.floor(s.length/2);return s.length%2?s[m]:(s[m-1]+s[m])/2;}
+  function recDec(r){var d=num(r.flagged_best_dec);if(d!=null&&d>1)return d;d=num(r.first_best_dec);return (d!=null&&d>1)?d:null;}
+  function profit(r){var d=recDec(r);if(d==null)return null;if(r.result==='win')return d-1;if(r.result==='loss')return -1;if(r.result==='push')return 0;return null;}
+  function pctS(v,dp){return v==null?'\u2014':((v>=0?'+':'')+(v*100).toFixed(dp==null?1:dp)+'%');}
+  function sampTag(n){return n>=SAMP.EST?{cls:'est',t:'Established'}:n>=SAMP.DEV?{cls:'dev',t:'Developing'}:n>=SAMP.INSUF?{cls:'',t:'Early'}:{cls:'',t:'Insufficient'};}
+
+  function bucketize(rows){
+    var out={};BUCKETS.forEach(function(b){out[b.key]={n:0,clv:[],edge:[],beat:0,beatN:0,prof:[]};});
+    (rows||[]).forEach(function(r){
+      var q=compute(r); if(!q.applies||q.score==null)return;
+      var b=null;for(var i=0;i<BUCKETS.length;i++)if(BUCKETS[i].test(q.score)){b=BUCKETS[i].key;break;}
+      if(!b)return;
+      var g=out[b];g.n++;
+      var c=num(r.clv); if(c!=null)g.clv.push(c);
+      var ed=num(r.flagged_edge); if(ed==null)ed=num(r.edge); if(ed!=null)g.edge.push(ed);
+      if(r.beat_close===true||r.beat_close==='true'){g.beat++;g.beatN++;}
+      else if(r.beat_close===false||r.beat_close==='false'){g.beatN++;}
+      var p=profit(r); if(p!=null)g.prof.push(p);
+    });
+    return out;
+  }
+
+  function hypothesis(bk){
+    var lowN=bk.vlow.n+bk.low.n, highN=bk.high.n+bk.marq.n, tot=lowN+highN;
+    if(tot<SAMP.INSUF)return {status:'UNTESTED',cls:'untested',why:'Only '+tot+' graded low- or high-coverage signals so far \u2014 nothing to conclude.'};
+    var lowClv=mean(bk.vlow.clv.concat(bk.low.clv));
+    var highClv=mean(bk.high.clv.concat(bk.marq.clv));
+    if(lowClv==null||highClv==null)return {status:'UNTESTED',cls:'untested',why:'CLV missing on one side; cannot compare yet ('+tot+' graded).'};
+    var diff=lowClv-highClv;
+    var lowBeatN=bk.vlow.beatN+bk.low.beatN, lowBeat=(bk.vlow.beat+bk.low.beat);
+    var highBeatN=bk.high.beatN+bk.marq.beatN, highBeat=(bk.high.beat+bk.marq.beat);
+    var lowRate=lowBeatN?lowBeat/lowBeatN:null, highRate=highBeatN?highBeat/highBeatN:null;
+    if(tot<SAMP.DEV)return {status:'EARLY_SIGNAL',cls:'early',why:'Descriptive only: low-coverage CLV runs '+pctS(diff)+' vs high-coverage over '+tot+' graded. Below the '+SAMP.DEV+'-signal bar for any conclusion.'};
+    var established=tot>=SAMP.EST;
+    if(Math.abs(diff)<0.005)return {status:'NO_CLEAR_RELATIONSHIP',cls:'none',why:'Low- and high-coverage CLV sit within half a point ('+pctS(diff)+') over '+tot+' graded \u2014 no attention effect visible.'};
+    if(diff>0){
+      var strong=established&&diff>=0.01&&(lowRate==null||highRate==null||lowRate>=highRate);
+      if(strong)return {status:'SUPPORTED',cls:'supported',why:'Low-coverage CLV beats high-coverage by '+pctS(diff)+' over '+tot+' graded'+(lowRate!=null&&highRate!=null?' (beat-close '+(lowRate*100).toFixed(0)+'% vs '+(highRate*100).toFixed(0)+'%)':'')+'. Consistent with the hypothesis \u2014 keep validating.'};
+      return {status:'POSSIBLE_RELATIONSHIP',cls:'possible',why:'Low-coverage CLV leads by '+pctS(diff)+' over '+tot+' graded'+(established?'':' \u2014 sample still developing')+'. Suggestive, not established.'};
+    }
+    var reject=established&&diff<=-0.01&&(lowRate==null||highRate==null||lowRate<=highRate);
+    if(reject)return {status:'REJECTED',cls:'rejected',why:'Low-coverage CLV trails high-coverage by '+pctS(-diff)+' over '+tot+' graded. No support \u2014 if anything, marquee markets priced better.'};
+    return {status:'NO_CLEAR_RELATIONSHIP',cls:'none',why:'Low-coverage CLV runs '+pctS(diff)+' vs high-coverage over '+tot+' graded \u2014 no clear edge to low attention.'};
+  }
+
+  function researchTableHTML(bk){
+    var head='<tr><th>Coverage</th><th>Signals</th><th>Avg edge</th><th>Avg CLV</th><th>Med CLV</th><th>Beat close</th><th>ROI</th></tr>';
+    var body=BUCKETS.map(function(b){
+      var g=bk[b.key], n=g.n;
+      var avgE=mean(g.edge), avgC=mean(g.clv), medC=median(g.clv);
+      var rate=g.beatN?g.beat/g.beatN:null;
+      var roi=(n>=SAMP.DEV)?mean(g.prof):null; /* ROI only once sample is sufficient */
+      var st=sampTag(n);
+      function cell(v){return '<td class="'+(v==null?'mut':v>0?'pos':v<0?'neg':'')+'">'+(v==null?'\u2014':pctS(v))+'</td>';}
+      var roiCell=(n<SAMP.DEV)?'<td class="mut" title="Hidden until '+SAMP.DEV+' graded signals">n/a</td>':'<td class="'+(roi==null?'mut':roi>0?'pos':roi<0?'neg':'')+'">'+(roi==null?'\u2014':(roi>=0?'+':'')+(roi*100).toFixed(1)+'%')+'</td>';
+      return '<tr>'+
+        '<td><span class="bkt"><span class="dot" style="background:'+b.color+'"></span>'+b.label+' <span class="samp '+st.cls+'">'+st.t+'</span></span></td>'+
+        '<td>'+n+'</td>'+cell(avgE)+cell(avgC)+cell(medC)+
+        '<td class="'+(rate==null?'mut':rate>=0.5?'pos':'neg')+'">'+(rate==null?'\u2014':(rate*100).toFixed(0)+'%')+'</td>'+
+        roiCell+'</tr>';
+    }).join('');
+    return '<table class="mcov-rtbl"><thead>'+head+'</thead><tbody>'+body+'</tbody></table>';
+  }
+
+  function renderResearchInto(host,sport){
+    var all=window.__MCOV_REC;
+    if(all==null){host.innerHTML='<div class="mcov-empty">Could not load graded history. Confirm the <b>signals</b> table is exposed; coverage research reads graded CFB/CBB rows from it.</div>';return;}
+    var rows=all.filter(function(r){var c=sportCode(r);if(!c)return false;if(sport==='CFB')return c==='CFB';if(sport==='CBB')return c==='CBB';return true;});
+    if(!rows.length){host.innerHTML='<div class="mcov-empty">No graded '+(sport==='ALL'?'CFB/CBB':sport)+' signals with CLV yet. This view fills in as games grade \u2014 and it is allowed to end at "no relationship."</div>';return;}
+    var bk=bucketize(rows);
+    var hyp=hypothesis(bk);
+    var totClv=0;rows.forEach(function(r){if(num(r.clv)!=null)totClv++;});
+    host.innerHTML=
+      '<div class="mcov-status"><span class="flag '+hyp.cls+'">'+hyp.status.replace(/_/g,' ')+'</span><span class="why">'+esc(hyp.why)+'</span></div>'+
+      researchTableHTML(bk)+
+      '<div class="mcov-rfoot">'+rows.length+' graded '+(sport==='ALL'?'CFB/CBB':sport)+' signal'+(rows.length===1?'':'s')+' \u00b7 '+totClv+' with CLV. '+
+        'Coverage is recomputed from each row\u2019s frozen capture inputs (teams, market, tip time, book count) \u2014 deterministic and stable, never overwritten. '+
+        'ROI is withheld below '+SAMP.DEV+' signals per bucket; the status flag stays UNTESTED/EARLY until '+SAMP.EST+'. '+
+        'This measures whether attention correlates with CLV \u2014 it does not steer any pick. Segment by sport above; conference / weekday / ranked / market-type splits unlock as sample grows.</div>';
+  }
+
+  var CUR_SPORT='ALL';
+  async function loadResearch(){
+    var host=document.getElementById('mcovResearchHost');
+    if(!host)return;
+    if(window.__MCOV_REC===undefined){
+      host.innerHTML='<div class="mcov-empty">Loading coverage history\u2026</div>';
+      try{
+        var cols='sport_key,market,home_team,away_team,commence_time,n_books,n_books_eff,flagged_edge,edge,clv,result,beat_close,first_best_dec,flagged_best_dec';
+        var q='signals?select='+cols+'&graded_at=not.is.null&sport_key=in.(americanfootball_ncaaf,basketball_ncaab)&limit=5000';
+        window.__MCOV_REC=(await sbGet(q))||[];
+      }catch(_){window.__MCOV_REC=null;}
+    }
+    renderResearchInto(host,CUR_SPORT);
+  }
+  function researchSegment(sport){
+    CUR_SPORT=sport;
+    var host=document.getElementById('mcovResearchHost');
+    var seg=document.querySelectorAll('#mcovResearchSeg button');
+    for(var i=0;i<seg.length;i++)seg[i].classList.toggle('on',seg[i].getAttribute('data-sport')===sport);
+    if(host)renderResearchInto(host,sport);
+  }
+
+  /* Build the Lab section shell and kick off the (cached) load. */
+  function mountResearch(labHost){
+    if(!labHost || document.getElementById('mcovResearch'))return;
+    var wrap=document.createElement('div');
+    wrap.className='mcov-research';wrap.id='mcovResearch';
+    wrap.innerHTML=
+      '<h4>Market Coverage Research</h4>'+
+      '<p class="sub">Testing one hypothesis: <i>do lower-attention college markets actually earn better closing-line value?</i> '+
+        'Coverage is the hypothesis variable; CLV is the proof. The table is descriptive; the flag only turns into a conclusion once the sample is real. '+
+        'A verdict of \u201cno relationship\u201d is a valid, wanted outcome.</p>'+
+      '<div class="mcov-seg" id="mcovResearchSeg">'+
+        '<button class="on" data-sport="ALL" onclick="ED_COVERAGE.researchSegment(\'ALL\')">CFB + CBB</button>'+
+        '<button data-sport="CFB" onclick="ED_COVERAGE.researchSegment(\'CFB\')">CFB</button>'+
+        '<button data-sport="CBB" onclick="ED_COVERAGE.researchSegment(\'CBB\')">CBB</button>'+
+      '</div>'+
+      '<div id="mcovResearchHost"><div class="mcov-empty">Loading coverage history\u2026</div></div>';
+    labHost.appendChild(wrap);
+    loadResearch();
+  }
+
+  return {
+    version:VERSION, applies:applies, compute:compute,
+    chipHTML:chipHTML, cardHTML:cardHTML, snapshotBlock:snapshotBlock,
+    packet:packet, ledgerFields:ledgerFields,
+    mountResearch:mountResearch, loadResearch:loadResearch, researchSegment:researchSegment
+  };
+})();
+window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.toggle('open');};
+
+/* Non-invasively extend the existing Lab loader: run it untouched, then append
+   the Coverage Research section into #labHost. If Lab is reworked later this
+   simply no-ops. */
+(function(){
+  if(typeof window.loadLab!=='function'){return;}
+  var _orig=window.loadLab;
+  window.loadLab=async function(){
+    try{ await _orig.apply(this,arguments); }catch(_){}
+    try{
+      var host=document.getElementById('labHost');
+      if(host && window.ED_COVERAGE){ window.__MCOV_REC=undefined; ED_COVERAGE.mountResearch(host); }
+    }catch(_){}
+  };
+})();
+</script>
+
 <script>
 /* ============================================================================
    MARKET DISCOVERY — executive summary above the edge table.
@@ -11185,6 +11696,7 @@ async function wxSync(){
           + (x.clv!=null?'CLV '+pct(x.clv)+' · ':'')
           + (x.beat===true?'beat the close':x.beat===false?'did not beat the close':'')
           + '. Result does not validate the decision — CLV does.</div>' : '')
+      + (window.ED_COVERAGE?ED_COVERAGE.snapshotBlock(x.e):'')
       + '<div class="edai-note">Fair price and edge are pipeline values ('+esc(x.fairSrc)+'). EV, decay, window and the readout are deterministic transforms of owned prices — the model does not touch them.</div>'
       + '</div>';
   }
@@ -11292,6 +11804,7 @@ async function wxSync(){
       timing:{stale_min:Math.round(x.staleM)},
       clv:x.graded?{clv:x.clv,beat_close:x.beat,closing:x.closeP,result:x.result}:null,
       mlb: mlbPacket(x.mlb),
+      market_coverage: (window.ED_COVERAGE?ED_COVERAGE.packet(x.e):null),
       deterministic:{verdict:x.verdict,why:x.why,score:x.score,band:x.band,
         reasons_for:x.reasonsFor,reasons_against:x.reasonsAgainst}
     } : null;
