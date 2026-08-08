@@ -3189,7 +3189,9 @@ function receiptHTML(e){
 /* wrap any edge into a tappable card with the shared receipt */
 function receiptInner(e,domid){
   return receiptHTML(e)+
-    '<button class="btn ghost sm" onclick="__trackId(\''+domid+'\')" style="margin-top:10px">Track this to my ledger</button>';
+    '<button class="edai-analyze" onclick="event.stopPropagation();edaiAnalyze(\''+domid+'\')">'+
+      '<svg viewBox="0 0 24 24"><path d="M12 3l2.2 5.8L20 11l-5.8 2.2L12 19l-2.2-5.8L4 11l5.8-2.2L12 3z"/></svg>Analyze with EdgeDesk Intelligence</button>'+
+    '<button class="btn ghost sm" onclick="__trackId(\''+domid+'\')" style="margin-top:8px">Track this to my ledger</button>';
 }
 function expandItem(e,domid,headerInner){
   window.RCPT=window.RCPT||{};window.RCPT[domid]=e;
@@ -10835,6 +10837,687 @@ async function wxSync(){
   };
 })();
 </script>
+
+<!-- ==================== EdgeDesk Intelligence (AI decision layer) ==================== -->
+<style>
+/* Native to EdgeDesk's token system: reuses --bg/--surface/--accent/--pos/--neg/--warn/--gold/--mdl. */
+#edaiFab{position:fixed;right:14px;bottom:calc(var(--nav) + env(safe-area-inset-bottom) + 12px);z-index:34;
+  width:52px;height:52px;border-radius:16px;border:1px solid rgba(77,141,255,.5);cursor:pointer;
+  background:linear-gradient(180deg,#1b2740,#141821);color:var(--accent);box-shadow:0 6px 22px rgba(0,0,0,.45);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;font-family:inherit}
+#edaiFab .fk{font-family:'JetBrains Mono',monospace;font-size:8px;letter-spacing:.12em;color:var(--dim)}
+#edaiFab svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:2}
+#edaiFab.hide{display:none!important}
+
+#edaiScrim{position:fixed;inset:0;z-index:40;background:rgba(6,8,12,.55);backdrop-filter:blur(2px);opacity:0;pointer-events:none;transition:opacity .18s}
+#edaiScrim.open{opacity:1;pointer-events:auto}
+#edaiPanel{position:fixed;z-index:41;background:var(--bg);border-left:1px solid var(--border);
+  display:flex;flex-direction:column;transform:translateX(100%);transition:transform .22s cubic-bezier(.4,0,.2,1);
+  top:0;right:0;bottom:0;width:min(440px,100%);box-shadow:-14px 0 40px rgba(0,0,0,.5)}
+#edaiPanel.open{transform:translateX(0)}
+@media(max-width:620px){#edaiPanel{width:100%;border-left:none}}
+
+.edai-top{display:flex;align-items:center;gap:9px;padding:12px 14px;border-top:env(safe-area-inset-top) solid transparent;
+  border-bottom:1px solid var(--border);background:rgba(19,22,28,.92);backdrop-filter:blur(8px)}
+.edai-brand{display:flex;flex-direction:column;line-height:1.15}
+.edai-brand b{font-size:14px;font-weight:800;letter-spacing:.01em}
+.edai-brand span{font-size:10px;color:var(--dim)}
+.edai-dot{width:8px;height:8px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 3px rgba(77,141,255,.15)}
+.edai-x{margin-left:auto;background:none;border:1px solid var(--border);color:var(--dim);border-radius:9px;
+  width:32px;height:32px;font-size:16px;cursor:pointer;line-height:1}
+.edai-x:active{transform:scale(.95)}
+
+.edai-loaded{padding:9px 14px;border-bottom:1px solid var(--border);background:var(--surface);font-size:12px;color:var(--dim);display:flex;align-items:center;gap:8px}
+.edai-loaded .sel{color:var(--text);font-weight:600}
+.edai-loaded.hide{display:none}
+.edai-clear{margin-left:auto;font-size:10px;color:var(--faint);border:1px solid var(--border);background:none;border-radius:7px;padding:3px 7px;cursor:pointer}
+
+.edai-actions{display:flex;gap:7px;padding:10px 14px;overflow-x:auto;border-bottom:1px solid var(--border);scrollbar-width:none}
+.edai-actions::-webkit-scrollbar{display:none}
+.edai-qa{flex:0 0 auto;background:var(--surface2);border:1px solid var(--border);color:var(--text);
+  border-radius:20px;padding:7px 12px;font-size:12px;font-weight:600;font-family:inherit;cursor:pointer;white-space:nowrap}
+.edai-qa:active{transform:scale(.97)}
+.edai-qa.hot{border-color:rgba(77,141,255,.5);color:var(--accent)}
+
+.edai-log{flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:12px}
+.edai-msg{max-width:100%;font-size:13.5px;line-height:1.5}
+.edai-msg.u{align-self:flex-end;background:var(--accent);color:#06122b;border-radius:14px 14px 4px 14px;padding:9px 12px;font-weight:500;max-width:82%}
+.edai-msg.a{align-self:flex-start;color:var(--text)}
+.edai-msg.a p{margin:0 0 8px}.edai-msg.a p:last-child{margin:0}
+.edai-msg.a b{color:#fff}
+.edai-msg.a ul{margin:4px 0 8px;padding-left:2px;list-style:none}
+.edai-msg.a li{padding:2px 0 2px 16px;position:relative;color:var(--text)}
+.edai-msg.a li:before{content:'';position:absolute;left:2px;top:10px;width:5px;height:5px;border-radius:50%;background:var(--dim)}
+.edai-msg.a li.pos:before{background:var(--pos)}.edai-msg.a li.neg:before{background:var(--neg)}.edai-msg.a li.warn:before{background:var(--warn)}
+.edai-src{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--faint);margin-top:6px;border-top:1px dashed var(--border);padding-top:5px}
+
+/* structured verdict card */
+.edai-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden}
+.edai-vhead{display:flex;align-items:center;gap:10px;padding:11px 13px;border-bottom:1px solid var(--border)}
+.edai-verdict{font-family:'JetBrains Mono',monospace;font-weight:700;font-size:13px;letter-spacing:.04em;padding:4px 10px;border-radius:8px}
+.v-bet{color:var(--pos);background:rgba(47,180,124,.12);border:1px solid rgba(47,180,124,.4)}
+.v-lean{color:var(--warn);background:rgba(217,154,43,.12);border:1px solid rgba(217,154,43,.4)}
+.v-pass{color:var(--neg);background:rgba(226,96,68,.12);border:1px solid rgba(226,96,68,.4)}
+.edai-vsel{font-size:13px;font-weight:700}.edai-vsub{font-size:10px;color:var(--dim);font-family:'JetBrains Mono',monospace}
+.edai-grid{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)}
+.edai-cell{background:var(--surface);padding:9px 12px}
+.edai-cell .k{font-size:9px;text-transform:uppercase;letter-spacing:.05em;color:var(--faint)}
+.edai-cell .v{font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:600;margin-top:2px}
+.edai-cell .v.pos{color:var(--pos)}.edai-cell .v.neg{color:var(--neg)}.edai-cell .v.dim{color:var(--dim)}
+
+/* signature: edge decay */
+.edai-decay{padding:11px 13px;border-top:1px solid var(--border)}
+.edai-decay .dh{display:flex;justify-content:space-between;font-size:10px;text-transform:uppercase;letter-spacing:.05em;color:var(--faint);margin-bottom:7px}
+.edai-decay .dh b{color:var(--text);font-family:'JetBrains Mono',monospace}
+.edai-track{height:9px;border-radius:5px;background:linear-gradient(90deg,rgba(226,96,68,.25),rgba(217,154,43,.22),rgba(47,180,124,.22));overflow:hidden;position:relative}
+.edai-fill{position:absolute;left:0;top:0;bottom:0;border-radius:5px;background:linear-gradient(90deg,var(--accent),#7db0ff)}
+.edai-decay .dm{display:flex;justify-content:space-between;font-family:'JetBrains Mono',monospace;font-size:11px;margin-top:6px;color:var(--dim)}
+.edai-decay .dm .now{color:var(--text);font-weight:600}
+
+/* betting window */
+.edai-win{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--border);border-top:1px solid var(--border)}
+.edai-win .w{background:var(--surface);padding:9px 8px;text-align:center}
+.edai-win .w .k{font-size:9px;text-transform:uppercase;color:var(--faint);letter-spacing:.04em}
+.edai-win .w .v{font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:600;margin-top:3px}
+.edai-winstat{text-align:center;font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;letter-spacing:.06em;padding:7px;border-top:1px solid var(--border)}
+.edai-winstat.play{color:var(--pos)}.edai-winstat.miss{color:var(--neg)}
+
+/* decision readout (heuristic composite, components visible) */
+.edai-score{padding:11px 13px;border-top:1px solid var(--border)}
+.edai-score .sh{display:flex;align-items:baseline;gap:9px}
+.edai-score .num{font-family:'JetBrains Mono',monospace;font-size:26px;font-weight:700;line-height:1}
+.edai-score .band{font-size:11px;font-weight:700;letter-spacing:.03em}
+.edai-score .xp{margin-left:auto;font-size:9px;color:var(--warn);border:1px solid rgba(217,154,43,.4);border-radius:10px;padding:2px 6px;text-transform:uppercase;letter-spacing:.05em}
+.edai-comp{margin-top:9px;display:flex;flex-direction:column;gap:6px}
+.edai-comp .c{display:grid;grid-template-columns:88px 1fr 34px;align-items:center;gap:8px;font-size:11px}
+.edai-comp .c .lbl{color:var(--dim)}
+.edai-comp .c .bar{height:5px;border-radius:3px;background:var(--surface2);overflow:hidden}
+.edai-comp .c .bar i{display:block;height:100%;border-radius:3px;background:var(--mdl)}
+.edai-comp .c .val{font-family:'JetBrains Mono',monospace;text-align:right;color:var(--dim)}
+.edai-note{font-size:10.5px;color:var(--faint);line-height:1.45;padding:9px 13px;border-top:1px solid var(--border)}
+
+.edai-input{display:flex;gap:8px;padding:10px 12px calc(10px + env(safe-area-inset-bottom));border-top:1px solid var(--border);background:var(--surface)}
+.edai-input textarea{flex:1;min-height:42px;max-height:120px;background:var(--surface2);border:1px solid var(--border);border-radius:11px;
+  color:var(--text);padding:11px;font-size:14px;font-family:inherit;resize:none}
+.edai-send{background:var(--accent);color:#06122b;border:none;border-radius:11px;width:44px;font-weight:700;font-size:18px;cursor:pointer}
+.edai-send:disabled{opacity:.5}
+.edai-think{display:flex;gap:4px;align-self:flex-start;padding:4px 0}
+.edai-think i{width:6px;height:6px;border-radius:50%;background:var(--dim);animation:edaiB 1s infinite}
+.edai-think i:nth-child(2){animation-delay:.15s}.edai-think i:nth-child(3){animation-delay:.3s}
+@keyframes edaiB{0%,60%,100%{opacity:.25}30%{opacity:1}}
+.edai-empty{color:var(--dim);font-size:13px;line-height:1.5;text-align:center;margin:auto;max-width:300px}
+.edai-empty svg{width:34px;height:34px;stroke:var(--accent);fill:none;stroke-width:1.6;opacity:.7;margin-bottom:10px}
+
+/* the per-signal Analyze button injected into receipts */
+.edai-analyze{width:100%;margin-top:8px;background:transparent;border:1px solid rgba(77,141,255,.45);color:var(--accent);
+  border-radius:10px;font-family:inherit;font-weight:700;font-size:13px;padding:11px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px}
+.edai-analyze svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:2}
+.edai-analyze:active{transform:scale(.99)}
+</style>
+
+<button id="edaiFab" onclick="EDAI.open()" title="EdgeDesk Intelligence">
+  <svg viewBox="0 0 24 24"><path d="M12 3l2.2 5.8L20 11l-5.8 2.2L12 19l-2.2-5.8L4 11l5.8-2.2L12 3z"/></svg>
+  <span class="fk">AI</span>
+</button>
+<div id="edaiScrim" onclick="EDAI.close()"></div>
+<div id="edaiPanel" role="dialog" aria-label="EdgeDesk Intelligence">
+  <div class="edai-top">
+    <span class="edai-dot"></span>
+    <div class="edai-brand"><b>EdgeDesk Intelligence</b><span>Your AI betting research analyst</span></div>
+    <button class="edai-x" onclick="EDAI.close()" aria-label="Close">&times;</button>
+  </div>
+  <div class="edai-loaded hide" id="edaiLoaded">
+    <span>Loaded</span><span class="sel" id="edaiLoadedSel"></span>
+    <button class="edai-clear" onclick="EDAI.unload()">clear</button>
+  </div>
+  <div class="edai-actions" id="edaiActions"></div>
+  <div class="edai-log" id="edaiLog"></div>
+  <div class="edai-input">
+    <textarea id="edaiText" rows="1" placeholder="Ask about an edge, a price, a matchup…"
+      onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();EDAI.sendText();}"
+      oninput="this.style.height='auto';this.style.height=Math.min(120,this.scrollHeight)+'px'"></textarea>
+    <button class="edai-send" id="edaiSend" onclick="EDAI.sendText()">&#8593;</button>
+  </div>
+</div>
+
+<script>
+/* ===================================================================================
+   EdgeDesk Intelligence — decision-support layer.
+
+   ARCHITECTURE (mirrors the product's frozen research discipline):
+     1. Deterministic engine  — all math (implied, de-vig, EV, edge decay, betting
+        window, decision readout) runs here on OWNED signal fields. No LLM, no
+        fabrication. This is the source of truth and works with zero backend.
+     2. AI narration           — a compact evidence packet is POSTed to a Supabase
+        Edge Function (edgedesk_ai) that proxies a model with a strict, packet-only
+        system prompt. If the function is not deployed/reachable, the panel falls
+        back to a locally-generated analyst narrative built from the same numbers.
+
+   The LLM never produces probabilities, edges, fair prices or CLV. Those come from
+   the pipeline. The AI interprets; it is not the model.
+   =================================================================================== */
+(function(){
+  var AI_FN = (typeof SB_URL!=='undefined'? SB_URL : '') + '/functions/v1/edgedesk_ai';
+  var FLOOR  = (typeof REAL_FLOOR!=='undefined' && REAL_FLOOR) ? REAL_FLOOR : 0.02;
+  var STALE_MIN = (typeof EDGE_MAX_AGE_MIN!=='undefined' && EDGE_MAX_AGE_MIN) ? EDGE_MAX_AGE_MIN : 45;
+
+  var LOADED=null;        // enriched signal currently in focus
+  var HIST=[];            // chat history for the AI function
+  var BUSY=false;
+
+  /* ---- small utils ---- */
+  function $id(x){return document.getElementById(x);}
+  function n(x){ x=+x; return isFinite(x)?x:null; }
+  function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+  function amStr(a){ if(a==null)return '—'; a=Math.round(a); return a>0?'+'+a:''+a; }
+  function decToAm(d){ return (typeof GE!=='undefined'&&GE.decToAm)?GE.decToAm(d):(d>=2?Math.round((d-1)*100):Math.round(-100/(d-1))); }
+  function impDec(d){ return d>1?1/d:null; }
+  function pct(x,dp){ if(x==null)return '—'; return (x>=0?'+':'')+(x*100).toFixed(dp==null?1:dp)+'%'; }
+  function pctAbs(x,dp){ if(x==null)return '—'; return (x*100).toFixed(dp==null?1:dp)+'%'; }
+  function clamp(x,a,b){return Math.max(a,Math.min(b,x));}
+  function selL(e){ return (typeof selLabel==='function')?selLabel(e):(esc(e.selection)+(e.point!=null?' '+e.point:'')); }
+  function mktL(m){ return (typeof mktLabel==='function')?mktLabel(m):esc(m||''); }
+  function sportL(e){ return (typeof evSportLabel==='function')?evSportLabel(e):esc(e.sport_title||e.sport_key||''); }
+  function trusted(b){ return (typeof isTrusted==='function')?isTrusted(b):true; }
+  function ago(ms){ var m=Math.round((Date.now()-ms)/60000); if(m<60)return m+'m'; var h=(m/60); return h.toFixed(1)+'h'; }
+
+  /* ---- enrich a card object with the full signal row (CLV / pinnacle / first_edge / close) ---- */
+  async function enrich(e){
+    var out=Object.assign({},e);
+    try{
+      if(typeof sbGet==='function' && e.event_id){
+        var cols='first_edge,first_seen_at,flagged_best_dec,flagged_edge,flagged_at,pin_dec,pin_opp_dec,'
+               + 'clv,beat_close,result,graded_at,closing_sharp_fair';
+        var q='signals?select='+cols+'&event_id=eq.'+encodeURIComponent(e.event_id)
+             + '&market=eq.'+encodeURIComponent(e.market||'')
+             + '&selection=eq.'+encodeURIComponent(e.selection||'');
+        if(e.point!=null) q+='&point=eq.'+encodeURIComponent(e.point);
+        q+='&order=last_seen_at.desc.nullslast&limit=1';
+        var rows=await sbGet(q);
+        if(rows&&rows[0]) out=Object.assign(out,rows[0]);
+      }
+    }catch(_){}
+    // MLB context (display-only), reuse the app's own resolver
+    try{ if(typeof mlbLookup==='function'){ var g=mlbLookup(e); if(g) out.__mlb=g; } }catch(_){}
+    try{ if(window.WX&&e.event_id&&window.WX[e.event_id]) out.__wx=window.WX[e.event_id]; }catch(_){}
+    return out;
+  }
+
+  /* ======================= DETERMINISTIC DECISION ENGINE ======================= */
+  function evidence(e){
+    var fairP = n(e.sharp_fair); var fairSrc='Pinnacle de-vig fair';
+    if(fairP==null){ fairP=n(e.consensus_fair); fairSrc='consensus fair'; }
+    var curDec = n(e.best_dec), detDec = n(e.first_best_dec), flagDec=n(e.flagged_best_dec);
+    var curAm = curDec?decToAm(curDec):null, detAm=detDec?decToAm(detDec):null;
+    var fairDec = (fairP&&fairP>0)?1/fairP:null, fairAm=fairDec?decToAm(fairDec):null;
+
+    var curEdge = n(e.edge);                                    // authoritative (pipeline)
+    if(curEdge==null && fairP && curDec) curEdge = fairP*curDec-1;
+    var detEdge = n(e.first_edge);
+    if(detEdge==null && fairP && detDec) detEdge = fairP*detDec-1;   // deterministic transform of owned prices
+    var evNow = (fairP && curDec)? fairP*curDec-1 : null;
+
+    // edge decay
+    var remaining=null;
+    if(detEdge!=null && detEdge>0 && curEdge!=null) remaining=clamp(curEdge/detEdge,0,1);
+    else if(curEdge!=null) remaining = curEdge>0?1:0;
+
+    // betting window (fair break-even -> floor-adjusted max playable)
+    var maxDec = (fairP&&fairP>0)? (1+FLOOR)/fairP : null;      // price where edge == floor
+    var maxAm  = maxDec?decToAm(maxDec):null;
+    var bestDec = detDec!=null? Math.max(detDec, curDec||0) : curDec; // best observed number
+    var bestAm  = bestDec?decToAm(bestDec):null;
+
+    // confirmation / quality
+    var nb=n(e.n_books)||0, nbe=n(e.n_books_eff)||nb, corr=n(e.corrob_n)||0;
+    var sharp = e.has_sharp===true || e.has_sharp==='true';
+    var tr = trusted(e.best_book);
+    var ls = e.last_seen_at? new Date(e.last_seen_at).getTime():0;
+    var staleM = ls? (Date.now()-ls)/60000 : 999;
+
+    // graded CLV (only if present — never invented)
+    var graded = e.graded_at!=null;
+    var clv = graded? n(e.clv) : null;
+    var beat = graded? (e.beat_close===true||e.beat_close==='true') : null;
+    var closeP = n(e.closing_sharp_fair);
+    var result = graded? e.result : null;
+
+    /* ---- verdict (consistent with the app's edgeVerdict philosophy) ---- */
+    var reasonsFor=[], reasonsAgainst=[], verdict, why;
+    if(curEdge==null){ verdict='PASS'; why='No fair price available to judge this number against.'; }
+    else if(curEdge < FLOOR){
+      verdict='PASS';
+      why = (detEdge!=null && detEdge>=FLOOR)
+        ? 'The edge existed at detection ('+amStr(detAm)+') but the current price has moved to '+amStr(curAm)+', pulling EV below the '+pctAbs(FLOOR,1)+' floor.'
+        : 'Current price is below fair — negative-to-marginal EV at the best number. Research only, not a play.';
+    } else {
+      if(!tr && nb<4){ verdict='PASS'; why='Best price is offshore and only '+nb+' book'+(nb===1?'':'s')+' quote the fair line — structurally too thin to trust.'; }
+      else if(staleM>=STALE_MIN){ verdict='PASS'; why='Last re-priced '+Math.round(staleM)+'m ago. Treat as stale until capture confirms it is still live.'; }
+      else if(curEdge>=0.03 && tr && nb>=5 && sharp){ verdict='BET'; why='Clears the bar with real liquidity: '+pct(curEdge)+' at a US-regulated book, sharp-confirmed.'; }
+      else { verdict='LEAN'; why='Positive and playable, but with caveats worth pricing in before you fire.'; }
+    }
+
+    // reasons (all from owned data)
+    if(curEdge!=null && curEdge>0) reasonsFor.push(pct(curEdge)+' estimated edge vs '+fairSrc);
+    if(sharp) reasonsFor.push('Pinnacle (sharp reference) is quoting this side');
+    if(tr) reasonsFor.push('best price is at a US-regulated book');
+    if(nb>=5) reasonsFor.push(nb+' books behind the fair line');
+    if(corr>=1) reasonsFor.push('corroborated across '+corr+' sharp level'+(corr===1?'':'s'));
+    if(graded && beat===true && clv!=null) reasonsFor.push('this bet beat the close (CLV '+pct(clv)+')');
+
+    if(!tr) reasonsAgainst.push('best price is offshore — structurally less trustworthy');
+    if(nb<4) reasonsAgainst.push('only '+nb+' book'+(nb===1?'':'s')+' quoting the fair line');
+    if(staleM>=20 && staleM<STALE_MIN) reasonsAgainst.push('priced '+Math.round(staleM)+'m ago — verify it is still live');
+    if(staleM>=STALE_MIN) reasonsAgainst.push('stale: last re-priced '+Math.round(staleM)+'m ago');
+    if(curEdge>0.06) reasonsAgainst.push('edge this large on a game line is often a stale/erroneous price — confirm before trusting');
+    if(remaining!=null && remaining<0.5 && detEdge>0) reasonsAgainst.push('over half the detection edge has already decayed ('+(remaining*100).toFixed(0)+'% remains)');
+    if(!sharp) reasonsAgainst.push('no sharp (Pinnacle) confirmation on this exact side');
+    if(graded && beat===false) reasonsAgainst.push('this bet failed to beat the close (CLV '+pct(clv)+') — placement value is not closing value');
+    if(e.sport_key==='baseball_mlb') reasonsAgainst.push('MLB caveat: lineups are probable, not confirmed; bullpen shows flagged arms only');
+
+    /* ---- decision readout (heuristic composite — components stay visible, flagged experimental) ---- */
+    var comps=[];
+    var cEdge = curEdge==null?0: clamp(curEdge/0.05,0,1)*30;                          // 0–30
+    var cPrice= remaining==null?0: remaining*25;                                       // 0–25
+    var cConf = (sharp?12:0) + clamp(nb/8,0,1)*8 + clamp(corr/3,0,1)*5;                // 0–25
+    var cData = (tr?6:0) + clamp((STALE_MIN-Math.min(staleM,STALE_MIN))/STALE_MIN,0,1)*6; // 0–12
+    var cStab = curEdge==null?0 : (curEdge>0.06? 2 : (curEdge>0?8:0));                 // 0–8 (penalize suspicious size)
+    comps.push({k:'Edge size',v:cEdge,max:30});
+    comps.push({k:'Price / decay',v:cPrice,max:25});
+    comps.push({k:'Confirmation',v:cConf,max:25});
+    comps.push({k:'Data quality',v:cData,max:12});
+    comps.push({k:'Stability',v:cStab,max:8});
+    var score=Math.round(cEdge+cPrice+cConf+cData+cStab);
+    if(verdict==='PASS') score=Math.min(score,44);
+    var band = score>=85?'Strong setup':score>=70?'Solid':score>=55?'Marginal':score>=40?'Thin':'Below bar';
+
+    return {
+      e:e, sel:selL(e), matchup:(e.away_team||'')+' @ '+(e.home_team||''),
+      market:mktL(e.market), sport:sportL(e), when:(typeof whenLabel==='function'?whenLabel(e.commence_time):''),
+      fairP:fairP, fairSrc:fairSrc, fairAm:fairAm, fairDec:fairDec,
+      curDec:curDec, curAm:curAm, detDec:detDec, detAm:detAm, flagDec:flagDec,
+      curEdge:curEdge, detEdge:detEdge, evNow:evNow, remaining:remaining,
+      maxAm:maxAm, bestAm:bestAm,
+      nb:nb, nbe:nbe, corr:corr, sharp:sharp, trusted:tr, staleM:staleM, book:e.best_book,
+      pinDec:n(e.pin_dec), pinOppDec:n(e.pin_opp_dec),
+      graded:graded, clv:clv, beat:beat, closeP:closeP, result:result,
+      verdict:verdict, why:why, reasonsFor:reasonsFor, reasonsAgainst:reasonsAgainst,
+      score:score, band:band, comps:comps, mlb:e.__mlb||null, wx:e.__wx||null
+    };
+  }
+
+  /* ======================= RENDERERS ======================= */
+  function vClass(v){ return v==='BET'?'v-bet':v==='LEAN'?'v-lean':'v-pass'; }
+
+  function snapshotHTML(x){
+    var evc = x.evNow==null?'dim':(x.evNow>0?'pos':'neg');
+    var edc = x.curEdge==null?'dim':(x.curEdge>0?'pos':'neg');
+    var decayPct = x.remaining==null?0:Math.round(x.remaining*100);
+    var winStat = (x.curEdge!=null && x.curEdge>=FLOOR)?'play':'miss';
+    var comps = x.comps.map(function(c){
+      var w=Math.round(c.v/c.max*100);
+      return '<div class="c"><span class="lbl">'+esc(c.k)+'</span><span class="bar"><i style="width:'+w+'%"></i></span>'
+           + '<span class="val">'+Math.round(c.v)+'/'+c.max+'</span></div>';
+    }).join('');
+    return '<div class="edai-card">'
+      + '<div class="edai-vhead"><span class="edai-verdict '+vClass(x.verdict)+'">'+x.verdict+'</span>'
+      +   '<div><div class="edai-vsel">'+x.sel+'</div><div class="edai-vsub">'+esc(x.market)+' · '+amStr(x.curAm)+' · '+esc(x.book||'')+'</div></div></div>'
+      + '<div class="edai-grid">'
+      +   cell('Model / fair prob', x.fairP==null?'—':pctAbs(x.fairP), 'dim')
+      +   cell('Fair price', amStr(x.fairAm), 'dim')
+      +   cell('Current edge', pct(x.curEdge), edc)
+      +   cell('EV @ this price', x.evNow==null?'—':pct(x.evNow), evc)
+      + '</div>'
+      + '<div class="edai-decay"><div class="dh"><span>Edge decay</span><b>'+decayPct+'% remains</b></div>'
+      +   '<div class="edai-track"><div class="edai-fill" style="width:'+decayPct+'%"></div></div>'
+      +   '<div class="dm"><span>detected '+amStr(x.detAm)+' · '+pct(x.detEdge)+'</span>'
+      +     '<span class="now">now '+amStr(x.curAm)+' · '+pct(x.curEdge)+'</span></div></div>'
+      + '<div class="edai-win">'
+      +   '<div class="w"><div class="k">Best seen</div><div class="v">'+amStr(x.bestAm)+'</div></div>'
+      +   '<div class="w"><div class="k">Current</div><div class="v">'+amStr(x.curAm)+'</div></div>'
+      +   '<div class="w"><div class="k">Max playable</div><div class="v">'+amStr(x.maxAm)+'</div></div></div>'
+      + '<div class="edai-winstat '+winStat+'">'+(winStat==='play'?'● PLAYABLE at the current number':'○ MISSED — current price is past the floor')+'</div>'
+      + '<div class="edai-score"><div class="sh"><span class="num">'+x.score+'</span><span class="band">'+x.band+'</span>'
+      +   '<span class="xp" title="Not a CLV-validated model. A transparent readout of the components below.">experimental</span></div>'
+      +   '<div class="edai-comp">'+comps+'</div></div>'
+      + (x.graded? '<div class="edai-note"><b style="color:var(--text)">Graded outcome:</b> '
+          + (x.result?esc(x.result).toUpperCase()+' · ':'')
+          + (x.clv!=null?'CLV '+pct(x.clv)+' · ':'')
+          + (x.beat===true?'beat the close':x.beat===false?'did not beat the close':'')
+          + '. Result does not validate the decision — CLV does.</div>' : '')
+      + '<div class="edai-note">Fair price and edge are pipeline values ('+esc(x.fairSrc)+'). EV, decay, window and the readout are deterministic transforms of owned prices — the model does not touch them.</div>'
+      + '</div>';
+  }
+  function cell(k,v,cls){ return '<div class="edai-cell"><div class="k">'+esc(k)+'</div><div class="v '+(cls||'')+'">'+esc(v)+'</div></div>'; }
+
+  /* local analyst narrative (no LLM) — grounded entirely in the evidence object */
+  function narrative(x, mode){
+    var p=[];
+    if(mode==='challenge'){
+      p.push('<p><b>Challenge — the case against '+x.sel+'.</b> I am arguing to talk you off this, on purpose.</p>');
+      var ag = x.reasonsAgainst.length?x.reasonsAgainst:['nothing structural stands out, which is itself a reason to size conservatively rather than press'];
+      p.push(list(ag,'neg'));
+      p.push('<p>'+ (x.verdict==='PASS'
+        ? 'The numbers already say PASS, so the burden is on the bet, not the fade.'
+        : 'None of this necessarily kills it, but confirmation bias is the enemy. If you would not take '+amStr(x.maxAm)+', you are betting the team, not the price.') +'</p>');
+      return p.join('');
+    }
+    if(mode==='whatchanged'){
+      p.push('<p><b>Since EdgeDesk detected this:</b></p>');
+      var ch=[];
+      if(x.detAm!=null && x.curAm!=null && x.detAm!==x.curAm) ch.push({t:'Line moved '+amStr(x.detAm)+' → '+amStr(x.curAm),k:(x.curEdge<x.detEdge?'neg':'pos')});
+      else ch.push({t:'Line unchanged at '+amStr(x.curAm),k:''});
+      if(x.detEdge!=null&&x.curEdge!=null) ch.push({t:'Edge '+pct(x.detEdge)+' → '+pct(x.curEdge)+' ('+(x.remaining==null?'—':Math.round(x.remaining*100)+'% remains')+')',k:(x.curEdge<x.detEdge?'neg':'pos')});
+      if(x.pinDec) ch.push({t:'Pinnacle currently '+amStr(decToAm(x.pinDec))+' on this side',k:''});
+      if(x.wx) ch.push({t:'Weather on file: '+(x.wx.temp_f!=null?Math.round(x.wx.temp_f)+'°F ':'')+(x.wx.wind_mph!=null?x.wx.wind_mph+'mph wind':''),k:''});
+      ch.push({t:'Last re-priced '+ (x.staleM<1?'<1':Math.round(x.staleM)) +'m ago',k:(x.staleM>=STALE_MIN?'warn':'')});
+      p.push(list(ch));
+      p.push('<p><b>Conclusion:</b> '+ (x.remaining!=null&&x.remaining<0.6
+        ? 'the edge has weakened mainly through price movement, not new information.'
+        : 'the opportunity is largely intact since detection.') +'</p>');
+      return p.join('');
+    }
+    // default: analyze / why
+    p.push('<p><b>Verdict: '+x.verdict+'.</b> '+esc(x.why)+'</p>');
+    if(x.reasonsFor.length){ p.push('<p><b>Why I like it</b></p>'); p.push(list(x.reasonsFor,'pos')); }
+    if(x.reasonsAgainst.length){ p.push('<p><b>Why I don\u2019t love it</b></p>'); p.push(list(x.reasonsAgainst,'warn')); }
+    var bottom = x.verdict==='PASS'
+      ? 'Bottom line: pass at '+amStr(x.curAm)+'. This is a good non-bet, not a missed one.'
+      : 'Bottom line: playable at '+amStr(x.curAm)+'. I would not chase it past '+amStr(x.maxAm)+'.';
+    p.push('<p><b>'+esc(bottom)+'</b></p>');
+    return p.join('');
+  }
+  function list(items,cls){
+    return '<ul>'+items.map(function(it){
+      var t=typeof it==='string'?it:it.t, k=typeof it==='string'?(cls||''):(it.k||cls||'');
+      return '<li'+(k?' class="'+k+'"':'')+'>'+esc(t)+'</li>';
+    }).join('')+'</ul>';
+  }
+
+  /* MLB matchup packet for the AI (owned, display-only fields) */
+  function mlbPacket(g){
+    if(!g)return null;
+    return {
+      away_pitcher:g.away_pitcher_name, away_throws:g.away_pitcher_throws,
+      home_pitcher:g.home_pitcher_name, home_throws:g.home_pitcher_throws,
+      park_factor:g.park_factor, hr_factor:g.hr_factor, run_factor:g.run_factor,
+      roof:g.roof_type, dome:g.is_dome, temp_f:g.temp_f, wind_mph:g.wind_mph, wind_dir:g.wind_dir,
+      away_record:g.away_record, home_record:g.home_record, away_streak:g.away_streak, home_streak:g.home_streak,
+      note:'probable pitchers / records — display-only context, never feeds edge math'
+    };
+  }
+
+  /* ======================= UI PLUMBING ======================= */
+  var ACTIONS_LOADED=[
+    ['Analyze','analyze','hot'],['Why?','why',''],['Challenge','challenge',''],
+    ['What changed?','whatchanged',''],['Check my bet','checkbet',''],['Compare…','compare','']
+  ];
+  var ACTIONS_EMPTY=[
+    ['Best bets today','bestbets','hot'],['Compare edges','compare',''],['How this works','help','']
+  ];
+  function renderActions(){
+    var host=$id('edaiActions'); if(!host)return;
+    var set=LOADED?ACTIONS_LOADED:ACTIONS_EMPTY;
+    host.innerHTML=set.map(function(a){
+      return '<button class="edai-qa '+(a[2]||'')+'" onclick="EDAI.action(\''+a[1]+'\')">'+esc(a[0])+'</button>';
+    }).join('');
+  }
+  function push(role,html){
+    var log=$id('edaiLog'); if(!log)return;
+    var d=document.createElement('div'); d.className='edai-msg '+role;
+    d.innerHTML= role==='u'?esc(html):html;
+    log.appendChild(d); log.scrollTop=log.scrollHeight; return d;
+  }
+  function thinking(on){
+    var log=$id('edaiLog'); var ex=$id('edaiThink');
+    if(on){ if(ex)return; var d=document.createElement('div'); d.className='edai-think'; d.id='edaiThink';
+      d.innerHTML='<i></i><i></i><i></i>'; log.appendChild(d); log.scrollTop=log.scrollHeight; }
+    else if(ex) ex.remove();
+  }
+  function emptyState(){
+    $id('edaiLog').innerHTML='<div class="edai-empty">'
+      +'<svg viewBox="0 0 24 24"><path d="M12 3l2.2 5.8L20 11l-5.8 2.2L12 19l-2.2-5.8L4 11l5.8-2.2L12 3z"/></svg>'
+      +'<div>Ask whether a number is worth it, or open a signal and hit <b>Analyze</b>.<br><br>'
+      +'I answer the only question that matters: is this a good decision at <i>this</i> price, right now? A well-reasoned PASS counts as a win.</div></div>';
+  }
+
+  /* ---- call the AI function; fall back to the local narrative on any failure ---- */
+  async function askAI(mode, question, x, extra){
+    var packet = x? {
+      game:{matchup:x.matchup,sport:x.sport,commence:x.e.commence_time},
+      market:x.market, selection:x.sel,
+      prices:{detect:x.detAm,current:x.curAm,fair:x.fairAm,fair_src:x.fairSrc,best_seen:x.bestAm,max_playable:x.maxAm,pinnacle:x.pinDec?decToAm(x.pinDec):null},
+      edge:{detect:x.detEdge,current:x.curEdge,ev:x.evNow,remaining:x.remaining,floor:FLOOR},
+      confirmation:{has_sharp:x.sharp,n_books:x.nb,n_books_eff:x.nbe,corrob:x.corr,book:x.book,trusted:x.trusted},
+      timing:{stale_min:Math.round(x.staleM)},
+      clv:x.graded?{clv:x.clv,beat_close:x.beat,closing:x.closeP,result:x.result}:null,
+      mlb: mlbPacket(x.mlb),
+      deterministic:{verdict:x.verdict,why:x.why,score:x.score,band:x.band,
+        reasons_for:x.reasonsFor,reasons_against:x.reasonsAgainst}
+    } : null;
+    try{
+      var tok = (typeof edToken==='function')? await edToken() : (typeof SB_KEY!=='undefined'?SB_KEY:'');
+      var r=await fetch(AI_FN,{method:'POST',
+        headers:{'content-type':'application/json',authorization:'Bearer '+tok,apikey:(typeof SB_KEY!=='undefined'?SB_KEY:'')},
+        body:JSON.stringify({mode:mode,question:question,packet:packet,history:HIST.slice(-6),compare:extra||null})});
+      if(!r.ok) throw new Error('fn '+r.status);
+      var d=await r.json();
+      if(d&&d.answer){ HIST.push({role:'user',content:question||mode}); HIST.push({role:'assistant',content:d.answer});
+        return {html:mdToHtml(d.answer), src:d.model?('reasoned by '+d.model+(d.cached?' · cached':'')):null}; }
+      throw new Error('empty');
+    }catch(err){
+      // deterministic fallback — still a real, grounded answer
+      if(x){ return {html:narrative(x, mode==='why'?'analyze':mode), src:'deterministic engine (AI narration offline — deploy edgedesk_ai to enable)'}; }
+      return {html:'<p>The reasoning service isn\u2019t reachable right now. Open a specific signal and hit <b>Analyze</b> — the decision engine runs locally and doesn\u2019t need it.</p>',
+        src:'AI narration offline'};
+    }
+  }
+  // very small markdown -> html (bold, bullets, paragraphs). The function returns plain prose.
+  function mdToHtml(s){
+    s=esc(s);
+    var lines=s.split(/\n/), out=[], buf=[], inList=false;
+    function flush(){ if(buf.length){out.push('<p>'+buf.join(' ')+'</p>');buf=[];} }
+    lines.forEach(function(ln){
+      ln=ln.replace(/\*\*(.+?)\*\*/g,'<b>$1</b>');
+      if(/^\s*[-*•]\s+/.test(ln)){ if(!inList){flush();out.push('<ul>');inList=true;} out.push('<li>'+ln.replace(/^\s*[-*•]\s+/,'')+'</li>'); }
+      else if(!ln.trim()){ if(inList){out.push('</ul>');inList=false;} flush(); }
+      else buf.push(ln.trim());
+    });
+    if(inList)out.push('</ul>'); flush();
+    return out.join('');
+  }
+
+  /* ======================= BEST BETS (deterministic scan + rank) ======================= */
+  async function bestBets(){
+    push('u','What are the best opportunities today?');
+    thinking(true);
+    var pool=[].concat(window.EDGES||[], window.D5_POOL||[]);
+    // one side per market, positive edge, fresh-ish, liquid
+    var seen={}, cand=[];
+    pool.forEach(function(e){
+      if(!e||e.edge==null||e.edge<=0||!e.best_dec)return;
+      var k=e.event_id+'|'+e.market+'|'+e.selection; if(seen[k])return; seen[k]=1;
+      var ls=e.last_seen_at?new Date(e.last_seen_at).getTime():0;
+      if(ls && (Date.now()-ls)/60000>=STALE_MIN)return;
+      if((e.n_books||0)<3)return;
+      cand.push(e);
+    });
+    // score each with the same engine (no enrichment needed for ranking)
+    var scored=cand.map(function(e){ var x=evidence(e); return {x:x,s:x.score}; })
+                   .sort(function(a,b){return b.s-a.s;}).slice(0,6);
+    thinking(false);
+    if(!scored.length){ push('a','<p>Nothing on the board clears the bar right now — no positive-edge, liquid, fresh signals in the window. That is a real answer: today is a no-play. I would rather show you an empty board than manufacture a bet.</p>'); return; }
+    var rows=scored.map(function(o,i){
+      var x=o.x;
+      return '<div class="edai-card" style="margin-bottom:8px"><div class="edai-vhead">'
+        + '<span class="edai-verdict '+vClass(x.verdict)+'">'+x.verdict+'</span>'
+        + '<div><div class="edai-vsel">'+x.sel+'</div><div class="edai-vsub">'+esc(x.sport)+' · '+amStr(x.curAm)+' · '+pct(x.curEdge)+' · score '+x.score+'</div></div>'
+        + '<button class="edai-clear" style="margin-left:auto" onclick="EDAI.loadFrom('+i+')">open</button></div></div>';
+    }).join('');
+    window.__EDAI_BB=scored.map(function(o){return o.x.e;});
+    push('a','<p><b>Ranked by decision quality, not raw edge.</b> The biggest model number is not automatically the best bet — these balance edge, price survival, confirmation and data quality.</p>'+rows
+      +'<p class="edai-src" style="border:none;margin-top:2px">Deterministic ranking over live signals. Tap <b>open</b> to load one and go deeper.</p>');
+  }
+
+  /* ======================= COMPARE ======================= */
+  async function compare(){
+    var pool=[].concat(window.EDGES||[],window.D5_POOL||[]).filter(function(e){return e&&e.edge!=null&&e.best_dec;});
+    var seen={},uniq=[];
+    pool.forEach(function(e){var k=e.event_id+'|'+e.market+'|'+e.selection;if(!seen[k]){seen[k]=1;uniq.push(e);}});
+    uniq.sort(function(a,b){return (b.edge||0)-(a.edge||0);});
+    var top=uniq.slice(0,3);
+    if(top.length<2){ push('a','<p>I need at least two live edges on the board to compare. Nothing sufficient right now.</p>'); return; }
+    push('u','Compare the top edges on the board.');
+    thinking(true);
+    var xs=top.map(evidence);
+    thinking(false);
+    var head='<tr><th style="text-align:left">Bet</th><th>Edge</th><th>EV</th><th>Conf.</th><th>Decision</th></tr>';
+    var body=xs.map(function(x){
+      var conf=(x.sharp?'sharp':'no-sharp')+' · '+x.nb+'bk';
+      return '<tr><td style="text-align:left">'+x.sel+' <span style="color:var(--faint)">'+amStr(x.curAm)+'</span></td>'
+        +'<td class="mono">'+pct(x.curEdge)+'</td><td class="mono">'+(x.evNow==null?'—':pct(x.evNow))+'</td>'
+        +'<td style="font-size:10px;color:var(--dim)">'+esc(conf)+'</td>'
+        +'<td><span class="edai-verdict '+vClass(x.verdict)+'" style="font-size:10px;padding:2px 6px">'+x.verdict+'</span></td></tr>';
+    }).join('');
+    // pick best-value, best-confirmed, best risk-adjusted
+    var byEdge=xs.slice().sort(function(a,b){return b.curEdge-a.curEdge;})[0];
+    var byConf=xs.slice().sort(function(a,b){return (b.sharp?1:0)+b.nb/20 - ((a.sharp?1:0)+a.nb/20);})[0];
+    var byScore=xs.slice().sort(function(a,b){return b.score-a.score;})[0];
+    push('a','<div class="edai-card" style="padding:6px 10px"><table class="tbl" style="width:100%;font-size:12px">'+head+body+'</table></div>'
+      +'<p style="margin-top:8px"><b>Best pure value:</b> '+byEdge.sel+' ('+pct(byEdge.curEdge)+').<br>'
+      +'<b>Best market-confirmed:</b> '+byConf.sel+' ('+(byConf.sharp?'sharp-confirmed':'widest book support')+').<br>'
+      +'<b>Best risk-adjusted:</b> '+byScore.sel+' (readout '+byScore.score+').</p>'
+      +'<p>Raw edge and decision quality disagree on purpose — the largest number often carries the most price or data risk.</p>');
+  }
+
+  /* ======================= CHECK MY BET ======================= */
+  function checkBet(){
+    if(!LOADED){ push('a','<p>Load a signal first, then I can grade your specific entry price against the fair number.</p>'); return; }
+    var x=evidence(LOADED);
+    push('a','<div class="edai-card" style="padding:12px"><div class="edai-vsel" style="margin-bottom:8px">Check my bet — '+x.sel+'</div>'
+      +'<div class="edai-cell" style="padding:0"><div class="k">Enter the American odds you got</div></div>'
+      +'<div style="display:flex;gap:8px;margin-top:8px"><input id="edaiMyOdds" inputmode="text" placeholder="'+amStr(x.curAm)+'" '
+      +'style="flex:1;background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:9px;padding:10px;font-family:JetBrains Mono,monospace">'
+      +'<button class="edai-qa hot" onclick="EDAI.gradeBet()">Grade it</button></div>'
+      +'<div id="edaiMyRes" style="margin-top:10px"></div></div>');
+  }
+  function gradeBet(){
+    if(!LOADED)return; var x=evidence(LOADED);
+    var raw=($id('edaiMyOdds')||{}).value; var am=parseFloat(String(raw||'').replace(/[^0-9.\-+]/g,''));
+    if(!isFinite(am)){ $id('edaiMyRes').innerHTML='<span style="color:var(--warn);font-size:12px">Enter odds like -122 or +140.</span>'; return; }
+    var myDec=(typeof GE!=='undefined'&&GE.amToDec)?GE.amToDec(am):(am>0?am/100+1:100/(-am)+1);
+    var myEv = (x.fairP&&myDec)? x.fairP*myDec-1 : null;
+    var vsFair = x.fairAm!=null? (am - x.fairAm) : null;
+    var beatsMax = (x.maxAm!=null)? ( (am>0?1:0)===(x.maxAm>0?1:0) ? Math.abs(am)<=Math.abs(x.maxAm)+1e-6 || (am>0&&x.maxAm>0&&am>=x.maxAm) : am>x.maxAm ) : null;
+    // simpler, robust: compare EV at user's price to floor
+    var ok = (myEv!=null && myEv>=FLOOR);
+    var evc = myEv==null?'dim':(myEv>0?'pos':'neg');
+    $id('edaiMyRes').innerHTML=
+       '<div class="edai-grid" style="border-radius:10px;overflow:hidden">'
+      + cell('Your EV', myEv==null?'—':pct(myEv), evc)
+      + cell('Fair price', amStr(x.fairAm),'dim')
+      + cell('Your vs fair', vsFair==null?'—':(vsFair>0?'+':'')+Math.round(vsFair)+' cents', vsFair>=0?'pos':'neg')
+      + cell('Max playable', amStr(x.maxAm),'dim')
+      +'</div>'
+      +'<p style="font-size:12.5px;margin:9px 0 0;color:var(--text)"><b>'+ (ok?'Good number.':'Below the bar.') +'</b> '
+      + (ok? 'At '+amStr(am)+' you are still '+pct(myEv)+' EV against the '+esc(x.fairSrc)+' — inside the '+pctAbs(FLOOR,1)+' floor.'
+           : 'At '+amStr(am)+' your EV is '+ (myEv==null?'unclear':pct(myEv)) +'. The fair price is '+amStr(x.fairAm)+'; past '+amStr(x.maxAm)+' this stops being a bet and becomes a lottery ticket.')
+      +'</p>';
+  }
+
+  /* ======================= HELP ======================= */
+  function help(){
+    push('a','<p><b>I am the interpretation layer, not the model.</b> EdgeDesk\u2019s pipeline owns the probabilities, fair prices, edges and CLV. I read those and help you decide.</p>'
+      +'<p>What I do, all from owned data:</p>'
+      +list([
+        'Analyze a number and give a BET / LEAN / PASS with the math behind it',
+        'Edge decay — how much of the detection edge survives at the current price',
+        'Betting window — best number seen, current, and the max price still worth playing',
+        'Challenge — argue against the bet on purpose, to kill confirmation bias',
+        'Check my bet — grade your actual entry price against fair',
+        'Best bets — rank the board by decision quality, not raw edge'
+      ])
+      +'<p>I will never invent odds, injuries, stats or closing prices. If EdgeDesk doesn\u2019t have it, I say so. And a well-reasoned PASS is a successful answer.</p>');
+  }
+
+  /* ======================= PUBLIC API ======================= */
+  window.EDAI = {
+    open:function(){ $id('edaiScrim').classList.add('open'); $id('edaiPanel').classList.add('open'); $id('edaiFab').classList.add('hide');
+      renderActions(); if(!$id('edaiLog').children.length) emptyState(); },
+    close:function(){ $id('edaiScrim').classList.remove('open'); $id('edaiPanel').classList.remove('open'); $id('edaiFab').classList.remove('hide'); },
+    unload:function(){ LOADED=null; $id('edaiLoaded').classList.add('hide'); renderActions(); },
+    loadFrom:function(i){ var e=(window.__EDAI_BB||[])[i]; if(e) window.EDAI.loadSignal(e,true); },
+
+    // load a signal into focus (from a card, Best Bets, or click-through)
+    loadSignal:async function(e, announce){
+      window.EDAI.open();
+      LOADED=e;
+      $id('edaiLoadedSel').textContent=selL(e)+'  '+(e.best_dec?amStr(decToAm(e.best_dec)):'');
+      $id('edaiLoaded').classList.remove('hide');
+      renderActions();
+      if(announce!==false) push('a','<p>Loaded <b>'+selL(e)+'</b> ('+mktL(e.market)+', '+(e.away_team||'')+' @ '+(e.home_team||'')+'). What do you want to know? Hit <b>Analyze</b> for the full read.</p>');
+      // enrich in the background so CLV / pinnacle / detection edge are ready
+      try{ LOADED=await enrich(e); }catch(_){}
+    },
+
+    action:function(mode){
+      if(mode==='bestbets')return bestBets();
+      if(mode==='compare')return compare();
+      if(mode==='checkbet')return checkBet();
+      if(mode==='help')return help();
+      if(!LOADED){ push('a','<p>Open a signal first (tap <b>Analyze</b> on any edge card), or ask me about the board.</p>'); return; }
+      var x=evidence(LOADED);
+      if(mode==='analyze'){ push('u','Analyze '+x.sel); push('a',snapshotHTML(x)); runNarr('analyze',x,'Full analysis.'); return; }
+      if(mode==='why'){ push('u','Why does EdgeDesk like this?'); runNarr('why',x); return; }
+      if(mode==='challenge'){ push('u','Challenge this bet.'); runNarr('challenge',x); return; }
+      if(mode==='whatchanged'){ push('u','What changed since detection?'); runNarr('whatchanged',x); return; }
+    },
+
+    sendText:async function(){
+      var t=($id('edaiText').value||'').trim(); if(!t||BUSY)return;
+      $id('edaiText').value=''; $id('edaiText').style.height='auto';
+      push('u',t); BUSY=true; $id('edaiSend').disabled=true; thinking(true);
+      var x=LOADED?evidence(LOADED):null;
+      var res=await askAI('chat',t,x);
+      thinking(false);
+      var d=push('a',res.html);
+      if(res.src&&d){ var s=document.createElement('div'); s.className='edai-src'; s.textContent=res.src; d.appendChild(s); }
+      BUSY=false; $id('edaiSend').disabled=false;
+    },
+
+    gradeBet:gradeBet
+  };
+
+  async function runNarr(mode,x,userSuffix){
+    BUSY=true; thinking(true);
+    var res=await askAI(mode, userSuffix||('' ), x);
+    thinking(false);
+    var d=push('a',res.html);
+    if(res.src&&d){ var s=document.createElement('div'); s.className='edai-src'; s.textContent=res.src; d.appendChild(s); }
+    BUSY=false;
+  }
+
+  /* hook invoked by the Analyze button injected into every receipt */
+  window.edaiAnalyze=function(domid){
+    var e=(window.RCPT||{})[domid];
+    if(!e){ window.EDAI.open(); return; }
+    window.EDAI.loadSignal(e);
+    setTimeout(function(){ window.EDAI.action('analyze'); }, 60);
+  };
+
+  /* add an "AI" item to the bottom nav if present, without disturbing existing handlers */
+  try{
+    var nav=document.querySelector('.bottomnav');
+    if(nav && !nav.querySelector('[data-v="ai"]')){
+      var b=document.createElement('button'); b.setAttribute('data-v','ai');
+      b.innerHTML='<svg class="ic" viewBox="0 0 24 24"><path d="M12 3l2.2 5.8L20 11l-5.8 2.2L12 19l-2.2-5.8L4 11l5.8-2.2L12 3z"/></svg>AI';
+      b.onclick=function(){ window.EDAI.open(); };
+      nav.appendChild(b);
+    }
+  }catch(_){}
+})();
+</script>
+<!-- ==================== end EdgeDesk Intelligence ==================== -->
 
 </body>
 </html>
