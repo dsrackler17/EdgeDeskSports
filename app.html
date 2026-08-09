@@ -12391,7 +12391,7 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
     ['Check my bet','checkbet',''],['Compare…','compare','']
   ];
   var ACTIONS_EMPTY=[
-    ['Scan slate','scanslate','hot'],['Best bets today','bestbets',''],['Compare edges','compare',''],['How this works','help','']
+    ['Daily scan','dailyscan','hot'],['Scan slate','scanslate',''],['Best bets today','bestbets',''],['Compare edges','compare',''],['How this works','help','']
   ];
   function renderActions(){
     var host=$id('edaiActions'); if(!host)return;
@@ -13008,6 +13008,384 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
     };
   }
 
+
+  /* =====================================================================================
+     DAILY SCAN — native "find today's best bet" orchestration.
+
+     Fixes the integration gap where a free-text best-bet question fell through to the AI
+     with no packet attached ("cannot scan — no packet"). DAILY_SCAN builds the packet
+     ITSELF from the live board and the existing deterministic layer. It invents nothing:
+
+       resolve today's slate (window.EDGES / D5_POOL are already loaded for the current
+       commence window) -> score every game (scanGames -> evidence()) -> take the top
+       3-5 by deterministic priority -> enrich each -> research on OWNED data (runTools)
+       -> attack each thesis (attack) -> deterministic final comparison + price discipline
+       -> render BEST BET / WAIT / NO BET -> opt-in AI synthesis over the SAME rows.
+
+     The LLM never scores, ranks, prices or invents. Every number here is EdgeDesk's own.
+     ===================================================================================== */
+  var DSCAN=null;   // last scan: { finalists:[{rank,priority,ctx,x,research,cls,question}], headlineRank, outcome, ts }
+
+  /* build a research ctx from an arbitrary enriched signal (buildCtx() only knows LOADED) */
+  function buildCtxFor(e){
+    var x=evidence(e);
+    return {e:e, x:x, g:e.__mlb||(typeof mlbLookup==='function'?mlbLookup(e):null),
+      eventId:e.event_id, sport:e.sport_key};
+  }
+
+  /* scope the scored board to today's / tonight's slate. The board horizon is wide (14d),
+     so filter by commence window; never hide the whole board on a timezone edge. */
+  function dscanToday(scan){
+    var now=Date.now();
+    function within(g, loH, hiH){
+      var e=g.e, ct=(e&&e.commence_time)?new Date(e.commence_time).getTime():null;
+      if(ct==null||isNaN(ct)) return true;               // no time -> don't exclude
+      return ct >= now - loH*3600e3 && ct <= now + hiH*3600e3;
+    }
+    var pri=scan.filter(function(g){ return within(g,3,20); });   // today + tonight (all US TZs)
+    if(pri.length) return pri;
+    return scan.filter(function(g){ return within(g,3,30); });    // widen once before giving up
+  }
+
+  /* research one candidate on OWNED data only — reuses the exact DEEP toolset of investigate() */
+  async function dscanResearch(ctx){
+    var tools = ctx.sport==='baseball_mlb'
+      ? ['edgedesk','market','price','model','game','pitchers','bullpen','weather']
+      : ['edgedesk','market','price','model'];
+    var out=await runTools(ctx, tools);
+    var verified=out.evidence.filter(function(i){return i.status!=='UNAVAILABLE';});
+    var missing=out.unavailable.slice();
+    if(ctx.sport==='baseball_mlb') Object.keys(UNAVAILABLE_TOOLS).forEach(function(k){ missing.push({tool:k,reason:UNAVAILABLE_TOOLS[k]}); });
+    var conflicts=findConflicts(ctx, verified, missing);
+    var att=attack(ctx, conflicts);
+    return {evidence:verified, conflicts:conflicts, unavailable:missing, attack:att};
+  }
+
+  /* deterministic class per finalist — NO opaque formula, only owned verdict + thesis + price */
+  function dscanClass(f){
+    var x=f.x, a=f.research.attack;
+    if(x.isWait) return 'WAIT';
+    if(x.curEdge==null || x.curEdge<FLOOR || a.status==='INVALIDATED' || x.dverdict==='PASS') return 'PASS';
+    if((x.dverdict==='BET'||x.dverdict==='LEAN') && (a.status==='SURVIVES'||a.status==='WEAKENED')) return 'BET';
+    return 'PASS';
+  }
+  /* final comparison + selection (finalists arrive in deterministic priority order) */
+  function dscanDecide(finalists){
+    finalists.forEach(function(f){ f.cls=dscanClass(f); });
+    var bets=finalists.filter(function(f){return f.cls==='BET';});
+    var waits=finalists.filter(function(f){return f.cls==='WAIT';});
+    var headline = bets.length? bets[0] : (waits.length? waits[0] : finalists[0]);
+    var outcome  = bets.length? 'BET' : (waits.length? 'WAIT' : 'NO BET');
+    var ordered=[headline].concat(finalists.filter(function(f){return f!==headline;}));
+    ordered.forEach(function(f,i){ f.rank=i+1; });          // headline becomes #1
+    return {ordered:ordered, headline:headline, outcome:outcome, bets:bets, waits:waits};
+  }
+
+  /* information timing: what EdgeDesk knew at detection vs now (owned fields only) */
+  function dscanWhatChanged(x){
+    var out=[], e=x.e;
+    if(x.detAm!=null && x.curAm!=null){
+      if(x.detAm===x.curAm) out.push('Price unchanged since detection ('+amStr(x.curAm)+').');
+      else out.push('Price moved from '+amStr(x.detAm)+' at detection to '+amStr(x.curAm)+' now'
+        + (x.remaining!=null&&x.detEdge>0?' \u2014 '+Math.round(x.remaining*100)+'% of the detection edge remains.':'.'));
+    }
+    if(x.remaining!=null && x.detEdge>0 && x.remaining<0.5) out.push('Over half the detection edge has decayed; the move is going against the signal.');
+    if(x.staleM>=STALE_MIN) out.push('No fresh capture in '+Math.round(x.staleM)+'m \u2014 the shown price may already be gone.');
+    else if(x.staleM>=20) out.push('Last capture '+Math.round(x.staleM)+'m ago; verify it is still live.');
+    if(e && e.sport_key==='baseball_mlb'){
+      var mlb=x.mlb||null, haveA=mlb&&mlb.away_pitcher_name, haveH=mlb&&mlb.home_pitcher_name;
+      if(mlb && haveA && haveH) out.push('Both probable starters posted ('+mlb.away_pitcher_name+' / '+mlb.home_pitcher_name+') \u2014 still probable, not confirmed.');
+      else out.push('A probable starter is still missing \u2014 the largest single MLB input is unresolved.');
+    }
+    if(x.graded && x.beat!=null) out.push('Graded: '+(x.beat?'beat the close':'did not beat the close')+' (CLV '+pct(x.clv)+').');
+    if(!out.length) out.push('Nothing material has changed since detection on owned data.');
+    return out;
+  }
+
+  /* ---- render helpers ---- */
+  function dscanSec(title, inner){
+    return '<div style="font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--faint);font-weight:700;margin:12px 2px 5px">'+esc(title)+'</div>'+inner;
+  }
+  function dscanUL(arr){
+    if(!arr||!arr.length) return '<div class="edai-src" style="border:none">Nothing on file.</div>';
+    return '<ul style="margin:2px 0;padding-left:16px;font-size:12.5px;color:var(--text);line-height:1.5">'
+      + arr.map(function(s){return '<li style="margin:2px 0">'+esc(s)+'</li>';}).join('')+'</ul>';
+  }
+  function dscanEvBox(evs){
+    if(!evs||!evs.length) return '<div class="edai-src" style="border:none">No verified context items on file.</div>';
+    return '<div class="edai-card" style="padding:6px 10px">'+evs.map(evRow).join('')+'</div>';
+  }
+  function dscanProgHTML(steps, active){
+    return '<div class="edai-card" style="padding:10px 13px">'+steps.map(function(s,i){
+      var st=i<active?'done':i===active?'now':'todo';
+      var dot=st==='done'?'\u2713':st==='now'?'\u2022':'\u25e6';
+      var col=st==='done'?'var(--pos)':st==='now'?'var(--accent)':'var(--faint)';
+      return '<div style="display:flex;align-items:center;gap:8px;font-family:JetBrains Mono,monospace;font-size:11px;letter-spacing:.04em;color:'+col+';padding:2px 0">'
+        +'<span style="width:12px;text-align:center">'+dot+'</span><span>'+esc(s.toUpperCase())+(st==='now'?'\u2026':'')+'</span></div>';
+    }).join('')+'</div>';
+  }
+  function dscanFinalLine(f, outcome){
+    var x=f.x, a=f.research.attack;
+    if(outcome==='NO BET') return 'Nothing on the slate clears the bar at a playable price right now.';
+    if(x.isWait) return 'Hold at '+amStr(x.curAm)+' \u2014 '+(x.waitWhy||'the information needed to decide is not in yet.');
+    if(x.dverdict==='PASS') return 'Pass at '+amStr(x.curAm)+(a.status==='INVALIDATED'?' \u2014 the price killed the edge.':'.');
+    return 'Playable at '+amStr(x.curAm)+' (max '+amStr(x.toPlayAm)+'). Thesis '+a.status.toLowerCase()+'. Confidence '+x.confidence+'.';
+  }
+  function dscanHeadline(f, outcome){
+    var x=f.x, e=x.e, r=f.research, ev=x.evNow;
+    var bannerTxt = outcome==='NO BET' ? 'NO BET TODAY'
+      : outcome==='WAIT' ? 'WAIT \u2014 no confirmed bet yet'
+      : (x.dverdict==='BET' ? 'BEST BET' : 'BEST PLAY \u00b7 LEAN');
+    var finalVerdict = outcome==='NO BET' ? 'NO BET' : x.dverdict;
+    var badgeCls = vClass(finalVerdict==='NO BET'?'PASS':x.dverdict);
+    var marketLine = (x.sharp?'Pinnacle is quoting this side. ':'No Pinnacle print on this exact side. ')
+      + x.nb+' book'+(x.nb===1?'':'s')+' behind the fair line'
+      + (x.detAm!=null?', detection '+amStr(x.detAm)+' \u2192 now '+amStr(x.curAm):'')+'.';
+    var ctxEv=r.evidence.filter(function(i){return i.relevance!=='price'&&i.relevance!=='edge'&&i.relevance!=='decay';}).slice(0,6);
+    var priceStatus = x.curEdge==null?'no fair price':(x.curEdge>=FLOOR?'inside the playable window':'past the playable window');
+    var priceGrid='<div class="edai-grid" style="border-radius:10px;overflow:hidden;margin-top:2px">'
+      + cell('Current', amStr(x.curAm), (x.curEdge!=null&&x.curEdge>=FLOOR)?'pos':'neg')
+      + cell('Fair', amStr(x.fairAm),'dim')
+      + cell('Max playable', amStr(x.toPlayAm),'dim')
+      + cell('Break-even', amStr(x.breakevenAm),'dim')
+      +'</div>';
+    var strongestAgainst = (r.conflicts&&r.conflicts.length)?r.conflicts[0]
+      : ((x.reasonsAgainst&&x.reasonsAgainst[0])||'No structural objection stands out on owned data.');
+    return '<div class="edai-card" style="margin-bottom:10px">'
+      +'<div class="edai-vhead"><span class="edai-verdict '+badgeCls+'">'+esc(bannerTxt)+'</span>'
+      +'<div style="min-width:0"><div class="edai-vsel">'+esc(x.matchup)+'</div>'
+      +'<div class="edai-vsub">'+esc(x.sport)+' \u00b7 '+x.sel+' \u00b7 '+mktL(e.market)+' \u00b7 '+amStr(x.curAm)+' \u00b7 '+pct(x.curEdge)+(ev!=null?' \u00b7 EV '+pct(ev):'')+'</div></div>'
+      +confBadge(x)+'</div>'
+      +(x.isWait?'<div class="edai-waitbar"><b>WAIT.</b> '+esc(x.waitWhy)+'</div>':'')
+      +'<div style="padding:2px 13px 12px">'
+      + dscanSec('Why #1', dscanUL((x.reasonsFor||[]).slice(0,5)))
+      + dscanSec('Market', '<div style="font-size:12.5px;color:var(--text);line-height:1.5">'+esc(marketLine)+'</div>')
+      + dscanSec('Research', dscanEvBox(ctxEv))
+      + dscanSec('Price \u00b7 '+priceStatus, priceGrid)
+      + dscanSec('Thesis attack \u00b7 '+r.attack.status,
+          '<div style="font-size:12.5px;color:var(--text);line-height:1.5">'+esc(r.attack.note)+'</div>'
+          +'<div class="edai-src" style="margin-top:4px">Strongest against: '+esc(strongestAgainst)+'</div>')
+      + dscanSec('What changed', dscanUL(dscanWhatChanged(x)))
+      + dscanSec('Falsifiers', dscanUL(x.falsifiers))
+      + dscanSec('Final',
+          '<div class="edai-vhead" style="border:none;padding:2px 0"><span class="edai-verdict '+badgeCls+'">'+esc(finalVerdict)+'</span>'
+          +'<span style="font-size:12px;color:var(--dim);margin-left:8px">'+esc(dscanFinalLine(f,outcome))+'</span></div>')
+      +'</div></div>';
+  }
+  function dscanMini(f){
+    var x=f.x, e=x.e;
+    return '<div class="edai-card" style="margin-bottom:8px"><div class="edai-vhead">'
+      +'<span class="edai-verdict '+vClass(x.dverdict)+'">'+x.dverdict+'</span>'
+      +'<div style="min-width:0"><div class="edai-vsel">#'+f.rank+'  '+esc(x.matchup)+'</div>'
+      +'<div class="edai-vsub">'+x.sel+' \u00b7 '+amStr(x.curAm)+' \u00b7 '+pct(x.curEdge)+' \u00b7 '+f.research.attack.status+' \u00b7 conf '+x.confidence+'</div></div>'
+      +'<span style="margin-left:auto;text-align:right"><div class="mono" style="font-size:15px;font-weight:700">'+f.priority+'</div><div style="font-size:9px;color:var(--faint)">PRIORITY</div></span></div>'
+      +'<div style="padding:6px 12px 10px;font-size:12px;color:var(--dim)"><b>Biggest question:</b> '+esc(f.question||'')+'</div></div>';
+  }
+  function dscanRenderHTML(decided){
+    var head=decided.headline, outcome=decided.outcome, rest=decided.ordered.slice(1,3);
+    var intro='<div class="edai-card" style="padding:12px 12px 8px;margin-bottom:8px"><div class="edai-vsel">Daily scan complete.</div>'
+      +'<div class="edai-vsub">'+decided.ordered.length+' finalist'+(decided.ordered.length===1?'':'s')+' researched and attacked \u00b7 ranked by EdgeDesk\u2019s deterministic priority, not raw edge \u00b7 '
+      +(outcome==='BET'?'one playable bet.':outcome==='WAIT'?'nothing confirmed \u2014 a WAIT.':'no qualifying bet \u2014 a no-play.')+'</div></div>';
+    var html=intro + dscanHeadline(head, outcome);
+    if(rest.length){
+      html+='<div style="font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--dim);font-weight:600;margin:6px 2px">Other finalists</div>';
+      rest.forEach(function(f){ html+=dscanMini(f); });
+    }
+    html+='<div style="display:flex;gap:8px;margin-top:6px;flex-wrap:wrap">'
+      +'<button class="edai-qa" onclick="EDAI.dscan(\'why\',1)">Why #1</button>'
+      +'<button class="edai-qa" onclick="EDAI.dscan(\'attack\',1)">Attack #1</button>'
+      +'<button class="edai-qa" onclick="EDAI.dscan(\'price\',1)">What price?</button>'
+      +'<button class="edai-qa" onclick="EDAI.dscan(\'changed\',1)">What changed?</button>'
+      +(rest.length?'<button class="edai-qa" onclick="EDAI.dscan(\'compare\')">Compare #1 & #2</button>':'')
+      +'<button class="edai-qa" onclick="EDAI.dailyScan()">Rescan</button></div>';
+    html+='<div class="edai-src" style="border:none;margin-top:4px">You can also type: <b>Why #1</b>, <b>Why not #2</b>, <b>Attack #1</b>, <b>What price would you take?</b>, <b>What changed?</b>, <b>What would make you pass?</b></div>';
+    return html;
+  }
+  function dscanEmptyHTML(){
+    return '<div class="edai-card" style="padding:12px"><div class="edai-vhead"><span class="edai-verdict v-pass">NO BET</span>'
+      +'<div><div class="edai-vsel">Nothing on today\u2019s slate clears the bar.</div><div class="edai-vsub">No positive-edge, liquid, fresh signal in the window.</div></div></div>'
+      +'<div class="edai-note">That is a real answer, not a failure \u2014 a no-play day. I would rather show an empty board than manufacture a bet. Rescan once the board repopulates.</div>'
+      +'<div style="padding:0 13px 12px"><button class="edai-qa" onclick="EDAI.dailyScan()">Rescan</button></div></div>';
+  }
+
+  /* ---- opt-in AI synthesis over the SAME finalist rows (reuses askAI 'slate' -> edgedesk_ai) ---- */
+  function dscanSynthCand(f){
+    var x=f.x, e=x.e, r=f.research;
+    return {rank:f.rank, game:x.matchup, sport:x.sport, market:mktL(e.market), selection:x.sel,
+      priority:f.priority, deterministic_verdict:x.dverdict, class:f.cls, is_wait:x.isWait, wait_reason:x.waitWhy,
+      current:x.curAm, fair:x.fairAm, fair_src:x.fairSrc, max_playable:x.toPlayAm, breakeven:x.breakevenAm,
+      edge:x.curEdge, ev:x.evNow, remaining:x.remaining, confidence:x.confidence,
+      confirmation:{has_sharp:x.sharp, n_books:x.nb, corrob:x.corr, book:x.book, trusted:x.trusted},
+      stale_min:Math.round(x.staleM),
+      thesis_attack:{status:r.attack.status, note:r.attack.note},
+      strongest_against:(r.conflicts||[]).slice(0,3),
+      what_changed:dscanWhatChanged(x),
+      verified_research:(r.evidence||[]).slice(0,8).map(function(it){return {claim:it.claim, value:it.value, status:it.status, source:it.source};}),
+      reasons:(x.reasonsFor||[]).slice(0,5), biggest_question:f.question};
+  }
+  function dscanSynthOffer(decided){
+    var log=$id('edaiLog'); if(!log)return;
+    var d=document.createElement('div'); d.className='edai-msg a';
+    d.innerHTML='<button class="edai-qa" style="margin-top:2px" id="edaiDscanSynth">AI synthesis of the scan</button>';
+    log.appendChild(d); log.scrollTop=log.scrollHeight;
+    var btn=$id('edaiDscanSynth'); if(!btn)return;
+    btn.onclick=async function(){
+      btn.disabled=true; btn.textContent='Synthesizing\u2026'; thinking(true);
+      var cand=decided.ordered.map(dscanSynthCand);
+      var q='This is EdgeDesk\u2019s deterministic daily scan of today\u2019s slate. #'+decided.headline.rank
+        +' is the current best pick and the overall call is '+decided.outcome+'. Interpret the finalists, explain the headline pick and the strongest case against it, and name anything that could not be verified. Do not invent games, prices, injuries or numbers beyond these rows.';
+      var res=await askAI('slate', q, null, cand);
+      thinking(false); var m=push('a',res.html);
+      if(res.src&&m){ var s=document.createElement('div'); s.className='edai-src'; s.textContent=res.src; m.appendChild(s); }
+      if(btn.parentNode)btn.parentNode.removeChild(btn);
+    };
+  }
+
+  /* ---- the orchestrator (core; caller owns the 'u' bubble + BUSY flag) ---- */
+  async function dailyScanCore(){
+    var steps=['Scanning slate','Loading signals','Selecting candidates','Researching','Attacking theses','Comparing','Finalizing'];
+    var prog=push('a', dscanProgHTML(steps,0));
+    function setStep(i){ if(prog) prog.innerHTML=dscanProgHTML(steps,i); var log=$id('edaiLog'); if(log)log.scrollTop=log.scrollHeight; }
+    function yield_(){ return new Promise(function(r){ setTimeout(r,16); }); }
+    try{
+      setStep(0); await yield_();
+      var all=[]; try{ all=scanGames(); }catch(_){ all=[]; }
+      setStep(1); await yield_();
+      var scan=dscanToday(all);
+      if(!scan.length && all.length) scan=all;                 // never hide the whole board on a TZ edge
+      setStep(2); await yield_();
+      var shortlist=scan.slice(0,5);                            // 3-5 research candidates, deterministic order
+      if(!shortlist.length){ if(prog)prog.remove(); DSCAN=null; push('a', dscanEmptyHTML()); return; }
+      setStep(3); await yield_();
+      var saved={eventId:SESSION.eventId, cache:SESSION.cache};  // don't clobber a loaded-game session
+      var finalists=[];
+      for(var i=0;i<shortlist.length;i++){
+        var g=shortlist[i], e=g.e;
+        try{ e=await enrich(g.e); }catch(_){ e=g.e; }
+        var ctx=buildCtxFor(e);
+        SESSION.cache={};                                       // isolate each candidate's tool cache
+        var res=await dscanResearch(ctx);
+        finalists.push({rank:i+1, priority:g.priority, ctx:ctx, x:ctx.x, research:res, question:g.question, agree:g.agree});
+      }
+      SESSION.eventId=saved.eventId; SESSION.cache=saved.cache;  // restore
+      setStep(4); await yield_();
+      setStep(5); await yield_();
+      var decided=dscanDecide(finalists);
+      setStep(6); await yield_();
+      if(prog) prog.remove();
+      DSCAN={finalists:decided.ordered, headlineRank:decided.headline.rank, outcome:decided.outcome, ts:Date.now()};
+      push('a', dscanRenderHTML(decided));
+      dscanSynthOffer(decided);
+    }catch(err){
+      if(prog) prog.remove();
+      push('a','<p>The daily scan hit an error mid-run. Try again, or open a signal and hit <b>Analyze</b> \u2014 the decision engine runs locally.</p>');
+    }
+  }
+
+  /* ---- follow-up handling (reuses the stored scan; no re-scan) ---- */
+  function dscanRankOf(q){
+    var m=q.match(/#\s*([1-9])/); if(m) return +m[1];
+    m=q.match(/\b(?:no\.?|number|rank|pick|option|finalist|candidate|bet)\s*#?\s*([1-9])\b/); if(m) return +m[1];
+    m=q.match(/\b([1-9])(?:st|nd|rd|th)\b/); if(m) return +m[1];
+    if(/\b(first|1st|number one|no\.?\s*one)\b/.test(q)) return 1;
+    if(/\bsecond\b/.test(q)) return 2;
+    if(/\bthird\b/.test(q)) return 3;
+    m=q.match(/\b(one|two|three|four|five)\b/);
+    if(m){ var map={one:1,two:2,three:3,four:4,five:5}; return map[m[1]]; }
+    return null;
+  }
+  function dscanFind(oneBased){
+    if(!DSCAN||!DSCAN.finalists||!DSCAN.finalists.length) return null;
+    if(oneBased==null) return DSCAN.finalists[0];              // headline is always #1 after reorder
+    return DSCAN.finalists[oneBased-1]||null;
+  }
+  function dscanWhy(rank){
+    var f=dscanFind(rank); if(!f){ push('a','<p>Run the daily scan first \u2014 ask for today\u2019s best bet.</p>'); return; }
+    var x=f.x;
+    push('a', dscanSec('Why #'+f.rank+' \u00b7 '+x.matchup, dscanUL((x.reasonsFor||[]).slice(0,5)))
+      + '<div class="edai-vhead" style="border:none;padding:2px 0"><span class="edai-verdict '+vClass(x.dverdict)+'">'+x.dverdict+'</span>'
+      + '<span style="font-size:12px;color:var(--dim);margin-left:8px">'+esc(x.why||'')+'</span>'+confBadge(x)+'</div>');
+  }
+  function dscanAttack(rank){
+    var f=dscanFind(rank); if(!f){ push('a','<p>Run the daily scan first.</p>'); return; }
+    var x=f.x, r=f.research;
+    var conflicts=(r.conflicts&&r.conflicts.length)?r.conflicts:(x.reasonsAgainst||[]).slice(0,4);
+    push('a', dscanSec('Thesis attack #'+f.rank+' \u00b7 '+r.attack.status, dscanUL(conflicts))
+      + '<div class="edai-card">'+flipHTML(x)+'<div class="edai-note">'+esc(r.attack.note)+'</div></div>');
+  }
+  function dscanPrice(rank){
+    var f=dscanFind(rank); if(!f){ push('a','<p>Run the daily scan first.</p>'); return; }
+    var x=f.x;
+    var status=x.curEdge==null?'no fair price on file':(x.curEdge>=FLOOR?'the current number is inside the window':'the current number is past the window');
+    var take=x.curEdge==null?'No fair price on file, so there is no take-price yet.'
+      :'Take it up to '+amStr(x.toPlayAm)+' (max playable). Break-even is '+amStr(x.fairAm)+'. Past '+amStr(x.toPlayAm)+' it stops being a bet and becomes a lottery ticket.';
+    push('a', dscanSec('Price #'+f.rank+' \u00b7 '+status,
+      '<div class="edai-grid" style="border-radius:10px;overflow:hidden">'
+      + cell('Current', amStr(x.curAm), (x.curEdge!=null&&x.curEdge>=FLOOR)?'pos':'neg')
+      + cell('Fair', amStr(x.fairAm),'dim')
+      + cell('Max playable', amStr(x.toPlayAm),'dim')
+      + cell('Break-even', amStr(x.breakevenAm),'dim')
+      +'</div><div class="edai-note">'+esc(take)+'</div>'));
+  }
+  function dscanChanged(rank){
+    var f=dscanFind(rank); if(!f){ push('a','<p>Run the daily scan first.</p>'); return; }
+    push('a', dscanSec('What changed #'+f.rank+' \u00b7 '+f.x.matchup, dscanUL(dscanWhatChanged(f.x))));
+  }
+  function dscanPassCase(rank){
+    var f=dscanFind(rank); if(!f){ push('a','<p>Run the daily scan first.</p>'); return; }
+    push('a', dscanSec('What would make #'+f.rank+' a pass or wait', dscanUL(f.x.falsifiers)));
+  }
+  function dscanCompareTop(){
+    if(!DSCAN||!DSCAN.finalists||DSCAN.finalists.length<2){ push('a','<p>Need at least two finalists \u2014 run the daily scan first.</p>'); return; }
+    var a=DSCAN.finalists[0], b=DSCAN.finalists[1];
+    function rowc(f){ var x=f.x;
+      return '<tr><td style="text-align:left">#'+f.rank+' '+esc(x.matchup)+'<br><span style="color:var(--faint)">'+x.sel+' '+amStr(x.curAm)+'</span></td>'
+        +'<td class="mono">'+pct(x.curEdge)+'</td><td class="mono">'+(x.evNow==null?'\u2014':pct(x.evNow))+'</td>'
+        +'<td style="font-size:10px;color:var(--dim)">'+esc(f.research.attack.status)+'</td>'
+        +'<td><span class="edai-verdict '+vClass(x.dverdict)+'" style="font-size:10px;padding:2px 6px">'+x.dverdict+'</span></td></tr>'; }
+    var verdictNote = (a.cls==='BET'&&b.cls!=='BET')?'It is the only one of the two clearing the bar at a playable price.'
+      : (a.cls==='BET'&&b.cls==='BET')?'Both are playable; #'+a.rank+' has the stronger price-survival / confirmation profile.'
+      : (a.cls==='WAIT')?'#'+a.rank+' is a WAIT pending confirmation \u2014 neither is a clean bet right now.'
+      : 'Neither is a clean bet right now.';
+    push('a','<div class="edai-card" style="padding:6px 10px"><table class="tbl" style="width:100%;font-size:12px">'
+      +'<tr><th style="text-align:left">Finalist</th><th>Edge</th><th>EV</th><th>Thesis</th><th>Verdict</th></tr>'
+      +rowc(a)+rowc(b)+'</table></div>'
+      +'<p style="margin-top:8px"><b>#'+a.rank+' leads</b> on deterministic priority ('+a.priority+' vs '+b.priority+'). '+esc(verdictNote)+'</p>');
+  }
+
+  /* route a follow-up to the stored scan; returns true if handled */
+  function dscanFollow(t){
+    if(!DSCAN||!DSCAN.finalists||!DSCAN.finalists.length) return false;
+    var q=(t||'').toLowerCase().trim();
+    var rankTokens=/#\s*[1-9]|\b[1-9](?:st|nd|rd|th)\b|\b(?:number|no\.?|rank|pick|finalist|candidate)\s*#?\s*[1-9]\b|\b(one|two|three)\b|\b(first|second|third)\b/;
+    var hasRank=rankTokens.test(q);
+    // "compare #1 and #2" / "compare the top two"
+    if(/\bcompare\b/.test(q) && (/#?\s*1\s*(?:and|vs|&|,|to)\s*#?\s*2|top\s*(?:two|2)|first\s*(?:two|2)\b/.test(q))){ dscanCompareTop(); return true; }
+    // when a specific game is loaded, a BARE "why?/attack" targets that game — require an explicit rank here
+    if(LOADED && !hasRank) return false;
+    var rank=dscanRankOf(q);
+    if(/\b(attack|break it|argue against|fade|kill the thesis|why not)\b/.test(q)){ dscanAttack(rank); return true; }
+    if(/what\s*price|what\s*number|price would you take|at what price|max (?:price|playable)/.test(q)){ dscanPrice(rank); return true; }
+    if(/what\s*chang|what'?s\s*changed|since detection/.test(q)){ dscanChanged(rank); return true; }
+    if(/what\s*would\s*make\s*you\s*(?:pass|wait|fold|fade)|make you (?:pass|wait)|would you pass/.test(q)){ dscanPassCase(rank); return true; }
+    if(/\bwhy\b/.test(q)){ dscanWhy(rank); return true; }
+    if(hasRank && rank!=null){ dscanWhy(rank); return true; }   // bare "#2"
+    return false;
+  }
+
+  /* intent router: does this free-text question mean "scan today's slate"? */
+  function isDailyScan(t){
+    var q=(t||'').toLowerCase().trim();
+    if(/\bdaily\s*scan\b/.test(q)) return true;
+    if(/\bscan\b.*\b(slate|board|mlb|today|tonight)\b/.test(q)) return true;
+    if(/\brun\b.*\bscan\b/.test(q)) return true;
+    if(/\b(best|strongest|top)\s*(bet|play|edge)\b/.test(q)) return true;   // "best bet", "strongest edge", "top play"
+    if(/\bwhat\s+(?:should|to)\s+(?:i\s+)?(?:bet|play)\b/.test(q)) return true;
+    if(/\bwhat(?:'?s| is)\s+worth\s+(?:betting|playing|a bet)\b/.test(q)) return true;
+    if(/\bfind\b.*\b(?:bet|edge|play)\b/.test(q)) return true;
+    return false;
+  }
+
   /* ======================= PUBLIC API ======================= */
   window.EDAI = {
     open:function(){ $id('edaiScrim').classList.add('open'); $id('edaiPanel').classList.add('open'); $id('edaiFab').classList.add('hide');
@@ -13018,6 +13396,25 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
     scanSlate:function(){ return scanSlate(); },
     slateAI:function(){ return slateAI(); },
     analyzeScan:function(i){ return analyzeScan(i); },
+
+    // native "find today's best bet" — builds its own packet from the live board
+    dailyScan:async function(){
+      if(BUSY) return; BUSY=true; var sb=$id('edaiSend'); if(sb)sb.disabled=true;
+      window.EDAI.open(); push('u','Find today\u2019s best bet.');
+      try{ await dailyScanCore(); }
+      finally{ BUSY=false; var s2=$id('edaiSend'); if(s2)s2.disabled=false; }
+    },
+    // daily-scan follow-up buttons/dispatch (why / attack / price / changed / pass / compare)
+    dscan:function(act,rank){
+      var label={why:'Why #'+(rank||1)+'?',attack:'Attack #'+(rank||1)+'.',price:'What price would you take on #'+(rank||1)+'?',changed:'What changed on #'+(rank||1)+'?',pass:'What would make #'+(rank||1)+' a pass?',compare:'Compare #1 and #2.'}[act]||act;
+      push('u',label);
+      if(act==='attack') dscanAttack(rank);
+      else if(act==='price') dscanPrice(rank);
+      else if(act==='changed') dscanChanged(rank);
+      else if(act==='pass') dscanPassCase(rank);
+      else if(act==='compare') dscanCompareTop();
+      else dscanWhy(rank);
+    },
 
     // load a signal into focus (from a card, Best Bets, or click-through)
     loadSignal:async function(e, announce){
@@ -13033,6 +13430,7 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
     },
 
     action:function(mode){
+      if(mode==='dailyscan')return window.EDAI.dailyScan();
       if(mode==='scanslate')return scanSlate();
       if(mode==='bestbets')return bestBets();
       if(mode==='compare')return compare();
@@ -13055,6 +13453,10 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
       $id('edaiText').value=''; $id('edaiText').style.height='auto';
       push('u',t); BUSY=true; $id('edaiSend').disabled=true;
       try{
+        // native DAILY_SCAN: build the packet ourselves, never require an attached signal
+        if(isDailyScan(t)){ await dailyScanCore(); return; }
+        // daily-scan follow-ups ("Why #1", "Attack #1", "Compare #1 and #2", ...) reuse the stored scan
+        if(dscanFollow(t)) return;
         var ctx=buildCtx();
         if(ctx){
           if(SESSION.eventId!==ctx.eventId){ SESSION.eventId=ctx.eventId; SESSION.cache={}; } // new game -> fresh session cache
