@@ -13062,12 +13062,24 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
   }
 
   /* deterministic class per finalist — NO opaque formula, only owned verdict + thesis + price */
-  function dscanClass(f){
+  /* ---- SINGLE deterministic price gate (the invariant everything else obeys) ----
+     Playable == the current number is at least as good as the max-playable price, i.e. EV
+     still clears the floor. In decimal terms curDec >= maxDec; equivalently curEdge >= FLOOR.
+     maxAm/toPlayAm is the boundary where EV == FLOOR: current must be that price OR BETTER.
+     EXACT-at-floor counts as playable. This is owned pipeline data only — no fair-math here. */
+  function dscanPlayable(x){ return x.curEdge!=null && x.curEdge >= FLOOR-1e-9; }
+  /* The DISPLAYED verdict is derived from the gate, never from raw x.dverdict, so a
+     price-killed (curEdge<FLOOR) or thesis-invalidated candidate can NEVER render as BET/LEAN
+     or claim the current price is "playable". */
+  function dscanVerdictOf(f){
     var x=f.x, a=f.research.attack;
     if(x.isWait) return 'WAIT';
-    if(x.curEdge==null || x.curEdge<FLOOR || a.status==='INVALIDATED' || x.dverdict==='PASS') return 'PASS';
-    if((x.dverdict==='BET'||x.dverdict==='LEAN') && (a.status==='SURVIVES'||a.status==='WEAKENED')) return 'BET';
-    return 'PASS';
+    if(!dscanPlayable(x) || a.status==='INVALIDATED' || x.dverdict==='PASS') return 'PASS';
+    return (x.dverdict==='BET'||x.dverdict==='LEAN') ? x.dverdict : 'PASS';
+  }
+  function dscanClass(f){
+    var v=dscanVerdictOf(f);                          // class and shown-verdict are ONE computation
+    return v==='WAIT' ? 'WAIT' : (v==='PASS' ? 'PASS' : 'BET');
   }
   /* final comparison + selection (finalists arrive in deterministic priority order) */
   function dscanDecide(finalists){
@@ -13125,28 +13137,35 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
     }).join('')+'</div>';
   }
   function dscanFinalLine(f, outcome){
-    var x=f.x, a=f.research.attack;
+    var x=f.x, a=f.research.attack, v=dscanVerdictOf(f);
     if(outcome==='NO BET') return 'Nothing on the slate clears the bar at a playable price right now.';
-    if(x.isWait) return 'Hold at '+amStr(x.curAm)+' \u2014 '+(x.waitWhy||'the information needed to decide is not in yet.');
-    if(x.dverdict==='PASS') return 'Pass at '+amStr(x.curAm)+(a.status==='INVALIDATED'?' \u2014 the price killed the edge.':'.');
-    return 'Playable at '+amStr(x.curAm)+' (max '+amStr(x.toPlayAm)+'). Thesis '+a.status.toLowerCase()+'. Confidence '+x.confidence+'.';
+    if(v==='WAIT') return 'Hold at '+amStr(x.curAm)+' \u2014 '+(x.waitWhy||'the information needed to decide is not in yet.');
+    if(v==='PASS'){
+      if(!dscanPlayable(x)) return 'Pass at '+amStr(x.curAm)+' \u2014 below the '+pctAbs(FLOOR,1)+' floor; you would need '+amStr(x.toPlayAm)+' or better to play.';
+      if(a.status==='INVALIDATED') return 'Pass at '+amStr(x.curAm)+' \u2014 the thesis was invalidated in research, so the price does not matter.';
+      return 'Pass at '+amStr(x.curAm)+'.';
+    }
+    // playable: current is at least as good as the floor price — state the direction so it can never read as a contradiction
+    return 'Playable at '+amStr(x.curAm)+' \u2014 clears the '+pctAbs(FLOOR,1)+' floor (needs '+amStr(x.toPlayAm)+' or better). Thesis '+a.status.toLowerCase()+'. Confidence '+x.confidence+'.';
   }
   function dscanHeadline(f, outcome){
     var x=f.x, e=x.e, r=f.research, ev=x.evNow;
+    var shown = dscanVerdictOf(f);                    // gated verdict drives every label below
     var bannerTxt = outcome==='NO BET' ? 'NO BET TODAY'
       : outcome==='WAIT' ? 'WAIT \u2014 no confirmed bet yet'
-      : (x.dverdict==='BET' ? 'BEST BET' : 'BEST PLAY \u00b7 LEAN');
-    var finalVerdict = outcome==='NO BET' ? 'NO BET' : x.dverdict;
-    var badgeCls = vClass(finalVerdict==='NO BET'?'PASS':x.dverdict);
+      : shown==='PASS' ? 'NO BET \u2014 price past the window'
+      : (shown==='BET' ? 'BEST BET' : 'BEST PLAY \u00b7 LEAN');
+    var finalVerdict = outcome==='NO BET' ? 'NO BET' : shown;
+    var badgeCls = vClass(finalVerdict==='NO BET'?'PASS':shown);
     var marketLine = (x.sharp?'Pinnacle is quoting this side. ':'No Pinnacle print on this exact side. ')
       + x.nb+' book'+(x.nb===1?'':'s')+' behind the fair line'
       + (x.detAm!=null?', detection '+amStr(x.detAm)+' \u2192 now '+amStr(x.curAm):'')+'.';
     var ctxEv=r.evidence.filter(function(i){return i.relevance!=='price'&&i.relevance!=='edge'&&i.relevance!=='decay';}).slice(0,6);
-    var priceStatus = x.curEdge==null?'no fair price':(x.curEdge>=FLOOR?'inside the playable window':'past the playable window');
+    var priceStatus = x.curEdge==null?'no fair price':(dscanPlayable(x)?'inside the playable window':'past the playable window');
     var priceGrid='<div class="edai-grid" style="border-radius:10px;overflow:hidden;margin-top:2px">'
-      + cell('Current', amStr(x.curAm), (x.curEdge!=null&&x.curEdge>=FLOOR)?'pos':'neg')
+      + cell('Current', amStr(x.curAm), dscanPlayable(x)?'pos':'neg')
       + cell('Fair', amStr(x.fairAm),'dim')
-      + cell('Max playable', amStr(x.toPlayAm),'dim')
+      + cell('Max playable (or better)', amStr(x.toPlayAm),'dim')
       + cell('Break-even', amStr(x.breakevenAm),'dim')
       +'</div>';
     var strongestAgainst = (r.conflicts&&r.conflicts.length)?r.conflicts[0]
@@ -13173,9 +13192,9 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
       +'</div></div>';
   }
   function dscanMini(f){
-    var x=f.x, e=x.e;
+    var x=f.x, e=x.e, v=dscanVerdictOf(f);
     return '<div class="edai-card" style="margin-bottom:8px"><div class="edai-vhead">'
-      +'<span class="edai-verdict '+vClass(x.dverdict)+'">'+x.dverdict+'</span>'
+      +'<span class="edai-verdict '+vClass(v)+'">'+v+'</span>'
       +'<div style="min-width:0"><div class="edai-vsel">#'+f.rank+'  '+esc(x.matchup)+'</div>'
       +'<div class="edai-vsub">'+x.sel+' \u00b7 '+amStr(x.curAm)+' \u00b7 '+pct(x.curEdge)+' \u00b7 '+f.research.attack.status+' \u00b7 conf '+x.confidence+'</div></div>'
       +'<span style="margin-left:auto;text-align:right"><div class="mono" style="font-size:15px;font-weight:700">'+f.priority+'</div><div style="font-size:9px;color:var(--faint)">PRIORITY</div></span></div>'
@@ -13212,7 +13231,7 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
   function dscanSynthCand(f){
     var x=f.x, e=x.e, r=f.research;
     return {rank:f.rank, game:x.matchup, sport:x.sport, market:mktL(e.market), selection:x.sel,
-      priority:f.priority, deterministic_verdict:x.dverdict, class:f.cls, is_wait:x.isWait, wait_reason:x.waitWhy,
+      priority:f.priority, verdict:dscanVerdictOf(f), deterministic_verdict:x.dverdict, class:f.cls, playable:dscanPlayable(x), is_wait:x.isWait, wait_reason:x.waitWhy,
       current:x.curAm, fair:x.fairAm, fair_src:x.fairSrc, max_playable:x.toPlayAm, breakeven:x.breakevenAm,
       edge:x.curEdge, ev:x.evNow, remaining:x.remaining, confidence:x.confidence,
       confirmation:{has_sharp:x.sharp, n_books:x.nb, corrob:x.corr, book:x.book, trusted:x.trusted},
@@ -13316,14 +13335,16 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
   function dscanPrice(rank){
     var f=dscanFind(rank); if(!f){ push('a','<p>Run the daily scan first.</p>'); return; }
     var x=f.x;
-    var status=x.curEdge==null?'no fair price on file':(x.curEdge>=FLOOR?'the current number is inside the window':'the current number is past the window');
+    var status=x.curEdge==null?'no fair price on file':(dscanPlayable(x)?'the current number is inside the window':'the current number is past the window');
     var take=x.curEdge==null?'No fair price on file, so there is no take-price yet.'
-      :'Take it up to '+amStr(x.toPlayAm)+' (max playable). Break-even is '+amStr(x.fairAm)+'. Past '+amStr(x.toPlayAm)+' it stops being a bet and becomes a lottery ticket.';
+      :(dscanPlayable(x)
+        ?'Play it at '+amStr(x.toPlayAm)+' or better (that is the max-playable floor). Break-even is '+amStr(x.fairAm)+'. Anything short of '+amStr(x.toPlayAm)+' drops EV below the '+pctAbs(FLOOR,1)+' floor and it stops being a bet.'
+        :'Current '+amStr(x.curAm)+' is past the window \u2014 you would need '+amStr(x.toPlayAm)+' or better before this is a bet. Break-even is '+amStr(x.fairAm)+'.');
     push('a', dscanSec('Price #'+f.rank+' \u00b7 '+status,
       '<div class="edai-grid" style="border-radius:10px;overflow:hidden">'
-      + cell('Current', amStr(x.curAm), (x.curEdge!=null&&x.curEdge>=FLOOR)?'pos':'neg')
+      + cell('Current', amStr(x.curAm), dscanPlayable(x)?'pos':'neg')
       + cell('Fair', amStr(x.fairAm),'dim')
-      + cell('Max playable', amStr(x.toPlayAm),'dim')
+      + cell('Max playable (or better)', amStr(x.toPlayAm),'dim')
       + cell('Break-even', amStr(x.breakevenAm),'dim')
       +'</div><div class="edai-note">'+esc(take)+'</div>'));
   }
@@ -13338,11 +13359,11 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
   function dscanCompareTop(){
     if(!DSCAN||!DSCAN.finalists||DSCAN.finalists.length<2){ push('a','<p>Need at least two finalists \u2014 run the daily scan first.</p>'); return; }
     var a=DSCAN.finalists[0], b=DSCAN.finalists[1];
-    function rowc(f){ var x=f.x;
+    function rowc(f){ var x=f.x, v=dscanVerdictOf(f);
       return '<tr><td style="text-align:left">#'+f.rank+' '+esc(x.matchup)+'<br><span style="color:var(--faint)">'+x.sel+' '+amStr(x.curAm)+'</span></td>'
         +'<td class="mono">'+pct(x.curEdge)+'</td><td class="mono">'+(x.evNow==null?'\u2014':pct(x.evNow))+'</td>'
         +'<td style="font-size:10px;color:var(--dim)">'+esc(f.research.attack.status)+'</td>'
-        +'<td><span class="edai-verdict '+vClass(x.dverdict)+'" style="font-size:10px;padding:2px 6px">'+x.dverdict+'</span></td></tr>'; }
+        +'<td><span class="edai-verdict '+vClass(v)+'" style="font-size:10px;padding:2px 6px">'+v+'</span></td></tr>'; }
     var verdictNote = (a.cls==='BET'&&b.cls!=='BET')?'It is the only one of the two clearing the bar at a playable price.'
       : (a.cls==='BET'&&b.cls==='BET')?'Both are playable; #'+a.rank+' has the stronger price-survival / confirmation profile.'
       : (a.cls==='WAIT')?'#'+a.rank+' is a WAIT pending confirmation \u2014 neither is a clean bet right now.'
