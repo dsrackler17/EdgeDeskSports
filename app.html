@@ -11926,6 +11926,22 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
 .edai-trace .tv{background:var(--bg);padding:8px 11px;font-size:11.5px;color:var(--text);line-height:1.45}
 .edai-trace .tv .s{color:var(--dim)}
 .edai-trace .tv .neg{color:var(--neg)}.edai-trace .tv .pos{color:var(--pos)}.edai-trace .tv .warn{color:var(--warn)}
+
+/* research-agent UI states + evidence rows */
+.edai-rstate{font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:700;letter-spacing:.1em;color:var(--faint);
+  margin:14px 2px 5px;text-transform:uppercase}
+.edai-rnote{font-size:11px;color:var(--dim);margin:0 2px 6px}
+.edai-ev{display:flex;justify-content:space-between;gap:8px;align-items:flex-start;padding:6px 2px;border-top:1px solid var(--border)}
+.edai-ev:first-child{border-top:none}
+.edai-ev-c{font-size:12px;color:var(--text);line-height:1.4}
+.edai-ev-c b{color:#fff}
+.edai-ev-m{display:flex;flex-direction:column;align-items:flex-end;gap:2px;flex:0 0 auto;text-align:right}
+.edai-ev-st{font-family:'JetBrains Mono',monospace;font-size:8px;font-weight:700;padding:1px 5px;border-radius:7px;border:1px solid var(--border)}
+.edai-ev-st.pos{color:var(--pos);border-color:rgba(47,180,124,.4)}
+.edai-ev-st.warn{color:var(--warn);border-color:rgba(217,154,43,.4)}
+.edai-ev-st.neg{color:var(--neg);border-color:rgba(226,96,68,.4)}
+.edai-ev-st.dim{color:var(--faint)}
+.edai-ev-src{font-family:'JetBrains Mono',monospace;font-size:8.5px;color:var(--faint);max-width:160px;line-height:1.3}
 </style>
 
 <button id="edaiFab" onclick="EDAI.open()" title="EdgeDesk Intelligence">
@@ -12370,7 +12386,7 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
 
   /* ======================= UI PLUMBING ======================= */
   var ACTIONS_LOADED=[
-    ['Analyze','analyze','hot'],['Why?','why',''],['At what price?','price',''],['Market read','market',''],
+    ['Research this','research','hot'],['Analyze','analyze',''],['Why?','why',''],['At what price?','price',''],['Market read','market',''],
     ['Challenge','challenge',''],['What changed?','whatchanged',''],['Research packet','trace',''],
     ['Check my bet','checkbet',''],['Compare…','compare','']
   ];
@@ -12420,11 +12436,13 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
         confidence:x.confidence,why:x.why,score:x.score,band:x.band,
         reasons_for:x.reasonsFor,reasons_against:x.reasonsAgainst,falsifiers:x.falsifiers}
     } : null;
+    if(packet && extra && extra.research) packet.research = extra.research;
+    var compareArr = Array.isArray(extra) ? extra : null;
     try{
       var tok = (typeof edToken==='function')? await edToken() : (typeof SB_KEY!=='undefined'?SB_KEY:'');
       var r=await fetch(AI_FN,{method:'POST',
         headers:{'content-type':'application/json',authorization:'Bearer '+tok,apikey:(typeof SB_KEY!=='undefined'?SB_KEY:'')},
-        body:JSON.stringify({mode:mode,question:question,packet:packet,history:HIST.slice(-6),compare:extra||null})});
+        body:JSON.stringify({mode:mode,question:question,packet:packet,history:HIST.slice(-6),compare:compareArr})});
       if(!r.ok) throw new Error('fn '+r.status);
       var d=await r.json();
       if(d&&d.answer){ HIST.push({role:'user',content:question||mode}); HIST.push({role:'assistant',content:d.answer});
@@ -12729,6 +12747,267 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
 
   function analyzeScan(i){ var e=(window.__EDAI_SCAN||[])[i]; if(e){ window.EDAI.loadSignal(e,true); setTimeout(function(){ window.EDAI.action('analyze'); },60); } }
 
+  /* =====================================================================================
+     EDResearch — research-orchestration layer (Phase 2).
+     The agent plans which OWNED data to retrieve, normalizes it into evidence objects,
+     validates by source, finds contradictions, then hands the verified evidence plus the
+     deterministic evidence() numbers to the thesis attacker and the trace UI.
+
+     Discipline (unchanged): the pipeline owns every number; this layer RETRIEVES and
+     INTERPRETS owned data only. Sources EdgeDesk does not own are declared UNAVAILABLE,
+     never faked. Nothing here alters evidence()/score/priority — the frozen ranking holds.
+     ===================================================================================== */
+  var RES_TTL={market:0,edgedesk:0,price:0,clv:0,model:6*3600e3,game:6*3600e3,pitchers:6*3600e3,
+    weather:30*60e3,bullpen:6*3600e3,history:24*3600e3};
+  var SESSION={eventId:null,cache:{}};
+
+  function evObj(o){ return {claim:o.claim, value:(o.value==null?null:o.value), source:o.source||'EdgeDesk',
+    source_type:o.source_type||'DERIVED', status:o.status||'VERIFIED', confidence:o.confidence||'MEDIUM',
+    timestamp:o.timestamp||null, relevance:o.relevance||'', tool:o.tool||null}; }
+  function fresh(tool){ var c=SESSION.cache[tool]; if(!c)return null; var ttl=RES_TTL[tool]||0;
+    if(ttl>0 && (Date.now()-c.ts)>ttl)return null; return c.data; }
+  function stash(tool,data){ SESSION.cache[tool]={ts:Date.now(),data:data}; return data; }
+
+  /* ---- OWNED-data tools (read-only; each returns {evidence,unavailable?,note?}) ---- */
+  var TOOLS={};
+  TOOLS.market=function(ctx){ var x=ctx.x, ev=[];
+    ev.push(evObj({tool:'market',claim:'Current best price',value:amStr(x.curAm),source:'EdgeDesk market capture',source_type:'MARKET',status:x.staleM>=STALE_MIN?'STALE':'VERIFIED',confidence:x.staleM>=STALE_MIN?'LOW':'HIGH',timestamp:x.e.last_seen_at||null,relevance:'price'}));
+    if(x.detAm!=null) ev.push(evObj({tool:'market',claim:'Detection price',value:amStr(x.detAm),source:'EdgeDesk detection',source_type:'MARKET',status:'VERIFIED',confidence:'HIGH',relevance:'movement'}));
+    if(x.pinDec) ev.push(evObj({tool:'market',claim:'Pinnacle (sharp) on this side',value:amStr(decToAm(x.pinDec)),source:'Pinnacle via EdgeDesk',source_type:'MARKET',status:'VERIFIED',confidence:'HIGH',relevance:'sharp'}));
+    ev.push(evObj({tool:'market',claim:'Books behind the fair line',value:x.nb,source:'EdgeDesk market capture',source_type:'MARKET',status:'VERIFIED',confidence:x.nb>=5?'HIGH':'MEDIUM',relevance:'liquidity'}));
+    if(x.graded && x.closeP!=null) ev.push(evObj({tool:'market',claim:'Closing fair (sharp)',value:pctAbs(x.closeP),source:'EdgeDesk close capture',source_type:'MARKET',status:'VERIFIED',confidence:'HIGH',relevance:'close'}));
+    return {evidence:ev};
+  };
+  TOOLS.edgedesk=function(ctx){ var x=ctx.x;
+    return {evidence:[
+      evObj({tool:'edgedesk',claim:'Fair probability',value:x.fairP==null?null:pctAbs(x.fairP),source:x.fairSrc,source_type:'DERIVED',status:x.fairP==null?'UNAVAILABLE':'VERIFIED',confidence:x.fairP==null?'UNVERIFIED':'HIGH',relevance:'model'}),
+      evObj({tool:'edgedesk',claim:'Current edge vs fair',value:pct(x.curEdge),source:'EdgeDesk deterministic engine',source_type:'DERIVED',status:x.curEdge==null?'UNAVAILABLE':'VERIFIED',confidence:'HIGH',relevance:'edge'}),
+      evObj({tool:'edgedesk',claim:'Edge remaining since detection',value:x.remaining==null?null:Math.round(x.remaining*100)+'%',source:'EdgeDesk deterministic engine',source_type:'DERIVED',status:'VERIFIED',confidence:'HIGH',relevance:'decay'})
+    ]};
+  };
+  TOOLS.price=function(ctx){ var x=ctx.x;
+    return {evidence:[
+      evObj({tool:'price',claim:'Break-even (fair) price',value:amStr(x.breakevenAm),source:'EdgeDesk price engine',source_type:'DERIVED',status:'VERIFIED',confidence:'HIGH',relevance:'price'}),
+      evObj({tool:'price',claim:'Max playable price',value:amStr(x.toPlayAm),source:'EdgeDesk price engine',source_type:'DERIVED',status:'VERIFIED',confidence:'HIGH',relevance:'price'}),
+      evObj({tool:'price',claim:x.needsPriceForEv!=null?'Price needed to be a bet again':'Current price vs window',value:x.needsPriceForEv!=null?amStr(x.needsPriceForEv):amStr(x.curAm)+((x.curEdge!=null&&x.curEdge>=FLOOR)?' (inside)':' (past)'),source:'EdgeDesk price engine',source_type:'DERIVED',status:'VERIFIED',confidence:'HIGH',relevance:'price'})
+    ]};
+  };
+  TOOLS.clv=function(ctx){ var x=ctx.x;
+    if(!x.graded) return {evidence:[evObj({tool:'clv',claim:'CLV',value:null,source:'EdgeDesk ledger',source_type:'DERIVED',status:'UNAVAILABLE',confidence:'UNVERIFIED',relevance:'validation'})],note:'Not graded yet — CLV exists only after the close is captured.'};
+    return {evidence:[
+      evObj({tool:'clv',claim:'CLV (process, not outcome)',value:pct(x.clv),source:'EdgeDesk graded ledger',source_type:'DERIVED',status:'VERIFIED',confidence:'HIGH',relevance:'validation'}),
+      evObj({tool:'clv',claim:'Beat the close',value:x.beat===true?'yes':x.beat===false?'no':'—',source:'EdgeDesk graded ledger',source_type:'DERIVED',status:'VERIFIED',confidence:'HIGH',relevance:'validation'}),
+      evObj({tool:'clv',claim:'Result (outcome, not process)',value:x.result?String(x.result).toUpperCase():'—',source:'EdgeDesk graded ledger',source_type:'DERIVED',status:'VERIFIED',confidence:'HIGH',relevance:'outcome'})
+    ],note:'A losing bet can have good CLV; a winning bet can have poor CLV. CLV grades the price, not the result.'};
+  };
+  TOOLS.game=function(ctx){ var g=ctx.g; if(!g) return {evidence:[],unavailable:{tool:'game',reason:'No MLB game card resolved for this event.'}};
+    var ev=[];
+    if(g.venue) ev.push(evObj({tool:'game',claim:'Venue',value:g.venue,source:'mlb_game_cards (MLB Stats API)',source_type:'OFFICIAL',status:'VERIFIED',confidence:'HIGH',relevance:'context'}));
+    if(g.status) ev.push(evObj({tool:'game',claim:'Game status',value:g.status,source:'mlb_game_cards (MLB Stats API)',source_type:'OFFICIAL',status:'VERIFIED',confidence:'HIGH',relevance:'status'}));
+    if(g.away_record||g.home_record) ev.push(evObj({tool:'game',claim:'Records',value:(g.away_team_name||'Away')+' '+(g.away_record||'?')+' / '+(g.home_team_name||'Home')+' '+(g.home_record||'?'),source:'mlb_game_cards',source_type:'OFFICIAL',status:'VERIFIED',confidence:'HIGH',relevance:'form'}));
+    if(g.park_factor!=null) ev.push(evObj({tool:'game',claim:'Park factor',value:g.park_factor+(g.hr_factor!=null?' · HR '+g.hr_factor:''),source:'mlb_game_cards',source_type:'DERIVED',status:'VERIFIED',confidence:'MEDIUM',relevance:'context'}));
+    return {evidence:ev};
+  };
+  TOOLS.pitchers=function(ctx){ var g=ctx.g; if(!g) return {evidence:[],unavailable:{tool:'pitchers',reason:'No MLB game card for this event.'}};
+    var ev=[], miss=[];
+    if(g.away_pitcher_name) ev.push(evObj({tool:'pitchers',claim:(g.away_team_name||'Away')+' probable starter',value:g.away_pitcher_name+(g.away_pitcher_throws?' ('+g.away_pitcher_throws+')':''),source:'mlb_game_cards probables',source_type:'OFFICIAL',status:'PROBABLE',confidence:'MEDIUM',relevance:'pitching'})); else miss.push('away');
+    if(g.home_pitcher_name) ev.push(evObj({tool:'pitchers',claim:(g.home_team_name||'Home')+' probable starter',value:g.home_pitcher_name+(g.home_pitcher_throws?' ('+g.home_pitcher_throws+')':''),source:'mlb_game_cards probables',source_type:'OFFICIAL',status:'PROBABLE',confidence:'MEDIUM',relevance:'pitching'})); else miss.push('home');
+    var out={evidence:ev, note:'Names + handedness only, PROBABLE not confirmed. ERA / xERA / Stuff+ / pitch counts are not ingested.'};
+    if(miss.length) out.unavailable={tool:'pitchers',reason:'Probable starter missing for '+miss.join(' & ')+' side.'};
+    return out;
+  };
+  TOOLS.weather=async function(ctx){
+    var r=(window.WX&&ctx.eventId)?window.WX[ctx.eventId]:null;
+    if(!r){ try{ if(ctx.eventId){ var rows=await sbGet('venue_weather?select=*&event_id=eq.'+encodeURIComponent(ctx.eventId)+'&limit=1'); r=rows&&rows[0]; } }catch(_){} }
+    if(!r) return {evidence:[],unavailable:{tool:'weather',reason:'No venue_weather row for this game yet.'}};
+    var age=(typeof wxAgeH==='function')?wxAgeH(r):null, STALEH=(typeof WX_STALE_H!=='undefined'?WX_STALE_H:6);
+    if(age!=null && age>STALEH) return {evidence:[evObj({tool:'weather',claim:'Forecast',value:'stale ('+age.toFixed(1)+'h old) — not used',source:'venue_weather (NWS)',source_type:'FORECAST',status:'STALE',confidence:'LOW',timestamp:r.fetched_at,relevance:'variance'})]};
+    if(r.is_dome) return {evidence:[evObj({tool:'weather',claim:'Conditions',value:'dome — weather neutral',source:'venue_weather',source_type:'FORECAST',status:'VERIFIED',confidence:'HIGH',timestamp:r.fetched_at,relevance:'variance'})]};
+    var ev=[];
+    if(r.temp_f!=null) ev.push(evObj({tool:'weather',claim:'Temperature',value:Math.round(r.temp_f)+'\u00b0F',source:'venue_weather (NWS)',source_type:'FORECAST',status:'VERIFIED',confidence:'MEDIUM',timestamp:r.fetched_at,relevance:'variance'}));
+    if(r.wind_mph!=null){ var w=Math.round(r.wind_mph)+' mph'; if(r.wind_component_out!=null&&Math.abs(r.wind_component_out)>=4) w+=(r.wind_component_out>0?' out':' in'); ev.push(evObj({tool:'weather',claim:'Wind',value:w,source:'venue_weather (NWS)',source_type:'FORECAST',status:'VERIFIED',confidence:'MEDIUM',timestamp:r.fetched_at,relevance:'variance'})); }
+    if(r.precip_prob!=null&&r.precip_prob>=30) ev.push(evObj({tool:'weather',claim:'Precip probability',value:Math.round(r.precip_prob)+'%',source:'venue_weather (NWS)',source_type:'FORECAST',status:'VERIFIED',confidence:'MEDIUM',timestamp:r.fetched_at,relevance:'variance'}));
+    if(!ev.length) ev.push(evObj({tool:'weather',claim:'Conditions',value:'no material wind / temp / precip',source:'venue_weather (NWS)',source_type:'FORECAST',status:'VERIFIED',confidence:'MEDIUM',timestamp:r.fetched_at,relevance:'variance'}));
+    return {evidence:ev, note:'Weather feeds the variance read only — never the edge, fair line or CLV.'};
+  };
+  TOOLS.bullpen=async function(ctx){ var g=ctx.g; if(!g||(g.away_team_id==null&&g.home_team_id==null)) return {evidence:[],unavailable:{tool:'bullpen',reason:'No team ids to look up bullpen status.'}};
+    var ids=[g.away_team_id,g.home_team_id].filter(function(v){return v!=null;}), taxed=[],closers=[];
+    try{ if(ids.length) taxed=await sbGet('mlb_bullpen_taxed?select=team_id,full_name,flag,pitches_yesterday,severity&team_id=in.('+ids.join(',')+')&order=severity.desc'); }catch(_){}
+    try{ if(ids.length) closers=await sbGet('mlb_bullpen_team?select=team_id,closer_name,closer_flag&team_id=in.('+ids.join(',')+')'); }catch(_){}
+    var teamName=function(id){ return id===g.away_team_id?(g.away_team_name||'Away'):(g.home_team_name||'Home'); }, ev=[];
+    (taxed||[]).forEach(function(t){ ev.push(evObj({tool:'bullpen',claim:teamName(t.team_id)+' flagged arm',value:t.full_name+(t.pitches_yesterday!=null?' ('+t.pitches_yesterday+'p yest)':'')+(t.flag?' \u00b7 '+t.flag:''),source:'mlb_bullpen sync',source_type:'DERIVED',status:'PARTIAL',confidence:'MEDIUM',relevance:'bullpen'})); });
+    (closers||[]).forEach(function(c){ if(c.closer_name) ev.push(evObj({tool:'bullpen',claim:teamName(c.team_id)+' closer',value:c.closer_name+(c.closer_flag?' ('+c.closer_flag+')':' (available)'),source:'mlb_bullpen sync',source_type:'DERIVED',status:'PARTIAL',confidence:'MEDIUM',relevance:'bullpen'})); });
+    if(!ev.length) ev.push(evObj({tool:'bullpen',claim:'Bullpen',value:'no flagged / taxed arms on file',source:'mlb_bullpen sync',source_type:'DERIVED',status:'PARTIAL',confidence:'MEDIUM',relevance:'bullpen'}));
+    return {evidence:ev, note:'Flagged arms + closer availability only — not full usage or rest state.'};
+  };
+  TOOLS.model=async function(ctx){ var e=ctx.e, rows=[];
+    try{ rows=await sbGet('model_predictions?select=model_prob,model_fair_american,model_edge,model_version&event_id=eq.'+encodeURIComponent(e.event_id)+'&market=eq.'+encodeURIComponent(e.market||'')+'&selection=eq.'+encodeURIComponent(e.selection||'')+(e.point!=null?'&point=eq.'+encodeURIComponent(e.point):'')+'&order=created_at.desc&limit=1'); }catch(_){}
+    var m=rows&&rows[0];
+    if(!m) return {evidence:[],unavailable:{tool:'model',reason:'No model_predictions row for this exact selection.'}};
+    return {evidence:[
+      evObj({tool:'model',claim:'Model probability (UNPROVEN)',value:m.model_prob!=null?pctAbs(m.model_prob):null,source:'EdgeDesk model '+(m.model_version||''),source_type:'MODEL',status:'UNPROVEN',confidence:'LOW',relevance:'model'}),
+      evObj({tool:'model',claim:'Model edge vs market (UNPROVEN)',value:m.model_edge!=null?pct(m.model_edge):null,source:'EdgeDesk model '+(m.model_version||''),source_type:'MODEL',status:'UNPROVEN',confidence:'LOW',relevance:'model'})
+    ],note:'Independent proprietary model — display-only, not CLV-validated, counted nowhere in the edge math.'};
+  };
+  TOOLS.history=async function(ctx){ var x=ctx.x, e=ctx.e;
+    if(x.curEdge==null) return {evidence:[],unavailable:{tool:'history',reason:'No current edge to define a comparable band.'}};
+    var lo=Math.max(0,x.curEdge-0.015), hi=x.curEdge+0.015, rows=[];
+    try{ rows=await sbGet('signals?select=clv,beat_close,result&sport_key=eq.'+encodeURIComponent(e.sport_key||'')+'&market=eq.'+encodeURIComponent(e.market||'')+'&graded_at=not.is.null&first_edge=gte.'+lo.toFixed(3)+'&first_edge=lte.'+hi.toFixed(3)+'&limit=500'); }catch(_){}
+    var N=(rows||[]).length;
+    if(N<8) return {evidence:[evObj({tool:'history',claim:'Comparable graded signals (\u00b11.5% edge, same market)',value:N+' — too few to read',source:'EdgeDesk signal history',source_type:'HISTORICAL',status:'HISTORICAL',confidence:'LOW',relevance:'history'})],note:'Sample too small for a stable read.'};
+    var beat=rows.filter(function(r){return r.beat_close===true;}).length;
+    var clvs=rows.map(function(r){return n(r.clv);}).filter(function(v){return v!=null;});
+    var avgClv=clvs.length?clvs.reduce(function(a,b){return a+b;},0)/clvs.length:null;
+    return {evidence:[
+      evObj({tool:'history',claim:'Comparable graded signals (\u00b11.5% edge, same market)',value:'N='+N,source:'EdgeDesk signal history',source_type:'HISTORICAL',status:'HISTORICAL',confidence:'MEDIUM',relevance:'history'}),
+      evObj({tool:'history',claim:'Beat-close rate in that band',value:Math.round(beat/N*100)+'% ('+beat+'/'+N+')',source:'EdgeDesk signal history',source_type:'HISTORICAL',status:'HISTORICAL',confidence:'MEDIUM',relevance:'history'}),
+      evObj({tool:'history',claim:'Average CLV in that band',value:avgClv==null?'\u2014':pct(avgClv),source:'EdgeDesk signal history',source_type:'HISTORICAL',status:'HISTORICAL',confidence:'MEDIUM',relevance:'history'})
+    ],note:'Correlation over a sample, not proof for this game.'};
+  };
+
+  /* ---- adapters for sources EdgeDesk does NOT own: declared, never faked ---- */
+  var UNAVAILABLE_TOOLS={
+    confirmed_lineup:'Confirmed batting lineups are not ingested — EdgeDesk stores probable pitchers only. Needs a live-lineup adapter (MLB Stats API lineup endpoint).',
+    injuries:'Injury / IL status is not connected. Needs a primary injury feed adapter.',
+    transactions:'Roster moves / transactions are not connected. Needs a transactions feed adapter.',
+    pitcher_stats:'Advanced pitcher stats (ERA / xERA / Stuff+ / pitch counts) are not ingested (Phase 2 Statcast/FanGraphs layer). Needs that ingestion plus a stats tool.',
+    news:'News / social reporting is not connected and is lower-confidence by policy. Needs a vetted news adapter with source-tier tagging.'
+  };
+
+  /* ---- contradiction engine over verified evidence + owned numbers ---- */
+  function findConflicts(ctx, ev, unavailable){
+    var x=ctx.x, c=[];
+    if(x.curEdge!=null && x.curEdge<FLOOR) c.push('Price vs edge: the number is already past the playable range even though a positive edge was detected.');
+    if(x.curEdge!=null && x.curEdge>0.06) c.push('Edge size vs liquidity: a '+pct(x.curEdge)+' edge is large enough to suggest a stale or bad line rather than genuine value.');
+    if(!x.sharp) c.push('No sharp confirmation: Pinnacle does not print this exact side, so the fair line rests on softer books.');
+    if(ev.some(function(i){return i.tool==='weather'&&i.status==='STALE';})) c.push('Weather forecast on file is stale and was refused as current.');
+    if(unavailable.some(function(u){return u.tool==='pitchers';})) c.push('A probable starter is missing — the largest single input in a baseball number is unresolved.');
+    else if(ctx.sport==='baseball_mlb') c.push('Starters are probable, not confirmed; a late scratch would move the number.');
+    if(ev.some(function(i){return i.tool==='bullpen'&&/flagged arm/.test(i.claim);})) c.push('Flagged / taxed bullpen arms are on file for this matchup — late-inning risk if the game turns.');
+    if(x.graded && x.beat===false) c.push('This signal did not beat the close (CLV '+pct(x.clv)+') — the market moved through the number.');
+    return c;
+  }
+
+  /* ---- thesis attacker: SURVIVES / WEAKENED / INVALIDATED / PENDING ---- */
+  function attack(ctx, conflicts){ var x=ctx.x;
+    if(x.isWait || x.curEdge==null) return {status:'PENDING',note:'Cannot test a thesis with no fair price or unconfirmed critical info.'};
+    if(x.curEdge<FLOOR) return {status:'INVALIDATED',note:'Price has moved EV below the floor — the bet thesis does not survive at this number.'};
+    var hard=(!x.trusted&&x.nb<4)||x.staleM>=STALE_MIN||(x.remaining!=null&&x.remaining<0.4&&x.detEdge>0);
+    if(hard) return {status:'WEAKENED',note:'Positive but undercut by a structural problem (thin/offshore, stale, or heavy decay).'};
+    if(conflicts.length>=3) return {status:'WEAKENED',note:'Several unresolved conflicts remain; treat as a lean, not a strong bet.'};
+    return {status:'SURVIVES',note:'The edge holds up against price, confirmation and freshness checks on owned data.'};
+  }
+
+  /* ---- intent router / research plan (depth-scaled so simple questions stay cheap) ---- */
+  function plan(question, ctx){ var q=(question||'').toLowerCase(), mlb=ctx.sport==='baseball_mlb';
+    if(/(who.*(start|pitch)|starter|starting|probable pitch|lineup)/.test(q)) return {depth:'QUICK',tools:['pitchers']};
+    if(/\b(weather|wind|rain|temp)\b/.test(q)) return {depth:'QUICK',tools:['weather']};
+    if(/\b(bullpen|reliever|closer|\barm\b|taxed)\b/.test(q)) return {depth:'QUICK',tools:['bullpen']};
+    if(/\b(at what price|break.?even|max playable|lottery|\+ev|plus.?ev|price)\b/.test(q)) return {depth:'QUICK',tools:['price']};
+    if(/\b(clv|beat.*close|closing)\b/.test(q)) return {depth:'QUICK',tools:['clv','market']};
+    if(/\b(history|historical|seen this|analog|comparable|before)\b/.test(q)) return {depth:'STANDARD',tools:['edgedesk','history']};
+    if(/\b(attack|wrong|false|invalidat|\brisk\b|what.*miss|challenge|break it)\b/.test(q)) return {depth:'DEEP',tools:['edgedesk','market','price','model'].concat(mlb?['pitchers','bullpen','weather']:[])};
+    if(/\b(research|dig|deep|full packet|everything|should i bet|full read)\b/.test(q)) return {depth:'FULL',tools:['edgedesk','market','price','clv','model','history'].concat(mlb?['game','pitchers','bullpen','weather']:[])};
+    if(/\b(market|move|moving|sharp|public|steam)\b/.test(q)) return {depth:'STANDARD',tools:['market','edgedesk','model']};
+    return {depth:'STANDARD',tools:['edgedesk','market','price'].concat(mlb?['pitchers']:[])};
+  }
+
+  async function runTools(ctx, toolIds){
+    var evidence=[],unavailable=[],notes=[];
+    for(var i=0;i<toolIds.length;i++){ var id=toolIds[i],t=TOOLS[id]; if(!t)continue;
+      var cached=fresh(id),res;
+      if(cached) res=cached;
+      else{ try{ res=await t(ctx); }catch(err){ res={evidence:[],unavailable:{tool:id,reason:'retrieval failed: '+((err&&err.message)||err)}}; } stash(id,res); }
+      if(res.evidence&&res.evidence.length) evidence=evidence.concat(res.evidence);
+      if(res.unavailable) unavailable.push(res.unavailable);
+      if(res.note) notes.push({tool:id,note:res.note});
+    }
+    return {evidence:evidence,unavailable:unavailable,notes:notes};
+  }
+
+  function buildCtx(){ if(!LOADED)return null; var x=evidence(LOADED);
+    return {e:LOADED, x:x, g:LOADED.__mlb||(typeof mlbLookup==='function'?mlbLookup(LOADED):null),
+      eventId:LOADED.event_id, sport:LOADED.sport_key}; }
+
+  /* ---- render helpers ---- */
+  function stbadge(s){ var m={VERIFIED:'pos',PROBABLE:'warn',PARTIAL:'warn',STALE:'neg',UNPROVEN:'dim',HISTORICAL:'dim',UNAVAILABLE:'neg',UNVERIFIED:'neg'}; return '<span class="edai-ev-st '+(m[s]||'dim')+'">'+esc(s)+'</span>'; }
+  function evRow(it){ return '<div class="edai-ev"><div class="edai-ev-c">'+esc(it.claim)+(it.value!=null?': <b>'+esc(String(it.value))+'</b>':'')+'</div>'
+    +'<div class="edai-ev-m">'+stbadge(it.status)+'<span class="edai-ev-src">'+esc(it.source)+(it.timestamp?' \u00b7 '+ago(new Date(it.timestamp).getTime()):'')+'</span></div></div>'; }
+  function rstate(t){ return '<div class="edai-rstate">'+esc(t)+'</div>'; }
+  function thesisLine(ctx){ var x=ctx.x;
+    if(x.curEdge==null) return 'No fair price on file, so there is no thesis to state yet — this is a WAIT, not a read.';
+    return x.sel+' shows '+pct(x.curEdge)+' vs '+x.fairSrc+' at '+amStr(x.curAm)+(x.sharp?', with Pinnacle quoting the same side':', without a sharp print')+'. '+(x.dverdict==='PASS'?'The price no longer supports the position.':x.isWait?'Pending confirmation before it is a decision.':'The edge survives the owned-data checks.'); }
+  function bottomLine(ctx,att){ var x=ctx.x;
+    if(x.isWait) return 'Hold at '+amStr(x.curAm)+' — the information needed to decide is not in yet. Confidence '+x.confidence+'.';
+    if(x.dverdict==='PASS') return 'Pass at '+amStr(x.curAm)+'. '+(att.status==='INVALIDATED'?'The price killed the edge.':'A good non-bet.')+' Confidence '+x.confidence+'.';
+    return 'Playable at '+amStr(x.curAm)+' (max '+amStr(x.toPlayAm)+'). Thesis '+att.status.toLowerCase()+'. Confidence '+x.confidence+'.'; }
+
+  /* ---- QUICK single-fact answer (owned tools, no thesis) ---- */
+  async function quickAnswer(ctx, pl, question){
+    if(pl.tools.length===1 && pl.tools[0]==='price'){ return runNarr('price',ctx.x); }
+    thinking(true); var out=await runTools(ctx, pl.tools); thinking(false);
+    var verified=out.evidence.filter(function(i){return i.status!=='UNAVAILABLE';});
+    var html='';
+    if(verified.length) html+='<div class="edai-card" style="padding:6px 10px">'+verified.map(evRow).join('')+'</div>';
+    if(out.unavailable.length) html+='<div class="edai-card" style="padding:8px 12px;font-size:11.5px;color:var(--dim);margin-top:6px">'+out.unavailable.map(function(u){return '\u2022 <b>'+esc(u.tool)+'</b>: '+esc(u.reason);}).join('<br>')+'</div>';
+    if(out.notes.length) html+='<div class="edai-src" style="border:none;margin-top:4px">'+esc(out.notes[0].note)+'</div>';
+    if(!verified.length&&!out.unavailable.length) html='<p>Nothing on file for that yet.</p>';
+    push('a', html);
+  }
+
+  /* ---- DEEP / FULL research workflow with visible UI states ---- */
+  async function investigate(ctx, forcedDepth, question){
+    var pl=plan(question||'', ctx); if(forcedDepth)pl.depth=forcedDepth;
+    if(pl.depth==='QUICK'||pl.depth==='STANDARD') pl.depth='DEEP';   // this path is for real research
+    if(pl.depth==='DEEP' && ctx.sport==='baseball_mlb') pl.tools=['edgedesk','market','price','model','game','pitchers','bullpen','weather'];
+    if(pl.depth==='FULL') pl.tools=['edgedesk','market','price','clv','model','history'].concat(ctx.sport==='baseball_mlb'?['game','pitchers','bullpen','weather']:[]);
+    push('a', rstate('RESEARCHING')+'<div class="edai-rnote">Plan ('+pl.depth+'): '+esc(pl.tools.join(', '))+'</div>');
+    thinking(true); var out=await runTools(ctx, pl.tools); thinking(false);
+    var x=ctx.x;
+    var verified=out.evidence.filter(function(i){return i.status!=='UNAVAILABLE';});
+    var conflicts=findConflicts(ctx, verified, out.unavailable);
+    var att=attack(ctx, conflicts);
+
+    var html=rstate('VERIFIED \u00b7 '+verified.length+' item'+(verified.length===1?'':'s'));
+    html+='<div class="edai-card" style="padding:6px 10px">'+verified.map(evRow).join('')+'</div>';
+
+    var missing=out.unavailable.slice();
+    if(ctx.sport==='baseball_mlb') Object.keys(UNAVAILABLE_TOOLS).forEach(function(k){ missing.push({tool:k,reason:UNAVAILABLE_TOOLS[k]}); });
+    if(missing.length){ html+=rstate('NOT AVAILABLE \u00b7 '+missing.length);
+      html+='<div class="edai-card" style="padding:8px 12px;font-size:11px;color:var(--dim)">'+missing.map(function(u){return '\u2022 <b>'+esc(u.tool)+'</b>: '+esc(u.reason);}).join('<br>')+'</div>'; }
+
+    if(conflicts.length){ html+=rstate('CONFLICTS \u00b7 '+conflicts.length);
+      html+='<div class="edai-card"><div class="edai-flip"><ul>'+conflicts.map(function(c){return '<li>'+esc(c)+'</li>';}).join('')+'</ul></div></div>'; }
+
+    html+=rstate('THESIS');
+    html+='<div class="edai-card" style="padding:10px 12px;font-size:12.5px;color:var(--text);line-height:1.5">'+esc(thesisLine(ctx))+'</div>';
+    html+=rstate('CHALLENGE \u00b7 '+att.status);
+    html+='<div class="edai-card">'+flipHTML(x)+'<div class="edai-note">'+esc(att.note)+'</div></div>';
+    html+=rstate('FINAL');
+    html+='<div class="edai-card"><div class="edai-vhead"><span class="edai-verdict '+vClass(x.dverdict)+'">'+x.dverdict+'</span>'
+      +'<div><div class="edai-vsel">'+x.sel+'</div><div class="edai-vsub">'+esc(x.market)+' \u00b7 '+amStr(x.curAm)+'</div></div>'+confBadge(x)+'</div>'
+      +(x.isWait?'<div class="edai-waitbar"><b>WAIT.</b> '+esc(x.waitWhy)+'</div>':'')
+      +'<div class="edai-note">'+esc(bottomLine(ctx,att))+'</div></div>';
+    push('a', html);
+
+    // optional AI synthesis over the SAME verified evidence (never a dependency)
+    html2Offer(ctx, {evidence:verified, conflicts:conflicts, unavailable:missing, attack:att}, question);
+    return {evidence:verified,conflicts:conflicts,unavailable:missing,attack:att};
+  }
+  function html2Offer(ctx, res, question){
+    var log=$id('edaiLog'); if(!log)return;
+    var d=document.createElement('div'); d.className='edai-msg a';
+    d.innerHTML='<button class="edai-qa" style="margin-top:2px" id="edaiSynthBtn">AI synthesis of this research</button>';
+    log.appendChild(d); log.scrollTop=log.scrollHeight;
+    var btn=$id('edaiSynthBtn'); if(!btn)return;
+    btn.onclick=async function(){ btn.disabled=true; btn.textContent='Synthesizing\u2026'; thinking(true);
+      var r=await askAI('research', question||'Synthesize this research into a decision.', ctx.x, {research:res});
+      thinking(false); var m=push('a',r.html);
+      if(r.src&&m){ var s=document.createElement('div'); s.className='edai-src'; s.textContent=r.src; m.appendChild(s); }
+      if(btn.parentNode)btn.parentNode.removeChild(btn);
+    };
+  }
+
   /* ======================= PUBLIC API ======================= */
   window.EDAI = {
     open:function(){ $id('edaiScrim').classList.add('open'); $id('edaiPanel').classList.add('open'); $id('edaiFab').classList.add('hide');
@@ -12744,6 +13023,7 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
     loadSignal:async function(e, announce){
       window.EDAI.open();
       LOADED=e;
+      if(SESSION.eventId!==e.event_id){ SESSION.eventId=e.event_id; SESSION.cache={}; }
       $id('edaiLoadedSel').textContent=selL(e)+'  '+(e.best_dec?amStr(decToAm(e.best_dec)):'');
       $id('edaiLoaded').classList.remove('hide');
       renderActions();
@@ -12767,22 +13047,37 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
       if(mode==='challenge'){ push('u','Challenge this bet.'); runNarr('challenge',x); return; }
       if(mode==='whatchanged'){ push('u','What changed since detection?'); runNarr('whatchanged',x); return; }
       if(mode==='trace'){ push('u','Give me the full research packet.'); push('a',narrative(x,'trace')); return; }
+      if(mode==='research'){ push('u','Research this game.'); var ctx=buildCtx(); if(ctx) investigate(ctx,'FULL','Research this game.'); return; }
     },
 
     sendText:async function(){
       var t=($id('edaiText').value||'').trim(); if(!t||BUSY)return;
       $id('edaiText').value=''; $id('edaiText').style.height='auto';
-      push('u',t); BUSY=true; $id('edaiSend').disabled=true; thinking(true);
-      var x=LOADED?evidence(LOADED):null;
-      var res=await askAI('chat',t,x);
-      thinking(false);
-      var d=push('a',res.html);
-      if(res.src&&d){ var s=document.createElement('div'); s.className='edai-src'; s.textContent=res.src; d.appendChild(s); }
-      BUSY=false; $id('edaiSend').disabled=false;
+      push('u',t); BUSY=true; $id('edaiSend').disabled=true;
+      try{
+        var ctx=buildCtx();
+        if(ctx){
+          if(SESSION.eventId!==ctx.eventId){ SESSION.eventId=ctx.eventId; SESSION.cache={}; } // new game -> fresh session cache
+          var pl=plan(t,ctx);
+          if(pl.depth==='FULL'||pl.depth==='DEEP'){ await investigate(ctx,null,t); return; }
+          if(pl.depth==='QUICK'){ await quickAnswer(ctx,pl,t); return; }
+        }
+        thinking(true);
+        var res=await askAI('chat',t,ctx?ctx.x:null);
+        thinking(false);
+        var d=push('a',res.html);
+        if(res.src&&d){ var s=document.createElement('div'); s.className='edai-src'; s.textContent=res.src; d.appendChild(s); }
+      }catch(err){ thinking(false); push('a','<p>Something went wrong running that. Try <b>Analyze</b> or <b>Research this</b>.</p>'); }
+      finally{ BUSY=false; var sb=$id('edaiSend'); if(sb)sb.disabled=false; }
     },
 
+    research:function(depth){ var ctx=buildCtx(); if(ctx) investigate(ctx, depth||'FULL', 'Research this game.'); },
     gradeBet:gradeBet
   };
+
+  /* research primitives exposed for reuse (e.g. slate research, tests) */
+  window.EDResearch = { TOOLS:TOOLS, UNAVAILABLE_TOOLS:UNAVAILABLE_TOOLS, plan:plan, runTools:runTools,
+    buildCtx:buildCtx, investigate:investigate, findConflicts:findConflicts, attack:attack };
 
   async function runNarr(mode,x,userSuffix){
     BUSY=true; thinking(true);
