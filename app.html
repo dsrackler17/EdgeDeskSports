@@ -13081,16 +13081,328 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
     var v=dscanVerdictOf(f);                          // class and shown-verdict are ONE computation
     return v==='WAIT' ? 'WAIT' : (v==='PASS' ? 'PASS' : 'BET');
   }
+  /* ==================== BET-QUALITY LAYER (research-quality, non-authoritative) ==================== */
+  /* ============================================================
+     BET-QUALITY LAYER  (research-quality classification)
+     ------------------------------------------------------------
+     Sits ABOVE the deterministic engine. Reads ONLY owned fields
+     already produced by evidence() (x) and dscanResearch()
+     (research = {evidence, conflicts, unavailable, attack}). It
+     NEVER recomputes fair price, EV, edge, CLV, the floor, the
+     verdict, confidence, priority, evidence() math or slate
+     ranking — those stay authoritative. Every attribute is a
+     transparent, inspectable function of existing values: no
+     opaque score, no model call.
+
+     Thresholds derive from existing EdgeDesk semantics:
+       FLOOR       the EV floor the engine already enforces
+       STALE_MIN   the staleness cutoff the engine already uses
+       0.03 / 0.06 the engine's own "genuine BET" and
+                   "suspiciously large / stale line" edge marks
+                   (see evidence(): verdict block).
+     ============================================================ */
+
+  /* independent evidence AXES — correlated market signals collapse
+     to ONE axis (spec: do not double-count Pinnacle fair + "books
+     behind fair"; they share one market structure). Real-world MLB
+     inputs each count once, and only when actually present. */
+  function bqAxes(f){
+    var x=f.x, evs=(f.research&&f.research.evidence)||[];
+    function hasRel(rels, okStatuses){
+      return evs.some(function(i){
+        return rels.indexOf(i.relevance)>=0 && (!okStatuses || okStatuses.indexOf(i.status)>=0);
+      });
+    }
+    var axes=[];
+    // MARKET/PRICE structure (sharp print + books-behind + close + break-even
+    // + decay all originate from one capture): a single independent axis.
+    if(x.fairP!=null || x.sharp) axes.push('market');
+    // Real-world, independent of the market capture:
+    if(hasRel(['pitching'], ['OFFICIAL','PROBABLE','VERIFIED'])) axes.push('pitching');
+    if(hasRel(['bullpen'],  ['PARTIAL','VERIFIED','OFFICIAL']))  axes.push('bullpen');
+    if(hasRel(['variance'], ['VERIFIED']))                        axes.push('weather'); // STALE excluded
+    if(hasRel(['context','form','status'], ['VERIFIED','OFFICIAL'])) axes.push('context');
+    if(x.graded) axes.push('clv'); // graded CLV = independent validation
+    return axes;
+  }
+
+  /* edge provenance — is the edge sharp-market-confirmed, or resting on a
+     softer consensus fair? (spec #7: separate market-derived from
+     model-derived; never let a soft/model edge masquerade as high quality) */
+  function bqProvenance(x){
+    if(x.curEdge==null) return 'NONE';
+    if(x.sharp || x.fairSrc==='Pinnacle de-vig fair') return 'SHARP';
+    return 'CONSENSUS';
+  }
+
+  /* PRICE CUSHION / FRAGILITY (spec #3, #4) — distance of EV above the floor.
+     A candidate sitting on the floor is flagged FLOOR / extremely price-sensitive
+     and must never look equivalent to one with real cushion. */
+  function bqCushion(x){
+    if(x.curEdge==null) return {cushion:null, floors:null, state:'FLOOR', playable:false};
+    var cushion=x.curEdge-FLOOR;                         // absolute EV headroom
+    var floors=cushion/FLOOR;                            // headroom in "floors"
+    var playable=cushion>=-1e-9;
+    var atFloor = cushion<=Math.max(0.10*FLOOR,0.001)+1e-12; // essentially on the floor
+    // bands in "floors" of EV headroom above the engine floor:
+    //   FLOOR  ~0   |  FRAGILE <=0.5f  |  MODERATE <=1f  |  ROBUST >1f
+    // (a full floor of cushion — e.g. curEdge>=2*FLOOR — reads as robust, and
+    //  aligns with the engine's own 0.03 "genuine BET" mark sitting mid-band.)
+    var state = !playable ? 'FLOOR'
+      : atFloor ? 'FLOOR'
+      : cushion<=0.5*FLOOR ? 'FRAGILE'
+      : cushion<=1.0*FLOOR ? 'MODERATE'
+      : 'ROBUST';
+    return {cushion:cushion, floors:floors, state:state, playable:playable, atFloor:atFloor};
+  }
+
+  /* EVIDENCE QUALITY (spec #5) — breadth of independent verified axes, weighted
+     by status quality. Missing info is uncertainty, NOT negative evidence, so it
+     lowers the axis count without adding penalties (those feed information_gap). */
+  function bqEvidence(f, axes){
+    var x=f.x, evs=(f.research&&f.research.evidence)||[], conf=(f.research&&f.research.conflicts)||[];
+    if(x.curEdge==null) return 'INSUFFICIENT';           // no fair price to grade against
+    var n=axes.length;
+    var strongStatuses=evs.filter(function(i){return i.status==='VERIFIED'||i.status==='OFFICIAL';}).length;
+    var weakOnly = strongStatuses===0;
+    var conflicts=conf.length;
+    if(n<=1) return weakOnly?'INSUFFICIENT':'WEAK';       // market/model only
+    if(n===2) return conflicts>=2?'WEAK':'MIXED';
+    if(n>=4 && conflicts<=1 && x.confidence!=='LOW' && x.confidence!=='UNVERIFIED') return 'EXCELLENT';
+    if(n>=3 && conflicts<=2) return 'STRONG';
+    return 'MIXED';
+  }
+
+  /* MARKET CONFIRMATION (spec #6) — do NOT call it "sharp money" just because
+     Pinnacle exists; require a print on THIS side plus real corroboration. */
+  function bqMarket(x){
+    if(x.fairP==null) return 'UNAVAILABLE';
+    var killed = (x.curEdge!=null && x.curEdge<FLOOR && x.detEdge!=null && x.detEdge>=FLOOR);
+    var heavyDecayAgainst = (x.remaining!=null && x.remaining<0.4 && x.detEdge>0);
+    var missedClose = (x.graded && x.beat===false);
+    if(killed || heavyDecayAgainst || missedClose) return 'CONFLICTING';
+    if(x.sharp && (x.nb>=5 || x.corr>=1)) return 'CONFIRMED';
+    return 'NEUTRAL';
+  }
+
+  /* INFORMATION GAP (spec #11) — could a MISSING variable materially move the bet?
+     The unknown MLB starter is the single largest baseball input → CRITICAL. */
+  function bqGap(f){
+    var x=f.x, un=(f.research&&f.research.unavailable)||[];
+    var mlb = x.e && x.e.sport_key==='baseball_mlb';
+    var unknownStarter = mlb && x.mlb && (!x.mlb.away_pitcher_name || !x.mlb.home_pitcher_name);
+    if(x.curEdge==null) return 'CRITICAL';               // cannot evaluate at all
+    if(unknownStarter) return 'CRITICAL';                // pitching unresolved
+    if(x.staleM>=STALE_MIN) return 'HIGH';               // shown price may be gone
+    if(x.remaining!=null && x.remaining<0.4 && x.detEdge>0) return 'HIGH';
+    if(mlb) return 'MODERATE';                           // probable, lineups unconfirmed
+    if(!x.sharp) return 'MODERATE';                      // no sharp confirmation
+    if(x.staleM>=20) return 'MODERATE';
+    return 'LOW';
+  }
+
+  /* THESIS DURABILITY (spec #9) — an interpretation LAYER over the existing
+     attack status; it never replaces SURVIVES/WEAKENED/INVALIDATED/PENDING. */
+  function bqDurability(f, axes, cushion){
+    var x=f.x, a=f.research.attack, conf=(f.research&&f.research.conflicts)||[];
+    if(a.status==='PENDING' || x.isWait) return 'PENDING';
+    if(a.status==='INVALIDATED') return 'INVALIDATED';
+    if(a.status==='WEAKENED') return 'FRAGILE';          // one structural problem
+    // SURVIVES:
+    if(cushion.state==='FLOOR') return 'FRAGILE';        // price alone could flip it
+    var strong = axes.length>=3 && conf.length<=1 &&
+                 (x.confidence==='HIGH'||x.confidence==='MEDIUM');
+    if(strong) return 'DURABLE';
+    return 'STABLE';                                     // survives, identifiable weaknesses
+  }
+
+  /* DETECTION-TO-NOW (spec #12) — what changed since detection, and WHY. */
+  function bqSinceDetection(x){
+    if(x.curEdge==null) return 'INFORMATION-CHANGED';
+    if(x.detEdge!=null && x.detEdge>=FLOOR && x.curEdge<FLOOR) return 'PRICE-KILLED';
+    if(x.staleM>=STALE_MIN) return 'INFORMATION-CHANGED'; // can't trust the shown price is current
+    if(x.detEdge!=null && x.curEdge>x.detEdge+1e-9) return 'IMPROVED';
+    if(x.remaining!=null && x.remaining<0.6 && x.detEdge>0) return 'DETERIORATED';
+    return 'STABLE';
+  }
+
+  /* transparent, inspectable quality components (spec #13: no opaque score) */
+  function bqComponents(q){
+    var cushionPts={ROBUST:3,MODERATE:2,FRAGILE:1,FLOOR:0}[q.price_fragility];
+    var evPts={EXCELLENT:4,STRONG:3,MIXED:2,WEAK:1,INSUFFICIENT:0}[q.evidence_quality];
+    var mkPts={CONFIRMED:3,NEUTRAL:1,CONFLICTING:-2,UNAVAILABLE:0}[q.market_confirmation];
+    var duPts={DURABLE:3,STABLE:2,FRAGILE:1,PENDING:0,INVALIDATED:-3}[q.thesis_durability];
+    var gapPts={LOW:2,MODERATE:1,HIGH:0,CRITICAL:-2}[q.information_gap];
+    var cfPts={HIGH:3,MEDIUM:2,LOW:1,UNVERIFIED:0}[q.confidence];
+    var indPts=Math.min(q.independent_axes.length,4);
+    var frPts=q.stale_min<20?1:0;
+    return [
+      {k:'Price cushion',   v:cushionPts, of:3},
+      {k:'Evidence quality',v:evPts,      of:4},
+      {k:'Market confirm',  v:mkPts,      of:3},
+      {k:'Thesis durability',v:duPts,     of:3},
+      {k:'Information gap',  v:gapPts,     of:2},
+      {k:'Confidence',       v:cfPts,     of:3},
+      {k:'Independent axes', v:indPts,    of:4},
+      {k:'Freshness',        v:frPts,     of:1}
+    ];
+  }
+
+  /* overall TIER + research quality_call. quality_call is layered above and is
+     NEVER more aggressive than the deterministic verdict (spec #14, #18): it can
+     downgrade a borderline BET to WAIT/NO-BET quality, never upgrade. */
+  function bqTier(f, q, shownVerdict){
+    if(shownVerdict==='PASS') return {tier:'PASS', call:'PASS'};
+    if(shownVerdict==='WAIT') return {tier:'PENDING', call:'WAIT'};
+    // playable BET / LEAN:
+    var frag=q.price_fragility, ev=q.evidence_quality, mk=q.market_confirmation,
+        du=q.thesis_durability, gap=q.information_gap;
+    var tier;
+    if(du==='DURABLE' && (ev==='STRONG'||ev==='EXCELLENT') && mk==='CONFIRMED'
+        && frag!=='FLOOR' && gap!=='CRITICAL' && gap!=='HIGH') tier='STRONG';
+    else if((du==='DURABLE'||du==='STABLE') && (ev==='STRONG'||ev==='MIXED')
+        && (mk==='CONFIRMED'||mk==='NEUTRAL') && frag!=='FLOOR' && gap!=='CRITICAL') tier='SOLID';
+    else if(frag==='FLOOR') tier='FLOOR';
+    else if(mk==='CONFLICTING' || ev==='WEAK' || ev==='INSUFFICIENT'
+        || gap==='CRITICAL' || du==='FRAGILE') tier='MARGINAL';
+    else tier='LEAN';
+    // quality_call, capped so it never exceeds the shown verdict
+    var call;
+    if(tier==='STRONG'||tier==='SOLID') call = (shownVerdict==='BET')?'BET':'LEAN';
+    else if(tier==='LEAN') call='LEAN';
+    else /* FLOOR or MARGINAL */ call = (gap==='HIGH'||gap==='CRITICAL')?'WAIT':'NO BET';
+    // hard cap: BET > LEAN > WAIT > NO BET > PASS ; never upgrade past shownVerdict
+    var order={PASS:0,'NO BET':1,WAIT:2,LEAN:3,BET:4};
+    if(order[call]>order[shownVerdict]) call=shownVerdict;
+    return {tier:tier, call:call};
+  }
+
+  /* the public per-finalist quality object (attached as f.q) */
+  function betQuality(f){
+    var x=f.x, shown=dscanVerdictOf(f);
+    var axes=bqAxes(f);
+    var cushion=bqCushion(x);
+    var q={
+      playable: dscanPlayable(x),
+      shown_verdict: shown,
+      price_cushion_pts: cushion.cushion,            // absolute EV over floor
+      price_floors: cushion.floors,                  // headroom in floors
+      price_fragility: cushion.state,                // ROBUST/MODERATE/FRAGILE/FLOOR
+      evidence_quality: bqEvidence(f, axes),         // EXCELLENT..INSUFFICIENT
+      market_confirmation: bqMarket(x),              // CONFIRMED/NEUTRAL/CONFLICTING/UNAVAILABLE
+      information_gap: bqGap(f),                      // LOW/MODERATE/HIGH/CRITICAL
+      thesis_durability: bqDurability(f, axes, cushion), // DURABLE..INVALIDATED
+      since_detection: bqSinceDetection(x),          // IMPROVED/STABLE/DETERIORATED/PRICE-KILLED/INFORMATION-CHANGED
+      edge_provenance: bqProvenance(x),              // SHARP/CONSENSUS/NONE
+      confidence: x.confidence,                      // reused, not recomputed
+      independent_axes: axes,
+      stale_min: Math.round(x.staleM),
+      market_edge: (bqProvenance(x)==='SHARP')? x.curEdge : null,
+      model_edge:  (bqProvenance(x)==='CONSENSUS')? x.curEdge : null
+    };
+    var t=bqTier(f, q, shown);
+    q.tier=t.tier; q.quality_call=t.call;
+    q.components=bqComponents(q);
+    q.score=q.components.reduce(function(s,c){return s+c.v;},0); // transparent sum, inspectable
+    return q;
+  }
+
+  /* research-adjusted headline pick among the BET-class finalists (spec #14):
+     a smaller raw edge with stronger, better-confirmed, more-independent
+     evidence can outrank a larger but fragile edge. Deterministic tiebreaks
+     preserve the existing priority order. */
+  function bqPickHeadline(bets){
+    return bets.slice().sort(function(a,b){
+      if(b.q.score!==a.q.score) return b.q.score-a.q.score;   // quality first
+      if(b.priority!==a.priority) return b.priority-a.priority; // then engine priority
+      return (b.x.curEdge||0)-(a.x.curEdge||0);                 // then raw edge
+    })[0];
+  }
+
+  /* slate-level quality outcome (spec #14): willing to conclude NO BET even when
+     something technically clears the floor. This is a RESEARCH conclusion layered
+     over — and never replacing — the deterministic dscanDecide outcome. */
+  function bqSlateOutcome(headline, detOutcome){
+    if(detOutcome!=='BET') return detOutcome;      // WAIT / NO BET pass through
+    var t=headline.q.tier;
+    if(t==='STRONG'||t==='SOLID') return 'BET';
+    if(t==='LEAN') return 'LEAN';
+    return 'NO BET';                               // FLOOR / MARGINAL: playable, not quality
+  }
+
+  /* WHY #1 BEAT #2/#3 (spec #16) — pairwise, attribute-level, auditable. */
+  function bqWhyBeat(head, other){
+    var reasons=[], hq=head.q, oq=other.q, hx=head.x, ox=other.x;
+    var rank={CONFIRMED:3,NEUTRAL:2,CONFLICTING:1,UNAVAILABLE:0};
+    var evr={EXCELLENT:5,STRONG:4,MIXED:3,WEAK:2,INSUFFICIENT:1};
+    var fr={ROBUST:4,MODERATE:3,FRAGILE:2,FLOOR:1};
+    var du={DURABLE:5,STABLE:4,FRAGILE:3,PENDING:2,INVALIDATED:1};
+    var gp={LOW:4,MODERATE:3,HIGH:2,CRITICAL:1};
+    if((ox.curEdge||0) > (hx.curEdge||0)+1e-9){
+      // the other has the bigger nominal edge — explain why it still lost
+      if(rank[oq.market_confirmation]<rank[hq.market_confirmation])
+        reasons.push('#'+other.rank+' shows a larger raw edge ('+pct(ox.curEdge)+' vs '+pct(hx.curEdge)+') but weaker market confirmation ('+oq.market_confirmation.toLowerCase()+' vs '+hq.market_confirmation.toLowerCase()+').');
+      else if(fr[oq.price_fragility]<fr[hq.price_fragility])
+        reasons.push('#'+other.rank+' has the bigger edge but sits closer to the floor ('+oq.price_fragility.toLowerCase()+' vs '+hq.price_fragility.toLowerCase()+' cushion).');
+      else if(oq.market_confirmation==='CONFLICTING')
+        reasons.push('#'+other.rank+' has the bigger raw edge but is contradicted by the market (price moved against the signal).');
+      else if(evr[oq.evidence_quality]<evr[hq.evidence_quality])
+        reasons.push('#'+other.rank+' has the bigger edge but thinner evidence ('+oq.evidence_quality.toLowerCase()+' vs '+hq.evidence_quality.toLowerCase()+').');
+      else
+        reasons.push('#'+other.rank+' has a larger raw edge; #'+head.rank+' wins on overall research quality ('+hq.score+' vs '+oq.score+').');
+    } else {
+      if(evr[hq.evidence_quality]>evr[oq.evidence_quality])
+        reasons.push('#'+head.rank+' rests on stronger evidence ('+hq.evidence_quality.toLowerCase()+' vs '+oq.evidence_quality.toLowerCase()+', '+hq.independent_axes.length+' independent signals vs '+oq.independent_axes.length+').');
+      if(rank[hq.market_confirmation]>rank[oq.market_confirmation])
+        reasons.push('#'+head.rank+' is better confirmed by the market ('+hq.market_confirmation.toLowerCase()+' vs '+oq.market_confirmation.toLowerCase()+').');
+      if(fr[hq.price_fragility]>fr[oq.price_fragility])
+        reasons.push('#'+head.rank+' has more price cushion ('+hq.price_fragility.toLowerCase()+' vs '+oq.price_fragility.toLowerCase()+').');
+    }
+    if(du[hq.thesis_durability]>du[oq.thesis_durability])
+      reasons.push('#'+head.rank+'\u2019s thesis is more durable ('+hq.thesis_durability.toLowerCase()+' vs '+oq.thesis_durability.toLowerCase()+').');
+    if(gp[hq.information_gap]>gp[oq.information_gap])
+      reasons.push('#'+other.rank+' carries a bigger information gap ('+oq.information_gap.toLowerCase()+' vs '+hq.information_gap.toLowerCase()+').');
+    if(!reasons.length) reasons.push('#'+head.rank+' and #'+other.rank+' are close; #'+head.rank+' edges it on the combined research score ('+hq.score+' vs '+oq.score+').');
+    return reasons;
+  }
+
+  /* WHAT WOULD MAKE #n BETTER (spec #17) — the single biggest blocker, with a
+     deterministic target price where owned data provides one; never invented. */
+  function bqUnblock(f){
+    var x=f.x, q=f.q;
+    if(!dscanPlayable(x))
+      return 'Would come back into play at '+amStr(x.toPlayAm)+' or better \u2014 the current '+amStr(x.curAm)+' is past the floor.';
+    if(q.thesis_durability==='INVALIDATED')
+      return 'Thesis was invalidated in research; a price change alone would not fix it.';
+    if(q.information_gap==='CRITICAL' && x.mlb && (!x.mlb.away_pitcher_name || !x.mlb.home_pitcher_name))
+      return 'Would strengthen once the missing probable starter is posted \u2014 the largest unresolved input here.';
+    if(q.price_fragility==='FLOOR')
+      return 'Sitting on the floor: a move to a clear cushion (better than '+amStr(x.toPlayAm)+', ideally toward '+amStr(x.fairAm)+') would lift it out of FLOOR-level.';
+    if(q.market_confirmation==='NEUTRAL' && !x.sharp)
+      return 'Would upgrade if Pinnacle prints this side (a sharp confirmation the fair line currently lacks).';
+    if(q.market_confirmation==='CONFLICTING')
+      return 'Market is moving against it; it would need the price to firm back above '+amStr(x.toPlayAm)+' with the signal intact.';
+    if(x.staleM>=STALE_MIN)
+      return 'Would clear once a fresh capture confirms the '+amStr(x.curAm)+' is still live (last seen '+q.stale_min+'m ago).';
+    if(q.evidence_quality==='MIXED'||q.evidence_quality==='WEAK')
+      return 'Would improve with another independent confirmation (currently '+q.independent_axes.length+' independent signal'+(q.independent_axes.length===1?'':'s')+').';
+    return 'Already the cleanest of the finalists on owned data; nothing single-variable is holding it back.';
+  }
+
   /* final comparison + selection (finalists arrive in deterministic priority order) */
   function dscanDecide(finalists){
-    finalists.forEach(function(f){ f.cls=dscanClass(f); });
+    finalists.forEach(function(f){ f.cls=dscanClass(f); f.q=betQuality(f); }); // attach research-quality
     var bets=finalists.filter(function(f){return f.cls==='BET';});
     var waits=finalists.filter(function(f){return f.cls==='WAIT';});
-    var headline = bets.length? bets[0] : (waits.length? waits[0] : finalists[0]);
-    var outcome  = bets.length? 'BET' : (waits.length? 'WAIT' : 'NO BET');
+    // Among playable BETs the headline is chosen by TRANSPARENT research quality (spec #14),
+    // not raw edge — deterministic priority stays the tiebreak inside bqPickHeadline().
+    // The gate itself (only BET-class can headline; else WAIT; else NO BET) is unchanged.
+    var headline = bets.length? bqPickHeadline(bets) : (waits.length? waits[0] : finalists[0]);
+    var outcome  = bets.length? 'BET' : (waits.length? 'WAIT' : 'NO BET');       // deterministic outcome (UNCHANGED)
+    var qualityOutcome = bets.length? bqSlateOutcome(headline, 'BET') : outcome; // research conclusion (layered, never more aggressive)
     var ordered=[headline].concat(finalists.filter(function(f){return f!==headline;}));
     ordered.forEach(function(f,i){ f.rank=i+1; });          // headline becomes #1
-    return {ordered:ordered, headline:headline, outcome:outcome, bets:bets, waits:waits};
+    return {ordered:ordered, headline:headline, outcome:outcome, qualityOutcome:qualityOutcome, bets:bets, waits:waits};
   }
 
   /* information timing: what EdgeDesk knew at detection vs now (owned fields only) */
@@ -13148,14 +13460,94 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
     // playable: current is at least as good as the floor price — state the direction so it can never read as a contradiction
     return 'Playable at '+amStr(x.curAm)+' \u2014 clears the '+pctAbs(FLOOR,1)+' floor (needs '+amStr(x.toPlayAm)+' or better). Thesis '+a.status.toLowerCase()+'. Confidence '+x.confidence+'.';
   }
-  function dscanHeadline(f, outcome){
+  /* ---- bet-quality render helpers (colored, inspectable; no opaque score) ---- */
+  function dscanQPill(txt, color){
+    return '<span style="display:inline-block;font-family:JetBrains Mono,monospace;font-size:10.5px;font-weight:700;letter-spacing:.04em;'
+      +'padding:2px 7px;border-radius:6px;color:'+color+';background:color-mix(in srgb,'+color+' 15%,transparent);border:1px solid color-mix(in srgb,'+color+' 40%,transparent)">'+esc(txt)+'</span>';
+  }
+  var BQ_COLOR={
+    tier:{STRONG:'var(--pos)',SOLID:'var(--pos)',LEAN:'var(--accent)',FLOOR:'var(--warn)',MARGINAL:'var(--warn)',PENDING:'var(--dim)',PASS:'var(--neg)'},
+    price_fragility:{ROBUST:'var(--pos)',MODERATE:'var(--accent)',FRAGILE:'var(--warn)',FLOOR:'var(--neg)'},
+    evidence_quality:{EXCELLENT:'var(--pos)',STRONG:'var(--pos)',MIXED:'var(--warn)',WEAK:'var(--neg)',INSUFFICIENT:'var(--neg)'},
+    market_confirmation:{CONFIRMED:'var(--pos)',NEUTRAL:'var(--dim)',CONFLICTING:'var(--neg)',UNAVAILABLE:'var(--warn)'},
+    thesis_durability:{DURABLE:'var(--pos)',STABLE:'var(--pos)',FRAGILE:'var(--warn)',PENDING:'var(--dim)',INVALIDATED:'var(--neg)'},
+    information_gap:{LOW:'var(--pos)',MODERATE:'var(--accent)',HIGH:'var(--warn)',CRITICAL:'var(--neg)'}
+  };
+  function dscanQColor(field,state){ return (BQ_COLOR[field]&&BQ_COLOR[field][state])||'var(--dim)'; }
+  function dscanQRow(label, field, state, extra){
+    return '<div style="display:flex;align-items:center;gap:8px;padding:3px 0">'
+      +'<span style="min-width:132px;font-size:11px;color:var(--faint);text-transform:uppercase;letter-spacing:.04em">'+esc(label)+'</span>'
+      +dscanQPill(state, dscanQColor(field,state))
+      +(extra?'<span style="font-size:11.5px;color:var(--dim)">'+esc(extra)+'</span>':'')+'</div>';
+  }
+  /* the required BET QUALITY block (spec #15) + transparent components (#13) + model/market split (#7) */
+  function dscanQualityHTML(f){
+    var q=f.q, x=f.x;
+    var cushionExtra = q.price_cushion_pts==null ? 'no fair price'
+      : (q.price_fragility==='FLOOR' ? 'on the '+pctAbs(FLOOR,1)+' floor \u2014 extremely price-sensitive'
+        : '+'+(q.price_cushion_pts*100).toFixed(1)+'% over the '+pctAbs(FLOOR,1)+' floor ('+q.price_floors.toFixed(1)+' floors)');
+    var provLine = q.edge_provenance==='SHARP'
+      ? 'Market-derived edge '+pct(x.curEdge)+' (Pinnacle-backed fair). '+(q.market_confirmation==='CONFIRMED'?'Sharp-confirmed on this side.':'Not yet sharp-confirmed on this exact side.')
+      : q.edge_provenance==='CONSENSUS'
+        ? 'Model/consensus-derived edge '+pct(x.curEdge)+' \u2014 rests on softer books, NOT a sharp print. Treat the size with caution until the market confirms.'
+        : 'No fair price on file, so there is no edge to attribute.';
+    var comps=q.components.map(function(c){
+      var col = c.v<=0 && c.of>0 ? 'var(--neg)' : (c.v>=c.of? 'var(--pos)':'var(--dim)');
+      return '<span style="font-family:JetBrains Mono,monospace;font-size:10px;color:'+col+';border:1px solid var(--line,rgba(255,255,255,.08));border-radius:5px;padding:1px 5px;margin:2px 4px 0 0;display:inline-block">'
+        +esc(c.k)+' '+c.v+'/'+c.of+'</span>';
+    }).join('');
+    return '<div class="edai-card" style="padding:8px 12px 10px">'
+      + '<div style="display:flex;align-items:center;gap:8px;margin:2px 0 6px">'
+        + '<span style="font-size:11px;color:var(--faint);text-transform:uppercase;letter-spacing:.06em;font-weight:700">Bet quality</span>'
+        + dscanQPill(q.tier, dscanQColor('tier',q.tier))
+        + '<span style="font-size:11px;color:var(--dim)">research call: <b style="color:var(--text)">'+esc(q.quality_call)+'</b></span></div>'
+      + dscanQRow('Price cushion','price_fragility',q.price_fragility,cushionExtra)
+      + dscanQRow('Evidence quality','evidence_quality',q.evidence_quality, q.independent_axes.length+' independent signal'+(q.independent_axes.length===1?'':'s')+(q.independent_axes.length?' \u00b7 '+q.independent_axes.join(', '):''))
+      + dscanQRow('Market confirmation','market_confirmation',q.market_confirmation)
+      + dscanQRow('Thesis durability','thesis_durability',q.thesis_durability)
+      + dscanQRow('Information gap','information_gap',q.information_gap)
+      + '<div class="edai-src" style="border:none;margin-top:6px">'+esc(provLine)+'</div>'
+      + '<div style="margin-top:5px">'+comps+'</div>'
+      + '<div class="edai-src" style="border:none;margin-top:4px">Every field above is a deterministic read of owned data \u2014 fair price, EV, edge, the floor and confidence are untouched. Quality never overrides the price verdict; it only refuses to call a floor-level number a strong bet.</div>'
+      + '</div>';
+  }
+  /* WHY #1 BEAT #2/#3 — auditable, attribute-level (spec #16) */
+  function dscanWhyBeatHTML(decided){
+    var head=decided.headline, rest=decided.ordered.slice(1,3);
+    if(!rest.length) return '';
+    var items=[];
+    rest.forEach(function(o){ bqWhyBeat(head,o).forEach(function(s){ items.push(s); }); });
+    return dscanSec('Why #'+head.rank+' beat the others', dscanUL(items));
+  }
+  /* WHAT WOULD MAKE #2 / #3 BETTER — biggest blocker, deterministic target (spec #17) */
+  function dscanUnblockHTML(decided){
+    var rest=decided.ordered.slice(1,3);
+    if(!rest.length) return '';
+    var items=rest.map(function(o){ return '#'+o.rank+' ('+o.x.matchup+'): '+bqUnblock(o); });
+    return dscanSec('What would make #2/#3 the pick', dscanUL(items));
+  }
+
+  function dscanHeadline(f, outcome, decided){
     var x=f.x, e=x.e, r=f.research, ev=x.evNow;
     var shown = dscanVerdictOf(f);                    // gated verdict drives every label below
+    var q=f.q, tier=q?q.tier:null;
+    // banner reflects RESEARCH QUALITY on a playable bet: a floor-level or low-quality
+    // number is labeled honestly (spec #20) instead of reading as a strong bet.
     var bannerTxt = outcome==='NO BET' ? 'NO BET TODAY'
       : outcome==='WAIT' ? 'WAIT \u2014 no confirmed bet yet'
       : shown==='PASS' ? 'NO BET \u2014 price past the window'
-      : (shown==='BET' ? 'BEST BET' : 'BEST PLAY \u00b7 LEAN');
+      : (tier==='STRONG' ? 'BEST BET'
+        : tier==='SOLID' ? 'BEST BET'
+        : tier==='FLOOR' ? 'PLAYABLE \u00b7 FLOOR-LEVEL'
+        : tier==='MARGINAL' ? 'PLAYABLE \u00b7 LOW QUALITY'
+        : (shown==='BET' ? 'BEST BET \u00b7 LEAN' : 'BEST PLAY \u00b7 LEAN'));
     var finalVerdict = outcome==='NO BET' ? 'NO BET' : shown;
+    var borderline = (outcome!=='NO BET' && shown!=='PASS' && shown!=='WAIT' && (tier==='FLOOR'||tier==='MARGINAL'))
+      ? '<div class="edai-note" style="border-left:3px solid var(--warn);padding-left:8px"><b style="color:var(--text)">Technically playable, but not a high-quality bet.</b> '
+        +(tier==='FLOOR'?'The price is sitting on the '+pctAbs(FLOOR,1)+' floor':'The evidence is thin or the market is not confirming')
+        +' \u2014 the deterministic engine still allows it, but as research this is a '+esc(q.quality_call)+', not a strong play.'
+        +(decided&&decided.ordered.length>1?' See \u201cWhy #1 beat the others\u201d below.':'')+'</div>'
+      : '';
     var badgeCls = vClass(finalVerdict==='NO BET'?'PASS':shown);
     var marketLine = (x.sharp?'Pinnacle is quoting this side. ':'No Pinnacle print on this exact side. ')
       + x.nb+' book'+(x.nb===1?'':'s')+' behind the fair line'
@@ -13177,6 +13569,8 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
       +confBadge(x)+'</div>'
       +(x.isWait?'<div class="edai-waitbar"><b>WAIT.</b> '+esc(x.waitWhy)+'</div>':'')
       +'<div style="padding:2px 13px 12px">'
+      + (borderline)
+      + (q? dscanQualityHTML(f) : '')
       + dscanSec('Why #1', dscanUL((x.reasonsFor||[]).slice(0,5)))
       + dscanSec('Market', '<div style="font-size:12.5px;color:var(--text);line-height:1.5">'+esc(marketLine)+'</div>')
       + dscanSec('Research', dscanEvBox(ctxEv))
@@ -13185,6 +13579,8 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
           '<div style="font-size:12.5px;color:var(--text);line-height:1.5">'+esc(r.attack.note)+'</div>'
           +'<div class="edai-src" style="margin-top:4px">Strongest against: '+esc(strongestAgainst)+'</div>')
       + dscanSec('What changed', dscanUL(dscanWhatChanged(x)))
+      + (decided? dscanWhyBeatHTML(decided) : '')
+      + (decided? dscanUnblockHTML(decided) : '')
       + dscanSec('Falsifiers', dscanUL(x.falsifiers))
       + dscanSec('Final',
           '<div class="edai-vhead" style="border:none;padding:2px 0"><span class="edai-verdict '+badgeCls+'">'+esc(finalVerdict)+'</span>'
@@ -13192,32 +13588,44 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
       +'</div></div>';
   }
   function dscanMini(f){
-    var x=f.x, e=x.e, v=dscanVerdictOf(f);
+    var x=f.x, e=x.e, v=dscanVerdictOf(f), q=f.q;
+    var qpill = q? ' '+dscanQPill(q.tier, dscanQColor('tier',q.tier)) : '';
     return '<div class="edai-card" style="margin-bottom:8px"><div class="edai-vhead">'
       +'<span class="edai-verdict '+vClass(v)+'">'+v+'</span>'
-      +'<div style="min-width:0"><div class="edai-vsel">#'+f.rank+'  '+esc(x.matchup)+'</div>'
-      +'<div class="edai-vsub">'+x.sel+' \u00b7 '+amStr(x.curAm)+' \u00b7 '+pct(x.curEdge)+' \u00b7 '+f.research.attack.status+' \u00b7 conf '+x.confidence+'</div></div>'
+      +'<div style="min-width:0"><div class="edai-vsel">#'+f.rank+'  '+esc(x.matchup)+qpill+'</div>'
+      +'<div class="edai-vsub">'+x.sel+' \u00b7 '+amStr(x.curAm)+' \u00b7 '+pct(x.curEdge)+' \u00b7 '+f.research.attack.status+' \u00b7 conf '+x.confidence
+        +(q?' \u00b7 '+q.price_fragility.toLowerCase()+' cushion \u00b7 '+q.evidence_quality.toLowerCase()+' evidence':'')+'</div></div>'
       +'<span style="margin-left:auto;text-align:right"><div class="mono" style="font-size:15px;font-weight:700">'+f.priority+'</div><div style="font-size:9px;color:var(--faint)">PRIORITY</div></span></div>'
       +'<div style="padding:6px 12px 10px;font-size:12px;color:var(--dim)"><b>Biggest question:</b> '+esc(f.question||'')+'</div></div>';
   }
   function dscanRenderHTML(decided){
-    var head=decided.headline, outcome=decided.outcome, rest=decided.ordered.slice(1,3);
+    var head=decided.headline, outcome=decided.outcome, qOut=decided.qualityOutcome||outcome, rest=decided.ordered.slice(1,3);
+    // the intro reports the research conclusion (qOut) — which may be more conservative than
+    // the deterministic outcome when the best playable number is only floor-level (spec #14, #20).
+    var concl = outcome!=='BET' ? (outcome==='WAIT'?'nothing confirmed \u2014 a WAIT.':'no qualifying bet \u2014 a no-play.')
+      : qOut==='BET' ? 'one high-quality playable bet.'
+      : qOut==='LEAN' ? 'one playable lean \u2014 caveated, not a strong bet.'
+      : 'technically playable, but no high-quality bet \u2014 research call is a no-play.';
     var intro='<div class="edai-card" style="padding:12px 12px 8px;margin-bottom:8px"><div class="edai-vsel">Daily scan complete.</div>'
-      +'<div class="edai-vsub">'+decided.ordered.length+' finalist'+(decided.ordered.length===1?'':'s')+' researched and attacked \u00b7 ranked by EdgeDesk\u2019s deterministic priority, not raw edge \u00b7 '
-      +(outcome==='BET'?'one playable bet.':outcome==='WAIT'?'nothing confirmed \u2014 a WAIT.':'no qualifying bet \u2014 a no-play.')+'</div></div>';
-    var html=intro + dscanHeadline(head, outcome);
+      +'<div class="edai-vsub">'+decided.ordered.length+' finalist'+(decided.ordered.length===1?'':'s')+' researched, attacked and quality-graded \u00b7 headline chosen by research quality, not raw edge \u00b7 '
+      +esc(concl)+'</div></div>';
+    var html=intro + dscanHeadline(head, outcome, decided);
     if(rest.length){
       html+='<div style="font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--dim);font-weight:600;margin:6px 2px">Other finalists</div>';
       rest.forEach(function(f){ html+=dscanMini(f); });
     }
     html+='<div style="display:flex;gap:8px;margin-top:6px;flex-wrap:wrap">'
       +'<button class="edai-qa" onclick="EDAI.dscan(\'why\',1)">Why #1</button>'
+      +'<button class="edai-qa" onclick="EDAI.dscan(\'quality\',1)">Bet quality</button>'
+      +'<button class="edai-qa" onclick="EDAI.dscan(\'fragile\',1)">How fragile?</button>'
+      +(rest.length?'<button class="edai-qa" onclick="EDAI.dscan(\'whybeat\')">Why #1 beat #2</button>':'')
       +'<button class="edai-qa" onclick="EDAI.dscan(\'attack\',1)">Attack #1</button>'
-      +'<button class="edai-qa" onclick="EDAI.dscan(\'price\',1)">What price?</button>'
+      +'<button class="edai-qa" onclick="EDAI.dscan(\'best\',\'evidence\')">Strongest evidence</button>'
+      +'<button class="edai-qa" onclick="EDAI.dscan(\'best\',\'price\')">Safest price</button>'
       +'<button class="edai-qa" onclick="EDAI.dscan(\'changed\',1)">What changed?</button>'
       +(rest.length?'<button class="edai-qa" onclick="EDAI.dscan(\'compare\')">Compare #1 & #2</button>':'')
       +'<button class="edai-qa" onclick="EDAI.dailyScan()">Rescan</button></div>';
-    html+='<div class="edai-src" style="border:none;margin-top:4px">You can also type: <b>Why #1</b>, <b>Why not #2</b>, <b>Attack #1</b>, <b>What price would you take?</b>, <b>What changed?</b>, <b>What would make you pass?</b></div>';
+    html+='<div class="edai-src" style="border:none;margin-top:4px">You can also type: <b>How fragile is #1?</b>, <b>How much price cushion does #1 have?</b>, <b>Why did #1 beat #2?</b>, <b>Why isn\u2019t #2 better?</b>, <b>What\u2019s the biggest weakness?</b>, <b>Which bet has the strongest evidence?</b>, <b>Which has the safest price?</b>, <b>Biggest raw edge?</b>, <b>Best research quality?</b>, <b>Most conservative play</b>, <b>Most aggressive playable edge</b>, <b>What would make #1 a pass?</b></div>';
     return html;
   }
   function dscanEmptyHTML(){
@@ -13240,7 +13648,17 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
       strongest_against:(r.conflicts||[]).slice(0,3),
       what_changed:dscanWhatChanged(x),
       verified_research:(r.evidence||[]).slice(0,8).map(function(it){return {claim:it.claim, value:it.value, status:it.status, source:it.source};}),
-      reasons:(x.reasonsFor||[]).slice(0,5), biggest_question:f.question};
+      reasons:(x.reasonsFor||[]).slice(0,5), biggest_question:f.question,
+      /* research-quality layer (deterministic; AI must EXPLAIN, never override — spec #18) */
+      bet_quality: f.q? {
+        tier:f.q.tier, quality_call:f.q.quality_call,
+        price_fragility:f.q.price_fragility, price_cushion_over_floor:f.q.price_cushion_pts,
+        evidence_quality:f.q.evidence_quality, independent_signals:f.q.independent_axes,
+        market_confirmation:f.q.market_confirmation, thesis_durability:f.q.thesis_durability,
+        information_gap:f.q.information_gap, since_detection:f.q.since_detection,
+        edge_provenance:f.q.edge_provenance, market_edge:f.q.market_edge, model_edge:f.q.model_edge,
+        transparent_components:f.q.components, quality_score:f.q.score
+      } : null};
   }
   function dscanSynthOffer(decided){
     var log=$id('edaiLog'); if(!log)return;
@@ -13252,7 +13670,10 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
       btn.disabled=true; btn.textContent='Synthesizing\u2026'; thinking(true);
       var cand=decided.ordered.map(dscanSynthCand);
       var q='This is EdgeDesk\u2019s deterministic daily scan of today\u2019s slate. #'+decided.headline.rank
-        +' is the current best pick and the overall call is '+decided.outcome+'. Interpret the finalists, explain the headline pick and the strongest case against it, and name anything that could not be verified. Do not invent games, prices, injuries or numbers beyond these rows.';
+        +' is the headline pick; the deterministic outcome is '+decided.outcome+' and the research-quality call is '+(decided.qualityOutcome||decided.outcome)+'. '
+        +'Each finalist carries a deterministic bet_quality block (tier, price_fragility, evidence_quality, market_confirmation, thesis_durability, information_gap, edge_provenance, transparent_components). '
+        +'Explain WHY EdgeDesk rates the headline above the alternatives using those fields, name the weakest link and anything unverified, and \u2014 if the headline is FLOOR/MARGINAL \u2014 say plainly it is playable but not a high-quality bet. '
+        +'You are interpreting the deterministic results: do NOT invent games, prices, injuries or numbers, do NOT change the verdict, fair price, max-playable or confidence, and do NOT manufacture a new score. Explain, never override.';
       var res=await askAI('slate', q, null, cand);
       thinking(false); var m=push('a',res.html);
       if(res.src&&m){ var s=document.createElement('div'); s.className='edai-src'; s.textContent=res.src; m.appendChild(s); }
@@ -13374,6 +13795,97 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
       +'<p style="margin-top:8px"><b>#'+a.rank+' leads</b> on deterministic priority ('+a.priority+' vs '+b.priority+'). '+esc(verdictNote)+'</p>');
   }
 
+  /* ---- bet-quality follow-ups (reuse the stored scan; no rescan) ---- */
+  function dscanFinalists(){ return (DSCAN&&DSCAN.finalists&&DSCAN.finalists.length)?DSCAN.finalists:null; }
+  function dscanQualityOf(rank){
+    var f=dscanFind(rank); if(!f){ push('a','<p>Run the daily scan first \u2014 ask for today\u2019s best bet.</p>'); return; }
+    push('a', dscanSec('Bet quality \u00b7 #'+f.rank+' '+f.x.matchup, dscanQualityHTML(f)));
+  }
+  function dscanFragilityOf(rank){
+    var f=dscanFind(rank); if(!f){ push('a','<p>Run the daily scan first.</p>'); return; }
+    var x=f.x, q=f.q;
+    var line = q.price_fragility==='FLOOR'
+      ? 'FLOOR-level \u2014 EV is sitting on the '+pctAbs(FLOOR,1)+' floor. Any move worse than '+amStr(x.toPlayAm)+' kills the bet outright; there is essentially no cushion.'
+      : q.price_fragility==='FRAGILE'
+        ? 'FRAGILE \u2014 only +'+(q.price_cushion_pts*100).toFixed(1)+'% of EV over the floor ('+q.price_floors.toFixed(1)+' floors). A small move to '+amStr(x.toPlayAm)+' takes it out.'
+        : q.price_fragility==='MODERATE'
+          ? 'MODERATE \u2014 +'+(q.price_cushion_pts*100).toFixed(1)+'% over the floor ('+q.price_floors.toFixed(1)+' floors). Some room before '+amStr(x.toPlayAm)+' matters.'
+          : 'ROBUST \u2014 +'+(q.price_cushion_pts*100).toFixed(1)+'% over the floor ('+q.price_floors.toFixed(1)+' floors). Comfortable distance from the '+amStr(x.toPlayAm)+' boundary.';
+    push('a', dscanSec('Price cushion \u00b7 #'+f.rank,
+      '<div class="edai-grid" style="border-radius:10px;overflow:hidden">'
+      + cell('Current', amStr(x.curAm), dscanPlayable(x)?'pos':'neg')
+      + cell('Fair', amStr(x.fairAm),'dim')
+      + cell('Max playable (or better)', amStr(x.toPlayAm),'dim')
+      + cell('Fragility', q.price_fragility, q.price_fragility==='ROBUST'?'pos':q.price_fragility==='FLOOR'?'neg':'dim')
+      +'</div><div class="edai-note">'+esc(line)+'</div>'));
+  }
+  function dscanEvidenceOf(rank){
+    var f=dscanFind(rank); if(!f){ push('a','<p>Run the daily scan first.</p>'); return; }
+    var q=f.q, x=f.x;
+    var prov = q.edge_provenance==='SHARP'?'Sharp/Pinnacle-backed fair line.'
+      : q.edge_provenance==='CONSENSUS'?'Consensus (softer-book) fair line \u2014 not a sharp print; treat the edge size with caution.'
+      : 'No fair price on file.';
+    push('a', dscanSec('Evidence quality \u00b7 #'+f.rank,
+      '<div class="edai-note">Grade: <b>'+esc(q.evidence_quality)+'</b> \u00b7 '+q.independent_axes.length+' independent signal'+(q.independent_axes.length===1?'':'s')
+      +(q.independent_axes.length?': '+esc(q.independent_axes.join(', ')):'')+'. '+esc(prov)+'</div>'
+      + dscanEvBox((f.research.evidence||[]).filter(function(i){return i.relevance!=='price'&&i.relevance!=='edge'&&i.relevance!=='decay';}).slice(0,8))));
+  }
+  function dscanWeakness(rank){
+    var f=dscanFind(rank); if(!f){ push('a','<p>Run the daily scan first.</p>'); return; }
+    var q=f.q;
+    var worst=q.components.slice().sort(function(a,b){ return (a.v/a.of)-(b.v/b.of); })[0];
+    var map={'Price cushion':q.price_fragility,'Evidence quality':q.evidence_quality,'Market confirm':q.market_confirmation,
+      'Thesis durability':q.thesis_durability,'Information gap':q.information_gap,'Confidence':q.confidence,
+      'Independent axes':q.independent_axes.length+' signal'+(q.independent_axes.length===1?'':'s'),'Freshness':q.stale_min+'m since capture'};
+    push('a', dscanSec('Biggest weakness \u00b7 #'+f.rank,
+      '<div class="edai-note">The weakest link is <b>'+esc(worst.k)+'</b> ('+esc(String(map[worst.k]))+', scoring '+worst.v+'/'+worst.of+'). '
+      +esc(bqUnblock(f))+'</div>'));
+  }
+  function dscanWhyBeatFollow(aRank, bRank){
+    var fs=dscanFinalists(); if(!fs){ push('a','<p>Run the daily scan first.</p>'); return; }
+    var a=dscanFind(aRank||1), b=dscanFind(bRank|| (aRank===1?2: (aRank||1)+1) );
+    if(!a||!b||a===b){ push('a','<p>Need two distinct finalists to compare \u2014 e.g. \u201cwhy did #1 beat #2?\u201d</p>'); return; }
+    push('a', dscanSec('Why #'+a.rank+' beat #'+b.rank, dscanUL(bqWhyBeat(a,b)))
+      + dscanSec('What would make #'+b.rank+' the pick', dscanUL([bqUnblock(b)])));
+  }
+  function dscanUnblockOf(rank){
+    var f=dscanFind(rank); if(!f){ push('a','<p>Run the daily scan first.</p>'); return; }
+    push('a', dscanSec('What would make #'+f.rank+' better', '<div class="edai-note">'+esc(bqUnblock(f))+'</div>'));
+  }
+  function dscanBest(metric){
+    var fs=dscanFinalists(); if(!fs){ push('a','<p>Run the daily scan first.</p>'); return; }
+    var frag={ROBUST:4,MODERATE:3,FRAGILE:2,FLOOR:1}, evr={EXCELLENT:5,STRONG:4,MIXED:3,WEAK:2,INSUFFICIENT:1};
+    var gp={LOW:4,MODERATE:3,HIGH:2,CRITICAL:1}, cf={HIGH:3,MEDIUM:2,LOW:1,UNVERIFIED:0};
+    var playable=fs.filter(function(f){return dscanPlayable(f.x);});
+    var pool=(metric==='aggressive')?playable:fs;
+    if(!pool.length) pool=fs;
+    var pick, label, why;
+    function best(scorer){ return pool.slice().sort(function(a,b){return scorer(b)-scorer(a);})[0]; }
+    if(metric==='evidence'){ label='strongest evidence';
+      pick=best(function(f){return f.q.independent_axes.length*10+evr[f.q.evidence_quality];});
+      why='It has '+pick.q.independent_axes.length+' independent signal'+(pick.q.independent_axes.length===1?'':'s')+' ('+pick.q.evidence_quality.toLowerCase()+' evidence).'; }
+    else if(metric==='price'){ label='safest price';
+      pick=best(function(f){return frag[f.q.price_fragility]*100+(f.q.price_cushion_pts||0)*1000;});
+      why='It has the most price cushion ('+pick.q.price_fragility.toLowerCase()+', +'+((pick.q.price_cushion_pts||0)*100).toFixed(1)+'% over the '+pctAbs(FLOOR,1)+' floor).'; }
+    else if(metric==='edge'){ label='biggest raw edge';
+      pick=best(function(f){return f.x.curEdge||-1;});
+      why='It has the largest nominal edge ('+pct(pick.x.curEdge)+') \u2014 note that raw size is not the same as quality.'; }
+    else if(metric==='quality'){ label='best research quality';
+      pick=best(function(f){return f.q.score;});
+      why='It has the highest combined research-quality score ('+pick.q.score+'), tier '+pick.q.tier+'.'; }
+    else if(metric==='conservative'){ label='most conservative play';
+      pick=best(function(f){return (dscanPlayable(f.x)?1000:0)+frag[f.q.price_fragility]*30+gp[f.q.information_gap]*10+cf[f.q.confidence]*5;});
+      why='Safest combination of price cushion, low information gap and confidence ('+pick.q.price_fragility.toLowerCase()+' cushion, '+pick.q.information_gap.toLowerCase()+' gap, conf '+pick.q.confidence+').'; }
+    else /* aggressive */ { label='most aggressive playable edge';
+      pick=best(function(f){return f.x.curEdge||-1;});
+      why='Largest edge that still clears the floor ('+pct(pick.x.curEdge)+' at '+amStr(pick.x.curAm)+') \u2014 higher variance, thinner margin.'; }
+    push('a', dscanSec('The '+label,
+      '<div class="edai-card"><div class="edai-vhead"><span class="edai-verdict '+vClass(dscanVerdictOf(pick))+'">'+dscanVerdictOf(pick)+'</span>'
+      +'<div><div class="edai-vsel">#'+pick.rank+'  '+esc(pick.x.matchup)+'  '+dscanQPill(pick.q.tier,dscanQColor('tier',pick.q.tier))+'</div>'
+      +'<div class="edai-vsub">'+pick.x.sel+' \u00b7 '+amStr(pick.x.curAm)+' \u00b7 '+pct(pick.x.curEdge)+'</div></div></div>'
+      +'<div class="edai-note">'+esc(why)+'</div></div>'));
+  }
+
   /* route a follow-up to the stored scan; returns true if handled */
   function dscanFollow(t){
     if(!DSCAN||!DSCAN.finalists||!DSCAN.finalists.length) return false;
@@ -13382,6 +13894,34 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
     var hasRank=rankTokens.test(q);
     // "compare #1 and #2" / "compare the top two"
     if(/\bcompare\b/.test(q) && (/#?\s*1\s*(?:and|vs|&|,|to)\s*#?\s*2|top\s*(?:two|2)|first\s*(?:two|2)\b/.test(q))){ dscanCompareTop(); return true; }
+    // ----- bet-quality follow-ups (slate-level; reuse the stored scan, no rescan) -----
+    // "why did #1 beat #2?" / "why isn't #2 better?"
+    if(/\bbeat\b/.test(q) || /why\s+(?:is|isn'?t|isnt|not)\b.*\bbetter\b/.test(q) || /why\s+isn'?t\s+#?\s*[1-9]\b/.test(q)){
+      var brk=(q.match(/#?\s*([1-9])/g)||[]).map(function(s){return +s.replace(/[^0-9]/g,'');});
+      if(/\bbeat\b/.test(q) && brk.length>=2){ dscanWhyBeatFollow(brk[0],brk[1]); return true; }
+      var oneR=dscanRankOf(q);
+      if(oneR && oneR!==1){ dscanWhyBeatFollow(1,oneR); return true; }   // "why isn't #2 better" -> why #1 beat #2
+      dscanWhyBeatFollow(1,2); return true;
+    }
+    // price cushion / fragility
+    if(/how\s+fragile|price\s+cushion|how\s+much\s+cushion|how\s+safe.*price|price\s+fragil/.test(q)){ dscanFragilityOf(dscanRankOf(q)); return true; }
+    // biggest weakness / weakest link
+    if(/biggest\s+weakness|weakest\s+link|main\s+weakness|what'?s\s+the\s+weakness/.test(q)){ dscanWeakness(dscanRankOf(q)); return true; }
+    // full bet-quality readout for a specific pick
+    if(/(?:bet\s+quality|research\s+quality|how\s+(?:strong|good)\s+is|quality\s+of)\b/.test(q) && /#?\s*[1-9]\b|\b(?:one|two|three|first|second|third)\b/.test(q)){ dscanQualityOf(dscanRankOf(q)); return true; }
+    // what would make #n better (distinct from "what would make you pass")
+    if(/what\s+would\s+make\s+#?\s*[1-9].*\bbetter\b|what\s+would\s+(?:improve|strengthen)/.test(q)){ dscanUnblockOf(dscanRankOf(q)); return true; }
+    // slate-wide selectors: "which bet has ...", "most conservative/aggressive"
+    if(/which\s+bet|which\s+one|which\s+finalist|most\s+conservative|most\s+aggressive|safest|strongest\s+evidence|biggest\s+(?:raw\s+)?edge|largest\s+edge|best\s+(?:research\s+)?quality/.test(q)){
+      var metric = /strongest\s+evidence|best\s+evidence|most\s+evidence/.test(q) ? 'evidence'
+        : /safest|least\s+fragile/.test(q) ? 'price'
+        : /biggest\s+(?:raw\s+)?edge|largest\s+edge|highest\s+edge/.test(q) ? 'edge'
+        : /best\s+(?:research\s+)?quality|highest\s+quality/.test(q) ? 'quality'
+        : /most\s+conservative/.test(q) ? 'conservative'
+        : /most\s+aggressive|biggest\s+playable/.test(q) ? 'aggressive'
+        : null;
+      if(metric){ dscanBest(metric); return true; }
+    }
     // when a specific game is loaded, a BARE "why?/attack" targets that game — require an explicit rank here
     if(LOADED && !hasRank) return false;
     var rank=dscanRankOf(q);
@@ -13427,13 +13967,21 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
     },
     // daily-scan follow-up buttons/dispatch (why / attack / price / changed / pass / compare)
     dscan:function(act,rank){
-      var label={why:'Why #'+(rank||1)+'?',attack:'Attack #'+(rank||1)+'.',price:'What price would you take on #'+(rank||1)+'?',changed:'What changed on #'+(rank||1)+'?',pass:'What would make #'+(rank||1)+' a pass?',compare:'Compare #1 and #2.'}[act]||act;
+      var bestLabel={evidence:'Which bet has the strongest evidence?',price:'Which bet has the safest price?',edge:'Which bet has the biggest raw edge?',quality:'Which bet has the best research quality?',conservative:'Give me the most conservative play.',aggressive:'Give me the most aggressive playable edge.'};
+      var label={why:'Why #'+(rank||1)+'?',attack:'Attack #'+(rank||1)+'.',price:'What price would you take on #'+(rank||1)+'?',changed:'What changed on #'+(rank||1)+'?',pass:'What would make #'+(rank||1)+' a pass?',compare:'Compare #1 and #2.',
+        quality:'Bet quality of #'+(rank||1)+'?',fragile:'How fragile is #'+(rank||1)+'?',weakness:'What\u2019s the biggest weakness of #'+(rank||1)+'?',unblock:'What would make #'+(rank||1)+' better?',whybeat:'Why did #1 beat #2?',best:bestLabel[rank]||('Which bet is best on '+rank+'?')}[act]||act;
       push('u',label);
       if(act==='attack') dscanAttack(rank);
       else if(act==='price') dscanPrice(rank);
       else if(act==='changed') dscanChanged(rank);
       else if(act==='pass') dscanPassCase(rank);
       else if(act==='compare') dscanCompareTop();
+      else if(act==='quality') dscanQualityOf(rank);
+      else if(act==='fragile') dscanFragilityOf(rank);
+      else if(act==='weakness') dscanWeakness(rank);
+      else if(act==='unblock') dscanUnblockOf(rank);
+      else if(act==='whybeat') dscanWhyBeatFollow(1,2);
+      else if(act==='best') dscanBest(rank);
       else dscanWhy(rank);
     },
 
@@ -13501,6 +14049,67 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
   /* research primitives exposed for reuse (e.g. slate research, tests) */
   window.EDResearch = { TOOLS:TOOLS, UNAVAILABLE_TOOLS:UNAVAILABLE_TOOLS, plan:plan, runTools:runTools,
     buildCtx:buildCtx, investigate:investigate, findConflicts:findConflicts, attack:attack };
+
+  /* ---- bet-quality primitives + regression self-test (spec #21) ----
+     Run in the console:  EDBetQuality.selfTest()  -> {passed, failed, results}
+     Builds synthetic finalists (owned-field shape) and asserts the classifier
+     behaviour for TEST A..J. Pure deterministic checks; no board/network needed. */
+  window.EDBetQuality = {
+    betQuality:betQuality, pickHeadline:bqPickHeadline, slateOutcome:bqSlateOutcome,
+    whyBeat:bqWhyBeat, unblock:bqUnblock, axes:bqAxes,
+    selfTest:function(verbose){
+      function ev(rel,st){return {relevance:rel,status:st};}
+      function fin(over){
+        var x=Object.assign({
+          e:{sport_key:'baseball_mlb'}, curEdge:0.03, detEdge:0.03, evNow:0.03, remaining:1,
+          fairP:0.5, fairSrc:'Pinnacle de-vig fair', sharp:true, nb:6, corr:1, trusted:true,
+          staleM:5, graded:false, beat:null, clv:null, isWait:false, dverdict:'BET',
+          confidence:'MEDIUM', curAm:120, detAm:120, fairAm:118, toPlayAm:119, breakevenAm:118,
+          matchup:'Away @ Home', sel:'Away ML',
+          mlb:{away_pitcher_name:'A. Ace', home_pitcher_name:'B. Bishop'}
+        }, over.x||{});
+        var research=Object.assign({
+          evidence:[ev('sharp','VERIFIED'),ev('liquidity','VERIFIED'),ev('model','VERIFIED'),
+                    ev('pitching','PROBABLE'),ev('bullpen','PARTIAL'),ev('variance','VERIFIED'),ev('context','VERIFIED')],
+          conflicts:[], unavailable:[], attack:{status:'SURVIVES',note:''}
+        }, over.research||{});
+        var f={x:x, research:research, priority:over.priority||70, rank:over.rank||1};
+        f.q=betQuality(f); return f;
+      }
+      var R=[],P=0,F=0; function chk(n,g,w){var ok=g===w;R.push({t:n,ok:ok,got:g,want:w});ok?P++:F++;}
+      var A=fin({x:{curEdge:0.045,detEdge:0.045,evNow:0.045,confidence:'HIGH'}});
+      chk('A robust price', A.q.price_fragility,'ROBUST');
+      chk('A strong tier', (A.q.tier==='STRONG'||A.q.tier==='SOLID'),true);
+      var B=fin({x:{curEdge:0.02,detEdge:0.02,evNow:0.02}});
+      chk('B floor', B.q.price_fragility,'FLOOR'); chk('B tier floor', B.q.tier,'FLOOR');
+      chk('B not a BET call', B.q.quality_call!=='BET', true);
+      var C=fin({x:{curEdge:0.031,detEdge:0.031,evNow:0.031,sharp:false,fairSrc:'consensus fair',nb:3,corr:0},research:{evidence:[ev('model','VERIFIED')],attack:{status:'SURVIVES',note:''}}});
+      chk('C consensus provenance', C.q.edge_provenance,'CONSENSUS');
+      chk('C not confirmed', C.q.market_confirmation!=='CONFIRMED', true);
+      chk('C not strong', C.q.tier!=='STRONG', true);
+      var big=fin({x:{curEdge:0.055,detEdge:0.09,evNow:0.055,remaining:0.35,confidence:'LOW'},research:{evidence:[ev('sharp','VERIFIED'),ev('model','VERIFIED')],conflicts:['decay'],attack:{status:'WEAKENED',note:''}},priority:80,rank:1});
+      var small=fin({x:{curEdge:0.03,detEdge:0.03,evNow:0.03,confidence:'HIGH'},priority:60,rank:2});
+      chk('D quality outranks fragile bigger edge', bqPickHeadline([big,small])===small, true);
+      var E=fin({x:{mlb:{away_pitcher_name:'A. Ace',home_pitcher_name:null}},research:{unavailable:[{tool:'pitchers'}],evidence:[ev('sharp','VERIFIED'),ev('model','VERIFIED')]}});
+      chk('E critical gap', E.q.information_gap,'CRITICAL'); chk('E not strong', E.q.tier!=='STRONG', true);
+      var Ff=fin({x:{curEdge:0.024,detEdge:0.05,evNow:0.024,remaining:0.48}});
+      chk('F fragility up', (Ff.q.price_fragility==='FRAGILE'||Ff.q.price_fragility==='FLOOR'), true);
+      chk('F deteriorated', Ff.q.since_detection,'DETERIORATED');
+      var G=fin({x:{curEdge:0.005,detEdge:0.04,evNow:0.005,dverdict:'PASS'},research:{attack:{status:'INVALIDATED',note:''}}});
+      chk('G pass tier', G.q.tier,'PASS'); chk('G price-killed', G.q.since_detection,'PRICE-KILLED');
+      var H=fin({x:{curEdge:0.035,detEdge:0.035,evNow:0.035,sharp:false,fairSrc:'consensus fair',nb:4,corr:0},research:{evidence:[ev('model','VERIFIED'),ev('pitching','PROBABLE'),ev('context','VERIFIED')],attack:{status:'SURVIVES',note:''}}});
+      chk('H weak confirmation', H.q.market_confirmation!=='CONFIRMED', true); chk('H not strong', H.q.tier!=='STRONG', true);
+      var I=fin({x:{curEdge:0.028,detEdge:0.06,evNow:0.028,remaining:0.30}});
+      chk('I conflicting market', I.q.market_confirmation,'CONFLICTING');
+      var j1=fin({x:{curEdge:0.02,evNow:0.02,detEdge:0.02}}), j2=fin({x:{curEdge:0.021,evNow:0.021,detEdge:0.05,remaining:0.42}});
+      chk('J slate NO BET when only floor-level', bqSlateOutcome(bqPickHeadline([j1,j2]),'BET'),'NO BET');
+      var s1=fin({x:{curEdge:0.045,detEdge:0.045,evNow:0.045,confidence:'HIGH'}});
+      chk('K strong slate stays BET', bqSlateOutcome(bqPickHeadline([s1]),'BET'),'BET');
+      chk('L LEAN never upgraded', fin({x:{dverdict:'LEAN',curEdge:0.045,detEdge:0.045,evNow:0.045,confidence:'HIGH'}}).q.quality_call!=='BET', true);
+      if(verbose!==false){ try{ console.log('%cEDBetQuality self-test','font-weight:bold'); R.forEach(function(r){ console.log((r.ok?'PASS':'FAIL')+' | '+r.t+(r.ok?'':'  got '+JSON.stringify(r.got)+' want '+JSON.stringify(r.want))); }); console.log((F===0?'ALL GREEN ':'FAILURES ')+P+' passed, '+F+' failed'); }catch(_){} }
+      return {passed:P, failed:F, results:R};
+    }
+  };
 
   async function runNarr(mode,x,userSuffix){
     BUSY=true; thinking(true);
