@@ -9,7 +9,7 @@ import {
   wilsonLo, normalCdf, twoSidedP, benjaminiHochberg,
   edgeBand, priceBand, booksBand, etDow, splitChrono,
   evaluate, calibrate, HYPOTHESES, BUILD, planColumns, discoverColumns,
-  baseRateWarning, type Graded,
+  baseRateWarning, clvIsReal, clvProfile, CLV_SANE, type Graded,
 } from "./index.ts";
 
 let passed = 0, failed = 0;
@@ -387,7 +387,7 @@ section("A signal with no CLV is not a loss");
 
   ok("V12 the guard rides on every evaluation",
     "base_rate_warning" in evaluate(closed(100, 50)));
-  ok("V13 the build marker records this change", /clv-required/.test(BUILD), BUILD);
+  ok("V13 the build marker is present", typeof BUILD === "string" && BUILD.length > 0, BUILD);
 
   // Calibration must obey the same rule.
   const cal = calibrate([
@@ -396,6 +396,58 @@ section("A signal with no CLV is not a loss");
   ]);
   eq("V14 calibration ignores rows with no CLV", cal[0].n, 40);
   eq("V15 ...so its beat rate is not dragged down either", cal[0].beat_rate, 1);
+}
+
+/* Second live run: excluding null CLV changed nothing — the count went UP, to
+   3642, and the base rate stayed at 17.1%. So these rows DO carry a CLV, and
+   83% of them are negative. The old close computed
+   `(best_dec ?? 0) * closeFair - 1`, which is exactly -1 whenever the entry
+   price was missing, and those fabrications are still in the history. */
+section("A fabricated CLV is not a loss either");
+{
+  eq("F1 a normal CLV is real", clvIsReal(0.03), true);
+  eq("F2 a normal negative CLV is real", clvIsReal(-0.04), true);
+  eq("F3 the fabricated -100% is not", clvIsReal(-1), false);
+  eq("F4 nor is anything near it", clvIsReal(-0.95), false);
+  eq("F5 an absurd positive is not", clvIsReal(2.5), false);
+  eq("F6 null is not", clvIsReal(null), false);
+  eq("F7 the band edges are inclusive", [clvIsReal(CLV_SANE.lo), clvIsReal(CLV_SANE.hi)], [true, true]);
+
+  /* The exact shape of the live data: a real population near even, buried
+     under fabricated -1s. */
+  const real = Array.from({ length: 200 }, (_, i) => g({ clv: i < 100 ? 0.02 : -0.02, beat_close: i < 100 }));
+  const fabricated = Array.from({ length: 800 }, () => g({ clv: -1, beat_close: false }));
+
+  const before = evaluate([...real, ...fabricated]);
+  eq("F8 fabricated rows are excluded from the population", before.n_graded, 200);
+  near("F9 ...so the base rate is the real one", before.base_rate, 0.5, 0.02);
+  eq("F10 ...and no contamination warning is raised", before.base_rate_warning, null);
+
+  // The profile is what turns "why is it 17%" into a fact.
+  const prof = clvProfile([...real, ...fabricated].map((r) => ({ clv: r.clv })));
+  eq("F11 the profile counts the fabricated rows exactly", prof.exactly_minus_one, 800);
+  eq("F12 ...and separates the plausible ones", prof.plausible, 200);
+  eq("F13 ...reporting their true beat rate", prof.plausible_beat_rate, 0.5);
+  eq("F14 the histogram puts them in the fabricated band",
+    prof.histogram["<= -0.9 (fabricated -100%)"], 800);
+  ok("F15 the reading states both counts", /200 of 1000 CLV values/.test(prof.reading), prof.reading);
+
+  eq("F16 rows with no CLV are counted separately",
+    clvProfile([{ clv: null }, { clv: 0.01 }]).clv_null, 1);
+  eq("F17 exclusion reasons are counted when present",
+    clvProfile([{ clv: null, clv_excluded_reason: "missed_close_window" }]).with_excluded_reason, 1);
+  ok("F18 an entirely fabricated history says so plainly",
+    /not CLV/.test(clvProfile([{ clv: -1 }, { clv: -1 }]).reading));
+  eq("F19 quartiles come back for a real distribution",
+    clvProfile([{ clv: -0.02 }, { clv: 0 }, { clv: 0.02 }]).median, 0);
+
+  // Calibration must apply the same rule.
+  const cal = calibrate([
+    ...Array.from({ length: 40 }, () => g({ edge: 0.03, clv: 0.01, beat_close: true })),
+    ...Array.from({ length: 400 }, () => g({ edge: 0.03, clv: -1, beat_close: false })),
+  ]);
+  eq("F20 calibration ignores fabricated CLV", cal[0].n, 40);
+  near("F21 ...so the realised mean is the real one, not -0.91", cal[0].mean_clv_realised, 0.01);
 }
 
 console.log(`\n${failed === 0 ? "ALL GREEN" : "FAILURES"} — ${passed} passed, ${failed} failed`);

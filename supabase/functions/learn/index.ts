@@ -72,7 +72,7 @@ export const HOLDOUT_FRAC = Number(Deno.env.get('LEARN_HOLDOUT_FRAC') ?? '0.30')
 /* Bumped whenever this file changes in a way you would want to confirm landed.
    Returned on every response, because "is the new build actually deployed?"
    should be answerable rather than inferred from whether the old bug recurs. */
-export const BUILD = '2026-08-12.4-clv-required';
+export const BUILD = '2026-08-12.5-clv-plausible';
 
 /* ========================================================================
    STATISTICS — pure, exported, tested. No database, no network.
@@ -269,10 +269,14 @@ const beat = (g: Graded) => g.beat_close === true;
  * un-closed rows. Every pattern built on that base rate would have been
  * measuring which slices get CLOSED properly, not which slices beat the close.
  *
- * No CLV means no outcome. It is excluded, not counted against.
+ * A CLV outside the plausible band is likewise not an outcome. The old close
+ * bug wrote exactly -1 whenever the entry price was missing, and those rows are
+ * still in the history — averaging a fabricated -100% with real results is how
+ * a 17% population beat rate appears out of a pipeline that should sit near 50%.
+ *
+ * No real CLV means no outcome. Such rows are excluded, never counted against.
  */
-const hasOutcome = (g: Graded) =>
-  g.clv != null && Number.isFinite(g.clv) && g.beat_close != null;
+const hasOutcome = (g: Graded) => clvIsReal(g.clv) && g.beat_close != null;
 
 /**
  * Score every level of every pre-registered hypothesis, then apply BH across
@@ -291,6 +295,60 @@ const hasOutcome = (g: Graded) =>
  * output must not be quoted.
  */
 export const BASE_RATE_SANE = { lo: 0.30, hi: 0.70 };
+
+/**
+ * The plausible range for a real CLV.
+ *
+ * CLV is entry_decimal x closing_fair_probability - 1. For a two-way market
+ * the close rarely moves the fair price more than a few points, so real values
+ * cluster inside roughly +/-15% and essentially never leave +/-50%. A value at
+ * or near -1 is the signature of the old close bug, which computed
+ * `(best_dec ?? 0) * closeFair - 1` and so produced exactly -100% whenever the
+ * entry price was missing. Those rows are still in the history; they are
+ * fabrications, not losses, and they must not be averaged with real outcomes.
+ */
+export const CLV_SANE = { lo: -0.5, hi: 0.5 };
+
+export function clvIsReal(clv: number | null | undefined): boolean {
+  return clv != null && Number.isFinite(clv) && clv >= CLV_SANE.lo && clv <= CLV_SANE.hi;
+}
+
+/** Distribution of CLV, so the shape of the history is a fact rather than a guess. */
+export function clvProfile(rows: { clv: number | null; clv_excluded_reason?: string | null }[]) {
+  const bands = [
+    ['<= -0.9 (fabricated -100%)', (v: number) => v <= -0.9],
+    ['-0.9 to -0.5', (v: number) => v > -0.9 && v <= -0.5],
+    ['-0.5 to -0.15', (v: number) => v > -0.5 && v <= -0.15],
+    ['-0.15 to 0', (v: number) => v > -0.15 && v <= 0],
+    ['0 to 0.15', (v: number) => v > 0 && v <= 0.15],
+    ['0.15 to 0.5', (v: number) => v > 0.15 && v <= 0.5],
+    ['> 0.5', (v: number) => v > 0.5],
+  ] as [string, (v: number) => boolean][];
+
+  const vals = rows.map((r) => r.clv).filter((v): v is number => v != null && Number.isFinite(v));
+  const hist: Record<string, number> = {};
+  for (const [label] of bands) hist[label] = 0;
+  for (const v of vals) for (const [label, test] of bands) if (test(v)) { hist[label]++; break; }
+
+  const sorted = [...vals].sort((a, b) => a - b);
+  const at = (q: number) => sorted.length ? sorted[Math.min(sorted.length - 1, Math.floor(sorted.length * q))] : null;
+  const real = vals.filter(clvIsReal);
+
+  return {
+    rows: rows.length,
+    clv_null: rows.filter((r) => r.clv == null).length,
+    with_excluded_reason: rows.filter((r) => r.clv_excluded_reason != null).length,
+    exactly_minus_one: vals.filter((v) => v <= -0.999 && v >= -1.001).length,
+    histogram: hist,
+    min: sorted[0] ?? null, p25: at(0.25), median: at(0.5), p75: at(0.75), max: sorted[sorted.length - 1] ?? null,
+    plausible: real.length,
+    plausible_beat_rate: real.length ? +(real.filter((v) => v > 0).length / real.length).toFixed(4) : null,
+    reading: real.length
+      ? `${real.length} of ${vals.length} CLV values are inside the plausible ${CLV_SANE.lo}..${CLV_SANE.hi} band; `
+        + `those beat the close ${((real.filter((v) => v > 0).length / real.length) * 100).toFixed(1)}% of the time.`
+      : 'No CLV value is inside the plausible band — the close job is producing values that are not CLV.',
+  };
+}
 
 export function baseRateWarning(base: number, n: number): string | null {
   if (!n) return null;
@@ -410,7 +468,11 @@ export function calibrate(rows: Graded[], minN = MIN_N): CalibrationBucket[] {
   const by = new Map<string, Graded[]>();
   for (const g of rows) {
     const b = edgeBand(g.edge);
-    if (!b || g.clv == null) continue;
+    /* Same rule as the pattern side: a fabricated -100% is not a realised CLV.
+       Averaging it in reported a -0.91 mean realised CLV, which would have been
+       read as the engine being catastrophically wrong rather than the close job
+       having written a placeholder. */
+    if (!b || !clvIsReal(g.clv)) continue;
     (by.get(b) ?? by.set(b, []).get(b)!).push(g);
   }
   const order = ['edge<1%', 'edge 1-2%', 'edge 2-4%', 'edge 4-8%', 'edge>8%'];
@@ -507,9 +569,13 @@ async function loadGraded(sb: any, days: number): Promise<{
     const r = await sb.from('signals')
       .select(select.join(','))
       .not('graded_at', 'is', null)
-      /* A signal with no CLV was never closed. It is not a loss, it is a row
-         with no outcome, and including it corrupts every rate downstream. */
+      /* A signal with no CLV was never closed, and one outside the plausible
+         band was not measured — the old close bug wrote exactly -1 when the
+         entry price was missing. Neither is a loss; both corrupt every rate
+         downstream if counted as one. */
       .not('clv', 'is', null)
+      .gte('clv', CLV_SANE.lo)
+      .lte('clv', CLV_SANE.hi)
       .gte('graded_at', from)
       .order('graded_at', { ascending: true })
       .range(page * PAGE, page * PAGE + PAGE - 1);
@@ -542,6 +608,31 @@ Deno.serve(async (req) => {
 
     /* Ends the guessing: returns exactly what `signals` has, so a column
        question never needs another round of redeploy-and-see. */
+    /* Reports the actual SHAPE of the CLV history. Added because the base rate
+       came back at 17% twice and guessing at the cause was not converging —
+       this answers it from the data instead. */
+    if (mode === 'diagnose') {
+      const available = await discoverColumns(sb);
+      const cols = ['clv', 'graded_at'].concat(available.includes('clv_excluded_reason') ? ['clv_excluded_reason'] : []);
+      const rows: any[] = [];
+      for (let page = 0; page < 20; page++) {
+        const r = await sb.from('signals').select(cols.join(','))
+          .not('graded_at', 'is', null)
+          .order('graded_at', { ascending: false })
+          .range(page * 1000, page * 1000 + 999);
+        if (r.error) return json({ ok: false, error: r.error.message }, 500);
+        rows.push(...(r.data ?? []));
+        if ((r.data ?? []).length < 1000) break;
+      }
+      const profile = clvProfile(rows);
+      return json({
+        build: BUILD, ...profile,
+        next: profile.plausible >= MIN_N
+          ? 'Enough plausible CLV to learn from. Re-run without mode to rebuild patterns.'
+          : `Only ${profile.plausible} plausible CLV values — the close job needs to produce more before any pattern can be evaluated.`,
+      });
+    }
+
     if (mode === 'columns') {
       const available = await discoverColumns(sb);
       return json({ build: BUILD, columns_on_signals: available.sort(), ...planColumns(available) });
