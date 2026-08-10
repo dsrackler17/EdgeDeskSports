@@ -12977,8 +12977,20 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
     if(r.attack) bits.push('thesis '+String(r.attack).toLowerCase());
     var head='<div class="edai-rstate">'+esc((r.intent||'research')+' · '+(r.depth||'')+(bits.length?' · '+bits.join(' · '):''))+'</div>';
     var body='';
-    if(r.sources && r.sources.length)
-      body+='<div style="font-size:11px;color:var(--faint);margin-top:3px">Sources: '+esc(r.sources.join(', '))+'</div>';
+    /* Server-retrieved sources AND client-supplied context, together. Listing
+       only the former made a correctly-grounded slate answer read as though it
+       had been written from nothing — "Sources: signals" under ten starters'
+       worth of xERA. On a provenance product that is the worst direction to be
+       wrong in, because it is indistinguishable from fabrication. */
+    var srcs=(r.sources||[]).slice();
+    var cc=r.client_context||null;
+    if(cc){
+      if(cc.board_games)srcs.push('board attached by this browser ('+cc.board_games+' games)');
+      else if(cc.packet_attached)srcs.push('open signal attached by this browser');
+      if(cc.compare_rows)srcs.push('shortlist ('+cc.compare_rows+' rows)');
+    }
+    if(srcs.length)
+      body+='<div style="font-size:11px;color:var(--faint);margin-top:3px">Sources: '+esc(srcs.join(', '))+'</div>';
     if(r.coverage && r.coverage.length){
       var cov=r.coverage.filter(function(c){return c.total;})
         .map(function(c){return esc(c.field)+' '+c.have+'/'+c.total;});

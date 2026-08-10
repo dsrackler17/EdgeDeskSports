@@ -894,6 +894,23 @@ export async function handle(req: Request): Promise<Response> {
           queue: research.queue.slice(0, 6),
           retrievals: research.calls, ms: research.ms,
           sources: Array.from(new Set(research.evidence.map((e) => e.source))),
+          /* What the CLIENT supplied, reported separately from what the server
+             retrieved.
+
+             Without this the trace read "1 retrieval · Sources: signals" under
+             an answer full of xERA and barrel rates, because the board the
+             browser attached is not server-side evidence and never appeared in
+             `sources`. The answer was correctly grounded — every figure matched
+             pitcher_features — but the provenance display said otherwise, which
+             on a product whose entire claim is provenance is the worst possible
+             direction to be wrong in. A reader cannot distinguish that from
+             fabrication, and should not have to. */
+          client_context: {
+            board_games: Array.isArray((body as any)?.board?.games) ? (body as any).board.games.length
+              : Array.isArray((body as any)?.board) ? (body as any).board.length : 0,
+            packet_attached: !!(body as any)?.packet,
+            compare_rows: Array.isArray((body as any)?.compare) ? (body as any).compare.length : 0,
+          },
           evidence_count: research.evidence.filter((e) => e.status !== "UNAVAILABLE").length,
           /* How much of that count actually reached the model. When these
              differ, coverage is describing more than the answer could see. */
