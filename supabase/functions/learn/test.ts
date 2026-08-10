@@ -573,8 +573,8 @@ section("Fair-price drift separates a bad model from a fixed offset");
   const live = fairDrift(Array.from({ length: 200 }, (_, i) => row(0.03, -0.027, i)));
   ok("R5 the live shape shows negative retention", (live.edge_retention ?? 0) < 0, live.edge_retention);
   near("R6 ...and quantifies how far the fair moved", live.fair_overstated_pct, 5.86, 0.1);
-  ok("R7 ...and the reading names the cause candidates",
-    /de-vig or book-set difference|noise in a thin book set/.test(live.reading), live.reading);
+  ok("R7 a single band cannot separate offset from slope, and says so",
+    /Too few populated bands/.test(live.reading), live.reading);
 
   /* Constant offset across bands vs one that grows with the flagged edge -
      the whole point of splitting by band. */
@@ -587,16 +587,38 @@ section("Fair-price drift separates a bad model from a fixed offset");
     ...Array.from({ length: 40 }, (_, i) => row(0.03, atRatio(0.03, 1.03), i + 40)),
     ...Array.from({ length: 40 }, (_, i) => row(0.06, atRatio(0.06, 1.03), i + 80)),
   ]);
-  ok("R8 a constant offset is called systematic",
-    /roughly CONSTANT/.test(constant.reading), constant.reading);
+  /* A constant fair-price RATIO means CLV scales with the edge, so the slope
+     is near 1 and what remains is a pure offset. */
+  near("R8 a constant ratio shows a slope near 1", constant.clv_slope_vs_edge, 1, 0.05);
+  ok("R8b ...and the offset is named as the cost",
+    /constant offset of -2\.\d+% is what is costing you/.test(constant.reading), constant.reading);
 
   const growing = fairDrift([
     ...Array.from({ length: 40 }, (_, i) => row(0.015, 0.010, i)),
     ...Array.from({ length: 40 }, (_, i) => row(0.03, -0.010, i + 40)),
     ...Array.from({ length: 40 }, (_, i) => row(0.12, -0.20, i + 80)),
   ]);
-  ok("R9 an offset that grows with the edge is called noise",
-    /noise in a thin book set/.test(growing.reading), growing.reading);
+  ok("R9 an edge whose CLV gets worse as it grows is called anti-predictive",
+    /ANTI-predictive/.test(growing.reading), growing.reading);
+  ok("R9b ...and points at book-count and freshness, not the formula",
+    /book-count and freshness/.test(growing.reading));
+
+  /* The live shape: CLV flat near -2% while the edge runs 0.4% to 13.9%. */
+  const flat = fairDrift([
+    ...Array.from({ length: 159 }, (_, i) => row(0.00393, -0.0204, i)),
+    ...Array.from({ length: 102 }, (_, i) => row(0.01495, -0.02712, i + 200)),
+    ...Array.from({ length: 124 }, (_, i) => row(0.02728, -0.01322, i + 400)),
+    ...Array.from({ length: 107 }, (_, i) => row(0.05744, -0.01416, i + 600)),
+    ...Array.from({ length: 174 }, (_, i) => row(0.13944, -0.00963, i + 800)),
+  ]);
+  near("R13 the live data has almost no slope", flat.clv_slope_vs_edge, 0.086, 0.02);
+  near("R14 ...and a constant offset near -2%", flat.clv_intercept, -0.021, 0.003);
+  ok("R15 ...and is reported as flat, not as noise",
+    /essentially FLAT/.test(flat.reading), flat.reading);
+  ok("R16 ...naming both findings separately",
+    /TWO SEPARATE FINDINGS/.test(flat.reading));
+  ok("R17 ...and saying which fix moves which number",
+    /Fixing the offset would lift every band; only a better edge estimate lifts the slope/.test(flat.reading));
 
   ok("R10 bands below the floor are not reported",
     Object.keys(fairDrift([row(0.03, -0.02, 0)]).by_edge_band).length === 0);

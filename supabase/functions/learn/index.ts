@@ -72,7 +72,7 @@ export const HOLDOUT_FRAC = Number(Deno.env.get('LEARN_HOLDOUT_FRAC') ?? '0.30')
 /* Bumped whenever this file changes in a way you would want to confirm landed.
    Returned on every response, because "is the new build actually deployed?"
    should be answerable rather than inferred from whether the old bug recurs. */
-export const BUILD = '2026-08-13.3-actionable-only';
+export const BUILD = '2026-08-13.4-slope';
 
 /* ========================================================================
    STATISTICS — pure, exported, tested. No database, no network.
@@ -433,25 +433,61 @@ export function fairDrift(rows: Graded[]) {
     if (rs.length >= 20) byBand[b] = summarise(rs);
   }
 
-  const bands = Object.values(byBand) as any[];
-  const spread = bands.length >= 2
-    ? Math.max(...bands.map((b) => b.fair_overstated_pct)) - Math.min(...bands.map((b) => b.fair_overstated_pct))
-    : null;
+  /* Regress realised CLV on projected edge ACROSS bands, weighted by sample.
+     The slope is the question: how much extra CLV does one extra point of
+     flagged edge actually buy?
+
+     An earlier version tested whether the fair-price OVERSTATEMENT grew with
+     the edge, and concluded "noise in a thin book set". That was reading the
+     wrong column. Overstatement is (1+edge)/(1+clv)-1, so if CLV is flat the
+     overstatement grows with the edge by arithmetic alone, whatever the cause.
+     The live data has CLV essentially flat — -2.04, -2.71, -1.32, -1.42,
+     -0.96 across bands spanning 0.4% to 13.9% of projected edge — which is a
+     constant offset plus almost no signal, not edges corrupted by noise. */
+  const bands = Object.entries(byBand).map(([band, v]) => ({ band, ...(v as any) }));
+  let slope: number | null = null, intercept: number | null = null, clvSpread: number | null = null;
+  if (bands.length >= 3) {
+    const W = bands.reduce((a, b) => a + b.n, 0);
+    const mx = bands.reduce((a, b) => a + b.n * b.median_edge, 0) / W;
+    const my = bands.reduce((a, b) => a + b.n * b.median_clv, 0) / W;
+    const sxx = bands.reduce((a, b) => a + b.n * (b.median_edge - mx) ** 2, 0);
+    const sxy = bands.reduce((a, b) => a + b.n * (b.median_edge - mx) * (b.median_clv - my), 0);
+    if (sxx > 0) { slope = +(sxy / sxx).toFixed(3); intercept = +(my - (sxy / sxx) * mx).toFixed(5); }
+    const clvs = bands.map((b) => b.median_clv);
+    clvSpread = +(Math.max(...clvs) - Math.min(...clvs)).toFixed(5);
+  }
+
+  const reading = !overall
+    ? 'no rows carry both an edge and a CLV'
+    : slope == null
+      ? `Median projected edge ${(overall.median_edge * 100).toFixed(2)}%, median realised `
+        + `${(overall.median_clv * 100).toFixed(2)}%, retention ${overall.edge_retention}. `
+        + `Too few populated bands to separate a constant offset from a scaling error.`
+      : slope < -0.1
+        ? `Realised CLV gets WORSE as the flagged edge grows (slope ${slope}, where 1.0 would mean the edge is `
+          + `fully realised). The edge is ANTI-predictive: the biggest flagged edges are the worst prices, which `
+          + `is what you see when a large apparent edge is produced by a stale or thin quote rather than by value. `
+          + `Tightening the book-count and freshness requirements before a signal is raised should help more than `
+          + `any change to the edge formula.`
+      : slope < 0.25
+        ? `Realised CLV is essentially FLAT at about ${(intercept! * 100).toFixed(2)}% across bands spanning `
+          + `${(bands[0].median_edge * 100).toFixed(2)}% to ${(bands[bands.length - 1].median_edge * 100).toFixed(2)}% `
+          + `of projected edge — a slope of ${slope}, where 1.0 would mean the edge is fully realised. `
+          + `TWO SEPARATE FINDINGS. First, the flagged edge carries almost no information about what happens at `
+          + `the close: a 14% edge finishes no better than a 0.4% one. Second, there is a constant offset of `
+          + `roughly ${(intercept! * 100).toFixed(2)}% applied to everything, which is the size of a de-vig or `
+          + `book-set difference between capture and close rather than anything about the edge model. Fixing the `
+          + `offset would lift every band; only a better edge estimate lifts the slope.`
+        : slope > 0.75
+          ? `Realised CLV tracks projected edge closely (slope ${slope}), so the edge estimate is sound. The `
+            + `constant offset of ${(intercept! * 100).toFixed(2)}% is what is costing you.`
+          : `Realised CLV tracks projected edge at slope ${slope} — the edge estimate carries real but partial `
+            + `information — over a constant offset of ${(intercept! * 100).toFixed(2)}%.`;
 
   return {
     ...overall, by_edge_band: byBand,
-    reading: !overall ? 'no rows carry both an edge and a CLV'
-      : overall.edge_retention != null && overall.edge_retention <= 0.1
-        ? `Of a median projected edge of ${(overall.median_edge * 100).toFixed(2)}%, `
-          + `${(overall.median_clv * 100).toFixed(2)}% was realised — retention ${overall.edge_retention}. `
-          + `The entry fair price is overstated by ${overall.fair_overstated_pct}% relative to the close`
-          + (spread != null && spread > 2
-            ? `, and the overstatement GROWS with the flagged edge (${spread.toFixed(1)}pp spread across bands), `
-              + `which is the signature of edges driven by noise in a thin book set rather than by real value.`
-            : `, and the overstatement is roughly CONSTANT across edge bands, which points at a systematic `
-              + `de-vig or book-set difference between capture and close rather than at the edge model.`)
-      : `Median projected edge ${(overall.median_edge * 100).toFixed(2)}%, median realised `
-        + `${(overall.median_clv * 100).toFixed(2)}%, retention ${overall.edge_retention}.`,
+    clv_slope_vs_edge: slope, clv_intercept: intercept, clv_spread_across_bands: clvSpread,
+    reading,
   };
 }
 
