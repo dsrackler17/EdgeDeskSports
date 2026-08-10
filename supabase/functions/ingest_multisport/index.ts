@@ -45,7 +45,7 @@ const url = Deno.env.get('SUPABASE_URL')!;
 const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 const UA = { 'User-Agent': 'EdgeDesk/1.0 (contact: ops@edgedesk)', 'Accept': 'application/json,text/csv,*/*' };
 
-export const BUILD = '2026-08-14.4-discover';
+export const BUILD = '2026-08-14.5-auto-discover';
 
 /* ========================================================================
    SPORTS
@@ -647,6 +647,65 @@ async function ingestTeamBase(sb: any, sp: SportDef, teams: any[]) {
   return { team_rows: written };
 }
 
+/**
+ * Which feed files exist, and can defence be derived from any of them.
+ *
+ * Runs automatically when a sport's card is empty, because an ingest with no
+ * games has nothing else to do and the operator's real question in the
+ * off-season is "will this work when the season starts". It also removes a
+ * parameter: three separate runs tried to reach this through `mode=discover`
+ * and all three arrived as a default ingest, so the information now comes to
+ * you instead of having to be asked for.
+ */
+async function discoverFeeds(sp: SportDef, season: number) {
+  const candidates = sp.slug === 'nfl'
+    ? [
+      `https://github.com/nflverse/nflverse-data/releases/download/stats_team/stats_team_week_reg_${season}.csv`,
+      `https://github.com/nflverse/nflverse-data/releases/download/stats_team/stats_team_week_${season}.csv`,
+      `https://github.com/nflverse/nflverse-data/releases/download/stats_team/stats_team_reg_${season}.csv`,
+    ]
+    : sp.slug === 'cbb'
+      ? [
+        `https://barttorvik.com/trank.php?year=${season}&csv=1`,
+        `https://barttorvik.com/getadvstats.php?year=${season}&csv=1`,
+        `https://barttorvik.com/${season}_team_results.csv`,
+      ]
+      : [];
+  if (!candidates.length) {
+    return { note: 'College football advanced stats need a CollegeFootballData API key; there is nothing unauthenticated to discover.' };
+  }
+
+  const tried: any[] = [];
+  for (const u of candidates) {
+    const r = await getCsv(u, 20000);
+    const cols = r.report.columns ?? [];
+    tried.push({
+      url: u, ok: r.report.ok, status: r.report.status, rows: r.report.rows,
+      error: r.report.error,
+      column_count: cols.length,
+      has_opponent_column: cols.some((c) => /^(opponent|opponent_team|opp|def_team)$/i.test(c)),
+      has_week_column: cols.some((c) => /^week$/i.test(c)),
+      has_four_factors: ['efg_o', 'efg', 'to_o', 'or_o', 'ftr'].some((k) => cols.includes(k)),
+      /* Only the first 40 headers: enough to identify the file, short enough
+         that this block does not bury the run report. */
+      columns: cols.slice(0, 40),
+    });
+  }
+
+  const weekly = tried.find((t) => t.ok && t.has_opponent_column && t.has_week_column);
+  const factors = tried.find((t) => t.ok && t.has_four_factors);
+  return {
+    season, tried,
+    verdict: sp.slug === 'nfl'
+      ? (weekly
+        ? `DEFENSIVE EPA IS DERIVABLE. ${weekly.url} carries week and opponent columns, so one team's offensive EPA in a game is the other's defensive EPA allowed. defenceFromWeekly() is already written and tested against this shape — wiring it to this URL fills def_epa_play, def_pass_epa_play and def_rush_epa_play with real numbers.`
+        : 'No weekly file with an opponent column responded. Defensive EPA cannot be derived from the free team feeds, and def_epa_play stays honestly null.')
+      : (factors
+        ? `The four factors are available from ${factors.url} — in-season these populate.`
+        : 'No four-factor feed responded for this season. Adjusted efficiency, tempo, barthag and SOS still land; the four factors need the trank leaderboard, which only exists once a season has games.'),
+  };
+}
+
 /* ========================================================================
    ONE SPORT, ONE DAY
    ======================================================================== */
@@ -680,9 +739,17 @@ async function ingestSport(sb: any, sp: SportDef, date: string, season: number) 
   if (!empty && (efficiency as any).applied === 0 && sp.slug !== 'cfb') {
     warnings.push(`${sp.label}: games landed but NO efficiency rows were applied — the stats feed changed shape or the team names do not match. Check the feeds block.`);
   }
+  /* Nothing to ingest means nothing to do, so use the run to answer the
+     question that actually matters out of season. */
+  /* Ask about the LAST COMPLETED season. The question is "does this file type
+     exist and what shape is it", and a season that has not started yet is a
+     404 that answers nothing. */
+  const discovery = empty ? await discoverFeeds(sp, season - 1) : undefined;
+
   return {
     sport: sp.label, date, healthy,
     ...(empty ? { note: `no ${sp.label} games scheduled on ${date} — the feed answered with an empty card, which is not a fault` } : {}),
+    ...(discovery ? { feed_discovery: discovery } : {}),
     ...(warnings.length ? { warnings } : {}),
     schedule: { ...schedule, teams: undefined }, team_base: base, rest, efficiency,
   };
@@ -730,50 +797,7 @@ Deno.serve(async (req) => {
     if (mode === 'discover') {
       const sp = chosen[0];
       const season = seasonFor(sp, new Date()) - 1;   // last completed season
-      const candidates = sp.slug === 'nfl'
-        ? [
-          `https://github.com/nflverse/nflverse-data/releases/download/stats_team/stats_team_week_reg_${season}.csv`,
-          `https://github.com/nflverse/nflverse-data/releases/download/stats_team/stats_team_week_${season}.csv`,
-          `https://github.com/nflverse/nflverse-data/releases/download/stats_team/stats_team_reg_${season}.csv`,
-          `https://github.com/nflverse/nflverse-data/releases/download/pbp/play_by_play_${season}.csv`,
-        ]
-        : sp.slug === 'cbb'
-          ? [
-            `https://barttorvik.com/trank.php?year=${season}&csv=1`,
-            `https://barttorvik.com/${season}_team_results.csv`,
-            `https://barttorvik.com/getadvstats.php?year=${season}&csv=1`,
-          ]
-          : [
-            `https://api.collegefootballdata.com/stats/season/advanced?year=${season}`,
-          ];
-
-      const tried: any[] = [];
-      for (const u of candidates) {
-        const r = await getCsv(u, 20000);
-        const cols = r.report.columns ?? [];
-        tried.push({
-          url: u, ok: r.report.ok, status: r.report.status, bytes: r.report.bytes,
-          rows: r.report.rows, error: r.report.error,
-          columns: cols.slice(0, 60),
-          /* The question that matters: can defence be derived from this file? */
-          has_opponent_column: cols.some((c) => /^(opponent|opponent_team|opp|def_team)$/i.test(c)),
-          has_week_column: cols.some((c) => /^week$/i.test(c)),
-          has_four_factors: ['efg_o', 'efg', 'to_o', 'or_o', 'ftr'].some((k) => cols.includes(k)),
-        });
-      }
-      const weekly = tried.find((t) => t.ok && t.has_opponent_column && t.has_week_column);
-      return json({
-        build: BUILD, sport: sp.label, season, tried,
-        verdict: sp.slug === 'nfl'
-          ? (weekly
-            ? `A weekly file with an opponent column exists: ${weekly.url}. Defensive EPA IS derivable from it — one team's offensive EPA in a game is the other's defensive EPA allowed. Send this output back and the defence columns can be filled properly.`
-            : 'No weekly-with-opponent file responded. Defensive EPA cannot be derived from the free team feeds, and def_epa_play stays honestly null.')
-          : sp.slug === 'cbb'
-            ? (tried.find((t) => t.ok && t.has_four_factors)
-              ? 'A feed carrying the four factors responded — in-season these will populate.'
-              : 'No four-factor feed responded for this season. Adjusted efficiency and tempo still land; the four factors need the trank leaderboard, which only exists once a season starts.')
-            : 'College football advanced stats require a CollegeFootballData API key. Everything tried here is unauthenticated and will be rejected.',
-      });
+      return json({ build: BUILD, sport: sp.label, ...(await discoverFeeds(sp, season)) });
     }
 
     /* PROBE — what does a feed actually return, without writing anything.
