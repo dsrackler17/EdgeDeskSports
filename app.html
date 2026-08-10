@@ -13248,10 +13248,16 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
         +'<button class="edai-qa" onclick="EDAI.scanSlate()">Rescan</button>');
       return;
     }
+    /* "0 quantified edges" printed above six cards each showing "+3.8% edge"
+       reads as a contradiction. It was not: this counts BET verdicts, while
+       the cards show the edge NUMBER. Two different things wearing one word.
+       Count and name both. */
     var edges=games.filter(function(g){return g.status==='EDGE';}).length;
+    var priced=games.filter(function(g){return (n(g.x&&g.x.curEdge)||0)>0;}).length;
     var top=games.slice(0,3), next=games.slice(3,6), rest=games.slice(6);
     var html='<div class="edai-card" style="padding:12px 12px 4px"><div class="edai-vsel" style="margin-bottom:2px">I\u2019ve scanned the board.</div>'
-      +'<div class="edai-vsub">'+games.length+' game'+(games.length===1?'':'s')+' with signals · '+edges+' quantified edge'+(edges===1?'':'s')
+      +'<div class="edai-vsub">'+games.length+' game'+(games.length===1?'':'s')+' with signals · '
+      +priced+' with a positive edge · '+edges+' at BET'
       +(leads.length?' · '+leads.length+' model lead'+(leads.length===1?'':'s'):'')+' · ranked by research priority, not raw edge.</div></div>';
     if(top.length){ html+=scanHead('Top opportunities'); top.forEach(function(g,i){ html+=scanCard(g,i+1,i); }); }
     if(next.length){ html+=scanHead('Worth watching'); next.forEach(function(g,i){ html+=scanCard(g,i+4,i+3); }); }
