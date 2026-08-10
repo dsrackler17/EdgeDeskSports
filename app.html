@@ -12384,6 +12384,278 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
     };
   }
 
+  /* =====================================================================================
+     BOARD CONTEXT — the evidence layer for board-level questions.
+       "Who are today's worst starting pitchers?"  "Best MLB matchups?"
+       "Which games should I research first?"      "Where is the market disagreeing?"
+
+     Signal mode hands the AI one packet for one signal. BOARD mode hands it the slate:
+     every game EdgeDesk has already scored (with its deterministic verdict), every probable
+     starter with whatever pitcher / offense features are actually ingested, plus park,
+     weather, bullpen and workload context.
+
+     Discipline is unchanged. The AI interprets this evidence; it never recomputes it.
+     Probability, fair price, edge, EV, CLV, confidence, verdict, score and price sensitivity
+     are copied verbatim out of evidence() — the deterministic engine stays the authority.
+
+     Nothing is guessed. A field that is not on file is null and is named in
+     board.unavailable, so the answer can say "not available in EdgeDesk's current data"
+     instead of inventing it — or instead of claiming it cannot see the board at all.
+     ===================================================================================== */
+  var BOARD_CACHE={ts:0,data:null}, BOARD_TTL=3*60e3;
+
+  function etDay(off){
+    try{ return new Intl.DateTimeFormat('en-CA',{timeZone:'America/New_York',year:'numeric',month:'2-digit',day:'2-digit'})
+      .format(new Date(Date.now()+(off||0)*86400000)); }
+    catch(_){ return new Date(Date.now()+(off||0)*86400000).toISOString().slice(0,10); }
+  }
+  function r4(v){ v=+v; return isFinite(v)?Math.round(v*10000)/10000:null; }
+  function nmKey(s){
+    s=String(s||'').toLowerCase();
+    try{ s=s.normalize('NFD').replace(/[\u0300-\u036f]/g,''); }catch(_){}
+    return s.replace(/[^a-z ]/g,'').replace(/\s+/g,' ').trim();
+  }
+  function nmAlt(s){ var p=nmKey(s).split(' '); return p.length>1?(p[0].charAt(0)+' '+p[p.length-1]):nmKey(s); }
+  function flipSide(s){ s=String(s||'').toLowerCase();
+    return s==='home'?'away':s==='away'?'home':s==='h'?'a':s==='a'?'h':null; }
+
+  /* one row per MLB game on the card, de-duplicated out of the schedule index */
+  function mlbGamesToday(){
+    var m=window.MLBG||{}, seen={}, out=[];
+    Object.keys(m).forEach(function(k){
+      var g=m[k]; if(!g||!g.away_team_name||!g.home_team_name) return;
+      var id=(g.game_date||'')+'|'+mlbNorm(g.away_team_name)+'|'+mlbNorm(g.home_team_name)+'|'+(g.game_number||1);
+      if(seen[id])return; seen[id]=1; out.push(g);
+    });
+    return out.sort(function(a,b){ return String(a.start_time||'').localeCompare(String(b.start_time||'')); });
+  }
+
+  /* owned-table reads: the pitcher / offense / workload features ingest_mlb + bullpen_sync write.
+     Each read reports VERIFIED / EMPTY / UNAVAILABLE so the answer can be honest about gaps. */
+  async function boardFeatures(){
+    var out={read:{}, games:[], pitchers:[], offense:[], usage:[]};
+    var d1=etDay(0), d2=etDay(1);
+    try{
+      var gs=await sbGet('games?select=game_id,game_date,home_team,away_team,start_time,status,park_id&game_date=in.('+d1+','+d2+')&order=start_time.asc&limit=60');
+      out.games=gs||[]; out.read.games=out.games.length?'VERIFIED':'EMPTY';
+    }catch(_){ out.read.games='UNAVAILABLE'; }
+    var ids=out.games.map(function(g){return g.game_id;}).filter(function(v){return v!=null;});
+    if(ids.length){
+      var inl='in.('+ids.map(function(v){return encodeURIComponent(v);}).join(',')+')';
+      try{
+        var pf=await sbGet('pitcher_features?select=game_id,side,pitcher_id,name,xera,k_pct,bb_pct,barrel_pct,hardhit_pct&game_id='+inl+'&limit=200');
+        out.pitchers=pf||[]; out.read.pitcher_features=out.pitchers.length?'VERIFIED':'EMPTY';
+      }catch(_){ out.read.pitcher_features='UNAVAILABLE'; }
+      try{
+        var of=await sbGet('offense_features?select=game_id,side,obp,iso,k_pct,runs_per_game&game_id='+inl+'&limit=200');
+        out.offense=of||[]; out.read.offense_features=out.offense.length?'VERIFIED':'EMPTY';
+      }catch(_){ out.read.offense_features='UNAVAILABLE'; }
+    }else{
+      out.read.pitcher_features='SKIPPED — no games rows for '+d1+'/'+d2;
+      out.read.offense_features='SKIPPED — no games rows for '+d1+'/'+d2;
+    }
+    try{
+      var us=await sbGet('mlb_pitcher_usage?select=pitcher_id,game_date,pitches,outs,started&game_date=gte.'+etDay(-7)+'&order=game_date.desc&limit=2000');
+      out.usage=us||[]; out.read.mlb_pitcher_usage=out.usage.length?'VERIFIED':'EMPTY';
+    }catch(_){ out.read.mlb_pitcher_usage='UNAVAILABLE'; }
+    return out;
+  }
+
+  function boardIndex(f){
+    var pfByName={}, offBySide={}, lastStart={};
+    (f.pitchers||[]).forEach(function(r){
+      if(r.name){ pfByName[nmKey(r.name)]=r; if(!pfByName[nmAlt(r.name)]) pfByName[nmAlt(r.name)]=r; }
+    });
+    (f.offense||[]).forEach(function(r){ offBySide[r.game_id+'|'+String(r.side||'').toLowerCase()]=r; });
+    (f.usage||[]).forEach(function(r){
+      if(!r.started||r.pitcher_id==null)return; var k=String(r.pitcher_id);
+      if(!lastStart[k]||String(r.game_date)>String(lastStart[k].game_date)) lastStart[k]=r;
+    });
+    return {pfByName:pfByName, offBySide:offBySide, lastStart:lastStart};
+  }
+
+  /* one probable starter, joined to the offense he actually faces + the game's own market read */
+  function boardPitcher(g, side, gg, ix){
+    var away=(side==='away');
+    var name=away?g.away_pitcher_name:g.home_pitcher_name;
+    var pf=name?(ix.pfByName[nmKey(name)]||ix.pfByName[nmAlt(name)]||null):null;
+    var oppOff=null;
+    if(pf&&pf.game_id!=null){ var os=flipSide(pf.side); if(os) oppOff=ix.offBySide[pf.game_id+'|'+os]||null; }
+    var use=(pf&&pf.pitcher_id!=null)?ix.lastStart[String(pf.pitcher_id)]:null, rest=null;
+    if(use&&use.game_date){
+      var dd=Math.round((new Date(etDay(0)+'T00:00:00Z')-new Date(String(use.game_date).slice(0,10)+'T00:00:00Z'))/86400000);
+      if(isFinite(dd)&&dd>=0) rest=dd;
+    }
+    var missing=[];
+    ['xera','k_pct','bb_pct','barrel_pct','hardhit_pct'].forEach(function(k){ if(!pf||pf[k]==null) missing.push(k); });
+    if(!oppOff) missing.push('opponent_offense');
+    var x=gg?gg.x:null;
+    return {
+      pitcher:name||null, throws:(away?g.away_pitcher_throws:g.home_pitcher_throws)||null,
+      announced:name?'PROBABLE (not confirmed)':'NOT ANNOUNCED',
+      team:(away?g.away_team_name:g.home_team_name)||null,
+      opponent:(away?g.home_team_name:g.away_team_name)||null,
+      side:side, game:(g.away_team_name||'')+' @ '+(g.home_team_name||''),
+      game_date:g.game_date||null, first_pitch_local:g.start_time_local||null,
+      quality: pf?{source:'pitcher_features (ingest_mlb)', xera:r4(pf.xera), k_pct:r4(pf.k_pct),
+        bb_pct:r4(pf.bb_pct), barrel_pct:r4(pf.barrel_pct), hardhit_pct:r4(pf.hardhit_pct)}:null,
+      opponent_offense: oppOff?{source:'offense_features (ingest_mlb)', obp:r4(oppOff.obp), iso:r4(oppOff.iso),
+        k_pct:r4(oppOff.k_pct), runs_per_game:r4(oppOff.runs_per_game)}:null,
+      workload: use?{last_start:String(use.game_date).slice(0,10), pitches:(use.pitches!=null?use.pitches:null),
+        days_rest:rest, source:'mlb_pitcher_usage (bullpen_sync)'}:null,
+      park:{venue:g.venue||null, park_factor:(g.park_factor!=null?g.park_factor:null),
+        hr_factor:(g.hr_factor!=null?g.hr_factor:null), run_factor:(g.run_factor!=null?g.run_factor:null),
+        roof:g.roof_type||null, dome:!!g.is_dome},
+      weather: g.is_dome?{dome:true}:{temp_f:(g.temp_f!=null?g.temp_f:null), wind_mph:(g.wind_mph!=null?g.wind_mph:null),
+        wind_dir:g.wind_dir||null, wind_rel:g.wind_rel||null, precip_prob:(g.precip_prob!=null?g.precip_prob:null)},
+      own_bullpen: mlbPenTxt(away?g.away_team_id:g.home_team_id)||null,
+      opponent_bullpen: mlbPenTxt(away?g.home_team_id:g.away_team_id)||null,
+      team_form:{record:(away?g.away_record:g.home_record)||null, streak:(away?g.away_streak:g.home_streak)||null},
+      edgedesk_market: x?{
+        best_signal_on_game:x.sel, market:x.market,
+        current_price:x.curAm, fair_price:x.fairAm, fair_src:x.fairSrc,
+        edge:r4(x.curEdge), ev:r4(x.evNow), edge_remaining:r4(x.remaining),
+        max_playable:x.toPlayAm, breakeven:x.breakevenAm,
+        has_sharp:x.sharp, n_books:x.nb, trusted_book:x.trusted, stale_min:Math.round(x.staleM),
+        verdict:x.verdict, display_verdict:x.dverdict, confidence:x.confidence, score:x.score,
+        priority:gg.priority
+      }:null,
+      missing_fields:missing
+    };
+  }
+
+  /* assemble the whole board. Cached briefly so a burst of questions costs one set of reads. */
+  async function buildBoard(force){
+    if(!force && BOARD_CACHE.data && (Date.now()-BOARD_CACHE.ts)<BOARD_TTL) return BOARD_CACHE.data;
+
+    var games=[]; try{ games=scanGames(); }catch(_){ games=[]; }
+    var covered={}; games.forEach(function(g){ covered[g.id]=1; });
+    var leads=[]; try{ leads=leadGames(covered); }catch(_){ leads=[]; }
+
+    var rows=games.slice(0,14).map(function(g,i){
+      var x=g.x, e=g.e;
+      return {rank:i+1, event_id:e.event_id, game:(e.away_team||'')+' @ '+(e.home_team||''), sport:sportL(e),
+        starts:e.commence_time||null, market:x.market, selection:x.sel,
+        price:{current:x.curAm, detection:x.detAm, fair:x.fairAm, fair_src:x.fairSrc, best_seen:x.bestAm,
+          max_playable:x.toPlayAm, breakeven:x.breakevenAm,
+          pinnacle:x.pinDec?decToAm(x.pinDec):null, book:x.book},
+        edge:{current:r4(x.curEdge), detection:r4(x.detEdge), ev:r4(x.evNow), remaining:r4(x.remaining), floor:FLOOR},
+        confirmation:{has_sharp:x.sharp, n_books:x.nb, n_books_eff:x.nbe, corrob:x.corr, trusted_book:x.trusted},
+        freshness:{stale_min:Math.round(x.staleM)},
+        clv:x.graded?{clv:r4(x.clv), beat_close:x.beat, result:x.result}:null,
+        deterministic:{verdict:x.verdict, display_verdict:x.dverdict, is_wait:x.isWait, wait_reason:x.waitWhy,
+          confidence:x.confidence, score:x.score, band:x.band, priority:g.priority, status:g.status,
+          why:x.why, reasons_for:x.reasonsFor, reasons_against:x.reasonsAgainst, falsifiers:x.falsifiers},
+        model_agrees:!!g.agree, biggest_question:g.question};
+    });
+
+    // MLB card: load the schedule on demand so a board question never depends on which tab was opened
+    if(!Object.keys(window.MLBG||{}).length && typeof loadMlbSched==='function'){ try{ await loadMlbSched(); }catch(_){} }
+    var card=mlbGamesToday();
+
+    var f={read:{}}, ix={pfByName:{},offBySide:{},lastStart:{}};
+    if(card.length){ try{ f=await boardFeatures(); ix=boardIndex(f); }catch(_){ f={read:{games:'UNAVAILABLE'}}; } }
+
+    var byMatch={};
+    games.forEach(function(g){ var e=g.e;
+      if(e&&e.sport_key==='baseball_mlb') byMatch[mlbNorm(e.away_team)+'|'+mlbNorm(e.home_team)]=g; });
+
+    var pitchers=[];
+    card.forEach(function(g){
+      var gg=byMatch[mlbNorm(g.away_team_name)+'|'+mlbNorm(g.home_team_name)]||null;
+      pitchers.push(boardPitcher(g,'away',gg,ix));
+      pitchers.push(boardPitcher(g,'home',gg,ix));
+    });
+
+    var rd=f.read||{}, un={};
+    if(rd.pitcher_features!=='VERIFIED') un.pitcher_quality='pitcher_features (xERA / K% / BB% / barrel% / hard-hit%) — '+(rd.pitcher_features||'NOT READ')+'. Written by ingest_mlb.';
+    if(rd.offense_features!=='VERIFIED') un.opponent_offense='offense_features (OBP / ISO / K% / runs per game) — '+(rd.offense_features||'NOT READ')+'. Written by ingest_mlb.';
+    if(rd.mlb_pitcher_usage!=='VERIFIED') un.workload='mlb_pitcher_usage (last start, pitch count, days rest) — '+(rd.mlb_pitcher_usage||'NOT READ')+'. Written by bullpen_sync.';
+    un.era_whip_fip='Traditional ERA / WHIP / FIP are not ingested per starter. EdgeDesk stores xERA and batted-ball rates in pitcher_features only.';
+    un.strikeout_trends='Rolling game-log form (last 3 / 5 starts) is not stored. Only season-level rates are on file.';
+    un.handedness_splits='Platoon splits are not ingested. Only the starter’s throwing hand and the opposing lineup’s season rates are on file.';
+    un.confirmed_lineup=UNAVAILABLE_TOOLS.confirmed_lineup;
+    un.injuries=UNAVAILABLE_TOOLS.injuries;
+    un.news=UNAVAILABLE_TOOLS.news;
+
+    var board={
+      generated_at:new Date().toISOString(), date_et:etDay(0),
+      engine:{floor:FLOOR, stale_minutes:STALE_MIN,
+        note:'Every number here was produced by the EdgeDesk deterministic engine or read from an owned table. Cite them; never recompute probability, fair price, edge, EV, CLV, confidence, verdict, score or price sensitivity.'},
+      counts:{games_with_signals:games.length, shown:rows.length, model_leads:leads.length,
+        mlb_games:card.length, mlb_starters:pitchers.length,
+        starters_with_quality:pitchers.filter(function(p){return p.quality&&p.quality.xera!=null;}).length},
+      slate:rows,
+      low_priority:games.slice(14).map(function(g){
+        return {game:(g.e.away_team||'')+' @ '+(g.e.home_team||''), status:g.status, priority:g.priority}; }),
+      model_leads:leads.map(function(l){
+        return {game:l.matchup, sport:l.sport, priority:l.priority, note:(l.reasons||[])[0]||null, question:l.question}; }),
+      mlb_starters:pitchers,
+      join_note:'A starter is joined to his opponent’s offense through pitcher_features.game_id + the opposite side of offense_features. Market numbers attached to a starter belong to the highest-scoring EdgeDesk signal on that game, which may be on either team.',
+      sources:rd,
+      unavailable:un
+    };
+    BOARD_CACHE={ts:Date.now(), data:board};
+    return board;
+  }
+
+  /* offline fallback: the engine's own board, rendered locally, if edgedesk_ai is unreachable */
+  function boardFallbackHTML(b, q){
+    q=(q||'').toLowerCase(); var out='';
+    if(/pitch|starter|arm/.test(q) && b.mlb_starters && b.mlb_starters.length){
+      var wx=b.mlb_starters.filter(function(p){return p.quality&&p.quality.xera!=null;})
+        .sort(function(a,c){return c.quality.xera-a.quality.xera;}).slice(0,6);
+      if(wx.length){
+        out+='<p><b>Weakest starters by xERA on file.</b> This is a data ordering out of <span class="mono">pitcher_features</span>, not an EdgeDesk rating — and it does not yet weigh who they face.</p><ul>'
+          +wx.map(function(p){ var o=p.opponent_offense;
+            return '<li><b>'+esc(p.pitcher)+'</b> ('+esc(p.team||'')+') vs '+esc(p.opponent||'')+' — xERA '+p.quality.xera
+              +(p.quality.k_pct!=null?', K% '+p.quality.k_pct:'')+(p.quality.bb_pct!=null?', BB% '+p.quality.bb_pct:'')
+              +(o?'. Opponent offense: OBP '+o.obp+', ISO '+o.iso+', '+o.runs_per_game+' R/G.':'. Opponent offense not on file.')+'</li>'; }).join('')
+          +'</ul>';
+      }else{
+        out+='<p>EdgeDesk has '+b.mlb_starters.length+' probable starter'+(b.mlb_starters.length===1?'':'s')+' on today’s card, but no pitcher-quality rows for this slate, so I can rank the games and not the arms. '
+          +esc(b.unavailable.pitcher_quality||'')+'</p>';
+      }
+    }
+    if(b.slate&&b.slate.length){
+      out+='<p><b>Board, ranked by EdgeDesk research priority.</b></p><ul>'
+        +b.slate.slice(0,5).map(function(r){
+          return '<li>#'+r.rank+' <b>'+esc(r.game)+'</b> — '+esc(r.selection)+' '+amStr(r.price.current)
+            +', edge '+pct(r.edge.current)+' · '+esc(r.deterministic.display_verdict)
+            +' · conf '+esc(r.deterministic.confidence)+' · priority '+r.deterministic.priority+'.</li>'; }).join('')
+        +'</ul>';
+    }
+    if(!out) out='<p>Nothing is on the board right now — no scored signals and no MLB card loaded. That is a real answer, not a failure to look.</p>';
+    return out+'<p class="edai-src" style="border:none">EdgeDesk deterministic board. AI narration is offline, so this is the engine’s ranking without interpretation.</p>';
+  }
+
+  /* board-scoped questions: broader than one signal, and never dependent on one being open */
+  function isBoardQuestion(t){
+    var q=(t||'').toLowerCase();
+    if(/#\s*\d/.test(q)) return false;                                  // "#1 vs #2" belongs to the daily scan
+    if(/\b(slate|board|today'?s|tonight'?s|the card|across the board)\b/.test(q)) return true;
+    if(/\b(worst|best|top|weakest|strongest|most|least|biggest)\b[\s\S]{0,40}\b(pitcher|starter|matchup|offense|offence|game|edge|signal|bet|price|spot|arm|bullpen)s?\b/.test(q)) return true;
+    if(/\bwhich\b[\s\S]{0,40}\b(pitcher|starter|matchup|offense|offence|game|edge|signal|bet|price|team|arm)s?\b/.test(q)) return true;
+    if(/(exploitable|\btraps?\b|research first|disagree|shortlist|ranked (above|higher|below)|rank(ing|ed)? .*\b(above|over|higher)\b)/.test(q)) return true;
+    if(/\bwho\b[\s\S]{0,30}\b(pitch|start|attack|fade)/.test(q)) return true;
+    return false;
+  }
+
+  async function boardAnswer(question){
+    thinking(true);
+    var board=null; try{ board=await buildBoard(); }catch(_){}
+    if(!board||(!board.slate.length&&!board.mlb_starters.length)){
+      thinking(false);
+      push('a','<p>There is nothing on the board to reason over yet — no scored signals in the window and no MLB card loaded. Rescan once the board populates.</p>'
+        +'<div style="margin-top:6px"><button class="edai-qa" onclick="EDAI.scanSlate()">Rescan</button></div>');
+      return;
+    }
+    var res=await askAI('board', question, null, {board:board});
+    thinking(false);
+    var d=push('a',res.html);
+    if(res.src&&d){ var s=document.createElement('div'); s.className='edai-src'; s.textContent=res.src; d.appendChild(s); }
+  }
+
   /* ======================= UI PLUMBING ======================= */
   var ACTIONS_LOADED=[
     ['Research this','research','hot'],['Analyze','analyze',''],['Why?','why',''],['At what price?','price',''],['Market read','market',''],
@@ -12391,7 +12663,9 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
     ['Check my bet','checkbet',''],['Compare…','compare','']
   ];
   var ACTIONS_EMPTY=[
-    ['Daily scan','dailyscan','hot'],['Scan slate','scanslate',''],['Best bets today','bestbets',''],['Compare edges','compare',''],['How this works','help','']
+    ['Daily scan','dailyscan','hot'],['Scan slate','scanslate',''],['Best bets today','bestbets',''],
+    ['Worst starters','worstpitchers',''],['Best matchups','bestmatchups',''],['Research first','researchfirst',''],
+    ['Compare edges','compare',''],['How this works','help','']
   ];
   function renderActions(){
     var host=$id('edaiActions'); if(!host)return;
@@ -12415,7 +12689,7 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
   function emptyState(){
     $id('edaiLog').innerHTML='<div class="edai-empty">'
       +'<svg viewBox="0 0 24 24"><path d="M12 3l2.2 5.8L20 11l-5.8 2.2L12 19l-2.2-5.8L4 11l5.8-2.2L12 3z"/></svg>'
-      +'<div>Ask whether a number is worth it, or open a signal and hit <b>Analyze</b>.<br><br>'
+      +'<div>Ask about the board — today’s worst starters, the best matchups, what to research first — or open a signal and hit <b>Analyze</b>.<br><br>'
       +'I answer the only question that matters: is this a good decision at <i>this</i> price, right now? A well-reasoned PASS counts as a win.</div></div>';
   }
 
@@ -12437,6 +12711,10 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
         reasons_for:x.reasonsFor,reasons_against:x.reasonsAgainst,falsifiers:x.falsifiers}
     } : null;
     if(packet && extra && extra.research) packet.research = extra.research;
+    /* BOARD mode rides inside the existing `packet` field — no contract change. The upgraded
+       edgedesk_ai reads packet.board and switches to its board prompt; an older deployment
+       still receives the same evidence and can reason over it. */
+    if(extra && extra.board) packet = Object.assign(packet||{}, {board_mode:true, board:extra.board});
     var compareArr = Array.isArray(extra) ? extra : null;
     try{
       var tok = (typeof edToken==='function')? await edToken() : (typeof SB_KEY!=='undefined'?SB_KEY:'');
@@ -12450,6 +12728,8 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
       throw new Error('empty');
     }catch(err){
       // deterministic fallback — still a real, grounded answer
+      if(extra && extra.board) return {html:boardFallbackHTML(extra.board, question),
+        src:'deterministic board (AI narration offline — deploy edgedesk_ai to enable)'};
       if(x){ var lm=(mode==='chat')?routeLocal(question):(mode==='why'?'analyze':mode);
         return {html:narrative(x, lm), src:'deterministic engine (AI narration offline — deploy edgedesk_ai to enable)'}; }
       return {html:'<p>The reasoning service isn\u2019t reachable right now. Open a specific signal and hit <b>Analyze</b> — the decision engine runs locally and doesn\u2019t need it.</p>',
@@ -13956,6 +14236,17 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
     loadFrom:function(i){ var e=(window.__EDAI_BB||[])[i]; if(e) window.EDAI.loadSignal(e,true); },
     scanSlate:function(){ return scanSlate(); },
     slateAI:function(){ return slateAI(); },
+
+    // BOARD/RESEARCH mode — ask anything about the slate without opening a signal first
+    board:async function(q){
+      if(BUSY) return; BUSY=true; var sb=$id('edaiSend'); if(sb)sb.disabled=true;
+      window.EDAI.open(); push('u',q);
+      try{ await boardAnswer(q); }
+      catch(_){ thinking(false); push('a','<p>Something went wrong building the board. Try <b>Scan slate</b>.</p>'); }
+      finally{ BUSY=false; var s2=$id('edaiSend'); if(s2)s2.disabled=false; }
+    },
+    buildBoard:function(force){ return buildBoard(force); },   // inspectable: EDAI.buildBoard(true).then(console.log)
+
     analyzeScan:function(i){ return analyzeScan(i); },
 
     // native "find today's best bet" — builds its own packet from the live board
@@ -14005,6 +14296,9 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
       if(mode==='compare')return compare();
       if(mode==='checkbet')return checkBet();
       if(mode==='help')return help();
+      if(mode==='worstpitchers')return window.EDAI.board('Who are today’s worst starting pitchers, and which of them are actually exploitable rather than merely bad?');
+      if(mode==='bestmatchups')return window.EDAI.board('What are the best MLB matchups on today’s card, and which offense has the strongest matchup?');
+      if(mode==='researchfirst')return window.EDAI.board('Which games should I research first, and why those?');
       if(!LOADED){ push('a','<p>Open a signal first (tap <b>Analyze</b> on any edge card), or ask me about the board.</p>'); return; }
       var x=evidence(LOADED);
       if(mode==='analyze'){ push('u','Analyze '+x.sel); push('a',snapshotHTML(x)); runNarr('analyze',x,'Full analysis.'); return; }
@@ -14027,6 +14321,9 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
         // daily-scan follow-ups ("Why #1", "Attack #1", "Compare #1 and #2", ...) reuse the stored scan
         if(dscanFollow(t)) return;
         var ctx=buildCtx();
+        // BOARD/RESEARCH mode: broader questions, and anything asked with no signal open.
+        // The board data the app already holds goes to the AI — it never answers "I can't see the slate".
+        if(!ctx || isBoardQuestion(t)){ await boardAnswer(t); return; }
         if(ctx){
           if(SESSION.eventId!==ctx.eventId){ SESSION.eventId=ctx.eventId; SESSION.cache={}; } // new game -> fresh session cache
           var pl=plan(t,ctx);
