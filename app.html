@@ -14364,16 +14364,21 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
      normalizer; LIVE_FALLBACK = public keyless browser-direct source, documented, unverified here.
      NOTE: *_sync / capture_* are likely cron INGESTION writers, not browser readers — confirm. */
   var SOURCES={
-    schedule_mlb:{name:'ingest_mlb / mlb_sync',categories:['schedule','starter','game_status'],owned:true,fn:'ingest_mlb',status:'NEEDS_CONTRACT',ttl:'schedule',need:'confirm browser-readable fn (vs cron sync writer) + response schema, or the table the app reads'},
-    odds:{name:'odds',categories:['odds','line_movement'],owned:true,fn:'odds',status:'NEEDS_CONTRACT',ttl:'odds',need:'request body + response schema of /functions/v1/odds'},
-    slate:{name:'run_slate',categories:['slate'],owned:true,fn:'run_slate',status:'NEEDS_CONTRACT',ttl:'schedule',need:'request body + response schema of run_slate (orchestrator)'},
-    weather:{name:'venue_weather / weather_sync',categories:['weather'],owned:true,fn:'venue_weather',status:'NEEDS_CONTRACT',ttl:'weather',need:'reader vs sync-writer; response or weather table + columns'},
-    bullpen:{name:'bullpen_sync',categories:['bullpen'],owned:true,fn:'bullpen_sync',status:'NEEDS_CONTRACT',ttl:'bullpen',need:'reader vs writer; bullpen table + columns'},
-    player_stats:{name:'capture_stats / capture_players',categories:['player_stats'],owned:true,fn:'capture_stats',status:'NEEDS_CONTRACT',ttl:'player_stats',need:'reader vs writer; stats table the app reads + columns'},
-    news:{name:'capture_news',categories:['news'],owned:true,fn:'capture_news',status:'NEEDS_CONTRACT',ttl:'news',need:'news table + columns or reader response'},
-    resolver:{name:'resolver',categories:['identity'],owned:true,fn:'resolver',status:'NEEDS_CONTRACT',ttl:'schedule',need:'entity-resolution request/response (canonical ids)'},
-    team_brief:{name:'team_brief',categories:['context'],owned:true,fn:'team_brief',status:'WIRED',ttl:'schedule',need:'response schema to type fields (POST invocation already used by the app)'},
-    ai:{name:'edgedesk_ai',categories:['synthesis'],owned:true,fn:'edgedesk_ai',status:'WIRED',ttl:'news',need:null},
+    /* WIRED: contract discovered from the supplied app.html, verified adapter written */
+    team_brief:{name:'team_brief',categories:['context','news'],owned:true,fn:'team_brief',status:'WIRED',ttl:'news',contract:'{league,team}->{ok,brief,facts,sources[],cached,searches}',adapter:teamBrief},
+    ai:{name:'edgedesk_ai',categories:['synthesis'],owned:true,fn:'edgedesk_ai',status:'WIRED',ttl:'news',contract:'{mode,question,packet,history,compare}->{answer,model,cached}'},
+    signals:{name:'signals (table)',categories:['historical','clv'],owned:true,fn:null,rest:'signals',status:'WIRED',ttl:'historical',contract:'/rest/v1/signals?select=...&count=exact',reader:signalsCount},
+    /* UNKNOWN: on the dashboard, but source not supplied + app never calls them + host unreachable here */
+    odds:{name:'odds',categories:['odds','line_movement'],owned:true,fn:'odds',status:'UNKNOWN',ttl:'odds',need:'function source, or one sample request+response'},
+    run_slate:{name:'run_slate',categories:['slate'],owned:true,fn:'run_slate',status:'UNKNOWN',ttl:'schedule',need:'function source, or sample request+response'},
+    ingest_mlb:{name:'ingest_mlb / mlb_sync',categories:['schedule','starter'],owned:true,fn:'ingest_mlb',status:'UNKNOWN',ttl:'schedule',need:'reader vs cron-writer + contract'},
+    venue_weather:{name:'venue_weather / weather_sync',categories:['weather'],owned:true,fn:'venue_weather',status:'UNKNOWN',ttl:'weather',need:'reader vs writer + contract'},
+    bullpen:{name:'bullpen_sync',categories:['bullpen'],owned:true,fn:'bullpen_sync',status:'UNKNOWN',ttl:'bullpen',need:'reader vs writer + contract'},
+    player_stats:{name:'capture_stats / capture_players',categories:['player_stats'],owned:true,fn:'capture_stats',status:'UNKNOWN',ttl:'player_stats',need:'reader vs writer + table/columns'},
+    project_game:{name:'project_game',categories:['model'],owned:true,fn:'project_game',status:'UNKNOWN',ttl:'schedule',need:'contract (engine-side model output)'},
+    resolver:{name:'resolver',categories:['identity'],owned:true,fn:'resolver',status:'UNKNOWN',ttl:'schedule',need:'contract'},
+    healthcheck:{name:'healthcheck',categories:['diagnostic'],owned:true,fn:'healthcheck',status:'UNKNOWN',ttl:'game_status',need:'contract'},
+    /* LIVE_FALLBACK: public keyless browser-direct, documented, unverified from build env */
     mlb_public:{name:'MLB Stats API (public fallback)',categories:['schedule','starter'],owned:false,cors:true,status:'LIVE_FALLBACK',ttl:'schedule',adapter:mlbSchedule},
     nws_public:{name:'NWS (public fallback)',categories:['weather'],owned:false,cors:true,status:'LIVE_FALLBACK',ttl:'weather',adapter:nwsWeather}
   };
@@ -14381,8 +14386,7 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
 
   /* ---- live slate composition (browser only): schedule now, enrich as sources are configured ---- */
   function liveSlate(dateISO){
-    var mlb=SOURCES.mlb_schedule.adapter;
-    return mlb(dateISO).then(function(list){
+    return mlbSchedule(dateISO).then(function(list){
       var clean=mergeEvidence(list);
       return {evidence:clean, conflicts:findConflicts(clean), generated_at:Date.now(),
         unavailable:Object.keys(SOURCES).filter(function(k){return SOURCES[k].status==='NOT_CONFIGURED';}).map(function(k){return {source:k,need:SOURCES[k].need};}),
@@ -14390,50 +14394,87 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
     });
   }
 
-  /* ---- owned-backend invocation: reuse the app's Supabase project + auth (no new secrets) ---- */
+  /* ---- EDBackend: one abstraction over the app's Supabase project (spec #2) ----
+     Reuses SB_URL / SB_KEY / the user's JWT (edToken). Every call returns a metadata envelope. */
   function _sburl(){ return (typeof SB_URL!=='undefined'&&SB_URL)?SB_URL:''; }
   function _sbkey(){ return (typeof SB_KEY!=='undefined'&&SB_KEY)?SB_KEY:''; }
   function _tok(){ return (typeof edToken==='function')?Promise.resolve(edToken()):Promise.resolve(_sbkey()); }
   function fnUrl(name){ return _sburl()+'/functions/v1/'+name; }
+  function _env(source){ return {status:'UNKNOWN',source:source,retrieved_at:null,freshness:'UNKNOWN',latency:null,data:null,error:null}; }
   function callFn(name, body, ms){
+    var env=_env(name), t0=Date.now();
     return _tok().then(function(tok){
       var ctrl=(typeof AbortController!=='undefined')?new AbortController():null;
-      var t=ctrl?setTimeout(function(){ctrl.abort();},ms||10000):null;
+      var tm=ctrl?setTimeout(function(){ctrl.abort();},ms||10000):null;
       return fetch(fnUrl(name),{method:'POST',signal:ctrl?ctrl.signal:undefined,
-        headers:{'content-type':'application/json',authorization:'Bearer '+tok,apikey:_sbkey()},
-        body:JSON.stringify(body||{})})
-        .then(function(r){ if(t)clearTimeout(t); if(!r.ok) throw new Error('fn '+name+' '+r.status); return r.json(); })
-        .then(function(j){ return {ok:true,name:name,data:j}; })
-        .catch(function(e){ if(t)clearTimeout(t); return {ok:false,name:name,reason:(e&&e.message)||'error'}; });
+        headers:{'content-type':'application/json',authorization:'Bearer '+tok,apikey:_sbkey()},body:JSON.stringify(body||{})})
+        .then(function(r){ if(tm)clearTimeout(tm); env.latency=Date.now()-t0; env.retrieved_at=Date.now();
+          return r.json().then(function(j){ if(!r.ok||(j&&j.ok===false)){env.status='ERROR';env.error=(j&&j.error)||('HTTP '+r.status);return env;}
+            env.status='VERIFIED'; env.freshness='LIVE'; env.data=j; return env; },
+            function(){ env.status='ERROR'; env.error='non-JSON response'; return env; }); })
+        .catch(function(e){ if(tm)clearTimeout(tm); env.latency=Date.now()-t0; env.status='UNAVAILABLE'; env.error=(e&&e.message)||'error'; return env; });
     });
   }
-  /* wrap an owned-function response as evidence WITHOUT inventing field structure not yet seen */
-  function fnEvidence(name, category, res){
-    var now=Date.now();
-    if(!res||!res.ok) return [evi({source:name,source_type:'owned_fn',category:category,metric:'payload',value:null,
-      status:'UNAVAILABLE',provenance:'UNAVAILABLE \u00b7 '+name+' ('+((res&&res.reason)||'no response')+')',captured_at:now,now:now})];
-    return [evi({source:name,source_type:'owned_fn',category:category,metric:'payload',value:res.data,
-      status:'VERIFIED',provenance:'VERIFIED \u00b7 '+name,captured_at:now,now:now})];
+  function readTable(tableAndQuery, ms){
+    var env=_env('rest:'+String(tableAndQuery).split('?')[0]), t0=Date.now();
+    return _tok().then(function(tok){
+      var ctrl=(typeof AbortController!=='undefined')?new AbortController():null;
+      var tm=ctrl?setTimeout(function(){ctrl.abort();},ms||10000):null;
+      return fetch(_sburl()+'/rest/v1/'+tableAndQuery,{headers:{apikey:_sbkey(),authorization:'Bearer '+tok},signal:ctrl?ctrl.signal:undefined})
+        .then(function(r){ if(tm)clearTimeout(tm); env.latency=Date.now()-t0; env.retrieved_at=Date.now();
+          return r.json().then(function(j){ if(!r.ok){env.status='ERROR';env.error='HTTP '+r.status;return env;} env.status='VERIFIED'; env.freshness='FRESH'; env.data=j; return env; },
+            function(){ env.status='ERROR'; env.error='non-JSON'; return env; }); })
+        .catch(function(e){ if(tm)clearTimeout(tm); env.latency=Date.now()-t0; env.status='UNAVAILABLE'; env.error=(e&&e.message)||'error'; return env; });
+    });
   }
-  /* RLS-respecting REST read via the app's own sbFetch, when present */
-  function readTable(pathAndQuery){
-    if(typeof sbFetch==='function') return Promise.resolve(sbFetch(pathAndQuery));
-    return Promise.reject(new Error('sbFetch unavailable in this context'));
+  var EDBackend={ call:callFn, read:readTable, fnUrl:fnUrl };
+
+  /* verified adapter: team_brief  (contract discovered from app.html: {league,team} -> {ok,brief,facts,sources[],cached,searches}) */
+  function teamBrief(league, team, fresh){
+    return callFn('team_brief'+(fresh?'?fresh=1':''), {league:league, team:team}).then(function(env){
+      var now=Date.now();
+      if(env.status!=='VERIFIED'||!env.data)
+        return [evi({source:'team_brief',source_type:'owned_fn',category:'context',metric:'brief',value:null,status:'UNAVAILABLE',
+          provenance:'UNAVAILABLE \u00b7 team_brief ('+(env.error||'no data')+')',captured_at:now,now:now,team_id:team})];
+      var d=env.data, out=[];
+      out.push(evi({source:'team_brief',source_type:'owned_fn',category:'context',metric:'brief',value:d.brief||null,team_id:team,
+        status:d.cached?'PROBABLE':'VERIFIED', provenance:(d.cached?'cached':'live')+' \u00b7 team_brief'+(d.searches?(' \u00b7 '+d.searches+' searches'):''), captured_at:now, now:now}));
+      (d.sources||[]).slice(0,8).forEach(function(x){ out.push(evi({source:'team_brief',source_type:'owned_fn',category:'context',metric:'source',
+        value:x.title||x.url, provenance:x.url, status:'VERIFIED', captured_at:now, now:now, team_id:team})); });
+      return out;
+    });
   }
-  /* discovery probe: which owned functions actually answer the browser (run in the deployed app) */
+  /* verified reader: signals count (contract discovered: /rest/v1/signals?select=id&limit=1 + count=exact content-range) */
+  function signalsCount(filter){
+    return _tok().then(function(tok){
+      return fetch(_sburl()+'/rest/v1/signals?select=id&limit=1'+(filter?('&'+filter):''),
+        {headers:{apikey:_sbkey(),authorization:'Bearer '+tok,prefer:'count=exact'}})
+        .then(function(r){ var cr=r.headers.get('content-range'); var n=cr?parseInt(cr.split('/')[1],10):NaN; return {ok:r.ok&&!isNaN(n),count:isNaN(n)?null:n}; })
+        .catch(function(e){ return {ok:false,count:null,error:(e&&e.message)||'error'}; });
+    });
+  }
+  /* discovery probe: which owned functions actually answer the browser (run in deployed app) */
   function probe(names){
     names=names||Object.keys(SOURCES).map(function(k){return SOURCES[k].fn;}).filter(Boolean);
     var t0=Date.now();
-    return Promise.all(names.map(function(n){
-      return callFn(n,{probe:true},6000).then(function(r){return {fn:n,ok:r.ok,reason:r.reason||null};});
-    })).then(function(rows){ return {probed_at:t0,results:rows}; });
+    return Promise.all(names.map(function(n){ return callFn(n,{probe:true},6000).then(function(env){return {fn:n,status:env.status,latency:env.latency,error:env.error};}); }))
+      .then(function(rows){ return {probed_at:t0,results:rows}; });
+  }
+  /* self-diagnostics (spec #30) */
+  function health(){
+    var reg=Object.keys(SOURCES).map(function(k){var s=SOURCES[k];return {id:k,name:s.name,status:s.status,categories:s.categories,contract:s.contract||null,need:s.need||null};});
+    var counts={}; reg.forEach(function(r){counts[r.status]=(counts[r.status]||0)+1;});
+    return {version:API.version, counts:counts, sources:reg,
+      wired:reg.filter(function(r){return r.status==='WIRED';}).map(function(r){return r.id;}),
+      unknown:reg.filter(function(r){return r.status==='UNKNOWN';}).map(function(r){return r.id;}),
+      note:'WIRED = contract discovered from app.html and adapter written. UNKNOWN = on your dashboard but source not supplied and host unreachable from this build env.'};
   }
   var API={
     version:'fabric-1', TTL:TTL, EV_STATUS:EV_STATUS, FRESH_STATE:FRESH_STATE,
     freshnessState:freshnessState, evi:evi, validate:validate, validateGameState:validateGameState,
     canonTeam:canonTeam, canonGameId:canonGameId, canonDate:canonDate,
     mergeEvidence:mergeEvidence, findConflicts:findConflicts, assertResearchOnly:assertResearchOnly,
-    route:route, SOURCES:SOURCES, sourceStatus:sourceStatus, fnUrl:fnUrl, callFn:callFn, fnEvidence:fnEvidence, readTable:readTable, probe:probe, mlbSchedule:mlbSchedule, nwsWeather:nwsWeather, liveSlate:liveSlate,
+    route:route, SOURCES:SOURCES, sourceStatus:sourceStatus, EDBackend:EDBackend, fnUrl:fnUrl, callFn:callFn, readTable:readTable, teamBrief:teamBrief, signalsCount:signalsCount, probe:probe, health:health, mlbSchedule:mlbSchedule, nwsWeather:nwsWeather, liveSlate:liveSlate,
     selfTest:function(verbose){
       var R=[],P=0,F=0; function chk(n,g,w){var ok=(g===w);R.push({t:n,ok:ok,got:g,want:w});ok?P++:F++;}
       var now=1000000000000;
@@ -14479,7 +14520,11 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
       chk('route weather', route('Which games have the strongest weather?').intent,'weather');
       chk('route bullpen', route('Who has the worst bullpen?').intent,'bullpen');
       chk('odds is owned', SOURCES.odds.owned,true);
-      chk('odds needs contract', SOURCES.odds.status,'NEEDS_CONTRACT');
+      chk('odds is UNKNOWN', SOURCES.odds.status,'UNKNOWN');
+      chk('signals wired', SOURCES.signals.status,'WIRED');
+      chk('health counts wired>=3', (function(){var h=health();return (h.counts.WIRED||0)>=3;})(),true);
+      chk('health lists unknown', (function(){var h=health();return h.unknown.indexOf('odds')>=0;})(),true);
+      chk('envelope shape', (function(){var e=_env('x');return ('status'in e)&&('retrieved_at'in e)&&('latency'in e)&&('freshness'in e)&&('data'in e)&&('error'in e);})(),true);
       chk('ai wired', SOURCES.ai.status,'WIRED');
       chk('team_brief wired', SOURCES.team_brief.status,'WIRED');
       chk('public fallback present', SOURCES.mlb_public.status,'LIVE_FALLBACK');
