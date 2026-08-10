@@ -18,7 +18,7 @@ import {
   Dal, classify, deriveState, attackThesis, findConflicts, completeness, coverage,
   freshnessOf, ev, resolveTeams, personKey, etDay, clearCache,
   buildSnapshot, diffSnapshots, extractFindings, scout, MODE_OF_INTENT,
-  crossMarketFlags, movementRead,
+  crossMarketFlags, movementRead, rankingAxis,
 } from "./_lib.ts";
 
 /* ------------------------------------------------------------ harness */
@@ -965,6 +965,40 @@ section("Season line is never crowded out by game logs");
     (fb.path as any).game_logs >= 1, (fb.path as any).game_logs);
   ok("W11 the layer stays inside its raised ceiling", ((fb.path as any).api_calls ?? 99) <= 20,
     (fb.path as any).api_calls);
+}
+
+/* The live failure: asked "best pitchers on todays slate?", the engine
+   classified it correctly and then answered with the five WORST arms, filing
+   the slate's best pitcher under "the one who is NOT on the list". */
+section("A ranking question is answered on the axis it asked for");
+{
+  eq("R1 'best pitchers on todays slate?' classifies as best_pitchers",
+    classify("best pitchers on todays slate?", null).intent, "best_pitchers");
+
+  const best = rankingAxis("best_pitchers") ?? "";
+  ok("R2 best_pitchers carries an axis instruction", best.length > 0);
+  ok("R3 it says rank by quality, strongest first", /strongest arm at #1/.test(best));
+  ok("R4 it forbids the exploitability reorder", /do not reorder by attackability/i.test(best));
+  ok("R5 it puts the asked-for ranking before the betting angle",
+    /in full before any betting angle/i.test(best));
+
+  const worst = rankingAxis("worst_pitchers") ?? "";
+  ok("R6 worst_pitchers still ranks by attackability", /attackability/.test(worst));
+  ok("R7 worst_pitchers explicitly is not raw ERA", /not by raw ERA/.test(worst));
+  eq("R8 exploitable_pitchers gets the same axis as worst_pitchers",
+    rankingAxis("exploitable_pitchers"), worst);
+
+  ok("R9 the two axes are genuinely opposite, not the same text", best !== worst);
+  ok("R10 best_matchups is named too", (rankingAxis("best_matchups") ?? "").length > 0);
+  eq("R11 an intent with no ranking axis returns null", rankingAxis("weather"), null);
+  eq("R12 an unknown intent returns null rather than throwing", rankingAxis("nonsense"), null);
+
+  /* The classifier half of the same bug, kept alongside so a future edit to
+     the stem regexes cannot silently re-invert the answer. */
+  eq("R13 'worst starters today' still routes to worst_pitchers",
+    classify("worst starters today", null).intent, "worst_pitchers");
+  ok("R14 best and worst do not collapse to one intent",
+    classify("best pitchers today", null).intent !== classify("worst pitchers today", null).intent);
 }
 
 console.log(`\n${failed === 0 ? "ALL GREEN" : "FAILURES"} — ${passed} passed, ${failed} failed`);

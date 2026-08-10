@@ -66,6 +66,35 @@ export type Mode =
   | "FAST" | "DEEP" | "ATTACK" | "COMPARE" | "HISTORICAL"
   | "MARKET" | "MATCHUP" | "SLATE" | "SCOUT" | "POSTMORTEM";
 
+/**
+ * The direction a ranking question runs in, restated next to the intent.
+ *
+ * The standing BAD vs EXPLOITABLE prompt rule was written for "who is worst",
+ * and it turned out strong enough to capture "who is BEST" as well: asked for
+ * the best pitchers on the slate, the model opened by reframing the question
+ * as most-exploitable, ranked the five worst arms on the card, and put the
+ * actual best pitcher on the slate in a closing footnote headed "the one who
+ * is NOT on the list". The classifier was right the whole time — it returned
+ * intent=best_pitchers — so the axis has to travel WITH the intent rather
+ * than being left for a general rule to infer, and get over-applied.
+ */
+export function rankingAxis(intent: string): string | null {
+  switch (intent) {
+    case "best_pitchers":
+      return "The user asked who is BEST. Rank by pitching quality, strongest arm at #1, "
+        + "and do not reorder by attackability. Give that ranking in full before any betting angle.";
+    case "worst_pitchers":
+    case "exploitable_pitchers":
+      return "The user asked who is WORST or most exploitable. Rank by attackability — quality "
+        + "read against the opponent, park, workload, bullpen and price — not by raw ERA.";
+    case "best_matchups":
+      return "The user asked for the BEST matchups. Name the axis you ranked on in the first "
+        + "sentence, and rank in the direction the question asked for.";
+    default:
+      return null;
+  }
+}
+
 export const MODE_OF_INTENT: Record<string, Mode> = {
   worst_pitchers: "MATCHUP", exploitable_pitchers: "MATCHUP", best_pitchers: "MATCHUP",
   best_matchups: "MATCHUP", offense: "MATCHUP", research_matchup: "DEEP",

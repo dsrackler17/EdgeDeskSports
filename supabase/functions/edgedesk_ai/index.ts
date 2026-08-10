@@ -38,7 +38,7 @@
 
 import {
   Dal, classify, deriveState, attackThesis, findConflicts, sportModule,
-  completeness, coverage, num, etDay,
+  completeness, coverage, num, etDay, rankingAxis,
   buildSnapshot, diffSnapshots, extractFindings, scout,
   crossMarketFlags, movementRead,
   type Evidence, type Plan, type ConvoState, type Completeness,
@@ -102,8 +102,14 @@ HARD RULES
 - Never say you cannot see the slate, the board or today's games when evidence is attached. It is in front of you.
 - Prefer "EdgeDesk could not retrieve that" over a plausible-sounding invention. Every time.
 
+ANSWER THE QUESTION THAT WAS ASKED
+Rank by the axis the question names, not the axis you find more interesting. "Best pitchers" means the best pitchers — the strongest arms on the card, ranked by quality, with the best one at #1. "Worst" and "most exploitable" mean the other direction. Never silently invert the axis, never open a ranking by restating the question as a different one, and never bury the true answer to the asked question in a footnote at the bottom. Where the more useful betting angle runs the other way, give the asked-for ranking FIRST, in full, then add the other angle in a clearly separate section — as an addition, never as a substitution.
+
 BAD vs EXPLOITABLE
-Ranking arms by xERA answers a different question than ranking betting targets. A poor starter facing a low-OBP, high-strikeout offense in a pitcher's park is not the best target. A better starter facing a high-OBP, high-ISO offense in a hitter's park, on short rest, with a taxed bullpen behind him, can be far more exploitable. Read each starter's quality against the opponent_offense actually attached to HIM, plus park, weather, workload and bullpen — then whether the market makes it actionable at all. When your top pick is not the statistically worst arm, say so explicitly and say why. Weigh only fields that are present.
+These are two different rankings and the question decides which one leads.
+- Asked who is WORST or MOST EXPLOITABLE: rank by attackability, not by raw line. A poor starter facing a low-OBP, high-strikeout offense in a pitcher's park is not the best target. A better starter facing a high-OBP, high-ISO offense in a hitter's park, on short rest, with a taxed bullpen behind him, can be far more exploitable. When your top pick is not the statistically worst arm, say so explicitly and say why.
+- Asked who is BEST: rank by pitching quality — the run-prevention line the evidence actually shows (ERA, xERA, FIP, whiff%, barrel% and hard-hit% allowed), best arm first. Do not reorder that list by how attackable each one is. The betting implication of an elite arm belongs in one closing line — an elite starter is usually an anti-target, so the angle is against his opponent, not against him — and that line comes after the ranking, not instead of it.
+Either way: read each starter's quality against the opponent_offense actually attached to HIM, plus park, weather, workload and bullpen, then whether the market makes it actionable at all. Weigh only fields that are present.
 
 VERDICT DISCIPLINE
 Use the deterministic verdict wherever one is attached (BET / LEAN / WAIT / PASS). Never upgrade it. WAIT means information is missing, stale or unconfirmed — it is not a rejection; lead with what must confirm. On PASS, explain what would have to change; do not find a way to recommend it. A positive edge is not a bet: judge it against break-even and max-playable, and if the price is past the floor, say the price is the problem and name the price that would restore it.
@@ -402,6 +408,7 @@ function compact(o: unknown, max = 60000): string {
   return s.length > max ? s.slice(0, max) + `…[truncated at ${max} chars]` : s;
 }
 
+
 function buildUserContent(body: any, research: ResearchOut | null): string {
   const { mode, question, packet, compare } = body ?? {};
   const parts: string[] = [];
@@ -413,6 +420,7 @@ function buildUserContent(body: any, research: ResearchOut | null): string {
     parts.push(
       `RESEARCH PLAN — intent=${p.intent}, mode=${p.mode}, depth=${p.depth}, sport=${research.focus?.sport_key ?? research.state.sport ?? "unresolved"}\n`
       + `Reason: ${p.why}\n`
+      + (rankingAxis(p.intent) ? `RANKING AXIS: ${rankingAxis(p.intent)}\n` : "")
       + `Steps executed: ${p.steps.join(", ")}\n`
       + `In focus: ${research.state.teams.join(" / ") || "(board-wide)"}\n`
       + `Retrievals: ${research.calls} reads in ${research.ms}ms`,

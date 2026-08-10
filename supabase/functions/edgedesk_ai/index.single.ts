@@ -37,21 +37,34 @@
 //      Optional: EDGEDESK_AI_MODEL, EDGEDESK_AI_RESEARCH=0, EDGEDESK_MIN_PATTERN_N.
 // ============================================================================
 
-/* ==========================================================================
+/* ========================================================================
    PART 1 — RESEARCH LIBRARY
-   ==========================================================================
-   THE ONE RULE THAT GOVERNS THIS SECTION
-     EdgeDesk's deterministic pipeline owns every number. This layer RETRIEVES
-     those numbers and the evidence around them. It never computes, adjusts or
-     replaces one. Where it "ranks", it ranks RESEARCH PRIORITY over owned
-     fields — it never produces a betting number.
+   Source of truth: supabase/functions/edgedesk_ai/_lib.ts
+   ======================================================================= */
 
-   HONESTY CONTRACT
-     Every retrieval returns Evidence[] with provenance {source, retrieved_at,
-     status, freshness}. A read that fails or comes back empty produces an
-     UNAVAILABLE item naming the exact table and error. Nothing is ever
-     silently filled in.
-   ========================================================================== */
+// supabase/functions/edgedesk_ai/_lib.ts
+// ============================================================================
+// EdgeDesk Intelligence — research engine internals.
+//
+// Everything in this file is PURE LOGIC + DATA ACCESS. It is imported by
+// index.ts, which owns the HTTP handler and the Anthropic call. Split this way
+// so the research logic can be unit-tested without a server or an API key.
+//
+// THE ONE RULE THAT GOVERNS THIS FILE
+//   EdgeDesk's deterministic pipeline owns every number: probability, fair
+//   price, edge, EV, CLV, confidence, score, verdict, price sensitivity. This
+//   layer RETRIEVES those numbers and the evidence around them. It never
+//   computes, adjusts or replaces one. Where this file "ranks", it ranks
+//   RESEARCH PRIORITY over already-owned fields — it never produces a betting
+//   number.
+//
+// HONESTY CONTRACT
+//   Every retrieval returns an Evidence[] with provenance {source, retrieved_at,
+//   status, freshness}. A read that fails or comes back empty produces an
+//   UNAVAILABLE evidence item naming the exact table and error. Nothing is ever
+//   silently filled in. The model downstream is instructed to say "not available
+//   in EdgeDesk's current data" whenever it sees one.
+// ============================================================================
 
 /* ------------------------------------------------------------------ types */
 
@@ -96,6 +109,35 @@ export type Depth = "QUICK" | "STANDARD" | "DEEP" | "SLATE" | "FULL";
 export type Mode =
   | "FAST" | "DEEP" | "ATTACK" | "COMPARE" | "HISTORICAL"
   | "MARKET" | "MATCHUP" | "SLATE" | "SCOUT" | "POSTMORTEM";
+
+/**
+ * The direction a ranking question runs in, restated next to the intent.
+ *
+ * The standing BAD vs EXPLOITABLE prompt rule was written for "who is worst",
+ * and it turned out strong enough to capture "who is BEST" as well: asked for
+ * the best pitchers on the slate, the model opened by reframing the question
+ * as most-exploitable, ranked the five worst arms on the card, and put the
+ * actual best pitcher on the slate in a closing footnote headed "the one who
+ * is NOT on the list". The classifier was right the whole time — it returned
+ * intent=best_pitchers — so the axis has to travel WITH the intent rather
+ * than being left for a general rule to infer, and get over-applied.
+ */
+export function rankingAxis(intent: string): string | null {
+  switch (intent) {
+    case "best_pitchers":
+      return "The user asked who is BEST. Rank by pitching quality, strongest arm at #1, "
+        + "and do not reorder by attackability. Give that ranking in full before any betting angle.";
+    case "worst_pitchers":
+    case "exploitable_pitchers":
+      return "The user asked who is WORST or most exploitable. Rank by attackability — quality "
+        + "read against the opponent, park, workload, bullpen and price — not by raw ERA.";
+    case "best_matchups":
+      return "The user asked for the BEST matchups. Name the axis you ranked on in the first "
+        + "sentence, and rank in the direction the question asked for.";
+    default:
+      return null;
+  }
+}
 
 export const MODE_OF_INTENT: Record<string, Mode> = {
   worst_pitchers: "MATCHUP", exploitable_pitchers: "MATCHUP", best_pitchers: "MATCHUP",
@@ -2066,10 +2108,10 @@ export function deriveState(history: any[], plan: Plan, packet: any, prev?: Conv
   return st;
 }
 
-
-/* ==========================================================================
+/* ========================================================================
    PART 2 — ORCHESTRATOR, PROMPT, HANDLER
-   ========================================================================== */
+   Source of truth: supabase/functions/edgedesk_ai/index.ts
+   ======================================================================= */
 
 const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY") ?? "";
 const MODEL = Deno.env.get("EDGEDESK_AI_MODEL") ?? "claude-sonnet-4-5";
@@ -2128,8 +2170,14 @@ HARD RULES
 - Never say you cannot see the slate, the board or today's games when evidence is attached. It is in front of you.
 - Prefer "EdgeDesk could not retrieve that" over a plausible-sounding invention. Every time.
 
+ANSWER THE QUESTION THAT WAS ASKED
+Rank by the axis the question names, not the axis you find more interesting. "Best pitchers" means the best pitchers — the strongest arms on the card, ranked by quality, with the best one at #1. "Worst" and "most exploitable" mean the other direction. Never silently invert the axis, never open a ranking by restating the question as a different one, and never bury the true answer to the asked question in a footnote at the bottom. Where the more useful betting angle runs the other way, give the asked-for ranking FIRST, in full, then add the other angle in a clearly separate section — as an addition, never as a substitution.
+
 BAD vs EXPLOITABLE
-Ranking arms by xERA answers a different question than ranking betting targets. A poor starter facing a low-OBP, high-strikeout offense in a pitcher's park is not the best target. A better starter facing a high-OBP, high-ISO offense in a hitter's park, on short rest, with a taxed bullpen behind him, can be far more exploitable. Read each starter's quality against the opponent_offense actually attached to HIM, plus park, weather, workload and bullpen — then whether the market makes it actionable at all. When your top pick is not the statistically worst arm, say so explicitly and say why. Weigh only fields that are present.
+These are two different rankings and the question decides which one leads.
+- Asked who is WORST or MOST EXPLOITABLE: rank by attackability, not by raw line. A poor starter facing a low-OBP, high-strikeout offense in a pitcher's park is not the best target. A better starter facing a high-OBP, high-ISO offense in a hitter's park, on short rest, with a taxed bullpen behind him, can be far more exploitable. When your top pick is not the statistically worst arm, say so explicitly and say why.
+- Asked who is BEST: rank by pitching quality — the run-prevention line the evidence actually shows (ERA, xERA, FIP, whiff%, barrel% and hard-hit% allowed), best arm first. Do not reorder that list by how attackable each one is. The betting implication of an elite arm belongs in one closing line — an elite starter is usually an anti-target, so the angle is against his opponent, not against him — and that line comes after the ranking, not instead of it.
+Either way: read each starter's quality against the opponent_offense actually attached to HIM, plus park, weather, workload and bullpen, then whether the market makes it actionable at all. Weigh only fields that are present.
 
 VERDICT DISCIPLINE
 Use the deterministic verdict wherever one is attached (BET / LEAN / WAIT / PASS). Never upgrade it. WAIT means information is missing, stale or unconfirmed — it is not a rejection; lead with what must confirm. On PASS, explain what would have to change; do not find a way to recommend it. A positive edge is not a bet: judge it against break-even and max-playable, and if the price is past the floor, say the price is the problem and name the price that would restore it.
@@ -2428,6 +2476,7 @@ function compact(o: unknown, max = 60000): string {
   return s.length > max ? s.slice(0, max) + `…[truncated at ${max} chars]` : s;
 }
 
+
 function buildUserContent(body: any, research: ResearchOut | null): string {
   const { mode, question, packet, compare } = body ?? {};
   const parts: string[] = [];
@@ -2439,6 +2488,7 @@ function buildUserContent(body: any, research: ResearchOut | null): string {
     parts.push(
       `RESEARCH PLAN — intent=${p.intent}, mode=${p.mode}, depth=${p.depth}, sport=${research.focus?.sport_key ?? research.state.sport ?? "unresolved"}\n`
       + `Reason: ${p.why}\n`
+      + (rankingAxis(p.intent) ? `RANKING AXIS: ${rankingAxis(p.intent)}\n` : "")
       + `Steps executed: ${p.steps.join(", ")}\n`
       + `In focus: ${research.state.teams.join(" / ") || "(board-wide)"}\n`
       + `Retrievals: ${research.calls} reads in ${research.ms}ms`,
@@ -2827,3 +2877,4 @@ export async function handle(req: Request): Promise<Response> {
 if (typeof Deno !== "undefined" && (Deno as any).serve && !Deno.env.get("EDGEDESK_AI_NO_SERVE")) {
   Deno.serve(handle);
 }
+
