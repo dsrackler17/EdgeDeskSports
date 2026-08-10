@@ -391,22 +391,72 @@ function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } });
 }
 
-async function loadGraded(sb: any, days: number): Promise<Graded[]> {
+/* Columns this function would LIKE. Only the first four are load-bearing; the
+   rest each power one hypothesis family and are individually optional.
+   `verdict` in particular is computed in the browser and is not a column on
+   every deployment — assuming it was there took the whole run down with
+   "column signals.verdict does not exist", which is a poor way for a learning
+   job to fail. A missing column should cost one hypothesis family, not the
+   loop. */
+const WANTED = [
+  'sport_key', 'market', 'beat_close', 'clv', 'graded_at', 'commence_time',
+  'edge', 'best_dec', 'n_books', 'has_sharp', 'verdict',
+] as const;
+const REQUIRED = new Set(['beat_close', 'clv', 'graded_at']);
+
+/** PostgREST names the offending column; pull it out of the message. */
+function missingColumn(msg: string): string | null {
+  const m = /column\s+(?:\w+\.)?"?([a-z0-9_]+)"?\s+does not exist/i.exec(msg);
+  return m?.[1] ?? null;
+}
+
+async function loadGraded(sb: any, days: number): Promise<{ rows: Graded[]; dropped: string[] }> {
   const from = new Date(Date.now() - days * 864e5).toISOString();
-  const out: Graded[] = [];
+  let cols = [...WANTED] as string[];
+  const dropped: string[] = [];
+  const out: any[] = [];
   const PAGE = 1000;
-  for (let i = 0; i < 20; i++) {                       // hard ceiling: 20k rows
-    const { data, error } = await sb.from('signals')
-      .select('sport_key,market,beat_close,clv,edge,best_dec,n_books,has_sharp,verdict,commence_time,graded_at')
-      .not('graded_at', 'is', null)
-      .gte('graded_at', from)
-      .order('graded_at', { ascending: true })
-      .range(i * PAGE, i * PAGE + PAGE - 1);
-    if (error) throw new Error(error.message);
-    out.push(...(data ?? []));
-    if (!data || data.length < PAGE) break;
+
+  for (let page = 0; page < 20; page++) {              // hard ceiling: 20k rows
+    let data: any[] | null = null;
+
+    // Retry the SAME page with the offending column removed, up to once per
+    // optional column, so one schema difference cannot end the run.
+    for (let attempt = 0; attempt <= WANTED.length; attempt++) {
+      const r = await sb.from('signals')
+        .select(cols.join(','))
+        .not('graded_at', 'is', null)
+        .gte('graded_at', from)
+        .order('graded_at', { ascending: true })
+        .range(page * PAGE, page * PAGE + PAGE - 1);
+      if (!r.error) { data = r.data ?? []; break; }
+
+      const bad = missingColumn(r.error.message);
+      if (!bad || !cols.includes(bad)) throw new Error(r.error.message);
+      if (REQUIRED.has(bad)) {
+        throw new Error(
+          `signals.${bad} does not exist, and the learning loop cannot run without it. `
+          + `Run the close job so CLV and beat_close are populated.`);
+      }
+      cols = cols.filter((c) => c !== bad);
+      if (!dropped.includes(bad)) dropped.push(bad);
+    }
+
+    if (data == null) throw new Error('could not read signals with any column set');
+    out.push(...data);
+    if (data.length < PAGE) break;
   }
-  return out;
+
+  // Absent optional columns come back undefined; normalise so the label
+  // functions see null and skip the family cleanly.
+  const rows: Graded[] = out.map((r) => ({
+    sport_key: r.sport_key ?? null, market: r.market ?? null,
+    beat_close: r.beat_close ?? null, clv: r.clv ?? null, edge: r.edge ?? null,
+    best_dec: r.best_dec ?? null, n_books: r.n_books ?? null,
+    has_sharp: r.has_sharp ?? null, verdict: r.verdict ?? null,
+    commence_time: r.commence_time ?? null, graded_at: r.graded_at ?? null,
+  }));
+  return { rows, dropped };
 }
 
 Deno.serve(async (req) => {
@@ -417,7 +467,7 @@ Deno.serve(async (req) => {
     const days = Math.max(7, Math.min(400, Number(body.days ?? params.days ?? 365)));
     const sb = createClient(url, serviceKey);
 
-    const rows = await loadGraded(sb, days);
+    const { rows, dropped } = await loadGraded(sb, days);
     const { patterns, base_rate, n_graded, tested } = evaluate(rows);
     const buckets = calibrate(rows);
 
@@ -430,6 +480,10 @@ Deno.serve(async (req) => {
       calibration_buckets: buckets.length,
       /* Says plainly how far off a usable sample this is, so "the loop is
          learning" can never be implied by an empty table. */
+      /* Named, not swallowed: a family that silently stopped being tested is
+         indistinguishable from one that found nothing. */
+      ...(dropped.length ? { columns_unavailable: dropped,
+        note: `signals has no ${dropped.join(', ')} column, so the matching hypothesis families were skipped.` } : {}),
       readiness: n_graded >= MIN_N
         ? `${n_graded} graded signals — patterns are being evaluated`
         : `${n_graded} of ${MIN_N} graded signals needed before any pattern can be evaluated`,

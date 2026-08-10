@@ -267,6 +267,35 @@ section("Calibration says whether the number means what it claims");
   eq("C11 buckets come back in edge order", cal.map((c) => c.bucket), ["edge 2-4%", "edge 4-8%"]);
 }
 
+/* Live failure: `verdict` is computed in the browser and is not a column on
+   every deployment, so selecting it returned
+   "column signals.verdict does not exist" and took the entire run down. A
+   missing optional column must cost one hypothesis family, not the loop. */
+section("A missing optional column costs one family, not the run");
+{
+  const noVerdict = [
+    ...series(300, 150, { market: "h2h", verdict: null }),
+    ...series(200, 150, { market: "totals", verdict: null }),
+  ];
+  const r = evaluate(noVerdict);
+  ok("M1 evaluation still runs with verdict absent", r.tested > 0, r.tested);
+  eq("M2 the verdict family simply produces no slices",
+    r.patterns.filter((p) => p.family === "verdict").length, 0);
+  eq("M3 ...and the other families are unaffected",
+    r.patterns.find((p) => p.key === "market:totals")?.status, "CONFIRMED");
+
+  // Every label function must tolerate a fully empty row rather than throwing.
+  const blank: Graded = {
+    sport_key: null, market: null, beat_close: null, clv: null, edge: null,
+    best_dec: null, n_books: null, has_sharp: null, verdict: null,
+    commence_time: null, graded_at: null,
+  };
+  ok("M4 every hypothesis label survives an entirely empty row",
+    HYPOTHESES.every((h) => { try { return h.label(blank) === null; } catch { return false; } }));
+  eq("M5 rows with no outcome are never counted as graded",
+    evaluate([blank, blank]).n_graded, 0);
+}
+
 console.log(`\n${failed === 0 ? "ALL GREEN" : "FAILURES"} — ${passed} passed, ${failed} failed`);
 if (failures.length) console.log("failed:", failures.join(" | "));
 if (typeof process !== "undefined" && failed > 0) (process as any).exit(1);
