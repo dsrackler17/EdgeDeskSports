@@ -39,7 +39,9 @@
 import {
   Dal, classify, deriveState, attackThesis, findConflicts, sportModule,
   completeness, coverage, num,
+  buildSnapshot, diffSnapshots, extractFindings, scout,
   type Evidence, type Plan, type ConvoState, type Completeness,
+  type Snapshot, type Finding, type ScoutItem,
 } from "./_lib.ts";
 
 const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY") ?? "";
@@ -148,6 +150,10 @@ interface ResearchOut {
   log: { table: string; ms: number; rows: number; error: string | null }[];
   completeness: Completeness;
   coverage: ReturnType<typeof coverage>[];
+  snapshot: Snapshot | null;
+  changed: ReturnType<typeof diffSnapshots> | null;
+  findings: Finding[];
+  queue: ScoutItem[];
 }
 
 async function runResearch(
@@ -304,10 +310,28 @@ async function runResearch(
   }
   if (games.length) cov.push(coverage(evidence, "weather", games));
 
+  /* ---- 10. research packet versioning -----------------------------------
+     Reduce this game's research state to comparable scalars, fetch the last
+     stored packet, and diff. This is what makes "what changed since we last
+     looked at this?" a factual answer instead of a guess. */
+  let snapshot: Snapshot | null = null;
+  let changed: ReturnType<typeof diffSnapshots> | null = null;
+  if (focus?.event_id) {
+    const prev = await dal.getLastSnapshot(focus.event_id);
+    snapshot = buildSnapshot(focus.event_id, evidence, focus, (prev?.version ?? 0) + 1);
+    changed = diffSnapshots(prev, snapshot);
+  }
+
+  /* ---- 11. structured findings, derived from evidence only --------------- */
+  const findings = extractFindings(evidence);
+
+  /* ---- 12. proactive research queue ------------------------------------- */
+  const queue = slateRows.length ? scout(slateRows) : [];
+
   return {
     plan, state, evidence, conflicts, unavailable: unavail, attack, memory,
     data_path, focus, calls: dal.calls, ms: Date.now() - t0, log: dal.log,
-    completeness: comp, coverage: cov,
+    completeness: comp, coverage: cov, snapshot, changed, findings, queue,
   };
 }
 
@@ -329,7 +353,7 @@ function buildUserContent(body: any, research: ResearchOut | null): string {
   if (research) {
     const p = research.plan;
     parts.push(
-      `RESEARCH PLAN — intent=${p.intent}, depth=${p.depth}, sport=${research.focus?.sport_key ?? research.state.sport ?? "unresolved"}\n`
+      `RESEARCH PLAN — intent=${p.intent}, mode=${p.mode}, depth=${p.depth}, sport=${research.focus?.sport_key ?? research.state.sport ?? "unresolved"}\n`
       + `Reason: ${p.why}\n`
       + `Steps executed: ${p.steps.join(", ")}\n`
       + `In focus: ${research.state.teams.join(" / ") || "(board-wide)"}\n`
@@ -389,6 +413,23 @@ function buildUserContent(body: any, research: ResearchOut | null): string {
         + research.coverage.map((c) => "  " + c.summary).join("\n")
         : ""),
     );
+
+    if (research.changed) {
+      parts.push(
+        `WHAT CHANGED — research packet v${research.snapshot?.version ?? 1} vs the last one on file. `
+        + "Use this for any 'what changed' question; do not infer movement from anything else:\n"
+        + compact(research.changed, 3000),
+      );
+    }
+
+    if (research.queue.length && (research.plan.mode === "SCOUT" || research.plan.depth === "SLATE")) {
+      parts.push(
+        "RESEARCH QUEUE — games flagged by comparing owned fields against each other. "
+        + "research_interest and betting_action are SEPARATE: a game can be the most interesting "
+        + "thing on the board and still not be a bet. Never present research interest as a recommendation:\n"
+        + compact(research.queue, 6000),
+      );
+    }
 
     if (Object.keys(research.data_path).length) {
       parts.push(
@@ -469,6 +510,7 @@ async function rememberSession(
     entities,
     question: String(body?.question ?? body?.mode ?? "").slice(0, 1000),
     intent: research.plan.intent,
+    mode: research.plan.mode,
     depth: research.plan.depth,
     research_plan: { steps: research.plan.steps, why: research.plan.why, budget: research.plan.budget },
     evidence_summary: {
@@ -487,15 +529,42 @@ async function rememberSession(
     retrieval_log: research.log.slice(0, 30),
   };
 
-  try {
-    await fetch(`${SUPABASE_URL}/rest/v1/research_sessions`, {
+  const post = (table: string, payload: unknown) =>
+    fetch(`${SUPABASE_URL}/rest/v1/${table}`, {
       method: "POST",
       headers: {
         apikey: SUPABASE_ANON_KEY, authorization: auth,
         "content-type": "application/json", prefer: "return=minimal",
       },
-      body: JSON.stringify(row),
+      body: JSON.stringify(payload),
     });
+
+  try {
+    await post("research_sessions", row);
+
+    // Versioned research packet, so the next turn can diff against it.
+    if (research.snapshot?.event_id) {
+      await post("research_snapshots", {
+        event_id: research.snapshot.event_id,
+        version: research.snapshot.version,
+        sport: research.focus?.sport_key ?? null,
+        taken_at: new Date(research.snapshot.taken_at).toISOString(),
+        facts: research.snapshot.facts,
+      });
+    }
+
+    // Structured findings — claims bound to the record that produced them.
+    // Nothing the model wrote is ever stored here; only extracted evidence.
+    if (research.findings.length) {
+      await post("research_findings", research.findings.slice(0, 40).map((f) => ({
+        entity: f.entity, fact_type: f.fact_type, claim: f.claim,
+        fact_value: f.fact_value, source: f.source,
+        source_timestamp: f.source_timestamp,
+        verification_status: f.verification_status,
+        confidence: f.confidence, valid_until: f.valid_until,
+        sport: research.focus?.sport_key ?? research.state.sport ?? null,
+      })));
+    }
   } catch { /* memory is an enhancement; never fail the answer for it */ }
 }
 
@@ -581,7 +650,11 @@ export async function handle(req: Request): Promise<Response> {
       // Additive. Older clients ignore it; the panel can render a research trace.
       research: research
         ? {
-          intent: research.plan.intent, depth: research.plan.depth,
+          intent: research.plan.intent, mode: research.plan.mode, depth: research.plan.depth,
+          packet_version: research.snapshot?.version ?? null,
+          changed: research.changed?.changed ?? null,
+          findings_stored: research.findings.length,
+          queue: research.queue.slice(0, 6),
           retrievals: research.calls, ms: research.ms,
           sources: Array.from(new Set(research.evidence.map((e) => e.source))),
           evidence_count: research.evidence.filter((e) => e.status !== "UNAVAILABLE").length,
@@ -592,7 +665,7 @@ export async function handle(req: Request): Promise<Response> {
           coverage: research.coverage.map((c) => ({ field: c.field, have: c.have_n, total: c.total_n })),
           data_path: research.data_path,
         }
-        : { intent: plan.intent, depth: plan.depth, retrievals: 0, note: "retrieval unavailable — answered from the attached packet only" },
+        : { intent: plan.intent, mode: plan.mode, depth: plan.depth, retrievals: 0, note: "retrieval unavailable — answered from the attached packet only" },
     });
   } catch (e) {
     return json({ error: String((e as Error)?.message ?? e) }, 502);

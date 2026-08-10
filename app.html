@@ -12660,11 +12660,13 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
   var ACTIONS_LOADED=[
     ['Research this','research','hot'],['Analyze','analyze',''],['Why?','why',''],['At what price?','price',''],['Market read','market',''],
     ['Challenge','challenge',''],['What changed?','whatchanged',''],['Research packet','trace',''],
+    ['Deep research','deepresearch',''],['Historical','historical',''],['Postmortem','postmortem',''],
     ['Check my bet','checkbet',''],['Compare…','compare','']
   ];
   var ACTIONS_EMPTY=[
     ['Daily scan','dailyscan','hot'],['Scan slate','scanslate',''],['Best bets today','bestbets',''],
     ['Worst starters','worstpitchers',''],['Best matchups','bestmatchups',''],['Research first','researchfirst',''],
+    ['Scout the board','scout',''],['Market vs model','marketvsmodel',''],
     ['Compare edges','compare',''],['How this works','help','']
   ];
   function renderActions(){
@@ -14328,6 +14330,11 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
       if(mode==='worstpitchers')return window.EDAI.board('Who are today’s worst starting pitchers, and which of them are actually exploitable rather than merely bad?');
       if(mode==='bestmatchups')return window.EDAI.board('What are the best MLB matchups on today’s card, and which offense has the strongest matchup?');
       if(mode==='researchfirst')return window.EDAI.board('Which games should I research first, and why those?');
+      if(mode==='scout')return window.EDAI.board('Scout the board: what deserves research time right now, and why?');
+      if(mode==='marketvsmodel')return window.EDAI.board('Where is the market disagreeing with EdgeDesk, and what does Pinnacle disagree with?');
+      if(mode==='deepresearch'){ push('u','Research this matchup in full.'); return runNarr('research',evidence(LOADED),'Research this matchup in full.'); }
+      if(mode==='historical'){ push('u','Have we seen this setup before?'); return runNarr('chat',evidence(LOADED),'Have we seen this setup before? What happened the last time this type of signal appeared?'); }
+      if(mode==='postmortem'){ push('u','Postmortem this decision.'); return runNarr('chat',evidence(LOADED),'Postmortem: why did EdgeDesk get this right or wrong? Use the closing line and CLV.'); }
       if(!LOADED){ push('a','<p>Open a signal first (tap <b>Analyze</b> on any edge card), or ask me about the board.</p>'); return; }
       var x=evidence(LOADED);
       if(mode==='analyze'){ push('u','Analyze '+x.sel); push('a',snapshotHTML(x)); runNarr('analyze',x,'Full analysis.'); return; }

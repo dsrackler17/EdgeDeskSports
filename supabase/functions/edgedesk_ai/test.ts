@@ -17,6 +17,7 @@
 import {
   Dal, classify, deriveState, attackThesis, findConflicts, completeness, coverage,
   freshnessOf, ev, resolveTeams, personKey, etDay, clearCache,
+  buildSnapshot, diffSnapshots, extractFindings, scout, MODE_OF_INTENT,
 } from "./_lib.ts";
 
 /* ------------------------------------------------------------ harness */
@@ -399,6 +400,112 @@ section("Conversation state");
 }
 
 /* ===================================================================== */
+
+/* ===================================================================== */
+/* research packet versioning (§14, §21)                                  */
+/* ===================================================================== */
+
+section("Research packet versioning");
+{
+  clearCache();
+  const d = dal(FULL);
+  const card = await d.getMlbCard();
+  const pf = await d.getPitcherFeatures();
+  const all = [...card.ev, ...pf.ev];
+
+  const v1 = buildSnapshot("ev1", all, SIGNAL_LIVE, 1);
+  ok("P1 snapshot captures market + matchup scalars",
+    v1.facts.edge === 0.041 && v1.facts.away_starter != null, v1.facts);
+
+  eq("P2 first look reports no earlier packet",
+    diffSnapshots(null, v1).note.includes("version 1"), true);
+
+  // price improves, starter gets scratched, wind picks up
+  const later = { ...SIGNAL_LIVE, best_dec: 1.95, edge: 0.061 };
+  const v2 = buildSnapshot("ev1", all.filter((e) => !(e.field === "probable_starter" && String(e.entity).includes("Rod"))), later, 2);
+  const diff = diffSnapshots(v1, v2);
+  ok("P3 price movement detected with direction",
+    diff.changed.some((c) => c.field === "current_price" && c.direction === "up"), diff.changed);
+  ok("P4 edge movement detected", diff.changed.some((c) => c.field === "edge"));
+  ok("P5 a lost starter is reported as lost, not silently dropped",
+    diff.changed.some((c) => c.field === "away_starter" && c.direction === "lost"), diff.changed);
+  ok("P6 unchanged fields are listed, not invented", Array.isArray(diff.unchanged));
+
+  const same = diffSnapshots(v1, buildSnapshot("ev1", all, SIGNAL_LIVE, 2));
+  eq("P7 nothing changed says so plainly", same.changed.length, 0);
+}
+
+/* ===================================================================== */
+/* structured findings — no knowledge contamination (§3, §15)             */
+/* ===================================================================== */
+
+section("Findings extraction");
+{
+  clearCache();
+  const d = dal(FULL);
+  const pf = await d.getPitcherFeatures();
+  const card = await d.getMlbCard();
+  const f = extractFindings([...pf.ev, ...card.ev]);
+
+  ok("K1 findings are produced from evidence", f.length > 0);
+  ok("K2 every finding names its source table", f.every((x) => !!x.source));
+  ok("K3 every finding carries the record it came from", f.every((x) => x.fact_value != null));
+  ok("K4 every finding expires", f.every((x) => !!x.valid_until));
+  const q = f.find((x) => x.fact_type === "pitcher_quality");
+  ok("K5 the claim quotes the actual number, not an adjective",
+    !!q && /xERA 5\.41/.test(q.claim) && !/terrible|bad|elite/i.test(q.claim), q?.claim);
+  const ps = f.find((x) => x.fact_type === "probable_starter");
+  ok("K6 probable starters are stored as probable, never verified",
+    !!ps && ps.verification_status === "PROBABLE" && /not confirmed/.test(ps.claim), ps?.claim);
+  ok("K7 weather expires faster than park factors", (() => {
+    const w = f.find((x) => x.fact_type === "weather"), p = f.find((x) => x.fact_type === "park");
+    if (!w || !p) return true;
+    return Date.parse(w.valid_until!) < Date.parse(p.valid_until!);
+  })());
+  eq("K8 UNAVAILABLE evidence never becomes a finding",
+    extractFindings([ev({ source: "pitcher_features", field: "pitcher_quality", entity: "X", value: null, status: "UNAVAILABLE" })]).length, 0);
+}
+
+/* ===================================================================== */
+/* proactive research scout + research-vs-betting separation (§10, §11)   */
+/* ===================================================================== */
+
+section("Research queue");
+{
+  const q = scout([SIGNAL_LIVE, SIGNAL_PRICE_KILLED, SIGNAL_STALE, SIGNAL_NO_SHARP]);
+  ok("Q1 the scout flags something", q.length > 0);
+  ok("Q2 a stale playable number is flagged",
+    q.some((i) => i.flags.some((f) => /stale capture/.test(f))), q.map((i) => i.flags));
+  ok("Q3 a thin, unconfirmed edge is flagged",
+    q.some((i) => i.flags.some((f) => /Pinnacle print|weak confirmation/.test(f))));
+  ok("Q4 a decayed edge is flagged",
+    q.some((i) => i.flags.some((f) => /decayed/.test(f))));
+  ok("Q5 research interest is kept separate from betting action",
+    q.every((i) => !!i.research_interest && !!i.betting_action));
+  ok("Q6 a sub-floor game is never presented as a bet",
+    q.filter((i) => i.event_id === "ev2").every((i) => /not a bet/.test(i.betting_action)),
+    q.filter((i) => i.event_id === "ev2").map((i) => i.betting_action));
+  eq("Q7 a clean board produces an empty queue, not invented flags",
+    scout([{ ...SIGNAL_LIVE, edge: 0.03, first_edge: 0.03, n_books: 8, has_sharp: true, pin_dec: 1.84 }]).length, 0);
+}
+
+/* ===================================================================== */
+/* named research modes (§8)                                              */
+/* ===================================================================== */
+
+section("Research modes");
+eq("M1 attack question -> ATTACK", classify("Attack this bet.").mode, "ATTACK");
+eq("M2 comparison -> COMPARE", classify("Compare these three games.").mode, "COMPARE");
+eq("M3 history -> HISTORICAL", classify("Have we seen this setup before?").mode, "HISTORICAL");
+eq("M4 pricing -> MARKET", classify("Is this line still playable?").mode, "MARKET");
+eq("M5 pitcher matchup -> MATCHUP", classify("Which pitcher is most exploitable?").mode, "MATCHUP");
+eq("M6 slate sweep -> SLATE", classify("Find me the best MLB moneyline edges.").mode, "SLATE");
+eq("M7 triage -> SCOUT", classify("What should I research next?").mode, "SCOUT");
+eq("M8 postmortem -> POSTMORTEM", classify("Why did EdgeDesk get that one wrong?").mode, "POSTMORTEM");
+ok("M9 postmortem retrieves the closing line and CLV, not today's card",
+  classify("Why did EdgeDesk get that one wrong?").steps.includes("closing_line"));
+eq("M10 a plain why stays FAST", classify("Why do you like this?").mode, "FAST");
+ok("M11 every intent maps to a mode", Object.values(MODE_OF_INTENT).every((m) => typeof m === "string"));
 
 console.log(`\n${failed === 0 ? "ALL GREEN" : "FAILURES"} — ${passed} passed, ${failed} failed`);
 if (failures.length) console.log("failed:", failures.join(" | "));

@@ -59,8 +59,26 @@ export interface Conflict {
 
 export type Depth = "QUICK" | "STANDARD" | "DEEP" | "SLATE" | "FULL";
 
+/* The named research modes the panel exposes. Depth is the retrieval budget;
+   Mode is what kind of investigation it is. They are not the same axis: an
+   ATTACK can be cheap and a SLATE sweep can be shallow. */
+export type Mode =
+  | "FAST" | "DEEP" | "ATTACK" | "COMPARE" | "HISTORICAL"
+  | "MARKET" | "MATCHUP" | "SLATE" | "SCOUT" | "POSTMORTEM";
+
+export const MODE_OF_INTENT: Record<string, Mode> = {
+  worst_pitchers: "MATCHUP", exploitable_pitchers: "MATCHUP", best_pitchers: "MATCHUP",
+  best_matchups: "MATCHUP", offense: "MATCHUP", research_matchup: "DEEP",
+  best_bets: "SLATE", slate_overview: "SLATE", bullpen: "SLATE", weather: "SLATE",
+  traps: "SCOUT", research_priority: "SCOUT", signal_quality: "SCOUT",
+  market_disagreement: "MARKET", what_changed: "MARKET", price: "MARKET",
+  attack: "ATTACK", compare: "COMPARE", historical: "HISTORICAL",
+  full_research: "DEEP", why: "FAST", unknown: "FAST",
+};
+
 export interface Plan {
   intent: string;
+  mode: Mode;
   depth: Depth;
   sport: string | null;
   steps: string[];           // named retrieval steps, in order
@@ -365,10 +383,17 @@ export function classify(question: string, mode?: string): Plan {
   };
 
   const P = (intent: string, depth: Depth, steps: string[], why: string): Plan => ({
-    intent, depth, sport: null, steps, entities,
+    intent, mode: MODE_OF_INTENT[intent] ?? "FAST", depth, sport: null, steps, entities,
     budget: depth === "QUICK" ? 4 : depth === "STANDARD" ? 8 : depth === "DEEP" ? 14 : depth === "SLATE" ? 12 : 18,
     why,
   });
+
+  // A postmortem is about a decision EdgeDesk already made, not today's board.
+  if (has("postmortem", "why did we", "why did edgedesk", "what went wrong", "how did we do", "review that bet"))
+    return { ...P("postmortem", "DEEP", ["focus_signal", "closing_line", "clv_history", "memory", "market"], "Postmortem on a graded decision."), mode: "POSTMORTEM" };
+
+  if (has("what should i research", "research next", "research queue", "deserves attention", "scout"))
+    return { ...P("research_priority", "SLATE", ["slate", "market", "sharp_reference", "matchup"], "Scout the board for what deserves research time."), mode: "SCOUT" };
 
   // Explicit modes from the client's buttons win over text parsing.
   if (mode === "price") return P("price", "QUICK", ["focus_signal", "market"], "Price question — the owned price-sensitivity fields answer it.");
@@ -411,7 +436,8 @@ export function classify(question: string, mode?: string): Plan {
   if (has("research ", "dig into", "look into", "tell me about", "what do you know about", "what does edgedesk know"))
     return P("research_matchup", "DEEP", ["slate", "focus_signal", "market", "sharp_reference", "matchup", "pitchers", "pitcher_features", "opponent_offense", "bullpen", "park", "weather", "workload", "model", "memory"], "Open-ended research on a named entity.");
 
-  if (has("last time", "historically", "history", "track record", "how have", "sample", "previously"))
+  if (has("last time", "historically", "history", "track record", "how have", "sample", "previously",
+          "have we seen", "seen this", "seen a setup", "setup like", "similar to", "same setup", "before?"))
     return P("historical", "DEEP", ["clv_history", "historical_results", "memory", "focus_signal"], "Historical question — answer from graded EdgeDesk outcomes, with the sample size.");
 
   if (has("bullpen", "reliever", "closer", "taxed"))
@@ -891,6 +917,20 @@ export class Dal {
 
   /* ------------------------------------- research memory (new tables) ----- */
 
+  /** The most recent stored research packet for a game, for the "what changed" diff. */
+  async getLastSnapshot(eventId: string): Promise<Snapshot | null> {
+    const { rows, error } = await this.read(
+      `research_snapshots?select=event_id,version,taken_at,facts&event_id=eq.${encodeURIComponent(eventId)}&order=version.desc&limit=1`, "memory");
+    if (error || !rows.length) return null;
+    const r = rows[0];
+    return {
+      event_id: r.event_id,
+      version: num(r.version) ?? 1,
+      taken_at: Date.parse(r.taken_at) || Date.now(),
+      facts: r.facts ?? {},
+    };
+  }
+
   async getResearchMemory(entities: string[], sport?: string | null): Promise<{
     facts: any[]; outcomes: any[]; patterns: any[]; prior: any[]; ev: Evidence[];
   }> {
@@ -1046,6 +1086,232 @@ export function attackThesis(sig: any, floor = 0.02, staleMin = 45): { status: s
   if (hard) return { status: "WEAKENED", note: "Positive, but undercut by thin confirmation, staleness or heavy decay.", falsifiers };
   if (falsifiers.length >= 3) return { status: "WEAKENED", note: "Several unresolved problems — a lean, not a strong bet.", falsifiers };
   return { status: "SURVIVES", note: "The edge holds up against price, confirmation and freshness on owned data.", falsifiers };
+}
+
+/* ------------------------------------- research packet versioning */
+
+/* A snapshot is the research-relevant state of ONE game, reduced to comparable
+   scalars. Storing these versioned is what lets EdgeDesk answer "what changed
+   since we last looked" with facts instead of vibes. */
+export interface Snapshot {
+  event_id: string | null;
+  version: number;
+  taken_at: number;
+  facts: Record<string, unknown>;
+}
+
+const SNAP_FIELDS = [
+  "current_price", "fair_price", "edge", "n_books", "has_sharp", "stale_min",
+  "away_starter", "home_starter", "temp_f", "wind_mph", "park_factor", "status",
+] as const;
+
+export function buildSnapshot(eventId: string | null, evidence: Evidence[], focus: any, version = 1): Snapshot {
+  const facts: Record<string, unknown> = {};
+
+  /* A snapshot describes ONE game. Slate-wide research carries evidence for the
+     whole card, so scope it here — otherwise another game's starter or weather
+     lands in this game's packet and the next diff reports a phantom change. */
+  const matchup = focus?.away_team && focus?.home_team
+    ? normName(`${focus.away_team} @ ${focus.home_team}`) : null;
+  if (matchup) {
+    evidence = evidence.filter((e) => {
+      const ent = normName(e.entity);
+      if (ent === matchup) return true;
+      const g = (e.value as any)?.game;
+      return g ? normName(g) === matchup : false;
+    });
+  }
+
+  if (focus) {
+    facts.current_price = focus.best_dec ?? null;
+    facts.fair_price = focus.sharp_fair ?? focus.consensus_fair ?? null;
+    facts.edge = focus.edge ?? null;
+    facts.n_books = focus.n_books ?? null;
+    facts.has_sharp = focus.has_sharp ?? null;
+    facts.stale_min = focus.last_seen_at
+      ? Math.round((Date.now() - Date.parse(focus.last_seen_at)) / 60000) : null;
+  }
+  for (const e of evidence) {
+    if (e.status === "UNAVAILABLE") continue;
+    const v = e.value as any;
+    if (e.field === "probable_starter" && v?.side) facts[`${v.side}_starter`] = v.name ?? null;
+    if (e.field === "weather") { if (v?.temp_f != null) facts.temp_f = v.temp_f; if (v?.wind_mph != null) facts.wind_mph = v.wind_mph; }
+    if (e.field === "park" && v?.park_factor != null) facts.park_factor = v.park_factor;
+    if (e.field === "game" && v?.status) facts.status = v.status;
+  }
+  return { event_id: eventId, version, taken_at: Date.now(), facts };
+}
+
+/* What actually moved between two snapshots. Direction included, because
+   "the price improved" and "the price ran away" are different answers. */
+export function diffSnapshots(prev: Snapshot | null, cur: Snapshot): {
+  changed: { field: string; from: unknown; to: unknown; direction: string | null }[];
+  unchanged: string[];
+  note: string;
+} {
+  if (!prev) {
+    return { changed: [], unchanged: [], note: "No earlier research packet on file for this game — this is version 1." };
+  }
+  const changed: { field: string; from: unknown; to: unknown; direction: string | null }[] = [];
+  const unchanged: string[] = [];
+  for (const f of SNAP_FIELDS) {
+    const a = (prev.facts as any)[f], b = (cur.facts as any)[f];
+    if (a === undefined && b === undefined) continue;
+    const na = num(a), nb = num(b);
+    const same = (na != null && nb != null) ? Math.abs(na - nb) < 1e-9 : String(a) === String(b);
+    if (same) { unchanged.push(f); continue; }
+    let direction: string | null = null;
+    if (na != null && nb != null) direction = nb > na ? "up" : "down";
+    else if (a == null && b != null) direction = "resolved";
+    else if (a != null && b == null) direction = "lost";
+    changed.push({ field: f, from: a ?? null, to: b ?? null, direction });
+  }
+  const mins = Math.round((cur.taken_at - prev.taken_at) / 60000);
+  return {
+    changed, unchanged,
+    note: changed.length
+      ? `Compared against research packet v${prev.version}, taken ${mins}m ago.`
+      : `Nothing material has changed since research packet v${prev.version}, ${mins}m ago.`,
+  };
+}
+
+/* -------------------------------------- structured finding extraction */
+
+/* Findings are derived from EVIDENCE, never from model prose. A finding is a
+   claim bound to the record that produced it, so nothing an LLM said can ever
+   become stored sports knowledge (spec: no knowledge contamination). */
+export interface Finding {
+  entity: string | null;
+  fact_type: string;
+  claim: string;
+  fact_value: unknown;
+  source: string;
+  source_timestamp: string | null;
+  verification_status: EvStatus;
+  confidence: "HIGH" | "MEDIUM" | "LOW";
+  valid_until: string | null;
+}
+
+const FACT_TTL_HOURS: Record<string, number> = {
+  pitcher_quality: 72, opponent_offense: 72, workload: 36, park: 720,
+  probable_starter: 12, weather: 3, bullpen_flag: 12, team_form: 48,
+};
+
+export function extractFindings(evidence: Evidence[]): Finding[] {
+  const out: Finding[] = [];
+  for (const e of evidence) {
+    if (e.status === "UNAVAILABLE" || e.value == null) continue;
+    const ttl = FACT_TTL_HOURS[e.field];
+    if (ttl == null) continue;                       // only durable fact types are stored
+    const v = e.value as any;
+    let claim: string | null = null;
+
+    switch (e.field) {
+      case "pitcher_quality":
+        if (v.xera == null && v.k_pct == null) break;
+        claim = `${e.entity} recorded ${[
+          v.xera != null ? `xERA ${v.xera}` : null,
+          v.k_pct != null ? `K% ${v.k_pct}` : null,
+          v.bb_pct != null ? `BB% ${v.bb_pct}` : null,
+          v.barrel_pct != null ? `barrel% ${v.barrel_pct}` : null,
+          v.hardhit_pct != null ? `hard-hit% ${v.hardhit_pct}` : null,
+        ].filter(Boolean).join(", ")} in EdgeDesk's pitcher_features dataset.`;
+        break;
+      case "opponent_offense":
+        claim = `The offense ${e.entity} faces posted ${[
+          v.obp != null ? `OBP ${v.obp}` : null,
+          v.iso != null ? `ISO ${v.iso}` : null,
+          v.k_pct != null ? `K% ${v.k_pct}` : null,
+          v.runs_per_game != null ? `${v.runs_per_game} R/G` : null,
+        ].filter(Boolean).join(", ")} in EdgeDesk's offense_features dataset.`;
+        break;
+      case "workload":
+        claim = `${e.entity} last started ${v.last_start}${v.pitches != null ? ` on ${v.pitches} pitches` : ""}.`;
+        break;
+      case "probable_starter":
+        claim = `${v.name} is the probable starter for ${v.team} (${v.throws ?? "hand unknown"}), not confirmed.`;
+        break;
+      case "park":
+        if (v.park_factor == null) break;
+        claim = `${v.venue ?? e.entity} carries park factor ${v.park_factor}${v.hr_factor != null ? `, HR factor ${v.hr_factor}` : ""}.`;
+        break;
+      case "bullpen_flag":
+        claim = `${v.pitcher} is flagged ${v.flag}${v.pitches_yesterday != null ? ` after ${v.pitches_yesterday} pitches yesterday` : ""}.`;
+        break;
+      case "team_form":
+        claim = `Records on file: away ${v.away?.record ?? "?"}, home ${v.home?.record ?? "?"}.`;
+        break;
+      case "weather":
+        if (v.temp_f == null && v.wind_mph == null) break;
+        claim = `Forecast on file: ${[v.temp_f != null ? `${v.temp_f}°F` : null, v.wind_mph != null ? `wind ${v.wind_mph} mph` : null].filter(Boolean).join(", ")}.`;
+        break;
+    }
+    if (!claim) continue;
+
+    out.push({
+      entity: e.entity, fact_type: e.field, claim, fact_value: e.value,
+      source: e.source, source_timestamp: e.source_timestamp ?? null,
+      verification_status: e.status,
+      confidence: e.status === "VERIFIED" ? "HIGH" : e.status === "PROBABLE" || e.status === "PARTIAL" ? "MEDIUM" : "LOW",
+      valid_until: new Date(Date.now() + ttl * 3600_000).toISOString(),
+    });
+  }
+  return out;
+}
+
+/* ------------------------------------------- proactive research scout */
+
+/* Runs over the already-scored board and flags what deserves research time.
+   Every reason is a comparison of OWNED fields — it produces no new number and
+   never turns a research flag into a betting recommendation. */
+export interface ScoutItem {
+  event_id: string;
+  game: string;
+  flags: string[];
+  why: string;
+  research_interest: "HIGH" | "MEDIUM" | "LOW";
+  betting_action: string;      // kept explicitly separate from research interest
+}
+
+export function scout(slateRows: any[], floor = 0.02, staleMin = 45): ScoutItem[] {
+  const out: ScoutItem[] = [];
+  for (const s of slateRows) {
+    const edge = num(s.edge), first = num(s.first_edge);
+    const nb = num(s.n_books) ?? 0;
+    const sharp = s.has_sharp === true || s.has_sharp === "true";
+    const seen = s.last_seen_at ? Date.parse(s.last_seen_at) : NaN;
+    const staleM = Number.isFinite(seen) ? (Date.now() - seen) / 60000 : null;
+    const remaining = (first && first > 0 && edge != null) ? edge / first : null;
+    const flags: string[] = [];
+
+    if (edge != null && edge >= 0.04 && (!sharp || nb < 5)) flags.push("large edge, weak confirmation");
+    if (edge != null && edge > 0 && edge < floor && sharp && nb >= 6) flags.push("strong confirmation, sub-floor edge");
+    if (edge != null && edge >= floor && staleM != null && staleM >= staleMin) flags.push("playable number on a stale capture");
+    if (remaining != null && remaining < 0.5 && first! > 0) flags.push("over half the detection edge has decayed");
+    if (edge != null && edge > 0.06) flags.push("edge large enough to suspect a bad or stale price");
+    if (!sharp && edge != null && edge >= floor) flags.push("no Pinnacle print on this side");
+    if (s.pin_dec != null && s.best_dec != null) {
+      const gap = num(s.best_dec)! / num(s.pin_dec)!;
+      if (gap > 1.06) flags.push("market price diverges sharply from the Pinnacle reference");
+    }
+    if (edge == null) flags.push("no fair price on file — cannot be evaluated yet");
+    if (!flags.length) continue;
+
+    const interest = flags.length >= 3 ? "HIGH" : flags.length === 2 ? "MEDIUM" : "LOW";
+    out.push({
+      event_id: s.event_id,
+      game: `${s.away_team ?? ""} @ ${s.home_team ?? ""}`,
+      flags,
+      why: flags.join("; ") + ".",
+      research_interest: interest,
+      betting_action: edge == null
+        ? "Not evaluable — WAIT, not a bet."
+        : edge < floor
+          ? "Below the playable floor — research interest only, not a bet."
+          : "EdgeDesk's deterministic verdict governs whether this is a bet; research interest is separate.",
+    });
+  }
+  return out.sort((a, b) => b.flags.length - a.flags.length).slice(0, 12);
 }
 
 /* ------------------------------------------- conversation state */

@@ -77,6 +77,51 @@ create table if not exists public.research_facts (
 create index if not exists research_facts_entity_idx on public.research_facts (entity, fact_type, source_timestamp desc);
 create index if not exists research_facts_sport_idx  on public.research_facts (sport, source_timestamp desc);
 
+-- --------------------------------------------------------------- findings
+-- Structured claims extracted from EVIDENCE, never from model prose. The
+-- source + fact_value columns are NOT NULL precisely so an unsourced assertion
+-- cannot be stored: knowledge contamination is prevented by the schema, not by
+-- asking the model nicely.
+create table if not exists public.research_findings (
+  id                  uuid primary key default gen_random_uuid(),
+  user_id             uuid not null default auth.uid() references auth.users(id) on delete cascade,
+  created_at          timestamptz not null default now(),
+
+  entity              text,
+  sport               text,
+  fact_type           text not null,
+  claim               text not null,             -- human-readable, but derived from fact_value
+  fact_value          jsonb not null,            -- the actual record the claim came from
+  source              text not null,             -- the owned table
+  source_timestamp    timestamptz,
+  verification_status text not null default 'VERIFIED'
+    check (verification_status in ('VERIFIED','PROBABLE','PARTIAL','STALE','UNPROVEN','HISTORICAL','CONFLICT')),
+  confidence          text check (confidence in ('HIGH','MEDIUM','LOW')),
+  valid_until         timestamptz,
+  times_verified      integer not null default 1,
+  times_contradicted  integer not null default 0,
+  last_verified_at    timestamptz not null default now()
+);
+
+create index if not exists research_findings_entity_idx on public.research_findings (entity, fact_type, created_at desc);
+create index if not exists research_findings_valid_idx  on public.research_findings (valid_until);
+
+-- -------------------------------------------------------------- snapshots
+-- Versioned research packets. One row per (event, version); the diff between
+-- consecutive versions is what answers "what changed since we last looked".
+create table if not exists public.research_snapshots (
+  id         uuid primary key default gen_random_uuid(),
+  user_id    uuid not null default auth.uid() references auth.users(id) on delete cascade,
+  event_id   text not null,
+  sport      text,
+  version    integer not null,
+  taken_at   timestamptz not null default now(),
+  facts      jsonb not null,
+  unique (user_id, event_id, version)
+);
+
+create index if not exists research_snapshots_event_idx on public.research_snapshots (event_id, version desc);
+
 -- --------------------------------------------------------------- outcomes
 -- What happened to a thesis. Closing price and CLV come from the EXISTING
 -- settle/close pipeline via the trigger below — they are never recomputed here.
@@ -133,7 +178,9 @@ create table if not exists public.research_patterns (
 create index if not exists research_patterns_sport_idx on public.research_patterns (sport, sample_size desc);
 
 -- ------------------------------------------------------------------- RLS
-alter table public.research_sessions enable row level security;
+alter table public.research_sessions  enable row level security;
+alter table public.research_findings  enable row level security;
+alter table public.research_snapshots enable row level security;
 alter table public.research_facts    enable row level security;
 alter table public.research_outcomes enable row level security;
 alter table public.research_patterns enable row level security;
@@ -144,6 +191,14 @@ create policy rs_own on public.research_sessions
 
 drop policy if exists rf_own on public.research_facts;
 create policy rf_own on public.research_facts
+  for all using (user_id = auth.uid()) with check (user_id = auth.uid());
+
+drop policy if exists rfi_own on public.research_findings;
+create policy rfi_own on public.research_findings
+  for all using (user_id = auth.uid()) with check (user_id = auth.uid());
+
+drop policy if exists rsn_own on public.research_snapshots;
+create policy rsn_own on public.research_snapshots
   for all using (user_id = auth.uid()) with check (user_id = auth.uid());
 
 drop policy if exists ro_own on public.research_outcomes;
@@ -159,6 +214,8 @@ create policy rp_read on public.research_patterns
 grant select, insert, update, delete on public.research_sessions to authenticated;
 grant select, insert, update, delete on public.research_facts    to authenticated;
 grant select, insert, update, delete on public.research_outcomes to authenticated;
+grant select, insert, update, delete on public.research_findings  to authenticated;
+grant select, insert, update, delete on public.research_snapshots to authenticated;
 grant select                          on public.research_patterns to authenticated;
 
 -- ================================================================ feedback
@@ -276,4 +333,6 @@ grant execute on function public.research_rebuild_patterns(integer) to authentic
 comment on table public.research_sessions is 'What EdgeDesk was asked, what it retrieved, and what it concluded.';
 comment on table public.research_facts    is 'Durable verified facts with an explicit validity window. Expired facts are historical context, never current facts.';
 comment on table public.research_outcomes is 'What happened to a thesis. Closing price and CLV are copied from the existing settle pipeline, never recomputed.';
+comment on table public.research_findings  is 'Claims extracted from evidence and bound to the record that produced them. source and fact_value are NOT NULL so unsourced model prose cannot be stored as knowledge.';
+comment on table public.research_snapshots is 'Versioned research packets. Diffing consecutive versions is how "what changed since we last looked" is answered factually.';
 comment on table public.research_patterns is 'Patterns discovered over a sample. sample_size >= 30 is enforced so one game can never become a pattern.';
