@@ -70,6 +70,36 @@ const CLOSE_OVR_HI = Number(Deno.env.get("CLOSE_OVR_HI") ?? "1.25");         // 
 const CLOSE_REQUIRE_SHARP = (Deno.env.get("CLOSE_REQUIRE_SHARP") ?? "false").toLowerCase() === "true";
 
 /**
+ * WHICH PRICE IS CLV MEASURED FROM?
+ *
+ * This is the -2.09% constant offset the learning loop found across every edge
+ * band, and it is a measurement artifact rather than a market result.
+ *
+ * capture prices the FULL board every pass, so a selection is inserted the
+ * first time it appears anywhere — usually before it is a signal at all, with
+ * no edge. `first_best_dec` is written on that pass and frozen. A row becomes a
+ * signal LATER, when a soft book's price drifts out and an edge appears, so the
+ * flagged price is typically BETTER than the first-seen price.
+ *
+ * Computing CLV from the first-seen price therefore charges the scanner for a
+ * price it never offered, and understates CLV on every row. `flagged_best_dec`
+ * is the price EdgeDesk actually put in front of the user; that is the entry.
+ *
+ * The fallback chain is deliberate and the basis is reported, because a row
+ * graded on a different basis is not comparable and that has to be visible
+ * rather than averaged in silently.
+ */
+export function entryPrice(p: {
+  flagged_best_dec?: number | null; first_best_dec?: number | null; best_dec?: number | null;
+}): { dec: number | null; basis: "flagged" | "first_seen" | "current" | "none" } {
+  const ok = (v: unknown) => typeof v === "number" && Number.isFinite(v) && v > 1;
+  if (ok(p.flagged_best_dec)) return { dec: p.flagged_best_dec!, basis: "flagged" };
+  if (ok(p.first_best_dec)) return { dec: p.first_best_dec!, basis: "first_seen" };
+  if (ok(p.best_dec)) return { dec: p.best_dec!, basis: "current" };
+  return { dec: null, basis: "none" };
+}
+
+/**
  * The whole close decision, as a pure function so it can be tested without a
  * database or a provider. Returns the CLV to store (or null) and the reason it
  * was excluded (or null). It NEVER returns a number it cannot justify.
@@ -126,13 +156,28 @@ Deno.serve(async (req) => {
   /* FIX 1: the eligible window now reaches BACKWARD as well as forward. The old
      `gte(commence_time, now)` made a signal eligible only in the 35 minutes
      before its own first pitch, so a single missed tick lost it permanently. */
-  const { data: pending } = await db.from("signals")
-    .select("sig_key,sport_key,event_id,best_dec,sharp_fair,commence_time")
+  /* flagged_best_dec / first_best_dec are requested so CLV can be measured
+     from the price actually offered. If a deployment predates those columns the
+     select falls back, and the basis counts in the summary make it obvious. */
+  const COLS_FULL = "sig_key,sport_key,event_id,best_dec,first_best_dec,flagged_best_dec,sharp_fair,commence_time";
+  const COLS_MIN = "sig_key,sport_key,event_id,best_dec,sharp_fair,commence_time";
+  let { data: pending, error: pendErr } = await db.from("signals")
+    .select(COLS_FULL)
     .is("closed_at", null)
     .gte("commence_time", graceFloor)
     .lte("commence_time", horizon)
     .order("commence_time", { ascending: true })
     .limit(5000);
+
+  if (pendErr) {
+    const r = await db.from("signals").select(COLS_MIN)
+      .is("closed_at", null)
+      .gte("commence_time", graceFloor)
+      .lte("commence_time", horizon)
+      .order("commence_time", { ascending: true })
+      .limit(5000);
+    pending = r.data;
+  }
 
   /* Stragglers: started longer ago than the grace window and still unclosed.
      No honest close exists for these, but leaving closed_at null hides them
@@ -181,13 +226,16 @@ Deno.serve(async (req) => {
 
   let closed = 0, excluded = 0, deferred = 0, updateErrors = 0;
   const byReason: Record<string, number> = {};
+  const basis: Record<string, number> = {};
 
   for (const p of pending) {
     // Provider failed for this sport: leave the row open for the next run.
     if (!fetchOk.has(p.sport_key)) { deferred++; continue; }
 
     const o = fresh.get(p.sig_key) ?? null;
-    const { clv, reason } = decideClose(p.best_dec, o);
+    const entry = entryPrice(p);
+    basis[entry.basis] = (basis[entry.basis] ?? 0) + 1;
+    const { clv, reason } = decideClose(entry.dec, o);
 
     if (reason) { excluded++; byReason[reason] = (byReason[reason] ?? 0) + 1; }
 
@@ -210,6 +258,9 @@ Deno.serve(async (req) => {
     ok: true, closed, excluded, priced: closed - excluded,
     deferred_provider_down: deferred, swept_missed_window: sweptStale,
     excluded_by_reason: byReason, updateErrors, providers,
+    /* Which price each CLV was measured from. "first_seen" rows are
+       open-to-close and understate CLV; "flagged" is the real entry. */
+    clv_basis: basis,
     window: { grace_min: GRACE_MIN, window_min: WINDOW_MIN, stale_min: STALE_MIN },
   };
   console.log("CLOSE", JSON.stringify(summary));

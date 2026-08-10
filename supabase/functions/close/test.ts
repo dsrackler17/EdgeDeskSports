@@ -17,7 +17,7 @@ function near(n: string, got: number | null, want: number, tol: number) {
 function sec(s: string) { console.log(`\n${s}`); }
 
 (globalThis as any).Deno = { env: { get: () => undefined }, serve: () => {} };
-const { decideClose } = await import("./index.ts");
+const { decideClose, entryPrice } = await import("./index.ts");
 
 const OPTS = { minDec: 1.02, maxDec: 30, ovrLo: 0.98, ovrHi: 1.25, requireSharp: false };
 // a clean, coherent Pinnacle close
@@ -70,6 +70,42 @@ for (const [name, o, entry] of [
 ] as any[]) {
   const r = decideClose(entry, o, OPTS);
   ok(`C18 ${name}: clv is null and a reason is given`, r.clv === null && !!r.reason, r);
+}
+
+/* The -2.09% constant offset the learning loop found across every edge band.
+   capture inserts a selection the first time it appears anywhere, usually
+   before it is a signal; the row becomes a signal LATER, when the price drifts
+   out. Measuring CLV from the first-seen price charges the scanner for a price
+   it never offered. */
+sec("CLV is measured from the price EdgeDesk actually offered");
+{
+  eq("P1 the flag price wins when present",
+    entryPrice({ flagged_best_dec: 2.10, first_best_dec: 1.95, best_dec: 2.02 }),
+    { dec: 2.10, basis: "flagged" });
+  eq("P2 first-seen is the fallback, and is labelled as such",
+    entryPrice({ flagged_best_dec: null, first_best_dec: 1.95, best_dec: 2.02 }),
+    { dec: 1.95, basis: "first_seen" });
+  eq("P3 the current price is the last resort",
+    entryPrice({ best_dec: 2.02 }), { dec: 2.02, basis: "current" });
+  eq("P4 no usable price is stated rather than guessed",
+    entryPrice({}), { dec: null, basis: "none" });
+  eq("P5 a decimal at or below 1 is not a price",
+    entryPrice({ flagged_best_dec: 1, first_best_dec: 1.95 }), { dec: 1.95, basis: "first_seen" });
+  eq("P6 a non-numeric price is skipped",
+    entryPrice({ flagged_best_dec: "2.1" as any, first_best_dec: 1.95 }), { dec: 1.95, basis: "first_seen" });
+
+  /* The size of the artifact: the same close, priced from the open versus the
+     flag price, on a row whose price drifted out before it was flagged. */
+  const close = { best_dec: 2.00, sharp_fair: 0.505, pin_dec: 1.98, pin_opp_dec: 2.02 };
+  const fromOpen = decideClose(entryPrice({ first_best_dec: 1.92 }).dec, close);
+  const fromFlag = decideClose(entryPrice({ flagged_best_dec: 2.06, first_best_dec: 1.92 }).dec, close);
+  ok("P7 measuring from the open produces a negative CLV", (fromOpen.clv ?? 0) < 0, fromOpen);
+  ok("P8 measuring from the flag price produces a positive one", (fromFlag.clv ?? 0) > 0, fromFlag);
+  ok("P9 the gap is the size of the reported offset",
+    Math.abs((fromFlag.clv! - fromOpen.clv!) - 0.0707) < 0.002, fromFlag.clv! - fromOpen.clv!);
+
+  eq("P10 a row with no price at all is still excluded, not fabricated",
+    decideClose(entryPrice({}).dec, close).reason, "no_entry_price");
 }
 
 console.log(`\n${failed === 0 ? "ALL GREEN" : "FAILURES"} — ${passed} passed, ${failed} failed`);
