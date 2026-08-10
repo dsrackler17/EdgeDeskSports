@@ -3494,7 +3494,8 @@ $('sliceType').onchange=renderSlice;$('recRefresh').onclick=loadRecord;
    ===================================================================== */
 var REC={rows:[],flt:[],loaded:false,loading:false,proofDone:false,
   pool:{kind:'',label:'',funnel:''},tab:'overview',
-  sort:{k:'_gts',d:-1},page:0,per:25,dirty:{charts:true,analytics:true},open:{},colW:{}};
+  sort:{k:'_gts',d:-1},page:0,per:25,dirty:{charts:true,analytics:true},open:{},colW:{},
+  dow:{sport:'',market:''}};
 var REC_MIN=30; /* below this, everything gets a small-sample tag */
 
 /* ---- tiny format helpers (records only, prefixed to avoid collisions) ---- */
@@ -4155,6 +4156,180 @@ function wewRender(){
   return h+'</div>';
 }
 
+/* ===================================================================== */
+/* ===== Day of Week — does CLV depend on WHEN the game is played? =====
+   Derived live from the graded rows already loaded for this tab. No new
+   table, no new query, nothing stored: recompute from REC.flt on every
+   render so it can never drift from the record above it.
+
+   THE SLATE-DAY PROBLEM, AND WHY IT IS NOT UTC
+   commence_time is an instant, not a day. A 10:10pm PT Wednesday first pitch
+   is 05:10 UTC and 1:10am ET — both of which call it THURSDAY, while every
+   bettor alive calls it Wednesday's slate. Taking the raw UTC or ET weekday
+   therefore pushes a chunk of west-coast night games one day forward, which
+   would quietly corrupt precisely the comparison this table exists to make.
+   So the day is the US-Eastern date of (commence_time - 6h): anything before
+   6am ET belongs to the previous slate. That matches how slates are named.
+
+   SAMPLE DISCIPLINE
+   Beat-close is reported with a Wilson 95% lower bound, and a day is only
+   called a real difference when that bound clears 50% — the same bar the
+   rest of this dashboard uses. Below REC_MIN rows a day is shown but tagged,
+   and never described as a finding. Seven days across a few hundred rows is
+   thin by construction; the table says so rather than implying otherwise.
+   ===================================================================== */
+var DOW_NAMES=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+var DOW_FULL=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+var DOW_ORDER=[1,2,3,4,5,6,0];              /* read Mon -> Sun */
+var DOW_CUTOFF_H=6;                          /* slate day starts 6am ET */
+
+function recSlateDow(iso){
+  if(!iso)return null;
+  var d=new Date(iso); if(isNaN(d.getTime()))return null;
+  var shifted=new Date(d.getTime()-DOW_CUTOFF_H*3600000);
+  try{
+    var wd=new Intl.DateTimeFormat('en-US',{timeZone:'America/New_York',weekday:'short'}).format(shifted);
+    var i=DOW_NAMES.indexOf(wd); return i<0?null:i;
+  }catch(_){ return shifted.getUTCDay(); }
+}
+function recWilsonLo(k,n){
+  if(!n)return null;
+  var z=1.96,p=k/n,z2=z*z;
+  var lo=(p+z2/(2*n)-z*Math.sqrt((p*(1-p)+z2/(4*n))/n))/(1+z2/n);
+  return Math.max(0,Math.min(1,lo));
+}
+/* The Wilson floor ALONE is not enough protection, and it is worth being
+   explicit about why: at 4-for-4 the 95% lower bound is 0.51, which clears a
+   bare >0.5 test. Wilson is anti-conservative for tiny n at extreme
+   proportions, so a four-row Tuesday that happened to beat the close every
+   time would otherwise read as a finding. A day counts as separable only when
+   it clears the sample floor AND the Wilson bound. */
+function recDowSeparable(a){
+  return a.n_clv>=REC_MIN && a.beat_lo!=null && a.beat_lo>0.5;
+}
+function recMedian(a){
+  if(!a.length)return null;
+  var b=a.slice().sort(function(x,y){return x-y;}),m=b.length>>1;
+  return b.length%2?b[m]:(b[m-1]+b[m])/2;
+}
+/* one bucket of rows -> the same shape the rest of the dashboard speaks */
+function recDowAgg(rows){
+  var clvs=[],beat=0,beatN=0,w=0,l=0,units=0,priced=0;
+  rows.forEach(function(r){
+    if(r.clv!=null){clvs.push(+r.clv); beatN++; if(r.beat_close)beat++;}
+    if(r.result==='win')w++;else if(r.result==='loss')l++;
+    if(r._profit!=null){units+=r._profit;priced++;}
+  });
+  var avg=clvs.length?clvs.reduce(function(a,b){return a+b;},0)/clvs.length:null;
+  return {n:rows.length, n_clv:clvs.length,
+    avg_clv:avg, median_clv:recMedian(clvs),
+    beat_rate:beatN?beat/beatN:null, beat_lo:beatN?recWilsonLo(beat,beatN):null,
+    w:w, l:l, units:priced?units:null, roi:priced?units/priced*100:null, priced:priced};
+}
+function recDowRows(){
+  var rows=(REC.flt||[]).slice();
+  var sp=REC.dow.sport, mk=REC.dow.market;
+  if(sp)rows=rows.filter(function(r){return (r.sport_title||'')===sp;});
+  if(mk)rows=rows.filter(function(r){return (r.market||'')===mk;});
+  return rows;
+}
+function recDowCell(v,cls){return '<td class="'+(cls||'')+'">'+v+'</td>';}
+
+function recRenderDow(host){
+  if(!host)return;
+  var all=(REC.flt||[]);
+  if(!all.length){host.innerHTML='';return;}
+
+  var rows=recDowRows();
+  var buckets={}; DOW_ORDER.forEach(function(d){buckets[d]=[];});
+  var undated=0;
+  rows.forEach(function(r){
+    var d=recSlateDow(r.commence_time);
+    if(d==null){undated++;return;}
+    buckets[d].push(r);
+  });
+
+  var days=DOW_ORDER.map(function(d){var a=recDowAgg(buckets[d]);a.day=d;return a;});
+  var weekday=recDowAgg([1,2,3,4,5].reduce(function(acc,d){return acc.concat(buckets[d]);},[]));
+  var weekend=recDowAgg([0,6].reduce(function(acc,d){return acc.concat(buckets[d]);},[]));
+
+  /* sport / market pickers, built from what is actually in the pool */
+  var sports=[],markets=[];
+  all.forEach(function(r){
+    var s=r.sport_title||''; if(s&&sports.indexOf(s)<0)sports.push(s);
+    var m=r.market||''; if(m&&markets.indexOf(m)<0)markets.push(m);
+  });
+  sports.sort(); markets.sort();
+  function mkLabel(m){ try{ return (typeof mktLabel==='function')?mktLabel(m):m; }catch(_){ return m; } }
+  var selS='<select id="dowSport" class="rsel"><option value="">All sports</option>'+
+    sports.map(function(x){return '<option value="'+recEsc(x)+'"'+(REC.dow.sport===x?' selected':'')+'>'+recEsc(x)+'</option>';}).join('')+'</select>';
+  var selM='<select id="dowMarket" class="rsel"><option value="">All markets</option>'+
+    markets.map(function(x){return '<option value="'+recEsc(x)+'"'+(REC.dow.market===x?' selected':'')+'>'+recEsc(mkLabel(x))+'</option>';}).join('')+'</select>';
+
+  function clvCell(v){return v==null?'<td>—</td>':'<td class="'+(v>=0?'rpos':'rneg')+'">'+wewPctS(v)+'</td>';}
+  function pctCell(v){return v==null?'<td class="wew-sm">—</td>':'<td class="wew-sm">'+wewPct(v,0)+'</td>';}
+
+  var body=days.map(function(a){
+    var thin=a.n_clv<REC_MIN;
+    var real=recDowSeparable(a);
+    var tag=a.n_clv===0?'<span class="wew-conf small">no CLV rows</span>'
+      :thin?'<span class="wew-conf small">n&lt;'+REC_MIN+'</span>'
+      :real?'<span class="wew-conf reliable">clears 50% floor</span>'
+      :'<span class="wew-conf developing">not separable</span>';
+    return '<tr>'+
+      '<td class="l"><b>'+DOW_FULL[a.day]+'</b></td>'+
+      '<td>'+a.n_clv+'</td>'+
+      clvCell(a.avg_clv)+
+      (a.median_clv==null?'<td class="wew-sm">—</td>':'<td class="wew-sm">'+wewPctS(a.median_clv)+'</td>')+
+      pctCell(a.beat_rate)+ pctCell(a.beat_lo)+
+      '<td>'+a.w+'–'+a.l+'</td>'+
+      (a.roi==null?'<td>—</td>':'<td class="'+(a.roi>=0?'rpos':'rneg')+'">'+wewRoi(a.roi)+'</td>')+
+      (a.units==null?'<td class="wew-sm">—</td>':'<td class="wew-sm">'+wewU(a.units)+'</td>')+
+      '<td>'+tag+'</td></tr>';
+  }).join('');
+
+  /* headline: only stated when BOTH halves clear the sample bar */
+  var head;
+  if(weekday.n_clv>=REC_MIN&&weekend.n_clv>=REC_MIN&&weekday.avg_clv!=null&&weekend.avg_clv!=null){
+    var gap=weekday.avg_clv-weekend.avg_clv;
+    var dir=Math.abs(gap)<0.005?'run about level'
+      :(gap>0?'run better than weekends':'run worse than weekends');
+    head='Weekdays '+dir+': <b>'+wewPctS(weekday.avg_clv)+'</b> avg CLV over '+weekday.n_clv+
+      ' rows vs <b>'+wewPctS(weekend.avg_clv)+'</b> over '+weekend.n_clv+
+      '. Gap '+wewPctS(gap)+'.'+
+      (Math.abs(gap)<0.005?' That is inside the noise — no day preference is supported.':'');
+  }else{
+    head='Not enough CLV-scored rows to compare weekdays with weekends yet ('+
+      weekday.n_clv+' weekday, '+weekend.n_clv+' weekend, floor is '+REC_MIN+' each). '+
+      'The split is shown below so it can be watched, not acted on.';
+  }
+
+  host.innerHTML=
+    '<div class="wew-wrap" style="margin-top:14px">'+
+    '<div class="wew-top"><h3>Day of Week</h3>'+
+    '<div class="wew-sub">Whether an edge holds depends on who else is betting it. '+
+    'This asks the only version of that question the data can answer: does CLV differ by the day the game is played? '+
+    'Everything here recomputes from the graded rows above — nothing is stored, so it cannot drift from the record.</div>'+
+    '<div class="wew-thesis">'+head+'</div></div>'+
+    '<div class="wew-shead"><span class="wew-stitle sm">Slice</span>'+
+      '<span style="display:flex;gap:8px;margin-left:auto">'+selS+selM+'</span></div>'+
+    '<div class="wew-tblwrap"><table class="wew-tbl"><thead><tr>'+
+      '<th class="l">Day</th><th>n (CLV)</th><th>Avg CLV</th><th class="wew-sm">Med</th>'+
+      '<th class="wew-sm">Beat close</th><th class="wew-sm">95% lo</th>'+
+      '<th>W–L</th><th>ROI</th><th class="wew-sm">Units</th><th>Read</th>'+
+      '</tr></thead><tbody>'+body+'</tbody></table></div>'+
+    '<div class="wew-sub" style="margin-top:10px">'+
+      'Day is the US-Eastern date of first pitch minus six hours, so a late West Coast start counts to the slate it belongs to rather than rolling into the next day. '+
+      'A day reads as a real difference only when the Wilson 95% lower bound on beat-close clears 50%; anything under '+REC_MIN+' CLV-scored rows is tagged and should not be acted on. '+
+      'Seven days across a few hundred rows is thin by construction — this table is built to show you when it stops being thin.'+
+      (undated?' '+undated+' row'+(undated===1?'':'s')+' had no usable commence_time and are excluded.':'')+
+    '</div></div>';
+
+  var ss=$('dowSport'),sm=$('dowMarket');
+  if(ss)ss.onchange=function(){REC.dow.sport=ss.value;recRenderDow(host);};
+  if(sm)sm.onchange=function(){REC.dow.market=sm.value;recRenderDow(host);};
+}
+
 function recRenderAnalytics(){
   REC.dirty.analytics=false;
   var host=$('recAdvHost');if(!host)return;
@@ -4168,6 +4343,17 @@ function recRenderAnalytics(){
     var wh=$('wewHost');if(wh)wh.innerHTML='<div class="wew-empty"><b>Where EdgeDesk Wins failed to mount.</b><br>'+String(_wewErr&&_wewErr.message||_wewErr)+'</div>';
     if(window.console)console.error('WEW mount',_wewErr);
   }
+  /* Day-of-week CLV, mounted between the market analytics and the sim stats */
+  try{
+    var dowHost=$('dowHost');
+    if(!dowHost){dowHost=document.createElement('div');dowHost.id='dowHost';
+      if(host.parentNode)host.parentNode.insertBefore(dowHost,host);else host.insertAdjacentElement('beforebegin',dowHost);}
+    recRenderDow(dowHost);
+  }catch(_dowErr){
+    var dh=$('dowHost');if(dh)dh.innerHTML='<div class="wew-empty"><b>Day of Week failed to render.</b><br>'+recEsc(String(_dowErr&&_dowErr.message||_dowErr))+'</div>';
+    if(window.console)console.error('DOW render',_dowErr);
+  }
+
   var rows=REC.flt;
   if(!rows.length){host.innerHTML=recEmptyHTML(REC.rows.length?'search':'empty','<b>Nothing to analyze.</b><br>'+(REC.rows.length?'No graded signals match the current filters.':'Analytics build themselves as graded rows accumulate.'));return;}
   var priced=rows.filter(function(r){return r._profit!=null;});
