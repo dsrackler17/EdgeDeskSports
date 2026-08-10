@@ -1848,7 +1848,7 @@ export class Dal {
   }
 
   async getResearchMemory(entities: string[], sport?: string | null): Promise<{
-    facts: any[]; outcomes: any[]; patterns: any[]; prior: any[]; ev: Evidence[];
+    facts: any[]; outcomes: any[]; patterns: any[]; prior: any[]; calibration: any[]; ev: Evidence[];
   }> {
     const out: Evidence[] = [];
     const ents = entities.filter(Boolean).slice(0, 8);
@@ -1860,9 +1860,23 @@ export class Dal {
     const outcomes = ents.length
       ? await this.read(`research_outcomes?select=entity,sport,market,thesis,price,fair_price,edge,closing_price,clv,result,thesis_survived,falsifier,what_happened,graded_at&entity=in.(${enc(ents)})&order=graded_at.desc&limit=40`, "memory")
       : { rows: [], error: null, cached: false };
-    let patQ = "research_patterns?select=pattern_key,sport,description,sample_size,metric,metric_value,confidence,updated_at&order=sample_size.desc&limit=25";
+    /* CONFIRMED only. A pattern that has not survived a chronological holdout,
+       the family-wide FDR and the effect floor is a hypothesis, and quoting a
+       hypothesis as a finding is the exact failure this whole layer exists to
+       prevent. CANDIDATE and EXPIRED rows stay in the table for inspection;
+       they never reach the model. */
+    let patQ = "research_patterns?select=pattern_key,sport,description,sample_size,metric,metric_value,"
+      + "confidence,status,effect,base_rate,n_discovery,n_holdout,lo_overall,lo_holdout,q_value,avg_clv,rationale,updated_at"
+      + "&status=eq.CONFIRMED&order=sample_size.desc&limit=25";
     if (sport) patQ += `&sport=eq.${encodeURIComponent(sport)}`;
     const patterns = await this.read(patQ, "memory");
+
+    /* Calibration is not a pattern and needs no confirmation — it is a direct
+       measurement of whether the engine's own edge numbers land where they
+       claim. It is the single most useful thing memory can offer. */
+    const calibration = await this.read(
+      "research_calibration?select=bucket,n,mean_edge_predicted,mean_clv_realised,beat_rate,beat_lo,shortfall,updated_at"
+      + "&order=bucket.asc&limit=10", "memory");
     const prior = ents.length
       ? await this.read(`research_sessions?select=question,intent,conclusion,confidence,sport,entities,created_at&entities=ov.{${ents.map((s) => `"${s.replace(/"/g, '\\"')}"`).join(",")}}&order=created_at.desc&limit=10`, "memory")
       : { rows: [], error: null, cached: false };
@@ -1889,14 +1903,29 @@ export class Dal {
       out.push(ev({
         source: "research_patterns", entity: p.pattern_key, field: "pattern", value: p,
         status: "HISTORICAL", source_timestamp: p.updated_at, freshness: "HISTORICAL", relevance: "history",
-        note: `Discovered over ${p.sample_size} samples. One game is never a pattern.`,
+        note: `Confirmed over ${p.sample_size} graded signals (${p.n_holdout ?? "?"} of them in a held-out later `
+          + `window), ${p.effect != null ? (p.effect * 100).toFixed(1) + "pp over a base rate of "
+            + ((p.base_rate ?? 0) * 100).toFixed(1) + "%" : "effect unrecorded"}, `
+          + `q=${p.q_value ?? "?"} across every slice tested. This is a historical base rate over many games. `
+          + `It is never evidence about one game and it never changes a price.`,
+      }));
+    }
+    for (const c of calibration.rows) {
+      out.push(ev({
+        source: "research_calibration", entity: c.bucket, field: "calibration", value: c,
+        status: "HISTORICAL", source_timestamp: c.updated_at, freshness: "HISTORICAL", relevance: "history",
+        note: `Over ${c.n} graded signals in this band the engine predicted `
+          + `${c.mean_edge_predicted != null ? (c.mean_edge_predicted * 100).toFixed(2) + "%" : "?"} and realised `
+          + `${c.mean_clv_realised != null ? (c.mean_clv_realised * 100).toFixed(2) + "%" : "?"} CLV. `
+          + `Use this to say how much a quoted edge has historically been worth. Do NOT restate the edge itself.`,
       }));
     }
     if (facts.error || outcomes.error || patterns.error || prior.error) {
       out.push(unavailable("research_memory", "memory",
         `memory tables not readable — ${facts.error ?? outcomes.error ?? patterns.error ?? prior.error}. Run the research-memory migration.`));
     }
-    return { facts: facts.rows, outcomes: outcomes.rows, patterns: patterns.rows, prior: prior.rows, ev: out };
+    return { facts: facts.rows, outcomes: outcomes.rows, patterns: patterns.rows, prior: prior.rows,
+             calibration: calibration.rows, ev: out };
   }
 }
 

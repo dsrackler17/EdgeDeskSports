@@ -1892,7 +1892,7 @@ export class Dal {
   }
 
   async getResearchMemory(entities: string[], sport?: string | null): Promise<{
-    facts: any[]; outcomes: any[]; patterns: any[]; prior: any[]; ev: Evidence[];
+    facts: any[]; outcomes: any[]; patterns: any[]; prior: any[]; calibration: any[]; ev: Evidence[];
   }> {
     const out: Evidence[] = [];
     const ents = entities.filter(Boolean).slice(0, 8);
@@ -1904,9 +1904,23 @@ export class Dal {
     const outcomes = ents.length
       ? await this.read(`research_outcomes?select=entity,sport,market,thesis,price,fair_price,edge,closing_price,clv,result,thesis_survived,falsifier,what_happened,graded_at&entity=in.(${enc(ents)})&order=graded_at.desc&limit=40`, "memory")
       : { rows: [], error: null, cached: false };
-    let patQ = "research_patterns?select=pattern_key,sport,description,sample_size,metric,metric_value,confidence,updated_at&order=sample_size.desc&limit=25";
+    /* CONFIRMED only. A pattern that has not survived a chronological holdout,
+       the family-wide FDR and the effect floor is a hypothesis, and quoting a
+       hypothesis as a finding is the exact failure this whole layer exists to
+       prevent. CANDIDATE and EXPIRED rows stay in the table for inspection;
+       they never reach the model. */
+    let patQ = "research_patterns?select=pattern_key,sport,description,sample_size,metric,metric_value,"
+      + "confidence,status,effect,base_rate,n_discovery,n_holdout,lo_overall,lo_holdout,q_value,avg_clv,rationale,updated_at"
+      + "&status=eq.CONFIRMED&order=sample_size.desc&limit=25";
     if (sport) patQ += `&sport=eq.${encodeURIComponent(sport)}`;
     const patterns = await this.read(patQ, "memory");
+
+    /* Calibration is not a pattern and needs no confirmation — it is a direct
+       measurement of whether the engine's own edge numbers land where they
+       claim. It is the single most useful thing memory can offer. */
+    const calibration = await this.read(
+      "research_calibration?select=bucket,n,mean_edge_predicted,mean_clv_realised,beat_rate,beat_lo,shortfall,updated_at"
+      + "&order=bucket.asc&limit=10", "memory");
     const prior = ents.length
       ? await this.read(`research_sessions?select=question,intent,conclusion,confidence,sport,entities,created_at&entities=ov.{${ents.map((s) => `"${s.replace(/"/g, '\\"')}"`).join(",")}}&order=created_at.desc&limit=10`, "memory")
       : { rows: [], error: null, cached: false };
@@ -1933,14 +1947,29 @@ export class Dal {
       out.push(ev({
         source: "research_patterns", entity: p.pattern_key, field: "pattern", value: p,
         status: "HISTORICAL", source_timestamp: p.updated_at, freshness: "HISTORICAL", relevance: "history",
-        note: `Discovered over ${p.sample_size} samples. One game is never a pattern.`,
+        note: `Confirmed over ${p.sample_size} graded signals (${p.n_holdout ?? "?"} of them in a held-out later `
+          + `window), ${p.effect != null ? (p.effect * 100).toFixed(1) + "pp over a base rate of "
+            + ((p.base_rate ?? 0) * 100).toFixed(1) + "%" : "effect unrecorded"}, `
+          + `q=${p.q_value ?? "?"} across every slice tested. This is a historical base rate over many games. `
+          + `It is never evidence about one game and it never changes a price.`,
+      }));
+    }
+    for (const c of calibration.rows) {
+      out.push(ev({
+        source: "research_calibration", entity: c.bucket, field: "calibration", value: c,
+        status: "HISTORICAL", source_timestamp: c.updated_at, freshness: "HISTORICAL", relevance: "history",
+        note: `Over ${c.n} graded signals in this band the engine predicted `
+          + `${c.mean_edge_predicted != null ? (c.mean_edge_predicted * 100).toFixed(2) + "%" : "?"} and realised `
+          + `${c.mean_clv_realised != null ? (c.mean_clv_realised * 100).toFixed(2) + "%" : "?"} CLV. `
+          + `Use this to say how much a quoted edge has historically been worth. Do NOT restate the edge itself.`,
       }));
     }
     if (facts.error || outcomes.error || patterns.error || prior.error) {
       out.push(unavailable("research_memory", "memory",
         `memory tables not readable — ${facts.error ?? outcomes.error ?? patterns.error ?? prior.error}. Run the research-memory migration.`));
     }
-    return { facts: facts.rows, outcomes: outcomes.rows, patterns: patterns.rows, prior: prior.rows, ev: out };
+    return { facts: facts.rows, outcomes: outcomes.rows, patterns: patterns.rows, prior: prior.rows,
+             calibration: calibration.rows, ev: out };
   }
 }
 
@@ -2566,8 +2595,17 @@ Keep these separate and never collapse them into one "AI confidence": MODEL EDGE
 CONTRADICTION IS THE JOB
 Every serious answer must try to break itself. For each candidate give the supporting evidence, the strongest contradiction, the biggest open question, and the falsifier that would end it. You are not rewarded for defending a conclusion.
 
-MEMORY
-Prior outcomes and patterns are historical. Quote a pattern only when its sample_size supports it, and always say the N. One result is never a pattern. If prior research on this entity exists, reference it briefly — "EdgeDesk last researched this matchup on <date> and concluded X" — and say whether the current evidence agrees.
+MEMORY AND WHAT EDGEDESK HAS LEARNED
+Prior outcomes and patterns are historical. If prior research on this entity exists, reference it briefly — "EdgeDesk last researched this matchup on <date> and concluded X" — and say whether the current evidence agrees.
+
+Patterns reaching you have already survived a chronological holdout, a family-wide false-discovery correction and an effect floor; unconfirmed ones are filtered out before you see them, so you will never be handed a hypothesis dressed as a finding. Your job is to quote them correctly:
+- ALWAYS state the sample size, and state it as a historical base rate over many games — "over 214 graded signals this ran 58% against a 51% baseline" — never as a claim about tonight.
+- A pattern NEVER modifies a price, a probability, an edge or a verdict. Those are the deterministic engine's and remain exactly as attached. A pattern is context for how much weight to put on a thesis, nothing more.
+- If NO patterns are attached, say EdgeDesk has not yet confirmed any — do not reach for a plausible-sounding tendency, and do not treat an empty pattern set as evidence that nothing is there. It usually means the sample is still accumulating.
+- Never invent a pattern, never generalise one sport's pattern to another, and never present a single prior outcome as a pattern.
+
+CALIBRATION
+When a calibration band is attached it says what EdgeDesk's OWN edge numbers have historically been worth in that band — predicted versus realised CLV. Use it to qualify a quoted edge honestly ("signals in this band have realised about a third of the projected edge"), which is the most useful thing memory can tell a bettor. You still quote the engine's edge exactly as given; calibration explains what it has been worth, it does not restate or correct it.
 
 CONFLICTS
 If two owned sources disagree, say so and name both. If a trusted resolution is attached, use it and say which source won. If not, treat the field as contested and let it lower confidence.
@@ -2949,11 +2987,22 @@ function buildUserContent(body: any, research: ResearchOut | null): string {
     }
 
     const mem = research.memory;
-    if (mem.facts.length || mem.outcomes.length || mem.patterns.length || mem.prior.length) {
+    const cal = (mem as any).calibration ?? [];
+    if (mem.facts.length || mem.outcomes.length || mem.patterns.length || mem.prior.length || cal.length) {
       parts.push(
-        `RESEARCH MEMORY — EdgeDesk's own accumulated history. Patterns below already clear the `
-        + `${MIN_PATTERN_N}-sample floor; always state the N. Prior outcomes are historical, never proof about today:\n`
-        + compact({ facts: mem.facts, prior_outcomes: mem.outcomes, patterns: mem.patterns, prior_sessions: mem.prior }),
+        `RESEARCH MEMORY — EdgeDesk's own accumulated history. Every pattern below is CONFIRMED: it cleared the `
+        + `${MIN_PATTERN_N}-sample floor, held in a chronologically held-out later window, survived a `
+        + `false-discovery correction across every slice tested, and beat an effect floor. Unconfirmed patterns were `
+        + `filtered out before this message. Always state the N; prior outcomes are historical, never proof about today:\n`
+        + compact({ facts: mem.facts, prior_outcomes: mem.outcomes, patterns: mem.patterns,
+                    calibration: cal, prior_sessions: mem.prior }),
+      );
+    }
+    if (!mem.patterns.length) {
+      parts.push(
+        "LEARNING STATE — EdgeDesk has NO confirmed patterns to offer for this question. That means the sample is "
+        + "still accumulating, not that no tendency exists. Say so plainly if the question invites a pattern, and do "
+        + "not substitute a general belief about sports betting for a pattern EdgeDesk has actually measured.",
       );
     }
 

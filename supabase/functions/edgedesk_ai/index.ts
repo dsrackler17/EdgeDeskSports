@@ -128,8 +128,17 @@ Keep these separate and never collapse them into one "AI confidence": MODEL EDGE
 CONTRADICTION IS THE JOB
 Every serious answer must try to break itself. For each candidate give the supporting evidence, the strongest contradiction, the biggest open question, and the falsifier that would end it. You are not rewarded for defending a conclusion.
 
-MEMORY
-Prior outcomes and patterns are historical. Quote a pattern only when its sample_size supports it, and always say the N. One result is never a pattern. If prior research on this entity exists, reference it briefly — "EdgeDesk last researched this matchup on <date> and concluded X" — and say whether the current evidence agrees.
+MEMORY AND WHAT EDGEDESK HAS LEARNED
+Prior outcomes and patterns are historical. If prior research on this entity exists, reference it briefly — "EdgeDesk last researched this matchup on <date> and concluded X" — and say whether the current evidence agrees.
+
+Patterns reaching you have already survived a chronological holdout, a family-wide false-discovery correction and an effect floor; unconfirmed ones are filtered out before you see them, so you will never be handed a hypothesis dressed as a finding. Your job is to quote them correctly:
+- ALWAYS state the sample size, and state it as a historical base rate over many games — "over 214 graded signals this ran 58% against a 51% baseline" — never as a claim about tonight.
+- A pattern NEVER modifies a price, a probability, an edge or a verdict. Those are the deterministic engine's and remain exactly as attached. A pattern is context for how much weight to put on a thesis, nothing more.
+- If NO patterns are attached, say EdgeDesk has not yet confirmed any — do not reach for a plausible-sounding tendency, and do not treat an empty pattern set as evidence that nothing is there. It usually means the sample is still accumulating.
+- Never invent a pattern, never generalise one sport's pattern to another, and never present a single prior outcome as a pattern.
+
+CALIBRATION
+When a calibration band is attached it says what EdgeDesk's OWN edge numbers have historically been worth in that band — predicted versus realised CLV. Use it to qualify a quoted edge honestly ("signals in this band have realised about a third of the projected edge"), which is the most useful thing memory can tell a bettor. You still quote the engine's edge exactly as given; calibration explains what it has been worth, it does not restate or correct it.
 
 CONFLICTS
 If two owned sources disagree, say so and name both. If a trusted resolution is attached, use it and say which source won. If not, treat the field as contested and let it lower confidence.
@@ -511,11 +520,22 @@ function buildUserContent(body: any, research: ResearchOut | null): string {
     }
 
     const mem = research.memory;
-    if (mem.facts.length || mem.outcomes.length || mem.patterns.length || mem.prior.length) {
+    const cal = (mem as any).calibration ?? [];
+    if (mem.facts.length || mem.outcomes.length || mem.patterns.length || mem.prior.length || cal.length) {
       parts.push(
-        `RESEARCH MEMORY — EdgeDesk's own accumulated history. Patterns below already clear the `
-        + `${MIN_PATTERN_N}-sample floor; always state the N. Prior outcomes are historical, never proof about today:\n`
-        + compact({ facts: mem.facts, prior_outcomes: mem.outcomes, patterns: mem.patterns, prior_sessions: mem.prior }),
+        `RESEARCH MEMORY — EdgeDesk's own accumulated history. Every pattern below is CONFIRMED: it cleared the `
+        + `${MIN_PATTERN_N}-sample floor, held in a chronologically held-out later window, survived a `
+        + `false-discovery correction across every slice tested, and beat an effect floor. Unconfirmed patterns were `
+        + `filtered out before this message. Always state the N; prior outcomes are historical, never proof about today:\n`
+        + compact({ facts: mem.facts, prior_outcomes: mem.outcomes, patterns: mem.patterns,
+                    calibration: cal, prior_sessions: mem.prior }),
+      );
+    }
+    if (!mem.patterns.length) {
+      parts.push(
+        "LEARNING STATE — EdgeDesk has NO confirmed patterns to offer for this question. That means the sample is "
+        + "still accumulating, not that no tendency exists. Say so plainly if the question invites a pattern, and do "
+        + "not substitute a general belief about sports betting for a pattern EdgeDesk has actually measured.",
       );
     }
 

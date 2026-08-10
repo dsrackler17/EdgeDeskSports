@@ -1332,6 +1332,73 @@ section("Evidence integrity is audited before anything is allowed to rank it");
      "freshness", "identity_chain", "market", "source", "temporal"].sort().join(","));
 }
 
+/* A pattern that has not survived holdout validation is a hypothesis. The
+   filter that keeps hypotheses away from the model has to live in the QUERY,
+   not in the prompt — a prompt rule can be reasoned around, a `status=eq.
+   CONFIRMED` cannot. */
+section("Only confirmed patterns are ever fetched");
+{
+  const seen: string[] = [];
+  const spy = (fx: any) => {
+    clearCache();
+    return new Dal({
+      supabaseUrl: "https://x.supabase.co", apikey: "anon", authorization: "Bearer jwt",
+      budget: 24,
+      fetchImpl: (async (url: any) => {
+        seen.push(String(url));
+        const table = String(url).split("/rest/v1/")[1]?.split("?")[0] ?? "";
+        return new Response(JSON.stringify(fx[table] ?? []), { status: 200 });
+      }) as any,
+    });
+  };
+
+  const CONFIRMED = {
+    pattern_key: "market:totals", sport: null, description: "totals signals",
+    sample_size: 214, metric: "beat_close_rate", metric_value: 0.58, confidence: "MEDIUM",
+    status: "CONFIRMED", effect: 0.07, base_rate: 0.51, n_discovery: 150, n_holdout: 64,
+    lo_overall: 0.52, lo_holdout: 0.51, q_value: 0.012, avg_clv: 0.008,
+    rationale: "holds in both windows", updated_at: new Date().toISOString(),
+  };
+  const CAL = {
+    bucket: "edge 2-4%", n: 180, mean_edge_predicted: 0.029, mean_clv_realised: 0.009,
+    beat_rate: 0.55, beat_lo: 0.48, shortfall: 0.020, updated_at: new Date().toISOString(),
+  };
+
+  const d = spy({ research_patterns: [CONFIRMED], research_calibration: [CAL],
+                  research_facts: [], research_outcomes: [], research_sessions: [] });
+  const mem = await d.getResearchMemory(["New York Yankees"], "baseball_mlb");
+
+  const patQ = seen.find((u) => u.includes("research_patterns")) ?? "";
+  ok("P1 the pattern query filters on CONFIRMED in the QUERY, not in the prompt",
+    patQ.includes("status=eq.CONFIRMED"), patQ);
+  ok("P2 it asks for the holdout size", patQ.includes("n_holdout"));
+  ok("P3 it asks for the family-adjusted q", patQ.includes("q_value"));
+  ok("P4 it asks for the base rate the effect is measured against", patQ.includes("base_rate"));
+
+  ok("P5 calibration is fetched too", seen.some((u) => u.includes("research_calibration")));
+  eq("P6 calibration comes back on the memory object", (mem as any).calibration.length, 1);
+
+  const patEv = mem.ev.find((e) => e.field === "pattern");
+  ok("P7 the pattern is attached as evidence", !!patEv);
+  ok("P8 ...marked HISTORICAL, never current", patEv?.status === "HISTORICAL");
+  ok("P9 ...with the holdout stated in the note", /64 of them in a held-out later window/.test(patEv?.note ?? ""));
+  ok("P10 ...with the effect against the base rate", /7\.0pp over a base rate of 51\.0%/.test(patEv?.note ?? ""));
+  ok("P11 ...and an explicit ban on it moving a price",
+    /never changes a price/.test(patEv?.note ?? ""));
+
+  const calEv = mem.ev.find((e) => e.field === "calibration");
+  ok("P12 calibration is attached as evidence", !!calEv);
+  ok("P13 ...stating predicted against realised", /predicted 2\.90% and realised 0\.90% CLV/.test(calEv?.note ?? ""));
+  ok("P14 ...and forbidding it from restating the edge", /Do NOT restate the edge itself/.test(calEv?.note ?? ""));
+
+  const empty = spy({ research_patterns: [], research_calibration: [],
+                      research_facts: [], research_outcomes: [], research_sessions: [] });
+  const mem2 = await empty.getResearchMemory(["New York Yankees"], "baseball_mlb");
+  eq("P15 no confirmed patterns means none are attached",
+    mem2.ev.filter((e) => e.field === "pattern").length, 0);
+  eq("P16 ...and that is not reported as an error", mem2.patterns.length, 0);
+}
+
 console.log(`\n${failed === 0 ? "ALL GREEN" : "FAILURES"} — ${passed} passed, ${failed} failed`);
 if (failures.length) console.log("failed:", failures.join(" | "));
 if (typeof process !== "undefined" && failed > 0) (process as any).exit(1);
