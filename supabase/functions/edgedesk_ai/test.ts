@@ -1,0 +1,1609 @@
+// supabase/functions/edgedesk_ai/test.ts
+// ============================================================================
+// Research-engine test suite.
+//
+//   deno test --allow-env supabase/functions/edgedesk_ai/test.ts
+//   node --experimental-strip-types supabase/functions/edgedesk_ai/test.ts
+//
+// These exercise the real classifier, the real Dal, and the real evidence /
+// conflict / completeness / attack logic against a mocked Supabase REST layer.
+// No API key and no network are required — the Anthropic call is not part of
+// the research engine and is not under test here.
+//
+// The point of the suite is the honesty contract: every case that could tempt
+// the system into inventing data asserts that it reports the gap instead.
+// ============================================================================
+
+import {
+  Dal, classify, deriveState, attackThesis, findConflicts, completeness, coverage,
+  freshnessOf, ev, resolveTeams, personKey, etDay, clearCache,
+  buildSnapshot, diffSnapshots, extractFindings, scout, MODE_OF_INTENT,
+  crossMarketFlags, movementRead, rankingAxis, budgetEvidence, evidenceIntegrity,
+} from "./_lib.ts";
+
+/* ------------------------------------------------------------ harness */
+
+let passed = 0, failed = 0;
+const failures: string[] = [];
+
+function ok(name: string, cond: boolean, detail?: unknown) {
+  if (cond) { passed++; console.log(`  PASS  ${name}`); }
+  else { failed++; failures.push(name); console.log(`  FAIL  ${name}${detail !== undefined ? "  " + JSON.stringify(detail) : ""}`); }
+}
+function eq(name: string, got: unknown, want: unknown) {
+  ok(name, JSON.stringify(got) === JSON.stringify(want), { got, want });
+}
+function section(s: string) { console.log(`\n${s}`); }
+
+/* --------------------------------------------------- mock database */
+
+const TODAY = etDay(0);
+
+interface Fixture { [table: string]: any[] | "error" | "rls" | undefined }
+
+function mockFetch(fx: Fixture): typeof fetch {
+  return (async (url: string | URL | Request) => {
+    const u = String(url);
+    if (u.includes("baseballsavant.mlb.com")) {
+      if (fx.__savant === "error") return new Response("nope", { status: 503 });
+      if (u.includes("expected_statistics")) return new Response(SAVANT_EXPECTED, { status: 200 });
+      if (u.includes("leaderboard/custom")) return new Response(SAVANT_CUSTOM, { status: 200 });
+      return new Response("", { status: 200 });
+    }
+    if (u.includes("statsapi.mlb.com")) {
+      if (fx.__statsapi === "error") return new Response("nope", { status: 503 });
+      if (u.includes("/schedule")) {
+        // only the first date has games; the second returns an empty card
+        return new Response(JSON.stringify(u.includes(etDay(1)) ? { dates: [] } : STATSAPI_SCHED), { status: 200 });
+      }
+      if (u.includes("/people")) return new Response(JSON.stringify(STATSAPI_PEOPLE), { status: 200 });
+      if (u.includes("/teams/stats")) {
+        if (u.includes("group=pitching")) return new Response(JSON.stringify(STATSAPI_LEAGUE_PITCHING), { status: 200 });
+        if (u.includes("sitCodes=vl")) return new Response(JSON.stringify(STATSAPI_HIT_VL), { status: 200 });
+        if (u.includes("sitCodes=vr")) return new Response(JSON.stringify(STATSAPI_HIT_VR), { status: 200 });
+        return new Response(JSON.stringify(STATSAPI_TEAMS), { status: 200 });
+      }
+      return new Response("{}", { status: 200 });
+    }
+    const table = u.split("/rest/v1/")[1]?.split("?")[0] ?? "";
+    const rows = fx[table];
+    if (rows === "error") return new Response("boom", { status: 500 });
+    if (rows === "rls") return new Response(JSON.stringify({ message: "permission denied for table " + table }), { status: 403 });
+    if (rows === undefined) return new Response("[]", { status: 200, headers: { "content-type": "application/json" } });
+
+    let out = rows as any[];
+    // Honour the two filters the engine actually relies on, so join bugs surface.
+    const q = u.split("?")[1] ?? "";
+    const gid = q.match(/game_id=in\.\(([^)]*)\)/);
+    if (gid) {
+      const ids = gid[1].split(",").map((s) => decodeURIComponent(s.replace(/^"|"$/g, "")));
+      out = out.filter((r) => ids.includes(String(r.game_id)));
+    }
+    const gdate = q.match(/game_date=in\.\(([^)]*)\)/);
+    if (gdate) {
+      const days = gdate[1].split(",");
+      out = out.filter((r) => days.includes(String(r.game_date)));
+    }
+    return new Response(JSON.stringify(out), { status: 200, headers: { "content-type": "application/json" } });
+  }) as unknown as typeof fetch;
+}
+
+function dal(fx: Fixture, budget = 24) {
+  clearCache();   // one fixture must never bleed into the next
+  return new Dal({
+    supabaseUrl: "https://x.supabase.co", apikey: "anon", authorization: "Bearer jwt",
+    fetchImpl: mockFetch(fx), budget,
+  });
+}
+
+/* ------------------------------------------------------- fixtures */
+
+const SIGNAL_LIVE = {
+  event_id: "ev1", sport_key: "baseball_mlb", sport_title: "MLB", market: "h2h",
+  selection: "New York Yankees", point: null, best_dec: 1.85, first_best_dec: 1.91,
+  best_book: "DraftKings", sharp_fair: 0.57, consensus_fair: 0.56, edge: 0.041, first_edge: 0.048,
+  n_books: 7, n_books_eff: 7, has_sharp: true, corrob_n: 2, pin_dec: 1.79, pin_opp_dec: 2.12,
+  home_team: "Boston Red Sox", away_team: "New York Yankees",
+  commence_time: new Date(Date.now() + 4 * 3600e3).toISOString(),
+  first_seen_at: new Date(Date.now() - 90 * 60e3).toISOString(),
+  last_seen_at: new Date(Date.now() - 5 * 60e3).toISOString(),
+  clv: null, beat_close: null, result: null, graded_at: null, closing_sharp_fair: null,
+};
+const SIGNAL_PRICE_KILLED = {
+  ...SIGNAL_LIVE, event_id: "ev2", selection: "Chicago Cubs", edge: 0.004, first_edge: 0.052,
+  home_team: "Chicago Cubs", away_team: "Milwaukee Brewers",
+};
+const SIGNAL_STALE = {
+  ...SIGNAL_LIVE, event_id: "ev3", selection: "Seattle Mariners", edge: 0.038,
+  home_team: "Seattle Mariners", away_team: "Oakland Athletics",
+  last_seen_at: new Date(Date.now() - 90 * 60e3).toISOString(),
+};
+const SIGNAL_NO_SHARP = {
+  ...SIGNAL_LIVE, event_id: "ev4", selection: "Miami Marlins", has_sharp: false, n_books: 3,
+  sharp_fair: null, home_team: "Miami Marlins", away_team: "Atlanta Braves",
+};
+
+const CARD = [{
+  game_date: TODAY, start_time: new Date(Date.now() + 4 * 3600e3).toISOString(), start_time_local: "7:10 PM",
+  venue: "Fenway Park", status: "Scheduled", doubleheader: "N", game_number: 1,
+  away_team_id: 147, away_team_name: "New York Yankees", away_record: "62-50", away_streak: "W3",
+  away_pitcher_name: "Carlos Rodón", away_pitcher_throws: "L",
+  home_team_id: 111, home_team_name: "Boston Red Sox", home_record: "55-57", home_streak: "L2",
+  home_pitcher_name: "Kutter Crawford", home_pitcher_throws: "R",
+  park_factor: 1.08, hr_factor: 1.02, run_factor: 1.06, roof_type: "Open", is_dome: false,
+  temp_f: 78, humidity: 55, precip_prob: 5, wind_mph: 11, wind_dir: "SW", wind_rel: "out",
+}, {
+  game_date: TODAY, start_time: new Date(Date.now() + 6 * 3600e3).toISOString(), start_time_local: "9:40 PM",
+  venue: "T-Mobile Park", status: "Scheduled", doubleheader: "N", game_number: 1,
+  away_team_id: 133, away_team_name: "Oakland Athletics", away_record: "48-64", away_streak: "L1",
+  away_pitcher_name: "JP Sears", away_pitcher_throws: "L",
+  home_team_id: 136, home_team_name: "Seattle Mariners", home_record: "60-52", home_streak: "W1",
+  home_pitcher_name: null, home_pitcher_throws: null,      // starter NOT announced
+  park_factor: 0.94, hr_factor: 0.9, run_factor: 0.93, roof_type: "Retractable", is_dome: false,
+  temp_f: 66, humidity: 70, precip_prob: 10, wind_mph: 5, wind_dir: "N", wind_rel: "in",
+}];
+
+// A finished game from the card's lookback window. It must never land in the
+// coverage denominator — that is what made coverage read 30 of 60.
+const CARD_YESTERDAY = {
+  game_date: etDay(-1), start_time: new Date(Date.now() - 20 * 3600e3).toISOString(), start_time_local: "7:05 PM",
+  venue: "Yankee Stadium", status: "Final", doubleheader: "N", game_number: 1,
+  away_team_id: 110, away_team_name: "Baltimore Orioles", away_record: "50-62", away_streak: "L2",
+  away_pitcher_name: "Dean Kremer", away_pitcher_throws: "R",
+  home_team_id: 147, home_team_name: "New York Yankees", home_record: "62-50", home_streak: "W3",
+  home_pitcher_name: "Max Fried", home_pitcher_throws: "L",
+  park_factor: 1.02, hr_factor: 1.12, run_factor: 1.03, roof_type: "Open", is_dome: false,
+  temp_f: 74, humidity: 60, precip_prob: 0, wind_mph: 8, wind_dir: "NE", wind_rel: "in",
+};
+
+const GAMES = [
+  { game_id: "g1", game_date: TODAY, home_team: "Boston Red Sox", away_team: "New York Yankees", start_time: CARD[0].start_time, status: "scheduled", park_id: "BOS" },
+  { game_id: "g2", game_date: TODAY, home_team: "Seattle Mariners", away_team: "Oakland Athletics", start_time: CARD[1].start_time, status: "scheduled", park_id: "SEA" },
+];
+// g1 has pitcher quality; g2 deliberately does NOT — partial coverage is the
+// case the old system collapsed into "nothing is on file".
+const PITCHER_FEATURES = [
+  { game_id: "g1", side: "away", pitcher_id: 9001, name: "Rodón, Carlos", xera: 5.41, k_pct: 0.212, bb_pct: 0.101, barrel_pct: 0.099, hardhit_pct: 0.443 },
+  { game_id: "g1", side: "home", pitcher_id: 9002, name: "Kutter Crawford", xera: 3.72, k_pct: 0.248, bb_pct: 0.055, barrel_pct: 0.081, hardhit_pct: 0.401 },
+];
+const OFFENSE_FEATURES = [
+  { game_id: "g1", side: "home", obp: 0.331, iso: 0.181, k_pct: 0.203, runs_per_game: 5.1 },
+  { game_id: "g1", side: "away", obp: 0.342, iso: 0.196, k_pct: 0.219, runs_per_game: 5.4 },
+];
+const USAGE = [
+  { pitcher_id: 9001, game_date: etDay(-5), pitches: 96, outs: 16, started: true },
+  { pitcher_id: 9002, game_date: etDay(-4), pitches: 88, outs: 18, started: true },
+];
+
+const STATSAPI_SCHED = { dates: [{ games: [{
+  teams: {
+    away: { team: { id: 147, name: "New York Yankees" }, probablePitcher: { id: 9001, fullName: "Carlos Rodón" } },
+    home: { team: { id: 111, name: "Boston Red Sox" },   probablePitcher: { id: 9002, fullName: "Kutter Crawford" } },
+  },
+}] }] };
+// Savant quotes the name column (it contains a comma) and quotes values freely.
+const SAVANT_EXPECTED = '"last_name, first_name",player_id,year,era,xera,era_minus_xera_diff,est_woba\n'
+  + '"Rodon, Carlos",9001,2026,"5.41","4.88","0.53",".339"\n'
+  + '"Crawford, Kutter",9002,2026,3.72,3.95,-0.23,.298';
+const SAVANT_CUSTOM = 'player_id,k_percent,bb_percent,barrel_batted_rate,hard_hit_percent,whiff_percent\n'
+  + '9001,21.2,10.1,"9.9",44.3,24.1\n'
+  + '9002,24.8,5.5,8.1,40.1,28.6';
+
+const STATSAPI_LEAGUE_PITCHING = { stats: [{ splits: Array.from({ length: 30 }, () => ({
+  stat: { inningsPitched: "1000.0", homeRuns: 110, baseOnBalls: 330, hitBatsmen: 40, strikeOuts: 900, earnedRuns: 440 },
+})) }] };
+const STATSAPI_HIT_VL = { stats: [{ splits: [
+  { team: { id: 111 }, stat: { avg: ".240", obp: ".310", slg: ".390", ops: ".700", runs: 140, gamesPlayed: 112, strikeOuts: 230, baseOnBalls: 95, plateAppearances: 1000, homeRuns: 34 } },
+  { team: { id: 147 }, stat: { avg: ".270", obp: ".360", slg: ".480", ops: ".840", runs: 190, gamesPlayed: 112, strikeOuts: 200, baseOnBalls: 120, plateAppearances: 1000, homeRuns: 52 } },
+] }] };
+const STATSAPI_HIT_VR = { stats: [{ splits: [
+  { team: { id: 111 }, stat: { avg: ".262", obp: ".338", slg: ".442", ops: ".780", runs: 430, gamesPlayed: 112, strikeOuts: 660, baseOnBalls: 300, plateAppearances: 3000, homeRuns: 114 } },
+  { team: { id: 147 }, stat: { avg: ".246", obp: ".330", slg: ".430", ops: ".760", runs: 410, gamesPlayed: 112, strikeOuts: 740, baseOnBalls: 330, plateAppearances: 3000, homeRuns: 126 } },
+] }] };
+
+const STATSAPI_PEOPLE = { people: [
+  { id: 9001, fullName: "Carlos Rodón", pitchHand: { code: "L" }, stats: [
+    { group: { displayName: "pitching" }, type: { displayName: "season" }, splits: [{ stat: {
+      era: "5.41", whip: "1.48", strikeoutsPer9Inn: "8.12", walksPer9Inn: "4.02", strikeoutWalkRatio: "2.04",
+      inningsPitched: "121.2", strikeOuts: 110, baseOnBalls: 54, hitBatsmen: 6, homeRuns: 22,
+      gamesStarted: 22, battersFaced: 540, groundOutsToAirouts: "0.78",
+      strikePercentage: ".620", pitchesPerInning: "16.8" } }] },
+    { group: { displayName: "pitching" }, type: { displayName: "gameLog" }, splits: [
+      { date: "2026-08-05", stat: { gamesStarted: 1, inningsPitched: "5.1", numberOfPitches: 96, earnedRuns: 4, strikeOuts: 6, baseOnBalls: 3 } },
+      { date: "2026-07-30", stat: { gamesStarted: 1, inningsPitched: "6.0", numberOfPitches: 101, earnedRuns: 2, strikeOuts: 8, baseOnBalls: 1 } },
+      { date: "2026-07-24", stat: { gamesStarted: 1, inningsPitched: "4.2", numberOfPitches: 88, earnedRuns: 5, strikeOuts: 4, baseOnBalls: 4 } },
+      { date: "2026-07-19", stat: { gamesStarted: 0, inningsPitched: "1.0", numberOfPitches: 15 } },
+    ] },
+  ] },
+  { id: 9002, fullName: "Kutter Crawford", pitchHand: { code: "R" }, stats: [
+    { group: { displayName: "pitching" }, type: { displayName: "season" }, splits: [{ stat: {
+      era: "3.72", whip: "1.11", strikeoutsPer9Inn: "9.44", walksPer9Inn: "2.10", strikeoutWalkRatio: "4.52",
+      inningsPitched: "134.0", strikeOuts: 140, baseOnBalls: 31, hitBatsmen: 4, homeRuns: 18,
+      gamesStarted: 23, battersFaced: 545, groundOutsToAirouts: "1.42",
+      strikePercentage: ".660", pitchesPerInning: "15.1" } }] },
+  ] },
+] };
+const STATSAPI_TEAMS = { stats: [{ splits: [
+  { team: { id: 111, name: "Boston Red Sox" },   stat: { obp: ".331", slg: ".428", ops: ".759", avg: ".256", runs: 571, gamesPlayed: 112, strikeOuts: 890, baseOnBalls: 401, homeRuns: 148 } },
+  { team: { id: 147, name: "New York Yankees" }, stat: { obp: ".342", slg: ".451", ops: ".793", avg: ".251", runs: 604, gamesPlayed: 112, strikeOuts: 940, baseOnBalls: 452, homeRuns: 178 } },
+] }] };
+
+const FULL: Fixture = {
+  signals: [SIGNAL_LIVE, SIGNAL_PRICE_KILLED, SIGNAL_STALE, SIGNAL_NO_SHARP],
+  mlb_game_cards: CARD, games: GAMES, pitcher_features: PITCHER_FEATURES,
+  offense_features: OFFENSE_FEATURES, mlb_pitcher_usage: USAGE,
+  mlb_bullpen_taxed: [{ team_id: 111, full_name: "Chris Martin", flag: "b2b", pitches_yesterday: 22, severity: 2 }],
+  mlb_bullpen_team: [{ team_id: 111, closer_name: "Kenley Jansen", closer_flag: "fresh" }],
+  venue_weather: [{ event_id: "ev1", temp_f: 78, wind_mph: 11, wind_component_out: 6, precip_prob: 5, is_dome: false, fetched_at: new Date(Date.now() - 20 * 60e3).toISOString() }],
+  research_facts: [], research_outcomes: [], research_patterns: [], research_sessions: [],
+  team_features: [], qb_features: [], matchup_context: [],
+};
+
+/* ===================================================================== */
+/* 1–8  intent classification -> the right research workflow             */
+/* ===================================================================== */
+
+section("Intent classification");
+eq("1  worst pitcher -> slate pitcher research", classify("Who's the worst pitcher on today's slate?").intent, "worst_pitchers");
+ok("1b worst pitcher retrieves opponent offense too", classify("Who's the worst pitcher today?").steps.includes("opponent_offense"));
+eq("2  best matchup", classify("What are the best pitching matchups today?").intent, "best_matchups");
+eq("3  best MLB bet", classify("Find me the best MLB moneyline edges.").intent, "best_bets");
+eq("4  why this bet", classify("Why does EdgeDesk like this?").intent, "why");
+eq("5  attack", classify("Attack this bet.").intent, "attack");
+ok("5b attack runs DEEP", classify("Convince me not to bet it.").depth === "DEEP");
+eq("6  what changed", classify("What changed since this signal was detected?").intent, "what_changed");
+eq("7  compare", classify("Compare Yankees vs Red Sox and Dodgers vs Giants.").intent, "compare");
+eq("8  historical similarity", classify("What happened the last time this type of setup appeared?").intent, "historical");
+eq("8b exploitable is NOT the same intent as worst", classify("Which pitcher is most exploitable?").intent, "exploitable_pitchers");
+eq("8c market disagreement", classify("What does Pinnacle disagree with?").intent, "market_disagreement");
+eq("8d price question stays QUICK", classify("Is this line still playable?").depth, "QUICK");
+eq("8e entity resolution", resolveTeams("Research Dodgers vs Diamondbacks."), ["Arizona Diamondbacks", "Los Angeles Dodgers"]);
+eq("8f accented + reversed name keys collapse", personKey("Rodón, Carlos"), personKey("Carlos Rodon"));
+
+/* ===================================================================== */
+/* 9  missing pitcher data is reported as PARTIAL COVERAGE, not "nothing" */
+/* ===================================================================== */
+
+section("Partial coverage (the reported bug)");
+{
+  const d = dal(FULL);
+  const pf = await d.getPitcherFeatures();
+  const starters = ["Carlos Rodón", "Kutter Crawford", "JP Sears"];
+  const cov = coverage(pf.ev, "pitcher_quality", starters);
+  eq("9  quality usable for 2 of 3 starters", [cov.have_n, cov.total_n], [2, 3]);
+  ok("9b names the starter that lacks it", cov.missing.includes("JP Sears"), cov.missing);
+  ok("9c does not claim the field is globally unavailable", cov.have_n > 0);
+  ok("9d opponent offense joined via the OPPOSITE side", (() => {
+    const e = pf.ev.find((x) => x.field === "opponent_offense" && String(x.entity).includes("Rod"));
+    return (e?.value as any)?.obp === 0.331;   // away pitcher faces the home offense
+  })());
+  ok("9e workload attached from usage", pf.ev.some((x) => x.field === "workload" && (x.value as any).pitches === 96));
+}
+
+/* ===================================================================== */
+/* 10–12  data-path diagnosis when the join genuinely fails              */
+/* ===================================================================== */
+
+section("Data-path diagnosis");
+{
+  // Table holds rows, but under game_ids that today's `games` never produces.
+  const d = dal({ ...FULL, pitcher_features: [{ game_id: "SOMETHING_ELSE", name: "X", xera: 4 }] });
+  const pf = await d.getPitcherFeatures();
+  const diag = String((pf.path.pitcher_features_probe as any)?.diagnosis ?? "");
+  ok("10 join mismatch diagnosed as B", diag.startsWith("B"), diag);
+}
+{
+  const d = dal({ ...FULL, pitcher_features: [] });
+  const pf = await d.getPitcherFeatures();
+  const diag = String((pf.path.pitcher_features_probe as any)?.diagnosis ?? "");
+  ok("11 genuinely empty table diagnosed as A", diag.startsWith("A"), diag);
+}
+{
+  const d = dal({ ...FULL, games: "rls" });
+  const pf = await d.getPitcherFeatures();
+  const diag = String((pf.path.games_probe as any)?.diagnosis ?? "");
+  ok("12 RLS denial diagnosed as E, not as missing data", diag.startsWith("E"), diag);
+}
+{
+  const d = dal({ ...FULL, games: [{ ...GAMES[0], game_date: etDay(-30) }] });
+  const pf = await d.getPitcherFeatures();
+  const diag = String((pf.path.games_probe as any)?.diagnosis ?? "");
+  ok("12b stale ingestion diagnosed as C with the latest date", diag.startsWith("C") && diag.includes(etDay(-30)), diag);
+}
+
+/* ===================================================================== */
+/* 13–17  deterministic verdict discipline (attack runs on owned fields)  */
+/* ===================================================================== */
+
+section("Thesis attack on owned numbers");
+eq("13 price past the floor -> INVALIDATED", attackThesis(SIGNAL_PRICE_KILLED).status, "INVALIDATED");
+eq("14 stale capture -> WEAKENED (a WAIT condition, not a PASS)", attackThesis(SIGNAL_STALE).status, "WEAKENED");
+eq("15 no sharp + thin books -> WEAKENED", attackThesis(SIGNAL_NO_SHARP).status, "WEAKENED");
+eq("16 healthy signal -> SURVIVES", attackThesis(SIGNAL_LIVE).status, "SURVIVES");
+eq("17 no fair price -> PENDING, never PASS", attackThesis({ ...SIGNAL_LIVE, edge: null }).status, "PENDING");
+ok("17b suspiciously large edge is flagged as a falsifier",
+  attackThesis({ ...SIGNAL_LIVE, edge: 0.09 }).falsifiers.some((f) => /stale or bad price/.test(f)));
+ok("17c decayed edge is flagged",
+  attackThesis({ ...SIGNAL_LIVE, edge: 0.012, first_edge: 0.05 }).falsifiers.some((f) => /decayed/.test(f)));
+
+/* ===================================================================== */
+/* 18  empty research source degrades honestly                           */
+/* ===================================================================== */
+
+section("Empty and broken sources");
+{
+  const d = dal({});
+  const s = await d.getSlate();
+  eq("18 empty board yields UNAVAILABLE, not a fabricated slate", s.ev[0].status, "UNAVAILABLE");
+  ok("18b names the table", s.ev[0].source === "signals");
+}
+{
+  const d = dal({ signals: "error" });
+  const s = await d.getSlate();
+  ok("18c a 500 is reported, never swallowed", String(s.ev[0].note).includes("HTTP 500"), s.ev[0].note);
+}
+{
+  const d = dal({ ...FULL, research_facts: "rls" });
+  const m = await d.getResearchMemory(["New York Yankees"], "baseball_mlb");
+  ok("18d missing memory tables tell you to run the migration",
+    m.ev.some((e) => e.status === "UNAVAILABLE" && String(e.note).includes("migration")));
+}
+
+/* ===================================================================== */
+/* 19  contradictory sources are surfaced, never silently collapsed      */
+/* ===================================================================== */
+
+section("Conflict detection");
+{
+  const list = [
+    ev({ source: "mlb_game_cards", entity: "NYY @ BOS", field: "probable_starter", value: "Carlos Rodón", status: "PROBABLE" }),
+    ev({ source: "pitcher_features", entity: "NYY @ BOS", field: "probable_starter", value: "Nestor Cortes", status: "VERIFIED" }),
+  ];
+  const c = findConflicts(list);
+  eq("19 disagreement detected", c.length, 1);
+  eq("19b resolved to the trusted source for that field", c[0].resolution, "mlb_game_cards");
+
+  const unresolved = findConflicts([
+    ev({ source: "srcA", entity: "g", field: "attendance", value: 100, status: "VERIFIED" }),
+    ev({ source: "srcB", entity: "g", field: "attendance", value: 900, status: "VERIFIED" }),
+  ]);
+  eq("19c unlisted field stays contested", unresolved[0].resolution, null);
+
+  eq("19d agreement is not a conflict", findConflicts([
+    ev({ source: "a", entity: "g", field: "temp", value: 78, status: "VERIFIED" }),
+    ev({ source: "b", entity: "g", field: "temp", value: 78, status: "VERIFIED" }),
+  ]).length, 0);
+}
+
+/* ===================================================================== */
+/* 20  repeated research is cached; budget is enforced                    */
+/* ===================================================================== */
+
+section("Cost control");
+{
+  const d = dal(FULL);
+  await d.getMlbCard();
+  const first = d.calls;
+  await d.getMlbCard();
+  eq("20 repeated schedule read is served from cache", d.calls, first);
+}
+{
+  const d = dal(FULL, 2);
+  await d.getSlate(); await d.getMlbCard(); const r = await d.getSlate("baseball_mlb");
+  ok("20b budget stops runaway retrieval", String(r.ev[0].note ?? "").includes("budget")
+    || d.calls <= 2, { calls: d.calls });
+}
+
+/* ===================================================================== */
+/* freshness + staleness never masquerade as current                      */
+/* ===================================================================== */
+
+section("Freshness");
+eq("F1 fresh odds are CURRENT", freshnessOf("odds", Date.now() - 60e3), "CURRENT");
+eq("F2 20-minute-old odds are RECENT", freshnessOf("odds", Date.now() - 20 * 60e3), "RECENT");
+eq("F3 day-old odds are STALE", freshnessOf("odds", Date.now() - 26 * 3600e3), "STALE");
+eq("F4 no timestamp is UNKNOWN, not CURRENT", freshnessOf("odds", null), "UNKNOWN");
+ok("F5 a stale fact cannot be VERIFIED",
+  ev({ source: "s", field: "f", value: 1, status: "VERIFIED", freshness: "STALE" }).status === "STALE");
+{
+  const d = dal({
+    ...FULL,
+    venue_weather: [{ event_id: "ev1", temp_f: 70, wind_mph: 4, is_dome: false, fetched_at: new Date(Date.now() - 30 * 3600e3).toISOString() }],
+  });
+  const w = await d.getWeather(["ev1"]);
+  eq("F6 stale weather is downgraded, not presented as current", w[0].status, "STALE");
+}
+
+/* ===================================================================== */
+/* probable vs confirmed, and model output stays UNPROVEN                 */
+/* ===================================================================== */
+
+section("Status discipline");
+{
+  const d = dal(FULL);
+  const card = await d.getMlbCard();
+  const starters = card.ev.filter((e) => e.field === "probable_starter");
+  ok("S1 announced starters are PROBABLE, never VERIFIED",
+    starters.filter((s) => s.status !== "UNAVAILABLE").every((s) => s.status === "PROBABLE"));
+  ok("S2 an unannounced starter is UNAVAILABLE with a reason",
+    starters.some((s) => s.status === "UNAVAILABLE" && String(s.note).includes("not announced")));
+}
+{
+  const d = dal({ ...FULL, model_predictions: [{ market: "h2h", selection: "New York Yankees", model_prob: 0.58, model_edge: 0.03, model_version: "v3" }] });
+  const m = await d.getModel("ev1");
+  eq("S3 model output is UNPROVEN", m[0].status, "UNPROVEN");
+  ok("S4 and is labelled as feeding no edge math", String(m[0].note).includes("feeds no edge math"));
+}
+{
+  const d = dal({ ...FULL, signals: [{ clv: 0.01, beat_close: true, result: "win", first_edge: 0.03 }] });
+  const h = await d.getCLVHistory("baseball_mlb", "h2h", 0.03);
+  ok("S5 a 1-row sample refuses to be a read", String(h[0].value && (h[0].value as any).note).includes("too small"));
+}
+{
+  const rows = Array.from({ length: 60 }, (_, i) => ({ clv: 0.005, beat_close: i % 2 === 0, result: "win", first_edge: 0.03 }));
+  const d = dal({ ...FULL, signals: rows });
+  const h = await d.getCLVHistory("baseball_mlb", "h2h", 0.03);
+  eq("S6 a real sample reports N", (h[0].value as any).n, 60);
+  eq("S7 and stays HISTORICAL, never proof", h[0].status, "HISTORICAL");
+}
+
+/* ===================================================================== */
+/* completeness scoring                                                   */
+/* ===================================================================== */
+
+section("Research completeness");
+{
+  const d = dal(FULL);
+  const card = await d.getMlbCard();
+  const pf = await d.getPitcherFeatures();
+  const slate = await d.getSlate();
+  const all = [...slate.ev, ...card.ev, ...pf.ev];
+  const c = completeness(all, "baseball_mlb");
+  ok("C1 completeness is a real percentage", c.pct > 40 && c.pct <= 100, c);
+  ok("C2 it names what is missing", Array.isArray(c.missing));
+  const bare = completeness([], "baseball_mlb");
+  eq("C3 nothing retrieved scores 0", bare.pct, 0);
+  ok("C4 and lists every dimension as missing", bare.missing.length >= 8);
+}
+
+/* ===================================================================== */
+/* conversation state carries the subject forward                         */
+/* ===================================================================== */
+
+section("Conversation state");
+{
+  const p1 = classify("Research Dodgers vs Diamondbacks.");
+  const s1 = deriveState([], p1, null, null);
+  ok("V1 first turn resolves both clubs", s1.teams.length === 2, s1.teams);
+
+  const p2 = classify("What about the bullpen?");
+  const s2 = deriveState([{ role: "user", content: "Research Dodgers vs Diamondbacks." }], p2, null, s1);
+  ok("V2 follow-up keeps the same subject without repeating it", s2.teams.length === 2, s2.teams);
+
+  const p3 = classify("Now attack both.");
+  const s3 = deriveState([], p3, null, s2);
+  eq("V3 subject survives another hop", s3.teams, s2.teams);
+
+  const s4 = deriveState([], classify("What changed?"), { game: { matchup: "Seattle Mariners @ Oakland Athletics" }, sport_key: "baseball_mlb" }, s3);
+  ok("V4 an open signal overrides the carried subject", s4.teams.includes("Seattle Mariners"), s4.teams);
+}
+
+/* ===================================================================== */
+
+/* ===================================================================== */
+/* research packet versioning (§14, §21)                                  */
+/* ===================================================================== */
+
+section("Research packet versioning");
+{
+  clearCache();
+  const d = dal(FULL);
+  const card = await d.getMlbCard();
+  const pf = await d.getPitcherFeatures();
+  const all = [...card.ev, ...pf.ev];
+
+  const v1 = buildSnapshot("ev1", all, SIGNAL_LIVE, 1);
+  ok("P1 snapshot captures market + matchup scalars",
+    v1.facts.edge === 0.041 && v1.facts.away_starter != null, v1.facts);
+
+  eq("P2 first look reports no earlier packet",
+    diffSnapshots(null, v1).note.includes("version 1"), true);
+
+  // price improves, starter gets scratched, wind picks up
+  const later = { ...SIGNAL_LIVE, best_dec: 1.95, edge: 0.061 };
+  const v2 = buildSnapshot("ev1", all.filter((e) => !(e.field === "probable_starter" && String(e.entity).includes("Rod"))), later, 2);
+  const diff = diffSnapshots(v1, v2);
+  ok("P3 price movement detected with direction",
+    diff.changed.some((c) => c.field === "current_price" && c.direction === "up"), diff.changed);
+  ok("P4 edge movement detected", diff.changed.some((c) => c.field === "edge"));
+  ok("P5 a lost starter is reported as lost, not silently dropped",
+    diff.changed.some((c) => c.field === "away_starter" && c.direction === "lost"), diff.changed);
+  ok("P6 unchanged fields are listed, not invented", Array.isArray(diff.unchanged));
+
+  const same = diffSnapshots(v1, buildSnapshot("ev1", all, SIGNAL_LIVE, 2));
+  eq("P7 nothing changed says so plainly", same.changed.length, 0);
+}
+
+/* ===================================================================== */
+/* structured findings — no knowledge contamination (§3, §15)             */
+/* ===================================================================== */
+
+section("Findings extraction");
+{
+  clearCache();
+  const d = dal(FULL);
+  const pf = await d.getPitcherFeatures();
+  const card = await d.getMlbCard();
+  const f = extractFindings([...pf.ev, ...card.ev]);
+
+  ok("K1 findings are produced from evidence", f.length > 0);
+  ok("K2 every finding names its source table", f.every((x) => !!x.source));
+  ok("K3 every finding carries the record it came from", f.every((x) => x.fact_value != null));
+  ok("K4 every finding expires", f.every((x) => !!x.valid_until));
+  const q = f.find((x) => x.fact_type === "pitcher_quality");
+  ok("K5 the claim quotes the actual number, not an adjective",
+    !!q && /xERA 5\.41/.test(q.claim) && !/terrible|bad|elite/i.test(q.claim), q?.claim);
+  const ps = f.find((x) => x.fact_type === "probable_starter");
+  ok("K6 probable starters are stored as probable, never verified",
+    !!ps && ps.verification_status === "PROBABLE" && /not confirmed/.test(ps.claim), ps?.claim);
+  ok("K7 weather expires faster than park factors", (() => {
+    const w = f.find((x) => x.fact_type === "weather"), p = f.find((x) => x.fact_type === "park");
+    if (!w || !p) return true;
+    return Date.parse(w.valid_until!) < Date.parse(p.valid_until!);
+  })());
+  eq("K8 UNAVAILABLE evidence never becomes a finding",
+    extractFindings([ev({ source: "pitcher_features", field: "pitcher_quality", entity: "X", value: null, status: "UNAVAILABLE" })]).length, 0);
+}
+
+/* ===================================================================== */
+/* proactive research scout + research-vs-betting separation (§10, §11)   */
+/* ===================================================================== */
+
+section("Research queue");
+{
+  const q = scout([SIGNAL_LIVE, SIGNAL_PRICE_KILLED, SIGNAL_STALE, SIGNAL_NO_SHARP]);
+  ok("Q1 the scout flags something", q.length > 0);
+  ok("Q2 a stale playable number is flagged",
+    q.some((i) => i.flags.some((f) => /stale capture/.test(f))), q.map((i) => i.flags));
+  ok("Q3 a thin, unconfirmed edge is flagged",
+    q.some((i) => i.flags.some((f) => /Pinnacle print|weak confirmation/.test(f))));
+  ok("Q4 a decayed edge is flagged",
+    q.some((i) => i.flags.some((f) => /decayed/.test(f))));
+  ok("Q5 research interest is kept separate from betting action",
+    q.every((i) => !!i.research_interest && !!i.betting_action));
+  ok("Q6 a sub-floor game is never presented as a bet",
+    q.filter((i) => i.event_id === "ev2").every((i) => /not a bet/.test(i.betting_action)),
+    q.filter((i) => i.event_id === "ev2").map((i) => i.betting_action));
+  eq("Q7 a clean board produces an empty queue, not invented flags",
+    scout([{ ...SIGNAL_LIVE, edge: 0.03, first_edge: 0.03, n_books: 8, has_sharp: true, pin_dec: 1.84 }]).length, 0);
+}
+
+/* ===================================================================== */
+/* named research modes (§8)                                              */
+/* ===================================================================== */
+
+section("Research modes");
+eq("M1 attack question -> ATTACK", classify("Attack this bet.").mode, "ATTACK");
+eq("M2 comparison -> COMPARE", classify("Compare these three games.").mode, "COMPARE");
+eq("M3 history -> HISTORICAL", classify("Have we seen this setup before?").mode, "HISTORICAL");
+eq("M4 pricing -> MARKET", classify("Is this line still playable?").mode, "MARKET");
+eq("M5 pitcher matchup -> MATCHUP", classify("Which pitcher is most exploitable?").mode, "MATCHUP");
+eq("M6 slate sweep -> SLATE", classify("Find me the best MLB moneyline edges.").mode, "SLATE");
+eq("M7 triage -> SCOUT", classify("What should I research next?").mode, "SCOUT");
+eq("M8 postmortem -> POSTMORTEM", classify("Why did EdgeDesk get that one wrong?").mode, "POSTMORTEM");
+ok("M9 postmortem retrieves the closing line and CLV, not today's card",
+  classify("Why did EdgeDesk get that one wrong?").steps.includes("closing_line"));
+eq("M10 a plain why stays FAST", classify("Why do you like this?").mode, "FAST");
+ok("M11 every intent maps to a mode", Object.values(MODE_OF_INTENT).every((m) => typeof m === "string"));
+
+/* ===================================================================== */
+/* live fallback when the owned feature pipeline is stale                 */
+/* ===================================================================== */
+
+section("Official-feed fallback (stale ingestion)");
+{
+  // Reproduces the reported failure: games are current, pitcher_features is not.
+  const d = dal({ ...FULL, pitcher_features: [], offense_features: [] });
+  const pf = await d.getPitcherFeatures();
+
+  ok("L1 the fallback fires when the owned table is empty",
+    !!pf.path.live_fallback, Object.keys(pf.path));
+  ok("L2 and says why, still naming the owned-table repair",
+    /repair(ing)? ingest_mlb/i.test(String(pf.path.live_fallback_reason)), pf.path.live_fallback_reason);
+
+  const q = pf.ev.filter((e) => e.field === "pitcher_quality" && e.status !== "UNAVAILABLE");
+  eq("L3 both starters now carry a usable line", q.length, 2);
+  ok("L4 the line is the official ERA, not an invented xERA",
+    (q.find((e) => String(e.entity).includes("Rod"))!.value as any).era === 5.41);
+  ok("L5 xERA and barrel% now ARRIVE from the Statcast tier",
+    q.every((e) => (e.value as any).xera != null && (e.value as any).barrel_pct != null));
+  ok("L6 every fallback fact names both feeds it drew on",
+    q.every((e) => e.source === "MLB Stats API" && /Baseball Savant/.test(String(e.note))));
+
+  const off = pf.ev.filter((e) => e.field === "opponent_offense" && e.status !== "UNAVAILABLE");
+  eq("L7 opponent offense comes with it", off.length, 2);
+  ok("L8 and each starter faces the OTHER team's bats",
+    (off.find((e) => String(e.entity).includes("Rod"))!.value as any).opponent === "Boston Red Sox",
+    (off.find((e) => String(e.entity).includes("Rod"))!.value as any).opponent);
+  ok("L9 offense gaps are named too",
+    off.every((e) => (e.value as any).applicable.missing_fields.includes("wrc_plus")));
+
+  const cov = coverage(pf.ev, "pitcher_quality", ["Carlos Rodón", "Kutter Crawford"]);
+  eq("L10 coverage recovers from 0/2 to 2/2", [cov.have_n, cov.total_n], [2, 2]);
+}
+{
+  // The owned tables are healthy — the fallback must stay out of the way.
+  const d = dal(FULL);
+  const pf = await d.getPitcherFeatures();
+  ok("L11 healthy owned tables do NOT trigger the fallback", !pf.path.live_fallback);
+  ok("L12 and the owned Statcast fields are used",
+    pf.ev.some((e) => e.field === "pitcher_quality" && (e.value as any).xera === 5.41
+      && e.source === "pitcher_features"));
+}
+{
+  const d = new Dal({
+    supabaseUrl: "https://x.supabase.co", apikey: "anon", authorization: "Bearer jwt",
+    fetchImpl: mockFetch({ ...FULL, pitcher_features: [] }), budget: 24, mlbFallback: false,
+  });
+  clearCache();
+  const pf = await d.getPitcherFeatures();
+  ok("L13 the fallback can be switched off entirely", !pf.path.live_fallback);
+  ok("L14 and then it reports the gap rather than filling it",
+    pf.ev.some((e) => e.status === "UNAVAILABLE"));
+}
+{
+  const d = dal({ ...FULL, pitcher_features: [], __statsapi: "error" } as any);
+  const pf = await d.getPitcherFeatures();
+  ok("L15 an unreachable feed degrades honestly, it does not throw",
+    pf.ev.some((e) => e.status === "UNAVAILABLE"));
+}
+
+/* ===================================================================== */
+/* cross-market structure — the spots a per-signal board cannot show      */
+/* ===================================================================== */
+
+section("Cross-market structure");
+
+const G = { home_team: "Boston Red Sox", away_team: "New York Yankees" };
+const mk = (market: string, selection: string, edge: number, over: any = {}) =>
+  ({ ...G, market, selection, edge, first_edge: edge, n_books: 7, has_sharp: true, best_dec: 1.9, ...over });
+
+{
+  // moneyline AND run line on the same team
+  const f = crossMarketFlags([mk("h2h", "New York Yankees", 0.04), mk("spreads", "New York Yankees", 0.035)]);
+  ok("X1 two markets on the same side is flagged",
+    f.some((x) => x.kind === "multi_market_same_side"), f.map((x) => x.kind));
+  ok("X2 ...as high research interest",
+    f.find((x) => x.kind === "multi_market_same_side")?.research_interest === "HIGH");
+  ok("X3 ...and says why a single verdict cannot show it",
+    /not in any single verdict/.test(f.find((x) => x.kind === "multi_market_same_side")!.detail));
+}
+{
+  // nickname on one side must still resolve, or the whole flag is missed
+  const f = crossMarketFlags([mk("h2h", "Yankees", 0.04), mk("spreads", "New York Yankees", 0.035)]);
+  ok("X4 a nickname still resolves to the same side",
+    f.some((x) => x.kind === "multi_market_same_side"), f.map((x) => x.kind));
+}
+{
+  // edges on BOTH teams across markets — they cannot both be right
+  const f = crossMarketFlags([mk("h2h", "New York Yankees", 0.04), mk("spreads", "Boston Red Sox", 0.03)]);
+  const c = f.find((x) => x.kind === "cross_market_conflict");
+  ok("X5 opposite sides of one game is flagged as a conflict", !!c, f.map((x) => x.kind));
+  ok("X6 ...and refuses to present it as two bets", /not two bets/.test(c!.detail));
+}
+{
+  // the moneyline is efficient but the total is not — the classic overlooked spot
+  const f = crossMarketFlags([mk("h2h", "New York Yankees", 0.001), mk("totals", "Over 8.5", 0.045)]);
+  const d = f.find((x) => x.kind === "derivative_only_edge");
+  ok("X7 an edge only on a derivative market is surfaced", !!d, f.map((x) => x.kind));
+  ok("X8 ...with the reason it is overlooked", /less sharp money/.test(d!.detail));
+}
+{
+  const f = crossMarketFlags([
+    mk("h2h", "New York Yankees", 0.04, { has_sharp: true }),
+    mk("totals", "Over 8.5", 0.04, { has_sharp: false }),
+  ]);
+  ok("X9 uneven sharp confirmation across markets is flagged",
+    f.some((x) => x.kind === "uneven_sharp_confirmation"), f.map((x) => x.kind));
+}
+{
+  const f = crossMarketFlags([
+    mk("h2h", "New York Yankees", 0.04, { n_books: 9 }),
+    mk("spreads", "New York Yankees", 0.04, { n_books: 2 }),
+  ]);
+  ok("X10 a thin market on an otherwise liquid game is flagged",
+    f.some((x) => x.kind === "thin_market_on_liquid_game"), f.map((x) => x.kind));
+}
+{
+  eq("X11 a single market has no structure to read", crossMarketFlags([mk("h2h", "New York Yankees", 0.04)]).length, 0);
+  eq("X12 an empty board invents nothing", crossMarketFlags([]).length, 0);
+  eq("X13 sub-floor edges are not treated as edges",
+    crossMarketFlags([mk("h2h", "New York Yankees", 0.001), mk("spreads", "New York Yankees", 0.001)])
+      .filter((x) => x.kind === "multi_market_same_side").length, 0);
+}
+
+/* ===================================================================== */
+/* market movement direction                                             */
+/* ===================================================================== */
+
+section("Market movement");
+
+const ticks = (prices: number[]) => prices.map((p, i) => ({ best_dec: p, edge: 0.03, created_at: new Date(Date.now() - (prices.length - i) * 6e5).toISOString() }));
+
+eq("V20 a shortening price is movement TOWARD the side",
+  movementRead(2.00, ticks([2.00, 1.95, 1.90])).direction, "toward");
+eq("V21 a drifting price is movement AWAY",
+  movementRead(2.00, ticks([2.00, 2.05, 2.15])).direction, "away");
+eq("V22 a small wobble is flat, not a signal",
+  movementRead(2.00, ticks([2.00, 2.00, 2.005])).direction, "flat");
+eq("V23 no ticks means unknown, never a guess",
+  movementRead(2.00, []).direction, "unknown");
+eq("V24 no entry price means unknown", movementRead(null, ticks([2.0, 1.9])).direction, "unknown");
+ok("V25 magnitude is reported",
+  Math.abs(movementRead(2.00, ticks([2.00, 1.80]))!.moved_pct! - 0.10) < 1e-9);
+ok("V26 movement is explicitly NOT called CLV",
+  /not CLV/.test(movementRead(2.00, ticks([2.00, 1.90])).note));
+ok("V27 drift is not spun as good news",
+  /market knows something/.test(movementRead(2.00, ticks([2.00, 2.20])).note));
+
+/* ===================================================================== */
+/* the expanded MLB statistical layer                                    */
+/* ===================================================================== */
+
+section("MLB stats layer — rate stats, FIP, platoon, workload");
+{
+  const d = dal({ ...FULL, pitcher_features: [], offense_features: [] });
+  const pf = await d.getPitcherFeatures();
+  const q = pf.ev.filter((e) => e.field === "pitcher_quality" && e.status !== "UNAVAILABLE");
+  const rodon = q.find((e) => String(e.entity).includes("Rod"))!.value as any;
+  const craw = q.find((e) => String(e.entity).includes("Crawford"))!.value as any;
+
+  // "121.2" is 121 innings and TWO OUTS. Reading it as 121.2 corrupts every rate.
+  ok("N1 innings-pitched thirds are parsed, not read as a decimal",
+    Math.abs(rodon.innings_num - 121.7) < 0.05, rodon.innings_num);
+
+  eq("N2 K% is strikeouts over batters faced, not per nine", rodon.k_pct, +(110 / 540).toFixed(3));
+  eq("N3 BB% likewise", rodon.bb_pct, +(54 / 540).toFixed(3));
+  ok("N4 HR/9 is computed from innings", Math.abs(rodon.hr_per_9 - (9 * 22 / 121.667)) < 0.02, rodon.hr_per_9);
+
+  // FIP with the constant solved from league totals in the same response.
+  ok("N5 FIP is computed", rodon.fip != null, rodon.fip);
+  ok("N6 ...and the constant is derived, not assumed",
+    /solved from this season's league totals, not assumed/.test(rodon.fip_note), rodon.fip_note);
+  ok("N7 the league constant is in the data path",
+    (pf.path.live_fallback as any)?.fip_constant?.cFIP != null, (pf.path.live_fallback as any)?.fip_constant);
+  ok("N8 the worse arm has the worse FIP", rodon.fip > craw.fip, { rodon: rodon.fip, craw: craw.fip });
+
+  eq("N9 batted-ball lean is read from ground-to-air", rodon.batted_ball_lean, "fly-ball");
+  eq("N10 ...and the other way for a ground-baller", craw.batted_ball_lean, "ground-ball");
+  eq("N11 throwing hand is captured", [rodon.throws, craw.throws], ["L", "R"]);
+  ok("N12 strike% and pitches/inning come through", rodon.strike_pct != null && rodon.pitches_per_inning != null);
+  ok("N13 only the fields in NEITHER feed are declared missing",
+    rodon.missing_fields.includes("csw_pct") && rodon.missing_fields.includes("velocity")
+    && !rodon.missing_fields.includes("xera"));
+
+  // platoon split — the single most matchup-relevant field
+  const off = pf.ev.filter((e) => e.field === "opponent_offense" && e.status !== "UNAVAILABLE");
+  const rodonOpp = off.find((e) => String(e.entity).includes("Rod"))!.value as any;
+  eq("N14 a lefty gets the opponent's vs-LHP split, not the overall line",
+    rodonOpp.applicable.split, "vs LHP");
+  eq("N15 ...and it is the RIGHT team's split (he faces Boston)", rodonOpp.applicable.obp, 0.310);
+  ok("N16 the season overall line is kept for contrast",
+    rodonOpp.season_overall != null && rodonOpp.season_overall.split === "season overall");
+  const crawOpp = off.find((e) => String(e.entity).includes("Crawford"))!.value as any;
+  eq("N17 a righty gets the vs-RHP split", crawOpp.applicable.split, "vs RHP");
+  ok("N18 ISO is derived from SLG minus AVG",
+    Math.abs(rodonOpp.applicable.iso - (0.390 - 0.240)) < 1e-9, rodonOpp.applicable.iso);
+  ok("N19 opponent K% is over plate appearances", rodonOpp.applicable.k_pct === +(230 / 1000).toFixed(3));
+  ok("N20 wOBA and wRC+ are declared missing rather than faked",
+    rodonOpp.applicable.missing_fields.includes("wrc_plus") && rodonOpp.applicable.missing_fields.includes("woba"));
+
+  // workload from the game log
+  const wl = pf.ev.filter((e) => e.field === "workload" && e.status !== "UNAVAILABLE");
+  const rw = wl.find((e) => String(e.entity).includes("Rod"))!.value as any;
+  eq("N21 only actual STARTS count toward recent workload", rw.recent_starts.length, 3);
+  eq("N22 the most recent start is first", rw.recent_starts[0].date, "2026-08-05");
+  eq("N23 pitch counts come through", rw.recent_starts[0].pitches, 96);
+  ok("N24 days rest is computed from the last start", rw.days_rest >= 0, rw.days_rest);
+  ok("N25 a relief appearance is excluded from starts",
+    !rw.recent_starts.some((g: any) => g.date === "2026-07-19"));
+
+  ok("N26 coverage now reports the platoon-aware offense as present",
+    coverage(pf.ev, "opponent_offense", ["Carlos Rodón", "Kutter Crawford"]).have_n === 2);
+  ok("N27 the whole layer stays inside its call ceiling",
+    ((pf.path.live_fallback as any)?.api_calls ?? 99) <= 12, (pf.path.live_fallback as any)?.api_calls);
+}
+{
+  // league totals unavailable -> FIP is omitted, not guessed
+  const d = dal({ ...FULL, pitcher_features: [], offense_features: [] });
+  const orig = mockFetch({ ...FULL, pitcher_features: [] });
+  (d as any).f = async (url: string, init: any) => {
+    if (String(url).includes("group=pitching")) return new Response("{}", { status: 200 });
+    return orig(url as any, init);
+  };
+  const pf = await d.getPitcherFeatures();
+  const q = pf.ev.find((e) => e.field === "pitcher_quality" && e.status !== "UNAVAILABLE")!.value as any;
+  eq("N28 no league totals means NO FIP, not an assumed constant", q.fip, null);
+  ok("N29 ...and it says why", /league constant unavailable/.test(q.fip_note), q.fip_note);
+}
+
+/* ===================================================================== */
+/* Statcast tier + full-card coverage                                    */
+/* ===================================================================== */
+
+section("Statcast tier (read directly when pitcher_features is empty)");
+{
+  const d = dal({ ...FULL, pitcher_features: [], offense_features: [] });
+  const pf = await d.getPitcherFeatures();
+  const q = pf.ev.filter((e) => e.field === "pitcher_quality" && e.status !== "UNAVAILABLE");
+  const rodon = q.find((e) => String(e.entity).includes("Rod"))!.value as any;
+
+  eq("S30 xERA arrives even though the owned table is empty", rodon.xera, 4.88);
+  eq("S31 barrel% arrives", rodon.barrel_pct, 9.9);
+  eq("S32 hard-hit% arrives", rodon.hardhit_pct, 44.3);
+  eq("S33 whiff% arrives", rodon.whiff_pct, 24.1);
+  eq("S34 xwOBA against arrives", rodon.xwoba_against, 0.339);
+
+  // the column-resolution bug that stored a diff as the stat
+  ok("S35 xERA is the xera column, NOT era_minus_xera_diff",
+    rodon.xera !== 0.53 && rodon.xera !== -0.62, rodon.xera);
+  // quoted numerics
+  ok("S36 quoted CSV values are usable", rodon.barrel_pct === 9.9 && rodon.xera === 4.88);
+
+  eq("S37 ERA minus xERA is exposed as a read", rodon.era_vs_xera, +(5.41 - 4.88).toFixed(2));
+  ok("S38 ...with what it means", /better than the line suggests/.test(rodon.era_vs_xera_note));
+  eq("S39 Statcast is attributed", rodon.statcast_source, "Baseball Savant (Statcast)");
+  ok("S40 xERA is no longer in missing_fields", !rodon.missing_fields.includes("xera"), rodon.missing_fields);
+  ok("S41 fields in NEITHER feed stay declared missing",
+    rodon.missing_fields.includes("csw_pct") && rodon.missing_fields.includes("velocity"));
+  ok("S42 the data path reports the Statcast read",
+    /read \d+ pitchers/.test(String((pf.path.live_fallback as any)?.statcast_status)),
+    (pf.path.live_fallback as any)?.statcast_status);
+}
+{
+  // Savant down -> traditional line still lands, Statcast declared missing
+  const d = dal({ ...FULL, pitcher_features: [], offense_features: [], __savant: "error" } as any);
+  const pf = await d.getPitcherFeatures();
+  const q = pf.ev.find((e) => e.field === "pitcher_quality" && e.status !== "UNAVAILABLE")!.value as any;
+  eq("S43 Savant down means xERA is null, never guessed", q.xera, null);
+  ok("S44 ...and it goes back into missing_fields", q.missing_fields.includes("xera"));
+  ok("S45 the traditional line still lands", q.era === 5.41 && q.fip != null);
+  eq("S46 no Statcast attribution is claimed", q.statcast_source, null);
+}
+{
+  // the 20/50 bug: the fallback covered one date while the card spans several
+  const d = dal({ ...FULL, pitcher_features: [], offense_features: [] });
+  const fb = await d.getMlbLiveFallback();
+  ok("S47 the schedule window matches the card's, not a single day",
+    Array.isArray((fb.path as any).dates) && (fb.path as any).dates.length > 1, (fb.path as any).dates);
+  ok("S48 an empty second date does not break the run", (fb.path as any).starters_found === 2,
+    (fb.path as any).starters_found);
+  ok("S49 the whole layer stays inside its call ceiling", ((fb.path as any).api_calls ?? 99) <= 12,
+    (fb.path as any).api_calls);
+}
+
+/* ===================================================================== */
+/* coverage is measured against the LIVE slate                           */
+/* ===================================================================== */
+
+section("Slate scoping (the 30/60 denominator bug)");
+{
+  const d = dal({ ...FULL, mlb_game_cards: [...CARD, CARD_YESTERDAY] });
+  const card = await d.getMlbCard();
+  const starters = card.ev.filter((e) => e.field === "probable_starter" && e.status !== "UNAVAILABLE");
+
+  ok("Z1 the card still returns the lookback game — the reader is unchanged",
+    starters.some((e) => String(e.entity) === "Max Fried"), starters.map((e) => e.entity));
+  ok("Z2 every starter now carries the date of its game",
+    starters.every((e) => (e.value as any).game_date != null));
+  ok("Z3 ...and its status, so a finished game is identifiable",
+    starters.some((e) => String((e.value as any).status).toLowerCase() === "final"));
+
+  // the scoping rule the orchestrator applies
+  const live = new Set([etDay(0), etDay(1)]);
+  const onLive = (e: any) => {
+    const v = e.value;
+    const dd = v?.game_date ? String(v.game_date).slice(0, 10) : null;
+    if (dd && !live.has(dd)) return false;
+    return String(v?.status ?? "").toLowerCase() !== "final";
+  };
+  const scoped = starters.filter(onLive);
+  ok("Z4 yesterday's finished starters are excluded from the live slate",
+    !scoped.some((e) => String(e.entity) === "Max Fried"), scoped.map((e) => e.entity));
+  ok("Z5 today's starters are kept",
+    scoped.some((e) => String(e.entity) === "Carlos Rodón"));
+  eq("Z6 the denominator shrinks to the playable card", scoped.length, 3);
+
+  // and the coverage number that results
+  const pf = await d.getPitcherFeatures();
+  const all = coverage(pf.ev, "pitcher_quality", starters.map((e) => String(e.entity)));
+  const liveCov = coverage(pf.ev, "pitcher_quality", scoped.map((e) => String(e.entity)));
+  ok("Z7 the unscoped denominator is the larger, misleading one",
+    all.total_n > liveCov.total_n, { all: all.total_n, live: liveCov.total_n });
+  ok("Z8 scoped coverage reports against the live card only", liveCov.total_n === 3, liveCov.total_n);
+}
+
+/* ===================================================================== */
+/* the answer must never deny data it actually has                       */
+/* ===================================================================== */
+
+section("Statcast messaging (the self-contradiction bug)");
+{
+  const d = dal({ ...FULL, pitcher_features: [], offense_features: [] });
+  const pf = await d.getPitcherFeatures();
+  const reason = String(pf.path.live_fallback_reason ?? "");
+  const q = pf.ev.filter((e) => e.field === "pitcher_quality" && e.status !== "UNAVAILABLE");
+  const withX = q.filter((e) => (e.value as any).xera != null);
+
+  ok("W1 Statcast actually landed", withX.length > 0, withX.length);
+  ok("W2 the data-path text says the Statcast fields ARE present",
+    /ARE present/.test(reason), reason.slice(0, 160));
+  ok("W3 ...and no longer tells the model they are missing",
+    !/restore xERA \/ barrel% \/ hard-hit%/.test(reason), reason.slice(0, 160));
+  ok("W4 ...and points at per-starter fields instead of a slate-wide claim",
+    /check each starter's own fields/.test(reason));
+}
+{
+  // Savant unreachable: the message must flip back to an honest gap
+  const d = dal({ ...FULL, pitcher_features: [], offense_features: [], __savant: "error" } as any);
+  const pf = await d.getPitcherFeatures();
+  const reason = String(pf.path.live_fallback_reason ?? "");
+  ok("W5 when Savant fails the text says the fields are genuinely unavailable",
+    /genuinely unavailable/.test(reason), reason.slice(0, 160));
+  ok("W6 ...and does not claim Statcast is present",
+    !/ARE present/.test(reason));
+}
+
+section("Season line is never crowded out by game logs");
+{
+  const d = dal({ ...FULL, pitcher_features: [], offense_features: [] });
+  const fb = await d.getMlbLiveFallback();
+  eq("W7 every starter got a season line", (fb.path as any).pitching_lines, 2);
+  eq("W8 none are reported as missing a line", ((fb.path as any).starters_without_line ?? []).length, 0);
+  ok("W9 the starters that lack a line would be NAMED if any did",
+    Array.isArray((fb.path as any).starters_without_line));
+  ok("W10 game logs are fetched separately and still land",
+    (fb.path as any).game_logs >= 1, (fb.path as any).game_logs);
+  ok("W11 the layer stays inside its raised ceiling", ((fb.path as any).api_calls ?? 99) <= 20,
+    (fb.path as any).api_calls);
+}
+
+/* The live failure: asked "best pitchers on todays slate?", the engine
+   classified it correctly and then answered with the five WORST arms, filing
+   the slate's best pitcher under "the one who is NOT on the list". */
+section("A ranking question is answered on the axis it asked for");
+{
+  eq("R1 'best pitchers on todays slate?' classifies as best_pitchers",
+    classify("best pitchers on todays slate?", null).intent, "best_pitchers");
+
+  const best = rankingAxis("best_pitchers") ?? "";
+  ok("R2 best_pitchers carries an axis instruction", best.length > 0);
+  ok("R3 it says rank by quality, strongest first", /strongest arm at #1/.test(best));
+  ok("R4 it forbids the exploitability reorder", /do not reorder by attackability/i.test(best));
+  ok("R5 it puts the asked-for ranking before the betting angle",
+    /in full before any betting angle/i.test(best));
+
+  const worst = rankingAxis("worst_pitchers") ?? "";
+  ok("R6 worst_pitchers still ranks by attackability", /attackability/.test(worst));
+  ok("R7 worst_pitchers explicitly is not raw ERA", /not by raw ERA/.test(worst));
+  eq("R8 exploitable_pitchers gets the same axis as worst_pitchers",
+    rankingAxis("exploitable_pitchers"), worst);
+
+  ok("R9 the two axes are genuinely opposite, not the same text", best !== worst);
+  ok("R10 best_matchups is named too", (rankingAxis("best_matchups") ?? "").length > 0);
+  eq("R11 an intent with no ranking axis returns null", rankingAxis("weather"), null);
+  eq("R12 an unknown intent returns null rather than throwing", rankingAxis("nonsense"), null);
+
+  /* The classifier half of the same bug, kept alongside so a future edit to
+     the stem regexes cannot silently re-invert the answer. */
+  eq("R13 'worst starters today' still routes to worst_pitchers",
+    classify("worst starters today", null).intent, "worst_pitchers");
+  ok("R14 best and worst do not collapse to one intent",
+    classify("best pitchers today", null).intent !== classify("worst pitchers today", null).intent);
+}
+
+/* The live failure: a 30-starter slate serialized to ~69,000 chars against a
+   60,000-char cap, so the evidence string was cut mid-object. The model filled
+   the severed tail from the last complete record it had seen and reported
+   three different pitchers with one identical stat line — while coverage,
+   computed over the full array, still said 30/30. */
+section("Evidence is never cut in half, and what is withheld is named");
+{
+  const item = (i: number) => ({
+    source: "MLB Stats API", entity: `Pitcher ${i}`, field: "pitcher_quality",
+    status: "VERIFIED", freshness: "CURRENT",
+    value: { name: `Pitcher ${i}`, era: 2.5 + i / 100, xera: 3.1 + i / 100, filler: "x".repeat(200) },
+  });
+  const many = Array.from({ length: 30 }, (_, i) => item(i));
+  const whole = JSON.stringify(many);
+
+  // Generous budget: nothing is lost and the text is byte-identical.
+  const full = budgetEvidence(many, whole.length + 10);
+  eq("B1 nothing is dropped when it all fits", full.dropped, 0);
+  eq("B2 every item is included", full.included, 30);
+  eq("B3 the output is exactly the array", full.text, whole);
+  eq("B4 no withheld note when nothing was withheld", full.droppedNote, null);
+
+  // Tight budget: this is the case that used to sever the string.
+  const tight = budgetEvidence(many, 2000);
+  ok("B5 some items are withheld under a tight budget", tight.dropped > 0, tight);
+  ok("B6 ...and some still get through", tight.included > 0, tight);
+  eq("B7 included + withheld accounts for every item", tight.included + tight.dropped, 30);
+
+  // The whole point: the result must still PARSE.
+  let parsed: any = null, threw = false;
+  try { parsed = JSON.parse(tight.text); } catch { threw = true; }
+  ok("B8 the truncated output is still valid JSON", !threw);
+  ok("B9 it parses to an array", Array.isArray(parsed));
+  eq("B10 with exactly the included count", parsed?.length, tight.included);
+
+  // Every surviving item is whole — no half-objects with missing fields.
+  ok("B11 every item that survived is complete",
+    (parsed ?? []).every((p: any) => p && p.value && typeof p.value.era === "number"
+      && typeof p.value.xera === "number" && p.entity && p.field));
+
+  // And no two survivors share a stat line, which is the reported symptom.
+  const eras = (parsed ?? []).map((p: any) => p.value.era);
+  eq("B12 no two surviving pitchers share an ERA", new Set(eras).size, eras.length);
+
+  ok("B13 the withheld items are named, not just counted", !!tight.droppedNote
+    && /Pitcher \d+ \(pitcher_quality\)/.test(tight.droppedNote));
+  ok("B14 the note says they were retrieved, not missing from the database",
+    /RETRIEVED SUCCESSFULLY/.test(tight.droppedNote ?? ""));
+  ok("B15 the note forbids reusing another entity's numbers",
+    /do not reuse another entity's numbers/i.test(tight.droppedNote ?? ""));
+  ok("B16 the note states the count", /\d+ retrieved items were withheld/.test(tight.droppedNote ?? ""));
+
+  // A budget too small for even one item must not produce garbage.
+  const none = budgetEvidence(many, 5);
+  eq("B17 an impossible budget yields an empty array, not a fragment", none.text, "[]");
+  eq("B18 ...and reports everything as withheld", none.dropped, 30);
+  ok("B19 ...and still parses", Array.isArray(JSON.parse(none.text)));
+
+  eq("B20 an empty evidence set is an empty array", budgetEvidence([], 1000).text, "[]");
+
+  /* The real measurement: a realistic full slate must fit the shipped budget
+     without dropping anything, so the common case never truncates at all. */
+  const slate: any[] = [];
+  const NOTE = "Traditional line from the MLB Stats API; Statcast fields (xERA, xwOBA, barrel%, hard-hit%, "
+    + "whiff%) read directly from Baseball Savant because pitcher_features is empty. CSW%, pitch mix and "
+    + "velocity are in neither feed and are not approximated.";
+  for (let i = 0; i < 30; i++) {
+    /* The real emitted shape, field for field, so the size assertion below is
+       a measurement of production and not of a toy. */
+    slate.push({
+      source: "MLB Stats API", entity: `Starter Name ${i}`, field: "pitcher_quality", relevance: "pitching",
+      status: "VERIFIED", freshness: "CURRENT", retrieved_at: "2026-08-10T18:00:00.000Z",
+      source_timestamp: "2026-08-10T18:00:00.000Z", note: NOTE,
+      value: {
+        name: `Starter Name ${i}`, team: "Los Angeles Dodgers",
+        game: "Kansas City Royals @ Los Angeles Dodgers", throws: "R",
+        era: 2.78, whip: 1.02, fip: 3.11,
+        fip_note: "FIP from owned counting stats; league constant 3.142 solved from this season's league totals, not assumed.",
+        k_pct: 21.9, bb_pct: 6.1, k_per_9: 9.4, bb_per_9: 2.6, k_bb_ratio: 3.31, hr_per_9: 1.02,
+        ground_to_air: 1.11, batted_ball_lean: "neutral", strike_pct: .655, pitches_per_inning: 14.52,
+        innings: "121.2", innings_num: 121.7, batters_faced: 498, games_started: 22,
+        xera: 3.70, xwoba_against: .291, barrel_pct: 6.5, hardhit_pct: 38.0, whiff_pct: 23.2,
+        statcast_k_pct: 21.9, statcast_bb_pct: 6.1, era_vs_xera: -0.92,
+        era_vs_xera_note: "ERA minus xERA. Positive means the ERA is worse than the contact he allowed — the arm may be better than the line suggests, and vice versa.",
+        statcast_source: "Baseball Savant (Statcast)", missing_fields: ["csw_pct", "pitch_mix", "velocity"],
+      },
+    });
+    slate.push({
+      source: "MLB Stats API", entity: `Starter Name ${i}`, field: "workload", relevance: "pitching",
+      status: "VERIFIED", freshness: "CURRENT", retrieved_at: "2026-08-10T18:00:00.000Z",
+      value: { days_rest: 5, last_start: "2026-08-05",
+        recent_starts: [1, 2, 3].map(() => ({ date: "2026-08-05", ip: "6.0", pitches: 83, er: 2 })) },
+    });
+  }
+  for (let i = 0; i < 30; i++) {
+    slate.push({
+      source: "MLB Stats API", entity: `Team Name ${i}`, field: "opponent_offense", relevance: "hitting",
+      status: "VERIFIED", freshness: "CURRENT", retrieved_at: "2026-08-10T18:00:00.000Z",
+      value: { split: "vs RHP", avg: .252, obp: .308, slg: .392, ops: .700, iso: .140, k_pct: 18.9,
+        bb_pct: 7.4, runs_per_game: 4.31, home_runs: 132, plate_appearances: 4210, at_bats: 3811,
+        missing_fields: [] },
+    });
+  }
+  const slateSize = JSON.stringify(slate).length;
+  ok("B21 a full slate really is bigger than the old 60,000-char cap", slateSize > 60000, slateSize);
+  const shipped = budgetEvidence(slate, 240000);
+  eq("B22 ...and fits the shipped budget with nothing withheld", shipped.dropped, 0);
+  eq("B23 ...delivering every item", shipped.included, slate.length);
+  ok("B24 the old cap would have dropped items", budgetEvidence(slate, 60000).dropped > 0);
+}
+
+/* Built from the exact output that exposed it: Skubal, Gray and Peralta ranked
+   1-2-3 with one identical stat line between them, and the engine explaining
+   the coincidence away as "EdgeDesk read the same Statcast layer for all
+   three" instead of reporting a duplication fault. */
+section("Evidence integrity is audited before anything is allowed to rank it");
+{
+  const NOW = Date.parse("2026-08-10T18:00:00Z");
+  const line = (era: number) => ({
+    era, whip: 1.02, fip: 3.11, xera: 3.70, barrel_pct: 6.5, hardhit_pct: 38.0,
+    whiff_pct: 23.2, k_pct: 21.9, bb_pct: 6.1,
+  });
+  /* Default to the OWNED table: that is what a healthy pipeline looks like.
+     Serving the same fact from the live API is a real finding, tested below. */
+  const arm = (name: string, team: string, game: string, v: any, source = "pitcher_features") => ({
+    source, entity: name, field: "pitcher_quality",
+    status: "VERIFIED", freshness: "CURRENT", source_timestamp: "2026-08-10T12:00:00Z",
+    value: { name, team, game, ...v },
+  }) as any;
+  // A healthy turn: everything retrieved was also delivered.
+  const DELIVERED = (n: number) => ({ now: NOW, delivered: { included: n, withheld: 0 } });
+
+  const clean = [
+    arm("Tarik Skubal", "Los Angeles Dodgers", "Kansas City Royals @ Los Angeles Dodgers", line(2.78)),
+    arm("Sonny Gray", "Boston Red Sox", "Boston Red Sox @ Toronto Blue Jays", line(3.41)),
+    arm("Jameson Taillon", "Toronto Blue Jays", "Boston Red Sox @ Toronto Blue Jays", line(5.96)),
+  ];
+  const g1 = evidenceIntegrity(clean, DELIVERED(3));
+  eq("G1 clean evidence passes", g1.verdict, "PASS");
+  eq("G2 ...with no failing checks", g1.checks.filter((c) => c.status !== "PASS").length, 0);
+  ok("G3 the identity check actually ran", g1.checks.some((c) =>
+    c.name === "identity_chain" && /All 3 starters resolve/.test(c.detail)));
+  eq("G4 summary says so", g1.summary, "All integrity checks passed.");
+
+  /* The reported bug: three different arms, one identical vector. */
+  const dupes = [
+    arm("Tarik Skubal", "Los Angeles Dodgers", "Kansas City Royals @ Los Angeles Dodgers", line(2.78)),
+    arm("Sonny Gray", "Boston Red Sox", "Boston Red Sox @ Toronto Blue Jays", line(2.78)),
+    arm("Freddy Peralta", "Athletics", "Tampa Bay Rays @ Athletics", line(2.78)),
+  ];
+  const g2 = evidenceIntegrity(dupes, { now: NOW });
+  eq("G5 identical profiles across players is a FAIL", g2.verdict, "FAIL");
+  const dupChk = g2.checks.find((c) => c.name === "duplicate_pitcher_stats")!;
+  eq("G6 the duplication check is the one that failed", dupChk.status, "FAIL");
+  ok("G7 all three duplicated arms are named", ["Tarik Skubal", "Sonny Gray", "Freddy Peralta"]
+    .every((n) => (dupChk.entities ?? []).includes(n)));
+  ok("G8 the detail rejects the coincidence explanation",
+    /do not share a whole feature vector/.test(dupChk.detail));
+
+  /* The broken join: a pitcher on a team that is not in his own game. */
+  const wrongTeam = [
+    arm("Tarik Skubal", "Detroit Tigers", "Kansas City Royals @ Los Angeles Dodgers", line(2.78)),
+    arm("Sonny Gray", "Boston Red Sox", "Boston Red Sox @ Toronto Blue Jays", line(3.41)),
+  ];
+  const g3 = evidenceIntegrity(wrongTeam, { now: NOW });
+  eq("G9 a pitcher outside his own game is a FAIL", g3.verdict, "FAIL");
+  const idChk = g3.checks.find((c) => c.name === "identity_chain")!;
+  eq("G10 the identity check is what caught it", idChk.status, "FAIL");
+  ok("G11 it names the pitcher and both sides", (idChk.entities ?? [])[0]?.includes("Tarik Skubal")
+    && (idChk.entities ?? [])[0]?.includes("Detroit Tigers"));
+  eq("G12 the correctly-joined arm is not accused", (idChk.entities ?? []).length, 1);
+
+  /* Staleness: the "latest pitcher_features date is 2026-07-19" case. */
+  const stale = [
+    arm("A Pitcher", "Team A", "Team A @ Team B", line(3.10)),
+    arm("B Pitcher", "Team B", "Team A @ Team B", line(4.20)),
+  ].map((e) => ({ ...e, source_timestamp: "2026-07-19T12:00:00Z" }));
+  const g4 = evidenceIntegrity(stale as any, { now: NOW });
+  eq("G13 22-day-old pitcher data is a WARNING, not a silent pass", g4.verdict, "WARNING");
+  const fresh = g4.checks.find((c) => c.name === "freshness")!;
+  ok("G14 the age is stated in days", /22 days old/.test(fresh.detail));
+  ok("G15 ...with the date it dates from", /2026-07-19/.test(fresh.detail));
+  ok("G16 ...and it demands the caveat lead, not trail",
+    /UP FRONT, not disclosed at the end/.test(fresh.detail));
+
+  eq("G17 WARNING alone never suppresses the answer entirely", g4.verdict === "FAIL", false);
+
+  /* FAIL must dominate WARNING when both are present. */
+  const both = [...dupes.map((e) => ({ ...e, source_timestamp: "2026-07-19T12:00:00Z" }))];
+  eq("G18 a FAIL outranks a co-occurring WARNING", evidenceIntegrity(both as any, { now: NOW }).verdict, "FAIL");
+
+  /* Guards against false positives. */
+  const sparse = [
+    arm("X", "Team A", "Team A @ Team B", { era: 3.0 }),
+    arm("Y", "Team B", "Team A @ Team B", { era: 3.0 }),
+  ];
+  eq("G19 two sparse rows sharing one number is not a duplication fault",
+    evidenceIntegrity(sparse, { now: NOW }).checks.find((c) => c.name === "duplicate_pitcher_stats")!.status, "PASS");
+  eq("G20 an empty evidence set does not FAIL",
+    evidenceIntegrity([], { now: NOW }).verdict === "FAIL", false);
+  ok("G21 the same pitcher appearing twice is not flagged as two players sharing a line",
+    evidenceIntegrity([clean[0], { ...clean[0] }], { now: NOW })
+      .checks.find((c) => c.name === "duplicate_pitcher_stats")!.status === "PASS");
+
+  /* Offense duplication is suspicious but not disqualifying. */
+  const off = (team: string) => ({
+    source: "MLB Stats API", entity: team, field: "opponent_offense", status: "VERIFIED",
+    freshness: "CURRENT", source_timestamp: "2026-08-10T12:00:00Z",
+    value: { avg: .252, obp: .308, slg: .392, ops: .700, iso: .140, k_pct: 18.9 },
+  }) as any;
+  const g5 = evidenceIntegrity([...clean, off("Kansas City Royals"), off("Toronto Blue Jays")], DELIVERED(5));
+  eq("G22 two lineups sharing a full split is a WARNING", g5.verdict, "WARNING");
+  eq("G23 ...from the offense check specifically",
+    g5.checks.find((c) => c.name === "duplicate_offense_stats")!.status, "WARNING");
+
+  /* COMPLETENESS — the check that would have caught the truncation on its own:
+     coverage said 30/30 while the prompt carried a fraction of it. */
+  const chk = (g: any, n: string) => g.checks.find((c: any) => c.name === n)!;
+  eq("G24 full delivery passes completeness", chk(g1, "completeness").status, "PASS");
+  const partial = evidenceIntegrity(clean, { now: NOW, delivered: { included: 20, withheld: 10 } });
+  eq("G25 withheld evidence is a WARNING", chk(partial, "completeness").status, "WARNING");
+  ok("G26 ...stating how many of how many arrived",
+    /20 of 30 retrieved items reached the analyst/.test(chk(partial, "completeness").detail));
+  eq("G27 unmeasured delivery is never silently treated as complete",
+    chk(evidenceIntegrity(clean, { now: NOW }), "completeness").status, "WARNING");
+
+  /* SOURCE — the live fallback is a working answer over a broken pipeline. */
+  eq("G28 owned-table evidence passes the source check", chk(g1, "source").status, "PASS");
+  const viaApi = clean.map((e) => ({ ...e, source: "MLB Stats API" }));
+  const g6 = evidenceIntegrity(viaApi, DELIVERED(3));
+  eq("G29 serving pitcher quality from the live API is a WARNING", chk(g6, "source").status, "WARNING");
+  ok("G30 ...naming the fallback source", /MLB Stats API/.test(chk(g6, "source").detail));
+  ok("G31 ...and saying the ingest is what is broken",
+    /ingest that should populate the owned table is not/.test(chk(g6, "source").detail));
+
+  /* TEMPORAL — a stat bound to the wrong day is not a stat about today. */
+  eq("G32 no slate days given means nothing to contradict", chk(g1, "temporal").status, "PASS");
+  const dated = clean.map((e, i) => ({ ...e, value: { ...e.value, game_date: i === 0 ? "2026-07-04" : "2026-08-10" } }));
+  const g7 = evidenceIntegrity(dated, { ...DELIVERED(3), slateDays: ["2026-08-10", "2026-08-11"] });
+  eq("G33 a stat dated outside the slate is a WARNING", chk(g7, "temporal").status, "WARNING");
+  ok("G34 ...naming the offending date", /2026-07-04/.test((chk(g7, "temporal").entities ?? []).join(" ")));
+  const onSlate = clean.map((e) => ({ ...e, value: { ...e.value, game_date: "2026-08-10" } }));
+  eq("G35 on-slate dates pass",
+    chk(evidenceIntegrity(onSlate, { ...DELIVERED(3), slateDays: ["2026-08-10", "2026-08-11"] }), "temporal").status, "PASS");
+  const ahead = [{ ...clean[0], source_timestamp: "2026-08-12T00:00:00Z" }, clean[1], clean[2]];
+  ok("G36 a timestamp from the future is caught",
+    /timestamped in the future/.test(chk(evidenceIntegrity(ahead, DELIVERED(3)), "temporal").detail
+      + (chk(evidenceIntegrity(ahead, DELIVERED(3)), "temporal").entities ?? []).join(" ")));
+
+  /* MARKET — an edge computed against an impossible price is not an edge. */
+  const sig = (entity: string, v: any) => ({
+    source: "signals", entity, field: "signal", status: "VERIFIED", freshness: "CURRENT",
+    source_timestamp: "2026-08-10T17:00:00Z", value: v,
+  }) as any;
+  const goodMkt = sig("A @ B", { best_dec: 1.91, sharp_fair: 0.53, pin_dec: 1.95, pin_opp_dec: 1.95 });
+  eq("G37 coherent prices pass", chk(evidenceIntegrity([...clean, goodMkt], DELIVERED(4)), "market").status, "PASS");
+  const badDec = sig("A @ B", { best_dec: 0.85, sharp_fair: 0.53 });
+  eq("G38 decimal odds at or below 1.0 is a FAIL",
+    evidenceIntegrity([...clean, badDec], DELIVERED(4)).verdict, "FAIL");
+  const badFair = sig("A @ B", { best_dec: 1.91, sharp_fair: 1.4 });
+  ok("G39 a fair value outside 0-1 is not a probability",
+    /not a probability/.test(chk(evidenceIntegrity([...clean, badFair], DELIVERED(4)), "market").detail
+      + (chk(evidenceIntegrity([...clean, badFair], DELIVERED(4)), "market").entities ?? []).join(" ")));
+  const badOvr = sig("A @ B", { best_dec: 1.91, sharp_fair: 0.53, pin_dec: 3.0, pin_opp_dec: 3.0 });
+  ok("G40 an impossible two-way overround is caught",
+    /overround/.test((chk(evidenceIntegrity([...clean, badOvr], DELIVERED(4)), "market").entities ?? []).join(" ")));
+  eq("G41 evidence with no prices does not fail the market check",
+    chk(g1, "market").status, "PASS");
+
+  /* The one line a person reads. */
+  ok("G42 the headline counts starters", /3\/3 starters with a full line/.test(g1.headline));
+  ok("G43 ...reports delivery as a percentage", /100% of evidence delivered/.test(g1.headline));
+  ok("G44 ...and states the age of the freshest record", /freshest data 6h old/.test(g1.headline));
+  ok("G45 partial delivery shows through in the headline",
+    /67% of evidence delivered/.test(evidenceIntegrity(clean, { now: NOW, delivered: { included: 20, withheld: 10 } }).headline));
+  eq("G46 an empty evidence set yields an empty headline",
+    evidenceIntegrity([], { now: NOW, delivered: { included: 0, withheld: 0 } }).headline,
+    "no evidence delivered");
+
+  /* Live false positive: on a two-day card the same club appears twice, so the
+     two starters facing it legitimately carry one identical season line. Keyed
+     on the pitcher, that read as "15 identical profiles across 30 entities". */
+  const oppOf = (pitcher: string, team: string, v: any) => ({
+    source: "offense_features", entity: pitcher, field: "opponent_offense",
+    status: "VERIFIED", freshness: "CURRENT", source_timestamp: "2026-08-10T12:00:00Z",
+    value: { opponent: team, obp: v.obp, iso: v.iso, k_pct: v.k_pct, runs_per_game: v.rpg, ops: v.ops },
+  }) as any;
+  const ATL = { obp: .312, iso: .153, k_pct: 20.9, rpg: 4.4, ops: .724 };
+  const NYM = { obp: .303, iso: .134, k_pct: 19.7, rpg: 4.1, ops: .701 };
+
+  const sameTeamTwice = evidenceIntegrity(
+    [...clean, oppOf("Bryce Elder", "Atlanta Braves", ATL), oppOf("Jared Jones", "Atlanta Braves", ATL)],
+    DELIVERED(5));
+  eq("G48 two starters facing the SAME club is not a duplication fault",
+    chk(sameTeamTwice, "duplicate_offense_stats").status, "PASS");
+
+  const twoTeamsOneLine = evidenceIntegrity(
+    [...clean, oppOf("Bryce Elder", "Atlanta Braves", ATL), oppOf("Jared Jones", "New York Mets", ATL)],
+    DELIVERED(5));
+  eq("G49 two DIFFERENT clubs sharing one line still is",
+    chk(twoTeamsOneLine, "duplicate_offense_stats").status, "WARNING");
+  ok("G50 ...and names the two clubs, not the two pitchers",
+    (chk(twoTeamsOneLine, "duplicate_offense_stats").entities ?? []).join(" ").includes("Atlanta Braves")
+    && (chk(twoTeamsOneLine, "duplicate_offense_stats").entities ?? []).join(" ").includes("New York Mets"));
+  eq("G51 distinct clubs with distinct lines pass",
+    chk(evidenceIntegrity([...clean, oppOf("A", "Atlanta Braves", ATL), oppOf("B", "New York Mets", NYM)],
+      DELIVERED(5)), "duplicate_offense_stats").status, "PASS");
+
+  /* The identity check was silently no-opping on owned-table evidence, because
+     that path emitted a side and a game_id but never a team or a matchup. */
+  const ownedNoIdentity = [{
+    source: "pitcher_features", entity: "A Pitcher", field: "pitcher_quality",
+    status: "VERIFIED", freshness: "RECENT", source_timestamp: "2026-08-10T12:00:00Z",
+    value: { name: "A Pitcher", side: "home", game_id: "MLB-1", ...line(3.2) },
+  }] as any;
+  ok("G52 evidence with no team or matchup cannot be identity-checked",
+    /No starter carried both a team and a game/.test(chk(evidenceIntegrity(ownedNoIdentity, DELIVERED(1)), "identity_chain").detail));
+  const ownedWithIdentity = [{
+    ...ownedNoIdentity[0],
+    value: { ...ownedNoIdentity[0].value, team: "Los Angeles Dodgers", game: "Kansas City Royals @ Los Angeles Dodgers" },
+  }] as any;
+  eq("G53 once team and matchup are carried, the check actually runs",
+    chk(evidenceIntegrity(ownedWithIdentity, DELIVERED(1)), "identity_chain").detail,
+    "All 1 starters resolve pitcher -> team -> game consistently.");
+
+  /* All eight audits from the product table are present, every turn. */
+  eq("G47 every audit runs on every turn", g1.checks.map((c) => c.name).sort().join(","),
+    ["attribution", "completeness", "duplicate_offense_stats", "duplicate_pitcher_stats",
+     "freshness", "identity_chain", "market", "source", "temporal"].sort().join(","));
+}
+
+/* A pattern that has not survived holdout validation is a hypothesis. The
+   filter that keeps hypotheses away from the model has to live in the QUERY,
+   not in the prompt — a prompt rule can be reasoned around, a `status=eq.
+   CONFIRMED` cannot. */
+section("Only confirmed patterns are ever fetched");
+{
+  const seen: string[] = [];
+  const spy = (fx: any) => {
+    clearCache();
+    return new Dal({
+      supabaseUrl: "https://x.supabase.co", apikey: "anon", authorization: "Bearer jwt",
+      budget: 24,
+      fetchImpl: (async (url: any) => {
+        seen.push(String(url));
+        const table = String(url).split("/rest/v1/")[1]?.split("?")[0] ?? "";
+        return new Response(JSON.stringify(fx[table] ?? []), { status: 200 });
+      }) as any,
+    });
+  };
+
+  const CONFIRMED = {
+    pattern_key: "market:totals", sport: null, description: "totals signals",
+    sample_size: 214, metric: "beat_close_rate", metric_value: 0.58, confidence: "MEDIUM",
+    status: "CONFIRMED", effect: 0.07, base_rate: 0.51, n_discovery: 150, n_holdout: 64,
+    lo_overall: 0.52, lo_holdout: 0.51, q_value: 0.012, avg_clv: 0.008,
+    rationale: "holds in both windows", updated_at: new Date().toISOString(),
+  };
+  const CAL = {
+    bucket: "edge 2-4%", n: 180, mean_edge_predicted: 0.029, mean_clv_realised: 0.009,
+    beat_rate: 0.55, beat_lo: 0.48, shortfall: 0.020, updated_at: new Date().toISOString(),
+  };
+
+  const d = spy({ research_patterns: [CONFIRMED], research_calibration: [CAL],
+                  research_facts: [], research_outcomes: [], research_sessions: [] });
+  const mem = await d.getResearchMemory(["New York Yankees"], "baseball_mlb");
+
+  const patQ = seen.find((u) => u.includes("research_patterns")) ?? "";
+  ok("P1 the pattern query filters on CONFIRMED in the QUERY, not in the prompt",
+    patQ.includes("status=eq.CONFIRMED"), patQ);
+  ok("P2 it asks for the holdout size", patQ.includes("n_holdout"));
+  ok("P3 it asks for the family-adjusted q", patQ.includes("q_value"));
+  ok("P4 it asks for the base rate the effect is measured against", patQ.includes("base_rate"));
+
+  ok("P5 calibration is fetched too", seen.some((u) => u.includes("research_calibration")));
+  eq("P6 calibration comes back on the memory object", (mem as any).calibration.length, 1);
+
+  const patEv = mem.ev.find((e) => e.field === "pattern");
+  ok("P7 the pattern is attached as evidence", !!patEv);
+  ok("P8 ...marked HISTORICAL, never current", patEv?.status === "HISTORICAL");
+  ok("P9 ...with the holdout stated in the note", /64 of them in a held-out later window/.test(patEv?.note ?? ""));
+  ok("P10 ...with the effect against the base rate", /7\.0pp over a base rate of 51\.0%/.test(patEv?.note ?? ""));
+  ok("P11 ...and an explicit ban on it moving a price",
+    /never changes a price/.test(patEv?.note ?? ""));
+
+  const calEv = mem.ev.find((e) => e.field === "calibration");
+  ok("P12 calibration is attached as evidence", !!calEv);
+  ok("P13 ...stating predicted against realised", /predicted 2\.90% and realised 0\.90% CLV/.test(calEv?.note ?? ""));
+  ok("P14 ...and forbidding it from restating the edge", /Do NOT restate the edge itself/.test(calEv?.note ?? ""));
+
+  const empty = spy({ research_patterns: [], research_calibration: [],
+                      research_facts: [], research_outcomes: [], research_sessions: [] });
+  const mem2 = await empty.getResearchMemory(["New York Yankees"], "baseball_mlb");
+  eq("P15 no confirmed patterns means none are attached",
+    mem2.ev.filter((e) => e.field === "pattern").length, 0);
+  eq("P16 ...and that is not reported as an error", mem2.patterns.length, 0);
+}
+
+/* NFL, college football and college basketball, given the same treatment MLB
+   has: an owned layer joined through games, with identity on every row and
+   absent columns named rather than left as holes. */
+section("Football and basketball retrieve their own owned layer");
+{
+  const D0 = etDay(0);
+  const NFL_GAME = {
+    game_id: "NFL-1", sport_key: "americanfootball_nfl", game_date: D0,
+    home_team: "Buffalo Bills", away_team: "Carolina Panthers",
+    start_time: new Date(Date.now() + 6 * 3600e3).toISOString(), status: "scheduled",
+  };
+  const CBB_GAME = {
+    game_id: "CBB-1", sport_key: "basketball_ncaab", game_date: D0,
+    home_team: "Duke Blue Devils", away_team: "Kansas Jayhawks",
+    start_time: new Date(Date.now() + 5 * 3600e3).toISOString(), status: "scheduled",
+  };
+  const NOW = new Date().toISOString();
+
+  const nflFx = {
+    ...FULL,
+    games: [NFL_GAME],
+    team_features: [
+      { game_id: "NFL-1", side: "home", team: "Buffalo Bills", wins: 7, losses: 2,
+        off_epa_play: 0.14, def_epa_play: -0.06, off_success_rate: 0.49, def_success_rate: 0.41,
+        pass_epa_play: 0.21, rush_epa_play: -0.02, def_pass_epa_play: -0.04, def_rush_epa_play: -0.09,
+        plays_per_game: 64.2, updated_at: NOW, source: "nflverse" },
+      { game_id: "NFL-1", side: "away", team: "Carolina Panthers", wins: 2, losses: 7,
+        off_epa_play: -0.11, def_epa_play: 0.08, off_success_rate: 0.38, def_success_rate: 0.48,
+        pass_epa_play: -0.14, rush_epa_play: -0.05, def_pass_epa_play: 0.11, def_rush_epa_play: 0.03,
+        plays_per_game: 60.1, updated_at: NOW, source: "nflverse" },
+    ],
+    qb_features: [
+      { game_id: "NFL-1", side: "home", name: "Starter QB", epa_per_dropback: 0.19, cpoe: 3.2,
+        status: "active", is_backup: false, attempts: 280, updated_at: NOW },
+      { game_id: "NFL-1", side: "away", name: "Backup QB", epa_per_dropback: -0.08, cpoe: -2.1,
+        status: "active", is_backup: true, attempts: 41, updated_at: NOW },
+    ],
+    matchup_context: [
+      { game_id: "NFL-1", neutral_site: false, conference_game: true, home_rest_days: 7,
+        away_rest_days: 4, short_week: true, venue: "Highmark Stadium", indoor: false,
+        surface: "turf", updated_at: NOW },
+    ],
+  };
+
+  const d1 = dal(nflFx);
+  const nfl = await d1.getTeamFeatures("americanfootball_nfl");
+
+  eq("T1 both sides produce an efficiency row",
+    nfl.ev.filter((e) => e.field === "team_efficiency").length, 2);
+  const bills = nfl.ev.find((e) => e.entity === "Buffalo Bills")!;
+  eq("T2 the row carries its own identity", (bills.value as any).team, "Buffalo Bills");
+  eq("T3 ...and its opponent", (bills.value as any).opponent, "Carolina Panthers");
+  eq("T4 ...and the matchup and date the audits need",
+    [(bills.value as any).game, (bills.value as any).game_date],
+    ["Carolina Panthers @ Buffalo Bills", D0]);
+  eq("T5 EPA is carried, not points per game", (bills.value as any).off_epa_play, 0.14);
+  eq("T6 the OPPONENT's matching split is attached, so strength meets weakness",
+    (bills.value as any).opponent_def_pass_epa_play, 0.11);
+  ok("T7 the sign of the defensive column is stated on the row",
+    /NEGATIVE is a good defence/.test((bills.value as any).def_epa_note));
+
+  const qbs = nfl.ev.filter((e) => e.field === "quarterback");
+  eq("T8 a quarterback row is emitted per side", qbs.length, 2);
+  const backup = qbs.find((e) => (e.value as any).is_backup === true)!;
+  eq("T9 a backup starter is never VERIFIED", backup.status, "PROBABLE");
+  ok("T10 ...and says every conclusion resting on him is provisional",
+    /NOT the season-long starter/.test(backup.note ?? ""));
+  eq("T11 a confirmed starter is VERIFIED",
+    qbs.find((e) => (e.value as any).is_backup === false)!.status, "VERIFIED");
+
+  const ctx = nfl.ev.find((e) => e.field === "matchup_context")!;
+  eq("T12 the situational layer is retrieved", (ctx.value as any).short_week, true);
+  eq("T13 ...with rest for both sides",
+    [(ctx.value as any).home_rest_days, (ctx.value as any).away_rest_days], [7, 4]);
+
+  /* Basketball takes the tempo-free branch, not the football one. */
+  const cbbFx = {
+    ...FULL,
+    games: [CBB_GAME],
+    team_features: [
+      { game_id: "CBB-1", side: "home", team: "Duke Blue Devils", adj_o: 118.2, adj_d: 92.4,
+        adj_em: 25.8, adj_tempo: 66.1, efg_pct: 55.1, to_pct: 15.2, orb_pct: 33.0, ft_rate: 31.2,
+        def_efg_pct: 45.0, def_to_pct: 19.8, def_orb_pct: 24.1, def_ft_rate: 27.0,
+        three_rate: 41.0, three_pct: 37.2, def_three_rate: 33.0, def_three_pct: 30.1,
+        updated_at: NOW, source: "barttorvik" },
+      { game_id: "CBB-1", side: "away", team: "Kansas Jayhawks", adj_o: 114.0, adj_d: 95.1,
+        adj_em: 18.9, adj_tempo: 63.4, efg_pct: 52.0, to_pct: 17.9, orb_pct: 30.2, ft_rate: 29.0,
+        def_efg_pct: 47.2, def_to_pct: 18.0, def_orb_pct: 27.5, def_ft_rate: 30.1,
+        updated_at: NOW, source: "barttorvik" },
+    ],
+    qb_features: [],
+    matchup_context: [{ game_id: "CBB-1", neutral_site: true, updated_at: NOW }],
+  };
+  const cbb = await dal(cbbFx).getTeamFeatures("basketball_ncaab");
+  const duke = cbb.ev.find((e) => e.entity === "Duke Blue Devils")!;
+  eq("T14 basketball carries adjusted efficiency", (duke.value as any).adj_o, 118.2);
+  eq("T15 ...and the four factors for BOTH ends",
+    [(duke.value as any).four_factors.efg, (duke.value as any).four_factors_defence.efg], [55.1, 45.0]);
+  eq("T16 ...and both tempos, because the total is a possession count",
+    [(duke.value as any).adj_tempo, (duke.value as any).opponent_adj_tempo], [66.1, 63.4]);
+  ok("T17 the direction of adj_d is stated on the row",
+    /lower is better/.test((duke.value as any).adj_d_note));
+  ok("T18 the tempo note explains the totals implication",
+    /possession count/.test((duke.value as any).tempo_note));
+  eq("T19 no quarterback rows are invented for basketball",
+    cbb.ev.filter((e) => e.field === "quarterback").length, 0);
+  ok("T20 football fields are not emitted for a basketball row",
+    (duke.value as any).off_epa_play === undefined);
+
+  /* College football's real gap, reported rather than papered over. */
+  const cfbFx = {
+    ...FULL,
+    games: [{ ...NFL_GAME, game_id: "CFB-1", sport_key: "americanfootball_ncaaf",
+      home_team: "Georgia Bulldogs", away_team: "Alabama Crimson Tide" }],
+    team_features: [
+      { game_id: "CFB-1", side: "home", team: "Georgia Bulldogs", wins: 8, losses: 1, updated_at: NOW, source: "espn_scoreboard" },
+      { game_id: "CFB-1", side: "away", team: "Alabama Crimson Tide", wins: 7, losses: 2, updated_at: NOW, source: "espn_scoreboard" },
+    ],
+    qb_features: [], matchup_context: [],
+  };
+  const cfb = await dal(cfbFx).getTeamFeatures("americanfootball_ncaaf");
+  const uga = cfb.ev.find((e) => e.entity === "Georgia Bulldogs")!;
+  ok("T21 a row with no efficiency names the missing columns",
+    (uga.value as any).missing_fields.includes("off_epa_play"));
+  ok("T22 ...and says CFB efficiency is not ingested, rather than leaving a hole",
+    /no free play-by-play EPA feed/.test((uga.value as any).missing_note));
+  ok("T23 ...and forbids substituting points per game",
+    /do not substitute points per game/i.test((uga.value as any).missing_note));
+  eq("T24 such a row is PARTIAL, never VERIFIED", uga.status, "PARTIAL");
+  ok("T25 a football sport with no QB row reports it as unavailable",
+    cfb.ev.some((e) => e.field === "quarterback" && e.status === "UNAVAILABLE"));
+
+  /* The diagnosis path, same as the MLB card's. */
+  const empty = await dal({ ...FULL, games: [], team_features: [], qb_features: [], matchup_context: [] })
+    .getTeamFeatures("americanfootball_nfl");
+  ok("T26 an empty slate diagnoses which link failed",
+    typeof (empty.path as any).games_probe?.diagnosis === "string", empty.path);
+  eq("T27 ...and returns an explicit unavailable rather than silence",
+    empty.ev.filter((e) => e.status === "UNAVAILABLE").length, 1);
+
+  /* Classification: these questions must reach the owned layer at all. */
+  eq("T28 an NFL efficiency question routes to the team layer",
+    classify("which offense is most efficient tonight", null).intent, "team_efficiency");
+  eq("T29 a tempo question routes there too",
+    classify("best tempo matchups on tonight's slate", null).intent, "team_efficiency");
+  ok("T30 the plan retrieves team_efficiency, the quarterback and context",
+    ["team_efficiency", "quarterback", "matchup_context"]
+      .every((st) => classify("worst defenses tonight", null).steps.includes(st)));
+  ok("T31 MLB pitcher questions are not hijacked by the new routing",
+    classify("worst pitchers today", null).intent === "worst_pitchers");
+}
+
+/* A live WNBA answer opened with "DATA WARNING: No pitcher data was retrieved
+   for any game on the slate, so pitcher age cannot be established." The
+   freshness check was keyed to pitcher rows, so on every non-baseball turn it
+   found none and warned — a baseball-shaped complaint leading a basketball
+   answer that was otherwise correct. A check that cannot apply must stay
+   silent, not invent a concern. */
+section("A check that cannot apply says nothing");
+{
+  const chk2 = (g: any, n: string) => g.checks.find((c: any) => c.name === n)!;
+  const NOW2 = Date.parse("2026-08-10T18:00:00Z");
+  const DELIV = { now: NOW2, delivered: { included: 3, withheld: 0 } };
+
+  // A market-only turn: signals and nothing else, exactly the WNBA case.
+  const marketOnly = [
+    { source: "signals", entity: "New York Liberty @ Indiana Fever", field: "signal",
+      status: "VERIFIED", freshness: "CURRENT", source_timestamp: "2026-08-10T17:00:00Z",
+      value: { best_dec: 1.91, sharp_fair: 0.53 } },
+  ] as any;
+  const g = evidenceIntegrity(marketOnly, DELIV);
+  eq("W1 freshness PASSES when nothing dated was retrieved", chk2(g, "freshness").status, "PASS");
+  ok("W2 ...and never mentions pitchers on a basketball turn",
+    !/pitcher/i.test(chk2(g, "freshness").detail), chk2(g, "freshness").detail);
+  ok("W3 ...saying instead that nothing age-sensitive was retrieved",
+    /nothing whose age could change the answer/.test(chk2(g, "freshness").detail));
+  ok("W4 the headline invents no starter count either",
+    !/starters/.test(g.headline), g.headline);
+
+  // Football subjects ARE age-sensitive and must still be checked.
+  const stale = [{
+    source: "team_features", entity: "Buffalo Bills", field: "team_efficiency",
+    status: "VERIFIED", freshness: "RECENT", source_timestamp: "2026-07-19T12:00:00Z",
+    value: { team: "Buffalo Bills", off_epa_play: 0.14, def_epa_play: -0.06,
+             off_success_rate: 0.49, def_success_rate: 0.41 },
+  }] as any;
+  const g2 = evidenceIntegrity(stale, DELIV);
+  eq("W5 a stale TEAM row still warns", chk2(g2, "freshness").status, "WARNING");
+  ok("W6 ...in sport-neutral language", /subject record/.test(chk2(g2, "freshness").detail));
+  ok("W7 ...with the age and the date", /22 days old \(2026-07-19\)/.test(chk2(g2, "freshness").detail));
+  ok("W8 the headline counts teams when there are no pitchers",
+    /1\/1 teams with an efficiency line/.test(g2.headline), g2.headline);
+
+  // Subjects present but undated is still a real gap.
+  const undated = [{
+    source: "team_features", entity: "Duke", field: "team_efficiency",
+    status: "VERIFIED", freshness: "UNKNOWN",
+    value: { team: "Duke", adj_o: 118.2, adj_d: 92.4, adj_tempo: 66.1, efg_pct: 55.1 },
+  }] as any;
+  ok("W9 undated subjects warn, and say how many",
+    /1 subject rows were retrieved but none carried a source timestamp/
+      .test(chk2(evidenceIntegrity(undated, DELIV), "freshness").detail));
+}
+
+console.log(`\n${failed === 0 ? "ALL GREEN" : "FAILURES"} — ${passed} passed, ${failed} failed`);
+if (failures.length) console.log("failed:", failures.join(" | "));
+if (typeof process !== "undefined" && failed > 0) (process as any).exit(1);
