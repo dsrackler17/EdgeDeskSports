@@ -1113,7 +1113,7 @@ loadLiveProof();
    the same amount shown in PRICE_DISPLAY and in the auto-renewal consent text —
    a customer consenting to one figure and being charged another is a
    compliance problem, not a display bug. */
-var STRIPE_LINK="https://buy.stripe.com/6oU28qb5U86F36C9P48IU0a";
+var STRIPE_LINK="https://buy.stripe.com/fZufZggqeev36iOf9o8IU0b";
 /* Must match the amount on the Stripe price behind STRIPE_LINK. This string is
    recorded with the auto-renewal consent, so a mismatch is a compliance problem,
    not a cosmetic one. */
@@ -1211,6 +1211,16 @@ async function confirmArl(){
   }catch(e){
     msg.className='auth-msg err';
     msg.textContent='Network error recording consent. Checkout stopped.';
+    btn.disabled=false; btn.textContent=old; return;
+  }
+
+  /* Payment links get rotated and deactivated, so a stale or mistyped one is a
+     routine failure rather than an exotic one. Refuse anything that is not a
+     Stripe checkout link instead of navigating a paying customer into it. */
+  if(!/^https:\/\/buy\.stripe\.com\/[A-Za-z0-9]+$/.test(STRIPE_LINK)){
+    msg.className='auth-msg err';
+    msg.textContent='Checkout is misconfigured and payment was stopped before anything was charged. Please email support@edgedesksports.com.';
+    try{console.error('STRIPE_LINK is not a valid https://buy.stripe.com/... payment link. Got: '+STRIPE_LINK);}catch(_){}
     btn.disabled=false; btn.textContent=old; return;
   }
 
