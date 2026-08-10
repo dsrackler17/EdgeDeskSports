@@ -12660,11 +12660,13 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
   var ACTIONS_LOADED=[
     ['Research this','research','hot'],['Analyze','analyze',''],['Why?','why',''],['At what price?','price',''],['Market read','market',''],
     ['Challenge','challenge',''],['What changed?','whatchanged',''],['Research packet','trace',''],
+    ['Deep research','deepresearch',''],['Historical','historical',''],['Postmortem','postmortem',''],
     ['Check my bet','checkbet',''],['Compare…','compare','']
   ];
   var ACTIONS_EMPTY=[
     ['Daily scan','dailyscan','hot'],['Scan slate','scanslate',''],['Best bets today','bestbets',''],
     ['Worst starters','worstpitchers',''],['Best matchups','bestmatchups',''],['Research first','researchfirst',''],
+    ['Scout the board','scout',''],['Market vs model','marketvsmodel',''],
     ['Compare edges','compare',''],['How this works','help','']
   ];
   function renderActions(){
@@ -12691,6 +12693,34 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
       +'<svg viewBox="0 0 24 24"><path d="M12 3l2.2 5.8L20 11l-5.8 2.2L12 19l-2.2-5.8L4 11l5.8-2.2L12 3z"/></svg>'
       +'<div>Ask about the board — today’s worst starters, the best matchups, what to research first — or open a signal and hit <b>Analyze</b>.<br><br>'
       +'I answer the only question that matters: is this a good decision at <i>this</i> price, right now? A well-reasoned PASS counts as a win.</div></div>';
+  }
+
+  /* ---- research trace: what the server actually retrieved, and what it could not.
+     Additive — an older edgedesk_ai returns no `research` field and this renders nothing.
+     This is the visible line between EDGEDESK DATA and AI INTERPRETATION: the answer above
+     is interpretation, this strip is the provenance behind it. ---- */
+  function traceHTMLFor(r){
+    if(!r || typeof r!=='object') return '';
+    var bits=[];
+    if(r.retrievals) bits.push(r.retrievals+' retrieval'+(r.retrievals===1?'':'s'));
+    if(r.evidence_count!=null) bits.push(r.evidence_count+' facts');
+    if(r.completeness && r.completeness.pct!=null) bits.push(r.completeness.pct+'% complete');
+    if(r.conflicts) bits.push(r.conflicts+' conflict'+(r.conflicts===1?'':'s'));
+    if(r.attack) bits.push('thesis '+String(r.attack).toLowerCase());
+    var head='<div class="edai-rstate">'+esc((r.intent||'research')+' · '+(r.depth||'')+(bits.length?' · '+bits.join(' · '):''))+'</div>';
+    var body='';
+    if(r.sources && r.sources.length)
+      body+='<div style="font-size:11px;color:var(--faint);margin-top:3px">Sources: '+esc(r.sources.join(', '))+'</div>';
+    if(r.coverage && r.coverage.length){
+      var cov=r.coverage.filter(function(c){return c.total;})
+        .map(function(c){return esc(c.field)+' '+c.have+'/'+c.total;});
+      if(cov.length) body+='<div style="font-size:11px;color:var(--faint)">Coverage: '+cov.join(' · ')+'</div>';
+    }
+    if(r.unavailable && r.unavailable.length)
+      body+='<div style="font-size:11px;color:var(--warn);margin-top:2px">Not available: '
+        +esc(r.unavailable.slice(0,4).map(function(u){return u.source+'.'+u.field;}).join(', '))
+        +(r.unavailable.length>4?(' +'+(r.unavailable.length-4)):'')+'</div>';
+    return '<div class="edai-flip" style="margin-top:8px">'+head+body+'</div>';
   }
 
   /* ---- call the AI function; fall back to the local narrative on any failure ---- */
@@ -12724,7 +12754,8 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
       if(!r.ok) throw new Error('fn '+r.status);
       var d=await r.json();
       if(d&&d.answer){ HIST.push({role:'user',content:question||mode}); HIST.push({role:'assistant',content:d.answer});
-        return {html:mdToHtml(d.answer), src:d.model?('reasoned by '+d.model+(d.cached?' · cached':'')):null}; }
+        return {html:mdToHtml(d.answer)+traceHTMLFor(d.research),
+          src:d.model?('reasoned by '+d.model+(d.cached?' · cached':'')):null}; }
       throw new Error('empty');
     }catch(err){
       // deterministic fallback — still a real, grounded answer
@@ -14299,6 +14330,11 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
       if(mode==='worstpitchers')return window.EDAI.board('Who are today’s worst starting pitchers, and which of them are actually exploitable rather than merely bad?');
       if(mode==='bestmatchups')return window.EDAI.board('What are the best MLB matchups on today’s card, and which offense has the strongest matchup?');
       if(mode==='researchfirst')return window.EDAI.board('Which games should I research first, and why those?');
+      if(mode==='scout')return window.EDAI.board('Scout the board: what deserves research time right now, and why?');
+      if(mode==='marketvsmodel')return window.EDAI.board('Where is the market disagreeing with EdgeDesk, and what does Pinnacle disagree with?');
+      if(mode==='deepresearch'){ push('u','Research this matchup in full.'); return runNarr('research',evidence(LOADED),'Research this matchup in full.'); }
+      if(mode==='historical'){ push('u','Have we seen this setup before?'); return runNarr('chat',evidence(LOADED),'Have we seen this setup before? What happened the last time this type of signal appeared?'); }
+      if(mode==='postmortem'){ push('u','Postmortem this decision.'); return runNarr('chat',evidence(LOADED),'Postmortem: why did EdgeDesk get this right or wrong? Use the closing line and CLV.'); }
       if(!LOADED){ push('a','<p>Open a signal first (tap <b>Analyze</b> on any edge card), or ask me about the board.</p>'); return; }
       var x=evidence(LOADED);
       if(mode==='analyze'){ push('u','Analyze '+x.sel); push('a',snapshotHTML(x)); runNarr('analyze',x,'Full analysis.'); return; }
