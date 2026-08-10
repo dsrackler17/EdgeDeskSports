@@ -2631,18 +2631,65 @@ async function rememberSession(
     retrieval_log: research.log.slice(0, 30),
   };
 
-  const post = (table: string, payload: unknown) =>
+  const post = (table: string, payload: unknown, wantRow = false, prefer?: string) =>
     fetch(`${SUPABASE_URL}/rest/v1/${table}`, {
       method: "POST",
       headers: {
         apikey: SUPABASE_ANON_KEY, authorization: auth,
-        "content-type": "application/json", prefer: "return=minimal",
+        "content-type": "application/json",
+        prefer: prefer ?? (wantRow ? "return=representation" : "return=minimal"),
       },
       body: JSON.stringify(payload),
     });
 
   try {
-    await post("research_sessions", row);
+    /* Ask for the row back so the outcome can be linked to the session that
+       produced it. Without that link a graded result cannot be traced to the
+       reasoning that preceded it, which is the entire point of the loop. */
+    let sessionId: string | null = null;
+    try {
+      const r = await post("research_sessions", row, true);
+      const j = await r.json().catch(() => null);
+      sessionId = Array.isArray(j) ? (j[0]?.id ?? null) : (j?.id ?? null);
+    } catch { /* the session write is best-effort; the rest still proceeds */ }
+
+    /* ── CLOSE THE LEARNING LOOP ──────────────────────────────────────────
+       research_outcomes was being READ but never WRITTEN, and the trigger on
+       settle only UPDATEs rows that already exist. So every graded result had
+       nothing to attach to and EdgeDesk could never learn from a single one —
+       the memory layer was architecturally unable to accumulate.
+
+       An open outcome is now recorded whenever research lands on a real signal
+       with a real thesis. It stores what was believed and why, at the price it
+       was believed at; settle fills in the closing price, CLV and result later.
+       Nothing here is a prediction and nothing is scored — it is the before
+       half of a before/after pair. */
+    const f = research.focus;
+    if (f?.event_id && research.attack && num(f.edge) != null) {
+      const strongest = research.evidence
+        .filter((e) => e.status === "VERIFIED" && e.relevance && e.relevance !== "schedule")
+        .slice(0, 1)
+        .map((e) => `${e.field} from ${e.source}: ${JSON.stringify(e.value).slice(0, 220)}`)[0] ?? null;
+      const contradiction = research.conflicts[0]
+        ? `${research.conflicts[0].field}: ${research.conflicts[0].a.source} vs ${research.conflicts[0].b.source}`
+        : (research.attack.falsifiers[0] ?? null);
+
+      await post("research_outcomes?on_conflict=user_id,event_id,market,selection", {
+        session_id: sessionId,
+        entity: research.state.teams[0] ?? `${f.away_team ?? ""} @ ${f.home_team ?? ""}`,
+        sport: f.sport_key ?? null,
+        event_id: f.event_id,
+        market: f.market ?? null,
+        selection: f.selection ?? null,
+        thesis: `${research.plan.intent} / ${research.attack.status}: ${research.attack.note}`.slice(0, 1000),
+        price: num(f.best_dec),
+        fair_price: num(f.sharp_fair) ?? num(f.consensus_fair),
+        edge: num(f.edge),
+        strongest_support: strongest,
+        strongest_contradiction: contradiction,
+        falsifier: research.attack.falsifiers[0] ?? null,
+      }, false, "resolution=ignore-duplicates,return=minimal");
+    }
 
     // Versioned research packet, so the next turn can diff against it.
     if (research.snapshot?.event_id) {

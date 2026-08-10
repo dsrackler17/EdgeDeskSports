@@ -115,6 +115,48 @@ eq("P5 a QUOTED number is usable (parseFloat('\"4.88\"') is NaN)", col(rows[0], 
 eq("P6 an unquoted number still works", col(rows[1], ["xera"]), 3.72);
 eq("P4 a header-only file yields nothing", parseCsv("a,b,c").length, 0);
 
+
+/* ---------------- ingest_mlb: the two-tier pitching adapter ---------------- */
+sec("Innings-pitched parsing (every rate stat depends on it)");
+{
+  const IP = (v: any) => {
+    const t = String(v ?? "").trim(); if (!t) return null;
+    const m = t.match(/^(\d+)(?:\.(\d))?$/);
+    return m ? parseInt(m[1], 10) + (m[2] ? parseInt(m[2], 10) / 3 : 0) : null;
+  };
+  ok("IP1 '121.2' is 121 innings and TWO OUTS, not 121.2",
+    Math.abs(IP("121.2")! - 121.6667) < 0.001, IP("121.2"));
+  ok("IP2 '134.0' is exact", IP("134.0") === 134);
+  ok("IP3 '5.1' is one out", Math.abs(IP("5.1")! - 5.3333) < 0.001);
+  eq("IP4 an empty value is null, not zero", IP(""), null);
+}
+
+sec("FIP is only computed with a solved constant");
+{
+  const fip = (hr: number, bb: number, hbp: number, so: number, ip: number, c: number | null) =>
+    (c == null || !ip) ? null : +(((13 * hr + 3 * (bb + hbp) - 2 * so) / ip) + c).toFixed(2);
+  // league: 30 teams x 1000 IP, solved constant
+  const lgIP = 30000, lgHR = 3300, lgBB = 9900, lgHBP = 1200, lgSO = 27000, lgER = 13200;
+  const c = (9 * lgER) / lgIP - ((13 * lgHR + 3 * (lgBB + lgHBP) - 2 * lgSO) / lgIP);
+  ok("F1 the constant lands in a plausible band", c > 2.5 && c < 4.0, +c.toFixed(3));
+  const bad = fip(22, 54, 6, 110, 121.667, c);
+  const good = fip(18, 31, 4, 140, 134, c);
+  ok("F2 the worse arm gets the worse FIP", bad! > good!, { bad, good });
+  eq("F3 no constant means NO FIP, never an assumed one", fip(22, 54, 6, 110, 121.667, null), null);
+}
+
+sec("Savant column resolution, reused by the ingest tier");
+{
+  const row = {
+    "last_name, first_name": "Rodon, Carlos", player_id: "543037",
+    era: "5.41", xera: "", era_minus_xera_diff: "-0.62", est_woba: ".339",
+  };
+  eq("SV1 a blank xera is null, never the diff column", col(row, ["xera"]), null);
+  eq("SV2 est_woba still resolves", col(row, ["est_woba"]), 0.339);
+  const quoted = parseCsv('player_id,whiff_percent\n9001,"24.1"');
+  eq("SV3 a quoted whiff rate survives parseFloat", col(quoted[0], ["whiff_percent"]), 24.1);
+}
+
 console.log(`\n${failed === 0 ? "ALL GREEN" : "FAILURES"} — ${passed} passed, ${failed} failed`);
 if (fails.length) console.log("failed:", fails.join(" | "));
 if (typeof process !== "undefined" && failed > 0) (process as any).exit(1);

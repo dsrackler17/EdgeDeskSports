@@ -157,6 +157,11 @@ create table if not exists public.research_outcomes (
 create index if not exists research_outcomes_entity_idx on public.research_outcomes (entity, graded_at desc);
 create index if not exists research_outcomes_event_idx  on public.research_outcomes (event_id);
 create index if not exists research_outcomes_open_idx   on public.research_outcomes (event_id, market, selection) where graded_at is null;
+-- One outcome per user per signal. Researching the same game twice must not
+-- create a second open row, or the graded result attaches to both and the
+-- sample double-counts itself.
+create unique index if not exists research_outcomes_signal_uniq
+  on public.research_outcomes (user_id, event_id, market, selection);
 
 -- --------------------------------------------------------------- patterns
 -- Only written by the aggregation function below, and only once the sample

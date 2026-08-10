@@ -8,6 +8,7 @@
 // Secrets: `supabase secrets set ODDS_API_KEY=...`   (SUPABASE_* are auto-injected)
 // Manual: POST /functions/v1/ingest_mlb {"date":"YYYY-MM-DD"}
 //         POST {"date":"YYYY-MM-DD","backfill":7}   re-runs the last N days
+//         GET  ?mode=health                          is the pipeline alive today?
 //
 // ─────────────────────────────────────────────────────────────────────────────
 // FIVE BUGS FIXED IN THIS REVISION
@@ -267,18 +268,32 @@ async function ingestOdds(sb: any, date: string) {
   return { books_games_matched: updated, not_today, unresolved, overflow };
 }
 
-// ---------- 3. pitching -> pitcher_features (Baseball Savant, no key) -----------
+// ---------- 3. pitching -> pitcher_features -------------------------------
+// Two tiers, and the second is why this now fills the table even on a bad day.
+//   Statcast : Baseball Savant CSV  -> xERA, xwOBA, barrel%, hard-hit%, whiff%
+//   Line     : MLB StatsAPI         -> ERA, WHIP, K%, BB%, FIP, workload
+// Savant changes its leaderboard URLs periodically and has no contract with
+// anyone. When it breaks, the old code wrote nothing and the whole matchup
+// layer went dark — which is exactly what happened on 19 July. Now the
+// traditional line lands regardless, so a Savant outage costs the Statcast
+// columns and nothing else.
+const IP_NUM = (v: any) => {                 // "121.2" is 121 innings and TWO OUTS
+  const t = String(v ?? '').trim(); if (!t) return null;
+  const m = t.match(/^(\d+)(?:\.(\d))?$/);
+  return m ? parseInt(m[1], 10) + (m[2] ? parseInt(m[2], 10) / 3 : 0) : num(t);
+};
+
 async function ingestPitching(sb: any, date: string) {
   const year = Number(date.slice(0, 4));
-  const expUrl = `https://baseballsavant.mlb.com/leaderboard/expected_statistics?type=pitcher&year=${year}&position=&team=&filterType=bip&min=1&csv=true`;
-  const rateUrl = `https://baseballsavant.mlb.com/leaderboard/custom?year=${year}&type=pitcher&filter=&min=1&selections=player_id,k_percent,bb_percent,barrel_batted_rate,hard_hit_percent&csv=true`;
-
-  const stats = new Map<string, any>();
-  const put = (id: string, k: string, v: number | null) => { if (v == null) return; const o = stats.get(id) ?? {}; o[k] = v; stats.set(id, o); };
-
-  // BUG 3 FIX: report what each leaderboard actually returned. A silent zero here
-  // is precisely how pitcher_features went stale without anyone noticing.
   const feeds: Record<string, any> = {};
+  const stats = new Map<string, any>();
+  const put = (id: string, k: string, v: number | null) => {
+    if (v == null || !id) return; const o = stats.get(id) ?? {}; o[k] = v; stats.set(id, o);
+  };
+
+  /* ---- tier 1: Statcast ---- */
+  const expUrl = `https://baseballsavant.mlb.com/leaderboard/expected_statistics?type=pitcher&year=${year}&position=&team=&filterType=bip&min=1&csv=true`;
+  const rateUrl = `https://baseballsavant.mlb.com/leaderboard/custom?year=${year}&type=pitcher&filter=&min=1&selections=player_id,k_percent,bb_percent,barrel_batted_rate,hard_hit_percent,whiff_percent&csv=true`;
 
   const exp = await getText(expUrl);
   feeds.expected_statistics = { ok: exp.ok, status: exp.status, bytes: exp.text.length, ...(exp.error ? { error: exp.error } : {}) };
@@ -292,7 +307,6 @@ async function ingestPitching(sb: any, date: string) {
       put(id, 'xwoba_against', col(row, ['est_woba']));
     }
   }
-
   const rate = await getText(rateUrl);
   feeds.custom = { ok: rate.ok, status: rate.status, bytes: rate.text.length, ...(rate.error ? { error: rate.error } : {}) };
   if (rate.ok) {
@@ -305,64 +319,207 @@ async function ingestPitching(sb: any, date: string) {
       put(id, 'bb_pct', col(row, ['bb_percent']));
       put(id, 'barrel_pct', col(row, ['barrel_batted_rate', 'barrel']));
       put(id, 'hardhit_pct', col(row, ['hard_hit_percent', 'hard_hit']));
+      put(id, 'whiff_pct', col(row, ['whiff_percent', 'whiff']));
     }
   }
+  feeds.statcast_players = stats.size;
 
-  if (!stats.size) {
-    return {
-      error: 'savant returned no usable rows — check the leaderboard URLs and column names',
-      feeds, savant_players: 0, pitchers_updated: 0,
-    };
-  }
-
+  /* ---- who is starting today ---- */
   const ids = await todaysGameIds(sb, date);
-  if (!ids.length) return { feeds, savant_players: stats.size, pitchers_updated: 0, note: 'no games rows for this date yet — run the schedule adapter first' };
-
-  const { data: pf } = await sb.from('pitcher_features').select('game_id,side,pitcher_id').in('game_id', ids);
-  let updated = 0, no_match = 0;
-  for (const row of pf ?? []) {
-    const s = stats.get(String(row.pitcher_id));
-    if (!s) { no_match++; continue; }
-    const { error } = await sb.from('pitcher_features').update({
-      xera: s.xera ?? null, k_pct: s.k_pct ?? null, bb_pct: s.bb_pct ?? null,
-      barrel_pct: s.barrel_pct ?? null, hardhit_pct: s.hardhit_pct ?? null,
-    }).eq('game_id', row.game_id).eq('side', row.side);
-    if (!error) updated++;
+  if (!ids.length) {
+    return { feeds, statcast_players: stats.size, pitchers_updated: 0,
+      error: 'no games rows for this date — the schedule adapter has to run first' };
   }
-  return { feeds, savant_players: stats.size, probables_on_file: (pf ?? []).length, pitchers_updated: updated, no_savant_match: no_match };
+  const { data: pf } = await sb.from('pitcher_features').select('game_id,side,pitcher_id,name').in('game_id', ids);
+  const starters = (pf ?? []).filter((r: any) => r.pitcher_id != null);
+  if (!starters.length) {
+    return { feeds, statcast_players: stats.size, pitchers_updated: 0,
+      error: 'no probable pitchers on file for this date yet' };
+  }
+
+  /* ---- tier 2: the traditional line, for every starter, from StatsAPI ----
+     Fetched in small batches with the season stats separated from the game
+     logs: a combined hydrate returns a partial payload, which looks identical
+     to missing data and is how most starters end up with no line at all. */
+  const line = new Map<string, any>(), logs = new Map<string, any[]>(), hand = new Map<string, string>();
+  const idList = starters.map((r: any) => String(r.pitcher_id));
+  for (let i = 0; i < idList.length; i += 12) {
+    const batch = idList.slice(i, i + 12).join(',');
+    try {
+      const r = await fetch(`https://statsapi.mlb.com/api/v1/people?personIds=${batch}&hydrate=stats(group=[pitching],type=[season],season=${year})`, { headers: UA });
+      if (!r.ok) continue;
+      for (const p of (await r.json()).people ?? []) {
+        if (p.pitchHand?.code) hand.set(String(p.id), p.pitchHand.code);
+        const sp = p.stats?.find((x: any) => x.group?.displayName === 'pitching')?.splits?.[0];
+        if (sp?.stat) line.set(String(p.id), sp.stat);
+      }
+    } catch (_) { /* keep whatever landed */ }
+  }
+  for (let i = 0; i < idList.length; i += 6) {
+    const batch = idList.slice(i, i + 6).join(',');
+    try {
+      const r = await fetch(`https://statsapi.mlb.com/api/v1/people?personIds=${batch}&hydrate=stats(group=[pitching],type=[gameLog],season=${year})`, { headers: UA });
+      if (!r.ok) continue;
+      for (const p of (await r.json()).people ?? []) {
+        const gl = p.stats?.find((x: any) => x.type?.displayName === 'gameLog');
+        if (gl) logs.set(String(p.id), gl.splits ?? []);
+      }
+    } catch (_) { /* workload is context, not the read */ }
+  }
+  feeds.statsapi_lines = line.size;
+  feeds.statsapi_logs = logs.size;
+
+  /* ---- the FIP constant, SOLVED from league totals in this same run ----
+     Hardcoding 3.10 would be a quiet fudge. Deriving it means every FIP stored
+     is reproducible from data captured at the same moment. */
+  let cFIP: number | null = null;
+  try {
+    const r = await fetch(`https://statsapi.mlb.com/api/v1/teams/stats?season=${year}&stats=season&group=pitching&sportIds=1`, { headers: UA });
+    if (r.ok) {
+      let hr = 0, bb = 0, hbp = 0, so = 0, ip = 0, er = 0, teams = 0;
+      for (const st of (await r.json()).stats ?? []) for (const sp of st.splits ?? []) {
+        const s2 = sp.stat ?? {}, i = IP_NUM(s2.inningsPitched); if (i == null) continue;
+        hr += num(s2.homeRuns) ?? 0; bb += num(s2.baseOnBalls) ?? 0; hbp += num(s2.hitBatsmen) ?? 0;
+        so += num(s2.strikeOuts) ?? 0; er += num(s2.earnedRuns) ?? 0; ip += i; teams++;
+      }
+      if (ip > 0 && teams >= 20) cFIP = (9 * er) / ip - ((13 * hr + 3 * (bb + hbp) - 2 * so) / ip);
+    }
+  } catch (_) { /* no constant, no FIP — never an assumed one */ }
+  feeds.fip_constant = cFIP == null ? 'unavailable — FIP not computed' : +cFIP.toFixed(3);
+
+  /* ---- write ---- */
+  let updated = 0, withStatcast = 0, withLine = 0;
+  const nowIso = new Date().toISOString();
+  for (const row of starters) {
+    const key = String(row.pitcher_id);
+    const sc = stats.get(key) ?? null;
+    const ln = line.get(key) ?? null;
+    const ip = ln ? IP_NUM(ln.inningsPitched) : null;
+    const bf = ln ? num(ln.battersFaced) : null;
+    const so = ln ? num(ln.strikeOuts) : null, bb = ln ? num(ln.baseOnBalls) : null;
+    const hr = ln ? num(ln.homeRuns) : null, hbp = ln ? (num(ln.hitBatsmen) ?? 0) : 0;
+    const fip = (cFIP != null && ip && hr != null && bb != null && so != null)
+      ? +(((13 * hr + 3 * (bb + hbp) - 2 * so) / ip) + cFIP).toFixed(2) : null;
+
+    const starts = (logs.get(key) ?? []).filter((g: any) => num(g.stat?.gamesStarted) === 1)
+      .sort((a: any, b: any) => String(b.date).localeCompare(String(a.date))).slice(0, 3);
+    const lastStart = starts[0]?.date ? String(starts[0].date).slice(0, 10) : null;
+    const rest = lastStart
+      ? Math.round((Date.parse(date + 'T00:00:00Z') - Date.parse(lastStart + 'T00:00:00Z')) / 86400000) : null;
+
+    const patch: any = {
+      // Statcast half. K%/BB% prefer Savant; StatsAPI over batters faced is the
+      // fallback so the field is populated either way.
+      xera: sc?.xera ?? null, xwoba_against: sc?.xwoba_against ?? null,
+      barrel_pct: sc?.barrel_pct ?? null, hardhit_pct: sc?.hardhit_pct ?? null,
+      whiff_pct: sc?.whiff_pct ?? null,
+      k_pct: sc?.k_pct ?? (bf && so != null ? +(so / bf * 100).toFixed(1) : null),
+      bb_pct: sc?.bb_pct ?? (bf && bb != null ? +(bb / bf * 100).toFixed(1) : null),
+      // traditional half
+      throws: hand.get(key) ?? null,
+      era: ln ? num(ln.era) : null, whip: ln ? num(ln.whip) : null,
+      fip, fip_constant: cFIP == null ? null : +cFIP.toFixed(3),
+      hr_per_9: (ip && hr != null) ? +((9 * hr) / ip).toFixed(2) : null,
+      k_bb_ratio: ln ? num(ln.strikeoutWalkRatio) : null,
+      ground_to_air: ln ? num(ln.groundOutsToAirouts) : null,
+      strike_pct: ln ? num(ln.strikePercentage) : null,
+      pitches_per_inning: ln ? num(ln.pitchesPerInning) : null,
+      innings: ip == null ? null : +ip.toFixed(1),
+      batters_faced: bf, games_started: ln ? num(ln.gamesStarted) : null,
+      // workload
+      last_start: lastStart, days_rest: (rest != null && rest >= 0) ? rest : null,
+      recent_starts: starts.length ? starts.map((g: any) => ({
+        date: String(g.date).slice(0, 10), innings: g.stat?.inningsPitched ?? null,
+        pitches: num(g.stat?.numberOfPitches), earned_runs: num(g.stat?.earnedRuns),
+        strikeouts: num(g.stat?.strikeOuts), walks: num(g.stat?.baseOnBalls),
+      })) : null,
+      // provenance, so a null is readable as "this feed was down" not "unknown"
+      quality_source: sc ? 'baseball_savant' : null,
+      line_source: ln ? 'mlb_statsapi' : null,
+      updated_at: nowIso,
+    };
+    const { error } = await sb.from('pitcher_features').update(patch)
+      .eq('game_id', row.game_id).eq('side', row.side);
+    if (error) continue;
+    updated++; if (sc) withStatcast++; if (ln) withLine++;
+  }
+
+  const missing = starters.filter((r: any) => !stats.get(String(r.pitcher_id)) && !line.get(String(r.pitcher_id)))
+    .map((r: any) => r.name).slice(0, 10);
+  return {
+    feeds, statcast_players: stats.size, starters: starters.length,
+    pitchers_updated: updated, with_statcast: withStatcast, with_line: withLine,
+    ...(missing.length ? { no_data_for: missing } : {}),
+  };
 }
 
 // ---------- 4. offense -> offense_features (StatsAPI team hitting, no key) -------
+// Now stores the PLATOON SPLITS alongside the season line. A right-hander does
+// not face a lineup's overall numbers, he faces its numbers against
+// right-handers, and storing only the overall line throws that away on every
+// row. Three requests instead of one; the splits are the single most
+// matchup-relevant field in the table.
 async function ingestOffense(sb: any, date: string) {
   const season = Number(date.slice(0, 4));
   const { abbrToId } = await teamMaps(season);
-  const r = await fetch(`https://statsapi.mlb.com/api/v1/teams/stats?stats=season&group=hitting&season=${season}&sportIds=1`, { headers: UA });
-  if (!r.ok) return { error: `statsapi teams/stats ${r.status}` };
-  const splits = (await r.json()).stats?.[0]?.splits ?? [];
-  const byTeam = new Map<number, any>();
-  for (const s of splits) {
-    const st = s.stat ?? {};
-    const avg = num(st.avg), slg = num(st.slg), pa = num(st.plateAppearances), so = num(st.strikeOuts);
-    byTeam.set(s.team?.id, {
-      obp: num(st.obp), iso: (slg != null && avg != null) ? +(slg - avg).toFixed(3) : null,
-      k_pct: (so != null && pa) ? +(so / pa * 100).toFixed(1) : null,
+
+  const pull = async (sit?: string) => {
+    const u = sit
+      ? `https://statsapi.mlb.com/api/v1/teams/stats?season=${season}&stats=statSplits&group=hitting&sitCodes=${sit}&sportIds=1`
+      : `https://statsapi.mlb.com/api/v1/teams/stats?season=${season}&stats=season&group=hitting&sportIds=1`;
+    try {
+      const r = await fetch(u, { headers: UA });
+      if (!r.ok) return { by: new Map<number, any>(), error: `HTTP ${r.status}` };
+      const by = new Map<number, any>();
+      for (const st of (await r.json()).stats ?? []) for (const sp of st.splits ?? []) {
+        if (sp.team?.id != null) by.set(sp.team.id, sp.stat ?? {});
+      }
+      return { by, error: null as string | null };
+    } catch (e) { return { by: new Map<number, any>(), error: String(e) }; }
+  };
+
+  const shape = (st: any) => {
+    if (!st) return null;
+    const avg = num(st.avg), slg = num(st.slg), pa = num(st.plateAppearances);
+    return {
+      avg, obp: num(st.obp), slg, ops: num(st.ops),
+      iso: (slg != null && avg != null) ? +(slg - avg).toFixed(3) : null,
+      k_pct: (pa && num(st.strikeOuts) != null) ? +(num(st.strikeOuts)! / pa * 100).toFixed(1) : null,
+      bb_pct: (pa && num(st.baseOnBalls) != null) ? +(num(st.baseOnBalls)! / pa * 100).toFixed(1) : null,
       runs_per_game: num(st.gamesPlayed) ? +((num(st.runs) ?? 0) / num(st.gamesPlayed)!).toFixed(2) : null,
-    });
-  }
+      home_runs: num(st.homeRuns), plate_appearances: pa,
+    };
+  };
+
+  const all = await pull(), vl = await pull('vl'), vr = await pull('vr');
   const { data: games } = await sb.from('games').select('game_id,home_team,away_team').eq('game_date', date);
-  let updated = 0, unmatched = 0;
+  const nowIso = new Date().toISOString();
+  let updated = 0, unmatched = 0, withSplits = 0;
+
   for (const g of games ?? []) {
     for (const [side, abbr] of [['home', g.home_team], ['away', g.away_team]] as const) {
-      const t = byTeam.get(abbrToId.get(abbr) ?? -1);
-      if (!t) { unmatched++; continue; }
-      const { error } = await sb.from('offense_features').upsert(
-        { game_id: g.game_id, side, obp: t.obp, iso: t.iso, k_pct: t.k_pct, runs_per_game: t.runs_per_game },
-        { onConflict: 'game_id,side' },
-      );
-      if (!error) updated++;
+      const id = abbrToId.get(abbr) ?? -1;
+      const base = shape(all.by.get(id));
+      if (!base) { unmatched++; continue; }
+      const L = shape(vl.by.get(id)), R = shape(vr.by.get(id));
+      const { error } = await sb.from('offense_features').upsert({
+        game_id: g.game_id, side,
+        obp: base.obp, iso: base.iso, k_pct: base.k_pct, runs_per_game: base.runs_per_game,
+        avg: base.avg, slg: base.slg, ops: base.ops, bb_pct: base.bb_pct,
+        home_runs: base.home_runs, plate_appearances: base.plate_appearances,
+        vs_lhp: L, vs_rhp: R,           // null here means the split was not retrievable
+        source: 'mlb_statsapi', updated_at: nowIso,
+      }, { onConflict: 'game_id,side' });
+      if (error) continue;
+      updated++; if (L || R) withSplits++;
     }
   }
-  return { teams: byTeam.size, offense_rows: updated, ...(unmatched ? { unmatched_teams: unmatched } : {}) };
+  return {
+    teams: all.by.size, offense_rows: updated, rows_with_splits: withSplits,
+    splits: { vs_lhp: vl.by.size, vs_rhp: vr.by.size, ...(vl.error || vr.error ? { error: vl.error ?? vr.error } : {}) },
+    ...(all.error ? { error: all.error } : {}),
+    ...(unmatched ? { unmatched_teams: unmatched } : {}),
+  };
 }
 
 // ---------- 5. weather (Open-Meteo, needs park lat/lon) ----------
@@ -427,11 +584,62 @@ async function ingestOneDay(sb: any, date: string) {
   return { date, healthy, ...(warnings.length ? { warnings } : {}), schedule, odds, pitching, offense, weather };
 }
 
+/* HEALTH — one call that answers "is this pipeline alive and complete today".
+   The July outage lasted three weeks because nothing ever surfaced it: the cron
+   returned 200, the table quietly stopped filling, and the only symptom was an
+   AI answer saying data was unavailable. This turns that into a number anyone
+   can check, and something a monitor can alert on. GET ?mode=health */
+async function health(sb: any, date: string) {
+  const out: any = { date, checked_at: new Date().toISOString() };
+  const count = async (table: string, filter: (q: any) => any) => {
+    try { const { count: c, error } = await filter(sb.from(table).select('*', { count: 'exact', head: true }));
+      return error ? { error: error.message } : c ?? 0; } catch (e) { return { error: String(e) }; }
+  };
+  const ids = await todaysGameIds(sb, date);
+  out.games_today = ids.length;
+
+  if (ids.length) {
+    const { data: pf } = await sb.from('pitcher_features')
+      .select('pitcher_id,name,xera,era,updated_at').in('game_id', ids);
+    const rows = pf ?? [];
+    out.starters_on_file = rows.length;
+    out.with_statcast = rows.filter((r: any) => r.xera != null).length;
+    out.with_line = rows.filter((r: any) => r.era != null).length;
+    out.missing_both = rows.filter((r: any) => r.xera == null && r.era == null).map((r: any) => r.name).slice(0, 10);
+    out.last_written = rows.map((r: any) => r.updated_at).filter(Boolean).sort().slice(-1)[0] ?? null;
+
+    const { data: off } = await sb.from('offense_features').select('side,obp,vs_lhp').in('game_id', ids);
+    out.offense_rows = (off ?? []).length;
+    out.offense_with_splits = (off ?? []).filter((r: any) => r.vs_lhp != null).length;
+
+    const { data: mk } = await sb.from('market_features').select('game_id').in('game_id', ids);
+    out.market_rows = (mk ?? []).length;
+    const { data: wx } = await sb.from('weather_features').select('game_id').in('game_id', ids);
+    out.weather_rows = (wx ?? []).length;
+  }
+
+  const problems: string[] = [];
+  if (!out.games_today) problems.push('no games rows for this date — the schedule adapter is not writing');
+  if (out.games_today && !out.starters_on_file) problems.push('games exist but no probable pitchers are on file');
+  if (out.starters_on_file && !out.with_line) problems.push('starters on file but no traditional line — the StatsAPI tier is failing');
+  if (out.starters_on_file && !out.with_statcast) problems.push('no Statcast on any starter — the Savant tier is failing (check the leaderboard URLs)');
+  if (out.offense_rows && !out.offense_with_splits) problems.push('offense rows carry no platoon splits — the statSplits call is failing');
+  out.healthy = problems.length === 0;
+  out.problems = problems;
+  out.summary = problems.length
+    ? `${problems.length} problem(s): ${problems[0]}`
+    : `complete: ${out.with_line}/${out.starters_on_file} lines, ${out.with_statcast}/${out.starters_on_file} Statcast, ${out.offense_with_splits}/${out.offense_rows} offense splits`;
+  return out;
+}
+
 Deno.serve(async (req) => {
   try {
     let body: any = {}; try { body = await req.json(); } catch { body = {}; }
     const params = Object.fromEntries(new URL(req.url).searchParams);
     const date = body.date ?? params.date ?? todayUTC();
+    if ((body.mode ?? params.mode) === 'health') {
+      return json(await health(createClient(url, serviceKey), date), 200);
+    }
     const backfill = Math.max(0, Math.min(14, Number(body.backfill ?? params.backfill ?? 0)));
     const sb = createClient(url, serviceKey);
 
