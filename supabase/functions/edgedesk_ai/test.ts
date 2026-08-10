@@ -1552,6 +1552,58 @@ section("Football and basketball retrieve their own owned layer");
     classify("worst pitchers today", null).intent === "worst_pitchers");
 }
 
+/* A live WNBA answer opened with "DATA WARNING: No pitcher data was retrieved
+   for any game on the slate, so pitcher age cannot be established." The
+   freshness check was keyed to pitcher rows, so on every non-baseball turn it
+   found none and warned — a baseball-shaped complaint leading a basketball
+   answer that was otherwise correct. A check that cannot apply must stay
+   silent, not invent a concern. */
+section("A check that cannot apply says nothing");
+{
+  const chk2 = (g: any, n: string) => g.checks.find((c: any) => c.name === n)!;
+  const NOW2 = Date.parse("2026-08-10T18:00:00Z");
+  const DELIV = { now: NOW2, delivered: { included: 3, withheld: 0 } };
+
+  // A market-only turn: signals and nothing else, exactly the WNBA case.
+  const marketOnly = [
+    { source: "signals", entity: "New York Liberty @ Indiana Fever", field: "signal",
+      status: "VERIFIED", freshness: "CURRENT", source_timestamp: "2026-08-10T17:00:00Z",
+      value: { best_dec: 1.91, sharp_fair: 0.53 } },
+  ] as any;
+  const g = evidenceIntegrity(marketOnly, DELIV);
+  eq("W1 freshness PASSES when nothing dated was retrieved", chk2(g, "freshness").status, "PASS");
+  ok("W2 ...and never mentions pitchers on a basketball turn",
+    !/pitcher/i.test(chk2(g, "freshness").detail), chk2(g, "freshness").detail);
+  ok("W3 ...saying instead that nothing age-sensitive was retrieved",
+    /nothing whose age could change the answer/.test(chk2(g, "freshness").detail));
+  ok("W4 the headline invents no starter count either",
+    !/starters/.test(g.headline), g.headline);
+
+  // Football subjects ARE age-sensitive and must still be checked.
+  const stale = [{
+    source: "team_features", entity: "Buffalo Bills", field: "team_efficiency",
+    status: "VERIFIED", freshness: "RECENT", source_timestamp: "2026-07-19T12:00:00Z",
+    value: { team: "Buffalo Bills", off_epa_play: 0.14, def_epa_play: -0.06,
+             off_success_rate: 0.49, def_success_rate: 0.41 },
+  }] as any;
+  const g2 = evidenceIntegrity(stale, DELIV);
+  eq("W5 a stale TEAM row still warns", chk2(g2, "freshness").status, "WARNING");
+  ok("W6 ...in sport-neutral language", /subject record/.test(chk2(g2, "freshness").detail));
+  ok("W7 ...with the age and the date", /22 days old \(2026-07-19\)/.test(chk2(g2, "freshness").detail));
+  ok("W8 the headline counts teams when there are no pitchers",
+    /1\/1 teams with an efficiency line/.test(g2.headline), g2.headline);
+
+  // Subjects present but undated is still a real gap.
+  const undated = [{
+    source: "team_features", entity: "Duke", field: "team_efficiency",
+    status: "VERIFIED", freshness: "UNKNOWN",
+    value: { team: "Duke", adj_o: 118.2, adj_d: 92.4, adj_tempo: 66.1, efg_pct: 55.1 },
+  }] as any;
+  ok("W9 undated subjects warn, and say how many",
+    /1 subject rows were retrieved but none carried a source timestamp/
+      .test(chk2(evidenceIntegrity(undated, DELIV), "freshness").detail));
+}
+
 console.log(`\n${failed === 0 ? "ALL GREEN" : "FAILURES"} — ${passed} passed, ${failed} failed`);
 if (failures.length) console.log("failed:", failures.join(" | "));
 if (typeof process !== "undefined" && failed > 0) (process as any).exit(1);

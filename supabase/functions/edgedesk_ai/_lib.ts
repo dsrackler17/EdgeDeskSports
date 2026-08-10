@@ -197,22 +197,41 @@ export function evidenceIntegrity(
           detail: `No two of the ${items.length} ${label.replace("_", " ")} rows share a full numeric profile.` });
   }
 
-  /* 3. FRESHNESS — how old is the newest thing we are ranking on. */
+  /* 3. FRESHNESS — how old is the newest thing being reasoned over.
+     Measured across ALL dated subject evidence, not pitchers specifically.
+     Keyed to pitchers, this fired on every non-baseball turn and made a WNBA
+     answer open with "No pitcher data was retrieved for any game on the slate"
+     — a baseball-shaped complaint about a basketball game, leading an answer
+     that was otherwise correct. A check that cannot apply must stay silent
+     rather than invent a concern. */
   {
-    const ages = pitchers.map((e) => AGE_DAYS(e.source_timestamp ?? e.retrieved_at, now))
+    const SUBJECT_FIELDS = new Set([
+      "pitcher_quality", "opponent_offense", "team_efficiency", "quarterback",
+      "workload", "player_stats", "team_form",
+    ]);
+    const subjects = usable.filter((e) => SUBJECT_FIELDS.has(String(e.field)));
+    const ages = subjects.map((e) => AGE_DAYS(e.source_timestamp ?? e.retrieved_at, now))
       .filter((a): a is number => a != null);
-    if (!ages.length) {
+
+    if (!subjects.length) {
+      /* Nothing whose age could matter was retrieved — a market-only turn.
+         That is not a freshness problem; the market layer carries its own
+         staleness handling and completeness already reports what is missing. */
+      checks.push({ name: "freshness", status: "PASS",
+        detail: "No dated subject evidence on this turn — nothing whose age could change the answer." });
+    } else if (!ages.length) {
       checks.push({ name: "freshness", status: "WARNING",
-        detail: "No pitcher row carried a source timestamp, so its age cannot be established." });
+        detail: `${subjects.length} subject rows were retrieved but none carried a source timestamp, `
+          + `so their age cannot be established.` });
     } else {
       const newest = Math.min(...ages);
       const when = new Date(now - newest * 86400000).toISOString().slice(0, 10);
       checks.push(newest > staleDays
         ? { name: "freshness", status: "WARNING",
-            detail: `The most recent pitcher record is ${Math.round(newest)} days old (${when}). `
+            detail: `The most recent subject record is ${Math.round(newest)} days old (${when}). `
               + `Any ranking built on it is provisional and must be labelled as such UP FRONT, not disclosed at the end.` }
         : { name: "freshness", status: "PASS",
-            detail: `Newest pitcher record is ${newest < 1 ? "under a day" : Math.round(newest) + " days"} old.` });
+            detail: `Newest subject record is ${newest < 1 ? "under a day" : Math.round(newest) + " days"} old.` });
     }
   }
 
@@ -330,6 +349,11 @@ export function evidenceIntegrity(
     const bits: string[] = [];
     const named = pitchers.filter((e) => statFingerprint(e.value) != null).length;
     if (pitchers.length) bits.push(`${named}/${pitchers.length} starters with a full line`);
+    else {
+      const teams = usable.filter((e) => e.field === "team_efficiency");
+      const withNums = teams.filter((e) => statFingerprint(e.value) != null).length;
+      if (teams.length) bits.push(`${withNums}/${teams.length} teams with an efficiency line`);
+    }
     const d = opts.delivered;
     if (d) {
       const total = d.included + d.withheld;

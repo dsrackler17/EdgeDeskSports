@@ -45,7 +45,7 @@ const url = Deno.env.get('SUPABASE_URL')!;
 const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 const UA = { 'User-Agent': 'EdgeDesk/1.0 (contact: ops@edgedesk)', 'Accept': 'application/json,text/csv,*/*' };
 
-export const BUILD = '2026-08-14.1';
+export const BUILD = '2026-08-14.2-offseason-aware';
 
 /* ========================================================================
    SPORTS
@@ -145,6 +145,11 @@ export function normTeam(s: unknown): string {
   return String(s ?? '')
     .toLowerCase()
     .replace(/&/g, ' and ')
+    /* Apostrophes are REMOVED, not turned into separators. "St. John's" and
+       "St Johns" are the same school and two feeds will spell it both ways;
+       splitting on the apostrophe yields "john s" against "johns" and the join
+       silently misses. */
+    .replace(/['\u2019]/g, '')
     .replace(/\bst\.?\b/g, 'state')          // "Ohio St." -> "ohio state"
     .replace(/\buniv(ersity)?\b/g, '')
     .replace(/[^a-z0-9]+/g, ' ')
@@ -247,6 +252,13 @@ async function getCsv(u: string, ms = 25000): Promise<{ rows: Record<string, str
     clearTimeout(t);
     const text = await r.text();
     if (!r.ok) return { rows: [], report: { ok: false, status: r.status, bytes: text.length, url: u } };
+    /* A 200 carrying an HTML error page is the most misleading failure a CSV
+         feed has: it parses, it yields "rows", and the first column is
+         "<!DOCTYPE html>". Barttorvik did exactly this for a season that does
+         not exist yet. Detect it as a failure rather than importing markup. */
+    if (/^\s*<(!doctype|html|head|body)/i.test(text)) {
+      return { rows: [], report: { ok: false, status: r.status, bytes: text.length, error: 'HTML, not CSV — the feed returned a page (wrong season, or the endpoint moved)', url: u } };
+    }
     const rows = parseCsv(text);
     return {
       rows,
@@ -390,10 +402,14 @@ async function ingestRest(sb: any, sp: SportDef, date: string) {
 
 /** NFL efficiency from nflverse. The Statcast layer of football. */
 async function ingestNflEfficiency(sb: any, teams: any[], season: number) {
-  const candidates = [
-    `https://github.com/nflverse/nflverse-data/releases/download/stats_team/stats_team_reg_${season}.csv`,
-    `https://raw.githubusercontent.com/nflverse/nflverse-data/master/data/stats_team_reg_${season}.csv`,
-  ];
+  /* Try the current season, then the previous one. A season file does not
+     exist until that season starts, so in August the current-year URL is a
+     legitimate 404 rather than a broken feed — and last season's numbers are
+     the correct prior anyway until real games are played. */
+  const candidates = [season, season - 1].flatMap((y) => [
+    `https://github.com/nflverse/nflverse-data/releases/download/stats_team/stats_team_reg_${y}.csv`,
+    `https://raw.githubusercontent.com/nflverse/nflverse-data/master/data/stats_team_reg_${y}.csv`,
+  ]);
   let rows: Record<string, string>[] = [];
   const feeds: FeedReport[] = [];
   for (const u of candidates) {
@@ -424,10 +440,10 @@ async function ingestNflEfficiency(sb: any, teams: any[], season: number) {
 
 /** College basketball efficiency from Barttorvik. */
 async function ingestCbbEfficiency(sb: any, teams: any[], season: number) {
-  const candidates = [
-    `https://barttorvik.com/trank.php?year=${season}&csv=1`,
-    `https://barttorvik.com/${season}_team_results.csv`,
-  ];
+  const candidates = [season, season - 1].flatMap((y) => [
+    `https://barttorvik.com/trank.php?year=${y}&csv=1`,
+    `https://barttorvik.com/${y}_team_results.csv`,
+  ]);
   let rows: Record<string, string>[] = [];
   const feeds: FeedReport[] = [];
   for (const u of candidates) {
@@ -495,14 +511,27 @@ async function ingestSport(sb: any, sp: SportDef, date: string, season: number) 
       ? await runAdapter('efficiency', () => ingestCbbEfficiency(sb, teams, season))
       : { ok: true, applied: 0, skipped: 'college football has no free play-by-play EPA feed without a CollegeFootballData key; efficiency columns stay null and the research layer reports that rather than guessing' };
 
-  const healthy = schedule.ok && (schedule.upserted ?? 0) > 0;
+  /* A feed that answered 200 with an empty card is telling the truth: these
+     sports do not play every day, and none of them plays in August. Reporting
+     that as "starved" trains you to ignore the warning that matters. A failure
+     is the feed not answering; an empty slate is an empty slate. */
+  const feedAnswered = schedule.ok && (schedule.feed?.ok === true);
+  const empty = feedAnswered && (schedule.games ?? 0) === 0;
+  const healthy = feedAnswered && (empty || (schedule.upserted ?? 0) > 0);
+
   const warnings: string[] = [];
-  if (!healthy) warnings.push(`${sp.label}: schedule wrote 0 games — every downstream adapter is starved`);
-  if (healthy && (efficiency as any).applied === 0 && sp.slug !== 'cfb') {
+  if (!feedAnswered) {
+    warnings.push(`${sp.label}: the schedule feed did not answer — every downstream adapter is starved`);
+  } else if ((schedule.games ?? 0) > 0 && (schedule.upserted ?? 0) === 0) {
+    warnings.push(`${sp.label}: the feed returned ${schedule.games} games but NONE were written — check the games upsert`);
+  }
+  if (!empty && (efficiency as any).applied === 0 && sp.slug !== 'cfb') {
     warnings.push(`${sp.label}: games landed but NO efficiency rows were applied — the stats feed changed shape or the team names do not match. Check the feeds block.`);
   }
   return {
-    sport: sp.label, date, healthy, ...(warnings.length ? { warnings } : {}),
+    sport: sp.label, date, healthy,
+    ...(empty ? { note: `no ${sp.label} games scheduled on ${date} — the feed answered with an empty card, which is not a fault` } : {}),
+    ...(warnings.length ? { warnings } : {}),
     schedule: { ...schedule, teams: undefined }, team_base: base, rest, efficiency,
   };
 }
