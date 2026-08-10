@@ -14357,16 +14357,25 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
     });
   }
 
-  /* ---- source registry: honest status per source ---- */
+  /* ---- source registry: mapped to the user's REAL Supabase Edge Functions ----
+     owned:true = your deployed function (called via the app's edToken + apikey path).
+     status: WIRED = invocation pattern confirmed from the app; NEEDS_CONTRACT = I must see the
+     request body / response schema (or the table+columns to read) before writing a verified
+     normalizer; LIVE_FALLBACK = public keyless browser-direct source, documented, unverified here.
+     NOTE: *_sync / capture_* are likely cron INGESTION writers, not browser readers — confirm. */
   var SOURCES={
-    mlb_schedule:{name:'MLB Stats API',categories:['schedule','starter','game_status'],auth:'none',cors:true,status:'LIVE',ttl:'schedule',adapter:mlbSchedule,fallback:'edgedesk_supabase'},
-    weather_nws:{name:'NWS',categories:['weather'],auth:'none',cors:true,status:'LIVE',ttl:'weather',adapter:nwsWeather,fallback:null},
-    lineups_mlb:{name:'MLB Stats API (boxscore)',categories:['lineup'],auth:'none',cors:true,status:'LIVE_INTERFACE',ttl:'lineup',adapter:null,need:'boxscore hydrate per gamePk; interface ready, unverified from build env'},
-    odds:{name:'Odds provider',categories:['odds','line_movement'],auth:'api_key',cors:false,status:'NOT_CONFIGURED',ttl:'odds',adapter:null,need:'server-side odds API key via Supabase Edge Function (never client-side)',fallback:'edgedesk_supabase'},
-    statcast:{name:'Baseball Savant / Statcast',categories:['player_stats'],auth:'none',cors:false,status:'NOT_CONFIGURED',ttl:'player_stats',adapter:null,need:'server-side proxy (no browser CORS)'},
-    fangraphs:{name:'FanGraphs',categories:['player_stats','team_stats'],auth:'terms',cors:false,status:'NOT_CONFIGURED',ttl:'player_stats',adapter:null,need:'licensed access + server-side adapter (no public API)'},
-    injuries:{name:'Injury feed',categories:['injury'],auth:'api_key',cors:false,status:'NOT_CONFIGURED',ttl:'injury',adapter:null,need:'provider key via Edge Function'},
-    news:{name:'News feed',categories:['news'],auth:'api_key',cors:false,status:'NOT_CONFIGURED',ttl:'news',adapter:null,need:'provider key via Edge Function'}
+    schedule_mlb:{name:'ingest_mlb / mlb_sync',categories:['schedule','starter','game_status'],owned:true,fn:'ingest_mlb',status:'NEEDS_CONTRACT',ttl:'schedule',need:'confirm browser-readable fn (vs cron sync writer) + response schema, or the table the app reads'},
+    odds:{name:'odds',categories:['odds','line_movement'],owned:true,fn:'odds',status:'NEEDS_CONTRACT',ttl:'odds',need:'request body + response schema of /functions/v1/odds'},
+    slate:{name:'run_slate',categories:['slate'],owned:true,fn:'run_slate',status:'NEEDS_CONTRACT',ttl:'schedule',need:'request body + response schema of run_slate (orchestrator)'},
+    weather:{name:'venue_weather / weather_sync',categories:['weather'],owned:true,fn:'venue_weather',status:'NEEDS_CONTRACT',ttl:'weather',need:'reader vs sync-writer; response or weather table + columns'},
+    bullpen:{name:'bullpen_sync',categories:['bullpen'],owned:true,fn:'bullpen_sync',status:'NEEDS_CONTRACT',ttl:'bullpen',need:'reader vs writer; bullpen table + columns'},
+    player_stats:{name:'capture_stats / capture_players',categories:['player_stats'],owned:true,fn:'capture_stats',status:'NEEDS_CONTRACT',ttl:'player_stats',need:'reader vs writer; stats table the app reads + columns'},
+    news:{name:'capture_news',categories:['news'],owned:true,fn:'capture_news',status:'NEEDS_CONTRACT',ttl:'news',need:'news table + columns or reader response'},
+    resolver:{name:'resolver',categories:['identity'],owned:true,fn:'resolver',status:'NEEDS_CONTRACT',ttl:'schedule',need:'entity-resolution request/response (canonical ids)'},
+    team_brief:{name:'team_brief',categories:['context'],owned:true,fn:'team_brief',status:'WIRED',ttl:'schedule',need:'response schema to type fields (POST invocation already used by the app)'},
+    ai:{name:'edgedesk_ai',categories:['synthesis'],owned:true,fn:'edgedesk_ai',status:'WIRED',ttl:'news',need:null},
+    mlb_public:{name:'MLB Stats API (public fallback)',categories:['schedule','starter'],owned:false,cors:true,status:'LIVE_FALLBACK',ttl:'schedule',adapter:mlbSchedule},
+    nws_public:{name:'NWS (public fallback)',categories:['weather'],owned:false,cors:true,status:'LIVE_FALLBACK',ttl:'weather',adapter:nwsWeather}
   };
   function sourceStatus(){ var o={}; Object.keys(SOURCES).forEach(function(k){var s=SOURCES[k];o[k]={name:s.name,status:s.status,auth:s.auth,need:s.need||null};}); return o; }
 
@@ -14381,12 +14390,50 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
     });
   }
 
+  /* ---- owned-backend invocation: reuse the app's Supabase project + auth (no new secrets) ---- */
+  function _sburl(){ return (typeof SB_URL!=='undefined'&&SB_URL)?SB_URL:''; }
+  function _sbkey(){ return (typeof SB_KEY!=='undefined'&&SB_KEY)?SB_KEY:''; }
+  function _tok(){ return (typeof edToken==='function')?Promise.resolve(edToken()):Promise.resolve(_sbkey()); }
+  function fnUrl(name){ return _sburl()+'/functions/v1/'+name; }
+  function callFn(name, body, ms){
+    return _tok().then(function(tok){
+      var ctrl=(typeof AbortController!=='undefined')?new AbortController():null;
+      var t=ctrl?setTimeout(function(){ctrl.abort();},ms||10000):null;
+      return fetch(fnUrl(name),{method:'POST',signal:ctrl?ctrl.signal:undefined,
+        headers:{'content-type':'application/json',authorization:'Bearer '+tok,apikey:_sbkey()},
+        body:JSON.stringify(body||{})})
+        .then(function(r){ if(t)clearTimeout(t); if(!r.ok) throw new Error('fn '+name+' '+r.status); return r.json(); })
+        .then(function(j){ return {ok:true,name:name,data:j}; })
+        .catch(function(e){ if(t)clearTimeout(t); return {ok:false,name:name,reason:(e&&e.message)||'error'}; });
+    });
+  }
+  /* wrap an owned-function response as evidence WITHOUT inventing field structure not yet seen */
+  function fnEvidence(name, category, res){
+    var now=Date.now();
+    if(!res||!res.ok) return [evi({source:name,source_type:'owned_fn',category:category,metric:'payload',value:null,
+      status:'UNAVAILABLE',provenance:'UNAVAILABLE \u00b7 '+name+' ('+((res&&res.reason)||'no response')+')',captured_at:now,now:now})];
+    return [evi({source:name,source_type:'owned_fn',category:category,metric:'payload',value:res.data,
+      status:'VERIFIED',provenance:'VERIFIED \u00b7 '+name,captured_at:now,now:now})];
+  }
+  /* RLS-respecting REST read via the app's own sbFetch, when present */
+  function readTable(pathAndQuery){
+    if(typeof sbFetch==='function') return Promise.resolve(sbFetch(pathAndQuery));
+    return Promise.reject(new Error('sbFetch unavailable in this context'));
+  }
+  /* discovery probe: which owned functions actually answer the browser (run in the deployed app) */
+  function probe(names){
+    names=names||Object.keys(SOURCES).map(function(k){return SOURCES[k].fn;}).filter(Boolean);
+    var t0=Date.now();
+    return Promise.all(names.map(function(n){
+      return callFn(n,{probe:true},6000).then(function(r){return {fn:n,ok:r.ok,reason:r.reason||null};});
+    })).then(function(rows){ return {probed_at:t0,results:rows}; });
+  }
   var API={
     version:'fabric-1', TTL:TTL, EV_STATUS:EV_STATUS, FRESH_STATE:FRESH_STATE,
     freshnessState:freshnessState, evi:evi, validate:validate, validateGameState:validateGameState,
     canonTeam:canonTeam, canonGameId:canonGameId, canonDate:canonDate,
     mergeEvidence:mergeEvidence, findConflicts:findConflicts, assertResearchOnly:assertResearchOnly,
-    route:route, SOURCES:SOURCES, sourceStatus:sourceStatus, mlbSchedule:mlbSchedule, nwsWeather:nwsWeather, liveSlate:liveSlate,
+    route:route, SOURCES:SOURCES, sourceStatus:sourceStatus, fnUrl:fnUrl, callFn:callFn, fnEvidence:fnEvidence, readTable:readTable, probe:probe, mlbSchedule:mlbSchedule, nwsWeather:nwsWeather, liveSlate:liveSlate,
     selfTest:function(verbose){
       var R=[],P=0,F=0; function chk(n,g,w){var ok=(g===w);R.push({t:n,ok:ok,got:g,want:w});ok?P++:F++;}
       var now=1000000000000;
@@ -14431,8 +14478,13 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
       chk('route what_changed', route('What changed since this morning?').intent,'what_changed');
       chk('route weather', route('Which games have the strongest weather?').intent,'weather');
       chk('route bullpen', route('Who has the worst bullpen?').intent,'bullpen');
-      chk('mlb adapter is LIVE', SOURCES.mlb_schedule.status,'LIVE');
-      chk('odds is NOT_CONFIGURED', SOURCES.odds.status,'NOT_CONFIGURED');
+      chk('odds is owned', SOURCES.odds.owned,true);
+      chk('odds needs contract', SOURCES.odds.status,'NEEDS_CONTRACT');
+      chk('ai wired', SOURCES.ai.status,'WIRED');
+      chk('team_brief wired', SOURCES.team_brief.status,'WIRED');
+      chk('public fallback present', SOURCES.mlb_public.status,'LIVE_FALLBACK');
+      chk('fnUrl built', fnUrl('odds').indexOf('/functions/v1/odds')>=0,true);
+      chk('probe lists owned fns', (function(){var seen={};Object.keys(SOURCES).forEach(function(k){if(SOURCES[k].fn)seen[SOURCES[k].fn]=1;});return !!seen.odds&&!!seen.run_slate;})(),true);
       if(verbose!==false){ try{ R.forEach(function(r){console.log((r.ok?'PASS':'FAIL')+' | '+r.t+(r.ok?'':'  got '+JSON.stringify(r.got)+' want '+JSON.stringify(r.want)));}); console.log((F===0?'ALL GREEN ':'FAILURES ')+P+' passed, '+F+' failed'); }catch(_){}}
       return {passed:P,failed:F,results:R};
     }
