@@ -8,7 +8,7 @@
 import {
   wilsonLo, normalCdf, twoSidedP, benjaminiHochberg,
   edgeBand, priceBand, booksBand, etDow, splitChrono,
-  evaluate, calibrate, HYPOTHESES, BUILD, type Graded,
+  evaluate, calibrate, HYPOTHESES, BUILD, planColumns, discoverColumns, type Graded,
 } from "./index.ts";
 
 let passed = 0, failed = 0;
@@ -298,6 +298,54 @@ section("A missing optional column costs one family, not the run");
     HYPOTHESES.every((h) => { try { return h.label(blank) === null; } catch { return false; } }));
   eq("M5 rows with no outcome are never counted as graded",
     evaluate([blank, blank]).n_graded, 0);
+}
+
+/* The query is built from the table's ACTUAL columns, so a missing one can no
+   longer produce a failed request at all. This replaced a retry-on-error
+   scheme, which still had to send one doomed query to discover the problem. */
+section("The column set is discovered, never assumed");
+{
+  const REAL = ["sig_key", "sport_key", "event_id", "market", "selection", "best_dec",
+    "sharp_fair", "consensus_fair", "edge", "n_books", "has_sharp", "corrob_n",
+    "commence_time", "clv", "beat_close", "result", "graded_at"];
+
+  const plan = planColumns(REAL);
+  ok("D1 verdict is never requested — it is not a stored column",
+    !plan.select.includes("verdict"));
+  ok("D2 the required columns are all selected",
+    ["beat_close", "clv", "graded_at"].every((c) => plan.select.includes(c)));
+  eq("D3 nothing required is missing", plan.missingRequired, []);
+  ok("D4 optional columns that exist are selected",
+    plan.select.includes("corrob_n") && plan.select.includes("edge"));
+
+  // A deployment without the optional columns still runs.
+  const thin = planColumns(["beat_close", "clv", "graded_at", "market"]);
+  eq("D5 a thin schema selects only what is there",
+    thin.select.sort(), ["beat_close", "clv", "graded_at", "market"]);
+  eq("D6 ...and reports what it could not ask for", thin.missingRequired, []);
+  ok("D7 ...naming the absent optional columns", thin.missing.includes("edge")
+    && thin.missing.includes("corrob_n"));
+
+  // A schema genuinely missing CLV cannot learn, and must say why.
+  const broken = planColumns(["sport_key", "market", "graded_at"]);
+  eq("D8 missing CLV is reported as required", broken.missingRequired.sort(), ["beat_close", "clv"]);
+
+  eq("D9 an empty column list needs everything", planColumns([]).select, []);
+
+  // Discovery itself: one select('*') limit 1, keys off the row.
+  const fake = (rows: any[], error?: string) => ({
+    from: () => ({ select: () => ({ limit: async () => ({ data: rows, error: error ? { message: error } : null }) }) }),
+  });
+  eq("D10 columns come from the row's own keys",
+    (await discoverColumns(fake([{ a: 1, b: 2, c: null }]))).sort(), ["a", "b", "c"]);
+  eq("D11 an empty table yields no columns rather than an error",
+    await discoverColumns(fake([])), []);
+  ok("D12 an unreadable table is a clear error", await (async () => {
+    try { await discoverColumns(fake([], "permission denied")); return false; }
+    catch (e) { return /signals is not readable/.test(String(e)); }
+  })());
+
+  ok("D13 the build marker records this change", /schema-discovery/.test(BUILD), BUILD);
 }
 
 console.log(`\n${failed === 0 ? "ALL GREEN" : "FAILURES"} — ${passed} passed, ${failed} failed`);

@@ -72,7 +72,7 @@ export const HOLDOUT_FRAC = Number(Deno.env.get('LEARN_HOLDOUT_FRAC') ?? '0.30')
 /* Bumped whenever this file changes in a way you would want to confirm landed.
    Returned on every response, because "is the new build actually deployed?"
    should be answerable rather than inferred from whether the old bug recurs. */
-export const BUILD = '2026-08-12.2';
+export const BUILD = '2026-08-12.3-schema-discovery';
 
 /* ========================================================================
    STATISTICS — pure, exported, tested. No database, no network.
@@ -404,65 +404,83 @@ function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } });
 }
 
-/* Columns this function would LIKE. Only the first four are load-bearing; the
-   rest each power one hypothesis family and are individually optional.
-   This adaptive path exists because assuming a column took the whole run down
-   once already: `verdict` is computed in the browser and is not stored, so
-   selecting it returned "column signals.verdict does not exist" and nothing
-   was learned. It is no longer requested at all, and any other column that
-   turns out to be absent now costs one hypothesis family rather than the
-   loop. */
+/* Columns this function would LIKE. Three are load-bearing; the rest each feed
+   exactly one hypothesis family and are individually optional.
+
+   It does not guess whether they exist. Twice now a column was assumed and the
+   whole run died on "column signals.verdict does not exist" — first because
+   verdict is computed in the browser and never stored, and then again because a
+   retry-on-error scheme still has to send one doomed request to find out.
+   Guessing and then recovering is strictly worse than asking. So: read the
+   actual column list from the table once, intersect, and send a query that
+   cannot fail on a missing column. */
 const WANTED = [
   'sport_key', 'market', 'beat_close', 'clv', 'graded_at', 'commence_time',
   'edge', 'best_dec', 'n_books', 'has_sharp', 'corrob_n',
 ] as const;
-const REQUIRED = new Set(['beat_close', 'clv', 'graded_at']);
+const REQUIRED = ['beat_close', 'clv', 'graded_at'] as const;
 
-/** PostgREST names the offending column; pull it out of the message. */
-function missingColumn(msg: string): string | null {
-  const m = /column\s+(?:\w+\.)?"?([a-z0-9_]+)"?\s+does not exist/i.exec(msg);
-  return m?.[1] ?? null;
+/**
+ * What columns does `signals` ACTUALLY have?
+ *
+ * One `select('*') limit 1` is authoritative and costs a single round trip.
+ * An empty table returns no keys, which is not an error — it means there is
+ * nothing to learn from yet, and the caller reports exactly that.
+ */
+export async function discoverColumns(sb: any): Promise<string[]> {
+  const r = await sb.from('signals').select('*').limit(1);
+  if (r.error) throw new Error(`signals is not readable: ${r.error.message}`);
+  const row = (r.data ?? [])[0];
+  return row ? Object.keys(row) : [];
 }
 
-async function loadGraded(sb: any, days: number): Promise<{ rows: Graded[]; dropped: string[] }> {
+/** Intersect what we want with what exists. Pure, so it is testable. */
+export function planColumns(available: string[]): {
+  select: string[]; missing: string[]; missingRequired: string[];
+} {
+  const have = new Set(available);
+  const select = WANTED.filter((c) => have.has(c));
+  const missing = WANTED.filter((c) => !have.has(c));
+  return {
+    select: [...select],
+    missing: [...missing],
+    missingRequired: REQUIRED.filter((c) => !have.has(c)),
+  };
+}
+
+async function loadGraded(sb: any, days: number): Promise<{
+  rows: Graded[]; dropped: string[]; columns_seen: number;
+}> {
+  const available = await discoverColumns(sb);
+  if (!available.length) return { rows: [], dropped: [], columns_seen: 0 };
+
+  const { select, missing, missingRequired } = planColumns(available);
+  if (missingRequired.length) {
+    throw new Error(
+      `signals has no ${missingRequired.join(', ')} column, and the learning loop cannot run without `
+      + `${missingRequired.length === 1 ? 'it' : 'them'}. CLV and beat_close are written by the close job — `
+      + `deploy and run close first.`);
+  }
+
   const from = new Date(Date.now() - days * 864e5).toISOString();
-  let cols = [...WANTED] as string[];
-  const dropped: string[] = [];
   const out: any[] = [];
   const PAGE = 1000;
-
   for (let page = 0; page < 20; page++) {              // hard ceiling: 20k rows
-    let data: any[] | null = null;
-
-    // Retry the SAME page with the offending column removed, up to once per
-    // optional column, so one schema difference cannot end the run.
-    for (let attempt = 0; attempt <= WANTED.length; attempt++) {
-      const r = await sb.from('signals')
-        .select(cols.join(','))
-        .not('graded_at', 'is', null)
-        .gte('graded_at', from)
-        .order('graded_at', { ascending: true })
-        .range(page * PAGE, page * PAGE + PAGE - 1);
-      if (!r.error) { data = r.data ?? []; break; }
-
-      const bad = missingColumn(r.error.message);
-      if (!bad || !cols.includes(bad)) throw new Error(r.error.message);
-      if (REQUIRED.has(bad)) {
-        throw new Error(
-          `signals.${bad} does not exist, and the learning loop cannot run without it. `
-          + `Run the close job so CLV and beat_close are populated.`);
-      }
-      cols = cols.filter((c) => c !== bad);
-      if (!dropped.includes(bad)) dropped.push(bad);
-    }
-
-    if (data == null) throw new Error('could not read signals with any column set');
+    const r = await sb.from('signals')
+      .select(select.join(','))
+      .not('graded_at', 'is', null)
+      .gte('graded_at', from)
+      .order('graded_at', { ascending: true })
+      .range(page * PAGE, page * PAGE + PAGE - 1);
+    if (r.error) throw new Error(`reading signals failed: ${r.error.message}`);
+    const data = r.data ?? [];
     out.push(...data);
     if (data.length < PAGE) break;
   }
 
-  // Absent optional columns come back undefined; normalise so the label
-  // functions see null and skip the family cleanly.
+  // A column that exists but was not selected, or one that is absent entirely,
+  // both arrive as undefined. Normalise so the label functions see null and
+  // skip their family cleanly instead of throwing.
   const rows: Graded[] = out.map((r) => ({
     sport_key: r.sport_key ?? null, market: r.market ?? null,
     beat_close: r.beat_close ?? null, clv: r.clv ?? null, edge: r.edge ?? null,
@@ -470,7 +488,7 @@ async function loadGraded(sb: any, days: number): Promise<{ rows: Graded[]; drop
     has_sharp: r.has_sharp ?? null, corrob_n: r.corrob_n ?? null,
     commence_time: r.commence_time ?? null, graded_at: r.graded_at ?? null,
   }));
-  return { rows, dropped };
+  return { rows, dropped: missing, columns_seen: available.length };
 }
 
 Deno.serve(async (req) => {
@@ -481,7 +499,14 @@ Deno.serve(async (req) => {
     const days = Math.max(7, Math.min(400, Number(body.days ?? params.days ?? 365)));
     const sb = createClient(url, serviceKey);
 
-    const { rows, dropped } = await loadGraded(sb, days);
+    /* Ends the guessing: returns exactly what `signals` has, so a column
+       question never needs another round of redeploy-and-see. */
+    if (mode === 'columns') {
+      const available = await discoverColumns(sb);
+      return json({ build: BUILD, columns_on_signals: available.sort(), ...planColumns(available) });
+    }
+
+    const { rows, dropped, columns_seen } = await loadGraded(sb, days);
     const { patterns, base_rate, n_graded, tested } = evaluate(rows);
     const buckets = calibrate(rows);
 
@@ -497,6 +522,7 @@ Deno.serve(async (req) => {
          learning" can never be implied by an empty table. */
       /* Named, not swallowed: a family that silently stopped being tested is
          indistinguishable from one that found nothing. */
+      columns_on_signals: columns_seen,
       ...(dropped.length ? { columns_unavailable: dropped,
         note: `signals has no ${dropped.join(', ')} column, so the matching hypothesis families were skipped.` } : {}),
       readiness: n_graded >= MIN_N
