@@ -45,7 +45,7 @@ const url = Deno.env.get('SUPABASE_URL')!;
 const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 const UA = { 'User-Agent': 'EdgeDesk/1.0 (contact: ops@edgedesk)', 'Accept': 'application/json,text/csv,*/*' };
 
-export const BUILD = '2026-08-14.3-real-columns';
+export const BUILD = '2026-08-14.4-discover';
 
 /* ========================================================================
    SPORTS
@@ -293,6 +293,62 @@ export function nflverseRow(r: Record<string, string>) {
   };
 
   return { ...fields, __metrics: metrics };
+}
+
+/**
+ * Turn weekly team rows into DEFENSIVE efficiency.
+ *
+ * The identity is exact and needs no extra source: in any game, one team's
+ * offensive EPA is the other team's defensive EPA allowed. Given weekly rows
+ * carrying `opponent_team`, a season of defence falls straight out of a season
+ * of offence — no approximation, no proxy, no substituting sack counts for
+ * efficiency.
+ *
+ * Returns per-team defensive rates keyed by normalised team name. Rows with no
+ * opponent are skipped rather than guessed at.
+ */
+export function defenceFromWeekly(rows: Record<string, string>[]) {
+  interface Acc { epa: number; plays: number; passEpa: number; dropbacks: number; rushEpa: number; carries: number; games: number }
+  const allowed = new Map<string, Acc>();
+  const bump = (k: string) => {
+    let a = allowed.get(k);
+    if (!a) { a = { epa: 0, plays: 0, passEpa: 0, dropbacks: 0, rushEpa: 0, carries: 0, games: 0 }; allowed.set(k, a); }
+    return a;
+  };
+
+  let paired = 0, orphaned = 0;
+  for (const r of rows) {
+    const opp = r.opponent_team ?? r.opponent ?? r.opp ?? '';
+    if (!opp) { orphaned++; continue; }
+    const att = col(r, ['attempts']), car = col(r, ['carries']), sk = col(r, ['sacks_suffered']);
+    const pEpa = col(r, ['passing_epa']), rEpa = col(r, ['rushing_epa']);
+    if (att == null && car == null) { orphaned++; continue; }
+    const dropbacks = (att ?? 0) + (sk ?? 0);
+    const plays = dropbacks + (car ?? 0);
+    if (plays <= 0) { orphaned++; continue; }
+
+    // This offensive performance was allowed BY the opponent.
+    const a = bump(normTeam(opp));
+    a.epa += (pEpa ?? 0) + (rEpa ?? 0);
+    a.plays += plays;
+    a.passEpa += pEpa ?? 0;
+    a.dropbacks += dropbacks;
+    a.rushEpa += rEpa ?? 0;
+    a.carries += car ?? 0;
+    a.games += 1;
+    paired++;
+  }
+
+  const out = new Map<string, { def_epa_play: number | null; def_pass_epa_play: number | null; def_rush_epa_play: number | null; games: number }>();
+  for (const [team, a] of allowed) {
+    out.set(team, {
+      def_epa_play: a.plays > 0 ? +(a.epa / a.plays).toFixed(4) : null,
+      def_pass_epa_play: a.dropbacks > 0 ? +(a.passEpa / a.dropbacks).toFixed(4) : null,
+      def_rush_epa_play: a.carries > 0 ? +(a.rushEpa / a.carries).toFixed(4) : null,
+      games: a.games,
+    });
+  }
+  return { byTeam: out, paired, orphaned };
 }
 
 /** Every value null means the feed produced a shape we did not recognise. */
@@ -661,6 +717,63 @@ Deno.serve(async (req) => {
       : SPORTS[want] ? [SPORTS[want]] : [];
     if (!chosen.length) {
       return json({ ok: false, error: `unknown sport "${want}"`, valid: Object.keys(SPORTS) }, 400);
+    }
+
+    /* DISCOVER — which feed files actually exist, without writing anything.
+       nflverse team totals carry no EPA-allowed column, so NFL defence is the
+       biggest hole in the football layer. A WEEKLY file with an opponent column
+       would close it exactly: in any game, one team's offensive EPA IS the
+       other team's defensive EPA allowed, so a season of weekly rows gives real
+       defensive efficiency with no extra source and no approximation.
+       Rather than guess an asset name and ship it, this reports which
+       candidates respond and what columns they carry. */
+    if (mode === 'discover') {
+      const sp = chosen[0];
+      const season = seasonFor(sp, new Date()) - 1;   // last completed season
+      const candidates = sp.slug === 'nfl'
+        ? [
+          `https://github.com/nflverse/nflverse-data/releases/download/stats_team/stats_team_week_reg_${season}.csv`,
+          `https://github.com/nflverse/nflverse-data/releases/download/stats_team/stats_team_week_${season}.csv`,
+          `https://github.com/nflverse/nflverse-data/releases/download/stats_team/stats_team_reg_${season}.csv`,
+          `https://github.com/nflverse/nflverse-data/releases/download/pbp/play_by_play_${season}.csv`,
+        ]
+        : sp.slug === 'cbb'
+          ? [
+            `https://barttorvik.com/trank.php?year=${season}&csv=1`,
+            `https://barttorvik.com/${season}_team_results.csv`,
+            `https://barttorvik.com/getadvstats.php?year=${season}&csv=1`,
+          ]
+          : [
+            `https://api.collegefootballdata.com/stats/season/advanced?year=${season}`,
+          ];
+
+      const tried: any[] = [];
+      for (const u of candidates) {
+        const r = await getCsv(u, 20000);
+        const cols = r.report.columns ?? [];
+        tried.push({
+          url: u, ok: r.report.ok, status: r.report.status, bytes: r.report.bytes,
+          rows: r.report.rows, error: r.report.error,
+          columns: cols.slice(0, 60),
+          /* The question that matters: can defence be derived from this file? */
+          has_opponent_column: cols.some((c) => /^(opponent|opponent_team|opp|def_team)$/i.test(c)),
+          has_week_column: cols.some((c) => /^week$/i.test(c)),
+          has_four_factors: ['efg_o', 'efg', 'to_o', 'or_o', 'ftr'].some((k) => cols.includes(k)),
+        });
+      }
+      const weekly = tried.find((t) => t.ok && t.has_opponent_column && t.has_week_column);
+      return json({
+        build: BUILD, sport: sp.label, season, tried,
+        verdict: sp.slug === 'nfl'
+          ? (weekly
+            ? `A weekly file with an opponent column exists: ${weekly.url}. Defensive EPA IS derivable from it — one team's offensive EPA in a game is the other's defensive EPA allowed. Send this output back and the defence columns can be filled properly.`
+            : 'No weekly-with-opponent file responded. Defensive EPA cannot be derived from the free team feeds, and def_epa_play stays honestly null.')
+          : sp.slug === 'cbb'
+            ? (tried.find((t) => t.ok && t.has_four_factors)
+              ? 'A feed carrying the four factors responded — in-season these will populate.'
+              : 'No four-factor feed responded for this season. Adjusted efficiency and tempo still land; the four factors need the trank leaderboard, which only exists once a season starts.')
+            : 'College football advanced stats require a CollegeFootballData API key. Everything tried here is unauthenticated and will be rejected.',
+      });
     }
 
     /* PROBE — what does a feed actually return, without writing anything.

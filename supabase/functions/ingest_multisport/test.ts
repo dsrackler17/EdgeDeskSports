@@ -2,7 +2,7 @@
 //   node --experimental-strip-types --import ../_testkit/register.mjs ingest_multisport/test.ts
 import {
   num, parseCsv, col, normTeam, restDays, torvikRow, nflverseRow, anyValue,
-  espnDate, SPORTS, BUILD, torvikExtras,
+  espnDate, SPORTS, BUILD, torvikExtras, defenceFromWeekly,
 } from "./index.ts";
 
 let passed = 0, failed = 0;
@@ -172,6 +172,59 @@ sec("Sport definitions and dates");
   eq("S5 ESPN wants YYYYMMDD", espnDate(new Date("2026-08-14T12:00:00Z")), "20260814");
   ok("S6 the build marker is set so a deploy can be confirmed",
     typeof BUILD === "string" && /^\d{4}-\d{2}-\d{2}\.\d+-/.test(BUILD), BUILD);
+}
+
+/* Defensive EPA is the biggest hole in the NFL layer, and it is closable
+   without a new source: in any game one team's offensive EPA IS the other's
+   defensive EPA allowed. Weekly rows with an opponent column give a season of
+   defence from a season of offence, exactly, with no proxy. */
+sec("Defence is derived from offence, exactly");
+{
+  // Two games. BUF's offence is what MIA's defence allowed, and vice versa.
+  const weekly = [
+    { week: "1", team: "BUF", opponent_team: "MIA", attempts: "30", carries: "20",
+      sacks_suffered: "0", passing_epa: "10", rushing_epa: "5" },
+    { week: "1", team: "MIA", opponent_team: "BUF", attempts: "40", carries: "10",
+      sacks_suffered: "0", passing_epa: "-5", rushing_epa: "0" },
+    { week: "2", team: "BUF", opponent_team: "NYJ", attempts: "30", carries: "20",
+      sacks_suffered: "0", passing_epa: "20", rushing_epa: "5" },
+  ];
+  const d = defenceFromWeekly(weekly);
+
+  // MIA allowed BUF's week-1 line: 15 EPA over 50 plays.
+  eq("D1 a defence's EPA allowed is its opponents' offensive EPA",
+    d.byTeam.get("mia")!.def_epa_play, 0.3);
+  // BUF allowed MIA's week-1 line: -5 EPA over 50 plays. Negative is good.
+  eq("D2 ...and keeps the sign, where negative is a good defence",
+    d.byTeam.get("buf")!.def_epa_play, -0.1);
+  eq("D3 pass defence uses dropbacks as the denominator",
+    d.byTeam.get("buf")!.def_pass_epa_play, -0.125);
+  eq("D4 rush defence uses carries", d.byTeam.get("buf")!.def_rush_epa_play, 0);
+  // NYJ appears only as an opponent and still gets a defensive line.
+  eq("D5 a team seen only as an opponent still gets a defence",
+    d.byTeam.get("nyj")!.def_epa_play, 0.5);
+  eq("D6 games allowed are counted per defence",
+    [d.byTeam.get("buf")!.games, d.byTeam.get("mia")!.games], [1, 1]);
+  eq("D7 every usable row is paired", d.paired, 3);
+
+  // Rows that cannot be attributed are skipped, never guessed at.
+  const messy = defenceFromWeekly([
+    { week: "1", team: "BUF", attempts: "30", carries: "20", passing_epa: "10" },
+    { week: "1", team: "BUF", opponent_team: "MIA", attempts: "0", carries: "0", passing_epa: "10" },
+  ]);
+  eq("D8 a row with no opponent cannot be attributed and is skipped", messy.orphaned, 2);
+  eq("D9 ...and produces no defensive line at all", messy.byTeam.size, 0);
+  eq("D10 an empty season is empty, not a crash", defenceFromWeekly([]).byTeam.size, 0);
+
+  // Sacks belong in the dropback denominator on the defensive side too.
+  const withSacks = defenceFromWeekly([
+    { week: "1", team: "BUF", opponent_team: "MIA", attempts: "30", carries: "20",
+      sacks_suffered: "5", passing_epa: "-7", rushing_epa: "0" },
+  ]);
+  eq("D11 a sack counts as a dropback the defence forced",
+    withSacks.byTeam.get("mia")!.def_pass_epa_play, -0.2);
+  eq("D12 ...and as a play in the overall rate",
+    withSacks.byTeam.get("mia")!.def_epa_play, -0.1273);
 }
 
 console.log(`\n${failed === 0 ? "ALL GREEN" : "FAILURES"} — ${passed} passed, ${failed} failed`);
