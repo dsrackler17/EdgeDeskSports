@@ -69,6 +69,11 @@ export const FDR_Q = Number(Deno.env.get('LEARN_FDR_Q') ?? '0.10');
 export const EFFECT_FLOOR = Number(Deno.env.get('LEARN_EFFECT_FLOOR') ?? '0.04'); // 4pp over base
 export const HOLDOUT_FRAC = Number(Deno.env.get('LEARN_HOLDOUT_FRAC') ?? '0.30');
 
+/* Bumped whenever this file changes in a way you would want to confirm landed.
+   Returned on every response, because "is the new build actually deployed?"
+   should be answerable rather than inferred from whether the old bug recurs. */
+export const BUILD = '2026-08-12.2';
+
 /* ========================================================================
    STATISTICS — pure, exported, tested. No database, no network.
    ======================================================================== */
@@ -155,7 +160,7 @@ export interface Graded {
   best_dec: number | null;
   n_books: number | null;
   has_sharp: boolean | null;
-  verdict: string | null;
+  corrob_n: number | null;
   commence_time: string | null;
   graded_at: string | null;
 }
@@ -216,8 +221,16 @@ export const HYPOTHESES: { family: string; label: (g: Graded) => string | null; 
     describe: (l) => `signals found with ${l}` },
   { family: 'sharp', label: (g) => g.has_sharp == null ? null : g.has_sharp ? 'Pinnacle quoting this side' : 'no Pinnacle print on this side',
     describe: (l) => `signals where there was ${l}` },
-  { family: 'verdict', label: (g) => g.verdict ? String(g.verdict).toUpperCase() : null,
-    describe: (l) => `signals the engine graded ${l}` },
+  /* There is deliberately no `verdict` family. Verdict is computed in the
+     browser from the deterministic engine's output and is never persisted on
+     signals, so asking about it meant selecting a column that does not exist.
+     Corroboration is the stored field that carries similar information: how
+     many independent sharp sources agreed before the signal was raised. */
+  { family: 'corroboration', label: (g) => g.corrob_n == null ? null
+      : g.corrob_n >= 3 ? 'three or more corroborating sources'
+      : g.corrob_n === 2 ? 'two corroborating sources'
+      : g.corrob_n === 1 ? 'one corroborating source' : 'no corroboration',
+    describe: (l) => `signals raised with ${l}` },
 ];
 
 /* ========================================================================
@@ -393,14 +406,15 @@ function json(body: unknown, status = 200) {
 
 /* Columns this function would LIKE. Only the first four are load-bearing; the
    rest each power one hypothesis family and are individually optional.
-   `verdict` in particular is computed in the browser and is not a column on
-   every deployment — assuming it was there took the whole run down with
-   "column signals.verdict does not exist", which is a poor way for a learning
-   job to fail. A missing column should cost one hypothesis family, not the
+   This adaptive path exists because assuming a column took the whole run down
+   once already: `verdict` is computed in the browser and is not stored, so
+   selecting it returned "column signals.verdict does not exist" and nothing
+   was learned. It is no longer requested at all, and any other column that
+   turns out to be absent now costs one hypothesis family rather than the
    loop. */
 const WANTED = [
   'sport_key', 'market', 'beat_close', 'clv', 'graded_at', 'commence_time',
-  'edge', 'best_dec', 'n_books', 'has_sharp', 'verdict',
+  'edge', 'best_dec', 'n_books', 'has_sharp', 'corrob_n',
 ] as const;
 const REQUIRED = new Set(['beat_close', 'clv', 'graded_at']);
 
@@ -453,7 +467,7 @@ async function loadGraded(sb: any, days: number): Promise<{ rows: Graded[]; drop
     sport_key: r.sport_key ?? null, market: r.market ?? null,
     beat_close: r.beat_close ?? null, clv: r.clv ?? null, edge: r.edge ?? null,
     best_dec: r.best_dec ?? null, n_books: r.n_books ?? null,
-    has_sharp: r.has_sharp ?? null, verdict: r.verdict ?? null,
+    has_sharp: r.has_sharp ?? null, corrob_n: r.corrob_n ?? null,
     commence_time: r.commence_time ?? null, graded_at: r.graded_at ?? null,
   }));
   return { rows, dropped };
@@ -472,6 +486,7 @@ Deno.serve(async (req) => {
     const buckets = calibrate(rows);
 
     const state = {
+      build: BUILD,
       graded_signals: n_graded,
       base_beat_rate: n_graded ? +base_rate.toFixed(4) : null,
       slices_tested: tested,

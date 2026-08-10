@@ -8,7 +8,7 @@
 import {
   wilsonLo, normalCdf, twoSidedP, benjaminiHochberg,
   edgeBand, priceBand, booksBand, etDow, splitChrono,
-  evaluate, calibrate, HYPOTHESES, type Graded,
+  evaluate, calibrate, HYPOTHESES, BUILD, type Graded,
 } from "./index.ts";
 
 let passed = 0, failed = 0;
@@ -132,7 +132,7 @@ section("The holdout is chronological, not random");
 
 const g = (o: Partial<Graded>): Graded => ({
   sport_key: "baseball_mlb", market: "h2h", beat_close: false, clv: 0, edge: 0.03,
-  best_dec: 1.9, n_books: 12, has_sharp: true, verdict: "LEAN",
+  best_dec: 1.9, n_books: 12, has_sharp: true, corrob_n: 2,
   commence_time: "2026-06-01T18:00:00Z", graded_at: "2026-06-01T22:00:00Z", ...o,
 });
 
@@ -273,21 +273,25 @@ section("Calibration says whether the number means what it claims");
    missing optional column must cost one hypothesis family, not the loop. */
 section("A missing optional column costs one family, not the run");
 {
-  const noVerdict = [
-    ...series(300, 150, { market: "h2h", verdict: null }),
-    ...series(200, 150, { market: "totals", verdict: null }),
+  const noCorrob = [
+    ...series(300, 150, { market: "h2h", corrob_n: null }),
+    ...series(200, 150, { market: "totals", corrob_n: null }),
   ];
-  const r = evaluate(noVerdict);
-  ok("M1 evaluation still runs with verdict absent", r.tested > 0, r.tested);
-  eq("M2 the verdict family simply produces no slices",
-    r.patterns.filter((p) => p.family === "verdict").length, 0);
+  const r = evaluate(noCorrob);
+  ok("M1 evaluation still runs with an optional column absent", r.tested > 0, r.tested);
+  eq("M2 the family that column fed simply produces no slices",
+    r.patterns.filter((p) => p.family === "corroboration").length, 0);
+  eq("M2b nothing asks about verdict at all — it is never a stored column",
+    HYPOTHESES.filter((h) => h.family === "verdict").length, 0);
+  ok("M2c the build marker is exported so a deploy can be confirmed",
+    typeof BUILD === "string" && BUILD.length > 0, BUILD);
   eq("M3 ...and the other families are unaffected",
     r.patterns.find((p) => p.key === "market:totals")?.status, "CONFIRMED");
 
   // Every label function must tolerate a fully empty row rather than throwing.
   const blank: Graded = {
     sport_key: null, market: null, beat_close: null, clv: null, edge: null,
-    best_dec: null, n_books: null, has_sharp: null, verdict: null,
+    best_dec: null, n_books: null, has_sharp: null, corrob_n: null,
     commence_time: null, graded_at: null,
   };
   ok("M4 every hypothesis label survives an entirely empty row",
