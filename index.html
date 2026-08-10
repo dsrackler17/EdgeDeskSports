@@ -1109,7 +1109,11 @@ loadLiveProof();
    checkout.session.completed, which is how the webhook attributes the payment.
    Stripe silently DROPS invalid values — only [A-Za-z0-9_-], max 200 chars. A UUID
    is valid; an email is not (the @ would be stripped and the payment orphaned). */
-var STRIPE_LINK="https://buy.stripe.com/cNi00ifmaaeNePk2mC8IU09";
+/* The $79.99 founding-rate payment link. This MUST point at a Stripe price of
+   the same amount shown in PRICE_DISPLAY and in the auto-renewal consent text —
+   a customer consenting to one figure and being charged another is a
+   compliance problem, not a display bug. */
+var STRIPE_LINK="https://buy.stripe.com/6oU28qb5U86F36C9P48IU0a";
 /* Must match the amount on the Stripe price behind STRIPE_LINK. This string is
    recorded with the auto-renewal consent, so a mismatch is a compliance problem,
    not a cosmetic one. */
@@ -1329,18 +1333,56 @@ async function submitAuth(){
 /* ===== boot =====
    Two jobs: stop showing "Sign up" to someone already signed in, and resume a
    checkout that was interrupted by email confirmation. */
+/* Is this signed-in account actually paid?
+   'yes' | 'no' | 'unknown'. Unknown means the read failed — treated as neither,
+   so a database hiccup never tells a paying subscriber they are locked out. The
+   real gate is RLS plus the paywall in app.html; this only decides what the
+   buttons say. */
+async function edSubState(){
+  var s=edSession(); if(!s||!s.access_token)return 'no';
+  try{
+    var r=await fetch(SB_URL+'/rest/v1/subscriptions?select=status&limit=1',
+      {headers:{apikey:SB_KEY,authorization:'Bearer '+s.access_token}});
+    if(!r.ok)return 'unknown';
+    var rows=await r.json();
+    var st=(rows&&rows[0]&&rows[0].status)||'';
+    return (st==='active'||st==='trialing')?'yes':'no';
+  }catch(e){ return 'unknown'; }
+}
+
 (async function bootAuthState(){
   var s=edSession();
   if(s&&(s.access_token||s.refresh_token)){
     var u=edUserFromSession()||{};
     var lg=document.getElementById('navLogin');
     if(lg){lg.textContent='Sign out';lg.onclick=edSignOut;}
+
+    /* An account is not access. Someone who signed up and never paid used to be
+       shown "Open scanner", which walked them into a locked screen and read as
+       a broken product rather than an unfinished purchase. Ask first. */
+    var paid=await edSubState();
+    var toApp=function(){window.location.href=APP_URL;};
+    var toPay=function(){ if(sessionValid()){openArl();} else {setPendingSub(true);openAuth('login');} };
+
     var su=document.getElementById('navSignup');
-    if(su){su.textContent='Open scanner';su.onclick=function(){window.location.href=APP_URL;};}
     var hs=document.getElementById('heroStart');
-    if(hs){hs.textContent='Open scanner \u2192';hs.onclick=function(){window.location.href=APP_URL;};}
     var bl=document.getElementById('btmLogin');
-    if(bl){bl.textContent=(u.email?'Signed in as '+u.email:'Open scanner');bl.onclick=function(){window.location.href=APP_URL;};}
+
+    if(paid==='no'){
+      if(su){su.textContent='Activate subscription';su.onclick=toPay;}
+      if(hs){hs.textContent='Activate subscription \u2192';hs.onclick=toPay;}
+      if(bl){bl.textContent=(u.email?'Finish signing up as '+u.email:'Activate subscription');bl.onclick=toPay;}
+      var sb=document.getElementById('subBtn');
+      if(sb)sb.textContent='Activate subscription \u2192';
+      /* Say why the terminal has not opened, rather than letting them find out
+         by clicking into a wall. */
+      var hp=document.querySelector('.microcta');
+      if(hp)hp.innerHTML='<b style="color:var(--est)">Your account is created but not active.</b> The terminal opens once your subscription starts. &middot; 21+ &middot; 1-800-GAMBLER';
+    }else{
+      if(su){su.textContent='Open scanner';su.onclick=toApp;}
+      if(hs){hs.textContent='Open scanner \u2192';hs.onclick=toApp;}
+      if(bl){bl.textContent=(u.email?'Signed in as '+u.email:'Open scanner');bl.onclick=toApp;}
+    }
   }
   if(!getPendingSub())return;
   if(sessionValid()){pendingSubscribe=true;setTimeout(openArl,300);return;}
