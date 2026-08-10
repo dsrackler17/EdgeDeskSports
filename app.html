@@ -14364,21 +14364,26 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
      normalizer; LIVE_FALLBACK = public keyless browser-direct source, documented, unverified here.
      NOTE: *_sync / capture_* are likely cron INGESTION writers, not browser readers — confirm. */
   var SOURCES={
-    /* WIRED: contract discovered from the supplied app.html, verified adapter written */
-    team_brief:{name:'team_brief',categories:['context','news'],owned:true,fn:'team_brief',status:'WIRED',ttl:'news',contract:'{league,team}->{ok,brief,facts,sources[],cached,searches}',adapter:teamBrief},
-    ai:{name:'edgedesk_ai',categories:['synthesis'],owned:true,fn:'edgedesk_ai',status:'WIRED',ttl:'news',contract:'{mode,question,packet,history,compare}->{answer,model,cached}'},
-    signals:{name:'signals (table)',categories:['historical','clv'],owned:true,fn:null,rest:'signals',status:'WIRED',ttl:'historical',contract:'/rest/v1/signals?select=...&count=exact',reader:signalsCount},
-    /* UNKNOWN: on the dashboard, but source not supplied + app never calls them + host unreachable here */
-    odds:{name:'odds',categories:['odds','line_movement'],owned:true,fn:'odds',status:'UNKNOWN',ttl:'odds',need:'function source, or one sample request+response'},
-    run_slate:{name:'run_slate',categories:['slate'],owned:true,fn:'run_slate',status:'UNKNOWN',ttl:'schedule',need:'function source, or sample request+response'},
-    ingest_mlb:{name:'ingest_mlb / mlb_sync',categories:['schedule','starter'],owned:true,fn:'ingest_mlb',status:'UNKNOWN',ttl:'schedule',need:'reader vs cron-writer + contract'},
-    venue_weather:{name:'venue_weather / weather_sync',categories:['weather'],owned:true,fn:'venue_weather',status:'UNKNOWN',ttl:'weather',need:'reader vs writer + contract'},
-    bullpen:{name:'bullpen_sync',categories:['bullpen'],owned:true,fn:'bullpen_sync',status:'UNKNOWN',ttl:'bullpen',need:'reader vs writer + contract'},
-    player_stats:{name:'capture_stats / capture_players',categories:['player_stats'],owned:true,fn:'capture_stats',status:'UNKNOWN',ttl:'player_stats',need:'reader vs writer + table/columns'},
-    project_game:{name:'project_game',categories:['model'],owned:true,fn:'project_game',status:'UNKNOWN',ttl:'schedule',need:'contract (engine-side model output)'},
-    resolver:{name:'resolver',categories:['identity'],owned:true,fn:'resolver',status:'UNKNOWN',ttl:'schedule',need:'contract'},
-    healthcheck:{name:'healthcheck',categories:['diagnostic'],owned:true,fn:'healthcheck',status:'UNKNOWN',ttl:'game_status',need:'contract'},
-    /* LIVE_FALLBACK: public keyless browser-direct, documented, unverified from build env */
+    /* WIRED: browser-callable Edge Functions, contract read from source */
+    odds:{name:'odds',categories:['odds','line_movement'],owned:true,fn:'odds',method:'GET',auth:'user_jwt',status:'WIRED',ttl:'odds',contract:'GET ?action=odds&sport&regions&markets&oddsFormat -> OddsAPI events[]',adapter:oddsFetch},
+    run_slate:{name:'run_slate',categories:['model','slate'],owned:true,fn:'run_slate',method:'POST',status:'WIRED',ttl:'schedule',contract:'POST {date} -> {projected,total,results[{game_id,home_win_prob,calibrated_edge_pct,confidence}]}',adapter:runSlate},
+    venue_weather:{name:'venue_weather',categories:['weather'],owned:true,fn:'venue_weather',method:'GET',status:'WIRED',ttl:'weather',contract:'GET ?mode=get&venue_id&t -> weather row',adapter:venueWeather},
+    team_brief:{name:'team_brief',categories:['context','news'],owned:true,fn:'team_brief',method:'POST',status:'WIRED',ttl:'news',contract:'{league,team}->{ok,brief,facts,sources[],cached,searches}',adapter:teamBrief},
+    ai:{name:'edgedesk_ai',categories:['synthesis'],owned:true,fn:'edgedesk_ai',method:'POST',status:'WIRED',ttl:'news',contract:'{mode,question,packet,history,compare}->{answer,model,cached}'},
+    /* WIRED_TABLE: cron writers -> read the normalized table they populate (RLS exposure to the user unverified here) */
+    games:{name:'games (ingest_mlb)',categories:['schedule','starter'],owned:true,rest:'games',status:'WIRED_TABLE',ttl:'schedule',contract:'game_id,game_date,home_team,away_team,start_time,status,park_id,home_won',reader:readGames},
+    pitcher_features:{name:'pitcher_features (ingest_mlb)',categories:['starter','player_stats'],owned:true,rest:'pitcher_features',status:'WIRED_TABLE',ttl:'player_stats',contract:'game_id,side,pitcher_id,name,xera,k_pct,bb_pct,barrel_pct,hardhit_pct'},
+    market_features:{name:'market_features (ingest_mlb)',categories:['odds','line_movement'],owned:true,rest:'market_features',status:'WIRED_TABLE',ttl:'odds',contract:'game_id,consensus_home_ml,consensus_away_ml,home_close_ml,away_close_ml,book_disagreement,closed_at'},
+    offense_features:{name:'offense_features (ingest_mlb)',categories:['offense'],owned:true,rest:'offense_features',status:'WIRED_TABLE',ttl:'team_stats',contract:'game_id,side,obp,iso,k_pct,runs_per_game'},
+    weather_features:{name:'weather_features (ingest_mlb)',categories:['weather'],owned:true,rest:'weather_features',status:'WIRED_TABLE',ttl:'weather',contract:'game_id,temp_f,humidity_pct,wind_mph,wind_dir_vs_cf'},
+    mlb_pitcher_usage:{name:'mlb_pitcher_usage (bullpen_sync)',categories:['bullpen'],owned:true,rest:'mlb_pitcher_usage',status:'WIRED_TABLE',ttl:'bullpen',contract:'game_id,pitcher_id,team_id,game_date,full_name,pitches,outs,started,appearance_order,finished_game',reader:readBullpenUsage},
+    stats_players:{name:'stats_players (capture_stats)',categories:['player_stats'],owned:true,rest:'stats_players',status:'WIRED_TABLE',ttl:'player_stats',contract:'league,team,player,position,stat_line,lead_cat,lead_val,cats,leads',reader:readPlayerStats},
+    signals:{name:'signals (table)',categories:['historical','clv'],owned:true,rest:'signals',status:'WIRED',ttl:'historical',contract:'/rest/v1/signals?select=...&count=exact',reader:signalsCount},
+    /* UNKNOWN: source not yet supplied */
+    project_game:{name:'project_game',categories:['model'],owned:true,fn:'project_game',status:'UNKNOWN',ttl:'schedule',need:'source (called by run_slate; response fields home_win_prob/calibrated_edge_pct/confidence known indirectly)'},
+    resolver:{name:'resolver',categories:['identity'],owned:true,fn:'resolver',status:'UNKNOWN',ttl:'schedule',need:'source'},
+    healthcheck:{name:'healthcheck',categories:['diagnostic'],owned:true,fn:'healthcheck',status:'UNKNOWN',ttl:'game_status',need:'source'},
+    /* LIVE_FALLBACK: public keyless browser-direct, documented, unverified here */
     mlb_public:{name:'MLB Stats API (public fallback)',categories:['schedule','starter'],owned:false,cors:true,status:'LIVE_FALLBACK',ttl:'schedule',adapter:mlbSchedule},
     nws_public:{name:'NWS (public fallback)',categories:['weather'],owned:false,cors:true,status:'LIVE_FALLBACK',ttl:'weather',adapter:nwsWeather}
   };
@@ -14482,12 +14487,113 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
       unknown:reg.filter(function(r){return r.status==='UNKNOWN';}).map(function(r){return r.id;}),
       note:'WIRED = contract discovered from app.html and adapter written. UNKNOWN = on your dashboard but source not supplied and host unreachable from this build env.'};
   }
+  /* ==================== VERIFIED INTEGRATIONS (contracts read from the Edge Function source) ====================
+     Browser-callable fns: odds (GET, user JWT), run_slate (POST {date}), venue_weather (GET ?mode=get&venue_id).
+     Cron writers -> READ the tables they populate: games, pitcher_features, market_features, offense_features,
+     weather_features (ingest_mlb); mlb_pitcher_usage (bullpen_sync); stats_players/player_stats (capture_stats).
+     Whether the authenticated user can READ each table depends on its RLS policy, which is not in the supplied
+     source; the app's own signals read proves at least one table is exposed. Readers are labelled accordingly. */
+  function callFnGet(name, params, ms){
+    var qs=Object.keys(params||{}).map(function(k){return encodeURIComponent(k)+'='+encodeURIComponent(params[k]);}).join('&');
+    var env=_env(name), t0=Date.now();
+    return _tok().then(function(tok){
+      var ctrl=(typeof AbortController!=='undefined')?new AbortController():null;
+      var tm=ctrl?setTimeout(function(){ctrl.abort();},ms||10000):null;
+      return fetch(fnUrl(name)+(qs?('?'+qs):''),{method:'GET',signal:ctrl?ctrl.signal:undefined,
+        headers:{authorization:'Bearer '+tok,apikey:_sbkey()}})
+        .then(function(r){ if(tm)clearTimeout(tm); env.latency=Date.now()-t0; env.retrieved_at=Date.now();
+          env.quota=r.headers&&r.headers.get?r.headers.get('x-requests-remaining'):null;
+          return r.json().then(function(j){ if(!r.ok){env.status='ERROR';env.error=(j&&j.error)||('HTTP '+r.status);return env;}
+            env.status='VERIFIED'; env.freshness='LIVE'; env.data=j; return env; },
+            function(){ env.status='ERROR'; env.error='non-JSON'; return env; }); })
+        .catch(function(e){ if(tm)clearTimeout(tm); env.latency=Date.now()-t0; env.status='UNAVAILABLE'; env.error=(e&&e.message)||'error'; return env; });
+    });
+  }
+
+  /* odds proxy: GET ?action=odds&sport=&regions=&markets=&oddsFormat= (needs a logged-in user JWT) -> Odds API events[] */
+  function oddsFetch(sport, opts){
+    opts=opts||{};
+    return callFnGet('odds',{action:'odds',sport:sport||'baseball_mlb',regions:opts.regions||'us',markets:opts.markets||'h2h',oddsFormat:opts.oddsFormat||'american'}).then(function(env){
+      var now=Date.now(), out=[];
+      if(env.status!=='VERIFIED'||!Array.isArray(env.data))
+        return {envelope:env, evidence:[evi({source:'odds',source_type:'owned_fn',category:'odds',metric:'events',value:null,status:'UNAVAILABLE',provenance:env.status+' \u00b7 odds ('+(env.error||'no data')+')',captured_at:now,now:now})]};
+      env.data.forEach(function(ev){
+        var homeP=[], awayP=[];
+        (ev.bookmakers||[]).forEach(function(bk){ (bk.markets||[]).forEach(function(m){ if(m.key!=='h2h')return;
+          (m.outcomes||[]).forEach(function(o){ if(o.name===ev.home_team) homeP.push(o.price); else if(o.name===ev.away_team) awayP.push(o.price); }); }); });
+        out.push(evi({source:'odds',source_type:'owned_fn',category:'odds',metric:'h2h',game_id:'oddsapi:'+ev.id,status:'VERIFIED',captured_at:now,now:now,
+          value:{home:ev.home_team,away:ev.away_team,commence:ev.commence_time,books:(ev.bookmakers||[]).length,home_prices:homeP,away_prices:awayP}}));
+      });
+      return {envelope:env, evidence:out, quota:env.quota};
+    });
+  }
+
+  /* run_slate: POST {date} -> {date,projected,total,results:[{game_id,home_win_prob,calibrated_edge_pct,confidence,error}]}
+     Values are the deterministic engine's own projections (project_game), surfaced as owned model evidence — not invented. */
+  function runSlate(date){
+    return callFn('run_slate', date?{date:date}:{}).then(function(env){
+      var now=Date.now();
+      if(env.status!=='VERIFIED'||!env.data||!Array.isArray(env.data.results))
+        return {envelope:env, evidence:[evi({source:'run_slate',source_type:'owned_model',category:'model',metric:'slate',value:null,status:'UNAVAILABLE',provenance:env.status+' \u00b7 run_slate ('+(env.error||'no data')+')',captured_at:now,now:now})]};
+      var out=env.data.results.map(function(r){ return evi({source:'run_slate',source_type:'owned_model',category:'model',metric:'projection',game_id:r.game_id,
+        status:r.ok?'VERIFIED':'UNAVAILABLE', captured_at:now, now:now, value:{home_win_prob:r.home_win_prob,calibrated_edge_pct:r.calibrated_edge_pct,confidence:r.confidence,error:r.error||null}}); });
+      return {envelope:env, evidence:out, projected:env.data.projected, total:env.data.total};
+    });
+  }
+
+  /* venue_weather reader: GET ?mode=get&venue_id=&t=ISO -> computed weather row (JWT not required per deploy note) */
+  function venueWeather(venueId, tISO){
+    var p={mode:'get',venue_id:venueId}; if(tISO) p.t=tISO;
+    return callFnGet('venue_weather', p).then(function(env){
+      var now=Date.now(), d=env.data;
+      if(env.status!=='VERIFIED'||!d||d.out_of_coverage||d.no_forecast_hour)
+        return {envelope:env, evidence:[evi({source:'venue_weather',source_type:'owned_fn',category:'weather',metric:'venue',value:d||null,status:(d&&(d.out_of_coverage||d.no_forecast_hour))?'UNAVAILABLE':(env.status==='VERIFIED'?'PARTIAL':'UNAVAILABLE'),provenance:'venue_weather'+(d&&d.out_of_coverage?' (out of coverage)':(d&&d.no_forecast_hour?' (no forecast hour)':'')),captured_at:now,now:now})]};
+      var out=[];
+      if(d.temp_f!=null) out.push(evi({source:'venue_weather',source_type:'owned_fn',category:'weather',metric:'temp_f',value:d.temp_f,unit:'F',status:'VERIFIED',captured_at:now,now:now}));
+      if(d.wind_mph!=null) out.push(evi({source:'venue_weather',source_type:'owned_fn',category:'weather',metric:'wind_mph',value:d.wind_mph,unit:'mph',status:'VERIFIED',captured_at:now,now:now}));
+      if(d.air_density_index!=null) out.push(evi({source:'venue_weather',source_type:'owned_fn',category:'weather',metric:'air_density_index',value:d.air_density_index,status:'VERIFIED',captured_at:now,now:now}));
+      if(d.run_environment!=null) out.push(evi({source:'venue_weather',source_type:'owned_fn',category:'weather',metric:'run_environment',value:d.run_environment,status:'PROBABLE',provenance:'venue_weather (derived, unvalidated model feature)',captured_at:now,now:now}));
+      return {envelope:env, evidence:out};
+    });
+  }
+
+  /* ---- owned-table readers (contracts = actual columns the writer functions populate) ---- */
+  function rowsEvidence(category, source, rows, mapFn){
+    var now=Date.now();
+    if(!Array.isArray(rows)) return [];
+    return rows.map(function(r){ var m=mapFn(r)||{}; return evi({source:source,source_type:'owned_table',category:category,metric:m.metric||'row',
+      value:('value'in m)?m.value:r, game_id:m.game_id||null, player_id:m.player_id||null, team_id:m.team_id||null, status:'VERIFIED', captured_at:now, now:now}); });
+  }
+  function readGames(dateISO){ return readTable('games?select=game_id,game_date,home_team,away_team,start_time,status,park_id,home_won&game_date=eq.'+encodeURIComponent(dateISO)+'&order=start_time.asc'); }
+  function readByIds(table, cols, ids){ if(!ids||!ids.length) return Promise.resolve({status:'VERIFIED',data:[]}); return readTable(table+'?select='+cols+'&game_id=in.('+ids.map(encodeURIComponent).join(',')+')'); }
+  function readBullpenUsage(dates){ return readTable('mlb_pitcher_usage?select=game_id,pitcher_id,team_id,game_date,full_name,pitches,outs,started,appearance_order,finished_game&game_date=in.('+(dates||[]).map(encodeURIComponent).join(',')+')&order=game_date.desc'); }
+  function readPlayerStats(league){ return readTable('stats_players?select=team,player,position,stat_line,lead_cat,lead_val,leads&league=eq.'+encodeURIComponent(league||'MLB')+'&order=lead_val.desc'); }
+
+  /* composer: MLB slate for a date from owned tables (schedule + starters + market + pitching + offense) */
+  function mlbSlate(dateISO){
+    return readGames(dateISO).then(function(g){
+      var rows=(g&&g.data)||[]; var ids=rows.map(function(r){return r.game_id;});
+      var sched=rowsEvidence('schedule','games',rows,function(r){return {metric:'game',game_id:r.game_id,value:{home:r.home_team,away:r.away_team,start:r.start_time,status:r.status,park:r.park_id}};});
+      return Promise.all([
+        readByIds('pitcher_features','game_id,side,pitcher_id,name,xera,k_pct,bb_pct,barrel_pct,hardhit_pct',ids),
+        readByIds('market_features','game_id,consensus_home_ml,consensus_away_ml,home_close_ml,away_close_ml,book_disagreement,closed_at',ids),
+        readByIds('offense_features','game_id,side,obp,iso,k_pct,runs_per_game',ids)
+      ]).then(function(res){
+        var pit=rowsEvidence('starter','pitcher_features',(res[0]&&res[0].data)||[],function(r){return {metric:'starter_'+r.side,game_id:r.game_id,player_id:String(r.pitcher_id),value:{name:r.name,xera:r.xera,k_pct:r.k_pct,bb_pct:r.bb_pct,barrel_pct:r.barrel_pct,hardhit_pct:r.hardhit_pct}};});
+        var mkt=rowsEvidence('odds','market_features',(res[1]&&res[1].data)||[],function(r){return {metric:'consensus',game_id:r.game_id,value:{home_ml:r.consensus_home_ml,away_ml:r.consensus_away_ml,home_close:r.home_close_ml,away_close:r.away_close_ml,book_disagreement:r.book_disagreement}};});
+        var off=rowsEvidence('offense','offense_features',(res[2]&&res[2].data)||[],function(r){return {metric:'offense_'+r.side,game_id:r.game_id,value:{obp:r.obp,iso:r.iso,k_pct:r.k_pct,rpg:r.runs_per_game}};});
+        var all=sched.concat(pit,mkt,off);
+        return {date:dateISO, games:rows.length, evidence:mergeEvidence(all), conflicts:findConflicts(all),
+          note:'From owned tables populated by ingest_mlb. Empty arrays usually mean the slate is not yet ingested for this date, or RLS does not expose the table to this user.'};
+      });
+    });
+  }
   var API={
     version:'fabric-1', TTL:TTL, EV_STATUS:EV_STATUS, FRESH_STATE:FRESH_STATE,
     freshnessState:freshnessState, evi:evi, validate:validate, validateGameState:validateGameState,
     canonTeam:canonTeam, canonGameId:canonGameId, canonDate:canonDate,
     mergeEvidence:mergeEvidence, findConflicts:findConflicts, assertResearchOnly:assertResearchOnly,
-    route:route, SOURCES:SOURCES, sourceStatus:sourceStatus, EDBackend:EDBackend, fnUrl:fnUrl, callFn:callFn, readTable:readTable, teamBrief:teamBrief, signalsCount:signalsCount, researchOwned:researchOwned, probe:probe, health:health, mlbSchedule:mlbSchedule, nwsWeather:nwsWeather, liveSlate:liveSlate,
+    route:route, SOURCES:SOURCES, sourceStatus:sourceStatus, EDBackend:EDBackend, fnUrl:fnUrl, callFn:callFn, readTable:readTable, teamBrief:teamBrief, signalsCount:signalsCount, researchOwned:researchOwned, callFnGet:callFnGet, oddsFetch:oddsFetch, runSlate:runSlate, venueWeather:venueWeather, mlbSlate:mlbSlate, readGames:readGames, readBullpenUsage:readBullpenUsage, readPlayerStats:readPlayerStats, probe:probe, health:health, mlbSchedule:mlbSchedule, nwsWeather:nwsWeather, liveSlate:liveSlate,
     selfTest:function(verbose){
       var R=[],P=0,F=0; function chk(n,g,w){var ok=(g===w);R.push({t:n,ok:ok,got:g,want:w});ok?P++:F++;}
       var now=1000000000000;
@@ -14533,10 +14639,15 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
       chk('route weather', route('Which games have the strongest weather?').intent,'weather');
       chk('route bullpen', route('Who has the worst bullpen?').intent,'bullpen');
       chk('odds is owned', SOURCES.odds.owned,true);
-      chk('odds is UNKNOWN', SOURCES.odds.status,'UNKNOWN');
+      chk('odds WIRED (GET)', SOURCES.odds.status==='WIRED'&&SOURCES.odds.method==='GET',true);
+      chk('run_slate WIRED', SOURCES.run_slate.status,'WIRED');
+      chk('venue_weather WIRED', SOURCES.venue_weather.status,'WIRED');
+      chk('games WIRED_TABLE', SOURCES.games.status,'WIRED_TABLE');
+      chk('bullpen table', SOURCES.mlb_pitcher_usage.rest,'mlb_pitcher_usage');
       chk('signals wired', SOURCES.signals.status,'WIRED');
       chk('health counts wired>=3', (function(){var h=health();return (h.counts.WIRED||0)>=3;})(),true);
-      chk('health lists unknown', (function(){var h=health();return h.unknown.indexOf('odds')>=0;})(),true);
+      chk('health lists unknown', (function(){var h=health();return h.unknown.indexOf('resolver')>=0;})(),true);
+      chk('health wired>=6', (function(){var h=health();return (h.counts.WIRED||0)>=6;})(),true);
       chk('envelope shape', (function(){var e=_env('x');return ('status'in e)&&('retrieved_at'in e)&&('latency'in e)&&('freshness'in e)&&('data'in e)&&('error'in e);})(),true);
       chk('ai wired', SOURCES.ai.status,'WIRED');
       chk('team_brief wired', SOURCES.team_brief.status,'WIRED');
