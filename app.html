@@ -14453,6 +14453,19 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
         .catch(function(e){ return {ok:false,count:null,error:(e&&e.message)||'error'}; });
     });
   }
+  /* generic owned-function research: retrieve ANY owned fn's payload as evidence, no field-level guessing.
+     Wraps the whole verified response as one evidence item (metric:'payload'); typed normalizers come
+     later per function once its response schema is known. Honest status: VERIFIED (owned) or UNAVAILABLE. */
+  function researchOwned(fnName, body){
+    return callFn(fnName, body).then(function(env){
+      var now=Date.now();
+      if(env.status!=='VERIFIED'||env.data==null)
+        return {ok:false, envelope:env, evidence:[evi({source:fnName,source_type:'owned_fn',category:'owned',metric:'payload',value:null,
+          status:'UNAVAILABLE', provenance:env.status+' \u00b7 '+fnName+(env.error?(' ('+env.error+')'):''), captured_at:now, now:now})]};
+      return {ok:true, envelope:env, evidence:[evi({source:fnName,source_type:'owned_fn',category:'owned',metric:'payload',value:env.data,
+        status:'VERIFIED', freshness:'LIVE', provenance:'VERIFIED \u00b7 '+fnName+(env.latency!=null?(' \u00b7 '+env.latency+'ms'):''), captured_at:now, now:now})]};
+    });
+  }
   /* discovery probe: which owned functions actually answer the browser (run in deployed app) */
   function probe(names){
     names=names||Object.keys(SOURCES).map(function(k){return SOURCES[k].fn;}).filter(Boolean);
@@ -14474,7 +14487,7 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
     freshnessState:freshnessState, evi:evi, validate:validate, validateGameState:validateGameState,
     canonTeam:canonTeam, canonGameId:canonGameId, canonDate:canonDate,
     mergeEvidence:mergeEvidence, findConflicts:findConflicts, assertResearchOnly:assertResearchOnly,
-    route:route, SOURCES:SOURCES, sourceStatus:sourceStatus, EDBackend:EDBackend, fnUrl:fnUrl, callFn:callFn, readTable:readTable, teamBrief:teamBrief, signalsCount:signalsCount, probe:probe, health:health, mlbSchedule:mlbSchedule, nwsWeather:nwsWeather, liveSlate:liveSlate,
+    route:route, SOURCES:SOURCES, sourceStatus:sourceStatus, EDBackend:EDBackend, fnUrl:fnUrl, callFn:callFn, readTable:readTable, teamBrief:teamBrief, signalsCount:signalsCount, researchOwned:researchOwned, probe:probe, health:health, mlbSchedule:mlbSchedule, nwsWeather:nwsWeather, liveSlate:liveSlate,
     selfTest:function(verbose){
       var R=[],P=0,F=0; function chk(n,g,w){var ok=(g===w);R.push({t:n,ok:ok,got:g,want:w});ok?P++:F++;}
       var now=1000000000000;
