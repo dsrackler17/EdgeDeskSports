@@ -3254,6 +3254,56 @@ $('fSport').onchange=refreshEdges;$('fMinev').oninput=refreshEdges;$('fBooks').o
 
 /* ===== Record (auto-graded) ===== */
 var WEIGHT_ROWS=[],CALIB=[];
+/* ---- Why the flagged rows without CLV have none -------------------------
+   This used to be a hardcoded sentence claiming they were "mostly alternate
+   lines Pinnacle does not quote at close". That was never queried. On a page
+   whose masthead says nothing here is typed in by hand and nothing is
+   estimated, that sentence was the one estimate on it — and it is wrong the
+   moment the close job misses its window or a provider call fails, because
+   those rows look identical from the outside.
+
+   Now the breakdown is READ from clv_excluded_reason, plus the case that has
+   no reason at all: a graded signal the close job never reached, which is the
+   exact fingerprint of a missed close window. */
+var NO_CLV_REASONS=[
+  ['line_pulled_no_close','no line quoted at close'],
+  ['missed_close_window','close window missed'],
+  ['implausible_close_price','placeholder close price'],
+  ['invalid_close_fair','de-vig produced no probability'],
+  ['incoherent_close_market','incoherent close market'],
+  ['no_sharp_at_close','no Pinnacle anchor at close'],
+  ['no_entry_price','no frozen entry price']
+];
+async function recNoClvBreakdown(flagFilter){
+  var base='graded_at=not.is.null&'+flagFilter+'&';
+  try{
+    var out=[];
+    var never=await sbCount(base+'closed_at=is.null');
+    if(never) out.push({label:'graded but never reached the close job',n:never,code:'never_closed'});
+    for(var i=0;i<NO_CLV_REASONS.length;i++){
+      var k=NO_CLV_REASONS[i];
+      var n=await sbCount(base+'clv_excluded_reason=eq.'+encodeURIComponent(k[0]));
+      if(n) out.push({label:k[1],n:n,code:k[0]});
+    }
+    out.sort(function(a,b){return b.n-a.n;});
+    return out;
+  }catch(_){ return null; }
+}
+function recNoClvSentence(missing,parts){
+  if(missing<=0) return '';
+  if(!parts) return ' '+missing+' flagged rows carry no CLV; the exclusion breakdown could not be read.';
+  var named=0; parts.forEach(function(p){named+=p.n;});
+  var list=parts.slice();
+  if(missing-named>0) list.push({label:'other / unclassified',n:missing-named});
+  if(!list.length) return ' '+missing+' flagged rows carry no CLV, with no exclusion reason recorded.';
+  var txt=' '+missing+' flagged rows carry no CLV: '
+    + list.map(function(p){return p.n+' '+p.label;}).join(' · ') + '.';
+  var never=parts.filter(function(p){return p.code==='never_closed'||p.code==='missed_close_window';})
+                 .reduce(function(a,p){return a+p.n;},0);
+  if(never>0) txt+=' The '+never+' the close job did not reach in time are a scheduling gap, not a market fact: those rows had a close, EdgeDesk just never asked for it.';
+  return txt;
+}
+
 async function loadRecordProof(){
   try{
     var total=await sbCount('');var graded=await sbCount('graded_at=not.is.null');
@@ -3299,7 +3349,7 @@ async function loadRecordProof(){
     else if(nClvAny>0){EDGEQ=CLV_ANY;poolLabel='all graded rows with CLV \u2014 provisional, NOT the flagged-edge record';poolKind='clvany';gradedEdges=nClvAny;}
     else{EDGEQ=FLAG_STRICT;poolLabel='no graded row carries CLV yet';poolKind='empty';gradedEdges=0;}
     var recFunnel='Pool funnel \u00b7 graded '+graded+' \u2192 flagged '+nFlagAny+' \u2192 flagged & 0.5\u20139.9% '+nStrict+' \u2192 flagged AND scored against a close '+nFlagClv+'. Live pool: '+poolLabel+' ('+gradedEdges+').'+
-      (nFlagAny>nFlagClv?' The '+(nFlagAny-nFlagClv)+' flagged rows without CLV are mostly alternate lines Pinnacle does not quote at close, so there is no sharp closing price to score them against.':'');
+      recNoClvSentence(nFlagAny-nFlagClv, await recNoClvBreakdown(FLAG_ANY));
     var g=poolKind==='empty'?[]:await sbGet('signals?select=clv,result,beat_close,clv_excluded_reason,sharp_fair,consensus_fair,first_has_sharp,first_corrob_n,first_corrob_ref,n_books,first_best_dec,flagged_best_dec,flagged_at,flagged_corrob_n,sport_title,sport_key,market,commence_time&graded_at=not.is.null&'+EDGEQ+'&limit=5000');
     var w=0,l=0,clvSum=0,beatStored=0,clvArr=[],clvPos=0;
     /* tennis spreads/totals are not gradeable (set scores vs game lines): keep them
@@ -3513,7 +3563,7 @@ async function loadRecord(force){
     else{EDGEQ=FLAG_STRICT;poolLabel='no graded row carries CLV yet';poolKind='empty';}
     REC.pool={kind:poolKind,label:poolLabel,
       funnel:'Pool funnel: graded '+graded+' \u2192 flagged '+nFlagAny+' \u2192 flagged & 0.5\u20139.9% '+nStrict+' \u2192 flagged AND scored against a close '+nFlagClv+'. Live pool: '+poolLabel+' ('+nFlagClv+').'+
-        (nFlagAny>nFlagClv?' The '+(nFlagAny-nFlagClv)+' flagged rows with no CLV are mostly alternate lines Pinnacle does not quote at close; with no sharp closing price there is nothing honest to score them against, so they are excluded rather than scored against a consensus median.':''),
+        recNoClvSentence(nFlagAny-nFlagClv, await recNoClvBreakdown(FLAG_ANY)),
       total:total,graded:graded};
     var rows=poolKind==='empty'?[]:await sbGetAll('signals?select='+REC_COLS+'&graded_at=not.is.null&'+EDGEQ+'&order=graded_at.asc',1000,12);
     /* Tennis spreads/totals are not gradeable against the Odds API scores feed:
