@@ -44,9 +44,18 @@ interface Fixture { [table: string]: any[] | "error" | "rls" | undefined }
 function mockFetch(fx: Fixture): typeof fetch {
   return (async (url: string | URL | Request) => {
     const u = String(url);
+    if (u.includes("baseballsavant.mlb.com")) {
+      if (fx.__savant === "error") return new Response("nope", { status: 503 });
+      if (u.includes("expected_statistics")) return new Response(SAVANT_EXPECTED, { status: 200 });
+      if (u.includes("leaderboard/custom")) return new Response(SAVANT_CUSTOM, { status: 200 });
+      return new Response("", { status: 200 });
+    }
     if (u.includes("statsapi.mlb.com")) {
       if (fx.__statsapi === "error") return new Response("nope", { status: 503 });
-      if (u.includes("/schedule")) return new Response(JSON.stringify(STATSAPI_SCHED), { status: 200 });
+      if (u.includes("/schedule")) {
+        // only the first date has games; the second returns an empty card
+        return new Response(JSON.stringify(u.includes(etDay(1)) ? { dates: [] } : STATSAPI_SCHED), { status: 200 });
+      }
       if (u.includes("/people")) return new Response(JSON.stringify(STATSAPI_PEOPLE), { status: 200 });
       if (u.includes("/teams/stats")) {
         if (u.includes("group=pitching")) return new Response(JSON.stringify(STATSAPI_LEAGUE_PITCHING), { status: 200 });
@@ -159,6 +168,14 @@ const STATSAPI_SCHED = { dates: [{ games: [{
     home: { team: { id: 111, name: "Boston Red Sox" },   probablePitcher: { id: 9002, fullName: "Kutter Crawford" } },
   },
 }] }] };
+// Savant quotes the name column (it contains a comma) and quotes values freely.
+const SAVANT_EXPECTED = '"last_name, first_name",player_id,year,era,xera,era_minus_xera_diff,est_woba\n'
+  + '"Rodon, Carlos",9001,2026,"5.41","4.88","0.53",".339"\n'
+  + '"Crawford, Kutter",9002,2026,3.72,3.95,-0.23,.298';
+const SAVANT_CUSTOM = 'player_id,k_percent,bb_percent,barrel_batted_rate,hard_hit_percent,whiff_percent\n'
+  + '9001,21.2,10.1,"9.9",44.3,24.1\n'
+  + '9002,24.8,5.5,8.1,40.1,28.6';
+
 const STATSAPI_LEAGUE_PITCHING = { stats: [{ splits: Array.from({ length: 30 }, () => ({
   stat: { inningsPitched: "1000.0", homeRuns: 110, baseOnBalls: 330, hitBatsmen: 40, strikeOuts: 900, earnedRuns: 440 },
 })) }] };
@@ -584,11 +601,10 @@ section("Official-feed fallback (stale ingestion)");
   eq("L3 both starters now carry a usable line", q.length, 2);
   ok("L4 the line is the official ERA, not an invented xERA",
     (q.find((e) => String(e.entity).includes("Rod"))!.value as any).era === 5.41);
-  ok("L5 Statcast fields stay declared missing, never approximated",
-    q.every((e) => (e.value as any).missing_fields.includes("xera")
-                && (e.value as any).missing_fields.includes("barrel_pct")));
-  ok("L6 every fallback fact is attributed to the MLB feed",
-    q.every((e) => e.source === "MLB Stats API" && /Statcast-derived/.test(String(e.note))));
+  ok("L5 xERA and barrel% now ARRIVE from the Statcast tier",
+    q.every((e) => (e.value as any).xera != null && (e.value as any).barrel_pct != null));
+  ok("L6 every fallback fact names both feeds it drew on",
+    q.every((e) => e.source === "MLB Stats API" && /Baseball Savant/.test(String(e.note))));
 
   const off = pf.ev.filter((e) => e.field === "opponent_offense" && e.status !== "UNAVAILABLE");
   eq("L7 opponent offense comes with it", off.length, 2);
@@ -748,9 +764,9 @@ section("MLB stats layer — rate stats, FIP, platoon, workload");
   eq("N10 ...and the other way for a ground-baller", craw.batted_ball_lean, "ground-ball");
   eq("N11 throwing hand is captured", [rodon.throws, craw.throws], ["L", "R"]);
   ok("N12 strike% and pitches/inning come through", rodon.strike_pct != null && rodon.pitches_per_inning != null);
-  ok("N13 Statcast fields are still declared missing, never approximated",
-    rodon.missing_fields.includes("xera") && rodon.missing_fields.includes("barrel_pct")
-    && rodon.missing_fields.includes("csw_pct"));
+  ok("N13 only the fields in NEITHER feed are declared missing",
+    rodon.missing_fields.includes("csw_pct") && rodon.missing_fields.includes("velocity")
+    && !rodon.missing_fields.includes("xera"));
 
   // platoon split — the single most matchup-relevant field
   const off = pf.ev.filter((e) => e.field === "opponent_offense" && e.status !== "UNAVAILABLE");
@@ -781,7 +797,7 @@ section("MLB stats layer — rate stats, FIP, platoon, workload");
   ok("N26 coverage now reports the platoon-aware offense as present",
     coverage(pf.ev, "opponent_offense", ["Carlos Rodón", "Kutter Crawford"]).have_n === 2);
   ok("N27 the whole layer stays inside its call ceiling",
-    ((pf.path.live_fallback as any)?.api_calls ?? 99) <= 8, (pf.path.live_fallback as any)?.api_calls);
+    ((pf.path.live_fallback as any)?.api_calls ?? 99) <= 12, (pf.path.live_fallback as any)?.api_calls);
 }
 {
   // league totals unavailable -> FIP is omitted, not guessed
@@ -795,6 +811,61 @@ section("MLB stats layer — rate stats, FIP, platoon, workload");
   const q = pf.ev.find((e) => e.field === "pitcher_quality" && e.status !== "UNAVAILABLE")!.value as any;
   eq("N28 no league totals means NO FIP, not an assumed constant", q.fip, null);
   ok("N29 ...and it says why", /league constant unavailable/.test(q.fip_note), q.fip_note);
+}
+
+/* ===================================================================== */
+/* Statcast tier + full-card coverage                                    */
+/* ===================================================================== */
+
+section("Statcast tier (read directly when pitcher_features is empty)");
+{
+  const d = dal({ ...FULL, pitcher_features: [], offense_features: [] });
+  const pf = await d.getPitcherFeatures();
+  const q = pf.ev.filter((e) => e.field === "pitcher_quality" && e.status !== "UNAVAILABLE");
+  const rodon = q.find((e) => String(e.entity).includes("Rod"))!.value as any;
+
+  eq("S30 xERA arrives even though the owned table is empty", rodon.xera, 4.88);
+  eq("S31 barrel% arrives", rodon.barrel_pct, 9.9);
+  eq("S32 hard-hit% arrives", rodon.hardhit_pct, 44.3);
+  eq("S33 whiff% arrives", rodon.whiff_pct, 24.1);
+  eq("S34 xwOBA against arrives", rodon.xwoba_against, 0.339);
+
+  // the column-resolution bug that stored a diff as the stat
+  ok("S35 xERA is the xera column, NOT era_minus_xera_diff",
+    rodon.xera !== 0.53 && rodon.xera !== -0.62, rodon.xera);
+  // quoted numerics
+  ok("S36 quoted CSV values are usable", rodon.barrel_pct === 9.9 && rodon.xera === 4.88);
+
+  eq("S37 ERA minus xERA is exposed as a read", rodon.era_vs_xera, +(5.41 - 4.88).toFixed(2));
+  ok("S38 ...with what it means", /better than the line suggests/.test(rodon.era_vs_xera_note));
+  eq("S39 Statcast is attributed", rodon.statcast_source, "Baseball Savant (Statcast)");
+  ok("S40 xERA is no longer in missing_fields", !rodon.missing_fields.includes("xera"), rodon.missing_fields);
+  ok("S41 fields in NEITHER feed stay declared missing",
+    rodon.missing_fields.includes("csw_pct") && rodon.missing_fields.includes("velocity"));
+  ok("S42 the data path reports the Statcast read",
+    /read \d+ pitchers/.test(String((pf.path.live_fallback as any)?.statcast_status)),
+    (pf.path.live_fallback as any)?.statcast_status);
+}
+{
+  // Savant down -> traditional line still lands, Statcast declared missing
+  const d = dal({ ...FULL, pitcher_features: [], offense_features: [], __savant: "error" } as any);
+  const pf = await d.getPitcherFeatures();
+  const q = pf.ev.find((e) => e.field === "pitcher_quality" && e.status !== "UNAVAILABLE")!.value as any;
+  eq("S43 Savant down means xERA is null, never guessed", q.xera, null);
+  ok("S44 ...and it goes back into missing_fields", q.missing_fields.includes("xera"));
+  ok("S45 the traditional line still lands", q.era === 5.41 && q.fip != null);
+  eq("S46 no Statcast attribution is claimed", q.statcast_source, null);
+}
+{
+  // the 20/50 bug: the fallback covered one date while the card spans several
+  const d = dal({ ...FULL, pitcher_features: [], offense_features: [] });
+  const fb = await d.getMlbLiveFallback();
+  ok("S47 the schedule window matches the card's, not a single day",
+    Array.isArray((fb.path as any).dates) && (fb.path as any).dates.length > 1, (fb.path as any).dates);
+  ok("S48 an empty second date does not break the run", (fb.path as any).starters_found === 2,
+    (fb.path as any).starters_found);
+  ok("S49 the whole layer stays inside its call ceiling", ((fb.path as any).api_calls ?? 99) <= 12,
+    (fb.path as any).api_calls);
 }
 
 console.log(`\n${failed === 0 ? "ALL GREEN" : "FAILURES"} — ${passed} passed, ${failed} failed`);

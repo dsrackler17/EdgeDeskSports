@@ -237,6 +237,48 @@ export function unavailable(source: string, field: string, reason: string, entit
   return ev({ source, field, entity, value: null, status: "UNAVAILABLE", freshness: "UNKNOWN", note: reason });
 }
 
+
+/* ---------------------------- Statcast CSV helpers -----------------------
+   Same discipline as the ingest_mlb repair: quotes are stripped from VALUES as
+   well as headers (parseFloat('"5.41"') is NaN, which silently drops a stat),
+   and column lookup is exact-name-first with derived *_diff / *_minus_ columns
+   excluded from fuzzy matching — otherwise a blank `xera` resolves to
+   `era_minus_xera_diff` and the DIFF gets stored as the pitcher's xERA. */
+export function csvRows(text: string): Record<string, string>[] {
+  const lines = text.trim().split(/\r?\n/);
+  if (lines.length < 2) return [];
+  const split = (l: string) => {
+    const out: string[] = []; let cur = "", q = false;
+    for (const c of l) { if (c === '"') q = !q; else if (c === "," && !q) { out.push(cur); cur = ""; } else cur += c; }
+    out.push(cur); return out;
+  };
+  const clean = (x: string) => x.trim().replace(/^"([\s\S]*)"$/, "$1").replace(/""/g, '"').trim();
+  const head = split(lines[0]).map(clean);
+  return lines.slice(1).map((l) => {
+    const c = split(l); const o: Record<string, string> = {};
+    head.forEach((h, i) => o[h] = clean(c[i] ?? ""));
+    return o;
+  });
+}
+
+export function csvCol(row: Record<string, string>, needles: string[]): number | null {
+  const keys = Object.keys(row);
+  const derived = (k: string) => /(_diff|_minus_|percentile|_rank)/.test(k.toLowerCase());
+  for (const n of needles) {
+    const hit = keys.find((k) => k.toLowerCase() === n.toLowerCase());
+    if (hit) return num(row[hit]);
+  }
+  for (const n of needles) {
+    const hit = keys.find((k) => !derived(k) && k.toLowerCase().startsWith(n.toLowerCase()));
+    if (hit) return num(row[hit]);
+  }
+  for (const n of needles) {
+    const hit = keys.find((k) => !derived(k) && k.toLowerCase().includes(n.toLowerCase()));
+    if (hit) return num(row[hit]);
+  }
+  return null;
+}
+
 /* ------------------------------------------------- conflict detection */
 
 /* Which source wins for a given field when two owned sources disagree.
@@ -936,13 +978,17 @@ export class Dal {
   async getMlbLiveFallback(dateISO?: string): Promise<{ ev: Evidence[]; path: Record<string, unknown> }> {
     const day = dateISO ?? etDay(0);
     const season = day.slice(0, 4);
-    const path: Record<string, unknown> = { source: "statsapi.mlb.com", date: day };
+    /* getMlbCard spans three ET days, so a single-date schedule fetch covered
+       only part of the card — which is exactly how coverage read 20 of 50
+       starters. The window here matches the card's. */
+    const days = dateISO ? [dateISO] : [etDay(0), etDay(1)];
+    const path: Record<string, unknown> = { source: "statsapi.mlb.com", dates: days };
     const out: Evidence[] = [];
     const now = Date.now();
     let apiCalls = 0;
 
     const getJSON = async (url: string, ms = 9000): Promise<any | null> => {
-      if (apiCalls >= 8) return null;              // cost ceiling, same spirit as the read budget
+      if (apiCalls >= 12) return null;             // cost ceiling, same spirit as the read budget
       apiCalls++;
       try {
         const ctrl = typeof AbortController !== "undefined" ? new AbortController() : null;
@@ -965,16 +1011,22 @@ export class Dal {
     };
     const pct3 = (x: number | null) => x == null ? null : +x.toFixed(3);
 
-    // 1. today's card + probable starters
-    const sched = await getJSON(
-      `https://statsapi.mlb.com/api/v1/schedule?sportId=1&date=${day}&hydrate=probablePitcher,team`);
-    if (!sched) {
+    // 1. the card + probable starters, across the same window getMlbCard uses
+    const scheds: any[] = [];
+    for (const dd of days) {
+      const j = await getJSON(
+        `https://statsapi.mlb.com/api/v1/schedule?sportId=1&date=${dd}&hydrate=probablePitcher,team`);
+      if (j) scheds.push(j);
+    }
+    if (!scheds.length) {
       path.error = "schedule request failed";
       return { ev: [unavailable("MLB Stats API", "pitcher_quality", "live fallback unreachable")], path };
     }
+    const sched = { dates: scheds.flatMap((j: any) => j.dates ?? []) };
 
     interface Starter { id: number; name: string; team: string; teamId: number; opp: string; oppId: number; game: string }
     const starters: Starter[] = [];
+    const seenStarter = new Set<string>();
     for (const d of sched.dates ?? []) {
       for (const g of d.games ?? []) {
         const away = g.teams?.away, home = g.teams?.home;
@@ -982,6 +1034,9 @@ export class Dal {
         for (const [side, other] of [[away, home], [home, away]] as any[]) {
           const p = side?.probablePitcher;
           if (!p?.id) continue;
+          const dedupe = `${p.id}|${game}`;
+          if (seenStarter.has(dedupe)) continue;   // doubleheaders repeat a card
+          seenStarter.add(dedupe);
           starters.push({
             id: p.id, name: p.fullName, team: side?.team?.name, teamId: side?.team?.id,
             opp: other?.team?.name, oppId: other?.team?.id, game,
@@ -995,14 +1050,22 @@ export class Dal {
       return { ev: [unavailable("MLB Stats API", "pitcher_quality", `no probable starters announced for ${day}`)], path };
     }
 
-    // 2. season line + game log + throwing hand for every starter, batched
-    const ids = starters.map((s) => s.id).join(",");
-    const people = await getJSON(
-      `https://statsapi.mlb.com/api/v1/people?personIds=${ids}`
-      + `&hydrate=stats(group=[pitching],type=[season,gameLog],season=${season})`);
+    /* 2. season line + game log + throwing hand, batched in chunks. A single
+       50-id request with a gameLog hydrate is large enough to be truncated or
+       refused, which silently halves coverage. */
     const lineById: Record<string, any> = {};
     const logById: Record<string, any[]> = {};
     const handById: Record<string, string> = {};
+    const CHUNK = 20;
+    const peoplePages: any[] = [];
+    for (let i = 0; i < starters.length; i += CHUNK) {
+      const ids = starters.slice(i, i + CHUNK).map((s) => s.id).join(",");
+      const j = await getJSON(
+        `https://statsapi.mlb.com/api/v1/people?personIds=${ids}`
+        + `&hydrate=stats(group=[pitching],type=[season,gameLog],season=${season})`);
+      if (j) peoplePages.push(j);
+    }
+    const people = { people: peoplePages.flatMap((j: any) => j.people ?? []) };
     for (const p of people?.people ?? []) {
       const key = String(p.id);
       if (p.pitchHand?.code) handById[key] = p.pitchHand.code;
@@ -1061,10 +1124,63 @@ export class Dal {
     const hitVsR = await hitting("vr");
     path.team_hitting = { season: Object.keys(hitAll).length, vs_lhp: Object.keys(hitVsL).length, vs_rhp: Object.keys(hitVsR).length };
 
-    const MISSING_STATCAST = ["xera", "xwoba", "barrel_pct", "hardhit_pct", "csw_pct", "swstr_pct", "pitch_mix", "velocity"];
-    const NOTE = "MLB Stats API season line. Statcast-derived fields (xERA, xwOBA, barrel%, hard-hit%, CSW%, "
-      + "swinging-strike%, pitch mix, velocity) are NOT in this feed and are not approximated — they return "
-      + "when ingest_mlb's Savant path is repaired.";
+    /* 7. STATCAST TIER — Baseball Savant, keyless CSV, keyed by MLBAM id.
+       This is the layer ingest_mlb is supposed to write into pitcher_features.
+       When that pipeline is down, reading Savant directly is what turns
+       "pitcher quality not on file" into an actual xERA. Same source, same
+       ids, just fetched here instead of yesterday. Two requests. */
+    const savant: Record<string, any> = {};
+    let savantStatus = "not attempted";
+    {
+      const getCsv = async (url: string): Promise<Record<string, string>[] | null> => {
+        if (apiCalls >= 12) return null;
+        apiCalls++;
+        try {
+          const ctrl = typeof AbortController !== "undefined" ? new AbortController() : null;
+          const t = ctrl ? setTimeout(() => ctrl.abort(), 15000) : null;
+          const r = await this.f(url, { signal: ctrl?.signal, headers: { accept: "text/csv,*/*" } });
+          if (t) clearTimeout(t);
+          if (!r.ok) return null;
+          return csvRows(await r.text());
+        } catch { return null; }
+      };
+      const put = (id: string, k: string, v: number | null) => {
+        if (v == null || !id) return;
+        (savant[id] ||= {})[k] = v;
+      };
+      const exp = await getCsv(
+        `https://baseballsavant.mlb.com/leaderboard/expected_statistics?type=pitcher&year=${season}`
+        + `&position=&team=&filterType=bip&min=1&csv=true`);
+      for (const row of exp ?? []) {
+        const id = String(csvCol(row, ["player_id"]) ?? "");
+        put(id, "xera", csvCol(row, ["xera"]));
+        put(id, "xwoba_against", csvCol(row, ["est_woba"]));
+      }
+      const rate = await getCsv(
+        `https://baseballsavant.mlb.com/leaderboard/custom?year=${season}&type=pitcher&filter=&min=1`
+        + `&selections=player_id,k_percent,bb_percent,barrel_batted_rate,hard_hit_percent,whiff_percent&csv=true`);
+      for (const row of rate ?? []) {
+        const id = String(csvCol(row, ["player_id"]) ?? "");
+        put(id, "sc_k_pct", csvCol(row, ["k_percent"]));
+        put(id, "sc_bb_pct", csvCol(row, ["bb_percent"]));
+        put(id, "barrel_pct", csvCol(row, ["barrel_batted_rate", "barrel"]));
+        put(id, "hardhit_pct", csvCol(row, ["hard_hit_percent", "hard_hit"]));
+        put(id, "whiff_pct", csvCol(row, ["whiff_percent", "whiff"]));
+      }
+      const n = Object.keys(savant).length;
+      savantStatus = n ? `read ${n} pitchers` : "returned no rows";
+      path.statcast = {
+        source: "baseballsavant.mlb.com", pitchers: n,
+        expected_statistics: exp == null ? "request failed" : `${exp.length} rows`,
+        custom_leaderboard: rate == null ? "request failed" : `${rate.length} rows`,
+        note: "Read directly because pitcher_features is empty. Repairing ingest_mlb restores this from the owned table instead.",
+      };
+    }
+
+    const MISSING_STATCAST = ["csw_pct", "pitch_mix", "velocity"];
+    const NOTE = "Traditional line from the MLB Stats API; Statcast fields (xERA, xwOBA, barrel%, hard-hit%, "
+      + "whiff%) read directly from Baseball Savant because pitcher_features is empty. CSW%, pitch mix and "
+      + "velocity are in neither feed and are not approximated.";
 
     const offenseOf = (st: any, label: string, extraMissing: string[]) => {
       if (!st) return null;
@@ -1096,6 +1212,8 @@ export class Dal {
         const fip = (cFIP != null && ip && ip > 0 && hr != null && bb != null && so != null)
           ? +(((13 * hr + 3 * (bb + hbp) - 2 * so) / ip) + cFIP).toFixed(2) : null;
         const gbfb = num(line.groundOutsToAirouts);
+        const sc = savant[String(s.id)] ?? null;
+        const scMissing = MISSING_STATCAST.concat(sc ? [] : ["xera", "xwoba", "barrel_pct", "hardhit_pct", "whiff_pct"]);
 
         out.push(ev({
           source: "MLB Stats API", entity: s.name, field: "pitcher_quality", relevance: "pitching",
@@ -1114,7 +1232,24 @@ export class Dal {
             strike_pct: num(line.strikePercentage), pitches_per_inning: num(line.pitchesPerInning),
             innings: line.inningsPitched ?? null, innings_num: ip == null ? null : +ip.toFixed(1),
             batters_faced: bf, games_started: num(line.gamesStarted),
-            missing_fields: MISSING_STATCAST,
+            /* Statcast, when Savant answered. These are the fields that separate
+               "bad ERA" from "bad pitcher" — xERA strips the defence and the
+               luck out, barrel% and hard-hit% say whether the contact allowed
+               was genuinely dangerous. */
+            xera: sc?.xera ?? null,
+            xwoba_against: sc?.xwoba_against ?? null,
+            barrel_pct: sc?.barrel_pct ?? null,
+            hardhit_pct: sc?.hardhit_pct ?? null,
+            whiff_pct: sc?.whiff_pct ?? null,
+            statcast_k_pct: sc?.sc_k_pct ?? null,
+            statcast_bb_pct: sc?.sc_bb_pct ?? null,
+            era_vs_xera: (sc?.xera != null && num(line.era) != null)
+              ? +(num(line.era)! - sc.xera).toFixed(2) : null,
+            era_vs_xera_note: (sc?.xera != null && num(line.era) != null)
+              ? "ERA minus xERA. Positive means the ERA is worse than the contact he allowed — the arm may be better than the line suggests, and vice versa."
+              : null,
+            statcast_source: sc ? "Baseball Savant (Statcast)" : null,
+            missing_fields: scMissing,
           },
           status: "VERIFIED", freshness: "CURRENT", source_timestamp: new Date(now).toISOString(), note: NOTE,
         }));
@@ -1186,6 +1321,7 @@ export class Dal {
       }));
     }
     path.api_calls = apiCalls;
+    path.statcast_status = savantStatus;
     return { ev: out, path };
   }
 
