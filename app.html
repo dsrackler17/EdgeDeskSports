@@ -14378,9 +14378,10 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
     weather_features:{name:'weather_features (ingest_mlb)',categories:['weather'],owned:true,rest:'weather_features',status:'WIRED_TABLE',ttl:'weather',contract:'game_id,temp_f,humidity_pct,wind_mph,wind_dir_vs_cf'},
     mlb_pitcher_usage:{name:'mlb_pitcher_usage (bullpen_sync)',categories:['bullpen'],owned:true,rest:'mlb_pitcher_usage',status:'WIRED_TABLE',ttl:'bullpen',contract:'game_id,pitcher_id,team_id,game_date,full_name,pitches,outs,started,appearance_order,finished_game',reader:readBullpenUsage},
     stats_players:{name:'stats_players (capture_stats)',categories:['player_stats'],owned:true,rest:'stats_players',status:'WIRED_TABLE',ttl:'player_stats',contract:'league,team,player,position,stat_line,lead_cat,lead_val,cats,leads',reader:readPlayerStats},
-    signals:{name:'signals (table)',categories:['historical','clv'],owned:true,rest:'signals',status:'WIRED',ttl:'historical',contract:'/rest/v1/signals?select=...&count=exact',reader:signalsCount},
+    signals:{name:'signals (table, graded by settle)',categories:['historical','clv'],owned:true,rest:'signals',status:'WIRED',ttl:'historical',contract:'sig_key,sport_key,market,selection,commence_time,clv,result,beat_close,final_home,final_away,graded_at (beat_close is generated)',reader:signalsCount},
     /* UNKNOWN: source not yet supplied */
-    project_game:{name:'project_game',categories:['model'],owned:true,fn:'project_game',status:'UNKNOWN',ttl:'schedule',need:'source (called by run_slate; response fields home_win_prob/calibrated_edge_pct/confidence known indirectly)'},
+    project_game:{name:'project_game',categories:['model'],owned:true,fn:'project_game',method:'POST',status:'WIRED',ttl:'schedule',contract:'POST {game_id} -> {home_win_prob,model_win_prob,market_win_prob,confidence{},categories{},explanation{},edge_pct,calibrated_edge_pct,calibration{}}',adapter:projectGame},
+    game_projections:{name:'game_projections (project_game)',categories:['model'],owned:true,rest:'game_projections',status:'WIRED_TABLE',ttl:'schedule',contract:'game_id,model_version,home_win_prob,model_win_prob,market_win_prob,confidence,edge_pct,calibrated_edge_pct,category_scores,explanation,computed_at',reader:readProjections},
     resolver:{name:'resolver',categories:['identity'],owned:true,fn:'resolver',status:'UNKNOWN',ttl:'schedule',need:'source'},
     healthcheck:{name:'healthcheck',categories:['diagnostic'],owned:true,fn:'healthcheck',status:'UNKNOWN',ttl:'game_status',need:'source'},
     /* LIVE_FALLBACK: public keyless browser-direct, documented, unverified here */
@@ -14588,12 +14589,56 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
       });
     });
   }
+  /* project_game: POST {game_id} -> full projection (writes game_projections). The engine's own numbers. */
+  function projectGame(gameId){
+    return callFn('project_game', {game_id:gameId}).then(function(env){
+      var now=Date.now(), d=env.data;
+      if(env.status!=='VERIFIED'||!d||d.error)
+        return {envelope:env, evidence:[evi({source:'project_game',source_type:'owned_model',category:'model',metric:'projection',game_id:gameId,value:null,status:'UNAVAILABLE',provenance:env.status+' \u00b7 project_game ('+((d&&d.error)||env.error||'no data')+')',captured_at:now,now:now})]};
+      var ev=[evi({source:'project_game',source_type:'owned_model',category:'model',metric:'projection',game_id:gameId,status:'VERIFIED',captured_at:now,now:now,
+        value:{home_win_prob:d.home_win_prob,model_win_prob:d.model_win_prob,market_win_prob:d.market_win_prob,
+               edge_pct:d.edge_pct,calibrated_edge_pct:d.calibrated_edge_pct,
+               confidence:d.confidence&&d.confidence.score,categories:d.categories,
+               calibration_n:d.calibration&&d.calibration.n,calibration_note:d.calibration&&d.calibration.note}})];
+      if(d.explanation) ev.push(evi({source:'project_game',source_type:'owned_model',category:'model',metric:'explanation',game_id:gameId,status:'VERIFIED',captured_at:now,now:now,
+        value:{for:d.explanation.for,against:d.explanation.against,risk:d.explanation.risk}}));
+      return {envelope:env, evidence:ev, projection:d};
+    });
+  }
+  /* read already-computed projections without recomputing */
+  function readProjections(ids){ return readByIds('game_projections','game_id,model_version,home_win_prob,model_win_prob,market_win_prob,confidence,edge_pct,calibrated_edge_pct,category_scores,explanation,computed_at', ids); }
+
+  /* historical validation over graded signals (settle writes result/clv/beat_close). Aggregation of OWNED outcomes. */
+  function readSignals(filter){ return readTable('signals?select=sig_key,sport_key,market,selection,commence_time,clv,result,beat_close,final_home,final_away,graded_at&'+(filter||'graded_at=not.is.null')+'&order=commence_time.desc&limit=5000'); }
+  function historicalSummary(filter){
+    return readTable('signals?select=result,clv,beat_close&'+(filter||'graded_at=not.is.null')+'&limit=5000').then(function(env){
+      var rows=(env&&env.data)||[]; var graded=rows.filter(function(r){return r.result;});
+      var n=graded.length, wins=graded.filter(function(r){return r.result==='win';}).length;
+      var beat=graded.filter(function(r){return r.beat_close===true;}).length;
+      var clvs=graded.map(function(r){return r.clv;}).filter(function(v){return typeof v==='number';});
+      var avg=clvs.length? clvs.reduce(function(s,x){return s+x;},0)/clvs.length : null;
+      return {envelope:env, n:n, wins:wins, win_rate:n?+(wins/n).toFixed(3):null,
+        beat_close:beat, beat_close_rate:n?+(beat/n).toFixed(3):null, avg_clv:avg!=null?+avg.toFixed(4):null,
+        note:'Owned graded signals. N='+n+(n<30?' \u2014 small sample, directional only.':'')};
+    });
+  }
+
+  /* slate research board: owned tables + engine projections, merged/conflict-checked. Research context only;
+     the deterministic client engine still owns the verdict. This is the zero-packet "build today's board" path. */
+  function slateResearch(date){
+    return Promise.all([mlbSlate(date), runSlate(date)]).then(function(r){
+      var slate=r[0], proj=r[1];
+      var all=(slate.evidence||[]).concat(proj.evidence||[]);
+      return {date:date, games:slate.games, projected:proj.projected, evidence:mergeEvidence(all), conflicts:findConflicts(all),
+        note:'Owned slate (games/starters/market/offense) + run_slate projections. Verdict stays with the deterministic client engine; research context only.'};
+    });
+  }
   var API={
     version:'fabric-1', TTL:TTL, EV_STATUS:EV_STATUS, FRESH_STATE:FRESH_STATE,
     freshnessState:freshnessState, evi:evi, validate:validate, validateGameState:validateGameState,
     canonTeam:canonTeam, canonGameId:canonGameId, canonDate:canonDate,
     mergeEvidence:mergeEvidence, findConflicts:findConflicts, assertResearchOnly:assertResearchOnly,
-    route:route, SOURCES:SOURCES, sourceStatus:sourceStatus, EDBackend:EDBackend, fnUrl:fnUrl, callFn:callFn, readTable:readTable, teamBrief:teamBrief, signalsCount:signalsCount, researchOwned:researchOwned, callFnGet:callFnGet, oddsFetch:oddsFetch, runSlate:runSlate, venueWeather:venueWeather, mlbSlate:mlbSlate, readGames:readGames, readBullpenUsage:readBullpenUsage, readPlayerStats:readPlayerStats, probe:probe, health:health, mlbSchedule:mlbSchedule, nwsWeather:nwsWeather, liveSlate:liveSlate,
+    route:route, SOURCES:SOURCES, sourceStatus:sourceStatus, EDBackend:EDBackend, fnUrl:fnUrl, callFn:callFn, readTable:readTable, teamBrief:teamBrief, signalsCount:signalsCount, researchOwned:researchOwned, callFnGet:callFnGet, oddsFetch:oddsFetch, runSlate:runSlate, venueWeather:venueWeather, mlbSlate:mlbSlate, slateResearch:slateResearch, projectGame:projectGame, readProjections:readProjections, readGames:readGames, readSignals:readSignals, historicalSummary:historicalSummary, readBullpenUsage:readBullpenUsage, readPlayerStats:readPlayerStats, probe:probe, health:health, mlbSchedule:mlbSchedule, nwsWeather:nwsWeather, liveSlate:liveSlate,
     selfTest:function(verbose){
       var R=[],P=0,F=0; function chk(n,g,w){var ok=(g===w);R.push({t:n,ok:ok,got:g,want:w});ok?P++:F++;}
       var now=1000000000000;
@@ -14643,11 +14688,13 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
       chk('run_slate WIRED', SOURCES.run_slate.status,'WIRED');
       chk('venue_weather WIRED', SOURCES.venue_weather.status,'WIRED');
       chk('games WIRED_TABLE', SOURCES.games.status,'WIRED_TABLE');
+      chk('project_game WIRED', SOURCES.project_game.status==='WIRED'&&SOURCES.project_game.method==='POST',true);
+      chk('game_projections table', SOURCES.game_projections.rest,'game_projections');
       chk('bullpen table', SOURCES.mlb_pitcher_usage.rest,'mlb_pitcher_usage');
       chk('signals wired', SOURCES.signals.status,'WIRED');
       chk('health counts wired>=3', (function(){var h=health();return (h.counts.WIRED||0)>=3;})(),true);
       chk('health lists unknown', (function(){var h=health();return h.unknown.indexOf('resolver')>=0;})(),true);
-      chk('health wired>=6', (function(){var h=health();return (h.counts.WIRED||0)>=6;})(),true);
+      chk('health wired>=7', (function(){var h=health();return (h.counts.WIRED||0)>=7;})(),true);
       chk('envelope shape', (function(){var e=_env('x');return ('status'in e)&&('retrieved_at'in e)&&('latency'in e)&&('freshness'in e)&&('data'in e)&&('error'in e);})(),true);
       chk('ai wired', SOURCES.ai.status,'WIRED');
       chk('team_brief wired', SOURCES.team_brief.status,'WIRED');
