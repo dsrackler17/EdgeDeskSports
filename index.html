@@ -329,6 +329,56 @@ footer{border-top:1px solid var(--line);background:#0a0c10;padding:38px 0 48px}
 }
 
 @media(prefers-reduced-motion:reduce){*{animation:none!important;scroll-behavior:auto}.reveal{opacity:1;transform:none}.spark path.ln{stroke-dashoffset:0}.step{opacity:1}.hl{opacity:1;transform:none}}
+/* ── research engine, coverage map, refusals, FAQ ─────────────────────── */
+.rx{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:40px}
+@media(max-width:900px){.rx{grid-template-columns:1fr}}
+.rx-flow{border:1px solid var(--line);border-radius:14px;background:var(--panel);padding:22px}
+.rx-step{display:grid;grid-template-columns:26px 1fr;gap:12px;padding:11px 0;border-bottom:1px solid var(--line)}
+.rx-step:last-child{border-bottom:0;padding-bottom:0}
+.rx-num{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--faint);padding-top:3px}
+.rx-t{font-weight:600;font-size:14px;margin:0 0 3px}
+.rx-d{font-size:13px;color:var(--dim);margin:0;line-height:1.5}
+.rx-trace{border:1px solid var(--line2);border-radius:14px;background:#0d1016;overflow:hidden;display:flex;flex-direction:column}
+.rx-tb{display:flex;align-items:center;gap:8px;padding:11px 14px;border-bottom:1px solid var(--line);background:var(--raised)}
+.rx-body{padding:16px 16px 18px;font-size:13.5px;line-height:1.62}
+.rx-body p{margin:0 0 11px}
+.rx-body p:last-child{margin-bottom:0}
+.rx-q{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--obs);margin:0 0 13px}
+.rx-meta{margin-top:14px;padding-top:12px;border-top:1px solid var(--line);
+  font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--faint);line-height:1.8}
+.rx-meta b{color:var(--dim);font-weight:500}
+.cov{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-top:36px}
+@media(max-width:820px){.cov{grid-template-columns:1fr}}
+.covc{border:1px solid var(--line);border-radius:12px;background:var(--panel);padding:18px 20px}
+.covh{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:9px}
+.covn{font-weight:600;font-size:14.5px}
+.covl{font-size:13px;color:var(--dim);margin:0;line-height:1.55}
+.nev{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-top:36px}
+@media(max-width:820px){.nev{grid-template-columns:1fr}}
+.nevc{border:1px solid rgba(226,102,75,.22);background:rgba(226,102,75,.03);border-radius:12px;padding:17px 19px}
+.nevt{font-weight:600;font-size:14px;margin:0 0 5px;color:var(--text)}
+.nevd{font-size:13px;color:var(--dim);margin:0;line-height:1.55}
+.faq{margin-top:36px;border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.faq details{border-bottom:1px solid var(--line);background:var(--panel)}
+.faq details:last-child{border-bottom:0}
+.faq summary{cursor:pointer;padding:17px 20px;font-weight:600;font-size:14.5px;list-style:none;
+  display:flex;align-items:center;justify-content:space-between;gap:14px;transition:.14s}
+.faq summary::-webkit-details-marker{display:none}
+.faq summary::after{content:"+";font-family:'JetBrains Mono',monospace;color:var(--faint);font-size:16px;flex-shrink:0}
+.faq details[open] summary::after{content:"\2212"}
+.faq summary:hover{color:var(--accent)}
+.faq summary:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+.faq .fa{padding:0 20px 18px;font-size:13.5px;color:var(--dim);line-height:1.62;margin:0}
+.faq .fa b{color:var(--text);font-weight:600}
+.deskgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:38px}
+@media(max-width:900px){.deskgrid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:620px){.deskgrid{grid-template-columns:1fr}}
+.desk{border:1px solid var(--line);border-radius:12px;background:var(--panel);padding:18px 19px;transition:.16s}
+.desk:hover{border-color:var(--line2);transform:translateY(-1px)}
+.deskn{font-weight:650;font-size:14.5px;margin:0 0 4px;display:flex;align-items:center;gap:8px}
+.deskd{font-size:12.8px;color:var(--dim);margin:0;line-height:1.55}
+.deskk{font-family:'JetBrains Mono',monospace;font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--faint)}
+
 </style>
 </head>
 <body>
@@ -350,6 +400,8 @@ footer{border-top:1px solid var(--line);background:#0a0c10;padding:38px 0 48px}
     <a class="nlink hideS" href="#different">Why it's different</a>
     <a class="nlink hideS" href="#workflow">How it works</a>
     <a class="nlink hideS" href="#anatomy">See an edge</a>
+      <a class="nlink" href="#intelligence">Intelligence</a>
+      <a class="nlink" href="#desk">The desk</a>
     <a class="nlink hideS" href="#provenance">Provenance</a>
     <a class="nlink hideS" href="#live">Live record</a>
     <button class="btn ghost" id="navLogin" onclick="openAuth('login')">Log in</button>
@@ -549,6 +601,110 @@ footer{border-top:1px solid var(--line);background:#0a0c10;padding:38px 0 48px}
   </div>
 </section>
 
+<section class="band" id="desk">
+  <div class="wrap">
+    <div class="head">
+      <span class="ey">Every tab on the terminal</span>
+      <h2>Ten desks, one subscription.</h2>
+      <p>This is the whole product, named honestly. Where a desk is still building its record, it says so on the tile rather than in the footnotes.</p>
+    </div>
+    <div class="deskgrid">
+      <div class="desk"><p class="deskn">Edges <span class="pv obs">Live</span></p><p class="deskd">Every price EdgeDesk has flagged against a sharp de-vigged fair line, ranked by research priority rather than raw edge — because the biggest number is usually the worst bet.</p></div>
+      <div class="desk"><p class="deskn">Daily Scan <span class="pv obs">Live</span></p><p class="deskd">The board scored end to end each day: quantified edges, model leads with no market signal yet, and everything ranked low with the reason it was ranked low.</p></div>
+      <div class="desk"><p class="deskn">Intelligence <span class="pv obs">Live</span></p><p class="deskd">The research engine. Ask in plain language; it retrieves, cross-checks, attacks its own answer and shows the trace.</p></div>
+      <div class="desk"><p class="deskn">Record <span class="pv obs">Live &middot; public</span></p><p class="deskd">Every flagged edge graded automatically against the closing line. Win-loss, CLV, calibration, day-of-week and time-of-day splits, and the full pool funnel showing what was excluded and why.</p></div>
+      <div class="desk"><p class="deskn">Faults <span class="pv obs">Live</span></p><p class="deskd">Where the platform was wrong. A public list of the calls that failed and the pipeline problems that caused them.</p></div>
+      <div class="desk"><p class="deskn">Ledger <span class="pv obs">Live</span></p><p class="deskd">Your own bets logged against the numbers you actually saw, so your record is measured the same way the platform's is.</p></div>
+      <div class="desk"><p class="deskn">Discipline <span class="pv obs">Live</span></p><p class="deskd">Staking rules, precommitments and the behavioural guardrails that decide more outcomes than handicapping does.</p></div>
+      <div class="desk"><p class="deskn">Research <span class="pv obs">Live</span></p><p class="deskd">Sport desks for college football, UFC, WTA, plus league stat leaderboards, player projections and the model lab.</p></div>
+      <div class="desk"><p class="deskn">News &amp; Pulse <span class="pv est">Context</span></p><p class="deskd">Team briefs and market movement, kept clearly separate from anything that touches the edge math.</p></div>
+      <div class="desk"><p class="deskn">Model Lab <span class="pv exp">Experimental</span></p><p class="deskd">Research notes with a promotion gate. A model only graduates by clearing positive CLV over a registered sample and a holdout — never by looking good.</p></div>
+      <div class="desk"><p class="deskn">Weather engine <span class="pv est">Context</span></p><p class="deskd">Venue-level conditions from the National Weather Service raw gridpoint: true wind bearing against the park's axis, air density, gusts. Not a forecast widget.</p></div>
+      <div class="desk"><p class="deskn">Bullpen &amp; workload <span class="pv est">Context</span></p><p class="deskd">Taxed arms, closer availability and starter rest, attached to the game before you read the line.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="band" id="coverage">
+  <div class="wrap">
+    <div class="head">
+      <span class="ey">Coverage</span>
+      <h2>Deep where the data exists. Honest where it doesn't.</h2>
+      <p>Market research — price, sharp reference, fair line, edge, confirmation, closing line value — works on every sport EdgeDesk prices, because that layer is sport-agnostic. Matchup research only goes as deep as the data actually ingested for that league, and the platform tells you which is which instead of pretending.</p>
+    </div>
+    <div class="cov">
+      <div class="covc">
+        <div class="covh"><span class="covn">MLB</span><span class="pv obs">Full matchup research</span></div>
+        <p class="covl">The deepest desk. Probable starters, pitcher quality and rate stats, the opposing lineup's platoon split against that pitcher's hand, park factors, venue weather, bullpen usage and starter rest — on top of the full market layer.</p>
+      </div>
+      <div class="covc">
+        <div class="covh"><span class="covn">NFL &middot; College football</span><span class="pv obs">Market research</span></div>
+        <p class="covl">Full price, sharp reference, edge and CLV research, plus AP and coaches rankings for college. Team-level efficiency research needs a feature pipeline that isn't built yet, and the platform says so rather than improvising.</p>
+      </div>
+      <div class="covc">
+        <div class="covh"><span class="covn">UFC &middot; MMA</span><span class="pv obs">Market research</span></div>
+        <p class="covl">Fight-card pricing with sharp confirmation and graded CLV. Fighter metrics live in a separate ingestion the research engine does not yet read.</p>
+      </div>
+      <div class="covc">
+        <div class="covh"><span class="covn">Tennis &middot; WTA &amp; ATP</span><span class="pv obs">Market research</span></div>
+        <p class="covl">Match pricing, Elo research and graded outcomes. Note the platform grades tennis moneylines only — game spreads and totals are scored in games while the results feed reports sets, so they are marked ungradeable rather than graded wrong.</p>
+      </div>
+      <div class="covc">
+        <div class="covh"><span class="covn">NBA &middot; NHL &middot; WNBA</span><span class="pv est">Market research</span></div>
+        <p class="covl">Priced and graded through the same market layer. Availability, rotation, goalie and efficiency research are named as missing inputs, not glossed over.</p>
+      </div>
+      <div class="covc">
+        <div class="covh"><span class="covn">Everything else priced</span><span class="pv est">Seasonal</span></div>
+        <p class="covl">College baseball, KBO, CFL, boxing and international cricket appear when books price them. They inherit the full market and CLV layer automatically; no sport-specific research is claimed for them.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="band" id="intelligence">
+  <div class="wrap">
+    <div class="head">
+      <span class="ey">EdgeDesk Intelligence</span>
+      <h2>Ask it anything. It goes and looks.</h2>
+      <p>Most betting AI is a chat box wrapped around a language model — it answers from whatever it was handed, and invents the rest. EdgeDesk Intelligence classifies your question, decides what data would answer it, retrieves that data from EdgeDesk's own tables, checks it for staleness and contradiction, tries to break its own conclusion, and only then writes. Every answer carries the receipts.</p>
+    </div>
+
+    <div class="rx">
+      <div class="rx-flow">
+        <div class="rx-step"><span class="rx-num">01</span><div><p class="rx-t">Understand the question</p><p class="rx-d">"Worst pitching matchups today" and "who's exploitable" are different questions and get different research plans.</p></div></div>
+        <div class="rx-step"><span class="rx-num">02</span><div><p class="rx-t">Decide what would answer it</p><p class="rx-d">A retrieval plan with a budget, so a simple question stays cheap and a deep one goes wide.</p></div></div>
+        <div class="rx-step"><span class="rx-num">03</span><div><p class="rx-t">Go get it</p><p class="rx-d">Nineteen scoped retrieval tools across the market, the matchup, the bullpen, the park, the weather and the graded history. No open database access, ever.</p></div></div>
+        <div class="rx-step"><span class="rx-num">04</span><div><p class="rx-t">Check what came back</p><p class="rx-d">Every fact is stamped with its source, its timestamp and its freshness. An hour-old price is not a current price, and it is not allowed to pretend to be one.</p></div></div>
+        <div class="rx-step"><span class="rx-num">05</span><div><p class="rx-t">Find the contradictions</p><p class="rx-d">When two owned sources disagree, both are named. If there is no trusted tiebreak the field is marked contested and confidence drops.</p></div></div>
+        <div class="rx-step"><span class="rx-num">06</span><div><p class="rx-t">Attack its own answer</p><p class="rx-d">The thesis is tested against the price, the confirmation and the freshness before you see it. A conclusion that cannot survive that does not get presented as one.</p></div></div>
+        <div class="rx-step"><span class="rx-num">07</span><div><p class="rx-t">Show the trace</p><p class="rx-d">Sources consulted, facts retrieved, research completeness, and exactly what was missing. You can audit the answer, not just read it.</p></div></div>
+      </div>
+
+      <div class="rx-trace">
+        <div class="rx-tb"><span class="dot" style="background:var(--obs)"></span><span class="mono" style="font-size:11px;color:var(--dim)">EdgeDesk Intelligence</span></div>
+        <div class="rx-body">
+          <p class="rx-q">&gt; which pitcher is most exploitable today?</p>
+          <p><b>The most exploitable arm is not the worst one.</b> Ranking by ERA and ranking betting targets are different questions, so here is the second one.</p>
+          <p>The weakest starter on the card by the numbers on file draws a low-OBP, high-strikeout lineup in a pitcher's park. That is a bad arm in a good spot — the matchup absorbs the weakness.</p>
+          <p>The genuinely attackable start is the mid-tier arm facing a high-OBP, high-ISO offense in a hitter's park, on four days' rest with a taxed bullpen behind him. Worse spot, better pitcher.</p>
+          <p><b>Against it:</b> the starter is probable, not confirmed, and EdgeDesk's deterministic verdict on that game is still PASS at the current price. Interesting to research is not the same as worth betting.</p>
+          <div class="rx-meta">
+            <b>exploitable_pitchers</b> · MATCHUP · SLATE<br>
+            9 retrievals · 214 facts · 78% complete<br>
+            <b>sources</b> signals · mlb_game_cards · pitcher_features · offense_features · mlb_pitcher_usage · venue_weather<br>
+            <b>coverage</b> pitcher_quality 26/30 · opponent_offense 26/30 · workload 24/30<br>
+            <b>not available</b> confirmed lineups · barrel% for 4 starters
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="honest" style="margin-top:28px">
+      <p style="margin:0;font-size:14px;color:var(--dim);line-height:1.65"><b class="warnc">The part nobody else builds.</b> When EdgeDesk cannot answer, it says which table it tried, what came back, and how much of the slate is affected — <span class="mono" style="font-size:12.5px">"pitcher quality is usable for 26 of 30 starters; missing for these four"</span>. It never fills a gap with something that sounds right. An answer you can trust when it says "I don't know" is the only kind worth trusting when it says it does.</p>
+    </div>
+  </div>
+</section>
+
 <section class="band" id="features">
   <div class="wrap">
     <div class="head">
@@ -593,6 +749,46 @@ footer{border-top:1px solid var(--line);background:#0a0c10;padding:38px 0 48px}
   </div>
 </section>
 
+<section class="band" id="never">
+  <div class="wrap">
+    <div class="head">
+      <span class="ey">The contract</span>
+      <h2>What EdgeDesk will never do.</h2>
+      <p>Most of this industry sells certainty because certainty converts. These are the things this platform is built to refuse, and they are enforced in the code rather than promised in the marketing.</p>
+    </div>
+    <div class="nev">
+      <div class="nevc"><p class="nevt">Never invent a number</p><p class="nevd">If a stat isn't in the database, the answer says which table was queried and what came back. There is no path in the system that fills a gap with something plausible.</p></div>
+      <div class="nevc"><p class="nevt">Never let the AI do the math</p><p class="nevd">Probability, fair price, edge, EV, CLV and the verdict come from a deterministic engine. The language model reads those numbers and explains them. It is not allowed to produce one.</p></div>
+      <div class="nevc"><p class="nevt">Never call a thin sample a pattern</p><p class="nevd">A discovered pattern needs a minimum sample before it can be quoted, and the requirement is enforced by a database constraint. One result can't become "a trend".</p></div>
+      <div class="nevc"><p class="nevt">Never present stale data as current</p><p class="nevd">Every fact carries a freshness window. Past it, a price is labelled stale and cannot be used as a current price — including by the AI.</p></div>
+      <div class="nevc"><p class="nevt">Never guarantee an outcome</p><p class="nevd">No locks, no units of the day, no "can't lose". A well-reasoned PASS is a correct answer and the platform says so out loud.</p></div>
+      <div class="nevc"><p class="nevt">Never hide the losses</p><p class="nevd">The public record includes the flat months, the losing streaks and a Faults desk devoted to where the platform was wrong.</p></div>
+      <div class="nevc"><p class="nevt">Never confuse interest with a bet</p><p class="nevd">A game can be the most fascinating thing on the board and still be a PASS. Research interest and betting action are separate fields, never collapsed into one recommendation.</p></div>
+      <div class="nevc"><p class="nevt">Never sell you picks</p><p class="nevd">There is no pick feed, no Telegram, no tail. EdgeDesk shows you the evidence and the price so you make the call — and keeps the receipt either way.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="band" id="faq">
+  <div class="wrap">
+    <div class="head">
+      <span class="ey">Before you sign up</span>
+      <h2>The questions worth asking.</h2>
+      <p>Including the ones a subscription page usually avoids.</p>
+    </div>
+    <div class="faq">
+      <details><summary>Will this make me money?</summary><p class="fa">Nobody can honestly answer that, and anyone who does is selling something. What EdgeDesk can tell you is whether the prices it flagged beat the closing line, on a public record that grades itself. That is the only measurable evidence of edge that exists before results arrive — and over a small sample, results are mostly noise. <b>Read the live record and judge the machinery, not a promise.</b></p></details>
+      <details><summary>How is this different from a picks service?</summary><p class="fa">A picks service tells you what to bet and shows you a curated record. EdgeDesk never tells you what to bet, shows you the evidence behind every number, publishes the full funnel including what was excluded and why, and keeps a desk dedicated to its own mistakes. <b>If you want to be told, this is the wrong product.</b></p></details>
+      <details><summary>Why does it keep saying data isn't available?</summary><p class="fa">Because it is telling the truth. Ingestion pipelines break, leagues go out of season, and some metrics are simply not in any free feed. The alternative — quietly producing a number anyway — is how betting tools lose people money. When something is missing, EdgeDesk names the table, says how much of the slate is affected, and works with what it has.</p></details>
+      <details><summary>What is CLV and why is the whole site built around it?</summary><p class="fa">Closing line value measures your price against where the market settled. It is the only signal that separates a good decision from a lucky one before a large sample of results exists — a winning bet at a bad price is still a bad bet, and a losing bet at a great price is still a good one. <b>Results take years to be meaningful. CLV starts telling you something immediately.</b></p></details>
+      <details><summary>Do I need to be an experienced bettor?</summary><p class="fa">You need to be willing to read evidence rather than follow a play. The terminal explains what every number means and where it came from, and the AI answers in plain language. But this is a research tool built for people who want to understand a market, not a shortcut around learning one.</p></details>
+      <details><summary>Which sports actually work today?</summary><p class="fa">Market research — price, sharp reference, fair line, edge, CLV — works on every sport EdgeDesk prices. Full matchup research is deepest in MLB. Every other league says exactly which research layer it has and which it doesn't, on the coverage section above.</p></details>
+      <details><summary>Can I cancel?</summary><p class="fa">Any time, from inside the app. No contracts, no retention call, no cancellation flow designed to wear you down.</p></details>
+      <details><summary>Is this legal, and am I old enough?</summary><p class="fa">EdgeDesk is a research and analysis tool. It does not accept wagers, place bets or handle stakes of any kind. You must be 21+ and in a jurisdiction where sports betting is legal. If gambling is causing you harm, call 1-800-GAMBLER.</p></details>
+    </div>
+  </div>
+</section>
+
 <section class="band" id="live">
   <div class="wrap">
     <div class="head">
@@ -602,8 +798,8 @@ footer{border-top:1px solid var(--line);background:#0a0c10;padding:38px 0 48px}
     </div>
 
     <div class="mgrid" id="metrics">
-      <div class="mtile"><div class="mn" data-count="2">2</div><div class="ml">Sports live now</div><div class="mtag"><span class="pv obs">MLB &middot; WNBA</span></div></div>
-      <div class="mtile"><div class="mn" data-count="2">2</div><div class="ml">Sports seasonal</div><div class="mtag"><span class="tag-s">CFB &middot; CBB</span></div></div>
+      <div class="mtile"><div class="mn" data-count="1">1</div><div class="ml">Full matchup research</div><div class="mtag"><span class="pv obs">MLB</span></div></div>
+      <div class="mtile"><div class="mn sm">Every sport priced</div><div class="ml">Market &amp; CLV research</div><div class="mtag"><span class="pv obs">sport-agnostic layer</span></div></div>
       <div class="mtile"><div class="mn" data-count="6">6</div><div class="ml">Research model classes</div><div class="mtag"><span class="pv obs">4 live &middot; 2 building</span></div></div>
       <div class="mtile"><div class="mn sm" id="m-graded">&mdash;</div><div class="ml">Calls graded against outcomes</div><div class="mtag"><span class="pv exp" id="m-gradedtag">loading</span></div></div>
       <div class="mtile"><div class="mn sm" id="m-clv">&mdash;</div><div class="ml">Avg closing line value</div><div class="mtag"><span class="pv obs" id="m-clvtag">reads live</span></div></div>
