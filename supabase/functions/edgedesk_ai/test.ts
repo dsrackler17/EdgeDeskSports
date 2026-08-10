@@ -607,8 +607,8 @@ section("Official-feed fallback (stale ingestion)");
 
   ok("L1 the fallback fires when the owned table is empty",
     !!pf.path.live_fallback, Object.keys(pf.path));
-  ok("L2 and says why, naming the repair",
-    /repair ingest_mlb/.test(String(pf.path.live_fallback_reason)), pf.path.live_fallback_reason);
+  ok("L2 and says why, still naming the owned-table repair",
+    /repair(ing)? ingest_mlb/i.test(String(pf.path.live_fallback_reason)), pf.path.live_fallback_reason);
 
   const q = pf.ev.filter((e) => e.field === "pitcher_quality" && e.status !== "UNAVAILABLE");
   eq("L3 both starters now carry a usable line", q.length, 2);
@@ -920,6 +920,51 @@ section("Slate scoping (the 30/60 denominator bug)");
   ok("Z7 the unscoped denominator is the larger, misleading one",
     all.total_n > liveCov.total_n, { all: all.total_n, live: liveCov.total_n });
   ok("Z8 scoped coverage reports against the live card only", liveCov.total_n === 3, liveCov.total_n);
+}
+
+/* ===================================================================== */
+/* the answer must never deny data it actually has                       */
+/* ===================================================================== */
+
+section("Statcast messaging (the self-contradiction bug)");
+{
+  const d = dal({ ...FULL, pitcher_features: [], offense_features: [] });
+  const pf = await d.getPitcherFeatures();
+  const reason = String(pf.path.live_fallback_reason ?? "");
+  const q = pf.ev.filter((e) => e.field === "pitcher_quality" && e.status !== "UNAVAILABLE");
+  const withX = q.filter((e) => (e.value as any).xera != null);
+
+  ok("W1 Statcast actually landed", withX.length > 0, withX.length);
+  ok("W2 the data-path text says the Statcast fields ARE present",
+    /ARE present/.test(reason), reason.slice(0, 160));
+  ok("W3 ...and no longer tells the model they are missing",
+    !/restore xERA \/ barrel% \/ hard-hit%/.test(reason), reason.slice(0, 160));
+  ok("W4 ...and points at per-starter fields instead of a slate-wide claim",
+    /check each starter's own fields/.test(reason));
+}
+{
+  // Savant unreachable: the message must flip back to an honest gap
+  const d = dal({ ...FULL, pitcher_features: [], offense_features: [], __savant: "error" } as any);
+  const pf = await d.getPitcherFeatures();
+  const reason = String(pf.path.live_fallback_reason ?? "");
+  ok("W5 when Savant fails the text says the fields are genuinely unavailable",
+    /genuinely unavailable/.test(reason), reason.slice(0, 160));
+  ok("W6 ...and does not claim Statcast is present",
+    !/ARE present/.test(reason));
+}
+
+section("Season line is never crowded out by game logs");
+{
+  const d = dal({ ...FULL, pitcher_features: [], offense_features: [] });
+  const fb = await d.getMlbLiveFallback();
+  eq("W7 every starter got a season line", (fb.path as any).pitching_lines, 2);
+  eq("W8 none are reported as missing a line", ((fb.path as any).starters_without_line ?? []).length, 0);
+  ok("W9 the starters that lack a line would be NAMED if any did",
+    Array.isArray((fb.path as any).starters_without_line));
+  ok("W10 game logs are fetched separately and still land",
+    (fb.path as any).game_logs >= 1, (fb.path as any).game_logs);
+  ok("W11 the layer stays inside its raised ceiling", ((fb.path as any).api_calls ?? 99) <= 20,
+    (fb.path as any).api_calls);
 }
 
 console.log(`\n${failed === 0 ? "ALL GREEN" : "FAILURES"} — ${passed} passed, ${failed} failed`);

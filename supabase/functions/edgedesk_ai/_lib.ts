@@ -908,10 +908,19 @@ export class Dal {
     if (!pf.length && this.mlbFallback) {
       const fb = await this.getMlbLiveFallback();
       path.live_fallback = fb.path;
+      /* This text is read by the model and it must describe what actually
+         happened. The previous wording predated the Savant tier and said the
+         Statcast fields were missing — so an answer that HAD xERA opened by
+         announcing it had none, then quoted it two lines later. */
+      const scOk = /read \d+ pitchers/.test(String(fb.path.statcast_status ?? ""));
       path.live_fallback_reason =
-        "pitcher_features returned no rows for this slate, so EdgeDesk queried the official MLB Stats API "
-        + "for the traditional pitching line. This is a fallback, not the owned Statcast layer — repair "
-        + "ingest_mlb to restore xERA / barrel% / hard-hit%.";
+        "pitcher_features returned no rows for this slate, so EdgeDesk read the official MLB Stats API for "
+        + "the traditional line" + (scOk
+          ? " AND Baseball Savant directly for the Statcast layer. xERA, xwOBA, barrel%, hard-hit% and whiff% "
+            + "ARE present for the pitchers Savant returned — check each starter's own fields rather than "
+            + "assuming the slate has none. Repairing ingest_mlb would serve these from the owned table instead."
+          : ", but the Statcast read returned nothing, so xERA / barrel% / hard-hit% are genuinely unavailable "
+            + "for this slate. Repair ingest_mlb to restore them from the owned table.");
       out.push(...fb.ev);
     }
 
@@ -958,7 +967,7 @@ export class Dal {
     let apiCalls = 0;
 
     const getJSON = async (url: string, ms = 9000): Promise<any | null> => {
-      if (apiCalls >= 12) return null;             // cost ceiling, same spirit as the read budget
+      if (apiCalls >= 20) return null;             // cost ceiling, same spirit as the read budget
       apiCalls++;
       try {
         const ctrl = typeof AbortController !== "undefined" ? new AbortController() : null;
@@ -1026,16 +1035,22 @@ export class Dal {
     const lineById: Record<string, any> = {};
     const logById: Record<string, any[]> = {};
     const handById: Record<string, string> = {};
-    const CHUNK = 20;
-    const peoplePages: any[] = [];
-    for (let i = 0; i < starters.length; i += CHUNK) {
-      const ids = starters.slice(i, i + CHUNK).map((s) => s.id).join(",");
+    /* Season stats and game logs are fetched SEPARATELY, season first.
+       Requesting both in one hydrate produces a payload heavy enough that the
+       response comes back partial — which showed up as most starters having no
+       line at all while one had everything. The season line is what the whole
+       quality read depends on, so it is never allowed to share a request with
+       the game log, and it is never the thing that runs out of budget. */
+    const SEASON_CHUNK = 12, LOG_CHUNK = 6;
+    const seasonPages: any[] = [];
+    for (let i = 0; i < starters.length; i += SEASON_CHUNK) {
+      const ids = starters.slice(i, i + SEASON_CHUNK).map((s) => s.id).join(",");
       const j = await getJSON(
         `https://statsapi.mlb.com/api/v1/people?personIds=${ids}`
-        + `&hydrate=stats(group=[pitching],type=[season,gameLog],season=${season})`);
-      if (j) peoplePages.push(j);
+        + `&hydrate=stats(group=[pitching],type=[season],season=${season})`);
+      if (j) seasonPages.push(j);
     }
-    const people = { people: peoplePages.flatMap((j: any) => j.people ?? []) };
+    const people = { people: seasonPages.flatMap((j: any) => j.people ?? []) };
     for (const p of people?.people ?? []) {
       const key = String(p.id);
       if (p.pitchHand?.code) handById[key] = p.pitchHand.code;
@@ -1047,6 +1062,24 @@ export class Dal {
       }
     }
     path.pitching_lines = Object.keys(lineById).length;
+    path.starters_without_line = starters
+      .filter((s) => !lineById[String(s.id)]).map((s) => s.name).slice(0, 12);
+
+    // Game logs are workload context, not the quality read. Best-effort, last.
+    for (let i = 0; i < starters.length; i += LOG_CHUNK) {
+      const ids = starters.slice(i, i + LOG_CHUNK).map((s) => s.id).join(",");
+      const j = await getJSON(
+        `https://statsapi.mlb.com/api/v1/people?personIds=${ids}`
+        + `&hydrate=stats(group=[pitching],type=[gameLog],season=${season})`, 12000);
+      if (!j) break;                       // out of budget or upstream trouble: keep what we have
+      for (const p of j.people ?? []) {
+        for (const st of p.stats ?? []) {
+          if (st.group?.displayName === "pitching" && st.type?.displayName === "gameLog") {
+            logById[String(p.id)] = st.splits ?? [];
+          }
+        }
+      }
+    }
     path.game_logs = Object.keys(logById).length;
 
     /* 3. LEAGUE PITCHING TOTALS -> the FIP constant, SOLVED not assumed.
@@ -1103,7 +1136,7 @@ export class Dal {
     let savantStatus = "not attempted";
     {
       const getCsv = async (url: string): Promise<Record<string, string>[] | null> => {
-        if (apiCalls >= 12) return null;
+        if (apiCalls >= 20) return null;
         apiCalls++;
         try {
           const ctrl = typeof AbortController !== "undefined" ? new AbortController() : null;
