@@ -10,7 +10,7 @@ import {
   edgeBand, priceBand, booksBand, etDow, splitChrono,
   evaluate, calibrate, HYPOTHESES, BUILD, planColumns, discoverColumns,
   baseRateWarning, clvIsReal, clvProfile, beatCloseAgreement, contamination,
-  fairDrift, CLV_SANE, type Graded,
+  fairDrift, population, isActionable, EDGE_SANE_MAX, CLV_SANE, type Graded,
 } from "./index.ts";
 
 let passed = 0, failed = 0;
@@ -98,9 +98,10 @@ section("Benjamini-Hochberg keeps the family honest");
 
 section("Bucketing");
 {
-  eq("K1 sub-1% edge", edgeBand(0.005), "edge<1%");
+  eq("K1 a small POSITIVE edge", edgeBand(0.005), "edge 0-1%");
   eq("K2 2-4% band", edgeBand(0.03), "edge 2-4%");
-  eq("K3 the top band is open-ended", edgeBand(0.5), "edge>8%");
+  eq("K3 the top band is bounded — beyond it is a broken price",
+    edgeBand(0.5), "implausible edge (>25%)");
   eq("K4 a missing edge has no band", edgeBand(null), null);
   eq("K5 heavy favourite", priceBand(1.25), "heavy favourite");
   eq("K6 big dog", priceBand(4.5), "big dog");
@@ -603,6 +604,61 @@ section("Fair-price drift separates a bad model from a fixed offset");
     fairDrift([g({ edge: null, clv: -0.02 })]).reading, "no rows carry both an edge and a CLV");
   eq("R12 fabricated CLV is excluded here too",
     fairDrift([g({ edge: 0.03, clv: -1 })]).reading, "no rows carry both an edge and a CLV");
+}
+
+/* The fair-drift run revealed the actual problem, and it was the population.
+   median_edge came back NEGATIVE (-3.0%), and the 'edge<1%' band held 2748 of
+   3539 rows at a median edge of -4.5%. `signals` is the full capture table -
+   every priced selection - not a list of flagged bets. The 17.5% "beat rate"
+   was mostly measuring selections nobody would ever have bet. */
+section("The population is flagged signals, not every priced selection");
+{
+  eq("P1 a negative edge gets its own band, not the small-edge one",
+    edgeBand(-0.045), "negative edge (not actionable)");
+  eq("P2 a small positive edge is distinguishable from it", edgeBand(0.005), "edge 0-1%");
+  eq("P3 a 40% edge is a broken price, not a huge opportunity",
+    edgeBand(0.405), "implausible edge (>25%)");
+  eq("P4 the top real band is bounded", edgeBand(0.12), "edge 8-25%");
+  eq("P5 exactly zero is not actionable", edgeBand(0), "negative edge (not actionable)");
+
+  eq("P6 only a plausible positive edge is actionable", isActionable({ edge: 0.03 }), true);
+  eq("P7 a negative edge is not", isActionable({ edge: -0.02 }), false);
+  eq("P8 an absurd edge is not", isActionable({ edge: 0.41 }), false);
+  eq("P9 a missing edge is not", isActionable({ edge: null }), false);
+  eq("P10 the boundary is inclusive", isActionable({ edge: EDGE_SANE_MAX }), true);
+
+  /* The live composition, reconstructed: 2748 negative, 458 absurd, 333 real. */
+  const mk = (edge: number, clv: number, i: number) => {
+    const d = new Date(Date.parse("2026-01-01T18:00:00Z") + i * 36e5);
+    return g({ edge, clv, beat_close: clv > 0, commence_time: d.toISOString(), graded_at: d.toISOString() });
+  };
+  let i = 0;
+  const live = [
+    ...Array.from({ length: 2748 }, () => mk(-0.045, -0.033, i++)),
+    ...Array.from({ length: 458 }, () => mk(0.405, -0.008, i++)),
+    ...Array.from({ length: 200 }, () => mk(0.027, 0.01, i++)),
+    ...Array.from({ length: 133 }, () => mk(0.027, -0.013, i++)),
+  ];
+
+  const pop = population(live);
+  eq("P11 the never-actionable rows are counted", pop.negative_edge_never_actionable, 2748);
+  eq("P12 the broken prices are counted separately", pop.implausible_edge_bad_price, 458);
+  eq("P13 ...leaving only the genuinely flagged signals", pop.actionable, 333);
+  eq("P14 ...whose beat rate is the one that matters", pop.actionable_beat_rate, 0.6006);
+  ok("P15 the reading spells out all three groups",
+    /2748 have a negative edge/.test(pop.reading) && /458 carry an edge above 25%/.test(pop.reading),
+    pop.reading);
+
+  const ev = evaluate(live);
+  eq("P16 evaluation uses only the actionable population", ev.n_graded, 333);
+  near("P17 ...so the base rate is theirs, not the capture table's", ev.base_rate, 0.6006, 0.001);
+  eq("P18 ...and no false contamination warning follows", ev.base_rate_warning, null);
+
+  // Drift must be measured on the same population.
+  const drift = fairDrift(live.filter(isActionable));
+  eq("P19 drift excludes the broken prices", drift.n, 333);
+  ok("P20 ...so a 46% overstatement from junk lines cannot leak in",
+    Math.abs(drift.fair_overstated_pct ?? 0) < 10, drift.fair_overstated_pct);
 }
 
 console.log(`\n${failed === 0 ? "ALL GREEN" : "FAILURES"} — ${passed} passed, ${failed} failed`);

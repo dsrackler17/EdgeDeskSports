@@ -72,7 +72,7 @@ export const HOLDOUT_FRAC = Number(Deno.env.get('LEARN_HOLDOUT_FRAC') ?? '0.30')
 /* Bumped whenever this file changes in a way you would want to confirm landed.
    Returned on every response, because "is the new build actually deployed?"
    should be answerable rather than inferred from whether the old bug recurs. */
-export const BUILD = '2026-08-13.2-fair-drift';
+export const BUILD = '2026-08-13.3-actionable-only';
 
 /* ========================================================================
    STATISTICS — pure, exported, tested. No database, no network.
@@ -176,13 +176,43 @@ export function etDow(iso: string | null): number | null {
   return et.getDay();                                    // 0 = Sunday
 }
 
+/**
+ * An edge above this is not a price, it is a bad line.
+ *
+ * In a two-way market with a sharp reference, a genuine 25%+ edge does not
+ * survive contact with reality — it is a stale quote, a limit-zero screen
+ * price, or a de-vig that failed. The live data had 458 rows with a MEDIAN
+ * edge of +40.5%, which is not a portfolio of enormous edges; it is a pile of
+ * broken prices, and it was 13% of everything being learned from.
+ */
+export const EDGE_SANE_MAX = Number(Deno.env.get('LEARN_EDGE_MAX') ?? '0.25');
+
+/**
+ * Bands over the edge at capture.
+ *
+ * The first version sent every NEGATIVE edge into 'edge<1%', because it was
+ * written assuming this table holds flagged bets. It does not — `signals` is
+ * the full capture, every priced selection, and 78% of it has a negative edge
+ * and was never actionable. Lumping those in produced a 17.5% "beat rate" that
+ * was really measuring "how often does a selection nobody would bet close
+ * better than it opened", which is a question with an obvious and useless
+ * answer. Negative and implausible edges now have their own bands so they can
+ * be seen and excluded rather than silently averaged in.
+ */
 export function edgeBand(edge: number | null): string | null {
   if (edge == null || !Number.isFinite(edge)) return null;
-  if (edge < 0.01) return 'edge<1%';
+  if (edge <= 0) return 'negative edge (not actionable)';
+  if (edge > EDGE_SANE_MAX) return `implausible edge (>${(EDGE_SANE_MAX * 100).toFixed(0)}%)`;
+  if (edge < 0.01) return 'edge 0-1%';
   if (edge < 0.02) return 'edge 1-2%';
   if (edge < 0.04) return 'edge 2-4%';
   if (edge < 0.08) return 'edge 4-8%';
-  return 'edge>8%';
+  return 'edge 8-25%';
+}
+
+/** Was this row ever something EdgeDesk would put in front of a user? */
+export function isActionable(g: { edge: number | null }): boolean {
+  return g.edge != null && Number.isFinite(g.edge) && g.edge > 0 && g.edge <= EDGE_SANE_MAX;
 }
 
 export function priceBand(dec: number | null): string | null {
@@ -304,7 +334,15 @@ export function beatCloseAgreement(rows: Graded[]) {
  *
  * No real CLV means no outcome. Such rows are excluded, never counted against.
  */
-const hasOutcome = (g: Graded) => clvIsReal(g.clv);
+/**
+ * A row counts as an outcome only if it had a real CLV AND was actionable.
+ *
+ * Learning from every priced selection answers the wrong question. The loop
+ * exists to say something about the bets EdgeDesk would actually surface, so
+ * the population is flagged signals with a plausible edge — not the capture
+ * table, and not the broken prices inside it.
+ */
+const hasOutcome = (g: Graded) => clvIsReal(g.clv) && isActionable(g);
 
 /**
  * Score every level of every pre-registered hypothesis, then apply BH across
@@ -390,7 +428,7 @@ export function fairDrift(rows: Graded[]) {
 
   const overall = summarise(usable);
   const byBand: Record<string, unknown> = {};
-  for (const b of ['edge<1%', 'edge 1-2%', 'edge 2-4%', 'edge 4-8%', 'edge>8%']) {
+  for (const b of ['edge 0-1%', 'edge 1-2%', 'edge 2-4%', 'edge 4-8%', 'edge 8-25%']) {
     const rs = usable.filter((r) => edgeBand(r.edge) === b);
     if (rs.length >= 20) byBand[b] = summarise(rs);
   }
@@ -414,6 +452,33 @@ export function fairDrift(rows: Graded[]) {
               + `de-vig or book-set difference between capture and close rather than at the edge model.`)
       : `Median projected edge ${(overall.median_edge * 100).toFixed(2)}%, median realised `
         + `${(overall.median_clv * 100).toFixed(2)}%, retention ${overall.edge_retention}.`,
+  };
+}
+
+/**
+ * What the capture table actually contains, so the population being learned
+ * from is stated rather than assumed. This is the breakdown that would have
+ * made the first three runs unnecessary.
+ */
+export function population(rows: Graded[]) {
+  const withClv = rows.filter((r) => clvIsReal(r.clv));
+  const negative = withClv.filter((r) => r.edge != null && r.edge <= 0).length;
+  const absurd = withClv.filter((r) => r.edge != null && r.edge > EDGE_SANE_MAX).length;
+  const noEdge = withClv.filter((r) => r.edge == null).length;
+  const actionable = withClv.filter(isActionable);
+  const beatRate = actionable.length
+    ? actionable.filter((r) => r.clv! > 0).length / actionable.length : null;
+  return {
+    rows_with_clv: withClv.length,
+    negative_edge_never_actionable: negative,
+    implausible_edge_bad_price: absurd,
+    no_edge_recorded: noEdge,
+    actionable: actionable.length,
+    actionable_beat_rate: beatRate == null ? null : +beatRate.toFixed(4),
+    reading: `${withClv.length} rows carry a real CLV. ${negative} have a negative edge and were never `
+      + `actionable; ${absurd} carry an edge above ${(EDGE_SANE_MAX * 100).toFixed(0)}%, which is a broken `
+      + `price rather than an opportunity. That leaves ${actionable.length} genuinely flagged signals`
+      + (beatRate == null ? '.' : `, which beat the close ${(beatRate * 100).toFixed(1)}% of the time.`),
   };
 }
 
@@ -623,7 +688,7 @@ export function calibrate(rows: Graded[], minN = MIN_N): CalibrationBucket[] {
     if (!b || !clvIsReal(g.clv)) continue;
     (by.get(b) ?? by.set(b, []).get(b)!).push(g);
   }
-  const order = ['edge<1%', 'edge 1-2%', 'edge 2-4%', 'edge 4-8%', 'edge>8%'];
+  const order = ['edge 0-1%', 'edge 1-2%', 'edge 2-4%', 'edge 4-8%', 'edge 8-25%'];
   return [...by.entries()]
     .filter(([, rs]) => rs.length >= minN)
     .sort((a, b) => order.indexOf(a[0]) - order.indexOf(b[0]))
@@ -804,9 +869,10 @@ Deno.serve(async (req) => {
          indistinguishable from one that found nothing. */
       columns_on_signals: columns_seen,
       ...(base_rate_warning ? { base_rate_warning } : {}),
+      population: population(rows),
       clv_profile: clvProfile(rows as any),
       beat_close_column: beatCloseAgreement(rows),
-      fair_drift: fairDrift(rows),
+      fair_drift: fairDrift(rows.filter(isActionable)),
       ...(dropped.length ? { columns_unavailable: dropped,
         note: `signals has no ${dropped.join(', ')} column, so the matching hypothesis families were skipped.` } : {}),
       readiness: n_graded >= MIN_N
