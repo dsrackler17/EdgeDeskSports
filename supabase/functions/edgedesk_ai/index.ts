@@ -38,11 +38,11 @@
 
 import {
   Dal, classify, deriveState, attackThesis, findConflicts, sportModule,
-  completeness, coverage, num, etDay, rankingAxis,
+  completeness, coverage, num, etDay, rankingAxis, budgetEvidence, dataIntegrity,
   buildSnapshot, diffSnapshots, extractFindings, scout,
   crossMarketFlags, movementRead,
   type Evidence, type Plan, type ConvoState, type Completeness,
-  type Snapshot, type Finding, type ScoutItem, type CrossFlag,
+  type Snapshot, type Finding, type ScoutItem, type CrossFlag, type Integrity,
 } from "./_lib.ts";
 
 const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY") ?? "";
@@ -101,6 +101,14 @@ HARD RULES
 - If something is UNAVAILABLE or missing, say "not available in EdgeDesk's current data" and name it once. EdgeDesk already tried to retrieve it — so say what was tried and what came back, not "I don't have access".
 - Never say you cannot see the slate, the board or today's games when evidence is attached. It is in front of you.
 - Prefer "EdgeDesk could not retrieve that" over a plausible-sounding invention. Every time.
+- EVERY NUMBER BELONGS TO ONE ENTITY. Read each figure from that entity's OWN evidence item, matched by name. Never carry a value across from another player, team or game, and never fill a gap with a neighbouring record's numbers. If two entities genuinely carry identical values, that is almost always you misreading the evidence, not a coincidence — re-read both items, and if one truly has no value for a field, say that field is not available for him rather than repeating the other's. An entity with no evidence item of its own gets named as missing, never described.
+
+DATA INTEGRITY — AUDIT BEFORE YOU ANALYSE
+Every turn carries a DATA INTEGRITY block with a verdict EdgeDesk computed deterministically over the evidence, before you saw it. Read it first. It is not advisory.
+- PASS — proceed normally.
+- WARNING — you may answer, but the caveat leads. Put it in your FIRST line, label the conclusion provisional, and name the specific defect and the date it dates from. Never bury a data warning at the bottom of a confident answer; a reader who stops after your ranking must already know it was provisional.
+- FAIL — you are NOT permitted to publish a ranking, a top-three, a "best" or "worst" list, or any confident comparison built on the failing evidence. Say plainly that the data is not clean enough to rank, name exactly what failed and which entities it touched, give whatever partial observation is still safe (clearly labelled as such), and say what would have to be repaired. A refusal that names the fault is worth more than a sophisticated-looking ranking assembled from corrupted joins.
+Two failures matter most and you must never explain either away in prose. IDENTICAL STATISTICAL PROFILES on different players are a duplication fault, not a coincidence and not "the same Statcast layer" — distinct players do not share a whole feature vector. A PITCHER ATTACHED TO A TEAM NOT PLAYING IN HIS OWN GAME is a broken join, and every downstream sentence about who faces whom is unsafe. If you find yourself writing a sentence that rationalises either one, stop and report the fault instead.
 
 ANSWER THE QUESTION THAT WAS ASKED
 Rank by the axis the question names, not the axis you find more interesting. "Best pitchers" means the best pitchers — the strongest arms on the card, ranked by quality, with the best one at #1. "Worst" and "most exploitable" mean the other direction. Never silently invert the axis, never open a ranking by restating the question as a different one, and never bury the true answer to the asked question in a footnote at the bottom. Where the more useful betting angle runs the other way, give the asked-for ranking FIRST, in full, then add the other angle in a clearly separate section — as an addition, never as a substitution.
@@ -179,6 +187,7 @@ interface ResearchOut {
   ms: number;
   log: { table: string; ms: number; rows: number; error: string | null }[];
   completeness: Completeness;
+  integrity: Integrity;
   coverage: ReturnType<typeof coverage>[];
   snapshot: Snapshot | null;
   changed: ReturnType<typeof diffSnapshots> | null;
@@ -395,7 +404,7 @@ async function runResearch(
     plan, state, evidence, conflicts, unavailable: unavail, attack, memory,
     data_path, focus, calls: dal.calls, ms: Date.now() - t0, log: dal.log,
     completeness: comp, coverage: cov, snapshot, changed, findings, queue,
-    cross, movement,
+    cross, movement, integrity: dataIntegrity(evidence),
   };
 }
 
@@ -403,6 +412,15 @@ async function runResearch(
 /* PROMPT ASSEMBLY                                                          */
 /* ======================================================================== */
 
+/* Evidence gets its own, much larger budget than the ancillary blocks. A full
+   MLB slate is ~69KB of evidence; at 60KB it was being cut in half mid-object.
+   ~240KB is roughly 60k tokens — comfortably inside the context window, and
+   large enough that a real slate never truncates at all. */
+const EVIDENCE_MAX = Number(Deno.env.get("EDGEDESK_EVIDENCE_MAX") ?? "240000");
+
+/* For everything OTHER than evidence. Still a blind slice, but these blocks
+   (movement reads, queues, data paths) are prose-ish and degrade gracefully;
+   evidence does not, which is why it no longer uses this. */
 function compact(o: unknown, max = 60000): string {
   const s = JSON.stringify(o);
   return s.length > max ? s.slice(0, max) + `…[truncated at ${max} chars]` : s;
@@ -426,13 +444,38 @@ function buildUserContent(body: any, research: ResearchOut | null): string {
       + `Retrievals: ${research.calls} reads in ${research.ms}ms`,
     );
 
+    /* Placed BEFORE the evidence, deliberately: the verdict has to be read
+       before the numbers it governs, not after them. */
+    {
+      const g = research.integrity;
+      parts.push(
+        `DATA INTEGRITY — ${g.verdict}\n`
+        + g.checks.map((c) => `- [${c.status}] ${c.name}: ${c.detail}`
+          + (c.entities?.length ? `\n    affected: ${c.entities.join("; ")}` : "")).join("\n")
+        + (g.verdict === "FAIL"
+          ? "\nYou may NOT publish a ranking or a confident comparison from this evidence. Report the fault, "
+            + "name the entities it touches, and say what would have to be repaired."
+          : g.verdict === "WARNING"
+            ? "\nLead with this caveat in your first line and label any conclusion provisional."
+            : ""),
+      );
+    }
+
     const usable = research.evidence.filter((e) => e.status !== "UNAVAILABLE");
     if (usable.length) {
+      /* EVIDENCE_MAX is deliberately large: a 30-starter MLB slate serializes
+         to ~69,000 characters, and the old 60,000 default silently severed it
+         mid-object. Evidence is the one block that must never be trimmed to
+         make room for something else — it is the entire factual basis of the
+         answer. Whole items only, and anything withheld is named below. */
+      const b = budgetEvidence(usable, EVIDENCE_MAX);
       parts.push(
         "EVIDENCE — retrieved from EdgeDesk's own tables just now. These are the facts you may use; "
         + "quote their values exactly and respect each item's status and freshness:\n"
-        + compact(usable),
+        + b.text,
       );
+      if (b.droppedNote) parts.push("EVIDENCE WITHHELD — " + b.droppedNote);
+      (research as any).evidence_shown = { included: b.included, withheld: b.dropped };
     }
 
     if (research.attack) {
@@ -791,6 +834,16 @@ export async function handle(req: Request): Promise<Response> {
           retrievals: research.calls, ms: research.ms,
           sources: Array.from(new Set(research.evidence.map((e) => e.source))),
           evidence_count: research.evidence.filter((e) => e.status !== "UNAVAILABLE").length,
+          /* How much of that count actually reached the model. When these
+             differ, coverage is describing more than the answer could see. */
+          evidence_shown: (research as any).evidence_shown ?? null,
+          /* The panel renders this as a banner above the answer, so a FAIL is
+             visible without reading to the bottom. */
+          integrity: {
+            verdict: research.integrity.verdict,
+            summary: research.integrity.summary,
+            failed: research.integrity.checks.filter((c) => c.status !== "PASS"),
+          },
           unavailable: research.unavailable,
           conflicts: research.conflicts.length,
           attack: research.attack?.status ?? null,

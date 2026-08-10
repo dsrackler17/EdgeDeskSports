@@ -18,7 +18,7 @@ import {
   Dal, classify, deriveState, attackThesis, findConflicts, completeness, coverage,
   freshnessOf, ev, resolveTeams, personKey, etDay, clearCache,
   buildSnapshot, diffSnapshots, extractFindings, scout, MODE_OF_INTENT,
-  crossMarketFlags, movementRead, rankingAxis,
+  crossMarketFlags, movementRead, rankingAxis, budgetEvidence, dataIntegrity,
 } from "./_lib.ts";
 
 /* ------------------------------------------------------------ harness */
@@ -999,6 +999,218 @@ section("A ranking question is answered on the axis it asked for");
     classify("worst starters today", null).intent, "worst_pitchers");
   ok("R14 best and worst do not collapse to one intent",
     classify("best pitchers today", null).intent !== classify("worst pitchers today", null).intent);
+}
+
+/* The live failure: a 30-starter slate serialized to ~69,000 chars against a
+   60,000-char cap, so the evidence string was cut mid-object. The model filled
+   the severed tail from the last complete record it had seen and reported
+   three different pitchers with one identical stat line — while coverage,
+   computed over the full array, still said 30/30. */
+section("Evidence is never cut in half, and what is withheld is named");
+{
+  const item = (i: number) => ({
+    source: "MLB Stats API", entity: `Pitcher ${i}`, field: "pitcher_quality",
+    status: "VERIFIED", freshness: "CURRENT",
+    value: { name: `Pitcher ${i}`, era: 2.5 + i / 100, xera: 3.1 + i / 100, filler: "x".repeat(200) },
+  });
+  const many = Array.from({ length: 30 }, (_, i) => item(i));
+  const whole = JSON.stringify(many);
+
+  // Generous budget: nothing is lost and the text is byte-identical.
+  const full = budgetEvidence(many, whole.length + 10);
+  eq("B1 nothing is dropped when it all fits", full.dropped, 0);
+  eq("B2 every item is included", full.included, 30);
+  eq("B3 the output is exactly the array", full.text, whole);
+  eq("B4 no withheld note when nothing was withheld", full.droppedNote, null);
+
+  // Tight budget: this is the case that used to sever the string.
+  const tight = budgetEvidence(many, 2000);
+  ok("B5 some items are withheld under a tight budget", tight.dropped > 0, tight);
+  ok("B6 ...and some still get through", tight.included > 0, tight);
+  eq("B7 included + withheld accounts for every item", tight.included + tight.dropped, 30);
+
+  // The whole point: the result must still PARSE.
+  let parsed: any = null, threw = false;
+  try { parsed = JSON.parse(tight.text); } catch { threw = true; }
+  ok("B8 the truncated output is still valid JSON", !threw);
+  ok("B9 it parses to an array", Array.isArray(parsed));
+  eq("B10 with exactly the included count", parsed?.length, tight.included);
+
+  // Every surviving item is whole — no half-objects with missing fields.
+  ok("B11 every item that survived is complete",
+    (parsed ?? []).every((p: any) => p && p.value && typeof p.value.era === "number"
+      && typeof p.value.xera === "number" && p.entity && p.field));
+
+  // And no two survivors share a stat line, which is the reported symptom.
+  const eras = (parsed ?? []).map((p: any) => p.value.era);
+  eq("B12 no two surviving pitchers share an ERA", new Set(eras).size, eras.length);
+
+  ok("B13 the withheld items are named, not just counted", !!tight.droppedNote
+    && /Pitcher \d+ \(pitcher_quality\)/.test(tight.droppedNote));
+  ok("B14 the note says they were retrieved, not missing from the database",
+    /RETRIEVED SUCCESSFULLY/.test(tight.droppedNote ?? ""));
+  ok("B15 the note forbids reusing another entity's numbers",
+    /do not reuse another entity's numbers/i.test(tight.droppedNote ?? ""));
+  ok("B16 the note states the count", /\d+ retrieved items were withheld/.test(tight.droppedNote ?? ""));
+
+  // A budget too small for even one item must not produce garbage.
+  const none = budgetEvidence(many, 5);
+  eq("B17 an impossible budget yields an empty array, not a fragment", none.text, "[]");
+  eq("B18 ...and reports everything as withheld", none.dropped, 30);
+  ok("B19 ...and still parses", Array.isArray(JSON.parse(none.text)));
+
+  eq("B20 an empty evidence set is an empty array", budgetEvidence([], 1000).text, "[]");
+
+  /* The real measurement: a realistic full slate must fit the shipped budget
+     without dropping anything, so the common case never truncates at all. */
+  const slate: any[] = [];
+  const NOTE = "Traditional line from the MLB Stats API; Statcast fields (xERA, xwOBA, barrel%, hard-hit%, "
+    + "whiff%) read directly from Baseball Savant because pitcher_features is empty. CSW%, pitch mix and "
+    + "velocity are in neither feed and are not approximated.";
+  for (let i = 0; i < 30; i++) {
+    /* The real emitted shape, field for field, so the size assertion below is
+       a measurement of production and not of a toy. */
+    slate.push({
+      source: "MLB Stats API", entity: `Starter Name ${i}`, field: "pitcher_quality", relevance: "pitching",
+      status: "VERIFIED", freshness: "CURRENT", retrieved_at: "2026-08-10T18:00:00.000Z",
+      source_timestamp: "2026-08-10T18:00:00.000Z", note: NOTE,
+      value: {
+        name: `Starter Name ${i}`, team: "Los Angeles Dodgers",
+        game: "Kansas City Royals @ Los Angeles Dodgers", throws: "R",
+        era: 2.78, whip: 1.02, fip: 3.11,
+        fip_note: "FIP from owned counting stats; league constant 3.142 solved from this season's league totals, not assumed.",
+        k_pct: 21.9, bb_pct: 6.1, k_per_9: 9.4, bb_per_9: 2.6, k_bb_ratio: 3.31, hr_per_9: 1.02,
+        ground_to_air: 1.11, batted_ball_lean: "neutral", strike_pct: .655, pitches_per_inning: 14.52,
+        innings: "121.2", innings_num: 121.7, batters_faced: 498, games_started: 22,
+        xera: 3.70, xwoba_against: .291, barrel_pct: 6.5, hardhit_pct: 38.0, whiff_pct: 23.2,
+        statcast_k_pct: 21.9, statcast_bb_pct: 6.1, era_vs_xera: -0.92,
+        era_vs_xera_note: "ERA minus xERA. Positive means the ERA is worse than the contact he allowed — the arm may be better than the line suggests, and vice versa.",
+        statcast_source: "Baseball Savant (Statcast)", missing_fields: ["csw_pct", "pitch_mix", "velocity"],
+      },
+    });
+    slate.push({
+      source: "MLB Stats API", entity: `Starter Name ${i}`, field: "workload", relevance: "pitching",
+      status: "VERIFIED", freshness: "CURRENT", retrieved_at: "2026-08-10T18:00:00.000Z",
+      value: { days_rest: 5, last_start: "2026-08-05",
+        recent_starts: [1, 2, 3].map(() => ({ date: "2026-08-05", ip: "6.0", pitches: 83, er: 2 })) },
+    });
+  }
+  for (let i = 0; i < 30; i++) {
+    slate.push({
+      source: "MLB Stats API", entity: `Team Name ${i}`, field: "opponent_offense", relevance: "hitting",
+      status: "VERIFIED", freshness: "CURRENT", retrieved_at: "2026-08-10T18:00:00.000Z",
+      value: { split: "vs RHP", avg: .252, obp: .308, slg: .392, ops: .700, iso: .140, k_pct: 18.9,
+        bb_pct: 7.4, runs_per_game: 4.31, home_runs: 132, plate_appearances: 4210, at_bats: 3811,
+        missing_fields: [] },
+    });
+  }
+  const slateSize = JSON.stringify(slate).length;
+  ok("B21 a full slate really is bigger than the old 60,000-char cap", slateSize > 60000, slateSize);
+  const shipped = budgetEvidence(slate, 240000);
+  eq("B22 ...and fits the shipped budget with nothing withheld", shipped.dropped, 0);
+  eq("B23 ...delivering every item", shipped.included, slate.length);
+  ok("B24 the old cap would have dropped items", budgetEvidence(slate, 60000).dropped > 0);
+}
+
+/* Built from the exact output that exposed it: Skubal, Gray and Peralta ranked
+   1-2-3 with one identical stat line between them, and the engine explaining
+   the coincidence away as "EdgeDesk read the same Statcast layer for all
+   three" instead of reporting a duplication fault. */
+section("Data integrity is audited before anything is allowed to rank it");
+{
+  const NOW = Date.parse("2026-08-10T18:00:00Z");
+  const line = (era: number) => ({
+    era, whip: 1.02, fip: 3.11, xera: 3.70, barrel_pct: 6.5, hardhit_pct: 38.0,
+    whiff_pct: 23.2, k_pct: 21.9, bb_pct: 6.1,
+  });
+  const arm = (name: string, team: string, game: string, v: any) => ({
+    source: "MLB Stats API", entity: name, field: "pitcher_quality",
+    status: "VERIFIED", freshness: "CURRENT", source_timestamp: "2026-08-10T12:00:00Z",
+    value: { name, team, game, ...v },
+  }) as any;
+
+  const clean = [
+    arm("Tarik Skubal", "Los Angeles Dodgers", "Kansas City Royals @ Los Angeles Dodgers", line(2.78)),
+    arm("Sonny Gray", "Boston Red Sox", "Boston Red Sox @ Toronto Blue Jays", line(3.41)),
+    arm("Jameson Taillon", "Toronto Blue Jays", "Boston Red Sox @ Toronto Blue Jays", line(5.96)),
+  ];
+  const g1 = dataIntegrity(clean, { now: NOW });
+  eq("G1 clean evidence passes", g1.verdict, "PASS");
+  eq("G2 ...with no failing checks", g1.checks.filter((c) => c.status !== "PASS").length, 0);
+  ok("G3 the identity check actually ran", g1.checks.some((c) =>
+    c.name === "identity_chain" && /All 3 starters resolve/.test(c.detail)));
+  eq("G4 summary says so", g1.summary, "All integrity checks passed.");
+
+  /* The reported bug: three different arms, one identical vector. */
+  const dupes = [
+    arm("Tarik Skubal", "Los Angeles Dodgers", "Kansas City Royals @ Los Angeles Dodgers", line(2.78)),
+    arm("Sonny Gray", "Boston Red Sox", "Boston Red Sox @ Toronto Blue Jays", line(2.78)),
+    arm("Freddy Peralta", "Athletics", "Tampa Bay Rays @ Athletics", line(2.78)),
+  ];
+  const g2 = dataIntegrity(dupes, { now: NOW });
+  eq("G5 identical profiles across players is a FAIL", g2.verdict, "FAIL");
+  const dupChk = g2.checks.find((c) => c.name === "duplicate_pitcher_stats")!;
+  eq("G6 the duplication check is the one that failed", dupChk.status, "FAIL");
+  ok("G7 all three duplicated arms are named", ["Tarik Skubal", "Sonny Gray", "Freddy Peralta"]
+    .every((n) => (dupChk.entities ?? []).includes(n)));
+  ok("G8 the detail rejects the coincidence explanation",
+    /do not share a whole feature vector/.test(dupChk.detail));
+
+  /* The broken join: a pitcher on a team that is not in his own game. */
+  const wrongTeam = [
+    arm("Tarik Skubal", "Detroit Tigers", "Kansas City Royals @ Los Angeles Dodgers", line(2.78)),
+    arm("Sonny Gray", "Boston Red Sox", "Boston Red Sox @ Toronto Blue Jays", line(3.41)),
+  ];
+  const g3 = dataIntegrity(wrongTeam, { now: NOW });
+  eq("G9 a pitcher outside his own game is a FAIL", g3.verdict, "FAIL");
+  const idChk = g3.checks.find((c) => c.name === "identity_chain")!;
+  eq("G10 the identity check is what caught it", idChk.status, "FAIL");
+  ok("G11 it names the pitcher and both sides", (idChk.entities ?? [])[0]?.includes("Tarik Skubal")
+    && (idChk.entities ?? [])[0]?.includes("Detroit Tigers"));
+  eq("G12 the correctly-joined arm is not accused", (idChk.entities ?? []).length, 1);
+
+  /* Staleness: the "latest pitcher_features date is 2026-07-19" case. */
+  const stale = [
+    arm("A Pitcher", "Team A", "Team A @ Team B", line(3.10)),
+    arm("B Pitcher", "Team B", "Team A @ Team B", line(4.20)),
+  ].map((e) => ({ ...e, source_timestamp: "2026-07-19T12:00:00Z" }));
+  const g4 = dataIntegrity(stale as any, { now: NOW });
+  eq("G13 22-day-old pitcher data is a WARNING, not a silent pass", g4.verdict, "WARNING");
+  const fresh = g4.checks.find((c) => c.name === "freshness")!;
+  ok("G14 the age is stated in days", /22 days old/.test(fresh.detail));
+  ok("G15 ...with the date it dates from", /2026-07-19/.test(fresh.detail));
+  ok("G16 ...and it demands the caveat lead, not trail",
+    /UP FRONT, not disclosed at the end/.test(fresh.detail));
+
+  eq("G17 WARNING alone never suppresses the answer entirely", g4.verdict === "FAIL", false);
+
+  /* FAIL must dominate WARNING when both are present. */
+  const both = [...dupes.map((e) => ({ ...e, source_timestamp: "2026-07-19T12:00:00Z" }))];
+  eq("G18 a FAIL outranks a co-occurring WARNING", dataIntegrity(both as any, { now: NOW }).verdict, "FAIL");
+
+  /* Guards against false positives. */
+  const sparse = [
+    arm("X", "Team A", "Team A @ Team B", { era: 3.0 }),
+    arm("Y", "Team B", "Team A @ Team B", { era: 3.0 }),
+  ];
+  eq("G19 two sparse rows sharing one number is not a duplication fault",
+    dataIntegrity(sparse, { now: NOW }).checks.find((c) => c.name === "duplicate_pitcher_stats")!.status, "PASS");
+  eq("G20 an empty evidence set does not FAIL",
+    dataIntegrity([], { now: NOW }).verdict === "FAIL", false);
+  ok("G21 the same pitcher appearing twice is not flagged as two players sharing a line",
+    dataIntegrity([clean[0], { ...clean[0] }], { now: NOW })
+      .checks.find((c) => c.name === "duplicate_pitcher_stats")!.status === "PASS");
+
+  /* Offense duplication is suspicious but not disqualifying. */
+  const off = (team: string) => ({
+    source: "MLB Stats API", entity: team, field: "opponent_offense", status: "VERIFIED",
+    freshness: "CURRENT", source_timestamp: "2026-08-10T12:00:00Z",
+    value: { avg: .252, obp: .308, slg: .392, ops: .700, iso: .140, k_pct: 18.9 },
+  }) as any;
+  const g5 = dataIntegrity([...clean, off("Kansas City Royals"), off("Toronto Blue Jays")], { now: NOW });
+  eq("G22 two lineups sharing a full split is a WARNING", g5.verdict, "WARNING");
+  eq("G23 ...from the offense check specifically",
+    g5.checks.find((c) => c.name === "duplicate_offense_stats")!.status, "WARNING");
 }
 
 console.log(`\n${failed === 0 ? "ALL GREEN" : "FAILURES"} — ${passed} passed, ${failed} failed`);

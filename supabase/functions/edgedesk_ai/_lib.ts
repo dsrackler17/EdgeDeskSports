@@ -66,6 +66,211 @@ export type Mode =
   | "FAST" | "DEEP" | "ATTACK" | "COMPARE" | "HISTORICAL"
   | "MARKET" | "MATCHUP" | "SLATE" | "SCOUT" | "POSTMORTEM";
 
+/* ========================================================================
+   DATA INTEGRITY — audit the evidence BEFORE anything is allowed to rank it.
+   ======================================================================== */
+
+export type IntegrityVerdict = "PASS" | "WARNING" | "FAIL";
+
+export interface IntegrityCheck {
+  name: string;
+  status: IntegrityVerdict;
+  detail: string;
+  entities?: string[];
+}
+
+export interface Integrity {
+  verdict: IntegrityVerdict;
+  checks: IntegrityCheck[];
+  summary: string;
+}
+
+/** Numeric identity of a stat row, used to spot the same row served twice. */
+function statFingerprint(v: any): string | null {
+  if (!v || typeof v !== "object") return null;
+  const SKIP = new Set(["plate_appearances", "at_bats", "batters_faced", "games_started", "home_runs"]);
+  const keys = Object.keys(v).filter((k) => typeof v[k] === "number" && !SKIP.has(k)).sort();
+  // Two or three coincidental matches happen; a whole vector matching does not.
+  if (keys.length < 4) return null;
+  return keys.map((k) => `${k}=${v[k]}`).join("|");
+}
+
+const AGE_DAYS = (iso: unknown, now: number): number | null => {
+  const t = Date.parse(String(iso ?? ""));
+  return Number.isFinite(t) ? (now - t) / 86400000 : null;
+};
+
+/**
+ * Decide whether this evidence deserves to be analysed at all.
+ *
+ * Built after a slate answer ranked Skubal, Gray and Peralta as the three best
+ * arms on the card while quoting one identical stat line for all three — and
+ * explained the coincidence away in prose rather than treating it as a fault.
+ * A convincing paragraph assembled from badly joined data is more dangerous
+ * than an obvious gap, because nothing about it looks wrong.
+ *
+ * So the audit is deterministic and runs first. The model is told the verdict
+ * and, on FAIL, is not permitted to publish a ranking at all. Auditing whether
+ * the data deserves analysis is the job, not a preamble to it.
+ */
+export function dataIntegrity(
+  evidence: Evidence[],
+  opts: { now?: number; staleDays?: number } = {},
+): Integrity {
+  const now = opts.now ?? Date.now();
+  const staleDays = opts.staleDays ?? 3;
+  const checks: IntegrityCheck[] = [];
+  const usable = evidence.filter((e) => e.status !== "UNAVAILABLE");
+
+  const byField = (f: string) => usable.filter((e) => e.field === f);
+  const pitchers = byField("pitcher_quality");
+  const offenses = byField("opponent_offense");
+
+  /* 1. IDENTITY — a pitcher's team must be one of the two teams in his game. */
+  {
+    const bad: string[] = [];
+    let checked = 0;
+    for (const e of pitchers) {
+      const v = e.value as any;
+      const team = String(v?.team ?? "").trim();
+      const game = String(v?.game ?? "").trim();
+      if (!team || !game || !game.includes("@")) continue;
+      checked++;
+      const sides = game.split("@").map((s) => s.trim().toLowerCase());
+      if (!sides.some((s) => s === team.toLowerCase())) {
+        bad.push(`${v?.name ?? e.entity}: listed with ${team} but scheduled in "${game}"`);
+      }
+    }
+    checks.push(bad.length
+      ? { name: "identity_chain", status: "FAIL", entities: bad.slice(0, 8),
+          detail: `${bad.length} of ${checked} starters are attached to a team that is not playing in their own game. `
+            + `Pitcher -> team -> game does not resolve, so any statement about who faces whom is unsafe.` }
+      : { name: "identity_chain", status: "PASS",
+          detail: checked
+            ? `All ${checked} starters resolve pitcher -> team -> game consistently.`
+            : "No starter carried both a team and a game to cross-check." });
+  }
+
+  /* 2. DUPLICATION — the same numeric vector on two different people. */
+  for (const [label, items, status] of [
+    ["pitcher_stats", pitchers, "FAIL"],
+    ["offense_stats", offenses, "WARNING"],
+  ] as [string, Evidence[], IntegrityVerdict][]) {
+    const seen = new Map<string, string[]>();
+    for (const e of items) {
+      const fp = statFingerprint(e.value);
+      if (!fp) continue;
+      const who = String((e.value as any)?.name ?? e.entity ?? "?");
+      const at = seen.get(fp) ?? [];
+      if (!at.includes(who)) at.push(who);
+      seen.set(fp, at);
+    }
+    const dupes = [...seen.values()].filter((g) => g.length > 1);
+    const affected = dupes.flat();
+    checks.push(dupes.length
+      ? { name: `duplicate_${label}`, status, entities: affected.slice(0, 12),
+          detail: `${dupes.length} identical statistical profile${dupes.length === 1 ? "" : "s"} shared across `
+            + `${affected.length} different entities: ${dupes.map((g) => g.join(" = ")).slice(0, 4).join("; ")}. `
+            + `Distinct players do not share a whole feature vector — this is one record served more than once.` }
+      : { name: `duplicate_${label}`, status: "PASS",
+          detail: `No two of the ${items.length} ${label.replace("_", " ")} rows share a full numeric profile.` });
+  }
+
+  /* 3. FRESHNESS — how old is the newest thing we are ranking on. */
+  {
+    const ages = pitchers.map((e) => AGE_DAYS(e.source_timestamp ?? e.retrieved_at, now))
+      .filter((a): a is number => a != null);
+    if (!ages.length) {
+      checks.push({ name: "freshness", status: "WARNING",
+        detail: "No pitcher row carried a source timestamp, so its age cannot be established." });
+    } else {
+      const newest = Math.min(...ages);
+      const when = new Date(now - newest * 86400000).toISOString().slice(0, 10);
+      checks.push(newest > staleDays
+        ? { name: "freshness", status: "WARNING",
+            detail: `The most recent pitcher record is ${Math.round(newest)} days old (${when}). `
+              + `Any ranking built on it is provisional and must be labelled as such UP FRONT, not disclosed at the end.` }
+        : { name: "freshness", status: "PASS",
+            detail: `Newest pitcher record is ${newest < 1 ? "under a day" : Math.round(newest) + " days"} old.` });
+    }
+  }
+
+  /* 4. NAMED SUBJECTS — an unnamed row cannot be attributed to anyone. */
+  {
+    const anon = usable.filter((e) => !String(e.entity ?? "").trim()).length;
+    checks.push(anon
+      ? { name: "attribution", status: "WARNING",
+          detail: `${anon} evidence items carry no entity name, so their values cannot be safely attributed.` }
+      : { name: "attribution", status: "PASS", detail: "Every evidence item names its subject." });
+  }
+
+  const verdict: IntegrityVerdict = checks.some((c) => c.status === "FAIL")
+    ? "FAIL"
+    : checks.some((c) => c.status === "WARNING") ? "WARNING" : "PASS";
+
+  const failed = checks.filter((c) => c.status !== "PASS");
+  const summary = verdict === "PASS"
+    ? "All integrity checks passed."
+    : `${verdict}: ` + failed.map((c) => c.name).join(", ");
+
+  return { verdict, checks, summary };
+}
+
+/**
+ * Serialize evidence to a character budget WITHOUT ever cutting an item in half.
+ *
+ * This replaces a blind `JSON.stringify(...).slice(0, max)`. On a 30-starter
+ * MLB slate the evidence array is ~69,000 characters against a 60,000 cap, so
+ * the tail was severed mid-object — the model received a JSON string that
+ * ended inside a key, and filled the hole from the last complete record it had
+ * seen. That is what produced three different pitchers sharing one stat line
+ * and two different lineups sharing one split. Worse, `coverage` is computed
+ * server-side over the FULL array, so it kept reporting 30/30 for data the
+ * model had never been shown: the honesty layer was certifying an absence.
+ *
+ * So: whole items only, and whatever will not fit is NAMED. A model told
+ * "8 items were withheld, here is what they were" can say the slate is
+ * incomplete. A model handed a severed string cannot even know it happened.
+ */
+export interface EvidenceBudget {
+  text: string;
+  included: number;
+  dropped: number;
+  droppedNote: string | null;
+}
+
+export function budgetEvidence(items: unknown[], max: number): EvidenceBudget {
+  const encoded = items.map((it) => ({ it, s: JSON.stringify(it) ?? "null" }));
+  const kept: string[] = [];
+  const lost: string[] = [];
+  let size = 2; // the enclosing [ ]
+
+  for (const { it, s } of encoded) {
+    // +1 for the separating comma once there is something to separate from.
+    const cost = s.length + (kept.length ? 1 : 0);
+    if (size + cost <= max) { kept.push(s); size += cost; continue; }
+    const e = it as any;
+    lost.push(`${e?.entity ?? "?"} (${e?.field ?? "?"})`);
+  }
+
+  let droppedNote: string | null = null;
+  if (lost.length) {
+    // Name as many as will fit in a readable line; count the rest.
+    const shown: string[] = [];
+    let n = 0;
+    for (const l of lost) { if (n + l.length > 900) break; shown.push(l); n += l.length + 2; }
+    droppedNote =
+      `${lost.length} retrieved item${lost.length === 1 ? " was" : "s were"} withheld from this message `
+      + `because the evidence exceeded the size budget: ${shown.join(", ")}`
+      + (shown.length < lost.length ? `, and ${lost.length - shown.length} more` : "")
+      + ". These were RETRIEVED SUCCESSFULLY but are not shown to you. You do not have their values. "
+      + "Do not state, estimate or carry over figures for them, and do not reuse another entity's numbers "
+      + "in their place — say the slate is larger than what you were shown and name what is missing.";
+  }
+
+  return { text: `[${kept.join(",")}]`, included: kept.length, dropped: lost.length, droppedNote };
+}
+
 /**
  * The direction a ranking question runs in, restated next to the intent.
  *

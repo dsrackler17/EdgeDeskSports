@@ -110,6 +110,211 @@ export type Mode =
   | "FAST" | "DEEP" | "ATTACK" | "COMPARE" | "HISTORICAL"
   | "MARKET" | "MATCHUP" | "SLATE" | "SCOUT" | "POSTMORTEM";
 
+/* ========================================================================
+   DATA INTEGRITY — audit the evidence BEFORE anything is allowed to rank it.
+   ======================================================================== */
+
+export type IntegrityVerdict = "PASS" | "WARNING" | "FAIL";
+
+export interface IntegrityCheck {
+  name: string;
+  status: IntegrityVerdict;
+  detail: string;
+  entities?: string[];
+}
+
+export interface Integrity {
+  verdict: IntegrityVerdict;
+  checks: IntegrityCheck[];
+  summary: string;
+}
+
+/** Numeric identity of a stat row, used to spot the same row served twice. */
+function statFingerprint(v: any): string | null {
+  if (!v || typeof v !== "object") return null;
+  const SKIP = new Set(["plate_appearances", "at_bats", "batters_faced", "games_started", "home_runs"]);
+  const keys = Object.keys(v).filter((k) => typeof v[k] === "number" && !SKIP.has(k)).sort();
+  // Two or three coincidental matches happen; a whole vector matching does not.
+  if (keys.length < 4) return null;
+  return keys.map((k) => `${k}=${v[k]}`).join("|");
+}
+
+const AGE_DAYS = (iso: unknown, now: number): number | null => {
+  const t = Date.parse(String(iso ?? ""));
+  return Number.isFinite(t) ? (now - t) / 86400000 : null;
+};
+
+/**
+ * Decide whether this evidence deserves to be analysed at all.
+ *
+ * Built after a slate answer ranked Skubal, Gray and Peralta as the three best
+ * arms on the card while quoting one identical stat line for all three — and
+ * explained the coincidence away in prose rather than treating it as a fault.
+ * A convincing paragraph assembled from badly joined data is more dangerous
+ * than an obvious gap, because nothing about it looks wrong.
+ *
+ * So the audit is deterministic and runs first. The model is told the verdict
+ * and, on FAIL, is not permitted to publish a ranking at all. Auditing whether
+ * the data deserves analysis is the job, not a preamble to it.
+ */
+export function dataIntegrity(
+  evidence: Evidence[],
+  opts: { now?: number; staleDays?: number } = {},
+): Integrity {
+  const now = opts.now ?? Date.now();
+  const staleDays = opts.staleDays ?? 3;
+  const checks: IntegrityCheck[] = [];
+  const usable = evidence.filter((e) => e.status !== "UNAVAILABLE");
+
+  const byField = (f: string) => usable.filter((e) => e.field === f);
+  const pitchers = byField("pitcher_quality");
+  const offenses = byField("opponent_offense");
+
+  /* 1. IDENTITY — a pitcher's team must be one of the two teams in his game. */
+  {
+    const bad: string[] = [];
+    let checked = 0;
+    for (const e of pitchers) {
+      const v = e.value as any;
+      const team = String(v?.team ?? "").trim();
+      const game = String(v?.game ?? "").trim();
+      if (!team || !game || !game.includes("@")) continue;
+      checked++;
+      const sides = game.split("@").map((s) => s.trim().toLowerCase());
+      if (!sides.some((s) => s === team.toLowerCase())) {
+        bad.push(`${v?.name ?? e.entity}: listed with ${team} but scheduled in "${game}"`);
+      }
+    }
+    checks.push(bad.length
+      ? { name: "identity_chain", status: "FAIL", entities: bad.slice(0, 8),
+          detail: `${bad.length} of ${checked} starters are attached to a team that is not playing in their own game. `
+            + `Pitcher -> team -> game does not resolve, so any statement about who faces whom is unsafe.` }
+      : { name: "identity_chain", status: "PASS",
+          detail: checked
+            ? `All ${checked} starters resolve pitcher -> team -> game consistently.`
+            : "No starter carried both a team and a game to cross-check." });
+  }
+
+  /* 2. DUPLICATION — the same numeric vector on two different people. */
+  for (const [label, items, status] of [
+    ["pitcher_stats", pitchers, "FAIL"],
+    ["offense_stats", offenses, "WARNING"],
+  ] as [string, Evidence[], IntegrityVerdict][]) {
+    const seen = new Map<string, string[]>();
+    for (const e of items) {
+      const fp = statFingerprint(e.value);
+      if (!fp) continue;
+      const who = String((e.value as any)?.name ?? e.entity ?? "?");
+      const at = seen.get(fp) ?? [];
+      if (!at.includes(who)) at.push(who);
+      seen.set(fp, at);
+    }
+    const dupes = [...seen.values()].filter((g) => g.length > 1);
+    const affected = dupes.flat();
+    checks.push(dupes.length
+      ? { name: `duplicate_${label}`, status, entities: affected.slice(0, 12),
+          detail: `${dupes.length} identical statistical profile${dupes.length === 1 ? "" : "s"} shared across `
+            + `${affected.length} different entities: ${dupes.map((g) => g.join(" = ")).slice(0, 4).join("; ")}. `
+            + `Distinct players do not share a whole feature vector — this is one record served more than once.` }
+      : { name: `duplicate_${label}`, status: "PASS",
+          detail: `No two of the ${items.length} ${label.replace("_", " ")} rows share a full numeric profile.` });
+  }
+
+  /* 3. FRESHNESS — how old is the newest thing we are ranking on. */
+  {
+    const ages = pitchers.map((e) => AGE_DAYS(e.source_timestamp ?? e.retrieved_at, now))
+      .filter((a): a is number => a != null);
+    if (!ages.length) {
+      checks.push({ name: "freshness", status: "WARNING",
+        detail: "No pitcher row carried a source timestamp, so its age cannot be established." });
+    } else {
+      const newest = Math.min(...ages);
+      const when = new Date(now - newest * 86400000).toISOString().slice(0, 10);
+      checks.push(newest > staleDays
+        ? { name: "freshness", status: "WARNING",
+            detail: `The most recent pitcher record is ${Math.round(newest)} days old (${when}). `
+              + `Any ranking built on it is provisional and must be labelled as such UP FRONT, not disclosed at the end.` }
+        : { name: "freshness", status: "PASS",
+            detail: `Newest pitcher record is ${newest < 1 ? "under a day" : Math.round(newest) + " days"} old.` });
+    }
+  }
+
+  /* 4. NAMED SUBJECTS — an unnamed row cannot be attributed to anyone. */
+  {
+    const anon = usable.filter((e) => !String(e.entity ?? "").trim()).length;
+    checks.push(anon
+      ? { name: "attribution", status: "WARNING",
+          detail: `${anon} evidence items carry no entity name, so their values cannot be safely attributed.` }
+      : { name: "attribution", status: "PASS", detail: "Every evidence item names its subject." });
+  }
+
+  const verdict: IntegrityVerdict = checks.some((c) => c.status === "FAIL")
+    ? "FAIL"
+    : checks.some((c) => c.status === "WARNING") ? "WARNING" : "PASS";
+
+  const failed = checks.filter((c) => c.status !== "PASS");
+  const summary = verdict === "PASS"
+    ? "All integrity checks passed."
+    : `${verdict}: ` + failed.map((c) => c.name).join(", ");
+
+  return { verdict, checks, summary };
+}
+
+/**
+ * Serialize evidence to a character budget WITHOUT ever cutting an item in half.
+ *
+ * This replaces a blind `JSON.stringify(...).slice(0, max)`. On a 30-starter
+ * MLB slate the evidence array is ~69,000 characters against a 60,000 cap, so
+ * the tail was severed mid-object — the model received a JSON string that
+ * ended inside a key, and filled the hole from the last complete record it had
+ * seen. That is what produced three different pitchers sharing one stat line
+ * and two different lineups sharing one split. Worse, `coverage` is computed
+ * server-side over the FULL array, so it kept reporting 30/30 for data the
+ * model had never been shown: the honesty layer was certifying an absence.
+ *
+ * So: whole items only, and whatever will not fit is NAMED. A model told
+ * "8 items were withheld, here is what they were" can say the slate is
+ * incomplete. A model handed a severed string cannot even know it happened.
+ */
+export interface EvidenceBudget {
+  text: string;
+  included: number;
+  dropped: number;
+  droppedNote: string | null;
+}
+
+export function budgetEvidence(items: unknown[], max: number): EvidenceBudget {
+  const encoded = items.map((it) => ({ it, s: JSON.stringify(it) ?? "null" }));
+  const kept: string[] = [];
+  const lost: string[] = [];
+  let size = 2; // the enclosing [ ]
+
+  for (const { it, s } of encoded) {
+    // +1 for the separating comma once there is something to separate from.
+    const cost = s.length + (kept.length ? 1 : 0);
+    if (size + cost <= max) { kept.push(s); size += cost; continue; }
+    const e = it as any;
+    lost.push(`${e?.entity ?? "?"} (${e?.field ?? "?"})`);
+  }
+
+  let droppedNote: string | null = null;
+  if (lost.length) {
+    // Name as many as will fit in a readable line; count the rest.
+    const shown: string[] = [];
+    let n = 0;
+    for (const l of lost) { if (n + l.length > 900) break; shown.push(l); n += l.length + 2; }
+    droppedNote =
+      `${lost.length} retrieved item${lost.length === 1 ? " was" : "s were"} withheld from this message `
+      + `because the evidence exceeded the size budget: ${shown.join(", ")}`
+      + (shown.length < lost.length ? `, and ${lost.length - shown.length} more` : "")
+      + ". These were RETRIEVED SUCCESSFULLY but are not shown to you. You do not have their values. "
+      + "Do not state, estimate or carry over figures for them, and do not reuse another entity's numbers "
+      + "in their place — say the slate is larger than what you were shown and name what is missing.";
+  }
+
+  return { text: `[${kept.join(",")}]`, included: kept.length, dropped: lost.length, droppedNote };
+}
+
 /**
  * The direction a ranking question runs in, restated next to the intent.
  *
@@ -2169,6 +2374,14 @@ HARD RULES
 - If something is UNAVAILABLE or missing, say "not available in EdgeDesk's current data" and name it once. EdgeDesk already tried to retrieve it — so say what was tried and what came back, not "I don't have access".
 - Never say you cannot see the slate, the board or today's games when evidence is attached. It is in front of you.
 - Prefer "EdgeDesk could not retrieve that" over a plausible-sounding invention. Every time.
+- EVERY NUMBER BELONGS TO ONE ENTITY. Read each figure from that entity's OWN evidence item, matched by name. Never carry a value across from another player, team or game, and never fill a gap with a neighbouring record's numbers. If two entities genuinely carry identical values, that is almost always you misreading the evidence, not a coincidence — re-read both items, and if one truly has no value for a field, say that field is not available for him rather than repeating the other's. An entity with no evidence item of its own gets named as missing, never described.
+
+DATA INTEGRITY — AUDIT BEFORE YOU ANALYSE
+Every turn carries a DATA INTEGRITY block with a verdict EdgeDesk computed deterministically over the evidence, before you saw it. Read it first. It is not advisory.
+- PASS — proceed normally.
+- WARNING — you may answer, but the caveat leads. Put it in your FIRST line, label the conclusion provisional, and name the specific defect and the date it dates from. Never bury a data warning at the bottom of a confident answer; a reader who stops after your ranking must already know it was provisional.
+- FAIL — you are NOT permitted to publish a ranking, a top-three, a "best" or "worst" list, or any confident comparison built on the failing evidence. Say plainly that the data is not clean enough to rank, name exactly what failed and which entities it touched, give whatever partial observation is still safe (clearly labelled as such), and say what would have to be repaired. A refusal that names the fault is worth more than a sophisticated-looking ranking assembled from corrupted joins.
+Two failures matter most and you must never explain either away in prose. IDENTICAL STATISTICAL PROFILES on different players are a duplication fault, not a coincidence and not "the same Statcast layer" — distinct players do not share a whole feature vector. A PITCHER ATTACHED TO A TEAM NOT PLAYING IN HIS OWN GAME is a broken join, and every downstream sentence about who faces whom is unsafe. If you find yourself writing a sentence that rationalises either one, stop and report the fault instead.
 
 ANSWER THE QUESTION THAT WAS ASKED
 Rank by the axis the question names, not the axis you find more interesting. "Best pitchers" means the best pitchers — the strongest arms on the card, ranked by quality, with the best one at #1. "Worst" and "most exploitable" mean the other direction. Never silently invert the axis, never open a ranking by restating the question as a different one, and never bury the true answer to the asked question in a footnote at the bottom. Where the more useful betting angle runs the other way, give the asked-for ranking FIRST, in full, then add the other angle in a clearly separate section — as an addition, never as a substitution.
@@ -2247,6 +2460,7 @@ interface ResearchOut {
   ms: number;
   log: { table: string; ms: number; rows: number; error: string | null }[];
   completeness: Completeness;
+  integrity: Integrity;
   coverage: ReturnType<typeof coverage>[];
   snapshot: Snapshot | null;
   changed: ReturnType<typeof diffSnapshots> | null;
@@ -2463,7 +2677,7 @@ async function runResearch(
     plan, state, evidence, conflicts, unavailable: unavail, attack, memory,
     data_path, focus, calls: dal.calls, ms: Date.now() - t0, log: dal.log,
     completeness: comp, coverage: cov, snapshot, changed, findings, queue,
-    cross, movement,
+    cross, movement, integrity: dataIntegrity(evidence),
   };
 }
 
@@ -2471,6 +2685,15 @@ async function runResearch(
 /* PROMPT ASSEMBLY                                                          */
 /* ======================================================================== */
 
+/* Evidence gets its own, much larger budget than the ancillary blocks. A full
+   MLB slate is ~69KB of evidence; at 60KB it was being cut in half mid-object.
+   ~240KB is roughly 60k tokens — comfortably inside the context window, and
+   large enough that a real slate never truncates at all. */
+const EVIDENCE_MAX = Number(Deno.env.get("EDGEDESK_EVIDENCE_MAX") ?? "240000");
+
+/* For everything OTHER than evidence. Still a blind slice, but these blocks
+   (movement reads, queues, data paths) are prose-ish and degrade gracefully;
+   evidence does not, which is why it no longer uses this. */
 function compact(o: unknown, max = 60000): string {
   const s = JSON.stringify(o);
   return s.length > max ? s.slice(0, max) + `…[truncated at ${max} chars]` : s;
@@ -2494,13 +2717,38 @@ function buildUserContent(body: any, research: ResearchOut | null): string {
       + `Retrievals: ${research.calls} reads in ${research.ms}ms`,
     );
 
+    /* Placed BEFORE the evidence, deliberately: the verdict has to be read
+       before the numbers it governs, not after them. */
+    {
+      const g = research.integrity;
+      parts.push(
+        `DATA INTEGRITY — ${g.verdict}\n`
+        + g.checks.map((c) => `- [${c.status}] ${c.name}: ${c.detail}`
+          + (c.entities?.length ? `\n    affected: ${c.entities.join("; ")}` : "")).join("\n")
+        + (g.verdict === "FAIL"
+          ? "\nYou may NOT publish a ranking or a confident comparison from this evidence. Report the fault, "
+            + "name the entities it touches, and say what would have to be repaired."
+          : g.verdict === "WARNING"
+            ? "\nLead with this caveat in your first line and label any conclusion provisional."
+            : ""),
+      );
+    }
+
     const usable = research.evidence.filter((e) => e.status !== "UNAVAILABLE");
     if (usable.length) {
+      /* EVIDENCE_MAX is deliberately large: a 30-starter MLB slate serializes
+         to ~69,000 characters, and the old 60,000 default silently severed it
+         mid-object. Evidence is the one block that must never be trimmed to
+         make room for something else — it is the entire factual basis of the
+         answer. Whole items only, and anything withheld is named below. */
+      const b = budgetEvidence(usable, EVIDENCE_MAX);
       parts.push(
         "EVIDENCE — retrieved from EdgeDesk's own tables just now. These are the facts you may use; "
         + "quote their values exactly and respect each item's status and freshness:\n"
-        + compact(usable),
+        + b.text,
       );
+      if (b.droppedNote) parts.push("EVIDENCE WITHHELD — " + b.droppedNote);
+      (research as any).evidence_shown = { included: b.included, withheld: b.dropped };
     }
 
     if (research.attack) {
@@ -2859,6 +3107,16 @@ export async function handle(req: Request): Promise<Response> {
           retrievals: research.calls, ms: research.ms,
           sources: Array.from(new Set(research.evidence.map((e) => e.source))),
           evidence_count: research.evidence.filter((e) => e.status !== "UNAVAILABLE").length,
+          /* How much of that count actually reached the model. When these
+             differ, coverage is describing more than the answer could see. */
+          evidence_shown: (research as any).evidence_shown ?? null,
+          /* The panel renders this as a banner above the answer, so a FAIL is
+             visible without reading to the bottom. */
+          integrity: {
+            verdict: research.integrity.verdict,
+            summary: research.integrity.summary,
+            failed: research.integrity.checks.filter((c) => c.status !== "PASS"),
+          },
           unavailable: research.unavailable,
           conflicts: research.conflicts.length,
           attack: research.attack?.status ?? null,
