@@ -38,11 +38,18 @@ function section(s: string) { console.log(`\n${s}`); }
 
 const TODAY = etDay(0);
 
-interface Fixture { [table: string]: any[] | "error" | "rls" }
+interface Fixture { [table: string]: any[] | "error" | "rls" | undefined }
 
 function mockFetch(fx: Fixture): typeof fetch {
   return (async (url: string | URL | Request) => {
     const u = String(url);
+    if (u.includes("statsapi.mlb.com")) {
+      if (fx.__statsapi === "error") return new Response("nope", { status: 503 });
+      if (u.includes("/schedule")) return new Response(JSON.stringify(STATSAPI_SCHED), { status: 200 });
+      if (u.includes("/people")) return new Response(JSON.stringify(STATSAPI_PEOPLE), { status: 200 });
+      if (u.includes("/teams/stats")) return new Response(JSON.stringify(STATSAPI_TEAMS), { status: 200 });
+      return new Response("{}", { status: 200 });
+    }
     const table = u.split("/rest/v1/")[1]?.split("?")[0] ?? "";
     const rows = fx[table];
     if (rows === "error") return new Response("boom", { status: 500 });
@@ -139,6 +146,25 @@ const USAGE = [
   { pitcher_id: 9001, game_date: etDay(-5), pitches: 96, outs: 16, started: true },
   { pitcher_id: 9002, game_date: etDay(-4), pitches: 88, outs: 18, started: true },
 ];
+
+const STATSAPI_SCHED = { dates: [{ games: [{
+  teams: {
+    away: { team: { id: 147, name: "New York Yankees" }, probablePitcher: { id: 9001, fullName: "Carlos Rodón" } },
+    home: { team: { id: 111, name: "Boston Red Sox" },   probablePitcher: { id: 9002, fullName: "Kutter Crawford" } },
+  },
+}] }] };
+const STATSAPI_PEOPLE = { people: [
+  { id: 9001, fullName: "Carlos Rodón", stats: [{ group: { displayName: "pitching" }, splits: [{ stat: {
+    era: "5.41", whip: "1.48", strikeoutsPer9Inn: "8.12", walksPer9Inn: "4.02",
+    inningsPitched: "121.2", strikeOuts: 110, baseOnBalls: 54, homeRuns: 22, gamesStarted: 22 } }] }] },
+  { id: 9002, fullName: "Kutter Crawford", stats: [{ group: { displayName: "pitching" }, splits: [{ stat: {
+    era: "3.72", whip: "1.11", strikeoutsPer9Inn: "9.44", walksPer9Inn: "2.10",
+    inningsPitched: "134.0", strikeOuts: 140, baseOnBalls: 31, homeRuns: 18, gamesStarted: 23 } }] }] },
+] };
+const STATSAPI_TEAMS = { stats: [{ splits: [
+  { team: { id: 111, name: "Boston Red Sox" },   stat: { obp: ".331", slg: ".428", ops: ".759", avg: ".256", runs: 571, gamesPlayed: 112, strikeOuts: 890, baseOnBalls: 401, homeRuns: 148 } },
+  { team: { id: 147, name: "New York Yankees" }, stat: { obp: ".342", slg: ".451", ops: ".793", avg: ".251", runs: 604, gamesPlayed: 112, strikeOuts: 940, baseOnBalls: 452, homeRuns: 178 } },
+] }] };
 
 const FULL: Fixture = {
   signals: [SIGNAL_LIVE, SIGNAL_PRICE_KILLED, SIGNAL_STALE, SIGNAL_NO_SHARP],
@@ -506,6 +532,69 @@ ok("M9 postmortem retrieves the closing line and CLV, not today's card",
   classify("Why did EdgeDesk get that one wrong?").steps.includes("closing_line"));
 eq("M10 a plain why stays FAST", classify("Why do you like this?").mode, "FAST");
 ok("M11 every intent maps to a mode", Object.values(MODE_OF_INTENT).every((m) => typeof m === "string"));
+
+/* ===================================================================== */
+/* live fallback when the owned feature pipeline is stale                 */
+/* ===================================================================== */
+
+section("Official-feed fallback (stale ingestion)");
+{
+  // Reproduces the reported failure: games are current, pitcher_features is not.
+  const d = dal({ ...FULL, pitcher_features: [], offense_features: [] });
+  const pf = await d.getPitcherFeatures();
+
+  ok("L1 the fallback fires when the owned table is empty",
+    !!pf.path.live_fallback, Object.keys(pf.path));
+  ok("L2 and says why, naming the repair",
+    /repair ingest_mlb/.test(String(pf.path.live_fallback_reason)), pf.path.live_fallback_reason);
+
+  const q = pf.ev.filter((e) => e.field === "pitcher_quality" && e.status !== "UNAVAILABLE");
+  eq("L3 both starters now carry a usable line", q.length, 2);
+  ok("L4 the line is the official ERA, not an invented xERA",
+    (q.find((e) => String(e.entity).includes("Rod"))!.value as any).era === 5.41);
+  ok("L5 Statcast fields stay declared missing, never approximated",
+    q.every((e) => (e.value as any).missing_fields.includes("xera")
+                && (e.value as any).missing_fields.includes("barrel_pct")));
+  ok("L6 every fallback fact is attributed to the MLB feed",
+    q.every((e) => e.source === "MLB Stats API" && /Statcast-derived/.test(String(e.note))));
+
+  const off = pf.ev.filter((e) => e.field === "opponent_offense" && e.status !== "UNAVAILABLE");
+  eq("L7 opponent offense comes with it", off.length, 2);
+  ok("L8 and each starter faces the OTHER team's bats",
+    (off.find((e) => String(e.entity).includes("Rod"))!.value as any).opponent === "Boston Red Sox",
+    (off.find((e) => String(e.entity).includes("Rod"))!.value as any).opponent);
+  ok("L9 offense gaps are named too",
+    off.every((e) => (e.value as any).missing_fields.includes("wrc_plus")));
+
+  const cov = coverage(pf.ev, "pitcher_quality", ["Carlos Rodón", "Kutter Crawford"]);
+  eq("L10 coverage recovers from 0/2 to 2/2", [cov.have_n, cov.total_n], [2, 2]);
+}
+{
+  // The owned tables are healthy — the fallback must stay out of the way.
+  const d = dal(FULL);
+  const pf = await d.getPitcherFeatures();
+  ok("L11 healthy owned tables do NOT trigger the fallback", !pf.path.live_fallback);
+  ok("L12 and the owned Statcast fields are used",
+    pf.ev.some((e) => e.field === "pitcher_quality" && (e.value as any).xera === 5.41
+      && e.source === "pitcher_features"));
+}
+{
+  const d = new Dal({
+    supabaseUrl: "https://x.supabase.co", apikey: "anon", authorization: "Bearer jwt",
+    fetchImpl: mockFetch({ ...FULL, pitcher_features: [] }), budget: 24, mlbFallback: false,
+  });
+  clearCache();
+  const pf = await d.getPitcherFeatures();
+  ok("L13 the fallback can be switched off entirely", !pf.path.live_fallback);
+  ok("L14 and then it reports the gap rather than filling it",
+    pf.ev.some((e) => e.status === "UNAVAILABLE"));
+}
+{
+  const d = dal({ ...FULL, pitcher_features: [], __statsapi: "error" } as any);
+  const pf = await d.getPitcherFeatures();
+  ok("L15 an unreachable feed degrades honestly, it does not throw",
+    pf.ev.some((e) => e.status === "UNAVAILABLE"));
+}
 
 console.log(`\n${failed === 0 ? "ALL GREEN" : "FAILURES"} — ${passed} passed, ${failed} failed`);
 if (failures.length) console.log("failed:", failures.join(" | "));

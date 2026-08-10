@@ -509,6 +509,8 @@ export interface DalOpts {
   authorization: string;   // the CALLER's bearer. RLS applies exactly as it does in the browser.
   fetchImpl?: typeof fetch;
   budget?: number;
+  /** Allow the official-MLB-feed fallback when the owned feature tables are empty. */
+  mlbFallback?: boolean;
 }
 
 interface CacheEntry { at: number; rows: unknown[]; err: string | null }
@@ -529,12 +531,14 @@ export class Dal {
   private f: typeof fetch;
   calls = 0;
   budget: number;
+  mlbFallback: boolean;
   log: { table: string; ms: number; rows: number; error: string | null }[] = [];
 
   constructor(o: DalOpts) {
     this.o = o;
     this.f = o.fetchImpl ?? fetch;
     this.budget = o.budget ?? 18;
+    this.mlbFallback = o.mlbFallback !== false;
   }
 
   /** One REST read. Never throws. Returns rows plus the error text if it failed. */
@@ -870,9 +874,155 @@ export class Dal {
       }
     }
 
+    /* The owned feature tables produced nothing usable. Rather than reporting a
+       dead end, fall back to the official MLB feed for the traditional line so
+       the question is still answerable — clearly attributed, and with the
+       Statcast fields still declared unavailable. */
+    if (!pf.length && this.mlbFallback) {
+      const fb = await this.getMlbLiveFallback();
+      path.live_fallback = fb.path;
+      path.live_fallback_reason =
+        "pitcher_features returned no rows for this slate, so EdgeDesk queried the official MLB Stats API "
+        + "for the traditional pitching line. This is a fallback, not the owned Statcast layer — repair "
+        + "ingest_mlb to restore xERA / barrel% / hard-hit%.";
+      out.push(...fb.ev);
+    }
+
     if (!out.length) {
       out.push(unavailable("pitcher_features", "pitcher_quality",
         "No pitcher-quality rows could be retrieved for this slate. See data_path for which link in games -> pitcher_features -> offense_features failed."));
+    }
+    return { ev: out, path };
+  }
+
+  /**
+   * LIVE FALLBACK — MLB Stats API (statsapi.mlb.com), keyless and official.
+   *
+   * This is NOT a new data source: it is the same official feed ingest_mlb and
+   * mlb_sync already read, and the app's own Intelligence Fabric already
+   * registers it. It runs ONLY when the owned feature tables come back empty,
+   * so a stalled ingestion does not take the research engine down with it.
+   *
+   * It is deliberately lower-fidelity and labelled as such. Statcast-derived
+   * fields — xERA, barrel%, hard-hit% — are NOT available here and stay
+   * unavailable. What it does provide is the traditional line (ERA, WHIP,
+   * K/9, BB/9, IP) plus opponent team hitting, which is enough to rank arms
+   * and matchups honestly while the feature pipeline is repaired.
+   *
+   * Three requests total, batched. Disable with EDGEDESK_MLB_FALLBACK=0.
+   */
+  async getMlbLiveFallback(dateISO?: string): Promise<{ ev: Evidence[]; path: Record<string, unknown> }> {
+    const day = dateISO ?? etDay(0);
+    const season = day.slice(0, 4);
+    const path: Record<string, unknown> = { source: "statsapi.mlb.com", date: day };
+    const out: Evidence[] = [];
+    const now = Date.now();
+
+    const getJSON = async (url: string, ms = 8000): Promise<any | null> => {
+      try {
+        const ctrl = typeof AbortController !== "undefined" ? new AbortController() : null;
+        const t = ctrl ? setTimeout(() => ctrl.abort(), ms) : null;
+        const r = await this.f(url, { signal: ctrl?.signal, headers: { accept: "application/json" } });
+        if (t) clearTimeout(t);
+        if (!r.ok) return null;
+        return await r.json();
+      } catch { return null; }
+    };
+
+    // 1. today's card + probable starters, with the ids the stats call needs
+    const sched = await getJSON(
+      `https://statsapi.mlb.com/api/v1/schedule?sportId=1&date=${day}&hydrate=probablePitcher,team`);
+    if (!sched) {
+      path.error = "schedule request failed";
+      return { ev: [unavailable("MLB Stats API", "pitcher_quality", "live fallback unreachable")], path };
+    }
+
+    interface Starter { id: number; name: string; team: string; teamId: number; opp: string; oppId: number; game: string }
+    const starters: Starter[] = [];
+    for (const d of sched.dates ?? []) {
+      for (const g of d.games ?? []) {
+        const away = g.teams?.away, home = g.teams?.home;
+        const game = `${away?.team?.name ?? "?"} @ ${home?.team?.name ?? "?"}`;
+        for (const [side, other] of [[away, home], [home, away]] as any[]) {
+          const p = side?.probablePitcher;
+          if (!p?.id) continue;
+          starters.push({
+            id: p.id, name: p.fullName, team: side?.team?.name, teamId: side?.team?.id,
+            opp: other?.team?.name, oppId: other?.team?.id, game,
+          });
+        }
+      }
+    }
+    path.starters_found = starters.length;
+    if (!starters.length) {
+      path.note = "no probable starters announced yet for this date";
+      return { ev: [unavailable("MLB Stats API", "pitcher_quality", `no probable starters announced for ${day}`)], path };
+    }
+
+    // 2. season pitching lines for every starter, in one batched request
+    const ids = starters.map((s) => s.id).join(",");
+    const people = await getJSON(
+      `https://statsapi.mlb.com/api/v1/people?personIds=${ids}&hydrate=stats(group=[pitching],type=[season],season=${season})`);
+    const lineById: Record<string, any> = {};
+    for (const p of people?.people ?? []) {
+      const split = p.stats?.find((s: any) => s.group?.displayName === "pitching")?.splits?.[0];
+      if (split?.stat) lineById[String(p.id)] = split.stat;
+    }
+    path.pitching_lines = Object.keys(lineById).length;
+
+    // 3. team hitting, for the offense each starter faces
+    const teamStats = await getJSON(
+      `https://statsapi.mlb.com/api/v1/teams/stats?season=${season}&stats=season&group=hitting&sportIds=1`);
+    const hitById: Record<string, any> = {};
+    for (const s of teamStats?.stats ?? []) {
+      for (const sp of s.splits ?? []) {
+        if (sp.team?.id != null) hitById[String(sp.team.id)] = sp.stat;
+      }
+    }
+    path.team_hitting = Object.keys(hitById).length;
+
+    const NOTE = "MLB Stats API season line — the official feed, used because EdgeDesk's own pitcher_features "
+      + "rows are missing for this slate. Traditional stats only: xERA, barrel% and hard-hit% are Statcast-derived "
+      + "and are NOT available from this source.";
+
+    for (const s of starters) {
+      const line = lineById[String(s.id)];
+      out.push(line
+        ? ev({
+          source: "MLB Stats API", entity: s.name, field: "pitcher_quality", relevance: "pitching",
+          value: {
+            name: s.name, team: s.team, game: s.game,
+            era: num(line.era), whip: num(line.whip),
+            k_per_9: num(line.strikeoutsPer9Inn), bb_per_9: num(line.walksPer9Inn),
+            innings: line.inningsPitched ?? null, strikeouts: num(line.strikeOuts), walks: num(line.baseOnBalls),
+            home_runs: num(line.homeRuns), games_started: num(line.gamesStarted),
+            missing_fields: ["xera", "barrel_pct", "hardhit_pct"],
+          },
+          status: "VERIFIED", freshness: "CURRENT", source_timestamp: new Date(now).toISOString(), note: NOTE,
+        })
+        : unavailable("MLB Stats API", "pitcher_quality", `no season pitching line on file for ${s.name}`, s.name));
+
+      const hit = hitById[String(s.oppId)];
+      out.push(hit
+        ? ev({
+          source: "MLB Stats API", entity: s.name, field: "opponent_offense", relevance: "matchup",
+          value: {
+            opponent: s.opp, obp: num(hit.obp), slg: num(hit.slg), ops: num(hit.ops), avg: num(hit.avg),
+            runs: num(hit.runs), games: num(hit.gamesPlayed), strikeouts: num(hit.strikeOuts),
+            walks: num(hit.baseOnBalls), home_runs: num(hit.homeRuns),
+            missing_fields: ["iso", "woba", "wrc_plus", "barrel_pct", "handedness_splits"],
+          },
+          status: "VERIFIED", freshness: "CURRENT",
+          note: "Season team hitting from the MLB Stats API. ISO, wOBA, wRC+ and platoon splits are not in this feed.",
+        })
+        : unavailable("MLB Stats API", "opponent_offense", `no team hitting line for ${s.opp}`, s.name));
+
+      out.push(ev({
+        source: "MLB Stats API", entity: s.name, field: "probable_starter", relevance: "pitching",
+        value: { name: s.name, team: s.team, game: s.game, opponent: s.opp },
+        status: "PROBABLE", freshness: "CURRENT",
+        note: "Probable, not confirmed.",
+      }));
     }
     return { ev: out, path };
   }
@@ -1396,6 +1546,10 @@ const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
 const RESEARCH_ENABLED = (Deno.env.get("EDGEDESK_AI_RESEARCH") ?? "1") !== "0";
 // Minimum samples before a stored pattern may be quoted as a pattern.
 const MIN_PATTERN_N = parseInt(Deno.env.get("EDGEDESK_MIN_PATTERN_N") ?? "30", 10);
+// When the owned MLB feature tables are empty, fall back to the official MLB
+// Stats API for the traditional pitching line. Set to "0" to keep the engine
+// strictly on owned tables and report the gap instead.
+const MLB_FALLBACK = (Deno.env.get("EDGEDESK_MLB_FALLBACK") ?? "1") !== "0";
 
 const MAX_TOKENS: Record<string, number> = {
   QUICK: 700, STANDARD: 1000, DEEP: 1500, SLATE: 1600, FULL: 1800,
@@ -1939,7 +2093,7 @@ export async function handle(req: Request): Promise<Response> {
     try {
       const dal = new Dal({
         supabaseUrl: SUPABASE_URL, apikey: SUPABASE_ANON_KEY,
-        authorization: auth, budget: plan.budget,
+        authorization: auth, budget: plan.budget, mlbFallback: MLB_FALLBACK,
       });
       research = await runResearch(plan, state, body?.packet, dal);
     } catch {

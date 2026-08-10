@@ -52,6 +52,10 @@ const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
 const RESEARCH_ENABLED = (Deno.env.get("EDGEDESK_AI_RESEARCH") ?? "1") !== "0";
 // Minimum samples before a stored pattern may be quoted as a pattern.
 const MIN_PATTERN_N = parseInt(Deno.env.get("EDGEDESK_MIN_PATTERN_N") ?? "30", 10);
+// When the owned MLB feature tables are empty, fall back to the official MLB
+// Stats API for the traditional pitching line. Set to "0" to keep the engine
+// strictly on owned tables and report the gap instead.
+const MLB_FALLBACK = (Deno.env.get("EDGEDESK_MLB_FALLBACK") ?? "1") !== "0";
 
 const MAX_TOKENS: Record<string, number> = {
   QUICK: 700, STANDARD: 1000, DEEP: 1500, SLATE: 1600, FULL: 1800,
@@ -595,7 +599,7 @@ export async function handle(req: Request): Promise<Response> {
     try {
       const dal = new Dal({
         supabaseUrl: SUPABASE_URL, apikey: SUPABASE_ANON_KEY,
-        authorization: auth, budget: plan.budget,
+        authorization: auth, budget: plan.budget, mlbFallback: MLB_FALLBACK,
       });
       research = await runResearch(plan, state, body?.packet, dal);
     } catch {
