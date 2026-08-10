@@ -10,7 +10,7 @@ import {
   edgeBand, priceBand, booksBand, etDow, splitChrono,
   evaluate, calibrate, HYPOTHESES, BUILD, planColumns, discoverColumns,
   baseRateWarning, clvIsReal, clvProfile, beatCloseAgreement, contamination,
-  CLV_SANE, type Graded,
+  fairDrift, CLV_SANE, type Graded,
 } from "./index.ts";
 
 let passed = 0, failed = 0;
@@ -545,6 +545,64 @@ section("An unflattering result is not the same as a broken one");
   near("X12 the base rate is the population's own", ev.base_rate, 0.25, 0.02);
   eq("X13 a slice that beats a bad base is still detectable",
     ev.patterns.find((p) => p.key === "market:totals")?.status, "CONFIRMED");
+}
+
+/* The entry price cancels out of edge and clv, so how far the FAIR price moved
+   between capture and close is derivable exactly from two columns already on
+   the table. That distinguishes "the edge model is wrong" from "there is a
+   fixed offset between the two fair prices", which are different bugs. */
+section("Fair-price drift separates a bad model from a fixed offset");
+{
+  const row = (edge: number, clv: number, i = 0) => {
+    const d = new Date(Date.parse("2026-01-01T18:00:00Z") + i * 36e5);
+    return g({ edge, clv, beat_close: clv > 0, commence_time: d.toISOString(), graded_at: d.toISOString() });
+  };
+
+  // Edge fully realised: fair did not move.
+  const kept = fairDrift(Array.from({ length: 50 }, (_, i) => row(0.03, 0.03, i)));
+  eq("R1 a fully realised edge shows retention 1", kept.edge_retention, 1);
+  eq("R2 ...and no overstatement", kept.fair_overstated_pct, 0);
+
+  // Edge entirely illusory: realised zero.
+  const lost = fairDrift(Array.from({ length: 50 }, (_, i) => row(0.03, 0, i)));
+  eq("R3 an unrealised edge shows retention 0", lost.edge_retention, 0);
+  near("R4 ...and the entry fair overstated by the edge", lost.fair_overstated_pct, 3, 0.05);
+
+  // The live shape: +3% projected, -2.7% realised.
+  const live = fairDrift(Array.from({ length: 200 }, (_, i) => row(0.03, -0.027, i)));
+  ok("R5 the live shape shows negative retention", (live.edge_retention ?? 0) < 0, live.edge_retention);
+  near("R6 ...and quantifies how far the fair moved", live.fair_overstated_pct, 5.86, 0.1);
+  ok("R7 ...and the reading names the cause candidates",
+    /de-vig or book-set difference|noise in a thin book set/.test(live.reading), live.reading);
+
+  /* Constant offset across bands vs one that grows with the flagged edge -
+     the whole point of splitting by band. */
+  /* A constant OFFSET means a constant fair_entry/fair_close ratio, so the
+     realised CLV is (1+edge)/ratio - 1 — not simply -edge, which is what a
+     model whose error scales with the edge would produce. */
+  const atRatio = (e: number, ratio: number) => (1 + e) / ratio - 1;
+  const constant = fairDrift([
+    ...Array.from({ length: 40 }, (_, i) => row(0.015, atRatio(0.015, 1.03), i)),
+    ...Array.from({ length: 40 }, (_, i) => row(0.03, atRatio(0.03, 1.03), i + 40)),
+    ...Array.from({ length: 40 }, (_, i) => row(0.06, atRatio(0.06, 1.03), i + 80)),
+  ]);
+  ok("R8 a constant offset is called systematic",
+    /roughly CONSTANT/.test(constant.reading), constant.reading);
+
+  const growing = fairDrift([
+    ...Array.from({ length: 40 }, (_, i) => row(0.015, 0.010, i)),
+    ...Array.from({ length: 40 }, (_, i) => row(0.03, -0.010, i + 40)),
+    ...Array.from({ length: 40 }, (_, i) => row(0.12, -0.20, i + 80)),
+  ]);
+  ok("R9 an offset that grows with the edge is called noise",
+    /noise in a thin book set/.test(growing.reading), growing.reading);
+
+  ok("R10 bands below the floor are not reported",
+    Object.keys(fairDrift([row(0.03, -0.02, 0)]).by_edge_band).length === 0);
+  eq("R11 rows with no edge cannot contribute",
+    fairDrift([g({ edge: null, clv: -0.02 })]).reading, "no rows carry both an edge and a CLV");
+  eq("R12 fabricated CLV is excluded here too",
+    fairDrift([g({ edge: 0.03, clv: -1 })]).reading, "no rows carry both an edge and a CLV");
 }
 
 console.log(`\n${failed === 0 ? "ALL GREEN" : "FAILURES"} — ${passed} passed, ${failed} failed`);

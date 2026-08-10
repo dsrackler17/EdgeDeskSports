@@ -72,7 +72,7 @@ export const HOLDOUT_FRAC = Number(Deno.env.get('LEARN_HOLDOUT_FRAC') ?? '0.30')
 /* Bumped whenever this file changes in a way you would want to confirm landed.
    Returned on every response, because "is the new build actually deployed?"
    should be answerable rather than inferred from whether the old bug recurs. */
-export const BUILD = '2026-08-13.1-clean-but-losing';
+export const BUILD = '2026-08-13.2-fair-drift';
 
 /* ========================================================================
    STATISTICS — pure, exported, tested. No database, no network.
@@ -339,6 +339,82 @@ export const CLV_SANE = { lo: -0.5, hi: 0.5 };
 
 export function clvIsReal(clv: number | null | undefined): boolean {
   return clv != null && Number.isFinite(clv) && clv >= CLV_SANE.lo && clv <= CLV_SANE.hi;
+}
+
+/**
+ * How far the sharp fair price MOVED between entry and close.
+ *
+ * This is derivable exactly, with no new data, because the entry price cancels:
+ *   edge = fair_entry x dec - 1      ->  fair_entry = (1 + edge) / dec
+ *   clv  = dec x fair_close - 1      ->  fair_close = (1 + clv)  / dec
+ *   fair_entry / fair_close = (1 + edge) / (1 + clv)
+ *
+ * A positive edge at entry with a negative CLV at close means, arithmetically,
+ * that the entry fair was HIGHER than the closing fair. This quantifies by how
+ * much, and separates the two explanations that matter:
+ *
+ *   retention ~ 0     the projected edge is not being realised at all; the
+ *                     entry fair is inflated by roughly the edge itself, so
+ *                     the "edge" is measurement error rather than value
+ *   retention ~ 1     the edge is real and survives, and a negative CLV would
+ *                     have to come from somewhere else entirely
+ *   drift constant    a fixed offset in the fair price - a de-vig or book-set
+ *                     difference between capture and close, and fixable
+ *   drift scales      bigger flagged edges drift more, the signature of edges
+ *                     driven by noise in a thin book set
+ */
+export function fairDrift(rows: Graded[]) {
+  const usable = rows.filter((r) => clvIsReal(r.clv) && r.edge != null && Number.isFinite(r.edge));
+  const med = (xs: number[]) => {
+    if (!xs.length) return null;
+    const s = [...xs].sort((a, b) => a - b);
+    return s[Math.floor(s.length / 2)];
+  };
+  const summarise = (rs: Graded[]) => {
+    if (!rs.length) return null;
+    const drift = rs.map((r) => (1 + r.edge!) / (1 + r.clv!));
+    const edges = rs.map((r) => r.edge!);
+    const clvs = rs.map((r) => r.clv!);
+    const mE = med(edges)!, mC = med(clvs)!;
+    return {
+      n: rs.length,
+      median_edge: +mE.toFixed(5),
+      median_clv: +mC.toFixed(5),
+      /* How much of the projected edge actually showed up at the close. */
+      edge_retention: mE !== 0 ? +(mC / mE).toFixed(3) : null,
+      /* fair_entry / fair_close. Above 1 means the entry fair was optimistic. */
+      median_fair_ratio: +med(drift)!.toFixed(5),
+      fair_overstated_pct: +((med(drift)! - 1) * 100).toFixed(2),
+    };
+  };
+
+  const overall = summarise(usable);
+  const byBand: Record<string, unknown> = {};
+  for (const b of ['edge<1%', 'edge 1-2%', 'edge 2-4%', 'edge 4-8%', 'edge>8%']) {
+    const rs = usable.filter((r) => edgeBand(r.edge) === b);
+    if (rs.length >= 20) byBand[b] = summarise(rs);
+  }
+
+  const bands = Object.values(byBand) as any[];
+  const spread = bands.length >= 2
+    ? Math.max(...bands.map((b) => b.fair_overstated_pct)) - Math.min(...bands.map((b) => b.fair_overstated_pct))
+    : null;
+
+  return {
+    ...overall, by_edge_band: byBand,
+    reading: !overall ? 'no rows carry both an edge and a CLV'
+      : overall.edge_retention != null && overall.edge_retention <= 0.1
+        ? `Of a median projected edge of ${(overall.median_edge * 100).toFixed(2)}%, `
+          + `${(overall.median_clv * 100).toFixed(2)}% was realised — retention ${overall.edge_retention}. `
+          + `The entry fair price is overstated by ${overall.fair_overstated_pct}% relative to the close`
+          + (spread != null && spread > 2
+            ? `, and the overstatement GROWS with the flagged edge (${spread.toFixed(1)}pp spread across bands), `
+              + `which is the signature of edges driven by noise in a thin book set rather than by real value.`
+            : `, and the overstatement is roughly CONSTANT across edge bands, which points at a systematic `
+              + `de-vig or book-set difference between capture and close rather than at the edge model.`)
+      : `Median projected edge ${(overall.median_edge * 100).toFixed(2)}%, median realised `
+        + `${(overall.median_clv * 100).toFixed(2)}%, retention ${overall.edge_retention}.`,
+  };
 }
 
 /** Distribution of CLV, so the shape of the history is a fact rather than a guess. */
@@ -730,6 +806,7 @@ Deno.serve(async (req) => {
       ...(base_rate_warning ? { base_rate_warning } : {}),
       clv_profile: clvProfile(rows as any),
       beat_close_column: beatCloseAgreement(rows),
+      fair_drift: fairDrift(rows),
       ...(dropped.length ? { columns_unavailable: dropped,
         note: `signals has no ${dropped.join(', ')} column, so the matching hypothesis families were skipped.` } : {}),
       readiness: n_graded >= MIN_N
