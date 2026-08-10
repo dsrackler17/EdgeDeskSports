@@ -9,7 +9,7 @@ import {
   wilsonLo, normalCdf, twoSidedP, benjaminiHochberg,
   edgeBand, priceBand, booksBand, etDow, splitChrono,
   evaluate, calibrate, HYPOTHESES, BUILD, planColumns, discoverColumns,
-  baseRateWarning, clvIsReal, clvProfile, CLV_SANE, type Graded,
+  baseRateWarning, clvIsReal, clvProfile, beatCloseAgreement, CLV_SANE, type Graded,
 } from "./index.ts";
 
 let passed = 0, failed = 0;
@@ -149,7 +149,10 @@ function series(n: number, k: number, o: Partial<Graded> = {}): Graded[] {
   return Array.from({ length: n }, (_, i) => {
     const d = new Date(Date.parse("2026-01-01T18:00:00Z") + i * 864e5);
     const win = Math.floor(((i + 1) * k) / n) > Math.floor((i * k) / n);
-    return g({ ...o, beat_close: win, commence_time: d.toISOString(), graded_at: d.toISOString() });
+    /* clv and beat_close must agree: the outcome is DERIVED from clv > 0, so a
+       fixture that sets only the flag describes a row that cannot exist. */
+    return g({ clv: win ? 0.02 : -0.02, ...o, beat_close: win,
+               commence_time: d.toISOString(), graded_at: d.toISOString() });
   });
 }
 
@@ -448,6 +451,46 @@ section("A fabricated CLV is not a loss either");
   ]);
   eq("F20 calibration ignores fabricated CLV", cal[0].n, 40);
   near("F21 ...so the realised mean is the real one, not -0.91", cal[0].mean_clv_realised, 0.01);
+}
+
+/* Third run at 17.5%, and the plausibility filter removed only ~100 of 3642
+   rows — so the fabricated -1s were not the cause either. The outcome is now
+   DERIVED from clv > 0 rather than read off a generated column whose
+   expression is not visible from here, and any disagreement is measured. */
+section("The outcome is derived, and the stored column is checked against it");
+{
+  const rows = [
+    ...Array.from({ length: 60 }, () => g({ clv: 0.02, beat_close: true })),
+    ...Array.from({ length: 40 }, () => g({ clv: -0.02, beat_close: false })),
+  ];
+  const agreed = beatCloseAgreement(rows);
+  eq("A1 every comparable row agrees", agreed.disagree, 0);
+  eq("A2 both rates match", [agreed.stored_true_rate, agreed.derived_true_rate], [0.6, 0.6]);
+  ok("A3 ...and it says the column is not the problem",
+    /not the problem/.test(agreed.reading), agreed.reading);
+
+  /* The case worth catching: the generated column says false while the CLV is
+     positive. That is what a 17% rate looks like if beat_close is not (clv>0). */
+  const skewed = [
+    ...Array.from({ length: 80 }, () => g({ clv: 0.02, beat_close: false })),
+    ...Array.from({ length: 20 }, () => g({ clv: 0.03, beat_close: true })),
+  ];
+  const bad = beatCloseAgreement(skewed);
+  eq("A4 disagreement is counted exactly", bad.disagree, 80);
+  eq("A5 the stored rate is the misleading one", bad.stored_true_rate, 0.2);
+  eq("A6 the derived rate is the true one", bad.derived_true_rate, 1);
+  ok("A7 ...and the reading names the column as the fault",
+    /not simply \(clv > 0\)/.test(bad.reading), bad.reading);
+
+  // Evaluation must follow the CLV, not the column.
+  const ev = evaluate(skewed.map((r, i) => g({ ...r, market: i < 50 ? "h2h" : "totals" })));
+  near("A8 the base rate follows clv > 0, not beat_close", ev.base_rate, 1, 1e-9);
+  eq("A9 a row with a real CLV counts even if beat_close is null",
+    evaluate(Array.from({ length: 40 }, () => g({ clv: 0.01, beat_close: null }))).n_graded, 40);
+
+  eq("A10 nothing comparable is handled", beatCloseAgreement([]).reading, "nothing comparable");
+  eq("A11 fabricated rows are not comparable",
+    beatCloseAgreement([g({ clv: -1, beat_close: false })]).comparable, 0);
 }
 
 console.log(`\n${failed === 0 ? "ALL GREEN" : "FAILURES"} — ${passed} passed, ${failed} failed`);

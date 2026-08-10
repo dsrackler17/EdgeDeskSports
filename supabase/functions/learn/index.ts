@@ -72,7 +72,7 @@ export const HOLDOUT_FRAC = Number(Deno.env.get('LEARN_HOLDOUT_FRAC') ?? '0.30')
 /* Bumped whenever this file changes in a way you would want to confirm landed.
    Returned on every response, because "is the new build actually deployed?"
    should be answerable rather than inferred from whether the old bug recurs. */
-export const BUILD = '2026-08-12.5-clv-plausible';
+export const BUILD = '2026-08-12.6-self-diagnosing';
 
 /* ========================================================================
    STATISTICS — pure, exported, tested. No database, no network.
@@ -257,7 +257,35 @@ export function splitChrono<T extends { graded_at: string | null }>(rows: T[], f
   return { discovery: sorted.slice(0, cut), holdout: sorted.slice(cut) };
 }
 
-const beat = (g: Graded) => g.beat_close === true;
+/**
+ * Beating the close IS a positive CLV, so derive it rather than trusting a
+ * generated column whose definition is not visible from here.
+ *
+ * CLV = entry_decimal x closing_fair - 1. Positive means the price taken was
+ * better than the de-vigged closing fair. That is the definition; reading it
+ * off `beat_close` adds a dependency on a column expression this function
+ * cannot inspect, and if that expression disagrees the disagreement is silent.
+ * It is now measured and reported instead (see beatCloseAgreement).
+ */
+const beat = (g: Graded) => g.clv != null && g.clv > 0;
+
+/** Does the stored generated column agree with the definition? */
+export function beatCloseAgreement(rows: Graded[]) {
+  const both = rows.filter((r) => clvIsReal(r.clv) && r.beat_close != null);
+  const agree = both.filter((r) => (r.clv! > 0) === (r.beat_close === true)).length;
+  return {
+    comparable: both.length,
+    agree,
+    disagree: both.length - agree,
+    stored_true_rate: both.length ? +(both.filter((r) => r.beat_close === true).length / both.length).toFixed(4) : null,
+    derived_true_rate: both.length ? +(both.filter((r) => r.clv! > 0).length / both.length).toFixed(4) : null,
+    reading: !both.length ? 'nothing comparable'
+      : both.length === agree
+        ? 'beat_close agrees with clv > 0 on every comparable row, so the outcome column is not the problem.'
+        : `beat_close disagrees with clv > 0 on ${both.length - agree} of ${both.length} rows — the generated `
+          + `column is not simply (clv > 0), and any rate computed from it is measuring something else.`,
+  };
+}
 
 /**
  * A signal only has an OUTCOME on this metric if a real CLV was computed.
@@ -276,7 +304,7 @@ const beat = (g: Graded) => g.beat_close === true;
  *
  * No real CLV means no outcome. Such rows are excluded, never counted against.
  */
-const hasOutcome = (g: Graded) => clvIsReal(g.clv) && g.beat_close != null;
+const hasOutcome = (g: Graded) => clvIsReal(g.clv);
 
 /**
  * Score every level of every pre-registered hypothesis, then apply BH across
@@ -671,9 +699,14 @@ Deno.serve(async (req) => {
        Writing these as CONFIRMED would put a data artifact in front of a user
        wearing the clothes of a validated finding. */
     if (base_rate_warning) {
+      /* Attach the evidence WITH the refusal. Three runs were spent asking the
+         user to make a second call for the distribution; a refusal that does
+         not carry its own diagnosis is an incomplete answer. */
       const blocked = {
         ok: false, ...state, patterns_written: 0, calibration_written: 0,
         blocked: 'Nothing was written. ' + base_rate_warning,
+        clv_profile: clvProfile(rows as any),
+        beat_close_column: beatCloseAgreement(rows),
       };
       console.log('LEARN BLOCKED', JSON.stringify(blocked));
       return json(blocked, 200);
