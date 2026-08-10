@@ -165,7 +165,13 @@ export function evidenceIntegrity(
             : "No starter carried both a team and a game to cross-check." });
   }
 
-  /* 2. DUPLICATION — the same numeric vector on two different people. */
+  /* 2. DUPLICATION — the same numeric vector on two different SUBJECTS.
+     The subject is not always the evidence's entity. An opponent_offense item
+     is filed under the pitcher who faces it, but the numbers describe his
+     OPPONENT — so two starters facing the same club legitimately carry one
+     identical season line, and keying on the pitcher reported that as a fault.
+     It did, live: 15 "duplicate" pairs that were just the same teams appearing
+     on both days of a two-day card. Key on what the numbers actually describe. */
   for (const [label, items, status] of [
     ["pitcher_stats", pitchers, "FAIL"],
     ["offense_stats", offenses, "WARNING"],
@@ -174,7 +180,8 @@ export function evidenceIntegrity(
     for (const e of items) {
       const fp = statFingerprint(e.value);
       if (!fp) continue;
-      const who = String((e.value as any)?.name ?? e.entity ?? "?");
+      const v = e.value as any;
+      const who = String(v?.opponent ?? v?.team_name ?? v?.name ?? e.entity ?? "?");
       const at = seen.get(fp) ?? [];
       if (!at.includes(who)) at.push(who);
       seen.set(fp, at);
@@ -1186,7 +1193,7 @@ export class Dal {
     let pf: any[] = [];
     if (ids.length) {
       const r = await this.read(
-        `pitcher_features?select=game_id,side,pitcher_id,name,xera,k_pct,bb_pct,barrel_pct,hardhit_pct&game_id=in.(${ids.map(encodeURIComponent).join(",")})&limit=200`, "player_stats");
+        `pitcher_features?select=game_id,side,pitcher_id,name,xera,k_pct,bb_pct,barrel_pct,hardhit_pct,era,fip,whip,whiff_pct,xwoba_against,updated_at&game_id=in.(${ids.map(encodeURIComponent).join(",")})&limit=200`, "player_stats");
       pf = r.rows; path.pitcher_features = { rows: pf.length, error: r.error, game_ids_tried: ids.length };
     }
     // Link 2b — join produced nothing: does the table hold anything at all, and
@@ -1210,7 +1217,7 @@ export class Dal {
     let off: any[] = [];
     if (ids.length) {
       const r = await this.read(
-        `offense_features?select=game_id,side,obp,iso,k_pct,runs_per_game&game_id=in.(${ids.map(encodeURIComponent).join(",")})&limit=200`, "team_stats");
+        `offense_features?select=game_id,side,obp,iso,k_pct,runs_per_game,avg,slg,ops,bb_pct,vs_lhp,vs_rhp,updated_at&game_id=in.(${ids.map(encodeURIComponent).join(",")})&limit=200`, "team_stats");
       off = r.rows; path.offense_features = { rows: off.length, error: r.error };
     }
 
@@ -1228,27 +1235,60 @@ export class Dal {
     }
     const flip = (s: string) => (s === "home" ? "away" : s === "away" ? "home" : "");
 
+    /* The games row carries the identity every audit needs: which teams, which
+       date, and whether it has already been played. Without it the owned path
+       emitted a pitcher with a side and a game_id and nothing else, so the
+       identity check had nothing to cross-check and silently passed, and the
+       model could not tell whose offense it was looking at. */
+    const gameById: Record<string, any> = {};
+    for (const r of g.rows) gameById[String(r.game_id)] = r;
+    const teamOn = (gm: any, s: string) => s === "home" ? gm?.home_team : s === "away" ? gm?.away_team : null;
+
     for (const p of pf) {
       const side = String(p.side ?? "").toLowerCase();
-      const opp = offBy[`${p.game_id}|${flip(side)}`] ?? null;
+      const gm = gameById[String(p.game_id)] ?? null;
+      const oppSide = flip(side);
+      const opp = offBy[`${p.game_id}|${oppSide}`] ?? null;
       const u = lastStart[String(p.pitcher_id)] ?? null;
       const missing = (["xera", "k_pct", "bb_pct", "barrel_pct", "hardhit_pct"] as const).filter((k) => p[k] == null);
+      const played = String(gm?.status ?? "").toLowerCase() === "final";
+      const gameDate = gm?.game_date ? String(gm.game_date).slice(0, 10) : null;
+      const matchup = gm ? `${gm.away_team} @ ${gm.home_team}` : null;
+      const oppTeam = teamOn(gm, oppSide);
+
       out.push(ev({
         source: "pitcher_features", entity: p.name, field: "pitcher_quality", relevance: "pitching",
         value: {
           name: p.name, side, game_id: p.game_id,
-          xera: p.xera, k_pct: p.k_pct, bb_pct: p.bb_pct, barrel_pct: p.barrel_pct, hardhit_pct: p.hardhit_pct,
+          team: teamOn(gm, side), game: matchup, game_date: gameDate, opponent: oppTeam,
+          era: p.era, fip: p.fip, whip: p.whip,
+          xera: p.xera, k_pct: p.k_pct, bb_pct: p.bb_pct, barrel_pct: p.barrel_pct,
+          hardhit_pct: p.hardhit_pct, whiff_pct: p.whiff_pct, xwoba_against: p.xwoba_against,
+          already_played: played,
           missing_fields: missing,
         },
-        status: missing.length === 5 ? "UNAVAILABLE" : missing.length ? "PARTIAL" : "VERIFIED",
-        freshness: "RECENT",
+        /* A completed game is a sample, never a fact about tonight. */
+        status: missing.length === 5 ? "UNAVAILABLE" : played ? "HISTORICAL" : missing.length ? "PARTIAL" : "VERIFIED",
+        source_timestamp: p.updated_at ?? null,
+        freshness: p.updated_at ? freshnessOf("player_stats", p.updated_at) : "UNKNOWN",
       }));
       out.push(opp
         ? ev({
           source: "offense_features", entity: p.name, field: "opponent_offense", relevance: "matchup",
-          value: { faces_side: flip(side), obp: opp.obp, iso: opp.iso, k_pct: opp.k_pct, runs_per_game: opp.runs_per_game },
-          status: "VERIFIED", freshness: "RECENT",
-          note: "Joined through pitcher_features.game_id and the opposite side of offense_features.",
+          value: {
+            /* Naming the team is what makes this attributable. Two starters who
+               face the SAME team share one season line by definition, and
+               without the name that reads as a duplication fault. */
+            opponent: oppTeam, faces_side: oppSide, game_date: gameDate,
+            obp: opp.obp, iso: opp.iso, k_pct: opp.k_pct, runs_per_game: opp.runs_per_game,
+            avg: opp.avg, slg: opp.slg, ops: opp.ops, bb_pct: opp.bb_pct,
+            vs_lhp: opp.vs_lhp ?? null, vs_rhp: opp.vs_rhp ?? null,
+          },
+          status: played ? "HISTORICAL" : "VERIFIED",
+          source_timestamp: opp.updated_at ?? null,
+          freshness: opp.updated_at ? freshnessOf("team_stats", opp.updated_at) : "UNKNOWN",
+          note: `Season line for ${oppTeam ?? "the opposing side"}, joined through pitcher_features.game_id `
+            + `and the opposite side of offense_features.`,
         })
         : unavailable("offense_features", "opponent_offense", "no offense row for the opposing side of this game", p.name));
       if (u) {

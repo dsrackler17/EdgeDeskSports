@@ -1280,6 +1280,52 @@ section("Evidence integrity is audited before anything is allowed to rank it");
     evidenceIntegrity([], { now: NOW, delivered: { included: 0, withheld: 0 } }).headline,
     "no evidence delivered");
 
+  /* Live false positive: on a two-day card the same club appears twice, so the
+     two starters facing it legitimately carry one identical season line. Keyed
+     on the pitcher, that read as "15 identical profiles across 30 entities". */
+  const oppOf = (pitcher: string, team: string, v: any) => ({
+    source: "offense_features", entity: pitcher, field: "opponent_offense",
+    status: "VERIFIED", freshness: "CURRENT", source_timestamp: "2026-08-10T12:00:00Z",
+    value: { opponent: team, obp: v.obp, iso: v.iso, k_pct: v.k_pct, runs_per_game: v.rpg, ops: v.ops },
+  }) as any;
+  const ATL = { obp: .312, iso: .153, k_pct: 20.9, rpg: 4.4, ops: .724 };
+  const NYM = { obp: .303, iso: .134, k_pct: 19.7, rpg: 4.1, ops: .701 };
+
+  const sameTeamTwice = evidenceIntegrity(
+    [...clean, oppOf("Bryce Elder", "Atlanta Braves", ATL), oppOf("Jared Jones", "Atlanta Braves", ATL)],
+    DELIVERED(5));
+  eq("G48 two starters facing the SAME club is not a duplication fault",
+    chk(sameTeamTwice, "duplicate_offense_stats").status, "PASS");
+
+  const twoTeamsOneLine = evidenceIntegrity(
+    [...clean, oppOf("Bryce Elder", "Atlanta Braves", ATL), oppOf("Jared Jones", "New York Mets", ATL)],
+    DELIVERED(5));
+  eq("G49 two DIFFERENT clubs sharing one line still is",
+    chk(twoTeamsOneLine, "duplicate_offense_stats").status, "WARNING");
+  ok("G50 ...and names the two clubs, not the two pitchers",
+    (chk(twoTeamsOneLine, "duplicate_offense_stats").entities ?? []).join(" ").includes("Atlanta Braves")
+    && (chk(twoTeamsOneLine, "duplicate_offense_stats").entities ?? []).join(" ").includes("New York Mets"));
+  eq("G51 distinct clubs with distinct lines pass",
+    chk(evidenceIntegrity([...clean, oppOf("A", "Atlanta Braves", ATL), oppOf("B", "New York Mets", NYM)],
+      DELIVERED(5)), "duplicate_offense_stats").status, "PASS");
+
+  /* The identity check was silently no-opping on owned-table evidence, because
+     that path emitted a side and a game_id but never a team or a matchup. */
+  const ownedNoIdentity = [{
+    source: "pitcher_features", entity: "A Pitcher", field: "pitcher_quality",
+    status: "VERIFIED", freshness: "RECENT", source_timestamp: "2026-08-10T12:00:00Z",
+    value: { name: "A Pitcher", side: "home", game_id: "MLB-1", ...line(3.2) },
+  }] as any;
+  ok("G52 evidence with no team or matchup cannot be identity-checked",
+    /No starter carried both a team and a game/.test(chk(evidenceIntegrity(ownedNoIdentity, DELIVERED(1)), "identity_chain").detail));
+  const ownedWithIdentity = [{
+    ...ownedNoIdentity[0],
+    value: { ...ownedNoIdentity[0].value, team: "Los Angeles Dodgers", game: "Kansas City Royals @ Los Angeles Dodgers" },
+  }] as any;
+  eq("G53 once team and matchup are carried, the check actually runs",
+    chk(evidenceIntegrity(ownedWithIdentity, DELIVERED(1)), "identity_chain").detail,
+    "All 1 starters resolve pitcher -> team -> game consistently.");
+
   /* All eight audits from the product table are present, every turn. */
   eq("G47 every audit runs on every turn", g1.checks.map((c) => c.name).sort().join(","),
     ["attribution", "completeness", "duplicate_offense_stats", "duplicate_pitcher_stats",
