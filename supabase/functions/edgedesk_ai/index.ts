@@ -40,8 +40,9 @@ import {
   Dal, classify, deriveState, attackThesis, findConflicts, sportModule,
   completeness, coverage, num,
   buildSnapshot, diffSnapshots, extractFindings, scout,
+  crossMarketFlags, movementRead,
   type Evidence, type Plan, type ConvoState, type Completeness,
-  type Snapshot, type Finding, type ScoutItem,
+  type Snapshot, type Finding, type ScoutItem, type CrossFlag,
 } from "./_lib.ts";
 
 const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY") ?? "";
@@ -158,6 +159,8 @@ interface ResearchOut {
   changed: ReturnType<typeof diffSnapshots> | null;
   findings: Finding[];
   queue: ScoutItem[];
+  cross: CrossFlag[];
+  movement: ReturnType<typeof movementRead> | null;
 }
 
 async function runResearch(
@@ -205,9 +208,23 @@ async function runResearch(
   if (focus && (wants("sharp_reference") || wants("market"))) {
     evidence.push(...await dal.getSharpReference(focus.event_id, focus.market, focus.selection));
   }
+  let movement: ReturnType<typeof movementRead> | null = null;
   if (focus && wants("line_movement")) {
     const sigKey = `${focus.event_id}|${focus.market}|${focus.selection}${focus.point != null ? "|" + focus.point : ""}`;
-    evidence.push(...await dal.getLineMovement(sigKey));
+    const mv = await dal.getLineMovement(sigKey);
+    evidence.push(...mv);
+    const series = (mv[0]?.value as any)?.series ?? null;
+    movement = movementRead(num(focus.best_dec), series);
+  }
+
+  /* Cross-market structure: what the markets on this game say about each other.
+     A per-signal board cannot express agreement or conflict between them, so
+     this is where spots live that no amount of scanning the board surfaces. */
+  let cross: CrossFlag[] = [];
+  if (focus?.event_id && plan.depth !== "QUICK") {
+    const cm = await dal.getCrossMarket(focus.event_id);
+    evidence.push(...cm.ev);
+    cross = crossMarketFlags(cm.rows);
   }
   if (focus && wants("closing_line")) {
     evidence.push(...await dal.getClosingLine(focus.event_id));
@@ -336,6 +353,7 @@ async function runResearch(
     plan, state, evidence, conflicts, unavailable: unavail, attack, memory,
     data_path, focus, calls: dal.calls, ms: Date.now() - t0, log: dal.log,
     completeness: comp, coverage: cov, snapshot, changed, findings, queue,
+    cross, movement,
   };
 }
 
@@ -423,6 +441,24 @@ function buildUserContent(body: any, research: ResearchOut | null): string {
         `WHAT CHANGED — research packet v${research.snapshot?.version ?? 1} vs the last one on file. `
         + "Use this for any 'what changed' question; do not infer movement from anything else:\n"
         + compact(research.changed, 3000),
+      );
+    }
+
+    if (research.cross.length) {
+      parts.push(
+        "CROSS-MARKET STRUCTURE — what the markets on this game say about EACH OTHER. "
+        + "EdgeDesk scores every signal in isolation, so none of this appears in any single verdict. "
+        + "It is research direction derived by comparing owned prices; it is never itself a bet, and a "
+        + "conflict flag means one of the two is wrong, not that both are playable:\n"
+        + compact(research.cross, 4000),
+      );
+    }
+
+    if (research.movement) {
+      parts.push(
+        "MARKET MOVEMENT since EdgeDesk froze the price. This is a comparison of two owned prices, "
+        + "NOT a CLV — CLV exists only after the close is captured. Do not present it as one:\n"
+        + compact(research.movement),
       );
     }
 
@@ -658,6 +694,8 @@ export async function handle(req: Request): Promise<Response> {
           packet_version: research.snapshot?.version ?? null,
           changed: research.changed?.changed ?? null,
           findings_stored: research.findings.length,
+          cross_market: research.cross.map((c) => ({ kind: c.kind, markets: c.markets, interest: c.research_interest })),
+          movement: research.movement?.direction ?? null,
           queue: research.queue.slice(0, 6),
           retrievals: research.calls, ms: research.ms,
           sources: Array.from(new Set(research.evidence.map((e) => e.source))),

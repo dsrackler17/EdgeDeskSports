@@ -18,6 +18,7 @@ import {
   Dal, classify, deriveState, attackThesis, findConflicts, completeness, coverage,
   freshnessOf, ev, resolveTeams, personKey, etDay, clearCache,
   buildSnapshot, diffSnapshots, extractFindings, scout, MODE_OF_INTENT,
+  crossMarketFlags, movementRead,
 } from "./_lib.ts";
 
 /* ------------------------------------------------------------ harness */
@@ -595,6 +596,94 @@ section("Official-feed fallback (stale ingestion)");
   ok("L15 an unreachable feed degrades honestly, it does not throw",
     pf.ev.some((e) => e.status === "UNAVAILABLE"));
 }
+
+/* ===================================================================== */
+/* cross-market structure — the spots a per-signal board cannot show      */
+/* ===================================================================== */
+
+section("Cross-market structure");
+
+const G = { home_team: "Boston Red Sox", away_team: "New York Yankees" };
+const mk = (market: string, selection: string, edge: number, over: any = {}) =>
+  ({ ...G, market, selection, edge, first_edge: edge, n_books: 7, has_sharp: true, best_dec: 1.9, ...over });
+
+{
+  // moneyline AND run line on the same team
+  const f = crossMarketFlags([mk("h2h", "New York Yankees", 0.04), mk("spreads", "New York Yankees", 0.035)]);
+  ok("X1 two markets on the same side is flagged",
+    f.some((x) => x.kind === "multi_market_same_side"), f.map((x) => x.kind));
+  ok("X2 ...as high research interest",
+    f.find((x) => x.kind === "multi_market_same_side")?.research_interest === "HIGH");
+  ok("X3 ...and says why a single verdict cannot show it",
+    /not in any single verdict/.test(f.find((x) => x.kind === "multi_market_same_side")!.detail));
+}
+{
+  // nickname on one side must still resolve, or the whole flag is missed
+  const f = crossMarketFlags([mk("h2h", "Yankees", 0.04), mk("spreads", "New York Yankees", 0.035)]);
+  ok("X4 a nickname still resolves to the same side",
+    f.some((x) => x.kind === "multi_market_same_side"), f.map((x) => x.kind));
+}
+{
+  // edges on BOTH teams across markets — they cannot both be right
+  const f = crossMarketFlags([mk("h2h", "New York Yankees", 0.04), mk("spreads", "Boston Red Sox", 0.03)]);
+  const c = f.find((x) => x.kind === "cross_market_conflict");
+  ok("X5 opposite sides of one game is flagged as a conflict", !!c, f.map((x) => x.kind));
+  ok("X6 ...and refuses to present it as two bets", /not two bets/.test(c!.detail));
+}
+{
+  // the moneyline is efficient but the total is not — the classic overlooked spot
+  const f = crossMarketFlags([mk("h2h", "New York Yankees", 0.001), mk("totals", "Over 8.5", 0.045)]);
+  const d = f.find((x) => x.kind === "derivative_only_edge");
+  ok("X7 an edge only on a derivative market is surfaced", !!d, f.map((x) => x.kind));
+  ok("X8 ...with the reason it is overlooked", /less sharp money/.test(d!.detail));
+}
+{
+  const f = crossMarketFlags([
+    mk("h2h", "New York Yankees", 0.04, { has_sharp: true }),
+    mk("totals", "Over 8.5", 0.04, { has_sharp: false }),
+  ]);
+  ok("X9 uneven sharp confirmation across markets is flagged",
+    f.some((x) => x.kind === "uneven_sharp_confirmation"), f.map((x) => x.kind));
+}
+{
+  const f = crossMarketFlags([
+    mk("h2h", "New York Yankees", 0.04, { n_books: 9 }),
+    mk("spreads", "New York Yankees", 0.04, { n_books: 2 }),
+  ]);
+  ok("X10 a thin market on an otherwise liquid game is flagged",
+    f.some((x) => x.kind === "thin_market_on_liquid_game"), f.map((x) => x.kind));
+}
+{
+  eq("X11 a single market has no structure to read", crossMarketFlags([mk("h2h", "New York Yankees", 0.04)]).length, 0);
+  eq("X12 an empty board invents nothing", crossMarketFlags([]).length, 0);
+  eq("X13 sub-floor edges are not treated as edges",
+    crossMarketFlags([mk("h2h", "New York Yankees", 0.001), mk("spreads", "New York Yankees", 0.001)])
+      .filter((x) => x.kind === "multi_market_same_side").length, 0);
+}
+
+/* ===================================================================== */
+/* market movement direction                                             */
+/* ===================================================================== */
+
+section("Market movement");
+
+const ticks = (prices: number[]) => prices.map((p, i) => ({ best_dec: p, edge: 0.03, created_at: new Date(Date.now() - (prices.length - i) * 6e5).toISOString() }));
+
+eq("V20 a shortening price is movement TOWARD the side",
+  movementRead(2.00, ticks([2.00, 1.95, 1.90])).direction, "toward");
+eq("V21 a drifting price is movement AWAY",
+  movementRead(2.00, ticks([2.00, 2.05, 2.15])).direction, "away");
+eq("V22 a small wobble is flat, not a signal",
+  movementRead(2.00, ticks([2.00, 2.00, 2.005])).direction, "flat");
+eq("V23 no ticks means unknown, never a guess",
+  movementRead(2.00, []).direction, "unknown");
+eq("V24 no entry price means unknown", movementRead(null, ticks([2.0, 1.9])).direction, "unknown");
+ok("V25 magnitude is reported",
+  Math.abs(movementRead(2.00, ticks([2.00, 1.80]))!.moved_pct! - 0.10) < 1e-9);
+ok("V26 movement is explicitly NOT called CLV",
+  /not CLV/.test(movementRead(2.00, ticks([2.00, 1.90])).note));
+ok("V27 drift is not spun as good news",
+  /market knows something/.test(movementRead(2.00, ticks([2.00, 2.20])).note));
 
 console.log(`\n${failed === 0 ? "ALL GREEN" : "FAILURES"} — ${passed} passed, ${failed} failed`);
 if (failures.length) console.log("failed:", failures.join(" | "));

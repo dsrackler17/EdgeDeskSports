@@ -996,6 +996,41 @@ export class Dal {
     return { ev: out, path };
   }
 
+  /**
+   * Every signal EdgeDesk holds on ONE game, across every market.
+   *
+   * The board scores each signal alone, which is why the most informative thing
+   * in the data is invisible: what the markets on a single game say ABOUT EACH
+   * OTHER. A moneyline edge with a run-line edge on the same team is a
+   * different object from a moneyline edge whose spread points the other way.
+   * Nothing new is computed here — this retrieves the rows so the relationship
+   * can be read off owned prices.
+   */
+  async getCrossMarket(eventId: string): Promise<{ rows: any[]; ev: Evidence[] }> {
+    const { rows, error } = await this.read(
+      `signals?select=event_id,market,selection,point,best_dec,first_best_dec,sharp_fair,consensus_fair,`
+      + `edge,first_edge,n_books,has_sharp,pin_dec,pin_opp_dec,home_team,away_team,last_seen_at`
+      + `&event_id=eq.${encodeURIComponent(eventId)}&order=edge.desc.nullslast&limit=40`, "");
+    if (error) return { rows: [], ev: [unavailable("signals", "cross_market", `read failed — ${error}`, eventId)] };
+    if (rows.length < 2) {
+      return { rows, ev: [unavailable("signals", "cross_market",
+        "only one market carries a signal on this game — nothing to cross-check", eventId)] };
+    }
+    return {
+      rows,
+      ev: [ev({
+        source: "signals", entity: eventId, field: "cross_market", relevance: "structure",
+        value: rows.map((r) => ({
+          market: r.market, selection: r.selection, point: r.point,
+          price: r.best_dec, edge: r.edge, has_sharp: r.has_sharp, n_books: r.n_books,
+        })),
+        status: "VERIFIED",
+        source_timestamp: rows[0]?.last_seen_at,
+        freshness: freshnessOf("odds", rows[0]?.last_seen_at),
+      })],
+    };
+  }
+
   /** Flagged/taxed arms and closer availability. Partial by nature — never full usage. */
   async getBullpen(teamIds: (number | string)[]): Promise<Evidence[]> {
     const ids = teamIds.filter((v) => v != null);
@@ -1407,6 +1442,172 @@ export function extractFindings(evidence: Evidence[]): Finding[] {
     });
   }
   return out;
+}
+
+/* ------------------------------- cross-market structure (non-obvious spots) */
+
+/* Which side of a game a selection sits on, by name. Reused from the same
+   problem that was mis-grading bets: exact string equality does not survive
+   "Athletics" vs "Oakland Athletics". */
+function sideOf(selection: string, home: string, away: string): "home" | "away" | null {
+  const s = normName(selection), h = normName(home), a = normName(away);
+  if (!s || !h || !a) return null;
+  if (s === h && s !== a) return "home";
+  if (s === a && s !== h) return "away";
+  const endsH = h.endsWith(" " + s), endsA = a.endsWith(" " + s);
+  if (endsH && !endsA) return "home";
+  if (endsA && !endsH) return "away";
+  return null;
+}
+
+export interface CrossFlag {
+  kind: string;
+  detail: string;
+  markets: string[];
+  research_interest: "HIGH" | "MEDIUM" | "LOW";
+}
+
+/**
+ * Read the RELATIONSHIP between the markets EdgeDesk holds on one game.
+ *
+ * This is where the non-obvious spots live. A moneyline edge is a thing anyone
+ * scanning a board will see. Two markets on the same game agreeing — or worse,
+ * disagreeing — is a structural fact about the price that no per-signal score
+ * can express, and it is sitting in data EdgeDesk already owns.
+ *
+ * Everything below is a COMPARISON of owned fields. No implied probability is
+ * derived from a spread, no market is converted into another, and no new
+ * betting number is produced. The flags are research direction, never a bet.
+ */
+export function crossMarketFlags(rows: any[], floor = 0.02): CrossFlag[] {
+  const out: CrossFlag[] = [];
+  if (!rows || rows.length < 2) return out;
+
+  const home = rows[0]?.home_team ?? "", away = rows[0]?.away_team ?? "";
+  const live = rows.filter((r) => num(r.edge) != null && num(r.edge)! >= floor);
+  const byMarket = (m: string) => rows.filter((r) => r.market === m);
+
+  // 1. Two markets, same team. The rarest and most informative shape: the
+  //    price is wrong about a team, not about one bet type.
+  const sided = live
+    .map((r) => ({ r, side: sideOf(r.selection, home, away) }))
+    .filter((x) => x.side);
+  const homeSide = sided.filter((x) => x.side === "home").map((x) => x.r);
+  const awaySide = sided.filter((x) => x.side === "away").map((x) => x.r);
+  for (const [label, group] of [["home", homeSide], ["away", awaySide]] as [string, any[]][]) {
+    const markets = Array.from(new Set(group.map((r) => r.market)));
+    if (markets.length >= 2) {
+      out.push({
+        kind: "multi_market_same_side",
+        detail: `${group[0].selection} carries an edge in ${markets.length} markets (${markets.join(", ")}). `
+          + `Two market types pricing the same side wrong is a stronger structural read than either alone — `
+          + `EdgeDesk still scores each separately, so this agreement is not in any single verdict.`,
+        markets, research_interest: "HIGH",
+      });
+    }
+  }
+
+  // 2. Two markets, OPPOSITE sides of the same game. One of them is wrong;
+  //    a per-signal board shows both as edges and cannot say that.
+  if (homeSide.length && awaySide.length) {
+    out.push({
+      kind: "cross_market_conflict",
+      detail: `EdgeDesk holds edges on BOTH sides of this game across different markets `
+        + `(${homeSide.map((r) => r.market).join(", ")} on ${homeSide[0].selection} vs `
+        + `${awaySide.map((r) => r.market).join(", ")} on ${awaySide[0].selection}). `
+        + `They cannot both be right about the same game. Treat as a pricing artefact to investigate, not two bets.`,
+      markets: Array.from(new Set([...homeSide, ...awaySide].map((r) => r.market))),
+      research_interest: "HIGH",
+    });
+  }
+
+  // 3. An edge on a derivative market while the moneyline has none. Derivative
+  //    markets get less attention and less sharp money, so this is exactly the
+  //    kind of spot a moneyline-first scan never surfaces.
+  const mlEdge = byMarket("h2h").some((r) => (num(r.edge) ?? 0) >= floor);
+  const derivEdges = live.filter((r) => r.market === "spreads" || r.market === "totals");
+  if (!mlEdge && derivEdges.length && byMarket("h2h").length) {
+    out.push({
+      kind: "derivative_only_edge",
+      detail: `The moneyline on this game is priced with no edge, but ${derivEdges.map((r) => r.market).join(" / ")} `
+        + `carries one. Derivative markets absorb less sharp money, so a discrepancy that exists only there `
+        + `is a genuine research target rather than a stale moneyline.`,
+      markets: Array.from(new Set(derivEdges.map((r) => r.market))),
+      research_interest: "HIGH",
+    });
+  }
+
+  // 4. Sharp confirmation present on one market and absent on another. The
+  //    unconfirmed one is resting on softer books than the board implies.
+  const confirmed = live.filter((r) => r.has_sharp === true).map((r) => r.market);
+  const unconfirmed = live.filter((r) => r.has_sharp !== true).map((r) => r.market);
+  if (confirmed.length && unconfirmed.length) {
+    out.push({
+      kind: "uneven_sharp_confirmation",
+      detail: `Pinnacle prints ${confirmed.join(", ")} on this game but not ${unconfirmed.join(", ")}. `
+        + `The unconfirmed market's fair line rests on softer books than its score suggests.`,
+      markets: Array.from(new Set([...confirmed, ...unconfirmed])),
+      research_interest: "MEDIUM",
+    });
+  }
+
+  // 5. Book depth differing sharply between markets on the same game.
+  const depths = live.map((r) => ({ m: r.market, n: num(r.n_books) ?? 0 })).filter((d) => d.n > 0);
+  if (depths.length >= 2) {
+    const max = Math.max(...depths.map((d) => d.n)), min = Math.min(...depths.map((d) => d.n));
+    if (max >= 6 && min <= 3) {
+      out.push({
+        kind: "thin_market_on_liquid_game",
+        detail: `Book coverage on this game ranges from ${min} to ${max} depending on the market. `
+          + `The thin side is materially less trustworthy than the liquid one, which a per-signal book count does not contrast.`,
+        markets: depths.map((d) => d.m), research_interest: "MEDIUM",
+      });
+    }
+  }
+
+  return out;
+}
+
+/* ------------------------------------- market movement direction */
+
+/**
+ * Which way the market moved relative to the price EdgeDesk froze.
+ *
+ * Movement toward your side is the single most informative pre-settlement
+ * signal EdgeDesk can observe, and the tick series was previously handed to the
+ * model as a raw dump. This classifies direction and magnitude only — it is a
+ * comparison of two owned prices, not a projection, and it never becomes a CLV.
+ * Real CLV still comes from `close`, after the fact.
+ */
+export function movementRead(entryDec: number | null, ticks: any[] | null): {
+  direction: "toward" | "away" | "flat" | "unknown";
+  moved_pct: number | null;
+  n: number;
+  note: string;
+} {
+  const n = ticks?.length ?? 0;
+  if (!entryDec || !(entryDec > 1) || n < 2) {
+    return { direction: "unknown", moved_pct: null, n,
+      note: n < 2 ? "Not enough tick history to read movement." : "No frozen entry price to compare against." };
+  }
+  const last = num(ticks![n - 1]?.best_dec);
+  if (last == null || !(last > 1)) {
+    return { direction: "unknown", moved_pct: null, n, note: "Latest tick carries no usable price." };
+  }
+  // Shortening price (lower decimal) = the market came toward this side.
+  const pct = (entryDec - last) / entryDec;
+  if (Math.abs(pct) < 0.005) {
+    return { direction: "flat", moved_pct: +pct.toFixed(4), n,
+      note: "The market has not moved materially since detection." };
+  }
+  if (pct > 0) {
+    return { direction: "toward", moved_pct: +pct.toFixed(4), n,
+      note: `The price has shortened ${(pct * 100).toFixed(1)}% since EdgeDesk froze it — the market moved TOWARD this side. `
+        + `That is the shape that precedes positive CLV, but it is not CLV: only the close settles that.` };
+  }
+  return { direction: "away", moved_pct: +pct.toFixed(4), n,
+    note: `The price has drifted ${(Math.abs(pct) * 100).toFixed(1)}% longer since detection — the market moved AWAY from this side. `
+      + `Either the edge is real and getting better, or the market knows something the frozen price did not.` };
 }
 
 /* ------------------------------------------- proactive research scout */
