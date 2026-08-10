@@ -45,7 +45,7 @@ const url = Deno.env.get('SUPABASE_URL')!;
 const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 const UA = { 'User-Agent': 'EdgeDesk/1.0 (contact: ops@edgedesk)', 'Accept': 'application/json,text/csv,*/*' };
 
-export const BUILD = '2026-08-14.2-offseason-aware';
+export const BUILD = '2026-08-14.3-real-columns';
 
 /* ========================================================================
    SPORTS
@@ -194,22 +194,105 @@ export function torvikRow(r: Record<string, string>) {
   };
 }
 
-/** Team EPA rows from an nflverse-shaped team stats CSV. */
-export function nflverseRow(r: Record<string, string>) {
+/**
+ * Torvik context the probe revealed: barthag, strength of schedule and the
+ * conference come from the season results file, while the four factors live in
+ * the trank leaderboard. Two files, two shapes — so what the results file adds
+ * goes into `metrics` rather than pretending the four factors were found.
+ */
+export function torvikExtras(r: Record<string, string>) {
   return {
-    off_epa_play: col(r, ['off_epa_play', 'epa_per_play', 'offense_epa_play']),
-    def_epa_play: col(r, ['def_epa_play', 'defense_epa_play']),
-    off_success_rate: col(r, ['off_success_rate', 'success_rate']),
-    def_success_rate: col(r, ['def_success_rate']),
-    pass_epa_play: col(r, ['pass_epa_play', 'passing_epa_play']),
-    rush_epa_play: col(r, ['rush_epa_play', 'rushing_epa_play']),
-    def_pass_epa_play: col(r, ['def_pass_epa_play']),
-    def_rush_epa_play: col(r, ['def_rush_epa_play']),
-    explosive_play_rate: col(r, ['explosive_rate', 'explosive_play_rate']),
-    plays_per_game: col(r, ['plays_per_game', 'plays_pg']),
-    sack_rate: col(r, ['sack_rate']),
-    sack_rate_allowed: col(r, ['sack_rate_allowed']),
+    barthag: col(r, ['barthag']),
+    sos: col(r, ['sos']),
+    ncsos: col(r, ['ncsos']),
+    opp_oe: col(r, ['Opp OE', 'opp_oe']),
+    opp_de: col(r, ['Opp DE', 'opp_de']),
+    conf: r.conf ?? r.Conf ?? null,
+    record: r.record ?? r.Record ?? null,
+    note: 'barthag is the projected win rate against an average D1 team. From the season results file; the four factors come from the trank leaderboard and are absent here.',
   };
+}
+
+/** Team EPA rows from an nflverse-shaped team stats CSV. */
+/**
+ * Map an nflverse team-stats row.
+ *
+ * The first version of this looked for `off_epa_play` and `def_epa_play` and
+ * would have found NEITHER. The probe returned the real header list and the
+ * file is season TOTALS, not rates: passing_epa, rushing_epa, attempts,
+ * carries, games. Every per-play number has to be derived, and the defensive
+ * columns are counting stats (def_sacks, def_interceptions, tackles for loss),
+ * not EPA allowed.
+ *
+ * So this derives what the file genuinely supports and REFUSES to fabricate
+ * what it does not. Defensive EPA per play is not in this feed; it is left
+ * null and named in `missing` rather than approximated from sacks, because a
+ * disruption proxy dressed as an efficiency number is exactly the kind of
+ * quiet substitution that makes a model look predictive and behave randomly.
+ */
+export function nflverseRow(r: Record<string, string>) {
+  const games = col(r, ['games']);
+  const att = col(r, ['attempts']);
+  const car = col(r, ['carries']);
+  const sacked = col(r, ['sacks_suffered']);
+  const passEpa = col(r, ['passing_epa']);
+  const rushEpa = col(r, ['rushing_epa']);
+
+  // A dropback is a pass attempt plus a sack; a play is that plus a carry.
+  const dropbacks = att != null ? att + (sacked ?? 0) : null;
+  const plays = (att != null && car != null) ? att + car + (sacked ?? 0) : null;
+  const totalEpa = (passEpa != null || rushEpa != null)
+    ? (passEpa ?? 0) + (rushEpa ?? 0) : null;
+
+  const per = (total: number | null, denom: number | null) =>
+    (total != null && denom != null && denom > 0) ? +(total / denom).toFixed(4) : null;
+
+  const passYds = col(r, ['passing_yards']);
+  const rushYds = col(r, ['rushing_yards']);
+  const ints = col(r, ['passing_interceptions']);
+  const fumLost = col(r, ['fumbles_lost_total']);
+  const defInts = col(r, ['def_interceptions']);
+  const defFumRec = col(r, ['fumble_recovery_opp']);
+  const takeaways = (defInts != null || defFumRec != null) ? (defInts ?? 0) + (defFumRec ?? 0) : null;
+  const giveaways = (ints != null || fumLost != null) ? (ints ?? 0) + (fumLost ?? 0) : null;
+
+  const fields = {
+    off_epa_play: per(totalEpa, plays),
+    pass_epa_play: per(passEpa, dropbacks),
+    rush_epa_play: per(rushEpa, car),
+    yards_per_play: (passYds != null && rushYds != null)
+      ? per(passYds + rushYds, plays) : null,
+    plays_per_game: per(plays, games),
+    sack_rate_allowed: (sacked != null && dropbacks != null && dropbacks > 0)
+      ? +(sacked / dropbacks).toFixed(4) : null,
+    turnover_margin_pg: (takeaways != null && giveaways != null)
+      ? per(takeaways - giveaways, games) : null,
+    penalty_yards_pg: per(col(r, ['penalty_yards']), games),
+    /* Present in the file only as counting stats, so these stay null. Naming
+       them is the point: the research layer reports "not ingested" instead of
+       reasoning from a hole it cannot see. */
+    def_epa_play: null as number | null,
+    def_pass_epa_play: null as number | null,
+    def_rush_epa_play: null as number | null,
+    off_success_rate: null as number | null,
+    def_success_rate: null as number | null,
+    explosive_play_rate: null as number | null,
+  };
+
+  /* Defensive disruption, kept out of the efficiency columns and stored as
+     context. Useful for a quarterback matchup read; not a substitute for EPA. */
+  const metrics = {
+    def_sacks_pg: per(col(r, ['def_sacks']), games),
+    def_qb_hits_pg: per(col(r, ['def_qb_hits']), games),
+    def_tfl_pg: per(col(r, ['def_tackles_for_loss']), games),
+    def_pass_defended_pg: per(col(r, ['def_pass_defended']), games),
+    takeaways_pg: per(takeaways, games),
+    cpoe: col(r, ['passing_cpoe']),
+    games: games,
+    note: 'Defensive counting stats per game. NOT an efficiency measure — nflverse team totals carry no EPA-allowed column, so def_epa_play is genuinely absent rather than approximated from these.',
+  };
+
+  return { ...fields, __metrics: metrics };
 }
 
 /** Every value null means the feed produced a shape we did not recognise. */
@@ -428,14 +511,26 @@ async function ingestNflEfficiency(sb: any, teams: any[], season: number) {
   for (const t of teams) {
     const r = byTeam.get(normTeam(t.team)) ?? byTeam.get(normTeam(t.abbr ?? ''));
     if (!r) { unmatched++; continue; }
-    const vals = nflverseRow(r);
+    const { __metrics, ...vals } = nflverseRow(r);
     if (!anyValue(vals)) continue;
     const { error } = await sb.from('team_features')
-      .upsert({ game_id: t.game_id, side: t.side, ...vals, source: 'nflverse', updated_at: new Date().toISOString() },
+      .upsert({ game_id: t.game_id, side: t.side, ...vals, metrics: __metrics,
+        source: 'nflverse', updated_at: new Date().toISOString() },
         { onConflict: 'game_id,side' });
     if (!error) applied++;
   }
-  return { feeds, applied, unmatched, teams_in_feed: byTeam.size };
+  const sample = byTeam.values().next().value;
+  const filled = sample ? Object.entries(nflverseRow(sample))
+    .filter(([k, v]) => k !== '__metrics' && v != null).map(([k]) => k) : [];
+  const empty = sample ? Object.entries(nflverseRow(sample))
+    .filter(([k, v]) => k !== '__metrics' && v == null).map(([k]) => k) : [];
+  return {
+    feeds, applied, unmatched, teams_in_feed: byTeam.size,
+    columns_derived: filled, columns_unavailable: empty,
+    note: empty.length
+      ? `This feed carries season totals, so per-play rates are derived. ${empty.join(', ')} are NOT in it and stay null — the research layer reports them as not ingested rather than guessing.`
+      : undefined,
+  };
 }
 
 /** College basketball efficiency from Barttorvik. */
@@ -469,6 +564,7 @@ async function ingestCbbEfficiency(sb: any, teams: any[], season: number) {
     const { error } = await sb.from('team_features').upsert({
       game_id: t.game_id, side: t.side, ...vals,
       adj_em: (adjO != null && adjD != null) ? +(adjO - adjD).toFixed(2) : null,
+      metrics: torvikExtras(r),
       source: 'barttorvik', updated_at: new Date().toISOString(),
     }, { onConflict: 'game_id,side' });
     if (!error) applied++;

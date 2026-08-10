@@ -2,7 +2,7 @@
 //   node --experimental-strip-types --import ../_testkit/register.mjs ingest_multisport/test.ts
 import {
   num, parseCsv, col, normTeam, restDays, torvikRow, nflverseRow, anyValue,
-  espnDate, SPORTS, BUILD,
+  espnDate, SPORTS, BUILD, torvikExtras,
 } from "./index.ts";
 
 let passed = 0, failed = 0;
@@ -88,10 +88,68 @@ sec("Feed row mapping");
   eq("F5 a column the feed omits is null, not zero", t.wab, null);
   ok("F6 a recognised row reports that it found something", anyValue(t));
 
-  const n = nflverseRow({ off_epa_play: "0.14", def_epa_play: "-0.06", off_success_rate: "0.49" });
-  eq("F7 offensive EPA", n.off_epa_play, 0.14);
-  eq("F8 defensive EPA keeps its sign — negative is a good defence", n.def_epa_play, -0.06);
-  eq("F9 success rate", n.off_success_rate, 0.49);
+  /* The REAL nflverse header set, taken from a live probe. The file is season
+     TOTALS, not rates — the first version of this mapping looked for
+     off_epa_play and def_epa_play and would have found neither. */
+  const nflReal = {
+    season: "2025", team: "BUF", season_type: "REG", games: "17",
+    completions: "380", attempts: "560", passing_yards: "4200", passing_tds: "32",
+    passing_interceptions: "9", sacks_suffered: "28", passing_epa: "112.5", passing_cpoe: "3.1",
+    carries: "440", rushing_yards: "2100", rushing_epa: "18.4",
+    penalties: "95", penalty_yards: "780",
+    def_sacks: "44", def_qb_hits: "96", def_tackles_for_loss: "70",
+    def_interceptions: "16", def_pass_defended: "70", fumble_recovery_opp: "8",
+    fumbles_lost_total: "7",
+  };
+  const n = nflverseRow(nflReal);
+  // 560 attempts + 28 sacks + 440 carries = 1028 plays; (112.5 + 18.4) / 1028
+  eq("F7 offensive EPA per play is DERIVED from season totals", n.off_epa_play, 0.1273);
+  eq("F8 pass EPA is per DROPBACK — attempts plus sacks", n.pass_epa_play, 0.1913);
+  eq("F9 rush EPA is per carry", n.rush_epa_play, 0.0418);
+  eq("F10 plays per game comes from the same denominator", n.plays_per_game, 60.4706);
+  eq("F11 sack rate allowed is sacks over dropbacks", n.sack_rate_allowed, 0.0476);
+  // takeaways 16+8=24, giveaways 9+7=16, margin +8 over 17 games
+  eq("F12 turnover margin is takeaways minus giveaways, per game", n.turnover_margin_pg, 0.4706);
+
+  /* The columns this feed genuinely does not carry. Naming them is the point:
+     a disruption proxy dressed as an efficiency number is the substitution
+     that makes a model look predictive and behave randomly. */
+  eq("F13 defensive EPA is NOT invented from sacks", n.def_epa_play, null);
+  eq("F14 nor is success rate", [n.off_success_rate, n.def_success_rate], [null, null]);
+  eq("F15 nor explosive rate", n.explosive_play_rate, null);
+  ok("F16 defensive counting stats are kept as CONTEXT, not efficiency",
+    (n as any).__metrics.def_sacks_pg === 2.5882 && (n as any).__metrics.takeaways_pg === 1.4118);
+  ok("F17 ...and say so in their own note",
+    /NOT an efficiency measure/.test((n as any).__metrics.note));
+
+  eq("F18 a row with no games cannot produce per-game rates",
+    nflverseRow({ attempts: "100", passing_epa: "10" }).plays_per_game, null);
+  eq("F19 zero plays never divides by zero",
+    nflverseRow({ games: "0", attempts: "0", carries: "0", passing_epa: "0" }).off_epa_play, null);
+
+  /* The REAL Torvik season-results header set, also from a live probe. It
+     carries adjusted efficiency and tempo but NOT the four factors, which live
+     in the trank leaderboard. */
+  const torvikReal = {
+    rank: "1", team: "Duke", conf: "ACC", record: "28-4",
+    adjoe: "121.4", "oe Rank": "2", adjde: "89.7", "de Rank": "3",
+    barthag: "0.9712", sos: "58.4", ncsos: "62.1",
+    "Opp OE": "104.2", "Opp DE": "101.8", WAB: "8.4", adjt: "67.3",
+  };
+  const t2 = torvikRow(torvikReal);
+  eq("F20 adjusted offence from the real header", t2.adj_o, 121.4);
+  eq("F21 adjusted defence", t2.adj_d, 89.7);
+  eq("F22 tempo is 'adjt' in this file, not 'adj_t'", t2.adj_tempo, 67.3);
+  eq("F23 wins above bubble is matched case-insensitively", t2.wab, 8.4);
+  eq("F24 the four factors are genuinely absent from this file",
+    [t2.efg_pct, t2.to_pct, t2.orb_pct, t2.ft_rate], [null, null, null, null]);
+
+  const x = torvikExtras(torvikReal);
+  eq("F25 barthag is kept as context", x.barthag, 0.9712);
+  eq("F26 ...along with schedule strength", [x.sos, x.ncsos], [58.4, 62.1]);
+  eq("F27 ...and the conference", x.conf, "ACC");
+  ok("F28 ...with a note saying where the four factors actually live",
+    /trank leaderboard/.test(x.note));
 
   /* An entirely unrecognised shape must be detectable, because that is what a
      feed looks like the day it changes its headers. */
@@ -113,7 +171,7 @@ sec("Sport definitions and dates");
     [SPORTS.cbb.kind, SPORTS.nfl.kind, SPORTS.cfb.kind], ["basketball", "football", "football"]);
   eq("S5 ESPN wants YYYYMMDD", espnDate(new Date("2026-08-14T12:00:00Z")), "20260814");
   ok("S6 the build marker is set so a deploy can be confirmed",
-    typeof BUILD === "string" && /offseason-aware/.test(BUILD), BUILD);
+    typeof BUILD === "string" && /^\d{4}-\d{2}-\d{2}\.\d+-/.test(BUILD), BUILD);
 }
 
 console.log(`\n${failed === 0 ? "ALL GREEN" : "FAILURES"} — ${passed} passed, ${failed} failed`);
