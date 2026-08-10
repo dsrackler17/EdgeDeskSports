@@ -48,7 +48,12 @@ function mockFetch(fx: Fixture): typeof fetch {
       if (fx.__statsapi === "error") return new Response("nope", { status: 503 });
       if (u.includes("/schedule")) return new Response(JSON.stringify(STATSAPI_SCHED), { status: 200 });
       if (u.includes("/people")) return new Response(JSON.stringify(STATSAPI_PEOPLE), { status: 200 });
-      if (u.includes("/teams/stats")) return new Response(JSON.stringify(STATSAPI_TEAMS), { status: 200 });
+      if (u.includes("/teams/stats")) {
+        if (u.includes("group=pitching")) return new Response(JSON.stringify(STATSAPI_LEAGUE_PITCHING), { status: 200 });
+        if (u.includes("sitCodes=vl")) return new Response(JSON.stringify(STATSAPI_HIT_VL), { status: 200 });
+        if (u.includes("sitCodes=vr")) return new Response(JSON.stringify(STATSAPI_HIT_VR), { status: 200 });
+        return new Response(JSON.stringify(STATSAPI_TEAMS), { status: 200 });
+      }
       return new Response("{}", { status: 200 });
     }
     const table = u.split("/rest/v1/")[1]?.split("?")[0] ?? "";
@@ -154,13 +159,39 @@ const STATSAPI_SCHED = { dates: [{ games: [{
     home: { team: { id: 111, name: "Boston Red Sox" },   probablePitcher: { id: 9002, fullName: "Kutter Crawford" } },
   },
 }] }] };
+const STATSAPI_LEAGUE_PITCHING = { stats: [{ splits: Array.from({ length: 30 }, () => ({
+  stat: { inningsPitched: "1000.0", homeRuns: 110, baseOnBalls: 330, hitBatsmen: 40, strikeOuts: 900, earnedRuns: 440 },
+})) }] };
+const STATSAPI_HIT_VL = { stats: [{ splits: [
+  { team: { id: 111 }, stat: { avg: ".240", obp: ".310", slg: ".390", ops: ".700", runs: 140, gamesPlayed: 112, strikeOuts: 230, baseOnBalls: 95, plateAppearances: 1000, homeRuns: 34 } },
+  { team: { id: 147 }, stat: { avg: ".270", obp: ".360", slg: ".480", ops: ".840", runs: 190, gamesPlayed: 112, strikeOuts: 200, baseOnBalls: 120, plateAppearances: 1000, homeRuns: 52 } },
+] }] };
+const STATSAPI_HIT_VR = { stats: [{ splits: [
+  { team: { id: 111 }, stat: { avg: ".262", obp: ".338", slg: ".442", ops: ".780", runs: 430, gamesPlayed: 112, strikeOuts: 660, baseOnBalls: 300, plateAppearances: 3000, homeRuns: 114 } },
+  { team: { id: 147 }, stat: { avg: ".246", obp: ".330", slg: ".430", ops: ".760", runs: 410, gamesPlayed: 112, strikeOuts: 740, baseOnBalls: 330, plateAppearances: 3000, homeRuns: 126 } },
+] }] };
+
 const STATSAPI_PEOPLE = { people: [
-  { id: 9001, fullName: "Carlos Rodón", stats: [{ group: { displayName: "pitching" }, splits: [{ stat: {
-    era: "5.41", whip: "1.48", strikeoutsPer9Inn: "8.12", walksPer9Inn: "4.02",
-    inningsPitched: "121.2", strikeOuts: 110, baseOnBalls: 54, homeRuns: 22, gamesStarted: 22 } }] }] },
-  { id: 9002, fullName: "Kutter Crawford", stats: [{ group: { displayName: "pitching" }, splits: [{ stat: {
-    era: "3.72", whip: "1.11", strikeoutsPer9Inn: "9.44", walksPer9Inn: "2.10",
-    inningsPitched: "134.0", strikeOuts: 140, baseOnBalls: 31, homeRuns: 18, gamesStarted: 23 } }] }] },
+  { id: 9001, fullName: "Carlos Rodón", pitchHand: { code: "L" }, stats: [
+    { group: { displayName: "pitching" }, type: { displayName: "season" }, splits: [{ stat: {
+      era: "5.41", whip: "1.48", strikeoutsPer9Inn: "8.12", walksPer9Inn: "4.02", strikeoutWalkRatio: "2.04",
+      inningsPitched: "121.2", strikeOuts: 110, baseOnBalls: 54, hitBatsmen: 6, homeRuns: 22,
+      gamesStarted: 22, battersFaced: 540, groundOutsToAirouts: "0.78",
+      strikePercentage: ".620", pitchesPerInning: "16.8" } }] },
+    { group: { displayName: "pitching" }, type: { displayName: "gameLog" }, splits: [
+      { date: "2026-08-05", stat: { gamesStarted: 1, inningsPitched: "5.1", numberOfPitches: 96, earnedRuns: 4, strikeOuts: 6, baseOnBalls: 3 } },
+      { date: "2026-07-30", stat: { gamesStarted: 1, inningsPitched: "6.0", numberOfPitches: 101, earnedRuns: 2, strikeOuts: 8, baseOnBalls: 1 } },
+      { date: "2026-07-24", stat: { gamesStarted: 1, inningsPitched: "4.2", numberOfPitches: 88, earnedRuns: 5, strikeOuts: 4, baseOnBalls: 4 } },
+      { date: "2026-07-19", stat: { gamesStarted: 0, inningsPitched: "1.0", numberOfPitches: 15 } },
+    ] },
+  ] },
+  { id: 9002, fullName: "Kutter Crawford", pitchHand: { code: "R" }, stats: [
+    { group: { displayName: "pitching" }, type: { displayName: "season" }, splits: [{ stat: {
+      era: "3.72", whip: "1.11", strikeoutsPer9Inn: "9.44", walksPer9Inn: "2.10", strikeoutWalkRatio: "4.52",
+      inningsPitched: "134.0", strikeOuts: 140, baseOnBalls: 31, hitBatsmen: 4, homeRuns: 18,
+      gamesStarted: 23, battersFaced: 545, groundOutsToAirouts: "1.42",
+      strikePercentage: ".660", pitchesPerInning: "15.1" } }] },
+  ] },
 ] };
 const STATSAPI_TEAMS = { stats: [{ splits: [
   { team: { id: 111, name: "Boston Red Sox" },   stat: { obp: ".331", slg: ".428", ops: ".759", avg: ".256", runs: 571, gamesPlayed: 112, strikeOuts: 890, baseOnBalls: 401, homeRuns: 148 } },
@@ -565,7 +596,7 @@ section("Official-feed fallback (stale ingestion)");
     (off.find((e) => String(e.entity).includes("Rod"))!.value as any).opponent === "Boston Red Sox",
     (off.find((e) => String(e.entity).includes("Rod"))!.value as any).opponent);
   ok("L9 offense gaps are named too",
-    off.every((e) => (e.value as any).missing_fields.includes("wrc_plus")));
+    off.every((e) => (e.value as any).applicable.missing_fields.includes("wrc_plus")));
 
   const cov = coverage(pf.ev, "pitcher_quality", ["Carlos Rodón", "Kutter Crawford"]);
   eq("L10 coverage recovers from 0/2 to 2/2", [cov.have_n, cov.total_n], [2, 2]);
@@ -684,6 +715,87 @@ ok("V26 movement is explicitly NOT called CLV",
   /not CLV/.test(movementRead(2.00, ticks([2.00, 1.90])).note));
 ok("V27 drift is not spun as good news",
   /market knows something/.test(movementRead(2.00, ticks([2.00, 2.20])).note));
+
+/* ===================================================================== */
+/* the expanded MLB statistical layer                                    */
+/* ===================================================================== */
+
+section("MLB stats layer — rate stats, FIP, platoon, workload");
+{
+  const d = dal({ ...FULL, pitcher_features: [], offense_features: [] });
+  const pf = await d.getPitcherFeatures();
+  const q = pf.ev.filter((e) => e.field === "pitcher_quality" && e.status !== "UNAVAILABLE");
+  const rodon = q.find((e) => String(e.entity).includes("Rod"))!.value as any;
+  const craw = q.find((e) => String(e.entity).includes("Crawford"))!.value as any;
+
+  // "121.2" is 121 innings and TWO OUTS. Reading it as 121.2 corrupts every rate.
+  ok("N1 innings-pitched thirds are parsed, not read as a decimal",
+    Math.abs(rodon.innings_num - 121.7) < 0.05, rodon.innings_num);
+
+  eq("N2 K% is strikeouts over batters faced, not per nine", rodon.k_pct, +(110 / 540).toFixed(3));
+  eq("N3 BB% likewise", rodon.bb_pct, +(54 / 540).toFixed(3));
+  ok("N4 HR/9 is computed from innings", Math.abs(rodon.hr_per_9 - (9 * 22 / 121.667)) < 0.02, rodon.hr_per_9);
+
+  // FIP with the constant solved from league totals in the same response.
+  ok("N5 FIP is computed", rodon.fip != null, rodon.fip);
+  ok("N6 ...and the constant is derived, not assumed",
+    /solved from this season's league totals, not assumed/.test(rodon.fip_note), rodon.fip_note);
+  ok("N7 the league constant is in the data path",
+    (pf.path.live_fallback as any)?.fip_constant?.cFIP != null, (pf.path.live_fallback as any)?.fip_constant);
+  ok("N8 the worse arm has the worse FIP", rodon.fip > craw.fip, { rodon: rodon.fip, craw: craw.fip });
+
+  eq("N9 batted-ball lean is read from ground-to-air", rodon.batted_ball_lean, "fly-ball");
+  eq("N10 ...and the other way for a ground-baller", craw.batted_ball_lean, "ground-ball");
+  eq("N11 throwing hand is captured", [rodon.throws, craw.throws], ["L", "R"]);
+  ok("N12 strike% and pitches/inning come through", rodon.strike_pct != null && rodon.pitches_per_inning != null);
+  ok("N13 Statcast fields are still declared missing, never approximated",
+    rodon.missing_fields.includes("xera") && rodon.missing_fields.includes("barrel_pct")
+    && rodon.missing_fields.includes("csw_pct"));
+
+  // platoon split — the single most matchup-relevant field
+  const off = pf.ev.filter((e) => e.field === "opponent_offense" && e.status !== "UNAVAILABLE");
+  const rodonOpp = off.find((e) => String(e.entity).includes("Rod"))!.value as any;
+  eq("N14 a lefty gets the opponent's vs-LHP split, not the overall line",
+    rodonOpp.applicable.split, "vs LHP");
+  eq("N15 ...and it is the RIGHT team's split (he faces Boston)", rodonOpp.applicable.obp, 0.310);
+  ok("N16 the season overall line is kept for contrast",
+    rodonOpp.season_overall != null && rodonOpp.season_overall.split === "season overall");
+  const crawOpp = off.find((e) => String(e.entity).includes("Crawford"))!.value as any;
+  eq("N17 a righty gets the vs-RHP split", crawOpp.applicable.split, "vs RHP");
+  ok("N18 ISO is derived from SLG minus AVG",
+    Math.abs(rodonOpp.applicable.iso - (0.390 - 0.240)) < 1e-9, rodonOpp.applicable.iso);
+  ok("N19 opponent K% is over plate appearances", rodonOpp.applicable.k_pct === +(230 / 1000).toFixed(3));
+  ok("N20 wOBA and wRC+ are declared missing rather than faked",
+    rodonOpp.applicable.missing_fields.includes("wrc_plus") && rodonOpp.applicable.missing_fields.includes("woba"));
+
+  // workload from the game log
+  const wl = pf.ev.filter((e) => e.field === "workload" && e.status !== "UNAVAILABLE");
+  const rw = wl.find((e) => String(e.entity).includes("Rod"))!.value as any;
+  eq("N21 only actual STARTS count toward recent workload", rw.recent_starts.length, 3);
+  eq("N22 the most recent start is first", rw.recent_starts[0].date, "2026-08-05");
+  eq("N23 pitch counts come through", rw.recent_starts[0].pitches, 96);
+  ok("N24 days rest is computed from the last start", rw.days_rest >= 0, rw.days_rest);
+  ok("N25 a relief appearance is excluded from starts",
+    !rw.recent_starts.some((g: any) => g.date === "2026-07-19"));
+
+  ok("N26 coverage now reports the platoon-aware offense as present",
+    coverage(pf.ev, "opponent_offense", ["Carlos Rodón", "Kutter Crawford"]).have_n === 2);
+  ok("N27 the whole layer stays inside its call ceiling",
+    ((pf.path.live_fallback as any)?.api_calls ?? 99) <= 8, (pf.path.live_fallback as any)?.api_calls);
+}
+{
+  // league totals unavailable -> FIP is omitted, not guessed
+  const d = dal({ ...FULL, pitcher_features: [], offense_features: [] });
+  const orig = mockFetch({ ...FULL, pitcher_features: [] });
+  (d as any).f = async (url: string, init: any) => {
+    if (String(url).includes("group=pitching")) return new Response("{}", { status: 200 });
+    return orig(url as any, init);
+  };
+  const pf = await d.getPitcherFeatures();
+  const q = pf.ev.find((e) => e.field === "pitcher_quality" && e.status !== "UNAVAILABLE")!.value as any;
+  eq("N28 no league totals means NO FIP, not an assumed constant", q.fip, null);
+  ok("N29 ...and it says why", /league constant unavailable/.test(q.fip_note), q.fip_note);
+}
 
 console.log(`\n${failed === 0 ? "ALL GREEN" : "FAILURES"} — ${passed} passed, ${failed} failed`);
 if (failures.length) console.log("failed:", failures.join(" | "));

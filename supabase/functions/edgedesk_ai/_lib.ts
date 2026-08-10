@@ -401,19 +401,30 @@ export function classify(question: string, mode?: string): Plan {
   if (mode === "challenge") return P("attack", "DEEP", ["focus_signal", "market", "sharp_reference", "matchup", "bullpen", "weather", "clv_history", "memory"], "Thesis attack — retrieve everything that could break it.");
   if (mode === "trace" || mode === "research") return P("full_research", "FULL", ["focus_signal", "market", "sharp_reference", "slate", "matchup", "pitchers", "opponent_offense", "bullpen", "park", "weather", "workload", "model", "clv_history", "memory"], "Full research request.");
 
-  if (has("worst pitcher", "worst starter", "worst arm", "weakest pitcher", "weakest starter"))
+  /* Stem-matched, because "worst pitching matchups" is the same question as
+     "worst pitchers" and the substring test missed it — pitchER vs pitchING —
+     which sent it to the generic slate overview and retrieved no pitcher data
+     at all. Anything asking about weak arms routes here. */
+  const PITCH_STEM = /\b(pitch|pitcher|pitchers|pitching|starter|starters|starting|arm|arms|rotation|mound)\b/;
+  const WEAK_WORD = /\b(worst|weakest|bad|worse|poorest|shakiest|most vulnerable|vulnerable)\b/;
+  const STRONG_WORD = /\b(best|strongest|top|elite|toughest)\b/;
+  /* "worst pitching MATCHUPS" is a matchup question, not purely an arm-quality
+     one, and the matchup intent retrieves weather and market on top of the
+     pitching layer. Let it win when the user actually said matchup. */
+  const MATCHUP_WORD = /\b(matchup|matchups|mismatch|spot|spots)\b/;
+
+  if (WEAK_WORD.test(q) && PITCH_STEM.test(q) && !MATCHUP_WORD.test(q))
     return P("worst_pitchers", "SLATE", ["slate", "pitchers", "pitcher_features", "opponent_offense", "park", "weather", "workload", "bullpen", "market"], "Ranking starters requires the whole card plus who each one faces.");
 
   if (has("exploitable", "most attackable", "attack the pitcher"))
     return P("exploitable_pitchers", "SLATE", ["slate", "pitchers", "pitcher_features", "opponent_offense", "park", "weather", "workload", "bullpen", "market"], "Exploitability is pitcher quality read against the specific opponent, park and bullpen.");
 
-  if (has("best pitcher", "best starter", "strongest pitcher"))
+  if (STRONG_WORD.test(q) && PITCH_STEM.test(q) && !MATCHUP_WORD.test(q))
     return P("best_pitchers", "SLATE", ["slate", "pitchers", "pitcher_features", "opponent_offense", "park"], "Ranking starters requires the whole card.");
 
   // Superlative + subject, matched loosely: "best pitching matchups today" and
   // "biggest mismatch between pitching and offense" are the same question.
-  if (/\b(best|strongest|biggest|top|juiciest)\b[\s\S]{0,30}\b(matchup|matchups|mismatch|game|games|spot|spots)\b/.test(q)
-      || has("easiest matchup", "worst matchup"))
+  if (/\b(best|strongest|biggest|top|juiciest|worst|weakest|easiest|softest)\b[\s\S]{0,40}\b(matchup|matchups|mismatch|game|games|spot|spots)\b/.test(q))
     return P("best_matchups", "SLATE", ["slate", "pitchers", "pitcher_features", "opponent_offense", "park", "weather", "market"], "Matchup quality across the card.");
 
   if (/\b(best|strongest|top|biggest|find me the best|three best|3 best)\b[\s\S]{0,30}\b(bet|bets|play|plays|edge|edges|value|moneyline|underdog|dog|price)\b/.test(q)
@@ -464,10 +475,14 @@ export function classify(question: string, mode?: string): Plan {
   if (has("why"))
     return P("why", "STANDARD", ["focus_signal", "market", "sharp_reference", "matchup", "model"], "Explain an owned signal from its evidence.");
 
+  /* The catch-all. It used to retrieve only the board, so ANY question that
+     merely mentioned "today" answered with zero pitcher coverage — which is
+     exactly how "worst pitching matchups today?" reported 0/30. The fallthrough
+     now pulls the matchup layer too; the retrieval budget still caps the cost. */
   if (has("slate", "today", "tonight", "board", "card"))
-    return P("slate_overview", "SLATE", ["slate", "market", "matchup"], "Board-level overview.");
+    return P("slate_overview", "SLATE", ["slate", "market", "matchup", "pitchers", "pitcher_features", "opponent_offense", "park"], "Board-level overview.");
 
-  return P("unknown", "STANDARD", ["slate", "focus_signal", "market", "matchup"], "Unclassified — retrieve the board and any focused signal, then answer from what is there.");
+  return P("unknown", "STANDARD", ["slate", "focus_signal", "market", "matchup", "pitcher_features", "opponent_offense"], "Unclassified — retrieve the board, the matchup layer and any focused signal, then answer from what is there.");
 }
 
 /* --------------------------------------------------- data access layer */
@@ -865,20 +880,27 @@ export class Dal {
   }
 
   /**
-   * LIVE FALLBACK — MLB Stats API (statsapi.mlb.com), keyless and official.
+   * MLB STATISTICAL LAYER — statsapi.mlb.com, keyless and official.
    *
    * This is NOT a new data source: it is the same official feed ingest_mlb and
-   * mlb_sync already read, and the app's own Intelligence Fabric already
-   * registers it. It runs ONLY when the owned feature tables come back empty,
-   * so a stalled ingestion does not take the research engine down with it.
+   * mlb_sync already read, and the app's Intelligence Fabric already registers
+   * it. It runs when the owned feature tables come back empty, so a stalled
+   * ingestion does not take the research engine down with it.
    *
-   * It is deliberately lower-fidelity and labelled as such. Statcast-derived
-   * fields — xERA, barrel%, hard-hit% — are NOT available here and stay
-   * unavailable. What it does provide is the traditional line (ERA, WHIP,
-   * K/9, BB/9, IP) plus opponent team hitting, which is enough to rank arms
-   * and matchups honestly while the feature pipeline is repaired.
+   * WHAT IT NOW PROVIDES (six batched requests, no per-pitcher fan-out):
+   *   pitcher : ERA, WHIP, K%, BB%, K/BB, HR/9, GB/FB tendency, strike%,
+   *             pitches/inning, IP, BF, GS, throwing hand
+   *   derived : FIP, computed from owned counting stats with the league
+   *             constant SOLVED FROM THE SAME FEED rather than assumed
+   *   opponent: AVG/OBP/SLG/OPS/ISO, K%, BB%, R/G — AND the platoon split that
+   *             actually applies, vs LHP or vs RHP depending on who is starting
+   *   workload: last three starts with pitch counts and days rest
    *
-   * Three requests total, batched. Disable with EDGEDESK_MLB_FALLBACK=0.
+   * STILL NOT AVAILABLE, and reported as such rather than approximated:
+   * xERA, xwOBA, barrel%, hard-hit%, CSW%, SwStr%, pitch mix and velocity are
+   * all Statcast-derived and absent from this feed. wRC+ and wOBA require park
+   * and league adjustments this feed does not publish. Those come back only
+   * when ingest_mlb's Savant path is repaired.
    */
   async getMlbLiveFallback(dateISO?: string): Promise<{ ev: Evidence[]; path: Record<string, unknown> }> {
     const day = dateISO ?? etDay(0);
@@ -886,8 +908,11 @@ export class Dal {
     const path: Record<string, unknown> = { source: "statsapi.mlb.com", date: day };
     const out: Evidence[] = [];
     const now = Date.now();
+    let apiCalls = 0;
 
-    const getJSON = async (url: string, ms = 8000): Promise<any | null> => {
+    const getJSON = async (url: string, ms = 9000): Promise<any | null> => {
+      if (apiCalls >= 8) return null;              // cost ceiling, same spirit as the read budget
+      apiCalls++;
       try {
         const ctrl = typeof AbortController !== "undefined" ? new AbortController() : null;
         const t = ctrl ? setTimeout(() => ctrl.abort(), ms) : null;
@@ -898,7 +923,18 @@ export class Dal {
       } catch { return null; }
     };
 
-    // 1. today's card + probable starters, with the ids the stats call needs
+    /* "121.2" is 121 innings and two OUTS, not 121.2 innings. Getting this
+       wrong quietly corrupts every rate stat built on top of it. */
+    const ipNum = (v: unknown): number | null => {
+      const s = String(v ?? "").trim();
+      if (!s) return null;
+      const m = s.match(/^(\d+)(?:\.(\d))?$/);
+      if (!m) { const n = num(s); return n; }
+      return parseInt(m[1], 10) + (m[2] ? parseInt(m[2], 10) / 3 : 0);
+    };
+    const pct3 = (x: number | null) => x == null ? null : +x.toFixed(3);
+
+    // 1. today's card + probable starters
     const sched = await getJSON(
       `https://statsapi.mlb.com/api/v1/schedule?sportId=1&date=${day}&hydrate=probablePitcher,team`);
     if (!sched) {
@@ -928,71 +964,197 @@ export class Dal {
       return { ev: [unavailable("MLB Stats API", "pitcher_quality", `no probable starters announced for ${day}`)], path };
     }
 
-    // 2. season pitching lines for every starter, in one batched request
+    // 2. season line + game log + throwing hand for every starter, batched
     const ids = starters.map((s) => s.id).join(",");
     const people = await getJSON(
-      `https://statsapi.mlb.com/api/v1/people?personIds=${ids}&hydrate=stats(group=[pitching],type=[season],season=${season})`);
+      `https://statsapi.mlb.com/api/v1/people?personIds=${ids}`
+      + `&hydrate=stats(group=[pitching],type=[season,gameLog],season=${season})`);
     const lineById: Record<string, any> = {};
+    const logById: Record<string, any[]> = {};
+    const handById: Record<string, string> = {};
     for (const p of people?.people ?? []) {
-      const split = p.stats?.find((s: any) => s.group?.displayName === "pitching")?.splits?.[0];
-      if (split?.stat) lineById[String(p.id)] = split.stat;
-    }
-    path.pitching_lines = Object.keys(lineById).length;
-
-    // 3. team hitting, for the offense each starter faces
-    const teamStats = await getJSON(
-      `https://statsapi.mlb.com/api/v1/teams/stats?season=${season}&stats=season&group=hitting&sportIds=1`);
-    const hitById: Record<string, any> = {};
-    for (const s of teamStats?.stats ?? []) {
-      for (const sp of s.splits ?? []) {
-        if (sp.team?.id != null) hitById[String(sp.team.id)] = sp.stat;
+      const key = String(p.id);
+      if (p.pitchHand?.code) handById[key] = p.pitchHand.code;
+      for (const s of p.stats ?? []) {
+        if (s.group?.displayName !== "pitching") continue;
+        const type = s.type?.displayName;
+        if (type === "season" && s.splits?.[0]?.stat) lineById[key] = s.splits[0].stat;
+        if (type === "gameLog") logById[key] = s.splits ?? [];
       }
     }
-    path.team_hitting = Object.keys(hitById).length;
+    path.pitching_lines = Object.keys(lineById).length;
+    path.game_logs = Object.keys(logById).length;
 
-    const NOTE = "MLB Stats API season line — the official feed, used because EdgeDesk's own pitcher_features "
-      + "rows are missing for this slate. Traditional stats only: xERA, barrel% and hard-hit% are Statcast-derived "
-      + "and are NOT available from this source.";
+    /* 3. LEAGUE PITCHING TOTALS -> the FIP constant, SOLVED not assumed.
+       FIP needs a league constant. Hardcoding 3.10 would be exactly the quiet
+       fudge this engine exists to avoid, so it is derived from the same feed:
+       cFIP = leagueERA - leagueFIPcore. Every input is traceable. */
+    const lgStats = await getJSON(
+      `https://statsapi.mlb.com/api/v1/teams/stats?season=${season}&stats=season&group=pitching&sportIds=1`);
+    let cFIP: number | null = null, lgERA: number | null = null;
+    {
+      let hr = 0, bb = 0, hbp = 0, so = 0, ip = 0, er = 0, teams = 0;
+      for (const s of lgStats?.stats ?? []) {
+        for (const sp of s.splits ?? []) {
+          const st = sp.stat ?? {};
+          const i = ipNum(st.inningsPitched);
+          if (i == null) continue;
+          hr += num(st.homeRuns) ?? 0; bb += num(st.baseOnBalls) ?? 0;
+          hbp += num(st.hitBatsmen) ?? 0; so += num(st.strikeOuts) ?? 0;
+          er += num(st.earnedRuns) ?? 0; ip += i; teams++;
+        }
+      }
+      if (ip > 0 && teams >= 20) {
+        lgERA = (9 * er) / ip;
+        cFIP = lgERA - ((13 * hr + 3 * (bb + hbp) - 2 * so) / ip);
+        path.fip_constant = { cFIP: +cFIP.toFixed(3), league_era: +lgERA.toFixed(3), teams, innings: Math.round(ip) };
+      } else {
+        path.fip_constant = { error: "league pitching totals unavailable — FIP not computed" };
+      }
+    }
+
+    // 4-6. opponent hitting: overall, vs LHP, vs RHP
+    const hitting = async (sit?: string) => {
+      const u = sit
+        ? `https://statsapi.mlb.com/api/v1/teams/stats?season=${season}&stats=statSplits&group=hitting&sitCodes=${sit}&sportIds=1`
+        : `https://statsapi.mlb.com/api/v1/teams/stats?season=${season}&stats=season&group=hitting&sportIds=1`;
+      const j = await getJSON(u);
+      const by: Record<string, any> = {};
+      for (const s of j?.stats ?? []) for (const sp of s.splits ?? []) {
+        if (sp.team?.id != null) by[String(sp.team.id)] = sp.stat;
+      }
+      return by;
+    };
+    const hitAll = await hitting();
+    const hitVsL = await hitting("vl");
+    const hitVsR = await hitting("vr");
+    path.team_hitting = { season: Object.keys(hitAll).length, vs_lhp: Object.keys(hitVsL).length, vs_rhp: Object.keys(hitVsR).length };
+
+    const MISSING_STATCAST = ["xera", "xwoba", "barrel_pct", "hardhit_pct", "csw_pct", "swstr_pct", "pitch_mix", "velocity"];
+    const NOTE = "MLB Stats API season line. Statcast-derived fields (xERA, xwOBA, barrel%, hard-hit%, CSW%, "
+      + "swinging-strike%, pitch mix, velocity) are NOT in this feed and are not approximated — they return "
+      + "when ingest_mlb's Savant path is repaired.";
+
+    const offenseOf = (st: any, label: string, extraMissing: string[]) => {
+      if (!st) return null;
+      const pa = num(st.plateAppearances), ab = num(st.atBats);
+      const avg = num(st.avg), slg = num(st.slg);
+      return {
+        split: label,
+        avg, obp: num(st.obp), slg, ops: num(st.ops),
+        iso: (slg != null && avg != null) ? +(slg - avg).toFixed(3) : null,
+        k_pct: (pa && num(st.strikeOuts) != null) ? pct3(num(st.strikeOuts)! / pa) : null,
+        bb_pct: (pa && num(st.baseOnBalls) != null) ? pct3(num(st.baseOnBalls)! / pa) : null,
+        runs_per_game: num(st.gamesPlayed) ? +((num(st.runs) ?? 0) / num(st.gamesPlayed)!).toFixed(2) : null,
+        home_runs: num(st.homeRuns), plate_appearances: pa, at_bats: ab,
+        missing_fields: extraMissing,
+      };
+    };
 
     for (const s of starters) {
-      const line = lineById[String(s.id)];
-      out.push(line
-        ? ev({
+      const key = String(s.id);
+      const line = lineById[key];
+      const hand = handById[key] ?? null;
+
+      /* ---- pitcher: true rate stats, plus FIP from owned counting stats ---- */
+      if (line) {
+        const ip = ipNum(line.inningsPitched);
+        const bf = num(line.battersFaced);
+        const so = num(line.strikeOuts), bb = num(line.baseOnBalls);
+        const hr = num(line.homeRuns), hbp = num(line.hitBatsmen) ?? 0;
+        const fip = (cFIP != null && ip && ip > 0 && hr != null && bb != null && so != null)
+          ? +(((13 * hr + 3 * (bb + hbp) - 2 * so) / ip) + cFIP).toFixed(2) : null;
+        const gbfb = num(line.groundOutsToAirouts);
+
+        out.push(ev({
           source: "MLB Stats API", entity: s.name, field: "pitcher_quality", relevance: "pitching",
           value: {
-            name: s.name, team: s.team, game: s.game,
-            era: num(line.era), whip: num(line.whip),
+            name: s.name, team: s.team, game: s.game, throws: hand,
+            era: num(line.era), whip: num(line.whip), fip,
+            fip_note: fip == null ? "FIP not computed — league constant unavailable"
+              : `FIP from owned counting stats; league constant ${cFIP!.toFixed(3)} solved from this season's league totals, not assumed.`,
+            k_pct: (bf && so != null) ? pct3(so / bf) : null,
+            bb_pct: (bf && bb != null) ? pct3(bb / bf) : null,
             k_per_9: num(line.strikeoutsPer9Inn), bb_per_9: num(line.walksPer9Inn),
-            innings: line.inningsPitched ?? null, strikeouts: num(line.strikeOuts), walks: num(line.baseOnBalls),
-            home_runs: num(line.homeRuns), games_started: num(line.gamesStarted),
-            missing_fields: ["xera", "barrel_pct", "hardhit_pct"],
+            k_bb_ratio: num(line.strikeoutWalkRatio),
+            hr_per_9: (ip && hr != null) ? +((9 * hr) / ip).toFixed(2) : null,
+            ground_to_air: gbfb,
+            batted_ball_lean: gbfb == null ? null : gbfb >= 1.3 ? "ground-ball" : gbfb <= 0.85 ? "fly-ball" : "neutral",
+            strike_pct: num(line.strikePercentage), pitches_per_inning: num(line.pitchesPerInning),
+            innings: line.inningsPitched ?? null, innings_num: ip == null ? null : +ip.toFixed(1),
+            batters_faced: bf, games_started: num(line.gamesStarted),
+            missing_fields: MISSING_STATCAST,
           },
           status: "VERIFIED", freshness: "CURRENT", source_timestamp: new Date(now).toISOString(), note: NOTE,
-        })
-        : unavailable("MLB Stats API", "pitcher_quality", `no season pitching line on file for ${s.name}`, s.name));
+        }));
+      } else {
+        out.push(unavailable("MLB Stats API", "pitcher_quality", `no season pitching line on file for ${s.name}`, s.name));
+      }
 
-      const hit = hitById[String(s.oppId)];
-      out.push(hit
-        ? ev({
+      /* ---- workload: last three starts, pitch counts, days rest ---- */
+      const log = (logById[key] ?? [])
+        .filter((g: any) => num(g.stat?.gamesStarted) === 1)
+        .sort((a: any, b: any) => String(b.date).localeCompare(String(a.date)))
+        .slice(0, 3);
+      if (log.length) {
+        const lastDate = String(log[0].date).slice(0, 10);
+        const rest = Math.round((Date.parse(day + "T00:00:00Z") - Date.parse(lastDate + "T00:00:00Z")) / 86400000);
+        out.push(ev({
+          source: "MLB Stats API", entity: s.name, field: "workload", relevance: "workload",
+          value: {
+            days_rest: Number.isFinite(rest) && rest >= 0 ? rest : null,
+            last_start: lastDate,
+            recent_starts: log.map((g: any) => ({
+              date: String(g.date).slice(0, 10),
+              innings: g.stat?.inningsPitched ?? null,
+              pitches: num(g.stat?.numberOfPitches),
+              earned_runs: num(g.stat?.earnedRuns),
+              strikeouts: num(g.stat?.strikeOuts), walks: num(g.stat?.baseOnBalls),
+            })),
+          },
+          status: "VERIFIED", freshness: "CURRENT", source_timestamp: lastDate,
+          note: "Last three starts from the official game log. Short rest and a heavy previous pitch count are the two workload facts that move a start.",
+        }));
+      } else {
+        out.push(unavailable("MLB Stats API", "workload", `no game log on file for ${s.name}`, s.name));
+      }
+
+      /* ---- opponent offense, on the split that ACTUALLY applies ----
+         A right-hander does not face a lineup's overall line; he faces its
+         numbers against right-handers. Using the overall split when the platoon
+         one exists is a quiet accuracy loss on the single most matchup-relevant
+         field there is. */
+      const splitTable = hand === "L" ? hitVsL : hand === "R" ? hitVsR : null;
+      const splitLabel = hand === "L" ? "vs LHP" : hand === "R" ? "vs RHP" : null;
+      const platoon = splitTable ? offenseOf(splitTable[String(s.oppId)], splitLabel!, ["woba", "wrc_plus", "barrel_pct", "hardhit_pct"]) : null;
+      const overall = offenseOf(hitAll[String(s.oppId)], "season overall", ["woba", "wrc_plus", "barrel_pct", "hardhit_pct"]);
+
+      if (platoon || overall) {
+        out.push(ev({
           source: "MLB Stats API", entity: s.name, field: "opponent_offense", relevance: "matchup",
           value: {
-            opponent: s.opp, obp: num(hit.obp), slg: num(hit.slg), ops: num(hit.ops), avg: num(hit.avg),
-            runs: num(hit.runs), games: num(hit.gamesPlayed), strikeouts: num(hit.strikeOuts),
-            walks: num(hit.baseOnBalls), home_runs: num(hit.homeRuns),
-            missing_fields: ["iso", "woba", "wrc_plus", "barrel_pct", "handedness_splits"],
+            opponent: s.opp, faces_hand: hand,
+            applicable: platoon ?? overall,
+            platoon_split: platoon, season_overall: overall,
+            note: platoon
+              ? `${s.opp}'s line ${splitLabel} is the one that applies to this start; the season overall line is included for contrast.`
+              : "Handedness split unavailable for this team, so the season overall line is what applies.",
           },
           status: "VERIFIED", freshness: "CURRENT",
-          note: "Season team hitting from the MLB Stats API. ISO, wOBA, wRC+ and platoon splits are not in this feed.",
-        })
-        : unavailable("MLB Stats API", "opponent_offense", `no team hitting line for ${s.opp}`, s.name));
+          note: "Season team hitting from the MLB Stats API. wOBA and wRC+ need park and league adjustments this feed does not publish, so they are not included.",
+        }));
+      } else {
+        out.push(unavailable("MLB Stats API", "opponent_offense", `no team hitting line for ${s.opp}`, s.name));
+      }
 
       out.push(ev({
         source: "MLB Stats API", entity: s.name, field: "probable_starter", relevance: "pitching",
-        value: { name: s.name, team: s.team, game: s.game, opponent: s.opp },
+        value: { name: s.name, team: s.team, game: s.game, opponent: s.opp, throws: hand },
         status: "PROBABLE", freshness: "CURRENT",
         note: "Probable, not confirmed.",
       }));
     }
+    path.api_calls = apiCalls;
     return { ev: out, path };
   }
 
