@@ -9,7 +9,8 @@ import {
   wilsonLo, normalCdf, twoSidedP, benjaminiHochberg,
   edgeBand, priceBand, booksBand, etDow, splitChrono,
   evaluate, calibrate, HYPOTHESES, BUILD, planColumns, discoverColumns,
-  baseRateWarning, clvIsReal, clvProfile, beatCloseAgreement, CLV_SANE, type Graded,
+  baseRateWarning, clvIsReal, clvProfile, beatCloseAgreement, contamination,
+  CLV_SANE, type Graded,
 } from "./index.ts";
 
 let passed = 0, failed = 0;
@@ -380,10 +381,10 @@ section("A signal with no CLV is not a loss");
 
   // The guard itself, on the number the live run actually produced.
   ok("V6 a 17% base rate is reported as a fault", !!baseRateWarning(0.1735, 3216));
-  ok("V7 ...naming the un-closed rows as the usual cause",
-    /no real CLV being counted as losses/.test(baseRateWarning(0.1735, 3216) ?? ""));
-  ok("V8 ...and saying every pattern is suspect",
-    /all of them are suspect/.test(baseRateWarning(0.1735, 3216) ?? ""));
+  ok("V7 ...stating what the rate means rather than assuming corruption",
+    /close WORSE than they open/.test(baseRateWarning(0.1735, 3216) ?? ""));
+  ok("V8 ...and pointing at the base rate itself as the finding",
+    /base rate itself as the finding/.test(baseRateWarning(0.1735, 3216) ?? ""));
   eq("V9 a sane base rate raises nothing", baseRateWarning(0.52, 3216), null);
   eq("V10 an implausibly HIGH rate is caught too", baseRateWarning(0.94, 500) != null, true);
   eq("V11 an empty population is not a fault", baseRateWarning(0, 0), null);
@@ -491,6 +492,59 @@ section("The outcome is derived, and the stored column is checked against it");
   eq("A10 nothing comparable is handled", beatCloseAgreement([]).reading, "nothing comparable");
   eq("A11 fabricated rows are not comparable",
     beatCloseAgreement([g({ clv: -1, beat_close: false })]).comparable, 0);
+}
+
+/* The real data, finally characterised: 3539 rows, zero nulls, zero fabricated
+   -1s, zero exclusion reasons, beat_close agreeing with clv>0 on every row, and
+   a smooth distribution from -0.498 to +0.418 with a median of -0.027. Clean
+   data, genuinely bad result. Blocking that was the tool protecting a
+   conclusion rather than reporting one. */
+section("An unflattering result is not the same as a broken one");
+{
+  // A faithful reconstruction of the live distribution's shape.
+  const live: Graded[] = [];
+  const mk = (clv: number, i: number) => {
+    const d = new Date(Date.parse("2026-01-01T18:00:00Z") + i * 36e5);
+    return g({ clv, beat_close: clv > 0, commence_time: d.toISOString(), graded_at: d.toISOString() });
+  };
+  let i = 0;
+  for (let k = 0; k < 558; k++) live.push(mk(-0.30, i++));
+  for (let k = 0; k < 2363; k++) live.push(mk(-0.03, i++));
+  for (let k = 0; k < 614; k++) live.push(mk(0.02, i++));
+  for (let k = 0; k < 4; k++) live.push(mk(0.30, i++));
+
+  const agree = beatCloseAgreement(live);
+  eq("X1 the reconstruction reproduces the live beat rate", agree.derived_true_rate, 0.1746);
+
+  const contam = contamination(live.map((r) => ({ clv: r.clv })), agree);
+  eq("X2 clean data is NOT flagged as contaminated", contam.contaminated, false);
+  eq("X3 ...with no issues listed", contam.issues, []);
+
+  const warn = baseRateWarning(0.1746, 3539);
+  ok("X4 an extreme clean rate still warns", !!warn);
+  ok("X5 ...but calls it a real result, not a data fault",
+    /real result rather than a data fault/.test(warn ?? ""), warn);
+  ok("X6 ...and says plainly what it means", /close WORSE than they open/.test(warn ?? ""));
+  ok("X7 ...and refuses to let 'beats the base' read as profitable",
+    /NOT "profitable"/.test(warn ?? ""));
+
+  // Contamination must still be caught when it is genuinely present.
+  const fabricated = [...live.map((r) => ({ clv: r.clv })), ...Array.from({ length: 50 }, () => ({ clv: -1 }))];
+  const c2 = contamination(fabricated, agree);
+  eq("X8 fabricated -1s are still contamination", c2.contaminated, true);
+  ok("X9 ...counted and named", /50 rows carry exactly -1/.test(c2.issues[0]), c2.issues);
+
+  const c3 = contamination(live.map((r) => ({ clv: r.clv })), { disagree: 12 });
+  eq("X10 a disagreeing outcome column is still contamination", c3.contaminated, true);
+  ok("X11 ...and says the stored column is not the definition",
+    /not the definition/.test(c3.issues.join(" ")));
+
+  // Patterns remain meaningful against a low base rate.
+  const skewed = [...series(300, 30, { market: "h2h" }), ...series(300, 120, { market: "totals" })];
+  const ev = evaluate(skewed);
+  near("X12 the base rate is the population's own", ev.base_rate, 0.25, 0.02);
+  eq("X13 a slice that beats a bad base is still detectable",
+    ev.patterns.find((p) => p.key === "market:totals")?.status, "CONFIRMED");
 }
 
 console.log(`\n${failed === 0 ? "ALL GREEN" : "FAILURES"} — ${passed} passed, ${failed} failed`);

@@ -72,7 +72,7 @@ export const HOLDOUT_FRAC = Number(Deno.env.get('LEARN_HOLDOUT_FRAC') ?? '0.30')
 /* Bumped whenever this file changes in a way you would want to confirm landed.
    Returned on every response, because "is the new build actually deployed?"
    should be answerable rather than inferred from whether the old bug recurs. */
-export const BUILD = '2026-08-12.6-self-diagnosing';
+export const BUILD = '2026-08-13.1-clean-but-losing';
 
 /* ========================================================================
    STATISTICS — pure, exported, tested. No database, no network.
@@ -378,13 +378,57 @@ export function clvProfile(rows: { clv: number | null; clv_excluded_reason?: str
   };
 }
 
+/**
+ * Is an unusual base rate a DATA fault, or a real and unflattering result?
+ *
+ * These are different things and the first version conflated them: it saw 17.5%
+ * and refused to write, on the assumption that a number that far from even had
+ * to be contamination. The profile then showed a clean population — no
+ * fabricated values, no nulls, no exclusion reasons, a smooth distribution, and
+ * the stored beat_close column agreeing with clv > 0 on all 3539 rows.
+ *
+ * So the yardstick was not bent. The signals genuinely close worse than they
+ * open. That is a finding about the pricing engine, and refusing to learn from
+ * it would be the tool protecting a conclusion rather than reporting one.
+ *
+ * Contamination now has to be POSITIVELY identified before anything is blocked.
+ * An unusual but clean base rate proceeds, loudly.
+ */
+export function contamination(
+  rows: { clv: number | null; clv_excluded_reason?: string | null }[],
+  agreement: { disagree: number },
+): { contaminated: boolean; issues: string[] } {
+  const p = clvProfile(rows);
+  const issues: string[] = [];
+  if (p.exactly_minus_one > 0) {
+    issues.push(`${p.exactly_minus_one} rows carry exactly -1, the signature of the old close bug computing `
+      + `(best_dec ?? 0) * closeFair - 1 with no entry price.`);
+  }
+  if (p.histogram['> 0.5'] > 0 || p.histogram['-0.9 to -0.5'] > 0) {
+    issues.push(`${p.histogram['> 0.5'] + p.histogram['-0.9 to -0.5']} rows sit outside any plausible CLV range.`);
+  }
+  if (agreement.disagree > 0) {
+    issues.push(`beat_close disagrees with clv > 0 on ${agreement.disagree} rows, so the stored outcome column `
+      + `is not the definition and any rate taken from it measures something else.`);
+  }
+  return { contaminated: issues.length > 0, issues };
+}
+
+/**
+ * A clean population with an extreme rate is not blocked — it is reported. The
+ * statistics below still work: every slice is measured against the population's
+ * OWN rate, so "beats 17.5%" remains a meaningful comparison even when 17.5% is
+ * itself bad news.
+ */
 export function baseRateWarning(base: number, n: number): string | null {
   if (!n) return null;
   if (base >= BASE_RATE_SANE.lo && base <= BASE_RATE_SANE.hi) return null;
-  return `The population beat-close rate is ${(base * 100).toFixed(1)}% over ${n} outcomes, which is outside the `
-    + `plausible ${BASE_RATE_SANE.lo * 100}-${BASE_RATE_SANE.hi * 100}% band. Every pattern is measured against `
-    + `this number, so all of them are suspect. The usual cause is signals with no real CLV being counted as `
-    + `losses — check that close is populating clv, and that rows with clv_excluded_reason are not being graded.`;
+  return `The population beat-close rate is ${(base * 100).toFixed(1)}% over ${n} outcomes, outside the usual `
+    + `${BASE_RATE_SANE.lo * 100}-${BASE_RATE_SANE.hi * 100}% band. The CLV distribution has been checked and is `
+    + `clean, so this is a real result rather than a data fault: these signals close WORSE than they open. `
+    + `Patterns below are still valid comparisons — each slice is measured against this same population rate, so `
+    + `"beats the base" means "loses to the close less than average", NOT "profitable". Treat the base rate itself `
+    + `as the finding: the edges being flagged are not surviving to the close.`;
 }
 
 export function evaluate(rows: Graded[], opts: {
@@ -684,6 +728,8 @@ Deno.serve(async (req) => {
          indistinguishable from one that found nothing. */
       columns_on_signals: columns_seen,
       ...(base_rate_warning ? { base_rate_warning } : {}),
+      clv_profile: clvProfile(rows as any),
+      beat_close_column: beatCloseAgreement(rows),
       ...(dropped.length ? { columns_unavailable: dropped,
         note: `signals has no ${dropped.join(', ')} column, so the matching hypothesis families were skipped.` } : {}),
       readiness: n_graded >= MIN_N
@@ -698,13 +744,15 @@ Deno.serve(async (req) => {
     /* If the yardstick is bent, nothing measured against it may be published.
        Writing these as CONFIRMED would put a data artifact in front of a user
        wearing the clothes of a validated finding. */
-    if (base_rate_warning) {
+    const contam = contamination(rows as any, beatCloseAgreement(rows));
+    if (contam.contaminated) {
       /* Attach the evidence WITH the refusal. Three runs were spent asking the
          user to make a second call for the distribution; a refusal that does
          not carry its own diagnosis is an incomplete answer. */
       const blocked = {
         ok: false, ...state, patterns_written: 0, calibration_written: 0,
-        blocked: 'Nothing was written. ' + base_rate_warning,
+        blocked: 'Nothing was written — the CLV history is contaminated: ' + contam.issues.join(' '),
+        issues: contam.issues,
         clv_profile: clvProfile(rows as any),
         beat_close_column: beatCloseAgreement(rows),
       };
