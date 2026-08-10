@@ -790,7 +790,8 @@ export class Dal {
         out.push(nm
           ? ev({
             source: "mlb_game_cards", entity: nm, field: "probable_starter",
-            value: { name: nm, throws: th, team: side === "away" ? g.away_team_name : g.home_team_name, game: entity, side },
+            value: { name: nm, throws: th, team: side === "away" ? g.away_team_name : g.home_team_name,
+              game: entity, side, game_date: g.game_date ?? null, status: g.status ?? null },
             status: "PROBABLE", freshness: "CURRENT", relevance: "pitching",
             note: "Probable, not confirmed. A scratch moves the number.",
           })
@@ -2051,7 +2052,7 @@ const MIN_PATTERN_N = parseInt(Deno.env.get("EDGEDESK_MIN_PATTERN_N") ?? "30", 1
 const MLB_FALLBACK = (Deno.env.get("EDGEDESK_MLB_FALLBACK") ?? "1") !== "0";
 
 const MAX_TOKENS: Record<string, number> = {
-  QUICK: 700, STANDARD: 1000, DEEP: 1500, SLATE: 1600, FULL: 1800,
+  QUICK: 800, STANDARD: 1200, DEEP: 2400, SLATE: 3000, FULL: 3400,
 };
 
 const CORS = {
@@ -2111,6 +2112,14 @@ Prior outcomes and patterns are historical. Quote a pattern only when its sample
 
 CONFLICTS
 If two owned sources disagree, say so and name both. If a trusted resolution is attached, use it and say which source won. If not, treat the field as contested and let it lower confidence.
+
+FINISH WHAT YOU START
+You have a fixed output budget. A ranked list that stops mid-sentence is worse
+than a shorter one that completes, because the reader cannot tell whether entry
+four was omitted or merely cut off. Decide how many entries you can finish
+BEFORE you begin, and deliver that many in full. Three complete entries beat six
+truncated ones. If the card is deep, rank the top few properly and say in one
+line how many others were considered and why they ranked below.
 
 ANSWER SHAPE
 Answer the question in the first sentence. Simple question, short answer. For rankings, a numbered list where each entry gives: the claim, the supporting numbers, the opponent or counterparty, the market read if attached, and the risk. Separate fact from interpretation — "xERA 5.41 against a .342-OBP lineup" is fact; "the most attackable arm on the card" is your read. Close with what would change your answer, or the one missing field that matters most.
@@ -2308,10 +2317,27 @@ async function runResearch(
      carry pitcher quality and 7 do not, the answer must say exactly that and
      then use the 33. */
   const comp = completeness(evidence, sportKey);
-  const starters = Array.from(new Set(
-    evidence.filter((e) => e.field === "probable_starter" && e.status !== "UNAVAILABLE")
-      .map((e) => String(e.entity)),
-  ));
+  /* The universe is the LIVE slate, not everything the card holds.
+     getMlbCard queries a three-day ET window because ingest writes dates in its
+     own timezone, so yesterday's completed starters were landing in the
+     denominator — which is why coverage read 30 of 60 when the fallback had in
+     fact covered the whole playable card. Ranking today's matchups against
+     yesterday's finished games is not a data gap, it is the wrong question. */
+  const liveDays = new Set([etDay(0), etDay(1)]);
+  const starterEv = evidence.filter((e) => e.field === "probable_starter" && e.status !== "UNAVAILABLE");
+  const onLiveSlate = (e: Evidence) => {
+    const v = e.value as any;
+    const d = v?.game_date ? String(v.game_date).slice(0, 10) : null;
+    if (d && !liveDays.has(d)) return false;
+    return String(v?.status ?? "").toLowerCase() !== "final";
+  };
+  const scoped = starterEv.filter(onLiveSlate);
+  const starters = Array.from(new Set((scoped.length ? scoped : starterEv).map((e) => String(e.entity))));
+  data_path.slate_scope = {
+    starters_on_card: starterEv.length, starters_on_live_slate: scoped.length,
+    days_counted: Array.from(liveDays),
+    note: "Coverage is measured against the live slate. Completed games from the card's lookback window are excluded from the denominator.",
+  };
   const games = Array.from(new Set(
     evidence.filter((e) => e.field === "game").map((e) => String(e.entity)),
   ));

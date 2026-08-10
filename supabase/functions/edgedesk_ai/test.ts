@@ -143,6 +143,19 @@ const CARD = [{
   temp_f: 66, humidity: 70, precip_prob: 10, wind_mph: 5, wind_dir: "N", wind_rel: "in",
 }];
 
+// A finished game from the card's lookback window. It must never land in the
+// coverage denominator — that is what made coverage read 30 of 60.
+const CARD_YESTERDAY = {
+  game_date: etDay(-1), start_time: new Date(Date.now() - 20 * 3600e3).toISOString(), start_time_local: "7:05 PM",
+  venue: "Yankee Stadium", status: "Final", doubleheader: "N", game_number: 1,
+  away_team_id: 110, away_team_name: "Baltimore Orioles", away_record: "50-62", away_streak: "L2",
+  away_pitcher_name: "Dean Kremer", away_pitcher_throws: "R",
+  home_team_id: 147, home_team_name: "New York Yankees", home_record: "62-50", home_streak: "W3",
+  home_pitcher_name: "Max Fried", home_pitcher_throws: "L",
+  park_factor: 1.02, hr_factor: 1.12, run_factor: 1.03, roof_type: "Open", is_dome: false,
+  temp_f: 74, humidity: 60, precip_prob: 0, wind_mph: 8, wind_dir: "NE", wind_rel: "in",
+};
+
 const GAMES = [
   { game_id: "g1", game_date: TODAY, home_team: "Boston Red Sox", away_team: "New York Yankees", start_time: CARD[0].start_time, status: "scheduled", park_id: "BOS" },
   { game_id: "g2", game_date: TODAY, home_team: "Seattle Mariners", away_team: "Oakland Athletics", start_time: CARD[1].start_time, status: "scheduled", park_id: "SEA" },
@@ -866,6 +879,47 @@ section("Statcast tier (read directly when pitcher_features is empty)");
     (fb.path as any).starters_found);
   ok("S49 the whole layer stays inside its call ceiling", ((fb.path as any).api_calls ?? 99) <= 12,
     (fb.path as any).api_calls);
+}
+
+/* ===================================================================== */
+/* coverage is measured against the LIVE slate                           */
+/* ===================================================================== */
+
+section("Slate scoping (the 30/60 denominator bug)");
+{
+  const d = dal({ ...FULL, mlb_game_cards: [...CARD, CARD_YESTERDAY] });
+  const card = await d.getMlbCard();
+  const starters = card.ev.filter((e) => e.field === "probable_starter" && e.status !== "UNAVAILABLE");
+
+  ok("Z1 the card still returns the lookback game — the reader is unchanged",
+    starters.some((e) => String(e.entity) === "Max Fried"), starters.map((e) => e.entity));
+  ok("Z2 every starter now carries the date of its game",
+    starters.every((e) => (e.value as any).game_date != null));
+  ok("Z3 ...and its status, so a finished game is identifiable",
+    starters.some((e) => String((e.value as any).status).toLowerCase() === "final"));
+
+  // the scoping rule the orchestrator applies
+  const live = new Set([etDay(0), etDay(1)]);
+  const onLive = (e: any) => {
+    const v = e.value;
+    const dd = v?.game_date ? String(v.game_date).slice(0, 10) : null;
+    if (dd && !live.has(dd)) return false;
+    return String(v?.status ?? "").toLowerCase() !== "final";
+  };
+  const scoped = starters.filter(onLive);
+  ok("Z4 yesterday's finished starters are excluded from the live slate",
+    !scoped.some((e) => String(e.entity) === "Max Fried"), scoped.map((e) => e.entity));
+  ok("Z5 today's starters are kept",
+    scoped.some((e) => String(e.entity) === "Carlos Rodón"));
+  eq("Z6 the denominator shrinks to the playable card", scoped.length, 3);
+
+  // and the coverage number that results
+  const pf = await d.getPitcherFeatures();
+  const all = coverage(pf.ev, "pitcher_quality", starters.map((e) => String(e.entity)));
+  const liveCov = coverage(pf.ev, "pitcher_quality", scoped.map((e) => String(e.entity)));
+  ok("Z7 the unscoped denominator is the larger, misleading one",
+    all.total_n > liveCov.total_n, { all: all.total_n, live: liveCov.total_n });
+  ok("Z8 scoped coverage reports against the live card only", liveCov.total_n === 3, liveCov.total_n);
 }
 
 console.log(`\n${failed === 0 ? "ALL GREEN" : "FAILURES"} — ${passed} passed, ${failed} failed`);

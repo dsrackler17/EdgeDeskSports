@@ -759,7 +759,8 @@ export class Dal {
         out.push(nm
           ? ev({
             source: "mlb_game_cards", entity: nm, field: "probable_starter",
-            value: { name: nm, throws: th, team: side === "away" ? g.away_team_name : g.home_team_name, game: entity, side },
+            value: { name: nm, throws: th, team: side === "away" ? g.away_team_name : g.home_team_name,
+              game: entity, side, game_date: g.game_date ?? null, status: g.status ?? null },
             status: "PROBABLE", freshness: "CURRENT", relevance: "pitching",
             note: "Probable, not confirmed. A scratch moves the number.",
           })
