@@ -557,8 +557,15 @@ async function todaysGameIds(sb: any, date: string): Promise<string[]> {
    into weeks of an empty `games` table. */
 async function runAdapter<T>(name: string, fn: () => Promise<T>): Promise<any> {
   const t0 = Date.now();
-  try { return { ok: true, ms: Date.now() - t0, ...(await fn() as any) }; }
-  catch (e) {
+  try {
+    /* Object literal properties evaluate left to right, so writing
+         { ok: true, ms: Date.now() - t0, ...(await fn()) }
+       computed `ms` BEFORE the await ever ran — every adapter reported ms:0
+       forever. Await first, measure after. A timing field that is always zero
+       is worse than no timing field: it looks like an answer. */
+    const res = await fn() as any;
+    return { ok: true, ms: Date.now() - t0, ...res };
+  } catch (e) {
     console.log('ADAPTER FAILED', JSON.stringify({ adapter: name, error: String(e) }));
     return { ok: false, ms: Date.now() - t0, error: String(e) };
   }
