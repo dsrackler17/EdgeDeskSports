@@ -72,7 +72,7 @@ export const HOLDOUT_FRAC = Number(Deno.env.get('LEARN_HOLDOUT_FRAC') ?? '0.30')
 /* Bumped whenever this file changes in a way you would want to confirm landed.
    Returned on every response, because "is the new build actually deployed?"
    should be answerable rather than inferred from whether the old bug recurs. */
-export const BUILD = '2026-08-12.3-schema-discovery';
+export const BUILD = '2026-08-12.4-clv-required';
 
 /* ========================================================================
    STATISTICS — pure, exported, tested. No database, no network.
@@ -258,7 +258,21 @@ export function splitChrono<T extends { graded_at: string | null }>(rows: T[], f
 }
 
 const beat = (g: Graded) => g.beat_close === true;
-const hasOutcome = (g: Graded) => g.beat_close != null;
+
+/**
+ * A signal only has an OUTCOME on this metric if a real CLV was computed.
+ *
+ * beat_close is a generated column, so a signal that never reached the close
+ * job resolves to `false` rather than null — and roughly three quarters of the
+ * history is in that state. Counting those as losses put the population beat
+ * rate at 17%, which is not a finding about EdgeDesk, it is a finding about
+ * un-closed rows. Every pattern built on that base rate would have been
+ * measuring which slices get CLOSED properly, not which slices beat the close.
+ *
+ * No CLV means no outcome. It is excluded, not counted against.
+ */
+const hasOutcome = (g: Graded) =>
+  g.clv != null && Number.isFinite(g.clv) && g.beat_close != null;
 
 /**
  * Score every level of every pre-registered hypothesis, then apply BH across
@@ -266,9 +280,30 @@ const hasOutcome = (g: Graded) => g.beat_close != null;
  * not 0.5 — the question is never "does this beat a coin", it is "does this
  * slice beat EdgeDesk's own average".
  */
+/**
+ * A base rate this far from even is a data fault, not a discovery.
+ *
+ * Every pattern here is measured AGAINST the population beat rate, so if that
+ * number is wrong, all of them are wrong in the same direction and none of the
+ * statistics downstream can detect it — the yardstick itself is bent. A live
+ * run reported 17.35%, which was un-closed rows counted as losses. Anything
+ * outside this band means the outcome column is contaminated and the run's
+ * output must not be quoted.
+ */
+export const BASE_RATE_SANE = { lo: 0.30, hi: 0.70 };
+
+export function baseRateWarning(base: number, n: number): string | null {
+  if (!n) return null;
+  if (base >= BASE_RATE_SANE.lo && base <= BASE_RATE_SANE.hi) return null;
+  return `The population beat-close rate is ${(base * 100).toFixed(1)}% over ${n} outcomes, which is outside the `
+    + `plausible ${BASE_RATE_SANE.lo * 100}-${BASE_RATE_SANE.hi * 100}% band. Every pattern is measured against `
+    + `this number, so all of them are suspect. The usual cause is signals with no real CLV being counted as `
+    + `losses — check that close is populating clv, and that rows with clv_excluded_reason are not being graded.`;
+}
+
 export function evaluate(rows: Graded[], opts: {
   minN?: number; minHoldout?: number; q?: number; effectFloor?: number; holdoutFrac?: number;
-} = {}): { patterns: Evaluated[]; base_rate: number; n_graded: number; tested: number } {
+} = {}): { patterns: Evaluated[]; base_rate: number; n_graded: number; tested: number; base_rate_warning: string | null } {
   const minN = opts.minN ?? MIN_N;
   const minHoldout = opts.minHoldout ?? MIN_HOLDOUT;
   const q = opts.q ?? FDR_Q;
@@ -346,7 +381,10 @@ export function evaluate(rows: Graded[], opts: {
     };
   });
 
-  return { patterns, base_rate: base, n_graded: graded.length, tested: scored.length };
+  return {
+    patterns, base_rate: base, n_graded: graded.length, tested: scored.length,
+    base_rate_warning: baseRateWarning(base, graded.length),
+  };
 }
 
 /* ========================================================================
@@ -469,6 +507,9 @@ async function loadGraded(sb: any, days: number): Promise<{
     const r = await sb.from('signals')
       .select(select.join(','))
       .not('graded_at', 'is', null)
+      /* A signal with no CLV was never closed. It is not a loss, it is a row
+         with no outcome, and including it corrupts every rate downstream. */
+      .not('clv', 'is', null)
       .gte('graded_at', from)
       .order('graded_at', { ascending: true })
       .range(page * PAGE, page * PAGE + PAGE - 1);
@@ -507,7 +548,7 @@ Deno.serve(async (req) => {
     }
 
     const { rows, dropped, columns_seen } = await loadGraded(sb, days);
-    const { patterns, base_rate, n_graded, tested } = evaluate(rows);
+    const { patterns, base_rate, n_graded, tested, base_rate_warning } = evaluate(rows);
     const buckets = calibrate(rows);
 
     const state = {
@@ -523,6 +564,7 @@ Deno.serve(async (req) => {
       /* Named, not swallowed: a family that silently stopped being tested is
          indistinguishable from one that found nothing. */
       columns_on_signals: columns_seen,
+      ...(base_rate_warning ? { base_rate_warning } : {}),
       ...(dropped.length ? { columns_unavailable: dropped,
         note: `signals has no ${dropped.join(', ')} column, so the matching hypothesis families were skipped.` } : {}),
       readiness: n_graded >= MIN_N
@@ -532,6 +574,18 @@ Deno.serve(async (req) => {
 
     if (mode === 'state' || mode === 'dry') {
       return json({ ...state, patterns: patterns.slice(0, 40), calibration: buckets });
+    }
+
+    /* If the yardstick is bent, nothing measured against it may be published.
+       Writing these as CONFIRMED would put a data artifact in front of a user
+       wearing the clothes of a validated finding. */
+    if (base_rate_warning) {
+      const blocked = {
+        ok: false, ...state, patterns_written: 0, calibration_written: 0,
+        blocked: 'Nothing was written. ' + base_rate_warning,
+      };
+      console.log('LEARN BLOCKED', JSON.stringify(blocked));
+      return json(blocked, 200);
     }
 
     // ---- write: patterns

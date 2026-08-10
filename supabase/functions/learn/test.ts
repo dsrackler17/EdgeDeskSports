@@ -8,7 +8,8 @@
 import {
   wilsonLo, normalCdf, twoSidedP, benjaminiHochberg,
   edgeBand, priceBand, booksBand, etDow, splitChrono,
-  evaluate, calibrate, HYPOTHESES, BUILD, planColumns, discoverColumns, type Graded,
+  evaluate, calibrate, HYPOTHESES, BUILD, planColumns, discoverColumns,
+  baseRateWarning, type Graded,
 } from "./index.ts";
 
 let passed = 0, failed = 0;
@@ -345,7 +346,56 @@ section("The column set is discovered, never assumed");
     catch (e) { return /signals is not readable/.test(String(e)); }
   })());
 
-  ok("D13 the build marker records this change", /schema-discovery/.test(BUILD), BUILD);
+  ok("D13 the build marker is set so a deploy can be confirmed",
+    /^\d{4}-\d{2}-\d{2}\.\d+-/.test(BUILD), BUILD);
+}
+
+/* The live run that caught this reported base_beat_rate 0.1735 over 3216
+   "graded" signals. beat_close is a GENERATED column, so a signal that never
+   reached the close job resolves to false rather than null — and roughly three
+   quarters of the history was in that state. Those are not losses. Counted as
+   losses they bend the yardstick every pattern is measured against, so all 11
+   "confirmed" patterns from that run were measuring which slices get CLOSED,
+   not which slices beat the close. */
+section("A signal with no CLV is not a loss");
+{
+  const closed = (n: number, k: number) => series(n, k, {});
+  const neverClosed = (n: number) => Array.from({ length: n }, (_, i) => {
+    const d = new Date(Date.parse("2026-01-01T18:00:00Z") + i * 864e5);
+    // Exactly the shape the generated column produces: clv null, beat_close false.
+    return g({ clv: null, beat_close: false, commence_time: d.toISOString(), graded_at: d.toISOString() });
+  });
+
+  const clean = evaluate(closed(200, 100));
+  near("V1 a properly closed population sits near even", clean.base_rate, 0.5, 0.02);
+  eq("V2 ...and every row counts as an outcome", clean.n_graded, 200);
+
+  const contaminated = evaluate([...closed(200, 100), ...neverClosed(600)]);
+  eq("V3 un-closed rows are excluded, not counted against", contaminated.n_graded, 200);
+  near("V4 ...so the base rate is unmoved by 600 of them", contaminated.base_rate, 0.5, 0.02);
+  eq("V5 ...and no false warning is raised", contaminated.base_rate_warning, null);
+
+  // The guard itself, on the number the live run actually produced.
+  ok("V6 a 17% base rate is reported as a fault", !!baseRateWarning(0.1735, 3216));
+  ok("V7 ...naming the un-closed rows as the usual cause",
+    /no real CLV being counted as losses/.test(baseRateWarning(0.1735, 3216) ?? ""));
+  ok("V8 ...and saying every pattern is suspect",
+    /all of them are suspect/.test(baseRateWarning(0.1735, 3216) ?? ""));
+  eq("V9 a sane base rate raises nothing", baseRateWarning(0.52, 3216), null);
+  eq("V10 an implausibly HIGH rate is caught too", baseRateWarning(0.94, 500) != null, true);
+  eq("V11 an empty population is not a fault", baseRateWarning(0, 0), null);
+
+  ok("V12 the guard rides on every evaluation",
+    "base_rate_warning" in evaluate(closed(100, 50)));
+  ok("V13 the build marker records this change", /clv-required/.test(BUILD), BUILD);
+
+  // Calibration must obey the same rule.
+  const cal = calibrate([
+    ...Array.from({ length: 40 }, () => g({ edge: 0.03, clv: 0.01, beat_close: true })),
+    ...Array.from({ length: 400 }, () => g({ edge: 0.03, clv: null, beat_close: false })),
+  ]);
+  eq("V14 calibration ignores rows with no CLV", cal[0].n, 40);
+  eq("V15 ...so its beat rate is not dragged down either", cal[0].beat_rate, 1);
 }
 
 console.log(`\n${failed === 0 ? "ALL GREEN" : "FAILURES"} — ${passed} passed, ${failed} failed`);
