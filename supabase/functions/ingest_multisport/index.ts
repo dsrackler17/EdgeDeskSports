@@ -1,0 +1,608 @@
+// ============================================================
+//  FILE:    supabase/functions/ingest_multisport/index.ts
+//  TYPE:    Edge Function (deployed) - cron job
+//  DEPLOY:  supabase functions deploy ingest_multisport --no-verify-jwt
+//  RUN:     POST {"sport":"nfl"}            one sport, today
+//           POST {"sport":"all","days":3}   every sport, next N days
+//           GET  ?mode=health               is each feed alive
+//           GET  ?mode=probe&sport=cbb      what a feed returns, without writing
+// ============================================================
+// MULTISPORT INGEST — NFL, college football, college basketball.
+//
+// One function rather than three, because the schedule/venue/odds shape is
+// identical across ESPN's leagues and only the efficiency feed differs per
+// sport. Three copies of the same adapter is three places for the same bug.
+//
+// SOURCES, and why each one
+//   ESPN scoreboard      (keyless)  schedule, teams, venue, neutral site,
+//                                   conference flag, rankings, and for NFL the
+//                                   weather block. The spine every sport needs.
+//   ESPN team statistics (keyless)  season team stats. Broad but shallow — it
+//                                   is the fallback, not the point.
+//   nflverse             (keyless)  NFL EPA per play, success rate, pass/rush
+//                                   splits. This is the Statcast of football:
+//                                   the difference between "scores 24 a game"
+//                                   and "is actually good".
+//   Barttorvik           (keyless)  college basketball adjusted efficiency,
+//                                   tempo and the four factors. The single most
+//                                   predictive free dataset in the sport, and
+//                                   the KenPom-equivalent core.
+//
+// College football is the thinnest of the three and this file says so rather
+// than pretending otherwise: without a CollegeFootballData key there is no free
+// play-by-play EPA, so CFB gets ESPN team stats plus rankings and its
+// efficiency columns stay null. That is a real gap, reported as one.
+//
+// THE DISCIPLINE, carried over from ingest_mlb because it is what made that one
+// debuggable: every feed reports its HTTP status, byte count, parsed row count
+// AND ITS COLUMN NAMES. Assuming a column is what cost a week on the MLB side
+// (`era_minus_xera_diff` silently stored as xERA) and again on the learning
+// loop (`signals.verdict` did not exist). A feed that changes shape should be
+// visible in the first run's output, not three weeks later.
+import { createClient } from 'jsr:@supabase/supabase-js@2';
+
+const url = Deno.env.get('SUPABASE_URL')!;
+const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+const UA = { 'User-Agent': 'EdgeDesk/1.0 (contact: ops@edgedesk)', 'Accept': 'application/json,text/csv,*/*' };
+
+export const BUILD = '2026-08-14.1';
+
+/* ========================================================================
+   SPORTS
+   ======================================================================== */
+
+export interface SportDef {
+  key: string;            // EdgeDesk sport_key, matching `signals`
+  slug: string;           // our short name
+  espnSport: string;      // ESPN path segment
+  espnLeague: string;
+  label: string;
+  kind: 'football' | 'basketball';
+  gamePrefix: string;     // game_id prefix, matching the MLB- convention
+}
+
+export const SPORTS: Record<string, SportDef> = {
+  nfl: {
+    key: 'americanfootball_nfl', slug: 'nfl', espnSport: 'football', espnLeague: 'nfl',
+    label: 'NFL', kind: 'football', gamePrefix: 'NFL',
+  },
+  cfb: {
+    key: 'americanfootball_ncaaf', slug: 'cfb', espnSport: 'football', espnLeague: 'college-football',
+    label: 'CFB', kind: 'football', gamePrefix: 'CFB',
+  },
+  cbb: {
+    key: 'basketball_ncaab', slug: 'cbb', espnSport: 'basketball', espnLeague: 'mens-college-basketball',
+    label: 'CBB', kind: 'basketball', gamePrefix: 'CBB',
+  },
+};
+
+/* ========================================================================
+   HELPERS — pure, exported, tested
+   ======================================================================== */
+
+export const num = (v: unknown): number | null => {
+  if (v == null) return null;
+  const n = parseFloat(String(v).replace(/[%,]/g, ''));
+  return Number.isFinite(n) ? n : null;
+};
+
+/** YYYYMMDD, which is what ESPN's `dates` parameter wants. */
+export function espnDate(d: Date): string {
+  return d.toISOString().slice(0, 10).replace(/-/g, '');
+}
+
+/**
+ * CSV -> rows. Same parser as the MLB side, including the fix that cost a week
+ * there: quotes are stripped from VALUES as well as headers, because
+ * parseFloat('"5.41"') is NaN and the stat silently vanishes.
+ */
+export function parseCsv(text: string): Record<string, string>[] {
+  const lines = text.split(/\r?\n/).filter((l) => l.trim().length);
+  if (!lines.length) return [];
+  const split = (line: string): string[] => {
+    const out: string[] = []; let cur = '', q = false;
+    for (let i = 0; i < line.length; i++) {
+      const c = line[i];
+      if (c === '"') { if (q && line[i + 1] === '"') { cur += '"'; i++; } else q = !q; }
+      else if (c === ',' && !q) { out.push(cur); cur = ''; }
+      else cur += c;
+    }
+    out.push(cur);
+    return out.map((s) => s.trim().replace(/^"|"$/g, ''));
+  };
+  const head = split(lines[0]);
+  return lines.slice(1).map((l) => {
+    const cells = split(l);
+    const row: Record<string, string> = {};
+    head.forEach((h, i) => { row[h] = cells[i] ?? ''; });
+    return row;
+  });
+}
+
+/**
+ * Column lookup: EXACT name first, then a fuzzy match that refuses any header
+ * looking like a derived difference.
+ *
+ * This is the ingest_mlb bug, kept fixed here rather than reintroduced: a
+ * fuzzy-first lookup for `xera` matched `era_minus_xera_diff` whenever the real
+ * cell was blank, and stored a -0.62 difference as an expected ERA.
+ */
+export function col(row: Record<string, string>, names: string[]): number | null {
+  for (const n of names) {
+    if (n in row) { const v = num(row[n]); if (v != null) return v; }
+  }
+  const keys = Object.keys(row).filter((k) => !/_diff$|_minus_|^diff_/i.test(k));
+  for (const n of names) {
+    const hit = keys.find((k) => k.toLowerCase() === n.toLowerCase())
+      ?? keys.find((k) => k.toLowerCase().replace(/[^a-z0-9]/g, '') === n.toLowerCase().replace(/[^a-z0-9]/g, ''));
+    if (hit) { const v = num(row[hit]); if (v != null) return v; }
+  }
+  return null;
+}
+
+/** Normalised team name, for joining a stats feed to a schedule feed. */
+export function normTeam(s: unknown): string {
+  return String(s ?? '')
+    .toLowerCase()
+    .replace(/&/g, ' and ')
+    .replace(/\bst\.?\b/g, 'state')          // "Ohio St." -> "ohio state"
+    .replace(/\buniv(ersity)?\b/g, '')
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim();
+}
+
+/**
+ * Rest days between two ISO datetimes, or null. Football and college
+ * basketball both hinge on this and it is free to compute from the schedule.
+ */
+export function restDays(prevIso: string | null, thisIso: string | null): number | null {
+  if (!prevIso || !thisIso) return null;
+  const a = Date.parse(prevIso), b = Date.parse(thisIso);
+  if (!Number.isFinite(a) || !Number.isFinite(b)) return null;
+  const d = Math.round((b - a) / 86400000);
+  return d >= 0 && d < 60 ? d : null;
+}
+
+/** Four-factor and efficiency rows from Barttorvik's public CSV. */
+export function torvikRow(r: Record<string, string>) {
+  return {
+    adj_o: col(r, ['adjoe', 'adj_o', 'AdjOE']),
+    adj_d: col(r, ['adjde', 'adj_d', 'AdjDE']),
+    adj_tempo: col(r, ['adj_t', 'adjt', 'tempo', 'AdjT']),
+    efg_pct: col(r, ['efg_o', 'efg', 'eFG']),
+    def_efg_pct: col(r, ['efg_d', 'efgd']),
+    to_pct: col(r, ['to_o', 'tor', 'TOR']),
+    def_to_pct: col(r, ['to_d', 'tord', 'TORD']),
+    orb_pct: col(r, ['or_o', 'orb', 'ORB']),
+    def_orb_pct: col(r, ['or_d', 'drb', 'DRB']),
+    ft_rate: col(r, ['ftr_o', 'ftr', 'FTR']),
+    def_ft_rate: col(r, ['ftr_d', 'ftrd', 'FTRD']),
+    three_rate: col(r, ['three_rate_o', '3pr', 'three_rate']),
+    def_three_rate: col(r, ['three_rate_d', '3prd']),
+    three_pct: col(r, ['three_pct_o', '3p_pct', 'three_pct']),
+    def_three_pct: col(r, ['three_pct_d', '3p_pct_d']),
+    ft_pct: col(r, ['ft_pct', 'ftpct']),
+    avg_height: col(r, ['avg_hgt', 'height', 'avg_height']),
+    experience: col(r, ['exp', 'experience']),
+    bench_minutes: col(r, ['bench', 'bench_minutes']),
+    wab: col(r, ['wab', 'WAB']),
+  };
+}
+
+/** Team EPA rows from an nflverse-shaped team stats CSV. */
+export function nflverseRow(r: Record<string, string>) {
+  return {
+    off_epa_play: col(r, ['off_epa_play', 'epa_per_play', 'offense_epa_play']),
+    def_epa_play: col(r, ['def_epa_play', 'defense_epa_play']),
+    off_success_rate: col(r, ['off_success_rate', 'success_rate']),
+    def_success_rate: col(r, ['def_success_rate']),
+    pass_epa_play: col(r, ['pass_epa_play', 'passing_epa_play']),
+    rush_epa_play: col(r, ['rush_epa_play', 'rushing_epa_play']),
+    def_pass_epa_play: col(r, ['def_pass_epa_play']),
+    def_rush_epa_play: col(r, ['def_rush_epa_play']),
+    explosive_play_rate: col(r, ['explosive_rate', 'explosive_play_rate']),
+    plays_per_game: col(r, ['plays_per_game', 'plays_pg']),
+    sack_rate: col(r, ['sack_rate']),
+    sack_rate_allowed: col(r, ['sack_rate_allowed']),
+  };
+}
+
+/** Every value null means the feed produced a shape we did not recognise. */
+export function anyValue(o: Record<string, unknown>): boolean {
+  return Object.values(o).some((v) => v != null);
+}
+
+/* ========================================================================
+   FETCH
+   ======================================================================== */
+
+interface FeedReport {
+  ok: boolean; status?: number; bytes?: number; rows?: number;
+  columns?: string[]; error?: string; url?: string;
+}
+
+async function getJson(u: string, ms = 20000): Promise<{ json: any; report: FeedReport }> {
+  try {
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), ms);
+    const r = await fetch(u, { headers: UA, signal: ctrl.signal });
+    clearTimeout(t);
+    const text = await r.text();
+    if (!r.ok) return { json: null, report: { ok: false, status: r.status, bytes: text.length, url: u } };
+    try {
+      return { json: JSON.parse(text), report: { ok: true, status: r.status, bytes: text.length, url: u } };
+    } catch {
+      return { json: null, report: { ok: false, status: r.status, bytes: text.length, error: 'not JSON', url: u } };
+    }
+  } catch (e) {
+    return { json: null, report: { ok: false, error: String(e).slice(0, 160), url: u } };
+  }
+}
+
+async function getCsv(u: string, ms = 25000): Promise<{ rows: Record<string, string>[]; report: FeedReport }> {
+  try {
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), ms);
+    const r = await fetch(u, { headers: UA, signal: ctrl.signal });
+    clearTimeout(t);
+    const text = await r.text();
+    if (!r.ok) return { rows: [], report: { ok: false, status: r.status, bytes: text.length, url: u } };
+    const rows = parseCsv(text);
+    return {
+      rows,
+      /* The column list is the point. A feed that silently changes a header is
+         how a stat becomes null forever without anything looking broken. */
+      report: { ok: true, status: r.status, bytes: text.length, rows: rows.length, columns: Object.keys(rows[0] ?? {}), url: u },
+    };
+  } catch (e) {
+    return { rows: [], report: { ok: false, error: String(e).slice(0, 160), url: u } };
+  }
+}
+
+/* ========================================================================
+   ADAPTERS
+   ======================================================================== */
+
+async function runAdapter<T>(name: string, fn: () => Promise<T>): Promise<any> {
+  const t0 = Date.now();
+  try {
+    // Await FIRST, measure after — the property-evaluation-order bug that made
+    // every ingest_mlb adapter report ms:0 forever.
+    const res = await fn() as any;
+    return { ok: true, ms: Date.now() - t0, ...res };
+  } catch (e) {
+    console.log('ADAPTER FAILED', JSON.stringify({ adapter: name, error: String(e) }));
+    return { ok: false, ms: Date.now() - t0, error: String(e).slice(0, 300) };
+  }
+}
+
+/** Schedule + venue + context. The spine; everything else joins to it. */
+async function ingestSchedule(sb: any, sp: SportDef, date: string) {
+  const dd = date.replace(/-/g, '');
+  const { json, report } = await getJson(
+    `https://site.api.espn.com/apis/site/v2/sports/${sp.espnSport}/${sp.espnLeague}/scoreboard?dates=${dd}&limit=200`);
+  if (!json) return { feed: report, games: 0, upserted: 0 };
+
+  const events: any[] = json.events ?? [];
+  let upserted = 0, contexts = 0;
+  const teamsSeen: { game_id: string; side: string; team: string; team_id: string; rec: any }[] = [];
+
+  for (const ev of events) {
+    const comp = ev.competitions?.[0];
+    if (!comp) continue;
+    const gid = `${sp.gamePrefix}-${ev.id}`;
+    const cs: any[] = comp.competitors ?? [];
+    const home = cs.find((c) => c.homeAway === 'home');
+    const away = cs.find((c) => c.homeAway === 'away');
+    if (!home || !away) continue;
+
+    const status = String(comp.status?.type?.state ?? '').toLowerCase();
+    const { error } = await sb.from('games').upsert({
+      game_id: gid, sport_key: sp.key,
+      game_date: String(ev.date ?? '').slice(0, 10),
+      start_time: ev.date ?? null,
+      home_team: home.team?.displayName ?? null,
+      away_team: away.team?.displayName ?? null,
+      status: status === 'post' ? 'final' : status === 'in' ? 'live' : 'scheduled',
+      home_score: num(home.score), away_score: num(away.score),
+    }, { onConflict: 'game_id' });
+    if (!error) upserted++;
+
+    for (const [side, c] of [['home', home], ['away', away]] as const) {
+      teamsSeen.push({
+        game_id: gid, side, team: c.team?.displayName ?? '', team_id: String(c.team?.id ?? ''),
+        rec: c.records?.find((r: any) => r.type === 'total' || r.name === 'overall') ?? c.records?.[0] ?? null,
+      });
+    }
+
+    // ---- context: the situational layer ----
+    const venue = comp.venue ?? {};
+    const wx = comp.weather ?? ev.weather ?? null;
+    const rank = (c: any) => (c?.curatedRank?.current && c.curatedRank.current <= 25 ? c.curatedRank.current : null);
+    const { error: ce } = await sb.from('matchup_context').upsert({
+      game_id: gid, sport_key: sp.key,
+      game_date: String(ev.date ?? '').slice(0, 10),
+      neutral_site: comp.neutralSite ?? null,
+      conference_game: comp.conferenceCompetition ?? null,
+      home_rank: rank(home), away_rank: rank(away),
+      ranking_poll: (rank(home) || rank(away)) ? 'espn_curated' : null,
+      venue: venue.fullName ?? null,
+      indoor: venue.indoor ?? null,
+      surface: venue.grass === true ? 'grass' : venue.grass === false ? 'turf' : null,
+      tv: comp.broadcasts?.[0]?.names?.[0] ?? null,
+      attendance_pct: (num(comp.attendance) && num(venue.capacity))
+        ? +(num(comp.attendance)! / num(venue.capacity)!).toFixed(3) : null,
+      notes: wx ? { weather: wx } : null,
+      source: 'espn_scoreboard', updated_at: new Date().toISOString(),
+    }, { onConflict: 'game_id' });
+    if (!ce) contexts++;
+  }
+
+  return { feed: report, games: events.length, upserted, contexts, teams: teamsSeen };
+}
+
+/**
+ * Rest days, computed from each team's own recent schedule.
+ *
+ * Cheap, entirely derivable from rows already stored, and one of the few
+ * situational factors with a durable effect — a short week in football and a
+ * third-game-in-five-nights in college basketball both move real numbers.
+ */
+async function ingestRest(sb: any, sp: SportDef, date: string) {
+  const { data: today } = await sb.from('games')
+    .select('game_id,home_team,away_team,start_time')
+    .eq('sport_key', sp.key).eq('game_date', date);
+  if (!today?.length) return { games: 0, filled: 0 };
+
+  const since = new Date(Date.parse(date + 'T00:00:00Z') - 21 * 864e5).toISOString().slice(0, 10);
+  const { data: prior } = await sb.from('games')
+    .select('home_team,away_team,start_time,game_date')
+    .eq('sport_key', sp.key).gte('game_date', since).lt('game_date', date)
+    .order('game_date', { ascending: false }).limit(4000);
+
+  const lastFor = new Map<string, string>();
+  for (const g of prior ?? []) {
+    for (const t of [g.home_team, g.away_team]) {
+      if (!t) continue;
+      const k = normTeam(t);
+      if (!lastFor.has(k)) lastFor.set(k, g.start_time ?? `${g.game_date}T00:00:00Z`);
+    }
+  }
+
+  let filled = 0;
+  for (const g of today) {
+    const hr = restDays(lastFor.get(normTeam(g.home_team)) ?? null, g.start_time);
+    const ar = restDays(lastFor.get(normTeam(g.away_team)) ?? null, g.start_time);
+    if (hr == null && ar == null) continue;
+    const short = sp.kind === 'football' && ((hr != null && hr <= 4) || (ar != null && ar <= 4));
+    const { error } = await sb.from('matchup_context').upsert({
+      game_id: g.game_id, sport_key: sp.key, game_date: date,
+      home_rest_days: hr, away_rest_days: ar,
+      short_week: sp.kind === 'football' ? short : null,
+      off_bye_home: sp.kind === 'football' && hr != null ? hr >= 12 : null,
+      off_bye_away: sp.kind === 'football' && ar != null ? ar >= 12 : null,
+      updated_at: new Date().toISOString(),
+    }, { onConflict: 'game_id' });
+    if (!error) filled++;
+  }
+  return { games: today.length, filled, teams_with_history: lastFor.size };
+}
+
+/** NFL efficiency from nflverse. The Statcast layer of football. */
+async function ingestNflEfficiency(sb: any, teams: any[], season: number) {
+  const candidates = [
+    `https://github.com/nflverse/nflverse-data/releases/download/stats_team/stats_team_reg_${season}.csv`,
+    `https://raw.githubusercontent.com/nflverse/nflverse-data/master/data/stats_team_reg_${season}.csv`,
+  ];
+  let rows: Record<string, string>[] = [];
+  const feeds: FeedReport[] = [];
+  for (const u of candidates) {
+    const r = await getCsv(u);
+    feeds.push(r.report);
+    if (r.rows.length) { rows = r.rows; break; }
+  }
+  if (!rows.length) return { feeds, applied: 0, note: 'no nflverse feed responded — EPA columns stay null' };
+
+  const byTeam = new Map<string, Record<string, string>>();
+  for (const r of rows) {
+    const nm = r.team ?? r.team_abbr ?? r.recent_team ?? r.posteam ?? '';
+    if (nm) byTeam.set(normTeam(nm), r);
+  }
+  let applied = 0, unmatched = 0;
+  for (const t of teams) {
+    const r = byTeam.get(normTeam(t.team)) ?? byTeam.get(normTeam(t.abbr ?? ''));
+    if (!r) { unmatched++; continue; }
+    const vals = nflverseRow(r);
+    if (!anyValue(vals)) continue;
+    const { error } = await sb.from('team_features')
+      .upsert({ game_id: t.game_id, side: t.side, ...vals, source: 'nflverse', updated_at: new Date().toISOString() },
+        { onConflict: 'game_id,side' });
+    if (!error) applied++;
+  }
+  return { feeds, applied, unmatched, teams_in_feed: byTeam.size };
+}
+
+/** College basketball efficiency from Barttorvik. */
+async function ingestCbbEfficiency(sb: any, teams: any[], season: number) {
+  const candidates = [
+    `https://barttorvik.com/trank.php?year=${season}&csv=1`,
+    `https://barttorvik.com/${season}_team_results.csv`,
+  ];
+  let rows: Record<string, string>[] = [];
+  const feeds: FeedReport[] = [];
+  for (const u of candidates) {
+    const r = await getCsv(u);
+    feeds.push(r.report);
+    if (r.rows.length) { rows = r.rows; break; }
+  }
+  if (!rows.length) return { feeds, applied: 0, note: 'no Torvik feed responded — adjusted efficiency stays null' };
+
+  const byTeam = new Map<string, Record<string, string>>();
+  for (const r of rows) {
+    const nm = r.team ?? r.Team ?? r.school ?? Object.values(r)[1] ?? '';
+    if (nm) byTeam.set(normTeam(nm), r);
+  }
+  let applied = 0, unmatched = 0;
+  const unmatchedNames: string[] = [];
+  for (const t of teams) {
+    const r = byTeam.get(normTeam(t.team));
+    if (!r) { unmatched++; if (unmatchedNames.length < 10) unmatchedNames.push(t.team); continue; }
+    const vals = torvikRow(r);
+    if (!anyValue(vals)) continue;
+    const adjO = vals.adj_o, adjD = vals.adj_d;
+    const { error } = await sb.from('team_features').upsert({
+      game_id: t.game_id, side: t.side, ...vals,
+      adj_em: (adjO != null && adjD != null) ? +(adjO - adjD).toFixed(2) : null,
+      source: 'barttorvik', updated_at: new Date().toISOString(),
+    }, { onConflict: 'game_id,side' });
+    if (!error) applied++;
+  }
+  return { feeds, applied, unmatched, unmatched_examples: unmatchedNames, teams_in_feed: byTeam.size };
+}
+
+/** Base team rows: identity and record, so a row exists even if efficiency fails. */
+async function ingestTeamBase(sb: any, sp: SportDef, teams: any[]) {
+  let written = 0;
+  for (const t of teams) {
+    const summary = String(t.rec?.summary ?? '');
+    const m = /^(\d+)-(\d+)/.exec(summary);
+    const w = m ? parseInt(m[1], 10) : null, l = m ? parseInt(m[2], 10) : null;
+    const { error } = await sb.from('team_features').upsert({
+      game_id: t.game_id, side: t.side, sport_key: sp.key,
+      team: t.team, team_id: t.team_id,
+      wins: w, losses: l,
+      win_pct: (w != null && l != null && w + l > 0) ? +(w / (w + l)).toFixed(4) : null,
+      source: 'espn_scoreboard', updated_at: new Date().toISOString(),
+    }, { onConflict: 'game_id,side' });
+    if (!error) written++;
+  }
+  return { team_rows: written };
+}
+
+/* ========================================================================
+   ONE SPORT, ONE DAY
+   ======================================================================== */
+
+async function ingestSport(sb: any, sp: SportDef, date: string, season: number) {
+  const schedule = await runAdapter('schedule', () => ingestSchedule(sb, sp, date));
+  const teams = (schedule.teams ?? []) as any[];
+
+  const base = await runAdapter('team_base', () => ingestTeamBase(sb, sp, teams));
+  const rest = await runAdapter('rest', () => ingestRest(sb, sp, date));
+  const efficiency = sp.slug === 'nfl'
+    ? await runAdapter('efficiency', () => ingestNflEfficiency(sb, teams, season))
+    : sp.slug === 'cbb'
+      ? await runAdapter('efficiency', () => ingestCbbEfficiency(sb, teams, season))
+      : { ok: true, applied: 0, skipped: 'college football has no free play-by-play EPA feed without a CollegeFootballData key; efficiency columns stay null and the research layer reports that rather than guessing' };
+
+  const healthy = schedule.ok && (schedule.upserted ?? 0) > 0;
+  const warnings: string[] = [];
+  if (!healthy) warnings.push(`${sp.label}: schedule wrote 0 games — every downstream adapter is starved`);
+  if (healthy && (efficiency as any).applied === 0 && sp.slug !== 'cfb') {
+    warnings.push(`${sp.label}: games landed but NO efficiency rows were applied — the stats feed changed shape or the team names do not match. Check the feeds block.`);
+  }
+  return {
+    sport: sp.label, date, healthy, ...(warnings.length ? { warnings } : {}),
+    schedule: { ...schedule, teams: undefined }, team_base: base, rest, efficiency,
+  };
+}
+
+/* ========================================================================
+   HANDLER
+   ======================================================================== */
+
+function json(body: unknown, status = 200) {
+  return new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } });
+}
+
+function seasonFor(sp: SportDef, d: Date): number {
+  const y = d.getUTCFullYear(), m = d.getUTCMonth() + 1;
+  // Football seasons are labelled by the year they start; basketball by the
+  // year they END, which is the convention every college feed uses.
+  if (sp.kind === 'football') return m >= 3 ? y : y - 1;
+  return m >= 7 ? y + 1 : y;
+}
+
+Deno.serve(async (req) => {
+  try {
+    const params = Object.fromEntries(new URL(req.url).searchParams);
+    let body: any = {}; try { body = await req.json(); } catch { /* GET */ }
+    const mode = body.mode ?? params.mode ?? 'ingest';
+    const want = String(body.sport ?? params.sport ?? 'all').toLowerCase();
+    const days = Math.max(1, Math.min(7, Number(body.days ?? params.days ?? 1)));
+    const sb = createClient(url, serviceKey);
+
+    const chosen = want === 'all' ? Object.values(SPORTS)
+      : SPORTS[want] ? [SPORTS[want]] : [];
+    if (!chosen.length) {
+      return json({ ok: false, error: `unknown sport "${want}"`, valid: Object.keys(SPORTS) }, 400);
+    }
+
+    /* PROBE — what does a feed actually return, without writing anything.
+       Exists because assuming a feed's shape has cost this project a week
+       twice now, and one read is cheaper than a deploy-and-see cycle. */
+    if (mode === 'probe') {
+      const sp = chosen[0];
+      const dd = espnDate(new Date());
+      const sched = await getJson(
+        `https://site.api.espn.com/apis/site/v2/sports/${sp.espnSport}/${sp.espnLeague}/scoreboard?dates=${dd}&limit=200`);
+      const season = seasonFor(sp, new Date());
+      const eff = sp.slug === 'cbb'
+        ? await getCsv(`https://barttorvik.com/trank.php?year=${season}&csv=1`)
+        : sp.slug === 'nfl'
+          ? await getCsv(`https://github.com/nflverse/nflverse-data/releases/download/stats_team/stats_team_reg_${season}.csv`)
+          : { rows: [], report: { ok: false, error: 'no free efficiency feed for CFB without a CollegeFootballData key' } };
+      return json({
+        build: BUILD, sport: sp.label, season,
+        schedule_feed: sched.report,
+        schedule_events: (sched.json?.events ?? []).length,
+        sample_event: sched.json?.events?.[0]
+          ? {
+            id: sched.json.events[0].id,
+            name: sched.json.events[0].name,
+            keys_on_competition: Object.keys(sched.json.events[0].competitions?.[0] ?? {}),
+          } : null,
+        efficiency_feed: (eff as any).report,
+        efficiency_sample_columns: Object.keys(((eff as any).rows ?? [])[0] ?? {}),
+      });
+    }
+
+    if (mode === 'health') {
+      const out: any = { build: BUILD, checked_at: new Date().toISOString(), sports: {} };
+      for (const sp of chosen) {
+        const { count: games } = await sb.from('games')
+          .select('*', { count: 'exact', head: true }).eq('sport_key', sp.key)
+          .gte('game_date', new Date(Date.now() - 2 * 864e5).toISOString().slice(0, 10));
+        const { count: tf } = await sb.from('team_features')
+          .select('*', { count: 'exact', head: true }).eq('sport_key', sp.key)
+          .gte('updated_at', new Date(Date.now() - 36 * 3600e3).toISOString());
+        out.sports[sp.slug] = {
+          games_last_2_days: games ?? 0, fresh_team_rows: tf ?? 0,
+          verdict: (games ?? 0) === 0 ? 'NO GAMES — schedule feed is not writing'
+            : (tf ?? 0) === 0 ? 'GAMES BUT NO TEAM ROWS — the efficiency tier is broken'
+              : 'ok',
+        };
+      }
+      return json(out);
+    }
+
+    const results: any[] = [];
+    for (const sp of chosen) {
+      for (let i = 0; i < days; i++) {
+        const d = new Date(Date.now() + i * 864e5);
+        const date = d.toISOString().slice(0, 10);
+        results.push(await ingestSport(sb, sp, date, seasonFor(sp, d)));
+      }
+    }
+    const summary = {
+      ok: true, build: BUILD,
+      healthy: results.every((r) => r.healthy),
+      warnings: results.flatMap((r) => r.warnings ?? []),
+      results,
+    };
+    console.log('INGEST_MULTISPORT', JSON.stringify({ healthy: summary.healthy, warnings: summary.warnings }));
+    return json(summary);
+  } catch (e) {
+    return json({ ok: false, build: BUILD, error: String(e) }, 500);
+  }
+});

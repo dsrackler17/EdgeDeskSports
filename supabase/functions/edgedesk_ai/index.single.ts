@@ -478,6 +478,7 @@ export function rankingAxis(intent: string): string | null {
 
 export const MODE_OF_INTENT: Record<string, Mode> = {
   worst_pitchers: "MATCHUP", exploitable_pitchers: "MATCHUP", best_pitchers: "MATCHUP",
+  team_efficiency: "MATCHUP",
   best_matchups: "MATCHUP", offense: "MATCHUP", research_matchup: "DEEP",
   best_bets: "SLATE", slate_overview: "SLATE", bullpen: "SLATE", weather: "SLATE",
   traps: "SCOUT", research_priority: "SCOUT", signal_quality: "SCOUT",
@@ -733,8 +734,8 @@ export const SPORTS: Record<string, SportModule> = {
     steps: ["starters", "pitcher_features", "opponent_offense", "bullpen", "park", "weather", "workload", "team_form"],
   },
   americanfootball_nfl: {
-    key: "americanfootball_nfl", label: "NFL", status: "CORE_ONLY", steps: [],
-    needs: "No NFL team/player feature tables are ingested. Core market research (price, sharp reference, edge, confirmation, CLV) works; QB / efficiency / trenches / rest research needs an NFL feature pipeline.",
+    key: "americanfootball_nfl", label: "NFL", status: "WIRED",
+    steps: ["team_efficiency", "quarterback", "matchup_context", "rest", "weather", "market"],
   },
   basketball_nba: {
     key: "basketball_nba", label: "NBA", status: "CORE_ONLY", steps: [],
@@ -753,8 +754,17 @@ export const SPORTS: Record<string, SportModule> = {
     needs: "Surface/serve/return research lives behind the wta schema (wta_ingest / wta_elo / wta_research) and is not exposed to this function's reader. Core market research works.",
   },
   americanfootball_ncaaf: {
-    key: "americanfootball_ncaaf", label: "CFB", status: "CORE_ONLY", steps: ["rankings"],
-    needs: "CFB efficiency lives behind the cfb schema (cfb_ingest / cfbd_rankings) and is not exposed to this function's reader. Core market research plus AP/coaches rankings work.",
+    key: "americanfootball_ncaaf", label: "CFB", status: "WIRED",
+    steps: ["team_efficiency", "matchup_context", "rest", "rankings", "market"],
+    /* Honest about the gap rather than quiet about it: there is no free
+       play-by-play EPA feed for college football without a CollegeFootballData
+       key, so the efficiency columns are usually null here even though the
+       schedule, rankings, rest and situational layer are all present. */
+    needs: "Schedule, rankings, rest, venue and situational context are ingested. Play-by-play EFFICIENCY (EPA per play, success rate) is not: there is no free CFB feed for it without a CollegeFootballData API key. Say so rather than substituting points per game.",
+  },
+  basketball_ncaab: {
+    key: "basketball_ncaab", label: "CBB", status: "WIRED",
+    steps: ["team_efficiency", "four_factors", "tempo", "matchup_context", "rest", "rankings", "market"],
   },
 };
 
@@ -858,6 +868,13 @@ export function classify(question: string, mode?: string): Plan {
      which sent it to the generic slate overview and retrieved no pitcher data
      at all. Anything asking about weak arms routes here. */
   const PITCH_STEM = /\b(pitch|pitcher|pitchers|pitching|starter|starters|starting|arm|arms|rotation|mound)\b/;
+  /* Football and basketball vocabulary. Without these, "which offense is most
+     efficient tonight" fell through to the generic slate overview and retrieved
+     no team_features at all — the same gap that made "worst pitching matchups"
+     return nothing before the pitcher stems were added. */
+  const GRIDIRON_STEM = /\b(quarterback|qb|qbs|offense|offence|defense|defence|epa|efficiency|efficient|rushing|passing|run game|pass rush|trenches|line|red zone|third down|explosive)\b/;
+  const HOOPS_STEM = /\b(tempo|pace|possessions|efficiency|efficient|adjusted|kenpom|torvik|four factors|rebounding|turnovers|three point|threes|shooting|effective field goal|efg)\b/;
+  const TEAM_STEM = /\b(team|teams|matchup|matchups|offense|offence|defense|defence|efficiency|efficient)\b/;
   const WEAK_WORD = /\b(worst|weakest|bad|worse|poorest|shakiest|most vulnerable|vulnerable)\b/;
   const STRONG_WORD = /\b(best|strongest|top|elite|toughest)\b/;
   /* "worst pitching MATCHUPS" is a matchup question, not purely an arm-quality
@@ -871,13 +888,22 @@ export function classify(question: string, mode?: string): Plan {
   if (has("exploitable", "most attackable", "attack the pitcher"))
     return P("exploitable_pitchers", "SLATE", ["slate", "pitchers", "pitcher_features", "opponent_offense", "park", "weather", "workload", "bullpen", "market"], "Exploitability is pitcher quality read against the specific opponent, park and bullpen.");
 
+  /* Football / basketball efficiency questions, routed before the generic
+     fallbacks so they retrieve the owned layer for their sport. */
+  if ((GRIDIRON_STEM.test(q) || HOOPS_STEM.test(q))
+    && (WEAK_WORD.test(q) || STRONG_WORD.test(q) || MATCHUP_WORD.test(q) || TEAM_STEM.test(q))) {
+    return P("team_efficiency", "SLATE",
+      ["slate", "team_efficiency", "quarterback", "matchup_context", "market"],
+      "Ranking football or basketball teams needs the owned efficiency layer plus who each one faces.");
+  }
+
   if (STRONG_WORD.test(q) && PITCH_STEM.test(q) && !MATCHUP_WORD.test(q))
     return P("best_pitchers", "SLATE", ["slate", "pitchers", "pitcher_features", "opponent_offense", "park"], "Ranking starters requires the whole card.");
 
   // Superlative + subject, matched loosely: "best pitching matchups today" and
   // "biggest mismatch between pitching and offense" are the same question.
   if (/\b(best|strongest|biggest|top|juiciest|worst|weakest|easiest|softest)\b[\s\S]{0,40}\b(matchup|matchups|mismatch|game|games|spot|spots)\b/.test(q))
-    return P("best_matchups", "SLATE", ["slate", "pitchers", "pitcher_features", "opponent_offense", "park", "weather", "market"], "Matchup quality across the card.");
+    return P("best_matchups", "SLATE", ["slate", "pitchers", "pitcher_features", "opponent_offense", "team_efficiency", "quarterback", "matchup_context", "park", "weather", "market"], "Matchup quality across the card.");
 
   if (/\b(best|strongest|top|biggest|find me the best|three best|3 best)\b[\s\S]{0,30}\b(bet|bets|play|plays|edge|edges|value|moneyline|underdog|dog|price)\b/.test(q)
       || has("what should i bet", "what to bet", "find me something"))
@@ -932,7 +958,7 @@ export function classify(question: string, mode?: string): Plan {
      exactly how "worst pitching matchups today?" reported 0/30. The fallthrough
      now pulls the matchup layer too; the retrieval budget still caps the cost. */
   if (has("slate", "today", "tonight", "board", "card"))
-    return P("slate_overview", "SLATE", ["slate", "market", "matchup", "pitchers", "pitcher_features", "opponent_offense", "park"], "Board-level overview.");
+    return P("slate_overview", "SLATE", ["slate", "market", "matchup", "pitchers", "pitcher_features", "opponent_offense", "team_efficiency", "quarterback", "matchup_context", "park"], "Board-level overview.");
 
   return P("unknown", "STANDARD", ["slate", "focus_signal", "market", "matchup", "pitcher_features", "opponent_offense"], "Unclassified — retrieve the board, the matchup layer and any focused signal, then answer from what is there.");
 }
@@ -1207,6 +1233,224 @@ export class Dal {
    * answer can name WHICH link is broken (A: no data / B: join / C: date /
    * E: RLS) instead of blaming the data.
    */
+  /**
+   * Football and basketball: team efficiency, the quarterback, and the
+   * situational layer, joined through games the same way the MLB card is.
+   *
+   * The shape deliberately mirrors getPitcherFeatures because the failure modes
+   * are the same. Every link is probed and diagnosed, each row carries the
+   * identity the integrity audit needs (team, opponent, matchup, date), and a
+   * column that is null is reported as absent rather than skipped — a CFB row
+   * with no EPA is a known gap, not a mystery.
+   */
+  async getTeamFeatures(sportKey: string): Promise<{ ev: Evidence[]; path: Record<string, unknown> }> {
+    const days = [etDay(0), etDay(1)];
+    const path: Record<string, unknown> = { sport: sportKey, days_queried: days };
+    const out: Evidence[] = [];
+
+    const g = await this.read(
+      `games?select=game_id,game_date,home_team,away_team,start_time,status`
+      + `&sport_key=eq.${encodeURIComponent(sportKey)}&game_date=in.(${days.join(",")})`
+      + `&order=start_time.asc&limit=120`, "schedule");
+    path.games = { rows: g.rows.length, error: g.error };
+
+    const ids = g.rows.map((r) => r.game_id).filter((v) => v != null).map(String);
+    if (!ids.length) {
+      const probe = await this.read(
+        `games?select=game_id,game_date&sport_key=eq.${encodeURIComponent(sportKey)}`
+        + `&order=game_date.desc&limit=5`, "schedule");
+      path.games_probe = {
+        rows: probe.rows.length, latest_dates: probe.rows.map((r) => r.game_date),
+        diagnosis: probe.error
+          ? "E — games is not readable by this caller (RLS or grant)."
+          : probe.rows.length
+            ? `C — games holds rows for this sport but none on ${days.join("/")}; latest is ${probe.rows[0]?.game_date}. The multisport ingest is stale or off-schedule.`
+            : "A — games holds no row for this sport at all. ingest_multisport has never written it.",
+      };
+      return { ev: [unavailable("games", "team_efficiency", `no ${sportKey} games on this slate`)], path };
+    }
+
+    const inList = ids.map(encodeURIComponent).join(",");
+    const tf = await this.read(
+      `team_features?select=game_id,side,team,wins,losses,win_pct,`
+      + `off_epa_play,def_epa_play,off_success_rate,def_success_rate,pass_epa_play,rush_epa_play,`
+      + `def_pass_epa_play,def_rush_epa_play,explosive_play_rate,yards_per_play,opp_yards_per_play,`
+      + `third_down_pct,def_third_down_pct,red_zone_td_pct,def_red_zone_td_pct,turnover_margin_pg,`
+      + `sack_rate,sack_rate_allowed,plays_per_game,`
+      + `adj_o,adj_d,adj_em,adj_tempo,efg_pct,to_pct,orb_pct,ft_rate,`
+      + `def_efg_pct,def_to_pct,def_orb_pct,def_ft_rate,three_rate,three_pct,def_three_rate,def_three_pct,`
+      + `avg_height,experience,bench_minutes,wab,source,updated_at`
+      + `&game_id=in.(${inList})&limit=240`, "team_stats");
+    path.team_features = { rows: tf.rows.length, error: tf.error };
+
+    const qb = await this.read(
+      `qb_features?select=game_id,side,name,epa_per_dropback,cpoe,ypa,comp_pct,td_rate,int_rate,`
+      + `sack_rate_taken,pressure_rate,rush_epa,qbr,attempts,games_started,status,is_backup,injury_note,`
+      + `source,updated_at&game_id=in.(${inList})&limit=240`, "player_stats");
+    path.qb_features = { rows: qb.rows.length, error: qb.error };
+
+    const mc = await this.read(
+      `matchup_context?select=game_id,neutral_site,conference_game,is_rivalry,home_rest_days,away_rest_days,`
+      + `short_week,off_bye_home,off_bye_away,home_rank,away_rank,venue,indoor,surface,altitude_ft,tv,notes,`
+      + `updated_at&game_id=in.(${inList})&limit=120`, "schedule");
+    path.matchup_context = { rows: mc.rows.length, error: mc.error };
+
+    if (!tf.rows.length) {
+      const probe = await this.read("team_features?select=game_id,sport_key,team&limit=5", "team_stats");
+      path.team_features_probe = {
+        rows: probe.rows.length, sample_game_ids: probe.rows.map((r) => r.game_id),
+        diagnosis: probe.error
+          ? "E — team_features is not readable by this caller (RLS or grant)."
+          : !probe.rows.length
+            ? "A — team_features is empty. ingest_multisport has never populated it."
+            : "B — team_features holds rows but none matched this slate's game_ids. Compare sample_game_ids against the ids in games.",
+      };
+    }
+
+    const gameById: Record<string, any> = {};
+    for (const r of g.rows) gameById[String(r.game_id)] = r;
+    const tfBy: Record<string, any> = {};
+    for (const r of tf.rows) tfBy[`${r.game_id}|${r.side}`] = r;
+    const qbBy: Record<string, any> = {};
+    for (const r of qb.rows) qbBy[`${r.game_id}|${r.side}`] = r;
+    const mcBy: Record<string, any> = {};
+    for (const r of mc.rows) mcBy[String(r.game_id)] = r;
+
+    const flip = (x: string) => x === "home" ? "away" : "home";
+    const teamOn = (gm: any, side: string) => side === "home" ? gm?.home_team : gm?.away_team;
+    const isHoops = sportKey === "basketball_ncaab" || sportKey === "basketball_nba";
+
+    for (const gm of g.rows) {
+      const gid = String(gm.game_id);
+      const played = String(gm.status ?? "").toLowerCase() === "final";
+      const matchup = `${gm.away_team} @ ${gm.home_team}`;
+      const ctx = mcBy[gid] ?? null;
+
+      for (const side of ["home", "away"] as const) {
+        const t = tfBy[`${gid}|${side}`];
+        const opp = tfBy[`${gid}|${flip(side)}`];
+        const team = teamOn(gm, side);
+        if (!t) {
+          out.push(unavailable("team_features", "team_efficiency",
+            `no efficiency row for ${team ?? side} in this game`, team ?? gid));
+          continue;
+        }
+
+        /* Which numbers are genuinely absent, named rather than left blank.
+           CFB has no free EPA feed, so this list is how the answer knows to
+           say "not ingested for this sport" instead of reasoning from a hole. */
+        const wantCols = isHoops
+          ? ["adj_o", "adj_d", "adj_tempo", "efg_pct", "to_pct", "orb_pct", "ft_rate"]
+          : ["off_epa_play", "def_epa_play", "off_success_rate", "def_success_rate", "plays_per_game"];
+        const missing = wantCols.filter((k) => t[k] == null);
+
+        out.push(ev({
+          source: "team_features", entity: team ?? `${gid}:${side}`, field: "team_efficiency",
+          relevance: isHoops ? "efficiency" : "offense",
+          value: {
+            team, side, opponent: teamOn(gm, flip(side)), game: matchup, game_date: gm.game_date,
+            game_id: gid, already_played: played,
+            record: (t.wins != null && t.losses != null) ? `${t.wins}-${t.losses}` : null,
+            ...(isHoops
+              ? {
+                adj_o: t.adj_o, adj_d: t.adj_d, adj_em: t.adj_em, adj_tempo: t.adj_tempo,
+                four_factors: { efg: t.efg_pct, tov: t.to_pct, orb: t.orb_pct, ftr: t.ft_rate },
+                four_factors_defence: { efg: t.def_efg_pct, tov: t.def_to_pct, orb_allowed: t.def_orb_pct, ftr: t.def_ft_rate },
+                three_rate: t.three_rate, three_pct: t.three_pct,
+                opp_three_rate: t.def_three_rate, opp_three_pct: t.def_three_pct,
+                height: t.avg_height, experience: t.experience, bench_minutes: t.bench_minutes, wab: t.wab,
+                opponent_adj_o: opp?.adj_o ?? null, opponent_adj_d: opp?.adj_d ?? null,
+                opponent_adj_tempo: opp?.adj_tempo ?? null,
+                tempo_note: (t.adj_tempo != null && opp?.adj_tempo != null)
+                  ? "Both tempos are attached. The expected possession count is the pace input for the total; two efficient slow teams can be excellent and still play under."
+                  : null,
+                adj_d_note: "adj_d is points ALLOWED per 100 possessions — lower is better, unlike every other efficiency field here.",
+              }
+              : {
+                off_epa_play: t.off_epa_play, def_epa_play: t.def_epa_play,
+                off_success_rate: t.off_success_rate, def_success_rate: t.def_success_rate,
+                pass_epa_play: t.pass_epa_play, rush_epa_play: t.rush_epa_play,
+                def_pass_epa_play: t.def_pass_epa_play, def_rush_epa_play: t.def_rush_epa_play,
+                explosive_play_rate: t.explosive_play_rate,
+                yards_per_play: t.yards_per_play, opp_yards_per_play: t.opp_yards_per_play,
+                third_down_pct: t.third_down_pct, def_third_down_pct: t.def_third_down_pct,
+                red_zone_td_pct: t.red_zone_td_pct, def_red_zone_td_pct: t.def_red_zone_td_pct,
+                turnover_margin_pg: t.turnover_margin_pg,
+                sack_rate: t.sack_rate, sack_rate_allowed: t.sack_rate_allowed,
+                plays_per_game: t.plays_per_game,
+                opponent_def_epa_play: opp?.def_epa_play ?? null,
+                opponent_off_epa_play: opp?.off_epa_play ?? null,
+                opponent_def_pass_epa_play: opp?.def_pass_epa_play ?? null,
+                opponent_def_rush_epa_play: opp?.def_rush_epa_play ?? null,
+                def_epa_note: "def_epa_play is EPA ALLOWED per play — NEGATIVE is a good defence. The sign is opposite to the offensive column.",
+              }),
+            missing_fields: missing,
+            missing_note: missing.length && sportKey === "americanfootball_ncaaf"
+              ? "College football has no free play-by-play EPA feed without a CollegeFootballData key, so these are NOT ingested for this sport. Say that; do not substitute points per game."
+              : missing.length ? "These columns were not populated for this row." : null,
+          },
+          status: missing.length === wantCols.length ? "PARTIAL" : played ? "HISTORICAL" : "VERIFIED",
+          source_timestamp: t.updated_at ?? null,
+          freshness: t.updated_at ? freshnessOf("team_stats", t.updated_at) : "UNKNOWN",
+        }));
+
+        const q = qbBy[`${gid}|${side}`];
+        if (q) {
+          out.push(ev({
+            source: "qb_features", entity: q.name ?? team ?? `${gid}:${side}`, field: "quarterback",
+            relevance: "pitching",
+            value: {
+              name: q.name, team, side, game: matchup, game_date: gm.game_date,
+              epa_per_dropback: q.epa_per_dropback, cpoe: q.cpoe, ypa: q.ypa, comp_pct: q.comp_pct,
+              td_rate: q.td_rate, int_rate: q.int_rate, sack_rate_taken: q.sack_rate_taken,
+              pressure_rate: q.pressure_rate, rush_epa: q.rush_epa, qbr: q.qbr,
+              attempts: q.attempts, games_started: q.games_started,
+              status: q.status, is_backup: q.is_backup, injury_note: q.injury_note,
+              opponent_pass_defence_epa: opp?.def_pass_epa_play ?? null,
+              opponent_sack_rate: opp?.sack_rate ?? null,
+            },
+            /* An unconfirmed or backup starter is never VERIFIED. It is the
+               single largest predictable line move in football, so a
+               conclusion resting on it has to be marked provisional. */
+            status: q.is_backup === true || (q.status && String(q.status).toLowerCase() !== "active")
+              ? "PROBABLE" : "VERIFIED",
+            source_timestamp: q.updated_at ?? null,
+            freshness: q.updated_at ? freshnessOf("player_stats", q.updated_at) : "UNKNOWN",
+            note: q.is_backup === true
+              ? "This is NOT the season-long starter. Treat every conclusion built on the quarterback as provisional."
+              : undefined,
+          }));
+        } else if (sportKey.startsWith("americanfootball")) {
+          out.push(unavailable("qb_features", "quarterback",
+            `no starting quarterback on file for ${team ?? side}`, team ?? gid));
+        }
+      }
+
+      if (ctx) {
+        out.push(ev({
+          source: "matchup_context", entity: matchup, field: "matchup_context", relevance: "situation",
+          value: {
+            game: matchup, game_date: gm.game_date, game_id: gid,
+            neutral_site: ctx.neutral_site, conference_game: ctx.conference_game, is_rivalry: ctx.is_rivalry,
+            home_rest_days: ctx.home_rest_days, away_rest_days: ctx.away_rest_days,
+            short_week: ctx.short_week, off_bye_home: ctx.off_bye_home, off_bye_away: ctx.off_bye_away,
+            home_rank: ctx.home_rank, away_rank: ctx.away_rank,
+            venue: ctx.venue, indoor: ctx.indoor, surface: ctx.surface, altitude_ft: ctx.altitude_ft,
+            tv: ctx.tv, weather: (ctx.notes as any)?.weather ?? null,
+          },
+          status: "VERIFIED", source_timestamp: ctx.updated_at ?? null,
+          freshness: ctx.updated_at ? freshnessOf("schedule", ctx.updated_at) : "UNKNOWN",
+        }));
+      } else {
+        out.push(unavailable("matchup_context", "matchup_context",
+          "no situational context row for this game", matchup));
+      }
+    }
+
+    path.emitted = out.length;
+    return { ev: out, path };
+  }
+
   async getPitcherFeatures(): Promise<{ ev: Evidence[]; path: Record<string, unknown> }> {
     const days = [etDay(-1), etDay(0), etDay(1)];
     const path: Record<string, unknown> = { days_queried: days };
@@ -2586,6 +2830,25 @@ These are two different rankings and the question decides which one leads.
 - Asked who is BEST: rank by pitching quality — the run-prevention line the evidence actually shows (ERA, xERA, FIP, whiff%, barrel% and hard-hit% allowed), best arm first. Do not reorder that list by how attackable each one is. The betting implication of an elite arm belongs in one closing line — an elite starter is usually an anti-target, so the angle is against his opponent, not against him — and that line comes after the ranking, not instead of it.
 Either way: read each starter's quality against the opponent_offense actually attached to HIM, plus park, weather, workload and bullpen, then whether the market makes it actionable at all. Weigh only fields that are present.
 
+FOOTBALL — WHAT ACTUALLY DECIDES A NUMBER
+Rank on EFFICIENCY, never on points per game. Points per game is a pace artifact: a team running 70 plays and one running 58 are not comparable on totals, and the slower one can be far better per snap. EPA per play and success rate are the ranking columns.
+- READ THE SIGN. def_epa_play is EPA ALLOWED per play, so NEGATIVE is a good defence. It is the opposite of the offensive column and reversing it inverts every conclusion you draw. Say which direction you are reading whenever you use it.
+- MATCH STRENGTH AGAINST WEAKNESS, not strength against average. A pass offence at +0.15 EPA/dropback facing a defence at +0.08 allowed against the pass is a very different bet from the same offence facing -0.10. The opponent's splits are attached to each team; use them.
+- THE QUARTERBACK IS THE PITCHER. It is the largest single input, and a backup starting is the biggest predictable line move in the sport. If qb_features is missing, PROBABLE, or is_backup is true, say so in the FIRST line and mark every conclusion resting on it provisional. Never rank a football matchup on team efficiency while ignoring that the quarterback is unconfirmed.
+- SITUATION IS REAL BUT SMALL. Short week, off a bye, travel, altitude, neutral site and surface belong in the answer as adjustments to a thesis, never as the thesis. If the only thing you can say about a game is that one side is on a short week, you do not have a read.
+- TOTALS ARE PACE FIRST. plays_per_game for both sides, then efficiency, then weather. Wind is the one weather variable that moves a football total materially; temperature almost never does. Do not treat a cold game as an automatic under.
+
+COLLEGE FOOTBALL — AND WHAT IS MISSING
+The schedule, rankings, rest, venue and situational layer are ingested. Play-by-play EFFICIENCY is NOT: there is no free CFB feed for EPA or success rate without a CollegeFootballData key, and the missing_note on each row says so. When those fields are absent, say plainly that EdgeDesk does not ingest CFB efficiency yet — do NOT substitute points per game, win-loss record or a ranking and present it as an efficiency read. A ranking is a poll, not a projection. Talent and variance gaps are wider in college than in the NFL, so a thin evidence base deserves a more provisional answer here, not a more confident one.
+
+COLLEGE BASKETBALL — TEMPO-FREE OR NOTHING
+Adjusted efficiency is the ranking column: adj_o is points scored per 100 possessions, adj_d is points ALLOWED per 100, and LOWER adj_d is better. adj_em is the margin between them and is the single best one-number summary.
+- NEVER rank on points per game. A 62-possession team and an 75-possession team scoring the same total are not comparable, and the whole point of the adjusted numbers is that they already remove pace and schedule.
+- THE TOTAL IS A POSSESSION COUNT. Expected possessions come from both adj_tempo values together, not from either alone; then apply the efficiencies. Two excellent slow teams routinely play under.
+- THE FOUR FACTORS SAY *HOW*, and they are attached for both offence and defence: shooting (efg), turnovers (tov), rebounding (orb), free throws (ftr). Shooting dominates, but the useful read is a mismatch — a high-turnover offence against a defence that forces turnovers is where a number is actually wrong. Weight them in that order and only where present.
+- THREE-POINT VARIANCE IS NOT SKILL. Opponent three-point PERCENTAGE allowed is mostly noise; opponent three-point RATE allowed is a real defensive property. Do not read a hot or cold shooting percentage as a durable edge.
+- Experience, height and bench minutes are context for variance, especially early in the season and in neutral-site tournaments. They are tiebreakers, never a thesis.
+
 VERDICT DISCIPLINE
 Use the deterministic verdict wherever one is attached (BET / LEAN / WAIT / PASS). Never upgrade it. WAIT means information is missing, stale or unconfirmed — it is not a rejection; lead with what must confirm. On PASS, explain what would have to change; do not find a way to recommend it. A positive edge is not a bet: judge it against break-even and max-playable, and if the price is past the floor, say the price is the problem and name the price that would restore it.
 
@@ -2764,6 +3027,19 @@ async function runResearch(
     const pf = await dal.getPitcherFeatures();
     data_path.pitcher_features = pf.path;
     evidence.push(...pf.ev.slice(0, plan.depth === "SLATE" ? 120 : 40));
+  }
+
+  /* Football and basketball. Same trigger shape as the MLB branch above, so a
+     question about matchups, efficiency or a quarterback retrieves the owned
+     layer for whichever sport is in scope rather than falling through to
+     market-only research. */
+  const MULTISPORT = new Set(["americanfootball_nfl", "americanfootball_ncaaf", "basketball_ncaab"]);
+  if (sportKey && MULTISPORT.has(sportKey)
+    && (wants("team_efficiency") || wants("matchup") || wants("pitcher_features")
+      || wants("opponent_offense") || wants("quarterback") || wants("matchup_context"))) {
+    const tf = await dal.getTeamFeatures(sportKey);
+    data_path.team_features = tf.path;
+    evidence.push(...tf.ev.slice(0, plan.depth === "SLATE" ? 140 : 45));
   }
 
   if (isMlb && wants("bullpen") && cardRows.length) {

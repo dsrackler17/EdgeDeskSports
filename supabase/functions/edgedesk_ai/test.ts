@@ -236,6 +236,7 @@ const FULL: Fixture = {
   mlb_bullpen_team: [{ team_id: 111, closer_name: "Kenley Jansen", closer_flag: "fresh" }],
   venue_weather: [{ event_id: "ev1", temp_f: 78, wind_mph: 11, wind_component_out: 6, precip_prob: 5, is_dome: false, fetched_at: new Date(Date.now() - 20 * 60e3).toISOString() }],
   research_facts: [], research_outcomes: [], research_patterns: [], research_sessions: [],
+  team_features: [], qb_features: [], matchup_context: [],
 };
 
 /* ===================================================================== */
@@ -1397,6 +1398,158 @@ section("Only confirmed patterns are ever fetched");
   eq("P15 no confirmed patterns means none are attached",
     mem2.ev.filter((e) => e.field === "pattern").length, 0);
   eq("P16 ...and that is not reported as an error", mem2.patterns.length, 0);
+}
+
+/* NFL, college football and college basketball, given the same treatment MLB
+   has: an owned layer joined through games, with identity on every row and
+   absent columns named rather than left as holes. */
+section("Football and basketball retrieve their own owned layer");
+{
+  const D0 = etDay(0);
+  const NFL_GAME = {
+    game_id: "NFL-1", sport_key: "americanfootball_nfl", game_date: D0,
+    home_team: "Buffalo Bills", away_team: "Carolina Panthers",
+    start_time: new Date(Date.now() + 6 * 3600e3).toISOString(), status: "scheduled",
+  };
+  const CBB_GAME = {
+    game_id: "CBB-1", sport_key: "basketball_ncaab", game_date: D0,
+    home_team: "Duke Blue Devils", away_team: "Kansas Jayhawks",
+    start_time: new Date(Date.now() + 5 * 3600e3).toISOString(), status: "scheduled",
+  };
+  const NOW = new Date().toISOString();
+
+  const nflFx = {
+    ...FULL,
+    games: [NFL_GAME],
+    team_features: [
+      { game_id: "NFL-1", side: "home", team: "Buffalo Bills", wins: 7, losses: 2,
+        off_epa_play: 0.14, def_epa_play: -0.06, off_success_rate: 0.49, def_success_rate: 0.41,
+        pass_epa_play: 0.21, rush_epa_play: -0.02, def_pass_epa_play: -0.04, def_rush_epa_play: -0.09,
+        plays_per_game: 64.2, updated_at: NOW, source: "nflverse" },
+      { game_id: "NFL-1", side: "away", team: "Carolina Panthers", wins: 2, losses: 7,
+        off_epa_play: -0.11, def_epa_play: 0.08, off_success_rate: 0.38, def_success_rate: 0.48,
+        pass_epa_play: -0.14, rush_epa_play: -0.05, def_pass_epa_play: 0.11, def_rush_epa_play: 0.03,
+        plays_per_game: 60.1, updated_at: NOW, source: "nflverse" },
+    ],
+    qb_features: [
+      { game_id: "NFL-1", side: "home", name: "Starter QB", epa_per_dropback: 0.19, cpoe: 3.2,
+        status: "active", is_backup: false, attempts: 280, updated_at: NOW },
+      { game_id: "NFL-1", side: "away", name: "Backup QB", epa_per_dropback: -0.08, cpoe: -2.1,
+        status: "active", is_backup: true, attempts: 41, updated_at: NOW },
+    ],
+    matchup_context: [
+      { game_id: "NFL-1", neutral_site: false, conference_game: true, home_rest_days: 7,
+        away_rest_days: 4, short_week: true, venue: "Highmark Stadium", indoor: false,
+        surface: "turf", updated_at: NOW },
+    ],
+  };
+
+  const d1 = dal(nflFx);
+  const nfl = await d1.getTeamFeatures("americanfootball_nfl");
+
+  eq("T1 both sides produce an efficiency row",
+    nfl.ev.filter((e) => e.field === "team_efficiency").length, 2);
+  const bills = nfl.ev.find((e) => e.entity === "Buffalo Bills")!;
+  eq("T2 the row carries its own identity", (bills.value as any).team, "Buffalo Bills");
+  eq("T3 ...and its opponent", (bills.value as any).opponent, "Carolina Panthers");
+  eq("T4 ...and the matchup and date the audits need",
+    [(bills.value as any).game, (bills.value as any).game_date],
+    ["Carolina Panthers @ Buffalo Bills", D0]);
+  eq("T5 EPA is carried, not points per game", (bills.value as any).off_epa_play, 0.14);
+  eq("T6 the OPPONENT's matching split is attached, so strength meets weakness",
+    (bills.value as any).opponent_def_pass_epa_play, 0.11);
+  ok("T7 the sign of the defensive column is stated on the row",
+    /NEGATIVE is a good defence/.test((bills.value as any).def_epa_note));
+
+  const qbs = nfl.ev.filter((e) => e.field === "quarterback");
+  eq("T8 a quarterback row is emitted per side", qbs.length, 2);
+  const backup = qbs.find((e) => (e.value as any).is_backup === true)!;
+  eq("T9 a backup starter is never VERIFIED", backup.status, "PROBABLE");
+  ok("T10 ...and says every conclusion resting on him is provisional",
+    /NOT the season-long starter/.test(backup.note ?? ""));
+  eq("T11 a confirmed starter is VERIFIED",
+    qbs.find((e) => (e.value as any).is_backup === false)!.status, "VERIFIED");
+
+  const ctx = nfl.ev.find((e) => e.field === "matchup_context")!;
+  eq("T12 the situational layer is retrieved", (ctx.value as any).short_week, true);
+  eq("T13 ...with rest for both sides",
+    [(ctx.value as any).home_rest_days, (ctx.value as any).away_rest_days], [7, 4]);
+
+  /* Basketball takes the tempo-free branch, not the football one. */
+  const cbbFx = {
+    ...FULL,
+    games: [CBB_GAME],
+    team_features: [
+      { game_id: "CBB-1", side: "home", team: "Duke Blue Devils", adj_o: 118.2, adj_d: 92.4,
+        adj_em: 25.8, adj_tempo: 66.1, efg_pct: 55.1, to_pct: 15.2, orb_pct: 33.0, ft_rate: 31.2,
+        def_efg_pct: 45.0, def_to_pct: 19.8, def_orb_pct: 24.1, def_ft_rate: 27.0,
+        three_rate: 41.0, three_pct: 37.2, def_three_rate: 33.0, def_three_pct: 30.1,
+        updated_at: NOW, source: "barttorvik" },
+      { game_id: "CBB-1", side: "away", team: "Kansas Jayhawks", adj_o: 114.0, adj_d: 95.1,
+        adj_em: 18.9, adj_tempo: 63.4, efg_pct: 52.0, to_pct: 17.9, orb_pct: 30.2, ft_rate: 29.0,
+        def_efg_pct: 47.2, def_to_pct: 18.0, def_orb_pct: 27.5, def_ft_rate: 30.1,
+        updated_at: NOW, source: "barttorvik" },
+    ],
+    qb_features: [],
+    matchup_context: [{ game_id: "CBB-1", neutral_site: true, updated_at: NOW }],
+  };
+  const cbb = await dal(cbbFx).getTeamFeatures("basketball_ncaab");
+  const duke = cbb.ev.find((e) => e.entity === "Duke Blue Devils")!;
+  eq("T14 basketball carries adjusted efficiency", (duke.value as any).adj_o, 118.2);
+  eq("T15 ...and the four factors for BOTH ends",
+    [(duke.value as any).four_factors.efg, (duke.value as any).four_factors_defence.efg], [55.1, 45.0]);
+  eq("T16 ...and both tempos, because the total is a possession count",
+    [(duke.value as any).adj_tempo, (duke.value as any).opponent_adj_tempo], [66.1, 63.4]);
+  ok("T17 the direction of adj_d is stated on the row",
+    /lower is better/.test((duke.value as any).adj_d_note));
+  ok("T18 the tempo note explains the totals implication",
+    /possession count/.test((duke.value as any).tempo_note));
+  eq("T19 no quarterback rows are invented for basketball",
+    cbb.ev.filter((e) => e.field === "quarterback").length, 0);
+  ok("T20 football fields are not emitted for a basketball row",
+    (duke.value as any).off_epa_play === undefined);
+
+  /* College football's real gap, reported rather than papered over. */
+  const cfbFx = {
+    ...FULL,
+    games: [{ ...NFL_GAME, game_id: "CFB-1", sport_key: "americanfootball_ncaaf",
+      home_team: "Georgia Bulldogs", away_team: "Alabama Crimson Tide" }],
+    team_features: [
+      { game_id: "CFB-1", side: "home", team: "Georgia Bulldogs", wins: 8, losses: 1, updated_at: NOW, source: "espn_scoreboard" },
+      { game_id: "CFB-1", side: "away", team: "Alabama Crimson Tide", wins: 7, losses: 2, updated_at: NOW, source: "espn_scoreboard" },
+    ],
+    qb_features: [], matchup_context: [],
+  };
+  const cfb = await dal(cfbFx).getTeamFeatures("americanfootball_ncaaf");
+  const uga = cfb.ev.find((e) => e.entity === "Georgia Bulldogs")!;
+  ok("T21 a row with no efficiency names the missing columns",
+    (uga.value as any).missing_fields.includes("off_epa_play"));
+  ok("T22 ...and says CFB efficiency is not ingested, rather than leaving a hole",
+    /no free play-by-play EPA feed/.test((uga.value as any).missing_note));
+  ok("T23 ...and forbids substituting points per game",
+    /do not substitute points per game/i.test((uga.value as any).missing_note));
+  eq("T24 such a row is PARTIAL, never VERIFIED", uga.status, "PARTIAL");
+  ok("T25 a football sport with no QB row reports it as unavailable",
+    cfb.ev.some((e) => e.field === "quarterback" && e.status === "UNAVAILABLE"));
+
+  /* The diagnosis path, same as the MLB card's. */
+  const empty = await dal({ ...FULL, games: [], team_features: [], qb_features: [], matchup_context: [] })
+    .getTeamFeatures("americanfootball_nfl");
+  ok("T26 an empty slate diagnoses which link failed",
+    typeof (empty.path as any).games_probe?.diagnosis === "string", empty.path);
+  eq("T27 ...and returns an explicit unavailable rather than silence",
+    empty.ev.filter((e) => e.status === "UNAVAILABLE").length, 1);
+
+  /* Classification: these questions must reach the owned layer at all. */
+  eq("T28 an NFL efficiency question routes to the team layer",
+    classify("which offense is most efficient tonight", null).intent, "team_efficiency");
+  eq("T29 a tempo question routes there too",
+    classify("best tempo matchups on tonight's slate", null).intent, "team_efficiency");
+  ok("T30 the plan retrieves team_efficiency, the quarterback and context",
+    ["team_efficiency", "quarterback", "matchup_context"]
+      .every((st) => classify("worst defenses tonight", null).steps.includes(st)));
+  ok("T31 MLB pitcher questions are not hijacked by the new routing",
+    classify("worst pitchers today", null).intent === "worst_pitchers");
 }
 
 console.log(`\n${failed === 0 ? "ALL GREEN" : "FAILURES"} — ${passed} passed, ${failed} failed`);

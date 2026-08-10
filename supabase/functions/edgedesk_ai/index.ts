@@ -119,6 +119,25 @@ These are two different rankings and the question decides which one leads.
 - Asked who is BEST: rank by pitching quality — the run-prevention line the evidence actually shows (ERA, xERA, FIP, whiff%, barrel% and hard-hit% allowed), best arm first. Do not reorder that list by how attackable each one is. The betting implication of an elite arm belongs in one closing line — an elite starter is usually an anti-target, so the angle is against his opponent, not against him — and that line comes after the ranking, not instead of it.
 Either way: read each starter's quality against the opponent_offense actually attached to HIM, plus park, weather, workload and bullpen, then whether the market makes it actionable at all. Weigh only fields that are present.
 
+FOOTBALL — WHAT ACTUALLY DECIDES A NUMBER
+Rank on EFFICIENCY, never on points per game. Points per game is a pace artifact: a team running 70 plays and one running 58 are not comparable on totals, and the slower one can be far better per snap. EPA per play and success rate are the ranking columns.
+- READ THE SIGN. def_epa_play is EPA ALLOWED per play, so NEGATIVE is a good defence. It is the opposite of the offensive column and reversing it inverts every conclusion you draw. Say which direction you are reading whenever you use it.
+- MATCH STRENGTH AGAINST WEAKNESS, not strength against average. A pass offence at +0.15 EPA/dropback facing a defence at +0.08 allowed against the pass is a very different bet from the same offence facing -0.10. The opponent's splits are attached to each team; use them.
+- THE QUARTERBACK IS THE PITCHER. It is the largest single input, and a backup starting is the biggest predictable line move in the sport. If qb_features is missing, PROBABLE, or is_backup is true, say so in the FIRST line and mark every conclusion resting on it provisional. Never rank a football matchup on team efficiency while ignoring that the quarterback is unconfirmed.
+- SITUATION IS REAL BUT SMALL. Short week, off a bye, travel, altitude, neutral site and surface belong in the answer as adjustments to a thesis, never as the thesis. If the only thing you can say about a game is that one side is on a short week, you do not have a read.
+- TOTALS ARE PACE FIRST. plays_per_game for both sides, then efficiency, then weather. Wind is the one weather variable that moves a football total materially; temperature almost never does. Do not treat a cold game as an automatic under.
+
+COLLEGE FOOTBALL — AND WHAT IS MISSING
+The schedule, rankings, rest, venue and situational layer are ingested. Play-by-play EFFICIENCY is NOT: there is no free CFB feed for EPA or success rate without a CollegeFootballData key, and the missing_note on each row says so. When those fields are absent, say plainly that EdgeDesk does not ingest CFB efficiency yet — do NOT substitute points per game, win-loss record or a ranking and present it as an efficiency read. A ranking is a poll, not a projection. Talent and variance gaps are wider in college than in the NFL, so a thin evidence base deserves a more provisional answer here, not a more confident one.
+
+COLLEGE BASKETBALL — TEMPO-FREE OR NOTHING
+Adjusted efficiency is the ranking column: adj_o is points scored per 100 possessions, adj_d is points ALLOWED per 100, and LOWER adj_d is better. adj_em is the margin between them and is the single best one-number summary.
+- NEVER rank on points per game. A 62-possession team and an 75-possession team scoring the same total are not comparable, and the whole point of the adjusted numbers is that they already remove pace and schedule.
+- THE TOTAL IS A POSSESSION COUNT. Expected possessions come from both adj_tempo values together, not from either alone; then apply the efficiencies. Two excellent slow teams routinely play under.
+- THE FOUR FACTORS SAY *HOW*, and they are attached for both offence and defence: shooting (efg), turnovers (tov), rebounding (orb), free throws (ftr). Shooting dominates, but the useful read is a mismatch — a high-turnover offence against a defence that forces turnovers is where a number is actually wrong. Weight them in that order and only where present.
+- THREE-POINT VARIANCE IS NOT SKILL. Opponent three-point PERCENTAGE allowed is mostly noise; opponent three-point RATE allowed is a real defensive property. Do not read a hot or cold shooting percentage as a durable edge.
+- Experience, height and bench minutes are context for variance, especially early in the season and in neutral-site tournaments. They are tiebreakers, never a thesis.
+
 VERDICT DISCIPLINE
 Use the deterministic verdict wherever one is attached (BET / LEAN / WAIT / PASS). Never upgrade it. WAIT means information is missing, stale or unconfirmed — it is not a rejection; lead with what must confirm. On PASS, explain what would have to change; do not find a way to recommend it. A positive edge is not a bet: judge it against break-even and max-playable, and if the price is past the floor, say the price is the problem and name the price that would restore it.
 
@@ -297,6 +316,19 @@ async function runResearch(
     const pf = await dal.getPitcherFeatures();
     data_path.pitcher_features = pf.path;
     evidence.push(...pf.ev.slice(0, plan.depth === "SLATE" ? 120 : 40));
+  }
+
+  /* Football and basketball. Same trigger shape as the MLB branch above, so a
+     question about matchups, efficiency or a quarterback retrieves the owned
+     layer for whichever sport is in scope rather than falling through to
+     market-only research. */
+  const MULTISPORT = new Set(["americanfootball_nfl", "americanfootball_ncaaf", "basketball_ncaab"]);
+  if (sportKey && MULTISPORT.has(sportKey)
+    && (wants("team_efficiency") || wants("matchup") || wants("pitcher_features")
+      || wants("opponent_offense") || wants("quarterback") || wants("matchup_context"))) {
+    const tf = await dal.getTeamFeatures(sportKey);
+    data_path.team_features = tf.path;
+    evidence.push(...tf.ev.slice(0, plan.depth === "SLATE" ? 140 : 45));
   }
 
   if (isMlb && wants("bullpen") && cardRows.length) {
