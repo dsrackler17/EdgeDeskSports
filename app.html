@@ -12935,6 +12935,38 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
      Additive — an older edgedesk_ai returns no `research` field and this renders nothing.
      This is the visible line between EDGEDESK DATA and AI INTERPRETATION: the answer above
      is interpretation, this strip is the provenance behind it. ---- */
+  /* Evidence Integrity banner. Rendered ABOVE the answer on purpose: a data
+     warning disclosed underneath a confident ranking is a warning nobody
+     reads. A reader who stops after the first line must already know whether
+     the ranking was trustworthy. */
+  function integrityHTMLFor(r){
+    var g = r && r.integrity;
+    if(!g || !g.verdict) return '';
+    var v = String(g.verdict).toUpperCase();
+    if(v==='PASS' && !g.headline) return '';
+    var tone = v==='FAIL' ? {bd:'var(--neg)', bg:'rgba(226,96,68,.10)', fg:'var(--neg)'}
+             : v==='WARNING' ? {bd:'var(--warn)', bg:'rgba(217,154,43,.10)', fg:'var(--warn)'}
+             : {bd:'var(--pos)', bg:'rgba(47,180,124,.08)', fg:'var(--pos)'};
+    var h = '<div style="border:1px solid '+tone.bd+';background:'+tone.bg
+      +';border-radius:8px;padding:8px 10px;margin:0 0 8px">'
+      + '<div style="font-size:11px;font-weight:700;letter-spacing:.04em;color:'+tone.fg+'">'
+      + 'EVIDENCE INTEGRITY: '+esc(v)+'</div>';
+    if(g.headline)
+      h += '<div style="font-size:11px;color:var(--faint);margin-top:2px">'+esc(g.headline)+'</div>';
+    var bad = (g.failed||[]).filter(function(c){return c.status!=='PASS';});
+    if(bad.length){
+      h += '<ul style="margin:5px 0 0;padding-left:16px;font-size:11.5px;line-height:1.45">'
+        + bad.slice(0,4).map(function(c){
+            return '<li><b>'+esc(String(c.name).replace(/_/g,' '))+'</b> — '+esc(c.detail)+'</li>';
+          }).join('')
+        + '</ul>';
+    }
+    if(v==='FAIL')
+      h += '<div style="font-size:11px;color:'+tone.fg+';margin-top:5px">'
+        + 'Ranking blocked — the evidence is not clean enough to rank. This is a data fault, not a gap in the model.</div>';
+    return h + '</div>';
+  }
+
   function traceHTMLFor(r){
     if(!r || typeof r!=='object') return '';
     var bits=[];
@@ -12990,7 +13022,7 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
       if(!r.ok) throw new Error('fn '+r.status);
       var d=await r.json();
       if(d&&d.answer){ HIST.push({role:'user',content:question||mode}); HIST.push({role:'assistant',content:d.answer});
-        return {html:mdToHtml(d.answer)+traceHTMLFor(d.research),
+        return {html:integrityHTMLFor(d.research)+mdToHtml(d.answer)+traceHTMLFor(d.research),
           src:d.model?('reasoned by '+d.model+(d.cached?' · cached':'')):null}; }
       throw new Error('empty');
     }catch(err){

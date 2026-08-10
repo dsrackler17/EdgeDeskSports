@@ -18,7 +18,7 @@ import {
   Dal, classify, deriveState, attackThesis, findConflicts, completeness, coverage,
   freshnessOf, ev, resolveTeams, personKey, etDay, clearCache,
   buildSnapshot, diffSnapshots, extractFindings, scout, MODE_OF_INTENT,
-  crossMarketFlags, movementRead, rankingAxis, budgetEvidence, dataIntegrity,
+  crossMarketFlags, movementRead, rankingAxis, budgetEvidence, evidenceIntegrity,
 } from "./_lib.ts";
 
 /* ------------------------------------------------------------ harness */
@@ -1116,25 +1116,29 @@ section("Evidence is never cut in half, and what is withheld is named");
    1-2-3 with one identical stat line between them, and the engine explaining
    the coincidence away as "EdgeDesk read the same Statcast layer for all
    three" instead of reporting a duplication fault. */
-section("Data integrity is audited before anything is allowed to rank it");
+section("Evidence integrity is audited before anything is allowed to rank it");
 {
   const NOW = Date.parse("2026-08-10T18:00:00Z");
   const line = (era: number) => ({
     era, whip: 1.02, fip: 3.11, xera: 3.70, barrel_pct: 6.5, hardhit_pct: 38.0,
     whiff_pct: 23.2, k_pct: 21.9, bb_pct: 6.1,
   });
-  const arm = (name: string, team: string, game: string, v: any) => ({
-    source: "MLB Stats API", entity: name, field: "pitcher_quality",
+  /* Default to the OWNED table: that is what a healthy pipeline looks like.
+     Serving the same fact from the live API is a real finding, tested below. */
+  const arm = (name: string, team: string, game: string, v: any, source = "pitcher_features") => ({
+    source, entity: name, field: "pitcher_quality",
     status: "VERIFIED", freshness: "CURRENT", source_timestamp: "2026-08-10T12:00:00Z",
     value: { name, team, game, ...v },
   }) as any;
+  // A healthy turn: everything retrieved was also delivered.
+  const DELIVERED = (n: number) => ({ now: NOW, delivered: { included: n, withheld: 0 } });
 
   const clean = [
     arm("Tarik Skubal", "Los Angeles Dodgers", "Kansas City Royals @ Los Angeles Dodgers", line(2.78)),
     arm("Sonny Gray", "Boston Red Sox", "Boston Red Sox @ Toronto Blue Jays", line(3.41)),
     arm("Jameson Taillon", "Toronto Blue Jays", "Boston Red Sox @ Toronto Blue Jays", line(5.96)),
   ];
-  const g1 = dataIntegrity(clean, { now: NOW });
+  const g1 = evidenceIntegrity(clean, DELIVERED(3));
   eq("G1 clean evidence passes", g1.verdict, "PASS");
   eq("G2 ...with no failing checks", g1.checks.filter((c) => c.status !== "PASS").length, 0);
   ok("G3 the identity check actually ran", g1.checks.some((c) =>
@@ -1147,7 +1151,7 @@ section("Data integrity is audited before anything is allowed to rank it");
     arm("Sonny Gray", "Boston Red Sox", "Boston Red Sox @ Toronto Blue Jays", line(2.78)),
     arm("Freddy Peralta", "Athletics", "Tampa Bay Rays @ Athletics", line(2.78)),
   ];
-  const g2 = dataIntegrity(dupes, { now: NOW });
+  const g2 = evidenceIntegrity(dupes, { now: NOW });
   eq("G5 identical profiles across players is a FAIL", g2.verdict, "FAIL");
   const dupChk = g2.checks.find((c) => c.name === "duplicate_pitcher_stats")!;
   eq("G6 the duplication check is the one that failed", dupChk.status, "FAIL");
@@ -1161,7 +1165,7 @@ section("Data integrity is audited before anything is allowed to rank it");
     arm("Tarik Skubal", "Detroit Tigers", "Kansas City Royals @ Los Angeles Dodgers", line(2.78)),
     arm("Sonny Gray", "Boston Red Sox", "Boston Red Sox @ Toronto Blue Jays", line(3.41)),
   ];
-  const g3 = dataIntegrity(wrongTeam, { now: NOW });
+  const g3 = evidenceIntegrity(wrongTeam, { now: NOW });
   eq("G9 a pitcher outside his own game is a FAIL", g3.verdict, "FAIL");
   const idChk = g3.checks.find((c) => c.name === "identity_chain")!;
   eq("G10 the identity check is what caught it", idChk.status, "FAIL");
@@ -1174,7 +1178,7 @@ section("Data integrity is audited before anything is allowed to rank it");
     arm("A Pitcher", "Team A", "Team A @ Team B", line(3.10)),
     arm("B Pitcher", "Team B", "Team A @ Team B", line(4.20)),
   ].map((e) => ({ ...e, source_timestamp: "2026-07-19T12:00:00Z" }));
-  const g4 = dataIntegrity(stale as any, { now: NOW });
+  const g4 = evidenceIntegrity(stale as any, { now: NOW });
   eq("G13 22-day-old pitcher data is a WARNING, not a silent pass", g4.verdict, "WARNING");
   const fresh = g4.checks.find((c) => c.name === "freshness")!;
   ok("G14 the age is stated in days", /22 days old/.test(fresh.detail));
@@ -1186,7 +1190,7 @@ section("Data integrity is audited before anything is allowed to rank it");
 
   /* FAIL must dominate WARNING when both are present. */
   const both = [...dupes.map((e) => ({ ...e, source_timestamp: "2026-07-19T12:00:00Z" }))];
-  eq("G18 a FAIL outranks a co-occurring WARNING", dataIntegrity(both as any, { now: NOW }).verdict, "FAIL");
+  eq("G18 a FAIL outranks a co-occurring WARNING", evidenceIntegrity(both as any, { now: NOW }).verdict, "FAIL");
 
   /* Guards against false positives. */
   const sparse = [
@@ -1194,11 +1198,11 @@ section("Data integrity is audited before anything is allowed to rank it");
     arm("Y", "Team B", "Team A @ Team B", { era: 3.0 }),
   ];
   eq("G19 two sparse rows sharing one number is not a duplication fault",
-    dataIntegrity(sparse, { now: NOW }).checks.find((c) => c.name === "duplicate_pitcher_stats")!.status, "PASS");
+    evidenceIntegrity(sparse, { now: NOW }).checks.find((c) => c.name === "duplicate_pitcher_stats")!.status, "PASS");
   eq("G20 an empty evidence set does not FAIL",
-    dataIntegrity([], { now: NOW }).verdict === "FAIL", false);
+    evidenceIntegrity([], { now: NOW }).verdict === "FAIL", false);
   ok("G21 the same pitcher appearing twice is not flagged as two players sharing a line",
-    dataIntegrity([clean[0], { ...clean[0] }], { now: NOW })
+    evidenceIntegrity([clean[0], { ...clean[0] }], { now: NOW })
       .checks.find((c) => c.name === "duplicate_pitcher_stats")!.status === "PASS");
 
   /* Offense duplication is suspicious but not disqualifying. */
@@ -1207,10 +1211,79 @@ section("Data integrity is audited before anything is allowed to rank it");
     freshness: "CURRENT", source_timestamp: "2026-08-10T12:00:00Z",
     value: { avg: .252, obp: .308, slg: .392, ops: .700, iso: .140, k_pct: 18.9 },
   }) as any;
-  const g5 = dataIntegrity([...clean, off("Kansas City Royals"), off("Toronto Blue Jays")], { now: NOW });
+  const g5 = evidenceIntegrity([...clean, off("Kansas City Royals"), off("Toronto Blue Jays")], DELIVERED(5));
   eq("G22 two lineups sharing a full split is a WARNING", g5.verdict, "WARNING");
   eq("G23 ...from the offense check specifically",
     g5.checks.find((c) => c.name === "duplicate_offense_stats")!.status, "WARNING");
+
+  /* COMPLETENESS — the check that would have caught the truncation on its own:
+     coverage said 30/30 while the prompt carried a fraction of it. */
+  const chk = (g: any, n: string) => g.checks.find((c: any) => c.name === n)!;
+  eq("G24 full delivery passes completeness", chk(g1, "completeness").status, "PASS");
+  const partial = evidenceIntegrity(clean, { now: NOW, delivered: { included: 20, withheld: 10 } });
+  eq("G25 withheld evidence is a WARNING", chk(partial, "completeness").status, "WARNING");
+  ok("G26 ...stating how many of how many arrived",
+    /20 of 30 retrieved items reached the analyst/.test(chk(partial, "completeness").detail));
+  eq("G27 unmeasured delivery is never silently treated as complete",
+    chk(evidenceIntegrity(clean, { now: NOW }), "completeness").status, "WARNING");
+
+  /* SOURCE — the live fallback is a working answer over a broken pipeline. */
+  eq("G28 owned-table evidence passes the source check", chk(g1, "source").status, "PASS");
+  const viaApi = clean.map((e) => ({ ...e, source: "MLB Stats API" }));
+  const g6 = evidenceIntegrity(viaApi, DELIVERED(3));
+  eq("G29 serving pitcher quality from the live API is a WARNING", chk(g6, "source").status, "WARNING");
+  ok("G30 ...naming the fallback source", /MLB Stats API/.test(chk(g6, "source").detail));
+  ok("G31 ...and saying the ingest is what is broken",
+    /ingest that should populate the owned table is not/.test(chk(g6, "source").detail));
+
+  /* TEMPORAL — a stat bound to the wrong day is not a stat about today. */
+  eq("G32 no slate days given means nothing to contradict", chk(g1, "temporal").status, "PASS");
+  const dated = clean.map((e, i) => ({ ...e, value: { ...e.value, game_date: i === 0 ? "2026-07-04" : "2026-08-10" } }));
+  const g7 = evidenceIntegrity(dated, { ...DELIVERED(3), slateDays: ["2026-08-10", "2026-08-11"] });
+  eq("G33 a stat dated outside the slate is a WARNING", chk(g7, "temporal").status, "WARNING");
+  ok("G34 ...naming the offending date", /2026-07-04/.test((chk(g7, "temporal").entities ?? []).join(" ")));
+  const onSlate = clean.map((e) => ({ ...e, value: { ...e.value, game_date: "2026-08-10" } }));
+  eq("G35 on-slate dates pass",
+    chk(evidenceIntegrity(onSlate, { ...DELIVERED(3), slateDays: ["2026-08-10", "2026-08-11"] }), "temporal").status, "PASS");
+  const ahead = [{ ...clean[0], source_timestamp: "2026-08-12T00:00:00Z" }, clean[1], clean[2]];
+  ok("G36 a timestamp from the future is caught",
+    /timestamped in the future/.test(chk(evidenceIntegrity(ahead, DELIVERED(3)), "temporal").detail
+      + (chk(evidenceIntegrity(ahead, DELIVERED(3)), "temporal").entities ?? []).join(" ")));
+
+  /* MARKET — an edge computed against an impossible price is not an edge. */
+  const sig = (entity: string, v: any) => ({
+    source: "signals", entity, field: "signal", status: "VERIFIED", freshness: "CURRENT",
+    source_timestamp: "2026-08-10T17:00:00Z", value: v,
+  }) as any;
+  const goodMkt = sig("A @ B", { best_dec: 1.91, sharp_fair: 0.53, pin_dec: 1.95, pin_opp_dec: 1.95 });
+  eq("G37 coherent prices pass", chk(evidenceIntegrity([...clean, goodMkt], DELIVERED(4)), "market").status, "PASS");
+  const badDec = sig("A @ B", { best_dec: 0.85, sharp_fair: 0.53 });
+  eq("G38 decimal odds at or below 1.0 is a FAIL",
+    evidenceIntegrity([...clean, badDec], DELIVERED(4)).verdict, "FAIL");
+  const badFair = sig("A @ B", { best_dec: 1.91, sharp_fair: 1.4 });
+  ok("G39 a fair value outside 0-1 is not a probability",
+    /not a probability/.test(chk(evidenceIntegrity([...clean, badFair], DELIVERED(4)), "market").detail
+      + (chk(evidenceIntegrity([...clean, badFair], DELIVERED(4)), "market").entities ?? []).join(" ")));
+  const badOvr = sig("A @ B", { best_dec: 1.91, sharp_fair: 0.53, pin_dec: 3.0, pin_opp_dec: 3.0 });
+  ok("G40 an impossible two-way overround is caught",
+    /overround/.test((chk(evidenceIntegrity([...clean, badOvr], DELIVERED(4)), "market").entities ?? []).join(" ")));
+  eq("G41 evidence with no prices does not fail the market check",
+    chk(g1, "market").status, "PASS");
+
+  /* The one line a person reads. */
+  ok("G42 the headline counts starters", /3\/3 starters with a full line/.test(g1.headline));
+  ok("G43 ...reports delivery as a percentage", /100% of evidence delivered/.test(g1.headline));
+  ok("G44 ...and states the age of the freshest record", /freshest data 6h old/.test(g1.headline));
+  ok("G45 partial delivery shows through in the headline",
+    /67% of evidence delivered/.test(evidenceIntegrity(clean, { now: NOW, delivered: { included: 20, withheld: 10 } }).headline));
+  eq("G46 an empty evidence set yields an empty headline",
+    evidenceIntegrity([], { now: NOW, delivered: { included: 0, withheld: 0 } }).headline,
+    "no evidence delivered");
+
+  /* All eight audits from the product table are present, every turn. */
+  eq("G47 every audit runs on every turn", g1.checks.map((c) => c.name).sort().join(","),
+    ["attribution", "completeness", "duplicate_offense_stats", "duplicate_pitcher_stats",
+     "freshness", "identity_chain", "market", "source", "temporal"].sort().join(","));
 }
 
 console.log(`\n${failed === 0 ? "ALL GREEN" : "FAILURES"} — ${passed} passed, ${failed} failed`);

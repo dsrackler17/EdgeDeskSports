@@ -83,6 +83,20 @@ export interface Integrity {
   verdict: IntegrityVerdict;
   checks: IntegrityCheck[];
   summary: string;
+  /** One product-facing line: "30/30 starters · 100% delivered · 2h old". */
+  headline: string;
+}
+
+/** What actually reached the model, so completeness can be audited honestly. */
+export interface DeliveryFacts { included: number; withheld: number }
+
+export interface IntegrityOpts {
+  now?: number;
+  staleDays?: number;
+  /** ET slate days in scope, used to catch stats bound to the wrong date. */
+  slateDays?: string[];
+  /** Filled in after the evidence has been budgeted for the prompt. */
+  delivered?: DeliveryFacts;
 }
 
 /** Numeric identity of a stat row, used to spot the same row served twice. */
@@ -113,9 +127,9 @@ const AGE_DAYS = (iso: unknown, now: number): number | null => {
  * and, on FAIL, is not permitted to publish a ranking at all. Auditing whether
  * the data deserves analysis is the job, not a preamble to it.
  */
-export function dataIntegrity(
+export function evidenceIntegrity(
   evidence: Evidence[],
-  opts: { now?: number; staleDays?: number } = {},
+  opts: IntegrityOpts = {},
 ): Integrity {
   const now = opts.now ?? Date.now();
   const staleDays = opts.staleDays ?? 3;
@@ -204,6 +218,97 @@ export function dataIntegrity(
       : { name: "attribution", status: "PASS", detail: "Every evidence item names its subject." });
   }
 
+  /* 5. COMPLETENESS — did the model actually receive everything retrieved?
+     This is the check that would have caught the truncation bug on its own:
+     coverage said 30/30 while the prompt carried a severed fraction of it. */
+  {
+    const d = opts.delivered;
+    checks.push(!d
+      ? { name: "completeness", status: "WARNING",
+          detail: "Delivery was not measured, so it cannot be confirmed that every retrieved item reached the analyst." }
+      : d.withheld > 0
+        ? { name: "completeness", status: "WARNING",
+            detail: `${d.included} of ${d.included + d.withheld} retrieved items reached the analyst; `
+              + `${d.withheld} were withheld for size. Conclusions cover only what was delivered, and the `
+              + `withheld subjects are named in the evidence-withheld note.` }
+        : { name: "completeness", status: "PASS",
+            detail: `All ${d.included} retrieved items were delivered to the analyst — nothing was truncated.` });
+  }
+
+  /* 6. TEMPORAL — is each fact valid for the date being asked about? */
+  {
+    const problems: string[] = [];
+    const days = opts.slateDays?.length ? new Set(opts.slateDays) : null;
+    let future = 0;
+    for (const e of usable) {
+      const ts = Date.parse(String(e.source_timestamp ?? ""));
+      // A little clock skew between hosts is normal; an hour ahead is not.
+      if (Number.isFinite(ts) && ts > now + 3600000) future++;
+      const gd = String((e.value as any)?.game_date ?? "").slice(0, 10);
+      if (days && gd && !days.has(gd)) {
+        problems.push(`${e.entity ?? "?"} (${e.field}) carries game_date ${gd}, outside the slate`);
+      }
+    }
+    if (future) problems.push(`${future} item${future === 1 ? "" : "s"} timestamped in the future`);
+    checks.push(problems.length
+      ? { name: "temporal", status: "WARNING", entities: problems.slice(0, 8),
+          detail: `${problems.length} item${problems.length === 1 ? " is" : "s are"} bound to a date other than the one `
+            + `being asked about. A stat attached to the wrong day is not a stat about today.` }
+      : { name: "temporal", status: "PASS",
+          detail: days
+            ? `Every dated fact falls on the slate being asked about (${[...days].join(", ")}).`
+            : "No dated fact contradicts the question's timeframe." });
+  }
+
+  /* 7. MARKET — are the prices and fair values internally coherent? */
+  {
+    const bad: string[] = [];
+    let priced = 0;
+    const PRICE_FIELDS = new Set(["signal", "sharp_reference", "closing_line", "book_spread"]);
+    for (const e of usable) {
+      if (!PRICE_FIELDS.has(String(e.field))) continue;
+      const v = e.value as any;
+      const who = String(e.entity ?? "?");
+      const dec = [v?.best_dec, v?.pinnacle_dec, v?.pin_dec, v?.closing_dec].map(num).filter((x) => x != null);
+      const fair = [v?.sharp_fair, v?.consensus_fair].map(num).filter((x) => x != null);
+      if (!dec.length && !fair.length) continue;
+      priced++;
+      // Decimal odds below 1.0 pay less than the stake — not a price.
+      if (dec.some((d) => d! <= 1)) bad.push(`${who}: decimal odds at or below 1.0`);
+      // A de-vigged fair value is a probability. Outside (0,1) it is not one.
+      if (fair.some((f) => f! <= 0 || f! >= 1)) bad.push(`${who}: fair value outside 0-1, not a probability`);
+      const p = num(v?.pinnacle_dec ?? v?.pin_dec), q = num(v?.pinnacle_opp_dec ?? v?.pin_opp_dec);
+      if (p && q && p > 1 && q > 1) {
+        const ovr = 1 / p + 1 / q;
+        // Below 1.0 is a free arbitrage against Pinnacle; it means stale sides.
+        if (ovr < 0.98 || ovr > 1.25) bad.push(`${who}: two-way overround ${ovr.toFixed(3)} is incoherent`);
+      }
+    }
+    checks.push(bad.length
+      ? { name: "market", status: "FAIL", entities: bad.slice(0, 8),
+          detail: `${bad.length} priced item${bad.length === 1 ? " is" : "s are"} not internally coherent. `
+            + `An edge computed against an impossible price is not an edge.` }
+      : { name: "market", status: "PASS",
+          detail: priced ? `All ${priced} priced items are internally coherent.` : "No priced evidence to check." });
+  }
+
+  /* 8. SOURCE — is each fact coming from where it is supposed to come from?
+     Serving pitcher quality from the live MLB API means the owned table is not
+     being written. The answer can still be correct; the pipeline is not. */
+  {
+    const fallback = usable.filter((e) =>
+      e.field === "pitcher_quality" && String(e.source) !== "pitcher_features");
+    const owned = usable.filter((e) => e.field === "pitcher_quality").length - fallback.length;
+    checks.push(fallback.length
+      ? { name: "source", status: "WARNING",
+          detail: `${fallback.length} pitcher record${fallback.length === 1 ? " is" : "s are"} being served from `
+            + `${[...new Set(fallback.map((e) => e.source))].join(", ")} rather than EdgeDesk's own `
+            + `pitcher_features table${owned ? ` (${owned} came from the owned table)` : ""}. `
+            + `The live fallback is working, but the ingest that should populate the owned table is not.` }
+      : { name: "source", status: "PASS",
+          detail: "Every fact came from the source it was expected to come from." });
+  }
+
   const verdict: IntegrityVerdict = checks.some((c) => c.status === "FAIL")
     ? "FAIL"
     : checks.some((c) => c.status === "WARNING") ? "WARNING" : "PASS";
@@ -213,7 +318,27 @@ export function dataIntegrity(
     ? "All integrity checks passed."
     : `${verdict}: ` + failed.map((c) => c.name).join(", ");
 
-  return { verdict, checks, summary };
+  /* The one line a person reads. Facts only — no adjectives. */
+  const headline = (() => {
+    const bits: string[] = [];
+    const named = pitchers.filter((e) => statFingerprint(e.value) != null).length;
+    if (pitchers.length) bits.push(`${named}/${pitchers.length} starters with a full line`);
+    const d = opts.delivered;
+    if (d) {
+      const total = d.included + d.withheld;
+      bits.push(total ? `${Math.round((d.included / total) * 100)}% of evidence delivered` : "no evidence delivered");
+    }
+    const ages = pitchers.map((e) => AGE_DAYS(e.source_timestamp ?? e.retrieved_at, now))
+      .filter((a): a is number => a != null);
+    if (ages.length) {
+      const newest = Math.min(...ages);
+      bits.push(`freshest data ${newest < 1 / 24 ? "under an hour" : newest < 1
+        ? Math.round(newest * 24) + "h" : Math.round(newest) + " days"} old`);
+    }
+    return bits.join(" · ");
+  })();
+
+  return { verdict, checks, summary, headline };
 }
 
 /**
