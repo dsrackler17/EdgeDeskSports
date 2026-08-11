@@ -12694,202 +12694,7 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
       var us=await sbGet('mlb_pitcher_usage?select=pitcher_id,game_date,pitches,outs,started&game_date=gte.'+etDay(-7)+'&order=game_date.desc&limit=2000');
       out.usage=us||[]; out.read.mlb_pitcher_usage=out.usage.length?'VERIFIED':'EMPTY';
     }catch(_){ out.read.mlb_pitcher_usage='UNAVAILABLE'; }
-
-    /* The point of the fallback: when ingest_mlb is dark, do not go dark with it.
-       Schedule + starter identity already had a keyless fallback; the stat line never did,
-       which is why an empty table turned every pitching question into a refusal. */
-    var ownP=out.read.pitcher_features, ownO=out.read.offense_features;
-    var needP=(ownP!=='VERIFIED'), needO=(ownO!=='VERIFIED');
-    if(needP||needO){
-      var live=null;
-      try{ live=await mlbLiveFeatures(d1,d2); }catch(_){ live=null; }
-      if(live&&needP&&live.pitchers.length){
-        out.pitchers=live.pitchers; out.live_pitchers=true;
-        out.read.pitcher_features='LIVE_FALLBACK · MLB Stats API season pitching ('
-          +live.n_with_stats+'/'+live.pitchers.length+' starters with a stat line) · owned table: '+(ownP||'NOT READ');
-      }
-      if(live&&needO&&live.offense.length){
-        out.offense=live.offense; out.live_offense=true;
-        out.read.offense_features='LIVE_FALLBACK · MLB Stats API team hitting ('
-          +live.n_teams+' teams) · owned table: '+(ownO||'NOT READ');
-      }
-    }
     return out;
-  }
-
-  /* ---- LIVE FALLBACK: real MLB pitching + team offense, keyless and browser-direct.
-     statsapi.mlb.com is the same public, CORS-open host the shipped schedule adapter already
-     uses, so this needs no key and no backend. It fills run prevention and plate discipline.
-     Statcast (xERA / barrel% / hard-hit%) is NOT served here and stays genuinely unavailable —
-     those fields are left null on purpose rather than approximated from something else. */
-  var MLB_API='https://statsapi.mlb.com/api/v1/';
-  function mlbJSON(url,ms){
-    var ctrl=(typeof AbortController!=='undefined')?new AbortController():null;
-    var t=ctrl?setTimeout(function(){ctrl.abort();},ms||9000):null;
-    return fetch(url,{signal:ctrl?ctrl.signal:undefined,headers:{'Accept':'application/json'}})
-      .then(function(r){ if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); })
-      .then(function(j){ if(t)clearTimeout(t); return j; })
-      .catch(function(e){ if(t)clearTimeout(t); throw e; });
-  }
-  function mlbNum(v){ if(v==null)return null; var n=parseFloat(v); return isFinite(n)?n:null; }
-  /* MLB reports innings in thirds: "120.1" is 120 and one out, not 120.1 innings.
-     Reading it as a plain decimal quietly biases every per-9 rate, so decode the thirds. */
-  function mlbIP(v){
-    if(v==null)return null;
-    var m=/^(-?\d+)(?:\.(\d))?$/.exec(String(v).trim());
-    if(!m) return mlbNum(v);
-    var whole=parseInt(m[1],10), third=m[2]?parseInt(m[2],10):0;
-    if(!isFinite(whole))return null;
-    if(third!==1&&third!==2) third=0;
-    return whole+(third/3);
-  }
-
-  /* probable starters WITH person ids. mlb_game_cards stores the name only, and a name is not
-     a join key — the schedule hydrate is the free source of the id everything else hangs off. */
-  async function mlbLiveProbables(dates){
-    var out=[], dedupe={};
-    for(var i=0;i<dates.length;i++){
-      var j=null, d=dates[i];
-      try{ j=await mlbJSON(MLB_API+'schedule?sportId=1&hydrate=probablePitcher,team&date='+d); }catch(_){ continue; }
-      ((j&&j.dates)||[]).forEach(function(dd){ (dd.games||[]).forEach(function(g){
-        var t=g.teams||{};
-        [['away',t.away,t.home],['home',t.home,t.away]].forEach(function(p){
-          var side=p[0], me=p[1]||{}, opp=p[2]||{}, pp=me.probablePitcher;
-          if(!pp||pp.id==null) return;
-          var dk=(g.gamePk!=null?g.gamePk:'?')+'|'+side; if(dedupe[dk]) return; dedupe[dk]=1;
-          out.push({pitcher_id:pp.id, name:pp.fullName||null, side:side, game_date:d,
-            game_id:(g.gamePk!=null?('mlb:'+g.gamePk):null),
-            team_id:(me.team&&me.team.id)||null, team:(me.team&&me.team.name)||null,
-            opp_team_id:(opp.team&&opp.team.id)||null, opp_team:(opp.team&&opp.team.name)||null});
-        });
-      });});
-    }
-    return out;
-  }
-
-  /* season pitching line per starter. K% and BB% come off battersFaced — the real denominator —
-     rather than being approximated from innings, so they are comparable to the ingested rates. */
-  async function mlbLivePitcherStats(ids, season){
-    var byId={};
-    for(var i=0;i<ids.length;i+=25){
-      var chunk=ids.slice(i,i+25), j=null;
-      try{
-        j=await mlbJSON(MLB_API+'people?personIds='+chunk.join(',')
-          +'&hydrate='+encodeURIComponent('stats(group=[pitching],type=[season],season='+season+')'));
-      }catch(_){ continue; }
-      ((j&&j.people)||[]).forEach(function(p){
-        var st=null;
-        ((p.stats)||[]).forEach(function(s){
-          if(s.group&&s.group.displayName&&s.group.displayName!=='pitching') return;
-          ((s.splits)||[]).forEach(function(sp){ if(!st&&sp&&sp.stat) st=sp.stat; });
-        });
-        if(!st) return;
-        var bf=mlbNum(st.battersFaced), so=mlbNum(st.strikeOuts), bb=mlbNum(st.baseOnBalls);
-        var ip=mlbIP(st.inningsPitched), hr=mlbNum(st.homeRuns);
-        byId[String(p.id)]={
-          pitcher_id:p.id, name:p.fullName||null, throws:(p.pitchHand&&p.pitchHand.code)||null,
-          era:mlbNum(st.era), whip:mlbNum(st.whip), ip:ip,
-          k_pct:(bf&&so!=null)?so/bf:null,
-          bb_pct:(bf&&bb!=null)?bb/bf:null,
-          hr9:(ip&&hr!=null)?(hr*9/ip):null,
-          batters_faced:bf
-        };
-      });
-    }
-    return byId;
-  }
-
-  /* team hitting, season to date — the other half of a matchup. */
-  async function mlbLiveTeamOffense(season){
-    var by={}, n=0, j=null;
-    try{ j=await mlbJSON(MLB_API+'teams/stats?stats=season&group=hitting&season='+season+'&sportIds=1'); }
-    catch(_){ return {by:by, n:0}; }
-    ((j&&j.stats)||[]).forEach(function(s){
-      ((s.splits)||[]).forEach(function(sp){
-        var t=sp.team||{}, st=sp.stat||{}; if(t.id==null||by[String(t.id)]) return;
-        var gp=mlbNum(st.gamesPlayed), r=mlbNum(st.runs);
-        var avg=mlbNum(st.avg), slg=mlbNum(st.slg), pa=mlbNum(st.plateAppearances), so=mlbNum(st.strikeOuts);
-        by[String(t.id)]={team_id:t.id, team:t.name||null,
-          obp:mlbNum(st.obp), slg:slg, ops:mlbNum(st.ops),
-          iso:(avg!=null&&slg!=null)?(slg-avg):null,
-          k_pct:(pa&&so!=null)?so/pa:null,
-          runs_per_game:(gp&&r!=null)?r/gp:null};
-        n++;
-      });
-    });
-    return {by:by, n:n};
-  }
-
-  /* assemble the fallback into the same row shapes boardIndex already understands, so nothing
-     downstream has to care which source filled it. Rows carry _src so the answer can say. */
-  async function mlbLiveFeatures(d1,d2){
-    var season=String(d1||etDay(0)).slice(0,4);
-    var probs=await mlbLiveProbables([d1||etDay(0),d2||etDay(1)]);
-    if(!probs.length) return null;
-    var ids=[], seen={};
-    probs.forEach(function(p){ var k=String(p.pitcher_id); if(!seen[k]){ seen[k]=1; ids.push(p.pitcher_id); } });
-    var stats={}, off={by:{},n:0};
-    try{ stats=await mlbLivePitcherStats(ids,season); }catch(_){ stats={}; }
-    try{ off=await mlbLiveTeamOffense(season); }catch(_){ off={by:{},n:0}; }
-
-    var pitchers=probs.map(function(p){
-      var s=stats[String(p.pitcher_id)]||{};
-      return {game_id:p.game_id, side:p.side, pitcher_id:p.pitcher_id, name:p.name||s.name||null,
-        team:p.team, opponent:p.opp_team, throws:s.throws||null,
-        xera:null, barrel_pct:null, hardhit_pct:null,
-        era:(s.era!=null?s.era:null), whip:(s.whip!=null?s.whip:null), ip:(s.ip!=null?s.ip:null),
-        k_pct:(s.k_pct!=null?s.k_pct:null), bb_pct:(s.bb_pct!=null?s.bb_pct:null),
-        hr9:(s.hr9!=null?s.hr9:null), batters_faced:(s.batters_faced!=null?s.batters_faced:null),
-        _src:'MLB Stats API · season pitching (live)'};
-    });
-    var offense=[], odone={};
-    probs.forEach(function(p){
-      var o=off.by[String(p.opp_team_id)]; if(!o||p.game_id==null) return;
-      var os=flipSide(p.side); if(!os) return;
-      var k=p.game_id+'|'+os; if(odone[k]) return; odone[k]=1;
-      offense.push({game_id:p.game_id, side:os, obp:o.obp, iso:o.iso, k_pct:o.k_pct,
-        runs_per_game:o.runs_per_game, team:o.team, _src:'MLB Stats API · team hitting (live)'});
-    });
-    return {pitchers:pitchers, offense:offense, n_teams:off.n,
-      n_with_stats:pitchers.filter(function(p){return p.era!=null||p.k_pct!=null;}).length};
-  }
-
-  /* ---- transparent pitching-matchup ordering ----
-     Fixed league reference points, not a fitted model: each metric maps to 0..1 where 1 = most
-     attackable, then averages over whatever is actually present, and reports which inputs it used.
-     This is a RESEARCH ORDERING of arms. It is not a price, an edge, an EV or an EdgeDesk verdict,
-     it never feeds them, and it is deliberately named apart from the engine's own score. */
-  var MLB_REF={
-    era:[3.20,5.20], whip:[1.05,1.55], xera:[3.20,5.20],
-    k_pct:[0.27,0.15], bb_pct:[0.055,0.110], hr9:[0.90,1.80],
-    barrel_pct:[0.055,0.115], hardhit_pct:[0.34,0.46],
-    runs_per_game:[3.80,5.40], obp:[0.300,0.340], iso:[0.140,0.190]
-  };
-  function mlbScale(v,ref){
-    v=mlbNum(v); if(v==null||!ref)return null;
-    var t=(v-ref[0])/(ref[1]-ref[0]);
-    return t<0?0:t>1?1:t;
-  }
-  function mlbBlend(src,keys){
-    if(!src)return null;
-    var parts=[], used=[];
-    keys.forEach(function(k){ var s=mlbScale(src[k],MLB_REF[k]); if(s!=null){ parts.push(s); used.push(k); } });
-    if(!parts.length)return null;
-    var m=parts.reduce(function(a,b){return a+b;},0)/parts.length;
-    return {score:Math.round(m*1000)/10, inputs:used};
-  }
-  function mlbVuln(pf){ return mlbBlend(pf,['xera','era','whip','k_pct','bb_pct','hr9','barrel_pct','hardhit_pct']); }
-  function mlbOppStrength(o){ return mlbBlend(o,['runs_per_game','obp','iso']); }
-  function mlbMatchup(pf,o){
-    var v=mlbVuln(pf), s=mlbOppStrength(o);
-    if(!v&&!s)return null;
-    var score=(v&&s)?(0.60*v.score+0.40*s.score):(v?v.score:s.score);
-    return {attack_score:Math.round(score*10)/10,
-      pitcher_vulnerability:v?v.score:null, opponent_offense_strength:s?s.score:null,
-      basis:(v&&s)?'0.60 × arm + 0.40 × opposing offense'
-        :(v?'arm only — opposing offense not on file':'opposing offense only — no stat line for the arm'),
-      inputs_used:(v?v.inputs:[]).concat(s?s.inputs.map(function(k){return 'opp_'+k;}):[]),
-      scale:'0 = least attackable, 100 = most attackable, against fixed league reference points'};
   }
 
   function boardIndex(f){
@@ -12918,9 +12723,8 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
       if(isFinite(dd)&&dd>=0) rest=dd;
     }
     var missing=[];
-    ['xera','k_pct','bb_pct','barrel_pct','hardhit_pct','era','whip','hr9'].forEach(function(k){ if(!pf||pf[k]==null) missing.push(k); });
+    ['xera','k_pct','bb_pct','barrel_pct','hardhit_pct'].forEach(function(k){ if(!pf||pf[k]==null) missing.push(k); });
     if(!oppOff) missing.push('opponent_offense');
-    var mu=mlbMatchup(pf,oppOff);
     var x=gg?gg.x:null;
     return {
       pitcher:name||null, throws:(away?g.away_pitcher_throws:g.home_pitcher_throws)||null,
@@ -12929,13 +12733,9 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
       opponent:(away?g.home_team_name:g.away_team_name)||null,
       side:side, game:(g.away_team_name||'')+' @ '+(g.home_team_name||''),
       game_date:g.game_date||null, first_pitch_local:g.start_time_local||null,
-      quality: pf?{source:pf._src||'pitcher_features (ingest_mlb)', xera:r4(pf.xera), k_pct:r4(pf.k_pct),
-        bb_pct:r4(pf.bb_pct), barrel_pct:r4(pf.barrel_pct), hardhit_pct:r4(pf.hardhit_pct),
-        era:r4(pf.era), whip:r4(pf.whip), hr9:r4(pf.hr9), ip:r4(pf.ip),
-        batters_faced:(pf.batters_faced!=null?pf.batters_faced:null)}:null,
-      matchup: mu,
-      rankable: !!mu,
-      opponent_offense: oppOff?{source:oppOff._src||'offense_features (ingest_mlb)', obp:r4(oppOff.obp), iso:r4(oppOff.iso),
+      quality: pf?{source:'pitcher_features (ingest_mlb)', xera:r4(pf.xera), k_pct:r4(pf.k_pct),
+        bb_pct:r4(pf.bb_pct), barrel_pct:r4(pf.barrel_pct), hardhit_pct:r4(pf.hardhit_pct)}:null,
+      opponent_offense: oppOff?{source:'offense_features (ingest_mlb)', obp:r4(oppOff.obp), iso:r4(oppOff.iso),
         k_pct:r4(oppOff.k_pct), runs_per_game:r4(oppOff.runs_per_game)}:null,
       workload: use?{last_start:String(use.game_date).slice(0,10), pitches:(use.pitches!=null?use.pitches:null),
         days_rest:rest, source:'mlb_pitcher_usage (bullpen_sync)'}:null,
@@ -13004,40 +12804,15 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
     });
 
     var rd=f.read||{}, un={};
-    var liveP=!!f.live_pitchers, liveO=!!f.live_offense;
-    if(liveP){
-      un.statcast='xERA, barrel% and hard-hit% are Statcast fields. The live MLB Stats API fallback does not serve them, so they are null on this slate — run prevention (ERA / WHIP / HR9) and plate discipline (K% / BB%) are on file in their place. Restoring ingest_mlb brings the Statcast layer back.';
-    }else if(rd.pitcher_features!=='VERIFIED'){
-      un.pitcher_quality='pitcher_features (xERA / K% / BB% / barrel% / hard-hit%) — '+(rd.pitcher_features||'NOT READ')+'. Written by ingest_mlb, and the live MLB Stats API fallback returned no stat line either.';
-    }
-    if(!liveO && rd.offense_features!=='VERIFIED') un.opponent_offense='offense_features (OBP / ISO / K% / runs per game) — '+(rd.offense_features||'NOT READ')+'. Written by ingest_mlb.';
+    if(rd.pitcher_features!=='VERIFIED') un.pitcher_quality='pitcher_features (xERA / K% / BB% / barrel% / hard-hit%) — '+(rd.pitcher_features||'NOT READ')+'. Written by ingest_mlb.';
+    if(rd.offense_features!=='VERIFIED') un.opponent_offense='offense_features (OBP / ISO / K% / runs per game) — '+(rd.offense_features||'NOT READ')+'. Written by ingest_mlb.';
     if(rd.mlb_pitcher_usage!=='VERIFIED') un.workload='mlb_pitcher_usage (last start, pitch count, days rest) — '+(rd.mlb_pitcher_usage||'NOT READ')+'. Written by bullpen_sync.';
-    un.era_whip_fip=liveP
-      ? 'ERA / WHIP / HR9 are on file for this slate from the live MLB Stats API fallback. FIP is still not computed anywhere in EdgeDesk.'
-      : 'Traditional ERA / WHIP / FIP are not ingested per starter. EdgeDesk stores xERA and batted-ball rates in pitcher_features only.';
+    un.era_whip_fip='Traditional ERA / WHIP / FIP are not ingested per starter. EdgeDesk stores xERA and batted-ball rates in pitcher_features only.';
     un.strikeout_trends='Rolling game-log form (last 3 / 5 starts) is not stored. Only season-level rates are on file.';
     un.handedness_splits='Platoon splits are not ingested. Only the starter’s throwing hand and the opposing lineup’s season rates are on file.';
     un.confirmed_lineup=UNAVAILABLE_TOOLS.confirmed_lineup;
     un.injuries=UNAVAILABLE_TOOLS.injuries;
     un.news=UNAVAILABLE_TOOLS.news;
-
-    /* Pre-sorted so a matchup question is a lookup, not a 60-object sort the narrator has to
-       do in prose. Descending = most attackable arm first ("worst" for the pitcher). */
-    var ranked=pitchers.filter(function(p){ return p.matchup&&p.matchup.attack_score!=null; })
-      .sort(function(a,c){ return c.matchup.attack_score-a.matchup.attack_score; })
-      .map(function(p,i){
-        var q=p.quality||{}, o=p.opponent_offense||{};
-        return {rank:i+1, pitcher:p.pitcher, throws:p.throws, team:p.team, opponent:p.opponent,
-          game:p.game, side:p.side, first_pitch_local:p.first_pitch_local,
-          attack_score:p.matchup.attack_score,
-          pitcher_vulnerability:p.matchup.pitcher_vulnerability,
-          opponent_offense_strength:p.matchup.opponent_offense_strength,
-          basis:p.matchup.basis, inputs_used:p.matchup.inputs_used,
-          era:q.era, whip:q.whip, k_pct:q.k_pct, bb_pct:q.bb_pct, hr9:q.hr9, ip:q.ip, xera:q.xera,
-          opponent_runs_per_game:o.runs_per_game, opponent_obp:o.obp, opponent_iso:o.iso,
-          park_factor:(p.park&&p.park.park_factor!=null)?p.park.park_factor:null,
-          source:q.source||null};
-      });
 
     var board={
       generated_at:new Date().toISOString(), date_et:etDay(0),
@@ -13045,17 +12820,13 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
         note:'Every number here was produced by the EdgeDesk deterministic engine or read from an owned table. Cite them; never recompute probability, fair price, edge, EV, CLV, confidence, verdict, score or price sensitivity.'},
       counts:{games_with_signals:games.length, shown:rows.length, model_leads:leads.length,
         mlb_games:card.length, mlb_starters:pitchers.length,
-        starters_with_quality:pitchers.filter(function(p){return p.rankable;}).length,
-        starters_with_statcast:pitchers.filter(function(p){return p.quality&&p.quality.xera!=null;}).length},
+        starters_with_quality:pitchers.filter(function(p){return p.quality&&p.quality.xera!=null;}).length},
       slate:rows,
       low_priority:games.slice(14).map(function(g){
         return {game:(g.e.away_team||'')+' @ '+(g.e.home_team||''), status:g.status, priority:g.priority}; }),
       model_leads:leads.map(function(l){
         return {game:l.matchup, sport:l.sport, priority:l.priority, note:(l.reasons||[])[0]||null, question:l.question}; }),
       mlb_starters:pitchers,
-      mlb_matchups:{
-        ranked:ranked, n:ranked.length,
-        note:'Sorted most-attackable arm first. attack_score is a transparent 0-100 ordering — each metric mapped against fixed league reference points and averaged over whatever is present, weighted 0.60 arm / 0.40 opposing offense when both are on file. It is a research ordering only: it is NOT a price, edge, EV, probability or EdgeDesk verdict, and it never feeds them. Answer "worst pitching matchups" from the top of this list and "best" from the bottom, and always say which inputs were used.'},
       join_note:'A starter is joined to his opponent’s offense through pitcher_features.game_id + the opposite side of offense_features. Market numbers attached to a starter belong to the highest-scoring EdgeDesk signal on that game, which may be on either team.',
       sources:rd,
       unavailable:un
@@ -13064,35 +12835,79 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
     return board;
   }
 
+  /* ---- transparent pitching-matchup ordering, for the OFFLINE path only ----
+     edgedesk_ai does its own retrieval and its own ranking (with FIP and platoon splits);
+     this exists purely for when that function is unreachable and the browser has to answer
+     from the owned tables alone. It is deliberately scoped here: it reads the board shapes
+     that already exist and adds nothing to the packet the server receives, so the two can
+     never disagree in the same answer.
+
+     Fixed league reference points, not a fitted model: each metric maps to 0..1 where 1 is
+     most attackable, averaged over whatever is actually present, reporting the inputs used.
+     A RESEARCH ORDERING of arms — never a price, edge, EV or verdict, and it feeds none. */
+  var MLB_REF={
+    era:[3.20,5.20], whip:[1.05,1.55], xera:[3.20,5.20],
+    k_pct:[0.27,0.15], bb_pct:[0.055,0.110], hr9:[0.90,1.80],
+    barrel_pct:[0.055,0.115], hardhit_pct:[0.34,0.46],
+    runs_per_game:[3.80,5.40], obp:[0.300,0.340], iso:[0.140,0.190]
+  };
+  function mlbScale(v,ref){
+    if(v==null||!ref)return null; v=parseFloat(v); if(!isFinite(v))return null;
+    var t=(v-ref[0])/(ref[1]-ref[0]);
+    return t<0?0:t>1?1:t;
+  }
+  function mlbBlend(src,keys){
+    if(!src)return null;
+    var parts=[], used=[];
+    keys.forEach(function(k){ var s=mlbScale(src[k],MLB_REF[k]); if(s!=null){ parts.push(s); used.push(k); } });
+    if(!parts.length)return null;
+    var m=parts.reduce(function(a,b){return a+b;},0)/parts.length;
+    return {score:Math.round(m*1000)/10, inputs:used};
+  }
+  function mlbVuln(q){ return mlbBlend(q,['xera','era','whip','k_pct','bb_pct','hr9','barrel_pct','hardhit_pct']); }
+  function mlbOppStrength(o){ return mlbBlend(o,['runs_per_game','obp','iso']); }
+  function mlbMatchup(q,o){
+    var v=mlbVuln(q), s=mlbOppStrength(o);
+    if(!v&&!s)return null;
+    var score=(v&&s)?(0.60*v.score+0.40*s.score):(v?v.score:s.score);
+    return {attack_score:Math.round(score*10)/10,
+      pitcher_vulnerability:v?v.score:null, opponent_offense_strength:s?s.score:null,
+      basis:(v&&s)?'0.60 × arm + 0.40 × opposing offense'
+        :(v?'arm only — opposing offense not on file':'opposing offense only — no stat line for the arm')};
+  }
+
   /* offline fallback: the engine's own board, rendered locally, if edgedesk_ai is unreachable */
   function boardFallbackHTML(b, q){
     q=(q||'').toLowerCase(); var out='';
     if(/pitch|starter|arm|matchup/.test(q) && b.mlb_starters && b.mlb_starters.length){
-      var mm=(b.mlb_matchups&&b.mlb_matchups.ranked)||[];
-      if(mm.length){
-        var wantBest=/\bbest\b|toughest|strongest|hardest/.test(q) && !/worst/.test(q);
-        var list=wantBest?mm.slice().reverse().slice(0,6):mm.slice(0,6);
+      /* Ranked here rather than on the board object, so this never reaches the server packet.
+         Ranks on whatever the owned tables hold — an empty xERA column no longer means an
+         empty answer, and the opponent's offense is now weighed instead of ignored. */
+      var wx=b.mlb_starters.map(function(p){ return {p:p, m:mlbMatchup(p.quality,p.opponent_offense)}; })
+        .filter(function(r){ return r.m&&r.m.attack_score!=null; })
+        .sort(function(a,c){ return c.m.attack_score-a.m.attack_score; });
+      var wantBest=/\bbest\b|toughest|strongest|hardest/.test(q) && !/worst/.test(q);
+      if(wantBest) wx.reverse();
+      wx=wx.slice(0,6);
+      if(wx.length){
         var pc=function(v){ return v==null?null:(Math.round(v*1000)/10)+'%'; };
         out+='<p><b>'+(wantBest?'Least attackable starters':'Most attackable starters')+' on today’s card.</b> '
-          +'Ordered by <span class="mono">attack_score</span> — a transparent ordering against fixed league reference points, weighting the arm and the offense it faces. It is a research ordering, not an EdgeDesk price, edge or verdict.</p><ul>'
-          +list.map(function(p){
-            var bits=[];
-            if(p.era!=null) bits.push('ERA '+p.era);
-            if(p.whip!=null) bits.push('WHIP '+p.whip);
-            if(p.xera!=null) bits.push('xERA '+p.xera);
-            if(p.k_pct!=null) bits.push('K% '+pc(p.k_pct));
-            if(p.bb_pct!=null) bits.push('BB% '+pc(p.bb_pct));
-            if(p.hr9!=null) bits.push('HR/9 '+p.hr9);
-            if(p.ip!=null) bits.push(p.ip+' IP');
+          +'Ordered against fixed league reference points, weighing the arm and the offense it faces. '
+          +'A data ordering out of the owned tables, not an EdgeDesk rating, and not a price or an edge.</p><ul>'
+          +wx.map(function(r){ var p=r.p, qq=p.quality||{}, o=p.opponent_offense, bits=[];
+            if(qq.xera!=null) bits.push('xERA '+qq.xera);
+            if(qq.k_pct!=null) bits.push('K% '+pc(qq.k_pct));
+            if(qq.bb_pct!=null) bits.push('BB% '+pc(qq.bb_pct));
+            if(qq.barrel_pct!=null) bits.push('barrel% '+pc(qq.barrel_pct));
+            if(qq.hardhit_pct!=null) bits.push('hard-hit% '+pc(qq.hardhit_pct));
             return '<li><b>'+esc(p.pitcher||'Unnamed')+'</b> ('+esc(p.team||'')+') vs '+esc(p.opponent||'')
-              +' — attack '+p.attack_score+(bits.length?' · '+esc(bits.join(', ')):'')
-              +(p.opponent_runs_per_game!=null?'. Opponent: '+(Math.round(p.opponent_runs_per_game*100)/100)+' R/G'
-                +(p.opponent_obp!=null?', OBP '+(Math.round(p.opponent_obp*1000)/1000):'')+'.':'. Opposing offense not on file.')
-              +'</li>'; }).join('')
-          +'</ul><p class="edai-src" style="border:none">'+esc((b.mlb_matchups&&b.mlb_matchups.note)||'')+'</p>';
+              +' — attack '+r.m.attack_score+(bits.length?' · '+esc(bits.join(', ')):'')
+              +(o?'. Opponent offense: OBP '+o.obp+', ISO '+o.iso+', '+o.runs_per_game+' R/G.'
+                 :'. Opponent offense not on file — '+esc(r.m.basis)+'.')+'</li>'; }).join('')
+          +'</ul>';
       }else{
-        out+='<p>EdgeDesk has '+b.mlb_starters.length+' probable starter'+(b.mlb_starters.length===1?'':'s')+' on today’s card, but no rankable pitching rows for this slate — the owned table is empty and the live MLB Stats API fallback returned nothing either, so I can rank the games and not the arms. '
-          +esc(b.unavailable.pitcher_quality||b.unavailable.statcast||'')+'</p>';
+        out+='<p>EdgeDesk has '+b.mlb_starters.length+' probable starter'+(b.mlb_starters.length===1?'':'s')+' on today’s card, but no pitcher-quality rows for this slate, so I can rank the games and not the arms. '
+          +esc(b.unavailable.pitcher_quality||'')+'</p>';
       }
     }
     if(b.slate&&b.slate.length){
@@ -14955,23 +14770,20 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
       var s1=fin({x:{curEdge:0.045,detEdge:0.045,evNow:0.045,confidence:'HIGH'}});
       chk('K strong slate stays BET', bqSlateOutcome(bqPickHeadline([s1]),'BET'),'BET');
       chk('L LEAN never upgraded', fin({x:{dverdict:'LEAN',curEdge:0.045,detEdge:0.045,evNow:0.045,confidence:'HIGH'}}).q.quality_call!=='BET', true);
-      /* MLB pitching fallback: the layer that turns "I cannot rank the arms" into a ranking */
-      chk('M innings thirds decoded', Math.abs(mlbIP('60.1')-(60+1/3))<1e-9, true);
-      chk('M innings whole', mlbIP('7.0'), 7);
-      chk('M bad IP string survives', mlbIP(null), null);
-      chk('N ERA scale tops out', mlbScale(5.20,MLB_REF.era), 1);
-      chk('N ERA scale floors', mlbScale(3.20,MLB_REF.era), 0);
-      chk('N K% inverted (low K = attackable)', mlbScale(0.15,MLB_REF.k_pct), 1);
-      chk('N missing metric stays null, never 0', mlbScale(null,MLB_REF.era), null);
-      var badArm={era:5.40,whip:1.55,k_pct:40/280,bb_pct:30/280,hr9:2.09};
-      var goodArm={era:2.90,whip:1.00,k_pct:150/470,bb_pct:25/470,hr9:0.75};
-      var bigBats={runs_per_game:600/110,obp:0.345,iso:0.190};
-      var weakBats={runs_per_game:400/110,obp:0.295,iso:0.140};
-      chk('O bad arm outranks good arm', mlbMatchup(badArm,weakBats).attack_score>mlbMatchup(goodArm,bigBats).attack_score, true);
-      chk('O blend is 0.60 arm / 0.40 offense', Math.abs(mlbMatchup(badArm,weakBats).attack_score-0.6*mlbVuln(badArm).score)<0.06, true);
-      chk('O unrankable arm returns null, not a score', mlbMatchup({era:null,k_pct:null},null), null);
-      chk('O arm-only basis is labelled', mlbMatchup(badArm,null).basis.indexOf('arm only')>=0, true);
-      chk('O opponent strength omitted when absent', mlbMatchup(badArm,null).opponent_offense_strength, null);
+      /* offline matchup ordering — the local ranking used only when edgedesk_ai is unreachable */
+      chk('M xERA scale tops out', mlbScale(5.20,MLB_REF.xera), 1);
+      chk('M xERA scale floors', mlbScale(3.20,MLB_REF.xera), 0);
+      chk('M K% inverted (low K = attackable)', mlbScale(0.15,MLB_REF.k_pct), 1);
+      chk('M missing metric stays null, never 0', mlbScale(null,MLB_REF.xera), null);
+      var badArm={xera:5.30,k_pct:0.15,bb_pct:0.105,barrel_pct:0.112,hardhit_pct:0.455};
+      var goodArm={xera:3.00,k_pct:0.30,bb_pct:0.050,barrel_pct:0.050,hardhit_pct:0.330};
+      var bigBats={runs_per_game:5.45,obp:0.345,iso:0.190};
+      var weakBats={runs_per_game:3.64,obp:0.295,iso:0.140};
+      chk('N bad arm outranks good arm', mlbMatchup(badArm,weakBats).attack_score>mlbMatchup(goodArm,bigBats).attack_score, true);
+      chk('N blend is 0.60 arm / 0.40 offense', Math.abs(mlbMatchup(badArm,weakBats).attack_score-0.6*mlbVuln(badArm).score)<0.06, true);
+      chk('N ranks on partial data (xERA absent)', mlbMatchup({k_pct:0.15,bb_pct:0.105},null)!=null, true);
+      chk('N unrankable arm returns null, not a score', mlbMatchup({xera:null,k_pct:null},null), null);
+      chk('N arm-only basis is labelled', mlbMatchup(badArm,null).basis.indexOf('arm only')>=0, true);
       if(verbose!==false){ try{ console.log('%cEDBetQuality self-test','font-weight:bold'); R.forEach(function(r){ console.log((r.ok?'PASS':'FAIL')+' | '+r.t+(r.ok?'':'  got '+JSON.stringify(r.got)+' want '+JSON.stringify(r.want))); }); console.log((F===0?'ALL GREEN ':'FAILURES ')+P+' passed, '+F+' failed'); }catch(_){} }
       return {passed:P, failed:F, results:R};
     }
@@ -15252,9 +15064,6 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
     healthcheck:{name:'healthcheck',categories:['diagnostic'],owned:true,fn:'healthcheck',status:'UNKNOWN',ttl:'game_status',need:'source'},
     /* LIVE_FALLBACK: public keyless browser-direct, documented, unverified here */
     mlb_public:{name:'MLB Stats API (public fallback)',categories:['schedule','starter'],owned:false,cors:true,status:'LIVE_FALLBACK',ttl:'schedule',adapter:mlbSchedule},
-    mlb_pitching_public:{name:'MLB Stats API (season pitching + team hitting fallback)',categories:['starter','player_stats','offense'],owned:false,cors:true,status:'LIVE_FALLBACK',ttl:'player_stats',
-      contract:'people?personIds=..&hydrate=stats(group=[pitching],type=[season]) -> ERA / WHIP / IP / K% / BB% / HR9 (K% and BB% off battersFaced); teams/stats?group=hitting -> OBP / ISO / K% / runs per game. Statcast (xERA, barrel%, hard-hit%) is NOT served by this API and stays null.',
-      note:'Invoked by the board when pitcher_features / offense_features read EMPTY, so an ingest_mlb gap degrades to official public data instead of refusing every pitching question.'},
     nws_public:{name:'NWS (public fallback)',categories:['weather'],owned:false,cors:true,status:'LIVE_FALLBACK',ttl:'weather',adapter:nwsWeather}
   };
   function sourceStatus(){ var o={}; Object.keys(SOURCES).forEach(function(k){var s=SOURCES[k];o[k]={name:s.name,status:s.status,auth:s.auth,need:s.need||null};}); return o; }
