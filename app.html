@@ -12268,6 +12268,57 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
     return out;
   }
 
+  /* ---- game identity: a team pair is a BUCKET, never an identity ------------
+     Two games between the same clubs on the same day share every name-based key
+     anyone would reach for. Bucket candidates by pair, then claim the one whose
+     first pitch is nearest, and consume it so it cannot be claimed twice. */
+  function mlbSignalPools(games){
+    var pools={};
+    (games||[]).forEach(function(g){
+      var e=g&&g.e; if(!e||e.sport_key!=='baseball_mlb')return;
+      /* Claims belong to ONE pass. Building the pools resets them, so a second
+         buildBoard over the same game objects does not find every signal
+         already spoken for and silently drop the whole MLB card. */
+      g.__claimed=false; g.__dhPool=false;
+      var k=mlbNorm(e.away_team)+'|'+mlbNorm(e.home_team);
+      (pools[k]=pools[k]||[]).push(g);
+    });
+    Object.keys(pools).forEach(function(k){
+      pools[k].sort(function(a,b){
+        return String((a.e&&a.e.commence_time)||'').localeCompare(String((b.e&&b.e.commence_time)||''));
+      });
+      if(pools[k].length>1) pools[k].forEach(function(g){ g.__dhPool=true; });
+    });
+    return pools;
+  }
+  /* Minutes apart two first pitches may be and still be the same game. A
+     doubleheader's halves are hours apart; provider clock skew is minutes. */
+  var MLB_CLAIM_WINDOW_MIN = 240;
+  function mlbClaimSignal(pools, awayName, homeName, startIso){
+    var pool=pools[mlbNorm(awayName)+'|'+mlbNorm(homeName)];
+    if(!pool||!pool.length) return null;
+    var free=pool.filter(function(g){ return !g.__claimed; });
+    if(!free.length) return null;
+    var t=startIso?Date.parse(startIso):NaN;
+    if(!isFinite(t)){ free[0].__claimed=true; return free[0]; }
+    var best=null, bestDiff=Infinity;
+    free.forEach(function(g){
+      var ct=(g.e&&g.e.commence_time)?Date.parse(g.e.commence_time):NaN;
+      var d=isFinite(ct)?Math.abs(ct-t):Infinity;
+      if(d<bestDiff){ bestDiff=d; best=g; }
+    });
+    if(!best) return null;
+    if(isFinite(bestDiff) && bestDiff > MLB_CLAIM_WINDOW_MIN*60000){
+      /* Nothing close enough. Only an undated signal may stand in, because it
+         carries no contradicting timestamp; otherwise report no market rather
+         than attach another game's numbers. */
+      var undated=free.filter(function(g){ return !(g.e&&g.e.commence_time); })[0];
+      if(!undated) return null;
+      undated.__claimed=true; return undated;
+    }
+    best.__claimed=true; return best;
+  }
+
   /* ============================ EDGE DESK BRAIN ============================
      Permanent reasoning architecture. This is the part of EdgeDesk that does not
      have to be re-derived from a document on every question: principles that hold
@@ -12953,13 +13004,18 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
     var f={read:{}}, ix={pfByName:{},offBySide:{},lastStart:{}};
     if(card.length){ try{ f=await boardFeatures(); ix=boardIndex(f); }catch(_){ f={read:{games:'UNAVAILABLE'}}; } }
 
-    var byMatch={};
-    games.forEach(function(g){ var e=g.e;
-      if(e&&e.sport_key==='baseball_mlb') byMatch[mlbNorm(e.away_team)+'|'+mlbNorm(e.home_team)]=g; });
-
-    var pitchers=[];
+    /* A team pair is not a game identity. Keyed on the pair alone, both halves of
+       a doubleheader collapsed into one bucket and the later signal overwrote the
+       earlier, so BOTH starters were shown the same market — the same edge, price
+       and verdict — for two different games. Bucket by pair, then let each card
+       game claim the signal whose first pitch is nearest its own and consume it,
+       so the second game cannot be handed the first game's market. Same
+       pool-and-nearest-start pattern the server side uses. */
+    var byMatch=mlbSignalPools(games);
+    var pitchers=[], dhClaims=0;
     card.forEach(function(g){
-      var gg=byMatch[mlbNorm(g.away_team_name)+'|'+mlbNorm(g.home_team_name)]||null;
+      var gg=mlbClaimSignal(byMatch, g.away_team_name, g.home_team_name, g.start_time||null);
+      if(gg&&gg.__dhPool) dhClaims++;
       pitchers.push(boardPitcher(g,'away',gg,ix));
       pitchers.push(boardPitcher(g,'home',gg,ix));
     });
@@ -15018,6 +15074,28 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
       chk('Q credibility follows the market, not the league', _atpDeep.credibility>_nflThin.credibility, true);
       chk('Q missing sport evidence is named', edgeCredibility({curEdge:0.04,nb:8,sharp:true,e:{sport_key:'baseball_mlb'}},{evidencePresent:{}}).missing_evidence.length, 5);
       chk('Q brain resolves the preseason key to NFL', EDGE_BRAIN.contractFor('americanfootball_nfl_preseason').label, 'NFL');
+      /* DOUBLEHEADERS — a team pair is a bucket, never an identity. Keyed on the
+         pair alone, both halves collapsed and both starters were shown one game's
+         market. */
+      var _dhSig=function(id,ct,edge){ return {e:{sport_key:'baseball_mlb',event_id:id,commence_time:ct,
+        away_team:'Boston Red Sox',home_team:'New York Yankees'}, x:{curEdge:edge}}; };
+      var _g1=_dhSig('evt-G1','2026-08-11T17:05:00Z',0.03), _g2=_dhSig('evt-G2','2026-08-11T23:05:00Z',0.07);
+      var _solo=_dhSig('evt-solo','2026-08-11T20:10:00Z',0.05);
+      _solo.e.away_team='San Diego Padres'; _solo.e.home_team='Los Angeles Dodgers';
+      var _pools=mlbSignalPools([_g1,_g2,_solo]);
+      chk('R doubleheader keeps two signals in one bucket', _pools['bostonredsox|newyorkyankees'].length, 2);
+      var _c1=mlbClaimSignal(_pools,'Boston Red Sox','New York Yankees','2026-08-11T17:05:00Z');
+      var _c2=mlbClaimSignal(_pools,'Boston Red Sox','New York Yankees','2026-08-11T23:05:00Z');
+      chk('R game 1 claims the early event', _c1&&_c1.e.event_id, 'evt-G1');
+      chk('R game 2 claims the late event', _c2&&_c2.e.event_id, 'evt-G2');
+      chk('R the two games carry different edges', _c1.x.curEdge!==_c2.x.curEdge, true);
+      chk('R a third claim returns null, never a reused signal', mlbClaimSignal(_pools,'Boston Red Sox','New York Yankees','2026-08-11T23:05:00Z'), null);
+      var _pools2=mlbSignalPools([_g1,_g2,_solo]);
+      chk('R single games are unaffected', mlbClaimSignal(_pools2,'San Diego Padres','Los Angeles Dodgers','2026-08-11T20:10:00Z').e.event_id, 'evt-solo');
+      var _pools3=mlbSignalPools([_g1]);
+      chk('R a far-away signal is refused, not mismatched', mlbClaimSignal(_pools3,'Boston Red Sox','New York Yankees','2026-08-12T09:00:00Z'), null);
+      var _pools4=mlbSignalPools([_g1]);
+      chk('R clock skew inside the window still matches', mlbClaimSignal(_pools4,'Boston Red Sox','New York Yankees','2026-08-11T17:35:00Z').e.event_id, 'evt-G1');
       if(verbose!==false){ try{ console.log('%cEDBetQuality self-test','font-weight:bold'); R.forEach(function(r){ console.log((r.ok?'PASS':'FAIL')+' | '+r.t+(r.ok?'':'  got '+JSON.stringify(r.got)+' want '+JSON.stringify(r.want))); }); console.log((F===0?'ALL GREEN ':'FAILURES ')+P+' passed, '+F+' failed'); }catch(_){} }
       return {passed:P, failed:F, results:R};
     }
