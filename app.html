@@ -12851,15 +12851,28 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
     barrel_pct:[0.055,0.115], hardhit_pct:[0.34,0.46],
     runs_per_game:[3.80,5.40], obp:[0.300,0.340], iso:[0.140,0.190]
   };
-  function mlbScale(v,ref){
-    if(v==null||!ref)return null; v=parseFloat(v); if(!isFinite(v))return null;
+  /* Rate columns are stored as PERCENTAGES by ingest_mlb — Savant's k_percent is
+     24.5, not 0.245, and the StatsAPI fallback multiplies by 100 to match. The
+     reference points above are fractions, so a raw 24.5 clamps to 0 and a raw
+     8.2 barrel% clamps to 1: K% would contribute nothing and every arm would
+     read as maximally attackable. Both units are accepted and normalised, since
+     a value above 1 is never a legitimate fraction for any of these rates. */
+  var MLB_RATE={k_pct:1, bb_pct:1, barrel_pct:1, hardhit_pct:1};
+  function mlbRate(v,key){
+    v=parseFloat(v); if(!isFinite(v))return null;
+    return (MLB_RATE[key] && v>1) ? v/100 : v;
+  }
+  function mlbScale(v,ref,key){
+    if(v==null||!ref)return null;
+    v=key?mlbRate(v,key):parseFloat(v);
+    if(v==null||!isFinite(v))return null;
     var t=(v-ref[0])/(ref[1]-ref[0]);
     return t<0?0:t>1?1:t;
   }
   function mlbBlend(src,keys){
     if(!src)return null;
     var parts=[], used=[];
-    keys.forEach(function(k){ var s=mlbScale(src[k],MLB_REF[k]); if(s!=null){ parts.push(s); used.push(k); } });
+    keys.forEach(function(k){ var s=mlbScale(src[k],MLB_REF[k],k); if(s!=null){ parts.push(s); used.push(k); } });
     if(!parts.length)return null;
     var m=parts.reduce(function(a,b){return a+b;},0)/parts.length;
     return {score:Math.round(m*1000)/10, inputs:used};
@@ -14773,8 +14786,13 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
       /* offline matchup ordering — the local ranking used only when edgedesk_ai is unreachable */
       chk('M xERA scale tops out', mlbScale(5.20,MLB_REF.xera), 1);
       chk('M xERA scale floors', mlbScale(3.20,MLB_REF.xera), 0);
-      chk('M K% inverted (low K = attackable)', mlbScale(0.15,MLB_REF.k_pct), 1);
+      chk('M K% inverted (low K = attackable)', mlbScale(0.15,MLB_REF.k_pct,'k_pct'), 1);
       chk('M missing metric stays null, never 0', mlbScale(null,MLB_REF.xera), null);
+      /* the tables store percentages; both units must land on the same score */
+      chk('M K% accepts percent units', mlbScale(15,MLB_REF.k_pct,'k_pct'), mlbScale(0.15,MLB_REF.k_pct,'k_pct'));
+      chk('M barrel% percent != clamped to 1', mlbScale(8.2,MLB_REF.barrel_pct,'barrel_pct')<1, true);
+      chk('M hard-hit% percent matches fraction', mlbScale(38,MLB_REF.hardhit_pct,'hardhit_pct'), mlbScale(0.38,MLB_REF.hardhit_pct,'hardhit_pct'));
+      chk('M ERA is not treated as a rate', mlbScale(5.20,MLB_REF.era,'era'), 1);
       var badArm={xera:5.30,k_pct:0.15,bb_pct:0.105,barrel_pct:0.112,hardhit_pct:0.455};
       var goodArm={xera:3.00,k_pct:0.30,bb_pct:0.050,barrel_pct:0.050,hardhit_pct:0.330};
       var bigBats={runs_per_game:5.45,obp:0.345,iso:0.190};
