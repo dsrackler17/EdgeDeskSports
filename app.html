@@ -13388,11 +13388,17 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
       var gs=await sbGet('games?select=game_id,game_date,home_team,away_team,start_time,status,park_id&game_date=in.('+d1+','+d2+')&order=start_time.asc&limit=60');
       out.games=gs||[]; out.read.games=out.games.length?'VERIFIED':'EMPTY';
     }catch(_){ out.read.games='UNAVAILABLE'; }
+    /* The select used to stop at the Statcast five. era, whip and hr_per_9 are
+       written by ingest_mlb and READ downstream by the evidence normalizer, so
+       omitting them here meant those fields were permanently undefined even on
+       rows that had them — the traditional line was in the table and never
+       reached the board. */
+    var PF_COLS='game_id,side,pitcher_id,name,xera,k_pct,bb_pct,barrel_pct,hardhit_pct,era,whip,fip,hr_per_9,whiff_pct,xwoba_against,updated_at';
     var ids=out.games.map(function(g){return g.game_id;}).filter(function(v){return v!=null;});
     if(ids.length){
       var inl='in.('+ids.map(function(v){return encodeURIComponent(v);}).join(',')+')';
       try{
-        var pf=await sbGet('pitcher_features?select=game_id,side,pitcher_id,name,xera,k_pct,bb_pct,barrel_pct,hardhit_pct&game_id='+inl+'&limit=200');
+        var pf=await sbGet('pitcher_features?select='+PF_COLS+'&game_id='+inl+'&limit=200');
         out.pitchers=pf||[]; out.read.pitcher_features=out.pitchers.length?'VERIFIED':'EMPTY';
       }catch(_){ out.read.pitcher_features='UNAVAILABLE'; }
       try{
@@ -13400,8 +13406,40 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
         out.offense=of||[]; out.read.offense_features=out.offense.length?'VERIFIED':'EMPTY';
       }catch(_){ out.read.offense_features='UNAVAILABLE'; }
     }else{
-      out.read.pitcher_features='SKIPPED — no games rows for '+d1+'/'+d2;
-      out.read.offense_features='SKIPPED — no games rows for '+d1+'/'+d2;
+      /* NO ROWS IN `games` MUST NOT MEAN NO PITCHING.
+         pitcher_features was reachable only through games.game_id, so an empty
+         games table skipped the read entirely and the board reported "no
+         pitcher-quality rows" without ever asking for any. That is what the
+         analyst then repeated back as if the table were empty.
+
+         mlb_game_cards carries the probable starters by NAME, and
+         pitcher_features has a name column, so ask for those pitchers directly.
+         It is a weaker join than game_id — it cannot attach opposing offense,
+         which genuinely needs the game key — but the arms themselves come back,
+         and a ranked answer with the offense missing beats a refusal built on a
+         query nobody ran. */
+      var names=[];
+      try{
+        (mlbGamesToday()||[]).forEach(function(g){
+          [g.away_pitcher_name,g.home_pitcher_name].forEach(function(nm){
+            if(nm && names.indexOf(nm)<0) names.push(nm);
+          });
+        });
+      }catch(_){}
+      if(names.length){
+        try{
+          var q='pitcher_features?select='+PF_COLS+'&name=in.('
+            +names.slice(0,80).map(function(v){return '"'+String(v).replace(/"/g,'')+'"';}).join(',')+')&limit=200';
+          var pfn=await sbGet(q);
+          out.pitchers=pfn||[];
+          out.read.pitcher_features=out.pitchers.length
+            ? ('VERIFIED via starter name — `games` is empty for '+d1+'/'+d2+', so the game_id join was unavailable and these were matched by name instead')
+            : ('EMPTY — asked pitcher_features for '+names.length+' probable starters by name and it returned nothing');
+        }catch(_){ out.read.pitcher_features='UNAVAILABLE — name lookup failed'; }
+      }else{
+        out.read.pitcher_features='SKIPPED — no games rows for '+d1+'/'+d2+' and no probable starters on the card either';
+      }
+      out.read.offense_features='SKIPPED — offense_features joins on game_id and `games` is empty for '+d1+'/'+d2+'; run ingest_mlb to repopulate it';
     }
     try{
       var us=await sbGet('mlb_pitcher_usage?select=pitcher_id,game_date,pitches,outs,started&game_date=gte.'+etDay(-7)+'&order=game_date.desc&limit=2000');
@@ -13690,16 +13728,21 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
       if(wantBest) wx.reverse();
       wx=wx.slice(0,6);
       if(wx.length){
-        var pc=function(v){ return v==null?null:(Math.round(v*1000)/10)+'%'; };
+        /* The tables store these as PERCENTAGES (Savant's k_percent is 24.5), so
+           the old formatter's blind ×100 rendered "K% 3210%". Reuse the same
+           normalization the scorer uses rather than a second convention. */
+        var pc=function(v,key){ var r=mlbRate(v,key); return r==null?null:(Math.round(r*1000)/10)+'%'; };
         out+='<p><b>'+(wantBest?'Least attackable starters':'Most attackable starters')+' on today’s card.</b> '
           +'Ordered against fixed league reference points, weighing the arm and the offense it faces. '
           +'A data ordering out of the owned tables, not an EdgeDesk rating, and not a price or an edge.</p><ul>'
           +wx.map(function(r){ var p=r.p, qq=p.quality||{}, o=p.opponent_offense, bits=[];
             if(qq.xera!=null) bits.push('xERA '+qq.xera);
-            if(qq.k_pct!=null) bits.push('K% '+pc(qq.k_pct));
-            if(qq.bb_pct!=null) bits.push('BB% '+pc(qq.bb_pct));
-            if(qq.barrel_pct!=null) bits.push('barrel% '+pc(qq.barrel_pct));
-            if(qq.hardhit_pct!=null) bits.push('hard-hit% '+pc(qq.hardhit_pct));
+            if(qq.era!=null) bits.push('ERA '+qq.era);
+            if(qq.whip!=null) bits.push('WHIP '+qq.whip);
+            if(qq.k_pct!=null) bits.push('K% '+pc(qq.k_pct,'k_pct'));
+            if(qq.bb_pct!=null) bits.push('BB% '+pc(qq.bb_pct,'bb_pct'));
+            if(qq.barrel_pct!=null) bits.push('barrel% '+pc(qq.barrel_pct,'barrel_pct'));
+            if(qq.hardhit_pct!=null) bits.push('hard-hit% '+pc(qq.hardhit_pct,'hardhit_pct'));
             return '<li><b>'+esc(p.pitcher||'Unnamed')+'</b> ('+esc(p.team||'')+') vs '+esc(p.opponent||'')
               +' — attack '+r.m.attack_score+(bits.length?' · '+esc(bits.join(', ')):'')
               +(o?'. Opponent offense: OBP '+o.obp+', ISO '+o.iso+', '+o.runs_per_game+' R/G.'
