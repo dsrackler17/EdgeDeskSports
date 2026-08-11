@@ -12768,7 +12768,18 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
   function liveEvidenceItems(x){
     var items=[]; if(!x) return items;
     var e=x.e||{}, sk=String(e.sport_key||'');
+    /* x.mlb is attached upstream by whatever normalized this row, and not every
+       path through the board does that — the Top 5 pool and the edges feed are
+       assembled separately. When it is absent, look the card up directly rather
+       than reporting the whole sport's evidence missing because one field was
+       never populated. Same for the weather row. */
     var card=x.mlb||null, wx=x.wx||null;
+    if(!card && sk==='baseball_mlb'){
+      try{ if(typeof mlbLookup==='function') card=mlbLookup(e)||null; }catch(_){ card=null; }
+    }
+    if(!wx && e.event_id){
+      try{ if(window.WX && window.WX[e.event_id]) wx=window.WX[e.event_id]; }catch(_){}
+    }
 
     if(sk==='baseball_mlb'){
       /* ENVIRONMENT — genuinely on the card and the weather row. */
@@ -13439,7 +13450,25 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
       }else{
         out.read.pitcher_features='SKIPPED — no games rows for '+d1+'/'+d2+' and no probable starters on the card either';
       }
-      out.read.offense_features='SKIPPED — offense_features joins on game_id and `games` is empty for '+d1+'/'+d2+'; run ingest_mlb to repopulate it';
+      /* The pitcher rows just fetched by name CARRY game_id. offense_features
+         joins on exactly that, so the empty `games` table is not actually in the
+         way — chain through the pitchers instead of giving up. This is what put
+         "opposing offense not on file" under every starter. */
+      var pgids=[];
+      (out.pitchers||[]).forEach(function(r){
+        if(r.game_id!=null && pgids.indexOf(r.game_id)<0) pgids.push(r.game_id); });
+      if(pgids.length){
+        try{
+          var of2=await sbGet('offense_features?select=game_id,side,obp,iso,k_pct,runs_per_game&game_id=in.('
+            +pgids.map(function(v){return encodeURIComponent(v);}).join(',')+')&limit=200');
+          out.offense=of2||[];
+          out.read.offense_features=out.offense.length
+            ? ('VERIFIED via the game ids on the pitcher rows — `games` is empty, so the ids came from pitcher_features instead')
+            : ('EMPTY — offense_features held nothing for the '+pgids.length+' game ids the starters carry');
+        }catch(_){ out.read.offense_features='UNAVAILABLE — offense lookup failed'; }
+      }else{
+        out.read.offense_features='SKIPPED — `games` is empty for '+d1+'/'+d2+' and the starter rows carry no game_id to join on';
+      }
     }
     try{
       var us=await sbGet('mlb_pitcher_usage?select=pitcher_id,game_date,pitches,outs,started&game_date=gte.'+etDay(-7)+'&order=game_date.desc&limit=2000');
