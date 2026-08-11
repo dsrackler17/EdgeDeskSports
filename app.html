@@ -12402,6 +12402,8 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
       'CLV is the process signal. Wins and losses over a short run are almost entirely variance.',
       'Market efficiency varies by sport, by market and by liquidity. A thin market is wrong more often AND right less usefully.',
       'A winning wager can be bad process and a losing wager can be excellent process. Judge the process.',
+      'A modelled edge is not a received edge. Price decay, limits and the gap between the quote you saw and the one you get all come out of it before anything is left over.',
+      'Beating the market is not the goal — beating it by more than the estimate\'s own error is. A one-point disagreement inside a three-point error bar is noise wearing a number.',
       'Saying "I do not know" is a valid, and often the correct, output.'
     ],
     /* What each sport actually needs before a matchup statement is meaningful.
@@ -12864,6 +12866,13 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
 
      Nothing here touches a deterministic number. Every field is a confidence
      about an edge, never a restatement of one. */
+  /* MINIMUM ECONOMIC EDGE. A technically-positive 0.4% is not an opportunity —
+     variance, limits, pricing noise and execution erase it. This is the floor an
+     edge must clear AFTER its penalties, and it is deliberately a separate,
+     higher bar than the engine's own FLOOR, which gates the raw number. Set from
+     judgement, not measurement; when the CLV record is large enough to estimate
+     it, replace this with the measured value. */
+  var MIN_EFFECTIVE_EDGE = 0.02;
   function edgeCredibility(x, ctx){
     ctx=ctx||{};
     var edge = (x&&x.curEdge!=null)?x.curEdge:null;
@@ -12959,10 +12968,53 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
     var band = credibility>=0.72?'High':credibility>=0.55?'Moderate':credibility>=0.38?'Low':'Very low';
     /* The call is deliberately conservative: credibility can only ever HOLD BACK
        a deterministic BET, never manufacture one. */
-    var call = (edge==null||edge<=0)?'PASS' : credibility>=0.62?'ACT' : credibility>=0.42?'WATCH' : 'INVESTIGATE';
+    /* The call now answers "is this worth capital", not just "is this credible".
+       An edge that cannot clear the minimum after its own penalties is NO BET —
+       a first-class outcome, not a failure to find something. */
+    var _effRaw = (edge==null||edge<=0) ? null
+      : edge - edge*(1-dataConf)*0.55 - edge*(1-marketConf)*0.45
+             - edge*(1-modelConf)*0.60 - edge*(1-survival)*0.35;
+    var call;
+    if(edge==null||edge<=0) call='PASS';
+    else if(_effRaw!=null && _effRaw < MIN_EFFECTIVE_EDGE)
+      call = (credibility>=0.42) ? 'NO BET' : 'INVESTIGATE';
+    else call = credibility>=0.62?'ACT' : credibility>=0.42?'WATCH' : 'INVESTIGATE';
 
     return {
       raw_edge:(edge==null?null:Math.round(edge*10000)/10000),
+      /* EFFECTIVE EDGE — raw edge minus what it is likely to cost to be wrong.
+         A confidence score sitting beside an untouched 3.2% still reads as 3.2%
+         to anyone deciding, so the discount is now taken in the same units as
+         the edge itself. Each penalty is derived from a confidence this engine
+         already computes; none is invented, and every one is itemised so the
+         subtraction can be argued with.
+
+         This is a DERIVED READ, not a replacement. raw_edge, EV, fair price and
+         CLV remain exactly the deterministic engine's, untouched — effective
+         edge only decides how seriously to take them. */
+      effective_edge:(function(){
+        if(edge==null||edge<=0) return null;
+        // Estimation error scales with how little of the sport's evidence is present.
+        var uncertainty = edge*(1-dataConf)*0.55;
+        // A thin or unanchored market is more often wrong about its own price.
+        var marketRisk  = edge*(1-marketConf)*0.45;
+        // An edge outside what this market is usually wrong by is partly artifact.
+        var modelRisk   = edge*(1-modelConf)*0.60;
+        // Execution: the price decays and you do not always get the quote you saw.
+        var execution   = edge*(1-survival)*0.35;
+        var eff = edge - uncertainty - marketRisk - modelRisk - execution;
+        return {
+          raw:Math.round(edge*10000)/10000,
+          uncertainty_penalty:-Math.round(uncertainty*10000)/10000,
+          market_penalty:-Math.round(marketRisk*10000)/10000,
+          model_penalty:-Math.round(modelRisk*10000)/10000,
+          execution_penalty:-Math.round(execution*10000)/10000,
+          effective:Math.round(eff*10000)/10000,
+          minimum_required:MIN_EFFECTIVE_EDGE,
+          clears_minimum:(eff>=MIN_EFFECTIVE_EDGE),
+          basis:'raw edge less penalties for evidence gaps, market thinness, an edge outside what this market is usually wrong by, and price decay. A research discount on the deterministic edge — it never rewrites it.'
+        };
+      })(),
       credibility:Math.round(credibility*1000)/10,
       band:band, call:call,
       market_confidence:Math.round(marketConf*1000)/10,
@@ -13633,6 +13685,25 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
     un.injuries=UNAVAILABLE_TOOLS.injuries;
     un.news=UNAVAILABLE_TOOLS.news;
 
+    /* The ranked ordering. Computed once here, used both to decide which
+       starters keep their full record below and to give the analyst a
+       pre-sorted answer instead of sixty objects to sort in prose.
+       Descending = most attackable first. */
+    var ranked=pitchers.filter(function(p){ return p.matchup&&p.matchup.attack_score!=null; })
+      .sort(function(a,c){ return c.matchup.attack_score-a.matchup.attack_score; })
+      .map(function(p,i){
+        var q=p.quality||{}, o=p.opponent_offense||{};
+        return {rank:i+1, pitcher:p.pitcher, throws:p.throws, team:p.team, opponent:p.opponent,
+          game:p.game, side:p.side, attack_score:p.matchup.attack_score,
+          pitcher_vulnerability:p.matchup.pitcher_vulnerability,
+          opponent_offense_strength:p.matchup.opponent_offense_strength,
+          basis:p.matchup.basis,
+          xera:q.xera, era:q.era, whip:q.whip, k_pct:q.k_pct, bb_pct:q.bb_pct,
+          barrel_pct:q.barrel_pct, hardhit_pct:q.hardhit_pct,
+          opponent_runs_per_game:o.runs_per_game, opponent_obp:o.obp, opponent_iso:o.iso,
+          source:q.source||null};
+      });
+
     var board={
       generated_at:new Date().toISOString(), date_et:etDay(0),
       engine:{floor:FLOOR, stale_minutes:STALE_MIN,
@@ -13680,7 +13751,32 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
         return {game:(g.e.away_team||'')+' @ '+(g.e.home_team||''), status:g.status, priority:g.priority}; }),
       model_leads:leads.map(function(l){
         return {game:l.matchup, sport:l.sport, priority:l.priority, note:(l.reasons||[])[0]||null, question:l.question}; }),
-      mlb_starters:pitchers,
+      /* The packet had grown to roughly 172 KB, most of it sixty starters each
+         carrying a full evidence profile, a matchup block and a market block —
+         and mlb_matchups below already holds the ranked version of exactly that.
+         Send the ranked ordering in full, the top arms in full, and a compact
+         line for the rest. Nothing is hidden: every starter still appears with
+         its headline numbers, and starters_detail_note says what was condensed
+         and how to get the rest. */
+      mlb_starters:(function(){
+        var byName={}; (ranked||[]).forEach(function(r,i){ if(r.pitcher) byName[r.pitcher]=i; });
+        return pitchers.map(function(p){
+          var rank=byName[p.pitcher];
+          if(rank!=null && rank<12) return p;              // the ones a question is actually about
+          var q=p.quality||{};
+          return {pitcher:p.pitcher, team:p.team, opponent:p.opponent, side:p.side, game:p.game,
+            announced:p.announced, rankable:p.rankable,
+            attack_score:(p.matchup&&p.matchup.attack_score)||null,
+            xera:q.xera, era:q.era, whip:q.whip, k_pct:q.k_pct, bb_pct:q.bb_pct,
+            barrel_pct:q.barrel_pct, hardhit_pct:q.hardhit_pct,
+            opponent_runs_per_game:(p.opponent_offense&&p.opponent_offense.runs_per_game)||null,
+            missing_fields:p.missing_fields, condensed:true};
+        });
+      })(),
+      mlb_matchups:{
+        ranked:ranked, n:ranked.length,
+        note:'Sorted most-attackable arm first. attack_score is a transparent 0-100 ordering against fixed league reference points, weighted 0.60 arm / 0.40 opposing offense when both are on file. A research ordering only — not a price, edge, EV or verdict, and it feeds none of them. Answer "best pitchers" from the BOTTOM of this list and "worst" from the top, and say which inputs were used.'},
+      starters_detail_note:'Every starter on the card is present. The twelve most attackable carry their full record; the rest are condensed to headline numbers plus attack_score, because mlb_matchups.ranked already holds the complete ordering. Nothing was dropped — ask about a specific pitcher to pull his full row.',
       join_note:'A starter is joined to his opponent’s offense through pitcher_features.game_id + the opposite side of offense_features. Market numbers attached to a starter belong to the highest-scoring EdgeDesk signal on that game, which may be on either team.',
       sources:rd,
       unavailable:un
@@ -13955,13 +14051,26 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
           src:d.model?('reasoned by '+d.model+(d.cached?' · cached':'')):null}; }
       throw new Error('empty');
     }catch(err){
+      /* The reason was being thrown away. This block hardcoded "deploy
+         edgedesk_ai" regardless of what actually failed — a deployed, healthy
+         function that returned 500, a 401 from a stale token, an oversized
+         payload and a genuinely absent function all printed the same sentence.
+         That single discarded string cost several rounds of diagnosis. Say what
+         happened. */
+      var why=(err&&err.message)?String(err.message):'unknown error';
+      try{ console.error('EdgeDesk AI call failed:', err, {mode:mode, packet_kb:(function(){ try{ return Math.round(JSON.stringify(packet||{}).length/1024); }catch(_){ return null; } })()}); }catch(_){}
+      var hint = /^fn 4/.test(why) ? ' — the function answered '+why.slice(3)+', so it is reachable and rejecting the request (auth or payload)'
+        : /^fn 5/.test(why) ? ' — the function answered '+why.slice(3)+', so it ran and threw; check its logs'
+        : /^fn 413/.test(why) ? ' — payload too large'
+        : (why==='empty') ? ' — the function replied 200 with no answer field'
+        : ' — the request never completed (network, CORS or timeout)';
       // deterministic fallback — still a real, grounded answer
       if(extra && extra.board) return {html:boardFallbackHTML(extra.board, question),
-        src:'deterministic board (AI narration offline — deploy edgedesk_ai to enable)'};
+        src:'deterministic board · AI call failed: '+why+hint};
       if(x){ var lm=(mode==='chat')?routeLocal(question):(mode==='why'?'analyze':mode);
-        return {html:narrative(x, lm), src:'deterministic engine (AI narration offline — deploy edgedesk_ai to enable)'}; }
+        return {html:narrative(x, lm), src:'deterministic engine · AI call failed: '+why+hint}; }
       return {html:'<p>The reasoning service isn\u2019t reachable right now. Open a specific signal and hit <b>Analyze</b> — the decision engine runs locally and doesn\u2019t need it.</p>',
-        src:'AI narration offline'};
+        src:'AI call failed: '+why+hint};
     }
   }
   // very small markdown -> html (bold, bullets, paragraphs). The function returns plain prose.
