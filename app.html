@@ -13633,6 +13633,25 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
     un.injuries=UNAVAILABLE_TOOLS.injuries;
     un.news=UNAVAILABLE_TOOLS.news;
 
+    /* The ranked ordering. Computed once here, used both to decide which
+       starters keep their full record below and to give the analyst a
+       pre-sorted answer instead of sixty objects to sort in prose.
+       Descending = most attackable first. */
+    var ranked=pitchers.filter(function(p){ return p.matchup&&p.matchup.attack_score!=null; })
+      .sort(function(a,c){ return c.matchup.attack_score-a.matchup.attack_score; })
+      .map(function(p,i){
+        var q=p.quality||{}, o=p.opponent_offense||{};
+        return {rank:i+1, pitcher:p.pitcher, throws:p.throws, team:p.team, opponent:p.opponent,
+          game:p.game, side:p.side, attack_score:p.matchup.attack_score,
+          pitcher_vulnerability:p.matchup.pitcher_vulnerability,
+          opponent_offense_strength:p.matchup.opponent_offense_strength,
+          basis:p.matchup.basis,
+          xera:q.xera, era:q.era, whip:q.whip, k_pct:q.k_pct, bb_pct:q.bb_pct,
+          barrel_pct:q.barrel_pct, hardhit_pct:q.hardhit_pct,
+          opponent_runs_per_game:o.runs_per_game, opponent_obp:o.obp, opponent_iso:o.iso,
+          source:q.source||null};
+      });
+
     var board={
       generated_at:new Date().toISOString(), date_et:etDay(0),
       engine:{floor:FLOOR, stale_minutes:STALE_MIN,
@@ -13680,7 +13699,32 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
         return {game:(g.e.away_team||'')+' @ '+(g.e.home_team||''), status:g.status, priority:g.priority}; }),
       model_leads:leads.map(function(l){
         return {game:l.matchup, sport:l.sport, priority:l.priority, note:(l.reasons||[])[0]||null, question:l.question}; }),
-      mlb_starters:pitchers,
+      /* The packet had grown to roughly 172 KB, most of it sixty starters each
+         carrying a full evidence profile, a matchup block and a market block —
+         and mlb_matchups below already holds the ranked version of exactly that.
+         Send the ranked ordering in full, the top arms in full, and a compact
+         line for the rest. Nothing is hidden: every starter still appears with
+         its headline numbers, and starters_detail_note says what was condensed
+         and how to get the rest. */
+      mlb_starters:(function(){
+        var byName={}; (ranked||[]).forEach(function(r,i){ if(r.pitcher) byName[r.pitcher]=i; });
+        return pitchers.map(function(p){
+          var rank=byName[p.pitcher];
+          if(rank!=null && rank<12) return p;              // the ones a question is actually about
+          var q=p.quality||{};
+          return {pitcher:p.pitcher, team:p.team, opponent:p.opponent, side:p.side, game:p.game,
+            announced:p.announced, rankable:p.rankable,
+            attack_score:(p.matchup&&p.matchup.attack_score)||null,
+            xera:q.xera, era:q.era, whip:q.whip, k_pct:q.k_pct, bb_pct:q.bb_pct,
+            barrel_pct:q.barrel_pct, hardhit_pct:q.hardhit_pct,
+            opponent_runs_per_game:(p.opponent_offense&&p.opponent_offense.runs_per_game)||null,
+            missing_fields:p.missing_fields, condensed:true};
+        });
+      })(),
+      mlb_matchups:{
+        ranked:ranked, n:ranked.length,
+        note:'Sorted most-attackable arm first. attack_score is a transparent 0-100 ordering against fixed league reference points, weighted 0.60 arm / 0.40 opposing offense when both are on file. A research ordering only — not a price, edge, EV or verdict, and it feeds none of them. Answer "best pitchers" from the BOTTOM of this list and "worst" from the top, and say which inputs were used.'},
+      starters_detail_note:'Every starter on the card is present. The twelve most attackable carry their full record; the rest are condensed to headline numbers plus attack_score, because mlb_matchups.ranked already holds the complete ordering. Nothing was dropped — ask about a specific pitcher to pull his full row.',
       join_note:'A starter is joined to his opponent’s offense through pitcher_features.game_id + the opposite side of offense_features. Market numbers attached to a starter belong to the highest-scoring EdgeDesk signal on that game, which may be on either team.',
       sources:rd,
       unavailable:un
@@ -13955,13 +13999,26 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
           src:d.model?('reasoned by '+d.model+(d.cached?' · cached':'')):null}; }
       throw new Error('empty');
     }catch(err){
+      /* The reason was being thrown away. This block hardcoded "deploy
+         edgedesk_ai" regardless of what actually failed — a deployed, healthy
+         function that returned 500, a 401 from a stale token, an oversized
+         payload and a genuinely absent function all printed the same sentence.
+         That single discarded string cost several rounds of diagnosis. Say what
+         happened. */
+      var why=(err&&err.message)?String(err.message):'unknown error';
+      try{ console.error('EdgeDesk AI call failed:', err, {mode:mode, packet_kb:(function(){ try{ return Math.round(JSON.stringify(packet||{}).length/1024); }catch(_){ return null; } })()}); }catch(_){}
+      var hint = /^fn 4/.test(why) ? ' — the function answered '+why.slice(3)+', so it is reachable and rejecting the request (auth or payload)'
+        : /^fn 5/.test(why) ? ' — the function answered '+why.slice(3)+', so it ran and threw; check its logs'
+        : /^fn 413/.test(why) ? ' — payload too large'
+        : (why==='empty') ? ' — the function replied 200 with no answer field'
+        : ' — the request never completed (network, CORS or timeout)';
       // deterministic fallback — still a real, grounded answer
       if(extra && extra.board) return {html:boardFallbackHTML(extra.board, question),
-        src:'deterministic board (AI narration offline — deploy edgedesk_ai to enable)'};
+        src:'deterministic board · AI call failed: '+why+hint};
       if(x){ var lm=(mode==='chat')?routeLocal(question):(mode==='why'?'analyze':mode);
-        return {html:narrative(x, lm), src:'deterministic engine (AI narration offline — deploy edgedesk_ai to enable)'}; }
+        return {html:narrative(x, lm), src:'deterministic engine · AI call failed: '+why+hint}; }
       return {html:'<p>The reasoning service isn\u2019t reachable right now. Open a specific signal and hit <b>Analyze</b> — the decision engine runs locally and doesn\u2019t need it.</p>',
-        src:'AI narration offline'};
+        src:'AI call failed: '+why+hint};
     }
   }
   // very small markdown -> html (bold, bullets, paragraphs). The function returns plain prose.
