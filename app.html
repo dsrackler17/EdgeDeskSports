@@ -12268,6 +12268,162 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
     return out;
   }
 
+  /* ============================ EDGE DESK BRAIN ============================
+     Permanent reasoning architecture. This is the part of EdgeDesk that does not
+     have to be re-derived from a document on every question: principles that hold
+     across every sport, plus a per-sport contract naming the evidence that sport
+     actually requires before a matchup read means anything.
+
+     It is a TEXTBOOK AND A CHECKLIST, not a calculator. Nothing in here produces
+     or adjusts a probability, a fair price, an edge, an EV or a CLV — those stay
+     the deterministic engine's, exclusively. What this adds is the ability to say
+     how much a given edge deserves to be believed, which is a different question
+     from how large it is, and the one the board was never asking. */
+  var EDGE_BRAIN = {
+    principles: [
+      'Price is the bet. A good team is not a good bet, and a good prediction is not a profitable wager.',
+      'Edge is relative to price. The same opinion is a bet at one number and a pass at another.',
+      'The market price carries information. Disagreeing with it is a claim that needs evidence, not a starting point.',
+      'A large discrepancy is a reason to investigate, not a reason to celebrate. At the extremes, an artifact is more likely than an edge.',
+      'Uncertainty reduces confidence. Missing evidence is not neutral — it is a cost.',
+      'Correlated evidence is one piece of evidence. Counting it twice manufactures confidence.',
+      'Small samples are dangerous in proportion to how convenient their conclusion is.',
+      'Stale information creates fake edges: the price moved and the number did not.',
+      'CLV is the process signal. Wins and losses over a short run are almost entirely variance.',
+      'Market efficiency varies by sport, by market and by liquidity. A thin market is wrong more often AND right less usefully.',
+      'A winning wager can be bad process and a losing wager can be excellent process. Judge the process.',
+      'Saying "I do not know" is a valid, and often the correct, output.'
+    ],
+    /* What each sport actually needs before a matchup statement is meaningful.
+       `required` is used to measure data completeness — evidence EdgeDesk cannot
+       see is counted against the credibility of the edge, never silently ignored. */
+    sports: {
+      baseball_mlb: { label:'MLB', variance:'high',
+        required:['starter','opponent_offense','bullpen','park','weather'],
+        note:'Starter and opposing offense are the axis; bullpen and park move totals more than sides.' },
+      americanfootball_nfl: { label:'NFL', variance:'medium',
+        required:['qb','offense_efficiency','defense_efficiency','injuries','rest'],
+        note:'QB status dominates every other input. Preseason carries far less signal than the sample implies.' },
+      basketball_nba: { label:'NBA', variance:'medium',
+        required:['lineup','injuries','offense_rating','defense_rating','pace','rest'],
+        note:'Availability outweighs season averages. A season rating for a lineup that is not playing is not evidence.' },
+      basketball_wnba: { label:'WNBA', variance:'high',
+        required:['lineup','injuries','offense_rating','defense_rating','rest'],
+        note:'Smaller rosters mean one absence moves more. Do not import NBA thresholds without validating them.' },
+      americanfootball_ncaaf: { label:'CFB', variance:'high',
+        required:['offense_efficiency','defense_efficiency','qb','line_play','roster_turnover'],
+        note:'Roster turnover and transfers break year-over-year priors more than any pro league.' },
+      basketball_ncaab: { label:'CBB', variance:'high',
+        required:['adj_offense','adj_defense','pace','lineup','home_court'],
+        note:'Adjusted efficiency is the core. Early-season samples are opponent-distorted.' },
+      mma_mixed_martial_arts: { label:'UFC', variance:'very high',
+        required:['striking','grappling','style_matchup','layoff','weight'],
+        note:'Style beats career averages. Outcome variance is the highest of any market here.' },
+      tennis_atp: { label:'ATP', variance:'high',
+        required:['surface_form','serve_hold','return_break','recent_load','opponent_quality'],
+        note:'Surface splits and serve/return holds are the real inputs. Ranking alone is not a model.' },
+      tennis_wta: { label:'WTA', variance:'high',
+        required:['surface_form','serve_hold','return_break','recent_load','opponent_quality'],
+        note:'As ATP. Match-to-match variance is higher, so the same edge deserves less confidence.' }
+    },
+    contractFor:function(sportKey){
+      var k=String(sportKey||'');
+      if(this.sports[k]) return this.sports[k];
+      var pre=Object.keys(this.sports).filter(function(s){ return k.indexOf(s)===0 || s.indexOf(k)===0; })[0];
+      if(pre) return this.sports[pre];
+      if(/^tennis_/.test(k)) return this.sports.tennis_atp;
+      if(/^americanfootball_nfl/.test(k)) return this.sports.americanfootball_nfl;
+      return {label:(k||'unknown'), variance:'unknown', required:[], note:'No sport contract on file — treat any matchup claim as unverified.'};
+    }
+  };
+
+  /* ---- EDGE CREDIBILITY ----------------------------------------------------
+     A raw edge and a credible opportunity are different objects, and the board
+     was ranking the first while calling it the second. That is how five ATP
+     moneylines at +8% to +20% outranked an NFL spread at +4.2% with a real
+     market behind it.
+
+     The skepticism here is NOT a hardcoded league preference. It is derived from
+     what is observable about THIS quote: how many books priced it, whether the
+     sharp reference is among them, whether independent markets corroborate, and
+     how fresh it is. A thin, unanchored market gets a smaller plausible-edge
+     scale, so the same +20% is treated very differently depending on how much
+     market is actually standing behind it.
+
+     Nothing here touches a deterministic number. Every field is a confidence
+     about an edge, never a restatement of one. */
+  function edgeCredibility(x, ctx){
+    ctx=ctx||{};
+    var edge = (x&&x.curEdge!=null)?x.curEdge:null;
+    var nb = (x&&x.nb)||0, corr=(x&&x.corr)||0, sharp=!!(x&&x.sharp), tr=!!(x&&x.trusted);
+    var staleM = (x&&isFinite(x.staleM))?x.staleM:0;
+    var contract = EDGE_BRAIN.contractFor(x&&x.e&&x.e.sport_key);
+
+    /* MARKET confidence — how much market is actually behind this number. */
+    var mBooks = clamp(nb/8,0,1);
+    var mCorr  = clamp(corr/3,0,1);
+    var mFresh = clamp((STALE_MIN-Math.min(staleM,STALE_MIN))/STALE_MIN,0,1);
+    var marketConf = clamp(0.42*mBooks + 0.30*(sharp?1:0) + 0.18*mCorr + 0.10*mFresh, 0, 1);
+
+    /* DATA confidence — how much of what this SPORT requires EdgeDesk can see.
+       Unknown is a cost, not a neutral. A sport with no contract cannot score
+       high here, which is the honest answer rather than a flattering one. */
+    var need = contract.required||[], have = ctx.evidencePresent||{};
+    var got = need.filter(function(k){ return !!have[k]; }).length;
+    var dataConf = need.length ? (got/need.length) : (ctx.evidenceUnknown===false?0.5:0.25);
+    if(tr) dataConf = clamp(dataConf+0.05,0,1);
+
+    /* MODEL confidence — does this edge sit inside the range a market this
+       liquid can plausibly be wrong by? The scale moves with market quality:
+       a deep, sharp-anchored market is rarely off by much, so a large number
+       there is more suspect, while a thin market genuinely disagrees more
+       often — and is also wrong more often, which the market term already
+       charges for. Above the scale, belief decays smoothly rather than
+       falling off a cliff at an arbitrary threshold. */
+    var scale = 0.035 + 0.055*(1-marketConf);          // ~3.5% deep book, ~9% thin
+    var modelConf = 1;
+    if(edge!=null && edge>scale){
+      var over=(edge-scale)/scale;
+      modelConf = Math.exp(-0.55*over*over);
+    }
+    if(edge!=null && edge<=0) modelConf=0;
+
+    /* Price survival is owned by the engine; it is READ here, never recomputed. */
+    var survival = (x&&x.remaining!=null)?clamp(x.remaining,0,1):0.5;
+
+    var credibility = clamp(0.34*marketConf + 0.26*dataConf + 0.28*modelConf + 0.12*survival, 0, 1);
+
+    var flags=[];
+    if(edge!=null && edge>scale*2) flags.push('Edge is far outside what a market this liquid is usually wrong by — treat as a price or data artifact until shown otherwise.');
+    if(!sharp) flags.push('No sharp reference quoted this selection; the fair value is a soft consensus.');
+    if(nb<4) flags.push('Only '+nb+' book'+(nb===1?'':'s')+' priced it — a thin market moves the consensus on its own.');
+    if(staleM>STALE_MIN) flags.push('Quote is '+Math.round(staleM)+' minutes old; the price may already be gone.');
+    if(need.length && got<need.length){
+      flags.push('Missing '+(need.length-got)+' of '+need.length+' inputs this sport needs: '+need.filter(function(k){return !have[k];}).join(', ')+'.');
+    }
+    if(!need.length) flags.push('No sport contract on file, so evidence completeness cannot be assessed.');
+
+    var band = credibility>=0.72?'High':credibility>=0.55?'Moderate':credibility>=0.38?'Low':'Very low';
+    /* The call is deliberately conservative: credibility can only ever HOLD BACK
+       a deterministic BET, never manufacture one. */
+    var call = (edge==null||edge<=0)?'PASS' : credibility>=0.62?'ACT' : credibility>=0.42?'WATCH' : 'INVESTIGATE';
+
+    return {
+      raw_edge:(edge==null?null:Math.round(edge*10000)/10000),
+      credibility:Math.round(credibility*1000)/10,
+      band:band, call:call,
+      market_confidence:Math.round(marketConf*1000)/10,
+      data_confidence:Math.round(dataConf*1000)/10,
+      model_confidence:Math.round(modelConf*1000)/10,
+      price_survival:Math.round(survival*1000)/10,
+      plausible_edge_scale:Math.round(scale*10000)/10000,
+      sport:contract.label, sport_note:contract.note,
+      required_evidence:need, missing_evidence:need.filter(function(k){return !have[k];}),
+      flags:flags,
+      basis:'Confidence in an edge, derived from market depth, evidence completeness and how far the number sits outside what this market is usually wrong by. It never restates or adjusts a deterministic value.'
+    };
+  }
+
   /* ======================= DETERMINISTIC DECISION ENGINE ======================= */
   function evidence(e){
     var fairP = n(e.sharp_fair); var fairSrc='Pinnacle de-vig fair';
@@ -12782,6 +12938,11 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
         deterministic:{verdict:x.verdict, display_verdict:x.dverdict, is_wait:x.isWait, wait_reason:x.waitWhy,
           confidence:x.confidence, score:x.score, band:x.band, priority:g.priority, status:g.status,
           why:x.why, reasons_for:x.reasonsFor, reasons_against:x.reasonsAgainst, falsifiers:x.falsifiers},
+        /* A raw edge and a credible opportunity are different objects. This is the
+           second one. It never restates or adjusts a deterministic value — cite the
+           edge from `edge`, and cite how much to believe it from here. */
+        credibility:g.credibility||null,
+        base_priority:(g.base_priority!=null?g.base_priority:null),
         model_agrees:!!g.agree, biggest_question:g.question};
     });
 
@@ -12818,6 +12979,24 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
       generated_at:new Date().toISOString(), date_et:etDay(0),
       engine:{floor:FLOOR, stale_minutes:STALE_MIN,
         note:'Every number here was produced by the EdgeDesk deterministic engine or read from an owned table. Cite them; never recompute probability, fair price, edge, EV, CLV, confidence, verdict, score or price sensitivity.'},
+      /* The reasoning architecture, carried on every board so it does not have to
+         be re-derived from a document per question. Principles are permanent;
+         the sport contract names the evidence that sport requires before a
+         matchup claim means anything, and what is missing is stated per row. */
+      brain:{
+        principles:EDGE_BRAIN.principles,
+        sport_contracts:(function(){
+          var seen={}, out={};
+          games.forEach(function(g){
+            var k=g&&g.e&&g.e.sport_key; if(!k||seen[k])return; seen[k]=1;
+            var c=EDGE_BRAIN.contractFor(k);
+            out[c.label]={required_evidence:c.required, variance:c.variance, note:c.note};
+          });
+          return out;
+        })(),
+        ranking_note:'slate is ordered by RESEARCH PRIORITY, which is the deterministic score weighted by edge credibility — not by raw edge. A large number on a thin, unanchored market ranks below a smaller one with a real market and complete evidence behind it. base_priority is the score before that weighting, so the two are comparable.',
+        answering_note:'Answer the question asked, first and plainly, before any methodology. Quote raw_edge and credibility as separate facts — a large edge with low credibility is a reason to investigate, not to bet. If the evidence a sport requires is missing, say which pieces and say that the conclusion is provisional.'
+      },
       counts:{games_with_signals:games.length, shown:rows.length, model_leads:leads.length,
         mlb_games:card.length, mlb_starters:pitchers.length,
         starters_with_quality:pitchers.filter(function(p){return p.quality&&p.quality.xera!=null;}).length},
@@ -13285,11 +13464,28 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
     });
     return Object.keys(byGame).map(function(id){
       var x=byGame[id].x, agree=!!midx[id];
-      var priority=Math.max(0,Math.min(100, x.score + (agree?5:0)));
+      var base=Math.max(0,Math.min(100, x.score + (agree?5:0)));
+      /* RESEARCH PRIORITY is credibility-weighted, not raw-edge-ranked. The
+         deterministic score still sets the ceiling — this can only ever pull a
+         candidate DOWN, never invent one — but a large number standing on a thin,
+         unanchored market no longer outranks a smaller one with a real market and
+         complete evidence behind it. That inversion is what put five ATP
+         moneylines above an NFL spread. x.score, verdict, edge and EV are
+         untouched; only the ordering changes. */
+      var cred=null; try{ cred=edgeCredibility(x,{evidencePresent:(x.e&&x.e.__evidence)||{}}); }catch(_){ cred=null; }
+      var priority=base;
+      if(cred){
+        // 0.55 floor: credibility re-ranks, it does not erase a strong setup.
+        priority=Math.round(base*(0.55+0.45*(cred.credibility/100)));
+        if(agree) priority=Math.min(100,priority+3);
+      }
       var status = (x.verdict==='BET')?'EDGE':(x.verdict==='LEAN')?'RESEARCH':'WATCH';
+      if(cred && cred.call==='INVESTIGATE' && status==='EDGE') status='RESEARCH';
       var reasons=(x.reasonsFor||[]).slice(0,4);
       if(agree) reasons=reasons.concat(['MODEL engine also projects an edge in this game']).slice(0,5);
-      return {id:id, x:x, e:x.e, priority:priority, status:status, agree:agree, reasons:reasons, question:biggestQuestion(x)};
+      if(cred && cred.flags.length) reasons=reasons.concat(cred.flags.slice(0,2)).slice(0,6);
+      return {id:id, x:x, e:x.e, priority:priority, base_priority:base, credibility:cred,
+              status:status, agree:agree, reasons:reasons, question:biggestQuestion(x)};
     }).sort(function(a,b){return b.priority-a.priority;});
   }
 
@@ -14802,6 +14998,26 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
       chk('N ranks on partial data (xERA absent)', mlbMatchup({k_pct:0.15,bb_pct:0.105},null)!=null, true);
       chk('N unrankable arm returns null, not a score', mlbMatchup({xera:null,k_pct:null},null), null);
       chk('N arm-only basis is labelled', mlbMatchup(badArm,null).basis.indexOf('arm only')>=0, true);
+      /* EDGE CREDIBILITY — raw discrepancy vs credible opportunity. The board
+         ranked five ATP moneylines above an NFL spread because it was ordering
+         the first while calling it the second. */
+      var _nflSig={curEdge:0.042,nb:5,corr:2,sharp:true,trusted:true,staleM:5,remaining:1.0,e:{sport_key:'americanfootball_nfl'}};
+      var _atpSig={curEdge:0.202,nb:6,corr:0,sharp:true,trusted:false,staleM:20,remaining:1.0,e:{sport_key:'tennis_atp'}};
+      var _cN=edgeCredibility(_nflSig,{evidencePresent:{qb:1,offense_efficiency:1,defense_efficiency:1,injuries:1,rest:1}});
+      var _cA=edgeCredibility(_atpSig,{evidencePresent:{}});
+      chk('P 4.2% NFL outranks 20.2% ATP on credibility', _cN.credibility>_cA.credibility, true);
+      chk('P outsized edge on a thin market is INVESTIGATE', _cA.call, 'INVESTIGATE');
+      chk('P credible edge clears to ACT', _cN.call, 'ACT');
+      chk('P raw edge is echoed, never rewritten', _cA.raw_edge, 0.202);
+      chk('P a negative edge can never be ACT', edgeCredibility({curEdge:-0.02,nb:9,sharp:true,e:{sport_key:'baseball_mlb'}},{}).call, 'PASS');
+      /* Not a league preference: the SAME tennis edge on a deep market with full
+         evidence outranks the SAME NFL edge on a thin market with none. */
+      var _atpDeep=edgeCredibility({curEdge:0.202,nb:14,corr:3,sharp:true,trusted:true,staleM:2,remaining:1.0,e:{sport_key:'tennis_atp'}},
+        {evidencePresent:{surface_form:1,serve_hold:1,return_break:1,recent_load:1,opponent_quality:1}});
+      var _nflThin=edgeCredibility({curEdge:0.202,nb:2,corr:0,sharp:false,trusted:false,staleM:120,remaining:0.3,e:{sport_key:'americanfootball_nfl'}},{evidencePresent:{}});
+      chk('Q credibility follows the market, not the league', _atpDeep.credibility>_nflThin.credibility, true);
+      chk('Q missing sport evidence is named', edgeCredibility({curEdge:0.04,nb:8,sharp:true,e:{sport_key:'baseball_mlb'}},{evidencePresent:{}}).missing_evidence.length, 5);
+      chk('Q brain resolves the preseason key to NFL', EDGE_BRAIN.contractFor('americanfootball_nfl_preseason').label, 'NFL');
       if(verbose!==false){ try{ console.log('%cEDBetQuality self-test','font-weight:bold'); R.forEach(function(r){ console.log((r.ok?'PASS':'FAIL')+' | '+r.t+(r.ok?'':'  got '+JSON.stringify(r.got)+' want '+JSON.stringify(r.want))); }); console.log((F===0?'ALL GREEN ':'FAILURES ')+P+' passed, '+F+' failed'); }catch(_){} }
       return {passed:P, failed:F, results:R};
     }
