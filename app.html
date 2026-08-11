@@ -12388,6 +12388,180 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
     }
   };
 
+  /* ---- EVIDENCE FAMILIES ---------------------------------------------------
+     Five strikeout metrics are not five discoveries. K%, SwStr% and CSW% are
+     three windows onto one underlying thing, and counting them as three
+     independent confirmations is how a credibility score talks itself into
+     confidence it has not earned.
+
+     A family is "the underlying thing being measured". Metrics inside one get
+     DIMINISHING returns — the first establishes the signal, the rest confirm it
+     — while a metric from a NEW family adds fresh information at full weight.
+     That is the whole mechanism.
+
+     Deliberately NOT a correlation matrix. The repository has nowhere near the
+     graded history needed to estimate metric-to-metric correlations, and a
+     fabricated 0.83 would be exactly the false precision this engine exists to
+     avoid. Grouping is a claim we can actually defend: these measure related
+     things. */
+  var EVIDENCE_FAMILIES = {
+    baseball_mlb:{
+      STRIKEOUT_SKILL:['k_pct','swstr_pct','csw_pct','chase_pct','whiff_pct','k_bb_ratio'],
+      COMMAND:['bb_pct','zone_pct','first_pitch_strike_pct','strike_pct'],
+      CONTACT_QUALITY:['hardhit_pct','barrel_pct','exit_velo','xwoba_against','gb_pct','fb_pct'],
+      RUN_PREVENTION:['era','fip','xfip','siera','xera','whip','hr_per_9'],
+      OFFENSE_QUALITY:['wrc_plus','woba','xwoba','ops','iso','obp','slg','runs_per_game'],
+      BULLPEN:['bullpen_era','bullpen_rest','closer_status','bullpen_taxed','reliever_workload'],
+      ENVIRONMENT:['park_factor','hr_factor','run_factor','temp_f','wind_mph','wind_dir','roof','is_dome'],
+      WORKLOAD:['days_rest','last_start','pitches_last','times_through_order']
+    },
+    americanfootball_nfl:{
+      PASSING_EFFICIENCY:['pass_epa_play','cpoe','ypa','comp_pct','anya','deep_rate'],
+      RUSHING_EFFICIENCY:['rush_epa_play','ypc','rush_success_rate','stuff_rate'],
+      OFFENSIVE_SUCCESS:['off_epa_play','off_success_rate','yards_per_play','third_down','red_zone'],
+      DEFENSIVE_SUCCESS:['def_epa_play','def_success_rate','def_pass_epa_play','def_rush_epa_play'],
+      PRESSURE:['pressure_rate','sack_rate','sack_rate_allowed','qb_hits','tfl'],
+      EXPLOSIVENESS:['explosive_play_rate','explosive_pass_rate','explosive_allowed'],
+      CONTEXT:['injuries','qb_status','rest','short_week','travel','weather']
+    },
+    basketball_nba:{
+      OFFENSIVE_EFFICIENCY:['off_rating','points_per_100','efg_pct','ts_pct'],
+      DEFENSIVE_EFFICIENCY:['def_rating','opp_efg_pct','rim_defense'],
+      SHOOTING:['three_rate','three_pct','rim_rate','ft_rate'],
+      REBOUNDING:['orb_pct','drb_pct'],
+      TURNOVERS:['to_pct','opp_to_pct'],
+      PACE:['pace','possessions'],
+      AVAILABILITY:['lineup','injuries','minutes','rest','back_to_back']
+    },
+    tennis_atp:{
+      SERVE:['hold_pct','serve_points_won','first_serve_pct','first_serve_won','second_serve_won','ace_pct','df_pct'],
+      RETURN:['break_pct','return_points_won','break_point_conv'],
+      SURFACE:['surface_win_pct','surface_elo','surface_form'],
+      FORM:['recent_form','last10','momentum'],
+      WORKLOAD:['recent_load','matches_7d','minutes_played','rest_days'],
+      OPPONENT:['opponent_quality','opponent_elo','opponent_rank']
+    },
+    mma_mixed_martial_arts:{
+      STRIKING:['sig_strikes','strike_accuracy','strike_volume','distance_strikes'],
+      STRIKE_DEFENSE:['strike_defense','head_movement','absorbed_per_min'],
+      GRAPPLING:['takedowns','td_accuracy','sub_attempts','top_position'],
+      GRAPPLE_DEFENSE:['td_defense','scramble','getup_rate'],
+      CARDIO:['late_round_output','layoff','five_round_exp'],
+      PHYSICAL:['reach','height','age','weight_class']
+    }
+  };
+  EVIDENCE_FAMILIES.basketball_wnba = EVIDENCE_FAMILIES.basketball_nba;
+  EVIDENCE_FAMILIES.tennis_wta      = EVIDENCE_FAMILIES.tennis_atp;
+
+  function familiesFor(sportKey){
+    var k=String(sportKey||'');
+    if(EVIDENCE_FAMILIES[k]) return EVIDENCE_FAMILIES[k];
+    if(/^tennis_/.test(k)) return EVIDENCE_FAMILIES.tennis_atp;
+    if(/^americanfootball_nfl/.test(k)) return EVIDENCE_FAMILIES.americanfootball_nfl;
+    if(/^basketball_/.test(k)) return EVIDENCE_FAMILIES.basketball_nba;
+    return null;
+  }
+  function familyOf(fams, metric){
+    var m=String(metric||'').toLowerCase().replace(/[^a-z0-9]/g,'_');
+    for(var f in fams){ if(fams[f].indexOf(m)>=0) return f; }
+    return null;
+  }
+
+  /* How much a family is worth once it holds n distinct metrics. The first
+     carries most of the weight; each further metric confirms rather than
+     discovers. 1 -> 0.55, 2 -> 0.80, 3 -> 0.91, 4 -> 0.96, 5 -> 0.98. */
+  function familyCredit(n){ return n<=0?0:(1-Math.pow(0.45,n)); }
+
+  /**
+   * Turn a flat list of metric-level evidence into an independence profile.
+   *
+   * Accepts items shaped like the repo's existing evObj — {metric, value, source,
+   * dir} — and does three things the old flat count could not: collapses the same
+   * metric arriving from several sources, applies saturation inside a family, and
+   * notices when metrics that should agree do not.
+   *
+   * `dir` is +1 / -1 / 0 relative to the thesis, and is optional. Without it the
+   * profile still measures independence; it just cannot detect contradiction, and
+   * says so rather than reporting perfect consistency.
+   */
+  function evidenceProfile(items, sportKey){
+    var fams=familiesFor(sportKey);
+    var out={metrics:0, unique_metrics:0, families:{}, family_count:0, families_defined:fams?Object.keys(fams).length:0,
+             independent_sources:0, coverage:0, consistency:null, conflicts:[], unmapped:[], duplicate_metrics:[]};
+    if(!fams || !items || !items.length) return out;
+
+    var seenMetric={}, srcSet={};
+    (items||[]).forEach(function(it){
+      if(!it||!it.metric) return;
+      out.metrics++;
+      var m=String(it.metric).toLowerCase().replace(/[^a-z0-9]/g,'_');
+      var f=familyOf(fams,m);
+      if(!f){ if(out.unmapped.indexOf(m)<0) out.unmapped.push(m); return; }
+      if(it.source) srcSet[String(it.source)]=1;
+      /* SAME METRIC, DIFFERENT SOURCE is one observation, not two. Two feeds
+         agreeing on K% is a data-integrity check, not a second finding. */
+      if(seenMetric[m]){ if(out.duplicate_metrics.indexOf(m)<0) out.duplicate_metrics.push(m); return; }
+      seenMetric[m]=1;
+      var F=out.families[f]||(out.families[f]={metrics:[],sources:{},dirs:[]});
+      F.metrics.push(m);
+      if(it.source) F.sources[String(it.source)]=1;
+      if(it.dir===1||it.dir===-1) F.dirs.push(it.dir);
+    });
+
+    out.unique_metrics=Object.keys(seenMetric).length;
+    out.independent_sources=Object.keys(srcSet).length;
+    out.family_count=Object.keys(out.families).length;
+
+    var credit=0, dirFamilies=0, conflicted=0;
+    Object.keys(out.families).forEach(function(f){
+      var F=out.families[f];
+      F.n=F.metrics.length;
+      F.source_count=Object.keys(F.sources).length;
+      F.credit=Math.round(familyCredit(F.n)*1000)/1000;
+      credit+=familyCredit(F.n);
+      if(F.dirs.length>=2){
+        dirFamilies++;
+        var pos=F.dirs.filter(function(d){return d>0;}).length, neg=F.dirs.length-pos;
+        F.agrees=(pos===0||neg===0);
+        if(!F.agrees){
+          conflicted++;
+          out.conflicts.push({scope:'within_family', family:f, metrics:F.metrics.slice(),
+            note:'Metrics inside '+f+' disagree, so they are not three findings pointing the same way — they are one unresolved question.'});
+        }
+      }
+    });
+    /* COVERAGE is families present over families defined — not metric count.
+       That is the whole point: twelve metrics in two families cover less than
+       six metrics in six.
+
+       Normalised against TWO metrics per family rather than a saturated family,
+       because saturation is asymptotic: dividing by families_defined alone caps
+       one-metric-per-family at 0.55 and no realistic slate ever reaches full
+       marks, which would quietly suppress every candidate in the sport rather
+       than discriminate between them. Two corroborating metrics in a family is
+       the honest definition of "we have this covered". */
+    var perFamilyTarget = familyCredit(2);
+    out.coverage = out.families_defined
+      ? clamp(credit/(out.families_defined*perFamilyTarget),0,1) : 0;
+    out.consistency = dirFamilies ? (1-(conflicted/dirFamilies)) : null;
+
+    /* Disagreement BETWEEN families is not a fault to average away — it is the
+       shape of the matchup, and the adversarial layer will need it. */
+    var famDir={};
+    Object.keys(out.families).forEach(function(f){
+      var F=out.families[f]; if(!F.dirs.length) return;
+      var s=F.dirs.reduce(function(a,b){return a+b;},0);
+      if(s>0) famDir[f]=1; else if(s<0) famDir[f]=-1;
+    });
+    var fpos=Object.keys(famDir).filter(function(f){return famDir[f]>0;});
+    var fneg=Object.keys(famDir).filter(function(f){return famDir[f]<0;});
+    if(fpos.length && fneg.length){
+      out.conflicts.push({scope:'across_families', supports:fpos, opposes:fneg,
+        note:'Independent families point in opposite directions: '+fpos.join(', ')+' support the thesis while '+fneg.join(', ')+' cut against it. That is countervailing evidence, not a score to average.'});
+    }
+    return out;
+  }
+
   /* ---- EDGE CREDIBILITY ----------------------------------------------------
      A raw edge and a credible opportunity are different objects, and the board
      was ranking the first while calling it the second. That is how five ATP
@@ -12416,13 +12590,30 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
     var mFresh = clamp((STALE_MIN-Math.min(staleM,STALE_MIN))/STALE_MIN,0,1);
     var marketConf = clamp(0.42*mBooks + 0.30*(sharp?1:0) + 0.18*mCorr + 0.10*mFresh, 0, 1);
 
-    /* DATA confidence — how much of what this SPORT requires EdgeDesk can see.
+    /* DATA confidence — how much INDEPENDENT information EdgeDesk can see, which
+       is not the same as how many numbers it holds. When a metric-level list is
+       supplied, coverage comes from evidence families with saturation inside
+       each, so five strikeout metrics cannot impersonate five findings. Without
+       one, fall back to counting the contract's slots, which are already
+       family-shaped.
+
        Unknown is a cost, not a neutral. A sport with no contract cannot score
        high here, which is the honest answer rather than a flattering one. */
     var need = contract.required||[], have = ctx.evidencePresent||{};
-    var got = need.filter(function(k){ return !!have[k]; }).length;
-    var dataConf = need.length ? (got/need.length) : (ctx.evidenceUnknown===false?0.5:0.25);
+    var prof = (ctx.evidenceItems && ctx.evidenceItems.length)
+      ? evidenceProfile(ctx.evidenceItems, x&&x.e&&x.e.sport_key) : null;
+    var dataConf;
+    if(prof && prof.families_defined){
+      dataConf = prof.coverage;
+      /* Metrics inside a family that disagree are one unresolved question, not
+         several confirmations. Charge for that rather than averaging it away. */
+      if(prof.consistency!=null) dataConf = dataConf*(0.6+0.4*prof.consistency);
+    }else{
+      var got = need.filter(function(k){ return !!have[k]; }).length;
+      dataConf = need.length ? (got/need.length) : (ctx.evidenceUnknown===false?0.5:0.25);
+    }
     if(tr) dataConf = clamp(dataConf+0.05,0,1);
+    dataConf = clamp(dataConf,0,1);
 
     /* MODEL confidence — does this edge sit inside the range a market this
        liquid can plausibly be wrong by? The scale moves with market quality:
@@ -12453,6 +12644,13 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
       flags.push('Missing '+(need.length-got)+' of '+need.length+' inputs this sport needs: '+need.filter(function(k){return !have[k];}).join(', ')+'.');
     }
     if(!need.length) flags.push('No sport contract on file, so evidence completeness cannot be assessed.');
+    if(prof){
+      if(prof.metrics>prof.family_count && prof.family_count>0 && prof.metrics>=prof.family_count*2)
+        flags.push(prof.metrics+' metrics but only '+prof.family_count+' independent evidence famil'+(prof.family_count===1?'y':'ies')+' — related measurements, not separate confirmations.');
+      (prof.conflicts||[]).forEach(function(c){ flags.push(c.note); });
+      if(prof.duplicate_metrics.length)
+        flags.push('Same metric arrived from more than one source ('+prof.duplicate_metrics.join(', ')+') — counted once, as one observation.');
+    }
 
     var band = credibility>=0.72?'High':credibility>=0.55?'Moderate':credibility>=0.38?'Low':'Very low';
     /* The call is deliberately conservative: credibility can only ever HOLD BACK
@@ -12470,6 +12668,21 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
       plausible_edge_scale:Math.round(scale*10000)/10000,
       sport:contract.label, sport_note:contract.note,
       required_evidence:need, missing_evidence:need.filter(function(k){return !have[k];}),
+      /* METRIC COUNT and INDEPENDENT FAMILY COUNT are different numbers and the
+         difference between them is the finding. Exposed so the AI can say
+         "eleven metrics, six families" rather than "eleven pieces of evidence". */
+      evidence:(prof&&prof.families_defined)?{
+        metrics:prof.metrics, unique_metrics:prof.unique_metrics,
+        independent_families:prof.family_count, families_defined:prof.families_defined,
+        independent_sources:prof.independent_sources,
+        completeness:Math.round(prof.coverage*1000)/10,
+        consistency:(prof.consistency==null?null:Math.round(prof.consistency*1000)/10),
+        families:Object.keys(prof.families).map(function(f){
+          return {family:f, metrics:prof.families[f].metrics, sources:prof.families[f].source_count,
+                  credit:prof.families[f].credit, agrees:(prof.families[f].agrees===undefined?null:prof.families[f].agrees)};
+        }),
+        conflicts:prof.conflicts, duplicate_metrics:prof.duplicate_metrics, unmapped_metrics:prof.unmapped
+      }:null,
       flags:flags,
       basis:'Confidence in an edge, derived from market depth, evidence completeness and how far the number sits outside what this market is usually wrong by. It never restates or adjusts a deterministic value.'
     };
