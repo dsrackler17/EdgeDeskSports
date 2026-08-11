@@ -823,6 +823,25 @@ body.ed-large-text .set-lbl,body.ed-large-text .lead-sel{font-size:14px}
 .rsport-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:7px 6px}
 .rsport .m .v{font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:700}
 .rsport .m .k{font-size:8.5px;color:var(--faint);text-transform:uppercase;letter-spacing:.03em;margin-top:1px}
+/* thin-sample sports: one line each, never a grid of em dashes */
+.rthin{grid-column:1/-1;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:10px 12px}
+.rthin-h{font-size:9px;color:var(--faint);text-transform:uppercase;letter-spacing:.05em;margin-bottom:7px}
+.rthin-r{display:flex;align-items:baseline;gap:10px;padding:3px 0;font-size:12px;border-top:1px solid var(--border)}
+.rthin-r:first-of-type{border-top:0}
+.rthin-r .s{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rthin-r .w,.rthin-r .c,.rthin-r .n{font-family:'JetBrains Mono',monospace;font-size:11px}
+.rthin-r .n{color:var(--faint);min-width:26px;text-align:right}
+/* pipeline health */
+.rhl{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:11px 13px;margin:8px 0 14px}
+.rhl-h{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin-bottom:9px}
+.rhl-s{font-weight:400;text-transform:none;letter-spacing:0;color:var(--faint);margin-left:6px}
+.rhl-r{display:flex;align-items:baseline;gap:10px;padding:4px 0;border-top:1px solid var(--border);font-size:12px}
+.rhl-r:first-of-type{border-top:0}
+.rhl-n{width:66px;flex:none;font-size:11px;color:var(--dim)}
+.rhl-v{width:76px;flex:none;font-family:'JetBrains Mono',monospace;font-size:11.5px;font-weight:700}
+.rhl-d{flex:1;min-width:0;color:var(--dim);font-size:11.5px;line-height:1.45}
+.rhl-x{display:block;color:var(--neg)}
+.rhl-f{margin-top:9px;padding-top:8px;border-top:1px solid var(--border);font-size:11.5px;color:var(--dim);line-height:1.5}
 .rcharts{display:grid;grid-template-columns:1fr;gap:10px}
 @media(min-width:820px){.rcharts{grid-template-columns:1fr 1fr}}
 .rchart{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px 12px 9px;transition:border-color .15s ease}
@@ -1390,6 +1409,7 @@ button:focus-visible,select:focus-visible,input:focus-visible,a:focus-visible{ou
     <!-- OVERVIEW -->
     <div class="recpane" id="rec-p-overview">
       <div id="recPoolNote"></div>
+      <div id="recHealth"></div>
       <div class="rkpis" id="recHero"><div class="rskel"></div><div class="rskel"></div><div class="rskel"></div><div class="rskel"></div></div>
       <div id="recSimNote"></div>
       <h3 style="margin:16px 0 8px">Performance by sport</h3>
@@ -3327,6 +3347,12 @@ var WEIGHT_ROWS=[],CALIB=[];
 var NO_CLV_REASONS=[
   ['line_pulled_no_close','no line quoted at close'],
   ['missed_close_window','close window missed'],
+  /* Not the same thing as a missed window, and the record should not blur them.
+     "Missed" means the price existed and the job failed to ask. This means the
+     event finished before any tick history was being recorded at all, so there
+     was never a close to capture. It is checkable: the row's commence_time is
+     earlier than the first row in signal_ticks. */
+  ['predates_tick_capture','before price history existed'],
   ['implausible_close_price','placeholder close price'],
   ['invalid_close_fair','de-vig produced no probability'],
   ['incoherent_close_market','incoherent close market'],
@@ -3590,6 +3616,7 @@ async function loadRecord(force){
   REC.loading=true;
   $('recHero').innerHTML='<div class="rskel"></div><div class="rskel"></div><div class="rskel"></div><div class="rskel"></div>';
   $('recSportCards').innerHTML='';$('recPoolNote').innerHTML='';$('recSimNote').innerHTML='';
+  if($('recHealth'))$('recHealth').innerHTML='';
   $('recCount').textContent='Loading graded signals\u2026';
   if(!navigator.onLine){
     $('recHero').innerHTML='';
@@ -3824,6 +3851,9 @@ function recRenderOverview(){
   $('recSimNote').innerHTML='<div class="rec-note"><b>What the money-shaped numbers are.</b> No stakes are recorded anywhere in this pipeline. Profit, ROI, streak sizes, largest win and loss are a flat 1 unit simulation at the frozen entry price of each flagged edge. They show what the flags would have done at even sizing; they are not a bankroll and not betting advice. CLV remains the only proof of edge.'+(small?' At n='+st.n+' every figure above is noise, not signal.':'')+'</div>';
   recRenderSportCards();
   recStatusCards();
+  /* Fire-and-forget: the health panel reads its own timestamps and must never
+     hold up the record or take it down with it if those reads fail. */
+  recPipelineHealth();
 }
 
 async function recStatusCards(){
@@ -3854,25 +3884,137 @@ async function recStatusCards(){
     else box.insertAdjacentHTML('beforeend',html);
   }catch(e){}
 }
+/* ---------------------------------------------------------------------------
+   PERFORMANCE BY SPORT
+
+   This used to give every sport the same six-metric card no matter how much
+   was behind it, so a sport with one graded row rendered a full grid of em
+   dashes. A dash is not a statistic. Six of them arranged in a card claim the
+   shape of an answer while carrying none, and a page of those reads as broken
+   rather than as honest about a thin sample.
+
+   Now there are two tiers, and the split is REC_MIN:
+     - enough graded rows  -> the full card, and only the metrics that exist
+     - a real but thin one -> ONE line: record, CLV, n. No empty tiles.
+   A metric that is null is omitted rather than dashed. If a sport has nothing
+   worth six numbers, it does not get a six-number card.
+--------------------------------------------------------------------------- */
 function recRenderSportCards(){
   var by={};
   REC.flt.forEach(function(r){var s=r.sport_title||'Unknown';(by[s]=by[s]||[]).push(r);});
   var keys=Object.keys(by);
   if(!keys.length){$('recSportCards').innerHTML='';return;}
   keys.sort(function(a,b){return by[b].length-by[a].length;});
-  $('recSportCards').innerHTML=keys.map(function(s){
+
+  var full=[],thin=[];
+  keys.forEach(function(s){
     var st=recStats(by[s]);
-    function m(v,kk,cls){return '<div class="m"><div class="v '+(cls||'')+'">'+v+'</div><div class="k">'+kk+'</div></div>';}
-    return '<div class="rsport"><div class="rsport-h"><b>'+recEsc(s)+'</b>'+(st.n<REC_MIN?'<span class="rtag small">n&lt;'+REC_MIN+'</span>':'')+'<span class="n">'+st.n+' graded</span></div><div class="rsport-grid">'+
-      m(st.w+'-'+st.l+(st.p?'-'+st.p:''),'record')+
-      m(recU(st.profit),'profit \u00b7 sim',recCls(st.profit))+
-      m(st.roi!=null?recPc(st.roi,1):'\u2014','roi \u00b7 sim',recCls(st.roi))+
-      m(st.avgEdge!=null?recPc(st.avgEdge,1):'\u2014','avg edge',recCls(st.avgEdge))+
-      m(st.avgClv!=null?recPc(st.avgClv,1):'\u2014','avg clv',recCls(st.avgClv))+
-      m(st.winPct!=null?recPc0(st.winPct,0):'\u2014','win rate')+
-      '</div></div>';
-  }).join('')+
-  '<div class="rec-note" style="grid-column:1/-1;margin:0">Only sports with graded rows in the live pool appear. A sport the pipeline has not graded is absent, not zeroed.</div>';
+    (st.n>=REC_MIN?full:thin).push({s:s,st:st});
+  });
+
+  function m(v,kk,cls){return '<div class="m"><div class="v '+(cls||'')+'">'+v+'</div><div class="k">'+kk+'</div></div>';}
+  var cards=full.map(function(o){
+    var st=o.st,g='';
+    /* Only real numbers get a tile. An absent metric is absent. */
+    g+=m(st.w+'-'+st.l+(st.p?'-'+st.p:''),'record');
+    if(st.profit!=null)g+=m(recU(st.profit),'profit \u00b7 sim',recCls(st.profit));
+    if(st.roi!=null)g+=m(recPc(st.roi,1),'roi \u00b7 sim',recCls(st.roi));
+    if(st.avgEdge!=null)g+=m(recPc(st.avgEdge,1),'avg edge',recCls(st.avgEdge));
+    if(st.avgClv!=null)g+=m(recPc(st.avgClv,1),'avg clv',recCls(st.avgClv));
+    if(st.winPct!=null)g+=m(recPc0(st.winPct,0),'win rate');
+    return '<div class="rsport"><div class="rsport-h"><b>'+recEsc(o.s)+'</b>'+
+      '<span class="n">'+st.n+' graded</span></div><div class="rsport-grid">'+g+'</div></div>';
+  }).join('');
+
+  /* One line each, and CLV is the one that carries \u2014 it is the only number
+     that means anything at this sample size. */
+  var thinRows=thin.length?('<div class="rthin"><div class="rthin-h">Too few graded to rank \u00b7 directional only</div>'+
+    thin.map(function(o){
+      var st=o.st;
+      return '<div class="rthin-r"><span class="s">'+recEsc(o.s)+'</span>'+
+        '<span class="w">'+st.w+'-'+st.l+(st.p?'-'+st.p:'')+'</span>'+
+        '<span class="c '+recCls(st.avgClv)+'">'+(st.avgClv!=null?('clv '+recPc(st.avgClv,1)):'no clv yet')+'</span>'+
+        '<span class="n">'+st.n+'</span></div>';
+    }).join('')+'</div>'):'';
+
+  $('recSportCards').innerHTML=cards+thinRows+
+    '<div class="rec-note" style="grid-column:1/-1;margin:0">Only sports with graded rows in the live pool appear \u2014 a sport the pipeline has not graded is absent, not zeroed. Below '+REC_MIN+' graded rows a sport gets one line instead of a card: there is not enough behind it to rank, and six numbers would imply there is.</div>';
+}
+
+/* ---------------------------------------------------------------------------
+   PIPELINE HEALTH
+
+   "Is the record working, or is it just empty?" was not answerable from this
+   page. A stalled cron and a genuinely quiet slate produce the identical view:
+   numbers that do not move. This reads the timestamps the jobs themselves
+   write and says which of the two it is, in the page where the question gets
+   asked.
+
+   Every field is a MAX(timestamp) or a COUNT straight from the database. There
+   is no health score and no inference \u2014 if a job has not written in a while
+   that is stated as an observation, with the age, and the reader decides.
+--------------------------------------------------------------------------- */
+function recAgeTxt(iso){
+  if(!iso)return {txt:'never',min:null};
+  var ms=Date.now()-Date.parse(iso);
+  if(!isFinite(ms))return {txt:'unreadable',min:null};
+  var min=Math.round(ms/60000);
+  if(min<1)return {txt:'just now',min:min};
+  if(min<60)return {txt:min+'m ago',min:min};
+  var h=Math.floor(min/60);
+  if(h<48)return {txt:h+'h ago',min:min};
+  return {txt:Math.floor(h/24)+'d ago',min:min};
+}
+async function recPipelineHealth(){
+  var host=$('recHealth');if(!host)return;
+  function row(name,age,ok,what,detail){
+    var cls=ok===null?'rmut':(ok?'rpos':'rneg');
+    return '<div class="rhl-r"><span class="rhl-n">'+name+'</span>'+
+      '<span class="rhl-v '+cls+'">'+age+'</span>'+
+      '<span class="rhl-d">'+what+(detail?' <span class="rhl-x">'+detail+'</span>':'')+'</span></div>';
+  }
+  try{
+    var one=function(q){return sbGet(q).then(function(b){return (b&&b[0])||null;}).catch(function(){return null;});};
+    var res=await Promise.all([
+      one('signal_ticks?select=created_at&order=created_at.desc&limit=1'),
+      one('signals?select=closed_at&closed_at=not.is.null&order=closed_at.desc&limit=1'),
+      one('signals?select=flagged_at&flagged_at=not.is.null&order=flagged_at.desc&limit=1'),
+      one('signals?select=graded_at&graded_at=not.is.null&order=graded_at.desc&limit=1')
+    ]);
+    var dayAgo=new Date(Date.now()-864e5).toISOString();
+    var closed24=await sbCount('closed_at=gte.'+dayAgo).catch(function(){return null;});
+    var graded24=await sbCount('graded_at=gte.'+dayAgo).catch(function(){return null;});
+
+    var tick=recAgeTxt(res[0]&&res[0].created_at);
+    var close=recAgeTxt(res[1]&&res[1].closed_at);
+    var flag=recAgeTxt(res[2]&&res[2].flagged_at);
+    var grade=recAgeTxt(res[3]&&res[3].graded_at);
+
+    /* Thresholds are the job's own cadence plus slack, not opinions about
+       what "healthy" feels like. capture ticks continuously; close runs on a
+       window measured in hours; grading waits for games to finish. */
+    var h='';
+    h+=row('capture',tick.txt,tick.min==null?null:tick.min<180,'last price written to signal_ticks',
+      tick.min!=null&&tick.min>=180?'nothing new in 3h \u2014 capture is not running, or every sport is dark':'');
+    h+=row('close',close.txt,close.min==null?null:close.min<360,'last closing snapshot stored',
+      close.min==null?'no signal has ever been closed':(close.min>=360?'no close in 6h \u2014 check the cron and its x-cron-secret header':''));
+    h+=row('flagging',flag.txt,flag.min==null?null:flag.min<360,'last edge frozen at flag price',
+      flag.min==null?'capture has never frozen a flag price \u2014 the record cannot fill without it':'');
+    h+=row('grading',grade.txt,grade.min==null?null:grade.min<1440,'last result settled',
+      grade.min==null?'nothing graded':'');
+    h+='<div class="rhl-f">'+
+      (closed24!=null?('<b>'+closed24+'</b> closed'):'closes')+' and '+
+      (graded24!=null?('<b>'+graded24+'</b> graded'):'grades')+' in the last 24h. '+
+      'Both at zero while capture is current means the slate is running but nothing is finishing it \u2014 that is a stalled job, not a quiet day.'+
+      '</div>';
+    host.innerHTML='<div class="rhl"><div class="rhl-h">Pipeline health <span class="rhl-s">what the jobs last wrote</span></div>'+h+'</div>';
+  }catch(e){
+    /* A failure here must not read as "the pipeline is down" \u2014 it is this
+       panel that failed, and saying so is the whole point. */
+    host.innerHTML='<div class="rhl"><div class="rhl-h">Pipeline health</div>'+
+      '<div class="rhl-f">Could not read the job timestamps \u2014 '+recEsc(String(e&&e.message||e))+
+      '. This says nothing about whether the jobs are running.</div></div>';
+  }
 }
 
 /* ---- SVG chart helpers (dependency-free, matches terminal style) ---- */
