@@ -12601,6 +12601,98 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
     var limit=(kind==='weather')?((typeof WX_STALE_H!=='undefined'?WX_STALE_H:6)*60):STALE_MIN;
     return mins<=limit/3?'fresh':mins<=limit?'recent':'stale';
   }
+  /* ---- MLB CORE EVIDENCE, hoisted ahead of ranking -------------------------
+     The ordering bug this fixes: scanGames() computed credibility and priority
+     while only the game card and the weather row were in hand, so a candidate
+     was RANKED on park and wind and only met its starter afterwards, inside
+     buildBoard(). The same candidate moved from data 20.4 to 85.1 once the
+     pitching arrived — meaning the ranking that decided whether it deserved
+     research was made without the evidence that decides the bet.
+
+     boardFeatures() queries purely by date and has no dependency on scanGames(),
+     and scanGames() reads only the signal pool, so the two are independent and
+     the order was arbitrary. Core evidence is now fetched ONCE, before ranking,
+     and the same cache is reused by the later starter stage — no second query,
+     no second transformation. */
+  var MLB_CORE={ts:0, ix:null, features:null, card:[]};
+  var MLB_CORE_TTL=60000;
+  function mlbCoreEmpty(){ return {ts:Date.now(), ix:{pfByName:{},offBySide:{},lastStart:{}}, features:{read:{}}, card:[]}; }
+  async function ensureMlbCore(force){
+    if(!force && MLB_CORE.ix && (Date.now()-MLB_CORE.ts)<MLB_CORE_TTL) return MLB_CORE;
+    try{
+      if(!Object.keys(window.MLBG||{}).length && typeof loadMlbSched==='function'){ try{ await loadMlbSched(); }catch(_){} }
+      var card=[]; try{ card=mlbGamesToday(); }catch(_){ card=[]; }
+      var f={read:{}}, ix={pfByName:{},offBySide:{},lastStart:{}};
+      /* No MLB card means nothing to read — do not spend four queries proving it. */
+      if(card.length){ try{ f=await boardFeatures(); ix=boardIndex(f); }catch(_){ f={read:{games:'UNAVAILABLE'}}; } }
+      MLB_CORE={ts:Date.now(), ix:ix, features:f, card:card};
+    }catch(_){ MLB_CORE=mlbCoreEmpty(); }
+    return MLB_CORE;
+  }
+  /* The starter -> features join, in ONE place. boardPitcher() does the same
+     lookup for its own richer row; this is the shared primitive so the query and
+     the name-matching are not reimplemented per caller. */
+  function mlbStarterRow(name, ix){
+    if(!name||!ix||!ix.pfByName) return null;
+    return ix.pfByName[nmKey(name)] || ix.pfByName[nmAlt(name)] || null;
+  }
+  /* CORE metrics for a GAME. Emits the union of metric TYPES EdgeDesk holds for
+     this matchup across both starters — the question credibility is asking is
+     "does this game have pitching evidence", not "whose". Type-level dedup then
+     collapses the two arms, which is correct: holding K% for both starters is
+     one kind of evidence, not two. Which side each came from is reported. */
+  function mlbCoreItems(card, ix){
+    var items=[]; if(!card||!ix) return items;
+    /* ONE canonical item per metric TYPE for the game. Both starters are read,
+       but a metric is emitted once with the sides that carried it recorded.
+       Emitting it twice and leaning on the profile's dedup would have been
+       silently equivalent for the score and actively WRONG in the reporting:
+       "the same metric arrived from more than one source" is a statement about
+       feeds disagreeing, and two starters both having a K% is not that. */
+    var acc={}, have={away:false,home:false};
+    function take(metric,value,meta,side){
+      if(value==null||value==='') return;
+      var v=+value; if(!isFinite(v)) return;
+      var slot=acc[metric];
+      if(!slot){ acc[metric]={value:v, meta:meta, sides:[side]}; return; }
+      if(slot.sides.indexOf(side)<0) slot.sides.push(side);
+    }
+    [['away',card.away_pitcher_name],['home',card.home_pitcher_name]].forEach(function(s){
+      var side=s[0], pf=mlbStarterRow(s[1],ix); if(!pf) return;
+      have[side]=true;
+      var m={source:'pitcher_features',source_type:'DERIVED',status:'VERIFIED',confidence:'MEDIUM',relevance:'pitching'};
+      take('k_pct',pf.k_pct,m,side);           take('bb_pct',pf.bb_pct,m,side);
+      take('xera',pf.xera,m,side);             take('era',pf.era,m,side);
+      take('whip',pf.whip,m,side);             take('hr_per_9',pf.hr9,m,side);
+      take('barrel_pct',pf.barrel_pct,m,side); take('hardhit_pct',pf.hardhit_pct,m,side);
+      /* Opposing offense, joined the way boardPitcher joins it. */
+      if(pf.game_id!=null){
+        var os=flipSide(pf.side);
+        var off=os?ix.offBySide[pf.game_id+'|'+os]:null;
+        if(off){
+          var om={source:'offense_features',source_type:'DERIVED',status:'VERIFIED',confidence:'MEDIUM',relevance:'offense'};
+          take('obp',off.obp,om,side); take('iso',off.iso,om,side);
+          take('runs_per_game',off.runs_per_game,om,side);
+        }
+      }
+      if(pf.pitcher_id!=null && ix.lastStart){
+        var use=ix.lastStart[String(pf.pitcher_id)];
+        if(use&&use.game_date){
+          var dd=Math.round((Date.parse(etDay(0)+'T00:00:00Z')-Date.parse(String(use.game_date).slice(0,10)+'T00:00:00Z'))/86400000);
+          if(isFinite(dd)&&dd>=0) take('days_rest',dd,
+            {source:'mlb_pitcher_usage',source_type:'DERIVED',status:'PARTIAL',confidence:'MEDIUM',relevance:'workload'},side);
+        }
+      }
+    });
+    Object.keys(acc).forEach(function(k){
+      var a=acc[k];
+      pushMetric(items,k,a.value,a.meta);
+      items[items.length-1].sides=a.sides.slice();   // which starters carried it
+    });
+    items.__sides=have;
+    return items;
+  }
+
   function liveEvidenceItems(x){
     var items=[]; if(!x) return items;
     var e=x.e||{}, sk=String(e.sport_key||'');
@@ -12628,9 +12720,13 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
         pushMetric(items,'temp_f',card.temp_f,cw);
         pushMetric(items,'wind_mph',card.wind_mph,cw);
       }
-      /* pitcher_features / offense_features are NOT read at this point in the
-         pipeline. Emitting nothing is the correct behaviour; buildBoard enriches
-         a starter separately once boardFeatures() has run. */
+      /* CORE pitching / offense / workload, from the cache hoisted ahead of
+         ranking. Absent only when ensureMlbCore() genuinely found nothing —
+         which stays a real "missing", never a fabricated value. */
+      if(card && MLB_CORE.ix){
+        var core=mlbCoreItems(card, MLB_CORE.ix);
+        for(var i=0;i<core.length;i++) items.push(core[i]);
+      }
     }
     return items;
   }
@@ -13292,6 +13388,14 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
   async function buildBoard(force){
     if(!force && BOARD_CACHE.data && (Date.now()-BOARD_CACHE.ts)<BOARD_TTL) return BOARD_CACHE.data;
 
+    /* CORE EVIDENCE BEFORE RANKING. This await is the architectural fix: it
+       populates the starter / offense / workload cache that liveEvidenceItems()
+       reads, so scanGames() ranks candidates WITH that evidence rather than
+       discovering it afterwards. Same four queries as before, just earlier and
+       fetched once — the starter stage below reuses this cache instead of
+       calling boardFeatures() a second time. */
+    try{ await ensureMlbCore(force); }catch(_){}
+
     var games=[]; try{ games=scanGames(); }catch(_){ games=[]; }
     var covered={}; games.forEach(function(g){ covered[g.id]=1; });
     var leads=[]; try{ leads=leadGames(covered); }catch(_){ leads=[]; }
@@ -13319,11 +13423,12 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
     });
 
     // MLB card: load the schedule on demand so a board question never depends on which tab was opened
-    if(!Object.keys(window.MLBG||{}).length && typeof loadMlbSched==='function'){ try{ await loadMlbSched(); }catch(_){} }
-    var card=mlbGamesToday();
-
-    var f={read:{}}, ix={pfByName:{},offBySide:{},lastStart:{}};
-    if(card.length){ try{ f=await boardFeatures(); ix=boardIndex(f); }catch(_){ f={read:{games:'UNAVAILABLE'}}; } }
+    /* REUSE the core fetched before ranking. This block previously ran
+       loadMlbSched + boardFeatures + boardIndex here for the first time; doing it
+       again now would be four duplicate queries and a second transformation of
+       identical rows. Fetch once, attach, reuse. */
+    var core=MLB_CORE.ix?MLB_CORE:mlbCoreEmpty();
+    var card=core.card||[], f=core.features||{read:{}}, ix=core.ix;
 
     /* A team pair is not a game identity. Keyed on the pair alone, both halves of
        a doubleheader collapsed into one bucket and the later signal overwrote the
