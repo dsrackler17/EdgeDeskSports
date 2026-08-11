@@ -3856,28 +3856,67 @@ function recRenderOverview(){
   recPipelineHealth();
 }
 
+/* ---------------------------------------------------------------------------
+   LEAGUE, NOT TOURNAMENT.
+
+   The Odds API names tennis by EVENT \u2014 "ATP Washington Open", "WTA Cincinnati
+   Open", "ATP Halle Open" \u2014 and every one of those was becoming its own row on
+   the record. A tour that plays a different tournament each week therefore
+   fragmented into a dozen entries of three graded rows apiece: no sample large
+   enough to say anything, and a page that reads as noise.
+
+   Rolling them into ATP and WTA is not cosmetic. The question the record
+   answers is "does the engine find edge on this tour", and that question is
+   only askable once a tour's rows are in one bucket. sport_key is used rather
+   than the title because the key is stable (`tennis_atp_*`) while the title is
+   whatever the provider felt like calling this week's event.
+--------------------------------------------------------------------------- */
+function recLeague(sportKey,sportTitle){
+  var k=String(sportKey||'').toLowerCase();
+  if(k.indexOf('tennis_atp')===0)return 'ATP';
+  if(k.indexOf('tennis_wta')===0)return 'WTA';
+  if(k.indexOf('americanfootball_nfl')===0)return 'NFL';
+  /* No key (older rows): fall back to the title, but still collapse the tennis
+     naming pattern so a missing key does not resurrect the fragmentation. */
+  var t=String(sportTitle||'').trim();
+  if(/^ATP\b/i.test(t))return 'ATP';
+  if(/^WTA\b/i.test(t))return 'WTA';
+  return t||'Unknown';
+}
+function recRowLeague(r){return recLeague(r&&r.sport_key,r&&r.sport_title);}
+
 async function recStatusCards(){
   try{
-    var rows=await sbGetAll('signals?select=sport_title,clv,graded_at,clv_excluded_reason&flagged_at=not.is.null');
+    var rows=await sbGetAll('signals?select=sport_key,sport_title,clv,graded_at,clv_excluded_reason&flagged_at=not.is.null');
     if(!rows||!rows.length)return;
     var by={};
     rows.forEach(function(r){
-      var s=r.sport_title||'Unknown';var o=by[s]||(by[s]={flagged:0,scored:0});
+      var s=recRowLeague(r);var o=by[s]||(by[s]={flagged:0,scored:0});
       o.flagged++;
       if(r.clv!=null&&!r.clv_excluded_reason)o.scored++;
     });
-    // sports already shown as real (graded) cards should NOT get a status card.
-    var shown={};(REC.flt||[]).forEach(function(r){if(r.sport_title)shown[r.sport_title]=1;});
+    // leagues already shown as real (graded) cards should NOT get a status row.
+    var shown={};(REC.flt||[]).forEach(function(r){shown[recRowLeague(r)]=1;});
     var pend=Object.keys(by).filter(function(s){return !shown[s]&&by[s].flagged>0;});
     if(!pend.length)return;
     pend.sort(function(a,b){return by[b].flagged-by[a].flagged;});
-    var html=pend.map(function(s){
-      var o=by[s];var label,sub;
-      if(o.scored>0){label=o.scored+' scored \u00b7 awaiting results';sub='Flagged edges with a Pinnacle close, waiting on the match to settle. Fills the record automatically once graded.';}
-      else{label=o.flagged+' flagged \u00b7 awaiting close';sub='Signals flagged but no scored Pinnacle close yet. No CLV until a sharp close lands.';}
-      return '<div class="rsport" style="opacity:.72"><div class="rsport-h"><b>'+recEsc(s)+'</b><span class="rtag small">awaiting</span><span class="n">'+o.flagged+' flagged</span></div>'+
-        '<div style="font-size:12.5px;color:var(--dim);line-height:1.5;padding:4px 2px 2px"><b>'+label+'</b><br>'+sub+'</div></div>';
-    }).join('');
+
+    /* One line each, not a card each. Fifteen paragraph cards all saying "no
+       CLV until a sharp close lands" is fifteen copies of one sentence \u2014 the
+       sentence belongs once, at the bottom. */
+    var anyScored=pend.some(function(s){return by[s].scored>0;});
+    var html='<div class="rthin"><div class="rthin-h">In the pipeline \u00b7 not graded yet</div>'+
+      pend.map(function(s){
+        var o=by[s];
+        return '<div class="rthin-r"><span class="s">'+recEsc(s)+'</span>'+
+          '<span class="w rmut">'+(o.scored>0?(o.scored+' scored'):'awaiting close')+'</span>'+
+          '<span class="n">'+o.flagged+'</span></div>';
+      }).join('')+
+      '<div style="margin-top:8px;padding-top:7px;border-top:1px solid var(--border);font-size:11px;color:var(--faint);line-height:1.5">'+
+      'Counts are flagged signals. '+(anyScored?'"Scored" means a sharp close landed and the row is waiting on the result; it joins the record automatically once graded. ':'')+
+      '"Awaiting close" means no sharp close has been captured yet, so there is no CLV to report.'+
+      '</div></div>';
+
     var box=document.getElementById('recSportCards');if(!box)return;
     var note=box.querySelector('.rec-note');
     if(note)note.insertAdjacentHTML('beforebegin',html);
@@ -3901,7 +3940,9 @@ async function recStatusCards(){
 --------------------------------------------------------------------------- */
 function recRenderSportCards(){
   var by={};
-  REC.flt.forEach(function(r){var s=r.sport_title||'Unknown';(by[s]=by[s]||[]).push(r);});
+  /* Grouped by LEAGUE, not by tournament — see recLeague. Before this, one tour
+     produced a separate three-row entry for every event it played. */
+  REC.flt.forEach(function(r){var s=recRowLeague(r);(by[s]=by[s]||[]).push(r);});
   var keys=Object.keys(by);
   if(!keys.length){$('recSportCards').innerHTML='';return;}
   keys.sort(function(a,b){return by[b].length-by[a].length;});
