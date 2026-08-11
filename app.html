@@ -12268,6 +12268,630 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
     return out;
   }
 
+  /* ---- game identity: a team pair is a BUCKET, never an identity ------------
+     Two games between the same clubs on the same day share every name-based key
+     anyone would reach for. Bucket candidates by pair, then claim the one whose
+     first pitch is nearest, and consume it so it cannot be claimed twice. */
+  function mlbSignalPools(games){
+    var pools={};
+    (games||[]).forEach(function(g){
+      var e=g&&g.e; if(!e||e.sport_key!=='baseball_mlb')return;
+      /* Claims belong to ONE pass. Building the pools resets them, so a second
+         buildBoard over the same game objects does not find every signal
+         already spoken for and silently drop the whole MLB card. */
+      g.__claimed=false; g.__dhPool=false;
+      var k=mlbNorm(e.away_team)+'|'+mlbNorm(e.home_team);
+      (pools[k]=pools[k]||[]).push(g);
+    });
+    Object.keys(pools).forEach(function(k){
+      pools[k].sort(function(a,b){
+        return String((a.e&&a.e.commence_time)||'').localeCompare(String((b.e&&b.e.commence_time)||''));
+      });
+      if(pools[k].length>1) pools[k].forEach(function(g){ g.__dhPool=true; });
+    });
+    return pools;
+  }
+  /* Minutes apart two first pitches may be and still be the same game. A
+     doubleheader's halves are hours apart; provider clock skew is minutes. */
+  var MLB_CLAIM_WINDOW_MIN = 240;
+  function mlbClaimSignal(pools, awayName, homeName, startIso){
+    var pool=pools[mlbNorm(awayName)+'|'+mlbNorm(homeName)];
+    if(!pool||!pool.length) return null;
+    var free=pool.filter(function(g){ return !g.__claimed; });
+    if(!free.length) return null;
+    var t=startIso?Date.parse(startIso):NaN;
+    if(!isFinite(t)){ free[0].__claimed=true; return free[0]; }
+    var best=null, bestDiff=Infinity;
+    free.forEach(function(g){
+      var ct=(g.e&&g.e.commence_time)?Date.parse(g.e.commence_time):NaN;
+      var d=isFinite(ct)?Math.abs(ct-t):Infinity;
+      if(d<bestDiff){ bestDiff=d; best=g; }
+    });
+    if(!best) return null;
+    if(isFinite(bestDiff) && bestDiff > MLB_CLAIM_WINDOW_MIN*60000){
+      /* Nothing close enough. Only an undated signal may stand in, because it
+         carries no contradicting timestamp; otherwise report no market rather
+         than attach another game's numbers. */
+      var undated=free.filter(function(g){ return !(g.e&&g.e.commence_time); })[0];
+      if(!undated) return null;
+      undated.__claimed=true; return undated;
+    }
+    best.__claimed=true; return best;
+  }
+
+  /* ============================ EDGE DESK BRAIN ============================
+     Permanent reasoning architecture. This is the part of EdgeDesk that does not
+     have to be re-derived from a document on every question: principles that hold
+     across every sport, plus a per-sport contract naming the evidence that sport
+     actually requires before a matchup read means anything.
+
+     It is a TEXTBOOK AND A CHECKLIST, not a calculator. Nothing in here produces
+     or adjusts a probability, a fair price, an edge, an EV or a CLV — those stay
+     the deterministic engine's, exclusively. What this adds is the ability to say
+     how much a given edge deserves to be believed, which is a different question
+     from how large it is, and the one the board was never asking. */
+  var EDGE_BRAIN = {
+    principles: [
+      'Price is the bet. A good team is not a good bet, and a good prediction is not a profitable wager.',
+      'Edge is relative to price. The same opinion is a bet at one number and a pass at another.',
+      'The market price carries information. Disagreeing with it is a claim that needs evidence, not a starting point.',
+      'A large discrepancy is a reason to investigate, not a reason to celebrate. At the extremes, an artifact is more likely than an edge.',
+      'Uncertainty reduces confidence. Missing evidence is not neutral — it is a cost.',
+      'Correlated evidence is one piece of evidence. Counting it twice manufactures confidence.',
+      'Small samples are dangerous in proportion to how convenient their conclusion is.',
+      'Stale information creates fake edges: the price moved and the number did not.',
+      'CLV is the process signal. Wins and losses over a short run are almost entirely variance.',
+      'Market efficiency varies by sport, by market and by liquidity. A thin market is wrong more often AND right less usefully.',
+      'A winning wager can be bad process and a losing wager can be excellent process. Judge the process.',
+      'Saying "I do not know" is a valid, and often the correct, output.'
+    ],
+    /* What each sport actually needs before a matchup statement is meaningful.
+       `required` is used to measure data completeness — evidence EdgeDesk cannot
+       see is counted against the credibility of the edge, never silently ignored. */
+    sports: {
+      baseball_mlb: { label:'MLB', variance:'high',
+        required:['starter','opponent_offense','bullpen','park','weather'],
+        note:'Starter and opposing offense are the axis; bullpen and park move totals more than sides.' },
+      americanfootball_nfl: { label:'NFL', variance:'medium',
+        required:['qb','offense_efficiency','defense_efficiency','injuries','rest'],
+        note:'QB status dominates every other input. Preseason carries far less signal than the sample implies.' },
+      basketball_nba: { label:'NBA', variance:'medium',
+        required:['lineup','injuries','offense_rating','defense_rating','pace','rest'],
+        note:'Availability outweighs season averages. A season rating for a lineup that is not playing is not evidence.' },
+      basketball_wnba: { label:'WNBA', variance:'high',
+        required:['lineup','injuries','offense_rating','defense_rating','rest'],
+        note:'Smaller rosters mean one absence moves more. Do not import NBA thresholds without validating them.' },
+      americanfootball_ncaaf: { label:'CFB', variance:'high',
+        required:['offense_efficiency','defense_efficiency','qb','line_play','roster_turnover'],
+        note:'Roster turnover and transfers break year-over-year priors more than any pro league.' },
+      basketball_ncaab: { label:'CBB', variance:'high',
+        required:['adj_offense','adj_defense','pace','lineup','home_court'],
+        note:'Adjusted efficiency is the core. Early-season samples are opponent-distorted.' },
+      mma_mixed_martial_arts: { label:'UFC', variance:'very high',
+        required:['striking','grappling','style_matchup','layoff','weight'],
+        note:'Style beats career averages. Outcome variance is the highest of any market here.' },
+      tennis_atp: { label:'ATP', variance:'high',
+        required:['surface_form','serve_hold','return_break','recent_load','opponent_quality'],
+        note:'Surface splits and serve/return holds are the real inputs. Ranking alone is not a model.' },
+      tennis_wta: { label:'WTA', variance:'high',
+        required:['surface_form','serve_hold','return_break','recent_load','opponent_quality'],
+        note:'As ATP. Match-to-match variance is higher, so the same edge deserves less confidence.' }
+    },
+    contractFor:function(sportKey){
+      var k=String(sportKey||'');
+      if(this.sports[k]) return this.sports[k];
+      var pre=Object.keys(this.sports).filter(function(s){ return k.indexOf(s)===0 || s.indexOf(k)===0; })[0];
+      if(pre) return this.sports[pre];
+      if(/^tennis_/.test(k)) return this.sports.tennis_atp;
+      if(/^americanfootball_nfl/.test(k)) return this.sports.americanfootball_nfl;
+      return {label:(k||'unknown'), variance:'unknown', required:[], note:'No sport contract on file — treat any matchup claim as unverified.'};
+    }
+  };
+
+  /* ---- EVIDENCE FAMILIES ---------------------------------------------------
+     Five strikeout metrics are not five discoveries. K%, SwStr% and CSW% are
+     three windows onto one underlying thing, and counting them as three
+     independent confirmations is how a credibility score talks itself into
+     confidence it has not earned.
+
+     A family is "the underlying thing being measured". Metrics inside one get
+     DIMINISHING returns — the first establishes the signal, the rest confirm it
+     — while a metric from a NEW family adds fresh information at full weight.
+     That is the whole mechanism.
+
+     Deliberately NOT a correlation matrix. The repository has nowhere near the
+     graded history needed to estimate metric-to-metric correlations, and a
+     fabricated 0.83 would be exactly the false precision this engine exists to
+     avoid. Grouping is a claim we can actually defend: these measure related
+     things. */
+  var EVIDENCE_FAMILIES = {
+    baseball_mlb:{
+      STRIKEOUT_SKILL:['k_pct','swstr_pct','csw_pct','chase_pct','whiff_pct','k_bb_ratio'],
+      COMMAND:['bb_pct','zone_pct','first_pitch_strike_pct','strike_pct'],
+      CONTACT_QUALITY:['hardhit_pct','barrel_pct','exit_velo','xwoba_against','gb_pct','fb_pct'],
+      RUN_PREVENTION:['era','fip','xfip','siera','xera','whip','hr_per_9'],
+      OFFENSE_QUALITY:['wrc_plus','woba','xwoba','ops','iso','obp','slg','runs_per_game'],
+      BULLPEN:['bullpen_era','bullpen_rest','closer_status','bullpen_taxed','reliever_workload'],
+      ENVIRONMENT:['park_factor','hr_factor','run_factor','temp_f','wind_mph','wind_dir','roof','is_dome'],
+      WORKLOAD:['days_rest','last_start','pitches_last','times_through_order']
+    },
+    americanfootball_nfl:{
+      PASSING_EFFICIENCY:['pass_epa_play','cpoe','ypa','comp_pct','anya','deep_rate'],
+      RUSHING_EFFICIENCY:['rush_epa_play','ypc','rush_success_rate','stuff_rate'],
+      OFFENSIVE_SUCCESS:['off_epa_play','off_success_rate','yards_per_play','third_down','red_zone'],
+      DEFENSIVE_SUCCESS:['def_epa_play','def_success_rate','def_pass_epa_play','def_rush_epa_play'],
+      PRESSURE:['pressure_rate','sack_rate','sack_rate_allowed','qb_hits','tfl'],
+      EXPLOSIVENESS:['explosive_play_rate','explosive_pass_rate','explosive_allowed'],
+      CONTEXT:['injuries','qb_status','rest','short_week','travel','weather']
+    },
+    basketball_nba:{
+      OFFENSIVE_EFFICIENCY:['off_rating','points_per_100','efg_pct','ts_pct'],
+      DEFENSIVE_EFFICIENCY:['def_rating','opp_efg_pct','rim_defense'],
+      SHOOTING:['three_rate','three_pct','rim_rate','ft_rate'],
+      REBOUNDING:['orb_pct','drb_pct'],
+      TURNOVERS:['to_pct','opp_to_pct'],
+      PACE:['pace','possessions'],
+      AVAILABILITY:['lineup','injuries','minutes','rest','back_to_back']
+    },
+    tennis_atp:{
+      SERVE:['hold_pct','serve_points_won','first_serve_pct','first_serve_won','second_serve_won','ace_pct','df_pct'],
+      RETURN:['break_pct','return_points_won','break_point_conv'],
+      SURFACE:['surface_win_pct','surface_elo','surface_form'],
+      FORM:['recent_form','last10','momentum'],
+      WORKLOAD:['recent_load','matches_7d','minutes_played','rest_days'],
+      OPPONENT:['opponent_quality','opponent_elo','opponent_rank']
+    },
+    mma_mixed_martial_arts:{
+      STRIKING:['sig_strikes','strike_accuracy','strike_volume','distance_strikes'],
+      STRIKE_DEFENSE:['strike_defense','head_movement','absorbed_per_min'],
+      GRAPPLING:['takedowns','td_accuracy','sub_attempts','top_position'],
+      GRAPPLE_DEFENSE:['td_defense','scramble','getup_rate'],
+      CARDIO:['late_round_output','layoff','five_round_exp'],
+      PHYSICAL:['reach','height','age','weight_class']
+    }
+  };
+  EVIDENCE_FAMILIES.basketball_wnba = EVIDENCE_FAMILIES.basketball_nba;
+  EVIDENCE_FAMILIES.tennis_wta      = EVIDENCE_FAMILIES.tennis_atp;
+
+  function familiesFor(sportKey){
+    var k=String(sportKey||'');
+    if(EVIDENCE_FAMILIES[k]) return EVIDENCE_FAMILIES[k];
+    if(/^tennis_/.test(k)) return EVIDENCE_FAMILIES.tennis_atp;
+    if(/^americanfootball_nfl/.test(k)) return EVIDENCE_FAMILIES.americanfootball_nfl;
+    if(/^basketball_/.test(k)) return EVIDENCE_FAMILIES.basketball_nba;
+    return null;
+  }
+  function familyOf(fams, metric){
+    var m=String(metric||'').toLowerCase().replace(/[^a-z0-9]/g,'_');
+    for(var f in fams){ if(fams[f].indexOf(m)>=0) return f; }
+    return null;
+  }
+
+  /* How much a family is worth once it holds n distinct metrics. The first
+     carries most of the weight; each further metric confirms rather than
+     discovers. 1 -> 0.55, 2 -> 0.80, 3 -> 0.91, 4 -> 0.96, 5 -> 0.98. */
+  function familyCredit(n){ return n<=0?0:(1-Math.pow(0.45,n)); }
+
+  /**
+   * Turn a flat list of metric-level evidence into an independence profile.
+   *
+   * Accepts items shaped like the repo's existing evObj — {metric, value, source,
+   * dir} — and does three things the old flat count could not: collapses the same
+   * metric arriving from several sources, applies saturation inside a family, and
+   * notices when metrics that should agree do not.
+   *
+   * `dir` is +1 / -1 / 0 relative to the thesis, and is optional. Without it the
+   * profile still measures independence; it just cannot detect contradiction, and
+   * says so rather than reporting perfect consistency.
+   */
+  function evidenceProfile(items, sportKey){
+    var fams=familiesFor(sportKey);
+    var out={metrics:0, unique_metrics:0, families:{}, family_count:0, families_defined:fams?Object.keys(fams).length:0,
+             independent_sources:0, coverage:0, consistency:null, conflicts:[], unmapped:[], duplicate_metrics:[]};
+    if(!fams || !items || !items.length) return out;
+
+    var seenMetric={}, srcSet={};
+    (items||[]).forEach(function(it){
+      if(!it||!it.metric) return;
+      out.metrics++;
+      var m=String(it.metric).toLowerCase().replace(/[^a-z0-9]/g,'_');
+      var f=familyOf(fams,m);
+      if(!f){ if(out.unmapped.indexOf(m)<0) out.unmapped.push(m); return; }
+      if(it.source) srcSet[String(it.source)]=1;
+      /* SAME METRIC, DIFFERENT SOURCE is one observation, not two. Two feeds
+         agreeing on K% is a data-integrity check, not a second finding. */
+      if(seenMetric[m]){ if(out.duplicate_metrics.indexOf(m)<0) out.duplicate_metrics.push(m); return; }
+      seenMetric[m]=1;
+      var F=out.families[f]||(out.families[f]={metrics:[],sources:{},dirs:[]});
+      F.metrics.push(m);
+      if(it.source) F.sources[String(it.source)]=1;
+      if(it.dir===1||it.dir===-1) F.dirs.push(it.dir);
+    });
+
+    out.unique_metrics=Object.keys(seenMetric).length;
+    out.independent_sources=Object.keys(srcSet).length;
+    out.family_count=Object.keys(out.families).length;
+
+    var credit=0, dirFamilies=0, conflicted=0;
+    Object.keys(out.families).forEach(function(f){
+      var F=out.families[f];
+      F.n=F.metrics.length;
+      F.source_count=Object.keys(F.sources).length;
+      F.credit=Math.round(familyCredit(F.n)*1000)/1000;
+      credit+=familyCredit(F.n);
+      if(F.dirs.length>=2){
+        dirFamilies++;
+        var pos=F.dirs.filter(function(d){return d>0;}).length, neg=F.dirs.length-pos;
+        F.agrees=(pos===0||neg===0);
+        if(!F.agrees){
+          conflicted++;
+          out.conflicts.push({scope:'within_family', family:f, metrics:F.metrics.slice(),
+            note:'Metrics inside '+f+' disagree, so they are not three findings pointing the same way — they are one unresolved question.'});
+        }
+      }
+    });
+    /* COVERAGE is families present over families defined — not metric count.
+       That is the whole point: twelve metrics in two families cover less than
+       six metrics in six.
+
+       Normalised against TWO metrics per family rather than a saturated family,
+       because saturation is asymptotic: dividing by families_defined alone caps
+       one-metric-per-family at 0.55 and no realistic slate ever reaches full
+       marks, which would quietly suppress every candidate in the sport rather
+       than discriminate between them. Two corroborating metrics in a family is
+       the honest definition of "we have this covered". */
+    var perFamilyTarget = familyCredit(2);
+    out.coverage = out.families_defined
+      ? clamp(credit/(out.families_defined*perFamilyTarget),0,1) : 0;
+    out.consistency = dirFamilies ? (1-(conflicted/dirFamilies)) : null;
+
+    /* Disagreement BETWEEN families is not a fault to average away — it is the
+       shape of the matchup, and the adversarial layer will need it. */
+    var famDir={};
+    Object.keys(out.families).forEach(function(f){
+      var F=out.families[f]; if(!F.dirs.length) return;
+      var s=F.dirs.reduce(function(a,b){return a+b;},0);
+      if(s>0) famDir[f]=1; else if(s<0) famDir[f]=-1;
+    });
+    var fpos=Object.keys(famDir).filter(function(f){return famDir[f]>0;});
+    var fneg=Object.keys(famDir).filter(function(f){return famDir[f]<0;});
+    if(fpos.length && fneg.length){
+      out.conflicts.push({scope:'across_families', supports:fpos, opposes:fneg,
+        note:'Independent families point in opposite directions: '+fpos.join(', ')+' support the thesis while '+fneg.join(', ')+' cut against it. That is countervailing evidence, not a score to average.'});
+    }
+    return out;
+  }
+
+  /* ---- LIVE EVIDENCE NORMALIZATION -----------------------------------------
+     ONE canonical path from what a candidate actually carries to the metric-level
+     items the family engine consumes. Every caller uses this; there is no second
+     evidence builder.
+
+     What it will and will not do: it emits an item ONLY when the underlying field
+     is genuinely present and non-null. A missing metric produces nothing — never
+     an item with a guessed value — so `metrics` is a count of things EdgeDesk can
+     actually see, and a sparse profile is a true report of a sparse board rather
+     than a padded one.
+
+     Honest scope, stated because the family registry is wider than this: at scan
+     time a candidate carries the mlb_game_cards row (x.mlb) and the venue_weather
+     row (x.wx). Those yield real ENVIRONMENT metrics. pitcher_features and
+     offense_features are read later, inside buildBoard, so the pitching and
+     offense families are NOT reachable here and are correctly reported absent
+     rather than assumed. For NFL, tennis and the rest there is no metric source
+     wired into this board at all, so those families stay empty and the flags say
+     so. */
+  function pushMetric(list, metric, value, meta){
+    if(value==null || value==='') return list;          // never fabricate
+    var v=(typeof value==='string')?value:+value;
+    if(typeof v==='number' && !isFinite(v)) return list;
+    meta=meta||{};
+    list.push({metric:metric, value:v, source:meta.source||'EdgeDesk',
+      source_type:meta.source_type||'DERIVED', status:meta.status||'VERIFIED',
+      confidence:meta.confidence||'MEDIUM', timestamp:meta.timestamp||null,
+      relevance:meta.relevance||null, dir:(meta.dir===1||meta.dir===-1)?meta.dir:0});
+    return list;
+  }
+  /* Freshness reuses the constants already in the file rather than inventing a
+     second set: STALE_MIN for market data, WX_STALE_H for a forecast. */
+  function evFreshness(tsIso, kind){
+    if(!tsIso) return 'unknown';
+    var t=Date.parse(tsIso); if(!isFinite(t)) return 'unknown';
+    var mins=(Date.now()-t)/60000;
+    var limit=(kind==='weather')?((typeof WX_STALE_H!=='undefined'?WX_STALE_H:6)*60):STALE_MIN;
+    return mins<=limit/3?'fresh':mins<=limit?'recent':'stale';
+  }
+  /* ---- MLB CORE EVIDENCE, hoisted ahead of ranking -------------------------
+     The ordering bug this fixes: scanGames() computed credibility and priority
+     while only the game card and the weather row were in hand, so a candidate
+     was RANKED on park and wind and only met its starter afterwards, inside
+     buildBoard(). The same candidate moved from data 20.4 to 85.1 once the
+     pitching arrived — meaning the ranking that decided whether it deserved
+     research was made without the evidence that decides the bet.
+
+     boardFeatures() queries purely by date and has no dependency on scanGames(),
+     and scanGames() reads only the signal pool, so the two are independent and
+     the order was arbitrary. Core evidence is now fetched ONCE, before ranking,
+     and the same cache is reused by the later starter stage — no second query,
+     no second transformation. */
+  var MLB_CORE={ts:0, ix:null, features:null, card:[]};
+  var MLB_CORE_TTL=60000;
+  function mlbCoreEmpty(){ return {ts:Date.now(), ix:{pfByName:{},offBySide:{},lastStart:{}}, features:{read:{}}, card:[]}; }
+  async function ensureMlbCore(force){
+    if(!force && MLB_CORE.ix && (Date.now()-MLB_CORE.ts)<MLB_CORE_TTL) return MLB_CORE;
+    try{
+      if(!Object.keys(window.MLBG||{}).length && typeof loadMlbSched==='function'){ try{ await loadMlbSched(); }catch(_){} }
+      var card=[]; try{ card=mlbGamesToday(); }catch(_){ card=[]; }
+      var f={read:{}}, ix={pfByName:{},offBySide:{},lastStart:{}};
+      /* No MLB card means nothing to read — do not spend four queries proving it. */
+      if(card.length){ try{ f=await boardFeatures(); ix=boardIndex(f); }catch(_){ f={read:{games:'UNAVAILABLE'}}; } }
+      MLB_CORE={ts:Date.now(), ix:ix, features:f, card:card};
+    }catch(_){ MLB_CORE=mlbCoreEmpty(); }
+    return MLB_CORE;
+  }
+  /* The starter -> features join, in ONE place. boardPitcher() does the same
+     lookup for its own richer row; this is the shared primitive so the query and
+     the name-matching are not reimplemented per caller. */
+  function mlbStarterRow(name, ix){
+    if(!name||!ix||!ix.pfByName) return null;
+    return ix.pfByName[nmKey(name)] || ix.pfByName[nmAlt(name)] || null;
+  }
+  /* CORE metrics for a GAME. Emits the union of metric TYPES EdgeDesk holds for
+     this matchup across both starters — the question credibility is asking is
+     "does this game have pitching evidence", not "whose". Type-level dedup then
+     collapses the two arms, which is correct: holding K% for both starters is
+     one kind of evidence, not two. Which side each came from is reported. */
+  function mlbCoreItems(card, ix){
+    var items=[]; if(!card||!ix) return items;
+    /* ONE canonical item per metric TYPE for the game. Both starters are read,
+       but a metric is emitted once with the sides that carried it recorded.
+       Emitting it twice and leaning on the profile's dedup would have been
+       silently equivalent for the score and actively WRONG in the reporting:
+       "the same metric arrived from more than one source" is a statement about
+       feeds disagreeing, and two starters both having a K% is not that. */
+    var acc={}, have={away:false,home:false};
+    function take(metric,value,meta,side){
+      if(value==null||value==='') return;
+      var v=+value; if(!isFinite(v)) return;
+      var slot=acc[metric];
+      if(!slot){ acc[metric]={value:v, meta:meta, sides:[side]}; return; }
+      if(slot.sides.indexOf(side)<0) slot.sides.push(side);
+    }
+    [['away',card.away_pitcher_name],['home',card.home_pitcher_name]].forEach(function(s){
+      var side=s[0], pf=mlbStarterRow(s[1],ix); if(!pf) return;
+      have[side]=true;
+      var m={source:'pitcher_features',source_type:'DERIVED',status:'VERIFIED',confidence:'MEDIUM',relevance:'pitching'};
+      take('k_pct',pf.k_pct,m,side);           take('bb_pct',pf.bb_pct,m,side);
+      take('xera',pf.xera,m,side);             take('era',pf.era,m,side);
+      take('whip',pf.whip,m,side);             take('hr_per_9',pf.hr9,m,side);
+      take('barrel_pct',pf.barrel_pct,m,side); take('hardhit_pct',pf.hardhit_pct,m,side);
+      /* Opposing offense, joined the way boardPitcher joins it. */
+      if(pf.game_id!=null){
+        var os=flipSide(pf.side);
+        var off=os?ix.offBySide[pf.game_id+'|'+os]:null;
+        if(off){
+          var om={source:'offense_features',source_type:'DERIVED',status:'VERIFIED',confidence:'MEDIUM',relevance:'offense'};
+          take('obp',off.obp,om,side); take('iso',off.iso,om,side);
+          take('runs_per_game',off.runs_per_game,om,side);
+        }
+      }
+      if(pf.pitcher_id!=null && ix.lastStart){
+        var use=ix.lastStart[String(pf.pitcher_id)];
+        if(use&&use.game_date){
+          var dd=Math.round((Date.parse(etDay(0)+'T00:00:00Z')-Date.parse(String(use.game_date).slice(0,10)+'T00:00:00Z'))/86400000);
+          if(isFinite(dd)&&dd>=0) take('days_rest',dd,
+            {source:'mlb_pitcher_usage',source_type:'DERIVED',status:'PARTIAL',confidence:'MEDIUM',relevance:'workload'},side);
+        }
+      }
+    });
+    Object.keys(acc).forEach(function(k){
+      var a=acc[k];
+      pushMetric(items,k,a.value,a.meta);
+      items[items.length-1].sides=a.sides.slice();   // which starters carried it
+    });
+    items.__sides=have;
+    return items;
+  }
+
+  function liveEvidenceItems(x){
+    var items=[]; if(!x) return items;
+    var e=x.e||{}, sk=String(e.sport_key||'');
+    var card=x.mlb||null, wx=x.wx||null;
+
+    if(sk==='baseball_mlb'){
+      /* ENVIRONMENT — genuinely on the card and the weather row. */
+      if(card){
+        var cm={source:'mlb_game_cards',source_type:'DERIVED',status:'VERIFIED',confidence:'MEDIUM',relevance:'context'};
+        pushMetric(items,'park_factor',card.park_factor,cm);
+        pushMetric(items,'hr_factor',card.hr_factor,cm);
+        pushMetric(items,'run_factor',card.run_factor,cm);
+        if(card.is_dome) pushMetric(items,'is_dome',1,cm);
+      }
+      /* venue_weather is a DIFFERENT source from the card, so temp/wind arriving
+         from both is two sources for one metric — deduped by the family engine,
+         with both sources still counted. */
+      var wm={source:'venue_weather (NWS)',source_type:'FORECAST',status:'VERIFIED',confidence:'MEDIUM',
+              timestamp:(wx&&wx.fetched_at)||null,relevance:'variance'};
+      if(wx && evFreshness(wx.fetched_at,'weather')!=='stale'){
+        pushMetric(items,'temp_f',wx.temp_f,wm);
+        pushMetric(items,'wind_mph',wx.wind_mph,wm);
+      }else if(card){
+        var cw={source:'mlb_game_cards',source_type:'FORECAST',status:'VERIFIED',confidence:'LOW',relevance:'variance'};
+        pushMetric(items,'temp_f',card.temp_f,cw);
+        pushMetric(items,'wind_mph',card.wind_mph,cw);
+      }
+      /* CORE pitching / offense / workload, from the cache hoisted ahead of
+         ranking. Absent only when ensureMlbCore() genuinely found nothing —
+         which stays a real "missing", never a fabricated value. */
+      if(card && MLB_CORE.ix){
+        var core=mlbCoreItems(card, MLB_CORE.ix);
+        for(var i=0;i<core.length;i++) items.push(core[i]);
+      }
+    }
+    return items;
+  }
+  /* Enrichment for the one place richer MLB data genuinely exists: after
+     boardFeatures() has populated pitcher_features / offense_features. Shapes
+     exactly the same item type, so there is still one family engine and one
+     normalizer contract. */
+  function starterEvidenceItems(p){
+    var items=[]; if(!p) return items;
+    var q=p.quality||null, o=p.opponent_offense||null, w=p.workload||null;
+    if(q){
+      var qm={source:q.source||'pitcher_features',source_type:'DERIVED',status:'VERIFIED',
+              confidence:'MEDIUM',relevance:'pitching'};
+      pushMetric(items,'k_pct',q.k_pct,qm);      pushMetric(items,'bb_pct',q.bb_pct,qm);
+      pushMetric(items,'xera',q.xera,qm);        pushMetric(items,'era',q.era,qm);
+      pushMetric(items,'whip',q.whip,qm);        pushMetric(items,'hr_per_9',q.hr9,qm);
+      pushMetric(items,'barrel_pct',q.barrel_pct,qm);
+      pushMetric(items,'hardhit_pct',q.hardhit_pct,qm);
+    }
+    if(o){
+      var om={source:o.source||'offense_features',source_type:'DERIVED',status:'VERIFIED',
+              confidence:'MEDIUM',relevance:'offense'};
+      pushMetric(items,'obp',o.obp,om); pushMetric(items,'iso',o.iso,om);
+      pushMetric(items,'runs_per_game',o.runs_per_game,om);
+    }
+    if(w){
+      var wkm={source:w.source||'mlb_pitcher_usage',source_type:'DERIVED',status:'PARTIAL',
+               confidence:'MEDIUM',relevance:'workload'};
+      pushMetric(items,'days_rest',w.days_rest,wkm);
+    }
+    var park=p.park||null;
+    if(park){
+      var pm={source:'mlb_game_cards',source_type:'DERIVED',status:'VERIFIED',confidence:'MEDIUM',relevance:'context'};
+      pushMetric(items,'park_factor',park.park_factor,pm);
+      pushMetric(items,'hr_factor',park.hr_factor,pm);
+    }
+    return items;
+  }
+
+  /* ---- EDGE CREDIBILITY ----------------------------------------------------
+     A raw edge and a credible opportunity are different objects, and the board
+     was ranking the first while calling it the second. That is how five ATP
+     moneylines at +8% to +20% outranked an NFL spread at +4.2% with a real
+     market behind it.
+
+     The skepticism here is NOT a hardcoded league preference. It is derived from
+     what is observable about THIS quote: how many books priced it, whether the
+     sharp reference is among them, whether independent markets corroborate, and
+     how fresh it is. A thin, unanchored market gets a smaller plausible-edge
+     scale, so the same +20% is treated very differently depending on how much
+     market is actually standing behind it.
+
+     Nothing here touches a deterministic number. Every field is a confidence
+     about an edge, never a restatement of one. */
+  function edgeCredibility(x, ctx){
+    ctx=ctx||{};
+    var edge = (x&&x.curEdge!=null)?x.curEdge:null;
+    var nb = (x&&x.nb)||0, corr=(x&&x.corr)||0, sharp=!!(x&&x.sharp), tr=!!(x&&x.trusted);
+    var staleM = (x&&isFinite(x.staleM))?x.staleM:0;
+    var contract = EDGE_BRAIN.contractFor(x&&x.e&&x.e.sport_key);
+
+    /* MARKET confidence — how much market is actually behind this number. */
+    var mBooks = clamp(nb/8,0,1);
+    var mCorr  = clamp(corr/3,0,1);
+    var mFresh = clamp((STALE_MIN-Math.min(staleM,STALE_MIN))/STALE_MIN,0,1);
+    var marketConf = clamp(0.42*mBooks + 0.30*(sharp?1:0) + 0.18*mCorr + 0.10*mFresh, 0, 1);
+
+    /* DATA confidence — how much INDEPENDENT information EdgeDesk can see, which
+       is not the same as how many numbers it holds. When a metric-level list is
+       supplied, coverage comes from evidence families with saturation inside
+       each, so five strikeout metrics cannot impersonate five findings. Without
+       one, fall back to counting the contract's slots, which are already
+       family-shaped.
+
+       Unknown is a cost, not a neutral. A sport with no contract cannot score
+       high here, which is the honest answer rather than a flattering one. */
+    var need = contract.required||[], have = ctx.evidencePresent||{};
+    var prof = (ctx.evidenceItems && ctx.evidenceItems.length)
+      ? evidenceProfile(ctx.evidenceItems, x&&x.e&&x.e.sport_key) : null;
+    var dataConf;
+    if(prof && prof.families_defined){
+      dataConf = prof.coverage;
+      /* Metrics inside a family that disagree are one unresolved question, not
+         several confirmations. Charge for that rather than averaging it away. */
+      if(prof.consistency!=null) dataConf = dataConf*(0.6+0.4*prof.consistency);
+    }else{
+      var got = need.filter(function(k){ return !!have[k]; }).length;
+      dataConf = need.length ? (got/need.length) : (ctx.evidenceUnknown===false?0.5:0.25);
+    }
+    if(tr) dataConf = clamp(dataConf+0.05,0,1);
+    dataConf = clamp(dataConf,0,1);
+
+    /* MODEL confidence — does this edge sit inside the range a market this
+       liquid can plausibly be wrong by? The scale moves with market quality:
+       a deep, sharp-anchored market is rarely off by much, so a large number
+       there is more suspect, while a thin market genuinely disagrees more
+       often — and is also wrong more often, which the market term already
+       charges for. Above the scale, belief decays smoothly rather than
+       falling off a cliff at an arbitrary threshold. */
+    var scale = 0.035 + 0.055*(1-marketConf);          // ~3.5% deep book, ~9% thin
+    var modelConf = 1;
+    if(edge!=null && edge>scale){
+      var over=(edge-scale)/scale;
+      modelConf = Math.exp(-0.55*over*over);
+    }
+    if(edge!=null && edge<=0) modelConf=0;
+
+    /* Price survival is owned by the engine; it is READ here, never recomputed. */
+    var survival = (x&&x.remaining!=null)?clamp(x.remaining,0,1):0.5;
+
+    var credibility = clamp(0.34*marketConf + 0.26*dataConf + 0.28*modelConf + 0.12*survival, 0, 1);
+
+    var flags=[];
+    if(edge!=null && edge>scale*2) flags.push('Edge is far outside what a market this liquid is usually wrong by — treat as a price or data artifact until shown otherwise.');
+    if(!sharp) flags.push('No sharp reference quoted this selection; the fair value is a soft consensus.');
+    if(nb<4) flags.push('Only '+nb+' book'+(nb===1?'':'s')+' priced it — a thin market moves the consensus on its own.');
+    if(staleM>STALE_MIN) flags.push('Quote is '+Math.round(staleM)+' minutes old; the price may already be gone.');
+    if(need.length && got<need.length){
+      flags.push('Missing '+(need.length-got)+' of '+need.length+' inputs this sport needs: '+need.filter(function(k){return !have[k];}).join(', ')+'.');
+    }
+    if(!need.length) flags.push('No sport contract on file, so evidence completeness cannot be assessed.');
+    if(prof){
+      if(prof.metrics>prof.family_count && prof.family_count>0 && prof.metrics>=prof.family_count*2)
+        flags.push(prof.metrics+' metrics but only '+prof.family_count+' independent evidence famil'+(prof.family_count===1?'y':'ies')+' — related measurements, not separate confirmations.');
+      (prof.conflicts||[]).forEach(function(c){ flags.push(c.note); });
+      if(prof.duplicate_metrics.length)
+        flags.push('Same metric arrived from more than one source ('+prof.duplicate_metrics.join(', ')+') — counted once, as one observation.');
+    }
+
+    var band = credibility>=0.72?'High':credibility>=0.55?'Moderate':credibility>=0.38?'Low':'Very low';
+    /* The call is deliberately conservative: credibility can only ever HOLD BACK
+       a deterministic BET, never manufacture one. */
+    var call = (edge==null||edge<=0)?'PASS' : credibility>=0.62?'ACT' : credibility>=0.42?'WATCH' : 'INVESTIGATE';
+
+    return {
+      raw_edge:(edge==null?null:Math.round(edge*10000)/10000),
+      credibility:Math.round(credibility*1000)/10,
+      band:band, call:call,
+      market_confidence:Math.round(marketConf*1000)/10,
+      data_confidence:Math.round(dataConf*1000)/10,
+      model_confidence:Math.round(modelConf*1000)/10,
+      price_survival:Math.round(survival*1000)/10,
+      plausible_edge_scale:Math.round(scale*10000)/10000,
+      sport:contract.label, sport_note:contract.note,
+      required_evidence:need, missing_evidence:need.filter(function(k){return !have[k];}),
+      /* METRIC COUNT and INDEPENDENT FAMILY COUNT are different numbers and the
+         difference between them is the finding. Exposed so the AI can say
+         "eleven metrics, six families" rather than "eleven pieces of evidence". */
+      evidence:(prof&&prof.families_defined)?{
+        metrics:prof.metrics, unique_metrics:prof.unique_metrics,
+        independent_families:prof.family_count, families_defined:prof.families_defined,
+        independent_sources:prof.independent_sources,
+        completeness:Math.round(prof.coverage*1000)/10,
+        consistency:(prof.consistency==null?null:Math.round(prof.consistency*1000)/10),
+        families:Object.keys(prof.families).map(function(f){
+          return {family:f, metrics:prof.families[f].metrics, sources:prof.families[f].source_count,
+                  credit:prof.families[f].credit, agrees:(prof.families[f].agrees===undefined?null:prof.families[f].agrees)};
+        }),
+        conflicts:prof.conflicts, duplicate_metrics:prof.duplicate_metrics, unmapped_metrics:prof.unmapped
+      }:null,
+      flags:flags,
+      basis:'Confidence in an edge, derived from market depth, evidence completeness and how far the number sits outside what this market is usually wrong by. It never restates or adjusts a deterministic value.'
+    };
+  }
+
   /* ======================= DETERMINISTIC DECISION ENGINE ======================= */
   function evidence(e){
     var fairP = n(e.sharp_fair); var fairSrc='Pinnacle de-vig fair';
@@ -12764,6 +13388,14 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
   async function buildBoard(force){
     if(!force && BOARD_CACHE.data && (Date.now()-BOARD_CACHE.ts)<BOARD_TTL) return BOARD_CACHE.data;
 
+    /* CORE EVIDENCE BEFORE RANKING. This await is the architectural fix: it
+       populates the starter / offense / workload cache that liveEvidenceItems()
+       reads, so scanGames() ranks candidates WITH that evidence rather than
+       discovering it afterwards. Same four queries as before, just earlier and
+       fetched once — the starter stage below reuses this cache instead of
+       calling boardFeatures() a second time. */
+    try{ await ensureMlbCore(force); }catch(_){}
+
     var games=[]; try{ games=scanGames(); }catch(_){ games=[]; }
     var covered={}; games.forEach(function(g){ covered[g.id]=1; });
     var leads=[]; try{ leads=leadGames(covered); }catch(_){ leads=[]; }
@@ -12782,25 +13414,56 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
         deterministic:{verdict:x.verdict, display_verdict:x.dverdict, is_wait:x.isWait, wait_reason:x.waitWhy,
           confidence:x.confidence, score:x.score, band:x.band, priority:g.priority, status:g.status,
           why:x.why, reasons_for:x.reasonsFor, reasons_against:x.reasonsAgainst, falsifiers:x.falsifiers},
+        /* A raw edge and a credible opportunity are different objects. This is the
+           second one. It never restates or adjusts a deterministic value — cite the
+           edge from `edge`, and cite how much to believe it from here. */
+        credibility:g.credibility||null,
+        base_priority:(g.base_priority!=null?g.base_priority:null),
         model_agrees:!!g.agree, biggest_question:g.question};
     });
 
     // MLB card: load the schedule on demand so a board question never depends on which tab was opened
-    if(!Object.keys(window.MLBG||{}).length && typeof loadMlbSched==='function'){ try{ await loadMlbSched(); }catch(_){} }
-    var card=mlbGamesToday();
+    /* REUSE the core fetched before ranking. This block previously ran
+       loadMlbSched + boardFeatures + boardIndex here for the first time; doing it
+       again now would be four duplicate queries and a second transformation of
+       identical rows. Fetch once, attach, reuse. */
+    var core=MLB_CORE.ix?MLB_CORE:mlbCoreEmpty();
+    var card=core.card||[], f=core.features||{read:{}}, ix=core.ix;
 
-    var f={read:{}}, ix={pfByName:{},offBySide:{},lastStart:{}};
-    if(card.length){ try{ f=await boardFeatures(); ix=boardIndex(f); }catch(_){ f={read:{games:'UNAVAILABLE'}}; } }
-
-    var byMatch={};
-    games.forEach(function(g){ var e=g.e;
-      if(e&&e.sport_key==='baseball_mlb') byMatch[mlbNorm(e.away_team)+'|'+mlbNorm(e.home_team)]=g; });
-
-    var pitchers=[];
+    /* A team pair is not a game identity. Keyed on the pair alone, both halves of
+       a doubleheader collapsed into one bucket and the later signal overwrote the
+       earlier, so BOTH starters were shown the same market — the same edge, price
+       and verdict — for two different games. Bucket by pair, then let each card
+       game claim the signal whose first pitch is nearest its own and consume it,
+       so the second game cannot be handed the first game's market. Same
+       pool-and-nearest-start pattern the server side uses. */
+    var byMatch=mlbSignalPools(games);
+    var pitchers=[], dhClaims=0;
     card.forEach(function(g){
-      var gg=byMatch[mlbNorm(g.away_team_name)+'|'+mlbNorm(g.home_team_name)]||null;
-      pitchers.push(boardPitcher(g,'away',gg,ix));
-      pitchers.push(boardPitcher(g,'home',gg,ix));
+      var gg=mlbClaimSignal(byMatch, g.away_team_name, g.home_team_name, g.start_time||null);
+      if(gg&&gg.__dhPool) dhClaims++;
+      /* This is the one point in the pipeline where pitcher_features and
+         offense_features have actually been read, so it is the only place the
+         pitching and offense families can be populated from live data. Same
+         normalizer contract, same family engine — the profile is attached per
+         starter rather than recomputed anywhere else. */
+      ['away','home'].forEach(function(side){
+        var p=boardPitcher(g,side,gg,ix);
+        try{
+          var prof=evidenceProfile(starterEvidenceItems(p), 'baseball_mlb');
+          p.evidence_profile=prof.families_defined?{
+            metrics:prof.metrics, unique_metrics:prof.unique_metrics,
+            independent_families:prof.family_count, families_defined:prof.families_defined,
+            independent_sources:prof.independent_sources,
+            completeness:Math.round(prof.coverage*1000)/10,
+            families:Object.keys(prof.families).map(function(fk){
+              return {family:fk, metrics:prof.families[fk].metrics, sources:prof.families[fk].source_count};
+            }),
+            duplicate_metrics:prof.duplicate_metrics
+          }:null;
+        }catch(_){ p.evidence_profile=null; }
+        pitchers.push(p);
+      });
     });
 
     var rd=f.read||{}, un={};
@@ -12818,6 +13481,24 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
       generated_at:new Date().toISOString(), date_et:etDay(0),
       engine:{floor:FLOOR, stale_minutes:STALE_MIN,
         note:'Every number here was produced by the EdgeDesk deterministic engine or read from an owned table. Cite them; never recompute probability, fair price, edge, EV, CLV, confidence, verdict, score or price sensitivity.'},
+      /* The reasoning architecture, carried on every board so it does not have to
+         be re-derived from a document per question. Principles are permanent;
+         the sport contract names the evidence that sport requires before a
+         matchup claim means anything, and what is missing is stated per row. */
+      brain:{
+        principles:EDGE_BRAIN.principles,
+        sport_contracts:(function(){
+          var seen={}, out={};
+          games.forEach(function(g){
+            var k=g&&g.e&&g.e.sport_key; if(!k||seen[k])return; seen[k]=1;
+            var c=EDGE_BRAIN.contractFor(k);
+            out[c.label]={required_evidence:c.required, variance:c.variance, note:c.note};
+          });
+          return out;
+        })(),
+        ranking_note:'slate is ordered by RESEARCH PRIORITY, which is the deterministic score weighted by edge credibility — not by raw edge. A large number on a thin, unanchored market ranks below a smaller one with a real market and complete evidence behind it. base_priority is the score before that weighting, so the two are comparable.',
+        answering_note:'Answer the question asked, first and plainly, before any methodology. Quote raw_edge and credibility as separate facts — a large edge with low credibility is a reason to investigate, not to bet. If the evidence a sport requires is missing, say which pieces and say that the conclusion is provisional.'
+      },
       counts:{games_with_signals:games.length, shown:rows.length, model_leads:leads.length,
         mlb_games:card.length, mlb_starters:pitchers.length,
         starters_with_quality:pitchers.filter(function(p){return p.quality&&p.quality.xera!=null;}).length},
@@ -12835,18 +13516,88 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
     return board;
   }
 
+  /* ---- transparent pitching-matchup ordering, for the OFFLINE path only ----
+     edgedesk_ai does its own retrieval and its own ranking (with FIP and platoon splits);
+     this exists purely for when that function is unreachable and the browser has to answer
+     from the owned tables alone. It is deliberately scoped here: it reads the board shapes
+     that already exist and adds nothing to the packet the server receives, so the two can
+     never disagree in the same answer.
+
+     Fixed league reference points, not a fitted model: each metric maps to 0..1 where 1 is
+     most attackable, averaged over whatever is actually present, reporting the inputs used.
+     A RESEARCH ORDERING of arms — never a price, edge, EV or verdict, and it feeds none. */
+  var MLB_REF={
+    era:[3.20,5.20], whip:[1.05,1.55], xera:[3.20,5.20],
+    k_pct:[0.27,0.15], bb_pct:[0.055,0.110], hr9:[0.90,1.80],
+    barrel_pct:[0.055,0.115], hardhit_pct:[0.34,0.46],
+    runs_per_game:[3.80,5.40], obp:[0.300,0.340], iso:[0.140,0.190]
+  };
+  /* Rate columns are stored as PERCENTAGES by ingest_mlb — Savant's k_percent is
+     24.5, not 0.245, and the StatsAPI fallback multiplies by 100 to match. The
+     reference points above are fractions, so a raw 24.5 clamps to 0 and a raw
+     8.2 barrel% clamps to 1: K% would contribute nothing and every arm would
+     read as maximally attackable. Both units are accepted and normalised, since
+     a value above 1 is never a legitimate fraction for any of these rates. */
+  var MLB_RATE={k_pct:1, bb_pct:1, barrel_pct:1, hardhit_pct:1};
+  function mlbRate(v,key){
+    v=parseFloat(v); if(!isFinite(v))return null;
+    return (MLB_RATE[key] && v>1) ? v/100 : v;
+  }
+  function mlbScale(v,ref,key){
+    if(v==null||!ref)return null;
+    v=key?mlbRate(v,key):parseFloat(v);
+    if(v==null||!isFinite(v))return null;
+    var t=(v-ref[0])/(ref[1]-ref[0]);
+    return t<0?0:t>1?1:t;
+  }
+  function mlbBlend(src,keys){
+    if(!src)return null;
+    var parts=[], used=[];
+    keys.forEach(function(k){ var s=mlbScale(src[k],MLB_REF[k],k); if(s!=null){ parts.push(s); used.push(k); } });
+    if(!parts.length)return null;
+    var m=parts.reduce(function(a,b){return a+b;},0)/parts.length;
+    return {score:Math.round(m*1000)/10, inputs:used};
+  }
+  function mlbVuln(q){ return mlbBlend(q,['xera','era','whip','k_pct','bb_pct','hr9','barrel_pct','hardhit_pct']); }
+  function mlbOppStrength(o){ return mlbBlend(o,['runs_per_game','obp','iso']); }
+  function mlbMatchup(q,o){
+    var v=mlbVuln(q), s=mlbOppStrength(o);
+    if(!v&&!s)return null;
+    var score=(v&&s)?(0.60*v.score+0.40*s.score):(v?v.score:s.score);
+    return {attack_score:Math.round(score*10)/10,
+      pitcher_vulnerability:v?v.score:null, opponent_offense_strength:s?s.score:null,
+      basis:(v&&s)?'0.60 × arm + 0.40 × opposing offense'
+        :(v?'arm only — opposing offense not on file':'opposing offense only — no stat line for the arm')};
+  }
+
   /* offline fallback: the engine's own board, rendered locally, if edgedesk_ai is unreachable */
   function boardFallbackHTML(b, q){
     q=(q||'').toLowerCase(); var out='';
-    if(/pitch|starter|arm/.test(q) && b.mlb_starters && b.mlb_starters.length){
-      var wx=b.mlb_starters.filter(function(p){return p.quality&&p.quality.xera!=null;})
-        .sort(function(a,c){return c.quality.xera-a.quality.xera;}).slice(0,6);
+    if(/pitch|starter|arm|matchup/.test(q) && b.mlb_starters && b.mlb_starters.length){
+      /* Ranked here rather than on the board object, so this never reaches the server packet.
+         Ranks on whatever the owned tables hold — an empty xERA column no longer means an
+         empty answer, and the opponent's offense is now weighed instead of ignored. */
+      var wx=b.mlb_starters.map(function(p){ return {p:p, m:mlbMatchup(p.quality,p.opponent_offense)}; })
+        .filter(function(r){ return r.m&&r.m.attack_score!=null; })
+        .sort(function(a,c){ return c.m.attack_score-a.m.attack_score; });
+      var wantBest=/\bbest\b|toughest|strongest|hardest/.test(q) && !/worst/.test(q);
+      if(wantBest) wx.reverse();
+      wx=wx.slice(0,6);
       if(wx.length){
-        out+='<p><b>Weakest starters by xERA on file.</b> This is a data ordering out of <span class="mono">pitcher_features</span>, not an EdgeDesk rating — and it does not yet weigh who they face.</p><ul>'
-          +wx.map(function(p){ var o=p.opponent_offense;
-            return '<li><b>'+esc(p.pitcher)+'</b> ('+esc(p.team||'')+') vs '+esc(p.opponent||'')+' — xERA '+p.quality.xera
-              +(p.quality.k_pct!=null?', K% '+p.quality.k_pct:'')+(p.quality.bb_pct!=null?', BB% '+p.quality.bb_pct:'')
-              +(o?'. Opponent offense: OBP '+o.obp+', ISO '+o.iso+', '+o.runs_per_game+' R/G.':'. Opponent offense not on file.')+'</li>'; }).join('')
+        var pc=function(v){ return v==null?null:(Math.round(v*1000)/10)+'%'; };
+        out+='<p><b>'+(wantBest?'Least attackable starters':'Most attackable starters')+' on today’s card.</b> '
+          +'Ordered against fixed league reference points, weighing the arm and the offense it faces. '
+          +'A data ordering out of the owned tables, not an EdgeDesk rating, and not a price or an edge.</p><ul>'
+          +wx.map(function(r){ var p=r.p, qq=p.quality||{}, o=p.opponent_offense, bits=[];
+            if(qq.xera!=null) bits.push('xERA '+qq.xera);
+            if(qq.k_pct!=null) bits.push('K% '+pc(qq.k_pct));
+            if(qq.bb_pct!=null) bits.push('BB% '+pc(qq.bb_pct));
+            if(qq.barrel_pct!=null) bits.push('barrel% '+pc(qq.barrel_pct));
+            if(qq.hardhit_pct!=null) bits.push('hard-hit% '+pc(qq.hardhit_pct));
+            return '<li><b>'+esc(p.pitcher||'Unnamed')+'</b> ('+esc(p.team||'')+') vs '+esc(p.opponent||'')
+              +' — attack '+r.m.attack_score+(bits.length?' · '+esc(bits.join(', ')):'')
+              +(o?'. Opponent offense: OBP '+o.obp+', ISO '+o.iso+', '+o.runs_per_game+' R/G.'
+                 :'. Opponent offense not on file — '+esc(r.m.basis)+'.')+'</li>'; }).join('')
           +'</ul>';
       }else{
         out+='<p>EdgeDesk has '+b.mlb_starters.length+' probable starter'+(b.mlb_starters.length===1?'':'s')+' on today’s card, but no pitcher-quality rows for this slate, so I can rank the games and not the arms. '
@@ -13215,11 +13966,34 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
     });
     return Object.keys(byGame).map(function(id){
       var x=byGame[id].x, agree=!!midx[id];
-      var priority=Math.max(0,Math.min(100, x.score + (agree?5:0)));
+      var base=Math.max(0,Math.min(100, x.score + (agree?5:0)));
+      /* RESEARCH PRIORITY is credibility-weighted, not raw-edge-ranked. The
+         deterministic score still sets the ceiling — this can only ever pull a
+         candidate DOWN, never invent one — but a large number standing on a thin,
+         unanchored market no longer outranks a smaller one with a real market and
+         complete evidence behind it. That inversion is what put five ATP
+         moneylines above an NFL spread. x.score, verdict, edge and EV are
+         untouched; only the ordering changes. */
+      /* Live evidence, from what this candidate actually carries. The previous
+         read was `x.e.__evidence`, which nothing in the codebase ever wrote — so
+         evidencePresent was permanently {} and data_confidence was a constant 0.
+         That dead container is gone rather than kept alongside a second one;
+         liveEvidenceItems is now the single source. */
+      var cred=null;
+      try{ cred=edgeCredibility(x,{evidenceItems:liveEvidenceItems(x)}); }catch(_){ cred=null; }
+      var priority=base;
+      if(cred){
+        // 0.55 floor: credibility re-ranks, it does not erase a strong setup.
+        priority=Math.round(base*(0.55+0.45*(cred.credibility/100)));
+        if(agree) priority=Math.min(100,priority+3);
+      }
       var status = (x.verdict==='BET')?'EDGE':(x.verdict==='LEAN')?'RESEARCH':'WATCH';
+      if(cred && cred.call==='INVESTIGATE' && status==='EDGE') status='RESEARCH';
       var reasons=(x.reasonsFor||[]).slice(0,4);
       if(agree) reasons=reasons.concat(['MODEL engine also projects an edge in this game']).slice(0,5);
-      return {id:id, x:x, e:x.e, priority:priority, status:status, agree:agree, reasons:reasons, question:biggestQuestion(x)};
+      if(cred && cred.flags.length) reasons=reasons.concat(cred.flags.slice(0,2)).slice(0,6);
+      return {id:id, x:x, e:x.e, priority:priority, base_priority:base, credibility:cred,
+              status:status, agree:agree, reasons:reasons, question:biggestQuestion(x)};
     }).sort(function(a,b){return b.priority-a.priority;});
   }
 
@@ -14713,6 +15487,67 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
       var s1=fin({x:{curEdge:0.045,detEdge:0.045,evNow:0.045,confidence:'HIGH'}});
       chk('K strong slate stays BET', bqSlateOutcome(bqPickHeadline([s1]),'BET'),'BET');
       chk('L LEAN never upgraded', fin({x:{dverdict:'LEAN',curEdge:0.045,detEdge:0.045,evNow:0.045,confidence:'HIGH'}}).q.quality_call!=='BET', true);
+      /* offline matchup ordering — the local ranking used only when edgedesk_ai is unreachable */
+      chk('M xERA scale tops out', mlbScale(5.20,MLB_REF.xera), 1);
+      chk('M xERA scale floors', mlbScale(3.20,MLB_REF.xera), 0);
+      chk('M K% inverted (low K = attackable)', mlbScale(0.15,MLB_REF.k_pct,'k_pct'), 1);
+      chk('M missing metric stays null, never 0', mlbScale(null,MLB_REF.xera), null);
+      /* the tables store percentages; both units must land on the same score */
+      chk('M K% accepts percent units', mlbScale(15,MLB_REF.k_pct,'k_pct'), mlbScale(0.15,MLB_REF.k_pct,'k_pct'));
+      chk('M barrel% percent != clamped to 1', mlbScale(8.2,MLB_REF.barrel_pct,'barrel_pct')<1, true);
+      chk('M hard-hit% percent matches fraction', mlbScale(38,MLB_REF.hardhit_pct,'hardhit_pct'), mlbScale(0.38,MLB_REF.hardhit_pct,'hardhit_pct'));
+      chk('M ERA is not treated as a rate', mlbScale(5.20,MLB_REF.era,'era'), 1);
+      var badArm={xera:5.30,k_pct:0.15,bb_pct:0.105,barrel_pct:0.112,hardhit_pct:0.455};
+      var goodArm={xera:3.00,k_pct:0.30,bb_pct:0.050,barrel_pct:0.050,hardhit_pct:0.330};
+      var bigBats={runs_per_game:5.45,obp:0.345,iso:0.190};
+      var weakBats={runs_per_game:3.64,obp:0.295,iso:0.140};
+      chk('N bad arm outranks good arm', mlbMatchup(badArm,weakBats).attack_score>mlbMatchup(goodArm,bigBats).attack_score, true);
+      chk('N blend is 0.60 arm / 0.40 offense', Math.abs(mlbMatchup(badArm,weakBats).attack_score-0.6*mlbVuln(badArm).score)<0.06, true);
+      chk('N ranks on partial data (xERA absent)', mlbMatchup({k_pct:0.15,bb_pct:0.105},null)!=null, true);
+      chk('N unrankable arm returns null, not a score', mlbMatchup({xera:null,k_pct:null},null), null);
+      chk('N arm-only basis is labelled', mlbMatchup(badArm,null).basis.indexOf('arm only')>=0, true);
+      /* EDGE CREDIBILITY — raw discrepancy vs credible opportunity. The board
+         ranked five ATP moneylines above an NFL spread because it was ordering
+         the first while calling it the second. */
+      var _nflSig={curEdge:0.042,nb:5,corr:2,sharp:true,trusted:true,staleM:5,remaining:1.0,e:{sport_key:'americanfootball_nfl'}};
+      var _atpSig={curEdge:0.202,nb:6,corr:0,sharp:true,trusted:false,staleM:20,remaining:1.0,e:{sport_key:'tennis_atp'}};
+      var _cN=edgeCredibility(_nflSig,{evidencePresent:{qb:1,offense_efficiency:1,defense_efficiency:1,injuries:1,rest:1}});
+      var _cA=edgeCredibility(_atpSig,{evidencePresent:{}});
+      chk('P 4.2% NFL outranks 20.2% ATP on credibility', _cN.credibility>_cA.credibility, true);
+      chk('P outsized edge on a thin market is INVESTIGATE', _cA.call, 'INVESTIGATE');
+      chk('P credible edge clears to ACT', _cN.call, 'ACT');
+      chk('P raw edge is echoed, never rewritten', _cA.raw_edge, 0.202);
+      chk('P a negative edge can never be ACT', edgeCredibility({curEdge:-0.02,nb:9,sharp:true,e:{sport_key:'baseball_mlb'}},{}).call, 'PASS');
+      /* Not a league preference: the SAME tennis edge on a deep market with full
+         evidence outranks the SAME NFL edge on a thin market with none. */
+      var _atpDeep=edgeCredibility({curEdge:0.202,nb:14,corr:3,sharp:true,trusted:true,staleM:2,remaining:1.0,e:{sport_key:'tennis_atp'}},
+        {evidencePresent:{surface_form:1,serve_hold:1,return_break:1,recent_load:1,opponent_quality:1}});
+      var _nflThin=edgeCredibility({curEdge:0.202,nb:2,corr:0,sharp:false,trusted:false,staleM:120,remaining:0.3,e:{sport_key:'americanfootball_nfl'}},{evidencePresent:{}});
+      chk('Q credibility follows the market, not the league', _atpDeep.credibility>_nflThin.credibility, true);
+      chk('Q missing sport evidence is named', edgeCredibility({curEdge:0.04,nb:8,sharp:true,e:{sport_key:'baseball_mlb'}},{evidencePresent:{}}).missing_evidence.length, 5);
+      chk('Q brain resolves the preseason key to NFL', EDGE_BRAIN.contractFor('americanfootball_nfl_preseason').label, 'NFL');
+      /* DOUBLEHEADERS — a team pair is a bucket, never an identity. Keyed on the
+         pair alone, both halves collapsed and both starters were shown one game's
+         market. */
+      var _dhSig=function(id,ct,edge){ return {e:{sport_key:'baseball_mlb',event_id:id,commence_time:ct,
+        away_team:'Boston Red Sox',home_team:'New York Yankees'}, x:{curEdge:edge}}; };
+      var _g1=_dhSig('evt-G1','2026-08-11T17:05:00Z',0.03), _g2=_dhSig('evt-G2','2026-08-11T23:05:00Z',0.07);
+      var _solo=_dhSig('evt-solo','2026-08-11T20:10:00Z',0.05);
+      _solo.e.away_team='San Diego Padres'; _solo.e.home_team='Los Angeles Dodgers';
+      var _pools=mlbSignalPools([_g1,_g2,_solo]);
+      chk('R doubleheader keeps two signals in one bucket', _pools['bostonredsox|newyorkyankees'].length, 2);
+      var _c1=mlbClaimSignal(_pools,'Boston Red Sox','New York Yankees','2026-08-11T17:05:00Z');
+      var _c2=mlbClaimSignal(_pools,'Boston Red Sox','New York Yankees','2026-08-11T23:05:00Z');
+      chk('R game 1 claims the early event', _c1&&_c1.e.event_id, 'evt-G1');
+      chk('R game 2 claims the late event', _c2&&_c2.e.event_id, 'evt-G2');
+      chk('R the two games carry different edges', _c1.x.curEdge!==_c2.x.curEdge, true);
+      chk('R a third claim returns null, never a reused signal', mlbClaimSignal(_pools,'Boston Red Sox','New York Yankees','2026-08-11T23:05:00Z'), null);
+      var _pools2=mlbSignalPools([_g1,_g2,_solo]);
+      chk('R single games are unaffected', mlbClaimSignal(_pools2,'San Diego Padres','Los Angeles Dodgers','2026-08-11T20:10:00Z').e.event_id, 'evt-solo');
+      var _pools3=mlbSignalPools([_g1]);
+      chk('R a far-away signal is refused, not mismatched', mlbClaimSignal(_pools3,'Boston Red Sox','New York Yankees','2026-08-12T09:00:00Z'), null);
+      var _pools4=mlbSignalPools([_g1]);
+      chk('R clock skew inside the window still matches', mlbClaimSignal(_pools4,'Boston Red Sox','New York Yankees','2026-08-11T17:35:00Z').e.event_id, 'evt-G1');
       if(verbose!==false){ try{ console.log('%cEDBetQuality self-test','font-weight:bold'); R.forEach(function(r){ console.log((r.ok?'PASS':'FAIL')+' | '+r.t+(r.ok?'':'  got '+JSON.stringify(r.got)+' want '+JSON.stringify(r.want))); }); console.log((F===0?'ALL GREEN ':'FAILURES ')+P+' passed, '+F+' failed'); }catch(_){} }
       return {passed:P, failed:F, results:R};
     }
