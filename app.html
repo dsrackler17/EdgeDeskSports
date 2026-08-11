@@ -3974,39 +3974,73 @@ async function recPipelineHealth(){
       '<span class="rhl-d">'+what+(detail?' <span class="rhl-x">'+detail+'</span>':'')+'</span></div>';
   }
   try{
-    var one=function(q){return sbGet(q).then(function(b){return (b&&b[0])||null;}).catch(function(){return null;});};
+    /* A BLOCKED READ IS NOT AN ABSENT ROW.
+
+       This originally collapsed both into null and rendered "never". signal_ticks
+       is behind RLS and the browser token has no policy on it, so PostgREST
+       answers 200 with an empty body \u2014 indistinguishable from an empty table
+       unless you keep the two apart. The panel therefore reported capture as
+       "never" while the table held 910k rows and capture was running fine. A
+       health panel that invents an outage is worse than no panel. */
+    var one=function(q){
+      return sbGet(q).then(function(b){return {row:(b&&b[0])||null,err:null};})
+        .catch(function(e){return {row:null,err:String(e&&e.message||e)};});
+    };
     var res=await Promise.all([
       one('signal_ticks?select=created_at&order=created_at.desc&limit=1'),
       one('signals?select=closed_at&closed_at=not.is.null&order=closed_at.desc&limit=1'),
       one('signals?select=flagged_at&flagged_at=not.is.null&order=flagged_at.desc&limit=1'),
-      one('signals?select=graded_at&graded_at=not.is.null&order=graded_at.desc&limit=1')
+      one('signals?select=graded_at&graded_at=not.is.null&order=graded_at.desc&limit=1'),
+      /* capture stamps last_seen_at on EVERY row it touches, every pass, and
+         `signals` is readable here. It is the heartbeat that survives the
+         signal_ticks read being blocked. */
+      one('signals?select=last_seen_at&last_seen_at=not.is.null&order=last_seen_at.desc&limit=1')
     ]);
     var dayAgo=new Date(Date.now()-864e5).toISOString();
     var closed24=await sbCount('closed_at=gte.'+dayAgo).catch(function(){return null;});
     var graded24=await sbCount('graded_at=gte.'+dayAgo).catch(function(){return null;});
 
-    var tick=recAgeTxt(res[0]&&res[0].created_at);
-    var close=recAgeTxt(res[1]&&res[1].closed_at);
-    var flag=recAgeTxt(res[2]&&res[2].flagged_at);
-    var grade=recAgeTxt(res[3]&&res[3].graded_at);
+    var tick=recAgeTxt(res[0].row&&res[0].row.created_at);
+    var close=recAgeTxt(res[1].row&&res[1].row.closed_at);
+    var flag=recAgeTxt(res[2].row&&res[2].row.flagged_at);
+    var grade=recAgeTxt(res[3].row&&res[3].row.graded_at);
+    var seen=recAgeTxt(res[4].row&&res[4].row.last_seen_at);
 
-    /* Thresholds are the job's own cadence plus slack, not opinions about
-       what "healthy" feels like. capture ticks continuously; close runs on a
-       window measured in hours; grading waits for games to finish. */
+    /* Thresholds are each job's own cadence plus slack, not opinions about what
+       "healthy" feels like. capture prices continuously; close runs on a window
+       measured in hours; grading waits for games to actually finish. */
     var h='';
-    h+=row('capture',tick.txt,tick.min==null?null:tick.min<180,'last price written to signal_ticks',
-      tick.min!=null&&tick.min>=180?'nothing new in 3h \u2014 capture is not running, or every sport is dark':'');
+    /* capture is judged on last_seen_at, which is readable. The tick series is
+       reported alongside it and, when it cannot be read, says so rather than
+       reporting an outage that is not happening. */
+    var tickNote = res[0].err ? 'tick series not readable from the browser ('+recEsc(res[0].err)+') \u2014 this says nothing about whether capture is writing it'
+      : (tick.min==null ? 'signal_ticks is empty or not visible to this session'
+      : 'last tick '+tick.txt);
+    h+=row('capture',seen.txt,seen.min==null?null:seen.min<180,'last board priced into signals',
+      seen.min!=null&&seen.min>=180?'nothing priced in 3h \u2014 capture is not running, or every sport is dark':tickNote);
     h+=row('close',close.txt,close.min==null?null:close.min<360,'last closing snapshot stored',
       close.min==null?'no signal has ever been closed':(close.min>=360?'no close in 6h \u2014 check the cron and its x-cron-secret header':''));
     h+=row('flagging',flag.txt,flag.min==null?null:flag.min<360,'last edge frozen at flag price',
-      flag.min==null?'capture has never frozen a flag price \u2014 the record cannot fill without it':'');
+      flag.min==null?'capture has never frozen a flag price \u2014 nothing can enter the record without it'
+      :(flag.min>=360?'no new flag in 6h \u2014 capture is running but nothing is clearing the edge floor':''));
     h+=row('grading',grade.txt,grade.min==null?null:grade.min<1440,'last result settled',
-      grade.min==null?'nothing graded':'');
+      grade.min==null?'nothing has ever been graded'
+      :(grade.min>=1440?'no result settled in 24h \u2014 the settle job is stalled. Signals close fine and then sit ungraded, so the record cannot grow no matter how healthy everything above is.':''));
+
+    /* State the counts, then say only what they actually support. The earlier
+       version asserted a condition ("both at zero") without checking it, which
+       is a sentence that can be false on the page it is printed on. */
+    var verdict;
+    if(closed24===0&&graded24===0&&seen.min!=null&&seen.min<180)
+      verdict='Nothing closed and nothing graded while capture is current: the slate is running but nothing is finishing it. That is a stalled job, not a quiet day.';
+    else if(graded24===0&&closed24>0)
+      verdict='Signals are closing but nothing is being graded. The record fills only from graded rows, so it stays frozen until the settle job runs \u2014 everything upstream of it is working.';
+    else if(closed24===0&&graded24>0)
+      verdict='Results are settling but no closing snapshots are being stored, so new rows will grade with no CLV.';
+    else verdict='Both stages are moving. New graded rows should reach the record within a day of their events finishing.';
     h+='<div class="rhl-f">'+
       (closed24!=null?('<b>'+closed24+'</b> closed'):'closes')+' and '+
-      (graded24!=null?('<b>'+graded24+'</b> graded'):'grades')+' in the last 24h. '+
-      'Both at zero while capture is current means the slate is running but nothing is finishing it \u2014 that is a stalled job, not a quiet day.'+
-      '</div>';
+      (graded24!=null?('<b>'+graded24+'</b> graded'):'grades')+' in the last 24h. '+verdict+'</div>';
     host.innerHTML='<div class="rhl"><div class="rhl-h">Pipeline health <span class="rhl-s">what the jobs last wrote</span></div>'+h+'</div>';
   }catch(e){
     /* A failure here must not read as "the pipeline is down" \u2014 it is this
