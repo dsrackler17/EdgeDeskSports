@@ -12562,6 +12562,114 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
     return out;
   }
 
+  /* ---- LIVE EVIDENCE NORMALIZATION -----------------------------------------
+     ONE canonical path from what a candidate actually carries to the metric-level
+     items the family engine consumes. Every caller uses this; there is no second
+     evidence builder.
+
+     What it will and will not do: it emits an item ONLY when the underlying field
+     is genuinely present and non-null. A missing metric produces nothing — never
+     an item with a guessed value — so `metrics` is a count of things EdgeDesk can
+     actually see, and a sparse profile is a true report of a sparse board rather
+     than a padded one.
+
+     Honest scope, stated because the family registry is wider than this: at scan
+     time a candidate carries the mlb_game_cards row (x.mlb) and the venue_weather
+     row (x.wx). Those yield real ENVIRONMENT metrics. pitcher_features and
+     offense_features are read later, inside buildBoard, so the pitching and
+     offense families are NOT reachable here and are correctly reported absent
+     rather than assumed. For NFL, tennis and the rest there is no metric source
+     wired into this board at all, so those families stay empty and the flags say
+     so. */
+  function pushMetric(list, metric, value, meta){
+    if(value==null || value==='') return list;          // never fabricate
+    var v=(typeof value==='string')?value:+value;
+    if(typeof v==='number' && !isFinite(v)) return list;
+    meta=meta||{};
+    list.push({metric:metric, value:v, source:meta.source||'EdgeDesk',
+      source_type:meta.source_type||'DERIVED', status:meta.status||'VERIFIED',
+      confidence:meta.confidence||'MEDIUM', timestamp:meta.timestamp||null,
+      relevance:meta.relevance||null, dir:(meta.dir===1||meta.dir===-1)?meta.dir:0});
+    return list;
+  }
+  /* Freshness reuses the constants already in the file rather than inventing a
+     second set: STALE_MIN for market data, WX_STALE_H for a forecast. */
+  function evFreshness(tsIso, kind){
+    if(!tsIso) return 'unknown';
+    var t=Date.parse(tsIso); if(!isFinite(t)) return 'unknown';
+    var mins=(Date.now()-t)/60000;
+    var limit=(kind==='weather')?((typeof WX_STALE_H!=='undefined'?WX_STALE_H:6)*60):STALE_MIN;
+    return mins<=limit/3?'fresh':mins<=limit?'recent':'stale';
+  }
+  function liveEvidenceItems(x){
+    var items=[]; if(!x) return items;
+    var e=x.e||{}, sk=String(e.sport_key||'');
+    var card=x.mlb||null, wx=x.wx||null;
+
+    if(sk==='baseball_mlb'){
+      /* ENVIRONMENT — genuinely on the card and the weather row. */
+      if(card){
+        var cm={source:'mlb_game_cards',source_type:'DERIVED',status:'VERIFIED',confidence:'MEDIUM',relevance:'context'};
+        pushMetric(items,'park_factor',card.park_factor,cm);
+        pushMetric(items,'hr_factor',card.hr_factor,cm);
+        pushMetric(items,'run_factor',card.run_factor,cm);
+        if(card.is_dome) pushMetric(items,'is_dome',1,cm);
+      }
+      /* venue_weather is a DIFFERENT source from the card, so temp/wind arriving
+         from both is two sources for one metric — deduped by the family engine,
+         with both sources still counted. */
+      var wm={source:'venue_weather (NWS)',source_type:'FORECAST',status:'VERIFIED',confidence:'MEDIUM',
+              timestamp:(wx&&wx.fetched_at)||null,relevance:'variance'};
+      if(wx && evFreshness(wx.fetched_at,'weather')!=='stale'){
+        pushMetric(items,'temp_f',wx.temp_f,wm);
+        pushMetric(items,'wind_mph',wx.wind_mph,wm);
+      }else if(card){
+        var cw={source:'mlb_game_cards',source_type:'FORECAST',status:'VERIFIED',confidence:'LOW',relevance:'variance'};
+        pushMetric(items,'temp_f',card.temp_f,cw);
+        pushMetric(items,'wind_mph',card.wind_mph,cw);
+      }
+      /* pitcher_features / offense_features are NOT read at this point in the
+         pipeline. Emitting nothing is the correct behaviour; buildBoard enriches
+         a starter separately once boardFeatures() has run. */
+    }
+    return items;
+  }
+  /* Enrichment for the one place richer MLB data genuinely exists: after
+     boardFeatures() has populated pitcher_features / offense_features. Shapes
+     exactly the same item type, so there is still one family engine and one
+     normalizer contract. */
+  function starterEvidenceItems(p){
+    var items=[]; if(!p) return items;
+    var q=p.quality||null, o=p.opponent_offense||null, w=p.workload||null;
+    if(q){
+      var qm={source:q.source||'pitcher_features',source_type:'DERIVED',status:'VERIFIED',
+              confidence:'MEDIUM',relevance:'pitching'};
+      pushMetric(items,'k_pct',q.k_pct,qm);      pushMetric(items,'bb_pct',q.bb_pct,qm);
+      pushMetric(items,'xera',q.xera,qm);        pushMetric(items,'era',q.era,qm);
+      pushMetric(items,'whip',q.whip,qm);        pushMetric(items,'hr_per_9',q.hr9,qm);
+      pushMetric(items,'barrel_pct',q.barrel_pct,qm);
+      pushMetric(items,'hardhit_pct',q.hardhit_pct,qm);
+    }
+    if(o){
+      var om={source:o.source||'offense_features',source_type:'DERIVED',status:'VERIFIED',
+              confidence:'MEDIUM',relevance:'offense'};
+      pushMetric(items,'obp',o.obp,om); pushMetric(items,'iso',o.iso,om);
+      pushMetric(items,'runs_per_game',o.runs_per_game,om);
+    }
+    if(w){
+      var wkm={source:w.source||'mlb_pitcher_usage',source_type:'DERIVED',status:'PARTIAL',
+               confidence:'MEDIUM',relevance:'workload'};
+      pushMetric(items,'days_rest',w.days_rest,wkm);
+    }
+    var park=p.park||null;
+    if(park){
+      var pm={source:'mlb_game_cards',source_type:'DERIVED',status:'VERIFIED',confidence:'MEDIUM',relevance:'context'};
+      pushMetric(items,'park_factor',park.park_factor,pm);
+      pushMetric(items,'hr_factor',park.hr_factor,pm);
+    }
+    return items;
+  }
+
   /* ---- EDGE CREDIBILITY ----------------------------------------------------
      A raw edge and a credible opportunity are different objects, and the board
      was ranking the first while calling it the second. That is how five ATP
@@ -13229,8 +13337,28 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
     card.forEach(function(g){
       var gg=mlbClaimSignal(byMatch, g.away_team_name, g.home_team_name, g.start_time||null);
       if(gg&&gg.__dhPool) dhClaims++;
-      pitchers.push(boardPitcher(g,'away',gg,ix));
-      pitchers.push(boardPitcher(g,'home',gg,ix));
+      /* This is the one point in the pipeline where pitcher_features and
+         offense_features have actually been read, so it is the only place the
+         pitching and offense families can be populated from live data. Same
+         normalizer contract, same family engine — the profile is attached per
+         starter rather than recomputed anywhere else. */
+      ['away','home'].forEach(function(side){
+        var p=boardPitcher(g,side,gg,ix);
+        try{
+          var prof=evidenceProfile(starterEvidenceItems(p), 'baseball_mlb');
+          p.evidence_profile=prof.families_defined?{
+            metrics:prof.metrics, unique_metrics:prof.unique_metrics,
+            independent_families:prof.family_count, families_defined:prof.families_defined,
+            independent_sources:prof.independent_sources,
+            completeness:Math.round(prof.coverage*1000)/10,
+            families:Object.keys(prof.families).map(function(fk){
+              return {family:fk, metrics:prof.families[fk].metrics, sources:prof.families[fk].source_count};
+            }),
+            duplicate_metrics:prof.duplicate_metrics
+          }:null;
+        }catch(_){ p.evidence_profile=null; }
+        pitchers.push(p);
+      });
     });
 
     var rd=f.read||{}, un={};
@@ -13741,7 +13869,13 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
          complete evidence behind it. That inversion is what put five ATP
          moneylines above an NFL spread. x.score, verdict, edge and EV are
          untouched; only the ordering changes. */
-      var cred=null; try{ cred=edgeCredibility(x,{evidencePresent:(x.e&&x.e.__evidence)||{}}); }catch(_){ cred=null; }
+      /* Live evidence, from what this candidate actually carries. The previous
+         read was `x.e.__evidence`, which nothing in the codebase ever wrote — so
+         evidencePresent was permanently {} and data_confidence was a constant 0.
+         That dead container is gone rather than kept alongside a second one;
+         liveEvidenceItems is now the single source. */
+      var cred=null;
+      try{ cred=edgeCredibility(x,{evidenceItems:liveEvidenceItems(x)}); }catch(_){ cred=null; }
       var priority=base;
       if(cred){
         // 0.55 floor: credibility re-ranks, it does not erase a strong setup.
