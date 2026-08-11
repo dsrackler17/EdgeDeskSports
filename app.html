@@ -14261,7 +14261,17 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
       var r=await fetch(AI_FN,{method:'POST',
         headers:{'content-type':'application/json',authorization:'Bearer '+tok,apikey:(typeof SB_KEY!=='undefined'?SB_KEY:'')},
         body:JSON.stringify({mode:mode,question:question,packet:packet,history:HIST.slice(-6),compare:compareArr})});
-      if(!r.ok) throw new Error('fn '+r.status);
+      /* THE ERROR WAS ALWAYS IN THE BODY. THIS THREW IT AWAY.
+         edgedesk_ai's top-level catch does `return json({error: <the actual
+         message>}, 502)` — so a 502 from it is not an opaque crash, it is a
+         deliberate report carrying the exception text. Discarding the body and
+         raising "fn 502" turned a named error into a status code, which is why
+         the same failure has been diagnosed by guessing more than once. */
+      if(!r.ok){
+        var body='';
+        try{ var t=await r.text(); try{ var j=JSON.parse(t); body=j&&(j.error||j.message)||t; }catch(_){ body=t; } }catch(_){}
+        throw new Error('fn '+r.status+(body?' — '+String(body).slice(0,400):''));
+      }
       var d=await r.json();
       if(d&&d.answer){ HIST.push({role:'user',content:question||mode}); HIST.push({role:'assistant',content:d.answer});
         return {html:integrityHTMLFor(d.research)+mdToHtml(d.answer)+traceHTMLFor(d.research),
