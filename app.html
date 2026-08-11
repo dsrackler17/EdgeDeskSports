@@ -12402,6 +12402,8 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
       'CLV is the process signal. Wins and losses over a short run are almost entirely variance.',
       'Market efficiency varies by sport, by market and by liquidity. A thin market is wrong more often AND right less usefully.',
       'A winning wager can be bad process and a losing wager can be excellent process. Judge the process.',
+      'A modelled edge is not a received edge. Price decay, limits and the gap between the quote you saw and the one you get all come out of it before anything is left over.',
+      'Beating the market is not the goal — beating it by more than the estimate\'s own error is. A one-point disagreement inside a three-point error bar is noise wearing a number.',
       'Saying "I do not know" is a valid, and often the correct, output.'
     ],
     /* What each sport actually needs before a matchup statement is meaningful.
@@ -12864,6 +12866,13 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
 
      Nothing here touches a deterministic number. Every field is a confidence
      about an edge, never a restatement of one. */
+  /* MINIMUM ECONOMIC EDGE. A technically-positive 0.4% is not an opportunity —
+     variance, limits, pricing noise and execution erase it. This is the floor an
+     edge must clear AFTER its penalties, and it is deliberately a separate,
+     higher bar than the engine's own FLOOR, which gates the raw number. Set from
+     judgement, not measurement; when the CLV record is large enough to estimate
+     it, replace this with the measured value. */
+  var MIN_EFFECTIVE_EDGE = 0.02;
   function edgeCredibility(x, ctx){
     ctx=ctx||{};
     var edge = (x&&x.curEdge!=null)?x.curEdge:null;
@@ -12959,10 +12968,53 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
     var band = credibility>=0.72?'High':credibility>=0.55?'Moderate':credibility>=0.38?'Low':'Very low';
     /* The call is deliberately conservative: credibility can only ever HOLD BACK
        a deterministic BET, never manufacture one. */
-    var call = (edge==null||edge<=0)?'PASS' : credibility>=0.62?'ACT' : credibility>=0.42?'WATCH' : 'INVESTIGATE';
+    /* The call now answers "is this worth capital", not just "is this credible".
+       An edge that cannot clear the minimum after its own penalties is NO BET —
+       a first-class outcome, not a failure to find something. */
+    var _effRaw = (edge==null||edge<=0) ? null
+      : edge - edge*(1-dataConf)*0.55 - edge*(1-marketConf)*0.45
+             - edge*(1-modelConf)*0.60 - edge*(1-survival)*0.35;
+    var call;
+    if(edge==null||edge<=0) call='PASS';
+    else if(_effRaw!=null && _effRaw < MIN_EFFECTIVE_EDGE)
+      call = (credibility>=0.42) ? 'NO BET' : 'INVESTIGATE';
+    else call = credibility>=0.62?'ACT' : credibility>=0.42?'WATCH' : 'INVESTIGATE';
 
     return {
       raw_edge:(edge==null?null:Math.round(edge*10000)/10000),
+      /* EFFECTIVE EDGE — raw edge minus what it is likely to cost to be wrong.
+         A confidence score sitting beside an untouched 3.2% still reads as 3.2%
+         to anyone deciding, so the discount is now taken in the same units as
+         the edge itself. Each penalty is derived from a confidence this engine
+         already computes; none is invented, and every one is itemised so the
+         subtraction can be argued with.
+
+         This is a DERIVED READ, not a replacement. raw_edge, EV, fair price and
+         CLV remain exactly the deterministic engine's, untouched — effective
+         edge only decides how seriously to take them. */
+      effective_edge:(function(){
+        if(edge==null||edge<=0) return null;
+        // Estimation error scales with how little of the sport's evidence is present.
+        var uncertainty = edge*(1-dataConf)*0.55;
+        // A thin or unanchored market is more often wrong about its own price.
+        var marketRisk  = edge*(1-marketConf)*0.45;
+        // An edge outside what this market is usually wrong by is partly artifact.
+        var modelRisk   = edge*(1-modelConf)*0.60;
+        // Execution: the price decays and you do not always get the quote you saw.
+        var execution   = edge*(1-survival)*0.35;
+        var eff = edge - uncertainty - marketRisk - modelRisk - execution;
+        return {
+          raw:Math.round(edge*10000)/10000,
+          uncertainty_penalty:-Math.round(uncertainty*10000)/10000,
+          market_penalty:-Math.round(marketRisk*10000)/10000,
+          model_penalty:-Math.round(modelRisk*10000)/10000,
+          execution_penalty:-Math.round(execution*10000)/10000,
+          effective:Math.round(eff*10000)/10000,
+          minimum_required:MIN_EFFECTIVE_EDGE,
+          clears_minimum:(eff>=MIN_EFFECTIVE_EDGE),
+          basis:'raw edge less penalties for evidence gaps, market thinness, an edge outside what this market is usually wrong by, and price decay. A research discount on the deterministic edge — it never rewrites it.'
+        };
+      })(),
       credibility:Math.round(credibility*1000)/10,
       band:band, call:call,
       market_confidence:Math.round(marketConf*1000)/10,
