@@ -12512,6 +12512,19 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
   EVIDENCE_FAMILIES.basketball_wnba = EVIDENCE_FAMILIES.basketball_nba;
   EVIDENCE_FAMILIES.tennis_wta      = EVIDENCE_FAMILIES.tennis_atp;
 
+  /* Which METRICS satisfy each contract slot. The contract names the coarse
+     inputs a sport needs ("park", "weather"); the families are finer and both
+     of those live inside ENVIRONMENT, so slot presence cannot be read off the
+     family list alone. This maps the two together at metric granularity. */
+  var CONTRACT_SLOT_METRICS = {
+    baseball_mlb:{
+      starter:['k_pct','bb_pct','xera','era','whip','hr_per_9','barrel_pct','hardhit_pct','whiff_pct','fip'],
+      opponent_offense:['obp','iso','runs_per_game','woba','wrc_plus','ops','slg'],
+      bullpen:['bullpen_era','bullpen_rest','closer_status','bullpen_taxed','reliever_workload'],
+      park:['park_factor','hr_factor','run_factor'],
+      weather:['temp_f','wind_mph','wind_dir','is_dome']
+    }
+  };
   function familiesFor(sportKey){
     var k=String(sportKey||'');
     if(EVIDENCE_FAMILIES[k]) return EVIDENCE_FAMILIES[k];
@@ -12865,6 +12878,23 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
     var need = contract.required||[], have = ctx.evidencePresent||{};
     var prof = (ctx.evidenceItems && ctx.evidenceItems.length)
       ? evidenceProfile(ctx.evidenceItems, x&&x.e&&x.e.sport_key) : null;
+    /* When the metric path is in use, `have` is empty — evidencePresent is the
+       OLD contract and nothing fills it any more. Left alone, missing_evidence
+       reported all five MLB inputs missing on every game, including park and
+       weather that were demonstrably present, and the AI then repeated that
+       back as fact. Derive presence from the metrics actually seen. */
+    if(prof){
+      var seen={};
+      (ctx.evidenceItems||[]).forEach(function(it){
+        if(it&&it.metric) seen[String(it.metric).toLowerCase().replace(/[^a-z0-9]/g,'_')]=1; });
+      var slots=CONTRACT_SLOT_METRICS[String(x&&x.e&&x.e.sport_key||'')]||null;
+      if(slots){
+        have={};
+        Object.keys(slots).forEach(function(slot){
+          if(slots[slot].some(function(m){ return !!seen[m]; })) have[slot]=1;
+        });
+      }
+    }
     var dataConf;
     if(prof && prof.families_defined){
       dataConf = prof.coverage;
@@ -13556,7 +13586,24 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
           return out;
         })(),
         ranking_note:'slate is ordered by RESEARCH PRIORITY, which is the deterministic score weighted by edge credibility — not by raw edge. A large number on a thin, unanchored market ranks below a smaller one with a real market and complete evidence behind it. base_priority is the score before that weighting, so the two are comparable.',
-        answering_note:'Answer the question asked, first and plainly, before any methodology. Quote raw_edge and credibility as separate facts — a large edge with low credibility is a reason to investigate, not to bet. If the evidence a sport requires is missing, say which pieces and say that the conclusion is provisional.'
+        answering_note:'Answer the question asked, first and plainly, before any methodology. Quote raw_edge and credibility as separate facts — a large edge with low credibility is a reason to investigate, not to bet. If the evidence a sport requires is missing, say which pieces and say that the conclusion is provisional.',
+        /* Written after a real answer to "best pitchers on today's slate" ran to
+           five paragraphs, restated the same empty field four times, explained
+           what the model was "not permitted" to do, and closed by inviting the
+           user to ask a second question. All of that is the assistant talking
+           about itself instead of answering. */
+        output_contract:[
+          'FIRST LINE ANSWERS THE QUESTION. A ranking, a name, a number, or a direct "no". Never open with what you checked, what you are permitted to do, or how the engine works.',
+          'A refusal is at most two sentences: what is missing, and the single thing that would fix it. State the empty field ONCE. Do not restate it per row, per paragraph, or in a closing summary.',
+          'Never describe your own constraints. "I am not permitted to substitute memory" and "I am not going to dress up team records" are about you, not the slate. Delete them.',
+          'If the exact question cannot be answered, answer the NEAREST question you can from the data you hold, in the same reply, without being asked. Do not offer to do it and wait — "say the word and I will rank the full slate" costs the user a round trip for nothing. Rank what you have and label it for what it is.',
+          'Cite a number once. Repeating "quality:null" for six pitchers is one fact, not six.',
+          'No preamble, no restating the question, no closing offer of further help.'
+        ],
+        answer_shape:{
+          answerable:'One-line verdict, then the ranked or compared items with the numbers that drive them, then at most one line on what would change it.',
+          unanswerable:'One line naming what is empty and the fix. Then immediately the closest ranking the present data supports, labelled as what it is — for example environment and market only, without pitching.'
+        }
       },
       counts:{games_with_signals:games.length, shown:rows.length, model_leads:leads.length,
         mlb_games:card.length, mlb_starters:pitchers.length,
