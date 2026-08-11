@@ -3327,6 +3327,12 @@ var WEIGHT_ROWS=[],CALIB=[];
 var NO_CLV_REASONS=[
   ['line_pulled_no_close','no line quoted at close'],
   ['missed_close_window','close window missed'],
+  /* Not the same thing as a missed window, and the record should not blur them.
+     "Missed" means the price existed and the job failed to ask. This means the
+     event finished before any tick history was being recorded at all, so there
+     was never a close to capture. It is checkable: the row's commence_time is
+     earlier than the first row in signal_ticks. */
+  ['predates_tick_capture','before price history existed'],
   ['implausible_close_price','placeholder close price'],
   ['invalid_close_fair','de-vig produced no probability'],
   ['incoherent_close_market','incoherent close market'],
