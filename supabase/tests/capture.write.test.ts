@@ -43,6 +43,7 @@ type Op = {
 };
 const ops: Op[] = [];
 let failOn: ((op: Op) => any) | null = null;
+let inflight = 0, peakUpdateInflight = 0;
 
 function makeClient() {
   return {
@@ -61,7 +62,20 @@ function makeClient() {
           eq: (...a: any[]) => { op.filters.push({ fn: "eq", args: a }); return chain; },
           is: (...a: any[]) => { op.filters.push({ fn: "is", args: a }); return chain; },
           select: () => chain,
-          then: (res: any, rej: any) => Promise.resolve(result).then(res, rej),
+          then: (res: any, rej: any) => {
+            /* TRUE IN-FLIGHT DEPTH. Resolution is deferred to a macrotask, so a
+               sequential `await` in a loop can never have more than one call
+               outstanding (peak 1), while a Promise.all batch registers its
+               whole batch before any of them settle (peak = batch size).
+               Counting issued-so-far instead would rise on its own as the run
+               progressed and pass against sequential code — which is exactly
+               what an earlier version of this check did. */
+            inflight++;
+            if (op.kind === "update") peakUpdateInflight = Math.max(peakUpdateInflight, inflight);
+            return new Promise((r) => setTimeout(() => r(result), 0))
+              .then((v) => { inflight--; return v; })
+              .then(res, rej);
+          },
         };
         return chain;
       };
@@ -93,7 +107,7 @@ let handler: (req: Request) => Promise<Response>;
 (globalThis as any).Deno.serve = (fn: any) => { handler = fn; };
 
 const run = async () => {
-  ops.length = 0;
+  ops.length = 0; inflight = 0; peakUpdateInflight = 0;
   const res = await handler(new Request("http://x/capture", { headers: { "x-cron-secret": "s" } }));
   return { res, body: await res.json() };
 };
@@ -162,6 +176,40 @@ async function main() {
     tickOps.every((o) => o.kind === "insert"));
   check("ticks_written is reported honestly", body.ticks_written === tickOps[0].payload.length,
     `${body.ticks_written}`);
+
+  /* ================= THE WALL-CLOCK FIX ================================
+     Phase C cannot be collapsed into one UPDATE — every row freezes a
+     different price and the flagged_at IS NULL guard is what stops an entry
+     price drifting. So the calls stay one-per-row; what changed is that they
+     are issued in bounded-concurrency batches. At FLAG_MAX=600 and ~40ms a
+     call, sequential meant 24 SECONDS PER SPORT of pure waiting, which walked
+     the run into the Edge Function wall-clock and got it killed mid-flight
+     with its writes still in memory — while net.http_post recorded a success.
+
+     Assert the batching directly, because a refactor back to `for (const f of
+     flagNow) await ...` would still pass every other test in this file. */
+  {
+    // enough distinct flaggable selections to fill more than one batch
+    const many = Array.from({ length: 60 }, (_, i) =>
+      evt("m" + i, [["bookA", 1.90, 1.95], ["bookB", 1.92, 1.93], ["soft", 2.10, 1.80]]));
+    oddsBody = many;
+    const { body: b } = await run();
+    const upd = ops.filter((o) => o.table === "signals" && o.kind === "update");
+    check("Every flaggable selection is frozen", upd.length === b.flag_frozen && upd.length >= 60,
+      `updates=${upd.length} frozen=${b.flag_frozen}`);
+    check("PHASE C issues flag freezes CONCURRENTLY, not one at a time",
+      peakUpdateInflight > 1,
+      `peak concurrent flag updates was ${peakUpdateInflight} — a sequential await-loop yields exactly 1`);
+    check("...and every concurrent freeze still carries the flagged_at IS NULL guard",
+      upd.every((o) => o.filters.some((f) => f.fn === "is" && f.args[0] === "flagged_at" && f.args[1] === null)));
+    check("...and still targets exactly one sig_key each",
+      upd.every((o) => o.filters.filter((f) => f.fn === "eq" && f.args[0] === "sig_key").length === 1));
+    check("The run reports its clock", typeof b.elapsed_ms === "number" && b.budget_ms > 0,
+      `${b.elapsed_ms}/${b.budget_ms}`);
+    check("A run inside its budget skips no sport for time",
+      b.sports_skipped_for_time === undefined, JSON.stringify(b.sports_skipped_for_time));
+    oddsBody = [evt("e1", [["bookA", 1.90, 1.95], ["bookB", 1.92, 1.93], ["soft", 2.10, 1.80]])];
+  }
 
   /* ================= write failures are never hidden =================== */
   {

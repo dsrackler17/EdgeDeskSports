@@ -107,7 +107,7 @@
    ═══════════════════════════════════════════════════════════════════════════ */
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-export const BUILD = "capture-v6-feed-resilience";
+export const BUILD = "capture-v7-wallclock";
 
 // ---- from _shared/db.ts -----------------------------------------------------
 const db = createClient(
@@ -273,6 +273,20 @@ const MAX_BEST_VS_MEDIAN = Number(Deno.env.get("CAPTURE_MAX_BEST_RATIO") ?? "1.3
    itself. Two is the minimum at which "consensus" means anything. */
 const MIN_BOOKS_TO_FLAG = Number(Deno.env.get("CAPTURE_MIN_BOOKS") ?? "2");
 
+/* ── WALL CLOCK ──────────────────────────────────────────────────────────
+   Capture is one HTTP request and it dies when the platform says so. Every
+   write it had not yet issued is lost, and the caller — net.http_post, which
+   is fire-and-forget — records a success either way. So the run has to police
+   its own clock: finish the sport it is on, skip the rest, RETURN, and say in
+   the response exactly what it did not get to. A short honest run beats a long
+   one that is killed with its results still in memory.
+
+   110s leaves headroom under the default 150s limit for the final response. */
+const BUDGET_MS = Number(Deno.env.get("CAPTURE_MAX_MS") ?? "110000");
+/* How many flag freezes are in flight at once. 25 turns a 600-call sequential
+   crawl into 24 rounds. Raise it only if PostgREST is comfortable. */
+const FLAG_CONCURRENCY = Math.max(1, Number(Deno.env.get("CAPTURE_FLAG_CONCURRENCY") ?? "25"));
+
 /**
  * Can this market actually be BACKED at the quoted price?
  *
@@ -423,6 +437,9 @@ Deno.serve(async (req) => {
      returned, how many outcomes priced, and exactly why each candidate was or
      was not flagged. It still needs the cron secret; it reads real odds. */
   const diag = params.diag === "1";
+  const startedAt = Date.now();
+  const elapsed = () => Date.now() - startedAt;
+  const outOfTime = () => elapsed() > BUDGET_MS;
 
   if (!authorized(req)) {
     return json({
@@ -470,6 +487,7 @@ Deno.serve(async (req) => {
   let dupesDropped = 0;
   let eventErrors = 0;
   const eventErrorSamples: { sport: string; event_id: string | null; error: string }[] = [];
+  const skippedForTime: string[] = [];
   const writeErrors: string[] = [];
   /* Why candidates did NOT become signals, counted by reason. This is the
      single most useful number in the response: it separates "a quiet board"
@@ -486,6 +504,9 @@ Deno.serve(async (req) => {
   const sportList = diag ? sports.slice(0, 1) : sports;
 
   for (const sport of sportList) {
+    /* Out of clock: stop cleanly rather than being killed with this sport's
+       writes still unissued. Everything already written stays written. */
+    if (outOfTime()) { skippedForTime.push(sport); continue; }
     const { data, quota: q, ok, status, detail } = await fetchOdds(sport, REGIONS, MARKETS);
     if (q) quota = q;
     if (!ok) {
@@ -602,17 +623,32 @@ Deno.serve(async (req) => {
     toFlag.sort((a, b) => (b.flagged_edge ?? 0) - (a.flagged_edge ?? 0));
     const flagNow = toFlag.slice(0, FLAG_MAX);
     flagDeferred += Math.max(0, toFlag.length - flagNow.length);
-    for (const f of flagNow) {
-      const { error } = await db.from("signals")
-        .update({ flagged_at: f.flagged_at, flagged_edge: f.flagged_edge,
-                  flagged_best_dec: f.flagged_best_dec, flagged_best_book: f.flagged_best_book })
-        .eq("sig_key", f.sig_key).is("flagged_at", null);
-      if (error) {
-        flagErrors++;
-        if (writeErrors.length < 8) writeErrors.push(explainWriteError("flag", error));
-        continue;
+    /* EACH FLAG IS ITS OWN ROUND TRIP AND THAT IS NOT NEGOTIABLE — every row
+       carries a different frozen price, so they cannot be collapsed into one
+       UPDATE, and the `flagged_at IS NULL` guard is what stops an entry price
+       drifting. What WAS negotiable is doing 600 of them one after another.
+       At FLAG_MAX=600 and ~40ms per call that is 24 SECONDS PER SPORT of pure
+       waiting; across a full sports list it walked straight through the Edge
+       Function wall-clock, the run was killed mid-flight, and net.http_post
+       recorded a success. Same calls, same guard, same order — issued in
+       bounded-concurrency batches instead of single file. */
+    for (let i = 0; i < flagNow.length; i += FLAG_CONCURRENCY) {
+      const batch = flagNow.slice(i, i + FLAG_CONCURRENCY);
+      const results = await Promise.all(batch.map((f) =>
+        db.from("signals")
+          .update({ flagged_at: f.flagged_at, flagged_edge: f.flagged_edge,
+                    flagged_best_dec: f.flagged_best_dec, flagged_best_book: f.flagged_best_book })
+          .eq("sig_key", f.sig_key).is("flagged_at", null)
+      ));
+      for (const { error } of results) {
+        if (error) {
+          flagErrors++;
+          if (writeErrors.length < 8) writeErrors.push(explainWriteError("flag", error));
+          continue;
+        }
+        flagged++;
       }
-      flagged++;
+      if (outOfTime()) { flagDeferred += flagNow.length - (i + batch.length); break; }
     }
 
     /* Tick history: the only thing that can grade a signal whose market key has
@@ -646,7 +682,8 @@ Deno.serve(async (req) => {
      is additive and carries the distinction. */
   const status = diag
     ? "diagnostic"
-    : capturedNothing ? "failed" : (errored.length || eventErrors || writeErrors.length) ? "partial" : "ok";
+    : capturedNothing ? "failed"
+    : (errored.length || eventErrors || writeErrors.length || skippedForTime.length) ? "partial" : "ok";
 
   const body = {
     ok: diag ? (!allErrored && !capturedNothing) : !capturedNothing,
@@ -679,6 +716,16 @@ Deno.serve(async (req) => {
     ...(eventErrors ? { event_pricing_failures: eventErrors, event_pricing_error_samples: eventErrorSamples } : {}),
     priced, quota_remaining: quota,
     flag_candidates: flagCandidates,
+    /* The clock. If `sports_skipped_for_time` is ever non-empty the run is
+       outgrowing its window: raise CAPTURE_FLAG_CONCURRENCY, cut FLAG_MAX, or
+       split the sports list across two crons. Before this existed the same
+       condition killed the run outright and reported nothing at all. */
+    elapsed_ms: elapsed(), budget_ms: BUDGET_MS,
+    ...(skippedForTime.length
+      ? { sports_skipped_for_time: skippedForTime,
+          time_warning: `Ran out of clock after ${elapsed()}ms. ${skippedForTime.length} sport(s) were not `
+            + `captured this run. Everything written before the cutoff is committed.` }
+      : {}),
 
     /* THE NUMBERS THAT ANSWER "WHY ARE THERE NO EDGES".
        flag_frozen is how many signals entered the record pool this run.
