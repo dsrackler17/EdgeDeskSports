@@ -54,6 +54,36 @@
 //   (bad sport key) and 429 (quota exhausted) need three different fixes and
 //   were previously indistinguishable.
 //
+// ─────────────────────────────────────────────────────────────────────────────
+// v6 — THE RUN THAT DIED ON ONE MALFORMED MARKET
+//
+//   `ev.bookmakers ?? []` and `bk.markets ?? []` were guarded. `mk.outcomes`
+//   was not. One market object arriving without an `outcomes` array threw
+//     TypeError: Cannot read properties of undefined (reading 'map')
+//   out of priceEvent — which is called inside the sport loop with nothing to
+//   catch it. The exception unwound past every remaining sport and out of the
+//   request handler: no signals written, no ticks, no flags, no telemetry, just
+//   a bare 500. And because the scheduler calls capture through net.http_post,
+//   which is fire-and-forget and records `succeeded` whatever the HTTP response
+//   was, the cron history stayed clean while the board went stale. Reproduced
+//   in supabase/tests/capture.test.ts (cases 7-8) before it was fixed.
+//
+//   FIX: `outcomes` is guarded like its siblings, prices are coerced with
+//   Number() and checked with Number.isFinite (a non-numeric price no longer
+//   slips past `!d || d <= 1`), and each event is priced inside a try/catch
+//   that counts the casualty and keeps going. One bad event costs one event.
+//
+// v6 — A DUPLICATED LINE FROM ONE BOOK PASSED THE TWO-BOOK CONSENSUS GATE
+//
+//   n_books was `slot.fairs.length` — the number of QUOTES, not of BOOKS. A
+//   single feed listing the same outcome twice therefore reported n_books: 2
+//   and satisfied MIN_BOOKS_TO_FLAG, defeating the very check whose comment
+//   reads "a fair line resting on one book is that book's own opinion devigged
+//   against itself". The same duplicate also double-weighted that book in the
+//   consensus median. Quotes are now keyed by book, first quote wins, and
+//   best_dec / median_dec are drawn from that same deduped population so the
+//   outlier ratio in `flaggable` compares like with like.
+//
 // PRESERVED FROM v4 (all five fixes still in force)
 //   1. Two-phase write so the opening snapshot is never overwritten.
 //   2. Phase C freezes the flagged entry price once, guarded on flagged_at IS NULL.
@@ -77,7 +107,7 @@
    ═══════════════════════════════════════════════════════════════════════════ */
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-export const BUILD = "capture-v5-flag-discipline";
+export const BUILD = "capture-v6-feed-resilience";
 
 // ---- from _shared/db.ts -----------------------------------------------------
 const db = createClient(
@@ -152,35 +182,54 @@ export function priceEvent(ev: any, method: string, sharpBook: string): Outcome[
   const out: Outcome[] = [];
   const mkts: Record<string, Record<string, any>> = {};
   for (const bk of ev.bookmakers ?? []) {
-    const isSharp = sharpBook && bk.key.toLowerCase().includes(sharpBook);
+    const bookKey = String(bk?.key ?? "");
+    const isSharp = sharpBook && bookKey.toLowerCase().includes(sharpBook);
     for (const mk of bk.markets ?? []) {
-      const decs = mk.outcomes.map((o: any) => o.price);
-      if (decs.length < 2 || decs.some((d: number) => !d || d <= 1)) continue;
+      /* THE FEED IS NOT A CONTRACT. `bookmakers` and `markets` were already
+         guarded; `outcomes` was not, so one market object arriving without it
+         threw a TypeError out of priceEvent — and priceEvent is called inside
+         the sport loop with nothing to catch it. A single malformed market
+         therefore killed the WHOLE run: every sport, no writes, no telemetry,
+         just a 500 that net.http_post discards. Guarding here restores the
+         intended behaviour, which is to skip the market and keep going. */
+      const outcomes: any[] = Array.isArray(mk?.outcomes) ? mk.outcomes : [];
+      const decs = outcomes.map((o: any) => Number(o?.price));
+      if (decs.length < 2 || decs.some((d: number) => !Number.isFinite(d) || d <= 1)) continue;
       const fair = devig(decs, method);
-      mk.outcomes.forEach((o: any, i: number) => {
+      outcomes.forEach((o: any, i: number) => {
         const pt = o.point ?? null;
         const okey = o.name + (pt != null ? "|" + pt : "");
         mkts[mk.key] = mkts[mk.key] ?? {};
-        const slot = mkts[mk.key][okey] ?? (mkts[mk.key][okey] = { name: o.name, point: pt, fairs: [], decs: [], sharp: null, best: { dec: 0, book: "" } });
-        slot.fairs.push(fair[i]); if (isSharp) slot.sharp = fair[i];
-        /* Every quoted decimal is kept, not just the best. Without the full set
-           there is no way to tell a genuinely generous price from a broken one,
-           which is precisely how a 12.0 on a coin flip became a 505% edge. */
-        slot.decs.push(o.price);
-        if (o.price > slot.best.dec) slot.best = { dec: o.price, book: bk.title };
+        const slot = mkts[mk.key][okey] ?? (mkts[mk.key][okey] = { name: o.name, point: pt, byBook: new Map<string, { fair: number; dec: number; book: string }>(), sharp: null });
+        /* ONE QUOTE PER BOOK PER SELECTION. A book that lists the same outcome
+           twice used to push two fairs and two decimals, which inflated n_books
+           — so a duplicated line from ONE feed satisfied MIN_BOOKS_TO_FLAG and
+           passed the "a single book is not a consensus" gate that exists
+           precisely to stop that. It also double-weighted that book in the
+           median. First quote wins; the population is now books, not rows. */
+        if (slot.byBook.has(bookKey)) return;
+        slot.byBook.set(bookKey, { fair: fair[i], dec: decs[i], book: bk.title });
+        /* The sharp anchor follows the same first-quote-wins rule, so the fair
+           used as the anchor is the same quote counted in the consensus. */
+        if (isSharp) slot.sharp = fair[i];
       });
     }
   }
   for (const mk in mkts) for (const okey in mkts[mk]) {
     const s = mkts[mk][okey];
+    const quotes = [...s.byBook.values()];
+    if (!quotes.length) continue;
     const hasSharp = s.sharp != null;
-    const cons = median(s.fairs), sharp = s.sharp ?? cons, edge = sharp * s.best.dec - 1;
+    /* best_dec and median_dec are drawn from the SAME deduped population, so
+       the outlier ratio in `flaggable` compares like with like. */
+    const best = quotes.reduce((a, b) => (b.dec > a.dec ? b : a));
+    const cons = median(quotes.map((q) => q.fair)), sharp = s.sharp ?? cons, edge = sharp * best.dec - 1;
     out.push({
       event_id: ev.id, sport_key: ev.sport_key, sport_title: ev.sport_title, commence_time: ev.commence_time,
       home_team: ev.home_team, away_team: ev.away_team, market: mk, selection: s.name, point: s.point,
-      best_dec: s.best.dec, best_book: s.best.book, sharp_fair: sharp, consensus_fair: cons, edge,
-      n_books: s.fairs.length, is_plus_ev: edge > 0, has_sharp: hasSharp,
-      median_dec: median(s.decs),
+      best_dec: best.dec, best_book: best.book, sharp_fair: sharp, consensus_fair: cons, edge,
+      n_books: quotes.length, is_plus_ev: edge > 0, has_sharp: hasSharp,
+      median_dec: median(quotes.map((q) => q.dec)),
     });
   }
   return out;
@@ -406,12 +455,20 @@ Deno.serve(async (req) => {
   let flagDeferred = 0, flagErrors = 0;
   let ticksWritten = 0, tickErrors = 0;
   let dupesDropped = 0;
+  let eventErrors = 0;
+  const eventErrorSamples: { sport: string; event_id: string | null; error: string }[] = [];
   const writeErrors: string[] = [];
   /* Why candidates did NOT become signals, counted by reason. This is the
      single most useful number in the response: it separates "a quiet board"
      from "every edge on the board was a broken price". */
   const rejected: Record<string, number> = {};
   const rejectSamples: any[] = [];
+  /* Candidates that PASSED every flag check. In a normal run this equals the
+     rows phase C will freeze; in ?diag=1 it is the answer to "would this run
+     have put anything on the board", asked without writing. */
+  let flagCandidates = 0;
+  const diagSamples: any[] = [];
+  const perSportEvents: Record<string, number> = {};
 
   const sportList = diag ? sports.slice(0, 1) : sports;
 
@@ -427,10 +484,30 @@ Deno.serve(async (req) => {
     const ticks: any[] = [];
     const toFlag: any[] = [];
     const seen = new Set<string>();
+    /* Events RETURNED by the provider, before pricing. Separates "the feed sent
+       nothing" from "the feed sent events that priced to nothing" — two very
+       different faults that both end in an empty board. */
+    perSportEvents[sport] = Array.isArray(data) ? data.length : 0;
 
     for (const ev of data) {
-      for (const bk of ev.bookmakers ?? []) bookSet.add(bk.key);
-      for (const o of priceEvent(ev, METHOD, SHARP)) {
+      /* ONE BAD EVENT IS NOT A BAD RUN. priceEvent is defensive now, but it
+         parses a third-party feed and this loop is the last place an unexpected
+         shape can still escape. Without this, an exception here unwinds all the
+         way out of the request handler: every sport lost, nothing written, and
+         a bare 500 that the fire-and-forget cron caller never records. Count
+         the casualty, name it in the response, and keep capturing. */
+      let pricedForEvent: any[];
+      try {
+        for (const bk of ev.bookmakers ?? []) bookSet.add(bk.key);
+        pricedForEvent = priceEvent(ev, METHOD, SHARP);
+      } catch (e) {
+        eventErrors++;
+        if (eventErrorSamples.length < 5) {
+          eventErrorSamples.push({ sport, event_id: ev?.id ?? null, error: String((e as Error)?.message ?? e) });
+        }
+        continue;
+      }
+      for (const o of pricedForEvent) {
         const key = sigKey(o);
         /* DEDUPE BEFORE THE WRITE. Postgres refuses an ON CONFLICT statement
            that touches the same row twice — "cannot affect row a second time"
@@ -459,6 +536,12 @@ Deno.serve(async (req) => {
            puts its name on the price. */
         const verdict = flaggable(o);
         if (verdict.ok) {
+          flagCandidates++;
+          if (diagSamples.length < 12) {
+            diagSamples.push({ sport, market: o.market, selection: o.selection, point: o.point,
+              edge: +o.edge.toFixed(4), best_dec: o.best_dec, median_dec: +o.median_dec.toFixed(3),
+              n_books: o.n_books, best_book: o.best_book, has_sharp: o.has_sharp });
+          }
           toFlag.push({ sig_key: key, flagged_at: now, flagged_edge: o.edge,
             flagged_best_dec: o.best_dec, flagged_best_book: o.best_book });
         } else if (verdict.reason !== "below_flag_floor") {
@@ -544,11 +627,28 @@ Deno.serve(async (req) => {
      look like quiet days for as long as nobody went looking. */
   const capturedNothing = priced === 0;
   const allErrored = errored.length === sportList.length;
+  /* A run where SOME sports failed and others captured is neither a success nor
+     a failure, and collapsing it into either loses the thing worth acting on.
+     `ok` keeps its existing meaning so current callers are unaffected; `status`
+     is additive and carries the distinction. */
+  const status = diag
+    ? "diagnostic"
+    : capturedNothing ? "failed" : (errored.length || eventErrors || writeErrors.length) ? "partial" : "ok";
 
   const body = {
-    ok: diag ? true : !capturedNothing,
+    ok: diag ? (!allErrored && !capturedNothing) : !capturedNothing,
+    status,
     build: BUILD,
-    ...(diag ? { mode: "diagnostic", note: "One sport priced, NOTHING written." } : {}),
+    ...(diag ? {
+      mode: "diagnostic",
+      note: "One sport priced. NOTHING was written — no signals, no flags, no ticks.",
+      persistence: "skipped_intentionally",
+      diag_scope_sport: sportList[0] ?? null,
+      events_returned: perSportEvents,
+      flaggable_candidates: flagCandidates,
+      ...(diagSamples.length ? { flaggable_candidate_samples: diagSamples } : {}),
+      would_have_flagged: Math.min(flagCandidates, FLAG_MAX),
+    } : {}),
     ...(capturedNothing && !diag
       ? { error: allErrored
             ? "every sport's odds request failed — see `errored` for the HTTP status of each"
@@ -561,8 +661,11 @@ Deno.serve(async (req) => {
     ...(discoveryDetail ? { sports_discovery_error: discoveryDetail } : {}),
     sports: sportList.length, sports_list: sportList,
     per_sport: perSport,
+    per_sport_events: perSportEvents,
     ...(errored.length ? { errored } : {}),
+    ...(eventErrors ? { event_pricing_failures: eventErrors, event_pricing_error_samples: eventErrorSamples } : {}),
     priced, quota_remaining: quota,
+    flag_candidates: flagCandidates,
 
     /* THE NUMBERS THAT ANSWER "WHY ARE THERE NO EDGES".
        flag_frozen is how many signals entered the record pool this run.

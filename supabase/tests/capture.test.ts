@@ -107,6 +107,113 @@ async function main() {
       new Set(keys).size === keys.length && keys.length === 2, keys.join(","));
   }
 
+  /* ---- 7. THE RUN-KILLER: a market with no `outcomes` ------------------
+     `bookmakers` and `markets` were guarded; `outcomes` was not. priceEvent is
+     called inside the sport loop with nothing to catch it, so this TypeError
+     unwound out of the request handler and lost EVERY sport — while the
+     fire-and-forget cron caller still recorded a successful run. */
+  {
+    const malformed = (mk: any) => ({
+      id: "bad", sport_key: "baseball_mlb", sport_title: "MLB",
+      commence_time: new Date().toISOString(), home_team: "H", away_team: "A",
+      bookmakers: [{ key: "b", title: "B", markets: [mk] }],
+    });
+    let threw = "";
+    try { C.priceEvent(malformed({ key: "h2h" }), "shin", "pinnacle"); }
+    catch (e) { threw = (e as Error).message; }
+    check("A market with NO outcomes array does not throw out of priceEvent", threw === "", threw);
+
+    threw = "";
+    try { C.priceEvent(malformed({ key: "h2h", outcomes: null }), "shin", "pinnacle"); }
+    catch (e) { threw = (e as Error).message; }
+    check("A market with outcomes:null does not throw either", threw === "", threw);
+
+    check("A malformed market is skipped, not priced",
+      C.priceEvent(malformed({ key: "h2h" }), "shin", "pinnacle").length === 0);
+  }
+
+  /* ---- 8. one malformed market must not cost the GOOD markets ---------- */
+  {
+    const mixed = {
+      id: "mix", sport_key: "baseball_mlb", sport_title: "MLB",
+      commence_time: new Date().toISOString(), home_team: "H", away_team: "A",
+      bookmakers: [
+        { key: "broken", title: "Broken", markets: [{ key: "h2h" }] },
+        { key: "bookA", title: "A", markets: [{ key: "h2h", outcomes: [{ name: "Away", price: 1.90 }, { name: "Home", price: 1.95 }] }] },
+        { key: "bookB", title: "B", markets: [{ key: "h2h", outcomes: [{ name: "Away", price: 1.92 }, { name: "Home", price: 1.93 }] }] },
+      ],
+    };
+    const priced = C.priceEvent(mixed, "shin", "pinnacle");
+    check("A broken book alongside good books still prices the good ones",
+      priced.length === 2, `priced=${priced.length}`);
+    check("...and the broken book is not counted as a corroborating book",
+      priced.every((o: any) => o.n_books === 2), priced.map((o: any) => o.n_books).join(","));
+  }
+
+  /* ---- 9. non-numeric / null prices ------------------------------------ */
+  {
+    const weird = (a: any, b: any) => ({
+      id: "w", sport_key: "s", sport_title: "S", commence_time: new Date().toISOString(),
+      home_team: "H", away_team: "A",
+      bookmakers: [{ key: "b", title: "B", markets: [{ key: "h2h", outcomes: [{ name: "Away", price: a }, { name: "Home", price: b }] }] }],
+    });
+    check("A null price is rejected, not devigged",
+      C.priceEvent(weird(null, 1.9), "shin", "pinnacle").length === 0);
+    check("A non-numeric price is rejected, not coerced into a fair line",
+      C.priceEvent(weird("abc", 1.9), "shin", "pinnacle").length === 0);
+    check("A price of exactly 1.0 is rejected",
+      C.priceEvent(weird(1.0, 1.9), "shin", "pinnacle").length === 0);
+  }
+
+  /* ---- 10. THE CONSENSUS GATE: n_books counts BOOKS, not QUOTES --------
+     A single feed listing the same outcome twice used to report n_books:2 and
+     satisfy MIN_BOOKS_TO_FLAG — defeating the exact check meant to stop a
+     one-book fair from being flagged as a consensus. */
+  {
+    const dup = {
+      id: "dup", sport_key: "s", sport_title: "S", commence_time: new Date().toISOString(),
+      home_team: "H", away_team: "A",
+      bookmakers: [{
+        key: "solo", title: "Solo",
+        markets: [{ key: "h2h", outcomes: [
+          { name: "Away", price: 2.10 }, { name: "Home", price: 1.80 }, { name: "Away", price: 2.10 },
+        ] }],
+      }],
+    };
+    const away = C.priceEvent(dup, "shin", "pinnacle").find((o: any) => o.selection === "Away");
+    check("A book quoting the same selection twice counts as ONE book",
+      away.n_books === 1, `n_books=${away.n_books}`);
+    check("...so the duplicate can no longer pass the consensus gate",
+      C.flaggable({ ...away, edge: 0.05 }).reason === "single_book_fair_is_not_a_consensus",
+      JSON.stringify(C.flaggable({ ...away, edge: 0.05 })));
+  }
+
+  /* ---- 11. two real books still corroborate normally ------------------- */
+  {
+    const priced = C.priceEvent(ev("ok2", [["bookA", 1.90, 1.95], ["bookB", 1.92, 1.93]]), "shin", "pinnacle");
+    const away = priced.find((o: any) => o.selection === "Away");
+    check("Two genuinely distinct books still report n_books=2",
+      away.n_books === 2, `n_books=${away.n_books}`);
+    check("best_dec is the highest of the deduped quotes",
+      away.best_dec === 1.92, `best_dec=${away.best_dec}`);
+    check("median_dec is drawn from the same population as best_dec",
+      Math.abs(away.median_dec - 1.91) < 1e-9, `median_dec=${away.median_dec}`);
+  }
+
+  /* ---- 12. the v5 outlier behaviour is unchanged (regression) ---------- */
+  {
+    const priced = C.priceEvent(ev("reg", [
+      ["bookA", 1.90, 1.95], ["bookB", 1.92, 1.93], ["bookC", 1.88, 1.98], ["stalefeed", 12.0, 1.05],
+    ]), "shin", "pinnacle");
+    const away = priced.find((o: any) => o.selection === "Away");
+    check("REGRESSION: the stale 12.0 quote is still refused as an outlier",
+      C.flaggable(away).reason === "best_price_is_an_outlier_vs_the_other_books");
+    check("REGRESSION: four books still report n_books=4",
+      away.n_books === 4, `n_books=${away.n_books}`);
+    check("REGRESSION: backable() still rejects lay markets",
+      C.backable("h2h_lay") === false && C.backable("h2h") === true);
+  }
+
   console.log("\n=============== capture flag-discipline tests ===============");
   for (const r of rows) {
     console.log(`${r.ok ? " ok " : "FAIL"}  #${String(r.n).padStart(2)} ${r.name}`

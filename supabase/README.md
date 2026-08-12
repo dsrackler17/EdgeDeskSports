@@ -11,7 +11,7 @@ is therefore self-contained with no `../_shared` imports.
 |---|---|---|
 | `edgedesk_ai` | `edgedesk_ai-2026-08-12-r3-sport-intelligence` | Research engine. Retrieval, evidence, coverage, integrity, learning. |
 | `edgedesk_learn` | `2026-08-13.4-slope` | Cron. Turns graded signals into confirmed patterns + calibration. |
-| `capture` | `capture-v5-flag-discipline` | Cron. Prices the board and writes `signals`. |
+| `capture` | `capture-v6-feed-resilience` | Cron. Prices the board and writes `signals`. |
 
 ## Tests
 
@@ -20,9 +20,40 @@ Tests live outside the function folders so they are never bundled into a deploy.
 ```
 node --experimental-strip-types supabase/tests/edgedesk_ai.test.ts
 node --experimental-strip-types --import ./supabase/tests/_deno-shim.mjs supabase/tests/capture.test.ts
+node --experimental-strip-types --import ./supabase/tests/_deno-shim.mjs supabase/tests/capture.diag.test.ts
+node --experimental-strip-types --import ./supabase/tests/_deno-shim.mjs supabase/tests/capture.write.test.ts
 ```
 
 Under Deno: `deno test -A supabase/tests/edgedesk_ai.test.ts`.
+
+The three capture suites split by what they can prove without a database:
+
+| Suite | Covers |
+|---|---|
+| `capture.test.ts` | Pricing, devig, `sigKey`, flag discipline, malformed-feed handling. |
+| `capture.diag.test.ts` | The `Deno.serve` handler: auth, preconditions, sport resolution, response semantics, `?diag=1`. Mocked Odds API, no quota spent. |
+| `capture.write.test.ts` | Phase A/B/C and tick writes against a recording client — asserts the opening snapshot and the flagged entry price cannot drift. |
+
+`capture.write.test.ts` opts into a recording database by setting
+`globalThis.__MOCK_DB__` before import; everywhere else a database call still
+throws, so a test can never silently pass against imaginary data.
+
+## Capture failure triage
+
+`GET /capture?diag=1` with the `x-cron-secret` header prices one sport, writes
+nothing, and answers "why is the board empty" without reading the source:
+`per_sport_events` (did the feed return games), `priced` (did they price),
+`flaggable_candidates` (would anything reach the board), and
+`flag_rejected_by_reason` + `flag_rejected_samples` (if not, why not).
+
+`status` distinguishes `ok` / `partial` / `failed` / `diagnostic`. `ok` keeps
+its previous meaning — captured something — so existing callers are unchanged.
+
+> The scheduler calls capture through `net.http_post`, which is fire-and-forget:
+> `cron.job_run_details` records **succeeded** no matter what the function
+> returned. A non-200 from capture is therefore invisible in the cron history —
+> read the function logs or call `?diag=1` by hand. See
+> `docs/cron-audit-2026-08-12.md` on the `scheduled-database-jobs` branch.
 
 ## Environment
 
