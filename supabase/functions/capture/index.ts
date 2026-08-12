@@ -292,8 +292,21 @@ export function backable(market: string): boolean {
  *
  * STORING and FLAGGING are different acts and this is the line between them.
  * Everything priced gets stored — it is real market data and the movement and
- * residual reads want all of it. Only a flagged row reaches the board and the
- * record, so only a flagged row has to be defensible.
+ * residual reads want all of it. Only a flagged row has to be defensible.
+ *
+ * WHAT FLAGGING ACTUALLY GATES, VERIFIED AGAINST THE CONSUMERS (do not trust
+ * the older claim that it gates "the board and the record" — it gates one):
+ *   - THE RECORD: yes. record.html and the app's record view both select on
+ *     `flagged_at=not.is.null&flagged_edge=gte.0.005&flagged_edge=lte.0.1`,
+ *     so an unflagged row can never enter the graded pool or the CLV figures.
+ *   - CLV / GRADING: yes. close/index.ts `entryPrice()` prefers
+ *     flagged_best_dec and falls back to first_best_dec only when it is absent.
+ *   - THE BOARD: NO. app.html's EDGES query filters on `edge=gt.0` and a
+ *     commence_time window, and does not mention flagged_at. A stored-but-
+ *     refused price with a positive edge therefore still renders on the board.
+ *     Capture cannot fix that from here — the filter belongs to the reader —
+ *     but nobody should believe this function is protecting the board until
+ *     that query also requires flagged_at.
  *
  * Returns the reason for refusal rather than a bare boolean, because the
  * counts by reason are the whole diagnostic: "0 edges today" and "1,400 edges
