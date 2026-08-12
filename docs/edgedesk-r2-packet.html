@@ -167,16 +167,16 @@ footer{margin-top:34px;padding-top:20px;border-top:1px solid var(--rule);color:v
 
 <div class="wrap">
   <header class="top">
-    <p class="eyebrow">EdgeDesk · 12 Aug 2026 · r2 · research packet + cron repair</p>
-    <h1>Three files — and the analyst stops guessing whether its own data is complete</h1>
-    <p class="lede">Step 1 is the whole <code class="mono">edgedesk_ai</code> function, paste-ready. Steps 2 and 3 are SQL and are independent of it — run them in either order, but read PART A of each before running PART B.</p>
-    <p class="lede" style="margin-top:12px"><strong>Step 1 fixes something the working notes had diagnosed wrong.</strong> "Worst pitchers today" was refusing because <code class="mono">getMlbCard</code> was feeding the analyst <em>yesterday's finished slate</em> — 30 of 30 starters from completed games, 0 of 30 from tonight — not because of the FINAL-game filter in <code class="mono">getPitcherFeatures</code>, which was already deployed and never touched that path.</p>
+    <p class="eyebrow">EdgeDesk · 12 Aug 2026 · r2 · rev 2 · post-verification</p>
+    <h1>Two files left — the build, and the repair the verification proved I got wrong</h1>
+    <p class="lede">Step 1 is the whole <code class="mono">edgedesk_ai</code> function, paste-ready. Step 2 is SQL and is independent of it: it finishes the cron repair, removes the last plaintext service-role keys, and <strong>undoes a redundant index the previous script created</strong>.</p>
+    <p class="lede" style="margin-top:12px"><strong>I was wrong about the learning loop.</strong> I predicted <code class="mono">research_outcomes.user_id</code> was missing its <code class="mono">DEFAULT auth.uid()</code>. It was not — the default and the unique constraint were both already correct, so the previous script's PART B added a duplicate index and fixed nothing. The table being empty <em>anyway</em> is a better clue than the one I guessed at, and step 2 PART B chases it properly.</p>
   </header>
 
   <div class="tracker">
     <span class="lbl">Progress</span>
     <span class="pips" id="pips"></span>
-    <span class="count" id="count">0 of 3 copied</span>
+    <span class="count" id="count">0 of 2 copied</span>
     <button class="reset" id="reset" type="button">Reset</button>
   </div>
 
@@ -187,9 +187,10 @@ footer{margin-top:34px;padding-top:20px;border-top:1px solid var(--rule);color:v
     <p><strong>Identity is an id, not a name.</strong> Every evidence item carries an id, a layer and whatever canonical identity its source publishes. Three new integrity checks catch a person on two teams, a team not playing in its own game, and one matchup filed under two event ids.</p>
     <p><strong>Nothing here computes a betting number.</strong> Probability, fair price, edge, EV, CLV, confidence, score, price sensitivity and the verdict remain the deterministic engine's, attached as a read-only block. That did not change and was re-verified after every edit.</p>
 
-    <h3>Two things that are not a paste</h3>
-    <p><strong>Rotate the service-role key and the cron secret before step 3's PART B.</strong> Both were sitting in plaintext in <code class="mono">cron.job.command</code> — readable by anyone who can select from the <code class="mono">cron</code> schema — and both have since been pasted into a chat. The JWT does not expire until 2036 and bypasses RLS entirely.</p>
-    <p><strong>Confirm which MLB ingest slug is real</strong> before running that line in step 3. One job posts to <code class="mono">ingest_mlb</code>, another invokes <code class="mono">ingest-mlb</code>. Only one of those functions exists.</p>
+    <h3>What the cron verification actually showed</h3>
+    <p><strong>Landed:</strong> <code class="mono">capture</code> is back to <code class="mono">*/10</code> from hourly, <code class="mono">market_residual</code> is scheduled for the first time as job 94, and six jobs — <code>capture_boards</code>, <code>mlb_sync</code>, <code>weather_sync</code>, <code>bullpen_sync</code>, <code>ingest-mlb</code>, <code>learn-nightly</code> — now route through <code class="mono">edge_call</code>. That last part also proves the helper and both vault secrets are working, since none of those six would resolve otherwise.</p>
+    <p><strong>Not landed:</strong> three jobs still carry a plaintext service-role JWT (<code>grade_faults</code>, <code>capture_news</code>, <code>healthcheck</code>), and three pairs of duplicate jobs are both still active. Step 2 handles the first; the second is three decisions rather than three fixes, so they are left commented.</p>
+    <p><strong>Still rotate the credentials</strong> if you have not. The service-role JWT does not expire until 2036, bypasses RLS entirely, and sat readable in <code class="mono">cron.job.command</code> before being pasted into a chat. Nothing in step 2 depends on the rotation, but nothing in step 2 makes the exposure go away either.</p>
   </div>
 
 
@@ -5574,370 +5575,194 @@ if (typeof Deno !== "undefined" &amp;&amp; (Deno as any).serve &amp;&amp; !Deno.
   <div class="step-body">
     <header class="step-head">
       <div class="titles">
-        <div class="chips"><span class="chip sev-high">learning loop</span><span class="chip quiet">111 lines · 5 KB</span></div>
-        <h2>The write half of the learning loop, which may never have run</h2>
+        <div class="chips"><span class="chip sev-high">finish the repair</span><span class="chip quiet">174 lines · 8 KB</span></div>
+        <h2>What the verification showed is still wrong — including one thing I got wrong</h2>
         <p class="path"><span class="dim">paste into</span> SQL editor</p>
       </div>
       <div class="actions"><button class="copy" data-target="c2" data-step="2">Copy file</button><span class="done" aria-live="polite"></span></div>
     </header>
-    <p class="why"><code>edgedesk_ai</code> upserts an open outcome on <code class="mono">(user_id, event_id, market, selection)</code> but has <strong>never sent <code class="mono">user_id</code></strong> — it depends entirely on that column carrying a <code class="mono">DEFAULT auth.uid()</code>. If the default is absent the insert is rejected, the rejection happens inside a catch <em>after</em> the response has already gone out, and nothing anywhere reports it.</p>
-    <p class="why"><code>settle</code> only UPDATEs rows that already exist. So a missing open outcome means every graded result has nothing to attach to, and the loop can never accumulate a single observation — silently, for as long as it has been deployed.</p>
-    <p class="why"><strong>I did not fix this blind.</strong> The repair depends on database state I could not inspect, and guessing at it is the same failure mode this whole system exists to prevent. PART A is read-only and tells you whether you need PART B. If A3 returns zero outcomes alongside a healthy <code class="mono">research_sessions</code> count, that is the signature.</p>
-    <p class="note"><span class="note-k">Faster check</span> The r2 build reports the status of its own last memory write. Ask the app one question, then <code class="mono">curl '&lt;project&gt;/functions/v1/edgedesk_ai?probe=1' | jq .last_memory_write</code> — <code class="mono">{"ok":false}</code> with <code class="mono">user_id</code> in the detail means PART B is needed.</p>
-    <p class="note"><span class="note-k">Note</span> PART B3 <em>reports</em> orphaned rows rather than repairing them. Inventing an owner for a historical research outcome would be fabrication, so it names them and stops.</p>
-    <details class="src"><summary><span class="sum-open">Show source</span><span class="sum-shut">Hide source</span> <span class="dim mono">sql/research_outcomes_user_id.sql</span></summary>
+    <p class="why"><strong>PART A undoes an index I should not have added.</strong> I predicted <code class="mono">research_outcomes.user_id</code> was missing its default. It was not — it already carried <code class="mono">DEFAULT auth.uid()</code> and <code class="mono">NOT NULL</code>, and <code class="mono">research_outcomes_signal_uniq</code> already covered exactly the four columns the upsert targets. The index the last script created is a byte-for-byte duplicate of it. Two identical unique indexes cost write throughput on every upsert and buy nothing, so this drops mine.</p>
+    <p class="why"><strong>PART B is the real question, and it is now a much better one.</strong> The schema is correct and the table is still empty, which rules out everything I originally suspected and leaves two candidates with different repairs. Most likely: <code class="mono">user_id</code> is <code class="mono">NOT NULL</code> with <code class="mono">DEFAULT auth.uid()</code>, and <code>edgedesk_ai</code> writes under the <em>caller's</em> JWT — so if the browser calls it with the anon key rather than a signed-in user's token, <code class="mono">auth.uid()</code> is null and every insert is rejected by the constraint, silently, inside the catch. B2 proves or kills that in one query.</p>
+    <p class="why">The other candidate: the write only fires when a focused signal carries an edge, and before r2 <code class="mono">focus</code> was left null at SLATE depth — which is most questions, including "best bets". B3 counts how many sessions could ever have produced an outcome. r2 already attaches a deterministic candidate for the intents that need one.</p>
+    <p class="why"><strong>PART C removes the last three plaintext service-role keys.</strong> Your B7 output still reports <code class="mono">has_hardcoded_jwt=true</code> for <code>edgedesk_grade_faults</code>, <code>edgedesk_capture_news</code> and <code>edgedesk_healthcheck</code> — the previous script only repointed <code>capture_boards</code>. After this, that query returns zero rows.</p>
+    <p class="why"><strong>PART D is three decisions, not three fixes.</strong> <code>settle</code> is still scheduled at both <code class="mono">*/5</code> and <code class="mono">*/15</code>, <code>learn</code> both hourly and nightly, and MLB ingest under two different slugs. Each pair needs your call on which survives, so none of them run automatically.</p>
+    <p class="note"><span class="note-k">What already landed</span> <code class="mono">capture</code> is back to <code class="mono">*/10</code>, <code class="mono">market_residual</code> is scheduled as job 94, and six jobs now route through <code class="mono">edge_call</code>. The helper and both vault secrets are confirmed working by the fact that those six resolved at all.</p>
+    <p class="note"><span class="note-k">Still unanswered</span> PART E's three queries were never reported back. <code class="mono">invoke_edge()</code> and <code class="mono">settle_and_recalibrate()</code> may not exist — jobs 77, 78 and 79 depend on them, and unlike an HTTP failure a missing SQL function <em>does</em> surface in <code class="mono">cron.job_run_details</code>.</p>
+    <p class="note"><span class="note-k">Run E3 last</span> Wait at least twenty minutes after PART C so the repaired jobs have fired through <code class="mono">edge_call</code> at least once. <code class="mono">net._http_response</code> is the only place the real status codes live.</p>
+    <details class="src"><summary><span class="sum-open">Show source</span><span class="sum-shut">Hide source</span> <span class="dim mono">sql/cron_finish_2026-08-12.sql</span></summary>
       <div class="code-wrap"><pre class="code"><code id="c2">-- ============================================================================
---  research_outcomes_user_id.sql
---  Additive, idempotent, safe to run more than once.
+--  cron_finish_2026-08-12.sql
+--  Follow-up to cron_fix_2026-08-12.sql, written against the ACTUAL verification
+--  output rather than against expectations. Idempotent.
 --
---  Closes the write half of the learning loop.
+--  What the B7 verification showed had landed:
+--    capture back to */10, market_residual scheduled (job 94), and
+--    capture_boards / mlb_sync / weather_sync / bullpen_sync / ingest-mlb /
+--    learn-nightly all routed through edge_call.
 --
---  edgedesk_ai upserts an open outcome on (user_id, event_id, market, selection)
---  but has never sent user_id in the payload — it depends entirely on the column
---  carrying a DEFAULT of auth.uid(). If that default is absent the insert is
---  rejected, the rejection happens inside a catch after the response has already
---  gone out, and nothing anywhere reports it. settle only UPDATEs rows that
---  already exist, so a missing open outcome means every graded result has
---  nothing to attach to and the loop can never accumulate.
---
---  This was flagged as UNVERIFIED rather than fixed blind, because the repair
---  depends on database state that could not be inspected. PART A tells you
---  whether you need PART B.
+--  What it showed had NOT:
+--    three jobs still carrying a plaintext service-role JWT, and three pairs of
+--    duplicate jobs still both active.
 -- ============================================================================
 
 
 -- ============================================================================
--- PART A — DIAGNOSE (read-only)
+-- PART A — UNDO MY REDUNDANT INDEX
+--
+-- research_outcomes.user_id already had DEFAULT auth.uid() and NOT NULL, and
+-- research_outcomes_signal_uniq already covered (event_id, market, selection,
+-- user_id). The index the previous script added is an exact duplicate of it:
+-- same columns, same uniqueness. Two identical unique indexes cost write
+-- throughput on every upsert and buy nothing.
 -- ============================================================================
 
--- A1. Does user_id have a default? A null column_default is the bug.
-select column_name, data_type, column_default, is_nullable
-from information_schema.columns
-where table_schema = 'public'
-  and table_name  = 'research_outcomes'
-  and column_name = 'user_id';
+drop index if exists public.research_outcomes_user_event_market_sel_key;
 
-
--- A2. Is there a unique constraint matching the ON CONFLICT target?
---     PostgREST's on_conflict=user_id,event_id,market,selection requires a
---     unique index on exactly those four columns, in any order. Without it the
---     upsert fails regardless of the default.
-select i.relname as index_name, ix.indisunique as is_unique,
-       array_agg(a.attname order by a.attname) as columns
+-- Confirm one unique index remains on that column set (expect exactly one row).
+select i.relname as index_name, array_agg(a.attname order by a.attname) as columns
 from pg_index ix
 join pg_class i on i.oid = ix.indexrelid
 join pg_class t on t.oid = ix.indrelid
 join pg_attribute a on a.attrelid = t.oid and a.attnum = any(ix.indkey)
-where t.relname = 'research_outcomes'
-group by i.relname, ix.indisunique
-order by ix.indisunique desc;
+where t.relname = 'research_outcomes' and ix.indisunique
+group by i.relname
+having array_agg(a.attname order by a.attname) = array['event_id','market','selection','user_id'];
 
 
--- A3. Has anything ever been written? Zero open outcomes alongside a healthy
---     research_sessions count is the signature of this exact failure.
+-- ============================================================================
+-- PART B — WHY research_outcomes IS STILL EMPTY
+--
+-- The schema is correct, so the cause is upstream of it. Two candidates, and
+-- these queries separate them. Do NOT skip to a fix: the two have different
+-- repairs and picking wrong wastes the next two weeks the same way the last two
+-- were wasted.
+-- ============================================================================
+
+-- B1. Are sessions being written at all? edgedesk_ai writes research_sessions
+--     first and research_outcomes second, under the same JWT. Sessions present
+--     with outcomes absent isolates the failure to the outcome write.
+--     Sessions ALSO absent means the whole memory write is failing — most
+--     likely auth, which B2 tests.
 select
-  (select count(*) from public.research_outcomes)                        as outcomes_total,
-  (select count(*) from public.research_outcomes where graded_at is null) as outcomes_open,
-  (select count(*) from public.research_outcomes where graded_at is not null) as outcomes_graded,
-  (select count(*) from public.research_sessions)                        as sessions_total;
+  (select count(*) from public.research_sessions)  as sessions,
+  (select max(created_at) from public.research_sessions) as last_session,
+  (select count(*) from public.research_outcomes)  as outcomes;
 
+-- B2. THE LIKELY CAUSE. user_id is NOT NULL with DEFAULT auth.uid(), and
+--     edgedesk_ai reads and writes under the CALLER's JWT. If the browser calls
+--     the function with the anon key rather than a signed-in user's token,
+--     auth.uid() returns null and the insert is rejected by the NOT NULL
+--     constraint — on every single request, silently, inside the catch.
+--     Any session row whose user_id is null proves the caller was anonymous.
+select user_id, count(*) as n, min(created_at) as first, max(created_at) as last
+from public.research_sessions
+group by user_id
+order by n desc
+limit 10;
 
--- A4. Rows that never got linked back to the session that produced them.
---     Without that link a graded result cannot be traced to the reasoning that
---     preceded it, which is the entire point of the loop.
-select count(*) as outcomes_without_session
-from public.research_outcomes
-where session_id is null;
+-- B3. The other candidate: the write condition was never met.
+--     edgedesk_ai only opens an outcome when it has a focused signal WITH an
+--     edge. Before the r2 build, `focus` was left null at SLATE depth — which
+--     is most questions, including "best bets" — so no outcome was ever
+--     recorded for them. r2 attaches a deterministic candidate for best_bets,
+--     why, price, attack, what_changed, compare, postmortem and traps.
+--     This counts how many sessions COULD have produced an outcome.
+select intent, count(*) as sessions, count(event_id) as sessions_with_focus
+from public.research_sessions
+group by intent
+order by sessions desc
+limit 20;
 
-
-
--- ============================================================================
--- PART B — REPAIR
--- Run only what PART A showed you need.
--- ============================================================================
-
--- B1. The default. This is the fix if A1 returned a null column_default.
-alter table public.research_outcomes
-  alter column user_id set default auth.uid();
-
--- B2. The unique constraint the upsert targets. Created concurrently-safe and
---     idempotent; if a duplicate set already exists this will error and tell you
---     which rows to reconcile first, which is the correct outcome — silently
---     collapsing duplicate outcomes would destroy history.
-create unique index if not exists research_outcomes_user_event_market_sel_key
-  on public.research_outcomes (user_id, event_id, market, selection);
-
--- B3. Backfill guard. Any pre-existing row with a null user_id can never match
---     the conflict target, so it will be duplicated forever. This does NOT
---     invent an owner — it only reports them, because guessing which user owned
---     a historical research outcome is exactly the kind of fabrication this
---     system exists to prevent.
-select id, event_id, market, selection, created_at
-from public.research_outcomes
-where user_id is null
-order by created_at desc
-limit 50;
+-- B4. Fastest check of all, no SQL: ask the app one question, then
+--       curl '&lt;project&gt;/functions/v1/edgedesk_ai?probe=1' | jq .last_memory_write
+--     The r2 build records the HTTP status of its own outcome write.
+--       {"ok":false, detail:"...null value in column \"user_id\"..."}  -&gt; B2
+--       null after a real question                                     -&gt; B3
+--       {"ok":true}                                                    -&gt; fixed
 
 
 -- ============================================================================
--- PART C — VERIFY
--- ============================================================================
-
--- C1. Ask edgedesk_ai a real question through the app, then run this. It should
---     be non-zero and rising.
-select count(*) as open_outcomes_now,
-       max(created_at) as most_recent
-from public.research_outcomes
-where graded_at is null;
-
--- C2. Or check without touching SQL at all — the function now reports the
---     status of its own last memory write:
---     curl -s '&lt;project&gt;/functions/v1/edgedesk_ai?probe=1' | jq .last_memory_write
---     null            -&gt; no question has run in this isolate yet
---     {"ok":true}     -&gt; the loop is writing
---     {"ok":false}    -&gt; read `detail`; if it mentions user_id, PART B is needed
-</code></pre></div>
-    </details>
-  </div>
-</section>
-
-<section class="step" id="s3" data-step="3">
-  <div class="step-rail"><span class="num">3</span><span class="thread" aria-hidden="true"></span></div>
-  <div class="step-body">
-    <header class="step-head">
-      <div class="titles">
-        <div class="chips"><span class="chip sev-critical">rotate first</span><span class="chip quiet">219 lines · 8 KB</span></div>
-        <h2>Five cron jobs that have been 401ing on every fire, invisibly</h2>
-        <p class="path"><span class="dim">paste into</span> SQL editor</p>
-      </div>
-      <div class="actions"><button class="copy" data-target="c3" data-step="3">Copy file</button><span class="done" aria-live="polite"></span></div>
-    </header>
-    <p class="why"><strong>The scheduler was never empty.</strong> 35 active jobs. The theory that a missing cron explained the recent failures does not hold — but five jobs build malformed <code class="mono">Authorization</code> headers and reject on every run. <code class="mono">mlb_sync</code>, <code class="mono">weather_sync</code> and <code class="mono">bullpen_sync</code> pass the raw cron secret where a JWT is expected; <code class="mono">learn-nightly</code> and <code class="mono">ingest-mlb</code> concatenate the cron secret onto the vault service-role key, producing two space-joined tokens the gateway cannot parse.</p>
-    <p class="why"><strong>This is why two weeks went by unnoticed.</strong> <code class="mono">net.http_post</code> enqueues and returns a request id immediately, so the job reports <code class="mono">succeeded</code> in <code class="mono">cron.job_run_details</code> no matter what the HTTP call did. A job can 401 every twenty minutes for a month with a spotless run history. The only place the truth lives is <code class="mono">net._http_response</code> — query A3.</p>
-    <p class="why"><code>capture</code> runs <code class="mono">0 * * * *</code>, not <code class="mono">*/10</code>. Six times coarser than intended, and it is the one that touches the thesis: coarser tick capture means coarser closing-line resolution, and CLV is measured against that line. <code>settle</code> fires twice (<code class="mono">*/5</code> and <code class="mono">*/15</code>), <code>learn</code> fires hourly <em>and</em> nightly with two different intentions, and <code class="mono">market_residual</code> has no job at all.</p>
-    <p class="why">PART B routes every call through a <code class="mono">public.edge_call()</code> helper that reads both credentials from vault, so the next rotation is one vault update instead of 35 job edits. It <strong>raises</strong> on a missing secret — deliberately, to convert a silent 401 into a visible scheduler error.</p>
-    <p class="note"><span class="note-k">Rotate before PART B</span> The service-role JWT (<code class="mono">exp</code> 2036 — a ten-year god-mode key that bypasses RLS) and the cron secret were both sitting in plaintext in <code class="mono">cron.job.command</code>, readable by anyone who can select from the <code class="mono">cron</code> schema, and both have since been pasted into a chat. Treat them as compromised. PART B assumes the new values are already in vault.</p>
-    <p class="note"><span class="note-k">Run A first</span> PART A is read-only and answers the four questions that need database access — whether the vault secrets exist, whether <code class="mono">invoke_edge()</code> and <code class="mono">settle_and_recalibrate()</code> exist, the real HTTP status codes, and which jobs send no <code class="mono">Authorization</code> header at all and therefore need <code class="mono">verify_jwt</code> off.</p>
-    <p class="note"><span class="note-k">Two slugs</span> Job 87 posts to <code class="mono">ingest_mlb</code> (underscore); job 77 invokes <code class="mono">ingest-mlb</code> (hyphen). Only one can be real — confirm which before running that line in B2.</p>
-    <details class="src"><summary><span class="sum-open">Show source</span><span class="sum-shut">Hide source</span> <span class="dim mono">sql/cron_fix_2026-08-12.sql</span></summary>
-      <div class="code-wrap"><pre class="code"><code id="c3">-- ============================================================================
--- EdgeDesk cron audit + fix — 2026-08-12
+-- PART C — THE LAST THREE PLAINTEXT SERVICE-ROLE KEYS
 --
--- Run PART A first and read the output. It answers the open questions before
--- you change anything. PART B is the fix. Do not run B blind.
---
--- No credentials appear in this file by design. Everything reads from vault.
+-- B7 reported has_hardcoded_jwt=true for jobs 10, 11 and 12. These three still
+-- carry the full service-role JWT in cron.job.command, readable by anyone who
+-- can select from the cron schema. The previous script only repointed job 9.
+-- Requires public.edge_call() and both vault secrets, which are already in
+-- place — the six jobs already using the helper prove it.
 -- ============================================================================
 
+select cron.schedule('edgedesk_grade_faults', '5 */6 * * *',
+  $$select public.edge_call('grade_faults', timeout_ms =&gt; 120000)$$);
 
--- ============================================================================
--- PART A — DIAGNOSTICS  (read-only, safe to run anytime)
--- ============================================================================
+select cron.schedule('edgedesk_capture_news', '0 13 * * *',
+  $$select public.edge_call('capture_news', timeout_ms =&gt; 120000)$$);
 
--- A1. Do the vault secrets exist? Jobs 86/87 silently produce a NULL header if
---     'service_role_key' is missing. Expect two rows.
-select name, created_at, updated_at
-from vault.decrypted_secrets
-where name in ('service_role_key', 'cron_secret')
-order by name;
+select cron.schedule('edgedesk_healthcheck', '*/30 * * * *',
+  $$select public.edge_call('healthcheck', timeout_ms =&gt; 60000)$$);
 
-
--- A2. Do the SQL functions jobs 77/78/79 depend on actually exist?
---     Missing ones DO show up as errors in job_run_details (unlike HTTP 401s).
-select n.nspname as schema, p.proname as function,
-       pg_get_function_identity_arguments(p.oid) as args
-from pg_proc p
-join pg_namespace n on n.oid = p.pronamespace
-where p.proname in ('invoke_edge', 'settle_and_recalibrate')
-order by 1, 2;
-
-
--- A3. THE IMPORTANT ONE — actual HTTP status codes.
---     cron.job_run_details reports 'succeeded' even when the request 401s,
---     because net.http_post only enqueues. This is the only place the truth is.
---     Note: pg_net expires _http_response rows (default ~6h), so this shows the
---     recent window only. The url join is best-effort — http_request_queue rows
---     are deleted once processed, so url will be null for older responses.
-select r.id,
-       q.url,
-       r.status_code,
-       r.error_msg,
-       r.timed_out,
-       r.created,
-       left(r.content, 300) as body_head
-from net._http_response r
-left join net.http_request_queue q on q.id = r.id
-order by r.created desc
-limit 200;
-
-
--- A4. Same data, collapsed — how many non-2xx in the retained window?
-select coalesce(r.status_code::text, 'no-response') as status,
-       count(*) as n,
-       min(r.created) as first_seen,
-       max(r.created) as last_seen
-from net._http_response r
-group by 1
-order by n desc;
-
-
--- A5. SQL-level failures. This catches missing functions and vault errors.
---     It does NOT catch HTTP failures — that is A3's job.
-select jobid, runid, job_pid, status, return_message, start_time, end_time
-from cron.job_run_details
-where status &lt;&gt; 'succeeded'
-order by start_time desc
-limit 100;
-
-
--- A6. Jobs that send no Authorization header at all. Each of these requires
---     verify_jwt = false on its function, or the gateway 401s before your code
---     runs. Cross-check the survivors against the dashboard function settings.
-select jobid, jobname, schedule
-from cron.job
-where active
-  and command not ilike '%Authorization%'
-  and command ilike '%net.http_post%'
-order by jobname;
-
+-- Verify: expect zero rows.
+select jobid, jobname from cron.job
+where active and command ilike '%eyJhbGci%';
 
 
 -- ============================================================================
--- PART B — FIXES
+-- PART D — THE DUPLICATE PAIRS
 --
--- Prerequisite: rotate the service-role key and the cron secret FIRST (both
--- were sitting in plaintext in cron.job.command), then store the new values:
---
---   select vault.create_secret('&lt;new service role jwt&gt;', 'service_role_key');
---   select vault.create_secret('&lt;new cron secret&gt;',      'cron_secret');
---
--- If they already exist, update instead:
---   select vault.update_secret(id, '&lt;new value&gt;')
---   from vault.secrets where name = 'service_role_key';
+-- Three functions are still scheduled twice. Each pair is a DECISION, which is
+-- why none of these ran automatically. Uncomment the one you want.
 -- ============================================================================
 
-
--- B1. One helper for every edge call. Centralising this means the next key
---     rotation is one vault update instead of 35 job edits.
---
---     It sends BOTH auth forms: Bearer JWT satisfies the gateway whether or not
---     verify_jwt is on, and x-cron-secret satisfies the function's own gate.
---
---     It RAISES if a vault secret is missing. That is deliberate — it converts a
---     silent 401 into a loud failure that shows up in cron.job_run_details.
-create or replace function public.edge_call(
-  slug        text,
-  body        jsonb default '{}'::jsonb,
-  timeout_ms  int   default 120000,
-  query       text  default null
-) returns bigint
-language plpgsql
-security definer
-set search_path = public, vault, net
-as $$
-declare
-  jwt     text;
-  secret  text;
-  req_id  bigint;
-begin
-  select decrypted_secret into jwt
-  from vault.decrypted_secrets where name = 'service_role_key';
-
-  select decrypted_secret into secret
-  from vault.decrypted_secrets where name = 'cron_secret';
-
-  if jwt is null then
-    raise exception 'edge_call(%): vault secret service_role_key is missing', slug;
-  end if;
-  if secret is null then
-    raise exception 'edge_call(%): vault secret cron_secret is missing', slug;
-  end if;
-
-  select net.http_post(
-    url := 'https://iattxbkbufslbauoumga.supabase.co/functions/v1/'
-           || slug || coalesce('?' || query, ''),
-    headers := jsonb_build_object(
-      'Content-Type',  'application/json',
-      'Authorization', 'Bearer ' || jwt,
-      'x-cron-secret', secret
-    ),
-    body := body,
-    timeout_milliseconds := timeout_ms
-  ) into req_id;
-
-  return req_id;
-end;
-$$;
-
-revoke all on function public.edge_call(text, jsonb, int, text) from public, anon, authenticated;
-
-
--- B2. Repair the five jobs with malformed Authorization headers.
---     cron.schedule() upserts by jobname on pg_cron &gt;= 1.4, so these replace
---     the existing jobs in place rather than creating duplicates.
-
-select cron.schedule('mlb_sync_20min', '*/20 * * * *',
-  $$select public.edge_call('mlb_sync', timeout_ms =&gt; 60000)$$);
-
-select cron.schedule('weather_sync_hourly', '10 * * * *',
-  $$select public.edge_call('weather_sync', timeout_ms =&gt; 60000)$$);
-
-select cron.schedule('bullpen_sync_daily', '0 10,16 * * *',
-  $$select public.edge_call('bullpen_sync', timeout_ms =&gt; 120000)$$);
-
--- learn-nightly: only keep this if nightly is the intent. See B4 — you are
--- currently running learn hourly via job 8 as well, and one of them is wrong.
-select cron.schedule('learn-nightly', '0 8 * * *',
-  $$select public.edge_call('learn', timeout_ms =&gt; 300000)$$);
-
--- ingest-mlb: CONFIRM THE SLUG FIRST. Job 87 posted to 'ingest_mlb' (underscore)
--- while job 77 invoked 'ingest-mlb' (hyphen). Only one is real. Fix the string
--- below to match the deployed function before running this line.
-select cron.schedule('ingest-mlb', '*/30 * * * *',
-  $$select public.edge_call('ingest_mlb', timeout_ms =&gt; 120000)$$);
-
-
--- B3. Restore capture to the intended cadence. Hourly is 6x coarser than spec
---     and it degrades closing-line resolution, which is what CLV is measured
---     against. This raises capture from 24 to 144 runs/day — a cost decision,
---     so run this line deliberately.
-select cron.schedule('edgedesk_capture', '*/10 * * * *',
-  $$select public.edge_call('capture', timeout_ms =&gt; 120000)$$);
-
-
--- B4. Remove duplicates. Uncomment the ones you have decided on.
-
--- settle runs at */5 (job 7) AND */15 (job 85). Drop the redundant one:
+-- D1. settle runs at */5 (job 7) AND */15 (job 85). Two settle passes overlap
+--     every fifteen minutes. The */5 job is the older, faster one.
 -- select cron.unschedule('settle-every-15min');
 
--- learn runs hourly (job 8) AND nightly (job 86, repaired in B2).
--- If nightly is correct, drop the hourly:
--- select cron.unschedule('edgedesk_learn');
+-- D2. learn runs hourly at :30 (job 8) AND nightly at 08:00 (job 86).
+--     Hourly learn is expensive and the nightly job's name says someone
+--     intended nightly. Keep ONE.
+-- select cron.unschedule('edgedesk_learn');      -- keep nightly
+-- select cron.unschedule('learn-nightly');       -- keep hourly
 
--- MLB ingest runs via job 77 (invoke_edge, 0 12) AND job 87 (*/30).
--- If the */30 path is correct, drop the daily one:
--- select cron.unschedule('edgedesk-ingest');
-
-
--- B5. Missing job — market_residual, intended hourly, currently does not exist.
-select cron.schedule('edgedesk_market_residual', '25 * * * *',
-  $$select public.edge_call('market_residual', timeout_ms =&gt; 120000)$$);
-
-
--- B6. Cosmetic: job 9 has a trailing space inside its JWT literal. Repointing it
---     at the helper fixes that and de-hardcodes the service-role key.
-select cron.schedule('edgedesk_capture_boards', '0 */6 * * *',
-  $$select public.edge_call('capture_boards', timeout_ms =&gt; 120000)$$);
+-- D3. MLB ingest runs via job 77 (invoke_edge('ingest-mlb'), daily 12:00) AND
+--     job 87 (edge_call('ingest_mlb'), */30). The two use DIFFERENT SLUGS —
+--     underscore vs hyphen — and only one function can exist.
+--     Resolve the slug FIRST:
+--       select proname from pg_proc where proname = 'invoke_edge';
+--       -- and check the Edge Functions list in the dashboard for which of
+--       -- ingest_mlb / ingest-mlb is actually deployed.
+--     Then drop the loser:
+-- select cron.unschedule('edgedesk-ingest');     -- keep the */30 edge_call path
+-- select cron.unschedule('ingest-mlb');          -- keep the daily invoke_edge path
 
 
--- B7. Verify. Every job should now route through edge_call and no command
---     should contain a literal token.
-select jobid, jobname, schedule, active,
-       command ilike '%eyJhbGci%' as has_hardcoded_jwt,
-       command ilike '%edge_call%' as uses_helper
-from cron.job
-where active
-order by jobname;
+-- ============================================================================
+-- PART E — STILL UNANSWERED FROM THE ORIGINAL PART A
+--
+-- These were never reported back and each one is a job that may be erroring on
+-- every fire. Unlike HTTP failures, a missing SQL function DOES surface in
+-- cron.job_run_details, so E2 is the fast way to see it.
+-- ============================================================================
+
+-- E1. Do the functions jobs 77, 78 and 79 depend on actually exist?
+select n.nspname as schema, p.proname as function
+from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+where p.proname in ('invoke_edge', 'settle_and_recalibrate', 'edge_call')
+order by 2;
+
+-- E2. SQL-level failures in the last day. A missing function shows up here.
+select jobid, status, return_message, start_time
+from cron.job_run_details
+where status &lt;&gt; 'succeeded' and start_time &gt; now() - interval '1 day'
+order by start_time desc
+limit 40;
+
+-- E3. The real HTTP status codes — the only place the truth about the repaired
+--     jobs lives. Run this at least 20 minutes after PART C so mlb_sync,
+--     weather_sync and the rest have fired through edge_call at least once.
+select r.status_code, count(*) as n, max(r.created) as last_seen
+from net._http_response r
+where r.created &gt; now() - interval '2 hours'
+group by r.status_code
+order by n desc;
 </code></pre></div>
     </details>
   </div>
@@ -5961,6 +5786,7 @@ order by jobname;
       <li><code class="mono">fallbacks</code> empty means nothing was missing. Entries with <code class="mono">rows_added: 0</code> and <em>"the gap is real"</em> mean the data genuinely does not exist — do not chase those as a plumbing bug.</li>
       <li><code class="mono">completeness.state</code> is the gate. INVALID means integrity caught contamination; read <code class="mono">integrity.checks</code> for which one.</li>
       <li>Ask <em>"Who are the worst pitchers on today's slate?"</em> through the app. It should rank tonight's starters. If it names a pitcher who threw yesterday, step 1 did not deploy.</li>
+      <li>Then check <code class="mono">?probe=1 | jq .last_memory_write</code>. That single field now settles whether the learning loop is writing — it reports the HTTP status of the outcome insert, so an auth rejection names itself instead of being inferred from an empty table.</li>
       <li>Ask <em>"How has Cole looked lately?"</em> on a card with two Coles. It should name both and ask which, not pick one.</li>
     </ul>
   </div>
@@ -5980,7 +5806,7 @@ order by jobname;
   var state = {};
   try { state = JSON.parse(localStorage.getItem(KEY) || "{}"); } catch (e) { state = {}; }
 
-  var steps = [1,2,3];
+  var steps = [1,2];
   var pips = document.getElementById("pips");
   steps.forEach(function(n){
     var s = document.createElement("span");
@@ -6000,7 +5826,7 @@ order by jobname;
       if (btn) btn.textContent = on ? "Copy again" : "Copy file";
       if (tag) tag.textContent = on ? "copied" : "";
     });
-    document.getElementById("count").textContent = done + " of 3 copied";
+    document.getElementById("count").textContent = done + " of 2 copied";
   }
 
   function save(){ try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {} }
