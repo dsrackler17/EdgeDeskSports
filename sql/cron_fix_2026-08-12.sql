@@ -95,6 +95,26 @@ order by jobname;
 -- ============================================================================
 
 
+-- ============================================================================
+-- READ THIS BEFORE RUNNING ANY OF PART B
+--
+-- 1. PROVE BOTH VAULT SECRETS EXIST FIRST. Query A1. edge_call RAISES when one
+--    is missing, so switching a job to it without checking converts a working
+--    job into one that throws on every fire. Six jobs resolving through
+--    edge_call proves `cron_secret` exists; it does NOT prove `service_role_key`
+--    does. Those are two separate facts and they need two separate checks.
+--
+-- 2. NEVER REWRITE A WORKING JOB'S AUTH AND ITS SCHEDULE IN ONE STATEMENT.
+--    If a job is firing successfully, its header shape is correct by
+--    observation, whatever the audit thinks of it. Change the cadence alone,
+--    confirm it still fires, and only then touch the headers — separately, one
+--    job at a time, checking cron.job_run_details after each.
+--
+-- 3. THE BROKEN JOBS ARE THE ONES TO CONVERT. B2 targets the five that are
+--    already failing, where edge_call cannot make anything worse. B3 and B6
+--    touch jobs that already work; treat them with more caution, not less.
+-- ============================================================================
+
 -- B1. One helper for every edge call. Centralising this means the next key
 --     rotation is one vault update instead of 35 job edits.
 --
@@ -175,12 +195,30 @@ select cron.schedule('ingest-mlb', '*/30 * * * *',
   $$select public.edge_call('ingest_mlb', timeout_ms => 120000)$$);
 
 
--- B3. Restore capture to the intended cadence. Hourly is 6x coarser than spec
---     and it degrades closing-line resolution, which is what CLV is measured
---     against. This raises capture from 24 to 144 runs/day — a cost decision,
---     so run this line deliberately.
-select cron.schedule('edgedesk_capture', '*/10 * * * *',
-  $$select public.edge_call('capture', timeout_ms => 120000)$$);
+-- B3. Restore capture to the intended cadence.
+--
+--     THIS LINE PREVIOUSLY ROUTED capture THROUGH edge_call AND TOOK IT DOWN.
+--     capture was NOT broken — it was on the wrong cadence. It had been working
+--     for months on `x-cron-secret` alone with NO Authorization header, which
+--     means its function has verify_jwt disabled. Rewriting its auth in the same
+--     statement that changed its schedule made one edit carry two risks, and the
+--     risky half hit the most important job in the stack: edge_call RAISES when
+--     a vault secret is missing, so every run threw before issuing any HTTP call
+--     and the board went stale for hours.
+--
+--     A job that works keeps the header shape that works. Only the schedule
+--     changes here. The secret still moves out of plaintext and into vault,
+--     which was the actual security goal.
+--
+--     Raises capture from 24 to 144 runs/day — a cost decision, so run it
+--     deliberately.
+select cron.schedule('edgedesk_capture', '*/10 * * * *', $$
+  select net.http_post(
+    url := 'https://iattxbkbufslbauoumga.supabase.co/functions/v1/capture',
+    headers := jsonb_build_object('x-cron-secret',
+      (select decrypted_secret from vault.decrypted_secrets where name = 'cron_secret')),
+    timeout_milliseconds := 120000)
+$$);
 
 
 -- B4. Remove duplicates. Uncomment the ones you have decided on.
