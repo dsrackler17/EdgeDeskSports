@@ -2463,6 +2463,36 @@ function whenLabel(iso){try{return new Date(iso).toLocaleString([], {weekday:'sh
 function ago(ms){var s=Math.floor((Date.now()-ms)/1000);if(s<0)s=0;if(s<60)return s+'s ago';var m=Math.floor(s/60);if(m<60)return m+'m ago';var h=Math.floor(m/60);if(h<24)return h+'h ago';return Math.floor(h/24)+'d ago';}
 /* ===== freshness guard + quality bar + track-record for the Top edges list ===== */
 var REAL_FLOOR=0.005;                 // <0.5% after the fair line = noise, not an edge
+/* ═══ THE ACTIVE-BOARD CONTRACT ═══════════════════════════════════════════
+   `signals` holds two different kinds of row and they must not be shown the
+   same way:
+
+     STORED  — every market observation capture priced. Real data, kept on
+               purpose: movement, residuals, replay and research all read it.
+     FLAGGED — a row capture was willing to put EdgeDesk's name on. It cleared
+               backable-market, plausible-price, sane-edge, consensus-depth and
+               outlier checks, and capture froze `flagged_at` + the entry price
+               `flagged_best_dec` at that moment.
+
+   The board was selecting on `edge=gt.0` alone, so it rendered STORED rows as
+   if they were SIGNALS. That is how h2h_lay quotes and 140% "edges" — prices
+   capture had explicitly REFUSED — reached the top of an edge-sorted board and
+   buried the genuine 2-4% ones underneath. Flag discipline was protecting the
+   record and the CLV basis and nothing else.
+
+   Every ACTIVE board query appends this. Historical, graded, replay, movement
+   and research reads deliberately do NOT — they are supposed to see the whole
+   stored series, and gating them would silently shrink the record. */
+var BOARD_FLAG_FILTER='flagged_at=not.is.null&flagged_best_dec=not.is.null';
+/* Columns any active-board select must carry so the client-side twin below can
+   re-check what the server already filtered. */
+var BOARD_FLAG_COLS='flagged_at,flagged_edge,flagged_best_dec,flagged_best_book';
+/* The same rule applied to rows already in memory. Defence in depth: a pool
+   assembled by concatenating other pools cannot inherit a URL filter. */
+function isFlaggedSignal(e){
+  return !!(e && e.flagged_at && isFinite(+e.flagged_best_dec) && +e.flagged_best_dec>1);
+}
+function onlyFlagged(rows){ return (rows||[]).filter(isFlaggedSignal); }
 var EDGE_MAX_AGE_MIN=90;              // an edge not re-priced in 90 min is a zombie (capture isn't covering it) — drop it
 var MINBOOKS=3;                       // need >=3 books quoting for a fair line to mean anything
 var STALE_AMBER_MIN=45, STALE_RED_MIN=120;   // ~30-min capture cadence; behind at 45m, down at 2h
@@ -2503,7 +2533,16 @@ async function loadEdges(){
     await loadWeights();
     var nowIso=new Date().toISOString();
     var horizonIso=new Date(Date.now()+14*24*3600*1000).toISOString(); // widened so far-out openers load; per-sport horizon applied at render
-    EDGES=await sbGet('signals?select=event_id,sport_title,sport_key,market,selection,point,best_dec,first_best_dec,best_book,sharp_fair,consensus_fair,edge,n_books,n_books_eff,commence_time,home_team,away_team,last_seen_at,has_sharp,corrob_n,corrob_ref,corrob_levels,is_fav&commence_time=gte.'+nowIso+'&commence_time=lte.'+horizonIso+'&edge=gt.0&order=edge.desc&limit=600');
+    /* ACTIVE BOARD — flagged signals only. See BOARD_FLAG_FILTER. */
+    EDGES=await sbGet('signals?select=event_id,sport_title,sport_key,market,selection,point,best_dec,first_best_dec,best_book,sharp_fair,consensus_fair,edge,n_books,n_books_eff,commence_time,home_team,away_team,last_seen_at,has_sharp,corrob_n,corrob_ref,corrob_levels,is_fav,'+BOARD_FLAG_COLS+'&'+BOARD_FLAG_FILTER+'&commence_time=gte.'+nowIso+'&commence_time=lte.'+horizonIso+'&edge=gt.0&order=edge.desc&limit=600');
+    EDGES=onlyFlagged(EDGES);
+    /* How many rows capture PRICED in the same window but refused to flag. The
+       difference between "quiet slate" and "capture rejected everything" — and
+       without it a correctly-empty board is indistinguishable from a broken
+       one, which is the confusion this whole repair started from. */
+    window.__boardStored=null;
+    try{ var st=await sbGet('signals?select=sig_key&commence_time=gte.'+nowIso+'&commence_time=lte.'+horizonIso+'&edge=gt.0&limit=1000');
+      window.__boardStored=(st||[]).length; }catch(_){}
     $('dbPill').textContent='DB ✓';$('dbPill').className='pill ok';
     // sport filter options — every sport with a LIVE line in the window, not just the positive-edge (EDGES) set.
     // old code keyed this off EDGES (edge>0), which silently dropped MLB/WNBA whenever they had no positive edge live.
@@ -2521,13 +2560,20 @@ async function loadEdges(){
     setStale(hb);
     // sharpest in-window line regardless of sign — proves the scanner ran and shows how close the board is to a play
     window.__bestNearMiss=null;
-    try{var nm=await sbGet('signals?select=sport_title,selection,edge,best_book,n_books&commence_time=gte.'+nowIso+'&commence_time=lte.'+horizonIso+'&edge=not.is.null&order=edge.desc.nullslast&limit=1');if(nm&&nm[0])window.__bestNearMiss=nm[0];}catch(_){}
+    /* Deliberately NOT flag-gated: this exists to show the sharpest line that
+       is NOT yet a signal, so requiring flagged_at would make it meaningless.
+       But it must still be a price a person could take — ordering by edge
+       alone is precisely what put a 140% exchange LAY quote on screen as the
+       "closest to a play". Pull a few and take the first TRADEABLE one. */
+    try{var nm=await sbGet('signals?select=sport_title,selection,market,best_dec,edge,best_book,n_books&commence_time=gte.'+nowIso+'&commence_time=lte.'+horizonIso+'&edge=not.is.null&order=edge.desc.nullslast&limit=40');
+      var nmOk=filterTradeable(nm||[]).keep;
+      if(nmOk.length)window.__bestNearMiss=nmOk[0];}catch(_){}
     // pool of the sharpest lines on the board (any sign) so the wider-net Top 5 is populated every day
     window.D5_POOL=[];
     /* Fetch wider than 40 because the guard below removes exchange lays and
        placeholder prices, which previously occupied the entire Top 5. */
-    try{var pool=await sbGet('signals?select=event_id,sport_title,sport_key,market,selection,point,best_dec,first_best_dec,sharp_fair,best_book,edge,n_books,n_books_eff,commence_time,home_team,away_team,last_seen_at,has_sharp,corrob_n,corrob_ref,corrob_levels,is_fav&commence_time=gte.'+nowIso+'&commence_time=lte.'+horizonIso+'&edge=not.is.null&order=edge.desc.nullslast&limit=120');
-      var ft=filterTradeable(pool||[]);
+    try{var pool=await sbGet('signals?select=event_id,sport_title,sport_key,market,selection,point,best_dec,first_best_dec,sharp_fair,best_book,edge,n_books,n_books_eff,commence_time,home_team,away_team,last_seen_at,has_sharp,corrob_n,corrob_ref,corrob_levels,is_fav,'+BOARD_FLAG_COLS+'&'+BOARD_FLAG_FILTER+'&commence_time=gte.'+nowIso+'&commence_time=lte.'+horizonIso+'&edge=not.is.null&order=edge.desc.nullslast&limit=120');
+      var ft=filterTradeable(onlyFlagged(pool));
       window.D5_POOL=ft.keep.slice(0,40);
       window.D5_DROPPED=ft.dropped;   // visible, not silently discarded
       if(ft.dropped.length) try{console.info('EdgeDesk: '+ft.dropped.length+' row(s) excluded from ranking',ft.dropped.slice(0,8));}catch(_){}
@@ -2540,7 +2586,7 @@ async function loadEdges(){
     // NEVER touches e.edge, sorting, filters, or the verify tags. A separate engine, shown side by side.
     try{var mp=await sbGet('model_predictions?select=event_id,market,selection,point,model_prob,model_fair_american,model_edge,model_version&sport_key=eq.baseball_mlb&commence_time=gte.'+nowIso+'&commence_time=lte.'+horizonIso+'&order=created_at.asc&limit=1500');window.MODELP={};(mp||[]).forEach(function(r){window.MODELP[modelKey(r.event_id,r.market,r.selection,r.point)]=r;});}catch(_){window.MODELP=window.MODELP||{};}
     try{var me=await sbGet('model_predictions?select=*&model_edge=gt.0&commence_time=gte.'+nowIso+'&commence_time=lte.'+horizonIso+'&order=model_edge.desc.nullslast&limit=400');window.MODEL_EDGES=me||[];}catch(_){window.MODEL_EDGES=[];}
-    try{var cq=await sbGet('signals?select=event_id,sport_title,sport_key,market,selection,point,best_dec,first_best_dec,first_seen_at,best_book,sharp_fair,consensus_fair,edge,n_books,n_books_eff,commence_time,home_team,away_team,last_seen_at,has_sharp,corrob_n,corrob_ref,corrob_levels,is_fav&consensus_fair=not.is.null&n_books=gte.'+MINBOOKS+'&commence_time=gte.'+nowIso+'&commence_time=lte.'+horizonIso+'&limit=900');window.CONS_POOL=cq||[];}catch(_){window.CONS_POOL=[];}
+    try{var cq=await sbGet('signals?select=event_id,sport_title,sport_key,market,selection,point,best_dec,first_best_dec,first_seen_at,best_book,sharp_fair,consensus_fair,edge,n_books,n_books_eff,commence_time,home_team,away_team,last_seen_at,has_sharp,corrob_n,corrob_ref,corrob_levels,is_fav,'+BOARD_FLAG_COLS+'&'+BOARD_FLAG_FILTER+'&consensus_fair=not.is.null&n_books=gte.'+MINBOOKS+'&commence_time=gte.'+nowIso+'&commence_time=lte.'+horizonIso+'&limit=900');window.CONS_POOL=onlyFlagged(cq);}catch(_){window.CONS_POOL=[];}
     await resolveModelMeta();
     await loadSliceStats();
     renderEdges();
@@ -2755,10 +2801,28 @@ function renderEdges(){
     var nWin=EDGES.filter(function(e){if(sport&&evSportLabel(e)!==sport)return false;if((e.edge||0)<=0)return false;var ct=e.commence_time?new Date(e.commence_time).getTime():0;return ct&&ct<=horizon&&ct>=nowMs-3600e3;}).length;
     var nFresh=EDGES.filter(function(e){if(sport&&evSportLabel(e)!==sport)return false;if((e.edge||0)<=0)return false;var ct=e.commence_time?new Date(e.commence_time).getTime():0;if(!(ct&&ct<=horizon&&ct>=nowMs-3600e3))return false;var ls=e.last_seen_at?new Date(e.last_seen_at).getTime():0;return ls&&ls>=staleCut;}).length;
     var poolN=(window.D5_POOL||[]).length;
-    var zeroNote=nLoaded===0?(poolN>0
-      ? ' \u00b7 <b>capture is live and pricing '+poolN+' line(s) \u2014 just none are +EV right now (clean board)</b>'
-      : ' \u00b7 <b>signals table returned 0 rows \u2014 capture isn\u2019t writing game rows at all</b>'):'';
-    var funnel='<div class="sb-sub" style="margin-top:8px;font-family:\'JetBrains Mono\',monospace">pipeline: '+nLoaded+' positive-edge rows in DB \u2192 '+nWin+' in your '+winLbl+' window \u2192 '+nFresh+' freshly priced (&lt;'+EDGE_MAX_AGE_MIN+'m) \u2192 0 after liquidity/book filters'+zeroNote+'</div>';
+    /* The board now shows FLAGGED signals only, so an empty board has three
+       distinct causes and they need three different answers. `__boardStored`
+       counts positive-edge rows capture PRICED in the same window, flagged or
+       not \u2014 the number that separates them. Saying "capture isn't writing game
+       rows" when it wrote 400 and flagged none would send you to fix the wrong
+       thing entirely. */
+    var storedN=window.__boardStored;
+    var zeroNote='';
+    if(nLoaded===0){
+      if(storedN>0){
+        zeroNote=' \u00b7 <b>capture priced '+storedN+' positive-edge line(s) in this window but FLAGGED none of them</b>'
+          +' \u2014 they failed the price checks (exchange lay, outlier vs the other books, implausible edge, or too few books).'
+          +' Stored as market data, deliberately not shown as signals. Call <code>capture?diag=1</code> and read'
+          +' <code>flag_rejected_by_reason</code> for the exact split.';
+      } else if(poolN>0){
+        zeroNote=' \u00b7 <b>capture is live and pricing '+poolN+' line(s) \u2014 just none are +EV right now (clean board)</b>';
+      } else {
+        zeroNote=' \u00b7 <b>signals table returned 0 rows \u2014 capture isn\u2019t writing game rows at all</b>';
+      }
+    }
+    var funnel='<div class="sb-sub" style="margin-top:8px;font-family:\'JetBrains Mono\',monospace">pipeline: '
+      +(storedN!=null?storedN+' priced \u2192 ':'')+nLoaded+' flagged signals \u2192 '+nWin+' in your '+winLbl+' window \u2192 '+nFresh+' freshly priced (&lt;'+EDGE_MAX_AGE_MIN+'m) \u2192 0 after liquidity/book filters'+zeroNote+'</div>';
     var nm=window.__bestNearMiss;
     if(nm&&nm.edge!=null){
       var ep=(nm.edge*100);
@@ -11674,13 +11738,22 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
     if(d.loading) return d.loading;
     var nowIso=new Date().toISOString();
     var hzIso=new Date(now+HORIZON_MAX_D*864e5).toISOString();
-    // every line that OPENED positive in the horizon, regardless of current sign.
-    // that's the discovery universe: steam, improving and missed all live here.
-    var q='signals?select=event_id,sport_title,sport_key,market,selection,point,best_dec,first_best_dec,first_best_book,best_book,edge,first_edge,sharp_fair,n_books,commence_time,home_team,away_team,first_seen_at,last_seen_at'
+    // every FLAGGED line that OPENED positive in the horizon, regardless of
+    // current sign. that's the discovery universe: steam, improving and missed
+    // all live here.
+    //
+    // ACTIVE BOARD — flagged only. These cards (Fresh Openers / Steam
+    // Confirmed / Improving / Closing Soon / Market Movers / Missed) are an
+    // edge display, and without the flag filter they rendered stored-but-
+    // refused rows: h2h_lay quotes and 140% "edges" capture never backed.
+    // Movement is still read from first_* vs current on the flagged row, so
+    // nothing about the movement maths changes — only which rows qualify.
+    var q='signals?select=event_id,sport_title,sport_key,market,selection,point,best_dec,first_best_dec,first_best_book,best_book,edge,first_edge,sharp_fair,n_books,commence_time,home_team,away_team,first_seen_at,last_seen_at,'+BOARD_FLAG_COLS
+      +'&'+BOARD_FLAG_FILTER
       +'&first_edge=gt.0&commence_time=gte.'+nowIso+'&commence_time=lte.'+hzIso
       +'&order=first_seen_at.desc&limit=800';
     d.loading=(async function(){
-      try{ var rows=await sbGet(q); d.pool=rows||[]; }
+      try{ var rows=await sbGet(q); d.pool=filterTradeable(onlyFlagged(rows)).keep; }
       catch(_){ d.pool=[]; }
       d.ts=Date.now(); d.loading=null; return d.pool;
     })();
@@ -14465,7 +14538,11 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
        not be ranked here either — the board and the Top 5 were drawing from
        overlapping rows, so filtering one and not the other would have left the
        nonsense visible in the other half of the screen. */
+    /* Both source pools are flag-gated at the query, but a pool built by
+       concatenation cannot inherit a URL filter — re-assert it here so a future
+       change to either source cannot quietly put unflagged rows back on screen. */
     var rawPool=[].concat(window.EDGES||[], window.D5_POOL||[]);
+    if(typeof onlyFlagged==='function') rawPool=onlyFlagged(rawPool);
     var _ft=(typeof filterTradeable==='function')?filterTradeable(rawPool):{keep:rawPool,dropped:[]};
     var pool=_ft.keep;
     try{ window.__SCAN_DROPPED=_ft.dropped; }catch(_){}
