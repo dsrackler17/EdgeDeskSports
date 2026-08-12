@@ -98,11 +98,12 @@ order by jobname;
 -- ============================================================================
 -- READ THIS BEFORE RUNNING ANY OF PART B
 --
--- 1. PROVE BOTH VAULT SECRETS EXIST FIRST. Query A1. edge_call RAISES when one
---    is missing, so switching a job to it without checking converts a working
---    job into one that throws on every fire. Six jobs resolving through
---    edge_call proves `cron_secret` exists; it does NOT prove `service_role_key`
---    does. Those are two separate facts and they need two separate checks.
+-- 1. RUN A1 AND READ IT. edge_call now requires only `cron_secret`, but if that
+--    one is missing every job pointed at it still throws. Do not infer a
+--    secret's existence from jobs "using the helper" — a job's COMMAND showing
+--    edge_call says nothing about whether the call succeeds, and reading it that
+--    way is exactly how a missing secret went unnoticed until the board went
+--    stale. Check the vault table itself, and check cron.job_run_details after.
 --
 -- 2. NEVER REWRITE A WORKING JOB'S AUTH AND ITS SCHEDULE IN ONE STATEMENT.
 --    If a job is firing successfully, its header shape is correct by
@@ -118,11 +119,15 @@ order by jobname;
 -- B1. One helper for every edge call. Centralising this means the next key
 --     rotation is one vault update instead of 35 job edits.
 --
---     It sends BOTH auth forms: Bearer JWT satisfies the gateway whether or not
---     verify_jwt is on, and x-cron-secret satisfies the function's own gate.
+--     x-cron-secret is REQUIRED — every one of these functions gates on it, and
+--     they deploy with --no-verify-jwt so no Authorization header is read at all.
+--     The Bearer JWT is therefore OPTIONAL: attached when the vault secret
+--     exists, omitted when it does not.
 --
---     It RAISES if a vault secret is missing. That is deliberate — it converts a
---     silent 401 into a loud failure that shows up in cron.job_run_details.
+--     AN EARLIER VERSION MADE BOTH MANDATORY AND RAISED ON EITHER. service_role_key
+--     did not exist, that check ran first, and seven jobs — capture included —
+--     threw at the RAISE before issuing any HTTP request. The board went stale for
+--     hours. A helper must never invent a dependency the callers do not have.
 create or replace function public.edge_call(
   slug        text,
   body        jsonb default '{}'::jsonb,
@@ -138,27 +143,31 @@ declare
   secret  text;
   req_id  bigint;
 begin
-  select decrypted_secret into jwt
-  from vault.decrypted_secrets where name = 'service_role_key';
-
+  -- REQUIRED. Every one of these functions gates on this header.
   select decrypted_secret into secret
   from vault.decrypted_secrets where name = 'cron_secret';
 
-  if jwt is null then
-    raise exception 'edge_call(%): vault secret service_role_key is missing', slug;
-  end if;
+  -- OPTIONAL. Attached when present, omitted when absent. Never fatal.
+  select decrypted_secret into jwt
+  from vault.decrypted_secrets where name = 'service_role_key';
+
   if secret is null then
-    raise exception 'edge_call(%): vault secret cron_secret is missing', slug;
+    raise exception
+      'edge_call(%): vault secret cron_secret is missing. Create it with the same value as the CRON_SECRET env var on the edge functions: select vault.create_secret(''<value>'', ''cron_secret'');',
+      slug;
   end if;
 
   select net.http_post(
     url := 'https://iattxbkbufslbauoumga.supabase.co/functions/v1/'
            || slug || coalesce('?' || query, ''),
     headers := jsonb_build_object(
-      'Content-Type',  'application/json',
-      'Authorization', 'Bearer ' || jwt,
-      'x-cron-secret', secret
-    ),
+                 'Content-Type',  'application/json',
+                 'x-cron-secret', secret
+               )
+               || case
+                    when jwt is null then '{}'::jsonb
+                    else jsonb_build_object('Authorization', 'Bearer ' || jwt)
+                  end,
     body := body,
     timeout_milliseconds := timeout_ms
   ) into req_id;
