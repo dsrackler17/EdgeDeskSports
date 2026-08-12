@@ -81,6 +81,8 @@ export type EvStatus =
 export type Freshness = "CURRENT" | "RECENT" | "HISTORICAL" | "STALE" | "UNKNOWN";
 
 export interface Evidence {
+  /** Stable within one packet. Every number the analyst quotes traces to this. */
+  id?: string;
   source: string;            // table / function that produced it
   entity: string | null;     // team, player, game, signal it describes
   field: string;             // what it is
@@ -91,6 +93,19 @@ export interface Evidence {
   source_timestamp?: string | null;
   relevance?: string;        // which research question it answers
   note?: string;
+  /* ── CANONICAL IDENTITY ────────────────────────────────────────────────
+     Names are display labels; ids are identity. These are populated wherever
+     the owning table publishes one, and the cross-entity integrity checks key
+     on them in preference to the name. A field that does not apply is simply
+     absent — nothing is forced. */
+  sport?: string | null;
+  event_id?: string | null;
+  team_id?: string | number | null;
+  player_id?: string | number | null;
+  /** The date this fact is ABOUT, not when it was read. */
+  date?: string | null;
+  /** Which layer this is, so a season rate can never be read as a matchup one. */
+  layer?: "matchup" | "season" | "market" | "historical" | "context" | null;
 }
 
 export interface Conflict {
@@ -146,7 +161,15 @@ export interface IntegrityOpts {
 /** Numeric identity of a stat row, used to spot the same row served twice. */
 function statFingerprint(v: any): string | null {
   if (!v || typeof v !== "object") return null;
-  const SKIP = new Set(["plate_appearances", "at_bats", "batters_faced", "games_started", "home_runs"]);
+  /* Counting stats that coincide often enough to be noise, PLUS every identity
+     field. An id is not a measurement: including pitcher_id here made two
+     genuinely identical stat lines look distinct purely because they belonged
+     to different people, which is exactly the case the check exists to catch.
+     Identity must never contribute to a statistical fingerprint. */
+  const SKIP = new Set([
+    "plate_appearances", "at_bats", "batters_faced", "games_started", "home_runs",
+    "pitcher_id", "player_id", "team_id", "game_id", "event_id", "id",
+  ]);
   const keys = Object.keys(v).filter((k) => typeof v[k] === "number" && !SKIP.has(k)).sort();
   // Two or three coincidental matches happen; a whole vector matching does not.
   if (keys.length < 4) return null;
@@ -377,6 +400,89 @@ export function evidenceIntegrity(
             + `The live fallback is working, but the ingest that should populate the owned table is not.` }
       : { name: "source", status: "PASS",
           detail: "Every fact came from the source it was expected to come from." });
+  }
+
+  /* 9. CROSS-ENTITY — the identity chain, generalised past pitchers.
+     Check 1 only ever looked at pitcher_quality, so a football answer could be
+     built on a team_efficiency row attached to a game that team is not in and
+     nothing would notice. Any item carrying both a subject team and a matchup
+     is checked the same way. */
+  {
+    const bad: string[] = [];
+    let checked = 0;
+    for (const e of usable) {
+      if (e.field === "pitcher_quality") continue;         // check 1 owns that one
+      const v = e.value as any;
+      const team = String(v?.team ?? v?.team_name ?? "").trim();
+      const game = String(v?.game ?? "").trim();
+      if (!team || !game || !game.includes("@")) continue;
+      checked++;
+      const sides = game.split("@").map((s) => normName(s));
+      if (!sides.some((s) => s === normName(team))) {
+        bad.push(`${e.entity ?? team} (${e.field}): listed with ${team}, which is not playing in "${game}"`);
+      }
+      // Home/away inversion: the declared side must match the side of the matchup.
+      const side = String(v?.side ?? "").toLowerCase();
+      if (side === "home" || side === "away") {
+        const want = side === "away" ? sides[0] : sides[1];
+        if (want && normName(team) !== want) {
+          bad.push(`${e.entity ?? team} (${e.field}): marked ${side} but ${team} is the other side of "${game}"`);
+        }
+      }
+    }
+    checks.push(bad.length
+      ? { name: "cross_entity_identity", status: "FAIL", entities: bad.slice(0, 8),
+          detail: `${bad.length} of ${checked} non-pitcher items are attached to a team that is not in their own game, `
+            + `or are marked on the wrong side of it. Every statement about who faces whom is unsafe.` }
+      : { name: "cross_entity_identity", status: "PASS",
+          detail: checked ? `All ${checked} team-keyed items resolve team -> game -> side consistently.`
+            : "No team-keyed item carried both a team and a game to cross-check." });
+  }
+
+  /* 10. ONE SUBJECT, ONE TEAM — a person attached to two clubs in one packet
+     is a join artefact, and it is the shape that puts a starter in the wrong
+     dugout without changing a single number. */
+  {
+    const teamsOf = new Map<string, Set<string>>();
+    for (const e of usable) {
+      const v = e.value as any;
+      const who = String(e.entity ?? "").trim();
+      const team = String(v?.team ?? "").trim();
+      if (!who || !team) continue;
+      const s = teamsOf.get(personKey(who)) ?? new Set<string>();
+      s.add(normName(team));
+      teamsOf.set(personKey(who), s);
+    }
+    const split = [...teamsOf.entries()].filter(([, s]) => s.size > 1);
+    checks.push(split.length
+      ? { name: "subject_team_consistency", status: "FAIL",
+          entities: split.map(([k, s]) => `${k}: ${[...s].join(" / ")}`).slice(0, 8),
+          detail: `${split.length} subject${split.length === 1 ? " is" : "s are"} attached to more than one team in the `
+            + `same packet. One of the joins is wrong and there is no way to tell which from the values alone.` }
+      : { name: "subject_team_consistency", status: "PASS",
+          detail: `Every named subject resolves to exactly one team.` });
+  }
+
+  /* 11. DUPLICATE EVENTS — the same matchup under two identifiers double-counts
+     a game in every denominator built from it. */
+  {
+    const idsOf = new Map<string, Set<string>>();
+    for (const e of usable) {
+      const v = e.value as any;
+      const game = String(v?.game ?? (e.field === "game" ? e.entity : "") ?? "").trim();
+      const id = e.event_id ?? v?.game_id;
+      if (!game || id == null) continue;
+      const s = idsOf.get(normName(game)) ?? new Set<string>();
+      s.add(String(id));
+      idsOf.set(normName(game), s);
+    }
+    const dupes = [...idsOf.entries()].filter(([, s]) => s.size > 1);
+    checks.push(dupes.length
+      ? { name: "duplicate_event", status: "WARNING",
+          entities: dupes.map(([g, s]) => `${g}: ${[...s].join(", ")}`).slice(0, 6),
+          detail: `${dupes.length} matchup${dupes.length === 1 ? "" : "s"} appear under more than one event id. `
+            + `A doubleheader legitimately does this; anything else is a duplicate that inflates every count built on it.` }
+      : { name: "duplicate_event", status: "PASS", detail: "No matchup appears under two event ids." });
   }
 
   const verdict: IntegrityVerdict = checks.some((c) => c.status === "FAIL")
@@ -645,6 +751,12 @@ export function ev(e: Partial<Evidence> & { source: string; field: string }): Ev
     source_timestamp: e.source_timestamp ?? null,
     relevance: e.relevance,
     note: e.note,
+    sport: e.sport ?? null,
+    event_id: e.event_id ?? null,
+    team_id: e.team_id ?? null,
+    player_id: e.player_id ?? null,
+    date: e.date ?? null,
+    layer: e.layer ?? null,
   };
   // Old information never masquerades as current information. Enforced here,
   // once, rather than trusted to every call site.
@@ -1528,6 +1640,9 @@ export class Dal {
       returned: rows.length, live: liveRows.length, dropped_final: dropped,
       note: "Completed games are dropped at the source so the evidence budget is never spent on a finished card.",
     };
+    /* The expected universe, computed from the SCHEDULE rather than from what
+       came back. This is the denominator every later count uses. */
+    path.slate_scope = buildSlateScope("baseball_mlb", rows, liveRows);
     if (!liveRows.length) {
       return { rows: [], path, ev: [unavailable("mlb_game_cards", "mlb_card",
         `all ${rows.length} carded games across ${days.join(" / ")} are Final — there is no live slate in this window`)] };
@@ -1994,8 +2109,15 @@ export class Dal {
 
       out.push(ev({
         source: "pitcher_features", entity: p.name, field: "pitcher_quality", relevance: "pitching",
+        player_id: p.pitcher_id ?? null,
+        event_id: p.game_id != null ? String(p.game_id) : null,
+        sport: "baseball_mlb",
         value: {
-          name: p.name, side, game_id: p.game_id,
+          /* pitcher_id travels WITH the value, not just alongside it. The name
+             is a display label — two starters can share a surname and one can
+             be spelled two ways — so the id is what the integrity checks and
+             any downstream join key on. */
+          name: p.name, pitcher_id: p.pitcher_id ?? null, side, game_id: p.game_id,
           team: teamOn(gm, side), game: matchup, game_date: gameDate, opponent: oppTeam,
           era: p.era, fip: p.fip, whip: p.whip,
           xera: p.xera, k_pct: p.k_pct, bb_pct: p.bb_pct, barrel_pct: p.barrel_pct,
@@ -2738,6 +2860,506 @@ export function coverage(evidence: Evidence[], field: string, universe: string[]
   };
 }
 
+/* ========================================================================
+   QUESTION REQUIREMENTS — what THIS question actually needs.
+
+   Coverage used to answer "how many rows came back". That is a database
+   statistic, not a research one: a 30-starter slate with complete weather and
+   no pitching data scored well, and a slate missing only weather scored the
+   same as one missing the starters. The requirement map makes coverage mean
+   "how much of what this question NEEDS is on hand", which is the only version
+   of the number that can gate an answer.
+
+   `per` is the denominator:
+     entity  — one per starter / team in scope
+     slate   — the game universe itself
+     focus   — the one signal under discussion
+     global  — a single row anywhere is enough
+   ======================================================================== */
+
+export type ReqTier = "REQUIRED" | "IMPORTANT" | "OPTIONAL";
+export interface Requirement {
+  field: string;
+  tier: ReqTier;
+  per: "entity" | "slate" | "focus" | "global";
+  /** Another field that satisfies this one when the preferred layer is absent. */
+  satisfied_by?: string[];
+  note?: string;
+}
+
+const R = (field: string, tier: ReqTier, per: Requirement["per"], extra: Partial<Requirement> = {}): Requirement =>
+  ({ field, tier, per, ...extra });
+
+export const REQUIREMENTS: Record<string, Requirement[]> = {
+  best_pitchers: [
+    R("game", "REQUIRED", "slate"),
+    R("probable_starter", "REQUIRED", "entity"),
+    R("pitcher_quality", "REQUIRED", "entity", {
+      satisfied_by: ["season_pitching"],
+      note: "The per-game layer is preferred; the season layer satisfies the requirement and must be labelled as season-long.",
+    }),
+    R("opponent_offense", "IMPORTANT", "entity", { satisfied_by: ["season_offense"] }),
+    R("park", "IMPORTANT", "slate"),
+    R("workload", "IMPORTANT", "entity"),
+    R("team_form", "IMPORTANT", "slate"),
+    R("bullpen_flag", "OPTIONAL", "global"),
+    R("weather", "OPTIONAL", "slate"),
+    R("signal", "OPTIONAL", "global"),
+  ],
+  worst_pitchers: [
+    R("game", "REQUIRED", "slate"),
+    R("probable_starter", "REQUIRED", "entity"),
+    R("pitcher_quality", "REQUIRED", "entity", { satisfied_by: ["season_pitching"] }),
+    R("opponent_offense", "IMPORTANT", "entity", { satisfied_by: ["season_offense"] }),
+    R("park", "IMPORTANT", "slate"),
+    R("workload", "IMPORTANT", "entity"),
+    R("bullpen_flag", "IMPORTANT", "global"),
+    R("weather", "OPTIONAL", "slate"),
+    R("signal", "OPTIONAL", "global"),
+  ],
+  best_matchups: [
+    R("game", "REQUIRED", "slate"),
+    R("probable_starter", "REQUIRED", "entity"),
+    R("pitcher_quality", "REQUIRED", "entity", { satisfied_by: ["season_pitching", "team_efficiency"] }),
+    R("opponent_offense", "REQUIRED", "entity", { satisfied_by: ["season_offense", "team_efficiency"] }),
+    R("park", "IMPORTANT", "slate"),
+    R("weather", "IMPORTANT", "slate"),
+    R("workload", "IMPORTANT", "entity"),
+    R("signal", "IMPORTANT", "global"),
+    R("bullpen_flag", "OPTIONAL", "global"),
+  ],
+  team_efficiency: [
+    R("game", "REQUIRED", "slate"),
+    R("team_efficiency", "REQUIRED", "entity"),
+    R("matchup_context", "IMPORTANT", "slate"),
+    R("quarterback", "IMPORTANT", "entity"),
+    R("signal", "OPTIONAL", "global"),
+    R("rankings", "OPTIONAL", "global"),
+  ],
+  best_bets: [
+    R("signal", "REQUIRED", "global"),
+    R("sharp_reference", "REQUIRED", "focus"),
+    R("game", "IMPORTANT", "slate"),
+    R("pitcher_quality", "IMPORTANT", "entity", { satisfied_by: ["season_pitching", "team_efficiency"] }),
+    R("opponent_offense", "IMPORTANT", "entity", { satisfied_by: ["season_offense"] }),
+    R("cross_market", "IMPORTANT", "focus"),
+    R("clv_history", "IMPORTANT", "global"),
+    R("line_movement", "OPTIONAL", "focus"),
+    R("market_residual", "OPTIONAL", "focus"),
+  ],
+  what_changed: [
+    R("signal", "REQUIRED", "focus"),
+    R("snapshot_diff", "REQUIRED", "focus"),
+    R("line_movement", "IMPORTANT", "focus"),
+    R("closing_line", "IMPORTANT", "focus"),
+    R("probable_starter", "IMPORTANT", "slate"),
+    R("weather", "OPTIONAL", "slate"),
+    R("market_residual", "OPTIONAL", "focus"),
+  ],
+  historical: [
+    R("clv_history", "REQUIRED", "global"),
+    R("prior_outcome", "IMPORTANT", "global"),
+    R("pattern", "IMPORTANT", "global"),
+    R("calibration", "IMPORTANT", "global"),
+    R("signal", "OPTIONAL", "focus"),
+  ],
+  player_specific: [
+    R("probable_starter", "REQUIRED", "entity"),
+    R("pitcher_quality", "REQUIRED", "entity", { satisfied_by: ["season_pitching", "player_stats", "quarterback"] }),
+    R("game", "REQUIRED", "slate"),
+    R("workload", "IMPORTANT", "entity"),
+    R("opponent_offense", "IMPORTANT", "entity", { satisfied_by: ["season_offense"] }),
+  ],
+  why: [
+    R("signal", "REQUIRED", "focus"),
+    R("sharp_reference", "REQUIRED", "focus"),
+    R("pitcher_quality", "IMPORTANT", "entity", { satisfied_by: ["season_pitching", "team_efficiency"] }),
+    R("cross_market", "OPTIONAL", "focus"),
+    R("model", "OPTIONAL", "focus"),
+  ],
+  price: [
+    R("signal", "REQUIRED", "focus"),
+    R("sharp_reference", "IMPORTANT", "focus"),
+    R("line_movement", "OPTIONAL", "focus"),
+  ],
+  _default: [
+    R("signal", "REQUIRED", "global"),
+    R("game", "IMPORTANT", "slate"),
+    R("sharp_reference", "IMPORTANT", "focus"),
+  ],
+};
+
+/* Player questions come in under many intents. The presence of a resolved
+   player changes what the question needs, so the map is selected accordingly. */
+export function requirementsFor(intent: string, hasPlayer = false): Requirement[] {
+  if (hasPlayer && REQUIREMENTS.player_specific && !REQUIREMENTS[intent]) return REQUIREMENTS.player_specific;
+  return REQUIREMENTS[intent] ?? REQUIREMENTS._default;
+}
+
+/* ========================================================================
+   SPORT CAPABILITY CONTRACT — what each sport ACTUALLY has.
+
+   The research architecture is sport-agnostic, which is exactly why this has
+   to be declared: a generic pipeline will happily report a missing field for a
+   sport that was never going to have one, and "EdgeDesk has no bullpen data for
+   this UFC card" is noise, not honesty. A capability that is false means the
+   requirement is dropped rather than counted as a gap.
+   ======================================================================== */
+export const SPORT_CAPABILITIES: Record<string, Record<string, boolean>> = {
+  baseball_mlb: {
+    schedule: true, starters: true, pitching_season: true, pitching_matchup: true,
+    offense: true, bullpen: true, park: true, weather: true, market: true,
+    team_efficiency: false, quarterback: false,
+  },
+  americanfootball_nfl: {
+    schedule: true, team_efficiency: true, quarterback: true, matchup_context: true,
+    market: true, weather: true,
+    starters: false, pitching_season: false, pitching_matchup: false, offense: false,
+    bullpen: false, park: false,
+  },
+  americanfootball_ncaaf: {
+    schedule: true, team_efficiency: false, matchup_context: true, rankings: true, market: true,
+    quarterback: false, starters: false, pitching_season: false, pitching_matchup: false,
+    offense: false, bullpen: false, park: false, weather: false,
+  },
+  basketball_ncaab: {
+    schedule: true, team_efficiency: true, matchup_context: true, market: true,
+    quarterback: false, starters: false, pitching_season: false, pitching_matchup: false,
+    offense: false, bullpen: false, park: false, weather: false,
+  },
+  _core: { market: true, schedule: false },
+};
+
+const FIELD_CAPABILITY: Record<string, string> = {
+  game: "schedule", probable_starter: "starters", pitcher_quality: "pitching_matchup",
+  season_pitching: "pitching_season", opponent_offense: "offense", season_offense: "offense",
+  bullpen_flag: "bullpen", park: "park", weather: "weather", signal: "market",
+  sharp_reference: "market", team_efficiency: "team_efficiency", quarterback: "quarterback",
+  matchup_context: "matchup_context", rankings: "rankings",
+};
+
+export function sportSupports(sportKey: string | null, field: string): boolean {
+  const caps = SPORT_CAPABILITIES[sportKey ?? ""] ?? SPORT_CAPABILITIES._core;
+  const need = FIELD_CAPABILITY[field];
+  if (!need) return true;                 // not a sport-gated field
+  return caps[need] !== false;
+}
+
+/* ========================================================================
+   SLATE SCOPE — the expected universe, established BEFORE anything is counted.
+
+   The denominator has to come from the schedule, never from the rows that came
+   back. Counting retrieved rows against retrieved rows always reports 100%,
+   which is how a half-ingested card looked complete.
+   ======================================================================== */
+export interface SlateScope {
+  sport: string | null;
+  date: string;
+  timezone: string;
+  expected_games: number;
+  retrieved_games: number;
+  live_games: number;
+  scheduled_games: number;
+  final_games: number;
+  postponed_games: number;
+  missing_games: number;
+  dropped_final: number;
+  complete: boolean;
+  note: string;
+}
+
+export function buildSlateScope(sport: string | null, allRows: any[], liveRows: any[]): SlateScope {
+  const statusOf = (r: any) => String(r?.status ?? "").toLowerCase();
+  const today = etDay(0);
+  const onToday = allRows.filter((r) => String(r?.game_date ?? "").slice(0, 10) === today);
+  const universe = onToday.length ? onToday : allRows;
+
+  const final = universe.filter((r) => statusOf(r) === "final").length;
+  const postponed = universe.filter((r) => /postpon|suspend|cancel/.test(statusOf(r))).length;
+  const scheduled = universe.length - final - postponed;
+  const expected = universe.length;
+  const live = liveRows.filter((r) => String(r?.game_date ?? "").slice(0, 10) === today).length
+    || liveRows.length;
+
+  return {
+    sport, date: today, timezone: "America/New_York",
+    expected_games: expected,
+    retrieved_games: allRows.length,
+    live_games: live,
+    scheduled_games: scheduled,
+    final_games: final,
+    postponed_games: postponed,
+    // A game on the card that is neither final, postponed, nor carried through.
+    missing_games: Math.max(0, scheduled - live),
+    dropped_final: allRows.length - liveRows.length,
+    complete: expected > 0 && live >= scheduled,
+    note: expected === 0
+      ? "No games are carded for this date — the schedule sync has not written this slate."
+      : `${live} of ${scheduled} scheduled games on ${today} are in scope; ${final} already final.`,
+  };
+}
+
+/* ========================================================================
+   SEMANTIC COVERAGE + THE COMPLETENESS GATE
+   ======================================================================== */
+
+export interface CoverageCell { available: number; expected: number; missing: string[]; via?: string }
+export interface SemanticCoverage {
+  question_type: string;
+  overall: number;
+  required: Record<string, CoverageCell>;
+  important: Record<string, CoverageCell>;
+  optional: Record<string, CoverageCell>;
+  critical_gaps: string[];
+  important_gaps: string[];
+  optional_gaps: string[];
+  not_applicable: string[];
+}
+
+export interface CoverageUniverse {
+  entities: string[];        // starters / teams in scope
+  games: string[];
+  hasFocus: boolean;
+  expectedGames: number;
+}
+
+export function semanticCoverage(
+  intent: string, evidence: Evidence[], reqs: Requirement[],
+  uni: CoverageUniverse, sportKey: string | null,
+): SemanticCoverage {
+  const usable = evidence.filter((e) => e.status !== "UNAVAILABLE");
+  const haveByField = new Map<string, Set<string>>();
+  const anyByField = new Set<string>();
+  for (const e of usable) {
+    anyByField.add(e.field);
+    if (!e.entity) continue;
+    const s = haveByField.get(e.field) ?? new Set<string>();
+    s.add(personKey(String(e.entity)));
+    haveByField.set(e.field, s);
+  }
+
+  const cell = (r: Requirement): CoverageCell => {
+    // A satisfying alternate layer counts, and is NAMED so nothing is silent.
+    const candidates = [r.field, ...(r.satisfied_by ?? [])];
+    if (r.per === "entity") {
+      const expected = uni.entities.length;
+      let best: CoverageCell = { available: 0, expected, missing: uni.entities.slice() };
+      for (const f of candidates) {
+        const have = haveByField.get(f);
+        // A slate-wide roll-up row (season layer) covers every entity it lists.
+        const rollup = usable.some((e) => e.field === f && !uni.entities.length);
+        let hit: string[];
+        if (have) hit = uni.entities.filter((n) => have.has(personKey(n)));
+        else hit = [];
+        if (!hit.length && anyByField.has(f) && rollup) hit = uni.entities.slice();
+        // season_pitching is one row carrying many pitchers — expand it.
+        if (!hit.length && anyByField.has(f)) {
+          const names = new Set<string>();
+          for (const e of usable) {
+            const v: any = e.value;
+            if (e.field === f && Array.isArray(v?.rows)) for (const row of v.rows) if (row?.name) names.add(personKey(String(row.name)));
+          }
+          if (names.size) hit = uni.entities.filter((n) => names.has(personKey(n)));
+        }
+        if (hit.length > best.available) {
+          best = { available: hit.length, expected, missing: uni.entities.filter((n) => !hit.includes(n)),
+                   via: f === r.field ? undefined : f };
+        }
+      }
+      return best;
+    }
+    if (r.per === "slate") {
+      const expected = Math.max(uni.expectedGames, uni.games.length);
+      for (const f of candidates) {
+        const have = haveByField.get(f);
+        if (have) {
+          const hit = uni.games.filter((g) => have.has(personKey(g)));
+          const n = hit.length || (anyByField.has(f) ? Math.min(expected, uni.games.length) : 0);
+          return { available: n, expected, missing: uni.games.filter((g) => !hit.includes(g)).slice(0, 12),
+                   via: f === r.field ? undefined : f };
+        }
+        if (anyByField.has(f)) return { available: expected, expected, missing: [], via: f === r.field ? undefined : f };
+      }
+      return { available: 0, expected, missing: uni.games.slice(0, 12) };
+    }
+    // focus / global — one is enough
+    const expected = r.per === "focus" ? (uni.hasFocus ? 1 : 0) : 1;
+    for (const f of candidates) {
+      if (anyByField.has(f)) return { available: expected, expected, missing: [], via: f === r.field ? undefined : f };
+    }
+    return { available: 0, expected, missing: [r.field] };
+  };
+
+  const required: Record<string, CoverageCell> = {};
+  const important: Record<string, CoverageCell> = {};
+  const optional: Record<string, CoverageCell> = {};
+  const critical_gaps: string[] = [], important_gaps: string[] = [], optional_gaps: string[] = [];
+  const not_applicable: string[] = [];
+
+  for (const r of reqs) {
+    /* A sport that does not HAVE a field cannot be missing it. Counting CFB's
+       absent EPA as a gap on every question buries the gaps that are real. */
+    if (!sportSupports(sportKey, r.field)) { not_applicable.push(r.field); continue; }
+    const c = cell(r);
+    if (c.expected === 0) { not_applicable.push(r.field); continue; }
+    const bucket = r.tier === "REQUIRED" ? required : r.tier === "IMPORTANT" ? important : optional;
+    bucket[r.field] = c;
+    const short = c.available < c.expected;
+    if (short) {
+      const label = `${r.field} (${c.available}/${c.expected})`;
+      if (r.tier === "REQUIRED") critical_gaps.push(label);
+      else if (r.tier === "IMPORTANT") important_gaps.push(label);
+      else optional_gaps.push(label);
+    }
+  }
+
+  const ratio = (b: Record<string, CoverageCell>) => {
+    const cells = Object.values(b);
+    if (!cells.length) return 1;
+    const exp = cells.reduce((a, c) => a + c.expected, 0);
+    const got = cells.reduce((a, c) => a + Math.min(c.available, c.expected), 0);
+    return exp ? got / exp : 1;
+  };
+  /* Weighted toward REQUIRED so optional gaps cannot drag a good packet down —
+     and the gate below reads critical_gaps directly, so a high overall can
+     never hide a missing required field either. */
+  const overall = 0.70 * ratio(required) + 0.25 * ratio(important) + 0.05 * ratio(optional);
+
+  return {
+    question_type: intent, overall: +overall.toFixed(3),
+    required, important, optional,
+    critical_gaps, important_gaps, optional_gaps, not_applicable,
+  };
+}
+
+export type CompletenessState = "COMPLETE" | "PARTIAL" | "INSUFFICIENT" | "INVALID";
+
+export interface ResearchCompleteness {
+  state: CompletenessState;
+  reason: string;
+  required_fields: string[];
+  available_fields: string[];
+  missing_fields: string[];
+  critical_gaps: string[];
+  safe_to_rank: boolean;
+  safe_to_compare: boolean;
+  safe_to_make_betting_interpretation: boolean;
+}
+
+/**
+ * The data-delivery state. NOT a betting score, and deliberately not a number:
+ * the analyst needs a decision it can obey, not a percentage it has to
+ * interpret. Integrity contamination outranks coverage — clean-but-thin data
+ * can still be reasoned over honestly, badly-joined data cannot be reasoned
+ * over at all.
+ */
+export function completenessGate(
+  cov: SemanticCoverage, integrity: Integrity, scope: SlateScope | null,
+): ResearchCompleteness {
+  const required_fields = Object.keys(cov.required);
+  const available_fields = required_fields.filter((f) => cov.required[f].available >= cov.required[f].expected);
+  const missing_fields = required_fields.filter((f) => cov.required[f].available < cov.required[f].expected);
+
+  const reqRatio = required_fields.length
+    ? required_fields.reduce((a, f) => a + Math.min(1, cov.required[f].available / Math.max(1, cov.required[f].expected)), 0) / required_fields.length
+    : 1;
+  const emptyRequired = required_fields.filter((f) => cov.required[f].available === 0);
+
+  let state: CompletenessState;
+  let reason: string;
+
+  if (integrity.verdict === "FAIL") {
+    state = "INVALID";
+    reason = `Evidence integrity failed (${integrity.summary}). The data cannot be safely attributed, so no ranking or comparison is permitted regardless of how much of it there is.`;
+  } else if (emptyRequired.length) {
+    state = "INSUFFICIENT";
+    reason = `Required evidence is entirely absent: ${emptyRequired.join(", ")}. `
+      + `Answer only what the present evidence supports and name what is missing.`;
+  } else if (reqRatio < 0.75) {
+    state = "INSUFFICIENT";
+    reason = `Only ${Math.round(reqRatio * 100)}% of the required evidence for a "${cov.question_type}" question was retrieved `
+      + `(${cov.critical_gaps.join(", ")}). That is too thin to rank responsibly.`;
+  } else if (cov.critical_gaps.length || cov.important_gaps.length || (scope && !scope.complete)) {
+    state = "PARTIAL";
+    const bits = [
+      ...cov.critical_gaps.map((g) => `required ${g}`),
+      ...cov.important_gaps.map((g) => `important ${g}`),
+    ];
+    if (scope && !scope.complete) bits.push(`slate incomplete (${scope.live_games}/${scope.scheduled_games} scheduled games in scope)`);
+    reason = `Answerable, with material gaps: ${bits.join("; ")}. Use what is present and name the gaps explicitly.`;
+  } else {
+    state = "COMPLETE";
+    reason = "All required and important evidence for this question was retrieved and passed integrity.";
+  }
+
+  const usable = state === "COMPLETE" || state === "PARTIAL";
+  return {
+    state, reason, required_fields, available_fields, missing_fields,
+    critical_gaps: cov.critical_gaps,
+    safe_to_rank: usable,
+    safe_to_compare: usable,
+    safe_to_make_betting_interpretation: usable
+      && (cov.required.signal?.available ?? cov.important.signal?.available ?? cov.optional.signal?.available ?? 0) > 0,
+  };
+}
+
+/* ========================================================================
+   EVIDENCE HIERARCHY — analytical priority, NOT a betting weight.
+   ======================================================================== */
+export function evidenceTier(e: Evidence): { tier: number; label: string } {
+  if (e.status === "UNAVAILABLE") return { tier: 99, label: "UNAVAILABLE — not evidence" };
+  const stale = e.status === "STALE" || e.status === "PARTIAL" || e.status === "PROBABLE" || e.freshness === "STALE";
+  if (stale) return { tier: 6, label: "T6 partial/probable/stale" };
+  if (e.status === "HISTORICAL" || e.layer === "historical") {
+    return { tier: 4, label: "T4 EdgeDesk historical" };
+  }
+  if (e.layer === "matchup") return { tier: 1, label: "T1 current matchup-specific" };
+  if (e.layer === "season") return { tier: 2, label: "T2 current season-level" };
+  if (e.layer === "market") return { tier: 3, label: "T3 current market" };
+  if (e.layer === "context") return { tier: 5, label: "T5 contextual" };
+  return { tier: 5, label: "T5 contextual" };
+}
+
+/* ========================================================================
+   NORMALIZATION — one place where every evidence item gets an id, a layer and
+   whatever canonical identity its value already carries.
+
+   Done centrally rather than at each of the ~20 emission sites, because the
+   whole point is that it cannot be forgotten at one of them. Anything an
+   emitter already set is preserved; this only fills gaps.
+   ======================================================================== */
+
+const FIELD_LAYER: Record<string, NonNullable<Evidence["layer"]>> = {
+  pitcher_quality: "matchup", opponent_offense: "matchup", probable_starter: "matchup",
+  team_efficiency: "matchup", quarterback: "matchup", workload: "matchup",
+  season_pitching: "season", season_offense: "season",
+  signal: "market", sharp_reference: "market", cross_market: "market",
+  line_movement: "market", market_residual: "market", book_spread: "market",
+  closing_line: "market", model: "market",
+  clv_history: "historical", prior_outcome: "historical", pattern: "historical",
+  calibration: "historical",
+  game: "context", park: "context", weather: "context", team_form: "context",
+  matchup_context: "context", rankings: "context", bullpen_flag: "context",
+  closer: "context", player_stats: "context",
+};
+
+export function normalizeEvidence(evidence: Evidence[]): Evidence[] {
+  return evidence.map((e, i) => {
+    const v: any = e.value ?? {};
+    const layer = e.layer ?? FIELD_LAYER[e.field]
+      ?? (String(e.field).startsWith("fact:") ? "historical" : "context");
+    return {
+      ...e,
+      id: e.id ?? `e${i + 1}`,
+      layer,
+      event_id: e.event_id ?? (typeof v?.game_id === "string" || typeof v?.game_id === "number" ? String(v.game_id) : null),
+      player_id: e.player_id ?? (v?.pitcher_id ?? v?.player_id ?? null),
+      team_id: e.team_id ?? (v?.team_id ?? null),
+      date: e.date ?? (v?.game_date ? String(v.game_date).slice(0, 10) : null),
+    };
+  });
+}
+
 /* ------------------------------------------------------ thesis attack */
 
 /* Deterministic. Reads the OWNED numbers on a signal row and reports whether the
@@ -2826,14 +3448,14 @@ export function buildSnapshot(eventId: string | null, evidence: Evidence[], focu
 /* What actually moved between two snapshots. Direction included, because
    "the price improved" and "the price ran away" are different answers. */
 export function diffSnapshots(prev: Snapshot | null, cur: Snapshot): {
-  changed: { field: string; from: unknown; to: unknown; direction: string | null }[];
+  changed: { field: string; from: unknown; to: unknown; direction: string | null; kind: string }[];
   unchanged: string[];
   note: string;
 } {
   if (!prev) {
     return { changed: [], unchanged: [], note: "No earlier research packet on file for this game — this is version 1." };
   }
-  const changed: { field: string; from: unknown; to: unknown; direction: string | null }[] = [];
+  const changed: { field: string; from: unknown; to: unknown; direction: string | null; kind: string }[] = [];
   const unchanged: string[] = [];
   for (const f of SNAP_FIELDS) {
     const a = (prev.facts as any)[f], b = (cur.facts as any)[f];
@@ -2845,7 +3467,21 @@ export function diffSnapshots(prev: Snapshot | null, cur: Snapshot): {
     if (na != null && nb != null) direction = nb > na ? "up" : "down";
     else if (a == null && b != null) direction = "resolved";
     else if (a != null && b == null) direction = "lost";
-    changed.push({ field: f, from: a ?? null, to: b ?? null, direction });
+
+    /* A classified change, derived ONLY from the two stored snapshots. Never
+       from model language, and never from a value that merely looks different
+       — the equality test above has already established a real difference. */
+    const kind = (() => {
+      if (a == null && b != null) return "NEW";
+      if (a != null && b == null) return "REMOVED";
+      if (f === "status") return "STATUS_CHANGED";
+      if (f === "away_starter" || f === "home_starter") return "STATUS_CHANGED";
+      if (f === "current_price" || f === "fair_price") return "PRICE_CHANGED";
+      if (f === "edge" && na != null && nb != null) return nb > na ? "IMPROVED" : "WORSENED";
+      if (na != null && nb != null) return "MOVED";
+      return "DATA_CHANGED";
+    })();
+    changed.push({ field: f, from: a ?? null, to: b ?? null, direction, kind });
   }
   const mins = Math.round((cur.taken_at - prev.taken_at) / 60000);
   return {
@@ -3214,7 +3850,7 @@ export function deriveState(history: any[], plan: Plan, packet: any, prev?: Conv
    build identifier in the response there is no way to tell those apart, and
    this function shipped for months with no way to answer "which version is
    answering?". That is what this constant exists to end. */
-const BUILD = "edgedesk_ai-2026-08-12-r1-entity-slate";
+const BUILD = "edgedesk_ai-2026-08-12-r2-research-packet";
 
 const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY") ?? "";
 /* The reasoning model. This layer retrieves evidence and asks the model to
@@ -3458,6 +4094,17 @@ interface ResearchOut {
     rejected_teams: TeamMatch[];
     players: PlayerResolution[];
   };
+  /* ── r2: the research packet ───────────────────────────────────────── */
+  semantic: SemanticCoverage;
+  research_completeness: ResearchCompleteness;
+  slate_scope: SlateScope;
+  requirements: Requirement[];
+  fallback_retrievals: any[];
+  thesis_attack: {
+    support: any[]; contradictions: any[];
+    unresolved_questions: string[]; falsifiers: string[];
+  };
+  deterministic_context: Record<string, unknown> | null;
 }
 
 async function runResearch(
@@ -3495,7 +4142,20 @@ async function runResearch(
       }) ?? null;
     }
     if (!focus && plan.entities.rank && slateRows[plan.entities.rank - 1]) focus = slateRows[plan.entities.rank - 1];
-    if (!focus && plan.depth !== "SLATE") focus = slateRows[0] ?? null;
+    /* SOME SLATE-WIDE QUESTIONS STILL NEED A DETERMINISTIC CANDIDATE.
+       "What's the best bet tonight?" is board-wide in its retrieval but it is
+       asking for ONE thing the engine already ranked. Leaving focus null at
+       SLATE depth meant the deterministic context — price, fair price, edge,
+       book depth, sharp print — was never attached, so the analyst was asked
+       to name the best bet with none of the engine's own numbers for any
+       candidate. The board is ordered by edge, so the top row IS the engine's
+       candidate; the model still may not compute anything from it. */
+    const NEEDS_CANDIDATE = new Set([
+      "best_bets", "why", "price", "attack", "what_changed", "compare", "postmortem", "traps",
+    ]);
+    if (!focus && (plan.depth !== "SLATE" || NEEDS_CANDIDATE.has(plan.intent))) {
+      focus = slateRows[0] ?? null;
+    }
   }
   /* THE SPORT COMES FROM THE QUESTION FIRST.
      This fell through to slateRows[0] — the highest-EDGE signal on the board —
@@ -3737,42 +4397,142 @@ async function runResearch(
     unavail.push({ source: mod.label, field: "sport_module", reason: mod.needs ?? "sport-specific research is not wired for this league" });
   }
 
-  /* ---- 9. completeness + per-entity coverage ---------------------------
-     "Not on file" is only honest when nothing is on file. When 33 of 40 games
-     carry pitcher quality and 7 do not, the answer must say exactly that and
-     then use the 33. */
-  const comp = completeness(evidence, sportKey);
-  /* The universe is the LIVE slate, not everything the card holds.
-     getMlbCard queries a three-day ET window because ingest writes dates in its
-     own timezone, so yesterday's completed starters were landing in the
-     denominator — which is why coverage read 30 of 60 when the fallback had in
-     fact covered the whole playable card. Ranking today's matchups against
-     yesterday's finished games is not a data gap, it is the wrong question. */
+  /* ---- 9. NORMALIZE, SCOPE, REQUIREMENTS, COVERAGE ----------------------
+     Everything below reasons about identity and denominators, so normalization
+     runs first: ids, layer and canonical identity are assigned in one place
+     rather than trusted to twenty emitters. */
+  let ev0 = normalizeEvidence(evidence);
+
+  /* The expected universe. It comes from the SCHEDULE, never from the rows
+     that came back — counting retrieved rows against retrieved rows always
+     reports 100%, which is how a half-ingested card looked complete. */
+  const cardScope = (data_path.mlb_card as any)?.slate_scope as SlateScope | undefined;
   const liveDays = new Set([etDay(0), etDay(1)]);
-  const starterEv = evidence.filter((e) => e.field === "probable_starter" && e.status !== "UNAVAILABLE");
+  const starterEv = ev0.filter((e) => e.field === "probable_starter" && e.status !== "UNAVAILABLE");
   const onLiveSlate = (e: Evidence) => {
     const v = e.value as any;
     const d = v?.game_date ? String(v.game_date).slice(0, 10) : null;
     if (d && !liveDays.has(d)) return false;
     return String(v?.status ?? "").toLowerCase() !== "final";
   };
-  const scoped = starterEv.filter(onLiveSlate);
-  const starters = Array.from(new Set((scoped.length ? scoped : starterEv).map((e) => String(e.entity))));
+  const scopedStarters = starterEv.filter(onLiveSlate);
+  const starters = Array.from(new Set((scopedStarters.length ? scopedStarters : starterEv).map((e) => String(e.entity))));
+  const teamsInPlay = Array.from(new Set(
+    ev0.filter((e) => e.field === "team_efficiency" && e.status !== "UNAVAILABLE").map((e) => String(e.entity)),
+  ));
+  const games = Array.from(new Set(ev0.filter((e) => e.field === "game").map((e) => String(e.entity))));
+
+  const slate_scope: SlateScope = cardScope ?? buildSlateScope(
+    sportKey,
+    games.map((g) => ({ game_date: etDay(0), status: "Scheduled", game: g })),
+    games.map((g) => ({ game_date: etDay(0), status: "Scheduled", game: g })),
+  );
+
+  const universe: CoverageUniverse = {
+    entities: starters.length ? starters : teamsInPlay,
+    games,
+    hasFocus: !!focus,
+    expectedGames: Math.max(slate_scope.expected_games || 0, games.length),
+  };
+
+  const hasResolvedPlayer = players.some((p) => p.status === "RESOLVED");
+  const reqs = requirementsFor(plan.intent, hasResolvedPlayer);
+  let semantic = semanticCoverage(plan.intent, ev0, reqs, universe, sportKey);
+
+  /* ---- 9b. ADAPTIVE SECOND PASS — gap-driven, never a blanket re-run -----
+     The first pass retrieves what the plan asked for. This pass retrieves only
+     what the COVERAGE AUDIT says is still missing, and records what each
+     targeted call bought. A retrieval that does not improve coverage is worth
+     seeing too: it means the gap is real rather than a plumbing miss. */
+  const fallback_retrievals: any[] = [];
+  const gapFields = new Set(
+    [...semantic.critical_gaps, ...semantic.important_gaps].map((g) => g.split(" ")[0]),
+  );
+  const alreadyHave = (f: string) => ev0.some((e) => e.field === f && e.status !== "UNAVAILABLE");
+
+  const targeted = async (
+    reason: string, missing: string, label: string, run: () => Promise<Evidence[]>,
+  ) => {
+    if (dal.calls >= dal.budget) {
+      fallback_retrievals.push({ reason, missing_requirement: missing, retrieval: label,
+        result: "skipped — retrieval budget exhausted", rows_added: 0,
+        coverage_before: semantic.overall, coverage_after: semantic.overall });
+      return;
+    }
+    const before = semantic.overall;
+    let added: Evidence[] = [];
+    try { added = await run(); } catch (e) {
+      fallback_retrievals.push({ reason, missing_requirement: missing, retrieval: label,
+        result: `threw — ${String((e as Error)?.message ?? e)}`, rows_added: 0,
+        coverage_before: before, coverage_after: before });
+      return;
+    }
+    const useful = added.filter((a) => a.status !== "UNAVAILABLE");
+    evidence.push(...added);
+    ev0 = normalizeEvidence(evidence);
+    semantic = semanticCoverage(plan.intent, ev0, reqs, universe, sportKey);
+    fallback_retrievals.push({
+      reason, missing_requirement: missing, retrieval: label,
+      result: useful.length ? "retrieved" : "returned nothing — the gap is real, not a lookup miss",
+      rows_added: useful.length,
+      coverage_before: +before.toFixed(3), coverage_after: +semantic.overall.toFixed(3),
+      improved: semantic.overall > before,
+    });
+  };
+
+  if (isMlb) {
+    if ((gapFields.has("pitcher_quality") || gapFields.has("opponent_offense"))
+      && !alreadyHave("season_pitching")) {
+      await targeted(
+        "the per-game pitching layer is short of the slate, so the identity-keyed season layer is fetched as a labelled fallback",
+        "pitcher_quality", "pitcher_season + team_season",
+        async () => (await dal.getSeasonPitching()).ev);
+    }
+    if (gapFields.has("weather") && slateRows.length) {
+      await targeted("weather is missing for part of the card", "weather", "venue_weather",
+        () => dal.getWeather(slateRows.slice(0, 20).map((r) => r.event_id).filter(Boolean)));
+    }
+    if (gapFields.has("bullpen_flag") && cardRows.length) {
+      const ids = Array.from(new Set(cardRows.flatMap((g: any) =>
+        [g.away_team_id, g.home_team_id].filter((v) => v != null)))).slice(0, 20);
+      if (ids.length) {
+        await targeted("bullpen state is missing for teams on the card", "bullpen_flag",
+          "mlb_bullpen_taxed + mlb_bullpen_team", () => dal.getBullpen(ids));
+      }
+    }
+  }
+  if (gapFields.has("sharp_reference") && focus?.event_id) {
+    await targeted("the focused signal has no sharp reference attached", "sharp_reference", "signals (sharp)",
+      () => dal.getSharpReference(focus.event_id, focus.market, focus.selection));
+  }
+  if (gapFields.has("clv_history")) {
+    await targeted("the question needs a historical base rate and none was retrieved", "clv_history",
+      "signals (graded)", () => dal.getCLVHistory(sportKey, focus?.market ?? null, num(focus?.first_edge ?? focus?.edge)));
+  }
+  if (fallback_retrievals.length) data_path.fallback_retrievals = fallback_retrievals;
+
+  /* ---- 9c. INTEGRITY, then the COMPLETENESS GATE ------------------------ */
+  const integrity0 = evidenceIntegrity(ev0, { slateDays: [etDay(0), etDay(1)] });
+  const research_completeness = completenessGate(semantic, integrity0, slate_scope);
+
+  const comp = completeness(ev0, sportKey);
   data_path.slate_scope = {
-    starters_on_card: starterEv.length, starters_on_live_slate: scoped.length,
+    starters_on_card: starterEv.length, starters_on_live_slate: scopedStarters.length,
     days_counted: Array.from(liveDays),
+    ...slate_scope,
     note: "Coverage is measured against the live slate. Completed games from the card's lookback window are excluded from the denominator.",
   };
-  const games = Array.from(new Set(
-    evidence.filter((e) => e.field === "game").map((e) => String(e.entity)),
-  ));
+  /* Legacy per-entity coverage, retained: the semantic layer above answers
+     "how much of what this question needs", this answers "which named entities
+     lack this field", and the answer quotes both. */
   const cov: ReturnType<typeof coverage>[] = [];
   if (starters.length) {
-    cov.push(coverage(evidence, "pitcher_quality", starters));
-    cov.push(coverage(evidence, "opponent_offense", starters));
-    cov.push(coverage(evidence, "workload", starters));
+    cov.push(coverage(ev0, "pitcher_quality", starters));
+    cov.push(coverage(ev0, "opponent_offense", starters));
+    cov.push(coverage(ev0, "workload", starters));
   }
-  if (games.length) cov.push(coverage(evidence, "weather", games));
+  if (teamsInPlay.length) cov.push(coverage(ev0, "team_efficiency", teamsInPlay));
+  if (games.length) cov.push(coverage(ev0, "weather", games));
 
   /* ---- 10. research packet versioning -----------------------------------
      Reduce this game's research state to comparable scalars, fetch the last
@@ -3782,22 +4542,62 @@ async function runResearch(
   let changed: ReturnType<typeof diffSnapshots> | null = null;
   if (focus?.event_id) {
     const prev = await dal.getLastSnapshot(focus.event_id);
-    snapshot = buildSnapshot(focus.event_id, evidence, focus, (prev?.version ?? 0) + 1);
+    snapshot = buildSnapshot(focus.event_id, ev0, focus, (prev?.version ?? 0) + 1);
     changed = diffSnapshots(prev, snapshot);
   }
 
   /* ---- 11. structured findings, derived from evidence only --------------- */
-  const findings = extractFindings(evidence);
+  const findings = extractFindings(ev0);
 
   /* ---- 12. proactive research queue ------------------------------------- */
   const queue = slateRows.length ? scout(slateRows) : [];
 
+  /* ---- 13. THESIS ATTACK INPUTS, bound to evidence ids -------------------
+     The support and the contradictions are SELECTED FROM OWNED EVIDENCE, not
+     written. If nothing in the packet contradicts the thesis, the list is
+     empty and stays empty — a manufactured objection to look even-handed is
+     the same failure as a manufactured statistic. */
+  const thesis_attack = {
+    support: ev0
+      .filter((e) => e.status === "VERIFIED" && (e.layer === "matchup" || e.layer === "market"))
+      .slice(0, 8).map((e) => ({ id: e.id, field: e.field, entity: e.entity })),
+    contradictions: [
+      ...conflicts.map((c) => ({
+        id: ev0.find((e) => e.field === c.field && e.entity === c.entity)?.id ?? null,
+        field: c.field, entity: c.entity,
+        detail: `${c.a.source} and ${c.b.source} disagree${c.resolution ? ` — EdgeDesk trusts ${c.resolution}` : " and nothing resolves it"}`,
+      })),
+      ...ev0.filter((e) => e.status === "STALE" || e.status === "CONFLICT")
+        .slice(0, 4).map((e) => ({ id: e.id, field: e.field, entity: e.entity,
+          detail: `${e.field} for ${e.entity} is ${e.status.toLowerCase()} and cannot support a current claim` })),
+    ],
+    unresolved_questions: [
+      ...semantic.critical_gaps.map((g) => `Required evidence short: ${g}`),
+      ...players.filter((p) => p.status === "AMBIGUOUS").map((p) => `"${p.query}" could be ${p.candidates.join(" or ")}`),
+    ],
+    falsifiers: attack?.falsifiers ?? [],
+  };
+
   return {
-    plan, state, evidence, conflicts, unavailable: unavail, attack, memory,
+    plan, state, evidence: ev0, conflicts, unavailable: unavail, attack, memory,
     data_path, focus, calls: dal.calls, ms: Date.now() - t0, log: dal.log,
     completeness: comp, coverage: cov, snapshot, changed, findings, queue,
-    cross, movement, integrity: evidenceIntegrity(evidence, { slateDays: [etDay(0), etDay(1)] }),
+    cross, movement, integrity: integrity0,
     entities: { teams: state.teams, rejected_teams: teamScope.rejected, players },
+    semantic, research_completeness, slate_scope, requirements: reqs,
+    fallback_retrievals, thesis_attack,
+    deterministic_context: focus
+      ? {
+        event_id: focus.event_id, market: focus.market, selection: focus.selection, point: focus.point ?? null,
+        price: focus.best_dec ?? null, first_price: focus.first_best_dec ?? null,
+        sharp_fair: focus.sharp_fair ?? null, consensus_fair: focus.consensus_fair ?? null,
+        edge: focus.edge ?? null, first_edge: focus.first_edge ?? null,
+        n_books: focus.n_books ?? null, n_books_eff: focus.n_books_eff ?? null,
+        has_sharp: focus.has_sharp ?? null, clv: focus.clv ?? null,
+        beat_close: focus.beat_close ?? null, result: focus.result ?? null,
+        _note: "Owned by the deterministic engine. READ-ONLY — quote exactly, never recompute.",
+      }
+      : null,
   };
 }
 
@@ -3868,6 +4668,60 @@ function buildUserContent(body: any, research: ResearchOut | null, evidenceMax =
       }
     }
 
+    /* ── THE GATE, before the evidence it governs ────────────────────────
+       The analyst must never have to work out for itself whether the packet is
+       complete. This states it, in a form that can be obeyed rather than
+       interpreted. */
+    {
+      const rc = research.research_completeness;
+      const sc = research.slate_scope;
+      const cov = research.semantic;
+      const permit = rc.state === "INVALID"
+        ? "You may NOT rank, compare, or publish a best/worst list from this evidence. Report the fault, name the entities it touches, and say what must be repaired."
+        : rc.state === "INSUFFICIENT"
+          ? "You may NOT publish a full ranking. Answer only what the present evidence safely supports, say so plainly in your first line, and name what is missing."
+          : rc.state === "PARTIAL"
+            ? "You MAY answer and rank. Lead with the gap in your first line, label the conclusion provisional, and name what is missing — do not bury it at the end."
+            : "You MAY answer normally.";
+      parts.push(
+        `RESEARCH COMPLETENESS: ${rc.state}\n`
+        + `${rc.reason}\n`
+        + `${permit}\n`
+        + `safe_to_rank=${rc.safe_to_rank} · safe_to_compare=${rc.safe_to_compare} · `
+        + `safe_to_make_betting_interpretation=${rc.safe_to_make_betting_interpretation}\n`
+        + (sc && sc.expected_games
+          ? `SLATE SCOPE — ${sc.date} (${sc.timezone}): ${sc.live_games} of ${sc.scheduled_games} scheduled games in scope, `
+            + `${sc.final_games} already final and excluded, ${sc.missing_games} scheduled game(s) not retrieved. `
+            + `${sc.complete ? "The slate is complete." : "The slate is INCOMPLETE — say so before ranking it."}\n`
+          : "")
+        + `COVERAGE of what THIS question requires — ${Math.round(cov.overall * 100)}%\n`
+        + `  required:  ${Object.entries(cov.required).map(([k, c]) => `${k} ${c.available}/${c.expected}${c.via ? ` (via ${c.via})` : ""}`).join(" · ") || "none"}\n`
+        + `  important: ${Object.entries(cov.important).map(([k, c]) => `${k} ${c.available}/${c.expected}${c.via ? ` (via ${c.via})` : ""}`).join(" · ") || "none"}\n`
+        + `  optional:  ${Object.entries(cov.optional).map(([k, c]) => `${k} ${c.available}/${c.expected}`).join(" · ") || "none"}\n`
+        + (cov.critical_gaps.length ? `  CRITICAL GAPS: ${cov.critical_gaps.join(", ")}\n` : "")
+        + (cov.important_gaps.length ? `  important gaps: ${cov.important_gaps.join(", ")}\n` : "")
+        + (cov.not_applicable.length
+          ? `  not applicable to this sport (do NOT report these as missing): ${cov.not_applicable.join(", ")}\n` : "")
+        + `A field marked "via" was satisfied by a FALLBACK LAYER — say which layer the number came from.`,
+      );
+    }
+
+    if (research.fallback_retrievals?.length) {
+      parts.push(
+        "TARGETED FOLLOW-UP RETRIEVALS — EdgeDesk audited its own coverage and went back for what was missing. "
+        + "A retrieval that added nothing means the gap is real, not a lookup miss; say the data does not exist "
+        + "rather than that it was not fetched:\n" + compact(research.fallback_retrievals, 2500),
+      );
+    }
+
+    if (research.deterministic_context) {
+      parts.push(
+        "DETERMINISTIC CONTEXT — the engine's own numbers for the signal in focus. READ-ONLY. "
+        + "Quote them exactly; never recompute, adjust, average or replace one:\n"
+        + compact(research.deterministic_context),
+      );
+    }
+
     const usableAll = research.evidence.filter((e) => e.status !== "UNAVAILABLE");
     /* Budget FIRST, then audit, so the completeness check measures what the
        model is actually about to receive rather than what was retrieved. That
@@ -3904,7 +4758,13 @@ function buildUserContent(body: any, research: ResearchOut | null, evidenceMax =
     if (usableAll.length) {
       parts.push(
         "EVIDENCE — retrieved from EdgeDesk's own tables just now. These are the facts you may use; "
-        + "quote their values exactly and respect each item's status and freshness:\n"
+        + "quote their values exactly and respect each item's status and freshness.\n"
+        + "Each item carries an `id` and a `layer`. EVERY NUMBER YOU QUOTE MUST COME FROM ONE OF THESE ITEMS.\n"
+        + "LAYER decides analytical priority when two items speak to the same thing: "
+        + "matchup (current, specific to tonight) > season (current, identity-keyed, says nothing about tonight's "
+        + "opponent) > market > historical > context. A historical or season figure NEVER outranks a current "
+        + "matchup figure, and a season rate must never be presented as a matchup read — name the layer whenever "
+        + "the distinction could matter:\n"
         + budget.text,
       );
       if (budget.droppedNote) parts.push("EVIDENCE WITHHELD — " + budget.droppedNote);
@@ -3915,6 +4775,20 @@ function buildUserContent(body: any, research: ResearchOut | null, evidenceMax =
       parts.push(
         "THESIS ATTACK (deterministic, computed from owned signal fields — do not recompute):\n"
         + compact(research.attack),
+      );
+    }
+
+    /* Support and contradictions SELECTED FROM THE EVIDENCE, by id. An empty
+       contradiction list is a real finding and must be reported as one. */
+    if (research.thesis_attack) {
+      const ta = research.thesis_attack;
+      parts.push(
+        "THESIS ATTACK INPUTS — evidence ids, chosen from the packet rather than written.\n"
+        + `support: ${ta.support.map((s: any) => `${s.id}(${s.field}/${s.entity})`).join(", ") || "none"}\n`
+        + `contradictions: ${ta.contradictions.length
+          ? ta.contradictions.map((c: any) => `${c.id ?? "-"}: ${c.detail}`).join(" | ")
+          : "NONE. Nothing in this packet contradicts the thesis. Say that plainly — do NOT manufacture an objection to look balanced."}\n`
+        + `unresolved: ${ta.unresolved_questions.join(" | ") || "none"}`,
       );
     }
 
@@ -3955,7 +4829,7 @@ function buildUserContent(body: any, research: ResearchOut | null, evidenceMax =
     }
 
     parts.push(
-      `RESEARCH COMPLETENESS: ${research.completeness.pct}%\n`
+      `DIMENSION AVAILABILITY (sport-level, secondary to the COVERAGE block above): ${research.completeness.pct}%\n`
       + `Available: ${research.completeness.available.join(", ") || "none"}\n`
       + `Partial/probable: ${research.completeness.partial.join(", ") || "none"}\n`
       + `Stale: ${research.completeness.stale.join(", ") || "none"}\n`
@@ -4063,6 +4937,12 @@ function defaultAsk(mode: string): string {
 /* MEMORY WRITE-BACK                                                        */
 /* ======================================================================== */
 
+/* The outcome of the most recent memory write, reported by ?probe=1. The
+   learning loop's write half fails silently by construction — it is inside a
+   catch, after the response has already gone out — so this is the only place
+   its health is observable without querying the database. */
+let LAST_MEMORY_WRITE: Record<string, unknown> | null = null;
+
 /* Writes the session under the CALLER's JWT, so RLS decides what is allowed.
    Never blocks the response and never fails the request. */
 async function rememberSession(
@@ -4143,7 +5023,16 @@ async function rememberSession(
         ? `${research.conflicts[0].field}: ${research.conflicts[0].a.source} vs ${research.conflicts[0].b.source}`
         : (research.attack.falsifiers[0] ?? null);
 
-      await post("research_outcomes?on_conflict=user_id,event_id,market,selection", {
+      /* THE WRITE HALF OF THE LEARNING LOOP, AND IT IS NOT ASSUMED TO WORK.
+         This upserts on (user_id, event_id, market, selection) but the payload
+         has never sent user_id — it relies on a column DEFAULT of auth.uid().
+         If that default is absent the row is rejected, the whole call is inside
+         a catch, and the loop silently never accumulates: settle only UPDATEs
+         rows that already exist, so a missing open outcome means a graded
+         result has nothing to attach to. The status is recorded so ?probe=1 can
+         report whether the last write actually landed, rather than leaving it
+         to be inferred from an empty table months later. */
+      const oRes = await post("research_outcomes?on_conflict=user_id,event_id,market,selection", {
         session_id: sessionId,
         entity: research.state.teams[0] ?? `${f.away_team ?? ""} @ ${f.home_team ?? ""}`,
         sport: f.sport_key ?? null,
@@ -4158,6 +5047,16 @@ async function rememberSession(
         strongest_contradiction: contradiction,
         falsifier: research.attack.falsifiers[0] ?? null,
       }, false, "resolution=ignore-duplicates,return=minimal");
+      LAST_MEMORY_WRITE = {
+        at: new Date().toISOString(),
+        research_outcomes_status: oRes.status,
+        ok: oRes.status >= 200 && oRes.status < 300,
+        detail: oRes.status >= 300
+          ? (await oRes.text().catch(() => "")).slice(0, 300)
+            + " — if this mentions user_id, the column has no auth.uid() default and the learning loop is not accumulating."
+          : null,
+        session_linked: !!sessionId,
+      };
     }
 
     // Versioned research packet, so the next turn can diff against it.
@@ -4215,6 +5114,11 @@ export async function handle(req: Request): Promise<Response> {
         supabase_anon_key: !!SUPABASE_ANON_KEY,
       },
       sports: Object.values(SPORTS).map((s) => ({ key: s.key, label: s.label, status: s.status })),
+      sport_capabilities: SPORT_CAPABILITIES,
+      intents_with_requirements: Object.keys(REQUIREMENTS).filter((k) => k !== "_default"),
+      /* null until a real question has run in this isolate. Non-null and
+         ok:false means the learning loop is dropping its open outcomes. */
+      last_memory_write: LAST_MEMORY_WRITE,
       modes: ["probe=1 (this)", "dry=1 (research packet, no model call)", "POST (full answer)"],
     });
   }
@@ -4260,21 +5164,48 @@ export async function handle(req: Request): Promise<Response> {
     const content = buildUserContent(body, research);
     return json({
       dry: true,
-      plan: research?.plan ?? plan,
+      /* The whole packet, in the order the analyst reads it, so exactly what
+         Claude receives can be inspected without spending a model call. */
+      request: { mode: body?.mode ?? "chat", question: body?.question ?? null,
+                 has_packet: !!body?.packet, history_turns: history.length },
+      intent: { intent: research?.plan.intent ?? plan.intent, mode: research?.plan.mode ?? plan.mode,
+                depth: research?.plan.depth ?? plan.depth, why: research?.plan.why ?? plan.why,
+                steps: research?.plan.steps ?? plan.steps },
+      sport: research?.focus?.sport_key ?? research?.state.sport ?? null,
       entities: research?.entities ?? null,
+      slate_scope: research?.slate_scope ?? null,
+      requirements: research?.requirements ?? null,
+      coverage: research?.semantic ?? null,
+      coverage_per_entity: research?.coverage ?? null,
+      completeness: research?.research_completeness ?? null,
+      dimension_availability: research?.completeness ?? null,
       integrity: research?.integrity ?? null,
-      completeness: research?.completeness ?? null,
-      coverage: research?.coverage ?? null,
-      unavailable: research?.unavailable ?? null,
+      fallbacks: research?.fallback_retrievals ?? [],
       conflicts: research?.conflicts ?? null,
+      unavailable: research?.unavailable ?? null,
+      deterministic_context: research?.deterministic_context ?? null,
+      historical_context: research
+        ? { patterns: research.memory.patterns, prior_outcomes: research.memory.outcomes,
+            calibration: (research.memory as any).calibration ?? [] }
+        : null,
+      thesis_attack: research?.thesis_attack ?? null,
+      thesis_attack_deterministic: research?.attack ?? null,
+      data_gaps: research?.semantic
+        ? { critical: research.semantic.critical_gaps, important: research.semantic.important_gaps,
+            optional: research.semantic.optional_gaps, not_applicable: research.semantic.not_applicable }
+        : null,
       data_path: research?.data_path ?? null,
-      retrievals: research?.calls ?? 0,
-      retrieval_log: research?.log ?? [],
+      provenance: {
+        build: BUILD, model_not_called: true,
+        retrievals: research?.calls ?? 0, retrieval_log: research?.log ?? [],
+        sources: research ? Array.from(new Set(research.evidence.map((e) => e.source))) : [],
+        ms: research?.ms ?? 0,
+      },
+      evidence: research?.evidence ?? [],
       evidence_count: research?.evidence.filter((e) => e.status !== "UNAVAILABLE").length ?? 0,
       evidence_shown: (research as any)?.evidence_shown ?? null,
       prompt_chars: content.length,
       prompt: content,
-      research,
     });
   }
 

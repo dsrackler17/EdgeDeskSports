@@ -59,7 +59,7 @@ section("BUILD / DEPLOY SAFETY (Phase 19)");
   }));
   const dj = await dry.json().catch(() => null);
   check("POST ?dry=1 returns the research packet without calling the model",
-    dry.status === 200 && !!dj?.research && dj?.answer === undefined,
+    dry.status === 200 && dj?.dry === true && dj?.answer === undefined && dj?.provenance?.model_not_called === true,
     `status=${dry.status} keys=${dj ? Object.keys(dj).join(",") : "null"}`);
   void r;
 }
@@ -322,7 +322,7 @@ section("EVIDENCE DELIVERY INTEGRITY (retry path)");
 
   // The evidence array in BOTH payloads must be complete JSON — never severed.
   for (const [i, c] of cap.anthropicCalls.entries()) {
-    const m = c.match(/quote their values exactly and respect each item's status and freshness:\n(\[[\s\S]*?\])\n\n/);
+    const m = c.match(/the distinction could matter:\n(\[[\s\S]*?\])\n\n/);
     let ok = false;
     try { ok = !!m && Array.isArray(JSON.parse(m[1])); } catch { ok = false; }
     check(`evidence payload ${i + 1} is whole, parseable JSON (no mid-object cut)`, ok);
