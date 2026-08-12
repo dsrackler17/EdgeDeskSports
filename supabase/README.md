@@ -11,7 +11,7 @@ is therefore self-contained with no `../_shared` imports.
 |---|---|---|
 | `edgedesk_ai` | `edgedesk_ai-2026-08-12-r3-sport-intelligence` | Research engine. Retrieval, evidence, coverage, integrity, learning. |
 | `edgedesk_learn` | `2026-08-13.4-slope` | Cron. Turns graded signals into confirmed patterns + calibration. |
-| `capture` | `capture-v7-wallclock` | Cron. Prices the board and writes `signals`. |
+| `capture` | `capture-v8-full-anchor` | Cron. Prices the board and writes `signals`. |
 
 ## Tests
 

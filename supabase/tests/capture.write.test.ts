@@ -158,9 +158,20 @@ async function main() {
     JSON.stringify(phaseC[0]?.filters));
   check("PHASE C targets exactly one sig_key per update",
     phaseC.every((o) => o.filters.some((f) => f.fn === "eq" && f.args[0] === "sig_key")));
-  check("PHASE C freezes all four entry columns",
-    phaseC.every((o) => ["flagged_at", "flagged_edge", "flagged_best_dec", "flagged_best_book"]
-      .every((c) => c in o.payload)));
+  /* The database freezes seven flagged_* columns via preserve_anchor_entry(),
+     coalesce(old,new) — first non-NULL wins and can NEVER be backfilled. So a
+     column capture leaves out at flag time is permanently NULL on that signal.
+     capture holds six of the seven; flagged_corrob_n is deliberately omitted
+     because corroboration is not n_books and capture does not compute it. */
+  check("PHASE C freezes all six entry columns capture has values for",
+    phaseC.every((o) => ["flagged_at", "flagged_edge", "flagged_best_dec", "flagged_best_book",
+      "flagged_sharp_fair", "flagged_has_sharp"].every((c) => c in o.payload)),
+    JSON.stringify(Object.keys(phaseC[0]?.payload ?? {})));
+  check("PHASE C does NOT invent a value for flagged_corrob_n",
+    phaseC.every((o) => !("flagged_corrob_n" in o.payload)));
+  check("PHASE C sharp anchor matches the row being frozen",
+    phaseC.every((o) => typeof o.payload.flagged_has_sharp === "boolean"
+      && (o.payload.flagged_sharp_fair == null || o.payload.flagged_sharp_fair > 0)));
   check("PHASE C entry price is the price that was flagged, not a later one",
     phaseC.every((o) => o.payload.flagged_best_dec > 1));
   check("PHASE C never sends an opening or live column alongside the freeze",

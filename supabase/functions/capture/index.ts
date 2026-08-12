@@ -2,7 +2,7 @@
 //  FILE:    supabase/functions/capture/index.ts
 //  TYPE:    Edge Function (deployed) - cron job
 //  DEPLOY:  supabase functions deploy capture --no-verify-jwt
-//  BUILD:   capture-v7-wallclock   (authoritative value: `export const BUILD` below)
+//  BUILD:   capture-v8-full-anchor   (authoritative value: `export const BUILD` below)
 //  IMPORTS: NONE from ../_shared. ONE FILE — see the block above the inlined
 //           helpers for why that is not a style choice.
 // ============================================================
@@ -107,7 +107,7 @@
    ═══════════════════════════════════════════════════════════════════════════ */
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-export const BUILD = "capture-v7-wallclock";
+export const BUILD = "capture-v8-full-anchor";
 
 // ---- from _shared/db.ts -----------------------------------------------------
 const db = createClient(
@@ -576,8 +576,21 @@ Deno.serve(async (req) => {
               edge: +o.edge.toFixed(4), best_dec: o.best_dec, median_dec: +o.median_dec.toFixed(3),
               n_books: o.n_books, best_book: o.best_book, has_sharp: o.has_sharp });
           }
+          /* WRITE THE WHOLE ANCHOR, NOT PART OF IT. The database freezes seven
+             flagged_* columns via preserve_anchor_entry(), whose rule is
+             `coalesce(old, new)` — first non-NULL wins and is then permanent.
+             Its comment says "never backfilled, not even from NULL", which is
+             exact: anything left NULL at flag time can NEVER be filled by a
+             later update. capture was writing four of the seven and holds the
+             values for two more right here, so flagged_sharp_fair and
+             flagged_has_sharp were permanently NULL on every signal ever
+             flagged. (flagged_corrob_n is deliberately still omitted —
+             corroboration is a different measure from n_books and capture does
+             not compute it; writing n_books there would freeze a wrong number
+             into a column nothing could ever correct.) */
           toFlag.push({ sig_key: key, flagged_at: now, flagged_edge: o.edge,
-            flagged_best_dec: o.best_dec, flagged_best_book: o.best_book });
+            flagged_best_dec: o.best_dec, flagged_best_book: o.best_book,
+            flagged_sharp_fair: o.sharp_fair, flagged_has_sharp: o.has_sharp });
         } else if (verdict.reason !== "below_flag_floor") {
           /* below_flag_floor is the ordinary case — most of the board is not an
              edge and counting it as a rejection would bury the interesting
@@ -637,7 +650,13 @@ Deno.serve(async (req) => {
       const results = await Promise.all(batch.map((f) =>
         db.from("signals")
           .update({ flagged_at: f.flagged_at, flagged_edge: f.flagged_edge,
-                    flagged_best_dec: f.flagged_best_dec, flagged_best_book: f.flagged_best_book })
+                    flagged_best_dec: f.flagged_best_dec, flagged_best_book: f.flagged_best_book,
+                    flagged_sharp_fair: f.flagged_sharp_fair, flagged_has_sharp: f.flagged_has_sharp })
+          /* Redundant with preserve_anchor_entry()'s coalesce, deliberately.
+             The trigger is the real guarantee; this keeps the guard visible in
+             the function and means capture is still correct if the trigger is
+             ever dropped. It also stops already-flagged rows matching at all,
+             so the batch is smaller. */
           .eq("sig_key", f.sig_key).is("flagged_at", null)
       ));
       for (const { error } of results) {
