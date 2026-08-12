@@ -229,6 +229,37 @@ async function main() {
       recIdx >= 0 && APP.includes("flagged_at=not.is.null&flagged_edge=gte.0.005"));
   }
 
+  /* ---- 6b. THE LEGACY FLAGGED LAY ROW ---------------------------------
+     capture cannot flag a lay market today: backable() refuses it before
+     flaggable() runs. But phase C is guarded on `flagged_at IS NULL`, so a row
+     flagged by an OLDER build stays flagged forever — the same guard that stops
+     an entry price drifting also preserves a bad historical flag. Three such
+     rows exist in the live database. flagged_at alone is therefore NOT enough
+     to keep a lay quote off the board; the tradeable guard must run too. */
+  {
+    const legacy = { ...SIGNAL_A, flagged_at: nowIso, flagged_best_dec: 12.0, flagged_edge: 1.40 };
+    check("A LEGACY flagged lay row still passes the flag filter (this is why the second guard exists)",
+      G.isFlaggedSignal(legacy) === true);
+    check("...but filterTradeable drops it, so it cannot reach the board",
+      G.filterTradeable([legacy]).keep.length === 0);
+    check("...and the exclusion is reported, not silent",
+      G.filterTradeable([legacy]).dropped.length === 1
+      && /lay/i.test(G.filterTradeable([legacy]).dropped[0].reason));
+
+    const i = APP.indexOf("EDGES=_et.keep");
+    const pre = i < 0 ? "" : APP.slice(Math.max(0, i - 600), i);
+    check("app.html: EDGES runs through BOTH onlyFlagged and filterTradeable",
+      i >= 0 && pre.includes("filterTradeable(onlyFlagged(EDGES))"),
+      i < 0 ? "EDGES assignment not found" : "EDGES is not double-guarded");
+
+    // the mixed pool a real board load produces
+    const mixed = [legacy, SIGNAL_B, SIGNAL_A, SIGNAL_C];
+    const board = G.filterTradeable(G.onlyFlagged(mixed)).keep;
+    check("A realistic mixed pool yields only the genuine signal",
+      board.length === 1 && board[0].sig_key === "B",
+      "board: " + JSON.stringify(board.map((r: any) => r.sig_key)));
+  }
+
   /* ---- 7. the near-miss diagnostic ------------------------------------
      Deliberately NOT flag-gated — it exists to show the sharpest line that is
      NOT yet a signal. But it must never surface a lay quote again. */
