@@ -173,16 +173,48 @@ export type Mode =
   | "MARKET" | "MATCHUP" | "SLATE" | "SCOUT" | "POSTMORTEM";
 
 /* ========================================================================
-   DATA INTEGRITY — audit the evidence BEFORE anything is allowed to rank it.
+   DATA INTEGRITY — audit the evidence BEFORE anything is allowed to rank it,
+   and LOCALIZE what the audit finds.
+
+   THE REDESIGN (r4). The audit used to answer one question — "is this packet
+   perfect?" — and any FAIL anywhere blocked every ranking. That turned a bad
+   join on 8 of 37 starters into a refusal about all 37, which is worse than
+   useless: the honest answer was a ranking of the clean 29 plus one sentence
+   about the 8. So every check now carries a SCOPE and names the exact
+   entities, evidence ids and event ids it implicates. A LOCAL fault excludes
+   its subjects; a GLOBAL fault (or a local fault that swallows most of the
+   universe) still fails the packet. The verdict gains a fourth value,
+   LOCALIZED, meaning: faults exist, they are fenced to the named exclusions,
+   and the remaining clean set is safe to analyse.
    ======================================================================== */
 
-export type IntegrityVerdict = "PASS" | "WARNING" | "FAIL";
+export type IntegrityVerdict = "PASS" | "WARNING" | "LOCALIZED" | "FAIL";
 
 export interface IntegrityCheck {
   name: string;
-  status: IntegrityVerdict;
+  /** Per-check severity stays three-valued; LOCALIZED is a PACKET verdict. */
+  status: "PASS" | "WARNING" | "FAIL";
   detail: string;
   entities?: string[];
+  /** LOCAL = the fault is fenced to the affected lists below and the rest of
+      the packet is untouched. GLOBAL = nothing in the packet is trustworthy
+      on this axis. Absent = GLOBAL (the conservative reading). */
+  scope?: "LOCAL" | "GLOBAL";
+  /** The SUBJECTS this fault implicates (personKey-comparable display names).
+      Distinct from `entities`, which is prose for humans. */
+  affected_subjects?: string[];
+  /** Evidence ids that must not be used. Filled where the check can point at
+      the exact rows; entity-level exclusion covers the rest. */
+  affected_evidence_ids?: string[];
+  /** Event ids (games) this fault implicates. */
+  affected_event_ids?: string[];
+}
+
+/** One excluded subject, with every reason that excluded it. */
+export interface IntegrityExclusion {
+  entity: string;
+  reasons: string[];
+  checks: string[];
 }
 
 export interface Integrity {
@@ -191,6 +223,16 @@ export interface Integrity {
   summary: string;
   /** One product-facing line: "30/30 starters · 100% delivered · 2h old". */
   headline: string;
+  /** Subjects excluded by LOCAL faults, with reasons. Empty on PASS/WARNING. */
+  exclusions: IntegrityExclusion[];
+  /** Subjects that survived every check — the set a ranking may be built on. */
+  clean_subjects: string[];
+  /** Every subject the packet carries, before exclusions. The denominator. */
+  all_subjects: string[];
+  /** Games excluded as duplicates (event ids). */
+  excluded_event_ids: string[];
+  /** Exact evidence ids that must not be used. */
+  excluded_evidence_ids: string[];
 }
 
 /** What actually reached the model, so completeness can be audited honestly. */
@@ -203,6 +245,11 @@ export interface IntegrityOpts {
   slateDays?: string[];
   /** Filled in after the evidence has been budgeted for the prompt. */
   delivered?: DeliveryFacts;
+  /** The sport in scope, so team aliases canonicalize inside the right league. */
+  sport?: string | null;
+  /** Above this fraction of subjects excluded, LOCALIZED escalates to FAIL —
+      a "clean subset" that is a sliver of the slate is not an answer. */
+  maxExcludedFraction?: number;
 }
 
 /** Numeric identity of a stat row, used to spot the same row served twice. */
@@ -229,7 +276,55 @@ const AGE_DAYS = (iso: unknown, now: number): number | null => {
 };
 
 /**
- * Decide whether this evidence deserves to be analysed at all.
+ * Collapse a team reference — full name, city, nickname or abbreviation — to
+ * one canonical key, so "Cincinnati Reds" and "CIN" stop reading as two clubs.
+ *
+ * THIS IS THE FIX FOR THE LARGEST FALSE-POSITIVE CLASS THE AUDIT EVER FIRED.
+ * A live packet carried each starter's team as a full name on one row and an
+ * abbreviation on another ("Andrew Abbott: Cincinnati Reds / CIN"), and the
+ * one-subject-one-team check compared them with normName alone — so EIGHTEEN
+ * subjects were declared broken joins, the packet FAILED, and a perfectly
+ * answerable "worst pitchers" question was refused. The join was never broken;
+ * the comparison was naive. Alias resolution belongs in the CHECK, not in the
+ * prose explaining the check away.
+ *
+ * Resolution is deliberately conservative: MLB's own alias table first (the
+ * only place abbreviations are curated), then the sport-scoped canonical
+ * registry for a single unambiguous claim. Anything that does not resolve
+ * keeps its normalized form — an unknown token must never be collapsed onto a
+ * club by guesswork, because a wrong merge HIDES a genuinely broken join.
+ */
+export function canonTeamKey(name: unknown, sportKey?: string | null): string {
+  const n = normName(name);
+  if (!n) return n;
+  // MLB aliases cover abbreviations (CIN, CWS), cities and nicknames.
+  if (!sportKey || sportKey === "baseball_mlb") {
+    for (const t of MLB_TEAMS) {
+      if (normName(t.name) === n || t.aliases.includes(n)) return normName(t.name);
+    }
+  }
+  if (sportKey && sportKey !== "baseball_mlb") {
+    const hits = resolveTeamIdentity(n, sportKey).filter((m) => m.status === "RESOLVED");
+    if (hits.length === 1 && hits[0].canonical_name) return normName(hits[0].canonical_name);
+    // The sport is known but the token did not resolve there. Try the MLB
+    // alias table anyway: an abbreviation like "CWS" in a baseball-shaped row
+    // that reached a non-baseball turn should still collapse consistently.
+    for (const t of MLB_TEAMS) {
+      if (normName(t.name) === n || t.aliases.includes(n)) return normName(t.name);
+    }
+  }
+  return n;
+}
+
+/** Do two team strings name the same club, once aliases are resolved? */
+export function sameClub(a: unknown, b: unknown, sportKey?: string | null): boolean {
+  const ka = canonTeamKey(a, sportKey), kb = canonTeamKey(b, sportKey);
+  if (!ka || !kb) return false;
+  return ka === kb;
+}
+
+/**
+ * Decide whether this evidence deserves to be analysed at all — and WHERE.
  *
  * Built after a slate answer ranked Skubal, Gray and Peralta as the three best
  * arms on the card while quoting one identical stat line for all three — and
@@ -237,9 +332,14 @@ const AGE_DAYS = (iso: unknown, now: number): number | null => {
  * A convincing paragraph assembled from badly joined data is more dangerous
  * than an obvious gap, because nothing about it looks wrong.
  *
- * So the audit is deterministic and runs first. The model is told the verdict
- * and, on FAIL, is not permitted to publish a ranking at all. Auditing whether
- * the data deserves analysis is the job, not a preamble to it.
+ * So the audit is deterministic and runs first. What changed in r4 is what
+ * happens AFTER a fault is found: instead of one packet-wide verdict, each
+ * check names the exact subjects, evidence ids and games it implicates, and
+ * the verdict distinguishes a GLOBAL failure (nothing is trustworthy) from a
+ * LOCALIZED one (the named exclusions are unsafe; everything else is clean).
+ * A localized fault produces exclusions and a clean set, not a refusal —
+ * refusing to rank 29 clean starters because 8 others have broken joins was
+ * the audit failing at its own job.
  */
 export function evidenceIntegrity(
   evidence: Evidence[],
@@ -247,6 +347,7 @@ export function evidenceIntegrity(
 ): Integrity {
   const now = opts.now ?? Date.now();
   const staleDays = opts.staleDays ?? 3;
+  const sport = opts.sport ?? null;
   const checks: IntegrityCheck[] = [];
   const usable = evidence.filter((e) => e.status !== "UNAVAILABLE");
 
@@ -254,9 +355,29 @@ export function evidenceIntegrity(
   const pitchers = byField("pitcher_quality");
   const offenses = byField("opponent_offense");
 
-  /* 1. IDENTITY — a pitcher's team must be one of the two teams in his game. */
+  /* The subject universe: every named person/team the packet makes claims
+     about. This is the denominator for "how much of the slate is implicated",
+     and the source of the clean set. Display names are kept for prose. */
+  const SUBJECT_FIELDS = new Set([
+    "pitcher_quality", "opponent_offense", "team_efficiency", "quarterback",
+    "workload", "player_stats", "probable_starter",
+  ]);
+  const displayOf = new Map<string, string>();     // personKey -> display name
+  for (const e of usable) {
+    if (!SUBJECT_FIELDS.has(String(e.field))) continue;
+    const who = String(e.entity ?? "").trim();
+    if (!who) continue;
+    const k = personKey(who);
+    if (!displayOf.has(k)) displayOf.set(k, who);
+  }
+
+  /* 1. IDENTITY — a pitcher's team must be one of the two teams in his game.
+     Compared through the alias table: "CIN" IS "Cincinnati Reds", and a naive
+     string comparison here is how a working join gets reported as broken. */
   {
     const bad: string[] = [];
+    const badSubjects: string[] = [];
+    const badIds: string[] = [];
     let checked = 0;
     for (const e of pitchers) {
       const v = e.value as any;
@@ -264,15 +385,21 @@ export function evidenceIntegrity(
       const game = String(v?.game ?? "").trim();
       if (!team || !game || !game.includes("@")) continue;
       checked++;
-      const sides = game.split("@").map((s) => s.trim().toLowerCase());
-      if (!sides.some((s) => s === team.toLowerCase())) {
+      const sides = game.split("@").map((s) => s.trim());
+      if (!sides.some((s) => sameClub(s, team, sport))) {
         bad.push(`${v?.name ?? e.entity}: listed with ${team} but scheduled in "${game}"`);
+        const who = String(v?.name ?? e.entity ?? "").trim();
+        if (who) badSubjects.push(who);
+        if (e.id) badIds.push(e.id);
       }
     }
     checks.push(bad.length
-      ? { name: "identity_chain", status: "FAIL", entities: bad.slice(0, 8),
+      ? { name: "identity_chain", status: "FAIL", scope: "LOCAL",
+          entities: bad.slice(0, 8),
+          affected_subjects: badSubjects, affected_evidence_ids: badIds,
           detail: `${bad.length} of ${checked} starters are attached to a team that is not playing in their own game. `
-            + `Pitcher -> team -> game does not resolve, so any statement about who faces whom is unsafe.` }
+            + `Pitcher -> team -> game does not resolve for THOSE starters, so any statement about who they face is `
+            + `unsafe and they are excluded. The other ${checked - bad.length} resolve cleanly and remain usable.` }
       : { name: "identity_chain", status: "PASS",
           detail: checked
             ? `All ${checked} starters resolve pitcher -> team -> game consistently.`
@@ -289,23 +416,32 @@ export function evidenceIntegrity(
   for (const [label, items, status] of [
     ["pitcher_stats", pitchers, "FAIL"],
     ["offense_stats", offenses, "WARNING"],
-  ] as [string, Evidence[], IntegrityVerdict][]) {
-    const seen = new Map<string, string[]>();
+  ] as [string, Evidence[], "FAIL" | "WARNING"][]) {
+    const seen = new Map<string, { who: string[]; ids: string[] }>();
     for (const e of items) {
       const fp = statFingerprint(e.value);
       if (!fp) continue;
       const v = e.value as any;
       const who = String(v?.opponent ?? v?.team_name ?? v?.name ?? e.entity ?? "?");
-      const at = seen.get(fp) ?? [];
-      if (!at.includes(who)) at.push(who);
+      const at = seen.get(fp) ?? { who: [], ids: [] };
+      if (!at.who.includes(who)) { at.who.push(who); if (e.id) at.ids.push(e.id); }
       seen.set(fp, at);
     }
-    const dupes = [...seen.values()].filter((g) => g.length > 1);
-    const affected = dupes.flat();
+    const dupes = [...seen.values()].filter((g) => g.who.length > 1);
+    const affected = dupes.flatMap((g) => g.who);
+    const affectedIds = dupes.flatMap((g) => g.ids);
     checks.push(dupes.length
-      ? { name: `duplicate_${label}`, status, entities: affected.slice(0, 12),
+      ? { name: `duplicate_${label}`, status, scope: "LOCAL",
+          entities: affected.slice(0, 12),
+          /* Only the pitcher variant EXCLUDES: an identical full profile on two
+             different players is one record served twice and neither copy can
+             be attributed. The offense variant stays a warning without
+             exclusions — two starters facing the same club legitimately share
+             one line, and the subject key above already handles the rest. */
+          affected_subjects: label === "pitcher_stats" ? affected : [],
+          affected_evidence_ids: label === "pitcher_stats" ? affectedIds : [],
           detail: `${dupes.length} identical statistical profile${dupes.length === 1 ? "" : "s"} shared across `
-            + `${affected.length} different entities: ${dupes.map((g) => g.join(" = ")).slice(0, 4).join("; ")}. `
+            + `${affected.length} different entities: ${dupes.map((g) => g.who.join(" = ")).slice(0, 4).join("; ")}. `
             + `Distinct players do not share a whole feature vector — this is one record served more than once.` }
       : { name: `duplicate_${label}`, status: "PASS",
           detail: `No two of the ${items.length} ${label.replace("_", " ")} rows share a full numeric profile.` });
@@ -349,12 +485,15 @@ export function evidenceIntegrity(
     }
   }
 
-  /* 4. NAMED SUBJECTS — an unnamed row cannot be attributed to anyone. */
+  /* 4. NAMED SUBJECTS — an unnamed row cannot be attributed to anyone. The
+     anonymous rows themselves are excluded; everything named is untouched. */
   {
-    const anon = usable.filter((e) => !String(e.entity ?? "").trim()).length;
-    checks.push(anon
-      ? { name: "attribution", status: "WARNING",
-          detail: `${anon} evidence items carry no entity name, so their values cannot be safely attributed.` }
+    const anon = usable.filter((e) => !String(e.entity ?? "").trim());
+    checks.push(anon.length
+      ? { name: "attribution", status: "WARNING", scope: "LOCAL",
+          affected_evidence_ids: anon.map((e) => e.id).filter((x): x is string => !!x),
+          detail: `${anon.length} evidence items carry no entity name, so their values cannot be safely attributed. `
+            + `Those items are excluded; every named item is unaffected.` }
       : { name: "attribution", status: "PASS", detail: "Every evidence item names its subject." });
   }
 
@@ -375,34 +514,65 @@ export function evidenceIntegrity(
             detail: `All ${d.included} retrieved items were delivered to the analyst — nothing was truncated.` });
   }
 
-  /* 6. TEMPORAL — is each fact valid for the date being asked about? */
+  /* 6. TEMPORAL — is each fact valid for the date being asked about?
+     LAYER-AWARE, which is the whole point. "Collected yesterday" and "about
+     yesterday" are different properties:
+       - A MATCHUP-layer row bound to an off-slate game_date describes a game
+         that is not tonight's, and is EXCLUDED from tonight's analysis.
+       - A SEASON-layer row is about the season, not any single date. A
+         season-to-date ERA pulled yesterday is perfectly valid season
+         evidence, and flagging it made every season fallback look tainted.
+       - HISTORICAL/context rows carry old dates by definition.
+     The previous version flagged them all alike, which is how four valid
+     season lines became "9 items bound to the wrong date" in a FAIL banner. */
   {
     const problems: string[] = [];
+    const badIds: string[] = [];
     const days = opts.slateDays?.length ? new Set(opts.slateDays) : null;
+    const MATCHUP_DATED = new Set([
+      "pitcher_quality", "opponent_offense", "probable_starter", "quarterback",
+      "team_efficiency", "matchup_context", "game", "weather",
+    ]);
     let future = 0;
     for (const e of usable) {
       const ts = Date.parse(String(e.source_timestamp ?? ""));
       // A little clock skew between hosts is normal; an hour ahead is not.
       if (Number.isFinite(ts) && ts > now + 3600000) future++;
+      if (!days) continue;
+      const isMatchupDated = e.layer === "matchup"
+        || (e.layer == null && MATCHUP_DATED.has(String(e.field)));
+      if (!isMatchupDated) continue;   // season/historical/market rows are not bound to the slate date
       const gd = String((e.value as any)?.game_date ?? "").slice(0, 10);
-      if (days && gd && !days.has(gd)) {
+      if (gd && !days.has(gd)) {
         problems.push(`${e.entity ?? "?"} (${e.field}) carries game_date ${gd}, outside the slate`);
+        if (e.id) badIds.push(e.id);
       }
     }
-    if (future) problems.push(`${future} item${future === 1 ? "" : "s"} timestamped in the future`);
-    checks.push(problems.length
-      ? { name: "temporal", status: "WARNING", entities: problems.slice(0, 8),
-          detail: `${problems.length} item${problems.length === 1 ? " is" : "s are"} bound to a date other than the one `
-            + `being asked about. A stat attached to the wrong day is not a stat about today.` }
+    const fut = future ? [`${future} item${future === 1 ? "" : "s"} timestamped in the future`] : [];
+    checks.push(problems.length || fut.length
+      ? { name: "temporal", status: "WARNING", scope: problems.length ? "LOCAL" : "GLOBAL",
+          entities: [...problems.slice(0, 8), ...fut],
+          /* RECORDS are excluded, never the PERSON. A pitcher whose matchup row
+             is bound to yesterday is not a corrupted pitcher — his season line
+             still ranks him. Excluding the subject here once emptied a clean
+             set that the season layer could have carried. */
+          affected_evidence_ids: badIds,
+          detail: `${problems.length} matchup-layer record${problems.length === 1 ? " is" : "s are"} bound to a game date `
+            + `outside the slate being asked about, and ${problems.length === 1 ? "that record is" : "those records are"} excluded from `
+            + `tonight's analysis — a matchup record about the wrong day is not a record about today. The players themselves `
+            + `remain rankable from season-to-date evidence, and season/historical rows are not affected by this check; `
+            + `their date is what they are about.`
+            + (fut.length ? ` Also: ${fut[0]}.` : "") }
       : { name: "temporal", status: "PASS",
           detail: days
-            ? `Every dated fact falls on the slate being asked about (${[...days].join(", ")}).`
+            ? `Every matchup-layer fact falls on the slate being asked about (${[...days].join(", ")}).`
             : "No dated fact contradicts the question's timeframe." });
   }
 
   /* 7. MARKET — are the prices and fair values internally coherent? */
   {
     const bad: string[] = [];
+    const badIds: string[] = [];
     let priced = 0;
     const PRICE_FIELDS = new Set(["signal", "sharp_reference", "closing_line", "book_spread"]);
     for (const e of usable) {
@@ -413,6 +583,7 @@ export function evidenceIntegrity(
       const fair = [v?.sharp_fair, v?.consensus_fair].map(num).filter((x) => x != null);
       if (!dec.length && !fair.length) continue;
       priced++;
+      const before = bad.length;
       // Decimal odds below 1.0 pay less than the stake — not a price.
       if (dec.some((d) => d! <= 1)) bad.push(`${who}: decimal odds at or below 1.0`);
       // A de-vigged fair value is a probability. Outside (0,1) it is not one.
@@ -423,11 +594,14 @@ export function evidenceIntegrity(
         // Below 1.0 is a free arbitrage against Pinnacle; it means stale sides.
         if (ovr < 0.98 || ovr > 1.25) bad.push(`${who}: two-way overround ${ovr.toFixed(3)} is incoherent`);
       }
+      if (bad.length > before && e.id) badIds.push(e.id);
     }
     checks.push(bad.length
-      ? { name: "market", status: "FAIL", entities: bad.slice(0, 8),
-          detail: `${bad.length} priced item${bad.length === 1 ? " is" : "s are"} not internally coherent. `
-            + `An edge computed against an impossible price is not an edge.` }
+      ? { name: "market", status: "FAIL", scope: "LOCAL", entities: bad.slice(0, 8),
+          affected_evidence_ids: badIds,
+          detail: `${bad.length} of ${priced} priced item${bad.length === 1 ? " is" : "s are"} not internally coherent, `
+            + `and ${bad.length === 1 ? "it is" : "they are"} excluded. An edge computed against an impossible price is `
+            + `not an edge; the other ${priced - bad.length} priced items are unaffected.` }
       : { name: "market", status: "PASS",
           detail: priced ? `All ${priced} priced items are internally coherent.` : "No priced evidence to check." });
   }
@@ -453,9 +627,11 @@ export function evidenceIntegrity(
      Check 1 only ever looked at pitcher_quality, so a football answer could be
      built on a team_efficiency row attached to a game that team is not in and
      nothing would notice. Any item carrying both a subject team and a matchup
-     is checked the same way. */
+     is checked the same way, through the alias table like check 1. */
   {
     const bad: string[] = [];
+    const badSubjects: string[] = [];
+    const badIds: string[] = [];
     let checked = 0;
     for (const e of usable) {
       if (e.field === "pitcher_quality") continue;         // check 1 owns that one
@@ -464,23 +640,32 @@ export function evidenceIntegrity(
       const game = String(v?.game ?? "").trim();
       if (!team || !game || !game.includes("@")) continue;
       checked++;
-      const sides = game.split("@").map((s) => normName(s));
-      if (!sides.some((s) => s === normName(team))) {
+      const sides = game.split("@").map((s) => s.trim());
+      const before = bad.length;
+      if (!sides.some((s) => sameClub(s, team, sport))) {
         bad.push(`${e.entity ?? team} (${e.field}): listed with ${team}, which is not playing in "${game}"`);
       }
       // Home/away inversion: the declared side must match the side of the matchup.
       const side = String(v?.side ?? "").toLowerCase();
       if (side === "home" || side === "away") {
         const want = side === "away" ? sides[0] : sides[1];
-        if (want && normName(team) !== want) {
+        if (want && !sameClub(team, want, sport)) {
           bad.push(`${e.entity ?? team} (${e.field}): marked ${side} but ${team} is the other side of "${game}"`);
         }
       }
+      if (bad.length > before) {
+        const who = String(e.entity ?? team).trim();
+        if (who) badSubjects.push(who);
+        if (e.id) badIds.push(e.id);
+      }
     }
     checks.push(bad.length
-      ? { name: "cross_entity_identity", status: "FAIL", entities: bad.slice(0, 8),
+      ? { name: "cross_entity_identity", status: "FAIL", scope: "LOCAL",
+          entities: bad.slice(0, 8),
+          affected_subjects: badSubjects, affected_evidence_ids: badIds,
           detail: `${bad.length} of ${checked} non-pitcher items are attached to a team that is not in their own game, `
-            + `or are marked on the wrong side of it. Every statement about who faces whom is unsafe.` }
+            + `or are marked on the wrong side of it. Those items and their subjects are excluded; the other `
+            + `${checked - bad.length} team-keyed items resolve cleanly.` }
       : { name: "cross_entity_identity", status: "PASS",
           detail: checked ? `All ${checked} team-keyed items resolve team -> game -> side consistently.`
             : "No team-keyed item carried both a team and a game to cross-check." });
@@ -488,58 +673,131 @@ export function evidenceIntegrity(
 
   /* 10. ONE SUBJECT, ONE TEAM — a person attached to two clubs in one packet
      is a join artefact, and it is the shape that puts a starter in the wrong
-     dugout without changing a single number. */
+     dugout without changing a single number.
+     Teams are compared through canonTeamKey, so "Cincinnati Reds" on one row
+     and "CIN" on another is ONE club, not a conflict. That naive comparison
+     once declared 18 subjects broken and failed a whole slate over spelling. */
   {
-    const teamsOf = new Map<string, Set<string>>();
+    const teamsOf = new Map<string, Map<string, string>>();  // personKey -> canonKey -> display
     for (const e of usable) {
       const v = e.value as any;
       const who = String(e.entity ?? "").trim();
       const team = String(v?.team ?? "").trim();
       if (!who || !team) continue;
-      const s = teamsOf.get(personKey(who)) ?? new Set<string>();
-      s.add(normName(team));
-      teamsOf.set(personKey(who), s);
+      const m = teamsOf.get(personKey(who)) ?? new Map<string, string>();
+      const k = canonTeamKey(team, sport);
+      if (!m.has(k)) m.set(k, team);
+      teamsOf.set(personKey(who), m);
     }
-    const split = [...teamsOf.entries()].filter(([, s]) => s.size > 1);
+    const split = [...teamsOf.entries()].filter(([, m]) => m.size > 1);
     checks.push(split.length
-      ? { name: "subject_team_consistency", status: "FAIL",
-          entities: split.map(([k, s]) => `${k}: ${[...s].join(" / ")}`).slice(0, 8),
+      ? { name: "subject_team_consistency", status: "FAIL", scope: "LOCAL",
+          entities: split.map(([k, m]) => `${displayOf.get(k) ?? k}: ${[...m.values()].join(" / ")}`).slice(0, 8),
+          affected_subjects: split.map(([k]) => displayOf.get(k) ?? k),
           detail: `${split.length} subject${split.length === 1 ? " is" : "s are"} attached to more than one team in the `
-            + `same packet. One of the joins is wrong and there is no way to tell which from the values alone.` }
+            + `same packet, AFTER team aliases were resolved (an abbreviation and its full club name never count as a `
+            + `conflict). One of the joins is wrong and there is no way to tell which from the values alone, so those `
+            + `subjects are excluded. Every other subject resolves to exactly one club and remains usable.` }
       : { name: "subject_team_consistency", status: "PASS",
-          detail: `Every named subject resolves to exactly one team.` });
+          detail: `Every named subject resolves to exactly one team once aliases are resolved.` });
   }
 
   /* 11. DUPLICATE EVENTS — the same matchup under two identifiers double-counts
-     a game in every denominator built from it. */
+     a game in every denominator built from it. Two legitimacies are recognised
+     before anything is flagged:
+       - the same matchup on DIFFERENT DATES is a series, not a duplicate (the
+         live card spans today and tomorrow by design);
+       - a marked doubleheader (doubleheader flag or game_number > 1) is two
+         real games under two real ids.
+     Anything left is a genuine duplicate, and it excludes THAT GAME only. */
   {
     const idsOf = new Map<string, Set<string>>();
+    const labelOf = new Map<string, string>();
+    const dhMarked = new Set<string>();          // matchup|date keys with a doubleheader marker
     for (const e of usable) {
       const v = e.value as any;
       const game = String(v?.game ?? (e.field === "game" ? e.entity : "") ?? "").trim();
       const id = e.event_id ?? v?.game_id;
       if (!game || id == null) continue;
-      const s = idsOf.get(normName(game)) ?? new Set<string>();
+      const date = String(v?.game_date ?? v?.date ?? "").slice(0, 10);
+      const key = `${normName(game)}|${date}`;
+      const s = idsOf.get(key) ?? new Set<string>();
       s.add(String(id));
-      idsOf.set(normName(game), s);
+      idsOf.set(key, s);
+      labelOf.set(key, game + (date ? ` (${date})` : ""));
+      const dh = v?.doubleheader;
+      const gn = num(v?.game_number);
+      if (dh === true || /^[ys]$/i.test(String(dh ?? "")) || (gn != null && gn > 1)) dhMarked.add(key);
     }
-    const dupes = [...idsOf.entries()].filter(([, s]) => s.size > 1);
+    const dupes = [...idsOf.entries()].filter(([k, s]) => s.size > 1 && !dhMarked.has(k));
+    const excludedEventIds = dupes.flatMap(([, s]) => [...s]);
     checks.push(dupes.length
-      ? { name: "duplicate_event", status: "WARNING",
-          entities: dupes.map(([g, s]) => `${g}: ${[...s].join(", ")}`).slice(0, 6),
-          detail: `${dupes.length} matchup${dupes.length === 1 ? "" : "s"} appear under more than one event id. `
-            + `A doubleheader legitimately does this; anything else is a duplicate that inflates every count built on it.` }
-      : { name: "duplicate_event", status: "PASS", detail: "No matchup appears under two event ids." });
+      ? { name: "duplicate_event", status: "WARNING", scope: "LOCAL",
+          entities: dupes.map(([k, s]) => `${labelOf.get(k) ?? k}: ${[...s].join(", ")}`).slice(0, 6),
+          affected_event_ids: excludedEventIds,
+          detail: `${dupes.length} matchup${dupes.length === 1 ? "" : "s"} appear${dupes.length === 1 ? "s" : ""} under `
+            + `more than one event id on the same date with no doubleheader marker — a duplicate record that inflates `
+            + `every count built on it. That game is excluded; the rest of the slate is unaffected. (Doubleheaders and `
+            + `the same matchup on consecutive days are recognised as legitimate and not flagged.)` }
+      : { name: "duplicate_event", status: "PASS",
+          detail: "No matchup appears under two event ids on the same date (doubleheaders excepted)." });
   }
 
-  const verdict: IntegrityVerdict = checks.some((c) => c.status === "FAIL")
-    ? "FAIL"
-    : checks.some((c) => c.status === "WARNING") ? "WARNING" : "PASS";
+  /* ── AGGREGATE: exclusions first, verdict second. ──────────────────────
+     A LOCAL fault contributes exclusions; only a GLOBAL fault — or a local
+     one that swallows most of the subject universe — fails the packet. */
+  const exclusionMap = new Map<string, IntegrityExclusion>();
+  const excluded_evidence_ids = new Set<string>();
+  const excluded_event_ids = new Set<string>();
+  for (const c of checks) {
+    if (c.status === "PASS" || c.scope !== "LOCAL") continue;
+    for (const id of c.affected_evidence_ids ?? []) excluded_evidence_ids.add(id);
+    for (const gid of c.affected_event_ids ?? []) excluded_event_ids.add(gid);
+    for (const raw of c.affected_subjects ?? []) {
+      const k = personKey(raw);
+      if (!k) continue;
+      const cur = exclusionMap.get(k) ?? { entity: displayOf.get(k) ?? raw, reasons: [], checks: [] };
+      if (!cur.checks.includes(c.name)) {
+        cur.checks.push(c.name);
+        cur.reasons.push(
+          c.name === "subject_team_consistency" ? "conflicting team joins — the pitcher/team join cannot be trusted"
+          : c.name === "identity_chain" || c.name === "cross_entity_identity" ? "attached to a team that is not in its own game"
+          : c.name === "duplicate_pitcher_stats" ? "shares an identical full statistical profile with another player — one record served twice"
+          : c.name === "temporal" ? "matchup record dated outside today's slate"
+          : `implicated by ${c.name}`);
+      }
+      exclusionMap.set(k, cur);
+    }
+  }
+  const exclusions = [...exclusionMap.values()];
+  const all_subjects = [...displayOf.values()];
+  const excludedKeys = new Set([...exclusionMap.keys()]);
+  const clean_subjects = all_subjects.filter((s) => !excludedKeys.has(personKey(s)));
+
+  const globalFail = checks.some((c) => c.status === "FAIL" && c.scope !== "LOCAL");
+  const localFail = checks.some((c) => c.status === "FAIL" && c.scope === "LOCAL");
+  const anyExclusions = exclusions.length > 0 || excluded_event_ids.size > 0;
+  const maxFrac = opts.maxExcludedFraction ?? 0.85;
+  const excludedFrac = all_subjects.length ? exclusions.length / all_subjects.length : 0;
+  const swallowed = all_subjects.length > 0
+    && (clean_subjects.length === 0 || excludedFrac > maxFrac);
+
+  const verdict: IntegrityVerdict = globalFail ? "FAIL"
+    : (localFail || anyExclusions)
+      ? (swallowed ? "FAIL" : "LOCALIZED")
+      : checks.some((c) => c.status === "WARNING") ? "WARNING" : "PASS";
 
   const failed = checks.filter((c) => c.status !== "PASS");
   const summary = verdict === "PASS"
     ? "All integrity checks passed."
-    : `${verdict}: ` + failed.map((c) => c.name).join(", ");
+    : verdict === "LOCALIZED"
+      ? `LOCALIZED: ${exclusions.length} of ${all_subjects.length} subjects excluded `
+        + `(${failed.filter((c) => c.scope === "LOCAL").map((c) => c.name).join(", ")}); `
+        + `${clean_subjects.length} clean and usable.`
+      : `${verdict}: ` + failed.map((c) => c.name).join(", ")
+        + (verdict === "FAIL" && swallowed && !globalFail
+          ? ` — localized faults implicate ${exclusions.length} of ${all_subjects.length} subjects, which is effectively the whole packet`
+          : "");
 
   /* The one line a person reads. Facts only — no adjectives. */
   const headline = (() => {
@@ -563,10 +821,59 @@ export function evidenceIntegrity(
       bits.push(`freshest data ${newest < 1 / 24 ? "under an hour" : newest < 1
         ? Math.round(newest * 24) + "h" : Math.round(newest) + " days"} old`);
     }
+    if (exclusions.length) {
+      bits.push(`${clean_subjects.length} clean · ${exclusions.length} excluded`);
+    }
     return bits.join(" · ");
   })();
 
-  return { verdict, checks, summary, headline };
+  return {
+    verdict, checks, summary, headline,
+    exclusions, clean_subjects, all_subjects,
+    excluded_event_ids: [...excluded_event_ids],
+    excluded_evidence_ids: [...excluded_evidence_ids],
+  };
+}
+
+/**
+ * Physically fence off the evidence a localized fault implicated.
+ *
+ * Exclusion is not advisory. A row named by the audit never reaches the model
+ * at all: an excluded pitcher's matchup rows, a duplicate game's rows, an
+ * incoherent price. Removing them is what makes "the clean set is safe" a
+ * structural guarantee instead of an instruction the model has to remember —
+ * you cannot quote a number you were never shown.
+ *
+ * Scope of removal, deliberately narrow:
+ *   - every evidence id a check named directly;
+ *   - every MATCHUP-layer item belonging to an excluded subject (the fault is
+ *     in who-plays-where, so who-faces-whom claims are what go);
+ *   - every item bound to an excluded (duplicate) event id.
+ * Season roll-ups, market rows and context for OTHER entities are untouched —
+ * that is the whole point of localization.
+ */
+export function quarantineEvidence(
+  evidence: Evidence[], integrity: Integrity,
+): { kept: Evidence[]; excluded: Evidence[] } {
+  if (integrity.verdict === "PASS" || integrity.verdict === "WARNING") {
+    if (!integrity.excluded_evidence_ids.length && !integrity.excluded_event_ids.length) {
+      return { kept: evidence, excluded: [] };
+    }
+  }
+  const badIds = new Set(integrity.excluded_evidence_ids);
+  const badEvents = new Set(integrity.excluded_event_ids.map(String));
+  const badSubjects = new Set(integrity.exclusions.map((x) => personKey(x.entity)));
+  const kept: Evidence[] = [];
+  const excluded: Evidence[] = [];
+  for (const e of evidence) {
+    const subject = e.entity ? personKey(String(e.entity)) : "";
+    const isBad =
+      (e.id != null && badIds.has(e.id))
+      || (e.event_id != null && badEvents.has(String(e.event_id)))
+      || (subject !== "" && badSubjects.has(subject) && e.layer === "matchup");
+    (isBad ? excluded : kept).push(e);
+  }
+  return { kept, excluded };
 }
 
 /**
@@ -2286,9 +2593,9 @@ export function classify(question: string, mode?: string): Plan {
      efficient tonight" fell through to the generic slate overview and retrieved
      no team_features at all — the same gap that made "worst pitching matchups"
      return nothing before the pitcher stems were added. */
-  const GRIDIRON_STEM = /\b(quarterback|qb|qbs|offense|offence|defense|defence|epa|efficiency|efficient|rushing|passing|run game|pass rush|trenches|line|red zone|third down|explosive)\b/;
+  const GRIDIRON_STEM = /\b(quarterback|qb|qbs|offenses?|offences?|defenses?|defences?|epa|efficiency|efficient|rushing|passing|run game|pass rush|trenches|line|red zone|third down|explosive)\b/;
   const HOOPS_STEM = /\b(tempo|pace|possessions|efficiency|efficient|adjusted|kenpom|torvik|four factors|rebounding|turnovers|three point|threes|shooting|effective field goal|efg)\b/;
-  const TEAM_STEM = /\b(team|teams|matchup|matchups|offense|offence|defense|defence|efficiency|efficient)\b/;
+  const TEAM_STEM = /\b(team|teams|matchup|matchups|offenses?|offences?|defenses?|defences?|efficiency|efficient)\b/;
   const WEAK_WORD = /\b(worst|weakest|bad|worse|poorest|shakiest|most vulnerable|vulnerable)\b/;
   const STRONG_WORD = /\b(best|strongest|top|elite|toughest)\b/;
   /* "worst pitching MATCHUPS" is a matchup question, not purely an arm-quality
@@ -2983,7 +3290,10 @@ export class Dal {
       const entity = `${g.away_team_name} @ ${g.home_team_name}`;
       out.push(ev({
         source: "mlb_game_cards", entity, field: "game", relevance: "schedule",
-        value: { date: g.game_date, start: g.start_time, local: g.start_time_local, venue: g.venue, status: g.status },
+        /* doubleheader/game_number travel with the row so the duplicate-event
+           audit can tell a real twin bill from one game filed twice. */
+        value: { date: g.game_date, start: g.start_time, local: g.start_time_local, venue: g.venue, status: g.status,
+          doubleheader: g.doubleheader ?? null, game_number: g.game_number ?? null },
         status: "VERIFIED", source_timestamp: g.start_time, freshness: freshnessOf("schedule", Date.now()),
       }));
       for (const side of ["away", "home"] as const) {
@@ -5538,6 +5848,222 @@ export function semanticCoverage(
 }
 
 export type CompletenessState = "COMPLETE" | "PARTIAL" | "INSUFFICIENT" | "INVALID";
+export type AnswerMode = "FULL" | "PARTIAL" | "CLEAN_SUBSET" | "UNSAFE";
+
+/* ========================================================================
+   ANSWERABILITY — the structured contract between the audit and the answer.
+
+   Integrity says what is broken. Requirements say what THIS question needs.
+   Answerability is where the two meet: which entities are clean, which are
+   excluded and why, which evidence layer the answer should lead with, and
+   whether the requested conclusion is safe at all. The analyst receives this
+   OBJECT, not a pile of prose to re-derive it from — forcing the model to
+   infer "who can I still rank?" from eleven check paragraphs is how a
+   localized fault kept becoming a global refusal.
+   ======================================================================== */
+
+/** Which evidence fields each integrity check actually governs. A failing
+    check whose fields this question does not need CANNOT gate the answer —
+    an incoherent price is irrelevant to "who are the worst pitchers", and a
+    broken pitcher join is irrelevant to "what moved this line". A check
+    absent from this map (or mapped to []) is generic and always applies. */
+export const CHECK_FIELDS: Record<string, string[]> = {
+  identity_chain: ["pitcher_quality", "opponent_offense"],
+  duplicate_pitcher_stats: ["pitcher_quality"],
+  duplicate_offense_stats: ["opponent_offense"],
+  temporal: ["pitcher_quality", "opponent_offense", "probable_starter", "quarterback",
+    "team_efficiency", "matchup_context", "game", "weather"],
+  market: ["signal", "sharp_reference", "closing_line", "book_spread", "cross_market", "line_movement"],
+  source: ["pitcher_quality"],
+  cross_entity_identity: ["team_efficiency", "quarterback", "opponent_offense", "matchup_context"],
+  subject_team_consistency: ["pitcher_quality", "opponent_offense", "team_efficiency",
+    "quarterback", "probable_starter"],
+  duplicate_event: ["game"],
+};
+
+export interface Answerability {
+  question_answerable: boolean;
+  answer_mode: AnswerMode;
+  clean_entities: string[];
+  excluded_entities: { entity: string; reason: string; checks: string[] }[];
+  /** Evidence ids removed from the packet before the model saw it. */
+  excluded_evidence: string[];
+  missing_required_fields: string[];
+  /** Non-PASS checks whose fields THIS question needs — these gated. */
+  failed_checks: string[];
+  /** Non-PASS checks that do NOT touch this question's evidence — noted, never gating. */
+  ignored_checks: { name: string; why: string }[];
+  usable_layers: string[];
+  /** The layer the ranking should lead with: "matchup", "season", or a mix. */
+  primary_evidence_layer: string;
+  reason: string;
+}
+
+export function buildAnswerability(opts: {
+  intent: string;
+  requirements: Requirement[];
+  integrity: Integrity;
+  /** Coverage computed over the CLEAN (post-quarantine) evidence and universe. */
+  coverage: SemanticCoverage;
+  /** The full entity universe BEFORE exclusions. */
+  universe: CoverageUniverse;
+  /** Players the question is explicitly about, when it named one. */
+  focusPlayers?: PlayerResolution[];
+}): Answerability {
+  const { intent, requirements, integrity, coverage: cov, universe } = opts;
+
+  /* 1. Which fields matter here. OPTIONAL fields never gate. */
+  const relevantFields = new Set<string>();
+  for (const r of requirements) {
+    if (r.tier === "OPTIONAL") continue;
+    relevantFields.add(r.field);
+    for (const s of r.satisfied_by ?? []) relevantFields.add(s);
+  }
+  const checkIsRelevant = (name: string): boolean => {
+    const fields = CHECK_FIELDS[name];
+    if (!fields || !fields.length) return true;         // generic checks always apply
+    return fields.some((f) => relevantFields.has(f));
+  };
+
+  const notPass = integrity.checks.filter((c) => c.status !== "PASS");
+  const failed_checks = notPass.filter((c) => checkIsRelevant(c.name)).map((c) => c.name);
+  const ignored_checks = notPass.filter((c) => !checkIsRelevant(c.name)).map((c) => ({
+    name: c.name,
+    why: `its fields (${(CHECK_FIELDS[c.name] ?? []).join(", ")}) are optional or absent for a "${intent}" question`,
+  }));
+
+  /* 2. Exclusions, scoped to the question. A single-player question is gated
+     only by faults touching THAT player — seven broken strangers elsewhere on
+     the card must never block "how good is Aaron Nola". */
+  const focus = (opts.focusPlayers ?? []).filter((p) => p.status === "RESOLVED" && p.resolved);
+  const focusKeys = new Set(focus.map((p) => personKey(p.resolved!)));
+  let excluded = integrity.exclusions.map((x) => ({
+    entity: x.entity, reason: x.reasons.join("; "), checks: x.checks.slice(),
+  }));
+  /* Only exclusions produced by checks relevant to this question gate it. */
+  excluded = excluded.filter((x) => x.checks.some((c) => failed_checks.includes(c)));
+  const excludedKeys = new Set(excluded.map((x) => personKey(x.entity)));
+
+  const allEntities = universe.entities.length ? universe.entities : integrity.all_subjects;
+  let clean = allEntities.filter((e) => !excludedKeys.has(personKey(e)));
+  if (focusKeys.size) {
+    const focusNames = focus.map((p) => p.resolved!) as string[];
+    clean = focusNames.filter((n) => !excludedKeys.has(personKey(n)));
+    excluded = excluded.filter((x) => focusKeys.has(personKey(x.entity)));
+  }
+
+  /* 3. Layers actually in play, from the clean coverage cells. */
+  const layerOfField = (f: string): string => {
+    if (f === "season_pitching" || f === "season_offense") return "season";
+    if (f === "pitcher_quality" || f === "opponent_offense" || f === "team_efficiency"
+      || f === "quarterback" || f === "probable_starter" || f === "workload"
+      || f === "cbb_matchup_edge" || f === "matchup_context") return "matchup";
+    if (f === "signal" || f === "sharp_reference" || f === "line_movement"
+      || f === "closing_line" || f === "cross_market" || f === "cfb_book_line") return "market";
+    if (f === "clv_history" || f === "prior_outcome" || f === "pattern" || f === "calibration") return "historical";
+    if (f === "cfb_sp_plus" || f === "cfb_elo") return "external_model";
+    if (f === "cfb_team_season_stat" || f === "cfb_record" || f === "player_stats"
+      || f === "nfl_player_production" || f === "cbb_player_production") return "season";
+    return "context";
+  };
+  const usable_layers = new Set<string>();
+  /* probable_starter and the schedule are IDENTITY, not statistics: knowing
+     who starts tonight is matchup-layer trivia that says nothing about which
+     layer the QUALITY evidence lives in. Counting them here made a pure
+     season-layer ranking report itself as "matchup where available". */
+  const IDENTITY_FIELDS = new Set(["probable_starter", "game", "cfb_game"]);
+  let matchupCovered = 0, seasonCovered = 0, perEntityReq = 0;
+  for (const [bucketName, bucket] of [["required", cov.required], ["important", cov.important]] as const) {
+    void bucketName;
+    for (const [field, cell] of Object.entries(bucket)) {
+      if (cell.available <= 0) continue;
+      const via = cell.via ?? field;
+      usable_layers.add(layerOfField(via));
+      const req = requirements.find((r) => r.field === field);
+      if (req?.per === "entity" && req.tier === "REQUIRED" && !IDENTITY_FIELDS.has(field)) {
+        perEntityReq++;
+        const l = layerOfField(via);
+        if (l === "matchup") matchupCovered++;
+        else if (l === "season") seasonCovered++;
+      }
+    }
+  }
+  const primary_evidence_layer = perEntityReq === 0
+    ? (usable_layers.has("matchup") ? "matchup" : usable_layers.has("season") ? "season"
+      : [...usable_layers][0] ?? "none")
+    : matchupCovered && !seasonCovered ? "matchup"
+      : seasonCovered && !matchupCovered ? "season"
+      : matchupCovered && seasonCovered ? "matchup where available, season elsewhere"
+      : "none";
+
+  /* 4. Required-field shortfalls, measured over the clean evidence. */
+  const missing_required_fields = Object.entries(cov.required)
+    .filter(([, c]) => c.available < c.expected)
+    .map(([f, c]) => `${f} (${c.available}/${c.expected})`);
+  const emptyRequired = Object.entries(cov.required).filter(([, c]) => c.available === 0);
+
+  /* 5. The mode. UNSAFE is reserved for the failures that actually poison the
+     requested conclusion: a GLOBAL fault on relevant evidence, a localized
+     fault that swallowed the universe, or required evidence that is simply
+     not there in any layer. */
+  const globalFailRelevant = integrity.checks.some((c) =>
+    c.status === "FAIL" && c.scope !== "LOCAL" && checkIsRelevant(c.name));
+  const swallowed = integrity.verdict === "FAIL" && !globalFailRelevant
+    && integrity.exclusions.length > 0
+    && failed_checks.length > 0
+    && clean.length === 0;
+  const perEntityRequirements = requirements.some((r) => r.tier === "REQUIRED" && r.per === "entity");
+  const nothingRequired = Object.keys(cov.required).length > 0
+    && Object.values(cov.required).every((c) => c.available === 0);
+
+  let answer_mode: AnswerMode;
+  let reason: string;
+  if (globalFailRelevant) {
+    answer_mode = "UNSAFE";
+    reason = `A global integrity failure (${integrity.checks.filter((c) => c.status === "FAIL" && c.scope !== "LOCAL")
+      .map((c) => c.name).join(", ")}) touches the evidence this question depends on. Nothing in the packet can `
+      + `carry the requested conclusion.`;
+  } else if (swallowed || (perEntityRequirements && allEntities.length > 0 && clean.length === 0 && excluded.length > 0)) {
+    answer_mode = "UNSAFE";
+    reason = `Localized faults implicate every entity in scope (${excluded.length} excluded, 0 clean). `
+      + `There is no clean subset to answer from.`;
+  } else if (nothingRequired) {
+    answer_mode = "PARTIAL";
+    reason = `Required evidence is entirely absent (${emptyRequired.map(([f]) => f).join(", ")}) in every layer. `
+      + `Answer only what the present evidence safely supports, and name what is missing.`;
+  } else if (excluded.length) {
+    answer_mode = "CLEAN_SUBSET";
+    reason = `${excluded.length} of ${allEntities.length || excluded.length + clean.length} entities are excluded by `
+      + `localized data faults; the remaining ${clean.length} are clean and independently usable. Answer from the `
+      + `clean set and state the exclusions in one sentence.`;
+  } else if (missing_required_fields.length || cov.important_gaps.length
+    || primary_evidence_layer.includes("season")) {
+    answer_mode = "PARTIAL";
+    const bits: string[] = [];
+    if (missing_required_fields.length) bits.push(`required short: ${missing_required_fields.join(", ")}`);
+    if (cov.important_gaps.length) bits.push(`important short: ${cov.important_gaps.join(", ")}`);
+    if (primary_evidence_layer.includes("season") && perEntityRequirements) {
+      bits.push("the per-game matchup layer is missing, so the season layer carries the answer — label it as season-to-date");
+    }
+    reason = `Answerable with gaps: ${bits.join("; ")}.`;
+  } else {
+    answer_mode = "FULL";
+    reason = "All required and important evidence is present, clean and current.";
+  }
+
+  const question_answerable = answer_mode !== "UNSAFE";
+  return {
+    question_answerable, answer_mode,
+    clean_entities: clean,
+    excluded_entities: excluded,
+    excluded_evidence: integrity.excluded_evidence_ids,
+    missing_required_fields,
+    failed_checks, ignored_checks,
+    usable_layers: [...usable_layers],
+    primary_evidence_layer,
+    reason,
+  };
+}
 
 export interface ResearchCompleteness {
   state: CompletenessState;
@@ -5549,17 +6075,28 @@ export interface ResearchCompleteness {
   safe_to_rank: boolean;
   safe_to_compare: boolean;
   safe_to_make_betting_interpretation: boolean;
+  /** Present when the gate ran with an answerability contract (the normal path). */
+  answer_mode?: AnswerMode;
+  clean_entities_n?: number;
+  excluded_entities_n?: number;
 }
 
 /**
  * The data-delivery state. NOT a betting score, and deliberately not a number:
  * the analyst needs a decision it can obey, not a percentage it has to
- * interpret. Integrity contamination outranks coverage — clean-but-thin data
- * can still be reasoned over honestly, badly-joined data cannot be reasoned
- * over at all.
+ * interpret.
+ *
+ * r4: INVALID is reserved for the packets that genuinely cannot carry the
+ * question — a global integrity failure on relevant evidence, or localized
+ * faults with no clean remainder. A localized fault with a usable clean set
+ * is PARTIAL: the answer proceeds over the clean entities and names the
+ * exclusions. "8 of 37 starters have broken joins" is a footnote to a ranking
+ * of 29, not a reason to refuse all 37 — the old any-FAIL-means-INVALID
+ * collapse was this gate failing at its own job.
  */
 export function completenessGate(
   cov: SemanticCoverage, integrity: Integrity, scope: SlateScope | null,
+  extra?: { answerability?: Answerability },
 ): ResearchCompleteness {
   const required_fields = Object.keys(cov.required);
   const available_fields = required_fields.filter((f) => cov.required[f].available >= cov.required[f].expected);
@@ -5570,28 +6107,42 @@ export function completenessGate(
     : 1;
   const emptyRequired = required_fields.filter((f) => cov.required[f].available === 0);
 
+  const ans = extra?.answerability ?? null;
   let state: CompletenessState;
   let reason: string;
 
-  if (integrity.verdict === "FAIL") {
+  if (ans ? !ans.question_answerable : integrity.verdict === "FAIL") {
     state = "INVALID";
-    reason = `Evidence integrity failed (${integrity.summary}). The data cannot be safely attributed, so no ranking or comparison is permitted regardless of how much of it there is.`;
+    reason = ans
+      ? `${ans.reason} No ranking or comparison may be published for this question.`
+      : `Evidence integrity failed globally (${integrity.summary}). The data cannot be safely attributed, so no ranking or comparison is permitted.`;
   } else if (emptyRequired.length) {
     state = "INSUFFICIENT";
     reason = `Required evidence is entirely absent: ${emptyRequired.join(", ")}. `
       + `Answer only what the present evidence supports and name what is missing.`;
   } else if (reqRatio < 0.75) {
     state = "INSUFFICIENT";
-    reason = `Only ${Math.round(reqRatio * 100)}% of the required evidence for a "${cov.question_type}" question was retrieved `
-      + `(${cov.critical_gaps.join(", ")}). That is too thin to rank responsibly.`;
-  } else if (cov.critical_gaps.length || cov.important_gaps.length || (scope && !scope.complete)) {
+    reason = `Only ${Math.round(reqRatio * 100)}% of the required evidence for a "${cov.question_type}" question is on hand `
+      + `(${cov.critical_gaps.join(", ")}). That is too thin to rank responsibly — answer what the present evidence `
+      + `supports and name the shortfall.`;
+  } else if ((ans && (ans.answer_mode === "CLEAN_SUBSET" || ans.answer_mode === "PARTIAL"))
+    || integrity.verdict === "LOCALIZED"
+    || cov.critical_gaps.length || cov.important_gaps.length || (scope && !scope.complete)) {
     state = "PARTIAL";
     const bits = [
       ...cov.critical_gaps.map((g) => `required ${g}`),
       ...cov.important_gaps.map((g) => `important ${g}`),
     ];
+    if (ans?.excluded_entities.length) {
+      bits.unshift(`${ans.excluded_entities.length} entit${ans.excluded_entities.length === 1 ? "y" : "ies"} excluded by `
+        + `localized data faults (${ans.clean_entities.length} clean)`);
+    } else if (integrity.verdict === "LOCALIZED") {
+      bits.unshift(`${integrity.exclusions.length} subject(s) excluded by localized data faults `
+        + `(${integrity.clean_subjects.length} clean)`);
+    }
     if (scope && !scope.complete) bits.push(`slate incomplete (${scope.live_games}/${scope.scheduled_games} scheduled games in scope)`);
-    reason = `Answerable, with material gaps: ${bits.join("; ")}. Use what is present and name the gaps explicitly.`;
+    reason = `Answerable over the clean evidence, with caveats: ${bits.join("; ")}. `
+      + `Answer first; state the exclusions and gaps briefly.`;
   } else {
     state = "COMPLETE";
     reason = "All required and important evidence for this question was retrieved and passed integrity.";
@@ -5605,6 +6156,11 @@ export function completenessGate(
     safe_to_compare: usable,
     safe_to_make_betting_interpretation: usable
       && (cov.required.signal?.available ?? cov.important.signal?.available ?? cov.optional.signal?.available ?? 0) > 0,
+    ...(ans ? {
+      answer_mode: ans.answer_mode,
+      clean_entities_n: ans.clean_entities.length,
+      excluded_entities_n: ans.excluded_entities.length,
+    } : {}),
   };
 }
 
@@ -6308,24 +6864,38 @@ export function deriveState(history: any[], plan: Plan, packet: any, prev?: Conv
    build identifier in the response there is no way to tell those apart, and
    this function shipped for months with no way to answer "which version is
    answering?". That is what this constant exists to end. */
-const BUILD = "edgedesk_ai-2026-08-12-r3-sport-intelligence";
+const BUILD = "edgedesk_ai-2026-08-13-r4-localized-integrity";
 
-const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY") ?? "";
+/* Environment access that survives BOTH runtimes. In production this is Deno;
+   the regression suite imports this module under Node (which strips the types
+   but has no `Deno` global), and a bare Deno.env.get at module top level made
+   the whole library untestable — every pure function in Part 1 was hostage to
+   one line of environment plumbing in Part 2. */
+const envGet = (k: string): string | undefined => {
+  try {
+    if (typeof Deno !== "undefined" && (Deno as any)?.env?.get) {
+      return (Deno as any).env.get(k) ?? undefined;
+    }
+  } catch { /* Deno exists but env permission is absent — fall through */ }
+  return (globalThis as any)?.process?.env?.[k];
+};
+
+const ANTHROPIC_API_KEY = envGet("ANTHROPIC_API_KEY") ?? "";
 /* The reasoning model. This layer retrieves evidence and asks the model to
    synthesise it under a hard honesty contract, so the quality of the answer is
    mostly the quality of the reader — worth being on the current generation.
    Override with EDGEDESK_AI_MODEL without redeploying if you need to pin. */
-const MODEL = Deno.env.get("EDGEDESK_AI_MODEL") ?? "claude-sonnet-5";
-const SUPABASE_URL = Deno.env.get("SUPABASE_URL") ?? "";
-const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
+const MODEL = envGet("EDGEDESK_AI_MODEL") ?? "claude-sonnet-5";
+const SUPABASE_URL = envGet("SUPABASE_URL") ?? "";
+const SUPABASE_ANON_KEY = envGet("SUPABASE_ANON_KEY") ?? "";
 // Retrieval is on by default. Set to "0" to fall back to packet-only narration.
-const RESEARCH_ENABLED = (Deno.env.get("EDGEDESK_AI_RESEARCH") ?? "1") !== "0";
+const RESEARCH_ENABLED = (envGet("EDGEDESK_AI_RESEARCH") ?? "1") !== "0";
 // Minimum samples before a stored pattern may be quoted as a pattern.
-const MIN_PATTERN_N = parseInt(Deno.env.get("EDGEDESK_MIN_PATTERN_N") ?? "30", 10);
+const MIN_PATTERN_N = parseInt(envGet("EDGEDESK_MIN_PATTERN_N") ?? "30", 10);
 // When the owned MLB feature tables are empty, fall back to the official MLB
 // Stats API for the traditional pitching line. Set to "0" to keep the engine
 // strictly on owned tables and report the gap instead.
-const MLB_FALLBACK = (Deno.env.get("EDGEDESK_MLB_FALLBACK") ?? "1") !== "0";
+const MLB_FALLBACK = (envGet("EDGEDESK_MLB_FALLBACK") ?? "1") !== "0";
 
 /* ── EXTERNAL SOURCE CREDENTIALS — every one optional ────────────────────
    The rule from the spec, applied literally: a source that needs a credential
@@ -6340,11 +6910,11 @@ const MLB_FALLBACK = (Deno.env.get("EDGEDESK_MLB_FALLBACK") ?? "1") !== "0";
    confirm a URL shape, and writing a plausible-looking one would be exactly
    the fabrication the whole engine exists to refuse. The adapters are wired and
    the endpoint is supplied by configuration. */
-const CFBD_API_KEY = Deno.env.get("CFBD_API_KEY") ?? "";
-const CFBD_BASE = Deno.env.get("CFBD_BASE") ?? "https://api.collegefootballdata.com";
-const NFLVERSE_ENABLED = (Deno.env.get("EDGEDESK_NFLVERSE") ?? "0") === "1";
-const NFLVERSE_BASE = Deno.env.get("EDGEDESK_NFLVERSE_BASE") ?? "";
-const CBB_RATINGS_URL = Deno.env.get("EDGEDESK_CBB_RATINGS_URL") ?? "";
+const CFBD_API_KEY = envGet("CFBD_API_KEY") ?? "";
+const CFBD_BASE = envGet("CFBD_BASE") ?? "https://api.collegefootballdata.com";
+const NFLVERSE_ENABLED = (envGet("EDGEDESK_NFLVERSE") ?? "0") === "1";
+const NFLVERSE_BASE = envGet("EDGEDESK_NFLVERSE_BASE") ?? "";
+const CBB_RATINGS_URL = envGet("EDGEDESK_CBB_RATINGS_URL") ?? "";
 
 const MAX_TOKENS: Record<string, number> = {
   QUICK: 800, STANDARD: 1200, DEEP: 2400, SLATE: 3000, FULL: 3400,
@@ -6374,10 +6944,11 @@ function json(body: unknown, status = 200) {
 const SYSTEM = `You are EdgeDesk Intelligence, the research analyst inside EdgeDesk — a CLV-first sports-betting research app. You are the reasoning layer over a deterministic pricing engine. You are not the engine.
 
 HOW A TURN REACHES YOU
-EdgeDesk classified the question, built a research plan, and ran that plan against its OWN databases before calling you. You receive:
+EdgeDesk classified the question, built a research plan, ran that plan against its OWN databases, audited the result and quarantined anything a data fault implicated — all before calling you. You receive:
 - RESEARCH PLAN — the intent, depth and retrieval steps that were executed.
 - ENTITY RESOLUTION — who the question resolved to, decided from retrieved data before any number was attached to a name.
-- EVIDENCE — every fact retrieved, each with {source, entity, field, value, status, freshness, source_timestamp}. This is real data pulled from EdgeDesk's tables seconds ago.
+- ANSWERABILITY — the deterministic contract for this answer: the mode (FULL / PARTIAL / CLEAN_SUBSET / UNSAFE), the clean entities, the excluded entities with reasons, and the evidence layer that leads. It is binding.
+- EVIDENCE — every CLEAN fact retrieved, each with {source, entity, field, value, status, freshness, source_timestamp}. This is real data pulled from EdgeDesk's tables seconds ago; rows implicated by a data fault were removed before you saw them.
 - CONFLICTS — owned sources that disagree, with the trusted resolution when one exists.
 - UNAVAILABLE — retrievals that returned nothing, each naming the table and the reason.
 - DATA PATH — when a retrieval came back empty, which link in the chain failed.
@@ -6400,15 +6971,21 @@ HARD RULES
 IDENTITY BEFORE NUMBERS
 When an ENTITY RESOLUTION block is attached it is binding, and it was computed from the retrieved roster rather than from the wording of the question. A name marked AMBIGUOUS matches more than one person in the data: do NOT choose between them. Answer for each candidate separately if the evidence supports it, or say which two people the name could mean and ask. Choosing is how a question about one player gets answered with another player's numbers, in a paragraph that reads perfectly and is entirely wrong. A name marked UNRESOLVED does not appear in anything retrieved — say he is not on the retrieved card; never describe him from memory. If a club was rejected as a cross-league alias, do not name that club anywhere in the answer.
 
-EVIDENCE INTEGRITY — AUDIT BEFORE YOU ANALYSE
-Every turn carries an EVIDENCE INTEGRITY block with a verdict EdgeDesk computed deterministically over the evidence, before you saw it. Read it first. It is not advisory.
-- PASS — proceed normally.
-- WARNING — you may answer, but the caveat leads. Put it in your FIRST line, label the conclusion provisional, and name the specific defect and the date it dates from. Never bury a data warning at the bottom of a confident answer; a reader who stops after your ranking must already know it was provisional.
-- FAIL — you are NOT permitted to publish a ranking, a top-three, a "best" or "worst" list, or any confident comparison built on the failing evidence. Say plainly that the data is not clean enough to rank, name exactly what failed and which entities it touched, give whatever partial observation is still safe (clearly labelled as such), and say what would have to be repaired. A refusal that names the fault is worth more than a sophisticated-looking ranking assembled from corrupted joins.
-Two failures matter most and you must never explain either away in prose. IDENTICAL STATISTICAL PROFILES on different players are a duplication fault, not a coincidence and not "the same Statcast layer" — distinct players do not share a whole feature vector. A PITCHER ATTACHED TO A TEAM NOT PLAYING IN HIS OWN GAME is a broken join, and every downstream sentence about who faces whom is unsafe. If you find yourself writing a sentence that rationalises either one, stop and report the fault instead.
+ANSWERABILITY AND EVIDENCE INTEGRITY — THE CONTRACT YOU ANSWER UNDER
+Every turn carries an ANSWERABILITY block and an EVIDENCE INTEGRITY verdict, both computed deterministically before you saw anything. They are binding, and they exist so that a data fault is handled ONCE, upstream, instead of by you improvising a refusal.
+- answer_mode=FULL — answer normally.
+- answer_mode=PARTIAL — answer, and answer FIRST; the named gap gets one or two sentences after the conclusion it affects, with the affected claims labelled provisional. A gap is a footnote to the answer, never a substitute for it.
+- answer_mode=CLEAN_SUBSET — some entities are excluded by localized data faults and their rows were already removed from your evidence. Rank and analyse the CLEAN entities exactly as if the excluded ones were not on the card, then close with ONE sentence: how many were excluded and why (e.g. "8 starters were excluded because their pitcher/team joins conflict; 4 records were dated outside today's slate"). Do not open with the exclusions, do not enumerate the faults per entity, do not re-audit the data in prose — the audit already ran.
+- answer_mode=UNSAFE — the one case where the requested ranking/comparison may not be published. Two sentences on what is broken or missing and what would repair it, then give whatever narrower observation the clean evidence still supports, clearly labelled. Even a refusal answers: never end without the most useful safe statement the data allows.
+Integrity verdicts map the same way: PASS needs no caveat at all; WARNING is stated briefly next to the conclusion it affects; LOCALIZED means the exclusions in ANSWERABILITY are the whole story — the evidence you hold is the clean set and is safe to rank; FAIL is global and pairs with UNSAFE.
+Never invert this hierarchy: a localized fault must never be treated as global, an ignored check (one whose fields this question does not need) must never gate the answer, and a warning must never be escalated into a refusal.
+Two faults, when the audit reports them, must never be explained away in prose. IDENTICAL STATISTICAL PROFILES on different players are a duplication fault, not a coincidence and not "the same Statcast layer" — distinct players do not share a whole feature vector. A PITCHER ATTACHED TO A TEAM NOT PLAYING IN HIS OWN GAME is a broken join. In both cases the affected rows have already been excluded; your job is to answer from the clean set, not to rationalise or re-litigate the fault.
 
 ANSWER THE QUESTION THAT WAS ASKED
 Rank by the axis the question names, not the axis you find more interesting. "Best pitchers" means the best pitchers — the strongest arms on the card, ranked by quality, with the best one at #1. "Worst" and "most exploitable" mean the other direction. Never silently invert the axis, never open a ranking by restating the question as a different one, and never bury the true answer to the asked question in a footnote at the bottom. Where the more useful betting angle runs the other way, give the asked-for ranking FIRST, in full, then add the other angle in a clearly separate section — as an addition, never as a substitution.
+
+A RESEARCH QUESTION IS NOT A BETTING QUESTION
+"Worst pitchers", "best offenses", "how good is X", "what changed" are sports research questions and get sports research answers. Do not redirect them toward "what should I bet", do not close every answer with a wager, and do not replace the requested analysis with a betting take. Add a betting implication only when the market evidence in the packet makes it directly relevant, and keep it to a line or two AFTER the requested analysis. When the user does ask a betting question, the deterministic engine's verdict governs, as always.
 
 BAD vs EXPLOITABLE
 These are two different rankings and the question decides which one leads.
@@ -6510,8 +7087,9 @@ BEFORE you begin, and deliver that many in full. Three complete entries beat six
 truncated ones. If the card is deep, rank the top few properly and say in one
 line how many others were considered and why they ranked below.
 
-ANSWER SHAPE
-Answer the question in the first sentence. Simple question, short answer. For rankings, a numbered list where each entry gives: the claim, the supporting numbers, the opponent or counterparty, the market read if attached, and the risk. Separate fact from interpretation — "xERA 5.41 against a .342-OBP lineup" is fact; "the most attackable arm on the card" is your read. Close with what would change your answer, or the one missing field that matters most.
+ANSWER SHAPE — THE ANSWER LEADS, ALWAYS
+Answer the question in the first sentence. Simple question, short answer — a factual question about one player or one game gets a few sentences of prose, not sections, not a data audit. For rankings, a numbered list where each entry gives: the claim, the supporting numbers, the opponent or counterparty, the market read if attached, and the risk. Separate fact from interpretation — "xERA 5.41 against a .342-OBP lineup" is fact; "the most attackable arm on the card" is your read. Name the axis and the evidence layer once ("season-to-date quality", "tonight's matchup layer") — once, not per entry. Close with what would change your answer, or the one missing field that matters most.
+The default answer is: the answer, the supporting numbers, one line of method, one line of exclusions or limitations IF any exist. Data diagnostics — check lists, retrieval traces, table names, coverage tables — appear only when answer_mode=UNSAFE, when the user asks about the data, or in the DEEP/FULL research trace. The user is talking to a sports research analyst, not a database administrator: pipeline vocabulary ("integrity check", "join", "ingest", "retrieval", "packet") should not appear in an ordinary answer at all — say "excluded because their team assignment conflicts in EdgeDesk's data", not "failed the subject_team_consistency check".
 
 WHEN THE DATA IS NOT THERE
 A refusal is an ANSWER and obeys every rule above. Two sentences: what is empty, and the one thing that would fill it. Then, in the SAME reply, rank or compare whatever the present data does support, labelled for what it is.
@@ -6520,6 +7098,7 @@ A refusal is an ANSWER and obeys every rule above. Two sentences: what is empty,
 - Never describe your own permissions. "I am not permitted to substitute memory", "I won't fabricate a ranking from reputation" — that is about you, not the slate. Declining once is enough.
 - Never end by offering to answer a different question and waiting. Give the closest usable answer immediately.
 - Before reporting a field as missing, check DATA PATH for whether the retrieval actually RAN. "The table is empty" and "the lookup never executed" are different failures and only one of them is about the data.
+- A fault in SOME entities is never a statement about the rest. If the ANSWERABILITY block excludes eight starters, the other twenty-nine are exactly as answerable as they would be on a clean day — answer for them at full confidence, not with borrowed hedging.
 
 The test: if the user has to ask a second question to get anything usable, the first answer failed.
 
@@ -6549,8 +7128,8 @@ Direct, analytical, specific. Name the factors; never "there are many factors to
    analyst cannot name a price the board refuses to display and the grader would
    throw out. A lay quote is the other side of the book; a decimal above 30 is a
    placeholder, not a market. */
-const SIG_MAX_DEC = Number(Deno.env.get("CLOSE_MAX_DEC") ?? "30");
-const SIG_MIN_DEC = Number(Deno.env.get("CLOSE_MIN_DEC") ?? "1.02");
+const SIG_MAX_DEC = Number(envGet("CLOSE_MAX_DEC") ?? "30");
+const SIG_MIN_DEC = Number(envGet("CLOSE_MIN_DEC") ?? "1.02");
 const BACK_MARKETS = new Set(["h2h","spreads","totals","ml","spread","total"]);
 export function signalTradeable(r: any): { ok: boolean; reason: string | null } {
   if (!r) return { ok:false, reason:"empty row" };
@@ -6780,7 +7359,7 @@ export async function runExternalAdapters(
 /* RESEARCH ORCHESTRATOR                                                    */
 /* ======================================================================== */
 
-interface ResearchOut {
+export interface ResearchOut {
   plan: Plan;
   state: ConvoState;
   evidence: Evidence[];
@@ -6814,6 +7393,11 @@ interface ResearchOut {
   slate_scope: SlateScope;
   requirements: Requirement[];
   fallback_retrievals: any[];
+  /* ── r4: localized integrity ────────────────────────────────────────── */
+  /** The structured contract: clean vs excluded entities, mode, primary layer. */
+  answerability: Answerability;
+  /** Rows the quarantine removed. Never shown to the model; kept for dry mode. */
+  excluded_evidence: Evidence[];
   thesis_attack: {
     support: any[]; contradictions: any[];
     unresolved_questions: string[]; falsifiers: string[];
@@ -7488,9 +8072,36 @@ async function runResearch(
     semantic = semanticCoverage(plan.intent, ev0, reqs, universe, sportKey);
   }
 
-  /* ---- 9c. INTEGRITY, then the COMPLETENESS GATE ------------------------ */
-  const integrity0 = evidenceIntegrity(ev0, { slateDays: [etDay(0), etDay(1)] });
-  const research_completeness = completenessGate(semantic, integrity0, slate_scope);
+  /* ---- 9c. INTEGRITY -> QUARANTINE -> ANSWERABILITY -> GATE -------------
+     The audit names its faults per entity; the quarantine physically removes
+     the implicated rows; coverage is then re-measured over what SURVIVED and
+     the clean universe, so the gate judges the packet the analyst will
+     actually see. This is the machinery that turns "8 broken joins" into
+     "rank the clean 29, list the 8" instead of a slate-wide refusal. */
+  const integrity0 = evidenceIntegrity(ev0, { slateDays: [etDay(0), etDay(1)], sport: sportKey });
+  const quarantined = quarantineEvidence(ev0, integrity0);
+  const excluded_evidence = quarantined.excluded;
+  ev0 = quarantined.kept;
+  if (excluded_evidence.length) {
+    data_path.quarantine = {
+      excluded_items: excluded_evidence.length,
+      excluded_entities: integrity0.exclusions.map((x) => `${x.entity} (${x.checks.join(", ")})`),
+      excluded_event_ids: integrity0.excluded_event_ids,
+      note: "Rows implicated by localized integrity faults were removed before the analyst saw the packet. "
+        + "The exclusions are named in ANSWERABILITY; the clean remainder carries the answer.",
+    };
+  }
+  const excludedSubjectKeys = new Set(integrity0.exclusions.map((x) => personKey(x.entity)));
+  const universeClean: CoverageUniverse = {
+    ...universe,
+    entities: universe.entities.filter((e) => !excludedSubjectKeys.has(personKey(e))),
+  };
+  semantic = semanticCoverage(plan.intent, ev0, reqs, universeClean, sportKey);
+  const answerability = buildAnswerability({
+    intent: plan.intent, requirements: reqs, integrity: integrity0,
+    coverage: semantic, universe, focusPlayers: players,
+  });
+  const research_completeness = completenessGate(semantic, integrity0, slate_scope, { answerability });
 
   const comp = completeness(ev0, sportKey);
   data_path.slate_scope = {
@@ -7563,6 +8174,7 @@ async function runResearch(
     entities: { teams: state.teams, rejected_teams: teamScope.rejected, players },
     semantic, research_completeness, slate_scope, requirements: reqs,
     fallback_retrievals, thesis_attack,
+    answerability, excluded_evidence,
     /* ── r3 ───────────────────────────────────────────────────────────── */
     sport: sportKey,
     sport_module: imod,
@@ -7615,7 +8227,7 @@ async function runResearch(
    MLB slate is ~69KB of evidence; at 60KB it was being cut in half mid-object.
    ~240KB is roughly 60k tokens — comfortably inside the context window, and
    large enough that a real slate never truncates at all. */
-const EVIDENCE_MAX = Number(Deno.env.get("EDGEDESK_EVIDENCE_MAX") ?? "240000");
+const EVIDENCE_MAX = Number(envGet("EDGEDESK_EVIDENCE_MAX") ?? "240000");
 
 /* For everything OTHER than evidence. Still a blind slice, but these blocks
    (movement reads, queues, data paths) are prose-ish and degrade gracefully;
@@ -7626,7 +8238,7 @@ function compact(o: unknown, max = 60000): string {
 }
 
 
-function buildUserContent(body: any, research: ResearchOut | null, evidenceMax = EVIDENCE_MAX): string {
+export function buildUserContent(body: any, research: ResearchOut | null, evidenceMax = EVIDENCE_MAX): string {
   const { mode, question, packet, compare } = body ?? {};
   const parts: string[] = [];
   const ask = (question && String(question).trim()) || defaultAsk(mode);
@@ -7720,6 +8332,41 @@ function buildUserContent(body: any, research: ResearchOut | null, evidenceMax =
       }
     }
 
+    /* ── ANSWERABILITY, before everything else it governs ────────────────
+       The structured contract: what mode the answer runs in, who is clean,
+       who is excluded and why, and which layer leads. The analyst OBEYS this
+       — it never re-derives exclusions from check prose. */
+    {
+      const a = research.answerability;
+      const excl = a.excluded_entities;
+      parts.push(
+        `ANSWERABILITY — computed deterministically. Obey it; do not re-derive it.\n`
+        + `answer_mode=${a.answer_mode} · question_answerable=${a.question_answerable}\n`
+        + `PRIMARY EVIDENCE LAYER: ${a.primary_evidence_layer}`
+        + (a.usable_layers.length ? ` (usable layers: ${a.usable_layers.join(", ")})` : "") + `\n`
+        + `${a.reason}\n`
+        + (a.answer_mode === "CLEAN_SUBSET" || excl.length
+          ? `CLEAN ENTITIES — build the answer from these${a.clean_entities.length ? ` (${a.clean_entities.length})` : ""}: `
+            + (a.clean_entities.slice(0, 40).join(", ") || "(none listed — use the clean evidence items)")
+            + (a.clean_entities.length > 40 ? ` (+${a.clean_entities.length - 40} more)` : "") + `\n`
+            + `EXCLUDED ENTITIES — do not rank these and do not quote numbers for them; their faulty rows were `
+            + `already removed from the evidence below. Mention them in AT MOST one closing sentence with the count `
+            + `and the reason:\n`
+            + excl.slice(0, 20).map((x) => `  - ${x.entity} — ${x.reason}`).join("\n")
+            + (excl.length > 20 ? `\n  (+${excl.length - 20} more)` : "") + `\n`
+          : "")
+        + (a.missing_required_fields.length
+          ? `MISSING REQUIRED: ${a.missing_required_fields.join(", ")}\n` : "")
+        + (a.ignored_checks.length
+          ? `Checks noted but NOT gating this question (their evidence is optional here): `
+            + a.ignored_checks.map((c) => c.name).join(", ") + `\n`
+          : "")
+        + `ANSWER FIRST. Give the requested answer or ranking immediately, in the direction the question asked. `
+        + `Method and data caveats come after the answer, in one or two sentences — never as the opening, and never `
+        + `as a diagnostics report, unless answer_mode=UNSAFE or the user explicitly asked about the data.`,
+      );
+    }
+
     /* ── THE GATE, before the evidence it governs ────────────────────────
        The analyst must never have to work out for itself whether the packet is
        complete. This states it, in a form that can be obeyed rather than
@@ -7728,13 +8375,16 @@ function buildUserContent(body: any, research: ResearchOut | null, evidenceMax =
       const rc = research.research_completeness;
       const sc = research.slate_scope;
       const cov = research.semantic;
+      const a = research.answerability;
       const permit = rc.state === "INVALID"
-        ? "You may NOT rank, compare, or publish a best/worst list from this evidence. Report the fault, name the entities it touches, and say what must be repaired."
+        ? "You may NOT rank, compare, or publish a best/worst list from this evidence. Say in two sentences what is broken or missing and what would fix it, then give whatever narrower observation is still safe, clearly labelled."
         : rc.state === "INSUFFICIENT"
-          ? "You may NOT publish a full ranking. Answer only what the present evidence safely supports, say so plainly in your first line, and name what is missing."
-          : rc.state === "PARTIAL"
-            ? "You MAY answer and rank. Lead with the gap in your first line, label the conclusion provisional, and name what is missing — do not bury it at the end."
-            : "You MAY answer normally.";
+          ? "You may NOT publish a full ranking. Answer what the present evidence safely supports — a partial list, a single-entity read, or a labelled season-layer view — say so plainly, and name what is missing once."
+          : a.answer_mode === "CLEAN_SUBSET"
+            ? "You MAY answer and rank, using the CLEAN ENTITIES from the ANSWERABILITY block. The ranking leads; the exclusions get one closing sentence with the count and reason. Do not open with the data problem."
+            : rc.state === "PARTIAL"
+              ? "You MAY answer and rank. The answer leads; state the gap briefly after it and label affected conclusions provisional — one or two sentences, not a report."
+              : "You MAY answer normally.";
       parts.push(
         `RESEARCH COMPLETENESS: ${rc.state}\n`
         + `${rc.reason}\n`
@@ -7775,30 +8425,53 @@ function buildUserContent(body: any, research: ResearchOut | null, evidenceMax =
     }
 
     const usableAll = research.evidence.filter((e) => e.status !== "UNAVAILABLE");
-    /* Budget FIRST, then audit, so the completeness check measures what the
-       model is actually about to receive rather than what was retrieved. That
-       gap is precisely the bug this layer exists to catch, so it would be
-       absurd for the auditor itself to assume delivery. */
+    /* Budget FIRST, then update the delivery check, so completeness measures
+       what the model is actually about to receive rather than what was
+       retrieved. The audit itself is NOT re-run here: it already ran over the
+       pre-quarantine packet, and re-running it on the cleaned evidence would
+       report PASS on a packet whose faults were localized away — losing the
+       LOCALIZED verdict and the exclusions the answer must disclose. Only the
+       delivery fact is new, so only the delivery check is replaced. */
     const budget = budgetEvidence(usableAll, evidenceMax);
-    research.integrity = evidenceIntegrity(research.evidence, {
-      slateDays: [etDay(0), etDay(1)],
-      delivered: { included: budget.included, withheld: budget.dropped },
-    });
-
-    /* Placed BEFORE the evidence, deliberately: the verdict has to be read
-       before the numbers it governs, not after them. */
     {
       const g = research.integrity;
+      const withheld = budget.dropped;
+      const delivery: IntegrityCheck = withheld > 0
+        ? { name: "completeness", status: "WARNING",
+            detail: `${budget.included} of ${budget.included + withheld} retrieved items reached the analyst; `
+              + `${withheld} were withheld for size. Conclusions cover only what was delivered, and the `
+              + `withheld subjects are named in the evidence-withheld note.` }
+        : { name: "completeness", status: "PASS",
+            detail: `All ${budget.included} retrieved items were delivered to the analyst — nothing was truncated.` };
+      g.checks = g.checks.map((c) => c.name === "completeness" ? delivery : c);
+      if (withheld > 0 && g.verdict === "PASS") g.verdict = "WARNING";
+      if (withheld === 0 && g.verdict === "WARNING"
+        && !g.checks.some((c) => c.status !== "PASS")) g.verdict = "PASS";
+    }
+
+    /* Placed BEFORE the evidence, deliberately: the verdict has to be read
+       before the numbers it governs, not after them. On PASS the block is one
+       line — a clean audit is not something the answer needs paragraphs on. */
+    {
+      const g = research.integrity;
+      const failing = g.checks.filter((c) => c.status !== "PASS");
       parts.push(
-        `EVIDENCE INTEGRITY — ${g.verdict}${g.headline ? `\n${g.headline}` : ""}\n`
-        + g.checks.map((c) => `- [${c.status}] ${c.name}: ${c.detail}`
-          + (c.entities?.length ? `\n    affected: ${c.entities.join("; ")}` : "")).join("\n")
+        `EVIDENCE INTEGRITY — ${g.verdict}${g.headline ? ` · ${g.headline}` : ""}\n`
+        + (g.verdict === "PASS"
+          ? "All integrity checks passed. No caveat is needed in the answer."
+          : failing.map((c) => `- [${c.status}${c.scope === "LOCAL" ? "/local" : ""}] ${c.name}: ${c.detail}`
+            + (c.entities?.length ? `\n    affected: ${c.entities.join("; ")}` : "")).join("\n"))
         + (g.verdict === "FAIL"
-          ? "\nYou may NOT publish a ranking or a confident comparison from this evidence. Report the fault, "
-            + "name the entities it touches, and say what would have to be repaired."
-          : g.verdict === "WARNING"
-            ? "\nLead with this caveat in your first line and label any conclusion provisional."
-            : ""),
+          ? "\nThis failure is GLOBAL (or leaves no usable clean set): you may NOT publish a ranking or a confident "
+            + "comparison from this evidence. Say in two sentences what failed and what would repair it, then give "
+            + "whatever narrower observation is still safe, clearly labelled."
+          : g.verdict === "LOCALIZED"
+            ? "\nThese faults are LOCALIZED and their rows were already removed. The ANSWERABILITY block above names "
+              + "the excluded entities; the evidence below is the clean set and is safe to rank. Do not re-litigate "
+              + "these checks in the answer — one closing sentence on the exclusions is the correct amount."
+            : g.verdict === "WARNING"
+              ? "\nAnswer normally, but state this caveat briefly alongside the conclusion it affects."
+              : ""),
       );
     }
 
@@ -8389,6 +9062,8 @@ export async function handle(req: Request): Promise<Response> {
       coverage: research?.semantic ?? null,
       coverage_per_entity: research?.coverage ?? null,
       completeness: research?.research_completeness ?? null,
+      answerability: research?.answerability ?? null,
+      excluded_evidence: research?.excluded_evidence ?? [],
       dimension_availability: research?.completeness ?? null,
       integrity: research?.integrity ?? null,
       fallbacks: research?.fallback_retrievals ?? [],
@@ -8554,6 +9229,19 @@ export async function handle(req: Request): Promise<Response> {
             summary: research.integrity.summary,
             headline: research.integrity.headline,
             failed: research.integrity.checks.filter((c) => c.status !== "PASS"),
+            exclusions: research.integrity.exclusions,
+            clean_n: research.integrity.clean_subjects.length,
+            all_n: research.integrity.all_subjects.length,
+          },
+          /* The structured contract the answer was written under. */
+          answerability: {
+            answer_mode: research.answerability.answer_mode,
+            question_answerable: research.answerability.question_answerable,
+            primary_evidence_layer: research.answerability.primary_evidence_layer,
+            clean_entities_n: research.answerability.clean_entities.length,
+            excluded_entities: research.answerability.excluded_entities,
+            missing_required_fields: research.answerability.missing_required_fields,
+            ignored_checks: research.answerability.ignored_checks,
           },
           unavailable: research.unavailable,
           conflicts: research.conflicts.length,
@@ -8570,6 +9258,6 @@ export async function handle(req: Request): Promise<Response> {
 }
 
 // Guarded so the module can be imported by tests without starting a server.
-if (typeof Deno !== "undefined" && (Deno as any).serve && !Deno.env.get("EDGEDESK_AI_NO_SERVE")) {
-  Deno.serve(handle);
+if (typeof Deno !== "undefined" && (Deno as any).serve && !envGet("EDGEDESK_AI_NO_SERVE")) {
+  (Deno as any).serve(handle);
 }

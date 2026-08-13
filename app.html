@@ -14268,23 +14268,40 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
     var g = r && r.integrity;
     if(!g || !g.verdict) return '';
     var v = String(g.verdict).toUpperCase();
-    if(v==='PASS' && !g.headline) return '';
+    var a = r && r.answerability;
+    if(v==='PASS') return '';   /* a clean audit needs no banner at all */
+    /* LOCALIZED = faults were fenced to named entities and the clean set
+       carried the answer. It must NOT paint green (it is not a clean PASS)
+       and must not scream red either — the answer above it is trustworthy. */
     var tone = v==='FAIL' ? {bd:'var(--neg)', bg:'rgba(226,96,68,.10)', fg:'var(--neg)'}
-             : v==='WARNING' ? {bd:'var(--warn)', bg:'rgba(217,154,43,.10)', fg:'var(--warn)'}
-             : {bd:'var(--pos)', bg:'rgba(47,180,124,.08)', fg:'var(--pos)'};
+             : {bd:'var(--warn)', bg:'rgba(217,154,43,.10)', fg:'var(--warn)'};
+    var label = v==='LOCALIZED' ? 'DATA NOTE: SOME RECORDS EXCLUDED' : 'EVIDENCE INTEGRITY: '+v;
     var h = '<div style="border:1px solid '+tone.bd+';background:'+tone.bg
       +';border-radius:8px;padding:8px 10px;margin:0 0 8px">'
       + '<div style="font-size:11px;font-weight:700;letter-spacing:.04em;color:'+tone.fg+'">'
-      + 'EVIDENCE INTEGRITY: '+esc(v)+'</div>';
-    if(g.headline)
-      h += '<div style="font-size:11px;color:var(--faint);margin-top:2px">'+esc(g.headline)+'</div>';
-    var bad = (g.failed||[]).filter(function(c){return c.status!=='PASS';});
-    if(bad.length){
-      h += '<ul style="margin:5px 0 0;padding-left:16px;font-size:11.5px;line-height:1.45">'
-        + bad.slice(0,4).map(function(c){
-            return '<li><b>'+esc(String(c.name).replace(/_/g,' '))+'</b> — '+esc(c.detail)+'</li>';
-          }).join('')
-        + '</ul>';
+      + esc(label)+'</div>';
+    if(v==='LOCALIZED'){
+      var excl=(a&&a.excluded_entities)||(g.exclusions||[]);
+      var cleanN=(a&&a.clean_entities_n!=null)?a.clean_entities_n:(g.clean_n!=null?g.clean_n:null);
+      h += '<div style="font-size:11px;color:var(--faint);margin-top:2px">'
+        + esc((excl.length?excl.length+' entit'+(excl.length===1?'y':'ies')+' excluded by data faults':'some records excluded')
+          + (cleanN!=null?' · answer built on the '+cleanN+' clean':'')) + '</div>';
+      if(excl.length){
+        h += '<div style="font-size:11px;color:var(--faint);margin-top:2px">'
+          + esc(excl.slice(0,6).map(function(x){return x.entity;}).join(', ')+(excl.length>6?' +'+(excl.length-6)+' more':''))
+          + '</div>';
+      }
+    } else {
+      if(g.headline)
+        h += '<div style="font-size:11px;color:var(--faint);margin-top:2px">'+esc(g.headline)+'</div>';
+      var bad = (g.failed||[]).filter(function(c){return c.status!=='PASS';});
+      if(bad.length){
+        h += '<ul style="margin:5px 0 0;padding-left:16px;font-size:11.5px;line-height:1.45">'
+          + bad.slice(0,4).map(function(c){
+              return '<li><b>'+esc(String(c.name).replace(/_/g,' '))+'</b> — '+esc(c.detail)+'</li>';
+            }).join('')
+          + '</ul>';
+      }
     }
     if(v==='FAIL')
       h += '<div style="font-size:11px;color:'+tone.fg+';margin-top:5px">'
