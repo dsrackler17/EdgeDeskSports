@@ -8681,8 +8681,16 @@ async function loadSubStatus(){
   if(SET_ACTIVE==='subscription')renderSettings();
 }
 function subStatusLabel(s){
-  return ({active:'Active',trialing:'Trial',past_due:'Payment failed',canceled:'Cancelled',
+  return ({active:'Active',trialing:'Free trial',past_due:'Payment failed',canceled:'Cancelled',
            incomplete:'Incomplete',unpaid:'Unpaid'})[s]||s||'\u2014';
+}
+/* Days until the trial converts. Null when there is no trial or no end date.
+   Ceil, not round: with 6h left the honest answer is "1 day", never "0". */
+function subTrialDaysLeft(sub){
+  if(!sub||sub.status!=='trialing'||!sub.current_period_end)return null;
+  var t=new Date(sub.current_period_end).getTime();
+  if(!isFinite(t))return null;
+  return Math.max(0,Math.ceil((t-Date.now())/864e5));
 }
 function renderSetSub(){
   var sub=window.SUB;
@@ -8691,32 +8699,60 @@ function renderSetSub(){
   }
   var out='';
   if(!sub){
-    out+=setCard('No active subscription','You are signed in but not subscribed.',
+    out+=setCard('No active subscription','You are signed in but your trial has not started.',
       setRow('Plan','<span class="set-val">None</span>')+
-      setRow('Price','<span class="set-val">'+SUB_PRICE_DISPLAY+' / month</span>','Renews monthly until cancelled')+
-      '<div class="set-act"><a class="btn sm" href="./index.html#subscribe" style="text-decoration:none">Subscribe</a></div>'+
-      '<div class="set-note">Subscribing takes you through the automatic renewal terms before any payment is collected.</div>');
+      setRow('Price','<span class="set-val">Free for 7 days</span>','Then '+SUB_PRICE_DISPLAY+' / month, renewing until cancelled')+
+      '<div class="set-act"><a class="btn sm" href="./index.html#subscribe" style="text-decoration:none">Start 7-day free trial</a></div>'+
+      '<div class="set-note">You will be shown the free trial and automatic renewal terms, and asked to confirm them, before any payment method is collected. Your card is not charged during the trial.</div>');
     return out;
   }
   var active=(sub.status==='active'||sub.status==='trialing');
+  var trialing=(sub.status==='trialing');
+  var daysLeft=subTrialDaysLeft(sub);
   var end=sub.current_period_end?new Date(sub.current_period_end):null;
   var endStr=end?end.toLocaleDateString(undefined,{month:'long',day:'numeric',year:'numeric'}):'\u2014';
+  /* During a trial current_period_end IS the trial end, which is also the date
+     of the first charge. Calling that row "Renews on" hides the single fact a
+     trialing customer most needs: the day money starts moving. */
+  var dateLabel=sub.cancel_at_period_end?(trialing?'Trial ends':'Access ends')
+               :(trialing?'First charge':'Renews on');
+  var dateNote=sub.cancel_at_period_end
+    ?(trialing?'Cancelled \u2014 your trial runs to this date and you will not be charged'
+              :'Cancelled \u2014 no further charges')
+    :(trialing?'Your card will be charged '+SUB_PRICE_DISPLAY+' on this date unless you cancel before then'
+              :'You will be charged '+SUB_PRICE_DISPLAY+' on this date');
   out+=setCard('Subscription',null,
     setRow('Plan','<span class="set-val">EdgeDesk Research Terminal</span>')+
-    setRow('Status','<span class="set-val '+(active?'pos':'')+'">'+stEsc(subStatusLabel(sub.status))+'</span>')+
-    setRow('Price','<span class="set-val">'+SUB_PRICE_DISPLAY+' / month</span>')+
-    setRow(sub.cancel_at_period_end?'Access ends':'Renews on','<span class="set-val">'+stEsc(endStr)+'</span>',
-      sub.cancel_at_period_end?'Cancelled \u2014 no further charges':'You will be charged '+SUB_PRICE_DISPLAY+' on this date')
+    setRow('Status','<span class="set-val '+(active?'pos':'')+'">'+stEsc(subStatusLabel(sub.status))+
+      (trialing&&daysLeft!=null?' <span style="color:var(--dim);font-weight:400">\u2014 '+daysLeft+' day'+(daysLeft===1?'':'s')+' left</span>':'')+'</span>')+
+    setRow('Price','<span class="set-val">'+(trialing?'$0 today, then '+SUB_PRICE_DISPLAY+' / month':SUB_PRICE_DISPLAY+' / month')+'</span>')+
+    setRow(dateLabel,'<span class="set-val">'+stEsc(endStr)+'</span>',dateNote)
   );
+  /* The one thing a trialing customer must not have to hunt for. Shown whether
+     or not they scroll, and phrased so the deadline and the escape are in the
+     same sentence. */
+  if(trialing&&!sub.cancel_at_period_end){
+    out+='<div class="set-gate" style="border-color:rgba(217,154,43,.4)"><div class="set-gate-h">'+
+      '<span class="set-gate-tag" style="border-color:rgba(217,154,43,.5);color:var(--warn);background:rgba(217,154,43,.1)">FREE TRIAL</span>'+
+      'Your trial converts on '+stEsc(endStr)+'</div>'+
+      '<p>You have not been charged. On '+stEsc(endStr)+' your subscription converts automatically and your card is charged '+
+      SUB_PRICE_DISPLAY+', then monthly at that rate until you cancel. '+
+      '<b>Cancel before that date, below, and you will never be charged.</b></p></div>';
+  }
   if(sub.status==='past_due'){
     out+='<div class="set-gate" style="border-color:rgba(226,96,68,.4)"><div class="set-gate-h"><span class="set-gate-tag" style="border-color:rgba(226,96,68,.5);color:var(--neg);background:rgba(226,96,68,.1)">ACTION NEEDED</span>Payment failed</div>'+
       '<p>Your most recent payment did not go through. Update your card to keep access.</p></div>';
   }
   var __portal=stripePortalHref();
-  out+=setCard('Manage','Cancel anytime. Cancellation stops all future charges and access continues to the end of the period you have paid for.',
+  out+=setCard('Manage',trialing
+    ?'Cancel anytime, including right now. Cancel before your trial ends and you are never charged; your access runs to the end of the trial either way.'
+    :'Cancel anytime. Cancellation stops all future charges and access continues to the end of the period you have paid for.',
     __portal
-      ? '<div class="set-act"><a class="btn ghost sm" href="'+__portal+'" target="_blank" rel="noopener" style="text-decoration:none">Manage or cancel subscription</a></div>'+
-        '<div class="set-note">Opens the secure billing portal where you can cancel or update your payment method.</div>'
+      ? '<div class="set-act"><a class="btn ghost sm" href="'+__portal+'" target="_blank" rel="noopener" style="text-decoration:none">'+
+          (trialing?'Cancel free trial':'Manage or cancel subscription')+'</a></div>'+
+        '<div class="set-note">Opens the secure billing portal where you can '+
+          (trialing?'cancel before your trial converts, or update your payment method. Cancelling there stops the charge.'
+                   :'cancel or update your payment method.')+'</div>'
       : '<div class="set-note" style="border:none;padding-top:0"><b style="color:var(--warn)">Self-serve cancellation is not wired yet.</b> The Stripe customer portal link has not been configured, so this button would go nowhere. Until it is, cancellation requests are handled by email. California law requires that a subscription bought online can be cancelled online \u2014 this must be connected before charging customers.</div>'
   );
   return out;
@@ -10384,7 +10420,25 @@ function bqCardHTML(e){
 /* app rather than data.                                                  */
 /* ===================================================================== */
 var PG_OWNER_ID='e7e46801-80c4-4f47-b718-4aff211c8d3a';
-var PG_STRIPE_LINK='https://buy.stripe.com/cNi00ifmaaeNePk2mC8IU09';
+/* PG_STRIPE_LINK IS GONE ON PURPOSE. It used to hold a SECOND Stripe payment
+   link (cNi00ifmaaeNePk2mC8IU09), different from the one index.html uses, and
+   this gate linked straight to it — skipping the ARL consent modal entirely.
+
+   Two problems, both made unacceptable by the 7-day free trial:
+
+   1. Two links, one product. Whichever link lacks trial_period_days charges its
+      customers on day 1. Customers arriving through the paywall would have been
+      billed immediately while the landing page promised them a free week.
+   2. No consent record. California's ARL requires express affirmative consent to
+      the auto-renewal terms, retained as a record, and a free trial that
+      auto-converts to a paid subscription is exactly the case the statute is
+      written about. This path collected none: it went user -> Stripe with no
+      billing_consents row, so a paywall signup produced a charge with no
+      evidence the terms were ever shown.
+
+   Checkout now routes back through index.html#subscribe, which is the one place
+   that shows the terms, records the consent, and only then hands off to Stripe.
+   Do not reintroduce a payment link here. */
 var PG_SUPPORT='support@edgedesksports.com';
 var PG_POLL_MS=2500, PG_POLL_MAX=24;      /* ~60s of webhook grace */
 
@@ -10459,13 +10513,20 @@ function pgHide(){
   document.body.style.overflow='';
 }
 
-function pgCheckoutURL(){
-  var u=(typeof edUser==='function')?edUser():null;
-  var url=PG_STRIPE_LINK;
-  if(u&&u.id)url+='?client_reference_id='+encodeURIComponent(u.id);
-  if(u&&u.email)url+=(url.indexOf('?')>0?'&':'?')+'prefilled_email='+encodeURIComponent(u.email);
-  return url;
+/* Hand off to the consent flow, not to Stripe. index.html owns the ARL terms,
+   the affirmative-consent checkbox and the billing_consents write; it appends
+   client_reference_id and prefilled_email itself from the same session this page
+   is using, so nothing is lost by going through it.
+
+   The pending flag is what makes it one click instead of two: index.html's boot
+   reads it and opens the consent modal on arrival. Same origin, so this write is
+   visible there. If localStorage is unavailable the link still works — the
+   visitor lands on the pricing card and taps the trial button. */
+function pgStartTrial(){
+  try{localStorage.setItem('edgedesk_pending_sub','1');}catch(_){}
+  return true;
 }
+function pgCheckoutURL(){ return './index.html#subscribe'; }
 
 function pgLockedHTML(note){
   var u=(typeof edUser==='function')?edUser():null;
@@ -10474,32 +10535,45 @@ function pgLockedHTML(note){
   var canceled=!!(s&&s.status==='canceled');
   var head=failed?'Your payment didn\u2019t go through'
           :canceled?'Your subscription has ended'
-          :'Your subscription isn\u2019t active';
+          :'Your terminal isn\u2019t open yet';
   var body=failed?'We kept your access open while the card was retried, but the payment never cleared.'
           :canceled?'Your subscription was cancelled, so the terminal is closed. You can restart it any time.'
-          :'You\u2019re signed in'+(u&&u.email?' as <b>'+stEsc(u.email)+'</b>':'')+', but the terminal needs an active subscription. This is a locked board, not an empty one.';
+          :'You\u2019re signed in'+(u&&u.email?' as <b>'+stEsc(u.email)+'</b>':'')+', but the terminal opens on a subscription. The first seven days are free and you can cancel before then without being charged.';
+  /* Someone who already had a trial or a subscription is not being offered a new
+     free week here, and the button should not imply otherwise. Stripe decides
+     eligibility (one trial per customer); this only decides what the copy says. */
+  var returning=failed||canceled;
+  var cta=returning?'Restart subscription':'Start 7-day free trial';
   return '<h1 class="pg-h">'+head+'</h1>'+
     '<p class="pg-p">'+body+'</p>'+
     (note?'<div class="pg-status">'+note+'</div>':'')+
-    '<div class="pg-price"><span class="n">'+SUB_PRICE_DISPLAY+'</span><span class="per">per month, cancel anytime</span></div>'+
+    (returning
+      ? '<div class="pg-price"><span class="n">'+SUB_PRICE_DISPLAY+'</span><span class="per">per month, cancel anytime</span></div>'
+      : '<div class="pg-price"><span class="n">$0</span><span class="per">for 7 days, then '+SUB_PRICE_DISPLAY+'/mo &middot; cancel anytime</span></div>')+
     '<ul class="pg-list">'+
       '<li>Live edges priced against a de-vigged Pinnacle fair line</li>'+
       '<li>Full research receipt behind every signal</li>'+
       '<li>CLV grading on anything you log, entry price vs closing fair</li>'+
       '<li>MLB, WNBA, UFC and CFB boards</li>'+
     '</ul>'+
-    '<a class="pg-btn" href="'+pgCheckoutURL()+'">Subscribe \u2014 '+SUB_PRICE_DISPLAY+'/mo</a>'+
+    '<a class="pg-btn" href="'+pgCheckoutURL()+'" onclick="return pgStartTrial()">'+cta+'</a>'+
     '<button class="pg-btn ghost" onclick="pgRecheck()">I already paid \u2014 check again</button>'+
     '<button class="pg-btn ghost" onclick="edSignOut()">Sign out</button>'+
     '<div class="pg-msg mut" id="pgMsg"></div>'+
-    '<div class="pg-foot">Billed monthly by Rackler Tech Ventures LLC. Renews automatically until cancelled. '+
+    '<div class="pg-foot">'+
+      (returning?'':'Free for 7 days, then ')+'billed monthly at '+SUB_PRICE_DISPLAY+' by Rackler Tech Ventures LLC. '+
+      (returning?'':'Your card is not charged during the trial. ')+
+      'Renews automatically until cancelled; cancel any time from Settings &rsaquo; Subscription. '+
       'Questions or cancellation: <a href="mailto:'+PG_SUPPORT+'">'+PG_SUPPORT+'</a><br>'+
-      'Research tool only, not betting advice. 21+.</div>';
+      'Research tool only, not betting advice. No guarantee of profit or result. 21+.</div>';
 }
 
 function pgPendingHTML(n){
-  return '<h1 class="pg-h"><span class="pg-spin"></span>Confirming your payment</h1>'+
-    '<p class="pg-p">Stripe has your payment. We\u2019re waiting for it to reach your account, which usually takes a few seconds.</p>'+
+  /* "Confirming your payment" was wrong the moment a trial existed: nothing was
+     charged. Stripe has the card and has opened the subscription in `trialing`;
+     what we are waiting on is the webhook, not a payment. */
+  return '<h1 class="pg-h"><span class="pg-spin"></span>Opening your terminal</h1>'+
+    '<p class="pg-p">Stripe has your details and your free trial has started. We\u2019re waiting for it to reach your account, which usually takes a few seconds.</p>'+
     '<div class="pg-status">Checked '+n+' of '+PG_POLL_MAX+' times. Leave this page open.</div>'+
     '<div class="pg-msg mut" id="pgMsg"></div>';
 }
@@ -10536,7 +10610,7 @@ async function pgPollForSub(){
     }
     await new Promise(function(r){setTimeout(r,PG_POLL_MS);});
   }
-  pgShow(pgLockedHTML('We didn\u2019t see the subscription land after a minute of checking. If you completed checkout, your payment is safe \u2014 email <a href="mailto:'+PG_SUPPORT+'">'+PG_SUPPORT+'</a> with the email you paid with and access will be turned on manually.'));
+  pgShow(pgLockedHTML('We didn\u2019t see the subscription land after a minute of checking. If you completed checkout, nothing is lost and you have not been charged \u2014 email <a href="mailto:'+PG_SUPPORT+'">'+PG_SUPPORT+'</a> with the email you signed up with and access will be turned on manually.'));
   return false;
 }
 
