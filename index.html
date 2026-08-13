@@ -311,6 +311,34 @@ input[type=range].edge:active::-webkit-slider-thumb{cursor:grabbing}
 .notbuy .nb-close b{color:var(--text);font-weight:600}
 .pcommit{font-family:'Space Grotesk',sans-serif;font-size:15px;font-weight:500;color:var(--dim);line-height:1.5;margin:14px 0 18px;padding-left:13px;border-left:2px solid var(--line2)}
 .pcommit b{color:var(--text);font-weight:600}
+/* the price reveal: recap the loop the visitor just walked, then the number */
+.justsaw{font-family:'JetBrains Mono',monospace;font-size:11.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim);margin-top:16px}
+.pchain{display:flex;flex-wrap:wrap;margin:15px 0 4px;font-family:'JetBrains Mono',monospace;font-size:11.5px;font-weight:600;letter-spacing:.15em;text-transform:uppercase;color:var(--obs)}
+.pchain span{padding:4px 15px;position:relative}
+.pchain span:first-child{padding-left:0}
+.pchain span+span::before{content:"\2192";position:absolute;left:-1px;color:var(--line2)}
+/* guarantee mechanics — the measurement stated before anyone pays */
+.gmech{margin-top:18px;border-top:1px solid rgba(63,184,131,.25);padding-top:16px;display:grid;gap:11px}
+.gm{display:grid;grid-template-columns:140px 1fr;gap:15px;align-items:baseline}
+@media(max-width:620px){.gm{grid-template-columns:1fr;gap:3px}}
+.gm .gk{font-family:'JetBrains Mono',monospace;font-size:9.5px;letter-spacing:.11em;text-transform:uppercase;color:var(--val);font-weight:700}
+.gm .gv{font-size:13px;color:var(--dim);line-height:1.6}
+.gm .gv b{color:var(--text);font-weight:600}
+.lnk{color:var(--obs);border-bottom:1px solid rgba(92,157,255,.45)}
+.lnk:hover{border-bottom-color:var(--obs)}
+/* public record status board */
+#proofInner{padding:0}
+.rf{padding:13px 16px;display:grid;grid-template-columns:132px 1fr;gap:15px;align-items:center;border-bottom:1px solid var(--line)}
+.rf:last-child{border-bottom:none}
+@media(max-width:560px){.rf{grid-template-columns:1fr;gap:5px}}
+.rf .rk{font-family:'JetBrains Mono',monospace;font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--faint)}
+.rf .rv2{display:block;font-family:'JetBrains Mono',monospace;font-size:12.5px;font-weight:700;letter-spacing:.05em;color:var(--text)}
+.rf .rv2.warnc{color:var(--est)}
+.rf .rv2.okc{color:var(--val)}
+.rf .rsub{display:block;font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--faint);letter-spacing:.03em;margin-top:4px;line-height:1.5}
+.seg{display:flex;gap:2px;margin-bottom:5px}
+.seg i{flex:1;height:10px;background:var(--cell);border:1px solid var(--line2);border-radius:1px}
+.seg i.on{background:var(--obs);border-color:var(--obs)}
 
 /* ---------- thesis attack ---------- */
 .atk{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:42px;align-items:start}
@@ -1064,20 +1092,24 @@ footer{border-top:1px solid var(--line);background:#0a0c10;padding:38px 0 48px}
   <div class="wrap">
     <div class="head rv">
       <span class="ey">The public record</span>
-      <h2>The record is public, and it is young.</h2>
-      <p>Every flagged edge is stored and graded against the closing line automatically, whether it makes EdgeDesk look good or not. This is the live state of that record, read straight from the database. It is not curated and it does not reset.</p>
+      <h2>We're not hiding the early record. We're building it in public.</h2>
+      <p>Every flagged edge is stored and graded against the closing line automatically, whether it makes EdgeDesk look good or not. Below is the live state of that record, read straight from the database. The methodology is published now, before the numbers are flattering, so it can't be chosen later to fit them.</p>
     </div>
     <div class="record-cols">
       <div class="ledger rv">
         <div class="ledger-hd"><span class="dot"></span> Live &middot; auto-graded &middot; unedited</div>
         <div id="proofInner">
-          <div class="lnote" style="padding-top:0">Loading the live record&hellip;</div>
+          <div class="rf"><span class="rk">Status</span><span class="rv2">Reading the record&hellip;</span></div>
         </div>
       </div>
       <div class="rside rv">
-        <p><b>Why show an unfinished record?</b> Because the alternative is a screenshot, and you have seen a thousand of those. A small sample proves nothing yet, and saying so is the whole point.</p>
-        <p>Grading happens on a schedule after each close. Nothing is entered by hand, nothing is removed after the fact, and losing periods stay in the sample.</p>
-        <p><b>This is also why the price is where it is.</b> You are being asked to back the proof before it's finished, and you are compensated for that with a rate that never rises.</p>
+        <p><b>Why show an unfinished record?</b> Because the alternative is a screenshot, and you have seen a thousand of those. A small sample proves nothing yet, and saying so out loud is the whole point.</p>
+        <p>Grading runs on a schedule after each close. Nothing is entered by hand, nothing is removed after the fact, and losing stretches stay in the sample. If the number is negative, the number is negative.</p>
+        <p><b>This is also why the price is where it is.</b> You are backing the proof before it is finished, and you are compensated for that with a rate that never rises.</p>
+        <div class="cta" style="margin-top:22px">
+          <a class="btn ghost" href="/record.html">Open the public record &rarr;</a>
+        </div>
+        <p style="font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--faint);letter-spacing:.03em;margin-top:12px">No account. No login. Not behind the paywall.</p>
       </div>
     </div>
   </div>
@@ -1088,8 +1120,10 @@ footer{border-top:1px solid var(--line);background:#0a0c10;padding:38px 0 48px}
   <div class="wrap">
     <div class="head rv">
       <span class="ey">Access</span>
-      <h2>One terminal. One price.</h2>
-      <p>You have now been through the loop: the board narrowing, the packet assembling, the thesis getting attacked, the price where the answer flips. Here is what that costs and, more importantly, what it is.</p>
+      <p class="justsaw">You just saw the process.</p>
+      <div class="pchain"><span>Board</span><span>Signal</span><span>Research</span><span>Attack</span><span>Price</span><span>Track</span></div>
+      <h2>That's EdgeDesk.</h2>
+      <p>Not because information is expensive. <b>Because the work of finding, evaluating, challenging and tracking a number is expensive</b> &mdash; and it is the same work, every night, whether or not anything on the board was worth it.</p>
     </div>
 
     <div class="buying">
@@ -1123,7 +1157,7 @@ footer{border-top:1px solid var(--line);background:#0a0c10;padding:38px 0 48px}
         <span id="subscribe"></span>
         <div class="ptag">Research terminal</div>
         <div class="pprice"><span class="pamt">$79.99</span><span class="pper">/ month</span></div>
-        <p class="pren">Founding rate, locked for the life of your subscription. Cancel anytime from Settings &rsaquo; Subscription.</p>
+        <p class="pren"><b style="color:var(--val)">Founding rate.</b> The price is intentionally set while EdgeDesk builds the public record. <b style="color:var(--text)">Founding subscribers lock their rate for life.</b> Cancel anytime from Settings &rsaquo; Subscription.</p>
         <p class="pcommit">The price is the commitment to the process, <b>not a promise of profit.</b></p>
         <button class="btn primary lg authbtn" id="subBtn" onclick="startSubscribe()">Get access</button>
         <p class="psub">21+ &middot; research tool, not betting advice &middot; 1-800-GAMBLER</p>
@@ -1131,9 +1165,16 @@ footer{border-top:1px solid var(--line);background:#0a0c10;padding:38px 0 48px}
 
       <div>
         <div class="guar rv">
-          <div class="gh"><span class="dot"></span> The guarantee</div>
-          <p class="gq">If EdgeDesk's flagged edges don't beat the closing line over your first 30 days, the month is free.</p>
-          <p class="gd">Not a winning-record guarantee &mdash; nobody honest can offer you that. This is the one claim EdgeDesk can actually be held to, because <b>beating the close is measured before any game finishes</b>, graded automatically, and published whether it goes well or badly. If the thing this product exists to do doesn't happen, you don't pay for it.</p>
+          <div class="gh"><span class="dot"></span> 30-day CLV guarantee</div>
+          <p class="gq">If EdgeDesk's flagged edges don't beat the closing line over your first 30 days, the month is refunded.</p>
+          <p class="gd">Not a winning-record guarantee &mdash; nobody honest can offer you that. This is the one claim EdgeDesk can be held to, because <b>beating the close is measured before any game finishes</b>. So that you are not taking our word for any part of it, here is exactly what gets measured, and where you can watch it happen.</p>
+          <div class="gmech">
+            <div class="gm"><span class="gk">What's measured</span><span class="gv">The average closing line value across <b>every edge EdgeDesk flags</b> during your first 30 days. Our numbers, not your bets &mdash; you don't have to place anything for this to be measurable.</span></div>
+            <div class="gm"><span class="gk">How</span><span class="gv">The same calculation that runs the public record: the price we flagged against the number the market settled on. It grades itself after each close, with no edit step between the pipeline and the page. <a class="lnk" href="/record.html">Read the methodology &rarr;</a></span></div>
+            <div class="gm"><span class="gk">What fails it</span><span class="gv"><b>Average CLV at or below zero</b> over those 30 days. One line, one direction, decided before you subscribe rather than after you complain.</span></div>
+            <div class="gm"><span class="gk">Where you check</span><span class="gv">The <a class="lnk" href="/record.html">public record</a> &mdash; no account, no login, no paywall. The number is visible to you before you ever have to ask us for anything.</span></div>
+            <div class="gm"><span class="gk">How to claim</span><span class="gv">Email <a class="lnk" href="mailto:support@edgedesksports.com">support@edgedesksports.com</a> and your first month is refunded. There is nothing to argue about: the measurement is already public.</span></div>
+          </div>
         </div>
 
         <div class="three rv">
@@ -1155,9 +1196,8 @@ footer{border-top:1px solid var(--line);background:#0a0c10;padding:38px 0 48px}
         </div>
 
         <div class="founding rv">
-          <h4><span class="pv est">Founding rate</span> Why $79.99, honestly</h4>
-          <p>The price is low right now <b>because the record is young</b>. You are backing the proof before it's finished, and the rate reflects that.</p>
-          <p>Founders lock this number <b>for the life of the subscription</b>. As the graded sample matures and the record can stand on its own, the rate rises for everyone who comes after. There is no countdown timer here and no fake scarcity &mdash; the rate moves when the evidence does.</p>
+          <h4><span class="pv est">Founding rate</span> Why the number moves later</h4>
+          <p>As the graded sample matures and the record can stand on its own, the rate rises &mdash; for everyone who comes after you, never for you. <b>There is no countdown timer here and no invented scarcity.</b> The rate moves when the evidence does, which is the only honest reason a price should move.</p>
         </div>
 
         <div class="never rv">
@@ -1212,7 +1252,7 @@ footer{border-top:1px solid var(--line);background:#0a0c10;padding:38px 0 48px}
     <p class="ld" id="arlWho"></p>
     <div class="arl">
       <div class="arl-h">AUTOMATIC RENEWAL TERMS</div>
-      <p id="arlTerms"><b>EdgeDesk Research Terminal &mdash; $79.99 per month (founding rate).</b> Your subscription starts today and <b>renews automatically every month at $79.99</b> until you cancel. This founding rate is locked for the life of your subscription and will not increase. You will be charged on the same day each month. <b>You can cancel at any time</b> from Settings &rsaquo; Subscription inside the app, or by emailing <a href="mailto:support@edgedesksports.com">support@edgedesksports.com</a> &mdash; cancellation takes effect at the end of your current billing period and stops all future charges. No refunds are issued for the current period.</p>
+      <p id="arlTerms"><b>EdgeDesk Research Terminal &mdash; $79.99 per month (founding rate).</b> Your subscription starts today and <b>renews automatically every month at $79.99</b> until you cancel. This founding rate is locked for the life of your subscription and will not increase. You will be charged on the same day each month. <b>You can cancel at any time</b> from Settings &rsaquo; Subscription inside the app, or by emailing <a href="mailto:support@edgedesksports.com">support@edgedesksports.com</a> &mdash; cancellation takes effect at the end of your current billing period and stops all future charges. Fees already charged are non-refundable, <b>except under the 30-Day CLV Guarantee</b>: if the edges EdgeDesk flags during your first 30 days do not beat the closing line on average, measured by the methodology published at edgedesksports.com/record.html, your first month is refunded on request to support@edgedesksports.com.</p>
       <label class="arl-row">
         <input type="checkbox" id="arlAgree">
         <span>I have read and <b>expressly agree to these automatic renewal terms</b>, including the recurring $79.99 monthly charge until I cancel.</span>
@@ -1277,11 +1317,21 @@ async function loadLiveProof(){
     var gate={total_graded:0,show_publicly:false,threshold:200};
     try{ var g=(await sbGet('public_proof_gate?select=*'))[0]; if(g)gate=g; }catch(_g){}
     if(!gate.show_publicly){
+      /* Status board. Every field below is a real read or a standing fact:
+         the counts come from the gate view, the methodology is public at
+         /record.html with no login, and grading runs after each close. */
       var pct=Math.min(100,Math.round((gate.total_graded/gate.threshold)*100));
-      inner.innerHTML='<div style="font-family:JetBrains Mono,monospace;font-size:12px;color:var(--warn);font-weight:700;letter-spacing:.04em">BUILDING THE RECORD</div>'+
-        '<div style="font-family:JetBrains Mono,monospace;font-size:22px;font-weight:700;margin-top:8px">'+gate.total_graded+' <span style="color:var(--faint);font-size:14px">/ '+gate.threshold+' graded</span></div>'+
-        '<div class="pbar"><i style="width:'+pct+'%"></i></div>'+
-        '<div style="font-size:12px;color:var(--dim);line-height:1.55;margin-top:6px">Every flagged bet and model call is saved and graded automatically against what really happened. The full public record unlocks here once the sample is large enough to actually prove something. It fills in on its own. No cherry-picking, no reset.</div>';
+      var SEGS=20, lit=Math.round((pct/100)*SEGS), seg='';
+      for(var s=0;s<SEGS;s++) seg+='<i'+(s<lit?' class="on"':'')+'></i>';
+      inner.innerHTML=
+        '<div class="rf"><span class="rk">Status</span><span class="rv2 warnc">BUILDING THE RECORD</span></div>'+
+        '<div class="rf"><span class="rk">Qualifying sample</span><span><span class="seg" aria-hidden="true">'+seg+'</span>'+
+          '<span class="rv2">'+gate.total_graded+' <span style="color:var(--faint);font-weight:400">/ '+gate.threshold+' graded</span></span>'+
+          '<span class="rsub">The full record opens here once the sample is large enough to prove anything.</span></span></div>'+
+        '<div class="rf"><span class="rk">Methodology</span><span><span class="rv2 okc">PUBLIC</span>'+
+          '<span class="rsub"><a class="lnk" href="/record.html">Published in full &rarr;</a> &middot; no account required</span></span></div>'+
+        '<div class="rf"><span class="rk">Results</span><span><span class="rv2">UPDATING AS EDGES CLOSE</span>'+
+          '<span class="rsub">Graded automatically after each close. No cherry-picking, no reset, no edit step.</span></span></div>';
       return;
     }
     // CLV
@@ -1307,9 +1357,12 @@ async function loadLiveProof(){
       if(calib.length||brier.length){calHtml='<div style="padding:14px 0 0;margin-top:14px;border-top:1px solid var(--border)"><div style="font-family:JetBrains Mono,monospace;font-size:10px;color:var(--dim);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">Calibration · model said vs happened</div>'+reliaMini(calib)+
         (brier.length?'<div style="font-family:JetBrains Mono,monospace;font-size:11px;color:var(--faint);text-align:center">'+brier.map(function(b){return esc(b.sport)+' Brier '+(+b.brier).toFixed(3);}).join(' · ')+'</div>':'')+'</div>';}
     }catch(e){}
-    inner.innerHTML=clvHtml+calHtml||'<div class="lnote" style="padding-top:0">Record is live but empty right now. It fills as bets grade.</div>';
+    /* #proofInner is unpadded so the status-board rows can run full-bleed;
+       the open-record branch supplies its own padding. */
+    inner.innerHTML='<div style="padding:16px">'+(clvHtml+calHtml||
+      '<div class="lnote" style="padding-top:0">Record is live but empty right now. It fills as edges grade.</div>')+'</div>';
   }catch(e){
-    inner.innerHTML='<div class="lnote" style="padding-top:0">Couldn’t reach the live record just now.</div>';
+    inner.innerHTML='<div style="padding:16px"><div class="lnote" style="padding-top:0">Couldn’t reach the live record just now. It is public either way &mdash; <a class="lnk" href="/record.html">open it directly</a>.</div></div>';
   }
 }
 function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
@@ -1335,7 +1388,11 @@ var STRIPE_LINK="https://buy.stripe.com/fZufZggqeev36iOf9o8IU0b";
    not a cosmetic one. */
 var PRICE_DISPLAY="$79.99";
 var BILLING_PERIOD="month";
-var CONSENT_VERSION="arl-2026-08-v2-founding";
+/* Bumped from v2: the displayed renewal terms now carry the 30-Day CLV
+   Guarantee carve-out to the non-refundable clause. billing_consents stores
+   the exact offer_text shown, so old records stay accurate on their own terms;
+   the version string is what distinguishes which text a user actually saw. */
+var CONSENT_VERSION="arl-2026-08-v3-clv-guarantee";
 
 function edSession(){try{return JSON.parse(localStorage.getItem('edgedesk_session')||'null');}catch(e){return null;}}
 function edUserFromSession(){
