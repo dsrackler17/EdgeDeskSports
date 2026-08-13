@@ -12547,7 +12547,7 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
 <div id="edaiPanel" role="dialog" aria-label="EdgeDesk Intelligence">
   <div class="edai-top">
     <span class="edai-dot"></span>
-    <div class="edai-brand"><b>EdgeDesk Intelligence</b><span>Your AI betting research analyst</span></div>
+    <div class="edai-brand"><b>EdgeDesk Intelligence</b><span>Your market research analyst</span></div>
     <button class="edai-x" onclick="EDAI.close()" aria-label="Close">&times;</button>
   </div>
   <div class="edai-loaded hide" id="edaiLoaded">
@@ -13390,12 +13390,12 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
       verdict='PASS';
       why = (detEdge!=null && detEdge>=FLOOR)
         ? 'The edge existed at detection ('+amStr(detAm)+') but the current price has moved to '+amStr(curAm)+', pulling EV below the '+pctAbs(FLOOR,1)+' floor.'
-        : 'Current price is below fair — negative-to-marginal EV at the best number. Research only, not a play.';
+        : 'Current price is below fair — negative-to-marginal EV at the best number. Research only; the number does not qualify.';
     } else {
       if(!tr && nb<4){ verdict='PASS'; why='Best price is offshore and only '+nb+' book'+(nb===1?'':'s')+' quote the fair line — structurally too thin to trust.'; }
       else if(staleM>=STALE_MIN){ verdict='PASS'; why='Last re-priced '+Math.round(staleM)+'m ago. Treat as stale until capture confirms it is still live.'; }
       else if(curEdge>=0.03 && tr && nb>=5 && sharp){ verdict='BET'; why='Clears the bar with real liquidity: '+pct(curEdge)+' at a US-regulated book, sharp-confirmed.'; }
-      else { verdict='LEAN'; why='Positive and playable, but with caveats worth pricing in before you fire.'; }
+      else { verdict='LEAN'; why='Positive and qualifying, but with caveats worth weighing in the research.'; }
     }
 
     // reasons (all from owned data)
@@ -13404,7 +13404,7 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
     if(tr) reasonsFor.push('best price is at a US-regulated book');
     if(nb>=5) reasonsFor.push(nb+' books behind the fair line');
     if(corr>=1) reasonsFor.push('corroborated across '+corr+' sharp level'+(corr===1?'':'s'));
-    if(graded && beat===true && clv!=null) reasonsFor.push('this bet beat the close (CLV '+pct(clv)+')');
+    if(graded && beat===true && clv!=null) reasonsFor.push('this signal beat the close (CLV '+pct(clv)+')');
 
     if(!tr) reasonsAgainst.push('best price is offshore — structurally less trustworthy');
     if(nb<4) reasonsAgainst.push('only '+nb+' book'+(nb===1?'':'s')+' quoting the fair line');
@@ -13413,7 +13413,7 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
     if(curEdge>0.06) reasonsAgainst.push('edge this large on a game line is often a stale/erroneous price — confirm before trusting');
     if(remaining!=null && remaining<0.5 && detEdge>0) reasonsAgainst.push('over half the detection edge has already decayed ('+(remaining*100).toFixed(0)+'% remains)');
     if(!sharp) reasonsAgainst.push('no sharp (Pinnacle) confirmation on this exact side');
-    if(graded && beat===false) reasonsAgainst.push('this bet failed to beat the close (CLV '+pct(clv)+') — placement value is not closing value');
+    if(graded && beat===false) reasonsAgainst.push('this signal failed to beat the close (CLV '+pct(clv)+') — entry value is not closing value');
     if(e.sport_key==='baseball_mlb') reasonsAgainst.push('MLB caveat: lineups are probable, not confirmed; bullpen shows flagged arms only');
 
     /* ---- WAIT layer: missing / stale / unconfirmed info is NOT a PASS (owned fields only) ----
@@ -13425,9 +13425,9 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
         (!e.__mlb.away_pitcher_name || !e.__mlb.home_pitcher_name);
     var isWait=false, waitWhy=null;
     if(curEdge==null){
-      isWait=true; waitWhy='No fair price is on file yet, so there is nothing to judge this number against. This is "cannot evaluate", not "bad bet".';
+      isWait=true; waitWhy='No fair price is on file yet, so there is nothing to judge this number against. This is "cannot evaluate", not a rejected signal.';
     } else if(curEdge>=FLOOR && staleM>=STALE_MIN){
-      isWait=true; waitWhy='Playable on the last number, but it was captured '+Math.round(staleM)+'m ago. Hold until a fresh capture confirms the price is still live.';
+      isWait=true; waitWhy='Qualified on the last number, but it was captured '+Math.round(staleM)+'m ago. Unconfirmed until a fresh capture verifies the price is still live.';
     } else if(curEdge>=FLOOR && mlbUnknownStarter){
       isWait=true; waitWhy='A probable starter is still missing for this game. Pitching is the single largest input in a baseball number — wait for the card to fill in.';
     }
@@ -13498,6 +13498,10 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
 
   /* ======================= RENDERERS ======================= */
   function vClass(v){ return v==='BET'?'v-bet':v==='LEAN'?'v-lean':v==='WAIT'?'v-wait':'v-pass'; }
+  /* Presentation-layer verdict labels. Internal enums (BET/LEAN/WAIT/PASS) are a
+     data contract shared with the engine, packets, and history — never change them.
+     Only what the user reads goes through vLabel(). */
+  function vLabel(v){ return v==='BET'?'STRONG SIGNAL':v==='NO BET'?'NO SIGNAL':(v||'—'); }
   function confBadge(x){ var c=(x.confidence||'').toLowerCase(); return '<span class="edai-conf '+c+'" title="Confidence is the weakest important piece of evidence, not an average.">CONF '+esc(x.confidence||'—')+'</span>'; }
   function flipHTML(x){
     if(!x.falsifiers||!x.falsifiers.length) return '';
@@ -13523,7 +13527,7 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
     var implication = x.isWait
       ? 'The number cannot be judged as current/complete yet — treat as pending, not rejected.'
       : (x.dverdict==='PASS'
-          ? 'The price no longer supports the position; this is a good non-bet.'
+          ? 'The price no longer supports the position; the pass is justified.'
           : 'The edge survives price, confirmation and freshness checks at the current number.');
     function row(k,v){ return '<div class="tr"><div class="tk">'+k+'</div><div class="tv">'+v+'</div></div>'; }
     function li(arr){ return arr.map(function(s){return '<span class="s">\u2022 '+esc(s)+'</span>';}).join('<br>'); }
@@ -13532,7 +13536,7 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
       + row('Found', li(found))
       + row('Conflicts', li(conflicts))
       + row('Implication', esc(implication))
-      + row('Decision', '<b>'+x.dverdict+'</b> \u00b7 confidence '+esc(x.confidence))
+      + row('Decision', '<b>'+vLabel(x.dverdict)+'</b> \u00b7 confidence '+esc(x.confidence))
       + '</div>';
   }
 
@@ -13547,7 +13551,7 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
            + '<span class="val">'+Math.round(c.v)+'/'+c.max+'</span></div>';
     }).join('');
     return '<div class="edai-card">'
-      + '<div class="edai-vhead"><span class="edai-verdict '+vClass(x.dverdict)+'">'+x.dverdict+'</span>'
+      + '<div class="edai-vhead"><span class="edai-verdict '+vClass(x.dverdict)+'">'+vLabel(x.dverdict)+'</span>'
       +   '<div><div class="edai-vsel">'+x.sel+'</div><div class="edai-vsub">'+esc(x.market)+' · '+amStr(x.curAm)+' · '+esc(x.book||'')+'</div></div>'
       +   confBadge(x)+'</div>'
       + (x.isWait? '<div class="edai-waitbar"><b>WAIT \u00b7 signal pending.</b> '+esc(x.waitWhy)+'</div>' : '')
@@ -13564,8 +13568,8 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
       + '<div class="edai-win">'
       +   '<div class="w"><div class="k">Best seen</div><div class="v">'+amStr(x.bestAm)+'</div></div>'
       +   '<div class="w"><div class="k">Current</div><div class="v">'+amStr(x.curAm)+'</div></div>'
-      +   '<div class="w"><div class="k">Max playable</div><div class="v">'+amStr(x.maxAm)+'</div></div></div>'
-      + '<div class="edai-winstat '+winStat+'">'+(winStat==='play'?'● PLAYABLE at the current number':'○ MISSED — current price is past the floor')+'</div>'
+      +   '<div class="w"><div class="k">Price threshold</div><div class="v">'+amStr(x.maxAm)+'</div></div></div>'
+      + '<div class="edai-winstat '+winStat+'">'+(winStat==='play'?'● QUALIFIES at the current number':'○ MISSED — current price is past the floor')+'</div>'
       + '<div class="edai-score"><div class="sh"><span class="num">'+x.score+'</span><span class="band">'+x.band+'</span>'
       +   '<span class="xp" title="Not a CLV-validated model. A transparent readout of the components below.">experimental</span></div>'
       +   '<div class="edai-comp">'+comps+'</div></div>'
@@ -13577,7 +13581,7 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
       + (window.ED_COVERAGE?ED_COVERAGE.snapshotBlock(x.e):'')
       + flipHTML(x)
       + '<div class="edai-note"><b style="color:var(--text)">Price sensitivity:</b> break-even at '+amStr(x.breakevenAm)
-        + ', playable to '+amStr(x.toPlayAm)+'. '
+        + ', qualifies to '+amStr(x.toPlayAm)+'. '
         + (x.needsPriceForEv!=null
             ? 'At '+amStr(x.curAm)+' this is below the floor — it only becomes a bet again at '+amStr(x.needsPriceForEv)+' or better.'
             : 'Past '+amStr(x.toPlayAm)+' you are betting the team, not the price.')
@@ -13592,11 +13596,11 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
     var p=[];
     if(mode==='challenge'){
       p.push('<p><b>Challenge — the case against '+x.sel+'.</b> I am arguing to talk you off this, on purpose.</p>');
-      var ag = x.reasonsAgainst.length?x.reasonsAgainst:['nothing structural stands out, which is itself a reason to size conservatively rather than press'];
+      var ag = x.reasonsAgainst.length?x.reasonsAgainst:['nothing structural stands out, which is itself worth treating with suspicion rather than as confirmation'];
       p.push(list(ag,'neg'));
       p.push('<p>'+ (x.verdict==='PASS'
-        ? 'The numbers already say PASS, so the burden is on the bet, not the fade.'
-        : 'None of this necessarily kills it, but confirmation bias is the enemy. If you would not take '+amStr(x.maxAm)+', you are betting the team, not the price.') +'</p>');
+        ? 'The numbers already say PASS, so the burden of proof is on the position, not the fade.'
+        : 'None of this necessarily kills it, but confirmation bias is the enemy. Past '+amStr(x.maxAm)+' the price no longer carries the thesis — beyond that number the case rests on the team, not the price.') +'</p>');
       return p.join('');
     }
     if(mode==='whatchanged'){
@@ -13628,17 +13632,17 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
       return p.join('');
     }
     if(mode==='price'){
-      p.push('<p><b>At what price does this stop being a bet?</b></p>');
+      p.push('<p><b>At what price does this stop qualifying?</b></p>');
       var pr=[
         {t:'Break-even (fair): '+amStr(x.breakevenAm),k:''},
-        {t:'Playable to: '+amStr(x.toPlayAm)+' — EV hits the '+pctAbs(FLOOR,1)+' floor at this number',k:''},
+        {t:'Qualifies to: '+amStr(x.toPlayAm)+' — EV hits the '+pctAbs(FLOOR,1)+' floor at this number',k:''},
         {t:'Current: '+amStr(x.curAm)+' — '+((x.curEdge!=null&&x.curEdge>=FLOOR)?'inside the window':'past the window'),k:((x.curEdge!=null&&x.curEdge>=FLOOR)?'pos':'neg')}
       ];
-      if(x.needsPriceForEv!=null) pr.push({t:'To make it a bet again you need '+amStr(x.needsPriceForEv)+' or better',k:'warn'});
+      if(x.needsPriceForEv!=null) pr.push({t:'The signal would re-qualify at '+amStr(x.needsPriceForEv)+' or better',k:'warn'});
       p.push(list(pr));
       p.push('<p>'+(x.fairP==null
         ? 'Without a fair price on file I cannot set these numbers — that is exactly why the verdict is WAIT, not PASS.'
-        : 'Past '+amStr(x.toPlayAm)+' you are betting the team, not the price.')+'</p>');
+        : 'Past '+amStr(x.toPlayAm)+' the price no longer carries the thesis — beyond that number the case rests on the team, not the price.')+'</p>');
       return p.join('');
     }
     if(mode==='trace'){
@@ -13651,15 +13655,15 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
     // default: analyze / why
     p.push(x.isWait
       ? '<p><b>Verdict: WAIT.</b> '+esc(x.waitWhy)+'</p>'
-      : '<p><b>Verdict: '+x.dverdict+'.</b> '+esc(x.why)+'</p>');
+      : '<p><b>Verdict: '+vLabel(x.dverdict)+'.</b> '+esc(x.why)+'</p>');
     if(x.reasonsFor.length){ p.push('<p><b>Why I like it</b></p>'); p.push(list(x.reasonsFor,'pos')); }
     if(x.reasonsAgainst.length){ p.push('<p><b>Why I don\u2019t love it</b></p>'); p.push(list(x.reasonsAgainst,'warn')); }
     p.push('<p><b>What would flip this</b></p>'); p.push(list(x.falsifiers,'neg'));
     var bottom = x.isWait
-      ? 'Bottom line: hold at '+amStr(x.curAm)+'. This is not a pass — the information needed to decide is not in yet.'
+      ? 'Bottom line: undecided at '+amStr(x.curAm)+'. This is not a pass — the information needed to decide is not in yet.'
       : (x.dverdict==='PASS'
-          ? 'Bottom line: pass at '+amStr(x.curAm)+'. This is a good non-bet, not a missed one.'
-          : 'Bottom line: playable at '+amStr(x.curAm)+'. I would not chase it past '+amStr(x.toPlayAm)+'.');
+          ? 'Bottom line: pass at '+amStr(x.curAm)+'. The research says the pass is justified, not a missed opportunity.'
+          : 'Bottom line: the signal qualifies at '+amStr(x.curAm)+', and stops qualifying past '+amStr(x.toPlayAm)+'.');
     p.push('<p><b>'+esc(bottom)+'</b></p>');
     p.push('<p class="edai-src" style="border:none">Confidence '+esc(x.confidence)+' — set by the weakest important piece of evidence above, not an average.</p>');
     return p.join('');
@@ -14225,7 +14229,7 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
     ['Check my bet','checkbet',''],['Compare…','compare','']
   ];
   var ACTIONS_EMPTY=[
-    ['Daily scan','dailyscan','hot'],['Scan slate','scanslate',''],['Best bets today','bestbets',''],
+    ['Daily scan','dailyscan','hot'],['Scan slate','scanslate',''],['Strongest signals today','bestbets',''],
     ['Worst starters','worstpitchers',''],['Best matchups','bestmatchups',''],['Research first','researchfirst',''],
     ['Scout the board','scout',''],['Market vs model','marketvsmodel',''],
     ['Compare edges','compare',''],['How this works','help','']
@@ -14434,16 +14438,16 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
     var scored=cand.map(function(e){ var x=evidence(e); return {x:x,s:x.score}; })
                    .sort(function(a,b){return b.s-a.s;}).slice(0,6);
     thinking(false);
-    if(!scored.length){ push('a','<p>Nothing on the board clears the bar right now — no positive-edge, liquid, fresh signals in the window. That is a real answer: today is a no-play. I would rather show you an empty board than manufacture a bet.</p>'); return; }
+    if(!scored.length){ push('a','<p>Nothing on the board clears the bar right now — no positive-edge, liquid, fresh signals in the window. That is a real answer: nothing qualifies today. I would rather show you an empty board than manufacture a signal.</p>'); return; }
     var rows=scored.map(function(o,i){
       var x=o.x;
       return '<div class="edai-card" style="margin-bottom:8px"><div class="edai-vhead">'
-        + '<span class="edai-verdict '+vClass(x.verdict)+'">'+x.verdict+'</span>'
+        + '<span class="edai-verdict '+vClass(x.verdict)+'">'+vLabel(x.verdict)+'</span>'
         + '<div><div class="edai-vsel">'+x.sel+'</div><div class="edai-vsub">'+esc(x.sport)+' · '+amStr(x.curAm)+' · '+pct(x.curEdge)+' · score '+x.score+'</div></div>'
         + '<button class="edai-clear" style="margin-left:auto" onclick="EDAI.loadFrom('+i+')">open</button></div></div>';
     }).join('');
     window.__EDAI_BB=scored.map(function(o){return o.x.e;});
-    push('a','<p><b>Ranked by decision quality, not raw edge.</b> The biggest model number is not automatically the best bet — these balance edge, price survival, confirmation and data quality.</p>'+rows
+    push('a','<p><b>Ranked by decision quality, not raw edge.</b> The biggest model number is not automatically the strongest signal — these balance edge, price survival, confirmation and data quality.</p>'+rows
       +'<p class="edai-src" style="border:none;margin-top:2px">Deterministic ranking over live signals. Tap <b>open</b> to load one and go deeper.</p>');
   }
 
@@ -14459,13 +14463,13 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
     thinking(true);
     var xs=top.map(evidence);
     thinking(false);
-    var head='<tr><th style="text-align:left">Bet</th><th>Edge</th><th>EV</th><th>Conf.</th><th>Decision</th></tr>';
+    var head='<tr><th style="text-align:left">Signal</th><th>Edge</th><th>EV</th><th>Conf.</th><th>Decision</th></tr>';
     var body=xs.map(function(x){
       var conf=(x.sharp?'sharp':'no-sharp')+' · '+x.nb+'bk';
       return '<tr><td style="text-align:left">'+x.sel+' <span style="color:var(--faint)">'+amStr(x.curAm)+'</span></td>'
         +'<td class="mono">'+pct(x.curEdge)+'</td><td class="mono">'+(x.evNow==null?'—':pct(x.evNow))+'</td>'
         +'<td style="font-size:10px;color:var(--dim)">'+esc(conf)+'</td>'
-        +'<td><span class="edai-verdict '+vClass(x.verdict)+'" style="font-size:10px;padding:2px 6px">'+x.verdict+'</span></td></tr>';
+        +'<td><span class="edai-verdict '+vClass(x.verdict)+'" style="font-size:10px;padding:2px 6px">'+vLabel(x.verdict)+'</span></td></tr>';
     }).join('');
     // pick best-value, best-confirmed, best risk-adjusted
     var byEdge=xs.slice().sort(function(a,b){return b.curEdge-a.curEdge;})[0];
@@ -14505,11 +14509,11 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
       + cell('Your EV', myEv==null?'—':pct(myEv), evc)
       + cell('Fair price', amStr(x.fairAm),'dim')
       + cell('Your vs fair', vsFair==null?'—':(vsFair>0?'+':'')+Math.round(vsFair)+' cents', vsFair>=0?'pos':'neg')
-      + cell('Max playable', amStr(x.maxAm),'dim')
+      + cell('Price threshold', amStr(x.maxAm),'dim')
       +'</div>'
       +'<p style="font-size:12.5px;margin:9px 0 0;color:var(--text)"><b>'+ (ok?'Good number.':'Below the bar.') +'</b> '
       + (ok? 'At '+amStr(am)+' you are still '+pct(myEv)+' EV against the '+esc(x.fairSrc)+' — inside the '+pctAbs(FLOOR,1)+' floor.'
-           : 'At '+amStr(am)+' your EV is '+ (myEv==null?'unclear':pct(myEv)) +'. The fair price is '+amStr(x.fairAm)+'; past '+amStr(x.maxAm)+' this stops being a bet and becomes a lottery ticket.')
+           : 'At '+amStr(am)+' your EV is '+ (myEv==null?'unclear':pct(myEv)) +'. The fair price is '+amStr(x.fairAm)+'; past '+amStr(x.maxAm)+' the number no longer qualifies on EV.')
       +'</p>';
   }
 
@@ -14518,16 +14522,16 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
     push('a','<p><b>I am the interpretation layer, not the model.</b> EdgeDesk\u2019s pipeline owns the probabilities, fair prices, edges and CLV. I read those and help you decide.</p>'
       +'<p>What I do, all from owned data:</p>'
       +list([
-        'Analyze a number and give a BET / LEAN / WAIT / PASS with the math and a confidence read',
-        'At what price? — break-even, max playable, and the exact number that flips the decision',
+        'Analyze a number and give a STRONG SIGNAL / LEAN / WAIT / PASS with the math and a confidence read',
+        'At what price? — break-even, the price threshold, and the exact number that flips the decision',
         'Market read — is the move sharp confirmation or just the edge pricing out',
         'Edge decay — how much of the detection edge survives at the current price',
-        'Challenge / What would flip this — the case against the bet, from owned data, to kill confirmation bias',
+        'Challenge / What would flip this — the case against the position, from owned data, to kill confirmation bias',
         'Research packet — the full RESEARCHED / FOUND / CONFLICTS / IMPLICATION / DECISION trace',
         'Check my bet — grade your actual entry price against fair',
-        'Best bets — rank the board by decision quality, not raw edge'
+        'Strongest signals — rank the board by decision quality, not raw edge'
       ])
-      +'<p><b>WAIT is not PASS.</b> When a lineup, a starter, a fair price or a fresh capture is missing, I hold — I do not reject a bet for lack of information.</p>'
+      +'<p><b>WAIT is not PASS.</b> When a lineup, a starter, a fair price or a fresh capture is missing, I hold — I do not reject a position for lack of information.</p>'
       +'<p>I will never invent odds, injuries, stats or closing prices. If EdgeDesk doesn\u2019t have it, I say so. And a well-reasoned PASS is a successful answer.</p>');
   }
 
@@ -14688,7 +14692,7 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
     var top=games.slice(0,3), next=games.slice(3,6), rest=games.slice(6);
     var html='<div class="edai-card" style="padding:12px 12px 4px"><div class="edai-vsel" style="margin-bottom:2px">I\u2019ve scanned the board.</div>'
       +'<div class="edai-vsub">'+games.length+' game'+(games.length===1?'':'s')+' with signals · '
-      +priced+' with a positive edge · '+edges+' at BET'
+      +priced+' with a positive edge · '+edges+' at STRONG SIGNAL'
       +(leads.length?' · '+leads.length+' model lead'+(leads.length===1?'':'s'):'')+' · ranked by research priority, not raw edge.</div></div>';
     if(top.length){ html+=scanHead('Top opportunities'); top.forEach(function(g,i){ html+=scanCard(g,i+1,i); }); }
     if(next.length){ html+=scanHead('Worth watching'); next.forEach(function(g,i){ html+=scanCard(g,i+4,i+3); }); }
@@ -14772,7 +14776,7 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
   TOOLS.price=function(ctx){ var x=ctx.x;
     return {evidence:[
       evObj({tool:'price',claim:'Break-even (fair) price',value:amStr(x.breakevenAm),source:'EdgeDesk price engine',source_type:'DERIVED',status:'VERIFIED',confidence:'HIGH',relevance:'price'}),
-      evObj({tool:'price',claim:'Max playable price',value:amStr(x.toPlayAm),source:'EdgeDesk price engine',source_type:'DERIVED',status:'VERIFIED',confidence:'HIGH',relevance:'price'}),
+      evObj({tool:'price',claim:'Price threshold',value:amStr(x.toPlayAm),source:'EdgeDesk price engine',source_type:'DERIVED',status:'VERIFIED',confidence:'HIGH',relevance:'price'}),
       evObj({tool:'price',claim:x.needsPriceForEv!=null?'Price needed to be a bet again':'Current price vs window',value:x.needsPriceForEv!=null?amStr(x.needsPriceForEv):amStr(x.curAm)+((x.curEdge!=null&&x.curEdge>=FLOOR)?' (inside)':' (past)'),source:'EdgeDesk price engine',source_type:'DERIVED',status:'VERIFIED',confidence:'HIGH',relevance:'price'})
     ]};
   };
@@ -14861,7 +14865,7 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
   /* ---- contradiction engine over verified evidence + owned numbers ---- */
   function findConflicts(ctx, ev, unavailable){
     var x=ctx.x, c=[];
-    if(x.curEdge!=null && x.curEdge<FLOOR) c.push('Price vs edge: the number is already past the playable range even though a positive edge was detected.');
+    if(x.curEdge!=null && x.curEdge<FLOOR) c.push('Price vs edge: the number is already past the qualifying range even though a positive edge was detected.');
     if(x.curEdge!=null && x.curEdge>0.06) c.push('Edge size vs liquidity: a '+pct(x.curEdge)+' edge is large enough to suggest a stale or bad line rather than genuine value.');
     if(!x.sharp) c.push('No sharp confirmation: Pinnacle does not print this exact side, so the fair line rests on softer books.');
     if(ev.some(function(i){return i.tool==='weather'&&i.status==='STALE';})) c.push('Weather forecast on file is stale and was refused as current.');
@@ -14922,9 +14926,9 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
     if(x.curEdge==null) return 'No fair price on file, so there is no thesis to state yet — this is a WAIT, not a read.';
     return x.sel+' shows '+pct(x.curEdge)+' vs '+x.fairSrc+' at '+amStr(x.curAm)+(x.sharp?', with Pinnacle quoting the same side':', without a sharp print')+'. '+(x.dverdict==='PASS'?'The price no longer supports the position.':x.isWait?'Pending confirmation before it is a decision.':'The edge survives the owned-data checks.'); }
   function bottomLine(ctx,att){ var x=ctx.x;
-    if(x.isWait) return 'Hold at '+amStr(x.curAm)+' — the information needed to decide is not in yet. Confidence '+x.confidence+'.';
-    if(x.dverdict==='PASS') return 'Pass at '+amStr(x.curAm)+'. '+(att.status==='INVALIDATED'?'The price killed the edge.':'A good non-bet.')+' Confidence '+x.confidence+'.';
-    return 'Playable at '+amStr(x.curAm)+' (max '+amStr(x.toPlayAm)+'). Thesis '+att.status.toLowerCase()+'. Confidence '+x.confidence+'.'; }
+    if(x.isWait) return 'Undecided at '+amStr(x.curAm)+' — the information needed to decide is not in yet. Confidence '+x.confidence+'.';
+    if(x.dverdict==='PASS') return 'Pass at '+amStr(x.curAm)+'. '+(att.status==='INVALIDATED'?'The price killed the edge.':'A justified pass.')+' Confidence '+x.confidence+'.';
+    return 'Qualifies at '+amStr(x.curAm)+' (threshold '+amStr(x.toPlayAm)+'). Thesis '+att.status.toLowerCase()+'. Confidence '+x.confidence+'.'; }
 
   /* ---- QUICK single-fact answer (owned tools, no thesis) ---- */
   async function quickAnswer(ctx, pl, question){
@@ -14968,7 +14972,7 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
     html+=rstate('CHALLENGE \u00b7 '+att.status);
     html+='<div class="edai-card">'+flipHTML(x)+'<div class="edai-note">'+esc(att.note)+'</div></div>';
     html+=rstate('FINAL');
-    html+='<div class="edai-card"><div class="edai-vhead"><span class="edai-verdict '+vClass(x.dverdict)+'">'+x.dverdict+'</span>'
+    html+='<div class="edai-card"><div class="edai-vhead"><span class="edai-verdict '+vClass(x.dverdict)+'">'+vLabel(x.dverdict)+'</span>'
       +'<div><div class="edai-vsel">'+x.sel+'</div><div class="edai-vsub">'+esc(x.market)+' \u00b7 '+amStr(x.curAm)+'</div></div>'+confBadge(x)+'</div>'
       +(x.isWait?'<div class="edai-waitbar"><b>WAIT.</b> '+esc(x.waitWhy)+'</div>':'')
       +'<div class="edai-note">'+esc(bottomLine(ctx,att))+'</div></div>';
@@ -15434,15 +15438,15 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
   }
   function dscanFinalLine(f, outcome){
     var x=f.x, a=f.research.attack, v=dscanVerdictOf(f);
-    if(outcome==='NO BET') return 'Nothing on the slate clears the bar at a playable price right now.';
-    if(v==='WAIT') return 'Hold at '+amStr(x.curAm)+' \u2014 '+(x.waitWhy||'the information needed to decide is not in yet.');
+    if(outcome==='NO BET') return 'Nothing on the slate clears the bar at a qualifying price right now.';
+    if(v==='WAIT') return 'Undecided at '+amStr(x.curAm)+' \u2014 '+(x.waitWhy||'the information needed to decide is not in yet.');
     if(v==='PASS'){
-      if(!dscanPlayable(x)) return 'Pass at '+amStr(x.curAm)+' \u2014 below the '+pctAbs(FLOOR,1)+' floor; you would need '+amStr(x.toPlayAm)+' or better to play.';
+      if(!dscanPlayable(x)) return 'Pass at '+amStr(x.curAm)+' \u2014 below the '+pctAbs(FLOOR,1)+' floor; the number would need to reach '+amStr(x.toPlayAm)+' or better to qualify.';
       if(a.status==='INVALIDATED') return 'Pass at '+amStr(x.curAm)+' \u2014 the thesis was invalidated in research, so the price does not matter.';
       return 'Pass at '+amStr(x.curAm)+'.';
     }
     // playable: current is at least as good as the floor price — state the direction so it can never read as a contradiction
-    return 'Playable at '+amStr(x.curAm)+' \u2014 clears the '+pctAbs(FLOOR,1)+' floor (needs '+amStr(x.toPlayAm)+' or better). Thesis '+a.status.toLowerCase()+'. Confidence '+x.confidence+'.';
+    return 'Qualifies at '+amStr(x.curAm)+' \u2014 clears the '+pctAbs(FLOOR,1)+' floor (needs '+amStr(x.toPlayAm)+' or better). Thesis '+a.status.toLowerCase()+'. Confidence '+x.confidence+'.';
   }
   /* ---- bet-quality render helpers (colored, inspectable; no opaque score) ---- */
   function dscanQPill(txt, color){
@@ -15517,19 +15521,19 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
     var q=f.q, tier=q?q.tier:null;
     // banner reflects RESEARCH QUALITY on a playable bet: a floor-level or low-quality
     // number is labeled honestly (spec #20) instead of reading as a strong bet.
-    var bannerTxt = outcome==='NO BET' ? 'NO BET TODAY'
-      : outcome==='WAIT' ? 'WAIT \u2014 no confirmed bet yet'
-      : shown==='PASS' ? 'NO BET \u2014 price past the window'
-      : (tier==='STRONG' ? 'BEST BET'
-        : tier==='SOLID' ? 'BEST BET'
-        : tier==='FLOOR' ? 'PLAYABLE \u00b7 FLOOR-LEVEL'
-        : tier==='MARGINAL' ? 'PLAYABLE \u00b7 LOW QUALITY'
-        : (shown==='BET' ? 'BEST BET \u00b7 LEAN' : 'BEST PLAY \u00b7 LEAN'));
+    var bannerTxt = outcome==='NO BET' ? 'NO QUALIFYING SIGNAL TODAY'
+      : outcome==='WAIT' ? 'WAIT \u2014 no confirmed signal yet'
+      : shown==='PASS' ? 'NO SIGNAL \u2014 price past the window'
+      : (tier==='STRONG' ? 'TOP SIGNAL'
+        : tier==='SOLID' ? 'TOP SIGNAL'
+        : tier==='FLOOR' ? 'QUALIFIES \u00b7 FLOOR-LEVEL'
+        : tier==='MARGINAL' ? 'QUALIFIES \u00b7 LOW QUALITY'
+        : (shown==='BET' ? 'TOP SIGNAL \u00b7 LEAN' : 'LEADING SIGNAL \u00b7 LEAN'));
     var finalVerdict = outcome==='NO BET' ? 'NO BET' : shown;
     var borderline = (outcome!=='NO BET' && shown!=='PASS' && shown!=='WAIT' && (tier==='FLOOR'||tier==='MARGINAL'))
-      ? '<div class="edai-note" style="border-left:3px solid var(--warn);padding-left:8px"><b style="color:var(--text)">Technically playable, but not a high-quality bet.</b> '
+      ? '<div class="edai-note" style="border-left:3px solid var(--warn);padding-left:8px"><b style="color:var(--text)">Technically qualifies, but not a high-quality signal.</b> '
         +(tier==='FLOOR'?'The price is sitting on the '+pctAbs(FLOOR,1)+' floor':'The evidence is thin or the market is not confirming')
-        +' \u2014 the deterministic engine still allows it, but as research this is a '+esc(q.quality_call)+', not a strong play.'
+        +' \u2014 the deterministic engine still allows it, but as research this is a '+esc(vLabel(q.quality_call))+', not a strong signal.'
         +(decided&&decided.ordered.length>1?' See \u201cWhy #1 beat the others\u201d below.':'')+'</div>'
       : '';
     var badgeCls = vClass(finalVerdict==='NO BET'?'PASS':shown);
@@ -15537,11 +15541,11 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
       + x.nb+' book'+(x.nb===1?'':'s')+' behind the fair line'
       + (x.detAm!=null?', detection '+amStr(x.detAm)+' \u2192 now '+amStr(x.curAm):'')+'.';
     var ctxEv=r.evidence.filter(function(i){return i.relevance!=='price'&&i.relevance!=='edge'&&i.relevance!=='decay';}).slice(0,6);
-    var priceStatus = x.curEdge==null?'no fair price':(dscanPlayable(x)?'inside the playable window':'past the playable window');
+    var priceStatus = x.curEdge==null?'no fair price':(dscanPlayable(x)?'inside the qualifying window':'past the qualifying window');
     var priceGrid='<div class="edai-grid" style="border-radius:10px;overflow:hidden;margin-top:2px">'
       + cell('Current', amStr(x.curAm), dscanPlayable(x)?'pos':'neg')
       + cell('Fair', amStr(x.fairAm),'dim')
-      + cell('Max playable (or better)', amStr(x.toPlayAm),'dim')
+      + cell('Price threshold (or better)', amStr(x.toPlayAm),'dim')
       + cell('Break-even', amStr(x.breakevenAm),'dim')
       +'</div>';
     var strongestAgainst = (r.conflicts&&r.conflicts.length)?r.conflicts[0]
@@ -15567,7 +15571,7 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
       + (decided? dscanUnblockHTML(decided) : '')
       + dscanSec('Falsifiers', dscanUL(x.falsifiers))
       + dscanSec('Final',
-          '<div class="edai-vhead" style="border:none;padding:2px 0"><span class="edai-verdict '+badgeCls+'">'+esc(finalVerdict)+'</span>'
+          '<div class="edai-vhead" style="border:none;padding:2px 0"><span class="edai-verdict '+badgeCls+'">'+esc(vLabel(finalVerdict))+'</span>'
           +'<span style="font-size:12px;color:var(--dim);margin-left:8px">'+esc(dscanFinalLine(f,outcome))+'</span></div>')
       +'</div></div>';
   }
@@ -15575,7 +15579,7 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
     var x=f.x, e=x.e, v=dscanVerdictOf(f), q=f.q;
     var qpill = q? ' '+dscanQPill(q.tier, dscanQColor('tier',q.tier)) : '';
     return '<div class="edai-card" style="margin-bottom:8px"><div class="edai-vhead">'
-      +'<span class="edai-verdict '+vClass(v)+'">'+v+'</span>'
+      +'<span class="edai-verdict '+vClass(v)+'">'+vLabel(v)+'</span>'
       +'<div style="min-width:0"><div class="edai-vsel">#'+f.rank+'  '+esc(x.matchup)+qpill+'</div>'
       +'<div class="edai-vsub">'+x.sel+' \u00b7 '+amStr(x.curAm)+' \u00b7 '+pct(x.curEdge)+' \u00b7 '+f.research.attack.status+' \u00b7 conf '+x.confidence
         +(q?' \u00b7 '+q.price_fragility.toLowerCase()+' cushion \u00b7 '+q.evidence_quality.toLowerCase()+' evidence':'')+'</div></div>'
@@ -15586,10 +15590,10 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
     var head=decided.headline, outcome=decided.outcome, qOut=decided.qualityOutcome||outcome, rest=decided.ordered.slice(1,3);
     // the intro reports the research conclusion (qOut) — which may be more conservative than
     // the deterministic outcome when the best playable number is only floor-level (spec #14, #20).
-    var concl = outcome!=='BET' ? (outcome==='WAIT'?'nothing confirmed \u2014 a WAIT.':'no qualifying bet \u2014 a no-play.')
-      : qOut==='BET' ? 'one high-quality playable bet.'
-      : qOut==='LEAN' ? 'one playable lean \u2014 caveated, not a strong bet.'
-      : 'technically playable, but no high-quality bet \u2014 research call is a no-play.';
+    var concl = outcome!=='BET' ? (outcome==='WAIT'?'nothing confirmed \u2014 a WAIT.':'no qualifying signal today.')
+      : qOut==='BET' ? 'one high-quality qualifying signal.'
+      : qOut==='LEAN' ? 'one qualifying lean \u2014 caveated, not a strong signal.'
+      : 'technically qualifies, but no high-quality signal \u2014 the research call is NO SIGNAL.';
     var intro='<div class="edai-card" style="padding:12px 12px 8px;margin-bottom:8px"><div class="edai-vsel">Daily scan complete.</div>'
       +'<div class="edai-vsub">'+decided.ordered.length+' finalist'+(decided.ordered.length===1?'':'s')+' researched, attacked and quality-graded \u00b7 headline chosen by research quality, not raw edge \u00b7 '
       +esc(concl)+'</div></div>';
@@ -15600,7 +15604,7 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
     }
     html+='<div style="display:flex;gap:8px;margin-top:6px;flex-wrap:wrap">'
       +'<button class="edai-qa" onclick="EDAI.dscan(\'why\',1)">Why #1</button>'
-      +'<button class="edai-qa" onclick="EDAI.dscan(\'quality\',1)">Bet quality</button>'
+      +'<button class="edai-qa" onclick="EDAI.dscan(\'quality\',1)">Signal quality</button>'
       +'<button class="edai-qa" onclick="EDAI.dscan(\'fragile\',1)">How fragile?</button>'
       +(rest.length?'<button class="edai-qa" onclick="EDAI.dscan(\'whybeat\')">Why #1 beat #2</button>':'')
       +'<button class="edai-qa" onclick="EDAI.dscan(\'attack\',1)">Attack #1</button>'
@@ -15609,13 +15613,13 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
       +'<button class="edai-qa" onclick="EDAI.dscan(\'changed\',1)">What changed?</button>'
       +(rest.length?'<button class="edai-qa" onclick="EDAI.dscan(\'compare\')">Compare #1 & #2</button>':'')
       +'<button class="edai-qa" onclick="EDAI.dailyScan()">Rescan</button></div>';
-    html+='<div class="edai-src" style="border:none;margin-top:4px">You can also type: <b>How fragile is #1?</b>, <b>How much price cushion does #1 have?</b>, <b>Why did #1 beat #2?</b>, <b>Why isn\u2019t #2 better?</b>, <b>What\u2019s the biggest weakness?</b>, <b>Which bet has the strongest evidence?</b>, <b>Which has the safest price?</b>, <b>Biggest raw edge?</b>, <b>Best research quality?</b>, <b>Most conservative play</b>, <b>Most aggressive playable edge</b>, <b>What would make #1 a pass?</b></div>';
+    html+='<div class="edai-src" style="border:none;margin-top:4px">You can also type: <b>How fragile is #1?</b>, <b>How much price cushion does #1 have?</b>, <b>Why did #1 beat #2?</b>, <b>Why isn\u2019t #2 better?</b>, <b>What\u2019s the biggest weakness?</b>, <b>Which signal has the strongest evidence?</b>, <b>Which has the safest price?</b>, <b>Biggest raw edge?</b>, <b>Best research quality?</b>, <b>Most conservative option</b>, <b>Most aggressive qualifying edge</b>, <b>What would make #1 a pass?</b></div>';
     return html;
   }
   function dscanEmptyHTML(){
-    return '<div class="edai-card" style="padding:12px"><div class="edai-vhead"><span class="edai-verdict v-pass">NO BET</span>'
+    return '<div class="edai-card" style="padding:12px"><div class="edai-vhead"><span class="edai-verdict v-pass">NO SIGNAL</span>'
       +'<div><div class="edai-vsel">Nothing on today\u2019s slate clears the bar.</div><div class="edai-vsub">No positive-edge, liquid, fresh signal in the window.</div></div></div>'
-      +'<div class="edai-note">That is a real answer, not a failure \u2014 a no-play day. I would rather show an empty board than manufacture a bet. Rescan once the board repopulates.</div>'
+      +'<div class="edai-note">That is a real answer, not a failure \u2014 nothing qualifies today. I would rather show an empty board than manufacture a signal. Rescan once the board repopulates.</div>'
       +'<div style="padding:0 13px 12px"><button class="edai-qa" onclick="EDAI.dailyScan()">Rescan</button></div></div>';
   }
 
@@ -15656,8 +15660,8 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
       var q='This is EdgeDesk\u2019s deterministic daily scan of today\u2019s slate. #'+decided.headline.rank
         +' is the headline pick; the deterministic outcome is '+decided.outcome+' and the research-quality call is '+(decided.qualityOutcome||decided.outcome)+'. '
         +'Each finalist carries a deterministic bet_quality block (tier, price_fragility, evidence_quality, market_confirmation, thesis_durability, information_gap, edge_provenance, transparent_components). '
-        +'Explain WHY EdgeDesk rates the headline above the alternatives using those fields, name the weakest link and anything unverified, and \u2014 if the headline is FLOOR/MARGINAL \u2014 say plainly it is playable but not a high-quality bet. '
-        +'You are interpreting the deterministic results: do NOT invent games, prices, injuries or numbers, do NOT change the verdict, fair price, max-playable or confidence, and do NOT manufacture a new score. Explain, never override.';
+        +'Explain WHY EdgeDesk rates the headline above the alternatives using those fields, name the weakest link and anything unverified, and \u2014 if the headline is FLOOR/MARGINAL \u2014 say plainly it qualifies but is not a high-quality signal. '
+        +'You are interpreting the deterministic results: do NOT invent games, prices, injuries or numbers, do NOT change the verdict, fair price, price threshold or confidence, and do NOT manufacture a new score. Never instruct anyone to place, increase, decrease, or avoid a wager, and never recommend a sportsbook. Explain, never override.';
       var res=await askAI('slate', q, null, cand);
       thinking(false); var m=push('a',res.html);
       if(res.src&&m){ var s=document.createElement('div'); s.className='edai-src'; s.textContent=res.src; m.appendChild(s); }
@@ -15724,10 +15728,10 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
     return DSCAN.finalists[oneBased-1]||null;
   }
   function dscanWhy(rank){
-    var f=dscanFind(rank); if(!f){ push('a','<p>Run the daily scan first \u2014 ask for today\u2019s best bet.</p>'); return; }
+    var f=dscanFind(rank); if(!f){ push('a','<p>Run the daily scan first \u2014 ask for today\u2019s strongest signal.</p>'); return; }
     var x=f.x;
     push('a', dscanSec('Why #'+f.rank+' \u00b7 '+x.matchup, dscanUL((x.reasonsFor||[]).slice(0,5)))
-      + '<div class="edai-vhead" style="border:none;padding:2px 0"><span class="edai-verdict '+vClass(x.dverdict)+'">'+x.dverdict+'</span>'
+      + '<div class="edai-vhead" style="border:none;padding:2px 0"><span class="edai-verdict '+vClass(x.dverdict)+'">'+vLabel(x.dverdict)+'</span>'
       + '<span style="font-size:12px;color:var(--dim);margin-left:8px">'+esc(x.why||'')+'</span>'+confBadge(x)+'</div>');
   }
   function dscanAttack(rank){
@@ -15741,15 +15745,15 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
     var f=dscanFind(rank); if(!f){ push('a','<p>Run the daily scan first.</p>'); return; }
     var x=f.x;
     var status=x.curEdge==null?'no fair price on file':(dscanPlayable(x)?'the current number is inside the window':'the current number is past the window');
-    var take=x.curEdge==null?'No fair price on file, so there is no take-price yet.'
+    var take=x.curEdge==null?'No fair price on file, so there is no threshold yet.'
       :(dscanPlayable(x)
-        ?'Play it at '+amStr(x.toPlayAm)+' or better (that is the max-playable floor). Break-even is '+amStr(x.fairAm)+'. Anything short of '+amStr(x.toPlayAm)+' drops EV below the '+pctAbs(FLOOR,1)+' floor and it stops being a bet.'
-        :'Current '+amStr(x.curAm)+' is past the window \u2014 you would need '+amStr(x.toPlayAm)+' or better before this is a bet. Break-even is '+amStr(x.fairAm)+'.');
+        ?'The signal qualifies at '+amStr(x.toPlayAm)+' or better (that is the qualifying floor). Break-even is '+amStr(x.fairAm)+'. Anything short of '+amStr(x.toPlayAm)+' drops EV below the '+pctAbs(FLOOR,1)+' floor and the signal stops qualifying.'
+        :'Current '+amStr(x.curAm)+' is past the window \u2014 the number would need to reach '+amStr(x.toPlayAm)+' or better before the signal qualifies. Break-even is '+amStr(x.fairAm)+'.');
     push('a', dscanSec('Price #'+f.rank+' \u00b7 '+status,
       '<div class="edai-grid" style="border-radius:10px;overflow:hidden">'
       + cell('Current', amStr(x.curAm), dscanPlayable(x)?'pos':'neg')
       + cell('Fair', amStr(x.fairAm),'dim')
-      + cell('Max playable (or better)', amStr(x.toPlayAm),'dim')
+      + cell('Price threshold (or better)', amStr(x.toPlayAm),'dim')
       + cell('Break-even', amStr(x.breakevenAm),'dim')
       +'</div><div class="edai-note">'+esc(take)+'</div>'));
   }
@@ -15768,11 +15772,11 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
       return '<tr><td style="text-align:left">#'+f.rank+' '+esc(x.matchup)+'<br><span style="color:var(--faint)">'+x.sel+' '+amStr(x.curAm)+'</span></td>'
         +'<td class="mono">'+pct(x.curEdge)+'</td><td class="mono">'+(x.evNow==null?'\u2014':pct(x.evNow))+'</td>'
         +'<td style="font-size:10px;color:var(--dim)">'+esc(f.research.attack.status)+'</td>'
-        +'<td><span class="edai-verdict '+vClass(v)+'" style="font-size:10px;padding:2px 6px">'+v+'</span></td></tr>'; }
-    var verdictNote = (a.cls==='BET'&&b.cls!=='BET')?'It is the only one of the two clearing the bar at a playable price.'
-      : (a.cls==='BET'&&b.cls==='BET')?'Both are playable; #'+a.rank+' has the stronger price-survival / confirmation profile.'
-      : (a.cls==='WAIT')?'#'+a.rank+' is a WAIT pending confirmation \u2014 neither is a clean bet right now.'
-      : 'Neither is a clean bet right now.';
+        +'<td><span class="edai-verdict '+vClass(v)+'" style="font-size:10px;padding:2px 6px">'+vLabel(v)+'</span></td></tr>'; }
+    var verdictNote = (a.cls==='BET'&&b.cls!=='BET')?'It is the only one of the two clearing the bar at a qualifying price.'
+      : (a.cls==='BET'&&b.cls==='BET')?'Both qualify; #'+a.rank+' has the stronger price-survival / confirmation profile.'
+      : (a.cls==='WAIT')?'#'+a.rank+' is a WAIT pending confirmation \u2014 neither is a clean signal right now.'
+      : 'Neither is a clean signal right now.';
     push('a','<div class="edai-card" style="padding:6px 10px"><table class="tbl" style="width:100%;font-size:12px">'
       +'<tr><th style="text-align:left">Finalist</th><th>Edge</th><th>EV</th><th>Thesis</th><th>Verdict</th></tr>'
       +rowc(a)+rowc(b)+'</table></div>'
@@ -15782,7 +15786,7 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
   /* ---- bet-quality follow-ups (reuse the stored scan; no rescan) ---- */
   function dscanFinalists(){ return (DSCAN&&DSCAN.finalists&&DSCAN.finalists.length)?DSCAN.finalists:null; }
   function dscanQualityOf(rank){
-    var f=dscanFind(rank); if(!f){ push('a','<p>Run the daily scan first \u2014 ask for today\u2019s best bet.</p>'); return; }
+    var f=dscanFind(rank); if(!f){ push('a','<p>Run the daily scan first \u2014 ask for today\u2019s strongest signal.</p>'); return; }
     push('a', dscanSec('Bet quality \u00b7 #'+f.rank+' '+f.x.matchup, dscanQualityHTML(f)));
   }
   function dscanFragilityOf(rank){
@@ -15799,7 +15803,7 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
       '<div class="edai-grid" style="border-radius:10px;overflow:hidden">'
       + cell('Current', amStr(x.curAm), dscanPlayable(x)?'pos':'neg')
       + cell('Fair', amStr(x.fairAm),'dim')
-      + cell('Max playable (or better)', amStr(x.toPlayAm),'dim')
+      + cell('Price threshold (or better)', amStr(x.toPlayAm),'dim')
       + cell('Fragility', q.price_fragility, q.price_fragility==='ROBUST'?'pos':q.price_fragility==='FLOOR'?'neg':'dim')
       +'</div><div class="edai-note">'+esc(line)+'</div>'));
   }
@@ -15860,11 +15864,11 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
     else if(metric==='conservative'){ label='most conservative play';
       pick=best(function(f){return (dscanPlayable(f.x)?1000:0)+frag[f.q.price_fragility]*30+gp[f.q.information_gap]*10+cf[f.q.confidence]*5;});
       why='Safest combination of price cushion, low information gap and confidence ('+pick.q.price_fragility.toLowerCase()+' cushion, '+pick.q.information_gap.toLowerCase()+' gap, conf '+pick.q.confidence+').'; }
-    else /* aggressive */ { label='most aggressive playable edge';
+    else /* aggressive */ { label='most aggressive qualifying edge';
       pick=best(function(f){return f.x.curEdge||-1;});
       why='Largest edge that still clears the floor ('+pct(pick.x.curEdge)+' at '+amStr(pick.x.curAm)+') \u2014 higher variance, thinner margin.'; }
     push('a', dscanSec('The '+label,
-      '<div class="edai-card"><div class="edai-vhead"><span class="edai-verdict '+vClass(dscanVerdictOf(pick))+'">'+dscanVerdictOf(pick)+'</span>'
+      '<div class="edai-card"><div class="edai-vhead"><span class="edai-verdict '+vClass(dscanVerdictOf(pick))+'">'+vLabel(dscanVerdictOf(pick))+'</span>'
       +'<div><div class="edai-vsel">#'+pick.rank+'  '+esc(pick.x.matchup)+'  '+dscanQPill(pick.q.tier,dscanQColor('tier',pick.q.tier))+'</div>'
       +'<div class="edai-vsub">'+pick.x.sel+' \u00b7 '+amStr(pick.x.curAm)+' \u00b7 '+pct(pick.x.curEdge)+'</div></div></div>'
       +'<div class="edai-note">'+esc(why)+'</div></div>'));
@@ -15892,11 +15896,11 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
     // biggest weakness / weakest link
     if(/biggest\s+weakness|weakest\s+link|main\s+weakness|what'?s\s+the\s+weakness/.test(q)){ dscanWeakness(dscanRankOf(q)); return true; }
     // full bet-quality readout for a specific pick
-    if(/(?:bet\s+quality|research\s+quality|how\s+(?:strong|good)\s+is|quality\s+of)\b/.test(q) && /#?\s*[1-9]\b|\b(?:one|two|three|first|second|third)\b/.test(q)){ dscanQualityOf(dscanRankOf(q)); return true; }
+    if(/(?:bet\s+quality|signal\s+quality|research\s+quality|how\s+(?:strong|good)\s+is|quality\s+of)\b/.test(q) && /#?\s*[1-9]\b|\b(?:one|two|three|first|second|third)\b/.test(q)){ dscanQualityOf(dscanRankOf(q)); return true; }
     // what would make #n better (distinct from "what would make you pass")
     if(/what\s+would\s+make\s+#?\s*[1-9].*\bbetter\b|what\s+would\s+(?:improve|strengthen)/.test(q)){ dscanUnblockOf(dscanRankOf(q)); return true; }
     // slate-wide selectors: "which bet has ...", "most conservative/aggressive"
-    if(/which\s+bet|which\s+one|which\s+finalist|most\s+conservative|most\s+aggressive|safest|strongest\s+evidence|biggest\s+(?:raw\s+)?edge|largest\s+edge|best\s+(?:research\s+)?quality/.test(q)){
+    if(/which\s+bet|which\s+signal|which\s+one|which\s+finalist|most\s+conservative|most\s+aggressive|safest|strongest\s+evidence|biggest\s+(?:raw\s+)?edge|largest\s+edge|best\s+(?:research\s+)?quality/.test(q)){
       var metric = /strongest\s+evidence|best\s+evidence|most\s+evidence/.test(q) ? 'evidence'
         : /safest|least\s+fragile/.test(q) ? 'price'
         : /biggest\s+(?:raw\s+)?edge|largest\s+edge|highest\s+edge/.test(q) ? 'edge'
@@ -15924,7 +15928,7 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
     if(/\bdaily\s*scan\b/.test(q)) return true;
     if(/\bscan\b.*\b(slate|board|mlb|today|tonight)\b/.test(q)) return true;
     if(/\brun\b.*\bscan\b/.test(q)) return true;
-    if(/\b(best|strongest|top)\s*(bet|play|edge)\b/.test(q)) return true;   // "best bet", "strongest edge", "top play"
+    if(/\b(best|strongest|top)\s*(bet|play|edge|signal)\b/.test(q)) return true;   // "best bet", "strongest edge", "top signal"
     if(/\bwhat\s+(?:should|to)\s+(?:i\s+)?(?:bet|play)\b/.test(q)) return true;
     if(/\bwhat(?:'?s| is)\s+worth\s+(?:betting|playing|a bet)\b/.test(q)) return true;
     if(/\bfind\b.*\b(?:bet|edge|play)\b/.test(q)) return true;
@@ -15956,15 +15960,15 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
     // native "find today's best bet" — builds its own packet from the live board
     dailyScan:async function(){
       if(BUSY) return; BUSY=true; var sb=$id('edaiSend'); if(sb)sb.disabled=true;
-      window.EDAI.open(); push('u','Find today\u2019s best bet.');
+      window.EDAI.open(); push('u','Find today\u2019s strongest signal.');
       try{ await dailyScanCore(); }
       finally{ BUSY=false; var s2=$id('edaiSend'); if(s2)s2.disabled=false; }
     },
     // daily-scan follow-up buttons/dispatch (why / attack / price / changed / pass / compare)
     dscan:function(act,rank){
-      var bestLabel={evidence:'Which bet has the strongest evidence?',price:'Which bet has the safest price?',edge:'Which bet has the biggest raw edge?',quality:'Which bet has the best research quality?',conservative:'Give me the most conservative play.',aggressive:'Give me the most aggressive playable edge.'};
+      var bestLabel={evidence:'Which signal has the strongest evidence?',price:'Which signal has the safest price?',edge:'Which signal has the biggest raw edge?',quality:'Which signal has the best research quality?',conservative:'Give me the most conservative option.',aggressive:'Give me the most aggressive qualifying edge.'};
       var label={why:'Why #'+(rank||1)+'?',attack:'Attack #'+(rank||1)+'.',price:'What price would you take on #'+(rank||1)+'?',changed:'What changed on #'+(rank||1)+'?',pass:'What would make #'+(rank||1)+' a pass?',compare:'Compare #1 and #2.',
-        quality:'Bet quality of #'+(rank||1)+'?',fragile:'How fragile is #'+(rank||1)+'?',weakness:'What\u2019s the biggest weakness of #'+(rank||1)+'?',unblock:'What would make #'+(rank||1)+' better?',whybeat:'Why did #1 beat #2?',best:bestLabel[rank]||('Which bet is best on '+rank+'?')}[act]||act;
+        quality:'Signal quality of #'+(rank||1)+'?',fragile:'How fragile is #'+(rank||1)+'?',weakness:'What\u2019s the biggest weakness of #'+(rank||1)+'?',unblock:'What would make #'+(rank||1)+' better?',whybeat:'Why did #1 beat #2?',best:bestLabel[rank]||('Which signal is best on '+rank+'?')}[act]||act;
       push('u',label);
       if(act==='attack') dscanAttack(rank);
       else if(act==='price') dscanPrice(rank);

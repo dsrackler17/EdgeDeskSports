@@ -513,7 +513,7 @@ async function load(){
         (nCLV<MIN_SAMPLE*3?' This bootstrap was itself tested: on skewed data it covers about 90% at n=30, not the 95% it claims. Below n=100 the interval is optimistic.':'')+'</div></div>');
     }
     $('recKpis').innerHTML=kpi(g.length,'edges graded')+kpi(nCLV,'with CLV')+
-      kpi(hit!=null?(hit*100).toFixed(0)+'%':'\u2014','hit rate')+
+      kpi(hit!=null?(hit*100).toFixed(0)+'%':'\u2014','settled win % (context only \u2014 not the metric)')+
       kpi(pct(avg),'avg CLV')+kpi(pct(med),'median CLV')+kpi(rate(posRate),'beat the close');
     var series=await sbGet('public_record?select=clv,graded_at&'+EDGEQ+'&clv=not.is.null&order=graded_at.asc&limit=5000');
     renderClvHero(series,avg,med,posRate);
