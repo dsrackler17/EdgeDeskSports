@@ -41,6 +41,67 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',system-ui,sans-s
 .tag{font-size:9px;letter-spacing:.05em;text-transform:uppercase;color:var(--warn);border:1px solid var(--warn);border-radius:14px;padding:2px 6px;font-weight:600}
 .spacer{flex:1}.pill{font-size:10px;color:var(--dim);border:1px solid var(--border);border-radius:12px;padding:3px 8px}.pill.ok{color:var(--pos);border-color:rgba(47,180,124,.4)}.pill.err{color:var(--neg);border-color:rgba(226,96,68,.4)}
 .view{padding:14px 14px calc(var(--nav) + env(safe-area-inset-bottom) + 30px);max-width:960px;margin:0 auto}.view.hide{display:none}
+/* research shell panels: layout comes from the parent .view box, panels only toggle */
+.rpanel.hide{display:none}
+/* ---- research provenance / maturity / state system ---- */
+.rs-hd{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.rs-hd h2{margin:0;font-size:19px}
+.rs-exp{font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:.09em;text-transform:uppercase;
+  color:var(--warn);border:1px solid rgba(217,154,43,.4);background:rgba(217,154,43,.07);border-radius:5px;padding:2px 6px}
+.rs-tool{background:var(--surface2);border:1px solid var(--border);color:var(--dim);border-radius:8px;
+  padding:6px 10px;font-size:11.5px;font-family:inherit;cursor:pointer}
+.rs-tool.on{color:var(--accent);border-color:rgba(77,141,255,.5)}
+.rs-badge{display:inline-flex;align-items:center;gap:4px;font-family:'JetBrains Mono',monospace;font-size:9px;
+  letter-spacing:.05em;text-transform:uppercase;border-radius:5px;padding:2px 6px;cursor:pointer;
+  border:1px solid var(--border);background:var(--surface2);color:var(--dim);vertical-align:middle}
+.rs-badge .dot{width:5px;height:5px;border-radius:50%;background:currentColor}
+.rs-t0{color:#5bbf87;border-color:rgba(91,191,135,.35);background:rgba(91,191,135,.07)}
+.rs-t1{color:#8ea2c0;border-color:rgba(142,162,192,.35);background:rgba(142,162,192,.07)}
+.rs-t2{color:#5d8def;border-color:rgba(93,141,239,.35);background:rgba(93,141,239,.07)}
+.rs-t3{color:var(--warn);border-color:rgba(217,154,43,.4);background:rgba(217,154,43,.07)}
+.rs-mat-exp{color:var(--warn);border-color:rgba(217,154,43,.4);background:rgba(217,154,43,.07)}
+.rs-mat-val{color:#5bbf87;border-color:rgba(91,191,135,.35);background:rgba(91,191,135,.07)}
+.rs-mat-na{color:var(--faint)}
+.rs-prov{border:1px solid var(--border);border-radius:11px;background:var(--surface);margin-bottom:12px;overflow:hidden}
+.rs-prov summary{list-style:none;cursor:pointer;padding:9px 12px;font-size:11.5px;color:var(--dim);display:flex;align-items:center;gap:7px}
+.rs-prov summary::-webkit-details-marker{display:none}
+.rs-prov summary b{color:var(--text);font-size:12px;font-weight:600}
+.rs-prov .body{padding:0 12px 10px}
+.rs-prov-row{display:flex;align-items:flex-start;gap:8px;padding:7px 0;border-top:1px solid var(--border);flex-wrap:wrap}
+.rs-prov-row .nm{flex:1 1 150px;font-size:12px;color:var(--text)}
+.rs-prov-row .src{display:block;font-size:10.5px;color:var(--faint);margin-top:2px}
+.rs-lim{border:1px solid var(--border);border-radius:11px;background:var(--surface);padding:10px 12px;margin-bottom:12px}
+.rs-lim h4{margin:0 0 6px;font-size:12px;font-weight:600;color:var(--text);display:flex;align-items:center;gap:6px}
+.rs-lim ul{margin:0;padding-left:17px}
+.rs-lim li{font-size:11.5px;color:var(--dim);line-height:1.55;margin:2px 0}
+.rs-state{border:1px dashed var(--border);border-radius:11px;padding:16px 14px;margin-bottom:12px;background:var(--surface)}
+.rs-state h4{margin:0 0 6px;font-size:13px;font-weight:600;color:var(--text)}
+.rs-state p{margin:0 0 10px;font-size:12.5px;color:var(--dim);line-height:1.55}
+.rs-state .mono{font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--faint)}
+.rs-state button{background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:8px;
+  padding:7px 13px;font-size:12px;font-family:inherit;cursor:pointer}
+.rs-inactive{color:var(--faint);font-style:normal;opacity:.75}
+.rs-freshna{border:1px dashed var(--border);border-radius:9px;padding:8px 11px;margin-bottom:12px;
+  font-size:11.5px;color:var(--faint);line-height:1.5;background:var(--surface)}
+.rs-freshna b{color:var(--dim);font-weight:600}
+.rs-stale{color:var(--warn)}
+.rs-panelwrap{margin-bottom:12px}
+.rs-srch input{width:100%;box-sizing:border-box}
+.rs-hit{display:flex;align-items:center;gap:8px;padding:8px 10px;border:1px solid var(--border);border-radius:9px;
+  background:var(--surface);margin-bottom:6px;cursor:pointer}
+.rs-hit .nm{flex:1;font-size:12.5px;color:var(--text)}
+.rs-hit .mod{font-family:'JetBrains Mono',monospace;font-size:9px;text-transform:uppercase;color:var(--faint)}
+.rs-save{background:none;border:1px solid var(--border);color:var(--faint);border-radius:7px;
+  padding:3px 8px;font-size:10.5px;font-family:inherit;cursor:pointer}
+.rs-save.on{color:var(--gold);border-color:rgba(212,175,55,.45)}
+.rs-dossier{position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.72);overflow-y:auto;display:none}
+.rs-dossier-card{max-width:520px;margin:24px auto;background:#0f141b;border:1px solid rgba(255,255,255,.12);
+  border-radius:16px;padding:18px;position:relative}
+.rs-dos-kv{display:flex;gap:10px;padding:7px 0;border-top:1px solid var(--border);font-size:12px}
+.rs-dos-kv .k{flex:0 0 132px;color:var(--faint)}
+.rs-dos-kv .v{flex:1;color:var(--text);font-family:'JetBrains Mono',monospace;font-size:11.5px}
+.rs-none{font-size:12px;color:var(--warn);background:rgba(217,154,43,.07);border:1px solid rgba(217,154,43,.3);
+  border-radius:9px;padding:10px 12px;line-height:1.5}
 h2{font-size:12px;letter-spacing:.07em;text-transform:uppercase;color:var(--dim);margin:0 0 4px;font-weight:600}
 .lede{color:var(--dim);font-size:13px;margin:0 0 12px}
 h3{font-size:14px;margin:18px 0 10px}
@@ -1493,30 +1554,32 @@ button:focus-visible,select:focus-visible,input:focus-visible,a:focus-visible{ou
     <div id="newsFeed"><div class="empty">Loading news…</div></div>
   </section>
 
-  <!-- STATS -->
-  <section id="v-stats" class="view hide">
+  <!-- RESEARCH — single shell: one sub-nav rendered once, six module panels.
+       Panels keep their original ids so every existing $() lookup and render
+       function is untouched; the shell only owns visibility + activation. -->
+  <section id="v-research" class="view hide">
+    <div class="rs-hd"><h2>Research Models <span class="rs-exp">Experimental</span></h2><span class="spacer"></span>
+      <button class="rs-tool" id="rsSearchBtn" onclick="rsToggleSearch()">Search</button>
+      <button class="rs-tool" id="rsSavedBtn" onclick="rsToggleSaved()">Saved</button></div>
+    <div id="rsSearchWrap" class="rs-srch hide" style="margin-bottom:12px"></div>
+    <div id="rsSavedWrap" class="hide" style="margin-bottom:12px"></div>
     <div class="stseg research-sub" style="margin-bottom:12px"><button data-sub="cfb" onclick="researchGo('cfb')">CFB</button><button data-sub="ufc" onclick="researchGo('ufc')">UFC</button><button data-sub="wta" onclick="researchGo('wta')">WTA</button><button data-sub="stats" onclick="researchGo('stats')">Stats</button><button data-sub="props" onclick="researchGo('props')">Props</button><button data-sub="lab" onclick="researchGo('lab')">Lab</button></div>
-    <div class="row-between"><h2 style="margin:0">Stats</h2><span class="spacer"></span><span class="freshness" id="stFresh">—</span><button class="refreshbtn" title="Refresh" onclick="loadStats(true)">&#8635;</button></div>
-    <p class="lede">The players and teams behind the boards — browse a roster, search a player, or scan the leaders. Fundamentals to sanity-check direction; the edge itself still lives in CLV.</p>
-    <div class="stchips" id="stLeagues"></div>
-    <div class="stseg" id="stSeg"><button data-m="teams" class="on">Teams</button><button data-m="players">Players</button><button data-m="leaders">Leaders</button></div>
-    <div id="stControls"></div>
-    <div id="stBody"><div class="empty">Loading…</div></div>
-  </section>
-
-  <section id="v-props" class="view hide">
-    <div class="stseg research-sub" style="margin-bottom:12px"><button data-sub="cfb" onclick="researchGo('cfb')">CFB</button><button data-sub="ufc" onclick="researchGo('ufc')">UFC</button><button data-sub="wta" onclick="researchGo('wta')">WTA</button><button data-sub="stats" onclick="researchGo('stats')">Stats</button><button data-sub="props" onclick="researchGo('props')">Props</button><button data-sub="lab" onclick="researchGo('lab')">Lab</button></div>
-    <div class="row-between"><h2 style="margin:0">Props</h2><span class="spacer"></span><span class="freshness" id="prFresh">—</span><button class="refreshbtn" title="Refresh" onclick="loadProps(true)">&#8635;</button></div>
-    <p class="lede">Model projections for player props &mdash; per-game rate with modeled variance. <b style="color:var(--warn)">Projections, not lines, not edges.</b> An edge only exists once these beat a real book's closing number; until then it's research to sanity-check, never a call.</p>
-    <div class="stchips" id="prSports"></div>
-    <div id="prControls"></div>
-    <div id="prBody"><div class="empty">Loading…</div></div>
-  </section>
-
-  <!-- UFC (research dataset) -->
-  <section id="v-ufc" class="view hide">
-    <div class="stseg research-sub" style="margin-bottom:12px"><button data-sub="cfb" onclick="researchGo('cfb')">CFB</button><button data-sub="ufc" onclick="researchGo('ufc')">UFC</button><button data-sub="wta" onclick="researchGo('wta')">WTA</button><button data-sub="stats" onclick="researchGo('stats')">Stats</button><button data-sub="props" onclick="researchGo('props')">Props</button><button data-sub="lab" onclick="researchGo('lab')">Lab</button></div>
-    <div class="row-between"><h2 style="margin:0">UFC research</h2><span class="spacer"></span><span class="freshness" id="ufcFresh">—</span><button class="refreshbtn" title="Refresh" onclick="loadUFC(true)">&#8635;</button></div>
+    <!-- CFB (College Football research) -->
+    <div id="v-cfb" class="rpanel hide">
+    <div class="row-between"><h2 style="margin:0">CFB</h2><span class="spacer"></span><span class="freshness" id="cfbFresh">&mdash;</span><button class="refreshbtn" title="Refresh" onclick="researchRefresh('cfb')">&#8635;</button></div>
+    <div id="rsMeta-cfb" class="rs-panelwrap"></div>
+    <p class="lede">College football matchups first &mdash; tap a game for the side-by-side, tap a team for the deep dive. <b style="color:var(--warn)">Research context, not edges.</b> SP+, records and season stats sanity-check direction; the edge itself still lives in CLV. Lines shown are consensus book numbers, not Pinnacle.</p>
+    <div class="flbanner demo" id="cfbBanner">Loading CFB dataset&hellip;</div>
+    <input class="stsearch" id="cfbQ" placeholder="Search a team&hellip;" style="margin-bottom:12px;display:none" oninput="renderCFB()">
+    <div id="cfbBody"><div class="empty">Loading&hellip;</div></div>
+    <div id="cfbModal" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.72);overflow-y:auto" onclick="if(event.target===this)cfbCloseTeam()">
+      <div id="cfbModalCard" style="max-width:600px;margin:24px auto;background:#0f141b;border:1px solid rgba(255,255,255,.12);border-radius:16px;padding:18px;position:relative"></div>
+    </div>
+    </div>
+    <!-- UFC (research dataset) -->
+    <div id="v-ufc" class="rpanel hide">
+    <div class="row-between"><h2 style="margin:0">UFC research</h2><span class="spacer"></span><span class="freshness" id="ufcFresh">—</span><button class="refreshbtn" title="Refresh" onclick="researchRefresh('ufc')">&#8635;</button></div>
+    <div id="rsMeta-ufc" class="rs-panelwrap"></div>
     <p class="lede">Historical fighter and fight database &mdash; <b style="color:var(--warn)">descriptive research only, never a prediction</b>. Browse a fighter for their record, dimensions, and full fight history with the de-vigged <b>consensus</b> closing probability of each bout. This is a backtest substrate, not a CLV record.</p>
     <div class="flbanner demo" id="ufcBanner">Loading UFC dataset…</div>
     <div style="display:flex;gap:8px;margin-bottom:12px">
@@ -1527,6 +1590,44 @@ button:focus-visible,select:focus-visible,input:focus-visible,a:focus-visible{ou
     <div id="ufcBody"><div class="empty">Loading…</div></div>
     <div id="ufcModal" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.72);overflow-y:auto" onclick="if(event.target===this)ufcCloseProfile()">
       <div id="ufcModalCard" style="max-width:580px;margin:24px auto;background:#0f141b;border:1px solid rgba(255,255,255,.12);border-radius:16px;padding:18px;position:relative"></div>
+    </div>
+    </div>
+    <!-- WTA (research engine) -->
+    <div id="v-wta" class="rpanel hide">
+    <div class="row-between"><h2 style="margin:0">WTA</h2><span class="spacer"></span><span class="freshness" id="wtaFresh">—</span><button class="refreshbtn" title="Refresh" onclick="researchRefresh('wta')">&#8635;</button></div>
+    <div id="rsMeta-wta" class="rs-panelwrap"></div>
+    <p class="lede">Automated match research, not picks. EdgeDesk asks <b>which matches deserve attention</b>, grades the evidence, and hands the decision back to you. <b style="color:var(--warn)">Research context, not edges.</b> Records are historical; the edge still lives in CLV against Pinnacle.</p>
+    <div class="flbanner demo" id="wtaBanner">Loading WTA research…</div>
+    <div class="stseg" id="wtaSeg" style="margin-bottom:12px"><button class="on" onclick="wtaSetSeg('research')">Today’s research</button><button onclick="wtaSetSeg('watchlist')">Watchlist</button></div>
+    <div id="wtaBody"><div class="empty">Loading…</div></div>
+    </div>
+    <!-- STATS -->
+    <div id="v-stats" class="rpanel hide">
+    <div class="row-between"><h2 style="margin:0">Stats</h2><span class="spacer"></span><span class="freshness" id="stFresh">—</span><button class="refreshbtn" title="Refresh" onclick="researchRefresh('stats')">&#8635;</button></div>
+    <div id="rsMeta-stats" class="rs-panelwrap"></div>
+    <p class="lede">The players and teams behind the boards — browse a roster, search a player, or scan the leaders. Fundamentals to sanity-check direction; the edge itself still lives in CLV.</p>
+    <div class="stchips" id="stLeagues"></div>
+    <div class="stseg" id="stSeg"><button data-m="teams" class="on">Teams</button><button data-m="players">Players</button><button data-m="leaders">Leaders</button></div>
+    <div id="stControls"></div>
+    <div id="stBody"><div class="empty">Loading…</div></div>
+    </div>
+    <!-- PROPS -->
+    <div id="v-props" class="rpanel hide">
+    <div class="row-between"><h2 style="margin:0">Props</h2><span class="spacer"></span><span class="freshness" id="prFresh">—</span><button class="refreshbtn" title="Refresh" onclick="researchRefresh('props')">&#8635;</button></div>
+    <div id="rsMeta-props" class="rs-panelwrap"></div>
+    <p class="lede">Model projections for player props &mdash; per-game rate with modeled variance. <b style="color:var(--warn)">Projections, not lines, not edges.</b> An edge only exists once these beat a real book's closing number; until then it's research to sanity-check, never a call.</p>
+    <div class="stchips" id="prSports"></div>
+    <div id="prControls"></div>
+    <div id="prBody"><div class="empty">Loading…</div></div>
+    </div>
+    <!-- LAB (TILT DATA LABS) -->
+    <div id="v-lab" class="rpanel hide">
+    <div class="lab-lede">TILT DATA LABS &middot; research library. An idea moves exploratory &rarr; validating &rarr; promoted &rarr; active only by clearing closing-line value, never by assertion. Nothing here is a bet.</div>
+    <div id="rsMeta-lab" class="rs-panelwrap"></div>
+    <div id="labHost"></div>
+    </div>
+    <div id="rsDossier" class="rs-dossier" onclick="if(event.target===this)rsDossierClose()">
+      <div class="rs-dossier-card" id="rsDossierCard"></div>
     </div>
   </section>
 
@@ -1546,36 +1647,9 @@ button:focus-visible,select:focus-visible,input:focus-visible,a:focus-visible{ou
 
 <div class="foot"><b class="footlink" onclick="show('terms')">Research tool only — not betting advice.</b> Signals can be wrong. 21+. 1-800-GAMBLER.</div>
 
-  <!-- CFB (College Football research) -->
-  <section id="v-cfb" class="view hide">
-    <div class="stseg research-sub" style="margin-bottom:12px"><button data-sub="cfb" onclick="researchGo('cfb')">CFB</button><button data-sub="ufc" onclick="researchGo('ufc')">UFC</button><button data-sub="wta" onclick="researchGo('wta')">WTA</button><button data-sub="stats" onclick="researchGo('stats')">Stats</button><button data-sub="props" onclick="researchGo('props')">Props</button><button data-sub="lab" onclick="researchGo('lab')">Lab</button></div>
-    <div class="row-between"><h2 style="margin:0">CFB</h2><span class="spacer"></span><span class="freshness" id="cfbFresh">&mdash;</span><button class="refreshbtn" title="Refresh" onclick="loadCFB(true)">&#8635;</button></div>
-    <p class="lede">College football matchups first &mdash; tap a game for the side-by-side, tap a team for the deep dive. <b style="color:var(--warn)">Research context, not edges.</b> SP+, records and season stats sanity-check direction; the edge itself still lives in CLV. Lines shown are consensus book numbers, not Pinnacle.</p>
-    <div class="flbanner demo" id="cfbBanner">Loading CFB dataset&hellip;</div>
-    <input class="stsearch" id="cfbQ" placeholder="Search a team&hellip;" style="margin-bottom:12px;display:none" oninput="renderCFB()">
-    <div id="cfbBody"><div class="empty">Loading&hellip;</div></div>
-    <div id="cfbModal" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.72);overflow-y:auto" onclick="if(event.target===this)cfbCloseTeam()">
-      <div id="cfbModalCard" style="max-width:600px;margin:24px auto;background:#0f141b;border:1px solid rgba(255,255,255,.12);border-radius:16px;padding:18px;position:relative"></div>
-    </div>
-  </section>
-
-  <!-- WTA (research engine) -->
-  <section id="v-wta" class="view hide">
-    <div class="stseg research-sub" style="margin-bottom:12px"><button data-sub="cfb" onclick="researchGo('cfb')">CFB</button><button data-sub="ufc" onclick="researchGo('ufc')">UFC</button><button data-sub="wta" onclick="researchGo('wta')">WTA</button><button data-sub="stats" onclick="researchGo('stats')">Stats</button><button data-sub="props" onclick="researchGo('props')">Props</button><button data-sub="lab" onclick="researchGo('lab')">Lab</button></div>
-    <div class="row-between"><h2 style="margin:0">WTA</h2><span class="spacer"></span><span class="freshness" id="wtaFresh">—</span><button class="refreshbtn" title="Refresh" onclick="loadWTA(true)">&#8635;</button></div>
-    <p class="lede">Automated match research, not picks. EdgeDesk asks <b>which matches deserve attention</b>, grades the evidence, and hands the decision back to you. <b style="color:var(--warn)">Research context, not edges.</b> Records are historical; the edge still lives in CLV against Pinnacle.</p>
-    <div class="flbanner demo" id="wtaBanner">Loading WTA research…</div>
-    <div class="stseg" id="wtaSeg" style="margin-bottom:12px"><button class="on" onclick="wtaSetSeg('research')">Today’s research</button><button onclick="wtaSetSeg('watchlist')">Watchlist</button></div>
-    <div id="wtaBody"><div class="empty">Loading…</div></div>
-  </section>
 
   <!-- SETTINGS -->
   <!-- PULSE (social) -->
-    <section id="v-lab" class="view hide">
-    <div class="stseg research-sub" style="margin-bottom:12px"><button data-sub="cfb" onclick="researchGo('cfb')">CFB</button><button data-sub="ufc" onclick="researchGo('ufc')">UFC</button><button data-sub="wta" onclick="researchGo('wta')">WTA</button><button data-sub="stats" onclick="researchGo('stats')">Stats</button><button data-sub="props" onclick="researchGo('props')">Props</button><button data-sub="lab" onclick="researchGo('lab')">Lab</button></div>
-    <div class="lab-lede">TILT DATA LABS &middot; research library. An idea moves exploratory &rarr; validating &rarr; promoted &rarr; active only by clearing closing-line value, never by assertion. Nothing here is a bet.</div>
-    <div id="labHost"></div>
-  </section>
   <section id="v-social" class="view hide">
     <div class="row-between"><h2 style="margin:0">Pulse</h2><span class="spacer"></span><span class="freshness" id="plFresh">—</span><button class="refreshbtn" title="Refresh" onclick="loadSocial(true)">&#8635;</button></div>
     <p class="lede">Every event the scanner is currently pricing, and a room for each one. Talk structure, post your read, argue with someone. <b style="color:var(--warn);font-weight:600">Posts are opinions from other users, not EdgeDesk research</b> — nothing here is graded, and none of it is an edge until CLV says it is.</p>
@@ -1638,19 +1712,19 @@ async function edToken(){
   }
   return s.access_token;
 }
-async function sbFetch(q,extra){
+async function sbFetch(q,extra,signal){
   var t=await edToken();
   var h={apikey:SB_KEY,authorization:"Bearer "+t};
   if(extra)for(var k in extra)h[k]=extra[k];
-  var r=await fetch(SB_URL+"/rest/v1/"+q,{headers:h});
+  var r=await fetch(SB_URL+"/rest/v1/"+q,{headers:h,signal:signal});
   if(r.status===401){                     // token rejected — refresh once, retry once
     var n=await edRefreshSession();
-    if(n&&n.access_token){h.authorization="Bearer "+n.access_token;r=await fetch(SB_URL+"/rest/v1/"+q,{headers:h});}
+    if(n&&n.access_token){h.authorization="Bearer "+n.access_token;r=await fetch(SB_URL+"/rest/v1/"+q,{headers:h,signal:signal});}
   }
   if(!r.ok)throw new Error("db "+r.status);
   return r.json();
 }
-async function sbGet(q){return sbFetch(q);}
+async function sbGet(q,signal){return sbFetch(q,null,signal);}
 async function sbPost(table,rows){
   var t=await edToken();
   var h={apikey:SB_KEY,authorization:"Bearer "+t,"content-type":"application/json",prefer:"return=minimal"};
@@ -1661,8 +1735,20 @@ async function sbPost(table,rows){
 async function sbGetAll(q,page,maxPages){page=page||1000;maxPages=maxPages||10;var out=[],off=0;for(var i=0;i<maxPages;i++){var b=await sbGet(q+'&limit='+page+'&offset='+off);if(!b||!b.length)break;out=out.concat(b);if(b.length<page)break;off+=page;}return out;}
 /* reads the isolated `ufc` research schema (descriptive-only dataset). Requires the
    ufc schema to be exposed under Supabase > API settings > Exposed schemas. */
-async function sbGetUfc(q){return sbFetch(q,{"accept-profile":"ufc"});}
-async function ufcFetchAll(sel,ord){var all=[],p=0,PAGE=1000;for(;p<20;p++){var b=await sbGetUfc(sel+'&order='+(ord||'full_name')+'&limit='+PAGE+'&offset='+(p*PAGE));if(!b||!b.length)break;all=all.concat(b);if(b.length<PAGE)break;}return all;}
+async function sbGetUfc(q,signal){return sbFetch(q,{"accept-profile":"ufc"},signal);}
+/* ONE paginated research fetch helper. schema picks the Postgres schema via the
+   accept-profile header (null = public); per-module page caps and default order
+   are preserved exactly by the ufcFetchAll/stFetchAll/cfbFetchAll shims so every
+   request URL is byte-identical to what each module issued before. */
+async function rsFetchAll(schema,sel,ord,maxPages,signal){
+  var all=[],p=0,PAGE=1000,extra=schema?{"accept-profile":schema}:null;
+  for(;p<maxPages;p++){
+    var b=await sbFetch(sel+'&order='+ord+'&limit='+PAGE+'&offset='+(p*PAGE),extra,signal);
+    if(!b||!b.length)break;all=all.concat(b);if(b.length<PAGE)break;
+  }
+  return all;
+}
+async function ufcFetchAll(sel,ord,signal){return rsFetchAll('ufc',sel,ord||'full_name',20,signal);}
 async function sbCount(filter){
   /* MUST carry the user's access_token, not the anon key. `signals` is gated by
      RLS on has_active_sub(), and anon has no policy at all, so an anon-keyed
@@ -2431,17 +2517,617 @@ GE.devig=function(decs,method){var q=decs.map(function(d){return 1/d;}),S=q.redu
 function $(id){return document.getElementById(id);}
 
 /* ===== nav ===== */
-function show(v){if(v==='research'){researchGo(RESEARCH_SUB);return;}if(v==='boards')v='faults';var s=document.querySelectorAll('.view');for(var i=0;i<s.length;i++)s[i].classList.toggle('hide',s[i].id!=='v-'+v);var b=document.querySelectorAll('.bottomnav button');for(var j=0;j<b.length;j++)b[j].classList.toggle('on',b[j].dataset.v===v);window.scrollTo(0,0);try{if(v!=='settings'){var _pp=prefs();_pp.lastTab=v;localStorage.setItem('edgedesk_prefs',JSON.stringify(_pp));}}catch(_){}
-  if(v==='record')loadRecord();if(v==='edges')loadEdges();if(v==='faults')loadFaults();if(v==='boards')loadBoards();if(v==='news')loadNews();if(v==='ledger')loadMarket();if(v==='stats')loadStats();if(v==='props')loadProps();if(v==='ufc')loadUFC();if(v==='cfb')loadCFB();if(v==='lab')loadLab();if(v==='wta')loadWTA();if(v==='settings')loadSettings();if(v==='discipline')loadDiscipline();/*ADDED*/
+function show(v){if(v==='research'){researchGo(RESEARCH_SUB);return;}if(RESEARCH_MODULES[v]){researchGo(v);return;}/* legacy subview ids (old lastTab values) route into the shell */
+  if(v==='boards')v='faults';
+  researchDeactivate(RESEARCH_SUB);   // leaving the research shell: abort in-flight loads, stop timers
+  var s=document.querySelectorAll('.view');for(var i=0;i<s.length;i++)s[i].classList.toggle('hide',s[i].id!=='v-'+v);var b=document.querySelectorAll('.bottomnav button');for(var j=0;j<b.length;j++)b[j].classList.toggle('on',b[j].dataset.v===v);window.scrollTo(0,0);try{if(v!=='settings'){var _pp=prefs();_pp.lastTab=v;localStorage.setItem('edgedesk_prefs',JSON.stringify(_pp));}}catch(_){}
+  if(v==='record')loadRecord();if(v==='edges')loadEdges();if(v==='faults')loadFaults();if(v==='boards')loadBoards();if(v==='news')loadNews();if(v==='ledger')loadMarket();if(v==='settings')loadSettings();if(v==='discipline')loadDiscipline();/*ADDED*/
   if(v==='social')loadSocial();else plStop();}
+
+/* ===== RESEARCH shell: one sub-nav, one module registry ==================
+   Module contract — every research module registers:
+     { id, label, schema,            // schema = accept-profile ('public' reads carry none)
+       cadenceMs,                    // expected pipeline cadence (null = no SLA claimable)
+       load(force,signal),           // existing loader; must tolerate AbortController signal
+       render(),                     // existing renderer (idempotent)
+       hasData(),                    // true when in-memory state can be painted (SWR)
+       search(q),                    // entity search over loaded rows      (stage 2 UI)
+       openEntity(id), closeEntity(), entityOpen(),   // deep-link / modal hooks
+       deactivate(),                 // stop module timers on switch-away
+       freshness(),                  // {loadedAt, builtAt|null} — builtAt only if the pipeline publishes one
+       availability(), limitations(), provenance }    // stage 2 presentation data
+   Loaders are late-bound through window.* at call time — never at parse time —
+   because loadLab lives in a later <script> block (the ED_COVERAGE wrapper died
+   to exactly that ordering trap). */
+var RESEARCH_MODULES={};
+function researchRegister(m){RESEARCH_MODULES[m.id]=m;m._={loading:null,ctrl:null};}
 var RESEARCH_SUB='cfb';
 window.researchGo=function(sub){
-  if(['cfb','ufc','wta','stats','props','lab'].indexOf(sub)<0)sub='cfb';
+  if(!RESEARCH_MODULES[sub])sub='cfb';
+  var prev=RESEARCH_SUB;
   RESEARCH_SUB=sub;
-  show(sub);
+  var s=document.querySelectorAll('.view');for(var i=0;i<s.length;i++)s[i].classList.toggle('hide',s[i].id!=='v-research');
+  var panels=document.querySelectorAll('#v-research .rpanel');for(var p=0;p<panels.length;p++)panels[p].classList.toggle('hide',panels[p].id!=='v-'+sub);
   var b=document.querySelectorAll('.bottomnav button');for(var j=0;j<b.length;j++)b[j].classList.toggle('on',b[j].dataset.v==='research');
   var bars=document.querySelectorAll('.research-sub button');for(var k=0;k<bars.length;k++)bars[k].classList.toggle('on',bars[k].dataset.sub===sub);
+  window.scrollTo(0,0);
+  plStop();
+  try{var _pp=prefs();_pp.lastTab='research';_pp.lastResearchSub=sub;localStorage.setItem('edgedesk_prefs',JSON.stringify(_pp));}catch(_){}
+  if(prev!==sub)researchDeactivate(prev);
+  researchActivate(sub,false);
+  researchSetHash(sub,null,false);
 };
+window.researchRefresh=function(sub){researchActivate(sub,true);};
+/* activate: paint what we already hold (stale-while-revalidate), then let the
+   module's own TTL guard decide whether to refetch. In-flight loads are deduped;
+   force aborts and restarts. */
+function researchActivate(sub,force){
+  var m=RESEARCH_MODULES[sub];if(!m||!m.load)return;
+  try{rsMetaRender(sub);}catch(_){}
+  /* the model registry backs the maturity badges; one read, repainted on arrival */
+  try{rsModelsLoad().then(function(){if(RESEARCH_SUB===sub)rsMetaRender(sub);});}catch(_){}
+  if(m.hasData&&m.hasData()){try{m.render();}catch(_){}}
+  if(m._.loading){if(!force)return;if(m._.ctrl){try{m._.ctrl.abort();}catch(_){}}}
+  var ctrl=(typeof AbortController!=='undefined')?new AbortController():null;
+  m._.ctrl=ctrl;
+  var p;
+  try{p=Promise.resolve(m.load(!!force,ctrl?ctrl.signal:null));}catch(e){p=Promise.reject(e);}
+  m._.loading=p;
+  p.catch(function(){}).then(function(){if(m._.loading===p){m._.loading=null;}});
+}
+function researchDeactivate(sub){
+  var m=RESEARCH_MODULES[sub];if(!m)return;
+  if(m._.ctrl){try{m._.ctrl.abort();}catch(_){}m._.ctrl=null;}
+  m._.loading=null;
+  if(m.deactivate){try{m.deactivate();}catch(_){}}
+}
+
+/* ---- hash routing: #research/<module>[/<entity-id>] ----
+   Module switches replace the hash (no history spam); opening an entity modal
+   pushes one entry so the browser Back button closes the modal instead of
+   leaving the app. The Record deep link (#receipt=…) is untouched: each router
+   ignores the other's hashes. */
+var RS_HASH_APPLYING=false;
+function researchHashFor(sub,entity){return '#research/'+sub+(entity!=null?'/'+encodeURIComponent(entity):'');}
+function researchParseHash(){
+  var m=(location.hash||'').match(/^#research\/([a-z]+)(?:\/(.+))?$/);
+  if(!m||!RESEARCH_MODULES[m[1]])return null;
+  var ent=null;if(m[2]!=null){try{ent=decodeURIComponent(m[2]);}catch(_){ent=m[2];}}
+  return {sub:m[1],entity:ent};
+}
+function researchSetHash(sub,entity,push){
+  var want=researchHashFor(sub,entity);
+  if(location.hash===want)return;
+  if(entity==null){var cur=researchParseHash();if(cur&&cur.sub===sub&&cur.entity!=null)return;} // keep a deep-linked entity in the URL
+  RS_HASH_APPLYING=true;
+  try{
+    if(push){location.hash=want;return;}          // hashchange fires and clears the flag
+    history.replaceState(null,'',location.pathname+location.search+want);
+  }catch(_){}
+  RS_HASH_APPLYING=false;                          // replaceState fires no hashchange
+}
+window.addEventListener('hashchange',function(){
+  if(RS_HASH_APPLYING){RS_HASH_APPLYING=false;return;}
+  var r=researchParseHash();
+  if(!r)return;
+  var shell=document.getElementById('v-research');
+  if(RESEARCH_SUB!==r.sub||!shell||shell.classList.contains('hide'))researchGo(r.sub);
+  var m=RESEARCH_MODULES[r.sub];if(!m)return;
+  if(r.entity!=null){if(m.openEntity&&(!m.entityOpen||!m.entityOpen()))m.openEntity(r.entity);}
+  else if(m.entityOpen&&m.entityOpen()&&m.closeEntity){m.closeEntity();}
+});
+
+/* ---- module registrations. Cadences per the research protocol owner:
+   WTA/Props/Stats daily, CFB/UFC weekly, Lab none. builtAt is reported ONLY
+   where the pipeline publishes a build time (WTA meta.last_research today);
+   everything else returns null — never a value computed from "now". ---- */
+researchRegister({id:'cfb',label:'CFB',schema:'cfb',cadenceMs:604800000,
+  load:function(force,signal){return window.loadCFB(force,signal);},
+  render:function(){renderCFB();},
+  hasData:function(){return !!(CFB.games.length||CFB.teams.length);},
+  search:function(q){return [];},                              /* stage 2 */
+  openEntity:function(id){window.cfbOpenTeam(encodeURIComponent(id));},
+  closeEntity:function(){window.cfbCloseTeam();},
+  entityOpen:function(){var m=$('cfbModal');return !!(m&&m.style.display!=='none');},
+  freshness:function(){return {loadedAt:CFB.at||null,builtAt:null};},
+  availability:function(){return null;},limitations:function(){return [];},provenance:{}});
+researchRegister({id:'ufc',label:'UFC',schema:'ufc',cadenceMs:604800000,
+  load:function(force,signal){return window.loadUFC(force,signal);},
+  render:function(){ufcRenderMode();},
+  hasData:function(){return !!UFC.fighters.length;},
+  search:function(q){return [];},                              /* stage 2 */
+  openEntity:function(id){window.ufcProfile(id);},
+  closeEntity:function(){window.ufcCloseProfile();},
+  entityOpen:function(){var m=$('ufcModal');return !!(m&&m.style.display==='block');},
+  deactivate:function(){if(UFC.liveTimer){clearInterval(UFC.liveTimer);UFC.liveTimer=null;}},
+  freshness:function(){return {loadedAt:UFC.at||null,builtAt:null};},
+  availability:function(){return null;},limitations:function(){return [];},provenance:{}});
+researchRegister({id:'wta',label:'WTA',schema:'wta',cadenceMs:86400000,
+  load:function(force,signal){return window.loadWTA(force,signal);},
+  render:function(){renderWTA();},
+  hasData:function(){return !!WTA.at;},
+  search:function(q){return [];},                              /* stage 2 */
+  openEntity:null,closeEntity:null,entityOpen:null,
+  freshness:function(){var lr=(WTA.meta&&(WTA.meta['last_research']||WTA.meta['wta_research_last'])||'').split(' ')[0];var t=lr?new Date(lr).getTime():NaN;return {loadedAt:WTA.at||null,builtAt:isNaN(t)?null:t};},
+  availability:function(){return null;},limitations:function(){return [];},provenance:{}});
+researchRegister({id:'stats',label:'Stats',schema:'public',cadenceMs:86400000,
+  load:function(force,signal){return window.loadStats(force,signal);},
+  render:function(){renderStats();},
+  hasData:function(){return !!ST.rows.length;},
+  search:function(q){return [];},                              /* stage 2 */
+  openEntity:null,closeEntity:null,entityOpen:null,
+  freshness:function(){return {loadedAt:ST.at||null,builtAt:null};},
+  availability:function(){return null;},limitations:function(){return [];},provenance:{}});
+researchRegister({id:'props',label:'Props',schema:'public',cadenceMs:86400000,
+  load:function(force,signal){return window.loadProps(force,signal);},
+  render:function(){renderProps();},
+  hasData:function(){return !!PR.rows.length;},
+  search:function(q){return [];},                              /* stage 2 */
+  openEntity:null,closeEntity:null,entityOpen:null,
+  freshness:function(){return {loadedAt:PR.at||null,builtAt:null};},
+  availability:function(){return null;},limitations:function(){return [];},provenance:{}});
+researchRegister({id:'lab',label:'Lab',schema:'public',cadenceMs:null,
+  load:function(force,signal){return (typeof window.loadLab==='function')?window.loadLab(force,signal):Promise.resolve();},
+  render:function(){},
+  hasData:function(){return false;},                            /* Lab has no cache: always refetches */
+  search:function(q){return [];},                              /* stage 2 */
+  openEntity:null,closeEntity:null,entityOpen:null,
+  freshness:function(){return {loadedAt:null,builtAt:null};},
+  availability:function(){return null;},limitations:function(){return [];},provenance:{}});
+
+/* ═══ RESEARCH: provenance, maturity, honest states, freshness ═══════════
+   Two INDEPENDENT axes, both read from data:
+     provenance tier — where a number comes from. T0 Observed / T1 Estimated /
+       T2 Computed (deterministic transforms: de-vig, fair, CLV, differences,
+       percentiles — rendered as computed, never as a model) / T3 Research Model.
+     maturity      — Experimental or Validated, read ONLY from the
+       research_model_current view. A promoted model keeps its tier and flips
+       only its maturity badge.
+   Absence of a registry row NEVER implies validated: no row, unreachable
+   schema, missing view, or a row with no result all render the same honest
+   string. Nothing here stubs, guesses, or fills in a model's record. */
+/* Escapes for innerHTML without changing what a value stringifies to: callers
+   pass (''+v) so null/undefined keep rendering exactly as they do today. */
+function rsEsc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+var RS_TIER={
+  T0:{l:'Observed',c:'rs-t0',d:'A recorded fact from the source feed. Nothing is estimated or modeled.'},
+  T1:{l:'Estimated',c:'rs-t1',d:'An estimate built from historical rates over a stated sample. It describes the past, not the future.'},
+  T2:{l:'Computed',c:'rs-t2',d:'A deterministic transform of other values — de-vig, fair price, CLV, a difference, a percentile. Reproducible arithmetic, not a model.'},
+  T3:{l:'Research Model',c:'rs-t3',d:'The output of a model. Maturity is a separate axis and is read from the model registry.'}
+};
+/* Every research value class this section displays, with its tier, its factual
+   data lineage, and (T3 only) the registry key of the model that produced it. */
+var RS_PROV={
+  cfb:[
+    {nm:'Scores, records, season totals, recruiting, AP poll, roster',tier:'T0',src:'CollegeFootballData ingest (cfb.games / records / team_season_stats / recruiting / rankings / roster)'},
+    {nm:'Book line (spread, total, moneyline)',tier:'T0',src:'cfb.lines — consensus book numbers, not Pinnacle'},
+    {nm:'SP+ rating, ranking, SOS',tier:'T3',model:'cfbd.sp_plus',src:'Third-party opponent-adjusted model, ingested from CollegeFootballData'},
+    {nm:'Pregame Elo',tier:'T3',model:'cfbd.elo',src:'Third-party rating model, ingested from CollegeFootballData (cfb.games.*_pregame_elo)'},
+    {nm:'SP+ favourite margin shown on game rows',tier:'T2',src:'Computed in the browser as home SP+ minus away SP+'},
+    {nm:'Analyst flag drivers and flag-to-close CLV',tier:'T2',src:'cfb.analyst_flags — deterministic rules computed server-side from stored drivers'}
+  ],
+  ufc:[
+    {nm:'Record, dimensions, division, stance',tier:'T0',src:'ufc.fighters (UFCStats/Kaggle backfill)'},
+    {nm:'Career microstats (SLpM, accuracy, defense, takedowns)',tier:'T0',src:'ufc.fighter_career_stats — dataset career averages'},
+    {nm:'Per-fight closing odds',tier:'T0',src:'ufc.fighter_fights.odds_close — dataset consensus price, not Pinnacle'},
+    {nm:'Closing probability shown per bout',tier:'T2',src:'De-vigged two-way consensus price stored in the dataset. Not a CLV measurement.'},
+    {nm:'Finish rate, streaks, activity, opponent quality',tier:'T2',src:'ufc.fighter_derived_metrics — aggregates computed from loaded fight history'},
+    {nm:'Style percentiles and durability',tier:'T2',src:'ufc.fighter_style_metrics percentiles / losses-by-finish computed in the browser'},
+    {nm:'Live win probability',tier:'T3',model:'espn.live_win_prob',src:'Supplied by the ESPN live feed via the ufc_live poller. Not an EdgeDesk model.'}
+  ],
+  wta:[
+    {nm:'Player rankings and ranking date',tier:'T0',src:'wta.daily_research — official WTA rankings as ingested'},
+    {nm:'Favourite decimal price',tier:'T0',src:'wta.daily_research.fav_dec — ingested book price'},
+    {nm:'Match-quality rates (retirement, tiebreak, three-set) and surface edges',tier:'T1',src:'Historical rates over the stated window and sample'},
+    {nm:'Rank gap, star rating, reliability',tier:'T2',src:'Rank arithmetic; stars are a fixed mapping of the pipeline grade; reliability is a share of researched matches'},
+    {nm:'CLV vs close, beat-close rate',tier:'T2',src:'wta.watchlist — graded closing-line arithmetic. The only edge evidence on this screen.'},
+    {nm:'research_score, grade, component scores, disqualifiers',tier:'T3',model:'wta.research_score',src:'Computed server-side by the wta_research pipeline and shipped as stored columns'}
+  ],
+  stats:[
+    {nm:'Player stat lines, leader values, team rosters',tier:'T0',src:'public.stats_players / player_stats — captured from the stat feed'},
+    {nm:'UFC fighter rows shown inside Stats',tier:'T0',src:'ufc.fighters, injected as a browsable league. Descriptive only, never a prediction.'},
+    {nm:'Projection (per-game rate)',tier:'T1',model:null,src:'public.model_props.proj — a season rate'},
+    {nm:'Projection line',tier:'T2',src:'public.model_props.line — a half-point placed near the rate'},
+    {nm:'Over probability',tier:'T3',model:'model_props.p_over',src:'public.model_props.p_over — probability under the modeled variance shape'}
+  ],
+  props:[
+    {nm:'Projection (per-game rate)',tier:'T1',src:'public.model_props.proj — a season rate, not matchup-adjusted'},
+    {nm:'Projection line',tier:'T2',src:'public.model_props.line — a half-point placed near the rate'},
+    {nm:'Over probability',tier:'T3',model:'model_props.p_over',src:'public.model_props.p_over — probability under the modeled variance shape (Poisson for counts, Normal for points)'}
+  ],
+  lab:[
+    {nm:'Research-note findings (headline metric, effect size, p-value)',tier:'T3',src:'public.research_notes.findings — stored outputs of offline analyses, displayed verbatim'},
+    {nm:'Validation gate measurements (sample, CLV, holdout)',tier:'T2',src:'public.note_validations — measured against criteria registered before the test'}
+  ]
+};
+/* First-class known limitations, from module metadata — not buried in prose. */
+var RS_LIMITS={
+  cfb:['Season totals are read without a season filter, so they are labelled without claiming a season.',
+       'Lines are consensus book numbers, not Pinnacle, and are not a CLV measurement.',
+       'Per-play and drive data are not ingested (free CollegeFootballData tier), so the deep dive is season aggregates only.',
+       'SP+ and Elo are third-party models. EdgeDesk has not validated either against closing lines.',
+       'Game lists are capped at 150 rows per segment.'],
+  ufc:['The dataset is descriptive history. Nothing here is a prediction.',
+       'Odds are dataset consensus closing prices, not Pinnacle, and carry no CLV record.',
+       'Per-minute microstats absent from the source are omitted rather than shown as blanks.',
+       'The fighter list renders at most 300 rows; search or filter by division to reach the rest.',
+       'Live model probability and pre-fight CLV stay gated until a UFC model and live capture exist.'],
+  wta:['The qualifying grade is computed server-side by the pipeline. The app displays its result and never recomputes or asserts it.',
+       'Records and rates are historical. They are not a prediction of the match.',
+       'Today’s slate is read at most 400 rows deep; the watchlist at most 100.',
+       'Reliability measures research attention, not profitability. Only the CLV columns are edge evidence.'],
+  stats:['Stat lines are as captured; leagues outside the tile set are not reachable from this screen.',
+         'Projections attach by exact player-name match across two independently captured tables, so a naming mismatch silently drops them.',
+         'In the basic fallback table, ordering uses the first number in the stat line, which is not comparable across positions.',
+         'UFC rows shown here lose the UFC module’s per-fight context.'],
+  props:['Projections are season rates. They are not matchup-adjusted and carry no closing-line validation.',
+         'The variance shape is an assumption of the model, not a measurement.',
+         'Each sport and market list is capped at the top 100 rows.',
+         'A projection is not a price. An edge exists only once these beat a real closing number.'],
+  lab:['Status is set by the validation gate server-side; this screen only displays it.',
+       'Notes and validations are read without pagination, so very large sets can be truncated by the API row cap.',
+       'A headline metric is one of several cells examined; weigh it against the disclosed comparison count.',
+       'The Market Coverage Research section is not mounted in this build and ships separately.']
+};
+
+/* ---- model registry: read-only, from research_model_current -------------
+   Failure modes are deliberately indistinguishable in the UI, because they
+   are indistinguishable in evidence: unreachable schema, missing view, no row
+   for the model, or a row carrying no result all mean the same thing — there
+   is no validation report to show. */
+var RS_MODELS={rows:null,state:'unread',at:0,loading:null};
+var RS_NO_REPORT='No validation report exists for this model.';
+function rsModelsLoad(force){
+  if(!force&&RS_MODELS.state!=='unread'&&(Date.now()-RS_MODELS.at)<300000)return Promise.resolve(RS_MODELS);
+  if(RS_MODELS.loading)return RS_MODELS.loading;
+  RS_MODELS.loading=sbGet('research_model_current?select=*').then(function(rows){
+    RS_MODELS.rows=rows||[];RS_MODELS.state='ok';RS_MODELS.at=Date.now();RS_MODELS.loading=null;return RS_MODELS;
+  }).catch(function(){
+    RS_MODELS.rows=null;RS_MODELS.state='unavailable';RS_MODELS.at=Date.now();RS_MODELS.loading=null;return RS_MODELS;
+  });
+  return RS_MODELS.loading;
+}
+function rsField(row,names){for(var i=0;i<names.length;i++){var v=row[names[i]];if(v!=null&&v!=='')return v;}return null;}
+function rsModelRow(key){
+  if(!key||RS_MODELS.state!=='ok'||!RS_MODELS.rows)return null;
+  var k=String(key).toLowerCase();
+  for(var i=0;i<RS_MODELS.rows.length;i++){
+    var r=RS_MODELS.rows[i];
+    var id=rsField(r,['model_key','key','name','model_name','model']);
+    if(id!=null&&String(id).toLowerCase()===k)return r;
+  }
+  return null;
+}
+/* maturity NEVER upgrades on missing evidence: no row => Experimental. */
+function rsMaturity(key){
+  if(!key)return null;
+  var row=rsModelRow(key);
+  if(!row)return {label:'Experimental',cls:'rs-mat-exp',hasReport:false,row:null};
+  var st=String(rsField(row,['status','model_status'])||'').toLowerCase();
+  var validated=(st==='validated');
+  return {label:validated?'Validated':'Experimental',cls:validated?'rs-mat-val':'rs-mat-exp',
+          hasReport:true,row:row};
+}
+function rsBadgeHTML(tier,key){
+  var t=RS_TIER[tier]||RS_TIER.T2;
+  var out='<span class="rs-badge '+t.c+'" onclick="rsDossierOpen(\''+stEsc(tier)+'\',\''+stEsc(key||'')+'\')" title="Provenance tier"><span class="dot"></span>'+t.l+'</span>';
+  if(tier==='T3'){
+    var m=rsMaturity(key);
+    out+=' <span class="rs-badge '+(m?m.cls:'rs-mat-exp')+'" onclick="rsDossierOpen(\''+stEsc(tier)+'\',\''+stEsc(key||'')+'\')" title="Model maturity"><span class="dot"></span>'+(m?m.label:'Experimental')+'</span>';
+  }else{
+    out+=' <span class="rs-badge rs-mat-na" onclick="rsDossierOpen(\''+stEsc(tier)+'\',\''+stEsc(key||'')+'\')" title="Maturity applies to models only">No model</span>';
+  }
+  return out;
+}
+window.rsDossierClose=function(){var d=$('rsDossier');if(d)d.style.display='none';document.body.style.overflow='';};
+window.rsDossierOpen=function(tier,key){
+  var d=$('rsDossier'),card=$('rsDossierCard');if(!d||!card)return;
+  d.style.display='block';document.body.style.overflow='hidden';d.scrollTop=0;
+  card.innerHTML=rsDossierHTML(tier,key);
+  if(key)rsModelsLoad().then(function(){var c=$('rsDossierCard');if(c&&$('rsDossier').style.display==='block')c.innerHTML=rsDossierHTML(tier,key);});
+};
+function rsDosKV(k,v){return '<div class="rs-dos-kv"><span class="k">'+stEsc(k)+'</span><span class="v">'+(v==null?'<span style="color:var(--faint)">not published</span>':stEsc(String(v)))+'</span></div>';}
+function rsDossierHTML(tier,key){
+  var t=RS_TIER[tier]||RS_TIER.T2;
+  var head='<button onclick="rsDossierClose()" style="position:absolute;top:12px;right:12px;background:none;border:1px solid var(--border);color:var(--dim);border-radius:8px;width:30px;height:30px;font-size:15px;cursor:pointer;line-height:1">×</button>'+
+    '<div style="font-size:15px;font-weight:700;margin-bottom:4px">'+t.l+(key?(' · <span class="mono" style="font-size:12px;color:var(--dim)">'+stEsc(key)+'</span>'):'')+'</div>'+
+    '<p style="margin:0 0 12px;font-size:12.5px;color:var(--dim);line-height:1.55">'+t.d+'</p>';
+  if(!key){
+    return head+'<div class="rs-none">Maturity is a property of models. This value is not a model output, so there is no model record to show.</div>';
+  }
+  if(RS_MODELS.state==='unread')return head+'<div class="rs-none">Reading the model registry…</div>';
+  var m=rsMaturity(key),row=m&&m.row;
+  if(!row){
+    return head+'<div class="rs-none"><b>'+RS_NO_REPORT+'</b><br>Until a registered version and a holdout result exist for it, this model reads as Experimental. Nothing about its performance is assumed.</div>';
+  }
+  var status=rsField(row,['status','model_status']);
+  var results=rsField(row,['holdout_result','result','results','holdout','metrics','computed_metrics']);
+  var passed=row.passed;
+  var body=rsDosKV('Version',rsField(row,['version','model_version']))+
+    rsDosKV('Status',status)+
+    rsDosKV('Training window',rsField(row,['training_window','train_window']))+
+    rsDosKV('Validation window',rsField(row,['validation_window','valid_window']))+
+    rsDosKV('Objective',rsField(row,['objective','goal']))+
+    rsDosKV('Holdout result',(results==null&&passed==null)?null:((results!=null?(typeof results==='object'?JSON.stringify(results):results):'')+(passed==null?'':(' · '+(passed?'passed':'did not pass')+' its registered criteria'))))+
+    rsDosKV('Last updated',rsField(row,['updated_at','registered_at','created_at']));
+  var note=(results==null&&passed==null)
+    ? '<div class="rs-none" style="margin-top:10px"><b>'+RS_NO_REPORT+'</b> A version is registered, but no holdout result has been recorded against its criteria.</div>'
+    : '<div class="sidenote" style="margin-top:10px">Pass/fail is computed against the criteria registered before the test, never asserted after it.</div>';
+  return head+body+note;
+}
+
+/* ---- honest state taxonomy ---------------------------------------------
+   Four distinct states, each with its own copy and its own retry. A module
+   with nothing to show is never silently blank and never blames the wrong
+   thing. */
+function rsClassifyError(e){
+  if(e&&e.name==='AbortError')return null;
+  var msg=(e&&e.message)?String(e.message):'';
+  var m=/db (\d+)/.exec(msg);
+  if(m){
+    var code=+m[1];
+    if(code===404||code===406)return {state:'schema',code:code,msg:msg};
+    if(code===401||code===403)return {state:'auth',code:code,msg:msg};
+    return {state:'network',code:code,msg:msg};
+  }
+  return {state:'network',code:null,msg:msg};
+}
+function rsSetState(modId,state,info){
+  var m=RESEARCH_MODULES[modId];if(!m)return;
+  m._.uistate={state:state,info:info||null};
+  rsMetaRender(modId);
+}
+function rsStateHTML(modId){
+  var m=RESEARCH_MODULES[modId];if(!m)return '';
+  var us=m._.uistate;if(!us||us.state==='ok')return '';
+  var schema=(m.schema&&m.schema!=='public')?m.schema:'public';
+  var retry='<button onclick="researchRefresh(\''+modId+'\')">Try again</button>';
+  var i=us.info||{};
+  if(us.state==='schema'){
+    return '<div class="rs-state"><h4>The '+stEsc(schema)+' schema is not exposed to the API</h4>'+
+      '<p>Supabase answered, but not with data: this schema is not in <b>API settings → Exposed schemas</b>, so the app cannot read it. This is a project setting, not a missing pipeline and not an outage. Nothing is shown rather than something invented.</p>'+
+      (i.msg?'<p class="mono">'+stEsc(i.msg)+'</p>':'')+retry+'</div>';
+  }
+  if(us.state==='empty'){
+    return '<div class="rs-state"><h4>Reachable, but the pipeline has never run</h4>'+
+      '<p>The '+stEsc(schema)+' schema answers and is empty — zero rows. Nothing has been ingested yet, so there is nothing to display. This screen stays empty until a real build lands.</p>'+retry+'</div>';
+  }
+  if(us.state==='zero-qualifying'){
+    var rev=(i.reviewed!=null?i.reviewed:0),ex=(i.excluded!=null?i.excluded:0);
+    return '<div class="rs-state"><h4>Pipeline ran — nothing qualified today</h4>'+
+      '<p><b>'+rev+'</b> reviewed, <b>'+ex+'</b> excluded by the qualifying grade'+(i.slate?(' on the '+stEsc(String(i.slate))+' slate'):'')+'. '+
+      'The grade is computed server-side by the research pipeline; the app displays its result and never recomputes it. An empty board is a real outcome, not a failure.</p>'+retry+'</div>';
+  }
+  if(us.state==='auth'){
+    return '<div class="rs-state"><h4>Not authorised to read this data</h4>'+
+      '<p>The request reached Supabase and was rejected for this session'+(i.code?(' ('+i.code+')'):'')+'. That is an auth or row-level-security result, not an empty dataset — signing in again usually clears it.</p>'+
+      (i.msg?'<p class="mono">'+stEsc(i.msg)+'</p>':'')+retry+'</div>';
+  }
+  return '<div class="rs-state"><h4>Could not reach the database</h4>'+
+    '<p>The request failed before any data came back'+(i.code?(' ('+i.code+')'):'')+'. Nothing is shown rather than something stale.</p>'+
+    (i.msg?'<p class="mono">'+stEsc(i.msg)+'</p>':'')+retry+'</div>';
+}
+
+/* ---- freshness SLA ------------------------------------------------------
+   A module that publishes no build time renders a visibly inactive state.
+   No age is ever computed from "now" as a stand-in for a real build time. */
+var RS_FRESH_EL={cfb:'cfbFresh',ufc:'ufcFresh',wta:'wtaFresh',stats:'stFresh',props:'prFresh'};
+function rsCadenceLabel(ms){
+  if(ms==null)return null;
+  var d=ms/86400000;
+  if(d<=1)return 'daily';if(d<=7)return 'weekly';if(d<=31)return 'monthly';return Math.round(d)+' days';
+}
+function rsFreshness(modId){
+  var m=RESEARCH_MODULES[modId];if(!m||!m.freshness)return null;
+  var f=m.freshness()||{};
+  if(f.builtAt==null)return {published:false};
+  var age=Date.now()-f.builtAt;
+  return {published:true,builtAt:f.builtAt,age:age,stale:!!(m.cadenceMs&&age>m.cadenceMs),cadence:rsCadenceLabel(m.cadenceMs)};
+}
+function rsFreshApply(modId){
+  var el=$(RS_FRESH_EL[modId]);if(!el)return;
+  var f=rsFreshness(modId);
+  if(!f){el.textContent='';return;}
+  if(!f.published){el.textContent='no build time published';el.className='freshness rs-inactive';return;}
+  el.textContent=(f.stale?'stale · ':'')+'built '+ago(f.builtAt);
+  el.className='freshness'+(f.stale?' rs-stale':'');
+}
+function rsFreshHTML(modId){
+  var m=RESEARCH_MODULES[modId];if(!m)return '';
+  var f=rsFreshness(modId);if(!f)return '';
+  if(!f.published){
+    var cad=rsCadenceLabel(m.cadenceMs);
+    return '<div class="rs-freshna"><b>Freshness SLA inactive</b> — this pipeline publishes no build time, so the age of this data cannot be measured'+
+      (cad?(' against its expected '+cad+' cadence'):'')+'. A build time has to come from the pipeline; the app will not compute one from the clock.</div>';
+  }
+  if(f.stale){
+    return '<div class="rs-state" style="padding:11px 12px;margin-bottom:12px;border-color:rgba(217,154,43,.45)"><h4 style="margin:0 0 4px;color:var(--warn)">Stale — past its expected cadence</h4>'+
+      '<p style="margin:0">Last build '+stEsc(ago(f.builtAt))+(f.cadence?(', against an expected '+f.cadence+' cadence'):'')+'. The pipeline has missed a run; what follows is the last build, not today’s.</p></div>';
+  }
+  return '';
+}
+
+/* ---- per-module meta block: freshness, state, provenance, limitations ---- */
+function rsProvHTML(modId){
+  var rows=RS_PROV[modId]||[];
+  if(!rows.length)return '';
+  var body=rows.map(function(p){
+    return '<div class="rs-prov-row"><span class="nm">'+stEsc(p.nm)+'<span class="src">'+stEsc(p.src||'')+'</span></span>'+
+      '<span style="flex:0 0 auto">'+rsBadgeHTML(p.tier,p.model)+'</span></div>';
+  }).join('');
+  return '<details class="rs-prov"><summary><b>Provenance &amp; maturity</b> · what each number on this screen is, and whether a model behind it has been validated · tap a badge for its record</summary>'+
+    '<div class="body">'+body+'</div></details>';
+}
+function rsLimitsHTML(modId){
+  var l=(RESEARCH_MODULES[modId]&&RESEARCH_MODULES[modId].limitations)?RESEARCH_MODULES[modId].limitations():[];
+  if(!l||!l.length)return '';
+  return '<div class="rs-lim"><h4>Known limitations</h4><ul>'+l.map(function(x){return '<li>'+stEsc(x)+'</li>';}).join('')+'</ul></div>';
+}
+function rsMetaRender(modId){
+  var host=$('rsMeta-'+modId);if(!host)return;
+  host.innerHTML=rsFreshHTML(modId)+rsStateHTML(modId)+rsProvHTML(modId)+rsLimitsHTML(modId);
+  rsFreshApply(modId);
+}
+
+/* ---- cross-module entity search ---------------------------------------- */
+function rsNorm(s){return String(s==null?'':s).toLowerCase();}
+function rsSearchAll(q){
+  var out=[],unloaded=[];
+  for(var id in RESEARCH_MODULES){
+    var m=RESEARCH_MODULES[id];
+    if(!m.search)continue;
+    if(m.hasData&&!m.hasData()){if(id!=='lab')unloaded.push(id);continue;}
+    var hits=[];
+    try{hits=m.search(q)||[];}catch(_){hits=[];}
+    for(var i=0;i<hits.length&&i<8;i++){hits[i].module=id;out.push(hits[i]);}
+  }
+  return {hits:out,unloaded:unloaded};
+}
+window.rsToggleSearch=function(){
+  var w=$('rsSearchWrap');if(!w)return;
+  var open=w.classList.contains('hide');
+  w.classList.toggle('hide',!open);
+  $('rsSearchBtn').classList.toggle('on',open);
+  if(open){
+    w.innerHTML='<input class="stsearch" id="rsQ" placeholder="Search every research module — team, fighter, player…" oninput="rsSearchRender()">'+
+      '<div id="rsHits" style="margin-top:8px"></div>';
+    var i=$('rsQ');if(i)i.focus();
+    rsSearchRender();
+  }else{w.innerHTML='';}
+};
+window.rsSearchRender=function(){
+  var host=$('rsHits');if(!host)return;
+  var q=($('rsQ')&&$('rsQ').value||'').trim();
+  if(q.length<2){host.innerHTML='<div class="sidenote">Type at least two characters. Search covers the modules you have opened this session — each one loads its own data.</div>';return;}
+  var r=rsSearchAll(q);
+  var html=r.hits.slice(0,40).map(function(h){
+    return '<div class="rs-hit" onclick="rsOpenHit(\''+stEsc(h.module)+'\',\''+stEsc(String(h.id))+'\')">'+
+      '<span class="mod">'+stEsc(h.module)+'</span><span class="nm">'+stEsc(h.label)+
+      (h.sub?'<span style="display:block;font-size:10.5px;color:var(--faint)">'+stEsc(h.sub)+'</span>':'')+'</span>'+
+      '<button class="rs-save'+(rsSaved(h.module,String(h.id))?' on':'')+'" onclick="event.stopPropagation();rsSaveToggle(\''+stEsc(h.module)+'\',\''+stEsc(String(h.id))+'\',\''+stEsc(h.label)+'\',this)">★</button></div>';
+  }).join('');
+  if(!html)html='<div class="empty">No match in the loaded modules.</div>';
+  if(r.unloaded.length){
+    html+='<div class="sidenote" style="margin-top:8px">Not searched (not loaded yet): '+r.unloaded.map(function(u){
+      return '<a href="#research/'+u+'" onclick="researchGo(\''+u+'\')" style="color:var(--accent)">'+stEsc(u)+'</a>';}).join(' · ')+
+      ' — open a module to include it.</div>';
+  }
+  host.innerHTML=html;
+};
+window.rsOpenHit=function(mod,id){
+  researchGo(mod);
+  var m=RESEARCH_MODULES[mod];if(!m)return;
+  if(m.openEntity){try{m.openEntity(id);}catch(_){}}
+};
+
+/* ---- shared saved-research list (any module's entity) ------------------- */
+function rsSaveBtnHTML(mod,id,label){
+  var on=rsSaved(mod,String(id));
+  return '<button class="rs-save'+(on?' on':'')+'" style="position:absolute;top:12px;right:52px" title="Save to research list"'+
+    ' onclick="rsSaveToggle(\''+rsEsc(mod)+'\',decodeURIComponent(\''+encodeURIComponent(''+id)+'\'),decodeURIComponent(\''+encodeURIComponent(''+(label||id))+'\'),this)">★ save</button>';
+}
+function rsSavedList(){var p=prefs();var l=p.savedResearch;return (l&&l.length)?l:[];}
+function rsSaved(mod,id){var l=rsSavedList();for(var i=0;i<l.length;i++)if(l[i].module===mod&&String(l[i].id)===String(id))return true;return false;}
+window.rsSaveToggle=function(mod,id,label,btn){
+  var p=prefs(),l=(p.savedResearch&&p.savedResearch.length)?p.savedResearch.slice():[],found=-1;
+  for(var i=0;i<l.length;i++)if(l[i].module===mod&&String(l[i].id)===String(id)){found=i;break;}
+  if(found>=0)l.splice(found,1);else l.push({module:mod,id:String(id),label:String(label||id),addedAt:Date.now()});
+  p.savedResearch=l;savePrefs(p);
+  if(btn)btn.classList.toggle('on',found<0);
+  if(!$('rsSavedWrap').classList.contains('hide'))rsSavedRender();
+};
+window.rsToggleSaved=function(){
+  var w=$('rsSavedWrap');if(!w)return;
+  var open=w.classList.contains('hide');
+  w.classList.toggle('hide',!open);
+  $('rsSavedBtn').classList.toggle('on',open);
+  if(open)rsSavedRender();else w.innerHTML='';
+};
+function rsSavedRender(){
+  var w=$('rsSavedWrap');if(!w)return;
+  var l=rsSavedList();
+  if(!l.length){w.innerHTML='<div class="sidenote">Nothing saved yet. Star a team, fighter or player from search or a profile to keep it here. Saved research is a reading list, not a position and not an edge.</div>';return;}
+  w.innerHTML=l.map(function(s,i){
+    return '<div class="rs-hit" onclick="rsOpenHit(\''+stEsc(s.module)+'\',\''+stEsc(String(s.id))+'\')">'+
+      '<span class="mod">'+stEsc(s.module)+'</span><span class="nm">'+stEsc(s.label)+
+      '<span style="display:block;font-size:10.5px;color:var(--faint)" id="rsClv-'+i+'">graded record not checked</span></span>'+
+      '<button class="rs-save" onclick="event.stopPropagation();rsClvCheck('+i+')" title="Check the graded CLV record">CLV</button>'+
+      '<button class="rs-save on" onclick="event.stopPropagation();rsSaveToggle(\''+stEsc(s.module)+'\',\''+stEsc(String(s.id))+'\',\''+stEsc(s.label)+'\')">★</button></div>';
+  }).join('')+'<div class="sidenote" style="margin-top:6px">Saved research is context to read, never a signal. An edge only exists where a graded CLV record says so.</div>';
+}
+/* CLV linkage: link real graded rows where they exist, say so plainly where
+   they do not, and never let "no record" read as "no edge risk". */
+window.rsClvCheck=async function(i){
+  var l=rsSavedList(),s=l[i];if(!s)return;
+  var el=$('rsClv-'+i);if(!el)return;
+  el.textContent='checking the graded record…';
+  var name=String(s.label||'').replace(/[(),*]/g,' ').trim();
+  if(!name){el.textContent='no name to match against the record';return;}
+  var pat='*'+name+'*';
+  var q='signals?select=id,sport_key,market,selection,home_team,away_team,clv,beat_close,graded_at'+
+        '&graded_at=not.is.null&or=(home_team.ilike.'+encodeURIComponent(pat)+',away_team.ilike.'+encodeURIComponent(pat)+',selection.ilike.'+encodeURIComponent(pat)+')'+
+        '&order=graded_at.desc&limit=5';
+  try{
+    var rows=await sbGet(q);
+    if(!rows||!rows.length){el.innerHTML='<span style="color:var(--faint)">No graded CLV record exists for this entity yet — research context is not an edge.</span>';return;}
+    el.innerHTML='<a href="#receipt='+encodeURIComponent(rows[0].id)+'" onclick="show(\'record\')" style="color:var(--accent)">'+rows.length+' graded signal'+(rows.length>1?'s':'')+' on record — open the receipt</a>';
+  }catch(e){
+    el.innerHTML='<span style="color:var(--faint)">Could not check the graded record ('+stEsc((e&&e.message)||'error')+') — this is not evidence either way.</span>';
+  }
+};
+
+/* ---- wire the stage-2 metadata onto the registered modules -------------- */
+(function(){
+  function attach(id,limits,search,prov){
+    var m=RESEARCH_MODULES[id];if(!m)return;
+    m.limitations=function(){return limits;};
+    m.provenance=prov;
+    if(search)m.search=search;
+    m.availability=function(){return (m._.uistate&&m._.uistate.state)||'unread';};
+  }
+  attach('cfb',RS_LIMITS.cfb,function(q){
+    var n=rsNorm(q),out=[];
+    for(var i=0;i<CFB.teams.length&&out.length<8;i++){var t=CFB.teams[i];
+      if(rsNorm(t.school).indexOf(n)>=0)out.push({id:t.school,label:t.school,sub:t.conference||''});}
+    return out;},RS_PROV.cfb);
+  attach('ufc',RS_LIMITS.ufc,function(q){
+    var n=rsNorm(q),out=[];
+    for(var i=0;i<UFC.fighters.length&&out.length<8;i++){var f=UFC.fighters[i];
+      if(rsNorm(f.full_name).indexOf(n)>=0)out.push({id:f.fighter_id,label:f.full_name,sub:f.division||''});}
+    return out;},RS_PROV.ufc);
+  attach('wta',RS_LIMITS.wta,function(q){
+    var n=rsNorm(q),out=[],seen={};
+    function push(id,nm,sub){if(nm&&!seen[nm]&&rsNorm(nm).indexOf(n)>=0){seen[nm]=1;out.push({id:id,label:nm,sub:sub});}}
+    for(var i=0;i<WTA.day.length&&out.length<8;i++){var r=WTA.day[i];push(r.fav_id,r.fav_name,'on the slate');push(r.dog_id,r.dog_name,'on the slate');}
+    for(var j=0;j<WTA.watch.length&&out.length<8;j++){var p=WTA.watch[j];push(p.player_id,p.full_name,'watchlist');}
+    return out;},RS_PROV.wta);
+  attach('stats',RS_LIMITS.stats,function(q){
+    var n=rsNorm(q),out=[];
+    for(var i=0;i<ST.rows.length&&out.length<8;i++){var r=ST.rows[i];
+      if(rsNorm(r.player).indexOf(n)>=0)out.push({id:(r.league||'')+'|'+(r.player||''),label:r.player,sub:(r.league||'')+(r.team?(' · '+r.team):'')});}
+    return out;},RS_PROV.stats);
+  attach('props',RS_LIMITS.props,function(q){
+    var n=rsNorm(q),out=[],seen={};
+    for(var i=0;i<PR.rows.length&&out.length<8;i++){var r=PR.rows[i];
+      var k=(r.sport||'')+'|'+(r.player||'');
+      if(!seen[k]&&rsNorm(r.player).indexOf(n)>=0){seen[k]=1;out.push({id:k+'|'+(r.market||''),label:r.player,sub:(r.sport||'')+(r.team?(' · '+r.team):'')});}}
+    return out;},RS_PROV.props);
+  attach('lab',RS_LIMITS.lab,null,RS_PROV.lab);
+  /* entity jumps for the modules whose "profile" is an in-list view */
+  RESEARCH_MODULES.stats.openEntity=function(id){
+    var parts=String(id).split('|');
+    if(parts[0]&&ST.byLeague[parts[0]]){ST.league=parts[0];ST.view='sport';}
+    ST.mode='players';ST.q=parts[1]||'';   /* renderStats paints ST.q into #stQ itself */
+    try{renderStats();}catch(_){}
+  };
+  RESEARCH_MODULES.props.openEntity=function(id){
+    var parts=String(id).split('|');
+    if(parts[0])PR.sport=parts[0];
+    if(parts[2])PR.market=parts[2];
+    try{renderProps();}catch(_){}
+  };
+})();
+
 var navs=document.querySelectorAll('.bottomnav button');for(var n=0;n<navs.length;n++)navs[n].onclick=(function(b){return function(){show(b.dataset.v);};})(navs[n]);
 
 /* ===== learned weights ===== */
@@ -6465,72 +7151,71 @@ function stFmt(v){v=+v;if(!isFinite(v))return '';return (v%1===0)?v.toLocaleStri
 function stLeadNum(s){if(!s)return -1;var m=String(s).replace(/,/g,'').match(/-?\d+(\.\d+)?/);return m?parseFloat(m[0]):-1;}
 function stEsc(s){return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 function stKey(r){return (r.league||'')+'|'+(r.team||'')+'|'+(r.player||'');}
-async function stFetchAll(tableSelect,orderBy){
-  var all=[],page=0,PAGE=1000,ord=orderBy||'player';
-  for(;page<60;page++){
-    var batch=await sbGet(tableSelect+'&order='+ord+'&limit='+PAGE+'&offset='+(page*PAGE));
-    if(!batch||!batch.length)break;
-    all=all.concat(batch);
-    if(batch.length<PAGE)break;
-  }
-  return all;
-}
-async function loadStats(force){
+async function stFetchAll(tableSelect,orderBy,signal){return rsFetchAll(null,tableSelect,orderBy||'player',60,signal);}
+async function loadStats(force,signal){
   if(!force&&ST.rows.length&&(Date.now()-ST.at)<300000){renderStats();return;}
   try{
-    var rows=[],rich=false;
-    try{rows=await stFetchAll('stats_players?select=league,team,player,position,stat_line,lead_cat,lead_val,cats,leads','league,team');if(rows&&rows.length)rich=true;}catch(_){}
-    if(!rich){try{rows=await stFetchAll('player_stats?select=league,team,player,position,stat_line,rank','league,team');}catch(__){rows=[];}}
-    ST.rich=rich;ST.rows=rows||[];ST.at=Date.now();ST.open={};
-    try{var pp=await stFetchAll('model_props?select=sport,player,market,proj,line,p_over,dist','sport,player');ST_PROPS={};(pp||[]).forEach(function(p){var k=(p.sport||'').toUpperCase()+'|'+p.player;(ST_PROPS[k]=ST_PROPS[k]||[]).push(p);});}catch(_){ST_PROPS={};}
+    var rows=[],rich=false,errRich=null,errBasic=null;
+    try{rows=await stFetchAll('stats_players?select=league,team,player,position,stat_line,lead_cat,lead_val,cats,leads','league,team',signal);if(rows&&rows.length)rich=true;}catch(_e1){errRich=_e1;}
+    if(!rich){try{rows=await stFetchAll('player_stats?select=league,team,player,position,stat_line,rank','league,team',signal);}catch(_e2){errBasic=_e2;rows=[];}}
+    if(signal&&signal.aborted)return;   // the inner catches swallow AbortError — never commit a half-aborted load
+    ST.rich=rich;ST.rows=rows||[];ST.open={};
+    try{var pp=await stFetchAll('model_props?select=sport,player,market,proj,line,p_over,dist','sport,player',signal);ST_PROPS={};(pp||[]).forEach(function(p){var k=(p.sport||'').toUpperCase()+'|'+p.player;(ST_PROPS[k]=ST_PROPS[k]||[]).push(p);});}catch(_){ST_PROPS={};}
     // UFC fighters from the ufc research schema, injected as a 'UFC' league so they
     // browse alongside the other sports (division as team, stance as position, record as stat_line).
-    try{var uf=await ufcFetchAll('fighters?select=full_name,division,stance,reach_inches,wins,losses,draws','full_name');
+    try{var uf=await ufcFetchAll('fighters?select=full_name,division,stance,reach_inches,wins,losses,draws','full_name',signal);
       (uf||[]).forEach(function(x){ST.rows.push({league:'UFC',team:(x.division||'UFC'),player:x.full_name,position:x.stance||'',
         stat_line:((x.wins!=null&&x.losses!=null)?(x.wins+'-'+x.losses+'-'+(x.draws!=null?x.draws:0)):'')+(x.reach_inches!=null?' \u00b7 '+x.reach_inches+'" reach':''),
         lead_val:(x.wins!=null?+x.wins:0)});});
     }catch(_){}
+    if(signal&&signal.aborted)return;
+    ST.at=Date.now();
     ST.byLeague={};ST.rows.forEach(function(r){r._lv=(r.lead_val!=null?+r.lead_val:stLeadNum(r.stat_line));var L=(r.league||'').toUpperCase();(ST.byLeague[L]=ST.byLeague[L]||[]).push(r);});
     var leagues=Object.keys(ST.byLeague).sort();
     if(!ST.league||leagues.indexOf(ST.league)<0)ST.league=leagues.indexOf('CFB')>=0?'CFB':(leagues[0]||null);
-    $('stFresh').textContent=ST.rows.length?((ST.rich?'':'basic \u00b7 ')+'updated '+ago(Date.now())):'no data';
+    rsFreshApply('stats');
+    /* a failed read is an outage, never an "empty dataset" telling the user to run a job */
+    if(errRich&&errBasic){var cs=rsClassifyError(errBasic)||rsClassifyError(errRich);if(!cs)return;rsSetState('stats',cs.state,cs);}
+    else if(!ST.rows.length)rsSetState('stats','empty');
+    else rsSetState('stats','ok');
     renderStats();
-  }catch(e){$('stBody').innerHTML='<div class="empty">Could not reach the database: '+e.message+'</div>';}
+  }catch(e){var c=rsClassifyError(e);if(!c)return;$('stBody').innerHTML='';rsSetState('stats',c.state,c);}
 }
 /* ===== PROPS tab — browsable player-prop projection board (model, not lines) ===== */
 var PR={rows:[],sport:null,market:null,dir:'proj',at:0};
 var PR_MKT={points:'Points',rebounds:'Rebounds',assists:'Assists',threes:'3-Pointers',hr:'Home runs',rbi:'RBI',strikeouts:'Strikeouts'};
 var PR_ORDER=['points','rebounds','assists','threes','hr','rbi','strikeouts'];
-async function loadProps(force){
+async function loadProps(force,signal){
   if(!force&&PR.rows.length&&(Date.now()-PR.at)<300000){renderProps();return;}
   try{
-    var rows=await stFetchAll('model_props?select=sport,player,team,position,market,proj,line,p_over,dist','sport,player');
+    var rows=await stFetchAll('model_props?select=sport,player,team,position,market,proj,line,p_over,dist','sport,player',signal);
     PR.rows=rows||[];PR.at=Date.now();
-    $('prFresh').textContent=PR.rows.length?('updated '+ago(Date.now())):'no projections';
+    rsFreshApply('props');
+    rsSetState('props',PR.rows.length?'ok':'empty');
     renderProps();
-  }catch(e){$('prBody').innerHTML='<div class="empty">Could not reach the database: '+e.message+'</div>';}
+  }catch(e){var c=rsClassifyError(e);if(!c)return;$('prBody').innerHTML='';rsSetState('props',c.state,c);}
 }
 function prSports(){var s={};PR.rows.forEach(function(r){if(r.sport)s[(r.sport||'').toUpperCase()]=1;});return Object.keys(s).sort();}
 function prMarkets(L){var m={};PR.rows.forEach(function(r){if((r.sport||'').toUpperCase()===L)m[r.market]=1;});
   return Object.keys(m).sort(function(a,b){var ia=PR_ORDER.indexOf(a),ib=PR_ORDER.indexOf(b);return (ia<0?99:ia)-(ib<0?99:ib);});}
 function renderProps(){
-  if(!PR.rows.length){$('prSports').innerHTML='';$('prControls').innerHTML='';
-    $('prBody').innerHTML='<div class="empty"><b>No projections yet.</b><br>Run <span class="mono">model_props</span> to populate MLB + WNBA player projections.</div>';return;}
+  if(!PR.rows.length){$('prSports').innerHTML='';$('prControls').innerHTML='';$('prBody').innerHTML='';return;}
   var sports=prSports();if(!PR.sport||sports.indexOf(PR.sport)<0)PR.sport=sports[0];
   $('prSports').innerHTML=sports.map(function(s){return '<button class="stchip'+(s===PR.sport?' on':'')+'" data-s="'+s+'">'+(ST_LABEL[s]||s)+'</button>';}).join('');
   var sc=$('prSports').querySelectorAll('.stchip');for(var i=0;i<sc.length;i++)sc[i].onclick=(function(el){return function(){PR.sport=el.getAttribute('data-s');PR.market=null;renderProps();};})(sc[i]);
   var markets=prMarkets(PR.sport);if(!PR.market||markets.indexOf(PR.market)<0)PR.market=markets[0];
-  $('prControls').innerHTML='<div class="stctlrow"><select class="stsearch" id="prMkt">'+markets.map(function(m){return '<option value="'+m+'"'+(m===PR.market?' selected':'')+'>'+(PR_MKT[m]||m)+'</option>';}).join('')+'</select>'+
+  $('prControls').innerHTML='<div class="stctlrow"><select class="stsearch" id="prMkt">'+markets.map(function(m){return '<option value="'+rsEsc(''+m)+'"'+(m===PR.market?' selected':'')+'>'+rsEsc(''+(PR_MKT[m]||m))+'</option>';}).join('')+'</select>'+
     '<button class="stdir" id="prDir">'+(PR.dir==='proj'?'By projection':'By over %')+'</button></div>';
   var ms=$('prMkt');if(ms)ms.onchange=function(){PR.market=ms.value;renderProps();};
   var db=$('prDir');if(db)db.onclick=function(){PR.dir=(PR.dir==='proj'?'over':'proj');renderProps();};
   var list=PR.rows.filter(function(r){return (r.sport||'').toUpperCase()===PR.sport&&r.market===PR.market;}).slice()
     .sort(function(a,b){return PR.dir==='proj'?(+b.proj-+a.proj):(+b.p_over-+a.p_over);}).slice(0,100);
   PR._list=list;
-  $('prBody').innerHTML=list.length?('<div class="pr-list">'+list.map(function(r,i){
+  $('prBody').innerHTML=list.length?('<div class="st-meta" style="margin-bottom:8px">Over probability '+rsBadgeHTML('T3','model_props.p_over')+' &nbsp; projection '+rsBadgeHTML('T1',null)+'</div>'+
+  '<div class="pr-list">'+list.map(function(r,i){
     var ov=+r.p_over,cls=ov>=52?'up':(ov<=48?'dn':'');
     return '<div class="pr-item"><div class="pr-row" data-i="'+i+'"><span class="pr-rk">'+(i+1)+'</span><div class="pr-nm"><div class="pr-p">'+stEsc(r.player)+'</div><div class="pr-t">'+stEsc(r.team||'')+(r.position?' \u00b7 '+stEsc(r.position):'')+'</div></div>'+
-      '<div class="pr-v"><span class="pr-line">'+(PR_MKT[r.market]||r.market)+' o'+r.line+'</span><span class="pr-proj">'+(+r.proj).toFixed(1)+' proj</span></div>'+
+      '<div class="pr-v"><span class="pr-line">'+rsEsc(''+(PR_MKT[r.market]||r.market))+' o'+rsEsc(''+r.line)+'</span><span class="pr-proj">'+(+r.proj).toFixed(1)+' proj</span></div>'+
       '<span class="pr-over '+cls+'">'+ov.toFixed(0)+'%</span></div><div class="pr-x" id="prx-'+i+'"></div></div>';
   }).join('')+'</div>'+
   '<div class="model-warn" style="margin-top:10px">Season-rate projections with modeled variance (Poisson for counts, Normal for points). Not market prices, not matchup-adjusted, and not CLV-validated. Research to sanity-check \u2014 an edge only exists once these beat a real closing line.</div>')
@@ -6645,8 +7330,8 @@ function stDetail(r){
     var order=['points','rebounds','assists','threes','hr','rbi','strikeouts'];
     pl=pl.slice().sort(function(a,b){var ia=order.indexOf(a.market),ib=order.indexOf(b.market);return (ia<0?99:ia)-(ib<0?99:ib);});
     var rows=pl.map(function(p){var ov=+p.p_over;var cls=ov>=52?'up':(ov<=48?'dn':'');
-      return '<div class="st-cell"><span class="st-cl">'+(ML[p.market]||p.market)+' o'+p.line+'</span><span class="st-cv '+cls+'">'+(+p.proj).toFixed(1)+' proj \u00b7 '+ov.toFixed(0)+'%</span></div>';}).join('');
-    props='<div class="st-catblk"><div class="st-cathdr">EdgeDesk projections \u2014 model, not a line</div><div class="st-grid">'+rows+'</div>'+
+      return '<div class="st-cell"><span class="st-cl">'+rsEsc(''+(ML[p.market]||p.market))+' o'+rsEsc(''+p.line)+'</span><span class="st-cv '+cls+'">'+(+p.proj).toFixed(1)+' proj \u00b7 '+ov.toFixed(0)+'%</span></div>';}).join('');
+    props='<div class="st-catblk"><div class="st-cathdr">EdgeDesk projections \u2014 model, not a line '+rsBadgeHTML('T3','model_props.p_over')+'</div><div class="st-grid">'+rows+'</div>'+
       '<div class="model-warn">Season-rate projection with modeled variance (Poisson/Normal). Not a market price and not CLV-validated \u2014 research, not a call.</div></div>';
   }
   return breakdown+props;
@@ -6660,28 +7345,36 @@ function stBindRows(scope){var taps=scope.querySelectorAll('.strow.tap');for(var
    with each bout's de-vigged CONSENSUS closing probability. These odds are NOT
    Pinnacle and NOT a CLV record — pinnacle_close/CLV fill only from live capture. */
 var UFC={fighters:[],byId:{},fights:{},open:{},cmp:[],div:'All',sort:'wins',divs:[],at:0};
-async function loadUFC(force){
-  if(!force&&UFC.fighters.length&&(Date.now()-UFC.at)<300000){renderUFC();return;}
+/* render honoring the active mode \u2014 re-entering the tab in Live mode must not
+   stomp the live shell with the research list (and vice versa). */
+function ufcRenderMode(){
+  if(UFC.mode==='live'){if(!UFC.liveTimer)window.ufcSetMode('live');}
+  else renderUFC();
+}
+async function loadUFC(force,signal){
+  if(!force&&UFC.fighters.length&&(Date.now()-UFC.at)<300000){ufcRenderMode();return;}
   var ban=$('ufcBanner');
   try{
-    var f=await ufcFetchAll('fighters?select=fighter_id,full_name,nickname,division,stance,height_inches,reach_inches,age,wins,losses,draws,pro_record','full_name');
+    var f=await ufcFetchAll('fighters?select=fighter_id,full_name,nickname,division,stance,height_inches,reach_inches,age,wins,losses,draws,pro_record','full_name',signal);
     UFC.fighters=f||[];UFC.byId={};UFC.fighters.forEach(function(x){UFC.byId[x.fighter_id]=x;});
     // merge computed metrics (real, from the fights you loaded) and the few real career stats
-    try{var dm=await ufcFetchAll('fighter_derived_metrics?select=fighter_id,finish_rate,finish_rate_last5,win_streak,loss_streak,days_since_last_fight,activity_last365,title_fight_experience,average_opponent_reach,average_opponent_age,average_round_finished,average_fight_time,opponent_average_win_pct','fighter_id');
+    try{var dm=await ufcFetchAll('fighter_derived_metrics?select=fighter_id,finish_rate,finish_rate_last5,win_streak,loss_streak,days_since_last_fight,activity_last365,title_fight_experience,average_opponent_reach,average_opponent_age,average_round_finished,average_fight_time,opponent_average_win_pct','fighter_id',signal);
       (dm||[]).forEach(function(x){if(UFC.byId[x.fighter_id])UFC.byId[x.fighter_id].d=x;});}catch(_){}
-    try{var cs=await ufcFetchAll('fighter_career_stats?select=fighter_id,slpm,sapm,striking_accuracy,striking_defense,takedown_avg,takedown_accuracy,takedown_defense,submission_avg,knockdown_avg,control_time_avg','fighter_id');
+    try{var cs=await ufcFetchAll('fighter_career_stats?select=fighter_id,slpm,sapm,striking_accuracy,striking_defense,takedown_avg,takedown_accuracy,takedown_defense,submission_avg,knockdown_avg,control_time_avg','fighter_id',signal);
       (cs||[]).forEach(function(x){if(UFC.byId[x.fighter_id])UFC.byId[x.fighter_id].c=x;});}catch(_){}
-    try{var sm=await ufcFetchAll('fighter_style_metrics?select=fighter_id,primary_style,distance_striker,pressure_striker,counter_striker,wrestler,submission_specialist,grappler,high_output,power_striker,durability_score,finisher','fighter_id');
+    try{var sm=await ufcFetchAll('fighter_style_metrics?select=fighter_id,primary_style,distance_striker,pressure_striker,counter_striker,wrestler,submission_specialist,grappler,high_output,power_striker,durability_score,finisher','fighter_id',signal);
       (sm||[]).forEach(function(x){if(UFC.byId[x.fighter_id])UFC.byId[x.fighter_id].s=x;});}catch(_){}
+    if(signal&&signal.aborted)return;   // inner catches swallow AbortError \u2014 never commit a half-aborted load
     var ds={};UFC.fighters.forEach(function(x){if(x.division)ds[x.division]=1;});UFC.divs=Object.keys(ds).sort();
     UFC.at=Date.now();UFC.open={};UFC.cmp=[];
-    if(!UFC.fighters.length){ban.className='flbanner demo';ban.textContent='\u25b2 UFC schema reachable but empty \u2014 run the Kaggle backfill to populate ufc.fighters / fighter_fights.';}
-    else{ban.className='flbanner live';ban.textContent='\u25cf '+UFC.fighters.length+' fighters \u00b7 finish rates, streaks & opponent quality computed \u00b7 consensus odds (not Pinnacle) \u00b7 research only.';}
-    $('ufcFresh').textContent=UFC.fighters.length?('loaded '+ago(Date.now())):'empty';
-    renderUFC();
+    if(!UFC.fighters.length){ban.style.display='none';rsSetState('ufc','empty');}
+    else{ban.style.display='';ban.className='flbanner live';ban.textContent='\u25cf '+UFC.fighters.length+' fighters \u00b7 finish rates, streaks & opponent quality computed \u00b7 consensus odds (not Pinnacle) \u00b7 research only.';rsSetState('ufc','ok');}
+    rsFreshApply('ufc');
+    ufcRenderMode();
   }catch(e){
-    ban.className='flbanner demo';ban.textContent='\u25b2 ufc schema not reachable \u2014 expose the ufc schema under Supabase > API settings.';
-    $('ufcBody').innerHTML='<div class="empty">Could not reach the ufc schema: '+e.message+'</div>';
+    var c=rsClassifyError(e);if(!c)return;
+    ban.style.display='none';$('ufcBody').innerHTML='';
+    rsSetState('ufc',c.state,c);
   }
 }
 function ufcResultFor(fight,fid){
@@ -6698,7 +7391,7 @@ async function ufcLoadFights(fid){
   try{
     var rows=await sbGetUfc('fighter_fights?select=opponent_id,date,weight_class,winner,method,round,time,odds_close,closing_probability,went_distance,title_fight&fighter_id=eq.'+encodeURIComponent(fid)+'&order=date.desc.nullslast&limit=120');
     UFC.fights[fid]=rows||[];
-  }catch(_){UFC.fights[fid]=[];}
+  }catch(_){return [];}   // transient failure: do NOT cache — the next tap retries instead of showing "no fights" forever
   return UFC.fights[fid];
 }
 function ufcStatGridHTML(x){
@@ -6812,12 +7505,13 @@ function renderUFC(){
     var meta=[x.division,x.stance,(x.reach_inches!=null?x.reach_inches+'" reach':''),(x.d&&x.d.finish_rate!=null?ufcPct(x.d.finish_rate)+' fin':'')].filter(Boolean).join(' \u00b7 ');
     var open=!!UFC.open[x.fighter_id];
     var inCmp=UFC.cmp.indexOf(x.fighter_id)>=0;
-    return '<div class="stitem'+(open?' open':'')+'" id="ufcitem-'+x.fighter_id+'">'+
-      '<div class="strow tap" onclick="ufcToggle(\''+x.fighter_id+'\')"><div class="st-mid"><div class="st-nm">'+stEsc(x.full_name||'\u2014')+(x.nickname?' <span class="st-pos">'+stEsc(x.nickname)+'</span>':'')+'</div>'+
+    var fidA=rsEsc(''+x.fighter_id),fidJ=encodeURIComponent(''+x.fighter_id);
+    return '<div class="stitem'+(open?' open':'')+'" id="ufcitem-'+fidA+'">'+
+      '<div class="strow tap" onclick="ufcToggle(decodeURIComponent(\''+fidJ+'\'))"><div class="st-mid"><div class="st-nm">'+stEsc(x.full_name||'\u2014')+(x.nickname?' <span class="st-pos">'+stEsc(x.nickname)+'</span>':'')+'</div>'+
         '<div class="st-meta">'+stEsc(rec)+(meta?' \u00b7 '+stEsc(meta):'')+'</div></div>'+
-        '<button title="Compare" onclick="ufcCmp(event,\''+x.fighter_id+'\')" style="background:'+(inCmp?'var(--accent,#5d8def)':'transparent')+';color:'+(inCmp?'#fff':'var(--faint)')+';border:1px solid rgba(255,255,255,.18);border-radius:7px;width:30px;height:30px;font-size:14px;cursor:pointer;margin-right:8px">\u21c4</button>'+
+        '<button title="Compare" onclick="ufcCmp(event,decodeURIComponent(\''+fidJ+'\'))" style="background:'+(inCmp?'var(--accent,#5d8def)':'transparent')+';color:'+(inCmp?'#fff':'var(--faint)')+';border:1px solid rgba(255,255,255,.18);border-radius:7px;width:30px;height:30px;font-size:14px;cursor:pointer;margin-right:8px">\u21c4</button>'+
         '<span class="st-chev">\u203a</span></div>'+
-      '<div class="st-detail"'+(open?'':' style="display:none"')+' id="ufcdet-'+x.fighter_id+'"></div></div>';
+      '<div class="st-detail"'+(open?'':' style="display:none"')+' id="ufcdet-'+fidA+'"></div></div>';
   }).join('');
   body.innerHTML=ufcCmpHTML()+ufcControlsHTML()+rows;
   list.forEach(function(x){if(UFC.open[x.fighter_id]){var det=$('ufcdet-'+x.fighter_id);if(det){det.style.display='';det.innerHTML=ufcStatGridHTML(x)+(UFC.fights[x.fighter_id]?ufcFightsHTML(x.fighter_id,UFC.fights[x.fighter_id]):'<div class="fi-empty">Tap the row to load fights.</div>');}}});
@@ -6857,12 +7551,14 @@ async function loadUFCLive(){
   var e=ev[0];
   try{fx=await sbGetUfc('live_fights?select=fight_id,red_name,blue_name,red_fighter_id,blue_fighter_id,status,round,clock,red_strikes,blue_strikes,red_td,blue_td,red_kd,blue_kd,red_win_prob,weight_class,is_main,red_odds,blue_odds&event_id=eq.'+encodeURIComponent(e.event_id)+'&order=is_main.desc,fight_id.asc&limit=30');}catch(_){fx=[];}
   body.innerHTML=ufcLiveShellHTML(e,fx||[]);
-  UFC.liveAt=Date.now();$('ufcFresh').textContent='live \u00b7 '+ago(Date.now());
+  UFC.liveAt=Date.now();
+  var lf=$('ufcFresh');if(lf){lf.textContent='live \u00b7 polling every 20s';lf.className='freshness';}
 }
 function ufcWinProbBar(p){
   if(p==null)return '<div style="font-size:11px;color:var(--faint);text-align:center;margin-top:8px">live win probability \u2014 not provided by source</div>';
   var pct=Math.max(0,Math.min(100,Math.round(+p*100)));
-  return '<div style="margin-top:10px"><div style="display:flex;justify-content:space-between;font-size:10.5px;color:var(--faint);margin-bottom:3px"><span style="color:#e0533a">red '+pct+'%</span><span style="color:#5d8def">'+(100-pct)+'% blue</span></div>'+
+  return '<div style="margin-top:10px"><div style="text-align:center;margin-bottom:4px">'+rsBadgeHTML('T3','espn.live_win_prob')+'</div>'+
+    '<div style="display:flex;justify-content:space-between;font-size:10.5px;color:var(--faint);margin-bottom:3px"><span style="color:#e0533a">red '+pct+'%</span><span style="color:#5d8def">'+(100-pct)+'% blue</span></div>'+
     '<div style="height:9px;border-radius:6px;background:#5d8def;overflow:hidden"><div style="height:100%;width:'+pct+'%;background:#e0533a"></div></div></div>';
 }
 /* ===== Fighter profile modal — REAL data only; style/matchup honestly gated ===== */
@@ -6877,7 +7573,7 @@ function ufcProfileHTML(x,fights){
   var d=x.d||{},c=x.c||{};
   var rec=ufcRec(x);
   var close='<button onclick="ufcCloseProfile()" style="position:absolute;top:12px;right:14px;background:transparent;border:none;color:var(--faint);font-size:22px;cursor:pointer;line-height:1">\u00d7</button>';
-  var header='<div style="padding-right:30px"><div style="font-size:20px;font-weight:800">'+stEsc(x.full_name||'\u2014')+(x.nickname?' <span style="color:var(--faint);font-size:13px;font-weight:500">\u201c'+stEsc(x.nickname)+'\u201d</span>':'')+'</div>'+
+  var header=rsSaveBtnHTML('ufc',x.fighter_id,x.full_name)+'<div style="padding-right:30px"><div style="font-size:20px;font-weight:800">'+stEsc(x.full_name||'\u2014')+(x.nickname?' <span style="color:var(--faint);font-size:13px;font-weight:500">\u201c'+stEsc(x.nickname)+'\u201d</span>':'')+'</div>'+
     '<div style="color:var(--faint);font-size:12.5px;margin-top:3px">'+[rec,x.division,x.stance,(x.age!=null?x.age+' yrs':''),(x.reach_inches!=null?x.reach_inches+'" reach':''),(x.height_inches!=null?x.height_inches+'" tall':'')].filter(Boolean).join(' \u00b7 ')+'</div></div>';
 
   var tend='<div style="margin-top:14px;font-size:11px;letter-spacing:.05em;color:var(--faint);text-transform:uppercase">Tendencies (computed from fight history)</div><div style="margin-top:4px">'+
@@ -6988,12 +7684,12 @@ function ufcChips(fid){
   else if(d.loss_streak)bits.push('L'+d.loss_streak);
   if(d.average_fight_time!=null)bits.push(Math.round(+d.average_fight_time/60)+'m avg');
   if(d.activity_last365!=null)bits.push(d.activity_last365+'/yr');
-  return bits.map(function(b){return '<span style="display:inline-block;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.07);border-radius:6px;padding:2px 7px;margin:3px 4px 0 0;font-size:10px;color:var(--faint)">'+b+'</span>';}).join('');
+  return bits.map(function(b){return '<span style="display:inline-block;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.07);border-radius:6px;padding:2px 7px;margin:3px 4px 0 0;font-size:10px;color:var(--faint)">'+rsEsc(''+b)+'</span>';}).join('');
 }
 function ufcLiveFightCard(g){
   var live=(g.status==='live'||g.status==='in');
   var fin=(g.status==='final'||g.status==='post');
-  var badge=live?'<span style="display:inline-flex;align-items:center;gap:5px;background:rgba(224,83,58,.15);color:#e0533a;font-weight:700;font-size:11px;padding:3px 9px;border-radius:20px">\u25cf R'+(g.round||'?')+(g.clock?' '+g.clock:'')+' LIVE</span>'
+  var badge=live?'<span style="display:inline-flex;align-items:center;gap:5px;background:rgba(224,83,58,.15);color:#e0533a;font-weight:700;font-size:11px;padding:3px 9px;border-radius:20px">\u25cf R'+rsEsc(''+(g.round||'?'))+(g.clock?' '+rsEsc(''+g.clock):'')+' LIVE</span>'
             :(fin?'<span style="background:rgba(255,255,255,.06);color:var(--faint);font-size:11px;padding:3px 9px;border-radius:20px">FINAL</span>':'<span style="background:rgba(93,141,239,.12);color:#5d8def;font-size:11px;padding:3px 9px;border-radius:20px">UPCOMING</span>');
   function stat(l,a,b){
     var an=(a==null?0:+a),bn=(b==null?0:+b);
@@ -7007,9 +7703,9 @@ function ufcLiveFightCard(g){
     '<span style="color:var(--faint);font-size:11px">'+stEsc(g.weight_class||'')+'</span>'+
     '<span style="display:flex;gap:6px;align-items:center">'+badge+mainTag+'</span></div>';
   var names='<div style="display:grid;grid-template-columns:1fr auto 1fr;gap:8px;align-items:start;margin-bottom:2px">'+
-    '<div style="text-align:left"><div onclick="ufcProfile(\''+(g.red_fighter_id||'')+'\')" style="font-weight:700;font-size:15px;color:#e0533a;cursor:pointer">'+stEsc(g.red_name||'Red')+' <span style="font-size:10px;opacity:.55">\u2197</span></div><div style="margin-top:2px">'+ufcChips(g.red_fighter_id)+'</div></div>'+
+    '<div style="text-align:left"><div onclick="ufcProfile(decodeURIComponent(\''+encodeURIComponent(''+(g.red_fighter_id||''))+'\'))" style="font-weight:700;font-size:15px;color:#e0533a;cursor:pointer">'+stEsc(g.red_name||'Red')+' <span style="font-size:10px;opacity:.55">\u2197</span></div><div style="margin-top:2px">'+ufcChips(g.red_fighter_id)+'</div></div>'+
     '<div style="color:var(--faint);font-size:11px;font-weight:600;padding-top:3px">vs</div>'+
-    '<div style="text-align:right"><div onclick="ufcProfile(\''+(g.blue_fighter_id||'')+'\')" style="font-weight:700;font-size:15px;color:#5d8def;cursor:pointer">'+stEsc(g.blue_name||'Blue')+' <span style="font-size:10px;opacity:.55">\u2197</span></div><div style="margin-top:2px">'+ufcChips(g.blue_fighter_id)+'</div></div></div>';
+    '<div style="text-align:right"><div onclick="ufcProfile(decodeURIComponent(\''+encodeURIComponent(''+(g.blue_fighter_id||''))+'\'))" style="font-weight:700;font-size:15px;color:#5d8def;cursor:pointer">'+stEsc(g.blue_name||'Blue')+' <span style="font-size:10px;opacity:.55">\u2197</span></div><div style="margin-top:2px">'+ufcChips(g.blue_fighter_id)+'</div></div></div>';
   var statsBlock='';
   if(live||fin){
     statsBlock='<div style="border-top:1px solid rgba(255,255,255,.06);margin-top:10px;padding-top:6px">'+
@@ -7078,42 +7774,45 @@ var CFB={teams:[],byId:{},byName:{},games:[],ratings:{},records:{},stats:{},rank
 var CFB_BTN='flex:0 0 auto;padding:8px 14px;border-radius:9px;border:1px solid rgba(255,255,255,.18);background:transparent;color:var(--fg,#e8eef7);font-size:12.5px;cursor:pointer';
 
 /* ===== WTA research (isolated wta schema; descriptive-only, edge lives in CLV) ===== */
-async function sbGetWta(q){return sbFetch(q,{"accept-profile":"wta"});}
+async function sbGetWta(q,signal){return sbFetch(q,{"accept-profile":"wta"},signal);}
 var WTA={research:[],watch:[],day:[],meta:{},slate:null,hidden:0,at:0,seg:'research'};
 function wtaPct(w,l){return (w+l)?Math.round(w/(w+l)*100):0;}
 var WTA_TIER={elite:{n:5,label:'Elite research'},strong:{n:4,label:'Strong'},watch:{n:3,label:'Worth watching'}};
 function wtaStars(n){var s='';for(var i=0;i<5;i++)s+=(i<n?'\u2605':'\u2606');return s;}
 
-async function loadWTA(force){
+async function loadWTA(force,signal){
   if(!force&&WTA.at&&(Date.now()-WTA.at)<300000){renderWTA();return;}
   var ban=$('wtaBanner');
   try{
-    var meta=await sbGetWta('meta?select=key,value');
+    var meta=await sbGetWta('meta?select=key,value',signal);
     WTA.meta={};meta.forEach(function(m){WTA.meta[m.key]=m.value;});
-    var rows=await sbGetWta('daily_research?select=*&order=slate_date.desc,research_score.desc&limit=400');
+    var rows=await sbGetWta('daily_research?select=*&order=slate_date.desc,research_score.desc&limit=400',signal);
     var slate=null;rows.forEach(function(r){if(!slate||r.slate_date>slate)slate=r.slate_date;});
     WTA.slate=slate;
     var day=rows.filter(function(r){return r.slate_date===slate;});
     WTA.day=day;
     WTA.hidden=day.filter(function(r){return r.grade==='hidden';}).length;
     WTA.research=day.filter(function(r){return r.grade!=='hidden';});
-    WTA.watch=await sbGetWta('watchlist?select=*&order=beat_close_rate.desc.nullslast,clv_avg.desc.nullslast,reliability.desc,rank.asc&limit=100');
+    WTA.watch=await sbGetWta('watchlist?select=*&order=beat_close_rate.desc.nullslast,clv_avg.desc.nullslast,reliability.desc,rank.asc&limit=100',signal);
     WTA.at=Date.now();
-    var lr=(WTA.meta['last_research']||WTA.meta['wta_research_last']||'').split(' ')[0];
-    $('wtaFresh').textContent=(lr&&!isNaN(new Date(lr).getTime()))?('built '+ago(new Date(lr).getTime())):'\u2014';
+    rsFreshApply('wta');
     if(!rows.length){
-      ban.className='flbanner demo';
-      ban.textContent='\u25b2 wta schema reachable but empty \u2014 run wta_ingest, then wta_research. Nothing is shown until a real slate lands.';
+      ban.style.display='none';rsSetState('wta','empty');
+    }else if(!WTA.research.length&&WTA.day.length){
+      ban.style.display='none';
+      rsSetState('wta','zero-qualifying',{reviewed:WTA.day.length,excluded:WTA.hidden,slate:slate});
     }else{
+      ban.style.display='';
       ban.className='flbanner live';
       ban.textContent='\u25cf '+WTA.research.length+' matches worth research \u00b7 slate '+(slate||'\u2014')+
         ' \u00b7 rankings as of '+(WTA.meta['ranking_as_of']||'\u2014')+' \u00b7 research context, edge still lives in CLV.';
+      rsSetState('wta','ok');
     }
     renderWTA();
   }catch(e){
-    ban.className='flbanner demo';
-    ban.textContent='\u25b2 wta schema not reachable \u2014 run wta_schema.sql and expose the wta schema under Supabase > API settings.';
-    $('wtaBody').innerHTML='<div class="empty">Could not reach the wta schema: '+stEsc(e.message)+'</div>';
+    var c=rsClassifyError(e);if(!c)return;
+    ban.style.display='none';$('wtaBody').innerHTML='';
+    rsSetState('wta',c.state,c);
   }
 }
 window.wtaSetSeg=function(s){
@@ -7140,7 +7839,8 @@ function wtaCard(r){
       '<div style="font-size:14.5px"><b>'+stEsc(r.fav_name)+'</b> <span class="muted">#'+r.fav_rank+'</span> '+
         '<span style="color:var(--faint)">vs</span> <b>'+stEsc(r.dog_name)+'</b> <span class="muted">#'+r.dog_rank+'</span></div>'+
       '<div style="text-align:right;flex:none"><div style="color:var(--gold);font-size:13px;letter-spacing:1px">'+wtaStars(t.n)+'</div>'+
-        '<div style="font-family:\'JetBrains Mono\',monospace;font-size:11px;color:var(--dim)">'+t.label+' \u00b7 '+r.research_score+'</div></div>'+
+        '<div style="font-family:\'JetBrains Mono\',monospace;font-size:11px;color:var(--dim)">'+t.label+' \u00b7 '+r.research_score+'</div>'+
+        '<div style="margin-top:4px">'+rsBadgeHTML('T3','wta.research_score')+'</div></div>'+
     '</div>'+
     '<div class="st-meta" style="margin:4px 0 10px">'+stEsc(r.tourney_title||'')+' \u00b7 '+surf+' \u00b7 gap '+r.rank_gap+price+'</div>'+
     '<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px">'+
@@ -7154,8 +7854,8 @@ function wtaCard(r){
 }
 function wtaRatesLine(rt){
   if(!rt||!rt.matches)return '';
-  return '<div class="st-meta" style="margin:0 0 8px">Favorite match quality ('+rt.window+', '+rt.matches+' matches): '+
-    'retires '+rt.ret_pct+'% \u00b7 tiebreak '+rt.tb_pct+'% \u00b7 3-set '+rt.three_set_pct+'%</div>';
+  return '<div class="st-meta" style="margin:0 0 8px">Favorite match quality ('+rsEsc(''+rt.window)+', '+rsEsc(''+rt.matches)+' matches): '+
+    'retires '+rsEsc(''+rt.ret_pct)+'% \u00b7 tiebreak '+rsEsc(''+rt.tb_pct)+'% \u00b7 3-set '+rsEsc(''+rt.three_set_pct)+'%</div>';
 }
 function wtaDisqLine(dq){
   if(!dq||!dq.length)return '';
@@ -7191,13 +7891,13 @@ function wtaSlateStatusRow(p,r){
   var dot='\u25cf',col,reason;
   if(!isFav){dot='\u25cb';col='var(--dim)';reason='on slate as the underdog vs #'+oppRank+' '+stEsc(opp);}
   else if(r.grade==='elite'||r.grade==='strong'){col='var(--pos)';reason='qualifies \u00b7 '+r.grade+' '+r.research_score+' vs #'+oppRank+' '+stEsc(opp);}
-  else{col='var(--neg)';var dq=(r.disqualifiers&&r.disqualifiers[0])?r.disqualifiers[0].label:('score '+r.research_score+' below the 70 threshold');reason='does not qualify \u00b7 '+stEsc(dq);}
+  else{col='var(--neg)';var dq=(r.disqualifiers&&r.disqualifiers[0])?r.disqualifiers[0].label:'reason not published by the pipeline';reason='does not qualify \u00b7 '+stEsc(dq);}
   return '<div class="strow"><div class="st-mid">'+
     '<div class="st-nm"><span style="color:'+col+'">'+dot+'</span> '+stEsc(p.full_name)+' <span class="muted">#'+(p.rank!=null?p.rank:'\u2014')+'</span></div>'+
     '<div class="st-meta">'+reason+'</div></div></div>';
 }
 function wtaBelowRow(r){
-  var dq=(r.disqualifiers&&r.disqualifiers[0])?r.disqualifiers[0].label:('score '+r.research_score+' below the 70 threshold');
+  var dq=(r.disqualifiers&&r.disqualifiers[0])?r.disqualifiers[0].label:'reason not published by the pipeline';
   return '<div class="strow"><div class="st-mid">'+
     '<div class="st-nm"><b>'+stEsc(r.fav_name)+'</b> <span class="muted">#'+(r.fav_rank!=null?r.fav_rank:'\u2014')+'</span> <span style="color:var(--faint)">vs</span> <b>'+stEsc(r.dog_name)+'</b> <span class="muted">#'+(r.dog_rank!=null?r.dog_rank:'\u2014')+'</span></div>'+
     '<div class="st-meta">score '+r.research_score+' \u00b7 '+stEsc(dq)+'</div>'+
@@ -7226,68 +7926,71 @@ function renderWTA(){
       body.innerHTML='<div class="empty">No WTA slate has been ingested yet. The pipeline (wta_ingest \u2192 wta_odds \u2192 wta_close \u2192 wta_research) has not produced data. Nothing here is real until it has run.</div>';
       return;
     }
-    body.innerHTML='<div class="sidenote" style="margin-bottom:8px">'+WTA.day.length+' matches on this slate ('+(WTA.slate||'\u2014')+'). None cleared the research grade (70). Shown for transparency \u2014 not recommendations, and none is an edge. The edge only lives in CLV against the close.</div>'+
+    body.innerHTML='<div class="sidenote" style="margin-bottom:8px">'+WTA.day.length+' matches on this slate ('+(WTA.slate||'\u2014')+'). None cleared the pipeline\u2019s qualifying grade. Shown for transparency \u2014 not recommendations, and none is an edge. The edge only lives in CLV against the close.</div>'+
       WTA.day.slice().sort(function(a,b){return (b.research_score||0)-(a.research_score||0);}).map(wtaBelowRow).join('');
     return;
   }
-  var note=WTA.hidden?('<div class="sidenote" style="margin-bottom:8px">'+WTA.research.length+' shown \u00b7 '+WTA.hidden+' reviewed and hidden below the 70 threshold.</div>'):'';
+  var note=WTA.hidden?('<div class="sidenote" style="margin-bottom:8px">'+WTA.research.length+' shown \u00b7 '+WTA.hidden+' reviewed and excluded by the pipeline\u2019s qualifying grade.</div>'):'';
   body.innerHTML=note+WTA.research.map(wtaCard).join('');
 }
 
-async function sbGetCfb(q){return sbFetch(q,{"accept-profile":"cfb"});}
-async function cfbFetchAll(sel,ord){var all=[],p=0,PAGE=1000;for(;p<25;p++){var b=await sbGetCfb(sel+'&order='+(ord||'team')+'&limit='+PAGE+'&offset='+(p*PAGE));if(!b||!b.length)break;all=all.concat(b);if(b.length<PAGE)break;}return all;}
+async function sbGetCfb(q,signal){return sbFetch(q,{"accept-profile":"cfb"},signal);}
+async function cfbFetchAll(sel,ord,signal){return rsFetchAll('cfb',sel,ord||'team',25,signal);}
 
-function cfbEsc(s){return encodeURIComponent(s==null?'':s);}
+/* encodeURIComponent leaves apostrophes intact, which breaks the inline
+   onclick="cfbOpenTeam('...')" string for teams like Hawai'i — encode them too. */
+function cfbEsc(s){return encodeURIComponent(s==null?'':s).replace(/'/g,'%27');}
 function cfbLc(s){return (s==null?'':s).toLowerCase();}
 function cfbSp(name){return CFB.ratings[cfbLc(name)]||null;}
 function cfbRecStr(name){var r=CFB.records[cfbLc(name)];if(!r)return '';return (r.total_wins!=null?r.total_wins:0)+'-'+(r.total_losses!=null?r.total_losses:0)+(r.total_ties?'-'+r.total_ties:'');}
 function cfbIsUpcoming(g){if(g.completed)return false;if(!g.start_date)return false;return new Date(g.start_date).getTime()>=Date.now()-3*3600*1000;}
 
-async function loadCFB(force){
+async function loadCFB(force,signal){
   if(!force&&CFB.games.length&&(Date.now()-CFB.at)<300000){renderCFB();return;}
   var ban=$('cfbBanner');
   try{
-    var teams=await cfbFetchAll('teams?select=team_id,school,mascot,abbreviation,conference,classification,color,logo','school');
+    var teams=await cfbFetchAll('teams?select=team_id,school,mascot,abbreviation,conference,classification,color,logo','school',signal);
     CFB.teams=teams||[];CFB.byId={};CFB.byName={};
     CFB.teams.forEach(function(t){CFB.byId[t.team_id]=t;CFB.byName[cfbLc(t.school)]=t;});
 
-    var games=await cfbFetchAll('games?select=game_id,season,week,season_type,start_date,completed,neutral_site,conference_game,venue,home_id,home_team,home_conference,home_points,home_pregame_elo,away_id,away_team,away_conference,away_points,away_pregame_elo,excitement,notes','start_date.desc.nullslast');
+    var games=await cfbFetchAll('games?select=game_id,season,week,season_type,start_date,completed,neutral_site,conference_game,venue,home_id,home_team,home_conference,home_points,home_pregame_elo,away_id,away_team,away_conference,away_points,away_pregame_elo,excitement,notes','start_date.desc.nullslast',signal);
     CFB.games=games||[];
 
-    var rt=await cfbFetchAll('ratings?select=season,team,conference,rating,ranking,offense_rating,offense_ranking,defense_rating,defense_ranking,special_teams_rating,sos','season.desc.nullslast');
+    var rt=await cfbFetchAll('ratings?select=season,team,conference,rating,ranking,offense_rating,offense_ranking,defense_rating,defense_ranking,special_teams_rating,sos','season.desc.nullslast',signal);
     var rSeason=null;rt.forEach(function(r){if(r.season!=null&&(rSeason==null||r.season>rSeason))rSeason=r.season;});
     CFB.qualSeason=rSeason;CFB.ratings={};
     rt.forEach(function(r){if(r.season===rSeason)CFB.ratings[cfbLc(r.team)]=r;});
 
-    var rec=await cfbFetchAll('records?select=season,team,total_wins,total_losses,total_ties,conf_wins,conf_losses','team');
+    var rec=await cfbFetchAll('records?select=season,team,total_wins,total_losses,total_ties,conf_wins,conf_losses','team',signal);
     CFB.records={};rec.forEach(function(r){var k=cfbLc(r.team);if(!CFB.records[k]||r.season>CFB.records[k].season)CFB.records[k]=r;});
 
-    var rk=await cfbFetchAll('rankings?select=season,week,season_type,poll,team,rank,points','rank.asc');
+    var rk=await cfbFetchAll('rankings?select=season,week,season_type,poll,team,rank,points','rank.asc',signal);
     var maxWk={};rk.forEach(function(r){if(r.poll!=='AP Top 25')return;var key=r.season+'|'+r.season_type;if(maxWk[key]==null||r.week>maxWk[key])maxWk[key]=r.week;});
     CFB.ranks={};rk.forEach(function(r){if(r.poll!=='AP Top 25')return;if(r.week===maxWk[r.season+'|'+r.season_type])CFB.ranks[cfbLc(r.team)]=r;});
 
-    var stats=await cfbFetchAll('team_season_stats?select=season,team,stat_name,stat_value','team');
+    var stats=await cfbFetchAll('team_season_stats?select=season,team,stat_name,stat_value','team',signal);
     CFB.stats={};stats.forEach(function(s){var k=cfbLc(s.team);(CFB.stats[k]=CFB.stats[k]||{})[s.stat_name]=s.stat_value;});
 
-    var recr=await cfbFetchAll('recruiting?select=year,team,rank,points','team');
+    var recr=await cfbFetchAll('recruiting?select=year,team,rank,points','team',signal);
     CFB.recruit={};recr.forEach(function(r){var k=cfbLc(r.team);if(!CFB.recruit[k]||r.year>CFB.recruit[k].year)CFB.recruit[k]=r;});
 
-    var lines=await cfbFetchAll('lines?select=game_id,provider,spread,over_under,home_moneyline,away_moneyline','game_id');
+    var lines=await cfbFetchAll('lines?select=game_id,provider,spread,over_under,home_moneyline,away_moneyline','game_id',signal);
     CFB.lines={};lines.forEach(function(l){(CFB.lines[l.game_id]=CFB.lines[l.game_id]||[]).push(l);});
     try{
-      var aflags=await cfbFetchAll('analyst_flags?select=game_id,classification,undervalued_side,sp_plus_implied_spread,market_spread,sp_disagreement_points,elo_implied_spread,elo_disagreement_points,second_order_win_gap,third_down_delta,net_ypg_delta,corroborator_count,conflict,reference_provider,flag_spread,flag_total,close_at,spread_clv_points,ml_clv_prob,available_inputs,missing_inputs,why,observable_factors,partial_factors,hidden_factors,data_limitations,thresholds_version','game_id');
+      var aflags=await cfbFetchAll('analyst_flags?select=game_id,classification,undervalued_side,sp_plus_implied_spread,market_spread,sp_disagreement_points,elo_implied_spread,elo_disagreement_points,second_order_win_gap,third_down_delta,net_ypg_delta,corroborator_count,conflict,reference_provider,flag_spread,flag_total,close_at,spread_clv_points,ml_clv_prob,available_inputs,missing_inputs,why,observable_factors,partial_factors,hidden_factors,data_limitations,thresholds_version','game_id',signal);
       CFB.flags={};aflags.forEach(function(f){CFB.flags[f.game_id]=f;});
     }catch(e){CFB.flags=CFB.flags||{};}
 
     CFB.at=Date.now();CFB.open={};
-    if(!CFB.games.length){ban.className='flbanner demo';ban.textContent='\u25b2 cfb schema reachable but empty \u2014 run the cfb_ingest edge function to populate cfb.games / cfb.ratings.';}
-    else{var up=CFB.games.filter(cfbIsUpcoming).length;ban.className='flbanner live';ban.textContent='\u25cf '+CFB.teams.length+' FBS teams \u00b7 '+CFB.games.length+' games \u00b7 '+up+' upcoming \u00b7 SP+ & records from '+(CFB.qualSeason||'\u2014')+' \u00b7 research context, edge still lives in CLV.';}
-    $('cfbFresh').textContent=CFB.games.length?('loaded '+ago(Date.now())):'empty';
+    if(!CFB.games.length){ban.style.display='none';rsSetState('cfb','empty');}
+    else{ban.style.display='';var up=CFB.games.filter(cfbIsUpcoming).length;ban.className='flbanner live';ban.textContent='\u25cf '+CFB.teams.length+' FBS teams \u00b7 '+CFB.games.length+' games \u00b7 '+up+' upcoming \u00b7 SP+ from '+(CFB.qualSeason||'\u2014')+' \u00b7 records and season totals as ingested \u00b7 research context, edge still lives in CLV.';rsSetState('cfb','ok');}
+    rsFreshApply('cfb');
     if(CFB.seg==='upcoming'&&!CFB.games.filter(cfbIsUpcoming).length)CFB.seg='recent';
     renderCFB();
   }catch(e){
-    ban.className='flbanner demo';ban.textContent='\u25b2 cfb schema not reachable \u2014 expose the cfb schema under Supabase > API settings, then run cfb_ingest.';
-    $('cfbBody').innerHTML='<div class="empty">Could not reach the cfb schema: '+e.message+'</div>';
+    var c=rsClassifyError(e);if(!c)return;      /* aborted loads are not failures */
+    ban.style.display='none';$('cfbBody').innerHTML='';
+    rsSetState('cfb',c.state,c);
   }
 }
 
@@ -7322,7 +8025,7 @@ function cfbGameRow(g){
   var when=d?(d.toLocaleDateString(undefined,{month:'short',day:'numeric'})+(g.completed?'':' '+d.toLocaleTimeString(undefined,{hour:'numeric',minute:'2-digit'}))):'';
   var score=g.completed?(' <span class="mono">'+(g.away_points!=null?g.away_points:'')+'\u2013'+(g.home_points!=null?g.home_points:'')+'</span>'):'';
   var aSp=cfbSp(g.away_team),hSp=cfbSp(g.home_team),edge='';
-  if(aSp&&hSp&&aSp.rating!=null&&hSp.rating!=null){var diff=hSp.rating-aSp.rating;var fav=(diff>=0?g.home_team:g.away_team)||'';edge='<span class="st-pos">SP+ '+fav.split(' ')[0]+' '+(diff>=0?'+':'')+diff.toFixed(1)+'</span>';}
+  if(aSp&&hSp&&aSp.rating!=null&&hSp.rating!=null){var diff=hSp.rating-aSp.rating;var fav=(diff>=0?g.home_team:g.away_team)||'';edge='<span class="st-pos">SP+ '+rsEsc(fav.split(' ')[0])+' '+(diff>=0?'+':'')+diff.toFixed(1)+'</span>';}
   var meta=[when,(g.week!=null?'Wk '+g.week:''),(g.conference_game?'conf':''),(g.neutral_site?'neutral':'')].filter(Boolean).join(' \u00b7 ');
   return '<div class="stitem'+(open?' open':'')+'" id="cfbitem-'+g.game_id+'">'+
     '<div class="strow tap" onclick="cfbToggle(\''+g.game_id+'\')"><div class="st-mid">'+
@@ -7424,8 +8127,9 @@ function cfbTeamHeadHTML(name){
   var sp=cfbSp(name)||{},rec=cfbRecStr(name),t=CFB.byName[cfbLc(name)]||{},rank=CFB.ranks[cfbLc(name)];
   var badge=rank?(' <span class="st-pos">AP #'+rank.rank+'</span>'):'';
   return '<button onclick="cfbCloseTeam()" style="position:absolute;top:12px;right:14px;background:transparent;border:none;color:var(--faint);font-size:22px;cursor:pointer">\u00d7</button>'+
+    rsSaveBtnHTML('cfb',name,name)+
     '<div class="st-nm" style="font-size:18px">'+stEsc(name||'')+badge+'</div>'+
-    '<div class="st-meta" style="margin-bottom:10px">'+stEsc([t.conference,rec?rec+' ('+(CFB.qualSeason||'')+')':''].filter(Boolean).join(' \u00b7 '))+'</div>'+
+    '<div class="st-meta" style="margin-bottom:10px">'+stEsc([t.conference,rec||''].filter(Boolean).join(' \u00b7 '))+'</div>'+
     '<div class="fi-card"><div class="gd-line"><span class="l">SP+ overall</span><span class="v mono">'+(sp.rating!=null?sp.rating.toFixed(1)+(sp.ranking!=null?' \u00b7 #'+sp.ranking:''):'\u2014')+'</span></div>'+
     '<div class="gd-line"><span class="l">SP+ offense</span><span class="v mono">'+(sp.offense_rating!=null?sp.offense_rating.toFixed(1)+(sp.offense_ranking!=null?' \u00b7 #'+sp.offense_ranking:''):'\u2014')+'</span></div>'+
     '<div class="gd-line"><span class="l">SP+ defense</span><span class="v mono">'+(sp.defense_rating!=null?sp.defense_rating.toFixed(1)+(sp.defense_ranking!=null?' \u00b7 #'+sp.defense_ranking:''):'\u2014')+'</span></div></div>';
@@ -7450,9 +8154,9 @@ function cfbTeamBodyHTML(name,roster){
     return '<div class="gd-line"><span class="l">'+stEsc(k)+'</span><span class="v" style="text-align:right;font-size:11px;color:var(--dim)">'+players+'</span></div>';
   }).join(''):'<div class="fi-empty">No roster rows loaded.</div>';
   return (form?'<div class="fi-card" style="margin-top:10px"><div class="gd-line" style="font-weight:600"><span class="l">recent form</span><span class="v mut">last '+rec.length+'</span></div>'+form+'</div>':'')+
-    (statRows||recrRow?'<div class="fi-card" style="margin-top:10px"><div class="gd-line" style="font-weight:600"><span class="l">season totals</span><span class="v mut">'+(CFB.qualSeason||'')+'</span></div>'+statRows+recrRow+'</div>':'')+
+    (statRows||recrRow?'<div class="fi-card" style="margin-top:10px"><div class="gd-line" style="font-weight:600"><span class="l">season totals</span><span class="v mut">season as ingested</span></div>'+statRows+recrRow+'</div>':'')+
     '<div class="fi-card" style="margin-top:10px"><div class="gd-line" style="font-weight:600"><span class="l">roster</span><span class="v mut">'+((roster||[]).length)+' players</span></div>'+rosterHtml+'</div>'+
-    '<div class="fi-foot">Season totals and SP+ are '+(CFB.qualSeason||'the latest')+'-season aggregates from CollegeFootballData \u2014 descriptive research, not a prediction and not an edge. Per-play / drive data is gated on the free CFBD tier.</div>';
+    '<div class="fi-foot">SP+ is the '+(CFB.qualSeason||'latest ingested')+' season. Season totals and the record are CollegeFootballData aggregates as ingested \u2014 the season is not filtered on read, so none is claimed for them here. Descriptive research, not a prediction and not an edge. Per-play / drive data is gated on the free CFBD tier.</div>';
 }
 window.cfbCloseTeam=function(){var m=$('cfbModal');if(m)m.style.display='none';};
 window.cfbOpenTeam=async function(name){
@@ -7463,6 +8167,33 @@ window.cfbOpenTeam=async function(name){
   card.innerHTML=cfbTeamHeadHTML(name)+cfbTeamBodyHTML(name,roster);
 };
 
+/* ---- modal <-> history integration: opening a profile pushes
+   #research/<module>/<entity> so the browser Back button closes the modal
+   instead of leaving the app; closing pops the entry it pushed. The original
+   open/close functions are untouched above — these wrappers only sync the hash. */
+(function(){
+  var _copen=window.cfbOpenTeam,_cclose=window.cfbCloseTeam;
+  window.cfbOpenTeam=function(name){
+    var nm=name;try{nm=decodeURIComponent(name);}catch(_){}
+    try{researchSetHash('cfb',nm,true);}catch(_){}
+    return _copen(name);
+  };
+  window.cfbCloseTeam=function(){
+    var r=null;try{r=researchParseHash();}catch(_){}
+    _cclose();
+    if(r&&r.sub==='cfb'&&r.entity!=null){try{history.back();}catch(_){}}
+  };
+  var _uopen=window.ufcProfile,_uclose=window.ufcCloseProfile;
+  window.ufcProfile=function(fid){
+    try{researchSetHash('ufc',fid,true);}catch(_){}
+    return _uopen(fid);
+  };
+  window.ufcCloseProfile=function(){
+    var r=null;try{r=researchParseHash();}catch(_){}
+    _uclose();
+    if(r&&r.sub==='ufc'&&r.entity!=null){try{history.back();}catch(_){}}
+  };
+})();
 
 /* ===== multi-engine Edges module (injected) ===== */
 /* ===== Multi-engine Edges =====================================================
@@ -8508,7 +9239,7 @@ var PREF_DEFAULTS={
   sports:{},                 /* {} = all. keyed by sport_title */
   minEdge:0, hideNoSharp:false, hideResearchOnly:false, onlyPositive:true,
   books:'trusted', window:'week',
-  defaultTab:'edges', rememberTab:true, lastTab:'edges',
+  defaultTab:'edges', rememberTab:true, lastTab:'edges', lastResearchSub:'cfb', savedResearch:[],
   compact:false, reduceMotion:false, largeText:false
 };
 function prefs(){
@@ -9238,7 +9969,16 @@ try{applyPrefs();renderAvatar();loadSubStatus();
     if(_n)_n.textContent=(_u.user_metadata&&_u.user_metadata.display_name)||(_u.email||'Account').split('@')[0];
     if(_m)_m.textContent=_u.email||'';}
   var _p=prefs();var _t=_p.rememberTab?(_p.lastTab||_p.defaultTab):_p.defaultTab;
-  if(_t&&_t!=='edges'&&$('v-'+_t))show(_t);
+  var _rh=null;try{_rh=researchParseHash();}catch(__){}
+  if(_rh){ /* a #research/<module>[/<entity>] deep link beats the remembered tab */
+    researchGo(_rh.sub);
+    if(_rh.entity!=null){(function(rm,ent){
+      var w=(rm&&rm._&&rm._.loading)?rm._.loading:Promise.resolve();
+      w.then(function(){if(rm&&rm.openEntity&&(!rm.entityOpen||!rm.entityOpen()))rm.openEntity(ent);}).catch(function(){});
+    })(RESEARCH_MODULES[_rh.sub],_rh.entity);}
+  }
+  else if(_t==='research')researchGo(_p.lastResearchSub||'cfb');
+  else if(_t&&_t!=='edges'&&(RESEARCH_MODULES[_t]||$('v-'+_t)))show(_t); /* legacy lastTab ('cfb'…) routes into the shell via show() */
 }catch(_e){}
 
 /* ================= ADDED: BET DISCIPLINE ENGINE (window.Discipline) ================= */
@@ -12277,7 +13017,10 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
 </style>
 <script>
 (function(){
-  function esc(s){return window.stEsc?stEsc(s):String(s==null?'':s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+  /* coerces before escaping: findings/validations carry numeric jsonb (p_value,
+     effect_size, seq, quarter counts) and a .replace on a number throws, which
+     used to kill the whole panel and surface as a bogus "table not migrated". */
+  function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
   function arr(v){return Array.isArray(v)?v:[];}
   function num(v){return v==null||v===''?null:+v;}
   var META={exploratory:{c:'exp',l:'EXPLORATORY'},validating:{c:'val',l:'VALIDATING'},
@@ -12299,10 +13042,13 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
     var th=num(v.clv_threshold), cm=num(v.clv_measured), hc=num(v.holdout_clv);
     var ho=v.holdout_split||{};
     var hoLbl=(ho.train||ho.test)?(' (train '+esc(ho.train||'?')+' / test '+esc(ho.test||'?')+')'):'';
+    /* A missing registered bar cannot be cleared: with st/th null the old
+       comparisons fell back to >=0 / >0 and painted a green pass against a
+       dash. No bar registered => unknown, never satisfied. */
     var rows=
-      checkRow(sa==null?null:(sa>=st), 'Sample \u2265 '+ (st!=null?st:'\u2014'), sa==null?'not run':(sa+' / '+st))+
-      checkRow(cm==null?null:(cm>th), 'CLV > '+ (th!=null?th+'%':'\u2014'), cm==null?'not run':((cm>=0?'+':'')+cm+'%'))+
-      checkRow(hc==null?null:(hc>th), 'Holdout CLV > '+(th!=null?th+'%':'\u2014')+hoLbl, hc==null?'not run':((hc>=0?'+':'')+hc+'%'));
+      checkRow((sa==null||st==null)?null:(sa>=st), 'Sample \u2265 '+ (st!=null?st:'\u2014'), st==null?'no bar registered':(sa==null?'not run':(sa+' / '+st)))+
+      checkRow((cm==null||th==null)?null:(cm>th), 'CLV > '+ (th!=null?th+'%':'\u2014'), th==null?'no bar registered':(cm==null?'not run':((cm>=0?'+':'')+cm+'%')))+
+      checkRow((hc==null||th==null)?null:(hc>th), 'Holdout CLV > '+(th!=null?th+'%':'\u2014')+hoLbl, th==null?'no bar registered':(hc==null?'not run':((hc>=0?'+':'')+hc+'%')));
 
     var msg;
     if(n.status==='validating') msg='Historical support only. Promotion is blocked until a closing-line study clears all three, measured entry to close.';
@@ -12361,16 +13107,24 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
       '</div>';
   }
 
-  window.loadLab=async function(){
+  window.loadLab=async function(force,signal){
     var host=document.getElementById('labHost'); if(!host)return;
     host.innerHTML='<div class="lab-empty">Loading research notes\u2026</div>';
     try{
-      var notes=await sbGet('research_notes?select=*&order=note_no.asc');
-      var vals=await sbGet('note_validations?select=*&order=seq.asc');
+      var notes=await sbGet('research_notes?select=*&order=note_no.asc',signal);
+      var vals=await sbGet('note_validations?select=*&order=seq.asc',signal);
       var by={}; (vals||[]).forEach(function(v){(by[v.note_id]=by[v.note_id]||[]).push(v);});
       window.LAB={notes:notes,vals:by};
-      host.innerHTML=(notes&&notes.length)?notes.map(function(n){return labCard(n,by[n.id]||[]);}).join(''):'<div class="lab-empty">No research notes yet. Submissions enter as exploratory and only reach the model by clearing CLV.</div>';
-    }catch(e){ host.innerHTML='<div class="lab-empty">Could not load research notes. Confirm the research_notes table is migrated and the public schema is exposed.</div>'; }
+      host.innerHTML=(notes&&notes.length)?notes.map(function(n){return labCard(n,by[n.id]||[]);}).join(''):'';
+      if(typeof rsSetState==='function')rsSetState('lab',(notes&&notes.length)?'ok':'empty');
+    }catch(e){
+      if(e&&e.name==='AbortError')return;
+      host.innerHTML='';
+      /* a render exception is not a schema problem — classify, never guess */
+      if(typeof rsClassifyError==='function'&&typeof rsSetState==='function'){
+        var c=rsClassifyError(e);if(!c)return;rsSetState('lab',c.state,c);
+      }else{host.innerHTML='<div class="lab-empty">Could not load research notes.</div>';}
+    }
   };
 })();
 </script>
