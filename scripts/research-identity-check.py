@@ -59,6 +59,10 @@ RENDER_FNS = [
     "prSports", "prMarkets", "renderProps", "propExplain",
     # Lab
     "labCard", "gatePanel", "checkRow",
+    # ATP (tennis deep dive) — guarded from introduction so its counts and
+    # percentages cannot drift silently either
+    "atpName", "atpMeta", "atpRankRow", "atpMatchRow", "renderATP",
+    "atpProfileHead", "atpPct", "atpProfileBody",
 ]
 
 # constants whose literal text is part of the frozen protocol presentation

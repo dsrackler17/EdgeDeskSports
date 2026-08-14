@@ -267,3 +267,64 @@ is a product decision, left to the owner).
 Identity check after this change: **CLEAN**. Section C caught a numeric token
 added to `ufcStatGridHTML` while wiring the definitions; the code was fixed
 (label bound once) rather than the check relaxed.
+
+---
+
+## ATP module + licensed tennis pipeline
+
+The deep-dive builder's tennis half could not ship as delivered: its source is
+CC BY-NC-SA (non-commercial). Rather than drop it or quietly ingest it anyway,
+the constraint is now enforced by the database and the ATP module is built on
+top of a licensed-source schema. See `migrations/TENNIS-SOURCING.md` for what
+was established about each candidate source and what remains for the owner to
+verify.
+
+### Created
+
+- **`migrations/020_tennis_schema.sql`** — a `tennis` schema (ATP + WTA) holding
+  players, rankings and matches, with every aggregate derived as a SQL view
+  (`player_career`, `player_season`, `player_surface`, `h2h`, `rankings_current`,
+  `player_form`), so no stored aggregate can drift from the facts. Includes
+  `tennis.meta` for build stamps — which is what lets a module have a real
+  freshness SLA. RLS + grants mirror the other research schemas.
+  - **Licensing is enforced structurally.** Every fact row carries a
+    `source_key` into `tennis.sources`, whose `commercial_use` flag defaults to
+    false. A `BEFORE INSERT OR UPDATE` trigger refuses unknown or uncleared
+    sources, so ingestion fails closed. Both Sackmann archives are registered
+    as blocked so the ban is explicit rather than implied by absence.
+- **`migrations/tests/020_tennis_schema_test.sql`** — proves it. Executed on
+  PostgreSQL 16: inserts under `sackmann_atp`, an unregistered key, and
+  `licensed_feed` before clearing are all refused; after a human clears the
+  licence the same inserts succeed and every derived view computes correctly.
+  The migration also applies twice cleanly (idempotent).
+- **`supabase/functions/tennis_ingest/index.ts`** — provider-agnostic ingestion.
+  Re-checks the licence gate before fetching anything, then loads through a
+  pluggable adapter: `generic_rest` (any licensed feed, described by a
+  `TENNIS_MAP` field map, no code changes) or `the_odds_api` (already licensed
+  by this app; recent completed matches only — current form, never history).
+  Surface is stored only where the source publishes it and is never inferred;
+  rows missing an id, both players or a date are skipped rather than patched.
+  Writes `tennis.meta` build stamps.
+- **ATP research module** in `app.html`, registered against the same contract as
+  every other module: rankings / results / players segments, a player profile
+  (career, surface splits, 20-match form strip, head-to-head) in a modal with
+  entity deep-linking and Back-to-close, cross-module search, saved-research
+  support, provenance (facts T0, splits T2, **no model anywhere**), known
+  limitations, honest states, and — uniquely — a **real freshness SLA**, because
+  `tennis.meta.last_ingest` is a published build time.
+
+### Verified
+
+- Migration applies and re-applies cleanly on PostgreSQL 16; licence gate and
+  all six derived views tested with real rows.
+- 18/18 ATP browser assertions, plus 20/20 stage-1, 43/43 stage-2 and 12/12
+  dictionary regressions. Zero uncaught console errors.
+- Identity check **CLEAN** (exit 0): additions only, no query removed, no render
+  numeral changed. The new ATP render functions were added to the checker's
+  guarded list so their counts and percentages are protected from here on.
+
+### Not done
+
+WTA still reads its own `wta_research` pipeline and was not touched — the
+research protocol there is frozen. The `tennis` schema already supports
+`tour = 'WTA'`, so a WTA deep dive is a data decision, not a code one.
