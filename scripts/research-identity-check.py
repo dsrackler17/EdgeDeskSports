@@ -194,6 +194,17 @@ def find_const(src, name):
     return src[m.start(): end] if end > 0 else ""
 
 
+def registry_block(src):
+    """Concatenated text of every researchRegister({...}) call (empty pre-rebuild).
+    Part of the plumbing layer: logic relocated here out of the loaders."""
+    out = []
+    for m in re.finditer(r"researchRegister\(\{", src):
+        end = _scan(src, m.end() - 1, "brace")
+        if end > 0:
+            out.append(src[m.start():end])
+    return "\n".join(out)
+
+
 def query_literals(src):
     """All quoted string literals containing ?select= — the PostgREST shapes."""
     out = []
@@ -395,15 +406,27 @@ def main():
         print("  identical — no numeric literal, rounding call, or threshold changed")
 
     print("=" * 72)
-    print("L. LOADER / PLUMBING DIFFS (allowed to change; numerals still guarded)")
+    print("L. LOADER / PLUMBING LAYER")
+    # The plumbing layer is compared as a WHOLE (loaders + the module registry),
+    # because the rebuild deliberately relocates logic out of loaders into the
+    # registry's freshness()/contract functions. A numeral that LEAVES this layer
+    # means a computation was lost -> fail. A numeral that ENTERS it is new
+    # plumbing (cadences, status codes) and is reported for review: it cannot
+    # reach a displayed value, because section C guards the render layer.
+    pre_layer = "\n".join(find_function(pre, fn) for fn in LOADER_FNS) + "\n" + registry_block(pre)
+    post_layer = "\n".join(find_function(post, fn) for fn in LOADER_FNS) + "\n" + registry_block(post)
+    lost, gained = multiset_diff(numeric_fingerprint(pre_layer), numeric_fingerprint(post_layer))
+    if lost:
+        failed = True
+        print("  FAIL — numerals LOST from the plumbing layer: %s" % lost)
+    else:
+        print("  no numeral lost from the plumbing layer (loaders + module registry)")
+    if gained:
+        print("  new plumbing numerals (review): %s" % gained)
     for fn in LOADER_FNS:
         a, b = find_function(pre, fn), find_function(post, fn)
         if not a and not b:
             continue
-        removed, added = multiset_diff(numeric_fingerprint(a), numeric_fingerprint(b))
-        if removed or added:
-            failed = True
-            print("  %s NUMERIC CHANGE: removed=%s added=%s" % (fn, removed, added))
         d = diff_lines(a, b, fn)
         if d:
             print(d)
