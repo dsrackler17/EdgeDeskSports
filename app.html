@@ -2965,7 +2965,7 @@ function rsLimitsHTML(modId){
 }
 function rsMetaRender(modId){
   var host=$('rsMeta-'+modId);if(!host)return;
-  host.innerHTML=rsFreshHTML(modId)+rsStateHTML(modId)+rsProvHTML(modId)+rsLimitsHTML(modId);
+  host.innerHTML=rsFreshHTML(modId)+rsStateHTML(modId)+rsProvHTML(modId)+rsFieldsHTML(modId)+rsLimitsHTML(modId)+rsDatasetHTML(modId);
   rsFreshApply(modId);
 }
 
@@ -3075,6 +3075,104 @@ window.rsClvCheck=async function(i){
     el.innerHTML='<span style="color:var(--faint)">Could not check the graded record ('+stEsc((e&&e.message)||'error')+') — this is not evidence either way.</span>';
   }
 };
+
+/* ═══ SOURCE FIELD DICTIONARY ════════════════════════════════════════════
+   Transcribed verbatim from the deep-dive dataset builder's ufc_schema.csv
+   (field, definition, source, tier). This is documentation of the SOURCE
+   schema — it does not change, rename, or reinterpret any number the app
+   displays. `app` records which column this build actually reads, or null
+   where the source defines a field this app does not read. Where the app
+   displays a DIFFERENT measure than the dictionary defines, that is stated
+   in `note` rather than silently reconciled. */
+var RS_FIELDS={
+  ufc:{
+    origin:'EdgeDesk UFC/WTA/ATP deep-dive builder · ufc_schema.csv',
+    rows:[
+      {f:'fighter_id',d:'Stable fighter identifier',s:'UFCStats-derived',t:'T0',app:'ufc.fighters.fighter_id'},
+      {f:'fighter_name',d:'Full fighter name',s:'UFCStats-derived',t:'T0',app:'ufc.fighters.full_name'},
+      {f:'nickname',d:'Nickname',s:'UFCStats-derived',t:'T0',app:'ufc.fighters.nickname'},
+      {f:'height',d:'Listed height',s:'UFCStats-derived',t:'T0',app:'ufc.fighters.height_inches'},
+      {f:'reach',d:'Listed reach',s:'UFCStats-derived',t:'T0',app:'ufc.fighters.reach_inches'},
+      {f:'stance',d:'Listed stance',s:'UFCStats-derived',t:'T0',app:'ufc.fighters.stance'},
+      {f:'dob',d:'Date of birth',s:'UFCStats-derived',t:'T0',app:null,
+       note:'This build reads ufc.fighters.age instead; date of birth is not read.'},
+      {f:'record_w',d:'Career wins',s:'UFCStats-derived',t:'T0',app:'ufc.fighters.wins'},
+      {f:'record_l',d:'Career losses',s:'UFCStats-derived',t:'T0',app:'ufc.fighters.losses'},
+      {f:'record_d',d:'Career draws',s:'UFCStats-derived',t:'T0',app:'ufc.fighters.draws'},
+      {f:'record_nc',d:'No contests',s:'UFCStats-derived',t:'T0',app:null,
+       note:'Not read by this app. A no-contest is therefore not shown anywhere in the record.'},
+      {f:'sig_strikes_landed_per_min',d:'Significant strikes landed per minute',s:'UFCStats',t:'T0',app:'ufc.fighter_career_stats.slpm'},
+      {f:'sig_strike_accuracy_pct',d:'Significant-strike accuracy',s:'UFCStats',t:'T0',app:'ufc.fighter_career_stats.striking_accuracy'},
+      {f:'sig_strike_defense_pct',d:'Significant-strike defense',s:'UFCStats',t:'T0',app:'ufc.fighter_career_stats.striking_defense'},
+      {f:'sig_strikes_absorbed_per_min',d:'Significant strikes absorbed per minute',s:'UFCStats',t:'T0',app:'ufc.fighter_career_stats.sapm'},
+      {f:'takedown_avg_per_15',d:'Takedowns per 15 minutes',s:'UFCStats',t:'T0',app:'ufc.fighter_career_stats.takedown_avg'},
+      {f:'takedown_accuracy_pct',d:'Takedown accuracy',s:'UFCStats',t:'T0',app:'ufc.fighter_career_stats.takedown_accuracy'},
+      {f:'takedown_defense_pct',d:'Takedown defense',s:'UFCStats',t:'T0',app:'ufc.fighter_career_stats.takedown_defense'},
+      {f:'submission_avg_per_15',d:'Submission attempts per 15 minutes',s:'UFCStats',t:'T0',app:'ufc.fighter_career_stats.submission_avg',
+       note:'This app labels the same column "Sub attempts / fight" on the stat grid and "Submission att/15min" on the profile. The source defines it per 15 minutes.'},
+      {f:'knockdowns',d:'Career knockdowns',s:'UFCStats',t:'T0',app:null,
+       note:'The source defines a career COUNT. This app reads ufc.fighter_career_stats.knockdown_avg (an average) and labels it "Knockdowns/15min". Different measure — not reconciled here.'},
+      {f:'fight_time',d:'Career fight time',s:'UFCStats',t:'T0',app:null,
+       note:'The source defines career total time. This app reads ufc.fighter_derived_metrics.average_fight_time (a per-fight average) instead.'}
+    ],
+    /* app display label -> source field, for the definition shown on each stat */
+    labels:{
+      'Sig. strikes/min (SLpM)':'sig_strikes_landed_per_min',
+      'Sig. strikes absorbed/min':'sig_strikes_absorbed_per_min',
+      'Striking accuracy':'sig_strike_accuracy_pct',
+      'Striking defense':'sig_strike_defense_pct',
+      'Takedowns/15min':'takedown_avg_per_15',
+      'Takedown accuracy':'takedown_accuracy_pct',
+      'Takedown defense':'takedown_defense_pct',
+      'Submission att/15min':'submission_avg_per_15',
+      'Sub attempts / fight':'submission_avg_per_15',
+      'Knockdowns/15min':'knockdowns'
+    }
+  }
+};
+/* definition tooltip for a displayed stat label; '' when the source schema
+   does not define it, so nothing is ever invented to fill the gap. */
+function rsDefFor(modId,label){
+  var D=RS_FIELDS[modId];if(!D||!D.labels)return '';
+  var key=D.labels[label];if(!key)return '';
+  for(var i=0;i<D.rows.length;i++){
+    var r=D.rows[i];
+    if(r.f===key)return r.d+' · source '+r.s+' · tier '+r.t+(r.note?(' · '+r.note):'');
+  }
+  return '';
+}
+function rsFieldsHTML(modId){
+  var D=RS_FIELDS[modId];if(!D)return '';
+  var rows=D.rows.map(function(r){
+    var status=r.app
+      ? '<span style="color:var(--faint)">read as <span class="mono">'+rsEsc(r.app)+'</span></span>'
+      : '<span style="color:var(--warn)">defined in the source schema, not read by this app</span>';
+    return '<div class="rs-prov-row"><span class="nm"><span class="mono" style="font-size:11px">'+rsEsc(r.f)+'</span> — '+rsEsc(r.d)+
+      '<span class="src">'+rsEsc(r.s)+' · '+status+(r.note?(' · '+rsEsc(r.note)):'')+'</span></span>'+
+      '<span style="flex:0 0 auto">'+rsBadgeHTML(r.t,null)+'</span></div>';
+  }).join('');
+  return '<details class="rs-prov"><summary><b>Source field dictionary</b> · every field the source schema defines, what it means, and whether this build reads it</summary>'+
+    '<div class="body"><div class="sidenote" style="margin:6px 0">From '+rsEsc(D.origin)+'. Definitions are the source’s, not this app’s.</div>'+rows+'</div></details>';
+}
+
+/* ═══ DEEP-DIVE DATASET COVERAGE ═════════════════════════════════════════
+   What the deep-dive builder defines vs what the live pipeline actually owns.
+   Where the pipeline does not own it, the conclusion is not displayed
+   anywhere — this block says so rather than leaving the gap unexplained. */
+var RS_DATASETS={
+  ufc:{owned:true,
+    text:'The deep-dive builder’s UFC schema is the dictionary above. This module reads a live ufc schema that carries 17 of its 21 fields; the four it does not carry are listed and are shown nowhere.'},
+  wta:{owned:false,
+    text:'The builder also produces tennis season, surface and head-to-head aggregates from the Jeff Sackmann WTA archive. This module does not read them — it reads the separate wta_research pipeline. No season/surface/H2H aggregate is displayed anywhere in this app, because no pipeline here owns one.'},
+  stats:{owned:false,
+    text:'The builder’s tennis aggregates are not part of the Stats feed. The UFC rows shown here come from the live ufc schema, so the field dictionary in the UFC module governs them.'}
+};
+function rsDatasetHTML(modId){
+  var d=RS_DATASETS[modId];if(!d)return '';
+  return '<div class="rs-lim"><h4>Deep-dive dataset coverage</h4><ul><li>'+rsEsc(d.text)+'</li>'+
+    (modId==='wta'?'<li>The tennis source (Jeff Sackmann archives) is licensed CC BY-NC-SA 4.0 — non-commercial and share-alike. Ingesting it into a commercial database is a licensing question that has to be resolved before any of it can ship here.</li>':'')+
+    '</ul></div>';
+}
 
 /* ---- wire the stage-2 metadata onto the registered modules -------------- */
 (function(){
@@ -7411,7 +7509,8 @@ function ufcStatGridHTML(x){
     ['Sub attempts / fight',c.submission_avg!=null?(+c.submission_avg).toFixed(1):'\u2014']
   ];
   return '<div class="fi-card" style="margin-top:8px">'+cells.map(function(k){
-    return '<div class="gd-line"><span class="l">'+k[0]+'</span><span class="v mono">'+k[1]+'</span></div>';
+    var lbl=k[0],def=(typeof rsDefFor==='function')?rsDefFor('ufc',lbl):'';
+    return '<div class="gd-line"><span class="l"'+(def?(' title="'+rsEsc(def)+'" style="border-bottom:1px dotted rgba(255,255,255,.18);cursor:help"'):'')+'>'+lbl+'</span><span class="v mono">'+k[1]+'</span></div>';
   }).join('')+'<div class="fi-foot">Finish rate, streaks and opponent quality are computed from '+((x.d)?'this fighter\u2019s':'the')+' loaded fight history. Striking/TD accuracy are dataset career averages; per-minute microstats (SLpM, control time) aren\u2019t in this source, so they\u2019re omitted rather than shown as blanks.</div></div>';
 }
 function ufcFightsHTML(fid,rows){
@@ -7568,7 +7667,11 @@ function ufcFinishedLosses(fid,fights){
   var finished=losses.filter(function(g){return /ko|tko|sub/i.test(g.method||'');});
   return {total:losses.length,finished:finished.length};
 }
-function ufcKV(k,v){return '<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.05);font-size:12.5px"><span style="color:var(--faint)">'+k+'</span><span class="mono">'+(v==null?'\u2014':v)+'</span></div>';}
+function ufcKV(k,v){
+  /* the source schema's own definition rides along on the label; empty when
+     the dictionary does not define this stat, so nothing is invented. */
+  var def=(typeof rsDefFor==='function')?rsDefFor('ufc',k):'';
+  return '<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.05);font-size:12.5px"><span style="color:var(--faint)'+(def?';border-bottom:1px dotted rgba(255,255,255,.18);cursor:help':'')+'"'+(def?(' title="'+rsEsc(def)+'"'):'')+'>'+k+'</span><span class="mono">'+(v==null?'\u2014':v)+'</span></div>';}
 function ufcProfileHTML(x,fights){
   var d=x.d||{},c=x.c||{};
   var rec=ufcRec(x);

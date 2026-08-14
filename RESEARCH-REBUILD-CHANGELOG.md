@@ -231,3 +231,39 @@ CFB/UFC weekly, Lab none.
   freshness age, dossier showing the exact no-report string, maturity never
   inferred as Validated, no "70 threshold" string in the DOM, search, saved
   list, and CLV copy. Zero uncaught console errors.
+
+---
+
+## Deep-dive builder integration (uploaded package)
+
+The uploaded `EdgeDesk_UFC_WTA_ATP_deep_dive_builder.zip` is an offline Python
+ETL plus a UFC schema definition. It is preserved verbatim under
+`tools/deep-dive-builder/` (not wired into the app — it downloads CSVs and
+writes a local warehouse; the app is a browser client reading Supabase), with
+`tools/deep-dive-builder/INTEGRATION.md` recording what was and was not used.
+
+Implemented into the stats — the part that is frontend-implementable without
+inventing data, the **UFC source field dictionary** (`ufc_schema.csv`):
+
+- `RS_FIELDS.ufc` carries all 21 fields verbatim (field, definition, source,
+  tier), each mapped to the column this build actually reads.
+- A **Source field dictionary** panel renders in the UFC module: every field,
+  the source's own definition, its tier badge, and whether this build reads it.
+  The four fields it does not read (`dob`, `record_nc`, `knockdowns`,
+  `fight_time`) are marked as such and displayed nowhere.
+- Every UFC career-microstat label in the fighter profile and stat grid now
+  carries the source's definition, so a stat's meaning comes from the schema
+  rather than a hand-written label. Labels the schema does not define carry
+  nothing rather than an invented gloss.
+- A **Deep-dive dataset coverage** block states per module what the builder
+  defines versus what the live pipeline owns, including that the tennis
+  season/surface/H2H aggregates are owned by no pipeline here and are therefore
+  displayed nowhere, and that their source is CC BY-NC-SA 4.0 (non-commercial).
+
+Not implemented: the tennis half (needs tables and a pipeline — out of scope)
+and an ATP module (the app has no ATP data or surface; adding an inactive tab
+is a product decision, left to the owner).
+
+Identity check after this change: **CLEAN**. Section C caught a numeric token
+added to `ufcStatGridHTML` while wiring the definitions; the code was fixed
+(label bound once) rather than the check relaxed.
