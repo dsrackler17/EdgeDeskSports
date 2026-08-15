@@ -101,12 +101,24 @@ a Brier score blended across MLB, UFC and tennis is not a number about anything.
 
 ## Deploy
 
+Two options. The module tree is the source of truth either way.
+
+**A — Supabase CLI (preferred).** Deploys `index.ts` and its 21 modules as-is.
+
+**B — the in-browser function editor.** It deploys one file, so paste
+`bundled.index.ts` instead. That file is GENERATED — regenerate it with
+`npm run bundle` after any change, never edit it by hand. `tests/bundle.test.ts`
+fails if it goes stale, and asserts that the same slate under the same seed
+produces byte-identical rows from both builds.
+
 ```bash
 # 1. schema first — the function writes columns this creates
 supabase db push                     # or: psql -f supabase/migrations/021_model_predict_multisport.sql
 
-# 2. the function
+# 2. the function — option A
 supabase functions deploy model_predict --no-verify-jwt
+#    option B: paste supabase/functions/model_predict/bundled.index.ts into the
+#    dashboard editor as `model_predict`, Verify-JWT OFF
 
 # 3. validate without writing
 curl -s "$SUPABASE_URL/functions/v1/model_predict?dry=1" | jq '.sports | to_entries[] | {sport:.key, status:.value.status, built:.value.rows_built}'
@@ -140,7 +152,7 @@ report `insufficient_data`: `tennis`, `ufc`.
 
 ```bash
 npm install
-npm run check      # tsc --noEmit && node --test tests/*.test.ts
+npm run check      # bundle && tsc --noEmit && node --test tests/*.test.ts
 ```
 
 The MLB suite pins `mlb_runs_v1.2_nbinom_dh` against a **reference
