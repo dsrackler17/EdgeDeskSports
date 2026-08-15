@@ -7692,6 +7692,12 @@ window.ufcSetMode=function(m){
    updating. A status column is not evidence about the present on its own. */
 var UFC_LIVE_WINDOW=8*3600*1000;      /* a card runs ~6h; 8h is generous */
 function ufcEventAge(e){var t=e&&e.start_time?new Date(e.start_time).getTime():NaN;return isFinite(t)?(Date.now()-t):NaN;}
+/* how long ago the ufc_live poller last wrote this row. This is the real
+   "is the feed alive" signal — an event's start_time only says when it began. */
+function ufcPollerLabel(e){
+  var t=e&&e.updated_at?new Date(e.updated_at).getTime():NaN;
+  return isFinite(t)?(' Poller last wrote '+ago(t)+'.'):' This row carries no write stamp, so the poller\u2019s last run is unknown.';
+}
 /* how long ago the event started, phrased for the stale banner. Lives here with
    the other event helpers rather than inside the shell renderer. */
 function ufcStaleAgeLabel(e){
@@ -7722,7 +7728,7 @@ function ufcPickEvent(evs){
 async function loadUFCLive(){
   var body=$('ufcBody');if(!body)return;
   var ev=[],fx=[];
-  try{ev=await sbGetUfc('live_events?select=event_id,name,status,start_time&order=start_time.desc&limit=25');}catch(e){
+  try{ev=await sbGetUfc('live_events?select=event_id,name,status,start_time,updated_at&order=start_time.desc&limit=25');}catch(e){
     body.innerHTML=ufcLiveShellHTML(null,[],'none')+'<div class="empty" style="margin-top:10px">Live source not reachable. Deploy the <b>ufc_live</b> poller and create the live tables (ufc_live.sql). Until then, the Live Center has no event to show.</div>';
     return;
   }
@@ -7732,7 +7738,12 @@ async function loadUFCLive(){
   try{fx=await sbGetUfc('live_fights?select=fight_id,red_name,blue_name,red_fighter_id,blue_fighter_id,status,round,clock,red_strikes,blue_strikes,red_td,blue_td,red_kd,blue_kd,red_win_prob,weight_class,is_main,red_odds,blue_odds&event_id=eq.'+encodeURIComponent(e.event_id)+'&order=is_main.desc,fight_id.asc&limit=30');}catch(_){fx=[];}
   body.innerHTML=ufcLiveShellHTML(e,fx||[],pick.mode);
   UFC.liveAt=Date.now();
-  var lf=$('ufcFresh');if(lf){lf.textContent='live \u00b7 polling every 20s';lf.className='freshness';}
+  var lf=$('ufcFresh');
+  if(lf){
+    var w=e&&e.updated_at?new Date(e.updated_at).getTime():NaN;
+    lf.textContent=isFinite(w)?('feed '+ago(w)):'feed age unknown';
+    lf.className='freshness'+((pick.mode==='stale')?' rs-stale':'');
+  }
 }
 function ufcWinProbBar(p){
   if(p==null)return '<div style="font-size:11px;color:var(--faint);text-align:center;margin-top:8px">live win probability \u2014 not provided by source</div>';
@@ -7921,7 +7932,8 @@ function ufcLiveShellHTML(e,fx,mode){
       head='<div class="flbanner demo" style="font-size:13px">\u25b2 <b>Live feed stale</b> \u00b7 '+stEsc(e.name||'UFC event')+when+
         ' \u2014 the most recent event on file is still marked <span class="mono">'+rsEsc(''+(e.status||'?'))+'</span>'+
         ufcStaleAgeLabel(e)+
-        '. The <b>ufc_live</b> poller has not updated it, so this is not being shown as live. Fights below are the last state it wrote.</div>';
+        '. The <b>ufc_live</b> poller has not moved it on, so this is not being shown as live.'+
+        ufcPollerLabel(e)+' Fights below are the last state it wrote.</div>';
     }else{
       var st=(mode==='live')?'<span style="color:#e0533a;font-weight:700">\u25cf LIVE NOW</span>':'<span style="color:#5d8def;font-weight:600">UPCOMING</span>';
       head='<div class="flbanner live" style="font-size:13px">'+st+' \u00b7 '+stEsc(e.name||'UFC event')+when+'</div>';
