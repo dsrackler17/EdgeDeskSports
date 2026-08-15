@@ -33,6 +33,26 @@ curl -X POST https://<project>.supabase.co/functions/v1/ufc_live \
 - `401` → the `x-cron-secret` header is missing or does not match.
 - `500` with "CRON_SECRET is not set" → the secret was never set, so **every**
   invocation was failing. This is the most likely reason a poller silently stops.
+- `stamp_error` non-null → the run happened but was not written to the ledger.
+  Almost always means `migrations/022_ufc_meta.sql` has not been applied yet.
+
+## The run ledger
+
+Every invocation — including crashes — writes a row to `ufc.build_log` via
+`ufc.stamp_build` (migration 022). That is what makes a dead poller visible: a
+function that stops running leaves data on screen that still looks plausible,
+and the ledger is the only thing that says when it last ran.
+
+```sql
+select * from ufc.pipeline_health;                 -- latest run per job
+select job, status, started_at, error
+  from ufc.build_log where status <> 'ok'
+ order by started_at desc limit 20;                -- the failures
+```
+
+This function passes `p_advance_built_at: false`. It streams a live card; it
+does not rebuild the fighter dataset, so it must never make the research screen
+look freshly built. Only the sync jobs advance `ufc.meta.built_at`.
 
 ## What was wrong before
 

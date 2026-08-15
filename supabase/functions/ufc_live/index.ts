@@ -55,6 +55,27 @@ const pub = createClient(
 );
 const SUMMARY = (id: string) => `https://site.api.espn.com/apis/site/v2/sports/mma/ufc/summary?event=${id}`;
 
+/* Record every run in ufc.build_log (migration 022). A poller that dies quietly
+   looks exactly like a quiet night, so the failures are written down too.
+   advance_built_at is FALSE here: this function streams a live card, it does not
+   rebuild the fighter dataset, and it must never make research data look freshly
+   built. Stamping is best-effort — if the ledger is missing the poll still runs. */
+async function stamp(rows: number | null, detail: Record<string, unknown>, error: string | null) {
+  try {
+    const r = await db.rpc("stamp_build", {
+      p_job: "ufc_live",
+      p_rows: rows,
+      p_source: "ESPN scoreboard + capture signals",
+      p_detail: detail,
+      p_error: error,
+      p_advance_built_at: false,
+    });
+    return r.error ? r.error.message : null;
+  } catch (e) {
+    return String((e as any)?.message ?? e);
+  }
+}
+
 /* an event that started this long ago and is still open was never closed out */
 const STALE_AFTER_MS = 12 * 3600 * 1000;
 
@@ -382,9 +403,21 @@ Deno.serve(async (req) => {
       r.red_strikes != null || r.blue_strikes != null || r.red_td != null ||
       r.blue_td != null || r.red_kd != null || r.blue_kd != null).length;
 
+    const stampError = await stamp(rows.length, {
+      event: eventId,
+      event_name: ev?.name ?? null,
+      status: state(ev),
+      fights_with_stats: withStats,
+      odds_matched: oddsMatched,
+      odds_unmatched: oddsUnmatched,
+      window_events: events.length,
+      stale_events_closed: closed,
+    }, [eventsError, closeError, fightErr, oddsError, orphanError].filter(Boolean).join("; ") || null);
+
     return json({
       ok: true,
       started_at: startedAt,
+      stamp_error: stampError,
       event: eventId,
       event_name: ev?.name ?? null,
       status: state(ev),
@@ -410,6 +443,9 @@ Deno.serve(async (req) => {
       fights_error: fightErr,
     });
   } catch (e) {
-    return json({ ok: false, started_at: startedAt, crash: String((e as any)?.stack || e) }, 500);
+    const crash = String((e as any)?.stack || e);
+    /* a crash is the run most worth recording — write it before answering */
+    await stamp(null, { phase: "crash" }, crash.slice(0, 2000));
+    return json({ ok: false, started_at: startedAt, crash }, 500);
   }
 });

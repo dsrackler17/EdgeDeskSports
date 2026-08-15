@@ -1750,7 +1750,13 @@ async function sbFetch(q,extra,signal){
     var n=await edRefreshSession();
     if(n&&n.access_token){h.authorization="Bearer "+n.access_token;r=await fetch(SB_URL+"/rest/v1/"+q,{headers:h,signal:signal});}
   }
-  if(!r.ok)throw new Error("db "+r.status);
+  if(!r.ok){
+    /* message is unchanged (rsClassifyError still reads it); status and body ride
+       along so a caller can tell "column does not exist" from a real outage. */
+    var er=new Error("db "+r.status);er.status=r.status;
+    try{er.body=await r.text();}catch(_){}
+    throw er;
+  }
   return r.json();
 }
 async function sbGet(q,signal){return sbFetch(q,null,signal);}
@@ -2669,7 +2675,8 @@ researchRegister({id:'ufc',label:'UFC',schema:'ufc',cadenceMs:604800000,
   closeEntity:function(){window.ufcCloseProfile();},
   entityOpen:function(){var m=$('ufcModal');return !!(m&&m.style.display==='block');},
   deactivate:function(){if(UFC.liveTimer){clearInterval(UFC.liveTimer);UFC.liveTimer=null;}},
-  freshness:function(){return {loadedAt:UFC.at||null,builtAt:null};},
+  freshness:function(){var b=(UFC.meta&&(UFC.meta['built_at']||UFC.meta['last_ingest'])||'');var t=rsParseStamp(b);return {loadedAt:UFC.at||null,builtAt:t};},
+  pipeline:function(){return UFC.meta;},
   availability:function(){return null;},limitations:function(){return [];},provenance:{}});
 researchRegister({id:'wta',label:'WTA',schema:'wta',cadenceMs:86400000,
   load:function(force,signal){return window.loadWTA(force,signal);},
@@ -2789,7 +2796,8 @@ var RS_LIMITS={
        'Odds are dataset consensus closing prices, not Pinnacle, and carry no CLV record.',
        'Per-minute microstats absent from the source are omitted rather than shown as blanks.',
        'The fighter list renders at most 300 rows; search or filter by division to reach the rest.',
-       'Live model probability and pre-fight CLV stay gated until a UFC model and live capture exist.'],
+       'Live model probability is gated because no UFC model is registered — the model registry holds no entry for this sport, so there is nothing to display and nothing is estimated in its place.',
+       'Pre-fight CLV is gated for a separate reason: capture now supplies live fight prices, but no closing price is stored per bout, so there is no reference to grade an entry against. Consensus is never shown as CLV.'],
   wta:['The qualifying grade is computed server-side by the pipeline. The app displays its result and never recomputes or asserts it.',
        'Records and rates are historical. They are not a prediction of the match.',
        'Today’s slate is read at most 400 rows deep; the watchlist at most 100.',
@@ -2955,6 +2963,19 @@ function rsStateHTML(modId){
    A module that publishes no build time renders a visibly inactive state.
    No age is ever computed from "now" as a stand-in for a real build time. */
 var RS_FRESH_EL={cfb:'cfbFresh',ufc:'ufcFresh',wta:'wtaFresh',tennis:'tddFresh',stats:'stFresh',props:'prFresh'};
+/* A build stamp the browser cannot parse is not a build time. Accepts ISO-8601
+   and Postgres' own "YYYY-MM-DD HH:MM:SS.ffffff+00" rendering (which V8 takes
+   but other engines reject); anything else returns null, so the module falls
+   back to "no build time published" instead of rendering NaN or Invalid Date. */
+function rsParseStamp(v){
+  if(!v)return null;
+  var s=String(v).trim();
+  var t=new Date(s).getTime();
+  if(isNaN(t)){
+    t=new Date(s.replace(' ','T').replace(/\.\d+/,'').replace(/([+-]\d\d)$/,'$1:00')).getTime();
+  }
+  return isNaN(t)?null:t;
+}
 function rsCadenceLabel(ms){
   if(ms==null)return null;
   var d=ms/86400000;
@@ -3006,9 +3027,40 @@ function rsLimitsHTML(modId){
   if(!l||!l.length)return '';
   return '<div class="rs-lim"><h4>Known limitations</h4><ul>'+l.map(function(x){return '<li>'+stEsc(x)+'</li>';}).join('')+'</ul></div>';
 }
+/* ---- pipeline ledger ---------------------------------------------------
+   What the jobs behind this module last did, read from the module's own build
+   stamps. A job that failed is shown as failed. A pipeline that has stopped
+   running leaves data that still looks fine, so "there are rows on screen" is
+   never treated as evidence that the job behind them is alive. */
+function rsPipelineHTML(modId){
+  var m=RESEARCH_MODULES[modId];
+  var meta=(m&&m.pipeline)?m.pipeline():null;
+  if(!meta)return '';
+  var jobs={},k,mm;
+  for(k in meta){
+    mm=/^(.+)_last_(run|status)$/.exec(k);
+    if(!mm)continue;
+    jobs[mm[1]]=jobs[mm[1]]||{};
+    jobs[mm[1]][mm[2]]=meta[k];
+  }
+  var names=Object.keys(jobs).sort();
+  if(!names.length)return '';
+  var bad=names.filter(function(n){return jobs[n].status==='error';});
+  var rows=names.map(function(n){
+    var j=jobs[n],t=rsParseStamp(j.run),ok=(j.status!=='error');
+    return '<li><span class="mono">'+rsEsc(n)+'</span> — '+
+      (ok?'last run ok':'<b style="color:var(--neg)">last run FAILED</b>')+
+      (t?(', '+rsEsc(ago(t))):', run time not recorded')+
+      ((meta['row_count_'+n]!=null)?(' · '+rsEsc(''+meta['row_count_'+n])+' rows written'):'')+'</li>';
+  }).join('');
+  return '<div class="rs-lim"><h4'+(bad.length?' style="color:var(--warn)"':'')+'>'+
+    (bad.length?'Pipeline reporting a failure':'Pipeline runs')+'</h4><ul>'+rows+
+    (bad.length?'<li>A failed run publishes no build time, so what is displayed above is whatever the last successful run left behind — not today’s data.</li>':'')+
+    '</ul></div>';
+}
 function rsMetaRender(modId){
   var host=$('rsMeta-'+modId);if(!host)return;
-  host.innerHTML=rsFreshHTML(modId)+rsStateHTML(modId)+rsProvHTML(modId)+rsFieldsHTML(modId)+rsLimitsHTML(modId)+rsDatasetHTML(modId);
+  host.innerHTML=rsFreshHTML(modId)+rsStateHTML(modId)+rsPipelineHTML(modId)+rsProvHTML(modId)+rsFieldsHTML(modId)+rsLimitsHTML(modId)+rsDatasetHTML(modId);
   rsFreshApply(modId);
 }
 
@@ -3137,13 +3189,15 @@ var RS_FIELDS={
       {f:'height',d:'Listed height',s:'UFCStats-derived',t:'T0',app:'ufc.fighters.height_inches'},
       {f:'reach',d:'Listed reach',s:'UFCStats-derived',t:'T0',app:'ufc.fighters.reach_inches'},
       {f:'stance',d:'Listed stance',s:'UFCStats-derived',t:'T0',app:'ufc.fighters.stance'},
-      {f:'dob',d:'Date of birth',s:'UFCStats-derived',t:'T0',app:null,
-       note:'This build reads ufc.fighters.age instead; date of birth is not read.'},
+      {f:'dob',d:'Date of birth',s:'UFCStats-derived',t:'T0',app:null,probe:'fighters.dob',
+       note:'This build reads ufc.fighters.age instead; date of birth is not read.',
+       fix:'Add dob to the fighters select and derive age from it, so age stops drifting between sync runs.'},
       {f:'record_w',d:'Career wins',s:'UFCStats-derived',t:'T0',app:'ufc.fighters.wins'},
       {f:'record_l',d:'Career losses',s:'UFCStats-derived',t:'T0',app:'ufc.fighters.losses'},
       {f:'record_d',d:'Career draws',s:'UFCStats-derived',t:'T0',app:'ufc.fighters.draws'},
-      {f:'record_nc',d:'No contests',s:'UFCStats-derived',t:'T0',app:null,
-       note:'Not read by this app. A no-contest is therefore not shown anywhere in the record.'},
+      {f:'record_nc',d:'No contests',s:'UFCStats-derived',t:'T0',app:null,probe:'fighters.no_contests',
+       note:'Not read by this app. A no-contest is therefore not shown anywhere in the record.',
+       fix:'Read the column and append it to the W-L-D record as W-L-D (N NC). ufcRec already prefers pro_record when the sync writes one.'},
       {f:'sig_strikes_landed_per_min',d:'Significant strikes landed per minute',s:'UFCStats',t:'T0',app:'ufc.fighter_career_stats.slpm'},
       {f:'sig_strike_accuracy_pct',d:'Significant-strike accuracy',s:'UFCStats',t:'T0',app:'ufc.fighter_career_stats.striking_accuracy'},
       {f:'sig_strike_defense_pct',d:'Significant-strike defense',s:'UFCStats',t:'T0',app:'ufc.fighter_career_stats.striking_defense'},
@@ -3153,10 +3207,12 @@ var RS_FIELDS={
       {f:'takedown_defense_pct',d:'Takedown defense',s:'UFCStats',t:'T0',app:'ufc.fighter_career_stats.takedown_defense'},
       {f:'submission_avg_per_15',d:'Submission attempts per 15 minutes',s:'UFCStats',t:'T0',app:'ufc.fighter_career_stats.submission_avg',
        note:'This app labels the same column "Sub attempts / fight" on the stat grid and "Submission att/15min" on the profile. The source defines it per 15 minutes.'},
-      {f:'knockdowns',d:'Career knockdowns',s:'UFCStats',t:'T0',app:null,
-       note:'The source defines a career COUNT. This app reads ufc.fighter_career_stats.knockdown_avg (an average) and labels it "Knockdowns/15min". Different measure — not reconciled here.'},
-      {f:'fight_time',d:'Career fight time',s:'UFCStats',t:'T0',app:null,
-       note:'The source defines career total time. This app reads ufc.fighter_derived_metrics.average_fight_time (a per-fight average) instead.'}
+      {f:'knockdowns',d:'Career knockdowns',s:'UFCStats',t:'T0',app:null,probe:'fighter_career_stats.knockdowns',
+       note:'The source defines a career COUNT. This app reads ufc.fighter_career_stats.knockdown_avg (an average) and labels it "Knockdowns/15min". Different measure — not reconciled here.',
+       fix:'Have ufcstats_sync store the raw career count alongside the average. The count and the rate answer different questions and neither substitutes for the other.'},
+      {f:'fight_time',d:'Career fight time',s:'UFCStats',t:'T0',app:null,probe:'fighter_career_stats.total_fight_time',
+       note:'The source defines career total time. This app reads ufc.fighter_derived_metrics.average_fight_time (a per-fight average) instead.',
+       fix:'Store the career total in fighter_career_stats; the per-fight average stays where it is. Total time is the denominator every per-15-minute rate is built on, so having it makes those rates auditable.'}
     ],
     /* app display label -> source field, for the definition shown on each stat */
     labels:{
@@ -3184,18 +3240,69 @@ function rsDefFor(modId,label){
   }
   return '';
 }
+/* ---- column-existence probe --------------------------------------------
+   "17 of 21 fields" used to be a sentence someone typed. A sentence cannot go
+   stale loudly, so it was asserted rather than known. PostgREST answers a
+   select on a column that does not exist with 400 / PostgREST code 42703, so
+   the app can MEASURE the live schema instead: for every source field this
+   build does not read, ask whether the database carries it at all. Three
+   honest outcomes — in the database but unread, absent from the database, or
+   not determined (the probe itself failed). Never a guess. */
+var RS_PROBE={};                       /* 'schema.table.col' -> present|absent|unknown */
+async function rsProbeColumn(getter,table,col,signal){
+  var k=table+'.'+col;
+  if(RS_PROBE[k])return RS_PROBE[k];
+  try{await getter(table+'?select='+encodeURIComponent(col)+'&limit=1',signal);RS_PROBE[k]='present';}
+  catch(e){
+    var b=(e&&e.body)||'';
+    RS_PROBE[k]=(e&&e.status===400&&(/42703/.test(b)||/does not exist/i.test(b)))?'absent':'unknown';
+  }
+  return RS_PROBE[k];
+}
+/* probe every unread source field of a module, then repaint its meta block */
+async function rsProbeFields(modId,getter,signal){
+  var D=RS_FIELDS[modId];if(!D)return;
+  var todo=D.rows.filter(function(r){return !r.app&&r.probe;});
+  if(!todo.length)return;
+  await Promise.all(todo.map(function(r){
+    var p=r.probe.split('.');
+    return rsProbeColumn(getter,p[0],p[1],signal);
+  }));
+  if(!(signal&&signal.aborted))rsMetaRender(modId);
+}
+function rsProbeState(r){return (r&&r.probe)?(RS_PROBE[r.probe]||'unread'):'unread';}
+/* Measured coverage of a module's source schema. Counts, never claims. */
+function rsFieldCoverage(modId){
+  var D=RS_FIELDS[modId];if(!D)return null;
+  var c={total:D.rows.length,read:0,inDbUnread:[],absent:[],undetermined:[]};
+  D.rows.forEach(function(r){
+    if(r.app){c.read++;return;}
+    var st=rsProbeState(r);
+    if(st==='present')c.inDbUnread.push(r.f);
+    else if(st==='absent')c.absent.push(r.f);
+    else c.undetermined.push(r.f);
+  });
+  return c;
+}
+var RS_PROBE_LABEL={
+  present:{t:'in the database, not read by this app',c:'var(--warn)'},
+  absent:{t:'not in the database either',c:'var(--faint)'},
+  unknown:{t:'database availability could not be determined',c:'var(--faint)'},
+  unread:{t:'defined in the source schema, not read by this app',c:'var(--warn)'}
+};
 function rsFieldsHTML(modId){
   var D=RS_FIELDS[modId];if(!D)return '';
   var rows=D.rows.map(function(r){
-    var status=r.app
-      ? '<span style="color:var(--faint)">read as <span class="mono">'+rsEsc(r.app)+'</span></span>'
-      : '<span style="color:var(--warn)">defined in the source schema, not read by this app</span>';
+    var status;
+    if(r.app)status='<span style="color:var(--faint)">read as <span class="mono">'+rsEsc(r.app)+'</span></span>';
+    else{var L=RS_PROBE_LABEL[rsProbeState(r)];status='<span style="color:'+L.c+'">'+rsEsc(L.t)+'</span>';}
     return '<div class="rs-prov-row"><span class="nm"><span class="mono" style="font-size:11px">'+rsEsc(r.f)+'</span> — '+rsEsc(r.d)+
-      '<span class="src">'+rsEsc(r.s)+' · '+status+(r.note?(' · '+rsEsc(r.note)):'')+'</span></span>'+
+      '<span class="src">'+rsEsc(r.s)+' · '+status+(r.note?(' · '+rsEsc(r.note)):'')+
+      (r.fix?('<br><span style="color:var(--accent)">to close it:</span> '+rsEsc(r.fix)):'')+'</span></span>'+
       '<span style="flex:0 0 auto">'+rsBadgeHTML(r.t,null)+'</span></div>';
   }).join('');
   return '<details class="rs-prov"><summary><b>Source field dictionary</b> · every field the source schema defines, what it means, and whether this build reads it</summary>'+
-    '<div class="body"><div class="sidenote" style="margin:6px 0">From '+rsEsc(D.origin)+'. Definitions are the source’s, not this app’s.</div>'+rows+'</div></details>';
+    '<div class="body"><div class="sidenote" style="margin:6px 0">From '+rsEsc(D.origin)+'. Definitions are the source’s, not this app’s. Database availability for unread fields is probed against the live schema, not asserted.</div>'+rows+'</div></details>';
 }
 
 /* ═══ DEEP-DIVE DATASET COVERAGE ═════════════════════════════════════════
@@ -3203,8 +3310,17 @@ function rsFieldsHTML(modId){
    Where the pipeline does not own it, the conclusion is not displayed
    anywhere — this block says so rather than leaving the gap unexplained. */
 var RS_DATASETS={
+  /* Counted from the dictionary and the live-schema probe every time this
+     renders. Editing RS_FIELDS moves this sentence; nothing here is typed in. */
   ufc:{owned:true,
-    text:'The deep-dive builder’s UFC schema is the dictionary above. This module reads a live ufc schema that carries 17 of its 21 fields; the four it does not carry are listed and are shown nowhere.'},
+    text:function(){
+      var c=rsFieldCoverage('ufc');if(!c)return '';
+      var s='The deep-dive builder’s UFC schema is the dictionary above: '+c.total+' fields, of which this module reads '+c.read+'.';
+      if(c.inDbUnread.length)s+=' '+c.inDbUnread.length+' more ('+c.inDbUnread.join(', ')+') exist in the live ufc schema but are not read, so they are displayed nowhere.';
+      if(c.absent.length)s+=' '+c.absent.length+' ('+c.absent.join(', ')+') are absent from the database as well — the source defines them, this pipeline never loaded them.';
+      if(c.undetermined.length)s+=' Database availability of '+c.undetermined.join(', ')+' has not been determined yet; the dictionary says so rather than assuming either way.';
+      return s;
+    }},
   wta:{owned:false,
     text:'The builder also produces tennis season, surface and head-to-head aggregates from the Jeff Sackmann WTA archive. This module does not read them — it reads the separate wta_research pipeline. No season/surface/H2H aggregate is displayed anywhere in this app, because no pipeline here owns one.'},
   stats:{owned:false,
@@ -3214,7 +3330,9 @@ var RS_DATASETS={
 };
 function rsDatasetHTML(modId){
   var d=RS_DATASETS[modId];if(!d)return '';
-  return '<div class="rs-lim"><h4>Deep-dive dataset coverage</h4><ul><li>'+rsEsc(d.text)+'</li>'+
+  var txt=(typeof d.text==='function')?d.text():d.text;
+  if(!txt)return '';
+  return '<div class="rs-lim"><h4>Deep-dive dataset coverage</h4><ul><li>'+rsEsc(txt)+'</li>'+
     (modId==='wta'?'<li>The tennis source (Jeff Sackmann archives) is licensed CC BY-NC-SA 4.0 — non-commercial and share-alike. Ingesting it into a commercial database is a licensing question that has to be resolved before any of it can ship here.</li>':'')+
     '</ul></div>';
 }
@@ -7487,7 +7605,7 @@ function stBindRows(scope){var taps=scope.querySelectorAll('.strow.tap');for(var
    Browse fighters (record, dimensions, stance) and expand for full fight history
    with each bout's de-vigged CONSENSUS closing probability. These odds are NOT
    Pinnacle and NOT a CLV record — pinnacle_close/CLV fill only from live capture. */
-var UFC={fighters:[],byId:{},fights:{},open:{},cmp:[],div:'All',sort:'wins',divs:[],at:0};
+var UFC={fighters:[],byId:{},fights:{},open:{},cmp:[],div:'All',sort:'wins',divs:[],at:0,meta:null};
 /* render honoring the active mode \u2014 re-entering the tab in Live mode must not
    stomp the live shell with the research list (and vice versa). */
 function ufcRenderMode(){
@@ -7498,6 +7616,12 @@ async function loadUFC(force,signal){
   if(!force&&UFC.fighters.length&&(Date.now()-UFC.at)<300000){ufcRenderMode();return;}
   var ban=$('ufcBanner');
   try{
+    /* Build stamps, same key/value contract as wta.meta and tennis.meta. Held
+       in its own try: a schema without the meta table must keep the module
+       working and keep saying "no build time published", not go dark. */
+    try{var um=await sbGetUfc('meta?select=key,value',signal);
+      UFC.meta={};(um||[]).forEach(function(m){UFC.meta[m.key]=m.value;});}
+    catch(_){UFC.meta=null;}
     var f=await ufcFetchAll('fighters?select=fighter_id,full_name,nickname,division,stance,height_inches,reach_inches,age,wins,losses,draws,pro_record','full_name',signal);
     UFC.fighters=f||[];UFC.byId={};UFC.fighters.forEach(function(x){UFC.byId[x.fighter_id]=x;});
     // merge computed metrics (real, from the fights you loaded) and the few real career stats
@@ -7514,6 +7638,7 @@ async function loadUFC(force,signal){
     else{ban.style.display='';ban.className='flbanner live';ban.textContent='\u25cf '+UFC.fighters.length+' fighters \u00b7 finish rates, streaks & opponent quality computed \u00b7 consensus odds (not Pinnacle) \u00b7 research only.';rsSetState('ufc','ok');}
     rsFreshApply('ufc');
     ufcRenderMode();
+    rsProbeFields('ufc',sbGetUfc,signal);   /* measures the dictionary's coverage; repaints when it lands */
   }catch(e){
     var c=rsClassifyError(e);if(!c)return;
     ban.style.display='none';$('ufcBody').innerHTML='';
@@ -7528,6 +7653,8 @@ function ufcResultFor(fight,fid){
   return{t:'\u2014',c:'muted'};
 }
 function ufcPct(v){return (v==null)?'\u2014':(Math.round(+v*100)+'%');}
+/* grammatical plural only \u2014 never touches a displayed quantity */
+function ufcPlural(n,w){return n+' '+w+((+n===1)?'':'s');}
 function ufcRec(x){return x.pro_record||((x.wins!=null?x.wins:'')+'-'+(x.losses!=null?x.losses:'')+'-'+(x.draws!=null?x.draws:0));}
 async function ufcLoadFights(fid){
   if(UFC.fights[fid])return UFC.fights[fid];
@@ -7682,7 +7809,10 @@ window.ufcSetMode=function(m){
   if(q)q.style.display=(m==='live')?'none':'';
   if(UFC.liveTimer){clearInterval(UFC.liveTimer);UFC.liveTimer=null;}
   if(m==='live'){loadUFCLive();UFC.liveTimer=setInterval(function(){if(UFC.mode==='live'&&!document.hidden)loadUFCLive();},20000);}
-  else renderUFC();
+  /* Live mode repoints the freshness chip at the poller's feed age. Coming back
+     to research has to repoint it at the dataset build time, or the research
+     screen keeps wearing the live feed's stamp. */
+  else{renderUFC();rsFreshApply('ufc');}
 };
 /* An event the poller never closed out stays at status 'pre'/'in' forever. The
    old query asked for the OLDEST such row (order=start_time.asc&limit=1), so one
@@ -7873,12 +8003,14 @@ function ufcChips(fid){
   var x=UFC.byId[fid];
   if(!x||!x.d)return '<span style="font-size:10px;color:var(--faint2,#6b7280)">no DB history</span>';
   var d=x.d,bits=[];
+  /* Say what each number IS. The old chips read "65% finW1611m avg1/yr" — every
+     value correct, none of them legible. Same values, same arithmetic, labelled. */
   if(x.s&&x.s.primary_style)bits.push(x.s.primary_style);
-  if(d.finish_rate!=null)bits.push(ufcPct(d.finish_rate)+' fin');
-  if(d.win_streak)bits.push('W'+d.win_streak);
-  else if(d.loss_streak)bits.push('L'+d.loss_streak);
-  if(d.average_fight_time!=null)bits.push(Math.round(+d.average_fight_time/60)+'m avg');
-  if(d.activity_last365!=null)bits.push(d.activity_last365+'/yr');
+  if(d.finish_rate!=null)bits.push('finish rate '+ufcPct(d.finish_rate));
+  if(d.win_streak)bits.push(d.win_streak+'-fight win streak');
+  else if(d.loss_streak)bits.push(d.loss_streak+'-fight losing streak');
+  if(d.average_fight_time!=null)bits.push('avg '+Math.round(+d.average_fight_time/60)+' min/fight');
+  if(d.activity_last365!=null)bits.push(ufcPlural(d.activity_last365,'fight')+' in the last year');
   return bits.map(function(b){return '<span style="display:inline-block;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.07);border-radius:6px;padding:2px 7px;margin:3px 4px 0 0;font-size:10px;color:var(--faint)">'+rsEsc(''+b)+'</span>';}).join('');
 }
 function ufcLiveFightCard(g){
@@ -7941,7 +8073,7 @@ function ufcLiveShellHTML(e,fx,mode){
   }
   var cards=fx.map(ufcLiveFightCard).join('');
   return head+
-    '<p class="lede" style="margin-top:10px">Red vs blue corners, weight class, and the live round/clock stream from the fight-state poller. Pre-fight tendencies (finish rate, streaks, activity) are computed from EdgeDesk\u2019s loaded history \u2014 fighters not in the database show \u201cno DB history.\u201d <b style="color:var(--warn)">Model probability and CLV stay gated</b> until the UFC model and live Pinnacle capture are deployed, so nothing here is a fabricated number.</p>'+
+    '<p class="lede" style="margin-top:10px">Red vs blue corners, weight class, and the live round/clock stream from the fight-state poller. Pre-fight tendencies (finish rate, streaks, activity) are computed from EdgeDesk\u2019s loaded history \u2014 fighters not in the database show \u201cno DB history.\u201d <b style="color:var(--warn)">Model probability and CLV stay gated</b>, for two different reasons: no UFC model is registered, and although capture now supplies live fight prices there is no stored closing price per bout to grade an entry against. Nothing here is a fabricated number, and consensus is never relabelled as CLV.</p>'+
     (cards||(e?'<div class="empty">Event found but no fights loaded yet for it.</div>':''));
 }
 

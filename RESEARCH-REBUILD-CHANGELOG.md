@@ -427,3 +427,96 @@ mapping. The app now reports these honestly instead of dressing them up as live.
 
 12/12 odds-matching unit tests, 12/12 fight-center assertions, all research
 suites green, identity section C clean.
+
+---
+
+## UFC pipeline: build metadata, measured coverage, and a run ledger
+
+The UFC research screen was reporting three problems at once — "no build time
+published", "Freshness SLA inactive", and a schema-coverage sentence nobody
+could verify. Only the third was a UI issue. The first two were accurate
+reports of a missing piece of the pipeline.
+
+### Root cause
+
+`wta.meta` and `tennis.meta` both exist and both publish key/value build stamps
+that the app reads. The `ufc` schema had **no equivalent table** — there were
+zero references to `ufc.meta` anywhere in the codebase — so the module's
+`freshness()` had nothing to return but `builtAt: null`, and the app correctly
+refused to invent an age from the clock. The warning was the system working.
+Turning it off would have been the bug.
+
+### What changed
+
+- **`migrations/022_ufc_meta.sql`** adds `ufc.meta` in the *same shape and key
+  convention* as the two schemas that already work, rather than a competing
+  system. Alongside it: `ufc.build_log` (one row per pipeline run, failures
+  included), `ufc.stamp_build()` (one call writes the ledger row and the meta
+  stamps together, so they cannot disagree) and the `ufc.pipeline_health` view.
+  - A **failed** run records the failure and does **not** advance `built_at` —
+    a broken job must not make data look freshly built.
+  - `p_advance_built_at: false` exists for the live poller, which streams a card
+    but does not rebuild the dataset.
+  - Stamps are written as ISO-8601 UTC. Postgres' own `now()::text` is parsed
+    by V8 but rejected by other engines, and a stamp the phone cannot parse
+    reads to the app as no stamp at all.
+  - `EXECUTE` is revoked from `PUBLIC`. Postgres grants it by default, which
+    would have let the signed-in app stamp its own freshness.
+  - The migration **seeds no build time**. Until a real run stamps, the app
+    keeps saying "no build time published", because that is still the truth.
+    An explicit, opt-in backfill from real row-write times sits at the bottom,
+    labelled for what it is.
+- **`ufc_live` writes to the ledger** on every invocation, crashes included, and
+  reports `stamp_error` in its response when it cannot.
+- **The app reads `ufc.meta`** in its own `try` — a schema without the table
+  keeps the module working instead of taking it dark — and the module's
+  `freshness()` returns a real `builtAt`. The SLA activates on its own once a
+  stamp exists; nothing was hardcoded to make it light up.
+- **`rsParseStamp`** returns null for anything unparseable, so a malformed
+  stamp renders as "no build time published" rather than `NaN` or a fake age.
+- **A pipeline ledger block** now renders in the module's meta panel: which jobs
+  ran, when, how many rows, and — in warning colour — which ones **failed**. A
+  pipeline that has stopped leaves data that still looks fine, so "there are
+  rows on screen" is never treated as evidence the job behind them is alive.
+- **Leaving Live mode repoints the freshness chip** at the dataset build time.
+  It used to keep wearing the live poller's feed stamp.
+
+### The 21-vs-17 field mismatch, measured instead of asserted
+
+The sentence "carries 17 of its 21 fields" was typed by hand. A typed sentence
+cannot go stale loudly. It is now **counted** from `RS_FIELDS` on every render,
+and the database availability of each unread field is **probed against the live
+schema**: PostgREST answers a select on a missing column with 400/`42703`, so
+the app can ask rather than assume. Three honest outcomes — in the database but
+unread, absent from the database, or not determined — and a 500 or 401 during
+the probe records "not determined", never "absent", so a bad network day cannot
+delete a real field from the count. Each of the four gaps now also states the
+specific fix that would close it.
+
+Measured on the dictionary: **21 fields, 17 read.** The count matches the old
+sentence — it is now derived from the data rather than trusted.
+
+### Gating language corrected
+
+Model probability and CLV remain gated, but the reasons were stale and are now
+separated and accurate: **no UFC model is registered** (confirmed — the model
+registry holds no UFC or MMA entry, and no unwired UFC model exists in the
+codebase), and **no closing price is stored per bout**, so there is no reference
+to grade an entry against. Capture *does* now supply live fight prices; the old
+copy claiming otherwise was wrong. Consensus is never relabelled as CLV.
+
+### Verification
+
+- **`scripts/ufc-pipeline-verify.sql`** — read-only, 12 sections, run against
+  Supabase: object inventory, exact row counts, a column-by-column check of
+  every field the app selects (a single renamed column takes the module dark
+  with a 400), the four missing fields, null rates, join coverage, fight-history
+  date range, UFC 330 specifically, what the live picker will choose right now,
+  duplicate pairings, build metadata, RLS as the `authenticated` role, whether a
+  UFC model is registered, and whether capture is pricing MMA.
+- **`scripts/tests/ufc-research-smoke.js`** — 43 browser assertions covering
+  every claim above, including that no displayed count is hardcoded.
+- **`migrations/tests/022_ufc_meta_test.sql`** — 8 steps on PostgreSQL 16.
+
+43/43 smoke assertions, 12/12 coverage unit tests, 8/8 migration steps, identity
+section C clean (no numeric literal, rounding call or threshold changed).
