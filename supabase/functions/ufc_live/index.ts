@@ -40,7 +40,19 @@ const json = (o: unknown, status = 200) =>
   new Response(JSON.stringify(o, null, 2), { status, headers: { "content-type": "application/json" } });
 
 const SCOREBOARD = "https://site.api.espn.com/apis/site/v2/sports/mma/ufc/scoreboard";
-const ODDS_API = "https://api.the-odds-api.com/v4/sports/mma_mixed_martial_arts/odds/";
+/* Odds come from `capture`, not from The Odds API directly. capture already
+   prices MMA through the full pipeline — Shin de-vig, one quote per book,
+   consensus fair, and the flaggable() discipline that rejects stale or
+   mis-keyed quotes — and writes it to public.signals. Reading that instead of
+   re-fetching means one source of truth for every price in the app, no second
+   opinion to reconcile, and no extra Odds API quota. */
+const SIGNALS_SPORT = Deno.env.get("UFC_SIGNALS_SPORT") ?? "mma_mixed_martial_arts";
+/* signals lives in `public`; the client above is pinned to the `ufc` schema. */
+const pub = createClient(
+  Deno.env.get("EDGE_SUPABASE_URL") ?? Deno.env.get("SUPABASE_URL")!,
+  Deno.env.get("EDGE_SERVICE_ROLE_KEY") ?? Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+  { auth: { persistSession: false } },
+);
 const SUMMARY = (id: string) => `https://site.api.espn.com/apis/site/v2/sports/mma/ufc/summary?event=${id}`;
 
 /* an event that started this long ago and is still open was never closed out */
@@ -126,27 +138,24 @@ function lastName(n: string | null): string | null {
   return parts.length ? parts[parts.length - 1] : null;
 }
 type PricedBout = { a: string | null; b: string | null; prices: Record<string, number[]>; books: number };
-function collectBouts(events: any[]): PricedBout[] {
-  const out: PricedBout[] = [];
-  for (const e of events ?? []) {
-    const prices: Record<string, number[]> = {};
-    let books = 0;
-    for (const bk of e?.bookmakers ?? []) {
-      const mkt = (bk?.markets ?? []).find((m: any) => m?.key === "h2h");
-      if (!mkt) continue;
-      let used = false;
-      for (const o of mkt?.outcomes ?? []) {
-        const k = slug(o?.name);
-        const price = Number(o?.price);
-        if (!k || !Number.isFinite(price)) continue;
-        (prices[k] = prices[k] ?? []).push(price);
-        used = true;
-      }
-      if (used) books++;
-    }
-    if (books) out.push({ a: slug(e?.home_team), b: slug(e?.away_team), prices, books });
+/* Fold capture's per-selection signals rows back into one bout per event.
+   best_dec is capture's best available quote across the books it saw, already
+   past its own sanity checks; n_books is how many books stood behind it. */
+export function boutsFromSignals(rows: any[]): PricedBout[] {
+  const byEvent = new Map<string, PricedBout>();
+  for (const r of rows ?? []) {
+    if (r?.market !== "h2h") continue;
+    const dec = Number(r?.best_dec);
+    if (!Number.isFinite(dec) || dec <= 1) continue;      // never price off a broken quote
+    const id = String(r?.event_id ?? "");
+    const k = slug(r?.selection);
+    if (!id || !k) continue;
+    let e = byEvent.get(id);
+    if (!e) { e = { a: slug(r?.home_team), b: slug(r?.away_team), prices: {}, books: 0 }; byEvent.set(id, e); }
+    (e.prices[k] = e.prices[k] ?? []).push(dec);
+    e.books = Math.max(e.books, Number(r?.n_books) || 0);
   }
-  return out;
+  return [...byEvent.values()].filter((e) => Object.keys(e.prices).length > 0);
 }
 function matchBout(bouts: PricedBout[], red: string | null, blue: string | null) {
   const r = slug(red), b = slug(blue);
@@ -302,26 +311,46 @@ Deno.serve(async (req) => {
       .map((c: any, i: number) => parseCompetition(c, eventId, i))
       .filter((r: any) => r.red_name || r.blue_name);
 
-    /* ---- live odds: one request, skipped once the card is over ---------- */
-    const oddsKey = Deno.env.get("ODDS_API_KEY") ?? "";
-    const wantOdds = body_odds !== false && oddsKey !== "" && state(ev) !== "post" && rows.length > 0;
-    let oddsMatched = 0, oddsBySurname = 0, oddsUnmatched = 0, oddsBooks = 0, oddsError: string | null = null;
+    /* ---- live odds, read from capture's signals ------------------------- */
+    const wantOdds = body_odds !== false && state(ev) !== "post" && rows.length > 0;
+    let oddsMatched = 0, oddsBySurname = 0, oddsUnmatched = 0, oddsBooks = 0;
+    let oddsError: string | null = null, signalRows = 0, oddsAgeMin: number | null = null;
+    let oddsNote: string | null = null;
     if (wantOdds) {
       try {
-        const r = await fetch(`${ODDS_API}?apiKey=${encodeURIComponent(oddsKey)}&regions=${encodeURIComponent(Deno.env.get("ODDS_REGIONS") ?? "us")}&markets=h2h&oddsFormat=decimal`);
-        if (!r.ok) {
-          oddsError = `odds ${r.status} ${(await r.text()).slice(0, 200)}`;
+        /* a window around this card, so an unrelated MMA event cannot be
+           mistaken for one of tonight's fights */
+        const from = new Date(now - 2 * 864e5).toISOString();
+        const to = new Date(now + 7 * 864e5).toISOString();
+        const sig = await pub.from("signals")
+          .select("event_id,home_team,away_team,selection,market,best_dec,n_books,last_seen_at")
+          .eq("market", "h2h").eq("sport_key", SIGNALS_SPORT)
+          .gte("commence_time", from).lte("commence_time", to)
+          .limit(4000);
+        if (sig.error) {
+          oddsError = `signals: ${sig.error.message}`;
         } else {
-          const bouts = collectBouts(await r.json());
-          for (const row of rows as any[]) {
-            const m = matchBout(bouts, row.red_name, row.blue_name);
-            if (!m) { oddsUnmatched++; continue; }
-            const rp = priceFor(m.bout, row.red_name), bp = priceFor(m.bout, row.blue_name);
-            if (rp == null && bp == null) { oddsUnmatched++; continue; }
-            row.red_odds = rp; row.blue_odds = bp;
-            oddsBooks = Math.max(oddsBooks, m.bout.books);
-            oddsMatched++;
-            if (m.how === "surname") oddsBySurname++;
+          signalRows = (sig.data ?? []).length;
+          const stamps = (sig.data ?? []).map((r: any) => new Date(r?.last_seen_at ?? 0).getTime())
+            .filter((t: number) => Number.isFinite(t) && t > 0);
+          if (stamps.length) oddsAgeMin = Math.round((now - Math.max(...stamps)) / 60000);
+          if (!signalRows) {
+            /* capture is not covering MMA. Say so precisely — this is a config
+               fix, not a missing feature, and it is invisible otherwise. */
+            oddsNote = `capture has no ${SIGNALS_SPORT} h2h rows in this window. Add ${SIGNALS_SPORT} to `
+              + `CAPTURE_SPORTS (or to CAPTURE_AUTO_PREFIXES) so capture prices the card; until then fights carry no odds.`;
+          } else {
+            const bouts = boutsFromSignals(sig.data ?? []);
+            for (const row of rows as any[]) {
+              const m = matchBout(bouts, row.red_name, row.blue_name);
+              if (!m) { oddsUnmatched++; continue; }
+              const rp = priceFor(m.bout, row.red_name), bp = priceFor(m.bout, row.blue_name);
+              if (rp == null && bp == null) { oddsUnmatched++; continue; }
+              row.red_odds = rp; row.blue_odds = bp;
+              oddsBooks = Math.max(oddsBooks, m.bout.books);
+              oddsMatched++;
+              if (m.how === "surname") oddsBySurname++;
+            }
           }
         }
       } catch (e) { oddsError = String(e); }
@@ -366,6 +395,10 @@ Deno.serve(async (req) => {
       odds_matched_by_surname: oddsBySurname,
       odds_unmatched: oddsUnmatched,
       odds_books_seen: oddsBooks,
+      odds_source: "capture -> public.signals",
+      odds_signal_rows: signalRows,
+      odds_age_minutes: oddsAgeMin,
+      ...(oddsNote ? { odds_note: oddsNote } : {}),
       odds_error: oddsError,
       orphan_fights_removed: orphansRemoved,
       orphan_error: orphanError,

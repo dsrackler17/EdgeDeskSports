@@ -65,30 +65,45 @@ select event_id, name, status, start_time, updated_at
  order by start_time desc;
 ```
 
-## Live odds
+## Live odds — sourced from `capture`, not from The Odds API
 
-Set `ODDS_API_KEY` (The Odds API — the licence this project already holds) and
-each run attaches h2h prices to the card:
+Fight prices come from `public.signals`, which `capture` already fills. Nothing
+here calls The Odds API, so there is **one source of truth for every price in
+the app** and no extra quota is spent.
+
+That also means the fight card inherits capture's discipline for free: Shin
+de-vig, one quote per book (so a duplicated line cannot inflate the book count),
+consensus fair, and the `flaggable()` bounds that reject stale or mis-keyed
+quotes. `red_odds` / `blue_odds` are capture's `best_dec` — the best available
+book price, already past those checks.
+
+**capture must be pricing MMA.** Add `mma_mixed_martial_arts` to `CAPTURE_SPORTS`
+(or to `CAPTURE_AUTO_PREFIXES`). If it is not, odds stay null and the response
+says exactly that in `odds_note` rather than failing quietly:
 
 ```
-supabase secrets set ODDS_API_KEY=<key>
-supabase secrets set ODDS_REGIONS=us          # optional, defaults to us
+"odds_note": "capture has no mma_mixed_martial_arts h2h rows in this window.
+              Add mma_mixed_martial_arts to CAPTURE_SPORTS ..."
 ```
 
-- One request per run, and only while the event is `pre` or `in` — a finished
-  card never spends quota. `POST {"odds": false}` skips it for a given run.
-- `red_odds` / `blue_odds` are the **median decimal across all books** quoting
-  that fight, which is what the app labels "consensus book odds".
-- **Matching refuses to guess.** A fight is priced only when both fighters match
-  a priced bout: exact normalised names first, then both surnames together.
-  Identical surnames on the two corners are rejected as too weak. Anything
-  unmatched is left null and counted as `odds_unmatched` in the response, so a
-  wrong price never reaches a card.
+Override the sport key with `UFC_SIGNALS_SPORT` if it ever rotates.
 
-Watch `odds_matched` / `odds_unmatched` / `odds_matched_by_surname`. A rising
-`odds_matched_by_surname` means ESPN and the book are spelling names
-differently; a high `odds_unmatched` usually means the book has not posted that
-card yet.
+**Matching refuses to guess.** A fight is priced only when both fighters match a
+priced bout — exact normalised names first, then both surnames together — and
+two corners sharing a surname are rejected as too weak. Unmatched fights keep
+null odds and are counted. A wrong price on a fight is worse than no price.
+
+Watch in the response:
+
+| field | meaning |
+|---|---|
+| `odds_signal_rows` | MMA h2h rows capture had in the window. `0` = capture is not covering MMA |
+| `odds_age_minutes` | how long since capture last refreshed those prices |
+| `odds_matched` / `odds_unmatched` | fights priced vs. left null |
+| `odds_matched_by_surname` | rising = ESPN and the book spell names differently |
+| `odds_books_seen` | capture's `n_books` behind the best price |
+
+`POST {"odds": false}` skips the lookup for a run.
 
 ## Card reconciliation
 

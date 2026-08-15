@@ -398,11 +398,16 @@ mapping. The app now reports these honestly instead of dressing them up as live.
 
 `ufc_live` now attaches live h2h prices, and cleans up after itself:
 
-- **Live odds** from The Odds API (`ODDS_API_KEY`) — one request per run, and
-  only while the event is `pre` or `in`, so a finished card never spends quota.
-  `red_odds`/`blue_odds` are the **median decimal across every book** quoting
-  that fight, which the app now labels "consensus book odds · median across
-  books, not Pinnacle" instead of the old "dataset" wording.
+- **Live odds sourced from `capture`**, not from a second Odds API call. Fight
+  prices are read from `public.signals`, which capture already fills, so there
+  is one source of truth for every price in the app and no extra quota is spent.
+  The card inherits capture's discipline for free — Shin de-vig, one quote per
+  book, consensus fair, and the `flaggable()` bounds that reject stale or
+  mis-keyed quotes. `red_odds`/`blue_odds` are capture's `best_dec`, labelled
+  "best book price via capture · de-vigged pipeline, not Pinnacle".
+  capture must be pricing MMA (`mma_mixed_martial_arts` in `CAPTURE_SPORTS`);
+  when it is not, odds stay null and the response says so in `odds_note`
+  instead of failing quietly.
 - **Matching refuses to guess.** A fight is priced only when both fighters match
   a priced bout — exact normalised names first, then both surnames together —
   and two corners with the same surname are rejected as too weak. Unmatched
