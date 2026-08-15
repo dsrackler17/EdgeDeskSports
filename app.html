@@ -364,6 +364,8 @@ textarea{min-height:110px;font-family:'JetBrains Mono',monospace;resize:vertical
 .fi-foot{font-size:10px;color:var(--faint);line-height:1.5;margin-top:9px;padding-top:8px;border-top:1px dashed var(--border)}
 .fi-empty{font-size:11.5px;color:var(--dim);line-height:1.55;padding:10px 11px;background:var(--surface2);border:1px dashed var(--border);border-radius:9px}
 .fi-empty .mono{color:var(--warn)}
+.fav-star{color:#e8a13b;margin-right:5px;font-size:11px}
+.set-favg{font-size:10.5px;letter-spacing:.05em;text-transform:uppercase;color:var(--faint);font-weight:700;margin:10px 0 4px}
 /* ---- UFC Live Fight Center: deep layer. Additive only; every class below is
    new and prefixed .ufc-, so no existing rule changes meaning. ---- */
 .ufc-deep{margin-top:10px;border-top:1px solid rgba(255,255,255,.06);padding-top:8px}
@@ -2573,6 +2575,74 @@ function renderAnchorSplit(rows){
 var GE={};
 GE.amToDec=function(a){return a>0?a/100+1:100/(-a)+1;};
 GE.decToAm=function(d){return d>=2?Math.round((d-1)*100):Math.round(-100/(d-1));};
+
+/* ===== ODDS FORMAT — one display formatter for every price on screen ======
+   Was a NOT AVAILABLE gate, on the correct grounds that ~50 sites each derived
+   their own display string from decToAm and formatted it inline, so a dropdown
+   would have changed nothing. This is that shared converter.
+
+   THE LINE THAT MATTERS: decToAm is UNCHANGED and still returns a NUMBER.
+   trackSignal() writes that number into the CLV ledger and the edgedesk_ai
+   payloads carry it as a wire value. A display preference must never reach
+   either. So:
+
+       decToAm(dec) -> Number   data. American. Never format-dependent.
+       fmtPrice(dec) -> String  display. Honours the user's format.
+
+   Anything a human reads goes through fmtPrice. Anything stored, graded or
+   sent stays on decToAm. The two are deliberately not interchangeable.
+
+   The format is cached in a module variable rather than read from localStorage
+   on every call, because these run inside tight render loops over hundreds of
+   rows. applyPrefs() refreshes it whenever the setting changes. */
+GE._oddsFmt=(function(){
+  try{return (JSON.parse(localStorage.getItem('edgedesk_prefs')||'{}').oddsFormat)||'american';}
+  catch(e){return 'american';}
+})();
+GE.setOddsFormat=function(f){GE._oddsFmt=(f==='decimal'||f==='fractional')?f:'american';};
+GE.oddsFormat=function(){return GE._oddsFmt;};
+/* Format an already-American number. For the handful of sites that hold the
+   American value and no longer have the decimal to hand. */
+GE.fmtAm=function(a){
+  if(a==null||!isFinite(+a))return '—';
+  a=+a;return (a>0?'+':'')+a;
+};
+/* Decimal -> the smallest fraction that represents it, in lowest terms.
+   Bounded search: betting fractions are conventional (4/5, 11/10, 5/2), so a
+   denominator ceiling keeps this exact for real prices and stops it printing
+   something like 337/200 for a rounding artefact. */
+GE.fmtFrac=function(d){
+  var v=d-1;
+  if(!(v>0))return '—';
+  var best=null;
+  for(var den=1;den<=50;den++){
+    var num=Math.round(v*den);
+    if(num<1)continue;
+    var err=Math.abs(num/den-v);
+    if(!best||err<best.err-1e-12)best={num:num,den:den,err:err};
+    if(err<1e-9)break;
+  }
+  if(!best)return d.toFixed(2);
+  var g=(function gcd(a,b){return b?gcd(b,a%b):a;})(best.num,best.den);
+  return (best.num/g)+'/'+(best.den/g);
+};
+/* THE display formatter. A price that cannot be quoted is a dash in every
+   format — never 0, never NaN, never "+Infinity". */
+GE.fmtPrice=function(dec){
+  var d=+dec;
+  if(dec==null||!isFinite(d)||d<=1)return '—';
+  if(GE._oddsFmt==='decimal')return d.toFixed(2);
+  if(GE._oddsFmt==='fractional')return GE.fmtFrac(d);
+  return GE.fmtAm(GE.decToAm(d));
+};
+/* A fair line is stored as a probability; this is the same formatter reached
+   through the one conversion, so a fair price and a book price can never end
+   up rendered in two different formats on the same card. */
+GE.fmtProb=function(p){
+  var v=+p;
+  if(p==null||!isFinite(v)||v<=0||v>=1)return '—';
+  return GE.fmtPrice(1/v);
+};
 GE.bisect=function(f,lo,hi,it){it=it||80;var fl=f(lo);for(var i=0;i<it;i++){var m=(lo+hi)/2,fm=f(m);if(Math.abs(fm)<1e-10)return m;if((fl<0)===(fm<0)){lo=m;fl=fm;}else hi=m;}return(lo+hi)/2;};
 GE.devig=function(decs,method){var q=decs.map(function(d){return 1/d;}),S=q.reduce(function(a,b){return a+b;},0);
   if(method==='multiplicative')return q.map(function(x){return x/S;});
@@ -3614,7 +3684,7 @@ function renderEliminator(rows,elig){
   var blocks=SPORTS.map(function(s){var entries=eb[s.k]||[];var body;
     if(!entries.length){body='<div class="elim-none">none flagged \u2014 '+s.rule+'</div>';}
     else{body=entries.map(function(e){var p=priced[s.k]&&priced[s.k][e.selection];if(p)live++;
-      var od=p?(p.am>0?'+'+p.am:p.am):null;
+      var od=p?vnOd(p.am,p.dec):null;
       var status=p?'<span class="elim">\u26d4 priced '+od+' \u2014 live Dead Money fault</span>':'<span class="alive">ineligible \u2014 not currently priced</span>';
       return'<div class="elim-row"><div class="elim-team">'+e.selection+' '+status+'</div><div class="elim-why">'+(e.reason||'')+'</div></div>';}).join('');}
     return'<div class="elim-sport"><div class="elim-h">'+s.label+'</div>'+body+'</div>';}).join('');
@@ -3669,7 +3739,7 @@ function renderTrapRadar(rows,elig,model){
   traps=traps.slice(0,8);
   host.innerHTML='<div class="trap"><h3>\u26a0 Trap Radar \u2014 where the crowd overpays</h3>'+
     '<p class="trap-note">Marquee teams the market prices <b style="color:var(--text)">above</b> the model \u2014 the classic public-money premium, a fade lean. A big gap can also mean the model is low, so treat each as a prompt to check the crowd, not an auto-fade. CLV is the only proof a fade was right.</p>'+
-    traps.map(function(t){var od=t.am>0?'+'+t.am:t.am;
+    traps.map(function(t){var od=vnOd(t.am,t.dec);
       return'<div class="traprow"><div class="trap-mid"><div class="trap-sel">'+t.sel+'<span class="pubchip">public</span></div>'+
         '<div class="trap-meta">'+t.board+' \u00b7 '+od+' \u00b7 market <b>'+(t.bookFair*100).toFixed(1)+'%</b> vs model <b>'+(t.modelP*100).toFixed(1)+'%</b></div></div>'+
         '<div class="trap-prem">+'+(t.prem*100).toFixed(1)+'<span class="pl">overpay</span></div></div>';
@@ -3851,7 +3921,7 @@ function renderEdges(){
                  (mode==='trusted'&&nb<4?('only '+nb+' books \u2014 below the US-regulated bar'):
                  (mode==='trusted'&&!isTrusted(near.best_book)?'best price is an offshore book':'just under the strict bar'));
       window.__NEAR=near;
-      var nam=GE.decToAm(near.best_dec),nod=nam>0?'+'+nam:nam;
+      var nam=GE.decToAm(near.best_dec),nod=GE.fmtPrice(near.best_dec);
       var nmHeader='<span class="rank">1</span><div class="lead-mid">'+
         '<div class="lead-sel">'+selLabel(near)+(isTrusted(near.best_book)?'':' <span class="suspect">offshore</span>')+'</div>'+
         '<div class="lead-meta">'+evSportLabel(near)+' \u00b7 '+mktLabel(near.market)+' \u00b7 '+(near.away_team||'')+' @ '+(near.home_team||'')+' \u00b7 '+whenLabel(near.commence_time)+' \u00b7 '+near.best_book+' '+nod+' \u00b7 '+nb+' books</div></div>'+
@@ -4285,9 +4355,9 @@ function mlbSchedHTML(g){
 }
 /* ===== end MLB schedule context ===== */
 function receiptHTML(e){
-  var am=GE.decToAm(e.best_dec),od=am>0?'+'+am:am;
+  var am=GE.decToAm(e.best_dec),od=GE.fmtPrice(e.best_dec);
   var haveFair=(e.sharp_fair!=null);
-  var fairAm=haveFair?GE.decToAm(1/Math.max(0.0001,e.sharp_fair)):null,fairOd=fairAm!=null?(fairAm>0?'+'+fairAm:fairAm):'\u2014';
+  var fairAm=haveFair?GE.decToAm(1/Math.max(0.0001,e.sharp_fair)):null,fairOd=haveFair?GE.fmtPrice(1/Math.max(0.0001,e.sharp_fair)):'\u2014';
   var mv=moveLabel(e),st=sliceStat(e),trec;
   if(st&&st.rate!=null){
     trec='<div class="trec">Signals like this \u2014 <b>'+evSportLabel(e)+(st.fine?' \u00b7 '+mktLabel(e.market):'')+'</b> \u2014 have beaten the close <span class="rate">'+(st.rate*100).toFixed(0)+'%</span> over <b>'+st.n+'</b> graded, avg CLV '+(st.clv>=0?'+':'')+(st.clv*100).toFixed(1)+'%.</div>';
@@ -4301,10 +4371,11 @@ function receiptHTML(e){
   var _a=anchorOf(e);
   var MG=mlbLookup(e);
   var edgePct=(e.edge!=null?e.edge*100:null),neg=(edgePct!=null&&edgePct<0);
+  var _fs=favSet();
   var match='<div class="gd-match">'+
-    '<div class="gd-team'+(isAwayPick?' pick':'')+'"><div class="nm">'+(e.away_team||'\u2014')+'</div><div class="rl">away'+(MG&&MG.away_record?' \\u00b7 '+MG.away_record:'')+(isAwayPick?' \u00b7 the pick':'')+'</div></div>'+
+    '<div class="gd-team'+(isAwayPick?' pick':'')+'"><div class="nm">'+(_fs[favNorm(e.away_team)]?'<span class="fav-star" title="Favourite team">\u2605</span>':'')+(e.away_team||'\u2014')+'</div><div class="rl">away'+(MG&&MG.away_record?' \\u00b7 '+MG.away_record:'')+(isAwayPick?' \u00b7 the pick':'')+'</div></div>'+
     '<span class="gd-vs">@</span>'+
-    '<div class="gd-team'+(isHomePick?' pick':'')+'"><div class="nm">'+(e.home_team||'\u2014')+'</div><div class="rl">home'+(MG&&MG.home_record?' \\u00b7 '+MG.home_record:'')+(isHomePick?' \u00b7 the pick':'')+'</div></div>'+
+    '<div class="gd-team'+(isHomePick?' pick':'')+'"><div class="nm">'+(_fs[favNorm(e.home_team)]?'<span class="fav-star" title="Favourite team">\u2605</span>':'')+(e.home_team||'\u2014')+'</div><div class="rl">home'+(MG&&MG.home_record?' \\u00b7 '+MG.home_record:'')+(isHomePick?' \u00b7 the pick':'')+'</div></div>'+
     '<div class="gd-when">'+whenLabel(e.commence_time)+(ttg?'<br><span class="'+(ttg.soon?'cd':'')+'">'+ttg.txt+'</span>':'')+'</div></div>';
   var edgeVal=(edgePct!=null?((edgePct>=0?'+':'')+edgePct.toFixed(2)+'%'+(gap!=null?' \u00b7 '+(gap>=0?'+':'')+gap.toFixed(1)+' pts of value':'')):'\u2014');
   var marketRead='<div class="gd-sec">The market \u00b7 '+mktLabel(e.market)+'</div>'+
@@ -4347,7 +4418,7 @@ function edgeRow(e,i){
   var tags=(e.edge>0.06?' <span class="suspect">\u26a0 verify</span>':'')+(isTrusted(e.best_book)?'':' <span class="suspect">offshore</span>');
   var header='<span class="rank">'+(i+1)+'</span>'+
     '<div class="lead-mid"><div class="lead-sel"><span class="ebadge market">MARKET</span>'+selLabel(e)+anchorBadge(e)+'<span class="corrslot" id="cs_t10_'+i+'">'+corrobBadge(e)+limitBadge(e)+'</span>'+tags+'</div>'+
-    '<div class="lead-meta">'+mktLabel(e.market)+' \u00b7 '+(e.away_team||'')+' @ '+(e.home_team||'')+' \u00b7 '+whenLabel(e.commence_time)+'</div>'+edgeChips(e)+'</div>'+
+    '<div class="lead-meta">'+favStar(e)+mktLabel(e.market)+' \u00b7 '+(e.away_team||'')+' @ '+(e.home_team||'')+' \u00b7 '+whenLabel(e.commence_time)+'</div>'+edgeChips(e)+'</div>'+
     '<span class="lead-ev">+'+(e.edge*100).toFixed(1)+'%</span>';
   return expandItem(e,'t10_'+i,header);
 }
@@ -4378,7 +4449,7 @@ function renderDaily(){
   var anyPos=top.some(function(e){return e.edge>0;});
   var note=anyPos?'':'<div class="sidenote" style="margin:0 0 8px;color:var(--warn)">No +EV on the board right now \u2014 these are the sharpest available, all below fair. Shown for research, not as plays.</div>';
   host.innerHTML=note+top.map(function(e,i){
-    var am=GE.decToAm(e.best_dec),od=am>0?'+'+am:am;
+    var am=GE.decToAm(e.best_dec),od=GE.fmtPrice(e.best_dec);
     var pos=e.edge>0;
     var evTxt=(pos?'+':'')+(e.edge*100).toFixed(pos?1:2)+'%';
     var evStyle=pos?'':' style="color:var(--neg)"';
@@ -6574,7 +6645,7 @@ function renderQuickAdd(){var host=$('qaList');if(!host)return;
   var src=(typeof EDGES!=='undefined'&&EDGES?EDGES:[]).filter(function(e){return e.best_dec&&e.selection;}).slice();
   src.sort(function(a,b){return b.edge-a.edge;});src=src.slice(0,6);window.QA_LIST=src;
   if(!src.length){host.innerHTML='<div class="empty" style="padding:10px">No edges loaded yet. Open the Edges tab to pull today\u2019s board, then come back.</div>';return;}
-  host.innerHTML=src.map(function(e,i){var am=GE.decToAm(e.best_dec),od=am>0?'+'+am:am;
+  host.innerHTML=src.map(function(e,i){var am=GE.decToAm(e.best_dec),od=GE.fmtPrice(e.best_dec);
     return'<button class="qarow" onclick="__qlog('+i+')"><div class="qa-l"><div class="qa-sel">'+selLabel(e)+'</div><div class="qa-meta">'+evSportLabel(e)+' \u00b7 '+e.best_book+' '+od+'</div></div><span class="qa-ev">+'+(e.edge*100).toFixed(1)+'%</span><span class="qa-plus">+</span></button>';
   }).join('');
 }
@@ -7412,7 +7483,7 @@ async function loadNews(){
 /* ===== init + live auto-refresh ===== */
 /* ===== auto market ledger (reads board_moves) ===== */
 async function loadMarket(){
-  function amStr(a){return (a>0?'+':'')+a;}
+  function amStr(a){return GE.fmtPrice(GE.amToDec(a));}
   // settle finished bets + refresh live CLV first, regardless of whether the market feed has rows
   await autoSettle();await refreshLiveCLV();renderLedger();
   var rows=[],live=false;
@@ -8479,12 +8550,12 @@ function ufcMarketHTML(g){
     var fair=(e.sharp_fair!=null&&GEok)?GE.decToAm(1/Math.max(0.0001,e.sharp_fair)):null;
     var anc=(typeof anchorOf==='function')?anchorOf(e,'live'):null;
     var flagged=(typeof isFlaggedSignal==='function')?isFlaggedSignal(e):!!e.flagged_at;
-    function am(v){return v==null?UFC_DASH:((v>0?'+':'')+v);}
+    function am(v,dec){return (typeof GE!=='undefined'&&GE.fmtPrice&&dec!=null)?GE.fmtPrice(dec):(v==null?UFC_DASH:((v>0?'+':'')+v));}
     return '<div class="ufc-mkc"><div class="ufc-pacen" style="color:'+c+'">'+stEsc(name||UFC_DASH)+'</div>'+
-      '<div class="gd-line"><span class="l">Opened</span><span class="v mono">'+am(open)+'</span></div>'+
-      '<div class="gd-line"><span class="l">Current</span><span class="v mono">'+am(cur)+(e.best_book?' <span class="mut">'+stEsc(e.best_book)+'</span>':'')+'</span></div>'+
+      '<div class="gd-line"><span class="l">Opened</span><span class="v mono">'+am(open,e.first_best_dec)+'</span></div>'+
+      '<div class="gd-line"><span class="l">Current</span><span class="v mono">'+am(cur,e.best_dec)+(e.best_book?' <span class="mut">'+stEsc(e.best_book)+'</span>':'')+'</span></div>'+
       '<div class="gd-line"><span class="l">Movement</span><span class="v mono '+(mv==null?'mut':(mv>0?'up':(mv<0?'dn':'mut')))+'">'+(mv==null?UFC_DASH:((mv>0?'+':'')+mv+' cents'))+'</span></div>'+
-      '<div class="gd-line"><span class="l">Sharp fair</span><span class="v mono">'+am(fair)+'</span></div>'+
+      '<div class="gd-line"><span class="l">Sharp fair</span><span class="v mono">'+am(fair,(e.sharp_fair!=null?1/Math.max(0.0001,e.sharp_fair):null))+'</span></div>'+
       '<div class="gd-line"><span class="l">Edge</span><span class="v mono">'+(e.edge==null?UFC_DASH:(+e.edge*100).toFixed(2)+'%')+'</span></div>'+
       '<div class="gd-line"><span class="l">Books</span><span class="v mono">'+(e.n_books==null?UFC_DASH:e.n_books)+'</span></div>'+
       '<div class="gd-line"><span class="l">Signal</span><span class="v">'+(flagged?'<span class="pos">flagged</span>':'<span class="mut">stored, not flagged</span>')+'</span></div>'+
@@ -9552,7 +9623,7 @@ function modelReceiptHTML(m){
 
   var marketRead,bars;
   if(px&&px.dec>1){
-    var am=GE.decToAm(px.dec), od=(am>0?'+':'')+am;
+    var am=GE.decToAm(px.dec), od=GE.fmtPrice(px.dec);
     var impl=1/px.dec;
     var gapPts=(prob!=null)?(prob-impl)*100:null;
     var evAt=(prob!=null)?(prob*px.dec-1)*100:null;
@@ -9561,7 +9632,7 @@ function modelReceiptHTML(m){
       '<div class="gd-line"><span class="l">Price implies</span><span class="v mut">'+(impl*100).toFixed(1)+'% to win</span></div>'+
       (gapPts!=null?'<div class="gd-line"><span class="l">Model minus market</span><span class="v '+(gapPts>=0?'up':'dn')+'">'+(gapPts>=0?'+':'')+gapPts.toFixed(1)+' pts</span></div>':'')+
       (evAt!=null?'<div class="gd-line"><span class="l">EV at this price</span><span class="v '+(evAt>=0?'up':'dn')+'">'+(evAt>=0?'+':'')+evAt.toFixed(1)+'%</span></div>':'')+
-      (sig&&sig.sharp_fair!=null?'<div class="gd-line"><span class="l">Pinnacle sharp fair</span><span class="v">'+GE.decToAm(1/Math.max(0.0001,sig.sharp_fair))+'</span></div>':'')+
+      (sig&&sig.sharp_fair!=null?'<div class="gd-line"><span class="l">Pinnacle sharp fair</span><span class="v">'+GE.fmtPrice(1/Math.max(0.0001,sig.sharp_fair))+'</span></div>':'')+
       (sig&&sig.edge!=null?'<div class="gd-line"><span class="l">MARKET edge on this line</span><span class="v '+(sig.edge>=0?'up':'dn')+'">'+(sig.edge>=0?'+':'')+(sig.edge*100).toFixed(2)+'%</span></div>':'');
     bars='<div class="gd-bars">'+
       '<div class="gd-bar"><div class="bn">'+(ev!=null?(ev>=0?'+':'')+ev.toFixed(1)+'%':'\u2014')+'</div><div class="bl">model edge</div></div>'+
@@ -10203,8 +10274,8 @@ function buildMarketSnapshot(ctx){
   var consAm=(ctx.consFair!=null&&ctx.consFair>0)?GE.decToAm(1/ctx.consFair):null;
   rows.push(['Books Compared',String(ctx.nBooks||0)]);
   rows.push(['Selected Sportsbook',(ctx.book||'\u2014')+(ctx.trusted?'':' (offshore)')]);
-  rows.push(['Consensus Price',consAm!=null?((consAm>0?'+':'')+consAm):'\u2014']);
-  rows.push(['Displayed Quote',am!=null?((am>0?'+':'')+am):'\u2014']);
+  rows.push(['Consensus Price',(ctx.consFair!=null&&ctx.consFair>0)?GE.fmtProb(ctx.consFair):'\u2014']);
+  rows.push(['Displayed Quote',GE.fmtPrice(ctx.quoteDec)]);
   rows.push(['Consensus Gap',ctx.gap!=null?('+'+(ctx.gap*100).toFixed(2)+'%'):'\u2014']);
   rows.push(['Market Edge',ctx.marketEdge!=null?(((ctx.marketEdge>=0?'+':'')+(ctx.marketEdge*100).toFixed(2))+'%'):'n/a']);
   rows.push(['Sharp Reference',ctx.hasSharp?'Yes':'No']);
@@ -10283,8 +10354,8 @@ function timelineHTML(ctx){
   }).join('');
   var dir=tl.moved>0?'lengthened':tl.moved<0?'shortened':'unchanged';
   return '<div class="rtl">'+bars+'</div>'+
-    '<div class="rtl-lbl"><span>'+((p[0].am>0?'+':'')+p[0].am)+' \u00b7 '+ago(p[0].t)+'</span>'+
-    '<span>'+((p[1].am>0?'+':'')+p[1].am)+' \u00b7 current</span></div>'+
+    '<div class="rtl-lbl"><span>'+vnOd(p[0].am,p[0].dec)+' \u00b7 '+ago(p[0].t)+'</span>'+
+    '<span>'+vnOd(p[1].am,p[1].dec)+' \u00b7 current</span></div>'+
     '<div class="rnote">Quote has '+dir+' '+Math.abs(tl.pct*100).toFixed(1)+'% since first capture. Only two captures are recorded per selection; a full series requires <span class="mono">CAPTURE_TICKS</span> enabled and <span class="mono">consensus_fair</span> added to the tick row.</div>';
 }
 
@@ -10333,7 +10404,7 @@ async function consLoadBooks(id){
     var best=rows[0].dec;
     host.innerHTML='<table class="bqtbl"><tbody>'+rows.map(function(r){
       var cls=(r.is_sharp?'sharpbk':(r.dec===best?'bestbk':''));
-      var am=GE.decToAm(r.dec),od=am>0?'+'+am:am;
+      var am=GE.decToAm(r.dec),od=GE.fmtPrice(r.dec);
       return '<tr class="'+cls+'"><td>'+stEsc(r.book_title||'\u2014')+(r.is_sharp?' \u2605':'')+'</td><td>'+od+'</td><td>'+(r.fair!=null?(r.fair*100).toFixed(1)+'%':'\u2014')+'</td></tr>';
     }).join('')+'</tbody></table>'+
     '<div class="gd-modelnote">Every book\u2019s price for this selection and its own de-vigged fair. <b>Green</b> = best available. <b>\u2605 gold</b> = the sharp book. The consensus fair is the median of the fair column.</div>';
@@ -10389,7 +10460,7 @@ function renderConsensusEngine(){
   var covBase={};pool.forEach(function(e){var k=e.sport_title||'';if(!covBase[k]||e.n_books>covBase[k])covBase[k]=e.n_books||0;});
   window.__consCov=covBase;
   host.innerHTML=top.map(function(e,i){
-    var am=GE.decToAm(e.best_dec),od=am>0?'+'+am:am;
+    var am=GE.decToAm(e.best_dec),od=GE.fmtPrice(e.best_dec);
     var flag=anchorBadge(e)+'<span class="corrslot" id="cs_'+('ce_'+(e.event_id||'')+'_'+i)+'">'+corrobBadge(e)+'</span>';
     var mkt=(e.edge!=null)?('MARKET '+(e.edge>=0?'+':'')+(e.edge*100).toFixed(2)+'%'):'MARKET \u2014';
     var meta=[evSportLabel(e),mktLabel(e.market),((e.away_team||'')+' @ '+(e.home_team||'')),whenLabel(e.commence_time),(e.best_book||'')+' '+od,(e.n_books||0)+' books',mkt].filter(Boolean).join(' \u00b7 ');
@@ -10433,7 +10504,12 @@ var PREF_DEFAULTS={
   minEdge:0, hideNoSharp:false, hideResearchOnly:false, onlyPositive:true,
   books:'trusted', window:'week',
   defaultTab:'edges', rememberTab:true, lastTab:'edges', lastResearchSub:'cfb', savedResearch:[],
-  compact:false, reduceMotion:false, largeText:false
+  compact:false, reduceMotion:false, largeText:false,
+  /* FAVOURITE TEAMS. Stored as team names exactly as `signals` spells them, so
+     a favourite matches by the same string the board renders. */
+  favTeams:[], favOnly:false,
+  /* Display only. Never reaches the ledger or a payload — see GE.fmtPrice. */
+  oddsFormat:'american'
 };
 function prefs(){
   try{var p=JSON.parse(localStorage.getItem('edgedesk_prefs')||'{}');
@@ -10445,10 +10521,31 @@ function setPref(k,v){var p=prefs();p[k]=v;savePrefs(p);}
 window.__setPref=function(k,v){setPref(k,v);renderSettings();};
 window.__setPrefSport=function(name,on){var p=prefs();p.sports=p.sports||{};p.sports[name]=!!on;savePrefs(p);
   if(!$('v-edges').classList.contains('hide')){renderEdges();renderConsensusEngine();}};
+window.__setPrefFav=function(name,on){
+  var p=prefs();var list=(p.favTeams||[]).slice();
+  var k=favNorm(name);
+  list=list.filter(function(t){return favNorm(t)!==k;});
+  if(on)list.push(name);
+  p.favTeams=list;savePrefs(p);
+  renderSettings();
+  if($('v-edges')&&!$('v-edges').classList.contains('hide')){renderEdges();renderDaily();renderConsensusEngine();}
+};
+window.__clearFavs=function(){var p=prefs();p.favTeams=[];savePrefs(p);renderSettings();
+  if($('v-edges')&&!$('v-edges').classList.contains('hide')){renderEdges();renderDaily();renderConsensusEngine();}};
 
 /* prefs -> live app. These are the real filters, not decoration. */
 function applyPrefs(){
   var p=prefs();
+  /* Keep the cached odds format in step with the stored pref. Cached because
+     GE.fmtPrice runs inside render loops over hundreds of rows and must not hit
+     localStorage per price. */
+  if(typeof GE!=='undefined'&&GE&&GE.setOddsFormat){
+    var wasFmt=GE.oddsFormat();
+    GE.setOddsFormat(p.oddsFormat);
+    if(wasFmt!==GE.oddsFormat()&&$('v-edges')&&!$('v-edges').classList.contains('hide')){
+      try{renderEdges();renderDaily();renderConsensusEngine();}catch(_){}
+    }
+  }
   document.body.classList.toggle('ed-compact',!!p.compact);
   document.body.classList.toggle('ed-reduce-motion',!!p.reduceMotion);
   document.body.classList.toggle('ed-large-text',!!p.largeText);
@@ -10457,6 +10554,49 @@ function applyPrefs(){
   var w=$('fScope');  if(w&&w.value!==p.window){w.value=p.window;}
 }
 /* shared row filter applied to BOTH the market feed and the consensus feed */
+/* ---------- favourite teams ----------
+   WHAT THIS DELIBERATELY DOES NOT DO: reorder the board.
+
+   The Top 10 is ordered by weighted edge, and that ordering is the product's
+   central claim. Letting a favourite jump the queue would put a weaker number
+   above a stronger one for a reason that has nothing to do with the price, and
+   the ranking would quietly stop meaning what it says. So a favourite MARKS a
+   row and can FILTER the board, and never promotes one.
+
+   Names are compared loosely (case, punctuation and spacing folded) because a
+   book's spelling of a team drifts; they are stored verbatim so the settings
+   list always shows exactly what the data says. */
+function favNorm(s){
+  return String(s==null?'':s).toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
+}
+function favSet(){
+  var out={},list=(prefs().favTeams)||[];
+  for(var i=0;i<list.length;i++){var k=favNorm(list[i]);if(k)out[k]=true;}
+  return out;
+}
+/* True when either side of the fixture is a favourite. Checks the TEAMS, not
+   the selection: you follow a team, not whichever side of a total the pricer
+   happened to flag. */
+function edgeIsFav(e,fs){
+  fs=fs||favSet();
+  if(!e)return false;
+  return !!(fs[favNorm(e.home_team)]||fs[favNorm(e.away_team)]);
+}
+function favStar(e,fs){return edgeIsFav(e,fs)?'<span class="fav-star" title="Favourite team">\u2605</span>':'';}
+/* Every team name the board currently knows about, read from live data exactly
+   the way the Sports list is — never a hardcoded league roster that would drift
+   out of date and list teams capture does not cover. */
+function favAllTeams(){
+  var seen={};
+  (window.EDGES||[]).concat(window.CONS_POOL||[],window.D5_POOL||[]).forEach(function(e){
+    if(!e)return;
+    [e.home_team,e.away_team].forEach(function(t){
+      if(t&&String(t).trim())seen[String(t)]=e.sport_title||'';
+    });
+  });
+  return Object.keys(seen).sort().map(function(t){return {team:t,sport:seen[t]};});
+}
+
 function prefAllows(e){
   var p=prefs();
   var st=e.sport_title||'';
@@ -10465,6 +10605,9 @@ function prefAllows(e){
     if(any&&!p.sports[st])return false;
   }
   if(p.hideNoSharp&&isSoftAnchor(e))return false;
+  /* Favourites-only is opt-in and does nothing until at least one team is
+     picked, so turning it on with an empty list can never blank the board. */
+  if(p.favOnly&&p.favTeams&&p.favTeams.length&&!edgeIsFav(e))return false;
   return true;
 }
 
@@ -10682,8 +10825,43 @@ function renderSetEdge(){
         return '<option value="'+t+'"'+(p.defaultTab===t?' selected':'')+'>'+(t==='social'?'Pulse':t.charAt(0).toUpperCase()+t.slice(1))+'</option>';}).join('')+'</select>')+
     setRow('Remember last opened tab',setToggle('rememberTab',p.rememberTab),'Overrides the default landing page'));
 
-  out+=setGate('Odds format','Every price in EdgeDesk renders through a single American-odds formatter. Adding decimal and fractional means routing all display paths through a shared converter \u2014 a real change, not a setting. It is not shown as a dropdown because switching it today would change nothing.');
-  out+=setGate('Favorite teams','Nothing in the app filters or sorts by team yet, so a favourites list would have no effect on what you see.');
+  /* ODDS FORMAT. Was gated because ~50 sites each formatted their own display
+     string inline, so a dropdown would have changed nothing. They now all route
+     through GE.fmtPrice, so it changes everything a human reads — and nothing
+     that is stored: the CLV ledger and the edgedesk_ai payloads still carry the
+     American number from GE.decToAm, which this setting cannot reach. */
+  out+=setCard('Odds format','Applies to every price EdgeDesk displays. It does not change your ledger \u2014 tracked bets keep the American price they were recorded at.',
+    setRow('Display prices as','<select class="set-sel" onchange="__setPref(\'oddsFormat\',this.value)">'+
+      [['american','American (+150 / -120)'],['decimal','Decimal (2.50 / 1.83)'],['fractional','Fractional (3/2 / 5/6)']]
+        .map(function(o){return '<option value="'+o[0]+'"'+(p.oddsFormat===o[0]?' selected':'')+'>'+o[1]+'</option>';}).join('')+
+      '</select>'));
+  /* FAVOURITE TEAMS. Was gated on the honest grounds that nothing filtered or
+     sorted by team, so a list would have had no effect. It has one now: the
+     board marks favourite fixtures and can be narrowed to them. It still does
+     NOT reorder — see the note on favNorm/edgeIsFav for why. */
+  var teams=favAllTeams();
+  var favs=p.favTeams||[];
+  var favIx={};favs.forEach(function(t){favIx[favNorm(t)]=true;});
+  var teamsHtml;
+  if(!teams.length){
+    teamsHtml='<div class="set-note">No teams in the current window yet \u2014 open the Edges tab once and they appear here. This list is read from live board data, not a hardcoded league roster, so it never offers a team capture does not cover.</div>';
+  }else{
+    var bySport={};
+    teams.forEach(function(x){(bySport[x.sport||'Other']=bySport[x.sport||'Other']||[]).push(x.team);});
+    teamsHtml=Object.keys(bySport).sort().map(function(sp){
+      return '<div class="set-favg">'+stEsc(sp)+'</div><div class="set-chks">'+
+        bySport[sp].map(function(t){
+          return '<label class="set-chk"><input type="checkbox" '+(favIx[favNorm(t)]?'checked':'')+
+            ' onchange="__setPrefFav(this.getAttribute(\'data-t\'),this.checked)" data-t="'+stEsc(t)+'"><span>'+stEsc(t)+'</span></label>';
+        }).join('')+'</div>';
+    }).join('');
+  }
+  out+=setCard('Favorite teams','Marks your teams on the board. It does not reorder it \u2014 the Top 10 stays ranked by edge, so a favourite never jumps a stronger number.',
+    (favs.length?('<div class="set-note" style="margin-bottom:8px">Following <b>'+favs.length+'</b> team'+(favs.length===1?'':'s')+'. '+
+      '<a href="#" onclick="__clearFavs();return false" style="color:var(--accent)">clear all</a></div>'):'')+
+    setRow('Show favorites only',setToggle('favOnly',p.favOnly),
+      'Narrows the Edges board to fixtures involving a favorite. Does nothing until you pick at least one team, so it cannot blank the board.')+
+    teamsHtml);
   return out;
 }
 
@@ -11728,7 +11906,14 @@ window.loadDiscipline=async function(){
 /* ===================================================================== */
 
 /* ---- compact chip strip for a collapsed edge card ---- */
-function vnOd(a){return a==null?'\u2014':(a>0?'+'+a:''+a);}
+/* Format-aware. Callers that hold the true decimal pass it and it is used
+   verbatim; callers holding only the American number get it converted back,
+   which round-trips to the same displayed price and only loses the sub-cent
+   precision the American rendering had already dropped. */
+function vnOd(a,dec){
+  if(dec!=null&&isFinite(+dec)&&+dec>1)return GE.fmtPrice(+dec);
+  return a==null?'\u2014':GE.fmtPrice(GE.amToDec(a));
+}
 function edgeChips(e){
   try{
     var q=eqsCompute(e);
@@ -11800,7 +11985,7 @@ function renderMarketPulse(){
   var mHtml=movers.length?movers.map(function(m){
     var e=m.e,a0=GE.decToAm(e.first_best_dec),a1=GE.decToAm(e.best_dec);
     var toward=m.pct<0; /* decimal shrinking = price shortening = market moving toward this side */
-    return '<div class="mp-row"><span class="mp-sel">'+selLabel(e)+'</span><span class="mp-meta">'+evSportLabel(e)+' \u00b7 '+mktLabel(e.market)+' \u00b7 '+vnOd(a0)+' \u2192 '+vnOd(a1)+'</span><span class="mp-val '+(toward?'up':'dn')+'">'+(toward?'\u2193 ':'\u2191 ')+(Math.abs(m.pct)*100).toFixed(1)+'%</span></div>';
+    return '<div class="mp-row"><span class="mp-sel">'+selLabel(e)+'</span><span class="mp-meta">'+evSportLabel(e)+' \u00b7 '+mktLabel(e.market)+' \u00b7 '+vnOd(a0,e.first_best_dec)+' \u2192 '+vnOd(a1)+'</span><span class="mp-val '+(toward?'up':'dn')+'">'+(toward?'\u2193 ':'\u2191 ')+(Math.abs(m.pct)*100).toFixed(1)+'%</span></div>';
   }).join(''):'<div class="mp-row"><span class="mp-sel mut" style="color:var(--faint)">No line has moved \u22650.5% since first capture in this window.</span></div>';
   var dHtml=dis.length?dis.map(function(d){
     var e=d.e;
@@ -11923,7 +12108,7 @@ BQE.register({id:'sharp',label:'Sharp validation',run:function(e){
     var pinAm=(e.sharp_fair!=null)?GE.decToAm(1/Math.max(0.0001,e.sharp_fair)):null;
     var curAm=(e.best_dec!=null)?GE.decToAm(e.best_dec):null;
     return{delta:8,verdict:'Pinnacle anchors the fair line',
-      lines:[['Pinnacle fair',vnOd(pinAm),''],['Current best',vnOd(curAm),''],['Gap',bqPct(e.edge||0,2),(e.edge||0)>0?'up':'dn']],
+      lines:[['Pinnacle fair',vnOd(pinAm,(e.sharp_fair!=null?1/Math.max(0.0001,e.sharp_fair):null)),''],['Current best',vnOd(curAm,e.best_dec),''],['Gap',bqPct(e.edge||0,2),(e.edge||0)>0?'up':'dn']],
       src:'Pinnacle two-way prices, de-vigged (Shin). The only anchor this platform treats as sharp.'};
   }
   if(a.kind==='soft')return{delta:-4,verdict:'No sharp validation \u2014 consensus only',
@@ -11993,7 +12178,7 @@ BQE.register({id:'move',label:'Line movement',run:function(e){
   var a0=(e.first_best_dec&&e.first_best_dec>1)?GE.decToAm(e.first_best_dec):null;
   var a1=(e.best_dec&&e.best_dec>1)?GE.decToAm(e.best_dec):null;
   return{delta:d,verdict:(cls==='mv-steam'?'steaming toward the pick':cls==='mv-drift'?'drifting away':'flat')+(staleMin>=45?' \u00b7 stale':''),
-    lines:[['First capture \u2192 now',vnOd(a0)+' \u2192 '+vnOd(a1),cls==='mv-steam'?'up':cls==='mv-drift'?'dn':'mut'],
+    lines:[['First capture \u2192 now',vnOd(a0,e.first_best_dec)+' \u2192 '+vnOd(a1,e.best_dec),cls==='mv-steam'?'up':cls==='mv-drift'?'dn':'mut'],
            ['Last re-priced',staleMin<999?Math.round(staleMin)+'m ago':'unknown',staleMin>=45?'dn':'']],
     src:'Two stored snapshots: price at first capture vs now. Tick history is not stored; this is the honest resolution available.'};
 }});
@@ -12027,7 +12212,7 @@ BQE.register({id:'variance',label:'Variance (price-based)',run:function(e){
   else if(dec>0&&dec<=1.55){d=2;v='LOW';why='short favorite \u2014 low outcome variance per bet';}
   else{d=0;v='NORMAL';why='near-even price';}
   return{delta:d,verdict:v,
-    lines:[['Price',vnOd(GE.decToAm(dec))+' ('+(dec?(1/dec*100).toFixed(1):'\u2014')+'% implied)',''],['Read',why,d>0?'up':d<0?'dn':'mut']],
+    lines:[['Price',vnOd(null,dec)+' ('+(dec?(1/dec*100).toFixed(1):'\u2014')+'% implied)',''],['Read',why,d>0?'up':d<0?'dn':'mut']],
     src:'Derived from the price alone. Park, weather and bullpen variance inputs are not connected, so this module only measures what the odds themselves imply.'};
 }});
 
@@ -12245,7 +12430,7 @@ function bqThesisHTML(e){
       bqGaugeHTML(q)+
       '<div class="bqt-grid">'+
         '<div class="bqt-cell"><div class="n">'+q.stake+'</div><div class="l">sizing read</div></div>'+
-        '<div class="bqt-cell"><div class="n">'+vnOd(am)+'</div><div class="l">current price</div></div>'+
+        '<div class="bqt-cell"><div class="n">'+vnOd(am,e.best_dec)+'</div><div class="l">current price</div></div>'+
         '<div class="bqt-cell"><div class="n">'+vnOd(fairAm)+'</div><div class="l">fair price'+(e.sharp_fair!=null?' \u00b7 pinnacle':' \u00b7 consensus')+'</div></div>'+
         '<div class="bqt-cell"><div class="n '+(edge!=null&&edge>0?'up':'dn')+'">'+(edge!=null?((edge>=0?'+':'')+edge.toFixed(2)+'%'):'\u2014')+'</div><div class="l">market edge</div></div>'+
       '</div>'+
@@ -13653,7 +13838,7 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
   function tms(iso){ try{var t=new Date(iso).getTime(); return isFinite(t)?t:0;}catch(_){return 0;} }
   function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
   function fmtE(x){ return (x>=0?'+':'')+(x*100).toFixed(1)+'%'; }
-  function amStr(dec){ try{ if(typeof GE==='undefined'||!GE||!GE.decToAm||!dec) return ''; var a=GE.decToAm(dec); return a>0?'+'+a:''+a; }catch(_){return'';} }
+  function amStr(dec){ try{ if(typeof GE==='undefined'||!GE||!GE.fmtPrice||!dec) return ''; return GE.fmtPrice(dec); }catch(_){return'';} }
   function label(e){ try{ return evSportLabel(e)||''; }catch(_){ return e.sport_title||''; } }
 
   // one row's opening-vs-current facts
@@ -13927,7 +14112,7 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
   function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
   function tms(iso){ try{var t=new Date(iso).getTime();return isFinite(t)?t:0;}catch(_){return 0;} }
   function fmtE(x){ return (x==null||!isFinite(x))?'—':((x>=0?'+':'')+(x*100).toFixed(1)+'%'); }
-  function am(dec){ try{ if(typeof GE==='undefined'||!GE||!GE.decToAm||!dec||dec<=1) return '—'; var a=GE.decToAm(dec); return a>0?'+'+a:''+a; }catch(_){return'—';} }
+  function am(dec){ try{ if(typeof GE==='undefined'||!GE||!GE.fmtPrice||!dec||dec<=1) return '—'; return GE.fmtPrice(dec); }catch(_){return'—';} }
   function probAm(p){ return (p&&p>0&&p<1)?am(1/p):'—'; }        // fair prob -> fair american
   function agoS(ms){ try{ return (typeof ago==='function')? ago(ms) : ''; }catch(_){return'';} }
   function lbl(e){ try{ return evSportLabel(e)||e.sport_title||''; }catch(_){ return e.sport_title||''; } }
@@ -14540,7 +14725,7 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
   function $id(x){return document.getElementById(x);}
   function n(x){ x=+x; return isFinite(x)?x:null; }
   function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
-  function amStr(a){ if(a==null)return '—'; a=Math.round(a); return a>0?'+'+a:''+a; }
+  function amStr(a){ if(a==null)return '—'; return GE.fmtPrice(GE.amToDec(Math.round(a))); }
   function decToAm(d){ return (typeof GE!=='undefined'&&GE.decToAm)?GE.decToAm(d):(d>=2?Math.round((d-1)*100):Math.round(-100/(d-1))); }
   function impDec(d){ return d>1?1/d:null; }
   function pct(x,dp){ if(x==null)return '—'; return (x>=0?'+':'')+(x*100).toFixed(dp==null?1:dp)+'%'; }
