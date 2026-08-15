@@ -365,6 +365,16 @@ textarea{min-height:110px;font-family:'JetBrains Mono',monospace;resize:vertical
 .fi-empty{font-size:11.5px;color:var(--dim);line-height:1.55;padding:10px 11px;background:var(--surface2);border:1px dashed var(--border);border-radius:9px}
 .fi-empty .mono{color:var(--warn)}
 .fav-star{color:#e8a13b;margin-right:5px;font-size:11px}
+.ufc-clvbox{background:var(--surface);border:1px solid var(--border);border-radius:9px;padding:6px 10px}
+.ufc-clvrow{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.05);font-size:12px}
+.ufc-clvrow:last-child{border-bottom:none}
+.ufc-clvsel{color:var(--text);line-height:1.45}
+.ufc-clvsub{display:block;font-size:10px;color:var(--faint);font-family:'JetBrains Mono',monospace;margin-top:2px}
+.ufc-clvv{font-family:'JetBrains Mono',monospace;text-align:right;white-space:nowrap;flex:0 0 auto}
+.ufc-clvv .mut{white-space:normal;display:block;font-size:9.5px;max-width:190px}
+.ufc-gategrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+.ufc-gate{padding:7px 9px;border:1px dashed rgba(255,255,255,.14);border-radius:8px;font-size:10.5px;color:var(--faint)}
+@media(max-width:520px){.ufc-gategrid{grid-template-columns:1fr}.ufc-clvrow{flex-direction:column;gap:2px}.ufc-clvv{text-align:left}}
 .set-favg{font-size:10.5px;letter-spacing:.05em;text-transform:uppercase;color:var(--faint);font-weight:700;margin:10px 0 4px}
 /* ---- UFC Live Fight Center: deep layer. Additive only; every class below is
    new and prefixed .ufc-, so no existing rule changes meaning. ---- */
@@ -2855,7 +2865,8 @@ var RS_PROV={
     {nm:'Snapshot timeline',tier:'T0',src:'ufc.live_fight_snapshots \u2014 immutable, timestamped, deduplicated by content so a row exists only where a number actually moved.'},
     {nm:'Live momentum',tier:'T2',src:'EdgeDesk-derived: the difference between two stored snapshots. Observed change, not a judging score \u2014 no live official scoring source exists and none is imitated.'},
     {nm:'Pace vs career baseline',tier:'T2',src:'EdgeDesk-derived: live rate over elapsed fight time, compared with ufc.fighter_career_stats career averages. Both inputs are stored; the comparison is EdgeDesk\u2019s.'},
-    {nm:'Market context (opening, current, movement, sharp fair, edge, flag)',tier:'T0',src:'public.signals, read exactly as the odds capture wrote it. Nothing on this screen recomputes a price, a fair line or an edge.'}
+    {nm:'Market context (opening, current, movement, sharp fair, edge, flag)',tier:'T0',src:'public.signals, read exactly as the odds capture wrote it. Nothing on this screen recomputes a price, a fair line or an edge.'},
+    {nm:'Pre-fight CLV',tier:'T2',src:'EdgeDesk-derived from stored values only: closing fair line \u00d7 frozen entry price \u2212 1. Entry from signals.flagged_best_dec (or the opener), close from signals.closing_sharp_fair or the last signal_ticks row at or before commence_time. No price is recomputed and no new table stores one.'}
   ],
   wta:[
     {nm:'Player rankings and ranking date',tier:'T0',src:'wta.daily_research — official WTA rankings as ingested'},
@@ -2903,7 +2914,8 @@ var RS_LIMITS={
        'Per-minute microstats absent from the source are omitted rather than shown as blanks.',
        'The fighter list renders at most 300 rows; search or filter by division to reach the rest.',
        'Live model probability is gated because no UFC model is registered — the model registry holds no entry for this sport, so there is nothing to display and nothing is estimated in its place.',
-       'Pre-fight CLV is gated for a separate reason: capture now supplies live fight prices, but no closing price is stored per bout, so there is no reference to grade an entry against. Consensus is never shown as CLV.',
+       'Pre-fight CLV reads the existing odds engine and recomputes nothing: entry is the price capture froze, close is closing_sharp_fair where the close pipeline has run and otherwise the last tick at or before the bell. A tick written after the fight starts is a live price and is never used as a close.',
+       'A bout with no stored mma_mixed_martial_arts signal shows no CLV rather than a substituted one, and a final pre-fight capture more than six hours before the bell is reported as an unqualified close rather than presented as one.',
        'Live statistics are only as deep as the configured provider publishes. A field the source omits is stored as NULL and rendered as a dash \u2014 never as a zero.',
        'Source fields the normalizer does not recognise are displayed nowhere. They are counted in the live pipeline diagnostics so they can be mapped, rather than being guessed into a column.',
        'EdgeDesk publishes no live round score. The UFC\u2019s official judging is not available live, so momentum is reported as observed change and labelled EdgeDesk-derived.',
@@ -7997,7 +8009,7 @@ async function loadUFCLive(){
   var e=pick.event;
   try{fx=await sbGetUfc('live_fights?select=fight_id,red_name,blue_name,red_fighter_id,blue_fighter_id,status,round,clock,red_strikes,blue_strikes,red_td,blue_td,red_kd,blue_kd,red_win_prob,weight_class,is_main,red_odds,blue_odds&event_id=eq.'+encodeURIComponent(e.event_id)+'&order=is_main.desc,fight_id.asc&limit=30');}catch(_){fx=[];}
   fx=await ufcDeepLoad(e.event_id,fx);
-  ufcMarketFetch();
+  await ufcMarketFetch();   /* cached 120s — the CLV tile must be right on the first paint */
   UFC._lastEvent=e;UFC._lastFights=fx||[];UFC._lastMode=pick.mode;
   body.innerHTML=ufcLiveShellHTML(e,fx||[],pick.mode);
   UFC.liveAt=Date.now();
@@ -8180,10 +8192,11 @@ function ufcLiveFightCard(g){
   }else{
     statsBlock='<div style="border-top:1px solid rgba(255,255,255,.06);margin-top:10px;padding-top:8px;text-align:center;font-size:11px;color:var(--faint2,#6b7280)">Live strikes, takedowns &amp; knockdowns begin at first bell</div>';
   }
-  var gated='<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px">'+
-      '<div style="padding:7px 9px;border:1px dashed rgba(255,255,255,.14);border-radius:8px;font-size:10.5px;color:var(--faint)">EdgeDesk model prob<br><b style="color:var(--warn)">not active</b> \u2014 needs UFC model</div>'+
-      '<div style="padding:7px 9px;border:1px dashed rgba(255,255,255,.14);border-radius:8px;font-size:10.5px;color:var(--faint)">Pre-fight CLV<br><b style="color:var(--warn)">not active</b> \u2014 needs live capture</div>'+
-    '</div>';
+  /* Was two hardcoded "not active" tiles that read no condition at all — the
+     CLV one would have said "not active" with a fully graded signal sitting in
+     the database. It now reads the stored market. The model tile stays gated
+     because that one is still true. */
+  var gated=ufcClvHTML(g);
   var odds=(g.red_odds!=null||g.blue_odds!=null)?'<div style="display:flex;justify-content:space-between;margin-top:8px;font-size:10.5px;color:var(--faint)"><span>best book price via capture \u00b7 de-vigged pipeline, not Pinnacle</span><span class="mono">'+(g.red_odds!=null?(+g.red_odds).toFixed(2):'\u2014')+' / '+(g.blue_odds!=null?(+g.blue_odds).toFixed(2):'\u2014')+'</span></div>':'';
   /* DEEP PANEL (additive). ufcDeepPanelHTML returns '' when no deep row exists
      for this bout, so with the migration unrun this card renders byte-for-byte
@@ -8209,7 +8222,7 @@ function ufcLiveShellHTML(e,fx,mode){
   }
   var cards=fx.map(ufcLiveFightCard).join('');
   return head+ufcEventMetaHTML(e)+
-    '<p class="lede" style="margin-top:10px">Red vs blue corners, weight class, and the live round/clock stream from the fight-state poller. Pre-fight tendencies (finish rate, streaks, activity) are computed from EdgeDesk\u2019s loaded history \u2014 fighters not in the database show \u201cno DB history.\u201d <b style="color:var(--warn)">Model probability and CLV stay gated</b>, for two different reasons: no UFC model is registered, and although capture now supplies live fight prices there is no stored closing price per bout to grade an entry against. Nothing here is a fabricated number, and consensus is never relabelled as CLV.</p>'+
+    '<p class="lede" style="margin-top:10px">Red vs blue corners, weight class, and the live round/clock stream from the fight-state poller. Pre-fight tendencies (finish rate, streaks, activity) are computed from EdgeDesk\u2019s loaded history \u2014 fighters not in the database show \u201cno DB history.\u201d <b style="color:var(--warn)">Model probability stays gated</b> \u2014 no UFC model is registered, so nothing is estimated in its place. <b>Pre-fight CLV is live</b>: it reads the entry price capture froze against the closing fair line, taken from the close pipeline where it has run and otherwise from the last tick stamped at or before the bell. A price captured after the first bell is a live price and is never used as a close. Nothing here is a fabricated number, and consensus is never relabelled as CLV.</p>'+
     (cards||(e?'<div class="empty">Event found but no fights loaded yet for it.</div>':''))+
     ufcDiagHTML();
 }
@@ -8236,9 +8249,9 @@ function ufcLiveShellHTML(e,fx,mode){
    drawn as a dash, never as a zero, and anything EdgeDesk computes itself is
    labelled as EdgeDesk-derived on the same screen as the number.
    ============================================================================ */
-UFC.deep = {ev:null, fights:{}, rounds:{}, snaps:{}, health:null, at:0, ok:null, why:''};
+UFC.deep = {ev:null, fights:{}, rounds:{}, snaps:{}, ticks:{}, health:null, at:0, ok:null, why:''};
 UFC.liveOpen = {};
-UFC.market = {byName:{}, at:0, ok:null};
+UFC.market = {byName:{}, byPair:{}, at:0, ok:null};
 
 /* ---- reads -------------------------------------------------------------- */
 async function ufcDeepFetchEvent(eventId){
@@ -8265,15 +8278,32 @@ async function ufcMarketFetch(){
   try{
     var from=new Date(Date.now()-6*3600000).toISOString();
     var to=new Date(Date.now()+8*86400000).toISOString();
-    var rows=await sbGet('signals?select=event_id,sport_key,sport_title,market,selection,commence_time,home_team,away_team,best_dec,best_book,first_best_dec,first_seen_at,sharp_fair,consensus_fair,edge,n_books,has_sharp,last_seen_at,'+BOARD_FLAG_COLS+'&sport_key=eq.mma_mixed_martial_arts&market=eq.h2h&commence_time=gte.'+from+'&commence_time=lte.'+to+'&order=commence_time.asc&limit=500');
-    var ix={};
+    /* EVERY market on the fixture, not just the moneyline. The bout card is
+       about the two fighters, but capture also prices totals and props on the
+       same fixture and a CLV receipt that silently omitted them would be
+       reporting on a subset without saying so.
+
+       Deliberately NOT filtered by BOARD_FLAG_FILTER: an unflagged row is still
+       real market data with a real stored entry, and the board's flag rule
+       exists to decide what EdgeDesk puts its NAME on, not what it may read. */
+    var rows=await sbGet('signals?select=sig_key,event_id,sport_key,sport_title,market,selection,point,commence_time,home_team,away_team,best_dec,best_book,first_best_dec,first_seen_at,first_sharp_fair,first_has_sharp,sharp_fair,consensus_fair,edge,n_books,has_sharp,last_seen_at,closing_sharp_fair,closed_at,'+BOARD_FLAG_COLS+',flagged_sharp_fair&sport_key=eq.mma_mixed_martial_arts&commence_time=gte.'+from+'&commence_time=lte.'+to+'&order=commence_time.asc&limit=800');
+    var ix={},pair={};
     (rows||[]).forEach(function(r){
       var k=ufcNormName(r.selection);
-      if(!k)return;
-      /* keep the freshest quote per fighter */
-      if(!ix[k]||String(r.last_seen_at||'')>String(ix[k].last_seen_at||''))ix[k]=r;
+      if(k&&r.market==='h2h'){
+        if(!ix[k]||String(r.last_seen_at||'')>String(ix[k].last_seen_at||''))ix[k]=r;
+      }
+      /* An MMA "event" in the odds feed IS one bout: home_team and away_team
+         are the two fighters. The unordered normalized name pair therefore
+         identifies the fixture without depending on corner assignment or on
+         either feed's ordering. */
+      var pk=ufcPairKey(r.home_team,r.away_team);
+      if(pk){
+        var slot=pair[pk]||(pair[pk]={event_id:r.event_id,commence_time:r.commence_time,rows:[]});
+        slot.rows.push(r);
+      }
     });
-    UFC.market.byName=ix;UFC.market.ok=true;UFC.market.at=Date.now();
+    UFC.market.byName=ix;UFC.market.byPair=pair;UFC.market.ok=true;UFC.market.at=Date.now();
   }catch(e){UFC.market.ok=false;UFC.market.at=Date.now();}
 }
 
@@ -8595,7 +8625,17 @@ window.ufcToggleDeep=async function(fid){
     if(UFC.deep.snaps[fid]===undefined){
       try{UFC.deep.snaps[fid]=await ufcSnapsFetch(fid)||[];}catch(e){UFC.deep.snaps[fid]=null;}
     }
-    ufcMarketFetch().then(function(){ufcRepaintLive();});
+    ufcMarketFetch().then(function(){
+      /* ticks only for the bout being looked at — a twelve-bout card would
+         otherwise pull the tick series for sixty selections every poll */
+      var d=UFC.deep.fights[fid];
+      if(!d||!d.red_name){
+        /* the deep row may not exist for a bout only the shallow poller saw;
+           ufcBoutSignals matches on fighter names, so find a row that has them */
+        d=(UFC._lastFights||[]).filter(function(x){return x.fight_id===fid;})[0]||d;
+      }
+      return ufcLoadCloseTicks(d||{fight_id:fid});
+    }).then(function(){ufcRepaintLive();});
   }
   ufcRepaintLive();
 };
@@ -8769,6 +8809,221 @@ async function ufcDeepLoad(eventId,fx){
   await ufcDeepLoadHealth();
   return UFC._lastFights;
 }
+
+/* ============================================================================
+   PRE-FIGHT CLV — the bridge from a UFC bout to the existing odds engine
+   ============================================================================
+   TWO SEPARATE BUGS KEPT THIS GATED, and only one of them was about data.
+
+   1. THE GATE WAS UNCONDITIONAL. `ufcLiveFightCard` rendered the literal string
+      "Pre-fight CLV — not active — needs live capture" with no check of any
+      kind. Even with a fully graded signal sitting in the database it would
+      still have said "not active". A gate that never reads its own condition
+      is not a gate, it is a caption.
+
+   2. NOTHING DERIVED A CLOSING REFERENCE FOR A BOUT. Entry was always there —
+      capture freezes `flagged_best_dec` / `flagged_sharp_fair` the first time a
+      selection crosses the floor, and `first_*` holds the opener. The missing
+      half was the close.
+
+   NO NEW TABLE. The raw material already exists and duplicating it into ufc.*
+   would create a second version of a number that already has one:
+
+     signals.closing_sharp_fair   written by the close pipeline once it grades
+                                  the bout. The canonical close.
+     signal_ticks(created_at)     the full pre-fight series capture already
+                                  writes. The LAST TICK AT OR BEFORE
+                                  commence_time IS the final pre-fight market
+                                  snapshot — which is exactly what a close is.
+
+   So this reads, it does not write. No price, fair line or edge is recomputed:
+   entry comes from the frozen anchor capture stored, close comes from the close
+   pipeline or from the tick series, and the only arithmetic here is the same
+   `fair × decimal − 1` the engine already uses.
+
+   THE LIVE PRICE IS NEVER THE CLOSE. Only ticks stamped at or before
+   commence_time qualify, and a snapshot taken too long before the bell is
+   reported as unqualified rather than quietly presented as a close.
+   ============================================================================ */
+
+/* How stale the final pre-fight tick may be and still be called a close. A card
+   capture last priced six hours before the bell did not observe the close, and
+   saying otherwise would put a number in the record that nothing supports. */
+var UFC_CLOSE_MAX_LEAD_MS = 6 * 3600 * 1000;
+
+/* Bout -> odds event. In the Odds API an MMA "event" IS one bout: home_team and
+   away_team are the two fighters. So the bridge is the unordered normalized
+   name pair, which does not depend on corner assignment or on either feed's
+   ordering. Names are folded by the same ufcNormName the fighter resolver uses,
+   so a bout that matches server-side matches here too. */
+function ufcPairKey(a, b) {
+  var x = ufcNormName(a), y = ufcNormName(b);
+  if (!x || !y) return '';
+  return (x < y) ? (x + '|' + y) : (y + '|' + x);
+}
+
+/* Entry price, defined the same way close/index.ts entryPrice() defines it:
+   the frozen flagged price when the signal was flagged, the opener otherwise.
+   Grading and display must agree on what "entry" means or the two will quietly
+   report different CLV for the same row. */
+function ufcEntryOf(e) {
+  if (e && e.flagged_at && e.flagged_best_dec != null && +e.flagged_best_dec > 1) {
+    return { dec: +e.flagged_best_dec, fair: (e.flagged_sharp_fair != null ? +e.flagged_sharp_fair : null),
+             at: e.flagged_at, kind: 'flagged' };
+  }
+  if (e && e.first_best_dec != null && +e.first_best_dec > 1) {
+    return { dec: +e.first_best_dec, fair: (e.first_sharp_fair != null ? +e.first_sharp_fair : null),
+             at: e.first_seen_at, kind: 'opening' };
+  }
+  return null;
+}
+
+/* Closing reference, in precedence order, each labelled with where it came from
+   so a reader is never left guessing which number they are looking at. */
+function ufcCloseOf(e, ticks) {
+  if (e && e.closing_sharp_fair != null && +e.closing_sharp_fair > 0 && +e.closing_sharp_fair < 1) {
+    return { fair: +e.closing_sharp_fair, at: e.closed_at || null, src: 'close pipeline', qualified: true };
+  }
+  var ct = e && e.commence_time ? new Date(e.commence_time).getTime() : NaN;
+  if (!isFinite(ct) || !ticks || !ticks.length) return null;
+  /* THE FINAL PRE-FIGHT SNAPSHOT. Strictly at or before the bell — a tick
+     written after commence_time is a live price, and calling that a close is
+     the one mistake that would make every CLV figure here a lie. */
+  var best = null;
+  for (var i = 0; i < ticks.length; i++) {
+    var t = ticks[i], ts = t && t.created_at ? new Date(t.created_at).getTime() : NaN;
+    if (!isFinite(ts) || ts > ct) continue;
+    if (t.sharp_fair == null || !(+t.sharp_fair > 0 && +t.sharp_fair < 1)) continue;
+    if (!best || ts > best.ts) best = { ts: ts, fair: +t.sharp_fair };
+  }
+  if (!best) return null;
+  var lead = ct - best.ts;
+  return {
+    fair: best.fair, at: new Date(best.ts).toISOString(), src: 'final pre-fight tick',
+    leadMs: lead, qualified: lead <= UFC_CLOSE_MAX_LEAD_MS
+  };
+}
+
+/* CLV, using the engine's own definition of an edge: what the entry price was
+   worth against the closing fair line. Positive means the market moved toward
+   the bet after it was taken. */
+function ufcClvOf(entry, close) {
+  if (!entry || !close || !close.qualified) return null;
+  var v = close.fair * entry.dec - 1;
+  return isFinite(v) ? v : null;
+}
+
+function ufcLeadTxt(ms) {
+  if (ms == null || !isFinite(ms)) return '';
+  var m = Math.round(ms / 60000);
+  if (m < 1) return 'at the bell';
+  if (m < 90) return m + 'm before the bell';
+  return (m / 60).toFixed(1) + 'h before the bell';
+}
+
+/* Every signal stored on this bout, moneyline first because that is the market
+   the card is about, then anything else capture priced on the same fixture. */
+function ufcBoutSignals(g) {
+  var k = ufcPairKey(g && g.red_name, g && g.blue_name);
+  if (!k) return [];
+  var slot = UFC.market.byPair ? UFC.market.byPair[k] : null;
+  if (!slot || !slot.rows) return [];
+  return slot.rows.slice().sort(function (a, b) {
+    var am = (a.market === 'h2h') ? 0 : 1, bm = (b.market === 'h2h') ? 0 : 1;
+    if (am !== bm) return am - bm;
+    return String(a.selection || '').localeCompare(String(b.selection || ''));
+  });
+}
+
+/* Lazy tick load, one query for every signal on the bout. Only issued when the
+   deep panel is opened — a twelve-bout card would otherwise pull the whole tick
+   series for sixty selections every twenty seconds to render a tile most of
+   which is collapsed. */
+async function ufcLoadCloseTicks(g) {
+  var rows = ufcBoutSignals(g);
+  if (!rows.length) return;
+  var keys = rows.map(function (r) { return r.sig_key; }).filter(Boolean);
+  if (!keys.length) return;
+  var need = keys.filter(function (k) { return UFC.deep.ticks[k] === undefined; });
+  if (!need.length) return;
+  var list = need.slice(0, 12).map(function (k) { return '%22' + encodeURIComponent(k) + '%22'; }).join(',');
+  try {
+    var t = await sbGet('signal_ticks?select=sig_key,created_at,sharp_fair,best_dec&sig_key=in.(' + list + ')&order=created_at.asc&limit=2000');
+    var by = {};
+    (t || []).forEach(function (x) { (by[x.sig_key] = by[x.sig_key] || []).push(x); });
+    need.forEach(function (k) { UFC.deep.ticks[k] = by[k] || []; });
+  } catch (e) {
+    /* A tick table this session cannot read costs the derived close and nothing
+       else: closing_sharp_fair still works where the close pipeline has run. */
+    need.forEach(function (k) { UFC.deep.ticks[k] = null; });
+  }
+}
+
+/* ---- the tile ----------------------------------------------------------- */
+function ufcClvLine(e) {
+  var entry = ufcEntryOf(e);
+  var ticks = UFC.deep.ticks[e.sig_key];
+  var close = ufcCloseOf(e, ticks);
+  var clv = ufcClvOf(entry, close);
+  var sel = stEsc(e.selection || '—') + (e.point != null ? (' ' + e.point) : '');
+  var mkt = (e.market && e.market !== 'h2h') ? (' <span class="mut">' + stEsc(e.market) + '</span>') : '';
+
+  if (!entry) {
+    return '<div class="ufc-clvrow"><span class="ufc-clvsel">' + sel + mkt + '</span>' +
+      '<span class="ufc-clvv mut">no stored entry price</span></div>';
+  }
+  var entryTxt = GE.fmtPrice(entry.dec);
+  if (!close) {
+    return '<div class="ufc-clvrow"><span class="ufc-clvsel">' + sel + mkt + '</span>' +
+      '<span class="ufc-clvv"><b class="mut">pending</b> <span class="mut">entry ' + entryTxt +
+      ' · closes at first bell</span></span></div>';
+  }
+  if (!close.qualified) {
+    return '<div class="ufc-clvrow"><span class="ufc-clvsel">' + sel + mkt + '</span>' +
+      '<span class="ufc-clvv"><b class="mut">unavailable</b> <span class="mut">no qualified closing reference — last pre-fight capture ' +
+      ufcLeadTxt(close.leadMs) + '</span></span></div>';
+  }
+  var closeTxt = GE.fmtPrice(1 / close.fair);
+  var cls = (clv == null) ? 'mut' : (clv > 0 ? 'up' : (clv < 0 ? 'dn' : 'mut'));
+  var val = (clv == null) ? UFC_DASH : ((clv > 0 ? '+' : '') + (clv * 100).toFixed(2) + '%');
+  var anc = (typeof anchorOf === 'function') ? anchorOf(e, 'entry') : null;
+  var src = close.src + (close.leadMs != null ? (' · ' + ufcLeadTxt(close.leadMs)) : '');
+  return '<div class="ufc-clvrow"><span class="ufc-clvsel">' + sel + mkt +
+      '<span class="ufc-clvsub">entry ' + entryTxt + ' (' + entry.kind + ') → close ' + closeTxt +
+      ' · ' + stEsc(src) + (anc ? (' · ' + stEsc(anc.short)) : '') + '</span></span>' +
+    '<span class="ufc-clvv ' + cls + '"><b>' + val + '</b></span></div>';
+}
+
+/* Replaces the two hardcoded "not active" tiles. The model tile stays gated —
+   that one is still true, there is no UFC model in the registry — and the CLV
+   tile now reads its own condition instead of asserting an answer. */
+function ufcClvHTML(g) {
+  var modelTile = '<div class="ufc-gate">EdgeDesk model prob<br><b style="color:var(--warn)">not active</b> — needs UFC model</div>';
+  var rows = ufcBoutSignals(g);
+
+  if (UFC.market.ok === false) {
+    return '<div class="ufc-gategrid">' + modelTile +
+      '<div class="ufc-gate">Pre-fight CLV<br><b style="color:var(--warn)">unavailable</b> — signals not readable this session</div></div>';
+  }
+  if (!rows.length) {
+    /* This is the honest answer to "why is there no CLV for this bout": the
+       odds engine has no stored market for it. Naming the sport key and the
+       matching rule makes that checkable instead of mysterious. */
+    return '<div class="ufc-gategrid">' + modelTile +
+      '<div class="ufc-gate">Pre-fight CLV<br><b style="color:var(--warn)">no market</b> — capture has no stored <span class="mono">mma_mixed_martial_arts</span> signal matching these two fighters</div></div>';
+  }
+
+  var body = rows.map(ufcClvLine).join('');
+  var anyGraded = rows.some(function (r) { return r.closing_sharp_fair != null; });
+  return '<div class="ufc-sec"><div class="ufc-sech">Pre-fight CLV ' + ufcDerivedTag() + '</div>' +
+    '<div class="ufc-clvbox">' + body + '</div>' +
+    '<div class="fi-foot">Entry is the price capture froze — <span class="mono">flagged_best_dec</span> when the signal was flagged, the opener otherwise — the same definition the grader uses. ' +
+    'Close is ' + (anyGraded ? '<span class="mono">closing_sharp_fair</span> from the close pipeline where it has run, and otherwise ' : '') +
+    'the last tick stamped at or before the bell. <b>A tick written after the fight starts is a live price and is never used as a close.</b> ' +
+    'CLV is that closing fair line against the entry price. Consensus is never substituted for a sharp close.</div>' +
+    '<div class="ufc-gategrid" style="margin-top:10px">' + modelTile + '</div></div>';
+}
+
 
 
 renderLedger();loadEdges();

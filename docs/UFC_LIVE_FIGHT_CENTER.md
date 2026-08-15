@@ -132,6 +132,11 @@ official judging is not available live, so none is imitated.
 **The market layer recomputes nothing.** Opening price, current price, sharp
 fair, edge and the flag are read from `signals` exactly as capture wrote them.
 
+**A live price is never a close.** Only ticks stamped at or before
+`commence_time` can serve as a closing reference, and one taken more than six
+hours before the bell is reported as unqualified rather than presented as a
+close.
+
 **Freshness is two facts, not one.** `source_timestamp` is when the provider says
 its state was true; `updated_at` is when we wrote the row. A poller running
 happily against a frozen upstream has a moving `updated_at` and a stationary
@@ -156,6 +161,49 @@ write the same state.
 
 A high `snapshots_skipped_dup` count during a live fight is **correct**: it means
 the numbers have not moved.
+
+---
+
+## Pre-fight CLV
+
+Two things kept this gated, and only one was about data.
+
+The gate in `ufcLiveFightCard` was a **hardcoded string** — `"Pre-fight CLV —
+not active — needs live capture"` with no condition read anywhere. It would
+have said that with a fully graded signal sitting in the database.
+
+The second was real: nothing derived a **closing reference** for a bout. Entry
+was never missing — capture freezes `flagged_best_dec` / `flagged_sharp_fair`
+the first time a selection crosses the floor, and `first_*` holds the opener.
+
+**No new table.** The raw material already exists, and duplicating it into
+`ufc.*` would create a second version of a number that already has one:
+
+| Piece | Source |
+|---|---|
+| Entry price | `signals.flagged_best_dec`, falling back to `first_best_dec` — the same definition `close/index.ts` `entryPrice()` uses |
+| Closing fair | `signals.closing_sharp_fair` where the close pipeline has run; otherwise the last `signal_ticks` row with `created_at <= commence_time` |
+| CLV | `closing_fair × entry_dec − 1` — the engine's own edge formula |
+
+The bridge from a bout to its market is the **unordered normalized fighter-name
+pair**. In the Odds API an MMA "event" *is* one bout (`home_team` / `away_team`
+are the two fighters), so the pair identifies the fixture without depending on
+corner assignment or either feed's ordering. It uses the same `ufcNormName` the
+server-side fighter resolver uses, so a bout that matches server-side matches in
+the browser too.
+
+Every state is named rather than collapsed into one blank:
+
+| State | Shown |
+|---|---|
+| Entry + qualified close | the CLV figure, with entry → close and the close's origin |
+| Before the bell | `pending · closes at first bell` |
+| Last capture >6h before the bell | `unavailable · no qualified closing reference` |
+| No stored MMA signal for these fighters | `no market`, naming the sport key |
+| Signals unreadable this session | `unavailable · signals not readable` |
+
+This layer is **read-only**. It writes nothing, and it does not touch `capture`
+or the close pipeline.
 
 ---
 

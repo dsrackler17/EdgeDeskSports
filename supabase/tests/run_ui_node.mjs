@@ -29,8 +29,8 @@ const APP = resolve(here, "../../app.html");
 const src = readFileSync(APP, "utf8");
 
 const START = "UFC LIVE FIGHT CENTER — DEEP LAYER";
-const END = "/* ---- deep-layer loaders";
-const a = src.indexOf(START), b = src.indexOf(END);
+const END = "\nrenderLedger();loadEdges();";
+const a = src.indexOf(START), b = src.indexOf(END, a);
 if (a < 0 || b < 0) {
   console.error("Could not locate the UFC deep-layer block in app.html.");
   process.exit(1);
@@ -50,7 +50,11 @@ const sandbox = {
   sbGetUfc: async () => [],
   sbGet: async () => [],
   BOARD_FLAG_COLS: "flagged_at,flagged_edge,flagged_best_dec,flagged_best_book",
-  GE: { decToAm: (d) => (d >= 2 ? Math.round((d - 1) * 100) : Math.round(-100 / (d - 1))) },
+  GE: {
+    decToAm: (d) => (d >= 2 ? Math.round((d - 1) * 100) : Math.round(-100 / (d - 1))),
+    fmtPrice(d) { if (d == null || !isFinite(+d) || +d <= 1) return "—";
+      const a = this.decToAm(+d); return (a > 0 ? "+" : "") + a; },
+  },
   anchorOf: () => ({ kind: "sharp", short: "sharp anchored", why: "Pinnacle quoted this selection." }),
   isFlaggedSignal: (e) => !!(e && e.flagged_at),
   setTimeout, clearTimeout, Date, Math, JSON, String, Number, Object, Array, isFinite, encodeURIComponent,
@@ -69,6 +73,7 @@ const t = (name, fn) => {
 const ok = (v, m) => { if (!v) throw new Error(m || "expected truthy"); };
 const has = (h, n, m) => ok(String(h).includes(n), m || `expected HTML to contain ${JSON.stringify(n)}`);
 const lacks = (h, n, m) => ok(!String(h).includes(n), m || `expected HTML NOT to contain ${JSON.stringify(n)}`);
+const eq = (a, b, m) => { if (a !== b) throw new Error(`${m ? m + " — " : ""}expected ${JSON.stringify(b)}, got ${JSON.stringify(a)}`); };
 
 const DASH = "—";
 const U = sandbox.UFC;
@@ -304,6 +309,140 @@ t("event metadata renders venue, location and card progress", () => {
 t("name normalization matches the Edge Function's, so market joins line up", () => {
   ok(sandbox.ufcNormName("José Aldó Jr.") === "jose aldo");
   ok(sandbox.ufcNormName("Conor McGregor") === "conor mcgregor");
+});
+
+
+/* ---- pre-fight CLV -------------------------------------------------------
+   The bridge from a bout to the existing odds engine. These assert the two
+   things that were actually broken: that the tile reads a condition at all,
+   and that a live price is never mistaken for a close. */
+const BOUT = { fight_id: "f9", red_name: "Myktybek Orolbai", blue_name: "Jeremiah Wells" };
+const BELL = "2026-08-15T22:00:00Z";
+const SIG = {
+  sig_key: "ev1|h2h|Myktybek Orolbai|", event_id: "ev1", market: "h2h",
+  selection: "Myktybek Orolbai", commence_time: BELL,
+  home_team: "Myktybek Orolbai", away_team: "Jeremiah Wells",
+  flagged_at: "2026-08-15T16:00:00Z", flagged_best_dec: 1.813, flagged_sharp_fair: 0.585,
+  first_best_dec: 1.90, first_sharp_fair: 0.57, first_seen_at: "2026-08-15T12:00:00Z",
+  best_dec: 1.74, sharp_fair: 0.60, n_books: 8, has_sharp: true, first_has_sharp: true,
+  closing_sharp_fair: null, closed_at: null,
+};
+const setMarket = (rows) => {
+  const pair = {};
+  (rows || []).forEach((r) => {
+    const k = sandbox.ufcPairKey(r.home_team, r.away_team);
+    (pair[k] = pair[k] || { event_id: r.event_id, rows: [] }).rows.push(r);
+  });
+  U.market = { ok: true, at: Date.now(), byName: {}, byPair: pair };
+};
+
+t("a bout matches its odds event by unordered fighter-name pair", () => {
+  ok(sandbox.ufcPairKey("Jeremiah Wells", "Myktybek Orolbai")
+     === sandbox.ufcPairKey("Myktybek Orolbai", "Jeremiah Wells"),
+     "corner assignment must not change the key");
+  eq(sandbox.ufcPairKey("A", null), "", "a half-known fixture matches nothing");
+});
+
+t("entry is the flagged price, matching the grader's definition", () => {
+  const e = sandbox.ufcEntryOf(SIG);
+  eq(e.dec, 1.813); eq(e.kind, "flagged");
+  const noFlag = sandbox.ufcEntryOf({ ...SIG, flagged_at: null, flagged_best_dec: null });
+  eq(noFlag.dec, 1.90); eq(noFlag.kind, "opening", "falls back to the opener, as close/index.ts does");
+  eq(sandbox.ufcEntryOf({}), null);
+});
+
+t("A TICK AFTER THE BELL IS NEVER USED AS A CLOSE", () => {
+  const ticks = [
+    { created_at: "2026-08-15T21:50:00Z", sharp_fair: 0.605 },   // last pre-fight
+    { created_at: "2026-08-15T22:10:00Z", sharp_fair: 0.900 },   // LIVE — must be ignored
+  ];
+  const c = sandbox.ufcCloseOf(SIG, ticks);
+  eq(c.fair, 0.605, "the live tick must not become the close");
+  ok(c.qualified);
+});
+
+t("the close is the LAST qualifying pre-fight tick, not the first", () => {
+  const c = sandbox.ufcCloseOf(SIG, [
+    { created_at: "2026-08-15T18:00:00Z", sharp_fair: 0.58 },
+    { created_at: "2026-08-15T21:50:00Z", sharp_fair: 0.605 },
+  ]);
+  eq(c.fair, 0.605);
+});
+
+t("closing_sharp_fair from the close pipeline takes precedence over ticks", () => {
+  const c = sandbox.ufcCloseOf({ ...SIG, closing_sharp_fair: 0.62, closed_at: BELL },
+    [{ created_at: "2026-08-15T21:50:00Z", sharp_fair: 0.605 }]);
+  eq(c.fair, 0.62); eq(c.src, "close pipeline");
+});
+
+t("a stale final capture is UNQUALIFIED, not silently called a close", () => {
+  const c = sandbox.ufcCloseOf(SIG, [{ created_at: "2026-08-15T10:00:00Z", sharp_fair: 0.55 }]);
+  ok(c !== null, "it is found");
+  ok(!c.qualified, "but 12h before the bell is not a close");
+});
+
+t("CLV is the closing fair against the entry price", () => {
+  const entry = sandbox.ufcEntryOf(SIG);
+  const close = sandbox.ufcCloseOf(SIG, [{ created_at: "2026-08-15T21:50:00Z", sharp_fair: 0.605 }]);
+  const clv = sandbox.ufcClvOf(entry, close);
+  // 0.605 * 1.813 - 1 = +0.09687
+  ok(Math.abs(clv - 0.09687) < 1e-4, `expected ~+9.69%, got ${(clv * 100).toFixed(2)}%`);
+});
+
+t("an unqualified close yields no CLV rather than a number", () => {
+  const entry = sandbox.ufcEntryOf(SIG);
+  const stale = sandbox.ufcCloseOf(SIG, [{ created_at: "2026-08-15T10:00:00Z", sharp_fair: 0.55 }]);
+  eq(sandbox.ufcClvOf(entry, stale), null);
+  eq(sandbox.ufcClvOf(entry, null), null);
+});
+
+t("THE TILE RENDERS REAL CLV — it is no longer a hardcoded 'not active'", () => {
+  setMarket([SIG]);
+  U.deep = { rounds: {}, snaps: {}, fights: {}, ticks: { [SIG.sig_key]: [{ created_at: "2026-08-15T21:50:00Z", sharp_fair: 0.605 }] },
+    ev: null, health: null, ok: true, why: "" };
+  const h = sandbox.ufcClvHTML(BOUT);
+  has(h, "+9.69%");
+  has(h, "entry"); has(h, "close");
+  has(h, "EdgeDesk-derived");
+  lacks(h, "needs live capture", "the old unconditional caption must be gone");
+  has(h, "never used as a close", "the rule must be stated where the number is shown");
+});
+
+t("no stored market says so, and names what to check", () => {
+  setMarket([]);
+  U.deep = { rounds: {}, snaps: {}, fights: {}, ticks: {}, ev: null, health: null, ok: true, why: "" };
+  const h = sandbox.ufcClvHTML(BOUT);
+  has(h, "no market");
+  has(h, "mma_mixed_martial_arts", "naming the sport key makes it checkable");
+});
+
+t("before the bell the row reads pending, not zero and not unavailable", () => {
+  setMarket([SIG]);
+  U.deep = { rounds: {}, snaps: {}, fights: {}, ticks: { [SIG.sig_key]: [] }, ev: null, health: null, ok: true, why: "" };
+  const h = sandbox.ufcClvHTML(BOUT);
+  has(h, "pending"); has(h, "closes at first bell");
+});
+
+t("an unqualified close is reported as such in the tile", () => {
+  setMarket([SIG]);
+  U.deep = { rounds: {}, snaps: {}, fights: {}, ticks: { [SIG.sig_key]: [{ created_at: "2026-08-15T10:00:00Z", sharp_fair: 0.55 }] },
+    ev: null, health: null, ok: true, why: "" };
+  has(sandbox.ufcClvHTML(BOUT), "no qualified closing reference");
+});
+
+t("the model tile stays gated — that gate is still true", () => {
+  setMarket([SIG]);
+  U.deep = { rounds: {}, snaps: {}, fights: {}, ticks: {}, ev: null, health: null, ok: true, why: "" };
+  has(sandbox.ufcClvHTML(BOUT), "needs UFC model");
+});
+
+t("non-moneyline markets on the same bout are included", () => {
+  const tot = { ...SIG, sig_key: "ev1|totals|Over|1.5", market: "totals", selection: "Over", point: 1.5 };
+  setMarket([SIG, tot]);
+  U.deep = { rounds: {}, snaps: {}, fights: {}, ticks: {}, ev: null, health: null, ok: true, why: "" };
+  const h = sandbox.ufcClvHTML(BOUT);
+  has(h, "Over 1.5", "a total priced on the same fixture must appear");
+  has(h, "totals");
 });
 
 console.log(`\n${pass}/${pass + fails.length} passed`);
