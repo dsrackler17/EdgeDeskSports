@@ -1,0 +1,16 @@
+{
+  "name": "edgedesk-model-predict",
+  "private": true,
+  "type": "module",
+  "description": "Type-check and test harness for the model_predict Supabase Edge Function. The app itself (index.html / app.html) has no build step and does not use this.",
+  "scripts": {
+    "bundle": "node scripts/bundle.mjs",
+    "typecheck": "tsc --noEmit",
+    "test": "node --test tests/*.test.ts",
+    "check": "npm run bundle && npm run typecheck && npm test"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "typescript": "^5.7.0"
+  }
+}

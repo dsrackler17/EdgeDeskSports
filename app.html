@@ -3664,7 +3664,11 @@ async function loadEdges(){
     await loadMlbSched();
     // EdgeDesk MODEL fair (me-vs-market) — display only, UNPROVEN, keyed to match model_predictions.
     // NEVER touches e.edge, sorting, filters, or the verify tags. A separate engine, shown side by side.
-    try{var mp=await sbGet('model_predictions?select=event_id,market,selection,point,model_prob,model_fair_american,model_edge,model_version&sport_key=eq.baseball_mlb&commence_time=gte.'+nowIso+'&commence_time=lte.'+horizonIso+'&order=created_at.asc&limit=1500');window.MODELP={};(mp||[]).forEach(function(r){window.MODELP[modelKey(r.event_id,r.market,r.selection,r.point)]=r;});}catch(_){window.MODELP=window.MODELP||{};}
+    // NO SPORT FILTER. model_predict now writes MLB, ATP, WTA, MMA, NFL and WNBA under six
+    // model versions; hardcoding sport_key=eq.baseball_mlb here would have shown the MLB rows
+    // and silently hidden the other five. The overlay is keyed by event_id, so whichever sports
+    // are on the board are the sports that light up.
+    try{var mp=await sbGet('model_predictions?select=event_id,sport_key,market,selection,point,model_prob,model_fair_american,model_edge,model_ev,context_quality,model_version&commence_time=gte.'+nowIso+'&commence_time=lte.'+horizonIso+'&order=created_at.asc&limit=1500');window.MODELP={};(mp||[]).forEach(function(r){window.MODELP[modelKey(r.event_id,r.market,r.selection,r.point)]=r;});}catch(_){window.MODELP=window.MODELP||{};}
     try{var me=await sbGet('model_predictions?select=*&model_edge=gt.0&commence_time=gte.'+nowIso+'&commence_time=lte.'+horizonIso+'&order=model_edge.desc.nullslast&limit=400');window.MODEL_EDGES=me||[];}catch(_){window.MODEL_EDGES=[];}
     try{var cq=await sbGet('signals?select=event_id,sport_title,sport_key,market,selection,point,best_dec,first_best_dec,first_seen_at,best_book,sharp_fair,consensus_fair,edge,n_books,n_books_eff,commence_time,home_team,away_team,last_seen_at,has_sharp,corrob_n,corrob_ref,corrob_levels,is_fav,'+BOARD_FLAG_COLS+'&'+BOARD_FLAG_FILTER+'&consensus_fair=not.is.null&n_books=gte.'+MINBOOKS+'&commence_time=gte.'+nowIso+'&commence_time=lte.'+horizonIso+'&limit=900');window.CONS_POOL=onlyFlagged(cq);}catch(_){window.CONS_POOL=[];}
     await resolveModelMeta();
@@ -9820,8 +9824,21 @@ async function resolveModelMeta(){
   }
 }
 
+/* NAME IS HISTORICAL — this returns a PROBABILITY GAP in percentage points
+   (model_prob - market_fair_prob), not an expected value. The two are different
+   quantities and model_predictions now stores them in different columns:
+   model_edge is this gap, model_ev is model_prob * decimal_price - 1. Every
+   label rendered off this function says "gap" or "pts" for that reason; the
+   only place a percentage EV is shown is modelEvAtPrice() below, which
+   recomputes it from the live price. */
 function modelEvOf(m){
   var v=+m.model_edge;
+  if(!isFinite(v))return null;
+  return Math.abs(v)<=1?v*100:v;
+}
+/* The stored EV, when model_predict wrote one. Distinct column, distinct number. */
+function modelStoredEv(m){
+  var v=+m.model_ev;
   if(!isFinite(v))return null;
   return Math.abs(v)<=1?v*100:v;
 }
@@ -9844,13 +9861,22 @@ function modelBookPrice(m,sig){
   return null;
 }
 
+/* The sport label a MODEL row is filtered by.
+   This MUST agree with evSportLabel(), which is what populates the #fSport
+   options — and it did not. sport_title for tennis is the TOURNAMENT ("ATP
+   Cincinnati Open"), so a row labelled that way could never equal the "ATP"
+   option in the dropdown and every tennis model row vanished the moment a
+   sport was selected. evSportLabel() collapses tennis_atp_* to ATP and
+   americanfootball_nfl* to NFL, which is exactly the taxonomy the backend
+   registry publishes, so it is the single source of truth for both. */
 function modelMeta(m){
   var meta=window.EVMETA[m.event_id]||{};
+  var key=m.sport_key||meta.sport_key||'';
   return {
     home:m.home_team||meta.home_team||null,
     away:m.away_team||meta.away_team||null,
     when:m.commence_time||meta.commence_time||null,
-    sport:meta.sport_title||prettySport(m.sport_key)
+    sport:evSportLabel({sport_key:key,sport_title:meta.sport_title})
   };
 }
 
@@ -9874,7 +9900,13 @@ function modelReceiptHTML(m){
   var modelRead='<div class="gd-sec">The model \u00b7 '+stEsc(m.model_version||'model')+'</div>'+
     '<div class="gd-line"><span class="l">Its pick</span><span class="v">'+stEsc(selLabel(m))+'</span></div>'+
     '<div class="gd-line"><span class="l">Model win probability</span><span class="v mdl">'+(prob!=null?(prob*100).toFixed(1)+'%':'\u2014')+'</span></div>'+
-    '<div class="gd-line"><span class="l">Model fair line</span><span class="v mdl">'+fa+'</span></div>';
+    /* The fair line is what the model's PROBABILITY converts to, not a price any
+       book is offering. Labelled so it can never be read as a quote. */
+    '<div class="gd-line"><span class="l">Model fair line <span class="mut">(from the probability, not a book)</span></span><span class="v mdl">'+fa+'</span></div>'+
+    /* What the model actually had when it wrote this row. Metadata: it never
+       scaled the probability above. */
+    (m.context_quality?'<div class="gd-line"><span class="l">Input completeness</span><span class="v '+(m.context_quality==='LOW'?'dn':'mut')+'">'+stEsc(m.context_quality)+'</span></div>':'')+
+    (m.sport_key?'<div class="gd-line"><span class="l">Sport</span><span class="v mut">'+stEsc(evSportLabel({sport_key:m.sport_key}))+'</span></div>':'');
 
   var marketRead,bars;
   if(px&&px.dec>1){
@@ -9890,15 +9922,22 @@ function modelReceiptHTML(m){
       (sig&&sig.sharp_fair!=null?'<div class="gd-line"><span class="l">Pinnacle sharp fair</span><span class="v">'+GE.fmtPrice(1/Math.max(0.0001,sig.sharp_fair))+'</span></div>':'')+
       (sig&&sig.edge!=null?'<div class="gd-line"><span class="l">MARKET edge on this line</span><span class="v '+(sig.edge>=0?'up':'dn')+'">'+(sig.edge>=0?'+':'')+(sig.edge*100).toFixed(2)+'%</span></div>':'');
     bars='<div class="gd-bars">'+
-      '<div class="gd-bar"><div class="bn">'+(ev!=null?(ev>=0?'+':'')+ev.toFixed(1)+'%':'\u2014')+'</div><div class="bl">model edge</div></div>'+
+      '<div class="gd-bar"><div class="bn">'+(ev!=null?(ev>=0?'+':'')+ev.toFixed(1)+' pts':'\u2014')+'</div><div class="bl">prob gap</div></div>'+
       '<div class="gd-bar"><div class="bn">'+(prob!=null?(prob*100).toFixed(0)+'%':'\u2014')+'</div><div class="bl">model</div></div>'+
       '<div class="gd-bar"><div class="bn">'+(sig&&sig.n_books?sig.n_books:'\u2014')+'</div><div class="bl">books</div></div></div>';
   }else{
+    /* No live line. The ENTRY SNAPSHOT model_predict froze at prediction time is
+       still the honest record of what this call was measured against, so it is
+       shown as exactly that \u2014 a stored number, not a price you can bet now. */
+    var storedEv=modelStoredEv(m);
     marketRead='<div class="gd-sec">The market \u00b7 '+mktLabel(m.market)+'</div>'+
-      '<div class="gd-nodata">No market price is stored on this prediction, and no live line on the board matches this exact selection right now. '+
-      'The headline number is whatever the model wrote at prediction time \u2014 EdgeDesk will not reconstruct the price it was measured against.</div>';
+      '<div class="gd-nodata">No live line on the board matches this exact selection right now. '+
+      'The headline number is whatever the model wrote at prediction time \u2014 EdgeDesk will not reconstruct the price it was measured against.</div>'+
+      (m.market_prob_at_pred!=null?'<div class="gd-line"><span class="l">Market implied at prediction time</span><span class="v mut">'+(+m.market_prob_at_pred*100).toFixed(1)+'%</span></div>':'')+
+      (m.best_am_at_pred!=null?'<div class="gd-line"><span class="l">Best price at prediction time</span><span class="v mut">'+((+m.best_am_at_pred>0?'+':'')+m.best_am_at_pred)+'</span></div>':'')+
+      (storedEv!=null?'<div class="gd-line"><span class="l">EV at that entry price</span><span class="v '+(storedEv>=0?'up':'dn')+'">'+(storedEv>=0?'+':'')+storedEv.toFixed(1)+'%</span></div>':'');
     bars='<div class="gd-bars">'+
-      '<div class="gd-bar"><div class="bn">'+(ev!=null?(ev>=0?'+':'')+ev.toFixed(1)+'%':'\u2014')+'</div><div class="bl">model edge</div></div>'+
+      '<div class="gd-bar"><div class="bn">'+(ev!=null?(ev>=0?'+':'')+ev.toFixed(1)+' pts':'\u2014')+'</div><div class="bl">prob gap</div></div>'+
       '<div class="gd-bar"><div class="bn">'+(prob!=null?(prob*100).toFixed(0)+'%':'\u2014')+'</div><div class="bl">model</div></div>'+
       '<div class="gd-bar"><div class="bn">\u2014</div><div class="bl">books</div></div></div>';
   }
@@ -10152,7 +10191,7 @@ function renderModelEngine(){
     return true;
   });
   if(!kept.length){
-    host.innerHTML='<div class="empty" style="padding:12px">No model edges in your window. This engine lights up for any sport loaded into <b>model_predictions</b> \u2014 MLB today; CFB, golf and props when their models exist. It is independent of Pinnacle and never dilutes a MARKET edge.</div>';
+    host.innerHTML='<div class="empty" style="padding:12px">No model edges in your window. This engine lights up for any sport loaded into <b>model_predictions</b> \u2014 <b>MLB, ATP, WTA, MMA, NFL and WNBA</b> each run their own model version, and a sport stays dark when its model reports <span class="mono">insufficient_data</span> rather than guessing. It is independent of Pinnacle and never dilutes a MARKET edge.</div>';
     return;
   }
   /* ONE CARD PER GAME. Group resolved markets by event, order games by their
