@@ -1576,7 +1576,7 @@ button:focus-visible,select:focus-visible,input:focus-visible,a:focus-visible{ou
       <button class="rs-tool" id="rsSavedBtn" onclick="rsToggleSaved()">Saved</button></div>
     <div id="rsSearchWrap" class="rs-srch hide" style="margin-bottom:12px"></div>
     <div id="rsSavedWrap" class="hide" style="margin-bottom:12px"></div>
-    <div class="stseg research-sub" style="margin-bottom:12px"><button data-sub="cfb" onclick="researchGo('cfb')">CFB</button><button data-sub="ufc" onclick="researchGo('ufc')">UFC</button><button data-sub="wta" onclick="researchGo('wta')">WTA</button><button data-sub="atp" onclick="researchGo('atp')">ATP</button><button data-sub="stats" onclick="researchGo('stats')">Stats</button><button data-sub="props" onclick="researchGo('props')">Props</button><button data-sub="lab" onclick="researchGo('lab')">Lab</button></div>
+    <div class="stseg research-sub" style="margin-bottom:12px"><button data-sub="cfb" onclick="researchGo('cfb')">CFB</button><button data-sub="ufc" onclick="researchGo('ufc')">UFC</button><button data-sub="wta" onclick="researchGo('wta')">WTA</button><button data-sub="tennis" onclick="researchGo('tennis')">Tennis</button><button data-sub="stats" onclick="researchGo('stats')">Stats</button><button data-sub="props" onclick="researchGo('props')">Props</button><button data-sub="lab" onclick="researchGo('lab')">Lab</button></div>
     <!-- CFB (College Football research) -->
     <div id="v-cfb" class="rpanel hide">
     <div class="row-between"><h2 style="margin:0">CFB</h2><span class="spacer"></span><span class="freshness" id="cfbFresh">&mdash;</span><button class="refreshbtn" title="Refresh" onclick="researchRefresh('cfb')">&#8635;</button></div>
@@ -1614,17 +1614,20 @@ button:focus-visible,select:focus-visible,input:focus-visible,a:focus-visible{ou
     <div class="stseg" id="wtaSeg" style="margin-bottom:12px"><button class="on" onclick="wtaSetSeg('research')">Today’s research</button><button onclick="wtaSetSeg('watchlist')">Watchlist</button></div>
     <div id="wtaBody"><div class="empty">Loading…</div></div>
     </div>
-    <!-- ATP (tennis deep dive — reads the licensed `tennis` schema) -->
-    <div id="v-atp" class="rpanel hide">
-    <div class="row-between"><h2 style="margin:0">ATP</h2><span class="spacer"></span><span class="freshness" id="atpFresh">—</span><button class="refreshbtn" title="Refresh" onclick="researchRefresh('atp')">&#8635;</button></div>
-    <div id="rsMeta-atp" class="rs-panelwrap"></div>
-    <p class="lede">Men's tour deep dive &mdash; rankings, results, surface splits and head-to-head, computed from the match record. <b style="color:var(--warn)">Research context, not edges.</b> Every number here is either a published fact or arithmetic over published facts; no model, no projection, and no CLV claim.</p>
-    <div class="flbanner demo" id="atpBanner">Loading ATP dataset&hellip;</div>
-    <div class="stseg" id="atpSeg" style="margin-bottom:12px"><button class="on" onclick="atpSetSeg('rankings')">Rankings</button><button onclick="atpSetSeg('results')">Results</button><button onclick="atpSetSeg('players')">Players</button></div>
-    <input class="stsearch" id="atpQ" placeholder="Search a player&hellip;" style="margin-bottom:12px;display:none" oninput="renderATP()">
-    <div id="atpBody"><div class="empty">Loading&hellip;</div></div>
-    <div id="atpModal" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.72);overflow-y:auto" onclick="if(event.target===this)atpClosePlayer()">
-      <div id="atpModalCard" style="max-width:580px;margin:24px auto;background:#0f141b;border:1px solid rgba(255,255,255,.12);border-radius:16px;padding:18px;position:relative"></div>
+    <!-- TENNIS deep dive (ATP + WTA) — reads the licensed tennis schema.
+         Separate from the WTA tab on purpose: that one is the daily research
+         engine and its own frozen pipeline; this is the historical record. -->
+    <div id="v-tennis" class="rpanel hide">
+    <div class="row-between"><h2 style="margin:0">Tennis</h2><span class="spacer"></span><span class="freshness" id="tddFresh">—</span><button class="refreshbtn" title="Refresh" onclick="researchRefresh('tennis')">&#8635;</button></div>
+    <div id="rsMeta-tennis" class="rs-panelwrap"></div>
+    <p class="lede">The tour record for both tours &mdash; rankings, results, surface splits and head-to-head, counted from the matches on file. <b style="color:var(--warn)">Research context, not edges.</b> Every number is a published fact or arithmetic over published facts; no model, no projection and no CLV claim. The WTA tab is a different thing: that is the daily research engine.</p>
+    <div class="stseg" id="tddTour" style="margin-bottom:10px"><button class="on" onclick="tddSetTour('ATP')">ATP</button><button onclick="tddSetTour('WTA')">WTA</button></div>
+    <div class="flbanner demo" id="tddBanner">Loading tennis record&hellip;</div>
+    <div class="stseg" id="tddSeg" style="margin-bottom:12px"><button class="on" onclick="tddSetSeg('rankings')">Rankings</button><button onclick="tddSetSeg('results')">Results</button><button onclick="tddSetSeg('players')">Players</button></div>
+    <input class="stsearch" id="tddQ" placeholder="Search a player&hellip;" style="margin-bottom:12px;display:none" oninput="renderTennis()">
+    <div id="tddBody"><div class="empty">Loading&hellip;</div></div>
+    <div id="tddModal" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.72);overflow-y:auto" onclick="if(event.target===this)tddClosePlayer()">
+      <div id="tddModalCard" style="max-width:580px;margin:24px auto;background:#0f141b;border:1px solid rgba(255,255,255,.12);border-radius:16px;padding:18px;position:relative"></div>
     </div>
     </div>
     <!-- STATS -->
@@ -2765,7 +2768,7 @@ var RS_PROV={
     {nm:'Research-note findings (headline metric, effect size, p-value)',tier:'T3',src:'public.research_notes.findings — stored outputs of offline analyses, displayed verbatim'},
     {nm:'Validation gate measurements (sample, CLV, holdout)',tier:'T2',src:'public.note_validations — measured against criteria registered before the test'}
   ],
-  atp:[
+  tennis:[
     {nm:'Ranking position, points and ranking date',tier:'T0',src:'tennis.rankings — as published by the licensed source'},
     {nm:'Match result, score, round, tournament, surface',tier:'T0',src:'tennis.matches — as published; surface is stored only where the source publishes it and is never inferred'},
     {nm:'Player country, hand and height',tier:'T0',src:'tennis.players — as published'},
@@ -2799,7 +2802,7 @@ var RS_LIMITS={
          'The variance shape is an assumption of the model, not a measurement.',
          'Each sport and market list is capped at the top 100 rows.',
          'A projection is not a price. An edge exists only once these beat a real closing number.'],
-  atp:['Every figure is a published fact or a count over published facts. There is no model, no projection and no closing-line claim on this screen.',
+  tennis:['Every figure is a published fact or a count over published facts. There is no model, no projection and no closing-line claim on this screen.',
        'Career, surface and head-to-head describe the matches held in this database, which is not necessarily a full career.',
        'Surface is shown only where the source publishes it; it is never inferred from the tournament.',
        'Rankings are a position on tour, not a forecast of a match.',
@@ -2951,7 +2954,7 @@ function rsStateHTML(modId){
 /* ---- freshness SLA ------------------------------------------------------
    A module that publishes no build time renders a visibly inactive state.
    No age is ever computed from "now" as a stand-in for a real build time. */
-var RS_FRESH_EL={cfb:'cfbFresh',ufc:'ufcFresh',wta:'wtaFresh',atp:'atpFresh',stats:'stFresh',props:'prFresh'};
+var RS_FRESH_EL={cfb:'cfbFresh',ufc:'ufcFresh',wta:'wtaFresh',tennis:'tddFresh',stats:'stFresh',props:'prFresh'};
 function rsCadenceLabel(ms){
   if(ms==null)return null;
   var d=ms/86400000;
@@ -3206,7 +3209,7 @@ var RS_DATASETS={
     text:'The builder also produces tennis season, surface and head-to-head aggregates from the Jeff Sackmann WTA archive. This module does not read them — it reads the separate wta_research pipeline. No season/surface/H2H aggregate is displayed anywhere in this app, because no pipeline here owns one.'},
   stats:{owned:false,
     text:'The builder’s tennis aggregates are not part of the Stats feed. The UFC rows shown here come from the live ufc schema, so the field dictionary in the UFC module governs them.'},
-  atp:{owned:true,
+  tennis:{owned:true,
     text:'This module reads the tennis schema, which stores licensed match facts and derives every split as a SQL view. The schema rejects any source not cleared for commercial use, so the non-commercial archives the deep-dive builder downloads cannot be loaded here — they are registered as blocked rather than merely omitted.'}
 };
 function rsDatasetHTML(modId){
@@ -7905,159 +7908,182 @@ setInterval(function(){var on=!$('v-edges').classList.contains('hide');if(on)loa
   if(!$('v-news').classList.contains('hide'))loadNews();
   if(!$('v-ledger').classList.contains('hide'))autoSettle().then(refreshLiveCLV).then(function(){renderLedger();});},60000);
 
-/* ═══ ATP deep dive ══════════════════════════════════════════════════════
+/* ═══ TENNIS deep dive — one implementation, both tours ══════════════════
    Reads the isolated `tennis` schema (migrations/020_tennis_schema.sql), which
-   holds licensed match facts and derives every aggregate as a SQL view. That is
-   why this module has no model and no projection: rankings and results are
-   published facts (T0), and career / surface / head-to-head / form are
-   arithmetic over those facts (T2). Nothing here is an edge.
+   holds licensed match facts and derives every split as a SQL view. ATP and WTA
+   run through the same code with a tour switch: there is no second copy of this
+   module for the second tour.
 
-   The schema refuses to store a source that is not cleared for commercial use,
-   so what this module displays is licensed by construction. Until a cleared
-   source is loaded the module renders its honest empty state — never a sample,
-   never a placeholder number. */
+   This is the historical RECORD. It is deliberately separate from the WTA tab,
+   which is the daily research engine and its own frozen pipeline — the two
+   answer different questions and are never mixed.
+
+   Every figure here is a published fact (T0) or a count over published facts
+   (T2). No model, no projection, no closing-line claim. The schema refuses to
+   store a source that is not cleared for commercial use, so what this module
+   shows is licensed by construction; until a cleared source is loaded it renders
+   its honest empty state rather than a sample. */
 async function sbGetTennis(q,signal){return sbFetch(q,{"accept-profile":"tennis"},signal);}
-var ATP={rank:[],byId:{},matches:[],meta:{},seg:'rankings',at:0,prof:{}};
 
-async function loadATP(force,signal){
-  if(!force&&ATP.rank.length&&(Date.now()-ATP.at)<300000){renderATP();return;}
-  var ban=$('atpBanner');
+var TDD_TOURS=['ATP','WTA'];
+var TDD={tour:'ATP',
+  ATP:{rank:[],byId:{},matches:[],meta:{},seg:'rankings',at:0,prof:{},state:null,q:''},
+  WTA:{rank:[],byId:{},matches:[],meta:{},seg:'rankings',at:0,prof:{},state:null,q:''}};
+function tddT(tour){return TDD[tour||TDD.tour];}
+
+async function loadTennis(force,signal){
+  var tour=TDD.tour,t=tddT(tour);
+  if(!force&&(t.rank.length||t.matches.length)&&(Date.now()-t.at)<300000){renderTennis();return;}
   try{
     var meta=await sbGetTennis('meta?select=key,value',signal);
-    ATP.meta={};(meta||[]).forEach(function(m){ATP.meta[m.key]=m.value;});
+    t.meta={};(meta||[]).forEach(function(m){t.meta[m.key]=m.value;});
 
-    var rk=await sbGetTennis('rankings_current?select=player_id,rank,points,as_of&tour=eq.ATP&order=rank.asc&limit=300',signal);
-    ATP.rank=rk||[];
+    var rk=await sbGetTennis('rankings_current?select=player_id,rank,points,as_of&tour=eq.'+tour+'&order=rank.asc&limit=300',signal);
+    t.rank=rk||[];
 
-    var pl=await rsFetchAll('tennis','players?select=player_id,full_name,country,plays,height_cm,birth_date&tour=eq.ATP','full_name',10,signal);
-    ATP.byId={};(pl||[]).forEach(function(p){ATP.byId[p.player_id]=p;});
+    var pl=await rsFetchAll('tennis','players?select=player_id,full_name,country,plays,height_cm,birth_date&tour=eq.'+tour,'full_name',10,signal);
+    t.byId={};(pl||[]).forEach(function(p){t.byId[p.player_id]=p;});
 
-    var ms=await sbGetTennis('matches?select=match_id,match_date,tourney_name,surface,level,round,winner_id,loser_id,score,minutes&tour=eq.ATP&order=match_date.desc&limit=200',signal);
-    ATP.matches=ms||[];
+    var ms=await sbGetTennis('matches?select=match_id,match_date,tourney_name,surface,level,round,winner_id,loser_id,score,minutes&tour=eq.'+tour+'&order=match_date.desc&limit=200',signal);
+    t.matches=ms||[];
 
     if(signal&&signal.aborted)return;
-    ATP.at=Date.now();ATP.prof={};
-    rsFreshApply('atp');
-    if(!ATP.rank.length&&!ATP.matches.length){
-      ban.style.display='none';rsSetState('atp','empty');
-    }else{
-      ban.style.display='';ban.className='flbanner live';
-      ban.textContent='● '+ATP.rank.length+' ranked · '+ATP.matches.length+' recent matches · '+
-        (ATP.meta['rankings_as_of']?('rankings as of '+ATP.meta['rankings_as_of']+' · '):'')+
-        'published facts and arithmetic over them — no model.';
-      rsSetState('atp','ok');
-    }
-    renderATP();
+    t.at=Date.now();t.prof={};
+    t.state=(t.rank.length||t.matches.length)?{state:'ok'}:{state:'empty'};
+    rsFreshApply('tennis');
+    rsSetState('tennis',t.state.state);
+    renderTennis();
   }catch(e){
     var c=rsClassifyError(e);if(!c)return;
-    ban.style.display='none';$('atpBody').innerHTML='';
-    rsSetState('atp',c.state,c);
+    t.state=c;rsSetState('tennis',c.state,c);
+    renderTennis();
   }
 }
-window.atpSetSeg=function(s){
-  ATP.seg=s;
-  var b=$('atpSeg').querySelectorAll('button');
-  for(var i=0;i<b.length;i++)b[i].classList.toggle('on',['rankings','results','players'][i]===s);
-  var q=$('atpQ');if(q)q.style.display=(s==='players')?'':'none';
-  renderATP();
+window.tddSetTour=function(tour){
+  if(TDD_TOURS.indexOf(tour)<0)return;
+  TDD.tour=tour;
+  var b=$('tddTour').querySelectorAll('button');
+  for(var i=0;i<b.length;i++)b[i].classList.toggle('on',TDD_TOURS[i]===tour);
+  researchActivate('tennis',false);            /* loads that tour on first view */
+  renderTennis();
 };
-function atpName(id){var p=ATP.byId[id];return (p&&p.full_name)||id;}
-function atpMeta(p){
+window.tddSetSeg=function(s){
+  var t=tddT();t.seg=s;
+  var b=$('tddSeg').querySelectorAll('button');
+  for(var i=0;i<b.length;i++)b[i].classList.toggle('on',['rankings','results','players'][i]===s);
+  var q=$('tddQ');if(q)q.style.display=(s==='players')?'':'none';
+  renderTennis();
+};
+function tddName(id){var p=tddT().byId[id];return (p&&p.full_name)||id;}
+function tddMeta(p){
   if(!p)return '';
-  var bits=[p.country,p.plays,(p.height_cm!=null?p.height_cm+'cm':'')].filter(Boolean);
-  return bits.join(' · ');
+  return [p.country,p.plays,(p.height_cm!=null?p.height_cm+'cm':'')].filter(Boolean).join(' · ');
 }
-function atpRankRow(r){
-  var p=ATP.byId[r.player_id];
-  return '<div class="atp-row" onclick="atpOpenPlayer(decodeURIComponent(\''+encodeURIComponent(''+r.player_id)+'\'))">'+
+function tddEnt(pid){return TDD.tour+':'+pid;}
+function tddRankRow(r){
+  var p=tddT().byId[r.player_id];
+  return '<div class="atp-row" onclick="tddOpenPlayer(decodeURIComponent(\''+encodeURIComponent(''+tddEnt(r.player_id))+'\'))">'+
     '<span class="atp-rk">'+rsEsc(''+r.rank)+'</span>'+
-    '<span class="atp-nm">'+rsEsc(atpName(r.player_id))+'<span>'+rsEsc(atpMeta(p))+'</span></span>'+
+    '<span class="atp-nm">'+rsEsc(tddName(r.player_id))+'<span>'+rsEsc(tddMeta(p))+'</span></span>'+
     '<span class="atp-pts">'+(r.points!=null?rsEsc(''+r.points)+' pts':'')+'</span></div>';
 }
-function atpMatchRow(m){
+function tddMatchRow(m){
   var sf=m.surface?(' · '+rsEsc(''+m.surface)):'';
-  return '<div class="atp-row" onclick="atpOpenPlayer(decodeURIComponent(\''+encodeURIComponent(''+m.winner_id)+'\'))">'+
-    '<span class="atp-nm"><b>'+rsEsc(atpName(m.winner_id))+'</b> <span style="color:var(--faint)">def.</span> '+rsEsc(atpName(m.loser_id))+
+  return '<div class="atp-row" onclick="tddOpenPlayer(decodeURIComponent(\''+encodeURIComponent(''+tddEnt(m.winner_id))+'\'))">'+
+    '<span class="atp-nm"><b>'+rsEsc(tddName(m.winner_id))+'</b> <span style="color:var(--faint)">def.</span> '+rsEsc(tddName(m.loser_id))+
     '<span>'+rsEsc(''+(m.tourney_name||''))+sf+(m.round?(' · '+rsEsc(''+m.round)):'')+' · '+rsEsc(''+m.match_date)+'</span></span>'+
     '<span class="atp-pts">'+rsEsc(''+(m.score||''))+'</span></div>';
 }
-function renderATP(){
-  var body=$('atpBody');if(!body)return;
-  if(!ATP.rank.length&&!ATP.matches.length){body.innerHTML='';return;}  /* the state card speaks */
-  if(ATP.seg==='rankings'){
-    body.innerHTML=ATP.rank.length
-      ?('<div class="fi-card">'+ATP.rank.map(atpRankRow).join('')+'</div>'+
-        '<div class="sidenote" style="margin-top:8px">Ranking and points as published'+(ATP.meta['rankings_as_of']?(' on '+rsEsc(''+ATP.meta['rankings_as_of'])):'')+'. Position is a fact about the tour, not a forecast of a match.</div>')
-      :'<div class="empty">No ranking rows ingested yet.</div>';
+function renderTennis(){
+  var body=$('tddBody');if(!body)return;
+  var t=tddT(),ban=$('tddBanner');
+  /* banner reflects the ACTIVE tour, never the other one's numbers */
+  if(ban){
+    if(t.rank.length||t.matches.length){
+      ban.style.display='';ban.className='flbanner live';
+      ban.textContent='● '+TDD.tour+' · '+t.rank.length+' ranked · '+t.matches.length+' recent matches'+
+        (t.meta['rankings_as_of']?(' · rankings as of '+t.meta['rankings_as_of']):'')+
+        ' · published facts and arithmetic over them — no model.';
+    }else{ban.style.display='none';}
+  }
+  if(!t.rank.length&&!t.matches.length){body.innerHTML='';return;}   /* the state card speaks */
+  if(t.seg==='rankings'){
+    body.innerHTML=t.rank.length
+      ?('<div class="fi-card">'+t.rank.map(tddRankRow).join('')+'</div>'+
+        '<div class="sidenote" style="margin-top:8px">'+TDD.tour+' ranking and points as published'+(t.meta['rankings_as_of']?(' on '+rsEsc(''+t.meta['rankings_as_of'])):'')+'. Position is a fact about the tour, not a forecast of a match.</div>')
+      :'<div class="empty">No '+TDD.tour+' ranking rows ingested yet.</div>';
     return;
   }
-  if(ATP.seg==='results'){
-    body.innerHTML=ATP.matches.length
-      ?('<div class="fi-card">'+ATP.matches.map(atpMatchRow).join('')+'</div>'+
-        '<div class="sidenote" style="margin-top:8px">The most recent '+ATP.matches.length+' matches held in the record. Surface is shown only where the source publishes it.</div>')
-      :'<div class="empty">No match rows ingested yet.</div>';
+  if(t.seg==='results'){
+    body.innerHTML=t.matches.length
+      ?('<div class="fi-card">'+t.matches.map(tddMatchRow).join('')+'</div>'+
+        '<div class="sidenote" style="margin-top:8px">The most recent '+t.matches.length+' '+TDD.tour+' matches held in the record. Surface is shown only where the source publishes it.</div>')
+      :'<div class="empty">No '+TDD.tour+' match rows ingested yet.</div>';
     return;
   }
-  var q=($('atpQ')&&$('atpQ').value||'').trim().toLowerCase();
+  var q=($('tddQ')&&$('tddQ').value||'').trim().toLowerCase();
   var list=[];
-  for(var id in ATP.byId){var p=ATP.byId[id];
+  for(var id in t.byId){var p=t.byId[id];
     if(!q||(p.full_name||'').toLowerCase().indexOf(q)>=0)list.push(p);
     if(list.length>=200)break;}
   list.sort(function(a,b){return (a.full_name||'').localeCompare(b.full_name||'');});
   body.innerHTML=list.length
     ?('<div class="fi-card">'+list.map(function(p){
-        return '<div class="atp-row" onclick="atpOpenPlayer(decodeURIComponent(\''+encodeURIComponent(''+p.player_id)+'\'))">'+
-          '<span class="atp-nm">'+rsEsc(''+(p.full_name||''))+'<span>'+rsEsc(atpMeta(p))+'</span></span><span class="st-chev">›</span></div>';
+        return '<div class="atp-row" onclick="tddOpenPlayer(decodeURIComponent(\''+encodeURIComponent(''+tddEnt(p.player_id))+'\'))">'+
+          '<span class="atp-nm">'+rsEsc(''+(p.full_name||''))+'<span>'+rsEsc(tddMeta(p))+'</span></span><span class="st-chev">›</span></div>';
       }).join('')+'</div>')
     :'<div class="empty">No player matches that search.</div>';
 }
 
 /* ---- player profile: career, surface splits, form, head-to-head ---------- */
-window.atpClosePlayer=function(){
-  var m=$('atpModal');if(m)m.style.display='none';document.body.style.overflow='';
+window.tddClosePlayer=function(){
+  var m=$('tddModal');if(m)m.style.display='none';document.body.style.overflow='';
   var r=null;try{r=researchParseHash();}catch(_){}
-  if(r&&r.sub==='atp'&&r.entity!=null){try{history.back();}catch(_){}}
+  if(r&&r.sub==='tennis'&&r.entity!=null){try{history.back();}catch(_){}}
 };
-window.atpOpenPlayer=async function(pid){
-  var m=$('atpModal'),card=$('atpModalCard');if(!m||!card)return;
-  try{researchSetHash('atp',pid,true);}catch(_){}
+window.tddOpenPlayer=async function(ent){
+  var parts=String(ent).split(':'),tour=parts[0],pid=parts.slice(1).join(':');
+  if(TDD_TOURS.indexOf(tour)<0){tour=TDD.tour;pid=String(ent);}
+  if(tour!==TDD.tour)tddSetTour(tour);
+  var t=tddT(tour);
+  var m=$('tddModal'),card=$('tddModalCard');if(!m||!card)return;
+  try{researchSetHash('tennis',tour+':'+pid,true);}catch(_){}
   m.style.display='block';document.body.style.overflow='hidden';m.scrollTop=0;
-  card.innerHTML=atpProfileHead(pid)+'<div class="fi-empty">Loading record…</div>';
-  var d=ATP.prof[pid];
+  card.innerHTML=tddProfileHead(tour,pid)+'<div class="fi-empty">Loading record…</div>';
+  var d=t.prof[pid];
   if(!d){
-    d={};
-    var f=encodeURIComponent(pid);
-    try{d.career=(await sbGetTennis('player_career?select=wins,losses,matches,win_pct,first_match,last_match&tour=eq.ATP&player_id=eq.'+f))[0]||null;}catch(_){d.career=null;d.err=true;}
-    try{d.surface=await sbGetTennis('player_surface?select=surface,season,wins,losses,matches,win_pct&tour=eq.ATP&player_id=eq.'+f+'&order=season.desc&limit=60');}catch(_){d.surface=[];d.err=true;}
-    try{d.form=await sbGetTennis('player_form?select=match_date,opponent_id,won,surface,tourney_name,round&tour=eq.ATP&player_id=eq.'+f+'&order=match_date.desc&limit=20');}catch(_){d.form=[];d.err=true;}
-    try{d.h2h=await sbGetTennis('h2h?select=opponent_id,wins,losses,matches,last_meeting&tour=eq.ATP&player_id=eq.'+f+'&order=matches.desc&limit=10');}catch(_){d.h2h=[];d.err=true;}
-    ATP.prof[pid]=d;
+    d={};var f=encodeURIComponent(pid),q='&tour=eq.'+tour+'&player_id=eq.'+f;
+    try{d.career=(await sbGetTennis('player_career?select=wins,losses,matches,win_pct,first_match,last_match'+q))[0]||null;}catch(_){d.career=null;d.err=true;}
+    try{d.surface=await sbGetTennis('player_surface?select=surface,season,wins,losses,matches,win_pct'+q+'&order=season.desc&limit=60');}catch(_){d.surface=[];d.err=true;}
+    try{d.form=await sbGetTennis('player_form?select=match_date,opponent_id,won,surface,tourney_name,round'+q+'&order=match_date.desc&limit=20');}catch(_){d.form=[];d.err=true;}
+    try{d.h2h=await sbGetTennis('h2h?select=opponent_id,wins,losses,matches,last_meeting'+q+'&order=matches.desc&limit=10');}catch(_){d.h2h=[];d.err=true;}
+    t.prof[pid]=d;
   }
   if(m.style.display!=='block')return;             /* closed while loading */
-  card.innerHTML=atpProfileHead(pid)+atpProfileBody(pid,d);
+  card.innerHTML=tddProfileHead(tour,pid)+tddProfileBody(tour,pid,d);
 };
-function atpProfileHead(pid){
-  var p=ATP.byId[pid]||{},rk=null;
-  for(var i=0;i<ATP.rank.length;i++)if(ATP.rank[i].player_id===pid){rk=ATP.rank[i];break;}
-  return '<button onclick="atpClosePlayer()" style="position:absolute;top:12px;right:14px;background:transparent;border:none;color:var(--faint);font-size:22px;cursor:pointer">×</button>'+
-    rsSaveBtnHTML('atp',pid,(p.full_name||pid))+
+function tddProfileHead(tour,pid){
+  var t=tddT(tour),p=t.byId[pid]||{},rk=null;
+  for(var i=0;i<t.rank.length;i++)if(t.rank[i].player_id===pid){rk=t.rank[i];break;}
+  return '<button onclick="tddClosePlayer()" style="position:absolute;top:12px;right:14px;background:transparent;border:none;color:var(--faint);font-size:22px;cursor:pointer">×</button>'+
+    rsSaveBtnHTML('tennis',tour+':'+pid,(p.full_name||pid))+
     '<div class="st-nm" style="font-size:18px">'+rsEsc(''+(p.full_name||pid))+(rk?(' <span class="st-pos">#'+rsEsc(''+rk.rank)+'</span>'):'')+'</div>'+
-    '<div class="st-meta" style="margin-bottom:10px">'+rsEsc(atpMeta(p))+(rk&&rk.points!=null?(' · '+rsEsc(''+rk.points)+' pts'):'')+'</div>';
+    '<div class="st-meta" style="margin-bottom:10px">'+rsEsc(tour)+(tddMeta(p)?(' · '+rsEsc(tddMeta(p))):'')+(rk&&rk.points!=null?(' · '+rsEsc(''+rk.points)+' pts'):'')+'</div>';
 }
-function atpPct(v){return (v==null)?'—':(Math.round(+v*100)+'%');}
-function atpProfileBody(pid,d){
+function tddPct(v){return (v==null)?'—':(Math.round(+v*100)+'%');}
+function tddProfileBody(tour,pid,d){
   if(d.err&&!d.career&&!(d.form||[]).length){
     return '<div class="rs-none">The record for this player could not be read just now. That is a read failure, not an empty career — nothing is shown rather than something invented.</div>';
   }
   var c=d.career;
   var career=c?('<div class="fi-card"><div class="gd-line" style="font-weight:600"><span class="l">career record</span><span class="v mut">as ingested</span></div>'+
       '<div class="gd-line"><span class="l">Won – lost</span><span class="v mono">'+rsEsc(''+c.wins)+'–'+rsEsc(''+c.losses)+'</span></div>'+
-      '<div class="gd-line"><span class="l">Win rate</span><span class="v mono">'+atpPct(c.win_pct)+'</span></div>'+
+      '<div class="gd-line"><span class="l">Win rate</span><span class="v mono">'+tddPct(c.win_pct)+'</span></div>'+
       '<div class="gd-line"><span class="l">Matches on record</span><span class="v mono">'+rsEsc(''+c.matches)+'</span></div>'+
       '<div class="gd-line"><span class="l">Span</span><span class="v mono">'+rsEsc(''+(c.first_match||''))+' → '+rsEsc(''+(c.last_match||''))+'</span></div></div>')
     :'<div class="fi-empty">No completed match on record for this player yet.</div>';
 
-  /* surface splits aggregated across the seasons on record */
+  /* the view groups by season; the profile shows the whole ingested record */
   var bySurf={};(d.surface||[]).forEach(function(r){
     var k=r.surface||'—';var b=bySurf[k]||(bySurf[k]={w:0,l:0});
     b.w+=(+r.wins||0);b.l+=(+r.losses||0);});
@@ -8072,13 +8098,13 @@ function atpProfileBody(pid,d){
       '<div style="padding:6px 0"><span class="atp-form">'+d.form.slice().reverse().map(function(f){
         return '<i class="'+(f.won?'w':'l')+'"></i>';}).join('')+'</span></div>'+
       d.form.slice(0,6).map(function(f){
-        return '<div class="gd-line"><span class="l"><b class="'+(f.won?'pos':'neg')+'">'+(f.won?'W':'L')+'</b> vs '+rsEsc(atpName(f.opponent_id))+'</span>'+
+        return '<div class="gd-line"><span class="l"><b class="'+(f.won?'pos':'neg')+'">'+(f.won?'W':'L')+'</b> vs '+rsEsc(tddName(f.opponent_id))+'</span>'+
           '<span class="v mut">'+rsEsc(''+(f.tourney_name||''))+(f.surface?(' · '+rsEsc(''+f.surface)):'')+'</span></div>';}).join('')+'</div>')
     :'';
 
   var h2h=(d.h2h||[]).length?('<div class="fi-card" style="margin-top:10px"><div class="gd-line" style="font-weight:600"><span class="l">head to head</span><span class="v mut">most played</span></div>'+
       d.h2h.map(function(h){
-        return '<div class="gd-line"><span class="l">vs '+rsEsc(atpName(h.opponent_id))+'</span><span class="v mono">'+rsEsc(''+h.wins)+'–'+rsEsc(''+h.losses)+
+        return '<div class="gd-line"><span class="l">vs '+rsEsc(tddName(h.opponent_id))+'</span><span class="v mono">'+rsEsc(''+h.wins)+'–'+rsEsc(''+h.losses)+
           (h.last_meeting?(' <span class="mut" style="font-size:10.5px">'+rsEsc(''+h.last_meeting)+'</span>'):'')+'</span></div>';}).join('')+'</div>')
     :'';
 
@@ -8086,26 +8112,31 @@ function atpProfileBody(pid,d){
     '<div class="fi-foot">Career, surface and head-to-head are counted from the matches held in this database, so they describe the ingested record and not necessarily a full career. Rankings and results are the source’s published facts; every split here is arithmetic over them. No model, no projection, and no closing-line claim.</div>';
 }
 
-researchRegister({id:'atp',label:'ATP',schema:'tennis',cadenceMs:86400000,
-  load:function(force,signal){return window.loadATP(force,signal);},
-  render:function(){renderATP();},
-  hasData:function(){return !!(ATP.rank.length||ATP.matches.length);},
+researchRegister({id:'tennis',label:'Tennis',schema:'tennis',cadenceMs:86400000,
+  load:function(force,signal){return window.loadTennis(force,signal);},
+  render:function(){renderTennis();},
+  hasData:function(){var t=tddT();return !!(t.rank.length||t.matches.length);},
   search:function(q){
     var n=rsNorm(q),out=[];
-    for(var id in ATP.byId){var p=ATP.byId[id];
-      if(rsNorm(p.full_name).indexOf(n)>=0){out.push({id:p.player_id,label:p.full_name,sub:atpMeta(p)});if(out.length>=8)break;}}
+    /* search covers every tour already loaded, and labels which one a hit is on */
+    for(var ti=0;ti<TDD_TOURS.length;ti++){var tour=TDD_TOURS[ti],t=TDD[tour];
+      for(var id in t.byId){var p=t.byId[id];
+        if(rsNorm(p.full_name).indexOf(n)>=0){
+          out.push({id:tour+':'+p.player_id,label:p.full_name,sub:tour+(tddMeta(p)?(' · '+tddMeta(p)):'')});
+          if(out.length>=8)return out;}}}
     return out;},
-  openEntity:function(id){window.atpOpenPlayer(id);},
-  closeEntity:function(){window.atpClosePlayer();},
-  entityOpen:function(){var m=$('atpModal');return !!(m&&m.style.display==='block');},
+  openEntity:function(id){window.tddOpenPlayer(id);},
+  closeEntity:function(){window.tddClosePlayer();},
+  entityOpen:function(){var m=$('tddModal');return !!(m&&m.style.display==='block');},
   /* this module registers after the stage-2 attach pass, so it wires its own
-     metadata rather than relying on that pass */
+     metadata. It is also the only module whose pipeline publishes a build time,
+     so the only one whose freshness SLA can actually be checked. */
   freshness:function(){
-    var t=ATP.meta&&ATP.meta['last_ingest']?new Date(ATP.meta['last_ingest']).getTime():NaN;
-    return {loadedAt:ATP.at||null,builtAt:isNaN(t)?null:t};},
-  availability:function(){var m=RESEARCH_MODULES.atp;return (m._.uistate&&m._.uistate.state)||'unread';},
-  limitations:function(){return RS_LIMITS.atp;},
-  provenance:RS_PROV.atp});
+    var t=tddT(),v=t.meta&&t.meta['last_ingest']?new Date(t.meta['last_ingest']).getTime():NaN;
+    return {loadedAt:t.at||null,builtAt:isNaN(v)?null:v};},
+  availability:function(){var m=RESEARCH_MODULES.tennis;return (m._.uistate&&m._.uistate.state)||'unread';},
+  limitations:function(){return RS_LIMITS.tennis;},
+  provenance:RS_PROV.tennis});
 
 /* ===== CFB module (injected) ===== */
 /* ================= CFB (College Football) =================

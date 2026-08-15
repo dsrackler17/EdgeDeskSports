@@ -270,7 +270,7 @@ added to `ufcStatGridHTML` while wiring the definitions; the code was fixed
 
 ---
 
-## ATP module + licensed tennis pipeline
+## Tennis module (ATP + WTA) + licensed tennis pipeline
 
 The deep-dive builder's tennis half could not ship as delivered: its source is
 CC BY-NC-SA (non-commercial). Rather than drop it or quietly ingest it anyway,
@@ -328,3 +328,21 @@ verify.
 WTA still reads its own `wta_research` pipeline and was not touched — the
 research protocol there is frozen. The `tennis` schema already supports
 `tour = 'WTA'`, so a WTA deep dive is a data decision, not a code one.
+
+### Both tours, one implementation
+
+The ATP module became a tour-generic **Tennis** module: ATP and WTA run through
+the same loader, renderers and profile with a tour switch, so the second tour
+added no second copy of the code. Per-tour state is isolated (`TDD.ATP` /
+`TDD.WTA`), the banner and freshness follow the active tour, entity deep links
+carry it (`#research/tennis/WTA:<player_id>`), and cross-module search covers
+every loaded tour and labels which one a hit is on.
+
+It is deliberately a **separate tab from WTA**. The WTA tab is the daily
+research engine and its own frozen pipeline; the Tennis tab is the historical
+record. Nothing was bolted into the frozen module: all 14 of its functions
+(`renderWTA`, `wtaCard`, `wtaSetSeg`, `loadWTA`, …) are byte-identical to the
+previous commit, verified mechanically.
+
+Suites: 18/18 tennis structure, 15/15 two-tour behaviour, plus 43/43, 12/12 and
+20/20 regressions. Identity check CLEAN.

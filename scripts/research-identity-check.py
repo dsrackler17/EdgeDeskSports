@@ -59,10 +59,10 @@ RENDER_FNS = [
     "prSports", "prMarkets", "renderProps", "propExplain",
     # Lab
     "labCard", "gatePanel", "checkRow",
-    # ATP (tennis deep dive) — guarded from introduction so its counts and
-    # percentages cannot drift silently either
-    "atpName", "atpMeta", "atpRankRow", "atpMatchRow", "renderATP",
-    "atpProfileHead", "atpPct", "atpProfileBody",
+    # Tennis deep dive (ATP + WTA, one implementation) — guarded from
+    # introduction so its counts and percentages cannot drift silently either
+    "tddName", "tddMeta", "tddEnt", "tddRankRow", "tddMatchRow", "renderTennis",
+    "tddProfileHead", "tddPct", "tddProfileBody",
 ]
 
 # constants whose literal text is part of the frozen protocol presentation
