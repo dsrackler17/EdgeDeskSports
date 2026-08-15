@@ -162,6 +162,12 @@ export interface ModelPrediction {
   missing_features: string[];
   /** optional model-specific diagnostics, stored as jsonb */
   detail?: Record<string, unknown>;
+  /** Columns that predate the multi-sport schema and are written for backward
+   *  compatibility only. MLB uses this to keep filling home_xr / away_xr, which
+   *  v1.2 wrote on every row: nothing in the app reads them today, but they may
+   *  be NOT NULL and something outside this repo may read them, and neither is
+   *  worth finding out the hard way. New models must not add to this. */
+  legacyColumns?: Record<string, unknown>;
 }
 
 /** Deterministic RNG. Production seeds from crypto; tests pass a fixed seed. */

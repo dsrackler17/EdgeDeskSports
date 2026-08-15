@@ -57,6 +57,28 @@ comment on column public.model_predictions.feature_snapshot_id is
 comment on column public.model_predictions.model_detail is
   'Per-sport diagnostics: expected runs/points, ratings, matchup terms, simulation settings.';
 
+-- home_xr / away_xr are MLB-only columns v1.2 wrote on every row. MLB still
+-- fills them, but ATP, WTA, UFC, NFL and WNBA rows have no such quantity, so a
+-- NOT NULL on either would reject every non-baseball prediction. Relaxed here
+-- rather than discovered on the first live multi-sport run.
+do $$
+begin
+  if exists (
+    select 1 from information_schema.columns
+    where table_schema = 'public' and table_name = 'model_predictions'
+      and column_name = 'home_xr' and is_nullable = 'NO'
+  ) then
+    alter table public.model_predictions alter column home_xr drop not null;
+  end if;
+  if exists (
+    select 1 from information_schema.columns
+    where table_schema = 'public' and table_name = 'model_predictions'
+      and column_name = 'away_xr' and is_nullable = 'NO'
+  ) then
+    alter table public.model_predictions alter column away_xr drop not null;
+  end if;
+end $$;
+
 do $$
 begin
   if not exists (

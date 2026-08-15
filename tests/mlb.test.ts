@@ -27,6 +27,25 @@ import {
 import { negBinomial, makeRng, poisson } from "../supabase/functions/model_predict/core/rng.ts";
 import { nrm } from "../supabase/functions/model_predict/core/names.ts";
 import { eventRows, makeFakeDeps, mlbSchedule, mlbTeamPayloads } from "./helpers.ts";
+import { buildMarketIndex } from "../supabase/functions/model_predict/core/market.ts";
+import { buildRow } from "../supabase/functions/model_predict/core/validate.ts";
+import type { ModelPrediction } from "../supabase/functions/model_predict/core/types.ts";
+
+function buildMarketIndexForTest(id: string, home: string, away: string) {
+  return buildMarketIndex(eventRows(id, home, away, "2026-08-15T23:05:00Z"));
+}
+function buildRowForTest(idx: ReturnType<typeof buildMarketIndex>, over: Partial<ModelPrediction>) {
+  const ev = Object.values(idx.byEvent)[0];
+  const res = buildRow("m_v1", {
+    event_id: ev.event_id, sport_key: "baseball_mlb", commence_time: ev.commence_time,
+    home_team: ev.home_team, away_team: ev.away_team,
+  }, ev, {
+    market: "h2h", selection: ev.home_team, point: null, model_prob: 0.5,
+    context_quality: "HIGH", missing_features: [], ...over,
+  }, { dataAsOf: null, featureSnapshotId: null });
+  if (!res.ok || !res.row) throw new Error(res.detail ?? "row rejected");
+  return res.row;
+}
 
 // ---------------------------------------------------------------------------
 // v1.2 REFERENCE IMPLEMENTATION — transcribed from the shipped function.
@@ -365,4 +384,27 @@ test("MLB telemetry still reports doubleheader counts and unmatched events", asy
 test("the model version is unchanged", () => {
   assert.equal(MLB_MODEL_VERSION, "mlb_runs_v1.2_nbinom_dh");
   assert.equal(MLBModel.modelVersion, "mlb_runs_v1.2_nbinom_dh");
+});
+
+test("v1.2's home_xr / away_xr columns are still written on every MLB row", async () => {
+  const signals = eventRows("evt-1", "Chicago Cubs", "Milwaukee Brewers", "2026-08-15T23:05:00Z", { total: 8.5 });
+  const deps = mlbDeps([
+    { gamePk: 1, gameDate: "2026-08-15T23:05:00Z", home: "Chicago Cubs", away: "Milwaukee Brewers", homeId: 1, awayId: 2 },
+  ], signals);
+  const ctx = await MLBModel.loadContext(deps, signals);
+  const built = await MLBModel.buildEvents(deps, signals, ctx);
+  const preds = await MLBModel.predict(built.events[0].event, built.events[0].market, ctx, deps);
+  for (const p of preds) {
+    assert.ok(p.legacyColumns, "the legacy columns ride along");
+    assert.ok((p.legacyColumns as any).home_xr > 0);
+    assert.ok((p.legacyColumns as any).away_xr > 0);
+    assert.equal((p.legacyColumns as any).home_xr, (p.detail as any).home_xr, "and agree with model_detail");
+  }
+});
+
+test("a legacy column can never overwrite a real one", () => {
+  const idx = buildMarketIndexForTest("evt-1", "Home", "Away");
+  const r = buildRowForTest(idx, { model_prob: 0.42, legacyColumns: { model_prob: 0.99, home_xr: 5 } });
+  assert.equal(r.model_prob, 0.42, "the model's own probability wins");
+  assert.equal((r as any).home_xr, 5, "but a genuinely new column is carried");
 });

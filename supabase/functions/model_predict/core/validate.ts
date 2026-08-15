@@ -135,6 +135,13 @@ export function buildRow(
     feature_snapshot_id: meta.featureSnapshotId,
     model_detail: pred.detail ?? null,
   };
+  /* Legacy columns are merged LAST but must never shadow a real one, so a
+     model cannot quietly rewrite model_prob through this door. */
+  if (pred.legacyColumns) {
+    for (const k of Object.keys(pred.legacyColumns)) {
+      if (!(k in row)) (row as unknown as Record<string, unknown>)[k] = pred.legacyColumns[k];
+    }
+  }
   return { ok: true, row };
 }
 

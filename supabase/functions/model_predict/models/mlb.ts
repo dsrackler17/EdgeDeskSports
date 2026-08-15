@@ -4,7 +4,7 @@
 // THE BASELINE. This is the v1.2 model, moved behind the SportPredictionModel
 // interface with its mathematics untouched. Every constant, every regression
 // prior, every multiplier and the negative-binomial draw itself are the same
-// values in the same order, and tests/mlb_regression.test.ts pins them.
+// values in the same order, and tests/mlb.test.ts pins them.
 //
 // The two things that changed are structural, not numerical:
 //   1. The uniform stream is injectable (core/rng.ts) so a run can be replayed.
@@ -36,6 +36,7 @@
 // ============================================================================
 
 import type {
+  ContextQuality,
   DataContractEntry,
   EventContext,
   MarketContext,
@@ -475,7 +476,7 @@ export const MLBModel: SportPredictionModel & {
     if (!d.pitCache[x.aPid]?.ip) missing.push("away_starter_season_line");
     if (PARK[nrm(x.homeName)] == null) missing.push("park_factor");
     missing.push("bullpen_state", "weather", "lineup");
-    const quality = missing.length > 3 ? "LOW" : missing.length > 2 ? "MEDIUM" : "HIGH";
+    const quality: ContextQuality = missing.length > 3 ? "LOW" : missing.length > 2 ? "MEDIUM" : "HIGH";
 
     const detail = {
       home_xr: +homeXR.toFixed(3),
@@ -488,11 +489,19 @@ export const MLBModel: SportPredictionModel & {
       game_pk: x.gamePk,
     };
 
+    /* v1.2 wrote home_xr / away_xr as real columns on every row. They are
+       carried forward unchanged so historical MLB rows and the new ones remain
+       the same shape, and so a NOT NULL on either column cannot break the
+       insert. The same numbers also live in model_detail, which is where
+       every other sport puts its diagnostics. */
+    const legacyColumns = { home_xr: +homeXR.toFixed(3), away_xr: +awayXR.toFixed(3) };
+    const base = { context_quality: quality, missing_features: missing, detail, legacyColumns };
+
     const out: ModelPrediction[] = [];
-    if (sg.h2hHome) out.push({ market: "h2h", selection: sg.home_team, point: null, model_prob: pHome, context_quality: quality, missing_features: missing, detail });
-    if (sg.h2hAway) out.push({ market: "h2h", selection: sg.away_team, point: null, model_prob: pAway, context_quality: quality, missing_features: missing, detail });
-    if (line != null && sg.mainTotal?.over) out.push({ market: "totals", selection: "Over", point: line, model_prob: pOver as number, context_quality: quality, missing_features: missing, detail });
-    if (line != null && sg.mainTotal?.under) out.push({ market: "totals", selection: "Under", point: line, model_prob: pUnder as number, context_quality: quality, missing_features: missing, detail });
+    if (sg.h2hHome) out.push({ market: "h2h", selection: sg.home_team, point: null, model_prob: pHome, ...base });
+    if (sg.h2hAway) out.push({ market: "h2h", selection: sg.away_team, point: null, model_prob: pAway, ...base });
+    if (line != null && sg.mainTotal?.over) out.push({ market: "totals", selection: "Over", point: line, model_prob: pOver as number, ...base });
+    if (line != null && sg.mainTotal?.under) out.push({ market: "totals", selection: "Under", point: line, model_prob: pUnder as number, ...base });
     return out;
   },
 
