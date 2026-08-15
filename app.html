@@ -364,6 +364,36 @@ textarea{min-height:110px;font-family:'JetBrains Mono',monospace;resize:vertical
 .fi-foot{font-size:10px;color:var(--faint);line-height:1.5;margin-top:9px;padding-top:8px;border-top:1px dashed var(--border)}
 .fi-empty{font-size:11.5px;color:var(--dim);line-height:1.55;padding:10px 11px;background:var(--surface2);border:1px dashed var(--border);border-radius:9px}
 .fi-empty .mono{color:var(--warn)}
+/* ---- UFC Live Fight Center: deep layer. Additive only; every class below is
+   new and prefixed .ufc-, so no existing rule changes meaning. ---- */
+.ufc-deep{margin-top:10px;border-top:1px solid rgba(255,255,255,.06);padding-top:8px}
+.ufc-deep .mut{color:var(--faint)}
+.ufc-deep .up{color:var(--pos)}
+.ufc-deep .dn{color:var(--neg)}
+.ufc-dhd{display:flex;align-items:center;gap:8px;flex-wrap:wrap;cursor:pointer;font-size:11px;color:var(--faint);padding:3px 0}
+.ufc-dtag{font-weight:700;color:var(--accent)}
+.ufc-clock{margin-left:auto;font-family:'JetBrains Mono',monospace;color:#e0533a;font-weight:700}
+.ufc-res{font-size:12px;color:var(--text);margin:6px 0;font-weight:600}
+.ufc-nostat{font-size:10.5px;color:var(--faint);padding:4px 0}
+.ufc-fresh{font-size:10px;color:var(--faint);font-family:'JetBrains Mono',monospace;margin-top:8px;padding-top:6px;border-top:1px dashed var(--border)}
+.ufc-scblk{margin-top:10px;background:var(--surface);border:1px solid var(--border);border-radius:9px;padding:8px 10px}
+.ufc-schd{font-size:10.5px;letter-spacing:.05em;text-transform:uppercase;color:var(--faint);margin-bottom:5px;font-weight:700}
+.ufc-schs{font-weight:400;text-transform:none;letter-spacing:0;opacity:.7}
+.ufc-scsub{font-size:9.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--faint2,#6b7280);margin:7px 0 2px;opacity:.85}
+.ufc-scrow{display:grid;grid-template-columns:1fr auto 1fr;gap:8px;align-items:center;padding:3px 0;font-size:12px}
+.ufc-scv{font-family:'JetBrains Mono',monospace;color:var(--text)}
+.ufc-scl{font-size:10px;color:var(--faint);text-align:center;min-width:86px}
+.ufc-acc{font-size:9.5px;color:var(--faint);opacity:.85}
+.ufc-sec{margin-top:12px}
+.ufc-sech{font-size:10.5px;letter-spacing:.05em;text-transform:uppercase;color:var(--faint);font-weight:700;margin-bottom:6px;display:flex;align-items:center;gap:7px}
+.ufc-derived{font-size:8.5px;font-weight:700;letter-spacing:.04em;background:rgba(93,141,239,.14);color:#5d8def;border:1px solid rgba(93,141,239,.3);border-radius:20px;padding:1px 7px;text-transform:none}
+.ufc-mom{display:grid;grid-template-columns:1fr auto 1fr;gap:8px;align-items:center;font-size:11.5px;background:var(--surface);border:1px solid var(--border);border-radius:9px;padding:9px 10px}
+.ufc-pacew,.ufc-mkw{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.ufc-pace,.ufc-mkc,.ufc-spark{background:var(--surface);border:1px solid var(--border);border-radius:9px;padding:8px 10px}
+.ufc-pacen{font-size:11.5px;font-weight:700;margin-bottom:4px}
+.ufc-sparkl{display:flex;justify-content:space-between;font-size:9.5px;color:var(--faint);margin-top:3px}
+.ufc-evmeta{font-size:11px;color:var(--faint);margin:-4px 0 10px;font-family:'JetBrains Mono',monospace}
+@media(max-width:520px){.ufc-pacew,.ufc-mkw{grid-template-columns:1fr}.ufc-scl{min-width:68px;font-size:9.5px}}
 /* ===== Stats section ===== */
 .stchips{display:flex;gap:7px;overflow-x:auto;padding-bottom:4px;margin-bottom:11px;-webkit-overflow-scrolling:touch}
 .stchip{flex:none;font-size:11px;font-weight:700;letter-spacing:.03em;color:var(--dim);background:transparent;border:1px solid var(--border);border-radius:20px;padding:6px 13px;cursor:pointer;font-family:'JetBrains Mono',monospace;white-space:nowrap}
@@ -2749,7 +2779,13 @@ var RS_PROV={
     {nm:'Closing probability shown per bout',tier:'T2',src:'De-vigged two-way consensus price stored in the dataset. Not a CLV measurement.'},
     {nm:'Finish rate, streaks, activity, opponent quality',tier:'T2',src:'ufc.fighter_derived_metrics — aggregates computed from loaded fight history'},
     {nm:'Style percentiles and durability',tier:'T2',src:'ufc.fighter_style_metrics percentiles / losses-by-finish computed in the browser'},
-    {nm:'Live win probability',tier:'T3',model:'espn.live_win_prob',src:'Supplied by the ESPN live feed via the ufc_live poller. Not an EdgeDesk model.'}
+    {nm:'Live win probability',tier:'T3',model:'espn.live_win_prob',src:'Supplied by the ESPN live feed via the ufc_live poller. Not an EdgeDesk model.'},
+    {nm:'Live round-by-round statistics (strikes, target, position, grappling, control)',tier:'T0',src:'ufc.live_fight_round_stats \u2014 as published by the configured live provider, normalized into EdgeDesk\u2019s canonical stat contract. Round 0 is the fight total.'},
+    {nm:'Fight state, referee, scheduled rounds, method and finish',tier:'T0',src:'ufc.live_fight_state \u2014 as published by the live provider.'},
+    {nm:'Snapshot timeline',tier:'T0',src:'ufc.live_fight_snapshots \u2014 immutable, timestamped, deduplicated by content so a row exists only where a number actually moved.'},
+    {nm:'Live momentum',tier:'T2',src:'EdgeDesk-derived: the difference between two stored snapshots. Observed change, not a judging score \u2014 no live official scoring source exists and none is imitated.'},
+    {nm:'Pace vs career baseline',tier:'T2',src:'EdgeDesk-derived: live rate over elapsed fight time, compared with ufc.fighter_career_stats career averages. Both inputs are stored; the comparison is EdgeDesk\u2019s.'},
+    {nm:'Market context (opening, current, movement, sharp fair, edge, flag)',tier:'T0',src:'public.signals, read exactly as the odds capture wrote it. Nothing on this screen recomputes a price, a fair line or an edge.'}
   ],
   wta:[
     {nm:'Player rankings and ranking date',tier:'T0',src:'wta.daily_research — official WTA rankings as ingested'},
@@ -2797,7 +2833,12 @@ var RS_LIMITS={
        'Per-minute microstats absent from the source are omitted rather than shown as blanks.',
        'The fighter list renders at most 300 rows; search or filter by division to reach the rest.',
        'Live model probability is gated because no UFC model is registered — the model registry holds no entry for this sport, so there is nothing to display and nothing is estimated in its place.',
-       'Pre-fight CLV is gated for a separate reason: capture now supplies live fight prices, but no closing price is stored per bout, so there is no reference to grade an entry against. Consensus is never shown as CLV.'],
+       'Pre-fight CLV is gated for a separate reason: capture now supplies live fight prices, but no closing price is stored per bout, so there is no reference to grade an entry against. Consensus is never shown as CLV.',
+       'Live statistics are only as deep as the configured provider publishes. A field the source omits is stored as NULL and rendered as a dash \u2014 never as a zero.',
+       'Source fields the normalizer does not recognise are displayed nowhere. They are counted in the live pipeline diagnostics so they can be mapped, rather than being guessed into a column.',
+       'EdgeDesk publishes no live round score. The UFC\u2019s official judging is not available live, so momentum is reported as observed change and labelled EdgeDesk-derived.',
+       'Market context is matched to a bout by fighter name. An unmatched fighter shows no quote rather than a nearby one.',
+       'The live layer is written by the ufc_live_stats function and is independent of the odds capture. A UFC source failure cannot affect the board.'],
   wta:['The qualifying grade is computed server-side by the pipeline. The app displays its result and never recomputes or asserts it.',
        'Records and rates are historical. They are not a prediction of the match.',
        'Today’s slate is read at most 400 rows deep; the watchlist at most 100.',
@@ -7857,15 +7898,36 @@ function ufcPickEvent(evs){
 }
 async function loadUFCLive(){
   var body=$('ufcBody');if(!body)return;
-  var ev=[],fx=[];
+  var ev=[],fx=[],reachable=true;
   try{ev=await sbGetUfc('live_events?select=event_id,name,status,start_time,updated_at&order=start_time.desc&limit=25');}catch(e){
+    reachable=false;
+  }
+  /* DEEP FALLBACK (additive). ufc.live_events is written by the ufc_live
+     poller; ufc.live_event_state by ufc_live_stats. EITHER ONE ALONE is enough
+     to show a card, so when the first is missing or empty the second answers.
+     When both have rows the existing table wins — the stated precedence. */
+  if(!ev||!ev.length){
+    try{
+      var de=await sbGetUfc('live_event_state?select=event_id,name,status,start_time,updated_at&order=start_time.desc&limit=25');
+      if(de&&de.length){ev=de;reachable=true;}
+    }catch(_){}
+  }
+  if(!reachable){
+    UFC._lastEvent=null;UFC._lastFights=[];UFC._lastMode='none';
     body.innerHTML=ufcLiveShellHTML(null,[],'none')+'<div class="empty" style="margin-top:10px">Live source not reachable. Deploy the <b>ufc_live</b> poller and create the live tables (ufc_live.sql). Until then, the Live Center has no event to show.</div>';
     return;
   }
   var pick=ufcPickEvent(ev);
-  if(!pick.event){body.innerHTML=ufcLiveShellHTML(null,[],'none');return;}
+  if(!pick.event){
+    UFC._lastEvent=null;UFC._lastFights=[];UFC._lastMode='none';
+    await ufcDeepLoadHealth();
+    body.innerHTML=ufcLiveShellHTML(null,[],'none');return;
+  }
   var e=pick.event;
   try{fx=await sbGetUfc('live_fights?select=fight_id,red_name,blue_name,red_fighter_id,blue_fighter_id,status,round,clock,red_strikes,blue_strikes,red_td,blue_td,red_kd,blue_kd,red_win_prob,weight_class,is_main,red_odds,blue_odds&event_id=eq.'+encodeURIComponent(e.event_id)+'&order=is_main.desc,fight_id.asc&limit=30');}catch(_){fx=[];}
+  fx=await ufcDeepLoad(e.event_id,fx);
+  ufcMarketFetch();
+  UFC._lastEvent=e;UFC._lastFights=fx||[];UFC._lastMode=pick.mode;
   body.innerHTML=ufcLiveShellHTML(e,fx||[],pick.mode);
   UFC.liveAt=Date.now();
   var lf=$('ufcFresh');
@@ -8052,7 +8114,10 @@ function ufcLiveFightCard(g){
       '<div style="padding:7px 9px;border:1px dashed rgba(255,255,255,.14);border-radius:8px;font-size:10.5px;color:var(--faint)">Pre-fight CLV<br><b style="color:var(--warn)">not active</b> \u2014 needs live capture</div>'+
     '</div>';
   var odds=(g.red_odds!=null||g.blue_odds!=null)?'<div style="display:flex;justify-content:space-between;margin-top:8px;font-size:10.5px;color:var(--faint)"><span>best book price via capture \u00b7 de-vigged pipeline, not Pinnacle</span><span class="mono">'+(g.red_odds!=null?(+g.red_odds).toFixed(2):'\u2014')+' / '+(g.blue_odds!=null?(+g.blue_odds).toFixed(2):'\u2014')+'</span></div>':'';
-  return '<div class="fi-card" style="margin-bottom:12px;'+(live?'border:1px solid rgba(224,83,58,.35)':'')+'">'+head+names+statsBlock+gated+odds+'</div>';
+  /* DEEP PANEL (additive). ufcDeepPanelHTML returns '' when no deep row exists
+     for this bout, so with the migration unrun this card renders byte-for-byte
+     what it rendered before the Fight Centre layer was added. */
+  return '<div class="fi-card" style="margin-bottom:12px;'+(live?'border:1px solid rgba(224,83,58,.35)':'')+'">'+head+names+statsBlock+gated+odds+ufcDeepPanelHTML(g)+'</div>';
 }
 function ufcLiveShellHTML(e,fx,mode){
   var head;
@@ -8072,10 +8137,568 @@ function ufcLiveShellHTML(e,fx,mode){
     }
   }
   var cards=fx.map(ufcLiveFightCard).join('');
-  return head+
+  return head+ufcEventMetaHTML(e)+
     '<p class="lede" style="margin-top:10px">Red vs blue corners, weight class, and the live round/clock stream from the fight-state poller. Pre-fight tendencies (finish rate, streaks, activity) are computed from EdgeDesk\u2019s loaded history \u2014 fighters not in the database show \u201cno DB history.\u201d <b style="color:var(--warn)">Model probability and CLV stay gated</b>, for two different reasons: no UFC model is registered, and although capture now supplies live fight prices there is no stored closing price per bout to grade an entry against. Nothing here is a fabricated number, and consensus is never relabelled as CLV.</p>'+
-    (cards||(e?'<div class="empty">Event found but no fights loaded yet for it.</div>':''));
+    (cards||(e?'<div class="empty">Event found but no fights loaded yet for it.</div>':''))+
+    ufcDiagHTML();
 }
+
+/* ============================================================================
+   UFC LIVE FIGHT CENTER — DEEP LAYER
+   ============================================================================
+   Reads the canonical UFC layer written by the `ufc_live_stats` Edge Function
+   (sql/ufc_live_v2.sql):
+
+     ufc.live_event_state        event metadata — venue, location, card counts
+     ufc.live_fight_state        bout metadata — referee, rounds, result, clock
+     ufc.live_fight_round_stats  round 0 = fight total, 1..N = that round
+     ufc.live_fight_snapshots    immutable timestamped timeline
+     ufc.live_pipeline_health    one-row diagnostic view
+
+   PURELY ADDITIVE. Every one of these reads sits in its own try/catch and every
+   renderer returns '' when its data is absent. If the migration has not been
+   run, or the poller has never fired, the Live Fight Center renders EXACTLY
+   what it rendered before this block existed — the shallow ufc.live_fights
+   card. Nothing here can subtract from what already worked.
+
+   THE ONE RULE THIS FILE OBEYS EVERYWHERE: a number that was not published is
+   drawn as a dash, never as a zero, and anything EdgeDesk computes itself is
+   labelled as EdgeDesk-derived on the same screen as the number.
+   ============================================================================ */
+UFC.deep = {ev:null, fights:{}, rounds:{}, snaps:{}, health:null, at:0, ok:null, why:''};
+UFC.liveOpen = {};
+UFC.market = {byName:{}, at:0, ok:null};
+
+/* ---- reads -------------------------------------------------------------- */
+async function ufcDeepFetchEvent(eventId){
+  var out={ev:null,fights:[]};
+  out.ev=(await sbGetUfc('live_event_state?select=event_id,name,short_name,status,status_detail,start_time,venue,location,source,source_url,fights_total,fights_completed,fights_active,current_fight_id,updated_at&event_id=eq.'+encodeURIComponent(eventId)+'&limit=1'))[0]||null;
+  out.fights=await sbGetUfc('live_fight_state?select=fight_id,event_id,card_segment,fight_order,is_main,is_title,weight_class,scheduled_rounds,referee,status,status_detail,round,clock,clock_seconds,elapsed_seconds,red_fighter_id,red_name,blue_fighter_id,blue_name,winner_corner,winner_fighter_id,method,method_detail,decision_type,end_round,end_time,red_win_prob,blue_win_prob,stats_available,source,source_timestamp,source_freshness_seconds,updated_at&event_id=eq.'+encodeURIComponent(eventId)+'&order=fight_order.asc.nullslast&limit=40');
+  return out;
+}
+async function ufcRoundsFetch(fightId){
+  return await sbGetUfc('live_fight_round_stats?select=*&fight_id=eq.'+encodeURIComponent(fightId)+'&order=round.asc,corner.asc&limit=40');
+}
+async function ufcSnapsFetch(fightId){
+  /* oldest-first so the timeline reads left to right. Capped: a five-round war
+     produces a few hundred state changes, not thousands, and a cap keeps one
+     runaway fight from stalling the tab. */
+  return await sbGetUfc('live_fight_snapshots?select=corner,round,captured_at,clock,elapsed_seconds,status,sig_strikes_landed,sig_strikes_attempted,total_strikes_landed,takedowns_landed,takedowns_attempted,control_seconds,knockdowns,submission_attempts&fight_id=eq.'+encodeURIComponent(fightId)+'&order=captured_at.asc&limit=400');
+}
+
+/* Market context. READ ONLY, from the existing signals table. EdgeDesk's odds
+   engine already owns opening price, current price, sharp fair, edge and tick
+   history; this joins to that work and recomputes none of it. */
+async function ufcMarketFetch(){
+  if(UFC.market.at&&(Date.now()-UFC.market.at)<120000)return;
+  try{
+    var from=new Date(Date.now()-6*3600000).toISOString();
+    var to=new Date(Date.now()+8*86400000).toISOString();
+    var rows=await sbGet('signals?select=event_id,sport_key,sport_title,market,selection,commence_time,home_team,away_team,best_dec,best_book,first_best_dec,first_seen_at,sharp_fair,consensus_fair,edge,n_books,has_sharp,last_seen_at,'+BOARD_FLAG_COLS+'&sport_key=eq.mma_mixed_martial_arts&market=eq.h2h&commence_time=gte.'+from+'&commence_time=lte.'+to+'&order=commence_time.asc&limit=500');
+    var ix={};
+    (rows||[]).forEach(function(r){
+      var k=ufcNormName(r.selection);
+      if(!k)return;
+      /* keep the freshest quote per fighter */
+      if(!ix[k]||String(r.last_seen_at||'')>String(ix[k].last_seen_at||''))ix[k]=r;
+    });
+    UFC.market.byName=ix;UFC.market.ok=true;UFC.market.at=Date.now();
+  }catch(e){UFC.market.ok=false;UFC.market.at=Date.now();}
+}
+
+/* Same normalization the Edge Function uses to link a feed name to a fighter.
+   Kept identical on purpose: if the two disagree, a bout matches a signal on
+   the server and not in the browser, and the market block silently empties. */
+function ufcNormName(n){
+  return String(n==null?'':n).normalize('NFD').replace(/[̀-ͯ]/g,'')
+    .toLowerCase().replace(/\b(jr|sr|ii|iii|iv)\b/g,' ')
+    .replace(/[^a-z0-9]+/g,' ').trim().replace(/\s+/g,' ');
+}
+
+/* ---- formatting --------------------------------------------------------- */
+var UFC_DASH='—';
+function ufcNum(v){return (v==null||!isFinite(+v))?UFC_DASH:String(+v);}
+function ufcPairTxt(l,a){
+  if(l==null&&a==null)return UFC_DASH;
+  if(l!=null&&a==null)return String(l);
+  if(l==null&&a!=null)return UFC_DASH+'/'+a;
+  return l+'/'+a;
+}
+function ufcAccTxt(l,a){
+  if(l==null||a==null||+a<=0)return UFC_DASH;
+  return Math.round(+l/+a*100)+'%';
+}
+function ufcTimeTxt(s){
+  if(s==null||!isFinite(+s))return UFC_DASH;
+  var n=Math.max(0,Math.round(+s));
+  return Math.floor(n/60)+':'+('0'+(n%60)).slice(-2);
+}
+/* a value present on one side and absent on the other must not crown a leader:
+   unknown is not "less than". Mirrors the existing ufcLiveFightCard stat(). */
+function ufcLead(a,b){
+  if(a==null||b==null)return '';
+  if(+a>+b)return 'a';
+  if(+b>+a)return 'b';
+  return '';
+}
+
+/* ---- the scorecard ------------------------------------------------------ */
+function ufcScRow(label,ra,ba,lead,hint){
+  var lc=(lead==='a')?'#e0533a':'', bc=(lead==='b')?'#5d8def':'';
+  return '<div class="ufc-scrow">'+
+    '<span class="ufc-scv" style="text-align:right;'+(lc?'color:'+lc+';font-weight:700':'')+'">'+ra+'</span>'+
+    '<span class="ufc-scl"'+(hint?(' title="'+rsEsc(hint)+'"'):'')+'>'+stEsc(label)+'</span>'+
+    '<span class="ufc-scv" style="text-align:left;'+(bc?'color:'+bc+';font-weight:700':'')+'">'+ba+'</span></div>';
+}
+
+/* One block of statistics for one round (or the fight total). Every row is
+   drawn from stored numbers; a row whose source published nothing shows dashes
+   on both sides rather than being hidden, so a reader can tell "this feed does
+   not carry leg strikes" from "no leg strikes were thrown". */
+function ufcStatBlockHTML(r,b){
+  r=r||{};b=b||{};
+  function row(label,f,hint){
+    return ufcScRow(label,ufcNum(r[f]),ufcNum(b[f]),ufcLead(r[f],b[f]),hint);
+  }
+  function pair(label,base,hint){
+    var rl=r[base+'_landed'],ra=r[base+'_attempted'],bl=b[base+'_landed'],ba=b[base+'_attempted'];
+    var rt=ufcPairTxt(rl,ra),bt=ufcPairTxt(bl,ba);
+    var racc=ufcAccTxt(rl,ra),bacc=ufcAccTxt(bl,ba);
+    return '<div class="ufc-scrow">'+
+      '<span class="ufc-scv" style="text-align:right;'+(ufcLead(rl,bl)==='a'?'color:#e0533a;font-weight:700':'')+'">'+rt+
+        (racc!==UFC_DASH?' <span class="ufc-acc">'+racc+'</span>':'')+'</span>'+
+      '<span class="ufc-scl"'+(hint?(' title="'+rsEsc(hint)+'"'):'')+'>'+stEsc(label)+'</span>'+
+      '<span class="ufc-scv" style="text-align:left;'+(ufcLead(rl,bl)==='b'?'color:#5d8def;font-weight:700':'')+'">'+bt+
+        (bacc!==UFC_DASH?' <span class="ufc-acc">'+bacc+'</span>':'')+'</span></div>';
+  }
+  return pair('Sig. strikes','sig_strikes','Landed / attempted, with accuracy. As published by the live source.')+
+    pair('Total strikes','total_strikes')+
+    '<div class="ufc-scsub">Target</div>'+
+    pair('Head','head_strikes')+pair('Body','body_strikes')+pair('Leg','leg_strikes')+
+    '<div class="ufc-scsub">Position</div>'+
+    pair('Distance','distance_strikes')+pair('Clinch','clinch_strikes')+pair('Ground','ground_strikes')+
+    '<div class="ufc-scsub">Grappling</div>'+
+    pair('Takedowns','takedowns')+
+    ufcScRow('Control',ufcTimeTxt(r.control_seconds),ufcTimeTxt(b.control_seconds),ufcLead(r.control_seconds,b.control_seconds),'Control time as published by the source.')+
+    row('Sub attempts','submission_attempts')+
+    row('Reversals','reversals')+
+    row('Knockdowns','knockdowns');
+}
+
+/* Round-by-round. Round 0 is the fight total by schema contract, so it is
+   pulled out and shown as TOTAL rather than as "round 0". */
+function ufcRoundsHTML(fightId){
+  var rows=UFC.deep.rounds[fightId];
+  if(rows===undefined)return '<div class="fi-empty" style="margin-top:10px">Loading round statistics…</div>';
+  if(rows===null)return '<div class="fi-empty" style="margin-top:10px">Round statistics could not be read. The <span class="mono">ufc.live_fight_round_stats</span> table did not answer — run <span class="mono">sql/ufc_live_v2.sql</span> if it has not been created.</div>';
+  if(!rows.length)return '<div class="fi-empty" style="margin-top:10px">No round statistics stored for this bout yet. Blank means the live source has not published them — not that nothing happened.</div>';
+
+  var byRound={};
+  rows.forEach(function(x){
+    var k=String(x.round);
+    byRound[k]=byRound[k]||{};
+    byRound[k][x.corner]=x;
+  });
+  var nums=Object.keys(byRound).map(Number).sort(function(a,b){return a-b;});
+  var out='';
+  var total=byRound['0'];
+  if(total){
+    out+='<div class="ufc-scblk"><div class="ufc-schd">Fight total</div>'+
+      ufcStatBlockHTML(total.red,total.blue)+'</div>';
+  }
+  nums.filter(function(n){return n>0;}).forEach(function(n){
+    var g=byRound[String(n)];
+    var st=(g.red&&g.red.round_status)||(g.blue&&g.blue.round_status)||'';
+    var tag=st?(' <span class="ufc-schs">'+stEsc(st)+'</span>'):'';
+    out+='<div class="ufc-scblk"><div class="ufc-schd">Round '+n+tag+'</div>'+
+      ufcStatBlockHTML(g.red,g.blue)+'</div>';
+  });
+  var cum=rows.some(function(x){return x.round>0&&x.is_cumulative;});
+  return out+'<div class="fi-foot">Per-round rows are that round only'+(cum?' — except where the source publishes running totals, which are stored and flagged as cumulative':'')+'. A dash means the source published no value for that field; it does not mean zero.</div>';
+}
+
+/* ---- EdgeDesk-derived analytics ----------------------------------------
+   Everything below is COMPUTED BY EDGEDESK from the stored numbers, and every
+   one of these renderers says so on screen. None of it is an official UFC
+   figure and none of it is a scorecard: the UFC's own judging is not published
+   live, so EdgeDesk does not imitate it. */
+
+function ufcDerivedTag(){
+  return '<span class="ufc-derived">EdgeDesk-derived</span>';
+}
+
+/* Momentum = what actually changed, over the window the snapshots cover. Not a
+   score, not a prediction — a difference between two observed states, which is
+   the only thing an immutable timeline can honestly support. */
+function ufcMomentumHTML(fightId,g){
+  var snaps=UFC.deep.snaps[fightId];
+  if(!snaps||!snaps.length)return '';
+  var cur=(g&&g.round!=null)?+g.round:null;
+  var pick=snaps.filter(function(s){return cur==null||+s.round===cur;});
+  if(pick.length<2)pick=snaps;
+  if(pick.length<2)return '';
+
+  function side(corner){
+    var rows=pick.filter(function(s){return s.corner===corner;});
+    if(rows.length<2)return null;
+    var a=rows[0],b=rows[rows.length-1];
+    function d(f){
+      if(a[f]==null||b[f]==null)return null;
+      return +b[f]-+a[f];
+    }
+    return {sig:d('sig_strikes_landed'),td:d('takedowns_landed'),
+      ctrl:d('control_seconds'),kd:d('knockdowns'),sub:d('submission_attempts'),
+      from:a.captured_at,to:b.captured_at};
+  }
+  var R=side('red'),B=side('blue');
+  if(!R&&!B)return '';
+  function bits(x){
+    if(!x)return '<span class="mut">'+UFC_DASH+'</span>';
+    var out=[];
+    if(x.sig)out.push((x.sig>0?'+':'')+x.sig+' sig');
+    if(x.td)out.push((x.td>0?'+':'')+x.td+' TD');
+    if(x.ctrl)out.push((x.ctrl>0?'+':'')+ufcTimeTxt(x.ctrl)+' control');
+    if(x.kd)out.push((x.kd>0?'+':'')+x.kd+' KD');
+    if(x.sub)out.push((x.sub>0?'+':'')+x.sub+' sub att');
+    return out.length?stEsc(out.join(' · ')):'<span class="mut">no change</span>';
+  }
+  var win=(R&&R.from)||(B&&B.from);
+  var winTo=(R&&R.to)||(B&&B.to);
+  var span='';
+  if(win&&winTo){
+    var secs=Math.max(0,Math.round((new Date(winTo)-new Date(win))/1000));
+    span=' over the last '+ufcTimeTxt(secs)+' of captured state';
+  }
+  return '<div class="ufc-sec"><div class="ufc-sech">Live momentum '+ufcDerivedTag()+'</div>'+
+    '<div class="ufc-mom"><span style="color:#e0533a">'+bits(R)+'</span>'+
+      '<span class="ufc-scl">change'+(cur!=null?' in R'+cur:'')+'</span>'+
+      '<span style="color:#5d8def">'+bits(B)+'</span></div>'+
+    '<div class="fi-foot">Differences between stored snapshots'+span+'. This is observed change, not a judging score — EdgeDesk does not publish a round score because no live official scoring source exists.</div></div>';
+}
+
+/* Pace against the fighter's own career baseline. The baseline is UFCStats
+   career microstats already loaded by the research module; the live rate is
+   arithmetic on stored live numbers. Both sides are real; the COMPARISON is
+   EdgeDesk's, and is labelled. */
+function ufcPaceHTML(g){
+  var rows=UFC.deep.rounds[g.fight_id];
+  if(!rows||!rows.length)return '';
+  var tot={};
+  rows.forEach(function(x){if(+x.round===0)tot[x.corner]=x;});
+  if(!tot.red&&!tot.blue)return '';
+  var el=(g.elapsed_seconds!=null)?+g.elapsed_seconds:null;
+  if(!el||el<60)return '';   /* a rate over a few seconds is noise, not a read */
+
+  function line(corner,fid,name,col){
+    var t=tot[corner];if(!t)return '';
+    var f=UFC.byId[fid];var c=(f&&f.c)||null;
+    var mins=el/60;
+    var liveSl=(t.sig_strikes_landed!=null)?(+t.sig_strikes_landed/mins):null;
+    var baseSl=(c&&c.slpm!=null)?+c.slpm:null;
+    var liveTd=(t.takedowns_landed!=null)?(+t.takedowns_landed/mins*15):null;
+    var baseTd=(c&&c.takedown_avg!=null)?+c.takedown_avg:null;
+    function cmp(live,base,unit,label){
+      if(live==null)return '<div class="gd-line"><span class="l">'+label+'</span><span class="v mut">'+UFC_DASH+'</span></div>';
+      var lv=live.toFixed(2)+unit;
+      if(base==null)return '<div class="gd-line"><span class="l">'+label+'</span><span class="v mono">'+lv+' <span class="mut">(no career baseline)</span></span></div>';
+      var pct=base>0?Math.round((live-base)/base*100):null;
+      var cls=(pct==null)?'mut':(pct>=15?'up':(pct<=-15?'dn':'mut'));
+      var arrow=(pct==null)?'':((pct>0?'+':'')+pct+'%');
+      return '<div class="gd-line"><span class="l">'+label+'</span><span class="v mono">'+lv+
+        ' <span class="'+cls+'">vs '+base.toFixed(2)+unit+' career '+arrow+'</span></span></div>';
+    }
+    return '<div class="ufc-pace"><div class="ufc-pacen" style="color:'+col+'">'+stEsc(name||corner)+'</div>'+
+      cmp(liveSl,baseSl,'','Sig. strikes / min')+
+      cmp(liveTd,baseTd,'','Takedowns / 15 min')+'</div>';
+  }
+  var a=line('red',g.red_fighter_id,g.red_name,'#e0533a');
+  var b=line('blue',g.blue_fighter_id,g.blue_name,'#5d8def');
+  if(!a&&!b)return '';
+  return '<div class="ufc-sec"><div class="ufc-sech">Pace vs career baseline '+ufcDerivedTag()+'</div>'+
+    '<div class="ufc-pacew">'+a+b+'</div>'+
+    '<div class="fi-foot">Live rate is this bout’s stored count over '+ufcTimeTxt(el)+' of elapsed fight time. Career baselines are UFCStats career averages from <span class="mono">ufc.fighter_career_stats</span>. A fighter with no career row shows no baseline rather than a substituted one.</div></div>';
+}
+
+/* Cumulative sig-strike timeline, drawn from the immutable snapshot table.
+   This is the "what did the fight look like at 8:42:31" mechanism made
+   visible. Pure SVG, no library, no external request. */
+function ufcTimelineHTML(fightId){
+  var snaps=UFC.deep.snaps[fightId];
+  if(snaps===undefined)return '';
+  if(snaps===null||!snaps.length)return '';
+  var pts={red:[],blue:[]};
+  snaps.forEach(function(s){
+    if(s.sig_strikes_landed==null)return;
+    var t=new Date(s.captured_at).getTime();
+    if(!isFinite(t))return;
+    if(pts[s.corner])pts[s.corner].push([t,+s.sig_strikes_landed]);
+  });
+  var all=pts.red.concat(pts.blue);
+  if(all.length<3)return '';
+  var t0=Math.min.apply(null,all.map(function(p){return p[0];}));
+  var t1=Math.max.apply(null,all.map(function(p){return p[0];}));
+  var vmax=Math.max.apply(null,all.map(function(p){return p[1];}))||1;
+  if(t1<=t0)return '';
+  var W=280,H=54;
+  function path(arr,col){
+    if(arr.length<2)return '';
+    var d=arr.map(function(p,i){
+      var x=((p[0]-t0)/(t1-t0))*W, y=H-((p[1]/vmax)*(H-6))-3;
+      return (i?'L':'M')+x.toFixed(1)+' '+y.toFixed(1);
+    }).join(' ');
+    return '<path d="'+d+'" fill="none" stroke="'+col+'" stroke-width="1.8" stroke-linejoin="round"/>';
+  }
+  return '<div class="ufc-sec"><div class="ufc-sech">Snapshot timeline '+ufcDerivedTag()+'</div>'+
+    '<div class="ufc-spark"><svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" style="width:100%;height:'+H+'px;display:block">'+
+      path(pts.red,'#e0533a')+path(pts.blue,'#5d8def')+'</svg></div>'+
+    '<div class="ufc-sparkl"><span style="color:#e0533a">red</span><span class="mut">cumulative sig. strikes landed · '+all.length+' stored states</span><span style="color:#5d8def">blue</span></div>'+
+    '<div class="fi-foot">Each point is a moment the numbers actually changed, from <span class="mono">ufc.live_fight_snapshots</span>. Snapshots are immutable and deduplicated, so the fight can be reconstructed at any earlier point.</div></div>';
+}
+
+/* ---- market context ----------------------------------------------------
+   Consumes the EXISTING odds pipeline. Recomputes nothing: opening price,
+   current price, sharp fair, edge and the flag all come from `signals` exactly
+   as capture wrote them, and are rendered with the same helpers the board uses
+   so a price cannot read differently in two places. */
+function ufcMarketHTML(g){
+  if(UFC.market.ok===false)
+    return '<div class="ufc-sec"><div class="ufc-sech">Market</div><div class="fi-empty">The signals table could not be read for this session, so no market context is shown.</div></div>';
+  var R=UFC.market.byName[ufcNormName(g.red_name)];
+  var B=UFC.market.byName[ufcNormName(g.blue_name)];
+  if(!R&&!B){
+    return '<div class="ufc-sec"><div class="ufc-sech">Market</div>'+
+      '<div class="fi-empty">No MMA moneyline signal is stored for either fighter in the current window. The odds capture prices the board on its own cron — a bout with no stored quote shows nothing rather than a placeholder price.</div></div>';
+  }
+  function col(e,name,c){
+    if(!e)return '<div class="ufc-mkc"><div class="ufc-pacen" style="color:'+c+'">'+stEsc(name||UFC_DASH)+'</div>'+
+      '<div class="fi-empty" style="padding:8px 9px">No stored quote.</div></div>';
+    var GEok=(typeof GE!=='undefined'&&GE&&typeof GE.decToAm==='function');
+    var open=(e.first_best_dec&&GEok)?GE.decToAm(e.first_best_dec):null;
+    var cur=(e.best_dec&&GEok)?GE.decToAm(e.best_dec):null;
+    var mv=(open!=null&&cur!=null)?(cur-open):null;
+    var fair=(e.sharp_fair!=null&&GEok)?GE.decToAm(1/Math.max(0.0001,e.sharp_fair)):null;
+    var anc=(typeof anchorOf==='function')?anchorOf(e,'live'):null;
+    var flagged=(typeof isFlaggedSignal==='function')?isFlaggedSignal(e):!!e.flagged_at;
+    function am(v){return v==null?UFC_DASH:((v>0?'+':'')+v);}
+    return '<div class="ufc-mkc"><div class="ufc-pacen" style="color:'+c+'">'+stEsc(name||UFC_DASH)+'</div>'+
+      '<div class="gd-line"><span class="l">Opened</span><span class="v mono">'+am(open)+'</span></div>'+
+      '<div class="gd-line"><span class="l">Current</span><span class="v mono">'+am(cur)+(e.best_book?' <span class="mut">'+stEsc(e.best_book)+'</span>':'')+'</span></div>'+
+      '<div class="gd-line"><span class="l">Movement</span><span class="v mono '+(mv==null?'mut':(mv>0?'up':(mv<0?'dn':'mut')))+'">'+(mv==null?UFC_DASH:((mv>0?'+':'')+mv+' cents'))+'</span></div>'+
+      '<div class="gd-line"><span class="l">Sharp fair</span><span class="v mono">'+am(fair)+'</span></div>'+
+      '<div class="gd-line"><span class="l">Edge</span><span class="v mono">'+(e.edge==null?UFC_DASH:(+e.edge*100).toFixed(2)+'%')+'</span></div>'+
+      '<div class="gd-line"><span class="l">Books</span><span class="v mono">'+(e.n_books==null?UFC_DASH:e.n_books)+'</span></div>'+
+      '<div class="gd-line"><span class="l">Signal</span><span class="v">'+(flagged?'<span class="pos">flagged</span>':'<span class="mut">stored, not flagged</span>')+'</span></div>'+
+      (anc?'<div class="gd-line"><span class="l">Anchor</span><span class="v mut" title="'+rsEsc(anc.why)+'">'+stEsc(anc.short)+'</span></div>':'')+
+      '</div>';
+  }
+  return '<div class="ufc-sec"><div class="ufc-sech">Market context</div>'+
+    '<div class="ufc-mkw">'+col(R,g.red_name,'#e0533a')+col(B,g.blue_name,'#5d8def')+'</div>'+
+    '<div class="fi-foot">Read straight from <span class="mono">signals</span> as the odds capture wrote it — opening price, current price, sharp fair, edge and the flag are not recomputed here. Movement is current minus opening in American cents. Prices are the best book quote across the captured books, not Pinnacle unless the anchor says so. Matched to this bout by fighter name; an unmatched fighter shows no quote rather than a nearby one.</div></div>';
+}
+
+/* ---- freshness ---------------------------------------------------------- */
+function ufcFreshHTML(g){
+  var bits=[];
+  if(g.updated_at){
+    var w=new Date(g.updated_at).getTime();
+    if(isFinite(w))bits.push('row written '+ago(w));
+  }
+  if(g.source_freshness_seconds!=null){
+    bits.push('source state '+ufcTimeTxt(g.source_freshness_seconds)+' old');
+  }
+  if(g.source)bits.push('via '+stEsc(g.source));
+  if(!bits.length)return '';
+  /* A poller writing happily against a frozen upstream has a moving write stamp
+     and a stationary source stamp. Showing BOTH is the only way that is
+     visible; showing one would make a dead feed look alive. */
+  return '<div class="ufc-fresh">'+bits.join(' · ')+'</div>';
+}
+
+/* ---- the deep panel ----------------------------------------------------- */
+window.ufcToggleDeep=async function(fid){
+  UFC.liveOpen[fid]=!UFC.liveOpen[fid];
+  if(UFC.liveOpen[fid]){
+    if(UFC.deep.rounds[fid]===undefined){
+      try{UFC.deep.rounds[fid]=await ufcRoundsFetch(fid)||[];}catch(e){UFC.deep.rounds[fid]=null;}
+    }
+    if(UFC.deep.snaps[fid]===undefined){
+      try{UFC.deep.snaps[fid]=await ufcSnapsFetch(fid)||[];}catch(e){UFC.deep.snaps[fid]=null;}
+    }
+    ufcMarketFetch().then(function(){ufcRepaintLive();});
+  }
+  ufcRepaintLive();
+};
+function ufcRepaintLive(){
+  if(UFC.mode!=='live')return;
+  var body=$('ufcBody');if(!body)return;
+  body.innerHTML=ufcLiveShellHTML(UFC._lastEvent||null,UFC._lastFights||[],UFC._lastMode||'none');
+}
+
+/* Appended to the bottom of the existing live card. Returns '' when there is no
+   deep row for this bout, which is what makes this whole file additive: with no
+   migration and no poller, every card renders exactly as it did before. */
+function ufcDeepPanelHTML(g){
+  var d=UFC.deep.fights[g.fight_id];
+  if(!d)return '';
+  var open=!!UFC.liveOpen[g.fight_id];
+  var meta=[];
+  if(d.weight_class&&!g.weight_class)meta.push(stEsc(d.weight_class));
+  if(d.scheduled_rounds!=null)meta.push(d.scheduled_rounds+' rounds');
+  if(d.referee)meta.push('ref '+stEsc(d.referee));
+  if(d.card_segment)meta.push(stEsc(d.card_segment));
+  if(d.is_title)meta.push('<span class="st-pos">TITLE</span>');
+
+  var res='';
+  if(d.method||d.end_round!=null){
+    var m=[d.method,d.decision_type&&d.decision_type!==d.method?d.decision_type:'',
+      (d.end_round!=null?'R'+d.end_round:''),(d.end_time||'')].filter(Boolean).join(' · ');
+    res='<div class="ufc-res">'+stEsc(m)+'</div>';
+  }
+  var live=(d.status==='in'||d.status==='live');
+  var clock=live?('<span class="ufc-clock">R'+rsEsc(''+(d.round||'?'))+(d.clock?(' · '+rsEsc(''+d.clock)):'')+'</span>'):'';
+
+  var head='<div class="ufc-dhd" onclick="ufcToggleDeep(decodeURIComponent(\''+encodeURIComponent(''+g.fight_id)+'\'))">'+
+    '<span class="ufc-dtag">'+(open?'▾':'▸')+' Fight centre</span>'+
+    (meta.length?'<span class="ufc-dmeta">'+meta.join(' · ')+'</span>':'')+clock+'</div>';
+
+  if(!open){
+    return '<div class="ufc-deep">'+head+res+
+      (d.stats_available===false?'<div class="ufc-nostat">The source publishes no live statistics for this bout yet.</div>':'')+
+      ufcFreshHTML(d)+'</div>';
+  }
+  return '<div class="ufc-deep open">'+head+res+
+    ufcRoundsHTML(g.fight_id)+
+    ufcMomentumHTML(g.fight_id,d)+
+    ufcPaceHTML(d)+
+    ufcTimelineHTML(g.fight_id)+
+    ufcMarketHTML(d)+
+    ufcFreshHTML(d)+'</div>';
+}
+
+/* ---- event header extras ------------------------------------------------ */
+function ufcEventMetaHTML(e){
+  if(!e)return '';
+  var d=UFC.deep.ev;
+  if(!d)return '';
+  var bits=[];
+  if(d.venue)bits.push(stEsc(d.venue));
+  if(d.location)bits.push(stEsc(d.location));
+  if(d.fights_total!=null){
+    var done=(d.fights_completed!=null?d.fights_completed:0);
+    bits.push(done+' of '+d.fights_total+' bouts complete');
+  }
+  if(d.fights_active)bits.push('<span style="color:#e0533a">'+d.fights_active+' live now</span>');
+  if(!bits.length)return '';
+  return '<div class="ufc-evmeta">'+bits.join(' · ')+'</div>';
+}
+
+/* ---- diagnostics -------------------------------------------------------
+   The five questions that look identical on a blank screen and have five
+   different fixes. Collapsed by default; it is a tool, not a banner. */
+function ufcDiagHTML(){
+  var h=UFC.deep.health;
+  if(UFC.deep.ok===false){
+    return '<details class="rs-prov" style="margin-top:12px"><summary><b>Live pipeline</b> · not installed</summary>'+
+      '<div style="padding:10px 12px;font-size:11.5px;color:var(--dim);line-height:1.6">'+
+      'The deep UFC tables did not answer. Run <span class="mono">sql/ufc_live_v2.sql</span> and deploy the '+
+      '<span class="mono">ufc_live_stats</span> function. Until then the Fight Centre shows the shallow live card only, '+
+      'which is exactly what it showed before this layer existed — nothing has been taken away.'+
+      (UFC.deep.why?'<div class="mono" style="margin-top:6px;color:var(--faint)">'+stEsc(UFC.deep.why)+'</div>':'')+
+      '</div></details>';
+  }
+  if(!h)return '';
+  var lines=[];
+  var age=h.seconds_since_last_run;
+  lines.push(['Last capture run',(age==null?UFC_DASH:(age<90?age+'s ago':ufcTimeTxt(age)+' ago'))+' · '+stEsc(h.last_run_status||UFC_DASH)]);
+  lines.push(['Provider',stEsc(h.provider||UFC_DASH)+(h.provider_verified===false?' <span class="neg">(adapter parsed nothing)</span>':(h.provider_verified?' <span class="pos">(parsing)</span>':''))]);
+  lines.push(['Events discovered / active',ufcNum(h.events_discovered)+' / '+ufcNum(h.events_active)]);
+  lines.push(['Fights discovered / live',ufcNum(h.fights_discovered)+' / '+ufcNum(h.fights_live_now)]);
+  lines.push(['Live fights WITH statistics',ufcNum(h.fights_live_with_stats)]);
+  lines.push(['Snapshots written / deduped',ufcNum(h.snapshots_written)+' / '+ufcNum(h.snapshots_skipped_dup)]);
+  lines.push(['API requests / failures',ufcNum(h.api_requests)+' / '+ufcNum(h.api_failures)+(h.rate_limited?(' · '+h.rate_limited+' rate-limited'):'')]);
+  if(h.db_write_failures)lines.push(['Database write failures','<span class="neg">'+h.db_write_failures+'</span>']);
+  var um=h.unmapped_stat_keys&&Object.keys(h.unmapped_stat_keys).length?Object.keys(h.unmapped_stat_keys).slice(0,8).join(', '):null;
+  if(um)lines.push(['Unmapped source fields','<span class="mono" style="color:var(--warn)">'+stEsc(um)+'</span>']);
+
+  /* the verdict, stated rather than left to be inferred from the numbers */
+  var verdict;
+  if(h.provider_verified===false&&h.api_failures>0)verdict='The source is failing — requests are erroring. This is not a quiet night.';
+  else if(h.provider_verified===false)verdict='The provider answered but the adapter parsed no events. The response shape has probably changed.';
+  else if(!h.events_active)verdict='No UFC event is inside the capture window right now. Nothing is wrong.';
+  else if(!h.fights_live_now)verdict='There is an event, but no bout is currently live.';
+  else if(!h.fights_live_with_stats)verdict='A bout is live, but the source publishes no statistics for it yet.';
+  else verdict='Event live, statistics flowing. If this screen still looks empty, the UI is failing to consume valid data.';
+
+  return '<details class="rs-prov" style="margin-top:12px"><summary><b>Live pipeline diagnostics</b> · '+stEsc(verdict)+'</summary>'+
+    '<div style="padding:8px 12px 12px">'+
+    lines.map(function(l){return '<div class="gd-line"><span class="l">'+l[0]+'</span><span class="v mono">'+l[1]+'</span></div>';}).join('')+
+    '<div class="fi-foot">Read from <span class="mono">ufc.live_pipeline_health</span>. '+
+    (um?'Unmapped fields are source keys the normalizer does not recognise — they are stored nowhere and displayed nowhere; add them to STAT_ALIASES in the ufc_live_stats function to light them up. ':'')+
+    'Snapshots are deduplicated by content, so a high dedup count during a live fight is correct: it means the numbers have not moved.</div></div></details>';
+}
+
+/* ---- deep-layer loaders ------------------------------------------------- */
+/* Build a shallow-shaped fight row from a deep row, so the EXISTING card
+   renderer can draw a bout discovered only by ufc_live_stats. This is what
+   lets the Fight Centre work with either poller deployed, or both. */
+function ufcFxFromDeep(rows){
+  return (rows||[]).map(function(d){
+    return {fight_id:d.fight_id,red_name:d.red_name,blue_name:d.blue_name,
+      red_fighter_id:d.red_fighter_id,blue_fighter_id:d.blue_fighter_id,
+      status:d.status,round:d.round,clock:d.clock,
+      red_strikes:null,blue_strikes:null,red_td:null,blue_td:null,
+      red_kd:null,blue_kd:null,red_win_prob:d.red_win_prob,
+      weight_class:d.weight_class,is_main:d.is_main,red_odds:null,blue_odds:null};
+  });
+}
+/* Fill the summary counts on the card from round-0 (fight total) rows, in ONE
+   query for the whole card rather than one per bout.
+
+   PRECEDENCE, and it matters: only a NULL is filled. ufc.live_fights is written
+   by the existing ufc_live poller and remains the source of truth for every
+   field it carries, so this can never overwrite a value that poller wrote. */
+async function ufcFillTotals(ids){
+  if(!ids||!ids.length)return;
+  try{
+    var list=ids.slice(0,30).map(function(i){return '%22'+encodeURIComponent(String(i))+'%22';}).join(',');
+    var rows=await sbGetUfc('live_fight_round_stats?select=fight_id,corner,sig_strikes_landed,takedowns_landed,knockdowns&round=eq.0&fight_id=in.('+list+')&limit=80');
+    var by={};
+    (rows||[]).forEach(function(r){by[r.fight_id]=by[r.fight_id]||{};by[r.fight_id][r.corner]=r;});
+    (UFC._lastFights||[]).forEach(function(g){
+      var t=by[g.fight_id];if(!t)return;
+      if(g.red_strikes==null&&t.red)g.red_strikes=t.red.sig_strikes_landed;
+      if(g.blue_strikes==null&&t.blue)g.blue_strikes=t.blue.sig_strikes_landed;
+      if(g.red_td==null&&t.red)g.red_td=t.red.takedowns_landed;
+      if(g.blue_td==null&&t.blue)g.blue_td=t.blue.takedowns_landed;
+      if(g.red_kd==null&&t.red)g.red_kd=t.red.knockdowns;
+      if(g.blue_kd==null&&t.blue)g.blue_kd=t.blue.knockdowns;
+    });
+  }catch(_){}
+}
+async function ufcDeepLoadHealth(){
+  try{UFC.deep.health=(await sbGetUfc('live_pipeline_health?select=*&limit=1'))[0]||null;}
+  catch(e){UFC.deep.health=null;}
+}
+async function ufcDeepLoad(eventId,fx){
+  UFC._lastFights=fx||[];
+  try{
+    var d=await ufcDeepFetchEvent(eventId);
+    UFC.deep.ev=d.ev;UFC.deep.fights={};
+    (d.fights||[]).forEach(function(x){UFC.deep.fights[x.fight_id]=x;});
+    UFC.deep.ok=true;UFC.deep.why='';
+    if((!fx||!fx.length)&&(d.fights||[]).length)UFC._lastFights=ufcFxFromDeep(d.fights);
+    await ufcFillTotals(Object.keys(UFC.deep.fights));
+  }catch(e){
+    /* The deep tables are optional. If they are not installed the Fight Centre
+       degrades to exactly the card it drew before, and the reason is recorded
+       for the diagnostics block rather than shown as an outage. */
+    UFC.deep.ok=false;UFC.deep.why=(e&&e.message)?String(e.message):'';
+    UFC.deep.fights={};UFC.deep.ev=null;
+  }
+  await ufcDeepLoadHealth();
+  return UFC._lastFights;
+}
+
 
 renderLedger();loadEdges();
 /* refresh buttons — wired in JS (not inline) with a visible spin so they never feel dead.
