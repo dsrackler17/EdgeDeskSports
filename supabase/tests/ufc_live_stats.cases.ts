@@ -555,5 +555,41 @@ export function defineCases(core: any): Case[] {
     a.eq((await mapLimit([], 4, async () => 1)).length, 0);
   });
 
+  T("a mapLimit worker that throws does not take down its siblings", async (a) => {
+    // this is the shape persistBout relies on: one bad bout costs one bout
+    const out = await mapLimit([1, 2, 3, 4], 2, async (x: number) => {
+      try { if (x === 2) throw new Error("bad bout"); return x; }
+      catch { return null; }
+    });
+    a.eq(out, [1, null, 3, 4]);
+  });
+
+  /* ── telemetry: a database failure must be RECORDED, not fatal ─────────── */
+  T("DATABASE WRITE FAILURE is counted and explained, and the run continues", (a) => {
+    const t = new Telemetry();
+    t.writeError("snapshot", { message: "timeout", code: "57014", hint: "retry" });
+    a.eq(t.db_write_failures, 1);
+    a.ok(t.write_errors[0].includes("snapshot:"));
+    a.ok(t.write_errors[0].includes("timeout"));
+    a.ok(t.write_errors[0].includes("57014"), "the code is the actionable part");
+  });
+
+  T("write errors are capped so one broken table cannot flood the response", (a) => {
+    const t = new Telemetry();
+    for (let i = 0; i < 50; i++) t.writeError("round_stats", { message: "boom " + i });
+    a.eq(t.db_write_failures, 50, "every failure is COUNTED");
+    a.eq(t.write_errors.length, 10, "but only the first few are quoted");
+  });
+
+  T("telemetry aggregates statuses and unmapped keys for the diagnostics", (a) => {
+    const t = new Telemetry();
+    t.status(200); t.status(200); t.status(429);
+    a.eq(t.http_status["200"], 2);
+    a.eq(t.http_status["429"], 1);
+    t.unmappedKeys(["odd_field", "odd_field", "other"]);
+    a.eq(t.unmapped["odd_field"], 2);
+    a.eq(t.unmapped["other"], 1);
+  });
+
   return cases;
 }
