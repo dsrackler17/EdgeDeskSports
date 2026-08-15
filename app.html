@@ -7684,17 +7684,53 @@ window.ufcSetMode=function(m){
   if(m==='live'){loadUFCLive();UFC.liveTimer=setInterval(function(){if(UFC.mode==='live'&&!document.hidden)loadUFCLive();},20000);}
   else renderUFC();
 };
+/* An event the poller never closed out stays at status 'pre'/'in' forever. The
+   old query asked for the OLDEST such row (order=start_time.asc&limit=1), so one
+   stuck card permanently shadowed every newer event and the header still claimed
+   LIVE NOW weeks later. Read recent candidates instead and choose one, then say
+   plainly which case it is — live, upcoming, or a stale row the poller stopped
+   updating. A status column is not evidence about the present on its own. */
+var UFC_LIVE_WINDOW=8*3600*1000;      /* a card runs ~6h; 8h is generous */
+function ufcEventAge(e){var t=e&&e.start_time?new Date(e.start_time).getTime():NaN;return isFinite(t)?(Date.now()-t):NaN;}
+/* how long ago the event started, phrased for the stale banner. Lives here with
+   the other event helpers rather than inside the shell renderer. */
+function ufcStaleAgeLabel(e){
+  var age=ufcEventAge(e);
+  if(!isFinite(age)||age<0)return '';
+  var days=Math.floor(age/86400000);
+  if(days>=1)return ' '+days+' day'+(days===1?'':'s')+' after it started';
+  var hrs=Math.floor(age/3600000);
+  return hrs>=1?(' '+hrs+' hour'+(hrs===1?'':'s')+' after it started'):' shortly after it started';
+}
+function ufcPickEvent(evs){
+  var live=null,next=null,recent=null;
+  (evs||[]).forEach(function(e){
+    var age=ufcEventAge(e);
+    if(!recent)recent=e;                                   /* query is newest-first */
+    if(e.status==='in'&&isFinite(age)&&age>=0&&age<=UFC_LIVE_WINDOW){
+      if(!live||ufcEventAge(live)>age)live=e;
+    }
+    if(e.status==='pre'&&isFinite(age)&&age<=3*3600000){    /* not yet started, or just did */
+      if(!next||ufcEventAge(next)<age)next=e;
+    }
+  });
+  if(live)return {event:live,mode:'live'};
+  if(next)return {event:next,mode:'upcoming'};
+  if(recent)return {event:recent,mode:'stale'};
+  return {event:null,mode:'none'};
+}
 async function loadUFCLive(){
   var body=$('ufcBody');if(!body)return;
   var ev=[],fx=[];
-  try{ev=await sbGetUfc('live_events?select=event_id,name,status,start_time&status=in.(pre,in)&order=start_time.asc&limit=1');}catch(e){
-    body.innerHTML=ufcLiveShellHTML(null,[])+'<div class="empty" style="margin-top:10px">Live source not reachable. Deploy the <b>ufc_live</b> poller and create the live tables (ufc_live.sql). Until then, the Live Center has no event to show.</div>';
+  try{ev=await sbGetUfc('live_events?select=event_id,name,status,start_time&order=start_time.desc&limit=25');}catch(e){
+    body.innerHTML=ufcLiveShellHTML(null,[],'none')+'<div class="empty" style="margin-top:10px">Live source not reachable. Deploy the <b>ufc_live</b> poller and create the live tables (ufc_live.sql). Until then, the Live Center has no event to show.</div>';
     return;
   }
-  if(!ev||!ev.length){body.innerHTML=ufcLiveShellHTML(null,[]);return;}
-  var e=ev[0];
+  var pick=ufcPickEvent(ev);
+  if(!pick.event){body.innerHTML=ufcLiveShellHTML(null,[],'none');return;}
+  var e=pick.event;
   try{fx=await sbGetUfc('live_fights?select=fight_id,red_name,blue_name,red_fighter_id,blue_fighter_id,status,round,clock,red_strikes,blue_strikes,red_td,blue_td,red_kd,blue_kd,red_win_prob,weight_class,is_main,red_odds,blue_odds&event_id=eq.'+encodeURIComponent(e.event_id)+'&order=is_main.desc,fight_id.asc&limit=30');}catch(_){fx=[];}
-  body.innerHTML=ufcLiveShellHTML(e,fx||[]);
+  body.innerHTML=ufcLiveShellHTML(e,fx||[],pick.mode);
   UFC.liveAt=Date.now();
   var lf=$('ufcFresh');if(lf){lf.textContent='live \u00b7 polling every 20s';lf.className='freshness';}
 }
@@ -7841,10 +7877,12 @@ function ufcLiveFightCard(g){
             :(fin?'<span style="background:rgba(255,255,255,.06);color:var(--faint);font-size:11px;padding:3px 9px;border-radius:20px">FINAL</span>':'<span style="background:rgba(93,141,239,.12);color:#5d8def;font-size:11px;padding:3px 9px;border-radius:20px">UPCOMING</span>');
   function stat(l,a,b){
     var an=(a==null?0:+a),bn=(b==null?0:+b);
+    /* a missing value is unknown, not zero: never crown a leader against a blank */
+    var both=(a!=null&&b!=null),aHi=both&&an>bn,bHi=both&&bn>an;
     return '<div style="display:grid;grid-template-columns:1fr auto 1fr;gap:10px;padding:5px 0;font-size:13px;align-items:center">'+
-      '<span style="text-align:right;font-weight:'+(an>bn?'700':'400')+';color:'+(an>bn?'#e0533a':'inherit')+'">'+(a==null?'\u2014':a)+'</span>'+
+      '<span style="text-align:right;font-weight:'+(aHi?'700':'400')+';color:'+(aHi?'#e0533a':'inherit')+'">'+(a==null?'\u2014':a)+'</span>'+
       '<span style="color:var(--faint);font-size:10px;text-align:center;min-width:78px">'+l+'</span>'+
-      '<span style="text-align:left;font-weight:'+(bn>an?'700':'400')+';color:'+(bn>an?'#5d8def':'inherit')+'">'+(b==null?'\u2014':b)+'</span></div>';
+      '<span style="text-align:left;font-weight:'+(bHi?'700':'400')+';color:'+(bHi?'#5d8def':'inherit')+'">'+(b==null?'\u2014':b)+'</span></div>';
   }
   var mainTag=g.is_main?'<span style="background:rgba(232,130,59,.15);color:#e8823b;font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px">MAIN</span>':'';
   var head='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">'+
@@ -7856,10 +7894,12 @@ function ufcLiveFightCard(g){
     '<div style="text-align:right"><div onclick="ufcProfile(decodeURIComponent(\''+encodeURIComponent(''+(g.blue_fighter_id||''))+'\'))" style="font-weight:700;font-size:15px;color:#5d8def;cursor:pointer">'+stEsc(g.blue_name||'Blue')+' <span style="font-size:10px;opacity:.55">\u2197</span></div><div style="margin-top:2px">'+ufcChips(g.blue_fighter_id)+'</div></div></div>';
   var statsBlock='';
   if(live||fin){
+    var noStats=(g.red_strikes==null&&g.blue_strikes==null&&g.red_td==null&&g.blue_td==null&&g.red_kd==null&&g.blue_kd==null);
     statsBlock='<div style="border-top:1px solid rgba(255,255,255,.06);margin-top:10px;padding-top:6px">'+
       stat('sig strikes',g.red_strikes,g.blue_strikes)+
       stat('takedowns',g.red_td,g.blue_td)+
       stat('knockdowns',g.red_kd,g.blue_kd)+
+      (noStats?'<div style="font-size:10.5px;color:var(--faint);text-align:center;padding-top:4px">The poller wrote no strike, takedown or knockdown counts for this fight \u2014 blank means not recorded, not zero.</div>':'')+
       ufcWinProbBar(g.red_win_prob)+'</div>';
   }else{
     statsBlock='<div style="border-top:1px solid rgba(255,255,255,.06);margin-top:10px;padding-top:8px;text-align:center;font-size:11px;color:var(--faint2,#6b7280)">Live strikes, takedowns &amp; knockdowns begin at first bell</div>';
@@ -7871,13 +7911,21 @@ function ufcLiveFightCard(g){
   var odds=(g.red_odds!=null||g.blue_odds!=null)?'<div style="display:flex;justify-content:space-between;margin-top:8px;font-size:10.5px;color:var(--faint)"><span>book odds (dataset, not Pinnacle)</span><span class="mono">'+(g.red_odds!=null?(+g.red_odds).toFixed(2):'\u2014')+' / '+(g.blue_odds!=null?(+g.blue_odds).toFixed(2):'\u2014')+'</span></div>':'';
   return '<div class="fi-card" style="margin-bottom:12px;'+(live?'border:1px solid rgba(224,83,58,.35)':'')+'">'+head+names+statsBlock+gated+odds+'</div>';
 }
-function ufcLiveShellHTML(e,fx){
+function ufcLiveShellHTML(e,fx,mode){
   var head;
   if(!e){head='<div class="flbanner demo">\u25cb No live or upcoming UFC event on the board right now. When a card is live (or the ufc_live poller is running), fights appear here in real time.</div>';}
   else{
-    var st=e.status==='in'?'<span style="color:#e0533a;font-weight:700">\u25cf LIVE NOW</span>':'<span style="color:#5d8def;font-weight:600">UPCOMING</span>';
     var when=e.start_time?(' \u00b7 '+new Date(e.start_time).toLocaleDateString(undefined,{weekday:'short',month:'short',day:'numeric'})):'';
-    head='<div class="flbanner live" style="font-size:13px">'+st+' \u00b7 '+stEsc(e.name||'UFC event')+when+'</div>';
+    if(mode==='stale'){
+      /* the row exists but the poller stopped updating it: never call this live */
+      head='<div class="flbanner demo" style="font-size:13px">\u25b2 <b>Live feed stale</b> \u00b7 '+stEsc(e.name||'UFC event')+when+
+        ' \u2014 the most recent event on file is still marked <span class="mono">'+rsEsc(''+(e.status||'?'))+'</span>'+
+        ufcStaleAgeLabel(e)+
+        '. The <b>ufc_live</b> poller has not updated it, so this is not being shown as live. Fights below are the last state it wrote.</div>';
+    }else{
+      var st=(mode==='live')?'<span style="color:#e0533a;font-weight:700">\u25cf LIVE NOW</span>':'<span style="color:#5d8def;font-weight:600">UPCOMING</span>';
+      head='<div class="flbanner live" style="font-size:13px">'+st+' \u00b7 '+stEsc(e.name||'UFC event')+when+'</div>';
+    }
   }
   var cards=fx.map(ufcLiveFightCard).join('');
   return head+

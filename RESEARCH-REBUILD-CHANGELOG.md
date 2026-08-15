@@ -346,3 +346,50 @@ previous commit, verified mechanically.
 
 Suites: 18/18 tennis structure, 15/15 two-tour behaviour, plus 43/43, 12/12 and
 20/20 regressions. Identity check CLEAN.
+
+---
+
+## UFC Live Fight Center fix
+
+Reported symptom: the Fight Center showed "● LIVE NOW · UFC Fight Night: Du
+Plessis vs. Usman · Sat, Jul 18" a month after that date, with a FINAL fight
+whose stat rows were all dashes.
+
+**Root cause (frontend).** The event query asked for the *oldest* unfinished
+event — `status=in.(pre,in)&order=start_time.asc&limit=1`. An event the poller
+never closed out stays at `pre`/`in` forever, so one stuck card permanently
+shadowed every newer event: no later card could ever be reached. The header then
+asserted "LIVE NOW" purely from the `status` column, with no check that the
+event was actually happening now.
+
+Fixed:
+
+- The query now reads recent candidates (`order=start_time.desc&limit=25`) and
+  `ufcPickEvent()` chooses: a genuinely live event (status `in` and started
+  within 8 hours), else the next upcoming one, else the most recent — labelled
+  **stale**. A stuck row can no longer hide the real card.
+- A stale event never claims to be live. It renders an explicit banner naming
+  the status it is stuck at, how long after its start time that is, and that the
+  `ufc_live` poller has not updated it. The fights below are labelled as the last
+  state the poller wrote.
+- **Unknown is no longer treated as zero.** The stat rows previously coerced
+  `null` to `0` for the comparison, so a fighter with a real count was bolded as
+  "leading" against an opponent whose value was simply missing. Highlighting now
+  requires both values to be present.
+- A live or final fight with no counts at all now says so — "blank means not
+  recorded, not zero" — instead of presenting a bare grid of dashes.
+
+**Identity check: one intentional query REMOVAL.** This is the first and only
+query shape this rebuild has removed, and it is the fix itself — the old
+`order=start_time.asc&limit=1` shape is the bug. Section C (the mandatory
+numeric guard) is clean: no numeric literal, rounding call or threshold changed
+in any render function. The staleness day-count lives in a helper
+(`ufcStaleAgeLabel`) beside the other event helpers, not inside a render
+function. Against a post-merge baseline the check returns to CLEAN.
+
+**Still pipeline-side, not fixable from the frontend.** `ufc_live` was last
+deployed a month ago and the stuck row is its last write: the poller is not
+running (or is failing), and no strike/takedown/knockdown counts are being
+written even for finished fights. The card in the screenshot also lists fighters
+that do not match the event title, which points at the poller's event/fight
+mapping. The app now reports these honestly instead of dressing them up as live.
