@@ -7919,7 +7919,7 @@ function ufcLiveFightCard(g){
       '<div style="padding:7px 9px;border:1px dashed rgba(255,255,255,.14);border-radius:8px;font-size:10.5px;color:var(--faint)">EdgeDesk model prob<br><b style="color:var(--warn)">not active</b> \u2014 needs UFC model</div>'+
       '<div style="padding:7px 9px;border:1px dashed rgba(255,255,255,.14);border-radius:8px;font-size:10.5px;color:var(--faint)">Pre-fight CLV<br><b style="color:var(--warn)">not active</b> \u2014 needs live capture</div>'+
     '</div>';
-  var odds=(g.red_odds!=null||g.blue_odds!=null)?'<div style="display:flex;justify-content:space-between;margin-top:8px;font-size:10.5px;color:var(--faint)"><span>book odds (dataset, not Pinnacle)</span><span class="mono">'+(g.red_odds!=null?(+g.red_odds).toFixed(2):'\u2014')+' / '+(g.blue_odds!=null?(+g.blue_odds).toFixed(2):'\u2014')+'</span></div>':'';
+  var odds=(g.red_odds!=null||g.blue_odds!=null)?'<div style="display:flex;justify-content:space-between;margin-top:8px;font-size:10.5px;color:var(--faint)"><span>best book price via capture \u00b7 de-vigged pipeline, not Pinnacle</span><span class="mono">'+(g.red_odds!=null?(+g.red_odds).toFixed(2):'\u2014')+' / '+(g.blue_odds!=null?(+g.blue_odds).toFixed(2):'\u2014')+'</span></div>':'';
   return '<div class="fi-card" style="margin-bottom:12px;'+(live?'border:1px solid rgba(224,83,58,.35)':'')+'">'+head+names+statsBlock+gated+odds+'</div>';
 }
 function ufcLiveShellHTML(e,fx,mode){
