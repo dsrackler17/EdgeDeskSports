@@ -40,6 +40,7 @@ const json = (o: unknown, status = 200) =>
   new Response(JSON.stringify(o, null, 2), { status, headers: { "content-type": "application/json" } });
 
 const SCOREBOARD = "https://site.api.espn.com/apis/site/v2/sports/mma/ufc/scoreboard";
+const ODDS_API = "https://api.the-odds-api.com/v4/sports/mma_mixed_martial_arts/odds/";
 const SUMMARY = (id: string) => `https://site.api.espn.com/apis/site/v2/sports/mma/ufc/summary?event=${id}`;
 
 /* an event that started this long ago and is still open was never closed out */
@@ -104,6 +105,72 @@ function pickStat(c: any, wants: string[]): number | null {
   return null;
 }
 
+/* ---- live odds ------------------------------------------------------------
+   Reads h2h prices from The Odds API (the licence this project already holds)
+   and writes a CONSENSUS decimal per corner into ufc.live_fights.
+
+   Matching is deliberately conservative. A wrong price on a fight is worse than
+   no price, so a fight only gets odds when both fighters match a priced bout:
+   first on exact normalised names, then on both surnames together. Anything
+   less certain is left null and counted in the response as unmatched. */
+function median(xs: number[]): number | null {
+  const v = xs.filter((n) => Number.isFinite(n)).sort((a, b) => a - b);
+  if (!v.length) return null;
+  const m = v.length >> 1;
+  return v.length % 2 ? v[m] : (v[m - 1] + v[m]) / 2;
+}
+function lastName(n: string | null): string | null {
+  const s = slug(n);
+  if (!s) return null;
+  const parts = s.split("-").filter(Boolean);
+  return parts.length ? parts[parts.length - 1] : null;
+}
+type PricedBout = { a: string | null; b: string | null; prices: Record<string, number[]>; books: number };
+function collectBouts(events: any[]): PricedBout[] {
+  const out: PricedBout[] = [];
+  for (const e of events ?? []) {
+    const prices: Record<string, number[]> = {};
+    let books = 0;
+    for (const bk of e?.bookmakers ?? []) {
+      const mkt = (bk?.markets ?? []).find((m: any) => m?.key === "h2h");
+      if (!mkt) continue;
+      let used = false;
+      for (const o of mkt?.outcomes ?? []) {
+        const k = slug(o?.name);
+        const price = Number(o?.price);
+        if (!k || !Number.isFinite(price)) continue;
+        (prices[k] = prices[k] ?? []).push(price);
+        used = true;
+      }
+      if (used) books++;
+    }
+    if (books) out.push({ a: slug(e?.home_team), b: slug(e?.away_team), prices, books });
+  }
+  return out;
+}
+function matchBout(bouts: PricedBout[], red: string | null, blue: string | null) {
+  const r = slug(red), b = slug(blue);
+  if (!r || !b) return null;
+  const exact = bouts.find((x) => (x.a === r && x.b === b) || (x.a === b && x.b === r));
+  if (exact) return { bout: exact, how: "exact" };
+  const rl = lastName(red), bl = lastName(blue);
+  if (!rl || !bl || rl === bl) return null;          // identical surnames: too weak to trust
+  const surname = bouts.find((x) => {
+    const al = x.a ? x.a.split("-").pop() : null, bbl = x.b ? x.b.split("-").pop() : null;
+    return (al === rl && bbl === bl) || (al === bl && bbl === rl);
+  });
+  return surname ? { bout: surname, how: "surname" } : null;
+}
+function priceFor(bout: PricedBout, name: string | null): number | null {
+  const k = slug(name);
+  if (!k) return null;
+  if (bout.prices[k]) return median(bout.prices[k]);
+  const ln = lastName(name);
+  if (!ln) return null;
+  const key = Object.keys(bout.prices).find((x) => x.split("-").pop() === ln);
+  return key ? median(bout.prices[key]) : null;
+}
+
 function parseCompetition(comp: any, eventId: string, idx: number) {
   const comps = comp?.competitors || [];
   const red = comps.find((c: any) => c?.homeAway === "home") || comps[0] || {};
@@ -153,6 +220,11 @@ Deno.serve(async (req) => {
     if (req.headers.get("x-cron-secret") !== secret) {
       return json({ ok: false, error: "unauthorized: x-cron-secret missing or did not match CRON_SECRET" }, 401);
     }
+
+    /* POST {"odds": false} skips the odds request for this run — useful when
+       polling fast during a card and you would rather not spend the quota. */
+    const reqBody: any = req.method === "POST" ? await req.json().catch(() => ({})) : {};
+    const body_odds: unknown = reqBody?.odds;
 
     const now = Date.now();
     /* start two days back: a US evening card rolls past midnight UTC, and the
@@ -230,10 +302,49 @@ Deno.serve(async (req) => {
       .map((c: any, i: number) => parseCompetition(c, eventId, i))
       .filter((r: any) => r.red_name || r.blue_name);
 
+    /* ---- live odds: one request, skipped once the card is over ---------- */
+    const oddsKey = Deno.env.get("ODDS_API_KEY") ?? "";
+    const wantOdds = body_odds !== false && oddsKey !== "" && state(ev) !== "post" && rows.length > 0;
+    let oddsMatched = 0, oddsBySurname = 0, oddsUnmatched = 0, oddsBooks = 0, oddsError: string | null = null;
+    if (wantOdds) {
+      try {
+        const r = await fetch(`${ODDS_API}?apiKey=${encodeURIComponent(oddsKey)}&regions=${encodeURIComponent(Deno.env.get("ODDS_REGIONS") ?? "us")}&markets=h2h&oddsFormat=decimal`);
+        if (!r.ok) {
+          oddsError = `odds ${r.status} ${(await r.text()).slice(0, 200)}`;
+        } else {
+          const bouts = collectBouts(await r.json());
+          for (const row of rows as any[]) {
+            const m = matchBout(bouts, row.red_name, row.blue_name);
+            if (!m) { oddsUnmatched++; continue; }
+            const rp = priceFor(m.bout, row.red_name), bp = priceFor(m.bout, row.blue_name);
+            if (rp == null && bp == null) { oddsUnmatched++; continue; }
+            row.red_odds = rp; row.blue_odds = bp;
+            oddsBooks = Math.max(oddsBooks, m.bout.books);
+            oddsMatched++;
+            if (m.how === "surname") oddsBySurname++;
+          }
+        }
+      } catch (e) { oddsError = String(e); }
+    }
+
     let fightErr: string | null = null;
     if (rows.length) {
       const fRes = await db.from("live_fights").upsert(rows, { onConflict: "fight_id" });
       if (fRes.error) fightErr = `${fRes.error.message} | details:${fRes.error.details ?? ""} | hint:${fRes.error.hint ?? ""}`;
+    }
+
+    /* Reconcile the card: drop rows for this event that are no longer on it.
+       Without this, a fight_id scheme change or a late replacement bout leaves
+       an orphan row and the card renders the fight twice. Only ever runs when
+       this poll actually produced fights, so a bad fetch cannot wipe a card. */
+    let orphansRemoved = 0, orphanError: string | null = null;
+    if (rows.length) {
+      const keep = (rows as any[]).map((r) => r.fight_id);
+      const del = await db.from("live_fights").delete()
+        .eq("event_id", eventId)
+        .not("fight_id", "in", `(${keep.map((k) => `"${String(k).replace(/"/g, '""')}"`).join(",")})`)
+        .select("fight_id");
+      if (del.error) orphanError = del.error.message; else orphansRemoved = (del.data ?? []).length;
     }
 
     /* how many fights actually carried a count — the number to watch if the app
@@ -251,6 +362,13 @@ Deno.serve(async (req) => {
       summary_used: summaryUsed,
       fights: rows.length,
       fights_with_stats: withStats,
+      odds_matched: oddsMatched,
+      odds_matched_by_surname: oddsBySurname,
+      odds_unmatched: oddsUnmatched,
+      odds_books_seen: oddsBooks,
+      odds_error: oddsError,
+      orphan_fights_removed: orphansRemoved,
+      orphan_error: orphanError,
       window_events: events.length,
       window_upserted: windowUpserted,
       stale_events_closed: closed,

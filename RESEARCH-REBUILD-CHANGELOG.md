@@ -393,3 +393,32 @@ running (or is failing), and no strike/takedown/knockdown counts are being
 written even for finished fights. The card in the screenshot also lists fighters
 that do not match the event title, which points at the poller's event/fight
 mapping. The app now reports these honestly instead of dressing them up as live.
+
+### Live odds on the fight card, and a duplication fix
+
+`ufc_live` now attaches live h2h prices, and cleans up after itself:
+
+- **Live odds** from The Odds API (`ODDS_API_KEY`) — one request per run, and
+  only while the event is `pre` or `in`, so a finished card never spends quota.
+  `red_odds`/`blue_odds` are the **median decimal across every book** quoting
+  that fight, which the app now labels "consensus book odds · median across
+  books, not Pinnacle" instead of the old "dataset" wording.
+- **Matching refuses to guess.** A fight is priced only when both fighters match
+  a priced bout — exact normalised names first, then both surnames together —
+  and two corners with the same surname are rejected as too weak. Unmatched
+  fights keep null odds and are counted in the response. A wrong price on a
+  fight is worse than no price.
+- **Card reconciliation.** After upserting, rows for the event that were not in
+  that run's payload are deleted. This fixes every fight rendering **twice**:
+  the earlier `fight_id` change (name slugs → ESPN competition id) inserted new
+  rows beside the old ones instead of replacing them, and a late replacement
+  bout left the same kind of orphan. It only runs when the poll actually
+  returned fights, so a failed fetch cannot wipe a card.
+- **`migrations/021_ufc_live_dedupe.sql`** clears what accumulated before that
+  shipped: keeps the most recently written row per (event, pairing), removes
+  fights whose event is gone, and re-checks for events the old status bug left
+  open. Verified on PostgreSQL 16 against the exact duplicate pattern seen in
+  the app — 6 rows to 3, newest kept, idempotent on re-run.
+
+12/12 odds-matching unit tests, 12/12 fight-center assertions, all research
+suites green, identity section C clean.

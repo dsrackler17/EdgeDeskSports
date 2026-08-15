@@ -64,3 +64,37 @@ select event_id, name, status, start_time, updated_at
  where status <> 'post' and start_time < now() - interval '12 hours'
  order by start_time desc;
 ```
+
+## Live odds
+
+Set `ODDS_API_KEY` (The Odds API — the licence this project already holds) and
+each run attaches h2h prices to the card:
+
+```
+supabase secrets set ODDS_API_KEY=<key>
+supabase secrets set ODDS_REGIONS=us          # optional, defaults to us
+```
+
+- One request per run, and only while the event is `pre` or `in` — a finished
+  card never spends quota. `POST {"odds": false}` skips it for a given run.
+- `red_odds` / `blue_odds` are the **median decimal across all books** quoting
+  that fight, which is what the app labels "consensus book odds".
+- **Matching refuses to guess.** A fight is priced only when both fighters match
+  a priced bout: exact normalised names first, then both surnames together.
+  Identical surnames on the two corners are rejected as too weak. Anything
+  unmatched is left null and counted as `odds_unmatched` in the response, so a
+  wrong price never reaches a card.
+
+Watch `odds_matched` / `odds_unmatched` / `odds_matched_by_surname`. A rising
+`odds_matched_by_surname` means ESPN and the book are spelling names
+differently; a high `odds_unmatched` usually means the book has not posted that
+card yet.
+
+## Card reconciliation
+
+After upserting, the poller deletes rows for the event that were not in that
+run's payload. This is what stops a card rendering every fight twice after a
+`fight_id` scheme change or a late replacement bout. It only runs when the poll
+actually returned fights, so a failed fetch cannot wipe a card. Rows that
+accumulated before this shipped are cleared once by
+`migrations/021_ufc_live_dedupe.sql`.
