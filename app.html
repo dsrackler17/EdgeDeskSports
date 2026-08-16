@@ -1447,27 +1447,24 @@ button:focus-visible,select:focus-visible,input:focus-visible,a:focus-visible{ou
 <main>
   <!-- EDGES -->
   <section id="v-edges" class="view">
+    <!-- TODAY'S RESEARCH — the primary daily entry point, and deliberately the
+         FIRST thing in this view. The whole pipeline (screen -> research ->
+         attack -> rank -> record) behind one action, so a user never has to know
+         that asking twenty questions is how research used to get done here.
+
+         It sits above the board header because the board is a firehose and this
+         is the reason to drink from it. Rendered by renderResearchHero() so it
+         can show a first-run state before any packet exists and a measured
+         funnel afterwards; the static markup here is only the pre-script
+         fallback, which still carries a working RUN button. -->
+    <div id="todayResearchCta">
+      <div style="border:1px solid var(--border);border-radius:14px;padding:13px 14px;margin:0 0 12px">
+        <div style="font-size:15px;font-weight:700;color:var(--text)">Today’s research</div>
+        <button onclick="try{window.EDAI.todaysResearch()}catch(e){}" style="margin-top:9px;border:0;border-radius:10px;padding:10px 16px;font-size:13px;font-weight:700;letter-spacing:.03em;cursor:pointer;background:var(--accent);color:#06121f">RUN RESEARCH</button>
+      </div>
+    </div>
     <div class="row-between"><h2 style="margin:0">Top edges</h2><span class="spacer"></span><span class="freshness" id="fresh">—</span><button class="refreshbtn" title="Refresh" data-refresh="edges">&#8635;</button></div>
     <p class="lede">The best live edges on games in your window — positive after the sharp fair line, with the liquidity to mean something. Ranked by edge × how this kind of signal has beaten the close. Tap any row for the receipt.</p>
-    <!-- TODAY'S RESEARCH — the primary daily entry point. The whole pipeline
-         (screen -> research -> attack -> rank -> record) behind one action, so a
-         user never has to know that asking twenty questions is how research used
-         to get done here. -->
-    <div id="todayResearchCta" style="border:1px solid var(--line);border-radius:14px;padding:13px 14px;margin:10px 0 12px;background:linear-gradient(180deg,rgba(255,255,255,.03),transparent)">
-      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-        <div style="min-width:0;flex:1">
-          <div style="font-size:15px;font-weight:700;color:var(--text);letter-spacing:.01em">Today’s research</div>
-          <div style="font-size:12px;color:var(--dim);margin-top:2px;line-height:1.45">Scan the slate, screen candidates, research the finalists, attack each thesis, and rank what survives — one best opportunity, its alternatives, and everything rejected with the reason. Ends in <b style="color:var(--text)">NO BET</b> when nothing qualifies.</div>
-        </div>
-        <button onclick="try{window.EDAI.todaysResearch()}catch(e){}" style="flex:0 0 auto;border:0;border-radius:10px;padding:10px 16px;font-size:13px;font-weight:700;letter-spacing:.03em;cursor:pointer;background:var(--accent);color:#06121f">RUN</button>
-      </div>
-      <div style="display:flex;gap:6px;margin-top:9px;flex-wrap:wrap">
-        <button class="edai-qa" onclick="try{window.EDAI.reevaluate()}catch(e){}">What changed?</button>
-        <button class="edai-qa" onclick="try{window.EDAI.packetPostmortem()}catch(e){}">Postmortem</button>
-        <button class="edai-qa" onclick="try{window.EDAI.packets()}catch(e){}">Past packets</button>
-      </div>
-      <div style="font-size:10.5px;color:var(--faint);margin-top:8px">Research tool only — not betting advice. Signals can be wrong.</div>
-    </div>
     <div id="edgeStale" class="stalebanner hide"></div>
     <div id="discovery" class="disco hide"></div>
     <div class="lead" id="leadWrap"><h3 id="t10title">★ Top edges — this week</h3><div id="leadList"></div></div>
@@ -14249,6 +14246,18 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
 
   window.renderDiscovery = async function(){
     var host=$('discovery'); if(!host) return;
+    /* FOLDED UNTIL THE FIRST RESEARCH RUN. This grid is the most visually
+       dominant thing in the view and its busiest labels are MISSED, CLOSING and
+       EXPIRED — a record of what happened while you were away. That is the right
+       first impression for a returning user and the wrong one for a new
+       subscriber, whose first question is what EdgeDesk can do for them RIGHT
+       NOW. It is deferred, not removed: one completed run and it renders on
+       every visit from then on. */
+    try{
+      if(window.EDResearchV2 && !window.EDResearchV2.hasResearched()){
+        host.classList.add('hide'); host.innerHTML=''; return;
+      }
+    }catch(_){ }
     try{
       var pool=await loadPool();
       var p=scope(pool);
@@ -14988,7 +14997,12 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
    =================================================================================== */
 (function(){
   var AI_FN = (typeof SB_URL!=='undefined'? SB_URL : '') + '/functions/v1/edgedesk_ai';
-  var FLOOR  = (typeof REAL_FLOOR!=='undefined' && REAL_FLOOR) ? REAL_FLOOR : 0.02;
+  /* The fallback MUST match REAL_FLOOR (0.005). It said 0.02 — four times the
+     real floor — so if this block ever loaded before the constant, every
+     playability gate, cushion band and price limit in the panel would silently
+     use a different floor from the rest of the app while looking correct. That
+     exact drift is what left six self-tests failing in the browser for months. */
+  var FLOOR  = (typeof REAL_FLOOR!=='undefined' && REAL_FLOOR) ? REAL_FLOOR : 0.005;
   var STALE_MIN = (typeof EDGE_MAX_AGE_MIN!=='undefined' && EDGE_MAX_AGE_MIN) ? EDGE_MAX_AGE_MIN : 45;
 
   var LOADED=null;        // enriched signal currently in focus
@@ -18980,7 +18994,7 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
   function dscanRejectHTML(rejections, totalRejected){
     if(!rejections||!rejections.length) return '';
     var rows=rejections.slice(0,6).map(function(r){
-      return '<div style="padding:6px 0;border-top:1px solid var(--line)">'
+      return '<div style="padding:6px 0;border-top:1px solid var(--border)">'
         +'<div style="font-size:12.5px;color:var(--text)"><b>'+esc(r.matchup)+'</b> <span style="color:var(--dim)">· '+esc(r.sport)+' · '+esc(r.selection)+' '+amStr(r.price_american)+'</span></div>'
         +'<div style="font-size:11.5px;color:var(--dim);margin-top:2px">'
           +'<span class="mono" style="color:var(--faint)">'+esc(r.code.replace(/_/g,' '))+'</span> — '+esc(r.reason)+'</div></div>';
@@ -19072,7 +19086,7 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
       +'<div class="edai-vsub">'+all.length+' on file · newest first · never overwritten</div>'
       +all.slice(0,15).map(function(p){
         var s=p.scope||{};
-        return '<div style="padding:6px 0;border-top:1px solid var(--line);font-size:12px">'
+        return '<div style="padding:6px 0;border-top:1px solid var(--border);font-size:12px">'
           +'<b style="color:var(--text)" class="mono">'+esc(p.id)+'</b> '
           +'<span style="color:var(--dim)">· '+esc(String(p.created_at_iso||'').slice(0,16).replace('T',' '))
           +' · '+(s.deep_researched||0)+' researched · '+(s.rejections_total||0)+' rejected · '
@@ -19082,6 +19096,54 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
       +'<button class="edai-qa" onclick="EDAI.packetPostmortem()">Postmortem the latest</button>'
       +'<button class="edai-qa" onclick="EDAI.reevaluate()">What has changed?</button></div>'
       +'<div class="edai-src" style="border:none;margin-top:6px">Full JSON for any packet: <span class="mono">EDAI.packetJSON(\'&lt;id&gt;\')</span> in the console.</div>'
+      +'</div>';
+  }
+
+  /* ---- THE FUNNEL ----------------------------------------------------------
+     What the run actually did, as a shape rather than a sentence. This is the
+     one moment where the product can show that it performed hours of work in
+     the last few minutes, so it is given real estate and real numbers.
+
+     Every figure is READ FROM THE PACKET, never recomputed and never estimated.
+     A stage the run genuinely could not measure is omitted rather than guessed:
+     a funnel with an invented middle would be exactly the "fake completeness"
+     this engine exists to refuse. */
+  function dscanFunnelHTML(packet){
+    if(!packet || !packet.scope) return '';
+    var s=packet.scope, rows=[];
+    function row(n, label, note, tone){
+      if(n==null) return;
+      rows.push({n:n, label:label, note:note||'', tone:tone||''});
+    }
+    var alts=Math.max(0,(s.finalists||0)-1);
+    row(s.games_scanned,   'markets scanned',        'everything on the board in your window');
+    row(s.in_window,       'candidates identified',  'priced, in-window and worth a look');
+    row(s.sharp_screened,  'carried a sharp price',  'screened against a sharp reference, not consensus alone');
+    row(s.deep_researched, 'received full research', 'evidence pulled, thesis attacked');
+    row(s.finalists,       'survived to a decision', 'ranked by research quality', 'pos');
+    row(alts,              'alternative'+(alts===1?'':'s'), 'ranked below the headline');
+    row(s.rejections_total,'rejected',               'each with the reason recorded', 'dim');
+    if(!rows.length) return '';
+    var maxN=rows.reduce(function(m,r){ return Math.max(m, r.n||0); }, 0)||1;
+    var body=rows.map(function(r){
+      /* The bar is proportional to the largest stage, so the narrowing is
+         something you SEE before you read a single number. */
+      var pct=Math.max(1.5, Math.round((r.n/maxN)*100));
+      var col=r.tone==='pos'?'var(--pos)':r.tone==='dim'?'var(--faint)':'var(--accent)';
+      return '<div style="display:flex;align-items:baseline;gap:9px;margin:0 0 5px">'
+        +'<div style="flex:0 0 42px;text-align:right;font-size:15px;font-weight:700;font-variant-numeric:tabular-nums;color:'
+          +(r.tone==='dim'?'var(--dim)':'var(--text)')+'">'+esc(String(r.n))+'</div>'
+        +'<div style="flex:1;min-width:0">'
+        +'<div style="height:5px;border-radius:3px;background:'+col+';width:'+pct+'%;opacity:'+(r.tone==='dim'?'.35':'.85')+';margin-bottom:3px"></div>'
+        +'<div style="font-size:11.5px;color:var(--text);font-weight:600">'+esc(r.label)+'</div>'
+        +(r.note?'<div style="font-size:10.5px;color:var(--faint);margin-top:1px">'+esc(r.note)+'</div>':'')
+        +'</div></div>';
+    }).join('');
+    return '<div class="edai-card" style="padding:12px;margin-bottom:8px">'
+      +'<div style="font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--dim);font-weight:600;margin-bottom:9px">Research complete</div>'
+      +body
+      +'<div style="font-size:10.5px;color:var(--faint);margin-top:7px;border-top:1px solid var(--border);padding-top:7px">'
+      +'Packet <b style="color:var(--dim)">'+esc(packet.id||'')+'</b> · saved. Rejections keep their reason so you can audit what was skipped.</div>'
       +'</div>';
   }
 
@@ -19096,7 +19158,7 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
     var intro='<div class="edai-card" style="padding:12px 12px 8px;margin-bottom:8px"><div class="edai-vsel">Daily scan complete.</div>'
       +'<div class="edai-vsub">'+decided.ordered.length+' finalist'+(decided.ordered.length===1?'':'s')+' researched, attacked and quality-graded \u00b7 headline chosen by research quality, not raw edge \u00b7 '
       +esc(concl)+'</div></div>';
-    var html=intro + dscanHeadline(head, outcome, decided);
+    var html=intro + dscanFunnelHTML(packet) + dscanHeadline(head, outcome, decided);
     if(rest.length){
       html+='<div style="font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--dim);font-weight:600;margin:6px 2px">Alternatives</div>';
       rest.forEach(function(f){ html+=dscanMini(f); });
@@ -19596,8 +19658,17 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
          this afternoon's rescan. */
       var chosen={}; shortlist.forEach(function(g){ chosen[g.id]=1; });
       var rejections=buildRejections(scan, chosen, 12);
+      /* SHARP SCREENING IS A REAL STAGE, SO IT GETS A REAL COUNT. The funnel the
+         user is shown must be measured, never narrated: this is how many in-window
+         candidates actually carried a sharp reference price to be screened
+         against. Everything below it was ranked on consensus alone, which is a
+         materially weaker basis and is why the number is worth showing. */
+      var sharpN=scan.filter(function(g){
+        var e=(g&&g.e)||{}; return e.has_sharp===true||e.has_sharp==='true';
+      }).length;
       var packet=buildPacket(decided, rejections,
         {games_scanned:all.length, in_window:scan.length, candidates:shortlist.length,
+         sharp_screened:sharpN,
          deep_researched:finalists.length, finalists:decided.ordered.length,
          rejections_recorded:rejections.length, rejections_total:Math.max(0,scan.length-shortlist.length)});
       var store=packetSave(packet);
@@ -19607,6 +19678,10 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
       DSCAN={finalists:decided.ordered, headlineRank:decided.headline.rank, outcome:decided.outcome,
              ts:Date.now(), packet:packet, rejections:rejections, decided:decided};
       push('a', dscanRenderHTML(decided, packet));
+      /* The first screen changes the moment a run lands: the hero switches from
+         the pitch to the measured funnel, and the movement board unfolds. */
+      try{ renderResearchHero(); }catch(_){ }
+      try{ if(window.renderDiscovery) window.renderDiscovery(); }catch(_){ }
       dscanSynthOffer(decided);
     }catch(err){
       if(prog) prog.remove();
@@ -19865,24 +19940,21 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
     analyzeScan:function(i){ return analyzeScan(i); },
 
     // native "find today's best bet" — builds its own packet from the live board
-    dailyScan:async function(){
-      if(BUSY) return; BUSY=true; var sb=$id('edaiSend'); if(sb)sb.disabled=true;
-      window.EDAI.open(); push('u','Find today\u2019s strongest signal.');
-      try{ await dailyScanCore(); }
-      finally{ BUSY=false; var s2=$id('edaiSend'); if(s2)s2.disabled=false; }
-    },
-
     /* ---- TODAY'S RESEARCH \u2014 the primary daily entry point ------------------
-       Same deterministic pipeline as the daily scan, framed as what it actually
-       is: the day's research, ending in ONE best opportunity with alternatives,
-       rejections and a recorded packet. It is a distinct verb because the user
-       should not have to know that "scan" is how research gets done. */
-    todaysResearch:async function(){
+       One pipeline, two names. `dailyScan` is the original verb and is kept so
+       every existing button, intent route and follow-up keeps working;
+       `todaysResearch` is what the product now calls it, because a user should
+       not have to know that "scan" is how research gets done here. They delegate
+       to one implementation rather than being copied, so the two entry points
+       cannot drift apart. */
+    _runResearch:async function(echo){
       if(BUSY) return; BUSY=true; var sb=$id('edaiSend'); if(sb)sb.disabled=true;
-      window.EDAI.open(); push('u','Run today\u2019s research.');
+      window.EDAI.open(); push('u',echo);
       try{ await dailyScanCore(); }
       finally{ BUSY=false; var s2=$id('edaiSend'); if(s2)s2.disabled=false; }
     },
+    dailyScan:function(){ return window.EDAI._runResearch('Find today\u2019s strongest signal.'); },
+    todaysResearch:function(){ return window.EDAI._runResearch('Run today\u2019s research.'); },
 
     /* ---- CONTINUOUS RE-EVALUATION ----------------------------------------
        Reads the live board against the most recent packet and reports what
@@ -20185,7 +20257,132 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
      actually built around — that a big number is not automatically a bet, that a
      missing source is reported rather than filled in, that PASS is a successful
      outcome, and that nothing downstream can rewrite an engine value. */
+  /* ---- THE FIRST SCREEN ----------------------------------------------------
+     Hierarchy, not features. The board behind this view is a market-monitoring
+     firehose — Fresh Openers, Steam Confirmed, Missed, Closing Soon — and it is
+     genuinely valuable to someone who already knows what EdgeDesk is. To someone
+     opening it for the first time it reads as "here is what happened while you
+     were away", which is the opposite of the promise. The promise is "give me a
+     few minutes and I will tell you what deserves your attention today."
+
+     So the research action owns the top of the screen, and the movement board
+     stays folded away until a run has actually happened. Nothing is deleted:
+     one run and the full board is there permanently. */
+  function heroAgo(ms){
+    var d=Math.max(0, Date.now()-ms), m=Math.round(d/60000);
+    if(m<1) return 'just now';
+    if(m<60) return m+' min ago';
+    var h=Math.round(m/60); if(h<24) return h+'h ago';
+    var days=Math.round(h/24); return days===1?'yesterday':days+' days ago';
+  }
+  function heroClock(ms){
+    try{ return new Date(ms).toLocaleTimeString([], {hour:'numeric', minute:'2-digit'}); }
+    catch(_){ return ''; }
+  }
+  /* Same calendar day in the USER'S timezone — a packet from 11pm last night is
+     not "today's research" at 7am, and telling them it is would be a lie the
+     product cannot detect on their behalf. */
+  function heroSameDay(ms){
+    try{ var a=new Date(ms), b=new Date();
+      return a.getFullYear()===b.getFullYear() && a.getMonth()===b.getMonth() && a.getDate()===b.getDate();
+    }catch(_){ return false; }
+  }
+  var HERO_STEPS=[
+    'Scan today’s markets',
+    'Identify candidates worth a look',
+    'Validate against sharp pricing',
+    'Research the strongest signals',
+    'Attack every thesis',
+    'Rank what survives',
+    'Tell you what not to pursue'
+  ];
+  function heroBtn(label){
+    return '<button onclick="try{window.EDAI.todaysResearch()}catch(e){}" '
+      +'style="border:0;border-radius:10px;padding:11px 18px;font-size:13px;font-weight:700;'
+      +'letter-spacing:.03em;cursor:pointer;background:var(--accent);color:#06121f">'+esc(label)+'</button>';
+  }
+  function heroStat(n, label){
+    return '<div style="min-width:64px">'
+      +'<div style="font-size:16px;font-weight:700;color:var(--text);font-variant-numeric:tabular-nums">'+esc(String(n))+'</div>'
+      +'<div style="font-size:10px;letter-spacing:.04em;text-transform:uppercase;color:var(--faint);margin-top:1px">'+esc(label)+'</div>'
+      +'</div>';
+  }
+  function heroFirstRunHTML(){
+    var checks=HERO_STEPS.map(function(s){
+      return '<div style="display:flex;gap:7px;align-items:flex-start;font-size:12px;color:var(--dim);line-height:1.5">'
+        +'<span style="color:var(--accent);flex:0 0 auto;font-weight:700">✓</span><span>'+esc(s)+'</span></div>';
+    }).join('');
+    return '<div style="border:1px solid var(--border);border-radius:14px;padding:16px;margin:0 0 14px;'
+      +'background:linear-gradient(180deg,rgba(255,255,255,.045),transparent)">'
+      +'<div style="font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--accent);font-weight:700">Start here</div>'
+      +'<div style="font-size:19px;font-weight:700;color:var(--text);margin-top:5px;letter-spacing:.01em">Your first research run</div>'
+      +'<div style="font-size:12.5px;color:var(--dim);margin-top:5px;line-height:1.5;max-width:62ch">'
+      +'You haven’t run today’s research yet. EdgeDesk will scan today’s slate and narrow every available price down '
+      +'to the few markets actually worth investigating — then tell you which one is strongest, and what it rejected.</div>'
+      +'<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:3px 16px;margin:13px 0 14px">'+checks+'</div>'
+      +heroBtn('RUN TODAY’S RESEARCH')
+      +'<div style="display:flex;gap:20px;flex-wrap:wrap;margin-top:14px;padding-top:12px;border-top:1px solid var(--border)">'
+      +'<div style="min-width:96px"><div style="font-size:13px;font-weight:700;color:var(--dim)">Never</div>'
+      +'<div style="font-size:10px;letter-spacing:.04em;text-transform:uppercase;color:var(--faint);margin-top:1px">last research run</div></div>'
+      +heroStat(0,'markets scanned')+heroStat(0,'candidates')+heroStat(0,'finalists')
+      +'</div>'
+      +'<div style="font-size:10.5px;color:var(--faint);margin-top:10px">Research tool only — not betting advice. Signals can be wrong.</div>'
+      +'</div>';
+  }
+  function heroReturningHTML(p){
+    var s=p.scope||{}, fresh=heroSameDay(p.created_at);
+    var out=p.quality_outcome||p.outcome||'—';
+    var tone=out==='BET'?'var(--pos)':out==='NO BET'||out==='PASS'?'var(--dim)':'var(--warn)';
+    var chips=[['What changed?','EDAI.reevaluate()'],['Postmortem','EDAI.packetPostmortem()'],['Past packets','EDAI.packets()']]
+      .map(function(c){ return '<button class="edai-qa" onclick="try{window.'+c[1]+'}catch(e){}">'+esc(c[0])+'</button>'; }).join('');
+    return '<div style="border:1px solid var(--border);border-radius:14px;padding:13px 14px;margin:0 0 12px;'
+      +'background:linear-gradient(180deg,rgba(255,255,255,.03),transparent)">'
+      +'<div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">'
+      +'<div style="min-width:0;flex:1">'
+      +'<div style="font-size:15px;font-weight:700;color:var(--text)">Today’s research</div>'
+      +'<div style="font-size:11.5px;color:var(--dim);margin-top:3px">'
+      +(fresh?'Last run <b style="color:var(--text)">'+esc(heroClock(p.created_at))+'</b> · '+esc(heroAgo(p.created_at))
+             :'<b style="color:var(--warn)">No run today.</b> Last run '+esc(heroAgo(p.created_at)))
+      +' · conclusion <b style="color:'+tone+'">'+esc(out)+'</b></div></div>'
+      +heroBtn(fresh?'RUN AGAIN':'RUN TODAY’S RESEARCH')
+      +'</div>'
+      +'<div style="display:flex;gap:20px;flex-wrap:wrap;margin-top:11px;padding-top:10px;border-top:1px solid var(--border)">'
+      +heroStat(s.games_scanned!=null?s.games_scanned:0,'markets scanned')
+      +heroStat(s.in_window!=null?s.in_window:0,'candidates')
+      +heroStat(s.deep_researched!=null?s.deep_researched:0,'researched')
+      +heroStat(s.finalists!=null?s.finalists:0,'finalists')
+      +heroStat(s.rejections_total!=null?s.rejections_total:0,'rejected')
+      +'</div>'
+      +'<div style="display:flex;gap:6px;margin-top:10px;flex-wrap:wrap">'+chips+'</div>'
+      +'<div style="font-size:10.5px;color:var(--faint);margin-top:8px">Research tool only — not betting advice. Signals can be wrong.</div>'
+      +'</div>';
+  }
+  function hasResearched(){ try{ return !!packetLatest(); }catch(_){ return false; } }
+  function renderResearchHero(){
+    var host=null; try{ host=document.getElementById('todayResearchCta'); }catch(_){ }
+    if(!host) return false;
+    var p=null; try{ p=packetLatest(); }catch(_){ p=null; }
+    host.innerHTML = p ? heroReturningHTML(p) : heroFirstRunHTML();
+    /* The movement board is the firehose. It stays folded until the user has
+       seen what a run produces, then it is theirs for good. */
+    try{
+      var disco=document.getElementById('discovery');
+      if(disco && !p){ disco.classList.add('hide'); disco.innerHTML=''; }
+    }catch(_){ }
+    return true;
+  }
+  try{
+    if(typeof document!=='undefined' && document.addEventListener){
+      document.addEventListener('DOMContentLoaded', function(){ try{ renderResearchHero(); }catch(_){ } });
+      setTimeout(function(){ try{ renderResearchHero(); }catch(_){ } }, 60);
+    }
+  }catch(_){ }
+
   window.EDResearchV2 = {
+    /* first screen */
+    renderResearchHero:renderResearchHero, hasResearched:hasResearched,
+    heroFirstRunHTML:heroFirstRunHTML, heroReturningHTML:heroReturningHTML,
+    heroSameDay:heroSameDay, dscanFunnelHTML:dscanFunnelHTML,
     /* classification + credibility */
     opportunityClass:opportunityClass, opportunityChecks:opportunityChecks,
     opportunityRankWeight:opportunityRankWeight, edgeCredibility:edgeCredibility,
@@ -20492,6 +20689,44 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
       ok('V17 every check states a state and a detail', classify({}).opp.checks.every(function(c){
         return /^(PASS|WARN|FAIL|N\/A)$/.test(c.state) && !!c.detail; }));
 
+      /* ---- 22. FIRST SCREEN: the funnel is measured, never narrated ---- */
+      var fun22=dscanFunnelHTML({id:'EDR-X', scope:{games_scanned:187,in_window:31,sharp_screened:8,
+        deep_researched:4,finalists:4,rejections_total:183}});
+      ['187','31','8','4','183'].forEach(function(nStr){
+        ok('V22 the funnel shows the measured count '+nStr, fun22.indexOf('>'+nStr+'<')>=0); });
+      ok('V22 the funnel names the sharp-screening stage', /carried a sharp price/.test(fun22));
+      ok('V22 the funnel reports alternatives below the headline', /3<\/div>[\s\S]{0,400}alternatives/.test(fun22));
+      /* A stage the run could not measure is OMITTED, not guessed — a funnel with
+         an invented middle is exactly the fake completeness this engine refuses. */
+      var fun22b=dscanFunnelHTML({id:'EDR-Y', scope:{games_scanned:12,in_window:3}});
+      ok('V22 an unmeasured stage is omitted, not invented', fun22b.indexOf('carried a sharp price')<0);
+      ok('V22 the measured stages still render', fun22b.indexOf('markets scanned')>=0);
+      ok('V22 no packet means no funnel at all', dscanFunnelHTML(null)==='');
+      ok('V22 a packet with no scope produces no funnel', dscanFunnelHTML({id:'Z'})==='');
+
+      /* ---- 23. FIRST SCREEN: first-run vs returning state ---- */
+      var h23=heroFirstRunHTML();
+      ok('V23 the first run leads with the research action', /Your first research run/.test(h23));
+      ok('V23 the first run states the work it will do', HERO_STEPS.every(function(s){
+        return h23.indexOf(esc(s))>=0; }));
+      ok('V23 the first run reports Never rather than a fabricated history', /Never/.test(h23));
+      ok('V23 the first run shows honest zeroes', (h23.match(/>0</g)||[]).length>=3);
+      ok('V23 the first run offers no postmortem it cannot produce', h23.indexOf('packetPostmortem')<0);
+      var h23b=heroReturningHTML({created_at:Date.now()-5*60000, quality_outcome:'NO BET',
+        scope:{games_scanned:187,in_window:31,deep_researched:4,finalists:4,rejections_total:183}});
+      ok('V23 a returning user sees when it last ran', /min ago/.test(h23b));
+      ok('V23 a returning user sees the real counts', h23b.indexOf('187')>=0 && h23b.indexOf('183')>=0);
+      ok('V23 a NO BET conclusion is carried onto the first screen', /NO BET/.test(h23b));
+      ok('V23 follow-ups appear only once there is a packet to ask about',
+        h23b.indexOf('packetPostmortem')>=0);
+      /* A packet from last night is NOT today's research, and saying otherwise
+         is a lie the user cannot check. */
+      var h23c=heroReturningHTML({created_at:Date.now()-30*3600e3, outcome:'BET', scope:{}});
+      ok('V23 a stale packet is not passed off as today’s run', /No run today/.test(h23c));
+      ok('V23 a stale packet still invites a fresh run', /RUN TODAY/.test(h23c));
+      ok('V23 same-day detection is by calendar day', heroSameDay(Date.now())===true);
+      ok('V23 a run 30h ago is not the same day', heroSameDay(Date.now()-30*3600e3)===false);
+
       if(verbose!==false){ try{
         console.log('%cEDResearchV2 self-test','font-weight:bold');
         R.forEach(function(r){ console.log((r.ok?'PASS':'FAIL')+' | '+r.t+(r.ok?'':'  got '+JSON.stringify(r.got)+' want '+JSON.stringify(r.want))); });
@@ -20765,7 +21000,12 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
     pitcher_features:{name:'pitcher_features (ingest_mlb)',categories:['starter','player_stats'],owned:true,rest:'pitcher_features',status:'WIRED_TABLE',ttl:'player_stats',contract:'game_id,side,pitcher_id,name,xera,k_pct,bb_pct,barrel_pct,hardhit_pct'},
     market_features:{name:'market_features (ingest_mlb)',categories:['odds','line_movement'],owned:true,rest:'market_features',status:'WIRED_TABLE',ttl:'odds',contract:'game_id,consensus_home_ml,consensus_away_ml,home_close_ml,away_close_ml,book_disagreement,closed_at'},
     offense_features:{name:'offense_features (ingest_mlb)',categories:['offense'],owned:true,rest:'offense_features',status:'WIRED_TABLE',ttl:'team_stats',contract:'game_id,side,obp,iso,k_pct,runs_per_game'},
-    weather_features:{name:'weather_features (ingest_mlb)',categories:['weather'],owned:true,rest:'weather_features',status:'WIRED_TABLE',ttl:'weather',contract:'game_id,temp_f,humidity_pct,wind_mph,wind_dir_vs_cf'},
+    /* DECLARED, NOT WIRED. The table exists and ingest_mlb writes it, but nothing
+       in this client ever reads it — weather comes from venue_weather and the
+       game card instead. Marked WIRED_TABLE it was a registry asserting coverage
+       the app does not have, which is the one thing a source registry must never
+       do. If a reader is added, restore WIRED_TABLE in the same commit. */
+    weather_features:{name:'weather_features (ingest_mlb)',categories:['weather'],owned:true,rest:'weather_features',status:'DECLARED_NO_READER',ttl:'weather',contract:'game_id,temp_f,humidity_pct,wind_mph,wind_dir_vs_cf',note:'No reader in this client; venue_weather + mlb_game_cards supply weather instead.'},
     mlb_pitcher_usage:{name:'mlb_pitcher_usage (bullpen_sync)',categories:['bullpen'],owned:true,rest:'mlb_pitcher_usage',status:'WIRED_TABLE',ttl:'bullpen',contract:'game_id,pitcher_id,team_id,game_date,full_name,pitches,outs,started,appearance_order,finished_game',reader:readBullpenUsage},
     stats_players:{name:'stats_players (capture_stats)',categories:['player_stats'],owned:true,rest:'stats_players',status:'WIRED_TABLE',ttl:'player_stats',contract:'league,team,player,position,stat_line,lead_cat,lead_val,cats,leads',reader:readPlayerStats},
     signals:{name:'signals (table, graded by settle)',categories:['historical','clv'],owned:true,rest:'signals',status:'WIRED',ttl:'historical',contract:'sig_key,sport_key,market,selection,commence_time,clv,result,beat_close,final_home,final_away,graded_at (beat_close is generated)',reader:signalsCount},
