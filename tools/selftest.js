@@ -9,14 +9,18 @@ const vm = require('vm');
 const path = process.argv[2] || require('path').join(__dirname, '..', 'app.html');
 const src = fs.readFileSync(path, 'utf8');
 
-/* The block under test is the one that defines EDGE_BRAIN. */
+/* EVERY inline block that exports a selfTest is loaded, not just the first match.
+   Scoping this to one block is how a whole suite goes unrun: the Intelligence
+   Fabric's own tests live in a different <script> and were invisible here until
+   the harness started looking for all of them. */
 const re = /<script(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>/g;
-let m, code = null, idx = 0, found = -1;
+const blocks = [];
+let m, idx = 0;
 while ((m = re.exec(src))) {
   idx++;
-  if (m[1].indexOf('EDGE_BRAIN') >= 0 && m[1].indexOf('EDBetQuality') >= 0) { code = m[1]; found = idx; break; }
+  if (m[1].indexOf('selfTest') >= 0) blocks.push({ n: idx, code: m[1] });
 }
-if (!code) { console.error('could not locate the EdgeDesk Intelligence script block'); process.exit(2); }
+if (!blocks.length) { console.error('no inline script block exports a selfTest'); process.exit(2); }
 
 function el() {
   const e = {
@@ -70,8 +74,11 @@ sandbox.window = sandbox;
 sandbox.globalThis = sandbox;
 vm.createContext(sandbox);
 
-try { new vm.Script(code, { filename: 'edgedesk-intelligence' }).runInContext(sandbox); }
-catch (e) { console.error('LOAD ERROR: ' + e.stack); process.exit(3); }
+const loaded = [];
+for (const b of blocks) {
+  try { new vm.Script(b.code, { filename: 'block' + b.n }).runInContext(sandbox); loaded.push(b.n); }
+  catch (e) { console.error('LOAD ERROR in block ' + b.n + ': ' + e.message); process.exit(3); }
+}
 
 let total = 0, failed = 0;
 function run(name, fn) {
@@ -85,10 +92,12 @@ function run(name, fn) {
     console.log('     FAIL ' + x.t + '  got ' + JSON.stringify(x.got) + '  want ' + JSON.stringify(x.want)));
 }
 
-console.log('EdgeDesk deterministic self-tests (script block ' + found + ')');
-if (sandbox.EDBetQuality) run('EDBetQuality.selfTest', () => sandbox.EDBetQuality.selfTest(false));
-else { console.log('  EDBetQuality not exported'); failed++; total++; }
-if (sandbox.EDResearchV2 && sandbox.EDResearchV2.selfTest) run('EDResearchV2.selfTest', () => sandbox.EDResearchV2.selfTest(false));
+console.log('EdgeDesk deterministic self-tests (script blocks ' + loaded.join(', ') + ')');
+/* Discovered, not hardcoded — a new suite is picked up by existing. */
+const suites = Object.keys(sandbox).filter(k =>
+  sandbox[k] && typeof sandbox[k] === 'object' && typeof sandbox[k].selfTest === 'function').sort();
+if (!suites.length) { console.log('  no suite exported a selfTest'); process.exit(1); }
+suites.forEach(k => run(k + '.selfTest', () => sandbox[k].selfTest(false)));
 
 console.log((failed === 0 ? 'ALL GREEN — ' : 'FAILURES — ') + (total - failed) + '/' + total + ' passed');
 process.exit(failed === 0 ? 0 : 1);

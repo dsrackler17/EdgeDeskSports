@@ -1453,7 +1453,7 @@ button:focus-visible,select:focus-visible,input:focus-visible,a:focus-visible{ou
          (screen -> research -> attack -> rank -> record) behind one action, so a
          user never has to know that asking twenty questions is how research used
          to get done here. -->
-    <div id="todayResearchCta" style="border:1px solid var(--line);border-radius:14px;padding:13px 14px;margin:10px 0 12px;background:linear-gradient(180deg,rgba(255,255,255,.03),transparent)">
+    <div id="todayResearchCta" style="border:1px solid var(--border);border-radius:14px;padding:13px 14px;margin:10px 0 12px;background:linear-gradient(180deg,rgba(255,255,255,.03),transparent)">
       <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
         <div style="min-width:0;flex:1">
           <div style="font-size:15px;font-weight:700;color:var(--text);letter-spacing:.01em">Today’s research</div>
@@ -14988,7 +14988,12 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
    =================================================================================== */
 (function(){
   var AI_FN = (typeof SB_URL!=='undefined'? SB_URL : '') + '/functions/v1/edgedesk_ai';
-  var FLOOR  = (typeof REAL_FLOOR!=='undefined' && REAL_FLOOR) ? REAL_FLOOR : 0.02;
+  /* The fallback MUST match REAL_FLOOR (0.005). It said 0.02 — four times the
+     real floor — so if this block ever loaded before the constant, every
+     playability gate, cushion band and price limit in the panel would silently
+     use a different floor from the rest of the app while looking correct. That
+     exact drift is what left six self-tests failing in the browser for months. */
+  var FLOOR  = (typeof REAL_FLOOR!=='undefined' && REAL_FLOOR) ? REAL_FLOOR : 0.005;
   var STALE_MIN = (typeof EDGE_MAX_AGE_MIN!=='undefined' && EDGE_MAX_AGE_MIN) ? EDGE_MAX_AGE_MIN : 45;
 
   var LOADED=null;        // enriched signal currently in focus
@@ -18980,7 +18985,7 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
   function dscanRejectHTML(rejections, totalRejected){
     if(!rejections||!rejections.length) return '';
     var rows=rejections.slice(0,6).map(function(r){
-      return '<div style="padding:6px 0;border-top:1px solid var(--line)">'
+      return '<div style="padding:6px 0;border-top:1px solid var(--border)">'
         +'<div style="font-size:12.5px;color:var(--text)"><b>'+esc(r.matchup)+'</b> <span style="color:var(--dim)">· '+esc(r.sport)+' · '+esc(r.selection)+' '+amStr(r.price_american)+'</span></div>'
         +'<div style="font-size:11.5px;color:var(--dim);margin-top:2px">'
           +'<span class="mono" style="color:var(--faint)">'+esc(r.code.replace(/_/g,' '))+'</span> — '+esc(r.reason)+'</div></div>';
@@ -19072,7 +19077,7 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
       +'<div class="edai-vsub">'+all.length+' on file · newest first · never overwritten</div>'
       +all.slice(0,15).map(function(p){
         var s=p.scope||{};
-        return '<div style="padding:6px 0;border-top:1px solid var(--line);font-size:12px">'
+        return '<div style="padding:6px 0;border-top:1px solid var(--border);font-size:12px">'
           +'<b style="color:var(--text)" class="mono">'+esc(p.id)+'</b> '
           +'<span style="color:var(--dim)">· '+esc(String(p.created_at_iso||'').slice(0,16).replace('T',' '))
           +' · '+(s.deep_researched||0)+' researched · '+(s.rejections_total||0)+' rejected · '
@@ -19865,24 +19870,21 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
     analyzeScan:function(i){ return analyzeScan(i); },
 
     // native "find today's best bet" — builds its own packet from the live board
-    dailyScan:async function(){
-      if(BUSY) return; BUSY=true; var sb=$id('edaiSend'); if(sb)sb.disabled=true;
-      window.EDAI.open(); push('u','Find today\u2019s strongest signal.');
-      try{ await dailyScanCore(); }
-      finally{ BUSY=false; var s2=$id('edaiSend'); if(s2)s2.disabled=false; }
-    },
-
     /* ---- TODAY'S RESEARCH \u2014 the primary daily entry point ------------------
-       Same deterministic pipeline as the daily scan, framed as what it actually
-       is: the day's research, ending in ONE best opportunity with alternatives,
-       rejections and a recorded packet. It is a distinct verb because the user
-       should not have to know that "scan" is how research gets done. */
-    todaysResearch:async function(){
+       One pipeline, two names. `dailyScan` is the original verb and is kept so
+       every existing button, intent route and follow-up keeps working;
+       `todaysResearch` is what the product now calls it, because a user should
+       not have to know that "scan" is how research gets done here. They delegate
+       to one implementation rather than being copied, so the two entry points
+       cannot drift apart. */
+    _runResearch:async function(echo){
       if(BUSY) return; BUSY=true; var sb=$id('edaiSend'); if(sb)sb.disabled=true;
-      window.EDAI.open(); push('u','Run today\u2019s research.');
+      window.EDAI.open(); push('u',echo);
       try{ await dailyScanCore(); }
       finally{ BUSY=false; var s2=$id('edaiSend'); if(s2)s2.disabled=false; }
     },
+    dailyScan:function(){ return window.EDAI._runResearch('Find today\u2019s strongest signal.'); },
+    todaysResearch:function(){ return window.EDAI._runResearch('Run today\u2019s research.'); },
 
     /* ---- CONTINUOUS RE-EVALUATION ----------------------------------------
        Reads the live board against the most recent packet and reports what
@@ -20765,7 +20767,12 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
     pitcher_features:{name:'pitcher_features (ingest_mlb)',categories:['starter','player_stats'],owned:true,rest:'pitcher_features',status:'WIRED_TABLE',ttl:'player_stats',contract:'game_id,side,pitcher_id,name,xera,k_pct,bb_pct,barrel_pct,hardhit_pct'},
     market_features:{name:'market_features (ingest_mlb)',categories:['odds','line_movement'],owned:true,rest:'market_features',status:'WIRED_TABLE',ttl:'odds',contract:'game_id,consensus_home_ml,consensus_away_ml,home_close_ml,away_close_ml,book_disagreement,closed_at'},
     offense_features:{name:'offense_features (ingest_mlb)',categories:['offense'],owned:true,rest:'offense_features',status:'WIRED_TABLE',ttl:'team_stats',contract:'game_id,side,obp,iso,k_pct,runs_per_game'},
-    weather_features:{name:'weather_features (ingest_mlb)',categories:['weather'],owned:true,rest:'weather_features',status:'WIRED_TABLE',ttl:'weather',contract:'game_id,temp_f,humidity_pct,wind_mph,wind_dir_vs_cf'},
+    /* DECLARED, NOT WIRED. The table exists and ingest_mlb writes it, but nothing
+       in this client ever reads it — weather comes from venue_weather and the
+       game card instead. Marked WIRED_TABLE it was a registry asserting coverage
+       the app does not have, which is the one thing a source registry must never
+       do. If a reader is added, restore WIRED_TABLE in the same commit. */
+    weather_features:{name:'weather_features (ingest_mlb)',categories:['weather'],owned:true,rest:'weather_features',status:'DECLARED_NO_READER',ttl:'weather',contract:'game_id,temp_f,humidity_pct,wind_mph,wind_dir_vs_cf',note:'No reader in this client; venue_weather + mlb_game_cards supply weather instead.'},
     mlb_pitcher_usage:{name:'mlb_pitcher_usage (bullpen_sync)',categories:['bullpen'],owned:true,rest:'mlb_pitcher_usage',status:'WIRED_TABLE',ttl:'bullpen',contract:'game_id,pitcher_id,team_id,game_date,full_name,pitches,outs,started,appearance_order,finished_game',reader:readBullpenUsage},
     stats_players:{name:'stats_players (capture_stats)',categories:['player_stats'],owned:true,rest:'stats_players',status:'WIRED_TABLE',ttl:'player_stats',contract:'league,team,player,position,stat_line,lead_cat,lead_val,cats,leads',reader:readPlayerStats},
     signals:{name:'signals (table, graded by settle)',categories:['historical','clv'],owned:true,rest:'signals',status:'WIRED',ttl:'historical',contract:'sig_key,sport_key,market,selection,commence_time,clv,result,beat_close,final_home,final_away,graded_at (beat_close is generated)',reader:signalsCount},
