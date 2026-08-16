@@ -1449,6 +1449,25 @@ button:focus-visible,select:focus-visible,input:focus-visible,a:focus-visible{ou
   <section id="v-edges" class="view">
     <div class="row-between"><h2 style="margin:0">Top edges</h2><span class="spacer"></span><span class="freshness" id="fresh">—</span><button class="refreshbtn" title="Refresh" data-refresh="edges">&#8635;</button></div>
     <p class="lede">The best live edges on games in your window — positive after the sharp fair line, with the liquidity to mean something. Ranked by edge × how this kind of signal has beaten the close. Tap any row for the receipt.</p>
+    <!-- TODAY'S RESEARCH — the primary daily entry point. The whole pipeline
+         (screen -> research -> attack -> rank -> record) behind one action, so a
+         user never has to know that asking twenty questions is how research used
+         to get done here. -->
+    <div id="todayResearchCta" style="border:1px solid var(--line);border-radius:14px;padding:13px 14px;margin:10px 0 12px;background:linear-gradient(180deg,rgba(255,255,255,.03),transparent)">
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+        <div style="min-width:0;flex:1">
+          <div style="font-size:15px;font-weight:700;color:var(--text);letter-spacing:.01em">Today’s research</div>
+          <div style="font-size:12px;color:var(--dim);margin-top:2px;line-height:1.45">Scan the slate, screen candidates, research the finalists, attack each thesis, and rank what survives — one best opportunity, its alternatives, and everything rejected with the reason. Ends in <b style="color:var(--text)">NO BET</b> when nothing qualifies.</div>
+        </div>
+        <button onclick="try{window.EDAI.todaysResearch()}catch(e){}" style="flex:0 0 auto;border:0;border-radius:10px;padding:10px 16px;font-size:13px;font-weight:700;letter-spacing:.03em;cursor:pointer;background:var(--accent);color:#06121f">RUN</button>
+      </div>
+      <div style="display:flex;gap:6px;margin-top:9px;flex-wrap:wrap">
+        <button class="edai-qa" onclick="try{window.EDAI.reevaluate()}catch(e){}">What changed?</button>
+        <button class="edai-qa" onclick="try{window.EDAI.packetPostmortem()}catch(e){}">Postmortem</button>
+        <button class="edai-qa" onclick="try{window.EDAI.packets()}catch(e){}">Past packets</button>
+      </div>
+      <div style="font-size:10.5px;color:var(--faint);margin-top:8px">Research tool only — not betting advice. Signals can be wrong.</div>
+    </div>
     <div id="edgeStale" class="stalebanner hide"></div>
     <div id="discovery" class="disco hide"></div>
     <div class="lead" id="leadWrap"><h3 id="t10title">★ Top edges — this week</h3><div id="leadList"></div></div>
@@ -15422,9 +15441,20 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
       var side=s[0], pf=mlbStarterRow(s[1],ix); if(!pf) return;
       have[side]=true;
       var m={source:'pitcher_features',source_type:'DERIVED',status:'VERIFIED',confidence:'MEDIUM',relevance:'pitching'};
+      /* FIELD NAMES MATCH PF_COLS EXACTLY. This read was `pf.hr9` against a
+         column named hr_per_9, so the value was undefined on every starter and
+         take() dropped it silently — and fip, whiff_pct and xwoba_against were
+         fetched by PF_COLS and never emitted at all. The visible effect was a
+         suppressed MLB coverage score: RUN_PREVENTION was carried by xERA alone
+         and CONTACT_QUALITY never saw xwOBA, so completeness under-reported the
+         evidence EdgeDesk was already holding. A typo that costs data is worse
+         than a missing feature, because the number it produces still looks like
+         an answer. */
       take('k_pct',pf.k_pct,m,side);           take('bb_pct',pf.bb_pct,m,side);
       take('xera',pf.xera,m,side);             take('era',pf.era,m,side);
-      take('whip',pf.whip,m,side);             take('hr_per_9',pf.hr9,m,side);
+      take('whip',pf.whip,m,side);             take('hr_per_9',pf.hr_per_9,m,side);
+      take('fip',pf.fip,m,side);               take('whiff_pct',pf.whiff_pct,m,side);
+      take('xwoba_against',pf.xwoba_against,m,side);
       take('barrel_pct',pf.barrel_pct,m,side); take('hardhit_pct',pf.hardhit_pct,m,side);
       /* Opposing offense, joined the way boardPitcher joins it. */
       if(pf.game_id!=null){
@@ -15492,6 +15522,29 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
         pushMetric(items,'temp_f',card.temp_f,cw);
         pushMetric(items,'wind_mph',card.wind_mph,cw);
       }
+      /* BULLPEN. This family had no emitter at all, so `bullpen` sat permanently
+         in missing_evidence on every MLB game and coverage was capped below what
+         EdgeDesk actually held — the board was under-reporting its own data and
+         then telling the analyst the input was missing. window.MLBPEN (taxed arms
+         by team) and window.MLBCL (closer status) are already loaded for the card
+         renderer; these are counts over those rows, not new numbers. */
+      if(card && (window.MLBPEN||window.MLBCL)){
+        var bm={source:'mlb_bullpen sync',source_type:'DERIVED',status:'PARTIAL',confidence:'MEDIUM',relevance:'bullpen'};
+        var taxed=0, closerKnown=0, closerFresh=0, sides=0;
+        [card.away_team_id,card.home_team_id].forEach(function(tid){
+          if(tid==null) return; sides++;
+          taxed += ((window.MLBPEN||{})[tid]||[]).length;
+          var cl=(window.MLBCL||{})[tid];
+          if(cl && cl.closer_name){ closerKnown++; if(!cl.closer_flag) closerFresh++; }
+        });
+        if(sides){
+          /* Flagged-arm COUNT is a real observation; it is explicitly not a
+             bullpen quality rating, and PARTIAL says so — flagged arms are not
+             full rest state for a whole pen. */
+          pushMetric(items,'bullpen_taxed',taxed,bm);
+          if(closerKnown) pushMetric(items,'closer_status',closerFresh/closerKnown,bm);
+        }
+      }
       /* CORE pitching / offense / workload, from the cache hoisted ahead of
          ranking. Absent only when ensureMlbCore() genuinely found nothing —
          which stays a real "missing", never a fabricated value. */
@@ -15499,6 +15552,16 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
         var core=mlbCoreItems(card, MLB_CORE.ix);
         for(var i=0;i<core.length;i++) items.push(core[i]);
       }
+    }else{
+      /* Every other sport. Previously this returned [] unconditionally, so
+         data_confidence was structurally zero outside baseball and a UFC or ATP
+         candidate could never be distinguished from one with no evidence at all
+         — the two look identical when neither has any. The extractors below emit
+         only what their schema actually returned, so an empty result here still
+         means "nothing on file", but now it means it truthfully. */
+      var sp=sportEvidenceItems(x);
+      for(var j=0;j<sp.length;j++) items.push(sp[j]);
+      if(sp.__resolved) items.__resolved=sp.__resolved;
     }
     return items;
   }
@@ -15514,7 +15577,9 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
               confidence:'MEDIUM',relevance:'pitching'};
       pushMetric(items,'k_pct',q.k_pct,qm);      pushMetric(items,'bb_pct',q.bb_pct,qm);
       pushMetric(items,'xera',q.xera,qm);        pushMetric(items,'era',q.era,qm);
-      pushMetric(items,'whip',q.whip,qm);        pushMetric(items,'hr_per_9',q.hr9,qm);
+      pushMetric(items,'whip',q.whip,qm);        pushMetric(items,'hr_per_9',q.hr_per_9,qm);
+      pushMetric(items,'fip',q.fip,qm);          pushMetric(items,'whiff_pct',q.whiff_pct,qm);
+      pushMetric(items,'xwoba_against',q.xwoba_against,qm);
       pushMetric(items,'barrel_pct',q.barrel_pct,qm);
       pushMetric(items,'hardhit_pct',q.hardhit_pct,qm);
     }
@@ -15536,6 +15601,464 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
       pushMetric(items,'hr_factor',park.hr_factor,pm);
     }
     return items;
+  }
+
+  /* ==================== SPORT INTELLIGENCE — THE NON-MLB CONTRACTS ====================
+     THE GAP THIS CLOSES, stated plainly because it was invisible from the UI:
+     dscanResearch() handed baseball eight tools and every other sport exactly four
+     — edgedesk, market, price, model — all four of which are market arithmetic. So
+     a UFC candidate and an ATP candidate reached the finalist stage with no fight
+     evidence and no surface evidence, and liveEvidenceItems() returned [] for every
+     sport but baseball, which meant data_confidence was structurally 0 for them.
+     They were not being researched; they were being priced and then narrated.
+
+     Meanwhile the project has been ingesting the evidence the whole time. The ufc
+     schema carries career striking and grappling rates, derived finish/layoff/
+     opponent-quality metrics and a style profile. The tennis schema carries
+     per-surface records, recent form, head-to-head and current ranking. The cfb
+     schema carries SP+ split into offence and defence, records and pregame ELO.
+     None of it was reachable from the research pipeline.
+
+     WHAT THIS DOES NOT DO, and the distinction is the whole design:
+       - It never invents a metric. A field that is absent produces NOTHING, so a
+         sparse profile is a true report of a sparse board.
+       - It never produces a probability, fair price, edge, EV or CLV. Every value
+         here is EVIDENCE, and the only thing evidence moves is data_confidence.
+       - It never treats an external rating as an EdgeDesk number. SP+ and ELO are
+         somebody else's model; they are labelled EXTERNAL and are research context.
+       - Where a sport genuinely has no source — the NFL, which this repository does
+         not ingest at all — it says so and lets credibility fall, rather than
+         quietly scoring the sport as if the absence were neutral.
+     ================================================================================= */
+
+  /* ---- metric vocabulary, extended to what the schemas ACTUALLY publish -----
+     Family membership is what makes five correlated numbers count as one finding,
+     so a metric that is not in a family is invisible to coverage. These names are
+     taken from the live column lists, not from what a sport "should" have. */
+  (function extendFamilies(){
+    /* Hockey had no contract at all, so contractFor() returned required:[] and
+       edgeCredibility fell to its 0.25 unknown-sport default — a middling score
+       for a sport it knows nothing about, which flatters the edge. With a
+       contract it scores honestly low and says which inputs are absent. */
+    if(!EDGE_BRAIN.sports.icehockey_nhl){
+      EDGE_BRAIN.sports.icehockey_nhl = { label:'NHL', variance:'very high',
+        required:['goalie','xg_for','xg_against','special_teams','rest'],
+        note:'Confirmed goalie is the single largest input and is not ingested. Outcome variance is high enough that a small edge is rarely distinguishable from noise.' };
+    }
+
+    var U=EVIDENCE_FAMILIES.mma_mixed_martial_arts;
+    U.STRIKING       = ['sig_strikes','strike_accuracy','strike_volume','distance_strikes','slpm','knockdown_avg'];
+    U.STRIKE_DEFENSE = ['strike_defense','head_movement','absorbed_per_min','sapm','durability'];
+    U.GRAPPLING      = ['takedowns','td_accuracy','sub_attempts','top_position','control_time'];
+    U.GRAPPLE_DEFENSE= ['td_defense','scramble','getup_rate'];
+    U.CARDIO         = ['late_round_output','layoff','five_round_exp','activity_365','avg_fight_time'];
+    U.PHYSICAL       = ['reach','height','age','weight_class','stance'];
+    U.OPPONENT       = ['opponent_quality','opponent_win_pct','finish_rate'];
+
+    var T=EVIDENCE_FAMILIES.tennis_atp;                 // tennis_wta is the SAME object
+    T.SURFACE = ['surface_win_pct','surface_elo','surface_form','surface_matches'];
+    T.FORM    = ['recent_form','last10','momentum','career_win_pct'];
+    T.WORKLOAD= ['recent_load','matches_7d','minutes_played','rest_days','days_since_match'];
+    T.OPPONENT= ['opponent_quality','opponent_elo','opponent_rank','rank_gap','h2h_record'];
+
+    /* College basketball was silently borrowing the NBA family set through the
+       /^basketball_/ fallback, and its contract slots (adj_offense, adj_defense,
+       home_court) map to no NBA metric — so the borrow could never satisfy the
+       contract and merely made the mismatch harder to see. Given its own set. */
+    EVIDENCE_FAMILIES.basketball_ncaab = {
+      ADJ_OFFENSE:['adj_o','adj_offense','off_rating','efg_pct','ts_pct'],
+      ADJ_DEFENSE:['adj_d','adj_defense','def_rating','opp_efg_pct'],
+      TEMPO:['adj_tempo','pace','possessions'],
+      FOUR_FACTORS:['to_pct','orb_pct','ft_rate','three_rate'],
+      AVAILABILITY:['lineup','injuries','minutes','rest'],
+      CONTEXT:['home_court','neutral_site','travel']
+    };
+
+    /* College football has no entry at all, so familiesFor() returned null and the
+       whole sport fell back to counting contract slots nothing ever filled. */
+    EVIDENCE_FAMILIES.americanfootball_ncaaf = {
+      OFFENSE_RATING:['sp_offense','sp_offense_rank','points_per_game'],
+      DEFENSE_RATING:['sp_defense','sp_defense_rank','points_allowed_per_game'],
+      TEAM_QUALITY:['sp_overall','sp_overall_rank','pregame_elo','elo_gap'],
+      SCHEDULE:['sos','conference_game','neutral_site'],
+      FORM:['wins','losses','win_pct','conf_record'],
+      RANKING:['poll_rank']
+    };
+  })();
+
+  /* Which metrics satisfy each contract slot, per sport. The contract names coarse
+     inputs ("striking", "surface_form"); families are finer. Without this map a
+     slot can never be marked present and missing_evidence lists every input on
+     every game — which is how an answer ends up reporting a gap it is looking at. */
+  CONTRACT_SLOT_METRICS.mma_mixed_martial_arts = {
+    striking:['slpm','strike_accuracy','knockdown_avg','strike_volume'],
+    grappling:['takedowns','td_accuracy','td_defense','sub_attempts','control_time'],
+    style_matchup:['stance','durability','finish_rate'],
+    layoff:['layoff','activity_365'],
+    weight:['weight_class','reach','height']
+  };
+  CONTRACT_SLOT_METRICS.tennis_atp = {
+    surface_form:['surface_win_pct','surface_matches','surface_form'],
+    serve_hold:['hold_pct','first_serve_won','ace_pct'],
+    return_break:['break_pct','return_points_won'],
+    recent_load:['days_since_match','matches_7d','recent_load'],
+    opponent_quality:['opponent_rank','rank_gap','h2h_record','opponent_quality']
+  };
+  CONTRACT_SLOT_METRICS.tennis_wta = CONTRACT_SLOT_METRICS.tennis_atp;
+  CONTRACT_SLOT_METRICS.americanfootball_ncaaf = {
+    offense_efficiency:['sp_offense','sp_offense_rank'],
+    defense_efficiency:['sp_defense','sp_defense_rank'],
+    qb:[],                       // no college passing layer is ingested — never satisfiable
+    line_play:[],                // not ingested
+    roster_turnover:[]           // returning production is not ingested
+  };
+  CONTRACT_SLOT_METRICS.americanfootball_nfl = {
+    qb:[], offense_efficiency:[], defense_efficiency:[], injuries:[], rest:[]
+  };
+  /* Basketball has a contract but no adapter and, until now, no slot map either —
+     so unsourcedSlots() returned null and all six inputs were reported as though
+     EdgeDesk had looked and found empty rows. It has no source at all. Declaring
+     the slots as unsatisfiable is the difference between "the feed is quiet" and
+     "there is no feed", and only one of those is true. */
+  CONTRACT_SLOT_METRICS.basketball_nba = {
+    lineup:[], injuries:[], offense_rating:[], defense_rating:[], pace:[], rest:[]
+  };
+  CONTRACT_SLOT_METRICS.basketball_wnba = CONTRACT_SLOT_METRICS.basketball_nba;
+  CONTRACT_SLOT_METRICS.basketball_ncaab = {
+    adj_offense:[], adj_defense:[], pace:[], lineup:[], home_court:[]
+  };
+
+  /* Slots that CANNOT be filled from anything this repository ingests. Declared
+     rather than discovered, so the answer can distinguish "EdgeDesk looked and the
+     row was empty" from "EdgeDesk has no source for this and never will until an
+     adapter is built". Those are different sentences with different fixes, and
+     collapsing them is how a missing pipeline reads as a quiet slate. */
+  var CONTRACT_SLOT_UNSOURCED = {
+    tennis_atp:{ serve_hold:'Serve/return splits (hold %, first-serve won, ace %) are not ingested — the tennis schema stores results, surfaces and rankings, not point-level serve data.',
+                 return_break:'Break/return-points-won are not ingested. Same gap as serve.' },
+    americanfootball_ncaaf:{ qb:'No college passing-efficiency layer is ingested; the cfb schema carries roster names, not per-play QB production.',
+                 line_play:'No line-play or trench metrics are ingested for college football.',
+                 roster_turnover:'Returning production / portal movement is not ingested.' },
+    americanfootball_nfl:{ qb:'EdgeDesk ingests no NFL quarterback layer.',
+                 offense_efficiency:'No NFL team-efficiency table (EPA/play, success rate) is ingested.',
+                 defense_efficiency:'No NFL defensive-efficiency table is ingested.',
+                 injuries:'No NFL injury report is ingested anywhere in the product.',
+                 rest:'No NFL rest/short-week table is ingested.' }
+  };
+  CONTRACT_SLOT_UNSOURCED.tennis_wta = CONTRACT_SLOT_UNSOURCED.tennis_atp;
+  var _NO_BBALL='No basketball data of any kind is ingested in this build — no lineup, injury, efficiency, pace or rest source exists. This is a missing pipeline, not an empty row, and no rescan will fill it.';
+  CONTRACT_SLOT_UNSOURCED.basketball_nba = {lineup:_NO_BBALL, injuries:_NO_BBALL, offense_rating:_NO_BBALL, defense_rating:_NO_BBALL, pace:_NO_BBALL, rest:_NO_BBALL};
+  CONTRACT_SLOT_UNSOURCED.basketball_wnba = CONTRACT_SLOT_UNSOURCED.basketball_nba;
+  CONTRACT_SLOT_UNSOURCED.basketball_ncaab = {adj_offense:_NO_BBALL, adj_defense:_NO_BBALL, pace:_NO_BBALL, lineup:_NO_BBALL, home_court:_NO_BBALL};
+  var _NO_NHL='No hockey data is ingested — goalie confirmation, expected goals and special teams all have no source in this build.';
+  CONTRACT_SLOT_METRICS.icehockey_nhl = {goalie:[], xg_for:[], xg_against:[], special_teams:[], rest:[]};
+  CONTRACT_SLOT_UNSOURCED.icehockey_nhl = {goalie:_NO_NHL, xg_for:_NO_NHL, xg_against:_NO_NHL, special_teams:_NO_NHL, rest:_NO_NHL};
+  function unsourcedSlots(sportKey){ return CONTRACT_SLOT_UNSOURCED[String(sportKey||'')]||null; }
+
+  /* ---- SPORT CORE ----------------------------------------------------------
+     The same hoisting discipline MLB_CORE already uses, for the same reason: the
+     ranking runs synchronously, so evidence has to be in hand BEFORE a candidate
+     is scored or it gets ranked on market depth alone and meets its own sport
+     afterwards. Fetches are NAME-SCOPED to the candidates actually on the board —
+     a daily scan must not page the entire fighter table to research four bouts. */
+  var SPORT_CORE={ ufc:{ts:0,by:null,note:null}, tennis:{ts:0,by:null,note:null}, cfb:{ts:0,by:null,note:null} };
+  var SPORT_CORE_TTL=300000;
+  function spNorm(s){
+    if(typeof ufcNormName==='function') return ufcNormName(s);
+    return String(s==null?'':s).toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
+  }
+  /* Surname key, so "Alexander Volkanovski" and "A. Volkanovski" resolve alike. */
+  function spLast(s){ var p=spNorm(s).split(' ').filter(Boolean); return p.length?p[p.length-1]:''; }
+  function spIndex(rows, nameField){
+    var by={full:{}, last:{}};
+    (rows||[]).forEach(function(r){
+      var nm=r&&r[nameField]; if(!nm) return;
+      by.full[spNorm(nm)]=r;
+      var l=spLast(nm);
+      if(l){ if(by.last[l]) by.last[l]='__AMBIGUOUS__'; else by.last[l]=r; }
+    });
+    return by;
+  }
+  /* A surname that matches two people is NOT a match. Returning either one would
+     attach one athlete's numbers to another in prose that reads perfectly. */
+  function spLookup(by, name){
+    if(!by||!name) return null;
+    var f=by.full[spNorm(name)];
+    if(f) return f;
+    var l=by.last[spLast(name)];
+    return (l && l!=='__AMBIGUOUS__') ? l : null;
+  }
+  function inList(names){
+    return names.map(function(s){ return '"'+String(s).replace(/"/g,'') + '"'; }).join(',');
+  }
+
+  /* Names on the board for one sport, both sides, deduped and capped. */
+  function sportNamesOnBoard(sportKey, rows, cap){
+    var seen={}, out=[];
+    (rows||[]).forEach(function(e){
+      if(!e || String(e.sport_key||'')!==sportKey) return;
+      [e.away_team,e.home_team].forEach(function(nm){
+        if(!nm) return; var k=spNorm(nm);
+        if(k && !seen[k]){ seen[k]=1; out.push(String(nm)); }
+      });
+    });
+    return out.slice(0, cap||40);
+  }
+
+  async function ensureUfcCore(names, force){
+    var C=SPORT_CORE.ufc;
+    if(!force && C.by && (Date.now()-C.ts)<SPORT_CORE_TTL) return C;
+    C={ts:Date.now(), by:null, note:null};
+    try{
+      if(typeof sbGetUfc!=='function'){ C.note='ufc schema reader is not available in this build.'; SPORT_CORE.ufc=C; return C; }
+      var fighters=[];
+      /* Reuse an already-loaded fighter table when the UFC tab has populated it;
+         otherwise fetch ONLY the names on the board. */
+      if(window.UFC && UFC.fighters && UFC.fighters.length){ fighters=UFC.fighters; }
+      else if(names && names.length){
+        fighters=await sbGetUfc('fighters?select=fighter_id,full_name,division,stance,height_inches,reach_inches,age,wins,losses,draws'
+          +'&full_name=in.('+encodeURIComponent(inList(names)).replace(/%2C/g,',')+')&limit=120');
+      }
+      if(!fighters || !fighters.length){
+        C.note='No ufc.fighters row matched the fighters on this board.'; SPORT_CORE.ufc=C; return C;
+      }
+      var ids=fighters.map(function(f){return f.fighter_id;}).filter(function(v){return v!=null;}).slice(0,120);
+      var byId={}; fighters.forEach(function(f){ byId[f.fighter_id]=Object.assign({},f); });
+      if(ids.length){
+        var idIn='&fighter_id=in.('+ids.join(',')+')&limit=200';
+        try{ (await sbGetUfc('fighter_career_stats?select=fighter_id,slpm,sapm,striking_accuracy,striking_defense,takedown_avg,takedown_accuracy,takedown_defense,submission_avg,knockdown_avg,control_time_avg'+idIn))
+          .forEach(function(r){ if(byId[r.fighter_id]) byId[r.fighter_id].c=r; }); }catch(_){}
+        try{ (await sbGetUfc('fighter_derived_metrics?select=fighter_id,finish_rate,win_streak,loss_streak,days_since_last_fight,activity_last365,average_fight_time,opponent_average_win_pct'+idIn))
+          .forEach(function(r){ if(byId[r.fighter_id]) byId[r.fighter_id].d=r; }); }catch(_){}
+        try{ (await sbGetUfc('fighter_style_metrics?select=fighter_id,primary_style,durability_score,finisher,wrestler,submission_specialist'+idIn))
+          .forEach(function(r){ if(byId[r.fighter_id]) byId[r.fighter_id].s=r; }); }catch(_){}
+      }
+      C.by=spIndex(Object.keys(byId).map(function(k){return byId[k];}),'full_name');
+    }catch(err){ C.note='ufc schema not readable this session ('+String(err&&err.message||err).slice(0,80)+').'; }
+    SPORT_CORE.ufc=C; return C;
+  }
+
+  async function ensureTennisCore(names, force){
+    var C=SPORT_CORE.tennis;
+    if(!force && C.by && (Date.now()-C.ts)<SPORT_CORE_TTL) return C;
+    C={ts:Date.now(), by:null, note:null, surf:{}, form:{}, rank:{}};
+    try{
+      if(typeof sbGetTennis!=='function'){ C.note='tennis schema reader is not available in this build.'; SPORT_CORE.tennis=C; return C; }
+      var players=[];
+      if(names && names.length){
+        players=await sbGetTennis('players?select=player_id,full_name,tour,country,plays'
+          +'&full_name=in.('+encodeURIComponent(inList(names)).replace(/%2C/g,',')+')&limit=120');
+      }
+      if(!players || !players.length){
+        C.note='No tennis.players row matched the players on this board.'; SPORT_CORE.tennis=C; return C;
+      }
+      var pids=players.map(function(p){return p.player_id;}).filter(function(v){return v!=null;}).slice(0,120);
+      var byId={}; players.forEach(function(p){ byId[p.player_id]=Object.assign({},p); });
+      if(pids.length){
+        var pin='&player_id=in.('+pids.map(function(v){return '"'+String(v).replace(/"/g,'')+'"';}).join(',')+')';
+        try{ (await sbGetTennis('player_career?select=player_id,wins,losses,matches,win_pct,last_match'+pin+'&limit=200'))
+          .forEach(function(r){ if(byId[r.player_id]) byId[r.player_id].career=r; }); }catch(_){}
+        try{ (await sbGetTennis('player_surface?select=player_id,surface,season,wins,losses,matches,win_pct'+pin+'&order=season.desc&limit=600'))
+          .forEach(function(r){ if(byId[r.player_id]){ (byId[r.player_id].surf=byId[r.player_id].surf||[]).push(r); } }); }catch(_){}
+        try{ (await sbGetTennis('player_form?select=player_id,match_date,won,surface'+pin+'&order=match_date.desc&limit=600'))
+          .forEach(function(r){ if(byId[r.player_id]){ (byId[r.player_id].form=byId[r.player_id].form||[]).push(r); } }); }catch(_){}
+        try{ (await sbGetTennis('rankings_current?select=player_id,rank,points'+pin+'&limit=200'))
+          .forEach(function(r){ if(byId[r.player_id]) byId[r.player_id].rank=r; }); }catch(_){}
+      }
+      C.by=spIndex(Object.keys(byId).map(function(k){return byId[k];}),'full_name');
+    }catch(err){ C.note='tennis schema not readable this session ('+String(err&&err.message||err).slice(0,80)+').'; }
+    SPORT_CORE.tennis=C; return C;
+  }
+
+  async function ensureCfbCore(force){
+    var C=SPORT_CORE.cfb;
+    if(!force && C.by && (Date.now()-C.ts)<SPORT_CORE_TTL) return C;
+    C={ts:Date.now(), by:null, note:null, rec:null};
+    try{
+      /* Reuse the CFB tab's own loaded ratings when present — same rows, no
+         second query and no second season-selection rule to drift out of sync. */
+      if(window.CFB && CFB.ratings && Object.keys(CFB.ratings).length){
+        var rows=Object.keys(CFB.ratings).map(function(k){ return CFB.ratings[k]; });
+        C.by=spIndex(rows,'team');
+        C.rec=(CFB.records&&Object.keys(CFB.records).length)?CFB.records:null;
+        SPORT_CORE.cfb=C; return C;
+      }
+      if(typeof sbGetCfb!=='function'){ C.note='cfb schema reader is not available in this build.'; SPORT_CORE.cfb=C; return C; }
+      var rt=await sbGetCfb('ratings?select=season,team,conference,rating,ranking,offense_rating,offense_ranking,defense_rating,defense_ranking,sos&order=season.desc.nullslast&limit=800');
+      if(!rt || !rt.length){ C.note='cfb.ratings returned no rows — SP+ has not been ingested.'; SPORT_CORE.cfb=C; return C; }
+      var latest=rt.reduce(function(a,r){ return Math.max(a, +r.season||0); },0);
+      C.by=spIndex(rt.filter(function(r){ return (+r.season||0)===latest; }),'team');
+    }catch(err){ C.note='cfb schema not readable this session ('+String(err&&err.message||err).slice(0,80)+').'; }
+    SPORT_CORE.cfb=C; return C;
+  }
+
+  /* One call, driven by what is actually on the board. Sports with no candidates
+     cost nothing; sports with no source cost one failed read and then say so. */
+  async function ensureSportCore(rows, force){
+    var jobs=[], sports={};
+    (rows||[]).forEach(function(e){ if(e&&e.sport_key) sports[e.sport_key]=1; });
+    if(sports.mma_mixed_martial_arts) jobs.push(ensureUfcCore(sportNamesOnBoard('mma_mixed_martial_arts',rows),force));
+    var tn=[];
+    if(sports.tennis_atp) tn=tn.concat(sportNamesOnBoard('tennis_atp',rows));
+    if(sports.tennis_wta) tn=tn.concat(sportNamesOnBoard('tennis_wta',rows));
+    if(tn.length) jobs.push(ensureTennisCore(tn,force));
+    if(sports.americanfootball_ncaaf) jobs.push(ensureCfbCore(force));
+    if(jobs.length){ try{ await Promise.all(jobs); }catch(_){} }
+    return SPORT_CORE;
+  }
+
+  /* ---- per-sport evidence extraction --------------------------------------
+     Each emits the UNION of metric TYPES held across both participants, exactly
+     as mlbCoreItems does for two starters: the question credibility asks is "does
+     this matchup have striking evidence", not "whose". A metric absent on both
+     sides is simply not emitted. */
+  function ufcEvidenceItems(x){
+    var items=[], e=x&&x.e; if(!e) return items;
+    var C=SPORT_CORE.ufc; if(!C||!C.by) return items;
+    var a=spLookup(C.by,e.away_team), h=spLookup(C.by,e.home_team);
+    if(!a && !h) return items;
+    var acc={};
+    function take(metric,value,meta,side){
+      if(value==null||value==='') return;
+      var v=+value; if(!isFinite(v)) return;
+      if(!acc[metric]) acc[metric]={value:v,meta:meta,sides:[side]};
+      else if(acc[metric].sides.indexOf(side)<0) acc[metric].sides.push(side);
+    }
+    [['away',a],['home',h]].forEach(function(p){
+      var side=p[0], f=p[1]; if(!f) return;
+      var c=f.c||{}, d=f.d||{}, s=f.s||{};
+      var cm={source:'ufc.fighter_career_stats',source_type:'DERIVED',status:'VERIFIED',confidence:'MEDIUM',relevance:'striking'};
+      take('slpm',c.slpm,cm,side);
+      take('strike_accuracy',c.striking_accuracy,cm,side);
+      take('knockdown_avg',c.knockdown_avg,cm,side);
+      var dm={source:'ufc.fighter_career_stats',source_type:'DERIVED',status:'VERIFIED',confidence:'MEDIUM',relevance:'defense'};
+      take('sapm',c.sapm,dm,side);
+      take('strike_defense',c.striking_defense,dm,side);
+      var gm={source:'ufc.fighter_career_stats',source_type:'DERIVED',status:'VERIFIED',confidence:'MEDIUM',relevance:'grappling'};
+      take('takedowns',c.takedown_avg,gm,side);
+      take('td_accuracy',c.takedown_accuracy,gm,side);
+      take('sub_attempts',c.submission_avg,gm,side);
+      take('control_time',c.control_time_avg,gm,side);
+      take('td_defense',c.takedown_defense,{source:'ufc.fighter_career_stats',source_type:'DERIVED',status:'VERIFIED',confidence:'MEDIUM',relevance:'grapple_defense'},side);
+      var km={source:'ufc.fighter_derived_metrics',source_type:'DERIVED',status:'VERIFIED',confidence:'MEDIUM',relevance:'cardio'};
+      take('layoff',d.days_since_last_fight,km,side);
+      take('activity_365',d.activity_last365,km,side);
+      take('avg_fight_time',d.average_fight_time,km,side);
+      var om={source:'ufc.fighter_derived_metrics',source_type:'DERIVED',status:'VERIFIED',confidence:'MEDIUM',relevance:'opponent'};
+      take('opponent_win_pct',d.opponent_average_win_pct,om,side);
+      take('finish_rate',d.finish_rate,om,side);
+      var pm={source:'ufc.fighters',source_type:'OFFICIAL',status:'VERIFIED',confidence:'HIGH',relevance:'physical'};
+      take('reach',f.reach_inches,pm,side);
+      take('height',f.height_inches,pm,side);
+      take('age',f.age,pm,side);
+      if(s.durability_score!=null) take('durability',s.durability_score,
+        {source:'ufc.fighter_style_metrics',source_type:'DERIVED',status:'VERIFIED',confidence:'MEDIUM',relevance:'defense'},side);
+    });
+    Object.keys(acc).forEach(function(k){
+      pushMetric(items,k,acc[k].value,acc[k].meta);
+      items[items.length-1].sides=acc[k].sides.slice();
+    });
+    items.__resolved={away:!!a, home:!!h};
+    return items;
+  }
+
+  function tennisEvidenceItems(x){
+    var items=[], e=x&&x.e; if(!e) return items;
+    var C=SPORT_CORE.tennis; if(!C||!C.by) return items;
+    var a=spLookup(C.by,e.away_team), h=spLookup(C.by,e.home_team);
+    if(!a && !h) return items;
+    var acc={};
+    function take(metric,value,meta,side){
+      if(value==null||value==='') return;
+      var v=+value; if(!isFinite(v)) return;
+      if(!acc[metric]) acc[metric]={value:v,meta:meta,sides:[side]};
+      else if(acc[metric].sides.indexOf(side)<0) acc[metric].sides.push(side);
+    }
+    [['away',a],['home',h]].forEach(function(p){
+      var side=p[0], pl=p[1]; if(!pl) return;
+      if(pl.career){
+        take('career_win_pct',pl.career.win_pct,
+          {source:'tennis.player_career',source_type:'DERIVED',status:'VERIFIED',confidence:'MEDIUM',relevance:'form'},side);
+      }
+      /* Most recent season with matches on ANY surface. The match surface is not
+         carried on the signal row, so this is a surface-form READ, not a
+         surface-specific claim, and it is labelled that way downstream. */
+      var sf=(pl.surf||[]).filter(function(r){ return (+r.matches||0)>0; })[0];
+      if(sf){
+        var sm={source:'tennis.player_surface',source_type:'DERIVED',status:'PARTIAL',confidence:'MEDIUM',relevance:'surface'};
+        take('surface_win_pct',sf.win_pct,sm,side);
+        take('surface_matches',sf.matches,sm,side);
+      }
+      var fm=(pl.form||[]).slice(0,10);
+      if(fm.length>=5){
+        var won=fm.filter(function(r){ return r.won===true||r.won==='true'; }).length;
+        take('last10',won/fm.length,
+          {source:'tennis.player_form',source_type:'DERIVED',status:'VERIFIED',confidence:'MEDIUM',relevance:'form'},side);
+        var last=Date.parse(String(fm[0].match_date||''));
+        if(isFinite(last)) take('days_since_match',Math.max(0,Math.round((Date.now()-last)/86400000)),
+          {source:'tennis.player_form',source_type:'DERIVED',status:'VERIFIED',confidence:'MEDIUM',relevance:'workload'},side);
+      }
+      if(pl.rank && pl.rank.rank!=null) take('opponent_rank',pl.rank.rank,
+        {source:'tennis.rankings_current',source_type:'OFFICIAL',status:'VERIFIED',confidence:'HIGH',relevance:'opponent'},side);
+    });
+    if(a && h && a.rank && h.rank && a.rank.rank!=null && h.rank.rank!=null){
+      pushMetric(items,'rank_gap',Math.abs((+a.rank.rank)-(+h.rank.rank)),
+        {source:'tennis.rankings_current',source_type:'DERIVED',status:'VERIFIED',confidence:'HIGH',relevance:'opponent'});
+    }
+    Object.keys(acc).forEach(function(k){
+      pushMetric(items,k,acc[k].value,acc[k].meta);
+      items[items.length-1].sides=acc[k].sides.slice();
+    });
+    items.__resolved={away:!!a, home:!!h};
+    return items;
+  }
+
+  function cfbEvidenceItems(x){
+    var items=[], e=x&&x.e; if(!e) return items;
+    var C=SPORT_CORE.cfb; if(!C||!C.by) return items;
+    var a=spLookup(C.by,e.away_team), h=spLookup(C.by,e.home_team);
+    if(!a && !h) return items;
+    var acc={};
+    function take(metric,value,meta,side){
+      if(value==null||value==='') return;
+      var v=+value; if(!isFinite(v)) return;
+      if(!acc[metric]) acc[metric]={value:v,meta:meta,sides:[side]};
+      else if(acc[metric].sides.indexOf(side)<0) acc[metric].sides.push(side);
+    }
+    /* SP+ is an EXTERNAL MODEL. source_type says so on every item so nothing
+       downstream can quote it as an EdgeDesk number. */
+    var sm={source:'cfb.ratings (CollegeFootballData SP+)',source_type:'EXTERNAL_MODEL',status:'UNPROVEN',confidence:'MEDIUM',relevance:'efficiency'};
+    [['away',a],['home',h]].forEach(function(p){
+      var side=p[0], t=p[1]; if(!t) return;
+      take('sp_overall',t.rating,sm,side);
+      take('sp_overall_rank',t.ranking,sm,side);
+      take('sp_offense',t.offense_rating,sm,side);
+      take('sp_offense_rank',t.offense_ranking,sm,side);
+      take('sp_defense',t.defense_rating,sm,side);
+      take('sp_defense_rank',t.defense_ranking,sm,side);
+      take('sos',t.sos,{source:'cfb.ratings',source_type:'EXTERNAL_MODEL',status:'UNPROVEN',confidence:'MEDIUM',relevance:'schedule'},side);
+      var rec=C.rec ? (C.rec[String(t.team||'').toLowerCase()]||null) : null;
+      if(rec){
+        var rm={source:'cfb.records',source_type:'OFFICIAL',status:'VERIFIED',confidence:'HIGH',relevance:'form'};
+        take('wins',rec.total_wins,rm,side); take('losses',rec.total_losses,rm,side);
+      }
+    });
+    Object.keys(acc).forEach(function(k){
+      pushMetric(items,k,acc[k].value,acc[k].meta);
+      items[items.length-1].sides=acc[k].sides.slice();
+    });
+    items.__resolved={away:!!a, home:!!h};
+    return items;
+  }
+
+  /* The single dispatch every caller uses. Adding a sport means adding one line
+     here and one extractor above — never a branch inside the credibility engine. */
+  function sportEvidenceItems(x){
+    var sk=String((x&&x.e&&x.e.sport_key)||'');
+    if(sk==='mma_mixed_martial_arts') return ufcEvidenceItems(x);
+    if(sk.indexOf('tennis_')===0)      return tennisEvidenceItems(x);
+    if(sk==='americanfootball_ncaaf')  return cfbEvidenceItems(x);
+    return [];
   }
 
   /* ---- EDGE CREDIBILITY ----------------------------------------------------
@@ -15602,6 +16125,13 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
         });
       }
     }
+    /* `got` is computed on BOTH paths. It used to be declared inside the else,
+       so on the metric path it was hoisted-but-undefined and every comparison
+       against it silently failed — which is why the "missing N of M inputs this
+       sport needs" flag never fired once the family engine took over, on any
+       sport, while missing_evidence beside it was correctly populated. A flag
+       that cannot fire is worse than no flag: it reads as a clean bill. */
+    var got = need.filter(function(k){ return !!have[k]; }).length;
     var dataConf;
     if(prof && prof.families_defined){
       dataConf = prof.coverage;
@@ -15609,7 +16139,6 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
          several confirmations. Charge for that rather than averaging it away. */
       if(prof.consistency!=null) dataConf = dataConf*(0.6+0.4*prof.consistency);
     }else{
-      var got = need.filter(function(k){ return !!have[k]; }).length;
       dataConf = need.length ? (got/need.length) : (ctx.evidenceUnknown===false?0.5:0.25);
     }
     if(tr) dataConf = clamp(dataConf+0.05,0,1);
@@ -15640,9 +16169,16 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
     if(!sharp) flags.push('No sharp reference quoted this selection; the fair value is a soft consensus.');
     if(nb<4) flags.push('Only '+nb+' book'+(nb===1?'':'s')+' priced it — a thin market moves the consensus on its own.');
     if(staleM>STALE_MIN) flags.push('Quote is '+Math.round(staleM)+' minutes old; the price may already be gone.');
-    if(need.length && got<need.length){
-      flags.push('Missing '+(need.length-got)+' of '+need.length+' inputs this sport needs: '+need.filter(function(k){return !have[k];}).join(', ')+'.');
-    }
+    /* MISSING vs UNSOURCED. "EdgeDesk looked and the row was empty" and "EdgeDesk
+       has no feed for this and never will until an adapter is built" are different
+       findings with different fixes, and reporting them as one sentence is how a
+       missing pipeline reads as a quiet slate. Split at the point of reporting. */
+    var _uns=unsourcedSlots(x&&x.e&&x.e.sport_key)||{};
+    var _absent=need.filter(function(k){ return !have[k]; });
+    var _noSource=_absent.filter(function(k){ return !!_uns[k]; });
+    var _empty=_absent.filter(function(k){ return !_uns[k]; });
+    if(_empty.length) flags.push('Missing '+_empty.length+' of '+need.length+' inputs this sport needs: '+_empty.join(', ')+'.');
+    if(_noSource.length) flags.push('EdgeDesk ingests no source for '+_noSource.join(', ')+' in this sport — that is a pipeline gap, not an empty row, and it cannot be filled by rescanning.');
     if(!need.length) flags.push('No sport contract on file, so evidence completeness cannot be assessed.');
     if(prof){
       if(prof.metrics>prof.family_count && prof.family_count>0 && prof.metrics>=prof.family_count*2)
@@ -15658,9 +16194,34 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
     /* The call now answers "is this worth capital", not just "is this credible".
        An edge that cannot clear the minimum after its own penalties is NO BET —
        a first-class outcome, not a failure to find something. */
-    var _effRaw = (edge==null||edge<=0) ? null
-      : edge - edge*(1-dataConf)*0.55 - edge*(1-marketConf)*0.45
-             - edge*(1-modelConf)*0.60 - edge*(1-survival)*0.35;
+    /* THE DISCOUNT IS COMPUTED EXACTLY ONCE. It used to be written twice — once
+       to decide the call and once to report the number — so changing a penalty
+       coefficient in one place and not the other would have produced a call that
+       disagreed with the figure printed beside it, with nothing to catch it. */
+    var _eff=(function(){
+      if(edge==null||edge<=0) return null;
+      // Estimation error scales with how little of the sport's evidence is present.
+      var uncertainty = edge*(1-dataConf)*0.55;
+      // A thin or unanchored market is more often wrong about its own price.
+      var marketRisk  = edge*(1-marketConf)*0.45;
+      // An edge outside what this market is usually wrong by is partly artifact.
+      var modelRisk   = edge*(1-modelConf)*0.60;
+      // Execution: the price decays and you do not always get the quote you saw.
+      var execution   = edge*(1-survival)*0.35;
+      var eff = edge - uncertainty - marketRisk - modelRisk - execution;
+      return {
+        raw:Math.round(edge*10000)/10000,
+        uncertainty_penalty:-Math.round(uncertainty*10000)/10000,
+        market_penalty:-Math.round(marketRisk*10000)/10000,
+        model_penalty:-Math.round(modelRisk*10000)/10000,
+        execution_penalty:-Math.round(execution*10000)/10000,
+        effective:Math.round(eff*10000)/10000,
+        minimum_required:MIN_EFFECTIVE_EDGE,
+        clears_minimum:(eff>=MIN_EFFECTIVE_EDGE),
+        basis:'raw edge less penalties for evidence gaps, market thinness, an edge outside what this market is usually wrong by, and price decay. A research discount on the deterministic edge — it never rewrites it.'
+      };
+    })();
+    var _effRaw = _eff? _eff.effective : null;
     var call;
     if(edge==null||edge<=0) call='PASS';
     else if(_effRaw!=null && _effRaw < MIN_EFFECTIVE_EDGE)
@@ -15679,29 +16240,7 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
          This is a DERIVED READ, not a replacement. raw_edge, EV, fair price and
          CLV remain exactly the deterministic engine's, untouched — effective
          edge only decides how seriously to take them. */
-      effective_edge:(function(){
-        if(edge==null||edge<=0) return null;
-        // Estimation error scales with how little of the sport's evidence is present.
-        var uncertainty = edge*(1-dataConf)*0.55;
-        // A thin or unanchored market is more often wrong about its own price.
-        var marketRisk  = edge*(1-marketConf)*0.45;
-        // An edge outside what this market is usually wrong by is partly artifact.
-        var modelRisk   = edge*(1-modelConf)*0.60;
-        // Execution: the price decays and you do not always get the quote you saw.
-        var execution   = edge*(1-survival)*0.35;
-        var eff = edge - uncertainty - marketRisk - modelRisk - execution;
-        return {
-          raw:Math.round(edge*10000)/10000,
-          uncertainty_penalty:-Math.round(uncertainty*10000)/10000,
-          market_penalty:-Math.round(marketRisk*10000)/10000,
-          model_penalty:-Math.round(modelRisk*10000)/10000,
-          execution_penalty:-Math.round(execution*10000)/10000,
-          effective:Math.round(eff*10000)/10000,
-          minimum_required:MIN_EFFECTIVE_EDGE,
-          clears_minimum:(eff>=MIN_EFFECTIVE_EDGE),
-          basis:'raw edge less penalties for evidence gaps, market thinness, an edge outside what this market is usually wrong by, and price decay. A research discount on the deterministic edge — it never rewrites it.'
-        };
-      })(),
+      effective_edge:_eff,
       credibility:Math.round(credibility*1000)/10,
       band:band, call:call,
       market_confidence:Math.round(marketConf*1000)/10,
@@ -15710,7 +16249,10 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
       price_survival:Math.round(survival*1000)/10,
       plausible_edge_scale:Math.round(scale*10000)/10000,
       sport:contract.label, sport_note:contract.note,
-      required_evidence:need, missing_evidence:need.filter(function(k){return !have[k];}),
+      required_evidence:need, missing_evidence:_absent,
+      /* Split so a reader can tell a stale pipeline from an absent one. */
+      evidence_absent_empty:_empty, evidence_absent_unsourced:_noSource,
+      unsourced_detail:_noSource.map(function(k){ return {slot:k, why:_uns[k]}; }),
       /* METRIC COUNT and INDEPENDENT FAMILY COUNT are different numbers and the
          difference between them is the finding. Exposed so the AI can say
          "eleven metrics, six families" rather than "eleven pieces of evidence". */
@@ -15731,8 +16273,192 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
     };
   }
 
+  /* ==================== RAW DISCREPANCY vs CREDIBLE OPPORTUNITY ====================
+     A number is not an opportunity. The board has always been able to say how big
+     an edge is and, since the credibility layer, how much to believe it — but the
+     two were still one continuum, so a large unvalidated discrepancy and a small
+     validated one differed only by degree. They are different KINDS of object and
+     the product has to name which one it is holding before it ranks anything.
+
+     The checks below are the named validation gates from the research protocol.
+     Every one reads OWNED fields, every one can come back N/A honestly, and none
+     of them computes or adjusts a price. A failed check does not subtract from a
+     score — it changes the classification, which is a stronger and more legible
+     statement than a lower number.
+
+     The classifications, in the order they are decided:
+       NOT_AN_OPPORTUNITY   the price is past the window or there is no edge at all
+       RAW_DISCREPANCY      a number exists but a validation gate failed; it is a
+                            reason to investigate, not a position
+       CONSENSUS_RESEARCH   positive and validated but with no sharp reference, so
+                            the fair line rests on soft books — research, not a play
+       RESEARCH_ONLY        survives validation but cannot clear the minimum
+                            economic edge once its own penalties are taken
+       CREDIBLE_OPPORTUNITY validated, sharp-anchored, and still economic
+     ================================================================================ */
+  function opportunityChecks(x, cred, ctx){
+    ctx=ctx||{};
+    var out=[], sk=String((x&&x.e&&x.e.sport_key)||'');
+    function add(name,state,detail){ out.push({check:name, state:state, detail:detail}); }
+
+    /* STALENESS — is the number being judged still the number on offer? */
+    var sm=(x&&isFinite(x.staleM))?x.staleM:null;
+    if(sm==null) add('STALENESS','FAIL','No capture timestamp on this quote, so its age cannot be established.');
+    else if(sm>=STALE_MIN) add('STALENESS','FAIL','Last re-priced '+Math.round(sm)+'m ago (limit '+STALE_MIN+'m) — the shown price may already be gone.');
+    else if(sm>=20) add('STALENESS','WARN','Captured '+Math.round(sm)+'m ago; verify it is still live before acting.');
+    else add('STALENESS','PASS','Captured '+Math.round(sm)+'m ago.');
+
+    /* DATA — does this sport's required evidence actually exist for this game? */
+    var miss=(cred&&cred.missing_evidence)||[], needN=((cred&&cred.required_evidence)||[]).length;
+    var unsourced=(cred&&cred.evidence_absent_unsourced)||[];
+    if(!needN) add('DATA','WARN','No evidence contract on file for this sport, so completeness cannot be assessed.');
+    else if(unsourced.length===needN) add('DATA','FAIL','EdgeDesk ingests no research source for this sport at all ('+unsourced.join(', ')+'). The edge is market arithmetic with nothing behind it.');
+    else if(miss.length>=Math.ceil(needN*0.6)) add('DATA','FAIL','Missing '+miss.length+' of '+needN+' required inputs ('+miss.join(', ')+').');
+    else if(miss.length) add('DATA','WARN','Missing '+miss.length+' of '+needN+' required inputs ('+miss.join(', ')+').');
+    else add('DATA','PASS','All '+needN+' inputs this sport requires are present.');
+
+    /* MARKET QUALITY — is there a real market behind the fair line? */
+    var nb=(x&&x.nb)||0, corr=(x&&x.corr)||0, sharp=!!(x&&x.sharp);
+    if(!sharp && nb<4) add('MARKET_QUALITY','FAIL','No sharp reference and only '+nb+' book'+(nb===1?'':'s')+' behind the fair line — the consensus is being set by almost nothing.');
+    else if(!sharp) add('MARKET_QUALITY','WARN','No Pinnacle print on this exact side; the fair line rests on softer books.');
+    else if(nb<5) add('MARKET_QUALITY','WARN','Sharp-anchored but thin ('+nb+' books, '+corr+' corroborating level'+(corr===1?'':'s')+').');
+    else add('MARKET_QUALITY','PASS','Sharp-anchored across '+nb+' books'+(corr?', '+corr+' corroborating level'+(corr===1?'':'s'):'')+'.');
+
+    /* MODEL — is the edge inside what a market this liquid is plausibly wrong by? */
+    var scale=(cred&&cred.plausible_edge_scale)||null, ed=(x&&x.curEdge!=null)?x.curEdge:null;
+    if(ed==null||scale==null) add('MODEL','N/A','No fair price or no plausible-error scale to judge the size against.');
+    else if(ed>scale*2) add('MODEL','FAIL','Edge of '+pct(ed)+' is more than twice what this market is usually wrong by ('+pct(scale)+') — an artifact is more likely than an edge.');
+    else if(ed>scale) add('MODEL','WARN','Edge of '+pct(ed)+' sits outside the '+pct(scale)+' this market is usually wrong by.');
+    else add('MODEL','PASS','Edge of '+pct(ed)+' is inside the '+pct(scale)+' this market is plausibly wrong by.');
+
+    /* PARTICIPANT STATUS — do we know who is actually playing? This is the
+       largest single input in most sports and the one most likely to be unknown. */
+    var res=(ctx.evidenceItems&&ctx.evidenceItems.__resolved)||null;
+    if(sk==='baseball_mlb'){
+      var m=(x&&x.mlb)||null;
+      if(!m) add('PARTICIPANT_STATUS','WARN','No MLB game card resolved, so the probable starters are unknown.');
+      else if(!m.away_pitcher_name||!m.home_pitcher_name) add('PARTICIPANT_STATUS','FAIL','A probable starter is still unposted — the largest single input in a baseball number is unresolved.');
+      else add('PARTICIPANT_STATUS','WARN','Both starters posted ('+m.away_pitcher_name+' / '+m.home_pitcher_name+') — probable, never confirmed, and lineups are not ingested.');
+    } else if(sk==='mma_mixed_martial_arts' || sk.indexOf('tennis_')===0 || sk==='americanfootball_ncaaf'){
+      if(!res) add('PARTICIPANT_STATUS','FAIL','Neither participant resolved to a record in EdgeDesk’s own data for this sport.');
+      else if(!res.away||!res.home) add('PARTICIPANT_STATUS','WARN','Only one participant resolved to a stored record; the matchup is half-known.');
+      else add('PARTICIPANT_STATUS','PASS','Both participants resolved to stored records.');
+    } else {
+      add('PARTICIPANT_STATUS','N/A','No participant-status source is ingested for this sport.');
+    }
+
+    /* SURFACE / VENUE — the conditions the result is produced under. */
+    if(sk.indexOf('tennis_')===0){
+      add('SURFACE','WARN','The match surface is not carried on the signal row, so surface records are read as general form rather than surface-specific evidence.');
+    } else if(sk==='baseball_mlb'){
+      var wx=(x&&x.wx)||null, card=(x&&x.mlb)||null;
+      if(card&&card.is_dome) add('SURFACE','PASS','Dome — weather neutral.');
+      else if(wx&&evFreshness(wx.fetched_at,'weather')!=='stale') add('SURFACE','PASS','Current venue forecast on file.');
+      else if(card&&card.park_factor!=null) add('SURFACE','WARN','Park factor on file but no fresh venue forecast.');
+      else add('SURFACE','WARN','No park or weather row resolved for this venue.');
+    } else {
+      add('SURFACE','N/A','No venue/surface source is ingested for this sport.');
+    }
+
+    /* LIQUIDITY — can the shown number actually be taken? */
+    var tr=!!(x&&x.trusted);
+    if(!tr && nb<4) add('LIQUIDITY','FAIL','Best price is offshore and the market is '+nb+'-book thin — structurally not takeable at size.');
+    else if(!tr) add('LIQUIDITY','WARN','Best price is at an offshore book; availability and limits are not guaranteed.');
+    else if(nb<5) add('LIQUIDITY','WARN','Regulated book, but only '+nb+' book'+(nb===1?'':'s')+' quoting the line.');
+    else add('LIQUIDITY','PASS','Regulated book with '+nb+' books quoting the line.');
+
+    /* PRICE DECAY — how much of the detected edge is still on the table. */
+    var rem=(x&&x.remaining!=null)?x.remaining:null;
+    if(rem==null) add('PRICE_MOVEMENT','N/A','No detection price on file to measure movement against.');
+    else if(rem<0.4) add('PRICE_MOVEMENT','FAIL','Only '+Math.round(rem*100)+'% of the detection edge remains — the market has moved through this number.');
+    else if(rem<0.7) add('PRICE_MOVEMENT','WARN',Math.round(rem*100)+'% of the detection edge remains; the move is going against the signal.');
+    else add('PRICE_MOVEMENT','PASS',Math.round(rem*100)+'% of the detection edge is still on the table.');
+
+    return out;
+  }
+
+  /* How much each classification is allowed to keep of its deterministic rank.
+     Module scope so the ordering is one declared table rather than a literal
+     rebuilt inside a ranking loop — and so a test can assert the ordering
+     directly instead of inferring it from a sorted board. Every value is <= 1:
+     a classification can only ever pull a candidate DOWN. */
+  var OPP_RANK_WEIGHT={CREDIBLE_OPPORTUNITY:1.00, CONSENSUS_RESEARCH:0.62,
+                       RESEARCH_ONLY:0.55, RAW_DISCREPANCY:0.45, NOT_AN_OPPORTUNITY:0.25};
+  function opportunityRankWeight(cls){
+    return OPP_RANK_WEIGHT[cls]!=null?OPP_RANK_WEIGHT[cls]:0.5;
+  }
+
+  function opportunityClass(x, cred, ctx){
+    var checks=opportunityChecks(x,cred,ctx);
+    var failed=checks.filter(function(c){return c.state==='FAIL';});
+    var warned=checks.filter(function(c){return c.state==='WARN';});
+    var ed=(x&&x.curEdge!=null)?x.curEdge:null;
+    var eff=(cred&&cred.effective_edge)?cred.effective_edge.effective:null;
+    var sharp=!!(x&&x.sharp);
+    var cls, headline, action;
+
+    if(ed==null){
+      cls='NOT_AN_OPPORTUNITY';
+      headline='No fair price on file, so there is nothing to judge this number against.';
+    } else if(ed<=0){
+      cls='NOT_AN_OPPORTUNITY';
+      headline='The best available price is at or below fair — there is no edge to research.';
+    } else if(ed<FLOOR){
+      cls='NOT_AN_OPPORTUNITY';
+      headline='The price has moved past the qualifying window; EV no longer clears the '+pctAbs(FLOOR,1)+' floor.';
+    } else if(failed.length){
+      /* The defining case: a positive, possibly large number that has not been
+         validated. It is a research lead, and calling it anything else is the
+         single most expensive mistake this product could make. */
+      cls='RAW_DISCREPANCY';
+      headline='A '+pct(ed)+' discrepancy exists but '+failed.length+' validation check'+(failed.length===1?'':'s')+' failed ('
+        +failed.map(function(c){return c.check.toLowerCase().replace(/_/g,' ');}).join(', ')
+        +'). That is a reason to investigate, not a position.';
+    } else if(!sharp){
+      /* Positive, validated on everything observable, but nobody sharp prints it.
+         The brief is explicit that this stays labelled as consensus research. */
+      cls='CONSENSUS_RESEARCH';
+      headline='A '+pct(ed)+' discrepancy against a soft-book consensus with no sharp reference. Interesting, but the fair line has nothing sharp anchoring it — research, not a play.';
+    } else if(eff!=null && eff<MIN_EFFECTIVE_EDGE){
+      cls='RESEARCH_ONLY';
+      headline='Survives every validation check, but '+pct(ed)+' falls to '+pct(eff)+' once its own penalties are taken — below the '+pctAbs(MIN_EFFECTIVE_EDGE,1)+' minimum worth capital.';
+    } else {
+      cls='CREDIBLE_OPPORTUNITY';
+      headline='A '+pct(ed)+' sharp-anchored edge that clears every validation check'
+        +(warned.length?' with '+warned.length+' caveat'+(warned.length===1?'':'s'):'')+'.';
+    }
+
+    action = (cls==='CREDIBLE_OPPORTUNITY') ? 'Qualifies for the deterministic verdict to decide.'
+      : (cls==='CONSENSUS_RESEARCH') ? 'Research only — not a qualified opportunity without a sharp reference.'
+      : (cls==='RESEARCH_ONLY') ? 'Research only — the edge does not survive its own discount.'
+      : (cls==='RAW_DISCREPANCY') ? 'Investigate the failed checks before this can be ranked as an opportunity.'
+      : 'Not an opportunity at this price.';
+
+    return {
+      classification:cls, headline:headline, action:action,
+      is_credible:(cls==='CREDIBLE_OPPORTUNITY'),
+      checks:checks,
+      failed:failed.map(function(c){return c.check;}),
+      warned:warned.map(function(c){return c.check;}),
+      passed:checks.filter(function(c){return c.state==='PASS';}).map(function(c){return c.check;}),
+      not_applicable:checks.filter(function(c){return c.state==='N/A';}).map(function(c){return c.check;}),
+      basis:'A classification of what KIND of object this is, decided by named validation gates over owned fields. It never changes the edge, the fair price, the EV or the deterministic verdict.'
+    };
+  }
+
   /* ======================= DETERMINISTIC DECISION ENGINE ======================= */
   function evidence(e){
+    /* The game card, resolved ONCE and with a fallback. This used to read
+       `e.__mlb` only, which is written by enrich() — and scanGames(), the ranked
+       path, does not enrich. So on the board the card was always null, which made
+       mlbUnknownStarter always false and silently disabled the WAIT-on-unposted-
+       starter rule exactly where it matters most: while candidates are being
+       ranked. liveEvidenceItems already falls back to mlbLookup(); this makes the
+       decision engine use the same resolution rather than a stricter one. */
+    var __card = e.__mlb || null;
+    if(!__card && e.sport_key==='baseball_mlb'){
+      try{ if(typeof mlbLookup==='function') __card=mlbLookup(e)||null; }catch(_){ __card=null; }
+    }
     var fairP = n(e.sharp_fair); var fairSrc='Pinnacle de-vig fair';
     if(fairP==null){ fairP=n(e.consensus_fair); fairSrc='consensus fair'; }
     var curDec = n(e.best_dec), detDec = n(e.first_best_dec), flagDec=n(e.flagged_best_dec);
@@ -15744,6 +16470,27 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
     var detEdge = n(e.first_edge);
     if(detEdge==null && fairP && detDec) detEdge = fairP*detDec-1;   // deterministic transform of owned prices
     var evNow = (fairP && curDec)? fairP*curDec-1 : null;
+
+    /* THREE EDGES, KEPT APART. `edge` is one number whose MEANING changes with
+       has_sharp: capture writes sharp_fair from the consensus whenever Pinnacle
+       does not quote, so on those rows the "market" edge is arithmetically a
+       consensus edge and nothing downstream could tell. Collapsing them is how a
+       soft-book disagreement gets presented with the authority of a sharp one.
+         sharpEdge  — only when a sharp reference actually printed this side
+         consEdge   — the cross-book consensus, always computed when available
+         modelEdge  — EdgeDesk's own model, UNPROVEN, feeding no edge math
+       Each is null when it genuinely does not exist. None replaces `curEdge`,
+       which remains the pipeline's authoritative number. */
+    var _sharpP = n(e.sharp_fair), _consP = n(e.consensus_fair);
+    var sharpEdge = (e.has_sharp===true||e.has_sharp==='true') && _sharpP && curDec ? _sharpP*curDec-1 : null;
+    var consEdge  = (_consP && curDec) ? _consP*curDec-1 : null;
+    var modelEdge = null;
+    try{
+      if(window.MODELP && typeof modelKey==='function'){
+        var _mp=window.MODELP[modelKey(e.event_id,e.market,e.selection,e.point)];
+        if(_mp) modelEdge=n(_mp.model_edge);
+      }
+    }catch(_){ modelEdge=null; }
 
     // edge decay
     var remaining=null;
@@ -15808,8 +16555,8 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
        yet — no fair price, a stale capture, an unknown starter — the honest label is WAIT, not
        PASS. This layer changes only the DISPLAYED verdict; the scored `verdict`, `score` and slate
        `priority` below are left byte-identical so the frozen research/ranking protocol is untouched. */
-    var mlbUnknownStarter = e.sport_key==='baseball_mlb' && e.__mlb &&
-        (!e.__mlb.away_pitcher_name || !e.__mlb.home_pitcher_name);
+    var mlbUnknownStarter = e.sport_key==='baseball_mlb' && __card &&
+        (!__card.away_pitcher_name || !__card.home_pitcher_name);
     var isWait=false, waitWhy=null;
     if(curEdge==null){
       isWait=true; waitWhy='No fair price is on file yet, so there is nothing to judge this number against. This is "cannot evaluate", not a rejected signal.';
@@ -15871,6 +16618,7 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
       fairP:fairP, fairSrc:fairSrc, fairAm:fairAm, fairDec:fairDec,
       curDec:curDec, curAm:curAm, detDec:detDec, detAm:detAm, flagDec:flagDec,
       curEdge:curEdge, detEdge:detEdge, evNow:evNow, remaining:remaining,
+      sharpEdge:sharpEdge, consEdge:consEdge, modelEdge:modelEdge,
       maxAm:maxAm, bestAm:bestAm,
       nb:nb, nbe:nbe, corr:corr, sharp:sharp, trusted:tr, staleM:staleM, book:e.best_book,
       pinDec:n(e.pin_dec), pinOppDec:n(e.pin_opp_dec),
@@ -15879,7 +16627,7 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
       dverdict:(isWait?'WAIT':verdict), isWait:isWait, waitWhy:waitWhy,
       confidence:conf, falsifiers:falsifiers,
       breakevenAm:breakevenAm, toPlayAm:toPlayAm, needsPriceForEv:needsPriceForEv,
-      score:score, band:band, comps:comps, mlb:e.__mlb||null, wx:e.__wx||null
+      score:score, band:band, comps:comps, mlb:__card, wx:e.__wx||null
     };
   }
 
@@ -16256,8 +17004,15 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
       opponent:(away?g.home_team_name:g.away_team_name)||null,
       side:side, game:(g.away_team_name||'')+' @ '+(g.home_team_name||''),
       game_date:g.game_date||null, first_pitch_local:g.start_time_local||null,
+      /* Carries every column PF_COLS actually fetches. It used to publish five of
+         them, so era, whip, fip, hr_per_9, whiff_pct and xwoba_against were
+         queried on every board build and then thrown away — and starterEvidence
+         Items, which reads this object, was asking for `q.era`/`q.whip`/`q.hr9`
+         and getting undefined every time. */
       quality: pf?{source:'pitcher_features (ingest_mlb)', xera:r4(pf.xera), k_pct:r4(pf.k_pct),
-        bb_pct:r4(pf.bb_pct), barrel_pct:r4(pf.barrel_pct), hardhit_pct:r4(pf.hardhit_pct)}:null,
+        bb_pct:r4(pf.bb_pct), barrel_pct:r4(pf.barrel_pct), hardhit_pct:r4(pf.hardhit_pct),
+        era:r4(pf.era), whip:r4(pf.whip), fip:r4(pf.fip), hr_per_9:r4(pf.hr_per_9),
+        whiff_pct:r4(pf.whiff_pct), xwoba_against:r4(pf.xwoba_against)}:null,
       opponent_offense: oppOff?{source:'offense_features (ingest_mlb)', obp:r4(oppOff.obp), iso:r4(oppOff.iso),
         k_pct:r4(oppOff.k_pct), runs_per_game:r4(oppOff.runs_per_game)}:null,
       workload: use?{last_start:String(use.game_date).slice(0,10), pitches:(use.pitches!=null?use.pitches:null),
@@ -16294,6 +17049,12 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
        fetched once — the starter stage below reuses this cache instead of
        calling boardFeatures() a second time. */
     try{ await ensureMlbCore(force); }catch(_){}
+    /* Same rule for every other sport. Without this the UFC / tennis / CFB
+       extractors run against an unpopulated SPORT_CORE and return [], so a
+       non-baseball candidate is ranked on market depth alone — the exact
+       ordering failure the MLB await above exists to prevent, just one sport
+       further out. */
+    try{ await ensureSportCore([].concat(window.EDGES||[], window.D5_POOL||[]), force); }catch(_){}
 
     var games=[]; try{ games=scanGames(); }catch(_){ games=[]; }
     var covered={}; games.forEach(function(g){ covered[g.id]=1; });
@@ -16361,6 +17122,19 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
             duplicate_metrics:prof.duplicate_metrics
           }:null;
         }catch(_){ p.evidence_profile=null; }
+        /* THE ATTACK ORDERING WAS NEVER BUILT. `ranked` below filters on
+           p.matchup, and nothing in the file ever assigned it — so
+           mlb_matchups.ranked was ALWAYS an empty array and every "worst
+           starters today" / "best matchups" answer was working from a note that
+           described an ordering it had not been given. mlbMatchup() existed,
+           was unit-tested, and was simply never called on the board.
+           It returns null when the arm cannot be ranked, which is what
+           `rankable` reports — a starter with no line stays unranked rather
+           than being scored from nothing. */
+        try{
+          p.matchup=mlbMatchup(p.quality, p.opponent_offense);
+          p.rankable=!!(p.matchup && p.matchup.attack_score!=null);
+        }catch(_){ p.matchup=null; p.rankable=false; }
         pitchers.push(p);
       });
     });
@@ -16488,7 +17262,11 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
      A RESEARCH ORDERING of arms — never a price, edge, EV or verdict, and it feeds none. */
   var MLB_REF={
     era:[3.20,5.20], whip:[1.05,1.55], xera:[3.20,5.20],
-    k_pct:[0.27,0.15], bb_pct:[0.055,0.110], hr9:[0.90,1.80],
+    /* hr9 and hr_per_9 are the SAME reference. The board row spells it hr_per_9
+       (it is the pitcher_features column name) and this table was only keyed on
+       the short form, so mlbBlend looked up MLB_REF['hr_per_9'], got undefined,
+       and dropped the home-run term from every attack score. */
+    k_pct:[0.27,0.15], bb_pct:[0.055,0.110], hr9:[0.90,1.80], hr_per_9:[0.90,1.80],
     barrel_pct:[0.055,0.115], hardhit_pct:[0.34,0.46],
     runs_per_game:[3.80,5.40], obp:[0.300,0.340], iso:[0.140,0.190]
   };
@@ -16518,7 +17296,11 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
     var m=parts.reduce(function(a,b){return a+b;},0)/parts.length;
     return {score:Math.round(m*1000)/10, inputs:used};
   }
-  function mlbVuln(q){ return mlbBlend(q,['xera','era','whip','k_pct','bb_pct','hr9','barrel_pct','hardhit_pct']); }
+  /* `hr9` was blended against a quality object whose field is `hr_per_9`, so the
+     home-run term silently contributed nothing to every attack score ever
+     computed. Both spellings are listed because MLB_REF is keyed on the short
+     one and the row is keyed on the long one; mlbBlend skips whichever is absent. */
+  function mlbVuln(q){ return mlbBlend(q,['xera','era','whip','k_pct','bb_pct','hr9','hr_per_9','barrel_pct','hardhit_pct']); }
   function mlbOppStrength(o){ return mlbBlend(o,['runs_per_game','obp','iso']); }
   function mlbMatchup(q,o){
     var v=mlbVuln(q), s=mlbOppStrength(o);
@@ -16616,7 +17398,9 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
     ['Check my bet','checkbet',''],['Compare…','compare','']
   ];
   var ACTIONS_EMPTY=[
-    ['Daily scan','dailyscan','hot'],['Scan slate','scanslate',''],['Strongest signals today','bestbets',''],
+    ['TODAY’S RESEARCH','todaysresearch','hot'],
+    ['What changed?','reevaluate',''],['Postmortem','packetpostmortem',''],['Past packets','packets',''],
+    ['Scan slate','scanslate',''],['Strongest signals today','bestbets',''],
     ['Worst starters','worstpitchers',''],['Best matchups','bestmatchups',''],['Research first','researchfirst',''],
     ['Scout the board','scout',''],['Market vs model','marketvsmodel',''],
     ['Compare edges','compare',''],['How this works','help','']
@@ -16995,20 +17779,38 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
          evidencePresent was permanently {} and data_confidence was a constant 0.
          That dead container is gone rather than kept alongside a second one;
          liveEvidenceItems is now the single source. */
-      var cred=null;
-      try{ cred=edgeCredibility(x,{evidenceItems:liveEvidenceItems(x)}); }catch(_){ cred=null; }
+      var cred=null, items=[], opp=null;
+      try{ items=liveEvidenceItems(x); }catch(_){ items=[]; }
+      try{ cred=edgeCredibility(x,{evidenceItems:items}); }catch(_){ cred=null; }
+      try{ opp=opportunityClass(x,cred,{evidenceItems:items}); }catch(_){ opp=null; }
       var priority=base;
       if(cred){
         // 0.55 floor: credibility re-ranks, it does not erase a strong setup.
         priority=Math.round(base*(0.55+0.45*(cred.credibility/100)));
         if(agree) priority=Math.min(100,priority+3);
       }
-      var status = (x.verdict==='BET')?'EDGE':(x.verdict==='LEAN')?'RESEARCH':'WATCH';
-      if(cred && cred.call==='INVESTIGATE' && status==='EDGE') status='RESEARCH';
+      /* CLASSIFICATION GATES THE RANK. Credibility alone re-ordered by degree, so
+         a large unvalidated number could still finish near the top simply by being
+         large — which is exactly the failure the classification exists to name.
+         A raw discrepancy is a research lead and is ranked as one. The multiplier
+         only ever pulls DOWN; nothing here can promote a candidate, and x.score,
+         the verdict, the edge and the EV are untouched. */
+      if(opp){ priority=Math.round(priority*opportunityRankWeight(opp.classification)); }
+      /* EDGE is reserved for a validated, sharp-anchored opportunity. Previously
+         `call==='NO BET'` and effective_edge.clears_minimum were computed and then
+         never read by anything, so a signal whose discounted edge failed the
+         economic minimum still displayed as EDGE. */
+      var status;
+      if(!opp) status=(x.verdict==='BET')?'EDGE':(x.verdict==='LEAN')?'RESEARCH':'WATCH';
+      else if(opp.classification==='CREDIBLE_OPPORTUNITY') status=(x.verdict==='BET')?'EDGE':'RESEARCH';
+      else if(opp.classification==='NOT_AN_OPPORTUNITY') status='WATCH';
+      else status='RESEARCH';
+      if(cred && (cred.call==='INVESTIGATE'||cred.call==='NO BET') && status==='EDGE') status='RESEARCH';
       var reasons=(x.reasonsFor||[]).slice(0,4);
       if(agree) reasons=reasons.concat(['MODEL engine also projects an edge in this game']).slice(0,5);
       if(cred && cred.flags.length) reasons=reasons.concat(cred.flags.slice(0,2)).slice(0,6);
       return {id:id, x:x, e:x.e, priority:priority, base_priority:base, credibility:cred,
+              opportunity:opp, evidence_items:items,
               status:status, agree:agree, reasons:reasons, question:biggestQuestion(x)};
     }).sort(function(a,b){return b.priority-a.priority;});
   }
@@ -17240,6 +18042,112 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
     ],note:'Correlation over a sample, not proof for this game.'};
   };
 
+  /* ---- SPORT RESEARCH TOOLS (non-MLB) --------------------------------------
+     dscanResearch gave every sport but baseball four tools, all of which are
+     market arithmetic — so a UFC or ATP finalist reached the decision stage with
+     no fight and no surface evidence and the attack layer had nothing to attack.
+     These read the same ufc / tennis / cfb schemas the research tabs already use.
+     Each returns an explicit `unavailable` naming the schema when the read fails,
+     so "EdgeDesk could not read it" and "the fighter is not on file" stay
+     different sentences. */
+  function fmtNum(v,dp){ var x=+v; return isFinite(x)?x.toFixed(dp==null?2:dp):null; }
+  function fmtPct01(v){ var x=+v; if(!isFinite(x)) return null; return (x<=1?Math.round(x*100):Math.round(x))+'%'; }
+
+  TOOLS.fighters=async function(ctx){
+    var e=ctx.e||{};
+    try{ await ensureUfcCore([e.away_team,e.home_team]); }catch(_){}
+    var C=SPORT_CORE.ufc;
+    if(!C||!C.by) return {evidence:[],unavailable:{tool:'fighters',reason:(C&&C.note)||'ufc schema not readable this session.'}};
+    var a=spLookup(C.by,e.away_team), h=spLookup(C.by,e.home_team), ev=[], miss=[];
+    [[e.away_team,a],[e.home_team,h]].forEach(function(p){
+      var nm=p[0], f=p[1];
+      if(!f){ miss.push(nm||'?'); return; }
+      var c=f.c||{}, d=f.d||{}, s=f.s||{};
+      function add(claim,val,rel,conf){ if(val==null||val==='') return;
+        ev.push(evObj({tool:'fighters',claim:nm+' — '+claim,value:val,source:'ufc schema (UFCStats-derived)',
+          source_type:'DERIVED',status:'VERIFIED',confidence:conf||'MEDIUM',relevance:rel})); }
+      add('record', f.wins!=null?(f.wins+'-'+f.losses+(f.draws?'-'+f.draws:'')):null,'form','HIGH');
+      add('striking landed / absorbed per min', (c.slpm!=null||c.sapm!=null)?(fmtNum(c.slpm)+' / '+fmtNum(c.sapm)):null,'striking');
+      add('striking accuracy / defense', (c.striking_accuracy!=null||c.striking_defense!=null)?(fmtPct01(c.striking_accuracy)+' / '+fmtPct01(c.striking_defense)):null,'striking');
+      add('knockdowns per 15min', c.knockdown_avg!=null?fmtNum(c.knockdown_avg):null,'striking');
+      add('takedowns per 15min (acc)', c.takedown_avg!=null?(fmtNum(c.takedown_avg)+(c.takedown_accuracy!=null?' ('+fmtPct01(c.takedown_accuracy)+')':'')):null,'grappling');
+      add('takedown defense', c.takedown_defense!=null?fmtPct01(c.takedown_defense):null,'grappling');
+      add('submission attempts per 15min', c.submission_avg!=null?fmtNum(c.submission_avg):null,'grappling');
+      add('control time avg', c.control_time_avg!=null?fmtNum(c.control_time_avg):null,'grappling');
+      add('finish rate', d.finish_rate!=null?fmtPct01(d.finish_rate):null,'style');
+      add('days since last fight', d.days_since_last_fight!=null?String(d.days_since_last_fight):null,'layoff');
+      add('fights last 365d', d.activity_last365!=null?String(d.activity_last365):null,'layoff');
+      add('avg opponent win %', d.opponent_average_win_pct!=null?fmtPct01(d.opponent_average_win_pct):null,'opponent');
+      add('reach / height (in)', (f.reach_inches!=null||f.height_inches!=null)?((f.reach_inches||'?')+' / '+(f.height_inches||'?')):null,'physical','HIGH');
+      add('stance', f.stance||null,'physical','HIGH');
+      add('age', f.age!=null?String(f.age):null,'physical','HIGH');
+      add('primary style', s.primary_style||null,'style');
+      add('durability score', s.durability_score!=null?fmtNum(s.durability_score):null,'defense');
+    });
+    var out={evidence:ev, note:'Career rates from the ufc schema. These are career averages, not a style read of THIS matchup — style interaction is not modelled anywhere in EdgeDesk.'};
+    if(miss.length) out.unavailable={tool:'fighters',reason:'No ufc.fighters row matched '+miss.join(' & ')+'. Their numbers are unavailable and must not be inferred from the opponent.'};
+    if(!ev.length) out.unavailable={tool:'fighters',reason:'Neither fighter resolved to a stored record.'};
+    return out;
+  };
+
+  TOOLS.tennis=async function(ctx){
+    var e=ctx.e||{};
+    try{ await ensureTennisCore([e.away_team,e.home_team]); }catch(_){}
+    var C=SPORT_CORE.tennis;
+    if(!C||!C.by) return {evidence:[],unavailable:{tool:'tennis',reason:(C&&C.note)||'tennis schema not readable this session.'}};
+    var a=spLookup(C.by,e.away_team), h=spLookup(C.by,e.home_team), ev=[], miss=[];
+    [[e.away_team,a],[e.home_team,h]].forEach(function(p){
+      var nm=p[0], pl=p[1];
+      if(!pl){ miss.push(nm||'?'); return; }
+      function add(claim,val,rel,st,conf){ if(val==null||val==='') return;
+        ev.push(evObj({tool:'tennis',claim:nm+' — '+claim,value:val,source:'tennis schema',
+          source_type:'DERIVED',status:st||'VERIFIED',confidence:conf||'MEDIUM',relevance:rel})); }
+      if(pl.rank) add('current ranking', pl.rank.rank!=null?('#'+pl.rank.rank+(pl.rank.points!=null?' ('+pl.rank.points+'pts)':'')):null,'opponent','VERIFIED','HIGH');
+      if(pl.career) add('career record', (pl.career.wins!=null?pl.career.wins+'-'+pl.career.losses:null)
+        +(pl.career.win_pct!=null?' ('+fmtPct01(pl.career.win_pct)+')':''),'form');
+      var sf=(pl.surf||[]).filter(function(r){ return (+r.matches||0)>0; })[0];
+      if(sf) add('most recent surface split ('+(sf.surface||'?')+' '+(sf.season||'')+')',
+        sf.wins+'-'+sf.losses+(sf.win_pct!=null?' ('+fmtPct01(sf.win_pct)+')':''),'surface','PARTIAL');
+      var fm=(pl.form||[]).slice(0,10);
+      if(fm.length>=5){
+        var won=fm.filter(function(r){ return r.won===true||r.won==='true'; }).length;
+        add('last '+fm.length+' matches', won+'-'+(fm.length-won),'form');
+        var last=Date.parse(String(fm[0].match_date||''));
+        if(isFinite(last)) add('days since last match', String(Math.max(0,Math.round((Date.now()-last)/86400000))),'workload');
+      }
+    });
+    var out={evidence:ev, note:'Results, surfaces and rankings from the tennis schema. Serve/return splits (hold %, first-serve won, break %) are NOT ingested — the strongest tennis inputs are genuinely missing here and must not be inferred from win rates.'};
+    if(miss.length) out.unavailable={tool:'tennis',reason:'No tennis.players row matched '+miss.join(' & ')+'.'};
+    if(!ev.length) out.unavailable={tool:'tennis',reason:'Neither player resolved to a stored record.'};
+    return out;
+  };
+
+  TOOLS.cfbteam=async function(ctx){
+    var e=ctx.e||{};
+    try{ await ensureCfbCore(); }catch(_){}
+    var C=SPORT_CORE.cfb;
+    if(!C||!C.by) return {evidence:[],unavailable:{tool:'cfbteam',reason:(C&&C.note)||'cfb schema not readable this session.'}};
+    var a=spLookup(C.by,e.away_team), h=spLookup(C.by,e.home_team), ev=[], miss=[];
+    [[e.away_team,a],[e.home_team,h]].forEach(function(p){
+      var nm=p[0], t=p[1];
+      if(!t){ miss.push(nm||'?'); return; }
+      function add(claim,val,rel){ if(val==null||val==='') return;
+        /* UNPROVEN because SP+ is somebody else's model. It is good evidence and
+           it is never an EdgeDesk number. */
+        ev.push(evObj({tool:'cfbteam',claim:nm+' — '+claim,value:val,source:'cfb.ratings (CollegeFootballData SP+)',
+          source_type:'MODEL',status:'UNPROVEN',confidence:'MEDIUM',relevance:rel})); }
+      add('SP+ overall', t.rating!=null?(fmtNum(t.rating,1)+(t.ranking!=null?' (#'+t.ranking+')':'')):null,'efficiency');
+      add('SP+ offense', t.offense_rating!=null?(fmtNum(t.offense_rating,1)+(t.offense_ranking!=null?' (#'+t.offense_ranking+')':'')):null,'efficiency');
+      add('SP+ defense (lower is better)', t.defense_rating!=null?(fmtNum(t.defense_rating,1)+(t.defense_ranking!=null?' (#'+t.defense_ranking+')':'')):null,'efficiency');
+      add('strength of schedule', t.sos!=null?fmtNum(t.sos,2):null,'schedule');
+      add('conference', t.conference||null,'context');
+    });
+    var out={evidence:ev, note:'SP+ is an EXTERNAL model from CollegeFootballData — evidence about team quality, never an EdgeDesk probability and never convertible into a spread or an edge. Per-play efficiency (EPA, success rate) is not ingested for college football.'};
+    if(miss.length) out.unavailable={tool:'cfbteam',reason:'No cfb.ratings row matched '+miss.join(' & ')+'.'};
+    if(!ev.length) out.unavailable={tool:'cfbteam',reason:'Neither program resolved to a stored rating.'};
+    return out;
+  };
+
   /* ---- adapters for sources EdgeDesk does NOT own: declared, never faked ---- */
   var UNAVAILABLE_TOOLS={
     confirmed_lineup:'Confirmed batting lineups are not ingested — EdgeDesk stores probable pitchers only. Needs a live-lineup adapter (MLB Stats API lineup endpoint).',
@@ -17423,14 +18331,36 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
   }
 
   /* research one candidate on OWNED data only — reuses the exact DEEP toolset of investigate() */
+  /* Which research tools a sport actually has. Every sport gets the market layer;
+     a sport with an owned research schema also gets that schema's tool. This map
+     is the whole reason a UFC finalist is now researched rather than only priced. */
+  function dscanToolsFor(sport){
+    var base=['edgedesk','market','price','model'];
+    var sk=String(sport||'');
+    if(sk==='baseball_mlb') return base.concat(['game','pitchers','bullpen','weather']);
+    if(sk==='mma_mixed_martial_arts') return base.concat(['fighters']);
+    if(sk.indexOf('tennis_')===0) return base.concat(['tennis']);
+    if(sk==='americanfootball_ncaaf') return base.concat(['cfbteam']);
+    return base;
+  }
+  /* Sports where EdgeDesk ingests no research layer at all. Declared so the answer
+     says "there is no source" rather than presenting a market-only read as though
+     the research simply came back quiet. */
+  var SPORT_NO_RESEARCH={
+    americanfootball_nfl:'No NFL research layer is ingested anywhere in EdgeDesk — no team efficiency, no quarterback data, no injury report. An NFL edge here is market arithmetic only.',
+    basketball_nba:'No NBA research layer is ingested — no lineup, injury, efficiency or pace data.',
+    basketball_wnba:'No WNBA research layer is ingested.',
+    basketball_ncaab:'No college-basketball research layer is ingested — adjusted efficiency and the four factors are not in this build.',
+    icehockey_nhl:'No NHL research layer is ingested — no goalie confirmation, xG or special teams.'
+  };
+
   async function dscanResearch(ctx){
-    var tools = ctx.sport==='baseball_mlb'
-      ? ['edgedesk','market','price','model','game','pitchers','bullpen','weather']
-      : ['edgedesk','market','price','model'];
+    var tools = dscanToolsFor(ctx.sport);
     var out=await runTools(ctx, tools);
     var verified=out.evidence.filter(function(i){return i.status!=='UNAVAILABLE';});
     var missing=out.unavailable.slice();
     if(ctx.sport==='baseball_mlb') Object.keys(UNAVAILABLE_TOOLS).forEach(function(k){ missing.push({tool:k,reason:UNAVAILABLE_TOOLS[k]}); });
+    if(SPORT_NO_RESEARCH[ctx.sport]) missing.push({tool:'sport_research', reason:SPORT_NO_RESEARCH[ctx.sport]});
     var conflicts=findConflicts(ctx, verified, missing);
     var att=attack(ctx, conflicts);
     return {evidence:verified, conflicts:conflicts, unavailable:missing, attack:att};
@@ -17902,6 +18832,44 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
     return dscanSec('What would make #2/#3 the pick', dscanUL(items));
   }
 
+  /* The named validation gates, rendered as a compact strip. Only the gates that
+     did NOT pass are spelled out — a wall of green is noise, and the reader needs
+     to see what failed, not be reassured about what did not. */
+  function dscanChecksHTML(opp){
+    if(!opp||!opp.checks||!opp.checks.length) return '';
+    var col={PASS:'var(--pos)',WARN:'var(--warn)',FAIL:'var(--neg)','N/A':'var(--faint)'};
+    var strip=opp.checks.map(function(c){
+      return '<span style="display:inline-block;margin:2px 4px 2px 0;padding:1px 6px;border-radius:9px;font-size:10px;'
+        +'font-family:JetBrains Mono,monospace;letter-spacing:.03em;border:1px solid '+col[c.state]+';color:'+col[c.state]+'">'
+        +esc(c.check.replace(/_/g,' '))+'</span>';
+    }).join('');
+    var bad=opp.checks.filter(function(c){ return c.state==='FAIL'||c.state==='WARN'; });
+    return '<div style="margin:6px 0 2px">'+strip+'</div>'
+      + (bad.length? '<ul style="margin:2px 0;padding-left:16px;font-size:12px;color:var(--dim);line-height:1.5">'
+          + bad.map(function(c){ return '<li style="margin:2px 0"><b style="color:'+col[c.state]+'">'+esc(c.check.replace(/_/g,' '))+'</b> — '+esc(c.detail)+'</li>'; }).join('')
+          + '</ul>' : '');
+  }
+
+  /* WHAT WOULD CHANGE MY MIND — measurable conditions, not sentiment. Every line
+     names a threshold the app can actually observe on a later scan, which is what
+     makes the re-evaluation loop able to answer it rather than a person. */
+  function dscanChangeMyMind(f){
+    var x=f.x, opp=f.opportunity, out=[];
+    if(x.toPlayAm!=null){
+      out.push(dscanPlayable(x)
+        ? 'Price drifts worse than '+amStr(x.toPlayAm)+': EV crosses the '+pctAbs(FLOOR,1)+' floor and this stops being a qualifying number.'
+        : 'Price improves to '+amStr(x.toPlayAm)+' or better: it comes back inside the qualifying window.');
+    }
+    out.push('Edge moves by more than '+pctAbs(REEVAL_EDGE_DELTA,1)+' in either direction (currently '+pct(x.curEdge)+') — that is the threshold at which a rescan re-ranks rather than confirms.');
+    if(!x.sharp) out.push('Pinnacle starts printing this side: the fair line stops being a soft consensus and the classification changes with it.');
+    else out.push('Pinnacle stops printing this side: the sharp anchor disappears and this drops to consensus research.');
+    if(x.staleM<STALE_MIN) out.push('No fresh capture for '+STALE_MIN+'m: the quote stops being verifiably live and the staleness gate fails.');
+    var ps=opp&&opp.checks?(opp.checks.filter(function(c){return c.check==='PARTICIPANT_STATUS';})[0]||null):null;
+    if(ps&&(ps.state==='FAIL'||ps.state==='WARN')) out.push('Participant status resolves ('+esc(ps.detail).slice(0,90)+'…): the largest unresolved input closes and credibility moves.');
+    if(x.graded!==true) out.push('The close is captured: CLV becomes computable and the decision can be graded on price rather than argued.');
+    return out;
+  }
+
   function dscanHeadline(f, outcome, decided){
     var x=f.x, e=x.e, r=f.research, ev=x.evNow;
     var shown = dscanVerdictOf(f);                    // gated verdict drives every label below
@@ -17923,6 +18891,20 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
         +' \u2014 the deterministic engine still allows it, but as research this is a '+esc(vLabel(q.quality_call))+', not a strong signal.'
         +(decided&&decided.ordered.length>1?' See \u201cWhy #1 beat the others\u201d below.':'')+'</div>'
       : '';
+    /* THE HEADER NEVER CLAIMS MORE THAN THE DECISION SUPPORTS. This block used
+       to read "TOP SIGNAL" off the quality tier alone, so a candidate whose final
+       decision was PASS could still be introduced as the top thing on the board.
+       The label is now derived from the FINAL verdict first and the tier second,
+       and the object is always a "BEST OPPORTUNITY" — an opportunity whose
+       decision is PASS is a coherent, honest result; a "best bet" that is a pass
+       is not. */
+    var oppCls=(f.opportunity&&f.opportunity.classification)||null;
+    if(outcome==='NO BET'||shown==='PASS') bannerTxt='BEST OPPORTUNITY · '+(outcome==='NO BET'?'NO BET':'PASS');
+    else if(shown==='WAIT') bannerTxt='BEST OPPORTUNITY · WAIT';
+    else if(oppCls==='RAW_DISCREPANCY') bannerTxt='BEST OPPORTUNITY · RAW DISCREPANCY';
+    else if(oppCls==='CONSENSUS_RESEARCH') bannerTxt='BEST OPPORTUNITY · CONSENSUS RESEARCH';
+    else if(oppCls==='RESEARCH_ONLY') bannerTxt='BEST OPPORTUNITY · RESEARCH ONLY';
+    else bannerTxt='BEST OPPORTUNITY · '+(tier==='STRONG'||tier==='SOLID'?'QUALIFIED':vLabel(q?q.quality_call:shown));
     var badgeCls = vClass(finalVerdict==='NO BET'?'PASS':shown);
     var marketLine = (x.sharp?'Pinnacle is quoting this side. ':'No Pinnacle print on this exact side. ')
       + x.nb+' book'+(x.nb===1?'':'s')+' behind the fair line'
@@ -17945,18 +18927,37 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
       +(x.isWait?'<div class="edai-waitbar"><b>WAIT.</b> '+esc(x.waitWhy)+'</div>':'')
       +'<div style="padding:2px 13px 12px">'
       + (borderline)
+      /* THE HEADLINE GRID. Model, sharp and consensus edges are shown as three
+         separate cells and a dash where one genuinely does not exist, so a
+         consensus-only number can never be read as a sharp-confirmed one. */
+      + '<div class="edai-grid" style="border-radius:10px;overflow:hidden;margin-top:2px">'
+        + cell('Market', mktL(e.market)+' \u00b7 '+x.sel, 'dim')
+        + cell('Price', amStr(x.curAm), dscanPlayable(x)?'pos':'neg')
+        + cell('Fair price', amStr(x.fairAm), 'dim')
+        + cell('Sharp edge', x.sharpEdge!=null?pct(x.sharpEdge):'\u2014 no sharp ref', x.sharpEdge!=null?'pos':'dim')
+        + cell('Consensus edge', x.consEdge!=null?pct(x.consEdge):'\u2014', 'dim')
+        + cell('Model edge', x.modelEdge!=null?pct(x.modelEdge)+' (unproven)':'\u2014 no model', 'dim')
+        + cell('Decision', vLabel(finalVerdict), badgeCls==='v-bet'?'pos':badgeCls==='v-pass'?'neg':'dim')
+        + cell('Confidence', x.confidence||'\u2014', 'dim')
+        + cell('Edge credibility', f.credibility?(f.credibility.credibility+' \u00b7 '+f.credibility.band):'\u2014', 'dim')
+        +'</div>'
+      + (f.opportunity? dscanSec('Classification \u00b7 '+f.opportunity.classification.replace(/_/g,' '),
+          '<div style="font-size:12.5px;color:var(--text);line-height:1.5">'+esc(f.opportunity.headline)+'</div>'
+          +'<div class="edai-src" style="margin-top:4px">'+esc(f.opportunity.action)+'</div>'
+          + dscanChecksHTML(f.opportunity)) : '')
       + (q? dscanQualityHTML(f) : '')
-      + dscanSec('Why #1', dscanUL((x.reasonsFor||[]).slice(0,5)))
-      + dscanSec('Market', '<div style="font-size:12.5px;color:var(--text);line-height:1.5">'+esc(marketLine)+'</div>')
-      + dscanSec('Research', dscanEvBox(ctxEv))
-      + dscanSec('Price \u00b7 '+priceStatus, priceGrid)
-      + dscanSec('Thesis attack \u00b7 '+r.attack.status,
+      + dscanSec('Why', dscanUL((x.reasonsFor||[]).slice(0,5)))
+      + dscanSec('Strongest evidence', dscanEvBox(ctxEv))
+      + dscanSec('Market view', '<div style="font-size:12.5px;color:var(--text);line-height:1.5">'+esc(marketLine)+'</div>')
+      + dscanSec('Counter-thesis \u00b7 '+r.attack.status,
           '<div style="font-size:12.5px;color:var(--text);line-height:1.5">'+esc(r.attack.note)+'</div>'
           +'<div class="edai-src" style="margin-top:4px">Strongest against: '+esc(strongestAgainst)+'</div>')
-      + dscanSec('What changed', dscanUL(dscanWhatChanged(x)))
+      + dscanSec('What could make this wrong', dscanUL(x.falsifiers))
+      + dscanSec('Price limit \u00b7 '+priceStatus, priceGrid)
+      + dscanSec('What would change my mind', dscanUL(dscanChangeMyMind(f)))
+      + dscanSec('What changed since detection', dscanUL(dscanWhatChanged(x)))
       + (decided? dscanWhyBeatHTML(decided) : '')
       + (decided? dscanUnblockHTML(decided) : '')
-      + dscanSec('Falsifiers', dscanUL(x.falsifiers))
       + dscanSec('Final',
           '<div class="edai-vhead" style="border:none;padding:2px 0"><span class="edai-verdict '+badgeCls+'">'+esc(vLabel(finalVerdict))+'</span>'
           +'<span style="font-size:12px;color:var(--dim);margin-left:8px">'+esc(dscanFinalLine(f,outcome))+'</span></div>')
@@ -17973,8 +18974,119 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
       +'<span style="margin-left:auto;text-align:right"><div class="mono" style="font-size:15px;font-weight:700">'+f.priority+'</div><div style="font-size:9px;color:var(--faint)">PRIORITY</div></span></div>'
       +'<div style="padding:6px 12px 10px;font-size:12px;color:var(--dim)"><b>Biggest question:</b> '+esc(f.question||'')+'</div></div>';
   }
-  function dscanRenderHTML(decided){
-    var head=decided.headline, outcome=decided.outcome, qOut=decided.qualityOutcome||outcome, rest=decided.ordered.slice(1,3);
+  /* TOP REJECTIONS — what was considered and did not make it, with the reason.
+     Showing only survivors makes a research tool look like a tipster; the list of
+     things it threw away and why is most of what makes the survivors credible. */
+  function dscanRejectHTML(rejections, totalRejected){
+    if(!rejections||!rejections.length) return '';
+    var rows=rejections.slice(0,6).map(function(r){
+      return '<div style="padding:6px 0;border-top:1px solid var(--line)">'
+        +'<div style="font-size:12.5px;color:var(--text)"><b>'+esc(r.matchup)+'</b> <span style="color:var(--dim)">· '+esc(r.sport)+' · '+esc(r.selection)+' '+amStr(r.price_american)+'</span></div>'
+        +'<div style="font-size:11.5px;color:var(--dim);margin-top:2px">'
+          +'<span class="mono" style="color:var(--faint)">'+esc(r.code.replace(/_/g,' '))+'</span> — '+esc(r.reason)+'</div></div>';
+    }).join('');
+    var more=(totalRejected||0)-Math.min(rejections.length,6);
+    return dscanSec('Top rejections',
+      '<div class="edai-card" style="padding:2px 10px 8px">'+rows
+      +(more>0?'<div class="edai-src" style="border:none;margin-top:6px">'+more+' further candidate'+(more===1?'':'s')+' ranked below these and were not researched.</div>':'')
+      +'</div>');
+  }
+
+  function dscanPacketHTML(packet){
+    if(!packet) return '';
+    var s=packet.scope||{}, me=packet.market_environment||{};
+    var warn=(packet.data_warnings||[]).slice(0,5);
+    return dscanSec('Research packet · '+packet.id,
+      '<div class="edai-card" style="padding:8px 11px">'
+      +'<div style="font-size:12px;color:var(--dim);line-height:1.6">'
+        +'Scanned <b style="color:var(--text)">'+(s.games_scanned||0)+'</b> games · '
+        +'<b style="color:var(--text)">'+(s.in_window||0)+'</b> in window · '
+        +'<b style="color:var(--text)">'+(s.candidates||0)+'</b> candidates · '
+        +'<b style="color:var(--text)">'+(s.deep_researched||0)+'</b> deep-researched · '
+        +'<b style="color:var(--text)">'+(s.rejections_total||0)+'</b> rejected'
+      +'</div>'
+      +'<div style="font-size:12px;color:var(--dim);margin-top:4px;line-height:1.6">'
+        +'Market environment: '+(me.sharp_anchored||0)+' sharp-anchored, '+(me.consensus_only||0)+' consensus-only, '
+        +(me.stale_quotes||0)+' stale'+(me.median_edge!=null?', median finalist edge '+pct(me.median_edge):'')+'.'
+      +'</div>'
+      +(warn.length?'<div style="font-size:11.5px;color:var(--warn);margin-top:6px;line-height:1.5"><b>Data warnings.</b> '
+        + warn.map(function(w){ return esc(w.input)+': '+esc(String(w.detail).slice(0,150)); }).join('<br>')
+        +'</div>':'')
+      +'<div class="edai-src" style="border:none;margin-top:6px">'
+        +(packet.__stored===false?'Not persisted (storage full) — this packet exists for this session only. '
+          :'Saved. Earlier packets are kept, never overwritten. ')
+        +'Recorded '+esc(packet.created_at_iso)+'.</div>'
+      +'</div>');
+  }
+
+  function dscanReevalHTML(p, rv){
+    var moved=rv.rows.filter(function(r){ return r.changes && r.changes.length; });
+    var head='<div class="edai-card" style="padding:11px 12px;margin-bottom:8px">'
+      +'<div class="edai-vsel">'+(rv.material?'Material change since '+esc(p.id):'No material change since '+esc(p.id))+'</div>'
+      +'<div class="edai-vsub">'+esc(rv.note)+'</div></div>';
+    if(!moved.length){
+      return head+'<div class="edai-src" style="border:none">Thresholds: edge ±'+pctAbs(rv.thresholds.edge_delta,1)
+        +', price ±'+Math.round(rv.thresholds.price_delta_pct*100)+'%, staleness '+rv.thresholds.stale_min+'m. '
+        +'Nothing crossed one, so the ranking was not re-run.</div>';
+    }
+    var sev={HIGH:'var(--neg)',MEDIUM:'var(--warn)',LOW:'var(--dim)'};
+    return head+moved.map(function(r){
+      return '<div class="edai-card" style="margin-bottom:8px;padding:8px 11px">'
+        +'<div class="edai-vsel" style="font-size:13px">'+esc(r.selection)+'</div>'
+        +'<div class="edai-vsub">now '+amStr(r.price_now_american)+' · '+pct(r.edge_now)+' · '+esc(r.verdict_now||'')+'</div>'
+        +'<ul style="margin:6px 0 0;padding-left:16px;font-size:12px;line-height:1.5">'
+        + r.changes.map(function(c){ return '<li style="margin:2px 0;color:'+(sev[c.severity]||'var(--dim)')+'"><b>'+esc(c.kind.replace(/_/g,' '))+'</b> <span style="color:var(--text)">'+esc(c.detail)+'</span></li>'; }).join('')
+        +'</ul></div>';
+    }).join('')
+    +'<div style="margin-top:6px"><button class="edai-qa hot" onclick="EDAI.todaysResearch()">Re-run research</button></div>';
+  }
+
+  function dscanPostmortemHTML(pm){
+    var s=pm.summary||{};
+    var head='<div class="edai-card" style="padding:11px 12px;margin-bottom:8px">'
+      +'<div class="edai-vsel">Postmortem · '+esc(pm.packet_id||'')+'</div>'
+      +'<div class="edai-vsub">'+(s.graded||0)+' graded, '+(s.ungraded||0)+' still open'
+      +(s.graded?' · beat the close '+s.beat_close+'/'+s.graded+' ('+s.beat_close_rate+'%)'
+        +(s.avg_clv!=null?' · avg CLV '+pct(s.avg_clv):''):'')+'</div>'
+      +'<div class="edai-note" style="margin:8px 0 0">'+esc(pm.note)+'</div></div>';
+    return head+(pm.rows||[]).map(function(r){
+      var c=r.clv==null?'var(--dim)':(r.beat_close?'var(--pos)':'var(--neg)');
+      return '<div class="edai-card" style="margin-bottom:8px;padding:8px 11px">'
+        +'<div class="edai-vsel" style="font-size:13px">'+esc(r.matchup)+' · '+esc(r.selection)+'</div>'
+        +'<div class="edai-vsub">decided '+esc(r.decision||'—')+' at '+amStr(r.captured_price_american)
+          +' · '+pct(r.captured_edge)+(r.classification?' · '+esc(r.classification.replace(/_/g,' ')):'')+'</div>'
+        +(r.clv==null
+          ? '<div class="edai-src" style="margin-top:5px">'+esc(r.note)+'</div>'
+          : '<div style="margin-top:5px;font-size:12.5px;line-height:1.55">'
+            +'<div style="color:'+c+'"><b>CLV '+pct(r.clv)+'</b> · '+(r.beat_close?'beat the close':'did not beat the close')+' · outcome '+esc(r.outcome)+'</div>'
+            +'<div style="color:var(--text);margin-top:3px">'+esc(r.verdict)+'</div>'
+            +(r.note?'<div class="edai-src" style="margin-top:4px">'+esc(r.note)+'</div>':'')
+            +'</div>')
+        +'</div>';
+    }).join('');
+  }
+
+  function dscanPacketListHTML(all){
+    return '<div class="edai-card" style="padding:10px 12px">'
+      +'<div class="edai-vsel">Recorded research packets</div>'
+      +'<div class="edai-vsub">'+all.length+' on file · newest first · never overwritten</div>'
+      +all.slice(0,15).map(function(p){
+        var s=p.scope||{};
+        return '<div style="padding:6px 0;border-top:1px solid var(--line);font-size:12px">'
+          +'<b style="color:var(--text)" class="mono">'+esc(p.id)+'</b> '
+          +'<span style="color:var(--dim)">· '+esc(String(p.created_at_iso||'').slice(0,16).replace('T',' '))
+          +' · '+(s.deep_researched||0)+' researched · '+(s.rejections_total||0)+' rejected · '
+          +esc(p.quality_outcome||p.outcome||'')+'</span></div>';
+      }).join('')
+      +'<div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap">'
+      +'<button class="edai-qa" onclick="EDAI.packetPostmortem()">Postmortem the latest</button>'
+      +'<button class="edai-qa" onclick="EDAI.reevaluate()">What has changed?</button></div>'
+      +'<div class="edai-src" style="border:none;margin-top:6px">Full JSON for any packet: <span class="mono">EDAI.packetJSON(\'&lt;id&gt;\')</span> in the console.</div>'
+      +'</div>';
+  }
+
+  function dscanRenderHTML(decided, packet){
+    var head=decided.headline, outcome=decided.outcome, qOut=decided.qualityOutcome||outcome, rest=decided.ordered.slice(1,4);
     // the intro reports the research conclusion (qOut) — which may be more conservative than
     // the deterministic outcome when the best playable number is only floor-level (spec #14, #20).
     var concl = outcome!=='BET' ? (outcome==='WAIT'?'nothing confirmed \u2014 a WAIT.':'no qualifying signal today.')
@@ -17986,8 +19098,12 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
       +esc(concl)+'</div></div>';
     var html=intro + dscanHeadline(head, outcome, decided);
     if(rest.length){
-      html+='<div style="font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--dim);font-weight:600;margin:6px 2px">Other finalists</div>';
+      html+='<div style="font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--dim);font-weight:600;margin:6px 2px">Alternatives</div>';
       rest.forEach(function(f){ html+=dscanMini(f); });
+    }
+    if(packet){
+      html+=dscanRejectHTML(packet.rejections, (packet.scope&&packet.scope.rejections_total)||0);
+      html+=dscanPacketHTML(packet);
     }
     html+='<div style="display:flex;gap:8px;margin-top:6px;flex-wrap:wrap">'
       +'<button class="edai-qa" onclick="EDAI.dscan(\'why\',1)">Why #1</button>'
@@ -17999,7 +19115,10 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
       +'<button class="edai-qa" onclick="EDAI.dscan(\'best\',\'price\')">Safest price</button>'
       +'<button class="edai-qa" onclick="EDAI.dscan(\'changed\',1)">What changed?</button>'
       +(rest.length?'<button class="edai-qa" onclick="EDAI.dscan(\'compare\')">Compare #1 & #2</button>':'')
-      +'<button class="edai-qa" onclick="EDAI.dailyScan()">Rescan</button></div>';
+      +'<button class="edai-qa" onclick="EDAI.reevaluate()">Re-evaluate vs live board</button>'
+      +'<button class="edai-qa" onclick="EDAI.packetPostmortem()">Postmortem</button>'
+      +'<button class="edai-qa" onclick="EDAI.packets()">Past packets</button>'
+      +'<button class="edai-qa" onclick="EDAI.todaysResearch()">Re-run research</button></div>';
     html+='<div class="edai-src" style="border:none;margin-top:4px">You can also type: <b>How fragile is #1?</b>, <b>How much price cushion does #1 have?</b>, <b>Why did #1 beat #2?</b>, <b>Why isn\u2019t #2 better?</b>, <b>What\u2019s the biggest weakness?</b>, <b>Which signal has the strongest evidence?</b>, <b>Which has the safest price?</b>, <b>Biggest raw edge?</b>, <b>Best research quality?</b>, <b>Most conservative option</b>, <b>Most aggressive qualifying edge</b>, <b>What would make #1 a pass?</b></div>';
     return html;
   }
@@ -18025,6 +19144,28 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
       verified_research:(r.evidence||[]).slice(0,8).map(function(it){return {claim:it.claim, value:it.value, status:it.status, source:it.source};}),
       reasons:(x.reasonsFor||[]).slice(0,5), biggest_question:f.question,
       /* research-quality layer (deterministic; AI must EXPLAIN, never override — spec #18) */
+      /* THE THREE EDGES, SEPARATE, so the model cannot present a consensus
+         discrepancy with the authority of a sharp-confirmed one. A null here is
+         load-bearing: it means that kind of edge does not exist for this row. */
+      sharp_edge:x.sharpEdge, consensus_edge:x.consEdge, model_edge_unproven:x.modelEdge,
+      /* Classification and credibility travel with the candidate so the AI can
+         EXPLAIN the deterministic call. It may not restate, recompute or upgrade
+         any of it. */
+      opportunity: f.opportunity? {
+        classification:f.opportunity.classification, headline:f.opportunity.headline,
+        action:f.opportunity.action, failed_checks:f.opportunity.failed,
+        warned_checks:f.opportunity.warned,
+        checks:f.opportunity.checks.map(function(c){ return {check:c.check, state:c.state, detail:c.detail}; })
+      } : null,
+      edge_credibility: f.credibility? {
+        credibility:f.credibility.credibility, band:f.credibility.band, call:f.credibility.call,
+        market_confidence:f.credibility.market_confidence, data_confidence:f.credibility.data_confidence,
+        model_confidence:f.credibility.model_confidence, price_survival:f.credibility.price_survival,
+        effective_edge:f.credibility.effective_edge,
+        missing_evidence:f.credibility.missing_evidence,
+        unsourced_inputs:f.credibility.unsourced_detail,
+        flags:f.credibility.flags
+      } : null,
       bet_quality: f.q? {
         tier:f.q.tier, quality_call:f.q.quality_call,
         price_fragility:f.q.price_fragility, price_cushion_over_floor:f.q.price_cushion_pts,
@@ -18047,8 +19188,12 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
       var q='This is EdgeDesk\u2019s deterministic daily scan of today\u2019s slate. #'+decided.headline.rank
         +' is the headline pick; the deterministic outcome is '+decided.outcome+' and the research-quality call is '+(decided.qualityOutcome||decided.outcome)+'. '
         +'Each finalist carries a deterministic bet_quality block (tier, price_fragility, evidence_quality, market_confirmation, thesis_durability, information_gap, edge_provenance, transparent_components). '
+        +'Each also carries an `opportunity` block (classification + named validation checks) and an `edge_credibility` block (component confidences and an itemised effective_edge). '
         +'Explain WHY EdgeDesk rates the headline above the alternatives using those fields, name the weakest link and anything unverified, and \u2014 if the headline is FLOOR/MARGINAL \u2014 say plainly it qualifies but is not a high-quality signal. '
-        +'You are interpreting the deterministic results: do NOT invent games, prices, injuries or numbers, do NOT change the verdict, fair price, price threshold or confidence, and do NOT manufacture a new score. Never instruct anyone to place, increase, decrease, or avoid a wager, and never recommend a sportsbook. Explain, never override.';
+        +'CLASSIFICATION IS BINDING. If a candidate is RAW_DISCREPANCY, describe it as a research lead whose named checks failed \u2014 never as an opportunity. If it is CONSENSUS_RESEARCH, say explicitly that no sharp reference prices it and that this is research rather than a play. If it is NOT_AN_OPPORTUNITY, do not argue it back onto the board. '
+        +'THE THREE EDGES ARE SEPARATE: sharp_edge, consensus_edge and model_edge_unproven mean different things and a null means that kind of edge does not exist for that row \u2014 never substitute one for another, and never describe a consensus edge as sharp-confirmed. '
+        +'Where `unsourced_inputs` names an input, say EdgeDesk ingests no source for it; that is a missing pipeline, not a quiet feed, and it must not be reported as merely absent data. '
+        +'You are interpreting the deterministic results: do NOT invent games, prices, injuries or numbers, do NOT change the verdict, fair price, price threshold, classification or confidence, and do NOT manufacture a new score. Never instruct anyone to place, increase, decrease, or avoid a wager, and never recommend a sportsbook. Explain, never override.';
       var res=await askAI('slate', q, null, cand);
       thinking(false); var m=push('a',res.html);
       if(res.src&&m){ var s=document.createElement('div'); s.className='edai-src'; s.textContent=res.src; m.appendChild(s); }
@@ -18056,19 +19201,368 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
     };
   }
 
+  /* ==================== DAILY RESEARCH PACKET ====================
+     Until now the daily scan's entire output lived in one module-local `DSCAN`
+     object that the next scan overwrote. That is fine for a chat answer and
+     useless for research: there was no way to ask what EdgeDesk knew at 9am, no
+     way to compare a decision against the close, and no record that the sixty
+     candidates which did NOT make the shortlist had ever been considered.
+
+     A packet is an APPEND-ONLY record with a stable id. Rescanning does not
+     replace this morning's packet; it writes a new one, so the day's sequence of
+     conclusions is itself inspectable. Every finalist carries a RECEIPT — the
+     complete set of owned values behind the decision, frozen at decision time —
+     which is what makes a postmortem meaningful rather than a re-derivation.
+
+     Storage is localStorage, deliberately: this app has no server and the whole
+     product runs in the browser. That has a real limit (quota), so the store is
+     capped and says so rather than failing silently at the boundary. */
+  var PACKET_KEY='edgedesk_research_packets';
+  var PACKET_CAP=40;                 // oldest are pruned; the prune is reported
+
+  function packetStamp(ts){
+    var d=new Date(ts||Date.now());
+    function p2(v){ return (v<10?'0':'')+v; }
+    return d.getFullYear()+p2(d.getMonth()+1)+p2(d.getDate())+'-'+p2(d.getHours())+p2(d.getMinutes())+p2(d.getSeconds());
+  }
+  function packetLoadAll(){
+    try{ var raw=localStorage.getItem(PACKET_KEY); var a=raw?JSON.parse(raw):[]; return Array.isArray(a)?a:[]; }
+    catch(_){ return []; }
+  }
+  function packetSave(p){
+    var all=packetLoadAll();
+    all.unshift(p);
+    var pruned=0;
+    while(all.length>PACKET_CAP){ all.pop(); pruned++; }
+    /* Quota is a real ceiling in a browser-only app. Shed oldest packets until it
+       fits rather than throwing away the one just built — and never pretend the
+       write succeeded when it did not. */
+    for(var tries=0; tries<8; tries++){
+      try{ localStorage.setItem(PACKET_KEY, JSON.stringify(all)); p.__stored=true; return {ok:true, pruned:pruned, kept:all.length}; }
+      catch(_){ if(all.length<=1) break; all.pop(); pruned++; }
+    }
+    p.__stored=false;
+    return {ok:false, pruned:pruned, kept:all.length, error:'localStorage quota — this packet is in memory for this session only.'};
+  }
+  function packetById(id){ return packetLoadAll().filter(function(p){ return p && p.id===id; })[0]||null; }
+  function packetLatest(){ return packetLoadAll()[0]||null; }
+
+  /* ---- RESEARCH RECEIPT ----------------------------------------------------
+     Everything EdgeDesk knew about ONE candidate at the moment it decided, in
+     plain data. No DOM, no functions, no references into live state — a receipt
+     has to survive being read back tomorrow from a different session, which is
+     the whole point of writing it down. */
+  function buildReceipt(f, packetTs){
+    var x=f.x, e=x.e||{}, r=f.research||{}, q=f.q||null;
+    var cred=f.credibility||null, opp=f.opportunity||null;
+    return {
+      /* identity */
+      event_id:e.event_id||null, sport_key:e.sport_key||null, sport:x.sport,
+      matchup:x.matchup, market:e.market||null, market_label:mktL(e.market),
+      selection:e.selection||null, point:(e.point==null?null:e.point), selection_label:x.sel,
+      commence_time:e.commence_time||null,
+      /* the price, and every reference price the decision used */
+      price_american:x.curAm, price_decimal:x.curDec, book:x.book, book_trusted:x.trusted,
+      detection_price_american:x.detAm, detection_price_decimal:x.detDec,
+      fair_probability:x.fairP, fair_source:x.fairSrc, fair_american:x.fairAm,
+      breakeven_american:x.breakevenAm, price_limit_american:x.toPlayAm,
+      price_needed_to_requalify:x.needsPriceForEv,
+      /* the numbers the deterministic engine owns — copied verbatim, never re-derived */
+      edge:x.curEdge, detection_edge:x.detEdge, ev:x.evNow, edge_remaining:x.remaining,
+      /* The three edges stay separate in the record too. A postmortem that cannot
+         tell a sharp-anchored edge from a consensus one cannot learn anything. */
+      sharp_edge:x.sharpEdge, consensus_edge:x.consEdge, model_edge:x.modelEdge,
+      score:x.score, band:x.band, components:x.comps,
+      /* market structure */
+      sharp_reference:{has_sharp:x.sharp, pinnacle_dec:x.pinDec, pinnacle_opp_dec:x.pinOppDec},
+      consensus:{n_books:x.nb, n_books_effective:x.nbe, corroborating_levels:x.corr},
+      captured_minutes_ago:Math.round(x.staleM), captured_at:e.last_seen_at||null,
+      /* research */
+      verdict_deterministic:x.dverdict, verdict_shown:dscanVerdictOf(f),
+      is_wait:x.isWait, wait_reason:x.waitWhy, confidence:x.confidence,
+      why:x.why, reasons_for:(x.reasonsFor||[]).slice(0,8), reasons_against:(x.reasonsAgainst||[]).slice(0,8),
+      falsifiers:(x.falsifiers||[]).slice(0,8),
+      evidence:(r.evidence||[]).map(function(i){
+        return {claim:i.claim, value:(i.value==null?null:i.value), status:i.status,
+                source:i.source, source_type:i.source_type, confidence:i.confidence,
+                relevance:i.relevance, timestamp:i.timestamp||null}; }),
+      unavailable:(r.unavailable||[]).map(function(u){ return {tool:u.tool, reason:u.reason}; }),
+      conflicts:(r.conflicts||[]).slice(),
+      attack:r.attack?{status:r.attack.status, note:r.attack.note}:null,
+      what_changed:dscanWhatChanged(x),
+      /* the quality + credibility + classification layers, stored whole */
+      bet_quality:q?{tier:q.tier, quality_call:q.quality_call, score:q.score,
+        price_fragility:q.price_fragility, price_cushion_pts:q.price_cushion_pts,
+        evidence_quality:q.evidence_quality, market_confirmation:q.market_confirmation,
+        information_gap:q.information_gap, thesis_durability:q.thesis_durability,
+        since_detection:q.since_detection, edge_provenance:q.edge_provenance,
+        independent_axes:q.independent_axes, components:q.components}:null,
+      credibility:cred?{credibility:cred.credibility, band:cred.band, call:cred.call,
+        market_confidence:cred.market_confidence, data_confidence:cred.data_confidence,
+        model_confidence:cred.model_confidence, price_survival:cred.price_survival,
+        plausible_edge_scale:cred.plausible_edge_scale, effective_edge:cred.effective_edge,
+        required_evidence:cred.required_evidence, missing_evidence:cred.missing_evidence,
+        evidence_absent_unsourced:cred.evidence_absent_unsourced,
+        unsourced_detail:cred.unsourced_detail, evidence:cred.evidence, flags:cred.flags}:null,
+      opportunity:opp?{classification:opp.classification, headline:opp.headline, action:opp.action,
+        checks:opp.checks, failed:opp.failed, warned:opp.warned}:null,
+      /* provenance of the record itself */
+      sources:Array.from(new Set((r.evidence||[]).map(function(i){return i.source;}).filter(Boolean))),
+      graded:x.graded, clv:x.clv, beat_close:x.beat, closing_fair:x.closeP, result:x.result,
+      recorded_at:packetTs||Date.now()
+    };
+  }
+
+  /* ---- REJECTIONS ----------------------------------------------------------
+     What was considered and did not make it, with the reason. The shortlist was
+     previously `scan.slice(0,5)` and everything behind it vanished without trace,
+     so the product could show what survived but never what it had rejected —
+     which is half of what makes research trustworthy. */
+  function rejectionReason(g){
+    var x=g.x, opp=g.opportunity, cred=g.credibility;
+    function has(c){ return opp && opp.failed && opp.failed.indexOf(c)>=0; }
+    if(x.curEdge==null) return {code:'NO_FAIR_PRICE', reason:'No fair price on file — the number cannot be evaluated at all.'};
+    if(x.curEdge<=0) return {code:'NO_EDGE', reason:'Best available price is at or below fair.'};
+    if(!dscanPlayable(x)) return {code:'PRICE_TOO_EXPENSIVE', reason:'Price has moved past the qualifying window; EV no longer clears the '+pctAbs(FLOOR,1)+' floor. Would requalify at '+amStr(x.toPlayAm)+' or better.'};
+    if(has('STALENESS')) return {code:'STALE_PRICE', reason:'Last captured '+Math.round(x.staleM)+'m ago — the shown price is not verifiably live.'};
+    if(has('MODEL')) return {code:'IMPLAUSIBLE_EDGE', reason:'Edge of '+pct(x.curEdge)+' is far outside what this market is usually wrong by — treated as a price or data artifact until validated.'};
+    if(has('MARKET_QUALITY')) return {code:'WEAK_MARKET', reason:'No sharp reference and only '+x.nb+' book'+(x.nb===1?'':'s')+' behind the fair line.'};
+    if(has('LIQUIDITY')) return {code:'INSUFFICIENT_LIQUIDITY', reason:'Best price is offshore on a '+x.nb+'-book market — not takeable at size.'};
+    if(has('DATA')) return {code:'POOR_DATA_QUALITY', reason:'Missing '+((cred&&cred.missing_evidence)||[]).length+' of '+((cred&&cred.required_evidence)||[]).length+' inputs this sport requires ('+((cred&&cred.missing_evidence)||[]).join(', ')+').'};
+    if(has('PARTICIPANT_STATUS')) return {code:'PARTICIPANT_UNRESOLVED', reason:'Who is actually playing is unresolved — the largest single input is unknown.'};
+    if(has('PRICE_MOVEMENT')) return {code:'EDGE_DECAYED', reason:'Only '+Math.round((x.remaining||0)*100)+'% of the detection edge remains; the market has moved through this number.'};
+    if(opp && opp.classification==='CONSENSUS_RESEARCH') return {code:'NO_SHARP_REFERENCE', reason:'Consensus-only discrepancy with no sharp reference — research, not a qualified opportunity.'};
+    if(opp && opp.classification==='RESEARCH_ONLY') return {code:'BELOW_MINIMUM', reason:'Edge does not survive its own discount — below the '+pctAbs(MIN_EFFECTIVE_EDGE,1)+' minimum worth capital.'};
+    return {code:'RANKED_BELOW', reason:'Valid but ranked below the finalists on research priority ('+g.priority+').'};
+  }
+  function buildRejections(candidates, chosenIds, cap){
+    var out=[];
+    (candidates||[]).forEach(function(g){
+      if(chosenIds[g.id]) return;
+      var rr=rejectionReason(g);
+      out.push({event_id:g.id, matchup:g.x.matchup, sport:g.x.sport,
+        selection:g.x.sel, market:mktL(g.e.market),
+        price_american:g.x.curAm, edge:g.x.curEdge, priority:g.priority,
+        classification:(g.opportunity&&g.opportunity.classification)||null,
+        credibility:(g.credibility&&g.credibility.credibility)||null,
+        code:rr.code, reason:rr.reason});
+    });
+    /* Ordered by how close they came, so the list reads as "the next best things
+       and why they lost" rather than an undifferentiated dump. */
+    out.sort(function(a,b){ return (b.priority||0)-(a.priority||0); });
+    return out.slice(0, cap||12);
+  }
+
+  /* ---- the packet itself ---- */
+  function buildPacket(decided, rejections, counts){
+    var ts=Date.now();
+    var head=decided.headline;
+    /* A packet id must be UNIQUE, because the store is append-only and the whole
+       point is that this morning's conclusion is still there this afternoon. The
+       stamp has one-second resolution, so two runs inside the same second would
+       otherwise produce two records claiming the same identity — which is worse
+       than overwriting, since nothing would look wrong. Disambiguate against what
+       is already stored. */
+    var _base='EDR-'+packetStamp(ts), _id=_base, _taken={}, _n=1;
+    packetLoadAll().forEach(function(q){ if(q&&q.id) _taken[q.id]=1; });
+    while(_taken[_id]){ _n++; _id=_base+'-'+_n; }
+    var p={
+      id:_id,
+      version:2,
+      created_at:ts,
+      created_at_iso:new Date(ts).toISOString(),
+      scope:counts||{},
+      outcome:decided.outcome,                       // deterministic
+      quality_outcome:decided.qualityOutcome||decided.outcome,   // research conclusion
+      headline_event_id:head?((head.x.e||{}).event_id||null):null,
+      finalists:decided.ordered.map(function(f){ return buildReceipt(f, ts); }),
+      rejections:rejections||[],
+      market_environment:null,
+      data_warnings:[],
+      reevaluations:[]
+    };
+    /* MARKET ENVIRONMENT — facts about the board, not opinions about it. */
+    var fin=p.finalists;
+    var sharpN=fin.filter(function(r){return r.sharp_reference.has_sharp;}).length;
+    var staleN=fin.filter(function(r){return r.captured_minutes_ago>=STALE_MIN;}).length;
+    var eds=fin.map(function(r){return r.edge;}).filter(function(v){return v!=null;});
+    p.market_environment={
+      finalists:fin.length,
+      sharp_anchored:sharpN,
+      consensus_only:fin.length-sharpN,
+      stale_quotes:staleN,
+      median_edge:eds.length?eds.slice().sort(function(a,b){return a-b;})[Math.floor(eds.length/2)]:null,
+      classifications:fin.reduce(function(a,r){ var k=(r.opportunity&&r.opportunity.classification)||'UNCLASSIFIED'; a[k]=(a[k]||0)+1; return a; },{})
+    };
+    /* DATA WARNINGS — aggregated honestly from what each receipt reported. */
+    var unsourced={};
+    fin.forEach(function(r){
+      ((r.credibility&&r.credibility.unsourced_detail)||[]).forEach(function(u){ unsourced[u.slot]=u.why; });
+      (r.unavailable||[]).forEach(function(u){ unsourced['tool:'+u.tool]=u.reason; });
+    });
+    Object.keys(unsourced).forEach(function(k){ p.data_warnings.push({input:k, detail:unsourced[k]}); });
+    if(!fin.length) p.data_warnings.push({input:'slate', detail:'No candidate survived screening on this board.'});
+    return p;
+  }
+
+  /* ==================== CONTINUOUS RE-EVALUATION ====================
+     A packet is a snapshot, and a snapshot goes stale. This compares a stored
+     receipt against the CURRENT board and reports what materially moved — and
+     "materially" is the whole design. Re-researching on every tick would be both
+     expensive and misleading, because a one-cent quote change is not news.
+
+     Thresholds are deliberate and named. Nothing here re-prices anything; it
+     reads the live deterministic values and reports the delta. */
+  var REEVAL_EDGE_DELTA = 0.005;   // half a point of edge
+  var REEVAL_PRICE_DELTA = 0.02;   // 2% of decimal price
+  function materialChanges(receipt, x){
+    var out=[];
+    if(!receipt || !x) return out;
+    var wasPlayable = receipt.edge!=null && receipt.edge>=FLOOR-1e-9;
+    var nowPlayable = x.curEdge!=null && x.curEdge>=FLOOR-1e-9;
+    if(wasPlayable!==nowPlayable){
+      out.push({kind:nowPlayable?'REQUALIFIED':'PRICE_KILLED', severity:'HIGH',
+        detail:nowPlayable
+          ? 'Back inside the qualifying window at '+amStr(x.curAm)+'.'
+          : 'Price moved past the window; EV no longer clears the '+pctAbs(FLOOR,1)+' floor at '+amStr(x.curAm)+'.'});
+    }
+    if(receipt.edge!=null && x.curEdge!=null && Math.abs(x.curEdge-receipt.edge)>=REEVAL_EDGE_DELTA){
+      out.push({kind:(x.curEdge>receipt.edge)?'EDGE_EXPANDED':'EDGE_COMPRESSED', severity:'MEDIUM',
+        detail:'Edge moved from '+pct(receipt.edge)+' to '+pct(x.curEdge)+'.'});
+    }
+    if(receipt.price_decimal && x.curDec && Math.abs(x.curDec-receipt.price_decimal)/receipt.price_decimal>=REEVAL_PRICE_DELTA){
+      out.push({kind:'PRICE_MOVED', severity:'MEDIUM',
+        detail:'Price moved from '+amStr(receipt.price_american)+' to '+amStr(x.curAm)+'.'});
+    }
+    if(receipt.sharp_reference.has_sharp!==x.sharp){
+      out.push({kind:x.sharp?'SHARP_APPEARED':'SHARP_WITHDRAWN', severity:'HIGH',
+        detail:x.sharp?'Pinnacle now prints this side.':'Pinnacle no longer prints this side; the fair line is soft again.'});
+    }
+    if(receipt.captured_minutes_ago<STALE_MIN && x.staleM>=STALE_MIN){
+      out.push({kind:'WENT_STALE', severity:'MEDIUM',
+        detail:'No fresh capture in '+Math.round(x.staleM)+'m — the quote is no longer verifiably live.'});
+    }
+    /* Participant news: an unposted starter becoming posted is the single most
+       common real information change on an MLB card. */
+    var was=receipt.opportunity&&receipt.opportunity.checks
+      ? (receipt.opportunity.checks.filter(function(c){return c.check==='PARTICIPANT_STATUS';})[0]||null) : null;
+    if(was && was.state==='FAIL' && x.mlb && x.mlb.away_pitcher_name && x.mlb.home_pitcher_name){
+      out.push({kind:'PARTICIPANT_RESOLVED', severity:'HIGH',
+        detail:'Both probable starters are now posted ('+x.mlb.away_pitcher_name+' / '+x.mlb.home_pitcher_name+').'});
+    }
+    if(!receipt.graded && x.graded){
+      out.push({kind:'GRADED', severity:'HIGH',
+        detail:'Now graded: '+(x.beat?'beat the close':'did not beat the close')+(x.clv!=null?' (CLV '+pct(x.clv)+')':'')+'.'});
+    }
+    return out;
+  }
+  /* Re-read the live board for every finalist in a packet and report what moved.
+     Returns a record that is APPENDED to the packet — the original receipts are
+     never edited, because a receipt that changes is not a receipt. */
+  function reevaluatePacket(p, liveBySig){
+    if(!p || !p.finalists) return null;
+    var rows=[], any=false;
+    p.finalists.forEach(function(rc){
+      var key=rc.event_id+'|'+rc.market+'|'+rc.selection;
+      var e=liveBySig[key]||null;
+      if(!e){ rows.push({event_id:rc.event_id, selection:rc.selection_label, changes:[],
+        note:'No live signal row for this selection any more — it has left the board.'}); return; }
+      var x; try{ x=evidence(e); }catch(_){ return; }
+      var ch=materialChanges(rc, x);
+      if(ch.length) any=true;
+      rows.push({event_id:rc.event_id, selection:rc.selection_label,
+        price_now_american:x.curAm, edge_now:x.curEdge,
+        verdict_now:x.dverdict, changes:ch});
+    });
+    return {at:Date.now(), at_iso:new Date().toISOString(), material:any, rows:rows,
+      thresholds:{edge_delta:REEVAL_EDGE_DELTA, price_delta_pct:REEVAL_PRICE_DELTA, stale_min:STALE_MIN},
+      note:any?'Material change detected — the ranking should be re-run.'
+              :'Nothing material moved. Re-ranking would produce the same order, so it was not run.'};
+  }
+
+  /* ==================== POSTMORTEM ====================
+     Compares what was decided against what the market did, and separates the two
+     questions that get conflated constantly: was the PRICE good (CLV) and did the
+     bet WIN (result). A winning wager on a bad price is bad process, and this
+     says so rather than letting the outcome launder the decision. */
+  function postmortemOne(rc, graded){
+    var out={event_id:rc.event_id, selection:rc.selection_label, matchup:rc.matchup,
+      market:rc.market_label, decision:rc.verdict_shown,
+      captured_price_american:rc.price_american, captured_edge:rc.edge,
+      classification:(rc.opportunity&&rc.opportunity.classification)||null,
+      closing_fair:null, clv:null, beat_close:null, result:null,
+      process:null, outcome:null, verdict:null, note:null};
+    if(!graded || graded.graded_at==null){
+      out.note='Not graded yet — a closing price exists only after the close is captured. CLV cannot be computed and must not be estimated.';
+      return out;
+    }
+    out.closing_fair=n(graded.closing_sharp_fair);
+    out.clv=n(graded.clv);
+    out.beat_close=(graded.beat_close===true||graded.beat_close==='true');
+    out.result=graded.result||null;
+    /* PROCESS is judged on the price and the evidence that were available at the
+       time — never on the result. */
+    var goodProcess = (rc.opportunity&&rc.opportunity.classification==='CREDIBLE_OPPORTUNITY')
+      && (rc.bet_quality? (rc.bet_quality.tier==='STRONG'||rc.bet_quality.tier==='SOLID') : true);
+    out.process = goodProcess?'SOUND':'WEAK';
+    out.outcome = out.result==='win'?'WON':out.result==='loss'?'LOST':out.result?String(out.result).toUpperCase():'UNSETTLED';
+    if(out.beat_close && goodProcess) out.verdict='GOOD PROCESS / GOOD PRICE';
+    else if(out.beat_close && !goodProcess) out.verdict='WEAK PROCESS / GOOD PRICE — the price came right, but the research behind it did not justify it at the time.';
+    else if(!out.beat_close && goodProcess) out.verdict='GOOD PROCESS / BAD PRICE — the market moved through the number. One instance proves nothing; the CLV record over many does.';
+    else out.verdict='WEAK PROCESS / BAD PRICE';
+    out.note='CLV grades the price, not the result. '+
+      (out.outcome==='WON'&&!out.beat_close?'This one won without beating the close — a good outcome from a poor entry, and not evidence the process worked. ':'')+
+      (out.outcome==='LOST'&&out.beat_close?'This one lost while beating the close — a bad outcome from a good entry, which is what variance looks like. ':'');
+    return out;
+  }
+  async function postmortemPacket(p){
+    if(!p||!p.finalists||!p.finalists.length) return {packet_id:p?p.id:null, rows:[], note:'No finalists in this packet.'};
+    var ids=Array.from(new Set(p.finalists.map(function(r){return r.event_id;}).filter(Boolean))).slice(0,20);
+    var rows=[];
+    if(ids.length && typeof sbGet==='function'){
+      try{
+        var inl='in.('+ids.map(function(v){return encodeURIComponent(v);}).join(',')+')';
+        rows=await sbGet('signals?select=event_id,market,selection,point,clv,beat_close,result,graded_at,closing_sharp_fair&event_id='+inl+'&limit=200');
+      }catch(_){ rows=[]; }
+    }
+    var by={};
+    (rows||[]).forEach(function(r){ by[r.event_id+'|'+r.market+'|'+r.selection]=r; });
+    var out=p.finalists.map(function(rc){
+      return postmortemOne(rc, by[rc.event_id+'|'+rc.market+'|'+rc.selection]||null);
+    });
+    var graded=out.filter(function(o){ return o.clv!=null; });
+    var beat=graded.filter(function(o){ return o.beat_close; }).length;
+    return {packet_id:p.id, created_at_iso:p.created_at_iso, rows:out,
+      summary:{graded:graded.length, ungraded:out.length-graded.length,
+        beat_close:beat, beat_close_rate:graded.length?Math.round(beat/graded.length*100):null,
+        avg_clv:graded.length?graded.reduce(function(a,o){return a+(o.clv||0);},0)/graded.length:null},
+      note:graded.length? 'CLV over a large sample is the only proof the process works. '+graded.length+' of '+out.length+' finalists are graded — far too few to conclude anything from on their own.'
+                        : 'Nothing in this packet is graded yet.'};
+  }
+
   /* ---- the orchestrator (core; caller owns the 'u' bubble + BUSY flag) ---- */
   async function dailyScanCore(){
-    var steps=['Scanning slate','Loading signals','Selecting candidates','Researching','Attacking theses','Comparing','Finalizing'];
+    var steps=['Scanning slate','Loading sport evidence','Screening candidates','Researching finalists','Attacking theses','Comparing','Recording packet'];
     var prog=push('a', dscanProgHTML(steps,0));
     function setStep(i){ if(prog) prog.innerHTML=dscanProgHTML(steps,i); var log=$id('edaiLog'); if(log)log.scrollTop=log.scrollHeight; }
     function yield_(){ return new Promise(function(r){ setTimeout(r,16); }); }
     try{
       setStep(0); await yield_();
-      var all=[]; try{ all=scanGames(); }catch(_){ all=[]; }
+      /* EVIDENCE BEFORE RANKING. scanGames() scores candidates synchronously, so
+         anything not already in hand cannot influence the order. This used to run
+         with no await at all, which meant that on a cold session MLB candidates
+         were ranked on park and weather and only met their own starters later,
+         inside buildBoard \u2014 the exact ordering bug the evidence-hoisting comment
+         upstream describes, still live on the most-used button in the product.
+         Non-MLB sports had no core to load at all until now. */
+      var pool=[].concat(window.EDGES||[], window.D5_POOL||[]);
       setStep(1); await yield_();
+      try{ await ensureMlbCore(); }catch(_){}
+      try{ await ensureSportCore(pool); }catch(_){}
+      var all=[]; try{ all=scanGames(); }catch(_){ all=[]; }
+      setStep(2); await yield_();
       var scan=dscanToday(all);
       if(!scan.length && all.length) scan=all;                 // never hide the whole board on a TZ edge
-      setStep(2); await yield_();
       var shortlist=scan.slice(0,5);                            // 3-5 research candidates, deterministic order
       if(!shortlist.length){ if(prog)prog.remove(); DSCAN=null; push('a', dscanEmptyHTML()); return; }
       setStep(3); await yield_();
@@ -18080,16 +19574,39 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
         var ctx=buildCtxFor(e);
         SESSION.cache={};                                       // isolate each candidate's tool cache
         var res=await dscanResearch(ctx);
-        finalists.push({rank:i+1, priority:g.priority, ctx:ctx, x:ctx.x, research:res, question:g.question, agree:g.agree});
+        /* Recomputed on the ENRICHED row. The screening pass scored a thinner
+           object (no CLV columns, no game card), so carrying its numbers into the
+           receipt would record a judgement made on less information than the one
+           actually taken. */
+        var fItems=[], fCred=null, fOpp=null;
+        try{ fItems=liveEvidenceItems(ctx.x); }catch(_){ fItems=[]; }
+        try{ fCred=edgeCredibility(ctx.x,{evidenceItems:fItems}); }catch(_){ fCred=null; }
+        try{ fOpp=opportunityClass(ctx.x,fCred,{evidenceItems:fItems}); }catch(_){ fOpp=null; }
+        finalists.push({rank:i+1, priority:g.priority, ctx:ctx, x:ctx.x, research:res,
+          question:g.question, agree:g.agree, credibility:fCred, opportunity:fOpp});
       }
       SESSION.eventId=saved.eventId; SESSION.cache=saved.cache;  // restore
       setStep(4); await yield_();
       setStep(5); await yield_();
       var decided=dscanDecide(finalists);
       setStep(6); await yield_();
+
+      /* THE PACKET. Everything considered, everything rejected, and the reason,
+         written to an append-only store so this morning's conclusion survives
+         this afternoon's rescan. */
+      var chosen={}; shortlist.forEach(function(g){ chosen[g.id]=1; });
+      var rejections=buildRejections(scan, chosen, 12);
+      var packet=buildPacket(decided, rejections,
+        {games_scanned:all.length, in_window:scan.length, candidates:shortlist.length,
+         deep_researched:finalists.length, finalists:decided.ordered.length,
+         rejections_recorded:rejections.length, rejections_total:Math.max(0,scan.length-shortlist.length)});
+      var store=packetSave(packet);
+      if(!store.ok) packet.data_warnings.push({input:'storage', detail:store.error});
+
       if(prog) prog.remove();
-      DSCAN={finalists:decided.ordered, headlineRank:decided.headline.rank, outcome:decided.outcome, ts:Date.now()};
-      push('a', dscanRenderHTML(decided));
+      DSCAN={finalists:decided.ordered, headlineRank:decided.headline.rank, outcome:decided.outcome,
+             ts:Date.now(), packet:packet, rejections:rejections, decided:decided};
+      push('a', dscanRenderHTML(decided, packet));
       dscanSynthOffer(decided);
     }catch(err){
       if(prog) prog.remove();
@@ -18313,6 +19830,9 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
   function isDailyScan(t){
     var q=(t||'').toLowerCase().trim();
     if(/\bdaily\s*scan\b/.test(q)) return true;
+    if(/\btoday'?s\s+research\b/.test(q)) return true;
+    if(/\b(run|do)\s+(the\s+|my\s+)?research\b/.test(q) && !/\bthis\b/.test(q)) return true;
+    if(/\bdaily\s+research\b/.test(q)) return true;
     if(/\bscan\b.*\b(slate|board|mlb|today|tonight)\b/.test(q)) return true;
     if(/\brun\b.*\bscan\b/.test(q)) return true;
     if(/\b(best|strongest|top)\s*(bet|play|edge|signal)\b/.test(q)) return true;   // "best bet", "strongest edge", "top signal"
@@ -18351,6 +19871,82 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
       try{ await dailyScanCore(); }
       finally{ BUSY=false; var s2=$id('edaiSend'); if(s2)s2.disabled=false; }
     },
+
+    /* ---- TODAY'S RESEARCH \u2014 the primary daily entry point ------------------
+       Same deterministic pipeline as the daily scan, framed as what it actually
+       is: the day's research, ending in ONE best opportunity with alternatives,
+       rejections and a recorded packet. It is a distinct verb because the user
+       should not have to know that "scan" is how research gets done. */
+    todaysResearch:async function(){
+      if(BUSY) return; BUSY=true; var sb=$id('edaiSend'); if(sb)sb.disabled=true;
+      window.EDAI.open(); push('u','Run today\u2019s research.');
+      try{ await dailyScanCore(); }
+      finally{ BUSY=false; var s2=$id('edaiSend'); if(s2)s2.disabled=false; }
+    },
+
+    /* ---- CONTINUOUS RE-EVALUATION ----------------------------------------
+       Reads the live board against the most recent packet and reports what
+       materially moved. When nothing crosses a threshold it says so and does NOT
+       re-run the research \u2014 a rescan that produces the same order is cost with no
+       information, and reporting "no change" is the useful answer. */
+    reevaluate:async function(){
+      if(BUSY) return; BUSY=true; var sb=$id('edaiSend'); if(sb)sb.disabled=true;
+      window.EDAI.open(); push('u','What has changed since the last research run?');
+      try{
+        var p=(DSCAN&&DSCAN.packet)||packetLatest();
+        if(!p){ push('a','<p>No research packet on file yet. Run <b>Today\u2019s research</b> first \u2014 there is nothing to compare against.</p>'); return; }
+        thinking(true);
+        try{ await ensureMlbCore(true); }catch(_){}
+        var pool=[].concat(window.EDGES||[], window.D5_POOL||[]);
+        if(typeof onlyFlagged==='function') pool=onlyFlagged(pool);
+        var by={};
+        pool.forEach(function(e){
+          if(!e||!e.event_id) return;
+          var k=e.event_id+'|'+e.market+'|'+e.selection;
+          var t=e.last_seen_at?new Date(e.last_seen_at).getTime():0;
+          var pv=by[k], pt=pv&&pv.last_seen_at?new Date(pv.last_seen_at).getTime():0;
+          if(!pv||t>pt) by[k]=e;
+        });
+        var rv=reevaluatePacket(p, by);
+        thinking(false);
+        if(rv){
+          /* Appended, never merged into the receipts. A receipt that changes is
+             not a receipt, and the packet's value is that it is fixed. */
+          p.reevaluations=p.reevaluations||[]; p.reevaluations.push(rv);
+          try{
+            var all=packetLoadAll(), i=-1;
+            all.forEach(function(q,ix){ if(q&&q.id===p.id) i=ix; });
+            if(i>=0){ all[i]=p; localStorage.setItem(PACKET_KEY, JSON.stringify(all)); }
+          }catch(_){}
+          push('a', dscanReevalHTML(p, rv));
+        }
+      }catch(_){ thinking(false); push('a','<p>Re-evaluation hit an error. The stored packet is unchanged.</p>'); }
+      finally{ BUSY=false; var s2=$id('edaiSend'); if(s2)s2.disabled=false; }
+    },
+
+    /* ---- POSTMORTEM over a recorded packet -------------------------------- */
+    packetPostmortem:async function(id){
+      if(BUSY) return; BUSY=true; var sb=$id('edaiSend'); if(sb)sb.disabled=true;
+      window.EDAI.open(); push('u','Postmortem the last research packet.');
+      try{
+        var p=id?packetById(id):((DSCAN&&DSCAN.packet)||packetLatest());
+        if(!p){ push('a','<p>No research packet on file to grade. Run <b>Today\u2019s research</b> first.</p>'); return; }
+        thinking(true);
+        var pm=await postmortemPacket(p);
+        thinking(false);
+        push('a', dscanPostmortemHTML(pm));
+      }catch(_){ thinking(false); push('a','<p>Postmortem hit an error reading the graded rows.</p>'); }
+      finally{ BUSY=false; var s2=$id('edaiSend'); if(s2)s2.disabled=false; }
+    },
+
+    /* ---- the stored history ---- */
+    packets:function(){
+      window.EDAI.open();
+      var all=packetLoadAll();
+      if(!all.length){ push('a','<p>No research packets recorded yet.</p>'); return; }
+      push('a', dscanPacketListHTML(all));
+    },
+    packetJSON:function(id){ return id?packetById(id):packetLatest(); },
     // daily-scan follow-up buttons/dispatch (why / attack / price / changed / pass / compare)
     dscan:function(act,rank){
       var bestLabel={evidence:'Which signal has the strongest evidence?',price:'Which signal has the safest price?',edge:'Which signal has the biggest raw edge?',quality:'Which signal has the best research quality?',conservative:'Give me the most conservative option.',aggressive:'Give me the most aggressive qualifying edge.'};
@@ -18385,6 +19981,10 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
     },
 
     action:function(mode){
+      if(mode==='todaysresearch')return window.EDAI.todaysResearch();
+      if(mode==='reevaluate')return window.EDAI.reevaluate();
+      if(mode==='packetpostmortem')return window.EDAI.packetPostmortem();
+      if(mode==='packets')return window.EDAI.packets();
       if(mode==='dailyscan')return window.EDAI.dailyScan();
       if(mode==='scanslate')return scanSlate();
       if(mode==='bestbets')return bestBets();
@@ -18477,7 +20077,15 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
       var A=fin({x:{curEdge:0.045,detEdge:0.045,evNow:0.045,confidence:'HIGH'}});
       chk('A robust price', A.q.price_fragility,'ROBUST');
       chk('A strong tier', (A.q.tier==='STRONG'||A.q.tier==='SOLID'),true);
-      var B=fin({x:{curEdge:0.02,detEdge:0.02,evNow:0.02}});
+      /* FIXTURES ARE FLOOR-RELATIVE, and this is a repair, not a style choice.
+         These cases were written when the engine floor was 2% and hardcoded 0.02
+         as "sitting on the floor". REAL_FLOOR is 0.5%, so a 2% edge is four
+         floors of cushion and every one of these assertions had been failing in
+         the browser — six silent reds in a suite whose whole job is to prove the
+         classifier still works. Expressed against FLOOR they test the BEHAVIOUR
+         ("a bet with no cushion is FLOOR-tier") and survive the constant moving
+         again. */
+      var B=fin({x:{curEdge:FLOOR,detEdge:FLOOR,evNow:FLOOR}});
       chk('B floor', B.q.price_fragility,'FLOOR'); chk('B tier floor', B.q.tier,'FLOOR');
       chk('B not a BET call', B.q.quality_call!=='BET', true);
       var C=fin({x:{curEdge:0.031,detEdge:0.031,evNow:0.031,sharp:false,fairSrc:'consensus fair',nb:3,corr:0},research:{evidence:[ev('model','VERIFIED')],attack:{status:'SURVIVES',note:''}}});
@@ -18489,16 +20097,16 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
       chk('D quality outranks fragile bigger edge', bqPickHeadline([big,small])===small, true);
       var E=fin({x:{mlb:{away_pitcher_name:'A. Ace',home_pitcher_name:null}},research:{unavailable:[{tool:'pitchers'}],evidence:[ev('sharp','VERIFIED'),ev('model','VERIFIED')]}});
       chk('E critical gap', E.q.information_gap,'CRITICAL'); chk('E not strong', E.q.tier!=='STRONG', true);
-      var Ff=fin({x:{curEdge:0.024,detEdge:0.05,evNow:0.024,remaining:0.48}});
+      var Ff=fin({x:{curEdge:FLOOR*1.4,detEdge:FLOOR*4,evNow:FLOOR*1.4,remaining:0.48}});
       chk('F fragility up', (Ff.q.price_fragility==='FRAGILE'||Ff.q.price_fragility==='FLOOR'), true);
       chk('F deteriorated', Ff.q.since_detection,'DETERIORATED');
-      var G=fin({x:{curEdge:0.005,detEdge:0.04,evNow:0.005,dverdict:'PASS'},research:{attack:{status:'INVALIDATED',note:''}}});
+      var G=fin({x:{curEdge:FLOOR*0.4,detEdge:FLOOR*8,evNow:FLOOR*0.4,dverdict:'PASS'},research:{attack:{status:'INVALIDATED',note:''}}});
       chk('G pass tier', G.q.tier,'PASS'); chk('G price-killed', G.q.since_detection,'PRICE-KILLED');
       var H=fin({x:{curEdge:0.035,detEdge:0.035,evNow:0.035,sharp:false,fairSrc:'consensus fair',nb:4,corr:0},research:{evidence:[ev('model','VERIFIED'),ev('pitching','PROBABLE'),ev('context','VERIFIED')],attack:{status:'SURVIVES',note:''}}});
       chk('H weak confirmation', H.q.market_confirmation!=='CONFIRMED', true); chk('H not strong', H.q.tier!=='STRONG', true);
       var I=fin({x:{curEdge:0.028,detEdge:0.06,evNow:0.028,remaining:0.30}});
       chk('I conflicting market', I.q.market_confirmation,'CONFLICTING');
-      var j1=fin({x:{curEdge:0.02,evNow:0.02,detEdge:0.02}}), j2=fin({x:{curEdge:0.021,evNow:0.021,detEdge:0.05,remaining:0.42}});
+      var j1=fin({x:{curEdge:FLOOR,evNow:FLOOR,detEdge:FLOOR}}), j2=fin({x:{curEdge:FLOOR*1.05,evNow:FLOOR*1.05,detEdge:FLOOR*10,remaining:0.42}});
       chk('J slate NO BET when only floor-level', bqSlateOutcome(bqPickHeadline([j1,j2]),'BET'),'NO BET');
       var s1=fin({x:{curEdge:0.045,detEdge:0.045,evNow:0.045,confidence:'HIGH'}});
       chk('K strong slate stays BET', bqSlateOutcome(bqPickHeadline([s1]),'BET'),'BET');
@@ -18565,6 +20173,330 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
       var _pools4=mlbSignalPools([_g1]);
       chk('R clock skew inside the window still matches', mlbClaimSignal(_pools4,'Boston Red Sox','New York Yankees','2026-08-11T17:35:00Z').e.event_id, 'evt-G1');
       if(verbose!==false){ try{ console.log('%cEDBetQuality self-test','font-weight:bold'); R.forEach(function(r){ console.log((r.ok?'PASS':'FAIL')+' | '+r.t+(r.ok?'':'  got '+JSON.stringify(r.got)+' want '+JSON.stringify(r.want))); }); console.log((F===0?'ALL GREEN ':'FAILURES ')+P+' passed, '+F+' failed'); }catch(_){} }
+      return {passed:P, failed:F, results:R};
+    }
+  };
+
+  /* ==================== EDGEDESK RESEARCH v2 — PUBLIC API + SELF-TEST ====================
+     Console:  EDResearchV2.selfTest()   -> {passed, failed, results}
+
+     Everything asserted here is deterministic and runs with no board and no
+     network. The suite exists to hold the line on the properties the product is
+     actually built around — that a big number is not automatically a bet, that a
+     missing source is reported rather than filled in, that PASS is a successful
+     outcome, and that nothing downstream can rewrite an engine value. */
+  window.EDResearchV2 = {
+    /* classification + credibility */
+    opportunityClass:opportunityClass, opportunityChecks:opportunityChecks,
+    opportunityRankWeight:opportunityRankWeight, edgeCredibility:edgeCredibility,
+    /* sport intelligence */
+    sportEvidenceItems:sportEvidenceItems, ensureSportCore:ensureSportCore,
+    evidenceProfile:evidenceProfile, unsourcedSlots:unsourcedSlots,
+    toolsFor:dscanToolsFor, noResearchSports:SPORT_NO_RESEARCH,
+    /* packets, receipts, rejections */
+    buildReceipt:buildReceipt, buildRejections:buildRejections, rejectionReason:rejectionReason,
+    buildPacket:buildPacket, packetSave:packetSave, packetLoadAll:packetLoadAll,
+    packetById:packetById, packetLatest:packetLatest,
+    /* re-evaluation + postmortem */
+    materialChanges:materialChanges, reevaluatePacket:reevaluatePacket,
+    postmortemOne:postmortemOne, postmortemPacket:postmortemPacket,
+
+    selfTest:function(verbose){
+      var R=[],P=0,F=0;
+      function chk(n,g,w){ var ok=(g===w); R.push({t:n,ok:ok,got:g,want:w}); ok?P++:F++; }
+      function ok(n,cond){ chk(n, !!cond, true); }
+
+      /* A synthetic signal row in the exact shape `signals` returns. Built as a
+         ROW, not as an `x`, so evidence() itself is under test. */
+      function row(over){
+        return Object.assign({
+          event_id:'evt-1', sport_key:'baseball_mlb', sport_title:'MLB',
+          market:'h2h', selection:'Away', point:null,
+          home_team:'Home Nine', away_team:'Away Nine',
+          best_dec:2.20, first_best_dec:2.20, best_book:'DraftKings',
+          sharp_fair:0.50, consensus_fair:0.49, has_sharp:true,
+          edge:0.10, first_edge:0.10, n_books:8, n_books_eff:8, corrob_n:2,
+          last_seen_at:new Date(Date.now()-5*60000).toISOString(),
+          commence_time:new Date(Date.now()+3*3600e3).toISOString()
+        }, over||{});
+      }
+      /* A full MLB evidence set, one metric per contract slot and family. Needed
+         wherever a test isolates ONE property: with no evidence the DATA gate
+         fails first and every candidate classifies as a raw discrepancy, which is
+         correct behaviour but masks whatever the test was actually about. */
+      function mlbItems(){
+        return [
+          {metric:'k_pct',value:0.26,source:'pitcher_features'},
+          {metric:'bb_pct',value:0.07,source:'pitcher_features'},
+          {metric:'xera',value:3.60,source:'pitcher_features'},
+          {metric:'whip',value:1.15,source:'pitcher_features'},
+          {metric:'barrel_pct',value:0.07,source:'pitcher_features'},
+          {metric:'hardhit_pct',value:0.38,source:'pitcher_features'},
+          {metric:'obp',value:0.320,source:'offense_features'},
+          {metric:'iso',value:0.160,source:'offense_features'},
+          {metric:'runs_per_game',value:4.4,source:'offense_features'},
+          {metric:'bullpen_taxed',value:2,source:'mlb_bullpen'},
+          {metric:'closer_status',value:1,source:'mlb_bullpen'},
+          {metric:'park_factor',value:100,source:'mlb_game_cards'},
+          {metric:'hr_factor',value:101,source:'mlb_game_cards'},
+          {metric:'temp_f',value:72,source:'venue_weather'},
+          {metric:'wind_mph',value:6,source:'venue_weather'},
+          {metric:'days_rest',value:5,source:'mlb_pitcher_usage'}
+        ];
+      }
+      function cred(x,items){ return edgeCredibility(x,{evidenceItems:items||[]}); }
+      function classify(over,items){
+        var x=evidence(row(over)); var c=cred(x,items);
+        return {x:x, cred:c, opp:opportunityClass(x,c,{evidenceItems:items||[]})};
+      }
+
+      /* ---- 1. THE CENTRAL PROPERTY: a raw edge is not automatically a bet ---- */
+      var stale=classify({edge:0.08, first_edge:0.08, best_dec:2.30,
+        last_seen_at:new Date(Date.now()-120*60000).toISOString()});
+      chk('V1 stale 8% edge is a raw discrepancy, not an opportunity', stale.opp.classification, 'RAW_DISCREPANCY');
+      ok('V1 staleness gate is the one that failed', stale.opp.failed.indexOf('STALENESS')>=0);
+      ok('V1 raw discrepancy is not credible', stale.opp.is_credible===false);
+
+      /* ---- 2. CONSENSUS-ONLY stays consensus research ----
+         Evidence is supplied so the ONLY thing missing is the sharp reference.
+         Without it the DATA gate fails first and the row classifies as a raw
+         discrepancy — correct, and asserted separately just below. */
+      var consNoEv=classify({has_sharp:false, sharp_fair:null, consensus_fair:0.50, edge:0.022, first_edge:0.022, n_books:6, corrob_n:1});
+      chk('V2 consensus-only with no evidence is a raw discrepancy first', consNoEv.opp.classification, 'RAW_DISCREPANCY');
+      var cons=classify({has_sharp:false, sharp_fair:null, consensus_fair:0.50, edge:0.022,
+        first_edge:0.022, n_books:6, corrob_n:1}, mlbItems());
+      chk('V2 consensus-only never classifies as a credible opportunity', cons.opp.classification, 'CONSENSUS_RESEARCH');
+      ok('V2 consensus-only is labelled research, not a play', /research/i.test(cons.opp.action));
+      chk('V2 no sharp edge is computed when nobody sharp printed it', cons.x.sharpEdge, null);
+      ok('V2 a consensus edge IS computed and kept separate', cons.x.consEdge!=null);
+
+      /* ---- 3. MODEL / MARKET / CONSENSUS stay three numbers ---- */
+      var sep=classify({});
+      ok('V3 sharp edge present when Pinnacle prints', sep.x.sharpEdge!=null);
+      ok('V3 consensus edge present alongside it', sep.x.consEdge!=null);
+      ok('V3 sharp and consensus edges are not the same number', Math.abs(sep.x.sharpEdge-sep.x.consEdge)>1e-9);
+      chk('V3 no model row means no model edge, never a zero', sep.x.modelEdge, null);
+
+      /* ---- 4. RANKING: credibility can outrank size ---- */
+      ok('V4 a credible opportunity keeps its full rank', opportunityRankWeight('CREDIBLE_OPPORTUNITY')===1);
+      ok('V4 a raw discrepancy is ranked below a credible one', opportunityRankWeight('RAW_DISCREPANCY')<opportunityRankWeight('CREDIBLE_OPPORTUNITY'));
+      ok('V4 consensus research outranks a raw discrepancy but not a credible edge',
+        opportunityRankWeight('CONSENSUS_RESEARCH')>opportunityRankWeight('RAW_DISCREPANCY') &&
+        opportunityRankWeight('CONSENSUS_RESEARCH')<opportunityRankWeight('CREDIBLE_OPPORTUNITY'));
+      /* The headline case from the brief, end to end: a small validated edge must
+         be able to finish above a large unvalidated one. */
+      var small=classify({edge:0.021, first_edge:0.021, best_dec:1.95});
+      var big=classify({edge:0.085, first_edge:0.085, best_dec:2.60, has_sharp:false, sharp_fair:null,
+        n_books:2, corrob_n:0, last_seen_at:new Date(Date.now()-95*60000).toISOString()});
+      var smallRank=100*opportunityRankWeight(small.opp.classification)*(small.cred.credibility/100);
+      var bigRank  =100*opportunityRankWeight(big.opp.classification)*(big.cred.credibility/100);
+      ok('V4 a 2.1% validated edge outranks an 8.5% stale unanchored one', smallRank>bigRank);
+
+      /* ---- 5. PRICE PAST THE WINDOW is not an opportunity ---- */
+      var past=classify({edge:FLOOR*0.4, first_edge:0.05, best_dec:1.60});
+      chk('V5 price past the window is not an opportunity', past.opp.classification, 'NOT_AN_OPPORTUNITY');
+      ok('V5 a price limit is still published so it can requalify', past.x.toPlayAm!=null);
+
+      /* ---- 6. NEGATIVE / ABSENT edge ---- */
+      chk('V6 no fair price is not an opportunity', classify({sharp_fair:null,consensus_fair:null,edge:null,first_edge:null}).opp.classification, 'NOT_AN_OPPORTUNITY');
+      chk('V6 a negative edge is never credible', classify({edge:-0.02, first_edge:-0.02}).opp.is_credible, false);
+
+      /* ---- 7. MISSING DATA IS REPORTED, NEVER INVENTED ---- */
+      var bare=cred(evidence(row({sport_key:'americanfootball_nfl'})), []);
+      chk('V7 NFL required inputs are all reported missing', bare.missing_evidence.length, 5);
+      ok('V7 NFL gaps are named as unsourced, not as empty rows', bare.evidence_absent_unsourced.length===5);
+      ok('V7 the unsourced reason names the missing pipeline', /ingests no|not ingested/i.test((bare.unsourced_detail[0]||{}).why||''));
+      ok('V7 no evidence means no fabricated coverage', bare.data_confidence<=10);
+      /* A sport with no source must not be quietly scored as if the gap were neutral. */
+      var nflOpp=classify({sport_key:'americanfootball_nfl'});
+      ok('V7 a sport with no research source cannot be a credible opportunity', nflOpp.opp.is_credible===false);
+
+      /* ---- 8. SPORT ROUTING ---- */
+      chk('V8 UFC routes to the fight extractor', sportEvidenceItems({e:{sport_key:'mma_mixed_martial_arts',away_team:'A',home_team:'B'}}).length, 0);
+      chk('V8 an unknown sport yields no items rather than an error', sportEvidenceItems({e:{sport_key:'icehockey_nhl'}}).length, 0);
+      /* Tool routing: a sport with an owned schema must actually be given its
+         tool, and a sport with none must declare that rather than look quiet. */
+      ok('V8 MLB is routed its pitching tools', dscanToolsFor('baseball_mlb').indexOf('pitchers')>=0);
+      ok('V8 UFC is routed the fight tool', dscanToolsFor('mma_mixed_martial_arts').indexOf('fighters')>=0);
+      ok('V8 ATP is routed the tennis tool', dscanToolsFor('tennis_atp').indexOf('tennis')>=0);
+      ok('V8 WTA is routed the tennis tool', dscanToolsFor('tennis_wta').indexOf('tennis')>=0);
+      ok('V8 CFB is routed the SP+ tool', dscanToolsFor('americanfootball_ncaaf').indexOf('cfbteam')>=0);
+      chk('V8 every sport still gets the market layer', dscanToolsFor('icehockey_nhl').length, 4);
+      ok('V8 the NFL declares that it has no research layer at all', !!SPORT_NO_RESEARCH.americanfootball_nfl);
+      ok('V8 a sport with a schema is NOT declared sourceless', !SPORT_NO_RESEARCH.mma_mixed_martial_arts);
+      ok('V8 tennis declares its serve/return gap explicitly', !!(unsourcedSlots('tennis_atp')||{}).serve_hold);
+      ok('V8 college football declares its per-play gap explicitly', !!(unsourcedSlots('americanfootball_ncaaf')||{}).qb);
+      chk('V8 MLB has no unsourced slots — every input has a feed', unsourcedSlots('baseball_mlb'), null);
+
+      /* ---- 9. EVIDENCE INDEPENDENCE (families, not metric counts) ---- */
+      var prof=evidenceProfile([
+        {metric:'k_pct',value:0.30,source:'a'},{metric:'swstr_pct',value:0.14,source:'a'},
+        {metric:'csw_pct',value:0.31,source:'a'},{metric:'whiff_pct',value:0.28,source:'a'}
+      ],'baseball_mlb');
+      chk('V9 four strikeout metrics are one independent family', prof.family_count, 1);
+      chk('V9 all four are still counted as metrics', prof.unique_metrics, 4);
+      ok('V9 one family cannot reach full coverage', prof.coverage<0.35);
+
+      /* ---- 10. REJECTIONS carry a reason ---- */
+      function cand(over,items){
+        var c=classify(over,items);
+        return {id:(over&&over.event_id)||'evt-1', x:c.x, e:c.x.e, priority:40,
+                credibility:c.cred, opportunity:c.opp};
+      }
+      chk('V10 a stale candidate is rejected as stale', rejectionReason(cand({edge:0.08,first_edge:0.08,last_seen_at:new Date(Date.now()-200*60000).toISOString()})).code, 'STALE_PRICE');
+      chk('V10 a price past the window is rejected on price', rejectionReason(cand({edge:FLOOR*0.3,first_edge:0.05})).code, 'PRICE_TOO_EXPENSIVE');
+      chk('V10 a consensus-only candidate is rejected for no sharp reference', rejectionReason(cand({has_sharp:false,sharp_fair:null,consensus_fair:0.5,edge:0.025,first_edge:0.025,n_books:7,corrob_n:1}, mlbItems())).code, 'NO_SHARP_REFERENCE');
+      var rj=buildRejections([cand({event_id:'a'}),cand({event_id:'b'})],{a:1},12);
+      chk('V10 the chosen candidate is not listed as a rejection', rj.length, 1);
+      ok('V10 every rejection states a reason', rj.every(function(r){ return !!r.reason && !!r.code; }));
+
+      /* ---- 11. RECEIPT completeness + the engine's numbers survive verbatim ---- */
+      var c11=classify({});
+      var f11={x:c11.x, credibility:c11.cred, opportunity:c11.opp, priority:70, rank:1,
+        research:{evidence:[{claim:'Fair probability',value:'50.0%',status:'VERIFIED',source:'Pinnacle de-vig fair',relevance:'model'}],
+                  conflicts:[], unavailable:[{tool:'injuries',reason:'not connected'}],
+                  attack:{status:'SURVIVES',note:'holds'}}};
+      f11.q=betQuality(f11);
+      var rc=buildReceipt(f11, 1234567890);
+      ['event_id','market','selection','price_american','fair_probability','edge','price_limit_american',
+       'confidence','verdict_shown','attack','credibility','opportunity','sources','recorded_at'
+      ].forEach(function(k){ ok('V11 receipt carries '+k, rc[k]!==undefined); });
+      chk('V11 the receipt copies the engine edge verbatim', rc.edge, c11.x.curEdge);
+      chk('V11 the receipt copies the fair probability verbatim', rc.fair_probability, c11.x.fairP);
+      chk('V11 the receipt copies the price limit verbatim', rc.price_limit_american, c11.x.toPlayAm);
+      chk('V11 the receipt keeps the three edges apart', rc.sharp_edge!=null && rc.consensus_edge!=null && rc.model_edge===null, true);
+      chk('V11 an unavailable tool is recorded, not dropped', rc.unavailable.length, 1);
+      /* Nothing downstream may rewrite a deterministic value: mutating the receipt
+         must not reach back into the engine's own object. */
+      rc.edge=0.99;
+      chk('V11 mutating a receipt cannot change the engine value', c11.x.curEdge!==0.99, true);
+
+      /* ---- 12. PACKET is append-only with unique ids ---- */
+      var decided12={ordered:[f11], headline:f11, outcome:'BET', qualityOutcome:f11.q.quality_call,
+        bets:[f11], waits:[]};
+      var before=packetLoadAll().length;
+      var p1=buildPacket(decided12, [], {games_scanned:9,in_window:4,candidates:1,deep_researched:1});
+      packetSave(p1);
+      var p2=buildPacket(decided12, [], {games_scanned:9,in_window:4,candidates:1,deep_researched:1});
+      packetSave(p2);
+      ok('V12 packets append rather than overwrite', packetLoadAll().length>=before+2);
+      ok('V12 two packets in the same second get different ids', p1.id!==p2.id);
+      ok('V12 a packet id is stable and readable', /^EDR-\d{8}-\d{6}/.test(p1.id));
+      ok('V12 the packet records what it scanned', p1.scope.games_scanned===9);
+      ok('V12 the packet records the market environment', !!p1.market_environment);
+      ok('V12 an unavailable tool becomes a data warning', (p1.data_warnings||[]).some(function(w){ return /injur/i.test(w.input+' '+w.detail); }));
+      ok('V12 the stored packet can be read back by id', !!packetById(p1.id));
+
+      /* ---- 13. NO QUALIFIED OPPORTUNITY is a successful result ---- */
+      var passF={x:evidence(row({edge:FLOOR*0.3, first_edge:0.04})), priority:10, rank:1,
+        research:{evidence:[],conflicts:[],unavailable:[],attack:{status:'INVALIDATED',note:''}}};
+      var d13=dscanDecide([passF]);
+      chk('V13 nothing playable yields NO BET', d13.outcome, 'NO BET');
+      chk('V13 a PASS finalist still produces a headline object', !!d13.headline, true);
+      var p13=buildPacket(d13, [], {games_scanned:5,in_window:5,candidates:1,deep_researched:1});
+      chk('V13 the packet records NO BET as its outcome', p13.outcome, 'NO BET');
+      ok('V13 a NO BET packet still carries a full receipt', !!p13.finalists[0].event_id);
+
+      /* ---- 14. RE-EVALUATION fires only on material change ---- */
+      var base=classify({});
+      var rcv=buildReceipt({x:base.x, credibility:base.cred, opportunity:base.opp, priority:70, rank:1,
+        research:{evidence:[],conflicts:[],unavailable:[],attack:{status:'SURVIVES',note:''}}}, Date.now());
+      chk('V14 an unchanged board reports no material change', materialChanges(rcv, base.x).length, 0);
+      var moved=evidence(row({best_dec:2.60, edge:0.30, first_edge:0.10}));
+      ok('V14 a large edge move is material', materialChanges(rcv, moved).some(function(c){ return c.kind==='EDGE_EXPANDED'; }));
+      var killed=evidence(row({best_dec:1.60, edge:FLOOR*0.2, first_edge:0.10}));
+      ok('V14 losing the qualifying window is material', materialChanges(rcv, killed).some(function(c){ return c.kind==='PRICE_KILLED'; }));
+      var wentSoft=evidence(row({has_sharp:false, sharp_fair:null, consensus_fair:0.50}));
+      ok('V14 losing the sharp anchor is material', materialChanges(rcv, wentSoft).some(function(c){ return c.kind==='SHARP_WITHDRAWN'; }));
+      var tiny=evidence(row({best_dec:2.205, edge:0.1025}));
+      chk('V14 a sub-threshold drift is NOT material', materialChanges(rcv, tiny).length, 0);
+
+      /* ---- 15. POSTMORTEM separates process from outcome ---- */
+      var goodRc=Object.assign({}, rcv, {opportunity:{classification:'CREDIBLE_OPPORTUNITY'},
+        bet_quality:{tier:'STRONG'}});
+      var weakRc=Object.assign({}, rcv, {opportunity:{classification:'RAW_DISCREPANCY'},
+        bet_quality:{tier:'MARGINAL'}});
+      var lostGood=postmortemOne(goodRc,{graded_at:'2026-01-01',clv:0.02,beat_close:true,result:'loss',closing_sharp_fair:0.52});
+      chk('V15 a loss that beat the close is good process', lostGood.process, 'SOUND');
+      ok('V15 and is reported as a bad outcome from a good entry', /GOOD PROCESS/.test(lostGood.verdict));
+      var wonWeak=postmortemOne(weakRc,{graded_at:'2026-01-01',clv:-0.03,beat_close:false,result:'win',closing_sharp_fair:0.46});
+      chk('V15 a win that missed the close is weak process', wonWeak.process, 'WEAK');
+      ok('V15 a win does not launder a bad price', /WEAK PROCESS/.test(wonWeak.verdict));
+      chk('V15 an ungraded row reports no CLV rather than estimating one', postmortemOne(rcv,null).clv, null);
+      ok('V15 and says why it cannot be computed', /not graded/i.test(postmortemOne(rcv,null).note||''));
+
+      /* ---- 16. DETERMINISM: identical input, identical output ---- */
+      var a16=classify({}), b16=classify({});
+      chk('V16 the same row classifies identically', a16.opp.classification, b16.opp.classification);
+      chk('V16 the same row scores identical credibility', a16.cred.credibility, b16.cred.credibility);
+      chk('V16 the same row produces an identical effective edge',
+        JSON.stringify(a16.cred.effective_edge), JSON.stringify(b16.cred.effective_edge));
+      chk('V16 the effective edge is stated once and agrees with the call gate',
+        a16.cred.effective_edge.clears_minimum, a16.cred.effective_edge.effective>=a16.cred.effective_edge.minimum_required);
+
+      /* ---- 18. THE QUALIFYING CASE — the one shape that IS allowed to be a bet.
+         Modest edge, sharp-anchored, fresh, liquid, complete evidence, no decay.
+         If this ever stops classifying as a credible opportunity the product has
+         become unable to say yes, which is as broken as saying yes too often. */
+      var goodEv=mlbItems();
+      var good=classify({edge:0.030, first_edge:0.030, best_dec:2.10, n_books:8, corrob_n:2}, goodEv);
+      chk('V18 a modest sharp-anchored validated edge is a credible opportunity', good.opp.classification, 'CREDIBLE_OPPORTUNITY');
+      chk('V18 no validation gate failed', good.opp.failed.length, 0);
+      chk('V18 the deterministic engine independently says BET', good.x.verdict, 'BET');
+      ok('V18 it clears the minimum economic edge after its own penalties', good.cred.effective_edge.clears_minimum===true);
+      ok('V18 credibility is high', good.cred.credibility>=70);
+      /* And the same row one notch worse on liquidity must NOT qualify. */
+      var thin=classify({edge:0.030, first_edge:0.030, best_dec:2.10, n_books:2, corrob_n:0, has_sharp:false, sharp_fair:null}, goodEv);
+      ok('V18 the same edge on a 2-book unanchored market does not qualify', thin.opp.is_credible===false);
+
+      /* ---- 19. PERSISTENCE ROUND-TRIP. A packet that cannot survive JSON is not
+         a record. This is the one property the whole append-only store rests on. */
+      var rt=JSON.parse(JSON.stringify(p1));
+      chk('V19 a packet survives a JSON round-trip intact', rt.id, p1.id);
+      chk('V19 receipts survive with their engine numbers', rt.finalists[0].edge, p1.finalists[0].edge);
+      chk('V19 the classification survives', rt.finalists[0].opportunity.classification, p1.finalists[0].opportunity.classification);
+      ok('V19 no function or DOM reference leaked into the record',
+        JSON.stringify(p1).indexOf('function')<0);
+
+      /* ---- 20. SPORTS WITH NO SOURCE SAY SO. A contract with unsatisfiable
+         slots and no unsourced declaration reports "we looked and it was empty",
+         which reads as a quiet feed rather than an absent one. */
+      ['basketball_nba','basketball_wnba','basketball_ncaab','icehockey_nhl',
+       'americanfootball_nfl','americanfootball_ncaaf','tennis_atp','tennis_wta'
+      ].forEach(function(sk){
+        ok('V20 '+sk+' declares its unsourced inputs', !!unsourcedSlots(sk));
+      });
+      ok('V20 hockey has a contract rather than an unknown-sport default',
+        (EDGE_BRAIN.contractFor('icehockey_nhl').required||[]).length>0);
+      var nhl=cred(evidence(row({sport_key:'icehockey_nhl'})), []);
+      ok('V20 an unsourced sport is reported as unsourced, not as empty rows',
+        nhl.evidence_absent_unsourced.length===nhl.missing_evidence.length && nhl.missing_evidence.length>0);
+      ok('V20 and it cannot score well on evidence it does not have', nhl.data_confidence<=10);
+
+      /* ---- 21. THE ATTACK ORDERING IS ACTUALLY COMPUTED.
+         mlbMatchup existed and was unit-tested but was never called on the board,
+         so the ranked list every "worst starters" answer relies on was empty. */
+      var arm={xera:5.30,era:5.10,whip:1.50,k_pct:0.15,bb_pct:0.105,hr_per_9:1.70,barrel_pct:0.112,hardhit_pct:0.455};
+      var bats={runs_per_game:5.45,obp:0.345,iso:0.190};
+      var mu=mlbMatchup(arm,bats);
+      ok('V21 a full starter line produces an attack score', mu && mu.attack_score!=null);
+      ok('V21 the home-run term is actually used', (mlbVuln(arm).inputs||[]).indexOf('hr_per_9')>=0);
+      var noHr={xera:5.30,k_pct:0.15};
+      ok('V21 a line without it still ranks', mlbVuln(noHr)!=null);
+      ok('V21 an unrankable arm returns null rather than a score', mlbMatchup({xera:null,k_pct:null},null)===null);
+
+      /* ---- 17. CHECKS are named, complete, and never silently absent ---- */
+      var need17=['STALENESS','DATA','MARKET_QUALITY','MODEL','PARTICIPANT_STATUS','SURFACE','LIQUIDITY','PRICE_MOVEMENT'];
+      var got17=classify({}).opp.checks.map(function(c){ return c.check; });
+      need17.forEach(function(k){ ok('V17 '+k+' check runs', got17.indexOf(k)>=0); });
+      ok('V17 every check states a state and a detail', classify({}).opp.checks.every(function(c){
+        return /^(PASS|WARN|FAIL|N\/A)$/.test(c.state) && !!c.detail; }));
+
+      if(verbose!==false){ try{
+        console.log('%cEDResearchV2 self-test','font-weight:bold');
+        R.forEach(function(r){ console.log((r.ok?'PASS':'FAIL')+' | '+r.t+(r.ok?'':'  got '+JSON.stringify(r.got)+' want '+JSON.stringify(r.want))); });
+        console.log((F===0?'ALL GREEN ':'FAILURES ')+P+' passed, '+F+' failed');
+      }catch(_){} }
       return {passed:P, failed:F, results:R};
     }
   };
