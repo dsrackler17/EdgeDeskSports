@@ -1,5 +1,5 @@
 -- ============================================================================
--- EdgeDesk — referral attribution + guarantee accounting
+-- EdgeDesk — referral attribution
 --
 -- Run this BEFORE sending partner traffic. The landing page writes to these
 -- tables on account creation and again at billing consent; if they do not
@@ -90,120 +90,29 @@ alter table if exists public.billing_consents
   add column if not exists trial_days            int;
 
 -- ----------------------------------------------------------------------------
--- guarantee_windows: the refund ledger.
---
--- Written when a subscription takes its FIRST PAYMENT (trial conversion), not
--- when the trial starts — the guarantee refunds a charge, so it cannot begin
--- before one exists. Evaluated by a scheduled job. The point of storing the
--- decision rather than recomputing it on demand is that a refund must be
--- reproducible months later, against the numbers as they stood at the time.
--- ----------------------------------------------------------------------------
-create table if not exists public.guarantee_windows (
-  user_id          uuid primary key references auth.users(id) on delete cascade,
-  first_charge_at  timestamptz not null,
-  window_start     timestamptz not null,
-  window_end       timestamptz not null,         -- first_charge_at + 30 days
-  hard_deadline    timestamptz not null,         -- first_charge_at + 90 days
-  graded_n         int,
-  mean_clv         numeric,
-  status           text not null default 'open'
-    check (status in ('open','extended','passed','failed','refunded','void')),
-  decided_at       timestamptz,
-  refunded_at      timestamptz,
-  stripe_refund_id text,
-  notes            text
-);
-create index if not exists guarantee_windows_status_idx on public.guarantee_windows(status);
-create index if not exists guarantee_windows_end_idx    on public.guarantee_windows(window_end);
-
-alter table public.guarantee_windows enable row level security;
-
--- A subscriber can read their own window. That is the whole trust argument:
--- the customer can see the same row the refund job acts on.
-drop policy if exists guarantee_windows_select_self on public.guarantee_windows;
-create policy guarantee_windows_select_self on public.guarantee_windows
-  for select to authenticated using (auth.uid() = user_id);
--- No insert/update policy: only the service role writes this table.
-
--- ----------------------------------------------------------------------------
--- The guarantee test, in SQL, so the refund job and the landing page cannot
--- drift apart. Selection rule is copied verbatim from record.html's EDGEQ:
---   flagged_at is not null AND flagged_edge between 0.005 and 0.1
--- Change it here and in BOTH index.html and record.html, or not at all.
--- ----------------------------------------------------------------------------
-create or replace function public.guarantee_eval(p_from timestamptz, p_to timestamptz)
-returns table (graded_n bigint, mean_clv numeric)
-language sql stable as $$
-  select count(*)::bigint, avg(clv)::numeric
-  from public.public_record
-  where clv is not null
-    and flagged_at is not null
-    and flagged_edge >= 0.005
-    and flagged_edge <= 0.1
-    and graded_at >= p_from
-    and graded_at <  p_to
-$$;
-
--- Decide every window that is due. Run daily.
---   * >= 30 graded edges and mean CLV  > 0  -> passed
---   * >= 30 graded edges and mean CLV <= 0  -> failed  (refund owed)
---   * <  30 graded edges, before the 90-day deadline -> extended (keep waiting)
---   * <  30 graded edges, past the deadline -> failed (we never produced enough
---     work to be measured; that is our failure, so the month is refunded)
--- Marking 'failed' does not move money. A separate worker issues the Stripe
--- refund and sets status='refunded' — keeping the decision and the payout in
--- two steps means a bug in one cannot silently double-refund through the other.
-create or replace function public.guarantee_sweep()
-returns int language plpgsql security definer set search_path = public as $$
-declare r record; g record; n int := 0;
-begin
-  for r in
-    select * from public.guarantee_windows
-    where status in ('open','extended') and now() >= window_end
-  loop
-    select * into g from public.guarantee_eval(r.window_start, least(now(), r.hard_deadline));
-    update public.guarantee_windows
-       set graded_n = g.graded_n,
-           mean_clv = g.mean_clv,
-           status = case
-             when g.graded_n >= 30 and coalesce(g.mean_clv,0) >  0 then 'passed'
-             when g.graded_n >= 30                                 then 'failed'
-             when now() >= r.hard_deadline                         then 'failed'
-             else 'extended' end,
-           decided_at = case when g.graded_n >= 30 or now() >= r.hard_deadline
-                             then now() else null end
-     where user_id = r.user_id;
-    n := n + 1;
-  end loop;
-  return n;
-end $$;
-
--- Refunds owed but not yet paid. This is the query to look at every morning.
-create or replace view public.guarantee_refunds_due as
-  select user_id, first_charge_at, window_start, window_end,
-         graded_n, mean_clv, decided_at
-  from public.guarantee_windows
-  where status = 'failed' and refunded_at is null
-  order by decided_at asc;
-
--- ----------------------------------------------------------------------------
 -- Partner reporting. Service-role only; run it to produce an invoice.
--- Commission is deliberately computed on NET revenue: a refunded month pays no
--- commission. Agreeing that in writing before launch is what stops the
--- conversation six months from now where both parties are certain and neither
--- can prove it.
+-- Commission should be computed on NET revenue — after refunds, chargebacks and
+-- failed renewals, not on gross signups. Trials in particular are not revenue:
+-- in_trial is reported separately from active_paid so nobody invoices for a
+-- customer who has not paid yet. Agreeing that in writing before launch is what
+-- stops the conversation six months from now where both parties are certain and
+-- neither can prove it.
 -- ----------------------------------------------------------------------------
 create or replace view public.partner_rollup as
   select r.ref,
-         count(*)                                              as signups,
-         count(*) filter (where s.status in ('trialing'))       as in_trial,
-         count(*) filter (where s.status = 'active')            as active_paid,
-         count(*) filter (where g.status = 'refunded')          as guarantee_refunded,
-         min(r.created_at)                                      as first_signup,
-         max(r.created_at)                                      as latest_signup
+         count(*)                                                    as signups,
+         count(*) filter (where s.status = 'trialing')               as in_trial,
+         count(*) filter (where s.status = 'active')                 as active_paid,
+         count(*) filter (where s.status in ('canceled','unpaid'))   as churned,
+         -- signups that never started a trial at all: the gap between clicking
+         -- the partner link and reaching checkout. Worth watching separately,
+         -- because it is the only number that says the funnel is broken rather
+         -- than the audience being wrong.
+         count(*) filter (where s.user_id is null)                   as never_started,
+         min(r.created_at)                                           as first_signup,
+         max(r.created_at)                                           as latest_signup
   from public.referrals r
-  left join public.subscriptions s      on s.user_id = r.user_id
-  left join public.guarantee_windows g  on g.user_id = r.user_id
+  left join public.subscriptions s on s.user_id = r.user_id
   where r.ref is not null
   group by r.ref
   order by active_paid desc;

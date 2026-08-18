@@ -7,83 +7,56 @@ will hurt you if you skip it.
 
 ---
 
-## 1. The economics of the guarantee, stated plainly
+## 1. The offer: a 7-day free trial, and nothing else
 
-The old guarantee was **a single coin flip on the entire cohort's revenue.**
+The 30-day CLV guarantee is **gone.** It was a conditional refund promise sitting on top
+of a statistic noisy enough that a genuinely good product could still fail it, and every
+subscriber in a cohort shared one window — so the whole cohort passed or failed together.
+That is a correlated liability on your entire first month of revenue, in exchange for a
+conversion argument the trial already makes better.
 
-One number — average CLV over 30 days — decided whether *every* subscriber got
-refunded. Every customer's refund was perfectly correlated with every other's. That is
-the worst possible structure for a correlated-arrival cohort: 100 subscribers from one
-partner all land inside ~72 hours, so they all share a window, so they all pass or all
-fail together. $7,999 on one draw of a noisy statistic.
+**The trial is the stronger risk reversal anyway,** for a reason that has nothing to do
+with the math: a guarantee asks someone to trust a promise about the future, and a trial
+just hands them the product. The objection it answers — "what if this isn't worth $80" —
+is answered by a week of using it, not by a refund clause they have to read twice.
 
-Worse, it had **no minimum sample.** If eight edges graded in someone's 30 days, eight
-rows decided the fate of the month. `record.html` already argues, at length and
-correctly, that a mean without a sample is not information — and then the guarantee
-was written to be decided by exactly that.
+What it does for your economics:
 
-### What changed
+- **Nothing is charged on day 0.** The cohort self-selects before money moves. People who
+  were never going to stick cancel in the trial rather than becoming a refund, a
+  chargeback, or a support thread.
+- **Refund exposure is close to zero.** Fees already charged are non-refundable, stated
+  plainly. There is no formula anyone can dispute, no window to argue about, and no
+  scenario where one number triggers a hundred simultaneous refunds.
+- **Everyone who converts used it for a week first.** That is a far better-qualified
+  paying pool than a cohort that bought on a promise.
 
-| | Before | Now |
-|---|---|---|
-| Sample floor | none | **30 graded edges**, or the window extends |
-| Max extension | n/a | 90 days, then automatic refund |
-| Window start | "your first 30 days" (ambiguous) | **30 days after your first payment** |
-| Window basis | the all-time public record | **your own window**, by `graded_at` |
-| "Flagged edge" | undefined on the page | `flagged_at not null AND flagged_edge ∈ [0.005, 0.1]` — the exact rule in `record.html` |
-| Claim | email support and ask | **automatic**; support is the backstop |
-| Repeatable | unbounded | one guaranteed month per customer |
-| Verifiable pre-purchase | no | live panel runs the real query in the visitor's browser |
-
-### Why the sample floor is the whole fix
-
-With CLV standard deviation around 4 points, the probability the *measured* mean lands
-below zero when the true edge is genuinely positive:
-
-| true mean CLV | n = 8 | n = 30 | n = 100 |
-|---|---|---|---|
-| +1.5% | ~14% | **~2%** | ~0.01% |
-| +0.5% | ~36% | ~25% | ~10% |
-| 0.0% | 50% | 50% | 50% |
-
-At n=30 with a real edge, expected refund cost is ~2% × cohort revenue — a couple of
-hundred dollars against $8k. At n=8 it is over a thousand. **The floor converts the
-guarantee from a coin flip into an insurance premium you can actually price.**
-
-And if the true edge is ~0, the guarantee fires about half the time — correctly. That
-is not a bug to engineer around. A product with no edge should refund.
-
-### The 7-day trial changes this in your favour
-
-The trial is the best risk control in the stack, and it is not primarily a conversion
-device:
-
-- Nobody is charged on day 0, so the cohort **self-selects before money moves.** People
-  who were never going to stick cancel in the trial instead of becoming a refund.
-- Refund exposure now applies only to people who used the product for a week and chose
-  to pay. That is a much better-qualified pool.
-- Worst case for a customer is 7 free days + a refunded month = **37 days free.** Say it
-  out loud in the copy rather than hoping nobody works it out.
+**Anyone who consented under the old terms is still owed the guarantee.** Consent
+versions `arl-2026-08-v3/v4/v5` promised it. `billing_consents` stores the exact text
+each customer agreed to, so honour it for those rows and only those rows. The current
+version is `arl-2026-08-v6-trial7`.
 
 ### Things you must do, that code cannot do for you
 
 - [ ] **Configure the 7-day trial on the Stripe price behind `STRIPE_LINK`.** The page
-      says "7 days free" in eleven places and in the consent record. If Stripe is not
+      says "7 days free" in a dozen places and in the consent record. If Stripe is not
       configured for a trial, **every one of those is false and the first charge lands
-      immediately.** This is the single highest-severity item on this page.
+      immediately.** This is the single highest-severity item here.
 - [ ] **Enable Stripe's trial-ending email** (Settings → Subscriptions → "Send trial
-      ending notifications"). The consent text now promises "We will also email you
-      before the trial converts." Several states require that notice for trial-to-paid.
+      ending notifications"). The consent text promises "We will also email you before
+      the trial converts," and several states require that notice for trial-to-paid.
+      This is a written promise; make it true.
 - [ ] **Set the payment link's success URL to `https://edgedesksports.com/?checkout=success`.**
-      Otherwise paying customers land on a marketing page that still says "Start free
-      trial" — see §4.
-- [ ] **Hold the first-month revenue from a referred cohort for 45 days.** Do not spend
-      it. The whole cohort's guarantee resolves at roughly the same moment.
-- [ ] **Budget for non-recoverable Stripe fees.** Stripe does not return processing fees
-      on refunds. A full 100-customer refund costs ~$262 *on top of* returning $7,999.
-- [ ] **Agree partner commission on NET revenue, in writing, before launch.** If you pay
-      25% on a month you later refund, you lose the refund *and* the commission.
-      `partner_rollup` reports refunded months separately for exactly this reason.
+      Otherwise customers land on a marketing page that still says "Start free trial" —
+      see §4.
+- [ ] **Confirm one-click cancellation actually works in `app.html`,** end to end, on a
+      real subscription. The page now promises it in writing, twice.
+- [ ] **Expect the day-8 conversion cliff.** Your entire partner cohort converts within
+      roughly the same 24 hours. Be at a keyboard that day — it is the one moment where
+      a billing bug hits everyone simultaneously.
+- [ ] **Watch for trial abuse.** One trial per customer; a burst of signups on
+      throwaway addresses from one referral code is worth a look before you pay
+      commission on it.
 
 ---
 
@@ -112,11 +85,11 @@ typo costs you a bridge section, not a commission.
 **Credit belongs to the first touch that carried a referral code.** Organic visits are
 recorded but never claim the customer.
 
-The first version of this got it backwards — any first visit, including an organic one,
-locked the record. The consequence: someone who browsed the homepage once in March,
-clicked the partner's link in June, and subscribed would be credited to *nobody*. The
-partner sends a paying customer and the ledger says "direct." Caught in browser testing;
-the organic record is now an upgradeable placeholder.
+The first version got it backwards — any first visit, including an organic one, locked
+the record. The consequence: someone who browsed the homepage in March, clicked the
+partner's link in June, and subscribed would be credited to *nobody*. The partner sends
+a paying customer and the ledger says "direct." Caught in browser testing; the organic
+record is now an upgradeable placeholder.
 
 Once a code is credited it is **frozen** — in the browser and again by a database
 trigger. A later, different code cannot take the customer. That half of the rule
@@ -129,6 +102,15 @@ the hop). All verified in a real browser.
 **Run `sql/referrals.sql` before you send traffic.** There is no backfill for "which
 link did this person click in March."
 
+### Paying the partner
+
+`partner_rollup` reports `signups`, `in_trial`, `active_paid`, `churned` and
+`never_started` separately, because **a trial is not revenue.** Agree in writing, before
+launch, that commission is 25% of *net* revenue — after refunds, chargebacks and failed
+renewals — and that it accrues on conversion, not on signup. With a 7-day trial, a
+partner counting signups and you counting payments will disagree by the entire trial
+population in week one. That argument is avoidable today and expensive later.
+
 ---
 
 ## 3. The golf bridge
@@ -137,22 +119,22 @@ Hidden by default. Cold traffic sees the page exactly as it was — it still rea
 sports-betting research terminal for people who arrived wanting one. The bridge appears
 only for `?ref=` codes registered as golf, or `?aud=golf`.
 
-It does three things in order: connects strokes gained to de-vigged fair value (same
-move — measure against what the field produces, not against the outcome), connects a
-season of differentials to a graded CLV sample, and then **shows the golf leaderboard
-that already exists in the product.** That last one matters most: it is the difference
-between "this could apply to you" and "this already covers your sport."
+It does three things in order: an above-the-fold hook so the first line a golfer reads
+is about them, a crosswalk from strokes gained to de-vigged fair value (same move —
+measure against what the field produces, not against the outcome), and then **the golf
+leaderboard that already exists in the product.** That last one matters most: it is the
+difference between "this could apply to you" and "this already covers your sport."
 
 ---
 
 ## 4. Payment → app access
 
-**This was the biggest hole, and it had nothing to do with the guarantee.**
+**This was the biggest hole, and it had nothing to do with the offer.**
 
-Stripe redirects a paying customer back to the site. Nothing handled that. They landed
-on a marketing page whose buttons still said "Sign up" while the webhook was in flight.
-At 100 customers, that single gap is most of your support inbox — and it reads as "I
-paid and got nothing," which is the worst possible first impression.
+Stripe redirects a converting customer back to the site. Nothing handled that. They
+landed on a marketing page whose buttons still said "Start free trial" while the webhook
+was in flight. At 100 customers, that single gap is most of your support inbox — and it
+reads as "I paid and got nothing," which is the worst possible first impression.
 
 Now: a returning customer gets an interstitial, the page polls their subscription for up
 to 40 seconds, and forwards them into the terminal the moment it activates. If polling
@@ -160,8 +142,8 @@ runs out it says activation is *catching up* — never that the payment failed, 
 the webhook can land after we stop looking, and telling a paying customer their payment
 didn't work is worse than telling them to wait. Both paths tested in a browser.
 
-`trialing` already counted as active in `edSubState()`, so trial users get in with no
-charge. Verified.
+`trialing` already counted as active in `edSubState()`, so trial users get straight in
+with no charge. Verified.
 
 ---
 
@@ -173,14 +155,13 @@ without you:
 | Driver | Self-serve path |
 |---|---|
 | Confirmation email never arrived | resend link, in the signup modal |
-| Paid but locked out | "Re-check my subscription now" — reads live billing state |
-| Wants to cancel before being charged | Settings › Subscription, stated on the page |
-| Thinks the guarantee failed | live panel + public record, both no-login |
+| Started the trial but locked out | "Re-check my subscription now" — reads live billing state |
+| Wants to cancel before being charged | Settings › Subscription, stated on the page twice |
+| Wants proof before trusting it | the public record, no account, no paywall |
 
-The guarantee being **automatic** is the largest single reduction here. A guarantee you
-have to claim generates one email per customer who thinks they might be owed. A
-guarantee that pays itself generates none — and it is a stronger promise, which is a
-rare case of the cheaper option also being the better one.
+The largest single reduction is the trial itself. A refund promise generates one email
+per customer who thinks they might be owed something; a trial generates none, because
+the person who didn't like it already cancelled and never wrote to you.
 
 ---
 
@@ -188,13 +169,8 @@ rare case of the cheaper option also being the better one.
 
 - [ ] Stripe: 7-day trial on the price; trial-ending emails on; success URL set.
 - [ ] Run `sql/referrals.sql`.
-- [ ] Schedule `guarantee_sweep()` daily; watch `guarantee_refunds_due` every morning.
-- [ ] Write `guarantee_windows` rows on first charge (trial conversion) in the webhook.
-      **Not on trial start** — the guarantee refunds a charge, so it cannot begin before
-      one exists.
-- [ ] Test one real end-to-end purchase with a real card before the partner sends anyone.
-- [ ] Decide the refund actor: `guarantee_sweep()` marks `failed`, a separate worker
-      issues the Stripe refund and sets `refunded`. Two steps on purpose — a bug in one
-      cannot silently double-refund through the other.
-- [ ] Confirm cancellation genuinely works inside the app (`app.html`), end to end, with
-      a real subscription. The page now promises one-click cancellation in writing.
+- [ ] Honour the old CLV guarantee for anyone on consent version v3–v5.
+- [ ] Test one real end-to-end trial → conversion with a real card before the partner
+      sends anyone. Do not let the first real charge in production be a customer's.
+- [ ] Be online for the day-8 conversion cliff.
+- [ ] Confirm cancellation genuinely works inside `app.html`, end to end.

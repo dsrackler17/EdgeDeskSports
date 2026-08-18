@@ -319,7 +319,7 @@ input[type=range].edge:active::-webkit-slider-thumb{cursor:grabbing}
 .pchain span{padding:4px 15px;position:relative}
 .pchain span:first-child{padding-left:0}
 .pchain span+span::before{content:"\2192";position:absolute;left:-1px;color:var(--line2)}
-/* guarantee mechanics — the measurement stated before anyone pays */
+/* offer mechanics — the terms stated plainly before anyone pays */
 .gmech{margin-top:18px;border-top:1px solid rgba(63,184,131,.25);padding-top:16px;display:grid;gap:11px}
 .gm{display:grid;grid-template-columns:140px 1fr;gap:15px;align-items:baseline}
 @media(max-width:620px){.gm{grid-template-columns:1fr;gap:3px}}
@@ -620,23 +620,6 @@ footer{border-top:1px solid var(--line);background:#0a0c10;padding:38px 0 48px}
 .fieldp-f{display:block;margin:13px 15px 15px;padding:11px 14px;border:1px solid var(--line2);border-radius:9px;background:var(--cell);font-family:'JetBrains Mono',monospace;font-size:11.5px;letter-spacing:.05em;color:var(--obs);text-align:left}
 .fieldp-cap{padding:0 17px 15px;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--faint);letter-spacing:.03em;line-height:1.65}
 .fieldp-cap b{color:var(--dim);font-weight:500}
-
-/* ---------- live guarantee status board ---------- */
-.gstat{margin-top:16px;border:1px solid var(--line2);border-radius:12px;background:#0e1116;overflow:hidden}
-.gstat-h{padding:10px 14px;border-bottom:1px solid var(--line);font-family:'JetBrains Mono',monospace;font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--faint);display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-.gstat-b{padding:14px 15px}
-.gstat .gsv{font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:700;letter-spacing:.09em;line-height:1.3}
-.gstat .gsv.okc{color:var(--val)}.gstat .gsv.warnc{color:var(--est)}.gstat .gsv.badc{color:var(--neg)}
-.gstat .gss{font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--faint);line-height:1.65;margin-top:7px;letter-spacing:.02em}
-.gstat .gsn{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--line);border:1px solid var(--line);border-radius:9px;overflow:hidden;margin-top:12px}
-@media(max-width:520px){.gstat .gsn{grid-template-columns:1fr}}
-.gstat .gsn>div{background:var(--cell);padding:10px 12px}
-.gstat .gsn .k{font-family:'JetBrains Mono',monospace;font-size:8px;letter-spacing:.11em;text-transform:uppercase;color:var(--faint);display:block;margin-bottom:5px}
-.gstat .gsn .v{font-family:'JetBrains Mono',monospace;font-size:16px;font-weight:700;line-height:1}
-.gauto{margin-top:14px;border:1px solid rgba(63,184,131,.4);background:rgba(63,184,131,.06);border-radius:11px;padding:13px 15px}
-.gauto .gah{font-family:'JetBrains Mono',monospace;font-size:9.5px;letter-spacing:.13em;text-transform:uppercase;color:var(--val);font-weight:700;margin-bottom:7px}
-.gauto p{font-size:13px;color:var(--dim);line-height:1.6}
-.gauto p b{color:var(--text);font-weight:600}
 
 /* ---------- self-serve support block ---------- */
 .selfserve{border:1px solid var(--line);border-radius:14px;background:var(--panel);padding:18px 19px;margin-top:14px}
@@ -1293,30 +1276,15 @@ footer{border-top:1px solid var(--line);background:#0a0c10;padding:38px 0 48px}
 
       <div>
         <div class="guar rv">
-          <div class="gh"><span class="dot"></span> 30-day CLV guarantee</div>
-          <p class="gq">If EdgeDesk's flagged edges don't beat the closing line over your first 30 paid days, your first month is refunded &mdash; automatically, without you asking.</p>
-          <p class="gd">Not a winning-record guarantee &mdash; nobody honest can offer you that. This is the one claim EdgeDesk can be held to, because <b>beating the close is measured before any game finishes</b>. Every term below is fixed in advance and computed from the public record, so there is no version of this where two people end up arguing over a spreadsheet.</p>
-
+          <div class="gh"><span class="dot"></span> 7 days free</div>
+          <p class="gq">Use the whole terminal for a week. Nothing is charged until day 8, and cancelling takes one click.</p>
+          <p class="gd">Not a stripped demo and not a sample slate &mdash; <b>the full product, every sport, every flagged edge, the whole research packet</b>. A week is long enough to run the loop on real boards and decide for yourself whether the work it removes is worth $79.99 a month.</p>
           <div class="gmech">
-            <div class="gm"><span class="gk">What counts</span><span class="gv">Every edge EdgeDesk flags in the window, defined exactly as the public record defines it: <b>a signal with a recorded flag time and a flagged edge between +0.5% and +10%</b>. That rule is frozen in code on both pages, and the flag time is stamped once and never revised. Our numbers, not your bets &mdash; you place nothing for this to be measurable.</span></div>
-            <div class="gm"><span class="gk">Your window</span><span class="gv"><b>The 30 days after your first payment</b>, by grading date &mdash; the free trial is not counted against it, so the guarantee covers 30 days of the month you actually paid for. Your window is yours: it is not the all-time record, and a bad stretch before you joined cannot fail it or save it.</span></div>
-            <div class="gm"><span class="gk">Minimum sample</span><span class="gv"><b>30 graded edges.</b> Below that the number is noise, and this whole site exists to say so. If your 30 days close under 30 graded edges, the window <b>extends until it reaches 30, up to 90 days total</b>. If 90 days pass and it still hasn't &mdash; <b>automatic refund</b>. Not producing enough work to be measured is our failure, not your risk.</span></div>
-            <div class="gm"><span class="gk">What fails it</span><span class="gv"><b>Mean CLV at or below zero</b> across those graded edges. One line, one direction, decided before you subscribe rather than after you complain. Not the median, not a cherry-picked sport, not "excluding outliers".</span></div>
-            <div class="gm"><span class="gk">How you're paid</span><span class="gv"><b>You do not have to claim it.</b> When a window fails, every subscriber in that window is refunded to the original card and emailed &mdash; the trigger is the measurement, not your complaint. Missed it anyway? <a class="lnk" href="mailto:support@edgedesksports.com?subject=CLV%20guarantee%20%E2%80%94%20window%20check">Email support</a> and we will re-run your window in front of you. One guaranteed month per customer.</span></div>
-            <div class="gm"><span class="gk">Where you check</span><span class="gv">The <a class="lnk" href="/record.html">public record</a> &mdash; no account, no login, no paywall &mdash; and the live panel below, which runs the guarantee query in your browser right now, against the same database the terminal runs on. <a class="lnk" href="/record.html">Read the methodology &rarr;</a></span></div>
-          </div>
-
-          <div class="gstat" id="gstat">
-            <div class="gstat-h"><span class="dot"></span> Guarantee test &middot; trailing 30 days &middot; computed in your browser</div>
-            <div class="gstat-b" id="gstatB">
-              <div class="gsv">READING THE RECORD&hellip;</div>
-              <div class="gss">Running the same query against the same database the terminal uses.</div>
-            </div>
-          </div>
-
-          <div class="gauto">
-            <div class="gah">Why it is automatic</div>
-            <p>A guarantee you have to argue for is a guarantee priced on you not bothering. <b>This one is triggered by the measurement, not by your email.</b> If the window fails, the refund is owed to everyone in it whether or not a single person writes in &mdash; and the number that decides it was public the whole time.</p>
+            <div class="gm"><span class="gk">What you get</span><span class="gv"><b>Everything.</b> No locked tiers, no trial-only board, no watermark on the research. If a subscriber can see it, you can see it.</span></div>
+            <div class="gm"><span class="gk">What it costs</span><span class="gv"><b>$0 today.</b> Stripe holds a card to start the trial and charges nothing for 7 days.</span></div>
+            <div class="gm"><span class="gk">If you cancel</span><span class="gv">Settings &rsaquo; Subscription, one click, no conversation and no retention call. <b>Cancel any time in the 7 days and you are never charged.</b> You keep access until the trial runs out.</span></div>
+            <div class="gm"><span class="gk">Before it converts</span><span class="gv">We email you ahead of the first charge. <b>Nobody here gets billed by forgetting</b> &mdash; a subscription that survives only because someone lost track of a date is not a subscription worth having.</span></div>
+            <div class="gm"><span class="gk">What to check first</span><span class="gv">The <a class="lnk" href="/record.html">public record</a> &mdash; no account, no login, no paywall. Every flagged edge is graded against the close and published whether it flatters us or not. <b>Read that before you spend a minute of the trial.</b> <a class="lnk" href="/record.html">Methodology &rarr;</a></span></div>
           </div>
         </div>
 
@@ -1360,12 +1328,10 @@ footer{border-top:1px solid var(--line);background:#0a0c10;padding:38px 0 48px}
             <dd>Check spam first, then <button type="button" onclick="openAuth('signup')">reopen signup</button> and use the resend link. Nothing is lost &mdash; your checkout resumes where you left off.</dd>
             <dt>You started the trial and the terminal still says "start trial".</dt>
             <dd>Activation lands within a minute. <button type="button" onclick="edRecheckSub(this)">Re-check my subscription now</button> &mdash; this reads your live billing status. If it still says inactive after five minutes, email support with the email you signed up under.</dd>
-            <dt>You want the trial but not the subscription.</dt>
-            <dd>Cancel any time in the 7 days and you are never charged &mdash; Settings &rsaquo; Subscription, one click, no conversation. You keep access until the trial ends. We email you before it converts, so nobody gets billed by forgetting.</dd>
             <dt>You want to cancel.</dt>
-            <dd>Settings &rsaquo; Subscription inside the app, any time, no conversation required. Access runs to the end of the period you already paid for.</dd>
-            <dt>You think your guarantee window failed.</dt>
-            <dd>You should already have been refunded automatically. The live panel above shows the trailing-30-day state, and <a class="lnk" href="/record.html">the public record</a> shows every graded edge. If the numbers say you are owed and no refund arrived, that is a bug &mdash; email support and it gets paid.</dd>
+            <dd>Settings &rsaquo; Subscription inside the app, any time, one click, no conversation and no retention call. <b>Cancel during the 7 days and you are never charged</b>; cancel later and access runs to the end of the period you already paid for. We email you before the trial converts, so nobody here gets billed by forgetting.</dd>
+            <dt>You want to see the results before trusting any of it.</dt>
+            <dd><a class="lnk" href="/record.html">The public record</a> is open &mdash; no account, no login, no paywall. Every flagged edge, graded against the close, including the stretches that look bad.</dd>
           </dl>
         </div>
       </div>
@@ -1428,7 +1394,7 @@ footer{border-top:1px solid var(--line);background:#0a0c10;padding:38px 0 48px}
       <b>You are not charged today.</b> Your free trial begins now and lasts <b>7 days</b>. Full access opens immediately.
       <b>Unless you cancel before the trial ends, the trial converts automatically into a paid subscription and your card is charged $79.99</b>, and $79.99 again every month on that same date, until you cancel. This founding rate is locked for the life of your subscription and will not increase.
       <b>To avoid being charged you must cancel before the end of the 7th day</b> &mdash; from Settings &rsaquo; Subscription inside the app, or by emailing <a href="mailto:support@edgedesksports.com">support@edgedesksports.com</a>. Cancelling during the trial costs nothing and stops all charges. Cancelling later takes effect at the end of the billing period you have already paid for and stops every future charge. We will also email you before the trial converts.
-      Fees already charged are non-refundable, <b>except under the 30-Day CLV Guarantee</b>: if the mean closing line value of the edges EdgeDesk flags in your guarantee window is at or below zero, <b>your first month is refunded automatically, without a request from you</b>. Your guarantee window is the <b>30 days following your first payment</b> (that is, after the free trial converts), measured by grading date, over signals with a recorded flag time and a flagged edge between +0.5% and +10%, using the methodology published at edgedesksports.com/record.html. A window must contain at least <b>30 graded edges</b> to be measured; if it does not, the window extends until it does, to a maximum of 90 days, and <b>if 90 days pass with fewer than 30 graded edges your first month is refunded</b>. The guarantee applies to one month per customer. Refunds are issued to the original payment method. Questions: support@edgedesksports.com.</p>
+      Cancelling during the free trial costs you nothing. <b>Fees already charged are non-refundable</b>, so cancel before the trial ends if you do not want to be billed. Questions: <a href="mailto:support@edgedesksports.com">support@edgedesksports.com</a>.</p>
       <label class="arl-row">
         <input type="checkbox" id="arlAgree">
         <span>I have read and <b>expressly agree to these free-trial and automatic renewal terms</b>. I understand my trial <b>converts to a paid subscription after 7 days</b> and my card is charged <b>$79.99 per month until I cancel</b>, unless I cancel before the trial ends.</span>
@@ -1714,81 +1680,6 @@ async function loadLiveProof(){
 function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
 loadLiveProof();
 
-/* ==========================================================================
-   LIVE GUARANTEE TEST
-   The guarantee is only worth what it is verifiable at. This runs the exact
-   test the refund is decided by — same table, same selection rule, same
-   arithmetic — over the trailing 30 days, in the visitor's own browser, before
-   they pay. A prospect can watch it say FAILING and decide accordingly.
-
-   GUAR_EDGEQ is copied verbatim from record.html's EDGEQ, and GUAR_MIN_N from
-   its MIN_SAMPLE. If these three files drift, the site publishes two different
-   guarantees and one of them is a lie. Change all three or none.
-   ========================================================================== */
-var GUAR_EDGEQ='flagged_at=not.is.null&flagged_edge=gte.0.005&flagged_edge=lte.0.1';
-var GUAR_MIN_N=30;
-var GUAR_WINDOW_DAYS=30;
-var GUAR_MAX_DAYS=90;
-
-function guarBox(cls,head,sub,kpis){
-  var k='';
-  if(kpis){
-    k='<div class="gsn">'+kpis.map(function(x){
-      return '<div><span class="k">'+x[0]+'</span><span class="v"'+(x[2]?' style="color:'+x[2]+'"':'')+'>'+x[1]+'</span></div>';
-    }).join('')+'</div>';
-  }
-  document.getElementById('gstatB').innerHTML=
-    '<div class="gsv '+cls+'">'+head+'</div><div class="gss">'+sub+'</div>'+k;
-}
-
-async function loadGuaranteeStatus(){
-  if(!document.getElementById('gstatB')) return;
-  try{
-    var since=new Date(Date.now()-GUAR_WINDOW_DAYS*86400000).toISOString();
-    var rows=await sbGet('public_record?select=clv,graded_at&'+GUAR_EDGEQ+
-      '&clv=not.is.null&graded_at=gte.'+encodeURIComponent(since)+'&order=graded_at.asc&limit=5000');
-    var v=[];
-    (rows||[]).forEach(function(r){ var c=+r.clv; if(isFinite(c)) v.push(c); });
-    var n=v.length;
-    var fmtN=String(n)+' / '+GUAR_MIN_N;
-
-    if(!n){
-      guarBox('warnc','NO GRADED EDGES IN THE LAST 30 DAYS',
-        'Nothing has graded in this window yet, so there is nothing to average. A window that ends here does not fail you on a coin flip &mdash; it extends, and if it still cannot be measured after '+GUAR_MAX_DAYS+' days the month is refunded.',
-        [['Graded edges',fmtN],['Mean CLV','&mdash;'],['Verdict','EXTENDS']]);
-      return;
-    }
-    var mean=v.reduce(function(a,b){return a+b;},0)/n;
-    var pos=v.filter(function(x){return x>0;}).length;
-    var mTxt=(mean>=0?'+':'')+(mean*100).toFixed(2)+'%';
-    var mCol=mean>0?'var(--val)':'var(--neg)';
-
-    if(n<GUAR_MIN_N){
-      guarBox('warnc','MEASURING &middot; SAMPLE TOO SMALL TO DECIDE',
-        'Running mean is '+mTxt+' over '+n+' graded edges, which is below the '+GUAR_MIN_N+' this guarantee will read anything into. '+
-        'A window this thin cannot fail you and cannot let us off: it extends until it reaches '+GUAR_MIN_N+', to a maximum of '+GUAR_MAX_DAYS+' days.',
-        [['Graded edges',fmtN],['Running mean',mTxt,mCol],['Verdict','EXTENDS']]);
-      return;
-    }
-    if(mean>0){
-      guarBox('okc','PASSING &middot; A WINDOW CLOSING NOW WOULD NOT REFUND',
-        'Mean CLV is '+mTxt+' across '+n+' graded edges over the last '+GUAR_WINDOW_DAYS+' days, and '+
-        Math.round((pos/n)*100)+'% of them beat the close. This is the live state, not a screenshot, and it can go negative tomorrow.',
-        [['Graded edges',fmtN],['Mean CLV',mTxt,mCol],['Verdict','PASS']]);
-    }else{
-      guarBox('badc','FAILING &middot; A WINDOW CLOSING NOW WOULD REFUND',
-        'Mean CLV is '+mTxt+' across '+n+' graded edges over the last '+GUAR_WINDOW_DAYS+' days. '+
-        'Shown because it is true. Every subscriber whose window closes on a number like this is refunded automatically, and you can see that before you decide to pay.',
-        [['Graded edges',fmtN],['Mean CLV',mTxt,mCol],['Verdict','REFUND']]);
-    }
-  }catch(e){
-    guarBox('warnc','COULD NOT REACH THE RECORD',
-      'The guarantee does not depend on this panel loading &mdash; it is measured server-side from the same table either way. '+
-      '<a class="lnk" href="/record.html">Open the public record directly &rarr;</a>');
-  }
-}
-loadGuaranteeStatus();
-
 /* Audience + attribution run as soon as the DOM below them exists. */
 edAudience(); attrDecorateLinks();
 
@@ -1818,14 +1709,14 @@ var BILLING_PERIOD="month";
    copy on this page is false and the first charge lands immediately. Changing
    this number without changing Stripe is a compliance problem, not a typo. */
 var TRIAL_DAYS=7;
-/* Bumped to v4: the renewal terms now state the guarantee's full mechanics —
-   the window, the 30-graded-edge minimum, the 90-day extension, the automatic
-   refund, and the one-month-per-customer limit. A customer who consented to v3
-   agreed to a differently-scoped promise, so the version string is what keeps
-   old records true on their own terms. billing_consents stores
+/* Bumped to v6: the 30-day CLV guarantee is gone and the 7-day free trial is
+   the offer. Earlier versions promised a conditional refund that this text no
+   longer offers, so the version string is what keeps those older records true
+   on their own terms — anyone who consented under v3/v4/v5 was promised the
+   guarantee and is still owed it. billing_consents stores
    the exact offer_text shown, so old records stay accurate on their own terms;
    the version string is what distinguishes which text a user actually saw. */
-var CONSENT_VERSION="arl-2026-08-v5-trial7-clv-guarantee-auto";
+var CONSENT_VERSION="arl-2026-08-v6-trial7";
 
 function edSession(){try{return JSON.parse(localStorage.getItem('edgedesk_session')||'null');}catch(e){return null;}}
 function edUserFromSession(){
@@ -2127,7 +2018,7 @@ async function handleCheckoutReturn(){
     if(st==='yes'){
       var h=retnEl('retnH'), pp=retnEl('retnP');
       if(h) h.textContent='You’re in. Opening the terminal…';
-      if(pp) pp.textContent='Trial active — nothing charged. Your card is billed in '+TRIAL_DAYS+' days unless you cancel, and the 30-day CLV guarantee window starts from that first payment.';
+      if(pp) pp.textContent='Trial active — nothing charged. Your card is billed in '+TRIAL_DAYS+' days unless you cancel, and we will email you before that happens.';
       setTimeout(function(){ window.location.href=APP_URL; },700);
       return true;
     }
