@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>EdgeDesk for competitive golfers</title>
+<meta name="robots" content="noindex,follow">
+<!-- Canonical points at the real page: this URL is a partner entry point, not a
+     second landing page. Everything a visitor reads — price, renewal terms, the
+     CLV guarantee — must exist in exactly ONE place. Two copies of a guarantee
+     is two guarantees, and the second one to be updated becomes a lie. -->
+<link rel="canonical" href="https://edgedesksports.com/">
+<meta name="theme-color" content="#0b0d11">
+<style>
+  html,body{margin:0;height:100%;background:#0b0d11;color:#e9edf4;
+    font-family:'Inter',system-ui,-apple-system,sans-serif}
+  .w{height:100%;display:flex;align-items:center;justify-content:center;padding:24px;text-align:center}
+  .mk{width:11px;height:22px;background:linear-gradient(180deg,#5c9dff,#9d7bff);border-radius:2px;
+    transform:skewX(-11deg);display:inline-block;vertical-align:-3px;margin-right:9px}
+  h1{font-size:19px;font-weight:600;letter-spacing:-.01em;margin:0 0 10px}
+  p{color:#8b95a6;font-size:13.5px;line-height:1.6;margin:0;max-width:42ch}
+  a{color:#5c9dff}
+  .m{font-family:'JetBrains Mono',ui-monospace,monospace;font-size:10.5px;
+    letter-spacing:.12em;text-transform:uppercase;color:#59626f;margin-top:16px}
+</style>
+</head>
+<body>
+<div class="w">
+  <div>
+    <h1><span class="mk"></span>EdgeDesk</h1>
+    <p>Opening the research terminal&hellip; If nothing happens,
+       <a id="go" href="/?ref=golfplatform&amp;aud=golf">continue here</a>.</p>
+    <p class="m">Referral: golf partner network</p>
+  </div>
+</div>
+<script>
+/* Preserve any campaign parameters the partner appended to this URL — a link
+   like /golf?utm_campaign=fall must not lose the campaign on the hop, or the
+   partner's own reporting and ours stop agreeing. ?ref= is forced to the
+   partner code; everything else is carried through untouched. */
+(function(){
+  var out;
+  try{
+    var q=new URLSearchParams(location.search);
+    q.set('ref', (q.get('ref')||'golfplatform'));
+    q.set('aud','golf');
+    out='/?'+q.toString();
+  }catch(e){ out='/?ref=golfplatform&aud=golf'; }
+  var a=document.getElementById('go'); if(a) a.setAttribute('href',out);
+  /* replace(), not assign(): the back button should return the visitor to the
+     partner's site, not bounce them through this redirect again. */
+  location.replace(out);
+})();
+</script>
+</body>
+</html>
