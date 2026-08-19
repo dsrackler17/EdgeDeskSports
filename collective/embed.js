@@ -27,16 +27,19 @@
   /* find our own script tag; tolerate double-loading */
   var tag = document.currentScript;
   if (!tag) {
-    var scripts = document.querySelectorAll('script[data-collective-host]');
+    var scripts = document.querySelectorAll('script[data-collective-host], script[src*="embed.js"]');
     tag = scripts[scripts.length - 1];
   }
   if (!tag) return;
   if (window.__MC_EMBED_LOADED) return;
   window.__MC_EMBED_LOADED = true;
 
+  /* data-collective-host is the member's slug. It may be omitted on the
+     Collective's own domain, where the wall renders unpinned. */
   var HOST = (tag.getAttribute('data-collective-host') || '').trim();
   var THEME = tag.getAttribute('data-theme') === 'light' ? 'light' : 'dark';
   var API = (tag.getAttribute('data-api') || DEFAULT_API).replace(/\/$/, '');
+  var REFQ = HOST ? '?ref=' + encodeURIComponent(HOST) : '';
 
   /* mount point */
   var mount = document.getElementById('model-collective');
@@ -175,7 +178,7 @@
     box.innerHTML =
       '<div class="hd"><a class="wm" href="' + esc(SITE) + '" target="_blank" rel="noopener"><span class="mk"></span>MODEL COLLECTIVE</a><span class="sp"></span><span class="sub">independent models, one record</span></div>' +
       '<div class="fallback">The Model Collective is temporarily unreachable from this page.<br>' +
-      '<a href="' + esc(SITE) + (HOST ? '?ref=' + encodeURIComponent(HOST) : '') + '" target="_blank" rel="noopener">Open the Collective directly →</a>' +
+      '<a href="' + esc(SITE) + REFQ + '" target="_blank" rel="noopener">Open the Collective directly →</a>' +
       (forbidden ? '<br><br><span class="note">Site owner: register this domain in your Collective dashboard to activate the embed here.</span>' : '') +
       '</div>';
   }
@@ -207,7 +210,7 @@
       var links = '';
       if (c.website_url) links += '<a href="' + esc(c.website_url) + '" target="_blank" rel="noopener" data-out="' + esc(c.slug) + '">Site ↗</a>';
       if (c.x_handle) links += '<a href="https://x.com/' + esc(c.x_handle) + '" target="_blank" rel="noopener" data-out="' + esc(c.slug) + '">@' + esc(c.x_handle) + ' ↗</a>';
-      links += '<a href="' + esc(SITE) + '?ref=' + encodeURIComponent(HOST) + '#/' + esc(c.slug) + '" target="_blank" rel="noopener" data-prof="' + esc(c.slug) + '">Profile →</a>';
+      links += '<a href="' + esc(SITE) + REFQ + '#/' + esc(c.slug) + '" target="_blank" rel="noopener" data-prof="' + esc(c.slug) + '">Profile →</a>';
       return '<div class="card"><div class="who">' + avatar(c) + '<span><span class="nm">' + esc(c.display_name) + '</span>' +
         (c.founding ? ' <span class="chip fnd">Founding</span>' : '') +
         '<br><span class="sb">' + esc(m0.model_name || '') + (m0.sport ? ' · ' + esc(m0.sport) : '') + '</span></span></div>' +
@@ -277,7 +280,7 @@
   /* ---------- fetch ---------- */
   var ctrl = typeof AbortController !== 'undefined' ? new AbortController() : null;
   var timer = setTimeout(function () { if (ctrl) ctrl.abort(); }, TIMEOUT_MS);
-  fetch(API + '/collective_embed/v1/embed/bootstrap?host=' + encodeURIComponent(HOST) + '&theme=' + THEME,
+  fetch(API + '/collective_embed/v1/embed/bootstrap?theme=' + THEME + (HOST ? '&host=' + encodeURIComponent(HOST) : ''),
     ctrl ? { signal: ctrl.signal } : {})
     .then(function (r) {
       clearTimeout(timer);

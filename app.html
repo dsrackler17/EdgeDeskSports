@@ -1751,6 +1751,33 @@ button:focus-visible,select:focus-visible,input:focus-visible,a:focus-visible{ou
   <!-- ADDED: BET DISCIPLINE view -->
   <section id="v-discipline" class="view hide"></section>
 
+<!-- ===== ADDED: MODEL COLLECTIVE tab view. Scoped to this section only:
+     one mount div plus one lazily injected script (collective/embed.js).
+     It touches nothing else in the app and nothing else touches it. ===== -->
+<section class="view hide" id="v-collective">
+  <h2 style="margin:4px 0 6px">Model Collective</h2>
+  <p class="lede">Independent sports model creators, one independently graded record. Every model here keeps its own site, price, and methodology; the Collective grades every one of them the same way against its own captured closing lines. <b style="color:var(--warn)">Research, not advice.</b></p>
+  <div id="model-collective"></div>
+  <p style="font-size:12px;color:var(--dim);margin-top:10px">
+    <a href="/collective/" target="_blank" rel="noopener">Open the full Collective site ↗</a>
+    <span style="margin:0 6px">&middot;</span>
+    <a href="/collective/#dashboard" target="_blank" rel="noopener">Creator dashboard ↗</a>
+  </p>
+</section>
+<script>
+/* ADDED: Model Collective tab loader. Injects the embed script once, on first
+   open, so the app pays nothing for the tab until it is used. The embed runs
+   in its own shadow root and cannot affect the rest of the app. */
+var _mcLoaded=false;
+function loadCollective(){
+  if(_mcLoaded)return;_mcLoaded=true;
+  var s=document.createElement('script');
+  s.src='/collective/embed.js';
+  s.setAttribute('data-theme','dark');
+  s.async=true;
+  document.getElementById('v-collective').appendChild(s);
+}
+</script>
 <nav class="bottomnav">
   <button data-v="edges" class="on"><svg class="ic" viewBox="0 0 24 24"><polyline points="3 17 9 11 13 15 21 7"/><polyline points="15 7 21 7 21 13"/></svg>Edges</button>
   <button data-v="faults"><svg class="ic" viewBox="0 0 24 24"><path d="M3 12h4l2-7 4 14 2-7h6"/></svg>Faults</button>
@@ -1762,6 +1789,8 @@ button:focus-visible,select:focus-visible,input:focus-visible,a:focus-visible{ou
   <button data-v="social"><svg class="ic" viewBox="0 0 24 24"><path d="M21 12a8 8 0 0 1-11.6 7.1L3 21l1.9-6.4A8 8 0 1 1 21 12z"/></svg>Pulse</button>
   <!-- ADDED: BET DISCIPLINE tab -->
   <button data-v="discipline"><svg class="ic" viewBox="0 0 24 24"><path d="M12 3l7 4v5c0 4-3 7-7 9-4-2-7-5-7-9V7z"/><path d="M9 12l2 2 4-4"/></svg>Discipline</button>
+  <!-- ADDED: MODEL COLLECTIVE tab -->
+  <button data-v="collective"><svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="5" r="2"/><circle cx="5" cy="12" r="2"/><circle cx="19" cy="12" r="2"/><circle cx="12" cy="19" r="2"/><path d="M12 7v10M7 12h10"/></svg>Collective</button>
 </nav>
 
 <script>
@@ -2682,7 +2711,7 @@ function show(v){if(v==='research'){researchGo(RESEARCH_SUB);return;}if(RESEARCH
   if(v==='boards')v='faults';
   researchDeactivate(RESEARCH_SUB);   // leaving the research shell: abort in-flight loads, stop timers
   var s=document.querySelectorAll('.view');for(var i=0;i<s.length;i++)s[i].classList.toggle('hide',s[i].id!=='v-'+v);var b=document.querySelectorAll('.bottomnav button');for(var j=0;j<b.length;j++)b[j].classList.toggle('on',b[j].dataset.v===v);window.scrollTo(0,0);try{if(v!=='settings'){var _pp=prefs();_pp.lastTab=v;localStorage.setItem('edgedesk_prefs',JSON.stringify(_pp));}}catch(_){}
-  if(v==='record')loadRecord();if(v==='edges')loadEdges();if(v==='faults')loadFaults();if(v==='boards')loadBoards();if(v==='news')loadNews();if(v==='ledger')loadMarket();if(v==='settings')loadSettings();if(v==='discipline')loadDiscipline();/*ADDED*/
+  if(v==='record')loadRecord();if(v==='edges')loadEdges();if(v==='faults')loadFaults();if(v==='boards')loadBoards();if(v==='news')loadNews();if(v==='ledger')loadMarket();if(v==='settings')loadSettings();if(v==='discipline')loadDiscipline();/*ADDED*/if(v==='collective')loadCollective();/*ADDED: Model Collective tab*/
   if(v==='social')loadSocial();else plStop();}
 
 /* ===== RESEARCH shell: one sub-nav, one module registry ==================
