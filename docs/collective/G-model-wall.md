@@ -10,7 +10,7 @@ One request: `GET /v1/wall` (free, `max-age=60`). One wall row per listed model 
 
 ## 2. Columns
 
-Order is fixed. Desktop shows all; the phone column notes follow F-ui.md section 7 (identity sticky-left, rest scroll in-container).
+Order is fixed. Desktop shows all; on the phone the table scrolls in-container per F-ui.md section 7 (sticky-left identity is a v1.1 target).
 
 | # | Column | Source field(s) | Render |
 |---|---|---|---|
@@ -62,7 +62,7 @@ Chip hover (desktop) and tap (phone) shows a one-line title attribute explaining
 
 ## 5. Live update mechanism
 
-Cache TTL refetch, not sockets. `GET /v1/wall` every 60 seconds while visible, aligned with the server's `max-age=60`, per F-ui.md section 5. On refetch: diff by `(creator_slug, model_slug)` key, patch changed cells in place under the single 120ms opacity swap, preserve scroll and sort. A row that disappears (creator unlisted) is removed; a new row is inserted at its canonical position. The freshness stamp shows the response `generated_at`.
+Cache TTL refetch, not sockets. v1 refetches on navigation and reload against the server's `max-age=60`. v1.1 targets: a 60 second visibility-gated timer, diffing by `(creator_slug, model_slug)` to patch cells in place, and a freshness stamp from the response `generated_at`.
 
 No websockets, no Realtime subscription in v1, deliberately: the wall changes on submission and settlement cadence, and the 60 second poll off a cached response costs one cheap request per open tab per minute. This is a decision, not a gap.
 
@@ -93,6 +93,6 @@ The wall must look intentional the week it has 3 rows and stay usable at 300 (de
 - **Sticky header, same density.** The header row sticks (`position: sticky; top: 0`, `--surface2` background, bottom border) under the site nav. Row height, type scale, and cell padding are identical to the 3-row wall: density does not degrade with scale, that is the terminal promise.
 - Three pages of 100 via the client pager. The full payload (300 rows of the wall shape is on the order of 100 to 150 KB) is still a single cacheable GET; server-side pagination of `/v1/wall` is deferred until the payload approaches 500 rows and is noted in doc N, not needed for the design target.
 - Search and (multi-sport) filter chips are present per the thresholds above.
-- Identity column sticky-left on phone plus sticky header combine so a phone user at row 250 still sees who and what.
+- Sticky header keeps the column labels while scrolling; the sticky-left identity column for phone is a v1.1 target.
 
 **Embed at scale:** the embed shows the top 25 wall rows in canonical order (host pinned first) with a `View all {n} models on the Collective` link out to the full wall. This threshold lives in the embed, not the API; the bootstrap payload carries the full wall.

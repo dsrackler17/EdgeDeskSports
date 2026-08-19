@@ -79,9 +79,9 @@ Line height 1.45 for prose, 1.2 in tables.
 
 ## 5. Update cadence
 
-- **60 second cache on free reads.** All free GETs arrive with `cache-control: public, max-age=60` (CONTRACT 5.2). Pages refetch on a 60 second timer while the tab is visible (`document.visibilityState === 'visible'`), and immediately on `visibilitychange` back to visible if the last fetch is older than 60s. The timer never runs in hidden tabs.
+- **60 second cache on free reads.** All free GETs arrive with `cache-control: public, max-age=60` (CONTRACT 5.2). v1 refetches on navigation and reload; the browser cache keeps that cheap inside the TTL. A visibility-gated 60 second refetch timer is a v1.1 target, not shipped.
 - **No live sockets in v1.** No Supabase Realtime, no websockets, no SSE. The data changes on the cadence of submissions and settlements, not ticks; a 60 second poll against a CDN-cached response is the correct cost and complexity. Sockets are a future-expansion item (doc N), not a v1 gap to apologize for.
-- Refetches swap content in place with the single 120ms opacity transition. Scroll position, open panels, and sort state are preserved across refetches.
+- v1.1 target: refetches swapping content in place with the single 120ms opacity transition, preserving scroll and sort. v1 re-renders the view on navigation.
 - Paid and dashboard responses are `no-store`; the dashboard refetches on navigation and on an explicit refresh control, not on a timer.
 - Each page shows one quiet freshness stamp per data region: `updated 14:32:05` in `--faint` mono, from the response's `generated_at` when present, else the fetch time.
 
@@ -112,7 +112,7 @@ Interpolations (`{query}`, `{week}`, numbers) fill from live data. No lorem, no 
 
 It will be opened on a phone, most often from a creator's post. Breakpoint: 720px.
 
-- **Tables scroll in-container.** Every table sits in a wrapper with `overflow-x: auto; -webkit-overflow-scrolling: touch`. The page body never scrolls horizontally. The first column (creator or model identity) is sticky-left (`position: sticky; left: 0; background: var(--surface)`) so the row identity stays visible while numbers scroll. A 12px end-fade mask hints at scrollability.
+- **Tables scroll in-container.** Every table sits in a wrapper with `overflow-x: auto`. The page body never scrolls horizontally. v1.1 targets, not shipped in v1: a sticky-left identity column, `-webkit-overflow-scrolling: touch`, and a 12px end-fade scroll hint.
 - **Nav collapses.** Below 720px the nav shows the wordmark plus a menu button toggling a full-width vertical list on `--surface2`. No hover-dependent menus anywhere; everything works on tap.
 - Tap targets minimum 40px. Row height moves to 40px.
 - Profile pages stack to a single column: identity block, then record, then coverage, then movement, then backfill.
