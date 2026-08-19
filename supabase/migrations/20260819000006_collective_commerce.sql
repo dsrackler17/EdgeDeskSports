@@ -112,6 +112,10 @@ create table collective.earnings_ledger (
 create index earnings_creator_month on collective.earnings_ledger (creator_id, period_month);
 create unique index earnings_invoice_once
   on collective.earnings_ledger (stripe_ref) where entry_type = 'earning' and stripe_ref is not null;
+-- Stripe delivers webhooks at least once: a replayed refund must not
+-- double-debit the creator.
+create unique index earnings_clawback_once
+  on collective.earnings_ledger (stripe_ref) where entry_type = 'clawback' and stripe_ref is not null;
 alter table collective.earnings_ledger enable row level security;
 grant select, insert on collective.earnings_ledger to service_role;
 create trigger earnings_ledger_append_only
@@ -154,6 +158,9 @@ create table collective.api_request_log (
 create index api_request_log_window on collective.api_request_log (api_key_id, at desc);
 alter table collective.api_request_log enable row level security;
 grant select, insert on collective.api_request_log to service_role;
+create trigger api_request_log_append_only
+  before update or delete on collective.api_request_log
+  for each row execute function collective.block_mutation();
 
 -- Creator-facing earnings rollup: if a creator cannot see what the
 -- Collective earned them this month, they will assume it is nothing.
@@ -165,7 +172,11 @@ select
   -sum(l.amount_cents) filter (where l.entry_type = 'clawback') as clawed_cents,
   -sum(l.amount_cents) filter (where l.entry_type = 'payout')   as paid_cents,
   sum(l.amount_cents)                                           as balance_cents,
-  sum(l.amount_cents) filter (where l.available_at <= now())    as available_cents
+  -- Earnings mature at available_at; clawbacks and payouts must always
+  -- count against availability (clawbacks carry the available_at of the
+  -- earning they reverse, payouts carry none).
+  sum(l.amount_cents) filter (where l.available_at is null or l.available_at <= now())
+                                                                as available_cents
 from collective.creators c
 join collective.earnings_ledger l on l.creator_id = c.id
 group by c.id, c.slug, l.period_month;

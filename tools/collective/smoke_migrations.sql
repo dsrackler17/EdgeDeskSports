@@ -243,5 +243,58 @@ begin
   select balance_cents into n from collective.creator_earnings_monthly where creator_slug = 'must-be-moose';
   if n <> 0 then raise exception 'balance after clawback wanted 0, got %', n; end if;
 
+  -- a replayed refund webhook never double-debits
+  r := collective.billing_post_refund(jsonb_build_object('stripe_ref','in_1'));
+  if (r->>'posted')::boolean then raise exception 'refund replay posted a second clawback'; end if;
+  select count(*) into n from collective.earnings_ledger where entry_type = 'clawback';
+  if n <> 1 then raise exception 'clawback posted % times', n; end if;
+
+  -- refunded money is never shown as available to pay
+  select available_cents into n from collective.creator_earnings_monthly where creator_slug = 'must-be-moose';
+  if n <> 0 then raise exception 'available after clawback wanted 0, got %', n; end if;
+
+  -- a returning subscriber (same user, new Stripe subscription) updates in
+  -- place instead of erroring, and keeps the original attribution
+  r := collective.billing_upsert_subscriber(jsonb_build_object(
+    'user_id','00000000-0000-0000-0000-0000000000d1','email','fan@example.com',
+    'status','active','plan','annual','stripe_customer_id','cus_1','stripe_subscription_id','sub_2'));
+  if not (r->>'ok')::boolean then raise exception 'resubscribe failed: %', r; end if;
+  select count(*) into n from collective.subscribers;
+  if n <> 1 then raise exception 'resubscribe duplicated the subscriber: % rows', n; end if;
+
+  ---------------------------------------------------------------- hardening
+  -- a bad optional field rejects that row only, never the submission
+  r := collective.ingest_submission(kctx, jsonb_build_object(
+    'sport','NFL','season',2026,'week',1,'data_origin','live',
+    'rows', jsonb_build_array(
+      jsonb_build_object('game_ref','BADFIELD','home_team','KC','away_team','BUF',
+        'kickoff', to_char(now() + interval '2 days', 'YYYY-MM-DD"T"HH24:MI:SS"Z"'),
+        'pick_side','banana'),
+      jsonb_build_object('game_ref','GOODROW','home_team','LV','away_team','DEN',
+        'kickoff', to_char(now() + interval '2 days', 'YYYY-MM-DD"T"HH24:MI:SS"Z"'),
+        'projected_total',43.5))), false);
+  if not (r->>'ok')::boolean then raise exception 'bad optional field aborted the submission: %', r; end if;
+  if (r->'counts'->>'rejected')::int <> 1 then raise exception 'bad pick_side should reject one row: %', r->'counts'; end if;
+  -- envelope-level week flows onto rows that omit it
+  select week into n from collective.projections where raw_game_ref = 'GOODROW';
+  if n is distinct from 1 then raise exception 'envelope week not applied, got %', n; end if;
+
+  -- a null hash can never verify
+  r := collective.verify_key('mck_smoke1', null);
+  if coalesce(r->>'code','') <> 'invalid_key' then raise exception 'null hash must be invalid_key: %', r; end if;
+
+  -- a 60-char display name still redeems (slug clamped to the constraint)
+  perform collective.mint_invite(admin_id, '{}'::jsonb, false, null, 1, 'long name', 'hash-of-long-token', 'mci_long');
+  r := collective.redeem_invite('hash-of-long-token', '00000000-0000-0000-0000-0000000000c2'::uuid, 'long@example.com',
+        jsonb_build_object('display_name', repeat('Very Long Name ', 4), 'sport','NFL','model_name','Long Model'),
+        'mck_smoke3', 'h3');
+  if not (r->>'ok')::boolean then raise exception 'long display name failed to redeem: %', r; end if;
+  if length(r->>'creator_slug') > 40 then raise exception 'slug exceeds 40 chars: %', r->>'creator_slug'; end if;
+
+  -- dead tokens leak no prefill
+  update collective.invite_tokens set expires_at = now() - interval '1 day' where token_prefix = 'mci_long';
+  r := collective.invite_status('hash-of-long-token');
+  if r->'prefill' <> '{}'::jsonb then raise exception 'expired token leaked prefill: %', r; end if;
+
   raise notice 'SMOKE: all assertions passed';
 end $$;
