@@ -1,0 +1,676 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Model Collective</title>
+<meta name="description" content="Shared infrastructure for independent sports model creators. Verified records, model comparison, and consensus. Every creator keeps their own model, site, and business.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0d0f13;--surface:#13161c;--surface2:#191d25;--border:#262c36;--text:#e7eaf0;--dim:#8a93a2;--faint:#5b6472;--accent:#4d8dff;--pos:#2fb47c;--neg:#e26044;--warn:#d99a2b;--gold:#e3b84d;--mdl:#9b8cff}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--text);font-family:'Inter',system-ui,sans-serif;-webkit-font-smoothing:antialiased;font-size:14px;line-height:1.45}
+a{color:var(--accent);text-decoration:none}
+a:hover{text-decoration:underline}
+.mono{font-family:'JetBrains Mono',monospace}
+.hide{display:none!important}
+.wrap{max-width:1060px;margin:0 auto;padding:0 14px}
+/* header */
+.hd{position:sticky;top:0;z-index:20;background:rgba(13,15,19,.94);backdrop-filter:blur(8px);border-bottom:1px solid var(--border)}
+.hd-in{display:flex;align-items:center;gap:12px;padding:12px 14px;max-width:1060px;margin:0 auto}
+.wordmark{font-weight:800;font-size:15px;letter-spacing:.06em;white-space:nowrap}
+.wordmark .mk{display:inline-block;width:9px;height:14px;background:var(--accent);border-radius:2px;transform:skewX(-12deg);margin-right:7px;vertical-align:-2px}
+.hd-sub{font-size:10px;color:var(--dim);letter-spacing:.04em;text-transform:uppercase;white-space:nowrap}
+.spacer{flex:1}
+nav.tabs{display:flex;gap:2px;overflow-x:auto;scrollbar-width:none;-ms-overflow-style:none}
+nav.tabs::-webkit-scrollbar{display:none}
+nav.tabs a{color:var(--dim);font-size:12px;font-weight:600;padding:6px 10px;border-radius:6px;white-space:nowrap}
+nav.tabs a:hover{text-decoration:none;color:var(--text)}
+nav.tabs a.on{color:var(--text);background:var(--surface2)}
+@media(max-width:760px){.hd-in{flex-wrap:wrap;padding:10px 12px 8px}.hd-sub{display:none}nav.tabs{width:100%;order:3}}
+/* layout blocks */
+.view{padding:18px 0 60px}
+h1{font-size:19px;margin:6px 0 4px;font-weight:800}
+h2{font-size:15px;margin:26px 0 8px;font-weight:700}
+.lede{color:var(--dim);font-size:13px;margin:0 0 16px;max-width:720px}
+.panel{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px}
+.kv{display:flex;gap:18px;flex-wrap:wrap;margin:10px 0 2px}
+.kv .k{color:var(--faint);font-size:10px;text-transform:uppercase;letter-spacing:.05em}
+.kv .v{font-family:'JetBrains Mono',monospace;font-size:15px;font-weight:700}
+/* table */
+.tblwrap{overflow-x:auto;border:1px solid var(--border);border-radius:10px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;min-width:760px}
+th{position:sticky;top:0;background:var(--surface2);color:var(--faint);font-size:10px;text-transform:uppercase;letter-spacing:.05em;text-align:left;padding:8px 10px;white-space:nowrap;z-index:1;cursor:pointer;user-select:none}
+th.num,td.num{text-align:right}
+td{padding:9px 10px;border-top:1px solid var(--border);font-size:13px;vertical-align:middle;white-space:nowrap}
+td.num{font-family:'JetBrains Mono',monospace;font-size:12.5px}
+tr.rowlink{cursor:pointer}
+tr.rowlink:hover td{background:var(--surface2)}
+/* chips and identity */
+.chip{display:inline-block;font-size:9.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;border:1px solid var(--border);border-radius:10px;padding:2px 7px;color:var(--dim);white-space:nowrap}
+.chip.active{color:var(--pos);border-color:rgba(47,180,124,.45)}
+.chip.member{color:var(--dim)}
+.chip.inactive{color:var(--faint);border-style:dashed}
+.chip.founding{color:var(--gold);border-color:rgba(227,184,77,.45)}
+.chip.late{color:var(--warn);border-color:rgba(217,154,43,.4)}
+.mg{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:6px;background:var(--surface2);border:1px solid var(--border);font-size:10.5px;font-weight:800;color:var(--accent);letter-spacing:.02em;flex:none}
+img.logo{width:26px;height:26px;border-radius:6px;object-fit:cover;border:1px solid var(--border);flex:none}
+.who{display:flex;align-items:center;gap:9px}
+.who .nm{font-weight:600}
+.who .sb{color:var(--faint);font-size:11px}
+/* coverage bar */
+.cov{display:inline-flex;align-items:center;gap:7px}
+.covbar{width:44px;height:4px;border-radius:2px;background:var(--surface2);overflow:hidden}
+.covbar i{display:block;height:100%;background:var(--accent)}
+/* buttons and forms */
+.btn{display:inline-block;background:var(--surface2);border:1px solid var(--border);color:var(--text);font-weight:600;font-size:12.5px;border-radius:8px;padding:8px 14px;cursor:pointer;font-family:inherit}
+.btn:hover{border-color:var(--faint)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#0b1220}
+.btn.danger{color:var(--neg);border-color:rgba(226,96,68,.4)}
+.btn[disabled]{opacity:.5;cursor:default}
+input,select,textarea{background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:8px 10px;font-size:13px;font-family:inherit;width:100%}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent)}
+label{display:block;color:var(--faint);font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;margin:12px 0 5px}
+label .opt{color:var(--faint);text-transform:none;letter-spacing:0;font-weight:400}
+.copybox{display:flex;gap:8px;align-items:stretch;margin:8px 0}
+.copybox .val{flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:9px 10px;font-family:'JetBrains Mono',monospace;font-size:11.5px;overflow-x:auto;white-space:pre;color:var(--text)}
+/* misc */
+.note{color:var(--dim);font-size:12px}
+.warnnote{color:var(--warn);font-size:12px}
+.errbox{border:1px solid rgba(226,96,68,.4);color:var(--neg);border-radius:10px;padding:12px 14px;font-size:13px;background:var(--surface)}
+.emptybox{border:1px dashed var(--border);border-radius:10px;padding:26px 16px;text-align:center;color:var(--dim);font-size:13px;background:var(--surface)}
+.lock{color:var(--faint);font-size:12px}
+.lock:before{content:"\1F512\FE0E ";opacity:.7}
+.grade-win{color:var(--pos)}.grade-loss{color:var(--neg)}.grade-push{color:var(--warn)}
+.gamecard{background:var(--surface);border:1px solid var(--border);border-radius:10px;margin-bottom:12px;overflow:hidden}
+.gamecard .gc-hd{display:flex;align-items:baseline;gap:10px;padding:11px 13px;border-bottom:1px solid var(--border);flex-wrap:wrap}
+.gc-hd .lbl{font-weight:700}
+.gc-hd .tm{color:var(--dim);font-size:12px}
+.gc-hd .fin{font-family:'JetBrains Mono',monospace;font-weight:700}
+.consline{padding:9px 13px;border-bottom:1px solid var(--border);font-size:12.5px;color:var(--dim);display:flex;gap:16px;flex-wrap:wrap}
+.consline b{color:var(--text);font-family:'JetBrains Mono',monospace;font-weight:600}
+.mrow{display:flex;align-items:center;gap:10px;padding:8px 13px;border-bottom:1px solid var(--border);font-size:12.5px;flex-wrap:wrap}
+.mrow:last-child{border-bottom:none}
+.mrow .mono{font-size:12px}
+.footer{border-top:1px solid var(--border);margin-top:40px;padding:18px 0 30px;color:var(--faint);font-size:11.5px}
+.footer .wrap{display:flex;flex-direction:column;gap:6px}
+.sortsel{display:flex;align-items:center;gap:8px;margin:0 0 10px;flex-wrap:wrap}
+.sortsel select{width:auto}
+.pill{font-size:10px;color:var(--dim);border:1px solid var(--border);border-radius:12px;padding:3px 8px}
+.profhead{display:flex;gap:14px;align-items:flex-start;flex-wrap:wrap}
+.profhead .mg,.profhead img.logo{width:52px;height:52px;font-size:18px;border-radius:10px}
+.links a{margin-right:14px;font-size:13px}
+.section-gap{height:8px}
+.price{font-family:'JetBrains Mono',monospace;font-weight:700;font-size:22px}
+.boards3{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px}
+.mini th{position:static}
+.mini table{min-width:0}
+.wk{display:flex;gap:6px;flex-wrap:wrap;margin:0 0 12px}
+.wk button{background:var(--surface2);border:1px solid var(--border);color:var(--dim);border-radius:6px;font-size:11.5px;padding:4px 9px;cursor:pointer;font-family:'JetBrains Mono',monospace}
+.wk button.on{color:var(--text);border-color:var(--accent)}
+.toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:9px 16px;font-size:12.5px;z-index:50}
+</style>
+</head>
+<body>
+<header class="hd"><div class="hd-in">
+  <span class="wordmark"><span class="mk"></span>MODEL COLLECTIVE</span>
+  <span class="hd-sub">independent models &middot; one record</span>
+  <span class="spacer"></span>
+  <nav class="tabs" id="tabs">
+    <a href="#" data-r="wall">Wall</a>
+    <a href="#board" data-r="board">Board</a>
+    <a href="#rankings" data-r="rankings">Rankings</a>
+    <a href="#rules" data-r="rules">Rules</a>
+    <a href="#about" data-r="about">About</a>
+    <a href="#dashboard" data-r="dashboard">Dashboard</a>
+  </nav>
+</div></header>
+
+<main class="wrap">
+  <div id="view" class="view"><div class="emptybox">Loading the Collective&hellip;</div></div>
+</main>
+
+<footer class="footer"><div class="wrap">
+  <div><b style="color:var(--dim)">MODEL COLLECTIVE</b> &middot; shared infrastructure for independent sports model creators. Part of <a href="https://edgedesksports.com">EdgeDesk Sports</a>.</div>
+  <div>Every model here belongs to its creator. Records are graded by the Collective against its own captured closing lines. Research and information only, not betting or financial advice. No guaranteed results. 21+. Gamble responsibly: 1-800-GAMBLER.</div>
+</div></footer>
+
+<script>
+"use strict";
+/* ================= config ================= */
+window.COLLECTIVE_CONFIG = {
+  SB_URL:  "https://iattxbkbufslbauoumga.supabase.co",
+  SB_ANON: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlhdHR4YmtidWZzbGJhdW91bWdhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE2MzY4MDUsImV4cCI6MjA5NzIxMjgwNX0.Mly5G587o5IFRnEigU2wRp9buWEk3dFwH9RNPJK7Uo8",
+  BASE_URL: "https://edgedesksports.com",
+  API: "https://iattxbkbufslbauoumga.supabase.co/functions/v1"
+};
+var CFG = window.COLLECTIVE_CONFIG;
+var API = (new URLSearchParams(location.search).get('api')) || localStorage.getItem('COLLECTIVE_API_OVERRIDE') || CFG.API;
+
+/* ================= helpers ================= */
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+function $(id){return document.getElementById(id);}
+function el(html){var d=document.createElement('div');d.innerHTML=html;return d;}
+function fmtPct(x,d){return x==null?'—':(100*x).toFixed(d==null?1:d)+'%';}
+function fmtNum(x,d){return x==null?'—':Number(x).toFixed(d==null?1:d);}
+function fmtSpread(x){if(x==null)return '—';var n=Number(x);return (n>0?'+':'')+n.toFixed(1);}
+function cents(c){return c==null?'—':'$'+(c/100).toFixed(2).replace(/\.00$/,'');}
+function rel(iso){
+  if(!iso)return 'never';
+  var s=(Date.now()-new Date(iso).getTime())/1000;
+  if(s<0)return new Date(iso).toLocaleString();
+  if(s<90)return 'just now';
+  if(s<5400)return Math.round(s/60)+'m ago';
+  if(s<172800)return Math.round(s/3600)+'h ago';
+  return Math.round(s/86400)+'d ago';
+}
+function kickoffFmt(iso){
+  if(!iso)return '';
+  var d=new Date(iso);
+  return d.toLocaleDateString(undefined,{weekday:'short',month:'short',day:'numeric'})+' '+d.toLocaleTimeString(undefined,{hour:'numeric',minute:'2-digit'});
+}
+function chipFor(m){
+  if(m==='ACTIVE CONTRIBUTOR')return '<span class="chip active">Active Contributor</span>';
+  if(m==='INACTIVE')return '<span class="chip inactive">Inactive</span>';
+  return '<span class="chip member">Member</span>';
+}
+function avatar(r){
+  if(r&&r.logo_url)return '<img class="logo" src="'+esc(r.logo_url)+'" alt="" onerror="this.outerHTML=\'<span class=mg>'+esc(r.monogram||'?')+'</span>\'">';
+  return '<span class="mg">'+esc((r&&r.monogram)||'?')+'</span>';
+}
+function covCell(p){
+  if(p==null)return '—';
+  var w=Math.max(0,Math.min(100,p));
+  return '<span class="cov"><span class="covbar"><i style="width:'+w+'%"></i></span><span class="mono" style="font-size:11.5px">'+fmtNum(p,0)+'%</span></span>';
+}
+function recCell(rec){
+  if(!rec)return '<span class="note">first submission pending</span>';
+  return '<span class="mono">'+rec.wins+'-'+rec.losses+'-'+rec.pushes+'</span>';
+}
+function toast(msg){
+  var t=el('<div class="toast">'+esc(msg)+'</div>').firstChild;
+  document.body.appendChild(t);setTimeout(function(){t.remove();},1800);
+}
+function copyText(txt,btn){
+  function done(){if(btn){var o=btn.textContent;btn.textContent='Copied';setTimeout(function(){btn.textContent=o;},1500);}else toast('Copied');}
+  if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(txt).then(done,function(){fallback();});}
+  else fallback();
+  function fallback(){var ta=document.createElement('textarea');ta.value=txt;document.body.appendChild(ta);ta.select();try{document.execCommand('copy');done();}catch(e){}ta.remove();}
+}
+
+/* ================= session (magic link) ================= */
+function session(){try{return JSON.parse(localStorage.getItem('collective_session')||'null');}catch(e){return null;}}
+function saveSession(s){try{localStorage.setItem('collective_session',JSON.stringify(s));}catch(e){}}
+function clearSession(){localStorage.removeItem('collective_session');}
+/* magic link returns tokens in the location hash; capture BEFORE routing */
+(function(){
+  if(/access_token=/.test(location.hash)){
+    var p=new URLSearchParams(location.hash.replace(/^#\/?/,''));
+    if(p.get('access_token')){
+      saveSession({access_token:p.get('access_token'),refresh_token:p.get('refresh_token'),expires_at:p.get('expires_at')});
+      history.replaceState(null,'',location.pathname+location.search+'#dashboard');
+    }
+  }
+})();
+async function refreshSession(){
+  var s=session();if(!s||!s.refresh_token)return null;
+  try{
+    var r=await fetch(CFG.SB_URL+'/auth/v1/token?grant_type=refresh_token',{method:'POST',
+      headers:{apikey:CFG.SB_ANON,'content-type':'application/json'},
+      body:JSON.stringify({refresh_token:s.refresh_token})});
+    if(!r.ok)return null;
+    var d=await r.json();
+    if(d&&d.access_token){saveSession(d);return d;}
+  }catch(e){}
+  return null;
+}
+async function token(){
+  var s=session();if(!s||!s.access_token)return null;
+  var exp=s.expires_at?(+s.expires_at*1000):0;
+  if(exp&&exp-Date.now()<120000){var n=await refreshSession();if(n)return n.access_token;}
+  return s.access_token;
+}
+async function sendMagicLink(email,redirectHash){
+  var redirect=location.origin+location.pathname+(location.search||'')+(redirectHash||'#dashboard');
+  var r=await fetch(CFG.SB_URL+'/auth/v1/otp?redirect_to='+encodeURIComponent(redirect),{
+    method:'POST',headers:{apikey:CFG.SB_ANON,'content-type':'application/json'},
+    body:JSON.stringify({email:email,create_user:true})});
+  if(!r.ok){var b='';try{b=(await r.json()).msg||'';}catch(e){}throw new Error(b||('Sign-in failed ('+r.status+')'));}
+}
+
+/* ================= api ================= */
+async function api(path,opts){
+  opts=opts||{};
+  var h=opts.headers||{};
+  if(opts.auth){var t=await token();if(t)h['authorization']='Bearer '+t;}
+  var fn=opts.fn||'collective_public';
+  var r=await fetch(API+'/'+fn+path,{method:opts.method||'GET',headers:h,body:opts.body?JSON.stringify(opts.body):undefined});
+  var d=null;try{d=await r.json();}catch(e){}
+  if(!r.ok){
+    var msg=(d&&d.error&&d.error.message)||('Request failed ('+r.status+')');
+    var err=new Error(msg);err.status=r.status;err.code=d&&d.error&&d.error.code;throw err;
+  }
+  return d;
+}
+var META=null;
+async function meta(){if(META)return META;META=await api('/v1/meta');return META;}
+
+/* ================= attribution first touch ================= */
+(function(){
+  try{
+    var ref=new URLSearchParams(location.search).get('ref');
+    if(ref&&!localStorage.getItem('mc_ref')){
+      localStorage.setItem('mc_ref',JSON.stringify({slug:ref,at:new Date().toISOString()}));
+      var vid=localStorage.getItem('mc_visitor');
+      if(!vid){vid=(crypto.randomUUID?crypto.randomUUID():String(Math.random()).slice(2));localStorage.setItem('mc_visitor',vid);}
+      fetch(API+'/collective_embed/v1/embed/events',{method:'POST',headers:{'content-type':'application/json'},
+        body:JSON.stringify({host:ref,visitor:vid,events:[{type:'collective_click',target:null,path:location.pathname,at:new Date().toISOString()}]})}).catch(function(){});
+    }
+  }catch(e){}
+})();
+
+/* ================= router ================= */
+function route(){
+  var h=location.hash.replace(/^#/,'');
+  if(/access_token=/.test(h))return;
+  var view=$('view');
+  document.querySelectorAll('nav.tabs a').forEach(function(a){a.classList.remove('on');});
+  function markTab(r){var a=document.querySelector('nav.tabs a[data-r="'+r+'"]');if(a)a.classList.add('on');}
+  if(h===''||h==='/'){markTab('wall');return renderWall(view);}
+  if(h==='board'){markTab('board');return renderBoard(view);}
+  if(h==='rankings'){markTab('rankings');return renderRankings(view);}
+  if(h==='rules'){markTab('rules');return renderRules(view);}
+  if(h==='about'||h==='join'){markTab('about');return renderAbout(view,h==='join');}
+  if(h==='dashboard'){markTab('dashboard');return renderDashboard(view);}
+  if(h.indexOf('/model/')===0){var p=h.split('/');return renderModel(view,p[2],p[3]);}
+  if(h.indexOf('/')===0){return renderCreator(view,h.slice(1));}
+  markTab('wall');renderWall(view);
+}
+window.addEventListener('hashchange',route);
+
+function fail(view,e){
+  view.innerHTML='<div class="errbox"><b>The Collective could not load this view.</b><br>'+esc(e.message||e)+'<br><span class="note">The API may be briefly unreachable. Refresh in a moment.</span></div>';
+}
+
+/* ================= wall ================= */
+var WALL_SORT='canonical';
+async function renderWall(view){
+  view.innerHTML='<div class="emptybox">Loading the wall&hellip;</div>';
+  try{
+    var m=await meta();
+    var w=await api('/v1/wall');
+    var rows=w.rows||[];
+    var hd='<h1>The Model Wall</h1>'+
+      '<p class="lede">Every model in the Collective, its verified record, and its slate coverage. Records are graded by the Collective against its own captured closing lines, never self-reported. Each creator keeps their own site, price, and methodology.</p>'+
+      '<div class="kv">'+
+        '<span><div class="k">Creators</div><div class="v">'+m.counts.creators+'</div></span>'+
+        '<span><div class="k">Models</div><div class="v">'+m.counts.models+'</div></span>'+
+        '<span><div class="k">Graded games</div><div class="v">'+m.counts.graded_games+'</div></span>'+
+        '<span><div class="k">Live projections</div><div class="v">'+m.counts.live_projections+'</div></span>'+
+      '</div>';
+    if(!rows.length){
+      view.innerHTML=hd+'<div class="emptybox">The wall is waiting on its first model. Creators join by invite and appear here the moment their profile is created.</div>';
+      return;
+    }
+    var sorted=rows.slice();
+    var S=WALL_SORT;
+    var rank={'ACTIVE CONTRIBUTOR':0,'MEMBER':1,'INACTIVE':2};
+    if(S==='win_pct')sorted.sort(function(a,b){return ((b.record&&b.record.win_pct)||-1)-((a.record&&a.record.win_pct)||-1);});
+    else if(S==='margin_mae')sorted.sort(function(a,b){return ((a.record&&a.record.margin_mae)||1e9)-((b.record&&b.record.margin_mae)||1e9);});
+    else if(S==='brier')sorted.sort(function(a,b){return ((a.record&&a.record.brier)||1e9)-((b.record&&b.record.brier)||1e9);});
+    else if(S==='coverage')sorted.sort(function(a,b){return (b.coverage_pct||0)-(a.coverage_pct||0);});
+    else if(S==='name')sorted.sort(function(a,b){return a.creator_name.localeCompare(b.creator_name);});
+    var search=rows.length>=20?'<input id="wallq" placeholder="Filter by creator or model" style="width:220px">':'';
+    var body=sorted.map(function(r){
+      var rec=r.record;
+      return '<tr class="rowlink" data-slug="'+esc(r.creator_slug)+'">'+
+        '<td><span class="who">'+avatar(r)+'<span><span class="nm">'+esc(r.creator_name)+'</span>'+(r.founding?' <span class="chip founding">Founding</span>':'')+'<br><span class="sb">'+esc(r.model_name)+' &middot; '+esc(r.sport)+'</span></span></span></td>'+
+        '<td>'+chipFor(r.membership)+'</td>'+
+        '<td class="num">'+recCell(rec)+'</td>'+
+        '<td class="num">'+(rec?fmtPct(rec.win_pct):'—')+'</td>'+
+        '<td class="num">'+(rec?fmtNum(rec.margin_mae):'—')+'</td>'+
+        '<td class="num">'+(rec?fmtNum(rec.brier,3):'—')+'</td>'+
+        '<td>'+covCell(r.coverage_pct)+'</td>'+
+        '<td class="num" style="color:var(--dim)">'+rel(r.last_submission_at)+'</td>'+
+      '</tr>';
+    }).join('');
+    view.innerHTML=hd+
+      '<div class="sortsel"><span class="note">Sort</span><select id="wallsort">'+
+        '<option value="canonical">Status, then record</option>'+
+        '<option value="win_pct">Win pct</option>'+
+        '<option value="margin_mae">Margin MAE (best first)</option>'+
+        '<option value="brier">Brier (best first)</option>'+
+        '<option value="coverage">Coverage</option>'+
+        '<option value="name">Name</option>'+
+      '</select>'+search+'</div>'+
+      '<div class="tblwrap"><table id="walltbl"><thead><tr>'+
+      '<th>Creator / model</th><th>Status</th><th class="num">Record</th><th class="num">Win %</th><th class="num">Margin MAE</th><th class="num">Brier</th><th>Coverage</th><th class="num">Last slate</th>'+
+      '</tr></thead><tbody>'+body+'</tbody></table></div>'+
+      '<p class="note" style="margin-top:10px">Win percentage excludes pushes. Coverage is the share of the season slate this model has submitted. Models below the coverage or sample minimums appear here but are not ranked. Tap a row for the full profile.</p>';
+    $('wallsort').value=S;
+    $('wallsort').onchange=function(){WALL_SORT=this.value;renderWall(view);};
+    if($('wallq'))$('wallq').oninput=function(){
+      var q=this.value.toLowerCase();
+      document.querySelectorAll('#walltbl tbody tr').forEach(function(tr){
+        tr.style.display=tr.textContent.toLowerCase().indexOf(q)>=0?'':'none';
+      });
+    };
+    document.querySelectorAll('#walltbl tr.rowlink').forEach(function(tr){
+      tr.onclick=function(){location.hash='#/'+tr.getAttribute('data-slug');};
+    });
+  }catch(e){fail(view,e);}
+}
+
+/* ================= creator profile ================= */
+async function renderCreator(view,slug){
+  view.innerHTML='<div class="emptybox">Loading profile&hellip;</div>';
+  try{
+    var d=await api('/v1/creators/'+encodeURIComponent(slug));
+    var c=d.creator;
+    var links='';
+    if(c.website_url)links+='<a href="'+esc(c.website_url)+'" target="_blank" rel="noopener">'+esc(c.website_url.replace(/^https?:\/\//,''))+' ↗</a>';
+    if(c.x_handle)links+='<a href="https://x.com/'+esc(c.x_handle)+'" target="_blank" rel="noopener">@'+esc(c.x_handle)+' ↗</a>';
+    var head='<div class="profhead">'+avatar(c)+
+      '<div style="flex:1;min-width:220px"><h1 style="margin:2px 0 4px">'+esc(c.display_name)+
+      (c.founding?' <span class="chip founding">Founding member</span>':'')+' '+chipFor(c.membership)+'</h1>'+
+      (c.description?'<p class="lede" style="margin:2px 0 8px">'+esc(c.description)+'</p>':'')+
+      '<div class="links">'+(links||'<span class="note">This Collective profile is this creator’s home page.</span>')+'</div>'+
+      '<div class="note" style="margin-top:6px">Member since '+new Date(c.joined_at).toLocaleDateString(undefined,{month:'short',year:'numeric'})+'</div>'+
+      '</div></div>';
+    var body='';
+    (d.models||[]).forEach(function(mo){
+      var rec=mo.record;
+      body+='<h2>'+esc(mo.model_name)+' <span class="pill">'+esc(mo.sport)+'</span></h2>';
+      if(rec){
+        body+='<div class="panel"><div class="kv">'+
+          '<span><div class="k">Record</div><div class="v">'+rec.wins+'-'+rec.losses+'-'+rec.pushes+'</div></span>'+
+          '<span><div class="k">Win %</div><div class="v">'+fmtPct(rec.win_pct)+'</div></span>'+
+          '<span><div class="k">Margin MAE</div><div class="v">'+fmtNum(rec.margin_mae)+'</div></span>'+
+          '<span><div class="k">Brier</div><div class="v">'+fmtNum(rec.brier,3)+'</div></span>'+
+          '<span><div class="k">Graded</div><div class="v">'+rec.graded+'</div></span>'+
+          '<span><div class="k">Coverage</div><div class="v">'+fmtNum(mo.coverage_pct,0)+'%</div></span>'+
+        '</div>'+
+        '<div class="note" style="margin-top:8px">Graded by the Collective against its own closing lines. <a href="#rules">Grading rules</a> &middot; <a href="#model/'+esc(c.slug)+'/'+esc(mo.model_slug)+'">Full game log →</a></div></div>';
+      }else{
+        body+='<div class="emptybox"><b style="color:var(--text)">'+esc(c.display_name)+' is on the wall.</b><br>First live submission pending. The record starts the moment their first slate arrives, graded against the Collective’s closing lines.</div>';
+      }
+      if(mo.backfill&&mo.backfill.rows){
+        body+='<div class="panel" style="margin-top:10px;border-style:dashed"><b>Backfilled history:</b> <span class="mono">'+mo.backfill.rows+'</span> games. <span class="note">'+esc(mo.backfill.note)+'. Backfill never counts toward the record, rankings, or consensus.</span></div>';
+      }
+    });
+    view.innerHTML=head+body+'<p style="margin-top:22px"><a href="#">← Back to the wall</a></p>';
+  }catch(e){
+    if(e.status===404){view.innerHTML='<div class="emptybox">No creator at this address. <a href="#">Back to the wall</a></div>';return;}
+    fail(view,e);
+  }
+}
+
+/* ================= model detail ================= */
+async function renderModel(view,cs,ms){
+  view.innerHTML='<div class="emptybox">Loading model&hellip;</div>';
+  try{
+    var d=await api('/v1/models/'+encodeURIComponent(cs)+'/'+encodeURIComponent(ms));
+    var rec=d.record;
+    var head='<h1>'+esc(d.model.model_name)+' <span class="pill">'+esc(d.model.sport)+'</span></h1>'+
+      '<p class="lede">by <a href="#/'+esc(d.creator.slug)+'">'+esc(d.creator.display_name)+'</a>'+(d.model.description?' &middot; '+esc(d.model.description):'')+'</p>';
+    var stats=rec?'<div class="panel"><div class="kv">'+
+      '<span><div class="k">Record</div><div class="v">'+rec.wins+'-'+rec.losses+'-'+rec.pushes+'</div></span>'+
+      '<span><div class="k">Win %</div><div class="v">'+fmtPct(rec.win_pct)+'</div></span>'+
+      '<span><div class="k">Margin MAE</div><div class="v">'+fmtNum(rec.margin_mae)+'</div></span>'+
+      '<span><div class="k">Brier</div><div class="v">'+fmtNum(rec.brier,3)+'</div></span>'+
+      '<span><div class="k">Coverage</div><div class="v">'+fmtNum(d.coverage_pct,0)+'%</div></span>'+
+      '</div></div>':'<div class="emptybox">No graded games yet.</div>';
+    var covRows=(d.coverage||[]).map(function(c){
+      return '<tr><td class="num">'+c.season+'</td><td class="num">W'+c.week+'</td><td class="num">'+c.games_submitted+' / '+c.games_available+'</td><td>'+covCell(100*c.games_submitted/Math.max(1,c.games_available))+'</td></tr>';
+    }).join('');
+    var cov=covRows?'<h2>Slate coverage by week</h2><div class="tblwrap mini"><table style="min-width:420px"><thead><tr><th class="num">Season</th><th class="num">Week</th><th class="num">Submitted</th><th>Coverage</th></tr></thead><tbody>'+covRows+'</tbody></table></div>':'';
+    var glRows=(d.recent_graded||[]).map(function(g){
+      var cls=g.pick_result?('grade-'+g.pick_result):'';
+      return '<tr><td>'+esc(g.label)+'<br><span class="sb" style="color:var(--faint);font-size:11px">W'+g.week+' &middot; '+kickoffFmt(g.kickoff_at)+'</span></td>'+
+        '<td class="num">'+esc(g.pick_side||'—')+'</td>'+
+        '<td class="num">'+fmtSpread(g.closing_spread)+'</td>'+
+        '<td class="num">'+esc(g.final||'—')+'</td>'+
+        '<td class="num '+cls+'">'+esc(g.pick_result||'—')+'</td>'+
+        '<td class="num">'+fmtNum(g.margin_error)+'</td>'+
+        '<td class="num">'+fmtNum(g.brier,3)+'</td>'+
+        '<td class="num" style="color:var(--dim)">'+(g.movement_n>1?g.movement_n+' subs':'—')+'</td></tr>';
+    }).join('');
+    var gl=glRows?'<h2>Recent graded games</h2><div class="tblwrap"><table><thead><tr><th>Game</th><th class="num">Pick</th><th class="num">Close</th><th class="num">Final</th><th class="num">Result</th><th class="num">Margin err</th><th class="num">Brier</th><th class="num">Movement</th></tr></thead><tbody>'+glRows+'</tbody></table></div>'+
+      '<p class="note" style="margin-top:8px">Each game is graded on the model’s first pre-kickoff live submission. Later revisions are stored as movement, never regraded.</p>':'';
+    view.innerHTML=head+stats+cov+gl+'<p style="margin-top:22px"><a href="#/'+esc(d.creator.slug)+'">← '+esc(d.creator.display_name)+'</a></p>';
+  }catch(e){fail(view,e);}
+}
+
+/* ================= board ================= */
+var BOARD_WEEK=null;
+async function renderBoard(view){
+  view.innerHTML='<div class="emptybox">Loading the board&hellip;</div>';
+  try{
+    var m=await meta();
+    var sport=m.sports[0]||{code:'NFL',season:2026};
+    var q='?sport='+sport.code+'&season='+sport.season+(BOARD_WEEK?'&week='+BOARD_WEEK:'');
+    var d=await api('/v1/games'+q,{auth:true});
+    var wk='<div class="wk"><button class="'+(BOARD_WEEK?'':'on')+'" data-w="">Current</button>';
+    for(var i=1;i<=18;i++)wk+='<button class="'+(BOARD_WEEK===i?'on':'')+'" data-w="'+i+'">W'+i+'</button>';
+    wk+='</div>';
+    var head='<h1>The Board</h1><p class="lede">Every game on the slate with each model’s number and, after settlement, its grade. Pre-kickoff numbers and consensus are for subscribers. Settled games are the public record.</p>'+wk;
+    var cards='';
+    (d.games||[]).forEach(function(g){
+      var hd='<div class="gc-hd"><span class="lbl">'+esc(g.label)+'</span><span class="tm">'+kickoffFmt(g.kickoff_at)+'</span>'+
+        (g.result?'<span class="spacer"></span><span class="fin">'+g.result.away_score+' - '+g.result.home_score+'</span><span class="tm">close '+fmtSpread(g.result.closing_spread)+' / '+fmtNum(g.result.closing_total)+'</span>':'')+
+        '</div>';
+      var cons='';
+      if(g.consensus){
+        if(g.consensus.locked){
+          cons='<div class="consline"><span class="lock">Consensus is a subscriber number</span></div>';
+        }else if(g.consensus.n){
+          cons='<div class="consline"><span>consensus <b>'+fmtSpread(g.consensus.spread_mean)+'</b></span><span>median <b>'+fmtSpread(g.consensus.spread_median)+'</b></span><span>spread σ <b>'+fmtNum(g.consensus.spread_stdev)+'</b></span><span>total <b>'+fmtNum(g.consensus.total_mean)+'</b></span><span>home win <b>'+fmtPct(g.consensus.home_win_prob_mean,0)+'</b></span><span>agreement <b>'+fmtPct(g.consensus.agreement,0)+'</b></span><span class="note">'+g.consensus.n+' models</span></div>';
+        }
+      }
+      var rows='';
+      (g.models||[]).forEach(function(mr){
+        var who='<a href="#/'+esc(mr.creator_slug)+'">'+esc(mr.creator_slug)+'</a> <span class="note">'+esc(mr.model_slug)+'</span>';
+        if(mr.locked){
+          rows+='<div class="mrow">'+who+'<span class="spacer"></span><span class="lock">Subscriber number</span></div>';
+        }else{
+          var grade=mr.grade?('<span class="mono grade-'+mr.grade.pick_result+'">'+mr.grade.pick_result+'</span> <span class="note mono">err '+fmtNum(mr.grade.margin_error)+' &middot; brier '+fmtNum(mr.grade.brier,3)+'</span>'):'';
+          rows+='<div class="mrow">'+who+(mr.late?'<span class="chip late">Late, ungraded</span>':'')+
+            '<span class="spacer"></span>'+
+            '<span class="mono">'+(mr.pick_side?('pick '+mr.pick_side):'no pick')+'</span>'+
+            '<span class="mono">spr '+fmtSpread(mr.projected_spread)+'</span>'+
+            (mr.projected_total!=null?'<span class="mono">tot '+fmtNum(mr.projected_total)+'</span>':'')+
+            (mr.home_win_probability!=null?'<span class="mono">hw '+fmtPct(mr.home_win_probability,0)+'</span>':'')+
+            grade+'</div>';
+        }
+      });
+      if(!g.models||!g.models.length)rows='<div class="mrow"><span class="note">No model has submitted this game yet.</span></div>';
+      cards+='<div class="gamecard">'+hd+cons+rows+'</div>';
+    });
+    if(!cards)cards='<div class="emptybox">No games on this slate yet. Games appear when the schedule is loaded.</div>';
+    var sub=(d.entitled===false)?'<div class="panel" style="margin-bottom:14px"><b>Locked numbers are for subscribers.</b> <span class="note">One subscription unlocks every model here: '+cents(m.pricing.monthly_cents)+' a month or '+cents(m.pricing.annual_cents)+' a year. '+(m.billing_live?'':'Billing opens soon.')+'</span> <a href="#about">Details →</a></div>':'';
+    view.innerHTML=head+sub+cards;
+    document.querySelectorAll('.wk button').forEach(function(b){
+      b.onclick=function(){var w=b.getAttribute('data-w');BOARD_WEEK=w?+w:null;renderBoard(view);};
+    });
+  }catch(e){fail(view,e);}
+}
+
+/* ================= rankings ================= */
+async function renderRankings(view){
+  view.innerHTML='<div class="emptybox">Loading rankings&hellip;</div>';
+  try{
+    var d=await api('/v1/rankings');
+    function board(title,rows,fmt,sub){
+      var body=(rows||[]).map(function(r){
+        return '<tr class="rowlink" data-slug="'+esc(r.creator_slug)+'"><td class="num" style="color:var(--faint)">'+r.rank+'</td>'+
+          '<td><span class="nm">'+esc(r.creator_name)+'</span><br><span class="sb" style="color:var(--faint);font-size:11px">'+esc(r.model_name)+'</span></td>'+
+          '<td class="num" style="font-weight:700">'+fmt(r.value)+'</td>'+
+          '<td class="num" style="color:var(--dim)">'+r.graded+'</td></tr>';
+      }).join('');
+      if(!body)body='<tr><td colspan="4" class="note" style="text-align:center;padding:18px">Nobody has cleared the minimums yet.</td></tr>';
+      return '<div><h2 style="margin-top:0">'+title+' <span class="note" style="font-weight:400">'+sub+'</span></h2>'+
+        '<div class="tblwrap mini"><table style="min-width:0"><thead><tr><th class="num">#</th><th>Model</th><th class="num">Value</th><th class="num">Graded</th></tr></thead><tbody>'+body+'</tbody></table></div></div>';
+    }
+    var un=(d.unranked||[]).map(function(u){
+      return '<li><b>'+esc(u.model_name)+'</b> <span class="note">('+esc(u.creator_slug)+'): '+esc(u.reason)+'</span></li>';
+    }).join('');
+    view.innerHTML='<h1>Rankings</h1>'+
+      '<p class="lede">Three separate boards, never blended into one score. A model must cover at least '+d.thresholds.min_coverage_pct+'% of the season slate and have '+d.thresholds.min_graded_games+' graded games to be ranked. Cherry-picking a slate is the fastest way off these boards.</p>'+
+      '<div class="boards3">'+
+        board('Win %',d.boards.win_pct,function(v){return fmtPct(v);},'vs closing line')+
+        board('Margin MAE',d.boards.margin_mae,function(v){return fmtNum(v);},'lower is better')+
+        board('Brier',d.boards.brier,function(v){return fmtNum(v,3);},'lower is better')+
+      '</div>'+
+      (un?'<h2>Not yet ranked</h2><ul style="color:var(--dim);font-size:13px;line-height:1.9">'+un+'</ul>':'')+
+      '<p class="note"><a href="#rules">How grading works →</a></p>';
+    document.querySelectorAll('.rowlink').forEach(function(tr){tr.onclick=function(){location.hash='#/'+tr.getAttribute('data-slug');};});
+  }catch(e){fail(view,e);}
+}
+
+/* ================= rules ================= */
+async function renderRules(view){
+  view.innerHTML='<div class="emptybox">Loading rules&hellip;</div>';
+  try{
+    var d=await api('/v1/rules');
+    var lis=(d.rules||[]).map(function(r){return '<li style="margin:10px 0">'+esc(r)+'</li>';}).join('');
+    view.innerHTML='<h1>Grading rules</h1>'+
+      '<p class="lede">Published in full so every number on this site is reproducible from the raw submissions by someone who does not trust us. Version '+d.version+'.</p>'+
+      '<div class="panel"><ol style="margin:4px 0;padding-left:22px;font-size:13.5px">'+lis+'</ol></div>'+
+      '<h2>Why the first submission is the graded one</h2>'+
+      '<p class="lede" style="max-width:760px">Creators can see each other’s numbers before kickoff, so anyone submitting later is anchored whether they mean to be or not. Every submission is timestamped when the server receives it, and each model’s first pre-kickoff live submission on a game is the one that counts for grading, rankings, and consensus. Revisions are stored and shown as movement. Submissions received after kickoff are stored, flagged late, and excluded. Backfilled history and test data are stored and shown separately, and are never graded, ranked, or blended into consensus.</p>';
+  }catch(e){fail(view,e);}
+}
+
+/* ================= about / join ================= */
+async function renderAbout(view,jump){
+  view.innerHTML='<div class="emptybox">Loading&hellip;</div>';
+  try{
+    var m=await meta();
+    view.innerHTML='<h1>What the Collective is</h1>'+
+      '<p class="lede" style="max-width:760px">Independent sports model creators, each with their own site, brand, methodology, and customers, contributing finished projections to one shared, independently graded record. The Collective grades every model the same way against its own captured closing lines, publishes the rules, and shows every creator’s work side by side. Every profile links out to the creator’s own site: the Collective exports traffic on purpose.</p>'+
+      '<h2>For readers</h2>'+
+      '<div class="panel" id="join">'+
+        '<div class="kv"><span><div class="k">Monthly</div><div class="price">'+cents(m.pricing.monthly_cents)+'</div></span>'+
+        '<span><div class="k">Annual</div><div class="price">'+cents(m.pricing.annual_cents)+'</div></span></div>'+
+        '<p class="note" style="margin:10px 0 12px">One subscription, one price everywhere, every model’s pre-kickoff numbers, the consensus, and model comparison. The historical record, profiles, and rankings are free forever.</p>'+
+        (m.billing_live
+          ?'<button class="btn primary" id="subBtn">Subscribe</button>'
+          :'<button class="btn" disabled>Billing opens soon</button> <span class="note">The record is being built in the open first. Subscriptions turn on once the wall has a verified season behind it.</span>')+
+      '</div>'+
+      '<h2>For creators</h2>'+
+      '<p class="lede" style="max-width:760px">Membership is by invite. You keep your model, your site, your customers, and your pricing. You send finished numbers to one endpoint, your verified record and profile appear on the wall, and your own site gets a Collective tab that turns every member’s audience into yours. Referrals pay 40 percent recurring. Ask any member for an invite, or reach out through EdgeDesk.</p>'+
+      '<p class="note">Already a member? <a href="#dashboard">Your dashboard →</a></p>';
+    if(m.billing_live&&$('subBtn'))$('subBtn').onclick=function(){
+      var ref='';try{var r=JSON.parse(localStorage.getItem('mc_ref')||'null');if(r)ref=r.slug;}catch(e){}
+      location.href=API+'/collective_billing/v1/billing/checkout?plan=monthly'+(ref?'&ref='+encodeURIComponent(ref):'');
+    };
+    if(jump){var j=$('join');if(j)j.scrollIntoView();}
+  }catch(e){fail(view,e);}
+}
+
+/* ================= dashboard ================= */
+async function renderDashboard(view){
+  var t=await token();
+  if(!t){
+    view.innerHTML='<h1>Creator dashboard</h1>'+
+      '<p class="lede">Sign in with the email you joined with. No password: we send a one-time link.</p>'+
+      '<div class="panel" style="max-width:420px"><label>Email</label><input id="dbEmail" type="email" autocomplete="email" placeholder="you@example.com">'+
+      '<div style="margin-top:12px"><button class="btn primary" id="dbSend">Send my sign-in link</button></div>'+
+      '<p class="note hide" id="dbSent" style="margin-top:10px"></p></div>';
+    $('dbSend').onclick=async function(){
+      var em=$('dbEmail').value.trim();
+      if(!/.+@.+\..+/.test(em)){toast('Enter a valid email');return;}
+      this.disabled=true;
+      try{await sendMagicLink(em,'#dashboard');$('dbSent').textContent='Link sent to '+em+'. Open it on this device.';$('dbSent').classList.remove('hide');}
+      catch(e){toast(e.message);this.disabled=false;}
+    };
+    return;
+  }
+  view.innerHTML='<div class="emptybox">Loading your dashboard&hellip;</div>';
+  try{
+    var d=await api('/v1/dashboard',{auth:true});
+    var c=d.creator;
+    var html='<h1>'+esc(c.display_name)+' <span class="note" style="font-weight:400">dashboard</span></h1>'+
+      '<p class="lede">'+chipFor(c.membership)+(c.founding?' <span class="chip founding">Founding member, '+(c.referral_share_bps/100)+'% recurring</span>':' <span class="note">'+(c.referral_share_bps/100)+'% recurring referral share</span>')+'</p>';
+    /* earnings */
+    html+='<h2>Earnings</h2><div class="panel"><div class="kv">'+
+      '<span><div class="k">This month</div><div class="v">'+cents(d.earnings.this_month_cents)+'</div></span>'+
+      '<span><div class="k">Balance</div><div class="v">'+cents(d.earnings.balance_cents)+'</div></span>'+
+      '<span><div class="k">Available</div><div class="v">'+cents(d.earnings.available_cents)+'</div></span>'+
+      '<span><div class="k">Referred active</div><div class="v">'+d.earnings.referred_active+'</div></span>'+
+      '<span><div class="k">Referred total</div><div class="v">'+d.earnings.referred_total+'</div></span>'+
+      '</div>'+(d.earnings.note?'<p class="note" style="margin:10px 0 0">'+esc(d.earnings.note)+'</p>':'')+'</div>';
+    /* keys */
+    html+='<h2>API keys</h2><div class="panel">';
+    (d.keys||[]).forEach(function(k){
+      html+='<div style="display:flex;gap:10px;align-items:center;margin:4px 0"><span class="mono" style="font-size:12px">'+esc(k.prefix)+'&hellip;</span><span class="chip '+(k.status==='active'?'active':'inactive')+'">'+esc(k.status)+'</span><span class="note">last used '+rel(k.last_used_at)+'</span></div>';
+    });
+    html+='<div style="margin-top:10px"><button class="btn" id="rotBtn">Rotate key</button> <span class="note">Rotating revokes the old key immediately. Your history and record are untouched.</span></div><div id="rotOut"></div></div>';
+    /* embed */
+    html+='<h2>Your Collective tab</h2><div class="panel"><p class="note" style="margin:0 0 6px">Paste this where you want the Collective to render on your site:</p>'+
+      '<div class="copybox"><div class="val">'+esc(d.embed_snippet)+'</div><button class="btn" data-copy>Copy</button></div>'+
+      '<label>Allowed domains</label><div id="origList"></div>'+
+      '<div style="display:flex;gap:8px;margin-top:8px;max-width:420px"><input id="origAdd" placeholder="https://yoursite.com"><button class="btn" id="origBtn">Add</button></div>'+
+      '<p class="note" style="margin:8px 0 0">The embed only answers on domains you list here. That is what makes the snippet safe to have in your page source.</p></div>';
+    /* profile */
+    html+='<h2>Profile</h2><div class="panel" style="max-width:560px">'+
+      '<label>Display name</label><input id="pfName" value="'+esc(c.display_name)+'">'+
+      '<label>Description <span class="opt">optional</span></label><input id="pfDesc" value="'+esc(c.description||'')+'" placeholder="One sentence about your model">'+
+      '<label>Website <span class="opt">optional</span></label><input id="pfSite" value="'+esc(c.website_url||'')+'" placeholder="https://">'+
+      '<label>X handle <span class="opt">optional</span></label><input id="pfX" value="'+esc(c.x_handle||'')+'" placeholder="handle, no @">'+
+      '<label>Logo URL <span class="opt">optional, monogram used otherwise</span></label><input id="pfLogo" value="'+esc(c.logo_url||'')+'" placeholder="https://">'+
+      '<div style="margin-top:14px"><button class="btn primary" id="pfSave">Save profile</button> <a class="note" href="#/'+esc(c.slug)+'">View public profile →</a></div></div>';
+    html+='<p style="margin-top:22px"><button class="btn" id="soBtn">Sign out</button></p>';
+    view.innerHTML=html;
+    function paintOrigins(list){
+      $('origList').innerHTML=(list||[]).map(function(o){
+        return '<div style="display:flex;gap:10px;align-items:center;margin:4px 0"><span class="mono" style="font-size:12px">'+esc(o.origin)+'</span><button class="btn danger" style="padding:3px 9px;font-size:11px" data-rm="'+esc(o.id)+'">Remove</button></div>';
+      }).join('')||'<p class="note">No domains yet. Add your site to activate your embed.</p>';
+      document.querySelectorAll('[data-rm]').forEach(function(b){
+        b.onclick=async function(){try{var r=await api('/v1/dashboard/origins',{method:'POST',auth:true,headers:{'content-type':'application/json'},body:{remove:b.getAttribute('data-rm')}});paintOrigins(r.origins);}catch(e){toast(e.message);}};
+      });
+    }
+    paintOrigins(d.origins);
+    $('origBtn').onclick=async function(){
+      var v=$('origAdd').value.trim();if(!/^https:\/\//.test(v)){toast('Use a full https:// origin');return;}
+      try{var r=await api('/v1/dashboard/origins',{method:'POST',auth:true,headers:{'content-type':'application/json'},body:{add:v}});$('origAdd').value='';paintOrigins(r.origins);}catch(e){toast(e.message);}
+    };
+    $('rotBtn').onclick=async function(){
+      if(!confirm('Rotate your API key? The current key stops working immediately.'))return;
+      try{
+        var r=await api('/v1/dashboard/keys/rotate',{method:'POST',auth:true});
+        $('rotOut').innerHTML='<p class="warnnote" style="margin:12px 0 4px">Your new key, shown once. Treat it like a password.</p>'+
+          '<div class="copybox"><div class="val">'+esc(r.key)+'</div><button class="btn" data-copy>Copy</button></div>';
+        wireCopy();
+      }catch(e){toast(e.message);}
+    };
+    $('pfSave').onclick=async function(){
+      try{
+        await api('/v1/dashboard/profile',{method:'POST',auth:true,headers:{'content-type':'application/json'},body:{
+          display_name:$('pfName').value.trim(),description:$('pfDesc').value.trim(),
+          website_url:$('pfSite').value.trim(),x_handle:$('pfX').value.trim().replace(/^@/,''),logo_url:$('pfLogo').value.trim()}});
+        toast('Profile saved');
+      }catch(e){toast(e.message);}
+    };
+    $('soBtn').onclick=function(){clearSession();renderDashboard(view);};
+    function wireCopy(){
+      document.querySelectorAll('[data-copy]').forEach(function(b){
+        if(b._wired)return;b._wired=true;
+        b.onclick=function(){copyText(b.parentElement.querySelector('.val').textContent,b);};
+      });
+    }
+    wireCopy();
+  }catch(e){
+    if(e.status===401){clearSession();renderDashboard(view);return;}
+    if(e.status===404||e.status===403){view.innerHTML='<h1>Creator dashboard</h1><div class="emptybox">This account is signed in but has no creator profile. If you were invited, open your invite link again on this device.<br><br><button class="btn" id="soBtn">Sign out</button></div>';$('soBtn').onclick=function(){clearSession();renderDashboard(view);};return;}
+    fail(view,e);
+  }
+}
+
+route();
+</script>
+</body>
+</html>

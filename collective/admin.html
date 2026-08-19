@@ -1,0 +1,294 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Collective Admin</title>
+<meta name="robots" content="noindex">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0d0f13;--surface:#13161c;--surface2:#191d25;--border:#262c36;--text:#e7eaf0;--dim:#8a93a2;--faint:#5b6472;--accent:#4d8dff;--pos:#2fb47c;--neg:#e26044;--warn:#d99a2b;--gold:#e3b84d}
+*{box-sizing:border-box}html,body{margin:0}
+body{background:var(--bg);color:var(--text);font-family:'Inter',system-ui,sans-serif;font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased}
+a{color:var(--accent);text-decoration:none}
+.mono{font-family:'JetBrains Mono',monospace}
+.hide{display:none!important}
+.hd{position:sticky;top:0;z-index:10;background:rgba(13,15,19,.94);border-bottom:1px solid var(--border);backdrop-filter:blur(8px)}
+.hd-in{display:flex;align-items:center;gap:12px;padding:12px 14px;max-width:1080px;margin:0 auto;flex-wrap:wrap}
+.wordmark{font-weight:800;font-size:14px;letter-spacing:.06em}
+.wordmark .mk{display:inline-block;width:9px;height:14px;background:var(--warn);border-radius:2px;transform:skewX(-12deg);margin-right:7px;vertical-align:-2px}
+nav{display:flex;gap:2px;overflow-x:auto}
+nav a{color:var(--dim);font-size:12px;font-weight:600;padding:6px 10px;border-radius:6px;white-space:nowrap;cursor:pointer}
+nav a.on{color:var(--text);background:var(--surface2)}
+.wrap{max-width:1080px;margin:0 auto;padding:18px 14px 60px}
+h1{font-size:18px;margin:6px 0 4px}
+h2{font-size:14px;margin:22px 0 8px}
+.lede{color:var(--dim);font-size:13px;margin:0 0 14px}
+.panel{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:14px}
+label{display:block;color:var(--faint);font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;margin:10px 0 4px}
+input,select,textarea{background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:8px 10px;font-size:13px;font-family:inherit;width:100%}
+textarea{font-family:'JetBrains Mono',monospace;font-size:12px;min-height:110px}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent)}
+.btn{display:inline-block;background:var(--surface2);border:1px solid var(--border);color:var(--text);font-weight:600;font-size:12.5px;border-radius:8px;padding:8px 14px;cursor:pointer;font-family:inherit}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#0b1220;font-weight:700}
+.btn[disabled]{opacity:.5;cursor:default}
+.tblwrap{overflow-x:auto;border:1px solid var(--border);border-radius:10px;background:var(--surface);margin-bottom:8px}
+table{border-collapse:collapse;width:100%;min-width:680px}
+th{background:var(--surface2);color:var(--faint);font-size:10px;text-transform:uppercase;letter-spacing:.05em;text-align:left;padding:7px 9px;white-space:nowrap}
+td{padding:8px 9px;border-top:1px solid var(--border);font-size:12.5px;white-space:nowrap;vertical-align:middle}
+td input{width:70px;padding:5px 7px;font-family:'JetBrains Mono',monospace;font-size:12px}
+.chip{display:inline-block;font-size:9.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;border:1px solid var(--border);border-radius:10px;padding:2px 7px;color:var(--dim)}
+.chip.ok{color:var(--pos);border-color:rgba(47,180,124,.45)}
+.chip.warn{color:var(--warn);border-color:rgba(217,154,43,.45)}
+.chip.dead{color:var(--faint);border-style:dashed}
+.note{color:var(--dim);font-size:12px}
+.warnnote{color:var(--warn);font-size:12.5px}
+.err{border:1px solid rgba(226,96,68,.4);color:var(--neg);border-radius:10px;padding:10px 12px;font-size:13px;margin:10px 0}
+.copybox{display:flex;gap:8px;margin:10px 0}
+.copybox .val{flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:9px 10px;font-family:'JetBrains Mono',monospace;font-size:11.5px;overflow-x:auto;white-space:pre}
+.raw{font-family:'JetBrains Mono',monospace;font-size:11px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px;white-space:pre-wrap;max-height:160px;overflow:auto;margin-top:6px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media(max-width:640px){.grid2{grid-template-columns:1fr}}
+.toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:9px 16px;font-size:12.5px;z-index:50}
+</style>
+</head>
+<body>
+<header class="hd"><div class="hd-in">
+  <span class="wordmark"><span class="mk"></span>COLLECTIVE ADMIN</span>
+  <span class="note">founder console</span>
+  <span style="flex:1"></span>
+  <nav id="nav" class="hide">
+    <a data-s="invites" class="on">Invites</a><a data-s="members">Members</a><a data-s="quarantine">Quarantine</a>
+    <a data-s="games">Games</a><a data-s="results">Results</a><a data-s="earnings">Earnings</a>
+  </nav>
+</div></header>
+<div class="wrap"><div id="app"><div class="panel note">Loading&hellip;</div></div></div>
+
+<script>
+"use strict";
+window.COLLECTIVE_CONFIG = {
+  SB_URL:  "https://iattxbkbufslbauoumga.supabase.co",
+  SB_ANON: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlhdHR4YmtidWZzbGJhdW91bWdhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE2MzY4MDUsImV4cCI6MjA5NzIxMjgwNX0.Mly5G587o5IFRnEigU2wRp9buWEk3dFwH9RNPJK7Uo8",
+  BASE_URL: "https://edgedesksports.com",
+  API: "https://iattxbkbufslbauoumga.supabase.co/functions/v1"
+};
+var CFG=window.COLLECTIVE_CONFIG;
+var API=(new URLSearchParams(location.search).get('api'))||localStorage.getItem('COLLECTIVE_API_OVERRIDE')||CFG.API;
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+function $(id){return document.getElementById(id);}
+function toast(m){var t=document.createElement('div');t.className='toast';t.textContent=m;document.body.appendChild(t);setTimeout(function(){t.remove();},2000);}
+function rel(iso){if(!iso)return 'never';var s=(Date.now()-new Date(iso).getTime())/1e3;if(s<5400)return Math.max(1,Math.round(s/60))+'m ago';if(s<172800)return Math.round(s/3600)+'h ago';return Math.round(s/86400)+'d ago';}
+function cents(c){return c==null?'—':'$'+(c/100).toFixed(2);}
+function copyWire(scope){(scope||document).querySelectorAll('[data-copy]').forEach(function(b){if(b._w)return;b._w=true;b.onclick=function(){var v=$(b.getAttribute('data-copy')).textContent;if(navigator.clipboard)navigator.clipboard.writeText(v).then(function(){toast('Copied');});};});}
+
+function session(){try{return JSON.parse(localStorage.getItem('collective_admin_session')||'null');}catch(e){return null;}}
+(function(){
+  if(/access_token=/.test(location.hash)){
+    var p=new URLSearchParams(location.hash.replace(/^#\/?/,''));
+    if(p.get('access_token')){
+      try{localStorage.setItem('collective_admin_session',JSON.stringify({access_token:p.get('access_token'),refresh_token:p.get('refresh_token'),expires_at:p.get('expires_at')}));}catch(e){}
+      history.replaceState(null,'',location.pathname+location.search);
+    }
+  }
+})();
+async function api(path,opts){
+  opts=opts||{};
+  var h=opts.headers||{};
+  var s=session();if(s&&s.access_token)h['authorization']='Bearer '+s.access_token;
+  var fn=opts.fn||'collective_admin';
+  var r=await fetch(API+'/'+fn+path,{method:opts.method||'GET',headers:h,body:opts.body?JSON.stringify(opts.body):undefined});
+  var d=null;try{d=await r.json();}catch(e){}
+  if(!r.ok){var e2=new Error((d&&d.error&&d.error.message)||('Request failed ('+r.status+')'));e2.status=r.status;throw e2;}
+  return d;
+}
+
+var SEC='invites';
+function nav(){
+  $('nav').classList.remove('hide');
+  document.querySelectorAll('#nav a').forEach(function(a){
+    a.classList.toggle('on',a.getAttribute('data-s')===SEC);
+    a.onclick=function(){SEC=a.getAttribute('data-s');nav();render();};
+  });
+}
+
+function signin(){
+  $('app').innerHTML='<h1>Sign in</h1><p class="lede">Admin access is by account allowlist. Sign in with your email and a one-time link.</p>'+
+    '<div class="panel" style="max-width:420px"><label>Email</label><input id="aEmail" type="email" placeholder="you@example.com">'+
+    '<div style="margin-top:12px"><button class="btn primary" id="aSend">Send my sign-in link</button></div>'+
+    '<p class="note hide" id="aSent" style="margin-top:10px"></p></div>';
+  $('aSend').onclick=async function(){
+    var em=$('aEmail').value.trim();if(!/.+@.+\..+/.test(em))return;
+    this.disabled=true;
+    var redirect=location.origin+location.pathname+(location.search||'');
+    try{
+      var r=await fetch(CFG.SB_URL+'/auth/v1/otp?redirect_to='+encodeURIComponent(redirect),{method:'POST',headers:{apikey:CFG.SB_ANON,'content-type':'application/json'},body:JSON.stringify({email:em,create_user:true})});
+      if(!r.ok)throw new Error('Could not send the link ('+r.status+')');
+      $('aSent').textContent='Link sent to '+em+'. Open it on this device.';$('aSent').classList.remove('hide');
+    }catch(e){toast(e.message);this.disabled=false;}
+  };
+}
+function notAdmin(uidMsg){
+  $('app').innerHTML='<div class="panel"><b>This account is not on the admin list.</b><br><span class="note">'+esc(uidMsg||'')+' Add the user id to collective.config key admin.user_ids, then reload.</span><br><br><button class="btn" onclick="localStorage.removeItem(\'collective_admin_session\');location.reload()">Sign out</button></div>';
+}
+
+async function render(){
+  if(!session()){signin();return;}
+  nav();
+  var app=$('app');
+  app.innerHTML='<div class="panel note">Loading '+esc(SEC)+'&hellip;</div>';
+  try{
+    if(SEC==='invites')await secInvites(app);
+    else if(SEC==='members')await secMembers(app);
+    else if(SEC==='quarantine')await secQuarantine(app);
+    else if(SEC==='games')await secGames(app);
+    else if(SEC==='results')await secResults(app);
+    else if(SEC==='earnings')await secEarnings(app);
+  }catch(e){
+    if(e.status===401){localStorage.removeItem('collective_admin_session');signin();return;}
+    if(e.status===403){notAdmin();return;}
+    app.innerHTML='<div class="err">'+esc(e.message)+'</div>';
+  }
+}
+
+async function secInvites(app){
+  var list=await api('/v1/admin/invites');
+  var rows=(list.rows||[]).map(function(r){
+    var st=r.status==='active'?'<span class="chip ok">active · '+(r.max_uses-r.use_count)+' left</span>':(r.status==='expired'?'<span class="chip dead">expired</span>':'<span class="chip warn">spent</span>');
+    return '<tr><td class="mono">'+esc(r.prefix)+'&hellip;</td><td>'+esc(r.note||'')+'</td><td>'+(r.founding?'<span class="chip warn">founding</span>':'')+'</td><td>'+st+'</td><td class="note">'+new Date(r.expires_at).toLocaleDateString()+'</td></tr>';
+  }).join('');
+  app.innerHTML='<h1>Invites</h1><p class="lede">Mint a link, send it, done. The whole join flow is the link: account, profile, key, prompt, and embed snippet, with nothing for you to do afterward.</p>'+
+    '<div class="panel"><div class="grid2">'+
+    '<div><label>Display name prefill (optional)</label><input id="ivName" placeholder="Their public name"></div>'+
+    '<div><label>Model name prefill (optional)</label><input id="ivModel" placeholder="Their model name"></div>'+
+    '<div><label>Sport</label><select id="ivSport"><option>NFL</option></select></div>'+
+    '<div><label>Max uses</label><input id="ivUses" type="number" value="1" min="1"></div>'+
+    '<div><label>Note to self</label><input id="ivNote" placeholder="Who this is for"></div>'+
+    '<div><label>Founding terms</label><select id="ivFound"><option value="1">Founding member, 50% for life</option><option value="0">Standard, 40%</option></select></div>'+
+    '</div><div style="margin-top:12px"><button class="btn primary" id="ivGo">Mint invite link</button></div><div id="ivOut"></div></div>'+
+    '<h2>All invites</h2><div class="tblwrap"><table><thead><tr><th>Token</th><th>Note</th><th></th><th>Status</th><th>Expires</th></tr></thead><tbody>'+(rows||'<tr><td colspan="5" class="note" style="text-align:center;padding:14px">No invites yet.</td></tr>')+'</tbody></table></div>';
+  $('ivGo').onclick=async function(){
+    this.disabled=true;
+    try{
+      var r=await api('/v1/admin/invites',{method:'POST',headers:{'content-type':'application/json'},body:{
+        prefill:{display_name:$('ivName').value.trim()||null,sport:$('ivSport').value,model_name:$('ivModel').value.trim()||null},
+        founding:$('ivFound').value==='1',share_bps:null,max_uses:+$('ivUses').value||1,note:$('ivNote').value.trim()}});
+      $('ivOut').innerHTML='<p class="warnnote" style="margin:12px 0 4px">The invite link, shown once. Copy it now.</p>'+
+        '<div class="copybox"><div class="val" id="ivUrl">'+esc(r.invite_url)+'</div><button class="btn" data-copy="ivUrl">Copy</button></div>';
+      copyWire($('ivOut'));
+    }catch(e){toast(e.message);}
+    this.disabled=false;
+  };
+}
+
+async function secMembers(app){
+  var d=await api('/v1/admin/members');
+  var rows=(d.rows||[]).map(function(r){
+    return '<tr><td><b>'+esc(r.display_name)+'</b><br><span class="note mono">'+esc(r.creator_slug)+'</span></td>'+
+      '<td>'+esc((r.models||[]).join(', '))+'</td>'+
+      '<td>'+esc(r.membership)+(r.founding?' <span class="chip warn">founding</span>':'')+'</td>'+
+      '<td class="mono">'+(r.referral_share_bps/100)+'%</td><td>'+esc(r.billing_mode)+'</td>'+
+      '<td class="mono" style="font-size:11px">'+esc((r.key_prefixes||[]).join('\n'))+'</td>'+
+      '<td class="note" style="font-size:11px">'+esc((r.origins||[]).join(', ')||'none')+'</td>'+
+      '<td class="note">'+rel(r.last_submission_at)+'</td></tr>';
+  }).join('');
+  app.innerHTML='<h1>Members</h1><p class="lede">Everyone on the wall, their keys, their rates, and their embed domains. Membership status is derived from submissions, never set by hand.</p>'+
+    '<div class="tblwrap"><table><thead><tr><th>Creator</th><th>Models</th><th>Status</th><th>Share</th><th>Mode</th><th>Keys</th><th>Embed domains</th><th>Last slate</th></tr></thead><tbody>'+
+    (rows||'<tr><td colspan="8" class="note" style="text-align:center;padding:14px">No members yet. Mint an invite.</td></tr>')+'</tbody></table></div>';
+}
+
+async function secQuarantine(app){
+  var d=await api('/v1/admin/quarantine');
+  var rows=(d.rows||[]).map(function(r,i){
+    return '<div class="panel"><b class="mono">'+esc(r.raw_game_ref)+'</b> <span class="chip warn">'+esc(r.reason)+'</span>'+
+      '<div class="note" style="margin:4px 0">'+esc(r.creator_slug)+' · '+esc(r.model_name)+' · '+rel(r.received_at)+'</div>'+
+      '<div class="raw">'+esc(JSON.stringify(r.raw_row,null,1))+'</div>'+
+      '<div class="grid2" style="margin-top:10px">'+
+      '<div><label>Resolve to game id</label><div style="display:flex;gap:8px"><input id="qG'+i+'" placeholder="game uuid"><button class="btn" data-i="'+i+'" data-id="'+esc(r.projection_id)+'" data-k="game">Resolve</button></div></div>'+
+      '<div><label>Or add a team alias</label><div style="display:flex;gap:8px"><input id="qA'+i+'" placeholder="alias text"><input id="qC'+i+'" placeholder="code" style="width:70px"><button class="btn" data-i="'+i+'" data-id="'+esc(r.projection_id)+'" data-k="alias">Add + retry</button></div></div>'+
+      '</div></div>';
+  }).join('');
+  app.innerHTML='<h1>Quarantine</h1><p class="lede">Rows the resolver could not match to a canonical game. They never fail a submission and never drop silently: they wait here. Fix by pointing at the right game or by teaching the resolver a new alias.</p>'+
+    (rows||'<div class="panel note">Nothing quarantined. Resolution is healthy.</div>');
+  app.querySelectorAll('button[data-k]').forEach(function(b){
+    b.onclick=async function(){
+      var i=b.getAttribute('data-i'),id=b.getAttribute('data-id');
+      try{
+        var body=b.getAttribute('data-k')==='game'?{game_id:$('qG'+i).value.trim()}:{alias:{sport:'NFL',alias:$('qA'+i).value.trim(),team_code:$('qC'+i).value.trim().toUpperCase()}};
+        var r=await api('/v1/admin/quarantine/'+encodeURIComponent(id)+'/resolve',{method:'POST',headers:{'content-type':'application/json'},body:body});
+        toast('Resolved '+(r.resolved||0)+' row(s)');render();
+      }catch(e){toast(e.message);}
+    };
+  });
+}
+
+async function secGames(app){
+  app.innerHTML='<h1>Games</h1><p class="lede">Load the slate. One line per game: <span class="mono">week, kickoff ISO, home, away</span> (CSV) or a JSON array of objects with those keys. Codes or full names both work through the alias table.</p>'+
+    '<div class="panel"><div class="grid2"><div><label>Sport</label><select id="gSport"><option>NFL</option></select></div>'+
+    '<div><label>Season</label><input id="gSeason" type="number" value="2026"></div></div>'+
+    '<label>Slate</label><textarea id="gRows" placeholder="3, 2026-09-21T17:00:00Z, KC, BUF&#10;3, 2026-09-21T20:25:00Z, DAL, NYG"></textarea>'+
+    '<div style="margin-top:10px;display:flex;gap:8px"><button class="btn" id="gPrev">Preview</button><button class="btn primary hide" id="gGo">Upload slate</button></div><div id="gOut"></div></div>';
+  var parsed=null;
+  $('gPrev').onclick=function(){
+    var t=$('gRows').value.trim();parsed=[];
+    try{
+      if(t[0]==='['){JSON.parse(t).forEach(function(o){parsed.push({week:+o.week,kickoff:o.kickoff,home:String(o.home),away:String(o.away)});});}
+      else t.split(/\n+/).forEach(function(l){var p=l.split(',').map(function(x){return x.trim();});if(p.length>=4)parsed.push({week:+p[0],kickoff:p[1],home:p[2],away:p[3]});});
+    }catch(e){$('gOut').innerHTML='<div class="err">Could not parse: '+esc(e.message)+'</div>';return;}
+    if(!parsed.length){$('gOut').innerHTML='<div class="err">No rows parsed.</div>';return;}
+    $('gOut').innerHTML='<div class="tblwrap" style="margin-top:10px"><table><thead><tr><th>Week</th><th>Kickoff</th><th>Home</th><th>Away</th></tr></thead><tbody>'+
+      parsed.map(function(g){return '<tr><td>'+g.week+'</td><td class="mono">'+esc(g.kickoff)+'</td><td>'+esc(g.home)+'</td><td>'+esc(g.away)+'</td></tr>';}).join('')+'</tbody></table></div>';
+    $('gGo').classList.remove('hide');
+  };
+  $('gGo').onclick=async function(){
+    if(!parsed||!parsed.length)return;
+    this.disabled=true;
+    try{
+      var r=await api('/v1/admin/games',{method:'POST',headers:{'content-type':'application/json'},body:{sport:$('gSport').value,season:+$('gSeason').value,games:parsed}});
+      toast('Upserted '+(r.upserted||0)+' games');$('gRows').value='';$('gOut').innerHTML='';$('gGo').classList.add('hide');
+    }catch(e){toast(e.message);}
+    this.disabled=false;
+  };
+}
+
+async function secResults(app){
+  var d=await api('/v1/games?sport=NFL&season=2026',{fn:'collective_public'});
+  var need=(d.games||[]).filter(function(g){return !g.result&&new Date(g.kickoff_at).getTime()<Date.now();});
+  var rows=need.map(function(g,i){
+    return '<tr><td><b>'+esc(g.label)+'</b><br><span class="note">'+new Date(g.kickoff_at).toLocaleString()+'</span></td>'+
+      '<td><input id="rH'+i+'" placeholder="home"></td><td><input id="rA'+i+'" placeholder="away"></td>'+
+      '<td><input id="rS'+i+'" placeholder="-2.5"></td><td><input id="rT'+i+'" placeholder="47.5"></td><td><input id="rM'+i+'" placeholder="0.62"></td>'+
+      '<td><button class="btn" data-i="'+i+'" data-g="'+esc(g.game_id)+'">Settle</button></td></tr>';
+  }).join('');
+  app.innerHTML='<h1>Results</h1><p class="lede">Final scores plus the closing line YOU captured (home convention, negative means home favored). Settling a game grades every candidate projection on it immediately. The closing line here is the only line any pick is ever graded against.</p>'+
+    '<div class="tblwrap"><table><thead><tr><th>Game</th><th>Home pts</th><th>Away pts</th><th>Close spread</th><th>Close total</th><th>Close home ML prob</th><th></th></tr></thead><tbody>'+
+    (rows||'<tr><td colspan="7" class="note" style="text-align:center;padding:14px">No unsettled past games. Load the slate under Games first.</td></tr>')+'</tbody></table></div>';
+  app.querySelectorAll('button[data-g]').forEach(function(b){
+    b.onclick=async function(){
+      var i=b.getAttribute('data-i');
+      var body={results:[{game_id:b.getAttribute('data-g'),home_score:+$('rH'+i).value,away_score:+$('rA'+i).value,
+        closing_spread:$('rS'+i).value===''?null:+$('rS'+i).value,closing_total:$('rT'+i).value===''?null:+$('rT'+i).value,
+        closing_home_ml_prob:$('rM'+i).value===''?null:+$('rM'+i).value}]};
+      if(isNaN(body.results[0].home_score)||isNaN(body.results[0].away_score)){toast('Scores required');return;}
+      b.disabled=true;
+      try{var r=await api('/v1/admin/results',{method:'POST',headers:{'content-type':'application/json'},body:body});toast('Settled. Graded '+(r.graded||0)+' projections.');render();}
+      catch(e){toast(e.message);b.disabled=false;}
+    };
+  });
+}
+
+async function secEarnings(app){
+  var d=await api('/v1/admin/earnings');
+  var rows=(d.rows||[]).map(function(r){
+    return '<tr><td>'+esc(r.creator_slug)+'</td><td class="mono">'+esc(r.month)+'</td><td class="mono">'+cents(r.earned_cents)+'</td><td class="mono">'+cents(r.clawed_cents)+'</td><td class="mono">'+cents(r.paid_cents)+'</td><td class="mono">'+cents(r.balance_cents)+'</td><td class="mono">'+cents(r.available_cents)+'</td></tr>';
+  }).join('');
+  app.innerHTML='<h1>Earnings</h1><p class="lede">Referral share ledger per creator per month. Net 30, $50 minimum rolls forward, 60-day clawback window. While billing is off this stays at zero but attribution is already being recorded.</p>'+
+    '<div class="tblwrap"><table><thead><tr><th>Creator</th><th>Month</th><th>Earned</th><th>Clawed back</th><th>Paid out</th><th>Balance</th><th>Available</th></tr></thead><tbody>'+
+    (rows||'<tr><td colspan="7" class="note" style="text-align:center;padding:14px">No ledger entries yet.</td></tr>')+'</tbody></table></div>';
+}
+
+render();
+</script>
+</body>
+</html>

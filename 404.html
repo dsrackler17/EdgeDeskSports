@@ -1,0 +1,41 @@
+<!doctype html>
+<!--
+  GitHub Pages serves this file for any unknown path. That behavior is what
+  gives a static host pretty routes:
+    /join/{token}  ->  /collective/join.html?t={token}
+    /c/{slug}      ->  /collective/#/{slug}
+  Anything else renders a small not-found page.
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Not found - EdgeDesk</title>
+<meta name="robots" content="noindex">
+<script>
+(function(){
+  var p=location.pathname.split('/').filter(Boolean);
+  if(p[0]==='join'&&p[1]){location.replace('/collective/join.html?t='+encodeURIComponent(p[1])+location.search.replace(/^\?/,'&').replace(/^&/,'&'));return;}
+  if(p[0]==='c'&&p[1]){location.replace('/collective/#/'+encodeURIComponent(p[1]));return;}
+})();
+</script>
+<style>
+:root{--bg:#0d0f13;--surface:#13161c;--border:#262c36;--text:#e7eaf0;--dim:#8a93a2;--accent:#4d8dff}
+html,body{margin:0}
+body{background:var(--bg);color:var(--text);font-family:Inter,system-ui,sans-serif;display:flex;min-height:100vh;align-items:center;justify-content:center;padding:20px}
+a{color:var(--accent);text-decoration:none}
+.box{max-width:420px;text-align:center}
+.mk{display:inline-block;width:10px;height:16px;background:var(--accent);border-radius:2px;transform:skewX(-12deg);margin-right:8px;vertical-align:-2px}
+h1{font-size:18px;margin:14px 0 8px}
+p{color:var(--dim);font-size:13.5px;line-height:1.6}
+</style>
+</head>
+<body>
+<div class="box">
+  <span style="font-weight:800;letter-spacing:.06em"><span class="mk"></span>EDGEDESK</span>
+  <h1>Nothing lives at this address</h1>
+  <p>The page may have moved, or the link was truncated.</p>
+  <p><a href="/">EdgeDesk home</a> &middot; <a href="/collective/">The Model Collective</a> &middot; <a href="/app.html">The terminal</a></p>
+</div>
+</body>
+</html>
