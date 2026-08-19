@@ -2,7 +2,7 @@
 // GET checks a token, POST redeems it after the magic-link sign-in, and the
 // dead-token request route makes sure a lost creator is never dropped.
 
-import { json, err, preflight, subpath } from "../_shared/http.ts";
+import { corsHeaders, json, err, preflight, subpath } from "../_shared/http.ts";
 import { rpc, RpcError } from "../_shared/db.ts";
 import { getUser } from "../_shared/auth.ts";
 import { newApiKey, sha256hex } from "../_shared/keys.ts";
@@ -20,6 +20,19 @@ Deno.serve(async (req) => {
   const pre = preflight(req);
   if (pre) return pre;
   const path = subpath(req, "collective_join");
+
+  // CONTRACT 5: join GETs answer any origin, join POSTs answer only the
+  // Collective's own site (plus localhost for development).
+  if (req.method === "POST") {
+    const origin = req.headers.get("origin");
+    if (origin) {
+      let host = "";
+      try { host = new URL(origin).hostname; } catch { host = ""; }
+      const base = new URL(BASE_URL).hostname;
+      const allowed = host === base || host === `www.${base}` || host === "localhost" || host === "127.0.0.1";
+      if (!allowed) return err("forbidden_origin", "Join requests come from the Collective site only.", 403);
+    }
+  }
 
   try {
     let m = path.match(/^\/v1\/join\/([^/]+)$/);

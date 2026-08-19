@@ -79,7 +79,7 @@ Deno.serve(async (req) => {
     }
 
     if (req.method === "POST" && path === "/v1/billing/webhook") {
-      if (!WEBHOOK_SECRET) return err("server_error", "Webhook secret is not configured.", 503);
+      if (!WEBHOOK_SECRET) return err("server_error", "Webhook secret is not configured.", 500);
       const raw = await req.text();
       if (!(await verifyStripeSignature(raw, req.headers.get("stripe-signature")))) {
         return err("forbidden", "Signature verification failed.", 403);
@@ -117,9 +117,16 @@ Deno.serve(async (req) => {
       } else if (event.type === "charge.refunded" || event.type === "charge.dispute.created") {
         await rpc("billing_post_refund", { p: { stripe_ref: obj.invoice ?? obj.id ?? null } });
       } else if (event.type === "customer.subscription.updated" || event.type === "customer.subscription.deleted") {
+        // Explicit status map: only genuinely paying states keep access.
+        // unpaid, paused, incomplete, and incomplete_expired all read as
+        // canceled rather than defaulting to active.
         const status = event.type === "customer.subscription.deleted"
           ? "canceled"
-          : (obj.status === "past_due" ? "past_due" : obj.status === "canceled" ? "canceled" : "active");
+          : (obj.status === "active" || obj.status === "trialing")
+          ? "active"
+          : obj.status === "past_due"
+          ? "past_due"
+          : "canceled";
         await rpc("billing_upsert_subscriber", {
           p_event: {
             stripe_customer_id: obj.customer ?? null,

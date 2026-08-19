@@ -48,11 +48,21 @@ async function originAllowed(creatorId: string | null, origin: string | null): P
     if (allow === true) return true;
   }
   if (!creatorId) return false;
+  // Full-origin comparison (scheme plus host plus port), not hostname only:
+  // an http page or an odd port on a registered host does not pass.
+  let normalized: string;
+  try {
+    const ou = new URL(origin);
+    normalized = `${ou.protocol}//${ou.host}`;
+  } catch {
+    return false;
+  }
   const rows = await viewGet<{ id: string; origin: string }>(
     "embed_installs", `select=id,origin&creator_id=eq.${creatorId}&status=eq.active`);
   return rows.some((r) => {
     try {
-      return new URL(r.origin).hostname === host;
+      const ru = new URL(r.origin);
+      return `${ru.protocol}//${ru.host}` === normalized;
     } catch {
       return false;
     }
@@ -165,10 +175,25 @@ Deno.serve(async (req) => {
         const rows = await viewGet<{ id: string }>("creators", `select=id&slug=eq.${hostSlug}&limit=1`);
         creatorId = rows[0]?.id ?? null;
       }
+      // Events pass the SAME origin allowlist as bootstrap: engagement is a
+      // future payment signal (Section 5), so an unregistered origin cannot
+      // write events or mint first touches. Still 202: the embed never sees
+      // an error for telemetry.
+      if (!(await originAllowed(creatorId, origin))) {
+        return new Response(JSON.stringify({ ok: true }), { status: 202, headers: { "content-type": "application/json", ...cors } });
+      }
       const events = body.events.slice(0, 50).filter((e) => VALID.includes(e.type ?? ""));
       if (events.length) {
+        const referrer = (req.headers.get("referer") ?? "").slice(0, 300) || null;
+        const slugRe = /^[a-z0-9-]{1,40}$/;
+        const targetSlugs = [...new Set(events.map((e) => e.target).filter((t): t is string => typeof t === "string" && slugRe.test(t)))];
+        const targets = targetSlugs.length
+          ? await viewGet<{ id: string; slug: string }>("creators", `select=id,slug&slug=in.(${targetSlugs.join(",")})`)
+          : [];
         await tableWrite("embed_events", "POST", "", events.map((e) => ({
           creator_id: creatorId, event_type: e.type, visitor_id: visitor,
+          target_creator_id: targets.find((t) => t.slug === e.target)?.id ?? null,
+          referrer,
           path: (e.path ?? "").slice(0, 300), origin: origin ?? null,
         }))).catch((e) => console.error("embed_events insert failed:", e));
         // Attribution first touch on the referring creator (Section 5):

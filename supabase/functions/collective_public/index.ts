@@ -9,7 +9,7 @@ import { getUser } from "../_shared/auth.ts";
 import { newApiKey } from "../_shared/keys.ts";
 import { BASE_URL } from "../_shared/env.ts";
 import {
-  buildGames, buildMeta, buildWall, isEntitled, RULES, tableWrite, viewGet,
+  buildGames, buildMeta, buildWall, currentWeek, isEntitled, RULES, tableWrite, viewGet,
 } from "../_shared/reads.ts";
 
 const FREE_CACHE = { "cache-control": "public, max-age=60" };
@@ -186,8 +186,16 @@ Deno.serve(async (req) => {
       const rawSport = u.searchParams.get("sport") ?? "";
       const sport = /^[A-Z0-9]{2,10}$/.test(rawSport) ? rawSport : (meta.sports[0]?.code ?? "NFL");
       const season = Number(u.searchParams.get("season") ?? meta.sports.find((s) => s.code === sport)?.season);
-      const week = u.searchParams.get("week") ? Number(u.searchParams.get("week")) : null;
       if (!Number.isFinite(season)) return err("invalid_payload", "season must be a number", 422);
+      const rawWeek = u.searchParams.get("week");
+      let week: number | null = null;
+      if (rawWeek !== null) {
+        week = Number(rawWeek);
+        if (!Number.isInteger(week)) return err("invalid_payload", "week must be an integer", 422);
+      } else {
+        // No week asked for: default to the current slate, not the season.
+        week = await currentWeek(sport, season);
+      }
       const user = await getUser(req);
       const entitled = await isEntitled(user?.id ?? null);
       const payload = await buildGames(sport, season, week, entitled);
@@ -200,7 +208,15 @@ Deno.serve(async (req) => {
       const rawSport = u.searchParams.get("sport") ?? "";
       const sport = /^[A-Z0-9]{2,10}$/.test(rawSport) ? rawSport : (meta.sports[0]?.code ?? "NFL");
       const season = Number(u.searchParams.get("season") ?? meta.sports.find((s) => s.code === sport)?.season);
-      const week = u.searchParams.get("week") ? Number(u.searchParams.get("week")) : null;
+      if (!Number.isFinite(season)) return err("invalid_payload", "season must be a number", 422);
+      const rawWeek = u.searchParams.get("week");
+      let week: number | null = null;
+      if (rawWeek !== null) {
+        week = Number(rawWeek);
+        if (!Number.isInteger(week)) return err("invalid_payload", "week must be an integer", 422);
+      } else {
+        week = await currentWeek(sport, season);
+      }
       const user = await getUser(req);
       const entitled = await isEntitled(user?.id ?? null);
       const board = await buildGames(sport, season, week, entitled);
@@ -248,9 +264,9 @@ Deno.serve(async (req) => {
       const meta = await buildMeta();
       const balance = earnings.reduce((s, e) => s + (e.balance_cents ?? 0), 0);
       const available = earnings.reduce((s, e) => s + (e.available_cents ?? 0), 0);
-      const models = await viewGet<{ slug: string; name: string; sport_code: string }>(
-        "models", `select=slug,name,sport_code&creator_id=eq.${creator.id}`);
-      const pinned = mine.length ? null : null;
+      const models = await viewGet<{ id: string; slug: string; name: string; sport_code: string }>(
+        "models", `select=id,slug,name,sport_code&creator_id=eq.${creator.id}`);
+      const pinned = models.find((x) => x.id === creator.pinned_model_id)?.slug ?? null;
       return json({
         creator: {
           ...pub(creator, mine[0]?.membership ?? "MEMBER", mine[0]?.monogram ?? "", pinned),
@@ -282,10 +298,28 @@ Deno.serve(async (req) => {
       if (!body) return err("invalid_payload", "Body must be JSON.", 422);
       const patch: Record<string, unknown> = {};
       // Creators edit identity fields only; records, rates, and flags are
-      // never editable from here.
+      // never editable from here. Values must be strings; URLs must parse
+      // as http(s) so a profile can never publish a javascript: link.
       for (const k of ["display_name", "description", "website_url", "x_handle", "logo_url"]) {
-        if (k in body) patch[k] = body[k] === "" ? null : body[k];
+        if (!(k in body)) continue;
+        const v = body[k];
+        if (v !== null && typeof v !== "string") {
+          return err("invalid_payload", `${k} must be a string.`, 422);
+        }
+        patch[k] = v === "" ? null : v;
       }
+      for (const k of ["website_url", "logo_url"]) {
+        const v = patch[k];
+        if (typeof v !== "string") continue;
+        try {
+          const uu = new URL(v.startsWith("http") ? v : `https://${v}`);
+          if (uu.protocol !== "https:" && uu.protocol !== "http:") throw new Error("scheme");
+          patch[k] = uu.toString();
+        } catch {
+          return err("invalid_payload", `${k} is not a usable URL.`, 422);
+        }
+      }
+      if (typeof patch.x_handle === "string") patch.x_handle = patch.x_handle.replace(/^@/, "");
       if (typeof body.pinned_model_slug === "string" && /^[a-z0-9-]{1,40}$/.test(body.pinned_model_slug)) {
         const mrows = await viewGet<{ id: string }>(
           "models", `select=id&creator_id=eq.${ctx.creator.id}&slug=eq.${body.pinned_model_slug}&limit=1`);

@@ -40,17 +40,16 @@ interface VerifyResult {
   ok?: boolean;
   code?: string;
   message?: string;
-  key?: { id?: string; status?: string; kind?: string; prefix?: string };
+  // verify_key returns FLAT fields (see migration 7)
   key_id?: string;
-  creator?: { slug?: string; display_name?: string };
-  model?: {
-    model_slug?: string;
-    slug?: string;
-    model_name?: string;
-    name?: string;
-    sport?: string;
-    sport_code?: string;
-  };
+  kind?: string;
+  creator_id?: string;
+  creator_slug?: string;
+  creator_name?: string;
+  model_id?: string;
+  model_slug?: string;
+  model_name?: string;
+  sport?: string;
   limits?: { max_rows?: number; max_bytes?: number; rate_per_hour?: number };
 }
 
@@ -113,8 +112,7 @@ async function handle(req: Request): Promise<Response> {
     p_hash: keyHash,
   });
   if (!verified || verified.ok === false) {
-    const revoked = verified?.code === "revoked_key" ||
-      verified?.key?.status === "revoked";
+    const revoked = verified?.code === "revoked_key";
     if (revoked) {
       return err(
         "revoked_key",
@@ -124,15 +122,8 @@ async function handle(req: Request): Promise<Response> {
     }
     return err("invalid_key", "Unknown submission key.", 401);
   }
-  if (verified.key?.status === "revoked") {
-    return err(
-      "revoked_key",
-      "This key has been revoked. Rotate a new key from your dashboard.",
-      401,
-    );
-  }
 
-  const keyId = verified.key?.id ?? verified.key_id ?? null;
+  const keyId = verified.key_id ?? null;
   if (!keyId) {
     console.error("collective_ingest: verify_key result carried no key id:", verified);
     return err("server_error", "An unexpected server error occurred.", 500);
@@ -156,19 +147,16 @@ async function handle(req: Request): Promise<Response> {
   const maxBytes = asNumber(limits.max_bytes, 524288);
   const ratePerHour = asNumber(limits.rate_per_hour, 60);
 
-  const creator = verified.creator ?? {};
-  const model = verified.model ?? {};
-
   if (path === "/v1/whoami") {
     return json({
       creator: {
-        slug: creator.slug ?? null,
-        display_name: creator.display_name ?? null,
+        slug: verified.creator_slug ?? null,
+        display_name: verified.creator_name ?? null,
       },
       model: {
-        model_slug: model.model_slug ?? model.slug ?? null,
-        model_name: model.model_name ?? model.name ?? null,
-        sport: model.sport ?? model.sport_code ?? null,
+        model_slug: verified.model_slug ?? null,
+        model_name: verified.model_name ?? null,
+        sport: verified.sport ?? null,
       },
       key: {
         prefix: `mck_${parsed.kind}_${parsed.prefix}`,

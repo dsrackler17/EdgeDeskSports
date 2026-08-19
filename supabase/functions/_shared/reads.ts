@@ -192,7 +192,11 @@ export async function buildGames(
     sport, season, week, entitled,
     games: games.map((g) => {
       const settled = g.status === "final" || (g.home_score !== null);
-      const open = !settled && new Date(g.kickoff_at).getTime() > now;
+      // Postponed and canceled games keep a stale kickoff_at in the past;
+      // they must stay locked or their pre-game numbers would leak free.
+      const open = !settled &&
+        (g.status === "postponed" || g.status === "canceled" ||
+          new Date(g.kickoff_at).getTime() > now);
       const unlocked = entitled || settled || !open;
       const c = consensus.find((x) => x.game_id === g.game_id) ?? null;
       return {
@@ -203,13 +207,14 @@ export async function buildGames(
               closing_spread: g.closing_spread, closing_total: g.closing_total }
           : null,
         consensus: !c || c.n === 0
-          ? (unlocked ? null : { locked: true })
+          ? (unlocked ? null : { locked: true, n: c?.n ?? 0 })
           : (unlocked
             ? { locked: false, n: c.n, spread_mean: c.spread_mean, spread_median: c.spread_median,
                 spread_stdev: c.spread_stdev, spread_min: c.spread_min, spread_max: c.spread_max,
-                total_mean: c.total_mean, home_win_prob_mean: c.home_win_prob_mean,
+                total_mean: c.total_mean, total_median: c.total_median,
+                home_win_prob_mean: c.home_win_prob_mean,
                 pct_picks_home: c.pct_picks_home, agreement: c.agreement }
-            : { locked: true }),
+            : { locked: true, n: c.n }),
         models: models.filter((m) => m.game_id === g.game_id).map((m) =>
           unlocked
             ? { creator_slug: m.creator_slug, model_slug: m.model_slug, locked: false,
@@ -229,11 +234,28 @@ export async function buildGames(
 // the board), checked by the Collective and never by a host site.
 export async function isEntitled(userId: string | null): Promise<boolean> {
   if (!userId) return false;
+  // While billing is off, any signed-in account is entitled (contract 5.2:
+  // the record is being built in the open; anonymous callers stay locked).
+  const billing = await rpc<unknown>("get_config", { p_key: "billing.enabled" });
+  if (billing !== true) return true;
   const [subs, creators] = await Promise.all([
     viewCount("subscribers", `user_id=eq.${userId}&status=in.(active,past_due)`),
     viewCount("creators", `user_id=eq.${userId}&status=eq.active`),
   ]);
   return subs > 0 || creators > 0;
+}
+
+// The current slate week: the week of the next game to kick off (with a
+// 36 hour grace so a week stays current through its Monday night game),
+// else the last week that has games.
+export async function currentWeek(sport: string, season: number): Promise<number | null> {
+  const grace = new Date(Date.now() - 36 * 3600e3).toISOString();
+  const next = await viewGet<{ week: number | null }>("game_detail",
+    `select=week&sport=eq.${sport}&season=eq.${season}&kickoff_at=gte.${encodeURIComponent(grace)}&week=not.is.null&order=kickoff_at.asc&limit=1`);
+  if (next[0]?.week != null) return next[0].week;
+  const last = await viewGet<{ week: number | null }>("game_detail",
+    `select=week&sport=eq.${sport}&season=eq.${season}&week=not.is.null&order=kickoff_at.desc&limit=1`);
+  return last[0]?.week ?? null;
 }
 
 export const RULES = {
