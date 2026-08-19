@@ -1,5 +1,5 @@
 -- MODEL COLLECTIVE, COMPLETE DATABASE SETUP
--- Paste this whole file into the Supabase SQL editor and run it once.
+-- Paste this whole file into the Supabase dashboard SQL editor and run it once.
 -- It creates the collective schema, every table, view, function, and seed.
 -- (Concatenation of supabase/migrations/*.sql in order.)
 
@@ -845,6 +845,10 @@ create table collective.earnings_ledger (
 create index earnings_creator_month on collective.earnings_ledger (creator_id, period_month);
 create unique index earnings_invoice_once
   on collective.earnings_ledger (stripe_ref) where entry_type = 'earning' and stripe_ref is not null;
+-- Stripe delivers webhooks at least once: a replayed refund must not
+-- double-debit the creator.
+create unique index earnings_clawback_once
+  on collective.earnings_ledger (stripe_ref) where entry_type = 'clawback' and stripe_ref is not null;
 alter table collective.earnings_ledger enable row level security;
 grant select, insert on collective.earnings_ledger to service_role;
 create trigger earnings_ledger_append_only
@@ -887,6 +891,9 @@ create table collective.api_request_log (
 create index api_request_log_window on collective.api_request_log (api_key_id, at desc);
 alter table collective.api_request_log enable row level security;
 grant select, insert on collective.api_request_log to service_role;
+create trigger api_request_log_append_only
+  before update or delete on collective.api_request_log
+  for each row execute function collective.block_mutation();
 
 -- Creator-facing earnings rollup: if a creator cannot see what the
 -- Collective earned them this month, they will assume it is nothing.
@@ -898,7 +905,11 @@ select
   -sum(l.amount_cents) filter (where l.entry_type = 'clawback') as clawed_cents,
   -sum(l.amount_cents) filter (where l.entry_type = 'payout')   as paid_cents,
   sum(l.amount_cents)                                           as balance_cents,
-  sum(l.amount_cents) filter (where l.available_at <= now())    as available_cents
+  -- Earnings mature at available_at; clawbacks and payouts must always
+  -- count against availability (clawbacks carry the available_at of the
+  -- earning they reverse, payouts carry none).
+  sum(l.amount_cents) filter (where l.available_at is null or l.available_at <= now())
+                                                                as available_cents
 from collective.creators c
 join collective.earnings_ledger l on l.creator_id = c.id
 group by c.id, c.slug, l.period_month;
@@ -922,8 +933,12 @@ $$;
 
 create or replace function collective.slugify(p_name text) returns text
 language sql immutable as $$
-  select coalesce(nullif(trim(both '-' from
-    regexp_replace(lower(trim(p_name)), '[^a-z0-9]+', '-', 'g')), ''), 'creator')
+  -- Clamped to the 40-char slug constraint; a name that collapses to
+  -- nothing or one char falls back to 'creator'.
+  select case when length(s) < 2 then 'creator' else s end from (
+    select trim(both '-' from left(trim(both '-' from
+      regexp_replace(lower(trim(p_name)), '[^a-z0-9]+', '-', 'g')), 40)) as s
+  ) x
 $$;
 
 create or replace function collective.get_config(p_key text) returns jsonb
@@ -947,7 +962,8 @@ begin
   left join collective.models m on m.id = ak.model_id
   where ak.key_prefix = p_prefix;
 
-  if not found or k.key_hash <> p_hash then
+  -- is distinct from: a null or empty hash must never read as a match.
+  if not found or coalesce(p_hash, '') = '' or k.key_hash is distinct from p_hash then
     return jsonb_build_object('ok', false, 'code', 'invalid_key', 'message', 'Unknown key');
   end if;
   if k.status <> 'active' or k.creator_status <> 'active' then
@@ -1123,6 +1139,10 @@ declare
   v_resp jsonb;
   v_existing record;
   v_hwp numeric; v_spread numeric;
+  v_pick collective.pick_side; v_tside collective.total_side;
+  v_line numeric; v_ptot numeric; v_phs numeric; v_pas numeric;
+  v_conf numeric; v_cover numeric; v_week int; v_env_week int;
+  v_gen timestamptz;
 begin
   -- Identity comes from the key, payload strings are only checked (8.2).
   if p_envelope ? 'model' and (p_envelope->>'model') is distinct from (p_key->>'model_slug') then
@@ -1147,6 +1167,10 @@ begin
   -- A test key can only ever write test data.
   if (p_key->>'kind') = 'test' then v_origin := 'test'; end if;
 
+  -- Envelope-level optionals are never allowed to abort the submission.
+  begin v_env_week := nullif(p_envelope->>'week','')::int; exception when others then v_env_week := null; end;
+  begin v_gen := nullif(p_envelope->>'generated_at','')::timestamptz; exception when others then v_gen := null; end;
+
   if jsonb_typeof(v_rows) <> 'array' or jsonb_array_length(v_rows) = 0 then
     return jsonb_build_object('ok', false, 'code', 'invalid_payload', 'message', 'rows must be a non-empty array');
   end if;
@@ -1156,8 +1180,11 @@ begin
   end if;
 
   -- Idempotency: same model, same payload, same answer (with duplicate:true).
+  -- The advisory lock serializes concurrent identical submissions so the
+  -- loser sees the winner's row here instead of a unique violation later.
   v_hash := md5(coalesce(p_envelope->>'idempotency_key', v_rows::text || v_origin::text || v_season::text));
   if not p_dry then
+    perform pg_advisory_xact_lock(hashtext(v_model_id::text || ':' || v_hash));
     select * into v_existing from collective.submissions
      where model_id = v_model_id and payload_hash = v_hash;
     if found then
@@ -1183,16 +1210,25 @@ begin
       end;
     end if;
     if v_status is null then
+      -- Every optional field parses inside this block: a bad value rejects
+      -- THIS row only and can never abort the whole submission.
       begin
-        v_hwp := nullif(row_j->>'home_win_probability','')::numeric;
-        v_spread := nullif(row_j->>'projected_spread','')::numeric;
+        v_hwp   := nullif(row_j->>'home_win_probability','')::numeric;
+        v_spread:= nullif(row_j->>'projected_spread','')::numeric;
+        v_cover := nullif(row_j->>'cover_probability','')::numeric;
+        v_line  := nullif(row_j->>'line_at_submission','')::numeric;
+        v_ptot  := nullif(row_j->>'projected_total','')::numeric;
+        v_phs   := nullif(row_j->>'proj_home_score','')::numeric;
+        v_pas   := nullif(row_j->>'proj_away_score','')::numeric;
+        v_conf  := nullif(row_j->>'confidence','')::numeric;
+        v_pick  := nullif(row_j->>'pick_side','')::collective.pick_side;
+        v_tside := nullif(row_j->>'total_side','')::collective.total_side;
+        v_week  := coalesce(nullif(row_j->>'week','')::int, v_env_week);
         if v_hwp is not null and (v_hwp < 0 or v_hwp > 1) then
           v_status := 'rejected'; v_reason := 'home_win_probability must be between 0 and 1';
-        elsif (nullif(row_j->>'cover_probability','')::numeric) is not null
-              and (nullif(row_j->>'cover_probability','')::numeric < 0 or nullif(row_j->>'cover_probability','')::numeric > 1) then
+        elsif v_cover is not null and (v_cover < 0 or v_cover > 1) then
           v_status := 'rejected'; v_reason := 'cover_probability must be between 0 and 1';
-        elsif (row_j ? 'cover_probability') and nullif(row_j->>'cover_probability','') is not null
-              and nullif(row_j->>'line_at_submission','') is null then
+        elsif v_cover is not null and v_line is null then
           -- A pick probability is meaningless without its line (9.3).
           v_status := 'rejected'; v_reason := 'cover_probability requires line_at_submission';
         elsif v_hwp is not null and v_spread is not null and
@@ -1203,7 +1239,7 @@ begin
           v_reason := 'home_win_probability contradicts projected_spread; check that the probability is moneyline and the spread is home convention';
         end if;
       exception when others then
-        v_status := 'rejected'; v_reason := 'a numeric field failed to parse';
+        v_status := 'rejected'; v_reason := 'a field failed to parse; check number formats and pick_side/total_side values';
       end;
     end if;
 
@@ -1246,17 +1282,9 @@ begin
           v_sub_id, v_model_id, v_game, row_j->>'game_ref', row_j,
           case when v_status = 'quarantined' then 'quarantined' else 'resolved' end::collective.resolution_status,
           case when v_status = 'quarantined' then v_reason end,
-          v_sport, v_season, nullif(row_j->>'week','')::int,
-          nullif(row_j->>'pick_side','')::collective.pick_side,
-          nullif(row_j->>'total_side','')::collective.total_side,
-          nullif(row_j->>'line_at_submission','')::numeric,
-          v_spread,
-          nullif(row_j->>'projected_total','')::numeric,
-          nullif(row_j->>'proj_home_score','')::numeric,
-          nullif(row_j->>'proj_away_score','')::numeric,
-          v_hwp,
-          nullif(row_j->>'cover_probability','')::numeric,
-          nullif(row_j->>'confidence','')::numeric,
+          v_sport, v_season, v_week,
+          v_pick, v_tside, v_line, v_spread, v_ptot, v_phs, v_pas,
+          v_hwp, v_cover, v_conf,
           v_origin, v_received, coalesce(v_late, false), v_candidate);
       exception when unique_violation then
         -- Concurrent first-lock race: the index is the law, this row
@@ -1269,17 +1297,9 @@ begin
           data_origin, received_at, is_late, is_graded_candidate)
         values (
           v_sub_id, v_model_id, v_game, row_j->>'game_ref', row_j,
-          'resolved', null, v_sport, v_season, nullif(row_j->>'week','')::int,
-          nullif(row_j->>'pick_side','')::collective.pick_side,
-          nullif(row_j->>'total_side','')::collective.total_side,
-          nullif(row_j->>'line_at_submission','')::numeric,
-          v_spread,
-          nullif(row_j->>'projected_total','')::numeric,
-          nullif(row_j->>'proj_home_score','')::numeric,
-          nullif(row_j->>'proj_away_score','')::numeric,
-          v_hwp,
-          nullif(row_j->>'cover_probability','')::numeric,
-          nullif(row_j->>'confidence','')::numeric,
+          'resolved', null, v_sport, v_season, v_week,
+          v_pick, v_tside, v_line, v_spread, v_ptot, v_phs, v_pas,
+          v_hwp, v_cover, v_conf,
           v_origin, v_received, coalesce(v_late, false), false);
         if v_candidate then n_first := n_first - 1; n_move := n_move + 1; v_candidate := false; end if;
       end;
@@ -1307,7 +1327,7 @@ begin
     insert into collective.submissions (id, model_id, api_key_id, received_at, data_origin,
       client_generated_at, payload_hash, n_rows, n_resolved, n_quarantined, n_late, response)
     values (v_sub_id, v_model_id, v_key_id, v_received, v_origin,
-      nullif(p_envelope->>'generated_at','')::timestamptz, v_hash,
+      v_gen, v_hash,
       jsonb_array_length(v_rows), n_res + n_late, n_quar, n_late, v_resp);
   end if;
 
@@ -1346,13 +1366,14 @@ begin
   if not found then
     return jsonb_build_object('ok', false, 'code', 'token_invalid', 'message', 'No such invite');
   end if;
+  -- Dead tokens leak no invitee details: no prefill on these branches.
   if t.expires_at < now() then
     return jsonb_build_object('ok', true, 'status', 'expired', 'founding', t.founding_member,
-      'prefill', t.prefill, 'expires_at', t.expires_at);
+      'prefill', '{}'::jsonb, 'expires_at', t.expires_at);
   end if;
   if t.use_count >= t.max_uses then
     return jsonb_build_object('ok', true, 'status', 'spent', 'founding', t.founding_member,
-      'prefill', t.prefill, 'expires_at', t.expires_at);
+      'prefill', '{}'::jsonb, 'expires_at', t.expires_at);
   end if;
   return jsonb_build_object('ok', true, 'status', 'valid', 'founding', t.founding_member,
     'prefill', t.prefill, 'expires_at', t.expires_at);
@@ -1403,7 +1424,9 @@ begin
 
   v_slug := collective.slugify(p_profile->>'display_name');
   while exists (select 1 from collective.creators where slug = v_slug) loop
-    v_slug := collective.slugify(p_profile->>'display_name') || '-' || i; i := i + 1;
+    -- keep the disambiguated slug inside the 40-char constraint
+    v_slug := left(collective.slugify(p_profile->>'display_name'), 40 - length(i::text) - 1) || '-' || i;
+    i := i + 1;
   end loop;
   v_share := coalesce(t.referral_share_bps,
     case when t.founding_member
@@ -1581,22 +1604,37 @@ begin
     nullif(p_event->>'visitor',''),
     nullif(p_event->>'ref_slug',''));
 
-  insert into collective.subscribers (user_id, email, status, plan, stripe_customer_id, stripe_subscription_id, attribution_id, current_period_end)
-  values (
-    nullif(p_event->>'user_id','')::uuid,
-    nullif(p_event->>'email',''),
-    coalesce(nullif(p_event->>'status',''), 'active')::collective.sub_status,
-    nullif(p_event->>'plan',''),
-    nullif(p_event->>'stripe_customer_id',''),
-    nullif(p_event->>'stripe_subscription_id',''),
-    nullif(v_attr->>'attribution_id','')::uuid,
-    nullif(p_event->>'current_period_end','')::timestamptz)
-  on conflict (stripe_subscription_id) do update
-    set status = excluded.status,
-        plan = coalesce(excluded.plan, collective.subscribers.plan),
-        current_period_end = coalesce(excluded.current_period_end, collective.subscribers.current_period_end),
-        canceled_at = case when excluded.status = 'canceled' then now() else collective.subscribers.canceled_at end
-  returning id into v_id;
+  begin
+    insert into collective.subscribers (user_id, email, status, plan, stripe_customer_id, stripe_subscription_id, attribution_id, current_period_end)
+    values (
+      nullif(p_event->>'user_id','')::uuid,
+      nullif(p_event->>'email',''),
+      coalesce(nullif(p_event->>'status',''), 'active')::collective.sub_status,
+      nullif(p_event->>'plan',''),
+      nullif(p_event->>'stripe_customer_id',''),
+      nullif(p_event->>'stripe_subscription_id',''),
+      nullif(v_attr->>'attribution_id','')::uuid,
+      nullif(p_event->>'current_period_end','')::timestamptz)
+    on conflict (stripe_subscription_id) do update
+      set status = excluded.status,
+          plan = coalesce(excluded.plan, collective.subscribers.plan),
+          current_period_end = coalesce(excluded.current_period_end, collective.subscribers.current_period_end),
+          canceled_at = case when excluded.status = 'canceled' then now() else collective.subscribers.canceled_at end
+    returning id into v_id;
+  exception when unique_violation then
+    -- A returning subscriber: same user, a NEW Stripe subscription id.
+    -- Update their row in place so the paying user regains entitlement and
+    -- the original creator keeps the referral (attribution never moves).
+    update collective.subscribers
+       set stripe_subscription_id = nullif(p_event->>'stripe_subscription_id',''),
+           stripe_customer_id = coalesce(nullif(p_event->>'stripe_customer_id',''), stripe_customer_id),
+           status = coalesce(nullif(p_event->>'status',''), 'active')::collective.sub_status,
+           plan = coalesce(nullif(p_event->>'plan',''), plan),
+           current_period_end = coalesce(nullif(p_event->>'current_period_end','')::timestamptz, current_period_end),
+           canceled_at = null
+     where user_id = nullif(p_event->>'user_id','')::uuid
+     returning id into v_id;
+  end;
   return jsonb_build_object('ok', true, 'subscriber_id', v_id,
     'creator_id', v_attr->>'creator_id');
 end $$;
@@ -1643,9 +1681,17 @@ begin
   if e.created_at < now() - make_interval(days => v_window) then
     return jsonb_build_object('ok', true, 'posted', false, 'reason', 'outside the clawback window');
   end if;
-  insert into collective.earnings_ledger (creator_id, subscriber_id, entry_type, amount_cents, period_month, stripe_ref, note)
-  values (e.creator_id, e.subscriber_id, 'clawback', -e.amount_cents, e.period_month,
-          p->>'stripe_ref', 'refund or chargeback clawback');
+  -- Stripe retries webhooks: one clawback per refund, ever. The clawback
+  -- carries the SAME available_at as the earning it reverses so the pair
+  -- always nets to zero in available_cents.
+  if exists (select 1 from collective.earnings_ledger
+             where entry_type = 'clawback' and stripe_ref = p->>'stripe_ref') then
+    return jsonb_build_object('ok', true, 'posted', false, 'reason', 'already clawed back');
+  end if;
+  insert into collective.earnings_ledger (creator_id, subscriber_id, entry_type, amount_cents, period_month, available_at, stripe_ref, note)
+  values (e.creator_id, e.subscriber_id, 'clawback', -e.amount_cents, e.period_month, e.available_at,
+          p->>'stripe_ref', 'refund or chargeback clawback')
+  on conflict (stripe_ref) where entry_type = 'clawback' and stripe_ref is not null do nothing;
   return jsonb_build_object('ok', true, 'posted', true, 'amount_cents', -e.amount_cents);
 end $$;
 
