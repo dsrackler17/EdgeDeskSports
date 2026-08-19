@@ -43,7 +43,7 @@ h2{font-size:15px;margin:26px 0 8px;font-weight:700}
 /* table */
 .tblwrap{overflow-x:auto;border:1px solid var(--border);border-radius:10px;background:var(--surface)}
 table{border-collapse:collapse;width:100%;min-width:760px}
-th{position:sticky;top:0;background:var(--surface2);color:var(--faint);font-size:10px;text-transform:uppercase;letter-spacing:.05em;text-align:left;padding:8px 10px;white-space:nowrap;z-index:1;cursor:pointer;user-select:none}
+th{position:sticky;top:0;background:var(--surface2);color:var(--faint);font-size:10px;text-transform:uppercase;letter-spacing:.05em;text-align:left;padding:8px 10px;white-space:nowrap;z-index:1;user-select:none}
 th.num,td.num{text-align:right}
 td{padding:9px 10px;border-top:1px solid var(--border);font-size:13px;vertical-align:middle;white-space:nowrap}
 td.num{font-family:'JetBrains Mono',monospace;font-size:12.5px}
@@ -156,7 +156,7 @@ label .opt{color:var(--faint);text-transform:none;letter-spacing:0;font-weight:4
 
 <footer class="footer"><div class="wrap">
   <div><b style="color:var(--dim)">MODEL COLLECTIVE</b> &middot; shared infrastructure for independent sports model creators. Part of <a href="https://edgedesksports.com">EdgeDesk Sports</a>.</div>
-  <div>Every model here belongs to its creator. Records are graded by the Collective against its own captured closing lines. Research and information only, not betting or financial advice. No guaranteed results. 21+. Gamble responsibly: 1-800-GAMBLER.</div>
+  <div>Every model here belongs to its creator. Records are graded by the Collective on actual results, against its own captured closing lines. Research and information only, not betting or financial advice. No guaranteed results. 21+. Gamble responsibly: 1-800-GAMBLER.</div>
 </div></footer>
 
 <script>
@@ -175,10 +175,10 @@ var API = (new URLSearchParams(location.search).get('api')) || localStorage.getI
 function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
 function $(id){return document.getElementById(id);}
 function el(html){var d=document.createElement('div');d.innerHTML=html;return d;}
-function fmtPct(x,d){return x==null?'—':(100*x).toFixed(d==null?1:d)+'%';}
-function fmtNum(x,d){return x==null?'—':Number(x).toFixed(d==null?1:d);}
-function fmtSpread(x){if(x==null)return '—';var n=Number(x);return (n>0?'+':'')+n.toFixed(1);}
-function cents(c){return c==null?'—':'$'+(c/100).toFixed(2).replace(/\.00$/,'');}
+function fmtPct(x,d){return x==null?'-':(100*x).toFixed(d==null?1:d)+'%';}
+function fmtNum(x,d){return x==null?'-':Number(x).toFixed(d==null?1:d);}
+function fmtSpread(x){if(x==null)return '-';var n=Number(x);return (n>0?'+':'')+n.toFixed(1);}
+function cents(c){return c==null?'-':'$'+(c/100).toFixed(2).replace(/\.00$/,'');}
 function rel(iso){
   if(!iso)return 'never';
   var s=(Date.now()-new Date(iso).getTime())/1000;
@@ -199,11 +199,12 @@ function chipFor(m){
   return '<span class="chip member">Member</span>';
 }
 function avatar(r){
-  if(r&&r.logo_url)return '<img class="logo" src="'+esc(r.logo_url)+'" alt="" onerror="this.outerHTML=\'<span class=mg>'+esc(r.monogram||'?')+'</span>\'">';
-  return '<span class="mg">'+esc((r&&r.monogram)||'?')+'</span>';
+  var mg=String((r&&r.monogram)||'?').replace(/[^A-Za-z0-9?]/g,'')||'?';
+  if(r&&r.logo_url)return '<img class="logo" src="'+esc(r.logo_url)+'" alt="" onerror="this.outerHTML=\'<span class=mg>'+mg+'</span>\'">';
+  return '<span class="mg">'+mg+'</span>';
 }
 function covCell(p){
-  if(p==null)return '—';
+  if(p==null)return '-';
   var w=Math.max(0,Math.min(100,p));
   return '<span class="cov"><span class="covbar"><i style="width:'+w+'%"></i></span><span class="mono" style="font-size:11.5px">'+fmtNum(p,0)+'%</span></span>';
 }
@@ -228,8 +229,11 @@ function saveSession(s){try{localStorage.setItem('collective_session',JSON.strin
 function clearSession(){localStorage.removeItem('collective_session');}
 /* magic link returns tokens in the location hash; capture BEFORE routing */
 (function(){
-  if(/access_token=/.test(location.hash)){
-    var p=new URLSearchParams(location.hash.replace(/^#\/?/,''));
+  /* GoTrue appends #access_token=... to the redirect; parse from wherever
+     it sits so a surviving route fragment cannot corrupt it */
+  var i=location.hash.indexOf('access_token=');
+  if(i>=0){
+    var p=new URLSearchParams(location.hash.slice(i));
     if(p.get('access_token')){
       saveSession({access_token:p.get('access_token'),refresh_token:p.get('refresh_token'),expires_at:p.get('expires_at')});
       history.replaceState(null,'',location.pathname+location.search+'#dashboard');
@@ -255,7 +259,9 @@ async function token(){
   return s.access_token;
 }
 async function sendMagicLink(email,redirectHash){
-  var redirect=location.origin+location.pathname+(location.search||'')+(redirectHash||'#dashboard');
+  /* no fragment on the redirect: GoTrue appends #access_token=... and a
+     route fragment would corrupt the returned hash */
+  var redirect=location.origin+location.pathname+(location.search||'');
   var r=await fetch(CFG.SB_URL+'/auth/v1/otp?redirect_to='+encodeURIComponent(redirect),{
     method:'POST',headers:{apikey:CFG.SB_ANON,'content-type':'application/json'},
     body:JSON.stringify({email:email,create_user:true})});
@@ -306,7 +312,7 @@ function route(){
   if(h==='rules'){markTab('rules');return renderRules(view);}
   if(h==='about'||h==='join'){markTab('about');return renderAbout(view,h==='join');}
   if(h==='dashboard'){markTab('dashboard');return renderDashboard(view);}
-  if(h.indexOf('/model/')===0){var p=h.split('/');return renderModel(view,p[2],p[3]);}
+  if(h.indexOf('/model/')===0||h.indexOf('model/')===0){var p=h.replace(/^\//,'').split('/');return renderModel(view,p[1],p[2]);}
   if(h.indexOf('/')===0){return renderCreator(view,h.slice(1));}
   markTab('wall');renderWall(view);
 }
@@ -329,7 +335,7 @@ function pickDisp(g,mr){
   if(mr.pick_side==='home')return esc(g.home)+' '+fmtSpread(mr.projected_spread);
   if(mr.pick_side==='away')return esc(g.away)+' '+fmtSpread(mr.projected_spread==null?null:-mr.projected_spread);
   if(mr.projected_spread!=null)return esc(g.home)+' '+fmtSpread(mr.projected_spread);
-  return '—';
+  return '-';
 }
 function pickProb(mr){
   if(mr.home_win_probability==null)return null;
@@ -368,7 +374,7 @@ async function renderWall(view){
           :(memDot[wr.membership]||'var(--dim)');
         lines+='<div class="gb-row">'+who+
           '<span class="num">'+pickDisp(g,mr)+(mr.late?' <span style="color:var(--warn)">LATE</span>':'')+'</span>'+
-          '<span class="num">'+(p==null?'—':Math.round(100*p)+'%')+'</span>'+
+          '<span class="num">'+(p==null?'-':Math.round(100*p)+'%')+'</span>'+
           '<span class="gb-dot" style="background:'+dot+'"></span></div>';
       });
       if(!g.models||!g.models.length)lines='<div class="gb-empty">No model has posted this game yet</div>';
@@ -376,7 +382,7 @@ async function renderWall(view){
       if(c&&!c.locked&&c.n>1){
         lines+='<div class="gb-row cons"><span class="nm">Consensus</span>'+
           '<span class="num">'+esc(g.home)+' '+fmtSpread(c.spread_mean)+'</span>'+
-          '<span class="num">'+(c.home_win_prob_mean==null?'—':Math.round(100*c.home_win_prob_mean)+'%')+'</span><span></span></div>';
+          '<span class="num">'+(c.home_win_prob_mean==null?'-':Math.round(100*c.home_win_prob_mean)+'%')+'</span><span></span></div>';
       }else if(c&&c.locked){
         lines+='<div class="gb-row cons"><span class="nm">Consensus</span><span class="lock" style="grid-column:2/4">Subscriber number</span><span></span></div>';
       }
@@ -395,7 +401,7 @@ async function renderWall(view){
         '<span><b>'+m.counts.graded_games+'</b> settled</span>'+
       '</div>'+
       boards+'</div>'+
-      '<p class="lede">Independent models, one independently graded record. Every number is graded by the Collective against its own captured closing lines, never self-reported. Each creator keeps their own site, price, and methodology.</p>';
+      '<p class="lede">Independent models, one independently graded record. Every pick is graded on the actual final score, measured against the Collective&#39;s own captured closing line so every model faces the same number, never self-reported. Each creator keeps their own site, price, and methodology.</p>';
 
     if(!rows.length){
       view.innerHTML=hd+'<div class="emptybox">The wall is waiting on its first model. Creators join by invite and appear here the moment their profile is created.</div>';
@@ -417,9 +423,9 @@ async function renderWall(view){
         '<td><span class="who">'+avatar(r)+'<span><span class="nm">'+esc(r.creator_name)+'</span>'+(r.founding?' <span class="chip founding">Founding</span>':'')+'<br><span class="sb">'+esc(r.model_name)+' &middot; '+esc(r.sport)+'</span></span></span></td>'+
         '<td>'+chipFor(r.membership)+'</td>'+
         '<td class="num">'+recCell(rec)+'</td>'+
-        '<td class="num">'+(rec?fmtPct(rec.win_pct):'—')+'</td>'+
-        '<td class="num">'+(rec?fmtNum(rec.margin_mae):'—')+'</td>'+
-        '<td class="num">'+(rec?fmtNum(rec.brier,3):'—')+'</td>'+
+        '<td class="num">'+(rec?fmtPct(rec.win_pct):'-')+'</td>'+
+        '<td class="num">'+(rec?fmtNum(rec.margin_mae):'-')+'</td>'+
+        '<td class="num">'+(rec?fmtNum(rec.brier,3):'-')+'</td>'+
         '<td>'+covCell(r.coverage_pct)+'</td>'+
         '<td class="num" style="color:var(--dim)">'+rel(r.last_submission_at)+'</td>'+
       '</tr>';
@@ -482,7 +488,7 @@ async function renderCreator(view,slug){
           '<span><div class="k">Graded</div><div class="v">'+rec.graded+'</div></span>'+
           '<span><div class="k">Coverage</div><div class="v">'+fmtNum(mo.coverage_pct,0)+'%</div></span>'+
         '</div>'+
-        '<div class="note" style="margin-top:8px">Graded by the Collective against its own closing lines. <a href="#rules">Grading rules</a> &middot; <a href="#model/'+esc(c.slug)+'/'+esc(mo.model_slug)+'">Full game log →</a></div></div>';
+        '<div class="note" style="margin-top:8px">Graded by the Collective against its own closing lines. <a href="#rules">Grading rules</a> &middot; <a href="#/model/'+esc(c.slug)+'/'+esc(mo.model_slug)+'">Full game log →</a></div></div>';
       }else{
         body+='<div class="emptybox"><b style="color:var(--text)">'+esc(c.display_name)+' is on the wall.</b><br>First live submission pending. The record starts the moment their first slate arrives, graded against the Collective’s closing lines.</div>';
       }
@@ -519,13 +525,13 @@ async function renderModel(view,cs,ms){
     var glRows=(d.recent_graded||[]).map(function(g){
       var cls=g.pick_result?('grade-'+g.pick_result):'';
       return '<tr><td>'+esc(g.label)+'<br><span class="sb" style="color:var(--faint);font-size:11px">W'+g.week+' &middot; '+kickoffFmt(g.kickoff_at)+'</span></td>'+
-        '<td class="num">'+esc(g.pick_side||'—')+'</td>'+
+        '<td class="num">'+esc(g.pick_side||'-')+'</td>'+
         '<td class="num">'+fmtSpread(g.closing_spread)+'</td>'+
-        '<td class="num">'+esc(g.final||'—')+'</td>'+
-        '<td class="num '+cls+'">'+esc(g.pick_result||'—')+'</td>'+
+        '<td class="num">'+esc(g.final||'-')+'</td>'+
+        '<td class="num '+cls+'">'+esc(g.pick_result||'-')+'</td>'+
         '<td class="num">'+fmtNum(g.margin_error)+'</td>'+
         '<td class="num">'+fmtNum(g.brier,3)+'</td>'+
-        '<td class="num" style="color:var(--dim)">'+(g.movement_n>1?g.movement_n+' subs':'—')+'</td></tr>';
+        '<td class="num" style="color:var(--dim)">'+(g.movement_n>1?g.movement_n+' subs':'-')+'</td></tr>';
     }).join('');
     var gl=glRows?'<h2>Recent graded games</h2><div class="tblwrap"><table><thead><tr><th>Game</th><th class="num">Pick</th><th class="num">Close</th><th class="num">Final</th><th class="num">Result</th><th class="num">Margin err</th><th class="num">Brier</th><th class="num">Movement</th></tr></thead><tbody>'+glRows+'</tbody></table></div>'+
       '<p class="note" style="margin-top:8px">Each game is graded on the model’s first pre-kickoff live submission. Later revisions are stored as movement, never regraded.</p>':'';

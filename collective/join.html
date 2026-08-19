@@ -243,7 +243,12 @@ function screen2(){
       STATE.redeem=r;screen3();
     }catch(e){
       this.disabled=false;this.textContent='Create my profile';
-      if(e.status===401){$('pErr').innerHTML='<div class="err">Your sign-in expired. Start again from step 1: it takes 20 seconds.</div>';}
+      if(e.status===401){
+        try{localStorage.removeItem('collective_session');}catch(_){}
+        $('pErr').innerHTML='<div class="err">Your sign-in link expired. It takes 20 seconds to get a new one.</div>'+
+          '<button class="btn" id="pBack" style="margin-top:10px">Send me a new sign-in link</button>';
+        document.getElementById('pBack').onclick=function(){screen1();};
+      }
       else $('pErr').innerHTML='<div class="err">'+esc(e.message)+'</div>';
     }
   };
