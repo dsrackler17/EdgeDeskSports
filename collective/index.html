@@ -112,6 +112,27 @@ label .opt{color:var(--faint);text-transform:none;letter-spacing:0;font-weight:4
 .wk button{background:var(--surface2);border:1px solid var(--border);color:var(--dim);border-radius:6px;font-size:11.5px;padding:4px 9px;cursor:pointer;font-family:'JetBrains Mono',monospace}
 .wk button.on{color:var(--text);border-color:var(--accent)}
 .toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:9px 16px;font-size:12.5px;z-index:50}
+/* the live market board: airport-terminal wall */
+.bd{border:1px solid var(--border);border-radius:10px;background:var(--surface);overflow:hidden;margin-bottom:16px}
+.bd-hd{display:flex;align-items:baseline;gap:14px;padding:11px 14px;border-bottom:1px solid var(--border);font-family:'JetBrains Mono',monospace}
+.bd-title{font-weight:800;letter-spacing:.14em;font-size:13px}
+.bd-live{width:7px;height:7px;border-radius:50%;background:var(--pos);display:inline-block;margin-right:8px;vertical-align:1px}
+.bd-clock{margin-left:auto;color:var(--dim);font-size:12px;letter-spacing:.06em;white-space:nowrap}
+.bd-stats{display:flex;gap:26px;padding:8px 14px;border-bottom:1px solid var(--border);color:var(--faint);font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.08em;text-transform:uppercase;flex-wrap:wrap}
+.bd-stats b{color:var(--text);font-weight:700}
+.gamebd{border-bottom:1px solid var(--border)}
+.gamebd:last-child{border-bottom:none}
+.gb-hd{display:flex;gap:12px;align-items:baseline;padding:8px 14px;background:var(--surface2);font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:700;letter-spacing:.06em}
+.gb-hd .tm{color:var(--faint);font-weight:400;font-size:11px;letter-spacing:.03em}
+.gb-hd .fin{margin-left:auto;color:var(--text)}
+.gb-row{display:grid;grid-template-columns:minmax(120px,1.6fr) minmax(96px,1fr) 58px 18px;gap:8px;padding:6px 14px;font-family:'JetBrains Mono',monospace;font-size:12px;align-items:center}
+.gb-row a{color:var(--text)}
+.gb-row .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;letter-spacing:.05em;text-transform:uppercase}
+.gb-row .num{text-align:right}
+.gb-row.cons{border-top:1px dashed var(--border);color:var(--accent);margin-top:2px;padding-top:7px}
+.gb-row.cons .nm{color:var(--accent)}
+.gb-dot{width:7px;height:7px;border-radius:50%;display:inline-block;justify-self:end}
+.gb-empty{padding:10px 14px;color:var(--faint);font-family:'JetBrains Mono',monospace;font-size:12px}
 </style>
 </head>
 <body>
@@ -295,24 +316,90 @@ function fail(view,e){
   view.innerHTML='<div class="errbox"><b>The Collective could not load this view.</b><br>'+esc(e.message||e)+'<br><span class="note">The API may be briefly unreachable. Refresh in a moment.</span></div>';
 }
 
-/* ================= wall ================= */
+/* ================= wall: the live market board ================= */
 var WALL_SORT='canonical';
+var CLOCK_TIMER=null;
+function boardClock(){
+  var el=$('bdClock');if(!el){if(CLOCK_TIMER){clearInterval(CLOCK_TIMER);CLOCK_TIMER=null;}return;}
+  try{
+    el.textContent=new Date().toLocaleTimeString('en-US',{timeZone:'America/Chicago',hour12:false})+' CT';
+  }catch(e){el.textContent=new Date().toLocaleTimeString();}
+}
+function pickDisp(g,mr){
+  if(mr.pick_side==='home')return esc(g.home)+' '+fmtSpread(mr.projected_spread);
+  if(mr.pick_side==='away')return esc(g.away)+' '+fmtSpread(mr.projected_spread==null?null:-mr.projected_spread);
+  if(mr.projected_spread!=null)return esc(g.home)+' '+fmtSpread(mr.projected_spread);
+  return '—';
+}
+function pickProb(mr){
+  if(mr.home_win_probability==null)return null;
+  return mr.pick_side==='away'?1-mr.home_win_probability:mr.home_win_probability;
+}
 async function renderWall(view){
   view.innerHTML='<div class="emptybox">Loading the wall&hellip;</div>';
   try{
     var m=await meta();
-    var w=await api('/v1/wall');
+    var results=await Promise.all([api('/v1/wall'),api('/v1/games',{auth:true}).catch(function(){return null;})]);
+    var w=results[0],board=results[1];
     var rows=w.rows||[];
-    var hd='<h1>The Model Wall</h1>'+
-      '<p class="lede">Every model in the Collective, its verified record, and its slate coverage. Records are graded by the Collective against its own captured closing lines, never self-reported. Each creator keeps their own site, price, and methodology.</p>'+
-      '<div class="kv">'+
-        '<span><div class="k">Creators</div><div class="v">'+m.counts.creators+'</div></span>'+
-        '<span><div class="k">Models</div><div class="v">'+m.counts.models+'</div></span>'+
-        '<span><div class="k">Graded games</div><div class="v">'+m.counts.graded_games+'</div></span>'+
-        '<span><div class="k">Live projections</div><div class="v">'+m.counts.live_projections+'</div></span>'+
-      '</div>';
+    var activeN=rows.filter(function(r){return r.membership==='ACTIVE CONTRIBUTOR';}).length;
+    var sportCode=(m.sports[0]&&m.sports[0].code)||'NFL';
+    var memDot={'ACTIVE CONTRIBUTOR':'var(--pos)','MEMBER':'var(--dim)','INACTIVE':'var(--faint)'};
+    var byCreator={};rows.forEach(function(r){byCreator[r.creator_slug]=r;});
+
+    /* the board: every game on the current slate, every model's number */
+    var boards='';
+    ((board&&board.games)||[]).slice(0,12).forEach(function(g){
+      var hd='<div class="gb-hd"><span>'+esc(g.away)+' @ '+esc(g.home)+'</span>'+
+        '<span class="tm">'+kickoffFmt(g.kickoff_at)+'</span>'+
+        (g.result?'<span class="fin">FINAL '+g.result.away_score+' - '+g.result.home_score+'</span>':'')+
+        '</div>';
+      var lines='';
+      (g.models||[]).forEach(function(mr){
+        var wr=byCreator[mr.creator_slug]||{};
+        var who='<a href="#/'+esc(mr.creator_slug)+'" class="nm">'+esc(wr.creator_name||mr.creator_slug)+'</a>';
+        if(mr.locked){
+          lines+='<div class="gb-row">'+who+'<span class="lock" style="grid-column:2/4">Subscriber number</span><span class="gb-dot" style="background:var(--faint)"></span></div>';
+          return;
+        }
+        var p=pickProb(mr);
+        var dot=mr.grade
+          ?({win:'var(--pos)',loss:'var(--neg)',push:'var(--warn)'}[mr.grade.pick_result]||'var(--dim)')
+          :(memDot[wr.membership]||'var(--dim)');
+        lines+='<div class="gb-row">'+who+
+          '<span class="num">'+pickDisp(g,mr)+(mr.late?' <span style="color:var(--warn)">LATE</span>':'')+'</span>'+
+          '<span class="num">'+(p==null?'—':Math.round(100*p)+'%')+'</span>'+
+          '<span class="gb-dot" style="background:'+dot+'"></span></div>';
+      });
+      if(!g.models||!g.models.length)lines='<div class="gb-empty">No model has posted this game yet</div>';
+      var c=g.consensus;
+      if(c&&!c.locked&&c.n>1){
+        lines+='<div class="gb-row cons"><span class="nm">Consensus</span>'+
+          '<span class="num">'+esc(g.home)+' '+fmtSpread(c.spread_mean)+'</span>'+
+          '<span class="num">'+(c.home_win_prob_mean==null?'—':Math.round(100*c.home_win_prob_mean)+'%')+'</span><span></span></div>';
+      }else if(c&&c.locked){
+        lines+='<div class="gb-row cons"><span class="nm">Consensus</span><span class="lock" style="grid-column:2/4">Subscriber number</span><span></span></div>';
+      }
+      boards+='<div class="gamebd">'+hd+lines+'</div>';
+    });
+    if(!boards)boards='<div class="gb-empty">The slate loads here the moment games are scheduled.</div>';
+
+    var hd='<div class="bd">'+
+      '<div class="bd-hd"><span class="bd-title"><span class="bd-live"></span>LIVE MODEL WALL</span>'+
+        '<span class="bd-clock" id="bdClock"></span></div>'+
+      '<div class="bd-stats">'+
+        '<span><b>'+esc(sportCode)+'</b></span>'+
+        '<span><b>'+String(m.counts.models).padStart(2,'0')+'</b> models</span>'+
+        '<span><b>'+m.counts.live_projections+'</b> projections</span>'+
+        '<span><b>'+(rows.length?Math.round(100*activeN/rows.length):0)+'%</b> active</span>'+
+        '<span><b>'+m.counts.graded_games+'</b> settled</span>'+
+      '</div>'+
+      boards+'</div>'+
+      '<p class="lede">Independent models, one independently graded record. Every number is graded by the Collective against its own captured closing lines, never self-reported. Each creator keeps their own site, price, and methodology.</p>';
+
     if(!rows.length){
       view.innerHTML=hd+'<div class="emptybox">The wall is waiting on its first model. Creators join by invite and appear here the moment their profile is created.</div>';
+      boardClock();if(!CLOCK_TIMER)CLOCK_TIMER=setInterval(boardClock,1000);
       return;
     }
     var sorted=rows.slice();
@@ -338,6 +425,7 @@ async function renderWall(view){
       '</tr>';
     }).join('');
     view.innerHTML=hd+
+      '<h2 style="letter-spacing:.1em;text-transform:uppercase;font-size:12px;color:var(--dim)">Model directory</h2>'+
       '<div class="sortsel"><span class="note">Sort</span><select id="wallsort">'+
         '<option value="canonical">Status, then record</option>'+
         '<option value="win_pct">Win pct</option>'+
@@ -350,6 +438,7 @@ async function renderWall(view){
       '<th>Creator / model</th><th>Status</th><th class="num">Record</th><th class="num">Win %</th><th class="num">Margin MAE</th><th class="num">Brier</th><th>Coverage</th><th class="num">Last slate</th>'+
       '</tr></thead><tbody>'+body+'</tbody></table></div>'+
       '<p class="note" style="margin-top:10px">Win percentage excludes pushes. Coverage is the share of the season slate this model has submitted. Models below the coverage or sample minimums appear here but are not ranked. Tap a row for the full profile.</p>';
+    boardClock();if(!CLOCK_TIMER)CLOCK_TIMER=setInterval(boardClock,1000);
     $('wallsort').value=S;
     $('wallsort').onchange=function(){WALL_SORT=this.value;renderWall(view);};
     if($('wallq'))$('wallq').oninput=function(){
