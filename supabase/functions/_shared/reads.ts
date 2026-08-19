@@ -239,7 +239,7 @@ export async function isEntitled(userId: string | null): Promise<boolean> {
 export const RULES = {
   version: 1,
   rules: [
-    "Pick result: the pick side against the Collective's own captured closing spread, home convention. Push on the exact number, excluded from win percentage. Never graded against the creator's line and never against a creator-supplied result column.",
+    "Pick result: decided by the final score. The actual margin is measured against the Collective's own captured closing spread (home convention) on the pick side; the captured close is the yardstick so every model faces the same number, never the line a creator reports. Push on the exact number, excluded from win percentage. Never graded against a creator-supplied result column.",
     "Margin error: absolute difference between projected home margin and actual home margin. Projected home margin comes from projected scores when given, otherwise from the projected spread.",
     "Brier: squared error on the moneyline home win probability. 0.25 is a coin flip. Lower is better.",
     "First submission: each model is graded on its first pre-kickoff live submission per game, timestamped on server receipt. Later revisions are stored and shown as movement, never regraded. Post-kickoff receipts are stored, marked late, and excluded. Backfill and test data are stored, shown separately, and excluded from records, rankings, and consensus.",
