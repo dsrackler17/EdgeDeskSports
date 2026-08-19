@@ -219,8 +219,52 @@ where s.data_origin = 'live' and c.is_listed
 order by s.received_at desc
 limit 100;
 
+-- Flat game rows with team codes, label, and result fields: the board's
+-- spine, embeddable-free so PostgREST reads need no FK hints.
+create view collective.game_detail as
+select
+  g.id as game_id, g.sport_code as sport, g.season, g.week, g.kickoff_at, g.status,
+  ht.code as home, at_.code as away,
+  at_.code || ' @ ' || ht.code as label,
+  r.home_score, r.away_score, r.closing_spread, r.closing_total
+from collective.games g
+join collective.teams ht  on ht.id = g.home_team_id
+join collective.teams at_ on at_.id = g.away_team_id
+left join collective.results r on r.game_id = g.id;
+
+-- Per-model rows for the board: graded candidates plus late rows (stored,
+-- flagged, excluded from grading per rule 8.6 but shown honestly).
+create view collective.board_models as
+select
+  p.game_id, p.model_id, c.slug as creator_slug, m.slug as model_slug,
+  p.pick_side, p.projected_spread, p.projected_total, p.home_win_prob,
+  p.received_at, p.is_late,
+  gr.pick_result, gr.margin_error, gr.brier
+from collective.projections p
+join collective.models m on m.id = p.model_id and m.is_listed
+join collective.creators c on c.id = m.creator_id and c.is_listed and c.status = 'active'
+left join collective.grades gr on gr.projection_id = p.id
+where p.resolution_status = 'resolved' and p.data_origin = 'live'
+  and (p.is_graded_candidate or p.is_late);
+
+-- Recent graded games per model, for the model detail page.
+create view collective.model_game_log as
+select
+  p.model_id, p.game_id, gd.label, gd.kickoff_at, gd.week,
+  p.pick_side, gd.closing_spread,
+  case when gd.home_score is not null
+       then gd.home_score::text || '-' || gd.away_score::text end as final,
+  gr.pick_result, gr.margin_error, gr.brier, gr.graded_at,
+  (select count(*) from collective.projections px
+    where px.model_id = p.model_id and px.game_id = p.game_id
+      and px.resolution_status = 'resolved') as movement_n
+from collective.grades gr
+join collective.projections p on p.id = gr.projection_id
+join collective.game_detail gd on gd.game_id = gr.game_id;
+
 grant select on collective.latest_projections, collective.first_submissions,
   collective.model_movement, collective.model_records, collective.model_coverage,
   collective.model_coverage_totals, collective.model_backfill, collective.model_wall,
   collective.model_rankings, collective.consensus, collective.quarantine_queue,
-  collective.activity_feed to service_role;
+  collective.activity_feed, collective.game_detail, collective.board_models,
+  collective.model_game_log to service_role;
