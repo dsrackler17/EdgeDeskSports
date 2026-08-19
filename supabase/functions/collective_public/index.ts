@@ -183,7 +183,8 @@ Deno.serve(async (req) => {
     if (req.method === "GET" && path === "/v1/games") {
       const u = new URL(req.url);
       const meta = await buildMeta();
-      const sport = u.searchParams.get("sport") ?? meta.sports[0]?.code ?? "NFL";
+      const rawSport = u.searchParams.get("sport") ?? "";
+      const sport = /^[A-Z0-9]{2,10}$/.test(rawSport) ? rawSport : (meta.sports[0]?.code ?? "NFL");
       const season = Number(u.searchParams.get("season") ?? meta.sports.find((s) => s.code === sport)?.season);
       const week = u.searchParams.get("week") ? Number(u.searchParams.get("week")) : null;
       if (!Number.isFinite(season)) return err("invalid_payload", "season must be a number", 422);
@@ -196,7 +197,8 @@ Deno.serve(async (req) => {
     if (req.method === "GET" && path === "/v1/consensus") {
       const u = new URL(req.url);
       const meta = await buildMeta();
-      const sport = u.searchParams.get("sport") ?? meta.sports[0]?.code ?? "NFL";
+      const rawSport = u.searchParams.get("sport") ?? "";
+      const sport = /^[A-Z0-9]{2,10}$/.test(rawSport) ? rawSport : (meta.sports[0]?.code ?? "NFL");
       const season = Number(u.searchParams.get("season") ?? meta.sports.find((s) => s.code === sport)?.season);
       const week = u.searchParams.get("week") ? Number(u.searchParams.get("week")) : null;
       const user = await getUser(req);
@@ -284,7 +286,7 @@ Deno.serve(async (req) => {
       for (const k of ["display_name", "description", "website_url", "x_handle", "logo_url"]) {
         if (k in body) patch[k] = body[k] === "" ? null : body[k];
       }
-      if (typeof body.pinned_model_slug === "string" && body.pinned_model_slug) {
+      if (typeof body.pinned_model_slug === "string" && /^[a-z0-9-]{1,40}$/.test(body.pinned_model_slug)) {
         const mrows = await viewGet<{ id: string }>(
           "models", `select=id&creator_id=eq.${ctx.creator.id}&slug=eq.${body.pinned_model_slug}&limit=1`);
         if (mrows[0]) patch.pinned_model_id = mrows[0].id;
@@ -325,7 +327,7 @@ Deno.serve(async (req) => {
         }
         await tableWrite("embed_installs", "POST", "", { creator_id: ctx.creator.id, origin })
           .catch(() => { /* already listed: adding again is a no-op */ });
-      } else if (typeof body.remove === "string") {
+      } else if (typeof body.remove === "string" && /^[0-9a-f-]{36}$/.test(body.remove)) {
         await tableWrite("embed_installs", "DELETE", `id=eq.${body.remove}&creator_id=eq.${ctx.creator.id}`);
       } else {
         return err("invalid_payload", "Pass add or remove.", 422);

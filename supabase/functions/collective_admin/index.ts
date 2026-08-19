@@ -118,8 +118,12 @@ Deno.serve(async (req) => {
       }
       if (body.alias && body.alias.alias && body.alias.team_code) {
         const sport = (body.alias.sport ?? "NFL").toUpperCase();
+        const code = body.alias.team_code.toUpperCase();
+        if (!/^[A-Z0-9]{2,10}$/.test(sport) || !/^[A-Z0-9]{2,5}$/.test(code)) {
+          return err("invalid_payload", "Sport and team code look wrong.", 422);
+        }
         const teams = await viewGet<{ id: string }>(
-          "teams", `select=id&sport_code=eq.${sport}&code=eq.${body.alias.team_code.toUpperCase()}&limit=1`);
+          "teams", `select=id&sport_code=eq.${sport}&code=eq.${code}&limit=1`);
         if (!teams[0]) return err("not_found", "No team with that code.", 404);
         await tableWrite("team_aliases", "POST", "", {
           sport_code: sport, alias: body.alias.alias.trim(), team_id: teams[0].id,

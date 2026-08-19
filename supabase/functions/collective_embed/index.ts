@@ -69,7 +69,9 @@ Deno.serve(async (req) => {
   try {
     if (req.method === "GET" && path === "/v1/embed/bootstrap") {
       const u = new URL(req.url);
-      const hostSlug = (u.searchParams.get("host") ?? "").trim();
+      // Slug shape is enforced before it ever reaches a PostgREST filter.
+      const rawHost = (u.searchParams.get("host") ?? "").trim();
+      const hostSlug = /^[a-z0-9-]{1,40}$/.test(rawHost) ? rawHost : "";
 
       let hostCreator: { id: string; slug: string; display_name: string } | null = null;
       if (hostSlug) {
@@ -156,7 +158,7 @@ Deno.serve(async (req) => {
         return new Response(JSON.stringify({ ok: true }), { status: 202, headers: { "content-type": "application/json", ...cors } });
       }
       const VALID = ["impression", "profile_view", "outbound_click", "collective_click", "subscribe_click"];
-      const hostSlug = typeof body.host === "string" ? body.host.slice(0, 60) : "";
+      const hostSlug = typeof body.host === "string" && /^[a-z0-9-]{1,40}$/.test(body.host) ? body.host : "";
       const visitor = typeof body.visitor === "string" ? body.visitor.slice(0, 64) : null;
       let creatorId: string | null = null;
       if (hostSlug) {
