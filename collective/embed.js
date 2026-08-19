@@ -114,9 +114,9 @@
       return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
     });
   }
-  function pct(x, d) { return x == null ? '—' : (100 * x).toFixed(d == null ? 1 : d) + '%'; }
-  function num(x, d) { return x == null ? '—' : Number(x).toFixed(d == null ? 1 : d); }
-  function spr(x) { if (x == null) return '—'; var n = Number(x); return (n > 0 ? '+' : '') + n.toFixed(1); }
+  function pct(x, d) { return x == null ? '-' : (100 * x).toFixed(d == null ? 1 : d) + '%'; }
+  function num(x, d) { return x == null ? '-' : Number(x).toFixed(d == null ? 1 : d); }
+  function spr(x) { if (x == null) return '-'; var n = Number(x); return (n > 0 ? '+' : '') + n.toFixed(1); }
   function chip(m) {
     if (m === 'ACTIVE CONTRIBUTOR') return '<span class="chip act">Active</span>';
     if (m === 'INACTIVE') return '<span class="chip inact">Inactive</span>';
@@ -195,10 +195,10 @@
           '<br><span class="sb">' + esc(r.model_name) + ' · ' + esc(r.sport) + '</span></span></span></td>' +
         '<td>' + chip(r.membership) + '</td>' +
         '<td class="n">' + (rec ? rec.wins + '-' + rec.losses + '-' + rec.pushes : '<span class="sb">pending</span>') + '</td>' +
-        '<td class="n">' + (rec ? pct(rec.win_pct) : '—') + '</td>' +
-        '<td class="n">' + (rec ? num(rec.margin_mae) : '—') + '</td>' +
-        '<td class="n">' + (rec ? num(rec.brier, 3) : '—') + '</td>' +
-        '<td class="n">' + (r.coverage_pct != null ? num(r.coverage_pct, 0) + '%' : '—') + '</td>' +
+        '<td class="n">' + (rec ? pct(rec.win_pct) : '-') + '</td>' +
+        '<td class="n">' + (rec ? num(rec.margin_mae) : '-') + '</td>' +
+        '<td class="n">' + (rec ? num(rec.brier, 3) : '-') + '</td>' +
+        '<td class="n">' + (r.coverage_pct != null ? num(r.coverage_pct, 0) + '%' : '-') + '</td>' +
         '</tr>';
     }).join('');
     /* The wall arrives in canonical order with the host pinned by the SERVER.
