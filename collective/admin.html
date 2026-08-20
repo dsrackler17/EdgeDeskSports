@@ -83,6 +83,19 @@ function rel(iso){if(!iso)return 'never';var s=(Date.now()-new Date(iso).getTime
 function cents(c){return c==null?'-':'$'+(c/100).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});}
 function copyWire(scope){(scope||document).querySelectorAll('[data-copy]').forEach(function(b){if(b._w)return;b._w=true;b.onclick=function(){var v=$(b.getAttribute('data-copy')).textContent;if(navigator.clipboard)navigator.clipboard.writeText(v).then(function(){toast('Copied');});};});}
 
+var SPORTS=null;
+async function sports(){
+  if(SPORTS)return SPORTS;
+  try{
+    var m=await api('/v1/meta',{fn:'collective_public'});
+    SPORTS=(m&&m.sports&&m.sports.length)?m.sports:[{code:'NFL',season:new Date().getFullYear()}];
+  }catch(e){SPORTS=[{code:'NFL',season:new Date().getFullYear()}];}
+  return SPORTS;
+}
+function sportOpts(list,sel){
+  return list.map(function(s){return '<option value="'+esc(s.code)+'"'+(sel===s.code?' selected':'')+'>'+esc(s.code)+(s.name?' ('+esc(s.name)+')':'')+'</option>';}).join('');
+}
+function seasonFor(list,code){var s=list.filter(function(x){return x.code===code;})[0];return (s&&s.season)||new Date().getFullYear();}
 function session(){try{return JSON.parse(localStorage.getItem('collective_admin_session')||'null');}catch(e){return null;}}
 (function(){
   if(/access_token=/.test(location.hash)){
@@ -402,7 +415,7 @@ async function secQuarantine(app){
       '<div class="raw">'+esc(JSON.stringify(r.raw_row,null,1))+'</div>'+
       '<div class="grid2" style="margin-top:10px">'+
       '<div><label>Resolve to game id</label><div style="display:flex;gap:8px"><input id="qG'+i+'" placeholder="game uuid"><button class="btn" data-i="'+i+'" data-id="'+esc(r.projection_id)+'" data-k="game">Resolve</button></div></div>'+
-      '<div><label>Or add a team alias</label><div style="display:flex;gap:8px"><input id="qA'+i+'" placeholder="alias text"><input id="qC'+i+'" placeholder="code" style="width:70px"><button class="btn" data-i="'+i+'" data-id="'+esc(r.projection_id)+'" data-k="alias">Add + retry</button></div></div>'+
+      '<div><label>Or add a team alias <span style="text-transform:none;letter-spacing:0">('+esc(r.sport_code||'')+')</span></label><div style="display:flex;gap:8px"><input id="qA'+i+'" placeholder="alias text"><input id="qC'+i+'" placeholder="team code" style="width:110px"><button class="btn" data-i="'+i+'" data-id="'+esc(r.projection_id)+'" data-sp="'+esc(r.sport_code||'NFL')+'" data-k="alias">Add + retry</button></div></div>'+
       '</div></div>';
   }).join('');
   app.innerHTML='<h1>Quarantine</h1><p class="lede">Rows the resolver could not match to a canonical game. They never fail a submission and never drop silently: they wait here. Fix by pointing at the right game or by teaching the resolver a new alias.</p>'+
@@ -411,7 +424,7 @@ async function secQuarantine(app){
     b.onclick=async function(){
       var i=b.getAttribute('data-i'),id=b.getAttribute('data-id');
       try{
-        var body=b.getAttribute('data-k')==='game'?{game_id:$('qG'+i).value.trim()}:{alias:{sport:'NFL',alias:$('qA'+i).value.trim(),team_code:$('qC'+i).value.trim().toUpperCase()}};
+        var body=b.getAttribute('data-k')==='game'?{game_id:$('qG'+i).value.trim()}:{alias:{sport:b.getAttribute('data-sp')||'NFL',alias:$('qA'+i).value.trim(),team_code:$('qC'+i).value.trim().toUpperCase()}};
         var r=await api('/v1/admin/quarantine/'+encodeURIComponent(id)+'/resolve',{method:'POST',headers:{'content-type':'application/json'},body:body});
         toast('Resolved '+(r.resolved||0)+' row(s)');render();
       }catch(e){toast(e.message);}
@@ -419,22 +432,76 @@ async function secQuarantine(app){
   });
 }
 
+/* Slate parsing is deliberately forgiving: a schedule arrives as a file, a
+   paste from a text editor, or a paste out of Excel (which yields tabs, not
+   commas). Commas, tabs, and semicolons all separate; quotes, header rows,
+   and extra trailing columns are ignored. */
+function parseSlate(text){
+  var t=String(text||'').trim();
+  var rows=[],problems=[],seen=0;
+  if(t.charAt(0)==='['){
+    JSON.parse(t).forEach(function(o,i){
+      seen++;
+      var wk=parseInt(o.week,10),ko=String(o.kickoff||'').trim();
+      if(!isFinite(wk)||!ko||!o.home||!o.away){problems.push('Entry '+(i+1)+': needs week, kickoff, home, away.');return;}
+      rows.push({week:wk,kickoff:ko,home:String(o.home).trim(),away:String(o.away).trim()});
+    });
+    return {rows:rows,problems:problems,seen:seen};
+  }
+  t.split(/\r?\n/).forEach(function(line,i){
+    if(!line.trim())return;
+    seen++;
+    var p=line.split(/[,\t;]/).map(function(x){return x.trim().replace(/^"(.*)"$/,'$1').trim();})
+              .filter(function(x,idx,arr){return idx<arr.length-1||x!=='';});
+    if(p.length<4){problems.push('Line '+(i+1)+': found '+p.length+' column'+(p.length===1?'':'s')+', need 4.');return;}
+    var wk=parseInt(p[0],10);
+    /* a header row ("week, kickoff, home, away") is skipped, not an error */
+    if(!isFinite(wk)){if(i===0||/week/i.test(p[0]))return;problems.push('Line '+(i+1)+': "'+p[0]+'" is not a week number.');return;}
+    if(isNaN(new Date(p[1]).getTime())){problems.push('Line '+(i+1)+': "'+p[1]+'" is not a readable kickoff time.');return;}
+    if(!p[2]||!p[3]){problems.push('Line '+(i+1)+': home and away are both required.');return;}
+    rows.push({week:wk,kickoff:p[1],home:p[2],away:p[3]});
+  });
+  return {rows:rows,problems:problems,seen:seen};
+}
+
 async function secGames(app){
-  app.innerHTML='<h1>Games</h1><p class="lede">Load the slate. One line per game: <span class="mono">week, kickoff ISO, home, away</span> (CSV) or a JSON array of objects with those keys. Codes or full names both work through the alias table.</p>'+
-    '<div class="panel"><div class="grid2"><div><label>Sport</label><select id="gSport"><option>NFL</option></select></div>'+
-    '<div><label>Season</label><input id="gSeason" type="number" value="2026"></div></div>'+
-    '<label>Slate</label><textarea id="gRows" placeholder="3, 2026-09-21T17:00:00Z, KC, BUF&#10;3, 2026-09-21T20:25:00Z, DAL, NYG"></textarea>'+
+  var SP=await sports();
+  app.innerHTML='<h1>Games</h1><p class="lede">Load the slate before anyone submits: projections only attach to games that already exist here. One line per game: <span class="mono">week, kickoff ISO, home, away</span>. Upload a file or paste it; commas, tabs, and semicolons all work, and a header row is ignored. Codes or full names both work through the alias table.</p>'+
+    '<div class="panel"><div class="grid2"><div><label>Sport</label><select id="gSport">'+sportOpts(SP,SP[0].code)+'</select></div>'+
+    '<div><label>Season</label><input id="gSeason" type="number" value="'+seasonFor(SP,SP[0].code)+'"></div></div>'+
+    '<label>Slate file <span style="text-transform:none;letter-spacing:0">(.csv, .tsv, .txt, or a JSON array)</span></label>'+
+    '<input type="file" id="gFile" accept=".csv,.tsv,.txt,.json" style="width:auto">'+
+    '<label>Or paste it</label><textarea id="gRows" placeholder="3, 2026-09-21T17:00:00Z, KC, BUF&#10;3, 2026-09-21T20:25:00Z, DAL, NYG"></textarea>'+
     '<div style="margin-top:10px;display:flex;gap:8px"><button class="btn" id="gPrev">Preview</button><button class="btn primary hide" id="gGo">Upload slate</button></div><div id="gOut"></div></div>';
   var parsed=null;
-  $('gPrev').onclick=function(){
-    var t=$('gRows').value.trim();parsed=[];
+  $('gSport').onchange=function(){$('gSeason').value=seasonFor(SP,this.value);};
+  $('gFile').onchange=async function(){
+    var f=this.files&&this.files[0];if(!f)return;
     try{
-      if(t[0]==='['){JSON.parse(t).forEach(function(o){parsed.push({week:+o.week,kickoff:o.kickoff,home:String(o.home),away:String(o.away)});});}
-      else t.split(/\n+/).forEach(function(l){var p=l.split(',').map(function(x){return x.trim();});if(p.length>=4)parsed.push({week:+p[0],kickoff:p[1],home:p[2],away:p[3]});});
-    }catch(e){$('gOut').innerHTML='<div class="err">Could not parse: '+esc(e.message)+'</div>';return;}
-    if(!parsed.length){$('gOut').innerHTML='<div class="err">No rows parsed.</div>';return;}
-    $('gOut').innerHTML='<div class="tblwrap" style="margin-top:10px"><table><thead><tr><th>Week</th><th>Kickoff</th><th>Home</th><th>Away</th></tr></thead><tbody>'+
-      parsed.map(function(g){return '<tr><td>'+g.week+'</td><td class="mono">'+esc(g.kickoff)+'</td><td>'+esc(g.home)+'</td><td>'+esc(g.away)+'</td></tr>';}).join('')+'</tbody></table></div>';
+      $('gRows').value=await f.text();
+      $('gOut').innerHTML='<p class="note" style="margin-top:10px">Loaded '+esc(f.name)+'. Hit Preview to check it.</p>';
+      $('gPrev').click();
+    }catch(e){$('gOut').innerHTML='<div class="err">Could not read that file: '+esc(e.message)+'</div>';}
+  };
+  $('gPrev').onclick=function(){
+    var raw=$('gRows').value;
+    var out;
+    try{out=parseSlate(raw);}
+    catch(e){$('gOut').innerHTML='<div class="err">Could not parse that as JSON: '+esc(e.message)+'</div>';return;}
+    parsed=out.rows;
+    if(!parsed.length){
+      var first=(raw.split(/\r?\n/).filter(function(l){return l.trim();})[0]||'').slice(0,120);
+      $('gOut').innerHTML='<div class="err"><b>No games parsed.</b><br>'+
+        (out.seen===0
+          ? 'The box is empty. Upload your schedule file above, or paste one line per game: <span class="mono">week, kickoff ISO, home, away</span>.'
+          : 'Read '+out.seen+' line'+(out.seen===1?'':'s')+' but none had four usable columns. First line seen:<br><span class="mono">'+esc(first)+'</span><br>Expected something like <span class="mono">3, 2026-09-21T17:00:00Z, KC, BUF</span>.')+
+        (out.problems.length?'<br><br>'+out.problems.slice(0,5).map(esc).join('<br>'):'')+'</div>';
+      return;
+    }
+    $('gOut').innerHTML=(out.problems.length?'<div class="err" style="margin-top:10px"><b>'+out.problems.length+' line'+(out.problems.length===1?'':'s')+' skipped:</b><br>'+out.problems.slice(0,5).map(esc).join('<br>')+(out.problems.length>5?'<br>and '+(out.problems.length-5)+' more.':'')+'</div>':'')+
+      '<p class="note" style="margin-top:10px"><b style="color:var(--text)">'+parsed.length+' game'+(parsed.length===1?'':'s')+' ready.</b> Weeks '+Math.min.apply(null,parsed.map(function(g){return g.week;}))+' to '+Math.max.apply(null,parsed.map(function(g){return g.week;}))+'.'+(parsed.length>25?' First 25 shown.':'')+'</p>'+
+      '<div class="tblwrap"><table><thead><tr><th>Week</th><th>Kickoff</th><th>Home</th><th>Away</th></tr></thead><tbody>'+
+      parsed.slice(0,25).map(function(g){return '<tr><td>'+g.week+'</td><td class="mono">'+esc(g.kickoff)+'</td><td>'+esc(g.home)+'</td><td>'+esc(g.away)+'</td></tr>';}).join('')+'</tbody></table></div>';
     $('gGo').classList.remove('hide');
   };
   $('gGo').onclick=async function(){
@@ -442,14 +509,25 @@ async function secGames(app){
     this.disabled=true;
     try{
       var r=await api('/v1/admin/games',{method:'POST',headers:{'content-type':'application/json'},body:{sport:$('gSport').value,season:+$('gSeason').value,games:parsed}});
-      toast('Upserted '+(r.upserted||0)+' games');$('gRows').value='';$('gOut').innerHTML='';$('gGo').classList.add('hide');
-    }catch(e){toast(e.message);}
+      var fails=r.failed||[];
+      toast('Loaded '+(r.upserted||0)+' games');
+      $('gRows').value='';$('gFile').value='';$('gGo').classList.add('hide');
+      $('gOut').innerHTML='<div class="panel" style="margin-top:10px;border-color:'+(fails.length?'rgba(217,154,43,.5)':'rgba(47,180,124,.5)')+'">'+
+        '<b style="color:'+(fails.length?'var(--warn)':'var(--pos)')+'">'+(r.upserted||0)+' game'+((r.upserted||0)===1?'':'s')+' loaded.</b>'+
+        (fails.length
+          ? '<p class="note" style="margin:8px 0 0">'+fails.length+' could not be matched to a team, usually an unfamiliar abbreviation. Add an alias under Quarantine, then re-upload those lines:</p><div class="raw">'+esc(JSON.stringify(fails.slice(0,10),null,1))+'</div>'
+          : '<p class="note" style="margin:8px 0 0">Creators can now submit against this slate. Anything they already sent that was quarantined as unknown_game will resolve when they re-post.</p>')+
+        '</div>';
+    }catch(e){toast(e.message);$('gOut').innerHTML='<div class="err">'+esc(e.message)+'</div>';}
     this.disabled=false;
   };
 }
 
+var RES_SPORT=null,RES_SEASON=null;
 async function secResults(app){
-  var d=await api('/v1/games?sport=NFL&season=2026',{fn:'collective_public'});
+  var SP=await sports();
+  if(!RES_SPORT){RES_SPORT=SP[0].code;RES_SEASON=seasonFor(SP,RES_SPORT);}
+  var d=await api('/v1/games?sport='+encodeURIComponent(RES_SPORT)+'&season='+encodeURIComponent(RES_SEASON),{fn:'collective_public'});
   var need=(d.games||[]).filter(function(g){return !g.result&&new Date(g.kickoff_at).getTime()<Date.now();});
   var rows=need.map(function(g,i){
     return '<tr><td><b>'+esc(g.label)+'</b><br><span class="note">'+new Date(g.kickoff_at).toLocaleString()+'</span></td>'+
@@ -458,8 +536,12 @@ async function secResults(app){
       '<td><button class="btn" data-i="'+i+'" data-g="'+esc(g.game_id)+'">Settle</button></td></tr>';
   }).join('');
   app.innerHTML='<h1>Results</h1><p class="lede">Final scores plus the closing line YOU captured (home convention, negative means home favored). Settling a game grades every candidate projection on it immediately. The closing line here is the only line any pick is ever graded against.</p>'+
+    '<div class="grid2" style="margin-bottom:10px"><div><label>Sport</label><select id="rSport">'+sportOpts(SP,RES_SPORT)+'</select></div>'+
+    '<div><label>Season</label><input id="rSeason" type="number" value="'+esc(RES_SEASON)+'"></div></div>'+
     '<div class="tblwrap"><table><thead><tr><th>Game</th><th>Home pts</th><th>Away pts</th><th>Close spread</th><th>Close total</th><th>Close home ML prob</th><th></th></tr></thead><tbody>'+
-    (rows||'<tr><td colspan="7" class="note" style="text-align:center;padding:14px">No unsettled past games. Load the slate under Games first.</td></tr>')+'</tbody></table></div>';
+    (rows||'<tr><td colspan="7" class="note" style="text-align:center;padding:14px">No unsettled past games for '+esc(RES_SPORT)+' '+esc(RES_SEASON)+'. Load the slate under Games first.</td></tr>')+'</tbody></table></div>';
+  $('rSport').onchange=function(){RES_SPORT=this.value;RES_SEASON=seasonFor(SP,RES_SPORT);render();};
+  $('rSeason').onchange=function(){RES_SEASON=+this.value||RES_SEASON;render();};
   app.querySelectorAll('button[data-g]').forEach(function(b){
     b.onclick=async function(){
       var i=b.getAttribute('data-i');
