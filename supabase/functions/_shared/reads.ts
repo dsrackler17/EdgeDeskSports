@@ -162,6 +162,13 @@ interface BoardModelRow {
   received_at: string; is_late: boolean;
   pick_result: string | null; margin_error: number | null; brier: number | null;
 }
+interface MarketRow {
+  game_id: string; book: string; source: string;
+  home_line: number | null; home_price: number | null;
+  away_line: number | null; away_price: number | null;
+  total_line: number | null; captured_at: string;
+}
+
 interface ConsensusRow {
   game_id: string; n: number; spread_mean: number | null; spread_median: number | null;
   spread_stdev: number | null; spread_min: number | null; spread_max: number | null;
@@ -184,8 +191,9 @@ export async function buildGames(
     "game_detail", `select=*&sport=eq.${sport}&season=eq.${season}${wq}&order=kickoff_at.asc`);
   if (games.length === 0) return { sport, season, week, entitled, games: [] };
   const ids = games.map((g) => `"${g.game_id}"`).join(",");
-  const [models, consensus] = await Promise.all([
+  const [models, market, consensus] = await Promise.all([
     viewGet<BoardModelRow>("board_models", `select=*&game_id=in.(${ids})&order=received_at.asc`),
+    viewGet<MarketRow>("current_market", `select=*&game_id=in.(${ids})`),
     viewGet<ConsensusRow>("consensus", `select=*&game_id=in.(${ids})`),
   ]);
   const now = Date.now();
@@ -203,6 +211,15 @@ export async function buildGames(
       return {
         game_id: g.game_id, label: g.label, home: g.home, away: g.away,
         kickoff_at: g.kickoff_at, status: g.status,
+        market: (() => {
+          const mk = market.find((x) => x.game_id === g.game_id);
+          return mk
+            ? { book: mk.book, source: mk.source, home_line: mk.home_line,
+                home_price: mk.home_price, away_line: mk.away_line,
+                away_price: mk.away_price, total_line: mk.total_line,
+                captured_at: mk.captured_at }
+            : null;
+        })(),
         result: settled && g.home_score !== null
           ? { home_score: g.home_score, away_score: g.away_score,
               closing_spread: g.closing_spread, closing_total: g.closing_total }

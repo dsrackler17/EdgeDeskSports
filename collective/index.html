@@ -439,8 +439,15 @@ async function renderWall(view){
     /* the board: every game on the current slate, every model's number */
     var boards='';
     ((board&&board.games)||[]).slice(0,12).forEach(function(g){
+      /* the market line, when one has been captured. Public information, so
+         it shows to everyone: what the Collective sells is the models. */
+      var mkt='';
+      if(g.market&&g.market.home_line!=null){
+        mkt='<span class="tm" title="market line, '+esc(g.market.book||'')+', captured '+rel(g.market.captured_at)+'">'+
+          esc(g.home)+' '+fmtSpread(g.market.home_line)+'</span>';
+      }
       var hd='<div class="gb-hd"><span>'+esc(g.away)+' @ '+esc(g.home)+'</span>'+
-        '<span class="tm">'+kickoffFmt(g.kickoff_at)+'</span>'+
+        '<span class="tm">'+kickoffFmt(g.kickoff_at)+'</span>'+mkt+
         (g.result?'<span class="fin">FINAL '+g.result.away_score+' - '+g.result.home_score+'</span>':'')+
         '</div>';
       var lines='';
@@ -651,7 +658,10 @@ async function renderBoard(view){
     var head='<h1>The Board</h1><p class="lede">Every game on the slate with each model’s number and, after settlement, its grade. Pre-kickoff numbers and consensus are for subscribers. Settled games are the public record.</p>'+wk;
     var cards='';
     (d.games||[]).forEach(function(g){
-      var hd='<div class="gc-hd"><span class="lbl">'+esc(g.label)+'</span><span class="tm">'+kickoffFmt(g.kickoff_at)+'</span>'+
+      var mkt2=(g.market&&g.market.home_line!=null)
+        ?'<span class="tm" title="market line from '+esc(g.market.book||'')+'">market '+esc(g.home)+' '+fmtSpread(g.market.home_line)+
+          (g.market.total_line!=null?' / '+fmtNum(g.market.total_line):'')+'</span>':'';
+      var hd='<div class="gc-hd"><span class="lbl">'+esc(g.label)+'</span><span class="tm">'+kickoffFmt(g.kickoff_at)+'</span>'+mkt2+
         (g.result?'<span class="spacer"></span><span class="fin">'+g.result.away_score+' - '+g.result.home_score+'</span><span class="tm">close '+fmtSpread(g.result.closing_spread)+' / '+fmtNum(g.result.closing_total)+'</span>':'')+
         '</div>';
       var cons='';
