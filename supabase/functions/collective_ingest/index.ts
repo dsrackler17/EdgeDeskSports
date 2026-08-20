@@ -261,11 +261,27 @@ Deno.serve(async (req: Request): Promise<Response> => {
   try {
     return await handle(req);
   } catch (e) {
+    // A 500 with null details is unactionable for the creator who hit it and
+    // for whoever has to debug it. Carry the underlying cause back: this API
+    // only ever handles a creator's own submission, so the database's error
+    // code and message tell them what to fix instead of hiding it.
+    let detail: Record<string, unknown> | null = null;
     if (e instanceof RpcError) {
       console.error(`collective_ingest: ${e.message}:`, e.body);
+      let dbCode: unknown = null;
+      let dbMessage: unknown = null;
+      try {
+        const parsed = JSON.parse(e.body) as Record<string, unknown>;
+        dbCode = parsed.code ?? null;
+        dbMessage = parsed.message ?? parsed.hint ?? null;
+      } catch {
+        dbMessage = e.body.slice(0, 300);
+      }
+      detail = { stage: "database", status: e.status, db_code: dbCode, db_message: dbMessage };
     } else {
       console.error("collective_ingest: unexpected error:", e);
+      detail = { stage: "function", db_message: e instanceof Error ? e.message : String(e) };
     }
-    return err("server_error", "An unexpected server error occurred.", 500);
+    return err("server_error", "An unexpected server error occurred.", 500, detail);
   }
 });
