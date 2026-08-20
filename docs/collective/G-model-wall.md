@@ -18,7 +18,7 @@ Order is fixed. Desktop shows all; on the phone the table scrolls in-container p
 | 2 | Model | `model_name` | `--mdl` color, Inter 500. |
 | 3 | Sport | `sport` | Plain `--dim` text. Hidden entirely while only one sport is active (v1 is NFL only; the column appears automatically when `/v1/meta` lists a second active sport). |
 | 4 | Status | `membership` | Chip per section 4. |
-| 5 | Record | `record.wins`, `record.losses`, `record.pushes` | Mono, `14-9-1` form. `record` null renders the literal text `no grades yet` in `--faint`. |
+| 5 | Record | `record.wins`, `record.losses`, `record.pushes`, `submitted_games` | Mono, `14-9-1` form. `record` null splits on `submitted_games`: above zero renders the literal text `no grades yet` in `--faint` (the slate is in, nothing has been played), zero renders `first submission pending` in `--dim`. Never `first submission pending` for a model that has already submitted: it reads as though the post failed. |
 | 6 | Win % | `record.win_pct` | Mono, one decimal, `60.9%`. `--pos` at or above .550, `--neg` at or below .450, `--text` between. Null with record null. |
 | 7 | Margin MAE | `record.margin_mae` | Mono, one decimal. Lower is better; no coloring, the rankings page does comparisons. |
 | 8 | Brier | `record.brier` | Mono, three decimals. |

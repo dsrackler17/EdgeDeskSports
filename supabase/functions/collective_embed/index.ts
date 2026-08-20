@@ -134,6 +134,7 @@ Deno.serve(async (req) => {
         }
         (c.models as unknown[]).push({
           model_name: w.model_name, sport: w.sport, record: w.record, coverage_pct: w.coverage_pct,
+          submitted_games: w.submitted_games,
         });
         return acc;
       }, []);

@@ -573,7 +573,15 @@ select
   ct.coverage_pct,
   (select max(p.received_at) from collective.projections p
     where p.model_id = m.id and p.data_origin = 'live' and p.resolution_status = 'resolved')
-    as last_submission_at
+    as last_submission_at,
+  -- Games this model has posted a live pick on, played or not. This is what
+  -- separates "has not submitted" from "submitted, waiting on kickoff"; the
+  -- record is null through both, so the wall and profile cannot tell them
+  -- apart without it.
+  (select count(distinct p.game_id) from collective.projections p
+    where p.model_id = m.id and p.data_origin = 'live'
+      and p.resolution_status = 'resolved' and p.is_graded_candidate)
+    as submitted_games
 from collective.creators c
 join collective.models m on m.creator_id = c.id and m.is_listed
 left join collective.model_records r on r.model_id = m.id

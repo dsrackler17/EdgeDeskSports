@@ -34,7 +34,7 @@ Deep dives (per-week coverage table, recent graded rows with movement counts) li
 **2.2 Models section.** Source: `models` array. One panel per model (flat, no nesting per F-ui.md). The pinned model (`creator.pinned_model_slug`) renders first, others in graded desc then name order. Per model:
 
 - Model name (`model_name`, `--mdl`) and sport (`sport`), linking to the model detail page.
-- Record block, source `record` (from `model_records` via `grades`): big mono `W-L-P`, then win pct, margin MAE, Brier, and `graded` count on one metrics line. The three metrics render side by side and are never combined into any single score (rule 8.11). `record` null renders the model-level pending line: `No graded games yet. Grades post when submitted slates settle.`
+- Record block, source `record` (from `model_records` via `grades`): big mono `W-L-P`, then win pct, margin MAE, Brier, and `graded` count on one metrics line. The three metrics render side by side and are never combined into any single score (rule 8.11). `record` null renders the model-level pending line, but only when `submitted_games` is above zero: `No graded games yet. Grades post when submitted slates settle.` plus the submitted count and that it is waiting on kickoff. At `submitted_games: 0` the model has never posted, so the section 6 block renders instead. The two are never the same sentence.
 - Coverage, source `coverage_pct` (from `model_coverage_totals`): percent plus the inline bar, always adjacent to the record (rule 8.7: coverage shows next to every record everywhere a record appears). Below the ranking threshold the bar is `--warn` and a `--faint` line states `Coverage below the {threshold} percent ranking minimum`.
 - Last submission (`last_submission_at`), relative time in `--dim` mono.
 - Movement note, source: `model_movement` summarized server side. One `--dim` line when revisions exist, e.g. `Revised numbers on 3 games this week. First submissions are what gets graded.` This is display of drift, never the graded number (rule 8.5).
@@ -72,7 +72,7 @@ Tokens, type, density, phone stacking order (identity, record, coverage, movemen
 
 ## 6. The zero-submission empty state
 
-Trigger: `empty_state: true` in the profile response (creator has zero live submissions). Per Section 6 of the build prompt this page must look intentional, not broken: it is the page a brand new member screenshots and posts within minutes of joining, so it is a marketing surface with a spec, not a fallback.
+Trigger: `empty_state: true` in the profile response (creator has zero live submissions), per model narrowed by `submitted_games: 0`. A model with submissions but no grades is not this state and never shows this copy: it gets the model-level pending line from section 2.2. Saying a submission is pending to a creator whose slate is already in reads as though the post failed, which is the one impression this page must never give. Per Section 6 of the build prompt this page must look intentional, not broken: it is the page a brand new member screenshots and posts within minutes of joining, so it is a marketing surface with a spec, not a fallback.
 
 What renders, exactly:
 

@@ -194,7 +194,8 @@
           (r.founding ? ' <span class="chip fnd">Founding</span>' : '') +
           '<br><span class="sb">' + esc(r.model_name) + ' · ' + esc(r.sport) + '</span></span></span></td>' +
         '<td>' + chip(r.membership) + '</td>' +
-        '<td class="n">' + (rec ? rec.wins + '-' + rec.losses + '-' + rec.pushes : '<span class="sb">pending</span>') + '</td>' +
+        '<td class="n">' + (rec ? rec.wins + '-' + rec.losses + '-' + rec.pushes
+          : '<span class="sb">' + (r.submitted_games > 0 ? 'no grades yet' : 'pending') + '</span>') + '</td>' +
         '<td class="n">' + (rec ? pct(rec.win_pct) : '-') + '</td>' +
         '<td class="n">' + (rec ? num(rec.margin_mae) : '-') + '</td>' +
         '<td class="n">' + (rec ? num(rec.brier, 3) : '-') + '</td>' +
@@ -214,7 +215,9 @@
       return '<div class="card"><div class="who">' + avatar(c) + '<span><span class="nm">' + esc(c.display_name) + '</span>' +
         (c.founding ? ' <span class="chip fnd">Founding</span>' : '') +
         '<br><span class="sb">' + esc(m0.model_name || '') + (m0.sport ? ' · ' + esc(m0.sport) : '') + '</span></span></div>' +
-        '<div class="sb" style="margin-top:7px">' + (rec ? ('Record <span class="mono">' + rec.wins + '-' + rec.losses + '-' + rec.pushes + '</span> · ' + pct(rec.win_pct) + ' · Brier ' + num(rec.brier, 3)) : 'First submission pending') + ' · ' + chip(c.membership) + '</div>' +
+        '<div class="sb" style="margin-top:7px">' + (rec
+          ? ('Record <span class="mono">' + rec.wins + '-' + rec.losses + '-' + rec.pushes + '</span> · ' + pct(rec.win_pct) + ' · Brier ' + num(rec.brier, 3))
+          : (m0.submitted_games > 0 ? 'No graded games yet' : 'First submission pending')) + ' · ' + chip(c.membership) + '</div>' +
         '<div class="ln">' + links + '</div></div>';
     }).join('');
 

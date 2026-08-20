@@ -242,9 +242,14 @@ function covCell(p){
   var w=Math.max(0,Math.min(100,p));
   return '<span class="cov"><span class="covbar"><i style="width:'+w+'%"></i></span><span class="mono" style="font-size:11.5px">'+fmtNum(p,0)+'%</span></span>';
 }
-function recCell(rec){
-  if(!rec)return '<span class="note">first submission pending</span>';
-  return '<span class="mono">'+rec.wins+'-'+rec.losses+'-'+rec.pushes+'</span>';
+function recCell(r){
+  var rec=r.record;
+  if(rec)return '<span class="mono">'+rec.wins+'-'+rec.losses+'-'+rec.pushes+'</span>';
+  /* No record covers two different situations. Telling a creator whose slate
+     is already in that their first submission is pending reads as though the
+     post failed, which is the one thing it must never say. */
+  if(r.submitted_games>0)return '<span class="note" style="color:var(--faint)">no grades yet</span>';
+  return '<span class="note">first submission pending</span>';
 }
 function toast(msg){
   var t=el('<div class="toast">'+esc(msg)+'</div>').firstChild;
@@ -512,7 +517,7 @@ async function renderWall(view){
       return '<tr class="rowlink" data-slug="'+esc(r.creator_slug)+'">'+
         '<td><span class="who">'+avatar(r)+'<span><span class="nm">'+esc(r.creator_name)+'</span>'+foundStar(r)+'<br><span class="sb">'+esc(r.model_name)+' &middot; '+esc(r.sport)+'</span></span></span></td>'+
         '<td>'+chipFor(r.membership)+'</td>'+
-        '<td class="num">'+recCell(rec)+'</td>'+
+        '<td class="num">'+recCell(r)+'</td>'+
         '<td class="num">'+(rec?fmtPct(rec.win_pct):'-')+'</td>'+
         '<td class="num">'+(rec?fmtNum(rec.margin_mae):'-')+'</td>'+
         '<td class="num">'+(rec?fmtNum(rec.brier,3):'-')+'</td>'+
@@ -581,8 +586,11 @@ async function renderCreator(view,slug){
           '<span><div class="k">Coverage</div><div class="v">'+fmtNum(mo.coverage_pct,0)+'%</div></span>'+
         '</div>'+
         '<div class="note" style="margin-top:8px">Graded by the Collective against its own closing lines. <a href="#rules">Grading rules</a> &middot; <a href="#/model/'+esc(c.slug)+'/'+esc(mo.model_slug)+'">Full game log →</a></div></div>';
+      }else if(mo.submitted_games>0){
+        /* Slate is in, nothing has kicked off yet. State that, not "pending". */
+        body+='<div class="emptybox"><b style="color:var(--text)">No graded games yet.</b><br>Grades post when submitted slates settle, against the Collective’s closing lines. <span class="mono">'+mo.submitted_games+'</span> game'+(mo.submitted_games===1?'':'s')+' submitted and waiting on kickoff.</div>';
       }else{
-        body+='<div class="emptybox"><b style="color:var(--text)">'+esc(c.display_name)+' is on the wall.</b><br>First live submission pending. The record starts the moment their first slate arrives, graded against the Collective’s closing lines.</div>';
+        body+='<div class="emptybox"><b style="color:var(--text)">First submission pending.</b><br>'+esc(c.display_name)+' is connected and will appear in grading after their first slate goes live.</div>';
       }
       if(mo.backfill&&mo.backfill.rows){
         body+='<div class="panel" style="margin-top:10px;border-style:dashed"><b>Backfilled history:</b> <span class="mono">'+mo.backfill.rows+'</span> games. <span class="note">'+esc(mo.backfill.note)+'. Backfill never counts toward the record, rankings, or consensus.</span></div>';

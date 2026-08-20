@@ -24,11 +24,11 @@ Testing hook (all pages and embed): the API base can be overridden with `?api=<b
   "model_slug": "nfl-model", "model_name": "NFL Model", "sport": "NFL",
   "record": { "graded": 24, "wins": 14, "losses": 9, "pushes": 1, "win_pct": 0.609,
               "margin_mae": 9.8, "brier": 0.231 },
-  "coverage_pct": 87.5, "last_submission_at": "…",
+  "coverage_pct": 87.5, "last_submission_at": "…", "submitted_games": 31,
   "website_url": "https://…", "x_handle": "mustbemoose"
 } ] }
 ```
-`record` is null for a model with zero graded games. `membership` is one of `ACTIVE CONTRIBUTOR`, `MEMBER`, `INACTIVE`.
+`record` is null for a model with zero graded games. `submitted_games` counts distinct games the model has a graded-eligible live pick on, played or not, and is always a number (never null). With `record` null it is the only thing separating a model that has not submitted (`0`) from one whose slate is in and unplayed (above zero); the two render differently on every surface. `membership` is one of `ACTIVE CONTRIBUTOR`, `MEMBER`, `INACTIVE`.
 
 ## GET /v1/creators/{slug}  (free)
 ```json
@@ -37,6 +37,7 @@ Testing hook (all pages and embed): the API base can be overridden with `?api=<b
   "joined_at": "…", "pinned_model_slug": null },
   "models": [ { "model_slug": "nfl-model", "model_name": "NFL Model", "sport": "NFL",
     "record": { …same as wall… }, "coverage_pct": 87.5, "last_submission_at": null,
+    "submitted_games": 31,
     "backfill": { "rows": 569, "note": "Backfilled history, shown separately, never ranked" } } ],
   "empty_state": false }
 ```

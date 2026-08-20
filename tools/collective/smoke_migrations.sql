@@ -242,6 +242,19 @@ begin
   select membership into rec from collective.model_wall where creator_slug = 'must-be-moose';
   if rec.membership <> 'ACTIVE CONTRIBUTOR' then raise exception 'membership wanted ACTIVE CONTRIBUTOR, got %', rec.membership; end if;
 
+  -- submitted_games separates "has not submitted" from "submitted, waiting on
+  -- kickoff". The record is null through both, so the wall carries the count.
+  select w.submitted_games as sg, w.graded as gr into rec
+    from collective.model_wall w where w.creator_slug = 'must-be-moose';
+  if rec.sg is null then raise exception 'submitted_games must never be null'; end if;
+  if rec.sg < 1 then raise exception 'submitted_games wanted at least 1, got %', rec.sg; end if;
+  if rec.sg < coalesce(rec.gr, 0) then
+    raise exception 'submitted_games % is below graded %', rec.sg, rec.gr;
+  end if;
+  if exists (select 1 from collective.model_wall where submitted_games is null) then
+    raise exception 'a wall row reported null submitted_games';
+  end if;
+
   select c.n into n from collective.consensus c where c.game_id = g_future;
   if n is distinct from 1 then raise exception 'consensus n wanted 1, got %', n; end if;
 

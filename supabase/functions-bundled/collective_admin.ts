@@ -315,6 +315,10 @@ interface WallRow {
     win_pct: number | null; margin_mae: number | null; brier: number | null;
   } | null;
   coverage_pct: number | null; last_submission_at: string | null;
+  // Games this model has a graded-eligible pick on, played or not. Separates
+  // "has not submitted" from "submitted, waiting on kickoff"; record stays
+  // null through both, so the surfaces cannot tell them apart without it.
+  submitted_games: number;
   website_url: string | null; x_handle: string | null;
 }
 
@@ -325,6 +329,7 @@ interface WallViewRow {
   graded: number | null; wins: number | null; losses: number | null; pushes: number | null;
   win_pct: number | null; margin_mae: number | null; brier: number | null;
   coverage_pct: number | null; last_submission_at: string | null;
+  submitted_games: number | null;
 }
 
 const MEMBER_RANK: Record<string, number> = { "ACTIVE CONTRIBUTOR": 0, "MEMBER": 1, "INACTIVE": 2 };
@@ -339,6 +344,7 @@ function toWallRow(v: WallViewRow): WallRow {
           win_pct: v.win_pct, margin_mae: v.margin_mae, brier: v.brier }
       : null,
     coverage_pct: v.coverage_pct, last_submission_at: v.last_submission_at,
+    submitted_games: v.submitted_games ?? 0,
     website_url: v.website_url, x_handle: v.x_handle,
   };
 }

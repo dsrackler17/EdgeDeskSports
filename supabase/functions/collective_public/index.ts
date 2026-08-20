@@ -53,6 +53,7 @@ async function creatorPayload(slug: string) {
       return {
         model_slug: w.model_slug, model_name: w.model_name, sport: w.sport,
         record: w.record, coverage_pct: w.coverage_pct, last_submission_at: w.last_submission_at,
+        submitted_games: w.submitted_games,
         backfill: bf ? { rows: bf.rows, note: "Backfilled history, shown separately, never ranked" } : null,
       };
     }),
