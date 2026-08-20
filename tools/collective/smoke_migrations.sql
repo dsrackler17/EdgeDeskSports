@@ -40,15 +40,31 @@ begin
 
   r := collective.redeem_invite('hash-of-invite-token', user_id, 'moose@example.com',
         jsonb_build_object('display_name','Must Be Moose','sport','NFL','model_name','NFL Model',
-                           'website_url','https://moosepicks.example.com'),
+                           'website_url','https://moosepicks.example.com',
+                           'source_kind','github','source_ref','https://github.com/moose/model'),
         'mck_smoke1', 'sha-of-full-key');
   if not (r->>'ok')::boolean or (r->>'already_issued')::boolean then raise exception 'redeem failed: %', r; end if;
   if r->>'creator_slug' <> 'must-be-moose' then raise exception 'slug wanted must-be-moose, got %', r->>'creator_slug'; end if;
   v_creator := (r->>'creator_id')::uuid; v_model := (r->>'model_id')::uuid;
 
-  -- founding rate travels on the creator record (Section 5)
+  -- comp is the founder pool now: referral share on the row is the separate
+  -- acquisition share, which defaults to 0 (econ.referral_bps)
   select referral_share_bps into n from collective.creators where id = v_creator;
-  if n <> 5000 then raise exception 'founding share wanted 5000 bps, got %', n; end if;
+  if n <> 0 then raise exception 'referral share wanted 0 bps, got %', n; end if;
+  if not exists (select 1 from collective.creators where id = v_creator and founding_member) then
+    raise exception 'founding flag lost on redeem';
+  end if;
+
+  -- the model source landed on the model record
+  if not exists (select 1 from collective.models where id = v_model
+                 and source_kind = 'github' and source_ref = 'https://github.com/moose/model') then
+    raise exception 'model source was not stored';
+  end if;
+
+  -- an invalid source kind is dropped, never an error
+  if (select source_kind from collective.models where id = v_model) not in ('excel','github','online','other') then
+    raise exception 'source kind check failed';
+  end if;
 
   -- website became an embed origin
   if not exists (select 1 from collective.embed_installs where creator_id = v_creator
@@ -227,18 +243,28 @@ begin
     'status','active','plan','monthly','stripe_customer_id','cus_1','stripe_subscription_id','sub_1',
     'visitor','vis-1','ref_slug','must-be-moose'));
   if not (r->>'ok')::boolean then raise exception 'subscriber upsert failed: %', r; end if;
+  -- the waterfall: $24.99 invoice, 60% pool / 6 seats = 249 cents per founder;
+  -- moose is the only active founding member so exactly one earning posts,
+  -- and referral (0 bps by default) posts nothing
   r := collective.billing_post_invoice(jsonb_build_object(
-    'stripe_subscription_id','sub_1','amount_cents',2000,'stripe_ref','in_1'));
-  if (r->>'amount_cents')::int <> 1000 then
-    raise exception 'founding 50 percent of $20 wanted 1000 cents, got %', r;
+    'stripe_subscription_id','sub_1','amount_cents',2499,'stripe_ref','in_1'));
+  if (r->>'per_founder_cents')::int <> 249 then
+    raise exception 'per-founder share of $24.99 wanted 249 cents, got %', r;
   end if;
+  if (r->>'entries')::int <> 1 then raise exception 'wanted 1 pool entry, got %', r; end if;
+  select count(*) into n from collective.earnings_ledger where entry_type = 'earning' and note = 'referral share';
+  if n <> 0 then raise exception 'referral posted despite 0 bps'; end if;
+  -- a ref-less invoice refuses to post (no idempotency, no clawback path)
+  r := collective.billing_post_invoice(jsonb_build_object(
+    'stripe_subscription_id','sub_1','amount_cents',2499));
+  if (r->>'posted')::boolean then raise exception 'ref-less invoice posted: %', r; end if;
   -- same invoice twice posts once
   perform collective.billing_post_invoice(jsonb_build_object(
-    'stripe_subscription_id','sub_1','amount_cents',2000,'stripe_ref','in_1'));
+    'stripe_subscription_id','sub_1','amount_cents',2499,'stripe_ref','in_1'));
   select count(*) into n from collective.earnings_ledger where entry_type = 'earning';
   if n <> 1 then raise exception 'invoice earning posted % times', n; end if;
   r := collective.billing_post_refund(jsonb_build_object('stripe_ref','in_1'));
-  if (r->>'amount_cents')::int <> -1000 then raise exception 'clawback wanted -1000: %', r; end if;
+  if (r->>'amount_cents')::int <> -249 then raise exception 'clawback wanted -249: %', r; end if;
 
   select balance_cents into n from collective.creator_earnings_monthly where creator_slug = 'must-be-moose';
   if n <> 0 then raise exception 'balance after clawback wanted 0, got %', n; end if;
@@ -295,6 +321,43 @@ begin
   update collective.invite_tokens set expires_at = now() - interval '1 day' where token_prefix = 'mci_long';
   r := collective.invite_status('hash-of-long-token');
   if r->'prefill' <> '{}'::jsonb then raise exception 'expired token leaked prefill: %', r; end if;
+
+  ---------------------------------------------------------------- econ config
+  if collective.cfg_int('econ.reserve_bps', -1) <> 1000
+     or collective.cfg_int('econ.platform_bps', -1) <> 3000
+     or collective.cfg_int('econ.founder_pool_bps', -1) <> 6000
+     or collective.cfg_int('econ.founder_count', -1) <> 6
+     or collective.cfg_int('econ.referral_bps', -1) <> 0 then
+    raise exception 'econ config keys missing or wrong';
+  end if;
+
+  ---------------------------------------------------------------- revocation
+  perform collective.mint_invite(admin_id,
+    jsonb_build_object('display_name','Revoked Guy'), false, null, 1, 'revoke test',
+    'hash-of-revoke-token', 'mci_revk');
+  r := collective.revoke_invite(admin_id,
+    (select id from collective.invite_tokens where token_prefix = 'mci_revk'));
+  if not (r->>'ok')::boolean or (r->>'already_revoked')::boolean then
+    raise exception 'revoke failed: %', r;
+  end if;
+  r := collective.invite_status('hash-of-revoke-token');
+  if r->>'status' <> 'revoked' then raise exception 'status wanted revoked, got %', r; end if;
+  if r->'prefill' <> '{}'::jsonb then raise exception 'revoked token leaked prefill'; end if;
+  r := collective.redeem_invite('hash-of-revoke-token',
+    '00000000-0000-0000-0000-0000000000c3'::uuid, 'rv@example.com',
+    jsonb_build_object('display_name','Revoked Guy','sport','NFL','model_name','RG Model'),
+    'mck_smoke4', 'h4');
+  if coalesce(r->>'code','') <> 'token_revoked' then
+    raise exception 'revoked redeem wanted token_revoked, got %', r;
+  end if;
+  -- revoking twice reports already_revoked, never errors
+  r := collective.revoke_invite(admin_id,
+    (select id from collective.invite_tokens where token_prefix = 'mci_revk'));
+  if not (r->>'already_revoked')::boolean then raise exception 'double revoke wrong: %', r; end if;
+  -- a non-admin cannot revoke
+  r := collective.revoke_invite('00000000-0000-0000-0000-0000000000c4'::uuid,
+    (select id from collective.invite_tokens where token_prefix = 'mci_revk'));
+  if coalesce(r->>'code','') <> 'forbidden' then raise exception 'non-admin revoke allowed: %', r; end if;
 
   raise notice 'SMOKE: all assertions passed';
 end $$;

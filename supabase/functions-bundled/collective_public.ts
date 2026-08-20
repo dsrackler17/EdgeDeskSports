@@ -268,8 +268,8 @@ async function viewGet<T = unknown>(view: string, query: string): Promise<T[]> {
   return await res.json() as T[];
 }
 
-async function viewCount(view: string, query: string): Promise<number> {
-  const res = await fetch(`${SB_URL}/rest/v1/${view}?select=id&${query}`, {
+async function viewCount(view: string, query: string, column = "id"): Promise<number> {
+  const res = await fetch(`${SB_URL}/rest/v1/${view}?select=${column}&${query}`, {
     method: "HEAD",
     headers: {
       "apikey": SERVICE_KEY,
@@ -895,6 +895,11 @@ Deno.serve(async (req) => {
       ]);
       const thisMonth = new Date().toISOString().slice(0, 7);
       const meta = await buildMeta();
+      const [poolBps, fCount, refBps] = await Promise.all([
+        rpc<unknown>("get_config", { p_key: "econ.founder_pool_bps" }),
+        rpc<unknown>("get_config", { p_key: "econ.founder_count" }),
+        rpc<unknown>("get_config", { p_key: "econ.referral_bps" }),
+      ]);
       const balance = earnings.reduce((s, e) => s + (e.balance_cents ?? 0), 0);
       const available = earnings.reduce((s, e) => s + (e.available_cents ?? 0), 0);
       const models = await viewGet<{ id: string; slug: string; name: string; sport_code: string }>(
@@ -921,6 +926,12 @@ Deno.serve(async (req) => {
         },
         embed_snippet: `<script src="${BASE_URL}/collective/embed.js" data-collective-host="${creator.slug}" async></script>`,
         prompt_available: true,
+        economics: {
+          founding: creator.founding_member,
+          founder_pool_bps: Number(poolBps ?? 6000),
+          founder_count: Math.max(Number(fCount ?? 6), 1),
+          referral_bps: Number(refBps ?? 0),
+        },
       }, 200, NO_STORE);
     }
 

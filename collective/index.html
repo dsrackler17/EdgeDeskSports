@@ -820,7 +820,7 @@ async function renderAbout(view,jump){
           :'<button class="btn" disabled>Billing opens soon</button> <span class="note">The record is being built in the open first. Subscriptions turn on once the wall has a verified season behind it.</span>')+
       '</div>'+
       '<h2>For creators</h2>'+
-      '<p class="lede" style="max-width:760px">Membership is by invite. You keep your model, your site, your customers, and your pricing. You send finished numbers to one endpoint, your verified record and profile appear on the wall, and your own site gets a Collective tab that turns every member’s audience into yours. Referrals pay 40 percent recurring. Ask any member for an invite, or reach out through EdgeDesk.</p>'+
+      '<p class="lede" style="max-width:760px">Membership is by invite. You keep your model, your site, your customers, and your pricing. You send finished numbers to one endpoint (or upload a spreadsheet from your dashboard), your verified record and profile appear on the wall, and your own site gets a Collective tab that turns every member&#39;s audience into yours. Ask any member for an invite, or reach out through EdgeDesk.</p>'+
       '<p class="note">Already a member? <a href="#dashboard">Your dashboard →</a></p>';
     if(m.billing_live&&$('subBtn'))$('subBtn').onclick=function(){
       var ref='';try{var r=JSON.parse(localStorage.getItem('mc_ref')||'null');if(r)ref=r.slug;}catch(e){}
@@ -1063,8 +1063,8 @@ async function renderCreatorDash(view,me){
 
     var html='<div class="dash-hd"><h1>Welcome back, '+esc(c.display_name)+'</h1>'+foundBadge(c)+' '+chipFor(c.membership)+'</div>'+
       '<p class="lede">'+(c.founding
-        ?'Founding member terms: '+(c.referral_share_bps/100)+'% recurring on every reader you refer, locked for the life of your membership.'
-        :(c.referral_share_bps/100)+'% recurring referral share on every reader you refer.')+'</p>';
+        ?'One of the founding members of the Collective. Founding status is permanent.'
+        :'Creator: your model, your record, your audience. The Collective grades it and puts it side by side with everyone else&#39;s.')+'</p>';
 
     /* the ten second answers: who am I, did I submit, how am I doing */
     html+='<div class="statgrid">'+
@@ -1167,7 +1167,12 @@ async function renderCreatorDash(view,me){
       '<span><div class="k">Available</div><div class="v">'+cents(d.earnings.available_cents)+'</div></span>'+
       '<span><div class="k">Referred active</div><div class="v">'+d.earnings.referred_active+'</div></span>'+
       '<span><div class="k">Referred total</div><div class="v">'+d.earnings.referred_total+'</div></span>'+
-      '</div>'+(d.earnings.note?'<p class="note" style="margin:10px 0 0">'+esc(d.earnings.note)+'</p>':'')+'</div>';
+      '</div>'+
+      (d.economics?'<p class="note" style="margin:10px 0 0">'+(d.economics.founding
+        ?'Each founding member receives an equal share of the '+(d.economics.founder_pool_bps/100)+'% Founding Collective Pool: currently '+
+          (Math.round(d.economics.founder_pool_bps/d.economics.founder_count)/100)+'% of Collective revenue.'
+        :'Creator terms are set per creator. Referral is a separate share, currently '+(d.economics.referral_bps/100)+'%.')+'</p>':'')+
+      (d.earnings.note?'<p class="note" style="margin:10px 0 0">'+esc(d.earnings.note)+'</p>':'')+'</div>';
     /* keys */
     html+='<h2>API keys</h2><div class="panel">';
     (d.keys||[]).forEach(function(k){

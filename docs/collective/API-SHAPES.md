@@ -130,14 +130,15 @@ Every slate the creator has posted, newest first, capped at 40, with the counts 
 
 ## GET /v1/dashboard  (creator JWT)
 ```json
-{ "creator": { …same as profile creator… , "billing_mode": "referral", "referral_share_bps": 5000 },
+{ "creator": { …same as profile creator… , "billing_mode": "referral", "referral_share_bps": 0 },
   "models": [ { "model_slug": "…", "model_name": "…", "sport": "NFL" } ],
   "keys": [ { "prefix": "mck_live_a1b2c3d4", "status": "active", "created_at": "…", "last_used_at": null } ],
   "origins": [ { "id": "…", "origin": "https://example.com", "status": "active" } ],
   "earnings": { "this_month_cents": 0, "balance_cents": 0, "available_cents": 0,
     "referred_active": 0, "referred_total": 0, "note": "Billing is not live yet. Attribution is being recorded now and pays out when billing turns on." },
   "embed_snippet": "<script src=… data-collective-host=…></script>",
-  "prompt_available": true }
+  "prompt_available": true,
+  "economics": { "founding": true, "founder_pool_bps": 6000, "founder_count": 6, "referral_bps": 0 } }
 ```
 
 ## GET /v1/dashboard/prompt  (creator JWT)
@@ -191,11 +192,13 @@ Request and response exactly as in CONTRACT.md section 5.1. Dry-run response add
 ```
 
 ## Admin
-- POST /v1/admin/invites body `{ prefill: {display_name, sport, model_name}, founding: bool, share_bps: int|null, max_uses: int, note: string }` -> `{ "invite_url": "https://edgedesksports.com/join/mci_…", "token": "mci_…", "expires_at": "…", "shown_once": true }`
-- GET /v1/admin/invites -> `{ "rows": [ { "id", "prefix", "note", "founding", "max_uses", "use_count", "expires_at", "status", "created_at" } ] }`
-- GET /v1/admin/members -> `{ "rows": [ { "creator_slug", "display_name", "membership", "founding", "referral_share_bps", "billing_mode", "models": [...], "key_prefixes": [...], "origins": [...], "joined_at", "last_submission_at" } ] }`
+- POST /v1/admin/invites body `{ display_name (required), email?, model_name?, source_kind? ('excel'|'github'|'online'|'other'), source_ref?, founding: bool }` -> `{ "invite_id", "invite_url": "https://edgedesksports.com/join/mci_…", "token": "mci_…", "expires_at", "shown_once": true, "invite": { display_name, model_name, email, source_kind, founding }, "message": "ready-to-send onboarding text" }` (the legacy `{ prefill: {...} }` body shape is still accepted)
+- GET /v1/admin/invites -> `{ "rows": [ { "id", "display_name", "model_name", "email", "source_kind", "note", "founding", "max_uses", "use_count", "expires_at", "created_at", "status": "sent"|"redeemed"|"expired"|"revoked" } ] }` (raw tokens are hashed at rest and never returned)
+- POST /v1/admin/invites/{id}/revoke -> `{ "ok": true, "already_revoked": bool }`
+- GET /v1/admin/overview -> `{ "collective": { founding_members, creators, subscribers, mrr_cents, billing_live }, "onboarding": { invites_pending, invites_redeemed }, "today": { models_submitted, models_missing, quarantined_rows }, "economics": { price_cents, reserve_bps, platform_bps, founder_pool_bps, founder_count, reserve_cents, platform_cents, pool_cents, per_founder_cents } }`
+- GET /v1/admin/members -> `{ "rows": [ { "creator_slug", "display_name", "description", "website_url", "account_status", "membership", "founding", "referral_share_bps", "billing_mode", "models": [ { slug, name, sport, source_kind, source_ref } ], "key_prefixes": [...], "origins": [...], "joined_at", "last_submission_at" } ] }`
 - GET /v1/admin/quarantine -> `{ "rows": [ { "projection_id", "creator_slug", "model_name", "raw_game_ref", "raw_row": {…}, "reason", "received_at" } ] }`
 - POST /v1/admin/quarantine/{id}/resolve body `{ "game_id": "…" }` or `{ "alias": { "sport": "NFL", "alias": "Jags", "team_code": "JAX" } }` -> `{ "ok": true, "resolved": 3 }` (alias path re-resolves all quarantined rows that now match)
 - POST /v1/admin/games body `{ "sport": "NFL", "season": 2026, "games": [ { "week": 3, "kickoff": "…", "home": "KC", "away": "BUF" } ] }` -> `{ "ok": true, "upserted": 16 }`
 - POST /v1/admin/results body `{ "results": [ { "game_id": "…", "home_score": 27, "away_score": 24, "closing_spread": -2.5, "closing_total": 47.5, "closing_home_ml_prob": 0.62 } ] }` -> `{ "ok": true, "settled": 1, "graded": 3 }`
-- GET /v1/admin/earnings -> `{ "rows": [ { "creator_slug", "month", "earned_cents", "clawed_cents", "paid_cents", "balance_cents", "available_cents" } ] }`
+- GET /v1/admin/earnings -> `{ "summary": { price_cents, subscribers, mrr_cents, reserve_bps, platform_bps, founder_pool_bps, founder_count, referral_bps, reserve_cents, platform_cents, pool_cents, per_founder_cents, billing_live }, "rows": [ { "creator_slug", "month", "earned_cents", "clawed_cents", "paid_cents", "balance_cents", "available_cents" } ] }`

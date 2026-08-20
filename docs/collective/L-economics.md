@@ -8,9 +8,21 @@ Purpose: the complete money design at the decided Section 5 numbers, exactly as 
 
 **$24.99 per month, monthly only.** (Owner decision 2026-08-20: this supersedes the original $20/mo plus $200/yr plan. The annual plan is disabled.) One price across the whole ecosystem. No creator sets a different standalone price for Collective access, in either mode. A single anchor price is what stops the members from undercutting each other into nothing. Stored as `pricing.monthly_cents = 2499` and `pricing.annual_cents = 0` (zero disables annual everywhere: the site and embeds hide the annual line, and the billing function only offers the annual plan when a Stripe annual price is configured, which it is not), surfaced through `/v1/meta` so every page and embed quotes the same number from the same row.
 
-## 2. Mode A, referral (the default)
+## 2. The revenue waterfall (owner decision 2026-08-20, supersedes referral compensation)
 
-The Collective bills the end user $24.99 directly. The referring creator earns **40 percent recurring, $9.99 per subscriber per month** (the ledger computes 2499 x 4000 / 10000 = 999 cents), for as long as that subscriber stays. The Collective keeps $15.00. Zero billing setup, zero support burden, zero payout plumbing on the creator's side; the Collective owns the customer relationship, the churn data, and the retention.
+Creator compensation is no longer a referral percentage. Gross Collective revenue splits three ways, all config-driven:
+
+| Allocation | Share | Purpose |
+|---|---|---|
+| Operating reserve | 10% (`econ.reserve_bps` 1000) | Infrastructure, data, APIs, software, processing |
+| Platform | 30% (`econ.platform_bps` 3000) | EdgeDesk: platform, billing, hosting, development, administration |
+| Founding Collective Pool | 60% (`econ.founder_pool_bps` 6000) | Divided equally across the founding seats |
+
+The pool divides by `econ.founder_count` (6), so **each founding member receives 10% of gross Collective revenue**, fixed per seat whether or not every seat is filled yet; undistributed seats stay with the Collective. At $24.99 the ledger posts 249 cents per founder per subscriber invoice (2499 x 6000 / 10000 / 6). Founder compensation is never based on picks, submissions, performance, sports covered, or effort: simple and predictable by design.
+
+**Referral is a separate concept.** It is customer acquisition, carried by `econ.referral_bps` (0 by default), posted to the attributed creator on top of, never out of, the founder pool. Attribution capture keeps running from day one either way. The old `share.*` keys and `creators.referral_share_bps` values were migrated to 0 and remain only as the referral knob.
+
+The sections below marked Mode A and Mode B describe the ORIGINAL referral and wholesale design and are retained for history; where they conflict with this section, this section wins.
 
 Every creator lands in Mode A by default (`creators.billing_mode` default `'referral'`). The rate is **stored per creator** as `creators.referral_share_bps` (default 4000 from `share.referral_bps_default`), never derived from a tier check at earn time.
 
@@ -57,8 +69,13 @@ All money numbers live in `collective.config` and only there. Changing one is an
 |---|---|---|
 | `pricing.monthly_cents` | 2499 | Retail monthly price |
 | `pricing.annual_cents` | 0 | Annual plan disabled, monthly only |
-| `share.referral_bps_default` | 4000 | Mode A default share (40 percent, $9.99) |
-| `share.founding_bps` | 5000 | Founding share written to the creator row (50 percent, $12.49) |
+| `econ.reserve_bps` | 1000 | Operating reserve share |
+| `econ.platform_bps` | 3000 | Platform allocation |
+| `econ.founder_pool_bps` | 6000 | Founding Collective Pool |
+| `econ.founder_count` | 6 | Founding seats the pool divides across |
+| `econ.referral_bps` | 0 | Separate referral acquisition share, off by default |
+| `share.referral_bps_default` | 0 | Legacy, superseded by econ.referral_bps |
+| `share.founding_bps` | 5000 | Legacy, superseded by the founder pool |
 | `share.founding_seats` | 10 | Founding seat count |
 | `wholesale.seat_cents` | 1400 | Mode B per seat per month |
 | `wholesale.min_seats` | 10 | Mode B minimum seats |

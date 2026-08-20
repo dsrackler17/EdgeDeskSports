@@ -47,7 +47,7 @@ Deno.serve(async (req) => {
         prefill: st.prefill ?? {}, expires_at: st.expires_at ?? null,
         request_url: "/v1/join/request",
       };
-      if (st.status === "expired" || st.status === "spent") return json(body, 410);
+      if (st.status === "expired" || st.status === "spent" || st.status === "revoked") return json(body, 410);
       return json(body, 200, { "cache-control": "no-store" });
     }
 
@@ -62,6 +62,7 @@ Deno.serve(async (req) => {
         display_name?: string; sport?: string; model_name?: string;
         description?: string | null; website_url?: string | null;
         x_handle?: string | null; logo_url?: string | null; accept_terms?: boolean;
+        source_kind?: string | null; source_ref?: string | null;
       } | null;
       if (!body) return err("invalid_payload", "Body must be JSON.", 422);
 
@@ -88,6 +89,10 @@ Deno.serve(async (req) => {
       };
       const website = cleanUrl(body.website_url);
       const logo = cleanUrl(body.logo_url);
+      // Model source: optional forever; an unknown kind is dropped, not fatal.
+      const srcKind = typeof body.source_kind === "string" &&
+        ["excel", "github", "online", "other"].includes(body.source_kind) ? body.source_kind : null;
+      const srcRef = (body.source_ref ?? "").toString().trim().slice(0, 300) || null;
       if (problems.length) return err("invalid_payload", problems.join(" "), 422, problems);
 
       const fresh = await newApiKey("live");
@@ -105,13 +110,14 @@ Deno.serve(async (req) => {
           website_url: website,
           x_handle: (body.x_handle ?? "").toString().trim().replace(/^@/, "") || null,
           logo_url: logo,
+          source_kind: srcKind, source_ref: srcRef,
         },
         p_key_prefix: fresh.prefix,
         p_key_hash: fresh.hash,
       });
 
       if (!out.ok) {
-        const status = out.code === "token_expired" || out.code === "token_spent" ? 410 : 404;
+        const status = out.code === "token_expired" || out.code === "token_spent" || out.code === "token_revoked" ? 410 : 404;
         return err(out.code ?? "token_invalid", out.message ?? "This invite cannot be used.", status);
       }
 

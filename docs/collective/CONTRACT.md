@@ -120,6 +120,11 @@ Seeded keys and values (the Section 5 numbers live here and only here):
 |---|---|
 | `pricing.monthly_cents` | `2499` |
 | `pricing.annual_cents` | `0` |
+| `econ.reserve_bps` | `1000` |
+| `econ.platform_bps` | `3000` |
+| `econ.founder_pool_bps` | `6000` |
+| `econ.founder_count` | `6` |
+| `econ.referral_bps` | `0` |
 | `share.referral_bps_default` | `4000` |
 | `share.founding_bps` | `5000` |
 | `share.founding_seats` | `10` |

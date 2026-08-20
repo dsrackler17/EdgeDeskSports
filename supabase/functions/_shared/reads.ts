@@ -20,8 +20,8 @@ export async function viewGet<T = unknown>(view: string, query: string): Promise
   return await res.json() as T[];
 }
 
-export async function viewCount(view: string, query: string): Promise<number> {
-  const res = await fetch(`${SB_URL}/rest/v1/${view}?select=id&${query}`, {
+export async function viewCount(view: string, query: string, column = "id"): Promise<number> {
+  const res = await fetch(`${SB_URL}/rest/v1/${view}?select=${column}&${query}`, {
     method: "HEAD",
     headers: {
       "apikey": SERVICE_KEY,
