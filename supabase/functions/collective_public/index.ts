@@ -134,6 +134,49 @@ Deno.serve(async (req) => {
       }, 200, FREE_CACHE);
     }
 
+    // Who am I: the one route the site uses to decide which dashboard to
+    // render. Role resolution happens here, server side, from the actual
+    // rows: a creators row makes a creator, an active subscribers row makes
+    // a subscriber, anyone else signed in is a member. The client only uses
+    // this for layout; every paid number stays gated in its own response.
+    if (req.method === "GET" && path === "/v1/me") {
+      const user = await getUser(req);
+      if (!user) return json({ signed_in: false, role: "guest" }, 200, NO_STORE);
+      interface SubscriberRow { status: string; plan: string; current_period_end: string | null; started_at: string }
+      const [creators, subs, adminCfg] = await Promise.all([
+        viewGet<CreatorRow>("creators", `select=*&user_id=eq.${user.id}&limit=1`),
+        viewGet<SubscriberRow>("subscribers",
+          `select=status,plan,current_period_end,started_at&user_id=eq.${user.id}&limit=1`),
+        rpc<unknown>("get_config", { p_key: "admin.user_ids" }),
+      ]);
+      const admin = Array.isArray(adminCfg) && adminCfg.includes(user.id);
+      const entitled = await isEntitled(user.id);
+      const c = creators[0] ?? null;
+      let creator = null;
+      if (c) {
+        const wall = await buildWall();
+        const mine = wall.filter((w) => w.creator_slug === c.slug);
+        creator = {
+          slug: c.slug, display_name: c.display_name, founding: c.founding_member,
+          membership: mine[0]?.membership ?? "MEMBER", monogram: mine[0]?.monogram ?? "",
+          logo_url: c.logo_url,
+          models: mine.map((w) => ({ model_slug: w.model_slug, model_name: w.model_name, sport: w.sport })),
+        };
+      }
+      const sub = subs[0] ?? null;
+      const role = c
+        ? "creator"
+        : (sub && ["active", "past_due"].includes(sub.status) ? "subscriber" : "member");
+      return json({
+        signed_in: true, email: user.email, role, admin, entitled,
+        founding: c?.founding_member ?? false,
+        creator,
+        subscription: sub
+          ? { status: sub.status, plan: sub.plan, current_period_end: sub.current_period_end, started_at: sub.started_at }
+          : null,
+      }, 200, NO_STORE);
+    }
+
     let m = path.match(/^\/v1\/creators\/([a-z0-9-]+)$/);
     if (req.method === "GET" && m) {
       const payload = await creatorPayload(m[1]);
@@ -164,7 +207,10 @@ Deno.serve(async (req) => {
           : Promise.resolve([] as LogRow[]),
       ]);
       return json({
-        creator: { slug: payload.creator.slug, display_name: payload.creator.display_name },
+        creator: {
+          slug: payload.creator.slug, display_name: payload.creator.display_name,
+          founding: payload.creator.founding,
+        },
         model: { model_slug: model.model_slug, model_name: model.model_name, sport: model.sport,
           description: models[0]?.description ?? null },
         record: model.record,
@@ -396,6 +442,30 @@ Deno.serve(async (req) => {
       return json(out, 200, NO_STORE);
     }
 
+    // The submission center: every slate this creator has ever posted, newest
+    // first, with the stored per-slate counts. Answers "did my model actually
+    // submit?" without the creator hunting through the public surfaces.
+    if (path === "/v1/dashboard/submissions" && req.method === "GET") {
+      const ctx = await requireCreator(req);
+      if (ctx instanceof Response) return ctx;
+      interface SubListRow {
+        id: string; received_at: string; data_origin: string;
+        n_rows: number; n_resolved: number; n_quarantined: number; n_late: number;
+        models: { slug: string; name: string; sport_code: string };
+      }
+      const rows = await viewGet<SubListRow>("submissions",
+        `select=id,received_at,data_origin,n_rows,n_resolved,n_quarantined,n_late,` +
+        `models!inner(slug,name,sport_code,creator_id)` +
+        `&models.creator_id=eq.${ctx.creator.id}&order=received_at.desc&limit=40`);
+      return json({
+        rows: rows.map((s) => ({
+          id: s.id, received_at: s.received_at, data_origin: s.data_origin,
+          model_slug: s.models.slug, model_name: s.models.name, sport: s.models.sport_code,
+          rows: s.n_rows, resolved: s.n_resolved, quarantined: s.n_quarantined, late: s.n_late,
+        })),
+      }, 200, NO_STORE);
+    }
+
     if (path === "/v1/dashboard/keys/rotate" && req.method === "POST") {
       const ctx = await requireCreator(req);
       if (ctx instanceof Response) return ctx;
@@ -434,7 +504,8 @@ Deno.serve(async (req) => {
     }
 
     if (["/v1/dashboard/profile", "/v1/dashboard/keys/rotate", "/v1/dashboard/origins", "/v1/dashboard/submit"].includes(path) ||
-      ["/v1/meta", "/v1/wall", "/v1/rules", "/v1/rankings", "/v1/activity", "/v1/games", "/v1/consensus", "/v1/dashboard"].includes(path)) {
+      ["/v1/meta", "/v1/wall", "/v1/rules", "/v1/rankings", "/v1/activity", "/v1/games", "/v1/consensus",
+        "/v1/dashboard", "/v1/dashboard/submissions", "/v1/me"].includes(path)) {
       return err("method_not_allowed", "Wrong method for this route.", 405);
     }
     return err("not_found", `No such route: ${req.method} ${path}`, 404);

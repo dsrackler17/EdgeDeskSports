@@ -44,7 +44,7 @@ Testing hook (all pages and embed): the API base can be overridden with `?api=<b
 
 ## GET /v1/models/{creator}/{model}  (free)
 ```json
-{ "creator": { "slug": "…", "display_name": "…" },
+{ "creator": { "slug": "…", "display_name": "…", "founding": true },
   "model": { "model_slug": "…", "model_name": "…", "sport": "NFL", "description": null },
   "record": { … }, "coverage": [ { "season": 2026, "week": 1, "games_available": 16, "games_submitted": 14 } ],
   "coverage_pct": 87.5,
@@ -106,6 +106,26 @@ Not entitled: `{ "entitled": false, "reason": "subscription_required" | "billing
 ## GET /v1/rules  (free)
 ```json
 { "version": 1, "rules": [ "Pick result: …", "Margin error: …", "Brier: …", "First submission: …", "Coverage: …" ] }
+```
+
+## GET /v1/me  (JWT optional; the role router for the site)
+Anonymous callers get `{ "signed_in": false, "role": "guest" }`. Signed-in callers get their server-resolved role: `creator` when a creators row carries their user id, `subscriber` when an active or past_due subscribers row does, else `member`. The client uses this only to pick a dashboard layout; every paid or private number stays gated inside its own response.
+```json
+{ "signed_in": true, "email": "moose@example.com", "role": "creator", "admin": false,
+  "entitled": true, "founding": true,
+  "creator": { "slug": "moose", "display_name": "Must Be Moose", "founding": true,
+    "membership": "ACTIVE CONTRIBUTOR", "monogram": "MM", "logo_url": null,
+    "models": [ { "model_slug": "nfl-model", "model_name": "Moose NFL", "sport": "NFL" } ] },
+  "subscription": null }
+```
+For a subscriber, `creator` is null and `subscription` is `{ "status": "active", "plan": "monthly", "current_period_end": "…", "started_at": "…" }`.
+
+## GET /v1/dashboard/submissions  (creator JWT)
+Every slate the creator has posted, newest first, capped at 40, with the counts stored at ingest time.
+```json
+{ "rows": [ { "id": "…", "received_at": "…", "data_origin": "live",
+  "model_slug": "nfl-model", "model_name": "Moose NFL", "sport": "NFL",
+  "rows": 14, "resolved": 13, "quarantined": 1, "late": 0 } ] }
 ```
 
 ## GET /v1/dashboard  (creator JWT)
