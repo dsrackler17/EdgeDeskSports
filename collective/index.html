@@ -585,7 +585,7 @@ async function renderBoard(view){
       cards+='<div class="gamecard">'+hd+cons+rows+'</div>';
     });
     if(!cards)cards='<div class="emptybox">No games on this slate yet. Games appear when the schedule is loaded.</div>';
-    var sub=(d.entitled===false)?'<div class="panel" style="margin-bottom:14px"><b>Locked numbers are for subscribers.</b> <span class="note">One subscription unlocks every model here: '+cents(m.pricing.monthly_cents)+' a month or '+cents(m.pricing.annual_cents)+' a year. '+(m.billing_live?'':'Billing opens soon.')+'</span> <a href="#about">Details →</a></div>':'';
+    var sub=(d.entitled===false)?'<div class="panel" style="margin-bottom:14px"><b>Locked numbers are for subscribers.</b> <span class="note">One subscription unlocks every model here: '+cents(m.pricing.monthly_cents)+' a month'+(m.pricing.annual_cents>0?' or '+cents(m.pricing.annual_cents)+' a year':'')+'. '+(m.billing_live?'':'Billing opens soon.')+'</span> <a href="#about">Details →</a></div>':'';
     view.innerHTML=head+sub+cards;
     document.querySelectorAll('.wk button').forEach(function(b){
       b.onclick=function(){var w=b.getAttribute('data-w');BOARD_WEEK=w?+w:null;renderBoard(view);};
@@ -649,7 +649,7 @@ async function renderAbout(view,jump){
       '<h2>For readers</h2>'+
       '<div class="panel" id="join">'+
         '<div class="kv"><span><div class="k">Monthly</div><div class="price">'+cents(m.pricing.monthly_cents)+'</div></span>'+
-        '<span><div class="k">Annual</div><div class="price">'+cents(m.pricing.annual_cents)+'</div></span></div>'+
+        (m.pricing.annual_cents>0?'<span><div class="k">Annual</div><div class="price">'+cents(m.pricing.annual_cents)+'</div></span>':'')+'</div>'+
         '<p class="note" style="margin:10px 0 12px">One subscription, one price everywhere, every model’s pre-kickoff numbers, the consensus, and model comparison. The historical record, profiles, and rankings are free forever.</p>'+
         (m.billing_live
           ?'<button class="btn primary" id="subBtn">Subscribe</button>'
@@ -664,6 +664,167 @@ async function renderAbout(view,jump){
     };
     if(jump){var j=$('join');if(j)j.scrollIntoView();}
   }catch(e){fail(view,e);}
+}
+
+/* ================= slate upload (dashboard) =================
+   A signed-in creator posts a slate straight from the browser: upload a
+   CSV or Excel file (or paste rows), the columns auto-map, a dry run shows
+   exactly what would happen, then it submits through the same validation
+   pipeline as the API. No API key ever touches the page. */
+function parseCSV(text){
+  var rows=[],row=[],cur='',q=false;
+  for(var i=0;i<text.length;i++){
+    var ch=text[i];
+    if(q){
+      if(ch==='"'){if(text[i+1]==='"'){cur+='"';i++;}else q=false;}
+      else cur+=ch;
+    }else if(ch==='"')q=true;
+    else if(ch===','||ch==='\t'){row.push(cur);cur='';}
+    else if(ch==='\n'||ch==='\r'){
+      if(cur!==''||row.length){row.push(cur);rows.push(row);row=[];cur='';}
+      if(ch==='\r'&&text[i+1]==='\n')i++;
+    }else cur+=ch;
+  }
+  if(cur!==''||row.length){row.push(cur);rows.push(row);}
+  return rows.filter(function(r){return r.some(function(c){return String(c).trim()!=='';});});
+}
+/* Minimal .xlsx reader: an xlsx is a zip; modern browsers can inflate its
+   entries natively with DecompressionStream, so no library is needed. */
+async function parseXLSX(buf){
+  var u8=new Uint8Array(buf);
+  var dv=new DataView(buf);
+  function findEntry(name){
+    for(var i=0;i<u8.length-4;i++){
+      if(u8[i]===0x50&&u8[i+1]===0x4b&&u8[i+2]===0x03&&u8[i+3]===0x04){
+        var nlen=dv.getUint16(i+26,true),xlen=dv.getUint16(i+28,true);
+        var nm='';for(var j2=0;j2<nlen;j2++)nm+=String.fromCharCode(u8[i+30+j2]);
+        if(nm===name){
+          var method=dv.getUint16(i+8,true),csize=dv.getUint32(i+18,true);
+          var start=i+30+nlen+xlen;
+          return {method:method,data:u8.slice(start,start+csize)};
+        }
+      }
+    }
+    return null;
+  }
+  async function inflate(e){
+    if(!e)return null;
+    if(e.method===0)return new TextDecoder().decode(e.data);
+    var ds=new DecompressionStream('deflate-raw');
+    var stream=new Blob([e.data]).stream().pipeThrough(ds);
+    return await new Response(stream).text();
+  }
+  var shared=[];
+  var sx=await inflate(findEntry('xl/sharedStrings.xml'));
+  if(sx){
+    var sdoc=new DOMParser().parseFromString(sx,'text/xml');
+    var sis=sdoc.getElementsByTagName('si');
+    for(var s2=0;s2<sis.length;s2++)shared.push(sis[s2].textContent);
+  }
+  var wx=await inflate(findEntry('xl/worksheets/sheet1.xml'));
+  if(!wx)throw new Error('Could not read the first worksheet. Save the file as CSV and upload that instead.');
+  var doc=new DOMParser().parseFromString(wx,'text/xml');
+  var out=[];
+  var rowsXml=doc.getElementsByTagName('row');
+  for(var r2=0;r2<rowsXml.length;r2++){
+    var cells=rowsXml[r2].getElementsByTagName('c');
+    var row=[];
+    for(var c2=0;c2<cells.length;c2++){
+      var cell=cells[c2];
+      var ref=cell.getAttribute('r')||'';
+      var col=0;
+      for(var k2=0;k2<ref.length;k2++){var cc=ref.charCodeAt(k2);if(cc>=65&&cc<=90)col=col*26+(cc-64);else break;}
+      var idx=Math.max(0,col-1);
+      var t=cell.getAttribute('t');
+      var v=cell.getElementsByTagName('v')[0];
+      var val=v?v.textContent:'';
+      if(t==='s')val=shared[+val]!==undefined?shared[+val]:'';
+      else if(t==='inlineStr'){var is2=cell.getElementsByTagName('t')[0];val=is2?is2.textContent:'';}
+      while(row.length<idx)row.push('');
+      row[idx]=val;
+    }
+    if(row.some(function(c3){return String(c3).trim()!=='';}))out.push(row);
+  }
+  return out;
+}
+var SLATE_FIELDS=[
+  {f:'home_team',label:'Home team',req:true,syn:['home','home_team','hometeam','h','home team']},
+  {f:'away_team',label:'Away team',req:true,syn:['away','road','away_team','visitor','a','away team']},
+  {f:'kickoff',label:'Game date',req:true,syn:['date','kickoff','game_date','datetime','start','start_time','gamedate','game date']},
+  {f:'week',label:'Week',req:false,syn:['week','wk']},
+  {f:'projected_spread',label:'Your spread (home side)',req:false,syn:['projected_spread','proj_spread','spread','line','my_line','model_spread','my line']},
+  {f:'projected_total',label:'Your total',req:false,syn:['projected_total','proj_total','total','ou','over_under','over/under']},
+  {f:'line_at_submission',label:'Market line you saw',req:false,syn:['line_at_submission','book_line','market_line','vegas_line','book line','market line']},
+  {f:'home_win_probability',label:'Home win % (moneyline)',req:false,syn:['ml_prob_home','home_win_probability','home_win_prob','win_prob','home_wp','ml_home','winprob','win prob','home win prob']},
+  {f:'cover_probability',label:'Cover % (at your line)',req:false,syn:['cover_prob_0','cover_probability','cover_prob','cover']},
+  {f:'pick_side',label:'Pick (home/away)',req:false,syn:['pick','pick_side','side','selection']},
+  {f:'proj_home_score',label:'Projected home score',req:false,syn:['proj_home_score','home_pts','home_score','home_points','home pts']},
+  {f:'proj_away_score',label:'Projected away score',req:false,syn:['proj_away_score','road_pts','away_pts','away_score','away_points','away pts','road pts']},
+  {f:'confidence',label:'Confidence (your scale)',req:false,syn:['confidence','conf']}
+];
+var SLATE={cols:[],rows:[],map:{},checked:false};
+function slateGuessMap(){
+  SLATE.map={};
+  SLATE.cols.forEach(function(h,i){
+    var n=String(h).toLowerCase().trim();
+    SLATE_FIELDS.forEach(function(fd){
+      if(SLATE.map[fd.f]===undefined&&fd.syn.indexOf(n)>=0)SLATE.map[fd.f]=i;
+    });
+  });
+}
+function slateNum(v){
+  if(v==null)return null;
+  var s=String(v).replace(/[%+]/g,'').trim();
+  if(s===''||isNaN(+s))return null;
+  return +s;
+}
+function slateKick(v){
+  var n=slateNum(v);
+  if(n!==null&&n>20000&&n<80000){ /* Excel date serial */
+    return new Date(Math.round((n-25569)*86400*1000)).toISOString();
+  }
+  var s=String(v).trim();
+  if(/^\d{4}-\d{2}-\d{2}$/.test(s))return s+'T17:00:00Z';
+  if(/^\d{1,2}\/\d{1,2}\/\d{2,4}$/.test(s)){
+    var p=s.split('/');var y=p[2].length===2?'20'+p[2]:p[2];
+    return y+'-'+String(p[0]).padStart(2,'0')+'-'+String(p[1]).padStart(2,'0')+'T17:00:00Z';
+  }
+  var d=new Date(s);
+  return isNaN(d.getTime())?null:d.toISOString();
+}
+function slateBuildRows(season,week){
+  var out=[],problems=[];
+  for(var r=1;r<SLATE.rows.length;r++){
+    var row=SLATE.rows[r];
+    function g(f){var i=SLATE.map[f];return i===undefined||i===null?null:(row[i]!==undefined?row[i]:null);}
+    var home=String(g('home_team')||'').trim(),away=String(g('away_team')||'').trim();
+    if(!home&&!away)continue;
+    if(!home||!away){problems.push('Row '+(r+1)+': needs both home and away.');continue;}
+    var kick=slateKick(g('kickoff'));
+    if(!kick){problems.push('Row '+(r+1)+': could not read the date "'+esc(String(g('kickoff')))+'".');continue;}
+    var o={
+      game_ref:('R'+r+'_'+away+'_'+home).toUpperCase().replace(/[^A-Z0-9_]/g,''),
+      home_team:home,away_team:away,kickoff:kick
+    };
+    var wk=slateNum(g('week'));if(wk===null&&week)wk=+week;if(wk!==null)o.week=wk;
+    ['projected_spread','projected_total','line_at_submission','proj_home_score','proj_away_score','confidence'].forEach(function(f){
+      var n=slateNum(g(f));if(n!==null)o[f]=n;
+    });
+    ['home_win_probability','cover_probability'].forEach(function(f){
+      var n=slateNum(g(f));
+      if(n!==null){if(n>1&&n<=100)n=n/100;o[f]=n;}
+    });
+    var pick=String(g('pick_side')||'').trim().toLowerCase();
+    if(pick){
+      if(pick==='home'||pick==='h'||pick===home.toLowerCase())o.pick_side='home';
+      else if(pick==='away'||pick==='a'||pick==='road'||pick===away.toLowerCase())o.pick_side='away';
+    }
+    if(o.cover_probability!==undefined&&o.line_at_submission===undefined&&o.projected_spread!==undefined){
+      o.line_at_submission=o.projected_spread;
+    }
+    out.push(o);
+  }
+  return {rows:out,problems:problems};
 }
 
 /* ================= dashboard ================= */
@@ -691,6 +852,30 @@ async function renderDashboard(view){
     var html='<h1>'+esc(c.display_name)+' <span class="note" style="font-weight:400">dashboard</span></h1>'+
       '<p class="lede">'+chipFor(c.membership)+(c.founding?' <span class="chip founding">Founding member, '+(c.referral_share_bps/100)+'% recurring</span>':' <span class="note">'+(c.referral_share_bps/100)+'% recurring referral share</span>')+'</p>';
     /* earnings */
+    /* post a slate: file or paste, auto-map, dry run, submit */
+    var mMeta=await meta().catch(function(){return {sports:[{code:'NFL',season:new Date().getFullYear()}]};});
+    var season0=(mMeta.sports[0]&&mMeta.sports[0].season)||new Date().getFullYear();
+    html+='<h2>Post a slate</h2><div class="panel">'+
+      '<p class="note" style="margin:0 0 10px">Upload a CSV or Excel file with your projections, or paste rows straight from your spreadsheet. Columns map automatically, you check the result, then it posts. Your first live slate flips your profile to Active Contributor.</p>'+
+      '<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end">'+
+      (d.models.length>1?'<div style="min-width:160px"><label>Model</label><select id="slModel">'+d.models.map(function(x){return '<option value="'+esc(x.model_slug)+'">'+esc(x.model_name)+'</option>';}).join('')+'</select></div>':'')+
+      '<div style="width:110px"><label>Season</label><input id="slSeason" type="number" value="'+season0+'"></div>'+
+      '<div style="width:90px"><label>Week <span class="opt">opt</span></label><input id="slWeek" type="number" placeholder="3"></div>'+
+      '<div style="min-width:200px"><label>Data type</label><select id="slOrigin">'+
+        '<option value="live">Live: counts toward my record</option>'+
+        '<option value="backfill">Backfill: history, shown separately</option>'+
+        '<option value="test">Test: throwaway</option></select></div>'+
+      '</div>'+
+      '<div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:12px;align-items:center">'+
+      '<input type="file" id="slFile" accept=".csv,.tsv,.txt,.xlsx" style="width:auto">'+
+      '<span class="note">or</span><button class="btn" id="slPasteBtn">Paste rows instead</button>'+
+      '</div>'+
+      '<textarea id="slPaste" class="hide" rows="5" style="margin-top:10px;font-family:\'JetBrains Mono\',monospace;font-size:12px" placeholder="home,away,date,spread,total&#10;KC,BUF,2026-09-20,-2.5,49.5"></textarea>'+
+      '<div id="slMap"></div><div id="slPrev"></div>'+
+      '<div style="display:flex;gap:10px;margin-top:12px" id="slBtns" class="hide">'+
+      '<button class="btn" id="slCheck">Check slate (dry run)</button>'+
+      '<button class="btn primary" id="slGo" disabled>Post slate</button></div>'+
+      '<div id="slOut"></div></div>';
     html+='<h2>Earnings</h2><div class="panel"><div class="kv">'+
       '<span><div class="k">This month</div><div class="v">'+cents(d.earnings.this_month_cents)+'</div></span>'+
       '<span><div class="k">Balance</div><div class="v">'+cents(d.earnings.balance_cents)+'</div></span>'+
@@ -713,7 +898,7 @@ async function renderDashboard(view){
     /* profile */
     html+='<h2>Profile</h2><div class="panel" style="max-width:560px">'+
       '<label>Display name</label><input id="pfName" value="'+esc(c.display_name)+'">'+
-      '<label>Description <span class="opt">optional</span></label><input id="pfDesc" value="'+esc(c.description||'')+'" placeholder="One sentence about your model">'+
+      '<label>Description <span class="opt">optional</span></label><textarea id="pfDesc" rows="3" placeholder="Tell readers what your model does, how often you post, and what makes it yours.">'+esc(c.description||'')+'</textarea>'+
       '<label>Website <span class="opt">optional</span></label><input id="pfSite" value="'+esc(c.website_url||'')+'" placeholder="https://">'+
       '<label>X handle <span class="opt">optional</span></label><input id="pfX" value="'+esc(c.x_handle||'')+'" placeholder="handle, no @">'+
       '<label>Logo URL <span class="opt">optional, monogram used otherwise</span></label><input id="pfLogo" value="'+esc(c.logo_url||'')+'" placeholder="https://">'+
@@ -751,6 +936,105 @@ async function renderDashboard(view){
       }catch(e){toast(e.message);}
     };
     $('soBtn').onclick=function(){clearSession();renderDashboard(view);};
+
+    /* ---- slate upload wiring ---- */
+    function slatePaintMap(){
+      var opts='<option value="">not in my file</option>'+SLATE.cols.map(function(h,i){return '<option value="'+i+'">'+esc(String(h))+'</option>';}).join('');
+      var rows=SLATE_FIELDS.map(function(fd){
+        var sel=SLATE.map[fd.f]!==undefined?SLATE.map[fd.f]:'';
+        return '<tr><td>'+esc(fd.label)+(fd.req?' <span style="color:var(--warn)">*</span>':'')+'</td>'+
+          '<td><select data-slf="'+fd.f+'">'+opts.replace('value="'+sel+'"','value="'+sel+'" selected')+'</select></td></tr>';
+      }).join('');
+      var ignored=SLATE.cols.filter(function(h){var n=String(h).toLowerCase().trim();return ['result','win','won','w/l','grade'].indexOf(n)>=0;});
+      $('slMap').innerHTML='<label style="margin-top:14px">Column mapping</label>'+
+        '<div class="tblwrap mini"><table style="min-width:0"><tbody>'+rows+'</tbody></table></div>'+
+        (ignored.length?'<p class="note" style="margin-top:6px">Your "'+esc(ignored.join(', '))+'" column is ignored on purpose: the Collective grades every pick itself from final scores, never from a creator\'s own grading.</p>':'');
+      document.querySelectorAll('[data-slf]').forEach(function(s){
+        s.onchange=function(){
+          var v=s.value;
+          if(v==='')delete SLATE.map[s.getAttribute('data-slf')];
+          else SLATE.map[s.getAttribute('data-slf')]=+v;
+          SLATE.checked=false;$('slGo').disabled=true;slatePaintPrev();
+        };
+      });
+      slatePaintPrev();
+      $('slBtns').classList.remove('hide');
+    }
+    function slatePaintPrev(){
+      var built=slateBuildRows($('slSeason').value,$('slWeek').value);
+      var head=['Game','Date','Spread','Total','Home win %','Pick'];
+      var body=built.rows.slice(0,8).map(function(o){
+        return '<tr><td>'+esc(o.away_team)+' @ '+esc(o.home_team)+'</td>'+
+          '<td class="num">'+esc(o.kickoff.slice(0,10))+'</td>'+
+          '<td class="num">'+(o.projected_spread!==undefined?fmtSpread(o.projected_spread):'-')+'</td>'+
+          '<td class="num">'+(o.projected_total!==undefined?o.projected_total:'-')+'</td>'+
+          '<td class="num">'+(o.home_win_probability!==undefined?Math.round(100*o.home_win_probability)+'%':'-')+'</td>'+
+          '<td class="num">'+(o.pick_side||'-')+'</td></tr>';
+      }).join('');
+      $('slPrev').innerHTML='<label style="margin-top:10px">Preview: '+built.rows.length+' game'+(built.rows.length===1?'':'s')+(built.rows.length>8?' (first 8 shown)':'')+'</label>'+
+        '<div class="tblwrap mini"><table style="min-width:0"><thead><tr>'+head.map(function(h){return '<th>'+h+'</th>';}).join('')+'</tr></thead><tbody>'+
+        (body||'<tr><td colspan="6" class="note" style="text-align:center;padding:12px">Nothing parsed yet. Check the required mappings above.</td></tr>')+'</tbody></table></div>'+
+        (built.problems.length?'<p class="warnnote" style="margin-top:6px">'+built.problems.slice(0,5).map(esc).join('<br>')+'</p>':'');
+    }
+    async function slateLoad(rows2d){
+      if(!rows2d||rows2d.length<2){toast('Need a header row plus at least one game');return;}
+      SLATE.cols=rows2d[0];SLATE.rows=rows2d;SLATE.checked=false;
+      slateGuessMap();slatePaintMap();$('slGo').disabled=true;$('slOut').innerHTML='';
+    }
+    $('slFile').onchange=async function(){
+      var f=this.files&&this.files[0];if(!f)return;
+      try{
+        if(/\.xlsx$/i.test(f.name)){
+          if(typeof DecompressionStream==='undefined')throw new Error('This browser cannot read Excel files directly. Save as CSV and upload that.');
+          await slateLoad(await parseXLSX(await f.arrayBuffer()));
+        }else{
+          await slateLoad(parseCSV(await f.text()));
+        }
+      }catch(e){$('slOut').innerHTML='<div class="errbox">'+esc(e.message||String(e))+'</div>';}
+    };
+    $('slPasteBtn').onclick=function(){
+      $('slPaste').classList.toggle('hide');
+      if(!$('slPaste').classList.contains('hide'))$('slPaste').focus();
+    };
+    $('slPaste').oninput=function(){
+      var t=this.value.trim();
+      if(t.split('\n').length>=2)slateLoad(parseCSV(t));
+    };
+    async function slateSend(dry){
+      var built=slateBuildRows($('slSeason').value,$('slWeek').value);
+      if(!built.rows.length){toast('No rows to send');return;}
+      var env={
+        sport:(d.models[0]&&d.models[0].sport)||'NFL',
+        season:+$('slSeason').value,
+        data_origin:$('slOrigin').value,
+        rows:built.rows,dry_run:dry
+      };
+      if($('slWeek').value)env.week=+$('slWeek').value;
+      if($('slModel'))env.model=$('slModel').value;
+      $('slOut').innerHTML='<p class="note">'+(dry?'Checking':'Posting')+' '+built.rows.length+' games&hellip;</p>';
+      try{
+        var r=await api('/v1/dashboard/submit',{method:'POST',auth:true,headers:{'content-type':'application/json'},body:env});
+        var c2=r.counts||{};
+        var lines=(r.rows||[]).filter(function(x){return x.status!=='resolved';}).slice(0,10).map(function(x){
+          var col={late:'var(--warn)',quarantined:'var(--warn)',rejected:'var(--neg)'}[x.status]||'var(--dim)';
+          return '<div style="color:'+col+'" class="mono">'+esc(x.status.toUpperCase())+' '+esc(x.game_ref)+(x.reason?': '+esc(x.reason):'')+'</div>';
+        }).join('');
+        $('slOut').innerHTML='<div class="panel" style="margin-top:10px;border-color:'+((c2.rejected||0)>0?'rgba(217,154,43,.5)':'rgba(47,180,124,.5)')+'">'+
+          '<b>'+(dry?'Dry run:':'Posted:')+'</b> <span class="mono">'+(c2.resolved||0)+' matched, '+(c2.first||0)+' first submissions, '+(c2.movement||0)+' revisions, '+(c2.late||0)+' late, '+(c2.quarantined||0)+' quarantined, '+(c2.rejected||0)+' rejected</span>'+
+          (lines?'<div style="margin-top:8px;font-size:12px">'+lines+'</div>':'')+
+          ((c2.quarantined||0)>0?'<p class="note" style="margin:8px 0 0">Quarantined games could not be matched to the schedule (usually a team name). They are saved and get resolved on the admin side; nothing is lost.</p>':'')+
+          (dry?'<p class="note" style="margin:8px 0 0">Nothing was saved. If this looks right, hit Post slate.</p>':
+            '<p style="margin:8px 0 0"><b style="color:var(--pos)">Your slate is in.</b> <a href="#/'+esc(c.slug)+'">See your profile</a> or <a href="#">the wall</a>.</p>')+
+          '</div>';
+        if(dry){SLATE.checked=true;$('slGo').disabled=false;}
+        else{$('slGo').disabled=true;SLATE.checked=false;}
+      }catch(e){
+        $('slOut').innerHTML='<div class="errbox">'+esc(e.message)+'</div>';
+      }
+    }
+    $('slCheck').onclick=function(){slateSend(true);};
+    $('slGo').onclick=function(){if(SLATE.checked)slateSend(false);else toast('Run the check first');};
+
     function wireCopy(){
       document.querySelectorAll('[data-copy]').forEach(function(b){
         if(b._wired)return;b._wired=true;
