@@ -108,6 +108,18 @@ def _game(block, t, cur_date, season, book, source, captured_at, problems):
             problems.append(f"{away} @ {home}: implausible price {p}")
             return None
 
+    # Moneyline is the last pair in the block: away then home.
+    home_ml = away_ml = None
+    if len(nums) >= 10:
+        try:
+            a_ml, h_ml = int(float(nums[8])), int(float(nums[9]))
+            if all(abs(x) >= 100 and abs(x) <= 10000 for x in (a_ml, h_ml)):
+                away_ml, home_ml = a_ml, h_ml
+            else:
+                problems.append(f"{away} @ {home}: implausible moneyline {a_ml}/{h_ml}, skipped")
+        except ValueError:
+            problems.append(f"{away} @ {home}: unreadable moneyline, skipped")
+
     total_line = over_price = under_price = None
     tot = [b for b in block if TOT_RE.match(b)]
     if len(tot) >= 2:
@@ -140,6 +152,7 @@ def _game(block, t, cur_date, season, book, source, captured_at, problems):
         "home_line": home_line, "home_price": home_price,
         "away_line": away_line, "away_price": away_price,
         "total_line": total_line, "over_price": over_price, "under_price": under_price,
+        "home_ml_price": home_ml, "away_ml_price": away_ml,
     }
 
 
