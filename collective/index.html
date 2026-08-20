@@ -133,6 +133,39 @@ label .opt{color:var(--faint);text-transform:none;letter-spacing:0;font-weight:4
 .gb-row.cons .nm{color:var(--accent)}
 .gb-dot{width:7px;height:7px;border-radius:50%;display:inline-block;justify-self:end}
 .gb-empty{padding:10px 14px;color:var(--faint);font-family:'JetBrains Mono',monospace;font-size:12px}
+/* member ecosystem */
+.fstar{color:var(--gold);cursor:default;font-size:12px}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px}
+.mcard{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px;display:flex;flex-direction:column;gap:8px;transition:border-color .12s}
+.mcard:hover{border-color:var(--faint)}
+.mcard .mc-top{display:flex;gap:10px;align-items:center}
+.mcard .mc-name{font-weight:700}
+.mcard .mc-sub{color:var(--faint);font-size:11.5px}
+.mcard .mc-rec{font-family:'JetBrains Mono',monospace;font-size:12.5px;color:var(--dim)}
+.mcard .mc-foot{margin-top:auto;padding-top:6px;display:flex;justify-content:space-between;align-items:center;font-size:12px}
+.welcome{max-width:680px;margin:30px auto;text-align:center}
+.welcome h1{font-size:24px}
+.stepcards{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin:22px 0;text-align:left}
+.stepcards .panel{display:flex;flex-direction:column;gap:6px}
+.stepnum{color:var(--accent);font-family:'JetBrains Mono',monospace;font-weight:700;font-size:11px;letter-spacing:.12em}
+.dash-hd{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin:6px 0 4px}
+.dash-hd h1{margin:0}
+.statgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:1px;background:var(--border);border:1px solid var(--border);border-radius:10px;overflow:hidden;margin:12px 0 4px}
+.statgrid .st{background:var(--surface);padding:11px 13px}
+.statgrid .st .k{color:var(--faint);font-size:10px;text-transform:uppercase;letter-spacing:.05em}
+.statgrid .st .v{font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:700;margin-top:3px}
+.statgrid .st .v.ok{color:var(--pos)}
+.statgrid .st .v.warn{color:var(--warn)}
+.actrow{display:flex;gap:10px;padding:9px 2px;border-bottom:1px solid var(--border);font-size:12.5px;align-items:baseline;flex-wrap:wrap}
+.actrow:last-child{border-bottom:none}
+.actrow .tm{color:var(--faint);font-size:11px;margin-left:auto;white-space:nowrap}
+.frm{display:inline-flex;gap:3px;vertical-align:middle}
+.frm i{font-style:normal;display:inline-flex;align-items:center;justify-content:center;width:17px;height:17px;border-radius:4px;font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;background:var(--surface2);color:var(--dim)}
+.frm i.w{color:var(--pos);border:1px solid rgba(47,180,124,.4)}
+.frm i.l{color:var(--neg);border:1px solid rgba(226,96,68,.4)}
+.frm i.p{color:var(--warn);border:1px solid rgba(217,154,43,.4)}
+.duo{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px}
+.rolechip{display:inline-block;font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;border-radius:10px;padding:3px 9px;background:var(--surface2);border:1px solid var(--border);color:var(--dim)}
 </style>
 </head>
 <body>
@@ -143,6 +176,7 @@ label .opt{color:var(--faint);text-transform:none;letter-spacing:0;font-weight:4
   <nav class="tabs" id="tabs">
     <a href="#" data-r="wall">Wall</a>
     <a href="#board" data-r="board">Board</a>
+    <a href="#models" data-r="models">Models</a>
     <a href="#rankings" data-r="rankings">Rankings</a>
     <a href="#rules" data-r="rules">Rules</a>
     <a href="#about" data-r="about">About</a>
@@ -284,6 +318,40 @@ async function api(path,opts){
 }
 var META=null;
 async function meta(){if(META)return META;META=await api('/v1/meta');return META;}
+var WALLC=null;
+async function wallRows(){if(WALLC)return WALLC;WALLC=(await api('/v1/wall')).rows||[];return WALLC;}
+
+/* founding member identity: one badge, identical for every founding member,
+   driven entirely by the database flag. Full badge on profiles and cards,
+   a plain gold star where a row is too tight for words. */
+function foundBadge(r){return (r&&r.founding)?' <span class="chip founding">&#9733; Founding Member</span>':'';}
+function foundStar(r){return (r&&r.founding)?' <span class="fstar" title="Founding Member">&#9733;</span>':'';}
+
+/* one model card, used by the directory, dashboards, and featured rows */
+function modelCard(r){
+  var rec=r.record;
+  return '<div class="mcard">'+
+    '<div class="mc-top">'+avatar(r)+'<div style="min-width:0"><div class="mc-name">'+esc(r.creator_name)+foundStar(r)+'</div>'+
+    '<div class="mc-sub">'+esc(r.model_name)+' <span class="pill">'+esc(r.sport)+'</span></div></div></div>'+
+    '<div>'+chipFor(r.membership)+'</div>'+
+    '<div class="mc-rec">'+(rec
+      ?rec.wins+'-'+rec.losses+'-'+rec.pushes+' &middot; '+fmtPct(rec.win_pct,0)+' &middot; '+rec.graded+' graded'
+      :'Building sample &middot; no graded games yet')+'</div>'+
+    '<div class="mc-rec">'+(r.coverage_pct!=null?covCell(r.coverage_pct):'')+'</div>'+
+    '<div class="mc-foot"><span class="note">'+rel(r.last_submission_at)+'</span>'+
+    '<a href="#/model/'+esc(r.creator_slug)+'/'+esc(r.model_slug)+'">View model &rarr;</a></div></div>';
+}
+
+/* the activity feed rows shared by the wall and the member dashboard */
+function activityRows(rows,limit){
+  var out=(rows||[]).slice(0,limit||10).map(function(a){
+    return '<div class="actrow"><span><a href="#/'+esc(a.creator_slug)+'">'+esc(a.creator_name)+'</a> posted '+
+      (a.week!=null?'a W'+a.week+' ':'a ')+esc(a.sport)+' slate <span class="note">&middot; '+a.n_rows+' game'+(a.n_rows===1?'':'s')+
+      (a.n_first?', '+a.n_first+' first submissions':'')+'</span></span>'+
+      '<span class="tm">'+rel(a.at)+'</span></div>';
+  }).join('');
+  return out||'<p class="note" style="padding:8px 0">Quiet right now. Submissions appear here the moment they land.</p>';
+}
 
 /* ================= attribution first touch ================= */
 (function(){
@@ -308,6 +376,8 @@ function route(){
   function markTab(r){var a=document.querySelector('nav.tabs a[data-r="'+r+'"]');if(a)a.classList.add('on');}
   if(h===''||h==='/'){markTab('wall');return renderWall(view);}
   if(h==='board'){markTab('board');return renderBoard(view);}
+  if(h==='models'){markTab('models');return renderModels(view);}
+  if(h==='performance'){markTab('rankings');return renderPerformance(view);}
   if(h==='rankings'){markTab('rankings');return renderRankings(view);}
   if(h==='rules'){markTab('rules');return renderRules(view);}
   if(h==='about'||h==='join'){markTab('about');return renderAbout(view,h==='join');}
@@ -345,9 +415,8 @@ async function renderWall(view){
   view.innerHTML='<div class="emptybox">Loading the wall&hellip;</div>';
   try{
     var m=await meta();
-    var results=await Promise.all([api('/v1/wall'),api('/v1/games',{auth:true}).catch(function(){return null;})]);
-    var w=results[0],board=results[1];
-    var rows=w.rows||[];
+    var results=await Promise.all([wallRows(),api('/v1/games',{auth:true}).catch(function(){return null;}),api('/v1/activity').catch(function(){return null;})]);
+    var rows=results[0],board=results[1],act=results[2];
     var activeN=rows.filter(function(r){return r.membership==='ACTIVE CONTRIBUTOR';}).length;
     var sportCode=(m.sports[0]&&m.sports[0].code)||'NFL';
     var memDot={'ACTIVE CONTRIBUTOR':'var(--pos)','MEMBER':'var(--dim)','INACTIVE':'var(--faint)'};
@@ -420,7 +489,7 @@ async function renderWall(view){
     var body=sorted.map(function(r){
       var rec=r.record;
       return '<tr class="rowlink" data-slug="'+esc(r.creator_slug)+'">'+
-        '<td><span class="who">'+avatar(r)+'<span><span class="nm">'+esc(r.creator_name)+'</span>'+(r.founding?' <span class="chip founding">Founding</span>':'')+'<br><span class="sb">'+esc(r.model_name)+' &middot; '+esc(r.sport)+'</span></span></span></td>'+
+        '<td><span class="who">'+avatar(r)+'<span><span class="nm">'+esc(r.creator_name)+'</span>'+foundStar(r)+'<br><span class="sb">'+esc(r.model_name)+' &middot; '+esc(r.sport)+'</span></span></span></td>'+
         '<td>'+chipFor(r.membership)+'</td>'+
         '<td class="num">'+recCell(rec)+'</td>'+
         '<td class="num">'+(rec?fmtPct(rec.win_pct):'-')+'</td>'+
@@ -443,7 +512,9 @@ async function renderWall(view){
       '<div class="tblwrap"><table id="walltbl"><thead><tr>'+
       '<th>Creator / model</th><th>Status</th><th class="num">Record</th><th class="num">Win %</th><th class="num">Margin MAE</th><th class="num">Brier</th><th>Coverage</th><th class="num">Last slate</th>'+
       '</tr></thead><tbody>'+body+'</tbody></table></div>'+
-      '<p class="note" style="margin-top:10px">Win percentage excludes pushes. Coverage is the share of the season slate this model has submitted. Models below the coverage or sample minimums appear here but are not ranked. Tap a row for the full profile.</p>';
+      '<p class="note" style="margin-top:10px">Win percentage excludes pushes. Coverage is the share of the season slate this model has submitted. Models below the coverage or sample minimums appear here but are not ranked. Tap a row for the full profile. <span class="fstar">&#9733;</span> marks a founding member.</p>'+
+      '<h2 style="letter-spacing:.1em;text-transform:uppercase;font-size:12px;color:var(--dim)">Recent activity</h2>'+
+      '<div class="panel">'+activityRows(act&&act.rows,10)+'</div>';
     boardClock();if(!CLOCK_TIMER)CLOCK_TIMER=setInterval(boardClock,1000);
     $('wallsort').value=S;
     $('wallsort').onchange=function(){WALL_SORT=this.value;renderWall(view);};
@@ -470,7 +541,7 @@ async function renderCreator(view,slug){
     if(c.x_handle)links+='<a href="https://x.com/'+esc(c.x_handle)+'" target="_blank" rel="noopener">@'+esc(c.x_handle)+' ↗</a>';
     var head='<div class="profhead">'+avatar(c)+
       '<div style="flex:1;min-width:220px"><h1 style="margin:2px 0 4px">'+esc(c.display_name)+
-      (c.founding?' <span class="chip founding">Founding member</span>':'')+' '+chipFor(c.membership)+'</h1>'+
+      foundBadge(c)+' '+chipFor(c.membership)+'</h1>'+
       (c.description?'<p class="lede" style="margin:2px 0 8px">'+esc(c.description)+'</p>':'')+
       '<div class="links">'+(links||'<span class="note">This Collective profile is this creator’s home page.</span>')+'</div>'+
       '<div class="note" style="margin-top:6px">Member since '+new Date(c.joined_at).toLocaleDateString(undefined,{month:'short',year:'numeric'})+'</div>'+
@@ -510,21 +581,25 @@ async function renderModel(view,cs,ms){
     var d=await api('/v1/models/'+encodeURIComponent(cs)+'/'+encodeURIComponent(ms));
     var rec=d.record;
     var head='<h1>'+esc(d.model.model_name)+' <span class="pill">'+esc(d.model.sport)+'</span></h1>'+
-      '<p class="lede">by <a href="#/'+esc(d.creator.slug)+'">'+esc(d.creator.display_name)+'</a>'+(d.model.description?' &middot; '+esc(d.model.description):'')+'</p>';
+      '<p class="lede">by <a href="#/'+esc(d.creator.slug)+'">'+esc(d.creator.display_name)+'</a>'+foundBadge(d.creator)+'</p>';
     var stats=rec?'<div class="panel"><div class="kv">'+
       '<span><div class="k">Record</div><div class="v">'+rec.wins+'-'+rec.losses+'-'+rec.pushes+'</div></span>'+
       '<span><div class="k">Win %</div><div class="v">'+fmtPct(rec.win_pct)+'</div></span>'+
       '<span><div class="k">Margin MAE</div><div class="v">'+fmtNum(rec.margin_mae)+'</div></span>'+
       '<span><div class="k">Brier</div><div class="v">'+fmtNum(rec.brier,3)+'</div></span>'+
       '<span><div class="k">Coverage</div><div class="v">'+fmtNum(d.coverage_pct,0)+'%</div></span>'+
-      '</div></div>':'<div class="emptybox">No graded games yet.</div>';
+      '</div><div class="note" style="margin-top:8px">Graded by the Collective on actual final scores against its own captured closing lines, never self-reported. <a href="#rules">Grading rules</a></div></div>'
+      :'<div class="emptybox"><b style="color:var(--text)">Building sample.</b><br>Performance metrics appear once enough graded games are on the record. Every pick is graded on the actual final score against the Collective&#39;s captured closing line.</div>';
+    var method='<h2>Methodology</h2>'+(d.model.description
+      ?'<div class="panel" style="max-width:760px">'+esc(d.model.description)+'</div>'
+      :'<div class="emptybox">This creator has not published a methodology summary yet. The record above stands on its own either way: same grading, same closing lines, same rules as every model here.</div>');
     var covRows=(d.coverage||[]).map(function(c){
       return '<tr><td class="num">'+c.season+'</td><td class="num">W'+c.week+'</td><td class="num">'+c.games_submitted+' / '+c.games_available+'</td><td>'+covCell(100*c.games_submitted/Math.max(1,c.games_available))+'</td></tr>';
     }).join('');
     var cov=covRows?'<h2>Slate coverage by week</h2><div class="tblwrap mini"><table style="min-width:420px"><thead><tr><th class="num">Season</th><th class="num">Week</th><th class="num">Submitted</th><th>Coverage</th></tr></thead><tbody>'+covRows+'</tbody></table></div>':'';
     var glRows=(d.recent_graded||[]).map(function(g){
       var cls=g.pick_result?('grade-'+g.pick_result):'';
-      return '<tr><td>'+esc(g.label)+'<br><span class="sb" style="color:var(--faint);font-size:11px">W'+g.week+' &middot; '+kickoffFmt(g.kickoff_at)+'</span></td>'+
+      return '<tr data-res="'+esc(g.pick_result||'')+'"><td>'+esc(g.label)+'<br><span class="sb" style="color:var(--faint);font-size:11px">W'+g.week+' &middot; '+kickoffFmt(g.kickoff_at)+'</span></td>'+
         '<td class="num">'+esc(g.pick_side||'-')+'</td>'+
         '<td class="num">'+fmtSpread(g.closing_spread)+'</td>'+
         '<td class="num">'+esc(g.final||'-')+'</td>'+
@@ -533,9 +608,17 @@ async function renderModel(view,cs,ms){
         '<td class="num">'+fmtNum(g.brier,3)+'</td>'+
         '<td class="num" style="color:var(--dim)">'+(g.movement_n>1?g.movement_n+' subs':'-')+'</td></tr>';
     }).join('');
-    var gl=glRows?'<h2>Recent graded games</h2><div class="tblwrap"><table><thead><tr><th>Game</th><th class="num">Pick</th><th class="num">Close</th><th class="num">Final</th><th class="num">Result</th><th class="num">Margin err</th><th class="num">Brier</th><th class="num">Movement</th></tr></thead><tbody>'+glRows+'</tbody></table></div>'+
+    var gl=glRows?'<h2>Recent graded games</h2>'+
+      '<div class="sortsel"><span class="note">Show</span><select id="glFilter"><option value="">All results</option><option value="win">Wins</option><option value="loss">Losses</option><option value="push">Pushes</option></select></div>'+
+      '<div class="tblwrap"><table id="glTbl"><thead><tr><th>Game</th><th class="num">Pick</th><th class="num">Close</th><th class="num">Final</th><th class="num">Result</th><th class="num">Margin err</th><th class="num">Brier</th><th class="num">Movement</th></tr></thead><tbody>'+glRows+'</tbody></table></div>'+
       '<p class="note" style="margin-top:8px">Each game is graded on the model’s first pre-kickoff live submission. Later revisions are stored as movement, never regraded.</p>':'';
-    view.innerHTML=head+stats+cov+gl+'<p style="margin-top:22px"><a href="#/'+esc(d.creator.slug)+'">← '+esc(d.creator.display_name)+'</a></p>';
+    view.innerHTML=head+stats+method+cov+gl+'<p style="margin-top:22px"><a href="#/'+esc(d.creator.slug)+'">← '+esc(d.creator.display_name)+'</a> &middot; <a href="#models">Model directory</a> &middot; <a href="#performance">Compare models</a></p>';
+    if($('glFilter'))$('glFilter').onchange=function(){
+      var v=this.value;
+      document.querySelectorAll('#glTbl tbody tr').forEach(function(tr){
+        tr.style.display=(!v||tr.getAttribute('data-res')===v)?'':'none';
+      });
+    };
   }catch(e){fail(view,e);}
 }
 
@@ -597,11 +680,13 @@ async function renderBoard(view){
 async function renderRankings(view){
   view.innerHTML='<div class="emptybox">Loading rankings&hellip;</div>';
   try{
-    var d=await api('/v1/rankings');
+    var res=await Promise.all([api('/v1/rankings'),wallRows().catch(function(){return [];})]);
+    var d=res[0];
+    var fmap={};res[1].forEach(function(r){if(r.founding)fmap[r.creator_slug]=true;});
     function board(title,rows,fmt,sub){
       var body=(rows||[]).map(function(r){
         return '<tr class="rowlink" data-slug="'+esc(r.creator_slug)+'"><td class="num" style="color:var(--faint)">'+r.rank+'</td>'+
-          '<td><span class="nm">'+esc(r.creator_name)+'</span><br><span class="sb" style="color:var(--faint);font-size:11px">'+esc(r.model_name)+'</span></td>'+
+          '<td><span class="nm">'+esc(r.creator_name)+'</span>'+(fmap[r.creator_slug]?' <span class="fstar" title="Founding Member">&#9733;</span>':'')+'<br><span class="sb" style="color:var(--faint);font-size:11px">'+esc(r.model_name)+'</span></td>'+
           '<td class="num" style="font-weight:700">'+fmt(r.value)+'</td>'+
           '<td class="num" style="color:var(--dim)">'+r.graded+'</td></tr>';
       }).join('');
@@ -620,8 +705,87 @@ async function renderRankings(view){
         board('Brier',d.boards.brier,function(v){return fmtNum(v,3);},'lower is better')+
       '</div>'+
       (un?'<h2>Not yet ranked</h2><ul style="color:var(--dim);font-size:13px;line-height:1.9">'+un+'</ul>':'')+
-      '<p class="note"><a href="#rules">How grading works →</a></p>';
+      '<p class="note"><a href="#rules">How grading works →</a> &middot; <a href="#performance">Compare any two models side by side →</a></p>';
     document.querySelectorAll('.rowlink').forEach(function(tr){tr.onclick=function(){location.hash='#/'+tr.getAttribute('data-slug');};});
+  }catch(e){fail(view,e);}
+}
+
+/* ================= model directory ================= */
+async function renderModels(view){
+  view.innerHTML='<div class="emptybox">Loading the directory&hellip;</div>';
+  try{
+    var rows=await wallRows();
+    var head='<h1>The models</h1>'+
+      '<p class="lede">Every model in the Collective: who built it, what it covers, and how it has actually done. One click into any card gives the full graded game log. <span class="fstar">&#9733;</span> marks a founding member.</p>';
+    if(!rows.length){
+      view.innerHTML=head+'<div class="emptybox">The directory is waiting on its first model. Creators join by invite and appear here the moment their profile is created.</div>';
+      return;
+    }
+    var search=rows.length>=9?'<div class="sortsel"><input id="mdq" placeholder="Filter by creator, model, or sport" style="width:260px"></div>':'';
+    view.innerHTML=head+search+'<div class="cards" id="mdCards">'+rows.map(modelCard).join('')+'</div>';
+    if($('mdq'))$('mdq').oninput=function(){
+      var q=this.value.toLowerCase();
+      document.querySelectorAll('#mdCards .mcard').forEach(function(cd){
+        cd.style.display=cd.textContent.toLowerCase().indexOf(q)>=0?'':'none';
+      });
+    };
+  }catch(e){fail(view,e);}
+}
+
+/* ================= performance explorer ================= */
+var PERF={a:'',b:''};
+async function renderPerformance(view){
+  view.innerHTML='<div class="emptybox">Loading&hellip;</div>';
+  try{
+    var rows=await wallRows();
+    var opts=function(sel){
+      return '<option value="">Choose a model</option>'+rows.map(function(r){
+        var v=r.creator_slug+'/'+r.model_slug;
+        return '<option value="'+esc(v)+'"'+(sel===v?' selected':'')+'>'+esc(r.creator_name)+' - '+esc(r.model_name)+' ('+esc(r.sport)+')</option>';
+      }).join('');
+    };
+    var head='<h1>Performance explorer</h1>'+
+      '<p class="lede">Put any two models side by side: record, accuracy, calibration, coverage, and recent form, all from the same independently graded record. Same rules for everyone, so the comparison is fair by construction.</p>';
+    if(!rows.length){view.innerHTML=head+'<div class="emptybox">Nothing to compare yet. Models appear here once creators join.</div>';return;}
+    view.innerHTML=head+
+      '<div class="duo" style="margin-bottom:14px">'+
+      '<div><label>Model A</label><select id="pfA">'+opts(PERF.a)+'</select></div>'+
+      '<div><label>Model B</label><select id="pfB">'+opts(PERF.b)+'</select></div></div>'+
+      '<div id="pfOut"><div class="emptybox">Pick two models above. Records, margin accuracy, Brier calibration, and each model&#39;s last ten graded games appear side by side.</div></div>';
+    async function paint(){
+      var out=$('pfOut');
+      var picks=[PERF.a,PERF.b].filter(Boolean);
+      if(!picks.length)return;
+      out.innerHTML='<div class="emptybox">Loading comparison&hellip;</div>';
+      try{
+        var ds=await Promise.all(picks.map(function(p){return api('/v1/models/'+p);}));
+        var cols=ds.map(function(d){
+          var rec=d.record;
+          var form=(d.recent_graded||[]).slice(0,10).map(function(g){
+            var k=g.pick_result==='win'?'w':(g.pick_result==='loss'?'l':'p');
+            return '<i class="'+k+'">'+k.toUpperCase()+'</i>';
+          }).join('');
+          return '<div class="panel"><div class="mc-top" style="margin-bottom:8px"><div><div class="mc-name">'+esc(d.model.model_name)+'</div>'+
+            '<div class="mc-sub">'+esc(d.creator.display_name)+foundStar(d.creator)+' &middot; '+esc(d.model.sport)+'</div></div></div>'+
+            (rec
+              ?'<div class="kv">'+
+               '<span><div class="k">Record</div><div class="v">'+rec.wins+'-'+rec.losses+'-'+rec.pushes+'</div></span>'+
+               '<span><div class="k">Win %</div><div class="v">'+fmtPct(rec.win_pct)+'</div></span>'+
+               '<span><div class="k">Margin MAE</div><div class="v">'+fmtNum(rec.margin_mae)+'</div></span>'+
+               '<span><div class="k">Brier</div><div class="v">'+fmtNum(rec.brier,3)+'</div></span>'+
+               '<span><div class="k">Graded</div><div class="v">'+rec.graded+'</div></span>'+
+               '<span><div class="k">Coverage</div><div class="v">'+fmtNum(d.coverage_pct,0)+'%</div></span></div>'+
+               (form?'<label style="margin-top:12px">Last '+Math.min(10,(d.recent_graded||[]).length)+' graded</label><span class="frm">'+form+'</span>':'')
+              :'<p class="note" style="margin:6px 0 0">Building sample: no graded games yet.</p>')+
+            '<p style="margin:12px 0 0;font-size:12px"><a href="#/model/'+esc(d.creator.slug)+'/'+esc(d.model.model_slug)+'">Full game log &rarr;</a></p></div>';
+        }).join('');
+        out.innerHTML='<div class="duo">'+cols+'</div>'+
+          '<p class="note" style="margin-top:10px">Win percentage excludes pushes. Margin MAE is the average error of the projected margin against the final score, lower is better. Brier scores the win probability, lower is better. Minimums for the ranked boards still apply on <a href="#rankings">Rankings</a>.</p>';
+      }catch(e){out.innerHTML='<div class="errbox">'+esc(e.message||String(e))+'</div>';}
+    }
+    $('pfA').onchange=function(){PERF.a=this.value;paint();};
+    $('pfB').onchange=function(){PERF.b=this.value;paint();};
+    if(PERF.a||PERF.b)paint();
   }catch(e){fail(view,e);}
 }
 
@@ -827,34 +991,114 @@ function slateBuildRows(season,week){
   return {rows:out,problems:problems};
 }
 
-/* ================= dashboard ================= */
+/* ================= dashboard: one door, three rooms =================
+   Everyone signs in the same way. The server (/v1/me) decides what this
+   account is from the actual rows: creator, subscriber, or member. The
+   client only uses the answer for layout; every paid or private number is
+   gated inside its own API response, never by hiding markup. */
 async function renderDashboard(view){
   var t=await token();
-  if(!t){
-    view.innerHTML='<h1>Creator dashboard</h1>'+
-      '<p class="lede">Sign in with the email you joined with. No password: we send a one-time link.</p>'+
-      '<div class="panel" style="max-width:420px"><label>Email</label><input id="dbEmail" type="email" autocomplete="email" placeholder="you@example.com">'+
-      '<div style="margin-top:12px"><button class="btn primary" id="dbSend">Send my sign-in link</button></div>'+
-      '<p class="note hide" id="dbSent" style="margin-top:10px"></p></div>';
-    $('dbSend').onclick=async function(){
-      var em=$('dbEmail').value.trim();
-      if(!/.+@.+\..+/.test(em)){toast('Enter a valid email');return;}
-      this.disabled=true;
-      try{await sendMagicLink(em,'#dashboard');$('dbSent').textContent='Link sent to '+em+'. Open it on this device.';$('dbSent').classList.remove('hide');}
-      catch(e){toast(e.message);this.disabled=false;}
-    };
-    return;
-  }
+  if(!t){renderSignIn(view);return;}
   view.innerHTML='<div class="emptybox">Loading your dashboard&hellip;</div>';
+  var me;
+  try{me=await api('/v1/me',{auth:true});}
+  catch(e){
+    if(e.status===401){clearSession();renderSignIn(view);return;}
+    fail(view,e);return;
+  }
+  if(!me.signed_in){clearSession();renderSignIn(view);return;}
+  if(me.role==='creator')return renderCreatorDash(view,me);
+  return renderMemberDash(view,me);
+}
+
+function renderSignIn(view){
+  view.innerHTML='<h1>Sign in to the Collective</h1>'+
+    '<p class="lede">One account for everything: creators run their model from here, readers get every pre-kickoff number. No password, we send a one-time link.</p>'+
+    '<div class="panel" style="max-width:420px"><label>Email</label><input id="dbEmail" type="email" autocomplete="email" placeholder="you@example.com">'+
+    '<div style="margin-top:12px"><button class="btn primary" id="dbSend">Send my sign-in link</button></div>'+
+    '<p class="note hide" id="dbSent" style="margin-top:10px"></p></div>'+
+    '<div class="duo" style="margin-top:16px;max-width:760px">'+
+    '<div class="panel"><b>Creators</b><p class="note" style="margin:6px 0 0">Post slates from the browser or the API, watch your verified record build, edit your public profile, and put the Collective tab on your own site. Membership is by invite: <a href="#about">how it works &rarr;</a></p></div>'+
+    '<div class="panel"><b>Readers</b><p class="note" style="margin:6px 0 0">Every model&#39;s pre-kickoff numbers, the consensus, and the full graded record, side by side. The historical record and rankings are free forever. <a href="#models">Meet the models &rarr;</a></p></div>'+
+    '</div>';
+  $('dbSend').onclick=async function(){
+    var em=$('dbEmail').value.trim();
+    if(!/.+@.+\..+/.test(em)){toast('Enter a valid email');return;}
+    this.disabled=true;
+    try{await sendMagicLink(em,'#dashboard');$('dbSent').textContent='Link sent to '+em+'. Open it on this device.';$('dbSent').classList.remove('hide');}
+    catch(e){toast(e.message);this.disabled=false;}
+  };
+}
+
+/* America/Chicago is the Collective's home clock (the board runs on CT) */
+function sameDayCT(iso){
+  if(!iso)return false;
   try{
-    var d=await api('/v1/dashboard',{auth:true});
+    var f=function(x){return new Date(x).toLocaleDateString('en-US',{timeZone:'America/Chicago'});};
+    return f(iso)===f(Date.now());
+  }catch(e){
+    return new Date(iso).toDateString()===new Date().toDateString();
+  }
+}
+
+async function renderCreatorDash(view,me){
+  try{
+    var res=await Promise.all([
+      api('/v1/dashboard',{auth:true}),
+      api('/v1/dashboard/submissions',{auth:true}).catch(function(){return {rows:[]};}),
+      wallRows().catch(function(){return [];}),
+      api('/v1/games',{auth:true}).catch(function(){return null;}),
+      meta().catch(function(){return {sports:[{code:'NFL',season:new Date().getFullYear()}]};})
+    ]);
+    var d=res[0],subs=res[1].rows||[],wall=res[2],games=res[3],mMeta=res[4];
     var c=d.creator;
-    var html='<h1>'+esc(c.display_name)+' <span class="note" style="font-weight:400">dashboard</span></h1>'+
-      '<p class="lede">'+chipFor(c.membership)+(c.founding?' <span class="chip founding">Founding member, '+(c.referral_share_bps/100)+'% recurring</span>':' <span class="note">'+(c.referral_share_bps/100)+'% recurring referral share</span>')+'</p>';
-    /* earnings */
-    /* post a slate: file or paste, auto-map, dry run, submit */
-    var mMeta=await meta().catch(function(){return {sports:[{code:'NFL',season:new Date().getFullYear()}]};});
+    var mine=wall.filter(function(w){return w.creator_slug===c.slug;});
+    var m0=mine[0]||null;
+    var rec=m0&&m0.record;
+    var todays=subs.filter(function(s){return s.data_origin==='live'&&sameDayCT(s.received_at);});
     var season0=(mMeta.sports[0]&&mMeta.sports[0].season)||new Date().getFullYear();
+
+    var html='<div class="dash-hd"><h1>Welcome back, '+esc(c.display_name)+'</h1>'+foundBadge(c)+' '+chipFor(c.membership)+'</div>'+
+      '<p class="lede">'+(c.founding
+        ?'Founding member terms: '+(c.referral_share_bps/100)+'% recurring on every reader you refer, locked for the life of your membership.'
+        :(c.referral_share_bps/100)+'% recurring referral share on every reader you refer.')+'</p>';
+
+    /* the ten second answers: who am I, did I submit, how am I doing */
+    html+='<div class="statgrid">'+
+      '<div class="st"><div class="k">Today&#39;s slate</div><div class="v '+(todays.length?'ok':'warn')+'">'+(todays.length?'Submitted':'Not yet')+'</div></div>'+
+      '<div class="st"><div class="k">Model</div><div class="v">'+esc(m0?m0.model_name:(d.models[0]?d.models[0].model_name:'-'))+'</div></div>'+
+      '<div class="st"><div class="k">Record</div><div class="v">'+(rec?rec.wins+'-'+rec.losses+'-'+rec.pushes:'building')+'</div></div>'+
+      '<div class="st"><div class="k">Win %</div><div class="v">'+(rec?fmtPct(rec.win_pct):'-')+'</div></div>'+
+      '<div class="st"><div class="k">Coverage</div><div class="v">'+(m0&&m0.coverage_pct!=null?fmtNum(m0.coverage_pct,0)+'%':'-')+'</div></div>'+
+      '<div class="st"><div class="k">Last slate</div><div class="v">'+rel(m0?m0.last_submission_at:null)+'</div></div>'+
+      '</div>';
+
+    /* my model, one card per model on the account */
+    html+='<h2>My model'+(d.models.length>1?'s':'')+'</h2><div class="cards">';
+    d.models.forEach(function(mo){
+      var w=mine.filter(function(x){return x.model_slug===mo.model_slug;})[0]||{};
+      var wr=w.record;
+      html+='<div class="mcard"><div class="mc-top"><div style="min-width:0"><div class="mc-name">'+esc(mo.model_name)+'</div>'+
+        '<div class="mc-sub"><span class="pill">'+esc(mo.sport)+'</span></div></div></div>'+
+        (c.description?'<div class="note">'+esc(c.description)+'</div>':'')+
+        '<div class="mc-rec">'+(wr?wr.wins+'-'+wr.losses+'-'+wr.pushes+' &middot; '+fmtPct(wr.win_pct,0)+' &middot; '+wr.graded+' graded':'Building sample &middot; no graded games yet')+'</div>'+
+        '<div class="mc-foot"><a href="#/'+esc(c.slug)+'">My public profile</a>'+
+        '<a href="#/model/'+esc(c.slug)+'/'+esc(mo.model_slug)+'">View my model &rarr;</a></div></div>';
+    });
+    html+='</div>';
+
+    /* what the organization is doing right now */
+    var gN=(games&&games.games)?games.games.length:0;
+    var postedN=0;var nextK=null;
+    ((games&&games.games)||[]).forEach(function(g){
+      postedN+=(g.models||[]).length;
+      if(!g.result&&g.kickoff_at&&(!nextK||g.kickoff_at<nextK))nextK=g.kickoff_at;
+    });
+    html+='<h2>Collective today</h2><div class="panel"><div class="kv">'+
+      '<span><div class="k">Games on the slate</div><div class="v">'+gN+'</div></span>'+
+      '<span><div class="k">Model numbers posted</div><div class="v">'+postedN+'</div></span>'+
+      (nextK?'<span><div class="k">Next kickoff</div><div class="v" style="font-size:13px">'+kickoffFmt(nextK)+'</div></span>':'')+
+      '</div><p class="note" style="margin:10px 0 0"><a href="#board">Open the board &rarr;</a> &middot; <a href="#models">All models &rarr;</a> &middot; <a href="#rankings">Rankings &rarr;</a></p></div>';
     html+='<h2>Post a slate</h2><div class="panel">'+
       '<p class="note" style="margin:0 0 10px">Upload a CSV or Excel file with your projections, or paste rows straight from your spreadsheet. Columns map automatically, you check the result, then it posts. Your first live slate flips your profile to Active Contributor.</p>'+
       '<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end">'+
@@ -876,6 +1120,30 @@ async function renderDashboard(view){
       '<button class="btn" id="slCheck">Check slate (dry run)</button>'+
       '<button class="btn primary" id="slGo" disabled>Post slate</button></div>'+
       '<div id="slOut"></div></div>';
+    /* the submission center: every slate ever posted, newest first */
+    html+='<h2>My submissions</h2>';
+    if(subs.length){
+      var subRows=subs.map(function(s){
+        var st,stC;
+        if(s.data_origin!=='live'){st=s.data_origin==='backfill'?'Backfill':'Test';stC='member';}
+        else if(s.quarantined>0&&s.resolved===0){st='Quarantined';stC='late';}
+        else if(s.late>0&&s.resolved===0){st='Late';stC='late';}
+        else{st='Submitted';stC='active';}
+        return '<tr>'+
+          '<td>'+new Date(s.received_at).toLocaleDateString(undefined,{month:'short',day:'numeric'})+' '+new Date(s.received_at).toLocaleTimeString(undefined,{hour:'numeric',minute:'2-digit'})+(sameDayCT(s.received_at)?' <span class="chip active">Today</span>':'')+'</td>'+
+          '<td>'+esc(s.model_name)+' <span class="sb" style="color:var(--faint)">'+esc(s.sport)+'</span></td>'+
+          '<td><span class="chip '+stC+'">'+st+'</span></td>'+
+          '<td class="num">'+s.rows+'</td>'+
+          '<td class="num">'+s.resolved+'</td>'+
+          '<td class="num"'+(s.quarantined?' style="color:var(--warn)"':'')+'>'+s.quarantined+'</td>'+
+          '<td class="num"'+(s.late?' style="color:var(--warn)"':'')+'>'+s.late+'</td>'+
+        '</tr>';
+      }).join('');
+      html+='<div class="tblwrap"><table style="min-width:640px"><thead><tr><th>Received</th><th>Model</th><th>Status</th><th class="num">Rows</th><th class="num">Matched</th><th class="num">Quarantined</th><th class="num">Late</th></tr></thead><tbody>'+subRows+'</tbody></table></div>'+
+        '<p class="note" style="margin-top:8px">Each row is one posted slate, timestamped when the server received it. Quarantined games are saved and matched on the admin side; late rows are stored but never graded. Your first pre-kickoff submission on a game is the one that counts.</p>';
+    }else{
+      html+='<div class="emptybox"><b style="color:var(--text)">No submissions yet.</b><br>Your slates appear here the moment you post one, with the server receipt time and exactly what happened to every row.<br><br><a href="#dashboard" onclick="document.getElementById(\'slFile\')&&document.getElementById(\'slFile\').scrollIntoView({behavior:\'smooth\',block:\'center\'});return false;">Post your first slate &uarr;</a></div>';
+    }
     html+='<h2>Earnings</h2><div class="panel"><div class="kv">'+
       '<span><div class="k">This month</div><div class="v">'+cents(d.earnings.this_month_cents)+'</div></span>'+
       '<span><div class="k">Balance</div><div class="v">'+cents(d.earnings.balance_cents)+'</div></span>'+
@@ -1043,8 +1311,88 @@ async function renderDashboard(view){
     }
     wireCopy();
   }catch(e){
-    if(e.status===401){clearSession();renderDashboard(view);return;}
-    if(e.status===404||e.status===403){view.innerHTML='<h1>Creator dashboard</h1><div class="emptybox">This account is signed in but has no creator profile. If you were invited, open your invite link again on this device.<br><br><button class="btn" id="soBtn">Sign out</button></div>';$('soBtn').onclick=function(){clearSession();renderDashboard(view);};return;}
+    if(e.status===401){clearSession();renderSignIn(view);return;}
+    fail(view,e);
+  }
+}
+
+/* ================= member / subscriber dashboard ================= */
+async function renderMemberDash(view,me){
+  /* first visit: a thirty second welcome, then straight into the product */
+  if(!localStorage.getItem('mc_welcomed')){
+    view.innerHTML='<div class="welcome"><h1>Welcome to the Model Collective</h1>'+
+      '<p class="lede" style="margin:8px auto 0;max-width:460px">You&#39;re in. Independent models, one independently graded record. Here is the whole product in three moves.</p>'+
+      '<div class="stepcards">'+
+      '<div class="panel"><span class="stepnum">01</span><b>Explore the models</b><span class="note">See what each independent model is built to do and how it has actually done.</span></div>'+
+      '<div class="panel"><span class="stepnum">02</span><b>Follow the board</b><span class="note">Every game, every model&#39;s number, and where they agree or split.</span></div>'+
+      '<div class="panel"><span class="stepnum">03</span><b>Track the record</b><span class="note">Rankings and the full graded history, same rules for everyone.</span></div>'+
+      '</div>'+
+      '<button class="btn primary" id="wcGo" style="font-size:13.5px;padding:10px 22px">Enter the Collective</button></div>';
+    $('wcGo').onclick=function(){try{localStorage.setItem('mc_welcomed','1');}catch(e){}renderMemberDash(view,me);};
+    return;
+  }
+  view.innerHTML='<div class="emptybox">Loading your dashboard&hellip;</div>';
+  try{
+    var res=await Promise.all([
+      meta(),
+      api('/v1/games',{auth:true}).catch(function(){return null;}),
+      wallRows().catch(function(){return [];}),
+      api('/v1/activity').catch(function(){return null;})
+    ]);
+    var m=res[0],games=res[1],wall=res[2],act=res[3];
+    var roleLabel=me.role==='subscriber'?'Subscriber':'Member';
+    var html='<div class="dash-hd"><h1>Welcome to the Collective</h1><span class="rolechip">'+roleLabel+'</span>'+(me.admin?' <span class="rolechip" style="color:var(--gold)">Admin</span>':'')+'</div>'+
+      '<p class="lede">'+(me.entitled
+        ?'Your account unlocks every model&#39;s pre-kickoff numbers and the consensus.'
+        :'Subscribe to unlock every model&#39;s pre-kickoff numbers and the consensus.')+'</p>';
+
+    var gN=(games&&games.games)?games.games.length:0;
+    var postedN=0;var nextK=null;var consN=0;
+    ((games&&games.games)||[]).forEach(function(g){
+      postedN+=(g.models||[]).length;
+      if(g.consensus&&!g.consensus.locked&&g.consensus.n>1)consN++;
+      if(!g.result&&g.kickoff_at&&(!nextK||g.kickoff_at<nextK))nextK=g.kickoff_at;
+    });
+    html+='<h2>Today&#39;s Collective</h2><div class="panel"><div class="kv">'+
+      '<span><div class="k">Games on the slate</div><div class="v">'+gN+'</div></span>'+
+      '<span><div class="k">Model numbers posted</div><div class="v">'+postedN+'</div></span>'+
+      '<span><div class="k">Games with consensus</div><div class="v">'+consN+'</div></span>'+
+      (nextK?'<span><div class="k">Next kickoff</div><div class="v" style="font-size:13px">'+kickoffFmt(nextK)+'</div></span>':'')+
+      '</div><p class="note" style="margin:10px 0 0"><a href="#board">Open the board &rarr;</a></p></div>';
+
+    html+='<h2>Explore the models</h2>';
+    if(wall.length){
+      html+='<div class="cards">'+wall.slice(0,3).map(modelCard).join('')+'</div>'+
+        (wall.length>3?'<p class="note" style="margin-top:10px"><a href="#models">All '+wall.length+' models &rarr;</a></p>':'');
+    }else{
+      html+='<div class="emptybox">The wall is waiting on its first model. Creators join by invite and appear the moment their profile is created.</div>';
+    }
+
+    html+='<h2>Recent activity</h2><div class="panel">'+activityRows(act&&act.rows,8)+'</div>';
+
+    html+='<h2>Performance</h2><div class="panel"><p class="note" style="margin:0">Three ranked boards (win percentage, margin accuracy, calibration) with published minimums, and a side-by-side explorer for any two models.</p>'+
+      '<p class="note" style="margin:10px 0 0"><a href="#rankings">Rankings &rarr;</a> &middot; <a href="#performance">Performance explorer &rarr;</a> &middot; <a href="#rules">Grading rules &rarr;</a></p></div>';
+
+    var subLine;
+    if(me.subscription){
+      var sst=me.subscription.status;
+      subLine='Subscription: <b>'+esc(me.subscription.plan)+'</b> <span class="chip '+(sst==='active'?'active':'late')+'">'+esc(sst)+'</span>'+
+        (me.subscription.current_period_end?' <span class="note">renews '+new Date(me.subscription.current_period_end).toLocaleDateString()+'</span>':'');
+    }else if(!m.billing_live){
+      subLine='Billing has not opened yet. Signed-in members see every number free while the record is built in the open.';
+    }else{
+      subLine='No subscription on this account. <a href="'+API+'/collective_billing/v1/billing/checkout?plan=monthly">Subscribe for '+cents(m.pricing.monthly_cents)+' a month &rarr;</a>';
+    }
+    html+='<h2>Account</h2><div class="panel" style="max-width:560px">'+
+      '<div class="note">Signed in as <b style="color:var(--text)">'+esc(me.email||'')+'</b> &middot; '+roleLabel+'</div>'+
+      '<p class="note" style="margin:8px 0 0">'+subLine+'</p>'+
+      '<p class="note" style="margin:8px 0 0">Creators join by invite: if you were invited, open your invite link on this device and your creator tools appear here automatically.</p>'+
+      '<div style="margin-top:12px"><button class="btn" id="soBtn">Sign out</button></div></div>';
+
+    view.innerHTML=html;
+    $('soBtn').onclick=function(){clearSession();renderSignIn(view);};
+  }catch(e){
+    if(e.status===401){clearSession();renderSignIn(view);return;}
     fail(view,e);
   }
 }
