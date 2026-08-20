@@ -1004,6 +1004,9 @@ async function renderDashboard(view){
   try{me=await api('/v1/me',{auth:true});}
   catch(e){
     if(e.status===401){clearSession();renderSignIn(view);return;}
+    /* deployed API predates /v1/me: go straight to the creator dashboard
+       so a creator is never stranded behind a missing route */
+    if(e.status===404)return renderCreatorDash(view,null);
     fail(view,e);return;
   }
   if(!me.signed_in){clearSession();renderSignIn(view);return;}
@@ -1013,7 +1016,7 @@ async function renderDashboard(view){
 
 function renderSignIn(view){
   view.innerHTML='<h1>Sign in to the Collective</h1>'+
-    '<p class="lede">One account for everything: creators run their model from here, readers get every pre-kickoff number. No password, we send a one-time link.</p>'+
+    '<p class="lede">Already a member? Enter the email you joined with and your dashboard opens right up: post your slate (CSV or Excel upload), see your record, edit your profile. No password, we send a one-time link.</p>'+
     '<div class="panel" style="max-width:420px"><label>Email</label><input id="dbEmail" type="email" autocomplete="email" placeholder="you@example.com">'+
     '<div style="margin-top:12px"><button class="btn primary" id="dbSend">Send my sign-in link</button></div>'+
     '<p class="note hide" id="dbSent" style="margin-top:10px"></p></div>'+
@@ -1072,6 +1075,13 @@ async function renderCreatorDash(view,me){
       '<div class="st"><div class="k">Coverage</div><div class="v">'+(m0&&m0.coverage_pct!=null?fmtNum(m0.coverage_pct,0)+'%':'-')+'</div></div>'+
       '<div class="st"><div class="k">Last slate</div><div class="v">'+rel(m0?m0.last_submission_at:null)+'</div></div>'+
       '</div>';
+
+    /* one obvious answer to "where do I put my data": right here */
+    html+='<div style="display:flex;gap:10px;flex-wrap:wrap;margin:12px 0 4px">'+
+      '<button class="btn primary" id="qaPost">'+(todays.length?'Post another slate':'Post today&#39;s slate')+'</button>'+
+      (d.models[0]?'<a class="btn" href="#/model/'+esc(c.slug)+'/'+esc(d.models[0].model_slug)+'">My model</a>':'')+
+      '<a class="btn" href="#board">The board</a>'+
+      '<a class="btn" href="#/'+esc(c.slug)+'">My public profile</a></div>';
 
     /* my model, one card per model on the account */
     html+='<h2>My model'+(d.models.length>1?'s':'')+'</h2><div class="cards">';
@@ -1173,6 +1183,7 @@ async function renderCreatorDash(view,me){
       '<div style="margin-top:14px"><button class="btn primary" id="pfSave">Save profile</button> <a class="note" href="#/'+esc(c.slug)+'">View public profile →</a></div></div>';
     html+='<p style="margin-top:22px"><button class="btn" id="soBtn">Sign out</button></p>';
     view.innerHTML=html;
+    if($('qaPost'))$('qaPost').onclick=function(){var f=$('slFile');if(f)f.scrollIntoView({behavior:'smooth',block:'center'});};
     function paintOrigins(list){
       $('origList').innerHTML=(list||[]).map(function(o){
         return '<div style="display:flex;gap:10px;align-items:center;margin:4px 0"><span class="mono" style="font-size:12px">'+esc(o.origin)+'</span><button class="btn danger" style="padding:3px 9px;font-size:11px" data-rm="'+esc(o.id)+'">Remove</button></div>';
@@ -1312,6 +1323,13 @@ async function renderCreatorDash(view,me){
     wireCopy();
   }catch(e){
     if(e.status===401){clearSession();renderSignIn(view);return;}
+    if(e.status===404||e.status===403){
+      /* only reachable on the compat path (no /v1/me on the API yet) when
+         the signed-in account has no creator profile */
+      view.innerHTML='<h1>Dashboard</h1><div class="emptybox">This account is signed in but has no creator profile. If you were invited, open your invite link again on this device.<br><br><button class="btn" id="soBtn">Sign out</button></div>';
+      $('soBtn').onclick=function(){clearSession();renderSignIn(view);};
+      return;
+    }
     fail(view,e);
   }
 }
