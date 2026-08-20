@@ -2619,3 +2619,997 @@ begin
 
   return v_resp;
 end $$;
+
+-- ============================================================
+-- 20260820000012_collective_cfb_all_divisions.sql
+-- ============================================================
+-- Model Collective, migration 12: the rest of college football.
+--
+-- Adds every non-FBS program that appears on an FBS or FCS schedule (FCS,
+-- Division II, Division III, and independents), so a full college slate can be
+-- loaded and every game resolves instead of bouncing as an unknown team.
+-- Names follow CollegeFootballData spelling, matching the EdgeDesk cfb ingest.
+--
+-- Teams gain a tier. This matters for one reason: coverage. Coverage is the
+-- share of the slate a model submitted, and it gates ranking eligibility. If
+-- an FCS tune-up game counted toward the denominator, a modeller who covered
+-- every top division game would still show roughly half coverage and could
+-- never be ranked. So coverage counts only games where BOTH teams are top
+-- division. The games themselves are all here, projectable and gradeable;
+-- they simply do not punish a model that ignores them.
+--
+-- NFL is untouched: its teams take the default tier.
+
+alter table collective.teams
+  add column if not exists tier text not null default 'major';
+do $$ begin
+  alter table collective.teams add constraint teams_tier_check check (tier in ('major','minor'));
+exception when duplicate_object then null; end $$;
+
+-- Format: code | school | alias;alias
+do $$
+declare
+  rows text[] := array[
+    'ABILENECHR|Abilene Christian|ACU',
+    'ADAMSSTATE|Adams State|Adams St;Adams St.',
+    'ADRIAN|Adrian|',
+    'ALABAMAAM|Alabama A&M|Alabama A M;Alabama AandM',
+    'ALABAMASTA|Alabama State|Alabama St;Alabama St.',
+    'ALBANYSTAT|Albany State GA|Albany St GA;Albany St. GA',
+    'ALBION|Albion|',
+    'ALBRIGHT|Albright|',
+    'ALCORNSTAT|Alcorn State|Alcorn St;Alcorn St.',
+    'ALFREDSTAT|Alfred State|Alfred St;Alfred St.',
+    'ALFREDUNIV|Alfred University|',
+    'ALLEGHENY|Allegheny|',
+    'ALLEN|Allen|',
+    'ALMA|Alma|',
+    'AMERICANIN|American International|',
+    'AMHERST|Amherst|',
+    'ANDERSONIN|Anderson (IN)|Anderson;Anderson IN',
+    'ANDERSONSC|Anderson (Sc)|Anderson;Anderson Sc',
+    'ANGELOSTAT|Angelo State|Angelo St;Angelo St.',
+    'ANNAMARIAC|Anna Maria College|',
+    'APPRENTICE|Apprentice School|',
+    'ARKANSASTE|Arkansas Tech|',
+    'ARKANSASMO|Arkansas-Monticello|Arkansas Monticello',
+    'ARKANSASPI|Arkansas-Pine Bluff|AR-Pine Bluff;Arkansas Pine Bluff',
+    'ASHLAND|Ashland|',
+    'ASSUMPTION|Assumption|',
+    'AUGSBURG|Augsburg|',
+    'AUGUSTANAI|Augustana (IL)|Augustana;Augustana IL',
+    'AUGUSTANAU|Augustana University (SD)|Augustana University;Augustana University SD',
+    'AURORA|Aurora|',
+    'AUSTIN|Austin|',
+    'AUSTINPEAY|Austin Peay|',
+    'AVERETT|Averett|',
+    'BLUEFIELD|BLUEFIELD|',
+    'BALDWINWAL|Baldwin Wallace|',
+    'BATES|Bates|',
+    'BELHAVEN|Belhaven|',
+    'BELOIT|Beloit|',
+    'BEMIDJISTA|Bemidji State|Bemidji St;Bemidji St.',
+    'BENEDICTCO|Benedict College|',
+    'BENEDICTIN|Benedictine University|',
+    'BENTLEY|Bentley|',
+    'BERRYCOLLE|Berry College|',
+    'BETHANYWV|Bethany (WV)|Bethany;Bethany WV',
+    'BETHELMN|Bethel (MN)|Bethel;Bethel MN',
+    'BETHELUNIV|Bethel University Tennessee|',
+    'BETHUNECOO|Bethune-Cookman|Bethune Cookman',
+    'BIDDEFORD|Biddeford|',
+    'BLACKHILLS|Black Hills State|Black Hills St;Black Hills St.',
+    'BLOOMSBURG|Bloomsburg|',
+    'BLUEFIELDS|Bluefield State|Bluefield St;Bluefield St.',
+    'BLUFFTON|Bluffton|',
+    'BOWDOIN|Bowdoin|',
+    'BOWIESTATE|Bowie State|Bowie St;Bowie St.',
+    'BREVARDCOL|Brevard College|',
+    'BRIDGEWATE|Bridgewater (VA)|Bridgewater;Bridgewater VA',
+    'BRIDGEWAT2|Bridgewater State|Bridgewater St;Bridgewater St.',
+    'BROCKPORT|Brockport|',
+    'BROWN|Brown|',
+    'BRYANT|Bryant|',
+    'BUCKNELL|Bucknell|',
+    'BUENAVISTA|Buena Vista|',
+    'BUFFALOSTA|Buffalo State|Buffalo St;Buffalo St.',
+    'BUTLER|Butler|',
+    'CENTENARY|CENTENARY|',
+    'CSUPUEBLO|CSU Pueblo|',
+    'CALPOLY|Cal Poly|',
+    'CALIFORNI2|California Lutheran University|',
+    'CALVINUNIV|Calvin University|',
+    'CAMPBELL|Campbell|',
+    'CAPITAL|Capital|',
+    'CARLETON|Carleton|',
+    'CARNEGIEME|Carnegie Mellon|',
+    'CARROLLUNI|Carroll University (WI)|Carroll University;Carroll University WI',
+    'CARSONNEWM|Carson-Newman College|Carson Newman College',
+    'CARTHAGE|Carthage|',
+    'CASEWESTER|Case Western Reserve|',
+    'CASTLETON|Castleton|',
+    'CATAWBA|Catawba|',
+    'CATHOLIC|Catholic|',
+    'CENTRALARK|Central Arkansas|',
+    'CENTRALCOL|Central College|',
+    'CENTRALCON|Central Connecticut|CCSU;Central Connecticut St',
+    'CENTRALMET|Central Methodist|',
+    'CENTRALMIS|Central Missouri|',
+    'CENTRALOKL|Central Oklahoma|',
+    'CENTRALSTA|Central State (OH)|Central St (OH);Central St. (OH);Central State;Central State OH',
+    'CENTRALWAS|Central Washington|',
+    'CENTRECOLL|Centre College Kentucky|',
+    'CHADRONST|Chadron St|Chadron State',
+    'CHAPMAN|Chapman|',
+    'CHARLESTON|Charleston Southern|Charleston So',
+    'CHATTANOOG|Chattanooga|',
+    'CHICAGO|Chicago|',
+    'CHOWAN|Chowan|',
+    'CHRISTOPHE|Christopher Newport|',
+    'CLAREMONTM|Claremont-Mudd-Scripps College|Claremont Mudd Scripps College',
+    'CLARION|Clarion|',
+    'CLARKATLAN|Clark Atlanta|',
+    'COASTGUARD|Coast Guard|',
+    'COECOLLEGE|Coe College|',
+    'COLBYCOLLE|Colby College|',
+    'COLGATE|Colgate|',
+    'COLLEGEOFN|College Of New Jersey|',
+    'COLORADOME|Colorado Mesa|',
+    'COLORADOSC|Colorado School Of Mines|',
+    'COLUMBIA|Columbia|',
+    'CONCORDUNI|Concord University|',
+    'CONCORDIAM|Concordia Moorhead|',
+    'CONCORDIAU|Concordia University Chicago|',
+    'CONCORDIA2|Concordia University St Paul|Concordia University State Paul',
+    'CONCORDIAW|Concordia-Wisconsin|Concordia Wisconsin',
+    'CORNELL|Cornell|',
+    'CORNELLCOL|Cornell College (IA)|Cornell College;Cornell College IA',
+    'CORTLAND|Cortland|',
+    'CROWNCOLLE|Crown College|',
+    'CUMBERLAND|Cumberland (TN)|Cumberland;Cumberland TN',
+    'CURRYCOLLE|Curry College|',
+    'DAKOTASTAT|Dakota State University|Dakota St University;Dakota St. University',
+    'DARTMOUTH|Dartmouth|',
+    'DAVENPORT|Davenport|',
+    'DAVIDSON|Davidson|',
+    'DAYTON|Dayton|',
+    'DEANCOLLEG|Dean College|',
+    'DELAWAREST|Delaware State|Delaware St;Delaware St.',
+    'DELAWAREVA|Delaware Valley|',
+    'DELTASTATE|Delta State|Delta St;Delta St.',
+    'DENISONUNI|Denison University|',
+    'DEPAUW|Depauw|',
+    'DICKINSONP|Dickinson (PA)|Dickinson;Dickinson PA',
+    'DRAKE|Drake|',
+    'DUBUQUE|Dubuque|',
+    'DUQUESNE|Duquesne|',
+    'ERSKINE|ERSKINE|',
+    'EASTCENTRA|East Central (OK)|East Central;East Central OK',
+    'EASTSTROUD|East Stroudsburg University|',
+    'EASTTENNES|East Tennessee State|East Tennessee St;East Tennessee St.',
+    'EASTTEXASA|East Texas A&M|East Texas A M;East Texas AandM',
+    'EASTTEXASB|East Texas Baptist University|',
+    'EASTERNILL|Eastern Illinois|Eastern IL',
+    'EASTERNKEN|Eastern Kentucky|',
+    'EASTERNNEW|Eastern New Mexico|',
+    'EASTERNORE|Eastern Oregon|',
+    'EASTERNUNI|Eastern University|',
+    'EASTERNWAS|Eastern Washington|Eastern WA',
+    'EDINBOROUN|Edinboro University|',
+    'EDWARDWATE|Edward Waters|',
+    'ELIZABETHC|Elizabeth City State|Elizabeth City St;Elizabeth City St.',
+    'ELMHURST|Elmhurst|',
+    'ELON|Elon|',
+    'EMORYHENRY|Emory & Henry College|Emory and Henry College;Emory Henry College',
+    'EMPORIASTA|Emporia State University|Emporia St University;Emporia St. University',
+    'ENDICOTTCO|Endicott College|',
+    'EUREKACOLL|Eureka College|',
+    'FDUFLORHAM|FDU-Florham|FDU Florham',
+    'FAIRMONTST|Fairmont State|Fairmont St;Fairmont St.',
+    'FAYETTEVIL|Fayetteville State|Fayetteville St;Fayetteville St.',
+    'FERRISSTAT|Ferris State|Ferris St;Ferris St.',
+    'FERRUM|Ferrum|',
+    'FINDLAY|Findlay|',
+    'FITCHBURGS|Fitchburg State|Fitchburg St;Fitchburg St.',
+    'FLORIDAAM|Florida A&M|Florida A M;Florida AandM',
+    'FLORIDAMEM|Florida Memorial University|',
+    'FORDHAM|Fordham|',
+    'FORTHAYSST|Fort Hays State|Fort Hays St;Fort Hays St.',
+    'FORTLEWIS|Fort Lewis|',
+    'FORTVALLEY|Fort Valley State|Fort Valley St;Fort Valley St.',
+    'FRAMINGHAM|Framingham State|Framingham St;Framingham St.',
+    'FRANKLIN|Franklin|',
+    'FRANKLINMA|Franklin & Marshall|Franklin and Marshall;Franklin Marshall',
+    'FRANKLINPI|Franklin Pierce|',
+    'FROSTBURGS|Frostburg State|Frostburg St;Frostburg St.',
+    'FURMAN|Furman|',
+    'GALLAUDET|Gallaudet|',
+    'GANNON|Gannon|',
+    'GARDNERWEB|Gardner-Webb|Gardner Webb',
+    'GENEVA|Geneva|',
+    'GEORGETOWN|Georgetown|',
+    'GETTYSBURG|Gettysburg|',
+    'GLENVILLES|Glenville State|Glenville St;Glenville St.',
+    'GRAMBLING|Grambling|',
+    'GRANDVALLE|Grand Valley State University|Grand Valley St University;Grand Valley St. University',
+    'GREENEVILL|Greeneville|',
+    'GREENSBORO|Greensboro College|',
+    'GREENVILLE|Greenville|',
+    'GRINNELL|Grinnell|',
+    'GROVECITYC|Grove City College|',
+    'GUILFORDCO|Guilford College|',
+    'GUSTAVUSAD|Gustavus Adolphus|',
+    'HAMILTON|Hamilton|',
+    'HAMLINEUNI|Hamline University|',
+    'HAMPDENSYD|Hampden-Sydney|Hampden Sydney',
+    'HAMPTON|Hampton|',
+    'HANOVERCOL|Hanover College|',
+    'HARDINSIMM|Hardin-Simmons|Hardin Simmons',
+    'HARDINGUNI|Harding University|',
+    'HARTWICK|Hartwick|',
+    'HARVARD|Harvard|',
+    'HEIDELBERG|Heidelberg|',
+    'HENDERSONS|Henderson State|Henderson St;Henderson St.',
+    'HENDRIXCOL|Hendrix College|',
+    'HILBERTCOL|Hilbert College|',
+    'HILLSDALE|Hillsdale|',
+    'HIRAMCOLLE|Hiram College|',
+    'HOBARTCOLL|Hobart College|',
+    'HOLYCROSS|Holy Cross|',
+    'HOPECOLLEG|Hope College|',
+    'HOUSTONCHR|Houston Christian|',
+    'HOWARD|Howard|',
+    'HOWARDPAYN|Howard Payne|',
+    'HUNTINGDON|Huntingdon College (AL)|Huntingdon College;Huntingdon College AL',
+    'HUSSON|Husson|',
+    'IDAHO|Idaho|',
+    'IDAHOSTATE|Idaho State|Idaho St;Idaho St.',
+    'ILLINOISCO|Illinois College|',
+    'ILLINOISST|Illinois State|Illinois St;Illinois St.',
+    'ILLINOISWE|Illinois Wesleyan|',
+    'INCARNATEW|Incarnate Word|UIW',
+    'INDIANASTA|Indiana State|Indiana St;Indiana St.',
+    'INDIANAPEN|Indiana-Pennsylvania|Indiana Pennsylvania',
+    'INDIANAPOL|Indianapolis|',
+    'ITHACACOLL|Ithaca College|',
+    'JACKSONSTA|Jackson State|Jackson St;Jackson St.',
+    'JAMESTOWNC|Jamestown College|',
+    'JOHNCARROL|John Carroll University|',
+    'JOHNSHOPKI|Johns Hopkins University|',
+    'JOHNSONCSM|Johnson C Smith|',
+    'JUNIATACOL|Juniata College|',
+    'KALAMAZOO|Kalamazoo|',
+    'KEAN|Kean|',
+    'KENTUCKYCH|Kentucky Christian|',
+    'KENTUCKYST|Kentucky State|Kentucky St;Kentucky St.',
+    'KENTUCKYWE|Kentucky Wesleyan|',
+    'KENYON|Kenyon|',
+    'KEYSTONE|Keystone|',
+    'KINGSCOLLE|Kings College (PA)|Kings College;Kings College PA',
+    'KNOXCOLLEG|Knox College|',
+    'KUTZTOWNUN|Kutztown University|',
+    'LYONCOLL|LYONCOLL|',
+    'LAVERNE|La Verne|',
+    'LAFAYETTE|Lafayette|',
+    'LAGRANGECO|Lagrange College|',
+    'LAKEERIE|Lake Erie|',
+    'LAKEFOREST|Lake Forest College|',
+    'LAKELAND|Lakeland|',
+    'LAMAR|Lamar|',
+    'LANECOLLEG|Lane College|',
+    'LANGSTONUN|Langston University|',
+    'LAWRENCEUN|Lawrence University|',
+    'LEBANONVAL|Lebanon Valley|',
+    'LEHIGH|Lehigh|',
+    'LENOIRRHYN|Lenoir-Rhyne|Lenoir Rhyne',
+    'LEWISCLARK|Lewis & Clark College|Lewis and Clark College;Lewis Clark College',
+    'LINCOLNCA|Lincoln (CA)|Lincoln;Lincoln CA',
+    'LINCOLNMO|Lincoln (MO)|Lincoln;Lincoln MO',
+    'LINCOLNPA|Lincoln (PA)|Lincoln;Lincoln PA',
+    'LINDENWOOD|Lindenwood|',
+    'LINFIELDCO|Linfield College|',
+    'LITTLEROCK|Little Rock|',
+    'LIVINGSTON|Livingstone|',
+    'LOCKHAVENU|Lock Haven University|',
+    'LONGISLAND|Long Island University|LIU',
+    'LORASCOLLE|Loras College|',
+    'LOUISIANAC|Louisiana College|',
+    'LUTHER|Luther|',
+    'LYCOMING|Lycoming|',
+    'MIT|MIT|',
+    'MACALESTER|Macalester|',
+    'MADONNAUNI|Madonna University (Mich.)|Madonna University;Madonna University Mich.',
+    'MAINE|Maine|',
+    'MAINEMARIT|Maine Maritime|',
+    'MANCHESTER|Manchester|',
+    'MARIANCOLL|Marian College|',
+    'MARIETTA|Marietta|',
+    'MARIST|Marist|',
+    'MARSHILL|Mars Hill|',
+    'MARTINLUTH|Martin Luther|',
+    'MARYHARDIN|Mary Hardin-Baylor|Mary Hardin Baylor',
+    'MARYVILLEC|Maryville College (TN)|Maryville College;Maryville College TN',
+    'MASSMARITI|Mass Maritime|',
+    'MAYVILLEST|Mayville State|Mayville St;Mayville St.',
+    'MCDANIELCO|McDaniel College|',
+    'MCKENDREE|McKendree|',
+    'MCMURRY|McMurry|',
+    'MCNEESE|McNeese|',
+    'MERCER|Mercer|',
+    'MERCHANTMA|Merchant Marine Academy|',
+    'MERCYHURST|Mercyhurst|',
+    'MERRIMACK|Merrimack|',
+    'METHODIST|Methodist|',
+    'MICHIGANTE|Michigan Tech|',
+    'MIDDLEBURY|Middlebury|',
+    'MIDLANDLUT|Midland Lutheran College|',
+    'MIDWESTERN|Midwestern State|Midwestern St;Midwestern St.',
+    'MILESCOLLE|Miles College|',
+    'MILLERSVIL|Millersville|',
+    'MILLIKIN|Millikin|',
+    'MILLSAPS|Millsaps|',
+    'MINNESOTAD|Minnesota Duluth|',
+    'MINNESOTAM|Minnesota Morris|',
+    'MINNESOTAS|Minnesota State Mankato|Minnesota St Mankato;Minnesota St. Mankato',
+    'MINNESOTA2|Minnesota State Moorhead|Minnesota St Moorhead;Minnesota St. Moorhead',
+    'MINOTSTATE|Minot State|Minot St;Minot St.',
+    'MISERICORD|Misericordia|',
+    'MISSISSIP2|Mississippi Valley State|Miss Valley St;Mississippi Valley St;Mississippi Valley St.;MVSU',
+    'MISSOURIS2|Missouri S&T|Missouri S T;Missouri SandT',
+    'MISSOURISO|Missouri Southern State|Missouri Southern St;Missouri Southern St.',
+    'MISSOURIWE|Missouri Western|',
+    'MONMOUTH|Monmouth|',
+    'MONMOUTHIL|Monmouth (IL)|Monmouth IL',
+    'MONTANA|Montana|',
+    'MONTANASTA|Montana State|Montana St;Montana St.',
+    'MONTCLAIRS|Montclair State|Montclair St;Montclair St.',
+    'MORAVIAN|Moravian|',
+    'MOREHEADST|Morehead State|Morehead St;Morehead St.',
+    'MOREHOUSEC|Morehouse College|',
+    'MORGANSTAT|Morgan State|Morgan St;Morgan St.',
+    'MOUNTSTJOS|Mount St. Joseph|Mount State. Joseph',
+    'MUHLENBERG|Muhlenberg|',
+    'MURRAYSTAT|Murray State|Murray St;Murray St.',
+    'MUSKINGUMU|Muskingum University|',
+    'NEWBERG|NEWBERG|',
+    'NEBRASKAWE|Nebraska Wesleyan|',
+    'NEBRASKAKE|Nebraska-Kearney|Nebraska Kearney',
+    'NEWENGLAND|New England College|',
+    'NEWHAMPSHI|New Hampshire|',
+    'NEWHAVEN|New Haven|',
+    'NEWMEXICOH|New Mexico Highlands|',
+    'NEWBERRY|Newberry|',
+    'NICHOLLS|Nicholls|Nicholls St;Nicholls State',
+    'NICHOLSCOL|Nichols College|',
+    'NORFOLKSTA|Norfolk State|Norfolk St;Norfolk St.',
+    'NORTHALABA|North Alabama|',
+    'NORTHCARO2|North Carolina A&T|NC A&T;North Carolina A T;North Carolina AandT',
+    'NORTHCARO3|North Carolina Central|NC Central',
+    'NORTHCARO4|North Carolina Wesleyan|',
+    'NORTHCENTR|North Central College|',
+    'NORTHDAKOT|North Dakota|',
+    'NORTHDAKO2|North Dakota State|North Dakota St;North Dakota St.',
+    'NORTHGREEN|North Greenville|',
+    'NORTHPARK|North Park|',
+    'NORTHEASTE|Northeastern State|Northeastern St;Northeastern St.',
+    'NORTHERNAR|Northern Arizona|Northern Ariz',
+    'NORTHERNCO|Northern Colorado|Northern Col',
+    'NORTHERNIO|Northern Iowa|',
+    'NORTHERNMI|Northern Michigan|',
+    'NORTHERNST|Northern State|Northern St;Northern St.',
+    'NORTHWESTM|Northwest Missouri St|Northwest Missouri State',
+    'NORTHWEST2|Northwestern (MN)|Northwestern MN',
+    'NORTHWEST3|Northwestern Oklahoma State|Northwestern Oklahoma St;Northwestern Oklahoma St.',
+    'NORTHWEST4|Northwestern State|Northwestern St;Northwestern St.',
+    'NORTHWOODM|Northwood (MI)|Northwood;Northwood MI',
+    'NORWICH|Norwich|',
+    'OBERLIN|Oberlin|',
+    'OHIODOMINI|Ohio Dominican|',
+    'OHIONORTHE|Ohio Northern|',
+    'OHIOWESLEY|Ohio Wesleyan|',
+    'OKLAHOMABA|Oklahoma Baptist|',
+    'OKLAHOMAPA|Oklahoma Panhandle St|Oklahoma Panhandle State',
+    'OLIVETCOLL|Olivet College|',
+    'OTTERBEIN|Otterbein|',
+    'OUACHITABA|Ouachita Baptist|',
+    'PACE|Pace|',
+    'PACIFICOR|Pacific (OR)|Pacific;Pacific OR',
+    'PACIFICLUT|Pacific Lutheran|',
+    'PENNWESTCA|PennWest California|',
+    'PENNSYLVAN|Pennsylvania|',
+    'PHOENIX|Phoenix|',
+    'PIKEVILLE|Pikeville|',
+    'PITTSBURGS|Pittsburg St|Pittsburg State',
+    'PLYMOUTHST|Plymouth State|Plymouth St;Plymouth St.',
+    'POINTUNIVE|Point University|',
+    'POMONAPITZ|Pomona Pitzer|',
+    'PORTLANDST|Portland State|Portland St;Portland St.',
+    'POSTUNIVER|Post University|',
+    'PRAIRIEVIE|Prairie View A&M|Prairie View A M;Prairie View AandM',
+    'PRESBYTERI|Presbyterian|Presbyterian College',
+    'PRINCETON|Princeton|',
+    'PUGETSOUND|Puget Sound|',
+    'QUINCY|Quincy|',
+    'RANDOLPHMA|Randolph-Macon|Randolph Macon',
+    'READING|Reading|',
+    'REDLANDS|Redlands|',
+    'RENSSELAER|Rensselaer|',
+    'RHODEISLAN|Rhode Island|',
+    'RHODESCOLL|Rhodes College|',
+    'RICHMOND|Richmond|',
+    'RIPON|Ripon|',
+    'ROANOKECOL|Roanoke College|',
+    'ROBERTMORR|Robert Morris|RMU',
+    'ROCKFORD|Rockford|',
+    'ROOSEVELT|Roosevelt|',
+    'ROSEHULMAN|Rose-Hulman|Rose Hulman',
+    'ROWAN|Rowan|',
+    'SELOUISIAN|SE Louisiana|',
+    'SUNYMARITI|SUNY Maritime|',
+    'SUNYMORRIS|SUNY Morrisville|',
+    'SACRAMENTO|Sacramento State|Sacramento St;Sacramento St.',
+    'SACREDHEAR|Sacred Heart|',
+    'SAGINAWVAL|Saginaw Valley State|Saginaw Valley St;Saginaw Valley St.',
+    'SAINTJOHNS|Saint John''s (MN)|Saint John''s;Saint John''s MN;Saint Johns (MN)',
+    'SAINTVINCE|Saint Vincent|',
+    'SAINTXAVIE|Saint Xavier (IL)|Saint Xavier;Saint Xavier IL',
+    'SALISBURY|Salisbury|',
+    'SALVEREGIN|Salve Regina|',
+    'SAMFORD|Samford|',
+    'SANDIEGO|San Diego|',
+    'SAVANNAHST|Savannah St|Savannah State',
+    'SETONHILL|Seton Hill|',
+    'SEWANEE|Sewanee|',
+    'SHAW|Shaw|',
+    'SHENANDOAH|Shenandoah|',
+    'SHEPHERD|Shepherd|',
+    'SHIPPENSBU|Shippensburg|',
+    'SHORTER|Shorter|',
+    'SIMPSONCOL|Simpson College (IA)|Simpson College;Simpson College IA',
+    'SIMPSONUNI|Simpson University (Ca)|Simpson University;Simpson University Ca',
+    'SIOUXFALLS|Sioux Falls|',
+    'SLIPPERYRO|Slippery Rock|',
+    'SOUTHCARO2|South Carolina State|South Carolina St;South Carolina St.',
+    'SOUTHDAKOT|South Dakota|',
+    'SOUTHDAKO2|South Dakota Mines|',
+    'SOUTHDAKO3|South Dakota State|South Dakota St;South Dakota St.',
+    'SOUTHEASTM|Southeast Missouri State|Southeast Missouri St;Southeast Missouri St.',
+    'SOUTHEASTE|Southeastern Oklahoma State|Southeastern Oklahoma St;Southeastern Oklahoma St.',
+    'SOUTHERN|Southern|Southern U',
+    'SOUTHERNAR|Southern Arkansas|',
+    'SOUTHERNCO|Southern Connecticut State|Southern Connecticut St;Southern Connecticut St.',
+    'SOUTHERNIL|Southern Illinois|Southern IL',
+    'SOUTHERNNA|Southern Nazarene|',
+    'SOUTHERNOR|Southern Oregon|',
+    'SOUTHERNUT|Southern Utah|',
+    'SOUTHERNVI|Southern Virginia|',
+    'SOUTHWESTB|Southwest Baptist|',
+    'SOUTHWESTM|Southwest Minnesota State|Southwest Minnesota St;Southwest Minnesota St.',
+    'SOUTHWESTE|Southwestern Assemblies Of God|',
+    'SOUTHWEST2|Southwestern Oklahoma State|Southwestern Oklahoma St;Southwestern Oklahoma St.',
+    'SOUTHWEST3|Southwestern University|',
+    'SPRINGFIEL|Springfield|',
+    'STJOHNFISH|St John Fisher University|State John Fisher University',
+    'STANSELM|St. Anselm|State. Anselm',
+    'STFRANCISP|St. Francis (PA)|St. Francis;St. Francis PA;State. Francis (PA)',
+    'STLAWRENCE|St. Lawrence|State. Lawrence',
+    'STNORBERT|St. Norbert|State. Norbert',
+    'STOLAF|St. Olaf|State. Olaf',
+    'STSCHOLAST|St. Scholastica|State. Scholastica',
+    'STTHOMASMN|St. Thomas (MN)|St. Thomas;St. Thomas MN;State. Thomas (MN)',
+    'STEPHENFAU|Stephen F. Austin|SFA;Stephen F Austin',
+    'STETSON|Stetson|',
+    'STEVENSON|Stevenson|',
+    'STONEHILL|Stonehill|',
+    'STONYBROOK|Stony Brook|',
+    'SULROSSSTA|Sul Ross State|Sul Ross St;Sul Ross St.',
+    'SUSQUEHANN|Susquehanna|',
+    'TARLETONST|Tarleton State|Tarleton St;Tarleton St.',
+    'TENNESSEES|Tennessee State|Tennessee St;Tennessee St.',
+    'TENNESSEET|Tennessee Tech|',
+    'TEXASAMKIN|Texas A&M-Kingsville|Texas A M-Kingsville;Texas A&M Kingsville;Texas AandM-Kingsville',
+    'TEXASLUTHE|Texas Lutheran|',
+    'TEXASSOUTH|Texas Southern|Texas South',
+    'TEXASWESLE|Texas Wesleyan|',
+    'THECITADEL|The Citadel|',
+    'THIEL|Thiel|',
+    'THOMASMORE|Thomas More College|',
+    'TIFFIN|Tiffin|',
+    'TOWSON|Towson|',
+    'TRINEUNIVE|Trine University|',
+    'TRINITYCT|Trinity (CT)|Trinity;Trinity CT',
+    'TRINITYUNI|Trinity University TX|',
+    'TRUMANSTAT|Truman State|Truman St;Truman St.',
+    'TUFTS|Tufts|',
+    'TUSKEGEE|Tuskegee|',
+    'UALBANY|UAlbany|',
+    'UCDAVIS|UC Davis|',
+    'UMASSDARTM|UMass Dartmouth|',
+    'UNCPEMBROK|UNC Pembroke|',
+    'UTMARTIN|UT Martin|',
+    'UTPERMIANB|UT Permian Basin|',
+    'UTRIOGRAND|UT Rio Grande Valley|',
+    'UVAWISE|UVA Wise|',
+    'UNIONNY|Union (NY)|Union;Union NY',
+    'UNIVERSITY|University Of Charleston (WV)|University Of Charleston;University Of Charleston WV',
+    'UNIVERSIT2|University of Mary|',
+    'UNIVERSIT3|University of Mount Union|',
+    'UNIVERSIT4|University of Rio Grande|',
+    'UNIVERSIT5|University of Rochester (NY)|University of Rochester;University of Rochester NY',
+    'UPPERIOWAU|Upper Iowa University|',
+    'URSINUS|Ursinus|',
+    'UTAHTECH|Utah Tech|',
+    'UTICA|Utica|',
+    'VMI|VMI|',
+    'VALDOSTAST|Valdosta State|Valdosta St;Valdosta St.',
+    'VALLEYCITY|Valley City State|Valley City St;Valley City St.',
+    'VALPARAISO|Valparaiso|',
+    'VILLANOVA|Villanova|',
+    'VIRGINIAST|Virginia St|Virginia State',
+    'VIRGINIAUN|Virginia Union|',
+    'VIRGINIAU2|Virginia University Of Lynchburg|',
+    'WABASHCOLL|Wabash College|',
+    'WAGNER|Wagner|',
+    'WALSH|Walsh|',
+    'WARNERUNIV|Warner University|',
+    'WARTBURG|Wartburg|',
+    'WASHBURN|Washburn|',
+    'WASHINGTO3|Washington & Jefferson|Washington and Jefferson;Washington Jefferson',
+    'WASHINGTO4|Washington University (St. Louis)|Washington University;Washington University (State. Louis);Washington University St. Louis',
+    'WASHINGTO5|Washington and Lee|',
+    'WAYLANDBAP|Wayland Baptist|',
+    'WAYNESTATE|Wayne State (MI)|Wayne St (MI);Wayne St. (MI);Wayne State;Wayne State MI',
+    'WAYNESTAT2|Wayne State (NE)|Wayne St (NE);Wayne St. (NE);Wayne State;Wayne State NE',
+    'WAYNESBURG|Waynesburg|',
+    'WEBBERINTE|Webber International|',
+    'WEBERSTATE|Weber State|Weber St;Weber St.',
+    'WESLEYANUN|Wesleyan University (CT)|Wesleyan University;Wesleyan University CT',
+    'WESTALABAM|West Alabama|',
+    'WESTCHESTE|West Chester|',
+    'WESTFLORID|West Florida|',
+    'WESTGEORGI|West Georgia|',
+    'WESTLIBERT|West Liberty|',
+    'WESTTEXASA|West Texas A&M|West Texas A M;West Texas AandM',
+    'WESTVIRGI2|West Virginia State|West Virginia St;West Virginia St.',
+    'WESTVIRGI3|West Virginia Wesleyan|',
+    'WESTERNCAR|Western Carolina|WCU',
+    'WESTERNCOL|Western Colorado|',
+    'WESTERNCON|Western Connecticut St|Western Connecticut State',
+    'WESTERNILL|Western Illinois|Western IL',
+    'WESTERNNEW|Western New England|',
+    'WESTERNNE2|Western New Mexico|',
+    'WESTERNORE|Western Oregon|',
+    'WESTFIELDS|Westfield State|Westfield St;Westfield St.',
+    'WESTMINSTE|Westminster (PA)|Westminster;Westminster PA',
+    'WESTMINST2|Westminster College (MO)|Westminster College;Westminster College MO',
+    'WHEATON|Wheaton|',
+    'WHEELING|Wheeling|',
+    'WHITWORTH|Whitworth|',
+    'WIDENER|Widener|',
+    'WILKES|Wilkes|',
+    'WILLAMETTE|Willamette|',
+    'WILLIAMMAR|William & Mary|William and Mary;William Mary',
+    'WILLIAMJEW|William Jewell|',
+    'WILLIAMPAT|William Paterson|',
+    'WILLIAMS|Williams|',
+    'WILMINGTON|Wilmington (OH)|Wilmington;Wilmington OH',
+    'WILSON|Wilson|',
+    'WINGATE|Wingate|',
+    'WINONASTAT|Winona State|Winona St;Winona St.',
+    'WINSTONSAL|Winston-Salem|Winston Salem',
+    'WISCONSINE|Wisconsin-Eau Claire|Wisconsin Eau Claire',
+    'WISCONSINL|Wisconsin-Lacrosse|Wisconsin Lacrosse',
+    'WISCONSIN2|Wisconsin-Lutheran|Wisconsin Lutheran',
+    'WISCONSINO|Wisconsin-Oshkosh|Wisconsin Oshkosh',
+    'WISCONSINP|Wisconsin-Platteville|Wisconsin Platteville',
+    'WISCONSINR|Wisconsin-River Falls|Wisconsin River Falls',
+    'WISCONSINS|Wisconsin-Stevens Pt|Wisconsin Stevens Pt',
+    'WISCONSIN3|Wisconsin-Stout|Wisconsin Stout',
+    'WISCONSINW|Wisconsin-Whitewater|Wisconsin Whitewater',
+    'WITTENBERG|Wittenberg|',
+    'WOFFORD|Wofford|',
+    'WOOSTER|Wooster|',
+    'WORCESTERP|Worcester Polytechnic Institute|',
+    'WORCESTERS|Worcester St|Worcester State',
+    'YALE|Yale|',
+    'YOUNGSTOWN|Youngstown State|Youngstown St;Youngstown St.'
+  ];
+  r text;
+  parts text[];
+  v_team uuid;
+  a text;
+begin
+  foreach r in array rows loop
+    parts := string_to_array(r, '|');
+
+    insert into collective.teams (sport_code, code, name, tier)
+    values ('CFB', parts[1], parts[2], 'minor')
+    on conflict (sport_code, code) do nothing;
+    select id into v_team from collective.teams where sport_code = 'CFB' and code = parts[1];
+
+    insert into collective.team_aliases (sport_code, alias, team_id)
+    values ('CFB', parts[1], v_team), ('CFB', parts[2], v_team)
+    on conflict do nothing;
+
+    if coalesce(parts[3], '') <> '' then
+      foreach a in array string_to_array(parts[3], ';') loop
+        if trim(a) <> '' then
+          insert into collective.team_aliases (sport_code, alias, team_id)
+          values ('CFB', trim(a), v_team)
+          on conflict do nothing;
+        end if;
+      end loop;
+    end if;
+  end loop;
+end $$;
+
+-- Coverage counts the top division slate only (see the note above).
+create or replace view collective.model_coverage as
+select
+  m.id as model_id, g.season, g.week,
+  count(distinct g.id)                                  as games_available,
+  count(distinct fs.game_id)                            as games_submitted
+from collective.models m
+join collective.games g on g.sport_code = m.sport_code and g.week is not null
+join collective.teams ht on ht.id = g.home_team_id and ht.tier = 'major'
+join collective.teams at on at.id = g.away_team_id and at.tier = 'major'
+left join collective.first_submissions fs on fs.model_id = m.id and fs.game_id = g.id
+group by m.id, g.season, g.week;
+
+create or replace view collective.model_coverage_totals as
+select
+  m.id as model_id, g.season,
+  count(distinct g.id)                       as games_available,
+  count(distinct fs.game_id)                 as games_submitted,
+  case when count(distinct g.id) > 0
+       then round(100.0 * count(distinct fs.game_id) / count(distinct g.id), 1)
+       else null end                         as coverage_pct
+from collective.models m
+join collective.games g on g.sport_code = m.sport_code and g.kickoff_at <= now()
+join collective.teams ht on ht.id = g.home_team_id and ht.tier = 'major'
+join collective.teams at on at.id = g.away_team_id and at.tier = 'major'
+left join collective.first_submissions fs on fs.model_id = m.id and fs.game_id = g.id
+group by m.id, g.season;
+
+-- Alias addendum: the short forms real schedule listings use, mapped to the
+-- CollegeFootballData spelling. Each pair was checked against an actual
+-- schedule paste. Deliberately absent: "Georgetown College" (a different
+-- school from the Patriot League's Georgetown, and both appear on the same
+-- slate), plus a handful of NAIA opponents that no data source carries.
+do $$
+declare
+  pairs text[][] := array[
+    ['Glenville State College','Glenville State'],
+    ['Prairie View','Prairie View A&M'],
+    ['Morehouse','Morehouse College'],
+    ['Winston-Salem St','Winston-Salem'],
+    ['Winston-Salem State','Winston-Salem'],
+    ['Virginia-Lynchburg','Virginia University Of Lynchburg'],
+    ['Albany St','Albany State GA'],
+    ['Albany State','Albany State GA'],
+    ['U Albany','UAlbany'],
+    ['Albany','UAlbany'],
+    ['Miles','Miles College'],
+    ['Texas Permian Basin','UT Permian Basin'],
+    ['SLU','SE Louisiana'],
+    ['Southeastern Louisiana','SE Louisiana'],
+    ['St. Thomas','St. Thomas (MN)'],
+    ['Saint Thomas','St. Thomas (MN)']
+  ];
+  i int;
+  v_team uuid;
+begin
+  for i in 1 .. array_length(pairs, 1) loop
+    select id into v_team from collective.teams
+     where sport_code = 'CFB' and name = pairs[i][2];
+    if v_team is not null then
+      insert into collective.team_aliases (sport_code, alias, team_id)
+      values ('CFB', pairs[i][1], v_team)
+      on conflict do nothing;
+    end if;
+  end loop;
+end $$;
+
+-- ============================================================
+-- 20260820000013_collective_event_parsing.sql
+-- ============================================================
+-- Model Collective, migration 13: accept the shapes real model clients emit.
+--
+-- Structured home_team/away_team stay the contract and always take priority.
+-- Two optional fallbacks are added so a creator does not have to re-key their
+-- output before they can post:
+--
+--   external_id  is accepted as a spelling of game_ref
+--   event        "SEA @ NE", "Seattle Seahawks at New England Patriots",
+--                "New England Patriots vs Seattle Seahawks"
+--
+-- "@" and "at" state the direction (away at home) and are used directly.
+-- "vs" does NOT state it. Where both orderings exist as real games, which is
+-- every division pairing, the row is quarantined as ambiguous_event_direction
+-- instead of guessing: matching the wrong game would silently corrupt a
+-- creator's record, which is worse than asking them to be explicit.
+
+create or replace function collective.parse_event(p_event text) returns jsonb
+language plpgsql immutable as $$
+declare
+  s text := trim(coalesce(p_event, ''));
+  parts text[];
+begin
+  if s = '' then return null; end if;
+  -- away @ home, and the written form of the same thing
+  parts := regexp_split_to_array(s, '\s+(@|at)\s+');
+  if array_length(parts, 1) = 2 then
+    return jsonb_build_object('home', trim(parts[2]), 'away', trim(parts[1]), 'ambiguous', false);
+  end if;
+  -- "vs" carries no direction: read it home first, but flag it
+  parts := regexp_split_to_array(s, '\s+(vs\.?|v\.)\s+');
+  if array_length(parts, 1) = 2 then
+    return jsonb_build_object('home', trim(parts[1]), 'away', trim(parts[2]), 'ambiguous', true);
+  end if;
+  return null;
+end $$;
+
+create or replace function collective.ingest_submission(p_key jsonb, p_envelope jsonb, p_dry boolean default false) returns jsonb
+language plpgsql security definer set search_path = collective as $$
+declare
+  v_model_id uuid := (p_key->>'model_id')::uuid;
+  v_key_id uuid := (p_key->>'key_id')::uuid;
+  v_sport text := p_envelope->>'sport';
+  v_season int;
+  v_origin collective.data_origin;
+  v_received timestamptz := now();
+  v_hash text;
+  v_max_rows int := collective.cfg_int('ingest.max_rows', 500);
+  v_rows jsonb := coalesce(p_envelope->'rows', '[]'::jsonb);
+  row_j jsonb;
+  v_out jsonb := '[]'::jsonb;
+  v_sub_id uuid;
+  v_game uuid;
+  v_kick timestamptz;
+  v_late boolean;
+  v_candidate boolean;
+  v_status text;
+  v_reason text;
+  n_res int := 0; n_quar int := 0; n_late int := 0; n_first int := 0; n_move int := 0; n_rej int := 0;
+  v_resp jsonb;
+  v_existing record;
+  v_hwp numeric; v_spread numeric;
+  v_pick collective.pick_side; v_tside collective.total_side;
+  v_line numeric; v_ptot numeric; v_phs numeric; v_pas numeric;
+  v_conf numeric; v_cover numeric; v_week int; v_env_week int;
+  v_gen timestamptz;
+  v_retry int;
+  v_ref text; v_home_s text; v_away_s text; v_ev jsonb; v_ambig boolean; v_rev uuid;
+begin
+  -- Identity comes from the key, payload strings are only checked (8.2).
+  if p_envelope ? 'model' and (p_envelope->>'model') is distinct from (p_key->>'model_slug') then
+    return jsonb_build_object('ok', false, 'code', 'invalid_payload',
+      'message', format('This key submits model "%s", not "%s"', p_key->>'model_slug', p_envelope->>'model'));
+  end if;
+  if v_sport is distinct from (p_key->>'sport') then
+    return jsonb_build_object('ok', false, 'code', 'invalid_payload',
+      'message', format('This key submits %s, the envelope says %s', p_key->>'sport', coalesce(v_sport, 'nothing')));
+  end if;
+  begin
+    v_season := (p_envelope->>'season')::int;
+  exception when others then v_season := null; end;
+  if v_season is null then
+    return jsonb_build_object('ok', false, 'code', 'invalid_payload', 'message', 'season is required and must be an integer');
+  end if;
+  begin
+    v_origin := (p_envelope->>'data_origin')::collective.data_origin;
+  exception when others then
+    return jsonb_build_object('ok', false, 'code', 'invalid_payload', 'message', 'data_origin must be live, backfill, or test');
+  end;
+  -- A test key can only ever write test data.
+  if (p_key->>'kind') = 'test' then v_origin := 'test'; end if;
+
+  -- Envelope-level optionals are never allowed to abort the submission.
+  begin v_env_week := nullif(p_envelope->>'week','')::int; exception when others then v_env_week := null; end;
+  begin v_gen := nullif(p_envelope->>'generated_at','')::timestamptz; exception when others then v_gen := null; end;
+
+  if jsonb_typeof(v_rows) <> 'array' or jsonb_array_length(v_rows) = 0 then
+    return jsonb_build_object('ok', false, 'code', 'invalid_payload', 'message', 'rows must be a non-empty array');
+  end if;
+  if jsonb_array_length(v_rows) > v_max_rows then
+    return jsonb_build_object('ok', false, 'code', 'invalid_payload',
+      'message', format('%s rows exceeds the %s row maximum', jsonb_array_length(v_rows), v_max_rows));
+  end if;
+
+  -- Idempotency: same model, same payload, same answer (with duplicate:true).
+  -- The advisory lock serializes concurrent identical submissions so the
+  -- loser sees the winner's row here instead of a unique violation later.
+  v_hash := md5(coalesce(p_envelope->>'idempotency_key', v_rows::text || v_origin::text || v_season::text));
+  if not p_dry then
+    perform pg_advisory_xact_lock(hashtext(v_model_id::text || ':' || v_hash));
+    select * into v_existing from collective.submissions
+     where model_id = v_model_id and payload_hash = v_hash;
+    if found then
+      -- A replay of a payload that fully landed returns the original answer.
+      -- But a payload whose rows were QUARANTINED is a different story: the
+      -- usual reason is that the schedule had not been loaded yet, and the
+      -- creator reposting the same file afterwards is a genuine retry, not a
+      -- duplicate. Let it through under a distinct hash so the rows get
+      -- another chance to resolve. The first-submission lock still decides
+      -- what counts for grading, so a true double delivery becomes movement
+      -- and can never create a second graded candidate.
+      if coalesce((v_existing.response->'counts'->>'quarantined')::int, 0) = 0 then
+        return coalesce(v_existing.response, '{}'::jsonb) || jsonb_build_object('ok', true, 'duplicate', true);
+      end if;
+      select count(*) into v_retry from collective.submissions
+       where model_id = v_model_id
+         and (payload_hash = v_hash or payload_hash like v_hash || ':retry%');
+      v_hash := v_hash || ':retry' || v_retry;
+    end if;
+  end if;
+
+  v_sub_id := gen_random_uuid();
+
+  for row_j in select * from jsonb_array_elements(v_rows) loop
+    v_status := null; v_reason := null; v_game := null; v_late := false; v_candidate := false;
+
+    -- Field validation. A rejected row is reported, never stored.
+    -- Structured fields are the contract and always win. A creator posting a
+    -- human readable "event" string (some model clients emit only that) gets
+    -- it parsed as a fallback, never as an override. external_id is accepted
+    -- as a spelling of game_ref for the same reason.
+    v_ref    := coalesce(nullif(row_j->>'game_ref',''), nullif(row_j->>'external_id',''));
+    v_home_s := nullif(row_j->>'home_team','');
+    v_away_s := nullif(row_j->>'away_team','');
+    v_ambig  := false;
+    if (v_home_s is null or v_away_s is null) and nullif(row_j->>'event','') is not null then
+      v_ev := collective.parse_event(row_j->>'event');
+      if v_ev is not null then
+        v_home_s := coalesce(v_home_s, v_ev->>'home');
+        v_away_s := coalesce(v_away_s, v_ev->>'away');
+        v_ambig  := coalesce((v_ev->>'ambiguous')::boolean, false);
+      end if;
+    end if;
+    if coalesce(v_ref,'') = '' or coalesce(v_home_s,'') = ''
+       or coalesce(v_away_s,'') = '' or coalesce(row_j->>'kickoff','') = '' then
+      v_status := 'rejected';
+      v_reason := 'game_ref (or external_id), home_team and away_team (or a parsable event), and kickoff are required';
+    end if;
+    if v_status is null then
+      begin
+        v_kick := (row_j->>'kickoff')::timestamptz;
+      exception when others then
+        v_status := 'rejected'; v_reason := 'kickoff is not a valid timestamp';
+      end;
+    end if;
+    if v_status is null then
+      -- Every optional field parses inside this block: a bad value rejects
+      -- THIS row only and can never abort the whole submission.
+      begin
+        v_hwp   := nullif(row_j->>'home_win_probability','')::numeric;
+        v_spread:= nullif(row_j->>'projected_spread','')::numeric;
+        v_cover := nullif(row_j->>'cover_probability','')::numeric;
+        v_line  := nullif(row_j->>'line_at_submission','')::numeric;
+        v_ptot  := nullif(row_j->>'projected_total','')::numeric;
+        v_phs   := nullif(row_j->>'proj_home_score','')::numeric;
+        v_pas   := nullif(row_j->>'proj_away_score','')::numeric;
+        v_conf  := nullif(row_j->>'confidence','')::numeric;
+        v_pick  := nullif(row_j->>'pick_side','')::collective.pick_side;
+        v_tside := nullif(row_j->>'total_side','')::collective.total_side;
+        v_week  := coalesce(nullif(row_j->>'week','')::int, v_env_week);
+        if v_hwp is not null and (v_hwp < 0 or v_hwp > 1) then
+          v_status := 'rejected'; v_reason := 'home_win_probability must be between 0 and 1';
+        elsif v_cover is not null and (v_cover < 0 or v_cover > 1) then
+          v_status := 'rejected'; v_reason := 'cover_probability must be between 0 and 1';
+        elsif v_cover is not null and v_line is null then
+          -- A pick probability is meaningless without its line (9.3).
+          v_status := 'rejected'; v_reason := 'cover_probability requires line_at_submission';
+        elsif v_hwp is not null and v_spread is not null and
+              ((v_hwp > 0.5 and v_spread > 3) or (v_hwp < 0.5 and v_spread < -3)) then
+          -- Win probability is not spread probability (9.2): an obvious
+          -- contradiction is a mapping error and gets rejected loudly.
+          v_status := 'rejected';
+          v_reason := 'home_win_probability contradicts projected_spread; check that the probability is moneyline and the spread is home convention';
+        end if;
+      exception when others then
+        v_status := 'rejected'; v_reason := 'a field failed to parse; check number formats and pick_side/total_side values';
+      end;
+    end if;
+
+    if v_status is null then
+      v_game := collective.resolve_game_ref(v_sport, v_season, v_home_s, v_away_s, v_kick);
+      -- "A vs B" does not say who is home. If BOTH orderings exist as real
+      -- games (division rivals play twice), refuse rather than pick one: a
+      -- wrong game is far worse than an unresolved one.
+      if v_ambig then
+        v_rev := collective.resolve_game_ref(v_sport, v_season, v_away_s, v_home_s, v_kick);
+        if v_game is not null and v_rev is not null then
+          v_game := null; v_status := 'quarantined'; v_reason := 'ambiguous_event_direction';
+          n_quar := n_quar + 1;
+        elsif v_game is null then
+          v_game := v_rev;
+        end if;
+      end if;
+      if v_game is null and v_status is null then
+        v_status := 'quarantined';
+        if collective.resolve_team(v_sport, v_home_s) is null then v_reason := 'unknown_team_home';
+        elsif collective.resolve_team(v_sport, v_away_s) is null then v_reason := 'unknown_team_away';
+        else v_reason := 'unknown_game'; end if;
+        n_quar := n_quar + 1;
+      else
+        select v_received > g.kickoff_at into v_late from collective.games g where g.id = v_game;
+        if v_late then
+          -- Stored, flagged, excluded from grading (8.6).
+          v_status := 'late'; n_late := n_late + 1;
+        else
+          v_status := 'resolved'; n_res := n_res + 1;
+        end if;
+        v_candidate := (not v_late) and v_origin = 'live'
+          and not exists (select 1 from collective.projections px
+                          where px.model_id = v_model_id and px.game_id = v_game and px.is_graded_candidate);
+        if v_status = 'resolved' then
+          if v_candidate then n_first := n_first + 1; else n_move := n_move + 1; end if;
+        end if;
+      end if;
+    else
+      n_rej := n_rej + 1;
+    end if;
+
+    if not p_dry and v_status <> 'rejected' then
+      begin
+        insert into collective.projections (
+          submission_id, model_id, game_id, raw_game_ref, raw_row,
+          resolution_status, quarantine_reason, sport_code, season, week,
+          pick_side, total_side, line_at_submission, projected_spread, projected_total,
+          proj_home_score, proj_away_score, home_win_prob, cover_prob, confidence,
+          data_origin, received_at, is_late, is_graded_candidate)
+        values (
+          v_sub_id, v_model_id, v_game, v_ref, row_j,
+          case when v_status = 'quarantined' then 'quarantined' else 'resolved' end::collective.resolution_status,
+          case when v_status = 'quarantined' then v_reason end,
+          v_sport, v_season, v_week,
+          v_pick, v_tside, v_line, v_spread, v_ptot, v_phs, v_pas,
+          v_hwp, v_cover, v_conf,
+          v_origin, v_received, coalesce(v_late, false), v_candidate);
+      exception when unique_violation then
+        -- Concurrent first-lock race: the index is the law, this row
+        -- becomes movement.
+        insert into collective.projections (
+          submission_id, model_id, game_id, raw_game_ref, raw_row,
+          resolution_status, quarantine_reason, sport_code, season, week,
+          pick_side, total_side, line_at_submission, projected_spread, projected_total,
+          proj_home_score, proj_away_score, home_win_prob, cover_prob, confidence,
+          data_origin, received_at, is_late, is_graded_candidate)
+        values (
+          v_sub_id, v_model_id, v_game, v_ref, row_j,
+          'resolved', null, v_sport, v_season, v_week,
+          v_pick, v_tside, v_line, v_spread, v_ptot, v_phs, v_pas,
+          v_hwp, v_cover, v_conf,
+          v_origin, v_received, coalesce(v_late, false), false);
+        if v_candidate then n_first := n_first - 1; n_move := n_move + 1; v_candidate := false; end if;
+      end;
+    end if;
+
+    v_out := v_out || jsonb_build_object(
+      'game_ref', v_ref,
+      'status', v_status,
+      'game_id', v_game,
+      'reason', v_reason);
+  end loop;
+
+  v_resp := jsonb_build_object(
+    'ok', true,
+    'submission_id', case when p_dry then null else v_sub_id::text end,
+    'received_at', v_received,
+    'data_origin', v_origin,
+    'counts', jsonb_build_object(
+      'rows', jsonb_array_length(v_rows), 'resolved', n_res + n_late, 'quarantined', n_quar,
+      'late', n_late, 'first', n_first, 'movement', n_move, 'rejected', n_rej),
+    'rows', v_out,
+    'duplicate', false);
+
+  if not p_dry then
+    insert into collective.submissions (id, model_id, api_key_id, received_at, data_origin,
+      client_generated_at, payload_hash, n_rows, n_resolved, n_quarantined, n_late, response)
+    values (v_sub_id, v_model_id, v_key_id, v_received, v_origin,
+      v_gen, v_hash,
+      jsonb_array_length(v_rows), n_res + n_late, n_quar, n_late, v_resp);
+  end if;
+
+  return v_resp;
+end $$;
