@@ -1,10 +1,7 @@
 -- MODEL COLLECTIVE, COMPLETE DATABASE SETUP
--- Paste this whole file into the Supabase dashboard SQL editor and run it once.
 
 
--- ============================================================
--- 20260819000001_collective_foundation.sql
--- ============================================================
+-- ====== 20260819000001_collective_foundation.sql ======
 -- Model Collective, migration 1: schema, enums, config, sports, teams, games.
 -- Forward-only. The collective schema is the separation seam (rule 8.1): no
 -- object in it references any other schema, so it lifts into its own project
@@ -131,9 +128,7 @@ create index games_kickoff on collective.games (kickoff_at);
 alter table collective.games enable row level security;
 grant select on collective.games to service_role;
 
--- ============================================================
--- 20260819000002_collective_creators.sql
--- ============================================================
+-- ====== 20260819000002_collective_creators.sql ======
 -- Model Collective, migration 2: creators, models, api keys, invite tokens.
 -- user_id is a bare uuid on purpose: no FK into auth.users, so the schema
 -- stays liftable (rule 8.1). Identity always comes from the authenticated
@@ -228,9 +223,7 @@ create table collective.join_requests (
 alter table collective.join_requests enable row level security;
 grant select, insert on collective.join_requests to service_role;
 
--- ============================================================
--- 20260819000003_collective_submissions.sql
--- ============================================================
+-- ====== 20260819000003_collective_submissions.sql ======
 -- Model Collective, migration 3: submissions and projections, append-only.
 -- Submissions are immutable observations (rule 8.3): a revision is a new
 -- row, UPDATE and DELETE are blocked for every path except the explicit
@@ -340,9 +333,7 @@ create trigger projections_append_only
   before update or delete on collective.projections
   for each row execute function collective.block_mutation();
 
--- ============================================================
--- 20260819000004_collective_grading.sql
--- ============================================================
+-- ====== 20260819000004_collective_grading.sql ======
 -- Model Collective, migration 4: results, grades, and the grading engine.
 -- Three separate metrics, never blended (rule 8.11), graded only against
 -- the Collective's own captured closing line (rule 9.1), only on each
@@ -452,9 +443,7 @@ end $$;
 revoke execute on function collective.grade_game(uuid) from public;
 grant execute on function collective.grade_game(uuid) to service_role;
 
--- ============================================================
--- 20260819000005_collective_views.sql
--- ============================================================
+-- ====== 20260819000005_collective_views.sql ======
 -- Model Collective, migration 5: derived read models. Everything here is a
 -- deterministic transform over the append-only tables (rules 8.7 to 8.10):
 -- no view stores state, so every published number is reproducible.
@@ -726,9 +715,7 @@ grant select on collective.latest_projections, collective.first_submissions,
   collective.activity_feed, collective.game_detail, collective.board_models,
   collective.model_game_log to service_role;
 
--- ============================================================
--- 20260819000006_collective_commerce.sql
--- ============================================================
+-- ====== 20260819000006_collective_commerce.sql ======
 -- Model Collective, migration 6: distribution and money tables, inert.
 -- Attribution, entitlement, and payout tables exist from the first day so
 -- the data is captured before billing turns on (rule 8.13): retrofitting
@@ -913,9 +900,7 @@ join collective.earnings_ledger l on l.creator_id = c.id
 group by c.id, c.slug, l.period_month;
 grant select on collective.creator_earnings_monthly to service_role;
 
--- ============================================================
--- 20260819000007_collective_rpcs.sql
--- ============================================================
+-- ====== 20260819000007_collective_rpcs.sql ======
 -- Model Collective, migration 7: the RPC surface. These are the only write
 -- paths into the schema; edge functions call them via PostgREST with the
 -- service role. All SECURITY DEFINER, all revoked from everyone else.
@@ -1708,9 +1693,7 @@ begin
   end loop;
 end $$;
 
--- ============================================================
--- 20260819000008_collective_seeds.sql
--- ============================================================
+-- ====== 20260819000008_collective_seeds.sql ======
 -- Model Collective, migration 8: seeds. Config numbers (Section 5, decided,
 -- one place only), the NFL, its 2026 season window, all 32 teams, and a
 -- generous alias vocabulary for canonical resolution.
@@ -1820,9 +1803,7 @@ begin
   end loop;
 end $$;
 
--- ============================================================
--- 20260820000009_collective_econ_invites.sql
--- ============================================================
+-- ====== 20260820000009_collective_econ_invites.sql ======
 -- Model Collective, migration 9: the economics waterfall, invite revocation,
 -- and model sources.
 --
@@ -2153,9 +2134,7 @@ end $$;
 revoke execute on function collective.revoke_invite(uuid, uuid) from public;
 grant execute on function collective.revoke_invite(uuid, uuid) to service_role;
 
--- ============================================================
--- 20260820000010_collective_cfb.sql
--- ============================================================
+-- ====== 20260820000010_collective_cfb.sql ======
 -- Model Collective, migration 10: NCAA football (CFB).
 --
 -- Adds the sport, the 2026 season window, and all 136 FBS programs with
@@ -2346,9 +2325,7 @@ begin
   end loop;
 end $$;
 
--- ============================================================
--- 20260820000011_collective_ingest_fixes.sql
--- ============================================================
+-- ====== 20260820000011_collective_ingest_fixes.sql ======
 -- Model Collective, migration 11: two ingest fixes found from a live failure.
 --
 -- 1) Repair the projections to submissions foreign key on databases created
@@ -2618,9 +2595,7 @@ begin
   return v_resp;
 end $$;
 
--- ============================================================
--- 20260820000012_collective_cfb_all_divisions.sql
--- ============================================================
+-- ====== 20260820000012_collective_cfb_all_divisions.sql ======
 -- Model Collective, migration 12: the rest of college football.
 --
 -- Adds every non-FBS program that appears on an FBS or FCS schedule (FCS,
@@ -3308,9 +3283,7 @@ begin
   end loop;
 end $$;
 
--- ============================================================
--- 20260820000013_collective_event_parsing.sql
--- ============================================================
+-- ====== 20260820000013_collective_event_parsing.sql ======
 -- Model Collective, migration 13: accept the shapes real model clients emit.
 --
 -- Structured home_team/away_team stay the contract and always take priority.
@@ -3612,9 +3585,7 @@ begin
   return v_resp;
 end $$;
 
--- ============================================================
--- 20260820000014_collective_board_line.sql
--- ============================================================
+-- ====== 20260820000014_collective_board_line.sql ======
 -- Model Collective, migration 14: show the number a model actually posted.
 --
 -- Not every model produces a projected spread. A model that picks a side at
@@ -3643,9 +3614,7 @@ left join collective.grades gr on gr.projection_id = p.id
 where p.resolution_status = 'resolved' and p.data_origin = 'live'
   and (p.is_graded_candidate or p.is_late);
 
--- ============================================================
--- 20260820000015_collective_market_snapshots.sql
--- ============================================================
+-- ====== 20260820000015_collective_market_snapshots.sql ======
 -- Model Collective, migration 15: immutable market snapshots.
 --
 -- The Collective grades a pick against the market it actually faced, so the
@@ -3865,9 +3834,7 @@ begin
   end loop;
 end $$;
 
--- ============================================================
--- 20260820000016_collective_nfl_short_names.sql
--- ============================================================
+-- ====== 20260820000016_collective_nfl_short_names.sql ======
 -- Model Collective, migration 16: short team names used by odds pages.
 --
 -- The NFL seed deliberately withheld bare city aliases for New York and Los
@@ -3898,9 +3865,7 @@ begin
   end loop;
 end $$;
 
--- ============================================================
--- 20260820000017_collective_current_market.sql
--- ============================================================
+-- ====== 20260820000017_collective_current_market.sql ======
 -- Model Collective, migration 17: the current market on the board.
 --
 -- One row per game: the most recent snapshot, whichever book it came from,
@@ -3919,3 +3884,188 @@ where ms.market = 'spread'
 order by ms.game_id, ms.captured_at desc;
 
 grant select on collective.current_market to service_role;
+
+-- ====== 20260820000018_collective_odds_math.sql ======
+-- Model Collective, migration 18: moneyline capture, best price, consensus.
+--
+-- Three pieces of market arithmetic that are easy to get subtly wrong, so
+-- they live in one place with the reasoning written down:
+--
+--   1. Best price compares like with like. A price is only better than
+--      another if it is on the SAME line. Chiefs -4 at -105 is not "better"
+--      than Chiefs -3.5 at -110; it is a different bet. Comparing across
+--      lines needs a model of what a half point is worth, which is a
+--      judgement call, so this refuses to make it silently.
+--   2. Consensus lines are medians, never means. One book hanging an
+--      outlier should not drag the number.
+--   3. Consensus probability de-vigs each book first. Averaging American
+--      prices averages the bookmaker's margin along with the opinion.
+--
+-- Pinnacle is kept out of the generic consensus and reported separately, so
+-- a sharp reference is never diluted by the rest of the market.
+
+alter table collective.market_snapshots
+  add column if not exists home_ml_price int,
+  add column if not exists away_ml_price int;
+
+-- American price to implied probability, vig included.
+create or replace function collective.american_to_prob(p int) returns numeric
+language sql immutable as $$
+  select case
+    when p is null then null
+    when p < 0 then (-p)::numeric / ((-p)::numeric + 100)
+    when p > 0 then 100::numeric / (p::numeric + 100)
+    else null end
+$$;
+
+-- American price to decimal, which is the only sane way to rank prices:
+-- higher decimal is always the better price for the bettor.
+create or replace function collective.american_to_decimal(p int) returns numeric
+language sql immutable as $$
+  select case
+    when p is null then null
+    when p < 0 then 1 + 100::numeric / (-p)::numeric
+    when p > 0 then 1 + p::numeric / 100
+    else null end
+$$;
+
+-- Two-way de-vig: strip the bookmaker's margin proportionally so the pair
+-- sums to 1. Returns the fair probability of the FIRST side.
+create or replace function collective.devig_two_way(p1 int, p2 int) returns numeric
+language sql immutable as $$
+  select case
+    when p1 is null or p2 is null then null
+    when (collective.american_to_prob(p1) + collective.american_to_prob(p2)) = 0 then null
+    else collective.american_to_prob(p1)
+         / (collective.american_to_prob(p1) + collective.american_to_prob(p2))
+  end
+$$;
+
+-- Latest snapshot per game per book, the input to both views below.
+create or replace view collective.latest_by_book as
+select distinct on (ms.game_id, ms.book)
+  ms.game_id, ms.book, ms.source, ms.captured_at,
+  ms.home_line, ms.home_price, ms.away_line, ms.away_price,
+  ms.total_line, ms.over_price, ms.under_price,
+  ms.home_ml_price, ms.away_ml_price
+from collective.market_snapshots ms
+where ms.market = 'spread'
+order by ms.game_id, ms.book, ms.captured_at desc;
+
+-- Consensus, with Pinnacle deliberately excluded and reported on its own.
+create or replace view collective.market_consensus as
+with pin as (
+  select game_id, home_line as pin_home_line, home_price as pin_home_price,
+         collective.devig_two_way(home_ml_price, away_ml_price) as pin_home_fair
+  from collective.latest_by_book where lower(book) = 'pinnacle'
+),
+rest as (
+  select
+    game_id,
+    count(*)                                            as books,
+    percentile_cont(0.5) within group (order by home_line)  as consensus_home_line,
+    percentile_cont(0.5) within group (order by total_line) as consensus_total,
+    avg(collective.devig_two_way(home_ml_price, away_ml_price)) as consensus_home_fair,
+    max(captured_at)                                    as latest_capture
+  from collective.latest_by_book
+  where lower(book) is distinct from 'pinnacle'
+  group by game_id
+)
+select
+  coalesce(rest.game_id, pin.game_id)                   as game_id,
+  coalesce(rest.books, 0)                               as books,
+  rest.consensus_home_line, rest.consensus_total, rest.consensus_home_fair,
+  pin.pin_home_line, pin.pin_home_price, pin.pin_home_fair,
+  rest.latest_capture
+from rest full outer join pin on pin.game_id = rest.game_id;
+
+-- Best price for one side of the spread, reported PER LINE. The caller
+-- decides which line it wants; nothing here pretends a different line is
+-- comparable.
+create or replace function collective.best_spread_price(p_game_id uuid, p_side text)
+returns table (line numeric, book text, price int, decimal_odds numeric, books_at_line int)
+language sql stable as $$
+  with s as (
+    select case when p_side = 'home' then home_line else away_line end as ln,
+           case when p_side = 'home' then home_price else away_price end as pr,
+           book
+    from collective.latest_by_book
+    where game_id = p_game_id
+  ), ranked as (
+    select ln, book, pr,
+           collective.american_to_decimal(pr) as dec,
+           count(*) over (partition by ln) as n,
+           row_number() over (partition by ln order by collective.american_to_decimal(pr) desc) as rk
+    from s where ln is not null and pr is not null
+  )
+  select ln, book, pr, dec, n::int from ranked where rk = 1 order by ln
+$$;
+
+grant select on collective.latest_by_book, collective.market_consensus to service_role;
+
+-- The write path predates the moneyline columns above, so it never stored
+-- them. Same function, two more fields.
+create or replace function collective.record_market_snapshots(p_admin uuid, p_rows jsonb)
+returns jsonb language plpgsql security definer set search_path = collective as $$
+declare
+  r jsonb;
+  v_game uuid;
+  v_cap timestamptz;
+  n_ok int := 0; n_dup int := 0; n_unmatched int := 0; n_bad int := 0;
+  v_unmatched jsonb := '[]'::jsonb;
+begin
+  if not collective.is_admin(p_admin) then
+    return jsonb_build_object('ok', false, 'code', 'forbidden', 'message', 'Not an admin account');
+  end if;
+  if jsonb_typeof(p_rows) <> 'array' then
+    return jsonb_build_object('ok', false, 'code', 'invalid_payload', 'message', 'rows must be an array');
+  end if;
+
+  for r in select * from jsonb_array_elements(p_rows) loop
+    begin
+      v_cap := coalesce(nullif(r->>'captured_at','')::timestamptz, now());
+      v_game := collective.resolve_game_ref(
+        r->>'sport', nullif(r->>'season','')::int,
+        r->>'home_team', r->>'away_team', nullif(r->>'kickoff','')::timestamptz);
+      if v_game is null then
+        n_unmatched := n_unmatched + 1;
+        v_unmatched := v_unmatched || jsonb_build_object(
+          'home_team', r->>'home_team', 'away_team', r->>'away_team', 'kickoff', r->>'kickoff');
+        continue;
+      end if;
+      if coalesce(r->>'book','') = '' then n_bad := n_bad + 1; continue; end if;
+
+      insert into collective.market_snapshots (
+        game_id, sport_code, market, book,
+        home_line, home_price, away_line, away_price,
+        total_line, over_price, under_price,
+        home_ml_price, away_ml_price, captured_at, source)
+      values (
+        v_game, r->>'sport', coalesce(nullif(r->>'market',''), 'spread'), r->>'book',
+        nullif(r->>'home_line','')::numeric, nullif(r->>'home_price','')::int,
+        nullif(r->>'away_line','')::numeric, nullif(r->>'away_price','')::int,
+        nullif(r->>'total_line','')::numeric, nullif(r->>'over_price','')::int,
+        nullif(r->>'under_price','')::int,
+        nullif(r->>'home_ml_price','')::int, nullif(r->>'away_ml_price','')::int,
+        v_cap, coalesce(nullif(r->>'source',''), 'unknown'));
+      n_ok := n_ok + 1;
+    exception
+      when unique_violation then n_dup := n_dup + 1;
+      when others then n_bad := n_bad + 1;
+    end;
+  end loop;
+
+  return jsonb_build_object('ok', true, 'stored', n_ok, 'duplicates', n_dup,
+    'unmatched', n_unmatched, 'rejected', n_bad, 'unmatched_rows', v_unmatched);
+end $$;
+
+do $$
+declare f record;
+begin
+  for f in select p.oid::regprocedure as sig from pg_proc p
+           join pg_namespace n on n.oid = p.pronamespace
+           where n.nspname='collective' and p.proname='record_market_snapshots' loop
+    execute format('revoke execute on function %s from public', f.sig);
+    execute format('grant execute on function %s to service_role', f.sig);
+  end loop;
+end $$;
