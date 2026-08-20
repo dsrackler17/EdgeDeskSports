@@ -813,7 +813,8 @@ Deno.serve(async (req) => {
       if (body.alias && body.alias.alias && body.alias.team_code) {
         const sport = (body.alias.sport ?? "NFL").toUpperCase();
         const code = body.alias.team_code.toUpperCase();
-        if (!/^[A-Z0-9]{2,10}$/.test(sport) || !/^[A-Z0-9]{2,5}$/.test(code)) {
+        // CFB team codes run longer than NFL's three letters (OHIOSTATE).
+        if (!/^[A-Z0-9]{2,10}$/.test(sport) || !/^[A-Z0-9]{2,12}$/.test(code)) {
           return err("invalid_payload", "Sport and team code look wrong.", 422);
         }
         const teams = await viewGet<{ id: string }>(
