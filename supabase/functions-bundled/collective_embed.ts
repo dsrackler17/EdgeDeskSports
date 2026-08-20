@@ -285,7 +285,8 @@ interface GameDetailRow {
 interface BoardModelRow {
   game_id: string; model_id: string; creator_slug: string; model_slug: string;
   pick_side: string | null; projected_spread: number | null; projected_total: number | null;
-  home_win_prob: number | null; received_at: string; is_late: boolean;
+  home_win_prob: number | null; line_at_submission: number | null; cover_prob: number | null;
+  received_at: string; is_late: boolean;
   pick_result: string | null; margin_error: number | null; brier: number | null;
 }
 interface ConsensusRow {
@@ -347,6 +348,7 @@ async function buildGames(
             ? { creator_slug: m.creator_slug, model_slug: m.model_slug, locked: false,
                 late: m.is_late, pick_side: m.pick_side, projected_spread: m.projected_spread,
                 projected_total: m.projected_total, home_win_probability: m.home_win_prob,
+                line_at_submission: m.line_at_submission, cover_probability: m.cover_prob,
                 received_at: m.received_at,
                 grade: m.pick_result !== null || m.margin_error !== null || m.brier !== null
                   ? { pick_result: m.pick_result, margin_error: m.margin_error, brier: m.brier }

@@ -401,15 +401,29 @@ function boardClock(){
     el.textContent=new Date().toLocaleTimeString('en-US',{timeZone:'America/Chicago',hour12:false})+' CT';
   }catch(e){el.textContent=new Date().toLocaleTimeString();}
 }
-function pickDisp(g,mr){
-  if(mr.pick_side==='home')return esc(g.home)+' '+fmtSpread(mr.projected_spread);
-  if(mr.pick_side==='away')return esc(g.away)+' '+fmtSpread(mr.projected_spread==null?null:-mr.projected_spread);
-  if(mr.projected_spread!=null)return esc(g.home)+' '+fmtSpread(mr.projected_spread);
-  return '-';
+/* The number to show beside a pick: the model's own projected spread when it
+   has one, otherwise the market line it posted the pick against. A model that
+   picks sides at the market line has no projection of its own, and showing a
+   dash made perfectly good submissions look empty. */
+function pickNum(mr){
+  if(mr.projected_spread!=null)return {v:mr.projected_spread,own:true};
+  if(mr.line_at_submission!=null)return {v:mr.line_at_submission,own:false};
+  return null;
 }
+function pickDisp(g,mr){
+  var n=pickNum(mr);
+  var num=n==null?'-':fmtSpread(mr.pick_side==='away'?-n.v:n.v);
+  var side=mr.pick_side==='away'?g.away:(mr.pick_side==='home'?g.home:null);
+  if(side==null)return n==null?'-':esc(g.home)+' '+fmtSpread(n.v);
+  return esc(side)+' '+num;
+}
+/* Probability for the picked side: moneyline if given, else the cover
+   probability, which is already stated at the model's own line. */
 function pickProb(mr){
-  if(mr.home_win_probability==null)return null;
-  return mr.pick_side==='away'?1-mr.home_win_probability:mr.home_win_probability;
+  if(mr.home_win_probability!=null)
+    return mr.pick_side==='away'?1-mr.home_win_probability:mr.home_win_probability;
+  if(mr.cover_probability!=null)return mr.cover_probability;
+  return null;
 }
 async function renderWall(view){
   view.innerHTML='<div class="emptybox">Loading the wall&hellip;</div>';
@@ -658,9 +672,15 @@ async function renderBoard(view){
           rows+='<div class="mrow">'+who+(mr.late?'<span class="chip late">Late, ungraded</span>':'')+
             '<span class="spacer"></span>'+
             '<span class="mono">'+(mr.pick_side?('pick '+mr.pick_side):'no pick')+'</span>'+
-            '<span class="mono">spr '+fmtSpread(mr.projected_spread)+'</span>'+
+            (mr.projected_spread!=null
+              ? '<span class="mono">spr '+fmtSpread(mr.projected_spread)+'</span>'
+              : (mr.line_at_submission!=null
+                  ? '<span class="mono" title="the market line this pick was posted against">line '+fmtSpread(mr.line_at_submission)+'</span>'
+                  : ''))+
             (mr.projected_total!=null?'<span class="mono">tot '+fmtNum(mr.projected_total)+'</span>':'')+
             (mr.home_win_probability!=null?'<span class="mono">hw '+fmtPct(mr.home_win_probability,0)+'</span>':'')+
+            (mr.home_win_probability==null&&mr.cover_probability!=null
+              ? '<span class="mono" title="the model\'s probability that this pick covers">cover '+fmtPct(mr.cover_probability,0)+'</span>':'')+
             grade+'</div>';
         }
       });
