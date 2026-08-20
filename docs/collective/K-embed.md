@@ -81,7 +81,7 @@ Gated (paid once billing is live):
 Gated rows render as a designed locked row (lock glyph, game label, kickoff time, model count, zero numeric values, because the payload has zero numeric values) with one subscribe CTA per gated section:
 
 ```
-Subscribe for live numbers, $20/mo
+Subscribe for live numbers, $24.99/mo
 ```
 
 linking to `subscribe_url` from the bootstrap payload, which is `BASE_URL/collective/?ref={host}#join`. The `ref` parameter carries first-touch attribution for the host creator, so a subscription that starts inside a member's tab credits that member. While `billing.enabled` is false the same rows carry `reason: "billing_not_live"` and the CTA reads `Live numbers arrive when billing opens` linking to the Collective site, so the embed is honest before money exists.

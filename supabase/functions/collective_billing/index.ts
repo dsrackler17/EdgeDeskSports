@@ -55,14 +55,16 @@ Deno.serve(async (req) => {
   try {
     if (req.method === "GET" && path === "/v1/billing/checkout") {
       const enabled = await rpc<unknown>("get_config", { p_key: "billing.enabled" });
-      if (enabled !== true || !STRIPE_SECRET || !PRICE_MONTHLY || !PRICE_ANNUAL) {
+      if (enabled !== true || !STRIPE_SECRET || !PRICE_MONTHLY) {
         return json({
           live: false,
           message: "Billing is not live yet. The record is being built in the open first; subscriptions open once the wall has a verified season behind it.",
         });
       }
       const u = new URL(req.url);
-      const plan = u.searchParams.get("plan") === "annual" ? "annual" : "monthly";
+      // annual is only honored when an annual price is configured; the
+      // Collective currently sells monthly only
+      const plan = u.searchParams.get("plan") === "annual" && PRICE_ANNUAL ? "annual" : "monthly";
       const ref = (u.searchParams.get("ref") ?? "").slice(0, 60);
       const visitor = (u.searchParams.get("visitor") ?? "").slice(0, 64);
       const user = await getUser(req);

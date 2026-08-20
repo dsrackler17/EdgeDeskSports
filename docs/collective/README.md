@@ -16,7 +16,7 @@ Each of these was decided during the autonomous build and is recorded in CONTRAC
 | 6 | Retention promise when a creator leaves? | Submissions are append-only and stay in the historical record: the public record is the product and it does not get holes when someone leaves. On departure the profile is unlisted (`is_listed=false`), keys are revoked, and personal fields (website, socials, logo) can be cleared on request. Stated in the join flow terms line. | Reversing this (deleting history) would corrupt every consensus and record number ever published; do not. |
 | 7 | Repo findings that shaped the design? | The repo had no `supabase/` directory; database objects lived only in the hosted project. This build establishes `supabase/migrations/` and `supabase/functions/` as the source of truth. The existing app already exposes extra PostgREST schemas via `accept-profile`, so exposing `collective` (with zero grants to anon and authenticated) is consistent with existing practice. | n/a, observation. |
 
-Pricing was decided in the build prompt and is not reopened: $20/month, $200/year, Mode A referral at 40 percent (founding members 50 percent, first 10 seats), Mode B wholesale at $14/seat with a 10 seat minimum and a $20 retail floor. All numbers live in `collective.config`, nowhere else.
+Pricing: $24.99/month, monthly only (owner decision 2026-08-20, superseding the build prompt's $20/month plus $200/year; the annual plan is disabled with `pricing.annual_cents = 0`). Mode A referral at 40 percent (founding members 50 percent, first 10 seats), Mode B wholesale at $14/seat with a 10 seat minimum and a $20 retail floor. All numbers live in `collective.config`, nowhere else.
 
 ## Document index
 

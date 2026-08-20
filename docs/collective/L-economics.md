@@ -6,15 +6,15 @@ Purpose: the complete money design at the decided Section 5 numbers, exactly as 
 
 ## 1. Retail price, fixed everywhere
 
-**$20 per month, or $200 per year.** One price across the whole ecosystem. No creator sets a different standalone price for Collective access, in either mode. A single anchor price is what stops the members from undercutting each other into nothing. Stored as `pricing.monthly_cents = 2000` and `pricing.annual_cents = 20000`, surfaced through `/v1/meta` so every page and embed quotes the same number from the same row.
+**$24.99 per month, monthly only.** (Owner decision 2026-08-20: this supersedes the original $20/mo plus $200/yr plan. The annual plan is disabled.) One price across the whole ecosystem. No creator sets a different standalone price for Collective access, in either mode. A single anchor price is what stops the members from undercutting each other into nothing. Stored as `pricing.monthly_cents = 2499` and `pricing.annual_cents = 0` (zero disables annual everywhere: the site and embeds hide the annual line, and the billing function only offers the annual plan when a Stripe annual price is configured, which it is not), surfaced through `/v1/meta` so every page and embed quotes the same number from the same row.
 
 ## 2. Mode A, referral (the default)
 
-The Collective bills the end user $20 directly. The referring creator earns **40 percent recurring, $8 per subscriber per month**, for as long as that subscriber stays. The Collective keeps $12. Zero billing setup, zero support burden, zero payout plumbing on the creator's side; the Collective owns the customer relationship, the churn data, and the retention.
+The Collective bills the end user $24.99 directly. The referring creator earns **40 percent recurring, $9.99 per subscriber per month** (the ledger computes 2499 x 4000 / 10000 = 999 cents), for as long as that subscriber stays. The Collective keeps $15.00. Zero billing setup, zero support burden, zero payout plumbing on the creator's side; the Collective owns the customer relationship, the churn data, and the retention.
 
 Every creator lands in Mode A by default (`creators.billing_mode` default `'referral'`). The rate is **stored per creator** as `creators.referral_share_bps` (default 4000 from `share.referral_bps_default`), never derived from a tier check at earn time.
 
-**Founding member terms.** The first 10 creators (`share.founding_seats = 10`) get **50 percent, $10 per subscriber per month, locked for the life of their membership.** Implemented as `referral_share_bps = 5000` written onto the creator row at invite redemption when the invite carries the founding flag. Because the money number travels on the creator record, the rate survives any later change to the defaults: no code knows about "founding" at earning time, it only reads the row's bps. `founding_member` is a separate display flag for the badge. At current scale founding terms cost a few hundred dollars a month and are the reason the first ten actually post the link.
+**Founding member terms.** The first 10 creators (`share.founding_seats = 10`) get **50 percent, $12.49 per subscriber per month, locked for the life of their membership.** Implemented as `referral_share_bps = 5000` written onto the creator row at invite redemption when the invite carries the founding flag. Because the money number travels on the creator record, the rate survives any later change to the defaults: no code knows about "founding" at earning time, it only reads the row's bps. `founding_member` is a separate display flag for the badge. At current scale founding terms cost a few hundred dollars a month and are the reason the first ten actually post the link.
 
 ## 3. Mode B, wholesale
 
@@ -26,7 +26,7 @@ Hard condition, the price floor: a Mode B creator may not sell Collective access
 
 Reproducing the decided argument faithfully, because it is load-bearing for every future pricing conversation:
 
-At a $20 retail price, Mode A pays the creator $8 per subscriber and Mode B nets them $6 ($20 collected minus $14 wholesale). Mode A is strictly better for the creator unless they retail above $22, which means Mode B is only attractive to someone bundling Collective access into an already-premium product. That is exactly the creator who should be in Mode B, because they already have billing, support, and a customer relationship worth protecting. Everyone else lands in Mode A by default, which is where the Collective wants them. The Collective keeps $12 under Mode A and $14 under Mode B, close enough that there is no incentive to push a creator into the mode that is worse for them.
+At a $24.99 retail price, Mode A pays the creator $9.99 per subscriber and Mode B nets them $10.99 ($24.99 collected minus $14 wholesale) but only if they run their own billing and support. Mode B is really only attractive to someone bundling Collective access into an already-premium product. That is exactly the creator who should be in Mode B, because they already have billing, support, and a customer relationship worth protecting. Everyone else lands in Mode A by default, which is where the Collective wants them. The Collective keeps $15.00 under Mode A and $14 under Mode B, close enough that there is no incentive to push a creator into the mode that is worse for them.
 
 ## 5. Attribution rules
 
@@ -41,7 +41,7 @@ At a $20 retail price, Mode A pays the creator $8 per subscriber and Mode B nets
 - **$50 minimum, rolls forward.** Balances under `payout.min_cents` (5000) are not paid; they carry to the next cycle with no expiry.
 - **Stripe Connect, requested only after first successful submission.** `payout_accounts` starts `'unstarted'` and the Connect onboarding ask is triggered by the first successful live submission, never at signup. Asking a stranger for banking information before they have seen the product working is how you lose them.
 - **60 day clawback.** Refunds and chargebacks within `payout.clawback_days` (60) post negative `clawback` ledger entries against the creator who earned the share.
-- **Annual subscriptions** pay the creator share on the **full amount at the time it clears** ($80 at 40 percent, $100 founding, on the $200 payment), subject to the same clawback window.
+- **Annual subscriptions are disabled** (`pricing.annual_cents = 0`, owner decision 2026-08-20). The ledger rule stands dormant: if an annual plan ever returns, the creator share posts on the full amount at the time it clears, subject to the same clawback window.
 
 Ledger discipline: `earnings_ledger` is append-only; balance is the sum of `earning`, `clawback`, `payout`, and `adjustment` entries. Payouts post as negative entries referencing the Stripe transfer. Every number a creator sees is reproducible by summing their rows.
 
@@ -55,10 +55,10 @@ All money numbers live in `collective.config` and only there. Changing one is an
 
 | Key | Value | Meaning |
 |---|---|---|
-| `pricing.monthly_cents` | 2000 | Retail monthly price |
-| `pricing.annual_cents` | 20000 | Retail annual price |
-| `share.referral_bps_default` | 4000 | Mode A default share (40 percent, $8) |
-| `share.founding_bps` | 5000 | Founding share written to the creator row (50 percent, $10) |
+| `pricing.monthly_cents` | 2499 | Retail monthly price |
+| `pricing.annual_cents` | 0 | Annual plan disabled, monthly only |
+| `share.referral_bps_default` | 4000 | Mode A default share (40 percent, $9.99) |
+| `share.founding_bps` | 5000 | Founding share written to the creator row (50 percent, $12.49) |
 | `share.founding_seats` | 10 | Founding seat count |
 | `wholesale.seat_cents` | 1400 | Mode B per seat per month |
 | `wholesale.min_seats` | 10 | Mode B minimum seats |
@@ -85,4 +85,4 @@ Backing view: `creator_earnings_monthly` (earned, clawed back, paid, balance, av
 
 ## 10. Scale arithmetic, honestly
 
-So nobody builds a fantasy: six creators with roughly 5,000 combined reachable audience at 3 percent conversion is about 150 subscribers. At $20 that is about **$3,000 gross monthly**, and after founding-member share the Collective keeps around $1,500. Real, not transformative. The lever is member count and audience quality, not price. Every mechanism in this document (config-driven rates, per-creator bps, ledger-summed balances, derived dashboards) is O(members) with no per-member code or manual step, because the system is designed for **60 creators, not 6**.
+So nobody builds a fantasy: six creators with roughly 5,000 combined reachable audience at 3 percent conversion is about 150 subscribers. At $24.99 that is about **$3,750 gross monthly**, and after founding-member share the Collective keeps around $1,875. Real, not transformative. The lever is member count and audience quality, not price. Every mechanism in this document (config-driven rates, per-creator bps, ledger-summed balances, derived dashboards) is O(members) with no per-member code or manual step, because the system is designed for **60 creators, not 6**.

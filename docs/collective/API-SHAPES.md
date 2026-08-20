@@ -8,7 +8,7 @@ Testing hook (all pages and embed): the API base can be overridden with `?api=<b
 ```json
 {
   "name": "Model Collective",
-  "pricing": { "monthly_cents": 2000, "annual_cents": 20000, "currency": "usd" },
+  "pricing": { "monthly_cents": 2499, "annual_cents": 0, "currency": "usd" },
   "billing_live": false,
   "sports": [ { "code": "NFL", "name": "Football", "season": 2026, "in_season": true } ],
   "counts": { "creators": 3, "models": 4, "graded_games": 120, "live_projections": 260 },

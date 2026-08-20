@@ -1718,8 +1718,8 @@ end $$;
 -- generous alias vocabulary for canonical resolution.
 
 insert into collective.config (key, value, description) values
-  ('pricing.monthly_cents',      '2000',  'Retail price, fixed everywhere: $20 per month'),
-  ('pricing.annual_cents',       '20000', 'Retail price, annual: $200 per year'),
+  ('pricing.monthly_cents',      '2499',  'Retail price, fixed everywhere: $24.99 per month'),
+  ('pricing.annual_cents',       '0',     'Annual plan disabled: monthly only'),
   ('share.referral_bps_default', '4000',  'Mode A default: 40 percent recurring'),
   ('share.founding_bps',         '5000',  'Founding member Mode A rate: 50 percent recurring, locked for membership life'),
   ('share.founding_seats',       '10',    'How many founding invitations exist'),

@@ -260,7 +260,7 @@ async function buildMeta(): Promise<MetaShape> {
   const site = `${BASE_URL}/collective/`;
   return {
     name: "Model Collective",
-    pricing: { monthly_cents: Number(monthly ?? 2000), annual_cents: Number(annual ?? 20000), currency: "usd" },
+    pricing: { monthly_cents: Number(monthly ?? 2499), annual_cents: Number(annual ?? 0), currency: "usd" },
     billing_live: billing === true,
     sports: sports.map((s) => {
       const season = seasons.find((x) => x.sport_code === s.code);

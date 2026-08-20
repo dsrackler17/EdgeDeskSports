@@ -381,7 +381,7 @@ async function buildMeta(): Promise<MetaShape> {
   const site = `${BASE_URL}/collective/`;
   return {
     name: "Model Collective",
-    pricing: { monthly_cents: Number(monthly ?? 2000), annual_cents: Number(annual ?? 20000), currency: "usd" },
+    pricing: { monthly_cents: Number(monthly ?? 2499), annual_cents: Number(annual ?? 0), currency: "usd" },
     billing_live: billing === true,
     sports: sports.map((s) => {
       const season = seasons.find((x) => x.sport_code === s.code);
@@ -851,6 +851,68 @@ Deno.serve(async (req) => {
       return json({ ok: true, creator: pub(c, "", "", null) }, 200, NO_STORE);
     }
 
+    // Browser slate submission: the signed-in creator posts an envelope from
+    // the dashboard (CSV or Excel upload, or manual entry) without ever
+    // handling their API key. Same validation pipeline as the key path: the
+    // envelope goes verbatim into the ingest RPC under the creator's own
+    // active key identity, so rate limits and attribution behave identically.
+    if (path === "/v1/dashboard/submit" && req.method === "POST") {
+      const ctx = await requireCreator(req);
+      if (ctx instanceof Response) return ctx;
+      const body = await req.json().catch(() => null) as Record<string, unknown> | null;
+      if (!body || typeof body !== "object" || Array.isArray(body)) {
+        return err("invalid_payload", "Body must be a JSON envelope.", 422);
+      }
+      const rows = body.rows;
+      if (!Array.isArray(rows) || rows.length === 0) {
+        return err("invalid_payload", "Envelope must include a non-empty rows array.", 422);
+      }
+      if (rows.length > 500) {
+        return err("invalid_payload", `${rows.length} rows exceeds the 500 row maximum.`, 422);
+      }
+      interface ModelRow { id: string; slug: string; name: string; sport_code: string }
+      const models = await viewGet<ModelRow>(
+        "models", `select=id,slug,name,sport_code&creator_id=eq.${ctx.creator.id}`);
+      if (models.length === 0) return err("not_found", "This account has no model yet.", 404);
+      let model = models[0];
+      if (typeof body.model === "string" && body.model) {
+        const found = models.find((x) => x.slug === body.model);
+        if (!found) return err("invalid_payload", `No model named "${body.model}" on this account.`, 422);
+        model = found;
+      } else if (models.length > 1) {
+        return err("invalid_payload", "This account has several models; set \"model\" to one of: " +
+          models.map((x) => x.slug).join(", "), 422);
+      }
+      const keys = await viewGet<{ id: string }>(
+        "api_keys", `select=id&creator_id=eq.${ctx.creator.id}&status=eq.active&order=created_at.desc&limit=1`);
+      if (!keys[0]) return err("conflict", "No active API key on this account. Rotate a key from the dashboard first.", 409);
+      const allowed = await rpc<boolean>("rate_check", { p_key_id: keys[0].id, p_endpoint: "/v1/dashboard/submit" });
+      if (allowed === false) return err("rate_limited", "Hourly submission limit reached. Try again later.", 429);
+      const pKey = {
+        key_id: keys[0].id, kind: "live",
+        creator_id: ctx.creator.id, creator_slug: ctx.creator.slug, creator_name: ctx.creator.display_name,
+        model_id: model.id, model_slug: model.slug, model_name: model.name, sport: model.sport_code,
+      };
+      const envelope = { ...body, model: model.slug, sport: model.sport_code };
+      delete (envelope as Record<string, unknown>).dry_run;
+      const dry = body.dry_run === true;
+      const result = await rpc<Record<string, unknown> | null>("ingest_submission", {
+        p_key: pKey, p_envelope: envelope, p_dry: dry,
+      });
+      if (!result || result.ok === false) {
+        const code = typeof result?.code === "string" ? result.code : "server_error";
+        if (code === "server_error") {
+          console.error("collective_public dashboard submit failed:", result);
+          return err("server_error", "Something went wrong on our side.", 500);
+        }
+        return err(code, String(result?.message ?? "The submission was rejected."), 422);
+      }
+      const out = { ...result } as Record<string, unknown>;
+      delete out.ok;
+      if (dry) { out.dry_run = true; out.submission_id = null; }
+      return json(out, 200, NO_STORE);
+    }
+
     if (path === "/v1/dashboard/keys/rotate" && req.method === "POST") {
       const ctx = await requireCreator(req);
       if (ctx instanceof Response) return ctx;
@@ -888,7 +950,7 @@ Deno.serve(async (req) => {
       return json({ ok: true, origins }, 200, NO_STORE);
     }
 
-    if (["/v1/dashboard/profile", "/v1/dashboard/keys/rotate", "/v1/dashboard/origins"].includes(path) ||
+    if (["/v1/dashboard/profile", "/v1/dashboard/keys/rotate", "/v1/dashboard/origins", "/v1/dashboard/submit"].includes(path) ||
       ["/v1/meta", "/v1/wall", "/v1/rules", "/v1/rankings", "/v1/activity", "/v1/games", "/v1/consensus", "/v1/dashboard"].includes(path)) {
       return err("method_not_allowed", "Wrong method for this route.", 405);
     }
