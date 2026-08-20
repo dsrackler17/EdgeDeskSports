@@ -146,11 +146,44 @@ begin
   r := collective.ingest_submission(kctx, env || jsonb_build_object('model','someone-elses-model'), false);
   if coalesce(r->>'code','') <> 'invalid_payload' then raise exception 'model mismatch must reject: %', r; end if;
 
-  -- idempotent replay (same payload, same answer)
+  -- Replay rules. A payload that had quarantined rows is allowed a genuine
+  -- retry (the usual cause is a schedule that was not loaded yet), so it is
+  -- reprocessed rather than answered from cache.
   r := collective.ingest_submission(kctx, env, false);
-  if not (r->>'duplicate')::boolean then raise exception 'replay should be duplicate: %', r; end if;
+  if (r->>'duplicate')::boolean then
+    raise exception 'a payload with quarantined rows must be retryable: %', r;
+  end if;
+  -- but the first-submission lock still holds: no second graded candidate
+  select count(*) into n from collective.projections
+   where model_id = v_model and game_id = g_future and is_graded_candidate;
+  if n <> 1 then raise exception 'retry created % graded candidates, wanted 1', n; end if;
+
+  -- A payload with nothing quarantined replays as a strict duplicate.
+  declare env_clean jsonb;
+  begin
+    env_clean := jsonb_build_object(
+      'sport','NFL','season',2026,'week',1,'data_origin','live',
+      'rows', jsonb_build_array(jsonb_build_object(
+        'game_ref','NFL_2026_W1_CLEAN','home_team','KC','away_team','BUF',
+        'kickoff', to_char((select kickoff_at from collective.games where id = g_future)
+                            at time zone 'UTC','YYYY-MM-DD"T"HH24:MI:SS"Z"'),
+        'projected_spread', -3.5)));
+    r := collective.ingest_submission(kctx, env_clean, false);
+    if coalesce((r->'counts'->>'quarantined')::int,0) <> 0 then
+      raise exception 'clean payload should not quarantine: %', r;
+    end if;
+    r := collective.ingest_submission(kctx, env_clean, false);
+    if not (r->>'duplicate')::boolean then
+      raise exception 'clean replay should be duplicate: %', r;
+    end if;
+  end;
+  -- Three submissions by design: the original (which quarantined a row), its
+  -- allowed retry, and the clean payload. The clean payload's replay added
+  -- nothing, which is what strict idempotency has to guarantee.
   select count(*) into n from collective.submissions;
-  if n <> 1 then raise exception 'replay duplicated the submission: % rows', n; end if;
+  if n <> 3 then raise exception 'wanted 3 submissions, got %', n; end if;
+  select count(*) into n from collective.submissions where payload_hash like '%:retry%';
+  if n <> 1 then raise exception 'wanted exactly 1 retry submission, got %', n; end if;
 
   -- a revision is movement, never the graded number (8.5)
   r := collective.ingest_submission(kctx, jsonb_build_object(
@@ -177,7 +210,10 @@ begin
   perform collective.upsert_games(admin_id, jsonb_build_object('sport','NFL','season',2026,'games',
     jsonb_build_array(jsonb_build_object('week',1,'kickoff', to_char(now() + interval '2 days', 'YYYY-MM-DD"T"HH24:MI:SS"Z"'),'home','Okland Raiders','away','DEN'))));
   r := collective.admin_reresolve('NFL');
-  if (r->>'resolved')::int <> 1 then raise exception 'reresolve wanted 1: %', r; end if;
+  -- 2, not 1: the allowed retry of the quarantined payload stored a second
+  -- copy of that row, and teaching the resolver the alias fixes both. Only one
+  -- of them can ever be the graded candidate (asserted above).
+  if (r->>'resolved')::int <> 2 then raise exception 'reresolve wanted 2: %', r; end if;
   select count(*) into n from collective.quarantine_queue;
   if n <> 0 then raise exception 'quarantine queue should be empty, has %', n; end if;
 
