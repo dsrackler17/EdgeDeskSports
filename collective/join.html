@@ -126,10 +126,13 @@ async function api(path,opts){
 }
 
 function deadToken(kind){
-  var head=kind==='expired'?'This invite link has expired':'This invite has already been used';
+  var head=kind==='expired'?'This invite link has expired'
+    :(kind==='revoked'?'This invite was withdrawn':'This invite has already been used');
   var sub=kind==='expired'
     ?'Invite links live for 30 days. Yours has lapsed, which is easy to fix.'
-    :'Each invite link works once. If that was you on another device, open your dashboard instead. If not, request a fresh link below.';
+    :(kind==='revoked'
+      ?'The person who sent this link revoked it. If you think that was a mistake, request a fresh one below.'
+      :'Each invite link works once. If that was you on another device, open your dashboard instead. If not, request a fresh link below.');
   $('app').innerHTML=
     '<h1>'+head+'</h1><p class="lede">'+sub+'</p>'+
     '<div class="panel"><label>Your email</label><input id="rqEmail" type="email" placeholder="you@example.com">'+
@@ -170,7 +173,7 @@ function badToken(){
 }
 
 function screen1(){
-  var f=STATE.info.founding?'<p class="warnnote" style="margin:-8px 0 14px"><span class="chip">Founding member</span> &nbsp;This invite carries founding terms: 50 percent recurring on every subscriber you refer, locked for the life of your membership.</p>':'';
+  var f=STATE.info.founding?'<p class="warnnote" style="margin:-8px 0 14px"><span class="chip">&#9733; Founding Member</span> &nbsp;This invite makes you one of the founding members of the Collective. Founding status is permanent.</p>':'';
   $('app').innerHTML=steps(1)+
     '<h1>You are joining the Model Collective</h1>'+
     '<p class="lede">Shared infrastructure for independent sports models. You keep your model, your site, and your customers. The Collective grades your record independently and puts it in front of every member’s audience.</p>'+f+
@@ -215,6 +218,13 @@ function screen2(){
     '<label>Display name</label><input id="pName" value="'+esc(p.display_name||'')+'" placeholder="Your public name" autofocus>'+
     '<label>Sport</label><select id="pSport">'+opts+'</select>'+
     '<label>Model name</label><input id="pModel" value="'+esc(p.model_name||'')+'" placeholder="What you call your model">'+
+    '<label>Where does your model live? <span class="opt">optional</span></label>'+
+    '<div style="display:flex;gap:8px;flex-wrap:wrap" id="pSrcRow">'+
+      '<button type="button" class="btn" data-src="excel">Excel / CSV</button>'+
+      '<button type="button" class="btn" data-src="github">GitHub</button>'+
+      '<button type="button" class="btn" data-src="online">Online</button>'+
+      '<button type="button" class="btn" data-src="other">Other</button>'+
+    '</div><div id="pSrcDetail"></div>'+
     '<label>Description <span class="opt">optional</span></label><input id="pDesc" placeholder="One sentence about your model">'+
     '<label>Website <span class="opt">optional</span></label><input id="pSite" placeholder="https://yoursite.com">'+
     '<p class="note" style="margin:4px 0 0">No site? Your Collective profile becomes your home page.</p>'+
@@ -223,6 +233,27 @@ function screen2(){
     '<div class="terms"><input type="checkbox" id="pTerms"><span>I agree to the <a href="/terms.html" target="_blank">Collective terms</a>. Your submissions stay in the historical record if you ever leave. Your model, your site, and your customers stay yours.</span></div>'+
     '<button class="btn" id="pGo">Create my profile</button>'+
     '<div id="pErr"></div></div>';
+  var SRC_INFO={
+    excel:{note:'Perfect. After joining, your dashboard has a Post a slate panel: upload your .xlsx or .csv and it maps your columns automatically. Nothing to configure now.'},
+    github:{label:'Repository URL',ph:'https://github.com/you/model'},
+    online:{label:'Model URL or API endpoint',ph:'https://yourmodel.com'},
+    other:{label:'Describe where your model lives',ph:'A short description'}
+  };
+  var pSrc=(p.source_kind&&SRC_INFO[p.source_kind])?p.source_kind:null;
+  function paintSrc(){
+    document.querySelectorAll('#pSrcRow .btn').forEach(function(b){
+      var on=b.getAttribute('data-src')===pSrc;
+      b.style.borderColor=on?'var(--accent)':'';b.style.color=on?'var(--text)':'';
+    });
+    var d2=pSrc?SRC_INFO[pSrc]:null;
+    $('pSrcDetail').innerHTML=!d2?'':(d2.label
+      ?'<input id="pSrcRef" style="margin-top:8px" placeholder="'+esc(d2.ph||'')+'" value="'+esc(p.source_ref||'')+'">'
+      :'<p class="note" style="margin:8px 0 0">'+esc(d2.note)+'</p>');
+  }
+  document.querySelectorAll('#pSrcRow .btn').forEach(function(b){
+    b.onclick=function(){pSrc=(pSrc===b.getAttribute('data-src'))?null:b.getAttribute('data-src');paintSrc();};
+  });
+  paintSrc();
   $('pGo').onclick=async function(){
     var name=$('pName').value.trim(),sport=$('pSport').value,model=$('pModel').value.trim();
     var errs=[];
@@ -239,6 +270,7 @@ function screen2(){
         display_name:name,sport:sport,model_name:model,
         description:$('pDesc').value.trim()||null,website_url:site||null,
         x_handle:$('pX').value.trim().replace(/^@/,'')||null,logo_url:logo||null,
+        source_kind:pSrc||null,source_ref:(pSrc&&$('pSrcRef'))?$('pSrcRef').value.trim()||null:null,
         accept_terms:true}});
       STATE.redeem=r;screen3();
     }catch(e){
@@ -279,6 +311,7 @@ function screen3(){
   try{
     var info=await api('/v1/join/'+encodeURIComponent(TOKEN));
     if(!info||!info.status){badToken();return;}
+    if(info.status==='revoked'){deadToken('revoked');return;}
     if(info.status==='expired'){deadToken('expired');return;}
     if(info.status==='spent'&&!session()){deadToken('spent');return;}
     STATE.info=info;STATE.prefill=info.prefill||{};

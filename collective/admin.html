@@ -60,8 +60,8 @@ td input{width:70px;padding:5px 7px;font-family:'JetBrains Mono',monospace;font-
   <span class="note">founder console</span>
   <span style="flex:1"></span>
   <nav id="nav" class="hide">
-    <a data-s="invites" class="on">Invites</a><a data-s="members">Members</a><a data-s="quarantine">Quarantine</a>
-    <a data-s="games">Games</a><a data-s="results">Results</a><a data-s="earnings">Earnings</a>
+    <a data-s="overview" class="on">Overview</a><a data-s="invites">Invites</a><a data-s="members">Members</a>
+    <a data-s="quarantine">Quarantine</a><a data-s="games">Games</a><a data-s="results">Results</a><a data-s="earnings">Earnings</a>
   </nav>
 </div></header>
 <div class="wrap"><div id="app"><div class="panel note">Loading&hellip;</div></div></div>
@@ -80,7 +80,7 @@ function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){retur
 function $(id){return document.getElementById(id);}
 function toast(m){var t=document.createElement('div');t.className='toast';t.textContent=m;document.body.appendChild(t);setTimeout(function(){t.remove();},2000);}
 function rel(iso){if(!iso)return 'never';var s=(Date.now()-new Date(iso).getTime())/1e3;if(s<5400)return Math.max(1,Math.round(s/60))+'m ago';if(s<172800)return Math.round(s/3600)+'h ago';return Math.round(s/86400)+'d ago';}
-function cents(c){return c==null?'-':'$'+(c/100).toFixed(2);}
+function cents(c){return c==null?'-':'$'+(c/100).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});}
 function copyWire(scope){(scope||document).querySelectorAll('[data-copy]').forEach(function(b){if(b._w)return;b._w=true;b.onclick=function(){var v=$(b.getAttribute('data-copy')).textContent;if(navigator.clipboard)navigator.clipboard.writeText(v).then(function(){toast('Copied');});};});}
 
 function session(){try{return JSON.parse(localStorage.getItem('collective_admin_session')||'null');}catch(e){return null;}}
@@ -104,7 +104,11 @@ async function api(path,opts){
   return d;
 }
 
-var SEC='invites';
+var SEC='overview';
+var IV_PREFILL=null;
+function pct(bps){return (bps/100)%1===0?(bps/100)+'%':(bps/100).toFixed(1)+'%';}
+function linkCache(){try{return JSON.parse(localStorage.getItem('mc_admin_links')||'{}');}catch(e){return {};}}
+function cacheLink(id,url){try{var c=linkCache();c[id]=url;localStorage.setItem('mc_admin_links',JSON.stringify(c));}catch(e){}}
 function nav(){
   $('nav').classList.remove('hide');
   document.querySelectorAll('#nav a').forEach(function(a){
@@ -139,7 +143,8 @@ async function render(){
   var app=$('app');
   app.innerHTML='<div class="panel note">Loading '+esc(SEC)+'&hellip;</div>';
   try{
-    if(SEC==='invites')await secInvites(app);
+    if(SEC==='overview')await secOverview(app);
+    else if(SEC==='invites')await secInvites(app);
     else if(SEC==='members')await secMembers(app);
     else if(SEC==='quarantine')await secQuarantine(app);
     else if(SEC==='games')await secGames(app);
@@ -152,50 +157,241 @@ async function render(){
   }
 }
 
+async function secOverview(app){
+  var d=await api('/v1/admin/overview');
+  var c=d.collective,e=d.economics,o=d.onboarding,t=d.today;
+  function kv(items){return '<div style="display:flex;gap:26px;flex-wrap:wrap">'+items.map(function(x){
+    return '<span><div style="color:var(--faint);font-size:10px;text-transform:uppercase;letter-spacing:.05em">'+x[0]+'</div><div class="mono" style="font-size:16px;font-weight:700;margin-top:2px'+(x[2]?';color:'+x[2]:'')+'">'+x[1]+'</div></span>';
+  }).join('')+'</div>';}
+  app.innerHTML='<h1>Overview</h1><p class="lede">The Collective at a glance. Every number is computed from real rows and the configured economics.</p>'+
+    '<h2>Collective</h2><div class="panel">'+kv([
+      ['Founding members',c.founding_members],
+      ['Creators',c.creators],
+      ['Subscribers',c.subscribers],
+      ['MRR',cents(c.mrr_cents)]])+
+    (c.billing_live?'':'<p class="note" style="margin:10px 0 0">Billing is not live yet: subscriber and revenue numbers stay at zero until it opens.</p>')+'</div>'+
+    '<h2>Creator onboarding</h2><div class="panel">'+kv([
+      ['Invites pending',o.invites_pending],
+      ['Invites redeemed',o.invites_redeemed]])+
+    '<p class="note" style="margin:10px 0 0"><a href="#" data-go="invites">Invite a creator &rarr;</a></p></div>'+
+    '<h2>Today</h2><div class="panel">'+kv([
+      ['Models submitted',t.models_submitted],
+      ['Missing today',t.models_missing,t.models_missing>0?'var(--warn)':null],
+      ['Quarantined rows',t.quarantined_rows,t.quarantined_rows>0?'var(--warn)':null]])+
+    (t.quarantined_rows>0?'<p class="note" style="margin:10px 0 0"><a href="#" data-go="quarantine">Resolve quarantine &rarr;</a></p>':'')+'</div>'+
+    '<h2>Earnings</h2><div class="panel">'+kv([
+      ['Operating reserve ('+pct(e.reserve_bps)+')',cents(e.reserve_cents)],
+      ['Platform ('+pct(e.platform_bps)+')',cents(e.platform_cents)],
+      ['Founder pool ('+pct(e.founder_pool_bps)+')',cents(e.pool_cents)],
+      ['Per founding member',cents(e.per_founder_cents)]])+
+    '<p class="note" style="margin:10px 0 0"><a href="#" data-go="earnings">Full breakdown &rarr;</a></p></div>';
+  app.querySelectorAll('[data-go]').forEach(function(a){
+    a.onclick=function(ev){ev.preventDefault();SEC=a.getAttribute('data-go');nav();render();};
+  });
+}
+
+var SRC_LABEL={excel:'Excel / CSV',github:'GitHub',online:'Online',other:'Other'};
+var SRC_DETAIL={
+  excel:{label:'',note:'Nothing to configure: they upload their spreadsheet straight from their dashboard after joining.'},
+  github:{label:'Repository URL',ph:'https://github.com/them/model'},
+  online:{label:'Model URL or API endpoint',ph:'https://theirmodel.com'},
+  other:{label:'Describe the source',ph:'Where the model lives'}
+};
+
 async function secInvites(app){
   var list=await api('/v1/admin/invites');
+  var links=linkCache();
   var rows=(list.rows||[]).map(function(r){
-    var st=r.status==='active'?'<span class="chip ok">active · '+(r.max_uses-r.use_count)+' left</span>':(r.status==='expired'?'<span class="chip dead">expired</span>':'<span class="chip warn">spent</span>');
-    return '<tr><td class="mono">'+esc(r.prefix)+'&hellip;</td><td>'+esc(r.note||'')+'</td><td>'+(r.founding?'<span class="chip warn">founding</span>':'')+'</td><td>'+st+'</td><td class="note">'+new Date(r.expires_at).toLocaleDateString()+'</td></tr>';
+    var st={sent:'<span class="chip ok">Sent</span>',redeemed:'<span class="chip ok">Active</span>',
+            expired:'<span class="chip dead">Expired</span>',revoked:'<span class="chip dead">Revoked</span>'}[r.status]||esc(r.status);
+    var acts=[];
+    if(links[r.id]&&r.status==='sent'){
+      acts.push('<a href="#" data-act="copy" data-id="'+esc(r.id)+'">Copy</a>');
+      acts.push('<a href="'+esc(links[r.id])+'" target="_blank" rel="noopener">Open</a>');
+    }
+    if(r.status==='sent')acts.push('<a href="#" data-act="revoke" data-id="'+esc(r.id)+'" style="color:var(--neg)">Revoke</a>');
+    acts.push('<a href="#" data-act="resend" data-id="'+esc(r.id)+'">Resend</a>');
+    return '<tr data-row="'+esc(r.id)+'"><td><b>'+esc(r.display_name||r.note||'(no name)')+'</b>'+(r.email?'<br><span class="note">'+esc(r.email)+'</span>':'')+'</td>'+
+      '<td>'+esc(r.model_name||'')+'</td>'+
+      '<td>'+(r.founding?'<span class="chip warn">&#9733; Founding</span>':'<span class="chip">Creator</span>')+'</td>'+
+      '<td>'+st+'</td>'+
+      '<td class="note">'+new Date(r.created_at).toLocaleDateString()+'</td>'+
+      '<td class="note">'+new Date(r.expires_at).toLocaleDateString()+'</td>'+
+      '<td style="display:flex;gap:10px">'+acts.join('')+'</td></tr>';
   }).join('');
-  app.innerHTML='<h1>Invites</h1><p class="lede">Mint a link, send it, done. The whole join flow is the link: account, profile, key, prompt, and embed snippet, with nothing for you to do afterward.</p>'+
+  var pf=IV_PREFILL||{};IV_PREFILL=null;
+  app.innerHTML='<h1>Invite a Creator</h1><p class="lede">One action mints the whole onboarding package: link, profile shell, model, source, founding status, key, prompt, and embed. You send the link; the creator does the rest in about a minute.</p>'+
     '<div class="panel"><div class="grid2">'+
-    '<div><label>Display name prefill (optional)</label><input id="ivName" placeholder="Their public name"></div>'+
-    '<div><label>Model name prefill (optional)</label><input id="ivModel" placeholder="Their model name"></div>'+
-    '<div><label>Sport</label><select id="ivSport"><option>NFL</option></select></div>'+
-    '<div><label>Max uses</label><input id="ivUses" type="number" value="1" min="1"></div>'+
-    '<div><label>Note to self</label><input id="ivNote" placeholder="Who this is for"></div>'+
-    '<div><label>Founding terms</label><select id="ivFound"><option value="1">Founding member, 50% for life</option><option value="0">Standard, 40%</option></select></div>'+
-    '</div><div style="margin-top:12px"><button class="btn primary" id="ivGo">Mint invite link</button></div><div id="ivOut"></div></div>'+
-    '<h2>All invites</h2><div class="tblwrap"><table><thead><tr><th>Token</th><th>Note</th><th></th><th>Status</th><th>Expires</th></tr></thead><tbody>'+(rows||'<tr><td colspan="5" class="note" style="text-align:center;padding:14px">No invites yet.</td></tr>')+'</tbody></table></div>';
+    '<div><label>Name</label><input id="ivName" placeholder="Their public name" value="'+esc(pf.display_name||'')+'"></div>'+
+    '<div><label>Email <span style="text-transform:none;letter-spacing:0">(optional)</span></label><input id="ivEmail" placeholder="them@example.com" value="'+esc(pf.email||'')+'"></div>'+
+    '<div><label>Model name <span style="text-transform:none;letter-spacing:0">(optional)</span></label><input id="ivModel" placeholder="They can name it during onboarding" value="'+esc(pf.model_name||'')+'"></div>'+
+    '</div>'+
+    '<label>Where does their model live? <span style="text-transform:none;letter-spacing:0">(optional)</span></label>'+
+    '<div style="display:flex;gap:8px;flex-wrap:wrap" id="ivSrcRow">'+
+      ['excel','github','online','other'].map(function(k){return '<button class="btn" data-src="'+k+'">'+SRC_LABEL[k]+'</button>';}).join('')+
+    '</div><div id="ivSrcDetail"></div>'+
+    '<label>Founding member?</label>'+
+    '<div style="display:flex;gap:8px" id="ivFoundRow">'+
+      '<button class="btn" data-f="1">&#9733; Founding Member</button><button class="btn" data-f="0">Creator</button>'+
+    '</div>'+
+    '<div style="margin-top:14px"><button class="btn primary" id="ivGo">Mint Invite</button></div><div id="ivOut"></div></div>'+
+    '<h2>All invites</h2><div class="tblwrap"><table><thead><tr><th>Creator</th><th>Model</th><th>Type</th><th>Status</th><th>Created</th><th>Expires</th><th>Actions</th></tr></thead><tbody>'+
+    (rows||'<tr><td colspan="7" class="note" style="text-align:center;padding:14px">No invites yet. Mint the first one above.</td></tr>')+'</tbody></table></div>'+
+    '<p class="note">Copy and Open work on this device for links minted here; invite codes are stored hashed, so a link cannot be recovered later. Resend prefills the form so a fresh link is one click.</p>';
+
+  var ivSrc=pf.source_kind||null,ivFound=(pf.founding===true)?'1':'0';
+  function paintSrc(){
+    document.querySelectorAll('#ivSrcRow .btn').forEach(function(b){
+      b.style.borderColor=b.getAttribute('data-src')===ivSrc?'var(--accent)':'';
+      b.style.color=b.getAttribute('data-src')===ivSrc?'var(--text)':'';
+    });
+    var d2=ivSrc?SRC_DETAIL[ivSrc]:null;
+    $('ivSrcDetail').innerHTML=!d2?'':(d2.label
+      ?'<label>'+esc(d2.label)+'</label><input id="ivSrcRef" placeholder="'+esc(d2.ph||'')+'" value="'+esc(pf.source_ref||'')+'">'
+      :'<p class="note" style="margin:8px 0 0">'+esc(d2.note)+'</p>');
+  }
+  function paintFound(){
+    document.querySelectorAll('#ivFoundRow .btn').forEach(function(b){
+      var on=b.getAttribute('data-f')===ivFound;
+      b.style.borderColor=on?(ivFound==='1'?'var(--gold)':'var(--accent)'):'';
+      b.style.color=on?'var(--text)':'';
+    });
+  }
+  document.querySelectorAll('#ivSrcRow .btn').forEach(function(b){
+    b.onclick=function(){ivSrc=(ivSrc===b.getAttribute('data-src'))?null:b.getAttribute('data-src');paintSrc();};
+  });
+  document.querySelectorAll('#ivFoundRow .btn').forEach(function(b){
+    b.onclick=function(){ivFound=b.getAttribute('data-f');paintFound();};
+  });
+  paintSrc();paintFound();
+
   $('ivGo').onclick=async function(){
+    var name=$('ivName').value.trim();
+    if(name.length<2){toast('A name is required to mint an invite');$('ivName').focus();return;}
     this.disabled=true;
     try{
-      var r=await api('/v1/admin/invites',{method:'POST',headers:{'content-type':'application/json'},body:{
-        prefill:{display_name:$('ivName').value.trim()||null,sport:$('ivSport').value,model_name:$('ivModel').value.trim()||null},
-        founding:$('ivFound').value==='1',share_bps:null,max_uses:+$('ivUses').value||1,note:$('ivNote').value.trim()}});
-      $('ivOut').innerHTML='<p class="warnnote" style="margin:12px 0 4px">The invite link, shown once. Copy it now.</p>'+
-        '<div class="copybox"><div class="val" id="ivUrl">'+esc(r.invite_url)+'</div><button class="btn" data-copy="ivUrl">Copy</button></div>';
+      var body={display_name:name,email:$('ivEmail').value.trim(),model_name:$('ivModel').value.trim(),founding:ivFound==='1'};
+      if(ivSrc){body.source_kind=ivSrc;if($('ivSrcRef'))body.source_ref=$('ivSrcRef').value.trim();}
+      var r=await api('/v1/admin/invites',{method:'POST',headers:{'content-type':'application/json'},body:body});
+      if(r.invite_id)cacheLink(r.invite_id,r.invite_url);
+      window._ivMsg=r.message;
+      $('ivOut').innerHTML='<div class="panel" style="margin:14px 0 0;border-color:rgba(47,180,124,.5)">'+
+        '<h2 style="margin:0 0 4px">Invite Ready</h2>'+
+        '<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:6px 0 2px">'+
+          '<b>'+esc(r.invite.display_name||name)+'</b>'+
+          (r.invite.model_name?'<span class="note">'+esc(r.invite.model_name)+'</span>':'')+
+          (r.invite.founding?'<span class="chip warn">&#9733; Founding Member</span>':'<span class="chip">Creator</span>')+
+          (r.invite.source_kind?'<span class="chip">'+esc(SRC_LABEL[r.invite.source_kind]||r.invite.source_kind)+'</span>':'')+
+        '</div>'+
+        '<div class="copybox"><div class="val" id="ivUrl">'+esc(r.invite_url)+'</div></div>'+
+        '<div style="display:flex;gap:8px;flex-wrap:wrap">'+
+          '<button class="btn primary" data-copy="ivUrl">Copy Invite Link</button>'+
+          '<button class="btn" id="ivMsgBtn">Copy Message</button>'+
+          '<a class="btn" href="'+esc(r.invite_url)+'" target="_blank" rel="noopener">Open Invite</a>'+
+        '</div>'+
+        '<p class="note" style="margin:10px 0 0">Send the link however you already talk to them. It works once and expires in 30 days. When they finish onboarding they appear under Members automatically.</p></div>';
       copyWire($('ivOut'));
+      $('ivMsgBtn').onclick=function(){
+        if(navigator.clipboard)navigator.clipboard.writeText(window._ivMsg||'').then(function(){toast('Message copied');});
+      };
+      toast('Invite created');
     }catch(e){toast(e.message);}
     this.disabled=false;
   };
+
+  app.querySelectorAll('[data-act]').forEach(function(a){
+    a.onclick=async function(ev){
+      ev.preventDefault();
+      var id=a.getAttribute('data-id'),act=a.getAttribute('data-act');
+      if(act==='copy'){
+        var u=linkCache()[id];
+        if(u&&navigator.clipboard)navigator.clipboard.writeText(u).then(function(){toast('Invite copied');});
+        return;
+      }
+      if(act==='revoke'){
+        if(!confirm('Revoke this invite? The link stops working immediately. This cannot be undone.'))return;
+        try{await api('/v1/admin/invites/'+encodeURIComponent(id)+'/revoke',{method:'POST',headers:{'content-type':'application/json'},body:{}});toast('Invite revoked');render();}
+        catch(e){toast(e.message);}
+        return;
+      }
+      if(act==='resend'){
+        var row=(list.rows||[]).filter(function(x){return x.id===id;})[0]||{};
+        IV_PREFILL={display_name:row.display_name,email:row.email,model_name:row.model_name,
+          source_kind:row.source_kind,founding:row.founding};
+        render();window.scrollTo(0,0);toast('Form prefilled. Mint to issue a fresh link.');
+      }
+    };
+  });
 }
 
-async function secMembers(app){
-  var d=await api('/v1/admin/members');
-  var rows=(d.rows||[]).map(function(r){
-    return '<tr><td><b>'+esc(r.display_name)+'</b><br><span class="note mono">'+esc(r.creator_slug)+'</span></td>'+
-      '<td>'+esc((r.models||[]).join(', '))+'</td>'+
-      '<td>'+esc(r.membership)+(r.founding?' <span class="chip warn">founding</span>':'')+'</td>'+
-      '<td class="mono">'+(r.referral_share_bps/100)+'%</td><td>'+esc(r.billing_mode)+'</td>'+
-      '<td class="mono" style="font-size:11px">'+esc((r.key_prefixes||[]).join('\n'))+'</td>'+
-      '<td class="note" style="font-size:11px">'+esc((r.origins||[]).join(', ')||'none')+'</td>'+
+async function secMembers(app,detailSlug){
+  var res=await Promise.all([api('/v1/admin/members'),api('/v1/admin/earnings').catch(function(){return null;})]);
+  var d=res[0],esum=res[1]&&res[1].summary;
+  var list=d.rows||[];
+  if(detailSlug){
+    var r=list.filter(function(x){return x.creator_slug===detailSlug;})[0];
+    if(r){memberDetail(app,r,esum);return;}
+  }
+  var rows=list.map(function(r){
+    var srcs=(r.models||[]).map(function(mo){return mo.source_kind?(SRC_LABEL[mo.source_kind]||mo.source_kind):null;}).filter(Boolean);
+    return '<tr data-m="'+esc(r.creator_slug)+'" style="cursor:pointer"><td><b>'+esc(r.display_name)+'</b><br><span class="note mono">'+esc(r.creator_slug)+'</span></td>'+
+      '<td>'+esc((r.models||[]).map(function(mo){return mo.name;}).join(', '))+'</td>'+
+      '<td>'+(r.founding?'<span class="chip warn">&#9733; Founding Member</span>':'<span class="chip">Creator</span>')+'</td>'+
+      '<td>'+esc(r.membership)+(r.account_status!=='active'?' <span class="chip dead">'+esc(r.account_status)+'</span>':'')+'</td>'+
+      '<td class="note">'+esc(srcs.join(', ')||'not set')+'</td>'+
       '<td class="note">'+rel(r.last_submission_at)+'</td></tr>';
   }).join('');
-  app.innerHTML='<h1>Members</h1><p class="lede">Everyone on the wall, their keys, their rates, and their embed domains. Membership status is derived from submissions, never set by hand.</p>'+
-    '<div class="tblwrap"><table><thead><tr><th>Creator</th><th>Models</th><th>Status</th><th>Share</th><th>Mode</th><th>Keys</th><th>Embed domains</th><th>Last slate</th></tr></thead><tbody>'+
-    (rows||'<tr><td colspan="8" class="note" style="text-align:center;padding:14px">No members yet. Mint an invite.</td></tr>')+'</tbody></table></div>';
+  app.innerHTML='<h1>Members</h1><p class="lede">Everyone in the Collective. Click a member for the full picture: identity, model, source, activity, and economics. Membership status is derived from submissions, never set by hand.</p>'+
+    '<div class="tblwrap"><table><thead><tr><th>Name</th><th>Model</th><th>Role</th><th>Status</th><th>Source</th><th>Last slate</th></tr></thead><tbody>'+
+    (rows||'<tr><td colspan="6" class="note" style="text-align:center;padding:14px">No members yet. Mint an invite under Invites.</td></tr>')+'</tbody></table></div>';
+  app.querySelectorAll('tr[data-m]').forEach(function(tr){
+    tr.onclick=function(){secMembers(app,tr.getAttribute('data-m'));};
+  });
+}
+
+function memberDetail(app,r,esum){
+  var econ;
+  if(r.founding&&esum){
+    var per=pct(Math.round(esum.founder_pool_bps/esum.founder_count));
+    econ='<b>Founding Member Distribution</b><p class="note" style="margin:6px 0 0">Each founding member receives an equal share of the '+pct(esum.founder_pool_bps)+' Collective founder pool.</p>'+
+      '<p style="margin:8px 0 0">Current founder share: <b class="mono">'+per+'</b> of Collective revenue'+(esum.mrr_cents?', currently <b class="mono">'+cents(esum.per_founder_cents)+'</b> a month':'')+'.</p>';
+  }else if(r.founding){
+    econ='<b>Founding Member Distribution</b><p class="note" style="margin:6px 0 0">An equal share of the Collective founder pool.</p>';
+  }else{
+    econ='<b>Creator terms</b><p class="note" style="margin:6px 0 0">Creator compensation is configurable per creator. Referral is a separate customer acquisition share, currently '+(esum?pct(esum.referral_bps):'0%')+'.</p>';
+  }
+  var models=(r.models||[]).map(function(mo){
+    return '<div style="margin:6px 0"><b>'+esc(mo.name)+'</b> <span class="chip">'+esc(mo.sport)+'</span>'+
+      (mo.source_kind?' <span class="chip">'+esc(SRC_LABEL[mo.source_kind]||mo.source_kind)+'</span>':' <span class="chip dead">source not set</span>')+
+      (mo.source_ref?'<br><span class="note mono" style="font-size:11px">'+esc(mo.source_ref)+'</span>':'')+
+      '<br><a href="/collective/#/model/'+esc(r.creator_slug)+'/'+esc(mo.slug)+'" target="_blank" rel="noopener" style="font-size:12px">View model &rarr;</a></div>';
+  }).join('')||'<p class="note">No model yet.</p>';
+  app.innerHTML='<p style="margin:0 0 10px"><a href="#" id="mBack">&larr; All members</a></p>'+
+    '<h1>'+esc(r.display_name)+' '+(r.founding?'<span class="chip warn">&#9733; Founding Member</span>':'<span class="chip">Creator</span>')+'</h1>'+
+    '<p class="lede">'+esc(r.description||'')+'</p>'+
+    '<div class="grid2">'+
+    '<div class="panel"><h2 style="margin:0 0 8px">Identity</h2>'+
+      '<div class="note">Slug <span class="mono" style="color:var(--text)">'+esc(r.creator_slug)+'</span></div>'+
+      '<div class="note" style="margin-top:4px">Joined '+new Date(r.joined_at).toLocaleDateString()+'</div>'+
+      '<div class="note" style="margin-top:4px">Account <b style="color:var(--text)">'+esc(r.account_status)+'</b> &middot; '+esc(r.membership)+'</div>'+
+      (r.website_url?'<div class="note" style="margin-top:4px"><a href="'+esc(r.website_url)+'" target="_blank" rel="noopener">'+esc(r.website_url)+'</a></div>':'')+
+      '<p style="margin:10px 0 0;font-size:12px"><a href="/collective/#/'+esc(r.creator_slug)+'" target="_blank" rel="noopener">Public profile &rarr;</a></p></div>'+
+    '<div class="panel"><h2 style="margin:0 0 8px">Model</h2>'+models+'</div>'+
+    '<div class="panel"><h2 style="margin:0 0 8px">Activity</h2>'+
+      '<div class="note">Last slate <b style="color:var(--text)">'+rel(r.last_submission_at)+'</b></div>'+
+      '<div class="note" style="margin-top:4px">Active keys <span class="mono" style="font-size:11px;color:var(--text)">'+esc((r.key_prefixes||[]).join(', ')||'none')+'</span></div>'+
+      '<div class="note" style="margin-top:4px">Embed domains '+esc((r.origins||[]).join(', ')||'none')+'</div></div>'+
+    '<div class="panel"><h2 style="margin:0 0 8px">Economics</h2>'+econ+'</div>'+
+    '</div>'+
+    '<div style="display:flex;gap:8px;margin-top:6px">'+
+    '<button class="btn" id="mResend">Resend invite</button>'+
+    '</div><p class="note" style="margin-top:8px">Resend mints a fresh invite link prefilled for this member (useful if they need to sign in on a new account). Profile edits belong to the creator, from their own dashboard.</p>';
+  $('mBack').onclick=function(ev){ev.preventDefault();secMembers(app);};
+  $('mResend').onclick=function(){
+    IV_PREFILL={display_name:r.display_name,model_name:(r.models[0]||{}).name,
+      source_kind:(r.models[0]||{}).source_kind,founding:r.founding};
+    SEC='invites';nav();render();
+  };
 }
 
 async function secQuarantine(app){
@@ -280,10 +476,34 @@ async function secResults(app){
 
 async function secEarnings(app){
   var d=await api('/v1/admin/earnings');
+  var s=d.summary||{};
+  var per=pct(Math.round((s.founder_pool_bps||6000)/(s.founder_count||6)));
   var rows=(d.rows||[]).map(function(r){
     return '<tr><td>'+esc(r.creator_slug)+'</td><td class="mono">'+esc(r.month)+'</td><td class="mono">'+cents(r.earned_cents)+'</td><td class="mono">'+cents(r.clawed_cents)+'</td><td class="mono">'+cents(r.paid_cents)+'</td><td class="mono">'+cents(r.balance_cents)+'</td><td class="mono">'+cents(r.available_cents)+'</td></tr>';
   }).join('');
-  app.innerHTML='<h1>Earnings</h1><p class="lede">Referral share ledger per creator per month. Net 30, $50 minimum rolls forward, 60-day clawback window. While billing is off this stays at zero but attribution is already being recorded.</p>'+
+  function line(label,val,sub){
+    return '<div style="display:flex;justify-content:space-between;gap:14px;padding:8px 0;border-bottom:1px solid var(--border)">'+
+      '<span>'+label+(sub?'<br><span class="note" style="font-size:11px">'+sub+'</span>':'')+'</span>'+
+      '<span class="mono" style="font-weight:700">'+val+'</span></div>';
+  }
+  app.innerHTML='<h1>Collective Revenue</h1>'+
+    '<p class="lede">The waterfall, computed live from the configured economics and the real subscriber count. Change a number in config and every figure here follows.</p>'+
+    '<div class="grid2"><div class="panel">'+
+      line('Price',cents(s.price_cents)+'<span class="note">/month</span>')+
+      line('Subscribers',String(s.subscribers||0))+
+      line('Monthly recurring revenue',cents(s.mrr_cents))+
+      line('Operating reserve <span class="chip">'+pct(s.reserve_bps||1000)+'</span>',cents(s.reserve_cents),'Infrastructure, data, APIs, processing')+
+      line('Platform allocation <span class="chip">'+pct(s.platform_bps||3000)+'</span>',cents(s.platform_cents),'EdgeDesk: platform, billing, hosting, development')+
+      line('Founding Collective Pool <span class="chip warn">'+pct(s.founder_pool_bps||6000)+'</span>',cents(s.pool_cents),'Divided equally across '+(s.founder_count||6)+' founding seats')+
+      '<div style="display:flex;justify-content:space-between;gap:14px;padding:8px 0"><span><b>Per founding member</b></span><span class="mono" style="font-weight:700;color:var(--pos)">'+cents(s.per_founder_cents)+'</span></div>'+
+    '</div><div class="panel">'+
+      '<b>Founding Member Distribution</b>'+
+      '<p class="note" style="margin:8px 0 0">Each founding member receives an equal share of the '+pct(s.founder_pool_bps||6000)+' Collective founder pool.</p>'+
+      '<p style="margin:10px 0 0">Current founder share: <b class="mono">'+per+'</b> of Collective revenue.</p>'+
+      '<p class="note" style="margin:10px 0 0">Referral is a separate customer acquisition share, currently '+pct(s.referral_bps||0)+', and never reduces a founder&#39;s pool share.</p>'+
+      (s.billing_live?'':'<p class="warnnote" style="margin:10px 0 0">Billing is not live yet: these figures stay at zero until it opens. The structure is already wired, so turning billing on changes nothing here but the numbers.</p>')+
+    '</div></div>'+
+    '<h2>Ledger</h2><p class="lede">Per creator per month. Net 30, $50 minimum rolls forward, 60-day clawback window.</p>'+
     '<div class="tblwrap"><table><thead><tr><th>Creator</th><th>Month</th><th>Earned</th><th>Clawed back</th><th>Paid out</th><th>Balance</th><th>Available</th></tr></thead><tbody>'+
     (rows||'<tr><td colspan="7" class="note" style="text-align:center;padding:14px">No ledger entries yet.</td></tr>')+'</tbody></table></div>';
 }
