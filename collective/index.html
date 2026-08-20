@@ -1126,9 +1126,10 @@ async function renderCreatorDash(view,me){
       '</div>'+
       '<textarea id="slPaste" class="hide" rows="5" style="margin-top:10px;font-family:\'JetBrains Mono\',monospace;font-size:12px" placeholder="home,away,date,spread,total&#10;KC,BUF,2026-09-20,-2.5,49.5"></textarea>'+
       '<div id="slMap"></div><div id="slPrev"></div>'+
-      '<div style="display:flex;gap:10px;margin-top:12px" id="slBtns" class="hide">'+
+      '<div style="display:flex;gap:10px;margin-top:12px;align-items:center;flex-wrap:wrap" id="slBtns" class="hide">'+
       '<button class="btn" id="slCheck">Check slate (dry run)</button>'+
-      '<button class="btn primary" id="slGo" disabled>Post slate</button></div>'+
+      '<button class="btn primary" id="slGo" disabled>Post slate</button>'+
+      '<label style="display:flex;gap:7px;align-items:center;margin:0;text-transform:none;letter-spacing:0;font-size:12px;color:var(--dim)"><input type="checkbox" id="slAuto" style="width:auto"> Post automatically when the check is clean</label></div>'+
       '<div id="slOut"></div></div>';
     /* the submission center: every slate ever posted, newest first */
     html+='<h2>My submissions</h2>';
@@ -1154,6 +1155,12 @@ async function renderCreatorDash(view,me){
     }else{
       html+='<div class="emptybox"><b style="color:var(--text)">No submissions yet.</b><br>Your slates appear here the moment you post one, with the server receipt time and exactly what happened to every row.<br><br><a href="#dashboard" onclick="document.getElementById(\'slFile\')&&document.getElementById(\'slFile\').scrollIntoView({behavior:\'smooth\',block:\'center\'});return false;">Post your first slate &uarr;</a></div>';
     }
+    /* hands-off posting: the Universal Prompt and the raw endpoint */
+    html+='<h2>Automate your posting</h2><div class="panel">'+
+      '<p class="note" style="margin:0 0 8px">Two ways to never post by hand. Copy the Universal Prompt and paste it into a Claude (or any assistant) conversation along with your spreadsheet: it formats your rows, dry-runs them, and posts through your API key. Or wire your model to POST the same JSON straight to the ingest endpoint on your own schedule. Either way your picks land here automatically and show up in My submissions.</p>'+
+      '<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center"><button class="btn" id="upBtn">Copy the Universal Prompt</button>'+
+      '<span class="note">Endpoint: <span class="mono" style="font-size:11px">'+esc(CFG.API)+'/collective_ingest/v1/projections</span></span></div>'+
+      '<div id="upOut"></div></div>';
     html+='<h2>Earnings</h2><div class="panel"><div class="kv">'+
       '<span><div class="k">This month</div><div class="v">'+cents(d.earnings.this_month_cents)+'</div></span>'+
       '<span><div class="k">Balance</div><div class="v">'+cents(d.earnings.balance_cents)+'</div></span>'+
@@ -1184,6 +1191,15 @@ async function renderCreatorDash(view,me){
     html+='<p style="margin-top:22px"><button class="btn" id="soBtn">Sign out</button></p>';
     view.innerHTML=html;
     if($('qaPost'))$('qaPost').onclick=function(){var f=$('slFile');if(f)f.scrollIntoView({behavior:'smooth',block:'center'});};
+    $('upBtn').onclick=async function(){
+      var b=this;b.disabled=true;
+      try{
+        var r=await api('/v1/dashboard/prompt',{auth:true});
+        copyText(r.prompt,b);
+        $('upOut').innerHTML='<p class="note" style="margin:8px 0 0">Copied. Start a Claude conversation, paste the prompt, attach your spreadsheet, and swap in your real API key where it says YOUR_API_KEY. It dry-runs first, then posts; the result shows up in My submissions.</p>';
+      }catch(e){toast(e.message);}
+      b.disabled=false;
+    };
     function paintOrigins(list){
       $('origList').innerHTML=(list||[]).map(function(o){
         return '<div style="display:flex;gap:10px;align-items:center;margin:4px 0"><span class="mono" style="font-size:12px">'+esc(o.origin)+'</span><button class="btn danger" style="padding:3px 9px;font-size:11px" data-rm="'+esc(o.id)+'">Remove</button></div>';
@@ -1225,7 +1241,7 @@ async function renderCreatorDash(view,me){
           '<td><select data-slf="'+fd.f+'">'+opts.replace('value="'+sel+'"','value="'+sel+'" selected')+'</select></td></tr>';
       }).join('');
       var ignored=SLATE.cols.filter(function(h){var n=String(h).toLowerCase().trim();return ['result','win','won','w/l','grade'].indexOf(n)>=0;});
-      $('slMap').innerHTML='<label style="margin-top:14px">Column mapping</label>'+
+      $('slMap').innerHTML='<label style="margin-top:14px">Column mapping'+(SLATE.remembered?' <span class="opt">remembered from your last slate</span>':'')+'</label>'+
         '<div class="tblwrap mini"><table style="min-width:0"><tbody>'+rows+'</tbody></table></div>'+
         (ignored.length?'<p class="note" style="margin-top:6px">Your "'+esc(ignored.join(', '))+'" column is ignored on purpose: the Collective grades every pick itself from final scores, never from a creator\'s own grading.</p>':'');
       document.querySelectorAll('[data-slf]').forEach(function(s){
@@ -1258,7 +1274,16 @@ async function renderCreatorDash(view,me){
     async function slateLoad(rows2d){
       if(!rows2d||rows2d.length<2){toast('Need a header row plus at least one game');return;}
       SLATE.cols=rows2d[0];SLATE.rows=rows2d;SLATE.checked=false;
-      slateGuessMap();slatePaintMap();$('slGo').disabled=true;$('slOut').innerHTML='';
+      slateGuessMap();
+      /* same headers as a slate you already posted: reuse that mapping */
+      SLATE.remembered=false;
+      try{
+        var sv=JSON.parse(localStorage.getItem('mc_slate_map')||'null');
+        if(sv&&sv.cols&&sv.cols.join('')===SLATE.cols.map(String).join('')){
+          SLATE.map=sv.map||SLATE.map;SLATE.remembered=true;
+        }
+      }catch(e){}
+      slatePaintMap();$('slGo').disabled=true;$('slOut').innerHTML='';
     }
     $('slFile').onchange=async function(){
       var f=this.files&&this.files[0];if(!f)return;
@@ -1305,8 +1330,14 @@ async function renderCreatorDash(view,me){
           (dry?'<p class="note" style="margin:8px 0 0">Nothing was saved. If this looks right, hit Post slate.</p>':
             '<p style="margin:8px 0 0"><b style="color:var(--pos)">Your slate is in.</b> <a href="#/'+esc(c.slug)+'">See your profile</a> or <a href="#">the wall</a>.</p>')+
           '</div>';
-        if(dry){SLATE.checked=true;$('slGo').disabled=false;}
-        else{$('slGo').disabled=true;SLATE.checked=false;}
+        if(dry){
+          SLATE.checked=true;$('slGo').disabled=false;
+          /* hands-off mode: a clean check posts on its own */
+          if($('slAuto')&&$('slAuto').checked&&(c2.rejected||0)===0&&!built.problems.length){slateSend(false);return;}
+        }else{
+          $('slGo').disabled=true;SLATE.checked=false;
+          try{localStorage.setItem('mc_slate_map',JSON.stringify({cols:SLATE.cols.map(String),map:SLATE.map}));}catch(e){}
+        }
       }catch(e){
         $('slOut').innerHTML='<div class="errbox">'+esc(e.message)+'</div>';
       }
@@ -1391,6 +1422,15 @@ async function renderMemberDash(view,me){
     html+='<h2>Performance</h2><div class="panel"><p class="note" style="margin:0">Three ranked boards (win percentage, margin accuracy, calibration) with published minimums, and a side-by-side explorer for any two models.</p>'+
       '<p class="note" style="margin:10px 0 0"><a href="#rankings">Rankings &rarr;</a> &middot; <a href="#performance">Performance explorer &rarr;</a> &middot; <a href="#rules">Grading rules &rarr;</a></p></div>';
 
+    /* inline creator setup: an invited member sets up their model right
+       here and their creator dashboard opens without ever leaving the page */
+    html+='<h2>Set up my model</h2><div class="panel" style="max-width:640px">'+
+      '<p class="note" style="margin:0 0 6px">Creators join by invite. Paste your invite link or code below and set your model up right here; your creator dashboard (slate upload, record, profile) opens the moment it is created.</p>'+
+      '<label>Invite link or code</label><div style="display:flex;gap:8px;flex-wrap:wrap"><input id="ivTok" placeholder="join.html?t=mci_... or just the mci_ code" style="flex:1;min-width:220px"><button class="btn" id="ivCheck">Check invite</button></div>'+
+      '<div id="ivForm"></div><div id="ivOut"></div>'+
+      '<p class="note" style="margin:10px 0 0">Already created your model on a different email? Your creator tools live on the account that redeemed the invite: sign out below and sign in with that email.</p>'+
+      '</div>';
+
     var subLine;
     if(me.subscription){
       var sst=me.subscription.status;
@@ -1404,11 +1444,53 @@ async function renderMemberDash(view,me){
     html+='<h2>Account</h2><div class="panel" style="max-width:560px">'+
       '<div class="note">Signed in as <b style="color:var(--text)">'+esc(me.email||'')+'</b> &middot; '+roleLabel+'</div>'+
       '<p class="note" style="margin:8px 0 0">'+subLine+'</p>'+
-      '<p class="note" style="margin:8px 0 0">Creators join by invite: if you were invited, open your invite link on this device and your creator tools appear here automatically.</p>'+
       '<div style="margin-top:12px"><button class="btn" id="soBtn">Sign out</button></div></div>';
 
     view.innerHTML=html;
     $('soBtn').onclick=function(){clearSession();renderSignIn(view);};
+    $('ivCheck').onclick=async function(){
+      var mt=String($('ivTok').value).match(/mci_[A-Za-z0-9]{8,64}/);
+      if(!mt){toast('Paste the invite link or the mci_ code from it');return;}
+      var tok=mt[0];
+      $('ivOut').innerHTML='<p class="note" style="margin:8px 0 0">Checking&hellip;</p>';
+      try{
+        var st=await api('/v1/join/'+tok,{fn:'collective_join'});
+        var pf=st.prefill||{};
+        var sportOpts=(m.sports||[]).map(function(s){return '<option value="'+esc(s.code)+'">'+esc(s.code)+'</option>';}).join('');
+        $('ivOut').innerHTML='';
+        $('ivForm').innerHTML=
+          (st.founding?'<p style="margin:12px 0 0"><span class="chip founding">&#9733; Founding Member</span> <span class="note">This invite carries founding terms, locked for life.</span></p>':'')+
+          '<label>Your public name</label><input id="ivName" value="'+esc(pf.display_name||'')+'" placeholder="Must Be Moose">'+
+          '<label>Model name</label><input id="ivModel" value="'+esc(pf.model_name||'')+'" placeholder="Moose NFL Model">'+
+          '<label>Sport</label><select id="ivSport">'+sportOpts+'</select>'+
+          '<label style="display:flex;gap:8px;align-items:center;text-transform:none;letter-spacing:0;font-size:12px;color:var(--dim)"><input type="checkbox" id="ivTerms" style="width:auto"> I accept the <a href="#rules">grading rules</a> and terms</label>'+
+          '<div style="margin-top:12px"><button class="btn primary" id="ivGo">Create my creator profile</button></div>';
+        if(pf.sport)$('ivSport').value=pf.sport;
+        $('ivGo').onclick=async function(){
+          if(!$('ivTerms').checked){toast('Tick the terms box first');return;}
+          var gb=this;gb.disabled=true;
+          $('ivOut').innerHTML='<p class="note" style="margin:8px 0 0">Creating your profile&hellip;</p>';
+          try{
+            var r=await api('/v1/join/'+tok+'/redeem',{method:'POST',auth:true,fn:'collective_join',headers:{'content-type':'application/json'},body:{
+              display_name:$('ivName').value.trim(),model_name:$('ivModel').value.trim(),sport:$('ivSport').value,accept_terms:true}});
+            WALLC=null;
+            $('ivForm').innerHTML='';
+            $('ivOut').innerHTML='<div class="panel" style="margin-top:10px;border-color:rgba(47,180,124,.5)">'+
+              '<b style="color:var(--pos)">You are in'+(r.founding?' as a Founding Member':'')+'.</b>'+
+              (r.api_key&&r.api_key.key
+                ?'<p class="warnnote" style="margin:8px 0 4px">Your API key, shown once. It is only for automated posting; the dashboard upload never asks for it.</p><div class="copybox"><div class="val">'+esc(r.api_key.key)+'</div><button class="btn" data-copy>Copy</button></div>'
+                :'')+
+              '<div style="margin-top:10px"><button class="btn primary" id="ivOpen">Open my creator dashboard</button></div></div>';
+            document.querySelectorAll('#ivOut [data-copy]').forEach(function(b){b.onclick=function(){copyText(b.parentElement.querySelector('.val').textContent,b);};});
+            $('ivOpen').onclick=function(){renderDashboard(view);};
+          }catch(e2){$('ivOut').innerHTML='<div class="errbox">'+esc(e2.message)+'</div>';gb.disabled=false;}
+        };
+      }catch(e){
+        $('ivForm').innerHTML='';
+        var extra=e.status===410?' This invite is expired or already used; ask whoever sent it for a fresh one.':'';
+        $('ivOut').innerHTML='<div class="errbox">'+esc(e.message)+extra+'</div>';
+      }
+    };
   }catch(e){
     if(e.status===401){clearSession();renderSignIn(view);return;}
     fail(view,e);

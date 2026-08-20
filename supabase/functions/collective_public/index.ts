@@ -7,7 +7,8 @@ import { json, err, preflight, subpath } from "../_shared/http.ts";
 import { rpc, RpcError } from "../_shared/db.ts";
 import { getUser } from "../_shared/auth.ts";
 import { newApiKey } from "../_shared/keys.ts";
-import { BASE_URL } from "../_shared/env.ts";
+import { BASE_URL, SB_URL } from "../_shared/env.ts";
+import { renderPrompt } from "../_shared/prompt_template.ts";
 import {
   buildGames, buildMeta, buildWall, currentWeek, isEntitled, RULES, tableWrite, viewGet,
 } from "../_shared/reads.ts";
@@ -466,6 +467,28 @@ Deno.serve(async (req) => {
       }, 200, NO_STORE);
     }
 
+    // The Universal Prompt, on demand from the dashboard. The stored key is
+    // hashed and can never be echoed back, so the prompt carries a marked
+    // placeholder the creator swaps for their real key.
+    if (path === "/v1/dashboard/prompt" && req.method === "GET") {
+      const ctx = await requireCreator(req);
+      if (ctx instanceof Response) return ctx;
+      const models = await viewGet<{ slug: string; name: string; sport_code: string }>(
+        "models", `select=slug,name,sport_code&creator_id=eq.${ctx.creator.id}&limit=1`);
+      if (!models[0]) return err("not_found", "This account has no model yet.", 404);
+      const prompt = renderPrompt({
+        CREATOR_NAME: ctx.creator.display_name,
+        MODEL_NAME: models[0].name,
+        SPORT: models[0].sport_code,
+        API_BASE: `${SB_URL}/functions/v1`,
+        API_KEY: "YOUR_API_KEY (paste your mck_live_ key here; rotate one from the dashboard if you no longer have it)",
+        EMBED_SNIPPET: `<script src="${BASE_URL}/collective/embed.js" data-collective-host="${ctx.creator.slug}" async></script>`,
+        DASHBOARD_URL: `${BASE_URL}/collective/#dashboard`,
+        DOCS_URL: `${BASE_URL}/collective/#rules`,
+      });
+      return json({ prompt }, 200, NO_STORE);
+    }
+
     if (path === "/v1/dashboard/keys/rotate" && req.method === "POST") {
       const ctx = await requireCreator(req);
       if (ctx instanceof Response) return ctx;
@@ -505,7 +528,7 @@ Deno.serve(async (req) => {
 
     if (["/v1/dashboard/profile", "/v1/dashboard/keys/rotate", "/v1/dashboard/origins", "/v1/dashboard/submit"].includes(path) ||
       ["/v1/meta", "/v1/wall", "/v1/rules", "/v1/rankings", "/v1/activity", "/v1/games", "/v1/consensus",
-        "/v1/dashboard", "/v1/dashboard/submissions", "/v1/me"].includes(path)) {
+        "/v1/dashboard", "/v1/dashboard/submissions", "/v1/dashboard/prompt", "/v1/me"].includes(path)) {
       return err("method_not_allowed", "Wrong method for this route.", 405);
     }
     return err("not_found", `No such route: ${req.method} ${path}`, 404);

@@ -140,6 +140,9 @@ Every slate the creator has posted, newest first, capped at 40, with the counts 
   "prompt_available": true }
 ```
 
+## GET /v1/dashboard/prompt  (creator JWT)
+The Universal Prompt rendered for this creator's model, with a marked `YOUR_API_KEY` placeholder (the stored key is hashed and can never be echoed back). -> `{ "prompt": "…" }`
+
 ## POST /v1/dashboard/keys/rotate -> `{ "key": "mck_live_…", "prefix": "…", "shown_once": true }`
 ## POST /v1/dashboard/profile  body: any of display_name, description, website_url, x_handle, logo_url, pinned_model_slug -> `{ "ok": true, "creator": { … } }`
 ## POST /v1/dashboard/origins  body `{ "add": "https://example.com" }` or `{ "remove": "<id>" }` -> `{ "ok": true, "origins": [ … ] }`

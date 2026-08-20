@@ -517,11 +517,81 @@ const RULES = {
   ],
 };
 
+// ---------- inlined _shared/prompt_template.ts ----------
+// The Universal Creator Prompt. This constant is the single source; the
+// human-readable copy lives at collective/claude-prompt-template.md and must
+// stay identical. It ships in the same repo and same deploy as the API, so
+// an endpoint change and its prompt change land in one commit.
+
+const PROMPT_TEMPLATE = `You are helping {{CREATOR_NAME}} connect their sports model to the Model Collective. The Collective is shared infrastructure for independent creators: they send finished projections to one endpoint, and the Collective grades them, shows them on a shared wall, and sends traffic back. You are working inside the creator's own project. Their model, code, and site belong to them and stay exactly as they are.
+
+Follow these steps in order. Do not skip the confirmations.
+
+1. Inspect first. Look through this project and report what you find before changing anything: what it is built with (plain HTML, React, Next.js, Vue, Node, Python, Flask, Django, Supabase, Firebase, a GitHub Action, or a script run by hand), and where it runs. Do not assume any particular framework. Everything below works for all of them.
+
+2. Find the finished numbers. Locate where this project produces its final projections (a CSV file, a database table, a function's output, a spreadsheet export). Show {{CREATOR_NAME}} what you found and confirm it is the right place before going further.
+
+3. Map the fields. The Collective accepts one JSON envelope per slate. Map the creator's fields to it and SHOW THE MAPPING for approval before sending anything. Required per game: game_ref (their own id for the game, any format), home_team, away_team, kickoff (ISO time). Optional, only if the model already produces them: pick_side (home or away), projected_spread (home team's number, negative means home favored), projected_total, proj_home_score, proj_away_score, home_win_probability (moneyline chance the home team wins, 0 to 1), cover_probability (chance the pick covers, 0 to 1, requires line_at_submission), line_at_submission, confidence. Do not invent numbers the model does not produce, and do not build any new modeling work. If a field means something different in their data (for example a result column that means "the pick covered"), leave it out and say so.
+
+4. Never send proprietary logic. Only finished outputs leave this project: the numbers above, nothing else. No source code, no weights, no formulas, no intermediate data. Say this plainly to {{CREATOR_NAME}} and confirm they agree with what will be sent.
+
+5. Add, do not rebuild. Put the submission code in one new file plus a small "Send to Model Collective" trigger that fits how this project already runs (a button, a script command, a step at the end of their pipeline). Do not restructure the project, do not touch the model logic, do not change any existing output.
+
+6. Keep the key private. The API key below must never appear in a public page or a public repo. For a server or a script, read it from an environment variable named COLLECTIVE_KEY. For a purely static site, do not put the key in the browser: use a GitHub Action with a repository secret instead, like this:
+
+   name: Send to Model Collective
+   on: [workflow_dispatch, schedule]
+   jobs:
+     submit:
+       runs-on: ubuntu-latest
+       steps:
+         - uses: actions/checkout@v4
+         - run: |
+             curl -s -X POST "{{API_BASE}}/collective_ingest/v1/projections" \\
+               -H "x-collective-key: $COLLECTIVE_KEY" \\
+               -H "content-type: application/json" \\
+               --data @projections.json
+           env:
+             COLLECTIVE_KEY: \${{ secrets.COLLECTIVE_KEY }}
+
+   Or a local Python script with only the standard library: read the JSON, urllib.request.urlopen a POST to the same URL with the x-collective-key header from os.environ.
+
+7. Add the Collective tab. Put this snippet on one page or route of the creator's site, and nowhere else. It renders the whole Collective inside their site and touches nothing else on the page:
+
+   {{EMBED_SNIPPET}}
+
+8. Dry run first. Before anything goes live, send the mapped slate to the test endpoint and show {{CREATOR_NAME}} the exact JSON you sent and the exact response:
+
+   POST {{API_BASE}}/collective_ingest/v1/projections/dry-run
+   header x-collective-key: the key below
+
+   The response lists every row as resolved, quarantined, late, or rejected, with reasons. Nothing is stored. Fix any rejected rows, rerun, and only then switch the URL to /v1/projections for the real submission.
+
+9. Report back. When done, tell {{CREATOR_NAME}}: which files you added or changed, how to submit going forward and how often (before kickoff matters: only the first submission per game before kickoff counts toward their record), what to do if a submission fails (the response says exactly which row and why; quarantined rows are fine, a human resolves them), and that the key can be rotated any time at {{DASHBOARD_URL}}.
+
+Credentials and identity for this creator:
+  Creator: {{CREATOR_NAME}}
+  Model: {{MODEL_NAME}} ({{SPORT}})
+  API base: {{API_BASE}}
+  API key (treat like a password): {{API_KEY}}
+  Docs and grading rules: {{DOCS_URL}}
+
+One honest rule to close on: the Collective grades every model the same way, against its own closing lines, on first submissions only. Backfilled history is stored and shown separately but never graded. Send the whole slate, not just the confident games, because slate coverage is published next to the record.`;
+
+function renderPrompt(vars: Record<string, string>): string {
+  let out = PROMPT_TEMPLATE;
+  for (const [k, v] of Object.entries(vars)) {
+    out = out.split(`{{${k}}}`).join(v);
+  }
+  return out;
+}
+
 // ---------- collective_public/index.ts ----------
 // Model Collective public read API. Free surfaces are genuinely free (they
 // are the marketing surface); paid surfaces gate IN THE RESPONSE BODY, so
 // no unentitled caller ever receives a pre-kickoff number (Section 5).
 // Dashboard routes serve the signed-in creator only.
+
 
 
 
@@ -983,6 +1053,28 @@ Deno.serve(async (req) => {
       }, 200, NO_STORE);
     }
 
+    // The Universal Prompt, on demand from the dashboard. The stored key is
+    // hashed and can never be echoed back, so the prompt carries a marked
+    // placeholder the creator swaps for their real key.
+    if (path === "/v1/dashboard/prompt" && req.method === "GET") {
+      const ctx = await requireCreator(req);
+      if (ctx instanceof Response) return ctx;
+      const models = await viewGet<{ slug: string; name: string; sport_code: string }>(
+        "models", `select=slug,name,sport_code&creator_id=eq.${ctx.creator.id}&limit=1`);
+      if (!models[0]) return err("not_found", "This account has no model yet.", 404);
+      const prompt = renderPrompt({
+        CREATOR_NAME: ctx.creator.display_name,
+        MODEL_NAME: models[0].name,
+        SPORT: models[0].sport_code,
+        API_BASE: `${SB_URL}/functions/v1`,
+        API_KEY: "YOUR_API_KEY (paste your mck_live_ key here; rotate one from the dashboard if you no longer have it)",
+        EMBED_SNIPPET: `<script src="${BASE_URL}/collective/embed.js" data-collective-host="${ctx.creator.slug}" async></script>`,
+        DASHBOARD_URL: `${BASE_URL}/collective/#dashboard`,
+        DOCS_URL: `${BASE_URL}/collective/#rules`,
+      });
+      return json({ prompt }, 200, NO_STORE);
+    }
+
     if (path === "/v1/dashboard/keys/rotate" && req.method === "POST") {
       const ctx = await requireCreator(req);
       if (ctx instanceof Response) return ctx;
@@ -1022,7 +1114,7 @@ Deno.serve(async (req) => {
 
     if (["/v1/dashboard/profile", "/v1/dashboard/keys/rotate", "/v1/dashboard/origins", "/v1/dashboard/submit"].includes(path) ||
       ["/v1/meta", "/v1/wall", "/v1/rules", "/v1/rankings", "/v1/activity", "/v1/games", "/v1/consensus",
-        "/v1/dashboard", "/v1/dashboard/submissions", "/v1/me"].includes(path)) {
+        "/v1/dashboard", "/v1/dashboard/submissions", "/v1/dashboard/prompt", "/v1/me"].includes(path)) {
       return err("method_not_allowed", "Wrong method for this route.", 405);
     }
     return err("not_found", `No such route: ${req.method} ${path}`, 404);
