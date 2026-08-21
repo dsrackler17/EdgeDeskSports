@@ -666,6 +666,42 @@ begin
             and provider_event_id = 'fkcheck-1'));
 end $$;
 
+-- --------------------------------------- a game beyond the default window
+-- The board is a time window, and a days-based one is right during a season
+-- and wrong between them. Seen from late August, NFL Week 1 sits three weeks
+-- out, past every window the site asks for (8, 10 and 14 days). The feed works
+-- perfectly and every page renders empty — indistinguishable from a dead feed.
+-- The read API retries an empty DEFAULT window with no upper bound; this pins
+-- the SQL behaviour that retry depends on.
+do $$
+declare v_run bigint; v_near int; v_far int;
+begin
+  v_run := odds.begin_ingest('theoddsapi', 'nfl', 'test');
+  perform odds.ingest_batch(v_run, 'theoddsapi', 'nfl', jsonb_build_object(
+    'events', jsonb_build_array(jsonb_build_object(
+      'provider_event_id','farout-1','home','CIN','away','TB',
+      'commence_time', (now() + interval '21 days')::text,
+      'odds', jsonb_build_array(jsonb_build_object(
+        'book','draftkings','market','spread','outcome','home','line',-2.5,'price',-110))))));
+
+  -- Count THIS game specifically. The scratch database already holds
+  -- near-term games from earlier blocks, so a bare array length would be
+  -- non-zero for reasons that have nothing to do with the window.
+  select count(*) into v_near from jsonb_array_elements(
+    collective.odds_board('nfl', now() - interval '1 day',
+                          now() + interval '10 days', false, 200)->'games') g
+   where g->>'home' = 'CIN' and g->>'away' = 'TB';
+  select count(*) into v_far from jsonb_array_elements(
+    collective.odds_board('nfl', now() - interval '1 day',
+                          null, false, 200)->'games') g
+   where g->>'home' = 'CIN' and g->>'away' = 'TB';
+
+  perform pg_temp.check('a game 21 days out is outside a 10 day window',
+    v_near = 0);
+  perform pg_temp.check('and an unbounded window finds it, which is what the retry uses',
+    v_far = 1);
+end $$;
+
 -- ------------------------------------------ the scheduler can authenticate
 -- Deploying the function polls nothing; something has to call it. The token
 -- below is what lets pg_cron do that from inside the database, so an absent

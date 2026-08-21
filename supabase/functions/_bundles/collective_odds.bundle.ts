@@ -383,17 +383,74 @@ function providerOf(fromRun: unknown, cfg: Record<string, unknown>): string {
 /** Window helpers. "week" here is the Collective's own slate week, which the
  *  odds feed carries only when the provider supplies it, so the default
  *  window is time based: yesterday through a week out. */
-function windowFrom(u: URL): { from: string | null; to: string | null } {
+function windowFrom(u: URL): {
+  from: string | null;
+  to: string | null;
+  explicit: boolean;
+} {
   const from = u.searchParams.get("from");
   const to = u.searchParams.get("to");
   if (from || to) {
-    return { from: safeDate(from), to: safeDate(to) };
+    return { from: safeDate(from), to: safeDate(to), explicit: true };
   }
   const days = Math.min(28, Math.max(1, num(u.searchParams.get("days"), 8)));
   return {
     from: new Date(Date.now() - 24 * 3600e3).toISOString(),
     to: new Date(Date.now() + days * 24 * 3600e3).toISOString(),
+    explicit: false,
   };
+}
+
+/**
+ * The board for a window, widening a DEFAULT window that finds nothing.
+ *
+ * A days-based window is right during a season and wrong between them. Week 1
+ * sits three weeks past a ten day window, so in August every caller gets an
+ * empty board from a feed that is working perfectly — the same blank page a
+ * dead feed produces, for an entirely different reason.
+ *
+ * So an empty default window retries with no upper bound and shows the next
+ * games on the calendar. An EXPLICIT from/to is never widened: a caller that
+ * named a range meant it, and quietly returning games outside it would be
+ * worse than returning none. `widened` is reported either way, because a
+ * surface that asked for ten days and is showing "the next games" needs to
+ * know which it has.
+ */
+async function boardInWindow(
+  u: URL,
+  includeBooks: boolean,
+  limit: number,
+): Promise<{
+  data: Record<string, unknown> | null;
+  games: Record<string, unknown>[];
+  from: string | null;
+  to: string | null;
+  widened: boolean;
+}> {
+  const win = windowFrom(u);
+  const data = await oddsBoard({
+    league: LEAGUE,
+    from: win.from,
+    to: win.to,
+    includeBooks,
+    limit,
+  });
+  const games = (data?.games ?? []) as Record<string, unknown>[];
+  if (win.explicit || games.length > 0) {
+    return { data, games, from: win.from, to: win.to, widened: false };
+  }
+  const next = await oddsBoard({
+    league: LEAGUE,
+    from: win.from,
+    to: null,
+    includeBooks,
+    limit,
+  });
+  const upcoming = (next?.games ?? []) as Record<string, unknown>[];
+  if (upcoming.length === 0) {
+    return { data, games, from: win.from, to: win.to, widened: false };
+  }
+  return { data: next, games: upcoming, from: win.from, to: null, widened: true };
 }
 
 function safeDate(v: string | null): string | null {
@@ -487,15 +544,8 @@ Deno.serve(async (req) => {
       (path === "/v1/nfl/games" || path === "/v1/nfl/odds")
     ) {
       const wantBooks = path === "/v1/nfl/odds" && u.searchParams.get("books") !== "0";
-      const { from, to } = windowFrom(u);
-      const data = await oddsBoard({
-        league: LEAGUE,
-        from,
-        to,
-        includeBooks: wantBooks,
-        limit: Math.min(200, Math.max(1, num(u.searchParams.get("limit"), 40))),
-      });
-      const games = (data?.games ?? []) as Record<string, unknown>[];
+      const limit = Math.min(200, Math.max(1, num(u.searchParams.get("limit"), 40)));
+      const { data, games, from, to, widened } = await boardInWindow(u, wantBooks, limit);
       const env = envelope(
         data?.last_poll_at as string | null,
         num(data?.stale_after_seconds, stale),
@@ -509,7 +559,10 @@ Deno.serve(async (req) => {
         : games;
       return json({
         ...env,
-        window: { from, to },
+        // widened is reported, not hidden: a caller asked for ten days and got
+        // something else, and a surface that says "next games" instead of
+        // "this week" needs to know which it is showing.
+        window: { from, to, widened },
         count: filtered.length,
         games: wantBooks ? filtered : filtered.map(summarize),
       }, 200, env.state === "unavailable" ? NO_STORE : CACHE);
@@ -538,9 +591,7 @@ Deno.serve(async (req) => {
             "Prices are grouped by line. A better price at a different line is a different bet, not a better one.",
         }, 200, CACHE);
       }
-      const { from, to } = windowFrom(u);
-      const data = await oddsBoard({ league: LEAGUE, from, to, includeBooks: false, limit: 40 });
-      const games = (data?.games ?? []) as Record<string, unknown>[];
+      const { data, games } = await boardInWindow(u, false, 40);
       const env = envelope(data?.last_poll_at as string | null, stale, LEAGUE,
         providerOf(data?.provider, cfg), data?.last_odds_at as string | null);
       return json({
@@ -578,9 +629,7 @@ Deno.serve(async (req) => {
           consensus: game.consensus,
         }, 200, CACHE);
       }
-      const { from, to } = windowFrom(u);
-      const data = await oddsBoard({ league: LEAGUE, from, to, includeBooks: false, limit: 40 });
-      const games = (data?.games ?? []) as Record<string, unknown>[];
+      const { data, games } = await boardInWindow(u, false, 40);
       return json({
         ...envelope(data?.last_poll_at as string | null, stale, LEAGUE,
           providerOf(data?.provider, cfg), data?.last_odds_at as string | null),
@@ -665,9 +714,7 @@ Deno.serve(async (req) => {
     // payload says so rather than returning an empty shell that could be
     // mistaken for "no line".
     if (req.method === "GET" && path === "/v1/nfl/assistant") {
-      const { from, to } = windowFrom(u);
-      const data = await oddsBoard({ league: LEAGUE, from, to, includeBooks: true, limit: 32 });
-      const games = (data?.games ?? []) as Record<string, unknown>[];
+      const { data, games } = await boardInWindow(u, true, 32);
       const env = envelope(
         data?.last_poll_at as string | null,
         num(data?.stale_after_seconds, stale),
