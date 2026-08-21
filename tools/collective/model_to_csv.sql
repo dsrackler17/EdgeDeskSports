@@ -38,12 +38,43 @@ with params as (
     2026               as season,
     'nfl_game_v1'      as model_version
 ),
+-- EVERY COLUMN IS READ THROUGH to_jsonb, ON PURPOSE.
+--
+-- public.model_predictions does not have the same shape in every project.
+-- Naming a column directly makes the whole export fail with `column
+-- "model_detail" does not exist` -- one absent optional column and you get
+-- no file at all, rather than a file with one column blank. Through jsonb an
+-- absent key is simply NULL, so the export degrades instead of dying.
+--
+-- Run nfl_preflight.sql to see which of these your table actually has.
+raw as (
+  select to_jsonb(mp) as j from public.model_predictions mp
+),
 p as (
-  select mp.*
-    from public.model_predictions mp, params q
-   where mp.model_version = q.model_version
-     and mp.commence_time >= (q.week_start::timestamp at time zone 'America/New_York')
-     and mp.commence_time <  (q.week_end::timestamp   at time zone 'America/New_York')
+  select
+    j ->> 'event_id'                                       as event_id,
+    (j ->> 'commence_time')::timestamptz                   as commence_time,
+    j ->> 'home_team'                                      as home_team,
+    j ->> 'away_team'                                      as away_team,
+    j ->> 'market'                                         as market,
+    j ->> 'selection'                                      as selection,
+    (j ->> 'point')::numeric                               as point,
+    (j ->> 'model_prob')::numeric                          as model_prob,
+    (j ->> 'model_edge')::numeric                          as model_edge,
+    (j ->> 'model_ev')::numeric                            as model_ev,
+    (j ->> 'market_prob_at_pred')::numeric                 as market_prob_at_pred,
+    (j ->> 'best_am_at_pred')::numeric                     as best_am_at_pred,
+    -- jsonb / json columns arrive as an object; a text column holding JSON
+    -- arrives as a string; an absent column arrives as nothing at all.
+    case jsonb_typeof(j -> 'model_detail')
+      when 'object' then  j -> 'model_detail'
+      when 'string' then (j ->> 'model_detail')::jsonb
+      else '{}'::jsonb
+    end                                                    as model_detail
+  from raw, params q
+   where j ->> 'model_version' = q.model_version
+     and (j ->> 'commence_time')::timestamptz >= (q.week_start::timestamp at time zone 'America/New_York')
+     and (j ->> 'commence_time')::timestamptz <  (q.week_end::timestamp   at time zone 'America/New_York')
 ),
 -- One spread pick per game. distinct on + a total order makes the choice
 -- deterministic: the same table always exports the same file, so two runs
@@ -67,12 +98,12 @@ h2h_home as (
    order by event_id, model_prob desc
 ),
 -- model_detail is identical across a game's rows, so any one of them carries
--- the simulation summary.
+-- the simulation summary. The game is listed whether or not it has one: a
+-- missing detail block costs you the projected spread and total, not the pick.
 det as (
   select distinct on (event_id) event_id, home_team, away_team, commence_time, model_detail
     from p
-   where model_detail is not null
-   order by event_id, market, selection
+   order by event_id, (model_detail = '{}'::jsonb), market, selection
 )
 select
   to_char(d.commence_time at time zone 'America/New_York', 'YYYY-MM-DD')  as date,

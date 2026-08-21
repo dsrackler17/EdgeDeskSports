@@ -29,6 +29,14 @@ It reads only. It computes no probabilities and invents no picks, so if the
 model has not run it returns zero rows — which is the correct answer, and
 `nfl_preflight.sql` says which of the three reasons it is.
 
+Every column is read through `to_jsonb`, deliberately. `public.model_predictions`
+is not the same shape in every project — the live EdgeDesk table has no
+`model_detail` — and naming a column directly makes the whole export fail with
+`column "..." does not exist`: no file at all, rather than a file with a
+couple of columns blank. Through jsonb an absent column is a NULL. The pick,
+the market line and the probabilities survive any missing optional column; the
+preflight's two `model_predictions columns` rows say which ones you have.
+
 The pick on each game is the spread side with the largest `model_edge`: the
 probability gap between the model and the de-vigged market. That is the price
 discrepancy, stated as a number. `model_edge_pct`, `model_ev_pct`,

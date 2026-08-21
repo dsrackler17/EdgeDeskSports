@@ -111,12 +111,104 @@ check("no captured NFL events is a blocker with its own wording", () => {
   assert.match(s.detail, /odds schema/, "should point at where the Collective feed writes");
 });
 
+check("the window counts events, not snapshot rows", () => {
+  // The live database reported "0 of 2950 events" one line under "272
+  // events", because one check counted distinct events and the other counted
+  // rows. Two numbers for the same thing reads as two separate bugs.
+  build("pf_rows", "create table public.signals(event_id text, sport_key text, " +
+    "commence_time timestamptz, book text); " +
+    "insert into public.signals select 'e'||g, 'americanfootball_nfl', " +
+    "now()+interval '20 days', b from generate_series(1,4) g, " +
+    "unnest(array['dk','fd','mgm']) b");
+  const r = run("pf_rows");
+  assert.match(r.at("signals").detail, /4 events/, "12 rows are 4 events");
+  assert.match(r.at("model window").detail, /0 of 4 /, `got: ${r.at("model window").detail}`);
+});
+
+check("nothing reachable says so, and says how far to reach", () => {
+  // The real failure: an entire season captured, every game past the
+  // look-ahead, and a run that reports success while writing nothing. The
+  // only useful output is the number to raise the setting to.
+  build("pf_none", "create table public.signals(event_id text, sport_key text, " +
+    "commence_time timestamptz); insert into public.signals values " +
+    "('e1','americanfootball_nfl', now()+interval '18 days')," +
+    "('e2','americanfootball_nfl', now()+interval '140 days')");
+  const w = run("pf_none").at("model window");
+  assert.equal(w.verdict, "BLOCKED");
+  assert.match(w.detail, /NOTHING is reachable/);
+  assert.match(w.detail, /at least 43[0-9]/, `18 days is ~432h; got: ${w.detail}`);
+  assert.match(w.detail, /or 33[0-9]{2} /, `140 days is ~3360h; got: ${w.detail}`);
+});
+
+check("a table missing model_detail is reported as partial, not broken", () => {
+  // This is the live shape. A missing optional column costs four CSV
+  // columns, not the export, and the difference has to be stated or the
+  // creator assumes the file is wrong.
+  build("pf_nodetail", "create table public.model_predictions(model_version text, " +
+    "event_id text, commence_time timestamptz, home_team text, away_team text, " +
+    "market text, selection text, point numeric, model_prob numeric)");
+  const r = run("pf_nodetail");
+  assert.equal(r.at("columns (required)").verdict, "ok");
+  const opt = r.at("columns (optional)");
+  assert.equal(opt.verdict, "PARTIAL");
+  assert.match(opt.detail, /model_detail/);
+  assert.match(opt.detail, /projected spread, total and scores/);
+  assert.match(opt.detail, /pick, the market line and the probabilities are unaffected/);
+});
+
+check("a table missing a required column is blocked and names it", () => {
+  build("pf_nopick", "create table public.model_predictions(model_version text, " +
+    "event_id text, commence_time timestamptz, home_team text, away_team text, " +
+    "market text, model_prob numeric)");
+  const req = run("pf_nopick").at("columns (required)");
+  assert.equal(req.verdict, "BLOCKED");
+  assert.match(req.detail, /selection/);
+  assert.match(req.detail, /point/);
+  assert.ok(!/model_prob/.test(req.detail), "named a column that was present");
+});
+
+check("a complete table reports both column checks ok", () => {
+  build("pf_fullcols", "create table public.model_predictions(model_version text, " +
+    "event_id text, commence_time timestamptz, home_team text, away_team text, " +
+    "market text, selection text, point numeric, model_prob numeric, " +
+    "model_detail jsonb, model_edge numeric, model_ev numeric, " +
+    "market_prob_at_pred numeric, best_am_at_pred int)");
+  const r = run("pf_fullcols");
+  assert.equal(r.at("columns (required)").verdict, "ok");
+  assert.equal(r.at("columns (optional)").verdict, "ok");
+});
+
 check("an existing predictions table with no NFL rows reads 'empty'", () => {
   // Distinct from BLOCKED: nothing is broken, the model simply has not run.
   build("pf_pred", "create table public.model_predictions(model_version text, x int)");
   const p = run("pf_pred").at("model_predictions");
   assert.equal(p.verdict, "empty");
   assert.match(p.detail, /model_to_csv/);
+});
+
+check("an empty table for every model points at the likely cause", () => {
+  // model_predict sending a column the table does not have makes PostgREST
+  // reject the entire insert. An empty table and a missing optional column
+  // together are that failure, and it is invisible from either one alone.
+  build("pf_allempty", "create table public.model_predictions(model_version text, " +
+    "event_id text, commence_time timestamptz, home_team text, away_team text, " +
+    "market text, selection text, point numeric, model_prob numeric)");
+  const a = run("pf_allempty").at("all models");
+  assert.equal(a.verdict, "empty");
+  assert.match(a.detail, /PostgREST rejects the whole insert/);
+});
+
+check("a table with other sports in it lists them", () => {
+  build("pf_mixed", "create table public.model_predictions(model_version text, " +
+    "event_id text, commence_time timestamptz, home_team text, away_team text, " +
+    "market text, selection text, point numeric, model_prob numeric); " +
+    "insert into public.model_predictions(model_version) select 'mlb_runs_v1.2' " +
+    "from generate_series(1,7); " +
+    "insert into public.model_predictions(model_version) values ('ufc_fight_v1')");
+  const a = run("pf_mixed").at("all models");
+  assert.equal(a.verdict, "ok");
+  assert.match(a.detail, /mlb_runs_v1\.2 \(7\)/);
+  assert.match(a.detail, /ufc_fight_v1 \(1\)/);
 });
 
 console.log(`\n${passed} checks passed`);

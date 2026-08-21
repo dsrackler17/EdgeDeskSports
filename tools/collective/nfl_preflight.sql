@@ -31,8 +31,12 @@ declare
   cols        text[];
   want        text[] := array['off_epa_play','def_epa_play','plays_per_game'];
   missing     text[];
-  ahead_hours numeric;
-  inside      bigint;
+  ahead_hours  numeric;
+  inside       bigint;
+  nearest      timestamptz;
+  need_nearest numeric;
+  need_all     numeric;
+  detail_txt   text;
   furthest    timestamptz;
 begin
   ------------------------------------------------------------------ features
@@ -119,14 +123,22 @@ begin
     -- out than that from today, so the model would look straight past it
     -- even with a fully populated features table. This is a one-line env
     -- change, but it is invisible: the run reports success and zero rows.
+    -- Both counts are DISTINCT EVENTS. Counting rows here while the check
+    -- above counts events reads as "0 of 2950" against "272 events", which
+    -- looks like two different bugs instead of one number.
     ahead_hours := 192;
     execute $q$
-      select count(*) filter (where commence_time <= now() + ($1 || ' hours')::interval),
-             count(*)
+      select count(distinct event_id)
+               filter (where commence_time <= now() + ($1 || ' hours')::interval),
+             count(distinct event_id),
+             min(commence_time)
         from public.signals
        where sport_key like 'americanfootball_nfl%'
          and commence_time >= now()
-    $q$ into inside, n using ahead_hours::text;
+    $q$ into inside, n, nearest using ahead_hours::text;
+
+    need_nearest := ceil(extract(epoch from (nearest  - now())) / 3600.0);
+    need_all     := ceil(extract(epoch from (furthest - now())) / 3600.0);
 
     return query select
       'model window (NFL_WINDOW_AHEAD_H)'::text,
@@ -135,12 +147,20 @@ begin
            else 'ok' end::text,
       (inside || ' of ' || n || ' captured NFL events fall inside the default '
        || ahead_hours || 'h look-ahead'
-       || case when inside < n
-               then '. The other ' || (n - inside) || ' are further out and get '
-                    || 'skipped in silence: the run reports success and simply '
-                    || 'does not mention them. Raise NFL_WINDOW_AHEAD_H to reach '
-                    || 'the slate you want.'
-               else '.' end)::text;
+       || case
+            when inside = 0 then
+              '. NOTHING is reachable: the nearest kickoff is '
+              || need_nearest || 'h away. A run right now would report success '
+              || 'and write zero rows without mentioning a single game. '
+              || 'NFL_WINDOW_AHEAD_H needs at least ' || need_nearest
+              || ' to reach the first one, or ' || need_all
+              || ' to reach every game captured.'
+            when inside < n then
+              '. The other ' || (n - inside) || ' are further out and get '
+              || 'skipped in silence. NFL_WINDOW_AHEAD_H needs ' || need_all
+              || ' to reach every game captured.'
+            else '.'
+          end)::text;
   end if;
 
   -------------------------------------------------------------- predictions
@@ -157,6 +177,67 @@ begin
       case when n > 0 then 'ok' else 'empty' end::text,
       (n || ' rows written by the NFL model, all time. '
        || 'model_to_csv.sql exports from here, so it returns nothing until this is non-zero.')::text;
+
+    -- The exporter's inputs. This table does not have the same shape in
+    -- every project: the live one has no model_detail, and an export that
+    -- names a missing column dies outright instead of leaving it blank.
+    select array_agg(column_name::text) into cols
+      from information_schema.columns
+     where table_schema = 'public' and table_name = 'model_predictions';
+    cols := coalesce(cols, '{}'::text[]);
+
+    select array_agg(w) into missing
+      from unnest(array['event_id','commence_time','home_team','away_team',
+                        'market','selection','point','model_prob','model_version']) w
+     where not (w = any(cols));
+
+    return query select
+      'model_predictions columns (required)'::text,
+      case when missing is null then 'ok' else 'BLOCKED' end::text,
+      case when missing is null
+           then 'every column the export needs for a pick is present'
+           else 'the export cannot build a pick without: '
+                || array_to_string(missing, ', ') end::text;
+
+    select array_agg(w) into missing
+      from unnest(array['model_detail','model_edge','model_ev',
+                        'market_prob_at_pred','best_am_at_pred']) w
+     where not (w = any(cols));
+
+    return query select
+      'model_predictions columns (optional)'::text,
+      case when missing is null then 'ok' else 'PARTIAL' end::text,
+      case when missing is null
+           then 'the projected spread, total, scores and edge columns will all be filled'
+           else 'absent, so those CSV columns come out blank: '
+                || array_to_string(missing, ', ')
+                || case when 'model_detail' = any(missing)
+                        then '. model_detail is where the projected spread, total and '
+                             || 'scores live, so those four columns will be empty. The '
+                             || 'pick, the market line and the probabilities are '
+                             || 'unaffected.'
+                        else '' end end::text;
+
+    -- What IS writing to this table. If model_predict sends a column the
+    -- table does not have, PostgREST rejects the whole insert, so an empty
+    -- table plus a missing optional column is worth telling apart from an
+    -- empty table on a model that has simply never been triggered.
+    if 'model_version' = any(cols) then
+      execute $q$
+        select string_agg(v || ' (' || c || ')', ', ' order by c desc)
+          from (select model_version v, count(*) c
+                  from public.model_predictions
+                 group by 1 order by 2 desc limit 8) s
+      $q$ into detail_txt;
+      return query select
+        'model_predictions (all models)'::text,
+        case when detail_txt is null then 'empty' else 'ok' end::text,
+        coalesce(detail_txt,
+          'the table is empty for every sport. If other models are supposed to '
+          || 'be writing, check that model_predict is not sending a column this '
+          || 'table does not have -- PostgREST rejects the whole insert for one '
+          || 'unknown column.')::text;
+    end if;
   end if;
 end
 $fn$;

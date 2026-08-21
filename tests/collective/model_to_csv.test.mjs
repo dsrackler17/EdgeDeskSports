@@ -227,6 +227,61 @@ check("only finished numbers leave the project", () => {
   }
 });
 
+// -------------------------------------------------- a table missing columns
+
+check("a table with no model_detail still exports, with blanks", () => {
+  // The live table has no model_detail column. Naming it directly made the
+  // whole export fail -- no file at all, instead of a file missing two
+  // numbers. The pick is the part that gets graded; losing it to a missing
+  // diagnostic column is the wrong trade.
+  const MIN = "nflcsv_min";
+  execFileSync("su", ["postgres", "-c",
+    `psql -q -c 'drop database if exists ${MIN};' -c 'create database ${MIN};'`],
+    { encoding: "utf8" });
+  execFileSync("su", ["postgres", "-c",
+    `psql -q -v ON_ERROR_STOP=1 -d ${MIN} -f ` +
+    join(root, "tests/collective/model_predictions_minimal.sql")], { encoding: "utf8" });
+
+  const out = execFileSync("su", ["postgres", "-c",
+    `psql -q --csv -v ON_ERROR_STOP=1 -d ${MIN} -f ${EXPORTER}`], { encoding: "utf8" });
+
+  const rows2 = P.parseCSV(out.trim() + "\n");
+  P.setSlate({ cols: rows2[0], rows: rows2, map: {} });
+  P.slateGuessMap();
+  const built2 = P.slateBuildRows();
+  const got = built2.rows || built2;
+  assert.deepEqual(built2.problems || [], []);
+  assert.equal(got.length, 2, `expected both games:\n${out}`);
+
+  const by = Object.fromEntries(got.map((r) => [r.home_team, r]));
+  assert.equal(by["Seattle Seahawks"].pick_side, "home");
+  assert.equal(by["Seattle Seahawks"].line_at_submission, -3.5);
+  assert.equal(by["Carolina Panthers"].pick_side, "away");
+  assert.equal(by["Carolina Panthers"].line_at_submission, 2.5,
+    "the sign still holds on the reduced shape");
+
+  // The numbers that lived in model_detail are absent, not zero. A zero
+  // projected spread is a claim; a blank is the truth.
+  assert.equal(by["Seattle Seahawks"].projected_spread, undefined);
+  assert.equal(by["Seattle Seahawks"].projected_total, undefined);
+
+  // model_prob survives, so the moneyline number is still there.
+  assert.equal(by["Seattle Seahawks"].home_win_probability, 0.63);
+  assert.equal(by["Seattle Seahawks"].cover_probability, 0.56);
+});
+
+check("with no model_edge the side choice is still deterministic", () => {
+  // coalesce(model_edge,-1) makes every row tie, so the tiebreak has to
+  // carry it. Without one, the same table can export either side of a game
+  // on different runs and the record silently disagrees with itself.
+  const MIN = "nflcsv_min";
+  const a = execFileSync("su", ["postgres", "-c",
+    `psql -q --csv -v ON_ERROR_STOP=1 -d ${MIN} -f ${EXPORTER}`], { encoding: "utf8" });
+  const b = execFileSync("su", ["postgres", "-c",
+    `psql -q --csv -v ON_ERROR_STOP=1 -d ${MIN} -f ${EXPORTER}`], { encoding: "utf8" });
+  assert.equal(a, b, "two runs of the same table disagreed");
+});
+
 // ------------------------------------------------------------ empty is fine
 
 check("an empty table exports nothing rather than something", () => {
