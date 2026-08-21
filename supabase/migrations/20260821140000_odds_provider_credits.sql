@@ -179,6 +179,28 @@ begin
   end if;
 end $mig$;
 
+-- The gateway's own check, satisfied from here rather than from a checkbox.
+--
+-- "Enforce JWT verification" accepts ANY valid JWT, and the anon key that
+-- produces one is printed in the site's page source — so it gates nothing.
+-- But when it is ON and pg_net sends no Authorization header at all, the
+-- gateway rejects the request with UNAUTHORIZED_NO_AUTH_HEADER before the
+-- function ever runs, and odds.ingest_runs stays empty with no trace of why.
+--
+-- That has now happened twice: the setting is per-deployment, and the
+-- Supabase CLI re-enables it on every deploy made without a config.toml.
+-- Sending the anon key makes the schedule work whether the toggle is on or
+-- off, so the pipeline stops depending on a checkbox nobody can see from SQL.
+--
+-- This is not a credential. It is the same public key the browser already
+-- ships, and it authorises nothing on its own: the gate that matters is
+-- ingest.cron_token, checked inside the function in constant time.
+insert into odds.settings (key, value, description) values
+  ('ingest.anon_key',
+   to_jsonb('eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlhdHR4YmtidWZzbGJhdW91bWdhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE2MzY4MDUsImV4cCI6MjA5NzIxMjgwNX0.Mly5G587o5IFRnEigU2wRp9buWEk3dFwH9RNPJK7Uo8'::text),
+   'Public anon key, sent as the Authorization header so the schedule survives "Enforce JWT verification" being on. Not a secret: it is in the site page source.')
+on conflict (key) do nothing;
+
 insert into odds.settings (key, value, description) values
   ('ingest.function_url',
    '"https://iattxbkbufslbauoumga.supabase.co/functions/v1/collective_odds_ingest/v1/ingest"'::jsonb,
@@ -196,9 +218,11 @@ on conflict (key) do nothing;
 create or replace function odds.run_ingest()
 returns bigint language plpgsql security definer set search_path = odds, public as $$
 declare
-  v_url   text;
-  v_token text;
-  v_req   bigint;
+  v_url     text;
+  v_token   text;
+  v_anon    text;
+  v_headers jsonb;
+  v_req     bigint;
 begin
   v_url   := trim(both '"' from coalesce((odds.get_setting('ingest.function_url'))::text, ''));
   v_token := trim(both '"' from coalesce((odds.get_setting('ingest.cron_token'))::text, ''));
@@ -212,11 +236,24 @@ begin
     raise exception 'odds.run_ingest: pg_net is not installed, so the database cannot make an HTTP call. Enable it under Database > Extensions, then re-run this migration.';
   end if;
 
+  -- Two headers, two different gates:
+  --   Authorization  satisfies the Supabase gateway when "Enforce JWT
+  --                  verification" is ON. Any valid JWT does, and the anon
+  --                  key is one. Omitted entirely when unset, so the request
+  --                  still goes out with the toggle off.
+  --   x-odds-cron-token  satisfies the function's own authorize(), which is
+  --                  the check that actually decides anything.
+  v_headers := jsonb_build_object(
+    'Content-Type', 'application/json',
+    'x-odds-cron-token', v_token);
+  v_anon := trim(both '"' from coalesce((odds.get_setting('ingest.anon_key'))::text, ''));
+  if v_anon is not null and v_anon <> '' and v_anon <> 'null' then
+    v_headers := v_headers || jsonb_build_object('Authorization', 'Bearer ' || v_anon);
+  end if;
+
   select net.http_post(
     url := v_url,
-    headers := jsonb_build_object(
-      'Content-Type', 'application/json',
-      'x-odds-cron-token', v_token),
+    headers := v_headers,
     body := '{}'::jsonb,
     timeout_milliseconds := 55000
   ) into v_req;

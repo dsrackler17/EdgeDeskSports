@@ -72,6 +72,33 @@ Leave `20260821140000` unmarked. You need it to run: it is the one carrying
 
 ---
 
+## The one flag that has broken this twice
+
+`supabase functions deploy` sets **verify_jwt = true** unless something tells
+it otherwise. Deploying from a directory with no `config.toml` therefore turns
+"Enforce JWT verification" back ON for that function, silently, on every
+deploy.
+
+When it is on and pg_net calls the function, the gateway answers
+`UNAUTHORIZED_NO_AUTH_HEADER` before the function runs, so `odds.ingest_runs`
+stays empty with no record of why.
+
+Two defences, both in place:
+
+- Deploy from the repo root, where `supabase/config.toml` sets `verify_jwt`
+  per function — or pass the flag explicitly:
+
+  ```powershell
+  supabase functions deploy collective_odds_ingest --no-verify-jwt
+  supabase functions deploy collective_odds --no-verify-jwt
+  ```
+
+- `odds.run_ingest()` sends the anon key as an Authorization header, so the
+  schedule works whether the toggle is on or off. That is not a credential —
+  it is the same public key the browser already ships, and it authorises
+  nothing by itself. The gate that decides anything is `ingest.cron_token`,
+  checked inside the function.
+
 ## The two commands you will actually use
 
 From the repo root, after `git pull`:

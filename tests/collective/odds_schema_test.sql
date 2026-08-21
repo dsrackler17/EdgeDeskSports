@@ -716,6 +716,16 @@ begin
     v_token <> '' and v_token <> 'null' and length(v_token) >= 32);
   perform pg_temp.check('the scheduler knows where to post',
     v_url like 'https://%/functions/v1/collective_odds_ingest/v1/ingest');
+  -- The gateway rejects a request with no Authorization header when
+  -- "Enforce JWT verification" is on, before the function runs at all, and
+  -- the Supabase CLI turns that back on for every deploy made without a
+  -- config.toml. Sending the anon key makes the schedule survive it.
+  perform pg_temp.check('the scheduler carries an Authorization header',
+    (select prosrc from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+      where n.nspname = 'odds' and p.proname = 'run_ingest') like '%Authorization%');
+  perform pg_temp.check('and the anon key it sends is configured',
+    length(trim(both '"' from coalesce((odds.get_setting('ingest.anon_key'))::text,''))) > 40);
+
   perform pg_temp.check('the caller and the reader both exist',
     to_regprocedure('odds.run_ingest()') is not null
     and to_regprocedure('odds.last_ingest_response(bigint)') is not null);
