@@ -248,9 +248,15 @@ function covCell(p){
   var w=Math.max(0,Math.min(100,p));
   return '<span class="cov"><span class="covbar"><i style="width:'+w+'%"></i></span><span class="mono" style="font-size:11.5px">'+fmtNum(p,0)+'%</span></span>';
 }
-function recCell(rec){
-  if(!rec)return '<span class="note">first submission pending</span>';
-  return '<span class="mono">'+rec.wins+'-'+rec.losses+'-'+rec.pushes+'</span>';
+/* A record exists only once a game has been graded. "first submission
+   pending" is right for a model that has never posted and wrong for one that
+   posted a full slate an hour ago and is waiting on Sunday — which reads as
+   "your upload failed" to the person who just uploaded. Those are different
+   states and the copy now says which. */
+function recCell(rec,lastSubmissionAt){
+  if(rec)return '<span class="mono">'+rec.wins+'-'+rec.losses+'-'+rec.pushes+'</span>';
+  if(lastSubmissionAt)return '<span class="note">submitted, awaiting results</span>';
+  return '<span class="note">first submission pending</span>';
 }
 function toast(msg){
   var t=el('<div class="toast">'+esc(msg)+'</div>').firstChild;
@@ -552,7 +558,7 @@ async function renderWall(view){
       return '<tr class="rowlink" data-slug="'+esc(r.creator_slug)+'">'+
         '<td><span class="who">'+avatar(r)+'<span><span class="nm">'+esc(r.creator_name)+'</span>'+foundStar(r)+'<br><span class="sb">'+esc(r.model_name)+' &middot; '+esc(r.sport)+'</span></span></span></td>'+
         '<td>'+chipFor(r.membership)+'</td>'+
-        '<td class="num">'+recCell(rec)+'</td>'+
+        '<td class="num">'+recCell(rec,r.last_submission_at)+'</td>'+
         '<td class="num">'+(rec?fmtPct(rec.win_pct):'-')+'</td>'+
         '<td class="num">'+(rec?fmtNum(rec.margin_mae):'-')+'</td>'+
         '<td class="num">'+(rec?fmtNum(rec.brier,3):'-')+'</td>'+
