@@ -228,6 +228,62 @@ check("nothing in the stored rows carries a credential", () => {
   assert.ok(!/key=[^R&\s]/i.test(runs), "an ingest run recorded a raw key");
 });
 
+// ---- 6. the browser components, over the payload SQL actually produced
+const { createRequire } = await import("node:module");
+const requireCJS = createRequire(import.meta.url);
+const MCOdds = requireCJS(join(ROOT, "collective", "odds.js"));
+
+// This is what the edge function wraps around the board, so the renderers
+// see exactly what a page will hand them.
+const env = { stale_after_seconds: board.stale_after_seconds, last_updated: board.last_odds_at };
+const kcGame = board.games.find((g) => g.home === "KC");
+
+check("the browser renderers read the real payload", () => {
+  const line = MCOdds.marketLine(kcGame, env);
+  // DK moved to -4.0 and FanDuel is at -3.5, so the consensus median is -3.75.
+  assert.match(line, /KC -3\.75/, line);
+  assert.match(line, /O\/U/, "the total renders");
+  assert.match(line, /Updated \d+s ago/, "the capture time is always attached");
+});
+
+check("the full card renders every book from the real payload", () => {
+  const card = MCOdds.marketCard(kcGame, env);
+  assert.match(card, /DraftKings/);
+  assert.match(card, /FanDuel/);
+  assert.match(card, /BetMGM/);
+  assert.match(card, /at another line/, "lines are kept apart, not ranked together");
+  // No sharp book is in this feed, so no sharp reference is rendered. The
+  // section appears when one is present and is never synthesised from retail.
+  assert.doesNotMatch(card, /SHARP REFERENCE/);
+  assert.match(
+    MCOdds.marketCard({ ...kcGame,
+      consensus: { ...kcGame.consensus, sharp: { pinnacle: { spread: -3.5 } } } }, env),
+    /SHARP REFERENCE/,
+  );
+});
+
+check("the same payload gives every surface the same number", () => {
+  // The wall, the board and the market page all call these two helpers on the
+  // same object, so agreement here is agreement on the site.
+  const a = MCOdds.consensusSpread(kcGame);
+  const b = MCOdds.consensusSpread(board.games.find((g) => g.event_id === kcGame.event_id));
+  assert.equal(a, b);
+  assert.match(MCOdds.marketLine(kcGame, env), new RegExp(String(a).replace("-", "-")));
+});
+
+check("a model number and the market number are comparable", () => {
+  // Both are home-convention spreads. -6.2 model against a -3.75 market.
+  const e = MCOdds.edge(-6.2, MCOdds.consensusSpread(kcGame), kcGame.home, kcGame.away);
+  assert.equal(Number(e.points.toFixed(2)), 2.45);
+  assert.equal(e.side, "KC");
+});
+
+check("a game with no market renders as unavailable, not as zero", () => {
+  const empty = { ...kcGame, last_odds_at: null, consensus: null, best: null };
+  assert.match(MCOdds.marketLine(empty, env), /unavailable/i);
+  assert.doesNotMatch(MCOdds.marketLine(empty, env), /-3\.75/);
+});
+
 console.log(`\n${passed} checks passed`);
 if (process.exitCode) console.error("SOME CHECKS FAILED");
 else console.log("ALL PIPELINE E2E TESTS PASSED");

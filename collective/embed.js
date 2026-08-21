@@ -42,6 +42,29 @@
   var REFQ = HOST ? '?ref=' + encodeURIComponent(HOST) : '';
 
   /* mount point */
+  /* The odds components, loaded from wherever this script itself lives. The
+     embed and the Collective's own pages then render the market from the same
+     file: one price, one formatter, one freshness rule. If it does not load,
+     the embed simply shows no market rather than a second implementation
+     that could drift. */
+  var ODDS_READY = new Promise(function (resolve) {
+    if (window.MCOdds) return resolve(window.MCOdds);
+    var src;
+    try { src = new URL('odds.js', tag.src || SITE).toString(); } catch (e) { return resolve(null); }
+    var sc = document.createElement('script');
+    sc.src = src;
+    sc.async = true;
+    sc.onload = function () { resolve(window.MCOdds || null); };
+    sc.onerror = function () { resolve(null); };
+    (document.head || document.documentElement).appendChild(sc);
+  }).then(function (M) {
+    if (!M) return null;
+    try {
+      M.configure({ api: API });
+      return M.board({ days: 8, books: false }).then(function (b) { return { M: M, board: b }; });
+    } catch (e) { return null; }
+  }).catch(function () { return null; });
+
   var mount = document.getElementById('model-collective');
   if (!mount) {
     mount = document.createElement('div');
@@ -183,7 +206,11 @@
       '</div>';
   }
 
+  var MARKET = null;
+  var LAST = null;
+
   function render(d) {
+    LAST = d;
     var wall = d.wall || [];
     var wallRows = wall.map(function (r) {
       var isHost = d.host && r.creator_slug === d.host.creator_slug;
@@ -227,6 +254,15 @@
       } else if (g.consensus && g.consensus.locked) {
         cons = '<div class="mrow"><span class="lock">Consensus is a subscriber number</span></div>';
       }
+      var mkt = MARKET && MARKET.board;
+      var mg = (mkt && mkt.find) ? mkt.find({ home: g.home, away: g.away }) : null;
+      var market = '';
+      if (MARKET && MARKET.M) {
+        market = mg
+          ? '<div class="mrow">' + MARKET.M.marketLine(mg, mkt) + '</div>'
+          : '';
+      }
+      var mktSpread = (MARKET && MARKET.M && mg) ? MARKET.M.consensusSpread(mg) : null;
       var rows = (g.models || []).map(function (m) {
         var who = '<span class="nm" style="font-size:12px">' + esc(m.creator_slug) + '</span>';
         if (m.locked) return '<div class="mrow">' + who + '<span class="sp"></span><span class="lock">Subscriber number</span></div>';
@@ -235,9 +271,12 @@
           '<span class="mono">' + (m.pick_side ? 'pick ' + esc(m.pick_side) : 'no pick') + '</span>' +
           '<span class="mono">spr ' + spr(m.projected_spread) + '</span>' +
           (m.home_win_probability != null ? '<span class="mono">hw ' + pct(m.home_win_probability, 0) + '</span>' : '') +
+          (mktSpread != null && m.projected_spread != null
+            ? '<span class="mono">' + MARKET.M.edgeHtml(m.projected_spread, mktSpread, g.home, g.away) + '</span>'
+            : '') +
           grade + '</div>';
       }).join('');
-      return '<div class="game">' + hd + cons + rows + '</div>';
+      return '<div class="game">' + hd + market + cons + rows + '</div>';
     }
 
     var upcoming = (d.upcoming && d.upcoming.games || []).map(function (g) { return gameBlock(g, d.upcoming.entitled); }).join('');
@@ -290,4 +329,23 @@
     })
     .then(function (d) { if (d) render(d); })
     .catch(function () { clearTimeout(timer); fallback(false); });
+
+  /* When the market arrives, inject its styles into the shadow tree and
+     repaint. The panel is already usable before this resolves. */
+  ODDS_READY.then(function (m) {
+    if (!m || !m.M || !LAST) return;
+    MARKET = m;
+    try {
+      m.M.injectCss(root);
+      /* The components style themselves from CSS variables. Inside the shadow
+         tree those do not exist, so the embed's own palette is published as
+         variables and the market matches the host's chosen theme. */
+      var vars = document.createElement('style');
+      vars.textContent = ':host{' + Object.keys(T).map(function (k) {
+        return '--' + k + ':' + T[k];
+      }).join(';') + '}';
+      root.appendChild(vars);
+    } catch (e) { /* not a shadow root: the page styles apply as-is */ }
+    render(LAST);
+  });
 })();
