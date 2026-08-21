@@ -525,7 +525,7 @@ async function secGames(app){
   };
 }
 
-var RES_SPORT=null,RES_SEASON=null;
+var RES_SPORT=null,RES_SEASON=null,RES_TOKEN=0;
 async function secResults(app){
   var SP=await sports();
   if(!RES_SPORT){RES_SPORT=SP[0].code;RES_SEASON=seasonFor(SP,RES_SPORT);}
@@ -535,7 +535,7 @@ async function secResults(app){
     return '<tr><td><b>'+esc(g.label)+'</b><br><span class="note">'+new Date(g.kickoff_at).toLocaleString()+'</span></td>'+
       '<td><input id="rH'+i+'" placeholder="home"></td><td><input id="rA'+i+'" placeholder="away"></td>'+
       '<td><input id="rS'+i+'" placeholder="-2.5"></td><td><input id="rT'+i+'" placeholder="47.5"></td><td><input id="rM'+i+'" placeholder="0.62"></td>'+
-      '<td id="rC'+i+'"><span class="note">checking&hellip;</span></td>'+
+      '<td id="rC'+i+'" data-g="'+esc(g.game_id)+'"><span class="note">checking&hellip;</span></td>'+
       '<td><button class="btn" data-i="'+i+'" data-g="'+esc(g.game_id)+'">Settle</button></td></tr>';
   }).join('');
   app.innerHTML='<h1>Results</h1><p class="lede">Final scores plus the closing line (home convention, negative means home favored). Settling a game grades every candidate projection on it immediately. The closing line here is the only line any pick is ever graded against.</p>'+
@@ -552,10 +552,18 @@ async function secResults(app){
      admin can still overwrite it: this replaces recall, not judgement. */
   if(window.MCOdds&&need.length){
     MCOdds.configure({api:API});
+    /* Each lookup is async and the table can be re-rendered while they are in
+       flight, so every callback checks it is still writing into the row it
+       was launched for. Without the stamp, a slow response from the previous
+       render lands on whatever game now occupies index i and offers one
+       game's closing line as another's. */
+    var stamp = (RES_TOKEN = (RES_TOKEN || 0) + 1);
     need.slice(0,30).forEach(function(g,i){
-      MCOdds.closingForGame(g.game_id).then(function(cl){
+      var gameId=g.game_id;
+      MCOdds.closingForGame(gameId).then(function(cl){
+        if(stamp!==RES_TOKEN)return;
         var cell=$('rC'+i);
-        if(!cell)return;
+        if(!cell||cell.getAttribute('data-g')!==gameId)return;
         if(!cl||!cl.available){
           var why={no_linked_odds_event:'no odds event linked to this game',
                    market_not_closed:'market has not closed yet',
@@ -563,14 +571,19 @@ async function secResults(app){
           cell.innerHTML='<span class="note">'+esc(why)+'</span>';
           return;
         }
+        /* The median of an even number of books lands on a quarter point:
+           the median of -6.0 and -6.5 is -6.25. Rounding that to one decimal
+           printed -6.3, which is neither what was captured nor a number any
+           book offered — and this value grades every model on the game. */
+        var num2=function(v){return String(Math.round(Number(v)*100)/100);};
         cell.innerHTML='<button class="btn" data-fill="'+i+'">Use captured close</button>'+
           '<div class="note" style="margin-top:3px">'+
-          (cl.closing_spread!=null?'spread '+Number(cl.closing_spread).toFixed(1):'')+
-          (cl.closing_total!=null?' &middot; total '+Number(cl.closing_total).toFixed(1):'')+
-          (cl.books?' &middot; '+cl.books+' books':'')+'</div>';
+          (cl.closing_spread!=null?'spread '+esc(num2(cl.closing_spread)):'')+
+          (cl.closing_total!=null?' &middot; total '+esc(num2(cl.closing_total)):'')+
+          (cl.books?' &middot; '+esc(cl.books)+' books':'')+'</div>';
         cell.querySelector('button').onclick=function(){
-          if(cl.closing_spread!=null)$('rS'+i).value=Number(cl.closing_spread).toFixed(1);
-          if(cl.closing_total!=null)$('rT'+i).value=Number(cl.closing_total).toFixed(1);
+          if(cl.closing_spread!=null)$('rS'+i).value=num2(cl.closing_spread);
+          if(cl.closing_total!=null)$('rT'+i).value=num2(cl.closing_total);
           if(cl.closing_home_ml_prob!=null)$('rM'+i).value=Number(cl.closing_home_ml_prob).toFixed(4);
           toast('Filled from the captured close');
         };

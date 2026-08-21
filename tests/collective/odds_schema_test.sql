@@ -250,6 +250,10 @@ begin
         and market_id='spread' and outcome='home'));
   perform pg_temp.check('event marked finalized',
     (select closing_finalized from odds.events where id = v_event));
+  -- Kickoff closes the market; it does not end the game. Writing status
+  -- 'final' here marked every game in progress as over, irreversibly.
+  perform pg_temp.check('closing the market does not declare the game over',
+    (select status <> 'final' from odds.events where id = v_event));
 
   -- A later price cannot rewrite a close.
   perform odds.ingest_batch(odds.begin_ingest('oddsblaze','nfl','test'), 'oddsblaze','nfl',
@@ -488,6 +492,164 @@ begin
   perform pg_temp.check('and it carries no closing line at all',
     (collective.odds_event((select id from odds.events where home_code='MIA'), null, true)
       ->'closing') = '{}'::jsonb);
+end $$;
+
+-- ------------------------------------------------- line oscillation
+-- A market that moves away from a number and back must record the return.
+-- Keying change detection on the line meant the second -3.5 matched the
+-- first, scored "unchanged", and froze the published line on -4.0.
+do $$
+declare v_ev uuid; seq numeric[] := array[-3.5,-4.0,-3.5,-3.5]; i int; r jsonb;
+        written int[] := array[0,0,0,0];
+begin
+  for i in 1..4 loop
+    r := odds.ingest_batch(odds.begin_ingest('oddsblaze','nfl','test'),'oddsblaze','nfl',
+      jsonb_build_object('events', jsonb_build_array(jsonb_build_object(
+        'provider_event_id','osc-1','home','PIT','away','CLE',
+        'commence_time','2026-12-06T18:00:00Z',
+        'odds', jsonb_build_array(jsonb_build_object(
+          'book','draftkings','market','spread','outcome','home',
+          'line',seq[i],'price',-110))))));
+    written[i] := (r->>'snapshots_written')::int;
+  end loop;
+  select id into v_ev from odds.events where home_code='PIT' and away_code='CLE';
+
+  perform pg_temp.check('a line returning to a previous value is recorded',
+    written = array[1,1,1,0]);
+  perform pg_temp.check('history keeps the round trip',
+    (select array_agg(line::text order by id) from odds.snapshots
+      where event_id = v_ev and market_id='spread' and outcome='home')
+    = array['-3.50','-4.00','-3.50']);
+  perform pg_temp.check('current state follows the market back',
+    (select line = -3.5 from odds.current_main_state
+      where event_id = v_ev and market_id='spread' and outcome='home'));
+  perform pg_temp.check('and a genuinely unchanged poll still writes nothing',
+    written[4] = 0);
+end $$;
+
+-- --------------------------------------------------- function privileges
+-- Postgres grants EXECUTE to PUBLIC by default, and these are SECURITY
+-- DEFINER functions in a PostgREST-exposed schema. Without an explicit
+-- revoke, the view grants tested above are decorative: odds_set_setting,
+-- odds_ingest and odds_finalize_closing would be reachable by anyone who can
+-- reach the schema.
+do $$
+begin
+  perform pg_temp.check('no collective.odds_* function is executable by anon',
+    (select count(*) from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+      where n.nspname='collective' and p.proname like 'odds\_%'
+        and has_function_privilege('anon', p.oid, 'EXECUTE')) = 0);
+  perform pg_temp.check('nor by authenticated',
+    (select count(*) from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+      where n.nspname='collective' and p.proname like 'odds\_%'
+        and has_function_privilege('authenticated', p.oid, 'EXECUTE')) = 0);
+  perform pg_temp.check('no odds.* function is executable by anon',
+    (select count(*) from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+      where n.nspname='odds' and has_function_privilege('anon', p.oid, 'EXECUTE')) = 0);
+  perform pg_temp.check('service_role can execute every collective.odds_* function',
+    (select count(*) from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+      where n.nspname='collective' and p.proname like 'odds\_%'
+        and not has_function_privilege('service_role', p.oid, 'EXECUTE')) = 0);
+  perform pg_temp.check('the writers are covered, not just the readers',
+    (select bool_and(not has_function_privilege('anon', p.oid, 'EXECUTE'))
+      from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+      where n.nspname='collective'
+        and p.proname in ('odds_set_setting','odds_ingest','odds_finalize_closing',
+                          'odds_begin_run','odds_finish_run','odds_link_games')));
+end $$;
+
+-- ------------------------------------------------------- feed freshness
+do $$
+begin
+  perform pg_temp.check('status reports the last successful poll separately',
+    (collective.odds_status('nfl') ? 'last_poll_at')
+    and (collective.odds_status('nfl') ? 'last_odds_at'));
+  perform pg_temp.check('the board carries the poll time too',
+    (collective.odds_board('nfl',null,null,false,5) ? 'last_poll_at'));
+  -- A quiet market is not a stale feed: the poll time keeps moving even when
+  -- no price does.
+  perform pg_temp.check('a poll that changed nothing still counts as a poll',
+    odds.last_poll_at() is not null);
+end $$;
+
+-- --------------------------------------------- season and week from the slate
+do $$
+declare v_game uuid;
+begin
+  insert into collective.games (sport, season, week, kickoff_at, home, away)
+  values ('NFL', 2026, 11, '2026-11-22T18:00:00Z', 'GB', 'CHI') returning id into v_game;
+  perform odds.ingest_batch(odds.begin_ingest('oddsblaze','nfl','test'),'oddsblaze','nfl',
+    jsonb_build_object('events', jsonb_build_array(jsonb_build_object(
+      'provider_event_id','wk-1','home','GB','away','CHI',
+      'commence_time','2026-11-22T18:00:00Z',
+      'odds', jsonb_build_array(jsonb_build_object(
+        'book','draftkings','market','spread','outcome','home','line',-3,'price',-110))))));
+  perform pg_temp.check('the feed carries no week of its own',
+    (select week is null from odds.events where home_code='GB'));
+  perform odds.link_collective_games('nfl');
+  -- Without this the ?week= filter on the read API silently returns nothing.
+  perform pg_temp.check('linking takes season and week from the Collective slate',
+    (select season = 2026 and week = 11 from odds.events where home_code='GB'));
+end $$;
+
+-- --------------------------------------------- a book that stops quoting
+-- current_main_state keeps a book's last price forever, so without a horizon
+-- a book that takes the market down keeps voting in the consensus and keeps
+-- offering a best price nobody can take.
+do $$
+declare v_ev uuid;
+begin
+  perform odds.ingest_batch(odds.begin_ingest('oddsblaze','nfl','test'),'oddsblaze','nfl',
+    jsonb_build_object('events', jsonb_build_array(jsonb_build_object(
+      'provider_event_id','stale-1','home','TEN','away','JAX',
+      'commence_time','2026-12-13T18:00:00Z',
+      'odds', jsonb_build_array(
+        jsonb_build_object('book','draftkings','market','spread','outcome','home','line',-3.0,'price',-110),
+        jsonb_build_object('book','fanduel','market','spread','outcome','home','line',-3.0,'price',-110),
+        jsonb_build_object('book','betmgm','market','spread','outcome','home','line',-9.0,'price',-110))))));
+  select id into v_ev from odds.events where home_code='TEN' and away_code='JAX';
+
+  perform pg_temp.check('all three books count while all three are current',
+    (odds.consensus(v_ev)->'spread'->>'books')::int = 3);
+
+  -- BetMGM stops quoting: its row simply stops being refreshed.
+  update odds.current_main_state set captured_at = now() - interval '3 hours'
+   where event_id = v_ev and book_id = 'betmgm';
+
+  perform pg_temp.check('a book that stopped quoting drops out of the consensus',
+    (odds.consensus(v_ev)->'spread'->>'books')::int = 2);
+  perform pg_temp.check('and its number stops moving the median',
+    (odds.consensus(v_ev)->'spread'->>'median')::numeric = -3.0);
+  perform pg_temp.check('and it is no longer offered as a best price',
+    not (odds.best_price(v_ev,'spread')::text like '%betmgm%'));
+
+  -- A settled game's prices are all equally old; the horizon is relative to
+  -- the freshest price on that game, so nothing drops out.
+  update odds.current_main_state set captured_at = now() - interval '5 days'
+   where event_id = v_ev;
+  perform pg_temp.check('an old settled game keeps its whole book list',
+    (odds.consensus(v_ev)->'spread'->>'books')::int = 3);
+end $$;
+
+-- ------------------------------------------- an unknown status is survivable
+do $$
+declare r jsonb;
+begin
+  r := odds.ingest_batch(odds.begin_ingest('oddsblaze','nfl','test'),'oddsblaze','nfl', $j$
+  {"events":[
+    {"provider_event_id":"st-1","home":"BAL","away":"CIN","commence_time":"2026-12-20T18:00:00Z",
+     "status":"Weather Delay - Unknown To Us",
+     "odds":[{"book":"draftkings","market":"spread","outcome":"home","line":-2.5,"price":-110}]},
+    {"provider_event_id":"st-2","home":"SEA","away":"ARI","commence_time":"2026-12-20T21:00:00Z",
+     "odds":[{"book":"draftkings","market":"spread","outcome":"home","line":-1.5,"price":-105}]}
+  ]}
+  $j$::jsonb);
+  -- The CHECK constraint plus one transaction per slate means an unrecognised
+  -- status would otherwise abort the batch and lose every price in it.
+  perform pg_temp.check('an unknown vendor status does not abort the slate',
+    (r->>'ok')::boolean and (r->>'snapshots_written')::int = 2);
+  perform pg_temp.check('the odd status falls back to scheduled',
+    (select status = 'scheduled' from odds.events where home_code='BAL'));
 end $$;
 
 select 'ALL ODDS SCHEMA TESTS PASSED' as result;

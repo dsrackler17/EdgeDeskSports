@@ -164,10 +164,42 @@ export function resolveOutcome(args: {
   if (!nameKey) return null;
   if (home.has(nameKey)) return "home";
   if (away.has(nameKey)) return "away";
-  // Vendors append the number: "Kansas City Chiefs -3.5".
-  const stripped = nameKey.replace(/[+-]?\d+(\d|5)?$/, "");
-  for (const h of home) if (h && (nameKey.startsWith(h) || stripped === h)) return "home";
-  for (const a of away) if (a && (nameKey.startsWith(a) || stripped === a)) return "away";
+
+  // Vendors append the number: "Kansas City Chiefs -3.5" normalizes to
+  // "kansascitychiefs35", so the trailing digits come off before comparing.
+  const stripped = nameKey.replace(/\d+$/, "");
+  if (home.has(stripped)) return "home";
+  if (away.has(stripped)) return "away";
+
+  // Loose prefix matching, with two guards that a naive version does not have.
+  //
+  // MIN_PREFIX: a two-letter abbreviation prefix-matches half the league.
+  // With New England at home and New Orleans away, a selection of
+  // "New Orleans" normalizes to "neworleans", which starts with "ne" — and
+  // the away price gets booked as the home price, silently inverting the
+  // market. Short aliases only ever match exactly, above.
+  //
+  // Ambiguity: if a name matches both sides, no answer is better than a
+  // coin flip, because the wrong one inverts a market and still looks
+  // perfectly plausible on the page.
+  // Either string may be the longer one: a vendor may send "Kansas City
+  // Chiefs" against our "KC", or just "New Orleans" against our "New Orleans
+  // Saints". So a prefix in either direction counts, but the SHORTER of the
+  // two has to carry the minimum length — that is what stops "ne" matching
+  // "neworleans".
+  const MIN_PREFIX = 4;
+  const prefixMatch = (a: string, k: string): boolean =>
+    Math.min(a.length, k.length) >= MIN_PREFIX && (k.startsWith(a) || a.startsWith(k));
+  const hit = (set: Set<string>): boolean => {
+    for (const a of set) {
+      if (prefixMatch(a, nameKey) || prefixMatch(a, stripped)) return true;
+    }
+    return false;
+  };
+  const isHome = hit(home);
+  const isAway = hit(away);
+  if (isHome && !isAway) return "home";
+  if (isAway && !isHome) return "away";
   return null;
 }
 

@@ -30,7 +30,9 @@ function check(label, fn) {
 const now = Date.now();
 const iso = (secondsAgo) => new Date(now - secondsAgo * 1000).toISOString();
 
-const ENV = { stale_after_seconds: 900, last_updated: iso(30) };
+// last_updated is the last successful POLL. last_change_at is when a price
+// last moved. Feed freshness is judged on the first.
+const ENV = { stale_after_seconds: 900, last_updated: iso(30), last_change_at: iso(30) };
 
 const GAME = {
   event_id: "11111111-1111-1111-1111-111111111111",
@@ -129,29 +131,58 @@ check("spreads render in home convention with a sign", () => {
 });
 
 // -------------------------------------------------------------- freshness
-check("a recent capture is live", () => {
-  const f = MCOdds.freshness(ENV, iso(30));
+check("a recent poll is live", () => {
+  const f = MCOdds.freshness(ENV);
   assert.equal(f.state, "live");
   assert.ok(f.age <= 31);
 });
 
-check("an old capture is stale, and says how old", () => {
-  const f = MCOdds.freshness(ENV, iso(1800));
-  assert.equal(f.state, "stale");
-  const html = MCOdds.freshChip(ENV, iso(1800));
+check("a feed not polled inside its window is stale, and says how long", () => {
+  const old = { stale_after_seconds: 900, last_updated: iso(1800) };
+  assert.equal(MCOdds.freshness(old).state, "stale");
+  const html = MCOdds.freshChip(old);
   assert.match(html, /Stale/);
   assert.match(html, /30 minutes ago|30m ago/);
 });
 
-check("no timestamp means unavailable, not fresh", () => {
-  assert.equal(MCOdds.freshness(ENV, null).state, "unavailable");
-  assert.match(MCOdds.freshChip(ENV, null), /Odds unavailable/);
+check("a quiet market on a healthy feed is NOT stale", () => {
+  // Unchanged polls write nothing by design, so judging freshness on the
+  // newest price made a healthy feed read stale all midweek — and a
+  // staleness label that cries wolf teaches people to ignore it.
+  const quiet = { stale_after_seconds: 900, last_updated: iso(20), last_change_at: iso(86400) };
+  assert.equal(MCOdds.freshness(quiet).state, "live");
+  const chip = MCOdds.freshChip(quiet, quiet.last_change_at);
+  assert.doesNotMatch(chip, /Stale/);
+  assert.match(chip, /Line 24h ago/, chip);
+});
+
+check("never polled means unavailable, not fresh", () => {
+  assert.equal(MCOdds.freshness({ stale_after_seconds: 900, last_updated: null }).state, "unavailable");
+  assert.match(MCOdds.freshChip({ stale_after_seconds: 900, last_updated: null }), /Odds unavailable/);
 });
 
 check("age is recomputed from the timestamp, not trusted from the payload", () => {
   // A cached response whose age_seconds says 5 must not read as 5s old later.
   const stale = { stale_after_seconds: 900, last_updated: iso(3600), age_seconds: 5 };
   assert.equal(MCOdds.freshness(stale).state, "stale");
+});
+
+check("a game with no stored price is reported as absent, not as stale", () => {
+  assert.equal(MCOdds.hasPrice({ last_odds_at: null }), false);
+  assert.equal(MCOdds.hasPrice(GAME), true);
+  assert.match(MCOdds.marketLine({ ...GAME, last_odds_at: null }, ENV), /No market posted/i);
+});
+
+check("an HTTP error is never parsed as a payload", async () => {
+  // A gateway error body is valid JSON with no games key, which would
+  // otherwise render as "this game has no market".
+  const realFetch = globalThis.fetch;
+  globalThis.fetch = async () => ({ ok: false, status: 502, json: async () => ({ message: "bad gateway" }) });
+  try {
+    const d = await MCOdds.board({ days: 1, limit: 7 });
+    assert.equal(d.state, "unavailable");
+    assert.deepEqual(d.games, []);
+  } finally { globalThis.fetch = realFetch; }
 });
 
 // -------------------------------------------------------- reading a payload
@@ -211,7 +242,7 @@ check("the one-line market shows numbers, the book, and the capture time", () =>
   assert.match(html, /KC -3\.75/, "consensus spread in home convention");
   assert.match(html, /47\.25/, "consensus total");
   assert.match(html, /Pinnacle/, "the book behind the best price is named");
-  assert.match(html, /Updated \d+s ago/, "capture time always present");
+  assert.match(html, /Updated \d+s ago|Line \d+s ago/, "capture time always present");
   assert.doesNotMatch(html, /LIVE/, "no live badge on a scheduled game");
 });
 
@@ -220,9 +251,9 @@ check("a live game is the only thing that produces a LIVE badge", () => {
   assert.match(live, /LIVE/);
 });
 
-check("with no stored price the markup says so and shows the last update", () => {
+check("with no stored price the markup says so and shows no number", () => {
   const html = MCOdds.marketLine({ ...GAME, last_odds_at: null }, ENV);
-  assert.match(html, /Market unavailable/);
+  assert.match(html, /No market posted/);
   assert.doesNotMatch(html, /-3\.75/, "no number is rendered when there is none");
 });
 

@@ -91,7 +91,8 @@ safe: it self-throttles.
 | `nfl.refresh_seconds.pregame` | 300 | A kickoff is inside the pregame window |
 | `nfl.refresh_seconds.idle` | 1800 | Nothing is near |
 | `nfl.pregame_window_hours` | 36 | Width of the pregame window |
-| `nfl.stale_after_seconds` | 900 | Age at which the read API stops calling a price current |
+| `nfl.stale_after_seconds` | 900 | Age of the last successful poll at which the feed stops counting as current |
+| `nfl.book_stale_seconds` | 5400 | How far behind the freshest price on a game a book may be and still count |
 | `nfl.books` | 8 books | Sportsbooks requested each run, in priority order |
 | `nfl.max_books_per_run` | 12 | Hard ceiling on provider requests per run |
 | `nfl.markets` | moneyline, spread, total | Canonical markets stored |
@@ -132,6 +133,16 @@ All storage lives in the `odds` schema. Nothing there is exposed through
 PostgREST; the API surface is the `collective.odds_*` views and functions,
 granted to `service_role` only, with `anon` and `authenticated` explicitly
 revoked.
+
+Revoked on the **functions** as well as the views, and that is not a detail.
+Postgres grants `EXECUTE` on a new function to `PUBLIC` by default, and these
+are `SECURITY DEFINER` functions in a PostgREST-exposed schema — so without an
+explicit revoke the view grants are decorative, and `odds_set_setting`,
+`odds_ingest` and `odds_finalize_closing` are reachable by anyone who can
+reach the schema. The migration revokes `PUBLIC` from every function in `odds`
+and every `collective.odds_*` function, as its last statement so it covers
+functions defined anywhere in the file, and `tests/collective/odds_schema_test.sql`
+asserts it.
 
 | Table | What it holds |
 | --- | --- |
@@ -217,6 +228,19 @@ on, ties broken toward the median.
 across retail books, computed the same way, so they are comparable. Each
 book's individual opener is kept under `opening[…].by_book`.
 
+**A book that stops quoting stops counting.** `odds.current_main_state` keeps
+each book's last price forever, so without a horizon a book that takes a
+market down would go on voting in the consensus and offering a best price
+nobody can take. A price more than `nfl.book_stale_seconds` behind the
+freshest price *on that game* drops out of the consensus, the best price and
+the book grid. Measured against that game's freshest price rather than against
+now, so a settled game whose prices are all equally old keeps its whole book
+list.
+
+**Closing the market is not ending the game.** `odds.finalize_closing` sets
+`closing_finalized` and nothing else. Kickoff means the market closed; the
+game is still being played, and status and liveness stay the feed's to report.
+
 **Closing is not "current".** `odds.closing_lines` is written only after
 kickoff, only from prices captured before it. Until then a game's `closing`
 object is empty and `market_closed` is false. A game that kicked off with
@@ -266,16 +290,28 @@ Every payload begins with:
 ```json
 {
   "source": { "provider": "oddsblaze", "league": "nfl" },
-  "last_updated": "2026-09-20T14:31:07Z",
+  "last_updated":   "2026-09-20T14:31:07Z",
+  "last_change_at": "2026-09-20T11:02:44Z",
   "age_seconds": 42,
   "state": "live",
   "stale_after_seconds": 900
 }
 ```
 
+`last_updated` is the **last successful poll**. `last_change_at` is when a
+price last actually moved. They answer different questions and freshness is
+judged on the first: unchanged polls write nothing by design, so keying
+staleness on the newest price made a perfectly healthy feed read "stale"
+through any quiet midweek stretch — and a staleness label that cries wolf
+teaches people to ignore the one label that is supposed to mean something.
+
 `state` is `live`, `stale`, or `unavailable`. A stale payload still carries its
 prices, labelled and aged — it is never relabelled current. An unavailable one
 carries no prices at all.
+
+A game with no stored price is a separate condition from a stale feed, and the
+UI says so separately: "No market posted for this game yet" against "Odds
+unavailable".
 
 ## Stale and unavailable in the UI
 
@@ -487,18 +523,37 @@ Ingestion was not running in the window before that game. The closing line is
 genuinely unavailable for it; settle with your own number.
 
 **Prices look stale even though ingestion is running.**
-Compare `nfl.stale_after_seconds` against the effective interval. At the idle
-cadence (1800s) with a 900s staleness window, prices will read stale between
-runs. Either shorten the interval or lengthen the window.
+Freshness is judged on the last successful poll, so this means runs are not
+completing, not that the market is quiet. Check Admin → Odds → Last run.
+If runs are completing, compare `nfl.stale_after_seconds` against the
+effective interval: at the idle cadence (1800s) with a 900s window the feed
+will read stale between runs. Either shorten the interval or widen the window.
+
+**A book vanished from the consensus.**
+It has not quoted inside `nfl.book_stale_seconds` of the freshest price on
+that game. That is deliberate — a price a book has taken down is not a price
+you can get. Widen the setting if the poll interval is longer than the
+window.
 
 ## Verification
 
 ```
-sh tests/collective/run_all.sh          # schema, adapter, end-to-end pipeline
-node tests/collective/odds_js.test.mjs  # browser components
-node tools/collective/check_html_js.mjs # inline page scripts parse
+sh tests/collective/run_all.sh          # everything below except the type check
 sh tools/collective/typecheck.sh        # modules and deployed bundles
 ```
+
+`run_all.sh` runs five stages, and the first one matters more than it looks:
+
+1. **deploy artifact matches source** — `bundle_functions.py --check`. The
+   bundles under `_bundles/` are what actually gets deployed; the split
+   sources never are. A fix that lands in `_shared/` and is not regenerated
+   ships as nothing at all, and every other test here would still pass while
+   production ran the old code. Nothing else can see that, so it runs first
+   and fails the suite.
+2. schema behaviour against a real Postgres 16
+3. adapter unit tests
+4. the end-to-end pipeline
+5. the browser components, plus a parse check of every inline page script
 
 `run_all.sh` needs a local Postgres and applies
 `tests/collective/odds_schema_fixture.sql`, which stands in for the parts of

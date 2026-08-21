@@ -186,7 +186,12 @@ type Freshness = "live" | "stale" | "unavailable";
 
 interface OddsEnvelope {
   source: { provider: string; league: string };
+  /** When the feed was last confirmed current: the last successful poll. */
   last_updated: string | null;
+  /** When a price last actually moved. Not the same question, and not what
+   *  freshness is judged on — unchanged polls write nothing by design, so a
+   *  quiet market would otherwise read as a broken feed. */
+  last_change_at: string | null;
   age_seconds: number | null;
   state: Freshness;
   stale_after_seconds: number;
@@ -197,18 +202,26 @@ interface OddsEnvelope {
 const DEFAULT_STALE_AFTER = 900;
 
 /**
- * Classifies a feed timestamp.
- *   live        a price captured inside the freshness window
- *   stale       we have a price, but it is older than the window. It is still
- *               returned, labelled, with its age. Never relabelled current.
- *   unavailable we have nothing to show. No number is invented to fill the gap.
+ * Classifies the feed.
+ *   live        polled successfully inside the freshness window
+ *   stale       the last successful poll is older than the window. Prices are
+ *               still returned, labelled, with their age. Never relabelled
+ *               current.
+ *   unavailable nothing to show. No number is invented to fill the gap.
+ *
+ * lastPolled, not the newest price. A market that has not moved since Tuesday
+ * is a quiet market, not a dead feed, and calling it stale would train people
+ * to ignore the one label that is supposed to mean something.
  */
 function envelope(
-  lastUpdated: string | null | undefined,
+  lastPolled: string | null | undefined,
   staleAfterSeconds: number | null | undefined,
   league = "nfl",
   provider = "oddsblaze",
+  lastChangeAt: string | null | undefined = null,
 ): OddsEnvelope {
+  const lastUpdated = lastPolled ?? null;
+  const changed = lastChangeAt ?? null;
   const staleAfter = Number(staleAfterSeconds) > 0
     ? Number(staleAfterSeconds)
     : DEFAULT_STALE_AFTER;
@@ -216,6 +229,7 @@ function envelope(
     return {
       source: { provider, league },
       last_updated: null,
+      last_change_at: changed,
       age_seconds: null,
       state: "unavailable",
       stale_after_seconds: staleAfter,
@@ -227,6 +241,7 @@ function envelope(
     return {
       source: { provider, league },
       last_updated: null,
+      last_change_at: changed,
       age_seconds: null,
       state: "unavailable",
       stale_after_seconds: staleAfter,
@@ -238,6 +253,7 @@ function envelope(
     return {
       source: { provider, league },
       last_updated: lastUpdated,
+      last_change_at: changed,
       age_seconds: age,
       state: "live",
       stale_after_seconds: staleAfter,
@@ -246,10 +262,11 @@ function envelope(
   return {
     source: { provider, league },
     last_updated: lastUpdated,
+    last_change_at: changed,
     age_seconds: age,
     state: "stale",
     stale_after_seconds: staleAfter,
-    notice: `Odds may be out of date. Last updated ${relativeAge(age)}.`,
+    notice: `Odds may be out of date. Last polled ${relativeAge(age)}.`,
   };
 }
 
@@ -287,7 +304,17 @@ async function settings(keys: string[]): Promise<Record<string, unknown>> {
   return values;
 }
 
+/**
+ * A number, or the fallback.
+ *
+ * The null check is the whole point: Number(null) is 0, and 0 is finite, so a
+ * bare Number.isFinite guard silently turns every absent value into zero.
+ * URLSearchParams.get returns null for a missing parameter, so ?limit,
+ * ?days and ?week all became 0 — a one-game board, a one-day window, and a
+ * cadence of zero seconds when a setting was missing.
+ */
 function num(v: unknown, fallback: number): number {
+  if (v === null || v === undefined || v === "") return fallback;
   const n = Number(v);
   return Number.isFinite(n) ? n : fallback;
 }
@@ -668,10 +695,42 @@ function resolveOutcome(args: {
   if (!nameKey) return null;
   if (home.has(nameKey)) return "home";
   if (away.has(nameKey)) return "away";
-  // Vendors append the number: "Kansas City Chiefs -3.5".
-  const stripped = nameKey.replace(/[+-]?\d+(\d|5)?$/, "");
-  for (const h of home) if (h && (nameKey.startsWith(h) || stripped === h)) return "home";
-  for (const a of away) if (a && (nameKey.startsWith(a) || stripped === a)) return "away";
+
+  // Vendors append the number: "Kansas City Chiefs -3.5" normalizes to
+  // "kansascitychiefs35", so the trailing digits come off before comparing.
+  const stripped = nameKey.replace(/\d+$/, "");
+  if (home.has(stripped)) return "home";
+  if (away.has(stripped)) return "away";
+
+  // Loose prefix matching, with two guards that a naive version does not have.
+  //
+  // MIN_PREFIX: a two-letter abbreviation prefix-matches half the league.
+  // With New England at home and New Orleans away, a selection of
+  // "New Orleans" normalizes to "neworleans", which starts with "ne" — and
+  // the away price gets booked as the home price, silently inverting the
+  // market. Short aliases only ever match exactly, above.
+  //
+  // Ambiguity: if a name matches both sides, no answer is better than a
+  // coin flip, because the wrong one inverts a market and still looks
+  // perfectly plausible on the page.
+  // Either string may be the longer one: a vendor may send "Kansas City
+  // Chiefs" against our "KC", or just "New Orleans" against our "New Orleans
+  // Saints". So a prefix in either direction counts, but the SHORTER of the
+  // two has to carry the minimum length — that is what stops "ne" matching
+  // "neworleans".
+  const MIN_PREFIX = 4;
+  const prefixMatch = (a: string, k: string): boolean =>
+    Math.min(a.length, k.length) >= MIN_PREFIX && (k.startsWith(a) || a.startsWith(k));
+  const hit = (set: Set<string>): boolean => {
+    for (const a of set) {
+      if (prefixMatch(a, nameKey) || prefixMatch(a, stripped)) return true;
+    }
+    return false;
+  };
+  const isHome = hit(home);
+  const isAway = hit(away);
+  if (isHome && !isAway) return "home";
+  if (isAway && !isHome) return "away";
   return null;
 }
 
@@ -849,6 +908,42 @@ interface ObTeam {
   short_name?: unknown;
 }
 
+function hasPlayer(v: unknown): boolean {
+  if (v === null || v === undefined || v === "") return false;
+  if (Array.isArray(v)) return v.length > 0;
+  if (typeof v === "object") return Object.keys(v as Record<string, unknown>).length > 0;
+  return true;
+}
+
+/** The statuses odds.events accepts. A value outside this set violates the
+ *  column's CHECK constraint, and because the whole slate is ingested in one
+ *  transaction that would abort the batch and lose every price in it — so an
+ *  unrecognised vendor status becomes "scheduled" rather than an outage. */
+const EVENT_STATUS = new Set(["scheduled", "live", "final", "postponed", "canceled"]);
+const STATUS_ALIASES: Record<string, string> = {
+  cancelled: "canceled",
+  delayed: "postponed",
+  suspended: "postponed",
+  complete: "final",
+  completed: "final",
+  finished: "final",
+  ended: "final",
+  closed: "final",
+  inprogress: "live",
+  started: "live",
+  upcoming: "scheduled",
+  pregame: "scheduled",
+  notstarted: "scheduled",
+};
+
+function normalizeStatus(raw: unknown, live: boolean): string {
+  if (live) return "live";
+  const k = normKey(raw);
+  if (!k) return "scheduled";
+  if (EVENT_STATUS.has(k)) return k;
+  return STATUS_ALIASES[k] ?? "scheduled";
+}
+
 function teamNames(t: ObTeam | undefined): string[] {
   if (!t) return [];
   return [t.name, t.abbreviation, t.short_name]
@@ -885,7 +980,11 @@ function readOdd(
 
   // A player prop carries a player; it is a different family and is skipped
   // here rather than mangled into a game line.
-  if (r.player || r.players) {
+  //
+  // Emptiness is checked, not truthiness: `players: []` is a truthy value, so
+  // a feed that includes an empty players array on ordinary game lines would
+  // have had every single row discarded as a prop.
+  if (hasPlayer(r.player) || hasPlayer(r.players)) {
     return { bad: unmapped(ctx.book, "player market, not a game line", row) };
   }
 
@@ -983,7 +1082,7 @@ function readEvent(
       home_name: homeNames[0],
       away_name: awayNames[0],
       commence_time: String(commence),
-      status: eventLive ? "live" : (typeof ev.status === "string" ? ev.status : "scheduled"),
+      status: normalizeStatus(ev.status, eventLive),
       is_live: eventLive,
       provider_updated_at: ctx.providerUpdatedAt,
       odds,
@@ -1418,6 +1517,19 @@ Deno.serve(async (req) => {
     if (path === "/v1/ingest" && req.method === "POST") {
       if (cfg["nfl.enabled"] === false) {
         return json({ ok: true, skipped: "disabled", reason: "nfl.enabled is false" }, 200, NO_STORE);
+      }
+      // Fail closed when the settings could not be read. settings() swallows
+      // its errors and leaves null behind, and null is not false — so the
+      // kill switch and the throttle would both have silently defaulted to
+      // "on, as fast as you like". Against a metered trial plan an
+      // unthrottled loop is the expensive failure, so an unreadable settings
+      // table stops the run instead of guessing.
+      if (cfg["nfl.enabled"] === null || cfg["nfl.enabled"] === undefined) {
+        return err(
+          "not_configured",
+          "The odds settings could not be read, so the kill switch and poll interval are unknown. Refusing to call the provider.",
+          503,
+        );
       }
       if (!provider.isConfigured()) {
         return err(

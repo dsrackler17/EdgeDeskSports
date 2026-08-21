@@ -49,12 +49,25 @@ insert into odds.settings (key, value, description) values
     '["moneyline","spread","total"]'::jsonb,
     'Canonical markets stored for NFL game lines'),
   ('nfl.close_grace_minutes',     '0'::jsonb,           'Minutes after kickoff before a market may be finalized as closed'),
+  ('nfl.book_stale_seconds',      '5400'::jsonb,        'How far behind the freshest price a book may be and still count toward consensus'),
   ('provider.default',            '"oddsblaze"'::jsonb, 'Provider used for NFL odds')
 on conflict (key) do nothing;
 
 create or replace function odds.get_setting(p_key text)
 returns jsonb language sql stable as $$
   select value from odds.settings where key = p_key;
+$$;
+
+-- How stale a single book's price may be and still count.
+--
+-- current_main_state keeps the newest price per book forever, so a book that
+-- takes a market down, or that the run stops requesting, would otherwise go
+-- on voting in the consensus and offering a "best price" nobody can take.
+-- Measured against the freshest price ON THAT GAME, not against now, so a
+-- settled game whose prices are all equally old keeps its whole book list.
+create or replace function odds.book_stale_seconds()
+returns integer language sql stable as $$
+  select coalesce((odds.get_setting('nfl.book_stale_seconds'))::text::int, 5400);
 $$;
 
 -- --------------------------------------------------------------- providers
@@ -345,6 +358,10 @@ create table if not exists odds.current_main_state (
 );
 create index if not exists current_main_state_event_idx
   on odds.current_main_state (event_id, market_id);
+-- The staleness horizon asks for max(captured_at) per event, once per market
+-- per game on every board render.
+create index if not exists current_main_state_fresh_idx
+  on odds.current_main_state (event_id, captured_at desc);
 
 -- ----------------------------------------------------------- closing lines
 -- Written once, by odds.finalize_closing, and only after kickoff. A current
@@ -599,7 +616,13 @@ begin
                 v_home, v_away,
                 v_ev->>'home_name', v_ev->>'away_name',
                 v_commence, v_commence_date,
-                coalesce(nullif(v_ev->>'status',''), 'scheduled'),
+                -- The column has a CHECK constraint and the whole slate
+                -- rides on one transaction, so an unrecognised vendor status
+                -- must not be allowed to abort the batch and lose every
+                -- price in it.
+                case when nullif(v_ev->>'status','') in
+                          ('scheduled','live','final','postponed','canceled')
+                     then v_ev->>'status' else 'scheduled' end,
                 coalesce((v_ev->>'is_live')::boolean, false))
         returning id into v_event_id;
         v_inserted := true;
@@ -619,8 +642,13 @@ begin
         commence_date = v_commence_date,
         is_live       = coalesce((v_ev->>'is_live')::boolean, e.is_live),
         -- A game already settled stays settled; a feed blip cannot reopen it.
-        status        = case when e.status = 'final' then e.status
-                             else coalesce(nullif(v_ev->>'status',''), e.status) end,
+        status        = case
+                          when e.status = 'final' then e.status
+                          when nullif(v_ev->>'status','') in
+                               ('scheduled','live','final','postponed','canceled')
+                            then v_ev->>'status'
+                          else e.status
+                        end,
         season        = coalesce(nullif(v_ev->>'season','')::int, e.season),
         week          = coalesce(nullif(v_ev->>'week','')::int, e.week),
         home_name     = coalesce(nullif(v_ev->>'home_name',''), e.home_name),
@@ -679,11 +707,22 @@ begin
 
       -- Only a real change becomes a row. Re-polling an unchanged market adds
       -- nothing, so the history stays a record of movement.
+      --
+      -- The comparison is against the newest row for the SERIES, not the
+      -- newest row at this line. Keying on the line meant a market that went
+      -- -3.5 -> -4.0 -> -3.5 matched the first -3.5 row, scored "unchanged",
+      -- and left the current state stuck on -4.0 until the book moved to a
+      -- third number. Oscillating between two adjacent numbers is ordinary,
+      -- so that froze the published line and the closing line with it.
+      --
+      -- Alternates are the exception: a book quotes many alternate lines at
+      -- once, so there the line really is part of the series identity.
       select content_hash into v_last_hash
       from odds.snapshots
       where event_id = v_event_id and market_id = v_market
         and book_id = v_book and outcome = v_outcome
-        and line is not distinct from v_line
+        and is_main = v_is_main
+        and (v_is_main or line is not distinct from v_line)
       order by captured_at desc, id desc
       limit 1;
 
@@ -774,7 +813,7 @@ begin
   end if;
   execute format($q$
     with cand as (
-      select g.game_id,
+      select g.game_id, g.season, g.week,
              odds.resolve_team(%L, g.home) as home_code,
              odds.resolve_team(%L, g.away) as away_code,
              odds.league_day(g.kickoff_at, %L) as kdate
@@ -782,14 +821,22 @@ begin
       where lower(g.sport) = %L
     )
     update odds.events e
-       set collective_game_id = cand.game_id, last_updated = now()
+       set collective_game_id = cand.game_id,
+           -- The odds feed does not carry season or week; the Collective's
+           -- own slate does. Without this, events.week stays null and the
+           -- week filter on the read API silently returns nothing.
+           season = coalesce(cand.season, e.season),
+           week   = coalesce(cand.week, e.week),
+           last_updated = now()
       from cand
      where e.league = %L
-       and e.collective_game_id is distinct from cand.game_id
        and cand.home_code is not null
        and e.home_code = cand.home_code
        and e.away_code = cand.away_code
        and e.commence_date = cand.kdate
+       and (e.collective_game_id is distinct from cand.game_id
+            or e.season is distinct from cand.season
+            or e.week is distinct from cand.week)
   $q$, p_league, p_league, p_league, p_league, p_league);
   get diagnostics v_linked = row_count;
   return v_linked;
@@ -837,11 +884,14 @@ begin
     -- event that closed with nothing captured before kickoff simply has no
     -- closing line, and the read path says exactly that rather than
     -- reaching for a post-kickoff price.
+    --
+    -- Only closing_finalized is set here. Kickoff means the market closed,
+    -- not that the game ended: writing status='final' and is_live=false at
+    -- kickoff marked every game in progress as over, and because ingest
+    -- refuses to move a game out of 'final' the feed could never correct it.
+    -- Status and liveness belong to the feed.
     update odds.events
-       set closing_finalized = true,
-           status = case when status in ('scheduled','live') then 'final' else status end,
-           is_live = false,
-           last_updated = now()
+       set closing_finalized = true, last_updated = now()
      where id = v_ev.id;
   end loop;
   return v_total;
@@ -859,10 +909,17 @@ returns jsonb language plpgsql stable as $$
 declare
   v jsonb;
 begin
-  with cur as (
+  with horizon as (
+    select max(captured_at) as newest from odds.current_main_state
+    where event_id = p_event_id
+  ),
+  cur as (
     select c.*, b.is_sharp, b.include_in_consensus
     from odds.current_main c
     join odds.books b on b.id = c.book_id
+    cross join horizon h
+    where h.newest is null
+       or c.captured_at >= h.newest - make_interval(secs => odds.book_stale_seconds())
   ),
   spreads as (
     select percentile_cont(0.5) within group (order by line)::numeric as median_line,
@@ -949,13 +1006,21 @@ returns jsonb language plpgsql stable as $$
 declare
   v jsonb;
 begin
-  with cur as (
+  with horizon as (
+    select max(captured_at) as newest from odds.current_main_state
+    where event_id = p_event_id
+  ),
+  cur as (
     select c.event_id, c.market_id, c.book_id, c.outcome, c.outcome_label,
            c.line, c.price, c.price_decimal, c.implied_prob, c.captured_at,
            b.name as book_name, b.is_sharp
     from odds.current_main c
     join odds.books b on b.id = c.book_id
+    cross join horizon h
     where c.event_id = p_event_id and c.market_id = p_market
+      -- A price a book has since taken down is not a price you can get.
+      and (h.newest is null
+           or c.captured_at >= h.newest - make_interval(secs => odds.book_stale_seconds()))
   ),
   median_line as (
     select outcome, percentile_cont(0.5) within group (order by line)::numeric as med
@@ -1064,10 +1129,23 @@ create or replace view collective.odds_books as
   from odds.books;
 
 -- Health in one row: is the feed current, and how current.
+-- The last run that actually reached the provider and came back. This is
+-- what "is the feed current" means; max(captured_at) answers a different
+-- question, which is when a price last MOVED.
+create or replace function odds.last_poll_at()
+returns timestamptz language sql stable as $$
+  select max(coalesce(finished_at, started_at))
+  from odds.ingest_runs where status in ('ok','partial');
+$$;
+
 create or replace function collective.odds_status(p_league text default 'nfl')
 returns jsonb language sql stable security definer set search_path = odds, collective, public as $$
   select jsonb_build_object(
     'league', p_league,
+    -- last_poll_at: the feed is current as of this moment.
+    -- last_odds_at: a price last changed at this moment. A quiet market is
+    -- not a stale feed, so freshness is judged on the first.
+    'last_poll_at',   odds.last_poll_at(),
     'last_odds_at',   (select max(captured_at) from odds.snapshots),
     'stale_after_seconds', coalesce((odds.get_setting('nfl.stale_after_seconds'))::text::int, 900),
     'events_upcoming', (select count(*) from odds.events
@@ -1256,12 +1334,19 @@ begin
   select * into v_ev from odds.events where id = p_event_id;
   if not found then return null; end if;
 
-  with cur as (
+  with horizon as (
+    select max(captured_at) as newest from odds.current_main_state
+    where event_id = p_event_id
+  ),
+  cur as (
     select c.*, b.name as book_name, b.is_sharp, b.include_in_consensus
     from odds.current_main c
     join odds.books b on b.id = c.book_id
+    cross join horizon h
     where c.event_id = p_event_id
       and c.market_id in ('moneyline','spread','total')
+      and (h.newest is null
+           or c.captured_at >= h.newest - make_interval(secs => odds.book_stale_seconds()))
   ),
   books as (
     select jsonb_object_agg(m.market_id, m.rows) as by_market from (
@@ -1352,6 +1437,7 @@ create or replace function collective.odds_board(
   select jsonb_build_object(
     'league', p_league,
     'generated_at', now(),
+    'last_poll_at', odds.last_poll_at(),
     'last_odds_at', (select max(s.captured_at) from odds.snapshots s
                      join odds.events e on e.id = s.event_id where e.league = p_league),
     'stale_after_seconds',
@@ -1419,5 +1505,32 @@ begin
              collective.odds_event(uuid,uuid,boolean),
              collective.odds_history(uuid,text,text,text,integer) to service_role';
   end if;
+end
+$mig$;
+
+-- ------------------------------------------------ function privileges
+-- Postgres grants EXECUTE on a new function to PUBLIC by default. Combined
+-- with SECURITY DEFINER and a PostgREST-exposed schema that is a writable
+-- back door: odds_set_setting, odds_ingest and odds_finalize_closing would be
+-- callable by anyone who can reach the schema, and odds_board would hand back
+-- everything the view revokes above were meant to protect.
+--
+-- Least privilege, stated rather than assumed. Runs last so it covers every
+-- function defined in this file, including ones added later.
+do $mig$
+declare r record; has_sr boolean;
+begin
+  select exists (select 1 from pg_roles where rolname = 'service_role') into has_sr;
+  for r in
+    select p.oid::regprocedure as sig
+    from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+    where (n.nspname = 'odds')
+       or (n.nspname = 'collective' and p.proname like 'odds\_%')
+  loop
+    execute format('revoke all on function %s from public', r.sig);
+    if has_sr then
+      execute format('grant execute on function %s to service_role', r.sig);
+    end if;
+  end loop;
 end
 $mig$;

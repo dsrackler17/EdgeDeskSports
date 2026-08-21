@@ -73,7 +73,16 @@
     var ctrl = (typeof AbortController !== 'undefined') ? new AbortController() : null;
     var timer = ctrl ? setTimeout(function () { ctrl.abort(); }, 8000) : null;
     var p = fetch(url, { signal: ctrl ? ctrl.signal : undefined })
-      .then(function (r) { return r.json(); })
+      .then(function (r) {
+        /* r.ok has to be checked. The read function answers 200 with an
+           explicit unavailable envelope on its own failures, so a non-2xx
+           here is the gateway or a routing mistake — and its error body
+           parses perfectly well as JSON with no `games` key, which the
+           renderers would read as "this game has no market" rather than
+           "we could not reach the market". */
+        if (!r.ok) throw new Error('odds request failed (' + r.status + ')');
+        return r.json();
+      })
       .then(function (d) {
         if (timer) clearTimeout(timer);
         delete inflight[url];
@@ -233,29 +242,42 @@
     return Math.max(0, Math.round((Date.now() - ms) / 1000));
   };
 
-  /* Freshness, decided here from the timestamp and the server's window. */
-  MCOdds.freshness = function (env, iso) {
+  /* Is the FEED current?
+   *
+   * Judged on env.last_updated, which is the last successful poll, not on
+   * when a price last moved. Unchanged polls are deliberately not stored, so
+   * keying this on the newest price made a perfectly healthy feed read
+   * "stale" through any quiet midweek stretch — and a staleness label that
+   * cries wolf is worse than none, because people learn to ignore it. */
+  MCOdds.freshness = function (env) {
     env = env || {};
-    /* undefined means "not asked about a specific series", so fall back to
-       the feed timestamp. An explicit null means this game has no stored
-       price, which is unavailable and must not inherit the feed's. */
-    var at = (iso === undefined) ? env.last_updated : iso;
-    var age = MCOdds.ageOf(at);
+    var age = MCOdds.ageOf(env.last_updated);
     var win = Number(env.stale_after_seconds) > 0 ? Number(env.stale_after_seconds) : 900;
     if (age == null) return { state: 'unavailable', age: null, at: null };
-    return { state: age <= win ? 'live' : 'stale', age: age, at: at };
+    return { state: age <= win ? 'live' : 'stale', age: age, at: env.last_updated };
   };
 
-  MCOdds.freshChip = function (env, iso) {
-    var f = MCOdds.freshness(env, iso);
+  /* Whether this particular game has a stored price at all. Separate question
+     from feed health: a healthy feed can simply have nothing on a game. */
+  MCOdds.hasPrice = function (g) { return !!(g && g.last_odds_at); };
+
+  /* changedAt (optional): when THIS market last moved, shown as the label so
+     a reader sees the age of the number in front of them. Feed health still
+     decides the chip's state. */
+  MCOdds.freshChip = function (env, changedAt) {
+    var f = MCOdds.freshness(env);
     if (f.state === 'unavailable') {
-      return '<span class="mco-chip mco-none" title="No stored price for this market">Odds unavailable</span>';
+      return '<span class="mco-chip mco-none" title="No successful poll of the odds feed">Odds unavailable</span>';
     }
     if (f.state === 'stale') {
-      return '<span class="mco-chip mco-stale" title="Older than the freshness window. Shown, but not current.">' +
-        'Stale &middot; ' + esc(MCOdds.ago(f.age)) + '</span>';
+      return '<span class="mco-chip mco-stale" title="The feed has not been polled successfully inside its freshness window. Prices are shown, but they are not current.">' +
+        'Stale &middot; polled ' + esc(MCOdds.ago(f.age)) + '</span>';
     }
-    return '<span class="mco-chip mco-fresh">Updated ' + esc(MCOdds.ago(f.age)) + '</span>';
+    var moved = MCOdds.ageOf(changedAt);
+    return '<span class="mco-chip mco-fresh" title="Feed polled ' + esc(MCOdds.ago(f.age)) +
+      (moved == null ? '' : '; this line last moved ' + esc(MCOdds.ago(moved))) + '">' +
+      (moved == null ? 'Updated ' + esc(MCOdds.ago(f.age))
+                     : 'Line ' + esc(MCOdds.ago(moved))) + '</span>';
   };
 
   /* --------------------------------------------------------- reading a game */
@@ -357,11 +379,13 @@
     if (!g) {
       return '<div class="mco-line mco-empty">Market unavailable</div>';
     }
-    var f = MCOdds.freshness(env, g.last_odds_at);
+    var f = MCOdds.freshness(env);
+    if (!MCOdds.hasPrice(g)) {
+      return '<div class="mco-line mco-empty">No market posted for this game yet</div>';
+    }
     if (f.state === 'unavailable') {
       return '<div class="mco-line mco-empty">Market unavailable' +
-        (g.last_odds_at ? ' <span class="mco-dim">last updated ' + esc(MCOdds.ago(MCOdds.ageOf(g.last_odds_at))) + '</span>' : '') +
-        '</div>';
+        ' <span class="mco-dim">last price seen ' + esc(MCOdds.ago(MCOdds.ageOf(g.last_odds_at))) + '</span></div>';
     }
     var sp = MCOdds.consensusSpread(g);
     var tot = MCOdds.consensusTotal(g);
@@ -369,10 +393,20 @@
     var spBest = MCOdds.bestAtPrimary(g, 'spread', 'home');
     var parts = [];
     if (sp != null) {
+      /* The consensus median and the best price are numbers at DIFFERENT
+         lines: the median of -3.5 and -4.0 is -3.75, which no book is
+         offering, while the best price is quoted at -3.5. Printing them
+         adjacent read as "-108 is the price for -3.75", which is the exact
+         confusion this whole design is supposed to prevent. So the best
+         price now states its own line, every time. */
       parts.push('<span class="mco-mk"><b>' + esc(g.home) + ' ' + esc(MCOdds.line(sp)) + '</b>' +
-        (spBest && spBest.price != null
-          ? ' <span class="mco-dim">' + esc(MCOdds.price(spBest.price)) + ' ' + esc(MCOdds.bookName(g, spBest.book)) + '</span>'
-          : '') + '</span>');
+        ' <span class="mco-dim">consensus</span></span>');
+      if (spBest && spBest.price != null && spBest.line != null) {
+        parts.push('<span class="mco-mk"><span class="mco-dim">best</span> ' +
+          esc(g.home) + ' ' + esc(MCOdds.line(spBest.line)) + ' ' +
+          esc(MCOdds.price(spBest.price)) +
+          ' <span class="mco-dim">' + esc(MCOdds.bookName(g, spBest.book)) + '</span></span>');
+      }
     }
     if (tot != null) parts.push('<span class="mco-mk">O/U <b>' + esc(MCOdds.total(tot)) + '</b></span>');
     if (hp != null) {
@@ -395,16 +429,19 @@
   MCOdds.marketCard = function (g, env, opts) {
     opts = opts || {};
     if (!g) return '<div class="mco-card mco-empty">Market unavailable</div>';
-    var f = MCOdds.freshness(env, g.last_odds_at);
+    var f = MCOdds.freshness(env);
     var head = '<div class="mco-hd">' +
       '<span class="mco-gm">' + esc(g.away_name || g.away) + ' @ ' + esc(g.home_name || g.home) + '</span>' +
       (g.is_live ? '<span class="mco-chip mco-live">LIVE</span>' : '') +
       (g.market_closed ? '<span class="mco-chip mco-closed" title="Kickoff has passed; the closing line is final">Market closed</span>' : '') +
       '<span class="mco-spacer"></span>' + MCOdds.freshChip(env, g.last_odds_at) + '</div>';
 
-    if (f.state === 'unavailable') {
+    if (!MCOdds.hasPrice(g) || f.state === 'unavailable') {
       return '<div class="mco-card">' + head +
-        '<div class="mco-empty">No stored prices for this game. Nothing is shown rather than an estimate.</div></div>';
+        '<div class="mco-empty">' + (MCOdds.hasPrice(g)
+          ? 'The odds feed has not been polled successfully. Nothing is shown rather than an estimate.'
+          : 'No stored prices for this game. Nothing is shown rather than an estimate.') +
+        '</div></div>';
     }
 
     if (!g.books) {

@@ -194,6 +194,19 @@ Deno.serve(async (req) => {
       if (cfg["nfl.enabled"] === false) {
         return json({ ok: true, skipped: "disabled", reason: "nfl.enabled is false" }, 200, NO_STORE);
       }
+      // Fail closed when the settings could not be read. settings() swallows
+      // its errors and leaves null behind, and null is not false — so the
+      // kill switch and the throttle would both have silently defaulted to
+      // "on, as fast as you like". Against a metered trial plan an
+      // unthrottled loop is the expensive failure, so an unreadable settings
+      // table stops the run instead of guessing.
+      if (cfg["nfl.enabled"] === null || cfg["nfl.enabled"] === undefined) {
+        return err(
+          "not_configured",
+          "The odds settings could not be read, so the kill switch and poll interval are unknown. Refusing to call the provider.",
+          503,
+        );
+      }
       if (!provider.isConfigured()) {
         return err(
           "not_configured",

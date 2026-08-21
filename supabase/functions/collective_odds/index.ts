@@ -100,13 +100,24 @@ Deno.serve(async (req) => {
   try {
     const cfg = await settings(SETTING_KEYS);
     const stale = staleAfter(cfg);
+    /* Feed health is a property of the feed, not of one game, so the routes
+       that return a single object still report the last successful poll. */
+    let pollAt: string | null | undefined;
+    const feedPolledAt = async (): Promise<string | null> => {
+      if (pollAt === undefined) {
+        const st = await oddsStatus(LEAGUE).catch(() => null);
+        pollAt = (st?.last_poll_at as string | null) ?? null;
+      }
+      return pollAt;
+    };
 
     // ------------------------------------------------------------ status
     // "Is the feed healthy?" as one object. The dashboards read this to
     // decide between showing numbers and showing why there are none.
     if (req.method === "GET" && (path === "/v1/nfl/status" || path === "/v1/status")) {
       const st = await oddsStatus(LEAGUE);
-      const env = envelope(st?.last_odds_at as string | null, stale, LEAGUE);
+      const env = envelope(st?.last_poll_at as string | null, stale, LEAGUE,
+        "oddsblaze", st?.last_odds_at as string | null);
       return json({ ...env, ...st }, 200, NO_STORE);
     }
 
@@ -134,9 +145,11 @@ Deno.serve(async (req) => {
       });
       const games = (data?.games ?? []) as Record<string, unknown>[];
       const env = envelope(
-        data?.last_odds_at as string | null,
+        data?.last_poll_at as string | null,
         num(data?.stale_after_seconds, stale),
         LEAGUE,
+        "oddsblaze",
+        data?.last_odds_at as string | null,
       );
       const week = u.searchParams.get("week");
       const filtered = week
@@ -160,7 +173,8 @@ Deno.serve(async (req) => {
         if (!isUuid(eventId)) return err("invalid_payload", "event must be a uuid.", 422);
         const game = await oddsEventPayload({ eventId, includeBooks: true });
         if (!game) return err("not_found", "No odds for that game.", 404);
-        const env = envelope(game.last_odds_at as string | null, stale, LEAGUE);
+        const env = envelope(await feedPolledAt(), stale, LEAGUE, "oddsblaze",
+          game.last_odds_at as string | null);
         const best = game.best as Record<string, unknown>;
         return json({
           ...env,
@@ -175,7 +189,8 @@ Deno.serve(async (req) => {
       const { from, to } = windowFrom(u);
       const data = await oddsBoard({ league: LEAGUE, from, to, includeBooks: false, limit: 40 });
       const games = (data?.games ?? []) as Record<string, unknown>[];
-      const env = envelope(data?.last_odds_at as string | null, stale, LEAGUE);
+      const env = envelope(data?.last_poll_at as string | null, stale, LEAGUE,
+        "oddsblaze", data?.last_odds_at as string | null);
       return json({
         ...env,
         count: games.length,
@@ -203,7 +218,8 @@ Deno.serve(async (req) => {
         const game = await oddsEventPayload({ eventId, includeBooks: false });
         if (!game) return err("not_found", "No odds for that game.", 404);
         return json({
-          ...envelope(game.last_odds_at as string | null, stale, LEAGUE),
+          ...envelope(await feedPolledAt(), stale, LEAGUE, "oddsblaze",
+            game.last_odds_at as string | null),
           event_id: game.event_id,
           home: game.home,
           away: game.away,
@@ -214,7 +230,8 @@ Deno.serve(async (req) => {
       const data = await oddsBoard({ league: LEAGUE, from, to, includeBooks: false, limit: 40 });
       const games = (data?.games ?? []) as Record<string, unknown>[];
       return json({
-        ...envelope(data?.last_odds_at as string | null, stale, LEAGUE),
+        ...envelope(data?.last_poll_at as string | null, stale, LEAGUE,
+          "oddsblaze", data?.last_odds_at as string | null),
         games: games.map((g) => ({
           event_id: g.event_id,
           home: g.home,
@@ -250,7 +267,7 @@ Deno.serve(async (req) => {
       const points = (data?.points ?? []) as { at?: string }[];
       const last = points.length ? points[points.length - 1].at ?? null : null;
       return json({
-        ...envelope(last, stale, LEAGUE),
+        ...envelope(await feedPolledAt(), stale, LEAGUE, "oddsblaze", last),
         ...data,
         note: "Every stored state, oldest first. Unchanged polls are not stored, so each point is a real move.",
       }, 200, CACHE);
@@ -265,7 +282,8 @@ Deno.serve(async (req) => {
       const game = byEvent ?? await oddsEventPayload({ gameId: m[1], includeBooks: true });
       if (!game) return err("not_found", "No odds for that game.", 404);
       return json({
-        ...envelope(game.last_odds_at as string | null, stale, LEAGUE),
+        ...envelope(await feedPolledAt(), stale, LEAGUE, "oddsblaze",
+          game.last_odds_at as string | null),
         game,
       }, 200, CACHE);
     }
@@ -275,13 +293,14 @@ Deno.serve(async (req) => {
       const game = await oddsEventPayload({ gameId: m[1], includeBooks: true });
       if (!game) {
         return json({
-          ...envelope(null, stale, LEAGUE),
+          ...envelope(await feedPolledAt(), stale, LEAGUE),
           game: null,
           reason: "no_linked_odds_event",
         }, 200, NO_STORE);
       }
       return json({
-        ...envelope(game.last_odds_at as string | null, stale, LEAGUE),
+        ...envelope(await feedPolledAt(), stale, LEAGUE, "oddsblaze",
+          game.last_odds_at as string | null),
         game,
       }, 200, CACHE);
     }
@@ -298,9 +317,11 @@ Deno.serve(async (req) => {
       const data = await oddsBoard({ league: LEAGUE, from, to, includeBooks: true, limit: 32 });
       const games = (data?.games ?? []) as Record<string, unknown>[];
       const env = envelope(
-        data?.last_odds_at as string | null,
+        data?.last_poll_at as string | null,
         num(data?.stale_after_seconds, stale),
         LEAGUE,
+        "oddsblaze",
+        data?.last_odds_at as string | null,
       );
       return json({
         ...env,

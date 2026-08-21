@@ -12,7 +12,12 @@ export type Freshness = "live" | "stale" | "unavailable";
 
 export interface OddsEnvelope {
   source: { provider: string; league: string };
+  /** When the feed was last confirmed current: the last successful poll. */
   last_updated: string | null;
+  /** When a price last actually moved. Not the same question, and not what
+   *  freshness is judged on — unchanged polls write nothing by design, so a
+   *  quiet market would otherwise read as a broken feed. */
+  last_change_at: string | null;
   age_seconds: number | null;
   state: Freshness;
   stale_after_seconds: number;
@@ -23,18 +28,26 @@ export interface OddsEnvelope {
 const DEFAULT_STALE_AFTER = 900;
 
 /**
- * Classifies a feed timestamp.
- *   live        a price captured inside the freshness window
- *   stale       we have a price, but it is older than the window. It is still
- *               returned, labelled, with its age. Never relabelled current.
- *   unavailable we have nothing to show. No number is invented to fill the gap.
+ * Classifies the feed.
+ *   live        polled successfully inside the freshness window
+ *   stale       the last successful poll is older than the window. Prices are
+ *               still returned, labelled, with their age. Never relabelled
+ *               current.
+ *   unavailable nothing to show. No number is invented to fill the gap.
+ *
+ * lastPolled, not the newest price. A market that has not moved since Tuesday
+ * is a quiet market, not a dead feed, and calling it stale would train people
+ * to ignore the one label that is supposed to mean something.
  */
 export function envelope(
-  lastUpdated: string | null | undefined,
+  lastPolled: string | null | undefined,
   staleAfterSeconds: number | null | undefined,
   league = "nfl",
   provider = "oddsblaze",
+  lastChangeAt: string | null | undefined = null,
 ): OddsEnvelope {
+  const lastUpdated = lastPolled ?? null;
+  const changed = lastChangeAt ?? null;
   const staleAfter = Number(staleAfterSeconds) > 0
     ? Number(staleAfterSeconds)
     : DEFAULT_STALE_AFTER;
@@ -42,6 +55,7 @@ export function envelope(
     return {
       source: { provider, league },
       last_updated: null,
+      last_change_at: changed,
       age_seconds: null,
       state: "unavailable",
       stale_after_seconds: staleAfter,
@@ -53,6 +67,7 @@ export function envelope(
     return {
       source: { provider, league },
       last_updated: null,
+      last_change_at: changed,
       age_seconds: null,
       state: "unavailable",
       stale_after_seconds: staleAfter,
@@ -64,6 +79,7 @@ export function envelope(
     return {
       source: { provider, league },
       last_updated: lastUpdated,
+      last_change_at: changed,
       age_seconds: age,
       state: "live",
       stale_after_seconds: staleAfter,
@@ -72,10 +88,11 @@ export function envelope(
   return {
     source: { provider, league },
     last_updated: lastUpdated,
+    last_change_at: changed,
     age_seconds: age,
     state: "stale",
     stale_after_seconds: staleAfter,
-    notice: `Odds may be out of date. Last updated ${relativeAge(age)}.`,
+    notice: `Odds may be out of date. Last polled ${relativeAge(age)}.`,
   };
 }
 
@@ -113,7 +130,17 @@ export async function settings(keys: string[]): Promise<Record<string, unknown>>
   return values;
 }
 
+/**
+ * A number, or the fallback.
+ *
+ * The null check is the whole point: Number(null) is 0, and 0 is finite, so a
+ * bare Number.isFinite guard silently turns every absent value into zero.
+ * URLSearchParams.get returns null for a missing parameter, so ?limit,
+ * ?days and ?week all became 0 — a one-game board, a one-day window, and a
+ * cadence of zero seconds when a setting was missing.
+ */
 export function num(v: unknown, fallback: number): number {
+  if (v === null || v === undefined || v === "") return fallback;
   const n = Number(v);
   return Number.isFinite(n) ? n : fallback;
 }

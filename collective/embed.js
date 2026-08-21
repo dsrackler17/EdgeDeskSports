@@ -304,7 +304,17 @@
       '<div class="ft"><span>Every model here keeps its own site, price, and methodology.</span><span style="flex:1"></span>' +
       '<a href="' + esc(d.collective_url || SITE) + '" target="_blank" rel="noopener" data-coll>The Model Collective →</a></div>';
 
-    /* event wiring */
+    /* event wiring. render() runs again when the market arrives, so the
+       handler is bound once and the impression is counted once; without the
+       guard a viewer produced two impressions and every click fired twice. */
+    if (!box.__mcWired) {
+      box.__mcWired = true;
+      wireBox(box);
+      ev('impression');
+    }
+  }
+
+  function wireBox(box) {
     box.addEventListener('click', function (e) {
       var a = e.target && e.target.closest ? e.target.closest('a') : null;
       if (!a) return;
@@ -313,7 +323,6 @@
       else if (a.hasAttribute('data-prof')) ev('profile_view', a.getAttribute('data-prof'));
       else if (a.hasAttribute('data-out')) ev('outbound_click', a.getAttribute('data-out'));
     });
-    ev('impression');
   }
 
   /* ---------- fetch ---------- */
@@ -333,8 +342,14 @@
   /* When the market arrives, inject its styles into the shadow tree and
      repaint. The panel is already usable before this resolves. */
   ODDS_READY.then(function (m) {
-    if (!m || !m.M || !LAST) return;
+    if (!m || !m.M) return;
     MARKET = m;
+    /* Assign MARKET before the LAST check. The two fetches race, and when
+       odds won the race the old order returned early, left MARKET null, and
+       the market never appeared at all — render() had already run and there
+       was nothing left to trigger a repaint. Now the bootstrap's own render
+       picks up MARKET when it lands. */
+    if (!LAST) return;
     try {
       m.M.injectCss(root);
       /* The components style themselves from CSS variables. Inside the shadow

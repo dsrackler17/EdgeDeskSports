@@ -3,15 +3,26 @@
 #
 #   sh tests/collective/run_all.sh
 #
-# 1. schema: fixture + migration + behavioural tests on a scratch database
-# 2. adapter: pure unit tests for the vendor normalizer
-# 3. pipeline: fixture -> real adapter -> real SQL, end to end
+# 1. artifact: the pasted-into-the-dashboard bundles match their sources
+# 2. schema: fixture + migration + behavioural tests on a scratch database
+# 3. adapter: pure unit tests for the vendor normalizer
+# 4. pipeline: fixture -> real adapter -> real SQL, end to end
+# 5. components: the browser renderers
 set -e
 ROOT=$(cd "$(dirname "$0")/../.." && pwd)
 cd "$ROOT"
 MIG=supabase/migrations/20260821090000_nfl_odds.sql
 
-echo "== 1/3 schema =="
+# The bundles under _bundles/ are what actually gets deployed: the docs say
+# paste them into the dashboard. The split sources are never deployed. So a
+# fix that lands in _shared/ and is not regenerated ships as nothing at all,
+# and every source-level test here would still pass while production runs the
+# old code. That failure is invisible to every other check, so it goes first.
+echo "== 1/5 deploy artifact matches source =="
+python3 tools/collective/bundle_functions.py --check
+
+echo
+echo "== 2/5 schema =="
 su postgres -c "psql -q -c 'drop database if exists oddstest;' -c 'create database oddstest;'" >/dev/null 2>&1
 su postgres -c "psql -q -d oddstest -v ON_ERROR_STOP=1 -f $ROOT/tests/collective/odds_schema_fixture.sql" >/dev/null
 su postgres -c "psql -q -d oddstest -v ON_ERROR_STOP=1 -f $ROOT/$MIG" >/dev/null
@@ -19,12 +30,20 @@ su postgres -c "psql -q -d oddstest -v ON_ERROR_STOP=1 -f $ROOT/tests/collective
   | grep -E "pass:|FAIL|ERROR|PASSED" | sed 's/^psql:[^ ]* //;s/^NOTICE:  //'
 
 echo
-echo "== 2/3 adapter =="
+echo "== 3/5 adapter =="
 node --experimental-strip-types tests/collective/oddsblaze_normalize.test.mjs 2>&1 | grep -v ExperimentalWarning | grep -v "trace-warnings"
 
 echo
-echo "== 3/3 pipeline end to end =="
+echo "== 4/5 pipeline end to end =="
 su postgres -c "psql -q -c 'drop database if exists oddspipe;' -c 'create database oddspipe;'" >/dev/null 2>&1
 su postgres -c "psql -q -d oddspipe -v ON_ERROR_STOP=1 -f $ROOT/tests/collective/odds_schema_fixture.sql" >/dev/null
 su postgres -c "psql -q -d oddspipe -v ON_ERROR_STOP=1 -f $ROOT/$MIG" >/dev/null
 PGDATABASE=oddspipe node --experimental-strip-types tests/collective/pipeline_e2e.test.mjs 2>&1 | grep -v ExperimentalWarning | grep -v "trace-warnings"
+
+echo
+echo "== 5/5 browser components =="
+node tests/collective/odds_js.test.mjs 2>&1 | grep -v ExperimentalWarning | grep -v "trace-warnings"
+
+echo
+echo "== inline page scripts =="
+node tools/collective/check_html_js.mjs

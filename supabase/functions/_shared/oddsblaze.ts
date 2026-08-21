@@ -36,6 +36,7 @@
 import {
   americanToDecimal,
   canonicalMarket,
+  normKey,
   firstOf,
   GAME_MARKETS,
   lineFromLabel,
@@ -101,6 +102,42 @@ interface ObTeam {
   short_name?: unknown;
 }
 
+function hasPlayer(v: unknown): boolean {
+  if (v === null || v === undefined || v === "") return false;
+  if (Array.isArray(v)) return v.length > 0;
+  if (typeof v === "object") return Object.keys(v as Record<string, unknown>).length > 0;
+  return true;
+}
+
+/** The statuses odds.events accepts. A value outside this set violates the
+ *  column's CHECK constraint, and because the whole slate is ingested in one
+ *  transaction that would abort the batch and lose every price in it — so an
+ *  unrecognised vendor status becomes "scheduled" rather than an outage. */
+const EVENT_STATUS = new Set(["scheduled", "live", "final", "postponed", "canceled"]);
+const STATUS_ALIASES: Record<string, string> = {
+  cancelled: "canceled",
+  delayed: "postponed",
+  suspended: "postponed",
+  complete: "final",
+  completed: "final",
+  finished: "final",
+  ended: "final",
+  closed: "final",
+  inprogress: "live",
+  started: "live",
+  upcoming: "scheduled",
+  pregame: "scheduled",
+  notstarted: "scheduled",
+};
+
+export function normalizeStatus(raw: unknown, live: boolean): string {
+  if (live) return "live";
+  const k = normKey(raw);
+  if (!k) return "scheduled";
+  if (EVENT_STATUS.has(k)) return k;
+  return STATUS_ALIASES[k] ?? "scheduled";
+}
+
 function teamNames(t: ObTeam | undefined): string[] {
   if (!t) return [];
   return [t.name, t.abbreviation, t.short_name]
@@ -137,7 +174,11 @@ export function readOdd(
 
   // A player prop carries a player; it is a different family and is skipped
   // here rather than mangled into a game line.
-  if (r.player || r.players) {
+  //
+  // Emptiness is checked, not truthiness: `players: []` is a truthy value, so
+  // a feed that includes an empty players array on ordinary game lines would
+  // have had every single row discarded as a prop.
+  if (hasPlayer(r.player) || hasPlayer(r.players)) {
     return { bad: unmapped(ctx.book, "player market, not a game line", row) };
   }
 
@@ -235,7 +276,7 @@ export function readEvent(
       home_name: homeNames[0],
       away_name: awayNames[0],
       commence_time: String(commence),
-      status: eventLive ? "live" : (typeof ev.status === "string" ? ev.status : "scheduled"),
+      status: normalizeStatus(ev.status, eventLive),
       is_live: eventLive,
       provider_updated_at: ctx.providerUpdatedAt,
       odds,

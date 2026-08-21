@@ -185,7 +185,7 @@ check("a real line move is stored as a new state, not an overwrite", () => {
 });
 
 // ---- 5. the read payload the frontend will actually receive
-const board = sqlJson(`select collective.odds_board('nfl', null, null, true, 40)`);
+let board = sqlJson(`select collective.odds_board('nfl', null, null, true, 40)`);
 
 check("the board payload is shaped for the UI", () => {
   assert.equal(board.games.length, 2);
@@ -235,7 +235,17 @@ const MCOdds = requireCJS(join(ROOT, "collective", "odds.js"));
 
 // This is what the edge function wraps around the board, so the renderers
 // see exactly what a page will hand them.
-const env = { stale_after_seconds: board.stale_after_seconds, last_updated: board.last_odds_at };
+// last_updated is the last successful POLL, which is what feed freshness is
+// judged on; last_change_at is when a price moved. The e2e runs above were
+// opened but never finished, so close one to give the feed a poll time.
+sql(`select odds.finish_ingest((select max(id) from odds.ingest_runs),
+       '{"status":"ok"}'::jsonb)`);
+const board2 = sqlJson(`select collective.odds_board('nfl', null, null, true, 40)`);
+const env = {
+  stale_after_seconds: board2.stale_after_seconds,
+  last_updated: board2.last_poll_at,
+  last_change_at: board2.last_odds_at,
+};
 const kcGame = board.games.find((g) => g.home === "KC");
 
 check("the browser renderers read the real payload", () => {
@@ -243,7 +253,8 @@ check("the browser renderers read the real payload", () => {
   // DK moved to -4.0 and FanDuel is at -3.5, so the consensus median is -3.75.
   assert.match(line, /KC -3\.75/, line);
   assert.match(line, /O\/U/, "the total renders");
-  assert.match(line, /Updated \d+s ago/, "the capture time is always attached");
+  assert.match(line, /Updated \d+s ago|Line \d+[smhd] ago/,
+    "every market block carries a time");
 });
 
 check("the full card renders every book from the real payload", () => {
@@ -278,10 +289,24 @@ check("a model number and the market number are comparable", () => {
   assert.equal(e.side, "KC");
 });
 
-check("a game with no market renders as unavailable, not as zero", () => {
+check("a game with no market renders as absent, not as zero", () => {
   const empty = { ...kcGame, last_odds_at: null, consensus: null, best: null };
-  assert.match(MCOdds.marketLine(empty, env), /unavailable/i);
-  assert.doesNotMatch(MCOdds.marketLine(empty, env), /-3\.75/);
+  const html = MCOdds.marketLine(empty, env);
+  assert.match(html, /No market posted/i);
+  assert.doesNotMatch(html, /-3\.75/, "no number is rendered when there is none");
+});
+
+check("a healthy feed with no price on one game is not called stale", () => {
+  // The two states are different and must read differently: the feed is
+  // current, this game simply has nothing on it.
+  assert.equal(MCOdds.freshness(env).state, "live");
+  assert.match(MCOdds.marketLine({ ...kcGame, last_odds_at: null }, env), /No market posted/i);
+});
+
+check("an unpolled feed is unavailable even when prices are stored", () => {
+  const dead = { stale_after_seconds: 900, last_updated: null, last_change_at: board2.last_odds_at };
+  assert.equal(MCOdds.freshness(dead).state, "unavailable");
+  assert.match(MCOdds.marketLine(kcGame, dead), /Market unavailable/i);
 });
 
 console.log(`\n${passed} checks passed`);
