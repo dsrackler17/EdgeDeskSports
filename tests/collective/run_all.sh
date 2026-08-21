@@ -14,15 +14,39 @@ cd "$ROOT"
 MIG=supabase/migrations/20260821090000_nfl_odds.sql
 MIG2=supabase/migrations/20260821140000_odds_provider_credits.sql
 
+# Every node stage below used to be piped straight into grep to strip Node's
+# ExperimentalWarning noise. That makes the PIPELINE's status grep's status,
+# so a test could print FAIL, exit 1, and the suite still reported success --
+# the same hole that hid a failing schema stage. Output goes through a file
+# instead, and the real exit code is checked.
+node_test() {
+  _out=$(mktemp)
+  _rc=0
+  # `|| _rc=$?` and not a bare call: under `set -e` a bare failing command
+  # exits the shell right here, and the test's output -- the only thing that
+  # says WHICH assertion failed -- is still sitting in the temp file unread.
+  node "$@" > "$_out" 2>&1 || _rc=$?
+  grep -vE "ExperimentalWarning|trace-warnings|^NOTICE:" "$_out" || true
+  rm -f "$_out"
+  if [ "$_rc" -ne 0 ]; then
+    echo "FAILED: node $*" >&2
+    exit 1
+  fi
+}
+
+py_test() {
+  python3 "$@" || { echo "FAILED: python3 $*" >&2; exit 1; }
+}
+
 # The bundles under _bundles/ are what actually gets deployed: the docs say
 # paste them into the dashboard. The split sources are never deployed. So a
 # fix that lands in _shared/ and is not regenerated ships as nothing at all,
 # and every source-level test here would still pass while production runs the
 # old code. That failure is invisible to every other check, so it goes first.
 echo "== 1/5 deploy artifact matches source =="
-python3 tools/collective/bundle_functions.py --check
+py_test tools/collective/bundle_functions.py --check
 echo
-python3 tests/collective/config_matches_bundles.py
+py_test tests/collective/config_matches_bundles.py
 
 echo
 echo "== 2/5 schema =="
@@ -45,9 +69,9 @@ rm -f "$SCHEMA_OUT"
 
 echo
 echo "== 3/5 adapters =="
-node --experimental-strip-types tests/collective/oddsblaze_normalize.test.mjs 2>&1 | grep -v ExperimentalWarning | grep -v "trace-warnings"
+node_test --experimental-strip-types tests/collective/oddsblaze_normalize.test.mjs
 echo
-node --experimental-strip-types tests/collective/theoddsapi_normalize.test.mjs 2>&1 | grep -v ExperimentalWarning | grep -v "trace-warnings"
+node_test --experimental-strip-types tests/collective/theoddsapi_normalize.test.mjs
 
 echo
 echo "== 4/5 pipeline end to end =="
@@ -55,24 +79,32 @@ su postgres -c "psql -q -c 'drop database if exists oddspipe;' -c 'create databa
 su postgres -c "psql -q -d oddspipe -v ON_ERROR_STOP=1 -f $ROOT/tests/collective/odds_schema_fixture.sql" >/dev/null
 su postgres -c "psql -q -d oddspipe -v ON_ERROR_STOP=1 -f $ROOT/$MIG" >/dev/null
 su postgres -c "psql -q -d oddspipe -v ON_ERROR_STOP=1 -f $ROOT/$MIG2" >/dev/null
-PGDATABASE=oddspipe node --experimental-strip-types tests/collective/pipeline_e2e.test.mjs 2>&1 | grep -v ExperimentalWarning | grep -v "trace-warnings"
+PGDATABASE=oddspipe node_test --experimental-strip-types tests/collective/pipeline_e2e.test.mjs
 
 echo
 echo "== 5/5 browser components =="
-node tests/collective/odds_js.test.mjs 2>&1 | grep -v ExperimentalWarning | grep -v "trace-warnings"
+node_test tests/collective/odds_js.test.mjs
 
 echo
 echo "== slate uploader (in-page) =="
-node tests/collective/slate_upload.test.mjs 2>&1 | grep -v ExperimentalWarning
+node_test tests/collective/slate_upload.test.mjs
 
 echo
 echo "== slate upload, real file end to end =="
-node tests/collective/slate_endtoend.test.mjs 2>&1 | grep -v ExperimentalWarning
+node_test tests/collective/slate_endtoend.test.mjs
 
 echo
 echo "== slate CSV mapper =="
-python3 tests/collective/submit_csv_test.py
+py_test tests/collective/submit_csv_test.py
+
+echo
+echo "== NFL model preflight =="
+node_test tests/collective/nfl_preflight.test.mjs
+
+echo
+echo "== model_predictions -> upload CSV =="
+node_test tests/collective/model_to_csv.test.mjs
 
 echo
 echo "== inline page scripts =="
-node tools/collective/check_html_js.mjs
+node_test tools/collective/check_html_js.mjs
