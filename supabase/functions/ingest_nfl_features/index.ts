@@ -104,7 +104,9 @@ function absorbGame(st, pairs) {
   }
 }
 function teamGameFromStw(r) {
-  const n = (x) => { const v = +x; return isFinite(v) ? v : NaN; };
+  /* null/'' -> NaN, never 0: +null===0 and a fabricated zero EPA would be
+     absorbed as a real observation; NaN is skipped by the recursion. */
+  const n = (x) => { if (x == null || x === "") return NaN; const v = +x; return isFinite(v) ? v : NaN; };
   const att = n(r.attempts), car = n(r.carries), sk = n(r.sacks_suffered);
   const db = att + sk, plays = att + car + sk;
   return {
@@ -143,7 +145,7 @@ function parseCsv(text) {
   }
   return out;
 }
-const num = (x) => { const v = +x; return isFinite(v) ? v : null; };
+const num = (x) => { if (x == null || x === "") return null; const v = +x; return isFinite(v) ? v : null; };
 
 /**
  * Pure compute: (games.csv rows, {season -> stw rows}) -> feature rows + diag.
