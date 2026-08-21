@@ -1,0 +1,56 @@
+{
+  "purpose": "Research pass required by the EdgeDesk NFL Elite spec (philosophy layer, section 2). Only PUBLICLY documented methodology claims, each with a source. Nothing proprietary is reproduced; where the actual mechanics are private the entry is marked UNKNOWN and the submodel implements the PRINCIPLE, tested independently on EdgeDesk's own data. Track records quoted here are the sellers' own published claims — evidence of a documented record, not proof the edge continues (and not independently audited).",
+  "reviewed": "2026-08-21",
+  "bettors": [
+    {
+      "bettor": "Warren Sharp",
+      "sources": [
+        {"url": "https://www.sharpfootballanalysis.com/lifetime-betting-records/", "note": "Self-published lifetime records page: computer totals 739-431 lifetime; totals algorithm 62.6% of releases 2006-2024 (site's own claim, not audited)."},
+        {"url": "https://www.sharpfootballanalysis.com/", "note": "Site describes analysis built on play-by-play and charting data, efficiency metrics, situational tendencies."}
+      ],
+      "claims": [
+        {"claim": "Long-running computer TOTALS model is the flagship documented record", "principle": "Totals deserve a first-class model, not an afterthought", "feature": "sharp_total submodel: efficiency + matchup + pace-proxy + environment model of the game total", "testable": true, "in_model": true, "confidence": "high"},
+        {"claim": "Play-by-play efficiency (EPA, success, explosiveness) over box-score stats", "principle": "Rate-based efficiency, opponent adjusted", "feature": "EPA/play, EPA/dropback, EPA/rush, explosive-play rates, sack rates — all opponent-adjusted via the online counter-rating recursion", "testable": true, "in_model": true, "confidence": "high"},
+        {"claim": "Matchup interactions (offense strength vs defense weakness), personnel groupings, early-down splits", "principle": "Interaction features, not season averages", "feature": "pass_matchup / rush_matchup interaction sums in the totals model. Personnel groupings and early-down splits are NOT in the public team-week dataset — implemented only as far as the data honestly allows", "testable": true, "in_model": "partial", "confidence": "medium"},
+        {"claim": "Exact proprietary formulas/weights", "principle": null, "feature": null, "testable": false, "in_model": false, "confidence": "UNKNOWN — private; never imitated"}
+      ]
+    },
+    {
+      "bettor": "Sean Koerner",
+      "sources": [
+        {"url": "https://www.actionnetwork.com/nfl/nfl-power-ratings-betting-picks-koerner-week-1-2019", "note": "Describes power ratings + Buy/Sell ratings; compares projected spreads/totals to the market."},
+        {"url": "https://www.actionnetwork.com/nfl/koerners-nfl-power-ratings-projecting-week-7-spreads-over-unders-to-find-the-best-bets", "note": "Weekly projected spreads/totals vs market workflow."}
+      ],
+      "claims": [
+        {"claim": "Dynamic power ratings updated weekly, projections compared against market lines", "principle": "Quantitative rating -> projected spread/total -> market comparison", "feature": "koerner_spread submodel: EWMA opponent-adjusted power rating (decay LEARNED by walk-forward, grid 0.07-0.14 per-game alpha, season carryover 0.5-0.8)", "testable": true, "in_model": true, "confidence": "high"},
+        {"claim": "Buy/Sell ratings flag public overreaction to luck-driven results (e.g. turnover margin)", "principle": "Regression candidates: results driven by turnovers overstate true strength", "feature": "Ratings are built on EPA rather than points, so turnover-inflated wins do not move them; the points-only ablation quantifies exactly this (points_only MAE 10.843 vs full 10.200). A dedicated public-overreaction score requires public betting % data EdgeDesk does not ingest — marked future work, not faked", "testable": true, "in_model": "partial", "confidence": "high"},
+        {"claim": "Quarterback value dominates", "principle": "QB layer with learned, not arbitrary, values", "feature": "Per-QB EPA/dropback EWMA with shrinkage by starts; team adjustment = announced starter vs QB play already in the rating. Effect size LEARNED (coefficient 5.7 pts per unit EPA/dropback dev); ablation shows its OOS contribution", "testable": true, "in_model": true, "confidence": "high"}
+      ]
+    },
+    {
+      "bettor": "Steve Fezzik",
+      "sources": [
+        {"url": "https://vsin.com/nfl/6-strategies-for-betting-super-bowl-59-from-steve-fezzik/", "note": "Probability/EV-driven 'advantage player' approach; market respect."},
+        {"url": "https://www.youtube.com/watch?v=MY6UoQ4cNwI", "note": "'How Do Professional Bettors Determine NFL Spreads?' — power ratings discussion; describes heavily market-informed ratings."}
+      ],
+      "claims": [
+        {"claim": "Power ratings largely anchored to the market; top-down before bottom-up", "principle": "The market number is the prior; your number matters only where it differs enough", "feature": "fezzik_market layer: market line as prior; top_down_bottom_up_gap; learned blend weights (the walk-forward ridge puts ~0.93-1.02 weight on the closing market vs ~0.04-0.16 on the football model — the market's dominance is a FINDING shipped in params, not an opinion)", "testable": true, "in_model": true, "confidence": "high"},
+        {"claim": "Price discipline: EV at the number, never 'better team = bet'", "principle": "Everything flows through price", "feature": "evPct / de-vig / fair-price primitives; classifyEdge refuses any tier not supported by the backtest", "testable": true, "in_model": true, "confidence": "high"},
+        {"claim": "Key numbers 3/7/10/14 change the value of a point", "principle": "Margins are discrete; model the mass", "feature": "margin PMF conditioned on the spread (kernel, bandwidth by held-out log-likelihood): P(margin=3|spread=3)=8.8%, P(margin=7|spread=7)=5.8%; halfPointValue()", "testable": true, "in_model": true, "confidence": "high"}
+      ]
+    },
+    {
+      "bettor": "Stuckey",
+      "sources": [
+        {"url": "https://www.actionnetwork.com/nfl/teaser-tips-strategy-guide", "note": "'10 Tips for Betting Gainful NFL Teasers' — key numbers 3,4,6,7,10,14; 3 and 7 are kings; price shopping math; totals don't tease."},
+        {"url": "https://www.actionnetwork.com/nfl/stuckeys-nfl-teaser-tips-and-best-week-1-teaser-betting-options", "note": "Cross-key-number rules and pricing thresholds."}
+      ],
+      "claims": [
+        {"claim": "Key numbers 3,4,6,7,10,14; 3 and 7 dominate; -2.5 is not -3.5", "principle": "Line value is measured in key-number mass crossed, not in points", "feature": "abs_margin_key_mass + margin_pmf_by_spread + halfPointValue; CFB gets its OWN learned masses (3 is 9.8% in CFB vs 14.9% NFL unconditional) — never NFL's", "testable": true, "in_model": true, "confidence": "high"},
+        {"claim": "Price/break-even discipline (-110 vs -120 changes the required win rate)", "principle": "Compare cover probability to the break-even of the actual price", "feature": "coverProbSpread win/push/lose vs implied break-even at the quoted price", "testable": true, "in_model": true, "confidence": "high"},
+        {"claim": "Situational context (rest, travel, scheduling)", "principle": "Context effects exist but must be learned, small, and never override price", "feature": "stuckey_context residual layer over rest/short-week/bye/divisional/week/surface — coefficients LEARNED by ridge on koerner residuals (all under 1.1 points)", "testable": true, "in_model": true, "confidence": "medium"}
+      ]
+    }
+  ],
+  "outcome_note": "Every principle above entered the model only through a measurable feature and survived (or was sized by) the 2003-2025 walk-forward. The combined model still does NOT beat the NFL closing line out of sample (see report_nfl.json / params validation_summary) — which is itself the most important finding, and the reason every EdgeDesk output stays labeled UNPROVEN until its own graded CLV says otherwise."
+}
