@@ -138,6 +138,7 @@ revoked.
 | `odds.events` | Canonical NFL game. Identity is our own uuid, derived from league + teams + league-day. |
 | `odds.event_providers` | `(provider, provider_event_id) → event_id`. A mapping, never the identity. |
 | `odds.snapshots` | Append-only price history. One row per real change. |
+| `odds.current_main_state` | The newest main-line price per series, maintained on write. |
 | `odds.closing_lines` | Written once, after kickoff, from the last pre-kickoff price. |
 | `odds.books` | Sportsbook registry. `is_sharp` marks reference books. |
 | `odds.markets` | Market registry. `kind` separates game lines from prop and futures families. |
@@ -145,7 +146,15 @@ revoked.
 | `odds.ingest_runs` | Per-run counts, timings and sanitized errors. |
 | `odds.settings` | Every tunable above. |
 
-Views: `odds.current_main` (newest main-line price per series),
+`odds.current_main_state` is a cache of what `odds.snapshots` already says.
+Deriving it with `DISTINCT ON` is correct but scans the whole history, and a
+board render asks for it once per game per market — roughly 450ms on one NFL
+week of movement, against 100ms with the state kept. History is untouched:
+still append-only, still complete. After a backfill or a manual edit, resync
+with `select odds.rebuild_current();` (the migration runs it, so applying it
+to a database that already holds snapshots is correct rather than empty).
+
+Views: `odds.current_main` (over that state table),
 `odds.current_odds` (newest per line, including alternates),
 `odds.opening_lines` (first stored price per series — immutable by
 construction, so it needs no writer and cannot drift).
@@ -243,6 +252,14 @@ It runs at the end of every ingest, and on demand from **Odds → Link games**.
 | `/v1/nfl/assistant` | Compact market snapshot with instructions, for a research assistant |
 
 Query params: `days` (default 8), `from`, `to`, `week`, `limit`, `books=0`.
+
+**Light versus detailed.** `/v1/nfl/games`, and `/v1/nfl/odds?books=0`, return
+the consensus, the best price at each line, opening and closing, and a compact
+`book_names` map — everything a summary line needs, without the per-book grid.
+`/v1/nfl/odds` returns the full grid. On a sixteen-game slate that is roughly
+120KB against 420KB, so the site requests the light form everywhere except the
+Market page, which is the only surface that renders the grid.
+`MCOdds.board()` defaults to light; pass `{ books: true }` for the grid.
 
 Every payload begins with:
 

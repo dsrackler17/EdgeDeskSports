@@ -375,6 +375,9 @@ function summarize(game: Record<string, unknown>): Record<string, unknown> {
     market_closed: game.market_closed,
     last_odds_at: game.last_odds_at,
     book_count: game.book_count,
+    /* Kept on the light payload: it is a small id -> name map, and without
+       it a summary line can show a price but not name the book behind it. */
+    book_names: game.book_names,
     consensus,
     best,
     opening: game.opening,

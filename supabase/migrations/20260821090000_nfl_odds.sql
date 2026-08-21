@@ -319,6 +319,33 @@ create index if not exists snapshots_captured_idx on odds.snapshots (captured_at
 create index if not exists snapshots_book_idx on odds.snapshots (book_id, captured_at desc);
 create index if not exists snapshots_market_idx on odds.snapshots (market_id, captured_at desc);
 
+-- --------------------------------------------------------- current state
+-- The newest main-line price per series, maintained on write.
+--
+-- Deriving this with DISTINCT ON over odds.snapshots is correct but scans the
+-- whole history, and a board render asks for it once per game per market. At
+-- one NFL week of movement that was ~450ms a page. Keeping the current state
+-- as a keyed table turns every read into an index lookup, and the history
+-- stays exactly as it was: append-only and complete.
+create table if not exists odds.current_main_state (
+  event_id      uuid not null references odds.events(id) on delete cascade,
+  market_id     text not null references odds.markets(id),
+  book_id       text not null references odds.books(id),
+  outcome       text not null,
+  provider      text not null,
+  outcome_label text,
+  line          numeric(8,2),
+  price         integer not null,
+  price_decimal numeric(12,5) not null,
+  implied_prob  numeric(9,6) not null,
+  is_live       boolean not null default false,
+  captured_at   timestamptz not null,
+  snapshot_id   bigint not null,
+  primary key (event_id, market_id, book_id, outcome)
+);
+create index if not exists current_main_state_event_idx
+  on odds.current_main_state (event_id, market_id);
+
 -- ----------------------------------------------------------- closing lines
 -- Written once, by odds.finalize_closing, and only after kickoff. A current
 -- price is never a closing price.
@@ -408,13 +435,14 @@ create or replace view odds.current_odds as
   order by s.event_id, s.market_id, s.book_id, s.outcome, s.line, s.captured_at desc, s.id desc;
 
 -- Main current line only: one row per event/market/book/outcome, the main
--- line. This is what a price display reads.
+-- line. This is what a price display reads. Same columns as before it was
+-- backed by a table, so every consumer is unchanged.
 create or replace view odds.current_main as
-  select distinct on (s.event_id, s.market_id, s.book_id, s.outcome)
-         s.*
-  from odds.snapshots s
-  where s.is_main
-  order by s.event_id, s.market_id, s.book_id, s.outcome, s.captured_at desc, s.id desc;
+  select c.snapshot_id as id, c.event_id, c.provider, c.book_id, c.market_id,
+         c.outcome, c.outcome_label, c.line, c.price, c.price_decimal,
+         c.implied_prob, c.is_live, true as is_main, c.captured_at,
+         c.snapshot_id
+  from odds.current_main_state c;
 
 -- Opening: the first snapshot per series. Immutable by construction, so it
 -- needs no writer and cannot drift.
@@ -500,6 +528,7 @@ declare
   v_is_live       boolean;
   v_is_main       boolean;
   v_inserted      boolean;
+  v_snapshot_id   bigint;
   v_commence_date date;
   v_prov_updated  timestamptz;
 begin
@@ -671,8 +700,27 @@ begin
         v_event_id, p_provider, v_book, v_market, v_outcome,
         nullif(v_od->>'outcome_label',''),
         v_line, v_price, v_decimal, v_prob, v_is_live, v_is_main,
-        v_prov_updated, v_hash, p_run_id, v_od->'raw');
+        v_prov_updated, v_hash, p_run_id, v_od->'raw')
+      returning id into v_snapshot_id;
       v_written := v_written + 1;
+
+      -- The current-state row moves with the newest main price. Guarded on
+      -- captured_at so an out-of-order write cannot walk the market backwards.
+      if v_is_main then
+        insert into odds.current_main_state (
+          event_id, market_id, book_id, outcome, provider, outcome_label,
+          line, price, price_decimal, implied_prob, is_live, captured_at, snapshot_id)
+        values (v_event_id, v_market, v_book, v_outcome, p_provider,
+                nullif(v_od->>'outcome_label',''), v_line, v_price, v_decimal,
+                v_prob, v_is_live, now(), v_snapshot_id)
+        on conflict (event_id, market_id, book_id, outcome) do update set
+          provider = excluded.provider, outcome_label = excluded.outcome_label,
+          line = excluded.line, price = excluded.price,
+          price_decimal = excluded.price_decimal, implied_prob = excluded.implied_prob,
+          is_live = excluded.is_live, captured_at = excluded.captured_at,
+          snapshot_id = excluded.snapshot_id
+        where excluded.captured_at >= odds.current_main_state.captured_at;
+      end if;
     end loop;
   end loop;
 
@@ -684,6 +732,29 @@ begin
     'snapshots_unchanged', v_unchanged,
     'rows_rejected', v_rejected,
     'unmatched', v_unmatched);
+end;
+$$;
+
+-- Rebuilds the current state from history. Run after a backfill, or by this
+-- migration so applying it to a database that already has snapshots is
+-- correct rather than empty.
+create or replace function odds.rebuild_current()
+returns integer language plpgsql security definer set search_path = odds, public as $$
+declare v_n int;
+begin
+  truncate odds.current_main_state;
+  insert into odds.current_main_state (
+    event_id, market_id, book_id, outcome, provider, outcome_label, line,
+    price, price_decimal, implied_prob, is_live, captured_at, snapshot_id)
+  select distinct on (s.event_id, s.market_id, s.book_id, s.outcome)
+         s.event_id, s.market_id, s.book_id, s.outcome, s.provider,
+         s.outcome_label, s.line, s.price, s.price_decimal, s.implied_prob,
+         s.is_live, s.captured_at, s.id
+  from odds.snapshots s
+  where s.is_main
+  order by s.event_id, s.market_id, s.book_id, s.outcome, s.captured_at desc, s.id desc;
+  get diagnostics v_n = row_count;
+  return v_n;
 end;
 $$;
 
@@ -869,7 +940,11 @@ $$;
 -- are different bets. Within a line the best price is unambiguous, so that is
 -- where a winner is named. The primary line is the one the most books are on
 -- (ties break toward the consensus median).
-create or replace function odds.best_price(p_event_id uuid, p_market text)
+-- p_detail false keeps the winning price per line but drops the per-book
+-- arrays. A slate of sixteen games with eight books repeats that detail
+-- hundreds of times, and a list view never reads it.
+create or replace function odds.best_price(
+  p_event_id uuid, p_market text, p_detail boolean default true)
 returns jsonb language plpgsql stable as $$
 declare
   v jsonb;
@@ -926,7 +1001,8 @@ begin
         'line', x.line,
         'best', jsonb_build_object('book', x.best_book, 'price', x.best_price,
                                    'price_decimal', x.best_decimal),
-        'books', x.books,
+        'books', case when p_detail then x.books else '[]'::jsonb end,
+        'book_count', jsonb_array_length(x.books),
         'is_primary', x.line is not distinct from
                       (select pl.line from primary_line pl where pl.outcome = x.outcome),
         'latest_captured_at', x.latest
@@ -1120,6 +1196,7 @@ alter table odds.team_aliases    enable row level security;
 alter table odds.events          enable row level security;
 alter table odds.event_providers enable row level security;
 alter table odds.snapshots       enable row level security;
+alter table odds.current_main_state enable row level security;
 alter table odds.closing_lines   enable row level security;
 alter table odds.ingest_runs     enable row level security;
 
@@ -1145,6 +1222,18 @@ begin
   end;
 end
 $mig$;
+
+do $mig$
+begin
+  if exists (select 1 from pg_roles where rolname = 'service_role') then
+    execute 'grant select, insert, update, delete on odds.current_main_state to service_role';
+  end if;
+end
+$mig$;
+
+-- Safe on a fresh database (nothing to rebuild) and correct on one that
+-- already holds history.
+select odds.rebuild_current();
 
 comment on schema odds is
   'Centralized odds infrastructure. Written only by the collective_odds_ingest edge function, read only through the collective.odds_* API surface.';
@@ -1236,11 +1325,13 @@ begin
     'book_count', (select count(distinct book_id) from cur),
     'consensus', odds.consensus(p_event_id),
     'best', jsonb_build_object(
-       'moneyline', odds.best_price(p_event_id,'moneyline'),
-       'spread',    odds.best_price(p_event_id,'spread'),
-       'total',     odds.best_price(p_event_id,'total')),
+       'moneyline', odds.best_price(p_event_id,'moneyline',p_include_books),
+       'spread',    odds.best_price(p_event_id,'spread',p_include_books),
+       'total',     odds.best_price(p_event_id,'total',p_include_books)),
     'opening', coalesce((select by_key from opens), '{}'::jsonb),
     'closing', coalesce((select by_key from closes), '{}'::jsonb),
+    'book_names', coalesce((select jsonb_object_agg(book_id, book_name)
+                            from (select distinct book_id, book_name from cur) n), '{}'::jsonb),
     'books', case when p_include_books
                   then coalesce((select by_market from books), '{}'::jsonb)
                   else null end

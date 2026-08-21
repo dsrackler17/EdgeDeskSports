@@ -98,10 +98,16 @@
     return p;
   }
 
-  /* The slate with the full book grid. Everything else is a view of this, so
-     a page that shows odds in three places makes one request. */
+  /* The slate.
+   *
+   * Light by default: a summary line needs the consensus and the best price
+   * at the primary line, not every book on every market. Pass
+   * { books: true } for the full grid, which is what marketCard renders.
+   * On a sixteen game slate that is the difference between roughly 120KB and
+   * 420KB, on every page that shows a market. */
   MCOdds.board = function (opts) {
     opts = opts || {};
+    if (opts.books === undefined) opts.books = false;
     var q = [];
     if (opts.days) q.push('days=' + encodeURIComponent(opts.days));
     if (opts.from) q.push('from=' + encodeURIComponent(opts.from));
@@ -114,6 +120,14 @@
   };
 
   MCOdds.status = function () { return get('/v1/nfl/status', 10000); };
+
+  /* One game by its odds event id, with the full book grid. Needed because
+     the board is a time window: a game that finished days ago is not in it,
+     and a link to that game must still open. */
+  MCOdds.event = function (eventId) {
+    return get('/v1/nfl/odds/' + encodeURIComponent(eventId), 30000)
+      .then(function (d) { return (d && d.game) ? d : null; });
+  };
 
   MCOdds.history = function (eventId, opts) {
     opts = opts || {};
@@ -292,6 +306,10 @@
   };
 
   MCOdds.bookName = function (g, id) {
+    /* The compact map first: it is present on light payloads too, so a book
+       is named even when the full grid was not requested. */
+    var names = g && g.book_names;
+    if (names && names[id]) return names[id];
     var lists = (g && g.books) || {};
     var keys = Object.keys(lists);
     for (var i = 0; i < keys.length; i++) {
@@ -389,6 +407,11 @@
         '<div class="mco-empty">No stored prices for this game. Nothing is shown rather than an estimate.</div></div>';
     }
 
+    if (!g.books) {
+      /* Rendered from a light payload. Rather than a card with empty book
+         rows, fall back to the summary the payload can actually support. */
+      return '<div class="mco-card">' + head + MCOdds.marketLine(g, env) + '</div>';
+    }
     var body = '';
     body += marketBlock(g, 'spread', 'Spread', ['home', 'away']);
     body += marketBlock(g, 'total', 'Total', ['over', 'under']);

@@ -787,7 +787,7 @@ async function renderMarket(view){
       view.innerHTML='<div class="errbox">The odds components did not load. Refresh the page.</div>';
       return;
     }
-    var res=await Promise.all([marketBoard({days:10}),
+    var res=await Promise.all([marketBoard({days:10,books:true}),
       api('/v1/games',{auth:true}).catch(function(){return null;})]);
     var mkt=res[0], board=res[1];
     var head='<h1>The market</h1>'+
@@ -867,8 +867,14 @@ async function renderMarketGame(view,eventId){
   try{
     if(!window.MCOdds){view.innerHTML='<div class="errbox">The odds components did not load.</div>';return;}
     MCOdds.configure({api:API});MCOdds.injectCss(document.head);
-    var mkt=await marketBoard({days:14});
+    var mkt=await marketBoard({days:14,books:true});
     var g=mkt&&mkt.byEvent?mkt.byEvent[eventId]:null;
+    if(!g){
+      /* The board is a time window; a game outside it is fetched directly so
+         an old link still opens. */
+      var one=await MCOdds.event(eventId).catch(function(){return null;});
+      if(one){g=one.game;mkt=one;}
+    }
     if(!g){
       view.innerHTML='<h1>Game not found</h1><p class="lede">No stored market for that game. <a href="#market">Back to the market</a></p>';
       return;

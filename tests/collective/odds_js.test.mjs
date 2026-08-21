@@ -252,6 +252,17 @@ check("open, current and close are distinct, and an open market is not closed", 
   assert.doesNotMatch(closed, /not closed/);
 });
 
+check("a light payload names its books and degrades the card gracefully", () => {
+  // What /v1/nfl/games and ?books=0 return: no per-book grid, but a compact
+  // id -> name map so a price can still name its book.
+  const light = { ...GAME, books: undefined, book_names: { pinnacle: "Pinnacle" } };
+  assert.equal(MCOdds.bookName(light, "pinnacle"), "Pinnacle");
+  assert.match(MCOdds.marketLine(light, ENV), /Pinnacle/);
+  const card = MCOdds.marketCard(light, ENV);
+  assert.doesNotMatch(card, /no price posted/, "no empty book table is rendered");
+  assert.match(card, /KC -3\.75/, "it falls back to the summary it can support");
+});
+
 check("a market with no price says 'no price posted' for that outcome", () => {
   const html = MCOdds.marketCard(GAME, ENV);
   assert.match(html, /no price posted/, "the away spread has no group in this fixture");
