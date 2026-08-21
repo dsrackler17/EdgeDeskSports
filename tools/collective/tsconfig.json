@@ -1,0 +1,17 @@
+{
+  "//": "Type check for the Supabase edge functions. npx tsc -p tools/collective/tsconfig.json",
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "allowImportingTsExtensions": true,
+    "strict": true,
+    "noEmit": true,
+    "skipLibCheck": true,
+    "types": []
+  },
+  "include": ["deno.d.ts", "../../supabase/functions/**/*.ts"],
+  "//exclude": "_bundles holds the flattened script-form output; it is checked separately by tools/collective/typecheck.sh because a flattened bundle redeclares every shared symbol.",
+  "exclude": ["../../supabase/functions/_bundles"]
+}
