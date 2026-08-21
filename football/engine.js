@@ -245,7 +245,9 @@
     /* exact per-team-game feature computation from a raw stats_team_week row
        (mirrors research/build_features.py) */
     teamGameFromStw: function (r) {
-      function n(x) { var v = +x; return isFinite(v) ? v : NaN; }
+      /* null/'' -> NaN, never 0: +null===0 and a fabricated zero EPA is a real
+         (wrong) observation, while NaN is skipped by the absorb recursion. */
+      function n(x) { if (x == null || x === '') return NaN; var v = +x; return isFinite(v) ? v : NaN; }
       var att = n(r.attempts), car = n(r.carries), sk = n(r.sacks_suffered);
       var db = att + sk, plays = att + car + sk;
       return {
