@@ -1659,6 +1659,7 @@ button:focus-visible,select:focus-visible,input:focus-visible,a:focus-visible{ou
     <p class="lede">EdgeDesk&rsquo;s own football engine &mdash; opponent-adjusted EPA ratings, a learned QB layer, sport-specific key numbers and market comparison for the NFL and NCAA FBS. <b style="color:var(--warn)">Research context, not edges.</b> The walk-forward record ships with the model and says so plainly: it has not beaten the closing line, and nothing here is counted anywhere until its own graded CLV does.</p>
     <div class="flbanner demo" id="fbBanner">Loading football engine&hellip;</div>
     <div class="stseg" id="fbSeg" style="margin-bottom:12px"><button class="on" onclick="fbSetSport('nfl')">NFL</button><button onclick="fbSetSport('cfb')">CFB</button></div>
+    <div id="fbCtl" style="display:none;align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap"></div>
     <div id="fbBody"><div class="empty">Loading&hellip;</div></div>
     </div>
     <!-- UFC (research dataset) -->
@@ -2995,7 +2996,7 @@ var RS_LIMITS={
        'Game lists are capped at 150 rows per segment.'],
   football:['The model is UNPROVEN by EdgeDesk’s own standard: its 2016–2025 walk-forward record does NOT beat the NFL closing line (48.7–50.8% ATS by gap size), and the module says so on every card.',
        'No public historical CFB betting-line archive exists, so the CFB side makes no market claim at all; its benchmarks are margin accuracy vs a third-party Elo and home-field-only.',
-       'NFL quotes are not yet in the capture scanner, so NFL games show the engine’s numbers without a live captured price; NCAAF games join live signals where they exist.',
+       'NFL and NCAAF quotes join from live captured signals where they exist; outside a capture window the cards show the engine’s numbers with reference lines clearly labeled as such.',
        'Starting QBs for upcoming games are unknown to the public schedule feed until close to kickoff; affected cards carry an explicit QB-unknown flag instead of a guessed adjustment.',
        'Parameters are trained through the 2025 season and the engine BLOCKS predictions beyond its supported window rather than silently going stale.',
        'Weather is not wired for football venues yet; no weather adjustment is applied or implied.'],
@@ -21445,8 +21446,8 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
    This module writes NOTHING to the database.
    ========================================================================== */
 (function(){
-var FB=window.FB={sport:'nfl',at:0,builtAt:null,loading:null,engineErr:null,
-  nfl:{state:null,up:[],absorbed:0,curSeason:null,notes:[],sig:{}},
+var FB=window.FB={sport:'nfl',scope:'auto',at:0,builtAt:null,loading:null,engineErr:null,
+  nfl:{state:null,up:[],games:[],weekPreds:{},absorbed:0,curSeason:null,notes:[],sig:{}},
   cfb:{state:null,up:[],absorbed:0,curSeason:null,notes:[],gate:null,sig:{},lines:{}},
   _cache:{},_pred:{}};
 var FB_TTL_MS=30*60*1000, FB_LOOKAHEAD_D=12;
@@ -21457,7 +21458,9 @@ var FB_NFL_NAMES={'Arizona Cardinals':'ARI','Atlanta Falcons':'ATL','Baltimore R
 var FB_CODE_NAMES={};(function(){for(var k in FB_NFL_NAMES)if(FB_NFL_NAMES.hasOwnProperty(k))FB_CODE_NAMES[FB_NFL_NAMES[k]]=k;})();
 function fbEsc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 function fbNorm(s){return String(s||'').toLowerCase().replace(/[^a-z0-9]/g,'');}
-function fbNum(x){var v=+x;return isFinite(v)?v:null;}
+/* null/'' MUST come back null, not 0: +null===0, and a 0 here is a real value
+   (0°F, a pick'em line) that the engine will believe. */
+function fbNum(x){if(x==null||x==='')return null;var v=+x;return isFinite(v)?v:null;}
 function fbPts(v,dp){return v==null?'—':((v>0?'+':'')+v.toFixed(dp==null?1:dp));}
 
 /* tolerant CSV parser (quoted fields, embedded commas). Header row -> objects. */
@@ -21535,6 +21538,58 @@ function fbMarketFromEvent(e,homeName){
   if(decH&&decA)out.quotes_h2h=[[decH,decA]];
   return out;
 }
+/* ---- shared per-game builders (cards, grading and CSV must agree) ---- */
+function fbNflGameReq(g){
+  return {home:g.home_team,away:g.away_team,week:fbNum(g.week),
+    home_rest:fbNum(g.home_rest),away_rest:fbNum(g.away_rest),roof:g.roof,surface:g.surface,
+    div_game:fbNum(g.div_game),temp:fbNum(g.temp),wind:fbNum(g.wind),
+    home_qb_id:g.home_qb_id||null,away_qb_id:g.away_qb_id||null};
+}
+/* nflverse consensus numbers for a games.csv row — reference, never a live quote */
+function fbNflRefMarket(g){
+  return {spread_line:fbNum(g.spread_line),total_line:fbNum(g.total_line),
+    home_ml:fbNum(g.home_moneyline),away_ml:fbNum(g.away_moneyline)};
+}
+/* best market for an UPCOMING game: live captured signals first, reference second */
+function fbNflMarketFor(g,t){
+  var homeName=FB_CODE_NAMES[g.home_team]||g.home_team,awayName=FB_CODE_NAMES[g.away_team]||g.away_team;
+  var ev=null,k;
+  for(k in FB.nfl.sig)if(FB.nfl.sig.hasOwnProperty(k)){
+    var e2=FB.nfl.sig[k];
+    if(fbNorm(e2.home)===fbNorm(homeName)&&fbNorm(e2.away)===fbNorm(awayName)
+      &&Math.abs(Date.parse(e2.t)-t)<36*3600e3){ev=e2;break;}
+  }
+  var mkt=fbMarketFromEvent(ev,homeName),src='captured';
+  var ref=fbNflRefMarket(g);
+  if(mkt.spread_line==null&&ref.spread_line!=null){mkt.spread_line=ref.spread_line;src='nflverse reference';}
+  if(mkt.total_line==null&&ref.total_line!=null){mkt.total_line=ref.total_line;if(src!=='captured')src='nflverse reference';}
+  return {mkt:mkt,src:src,homeName:homeName,awayName:awayName,
+    spread_book:mkt.spread_book,total_book:mkt.total_book};
+}
+/* grade the model's pregame picks for one completed game against the
+   nflverse closing consensus. Picks are the SIGN OF THE GAP — the same rule
+   the cards and the CSV show pregame, so grading can never grade a different
+   pick than the one displayed. */
+function fbGradeGame(g,p){
+  var out={done:g.home_score!=null&&g.away_score!=null,margin:null,total:null,
+    spread:null,total_ou:null,ml:null};
+  if(!out.done||!p||p.status!=='PREDICTED')return out;
+  var hm=fbNum(g.home_score)-fbNum(g.away_score);
+  out.margin=hm;out.total=fbNum(g.home_score)+fbNum(g.away_score);
+  var sGap=p.market.spread_gap,tGap=p.market.total_gap;
+  if(sGap!=null&&p.market.spread_line!=null&&Math.abs(sGap)>1e-9){
+    var d=hm-p.market.spread_line;
+    out.spread=d===0?'push':((d>0)===(sGap>0)?'win':'loss');
+  }
+  if(tGap!=null&&p.market.total_line!=null&&Math.abs(tGap)>1e-9){
+    var dt=out.total-p.market.total_line;
+    out.total_ou=dt===0?'push':((dt>0)===(tGap>0)?'win':'loss');
+  }
+  if(p.model.home_win_prob!=null){
+    out.ml=hm===0?'push':((hm>0)===(p.model.home_win_prob>=0.5)?'win':'loss');
+  }
+  return out;
+}
 
 /* ---- NFL load: seeds -> season break(s) -> absorb completed -> predict ---- */
 function fbLoadNfl(signal){
@@ -21572,11 +21627,17 @@ function fbLoadNfl(signal){
     return stwP.then(function(byGame){
       var absorbed=0;
       toAbsorb.sort(function(a,b){return String(a.gameday).localeCompare(String(b.gameday))||String(a.game_id).localeCompare(String(b.game_id));});
-      var lastSeason=st.seededThrough;
+      S.weekPreds={};
       toAbsorb.forEach(function(g){
-        var sn3=fbNum(g.season);
-        if(sn3>lastSeason+1){/* already broken above */}
-        lastSeason=sn3;
+        /* PREGAME SNAPSHOT, LEAK-FREE BY ORDER: the prediction for this game
+           is computed from the state BEFORE this game (and after everything
+           that kicked off earlier), then the game is absorbed. This is what
+           the grading views grade — never a hindsight number. Market inputs
+           are the nflverse closing consensus for that game. */
+        if(fbNum(g.season)===maxSeason){
+          try{S.weekPreds[g.game_id]=window.EDFootball.predictGame({sport:'nfl',state:st,season:maxSeason,
+            game:fbNflGameReq(g),market:fbNflRefMarket(g)});}catch(_){}
+        }
         var pair=byGame[g.game_id];
         if(!pair||pair.length!==2)return;
         var hRow=null,aRow=null;
@@ -21589,6 +21650,16 @@ function fbLoadNfl(signal){
         absorbed++;
       });
       S.state=st;S.absorbed=absorbed;
+      /* full current-season slate, for week scans / grading / CSV export */
+      S.games=[];
+      for(i=0;i<rows.length;i++){
+        r=rows[i];
+        if(fbNum(r.season)!==maxSeason)continue;
+        var t2=Date.parse(r.gameday+'T'+(r.gametime||'12:00')+':00');
+        S.games.push({g:r,t:isFinite(t2)?t2:0,week:fbNum(r.week),
+          done:r.home_score!=null&&r.away_score!=null,type:r.game_type||'REG'});
+      }
+      S.games.sort(function(a,b){return a.t-b.t;});
       if(!absorbed&&maxSeason>st.seededThrough)S.notes.push('No completed '+maxSeason+' games yet — ratings are the trained '+st.seededThrough+' seeds with the learned season carry-over applied.');
       /* upcoming slate */
       var now=Date.now(),hi=now+FB_LOOKAHEAD_D*864e5;
@@ -21605,7 +21676,7 @@ function fbLoadNfl(signal){
       return fbSignals('americanfootball_nfl',signal);
     }).then(function(sig){
       S.sig=sig;
-      if(!Object.keys(sig).length)S.notes.push('NFL is not in the capture scanner — no live captured quotes; nflverse reference numbers shown where published are a consensus close, not a bettable price.');
+      if(!Object.keys(sig).length)S.notes.push('No captured NFL quotes in this window (offseason, or capture has not priced NFL yet); nflverse reference numbers shown where published are a consensus close, not a bettable price.');
     });
   });
 }
@@ -21681,6 +21752,7 @@ window.loadFootball=function(force,signal){
 window.fbSetSport=function(s){
   FB.sport=(s==='cfb')?'cfb':'nfl';
   var seg=$('fbSeg');if(seg){var bs=seg.querySelectorAll('button');for(var i=0;i<bs.length;i++)bs[i].classList.toggle('on',(i===0?'nfl':'cfb')===FB.sport);}
+  var ctl=$('fbCtl');if(ctl)ctl.style.display=(FB.sport==='nfl'&&FB.at)?'flex':'none';
   window.renderFootball();
 };
 
@@ -21718,23 +21790,10 @@ function fbQualityLine(p,extra){
   return '<div class="gd-modelnote">⚠ '+fbEsc(bits.join(' · '))+'</div>';
 }
 function fbGameCardNfl(u){
-  var E=window.EDFootball,g=u.g;
-  var homeName=FB_CODE_NAMES[g.home_team]||g.home_team,awayName=FB_CODE_NAMES[g.away_team]||g.away_team;
-  /* live captured event, matched by both names + kickoff proximity */
-  var ev=null,k;
-  for(k in FB.nfl.sig)if(FB.nfl.sig.hasOwnProperty(k)){
-    var e2=FB.nfl.sig[k];
-    if(fbNorm(e2.home)===fbNorm(homeName)&&fbNorm(e2.away)===fbNorm(awayName)
-      &&Math.abs(Date.parse(e2.t)-u.t)<36*3600e3){ev=e2;break;}
-  }
-  var mkt=fbMarketFromEvent(ev,homeName);
-  var src='captured';
-  if(mkt.spread_line==null&&g.spread_line!=null){mkt.spread_line=+g.spread_line;src='nflverse reference';}
-  if(mkt.total_line==null&&g.total_line!=null){mkt.total_line=+g.total_line;if(src!=='captured')src='nflverse reference';}
-  var p=fbPredict('nfl',{home:g.home_team,away:g.away_team,week:fbNum(g.week),
-    home_rest:fbNum(g.home_rest),away_rest:fbNum(g.away_rest),roof:g.roof,surface:g.surface,
-    div_game:fbNum(g.div_game),temp:fbNum(g.temp),wind:fbNum(g.wind),
-    home_qb_id:g.home_qb_id||null,away_qb_id:g.away_qb_id||null},mkt,fbNum(g.season));
+  var g=u.g;
+  var M=fbNflMarketFor(g,u.t);
+  var homeName=M.homeName,awayName=M.awayName,mkt=M.mkt,src=M.src;
+  var p=fbPredict('nfl',fbNflGameReq(g),mkt,fbNum(g.season));
   if(p.status!=='PREDICTED')
     return '<div class="mdl-card"><div class="mdl-card-h"><div class="mdl-card-match">'+fbEsc(awayName)+' @ '+fbEsc(homeName)+'</div></div>'
       +'<div class="gd-nodata">'+fbEsc(p.status)+': '+fbEsc(p.reason||(p.missing||[]).join(', '))+'</div></div>';
@@ -21760,6 +21819,170 @@ function fbGameCardNfl(u){
     +'<div class="mdl-card-h"><div class="mdl-card-match">'+fbEsc(awayName)+' @ '+fbEsc(homeName)+'</div>'
     +'<div class="mdl-card-when">NFL · week '+fbEsc(String(g.week))+' · '+fbEsc(whenLabel(new Date(u.t).toISOString()))+'</div></div>'
     +lines+fbQualityLine(p,extra)+'</div>';
+}
+
+/* ---- week scan, grading and CSV export (NFL) --------------------------------
+   Scope is 'auto' (the next-12-days board), a specific week, or 'season'.
+   Completed games are graded against the PREGAME snapshot taken during the
+   absorb pass (see fbLoadNfl) — the model's number from before kickoff, using
+   only earlier results — never a recomputed hindsight number. Grading is
+   against the nflverse closing consensus: there is no frozen entry price in
+   this path, so NO CLV is claimed, and every summary says so. */
+function fbResChip(res){
+  if(!res)return '<span class="ec mut">no pick</span>';
+  var c=res==='win'?'var(--ok,#38b26c)':res==='loss'?'var(--bad,#e05a5a)':'var(--faint)';
+  return '<span class="ec" style="color:'+c+'">'+fbEsc(res)+'</span>';
+}
+function fbGameCardNflGraded(it){
+  var g=it.g;
+  var homeName=FB_CODE_NAMES[g.home_team]||g.home_team,awayName=FB_CODE_NAMES[g.away_team]||g.away_team;
+  var p=FB.nfl.weekPreds[g.game_id]||null;
+  var head='<div class="mdl-card-h"><div class="mdl-card-match">'+fbEsc(awayName)+' '+fbEsc(String(g.away_score))+' @ '+fbEsc(homeName)+' '+fbEsc(String(g.home_score))+'</div>'
+    +'<div class="mdl-card-when">NFL · week '+fbEsc(String(g.week))+' · final</div></div>';
+  if(!p||p.status!=='PREDICTED')
+    return '<div class="mdl-card">'+head+'<div class="gd-nodata">No pregame model snapshot for this game'+(p?(' ('+fbEsc(p.status)+')'):'')+' — nothing is graded rather than reconstructed after the fact.</div></div>';
+  var G=fbGradeGame(g,p),m=p.model;
+  var lines='';
+  lines+='<div class="gd-line"><span class="l">Pregame model</span><span class="v mdl">'+fbEsc(g.home_team)+' '+fbPts(-m.fair_spread)+' · total '+m.fair_total.toFixed(1)+' · home '+(m.home_win_prob*100).toFixed(0)+'%</span></div>';
+  lines+='<div class="gd-line"><span class="l">Close (nflverse consensus)</span><span class="v mut">'+fbEsc(g.home_team)+' '+(p.market.spread_line!=null?fbPts(-p.market.spread_line):'—')+' · total '+(p.market.total_line!=null?p.market.total_line:'—')+'</span></div>';
+  var sPick=p.market.spread_gap!=null&&Math.abs(p.market.spread_gap)>1e-9?(p.market.spread_gap>0?g.home_team:g.away_team):null;
+  var tPick=p.market.total_gap!=null&&Math.abs(p.market.total_gap)>1e-9?(p.market.total_gap>0?'Over':'Under'):null;
+  lines+='<div class="gd-line"><span class="l">ATS '+(sPick?fbEsc(sPick)+' '+fbPts(p.market.spread_gap)+' gap':'')+'</span><span class="v">'+fbResChip(G.spread)+'</span></div>';
+  lines+='<div class="gd-line"><span class="l">Total '+(tPick?fbEsc(tPick)+' '+fbPts(p.market.total_gap)+' gap':'')+'</span><span class="v">'+fbResChip(G.total_ou)+'</span></div>';
+  lines+='<div class="gd-line"><span class="l">ML '+fbEsc(m.home_win_prob>=0.5?g.home_team:g.away_team)+'</span><span class="v">'+fbResChip(G.ml)+'</span></div>';
+  return '<div class="mdl-card">'+head+lines+'</div>';
+}
+function fbWeekRecord(items){
+  var rec={sw:0,sl:0,sp:0,tw:0,tl:0,tp:0,mw:0,ml:0,mp:0,graded:0,pending:0,nopred:0};
+  items.forEach(function(it){
+    if(!it.done){rec.pending++;return;}
+    var p=FB.nfl.weekPreds[it.g.game_id];
+    if(!p||p.status!=='PREDICTED'){rec.nopred++;return;}
+    var G=fbGradeGame(it.g,p);rec.graded++;
+    if(G.spread==='win')rec.sw++;else if(G.spread==='loss')rec.sl++;else if(G.spread==='push')rec.sp++;
+    if(G.total_ou==='win')rec.tw++;else if(G.total_ou==='loss')rec.tl++;else if(G.total_ou==='push')rec.tp++;
+    if(G.ml==='win')rec.mw++;else if(G.ml==='loss')rec.ml++;else if(G.ml==='push')rec.mp++;
+  });
+  return rec;
+}
+function fbRecStr(w,l,p){return w+'-'+l+(p?('-'+p):'');}
+function fbWeekSummaryHTML(items,label){
+  var r=fbWeekRecord(items);
+  if(!r.graded)return '';
+  return '<div class="mdl-card"><div class="mdl-card-h"><div class="mdl-card-match">'+fbEsc(label)+' — graded record</div></div>'
+    +'<div class="gd-line"><span class="l">ATS (model side vs close)</span><span class="v">'+fbRecStr(r.sw,r.sl,r.sp)+'</span></div>'
+    +'<div class="gd-line"><span class="l">Totals</span><span class="v">'+fbRecStr(r.tw,r.tl,r.tp)+'</span></div>'
+    +'<div class="gd-line"><span class="l">Moneyline (model favorite)</span><span class="v">'+fbRecStr(r.mw,r.ml,r.mp)+'</span></div>'
+    +'<div class="gd-modelnote">Graded against the nflverse closing consensus from the PREGAME snapshot (state before each kickoff). No entry price exists in this path, so no CLV is claimed. Research record, counted nowhere.</div></div>';
+}
+window.fbSetScope=function(v){
+  FB.scope=(v==='auto'||v==='season')?v:(parseInt(v,10)||'auto');
+  window.renderFootball();
+};
+function fbScopeWeeks(){
+  var ws={},out=[];
+  FB.nfl.games.forEach(function(it){if(it.week!=null)ws[it.week]=it.type;});
+  Object.keys(ws).map(Number).sort(function(a,b){return a-b;}).forEach(function(w){out.push({week:w,type:ws[w]});});
+  return out;
+}
+function fbCtlHTML(){
+  var opts='<option value="auto"'+(FB.scope==='auto'?' selected':'')+'>Next up (12 days)</option>';
+  fbScopeWeeks().forEach(function(w){
+    var lbl=w.type==='REG'?('Week '+w.week):(w.type+' (wk '+w.week+')');
+    opts+='<option value="'+w.week+'"'+(FB.scope===w.week?' selected':'')+'>'+lbl+'</option>';
+  });
+  opts+='<option value="season"'+(FB.scope==='season'?' selected':'')+'>Full season</option>';
+  return '<select onchange="fbSetScope(this.value)" style="padding:8px 10px;border-radius:9px;border:1px solid rgba(255,255,255,.18);background:transparent;color:var(--fg,#e8eef7);font-size:12.5px">'+opts+'</select>'
+    +'<button class="btn ghost sm" onclick="fbCsvDownload()">Download CSV</button>'
+    +'<span class="ec mut">picks + grading, one row per game — research export, unproven</span>';
+}
+/* ---- CSV export: identical columns to the offline generator, so a sheet
+   built from either source lines up. One row per game; blank grading columns
+   until the game is final. */
+var FB_CSV_HEAD=['season','week','game_id','kickoff_local','away_team','home_team',
+'model_version','feature_version','ratings_basis',
+'model_home_margin','model_home_line','model_fair_total','home_win_prob_pct','model_fair_home_ml','model_fair_away_ml',
+'ref_home_line','ref_total','ref_home_ml','ref_away_ml','ref_source',
+'spread_gap_pts','total_gap_pts',
+'spread_pick','p_spread_pick_pct','spread_push_pct',
+'total_pick','p_total_pick_pct','total_push_pct',
+'ml_pick','p_ml_pick_pct',
+'recommendation_spread','recommendation_total','recommendation_basis',
+'qb_status','data_status','unproven','generated_at',
+'home_score','away_score','final_margin','final_total','spread_result','total_result','ml_result'];
+function fbCsvRow(it){
+  var g=it.g,q=function(s){s=String(s==null?'':s);return /[",\n]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s;};
+  var r2=function(v){return v==null?'':(Math.round(v*100)/100);};
+  var r1=function(v){return v==null?'':(Math.round(v*10)/10);};
+  var pc=function(v){return v==null?'':(Math.round(v*1000)/10);};
+  var p,src,mkt;
+  if(it.done&&FB.nfl.weekPreds[g.game_id]){p=FB.nfl.weekPreds[g.game_id];mkt=fbNflRefMarket(g);src='nflverse consensus close';}
+  else{var M=fbNflMarketFor(g,it.t);mkt=M.mkt;src=M.src==='captured'?'captured live (signals)':'nflverse consensus (reference, not a live bettable quote)';
+    var ref=fbNflRefMarket(g);
+    if(mkt.home_ml==null)mkt.home_ml=ref.home_ml;
+    if(mkt.away_ml==null)mkt.away_ml=ref.away_ml;
+    p=fbPredict('nfl',fbNflGameReq(g),mkt,fbNum(g.season));}
+  var base=[g.season,g.week,g.game_id,(g.gameday||'')+' '+(g.gametime||''),g.away_team,g.home_team];
+  if(!p||p.status!=='PREDICTED'){
+    var pad=[];while(base.length+pad.length<FB_CSV_HEAD.length)pad.push('');
+    var row=base.concat(pad);
+    row[6]=p&&p.model_version||'';row[7]=p&&p.feature_version||'';
+    row[34]=p?p.status:'NO_PREDICTION';row[35]='true';row[36]=new Date().toISOString();
+    row[37]=g.home_score==null?'':g.home_score;row[38]=g.away_score==null?'':g.away_score;
+    return row.map(q).join(',');
+  }
+  var m=p.model,cov=p.cover,ov=p.over,sGap=p.market.spread_gap,tGap=p.market.total_gap;
+  var sPick=(sGap!=null&&Math.abs(sGap)>1e-9)?(sGap>0?g.home_team:g.away_team):'';
+  var tPick=(tGap!=null&&Math.abs(tGap)>1e-9)?(tGap>0?'Over':'Under'):'';
+  var mlPick=m.home_win_prob>=0.5?g.home_team:g.away_team;
+  var G=it.done?fbGradeGame(g,p):null;
+  var basis=it.done?'pregame snapshot (state before kickoff, earlier results only)'
+    :(FB.nfl.absorbed?('trained seeds + '+FB.nfl.absorbed+' absorbed '+FB.nfl.curSeason+' games (as of now; future weeks update as results absorb)')
+      :('trained seeds through '+(FB.nfl.state?FB.nfl.state.seededThrough:'?')+' + learned season carry-over (no '+FB.nfl.curSeason+' games played yet)'));
+  return base.concat([
+    p.model_version,p.feature_version,basis,
+    r2(m.fair_spread),r2(-m.fair_spread),r1(m.fair_total),pc(m.home_win_prob),m.fair_home_ml,m.fair_away_ml,
+    mkt.spread_line==null?'':r1(-mkt.spread_line),mkt.total_line==null?'':r1(mkt.total_line),mkt.home_ml==null?'':mkt.home_ml,mkt.away_ml==null?'':mkt.away_ml,src,
+    r2(sGap),r2(tGap),
+    sPick,cov?pc(sGap>0?cov.win:cov.lose):'',cov?pc(cov.push):'',
+    tPick,ov?pc(tGap>0?ov.win:ov.lose):'',ov?pc(ov.push):'',
+    mlPick,pc(m.home_win_prob>=0.5?m.home_win_prob:1-m.home_win_prob),
+    p.edge.spread.recommendation,p.edge.total.recommendation,
+    'UNPROVEN: 2016-2025 walk-forward did NOT beat the close (48.7-50.8% ATS); research only, counted nowhere until graded CLV',
+    (g.home_qb_id?'':'home QB unknown; ')+(g.away_qb_id?'':'away QB unknown'),p.status,'true',new Date().toISOString(),
+    g.home_score==null?'':g.home_score,g.away_score==null?'':g.away_score,
+    G&&G.margin!=null?G.margin:'',G&&G.total!=null?G.total:'',
+    G&&G.spread?G.spread:'',G&&G.total_ou?G.total_ou:'',G&&G.ml?G.ml:''
+  ]).map(q).join(',');
+}
+window.fbCsvDownload=function(){
+  var S=FB.nfl;
+  if(!S.games.length){alert('No season slate loaded yet.');return;}
+  var items=FB.scope==='season'?S.games
+    :FB.scope==='auto'?S.games.filter(function(it){var now=Date.now();return !it.done&&it.t>=now-6*3600e3&&it.t<=now+FB_LOOKAHEAD_D*864e5;})
+    :S.games.filter(function(it){return it.week===FB.scope;});
+  if(!items.length){alert('No games in this scope.');return;}
+  var lines=[FB_CSV_HEAD.join(',')];
+  items.forEach(function(it){lines.push(fbCsvRow(it));});
+  var name='edgedesk_nfl_'+S.curSeason+'_'+(FB.scope==='season'?'season':FB.scope==='auto'?'upcoming':('week'+FB.scope))+'.csv';
+  var blob=new Blob([lines.join('\n')+'\n'],{type:'text/csv'});
+  var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;
+  document.body.appendChild(a);a.click();
+  setTimeout(function(){URL.revokeObjectURL(a.href);a.remove();},2000);
+};
+function fbSeasonTableHTML(){
+  var html='<div class="gd-sec">Season scan — '+fbEsc(String(FB.nfl.curSeason))+'</div>';
+  fbScopeWeeks().forEach(function(w){
+    var items=FB.nfl.games.filter(function(it){return it.week===w.week;});
+    var r=fbWeekRecord(items);
+    var lbl=w.type==='REG'?('Week '+w.week):(w.type+' (wk '+w.week+')');
+    var right=r.graded?('ATS '+fbRecStr(r.sw,r.sl,r.sp)+' · O/U '+fbRecStr(r.tw,r.tl,r.tp)+' · ML '+fbRecStr(r.mw,r.ml,r.mp)+(r.pending?(' · '+r.pending+' left'):''))
+      :(items.length+' games · first kick '+(items.length?whenLabel(new Date(items[0].t).toISOString()):'—'));
+    html+='<div class="gd-line"><span class="l" style="cursor:pointer" onclick="fbSetScope(\''+w.week+'\')">'+fbEsc(lbl)+' ›</span><span class="v mut">'+fbEsc(right)+'</span></div>';
+  });
+  var all=fbWeekRecord(FB.nfl.games);
+  if(all.graded)html+='<div class="gd-line"><span class="l"><b>Season to date</b></span><span class="v">ATS '+fbRecStr(all.sw,all.sl,all.sp)+' · O/U '+fbRecStr(all.tw,all.tl,all.tp)+' · ML '+fbRecStr(all.mw,all.ml,all.mp)+'</span></div>';
+  return html;
 }
 function fbGameCardCfb(u){
   var g=u.g;
@@ -21825,26 +22048,54 @@ function fbRatingsBoard(sport){
     +rc.slice(0,25).map(function(r,i){return '<div class="gd-line"><span class="l">'+(i+1)+'. '+fbEsc(r[0])+'</span><span class="v mut">'+fbPts(r[1],1)+'</span></div>';}).join('');
 }
 window.renderFootball=function(){
-  var host=$('fbBody'),ban=$('fbBanner');
+  var host=$('fbBody'),ban=$('fbBanner'),ctl=$('fbCtl');
   if(!host)return;
   try{rsMetaRender('football');}catch(_){}
   if(FB.engineErr)return;
-  if(!FB.at){host.innerHTML='<div class="empty">Loading…</div>';return;}
+  if(!FB.at){host.innerHTML='<div class="empty">Loading…</div>';if(ctl)ctl.style.display='none';return;}
   var fr=$('fbFresh');if(fr)fr.textContent='engine loaded '+ago(FB.at);
   if(ban){ban.className='flbanner hide';ban.innerHTML='';}
   var S=FB.sport==='cfb'?FB.cfb:FB.nfl;
+  if(ctl){
+    if(FB.sport==='nfl'){ctl.style.display='flex';ctl.innerHTML=fbCtlHTML();}
+    else{ctl.style.display='none';}
+  }
   var html=fbModelCard();
   if(S.notes&&S.notes.length)html+='<div class="flbanner demo" style="margin-bottom:10px">'+S.notes.map(fbEsc).join('<br>')+'</div>';
-  if(FB.sport==='cfb'&&FB.cfb.gate){
-    html+='<div class="flbanner demo" style="margin-bottom:10px">'+fbEsc(FB.cfb.gate)+'</div>'+fbRatingsBoard('cfb');
+  if(FB.sport==='cfb'){
+    if(FB.cfb.gate){
+      html+='<div class="flbanner demo" style="margin-bottom:10px">'+fbEsc(FB.cfb.gate)+'</div>'+fbRatingsBoard('cfb');
+      host.innerHTML=html;return;
+    }
+    if(!S.up.length){
+      html+='<div class="empty" style="margin-bottom:12px">No FBS games inside the next '+FB_LOOKAHEAD_D+' days in the schedule feed.</div>'+fbRatingsBoard('cfb');
+      host.innerHTML=html;return;
+    }
+    html+=S.up.map(fbGameCardCfb).join('')+fbRatingsBoard('cfb');
+    host.innerHTML=html;return;
+  }
+  /* NFL: scoped board — auto window, one week (predictions + grading), or season */
+  if(FB.scope==='season'){
+    html+=fbSeasonTableHTML()+fbRatingsBoard('nfl');
+    host.innerHTML=html;return;
+  }
+  if(FB.scope!=='auto'){
+    var items=S.games.filter(function(it){return it.week===FB.scope;});
+    if(!items.length){
+      html+='<div class="empty" style="margin-bottom:12px">No games found for week '+fbEsc(String(FB.scope))+'.</div>';
+      host.innerHTML=html+fbRatingsBoard('nfl');return;
+    }
+    html+=fbWeekSummaryHTML(items,'Week '+FB.scope);
+    html+=items.map(function(it){return it.done?fbGameCardNflGraded(it):fbGameCardNfl(it);}).join('');
+    html+=fbRatingsBoard('nfl');
     host.innerHTML=html;return;
   }
   if(!S.up.length){
-    html+='<div class="empty" style="margin-bottom:12px">No '+(FB.sport==='cfb'?'FBS':'NFL')+' games inside the next '+FB_LOOKAHEAD_D+' days in the schedule feed.</div>'+fbRatingsBoard(FB.sport);
+    html+='<div class="empty" style="margin-bottom:12px">No NFL games inside the next '+FB_LOOKAHEAD_D+' days in the schedule feed. Use the week selector above to scan any week of the season.</div>'+fbRatingsBoard('nfl');
     host.innerHTML=html;return;
   }
-  html+=S.up.map(FB.sport==='cfb'?fbGameCardCfb:fbGameCardNfl).join('');
-  html+=fbRatingsBoard(FB.sport);
+  html+=S.up.map(fbGameCardNfl).join('');
+  html+=fbRatingsBoard('nfl');
   host.innerHTML=html;
 };
 })();
