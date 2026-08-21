@@ -718,13 +718,26 @@ begin
     v_url like 'https://%/functions/v1/collective_odds_ingest/v1/ingest');
   perform pg_temp.check('the caller and the reader both exist',
     to_regprocedure('odds.run_ingest()') is not null
-    and to_regprocedure('odds.last_ingest_response()') is not null);
+    and to_regprocedure('odds.last_ingest_response(bigint)') is not null);
+
+  -- The reader must look our request up BY ID. net._http_response is project
+  -- wide and stores no URL, so "newest row" on a project with any other
+  -- pg_net job returns that job's response as if it were ours. That sent one
+  -- real debugging session chasing an unrelated function's 403.
+  perform pg_temp.check('the reader takes a request id rather than guessing',
+    (select count(*) from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+      where n.nspname = 'odds' and p.proname = 'last_ingest_response'
+        and p.pronargs = 1) = 1);
+  perform pg_temp.check('and it never selects the newest row across the table',
+    (select prosrc from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+      where n.nspname = 'odds' and p.proname = 'last_ingest_response')
+    not like '%order by r.id desc%');
 
   -- SECURITY DEFINER plus the default PUBLIC grant would let any anon caller
   -- spend the credit budget at will.
   perform pg_temp.check('and neither is callable by anon',
     not has_function_privilege('anon', 'odds.run_ingest()', 'EXECUTE')
-    and not has_function_privilege('anon', 'odds.last_ingest_response()', 'EXECUTE'));
+    and not has_function_privilege('anon', 'odds.last_ingest_response(bigint)', 'EXECUTE'));
 end $$;
 
 -- ------------------------------------- the feed names its own provider

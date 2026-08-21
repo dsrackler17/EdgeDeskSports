@@ -220,26 +220,62 @@ begin
     body := '{}'::jsonb,
     timeout_milliseconds := 55000
   ) into v_req;
+
+  -- Remember WHICH request this was. net._http_response is project wide and
+  -- carries no URL, so without this the only way to find our response is
+  -- "the newest row" — which in a project with any other pg_net traffic is
+  -- somebody else's job, reported as ours.
+  perform collective.odds_set_setting('ingest.last_request_id', to_jsonb(v_req));
   return v_req;
 end $$;
 
--- Reads back what the last call actually returned. pg_net is asynchronous:
--- run_ingest() hands back a request id immediately and the response arrives a
--- moment later, so without this the only feedback is a number.
-create or replace function odds.last_ingest_response()
+-- Reads back what OUR call returned. pg_net is asynchronous: run_ingest()
+-- hands back a request id immediately and the response lands a moment later.
+--
+-- Looked up BY THAT ID, never as "the newest row". net._http_response is
+-- project wide and stores no URL, so on a project running any other pg_net
+-- job — a scoreboard fetch, a scores backfill, anything on a cron — "newest"
+-- is somebody else's response presented as this one's. That misreporting sent
+-- a real debugging session chasing another function's 403.
+create or replace function odds.last_ingest_response(p_request_id bigint default null)
 returns jsonb language plpgsql security definer set search_path = odds, public as $$
-declare v jsonb;
+declare
+  v_id  bigint;
+  v     jsonb;
 begin
+  -- Two nullifs, not one. An absent setting reaches here as the empty string,
+  -- and ''::bigint raises — which the handler at the bottom would then report
+  -- as "pg_net is not installed", sending the reader after the wrong problem.
+  v_id := coalesce(
+    p_request_id,
+    nullif(nullif(trim(both '"' from coalesce((odds.get_setting('ingest.last_request_id'))::text, '')), ''), 'null')::bigint);
+
+  if v_id is null then
+    return jsonb_build_object(
+      'note', 'odds.run_ingest() has not been called yet, so there is no request to look up');
+  end if;
+
   select jsonb_build_object(
-           'id', r.id, 'status_code', r.status_code,
-           'created', r.created, 'error', r.error_msg,
+           'request_id', r.id, 'status_code', r.status_code,
+           'created', r.created, 'timed_out', r.timed_out, 'error', r.error_msg,
            'body', left(coalesce(r.content, ''), 4000))
     into v
   from net._http_response r
-  order by r.id desc limit 1;
-  return coalesce(v, jsonb_build_object('note', 'no pg_net response recorded yet'));
-exception when others then
-  return jsonb_build_object('error', 'pg_net is not installed or its response table is not readable');
+  where r.id = v_id;
+
+  if v is null then
+    return jsonb_build_object(
+      'request_id', v_id,
+      'note', 'the request was sent but no response is recorded yet. pg_net is asynchronous — wait a few seconds and run this again. If it never appears, the call did not complete.');
+  end if;
+  return v;
+exception
+  when undefined_table or invalid_schema_name then
+    return jsonb_build_object(
+      'error', 'pg_net is not installed, so there is no response table to read. Enable it under Database > Extensions.');
+  when others then
+    -- Report what actually went wrong rather than a stock guess.
+    return jsonb_build_object('error', sqlerrm, 'sqlstate', sqlstate);
 end $$;
 
 -- --------------------------------------------------------- the schedule

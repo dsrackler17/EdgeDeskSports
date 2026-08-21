@@ -35,16 +35,38 @@ select
 
 select odds.run_ingest();          -- returns a request id immediately
 
--- pg_net is asynchronous. Wait a few seconds, then:
+-- Wait ~5 seconds, then ask the question that has ONE right answer:
+-- did our function run? odds.ingest_runs is written by our function and
+-- nothing else, so it cannot be confused with another job's activity.
+
+select id, provider, trigger, status, started_at, finished_at,
+       books_ok, events_seen, snapshots_written,
+       error_code, left(coalesce(error_message,''), 300) as error_message
+from odds.ingest_runs
+order by id desc
+limit 3;
+
+--   a row with status ok or partial  -> IT WORKED. Go to 5.
+--   a row with status error          -> read error_message, that is the cause.
+--   NO ROW AT ALL                    -> the request never reached the function.
+--                                       Check the HTTP response below.
+
+-- The raw HTTP response, looked up by OUR request id. Do not read
+-- net._http_response directly and take the newest row: that table is project
+-- wide and carries no URL, so on a project with any other pg_net job the
+-- newest row is somebody else's response wearing ours.
 select odds.last_ingest_response();
 
--- status_code 200 with "snapshots_written" in the body  -> it worked.
--- status_code 401                                       -> token mismatch; re-run the migration
---                                                          and redeploy the function bundle.
--- status_code 503 "not_configured"                      -> NFL_ODDS_API_KEY is missing on the function.
--- body "skipped": "too_soon"                            -> throttled. Fine. Force it:
---   select odds.run_ingest();  after:
---   select collective.odds_set_setting('nfl.refresh_seconds.idle','60'::jsonb);
+--   status_code 200                  -> the function ran; ingest_runs has the detail.
+--   status_code 401                  -> the DEPLOYED function predates the cron token.
+--                                       Redeploy collective_odds_ingest.
+--   status_code 404                  -> ingest.function_url points at the wrong route.
+--   status_code 503 not_configured   -> NFL_ODDS_API_KEY missing on the function.
+--   "no response is recorded yet"    -> pg_net has not finished. Wait, run again.
+
+--   body "skipped": "too_soon"       -> throttled, not broken. To force one:
+--     select collective.odds_set_setting('nfl.refresh_seconds.idle','60'::jsonb);
+--     select odds.run_ingest();
 
 
 -- =========================================================================
