@@ -166,6 +166,27 @@ label .opt{color:var(--faint);text-transform:none;letter-spacing:0;font-weight:4
 .frm i.p{color:var(--warn);border:1px solid rgba(217,154,43,.4)}
 .duo{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px}
 .rolechip{display:inline-block;font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;border-radius:10px;padding:3px 9px;background:var(--surface2);border:1px solid var(--border);color:var(--dim)}
+
+/* slate upload: a drop target that reads as one, and a scan report that
+   says what was understood before anything is sent anywhere */
+.dropzone{margin-top:12px;border:1.5px dashed var(--line);border-radius:10px;
+  padding:22px 16px;text-align:center;background:var(--panel2,transparent);
+  transition:border-color .12s,background .12s}
+.dropzone.over{border-color:var(--acc);background:rgba(90,130,255,.07)}
+.dz-main{font-weight:600;font-size:14px}
+.dz-sub{margin-top:7px;font-size:12px;color:var(--dim)}
+.scan{margin-top:12px;border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+.scan h4{margin:0 0 8px;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--dim)}
+.scan .found{display:flex;flex-wrap:wrap;gap:6px}
+.scan .f{font-size:11.5px;padding:3px 8px;border-radius:999px;border:1px solid var(--line)}
+.scan .f.on{border-color:var(--pos);color:var(--pos)}
+.scan .f.off{color:var(--dim)}
+.scan .warn{color:var(--warn)}
+/* the one question the scanner asks: it must not read as a note */
+.scan .ask{margin:10px 0 4px;padding:11px 13px;border:1px solid var(--acc);
+  border-radius:9px;background:rgba(90,130,255,.07)}
+.scan .ask-q{font-size:13px;margin-bottom:9px}
+.scan .ask-btns{display:flex;gap:8px;flex-wrap:wrap}
 </style>
 </head>
 <body>
@@ -1192,6 +1213,16 @@ async function parseXLSX(buf){
   }
   return out;
 }
+/* Headers that genuinely mean either thing, depending on the creator.
+   "spread" and "line" are each used both for "the number my model produced"
+   and for "the number the book was showing". They are guessed as the model's
+   own, because that is the more common intent, and then the creator is ASKED —
+   because the two grade differently and the wrong one is silently wrong:
+   a market line stored as a projection measures your accuracy against the
+   market instead of against the result, and leaves closing line value with
+   nothing to compute from. */
+var AMBIGUOUS_SPREAD=['spread','line'];
+
 var SLATE_FIELDS=[
   {f:'home_team',label:'Home team',req:true,syn:['home','home_team','hometeam','h','home team']},
   {f:'away_team',label:'Away team',req:true,syn:['away','road','away_team','visitor','a','away team']},
@@ -1223,6 +1254,84 @@ function slateNum(v){
   if(s===''||isNaN(+s))return null;
   return +s;
 }
+/* Week is a choice, not a number to remember. Named rounds are spelled out
+   because "Week 20" is not how anyone refers to the Divisional round, and a
+   creator posting the wrong week silently grades against the wrong slate. */
+var WEEK_NAMES={19:'Wild Card',20:'Divisional',21:'Conference Championship',22:'Super Bowl'};
+function weekOptions(sel){
+  var out='<option value="">Read it from my file</option>';
+  for(var w=1;w<=22;w++){
+    out+='<option value="'+w+'"'+(String(sel)===String(w)?' selected':'')+'>'+
+      (WEEK_NAMES[w]||('Week '+w))+'</option>';
+  }
+  return out;
+}
+
+/* The most common week in the file, when the file says. One slate is one
+   week, so a single outlier row is a typo rather than a second week, and the
+   mode is the honest answer where an average or a first-row read is not. */
+function slateDetectWeek(rows,colIndex){
+  if(colIndex===undefined||colIndex===null)return null;
+  var counts={},best=null,bestN=0;
+  for(var r=1;r<rows.length;r++){
+    var v=parseInt(String((rows[r]||[])[colIndex]||'').replace(/[^0-9]/g,''),10);
+    if(!isFinite(v)||v<1||v>22)continue;
+    counts[v]=(counts[v]||0)+1;
+    if(counts[v]>bestN){bestN=counts[v];best=v;}
+  }
+  return best;
+}
+
+/* A pick cell -> which side, and the market number if it carries one.
+
+   A slate CSV usually writes the pick as one human string: "NE +3.5". That
+   holds TWO facts. Matching the cell exactly against a team code keeps the
+   side and silently drops the number, and a pick with no number renders on
+   the wall as "NE -" and gives cover probability and CLV nothing to work
+   from. Both are read here.
+
+   The returned line is in HOME convention, always: "NE +3.5" with NE away
+   means the home team is laying 3.5, so it becomes -3.5. Getting that
+   backwards inverts every game on the board and still looks entirely
+   plausible, which is why the flip happens once, here, and nowhere else. */
+function slatePick(raw,home,away){
+  var text=String(raw||'').trim();
+  if(!text)return null;
+  var m=text.match(/^([A-Za-z][A-Za-z0-9 .'\-]*?)\s+(pk|pick|even|[+-]?\d+(?:\.\d+)?)$/i);
+  var team=text,num=null;
+  if(m){
+    team=m[1].trim();
+    var tok=m[2].toLowerCase();
+    num=(tok==='pk'||tok==='pick'||tok==='even')?0:parseFloat(tok);
+    if(!isFinite(num))num=null;
+  }
+  var side=slateSide(team,home,away);
+  if(!side)return null;
+  var line=num===null?null:(side==='away'?-num:num);
+  if(line===0)line=0;   /* negating zero yields -0, which reads oddly everywhere */
+  return {side:side,line:line};
+}
+
+/* Which side a name refers to. Exact first, then a prefix match with a
+   three character floor: a two letter code must match exactly or not at all,
+   or NE at NO books the away pick as the home one. An ambiguous name returns
+   nothing, because a coin flip that picks the wrong side still renders
+   perfectly and is wrong forever. */
+function slateSide(team,home,away){
+  function k(s){return String(s||'').toLowerCase().replace(/[^a-z0-9]/g,'');}
+  var t=k(team),h=k(home),a=k(away);
+  if(!t)return null;
+  if(t==='home'||t==='h')return 'home';
+  if(t==='away'||t==='a'||t==='road')return 'away';
+  if(t===h)return 'home';
+  if(t===a)return 'away';
+  function hit(x){return t.length>=3&&x.length>=3&&(x.indexOf(t)===0||t.indexOf(x)===0);}
+  var hh=hit(h),aa=hit(a);
+  if(hh&&!aa)return 'home';
+  if(aa&&!hh)return 'away';
+  return null;
+}
+
 function slateKick(v){
   var n=slateNum(v);
   if(n!==null&&n>20000&&n<80000){ /* Excel date serial */
@@ -1259,10 +1368,14 @@ function slateBuildRows(season,week){
       var n=slateNum(g(f));
       if(n!==null){if(n>1&&n<=100)n=n/100;o[f]=n;}
     });
-    var pick=String(g('pick_side')||'').trim().toLowerCase();
-    if(pick){
-      if(pick==='home'||pick==='h'||pick===home.toLowerCase())o.pick_side='home';
-      else if(pick==='away'||pick==='a'||pick==='road'||pick===away.toLowerCase())o.pick_side='away';
+    var parsedPick=slatePick(g('pick_side'),home,away);
+    if(parsedPick){
+      o.pick_side=parsedPick.side;
+      /* An explicit line column always wins. This only fills a gap. */
+      if(parsedPick.line!==null&&o.line_at_submission===undefined)
+        o.line_at_submission=parsedPick.line;
+    }else if(String(g('pick_side')||'').trim()){
+      problems.push('Row '+(r+1)+': could not tell which side "'+esc(String(g('pick_side')))+'" means. Expected '+esc(away)+' or '+esc(home)+'.');
     }
     if(o.cover_probability!==undefined&&o.line_at_submission===undefined&&o.projected_spread!==undefined){
       o.line_at_submission=o.projected_spread;
@@ -1415,16 +1528,19 @@ async function renderCreatorDash(view,me){
       '<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end">'+
       (d.models.length>1?'<div style="min-width:160px"><label>Model</label><select id="slModel">'+d.models.map(function(x){return '<option value="'+esc(x.model_slug)+'">'+esc(x.model_name)+'</option>';}).join('')+'</select></div>':'')+
       '<div style="width:110px"><label>Season</label><input id="slSeason" type="number" value="'+season0+'"></div>'+
-      '<div style="width:90px"><label>Week <span class="opt">opt</span></label><input id="slWeek" type="number" placeholder="3"></div>'+
+      '<div style="min-width:150px"><label>Week</label><select id="slWeek">'+weekOptions()+'</select></div>'+
       '<div style="min-width:200px"><label>Data type</label><select id="slOrigin">'+
         '<option value="live">Live: counts toward my record</option>'+
         '<option value="backfill">Backfill: history, shown separately</option>'+
         '<option value="test">Test: throwaway</option></select></div>'+
       '</div>'+
-      '<div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:12px;align-items:center">'+
-      '<input type="file" id="slFile" accept=".csv,.tsv,.txt,.xlsx" style="width:auto">'+
-      '<span class="note">or</span><button class="btn" id="slPasteBtn">Paste rows instead</button>'+
+      '<div id="slDrop" class="dropzone">'+
+        '<div class="dz-main">Drop your CSV or Excel file here</div>'+
+        '<div class="dz-sub">or <button class="btn" id="slPick" type="button">choose a file</button>'+
+        ' &middot; <button class="btn" id="slPasteBtn" type="button">paste rows</button></div>'+
+        '<input type="file" id="slFile" accept=".csv,.tsv,.txt,.xlsx" class="hide">'+
       '</div>'+
+      '<div id="slScan"></div>'+
       '<textarea id="slPaste" class="hide" rows="5" style="margin-top:10px;font-family:\'JetBrains Mono\',monospace;font-size:12px" placeholder="home,away,date,spread,total&#10;KC,BUF,2026-09-20,-2.5,49.5"></textarea>'+
       '<div id="slMap"></div><div id="slPrev"></div>'+
       '<div style="display:flex;gap:10px;margin-top:12px;align-items:center;flex-wrap:wrap" id="slBtns" class="hide">'+
@@ -1547,15 +1663,18 @@ async function renderCreatorDash(view,me){
           '<td><select data-slf="'+fd.f+'">'+opts.replace('value="'+sel+'"','value="'+sel+'" selected')+'</select></td></tr>';
       }).join('');
       var ignored=SLATE.cols.filter(function(h){var n=String(h).toLowerCase().trim();return ['result','win','won','w/l','grade'].indexOf(n)>=0;});
-      $('slMap').innerHTML='<label style="margin-top:14px">Column mapping'+(SLATE.remembered?' <span class="opt">remembered from your last slate</span>':'')+'</label>'+
+      $('slMap').innerHTML='<details style="margin-top:12px"'+(SLATE.missingRequired?' open':'')+'>'+
+        '<summary style="cursor:pointer;font-size:12px;color:var(--dim);letter-spacing:.08em;text-transform:uppercase">'+
+        'Column mapping'+(SLATE.remembered?' &middot; remembered from your last slate':'')+'</summary>'+
         '<div class="tblwrap mini"><table style="min-width:0"><tbody>'+rows+'</tbody></table></div>'+
-        (ignored.length?'<p class="note" style="margin-top:6px">Your "'+esc(ignored.join(', '))+'" column is ignored on purpose: the Collective grades every pick itself from final scores, never from a creator\'s own grading.</p>':'');
+        (ignored.length?'<p class="note" style="margin-top:6px">Your "'+esc(ignored.join(', '))+'" column is ignored on purpose: the Collective grades every pick itself from final scores, never from a creator\'s own grading.</p>':'')+
+        '</details>';
       document.querySelectorAll('[data-slf]').forEach(function(s){
         s.onchange=function(){
           var v=s.value;
           if(v==='')delete SLATE.map[s.getAttribute('data-slf')];
           else SLATE.map[s.getAttribute('data-slf')]=+v;
-          SLATE.checked=false;$('slGo').disabled=true;slatePaintPrev();
+          SLATE.checked=false;$('slGo').disabled=true;slatePaintScan();slatePaintPrev();
         };
       });
       slatePaintPrev();
@@ -1589,10 +1708,110 @@ async function renderCreatorDash(view,me){
           SLATE.map=sv.map||SLATE.map;SLATE.remembered=true;
         }
       }catch(e){}
+      /* Week, read from the file when the file says. The creator can still
+         override it; this only removes the step where they had to know. */
+      /* Ambiguous only when the creator has not already told us both. A file
+         with "spread" AND "market_line" needs no question asked. */
+      var spi=SLATE.map['projected_spread'];
+      SLATE.ambiguousSpread=(spi!==undefined&&SLATE.map['line_at_submission']===undefined&&
+        AMBIGUOUS_SPREAD.indexOf(String(SLATE.cols[spi]).toLowerCase().trim())>=0)
+        ? String(SLATE.cols[spi]) : null;
+
+      var wk=slateDetectWeek(rows2d,SLATE.map['week']);
+      if(wk!==null&&$('slWeek')&&!$('slWeek').value)$('slWeek').innerHTML=weekOptions(wk);
+      SLATE.detectedWeek=wk;
+      slatePaintScan();
       slatePaintMap();$('slGo').disabled=true;$('slOut').innerHTML='';
     }
-    $('slFile').onchange=async function(){
-      var f=this.files&&this.files[0];if(!f)return;
+
+    /* What the scanner understood, in the creator's terms, before anything
+       is sent. The mapping table below is the fine control; this is the
+       answer to "did it read my file properly", which is the only question
+       anyone actually has at this point. */
+    function slatePaintScan(){
+      var n=SLATE.rows.length-1;
+      var have=function(f){return SLATE.map[f]!==undefined;};
+      var chip=function(on,label){return '<span class="f '+(on?'on':'off')+'">'+(on?'&#10003; ':'')+esc(label)+'</span>';};
+
+      /* Read the pick column the way the builder will, so this reports what
+         will actually be sent rather than what the header is called. */
+      var withSide=0,withLine=0,badPick=[];
+      if(have('pick_side')&&have('home_team')&&have('away_team')){
+        for(var r=1;r<SLATE.rows.length;r++){
+          var row=SLATE.rows[r]||[];
+          var raw=String(row[SLATE.map['pick_side']]||'').trim();
+          if(!raw)continue;
+          var pk=slatePick(raw,String(row[SLATE.map['home_team']]||''),String(row[SLATE.map['away_team']]||''));
+          if(!pk){if(badPick.length<3)badPick.push(raw);continue;}
+          withSide++;
+          if(pk.line!==null)withLine++;
+        }
+      }
+      var lineFromPick=withLine>0&&!have('line_at_submission');
+      /* A market line can arrive two ways: parsed out of the pick cell, or as
+         its own column. Counting only the first told a creator with a
+         perfectly good market_line column that they had none. */
+      var lineCount=have('line_at_submission')?(SLATE.rows.length-1):withLine;
+      var haveLine=have('line_at_submission')||withLine>0;
+
+      var msg='<div class="scan"><h4>What I read from your file</h4>'+
+        '<p style="margin:0 0 9px"><strong>'+n+'</strong> game'+(n===1?'':'s')+
+        (SLATE.detectedWeek?', <strong>'+esc(WEEK_NAMES[SLATE.detectedWeek]||('Week '+SLATE.detectedWeek))+'</strong> (from your week column)':'')+
+        '</p><div class="found">'+
+        chip(have('home_team'),'home team')+chip(have('away_team'),'away team')+
+        chip(have('kickoff'),'date')+
+        chip(withSide>0,withSide>0?('pick side ('+withSide+')'):'pick side')+
+        chip(haveLine,haveLine?('market line ('+lineCount+')'):'market line')+
+        chip(have('projected_spread'),'your spread')+
+        chip(have('projected_total'),'your total')+
+        chip(have('home_win_probability'),'home win %')+
+        '</div>';
+
+      if(SLATE.ambiguousSpread){
+        msg+='<div class="ask"><div class="ask-q">Your column <strong>&ldquo;'+esc(SLATE.ambiguousSpread)+'&rdquo;</strong> could mean two things. Which is it?</div>'+
+          '<div class="ask-btns">'+
+            '<button class="btn" data-spreadis="projected_spread">My model&rsquo;s own number</button>'+
+            '<button class="btn" data-spreadis="line_at_submission">The market line I posted against</button>'+
+          '</div>'+
+          '<p class="note" style="margin:8px 0 0">They grade differently, and neither one is recoverable later. '+
+          'Your own number is scored for accuracy against the final margin. The market line is the number your pick is measured against for closing line value. '+
+          'Right now it is being read as <strong>your own number</strong>.</p></div>';
+      }
+      if(lineFromPick){
+        msg+='<p class="note" style="margin:9px 0 0">The number in your pick column was read as the market line, in home terms. '+
+          '"NE +3.5" with NE on the road is stored as -3.5, the home team\'s number, which is what every model on the wall is measured against.</p>';
+      }
+      if(withSide>0&&withLine<withSide){
+        msg+='<p class="note warn" style="margin:9px 0 0">'+(withSide-withLine)+' pick'+((withSide-withLine)===1?'':'s')+
+          ' carry no number. Those still grade, but they show as "TEAM -" on the wall and cannot produce a cover probability or closing line value.</p>';
+      }
+      if(badPick.length){
+        msg+='<p class="note warn" style="margin:9px 0 0">Could not tell which side these mean: '+
+          esc(badPick.join(', '))+'. Check the team names match the home and away columns.</p>';
+      }
+      SLATE.missingRequired=!have('home_team')||!have('away_team')||!have('kickoff');
+      if(SLATE.missingRequired){
+        msg+='<p class="note warn" style="margin:9px 0 0">Home team, away team and date are required. Set them in the mapping below.</p>';
+      }
+      msg+='</div>';
+      $('slScan').innerHTML=msg;
+      document.querySelectorAll('[data-spreadis]').forEach(function(b){
+        b.onclick=function(){
+          var want=b.getAttribute('data-spreadis');
+          if(want==='line_at_submission'){
+            SLATE.map['line_at_submission']=SLATE.map['projected_spread'];
+            delete SLATE.map['projected_spread'];
+          }
+          /* Answered either way, so stop asking. Choosing "my own number"
+             confirms the guess rather than changing it. */
+          SLATE.ambiguousSpread=null;
+          SLATE.checked=false;$('slGo').disabled=true;
+          slatePaintScan();slatePaintMap();
+        };
+      });
+    }
+    async function slateReadFile(f){
+      if(!f)return;
       try{
         if(/\.xlsx$/i.test(f.name)){
           if(typeof DecompressionStream==='undefined')throw new Error('This browser cannot read Excel files directly. Save as CSV and upload that.');
@@ -1601,7 +1820,27 @@ async function renderCreatorDash(view,me){
           await slateLoad(parseCSV(await f.text()));
         }
       }catch(e){$('slOut').innerHTML='<div class="errbox">'+esc(e.message||String(e))+'</div>';}
-    };
+    }
+    $('slFile').onchange=function(){slateReadFile(this.files&&this.files[0]);};
+    $('slPick').onclick=function(){$('slFile').click();};
+
+    /* Drag and drop, with the whole panel as the target rather than a small
+       input. dragover must be cancelled or the browser navigates to the file
+       and the creator loses the page they were on. */
+    (function(){
+      var dz=$('slDrop');
+      if(!dz)return;
+      ['dragenter','dragover'].forEach(function(ev){
+        dz.addEventListener(ev,function(e){e.preventDefault();e.stopPropagation();dz.classList.add('over');});
+      });
+      ['dragleave','drop'].forEach(function(ev){
+        dz.addEventListener(ev,function(e){e.preventDefault();e.stopPropagation();dz.classList.remove('over');});
+      });
+      dz.addEventListener('drop',function(e){
+        var f=e.dataTransfer&&e.dataTransfer.files&&e.dataTransfer.files[0];
+        if(f)slateReadFile(f);
+      });
+    })();
     $('slPasteBtn').onclick=function(){
       $('slPaste').classList.toggle('hide');
       if(!$('slPaste').classList.contains('hide'))$('slPaste').focus();
