@@ -19,6 +19,8 @@ const here = dirname(fileURLToPath(import.meta.url));
 const SHARED = join(here, "..", "..", "supabase", "functions", "_shared");
 
 const TA = await import(join(SHARED, "theoddsapi.ts"));
+const NORMALIZE = await import(join(SHARED, "odds_normalize.ts"));
+const require_normalize = () => NORMALIZE;
 
 const fixture = JSON.parse(
   readFileSync(join(here, "fixtures", "theoddsapi_nfl_sample.json"), "utf8"),
@@ -250,11 +252,27 @@ check("asking for fewer markets drops the others without reporting them", () => 
 
 check("the adapter holds no credential and no key ever reaches a row", () => {
   const src = readFileSync(join(SHARED, "theoddsapi.ts"), "utf8");
-  // The key is read from the environment in exactly one place.
-  const reads = src.match(/Deno\.env\.get\("THE_ODDS_API_KEY"\)/g) ?? [];
-  assert.equal(reads.length, 1);
+
+  // No key literal in source.
   assert.equal(/apiKey\s*=\s*["'][A-Za-z0-9]{8,}/.test(src), false);
 
+  // The credential reaches an outbound request through exactly ONE call
+  // site. taKeyShape also reads the environment, but only to report which
+  // variable supplied the key — it never returns the value, which the
+  // shape tests above pin.
+  const sends = src.match(/searchParams\.set\("apiKey",[^)]*\)/g) ?? [];
+  assert.equal(sends.length, 1, "the key must be sent from one place only");
+  assert.match(sends[0], /taApiKey\(\)/);
+
+  // Every environment read of a credential is inside the two credential
+  // helpers, never sprinkled through the mapping code.
+  const helpers = src.slice(src.indexOf("function taApiKey"), src.indexOf("/** Our league id"));
+  const allReads = src.match(/Deno\.env\.get\("(?:THE_ODDS_API_KEY|NFL_ODDS_API_KEY)"\)/g) ?? [];
+  const helperReads = helpers.match(/Deno\.env\.get\("(?:THE_ODDS_API_KEY|NFL_ODDS_API_KEY)"\)/g) ?? [];
+  assert.equal(allReads.length, helperReads.length,
+    "a credential is read outside taApiKey/taKeyShape");
+
+  // And nothing key-shaped survives into mapped output.
   const all = JSON.stringify(readAll());
   assert.equal(all.includes("apiKey"), false);
 });
@@ -282,6 +300,150 @@ check("a decimal price is refused, so a format regression cannot pass silently",
   );
   assert.equal(event.odds.length, 0);
   assert.ok(bad.some((b) => b.reason.includes("american price")));
+});
+
+// ------------------------------------------------------ the wire request
+// The query string is asserted WHOLE, against the provider's documented
+// contract. A symbol rename once matched "apiKey" and "regions" inside these
+// string literals and shipped ?taApiKey=...&taRegions=..., which the API
+// answers with 401 — a wrong-key error for an entirely correct key, and the
+// hardest possible thing to diagnose from outside. Nothing short of pinning
+// every parameter name catches that.
+
+check("the request carries exactly the documented parameters", () => {
+  ENV.NFL_ODDS_API_KEY = "4855fde0fde3b6c52e4c31bb713bc81e";
+  try {
+    const url = new URL(TA.taBuildUrlForTest({
+      league: "nfl", books: [], markets: ["moneyline", "spread", "total"],
+    }));
+    assert.equal(url.origin + url.pathname,
+      "https://api.the-odds-api.com/v4/sports/americanfootball_nfl/odds");
+
+    const got = [...url.searchParams.keys()].sort();
+    assert.deepEqual(got, ["apiKey", "dateFormat", "markets", "oddsFormat", "regions"],
+      `parameter names drifted from the provider contract: ${got.join(",")}`);
+
+    assert.equal(url.searchParams.get("apiKey"), "4855fde0fde3b6c52e4c31bb713bc81e");
+    assert.equal(url.searchParams.get("regions"), "us");
+    assert.equal(url.searchParams.get("markets"), "h2h,spreads,totals");
+    assert.equal(url.searchParams.get("oddsFormat"), "american");
+    assert.equal(url.searchParams.get("dateFormat"), "iso");
+  } finally {
+    delete ENV.NFL_ODDS_API_KEY;
+  }
+});
+
+check("no parameter name carries one of our internal prefixes", () => {
+  // The specific way this broke: our TA_/ta prefix leaking into a wire name.
+  ENV.NFL_ODDS_API_KEY = "4855fde0fde3b6c52e4c31bb713bc81e";
+  try {
+    const url = new URL(TA.taBuildUrlForTest({ league: "nfl", books: [], markets: [] }));
+    for (const k of url.searchParams.keys()) {
+      assert.equal(/^ta[A-Z_]/.test(k), false, `internal prefix leaked into wire name: ${k}`);
+      assert.equal(k.startsWith("TA_"), false, `internal prefix leaked into wire name: ${k}`);
+    }
+  } finally {
+    delete ENV.NFL_ODDS_API_KEY;
+  }
+});
+
+check("the credential is redacted out of the URL we log and store", () => {
+  // redactUrl matches on the lowercased parameter NAME, so a renamed
+  // parameter silently stops being redacted. That is the same bug wearing a
+  // security hat: the real key would reach a probe response and a run record.
+  ENV.NFL_ODDS_API_KEY = "4855fde0fde3b6c52e4c31bb713bc81e";
+  try {
+    const N = require_normalize();
+    const safe = N.redactUrl(TA.taBuildUrlForTest({ league: "nfl", books: [], markets: [] }));
+    assert.equal(safe.includes("4855fde0"), false, "the key survived redaction");
+    assert.match(safe, /apiKey=REDACTED/);
+  } finally {
+    delete ENV.NFL_ODDS_API_KEY;
+  }
+});
+
+check("regions come from the environment and change the cost", () => {
+  ENV.NFL_ODDS_API_KEY = "4855fde0fde3b6c52e4c31bb713bc81e";
+  ENV.THE_ODDS_API_REGIONS = "us,eu";
+  try {
+    const url = new URL(TA.taBuildUrlForTest({ league: "nfl", books: [], markets: [] }));
+    assert.equal(url.searchParams.get("regions"), "us,eu");
+    assert.equal(TA.taPredictedCost(["moneyline", "spread", "total"], "us,eu"), 6);
+  } finally {
+    delete ENV.NFL_ODDS_API_KEY;
+    delete ENV.THE_ODDS_API_REGIONS;
+  }
+});
+
+// ------------------------------------------------------- the credential
+
+check("a pasted key with trailing whitespace is trimmed, not sent as-is", () => {
+  // Untrimmed, the whitespace is percent-encoded into the query string and
+  // the provider answers 401 — a wrong-key error for a correct key. The
+  // dashboard only shows a digest, so it looks fine from every angle.
+  const good = "4855fde0fde3b6c52e4c31bb713bc81e";
+  for (const messy of [`${good}\n`, `${good} `, ` ${good}`, `${good}\r\n`, `\t${good}\t`]) {
+    ENV.NFL_ODDS_API_KEY = messy;
+    try {
+      const shape = TA.taKeyShape();
+      assert.equal(shape.length, 32, `expected trimmed, got ${shape.length} for ${JSON.stringify(messy)}`);
+      assert.equal(shape.looks_like_key, true);
+    } finally {
+      delete ENV.NFL_ODDS_API_KEY;
+    }
+  }
+});
+
+check("an EMPTY preferred secret falls through to the fallback", () => {
+  // ?? only skips null and undefined, so an empty THE_ODDS_API_KEY would win
+  // over a perfectly good NFL_ODDS_API_KEY and send apiKey= with nothing after.
+  ENV.THE_ODDS_API_KEY = "";
+  ENV.NFL_ODDS_API_KEY = "4855fde0fde3b6c52e4c31bb713bc81e";
+  try {
+    const shape = TA.taKeyShape();
+    assert.equal(shape.present, true);
+    assert.equal(shape.source, "NFL_ODDS_API_KEY");
+    assert.equal(shape.length, 32);
+  } finally {
+    delete ENV.THE_ODDS_API_KEY;
+    delete ENV.NFL_ODDS_API_KEY;
+  }
+});
+
+check("a whitespace-only secret counts as absent, not as a key", () => {
+  ENV.NFL_ODDS_API_KEY = "   \n";
+  try {
+    const shape = TA.taKeyShape();
+    assert.equal(shape.present, false);
+    assert.equal(shape.length, 0);
+    assert.equal(shape.source, null);
+  } finally {
+    delete ENV.NFL_ODDS_API_KEY;
+  }
+});
+
+check("the preferred secret wins when both are set and non-empty", () => {
+  ENV.THE_ODDS_API_KEY = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+  ENV.NFL_ODDS_API_KEY = "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
+  try {
+    assert.equal(TA.taKeyShape().source, "THE_ODDS_API_KEY");
+  } finally {
+    delete ENV.THE_ODDS_API_KEY;
+    delete ENV.NFL_ODDS_API_KEY;
+  }
+});
+
+check("a key of the wrong shape is reported as such, without revealing it", () => {
+  ENV.NFL_ODDS_API_KEY = "not-a-real-key-at-all";
+  try {
+    const shape = TA.taKeyShape();
+    assert.equal(shape.looks_like_key, false);
+    assert.equal(shape.present, true);
+    // The value must not appear anywhere in the report.
+    assert.equal(JSON.stringify(shape).includes("not-a-real-key"), false);
+  } finally {
+    delete ENV.NFL_ODDS_API_KEY;
+  }
 });
 
 // ------------------------------------------------ diagnosable failures

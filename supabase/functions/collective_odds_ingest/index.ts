@@ -26,7 +26,7 @@ import { num, settings, strList } from "../_shared/odds_api.ts";
 import { getProvider, registerProvider } from "../_shared/odds_provider.ts";
 import type { FetchOptions, NormalizedEvent } from "../_shared/odds_provider.ts";
 import { oddsBlazeProvider } from "../_shared/oddsblaze.ts";
-import { taPredictedCost, theOddsApiProvider } from "../_shared/theoddsapi.ts";
+import { taKeyShape, taPredictedCost, theOddsApiProvider } from "../_shared/theoddsapi.ts";
 import { redactSecret } from "../_shared/odds_normalize.ts";
 
 registerProvider(oddsBlazeProvider);
@@ -222,6 +222,20 @@ function diagnose(
       fix: "Set nfl.enabled to true in odds.settings.",
     };
   }
+  if (provider.id === "theoddsapi") {
+    const shape = taKeyShape();
+    if (shape.present && !shape.looks_like_key) {
+      return {
+        healthy: false,
+        state: "credential_malformed",
+        detail:
+          `The configured key is ${shape.length} characters and does not match ` +
+          `this provider's form (32 lowercase hex). A trailing newline or space ` +
+          `from a paste is the usual cause, and it reads as a wrong key at the provider.`,
+        fix: `Re-set ${shape.source ?? "NFL_ODDS_API_KEY"} with no trailing whitespace.`,
+      };
+    }
+  }
   if (!provider.isConfigured()) {
     return {
       healthy: false,
@@ -348,6 +362,16 @@ Deno.serve(async (req) => {
             : Math.max(0, Math.floor(
               (quota.remaining - Math.max(0, num(cfg["provider.credit_reserve"], 0))) / cost,
             )),
+        },
+        // Shape only: length and whether it matches the documented form.
+        // Never the value. A key with a pasted-in trailing newline is
+        // otherwise invisible — the dashboard shows a digest, and a digest of
+        // the wrong string looks exactly as trustworthy as the right one.
+        credential: provider.id === "theoddsapi" ? taKeyShape() : {
+          present: provider.isConfigured(),
+          length: null,
+          looks_like_key: null,
+          source: null,
         },
         diagnosis: diagnose(st, cfg, provider, quota),
       }, 200, NO_STORE);

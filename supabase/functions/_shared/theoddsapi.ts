@@ -89,12 +89,57 @@ const TA_DEFAULT_REGIONS = "us";
  *  unmapped report never has an empty book column. */
 const TA_NO_BOOK = "(response)";
 
+/**
+ * The credential, trimmed, with an empty value treated as absent.
+ *
+ * Both details are load bearing and both were wrong.
+ *
+ * TRIM: a secret is set by pasting, and a paste carries a trailing newline or
+ * space more often than not. Untrimmed, that whitespace is percent-encoded
+ * into the query string and the provider answers 401 — a "wrong key" error for
+ * a key that is entirely correct, which is close to undiagnosable from the
+ * outside because the digest the dashboard shows still looks fine.
+ *
+ * EMPTY IS ABSENT: `??` only falls through on null and undefined, so a
+ * THE_ODDS_API_KEY that exists but is empty would win over a perfectly good
+ * NFL_ODDS_API_KEY and send apiKey= with nothing after it.
+ */
 function taApiKey(): string {
-  return Deno.env.get("THE_ODDS_API_KEY") ?? Deno.env.get("NFL_ODDS_API_KEY") ?? "";
+  const preferred = (Deno.env.get("THE_ODDS_API_KEY") ?? "").trim();
+  if (preferred !== "") return preferred;
+  return (Deno.env.get("NFL_ODDS_API_KEY") ?? "").trim();
+}
+
+/** Shape of the configured credential, for diagnostics. Reports LENGTH and
+ *  whether it matches the provider's documented form — never the value, and
+ *  never any part of it. That is enough to tell a correct key from one
+ *  carrying a stray newline, which is otherwise invisible: the dashboard shows
+ *  only a digest, and a digest of the wrong string looks exactly as valid as a
+ *  digest of the right one. */
+export function taKeyShape(): {
+  present: boolean;
+  length: number;
+  looks_like_key: boolean;
+  source: string | null;
+} {
+  const raw = Deno.env.get("THE_ODDS_API_KEY");
+  const fromPreferred = typeof raw === "string" && raw.trim() !== "";
+  const key = taApiKey();
+  return {
+    present: key.length > 0,
+    length: key.length,
+    // The Odds API issues 32 character lowercase hex keys.
+    looks_like_key: /^[0-9a-f]{32}$/.test(key),
+    source: key.length === 0 ? null : (fromPreferred ? "THE_ODDS_API_KEY" : "NFL_ODDS_API_KEY"),
+  };
 }
 
 function taBaseUrl(): string {
-  const raw = Deno.env.get("THE_ODDS_API_BASE_URL") ?? TA_DEFAULT_BASE;
+  // Empty is absent, same as the credential. `??` only falls through on null
+  // and undefined, so a base URL override set to an empty string would win
+  // and every request would be built against "/" — an invalid URL, reported
+  // as a failed fetch rather than as a misconfiguration.
+  const raw = (Deno.env.get("THE_ODDS_API_BASE_URL") ?? "").trim() || TA_DEFAULT_BASE;
   return raw.endsWith("/") ? raw : `${raw}/`;
 }
 
@@ -392,6 +437,10 @@ export function readTaEvent(
 
 // ------------------------------------------------------------------- request
 
+export function taBuildUrlForTest(opts: FetchOptions): string {
+  return taBuildUrl(opts);
+}
+
 function taBuildUrl(opts: FetchOptions): string {
   const league = normKey(opts.league) || "nfl";
   const sport = TA_SPORT_KEY[league] ?? league;
@@ -399,8 +448,13 @@ function taBuildUrl(opts: FetchOptions): string {
     .map((m) => TA_MARKET_PARAM[m])
     .filter(Boolean);
   const u = new URL(`sports/${sport}/odds`, taBaseUrl());
-  u.searchParams.set("taApiKey", taApiKey());
-  u.searchParams.set("taRegions", taRegions());
+  // These two strings are the PROVIDER'S wire names and have nothing to do
+  // with our function names. A symbol rename once matched them inside these
+  // literals and shipped ?taApiKey=...&taRegions=..., which the API answers
+  // with 401 — a wrong-key error for a correct key. The query string is
+  // asserted whole in the tests for exactly this reason.
+  u.searchParams.set("apiKey", taApiKey());
+  u.searchParams.set("regions", taRegions());
   u.searchParams.set("markets", (markets.length ? markets : ["h2h", "spreads", "totals"]).join(","));
   // Pinned, not defaulted. See the header note.
   u.searchParams.set("oddsFormat", "american");

@@ -67,7 +67,10 @@ const DEFAULT_TIMEOUT_MS = 12000;
 const CONCURRENCY = 3;
 
 function apiKey(): string {
-  return Deno.env.get("NFL_ODDS_API_KEY") ?? "";
+  // Trimmed: a secret is set by pasting, and a trailing newline or space
+  // rides along more often than not. Untrimmed it reaches the provider inside
+  // the credential and reads as a wrong key.
+  return (Deno.env.get("NFL_ODDS_API_KEY") ?? "").trim();
 }
 
 function baseUrl(): string {
