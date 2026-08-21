@@ -146,6 +146,136 @@ insert into odds.books (id, name, is_sharp, include_in_consensus, priority) valu
   ('betfair',   'Betfair',     true,  false, 25)
 on conflict (id) do nothing;
 
+-- =========================================================================
+-- MAKE IT ACTUALLY RUN
+-- =========================================================================
+--
+-- Deploying the ingest function does not poll anything. Something has to CALL
+-- it, and nothing did — which is the entire reason the board has been empty.
+-- Triggering it by hand needs a POST carrying the service role key, so the
+-- schedule lives here instead, in the database, where pg_cron can drive it
+-- without a human in the loop.
+--
+-- pg_cron runs inside Postgres and cannot read an edge function secret, so it
+-- authenticates with a token kept in odds.settings: both sides read the same
+-- value from the one place that is already service-role-only. No new secret to
+-- distribute, and nothing sensitive written into a cron job definition.
+
+-- ------------------------------------------------------- the shared token
+
+do $mig$
+declare v_existing text;
+begin
+  v_existing := trim(both '"' from coalesce((odds.get_setting('ingest.cron_token'))::text, ''));
+  if v_existing is null or v_existing = '' or v_existing = 'null' then
+    -- Two UUIDs, hyphens stripped: 64 hex characters from the same source
+    -- Postgres uses for primary keys, with no extension dependency.
+    perform collective.odds_set_setting('ingest.cron_token', to_jsonb(
+      replace(gen_random_uuid()::text, '-', '') ||
+      replace(gen_random_uuid()::text, '-', '')));
+    raise notice 'odds: generated ingest.cron_token';
+  else
+    raise notice 'odds: ingest.cron_token already set, left alone';
+  end if;
+end $mig$;
+
+insert into odds.settings (key, value, description) values
+  ('ingest.function_url',
+   '"https://iattxbkbufslbauoumga.supabase.co/functions/v1/collective_odds_ingest/v1/ingest"'::jsonb,
+   'Where the scheduled job POSTs to. Change this and the schedule follows, with no redeploy.'),
+  ('ingest.cron_schedule', '"*/30 * * * *"'::jsonb,
+   'How often the scheduler fires. The function throttles itself to the nfl.refresh_seconds cadence and to the credit budget, so firing more often than needed is cheap: an early call returns skipped without touching the provider.')
+on conflict (key) do nothing;
+
+-- --------------------------------------------------------- the caller
+
+-- Late bound on purpose: net.http_post is resolved when this RUNS, not when
+-- it is created, so the migration still applies cleanly on a database where
+-- pg_net is not installed. The failure then lands on the caller, with a
+-- readable message, instead of aborting the whole migration.
+create or replace function odds.run_ingest()
+returns bigint language plpgsql security definer set search_path = odds, public as $$
+declare
+  v_url   text;
+  v_token text;
+  v_req   bigint;
+begin
+  v_url   := trim(both '"' from coalesce((odds.get_setting('ingest.function_url'))::text, ''));
+  v_token := trim(both '"' from coalesce((odds.get_setting('ingest.cron_token'))::text, ''));
+  if v_url is null or v_url = '' or v_url = 'null' then
+    raise exception 'odds.run_ingest: ingest.function_url is not set';
+  end if;
+  if v_token is null or v_token = '' or v_token = 'null' then
+    raise exception 'odds.run_ingest: ingest.cron_token is not set';
+  end if;
+  if not exists (select 1 from pg_extension where extname = 'pg_net') then
+    raise exception 'odds.run_ingest: pg_net is not installed, so the database cannot make an HTTP call. Enable it under Database > Extensions, then re-run this migration.';
+  end if;
+
+  select net.http_post(
+    url := v_url,
+    headers := jsonb_build_object(
+      'Content-Type', 'application/json',
+      'x-odds-cron-token', v_token),
+    body := '{}'::jsonb,
+    timeout_milliseconds := 55000
+  ) into v_req;
+  return v_req;
+end $$;
+
+-- Reads back what the last call actually returned. pg_net is asynchronous:
+-- run_ingest() hands back a request id immediately and the response arrives a
+-- moment later, so without this the only feedback is a number.
+create or replace function odds.last_ingest_response()
+returns jsonb language plpgsql security definer set search_path = odds, public as $$
+declare v jsonb;
+begin
+  select jsonb_build_object(
+           'id', r.id, 'status_code', r.status_code,
+           'created', r.created, 'error', r.error_msg,
+           'body', left(coalesce(r.content, ''), 4000))
+    into v
+  from net._http_response r
+  order by r.id desc limit 1;
+  return coalesce(v, jsonb_build_object('note', 'no pg_net response recorded yet'));
+exception when others then
+  return jsonb_build_object('error', 'pg_net is not installed or its response table is not readable');
+end $$;
+
+-- --------------------------------------------------------- the schedule
+
+do $mig$
+declare
+  v_sched text;
+begin
+  begin
+    create extension if not exists pg_net;
+  exception when others then
+    raise notice 'odds: could not create extension pg_net (%). Enable it under Database > Extensions.', sqlerrm;
+  end;
+
+  begin
+    create extension if not exists pg_cron;
+  exception when others then
+    raise notice 'odds: could not create extension pg_cron (%). Enable it under Database > Extensions, then re-run this migration.', sqlerrm;
+  end;
+
+  if not exists (select 1 from pg_extension where extname = 'pg_cron') then
+    raise notice 'odds: pg_cron unavailable; NOTHING IS SCHEDULED. Enable it and re-run.';
+    return;
+  end if;
+
+  v_sched := trim(both '"' from coalesce((odds.get_setting('ingest.cron_schedule'))::text, '"*/30 * * * *"'));
+
+  if exists (select 1 from cron.job where jobname = 'collective_nfl_odds') then
+    perform cron.unschedule('collective_nfl_odds');
+  end if;
+  perform cron.schedule('collective_nfl_odds', v_sched, 'select odds.run_ingest();');
+  raise notice 'odds: scheduled collective_nfl_odds at %', v_sched;
+exception when others then
+  raise notice 'odds: scheduling failed (%). The pipeline still works; it just has nothing driving it.', sqlerrm;
+end $mig$;
+
 -- ------------------------------------------- expose the provider on reads
 --
 -- Re-issued verbatim from the base migration with one field added, so the

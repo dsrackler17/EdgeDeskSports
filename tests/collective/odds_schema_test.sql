@@ -666,6 +666,31 @@ begin
             and provider_event_id = 'fkcheck-1'));
 end $$;
 
+-- ------------------------------------------ the scheduler can authenticate
+-- Deploying the function polls nothing; something has to call it. The token
+-- below is what lets pg_cron do that from inside the database, so an absent
+-- or empty one means the board silently never fills.
+do $$
+declare v_token text; v_url text;
+begin
+  v_token := trim(both '"' from coalesce((odds.get_setting('ingest.cron_token'))::text, ''));
+  v_url   := trim(both '"' from coalesce((odds.get_setting('ingest.function_url'))::text, ''));
+
+  perform pg_temp.check('an ingest token exists and is not trivially short',
+    v_token <> '' and v_token <> 'null' and length(v_token) >= 32);
+  perform pg_temp.check('the scheduler knows where to post',
+    v_url like 'https://%/functions/v1/collective_odds_ingest/v1/ingest');
+  perform pg_temp.check('the caller and the reader both exist',
+    to_regprocedure('odds.run_ingest()') is not null
+    and to_regprocedure('odds.last_ingest_response()') is not null);
+
+  -- SECURITY DEFINER plus the default PUBLIC grant would let any anon caller
+  -- spend the credit budget at will.
+  perform pg_temp.check('and neither is callable by anon',
+    not has_function_privilege('anon', 'odds.run_ingest()', 'EXECUTE')
+    and not has_function_privilege('anon', 'odds.last_ingest_response()', 'EXECUTE'));
+end $$;
+
 -- ------------------------------------- the feed names its own provider
 -- The read payload must say who produced the numbers. A constant in the edge
 -- function was wrong the moment a second provider existed.

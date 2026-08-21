@@ -50,6 +50,13 @@ OUT_DIR = FUNCTIONS / "_bundles"
 #   collective_admin                    verifies the bearer token in-function
 #                                       via requireAdmin so a non-admin session
 #                                       gets a 403 rather than a gateway 401.
+#   collective_odds_ingest              authenticates the service role key, an
+#                                       admin session, or the pg_cron token,
+#                                       all in-function. The gateway check was
+#                                       ON here and bought nothing — the anon
+#                                       key that satisfies it is printed in the
+#                                       site's own page source — while it did
+#                                       block pg_net, which has no JWT to send.
 PUBLIC_FUNCTIONS = {
     "collective_public",
     "collective_odds",
@@ -57,6 +64,7 @@ PUBLIC_FUNCTIONS = {
     "collective_admin",
     "collective_billing",
     "collective_embed",
+    "collective_odds_ingest",
 }
 
 IMPORT_RE = re.compile(

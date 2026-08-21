@@ -88,10 +88,52 @@ function readStoredQuota(v: unknown): StoredQuota {
 
 /** pg_cron calls with the service role key; a founder calls with their own
  *  session. Anything else is refused before a provider request is made. */
+/** Constant-time compare, so a token cannot be recovered a character at a
+ *  time from response latency. */
+function sameSecret(a: string, b: string): boolean {
+  if (a.length !== b.length || a.length === 0) return false;
+  let diff = 0;
+  for (let i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  return diff === 0;
+}
+
+/**
+ * Three ways in, all of them real authentication:
+ *
+ *   service role key   the operator, by hand
+ *   admin session      the founder console
+ *   ingest.cron_token  the scheduled job inside the database
+ *
+ * The cron token exists because the scheduler is pg_cron, which runs in
+ * Postgres and cannot hold an edge function secret. Keeping the token in
+ * odds.settings means both sides read the same value from the one place that
+ * is already service-role-only, with no new secret to distribute and nothing
+ * sensitive written into a cron job definition.
+ *
+ * This is why the gateway's "Enforce JWT verification" is OFF for this
+ * function. Leaving it ON would not add security — the anon key that
+ * satisfies it is printed in the site's own page source, so every visitor
+ * already has one — while it WOULD block pg_net, which has no JWT to send.
+ * The gate that matters is this function, and it is below, in code.
+ */
 async function authorize(req: Request): Promise<{ trigger: string } | Response> {
   const authz = req.headers.get("authorization") ?? "";
   const bearer = authz.replace(/^Bearer\s+/i, "").trim();
-  if (SERVICE_KEY && bearer === SERVICE_KEY) return { trigger: "cron" };
+  if (SERVICE_KEY && sameSecret(bearer, SERVICE_KEY)) return { trigger: "cron" };
+
+  const presented = (req.headers.get("x-odds-cron-token") ?? "").trim();
+  if (presented) {
+    const expected = await rpc<unknown>("odds_get_setting", { p_key: "ingest.cron_token" })
+      .catch(() => null);
+    // A token that was never generated must never match a caller who also
+    // sends nothing: both would be the empty string. sameSecret refuses
+    // zero length for exactly this reason.
+    if (typeof expected === "string" && sameSecret(presented, expected)) {
+      return { trigger: "schedule" };
+    }
+    return err("invalid_key", "That ingest token is not valid.", 401);
+  }
+
   const admin = await requireAdmin(req);
   if (admin instanceof Response) return admin;
   return { trigger: "admin" };

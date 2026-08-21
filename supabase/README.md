@@ -83,16 +83,23 @@ public read surface and an open writer:
 | --- | --- | --- |
 | `collective_public` | OFF | anonymous site reads |
 | `collective_odds` | OFF | anonymous site reads |
-| `collective_odds_ingest` | **ON** | writer; only the scheduler calls it |
+| `collective_odds_ingest` | OFF | authenticates the service role key, an admin session, or the pg_cron token, in-function |
 | `collective_ingest` | OFF | authenticates its own `x-collective-key` header |
 | `collective_admin` | OFF | verifies the bearer token itself via `requireAdmin` |
 | `collective_billing` | OFF | the Stripe webhook is signed by Stripe, not a JWT |
 | `collective_embed` | OFF | third-party sites call it; the origin allowlist is the lock |
 
-OFF does not mean unauthenticated. Every OFF function above either is a public
+OFF does not mean unauthenticated. Every function above either is a public
 read surface or does its own authentication in code, which is why the gateway
-has to let the request through to reach that check. `collective_odds_ingest` is
-the only writer with no in-function caller check, so it is the only ON.
+has to let the request through to reach that check.
+
+`collective_odds_ingest` was ON and is now OFF, deliberately. The gateway check
+accepts any valid JWT, and the anon key that produces one is printed in the
+site's own page source — so every visitor already has one and it gated nothing.
+What it did block was pg_net, which drives the schedule from inside Postgres
+and has no JWT to send. The real gate is `authorize()` in the function: the
+service role key, an admin session, or the `ingest.cron_token` from
+`odds.settings`, compared in constant time.
 
 ## Type checking
 
