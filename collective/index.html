@@ -237,6 +237,8 @@ function el(html){var d=document.createElement('div');d.innerHTML=html;return d;
 function fmtPct(x,d){return x==null?'-':(100*x).toFixed(d==null?1:d)+'%';}
 function fmtNum(x,d){return x==null?'-':Number(x).toFixed(d==null?1:d);}
 function fmtSpread(x){if(x==null)return '-';var n=Number(x);return (n>0?'+':'')+n.toFixed(1);}
+/* American prices carry their sign or they are not American prices. */
+function fmtPrice(x){if(x==null)return '';var n=Number(x);return (n>0?'+':'')+n;}
 function cents(c){return c==null?'-':'$'+(c/100).toFixed(2).replace(/\.00$/,'');}
 function rel(iso){
   if(!iso)return 'never';
@@ -500,8 +502,16 @@ async function renderWall(view){
     /* the board: every game on the current slate, every model's number */
     var boards='';
     ((board&&board.games)||[]).slice(0,12).forEach(function(g){
+      /* the market line, when one has been captured. Public information, so
+         it shows to everyone: what the Collective sells is the models. */
+      var mkt='';
+      if(g.market&&g.market.home_line!=null){
+        mkt='<span class="tm" title="market line, '+esc(g.market.book||'')+', captured '+rel(g.market.captured_at)+'">'+
+          esc(g.home)+' '+fmtSpread(g.market.home_line)+
+          (g.market.home_price!=null?' '+fmtPrice(g.market.home_price):'')+'</span>';
+      }
       var hd='<div class="gb-hd"><span>'+esc(g.away)+' @ '+esc(g.home)+'</span>'+
-        '<span class="tm">'+kickoffFmt(g.kickoff_at)+'</span>'+
+        '<span class="tm">'+kickoffFmt(g.kickoff_at)+'</span>'+mkt+
         (g.result?'<span class="fin">FINAL '+g.result.away_score+' - '+g.result.home_score+'</span>':'')+
         '</div>';
       var lines='';
@@ -748,7 +758,17 @@ async function renderBoard(view){
     var head='<h1>The Board</h1><p class="lede">Every game on the slate with each model’s number and, after settlement, its grade. Pre-kickoff numbers and consensus are for subscribers. Settled games are the public record.</p>'+wk;
     var cards='';
     (d.games||[]).forEach(function(g){
-      var hd='<div class="gc-hd"><span class="lbl">'+esc(g.label)+'</span><span class="tm">'+kickoffFmt(g.kickoff_at)+'</span>'+
+      /* The captured market, priced. Book and capture time are on the
+         tooltip because a line without them is a claim, not a number. */
+      var mkt2='';
+      if(g.market&&(g.market.home_line!=null||g.market.total_line!=null||g.market.home_ml_price!=null)){
+        var bits=[];
+        if(g.market.home_line!=null)bits.push(esc(g.home)+' '+fmtSpread(g.market.home_line)+' '+fmtPrice(g.market.home_price));
+        if(g.market.total_line!=null)bits.push('o'+fmtNum(g.market.total_line)+' '+fmtPrice(g.market.over_price));
+        if(g.market.home_ml_price!=null)bits.push('ML '+fmtPrice(g.market.away_ml_price)+'/'+fmtPrice(g.market.home_ml_price));
+        mkt2='<span class="tm" title="'+esc(g.market.book||'')+', captured '+rel(g.market.captured_at)+'">market '+bits.join(' &middot; ')+'</span>';
+      }
+      var hd='<div class="gc-hd"><span class="lbl">'+esc(g.label)+'</span><span class="tm">'+kickoffFmt(g.kickoff_at)+'</span>'+mkt2+
         (g.result?'<span class="spacer"></span><span class="fin">'+g.result.away_score+' - '+g.result.home_score+'</span><span class="tm">close '+fmtSpread(g.result.closing_spread)+' / '+fmtNum(g.result.closing_total)+'</span>':'')+
         '</div>';
       var cons='';
