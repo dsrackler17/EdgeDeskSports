@@ -34,7 +34,11 @@ OUT_DIR = FUNCTIONS / "_bundles"
 # A function that must not have JWT verification enforced by the gateway,
 # because it serves the public site. Recorded here so the deployment note in
 # the bundle header cannot drift from reality.
-PUBLIC_FUNCTIONS = {"collective_public", "collective_odds"}
+# Functions the gateway must NOT enforce JWT on. collective_public and
+# collective_odds serve the site anonymously; collective_ingest authenticates
+# creators with an x-collective-key header rather than a Supabase session, so
+# the gateway has to let the request reach the function to be authenticated.
+PUBLIC_FUNCTIONS = {"collective_public", "collective_odds", "collective_ingest"}
 
 IMPORT_RE = re.compile(
     r"""^import\s+(?:type\s+)?(?:[\w*{}\n\r\t,\s]+?\s+from\s+)?["']([^"']+)["'];?\s*$""",
