@@ -458,6 +458,22 @@ interface NormalizedSlate {
    *  from the run record alone. */
   unmapped: UnmappedRow[];
   counts: { events: number; odds: number; unmapped: number };
+  /** Present only for metered providers. */
+  quota?: ProviderQuota;
+}
+
+/** Credit accounting a metered provider reports alongside its data. Numbers
+ *  only, never a raw header value. A provider that does not meter leaves every
+ *  field null, and the caller treats "unknown" as "no budget information",
+ *  never as "unlimited". */
+interface ProviderQuota {
+  /** Credits left in the current billing period. */
+  remaining: number | null;
+  /** Credits spent so far in the current billing period. */
+  used: number | null;
+  /** What the request that produced this slate cost. Authoritative: it is the
+   *  provider's own accounting, not our prediction of it. */
+  last_cost: number | null;
 }
 
 interface UnmappedRow {
@@ -510,6 +526,8 @@ interface ProbeResult {
   /** What the adapter made of the sample: proof the mapping works against
    *  the real feed, or a precise account of where it did not. */
   mapping: { mapped: number; unmapped: UnmappedRow[] };
+  /** Present only for metered providers. */
+  quota?: ProviderQuota;
 }
 
 const REGISTRY = new Map<string, OddsProvider>();
@@ -1331,6 +1349,605 @@ const oddsBlazeProvider: OddsProvider = {
 /** Exported for the read API's price comparison. Kept next to the provider so
  *  the American-odds convention has one owner. */
 
+// ---------- inlined _shared/theoddsapi.ts ----------
+// The Odds API provider (the-odds-api.com).
+//
+// The ONLY file in the Collective that knows what a The Odds API response
+// looks like. Everything else consumes NormalizedSlate.
+//
+// Wire contract, from the v4 documentation:
+//
+//   GET https://api.the-odds-api.com/v4/sports/<sportKey>/odds
+//         ?apiKey=<key>
+//         &regions=us[,us2,uk,eu,au]
+//         &markets=h2h,spreads,totals
+//         &oddsFormat=american        <- REQUIRED, see below
+//         &dateFormat=iso
+//
+//   -> [ { "id": …, "sport_key": "americanfootball_nfl",
+//          "commence_time": "2026-09-13T17:00:00Z",
+//          "home_team": "Cincinnati Bengals",
+//          "away_team": "Tampa Bay Buccaneers",
+//          "bookmakers": [ { "key": "draftkings", "title": "DraftKings",
+//                            "last_update": …,
+//                            "markets": [ { "key": "spreads", "last_update": …,
+//                                           "outcomes": [ { "name": "Cincinnati Bengals",
+//                                                           "price": -110,
+//                                                           "point": -3.5 }, … ] } ] } ] } ]
+//
+// oddsFormat is not optional in practice. The API defaults to DECIMAL, and a
+// decimal price is a small positive number that parses cleanly as a number —
+// so omitting it does not fail, it silently stores 1.91 where -110 belongs and
+// every consensus, de-vig and best-price number downstream becomes quiet
+// nonsense. It is pinned below and asserted in the tests.
+//
+// COST MODEL. This differs from OddsBlaze in a way that matters:
+//
+//   OddsBlaze     one request PER BOOK; cost scales with how many books.
+//   The Odds API  ONE request returns EVERY book in the region; cost is
+//                 [number of markets] x [number of regions], independent of
+//                 how many books come back.
+//
+// So this provider issues exactly one request per poll and keeps every book
+// in the response. Filtering to a shorter book list would discard data already
+// paid for without saving a single credit. `opts.books` is therefore a
+// PRIORITY ORDER here, not a filter, and books that were asked for but did not
+// appear are reported in books_failed so a vanished book is visible.
+//
+// The response carries the authoritative credit accounting in its headers:
+//   x-requests-remaining  credits left in the period
+//   x-requests-used       credits spent in the period
+//   x-requests-last       what THIS request cost
+// These are read and returned on the slate so the caller can enforce a budget
+// against real numbers rather than a predicted cost.
+//
+// The credential is read here and here only, from THE_ODDS_API_KEY, falling
+// back to NFL_ODDS_API_KEY so a single-provider deployment needs one secret.
+// It goes in the query string because that is the documented authentication
+// method, and every URL leaving this module — into a log, an error, an
+// ingest_runs row, or a probe response — passes through redactUrl first.
+
+const TA_DEFAULT_BASE = "https://api.the-odds-api.com/v4/";
+const TA_DEFAULT_TIMEOUT_MS = 15000;
+const TA_DEFAULT_REGIONS = "us";
+
+/** Reported as the book on rows that are not attributable to one book, so an
+ *  unmapped report never has an empty book column. */
+const TA_NO_BOOK = "(response)";
+
+function taApiKey(): string {
+  return Deno.env.get("THE_ODDS_API_KEY") ?? Deno.env.get("NFL_ODDS_API_KEY") ?? "";
+}
+
+function taBaseUrl(): string {
+  const raw = Deno.env.get("THE_ODDS_API_BASE_URL") ?? TA_DEFAULT_BASE;
+  return raw.endsWith("/") ? raw : `${raw}/`;
+}
+
+/** Comma separated region list. More regions = proportionally more credits,
+ *  so this is a setting rather than a constant: `eu` buys Pinnacle, and
+ *  whether that is worth doubling the cost is a plan decision, not a code
+ *  decision. */
+function taRegions(): string {
+  const raw = (Deno.env.get("THE_ODDS_API_REGIONS") ?? TA_DEFAULT_REGIONS).trim();
+  return raw === "" ? TA_DEFAULT_REGIONS : raw;
+}
+
+/** Our league id -> the API's sport key. */
+const TA_SPORT_KEY: Record<string, string> = {
+  nfl: "americanfootball_nfl",
+  ncaaf: "americanfootball_ncaaf",
+  nba: "basketball_nba",
+  ncaab: "basketball_ncaab",
+  mlb: "baseball_mlb",
+  nhl: "icehockey_nhl",
+};
+
+/** Canonical market id -> the API's `markets` value. Only the game-line
+ *  family is available on the bulk odds endpoint; alternates and props live
+ *  on the per-event endpoint, which bills per event and is deliberately not
+ *  used here. */
+const TA_MARKET_PARAM: Record<string, string> = {
+  moneyline: "h2h",
+  spread: "spreads",
+  total: "totals",
+};
+
+/** The API's bookmaker keys are not all the ids the Collective already uses.
+ *  Mapping them keeps one book from appearing twice under two names. Keys not
+ *  listed here pass through unchanged and are auto-registered on ingest. */
+const TA_BOOK_ALIASES: Record<string, string> = {
+  williamhill_us: "caesars",
+  betfair_ex_us: "betfair",
+  betfair_ex_eu: "betfair",
+  betfair_ex_uk: "betfair",
+  hardrockbet: "hardrock",
+  ballybet: "ballybet",
+  lowvig: "lowvig",
+  betonlineag: "betonline",
+  mybookieag: "mybookie",
+  betus: "betus",
+  unibet_us: "unibet",
+  superbook: "superbook",
+  windcreek: "betfred",
+};
+
+function taCanonicalBook(raw: unknown): string {
+  const k = normKey(raw).replace(/[^a-z0-9]/g, "");
+  const lower = String(raw ?? "").trim().toLowerCase();
+  return TA_BOOK_ALIASES[lower] ?? TA_BOOK_ALIASES[k] ?? (lower || k);
+}
+
+// --------------------------------------------------------------- wire types
+
+interface TaOutcome {
+  name?: unknown;
+  price?: unknown;
+  point?: unknown;
+  description?: unknown;
+}
+interface TaMarket {
+  key?: unknown;
+  last_update?: unknown;
+  outcomes?: unknown;
+}
+interface TaBookmaker {
+  key?: unknown;
+  title?: unknown;
+  last_update?: unknown;
+  markets?: unknown;
+}
+interface TaEvent {
+  id?: unknown;
+  sport_key?: unknown;
+  commence_time?: unknown;
+  home_team?: unknown;
+  away_team?: unknown;
+  bookmakers?: unknown;
+}
+
+function taAsArray(v: unknown): unknown[] {
+  return Array.isArray(v) ? v : [];
+}
+
+// ------------------------------------------------------------ quota headers
+
+/** The credit accounting the API reports on every response. Numbers only —
+ *  no header is echoed verbatim, so a future header carrying anything
+ *  identifying cannot leak through this path. */
+function readTaQuota(headers: Headers): ProviderQuota {
+  const n = (name: string): number | null => {
+    const raw = headers.get(name);
+    if (raw === null || raw.trim() === "") return null;
+    const v = Number(raw);
+    return Number.isFinite(v) ? v : null;
+  };
+  return {
+    remaining: n("x-requests-remaining"),
+    used: n("x-requests-used"),
+    last_cost: n("x-requests-last"),
+  };
+}
+
+/** What one poll will cost, by the documented formula. Used only to plan a
+ *  budget before the fact; the authoritative number is x-requests-last on the
+ *  response, which is what gets recorded. */
+function taPredictedCost(markets: MarketId[], regionList: string): number {
+  const m = markets.filter((x) => TA_MARKET_PARAM[x]).length || 1;
+  const r = regionList.split(",").map((s) => s.trim()).filter(Boolean).length || 1;
+  return m * r;
+}
+
+// ------------------------------------------------------------------ reading
+
+/** One outcome -> one canonical price, or an unmapped row explaining why not.
+ *
+ *  `point` is per outcome and already in that team's own terms, which is
+ *  exactly the home convention the Collective stores: the home outcome's point
+ *  IS the home spread. No sign flipping happens here, and none should. */
+function readTaOutcome(
+  row: unknown,
+  ctx: {
+    book: string;
+    market: MarketId;
+    homeNames: string[];
+    awayNames: string[];
+    isLive: boolean;
+  },
+): { odd: NormalizedOdd | null; bad: UnmappedRow | null } {
+  if (!row || typeof row !== "object" || Array.isArray(row)) {
+    return { odd: null, bad: unmapped(ctx.book, "outcome is not an object", row) };
+  }
+  const o = row as TaOutcome;
+
+  // A props payload carries `description` (the player). The bulk endpoint is
+  // not asked for props, so one appearing means the request changed shape;
+  // report it rather than filing a player line as a team line.
+  if (o.description !== undefined && o.description !== null && o.description !== "") {
+    return {
+      odd: null,
+      bad: unmapped(ctx.book, "outcome carries a player description; not a game line", row),
+    };
+  }
+
+  const price = parseAmericanPrice(o.price);
+  if (price === null) {
+    return { odd: null, bad: unmapped(ctx.book, "no readable american price", row) };
+  }
+
+  const outcome = resolveOutcome({
+    market: ctx.market,
+    selectionName: o.name,
+    homeNames: ctx.homeNames,
+    awayNames: ctx.awayNames,
+  });
+  if (!outcome) {
+    return {
+      odd: null,
+      bad: unmapped(ctx.book, "outcome name matched neither team nor over/under", row),
+    };
+  }
+
+  // Moneyline has no line. Spreads and totals must have one: a spread with no
+  // number is not a usable price, and storing it with a null line would let it
+  // group with genuinely different numbers in best-price and consensus.
+  let line: number | null = null;
+  if (ctx.market !== "moneyline") {
+    line = parseLine(o.point);
+    if (line === null) {
+      return { odd: null, bad: unmapped(ctx.book, `${ctx.market} outcome has no point`, row) };
+    }
+  }
+
+  return {
+    odd: {
+      book: ctx.book,
+      market: ctx.market,
+      outcome,
+      outcome_label: typeof o.name === "string" ? o.name : null,
+      line,
+      price,
+      is_live: ctx.isLive,
+      // The bulk endpoint returns main lines only; alternates are on the
+      // per-event endpoint, which this provider does not call.
+      is_main: true,
+      raw: sampleOf(row, 200),
+    },
+    bad: null,
+  };
+}
+
+/** One event -> canonical event plus every price under it. */
+function readTaEvent(
+  row: unknown,
+  opts: { markets: MarketId[]; now: number },
+): { event: NormalizedEvent | null; bad: UnmappedRow[] } {
+  const bad: UnmappedRow[] = [];
+  if (!row || typeof row !== "object" || Array.isArray(row)) {
+    return { event: null, bad: [unmapped(TA_NO_BOOK, "event is not an object", row)] };
+  }
+  const e = row as TaEvent;
+
+  const home = typeof e.home_team === "string" ? e.home_team : "";
+  const away = typeof e.away_team === "string" ? e.away_team : "";
+  const commence = typeof e.commence_time === "string" ? e.commence_time : "";
+  if (!home || !away || !commence) {
+    return {
+      event: null,
+      bad: [unmapped(TA_NO_BOOK, "event is missing home_team, away_team or commence_time", row)],
+    };
+  }
+  const kickoff = Date.parse(commence);
+  if (!Number.isFinite(kickoff)) {
+    return { event: null, bad: [unmapped(TA_NO_BOOK, "commence_time is not a parseable time", row)] };
+  }
+
+  // There is no in-play flag on this endpoint, so live is inferred from the
+  // clock. Stated plainly rather than guessed at: a game that has kicked off
+  // is live until the ingest layer learns otherwise from the Collective's own
+  // slate, which is the only place a final score is known.
+  const isLive = kickoff <= opts.now;
+
+  const wanted = new Set(opts.markets.length ? opts.markets : GAME_MARKETS);
+  const odds: NormalizedOdd[] = [];
+  const homeNames = [home];
+  const awayNames = [away];
+  let newestBook: number | null = null;
+
+  for (const bRow of taAsArray(e.bookmakers)) {
+    if (!bRow || typeof bRow !== "object" || Array.isArray(bRow)) {
+      bad.push(unmapped(TA_NO_BOOK, "bookmaker is not an object", bRow));
+      continue;
+    }
+    const b = bRow as TaBookmaker;
+    const book = taCanonicalBook(firstOf(b.key, b.title));
+    if (!book) {
+      bad.push(unmapped(TA_NO_BOOK, "bookmaker has no key or title", bRow));
+      continue;
+    }
+    const bUpdated = Date.parse(String(b.last_update ?? ""));
+    if (Number.isFinite(bUpdated)) {
+      newestBook = newestBook === null ? bUpdated : Math.max(newestBook, bUpdated);
+    }
+
+    for (const mRow of taAsArray(b.markets)) {
+      if (!mRow || typeof mRow !== "object" || Array.isArray(mRow)) {
+        bad.push(unmapped(book, "market is not an object", mRow));
+        continue;
+      }
+      const m = mRow as TaMarket;
+      const market = canonicalMarket(m.key);
+      if (!market) {
+        bad.push(unmapped(book, "market key is not one the Collective stores", mRow));
+        continue;
+      }
+      if (!wanted.has(market)) continue;
+
+      for (const oRow of taAsArray(m.outcomes)) {
+        const { odd, bad: problem } = readTaOutcome(oRow, {
+          book,
+          market,
+          homeNames,
+          awayNames,
+          isLive,
+        });
+        if (odd) odds.push(odd);
+        if (problem) bad.push(problem);
+      }
+    }
+  }
+
+  return {
+    event: {
+      provider_event_id: typeof e.id === "string" ? e.id : null,
+      // Team codes are resolved from these names by the database's alias
+      // table, which is the one place that mapping lives.
+      home,
+      away,
+      home_name: home,
+      away_name: away,
+      commence_time: new Date(kickoff).toISOString(),
+      status: isLive ? "live" : "scheduled",
+      is_live: isLive,
+      provider_updated_at: newestBook === null ? null : new Date(newestBook).toISOString(),
+      odds,
+    },
+    bad,
+  };
+}
+
+// ------------------------------------------------------------------- request
+
+function taBuildUrl(opts: FetchOptions): string {
+  const league = normKey(opts.league) || "nfl";
+  const sport = TA_SPORT_KEY[league] ?? league;
+  const markets = (opts.markets.length ? opts.markets : GAME_MARKETS)
+    .map((m) => TA_MARKET_PARAM[m])
+    .filter(Boolean);
+  const u = new URL(`sports/${sport}/odds`, taBaseUrl());
+  u.searchParams.set("taApiKey", taApiKey());
+  u.searchParams.set("taRegions", taRegions());
+  u.searchParams.set("markets", (markets.length ? markets : ["h2h", "spreads", "totals"]).join(","));
+  // Pinned, not defaulted. See the header note.
+  u.searchParams.set("oddsFormat", "american");
+  u.searchParams.set("dateFormat", "iso");
+  return u.toString();
+}
+
+function taReasonFor(status: number): string {
+  if (status === 401) return "the API rejected the key (401)";
+  if (status === 429) return "credit limit reached or rate limited (429)";
+  if (status === 422) return "the request parameters were rejected (422)";
+  if (status === 404) return "no such sport key (404)";
+  if (status >= 500) return `the provider returned ${status}`;
+  return `unexpected status ${status}`;
+}
+
+interface TaRawFetch {
+  ok: boolean;
+  status: number | null;
+  body: unknown;
+  quota: ProviderQuota;
+  reason: string | null;
+}
+
+async function taRequest(opts: FetchOptions): Promise<TaRawFetch> {
+  const url = taBuildUrl(opts);
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), opts.timeoutMs ?? TA_DEFAULT_TIMEOUT_MS);
+  const empty: ProviderQuota = { remaining: null, used: null, last_cost: null };
+  try {
+    const res = await fetch(url, { signal: controller.signal });
+    const quota = readTaQuota(res.headers);
+    if (!res.ok) {
+      return { ok: false, status: res.status, body: null, quota, reason: taReasonFor(res.status) };
+    }
+    const text = await res.text();
+    let body: unknown = null;
+    try {
+      body = JSON.parse(text);
+    } catch {
+      return {
+        ok: false,
+        status: res.status,
+        body: null,
+        quota,
+        reason: "the response was not JSON",
+      };
+    }
+    return { ok: true, status: res.status, body, quota, reason: null };
+  } catch (e) {
+    const msg = redactSecret(String((e as Error)?.message ?? e), taApiKey());
+    return {
+      ok: false,
+      status: null,
+      body: null,
+      quota: empty,
+      reason: msg.includes("abort") ? "the request timed out" : msg,
+    };
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+// ----------------------------------------------------------------- provider
+
+const theOddsApiProvider: OddsProvider = {
+  id: "theoddsapi",
+  name: "The Odds API",
+
+  isConfigured(): boolean {
+    return taApiKey().length > 0;
+  },
+
+  async fetchSlate(opts: FetchOptions): Promise<NormalizedSlate> {
+    const fetchedAt = new Date().toISOString();
+    const now = Date.now();
+    const base: NormalizedSlate = {
+      provider: "theoddsapi",
+      league: opts.league,
+      fetched_at: fetchedAt,
+      provider_updated_at: null,
+      events: [],
+      books_ok: [],
+      books_failed: [],
+      unmapped: [],
+      counts: { events: 0, odds: 0, unmapped: 0 },
+      quota: { remaining: null, used: null, last_cost: null },
+    };
+
+    if (!theOddsApiProvider.isConfigured()) {
+      base.books_failed = [{ book: TA_NO_BOOK, reason: "no API key configured" }];
+      return base;
+    }
+
+    const res = await taRequest(opts);
+    base.quota = res.quota;
+    if (!res.ok) {
+      base.books_failed = [{ book: TA_NO_BOOK, reason: res.reason ?? "request failed" }];
+      return base;
+    }
+
+    // One request returns every book, so a non-array body is the whole run
+    // failing rather than one book failing.
+    if (!Array.isArray(res.body)) {
+      base.books_failed = [{ book: TA_NO_BOOK, reason: "response was not an array of events" }];
+      base.unmapped = [unmapped(TA_NO_BOOK, "top level of response is not an array", res.body)];
+      base.counts.unmapped = 1;
+      return base;
+    }
+
+    const events: NormalizedEvent[] = [];
+    const bad: UnmappedRow[] = [];
+    const seenBooks = new Set<string>();
+    let newest: number | null = null;
+    let oddsCount = 0;
+
+    for (const row of res.body) {
+      const { event, bad: problems } = readTaEvent(row, { markets: opts.markets, now });
+      bad.push(...problems);
+      if (!event) continue;
+      // Pregame/live filter, applied after mapping so the counts stay honest.
+      if (opts.live === true && !event.is_live) continue;
+      if (opts.live === false && event.is_live) continue;
+      for (const o of event.odds) seenBooks.add(o.book);
+      oddsCount += event.odds.length;
+      if (event.provider_updated_at) {
+        const t = Date.parse(event.provider_updated_at);
+        if (Number.isFinite(t)) newest = newest === null ? t : Math.max(newest, t);
+      }
+      events.push(event);
+    }
+
+    // opts.books is a priority order, not a filter: every book in the response
+    // is kept because it cost nothing extra. A book that was asked for and did
+    // not arrive is reported so its absence is visible rather than silent.
+    const asked = opts.books.map(taCanonicalBook).filter(Boolean);
+    const missing = asked.filter((b) => !seenBooks.has(b));
+
+    const ordered = [...seenBooks].sort((a, b) => {
+      const ia = asked.indexOf(a);
+      const ib = asked.indexOf(b);
+      return (ia < 0 ? 999 : ia) - (ib < 0 ? 999 : ib) || a.localeCompare(b);
+    });
+
+    return {
+      ...base,
+      provider_updated_at: newest === null ? null : new Date(newest).toISOString(),
+      events,
+      books_ok: ordered,
+      books_failed: missing.map((b) => ({
+        book: b,
+        reason: "requested but not present in the response for this region",
+      })),
+      unmapped: bad,
+      counts: { events: events.length, odds: oddsCount, unmapped: bad.length },
+    };
+  },
+
+  async probe(opts: FetchOptions): Promise<ProbeResult> {
+    const urlRedacted = redactUrl(taBuildUrl(opts));
+    const empty: ProbeResult = {
+      provider: "theoddsapi",
+      ok: false,
+      url_redacted: urlRedacted,
+      http_status: null,
+      observed_shape: [],
+      sample_event: null,
+      sample_odd: null,
+      counts: { events: 0, odds: 0 },
+      error: null,
+      mapping: { mapped: 0, unmapped: [] },
+      quota: { remaining: null, used: null, last_cost: null },
+    };
+
+    if (!theOddsApiProvider.isConfigured()) {
+      return { ...empty, error: "no API key configured" };
+    }
+
+    const res = await taRequest(opts);
+    if (!res.ok) {
+      return { ...empty, http_status: res.status, error: res.reason, quota: res.quota };
+    }
+    if (!Array.isArray(res.body)) {
+      return {
+        ...empty,
+        http_status: res.status,
+        quota: res.quota,
+        observed_shape: shapePaths(res.body),
+        error: "response was not an array of events",
+      };
+    }
+
+    const first = res.body[0] ?? null;
+    const { event, bad } = readTaEvent(first, { markets: opts.markets, now: Date.now() });
+    const oddsTotal = res.body.reduce((n: number, row: unknown) => {
+      const r = row as TaEvent;
+      return n + taAsArray(r?.bookmakers).reduce((k: number, b: unknown) => {
+        const bb = b as TaBookmaker;
+        return k + taAsArray(bb?.markets).reduce(
+          (j: number, m: unknown) => j + taAsArray((m as TaMarket)?.outcomes).length,
+          0,
+        );
+      }, 0);
+    }, 0);
+
+    return {
+      provider: "theoddsapi",
+      ok: true,
+      url_redacted: urlRedacted,
+      http_status: res.status,
+      observed_shape: shapePaths(first),
+      sample_event: sampleOf(first, 600),
+      sample_odd: event?.odds[0] ?? null,
+      counts: { events: res.body.length, odds: oddsTotal },
+      error: null,
+      mapping: { mapped: event?.odds.length ?? 0, unmapped: bad },
+      quota: res.quota,
+    };
+  },
+};
+
 // ---------- collective_odds_ingest/index.ts ----------
 // Model Collective — NFL odds ingestion.
 //
@@ -1342,10 +1959,18 @@ const oddsBlazeProvider: OddsProvider = {
 // DEPLOYMENT: keep "Enforce JWT verification" ON for this function. The
 // gateway then rejects anonymous calls, and the checks below additionally
 // require either the service role key (how pg_cron calls it) or an admin
-// account. The OddsBlaze credential lives only in the NFL_ODDS_API_KEY
-// secret and is read only inside the provider module.
+// account. A provider credential lives only in an edge function secret and is
+// read only inside that provider's module.
+//
+// Two providers are registered. Which one runs is the `provider.default`
+// setting, not a deploy: OddsBlaze bills per book, The Odds API bills per
+// [markets x regions] and returns every book in one request. The Odds API
+// reports its remaining credits on every response, so when the active provider
+// meters itself this function enforces a budget against those real numbers
+// before spending anything.
 
 registerProvider(oddsBlazeProvider);
+registerProvider(theOddsApiProvider);
 
 const NO_STORE = { "cache-control": "no-store" };
 /** Events per RPC call. Keeps a single request body small enough to stay well
@@ -1363,7 +1988,43 @@ const SETTING_KEYS = [
   "nfl.pregame_window_hours",
   "nfl.max_books_per_run",
   "provider.default",
+  "provider.credit_reserve",
+  "provider.quota",
 ];
+
+/** Credit accounting carried forward between runs.
+ *
+ *  A metered provider only reports its remaining balance in a RESPONSE, which
+ *  is after the credit has already been spent. So the balance from the last
+ *  run is persisted in odds.settings and checked before the next one. That is
+ *  what makes the budget a guard rather than a report: without it the first
+ *  time we learn the plan is exhausted is a 429, mid-season, on the Sunday
+ *  that matters.
+ *
+ *  An unknown balance is treated as "no information" and allowed through —
+ *  never as "unlimited" — because the alternative is a deployment that can
+ *  never make its first request. */
+interface StoredQuota {
+  remaining: number | null;
+  used: number | null;
+  last_cost: number | null;
+  observed_at: string | null;
+}
+
+function readStoredQuota(v: unknown): StoredQuota {
+  const o = (v && typeof v === "object" && !Array.isArray(v)) ? v as Record<string, unknown> : {};
+  const n = (x: unknown): number | null => {
+    if (x === null || x === undefined || x === "") return null;
+    const k = Number(x);
+    return Number.isFinite(k) ? k : null;
+  };
+  return {
+    remaining: n(o.remaining),
+    used: n(o.used),
+    last_cost: n(o.last_cost),
+    observed_at: typeof o.observed_at === "string" ? o.observed_at : null,
+  };
+}
 
 /** pg_cron calls with the service role key; a founder calls with their own
  *  session. Anything else is refused before a provider request is made. */
@@ -1441,6 +2102,82 @@ async function secondsSinceLastRun(): Promise<number | null> {
   return Number.isFinite(ms) ? Math.round((Date.now() - ms) / 1000) : null;
 }
 
+/** Why the site is showing "Odds unavailable", in the order the pipeline
+ *  fails. The site itself deliberately says nothing beyond "unavailable" — it
+ *  will not guess at a cause in front of a visitor — so this is where the
+ *  cause is actually named, for an operator who is already authenticated. */
+function diagnose(
+  st: Record<string, unknown> | null,
+  cfg: Record<string, unknown>,
+  provider: { id: string; isConfigured(): boolean },
+  quota: StoredQuota,
+): { healthy: boolean; state: string; detail: string; fix: string | null } {
+  if (cfg["nfl.enabled"] === false) {
+    return {
+      healthy: false,
+      state: "disabled",
+      detail: "nfl.enabled is false, so ingestion never runs.",
+      fix: "Set nfl.enabled to true in odds.settings.",
+    };
+  }
+  if (!provider.isConfigured()) {
+    return {
+      healthy: false,
+      state: "no_credential",
+      detail: `The "${provider.id}" provider has no API key in this function's environment.`,
+      fix: provider.id === "theoddsapi"
+        ? "Add THE_ODDS_API_KEY (or NFL_ODDS_API_KEY) to the edge function secrets."
+        : "Add NFL_ODDS_API_KEY to the edge function secrets.",
+    };
+  }
+  const last = st?.last_run as Record<string, unknown> | null | undefined;
+  if (!st?.last_poll_at) {
+    if (!last) {
+      return {
+        healthy: false,
+        state: "never_run",
+        detail:
+          "No ingest run has ever been recorded, so nothing has called the provider. " +
+          "This is what makes the site say odds are unavailable.",
+        fix: "POST /v1/ingest?force=1 once by hand, then schedule it.",
+      };
+    }
+    return {
+      healthy: false,
+      state: "never_succeeded",
+      detail:
+        `Runs exist but none finished ok or partial. The most recent ended "${
+          String(last.status ?? "unknown")
+        }"` + (last.error_message ? `: ${String(last.error_message).slice(0, 200)}` : "."),
+      fix: "Run /v1/probe to see what the provider actually returned.",
+    };
+  }
+  if (num(st?.books_current, 0) === 0) {
+    return {
+      healthy: false,
+      state: "no_current_prices",
+      detail: "A poll succeeded but no book has a current price stored.",
+      fix: "Run /v1/probe; the mapping section shows which rows could not be read.",
+    };
+  }
+  if (quota.remaining !== null && quota.remaining <= 0) {
+    return {
+      healthy: false,
+      state: "out_of_credit",
+      detail: "The provider reports no credits left in this billing period.",
+      fix: "Wait for the period to reset, or raise the plan.",
+    };
+  }
+  return {
+    healthy: true,
+    state: "ok",
+    detail: `Last polled ${String(st?.last_poll_at)} with ${
+      num(st?.books_current, 0)
+    } book(s) currently priced.`,
+    fix: null,
+  };
+}
+
 function chunk<T>(items: T[], size: number): T[][] {
   const out: T[][] = [];
   for (let i = 0; i < items.length; i += size) out.push(items.slice(i, i + size));
@@ -1492,11 +2229,25 @@ Deno.serve(async (req) => {
     if (path === "/v1/status" && req.method === "GET") {
       const st = await rpc<Record<string, unknown> | null>("odds_status", { p_league: league });
       const cad = await cadence(cfg, league);
+      const quota = readStoredQuota(cfg["provider.quota"]);
+      const markets = strList(cfg["nfl.markets"], ["moneyline", "spread", "total"]);
+      const cost = taPredictedCost(markets, Deno.env.get("THE_ODDS_API_REGIONS") ?? "us");
       return json({
         ...st,
         provider: { id: provider.id, name: provider.name, configured: provider.isConfigured() },
         cadence: cad,
         seconds_since_last_run: await secondsSinceLastRun(),
+        credits: {
+          ...quota,
+          estimated_cost_per_poll: cost,
+          reserve: Math.max(0, num(cfg["provider.credit_reserve"], 0)),
+          polls_affordable: quota.remaining === null
+            ? null
+            : Math.max(0, Math.floor(
+              (quota.remaining - Math.max(0, num(cfg["provider.credit_reserve"], 0))) / cost,
+            )),
+        },
+        diagnosis: diagnose(st, cfg, provider, quota),
       }, 200, NO_STORE);
     }
 
@@ -1557,6 +2308,28 @@ Deno.serve(async (req) => {
       const markets = strList(cfg["nfl.markets"], ["moneyline", "spread", "total"]);
       const opts: FetchOptions = { league, books, markets, mainOnly: true, timeoutMs: 12000 };
 
+      // ------------------------------------------------- credit budget
+      // Spend nothing if the last known balance says this request would take
+      // the plan below its reserve. The reserve exists so the closing-line
+      // captures at the end of a period are still affordable after a month of
+      // routine polling: running to exactly zero would mean the last games of
+      // the month grade against no captured close at all.
+      const reserve = Math.max(0, num(cfg["provider.credit_reserve"], 0));
+      const stored = readStoredQuota(cfg["provider.quota"]);
+      const cost = taPredictedCost(markets, Deno.env.get("THE_ODDS_API_REGIONS") ?? "us");
+      if (stored.remaining !== null && stored.remaining - cost < reserve) {
+        return json({
+          ok: true,
+          skipped: "credit_budget",
+          reason:
+            `The provider reports ${stored.remaining} credits left. This poll costs about ` +
+            `${cost}, which would drop the balance below the reserve of ${reserve}.`,
+          quota: stored,
+          estimated_cost: cost,
+          credit_reserve: reserve,
+        }, 200, NO_STORE);
+      }
+
       const runId = await rpc<number>("odds_begin_run", {
         p_provider: provider.id,
         p_league: league,
@@ -1587,6 +2360,16 @@ Deno.serve(async (req) => {
           return err("provider_unavailable", "The odds provider did not return any data.", 502, {
             books_failed: slate.books_failed,
           });
+        }
+
+        // Record the balance the provider just reported, before anything
+        // below can throw. This is the only moment the real number is known,
+        // and a run that fails later still spent the credit.
+        if (slate.quota) {
+          await rpc("odds_set_setting", {
+            p_key: "provider.quota",
+            p_value: { ...slate.quota, observed_at: new Date().toISOString() },
+          }).catch((e) => console.error("could not persist provider quota:", e));
         }
 
         let written = 0, unchanged = 0, created = 0, seen = 0, rejected = 0;
@@ -1621,6 +2404,8 @@ Deno.serve(async (req) => {
           p_run_id: runId,
           p_stats: {
             status: partial ? "partial" : "ok",
+            credits_spent: slate.quota?.last_cost ?? null,
+            credits_remaining: slate.quota?.remaining ?? null,
             books_requested: books.length,
             books_ok: slate.books_ok.length,
             books_failed: slate.books_failed.length,
@@ -1652,6 +2437,7 @@ Deno.serve(async (req) => {
           snapshots_unchanged: unchanged,
           rows_rejected: rejected,
           provider_rows_unmapped: slate.counts.unmapped,
+          credits: slate.quota ?? null,
           unmapped_sample: slate.unmapped.slice(0, 5),
           unmatched_events: unmatched.slice(0, 5),
           closing_rows: closingRows ?? 0,

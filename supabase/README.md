@@ -109,8 +109,11 @@ Set in Supabase → Edge Functions → Secrets. Never in this repository.
 
 | Name | Used by | Required |
 | --- | --- | --- |
-| `NFL_ODDS_API_KEY` | `collective_odds_ingest` (via `_shared/oddsblaze.ts`) | yes, for odds ingestion |
+| `NFL_ODDS_API_KEY` | `collective_odds_ingest` (OddsBlaze, and the fallback for The Odds API) | yes, for odds ingestion |
+| `THE_ODDS_API_KEY` | same (The Odds API; takes precedence) | only to run both providers on separate keys |
 | `NFL_ODDS_BASE_URL` | same | no, defaults to the documented endpoint |
+| `THE_ODDS_API_BASE_URL` | same | no, defaults to the documented endpoint |
+| `THE_ODDS_API_REGIONS` | same | no, defaults to `us`; each region multiplies the credit cost per poll |
 | `COLLECTIVE_BASE_URL` | all | no, defaults to production |
 | `COLLECTIVE_STRIPE_SECRET` | `collective_billing` | only to take payments |
 | `COLLECTIVE_STRIPE_WEBHOOK_SECRET` | `collective_billing` | only to take payments |

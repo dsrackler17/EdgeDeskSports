@@ -74,6 +74,22 @@ export interface NormalizedSlate {
    *  from the run record alone. */
   unmapped: UnmappedRow[];
   counts: { events: number; odds: number; unmapped: number };
+  /** Present only for metered providers. */
+  quota?: ProviderQuota;
+}
+
+/** Credit accounting a metered provider reports alongside its data. Numbers
+ *  only, never a raw header value. A provider that does not meter leaves every
+ *  field null, and the caller treats "unknown" as "no budget information",
+ *  never as "unlimited". */
+export interface ProviderQuota {
+  /** Credits left in the current billing period. */
+  remaining: number | null;
+  /** Credits spent so far in the current billing period. */
+  used: number | null;
+  /** What the request that produced this slate cost. Authoritative: it is the
+   *  provider's own accounting, not our prediction of it. */
+  last_cost: number | null;
 }
 
 export interface UnmappedRow {
@@ -126,6 +142,8 @@ export interface ProbeResult {
   /** What the adapter made of the sample: proof the mapping works against
    *  the real feed, or a precise account of where it did not. */
   mapping: { mapped: number; unmapped: UnmappedRow[] };
+  /** Present only for metered providers. */
+  quota?: ProviderQuota;
 }
 
 const REGISTRY = new Map<string, OddsProvider>();

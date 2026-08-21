@@ -30,24 +30,98 @@ lives in a single Supabase edge function secret and is read by one module.
    (site components)    (operations)    member's site      research sources
 ```
 
+## Providers
+
+Two are registered. Which one runs is the `provider.default` setting, not a
+deploy.
+
+| | OddsBlaze | The Odds API |
+| --- | --- | --- |
+| Module | `_shared/oddsblaze.ts` | `_shared/theoddsapi.ts` |
+| id | `oddsblaze` | `theoddsapi` |
+| Billing | per book request | per `[markets] x [regions]` |
+| Books per request | one | every book in the region |
+| Alternate lines | yes | no (per-event endpoint, billed per event) |
+| Sharp books | Pinnacle, Circa, BookMaker | Pinnacle only, and only in `eu` |
+
+That billing difference drives everything else. OddsBlaze scales with how many
+books you ask for; The Odds API returns every book for a flat cost, so the
+adapter keeps them all — filtering to a shorter list would throw away data
+already paid for without saving a credit.
+
+### Credit budget
+
+The Odds API reports its own accounting on every response:
+`x-requests-remaining`, `x-requests-used`, `x-requests-last`. The ingest
+function stores that in the `provider.quota` setting after each run and checks
+it before the next one, refusing to poll when the request would drop the
+balance below `provider.credit_reserve`.
+
+The check has to work this way round because the balance only ever arrives in a
+response — that is, after the credit is already spent. Reading last run's
+number before this run is what makes it a guard instead of a report. An
+*unknown* balance is allowed through, never treated as unlimited, or a fresh
+deployment could never make its first request.
+
+**A 500-credit free plan is about 166 polls a month** at three markets in one
+region. That is a grading board — opens, movement, closing lines, CLV — not a
+live in-play ticker. `nfl.refresh_seconds.*` ship re-tuned for it, and the
+freshness horizons ship widened to match, because a 15-minute staleness
+threshold against a 4-hour cadence would mark a healthy feed stale within
+minutes of every poll.
+
+Check the budget any time:
+
+```
+GET /functions/v1/collective_odds_ingest/v1/status
+  -> credits: { remaining, used, last_cost, estimated_cost_per_poll,
+                reserve, polls_affordable }
+     diagnosis: { healthy, state, detail, fix }
+```
+
 ## The secret
 
-`NFL_ODDS_API_KEY`, stored in Supabase → Edge Functions → Secrets.
+Stored in Supabase → Edge Functions → Secrets. Each provider reads its own, in
+exactly one module, and never writes it to the database, returns it in a
+response, or logs it. Outbound URLs pass through `redactUrl` and error text
+through `redactSecret` before reaching a log line, an `odds.ingest_runs` row,
+or a probe response.
 
-It is read in exactly one place, `supabase/functions/_shared/oddsblaze.ts`,
-via `Deno.env.get("NFL_ODDS_API_KEY")`. It is never written to the database,
-never returned in a response, never logged. Outbound URLs pass through
-`redactUrl` and error text through `redactSecret` before reaching a log line,
-an `odds.ingest_runs` row, or a probe response.
+| Name | Used by | Required |
+| --- | --- | --- |
+| `NFL_ODDS_API_KEY` | OddsBlaze; also the fallback for The Odds API | yes |
+| `THE_ODDS_API_KEY` | The Odds API, taking precedence over the above | only to run both providers with separate keys |
 
-Optional secrets:
+Optional:
 
 | Name | Default | Purpose |
 | --- | --- | --- |
-| `NFL_ODDS_BASE_URL` | `https://odds.oddsblaze.com/` | Override the provider endpoint without a deploy |
+| `NFL_ODDS_BASE_URL` | `https://odds.oddsblaze.com/` | Override the OddsBlaze endpoint without a deploy |
+| `THE_ODDS_API_BASE_URL` | `https://api.the-odds-api.com/v4/` | Same, for The Odds API |
+| `THE_ODDS_API_REGIONS` | `us` | Regions to request. **Each one multiplies the credit cost of every poll.** `eu` buys Pinnacle at double the price |
 
-Never put the key in a repository, a page, a bundle, or a database row. The
-one place it belongs is the edge function secret.
+Never put a key in a repository, a page, a bundle, or a database row. The one
+place it belongs is the edge function secret. If a key is ever shown on screen
+— a screenshot, a shared terminal, a support thread — regenerate it in the
+provider's dashboard rather than assuming nobody read it.
+
+## "Odds unavailable" on the site
+
+The site says only "unavailable": it will not speculate about a cause in front
+of a visitor. The cause is named at
+`GET /functions/v1/collective_odds_ingest/v1/status`, under `diagnosis`:
+
+| state | Means | Fix |
+| --- | --- | --- |
+| `disabled` | `nfl.enabled` is false | set it true |
+| `no_credential` | the active provider has no key in this function's env | add the secret |
+| `never_run` | no ingest run has ever been recorded | `POST /v1/ingest?force=1`, then schedule it |
+| `never_succeeded` | runs exist, none reached ok or partial | `/v1/probe` shows what the provider returned |
+| `no_current_prices` | a poll succeeded, no book has a current price | `/v1/probe`, read the `mapping` section |
+| `out_of_credit` | the plan is exhausted for the period | wait for reset, or raise the plan |
+
+`never_run` is the one that produces an empty board on a correctly deployed
+stack: everything is in place and nothing has ever called the provider.
 
 ## Deploying
 
@@ -448,6 +522,11 @@ diagnosable report instead of silently wrong numbers.
 2. `registerProvider(yourProvider)` in `collective_odds_ingest/index.ts`.
 3. `select collective.odds_set_setting('provider.default', '"<vendor>"'::jsonb);`
 4. Add a row to `odds.providers`.
+5. Give every module-level name in the new file a prefix unique to that
+   provider. Bundling flattens all providers into one scope, so a second
+   `DEFAULT_BASE` or `apiKey` is a redeclaration error — `theoddsapi.ts` uses
+   `TA_` / `ta`. `sh tools/collective/typecheck.sh` catches this; the
+   module-level check alone does not.
 
 Nothing else changes. The schema, the read API, the components and every page
 are already vendor-agnostic: `odds.events` identity is ours, and provider event

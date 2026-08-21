@@ -8,8 +8,15 @@
 // DEPLOYMENT: keep "Enforce JWT verification" ON for this function. The
 // gateway then rejects anonymous calls, and the checks below additionally
 // require either the service role key (how pg_cron calls it) or an admin
-// account. The OddsBlaze credential lives only in the NFL_ODDS_API_KEY
-// secret and is read only inside the provider module.
+// account. A provider credential lives only in an edge function secret and is
+// read only inside that provider's module.
+//
+// Two providers are registered. Which one runs is the `provider.default`
+// setting, not a deploy: OddsBlaze bills per book, The Odds API bills per
+// [markets x regions] and returns every book in one request. The Odds API
+// reports its remaining credits on every response, so when the active provider
+// meters itself this function enforces a budget against those real numbers
+// before spending anything.
 
 import { SERVICE_KEY } from "../_shared/env.ts";
 import { err, json, preflight, subpath } from "../_shared/http.ts";
@@ -19,9 +26,11 @@ import { num, settings, strList } from "../_shared/odds_api.ts";
 import { getProvider, registerProvider } from "../_shared/odds_provider.ts";
 import type { FetchOptions, NormalizedEvent } from "../_shared/odds_provider.ts";
 import { oddsBlazeProvider } from "../_shared/oddsblaze.ts";
+import { taPredictedCost, theOddsApiProvider } from "../_shared/theoddsapi.ts";
 import { redactSecret } from "../_shared/odds_normalize.ts";
 
 registerProvider(oddsBlazeProvider);
+registerProvider(theOddsApiProvider);
 
 const NO_STORE = { "cache-control": "no-store" };
 /** Events per RPC call. Keeps a single request body small enough to stay well
@@ -39,7 +48,43 @@ const SETTING_KEYS = [
   "nfl.pregame_window_hours",
   "nfl.max_books_per_run",
   "provider.default",
+  "provider.credit_reserve",
+  "provider.quota",
 ];
+
+/** Credit accounting carried forward between runs.
+ *
+ *  A metered provider only reports its remaining balance in a RESPONSE, which
+ *  is after the credit has already been spent. So the balance from the last
+ *  run is persisted in odds.settings and checked before the next one. That is
+ *  what makes the budget a guard rather than a report: without it the first
+ *  time we learn the plan is exhausted is a 429, mid-season, on the Sunday
+ *  that matters.
+ *
+ *  An unknown balance is treated as "no information" and allowed through —
+ *  never as "unlimited" — because the alternative is a deployment that can
+ *  never make its first request. */
+interface StoredQuota {
+  remaining: number | null;
+  used: number | null;
+  last_cost: number | null;
+  observed_at: string | null;
+}
+
+function readStoredQuota(v: unknown): StoredQuota {
+  const o = (v && typeof v === "object" && !Array.isArray(v)) ? v as Record<string, unknown> : {};
+  const n = (x: unknown): number | null => {
+    if (x === null || x === undefined || x === "") return null;
+    const k = Number(x);
+    return Number.isFinite(k) ? k : null;
+  };
+  return {
+    remaining: n(o.remaining),
+    used: n(o.used),
+    last_cost: n(o.last_cost),
+    observed_at: typeof o.observed_at === "string" ? o.observed_at : null,
+  };
+}
 
 /** pg_cron calls with the service role key; a founder calls with their own
  *  session. Anything else is refused before a provider request is made. */
@@ -117,6 +162,82 @@ async function secondsSinceLastRun(): Promise<number | null> {
   return Number.isFinite(ms) ? Math.round((Date.now() - ms) / 1000) : null;
 }
 
+/** Why the site is showing "Odds unavailable", in the order the pipeline
+ *  fails. The site itself deliberately says nothing beyond "unavailable" — it
+ *  will not guess at a cause in front of a visitor — so this is where the
+ *  cause is actually named, for an operator who is already authenticated. */
+function diagnose(
+  st: Record<string, unknown> | null,
+  cfg: Record<string, unknown>,
+  provider: { id: string; isConfigured(): boolean },
+  quota: StoredQuota,
+): { healthy: boolean; state: string; detail: string; fix: string | null } {
+  if (cfg["nfl.enabled"] === false) {
+    return {
+      healthy: false,
+      state: "disabled",
+      detail: "nfl.enabled is false, so ingestion never runs.",
+      fix: "Set nfl.enabled to true in odds.settings.",
+    };
+  }
+  if (!provider.isConfigured()) {
+    return {
+      healthy: false,
+      state: "no_credential",
+      detail: `The "${provider.id}" provider has no API key in this function's environment.`,
+      fix: provider.id === "theoddsapi"
+        ? "Add THE_ODDS_API_KEY (or NFL_ODDS_API_KEY) to the edge function secrets."
+        : "Add NFL_ODDS_API_KEY to the edge function secrets.",
+    };
+  }
+  const last = st?.last_run as Record<string, unknown> | null | undefined;
+  if (!st?.last_poll_at) {
+    if (!last) {
+      return {
+        healthy: false,
+        state: "never_run",
+        detail:
+          "No ingest run has ever been recorded, so nothing has called the provider. " +
+          "This is what makes the site say odds are unavailable.",
+        fix: "POST /v1/ingest?force=1 once by hand, then schedule it.",
+      };
+    }
+    return {
+      healthy: false,
+      state: "never_succeeded",
+      detail:
+        `Runs exist but none finished ok or partial. The most recent ended "${
+          String(last.status ?? "unknown")
+        }"` + (last.error_message ? `: ${String(last.error_message).slice(0, 200)}` : "."),
+      fix: "Run /v1/probe to see what the provider actually returned.",
+    };
+  }
+  if (num(st?.books_current, 0) === 0) {
+    return {
+      healthy: false,
+      state: "no_current_prices",
+      detail: "A poll succeeded but no book has a current price stored.",
+      fix: "Run /v1/probe; the mapping section shows which rows could not be read.",
+    };
+  }
+  if (quota.remaining !== null && quota.remaining <= 0) {
+    return {
+      healthy: false,
+      state: "out_of_credit",
+      detail: "The provider reports no credits left in this billing period.",
+      fix: "Wait for the period to reset, or raise the plan.",
+    };
+  }
+  return {
+    healthy: true,
+    state: "ok",
+    detail: `Last polled ${String(st?.last_poll_at)} with ${
+      num(st?.books_current, 0)
+    } book(s) currently priced.`,
+    fix: null,
+  };
+}
+
 function chunk<T>(items: T[], size: number): T[][] {
   const out: T[][] = [];
   for (let i = 0; i < items.length; i += size) out.push(items.slice(i, i + size));
@@ -168,11 +289,25 @@ Deno.serve(async (req) => {
     if (path === "/v1/status" && req.method === "GET") {
       const st = await rpc<Record<string, unknown> | null>("odds_status", { p_league: league });
       const cad = await cadence(cfg, league);
+      const quota = readStoredQuota(cfg["provider.quota"]);
+      const markets = strList(cfg["nfl.markets"], ["moneyline", "spread", "total"]);
+      const cost = taPredictedCost(markets, Deno.env.get("THE_ODDS_API_REGIONS") ?? "us");
       return json({
         ...st,
         provider: { id: provider.id, name: provider.name, configured: provider.isConfigured() },
         cadence: cad,
         seconds_since_last_run: await secondsSinceLastRun(),
+        credits: {
+          ...quota,
+          estimated_cost_per_poll: cost,
+          reserve: Math.max(0, num(cfg["provider.credit_reserve"], 0)),
+          polls_affordable: quota.remaining === null
+            ? null
+            : Math.max(0, Math.floor(
+              (quota.remaining - Math.max(0, num(cfg["provider.credit_reserve"], 0))) / cost,
+            )),
+        },
+        diagnosis: diagnose(st, cfg, provider, quota),
       }, 200, NO_STORE);
     }
 
@@ -233,6 +368,28 @@ Deno.serve(async (req) => {
       const markets = strList(cfg["nfl.markets"], ["moneyline", "spread", "total"]);
       const opts: FetchOptions = { league, books, markets, mainOnly: true, timeoutMs: 12000 };
 
+      // ------------------------------------------------- credit budget
+      // Spend nothing if the last known balance says this request would take
+      // the plan below its reserve. The reserve exists so the closing-line
+      // captures at the end of a period are still affordable after a month of
+      // routine polling: running to exactly zero would mean the last games of
+      // the month grade against no captured close at all.
+      const reserve = Math.max(0, num(cfg["provider.credit_reserve"], 0));
+      const stored = readStoredQuota(cfg["provider.quota"]);
+      const cost = taPredictedCost(markets, Deno.env.get("THE_ODDS_API_REGIONS") ?? "us");
+      if (stored.remaining !== null && stored.remaining - cost < reserve) {
+        return json({
+          ok: true,
+          skipped: "credit_budget",
+          reason:
+            `The provider reports ${stored.remaining} credits left. This poll costs about ` +
+            `${cost}, which would drop the balance below the reserve of ${reserve}.`,
+          quota: stored,
+          estimated_cost: cost,
+          credit_reserve: reserve,
+        }, 200, NO_STORE);
+      }
+
       const runId = await rpc<number>("odds_begin_run", {
         p_provider: provider.id,
         p_league: league,
@@ -263,6 +420,16 @@ Deno.serve(async (req) => {
           return err("provider_unavailable", "The odds provider did not return any data.", 502, {
             books_failed: slate.books_failed,
           });
+        }
+
+        // Record the balance the provider just reported, before anything
+        // below can throw. This is the only moment the real number is known,
+        // and a run that fails later still spent the credit.
+        if (slate.quota) {
+          await rpc("odds_set_setting", {
+            p_key: "provider.quota",
+            p_value: { ...slate.quota, observed_at: new Date().toISOString() },
+          }).catch((e) => console.error("could not persist provider quota:", e));
         }
 
         let written = 0, unchanged = 0, created = 0, seen = 0, rejected = 0;
@@ -297,6 +464,8 @@ Deno.serve(async (req) => {
           p_run_id: runId,
           p_stats: {
             status: partial ? "partial" : "ok",
+            credits_spent: slate.quota?.last_cost ?? null,
+            credits_remaining: slate.quota?.remaining ?? null,
             books_requested: books.length,
             books_ok: slate.books_ok.length,
             books_failed: slate.books_failed.length,
@@ -328,6 +497,7 @@ Deno.serve(async (req) => {
           snapshots_unchanged: unchanged,
           rows_rejected: rejected,
           provider_rows_unmapped: slate.counts.unmapped,
+          credits: slate.quota ?? null,
           unmapped_sample: slate.unmapped.slice(0, 5),
           unmatched_events: unmatched.slice(0, 5),
           closing_rows: closingRows ?? 0,

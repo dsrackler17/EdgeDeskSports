@@ -403,8 +403,12 @@ begin
   perform pg_temp.check('odds_events exposes the collective link',
     (select count(*) from collective.odds_events where collective_game_id is not null)
     = (select count(*) from collective.games));
+  -- Asserts the type and the round trip, NOT a particular shipped number.
+  -- The cadence is deliberately re-tuned per provider plan, so pinning the
+  -- value here made a legitimate settings change look like a schema break.
   perform pg_temp.check('settings are readable and typed',
-    (collective.odds_get_setting('nfl.refresh_seconds.live'))::text::int = 60);
+    (collective.odds_get_setting('nfl.refresh_seconds.live'))::text::int > 0
+    and jsonb_typeof(collective.odds_get_setting('nfl.refresh_seconds.live')) = 'number');
   perform pg_temp.check('settings are writable',
     (collective.odds_set_setting('nfl.refresh_seconds.live','45'::jsonb))::text::int = 45);
   perform pg_temp.check('anon cannot read the odds API surface',
@@ -599,6 +603,12 @@ end $$;
 do $$
 declare v_ev uuid;
 begin
+  -- Pin the horizon this block is about, instead of inheriting whatever the
+  -- shipped default happens to be. The default is tuned per provider plan (a
+  -- metered plan polls hours apart and needs a much wider horizon), so a
+  -- legitimate settings change must not read as a consensus regression.
+  perform collective.odds_set_setting('nfl.book_stale_seconds', '5400'::jsonb);
+
   perform odds.ingest_batch(odds.begin_ingest('oddsblaze','nfl','test'),'oddsblaze','nfl',
     jsonb_build_object('events', jsonb_build_array(jsonb_build_object(
       'provider_event_id','stale-1','home','TEN','away','JAX',
