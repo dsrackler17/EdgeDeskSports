@@ -21023,6 +21023,11 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
   var SOURCES={
     /* WIRED: browser-callable Edge Functions, contract read from source */
     odds:{name:'odds',categories:['odds','line_movement'],owned:true,fn:'odds',method:'GET',auth:'user_jwt',status:'WIRED',ttl:'odds',contract:'GET ?action=odds&sport&regions&markets&oddsFormat -> OddsAPI events[]',adapter:oddsFetch},
+    /* NFL market: always the Collective's own stored feed, never a provider
+       call from the browser. Ask this for anything NFL: current spread,
+       total, moneyline, best price, consensus, sharp reference, opening line,
+       or how the line has moved. */
+    nfl_odds:{name:'collective_odds (NFL market)',categories:['odds','line_movement','consensus'],owned:true,fn:'collective_odds',method:'GET',auth:'none',status:'WIRED',ttl:'odds',contract:'GET /v1/nfl/assistant -> {state,last_updated,instructions,definitions,games[{home,away,consensus,best,books,opening,closing,last_odds_at}]}',adapter:nflOdds},
     run_slate:{name:'run_slate',categories:['model','slate'],owned:true,fn:'run_slate',method:'POST',status:'WIRED',ttl:'schedule',contract:'POST {date} -> {projected,total,results[{game_id,home_win_prob,calibrated_edge_pct,confidence}]}',adapter:runSlate},
     venue_weather:{name:'venue_weather',categories:['weather'],owned:true,fn:'venue_weather',method:'GET',status:'WIRED',ttl:'weather',contract:'GET ?mode=get&venue_id&t -> weather row',adapter:venueWeather},
     team_brief:{name:'team_brief',categories:['context','news'],owned:true,fn:'team_brief',method:'POST',status:'WIRED',ttl:'news',contract:'{league,team}->{ok,brief,facts,sources[],cached,searches}',adapter:teamBrief},
@@ -21191,6 +21196,59 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
     });
   }
 
+  /* nfl_odds: GET collective_odds/v1/nfl/assistant -> the Collective's own
+     normalized NFL market. This is the ONLY NFL odds source a research answer
+     may use. It is our stored feed, not a provider call: the browser holds no
+     provider credential and never makes one.
+
+     Every price arrives labelled with its book and capture time, and the
+     payload carries a freshness envelope. When the envelope says the market
+     is unavailable this returns UNAVAILABLE evidence with no numbers at all,
+     so a downstream answer has nothing to reach for. That is deliberate: the
+     assistant must say "I don't have a current line" rather than recall one. */
+  function nflOdds(){
+    var url=(typeof SB_URL!=='undefined'?SB_URL:'')+'/functions/v1/collective_odds/v1/nfl/assistant';
+    var env=_env('collective_odds'), t0=Date.now();
+    return fetch(url).then(function(r){ return r.json().then(function(j){ return {ok:r.ok,j:j}; }); })
+      .then(function(res){
+        var now=Date.now(); env.latency=now-t0; env.retrieved_at=now;
+        var d=res.j||{};
+        if(!res.ok||d.state==='unavailable'||!Array.isArray(d.games)||!d.games.length){
+          env.status='UNAVAILABLE'; env.error=(d&&d.notice)||'no stored NFL odds';
+          return {envelope:env, evidence:[evi({source:'collective_odds',source_type:'owned_fn',category:'odds',
+            metric:'nfl_market',value:null,status:'UNAVAILABLE',
+            provenance:'UNAVAILABLE \u00b7 collective_odds ('+env.error+')',captured_at:now,now:now})]};
+        }
+        env.status='VERIFIED';
+        env.freshness=(d.state==='stale')?'STALE':'LIVE';
+        env.data=d;
+        var out=d.games.map(function(g){
+          var c=g.consensus||{};
+          return evi({source:'collective_odds',source_type:'owned_fn',category:'odds',metric:'nfl_market',
+            game_id:'mc:'+g.event_id, status:(d.state==='stale')?'PROBABLE':'VERIFIED',
+            captured_at:g.last_odds_at?Date.parse(g.last_odds_at):now, now:now,
+            provenance:'collective_odds \u00b7 '+(g.book_count||0)+' books \u00b7 captured '+(g.last_odds_at||'unknown'),
+            value:{
+              home:g.home, away:g.away, kickoff:g.commence_time, live:!!g.is_live,
+              market_closed:!!g.market_closed,
+              consensus_spread:(c.spread&&c.spread.median!=null)?Number(c.spread.median):null,
+              consensus_total:(c.total&&c.total.median!=null)?Number(c.total.median):null,
+              home_fair_prob:(c.moneyline&&c.moneyline.home_fair_prob!=null)?Number(c.moneyline.home_fair_prob):null,
+              sharp:c.sharp||null, best:g.best||null, books:g.books||null,
+              opening:g.opening||null, closing:g.closing||null,
+              last_updated:g.last_odds_at}});
+        });
+        return {envelope:env, evidence:out, market_state:d.state, last_updated:d.last_updated,
+                instructions:d.instructions, definitions:d.definitions};
+      })
+      .catch(function(e){
+        var now=Date.now(); env.latency=now-t0; env.status='UNAVAILABLE'; env.error=(e&&e.message)||'error';
+        return {envelope:env, evidence:[evi({source:'collective_odds',source_type:'owned_fn',category:'odds',
+          metric:'nfl_market',value:null,status:'UNAVAILABLE',
+          provenance:'UNAVAILABLE \u00b7 collective_odds ('+env.error+')',captured_at:now,now:now})]};
+      });
+  }
+
   /* run_slate: POST {date} -> {date,projected,total,results:[{game_id,home_win_prob,calibrated_edge_pct,confidence,error}]}
      Values are the deterministic engine's own projections (project_game), surfaced as owned model evidence — not invented. */
   function runSlate(date){
@@ -21300,7 +21358,7 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
     freshnessState:freshnessState, evi:evi, validate:validate, validateGameState:validateGameState,
     canonTeam:canonTeam, canonGameId:canonGameId, canonDate:canonDate,
     mergeEvidence:mergeEvidence, findConflicts:findConflicts, assertResearchOnly:assertResearchOnly,
-    route:route, SOURCES:SOURCES, sourceStatus:sourceStatus, EDBackend:EDBackend, fnUrl:fnUrl, callFn:callFn, readTable:readTable, teamBrief:teamBrief, signalsCount:signalsCount, researchOwned:researchOwned, callFnGet:callFnGet, oddsFetch:oddsFetch, runSlate:runSlate, venueWeather:venueWeather, mlbSlate:mlbSlate, slateResearch:slateResearch, projectGame:projectGame, readProjections:readProjections, readGames:readGames, readSignals:readSignals, historicalSummary:historicalSummary, readBullpenUsage:readBullpenUsage, readPlayerStats:readPlayerStats, probe:probe, health:health, mlbSchedule:mlbSchedule, nwsWeather:nwsWeather, liveSlate:liveSlate,
+    route:route, SOURCES:SOURCES, sourceStatus:sourceStatus, EDBackend:EDBackend, fnUrl:fnUrl, callFn:callFn, readTable:readTable, teamBrief:teamBrief, signalsCount:signalsCount, researchOwned:researchOwned, callFnGet:callFnGet, oddsFetch:oddsFetch, nflOdds:nflOdds, runSlate:runSlate, venueWeather:venueWeather, mlbSlate:mlbSlate, slateResearch:slateResearch, projectGame:projectGame, readProjections:readProjections, readGames:readGames, readSignals:readSignals, historicalSummary:historicalSummary, readBullpenUsage:readBullpenUsage, readPlayerStats:readPlayerStats, probe:probe, health:health, mlbSchedule:mlbSchedule, nwsWeather:nwsWeather, liveSlate:liveSlate,
     selfTest:function(verbose){
       var R=[],P=0,F=0; function chk(n,g,w){var ok=(g===w);R.push({t:n,ok:ok,got:g,want:w});ok?P++:F++;}
       var now=1000000000000;

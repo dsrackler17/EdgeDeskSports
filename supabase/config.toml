@@ -1,0 +1,54 @@
+# Supabase CLI configuration.
+#
+# The point of this file is that deploying stops being a manual act. Copying a
+# generated bundle into the dashboard editor has no version check: paste an old
+# copy and everything reports success while running last week's code. That has
+# already cost this project a day. `supabase functions deploy` reads the
+# sources in this repo, so what ships is what is committed.
+#
+# verify_jwt below is the same switch as "Enforce JWT verification" in the
+# dashboard. Keeping it here means the setting is reviewed in a diff instead of
+# remembered, and a redeploy can never silently flip it.
+
+project_id = "iattxbkbufslbauoumga"
+
+# --------------------------------------------------------------- functions
+#
+# OFF does not mean unauthenticated. The gateway's JWT check accepts ANY valid
+# JWT, and the anon key that produces one is printed in the site's own page
+# source — so every visitor already has one and it gates nothing on its own.
+# Each function below either is a public read surface or authenticates in code,
+# which is why the request has to be allowed through to reach that check.
+
+# Public read surface for the site.
+[functions.collective_public]
+verify_jwt = false
+
+# Public read surface for market odds.
+[functions.collective_odds]
+verify_jwt = false
+
+# The odds writer. Authenticates in code: the service role key, an admin
+# session, or ingest.cron_token from odds.settings. It must stay false so
+# pg_net can reach it — pg_net runs inside Postgres and has no JWT to send.
+[functions.collective_odds_ingest]
+verify_jwt = false
+
+# Creator submissions. Authenticates its own x-collective-key header.
+[functions.collective_ingest]
+verify_jwt = false
+
+# Founder console. Verifies the bearer token itself via requireAdmin, so a
+# non-admin gets a 403 from the function rather than a bare gateway 401.
+[functions.collective_admin]
+verify_jwt = false
+
+# Stripe webhook: signed by Stripe, carries no JWT. The checkout route reads
+# the caller's session itself when one is present.
+[functions.collective_billing]
+verify_jwt = false
+
+# Called by third-party member sites. The lock is the per-creator origin
+# allowlist, not a Supabase session.
+[functions.collective_embed]
+verify_jwt = false

@@ -1,0 +1,171 @@
+{
+  "_comment": [
+    "SYNTHETIC TEST FIXTURE. Not real odds, and never read by any production",
+    "path — only tests/collective/oddsblaze_normalize.test.mjs imports it.",
+    "",
+    "Shaped after the OddsBlaze Odds endpoint response documented at",
+    "docs.oddsblaze.com: a top level `updated`, `league`, `sportsbook`, and an",
+    "`events` array whose entries carry `id`, `teams.home` / `teams.away`",
+    "(`id`, `name`, `abbreviation`), `date`, `live`, and an `odds` array of",
+    "`{ id, market, name, price, main, selection: { name, side, line } }`.",
+    "",
+    "The second book below deliberately uses the flat variants (a string",
+    "`selection`, a `points` field) so the adapter's field fallbacks are",
+    "exercised, and the third event contains rows that must NOT be mapped:",
+    "a player prop, a market we do not recognise, and an impossible price."
+  ],
+  "draftkings": {
+    "updated": "2026-09-20T14:31:07Z",
+    "league": { "id": "nfl", "name": "NFL", "sport": "Football" },
+    "sportsbook": { "id": "draftkings", "name": "DraftKings" },
+    "events": [
+      {
+        "id": "ob_evt_1001",
+        "teams": {
+          "away": { "id": "buf", "name": "Buffalo Bills", "abbreviation": "BUF" },
+          "home": { "id": "kc", "name": "Kansas City Chiefs", "abbreviation": "KC" }
+        },
+        "date": "2026-09-20T17:00:00Z",
+        "live": false,
+        "odds": [
+          {
+            "id": "ob_o_1", "market": "Point Spread", "name": "Kansas City Chiefs -3.5",
+            "price": "-110", "main": true,
+            "selection": { "name": "Kansas City Chiefs", "side": "home", "line": "-3.5" }
+          },
+          {
+            "id": "ob_o_2", "market": "Point Spread", "name": "Buffalo Bills +3.5",
+            "price": "-110", "main": true,
+            "selection": { "name": "Buffalo Bills", "side": "away", "line": "+3.5" }
+          },
+          {
+            "id": "ob_o_3", "market": "Moneyline", "name": "Kansas City Chiefs",
+            "price": "-185", "main": true,
+            "selection": { "name": "Kansas City Chiefs", "side": "home", "line": null }
+          },
+          {
+            "id": "ob_o_4", "market": "Moneyline", "name": "Buffalo Bills",
+            "price": "+155", "main": true,
+            "selection": { "name": "Buffalo Bills", "side": "away", "line": null }
+          },
+          {
+            "id": "ob_o_5", "market": "Total Points", "name": "Over 47.5",
+            "price": "-110", "main": true,
+            "selection": { "name": "Over", "side": "over", "line": "47.5" }
+          },
+          {
+            "id": "ob_o_6", "market": "Total Points", "name": "Under 47.5",
+            "price": "-110", "main": true,
+            "selection": { "name": "Under", "side": "under", "line": "47.5" }
+          },
+          {
+            "id": "ob_o_7", "market": "Point Spread", "name": "Kansas City Chiefs -7.5",
+            "price": "+215", "main": false,
+            "selection": { "name": "Kansas City Chiefs", "side": "home", "line": "-7.5" }
+          }
+        ]
+      },
+      {
+        "id": "ob_evt_1002",
+        "teams": {
+          "away": { "id": "nyg", "name": "New York Giants", "abbreviation": "NYG" },
+          "home": { "id": "dal", "name": "Dallas Cowboys", "abbreviation": "DAL" }
+        },
+        "date": "2026-09-21T00:20:00Z",
+        "live": true,
+        "odds": [
+          {
+            "id": "ob_o_8", "market": "Point Spread", "name": "Dallas Cowboys -6.5",
+            "price": -115, "main": true,
+            "selection": { "name": "Dallas Cowboys", "side": "home", "line": -6.5 }
+          },
+          {
+            "id": "ob_o_9", "market": "Moneyline", "name": "Dallas Cowboys",
+            "price": -280, "main": true,
+            "selection": { "name": "Dallas Cowboys", "side": "home", "line": null }
+          }
+        ]
+      }
+    ]
+  },
+  "fanduel_flat_variant": {
+    "updated": "2026-09-20T14:31:12Z",
+    "league": { "id": "nfl", "name": "NFL", "sport": "Football" },
+    "sportsbook": { "id": "fanduel", "name": "FanDuel" },
+    "games": [
+      {
+        "id": "fd_evt_77",
+        "teams": {
+          "away": { "id": "buf", "name": "Buffalo Bills", "abbreviation": "BUF" },
+          "home": { "id": "kc", "name": "Kansas City Chiefs", "abbreviation": "KC" }
+        },
+        "start": "2026-09-20T17:00:00Z",
+        "live": false,
+        "odds": [
+          {
+            "id": "fd_1", "market": "point-spread", "name": "Kansas City Chiefs -3.5",
+            "price": "-115", "main": true,
+            "selection": "Kansas City Chiefs", "points": "-3.5"
+          },
+          {
+            "id": "fd_2", "market": "moneyline", "name": "Buffalo Bills",
+            "price": "+152", "main": true, "selection": "Buffalo Bills"
+          },
+          {
+            "id": "fd_3", "market": "Total Points", "name": "Over 47",
+            "price": "-108", "main": true, "selection": "Over 47"
+          }
+        ]
+      }
+    ]
+  },
+  "unmappable_rows": {
+    "updated": "2026-09-20T14:31:20Z",
+    "league": { "id": "nfl", "name": "NFL", "sport": "Football" },
+    "sportsbook": { "id": "betmgm", "name": "BetMGM" },
+    "events": [
+      {
+        "id": "mgm_evt_9",
+        "teams": {
+          "away": { "id": "buf", "name": "Buffalo Bills", "abbreviation": "BUF" },
+          "home": { "id": "kc", "name": "Kansas City Chiefs", "abbreviation": "KC" }
+        },
+        "date": "2026-09-20T17:00:00Z",
+        "live": false,
+        "odds": [
+          {
+            "id": "mgm_1", "market": "Player Passing Yards", "name": "Patrick Mahomes Over 274.5",
+            "price": "-114", "main": true,
+            "player": { "id": "pm15", "name": "Patrick Mahomes" },
+            "selection": { "name": "Over", "side": "over", "line": "274.5" }
+          },
+          {
+            "id": "mgm_2", "market": "First Team To Score A Safety", "name": "Kansas City Chiefs",
+            "price": "+1400", "main": true,
+            "selection": { "name": "Kansas City Chiefs", "side": "home", "line": null }
+          },
+          {
+            "id": "mgm_3", "market": "Point Spread", "name": "Kansas City Chiefs -3.5",
+            "price": "0", "main": true,
+            "selection": { "name": "Kansas City Chiefs", "side": "home", "line": "-3.5" }
+          },
+          {
+            "id": "mgm_4", "market": "Point Spread", "name": "Some Unknown Franchise -1",
+            "price": "-110", "main": true,
+            "selection": { "name": "Some Unknown Franchise", "line": "-1" }
+          },
+          {
+            "id": "mgm_5", "market": "Point Spread", "name": "Kansas City Chiefs",
+            "price": "-110", "main": true,
+            "selection": { "name": "Kansas City Chiefs", "side": "home" }
+          },
+          {
+            "id": "mgm_6", "market": "Moneyline", "name": "Kansas City Chiefs",
+            "price": "-190", "main": true,
+            "selection": { "name": "Kansas City Chiefs", "side": "home", "line": null }
+          }
+        ]
+      }
+    ]
+  }
+}

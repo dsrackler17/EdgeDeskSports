@@ -6,14 +6,30 @@ it, and tracks your closing-line value (CLV). Everything runs in the browser —
 server, no build step, no accounts.
 
 ## What's in the repo
-Just **`index.html`**. That's the entire app. Nothing else is required.
+**`index.html`** is the EdgeDesk app itself — the whole thing, one file.
+
+Alongside it:
+
+- `collective/` — the Model Collective: shared infrastructure for independent
+  sports model creators (`index.html`, `admin.html`, `join.html`, the
+  `embed.js` a member drops into their own site, and `odds.js`, the shared
+  market components).
+- `supabase/` — backend sources: migrations and edge functions.
+  See [`supabase/README.md`](supabase/README.md).
+- `docs/collective/odds.md` — the NFL odds infrastructure: architecture,
+  refresh schedule, normalization rules, troubleshooting.
+- `tests/collective/` — schema, adapter and end-to-end tests
+  (`sh tests/collective/run_all.sh`).
+- `tools/collective/` — the edge function bundler and type checks.
 
 ## Put it online (GitHub Pages — free)
-1. Make sure `index.html` is the only file in the repo (delete anything else).
-2. Repo → **Settings** → **Pages**.
-3. Source: **Deploy from a branch** → Branch: **main** / **/(root)** → **Save**.
-4. Wait ~1 minute. Your site is live at:
+1. Repo → **Settings** → **Pages**.
+2. Source: **Deploy from a branch** → Branch: **main** / **/(root)** → **Save**.
+3. Wait ~1 minute. Your site is live at:
    **https://dsrackler17.github.io/EdgeDeskSports/**
+
+Pages serves the static files. `supabase/`, `tests/`, `tools/` and `docs/` are
+sources and are not part of the served site.
 
 ## First-time setup (10 seconds)
 1. Get a free API key at **https://the-odds-api.com**.
@@ -30,6 +46,18 @@ Just **`index.html`**. That's the entire app. Nothing else is required.
   only real proof the signals work — not whether any single bet won.
 - **De-vig** — paste any American odds, get Shin / power / multiplicative fair %.
 - **Terms** — the disclaimer.
+
+## NFL odds
+The Collective keeps its own copy of the NFL market: one server-side ingestion
+path into Supabase, one read surface, and every page rendering from that one
+copy. The browser never calls an odds provider and never holds a provider key.
+Prices carry their capture time everywhere they appear, stale is labelled
+stale, and a market with nothing stored says so rather than showing a number.
+Full details in [`docs/collective/odds.md`](docs/collective/odds.md).
+
+Note that this is separate from the personal `index.html` scanner described
+above, which still uses a browser-held the-odds-api key for its own live-edge
+tab.
 
 ## How edges are found
 For each game/market it de-vigs every book (Shin), anchors the fair line to your
