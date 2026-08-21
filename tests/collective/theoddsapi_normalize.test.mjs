@@ -284,6 +284,68 @@ check("a decimal price is refused, so a format regression cannot pass silently",
   assert.ok(bad.some((b) => b.reason.includes("american price")));
 });
 
+// ------------------------------------------------ diagnosable failures
+// Exercised against real Response objects rather than matched in the source:
+// what matters is the string an operator ends up reading in ingest_runs.
+
+const resp = (body, status = 401) =>
+  new Response(body, { status, headers: { "content-type": "application/json" } });
+
+check("a 401 reports the vendor's own explanation, not just the status", async () => {
+  // "invalid key" and "quota reached" are BOTH 401 and need opposite fixes:
+  // a different key versus a different plan. A bare status cannot tell them
+  // apart, and guessing wrong costs another round trip.
+  const invalid = await TA.taErrorDetail(
+    resp(JSON.stringify({ message: "The api key provided is invalid or incorrect." })));
+  assert.match(invalid, /api key provided is invalid/);
+
+  const quota = await TA.taErrorDetail(
+    resp(JSON.stringify({ message: "Usage quota has been reached." })));
+  assert.match(quota, /Usage quota has been reached/);
+
+  assert.notEqual(invalid, quota);
+});
+
+check("it reads the other names this API uses for the same field", async () => {
+  assert.match(await TA.taErrorDetail(resp(JSON.stringify({ error: "nope" }))), /nope/);
+  assert.match(await TA.taErrorDetail(resp(JSON.stringify({ error_message: "nah" }))), /nah/);
+});
+
+check("a non-JSON body is still reported rather than discarded", async () => {
+  const out = await TA.taErrorDetail(new Response("upstream exploded", { status: 502 }));
+  assert.match(out, /upstream exploded/);
+});
+
+check("an empty body yields no suffix, so the reason stays clean", async () => {
+  assert.equal(await TA.taErrorDetail(new Response("", { status: 401 })), "");
+  assert.equal(await TA.taErrorDetail(new Response("   ", { status: 401 })), "");
+});
+
+check("the detail is bounded, so an error body cannot balloon a run record", async () => {
+  const out = await TA.taErrorDetail(resp(JSON.stringify({ message: "x".repeat(5000) })));
+  assert.ok(out.length <= 302, `expected a bounded suffix, got ${out.length}`);
+});
+
+check("newlines are flattened, so the reason stays one line", async () => {
+  const out = await TA.taErrorDetail(new Response("line one\nline two\n\tthree", { status: 500 }));
+  assert.equal(out.includes("\n"), false);
+  assert.match(out, /line one line two three/);
+});
+
+check("a key echoed back by a vendor never reaches the run record", async () => {
+  // This API does not echo the key, but a body is untrusted text and a
+  // credential must not ride one into a stored row.
+  ENV.THE_ODDS_API_KEY = "supersecretkey123";
+  try {
+    const out = await TA.taErrorDetail(
+      resp(JSON.stringify({ message: "bad key supersecretkey123 rejected" })));
+    assert.equal(out.includes("supersecretkey123"), false);
+    assert.match(out, /bad key .* rejected/);
+  } finally {
+    delete ENV.THE_ODDS_API_KEY;
+  }
+});
+
 console.log(`\n${passed} checks passed`);
 if (process.exitCode) {
   console.error("SOME ADAPTER TESTS FAILED");

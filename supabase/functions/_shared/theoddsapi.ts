@@ -417,6 +417,31 @@ function taReasonFor(status: number): string {
   return `unexpected status ${status}`;
 }
 
+/** The vendor's own account of an error, bounded and redacted, as a suffix
+ *  ready to append to a reason. Empty string when the body says nothing
+ *  useful, so a caller never has to test for it. The key is stripped even
+ *  though this API does not echo it: a body is untrusted text, and a
+ *  credential must not reach a run record by way of one. */
+export async function taErrorDetail(res: Response): Promise<string> {
+  let raw: string;
+  try {
+    raw = (await res.text()).trim();
+  } catch {
+    return "";
+  }
+  if (!raw) return "";
+  let detail = raw;
+  try {
+    const parsed = JSON.parse(raw) as Record<string, unknown>;
+    const named = parsed?.message ?? parsed?.error_message ?? parsed?.error;
+    if (typeof named === "string" && named.trim() !== "") detail = named.trim();
+  } catch {
+    // Not JSON. The raw text is still better than nothing.
+  }
+  const safe = redactSecret(detail, taApiKey()).replace(/\s+/g, " ").slice(0, 300);
+  return safe ? `: ${safe}` : "";
+}
+
 interface TaRawFetch {
   ok: boolean;
   status: number | null;
@@ -434,7 +459,18 @@ async function taRequest(opts: FetchOptions): Promise<TaRawFetch> {
     const res = await fetch(url, { signal: controller.signal });
     const quota = readTaQuota(res.headers);
     if (!res.ok) {
-      return { ok: false, status: res.status, body: null, quota, reason: taReasonFor(res.status) };
+      // The vendor explains itself on an error, and the explanation is the
+      // whole diagnosis: "the api key provided is invalid" and "usage quota
+      // has been reached" are both 401, and they need opposite fixes — a
+      // different key versus a different plan. Reporting only the status code
+      // throws that away and leaves the operator guessing between them.
+      return {
+        ok: false,
+        status: res.status,
+        body: null,
+        quota,
+        reason: `${taReasonFor(res.status)}${await taErrorDetail(res)}`,
+      };
     }
     const text = await res.text();
     let body: unknown = null;
