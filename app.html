@@ -2995,7 +2995,7 @@ var RS_LIMITS={
        'Game lists are capped at 150 rows per segment.'],
   football:['The model is UNPROVEN by EdgeDesk’s own standard: its 2016–2025 walk-forward record does NOT beat the NFL closing line (48.7–50.8% ATS by gap size), and the module says so on every card.',
        'No public historical CFB betting-line archive exists, so the CFB side makes no market claim at all; its benchmarks are margin accuracy vs a third-party Elo and home-field-only.',
-       'NFL quotes are not yet in the capture scanner, so NFL games show the engine’s numbers without a live captured price; NCAAF games join live signals where they exist.',
+       'NFL and NCAAF quotes join from live captured signals where they exist; outside a capture window the cards show the engine’s numbers with reference lines clearly labeled as such.',
        'Starting QBs for upcoming games are unknown to the public schedule feed until close to kickoff; affected cards carry an explicit QB-unknown flag instead of a guessed adjustment.',
        'Parameters are trained through the 2025 season and the engine BLOCKS predictions beyond its supported window rather than silently going stale.',
        'Weather is not wired for football venues yet; no weather adjustment is applied or implied.'],
@@ -21605,7 +21605,7 @@ function fbLoadNfl(signal){
       return fbSignals('americanfootball_nfl',signal);
     }).then(function(sig){
       S.sig=sig;
-      if(!Object.keys(sig).length)S.notes.push('NFL is not in the capture scanner — no live captured quotes; nflverse reference numbers shown where published are a consensus close, not a bettable price.');
+      if(!Object.keys(sig).length)S.notes.push('No captured NFL quotes in this window (offseason, or capture has not priced NFL yet); nflverse reference numbers shown where published are a consensus close, not a bettable price.');
     });
   });
 }
