@@ -66,6 +66,10 @@ echo "== slate uploader (in-page) =="
 node tests/collective/slate_upload.test.mjs 2>&1 | grep -v ExperimentalWarning
 
 echo
+echo "== slate upload, real file end to end =="
+node tests/collective/slate_endtoend.test.mjs 2>&1 | grep -v ExperimentalWarning
+
+echo
 echo "== slate CSV mapper =="
 python3 tests/collective/submit_csv_test.py
 
