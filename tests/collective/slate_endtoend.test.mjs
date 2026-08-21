@@ -207,6 +207,58 @@ check("a CRLF file from Windows parses the same", () => {
   assert.equal(rows.filter((r) => r.line_at_submission === undefined).length, 0);
 });
 
+// ------------------------------------------- the one ambiguous column
+
+// "spread" and "line" each mean two different things depending on the
+// creator: the number their model produced, or the number the book showed.
+// Guessed one way and never asked, the wrong one is silently wrong forever —
+// a market line stored as a projection measures accuracy against the market
+// instead of against the result.
+
+const AMBIG = block("var AMBIGUOUS_SPREAD=", "[", "]");
+
+check("the ambiguous headers are named, not left to a guess", () => {
+  assert.match(AMBIG, /'spread'/);
+  assert.match(AMBIG, /'line'/);
+});
+
+check("a column called 'spread' maps to the creator's own number by default", () => {
+  // The commoner intent, and the one the question then confirms.
+  load(CSV.replace("away,home,pick", "away,home,pick,spread")
+          .split("\n").map((l, i) => (i === 0 || !l ? l : l + ",-3.0")).join("\n"));
+  assert.notEqual(P.SLATE.map["projected_spread"], undefined);
+  assert.equal(P.SLATE.map["line_at_submission"], undefined);
+  assert.equal(P.SLATE.cols[P.SLATE.map["projected_spread"]], "spread");
+});
+
+check("an unambiguous pair is never questioned", () => {
+  // A file carrying both leaves nothing to ask about.
+  load(CSV.replace("away,home,pick", "away,home,pick,spread,market_line")
+          .split("\n").map((l, i) => (i === 0 || !l ? l : l + ",-3.0,-3.5")).join("\n"));
+  assert.notEqual(P.SLATE.map["projected_spread"], undefined);
+  assert.notEqual(P.SLATE.map["line_at_submission"], undefined);
+});
+
+check("an explicit market line column reaches the built rows", () => {
+  load(CSV.replace("away,home,pick", "away,home,pick,market_line")
+          .split("\n").map((l, i) => (i === 0 || !l ? l : l + ",-9.5")).join("\n"));
+  const { rows } = P.slateBuildRows(2026, 1);
+  assert.equal(rows.length, 16);
+  // The explicit column wins over the number inside the pick cell.
+  assert.ok(rows.every((r) => r.line_at_submission === -9.5),
+    "an explicit market_line column must win over the pick's own number");
+});
+
+check("a projected spread column reaches the built rows separately", () => {
+  load(CSV.replace("away,home,pick", "away,home,pick,model_spread")
+          .split("\n").map((l, i) => (i === 0 || !l ? l : l + ",-2.0")).join("\n"));
+  const { rows } = P.slateBuildRows(2026, 1);
+  assert.ok(rows.every((r) => r.projected_spread === -2), "model_spread must map to projected_spread");
+  // and the pick's own number still supplies the market line
+  assert.ok(rows.every((r) => r.line_at_submission !== undefined),
+    "the pick cell should still supply the market line");
+});
+
 console.log(`\n${passed} checks passed`);
 if (process.exitCode) console.error("SOME END TO END SLATE TESTS FAILED");
 else console.log("ALL END TO END SLATE TESTS PASSED");
