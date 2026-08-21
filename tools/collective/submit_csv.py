@@ -117,7 +117,8 @@ def parse_pick(raw: str, home: str, away: str) -> tuple[str | None, float | None
     # THE sign flip, in one place. The stored line is the HOME team's number,
     # so a number quoted for the away team is negated and one quoted for the
     # home team is kept as written.
-    return side, (-number if side == "away" else number)
+    line = -number if side == "away" else number
+    return side, (0.0 if line == 0 else line)  # negating zero yields -0.0
 
 
 def side_of(team: str, home: str, away: str) -> str | None:

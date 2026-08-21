@@ -60,7 +60,7 @@ def t_home_dog_stays_positive():
 def t_pickem_is_zero_not_missing():
     # PK is a real number. Dropped, the pick renders with no line at all.
     for word in ("PK", "pk", "PICK", "even"):
-        assert M.parse_pick(f"BUF {word}", home="HOU", away="BUF") == ("away", -0.0), word
+        assert M.parse_pick(f"BUF {word}", home="HOU", away="BUF") == ("away", 0.0), word
 
 
 def t_whole_numbers():

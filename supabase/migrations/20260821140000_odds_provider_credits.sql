@@ -68,6 +68,8 @@ $$;
 -- ------------------------------------------------------------ new settings
 
 insert into odds.settings (key, value, description) values
+  ('nfl.retry_seconds', '300'::jsonb,
+   'Floor between attempts while the feed has never succeeded. Stops a failing provider being retried in a loop without letting one bad response consume the whole idle window'),
   ('provider.credit_reserve', '40'::jsonb,
    'Credits the ingest function refuses to spend below, so end-of-period closing captures stay affordable'),
   ('provider.quota', 'null'::jsonb,
@@ -365,6 +367,37 @@ begin
 exception when others then
   raise notice 'odds: scheduling failed (%). The pipeline still works; it just has nothing driving it.', sqlerrm;
 end $mig$;
+
+-- ------------------------------------------------------ reap stuck runs
+--
+-- odds_begin_run writes status='running' and the function writes the finish
+-- row afterwards. If the isolate dies in between — wall clock limit, OOM, a
+-- crash — the row stays 'running' forever. It is excluded from last_poll_at
+-- either way, so it does not block the throttle, but it does sit at the top of
+-- every diagnostic as a poll that never ended, which reads as "still working"
+-- when nothing is.
+--
+-- Reaped on the next begin rather than on a timer: that is the moment the
+-- answer is knowable and costs nothing extra.
+
+create or replace function odds.begin_ingest(
+  p_provider text, p_league text, p_trigger text default 'cron'
+) returns bigint language plpgsql security definer set search_path = odds, public as $$
+declare v_id bigint;
+begin
+  update odds.ingest_runs
+     set status = 'error',
+         finished_at = now(),
+         error_code = 'abandoned',
+         error_message = 'the run never reported a result; the function most likely stopped mid-flight'
+   where status = 'running'
+     and started_at < now() - interval '10 minutes';
+
+  insert into odds.ingest_runs (provider, league, trigger)
+  values (p_provider, p_league, coalesce(p_trigger, 'cron'))
+  returning id into v_id;
+  return v_id;
+end $$;
 
 -- ------------------------------------------- expose the provider on reads
 --

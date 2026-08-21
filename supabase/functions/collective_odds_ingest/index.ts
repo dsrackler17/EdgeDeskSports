@@ -50,6 +50,7 @@ const SETTING_KEYS = [
   "provider.default",
   "provider.credit_reserve",
   "provider.quota",
+  "nfl.retry_seconds",
 ];
 
 /** Credit accounting carried forward between runs.
@@ -194,14 +195,43 @@ async function nextKickoff(league: string): Promise<string | null> {
   return games[0]?.commence_time ?? null;
 }
 
-/** Seconds since the last run that actually reached the provider. */
-async function secondsSinceLastRun(): Promise<number | null> {
-  const st = await rpc<Record<string, unknown> | null>("odds_status", { p_league: "nfl" })
+/**
+ * How long since the feed last SUCCEEDED, and since it was last attempted.
+ *
+ * These are different questions and conflating them is expensive. The throttle
+ * exists to stop a working feed being polled faster than the plan allows. A
+ * run that failed did not poll anything — it spent no credit and stored no
+ * price — so counting it as "recently polled" makes one transient failure
+ * silence the pipeline for the whole idle window, and the caller gets
+ * HTTP 200 "skipped: too_soon", which reads as success. That combination
+ * turns a five minute outage into a twelve hour blackout that looks fine
+ * from every angle.
+ *
+ * since_success comes from odds.last_poll_at(), which the database already
+ * restricts to ok and partial runs. since_attempt is any run at all, and it
+ * only supplies a floor so a genuinely broken provider is still not hammered.
+ */
+interface ThrottleState {
+  since_success: number | null;
+  since_attempt: number | null;
+  last_status: string | null;
+}
+
+function ageSeconds(iso: unknown): number | null {
+  if (typeof iso !== "string" || iso === "") return null;
+  const ms = Date.parse(iso);
+  return Number.isFinite(ms) ? Math.max(0, Math.round((Date.now() - ms) / 1000)) : null;
+}
+
+async function throttleState(league = "nfl"): Promise<ThrottleState> {
+  const st = await rpc<Record<string, unknown> | null>("odds_status", { p_league: league })
     .catch(() => null);
   const last = st?.last_run as { started_at?: string; status?: string } | null | undefined;
-  if (!last?.started_at) return null;
-  const ms = Date.parse(last.started_at);
-  return Number.isFinite(ms) ? Math.round((Date.now() - ms) / 1000) : null;
+  return {
+    since_success: ageSeconds(st?.last_poll_at),
+    since_attempt: ageSeconds(last?.started_at),
+    last_status: typeof last?.status === "string" ? last.status : null,
+  };
 }
 
 /** Why the site is showing "Odds unavailable", in the order the pipeline
@@ -352,7 +382,7 @@ Deno.serve(async (req) => {
         ...st,
         provider: { id: provider.id, name: provider.name, configured: provider.isConfigured() },
         cadence: cad,
-        seconds_since_last_run: await secondsSinceLastRun(),
+        throttle: await throttleState(league),
         credits: {
           ...quota,
           estimated_cost_per_poll: cost,
@@ -418,14 +448,36 @@ Deno.serve(async (req) => {
 
       // Do not hammer the API: a run that arrives early for the current
       // cadence returns without making a provider request at all.
+      //
+      // Measured from the last SUCCESS, not the last attempt. A failure polled
+      // nothing, so letting it consume the window would mean one bad response
+      // silences the feed until the window expires — twelve hours, on an idle
+      // calendar — while every call in between answers 200.
       const cad = await cadence(cfg, league);
-      const since = await secondsSinceLastRun();
-      if (!force && since !== null && since < cad.interval_seconds) {
+      const thr = await throttleState(league);
+      const retryFloor = Math.max(60, num(cfg["nfl.retry_seconds"], 300));
+
+      if (!force && thr.since_success !== null && thr.since_success < cad.interval_seconds) {
         return json({
           ok: true,
           skipped: "too_soon",
+          reason: `Last successful poll was ${thr.since_success}s ago; the current cadence is ${cad.interval_seconds}s.`,
           cadence: cad,
-          seconds_since_last_run: since,
+          seconds_since_last_success: thr.since_success,
+          seconds_since_last_attempt: thr.since_attempt,
+        }, 200, NO_STORE);
+      }
+      // A failing provider still gets a floor between attempts, so a retry
+      // loop cannot turn an outage into a request storm.
+      if (!force && thr.since_success === null && thr.since_attempt !== null &&
+          thr.since_attempt < retryFloor) {
+        return json({
+          ok: true,
+          skipped: "retry_backoff",
+          reason: `The last attempt failed ${thr.since_attempt}s ago and has not succeeded yet. Retrying no sooner than every ${retryFloor}s.`,
+          last_status: thr.last_status,
+          cadence: cad,
+          seconds_since_last_attempt: thr.since_attempt,
         }, 200, NO_STORE);
       }
 
