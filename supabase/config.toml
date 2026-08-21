@@ -1,0 +1,27 @@
+# Supabase CLI config for the Model Collective.
+# Link with: supabase link --project-ref iattxbkbufslbauoumga
+# The project_id below is the local folder identity for the CLI, not a secret.
+
+project_id = "edgedesksports"
+
+# Every Collective function does its own auth (submission keys, invite tokens,
+# origin allowlists, or JWT checks against admin config). Platform JWT
+# verification must be off so unauthenticated surfaces work.
+
+[functions.collective_ingest]
+verify_jwt = false
+
+[functions.collective_public]
+verify_jwt = false
+
+[functions.collective_embed]
+verify_jwt = false
+
+[functions.collective_join]
+verify_jwt = false
+
+[functions.collective_admin]
+verify_jwt = false
+
+[functions.collective_billing]
+verify_jwt = false

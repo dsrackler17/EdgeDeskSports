@@ -1,0 +1,51 @@
+<!doctype html>
+<!--
+  Embed proving ground. This page simulates a MEMBER'S OWN SITE with hostile
+  global CSS (Comic Sans everywhere, loud table and list styles, clashing
+  colors). The Collective embed below must render untouched inside its shadow
+  root, and nothing from the embed may restyle this page. This is the Phase 6
+  done-check: one script tag on a plain page renders the full Collective with
+  a rival creator visible and linking out.
+
+  For local testing add data-api="http://127.0.0.1:8787" to the script tag
+  (or serve this page and pass ?api=). In production the tag needs only the
+  src and the host slug.
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Moose Picks - my model site (embed demo)</title>
+<style>
+  /* deliberately hostile host styles */
+  * { font-family: 'Comic Sans MS', 'Comic Sans', cursive; }
+  body { background: #fdf3d8; color: #4a2c11; margin: 0; padding: 0; }
+  .site-nav { background: #d2691e; padding: 14px 20px; color: #fff; font-size: 20px; font-weight: bold; }
+  .site-nav a { color: #ffe; margin-right: 18px; text-decoration: underline wavy; }
+  main { max-width: 900px; margin: 0 auto; padding: 24px 16px; }
+  table { border: 4px dashed hotpink !important; }
+  td, th { border: 2px dotted green !important; padding: 20px !important; font-size: 22px !important; }
+  a { color: red !important; }
+  h1, h2 { color: #b22222; text-shadow: 2px 2px 0 #ffd700; }
+  p { font-size: 17px; }
+</style>
+</head>
+<body>
+<nav class="site-nav">MOOSE PICKS <a href="#">Home</a> <a href="#">My Model</a> <a href="#">Collective</a></nav>
+<main>
+  <h1>My NFL Model</h1>
+  <p>This is a member creator's own website with its own (deliberately loud) styling.
+     Everything above and below the embed uses Comic Sans, dashed hot pink table borders,
+     and red links. If any of that shows up inside the Collective box, the shadow
+     boundary is broken. If the Collective's dark terminal look leaks out here,
+     the boundary is broken in the other direction.</p>
+
+  <h2>The Collective tab</h2>
+  <!-- one script tag, one slug: this is the whole install -->
+  <div id="model-collective"></div>
+  <script src="embed.js" data-collective-host="moose" data-theme="dark" data-api="http://127.0.0.1:8787" async></script>
+
+  <p>Host page content continues after the embed, still in Comic Sans.</p>
+</main>
+</body>
+</html>

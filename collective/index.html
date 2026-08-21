@@ -271,7 +271,12 @@ function covCell(p){
    pending" is right for a model that has never posted and wrong for one that
    posted a full slate an hour ago and is waiting on Sunday — which reads as
    "your upload failed" to the person who just uploaded. Those are different
-   states and the copy now says which. */
+   states and the copy now says which.
+
+   last_submission_at rather than submitted_games, though both are on the row:
+   every graded-eligible pick also sets last_submission_at, so the count can
+   never be positive where this is null, and testing it too would change no
+   outcome. The count still earns its place on the profile, which prints it. */
 function recCell(rec,lastSubmissionAt){
   if(rec)return '<span class="mono">'+rec.wins+'-'+rec.losses+'-'+rec.pushes+'</span>';
   if(lastSubmissionAt)return '<span class="note">submitted, awaiting results</span>';
@@ -500,8 +505,15 @@ async function renderWall(view){
     /* the board: every game on the current slate, every model's number */
     var boards='';
     ((board&&board.games)||[]).slice(0,12).forEach(function(g){
+      /* the market line, when one has been captured. Public information, so
+         it shows to everyone: what the Collective sells is the models. */
+      var mkt='';
+      if(g.market&&g.market.home_line!=null){
+        mkt='<span class="tm" title="market line, '+esc(g.market.book||'')+', captured '+rel(g.market.captured_at)+'">'+
+          esc(g.home)+' '+fmtSpread(g.market.home_line)+'</span>';
+      }
       var hd='<div class="gb-hd"><span>'+esc(g.away)+' @ '+esc(g.home)+'</span>'+
-        '<span class="tm">'+kickoffFmt(g.kickoff_at)+'</span>'+
+        '<span class="tm">'+kickoffFmt(g.kickoff_at)+'</span>'+mkt+
         (g.result?'<span class="fin">FINAL '+g.result.away_score+' - '+g.result.home_score+'</span>':'')+
         '</div>';
       var lines='';
@@ -638,8 +650,17 @@ async function renderCreator(view,slug){
           '<span><div class="k">Coverage</div><div class="v">'+fmtNum(mo.coverage_pct,0)+'%</div></span>'+
         '</div>'+
         '<div class="note" style="margin-top:8px">Graded by the Collective against its own closing lines. <a href="#rules">Grading rules</a> &middot; <a href="#/model/'+esc(c.slug)+'/'+esc(mo.model_slug)+'">Full game log →</a></div></div>';
+      }else if(mo.submitted_games>0){
+        /* Slate is in, nothing has kicked off yet. State that, not "pending". */
+        body+='<div class="emptybox"><b style="color:var(--text)">No graded games yet.</b><br>Grades post when submitted slates settle, against the Collective’s closing lines. <span class="mono">'+mo.submitted_games+'</span> game'+(mo.submitted_games===1?'':'s')+' submitted and waiting on kickoff.</div>';
+      }else if(mo.last_submission_at){
+        /* Same fallback the wall uses: a deployed collective_public older than
+           migration 19 sends no count, and telling a creator who has posted
+           that nothing has arrived is the one wrong thing to say. No number
+           here, because without the count there is no number to trust. */
+        body+='<div class="emptybox"><b style="color:var(--text)">No graded games yet.</b><br>Grades post when submitted slates settle, against the Collective’s closing lines.</div>';
       }else{
-        body+='<div class="emptybox"><b style="color:var(--text)">'+esc(c.display_name)+' is on the wall.</b><br>First live submission pending. The record starts the moment their first slate arrives, graded against the Collective’s closing lines.</div>';
+        body+='<div class="emptybox"><b style="color:var(--text)">First submission pending.</b><br>'+esc(c.display_name)+' is connected and will appear in grading after their first slate goes live.</div>';
       }
       if(mo.backfill&&mo.backfill.rows){
         body+='<div class="panel" style="margin-top:10px;border-style:dashed"><b>Backfilled history:</b> <span class="mono">'+mo.backfill.rows+'</span> games. <span class="note">'+esc(mo.backfill.note)+'. Backfill never counts toward the record, rankings, or consensus.</span></div>';
@@ -748,7 +769,10 @@ async function renderBoard(view){
     var head='<h1>The Board</h1><p class="lede">Every game on the slate with each model’s number and, after settlement, its grade. Pre-kickoff numbers and consensus are for subscribers. Settled games are the public record.</p>'+wk;
     var cards='';
     (d.games||[]).forEach(function(g){
-      var hd='<div class="gc-hd"><span class="lbl">'+esc(g.label)+'</span><span class="tm">'+kickoffFmt(g.kickoff_at)+'</span>'+
+      var mkt2=(g.market&&g.market.home_line!=null)
+        ?'<span class="tm" title="market line from '+esc(g.market.book||'')+'">market '+esc(g.home)+' '+fmtSpread(g.market.home_line)+
+          (g.market.total_line!=null?' / '+fmtNum(g.market.total_line):'')+'</span>':'';
+      var hd='<div class="gc-hd"><span class="lbl">'+esc(g.label)+'</span><span class="tm">'+kickoffFmt(g.kickoff_at)+'</span>'+mkt2+
         (g.result?'<span class="spacer"></span><span class="fin">'+g.result.away_score+' - '+g.result.home_score+'</span><span class="tm">close '+fmtSpread(g.result.closing_spread)+' / '+fmtNum(g.result.closing_total)+'</span>':'')+
         '</div>';
       var cons='';
