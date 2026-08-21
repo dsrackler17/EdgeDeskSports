@@ -62,5 +62,9 @@ echo "== 5/5 browser components =="
 node tests/collective/odds_js.test.mjs 2>&1 | grep -v ExperimentalWarning | grep -v "trace-warnings"
 
 echo
+echo "== slate CSV mapper =="
+python3 tests/collective/submit_csv_test.py
+
+echo
 echo "== inline page scripts =="
 node tools/collective/check_html_js.mjs
