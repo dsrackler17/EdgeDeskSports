@@ -176,6 +176,7 @@ label .opt{color:var(--faint);text-transform:none;letter-spacing:0;font-weight:4
   <nav class="tabs" id="tabs">
     <a href="#" data-r="wall">Wall</a>
     <a href="#board" data-r="board">Board</a>
+    <a href="#market" data-r="market">Market</a>
     <a href="#models" data-r="models">Models</a>
     <a href="#rankings" data-r="rankings">Rankings</a>
     <a href="#rules" data-r="rules">Rules</a>
@@ -193,6 +194,9 @@ label .opt{color:var(--faint);text-transform:none;letter-spacing:0;font-weight:4
   <div>Every model here belongs to its creator. Records are graded by the Collective on actual results, against its own captured closing lines. Research and information only, not betting or financial advice. No guaranteed results. 21+. Gamble responsibly: 1-800-GAMBLER.</div>
 </div></footer>
 
+<!-- The odds components. One file, shared by this page, the embed and the
+     admin console, so a price rendered in two places is the same price. -->
+<script src="odds.js"></script>
 <script>
 "use strict";
 /* ================= config ================= */
@@ -323,6 +327,34 @@ async function api(path,opts){
 }
 var META=null;
 async function meta(){if(META)return META;META=await api('/v1/meta');return META;}
+
+/* ================= market odds =================
+   One entry point for every surface on this page. The components live in
+   odds.js and talk only to our own collective_odds function, so no page here
+   knows an odds provider exists. A failure returns null and each caller
+   renders "market unavailable" rather than a broken view. */
+function marketBoard(opts){
+  if(!window.MCOdds)return Promise.resolve(null);
+  try{
+    MCOdds.configure({api:API});
+    MCOdds.injectCss(document.head);
+    return MCOdds.board(opts||{days:10}).catch(function(){return null;});
+  }catch(e){return Promise.resolve(null);}
+}
+/* Match a Collective game to its market. Prefers the server side link, falls
+   back to team codes for a game the odds feed has not been linked to yet. */
+function marketFor(mkt,g){
+  if(!mkt||!mkt.find||!g)return null;
+  return mkt.find({game_id:g.game_id,home:g.home,away:g.away});
+}
+function marketLineHtml(mkt,g){
+  if(!window.MCOdds)return '';
+  var m=marketFor(mkt,g);
+  if(!m&&(!mkt||mkt.state==='unavailable'))
+    return '<div class="mco-line mco-empty">Market unavailable</div>';
+  if(!m)return '<div class="mco-line mco-empty">No market posted for this game yet</div>';
+  return MCOdds.marketLine(m,mkt);
+}
 var WALLC=null;
 async function wallRows(){if(WALLC)return WALLC;WALLC=(await api('/v1/wall')).rows||[];return WALLC;}
 
@@ -381,6 +413,8 @@ function route(){
   function markTab(r){var a=document.querySelector('nav.tabs a[data-r="'+r+'"]');if(a)a.classList.add('on');}
   if(h===''||h==='/'){markTab('wall');return renderWall(view);}
   if(h==='board'){markTab('board');return renderBoard(view);}
+  if(h==='market'||h==='odds'){markTab('market');return renderMarket(view);}
+  if(h.indexOf('market/')===0){markTab('market');return renderMarketGame(view,h.slice(7));}
   if(h==='models'){markTab('models');return renderModels(view);}
   if(h==='performance'){markTab('rankings');return renderPerformance(view);}
   if(h==='rankings'){markTab('rankings');return renderRankings(view);}
@@ -434,8 +468,8 @@ async function renderWall(view){
   view.innerHTML='<div class="emptybox">Loading the wall&hellip;</div>';
   try{
     var m=await meta();
-    var results=await Promise.all([wallRows(),api('/v1/games',{auth:true}).catch(function(){return null;}),api('/v1/activity').catch(function(){return null;})]);
-    var rows=results[0],board=results[1],act=results[2];
+    var results=await Promise.all([wallRows(),api('/v1/games',{auth:true}).catch(function(){return null;}),api('/v1/activity').catch(function(){return null;}),marketBoard()]);
+    var rows=results[0],board=results[1],act=results[2],mkt=results[3];
     var activeN=rows.filter(function(r){return r.membership==='ACTIVE CONTRIBUTOR';}).length;
     var sportCode=(m.sports[0]&&m.sports[0].code)||'NFL';
     var memDot={'ACTIVE CONTRIBUTOR':'var(--pos)','MEMBER':'var(--dim)','INACTIVE':'var(--faint)'};
@@ -473,6 +507,9 @@ async function renderWall(view){
           '<span class="gb-dot" style="background:'+dot+'"></span></div>';
       });
       if(!g.models||!g.models.length)lines='<div class="gb-empty">No model has posted this game yet</div>';
+      /* the market, above the model numbers: it is the thing they are all
+         being measured against */
+      lines=marketLineHtml(mkt,g)+lines;
       var c=g.consensus;
       if(c&&!c.locked&&c.n>1){
         lines+='<div class="gb-row cons"><span class="nm">Consensus</span>'+
@@ -607,7 +644,11 @@ async function renderCreator(view,slug){
 async function renderModel(view,cs,ms){
   view.innerHTML='<div class="emptybox">Loading model&hellip;</div>';
   try{
-    var d=await api('/v1/models/'+encodeURIComponent(cs)+'/'+encodeURIComponent(ms));
+    var res=await Promise.all([
+      api('/v1/models/'+encodeURIComponent(cs)+'/'+encodeURIComponent(ms)),
+      api('/v1/games',{auth:true}).catch(function(){return null;}),
+      marketBoard()]);
+    var d=res[0], slate=res[1], mkt=res[2];
     var rec=d.record;
     var head='<h1>'+esc(d.model.model_name)+' <span class="pill">'+esc(d.model.sport)+'</span></h1>'+
       '<p class="lede">by <a href="#/'+esc(d.creator.slug)+'">'+esc(d.creator.display_name)+'</a>'+foundBadge(d.creator)+'</p>';
@@ -619,6 +660,34 @@ async function renderModel(view,cs,ms){
       '<span><div class="k">Coverage</div><div class="v">'+fmtNum(d.coverage_pct,0)+'%</div></span>'+
       '</div><div class="note" style="margin-top:8px">Graded by the Collective on actual final scores against its own captured closing lines, never self-reported. <a href="#rules">Grading rules</a></div></div>'
       :'<div class="emptybox"><b style="color:var(--text)">Building sample.</b><br>Performance metrics appear once enough graded games are on the record. Every pick is graded on the actual final score against the Collective&#39;s captured closing line.</div>';
+    /* Model against market, on the games this model has actually posted. A
+       difference is only shown where the model published a spread: a pick
+       side on its own is not comparable to a market number. */
+    var vs='';
+    if(window.MCOdds&&slate&&slate.games){
+      var rows=[];
+      slate.games.forEach(function(g){
+        (g.models||[]).forEach(function(mr){
+          if(mr.creator_slug!==cs||mr.model_slug!==ms||mr.locked)return;
+          var mg=marketFor(mkt,g);
+          var mSpread=mg?MCOdds.consensusSpread(mg):null;
+          rows.push('<tr><td>'+esc(g.label||((g.away||'')+' @ '+(g.home||'')))+
+            '<br><span class="sb" style="color:var(--faint);font-size:11px">'+esc(kickoffFmt(g.kickoff_at))+'</span></td>'+
+            '<td class="num">'+(mr.projected_spread!=null?fmtSpread(mr.projected_spread):'<span class="note">no spread</span>')+'</td>'+
+            '<td class="num">'+(mSpread!=null?esc(g.home)+' '+MCOdds.line(mSpread):'<span class="note">market unavailable</span>')+'</td>'+
+            '<td class="num">'+MCOdds.edgeHtml(mr.projected_spread,mSpread,g.home,g.away)+'</td>'+
+            '<td class="num">'+(mg?'<a href="#market/'+esc(mg.event_id)+'">books</a>':'')+'</td></tr>');
+        });
+      });
+      if(rows.length){
+        vs='<h2>Against the current market</h2>'+
+          '<div class="tblwrap"><table><thead><tr><th>Game</th><th class="num">Model spread</th>'+
+          '<th class="num">Market</th><th class="num">Difference</th><th class="num"></th></tr></thead><tbody>'+
+          rows.join('')+'</tbody></table></div>'+
+          '<p class="note" style="margin-top:8px">Market numbers are the Collective&#39;s own consensus, median across retail books, in home convention. '+
+          (mkt?MCOdds.freshChip(mkt):'')+' A difference is shown only where the model published a spread of its own.</p>';
+      }
+    }
     var method='<h2>Methodology</h2>'+(d.model.description
       ?'<div class="panel" style="max-width:760px">'+esc(d.model.description)+'</div>'
       :'<div class="emptybox">This creator has not published a methodology summary yet. The record above stands on its own either way: same grading, same closing lines, same rules as every model here.</div>');
@@ -641,7 +710,7 @@ async function renderModel(view,cs,ms){
       '<div class="sortsel"><span class="note">Show</span><select id="glFilter"><option value="">All results</option><option value="win">Wins</option><option value="loss">Losses</option><option value="push">Pushes</option></select></div>'+
       '<div class="tblwrap"><table id="glTbl"><thead><tr><th>Game</th><th class="num">Pick</th><th class="num">Close</th><th class="num">Final</th><th class="num">Result</th><th class="num">Margin err</th><th class="num">Brier</th><th class="num">Movement</th></tr></thead><tbody>'+glRows+'</tbody></table></div>'+
       '<p class="note" style="margin-top:8px">Each game is graded on the model’s first pre-kickoff live submission. Later revisions are stored as movement, never regraded.</p>':'';
-    view.innerHTML=head+stats+method+cov+gl+'<p style="margin-top:22px"><a href="#/'+esc(d.creator.slug)+'">← '+esc(d.creator.display_name)+'</a> &middot; <a href="#models">Model directory</a> &middot; <a href="#performance">Compare models</a></p>';
+    view.innerHTML=head+stats+vs+method+cov+gl+'<p style="margin-top:22px"><a href="#/'+esc(d.creator.slug)+'">← '+esc(d.creator.display_name)+'</a> &middot; <a href="#models">Model directory</a> &middot; <a href="#performance">Compare models</a></p>';
     if($('glFilter'))$('glFilter').onchange=function(){
       var v=this.value;
       document.querySelectorAll('#glTbl tbody tr').forEach(function(tr){
@@ -659,7 +728,8 @@ async function renderBoard(view){
     var m=await meta();
     var sport=m.sports[0]||{code:'NFL',season:2026};
     var q='?sport='+sport.code+'&season='+sport.season+(BOARD_WEEK?'&week='+BOARD_WEEK:'');
-    var d=await api('/v1/games'+q,{auth:true});
+    var both=await Promise.all([api('/v1/games'+q,{auth:true}),marketBoard()]);
+    var d=both[0],mkt=both[1];
     var wk='<div class="wk"><button class="'+(BOARD_WEEK?'':'on')+'" data-w="">Current</button>';
     for(var i=1;i<=18;i++)wk+='<button class="'+(BOARD_WEEK===i?'on':'')+'" data-w="'+i+'">W'+i+'</button>';
     wk+='</div>';
@@ -680,6 +750,8 @@ async function renderBoard(view){
           cons='<div class="consline"><span>consensus <b>'+fmtSpread(g.consensus.spread_mean)+'</b></span><span>median <b>'+fmtSpread(g.consensus.spread_median)+'</b></span><span>spread σ <b>'+fmtNum(g.consensus.spread_stdev)+'</b></span><span>total <b>'+fmtNum(g.consensus.total_mean)+'</b></span><span>home win <b>'+fmtPct(g.consensus.home_win_prob_mean,0)+'</b></span><span>agreement <b>'+fmtPct(g.consensus.agreement,0)+'</b></span><span class="note">'+g.consensus.n+' models</span></div>';
         }
       }
+      var mg=marketFor(mkt,g);
+      var mktSpread=(window.MCOdds&&mg)?MCOdds.consensusSpread(mg):null;
       var rows='';
       (g.models||[]).forEach(function(mr){
         var who='<a href="#/'+esc(mr.creator_slug)+'">'+esc(mr.creator_slug)+'</a> <span class="note">'+esc(mr.model_slug)+'</span>';
@@ -696,6 +768,10 @@ async function renderBoard(view){
                   ? '<span class="mono" title="the market line this pick was posted against">line '+fmtSpread(mr.line_at_submission)+'</span>'
                   : ''))+
             (mr.projected_total!=null?'<span class="mono">tot '+fmtNum(mr.projected_total)+'</span>':'')+
+            (mktSpread!=null&&mr.projected_spread!=null&&window.MCOdds
+              ? '<span class="mono" title="Model spread minus the market consensus, both in home convention">vs mkt '+
+                MCOdds.edgeHtml(mr.projected_spread,mktSpread,g.home,g.away)+'</span>'
+              : '')+
             (mr.home_win_probability!=null?'<span class="mono">hw '+fmtPct(mr.home_win_probability,0)+'</span>':'')+
             (mr.home_win_probability==null&&mr.cover_probability!=null
               ? '<span class="mono" title="the model\'s probability that this pick covers">cover '+fmtPct(mr.cover_probability,0)+'</span>':'')+
@@ -703,7 +779,10 @@ async function renderBoard(view){
         }
       });
       if(!g.models||!g.models.length)rows='<div class="mrow"><span class="note">No model has submitted this game yet.</span></div>';
-      cards+='<div class="gamecard">'+hd+cons+rows+'</div>';
+      var mktRow=marketLineHtml(mkt,g);
+      cards+='<div class="gamecard">'+hd+mktRow+cons+rows+
+        (mg?'<div class="note" style="margin-top:6px"><a href="#market/'+esc(mg.event_id)+'">Full market, every book, line movement &rarr;</a></div>':'')+
+        '</div>';
     });
     if(!cards)cards='<div class="emptybox">No games on this slate yet. Games appear when the schedule is loaded.</div>';
     var sub=(d.entitled===false)?'<div class="panel" style="margin-bottom:14px"><b>Locked numbers are for subscribers.</b> <span class="note">One subscription unlocks every model here: '+cents(m.pricing.monthly_cents)+' a month'+(m.pricing.annual_cents>0?' or '+cents(m.pricing.annual_cents)+' a year':'')+'. '+(m.billing_live?'':'Billing opens soon.')+'</span> <a href="#about">Details →</a></div>':'';
@@ -711,6 +790,123 @@ async function renderBoard(view){
     document.querySelectorAll('.wk button').forEach(function(b){
       b.onclick=function(){var w=b.getAttribute('data-w');BOARD_WEEK=w?+w:null;renderBoard(view);};
     });
+  }catch(e){fail(view,e);}
+}
+
+/* ================= market =================
+   The research surface: the current NFL market, in full, without leaving the
+   Collective. Everything here comes from our own feed through
+   collective_odds; nothing on this page talks to an odds provider. */
+var MKT_SORT='time';
+async function renderMarket(view){
+  view.innerHTML='<div class="emptybox">Loading the market&hellip;</div>';
+  try{
+    if(!window.MCOdds){
+      view.innerHTML='<div class="errbox">The odds components did not load. Refresh the page.</div>';
+      return;
+    }
+    var res=await Promise.all([marketBoard({days:10,books:true}),
+      api('/v1/games',{auth:true}).catch(function(){return null;})]);
+    var mkt=res[0], board=res[1];
+    var head='<h1>The market</h1>'+
+      '<p class="lede">Current NFL prices across sportsbooks, captured by the Collective on a schedule and stored so every move stays recoverable. This is the number every model on the wall is measured against.</p>';
+
+    if(!mkt||mkt.state==='unavailable'||!(mkt.games||[]).length){
+      var when=mkt&&mkt.last_updated?(' Last updated '+MCOdds.ago(MCOdds.ageOf(mkt.last_updated))+'.'):'';
+      view.innerHTML=head+'<div class="emptybox"><b style="color:var(--text)">Odds unavailable.</b><br>'+
+        'No current prices are stored for the NFL right now.'+esc(when)+
+        ' Nothing is shown rather than an estimate.</div>';
+      return;
+    }
+
+    var banner='<div class="panel" style="margin-bottom:14px;display:flex;gap:12px;align-items:center;flex-wrap:wrap">'+
+      MCOdds.freshChip(mkt)+
+      '<span class="note">'+mkt.count+' game'+(mkt.count===1?'':'s')+' &middot; prices from every book the Collective polls</span>'+
+      '<span class="spacer" style="flex:1"></span>'+
+      '<span class="note">Sort</span><select id="mktSort" style="width:auto">'+
+        '<option value="time">Kickoff</option>'+
+        '<option value="spread">Biggest spread</option>'+
+        '<option value="total">Highest total</option>'+
+        '<option value="disagree">Books disagree most</option>'+
+      '</select></div>';
+
+    var games=(mkt.games||[]).slice();
+    if(MKT_SORT==='spread')games.sort(function(a,b){return Math.abs(MCOdds.consensusSpread(b)||0)-Math.abs(MCOdds.consensusSpread(a)||0);});
+    else if(MKT_SORT==='total')games.sort(function(a,b){return (MCOdds.consensusTotal(b)||0)-(MCOdds.consensusTotal(a)||0);});
+    else if(MKT_SORT==='disagree')games.sort(function(a,b){
+      var sa=(a.consensus&&a.consensus.spread&&a.consensus.spread.stdev)||0;
+      var sb=(b.consensus&&b.consensus.spread&&b.consensus.spread.stdev)||0;
+      return sb-sa;});
+    else games.sort(function(a,b){return new Date(a.commence_time)-new Date(b.commence_time);});
+
+    /* Models that posted a number on this game, so the market and the models
+       sit side by side instead of on two different pages. */
+    var modelsByGame={};
+    ((board&&board.games)||[]).forEach(function(g){
+      if(g.game_id)modelsByGame[g.game_id]=g;
+    });
+
+    var cards=games.map(function(g){
+      var linked=g.collective_game_id&&modelsByGame[g.collective_game_id];
+      var modelRow='';
+      if(linked){
+        var mktSpread=MCOdds.consensusSpread(g);
+        var mrows=(linked.models||[]).filter(function(m){return !m.locked;}).map(function(m){
+          return '<div class="mrow"><a href="#/'+esc(m.creator_slug)+'">'+esc(m.creator_slug)+'</a>'+
+            '<span class="spacer"></span>'+
+            '<span class="mono">'+(m.projected_spread!=null?fmtSpread(m.projected_spread):'no spread')+'</span>'+
+            '<span class="mono">'+(m.projected_spread!=null&&mktSpread!=null
+              ? MCOdds.edgeHtml(m.projected_spread,mktSpread,g.home,g.away):'')+'</span></div>';
+        }).join('');
+        var locked=(linked.models||[]).some(function(m){return m.locked;});
+        modelRow='<div class="panel" style="margin-top:8px;border-style:dashed">'+
+          '<div class="note" style="margin-bottom:4px">MODELS ON THIS GAME</div>'+
+          (mrows||'<div class="note">'+(locked?'Model numbers on this game are a subscriber number.':'No model has posted this game yet.')+'</div>')+
+          '</div>';
+      }
+      return '<div style="margin-bottom:14px">'+MCOdds.marketCard(g,mkt,{footer:false})+modelRow+
+        '<div class="note" style="margin-top:6px"><a href="#market/'+esc(g.event_id)+'">Line movement and every stored price &rarr;</a></div></div>';
+    }).join('');
+
+    view.innerHTML=head+banner+cards+
+      '<p class="note" style="margin-top:14px">Consensus is the median across retail books; the moneyline consensus is a median of de-vigged probabilities, never an average of American prices. Sharp books are shown separately and are not folded into the consensus. Prices are grouped by line, so a better price on a different number is never presented as a better bet. Research and information only, not betting advice.</p>';
+
+    if($('mktSort')){
+      $('mktSort').value=MKT_SORT;
+      $('mktSort').onchange=function(){MKT_SORT=this.value;renderMarket(view);};
+    }
+  }catch(e){fail(view,e);}
+}
+
+/* One game, in full: current prices, how the line got here, and every model
+   number posted against it. */
+async function renderMarketGame(view,eventId){
+  view.innerHTML='<div class="emptybox">Loading the game&hellip;</div>';
+  try{
+    if(!window.MCOdds){view.innerHTML='<div class="errbox">The odds components did not load.</div>';return;}
+    MCOdds.configure({api:API});MCOdds.injectCss(document.head);
+    var mkt=await marketBoard({days:14,books:true});
+    var g=mkt&&mkt.byEvent?mkt.byEvent[eventId]:null;
+    if(!g){
+      /* The board is a time window; a game outside it is fetched directly so
+         an old link still opens. */
+      var one=await MCOdds.event(eventId).catch(function(){return null;});
+      if(one){g=one.game;mkt=one;}
+    }
+    if(!g){
+      view.innerHTML='<h1>Game not found</h1><p class="lede">No stored market for that game. <a href="#market">Back to the market</a></p>';
+      return;
+    }
+    var hist=await MCOdds.history(eventId,{market:'spread'}).catch(function(){return null;});
+    var head='<h1>'+esc(g.away_name||g.away)+' at '+esc(g.home_name||g.home)+'</h1>'+
+      '<p class="lede">'+esc(kickoffFmt(g.commence_time))+
+      (g.market_closed?' &middot; market closed':'')+'</p>';
+    var movement='<h2>Line movement</h2>'+
+      '<p class="note">Every stored state of the spread, oldest first. A re-poll that found no change is not stored, so each row here is a real move.</p>'+
+      '<div class="tblwrap">'+MCOdds.movementHtml(hist,g)+'</div>';
+    view.innerHTML=head+MCOdds.marketCard(g,mkt)+movement+
+      '<p style="margin-top:20px"><a href="#market">&larr; The market</a>'+
+      (g.collective_game_id?' &middot; <a href="#board">The board</a>':'')+'</p>';
   }catch(e){fail(view,e);}
 }
 
@@ -817,7 +1013,46 @@ async function renderPerformance(view){
               :'<p class="note" style="margin:6px 0 0">Building sample: no graded games yet.</p>')+
             '<p style="margin:12px 0 0;font-size:12px"><a href="#/model/'+esc(d.creator.slug)+'/'+esc(d.model.model_slug)+'">Full game log &rarr;</a></p></div>';
         }).join('');
-        out.innerHTML='<div class="duo">'+cols+'</div>'+
+        /* Same games, same market, side by side. This is where a comparison
+           becomes concrete: two models are only really being compared when
+           they are looking at the same number. */
+        var head2='';
+        if(window.MCOdds&&picks.length===2){
+          var extra=await Promise.all([
+            api('/v1/games',{auth:true}).catch(function(){return null;}),
+            marketBoard()]);
+          var slate=extra[0], mkt=extra[1];
+          var A=picks[0].split('/'), B=picks[1].split('/');
+          function numFor(g,cs,ms){
+            var hit=(g.models||[]).filter(function(m){
+              return m.creator_slug===cs&&m.model_slug===ms&&!m.locked;})[0];
+            return hit&&hit.projected_spread!=null?hit.projected_spread:null;
+          }
+          var lines=((slate&&slate.games)||[]).map(function(g){
+            var a=numFor(g,A[0],A[1]), b=numFor(g,B[0],B[1]);
+            if(a==null&&b==null)return '';
+            var mg=marketFor(mkt,g);
+            var mSpread=mg?MCOdds.consensusSpread(mg):null;
+            return '<tr><td>'+esc(g.label||((g.away||'')+' @ '+(g.home||'')))+'</td>'+
+              '<td class="num">'+(a!=null?fmtSpread(a):'<span class="note">—</span>')+'</td>'+
+              '<td class="num">'+(b!=null?fmtSpread(b):'<span class="note">—</span>')+'</td>'+
+              '<td class="num">'+(mSpread!=null?esc(g.home)+' '+MCOdds.line(mSpread):'<span class="note">unavailable</span>')+'</td>'+
+              '<td class="num">'+MCOdds.edgeHtml(a,mSpread,g.home,g.away)+'</td>'+
+              '<td class="num">'+MCOdds.edgeHtml(b,mSpread,g.home,g.away)+'</td></tr>';
+          }).filter(Boolean).join('');
+          if(lines){
+            head2='<h2 style="letter-spacing:.1em;text-transform:uppercase;font-size:12px;color:var(--dim);margin-top:20px">Same market, side by side</h2>'+
+              '<div class="tblwrap"><table><thead><tr><th>Game</th>'+
+              '<th class="num">'+esc(ds[0].model.model_name)+'</th>'+
+              '<th class="num">'+esc(ds[1].model.model_name)+'</th>'+
+              '<th class="num">Market</th>'+
+              '<th class="num">A vs market</th><th class="num">B vs market</th></tr></thead><tbody>'+
+              lines+'</tbody></table></div>'+
+              '<p class="note" style="margin-top:8px">All spreads in home convention. Market is the Collective&#39;s consensus, median across retail books. '+
+              (mkt?MCOdds.freshChip(mkt):'')+'</p>';
+          }
+        }
+        out.innerHTML='<div class="duo">'+cols+'</div>'+head2+
           '<p class="note" style="margin-top:10px">Win percentage excludes pushes. Margin MAE is the average error of the projected margin against the final score, lower is better. Brier scores the win probability, lower is better. Minimums for the ranked boards still apply on <a href="#rankings">Rankings</a>.</p>';
       }catch(e){out.innerHTML='<div class="errbox">'+esc(e.message||String(e))+'</div>';}
     }
@@ -1089,9 +1324,10 @@ async function renderCreatorDash(view,me){
       api('/v1/dashboard/submissions',{auth:true}).catch(function(){return {rows:[]};}),
       wallRows().catch(function(){return [];}),
       api('/v1/games',{auth:true}).catch(function(){return null;}),
-      meta().catch(function(){return {sports:[{code:'NFL',season:new Date().getFullYear()}]};})
+      meta().catch(function(){return {sports:[{code:'NFL',season:new Date().getFullYear()}]};}),
+      marketBoard({days:8})
     ]);
-    var d=res[0],subs=res[1].rows||[],wall=res[2],games=res[3],mMeta=res[4];
+    var d=res[0],subs=res[1].rows||[],wall=res[2],games=res[3],mMeta=res[4],mkt=res[5];
     var c=d.creator;
     var mine=wall.filter(function(w){return w.creator_slug===c.slug;});
     var m0=mine[0]||null;
@@ -1113,6 +1349,25 @@ async function renderCreatorDash(view,me){
       '<div class="st"><div class="k">Coverage</div><div class="v">'+(m0&&m0.coverage_pct!=null?fmtNum(m0.coverage_pct,0)+'%':'-')+'</div></div>'+
       '<div class="st"><div class="k">Last slate</div><div class="v">'+rel(m0?m0.last_submission_at:null)+'</div></div>'+
       '</div>';
+
+    /* The market this creator is about to submit against, on the same screen
+       as the submit button. A creator should not have to leave the
+       Collective to see what the books are on. */
+    if(window.MCOdds&&mkt&&(mkt.games||[]).length){
+      var upcoming=(mkt.games||[]).filter(function(g){
+        return new Date(g.commence_time).getTime()>Date.now();}).slice(0,6);
+      if(upcoming.length){
+        html+='<h2 style="letter-spacing:.1em;text-transform:uppercase;font-size:12px;color:var(--dim);margin-top:18px">'+
+          'Current market <span style="text-transform:none;letter-spacing:0">'+MCOdds.freshChip(mkt)+'</span></h2>'+
+          '<div class="panel">'+upcoming.map(function(g){
+            return '<div style="border-bottom:1px solid var(--border);padding:4px 0">'+
+              '<div style="font-size:12.5px">'+esc(g.away_name||g.away)+' @ '+esc(g.home_name||g.home)+
+              ' <span class="note">'+esc(kickoffFmt(g.commence_time))+'</span></div>'+
+              MCOdds.marketLine(g,mkt)+'</div>';
+          }).join('')+
+          '<div class="note" style="margin-top:8px"><a href="#market">The full market, every book &rarr;</a></div></div>';
+      }
+    }
 
     /* one obvious answer to "where do I put my data": right here */
     html+='<div style="display:flex;gap:10px;flex-wrap:wrap;margin:12px 0 4px">'+
@@ -1429,9 +1684,10 @@ async function renderMemberDash(view,me){
       meta(),
       api('/v1/games',{auth:true}).catch(function(){return null;}),
       wallRows().catch(function(){return [];}),
-      api('/v1/activity').catch(function(){return null;})
+      api('/v1/activity').catch(function(){return null;}),
+      marketBoard({days:8})
     ]);
-    var m=res[0],games=res[1],wall=res[2],act=res[3];
+    var m=res[0],games=res[1],wall=res[2],act=res[3],mkt=res[4];
     var roleLabel=me.role==='subscriber'?'Subscriber':'Member';
     var html='<div class="dash-hd"><h1>Welcome to the Collective</h1><span class="rolechip">'+roleLabel+'</span>'+(me.admin?' <span class="rolechip" style="color:var(--gold)">Admin</span>':'')+'</div>'+
       '<p class="lede">'+(me.entitled
@@ -1451,6 +1707,29 @@ async function renderMemberDash(view,me){
       '<span><div class="k">Games with consensus</div><div class="v">'+consN+'</div></span>'+
       (nextK?'<span><div class="k">Next kickoff</div><div class="v" style="font-size:13px">'+kickoffFmt(nextK)+'</div></span>':'')+
       '</div><p class="note" style="margin:10px 0 0"><a href="#board">Open the board &rarr;</a></p></div>';
+
+    /* The market, on the dashboard. A member should be able to see what the
+       books are on without leaving the Collective. */
+    if(window.MCOdds){
+      var upNext=((mkt&&mkt.games)||[]).filter(function(g){
+        return new Date(g.commence_time).getTime()>Date.now();}).slice(0,5);
+      html+='<h2>The market <span style="text-transform:none;letter-spacing:0;font-size:11px">'+
+        (mkt?MCOdds.freshChip(mkt):'')+'</span></h2>';
+      if(upNext.length){
+        html+='<div class="panel">'+upNext.map(function(g){
+          return '<div style="border-bottom:1px solid var(--border);padding:4px 0">'+
+            '<div style="font-size:12.5px">'+esc(g.away_name||g.away)+' @ '+esc(g.home_name||g.home)+
+            ' <span class="note">'+esc(kickoffFmt(g.commence_time))+'</span></div>'+
+            MCOdds.marketLine(g,mkt)+'</div>';
+        }).join('')+'<p class="note" style="margin:10px 0 0"><a href="#market">Every book, consensus and line movement &rarr;</a></p></div>';
+      }else{
+        html+='<div class="emptybox">'+
+          ((mkt&&mkt.state==='unavailable')
+            ? 'Odds unavailable right now. Nothing is shown rather than an estimate.'
+            : 'No upcoming games with a posted market. The market appears here as soon as books put numbers up.')+
+          '</div>';
+      }
+    }
 
     html+='<h2>Explore the models</h2>';
     if(wall.length){

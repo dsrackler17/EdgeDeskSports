@@ -61,11 +61,12 @@ td input{width:70px;padding:5px 7px;font-family:'JetBrains Mono',monospace;font-
   <span style="flex:1"></span>
   <nav id="nav" class="hide">
     <a data-s="overview" class="on">Overview</a><a data-s="invites">Invites</a><a data-s="members">Members</a>
-    <a data-s="quarantine">Quarantine</a><a data-s="games">Games</a><a data-s="results">Results</a><a data-s="earnings">Earnings</a>
+    <a data-s="quarantine">Quarantine</a><a data-s="games">Games</a><a data-s="results">Results</a><a data-s="odds">Odds</a><a data-s="earnings">Earnings</a>
   </nav>
 </div></header>
 <div class="wrap"><div id="app"><div class="panel note">Loading&hellip;</div></div></div>
 
+<script src="odds.js"></script>
 <script>
 "use strict";
 window.COLLECTIVE_CONFIG = {
@@ -162,6 +163,7 @@ async function render(){
     else if(SEC==='quarantine')await secQuarantine(app);
     else if(SEC==='games')await secGames(app);
     else if(SEC==='results')await secResults(app);
+    else if(SEC==='odds')await secOdds(app);
     else if(SEC==='earnings')await secEarnings(app);
   }catch(e){
     if(e.status===401){localStorage.removeItem('collective_admin_session');signin();return;}
@@ -523,7 +525,7 @@ async function secGames(app){
   };
 }
 
-var RES_SPORT=null,RES_SEASON=null;
+var RES_SPORT=null,RES_SEASON=null,RES_TOKEN=0;
 async function secResults(app){
   var SP=await sports();
   if(!RES_SPORT){RES_SPORT=SP[0].code;RES_SEASON=seasonFor(SP,RES_SPORT);}
@@ -533,15 +535,61 @@ async function secResults(app){
     return '<tr><td><b>'+esc(g.label)+'</b><br><span class="note">'+new Date(g.kickoff_at).toLocaleString()+'</span></td>'+
       '<td><input id="rH'+i+'" placeholder="home"></td><td><input id="rA'+i+'" placeholder="away"></td>'+
       '<td><input id="rS'+i+'" placeholder="-2.5"></td><td><input id="rT'+i+'" placeholder="47.5"></td><td><input id="rM'+i+'" placeholder="0.62"></td>'+
+      '<td id="rC'+i+'" data-g="'+esc(g.game_id)+'"><span class="note">checking&hellip;</span></td>'+
       '<td><button class="btn" data-i="'+i+'" data-g="'+esc(g.game_id)+'">Settle</button></td></tr>';
   }).join('');
-  app.innerHTML='<h1>Results</h1><p class="lede">Final scores plus the closing line YOU captured (home convention, negative means home favored). Settling a game grades every candidate projection on it immediately. The closing line here is the only line any pick is ever graded against.</p>'+
+  app.innerHTML='<h1>Results</h1><p class="lede">Final scores plus the closing line (home convention, negative means home favored). Settling a game grades every candidate projection on it immediately. The closing line here is the only line any pick is ever graded against.</p>'+
+    '<p class="note" style="margin:-6px 0 10px">Where the Collective captured its own closing line from the odds feed, it is offered in the last column. It appears only after the market actually closed, and it is a prefill: the number you settle with is still the one in the box.</p>'+
     '<div class="grid2" style="margin-bottom:10px"><div><label>Sport</label><select id="rSport">'+sportOpts(SP,RES_SPORT)+'</select></div>'+
     '<div><label>Season</label><input id="rSeason" type="number" value="'+esc(RES_SEASON)+'"></div></div>'+
-    '<div class="tblwrap"><table><thead><tr><th>Game</th><th>Home pts</th><th>Away pts</th><th>Close spread</th><th>Close total</th><th>Close home ML prob</th><th></th></tr></thead><tbody>'+
-    (rows||'<tr><td colspan="7" class="note" style="text-align:center;padding:14px">No unsettled past games for '+esc(RES_SPORT)+' '+esc(RES_SEASON)+'. Load the slate under Games first.</td></tr>')+'</tbody></table></div>';
+    '<div class="tblwrap"><table><thead><tr><th>Game</th><th>Home pts</th><th>Away pts</th><th>Close spread</th><th>Close total</th><th>Close home ML prob</th><th>Captured close</th><th></th></tr></thead><tbody>'+
+    (rows||'<tr><td colspan="8" class="note" style="text-align:center;padding:14px">No unsettled past games for '+esc(RES_SPORT)+' '+esc(RES_SEASON)+'. Load the slate under Games first.</td></tr>')+'</tbody></table></div>';
   $('rSport').onchange=function(){RES_SPORT=this.value;RES_SEASON=seasonFor(SP,RES_SPORT);render();};
   $('rSeason').onchange=function(){RES_SEASON=+this.value||RES_SEASON;render();};
+
+  /* The closing line the Collective captured itself, offered as a prefill.
+     It is only ever offered once the market has actually closed, and the
+     admin can still overwrite it: this replaces recall, not judgement. */
+  if(window.MCOdds&&need.length){
+    MCOdds.configure({api:API});
+    /* Each lookup is async and the table can be re-rendered while they are in
+       flight, so every callback checks it is still writing into the row it
+       was launched for. Without the stamp, a slow response from the previous
+       render lands on whatever game now occupies index i and offers one
+       game's closing line as another's. */
+    var stamp = (RES_TOKEN = (RES_TOKEN || 0) + 1);
+    need.slice(0,30).forEach(function(g,i){
+      var gameId=g.game_id;
+      MCOdds.closingForGame(gameId).then(function(cl){
+        if(stamp!==RES_TOKEN)return;
+        var cell=$('rC'+i);
+        if(!cell||cell.getAttribute('data-g')!==gameId)return;
+        if(!cl||!cl.available){
+          var why={no_linked_odds_event:'no odds event linked to this game',
+                   market_not_closed:'market has not closed yet',
+                   no_pregame_capture:'no price was captured before kickoff'}[cl&&cl.reason]||'not available';
+          cell.innerHTML='<span class="note">'+esc(why)+'</span>';
+          return;
+        }
+        /* The median of an even number of books lands on a quarter point:
+           the median of -6.0 and -6.5 is -6.25. Rounding that to one decimal
+           printed -6.3, which is neither what was captured nor a number any
+           book offered — and this value grades every model on the game. */
+        var num2=function(v){return String(Math.round(Number(v)*100)/100);};
+        cell.innerHTML='<button class="btn" data-fill="'+i+'">Use captured close</button>'+
+          '<div class="note" style="margin-top:3px">'+
+          (cl.closing_spread!=null?'spread '+esc(num2(cl.closing_spread)):'')+
+          (cl.closing_total!=null?' &middot; total '+esc(num2(cl.closing_total)):'')+
+          (cl.books?' &middot; '+esc(cl.books)+' books':'')+'</div>';
+        cell.querySelector('button').onclick=function(){
+          if(cl.closing_spread!=null)$('rS'+i).value=num2(cl.closing_spread);
+          if(cl.closing_total!=null)$('rT'+i).value=num2(cl.closing_total);
+          if(cl.closing_home_ml_prob!=null)$('rM'+i).value=Number(cl.closing_home_ml_prob).toFixed(4);
+          toast('Filled from the captured close');
+        };
+      }).catch(function(){});
+    });
+  }
   app.querySelectorAll('button[data-g]').forEach(function(b){
     b.onclick=async function(){
       var i=b.getAttribute('data-i');
@@ -553,6 +601,100 @@ async function secResults(app){
       try{var r=await api('/v1/admin/results',{method:'POST',headers:{'content-type':'application/json'},body:body});toast('Settled. Graded '+(r.graded||0)+' projections.');render();}
       catch(e){toast(e.message);b.disabled=false;}
     };
+  });
+}
+
+/* ================= odds =================
+   Operating the feed: is it current, what did the last run do, and the two
+   buttons that make a change. The provider credential is never here: these
+   are calls to our own functions, which hold the key server side. */
+async function secOdds(app){
+  app.innerHTML='<h1>Odds feed</h1><p class="lede">The Collective&#39;s own NFL market feed. One ingestion path fills it; every surface on the site reads it. Nothing on this page holds or sees the provider credential.</p><div class="panel note">Loading feed status&hellip;</div>';
+  var st=null,ing=null;
+  try{
+    st=await api('/v1/nfl/status',{fn:'collective_odds'});
+  }catch(e){ st={error:e.message}; }
+  try{
+    ing=await api('/v1/status',{fn:'collective_odds_ingest'});
+  }catch(e){ ing={error:e.message}; }
+
+  var run=(ing&&ing.last_run)||(st&&st.last_run)||null;
+  var fresh=window.MCOdds?MCOdds.freshChip(st||{},st&&st.last_odds_at):'';
+  var cad=(ing&&ing.cadence)||null;
+  var prov=(ing&&ing.provider)||null;
+
+  var health='<div class="panel"><div style="display:flex;gap:26px;flex-wrap:wrap">'+
+    '<div><div class="note">Feed</div><div>'+fresh+'</div></div>'+
+    '<div><div class="note">Provider</div><div>'+esc(prov?prov.name:'unknown')+
+      (prov?(prov.configured
+        ?' <span style="color:var(--pos)">credential present</span>'
+        :' <span style="color:var(--neg)">NFL_ODDS_API_KEY not set</span>'):'')+'</div></div>'+
+    '<div><div class="note">Upcoming games</div><div>'+esc(st&&st.events_upcoming!=null?st.events_upcoming:'-')+'</div></div>'+
+    '<div><div class="note">Live now</div><div>'+esc(st&&st.events_live!=null?st.events_live:'-')+'</div></div>'+
+    '<div><div class="note">Books current</div><div>'+esc(st&&st.books_current!=null?st.books_current:'-')+'</div></div>'+
+    '<div><div class="note">Stored prices</div><div>'+esc(st&&st.snapshots_total!=null?st.snapshots_total:'-')+'</div></div>'+
+    (cad?'<div><div class="note">Polling</div><div>every '+esc(cad.interval_seconds)+'s <span class="note">('+esc(cad.reason)+')</span></div></div>':'')+
+    '</div>'+
+    ((st&&st.error)||(ing&&ing.error)
+      ? '<div class="err" style="margin-top:10px">'+esc((st&&st.error)||(ing&&ing.error))+'</div>':'')+
+    '</div>';
+
+  var lastRun=run
+    ? '<h2 style="font-size:13px;letter-spacing:.1em;text-transform:uppercase;color:var(--dim);margin-top:18px">Last run</h2>'+
+      '<div class="panel"><div style="display:flex;gap:22px;flex-wrap:wrap">'+
+      '<div><div class="note">Status</div><div>'+esc(run.status||'-')+'</div></div>'+
+      '<div><div class="note">Started</div><div>'+esc(run.started_at?rel(run.started_at):'-')+'</div></div>'+
+      '<div><div class="note">Books</div><div>'+esc(run.books_ok||0)+' ok, '+esc(run.books_failed||0)+' failed</div></div>'+
+      '<div><div class="note">Games</div><div>'+esc(run.events_seen||0)+' seen, '+esc(run.events_created||0)+' new</div></div>'+
+      '<div><div class="note">Prices</div><div>'+esc(run.snapshots_written||0)+' written, '+esc(run.snapshots_unchanged||0)+' unchanged</div></div>'+
+      '<div><div class="note">Rejected rows</div><div>'+esc(run.rows_rejected||0)+'</div></div>'+
+      '</div>'+
+      (run.error_message?'<div class="err" style="margin-top:10px">'+esc(run.error_code||'error')+': '+esc(run.error_message)+'</div>':'')+
+      '<p class="note" style="margin:10px 0 0">Unchanged prices are not stored. A run that writes nothing usually means the market did not move, not that the run failed.</p>'+
+      '</div>'
+    : '<div class="panel note" style="margin-top:18px">No ingestion run has been recorded yet.</div>';
+
+  var actions='<h2 style="font-size:13px;letter-spacing:.1em;text-transform:uppercase;color:var(--dim);margin-top:18px">Operations</h2>'+
+    '<div class="panel"><div style="display:flex;gap:10px;flex-wrap:wrap">'+
+    '<button class="btn" id="odProbe">Probe the provider</button>'+
+    '<button class="btn" id="odRun">Run ingestion now</button>'+
+    '<button class="btn" id="odClose">Close finished markets</button>'+
+    '<button class="btn" id="odLink">Link games to the slate</button>'+
+    '</div>'+
+    '<p class="note" style="margin:10px 0 0">Probe makes one real request and reports the response <b>structure</b> plus whether our reader could map it. It never prints the credential. Running ingestion by hand bypasses the polling interval, so use it sparingly on a trial plan.</p>'+
+    '<div id="odOut"></div></div>';
+
+  app.innerHTML='<h1>Odds feed</h1><p class="lede">The Collective&#39;s own NFL market feed. One ingestion path fills it; every surface on the site reads it. Nothing on this page holds or sees the provider credential.</p>'+
+    health+lastRun+actions;
+
+  function show(title,obj,cls){
+    $('odOut').innerHTML='<div class="'+(cls||'panel')+'" style="margin-top:10px"><b>'+esc(title)+'</b>'+
+      '<div class="raw">'+esc(JSON.stringify(obj,null,1))+'</div></div>';
+  }
+  function wire(id,label,fn){
+    $(id).onclick=async function(){
+      var b=this;b.disabled=true;var old=b.textContent;b.textContent='Working…';
+      try{ show(label,await fn()); }
+      catch(e){ show(label+' failed',{error:e.message},'err'); }
+      b.textContent=old;b.disabled=false;
+    };
+  }
+  wire('odProbe','Provider probe',function(){
+    return api('/v1/probe',{fn:'collective_odds_ingest',method:'POST',
+      headers:{'content-type':'application/json'},body:{}});
+  });
+  wire('odRun','Ingestion run',function(){
+    return api('/v1/ingest?force=1',{fn:'collective_odds_ingest',method:'POST',
+      headers:{'content-type':'application/json'},body:{}}).then(function(r){
+        setTimeout(render,600); return r;});
+  });
+  wire('odClose','Close markets',function(){
+    return api('/v1/close',{fn:'collective_odds_ingest',method:'POST',
+      headers:{'content-type':'application/json'},body:{}});
+  });
+  wire('odLink','Link games',function(){
+    return api('/v1/link',{fn:'collective_odds_ingest',method:'POST',
+      headers:{'content-type':'application/json'},body:{}});
   });
 }
 
