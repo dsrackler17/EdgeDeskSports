@@ -182,6 +182,11 @@ label .opt{color:var(--faint);text-transform:none;letter-spacing:0;font-weight:4
 .scan .f.on{border-color:var(--pos);color:var(--pos)}
 .scan .f.off{color:var(--dim)}
 .scan .warn{color:var(--warn)}
+/* the one question the scanner asks: it must not read as a note */
+.scan .ask{margin:10px 0 4px;padding:11px 13px;border:1px solid var(--acc);
+  border-radius:9px;background:rgba(90,130,255,.07)}
+.scan .ask-q{font-size:13px;margin-bottom:9px}
+.scan .ask-btns{display:flex;gap:8px;flex-wrap:wrap}
 </style>
 </head>
 <body>
@@ -1212,6 +1217,16 @@ async function parseXLSX(buf){
   }
   return out;
 }
+/* Headers that genuinely mean either thing, depending on the creator.
+   "spread" and "line" are each used both for "the number my model produced"
+   and for "the number the book was showing". They are guessed as the model's
+   own, because that is the more common intent, and then the creator is ASKED —
+   because the two grade differently and the wrong one is silently wrong:
+   a market line stored as a projection measures your accuracy against the
+   market instead of against the result, and leaves closing line value with
+   nothing to compute from. */
+var AMBIGUOUS_SPREAD=['spread','line'];
+
 var SLATE_FIELDS=[
   {f:'home_team',label:'Home team',req:true,syn:['home','home_team','hometeam','h','home team']},
   {f:'away_team',label:'Away team',req:true,syn:['away','road','away_team','visitor','a','away team']},
@@ -1699,6 +1714,13 @@ async function renderCreatorDash(view,me){
       }catch(e){}
       /* Week, read from the file when the file says. The creator can still
          override it; this only removes the step where they had to know. */
+      /* Ambiguous only when the creator has not already told us both. A file
+         with "spread" AND "market_line" needs no question asked. */
+      var spi=SLATE.map['projected_spread'];
+      SLATE.ambiguousSpread=(spi!==undefined&&SLATE.map['line_at_submission']===undefined&&
+        AMBIGUOUS_SPREAD.indexOf(String(SLATE.cols[spi]).toLowerCase().trim())>=0)
+        ? String(SLATE.cols[spi]) : null;
+
       var wk=slateDetectWeek(rows2d,SLATE.map['week']);
       if(wk!==null&&$('slWeek')&&!$('slWeek').value)$('slWeek').innerHTML=weekOptions(wk);
       SLATE.detectedWeek=wk;
@@ -1730,6 +1752,11 @@ async function renderCreatorDash(view,me){
         }
       }
       var lineFromPick=withLine>0&&!have('line_at_submission');
+      /* A market line can arrive two ways: parsed out of the pick cell, or as
+         its own column. Counting only the first told a creator with a
+         perfectly good market_line column that they had none. */
+      var lineCount=have('line_at_submission')?(SLATE.rows.length-1):withLine;
+      var haveLine=have('line_at_submission')||withLine>0;
 
       var msg='<div class="scan"><h4>What I read from your file</h4>'+
         '<p style="margin:0 0 9px"><strong>'+n+'</strong> game'+(n===1?'':'s')+
@@ -1738,12 +1765,22 @@ async function renderCreatorDash(view,me){
         chip(have('home_team'),'home team')+chip(have('away_team'),'away team')+
         chip(have('kickoff'),'date')+
         chip(withSide>0,withSide>0?('pick side ('+withSide+')'):'pick side')+
-        chip(withLine>0,withLine>0?('market line ('+withLine+')'):'market line')+
+        chip(haveLine,haveLine?('market line ('+lineCount+')'):'market line')+
         chip(have('projected_spread'),'your spread')+
         chip(have('projected_total'),'your total')+
         chip(have('home_win_probability'),'home win %')+
         '</div>';
 
+      if(SLATE.ambiguousSpread){
+        msg+='<div class="ask"><div class="ask-q">Your column <strong>&ldquo;'+esc(SLATE.ambiguousSpread)+'&rdquo;</strong> could mean two things. Which is it?</div>'+
+          '<div class="ask-btns">'+
+            '<button class="btn" data-spreadis="projected_spread">My model&rsquo;s own number</button>'+
+            '<button class="btn" data-spreadis="line_at_submission">The market line I posted against</button>'+
+          '</div>'+
+          '<p class="note" style="margin:8px 0 0">They grade differently, and neither one is recoverable later. '+
+          'Your own number is scored for accuracy against the final margin. The market line is the number your pick is measured against for closing line value. '+
+          'Right now it is being read as <strong>your own number</strong>.</p></div>';
+      }
       if(lineFromPick){
         msg+='<p class="note" style="margin:9px 0 0">The number in your pick column was read as the market line, in home terms. '+
           '"NE +3.5" with NE on the road is stored as -3.5, the home team\'s number, which is what every model on the wall is measured against.</p>';
@@ -1762,6 +1799,20 @@ async function renderCreatorDash(view,me){
       }
       msg+='</div>';
       $('slScan').innerHTML=msg;
+      document.querySelectorAll('[data-spreadis]').forEach(function(b){
+        b.onclick=function(){
+          var want=b.getAttribute('data-spreadis');
+          if(want==='line_at_submission'){
+            SLATE.map['line_at_submission']=SLATE.map['projected_spread'];
+            delete SLATE.map['projected_spread'];
+          }
+          /* Answered either way, so stop asking. Choosing "my own number"
+             confirms the guess rather than changing it. */
+          SLATE.ambiguousSpread=null;
+          SLATE.checked=false;$('slGo').disabled=true;
+          slatePaintScan();slatePaintMap();
+        };
+      });
     }
     async function slateReadFile(f){
       if(!f)return;
