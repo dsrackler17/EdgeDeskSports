@@ -31,14 +31,33 @@ ROOT = Path(__file__).resolve().parents[2]
 FUNCTIONS = ROOT / "supabase" / "functions"
 OUT_DIR = FUNCTIONS / "_bundles"
 
-# A function that must not have JWT verification enforced by the gateway,
-# because it serves the public site. Recorded here so the deployment note in
-# the bundle header cannot drift from reality.
-# Functions the gateway must NOT enforce JWT on. collective_public and
-# collective_odds serve the site anonymously; collective_ingest authenticates
-# creators with an x-collective-key header rather than a Supabase session, so
-# the gateway has to let the request reach the function to be authenticated.
-PUBLIC_FUNCTIONS = {"collective_public", "collective_odds", "collective_ingest"}
+# Functions the gateway must NOT enforce JWT on. Recorded here so the
+# deployment note in the bundle header cannot drift from what is actually
+# configured in the dashboard.
+#
+#   collective_public, collective_odds  serve the site anonymously.
+#   collective_embed                    is called by third-party member sites;
+#                                       the lock is the per-creator origin
+#                                       allowlist, not a Supabase session.
+#   collective_ingest                   authenticates creators with an
+#                                       x-collective-key header rather than a
+#                                       Supabase session, so the gateway has to
+#                                       let the request reach the function.
+#   collective_billing                  takes the Stripe webhook, which is
+#                                       signed by Stripe and carries no JWT;
+#                                       the checkout route reads the caller's
+#                                       session itself when one is present.
+#   collective_admin                    verifies the bearer token in-function
+#                                       via requireAdmin so a non-admin session
+#                                       gets a 403 rather than a gateway 401.
+PUBLIC_FUNCTIONS = {
+    "collective_public",
+    "collective_odds",
+    "collective_ingest",
+    "collective_admin",
+    "collective_billing",
+    "collective_embed",
+}
 
 IMPORT_RE = re.compile(
     r"""^import\s+(?:type\s+)?(?:[\w*{}\n\r\t,\s]+?\s+from\s+)?["']([^"']+)["'];?\s*$""",

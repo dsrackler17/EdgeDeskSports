@@ -12,20 +12,52 @@ functions/_bundles/   generated single-file output for the dashboard editor
 
 ## What is here, and what is not
 
-The odds layer is complete here: its migration, its two functions, and the
-shared modules they need.
+Every deployed Collective edge function has its source here except
+`collective_join`, which is still dashboard-only. Recovering a source means
+dropping in its `index.ts` and running the bundler; the shared modules are
+already in place.
 
-The other Collective functions (`collective_public`, `collective_ingest`,
-`collective_admin`, `collective_join`, `collective_billing`,
-`collective_embed`, `collective_click`, `collective_session`,
-`collective_url`) are currently maintained in the Supabase dashboard and their
-sources are not in this repository. The shared modules here — `env.ts`,
-`http.ts`, `db.ts`, `auth.ts` — mirror what those deployed functions already
-inline, so adding a function's source later means dropping in its `index.ts`
-and running the bundler.
+| Function | What it serves |
+| --- | --- |
+| `collective_public` | the public site's read API |
+| `collective_odds` | the internal odds read API |
+| `collective_odds_ingest` | the OddsBlaze poll and snapshot writer |
+| `collective_ingest` | creator projection submissions (`x-collective-key`) |
+| `collective_admin` | the founder console |
+| `collective_billing` | Stripe Checkout and the Stripe webhook |
+| `collective_embed` | the bootstrap payload for member-site embeds |
+| `collective_join` | **dashboard only, no source here** |
 
-`odds_provider.ts`, `oddsblaze.ts`, `odds_normalize.ts` and `odds_api.ts` are
-new and used only by the odds functions.
+`collective_click`, `collective_session` and `collective_url` are *not*
+functions and never were: they are an embed event type, a `localStorage` key,
+and a payload field, all defined in `collective/embed.js`.
+
+Shared modules split by who uses them:
+
+- `env.ts`, `http.ts`, `db.ts`, `auth.ts`, `keys.ts`, `reads.ts` — the
+  Collective functions. These were reconstructed from the deployed bundles and
+  match them byte for byte apart from `timingSafeEqual` in `keys.ts`, which is
+  new.
+- `odds_provider.ts`, `oddsblaze.ts`, `odds_normalize.ts`, `odds_api.ts` — new,
+  used only by the odds functions.
+
+### `_shared/reads.ts` had drifted across three deployments
+
+The dashboard copies of `reads.ts` in `collective_public`, `collective_admin`
+and `collective_embed` were not the same file. Splitting them into one source
+resolved the differences in favor of `collective_public`, which is the copy the
+site renders from:
+
+| Difference | `_public` | `_admin` | `_embed` | Resolved to |
+| --- | --- | --- | --- | --- |
+| `viewCount` count column | parameter | parameter | hardcoded `id` | parameter |
+| `pricing` fallbacks (cents) | 2499 / 0 | 2499 / 0 | 2000 / 20000 | 2499 / 0 |
+| `line_at_submission`, `cover_prob` on board rows | present | absent | absent | present |
+
+The pricing fallbacks only apply when the `pricing.*` config rows are missing.
+The board-row fields mean the embed now emits `line_at_submission` and
+`cover_probability` on unlocked games, which is what "the embed and the site
+render from identical data" requires.
 
 ## Bundling for the dashboard
 
@@ -47,10 +79,20 @@ Each bundle's header states whether that function needs **Enforce JWT
 verification** on or off. Getting that wrong is the difference between a
 public read surface and an open writer:
 
-| Function | Enforce JWT |
-| --- | --- |
-| `collective_odds` | OFF |
-| `collective_odds_ingest` | ON |
+| Function | Enforce JWT | Why |
+| --- | --- | --- |
+| `collective_public` | OFF | anonymous site reads |
+| `collective_odds` | OFF | anonymous site reads |
+| `collective_odds_ingest` | **ON** | writer; only the scheduler calls it |
+| `collective_ingest` | OFF | authenticates its own `x-collective-key` header |
+| `collective_admin` | OFF | verifies the bearer token itself via `requireAdmin` |
+| `collective_billing` | OFF | the Stripe webhook is signed by Stripe, not a JWT |
+| `collective_embed` | OFF | third-party sites call it; the origin allowlist is the lock |
+
+OFF does not mean unauthenticated. Every OFF function above either is a public
+read surface or does its own authentication in code, which is why the gateway
+has to let the request through to reach that check. `collective_odds_ingest` is
+the only writer with no in-function caller check, so it is the only ON.
 
 ## Type checking
 
@@ -70,6 +112,13 @@ Set in Supabase → Edge Functions → Secrets. Never in this repository.
 | `NFL_ODDS_API_KEY` | `collective_odds_ingest` (via `_shared/oddsblaze.ts`) | yes, for odds ingestion |
 | `NFL_ODDS_BASE_URL` | same | no, defaults to the documented endpoint |
 | `COLLECTIVE_BASE_URL` | all | no, defaults to production |
+| `COLLECTIVE_STRIPE_SECRET` | `collective_billing` | only to take payments |
+| `COLLECTIVE_STRIPE_WEBHOOK_SECRET` | `collective_billing` | only to take payments |
+| `COLLECTIVE_PRICE_MONTHLY` | `collective_billing` | only to take payments |
+| `COLLECTIVE_PRICE_ANNUAL` | `collective_billing` | no, monthly-only without it |
+
+Billing ships inert: with `billing.enabled` false or the Stripe secrets unset,
+`/v1/billing/checkout` reports `live: false` and nothing charges.
 
 `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` and `SUPABASE_ANON_KEY` are
 injected by the runtime.
