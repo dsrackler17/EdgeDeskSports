@@ -7,9 +7,11 @@ import re, os, sys
 
 ROOT = 'supabase/functions'
 OUT = 'supabase/functions-bundled'
-SHARED_ORDER = ['env.ts', 'http.ts', 'db.ts', 'keys.ts', 'auth.ts', 'reads.ts', 'prompt_template.ts']
+SHARED_ORDER = ['env.ts', 'http.ts', 'db.ts', 'keys.ts', 'auth.ts', 'reads.ts', 'prompt_template.ts',
+                'oddsblaze.ts']
 FUNCTIONS = ['collective_ingest', 'collective_public', 'collective_embed',
-             'collective_join', 'collective_admin', 'collective_billing']
+             'collective_join', 'collective_admin', 'collective_billing',
+             'collective_odds']
 
 def strip(src):
     # remove complete import statements first (single or multi line)
@@ -30,7 +32,7 @@ for fn in FUNCTIONS:
     used = [f for f in SHARED_ORDER if f'/_shared/{f.replace(".ts","")}' in src or f'from "../_shared/{f}"' in src]
     # dependency closure: http->env(no), db->env, auth->env+db, reads->env+db, prompt none
     deps = {'db.ts': ['env.ts'], 'auth.ts': ['env.ts', 'http.ts', 'db.ts'], 'reads.ts': ['env.ts', 'db.ts'],
-            'http.ts': [], 'keys.ts': [], 'env.ts': [], 'prompt_template.ts': []}
+            'http.ts': [], 'keys.ts': [], 'env.ts': [], 'prompt_template.ts': [], 'oddsblaze.ts': []}
     need = set(used)
     changed = True
     while changed:

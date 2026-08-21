@@ -31,10 +31,17 @@ read. That is why collection runs server side and pages read only the
 normalized tables.
 
 ```
-ODDS_API_KEY          the provider key
-ODDS_API_BASE_URL     provider base url
-ODDS_REFRESH_SECONDS  polling interval, default 300
+ODDSBLAZE_API_KEY       the provider key. ODDS_API_KEY and NFL_ODDS_API_KEY are
+                        accepted as older names, in that order of preference.
+ODDS_API_BASE_URL       optional. Pins the endpoint if the account is served
+                        somewhere other than the documented one.
+ODDS_COLLECTOR_SECRET   optional. Lets a scheduler with no Supabase session call
+                        the collector. Absent, only a signed-in admin can.
 ```
+
+`GET /v1/odds/health` reports which of those names the key was found under. It
+never reports the value, and neither does any log line, error body, or probe
+response: the URL the adapter hands back always has `key=REDACTED` in it.
 
 ## 3. Storage
 
@@ -106,6 +113,72 @@ rather than fed a market the pick never faced. The canonical book is
 CLV therefore has what it needs without inventing anything: the line and price
 the pick was posted into, the closing line and price, the book, and both
 timestamps. A closing number exists only once a game has actually closed.
+
+## 6a. The live provider: OddsBlaze
+
+`supabase/functions/collective_odds` is the only thing in the system that
+calls a provider, and `_shared/oddsblaze.ts` is the only file that knows what
+its JSON looks like. The adapter was written against a captured response, not
+against a schema description, and that capture is committed at
+`tools/collective/fixtures/oddsblaze_mlb_draftkings.json` so the reader can be
+re-proved offline: `node --experimental-strip-types tools/collective/test_oddsblaze.ts`.
+
+The feed serves one sportsbook and one league per call, with the key as the
+`key` query parameter. Three things about the response are worth writing down,
+because each one is a way to be silently wrong:
+
+**`selection` is an object.** The team is `selection.name`, the over/under
+side is `selection.side`, and the handicap or total is `selection.line`. There
+is no top-level `points` field. A reader that expects a string gets `null`,
+finds no side for any selection, and stores a row with every price missing —
+without erroring.
+
+**Market names are the sport's own vocabulary, and prefixes change the bet.**
+MLB prints `Run Line`, `Total Runs`, `Moneyline`. It also prints
+`1st 5 Innings Run Line`, `3rd Inning Run Line`, `Team Total Runs`,
+`Team Total Runs Odd/Even`, and two dozen player props. Classification is
+therefore by *exact* normalized name against three explicit sets. A substring
+rule would file an inning's line as the game line, and nothing downstream —
+not the board, not consensus, not CLV — could tell that it had.
+
+**`main` separates primary from alternate within a market, not game lines from
+props.** Player props carry `main: true` too. Alternates carry `main: false`
+and are skipped. Where a book hangs more than one primary line — the capture
+shows DraftKings offering both a -1.5 and a -1 run line, both marked main —
+the first in feed order is stored and the rest are left alone.
+
+Everything the adapter cannot read with confidence is reported as a skip with
+a reason (`league_not_mapped_to_sport`, `kickoff_outside_configured_seasons`,
+`spread_sides_disagree`, `no_main_line_only_alternates`, `live_game`) rather
+than guessed at. In-progress games are excluded by default: a live price is a
+different market from the pregame one, and the closing line is defined as the
+last snapshot before kickoff.
+
+What to poll, and how a feed league id becomes a sport code, are config rows
+(`odds.collect`, `odds.league_sports`, `odds.include_live`), so a second book
+or a new league is a row rather than a deploy.
+
+`collective.provider_events` records which canonical game each provider event
+id resolved to, along with the ids the feed carries for other systems (the
+official league id, Kalshi, Sofascore). It is a cache and a ledger, never an
+authority: a row there can never create a game and grading never consults it.
+
+### When the feed changes
+
+`GET /v1/odds/probe` prints the shape of the live response and every market
+name in it with the adapter's verdict on each. A provider renaming a field or
+a market shows up there as a diff, before it shows up as a board that quietly
+stopped updating. `GET /v1/odds/sources` answers the only question worth
+asking of a collector: is it running, and how old is the newest price.
+
+### The canonical book
+
+The closing line is only ever written from a book that was actually collected.
+Migration 15 defaulted `market.canonical_book` to Pinnacle as a placeholder;
+migration 21 moves it to DraftKings, which is the feed that actually runs,
+because leaving Pinnacle in place would mean every game closes "unavailable"
+and CLV silently never computes. An installation that does collect Pinnacle
+keeps it: the update only fires where no Pinnacle snapshot exists.
 
 ## 7. Adding a provider
 

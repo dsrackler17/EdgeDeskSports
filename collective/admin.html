@@ -61,7 +61,7 @@ td input{width:70px;padding:5px 7px;font-family:'JetBrains Mono',monospace;font-
   <span style="flex:1"></span>
   <nav id="nav" class="hide">
     <a data-s="overview" class="on">Overview</a><a data-s="invites">Invites</a><a data-s="members">Members</a>
-    <a data-s="quarantine">Quarantine</a><a data-s="games">Games</a><a data-s="results">Results</a><a data-s="earnings">Earnings</a>
+    <a data-s="quarantine">Quarantine</a><a data-s="games">Games</a><a data-s="odds">Odds</a><a data-s="results">Results</a><a data-s="earnings">Earnings</a>
   </nav>
 </div></header>
 <div class="wrap"><div id="app"><div class="panel note">Loading&hellip;</div></div></div>
@@ -161,6 +161,7 @@ async function render(){
     else if(SEC==='members')await secMembers(app);
     else if(SEC==='quarantine')await secQuarantine(app);
     else if(SEC==='games')await secGames(app);
+    else if(SEC==='odds')await secOdds(app);
     else if(SEC==='results')await secResults(app);
     else if(SEC==='earnings')await secEarnings(app);
   }catch(e){
@@ -554,6 +555,106 @@ async function secResults(app){
       catch(e){toast(e.message);b.disabled=false;}
     };
   });
+}
+
+/* ===================== odds: the collector's console =====================
+   Every number on the board comes through collective_odds, which is the only
+   thing in the system that talks to a provider. This page never does: it
+   reads our own endpoints and shows what the collector last stored, so the
+   provider key stays a server secret and the console is honest about
+   freshness instead of implying it. */
+function ago(iso){
+  if(!iso)return 'never';
+  var m=Math.round((Date.now()-new Date(iso).getTime())/60000);
+  if(m<1)return 'just now';
+  if(m<60)return m+' min ago';
+  var h=Math.round(m/60);
+  return h<48?h+' h ago':Math.round(h/24)+' d ago';
+}
+async function secOdds(app){
+  var h=await api('/v1/odds/health',{fn:'collective_odds'});
+  var s=await api('/v1/odds/sources',{fn:'collective_odds'});
+  var tgt=(h.targets||[]).map(function(t){return t.sportsbook+' / '+t.league;}).join(', ')||'none configured';
+  var srcRows=(s.sources||[]).map(function(r){
+    var stale=r.age_minutes===null||r.age_minutes>(h.stale_minutes||180);
+    return '<tr><td>'+esc(r.book)+'</td><td class="mono">'+esc(r.source)+'</td><td class="mono">'+esc(r.sport_code)+'</td>'+
+      '<td class="mono">'+r.games+'</td><td class="mono">'+r.snapshots+'</td>'+
+      '<td class="mono"'+(stale?' style="color:var(--neg)"':'')+'>'+esc(ago(r.last_captured_at))+'</td></tr>';
+  }).join('');
+  app.innerHTML='<h1>Odds</h1>'+
+    '<p class="lede">The collector is the only thing in the Collective that calls an odds provider. Pages read the stored snapshots, never the provider, so the key never leaves the server. A capture is append-only: a new price is a new row, and line movement stays recoverable in full.</p>'+
+    '<div class="grid2"><div class="panel">'+
+      '<b>Provider</b>'+
+      '<p class="note" style="margin:8px 0 0">'+esc(h.provider||'none')+' &middot; key '+(h.key_configured?('set as <span class="mono">'+esc(h.key_secret_name)+'</span>'):'<b class="warn">not set</b>')+'</p>'+
+      '<p class="note" style="margin:6px 0 0">Polling: <span class="mono">'+esc(tgt)+'</span></p>'+
+      '<p class="note" style="margin:6px 0 0">Scheduled collection: '+(h.scheduled_collection_enabled?'enabled':'not enabled (run it from here)')+'</p>'+
+      (h.key_configured?'':'<p class="warnnote" style="margin:10px 0 0">Set the provider key as an Edge Function secret before collecting. It must never be put in a page, a table, or this repository.</p>')+
+    '</div><div class="panel">'+
+      '<b>Freshness</b>'+
+      '<p class="note" style="margin:8px 0 0">Newest stored price: <b class="mono">'+(h.newest_snapshot_age_minutes===null?'none yet':h.newest_snapshot_age_minutes+' min old')+'</b></p>'+
+      '<p class="note" style="margin:6px 0 0">A snapshot older than '+(h.stale_minutes||180)+' minutes is not shown as the current market.</p>'+
+      '<div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">'+
+        '<button class="btn" id="oPreview">Dry run</button>'+
+        '<button class="btn" id="oCollect">Collect now</button>'+
+        '<button class="btn" id="oProbe">Probe feed</button>'+
+      '</div>'+
+      '<p class="note" style="margin:8px 0 0">A dry run reads the feed and shows the rows it would write, without writing any.</p>'+
+    '</div></div>'+
+    '<h2>What the store holds</h2>'+
+    '<div class="tblwrap"><table><thead><tr><th>Book</th><th>Source</th><th>Sport</th><th>Games</th><th>Snapshots</th><th>Newest capture</th></tr></thead><tbody>'+
+    (srcRows||'<tr><td colspan="6" class="note" style="text-align:center;padding:14px">Nothing captured yet. Run a collection.</td></tr>')+'</tbody></table></div>'+
+    '<div id="oOut" style="margin-top:12px"></div>';
+
+  function report(d){
+    var lines=(d.targets||[]).map(function(t){
+      if(!t.ok)return '<tr><td class="mono">'+esc(t.sportsbook+' / '+t.league)+'</td><td class="mono" style="color:var(--neg)">'+esc(t.error||('status '+t.status))+'</td><td></td></tr>';
+      var why={};(t.skipped||[]).forEach(function(k){why[k.reason]=(why[k.reason]||0)+1;});
+      var wtxt=Object.keys(why).map(function(k){return k+' &times;'+why[k];}).join(', ');
+      return '<tr><td class="mono">'+esc(t.sportsbook+' / '+t.league)+'</td><td class="mono">'+t.rows+' of '+t.events_read+' events</td><td class="note">'+(wtxt||'nothing skipped')+'</td></tr>';
+    }).join('');
+    var st=d.stored;
+    var unmatched=(st&&st.unmatched_rows||[]).map(function(u){
+      return '<li class="mono">'+esc((u.away_team||'?')+' @ '+(u.home_team||'?')+' '+(u.kickoff||''))+'</li>';
+    }).join('');
+    return '<div class="panel"><b>'+(d.dry_run?'Dry run':'Collected')+'</b>'+
+      '<div class="tblwrap" style="margin-top:8px"><table><thead><tr><th>Feed</th><th>Read</th><th>Skipped</th></tr></thead><tbody>'+
+      (lines||'<tr><td colspan="3" class="note">No feeds polled.</td></tr>')+'</tbody></table></div>'+
+      (st?('<p class="note" style="margin:8px 0 0">Stored <b>'+st.stored+'</b>, duplicates '+st.duplicates+', unmatched '+st.unmatched+', rejected '+st.rejected+'.</p>'):
+          ('<p class="note" style="margin:8px 0 0">'+d.rows_normalized+' row(s) would be written. Nothing was stored.</p>'))+
+      (unmatched?('<p class="warnnote" style="margin:10px 0 0">These fixtures are not on the Collective’s slate, so their prices were dropped rather than inventing a game. Load them under Games first.</p><ul style="margin:6px 0 0 18px">'+unmatched+'</ul>'):'')+
+      '</div>';
+  }
+
+  $('oPreview').onclick=async function(){
+    this.disabled=true;$('oOut').innerHTML='<div class="panel note">Reading the feed&hellip;</div>';
+    try{$('oOut').innerHTML=report(await api('/v1/odds/preview',{fn:'collective_odds'}));}
+    catch(e){$('oOut').innerHTML='<div class="err">'+esc(e.message)+'</div>';}
+    this.disabled=false;
+  };
+  $('oCollect').onclick=async function(){
+    this.disabled=true;$('oOut').innerHTML='<div class="panel note">Collecting&hellip;</div>';
+    try{var d=await api('/v1/odds/collect',{fn:'collective_odds',method:'POST',headers:{'content-type':'application/json'},body:{}});
+      $('oOut').innerHTML=report(d);toast('Stored '+((d.stored&&d.stored.stored)||0)+' snapshot(s)');}
+    catch(e){$('oOut').innerHTML='<div class="err">'+esc(e.message)+'</div>';}
+    this.disabled=false;
+  };
+  $('oProbe').onclick=async function(){
+    this.disabled=true;$('oOut').innerHTML='<div class="panel note">Probing&hellip;</div>';
+    try{
+      var d=await api('/v1/odds/probe',{fn:'collective_odds'});
+      var mk=(d.markets||[]).map(function(m){
+        return '<tr><td>'+esc(m.market)+'</td><td class="mono">'+m.count+'</td><td class="mono"'+(m.read_as==='ignored'?' style="color:var(--dim)"':'')+'>'+esc(m.read_as)+'</td></tr>';
+      }).join('');
+      $('oOut').innerHTML='<div class="panel"><b>Live feed</b>'+
+        '<p class="note" style="margin:8px 0 0">'+esc(d.url)+'</p>'+
+        '<p class="note" style="margin:6px 0 0">Every market the feed printed, and how the adapter reads it. A provider renaming a field shows up here before it shows up as a stale board.</p>'+
+        '<div class="tblwrap" style="margin-top:8px"><table><thead><tr><th>Market</th><th>Prices</th><th>Read as</th></tr></thead><tbody>'+
+        (mk||'<tr><td colspan="3" class="note">No markets in the response.</td></tr>')+'</tbody></table></div>'+
+        '<p class="note" style="margin:10px 0 0">Response shape:</p>'+
+        '<pre class="mono" style="white-space:pre-wrap;font-size:11px;margin:4px 0 0">'+esc(JSON.stringify(d.shape,null,1))+'</pre></div>';
+    }catch(e){$('oOut').innerHTML='<div class="err">'+esc(e.message)+'</div>';}
+    this.disabled=false;
+  };
 }
 
 async function secEarnings(app){

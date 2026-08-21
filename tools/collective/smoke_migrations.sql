@@ -395,5 +395,162 @@ begin
     (select id from collective.invite_tokens where token_prefix = 'mci_revk'));
   if coalesce(r->>'code','') <> 'forbidden' then raise exception 'non-admin revoke allowed: %', r; end if;
 
+  ---------------------------------------------------------------- MLB aliases
+  -- Three cities field two clubs each, so the bare city must never resolve.
+  if collective.resolve_team('MLB','NY Yankees') is null
+     or collective.resolve_team('MLB','Chi Cubs') is null
+     or collective.resolve_team('MLB','LA Dodgers') is null
+     or collective.resolve_team('MLB','Guardians') is null then
+    raise exception 'MLB alias vocabulary incomplete';
+  end if;
+  if collective.resolve_team('MLB','Chicago') is not null
+     or collective.resolve_team('MLB','New York') is not null
+     or collective.resolve_team('MLB','Los Angeles') is not null then
+    raise exception 'an ambiguous bare city resolved to a club';
+  end if;
+  if collective.resolve_team('MLB','Boston') is null then
+    raise exception 'an unambiguous bare city failed to resolve';
+  end if;
+  select count(*) into n from collective.teams where sport_code = 'MLB';
+  if n <> 30 then raise exception 'MLB wanted 30 clubs, got %', n; end if;
+
+  ------------------------------------------------------- odds, end to end
+  -- The rows below are verbatim output of the OddsBlaze adapter run over
+  -- tools/collective/fixtures/oddsblaze_mlb_draftkings.json, a captured
+  -- DraftKings/MLB response. What the reader produces is what the store is
+  -- asked to accept here, so a change to either side fails this block.
+  perform collective.upsert_games(admin_id, jsonb_build_object(
+    'sport','MLB','season',2026,'games', jsonb_build_array(
+      jsonb_build_object('week',null,'kickoff','2026-08-20T22:35:00Z','home','BAL','away','NYY'),
+      jsonb_build_object('week',null,'kickoff','2026-08-21T00:05:00Z','home','TEX','away','WSH'),
+      jsonb_build_object('week',null,'kickoff','2026-08-21T00:10:00Z','home','HOU','away','LAA'))));
+
+  r := collective.record_market_snapshots(admin_id, '[
+    {"sport":"MLB","season":2026,"market":"spread",
+     "home_team":"Baltimore Orioles","away_team":"New York Yankees",
+     "kickoff":"2026-08-20T22:35:00.000Z","book":"DraftKings","source":"oddsblaze",
+     "captured_at":"2026-08-20T21:52:44.736Z",
+     "home_line":1.5,"home_price":-187,"away_line":-1.5,"away_price":154,
+     "total_line":7.5,"over_price":-101,"under_price":-120,
+     "home_ml_price":-103,"away_ml_price":-104},
+    {"sport":"MLB","season":2026,"market":"spread",
+     "home_team":"Texas Rangers","away_team":"Washington Nationals",
+     "kickoff":"2026-08-21T00:05:00.000Z","book":"DraftKings","source":"oddsblaze",
+     "captured_at":"2026-08-20T21:52:44.736Z",
+     "home_line":-1.5,"home_price":109,"away_line":1.5,"away_price":-132,
+     "total_line":7.5,"over_price":-105,"under_price":-115,
+     "home_ml_price":-181,"away_ml_price":168},
+    {"sport":"MLB","season":2026,"market":"spread",
+     "home_team":"Houston Astros","away_team":"Los Angeles Angels",
+     "kickoff":"2026-08-21T00:10:00.000Z","book":"DraftKings","source":"oddsblaze",
+     "captured_at":"2026-08-20T21:52:44.736Z",
+     "home_line":-1.5,"home_price":109,"away_line":1.5,"away_price":-132,
+     "total_line":8.5,"over_price":-101,"under_price":-119,
+     "home_ml_price":-181,"away_ml_price":168}]'::jsonb);
+  if (r->>'stored')::int <> 3 or (r->>'unmatched')::int <> 0 or (r->>'rejected')::int <> 0 then
+    raise exception 'MLB snapshot capture failed: %', r;
+  end if;
+
+  -- Team names off a sportsbook resolve through the same alias table the
+  -- projections use, so a feed and a creator land on one game.
+  select ms.home_line, ms.total_line, ms.home_ml_price into rec
+    from collective.market_snapshots ms
+   where ms.book = 'DraftKings'
+     and ms.game_id = (select g.id from collective.games g
+                        join collective.teams ht on ht.id = g.home_team_id
+                       where ht.code = 'TEX' and g.sport_code = 'MLB');
+  if rec.home_line is distinct from -1.5 or rec.total_line is distinct from 7.5
+     or rec.home_ml_price is distinct from -181 then
+    raise exception 'stored MLB market wrong: %', rec;
+  end if;
+
+  -- Append-only: the same capture twice is a duplicate, never a second row.
+  r := collective.record_market_snapshots(admin_id, '[
+    {"sport":"MLB","season":2026,"market":"spread",
+     "home_team":"Texas Rangers","away_team":"Washington Nationals",
+     "kickoff":"2026-08-21T00:05:00.000Z","book":"DraftKings","source":"oddsblaze",
+     "captured_at":"2026-08-20T21:52:44.736Z",
+     "home_line":-1.5,"home_price":109,"away_line":1.5,"away_price":-132,
+     "total_line":7.5,"over_price":-105,"under_price":-115,
+     "home_ml_price":-181,"away_ml_price":168}]'::jsonb);
+  if (r->>'duplicates')::int <> 1 or (r->>'stored')::int <> 0 then
+    raise exception 'a repeated capture must be a duplicate: %', r;
+  end if;
+
+  -- A fixture the Collective does not carry is dropped and reported, never
+  -- created: a collector cannot invent a game.
+  r := collective.record_market_snapshots(admin_id, '[
+    {"sport":"MLB","season":2026,"market":"spread",
+     "home_team":"Seattle Mariners","away_team":"Detroit Tigers",
+     "kickoff":"2026-08-21T02:10:00.000Z","book":"DraftKings","source":"oddsblaze",
+     "captured_at":"2026-08-20T21:52:44.736Z","home_line":-1.5,"home_price":110}]'::jsonb);
+  if (r->>'unmatched')::int <> 1 or (r->>'stored')::int <> 0 then
+    raise exception 'an unknown fixture must be unmatched, not created: %', r;
+  end if;
+  select count(*) into n from collective.games g
+   join collective.teams t on t.id = g.home_team_id
+   where g.sport_code = 'MLB' and t.code = 'SEA';
+  if n <> 0 then raise exception 'a collector created a game'; end if;
+
+  ------------------------------------------------------- provider events
+  r := collective.link_provider_events(admin_id, '[
+    {"provider":"oddsblaze","provider_event_id":"d18ab4b2-cbc4-5801-951c-191abec1070d",
+     "sport":"MLB","season":2026,"home_team":"Texas Rangers","away_team":"Washington Nationals",
+     "starts_at":"2026-08-21T00:05:00.000Z",
+     "mappings":{"MLB":"822861","Kalshi":"KXMLBGAME-26AUG202005WSHTEX","home_abbr":"TEX"}},
+    {"provider":"oddsblaze","provider_event_id":"not-a-game-we-carry",
+     "sport":"MLB","season":2026,"home_team":"Seattle Mariners","away_team":"Detroit Tigers",
+     "starts_at":"2026-08-21T02:10:00.000Z","mappings":{}}]'::jsonb);
+  if (r->>'linked')::int <> 1 or (r->>'skipped')::int <> 1 then
+    raise exception 'provider event linking wrong: %', r;
+  end if;
+  select count(*) into n from collective.provider_events pe
+   where pe.provider_event_id = 'd18ab4b2-cbc4-5801-951c-191abec1070d'
+     and pe.game_id = (select g.id from collective.games g
+                        join collective.teams ht on ht.id = g.home_team_id
+                       where ht.code = 'TEX' and g.sport_code = 'MLB');
+  if n <> 1 then raise exception 'provider event linked to the wrong game'; end if;
+  select count(*) into n from collective.provider_events
+   where mappings->>'MLB' = '822861';
+  if n <> 1 then raise exception 'official league id not kept on the link'; end if;
+
+  -- Re-linking the same event updates it rather than duplicating it.
+  perform collective.link_provider_events(admin_id, '[
+    {"provider":"oddsblaze","provider_event_id":"d18ab4b2-cbc4-5801-951c-191abec1070d",
+     "sport":"MLB","season":2026,"home_team":"Texas Rangers","away_team":"Washington Nationals",
+     "starts_at":"2026-08-21T00:05:00.000Z","mappings":{"MLB":"822861"}}]'::jsonb);
+  select count(*) into n from collective.provider_events
+   where provider_event_id = 'd18ab4b2-cbc4-5801-951c-191abec1070d';
+  if n <> 1 then raise exception 'provider events duplicated on re-link'; end if;
+
+  -- A non-admin cannot write to either path.
+  r := collective.link_provider_events('00000000-0000-0000-0000-000000000bad'::uuid, '[]'::jsonb);
+  if coalesce(r->>'code','') <> 'forbidden' then raise exception 'non-admin link allowed: %', r; end if;
+
+  ------------------------------------------------------- collector heartbeat
+  select ms.snapshots, ms.games into rec
+    from collective.market_sources ms
+   where ms.source = 'oddsblaze' and ms.book = 'DraftKings' and ms.sport_code = 'MLB';
+  if rec.snapshots <> 3 or rec.games <> 3 then
+    raise exception 'market_sources heartbeat wrong: %', rec;
+  end if;
+
+  ------------------------------------------------------- odds config
+  if collective.get_config('odds.provider') <> '"oddsblaze"'::jsonb then
+    raise exception 'odds.provider not seeded';
+  end if;
+  if collective.get_config('odds.league_sports')->>'mlb' <> 'MLB' then
+    raise exception 'league to sport map missing MLB';
+  end if;
+  if jsonb_array_length(collective.get_config('odds.collect')) < 1 then
+    raise exception 'nothing configured to collect';
+  end if;
+  -- The closing line may only ever come from a book that is actually
+  -- collected, so the canonical book must be one of them.
+  if collective.get_config('market.canonical_book') <> '"DraftKings"'::jsonb then
+    raise exception 'canonical book is not a collected book: %',
+      collective.get_config('market.canonical_book');
+  end if;
+
   raise notice 'SMOKE: all assertions passed';
 end $$;

@@ -170,6 +170,28 @@ curl -s -X POST "$API/collective_admin/v1/admin/results" \
         "closing_spread":-2.5, "closing_total":47.5, "closing_home_ml_prob":0.62 } ] }'
 ```
 
+## 7a. collective_odds (auth: admin, or the collector secret)
+
+CORS: site origins. The only function that calls an odds provider. Every route 403 `forbidden` unless the JWT user id is in `admin.user_ids`, or the request carries `x-collective-collector` matching the `ODDS_COLLECTOR_SECRET` Edge Function secret (a scheduler with no Supabase session), in which case it acts as the first account in `admin.user_ids`. The database still checks `is_admin` on every write, so the header widens nothing the admin list does not already allow.
+
+| Endpoint | Class | Purpose |
+|---|---|---|
+| `POST /v1/odds/collect` | admin | Fetch, normalize, store. Body `{ targets?, sportsbook?, league?, include_live?, dry_run? }`; with none of them, the `odds.collect` config list. Returns per-feed reports plus `{ stored, duplicates, unmatched, rejected, unmatched_rows }`. |
+| `GET /v1/odds/preview` | admin | `collect` with `dry_run` forced on: the rows it would write, written nowhere. |
+| `GET /v1/odds/probe` | admin | What the live feed returned: its JSON shape, every market name it printed, and whether the adapter reads each one. No prices, no key. |
+| `GET /v1/odds/sources` | admin | Per source and book: snapshot count, game count, newest capture, age in minutes. The collector's heartbeat. |
+| `GET /v1/odds/health` | admin | Whether the provider key is set (its secret *name* only, never its value), what is configured to poll, and whether the newest snapshot is inside `market.stale_minutes`. |
+
+A run that reaches no feed at all is a 502 `provider_unavailable`, not a 200 with zero rows: a dead collector must not look like a quiet slate. Rows naming a fixture the Collective does not have are returned under `unmatched_rows` and dropped — a collector cannot create a game.
+
+```bash
+curl -s "$API/collective_odds/v1/odds/preview" -H "Authorization: Bearer $ADMIN_JWT"
+
+curl -s -X POST "$API/collective_odds/v1/odds/collect" \
+  -H "x-collective-collector: $ODDS_COLLECTOR_SECRET" -H "content-type: application/json" \
+  -d '{ "sportsbook": "draftkings", "league": "mlb" }'
+```
+
 ## 8. collective_billing (inert scaffold)
 
 Ships with checkout wiring stubbed to a clearly labeled not-live response until the Stripe secrets and price ids are configured (`COLLECTIVE_STRIPE_SECRET`, `COLLECTIVE_STRIPE_WEBHOOK_SECRET`, `COLLECTIVE_PRICE_MONTHLY`, `COLLECTIVE_PRICE_ANNUAL`) and `billing.enabled` flips to true. The webhook path validates Stripe signatures, calls `lock_attribution` on conversion, upserts `subscribers`, and posts `earnings_ledger` entries at the creator's `referral_share_bps`. Attribution capture runs from day one regardless (rule 8.13); only the money paths wait.

@@ -16,6 +16,8 @@ export function json(body: unknown, status?: number, headers?: Record<string, st
 // error response in the contract shape { error: { code, message, details } }
 export function err(code: string, message: string, status: number, details?: unknown): Response;
 export function corsHeaders(origin?: string): Record<string, string>; // default origin "*"
+// Allow-Headers: authorization, apikey, content-type, x-collective-key,
+// x-collective-collector, x-client-info
 // returns a 204 Response for OPTIONS requests, else null
 export function preflight(req: Request, origin?: string): Response | null;
 // path after /functions/v1/<fnName>, normalized, e.g. "/v1/projections"; "" becomes "/"
@@ -59,6 +61,28 @@ export const PROMPT_TEMPLATE: string;                       // the Universal Cre
 export function renderPrompt(vars: Record<string, string>): string;  // replaces every {{KEY}}
 ```
 Placeholders: `{{CREATOR_NAME}} {{MODEL_NAME}} {{SPORT}} {{API_BASE}} {{API_KEY}} {{EMBED_SNIPPET}} {{DASHBOARD_URL}} {{DOCS_URL}}`. The template text must match `collective/claude-prompt-template.md` (that file is the human-readable copy of this constant).
+
+## oddsblaze.ts
+```ts
+// The only file that knows an odds provider's JSON. Deno-free on purpose, so
+// tools/collective/test_oddsblaze.ts can exercise it offline against the
+// captured response in tools/collective/fixtures/.
+export const DEFAULT_LEAGUE_TO_SPORT: Record<string, string>;  // { mlb: "MLB", nfl: "NFL", ... }
+export const ODDS_BASE_URL: string;                            // https://odds.oddsblaze.com/
+export function classifyMarket(market: unknown): "spread" | "moneyline" | "total" | null;
+export function parseAmericanPrice(v: unknown): number | null;  // American only; never converts
+export function parsePoints(v: unknown): number | null;
+export function parseTimestamp(v: unknown): string | null;      // ISO or epoch; never "now"
+export function seasonFor(sport: string, kickoffIso: string, seasons: SeasonWindow[]): number | null;
+export function payloadsOf(body: unknown): Payload[];
+export function normalizeOddsBlaze(body: unknown, opts: NormalizeOptions): NormalizeResult;
+export function oddsUrl(baseUrl: string | null, sportsbook: string, league: string, key: string): string;
+export function redactUrl(url: string): string;                 // key=REDACTED
+export function fetchOddsBlaze(fetchImpl, baseUrl, sportsbook, league, key, timeoutMs?): Promise<FetchOutcome>;
+export function shapeOf(v: unknown, depth?: number): unknown;    // structure only, no values
+export function marketCensus(body: unknown): Array<{ market: string; count: number; read_as: string }>;
+```
+`normalizeOddsBlaze` returns `{ rows, links, skipped, book, league, captured_at }`. `rows` are the `record_market_snapshots` contract (M-odds section 7); `links` are `link_provider_events` rows; `skipped` carries a reason per dropped event and is never silent. The provider key is passed in as an argument and never read, stored, or logged here.
 
 ## Key auth flow (ingest)
 1. Read `x-collective-key` header, `parseCollectiveKey`.

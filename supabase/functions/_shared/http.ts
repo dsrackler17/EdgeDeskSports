@@ -7,7 +7,7 @@ export function corsHeaders(origin = "*"): Record<string, string> {
     "Access-Control-Allow-Origin": origin,
     "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
     "Access-Control-Allow-Headers":
-      "authorization, apikey, content-type, x-collective-key, x-client-info",
+      "authorization, apikey, content-type, x-collective-key, x-collective-collector, x-client-info",
     "Access-Control-Max-Age": "86400",
   };
   if (origin !== "*") {

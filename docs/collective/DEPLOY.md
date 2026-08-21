@@ -19,7 +19,7 @@ Eight forward-only migrations, one logical change each, dated `20260819000001` t
 supabase db push
 ```
 
-Verify: `supabase migration list` shows all eight applied. Never edit an applied migration; a fix is a new migration.
+Verify: `supabase migration list` shows every migration in `supabase/migrations/` applied. Never edit an applied migration; a fix is a new migration.
 
 ## 3. Expose the `collective` schema to PostgREST (dashboard)
 
@@ -27,7 +27,7 @@ Dashboard: Project Settings, Data API (API settings), add `collective` to **Expo
 
 **Why this is safe**: `anon` and `authenticated` hold no grants on the `collective` schema at all, not even USAGE, and RLS is enabled on every table with zero policies as a second lock. Exposure only means PostgREST will route `Accept-Profile: collective` / `Content-Profile: collective` requests to the schema; every such request from a client role hits a permission error before touching a row. The edge functions need the exposure because they call the RPCs through PostgREST with the service role and `Content-Profile: collective`. This mirrors how the existing app already exposes extra schemas (ufc, tennis, wta, cfb).
 
-## 4. Deploy the six edge functions
+## 4. Deploy the seven edge functions
 
 `supabase/config.toml` carries `verify_jwt = false` for each function (they do their own auth).
 
@@ -38,6 +38,7 @@ supabase functions deploy collective_embed
 supabase functions deploy collective_join
 supabase functions deploy collective_admin
 supabase functions deploy collective_billing
+supabase functions deploy collective_odds
 ```
 
 ## 5. Set function secrets
@@ -54,6 +55,18 @@ supabase secrets set COLLECTIVE_PRICE_ANNUAL="price_..."
 ```
 
 `collective_billing` returns a clearly labeled not-live response until the Stripe secrets are set and `billing.enabled` is flipped in config. Do not flip `billing.enabled` in this deploy.
+
+### The odds provider key
+
+```bash
+supabase secrets set ODDSBLAZE_API_KEY="..."
+# Optional: lets a scheduler call the collector without a Supabase session.
+supabase secrets set ODDS_COLLECTOR_SECRET="$(openssl rand -hex 32)"
+```
+
+The key is an Edge Function secret and nothing else. Not in a page, not in `app.html`, not in a `collective.config` row, not in this repository. The site is static HTML, so anything a page can read the public can read; that is the whole reason collection runs server side. `collective_odds` reports only which secret *name* the key was found under, never its value, and every URL it hands back has `key=REDACTED` in it.
+
+Without the key, `collective_odds` answers 503 `not_configured` and names the secret it expects. Nothing else in the Collective changes: pages render the last capture with its timestamp, and a game with no snapshot shows no line rather than a guess.
 
 ## 6. Seed the admin allowlist
 
@@ -124,7 +137,30 @@ curl -s "$API/collective_public/v1/wall"
 # expect: the smoke creator's row, membership MEMBER (no live submission yet), record null
 ```
 
-Cleanup: the smoke creator can be unlisted from the admin console; the append-only tables keep the dry run nowhere (it wrote nothing).
+7. **Odds** (proves the provider key, the adapter, and the write path). Load the slate for the sport first, or every row comes back unmatched — a collector cannot create a game.
+
+```bash
+curl -s "$API/collective_odds/v1/odds/health" -H "Authorization: Bearer $ADMIN_JWT"
+# expect: key_configured true, key_secret_name ODDSBLAZE_API_KEY, the configured targets
+
+curl -s "$API/collective_odds/v1/odds/probe" -H "Authorization: Bearer $ADMIN_JWT"
+# expect: url ending key=REDACTED, and a markets list where Run Line reads as
+# spread, Total Runs as total, Moneyline as moneyline, everything else ignored
+
+curl -s "$API/collective_odds/v1/odds/preview" -H "Authorization: Bearer $ADMIN_JWT"
+# expect: rows_normalized > 0 and dry_run true. Nothing was written.
+
+curl -s -X POST "$API/collective_odds/v1/odds/collect" \
+  -H "Authorization: Bearer $ADMIN_JWT" -H "content-type: application/json" -d '{}'
+# expect: stored > 0. Re-running immediately gives duplicates, not double rows.
+
+curl -s "$API/collective_odds/v1/odds/sources" -H "Authorization: Bearer $ADMIN_JWT"
+# expect: one row per book with a fresh last_captured_at
+```
+
+   Then confirm it reached the surfaces: `curl -s "$API/collective_public/v1/games?sport=MLB"` carries a `market` object per game with `home_line`, `total_line`, `book`, and `captured_at`, and the board at `/collective/` shows the line next to each game. The Odds tab in the admin console runs all of the above from a browser.
+
+Cleanup: the smoke creator can be unlisted from the admin console; the append-only tables keep the dry run nowhere (it wrote nothing). Odds snapshots are append-only by design and are kept.
 
 ## 9. Local test loop
 
@@ -134,7 +170,13 @@ Migrations are proven locally before every push:
 tools/collective/test_migrations.sh
 ```
 
-The script starts a disposable local Postgres (via `supabase db start` or a plain Docker Postgres), applies all eight migrations in order against a clean database, and fails on any error, so a broken migration never reaches the hosted project. Run it after touching anything under `supabase/migrations/`. The full ingest behavior loop is `tools/collective/harness.py sample_moose_nfl.csv --dry-run` against a local `supabase functions serve` or against production with a test key (`mck_test_`, forced `data_origin='test'`).
+The odds adapter is proven offline against a captured provider response, with no network and no credentials:
+
+```bash
+node --experimental-strip-types tools/collective/test_oddsblaze.ts
+```
+
+The script starts a disposable local Postgres (via `supabase db start` or a plain Docker Postgres), applies every migration in order against a clean database, and fails on any error, so a broken migration never reaches the hosted project. Run it after touching anything under `supabase/migrations/`. The full ingest behavior loop is `tools/collective/harness.py sample_moose_nfl.csv --dry-run` against a local `supabase functions serve` or against production with a test key (`mck_test_`, forced `data_origin='test'`).
 
 ## 10. Rollback posture
 

@@ -166,7 +166,9 @@ interface MarketRow {
   game_id: string; book: string; source: string;
   home_line: number | null; home_price: number | null;
   away_line: number | null; away_price: number | null;
-  total_line: number | null; captured_at: string;
+  total_line: number | null; over_price: number | null; under_price: number | null;
+  home_ml_price: number | null; away_ml_price: number | null;
+  captured_at: string;
 }
 
 interface ConsensusRow {
@@ -217,6 +219,8 @@ export async function buildGames(
             ? { book: mk.book, source: mk.source, home_line: mk.home_line,
                 home_price: mk.home_price, away_line: mk.away_line,
                 away_price: mk.away_price, total_line: mk.total_line,
+                over_price: mk.over_price, under_price: mk.under_price,
+                home_ml_price: mk.home_ml_price, away_ml_price: mk.away_ml_price,
                 captured_at: mk.captured_at }
             : null;
         })(),
