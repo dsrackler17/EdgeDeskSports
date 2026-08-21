@@ -215,7 +215,18 @@ on conflict (key) do nothing;
 -- it is created, so the migration still applies cleanly on a database where
 -- pg_net is not installed. The failure then lands on the caller, with a
 -- readable message, instead of aborting the whole migration.
-create or replace function odds.run_ingest()
+-- p_force skips the cadence throttle for ONE call.
+--
+-- The throttle is what keeps a metered plan alive, and on an idle calendar it
+-- is twelve hours, so the first thing anyone does after changing a key or a
+-- setting is wait half a day to find out whether it worked. That is not a
+-- useful failure mode while setting the pipeline up: the call returns
+-- "skipped: too_soon" without ever reaching the provider, which looks
+-- identical to success in a status code and tells you nothing about the key.
+--
+-- Forcing costs one poll. The credit reserve still applies, so a forced call
+-- cannot spend past the budget.
+create or replace function odds.run_ingest(p_force boolean default false)
 returns bigint language plpgsql security definer set search_path = odds, public as $$
 declare
   v_url     text;
@@ -234,6 +245,12 @@ begin
   end if;
   if not exists (select 1 from pg_extension where extname = 'pg_net') then
     raise exception 'odds.run_ingest: pg_net is not installed, so the database cannot make an HTTP call. Enable it under Database > Extensions, then re-run this migration.';
+  end if;
+
+  -- Respect a query string already present on the configured URL rather than
+  -- assuming there is none.
+  if p_force then
+    v_url := v_url || case when position('?' in v_url) > 0 then '&' else '?' end || 'force=1';
   end if;
 
   -- Two headers, two different gates:

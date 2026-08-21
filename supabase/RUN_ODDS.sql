@@ -34,6 +34,12 @@ select
 -- =========================================================================
 
 select odds.run_ingest();          -- returns a request id immediately
+-- select odds.run_ingest(true);   -- same, but skips the cadence throttle.
+--                                 Use this while setting up: the idle cadence
+--                                 is 12h, so an unforced retry right after a
+--                                 change returns "skipped: too_soon" without
+--                                 ever reaching the provider — which tells you
+--                                 nothing about whether the change worked.
 
 -- Wait ~5 seconds, then ask the question that has ONE right answer:
 -- did our function run? odds.ingest_runs is written by our function and
@@ -64,9 +70,9 @@ select odds.last_ingest_response();
 --   status_code 503 not_configured   -> NFL_ODDS_API_KEY missing on the function.
 --   "no response is recorded yet"    -> pg_net has not finished. Wait, run again.
 
---   body "skipped": "too_soon"       -> throttled, not broken. To force one:
---     select collective.odds_set_setting('nfl.refresh_seconds.idle','60'::jsonb);
---     select odds.run_ingest();
+--   body "skipped": "too_soon"       -> throttled, not broken. It never reached
+--                                       the provider. Force one:
+--     select odds.run_ingest(true);
 
 
 -- =========================================================================

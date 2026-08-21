@@ -727,7 +727,7 @@ begin
     length(trim(both '"' from coalesce((odds.get_setting('ingest.anon_key'))::text,''))) > 40);
 
   perform pg_temp.check('the caller and the reader both exist',
-    to_regprocedure('odds.run_ingest()') is not null
+    to_regprocedure('odds.run_ingest(boolean)') is not null
     and to_regprocedure('odds.last_ingest_response(bigint)') is not null);
 
   -- The reader must look our request up BY ID. net._http_response is project
@@ -738,6 +738,15 @@ begin
     (select count(*) from pg_proc p join pg_namespace n on n.oid = p.pronamespace
       where n.nspname = 'odds' and p.proname = 'last_ingest_response'
         and p.pronargs = 1) = 1);
+  -- Without a force path the only way to retest after changing a key is to
+  -- wait out the idle cadence, which on an empty calendar is twelve hours.
+  perform pg_temp.check('the caller can bypass the cadence for one call',
+    (select prosrc from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+      where n.nspname = 'odds' and p.proname = 'run_ingest') like '%force=1%');
+  perform pg_temp.check('and it appends the flag without breaking an existing query string',
+    (select prosrc from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+      where n.nspname = 'odds' and p.proname = 'run_ingest') like '%position(''?'' in v_url)%');
+
   perform pg_temp.check('and it never selects the newest row across the table',
     (select prosrc from pg_proc p join pg_namespace n on n.oid = p.pronamespace
       where n.nspname = 'odds' and p.proname = 'last_ingest_response')
@@ -746,7 +755,7 @@ begin
   -- SECURITY DEFINER plus the default PUBLIC grant would let any anon caller
   -- spend the credit budget at will.
   perform pg_temp.check('and neither is callable by anon',
-    not has_function_privilege('anon', 'odds.run_ingest()', 'EXECUTE')
+    not has_function_privilege('anon', 'odds.run_ingest(boolean)', 'EXECUTE')
     and not has_function_privilege('anon', 'odds.last_ingest_response(bigint)', 'EXECUTE'));
 end $$;
 
