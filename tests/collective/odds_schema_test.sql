@@ -641,6 +641,64 @@ begin
     (odds.consensus(v_ev)->'spread'->>'books')::int = 3);
 end $$;
 
+-- ------------------------------------- the configured provider must exist
+-- odds.event_providers.provider and odds.snapshots.provider are both foreign
+-- keys to odds.providers. Pointing provider.default at an id with no row
+-- there does not degrade: every ingest dies on the FK and the board stays
+-- empty with the cause buried in a run record. This shipped once.
+do $$
+declare v_cfg text; v_run bigint;
+begin
+  v_cfg := trim(both '"' from (odds.get_setting('provider.default'))::text);
+  perform pg_temp.check('the configured provider is registered in odds.providers',
+    exists (select 1 from odds.providers where id = v_cfg));
+
+  -- and it can actually take a write, not merely exist as a row
+  v_run := odds.begin_ingest(v_cfg, 'nfl', 'test');
+  perform odds.ingest_batch(v_run, v_cfg, 'nfl', jsonb_build_object(
+    'events', jsonb_build_array(jsonb_build_object(
+      'provider_event_id','fkcheck-1','home','KC','away','BUF',
+      'commence_time','2026-12-27T18:00:00Z',
+      'odds', jsonb_build_array(jsonb_build_object(
+        'book','draftkings','market','spread','outcome','home','line',-3.0,'price',-110))))));
+  perform pg_temp.check('and an ingest under it actually writes',
+    exists (select 1 from odds.event_providers where provider = v_cfg
+            and provider_event_id = 'fkcheck-1'));
+end $$;
+
+-- ------------------------------------- the feed names its own provider
+-- The read payload must say who produced the numbers. A constant in the edge
+-- function was wrong the moment a second provider existed.
+do $$
+declare v_actual text; v_configured text; v_run bigint;
+begin
+  -- The reported provider is whoever produced the stored numbers, which is
+  -- NOT the same question as who is configured to poll next. The two differ
+  -- for as long as it takes the first run on a newly switched provider to
+  -- finish, and during that window the stored prices still came from the old
+  -- one. Reporting the setting would misattribute them.
+  v_configured := trim(both '"' from (odds.get_setting('provider.default'))::text);
+  v_actual := odds.last_poll_provider();
+
+  perform pg_temp.check('last_poll_provider names who actually polled',
+    v_actual = (select provider from odds.ingest_runs
+                where status in ('ok','partial')
+                order by coalesce(finished_at, started_at) desc, id desc limit 1));
+  perform pg_temp.check('odds_status reports that, not the configured default',
+    collective.odds_status('nfl')->>'provider' = v_actual);
+  perform pg_temp.check('odds_board reports it too, for the list surfaces',
+    collective.odds_board('nfl', null, null, false, 5)->>'provider' = v_actual);
+  perform pg_temp.check('last_poll_provider pairs with last_poll_at',
+    odds.last_poll_provider() is not null and odds.last_poll_at() is not null);
+
+  -- Switching providers moves the reported name only once a run succeeds.
+  v_run := odds.begin_ingest(v_configured, 'nfl', 'test');
+  perform odds.finish_ingest(v_run, '{"status":"ok"}'::jsonb);
+  perform pg_temp.check('a successful run under a new provider moves the attribution',
+    odds.last_poll_provider() = v_configured
+    and collective.odds_status('nfl')->>'provider' = v_configured);
+end $$;
+
 -- ------------------------------------------- an unknown status is survivable
 do $$
 declare r jsonb;

@@ -32,10 +32,28 @@ const CACHE = { "cache-control": "public, max-age=20" };
 const NO_STORE = { "cache-control": "no-store" };
 const LEAGUE = "nfl";
 
-const SETTING_KEYS = ["nfl.stale_after_seconds", "nfl.league_id"];
+const SETTING_KEYS = ["nfl.stale_after_seconds", "nfl.league_id", "provider.default"];
 
 function staleAfter(cfg: Record<string, unknown>): number {
   return num(cfg["nfl.stale_after_seconds"], 900);
+}
+
+/**
+ * Who produced the stored numbers.
+ *
+ * First choice is the provider of the most recent successful run, which is
+ * the run last_updated refers to. Falling back to provider.default answers a
+ * different question — who will poll NEXT — and the two differ for exactly as
+ * long as it takes the first run on a newly switched provider to finish, so
+ * it is a fallback and not the primary. "unknown" rather than a plausible
+ * vendor name when neither is available: a wrong attribution is worse than an
+ * absent one, because it reads as a fact.
+ */
+function providerOf(fromRun: unknown, cfg: Record<string, unknown>): string {
+  if (typeof fromRun === "string" && fromRun.length > 0) return fromRun;
+  const configured = cfg["provider.default"];
+  if (typeof configured === "string" && configured.length > 0) return configured;
+  return "unknown";
 }
 
 /** Window helpers. "week" here is the Collective's own slate week, which the
@@ -101,15 +119,25 @@ Deno.serve(async (req) => {
     const cfg = await settings(SETTING_KEYS);
     const stale = staleAfter(cfg);
     /* Feed health is a property of the feed, not of one game, so the routes
-       that return a single object still report the last successful poll. */
-    let pollAt: string | null | undefined;
-    const feedPolledAt = async (): Promise<string | null> => {
-      if (pollAt === undefined) {
+       that return a single object still report the last successful poll.
+       The provider comes from the SAME run as that poll, never from a
+       constant: with more than one provider registered, a hardcoded name is a
+       payload that misstates where its own numbers came from, and
+       /v1/nfl/assistant hands this field to a research model as fact.
+       Resolved once per request and reused. */
+    let feed: { pollAt: string | null; provider: string } | undefined;
+    const feedInfo = async (): Promise<{ pollAt: string | null; provider: string }> => {
+      if (feed === undefined) {
         const st = await oddsStatus(LEAGUE).catch(() => null);
-        pollAt = (st?.last_poll_at as string | null) ?? null;
+        feed = {
+          pollAt: (st?.last_poll_at as string | null) ?? null,
+          provider: providerOf(st?.provider, cfg),
+        };
       }
-      return pollAt;
+      return feed;
     };
+    const feedPolledAt = async (): Promise<string | null> => (await feedInfo()).pollAt;
+    const feedProvider = async (): Promise<string> => (await feedInfo()).provider;
 
     // ------------------------------------------------------------ status
     // "Is the feed healthy?" as one object. The dashboards read this to
@@ -117,7 +145,7 @@ Deno.serve(async (req) => {
     if (req.method === "GET" && (path === "/v1/nfl/status" || path === "/v1/status")) {
       const st = await oddsStatus(LEAGUE);
       const env = envelope(st?.last_poll_at as string | null, stale, LEAGUE,
-        "oddsblaze", st?.last_odds_at as string | null);
+        providerOf(st?.provider, cfg), st?.last_odds_at as string | null);
       return json({ ...env, ...st }, 200, NO_STORE);
     }
 
@@ -148,7 +176,7 @@ Deno.serve(async (req) => {
         data?.last_poll_at as string | null,
         num(data?.stale_after_seconds, stale),
         LEAGUE,
-        "oddsblaze",
+        providerOf(data?.provider, cfg),
         data?.last_odds_at as string | null,
       );
       const week = u.searchParams.get("week");
@@ -173,7 +201,7 @@ Deno.serve(async (req) => {
         if (!isUuid(eventId)) return err("invalid_payload", "event must be a uuid.", 422);
         const game = await oddsEventPayload({ eventId, includeBooks: true });
         if (!game) return err("not_found", "No odds for that game.", 404);
-        const env = envelope(await feedPolledAt(), stale, LEAGUE, "oddsblaze",
+        const env = envelope(await feedPolledAt(), stale, LEAGUE, await feedProvider(),
           game.last_odds_at as string | null);
         const best = game.best as Record<string, unknown>;
         return json({
@@ -190,7 +218,7 @@ Deno.serve(async (req) => {
       const data = await oddsBoard({ league: LEAGUE, from, to, includeBooks: false, limit: 40 });
       const games = (data?.games ?? []) as Record<string, unknown>[];
       const env = envelope(data?.last_poll_at as string | null, stale, LEAGUE,
-        "oddsblaze", data?.last_odds_at as string | null);
+        providerOf(data?.provider, cfg), data?.last_odds_at as string | null);
       return json({
         ...env,
         count: games.length,
@@ -218,7 +246,7 @@ Deno.serve(async (req) => {
         const game = await oddsEventPayload({ eventId, includeBooks: false });
         if (!game) return err("not_found", "No odds for that game.", 404);
         return json({
-          ...envelope(await feedPolledAt(), stale, LEAGUE, "oddsblaze",
+          ...envelope(await feedPolledAt(), stale, LEAGUE, await feedProvider(),
             game.last_odds_at as string | null),
           event_id: game.event_id,
           home: game.home,
@@ -231,7 +259,7 @@ Deno.serve(async (req) => {
       const games = (data?.games ?? []) as Record<string, unknown>[];
       return json({
         ...envelope(data?.last_poll_at as string | null, stale, LEAGUE,
-          "oddsblaze", data?.last_odds_at as string | null),
+          providerOf(data?.provider, cfg), data?.last_odds_at as string | null),
         games: games.map((g) => ({
           event_id: g.event_id,
           home: g.home,
@@ -267,7 +295,7 @@ Deno.serve(async (req) => {
       const points = (data?.points ?? []) as { at?: string }[];
       const last = points.length ? points[points.length - 1].at ?? null : null;
       return json({
-        ...envelope(await feedPolledAt(), stale, LEAGUE, "oddsblaze", last),
+        ...envelope(await feedPolledAt(), stale, LEAGUE, await feedProvider(), last),
         ...data,
         note: "Every stored state, oldest first. Unchanged polls are not stored, so each point is a real move.",
       }, 200, CACHE);
@@ -282,7 +310,7 @@ Deno.serve(async (req) => {
       const game = byEvent ?? await oddsEventPayload({ gameId: m[1], includeBooks: true });
       if (!game) return err("not_found", "No odds for that game.", 404);
       return json({
-        ...envelope(await feedPolledAt(), stale, LEAGUE, "oddsblaze",
+        ...envelope(await feedPolledAt(), stale, LEAGUE, await feedProvider(),
           game.last_odds_at as string | null),
         game,
       }, 200, CACHE);
@@ -299,7 +327,7 @@ Deno.serve(async (req) => {
         }, 200, NO_STORE);
       }
       return json({
-        ...envelope(await feedPolledAt(), stale, LEAGUE, "oddsblaze",
+        ...envelope(await feedPolledAt(), stale, LEAGUE, await feedProvider(),
           game.last_odds_at as string | null),
         game,
       }, 200, CACHE);
@@ -320,7 +348,7 @@ Deno.serve(async (req) => {
         data?.last_poll_at as string | null,
         num(data?.stale_after_seconds, stale),
         LEAGUE,
-        "oddsblaze",
+        providerOf(data?.provider, cfg),
         data?.last_odds_at as string | null,
       );
       return json({

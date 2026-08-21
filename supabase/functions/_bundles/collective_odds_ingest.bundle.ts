@@ -217,7 +217,10 @@ function envelope(
   lastPolled: string | null | undefined,
   staleAfterSeconds: number | null | undefined,
   league = "nfl",
-  provider = "oddsblaze",
+  // Not a vendor name. A caller that forgets to pass the provider should
+  // produce a visibly unknown source, not a confident and wrong one — the
+  // field is read as fact, including by the assistant route.
+  provider = "unknown",
   lastChangeAt: string | null | undefined = null,
 ): OddsEnvelope {
   const lastUpdated = lastPolled ?? null;

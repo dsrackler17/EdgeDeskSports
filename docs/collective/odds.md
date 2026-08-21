@@ -49,6 +49,19 @@ books you ask for; The Odds API returns every book for a flat cost, so the
 adapter keeps them all — filtering to a shorter list would throw away data
 already paid for without saving a credit.
 
+### Attribution
+
+Every payload's `source.provider` names the provider of the **most recent
+successful run** — the same run `last_updated` refers to — read from
+`odds.last_poll_provider()`. Not `provider.default`, which answers a different
+question: who will poll *next*. The two differ from the moment you switch
+providers until the first run on the new one finishes, and during that window
+the stored prices still came from the old one.
+
+If neither is known the field reads `unknown`. It is never defaulted to a
+vendor name, because `/v1/nfl/assistant` hands this field to a research model
+as fact, and a confident wrong attribution is worse than an absent one.
+
 ### Credit budget
 
 The Odds API reports its own accounting on every response:
@@ -522,7 +535,12 @@ diagnosable report instead of silently wrong numbers.
 2. `registerProvider(yourProvider)` in `collective_odds_ingest/index.ts`.
 3. `select collective.odds_set_setting('provider.default', '"<vendor>"'::jsonb);`
 4. Add a row to `odds.providers`.
-5. Give every module-level name in the new file a prefix unique to that
+5. **Insert the row into `odds.providers` before pointing `provider.default`
+   at it.** `odds.event_providers.provider` and `odds.snapshots.provider` are
+   both foreign keys to that table, so a missing row does not degrade — every
+   ingest dies on the FK and the board stays empty with the cause buried in a
+   run record. There is a schema test for exactly this.
+6. Give every module-level name in the new file a prefix unique to that
    provider. Bundling flattens all providers into one scope, so a second
    `DEFAULT_BASE` or `apiKey` is a redeclaration error — `theoddsapi.ts` uses
    `TA_` / `ta`. `sh tools/collective/typecheck.sh` catches this; the

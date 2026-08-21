@@ -34,6 +34,37 @@
 
 begin;
 
+-- ------------------------------------------------- register the provider
+--
+-- MUST come before the provider.default switch below. odds.event_providers
+-- and odds.snapshots both carry `provider text not null references
+-- odds.providers(id)`, so pointing provider.default at an id with no row here
+-- does not degrade gracefully: EVERY ingest fails on a foreign key violation
+-- and the board stays exactly as empty as it was, with the cause buried in a
+-- run record. Verified by running an ingest without this row and watching
+-- event_providers_provider_fkey reject it.
+
+insert into odds.providers (id, name, notes) values
+  ('theoddsapi', 'The Odds API',
+   'REST pull, api.the-odds-api.com/v4. One request returns every book in a region; billed [markets] x [regions]. Credential lives only in the THE_ODDS_API_KEY (or NFL_ODDS_API_KEY) edge function secret.')
+on conflict (id) do nothing;
+
+-- --------------------------------------------------- who last polled us
+--
+-- The freshness envelope pairs "when we last polled" with "who we polled",
+-- so the provider has to come from the same run as last_poll_at rather than
+-- from a constant in the edge function. With two providers registered, a
+-- hardcoded name is a payload that misstates where its own numbers came
+-- from — and /v1/nfl/assistant hands that field to a research model as fact.
+
+create or replace function odds.last_poll_provider()
+returns text language sql stable as $$
+  select provider from odds.ingest_runs
+  where status in ('ok','partial')
+  order by coalesce(finished_at, started_at) desc, id desc
+  limit 1;
+$$;
+
 -- ------------------------------------------------------------ new settings
 
 insert into odds.settings (key, value, description) values
@@ -114,5 +145,83 @@ insert into odds.books (id, name, is_sharp, include_in_consensus, priority) valu
   ('ballybet',  'Bally Bet',   false, true,  47),
   ('betfair',   'Betfair',     true,  false, 25)
 on conflict (id) do nothing;
+
+-- ------------------------------------------- expose the provider on reads
+--
+-- Re-issued verbatim from the base migration with one field added, so the
+-- edge function can stop naming a provider from a constant.
+
+create or replace function collective.odds_status(p_league text default 'nfl')
+returns jsonb language sql stable security definer set search_path = odds, collective, public as $$
+  select jsonb_build_object(
+    'league', p_league,
+    -- last_poll_at: the feed is current as of this moment.
+    -- last_odds_at: a price last changed at this moment. A quiet market is
+    -- not a stale feed, so freshness is judged on the first.
+    'last_poll_at',   odds.last_poll_at(),
+    'last_odds_at',   (select max(captured_at) from odds.snapshots),
+    'provider',       odds.last_poll_provider(),
+    'stale_after_seconds', coalesce((odds.get_setting('nfl.stale_after_seconds'))::text::int, 900),
+    'events_upcoming', (select count(*) from odds.events
+                        where league = p_league and commence_time > now()),
+    'events_live',     (select count(*) from odds.events
+                        where league = p_league and is_live),
+    'books_current',   (select count(distinct book_id) from odds.current_main),
+    'snapshots_total', (select count(*) from odds.snapshots),
+    'last_run', (select to_jsonb(r) - 'unmatched' from odds.ingest_runs r
+                 order by started_at desc limit 1)
+  );
+$$;
+
+create or replace function collective.odds_board(
+  p_league text default 'nfl',
+  p_from timestamptz default null,
+  p_to timestamptz default null,
+  p_include_books boolean default true,
+  p_limit integer default 40
+) returns jsonb language sql stable security definer set search_path = odds, collective, public as $$
+  select jsonb_build_object(
+    'league', p_league,
+    'generated_at', now(),
+    'last_poll_at', odds.last_poll_at(),
+    'last_odds_at', (select max(s.captured_at) from odds.snapshots s
+                     join odds.events e on e.id = s.event_id where e.league = p_league),
+    'provider', odds.last_poll_provider(),
+    'stale_after_seconds',
+      coalesce((odds.get_setting('nfl.stale_after_seconds'))::text::int, 900),
+    'games', coalesce((
+      select jsonb_agg(odds.event_payload(e.id, p_include_books) order by e.commence_time)
+      from (
+        select id, commence_time from odds.events
+        where league = p_league
+          and (p_from is null or commence_time >= p_from)
+          and (p_to   is null or commence_time <= p_to)
+        order by commence_time
+        limit greatest(1, least(coalesce(p_limit, 40), 200))
+      ) e), '[]'::jsonb));
+$$;
+
+-- ------------------------------------------------------------ privileges
+--
+-- Postgres grants EXECUTE to PUBLIC on every new function by default, and
+-- these are SECURITY DEFINER, so a function created above without this block
+-- is an anon-callable back door into the odds schema. Re-run over everything
+-- the base migration covers, because create-or-replace does not restore the
+-- grants the base migration set.
+
+do $mig$
+declare r record; has_sr boolean;
+begin
+  select exists (select 1 from pg_roles where rolname = 'service_role') into has_sr;
+  for r in
+    select p.oid::regprocedure as sig
+    from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+    where (n.nspname = 'odds')
+       or (n.nspname = 'collective' and p.proname like 'odds\_%')
+  loop
+    execute format('revoke all on function %s from public', r.sig);
+    if has_sr then execute format('grant execute on function %s to service_role', r.sig); end if;
+  end loop;
+end $mig$;
 
 commit;
