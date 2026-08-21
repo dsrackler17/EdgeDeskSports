@@ -21,6 +21,8 @@ MIG2=supabase/migrations/20260821140000_odds_provider_credits.sql
 # old code. That failure is invisible to every other check, so it goes first.
 echo "== 1/5 deploy artifact matches source =="
 python3 tools/collective/bundle_functions.py --check
+echo
+python3 tests/collective/config_matches_bundles.py
 
 echo
 echo "== 2/5 schema =="

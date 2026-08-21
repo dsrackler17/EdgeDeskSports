@@ -59,6 +59,26 @@ The board-row fields mean the embed now emits `line_at_submission` and
 `cover_probability` on unlocked games, which is what "the embed and the site
 render from identical data" requires.
 
+## Deploying
+
+Two paths. Prefer the first.
+
+**From the repo (recommended).** `supabase db push` and
+`supabase functions deploy` read what is committed here, so a stale copy cannot
+ship. `verify_jwt` comes from `supabase/config.toml`, which makes the "Enforce
+JWT verification" toggle a reviewable line in a diff rather than a checkbox
+someone has to remember. See [`SETUP_LOCAL.md`](SETUP_LOCAL.md).
+
+**Pasting a bundle into the dashboard (fallback).** Works, but has no version
+check: paste an older download and every screen reports success while the
+deployed code is out of date. This has already cost a day on this project — a
+migration was run from a stale download, so the scheduler it carried never
+existed while the dashboard showed "Success".
+
+`tests/collective/config_matches_bundles.py` asserts the two paths agree about
+JWT enforcement for every function, so whichever you use, the gateway posture
+is the same.
+
 ## Bundling for the dashboard
 
 The dashboard editor takes one `index.ts` per function, so the split sources
