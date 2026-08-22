@@ -1,4 +1,4 @@
-/* Model Collective — NFL odds components.
+/* Model Collective — market odds components.
  *
  * The one place the front end reads market odds. Every Collective surface
  * (the wall, the board, model pages, the market page, the embed, the admin
@@ -45,10 +45,34 @@
     opts = opts || {};
     if (opts.api) CFG.api = String(opts.api).replace(/\/$/, '');
     if (opts.fn) CFG.fn = opts.fn;
-    if (opts.league) CFG.league = opts.league;
+    if (opts.league) CFG.league = MCOdds.leagueFor(opts.league);
     if (typeof opts.ttlMs === 'number') CFG.ttlMs = opts.ttlMs;
     return MCOdds;
   };
+
+  /* The Collective names a sport ('CFB'); the odds layer names a league
+     ('ncaaf'). One map, here, so no caller has to know both vocabularies.
+     An unrecognised code passes through lowercased rather than silently
+     becoming NFL: a wrong league that 404s is debuggable, a wrong league
+     that quietly returns another sport's games is not. */
+  var SPORT_LEAGUE = { NFL: 'nfl', CFB: 'ncaaf', NCAAF: 'ncaaf', CFP: 'ncaaf' };
+
+  MCOdds.leagueFor = function (code) {
+    if (!code) return CFG.league;
+    var k = String(code).toUpperCase();
+    return SPORT_LEAGUE[k] || String(code).toLowerCase();
+  };
+
+  /* Every route below is league-scoped. CFG.league used to exist and be read
+     by nothing — configure({league}) set it and all five builders went to a
+     hardcoded /v1/nfl/, so a College Football page asked an NFL endpoint for
+     NFL games, matched none of them, and rendered "no market posted" on a
+     working feed. */
+  function leagueOf(opts) {
+    return (opts && opts.league) ? MCOdds.leagueFor(opts.league) : CFG.league;
+  }
+
+  function route(opts, tail) { return '/v1/' + leagueOf(opts) + tail; }
 
   function apiBase() {
     if (CFG.api) return CFG.api;
@@ -124,17 +148,17 @@
     if (opts.week) q.push('week=' + encodeURIComponent(opts.week));
     if (opts.limit) q.push('limit=' + encodeURIComponent(opts.limit));
     if (opts.books === false) q.push('books=0');
-    var path = '/v1/nfl/odds' + (q.length ? '?' + q.join('&') : '');
+    var path = route(opts, '/odds') + (q.length ? '?' + q.join('&') : '');
     return get(path, opts.ttlMs).then(index);
   };
 
-  MCOdds.status = function () { return get('/v1/nfl/status', 10000); };
+  MCOdds.status = function (opts) { return get(route(opts, '/status'), 10000); };
 
   /* One game by its odds event id, with the full book grid. Needed because
      the board is a time window: a game that finished days ago is not in it,
      and a link to that game must still open. */
-  MCOdds.event = function (eventId) {
-    return get('/v1/nfl/odds/' + encodeURIComponent(eventId), 30000)
+  MCOdds.event = function (eventId, opts) {
+    return get(route(opts, '/odds/') + encodeURIComponent(eventId), 30000)
       .then(function (d) { return (d && d.game) ? d : null; });
   };
 
@@ -144,12 +168,12 @@
     if (opts.market) q.push('market=' + encodeURIComponent(opts.market));
     if (opts.book) q.push('book=' + encodeURIComponent(opts.book));
     if (opts.outcome) q.push('outcome=' + encodeURIComponent(opts.outcome));
-    return get('/v1/nfl/odds/' + encodeURIComponent(eventId) + '/history' +
+    return get(route(opts, '/odds/') + encodeURIComponent(eventId) + '/history' +
       (q.length ? '?' + q.join('&') : ''), 30000);
   };
 
-  MCOdds.closingForGame = function (collectiveGameId) {
-    return get('/v1/nfl/closing/' + encodeURIComponent(collectiveGameId), 60000);
+  MCOdds.closingForGame = function (collectiveGameId, opts) {
+    return get(route(opts, '/closing/') + encodeURIComponent(collectiveGameId), 60000);
   };
 
   /* Adds lookup tables so a caller can find a game by either identity without
