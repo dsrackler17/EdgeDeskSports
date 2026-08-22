@@ -1130,7 +1130,33 @@ async function renderAbout(view,jump){
    CSV or Excel file (or paste rows), the columns auto-map, a dry run shows
    exactly what would happen, then it submits through the same validation
    pipeline as the API. No API key ever touches the page. */
-function parseCSV(text){
+/* ONE separator per file, decided by the file.
+
+   Treating comma and tab as separators at the same time looks accommodating
+   and quietly destroys data. Everything copied out of Excel or Google Sheets
+   arrives TAB separated with commas left bare inside cells — those tools only
+   quote a cell containing a tab, a newline or a quote, never one that merely
+   contains a comma — so a notes column reading "early lean, low conf" splits
+   into two cells and shifts every column to its right. Measured on a hand-kept
+   slate pasted from Sheets, the model's own line was filed as the MARKET line:
+   the exact number closing-line value is graded against.
+
+   The header row decides, because it is the one row whose shape is known, and
+   quoted regions do not vote. */
+function sniffDelim(text){
+  var line=String(text||'').split(/\r?\n/)[0]||'';
+  var counts={',':0,'\t':0,';':0,'|':0},q=false,i,ch;
+  for(i=0;i<line.length;i++){
+    ch=line.charAt(i);
+    if(ch==='"'){q=!q;continue;}
+    if(!q&&counts[ch]!==undefined)counts[ch]++;
+  }
+  var best=',',n=0,k;
+  for(k in counts)if(counts[k]>n){n=counts[k];best=k;}
+  return n?best:',';
+}
+function parseCSV(text,delim){
+  var d=delim||sniffDelim(text);
   var rows=[],row=[],cur='',q=false;
   for(var i=0;i<text.length;i++){
     var ch=text[i];
@@ -1138,7 +1164,7 @@ function parseCSV(text){
       if(ch==='"'){if(text[i+1]==='"'){cur+='"';i++;}else q=false;}
       else cur+=ch;
     }else if(ch==='"')q=true;
-    else if(ch===','||ch==='\t'){row.push(cur);cur='';}
+    else if(ch===d){row.push(cur);cur='';}
     else if(ch==='\n'||ch==='\r'){
       if(cur!==''||row.length){row.push(cur);rows.push(row);row=[];cur='';}
       if(ch==='\r'&&text[i+1]==='\n')i++;
@@ -1530,6 +1556,68 @@ function teamSimilarity(a,b){
      strong: "Florida St" against "Florida State" */
   if(shared===Math.min(ta.length,tb.length))score=Math.max(score,0.75);
   return score;
+}
+
+/* Resolve a team name onto the SCHEDULE'S OWN spelling.
+
+   The backend stores its team identifiers uppercased, stripped of punctuation
+   and TRUNCATED TO TEN CHARACTERS — "Florida State" is FLORIDASTA, "New Mexico
+   State" is NEWMEXICOS — and it matches a submitted slate literally against
+   those. So every team whose canonical name fits in ten characters resolved
+   and every longer one quarantined, which is exactly the split a real slate
+   produced: TCU, USC, Virginia, Stanford, NC State and Hawai'i through; North
+   Carolina, San José State, Florida State and New Mexico State rejected.
+
+   Guessing at the rule is not the fix. The schedule is the dictionary: look
+   each name up in it and send back the string it already uses. A truncation is
+   only accepted when it is UNAMBIGUOUS — "MISSISSIPP" could be Mississippi or
+   Mississippi State, and silently picking one would be worse than quarantining
+   both. */
+function slateNameIndex(games){
+  var byKey={},names=slateServerNames(games),i,k;
+  for(i=0;i<names.length;i++){k=teamKey(names[i]);if(k&&!byKey[k])byKey[k]=names[i];}
+  return byKey;
+}
+function slateResolveName(byKey,team){
+  var k=teamKey(team);
+  if(!k)return null;
+  if(byKey[k])return {name:byKey[k],how:'exact'};
+  var keys=Object.keys(byKey),hits=[],i;
+  /* the backend's key is a truncation of ours */
+  for(i=0;i<keys.length;i++)
+    if(keys[i].length>=6&&keys[i].length<k.length&&k.indexOf(keys[i])===0)hits.push(keys[i]);
+  if(hits.length===1)return {name:byKey[hits[0]],how:'truncated'};
+  if(hits.length>1)return {ambiguous:hits.map(function(x){return byKey[x];})};
+  /* or ours is the start of theirs — "TCU" against "TCU Horned Frogs" */
+  hits=[];
+  for(i=0;i<keys.length;i++)
+    if(k.length>=6&&keys[i].length>k.length&&keys[i].indexOf(k)===0)hits.push(keys[i]);
+  if(hits.length===1)return {name:byKey[hits[0]],how:'expanded'};
+  if(hits.length>1)return {ambiguous:hits.map(function(x){return byKey[x];})};
+  return null;
+}
+/* Rewrite a built slate onto the schedule's spellings. Returns new rows plus
+   what was changed, so the creator is told rather than surprised. */
+function slateAlignToSchedule(games,rows){
+  var byKey=slateNameIndex(games);
+  if(!Object.keys(byKey).length)return {rows:rows,changed:[],ambiguous:[],unresolved:[]};
+  var changed=[],ambiguous=[],unresolved=[],seen={};
+  var out=(rows||[]).map(function(o){
+    var c={},k;
+    for(k in o)if(Object.prototype.hasOwnProperty.call(o,k))c[k]=o[k];
+    ['home_team','away_team'].forEach(function(f){
+      var r=slateResolveName(byKey,c[f]);
+      if(!r){if(!seen['u'+c[f]]){seen['u'+c[f]]=1;unresolved.push(c[f]);}return;}
+      if(r.ambiguous){if(!seen['a'+c[f]]){seen['a'+c[f]]=1;
+        ambiguous.push({mine:c[f],options:r.ambiguous});}return;}
+      if(r.name!==c[f]){
+        if(!seen['c'+c[f]]){seen['c'+c[f]]=1;changed.push({from:c[f],to:r.name,how:r.how});}
+        c[f]=r.name;
+      }
+    });
+    return c;
+  });
+  return {rows:out,changed:changed,ambiguous:ambiguous,unresolved:unresolved};
 }
 
 function slateUnmatchedTeams(games,rows){
@@ -2233,6 +2321,16 @@ async function renderCreatorDash(view,me){
     async function slateLoad(rows2d){
       if(!rows2d||rows2d.length<2){toast('Need a header row plus at least one game');return;}
       SLATE.cols=rows2d[0];SLATE.rows=rows2d;SLATE.checked=false;
+      /* A row wider or narrower than the header means the file was cut on the
+         wrong separator, and every column to the right of the break is holding
+         its neighbour's value. That posts as real numbers against a real model,
+         so it is a hard stop rather than a note: the mismatch is sitting right
+         there in the row lengths and used to be nobody's job to look at. */
+      SLATE.ragged=[];
+      for(var rr=1;rr<rows2d.length;rr++){
+        if((rows2d[rr]||[]).length!==SLATE.cols.length)
+          SLATE.ragged.push({row:rr+1,got:(rows2d[rr]||[]).length});
+      }
       slateGuessMap();
       /* same headers as a slate you already posted: reuse that mapping */
       SLATE.remembered=false;
@@ -2288,7 +2386,24 @@ async function renderCreatorDash(view,me){
       if(wk!==null&&!SLATE.multiWeek&&$('slWeek')&&!$('slWeek').value)$('slWeek').innerHTML=weekOptions(wk,wkSport);
       SLATE.detectedWeek=SLATE.multiWeek?null:wk;
       slatePaintScan();
-      slatePaintMap();$('slGo').disabled=true;$('slOut').innerHTML='';
+      slatePaintMap();$('slGo').disabled=true;
+      $('slOut').innerHTML=SLATE.ragged.length?slateRaggedHTML():'';
+    }
+
+    function slateRaggedHTML(){
+      var n=SLATE.ragged.length,ex=SLATE.ragged.slice(0,5);
+      return '<div class="errbox">'+
+        '<b>'+n+' row'+(n===1?'':'s')+' do'+(n===1?'es':'')+' not line up with your header.</b>'+
+        '<p class="note" style="margin:6px 0 0">Your header has <span class="mono">'+
+        SLATE.cols.length+'</span> columns, but '+
+        ex.map(function(r){return 'row '+r.row+' has <span class="mono">'+r.got+'</span>';}).join(', ')+
+        (n>ex.length?' and '+(n-ex.length)+' more':'')+
+        '. That normally means the file was split on the wrong separator &mdash; a spreadsheet '+
+        'paste is tab separated and leaves commas bare inside cells, so one comma in a notes '+
+        'column shifts every value after it into the wrong field. Nothing is posted from a '+
+        'slate in this state, because the shifted values look like real numbers.</p>'+
+        '<p class="note" style="margin:6px 0 0">Save the sheet as a real CSV and upload the file, '+
+        'or quote any cell that contains a comma.</p></div>';
     }
 
     /* What the scanner understood, in the creator's terms, before anything
@@ -2494,9 +2609,14 @@ async function renderCreatorDash(view,me){
       try{srv=await api('/v1/games'+q,{auth:true});}
       catch(e){return null;}                 /* cannot check — never block on that */
       var list=(srv&&srv.games)||[];
+      SLATE.serverGames=list;                /* reused to align names before sending */
       if(!list.length)return {level:'no-games',sport:sportCode,season:season,week:week};
 
-      var u=slateUnmatchedTeams(list,slateBuildRows(season,week).rows);
+      /* Check what will ACTUALLY be sent, which is the slate after it has been
+         aligned onto the schedule's own spellings — otherwise this warns about
+         four teams that the alignment is about to resolve. */
+      var aligned=slateAlignToSchedule(list,slateBuildRows(season,week).rows);
+      var u=slateUnmatchedTeams(list,aligned.rows);
       if(!u.count)return null;
       return {level:u.none?'no-teams-at-all':'no-teams',
         sport:sportCode,season:season,week:week,
@@ -2556,6 +2676,10 @@ async function renderCreatorDash(view,me){
       if(opts.dropProb)sendRows=sendRows.map(function(o){
         var c={},k;for(k in o)if(o.hasOwnProperty(k)&&k!=='home_win_probability')c[k]=o[k];return c;});
       if(!sendRows.length){toast('No rows to send');return;}
+      if(SLATE.ragged&&SLATE.ragged.length){
+        $('slOut').innerHTML=slateRaggedHTML();
+        $('slGo').disabled=true;return;
+      }
       /* The dry run stays available — it is how you diagnose this — but a
          slate with no number on any row never gets posted, including through
          hands-off mode. */
@@ -2604,7 +2728,34 @@ async function renderCreatorDash(view,me){
         }
       }
 
-      $('slOut').innerHTML=pfHtml+
+      /* Send the schedule its own spellings. The pre-flight has just fetched the
+         game list; use it as the dictionary rather than hoping the backend
+         normalises the way this page does. */
+      var align={changed:[],ambiguous:[]};
+      if(SLATE.serverGames&&SLATE.serverGames.length){
+        align=slateAlignToSchedule(SLATE.serverGames,sendRows);
+        sendRows=align.rows;
+        env.rows=sendRows;
+      }
+      var alignHtml='';
+      if(align.changed.length){
+        alignHtml='<p class="note" style="margin:0 0 6px;border-left:2px solid var(--pos);padding-left:8px">'+
+          '<b style="color:var(--pos)">Matched to your schedule\'s own names</b> &mdash; '+
+          align.changed.slice(0,8).map(function(c){
+            return '<span class="mono">'+esc(c.from)+'</span> &rarr; <span class="mono">'+esc(c.to)+'</span>';
+          }).join(', ')+
+          (align.changed.length>8?' and '+(align.changed.length-8)+' more':'')+'.</p>';
+      }
+      if(align.ambiguous.length){
+        alignHtml+='<p class="note" style="margin:0 0 6px;border-left:2px solid var(--warn);padding-left:8px">'+
+          '<b style="color:var(--warn)">Ambiguous on your backend</b> &mdash; '+
+          align.ambiguous.slice(0,5).map(function(a){
+            return '<span class="mono">'+esc(a.mine)+'</span> could be '+
+              a.options.map(function(o){return '<span class="mono">'+esc(o)+'</span>';}).join(' or ');
+          }).join('; ')+'. Left as written rather than guessed at.</p>';
+      }
+
+      $('slOut').innerHTML=pfHtml+alignHtml+
         '<p class="note">'+(dry?'Checking':'Posting')+' '+sendRows.length+' games&hellip;</p>';
       try{
         var r=await api('/v1/dashboard/submit',{method:'POST',auth:true,headers:{'content-type':'application/json'},body:env});
@@ -2613,7 +2764,7 @@ async function renderCreatorDash(view,me){
           var col={late:'var(--warn)',quarantined:'var(--warn)',rejected:'var(--neg)'}[x.status]||'var(--dim)';
           return '<div style="color:'+col+'" class="mono">'+esc(x.status.toUpperCase())+' '+esc(x.game_ref)+(x.reason?': '+esc(x.reason):'')+'</div>';
         }).join('');
-        $('slOut').innerHTML=pfHtml+'<div class="panel" style="margin-top:10px;border-color:'+((c2.rejected||0)>0?'rgba(217,154,43,.5)':'rgba(47,180,124,.5)')+'">'+
+        $('slOut').innerHTML=pfHtml+alignHtml+'<div class="panel" style="margin-top:10px;border-color:'+((c2.rejected||0)>0?'rgba(217,154,43,.5)':'rgba(47,180,124,.5)')+'">'+
           '<b>'+(dry?'Dry run:':'Posted:')+'</b> <span class="mono">'+(c2.resolved||0)+' matched, '+(c2.first||0)+' first submissions, '+(c2.movement||0)+' revisions, '+(c2.late||0)+' late, '+(c2.quarantined||0)+' quarantined, '+(c2.rejected||0)+' rejected</span>'+
           (lines?'<div style="margin-top:8px;font-size:12px">'+lines+'</div>':'')+
           ((c2.quarantined||0)>0?'<p class="note" style="margin:8px 0 0">Quarantined games could not be matched to the schedule (usually a team name). They are saved and get resolved on the admin side; nothing is lost.</p>':'')+

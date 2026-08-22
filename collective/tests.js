@@ -284,6 +284,117 @@ if (typeof sandbox.teamKey === 'function') {
     S.slateUnmatchedTeams([{ label: 'North Carolina at TCU' }],
       [{ home_team: 'TCU', away_team: 'North Carolina' }]).count === 0);
 
+  /* ---- one separator per file, chosen from the file --------------------
+     Comma and tab were both live delimiters on every input at once. Excel and
+     Google Sheets put TAB separated text on the clipboard and quote a cell only
+     when it contains a tab, a newline or a quote -- never one that merely
+     contains a comma -- so a notes column reading "early lean, low conf" split
+     into two cells and shifted every column to its right. Measured on a real
+     paste, the model's own line was filed as the MARKET line: the number
+     closing-line value is graded against. */
+  var TSV = 'home_team\taway_team\tdate\tnotes\tmy_line\tmarket_line\n'
+    + 'TCU\tNorth Carolina\t2026-08-29 16:00\tearly lean, low conf\t-14.6\t-10.5';
+
+  chk('a spreadsheet paste is read as tab separated',
+    S.sniffDelim(TSV) === '\t', { got: JSON.stringify(S.sniffDelim(TSV)) });
+  chk('a bare comma inside a tab-separated cell no longer splits it',
+    (function () {
+      var r = S.parseCSV(TSV);
+      return r[0].length === 6 && r[1].length === 6
+        && r[1][3] === 'early lean, low conf' && r[1][4] === '-14.6';
+    })(),
+    'the model number used to land in the market-line column');
+  chk('an ordinary CSV is still read as comma separated',
+    S.sniffDelim('a,b,c\n1,2,3') === ',');
+  chk('a quoted comma in a CSV is still one cell',
+    (function () {
+      var r = S.parseCSV('a,b,c\n1,"x, y",3');
+      return r[1].length === 3 && r[1][1] === 'x, y';
+    })());
+  chk('a semicolon file is read as semicolon separated',
+    (function () {
+      var r = S.parseCSV('a;b;c\n1;2;3');
+      return S.sniffDelim('a;b;c\n1;2;3') === ';' && r[1].length === 3;
+    })());
+  chk('quoted regions of the header do not vote on the separator',
+    S.sniffDelim('"a,b,c,d"\tx\ty') === '\t');
+  chk('a single-column file falls back to comma rather than throwing',
+    S.sniffDelim('team\nTCU') === ',');
+  chk('the real 80-column CFB export is still comma separated',
+    S.sniffDelim(CSV) === ',');
+
+  /* ---- send the schedule its own names ---------------------------------
+     The backend stores team identifiers uppercased, punctuation stripped and
+     TRUNCATED TO TEN CHARACTERS, and matches a submitted slate literally
+     against them. Every team whose canonical name fits in ten characters
+     resolved and every longer one quarantined -- TCU, USC, Virginia, Stanford,
+     NC State and Hawai'i through; North Carolina, San José State, Florida
+     State and New Mexico State rejected. The schedule is the dictionary. */
+  var TRUNC = [{ label: 'NORTHCAROL @ TCU' }, { label: 'SANJOSESTA @ USC' },
+               { label: 'NCSTATE @ VIRGINIA' }, { label: 'NEWMEXICOS @ FLORIDASTA' },
+               { label: 'HAWAII @ STANFORD' }];
+  var SLATE_IN = [{ home_team: 'TCU', away_team: 'North Carolina' },
+                  { home_team: 'USC', away_team: 'San José State' },
+                  { home_team: 'Virginia', away_team: 'NC State' },
+                  { home_team: 'Florida State', away_team: 'New Mexico State' },
+                  { home_team: 'Stanford', away_team: "Hawai'i" }];
+
+  chk('a ten-character truncation resolves to the backend\'s own spelling',
+    (function () {
+      var ix = S.slateNameIndex(TRUNC);
+      var r = S.slateResolveName(ix, 'Florida State');
+      return r && r.name === 'FLORIDASTA' && r.how === 'truncated';
+    })());
+  chk('a name that already fits resolves exactly, case and all',
+    (function () {
+      var ix = S.slateNameIndex(TRUNC);
+      var r = S.slateResolveName(ix, 'Virginia');
+      return r && r.name === 'VIRGINIA' && r.how === 'exact';
+    })());
+  chk('a mascot suffix resolves the other way',
+    (function () {
+      var ix = S.slateNameIndex([{ label: 'North Carolina Tar Heels @ TCU Horned Frogs' }]);
+      var r = S.slateResolveName(ix, 'North Carolina');
+      return r && r.name === 'North Carolina Tar Heels' && r.how === 'expanded';
+    })());
+  chk('an AMBIGUOUS truncation is refused, never guessed',
+    (function () {
+      /* both of these are a prefix of "mississippistate", so the truncation
+         genuinely cannot be resolved to one school */
+      var ix = S.slateNameIndex([{ label: 'MISSISSIPP @ Alpha' }, { label: 'MISSISSIPPI @ Beta' }]);
+      var r = S.slateResolveName(ix, 'Mississippi State');
+      return r && r.ambiguous && r.ambiguous.length === 2;
+    })(),
+    'silently picking one would be worse than quarantining both');
+  chk('the whole slate aligns onto the schedule, every row',
+    (function () {
+      var a = S.slateAlignToSchedule(TRUNC, SLATE_IN);
+      var sent = a.rows.map(function (r) { return r.away_team + ' @ ' + r.home_team; });
+      return sent.join('|') === 'NORTHCAROL @ TCU|SANJOSESTA @ USC|NCSTATE @ VIRGINIA|'
+        + 'NEWMEXICOS @ FLORIDASTA|HAWAII @ STANFORD';
+    })(), { got: S.slateAlignToSchedule(TRUNC, SLATE_IN).rows });
+  chk('nothing is left unmatched once the slate is aligned',
+    S.slateUnmatchedTeams(TRUNC, S.slateAlignToSchedule(TRUNC, SLATE_IN).rows).count === 0,
+    'this is the "0 matched, 5 quarantined" case, resolved');
+  chk('alignment reports what it changed',
+    (function () {
+      var a = S.slateAlignToSchedule(TRUNC, SLATE_IN);
+      var by = {}; a.changed.forEach(function (c) { by[c.from] = c.to; });
+      return by['Florida State'] === 'FLORIDASTA' && by['North Carolina'] === 'NORTHCAROL';
+    })());
+  chk('alignment does not touch rows when the server list is empty',
+    (function () {
+      var a = S.slateAlignToSchedule([], SLATE_IN);
+      return a.rows === SLATE_IN && a.changed.length === 0;
+    })());
+  chk('a team genuinely absent from the schedule stays unresolved',
+    (function () {
+      var a = S.slateAlignToSchedule(TRUNC,
+        [{ home_team: 'Rutgers', away_team: 'TCU' }]);
+      return a.unresolved.indexOf('Rutgers') >= 0
+        && a.rows[0].home_team === 'Rutgers';
+    })());
+
   /* ---- naming the missing team is only half an answer ------------------ */
   chk('a mascot suffix is recognised as the same school',
     S.teamSimilarity('TCU', 'TCU Horned Frogs') >= 0.8
