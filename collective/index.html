@@ -433,6 +433,48 @@ function marketLeague(){
   if(window.MCOdds&&typeof MCOdds.leagueFor==='function')return MCOdds.leagueFor(code);
   return SPORT_ODDS_LEAGUE[code]||code.toLowerCase();
 }
+/* Everything MCOdds.board() does, for a league it cannot be asked about.
+   Only reached when the deployed odds.js predates league-aware routing: that
+   version has /v1/nfl/ typed into all five of its URL builders, so a College
+   Football page fetches the NFL board, matches none of its own games, and
+   reports a working market as absent. odds.js and this page are separate
+   uploads and WILL drift; the market should not depend on which one is
+   newer. Returns the same indexed shape MCOdds.index() builds, so nothing
+   downstream can tell the difference. */
+function marketBoardDirect(opts){
+  var q=[];
+  if(opts.days)q.push('days='+encodeURIComponent(opts.days));
+  if(opts.from)q.push('from='+encodeURIComponent(opts.from));
+  if(opts.to)q.push('to='+encodeURIComponent(opts.to));
+  if(opts.week)q.push('week='+encodeURIComponent(opts.week));
+  if(opts.limit)q.push('limit='+encodeURIComponent(opts.limit));
+  if(opts.books!==true)q.push('books=0');
+  var url=String(API||'').replace(/\/$/,'')+'/collective_odds/v1/'+
+          encodeURIComponent(opts.league)+'/odds'+(q.length?'?'+q.join('&'):'');
+  var tkey=function(x){return String(x==null?'':x).toLowerCase().replace(/[^a-z0-9]/g,'');};
+  return fetch(url).then(function(r){
+    if(!r.ok){var e=new Error('odds request failed ('+r.status+')');e.status=r.status;throw e;}
+    return r.json();
+  }).then(function(d){
+    var games=(d&&d.games)||[],byEvent={},byGame={},byTeams={};
+    games.forEach(function(g){
+      if(g.event_id)byEvent[g.event_id]=g;
+      if(g.collective_game_id)byGame[g.collective_game_id]=g;
+      byTeams[tkey(g.away)+'@'+tkey(g.home)]=g;
+    });
+    d.find=function(game){
+      if(!game)return null;
+      if(game.game_id&&byGame[game.game_id])return byGame[game.game_id];
+      if(game.event_id&&byEvent[game.event_id])return byEvent[game.event_id];
+      return byTeams[tkey(game.away)+'@'+tkey(game.home)]||null;
+    };
+    return d;
+  }).catch(function(e){
+    return {state:'unavailable',league:opts.league,games:[],
+            find:function(){return null;},
+            error:{message:e.message||'request failed',status:e.status||null,league:opts.league}};
+  });
+}
 function marketBoard(opts){
   if(!window.MCOdds)return Promise.resolve(null);
   try{
@@ -440,6 +482,7 @@ function marketBoard(opts){
     MCOdds.injectCss(document.head);
     opts=opts||{days:10};
     if(!opts.league)opts.league=marketLeague();
+    if(typeof MCOdds.leagueFor!=='function')return marketBoardDirect(opts);
     return MCOdds.board(opts).catch(function(){return null;});
   }catch(e){return Promise.resolve(null);}
 }
