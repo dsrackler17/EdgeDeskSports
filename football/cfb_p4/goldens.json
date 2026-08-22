@@ -1,0 +1,987 @@
+{
+ "generated_by": "football/cfb_p4/research/gen_goldens.py",
+ "model_version": null,
+ "teams": [
+  "alabama",
+  "georgia",
+  "texas"
+ ],
+ "feats": [
+  "epa_per_play",
+  "epa_pass",
+  "epa_rush",
+  "success_rate",
+  "early_down_success",
+  "passing_down_success",
+  "expl_epa_rate",
+  "yards_per_play",
+  "sack_rate_allowed",
+  "stuff_rate",
+  "third_down_rate",
+  "red_zone_success",
+  "front_disruption_rate",
+  "points_per_drive",
+  "start_field_position",
+  "pass_rate",
+  "plays_per_game",
+  "def_epa_per_play",
+  "def_epa_pass",
+  "def_epa_rush",
+  "def_success_rate",
+  "def_early_down_success",
+  "def_passing_down_success",
+  "def_expl_epa_rate",
+  "def_yards_per_play",
+  "def_sack_rate_allowed",
+  "def_stuff_rate",
+  "def_third_down_rate",
+  "def_red_zone_success",
+  "def_front_disruption_rate",
+  "def_points_per_drive",
+  "def_start_field_position",
+  "def_pass_rate",
+  "def_plays_per_game"
+ ],
+ "script": [
+  {
+   "home": "alabama",
+   "away": "georgia",
+   "hfa": 3.1,
+   "home_points": 27,
+   "away_points": 24,
+   "home_stats": {
+    "epa_per_play": 0.14,
+    "success_rate": 0.47,
+    "expl_epa_rate": 0.09,
+    "yards_per_play": 6.6,
+    "sack_rate_allowed": 0.05,
+    "plays_per_game": 68,
+    "def_epa_per_play": -0.02,
+    "def_success_rate": 0.41,
+    "def_expl_epa_rate": 0.06,
+    "def_yards_per_play": 5.4,
+    "def_sack_rate_allowed": 0.08,
+    "def_plays_per_game": 66
+   },
+   "away_stats": {
+    "epa_per_play": -0.02,
+    "success_rate": 0.41,
+    "expl_epa_rate": 0.06,
+    "yards_per_play": 5.4,
+    "sack_rate_allowed": 0.08,
+    "plays_per_game": 66,
+    "def_epa_per_play": 0.14,
+    "def_success_rate": 0.47,
+    "def_expl_epa_rate": 0.09,
+    "def_yards_per_play": 6.6,
+    "def_sack_rate_allowed": 0.05,
+    "def_plays_per_game": 68
+   }
+  },
+  {
+   "home": "texas",
+   "away": "alabama",
+   "hfa": 2.4,
+   "home_points": 10,
+   "away_points": 41,
+   "home_stats": {
+    "epa_per_play": -0.11,
+    "success_rate": 0.36,
+    "expl_epa_rate": 0.04,
+    "yards_per_play": 4.6,
+    "sack_rate_allowed": 0.11,
+    "plays_per_game": 61,
+    "def_epa_per_play": 0.21,
+    "def_success_rate": 0.52,
+    "def_expl_epa_rate": 0.12,
+    "def_yards_per_play": 7.4,
+    "def_sack_rate_allowed": 0.03,
+    "def_plays_per_game": 71
+   },
+   "away_stats": {
+    "epa_per_play": 0.21,
+    "success_rate": 0.52,
+    "expl_epa_rate": 0.12,
+    "yards_per_play": 7.4,
+    "sack_rate_allowed": 0.03,
+    "plays_per_game": 71,
+    "def_epa_per_play": -0.11,
+    "def_success_rate": 0.36,
+    "def_expl_epa_rate": 0.04,
+    "def_yards_per_play": 4.6,
+    "def_sack_rate_allowed": 0.11,
+    "def_plays_per_game": 61
+   }
+  },
+  {
+   "home": "georgia",
+   "away": "texas",
+   "hfa": 0.0,
+   "home_points": 31,
+   "away_points": 31,
+   "home_stats": {
+    "epa_per_play": 0.06,
+    "success_rate": 0.44,
+    "expl_epa_rate": 0.07,
+    "yards_per_play": 6.0,
+    "sack_rate_allowed": 0.06,
+    "plays_per_game": 64,
+    "def_epa_per_play": 0.06,
+    "def_success_rate": 0.44,
+    "def_expl_epa_rate": 0.07,
+    "def_yards_per_play": 6.0,
+    "def_sack_rate_allowed": 0.06,
+    "def_plays_per_game": 64
+   },
+   "away_stats": {
+    "epa_per_play": 0.06,
+    "success_rate": 0.44,
+    "expl_epa_rate": 0.07,
+    "yards_per_play": 6.0,
+    "sack_rate_allowed": 0.06,
+    "plays_per_game": 64,
+    "def_epa_per_play": 0.06,
+    "def_success_rate": 0.44,
+    "def_expl_epa_rate": 0.07,
+    "def_yards_per_play": 6.0,
+    "def_sack_rate_allowed": 0.06,
+    "def_plays_per_game": 64
+   }
+  }
+ ],
+ "steps": [
+  {
+   "label": "seeded",
+   "state": {
+    "r": {
+     "alabama": 7.1354,
+     "georgia": 14.8895,
+     "texas": 11.8098
+    },
+    "rf": {
+     "alabama": -12.0,
+     "georgia": -12.0,
+     "texas": -12.0
+    },
+    "n": {
+     "alabama": 312,
+     "georgia": 310,
+     "texas": 305
+    },
+    "scoring": {
+     "alabama": {
+      "pf": 0.7942,
+      "pa": -5.4967
+     },
+     "georgia": {
+      "pf": 4.5954,
+      "pa": -7.6586
+     },
+     "texas": {
+      "pf": 4.6175,
+      "pa": -3.98
+     }
+    },
+    "lmean": 25.744,
+    "eff": {
+     "alabama": {
+      "def_early_down_success": -0.107619,
+      "def_epa_pass": -0.229288,
+      "def_epa_per_play": -0.19333,
+      "def_epa_rush": -0.129224,
+      "def_expl_epa_rate": -0.023533,
+      "def_front_disruption_rate": 0.044063,
+      "def_pass_rate": -0.027873,
+      "def_passing_down_success": -0.069636,
+      "def_plays_per_game": -4.204611,
+      "def_points_per_drive": -0.827902,
+      "def_red_zone_success": -0.065056,
+      "def_sack_rate_allowed": 0.041989,
+      "def_start_field_position": 0.48358,
+      "def_stuff_rate": 0.040007,
+      "def_success_rate": -0.100013,
+      "def_third_down_rate": -0.088611,
+      "def_yards_per_play": -1.338979,
+      "early_down_success": 0.058451,
+      "epa_pass": 0.05606,
+      "epa_per_play": 0.06047,
+      "epa_rush": 0.047024,
+      "expl_epa_rate": 0.001976,
+      "front_disruption_rate": -0.022873,
+      "pass_rate": 0.074896,
+      "passing_down_success": 0.0495,
+      "plays_per_game": 0.521527,
+      "points_per_drive": 0.613711,
+      "red_zone_success": 0.050047,
+      "sack_rate_allowed": -0.015386,
+      "start_field_position": -2.000064,
+      "stuff_rate": 0.007843,
+      "success_rate": 0.048148,
+      "third_down_rate": -0.004028,
+      "yards_per_play": 0.885973
+     },
+     "georgia": {
+      "def_early_down_success": -0.060079,
+      "def_epa_pass": -0.145307,
+      "def_epa_per_play": -0.1556,
+      "def_epa_rush": -0.23338,
+      "def_expl_epa_rate": -0.008135,
+      "def_front_disruption_rate": 0.005094,
+      "def_pass_rate": 0.089665,
+      "def_passing_down_success": -0.097771,
+      "def_plays_per_game": -7.005395,
+      "def_points_per_drive": -0.278329,
+      "def_red_zone_success": -0.127347,
+      "def_sack_rate_allowed": -0.005697,
+      "def_start_field_position": 4.173652,
+      "def_stuff_rate": 0.042995,
+      "def_success_rate": -0.072336,
+      "def_third_down_rate": -0.085311,
+      "def_yards_per_play": -1.470749,
+      "early_down_success": 0.065799,
+      "epa_pass": 0.181981,
+      "epa_per_play": 0.150194,
+      "epa_rush": 0.110181,
+      "expl_epa_rate": 0.007348,
+      "front_disruption_rate": -0.007013,
+      "pass_rate": -0.032935,
+      "passing_down_success": 0.062231,
+      "plays_per_game": 6.075434,
+      "points_per_drive": 0.95991,
+      "red_zone_success": 0.077379,
+      "sack_rate_allowed": -0.016974,
+      "start_field_position": -3.230386,
+      "stuff_rate": -0.004929,
+      "success_rate": 0.072301,
+      "third_down_rate": 0.069209,
+      "yards_per_play": 0.519534
+     },
+     "texas": {
+      "def_early_down_success": -0.08024,
+      "def_epa_pass": -0.134074,
+      "def_epa_per_play": -0.167429,
+      "def_epa_rush": -0.2217,
+      "def_expl_epa_rate": -0.014094,
+      "def_front_disruption_rate": 0.020444,
+      "def_pass_rate": 0.083063,
+      "def_passing_down_success": -0.081292,
+      "def_plays_per_game": 4.488245,
+      "def_points_per_drive": -0.862831,
+      "def_red_zone_success": -0.126613,
+      "def_sack_rate_allowed": 0.017578,
+      "def_start_field_position": 2.983715,
+      "def_stuff_rate": 0.036661,
+      "def_success_rate": -0.089726,
+      "def_third_down_rate": -0.151332,
+      "def_yards_per_play": -1.386777,
+      "early_down_success": 0.038692,
+      "epa_pass": 0.129397,
+      "epa_per_play": 0.118072,
+      "epa_rush": 0.076727,
+      "expl_epa_rate": 0.016109,
+      "front_disruption_rate": -0.011109,
+      "pass_rate": 0.053347,
+      "passing_down_success": 0.08746,
+      "plays_per_game": 2.17179,
+      "points_per_drive": 0.431559,
+      "red_zone_success": -0.032636,
+      "sack_rate_allowed": -0.02211,
+      "start_field_position": -3.910916,
+      "stuff_rate": 0.01857,
+      "success_rate": 0.047042,
+      "third_down_rate": 0.074504,
+      "yards_per_play": 1.095819
+     }
+    }
+   }
+  },
+  {
+   "label": "after_season_break",
+   "state": {
+    "r": {
+     "alabama": 5.35155,
+     "georgia": 11.167125,
+     "texas": 8.85735
+    },
+    "rf": {
+     "alabama": -12.0,
+     "georgia": -12.0,
+     "texas": -12.0
+    },
+    "n": {
+     "alabama": 312,
+     "georgia": 310,
+     "texas": 305
+    },
+    "scoring": {
+     "alabama": {
+      "pf": 0.59565,
+      "pa": -4.1225249999999996
+     },
+     "georgia": {
+      "pf": 3.44655,
+      "pa": -5.74395
+     },
+     "texas": {
+      "pf": 3.463125,
+      "pa": -2.985
+     }
+    },
+    "lmean": 25.744,
+    "eff": {
+     "alabama": {
+      "def_early_down_success": -0.0538095,
+      "def_epa_pass": -0.114644,
+      "def_epa_per_play": -0.096665,
+      "def_epa_rush": -0.064612,
+      "def_expl_epa_rate": -0.0117665,
+      "def_front_disruption_rate": 0.0220315,
+      "def_pass_rate": -0.0139365,
+      "def_passing_down_success": -0.034818,
+      "def_plays_per_game": -2.1023055,
+      "def_points_per_drive": -0.413951,
+      "def_red_zone_success": -0.032528,
+      "def_sack_rate_allowed": 0.0209945,
+      "def_start_field_position": 0.24179,
+      "def_stuff_rate": 0.0200035,
+      "def_success_rate": -0.0500065,
+      "def_third_down_rate": -0.0443055,
+      "def_yards_per_play": -0.6694895,
+      "early_down_success": 0.0292255,
+      "epa_pass": 0.02803,
+      "epa_per_play": 0.030235,
+      "epa_rush": 0.023512,
+      "expl_epa_rate": 0.000988,
+      "front_disruption_rate": -0.0114365,
+      "pass_rate": 0.037448,
+      "passing_down_success": 0.02475,
+      "plays_per_game": 0.2607635,
+      "points_per_drive": 0.3068555,
+      "red_zone_success": 0.0250235,
+      "sack_rate_allowed": -0.007693,
+      "start_field_position": -1.000032,
+      "stuff_rate": 0.0039215,
+      "success_rate": 0.024074,
+      "third_down_rate": -0.002014,
+      "yards_per_play": 0.4429865
+     },
+     "georgia": {
+      "def_early_down_success": -0.0300395,
+      "def_epa_pass": -0.0726535,
+      "def_epa_per_play": -0.0778,
+      "def_epa_rush": -0.11669,
+      "def_expl_epa_rate": -0.0040675,
+      "def_front_disruption_rate": 0.002547,
+      "def_pass_rate": 0.0448325,
+      "def_passing_down_success": -0.0488855,
+      "def_plays_per_game": -3.5026975,
+      "def_points_per_drive": -0.1391645,
+      "def_red_zone_success": -0.0636735,
+      "def_sack_rate_allowed": -0.0028485,
+      "def_start_field_position": 2.086826,
+      "def_stuff_rate": 0.0214975,
+      "def_success_rate": -0.036168,
+      "def_third_down_rate": -0.0426555,
+      "def_yards_per_play": -0.7353745,
+      "early_down_success": 0.0328995,
+      "epa_pass": 0.0909905,
+      "epa_per_play": 0.075097,
+      "epa_rush": 0.0550905,
+      "expl_epa_rate": 0.003674,
+      "front_disruption_rate": -0.0035065,
+      "pass_rate": -0.0164675,
+      "passing_down_success": 0.0311155,
+      "plays_per_game": 3.037717,
+      "points_per_drive": 0.479955,
+      "red_zone_success": 0.0386895,
+      "sack_rate_allowed": -0.008487,
+      "start_field_position": -1.615193,
+      "stuff_rate": -0.0024645,
+      "success_rate": 0.0361505,
+      "third_down_rate": 0.0346045,
+      "yards_per_play": 0.259767
+     },
+     "texas": {
+      "def_early_down_success": -0.04012,
+      "def_epa_pass": -0.067037,
+      "def_epa_per_play": -0.0837145,
+      "def_epa_rush": -0.11085,
+      "def_expl_epa_rate": -0.007047,
+      "def_front_disruption_rate": 0.010222,
+      "def_pass_rate": 0.0415315,
+      "def_passing_down_success": -0.040646,
+      "def_plays_per_game": 2.2441225,
+      "def_points_per_drive": -0.4314155,
+      "def_red_zone_success": -0.0633065,
+      "def_sack_rate_allowed": 0.008789,
+      "def_start_field_position": 1.4918575,
+      "def_stuff_rate": 0.0183305,
+      "def_success_rate": -0.044863,
+      "def_third_down_rate": -0.075666,
+      "def_yards_per_play": -0.6933885,
+      "early_down_success": 0.019346,
+      "epa_pass": 0.0646985,
+      "epa_per_play": 0.059036,
+      "epa_rush": 0.0383635,
+      "expl_epa_rate": 0.0080545,
+      "front_disruption_rate": -0.0055545,
+      "pass_rate": 0.0266735,
+      "passing_down_success": 0.04373,
+      "plays_per_game": 1.085895,
+      "points_per_drive": 0.2157795,
+      "red_zone_success": -0.016318,
+      "sack_rate_allowed": -0.011055,
+      "start_field_position": -1.955458,
+      "stuff_rate": 0.009285,
+      "success_rate": 0.023521,
+      "third_down_rate": 0.037252,
+      "yards_per_play": 0.5479095
+     }
+    }
+   }
+  },
+  {
+   "label": "alabama_vs_georgia",
+   "state": {
+    "r": {
+     "alabama": 6.1517305,
+     "georgia": 10.3669445,
+     "texas": 8.85735
+    },
+    "rf": {
+     "alabama": -12.022,
+     "georgia": -11.978,
+     "texas": -12.0
+    },
+    "n": {
+     "alabama": 313,
+     "georgia": 311,
+     "texas": 305
+    },
+    "scoring": {
+     "alabama": {
+      "pf": 0.6616850000000001,
+      "pa": -3.8846724999999998
+     },
+     "georgia": {
+      "pf": 2.927495,
+      "pa": -5.0439549999999995
+     },
+     "texas": {
+      "pf": 3.463125,
+      "pa": -2.985
+     }
+    },
+    "lmean": 25.74156,
+    "eff": {
+     "alabama": {
+      "def_early_down_success": -0.0538095,
+      "def_epa_pass": -0.114644,
+      "def_epa_per_play": -0.09486979999999999,
+      "def_epa_rush": -0.064612,
+      "def_expl_epa_rate": -0.010733224999999999,
+      "def_front_disruption_rate": 0.0220315,
+      "def_pass_rate": -0.0139365,
+      "def_passing_down_success": -0.034818,
+      "def_plays_per_game": -0.9500748750000001,
+      "def_points_per_drive": -0.413951,
+      "def_red_zone_success": -0.032528,
+      "def_sack_rate_allowed": 0.022264924999999998,
+      "def_start_field_position": 0.24179,
+      "def_stuff_rate": 0.0200035,
+      "def_success_rate": -0.0464482,
+      "def_third_down_rate": -0.0443055,
+      "def_yards_per_play": -0.6047836249999999,
+      "early_down_success": 0.0292255,
+      "epa_pass": 0.02803,
+      "epa_per_play": 0.05993695,
+      "epa_rush": 0.023512,
+      "expl_epa_rate": 0.005767074999999999,
+      "front_disruption_rate": -0.0114365,
+      "pass_rate": 0.037448,
+      "passing_down_success": 0.02475,
+      "plays_per_game": 2.3396910500000003,
+      "points_per_drive": 0.3068555,
+      "red_zone_success": 0.0250235,
+      "sack_rate_allowed": -0.0074620749999999994,
+      "start_field_position": -1.000032,
+      "stuff_rate": 0.0039215,
+      "success_rate": 0.03638165,
+      "third_down_rate": -0.002014,
+      "yards_per_play": 0.67036265
+     },
+     "georgia": {
+      "def_early_down_success": -0.0300395,
+      "def_epa_pass": -0.0726535,
+      "def_epa_per_play": -0.04809084999999999,
+      "def_epa_rush": -0.11669,
+      "def_expl_epa_rate": 0.0007156309999999991,
+      "def_front_disruption_rate": 0.002547,
+      "def_pass_rate": 0.0448325,
+      "def_passing_down_success": -0.0488855,
+      "def_plays_per_game": -1.4367904734999994,
+      "def_points_per_drive": -0.1391645,
+      "def_red_zone_success": -0.0636735,
+      "def_sack_rate_allowed": -0.0026521905,
+      "def_start_field_position": 2.086826,
+      "def_stuff_rate": 0.0214975,
+      "def_success_rate": -0.023888798999999995,
+      "def_third_down_rate": -0.0426555,
+      "def_yards_per_play": -0.5083012750000001,
+      "early_down_success": 0.0328995,
+      "epa_pass": 0.0909905,
+      "epa_per_play": 0.076673728,
+      "epa_rush": 0.0550905,
+      "expl_epa_rate": 0.004661853499999999,
+      "front_disruption_rate": -0.0035065,
+      "pass_rate": -0.0164675,
+      "passing_down_success": 0.0311155,
+      "plays_per_game": 4.1741163505,
+      "points_per_drive": 0.479955,
+      "red_zone_success": 0.0386895,
+      "sack_rate_allowed": -0.007199921999999998,
+      "start_field_position": -1.615193,
+      "stuff_rate": -0.0024645,
+      "success_rate": 0.0396175145,
+      "third_down_rate": 0.0346045,
+      "yards_per_play": 0.3229081455
+     },
+     "texas": {
+      "def_early_down_success": -0.04012,
+      "def_epa_pass": -0.067037,
+      "def_epa_per_play": -0.0837145,
+      "def_epa_rush": -0.11085,
+      "def_expl_epa_rate": -0.007047,
+      "def_front_disruption_rate": 0.010222,
+      "def_pass_rate": 0.0415315,
+      "def_passing_down_success": -0.040646,
+      "def_plays_per_game": 2.2441225,
+      "def_points_per_drive": -0.4314155,
+      "def_red_zone_success": -0.0633065,
+      "def_sack_rate_allowed": 0.008789,
+      "def_start_field_position": 1.4918575,
+      "def_stuff_rate": 0.0183305,
+      "def_success_rate": -0.044863,
+      "def_third_down_rate": -0.075666,
+      "def_yards_per_play": -0.6933885,
+      "early_down_success": 0.019346,
+      "epa_pass": 0.0646985,
+      "epa_per_play": 0.059036,
+      "epa_rush": 0.0383635,
+      "expl_epa_rate": 0.0080545,
+      "front_disruption_rate": -0.0055545,
+      "pass_rate": 0.0266735,
+      "passing_down_success": 0.04373,
+      "plays_per_game": 1.085895,
+      "points_per_drive": 0.2157795,
+      "red_zone_success": -0.016318,
+      "sack_rate_allowed": -0.011055,
+      "start_field_position": -1.955458,
+      "stuff_rate": 0.009285,
+      "success_rate": 0.023521,
+      "third_down_rate": 0.037252,
+      "yards_per_play": 0.5479095
+     }
+    }
+   }
+  },
+  {
+   "label": "texas_vs_alabama",
+   "state": {
+    "r": {
+     "alabama": 11.206517230000001,
+     "georgia": 10.3669445,
+     "texas": 3.8025632699999994
+    },
+    "rf": {
+     "alabama": -4.669160000000001,
+     "georgia": -11.978,
+     "texas": -19.35284
+    },
+    "n": {
+     "alabama": 314,
+     "georgia": 311,
+     "texas": 306
+    },
+    "scoring": {
+     "alabama": {
+      "pf": 2.1213605,
+      "pa": -5.07036125
+     },
+     "georgia": {
+      "pf": 2.927495,
+      "pa": -5.0439549999999995
+     },
+     "texas": {
+      "pf": 1.5426564999999999,
+      "pa": -1.160656
+     }
+    },
+    "lmean": 25.739144399999997,
+    "eff": {
+     "alabama": {
+      "def_early_down_success": -0.0538095,
+      "def_epa_pass": -0.114644,
+      "def_epa_per_play": -0.10497456056,
+      "def_epa_rush": -0.064612,
+      "def_expl_epa_rate": -0.013641202249399999,
+      "def_front_disruption_rate": 0.0220315,
+      "def_pass_rate": -0.0139365,
+      "def_passing_down_success": -0.034818,
+      "def_plays_per_game": -0.476765344087349,
+      "def_points_per_drive": -0.413951,
+      "def_red_zone_success": -0.032528,
+      "def_sack_rate_allowed": 0.028256080568449995,
+      "def_start_field_position": 0.24179,
+      "def_stuff_rate": 0.0200035,
+      "def_success_rate": -0.049327274509899995,
+      "def_third_down_rate": -0.0443055,
+      "def_yards_per_play": -0.7178834602475,
+      "early_down_success": 0.0292255,
+      "epa_pass": 0.02803,
+      "epa_per_play": 0.0965131140928,
+      "epa_rush": 0.023512,
+      "expl_epa_rate": 0.014767540077849996,
+      "front_disruption_rate": -0.0114365,
+      "pass_rate": 0.037448,
+      "passing_down_success": 0.02475,
+      "plays_per_game": 3.6609235425975517,
+      "points_per_drive": 0.3068555,
+      "red_zone_success": 0.0250235,
+      "sack_rate_allowed": -0.012105858489699998,
+      "start_field_position": -1.000032,
+      "stuff_rate": 0.0039215,
+      "success_rate": 0.055589833571450004,
+      "third_down_rate": -0.002014,
+      "yards_per_play": 0.9766658108670498
+     },
+     "georgia": {
+      "def_early_down_success": -0.0300395,
+      "def_epa_pass": -0.0726535,
+      "def_epa_per_play": -0.04809084999999999,
+      "def_epa_rush": -0.11669,
+      "def_expl_epa_rate": 0.0007156309999999991,
+      "def_front_disruption_rate": 0.002547,
+      "def_pass_rate": 0.0448325,
+      "def_passing_down_success": -0.0488855,
+      "def_plays_per_game": -1.4367904734999994,
+      "def_points_per_drive": -0.1391645,
+      "def_red_zone_success": -0.0636735,
+      "def_sack_rate_allowed": -0.0026521905,
+      "def_start_field_position": 2.086826,
+      "def_stuff_rate": 0.0214975,
+      "def_success_rate": -0.023888798999999995,
+      "def_third_down_rate": -0.0426555,
+      "def_yards_per_play": -0.5083012750000001,
+      "early_down_success": 0.0328995,
+      "epa_pass": 0.0909905,
+      "epa_per_play": 0.076673728,
+      "epa_rush": 0.0550905,
+      "expl_epa_rate": 0.004661853499999999,
+      "front_disruption_rate": -0.0035065,
+      "pass_rate": -0.0164675,
+      "passing_down_success": 0.0311155,
+      "plays_per_game": 4.1741163505,
+      "points_per_drive": 0.479955,
+      "red_zone_success": 0.0386895,
+      "sack_rate_allowed": -0.007199921999999998,
+      "start_field_position": -1.615193,
+      "stuff_rate": -0.0024645,
+      "success_rate": 0.0396175145,
+      "third_down_rate": 0.0346045,
+      "yards_per_play": 0.3229081455
+     },
+     "texas": {
+      "def_early_down_success": -0.04012,
+      "def_epa_pass": -0.067037,
+      "def_epa_per_play": -0.047299211499999994,
+      "def_epa_rush": -0.11085,
+      "def_expl_epa_rate": 0.0019229826899999991,
+      "def_front_disruption_rate": 0.010222,
+      "def_pass_rate": 0.0415315,
+      "def_passing_down_success": -0.040646,
+      "def_plays_per_game": 3.570371224735001,
+      "def_points_per_drive": -0.4314155,
+      "def_red_zone_success": -0.0633065,
+      "def_sack_rate_allowed": 0.0042188949049999985,
+      "def_start_field_position": 1.4918575,
+      "def_stuff_rate": 0.0183305,
+      "def_success_rate": -0.025730347509999994,
+      "def_third_down_rate": -0.075666,
+      "def_yards_per_play": -0.38855174774999995,
+      "early_down_success": 0.019346,
+      "epa_pass": 0.0646985,
+      "epa_per_play": 0.04926918272,
+      "epa_rush": 0.0383635,
+      "expl_epa_rate": 0.005232547464999998,
+      "front_disruption_rate": -0.0055545,
+      "pass_rate": 0.0266735,
+      "passing_down_success": 0.04373,
+      "plays_per_game": 1.5794659459950011,
+      "points_per_drive": 0.2157795,
+      "red_zone_success": -0.016318,
+      "sack_rate_allowed": -0.00510491778,
+      "start_field_position": -1.955458,
+      "stuff_rate": 0.009285,
+      "success_rate": 0.020834808355000005,
+      "third_down_rate": 0.037252,
+      "yards_per_play": 0.438106561545
+     }
+    }
+   }
+  },
+  {
+   "label": "georgia_vs_texas",
+   "state": {
+    "r": {
+     "alabama": 11.206517230000001,
+     "georgia": 9.4479311278,
+     "texas": 4.7215766422
+    },
+    "rf": {
+     "alabama": -4.669160000000001,
+     "georgia": -13.6004648,
+     "texas": -17.7303752
+    },
+    "n": {
+     "alabama": 314,
+     "georgia": 312,
+     "texas": 307
+    },
+    "scoring": {
+     "alabama": {
+      "pf": 2.1213605,
+      "pa": -5.07036125
+     },
+     "georgia": {
+      "pf": 3.1608310600000005,
+      "pa": -4.013473939999999
+     },
+     "texas": {
+      "pf": 1.9144764100000002,
+      "pa": -0.5185048399999996
+     }
+    },
+    "lmean": 25.791752955999996,
+    "eff": {
+     "alabama": {
+      "def_early_down_success": -0.0538095,
+      "def_epa_pass": -0.114644,
+      "def_epa_per_play": -0.10497456056,
+      "def_epa_rush": -0.064612,
+      "def_expl_epa_rate": -0.013641202249399999,
+      "def_front_disruption_rate": 0.0220315,
+      "def_pass_rate": -0.0139365,
+      "def_passing_down_success": -0.034818,
+      "def_plays_per_game": -0.476765344087349,
+      "def_points_per_drive": -0.413951,
+      "def_red_zone_success": -0.032528,
+      "def_sack_rate_allowed": 0.028256080568449995,
+      "def_start_field_position": 0.24179,
+      "def_stuff_rate": 0.0200035,
+      "def_success_rate": -0.049327274509899995,
+      "def_third_down_rate": -0.0443055,
+      "def_yards_per_play": -0.7178834602475,
+      "early_down_success": 0.0292255,
+      "epa_pass": 0.02803,
+      "epa_per_play": 0.0965131140928,
+      "epa_rush": 0.023512,
+      "expl_epa_rate": 0.014767540077849996,
+      "front_disruption_rate": -0.0114365,
+      "pass_rate": 0.037448,
+      "passing_down_success": 0.02475,
+      "plays_per_game": 3.6609235425975517,
+      "points_per_drive": 0.3068555,
+      "red_zone_success": 0.0250235,
+      "sack_rate_allowed": -0.012105858489699998,
+      "start_field_position": -1.000032,
+      "stuff_rate": 0.0039215,
+      "success_rate": 0.055589833571450004,
+      "third_down_rate": -0.002014,
+      "yards_per_play": 0.9766658108670498
+     },
+     "georgia": {
+      "def_early_down_success": -0.0300395,
+      "def_epa_pass": -0.0726535,
+      "def_epa_per_play": -0.03809263216239999,
+      "def_epa_rush": -0.11669,
+      "def_expl_epa_rate": 0.0010467160908440012,
+      "def_front_disruption_rate": 0.002547,
+      "def_pass_rate": 0.0448325,
+      "def_passing_down_success": -0.0488855,
+      "def_plays_per_game": -0.5194460702082245,
+      "def_points_per_drive": -0.1391645,
+      "def_red_zone_success": -0.0636735,
+      "def_sack_rate_allowed": -0.0013927063827345013,
+      "def_start_field_position": 2.086826,
+      "def_stuff_rate": 0.0214975,
+      "def_success_rate": -0.017685673368050984,
+      "def_third_down_rate": -0.0426555,
+      "def_yards_per_play": -0.4081867124392751,
+      "early_down_success": 0.0328995,
+      "epa_pass": 0.0909905,
+      "epa_per_play": 0.082446986801872,
+      "epa_rush": 0.0550905,
+      "expl_epa_rate": 0.0048945196360715,
+      "front_disruption_rate": -0.0035065,
+      "pass_rate": -0.0164675,
+      "passing_down_success": 0.0311155,
+      "plays_per_game": 3.951159694061326,
+      "points_per_drive": 0.479955,
+      "red_zone_success": 0.0386895,
+      "sack_rate_allowed": -0.006653065228052998,
+      "start_field_position": -1.615193,
+      "stuff_rate": -0.0024645,
+      "success_rate": 0.04329106071223551,
+      "third_down_rate": 0.0346045,
+      "yards_per_play": 0.4225754763708794
+     },
+     "texas": {
+      "def_early_down_success": -0.04012,
+      "def_epa_pass": -0.067037,
+      "def_epa_per_play": -0.04163217090685599,
+      "def_epa_rush": -0.11085,
+      "def_expl_epa_rate": 0.002146336003488062,
+      "def_front_disruption_rate": 0.010222,
+      "def_pass_rate": 0.0415315,
+      "def_passing_down_success": -0.040646,
+      "def_plays_per_game": 3.3380563553741154,
+      "def_points_per_drive": -0.4314155,
+      "def_red_zone_success": -0.0633065,
+      "def_sack_rate_allowed": 0.004761007665762842,
+      "def_start_field_position": 1.4918575,
+      "def_stuff_rate": 0.0183305,
+      "def_success_rate": -0.022125845793652975,
+      "def_third_down_rate": -0.075666,
+      "def_yards_per_play": -0.29001570542544974,
+      "early_down_success": 0.019346,
+      "epa_pass": 0.0646985,
+      "epa_per_play": 0.05917007472610328,
+      "epa_rush": 0.0383635,
+      "expl_epa_rate": 0.005548508344175785,
+      "front_disruption_rate": -0.0055545,
+      "pass_rate": 0.0266735,
+      "passing_down_success": 0.04373,
+      "plays_per_game": 2.487393940168861,
+      "points_per_drive": 0.2157795,
+      "red_zone_success": -0.016318,
+      "sack_rate_allowed": -0.0038426458573799704,
+      "start_field_position": -1.955458,
+      "stuff_rate": 0.009285,
+      "success_rate": 0.026991961999878154,
+      "third_down_rate": 0.037252,
+      "yards_per_play": 0.5375583511912956
+     }
+    }
+   }
+  }
+ ],
+ "predictions": [
+  {
+   "home": "alabama",
+   "away": "georgia",
+   "hfa": 3.1,
+   "pred_margin": -2.7155750000000007,
+   "fresh_margin": 3.1,
+   "pred_total": 47.993435
+  },
+  {
+   "home": "texas",
+   "away": "alabama",
+   "hfa": 2.4,
+   "pred_margin": 5.1056194999999995,
+   "fresh_margin": 2.422,
+   "pred_total": 49.8362025
+  },
+  {
+   "home": "georgia",
+   "away": "texas",
+   "hfa": 0.0,
+   "pred_margin": 6.564381230000001,
+   "fresh_margin": 7.374840000000001,
+   "pred_total": 50.43761309999999
+  }
+ ],
+ "blend": [
+  {
+   "games_played": 0,
+   "w": 1.0,
+   "value": 11.206517230000001
+  },
+  {
+   "games_played": 1,
+   "w": 1.0,
+   "value": 11.206517230000001
+  },
+  {
+   "games_played": 2,
+   "w": 1.0,
+   "value": 11.206517230000001
+  },
+  {
+   "games_played": 3,
+   "w": 1.0,
+   "value": 11.206517230000001
+  },
+  {
+   "games_played": 4,
+   "w": 0.8,
+   "value": 8.031381784
+  },
+  {
+   "games_played": 5,
+   "w": 0.8,
+   "value": 8.031381784
+  },
+  {
+   "games_played": 6,
+   "w": 0.6,
+   "value": 4.856246338
+  },
+  {
+   "games_played": 7,
+   "w": 0.6,
+   "value": 4.856246338
+  },
+  {
+   "games_played": 8,
+   "w": 0.6,
+   "value": 4.856246338
+  },
+  {
+   "games_played": 9,
+   "w": 0.6,
+   "value": 4.856246338
+  },
+  {
+   "games_played": 10,
+   "w": 0.6,
+   "value": 4.856246338
+  },
+  {
+   "games_played": 11,
+   "w": 0.6,
+   "value": 4.856246338
+  },
+  {
+   "games_played": 12,
+   "w": 0.6,
+   "value": 4.856246338
+  },
+  {
+   "games_played": 13,
+   "w": 0.6,
+   "value": 4.856246338
+  },
+  {
+   "games_played": 14,
+   "w": 0.6,
+   "value": 4.856246338
+  },
+  {
+   "games_played": 15,
+   "w": 0.6,
+   "value": 4.856246338
+  }
+ ]
+}
