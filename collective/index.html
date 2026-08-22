@@ -1461,6 +1461,40 @@ function teamKey(s){
   return out.replace(/[^a-z0-9]+/g,'');
 }
 
+/* Which of these teams does the server's own schedule not know about?
+
+   Pure and top-level so it can be tested without a browser: the pre-flight in
+   the dashboard supplies the server's game list and the rows about to be
+   posted, and this answers the only question that matters — will these names
+   resolve, and if not, which ones. `label` is the shape /v1/games returns
+   ("Away @ Home"); explicit home/away fields are honoured when present. */
+function slateServerTeams(games){
+  var have={};
+  (games||[]).forEach(function(g){
+    String(g.label||'').split(/\s+@\s+|\s+at\s+/i).forEach(function(t){
+      var k=teamKey(t);if(k)have[k]=1;
+    });
+    [g.home_team,g.away_team,g.home,g.away].forEach(function(t){
+      var k=teamKey(t);if(k)have[k]=1;
+    });
+  });
+  return have;
+}
+function slateUnmatchedTeams(games,rows){
+  var have=slateServerTeams(games),miss={},n=0,matched=0;
+  (rows||[]).forEach(function(o){
+    [o.home_team,o.away_team].forEach(function(t){
+      var k=teamKey(t);
+      if(!k)return;
+      if(have[k]){matched++;return;}
+      if(!miss[k]){miss[k]=t;n++;}
+    });
+  });
+  return {missing:Object.keys(miss).map(function(k){return miss[k];}),
+    count:n,matched:matched,serverTeams:Object.keys(have).length,
+    none:matched===0};
+}
+
 function slateSide(team,home,away){
   var k=teamKey;
   var t=k(team),h=k(home),a=k(away);
@@ -2307,6 +2341,73 @@ async function renderCreatorDash(view,me){
       var t=this.value.trim();
       if(t.split('\n').length>=2)slateLoad(parseCSV(t));
     };
+    /* WILL THE SERVER BE ABLE TO MATCH THIS AT ALL?
+
+       A slate can be read perfectly, mapped perfectly and posted successfully,
+       and still land as 90 quarantined games — because matching happens on the
+       server, against ITS schedule, and nothing in the browser had ever asked
+       whether that schedule exists. "0 matched, 90 quarantined" after the fact
+       is the worst possible time to find out.
+
+       So ask first. Pull the server's own game list for the sport, season and
+       week being posted, and compare team for team on the same canonical key
+       the rest of this page uses. Three answers are worth stopping for:
+
+         no-sport   the server does not list this sport at all
+         no-games   it lists the sport but has no schedule for that week
+         no-teams   it has games, but these team names are not in them
+
+       The last one is the useful one: it names the spellings that will fail
+       while there is still time to fix them. */
+    async function slatePreflight(sportCode,season,week){
+      var fam=sportFamily(sportCode);
+      var known=(mMeta&&mMeta.sports)||[];
+      var listed=known.some(function(x){return sportFamily(x.code)===fam;});
+      if(known.length&&!listed){
+        return {level:'no-sport',sport:sportCode,
+          listed:known.map(function(x){return x.code;})};
+      }
+      var q='?sport='+encodeURIComponent(sportCode)+'&season='+encodeURIComponent(season)
+        +(week?'&week='+encodeURIComponent(week):'');
+      var srv;
+      try{srv=await api('/v1/games'+q,{auth:true});}
+      catch(e){return null;}                 /* cannot check — never block on that */
+      var list=(srv&&srv.games)||[];
+      if(!list.length)return {level:'no-games',sport:sportCode,season:season,week:week};
+
+      var u=slateUnmatchedTeams(list,slateBuildRows(season,week).rows);
+      if(!u.count)return null;
+      return {level:u.none?'no-teams-at-all':'no-teams',
+        sport:sportCode,season:season,week:week,
+        missing:u.missing,serverTeams:u.serverTeams};
+    }
+
+    function slatePreflightHTML(p){
+      if(!p)return '';
+      var head,body;
+      if(p.level==='no-sport'){
+        head='Your Collective backend does not list '+esc(p.sport)+' as a sport.';
+        body='It lists '+(p.listed.length?'<span class="mono">'+p.listed.map(esc).join('</span>, <span class="mono">')+'</span>':'nothing')+
+          '. Every row would be saved but matched against nothing, which is what "quarantined" means. '+
+          'This is a server-side change: the sport has to be registered and its schedule ingested before a slate for it can resolve.';
+      }else if(p.level==='no-games'){
+        head='Your backend has no '+esc(p.sport)+' schedule for '+esc(p.season)+(p.week?' week '+esc(p.week):'')+'.';
+        body='The sport is registered but there are no games to match against, so every row would quarantine. '+
+          'The schedule for this sport and week has to be ingested server-side first.';
+      }else if(p.level==='no-teams-at-all'){
+        head='None of these teams appear in your backend\'s '+esc(p.sport)+' schedule.';
+        body='The server has '+p.serverTeams+' team'+(p.serverTeams===1?'':'s')+' on that slate and none of them match yours, '+
+          'which usually means the schedule loaded there is for a different sport or a different season — not that your spellings are wrong.';
+      }else{
+        head=p.missing.length+' team'+(p.missing.length===1?'':'s')+' will not match your backend\'s schedule.';
+        body='Not found: <span class="mono">'+p.missing.slice(0,12).map(esc).join('</span>, <span class="mono">')+'</span>'+
+          (p.missing.length>12?' and '+(p.missing.length-12)+' more':'')+
+          '. Those rows will quarantine; the rest will post normally.';
+      }
+      return '<div class="errbox" style="border-color:rgba(217,154,43,.55)">'+
+        '<b style="color:var(--warn)">'+head+'</b><p class="note" style="margin:6px 0 0">'+body+'</p></div>';
+    }
+
     async function slateSend(dry,opts){
       opts=opts||{};
       var built=slateBuildRows($('slSeason').value,$('slWeek').value);
@@ -2344,7 +2445,30 @@ async function renderCreatorDash(view,me){
       };
       if($('slWeek').value)env.week=+$('slWeek').value;
       if($('slModel'))env.model=$('slModel').value;
-      $('slOut').innerHTML='<p class="note">'+(dry?'Checking':'Posting')+' '+sendRows.length+' games&hellip;</p>';
+
+      /* Ask the server whether it can match this BEFORE handing it 90 rows to
+         quarantine. A real post is stopped and the reason shown; the dry run
+         reports it and carries on, because diagnosing is what a dry run is
+         for. `slPreflightOK` is the creator's explicit override. */
+      $('slOut').innerHTML='<p class="note">Checking your backend&rsquo;s schedule&hellip;</p>';
+      var pf=null,pfHtml='';
+      try{pf=await slatePreflight(env.sport,env.season,env.week);}catch(e){pf=null;}
+      if(pf&&!opts.ignorePreflight){
+        pfHtml=slatePreflightHTML(pf);
+        var blocking=(pf.level!=='no-teams');
+        if(!dry&&blocking){
+          $('slOut').innerHTML=slatePreflightHTML(pf)+
+            '<p class="note" style="margin:8px 0 0">Nothing was posted. '+
+            '<button class="ghost" id="slForce">Post anyway</button> &mdash; the rows are saved either way '+
+            'and get resolved on the admin side, but they will not appear on the board until they match.</p>';
+          var fb=$('slForce');
+          if(fb)fb.onclick=function(){slateSend(false,Object.assign({},opts,{ignorePreflight:true}));};
+          return;
+        }
+      }
+
+      $('slOut').innerHTML=pfHtml+
+        '<p class="note">'+(dry?'Checking':'Posting')+' '+sendRows.length+' games&hellip;</p>';
       try{
         var r=await api('/v1/dashboard/submit',{method:'POST',auth:true,headers:{'content-type':'application/json'},body:env});
         var c2=r.counts||{};
@@ -2352,7 +2476,7 @@ async function renderCreatorDash(view,me){
           var col={late:'var(--warn)',quarantined:'var(--warn)',rejected:'var(--neg)'}[x.status]||'var(--dim)';
           return '<div style="color:'+col+'" class="mono">'+esc(x.status.toUpperCase())+' '+esc(x.game_ref)+(x.reason?': '+esc(x.reason):'')+'</div>';
         }).join('');
-        $('slOut').innerHTML='<div class="panel" style="margin-top:10px;border-color:'+((c2.rejected||0)>0?'rgba(217,154,43,.5)':'rgba(47,180,124,.5)')+'">'+
+        $('slOut').innerHTML=pfHtml+'<div class="panel" style="margin-top:10px;border-color:'+((c2.rejected||0)>0?'rgba(217,154,43,.5)':'rgba(47,180,124,.5)')+'">'+
           '<b>'+(dry?'Dry run:':'Posted:')+'</b> <span class="mono">'+(c2.resolved||0)+' matched, '+(c2.first||0)+' first submissions, '+(c2.movement||0)+' revisions, '+(c2.late||0)+' late, '+(c2.quarantined||0)+' quarantined, '+(c2.rejected||0)+' rejected</span>'+
           (lines?'<div style="margin-top:8px;font-size:12px">'+lines+'</div>':'')+
           ((c2.quarantined||0)>0?'<p class="note" style="margin:8px 0 0">Quarantined games could not be matched to the schedule (usually a team name). They are saved and get resolved on the admin side; nothing is lost.</p>':'')+

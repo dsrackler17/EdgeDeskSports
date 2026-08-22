@@ -203,6 +203,47 @@ if (typeof sandbox.teamKey === 'function') {
   chk('WEEK_NAMES is gone and nothing still reaches for it',
     typeof S.WEEK_NAMES === 'undefined' && !/\bWEEK_NAMES\b/.test(CODE));
 
+  /* ---- will the server be able to match this? -------------------------
+     The failure that survived every client-side fix: a slate reads perfectly,
+     posts successfully, and lands as "0 matched, 90 quarantined" because
+     matching happens on the server against a schedule the browser never
+     checked. These cover the shapes that produces. */
+  var SRV = [{ label: 'North Carolina @ TCU' }, { label: 'San Jose State @ USC' },
+             { label: "Hawai'i @ Stanford" }];
+  var MINE = [{ home_team: 'TCU', away_team: 'North Carolina' },
+              { home_team: 'USC', away_team: 'San José State' },
+              { home_team: 'Stanford', away_team: "Hawai'i" }];
+
+  chk('a slate whose teams are all on the server matches completely',
+    (function () {
+      var u = S.slateUnmatchedTeams(SRV, MINE);
+      return u.count === 0 && u.matched === 6 && u.none === false;
+    })(), { got: S.slateUnmatchedTeams(SRV, MINE) });
+  chk('the accented name matches the server\'s unaccented spelling',
+    S.slateUnmatchedTeams([{ label: 'San Jose State @ USC' }],
+      [{ home_team: 'USC', away_team: 'San José State' }]).count === 0);
+  chk('one differing spelling is named, and only that one',
+    (function () {
+      var u = S.slateUnmatchedTeams([{ label: 'New Mexico State @ Florida St' }],
+        [{ home_team: 'Florida State', away_team: 'New Mexico State' }]);
+      return u.count === 1 && u.missing[0] === 'Florida State' && u.none === false;
+    })());
+  chk('a schedule for the wrong sport matches nothing, and says so',
+    (function () {
+      var u = S.slateUnmatchedTeams(
+        [{ label: 'New England @ Seattle' }, { label: 'Dallas @ Philadelphia' }], MINE);
+      return u.none === true && u.count === 6 && u.serverTeams === 4;
+    })(),
+    'this is the "0 matched, 90 quarantined" case, caught before posting');
+  chk('an empty server schedule matches nothing',
+    S.slateUnmatchedTeams([], MINE).none === true);
+  chk('explicit home_team/away_team fields are honoured, not just the label',
+    S.slateUnmatchedTeams([{ home_team: 'TCU', away_team: 'North Carolina' }],
+      [{ home_team: 'TCU', away_team: 'North Carolina' }]).count === 0);
+  chk('"at" is understood as a separator as well as "@"',
+    S.slateUnmatchedTeams([{ label: 'North Carolina at TCU' }],
+      [{ home_team: 'TCU', away_team: 'North Carolina' }]).count === 0);
+
   /* ---- the server owns the sport vocabulary --------------------------- */
   chk('a detected sport is translated into the code THIS server uses',
     S.serverSportCode({ sports: [{ code: 'NFL' }, { code: 'NCAAF' }] }, 'CFB') === 'NCAAF',
