@@ -493,7 +493,9 @@ async function renderWall(view){
     var results=await Promise.all([wallRows(),api('/v1/games',{auth:true}).catch(function(){return null;}),api('/v1/activity').catch(function(){return null;}),marketBoard()]);
     var rows=results[0],board=results[1],act=results[2],mkt=results[3];
     var activeN=rows.filter(function(r){return r.membership==='ACTIVE CONTRIBUTOR';}).length;
-    var sportCode=(m.sports[0]&&m.sports[0].code)||'NFL';
+    /* the wall aggregates every model, so it names every sport the Collective
+       carries rather than just the one the reader last looked at */
+    var sportCode=sportList(m).map(function(x){return x.code;}).join(' \u00b7 ');
     var memDot={'ACTIVE CONTRIBUTOR':'var(--pos)','MEMBER':'var(--dim)','INACTIVE':'var(--faint)'};
     var byCreator={};rows.forEach(function(r){byCreator[r.creator_slug]=r;});
 
@@ -738,12 +740,17 @@ async function renderBoard(view){
   view.innerHTML='<div class="emptybox">Loading the board&hellip;</div>';
   try{
     var m=await meta();
-    var sport=m.sports[0]||{code:'NFL',season:2026};
-    var q='?sport='+sport.code+'&season='+sport.season+(BOARD_WEEK?'&week='+BOARD_WEEK:'');
+    var sport=currentSport(m);
+    var q='?sport='+encodeURIComponent(sport.code)+'&season='+sport.season+(BOARD_WEEK?'&week='+BOARD_WEEK:'');
     var both=await Promise.all([api('/v1/games'+q,{auth:true}),marketBoard()]);
     var d=both[0],mkt=both[1];
-    var wk='<div class="wk"><button class="'+(BOARD_WEEK?'':'on')+'" data-w="">Current</button>';
-    for(var i=1;i<=18;i++)wk+='<button class="'+(BOARD_WEEK===i?'on':'')+'" data-w="'+i+'">W'+i+'</button>';
+    var cal=weekCalendar(sport.code);
+    var wk=sportSwitcherHTML(m)+'<div class="wk"><button class="'+(BOARD_WEEK?'':'on')+'" data-w="">Current</button>';
+    for(var i=1;i<=cal.regular;i++)wk+='<button class="'+(BOARD_WEEK===i?'on':'')+'" data-w="'+i+'">W'+i+'</button>';
+    for(var pw=cal.regular+1;pw<=cal.max;pw++){
+      wk+='<button class="'+(BOARD_WEEK===pw?'on':'')+'" data-w="'+pw+'" title="'+esc(cal.names[pw]||('Week '+pw))+'">'
+        +esc((cal.names[pw]||('W'+pw)).replace(/^CFP /,'').split(' / ')[0])+'</button>';
+    }
     wk+='</div>';
     var head='<h1>The Board</h1><p class="lede">Every game on the slate with each model’s number and, after settlement, its grade. Pre-kickoff numbers and consensus are for subscribers. Settled games are the public record.</p>'+wk;
     var cards='';
@@ -796,9 +803,15 @@ async function renderBoard(view){
     if(!cards)cards='<div class="emptybox">No games on this slate yet. Games appear when the schedule is loaded.</div>';
     var sub=(d.entitled===false)?'<div class="panel" style="margin-bottom:14px"><b>Locked numbers are for subscribers.</b> <span class="note">One subscription unlocks every model here: '+cents(m.pricing.monthly_cents)+' a month'+(m.pricing.annual_cents>0?' or '+cents(m.pricing.annual_cents)+' a year':'')+'. '+(m.billing_live?'':'Billing opens soon.')+'</span> <a href="#about">Details →</a></div>':'';
     view.innerHTML=head+sub+cards;
-    document.querySelectorAll('.wk button').forEach(function(b){
+    /* scoped to [data-w] on purpose: the sport switcher shares the .wk styling
+       and would otherwise be caught by the week handler and silently reset the
+       week to Current */
+    document.querySelectorAll('.wk button[data-w]').forEach(function(b){
       b.onclick=function(){var w=b.getAttribute('data-w');BOARD_WEEK=w?+w:null;renderBoard(view);};
     });
+    /* a week number does not survive a sport change — CFB week 18 is the
+       playoff's first round, NFL week 18 is the last regular-season Sunday */
+    bindSportSwitcher(function(){BOARD_WEEK=null;renderBoard(view);});
   }catch(e){fail(view,e);}
 }
 
@@ -1242,15 +1255,61 @@ function slateNum(v){
   if(s===''||isNaN(+s))return null;
   return +s;
 }
+/* ================= sport ==================================================
+   The SERVER owns the sport vocabulary (meta().sports). Nothing here invents a
+   sport: this only remembers which of the server's sports the reader is
+   looking at, and validates that choice against the live list every time. A
+   sport that disappears server-side falls back to the first one rather than
+   producing an empty board. */
+var MC_SPORT_KEY='mc_sport';
+function sportList(m){
+  return (m&&m.sports&&m.sports.length)?m.sports
+    :[{code:'NFL',season:new Date().getFullYear()}];
+}
+function currentSport(m){
+  var list=sportList(m),want=null,i;
+  try{want=localStorage.getItem(MC_SPORT_KEY);}catch(e){}
+  for(i=0;i<list.length;i++)if(list[i].code===want)return list[i];
+  return list[0];
+}
+function setSport(code){try{localStorage.setItem(MC_SPORT_KEY,code);}catch(e){}}
+function sportSwitcherHTML(m){
+  var list=sportList(m);
+  if(list.length<2)return '';          /* one sport needs no switch */
+  var cur=currentSport(m).code;
+  return '<div class="wk sportsw" style="margin-bottom:10px">'+list.map(function(s){
+    return '<button class="'+(s.code===cur?'on':'')+'" data-sport="'+esc(s.code)+'">'+esc(s.code)+'</button>';
+  }).join('')+'</div>';
+}
+function bindSportSwitcher(rerender){
+  document.querySelectorAll('[data-sport]').forEach(function(b){
+    b.onclick=function(){setSport(b.getAttribute('data-sport'));rerender();};
+  });
+}
+
 /* Week is a choice, not a number to remember. Named rounds are spelled out
    because "Week 20" is not how anyone refers to the Divisional round, and a
-   creator posting the wrong week silently grades against the wrong slate. */
-var WEEK_NAMES={19:'Wild Card',20:'Divisional',21:'Conference Championship',22:'Super Bowl'};
-function weekOptions(sel){
+   creator posting the wrong week silently grades against the wrong slate.
+   The calendar is per sport: college football's regular season ends at 15 and
+   its postseason is conference championships, bowls and the playoff — calling
+   week 19 "Wild Card" on a CFB slate would be nonsense. */
+var WEEK_CALENDARS={
+  NFL:{regular:18,max:22,names:{19:'Wild Card',20:'Divisional',21:'Conference Championship',22:'Super Bowl'}},
+  CFB:{regular:15,max:20,names:{16:'Conference Championships',17:'Bowl Season',
+       18:'CFP First Round',19:'CFP Quarterfinal',20:'CFP Semifinal / National Championship'}}
+};
+/* server codes vary; map the ones that mean college football onto one calendar */
+var SPORT_ALIAS={NCAAF:'CFB',CFB:'CFB','CFB-P4':'CFB',COLLEGE:'CFB','NCAA FOOTBALL':'CFB',NFL:'NFL'};
+function weekCalendar(code){
+  var k=SPORT_ALIAS[String(code||'').toUpperCase()]||String(code||'').toUpperCase();
+  return WEEK_CALENDARS[k]||WEEK_CALENDARS.NFL;
+}
+function weekOptions(sel,code){
+  var cal=weekCalendar(code);
   var out='<option value="">Read it from my file</option>';
-  for(var w=1;w<=22;w++){
+  for(var w=1;w<=cal.max;w++){
     out+='<option value="'+w+'"'+(String(sel)===String(w)?' selected':'')+'>'+
-      (WEEK_NAMES[w]||('Week '+w))+'</option>';
+      (cal.names[w]||('Week '+w))+'</option>';
   }
   return out;
 }
@@ -1699,7 +1758,7 @@ async function renderCreatorDash(view,me){
       '<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end">'+
       (d.models.length>1?'<div style="min-width:160px"><label>Model</label><select id="slModel">'+d.models.map(function(x){return '<option value="'+esc(x.model_slug)+'">'+esc(x.model_name)+'</option>';}).join('')+'</select></div>':'')+
       '<div style="width:110px"><label>Season</label><input id="slSeason" type="number" value="'+season0+'"></div>'+
-      '<div style="min-width:150px"><label>Week</label><select id="slWeek">'+weekOptions()+'</select></div>'+
+      '<div style="min-width:150px"><label>Week</label><select id="slWeek">'+weekOptions(null,(d.models[0]||{}).sport)+'</select></div>'+
       '<div style="min-width:200px"><label>Data type</label><select id="slOrigin">'+
         '<option value="live">Live: counts toward my record</option>'+
         '<option value="backfill">Backfill: history, shown separately</option>'+

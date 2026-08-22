@@ -22499,10 +22499,38 @@ window.fbP4CsvDownload=function(){
   document.body.appendChild(a);a.click();
   setTimeout(function(){URL.revokeObjectURL(a.href);a.remove();},2000);
 };
+/* ---- posting a slate to the Model Collective ---------------------------
+   The Collective's slate uploader maps columns by name, and this export's
+   headers are already the ones it recognises: home_team, away_team,
+   kickoff_local, week, game_id, model_home_line, model_fair_total,
+   ref_home_line, home_win_prob_pct, p_spread_pick_pct, spread_pick and
+   confidence all match its synonym table, so the file maps with nothing to
+   correct by hand. Columns it does not recognise are simply ignored.
+
+   This does NOT post on the reader's behalf. Posting is an account action
+   against their own creator profile, so the button hands them the file and
+   opens the dashboard; they choose the model, week and data type there. */
+var FBP4_COLLECTIVE_URL='https://edgedesksports.com/collective/#dashboard';
+window.fbP4PostToCollective=function(){
+  if(!FB.p4.up.length){alert('No Power 4 games on the board to post yet.');return;}
+  window.fbP4CsvDownload();
+  setTimeout(function(){
+    try{window.open(FBP4_COLLECTIVE_URL,'_blank','noopener');}catch(_){}
+  },600);
+};
 function fbP4CtlHTML(){
+  var n=FB.p4.up.length;
   return '<button class="btn ghost sm" onclick="fbP4CsvDownload()">Download CSV</button>'
-    +'<span class="ec mut">'+FB.p4.up.length+' Power 4 game'+(FB.p4.up.length===1?'':'s')
-    +' · one row per game, same columns as the NFL export · research, unproven</span>';
+    +'<button class="btn ghost sm" onclick="fbP4PostToCollective()">Post to Collective</button>'
+    +'<span class="ec mut">'+n+' Power 4 game'+(n===1?'':'s')
+    +' · one row per game, same columns as the NFL export · research, unproven</span>'
+    +'<div class="gd-modelnote" style="flex-basis:100%">'
+    +'<b>Posting to the Collective.</b> The download\u2019s column names are the ones the '
+    +'Collective\u2019s uploader already recognises, so the slate maps with nothing to fix by '
+    +'hand: drop the file on <span class="mono">Dashboard \u2192 Post a slate</span>, pick your '
+    +'college-football model, set the week, run the dry check, post. Your record there is graded '
+    +'by the Collective against its own captured closing lines \u2014 not by this engine, and not '
+    +'self-reported.</div>';
 }
 
 /* ---- rendering ---- */
@@ -22511,6 +22539,7 @@ function fbP4Score(label,v,suffix){
   return '<span class="ec">'+fbEsc(label)+' '+Math.round(v)+(suffix||'')+'</span>';
 }
 function fbP4ModelCard(){
+  if(!window.EDCfbP4||!window.EDCfbP4Params)return '';
   var M=window.EDCfbP4.meta();if(!M)return '';
   var v=(M.validation&&M.validation.market)||null;
   var s='<div class="mdl-warn" style="margin-bottom:12px"><b>The record, up front.</b> ';
@@ -22608,6 +22637,15 @@ function fbP4Ratings(){
 }
 function fbP4Render(host){
   var S=FB.p4;
+  /* the load guard can mark the board "loaded" on a timeout while the engine
+     itself never arrived; render an honest gate rather than throwing on a
+     missing global */
+  if(!window.EDCfbP4||!window.EDCfbP4Params){
+    host.innerHTML='<div class="flbanner demo">The Power 4 engine did not finish loading'
+      +(S.engineErr?(': '+fbEsc(S.engineErr)):'.')
+      +' Nothing is projected from a partial load — refresh to retry.</div>';
+    return;
+  }
   if(S.engineErr){
     host.innerHTML='<div class="flbanner demo">⛔ Power 4 engine unavailable: '+fbEsc(S.engineErr)
       +'. Nothing is shown rather than something invented.</div>';return;
