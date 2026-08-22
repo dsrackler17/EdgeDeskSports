@@ -233,9 +233,17 @@ textarea{min-height:110px;font-family:'JetBrains Mono',monospace;resize:vertical
 .tbl{width:100%;border-collapse:collapse;font-family:'JetBrains Mono',monospace;font-size:11.5px}
 .tbl th{text-align:right;color:var(--faint);font-size:9.5px;text-transform:uppercase;padding:8px;border-bottom:1px solid var(--border)}
 .tbl th:first-child,.tbl td:first-child{text-align:left}.tbl td{text-align:right;padding:8px;border-bottom:1px solid rgba(38,44,54,.6)}
-.bottomnav{position:fixed;bottom:0;left:0;right:0;z-index:30;background:var(--surface);border-top:1px solid var(--border);display:flex;padding-bottom:env(safe-area-inset-bottom)}
-.bottomnav button{flex:1;background:none;border:none;color:var(--faint);font-family:inherit;font-size:9px;font-weight:600;padding:8px 1px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px;height:var(--nav)}
-.bottomnav button.on{color:var(--accent)}.bottomnav .ic{width:19px;height:19px;stroke:currentColor;fill:none;stroke-width:2}
+.bottomnav{position:fixed;bottom:0;left:0;right:0;z-index:30;background:color-mix(in srgb,var(--surface) 92%,transparent);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-top:1px solid var(--border);display:flex;padding-bottom:env(safe-area-inset-bottom)}
+.bottomnav button{position:relative;flex:1 1 0;min-width:0;background:none;border:none;color:var(--faint);font-family:inherit;font-size:8.5px;font-weight:600;letter-spacing:.01em;white-space:nowrap;padding:9px 1px 7px;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;height:var(--nav);transition:color .15s}
+.bottomnav button:hover{color:var(--dim)}
+/* the active tab gets a real indicator, not just a colour change */
+.bottomnav button::before{content:"";position:absolute;top:0;left:50%;transform:translateX(-50%);width:0;height:2px;border-radius:0 0 3px 3px;background:var(--accent);transition:width .18s ease}
+.bottomnav button.on::before{width:26px}
+.bottomnav button.on{color:var(--accent)}
+.bottomnav button.on .ic{stroke-width:2.2}
+.bottomnav .ic{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:2;flex:none}
+@media(max-width:359px){.bottomnav button{font-size:7.5px;gap:3px}.bottomnav .ic{width:17px;height:17px}}
+@media(min-width:760px){.bottomnav{justify-content:center;gap:4px}.bottomnav button{flex:0 0 96px;font-size:10px}.bottomnav .ic{width:20px;height:20px}}
 .foot{position:fixed;bottom:var(--nav);left:0;right:0;background:var(--surface2);border-top:1px solid var(--border);font-size:10px;color:var(--faint);text-align:center;padding:5px 10px;padding-bottom:env(safe-area-inset-bottom);z-index:25}.foot b{color:var(--warn)}
 @media(min-width:760px){.filters{grid-template-columns:repeat(4,1fr)}.kpis{grid-template-columns:repeat(4,1fr)}}
 /* ===== faultline ===== */
@@ -766,7 +774,7 @@ body.ed-large-text .set-lbl,body.ed-large-text .lead-sel{font-size:14px}
 }
 
 /* ===== Pulse (social) ===== */
-.bottomnav button{padding:8px 0;font-size:8.5px;gap:2px}
+.bottomnav button{padding:8px 0 6px;gap:3px}
 .pl-seg{display:flex;gap:6px;margin-bottom:10px}
 .pl-seg button{flex:1;background:var(--surface);border:1px solid var(--border);color:var(--dim);font-family:inherit;font-size:11.5px;font-weight:600;padding:7px 4px;border-radius:8px;cursor:pointer}
 .pl-seg button.on{background:var(--surface2);border-color:var(--accent);color:var(--accent)}
@@ -1793,22 +1801,27 @@ function loadCollective(){
   document.getElementById('v-collective').appendChild(s);
 }
 </script>
-<nav class="bottomnav">
-  <button data-v="edges" class="on"><svg class="ic" viewBox="0 0 24 24"><polyline points="3 17 9 11 13 15 21 7"/><polyline points="15 7 21 7 21 13"/></svg>Edges</button>
-  <button data-v="faults"><svg class="ic" viewBox="0 0 24 24"><path d="M3 12h4l2-7 4 14 2-7h6"/></svg>Faults</button>
-  
-  <button data-v="record"><svg class="ic" viewBox="0 0 24 24"><path d="M4 19V5"/><rect x="7" y="11" width="3" height="8"/><rect x="13" y="7" width="3" height="12"/><rect x="19" y="14" width="2" height="5"/></svg>Record</button>
-  <button data-v="research"><svg class="ic" viewBox="0 0 24 24"><path d="M12 3l9 5-9 5-9-5 9-5z"/><path d="M3 13l9 5 9-5"/></svg>Research</button>
-  <button data-v="ledger"><svg class="ic" viewBox="0 0 24 24"><path d="M4 5h16v14H4z"/><path d="M4 10h16"/><path d="M9 5v14"/></svg>Ledger</button>
-  <button data-v="news"><svg class="ic" viewBox="0 0 24 24"><path d="M4 5h16v14H4z"/><path d="M8 9h8M8 13h8M8 17h5"/></svg>News</button>
+<nav class="bottomnav" role="navigation" aria-label="Primary">
+  <!-- Order is deliberate: the scanner people open the app for, then the depth
+       that keeps them in it, then the two engagement surfaces (AI + Collective)
+       side by side, then proof and accounting, then the lower-traffic feeds.
+       The AI button is STATIC and sits here rather than being appended at the
+       end at runtime, and the old floating action button is retired — two
+       entry points to the same panel, one of them hovering over the board,
+       was the clutter. -->
+  <button data-v="edges" class="on" aria-label="Edges"><svg class="ic" viewBox="0 0 24 24"><polyline points="3 17 9 11 13 15 21 7"/><polyline points="15 7 21 7 21 13"/></svg>Edges</button>
+  <button data-v="research" aria-label="Research"><svg class="ic" viewBox="0 0 24 24"><path d="M12 3l9 5-9 5-9-5 9-5z"/><path d="M3 13l9 5 9-5"/></svg>Research</button>
+  <button data-v="ai" aria-label="AI"><svg class="ic" viewBox="0 0 24 24"><path d="M12 3l2.2 5.8L20 11l-5.8 2.2L12 19l-2.2-5.8L4 11l5.8-2.2L12 3z"/></svg>AI</button>
+  <button data-v="collective" aria-label="Collective"><svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="5" r="2"/><circle cx="5" cy="12" r="2"/><circle cx="19" cy="12" r="2"/><circle cx="12" cy="19" r="2"/><path d="M12 7v10M7 12h10"/></svg>Collective</button>
+  <button data-v="record" aria-label="Record"><svg class="ic" viewBox="0 0 24 24"><path d="M4 19V5"/><rect x="7" y="11" width="3" height="8"/><rect x="13" y="7" width="3" height="12"/><rect x="19" y="14" width="2" height="5"/></svg>Record</button>
+  <button data-v="ledger" aria-label="Ledger"><svg class="ic" viewBox="0 0 24 24"><path d="M4 5h16v14H4z"/><path d="M4 10h16"/><path d="M9 5v14"/></svg>Ledger</button>
+  <button data-v="faults" aria-label="Faults"><svg class="ic" viewBox="0 0 24 24"><path d="M3 12h4l2-7 4 14 2-7h6"/></svg>Faults</button>
+  <button data-v="news" aria-label="News"><svg class="ic" viewBox="0 0 24 24"><path d="M4 5h16v14H4z"/><path d="M8 9h8M8 13h8M8 17h5"/></svg>News</button>
   <!-- HIDDEN for now (owner request): Pulse and Discipline. Restore by
        uncommenting these two buttons; their views and loaders are intact.
   <button data-v="social"><svg class="ic" viewBox="0 0 24 24"><path d="M21 12a8 8 0 0 1-11.6 7.1L3 21l1.9-6.4A8 8 0 1 1 21 12z"/></svg>Pulse</button>
   <button data-v="discipline"><svg class="ic" viewBox="0 0 24 24"><path d="M12 3l7 4v5c0 4-3 7-7 9-4-2-7-5-7-9V7z"/><path d="M9 12l2 2 4-4"/></svg>Discipline</button>
   -->
-
-  <!-- ADDED: MODEL COLLECTIVE tab -->
-  <button data-v="collective"><svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="5" r="2"/><circle cx="5" cy="12" r="2"/><circle cx="19" cy="12" r="2"/><circle cx="12" cy="19" r="2"/><path d="M12 7v10M7 12h10"/></svg>Collective</button>
 </nav>
 
 <script>
@@ -2725,7 +2738,7 @@ GE.devig=function(decs,method){var q=decs.map(function(d){return 1/d;}),S=q.redu
 function $(id){return document.getElementById(id);}
 
 /* ===== nav ===== */
-function show(v){if(v==='social'||v==='discipline')v='edges';/*ADDED: Pulse and Discipline hidden for now; a remembered lastTab lands on Edges*/if(v==='research'){researchGo(RESEARCH_SUB);return;}if(RESEARCH_MODULES[v]){researchGo(v);return;}/* legacy subview ids (old lastTab values) route into the shell */
+function show(v){if(v==='ai'){try{window.EDAI.open();}catch(_){}return;}/*ADDED: AI is an overlay panel, not a view — it opens without changing the active tab*/if(v==='social'||v==='discipline')v='edges';/*ADDED: Pulse and Discipline hidden for now; a remembered lastTab lands on Edges*/if(v==='research'){researchGo(RESEARCH_SUB);return;}if(RESEARCH_MODULES[v]){researchGo(v);return;}/* legacy subview ids (old lastTab values) route into the shell */
   if(v==='boards')v='faults';
   researchDeactivate(RESEARCH_SUB);   // leaving the research shell: abort in-flight loads, stop timers
   var s=document.querySelectorAll('.view');for(var i=0;i<s.length;i++)s[i].classList.toggle('hide',s[i].id!=='v-'+v);var b=document.querySelectorAll('.bottomnav button');for(var j=0;j<b.length;j++)b[j].classList.toggle('on',b[j].dataset.v===v);window.scrollTo(0,0);try{if(v!=='settings'){var _pp=prefs();_pp.lastTab=v;localStorage.setItem('edgedesk_prefs',JSON.stringify(_pp));}}catch(_){}
@@ -14871,7 +14884,11 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
 <!-- ==================== EdgeDesk Intelligence (AI decision layer) ==================== -->
 <style>
 /* Native to EdgeDesk's token system: reuses --bg/--surface/--accent/--pos/--neg/--warn/--gold/--mdl. */
-#edaiFab{position:fixed;right:14px;bottom:calc(var(--nav) + env(safe-area-inset-bottom) + 12px);z-index:34;
+/* RETIRED: the AI panel now has a first-class nav button next to Collective.
+   The element is kept in the DOM (EDAI.open/close reference it) but never
+   shown — a floating button hovering over the board was clutter, and two
+   entry points to one panel was worse. */
+#edaiFab{display:none!important;position:fixed;right:14px;bottom:calc(var(--nav) + env(safe-area-inset-bottom) + 12px);z-index:34;
   width:52px;height:52px;border-radius:16px;border:1px solid rgba(77,141,255,.5);cursor:pointer;
   background:linear-gradient(180deg,#1b2740,#141821);color:var(--accent);box-shadow:0 6px 22px rgba(0,0,0,.45);
   display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;font-family:inherit}
@@ -21743,6 +21760,9 @@ window.loadFootball=function(force,signal){
     FB.at=Date.now();FB.loading=null;window.renderFootball();
   }).catch(function(e){
     FB.loading=null;FB.engineErr=(e&&e.message)||'load failed';
+    /* this failure belongs to the NFL/CFB loader only — if the reader is on
+       the Power 4 board, say nothing and let that board render its own state */
+    if(FB.sport==='p4'){try{window.renderFootball();}catch(_){}return;}
     var b=$('fbBanner');
     if(b){b.className='flbanner demo';b.innerHTML='⛔ Football engine unavailable: '+fbEsc(FB.engineErr)+'. Nothing is shown rather than something invented.';}
     var host=$('fbBody');if(host)host.innerHTML='<div class="empty">The engine or a data source did not load. Refresh to retry.</div>';
@@ -21757,7 +21777,7 @@ window.fbSetSport=function(s){
   /* the Power 4 model is a separate engine + parameter bundle; it loads only
      when someone actually opens it, and it renders its own gates on failure */
   if(FB.sport==='p4'&&!FB.p4.loadedAt&&!FB.p4._loading){
-    FB.p4._loading=fbP4Load(false).then(function(){FB.p4._loading=null;window.renderFootball();})
+    FB.p4._loading=fbP4LoadGuarded(false).then(function(){FB.p4._loading=null;window.renderFootball();})
       .catch(function(){FB.p4._loading=null;window.renderFootball();});
   }
   window.renderFootball();
@@ -22308,6 +22328,23 @@ function fbP4Load(force,signal){
 }
 
 /* ---- assemble one projection request from everything that loaded ---- */
+/* A slow or unreachable data source must not leave the board spinning. If the
+   load has not finished in time the board gates and says why; if the real load
+   lands afterwards it simply replaces the gate with real content. */
+var FBP4_LOAD_TIMEOUT_MS=30000;
+function fbP4LoadGuarded(force,signal){
+  var t=setTimeout(function(){
+    if(FB.p4.loadedAt)return;
+    FB.p4.gate='Loading timed out after '+Math.round(FBP4_LOAD_TIMEOUT_MS/1000)
+      +'s — a data source did not answer. Nothing is projected from a partial load; '
+      +'refresh to retry.';
+    FB.p4.loadedAt=Date.now();
+    try{window.renderFootball();}catch(_){}
+  },FBP4_LOAD_TIMEOUT_MS);
+  function done(){clearTimeout(t);}
+  return fbP4Load(force,signal).then(done,function(e){done();throw e;});
+}
+
 function fbP4Market(u){
   var g=u.g,out={spread_line:null,total_line:null,quotes_h2h:null,book:null,as_of:null};
   var hN=fbNorm(g.home_team),ev=null,k;
@@ -22349,6 +22386,123 @@ function fbP4Request(u){
       roster:FB.p4.rosterSeason?(FB.p4.rosterSeason+'-08-01T00:00:00Z'):null,
       weather:(FB.p4.weather[g.game_id]||{}).as_of||null}
   };
+}
+
+/* ---- CSV export -------------------------------------------------------
+   The first 43 columns are IDENTICAL in name and order to the NFL export, so
+   one spreadsheet holds both sports; the Power 4 model's extra outputs are
+   APPENDED after them rather than interleaved. The same columns come out of
+   football/cfb_p4/export_csv.js, so a sheet built from the app and one built
+   offline line up exactly. */
+var FBP4_CSV_HEAD=['season','week','game_id','kickoff_local','away_team','home_team',
+'model_version','feature_version','ratings_basis',
+'model_home_margin','model_home_line','model_fair_total','home_win_prob_pct','model_fair_home_ml','model_fair_away_ml',
+'ref_home_line','ref_total','ref_home_ml','ref_away_ml','ref_source',
+'spread_gap_pts','total_gap_pts',
+'spread_pick','p_spread_pick_pct','spread_push_pct',
+'total_pick','p_total_pick_pct','total_push_pct',
+'ml_pick','p_ml_pick_pct',
+'recommendation_spread','recommendation_total','recommendation_basis',
+'qb_status','data_status','unproven','generated_at',
+'home_score','away_score','final_margin','final_total','spread_result','total_result','ml_result',
+/* Power 4 extras */
+'kickoff_tz','neutral_site','venue','home_conference','away_conference',
+'confidence','volatility','roster_stability','qb_stability_home','qb_stability_away',
+'injury_uncertainty','rivalry_intensity','scheme_fit','schedule_stress_home','schedule_stress_away',
+'sigma_margin','p10_margin','median_margin','p90_margin','preseason_share_pct','games_played_min',
+'contrib_rating','contrib_hfa','contrib_qb','contrib_matchup','contrib_conference',
+'contrib_travel','contrib_schedule','contrib_injury','contrib_rivalry',
+'primary_driver_1','primary_driver_2','primary_driver_3','counterargument_1',
+'unavailable_inputs','data_quality_notes'];
+
+function fbP4Basis(){
+  var m=window.EDCfbP4Params.validation_summary&&window.EDCfbP4Params.validation_summary.market;
+  if(!m)return 'UNPROVEN: no validation record loaded';
+  return 'UNPROVEN: held-out '+m.window+' spread MAE '+m.spread_mae_model+' vs closing market '
+    +m.spread_mae_market+'; '+(m.beats_closing_line?'beats the close at the flagged thresholds'
+      :'does NOT beat the close (best ATS '+(m.best_ats||'n/a')+')')
+    +'; research only, counted nowhere until graded CLV';
+}
+function fbP4Contrib(p,key){
+  var c=(p.contributions||[]).filter(function(x){return x.key===key;})[0];
+  return c?Math.round(c.points*100)/100:'';
+}
+function fbP4CsvRow(u){
+  var g=u.g;
+  var qq=function(x){x=String(x==null?'':x);return /[",\n]/.test(x)?'"'+x.replace(/"/g,'""')+'"':x;};
+  var r2=function(v){return v==null?'':Math.round(v*100)/100;};
+  var r1=function(v){return v==null?'':Math.round(v*10)/10;};
+  var pc=function(v){return v==null?'':Math.round(v*1000)/10;};
+  var r0=function(v){return v==null?'':Math.round(v);};
+  var mkt=fbP4Market(u),p;
+  try{p=window.EDCfbP4.projectGame(fbP4Request(u));}catch(e){p={status:'BLOCKED',reason:(e&&e.message)||'engine threw'};}
+  var kick=String(g.start_date||'');
+  var base=[g.season,g.week,g.game_id,kick?(kick.slice(0,10)+' '+kick.slice(11,16)):'',g.away_team,g.home_team];
+  if(!p||p.status!=='PREDICTED'){
+    var row=base.slice();while(row.length<FBP4_CSV_HEAD.length)row.push('');
+    row[6]=window.EDCfbP4Params.model_version;row[7]=window.EDCfbP4Params.feature_version;
+    row[34]=p?p.status:'NO_PREDICTION';row[35]='true';row[36]=new Date().toISOString();
+    row[44]='UTC';row[45]=g.neutral_site?'true':'false';row[46]=g.venue||'';
+    row[47]=g.home_conference||'';row[48]=g.away_conference||'';
+    row[FBP4_CSV_HEAD.length-1]=(p&&(p.reason||(p.missing||[]).join('; ')))||'';
+    return row.map(qq).join(',');
+  }
+  var m=p.model,sc=p.scores,cov=p.cover,ov=p.over;
+  var sGap=p.market.spread_gap,tGap=p.market.total_gap;
+  var sPick=(sGap!=null&&Math.abs(sGap)>1e-9)?(sGap>0?g.home_team:g.away_team):'';
+  var tPick=(tGap!=null&&Math.abs(tGap)>1e-9)?(tGap>0?'Over':'Under'):'';
+  var mlPick=m.home_win_prob>=0.5?g.home_team:g.away_team;
+  var ex=p.explanation||{primary_drivers:[],counterarguments:[],unpredictable_variables:[],data_quality:[]};
+  var pb=p.layers.strength.preseason_blend||{};
+  var line=FB.p4.lines[g.game_id];
+  var basis=FB.p4.absorbed
+    ? ('trained seeds + '+FB.p4.absorbed+' absorbed '+FB.p4.season+' games (as of now; later weeks update as results absorb)')
+    : ('trained seeds through '+window.EDCfbP4Params.trained_through_season+' + learned season carry-over (no '+FB.p4.season+' games played yet)');
+  return base.concat([
+    p.model_version,p.feature_version,basis,
+    r2(m.fair_spread),r2(-m.fair_spread),r1(m.fair_total),pc(m.home_win_prob),m.fair_home_ml,m.fair_away_ml,
+    mkt.spread_line==null?'':r1(-mkt.spread_line),mkt.total_line==null?'':r1(mkt.total_line),
+    line&&line.home_moneyline!=null?line.home_moneyline:'',line&&line.away_moneyline!=null?line.away_moneyline:'',
+    mkt.book||'none joined — no book number available for this game',
+    r2(sGap),r2(tGap),
+    sPick,cov?pc(sGap>0?cov.win:cov.lose):'',cov?pc(cov.push):'',
+    tPick,ov?pc(tGap>0?ov.win:ov.lose):'',ov?pc(ov.push):'',
+    mlPick,pc(m.home_win_prob>=0.5?m.home_win_prob:1-m.home_win_prob),
+    p.edge.spread.recommendation,p.edge.total.recommendation,fbP4Basis(),
+    (p.layers.qb.home.value.available?'':'home QB unknown; ')+(p.layers.qb.away.value.available?'':'away QB unknown'),
+    p.status,String(!!p.unproven),new Date().toISOString(),
+    '','','','','','','',
+    'UTC',g.neutral_site?'true':'false',g.venue||'',g.home_conference||'',g.away_conference||'',
+    r0(sc.confidence),r0(sc.volatility),r0(sc.roster_stability),
+    r0(sc.qb_stability_home),r0(sc.qb_stability_away),r0(sc.injury_uncertainty),
+    r0(sc.rivalry_intensity),r0(sc.scheme_fit),r0(sc.schedule_stress_home),r0(sc.schedule_stress_away),
+    r1(m.sigma_margin),r1(m.p10_margin),r1(m.median_margin),r1(m.p90_margin),
+    pb.preseason_share==null?'':Math.round(pb.preseason_share*100),
+    pb.games_played==null?'':pb.games_played,
+    fbP4Contrib(p,'rating'),fbP4Contrib(p,'hfa'),fbP4Contrib(p,'qb'),fbP4Contrib(p,'matchup'),
+    fbP4Contrib(p,'conference'),fbP4Contrib(p,'travel'),fbP4Contrib(p,'schedule'),
+    fbP4Contrib(p,'injury'),fbP4Contrib(p,'rivalry'),
+    (ex.primary_drivers[0]||{}).text||'',(ex.primary_drivers[1]||{}).text||'',
+    (ex.primary_drivers[2]||{}).text||'',(ex.counterarguments[0]||{}).text||'',
+    ex.unpredictable_variables.map(function(x){return x.item;}).join('; '),
+    ex.data_quality.map(function(x){return x.text;}).join('; ')
+  ]).map(qq).join(',');
+}
+window.fbP4CsvDownload=function(){
+  var S=FB.p4;
+  if(!S.up.length){alert('No Power 4 games on the board to export yet.');return;}
+  var lines=[FBP4_CSV_HEAD.join(',')];
+  S.up.forEach(function(u){lines.push(fbP4CsvRow(u));});
+  var name='edgedesk_cfb_p4_'+S.season+'_upcoming.csv';
+  var blob=new Blob([lines.join('\n')+'\n'],{type:'text/csv;charset=utf-8'});
+  var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;
+  document.body.appendChild(a);a.click();
+  setTimeout(function(){URL.revokeObjectURL(a.href);a.remove();},2000);
+};
+function fbP4CtlHTML(){
+  return '<button class="btn ghost sm" onclick="fbP4CsvDownload()">Download CSV</button>'
+    +'<span class="ec mut">'+FB.p4.up.length+' Power 4 game'+(FB.p4.up.length===1?'':'s')
+    +' · one row per game, same columns as the NFL export · research, unproven</span>';
 }
 
 /* ---- rendering ---- */
@@ -22475,15 +22629,32 @@ window.renderFootball=function(){
   var host=$('fbBody'),ban=$('fbBanner'),ctl=$('fbCtl');
   if(!host)return;
   try{rsMetaRender('football');}catch(_){}
+  /* The Power 4 board is a SEPARATE engine with its own parameters, its own
+     loader, its own error state and its own gates. It is handled before the
+     NFL/CFB early-returns on purpose: an nflverse or signals failure must not
+     take down a board that never depended on either. */
+  if(FB.sport==='p4'){
+    if(ban){ban.className='flbanner hide';ban.innerHTML='';}
+    var frp=$('fbFresh');
+    if(frp)frp.textContent=FB.p4.loadedAt?('Power 4 model loaded '+ago(FB.p4.loadedAt)):'loading…';
+    if(FB.p4._loading&&!FB.p4.loadedAt){
+      if(ctl)ctl.style.display='none';
+      host.innerHTML='<div class="empty">Loading the Power 4 model…</div>';return;
+    }
+    if(!FB.p4.loadedAt&&!FB.p4.engineErr){
+      if(ctl)ctl.style.display='none';
+      host.innerHTML='<div class="empty">Open this board to load the Power 4 model.</div>';return;
+    }
+    if(ctl){
+      if(FB.p4.loadedAt&&FB.p4.up.length){ctl.style.display='flex';ctl.innerHTML=fbP4CtlHTML();}
+      else ctl.style.display='none';
+    }
+    fbP4Render(host);return;
+  }
   if(FB.engineErr)return;
   if(!FB.at){host.innerHTML='<div class="empty">Loading…</div>';if(ctl)ctl.style.display='none';return;}
   var fr=$('fbFresh');if(fr)fr.textContent='engine loaded '+ago(FB.at);
   if(ban){ban.className='flbanner hide';ban.innerHTML='';}
-  if(FB.sport==='p4'){
-    if(ctl)ctl.style.display='none';
-    if(FB.p4._loading&&!FB.p4.loadedAt){host.innerHTML='<div class="empty">Loading the Power 4 model…</div>';return;}
-    fbP4Render(host);return;
-  }
   var S=FB.sport==='cfb'?FB.cfb:FB.nfl;
   if(ctl){
     if(FB.sport==='nfl'){ctl.style.display='flex';ctl.innerHTML=fbCtlHTML();}
