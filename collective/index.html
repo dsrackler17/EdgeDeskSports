@@ -420,10 +420,18 @@ async function meta(){if(META)return META;META=await api('/v1/meta');return META
    surface — wall, board, model page, market page, embed — asks for the sport
    the reader is actually on, without each call site having to thread the meta
    object through to get there. */
+var SPORT_ODDS_LEAGUE={NFL:'nfl',CFB:'ncaaf',NCAAF:'ncaaf',CFP:'ncaaf'};
 function marketLeague(){
   var code=null;
   try{code=localStorage.getItem(MC_SPORT_KEY);}catch(e){}
-  return window.MCOdds?MCOdds.leagueFor(code||'NFL'):'nfl';
+  code=String(code||'NFL').toUpperCase();
+  /* Guard on the FUNCTION, not on the object. odds.js and this page are two
+     separate uploads and can be out of step -- and when they were, the older
+     odds.js had no leagueFor, this threw, marketBoard's catch turned it into
+     null, and every game on every page read "Market unavailable" over a feed
+     that was working. A version skew should cost the lookup, not the market. */
+  if(window.MCOdds&&typeof MCOdds.leagueFor==='function')return MCOdds.leagueFor(code);
+  return SPORT_ODDS_LEAGUE[code]||code.toLowerCase();
 }
 function marketBoard(opts){
   if(!window.MCOdds)return Promise.resolve(null);
