@@ -33,8 +33,25 @@ def main():
     rep = j('report_cfb_p4.json')
     repl = j('report_layers.json')
     P = j('params_cfb_p4.json')
-    mh = rep.get('market_headline', {})
+    core = rep.get('market_headline', {})
     ms = rep.get('market_secondary', {})
+    eng = None
+    ep = os.path.join(OUT, 'backtest_engine.json')
+    if os.path.exists(ep):
+        with open(ep) as f:
+            eng = json.load(f)
+    # The report describes the ENGINE. train_p4.py scores `blended_margin` (the
+    # rating core), which is not what engine.js publishes, so the headline comes
+    # from the cold replay of the shipped engine when one is available.
+    mh = dict(core)
+    if eng and eng.get('spread'):
+        mh['spread_mae_model'] = eng['spread']['mae_model']
+        mh['spread_mae_market'] = eng['spread']['mae_market']
+        mh['n_games'] = eng['n_projected']
+        mh['ats_vs_close'] = eng.get('ats_vs_close', mh.get('ats_vs_close', {}))
+        if eng.get('total'):
+            mh['total_mae_model'] = eng['total']['mae_model']
+            mh['total_mae_market'] = eng['total']['mae_market']
     L = []
     A = L.append
 
@@ -60,6 +77,24 @@ def main():
       % (d_total, mh.get('n_games')))
     A('was tuned on. It does not beat the market.')
     A('')
+    if eng:
+        A('**What is being measured.** `model.fair_spread` exactly as')
+        A('`football/cfb_p4/engine.js` publishes it, from a cold replay in kickoff order:')
+        A('each game is projected from state containing only games already played, and')
+        A('absorbed only afterwards. That distinction matters because the training run')
+        A('scores `blended_margin` — the opponent-adjusted rating difference plus')
+        A('home-field advantage — which is the model\'s core but not its output. The')
+        A('engine sums nine terms. Scoring the core and calling it the product would')
+        A('describe a number no user ever sees; on this window the core alone is')
+        A('%s, so the additional layers are worth %.3f points of MAE.'
+          % (core.get('spread_mae_model'),
+             float(core.get('spread_mae_model', 0)) - float(mh.get('spread_mae_model', 0))))
+        A('')
+        if eng.get('n_refused'):
+            A('%d of %d games in the window were REFUSED rather than projected: a team had'
+              % (eng['n_refused'], eng['n_refused'] + eng['n_projected']))
+            A('no rating yet, and the engine declines to invent one.')
+            A('')
     A('Against the close, by size of disagreement:')
     A('')
     ats = mh.get('ats_vs_close', {})
@@ -191,9 +226,18 @@ def main():
 
     A('## Regression constants (Section XXI), measured rather than assumed')
     A('')
-    A('Game-to-game persistence of each statistic within a season. A statistic with')
-    A('near-zero persistence is almost entirely regressed to the mean; one that repeats')
-    A('is barely touched. Nothing here was chosen by hand.')
+    A('Game-to-game persistence of each statistic within a season, measured rather')
+    A('than assumed. Nothing here was chosen by hand.')
+    A('')
+    A('**These constants are published, not applied.** `strength.regress()` is a public')
+    A('helper on the engine\'s strength API and a caller can shrink any statistic by its')
+    A('own measured persistence, but the projection path does not call it. The reason is')
+    A('specific: the matchup pair weights were fitted against the unregressed,')
+    A('opponent-adjusted efficiency EWMAs, so regressing those same inputs at read time')
+    A('would move them off the surface the weights were trained on. Applying the table')
+    A('inside the projection means refitting the matchup layer on regressed inputs and')
+    A('showing that it helps out of sample — which has not been done, so the table stays')
+    A('a measurement and this section does not claim otherwise.')
     A('')
     pers = rep.get('persistence', {})
     A(table([[k, v['n'], v['lag1_r']] for k, v in sorted(pers.items(), key=lambda x: -x[1]['lag1_r'])],
@@ -251,7 +295,33 @@ def main():
     A('- layer A (ratings, venue, travel, rivalry, conference): tuned 2001-2013')
     A('- layer B (efficiency, matchup, blend, QB, schedule, total): tuned 2014-2019')
     A('- layer C (roster continuity, volatility, confidence): tuned 2018-2021')
+    A('- distributional layer (sigma, residual PMFs, spread-conditioned margin table):')
+    A('  fitted **2014-2021**')
     A('- headline test window: **%s**, untouched by every layer' % mh.get('window'))
+    A('')
+    wp = rep.get('winprob', {})
+    wi = rep.get('winprob_in_sample', {})
+    if wp and wi:
+        A('### A breach that was here, and what it was worth')
+        A('')
+        A('An earlier build fitted sigma by maximum likelihood **on 2022-2025** and then')
+        A('reported that fit\'s own Brier score as a held-out result. That is the fit\'s')
+        A('maximised objective, not evidence, and the calibration table and residual PMFs')
+        A('were built the same way. Everything distributional is now fitted on 2014-2021')
+        A('and applied to the headline window unchanged.')
+        A('')
+        A('The correction is worth stating precisely, because the honest answer is that')
+        A('it was small:')
+        A('')
+        A(table([['in-sample optimum (2014-2021, where sigma was fitted)', wi.get('brier'),
+                  wi.get('log_loss')],
+                 ['held out (2022-2025, sigma applied unchanged)', wp.get('brier'),
+                  wp.get('log_loss')]],
+                ['window', 'Brier', 'log loss']))
+        A('')
+        A('So the reported number barely moved. That does not make the earlier version')
+        A('acceptable — a claim of "untouched by every layer" either holds or it does')
+        A('not, and the size of the error is not what decides that.')
     A('')
     if ms:
         A('Secondary window %s (layers A only were frozen by then): model spread MAE %s'
