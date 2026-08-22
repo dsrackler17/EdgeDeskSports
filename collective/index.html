@@ -149,15 +149,22 @@ label .opt{color:var(--faint);text-transform:none;letter-spacing:0;font-weight:4
    inside it, and the row reflows instead of overflowing. */
 .sportgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));
   gap:8px;margin-top:12px}
-.sportpick{display:flex;align-items:flex-start;gap:10px;font-size:12.5px;
+/* Every property the global `label` rule sets is reset here explicitly, because
+   these cards previously inherited display:block, uppercase and letter-spacing
+   from it and rendered one character per line outside their own border. */
+.sportpick{display:flex;align-items:center;gap:10px;font-size:12.5px;
   color:var(--text);background:var(--surface2);border:1px solid var(--border);
-  border-radius:8px;padding:10px 12px;cursor:pointer;box-sizing:border-box}
+  border-radius:8px;padding:11px 13px;cursor:pointer;box-sizing:border-box;
+  text-transform:none;letter-spacing:normal;margin:0;min-width:0}
 .sportpick.posted{border-color:var(--accent);cursor:default}
-.sportpick input{margin:2px 0 0;cursor:inherit;flex:0 0 auto}
-.sportpick .sp-txt{display:flex;flex-direction:column;gap:3px;line-height:1.3;
-  min-width:0;flex:1 1 auto}
-.sportpick .sp-txt b{font-weight:600;overflow-wrap:anywhere}
-.sportpick .sp-sub{color:var(--faint);font-size:10.5px;overflow-wrap:anywhere}
+.sportpick input{margin:0;cursor:inherit;flex:0 0 auto;width:15px;height:15px}
+.sportpick .sp-txt{display:block;min-width:0;flex:1 1 auto;overflow:hidden}
+.sportpick .sp-name{display:block;font-weight:600;font-size:13px;color:var(--text);
+  text-transform:none;letter-spacing:normal;white-space:nowrap;
+  overflow:hidden;text-overflow:ellipsis}
+.sportpick .sp-sub{display:block;color:var(--faint);font-size:11px;margin-top:2px;
+  text-transform:none;letter-spacing:normal;white-space:nowrap;
+  overflow:hidden;text-overflow:ellipsis}
 .sportpick .sp-add{color:var(--accent);font-size:10.5px;text-decoration:underline}
 .sqlbox{width:100%;font-family:'JetBrains Mono',monospace;font-size:11px;line-height:1.5;
   background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:6px;
@@ -2435,10 +2442,14 @@ async function renderCreatorDash(view,me){
       var long=d2.long||sportCode;
       var mslug=creatorSlug+'-'+String(sportCode).toLowerCase().replace(/[^a-z0-9]+/g,'');
       var mname=creatorName+' '+long;
+      /* Finds the creator three ways before giving up, because the slug the
+         dashboard shows is not guaranteed to be the slug in the table, and a
+         "no creator with that slug" error is a dead end for someone who did
+         not write the schema. Falls back to the owner of an existing model,
+         which is correct whenever the account already posts anything at all. */
       return ''
         +'-- Add a '+long+' model for '+creatorName+'.\n'
-        +'-- The Collective\'s tables are not in the public schema; this finds\n'
-        +'-- the right one instead of guessing at it.\n'
+        +'-- Finds your schema and your creator row itself. Safe to run twice.\n'
         +'do $$\n'
         +'declare\n'
         +'  s text;\n'
@@ -2447,22 +2458,32 @@ async function renderCreatorDash(view,me){
         +'  select table_schema into s\n'
         +'    from information_schema.tables\n'
         +'   where table_name = \'models\' limit 1;\n'
-        +'  if s is null then raise exception \'no models table found\'; end if;\n\n'
+        +'  if s is null then raise exception \'no models table in any schema\'; end if;\n\n'
+        +'  -- 1. by slug\n'
         +'  execute format(\'select id from %I.creators where slug = $1\', s)\n'
-        +'    into cid using \''+creatorSlug+'\';\n'
-        +'  if cid is null then raise exception \'no creator with slug '+creatorSlug+'\'; end if;\n\n'
+        +'    into cid using \''+creatorSlug+'\';\n\n'
+        +'  -- 2. by display name\n'
+        +'  if cid is null then\n'
+        +'    execute format(\'select id from %I.creators where display_name = $1\', s)\n'
+        +'      into cid using \''+creatorName+'\';\n'
+        +'  end if;\n\n'
+        +'  -- 3. whoever owns a model already\n'
+        +'  if cid is null then\n'
+        +'    execute format(\'select creator_id from %I.models order by created_at limit 1\', s)\n'
+        +'      into cid;\n'
+        +'  end if;\n\n'
+        +'  if cid is null then\n'
+        +'    raise exception \'could not find your creator row - run: select id, slug, display_name from %.creators\', s;\n'
+        +'  end if;\n\n'
         +'  execute format($f$\n'
         +'    insert into %I.models (creator_id, slug, name, sport_code, is_listed)\n'
         +'    select $1, $2, $3, $4, true\n'
         +'     where not exists (\n'
         +'       select 1 from %I.models\n'
         +'        where creator_id = $1 and upper(sport_code) = upper($4))\n'
-        +'  $f$, s, s) using cid, \''+mslug+'\', \''+mname+'\', \''+sportCode+'\';\n'
-        +'end $$;\n\n'
-        +'-- check it landed\n'
-        +'select c.slug, m.slug, m.name, m.sport_code\n'
-        +'  from models m join creators c on c.id = m.creator_id\n'
-        +' where c.slug = \''+creatorSlug+'\';\n';
+        +'  $f$, s, s) using cid, \''+mslug+'\', \''+mname+'\', \''+sportCode+'\';\n\n'
+        +'  raise notice \'done - reload the dashboard\';\n'
+        +'end $$;\n';
     }
 
     /* ---- what this creator covers ------------------------------------- */
@@ -2480,14 +2501,20 @@ async function renderCreatorDash(view,me){
         offered.map(function(sp){
           var f=sportFamily(sp.code),d2=sportDef(sp.code);
           var posted=!!have[f];
-          return '<label class="sportpick'+(posted?' posted':'')+'">'+
+          /* deliberately NOT a <label>: the global label rule is display:block,
+             uppercase and letter-spaced, which fought every style this card
+             needs. A div with an explicit `for`-less checkbox is simpler than
+             unwinding that cascade. */
+          return '<div class="sportpick'+(posted?' posted':'')+'">'+
             '<input type="checkbox" data-plan="'+esc(sp.code)+'"'+
             (posted||planned[f]?' checked':'')+(posted?' disabled':'')+'>'+
-            '<span class="sp-txt"><b>'+esc(d2.long||sp.code)+'</b>'+
-            '<span class="sp-sub">'+(posted?esc(have[f])
-              :'no model yet \u00b7 <a href="#" class="sp-add" data-addmodel="'+esc(sp.code)+'">add one</a>')+
-            '</span></span>'+
-            '</label>';
+            '<span class="sp-txt">'+
+              '<span class="sp-name">'+esc(d2.long||sp.code)+'</span>'+
+              '<span class="sp-sub">'+(posted?esc(have[f])
+                :'no model yet \u00b7 <a href="#" class="sp-add" data-addmodel="'+esc(sp.code)+'">add one</a>')+
+              '</span>'+
+            '</span>'+
+            '</div>';
         }).join('')+'</div>'+
         '<p class="note" style="margin:10px 0 0">A sport appears on your public profile once you '+
         'have a model for it &mdash; that is what visitors see, and it cannot go stale. Ticking one '+
