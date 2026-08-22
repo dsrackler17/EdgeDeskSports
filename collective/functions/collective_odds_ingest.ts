@@ -1738,8 +1738,16 @@ function taBuildUrlForTest(opts: FetchOptions): string {
 }
 
 function taBuildUrl(opts: FetchOptions): string {
-  const league = normKey(opts.league) || "nfl";
-  const sport = TA_SPORT_KEY[league] ?? league;
+  // The id arrives from `<league>.league_id`, whose documented job is to point
+  // a league at a different PROVIDER-side id without a redeploy. That could
+  // never work: normKey strips the underscore out of a vendor key like
+  // americanfootball_ncaaf, the TA_SPORT_KEY lookup then misses, and the
+  // STRIPPED string went to the API as the sport key -- 404 "Unknown sport"
+  // for a value that was exactly right. So the fallback is the raw string,
+  // and `ncaaf` and `americanfootball_ncaaf` now both resolve.
+  const raw = String(opts.league ?? "").trim();
+  const league = normKey(raw) || "nfl";
+  const sport = TA_SPORT_KEY[league] ?? (raw || league);
   const markets = (opts.markets.length ? opts.markets : GAME_MARKETS)
     .map((m) => TA_MARKET_PARAM[m])
     .filter(Boolean);
