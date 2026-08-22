@@ -451,6 +451,108 @@ if (typeof sandbox.teamKey === 'function') {
       return n.length === 3;
     })());
 
+  /* ---- one registry drives every sport --------------------------------
+     Sport knowledge used to be scattered across WEEK_CALENDARS, SPORT_ALIAS,
+     CFB_CONFERENCES and a hand-written detector, so adding a sport meant
+     editing five places and forgetting the sixth. SPORTS is now the only
+     place, and these assert that everything really does read from it. */
+  chk('the registry carries both sports the server offers',
+    (function () {
+      var fams = S.SPORTS.map(function (x) { return x.family; });
+      return fams.indexOf('NFL') >= 0 && fams.indexOf('CFB') >= 0;
+    })());
+  chk('every registry entry is complete enough to drive a surface',
+    S.SPORTS.every(function (x) {
+      return x.family && x.name && x.long && x.aliases.length
+        && x.regular > 0 && x.max >= x.regular && x.rounds && x.detect;
+    }),
+    'a half-filled entry is how a new sport breaks the week picker');
+  chk('the week calendar comes from the registry',
+    (function () {
+      var cal = S.weekCalendar('CFB'), def = S.sportDef('CFB');
+      return cal.regular === def.regular && cal.max === def.max
+        && cal.names[17] === 'Bowl Season';
+    })());
+  chk('a server alias resolves to its family',
+    S.sportDef('NCAAF').family === 'CFB' && S.sportDef('CFB-P4').family === 'CFB'
+    && S.sportDef('nfl').family === 'NFL');
+  chk('a sport the registry has never heard of still renders',
+    (function () {
+      var d = S.sportDef('KABADDI');
+      return d.family === null && d.name === 'KABADDI' && d.regular > 0
+        && S.weekCalendar('KABADDI').max > 0;
+    })(),
+    'an unknown server sport must not crash the board or borrow NFL rounds');
+  chk('two unknown sports do not merge into one family',
+    S.sportFamily('KABADDI') !== S.sportFamily('SEPAKTAKRAW'));
+  chk('display names come from the registry',
+    S.sportName('NCAAF') === 'CFB' && S.sportLongName('NCAAF') === 'College Football'
+    && S.sportLongName('NFL') === 'Football');
+
+  /* ---- one sport at a time, on every surface --------------------------- */
+  var MIXED = [
+    { creator_slug:'a', model_slug:'a1', sport:'NFL' },
+    { creator_slug:'a', model_slug:'a2', sport:'CFB' },
+    { creator_slug:'b', model_slug:'b1', sport:'NCAAF' },
+    { creator_slug:'c', model_slug:'c1' }               /* server did not label it */
+  ];
+  chk('a board shows only its own sport',
+    S.rowsForSport(MIXED, 'NFL').map(function (r) { return r.model_slug; }).join(',') === 'a1,c1');
+  chk('a server alias lands on the same board as its family',
+    S.rowsForSport(MIXED, 'CFB').map(function (r) { return r.model_slug; }).join(',') === 'a2,b1,c1',
+    'a model registered as NCAAF must appear on the CFB board');
+  chk('an UNLABELLED model is shown everywhere rather than hidden',
+    S.rowsForSport(MIXED, 'NFL').some(function (r) { return r.model_slug === 'c1'; })
+    && S.rowsForSport(MIXED, 'CFB').some(function (r) { return r.model_slug === 'c1'; }),
+    'silently disappearing a model because the server omitted a field is worse '
+    + 'than showing it twice');
+  chk('the sports present in a set of rows are listed in registry order',
+    S.sportsInRows(MIXED).join(',') === 'NFL,CFB');
+  chk('rows with no sport at all yield no sports',
+    S.sportsInRows([{ creator_slug: 'x' }]).length === 0);
+
+  /* ---- what a creator covers is DERIVED from their models --------------- */
+  chk('sports covered come from the models, in registry order',
+    (function () {
+      var c = S.creatorSports([{ sport: 'CFB' }, { sport: 'NFL' }]);
+      return c.length === 2 && c[0].family === 'NFL' && c[1].family === 'CFB'
+        && c.every(function (x) { return x.posted === true; });
+    })());
+  chk('two models in one sport count once',
+    S.creatorSports([{ sport: 'NFL' }, { sport: 'NFL' }]).length === 1);
+  chk('a declared sport is marked as not yet posted',
+    (function () {
+      var c = S.creatorSports([{ sport: 'NFL' }], ['CFB']);
+      var cfb = c.filter(function (x) { return x.family === 'CFB'; })[0];
+      return c.length === 2 && cfb && cfb.posted === false;
+    })());
+  chk('declaring a sport you already post for does not duplicate it',
+    S.creatorSports([{ sport: 'NFL' }], ['NFL']).length === 1);
+  chk('a creator with no models covers nothing',
+    S.creatorSports([]).length === 0 && S.creatorSports(null).length === 0);
+
+  /* ---- detecting the sport of an uploaded file ------------------------- */
+  chk('a model stamp identifies the sport',
+    S.slateDetectSport(['game_id', 'model_version'],
+      [['game_id', 'model_version'], ['1', 'edgedesk_cfb_p4_v1.0.0']]) === 'CFB');
+  chk('an NFL stamp is not mistaken for college',
+    S.slateDetectSport(['model_version'],
+      [['model_version'], ['edgedesk_nfl_v2']]) === 'NFL');
+  chk('conference columns identify the sport when there is no stamp',
+    S.slateDetectSport(['home_conference', 'away_conference'],
+      [['home_conference', 'away_conference'], ['Big 12', 'ACC']]) === 'CFB');
+  chk('AFC/NFC conferences identify the NFL',
+    S.slateDetectSport(['home_conference'],
+      [['home_conference'], ['AFC']]) === 'NFL');
+  chk('a file that says nothing about its sport returns null, not a guess',
+    S.slateDetectSport(['home_team', 'away_team'],
+      [['home_team', 'away_team'], ['TCU', 'North Carolina']]) === null,
+    'null means "the file does not say", which is not the same as "NFL"');
+  chk('a model stamp beats a conference column',
+    S.slateDetectSport(['model_version', 'home_conference'],
+      [['model_version', 'home_conference'], ['edgedesk_nfl_v2', 'SEC']]) === 'NFL',
+    'the creator\'s own export says what it is; a conference name is an inference');
+
   /* ---- a slate belongs to a model, and the model carries the sport ----
      The failure no spelling could reach: a submission is attached to a model
      and the Collective resolves its games in that MODEL'S sport, so a college

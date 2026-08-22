@@ -111,6 +111,46 @@ label .opt{color:var(--faint);text-transform:none;letter-spacing:0;font-weight:4
 .wk{display:flex;gap:6px;flex-wrap:wrap;margin:0 0 12px}
 .wk button{background:var(--surface2);border:1px solid var(--border);color:var(--dim);border-radius:6px;font-size:11.5px;padding:4px 9px;cursor:pointer;font-family:'JetBrains Mono',monospace}
 .wk button.on{color:var(--text);border-color:var(--accent)}
+/* The sport switcher. Same family as .wk — mono, small, bordered — but it sits
+   a level above the week picker in the hierarchy, so it reads as a tab strip:
+   a little taller, a filled active state, and an underline that ties the
+   selected sport to the panel beneath it. Long names on desktop, the short
+   code on narrow screens, so six sports still fit on a phone. */
+.sportsw{display:flex;gap:4px;flex-wrap:wrap;margin:0 0 14px;
+  border-bottom:1px solid var(--border);padding-bottom:0}
+.sportsw button{position:relative;background:transparent;border:1px solid transparent;
+  border-bottom:none;color:var(--dim);border-radius:7px 7px 0 0;font-size:12px;
+  padding:7px 13px 8px;cursor:pointer;font-family:'JetBrains Mono',monospace;
+  letter-spacing:.04em;transition:color .12s,background .12s}
+.sportsw button:hover{color:var(--text);background:var(--surface2)}
+.sportsw button.on{color:var(--text);background:var(--surface2);
+  border-color:var(--border);border-bottom:none}
+.sportsw button.on::after{content:'';position:absolute;left:0;right:0;bottom:-1px;
+  height:2px;background:var(--accent);border-radius:2px 2px 0 0}
+.sportsw .livedot{display:inline-block;width:5px;height:5px;border-radius:50%;
+  background:var(--pos);margin-left:6px;vertical-align:middle}
+.sportsw .s-short{display:none}
+.sportsw.compact button{padding:5px 10px;font-size:11.5px}
+@media(max-width:620px){
+  .sportsw .s-long{display:none}
+  .sportsw .s-short{display:inline}
+  .sportsw button{padding:6px 11px}
+}
+/* the sports a creator covers, on a public profile */
+.sportchips{display:flex;gap:5px;flex-wrap:wrap;margin:6px 0 0}
+.sportchips .sc{font-family:'JetBrains Mono',monospace;font-size:10.5px;
+  letter-spacing:.06em;padding:2px 8px;border-radius:999px;
+  border:1px solid var(--border);color:var(--dim);background:var(--surface2)}
+.sportchips .sc.live{color:var(--text);border-color:var(--accent)}
+.sportchips .sc.off{opacity:.55}
+.sportpick{display:inline-flex;align-items:center;gap:7px;font-size:12.5px;
+  color:var(--text);background:var(--surface2);border:1px solid var(--border);
+  border-radius:8px;padding:7px 11px;cursor:pointer}
+.sportpick.posted{border-color:var(--accent);cursor:default}
+.sportpick input{margin:0;cursor:inherit}
+.sportpick .note{font-size:11px}
+.bd-stats .allsports{font-style:normal;color:var(--faint);font-size:9.5px;
+  letter-spacing:.08em;text-transform:uppercase;margin-left:4px}
 .toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:9px 16px;font-size:12.5px;z-index:50}
 /* the live market board: airport-terminal wall */
 .bd{border:1px solid var(--border);border-radius:10px;background:var(--surface);overflow:hidden;margin-bottom:16px}
@@ -490,12 +530,17 @@ async function renderWall(view){
   view.innerHTML='<div class="emptybox">Loading the wall&hellip;</div>';
   try{
     var m=await meta();
-    var results=await Promise.all([wallRows(),api('/v1/games',{auth:true}).catch(function(){return null;}),api('/v1/activity').catch(function(){return null;}),marketBoard()]);
-    var rows=results[0],board=results[1],act=results[2],mkt=results[3];
+    var sport=currentSport(m);
+    /* The wall used to aggregate every sport at once and label itself with all
+       of their codes, while asking /v1/games for the default sport only — so a
+       college model sat in a list above an NFL slate. One sport at a time, and
+       the games come from the same sport the rows do. */
+    var gq='?sport='+encodeURIComponent(sport.code)+'&season='+encodeURIComponent(sport.season||'');
+    var results=await Promise.all([wallRows(),api('/v1/games'+gq,{auth:true}).catch(function(){return null;}),api('/v1/activity').catch(function(){return null;}),marketBoard()]);
+    var allRows=results[0],board=results[1],act=results[2],mkt=results[3];
+    var rows=rowsForSport(allRows,sport.code);
     var activeN=rows.filter(function(r){return r.membership==='ACTIVE CONTRIBUTOR';}).length;
-    /* the wall aggregates every model, so it names every sport the Collective
-       carries rather than just the one the reader last looked at */
-    var sportCode=sportList(m).map(function(x){return x.code;}).join(' \u00b7 ');
+    var sportCode=sportLongName(sport.code).toUpperCase()||sport.code;
     var memDot={'ACTIVE CONTRIBUTOR':'var(--pos)','MEMBER':'var(--dim)','INACTIVE':'var(--faint)'};
     var byCreator={};rows.forEach(function(r){byCreator[r.creator_slug]=r;});
 
@@ -539,21 +584,33 @@ async function renderWall(view){
     });
     if(!boards)boards='<div class="gb-empty">The slate loads here the moment games are scheduled.</div>';
 
-    var hd='<div class="bd">'+
+    var hd=sportSwitcherHTML(m)+'<div class="bd">'+
       '<div class="bd-hd"><span class="bd-title"><span class="bd-live"></span>LIVE MODEL WALL</span>'+
         '<span class="bd-clock" id="bdClock"></span></div>'+
+      /* The model count and the active share are computed from the rows on
+         screen, so they describe the sport being viewed. Projections and
+         settled games come from meta() with no sport dimension, so they are
+         labelled as Collective-wide rather than silently read as this
+         sport's — a "163 projections" beside one college model is a lie by
+         juxtaposition. */
       '<div class="bd-stats">'+
         '<span><b>'+esc(sportCode)+'</b></span>'+
-        '<span><b>'+String(m.counts.models).padStart(2,'0')+'</b> models</span>'+
-        '<span><b>'+m.counts.live_projections+'</b> projections</span>'+
+        '<span><b>'+String(rows.length).padStart(2,'0')+'</b> models</span>'+
         '<span><b>'+(rows.length?Math.round(100*activeN/rows.length):0)+'%</b> active</span>'+
-        '<span><b>'+m.counts.graded_games+'</b> settled</span>'+
+        '<span title="across every sport"><b>'+m.counts.live_projections+'</b> projections <i class="allsports">all sports</i></span>'+
+        '<span title="across every sport"><b>'+m.counts.graded_games+'</b> settled <i class="allsports">all sports</i></span>'+
       '</div>'+
       boards+'</div>'+
       '<p class="lede">Independent models, one independently graded record. Every pick is graded on the actual final score, measured against the Collective&#39;s own captured closing line so every model faces the same number, never self-reported. Each creator keeps their own site, price, and methodology.</p>';
 
     if(!rows.length){
-      view.innerHTML=hd+'<div class="emptybox">The wall is waiting on its first model. Creators join by invite and appear here the moment their profile is created.</div>';
+      view.innerHTML=hd+'<div class="emptybox">'+
+        (allRows.length
+          ? 'No '+esc(sportLongName(sport.code))+' model has posted yet. '
+            +'Other sports have '+allRows.length+' model'+(allRows.length===1?'':'s')+' \u2014 switch above.'
+          : 'The wall is waiting on its first model. Creators join by invite and appear here the moment their profile is created.')+
+        '</div>';
+      bindSportSwitcher(function(){renderWall(view);});
       boardClock();if(!CLOCK_TIMER)CLOCK_TIMER=setInterval(boardClock,1000);
       return;
     }
@@ -597,6 +654,7 @@ async function renderWall(view){
       '<div class="panel">'+activityRows(act&&act.rows,10)+'</div>';
     boardClock();if(!CLOCK_TIMER)CLOCK_TIMER=setInterval(boardClock,1000);
     $('wallsort').value=S;
+    bindSportSwitcher(function(){renderWall(view);});
     $('wallsort').onchange=function(){WALL_SORT=this.value;renderWall(view);};
     if($('wallq'))$('wallq').oninput=function(){
       var q=this.value.toLowerCase();
@@ -624,6 +682,10 @@ async function renderCreator(view,slug){
       foundBadge(c)+' '+chipFor(c.membership)+'</h1>'+
       (c.description?'<p class="lede" style="margin:2px 0 8px">'+esc(c.description)+'</p>':'')+
       '<div class="links">'+(links||'<span class="note">This Collective profile is this creator’s home page.</span>')+'</div>'+
+      /* DERIVED ONLY on a public profile. A "planned" sport lives in one
+         browser's localStorage, so putting it here would show the creator a
+         claim no visitor can see. Intent belongs in the dashboard. */
+      sportChipsHTML(creatorSports(d.models),await meta().catch(function(){return null;}))+
       '<div class="note" style="margin-top:6px">Member since '+new Date(c.joined_at).toLocaleDateString(undefined,{month:'short',year:'numeric'})+'</div>'+
       '</div></div>';
     var body='';
@@ -936,11 +998,23 @@ async function renderMarketGame(view,eventId){
 async function renderRankings(view){
   view.innerHTML='<div class="emptybox">Loading rankings&hellip;</div>';
   try{
-    var res=await Promise.all([api('/v1/rankings'),wallRows().catch(function(){return [];})]);
-    var d=res[0];
+    var res=await Promise.all([api('/v1/rankings'),wallRows().catch(function(){return [];}),
+      meta().catch(function(){return {sports:[]};})]);
+    var d=res[0],mMeta3=res[2];
+    var rkSport=currentSport(mMeta3);
     var fmap={};res[1].forEach(function(r){if(r.founding)fmap[r.creator_slug]=true;});
+    /* /v1/rankings carries no sport, so the sport of each ranked model is read
+       off the wall rows it shares a slug with. A model the wall does not know
+       is kept rather than hidden. */
+    var smap={};res[1].forEach(function(r){
+      if(r.model_slug)smap[r.creator_slug+'/'+r.model_slug]=r.sport;
+    });
+    function inSport(r){
+      var sp=smap[r.creator_slug+'/'+r.model_slug];
+      return sp==null||sportFamily(sp)===sportFamily(rkSport.code);
+    }
     function board(title,rows,fmt,sub){
-      var body=(rows||[]).map(function(r){
+      var body=(rows||[]).filter(inSport).map(function(r){
         return '<tr class="rowlink" data-slug="'+esc(r.creator_slug)+'"><td class="num" style="color:var(--faint)">'+r.rank+'</td>'+
           '<td><span class="nm">'+esc(r.creator_name)+'</span>'+(fmap[r.creator_slug]?' <span class="fstar" title="Founding Member">&#9733;</span>':'')+'<br><span class="sb" style="color:var(--faint);font-size:11px">'+esc(r.model_name)+'</span></td>'+
           '<td class="num" style="font-weight:700">'+fmt(r.value)+'</td>'+
@@ -954,6 +1028,7 @@ async function renderRankings(view){
       return '<li><b>'+esc(u.model_name)+'</b> <span class="note">('+esc(u.creator_slug)+'): '+esc(u.reason)+'</span></li>';
     }).join('');
     view.innerHTML='<h1>Rankings</h1>'+
+      sportSwitcherHTML(mMeta3)+
       '<p class="lede">Three separate boards, never blended into one score. A model must cover at least '+d.thresholds.min_coverage_pct+'% of the season slate and have '+d.thresholds.min_graded_games+' graded games to be ranked. Cherry-picking a slate is the fastest way off these boards.</p>'+
       '<div class="boards3">'+
         board('Win %',d.boards.win_pct,function(v){return fmtPct(v);},'vs closing line')+
@@ -962,6 +1037,7 @@ async function renderRankings(view){
       '</div>'+
       (un?'<h2>Not yet ranked</h2><ul style="color:var(--dim);font-size:13px;line-height:1.9">'+un+'</ul>':'')+
       '<p class="note"><a href="#rules">How grading works →</a> &middot; <a href="#performance">Compare any two models side by side →</a></p>';
+    bindSportSwitcher(function(){renderRankings(view);});
     document.querySelectorAll('.rowlink').forEach(function(tr){tr.onclick=function(){location.hash='#/'+tr.getAttribute('data-slug');};});
   }catch(e){fail(view,e);}
 }
@@ -970,15 +1046,25 @@ async function renderRankings(view){
 async function renderModels(view){
   view.innerHTML='<div class="emptybox">Loading the directory&hellip;</div>';
   try{
-    var rows=await wallRows();
+    var allRows=await wallRows();
+    var mMeta2=await meta().catch(function(){return {sports:[]};});
+    var sp=currentSport(mMeta2);
+    var rows=rowsForSport(allRows,sp.code);
     var head='<h1>The models</h1>'+
-      '<p class="lede">Every model in the Collective: who built it, what it covers, and how it has actually done. One click into any card gives the full graded game log. <span class="fstar">&#9733;</span> marks a founding member.</p>';
+      '<p class="lede">Every model in the Collective: who built it, what it covers, and how it has actually done. One click into any card gives the full graded game log. <span class="fstar">&#9733;</span> marks a founding member.</p>'+
+      sportSwitcherHTML(mMeta2);
     if(!rows.length){
-      view.innerHTML=head+'<div class="emptybox">The directory is waiting on its first model. Creators join by invite and appear here the moment their profile is created.</div>';
+      view.innerHTML=head+'<div class="emptybox">'+
+        (allRows.length
+          ? 'No '+esc(sportLongName(sp.code))+' model yet \u2014 switch above to see the others.'
+          : 'The directory is waiting on its first model. Creators join by invite and appear here the moment their profile is created.')+
+        '</div>';
+      bindSportSwitcher(function(){renderModels(view);});
       return;
     }
     var search=rows.length>=9?'<div class="sortsel"><input id="mdq" placeholder="Filter by creator, model, or sport" style="width:260px"></div>':'';
     view.innerHTML=head+search+'<div class="cards" id="mdCards">'+rows.map(modelCard).join('')+'</div>';
+    bindSportSwitcher(function(){renderModels(view);});
     if($('mdq'))$('mdq').oninput=function(){
       var q=this.value.toLowerCase();
       document.querySelectorAll('#mdCards .mcard').forEach(function(cd){
@@ -1324,11 +1410,59 @@ function slateSelectedModel(d){
 }
 
 /* ================= sport ==================================================
-   The SERVER owns the sport vocabulary (meta().sports). Nothing here invents a
-   sport: this only remembers which of the server's sports the reader is
-   looking at, and validates that choice against the live list every time. A
-   sport that disappears server-side falls back to the first one rather than
-   producing an empty board. */
+   ONE REGISTRY. Everything this page knows about a sport lives in SPORTS and
+   nowhere else: what to call it, what the server might call it, how its season
+   is shaped, and how to recognise one of its files. Adding the next sport is
+   one entry here — not a new branch in the wall, the board, the week picker,
+   the uploader and the profile.
+
+   The SERVER still owns the vocabulary. meta().sports is the live list and
+   this registry never invents a sport that is not on it; the registry only
+   says how to DISPLAY and INTERPRET the ones the server offers, and supplies
+   sane behaviour for a code it has never heard of.
+
+   `family` is the stable internal key. `aliases` are the codes a server might
+   use for the same sport — a slate detected as college football has to be
+   posted as whatever THIS server calls it, NCAAF or CFB. */
+var SPORTS=[
+  { family:'NFL', name:'NFL', long:'Football', order:1,
+    aliases:['NFL','NATIONAL FOOTBALL LEAGUE','PRO FOOTBALL'],
+    unit:'week', regular:18, max:22,
+    rounds:{19:'Wild Card',20:'Divisional',21:'Conference Championship',22:'Super Bowl'},
+    /* the season is the calendar year it STARTS in */
+    seasonSpan:1,
+    detect:{ model:['nfl'], conferences:['AFC','NFC'] } },
+
+  { family:'CFB', name:'CFB', long:'College Football', order:2,
+    aliases:['CFB','NCAAF','CFB-P4','COLLEGE','NCAA FOOTBALL','COLLEGE FOOTBALL'],
+    unit:'week', regular:15, max:20,
+    rounds:{16:'Conference Championships',17:'Bowl Season',18:'CFP First Round',
+            19:'CFP Quarterfinal',20:'CFP Semifinal / National Championship'},
+    seasonSpan:1,
+    detect:{ model:['cfb','ncaa','college'],
+             conferences:['SEC','ACC','Big Ten','Big 12','Pac-12','Pac-10','Mountain West',
+               'Conference USA','C-USA','Sun Belt','American','American Athletic','AAC',
+               'Mid-American','MAC','Big Sky','FBS Independents','FCS','Southland',
+               'Big South','Ivy','Patriot','Missouri Valley','Colonial','WAC',
+               'Western Athletic'] } }
+];
+/* A sport the server offers that this registry has never heard of still has to
+   render. It gets the neutral shape rather than an NFL-shaped guess. */
+var SPORT_FALLBACK={ family:null, name:'?', long:'', order:99, aliases:[],
+  unit:'week', regular:18, max:22, rounds:{}, seasonSpan:1, detect:{} };
+
+function sportDef(code){
+  var want=String(code||'').toUpperCase().trim(),i,j;
+  for(i=0;i<SPORTS.length;i++){
+    if(SPORTS[i].family===want)return SPORTS[i];
+    for(j=0;j<SPORTS[i].aliases.length;j++)
+      if(SPORTS[i].aliases[j].toUpperCase()===want)return SPORTS[i];
+  }
+  var f={};for(var k in SPORT_FALLBACK)f[k]=SPORT_FALLBACK[k];
+  f.name=want||'?';
+  return f;
+}
+
 var MC_SPORT_KEY='mc_sport';
 function sportList(m){
   return (m&&m.sports&&m.sports.length)?m.sports
@@ -1341,13 +1475,27 @@ function currentSport(m){
   return list[0];
 }
 function setSport(code){try{localStorage.setItem(MC_SPORT_KEY,code);}catch(e){}}
-function sportSwitcherHTML(m){
-  var list=sportList(m);
+/* The switcher names the sport rather than printing a server code at the
+   reader — "College Football", not "NCAAF" — and marks the one whose season is
+   actually running. Registry order decides the order, so NFL leads and the
+   next sport falls in behind it wherever it is added. */
+function sportSwitcherHTML(m,opts){
+  var list=sportList(m).slice();
   if(list.length<2)return '';          /* one sport needs no switch */
+  opts=opts||{};
+  list.sort(function(a,b){
+    return (sportDef(a.code).order||99)-(sportDef(b.code).order||99);
+  });
   var cur=currentSport(m).code;
-  return '<div class="wk sportsw" style="margin-bottom:10px">'+list.map(function(s){
-    return '<button class="'+(s.code===cur?'on':'')+'" data-sport="'+esc(s.code)+'">'+esc(s.code)+'</button>';
-  }).join('')+'</div>';
+  return '<div class="sportsw'+(opts.compact?' compact':'')+'" role="tablist">'+
+    list.map(function(s){
+      var d=sportDef(s.code),live=s.in_season?' <i class="livedot" title="in season"></i>':'';
+      return '<button class="'+(s.code===cur?'on':'')+'" role="tab" data-sport="'+esc(s.code)+'"'+
+        ' aria-selected="'+(s.code===cur?'true':'false')+'"'+
+        ' title="'+esc((d.long||s.name||s.code)+(s.season?' \u00b7 '+s.season:''))+'">'+
+        '<span class="s-long">'+esc(d.long||s.name||s.code)+'</span>'+
+        '<span class="s-short">'+esc(d.family?d.name:s.code)+'</span>'+live+'</button>';
+    }).join('')+'</div>';
 }
 function bindSportSwitcher(rerender){
   document.querySelectorAll('[data-sport]').forEach(function(b){
@@ -1361,36 +1509,48 @@ function bindSportSwitcher(rerender){
    The calendar is per sport: college football's regular season ends at 15 and
    its postseason is conference championships, bowls and the playoff — calling
    week 19 "Wild Card" on a CFB slate would be nonsense. */
-var WEEK_CALENDARS={
-  NFL:{regular:18,max:22,names:{19:'Wild Card',20:'Divisional',21:'Conference Championship',22:'Super Bowl'}},
-  CFB:{regular:15,max:20,names:{16:'Conference Championships',17:'Bowl Season',
-       18:'CFP First Round',19:'CFP Quarterfinal',20:'CFP Semifinal / National Championship'}}
-};
-/* server codes vary; map the ones that mean college football onto one calendar */
-var SPORT_ALIAS={NCAAF:'CFB',CFB:'CFB','CFB-P4':'CFB',COLLEGE:'CFB','NCAA FOOTBALL':'CFB',NFL:'NFL'};
-/* A conference column naming any of these means the file is college football,
-   whoever produced it. Kept as a declared table rather than a magic regex so it
-   can be read, extended and tested. */
-var CFB_CONFERENCES=['SEC','ACC','Big Ten','Big 12','Pac-12','Pac-10','Mountain West',
-  'Conference USA','C-USA','Sun Belt','American','American Athletic','AAC','Mid-American',
-  'MAC','Big Sky','FBS Independents','FCS','Southland','Big South','Ivy','Patriot',
-  'Missouri Valley','Colonial','WAC','Western Athletic'];
-function looksLikeCfbConference(text){
-  var t=' '+String(text||'').toLowerCase().replace(/[^a-z0-9]+/g,' ')+' ';
-  for(var i=0;i<CFB_CONFERENCES.length;i++){
-    var c=' '+CFB_CONFERENCES[i].toLowerCase().replace(/[^a-z0-9]+/g,' ')+' ';
-    if(t.indexOf(c)>=0)return true;
+/* Which sport does a conference name belong to? Driven by the registry, so a
+   new sport declaring its conferences is recognised in uploads for free. */
+function sportFromConference(text){
+  var t=' '+String(text||'').toLowerCase().replace(/[^a-z0-9]+/g,' ')+' ',i,j,c;
+  for(i=0;i<SPORTS.length;i++){
+    var list=(SPORTS[i].detect&&SPORTS[i].detect.conferences)||[];
+    for(j=0;j<list.length;j++){
+      c=' '+list[j].toLowerCase().replace(/[^a-z0-9]+/g,' ')+' ';
+      if(t.indexOf(c)>=0)return SPORTS[i].family;
+    }
   }
-  return false;
+  return null;
 }
+/* Which sport does a model_version / feature_version string belong to? */
+function sportFromModelString(text){
+  var t=String(text||'').toLowerCase(),i,j;
+  for(i=0;i<SPORTS.length;i++){
+    var list=(SPORTS[i].detect&&SPORTS[i].detect.model)||[];
+    for(j=0;j<list.length;j++)if(t.indexOf(list[j])>=0)return SPORTS[i].family;
+  }
+  return null;
+}
+/* the week shape for a sport, straight off the registry */
 function weekCalendar(code){
-  return WEEK_CALENDARS[sportFamily(code)]||WEEK_CALENDARS.NFL;
+  var d=sportDef(code);
+  return {regular:d.regular,max:d.max,names:d.rounds};
 }
 /* Which FAMILY of sport a code belongs to, independent of what the server
-   happens to call it. */
+   happens to call it. An unknown code is its own family, so two unknown sports
+   never silently merge. */
 function sportFamily(code){
-  var k=String(code||'').toUpperCase().trim();
-  return SPORT_ALIAS[k]||k;
+  var d=sportDef(code);
+  return d.family||String(code||'').toUpperCase().trim();
+}
+/* how this sport should be named on screen */
+function sportName(code){
+  var d=sportDef(code);
+  return d.family?d.name:String(code||'');
+}
+function sportLongName(code){
+  var d=sportDef(code);
+  return d.long||String(code||'');
 }
 /* The server owns the vocabulary, so a sport detected from a file has to be
    translated into whichever code THIS server uses before it is sent. Detecting
@@ -1573,6 +1733,131 @@ function teamSimilarity(a,b){
    only accepted when it is UNAMBIGUOUS — "MISSISSIPP" could be Mississippi or
    Mississippi State, and silently picking one would be worse than quarantining
    both. */
+/* WHICH SPORT IS THIS FILE? Pure, top-level and registry-driven, so a new sport
+   becomes detectable by declaring its markers rather than by editing this.
+
+   Order matters: an explicit model stamp beats a conference column, because a
+   creator's own export says what it is and a conference name is an inference.
+   Returns a FAMILY code or null; null means "the file does not say", which is
+   different from "the file says NFL". */
+/* WHAT SPORTS DOES THIS CREATOR COVER?
+
+   DERIVED, not stored. Each of a creator's models carries its sport, so the
+   answer is already in the data and cannot go stale: a creator who posts a
+   college slate covers college football the moment the model exists, and one
+   who retires a model stops claiming it without having to remember to. There
+   is nowhere server-side to store a declared list anyway — /v1/dashboard/profile
+   accepts display_name, description, website_url, x_handle and logo_url, and
+   nothing else — so a "sports I cover" preference would live in one browser
+   and be invisible on the public profile it was meant to appear on. Deriving it
+   is not a compromise here; it is the more truthful answer.
+
+   `declared` is the optional second source: sports the creator has told THIS
+   browser they intend to cover. They render dimmed and are never presented as
+   a record. */
+function creatorSports(models,declared){
+  var out=[],seen={},i,f;
+  (models||[]).forEach(function(mo){
+    if(!mo||!mo.sport)return;
+    f=sportFamily(mo.sport);
+    if(seen[f])return;
+    seen[f]=1;out.push({family:f,code:mo.sport,posted:true});
+  });
+  (declared||[]).forEach(function(code){
+    f=sportFamily(code);
+    if(seen[f])return;
+    seen[f]=1;out.push({family:f,code:code,posted:false});
+  });
+  out.sort(function(a,b){return (sportDef(a.family).order||99)-(sportDef(b.family).order||99);});
+  return out;
+}
+/* Sports a creator has told THIS BROWSER they plan to cover. It is a planning
+   note, not a public claim: /v1/dashboard/profile has nowhere to put it, so it
+   never leaves this device and never appears on the public profile. The
+   dashboard says so where it is offered. */
+var MC_PLAN_KEY='mc_sports_planned';
+function declaredSports(slug){
+  try{
+    var all=JSON.parse(localStorage.getItem(MC_PLAN_KEY)||'{}');
+    var v=all[slug||''];
+    return (v&&v.length)?v:[];
+  }catch(e){return [];}
+}
+function setDeclaredSports(slug,codes){
+  try{
+    var all=JSON.parse(localStorage.getItem(MC_PLAN_KEY)||'{}');
+    all[slug||'']=codes||[];
+    localStorage.setItem(MC_PLAN_KEY,JSON.stringify(all));
+  }catch(e){}
+}
+
+function sportChipsHTML(list,meta2){
+  if(!list||!list.length)return '';
+  var live={};
+  ((meta2&&meta2.sports)||[]).forEach(function(sp){
+    if(sp.in_season)live[sportFamily(sp.code)]=1;
+  });
+  return '<div class="sportchips">'+list.map(function(x){
+    var d=sportDef(x.family);
+    var cls='sc'+(live[x.family]?' live':'')+(x.posted?'':' off');
+    return '<span class="'+cls+'" title="'+esc((d.long||x.code)+(x.posted?'':' \u2014 declared, nothing posted yet'))+'">'+
+      esc(d.family?d.name:x.code)+(x.posted?'':' \u00b7 soon')+'</span>';
+  }).join('')+'</div>';
+}
+
+/* Wall and directory rows each carry the sport of their model, so the split is
+   a filter rather than a new endpoint. A row with NO sport is kept on every
+   board rather than hidden — an unlabelled model is the server's omission, and
+   silently disappearing it would be worse than showing it twice. */
+function rowsForSport(rows,code){
+  var fam=sportFamily(code);
+  return (rows||[]).filter(function(r){
+    if(!r||r.sport==null||r.sport==='')return true;
+    return sportFamily(r.sport)===fam;
+  });
+}
+/* Which sports do these rows actually cover? Used for profile chips and to
+   avoid offering a board that would be empty. */
+function sportsInRows(rows){
+  var seen={},out=[],i,f;
+  for(i=0;i<(rows||[]).length;i++){
+    var sp=rows[i]&&rows[i].sport;
+    if(!sp)continue;
+    f=sportFamily(sp);
+    if(!seen[f]){seen[f]=1;out.push(f);}
+  }
+  out.sort(function(a,b){return (sportDef(a).order||99)-(sportDef(b).order||99);});
+  return out;
+}
+
+function slateDetectSport(cols,rows){
+  if(!cols||!cols.length||!rows||rows.length<2)return null;
+  var ix={},i,r,v,hit;
+  for(i=0;i<cols.length;i++)ix[String(cols[i]).toLowerCase().trim()]=i;
+
+  /* 1. the file's own model stamp */
+  ['model_version','feature_version','model','model_slug','engine'].forEach(function(c){
+    if(hit||ix[c]===undefined)return;
+    for(r=1;r<rows.length;r++){
+      v=(rows[r]||[])[ix[c]];
+      if(!v)continue;
+      var f=sportFromModelString(v);
+      if(f){hit=f;return;}
+    }
+  });
+  if(hit)return hit;
+
+  /* 2. a conference column naming a conference the registry knows */
+  ['home_conference','away_conference','conference','league','division'].forEach(function(c){
+    if(hit||ix[c]===undefined)return;
+    for(r=1;r<rows.length;r++){
+      var f=sportFromConference((rows[r]||[])[ix[c]]);
+      if(f){hit=f;return;}
+    }
+  });
+  return hit||null;
+}
+
 function slateNameIndex(games){
   var byKey={},names=slateServerNames(games),i,k;
   for(i=0;i<names.length;i++){k=teamKey(names[i]);if(k&&!byKey[k])byKey[k]=names[i];}
@@ -2104,10 +2389,55 @@ async function renderCreatorDash(view,me){
       '<span><div class="k">Model numbers posted</div><div class="v">'+postedN+'</div></span>'+
       (nextK?'<span><div class="k">Next kickoff</div><div class="v" style="font-size:13px">'+kickoffFmt(nextK)+'</div></span>':'')+
       '</div><p class="note" style="margin:10px 0 0"><a href="#board">Open the board &rarr;</a> &middot; <a href="#models">All models &rarr;</a> &middot; <a href="#rankings">Rankings &rarr;</a></p></div>';
+    /* ---- what this creator covers ------------------------------------- */
+    (function(){
+      var covered=creatorSports(d.models,declaredSports(c.slug));
+      var offered=sportList(mMeta).slice().sort(function(a,b){
+        return (sportDef(a.code).order||99)-(sportDef(b.code).order||99);
+      });
+      var have={};(d.models||[]).forEach(function(mo){
+        if(mo.sport)have[sportFamily(mo.sport)]=mo.model_name||mo.model_slug;});
+      var planned={};declaredSports(c.slug).forEach(function(x){planned[sportFamily(x)]=1;});
+      html+='<h2>Sports you cover</h2><div class="panel">'+
+        sportChipsHTML(covered,mMeta)+
+        '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">'+
+        offered.map(function(sp){
+          var f=sportFamily(sp.code),d2=sportDef(sp.code);
+          var posted=!!have[f];
+          return '<label class="sportpick'+(posted?' posted':'')+'">'+
+            '<input type="checkbox" data-plan="'+esc(sp.code)+'"'+
+            (posted||planned[f]?' checked':'')+(posted?' disabled':'')+'> '+
+            esc(d2.long||sp.code)+
+            (posted?' <span class="note">&mdash; '+esc(have[f])+'</span>'
+                   :' <span class="note">&mdash; no model yet</span>')+
+            '</label>';
+        }).join('')+'</div>'+
+        '<p class="note" style="margin:10px 0 0">A sport appears on your public profile once you '+
+        'have a model for it &mdash; that is what visitors see, and it cannot go stale. Ticking one '+
+        'you have not posted for yet is a private note in this browser; it is not sent anywhere and '+
+        'nobody else can see it.</p>'+
+        (Object.keys(have).length<offered.length
+          ? '<p class="note" style="margin:8px 0 0;border-left:2px solid var(--warn);padding-left:8px">'
+            +'A slate is attached to a model, and the Collective resolves its games in that '
+            +'<b>model\'s</b> sport. To post for a sport you have no model for, that model has to '
+            +'exist first &mdash; otherwise the slate is looked up in the wrong sport\'s schedule '
+            +'and every game comes back unmatched.</p>'
+          : '')+
+        '</div>';
+    })();
+
     html+='<h2>Post a slate</h2><div class="panel">'+
       '<p class="note" style="margin:0 0 10px">Upload a CSV or Excel file with your projections, or paste rows straight from your spreadsheet. Columns map automatically, you check the result, then it posts. Your first live slate flips your profile to Active Contributor.</p>'+
       '<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end">'+
-      (d.models.length>1?'<div style="min-width:160px"><label>Model</label><select id="slModel">'+d.models.map(function(x){return '<option value="'+esc(x.model_slug)+'">'+esc(x.model_name)+'</option>';}).join('')+'</select></div>':'')+
+      /* ALWAYS shown, and the sport is on the label. Hiding it below two models
+         is what let a college slate go up under an NFL model without the
+         creator ever seeing which model it was attached to — and the model's
+         sport is what the server resolves the games in. */
+      (d.models.length?'<div style="min-width:200px"><label>Model</label><select id="slModel">'+
+        d.models.map(function(x){
+          return '<option value="'+esc(x.model_slug)+'">'+esc(x.model_name||x.model_slug)+
+            (x.sport?' \u00b7 '+esc(sportName(x.sport)):'')+'</option>';
+        }).join('')+'</select></div>':'')+
       '<div style="width:110px"><label>Season</label><input id="slSeason" type="number" value="'+season0+'"></div>'+
       '<div style="min-width:150px"><label>Week</label><select id="slWeek">'+weekOptions(null,(d.models[0]||{}).sport)+'</select></div>'+
       '<div style="min-width:200px"><label>Data type</label><select id="slOrigin">'+
@@ -2233,6 +2563,16 @@ async function renderCreatorDash(view,me){
         toast('Profile saved');
       }catch(e){toast(e.message);}
     };
+    document.querySelectorAll('[data-plan]').forEach(function(cb){
+      cb.onchange=function(){
+        var picked=[];
+        document.querySelectorAll('[data-plan]').forEach(function(x){
+          if(x.checked&&!x.disabled)picked.push(x.getAttribute('data-plan'));
+        });
+        setDeclaredSports(c.slug,picked);
+        toast('Saved in this browser');
+      };
+    });
     $('soBtn').onclick=function(){clearSession();renderDashboard(view);};
 
     /* ---- slate upload wiring ---- */
@@ -2247,34 +2587,7 @@ async function renderCreatorDash(view,me){
        slateSportMismatch() is what lets the UI say so out loud instead of
        posting the wrong thing quietly. */
     function slateSportFromFile(){
-      if(!SLATE.cols||!SLATE.cols.length)return null;
-      var ix=edSlateIdx(),i,v;
-      i=ix['model_version'];
-      if(i!==undefined){
-        for(var r=1;r<SLATE.rows.length;r++){
-          v=String((SLATE.rows[r]||[])[i]||'').toLowerCase();
-          if(!v)continue;
-          if(v.indexOf('cfb')>=0||v.indexOf('ncaa')>=0||v.indexOf('college')>=0)return 'CFB';
-          if(v.indexOf('nfl')>=0)return 'NFL';
-        }
-      }
-      i=ix['feature_version'];
-      if(i!==undefined){
-        for(var r2=1;r2<SLATE.rows.length;r2++){
-          v=String((SLATE.rows[r2]||[])[i]||'').toLowerCase();
-          if(v.indexOf('cfb')>=0)return 'CFB';
-        }
-      }
-      /* no EdgeDesk stamp: fall back to what the conference columns say */
-      var ci=ix['home_conference'],ai=ix['away_conference'];
-      if(ci!==undefined||ai!==undefined){
-        for(var r3=1;r3<SLATE.rows.length;r3++){
-          var row=SLATE.rows[r3]||[];
-          var cs=String((ci!==undefined?row[ci]:'')||'')+' '+String((ai!==undefined?row[ai]:'')||'');
-          if(looksLikeCfbConference(cs))return 'CFB';
-        }
-      }
-      return null;
+      return slateDetectSport(SLATE.cols,SLATE.rows);
     }
     function slateSportCode(){
       var m=slateSelectedModel(d);
