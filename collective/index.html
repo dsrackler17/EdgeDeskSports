@@ -1228,6 +1228,12 @@ var SLATE_FIELDS=[
   {f:'away_team',label:'Away team',req:true,syn:['away','road','away_team','visitor','a','away team']},
   {f:'kickoff',label:'Game date',req:true,syn:['date','kickoff','game_date','datetime','start','start_time','gamedate','game date','kickoff_local']},
   {f:'week',label:'Week',req:false,syn:['week','wk']},
+  /* The season belongs to the FILE. Taking it from meta.sports[0] posts a 2026
+     college slate under whatever season the server happens to list first. */
+  {f:'season',label:'Season',req:false,syn:['season','yr','year']},
+  /* Declared alongside the kickoff by the EdgeDesk export; without it a bare
+     wall-clock time is read in the reader's own timezone. */
+  {f:'kickoff_tz',label:'Kickoff timezone',req:false,syn:['kickoff_tz','timezone','tz','kickoff timezone']},
   {f:'game_ref',label:'Game id (optional)',req:false,syn:['game_id','game_ref']},
   {f:'projected_spread',label:'Your spread (home side)',req:false,syn:['projected_spread','proj_spread','spread','line','my_line','model_spread','my line','model_home_line']},
   {f:'projected_total',label:'Your total',req:false,syn:['projected_total','proj_total','total','ou','over_under','over/under','model_fair_total']},
@@ -1510,7 +1516,37 @@ function slateSide(team,home,away){
   return null;
 }
 
-function slateKick(v){
+/* What is the UTC offset of `zone` at `utcMs`, in minutes? Named zones need
+   the instant because of daylight saving. Returns null when the zone is not
+   something this runtime understands. */
+function tzOffsetMinutes(zone,utcMs){
+  var z=String(zone||'').trim();
+  if(!z)return null;
+  if(/^(Z|UTC|GMT|UT)$/i.test(z))return 0;
+  var m=z.match(/^(?:UTC|GMT)?([+-])(\d{1,2}):?(\d{2})?$/i);
+  if(m)return (m[1]==='-'?-1:1)*(parseInt(m[2],10)*60+parseInt(m[3]||'0',10));
+  try{
+    var dtf=new Intl.DateTimeFormat('en-US',{timeZone:z,hour12:false,
+      year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit'});
+    var parts={},arr=dtf.formatToParts(new Date(utcMs)),i;
+    for(i=0;i<arr.length;i++)parts[arr[i].type]=arr[i].value;
+    var asUtc=Date.UTC(+parts.year,+parts.month-1,+parts.day,
+      (+parts.hour)%24,+parts.minute,+parts.second);
+    return Math.round((asUtc-utcMs)/60000);
+  }catch(e){return null;}
+}
+
+/* A kickoff is shared data. "2026-08-29 19:00" carries no timezone, and
+   new Date() on that form is specified to mean the READER'S local time — so
+   the same file means a different instant for every creator who opens it, and
+   in US Pacific four of five games in a college slate roll into the next UTC
+   day and stop matching the schedule.
+
+   So: honour the timezone the file declares (the EdgeDesk export ships a
+   kickoff_tz column), and when nothing is declared read a bare wall-clock as
+   UTC rather than as wherever this laptop happens to be. An explicit offset or
+   a trailing Z in the value itself always wins — that is already unambiguous. */
+function slateKick(v,tz){
   var n=slateNum(v);
   if(n!==null&&n>20000&&n<80000){ /* Excel date serial */
     return new Date(Math.round((n-25569)*86400*1000)).toISOString();
@@ -1519,6 +1555,15 @@ function slateKick(v){
   /* "2026-09-09 20:20" (the EdgeDesk export) parses everywhere once the space
      is a T; Safari rejects the space form. */
   if(/^\d{4}-\d{2}-\d{2} \d{1,2}:\d{2}/.test(s))s=s.replace(' ','T');
+  /* a date-time with no designator: pin it instead of letting the runtime guess */
+  if(/^\d{4}-\d{2}-\d{2}T\d{1,2}:\d{2}(:\d{2})?$/.test(s)){
+    var naive=Date.parse(s+'Z');
+    if(isFinite(naive)){
+      var off=tzOffsetMinutes(tz,naive);
+      if(off===null)off=0;               /* undeclared reads as UTC, never local */
+      return new Date(naive-off*60000).toISOString();
+    }
+  }
   if(/^\d{4}-\d{2}-\d{2}$/.test(s))return s+'T17:00:00Z';
   if(/^\d{1,2}\/\d{1,2}\/\d{2,4}$/.test(s)){
     var p=s.split('/');var y=p[2].length===2?'20'+p[2]:p[2];
@@ -1535,7 +1580,7 @@ function slateBuildRows(season,week){
     var home=String(g('home_team')||'').trim(),away=String(g('away_team')||'').trim();
     if(!home&&!away)continue;
     if(!home||!away){problems.push('Row '+(r+1)+': needs both home and away.');continue;}
-    var kick=slateKick(g('kickoff'));
+    var kick=slateKick(g('kickoff'),g('kickoff_tz'));
     if(!kick){problems.push('Row '+(r+1)+': could not read the date "'+esc(String(g('kickoff')))+'".');continue;}
     /* A real game id from the file (the EdgeDesk export carries nflverse ids
        like 2026_01_NE_SEA) beats a synthesised row ref: it survives renames
@@ -2148,6 +2193,22 @@ async function renderCreatorDash(view,me){
         AMBIGUOUS_SPREAD.indexOf(String(SLATE.cols[spi]).toLowerCase().trim())>=0)
         ? String(SLATE.cols[spi]) : null;
 
+      /* The season the file states, when it states one and states it once. The
+         season box was seeded from meta.sports[0].season — whichever sport the
+         server happens to list first — so a 2026 college slate could be posted
+         under an NFL season of 2025 and matched against a schedule that does
+         not contain it. */
+      var si=SLATE.map['season'],seasons={},sOne=null;
+      if(si!==undefined)for(var sr=1;sr<rows2d.length;sr++){
+        var sv=parseInt(String((rows2d[sr]||[])[si]||'').replace(/[^0-9]/g,''),10);
+        if(isFinite(sv)&&sv>=2000&&sv<=2100)seasons[sv]=1;
+      }
+      var sKeys=Object.keys(seasons);
+      if(sKeys.length===1)sOne=+sKeys[0];
+      SLATE.fileSeason=sOne;
+      SLATE.multiSeason=sKeys.length>1;
+      if(sOne&&$('slSeason')&&+$('slSeason').value!==sOne)$('slSeason').value=sOne;
+
       var wk=slateDetectWeek(rows2d,SLATE.map['week']);
       /* A file spanning several weeks (a season export) must NOT be forced
          under one week: each row already carries its own. Only preselect the
@@ -2207,6 +2268,8 @@ async function renderCreatorDash(view,me){
         (SLATE.detectedWeek?', <strong>'+esc(weekCalendar(slateSportCode()).names[SLATE.detectedWeek]
           ||('Week '+SLATE.detectedWeek))+'</strong> (from your week column)':'')+
         (SLATE.multiWeek?', <strong>multiple weeks</strong> — each row keeps its own week from the file':'')+
+        (SLATE.fileSeason?', season <strong>'+esc(SLATE.fileSeason)+'</strong> (from your file)':'')+
+        (SLATE.multiSeason?', <strong>more than one season</strong> — check the season box':'')+
         '</p><div class="found">'+
         chip(have('home_team'),'home team')+chip(have('away_team'),'away team')+
         chip(have('kickoff'),'date')+
