@@ -130,6 +130,52 @@ already in its synonym table:
 Columns the uploader does not recognise are ignored, so the Power 4 extras ride
 along harmlessly.
 
+### Two doors, and they are not the same function
+
+* The **browser upload** (Dashboard → Post a slate) posts to
+  `collective_public` → `/v1/dashboard/submit`.
+* The **API-key path** (a creator's script sending `x-collective-key`) posts to
+  `collective_ingest` → `/v1/projections`.
+
+Both hand the envelope to the same `ingest_submission` RPC, but they are
+different deployments: editing one does not change the other.
+
+### Edits `collective_ingest` needs for a non-NFL sport
+
+Neither blocks a submission — `marketSnapshot` is explicitly additive and
+returns null on any failure — but without them a college-football creator gets
+`market: null` on every receipt and an `available:false` market endpoint.
+
+1. `marketSnapshot()` hard-codes NFL:
+
+   ```ts
+   if (String(sport).toUpperCase() !== "NFL") return null;
+   ...
+   p_league: "nfl",
+   ```
+
+   Replace with a sport→league map, so a sport with no stored market returns
+   null and every other sport is looked up properly:
+
+   ```ts
+   // The league key the Collective's own odds feed stores. A sport missing
+   // here has no stored market: the snapshot is null and the submission still
+   // stands. The values must match what collective_odds_ingest writes —
+   // adding a sport here without adding it there yields an empty board.
+   const ODDS_LEAGUE: Record<string, string> = { NFL: "nfl", CFB: "ncaaf", NCAAF: "ncaaf" };
+
+   async function marketSnapshot(sport: string) {
+     const league = ODDS_LEAGUE[String(sport).toUpperCase()];
+     if (!league) return null;
+     ...
+     p_league: league,
+   ```
+
+2. `/v1/market` reads `auth.models[0]?.sport_code ?? "NFL"` — the FIRST model on
+   the account. A creator with an NFL model and a CFB model always gets the NFL
+   market back. It should take the model from the query
+   (`?model=<slug>`) and fall back to the first only when none is given.
+
 ### The one thing that is NOT in this repo
 
 **The Collective's sport vocabulary is server-side.** `meta().sports` comes from
