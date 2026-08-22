@@ -1255,6 +1255,17 @@ function slateNum(v){
   if(s===''||isNaN(+s))return null;
   return +s;
 }
+/* The model a slate is being posted for. With one model there is no choice;
+   with several, the picker decides, and everything derived from the model —
+   its sport, and therefore its week calendar — must follow that choice. */
+function slateSelectedModel(d){
+  var sel=$('slModel'),i;
+  if(sel&&sel.value&&d&&d.models){
+    for(i=0;i<d.models.length;i++)if(d.models[i].model_slug===sel.value)return d.models[i];
+  }
+  return (d&&d.models&&d.models[0])||null;
+}
+
 /* ================= sport ==================================================
    The SERVER owns the sport vocabulary (meta().sports). Nothing here invents a
    sport: this only remembers which of the server's sports the reader is
@@ -2133,8 +2144,15 @@ async function renderCreatorDash(view,me){
           'Map <b>your spread</b> or <b>market line</b> in the column mapping, run the check again, then post.</div>';
         $('slGo').disabled=true;return;
       }
+      /* The sport MUST follow the model the creator picked, not whichever
+         model happens to be first on the account. Sending model=<my CFB
+         model> with sport=NFL matches the rows against the wrong schedule
+         and every game comes back rejected or quarantined — which is exactly
+         what a creator with an NFL model and a CFB model hits the first time
+         they post a college slate. */
+      var selModel=slateSelectedModel(d);
       var env={
-        sport:(d.models[0]&&d.models[0].sport)||'NFL',
+        sport:(selModel&&selModel.sport)||'NFL',
         season:+$('slSeason').value,
         data_origin:$('slOrigin').value,
         rows:sendRows,dry_run:dry
@@ -2179,6 +2197,16 @@ async function renderCreatorDash(view,me){
     /* A numberless slate goes through slateSend so the creator gets the real
        reason, not "run the check first" after they just ran it. */
     $('slGo').onclick=function(){if(SLATE.checked||SLATE.numberless)slateSend(false);else toast('Run the check first');};
+    /* changing the model changes the sport, so the week calendar changes with
+       it (a CFB slate must not offer "Super Bowl") and the dry check is
+       invalidated, because it was run against a different sport's schedule */
+    if($('slModel'))$('slModel').onchange=function(){
+      var mo=slateSelectedModel(d),wk=$('slWeek');
+      if(wk){var keep=wk.value;wk.innerHTML=weekOptions(keep,mo&&mo.sport);}
+      SLATE.checked=false;if($('slGo'))$('slGo').disabled=true;
+      if($('slOut'))$('slOut').innerHTML='<p class="note" style="margin:8px 0 0">Model changed to '
+        +esc(mo?mo.model_name:'-')+' ('+esc(mo?mo.sport:'?')+'). Run the check again before posting.</p>';
+    };
 
     function wireCopy(){
       document.querySelectorAll('[data-copy]').forEach(function(b){
