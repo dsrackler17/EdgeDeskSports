@@ -1,37 +1,46 @@
--- Read-only schema readout. Run this whole file and paste the output.
+-- Read-only schema readout. Paste this whole thing into the Supabase SQL
+-- Editor and paste the result back.
 --
--- Every query here reads system catalogs only. It references no column of
--- yours by name, so it cannot fail the way the last two attempts did
--- ("column p.game_ref does not exist"). It writes nothing.
+-- ONE statement, plain SQL. No psql meta-commands: the last version opened
+-- its sections with a client-only directive that the SQL Editor rejects.
+-- It reads system catalogs only and names no column of the collective schema,
+-- so it cannot fail on a column that does not exist. It writes nothing.
 --
--- The output is what is needed to write the actual fixes: which columns the
--- projections table really has, how board_models chooses the single row it
--- serves per model and game, and the exact coherence check inside
--- ingest_submission.
+-- Three sections come back in one grid:
+--   A  the real columns on the tables involved
+--   B  the board_models definition - its ORDER BY is the line that decides
+--      which single row per model and game the wall renders
+--   C  the spread/probability check inside ingest_submission
 
-\echo '=== A. columns, per table ==='
-select table_name,
-       string_agg(column_name || ' ' || data_type, ', ' order by ordinal_position) as columns
-from information_schema.columns
-where table_schema = 'collective'
-  and table_name in ('projections','submissions','games','board_models',
-                     'game_detail','consensus','models','creators')
-group by table_name
-order by table_name;
+select 'A columns'   as section,
+       c.table_name  as item,
+       string_agg(c.column_name || ' ' || c.data_type, ', ' order by c.ordinal_position) as detail
+from information_schema.columns c
+where c.table_schema = 'collective'
+  and c.table_name in ('projections','submissions','games','board_models',
+                       'game_detail','consensus','models','creators')
+group by c.table_name
 
-\echo '=== B. how board_models picks its row (look at the ORDER BY) ==='
-select pg_get_viewdef(c.oid, true) as board_models_definition
-from pg_class c
-join pg_namespace n on n.oid = c.relnamespace
-where n.nspname = 'collective' and c.relname = 'board_models';
+union all
 
-\echo '=== C. the spread/probability check inside ingest_submission ==='
-select l.i as line_no, l.ln as source
+select 'B board_models',
+       'definition',
+       pg_get_viewdef(k.oid, true)
+from pg_class k
+join pg_namespace n on n.oid = k.relnamespace
+where n.nspname = 'collective' and k.relname = 'board_models'
+
+union all
+
+select 'C ingest check',
+       lpad(l.i::text, 5, '0'),
+       l.ln
 from pg_proc p
-join pg_namespace n on n.oid = p.pronamespace
+join pg_namespace n2 on n2.oid = p.pronamespace
 cross join lateral unnest(string_to_array(pg_get_functiondef(p.oid), chr(10)))
        with ordinality as l(ln, i)
-where n.nspname = 'collective'
+where n2.nspname = 'collective'
   and p.proname = 'ingest_submission'
   and (l.ln ilike '%prob%' or l.ln ilike '%0.025%' or l.ln ilike '%contradict%')
-order by l.i;
+
+order by 1, 2;
