@@ -357,12 +357,30 @@ if (typeof sandbox.teamKey === 'function') {
       var r = S.slateResolveName(ix, 'North Carolina');
       return r && r.name === 'North Carolina Tar Heels' && r.how === 'expanded';
     })());
-  chk('an AMBIGUOUS truncation is refused, never guessed',
+  chk('the LONGEST truncation wins, because it is the most specific',
     (function () {
-      /* both of these are a prefix of "mississippistate", so the truncation
-         genuinely cannot be resolved to one school */
-      var ix = S.slateNameIndex([{ label: 'MISSISSIPP @ Alpha' }, { label: 'MISSISSIPPI @ Beta' }]);
-      var r = S.slateResolveName(ix, 'Mississippi State');
+      /* "Florida State" starts with both FLORIDASTA and FLORIDA, and only the
+         first is Florida State — the second is a different school that also
+         plays that week. Refusing both stranded two real games. */
+      var ix = S.slateNameIndex([{ label: 'FLORIDASTA @ FLORIDA' },
+                                 { label: 'NEWMEXICOS @ NEWMEXICO' }]);
+      return S.slateResolveName(ix, 'Florida State').name === 'FLORIDASTA'
+        && S.slateResolveName(ix, 'New Mexico State').name === 'NEWMEXICOS';
+    })());
+  chk('the shorter school still resolves to itself',
+    (function () {
+      var ix = S.slateNameIndex([{ label: 'FLORIDASTA @ FLORIDA' },
+                                 { label: 'NEWMEXICOS @ NEWMEXICO' }]);
+      return S.slateResolveName(ix, 'Florida').name === 'FLORIDA'
+        && S.slateResolveName(ix, 'New Mexico').name === 'NEWMEXICO';
+    })(),
+    'the fix for Florida State must not break Florida');
+  chk('a genuine two-way expansion is still refused, never guessed',
+    (function () {
+      /* two different schools both start with this name, and nothing in the
+         name says which — unlike a truncation, length does not decide it */
+      var ix = S.slateNameIndex([{ label: 'CHARLESTONSO @ A' }, { label: 'CHARLESTONCOLL @ B' }]);
+      var r = S.slateResolveName(ix, 'Charleston');
       return r && r.ambiguous && r.ambiguous.length === 2;
     })(),
     'silently picking one would be worse than quarantining both');

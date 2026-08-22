@@ -1586,15 +1586,32 @@ function slateResolveName(byKey,team){
   /* the backend's key is a truncation of ours */
   for(i=0;i<keys.length;i++)
     if(keys[i].length>=6&&keys[i].length<k.length&&k.indexOf(keys[i])===0)hits.push(keys[i]);
-  if(hits.length===1)return {name:byKey[hits[0]],how:'truncated'};
-  if(hits.length>1)return {ambiguous:hits.map(function(x){return byKey[x];})};
+  if(hits.length)return pickLongest(hits,'truncated');
   /* or ours is the start of theirs — "TCU" against "TCU Horned Frogs" */
   hits=[];
   for(i=0;i<keys.length;i++)
     if(k.length>=6&&keys[i].length>k.length&&keys[i].indexOf(k)===0)hits.push(keys[i]);
   if(hits.length===1)return {name:byKey[hits[0]],how:'expanded'};
+  /* More than one school starts with this name — "Miami" against MIAMIFL and
+     MIAMIOH. Unlike a truncation, nothing in the name says which, whatever
+     their lengths, so this is refused rather than guessed. */
   if(hits.length>1)return {ambiguous:hits.map(function(x){return byKey[x];})};
   return null;
+
+  /* Several of the backend's keys can be a prefix of one name, because the
+     backend truncates and because neighbouring schools share a stem:
+     "Florida State" starts with both FLORIDASTA and FLORIDA, and only the
+     first is Florida State — the second is a different school that also plays.
+     The LONGEST prefix is the most specific match and is the answer. Two keys
+     of the SAME length are a real collision and are still refused. */
+  function pickLongest(list,how){
+    /* No tie is possible here: two DISTINCT strings of the same length cannot
+       both be a prefix of the same name. Truncation always resolves. */
+    var best=list[0],j;
+    for(j=1;j<list.length;j++)if(list[j].length>best.length)best=list[j];
+    return {name:byKey[best],how:how};
+  }
+
 }
 /* Rewrite a built slate onto the schedule's spellings. Returns new rows plus
    what was changed, so the creator is told rather than surprised. */
@@ -2390,6 +2407,32 @@ async function renderCreatorDash(view,me){
       $('slOut').innerHTML=SLATE.ragged.length?slateRaggedHTML():'';
     }
 
+    /* When a slate is quarantined even though every name resolved against the
+       schedule, the names are not what the server is matching on — and no
+       amount of guessing from here will find out which field is. So print the
+       two things side by side: the shape of a game as /v1/games returns it, and
+       the row that was actually sent. Whoever owns the backend can read the
+       mismatch off this in seconds. */
+    function slateQuarantineForensics(sent){
+      var g=(SLATE.serverGames&&SLATE.serverGames[0])||null;
+      if(!g||!sent||!sent.length)return '';
+      var keys=[];for(var k in g)if(Object.prototype.hasOwnProperty.call(g,k))keys.push(k);
+      function trim(o){
+        try{var t=JSON.stringify(o,null,1);return t.length>900?t.slice(0,900)+'\n  …':t;}
+        catch(e){return String(o);}
+      }
+      return '<details style="margin-top:10px"><summary class="note">'+
+        'Why did these not match? &mdash; what the schedule returns vs what was sent</summary>'+
+        '<p class="note" style="margin:8px 0 4px">A game as <span class="mono">/v1/games</span> returns it '+
+        '(fields: <span class="mono">'+keys.map(esc).join(', ')+'</span>):</p>'+
+        '<pre class="mono" style="font-size:11px;white-space:pre-wrap;margin:0">'+esc(trim(g))+'</pre>'+
+        '<p class="note" style="margin:8px 0 4px">The first row that was posted:</p>'+
+        '<pre class="mono" style="font-size:11px;white-space:pre-wrap;margin:0">'+esc(trim(sent[0]))+'</pre>'+
+        '<p class="note" style="margin:8px 0 0">If the team names above already agree, the server is '+
+        'matching on something else &mdash; an id, a different field, or the kickoff &mdash; and that is '+
+        'a server-side lookup to fix, not a spelling in your file.</p></details>';
+    }
+
     function slateRaggedHTML(){
       var n=SLATE.ragged.length,ex=SLATE.ragged.slice(0,5);
       return '<div class="errbox">'+
@@ -2767,7 +2810,8 @@ async function renderCreatorDash(view,me){
         $('slOut').innerHTML=pfHtml+alignHtml+'<div class="panel" style="margin-top:10px;border-color:'+((c2.rejected||0)>0?'rgba(217,154,43,.5)':'rgba(47,180,124,.5)')+'">'+
           '<b>'+(dry?'Dry run:':'Posted:')+'</b> <span class="mono">'+(c2.resolved||0)+' matched, '+(c2.first||0)+' first submissions, '+(c2.movement||0)+' revisions, '+(c2.late||0)+' late, '+(c2.quarantined||0)+' quarantined, '+(c2.rejected||0)+' rejected</span>'+
           (lines?'<div style="margin-top:8px;font-size:12px">'+lines+'</div>':'')+
-          ((c2.quarantined||0)>0?'<p class="note" style="margin:8px 0 0">Quarantined games could not be matched to the schedule (usually a team name). They are saved and get resolved on the admin side; nothing is lost.</p>':'')+
+          ((c2.quarantined||0)>0?'<p class="note" style="margin:8px 0 0">Quarantined games could not be matched to the schedule (usually a team name). They are saved and get resolved on the admin side; nothing is lost.</p>'
+            +slateQuarantineForensics(sendRows):'')+
           (dry?'<p class="note" style="margin:8px 0 0">Nothing was saved. If this looks right, hit Post slate.</p>':
             '<p style="margin:8px 0 0"><b style="color:var(--pos)">Your slate is in.</b> <a href="#/'+esc(c.slug)+'">See your profile</a> or <a href="#">the wall</a>.</p>')+
           probRejectHTML(r,opts)+
