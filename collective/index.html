@@ -1474,6 +1474,20 @@ function teamKey(s){
    posted, and this answers the only question that matters — will these names
    resolve, and if not, which ones. `label` is the shape /v1/games returns
    ("Away @ Home"); explicit home/away fields are honoured when present. */
+/* the server's team names as it spells them, de-duplicated on the shared key */
+function slateServerNames(games){
+  var seen={},out=[];
+  (games||[]).forEach(function(g){
+    var cands=String(g.label||'').split(/\s+@\s+|\s+at\s+/i)
+      .concat([g.home_team,g.away_team,g.home,g.away]);
+    cands.forEach(function(t){
+      var name=String(t||'').trim(),k=teamKey(name);
+      if(!k||seen[k])return;
+      seen[k]=1;out.push(name);
+    });
+  });
+  return out;
+}
 function slateServerTeams(games){
   var have={};
   (games||[]).forEach(function(g){
@@ -1486,8 +1500,43 @@ function slateServerTeams(games){
   });
   return have;
 }
+/* How alike are two team names, once they are canonical? Token overlap plus a
+   shared-prefix bonus, which is enough to put "Florida St" next to "Florida
+   State" and "UNC" next to "North Carolina" without pretending to be clever. */
+function teamSimilarity(a,b){
+  var ka=teamKey(a),kb=teamKey(b);
+  if(!ka||!kb)return 0;
+  if(ka===kb)return 1;
+  var ta=String(a).toLowerCase().split(/[^a-z0-9]+/).filter(Boolean);
+  var tb=String(b).toLowerCase().split(/[^a-z0-9]+/).filter(Boolean);
+  var shared=0,i,j,used={};
+  for(i=0;i<ta.length;i++)for(j=0;j<tb.length;j++){
+    if(used[j])continue;
+    if(ta[i]===tb[j]||(ta[i].length>2&&tb[j].length>2&&
+       (ta[i].indexOf(tb[j])===0||tb[j].indexOf(ta[i])===0))){
+      shared++;used[j]=1;break;
+    }
+  }
+  var tok=shared/Math.max(ta.length,tb.length);
+  var pre=0,lim=Math.min(ka.length,kb.length);
+  while(pre<lim&&ka.charAt(pre)===kb.charAt(pre))pre++;
+  var score=Math.max(tok,pre/Math.max(ka.length,kb.length));
+  /* One name being the whole start of the other is the single strongest signal
+     there is: "TCU" inside "TCU Horned Frogs", "North Carolina" inside "North
+     Carolina Tar Heels". Token counting alone scores those low precisely
+     because the longer name carries extra words. */
+  if(lim>=3&&(ka.indexOf(kb)===0||kb.indexOf(ka)===0))score=Math.max(score,0.85);
+  /* every word of the shorter name appearing in the longer one is nearly as
+     strong: "Florida St" against "Florida State" */
+  if(shared===Math.min(ta.length,tb.length))score=Math.max(score,0.75);
+  return score;
+}
+
 function slateUnmatchedTeams(games,rows){
   var have=slateServerTeams(games),miss={},n=0,matched=0;
+  /* keep the server's own spelling, not just its key, so a mismatch can be
+     shown side by side instead of guessed at */
+  var names=slateServerNames(games);
   (rows||[]).forEach(function(o){
     [o.home_team,o.away_team].forEach(function(t){
       var k=teamKey(t);
@@ -1496,7 +1545,16 @@ function slateUnmatchedTeams(games,rows){
       if(!miss[k]){miss[k]=t;n++;}
     });
   });
+  var suggest=Object.keys(miss).map(function(k){
+    var mine=miss[k],best=null,bestScore=0;
+    names.forEach(function(their){
+      var sc=teamSimilarity(mine,their);
+      if(sc>bestScore){bestScore=sc;best=their;}
+    });
+    return {mine:mine,theirs:bestScore>=0.45?best:null,score:+bestScore.toFixed(2)};
+  });
   return {missing:Object.keys(miss).map(function(k){return miss[k];}),
+    suggest:suggest,serverNames:names,
     count:n,matched:matched,serverTeams:Object.keys(have).length,
     none:matched===0};
 }
@@ -2442,7 +2500,8 @@ async function renderCreatorDash(view,me){
       if(!u.count)return null;
       return {level:u.none?'no-teams-at-all':'no-teams',
         sport:sportCode,season:season,week:week,
-        missing:u.missing,serverTeams:u.serverTeams};
+        missing:u.missing,suggest:u.suggest,serverNames:u.serverNames,
+        serverTeams:u.serverTeams};
     }
 
     function slatePreflightHTML(p){
@@ -2463,12 +2522,27 @@ async function renderCreatorDash(view,me){
           'which usually means the schedule loaded there is for a different sport or a different season — not that your spellings are wrong.';
       }else{
         head=p.missing.length+' team'+(p.missing.length===1?'':'s')+' will not match your backend\'s schedule.';
-        body='Not found: <span class="mono">'+p.missing.slice(0,12).map(esc).join('</span>, <span class="mono">')+'</span>'+
-          (p.missing.length>12?' and '+(p.missing.length-12)+' more':'')+
-          '. Those rows will quarantine; the rest will post normally.';
+        /* Naming the missing team is half an answer. The other half is what the
+           backend calls it instead — put the two spellings side by side and the
+           mismatch is obvious rather than a guessing game. */
+        var lines=(p.suggest||[]).map(function(x){
+          return '<div class="mono" style="margin:2px 0">'+esc(x.mine)+
+            (x.theirs?' <span style="color:var(--dim)">&rarr;</span> <span style="color:var(--warn)">'
+              +esc(x.theirs)+'</span> <span class="note">(closest on your backend)</span>'
+              :' <span class="note">&mdash; nothing similar on your backend</span>')+'</div>';
+        }).join('');
+        body=lines+'<p class="note" style="margin:6px 0 0">Those rows will quarantine; the rest will post normally.</p>';
       }
+      var roster=(p.serverNames&&p.serverNames.length)
+        ? '<details style="margin-top:8px"><summary class="note">What your backend has for '
+          +esc(p.sport)+' '+esc(p.season)+(p.week?' week '+esc(p.week):'')+' &mdash; '
+          +p.serverNames.length+' team'+(p.serverNames.length===1?'':'s')+'</summary>'
+          +'<div class="mono" style="font-size:11px;margin-top:6px;line-height:1.6">'
+          +p.serverNames.map(esc).join(' &middot; ')+'</div></details>'
+        : '';
       return '<div class="errbox" style="border-color:rgba(217,154,43,.55)">'+
-        '<b style="color:var(--warn)">'+head+'</b><p class="note" style="margin:6px 0 0">'+body+'</p></div>';
+        '<b style="color:var(--warn)">'+head+'</b><div class="note" style="margin:6px 0 0">'+body+'</div>'+
+        roster+'</div>';
     }
 
     async function slateSend(dry,opts){
