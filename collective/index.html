@@ -480,8 +480,17 @@ function marketBoard(opts){
   try{
     MCOdds.configure({api:API});
     MCOdds.injectCss(document.head);
-    opts=opts||{days:10};
+    opts=opts||{};
     if(!opts.league)opts.league=marketLeague();
+    /* The window is a SPORT question, not a constant. Ten days is right for
+       the NFL, whose slate is a week long and priced a week out. College
+       posts Week 2 and beyond well before Week 1 kicks, so a ten-day window
+       showed a market on the opening Saturday and "no market posted" on every
+       game after it -- from a feed that was carrying all of them. The server
+       caps the window at 28 days and the limit at 200; ask for what the sport
+       actually needs and let it clamp. */
+    if(!opts.days&&!opts.from&&!opts.to)opts.days=(opts.league==='nfl')?10:24;
+    if(!opts.limit)opts.limit=(opts.league==='nfl')?40:120;
     if(typeof MCOdds.leagueFor!=='function')return marketBoardDirect(opts);
     return MCOdds.board(opts).catch(function(){return null;});
   }catch(e){return Promise.resolve(null);}
@@ -989,7 +998,7 @@ async function renderMarket(view){
       view.innerHTML='<div class="errbox">The odds components did not load. Refresh the page.</div>';
       return;
     }
-    var res=await Promise.all([marketBoard({days:10,books:true}),
+    var res=await Promise.all([marketBoard({books:true}),
       api('/v1/games',{auth:true}).catch(function(){return null;})]);
     var mkt=res[0], board=res[1];
     var head='<h1>The market</h1>'+
@@ -1069,7 +1078,7 @@ async function renderMarketGame(view,eventId){
   try{
     if(!window.MCOdds){view.innerHTML='<div class="errbox">The odds components did not load.</div>';return;}
     MCOdds.configure({api:API});MCOdds.injectCss(document.head);
-    var mkt=await marketBoard({days:14,books:true});
+    var mkt=await marketBoard({books:true});
     var g=mkt&&mkt.byEvent?mkt.byEvent[eventId]:null;
     if(!g){
       /* The board is a time window; a game outside it is fetched directly so
@@ -2431,7 +2440,7 @@ async function renderCreatorDash(view,me){
       wallRows().catch(function(){return [];}),
       api('/v1/games',{auth:true}).catch(function(){return null;}),
       meta().catch(function(){return {sports:[{code:'NFL',season:new Date().getFullYear()}]};}),
-      marketBoard({days:8})
+      marketBoard()
     ]);
     var d=res[0],subs=res[1].rows||[],wall=res[2],games=res[3],mMeta=res[4],mkt=res[5];
     var c=d.creator;
@@ -3530,7 +3539,7 @@ async function renderMemberDash(view,me){
       api('/v1/games',{auth:true}).catch(function(){return null;}),
       wallRows().catch(function(){return [];}),
       api('/v1/activity').catch(function(){return null;}),
-      marketBoard({days:8})
+      marketBoard()
     ]);
     var m=res[0],games=res[1],wall=res[2],act=res[3],mkt=res[4];
     var roleLabel=me.role==='subscriber'?'Subscriber':'Member';
