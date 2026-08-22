@@ -281,18 +281,28 @@ def aggregate_offense(d):
         out = out.merge(extra, on=['game_id', 'off_team'], how='left')
     out = out.merge(drv, on=['game_id', 'off_team'], how='left')
 
-    # havoc created BY the defence on this drive set (credited to def_team)
+    # DEFENSIVE FRONT DISRUPTION, credited to the defence.
+    #
+    # This is deliberately NOT the classic havoc rate. Havoc needs pass
+    # break-ups, interceptions and forced fumbles, and every one of those
+    # columns has season-scale coverage collapses in this feed: defence-
+    # credited sacks run 0.07 per team-game in 2014 against 1.71 in 2018,
+    # pass break-ups all but vanish 2020-2024, and interceptions thrown run
+    # 0.87 (2014) / 0.17 (2023) / 0.65 (2025). Those are data artefacts, not
+    # defences changing, and an EWMA fed on them would learn the feed's
+    # release history.
+    #
+    # Sacks TAKEN (offence-side attribution) and stuffed runs (derived from
+    # rushing yardage) are stable across the whole window, so the metric is
+    # built from those two and named for what it actually measures.
     hav = live.groupby(['game_id', 'def_team']).agg(
         hv_sacks=('is_sack', 'sum'),
-        hv_tfl=('stuffed', 'sum'),
-        hv_pbu=('pass_breakup_player', lambda s: int(s.notna().sum())),
-        hv_int=('interception_player', lambda s: int(s.notna().sum())),
-        hv_ff=('fumble_forced_player', lambda s: int(s.notna().sum())),
+        hv_stuffs=('stuffed', 'sum'),
         hv_plays=('is_scrimmage', 'sum')).reset_index()
-    hav['havoc_rate'] = (hav.hv_sacks + hav.hv_tfl + hav.hv_pbu + hav.hv_int
-                         + hav.hv_ff) / hav.hv_plays.replace(0, np.nan)
-    out = out.merge(hav[['game_id', 'def_team', 'havoc_rate']],
-                    left_on=['game_id', 'def_team'], right_on=['game_id', 'def_team'], how='left')
+    hav['front_disruption_rate'] = ((hav.hv_sacks + hav.hv_stuffs)
+                                    / hav.hv_plays.replace(0, np.nan))
+    out = out.merge(hav[['game_id', 'def_team', 'front_disruption_rate']],
+                    on=['game_id', 'def_team'], how='left')
     return out
 
 
@@ -337,7 +347,8 @@ def to_team_game(off):
                 'passing_down_success', 'expl_pass_rate', 'expl_rush_rate', 'stuff_rate',
                 'pass_rate', 'sack_rate_allowed', 'third_down_rate', 'fourth_down_rate',
                 'red_zone_success', 'turnovers', 'points_per_drive', 'drives',
-                'start_field_position', 'finish_rate', 'opportunity_rate', 'havoc_rate']
+                'start_field_position', 'finish_rate', 'opportunity_rate',
+                'front_disruption_rate']
     cols = [c for c in OFF_COLS if c in o.columns]
     o = o[['game_id', 'season', 'week', 'team', 'opponent'] + cols]
     # the mirror: what a team ALLOWED is literally what its opponent's
@@ -375,8 +386,13 @@ def main():
         if len(q):
             qframes.append(q)
         gb = float(d.garbage.mean())
-        print('[%d] plays=%d drives_unanchored=%d garbage_share=%.3f team_games=%d'
-              % (y, len(d), dropped, gb, len(off)))
+        pg = max(1.0, len(off))
+        print('[%d] plays=%d drives_unanchored=%d garbage_share=%.3f team_games=%d '
+              '| per team-game, UNSTABLE columns not used: pbu=%.2f int=%.2f ff=%.2f'
+              % (y, len(d), dropped, gb, len(off),
+                 d.pass_breakup_player.notna().sum() / pg,
+                 d.interception_player.notna().sum() / pg,
+                 d.fumble_forced_player.notna().sum() / pg))
     if not frames:
         raise SystemExit('no player_stats found under %s/pstats' % common.DATA)
     off = pd.concat(frames, ignore_index=True)

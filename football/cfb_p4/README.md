@@ -102,6 +102,12 @@ Measured out of sample, with permutation tests:
 * **Regression constants** — each statistic's own measured game-to-game
   persistence. Turnovers repeat at r = 0.077; anyone reading turnover margin as
   skill is reading noise.
+* **Key numbers, conditioned on the market spread** — P(margin = 3 | spread = 3)
+  is **6.66%** in the Power 4 against the **8.8%** this repo ships for the NFL.
+  The three is real in college football and worth appreciably less; a model
+  reusing NFL key-number mass mis-prices every field-goal-sized spread. There
+  are also no ties — zero in 17,472 FBS-vs-FBS games — so a pick'em never gets
+  a fabricated push.
 
 Offered to the model and **rejected by it**:
 
@@ -130,6 +136,15 @@ Offered to the model and **rejected by it**:
   sophomore file. Using it would leak the future, so experience is derived
   from first roster appearance instead, and the browser board publishes no
   youth score at all.
+
+Two data-quality corrections worth naming: 15.6% of the betting archive's rows
+are exact duplicates and are dropped before any consensus median is taken, and
+the classic havoc rate is **not** computed, because pass break-ups, forced
+fumbles and interceptions have season-scale coverage collapses in this feed
+(break-ups run 0.20 per team-game in 2014, 2.04 in 2017, 0.13 in 2024). What
+ships instead is a front-disruption rate built only from sacks taken and stuffed
+runs, which are stable across the whole window, and it is named for what it
+actually measures.
 
 Not shipped at all, because nothing earned it: weather coefficients (no
 historical weather series exists in this corpus), non-QB injury weights,

@@ -56,7 +56,7 @@ LAST = common.SCHED_LAST
 EFF_FEATS = ['epa_per_play', 'epa_pass', 'epa_rush', 'success_rate',
              'early_down_success', 'passing_down_success', 'expl_epa_rate',
              'yards_per_play', 'sack_rate_allowed', 'stuff_rate',
-             'third_down_rate', 'red_zone_success', 'havoc_rate',
+             'third_down_rate', 'red_zone_success', 'front_disruption_rate',
              'points_per_drive', 'start_field_position', 'pass_rate',
              'plays_per_game']
 # each offensive feature's defensive mirror, used for opponent adjustment
@@ -620,7 +620,7 @@ MATCHUP_PAIRS = [
     ('passing efficiency vs pass defence', 'epa_pass', 'def_epa_pass', 1.0, -1.0),
     ('early-down offence vs early-down defence', 'early_down_success', 'def_early_down_success', 1.0, -1.0),
     ('finishing drives vs red-zone defence', 'red_zone_success', 'def_red_zone_success', 1.0, -1.0),
-    ('ball control vs havoc', 'success_rate', 'def_havoc_rate', 1.0, -1.0),
+    ('ball control vs front disruption', 'success_rate', 'def_front_disruption_rate', 1.0, -1.0),
     ('field position', 'start_field_position', 'def_start_field_position', -1.0, 1.0),
 ]
 
@@ -665,7 +665,7 @@ def fit_persistence(tg):
     if tg is None:
         return {}, {}
     stats = ['turnovers', 'expl_epa_rate', 'third_down_rate', 'red_zone_success',
-             'havoc_rate', 'success_rate', 'epa_per_play', 'sack_rate_allowed',
+             'front_disruption_rate', 'success_rate', 'epa_per_play', 'sack_rate_allowed',
              'stuff_rate', 'points_per_drive']
     out, diag = {}, {}
     d = tg.sort_values(['team', 'season', 'week'])
@@ -877,7 +877,7 @@ def fit_margin_pmf_by_spread(games, lo, hi):
         return dict((m, v / tot) for m, v in out.items())
 
     best_bw, best_ll = None, -1e18
-    for bw in (1.5, 2.0, 3.0, 4.0, 6.0):
+    for bw in (1.5, 2.0, 3.0, 4.0, 6.0, 8.0, 12.0):
         ll = 0.0
         for s_val, grp in te.groupby(te.spread_close.round(0)):
             p = pmf_at(tr, s_val, bw)

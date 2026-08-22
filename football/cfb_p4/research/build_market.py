@@ -57,6 +57,14 @@ def _load_raw():
     for c in ('game_id', 'season', 'week', 'lines', 'odds', 'opening_lines',
               'opening_odds', 'home_team_id', 'away_team_id'):
         L[c] = pd.to_numeric(L[c], errors='coerce')
+    # The archive carries genuine duplicate rows: 1,183,529 raw collapses to
+    # ~998,701 distinct. Left in, they double-weight whichever books happen to
+    # be duplicated, which quietly biases every consensus median.
+    before = len(L)
+    L = L.drop_duplicates(subset=['game_id', 'market_type', 'abbr', 'book',
+                                  'lines', 'odds', 'opening_lines', 'opening_odds'])
+    print('[dedup] %d raw rows -> %d distinct (%.1f%% were duplicates)'
+          % (before, len(L), 100.0 * (before - len(L)) / max(before, 1)))
     L = L[L.game_id.notna()].copy()
     L['game_id'] = L.game_id.astype('int64')
     L['abbr'] = L.abbr.astype(str)

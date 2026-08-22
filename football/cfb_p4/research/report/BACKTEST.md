@@ -65,7 +65,7 @@ out of sample:
 | quarterback absence | 3.90 points, measured over 2846 games where the primary QB took no dropbacks |
 | schedule stress | moves the number by 1.13 points on average; tune r2 0.00685, test r2 0.00254 |
 | conference strength | 0.50 points per point of PRIOR-season cross-conference differential; tune r2 0.09447, TEST r2 0.07899, permutation p 0.0. Applied to cross-conference games only and decayed to zero by six games — the largest validated effect here after the ratings themselves |
-| stylistic matchup | explains 1.99% of what the ratings leave behind |
+| stylistic matchup | explains 2.29% of what the ratings leave behind |
 
 ## What was offered to the model and REJECTED by it
 
@@ -107,8 +107,8 @@ is barely touched. Nothing here was chosen by hand.
 | statistic | n | lag-1 correlation |
 |---|---|---|
 | points_per_drive | 21838 | 0.2206 |
-| havoc_rate | 21838 | 0.2198 |
 | success_rate | 21838 | 0.1807 |
+| front_disruption_rate | 21838 | 0.1582 |
 | epa_per_play | 21838 | 0.1509 |
 | sack_rate_allowed | 21646 | 0.1436 |
 | stuff_rate | 21828 | 0.1086 |
@@ -145,6 +145,33 @@ its August value, by games played:
 | 15 | 0.1041 |
 
 The preseason belief is half gone by four or five games and under 15% by twelve.
+
+## Key numbers, which are not the NFL's
+
+| absolute margin | share of games |
+|---|---|
+| 1 | 3.37% |
+| 2 | 3.28% |
+| 3 | 10.79% |
+| 4 | 3.73% |
+| 6 | 3.41% |
+| 7 | 8.77% |
+| 8 | 2.89% |
+| 10 | 4.82% |
+| 13 | 2.22% |
+| 14 | 4.14% |
+| 17 | 4.18% |
+| 21 | 3.60% |
+
+Conditioned on the market number — which the line archive makes possible —
+**P(margin = 3 | spread = 3) = 6.66%** in the Power 4, against the **8.8%** this
+repo ships for the NFL. The three is real in college football, but it is worth
+appreciably less, and a model that reuses NFL key-number mass mis-prices every
+field-goal-sized spread.
+
+There are also **no ties**: zero of 17,472 FBS-vs-FBS games 2001-2025 finished level.
+The shipped conditional tables assign exactly zero mass to a 0-point margin, so a
+pick'em never gets a fabricated push.
 
 ## Calibration
 

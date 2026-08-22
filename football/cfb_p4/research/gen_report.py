@@ -217,6 +217,27 @@ def main():
         A('The preseason belief is half gone by four or five games and under 15% by twelve.')
         A('')
 
+    A('## Key numbers, which are not the NFL\'s')
+    A('')
+    km = rep.get('key_mass', {})
+    if km:
+        A(table([[k, '%.2f%%' % (100 * v)] for k, v in sorted(km.items(), key=lambda x: int(x[0]))],
+                ['absolute margin', 'share of games']))
+        A('')
+    P4 = j('params_cfb_p4.json')
+    tab = (P4.get('distributions', {}) or {}).get('margin_pmf_by_spread', {})
+    if tab.get('3.0', {}).get('3') is not None:
+        A('Conditioned on the market number — which the line archive makes possible —')
+        A('**P(margin = 3 | spread = 3) = %.2f%%** in the Power 4, against the **8.8%%** this'
+          % (100 * tab['3.0']['3']))
+        A('repo ships for the NFL. The three is real in college football, but it is worth')
+        A('appreciably less, and a model that reuses NFL key-number mass mis-prices every')
+        A('field-goal-sized spread.')
+        A('')
+    A('There are also **no ties**: zero of 17,472 FBS-vs-FBS games 2001-2025 finished level.')
+    A('The shipped conditional tables assign exactly zero mass to a 0-point margin, so a')
+    A('pick\'em never gets a fabricated push.')
+    A('')
     A('## Calibration')
     A('')
     cal = rep.get('calibration', [])
