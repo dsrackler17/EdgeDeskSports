@@ -297,26 +297,33 @@ function relativeAge(seconds: number): string {
 // The odds* prefixes on the read helpers below are deliberate: the dashboard
 // deploys these functions as one flattened script, where a top level
 // `history` or `status` would sit alongside the DOM globals of the same name.
-let settingsCache: { at: number; values: Record<string, unknown> } | null = null;
+/** PER-KEY expiry, not one stamp for the whole cache.
+ *
+ *  With a single `at`, a request for the ncaaf.* keys refreshed the freshness
+ *  stamp on the nfl.* values it never re-read. The nfl branch then satisfied
+ *  `now - at < TTL` on every later call and never refetched, so an operator
+ *  setting nfl.enabled = false watched the NFL cron keep polling a metered
+ *  provider for the life of the isolate. Unreachable with one league, and
+ *  reachable the moment two share an isolate -- which is exactly what adding
+ *  college did. */
+let settingsCache: { at: Record<string, number>; values: Record<string, unknown> } | null = null;
 const SETTINGS_TTL_MS = 60_000;
 
-/** Reads odds settings, cached briefly so a slate render does not make one
- *  round trip per tunable. */
 async function settings(keys: string[]): Promise<Record<string, unknown>> {
   const now = Date.now();
-  if (settingsCache && now - settingsCache.at < SETTINGS_TTL_MS) {
-    const have = keys.every((k) => k in settingsCache!.values);
-    if (have) return settingsCache.values;
-  }
   const values: Record<string, unknown> = { ...(settingsCache?.values ?? {}) };
-  await Promise.all(keys.map(async (k) => {
+  const at: Record<string, number> = { ...(settingsCache?.at ?? {}) };
+  const stale = keys.filter((k) => !(k in values) || !(at[k] > now - SETTINGS_TTL_MS));
+  if (stale.length === 0) return values;
+  await Promise.all(stale.map(async (k) => {
     try {
       values[k] = await rpc<unknown>("odds_get_setting", { p_key: k });
     } catch {
       values[k] = null;
     }
+    at[k] = now;
   }));
-  settingsCache = { at: now, values };
+  settingsCache = { at, values };
   return values;
 }
 
@@ -467,6 +474,16 @@ interface NormalizedSlate {
   fetched_at: string;
   provider_updated_at: string | null;
   events: NormalizedEvent[];
+  /** Did the REQUEST succeed, regardless of how many games came back?
+   *
+   *  books_ok means two different things per provider. For OddsBlaze it is
+   *  "books whose HTTP request succeeded", so empty really is an outage. For
+   *  The Odds API it is "books that appeared in the payload", so a perfectly
+   *  good 200 carrying [] -- no upcoming games -- was indistinguishable from
+   *  every book failing. College is [] for roughly seven months of the year,
+   *  and that was being recorded as an error run that never advanced
+   *  last_poll_at. */
+  transport_ok: boolean;
   books_ok: string[];
   books_failed: { book: string; reason: string }[];
   /** Rows whose shape we did not recognise. Carries the row's KEY NAMES and
@@ -1252,6 +1269,7 @@ const oddsBlazeProvider: OddsProvider = {
         fetched_at,
         provider_updated_at: null,
         events: [],
+        transport_ok: false,
         books_ok: [],
         books_failed: opts.books.map((b) => ({ book: b, reason: "missing_api_key" })),
         unmapped: [],
@@ -1273,6 +1291,8 @@ const oddsBlazeProvider: OddsProvider = {
       fetched_at,
       provider_updated_at: merged.providerUpdatedAt,
       events: merged.events,
+      // Per-book requests: at least one that answered IS the transport working.
+      transport_ok: ok.length > 0,
       books_ok: ok.map((r) => r.book),
       books_failed: failed,
       // Bounded: a systematic shape change produces one report per row, and
@@ -1870,6 +1890,7 @@ const theOddsApiProvider: OddsProvider = {
       fetched_at: fetchedAt,
       provider_updated_at: null,
       events: [],
+      transport_ok: false,
       books_ok: [],
       books_failed: [],
       unmapped: [],
@@ -1936,6 +1957,10 @@ const theOddsApiProvider: OddsProvider = {
 
     return {
       ...base,
+      // The request answered. An empty slate is an empty week, not an outage,
+      // and must not be recorded as one -- college has no games for most of
+      // the calendar and would otherwise never register a successful poll.
+      transport_ok: true,
       provider_updated_at: newest === null ? null : new Date(newest).toISOString(),
       events,
       books_ok: ordered,
@@ -2181,8 +2206,22 @@ async function authorize(req: Request): Promise<{ trigger: string } | Response> 
 
   const presented = (req.headers.get("x-odds-cron-token") ?? "").trim();
   if (presented) {
-    const expected = await rpc<unknown>("odds_get_setting", { p_key: "ingest.cron_token" })
-      .catch(() => null);
+    // "We could not READ the expected token" is not "your token is wrong",
+    // and collapsing the two sent an operator to rotate a credential that
+    // was never the problem. A PostgREST 5xx or a statement timeout now says
+    // so, and the RpcError is logged instead of discarded.
+    let expected: unknown;
+    try {
+      expected = await rpc<unknown>("odds_get_setting", { p_key: "ingest.cron_token" });
+    } catch (e) {
+      console.error("authorize: could not read ingest.cron_token:", e);
+      return err(
+        "server_error",
+        "The ingest token could not be checked because the settings store is unreachable. " +
+          "This is not a credential problem.",
+        503,
+      );
+    }
     // A token that was never generated must never match a caller who also
     // sends nothing: both would be the empty string. sameSecret refuses
     // zero length for exactly this reason.
@@ -2402,10 +2441,15 @@ Deno.serve(async (req) => {
   if (pre) return pre;
   const path = subpath(req, "collective_odds_ingest");
 
-  const auth = await authorize(req);
-  if (auth instanceof Response) return auth;
-
   try {
+    // Inside the try. An RpcError raised while checking admin membership used
+    // to escape the handler entirely, so Deno answered with a bare 500
+    // carrying none of the CORS headers every other response sets -- a
+    // browser caller saw an opaque network failure rather than a readable
+    // error, and nothing reached the catch below to log it.
+    const auth = await authorize(req);
+    if (auth instanceof Response) return auth;
+
     const url = new URL(req.url);
     const force = url.searchParams.get("force") === "1";
 
@@ -2592,7 +2636,16 @@ Deno.serve(async (req) => {
       }
       // A failing provider still gets a floor between attempts, so a retry
       // loop cannot turn an outage into a request storm.
-      if (!force && thr.since_success === null && thr.since_attempt !== null &&
+      //
+      // Gated on the last ATTEMPT's outcome, not on since_success being null.
+      // since_success is null only until a league's first ever successful
+      // poll, so for any league already in production this branch was dead
+      // code: once the cadence window elapsed, every invocation went straight
+      // to a billed request no matter how recently the previous one failed --
+      // 60 attempts an hour against a floor configured at 300 seconds, and
+      // twice that with a second league added.
+      const lastAttemptOk = thr.last_status === "ok" || thr.last_status === "partial";
+      if (!force && !lastAttemptOk && thr.since_attempt !== null &&
           thr.since_attempt < retryFloor) {
         return json({
           ok: true,
@@ -2651,10 +2704,27 @@ Deno.serve(async (req) => {
       try {
         const slate = await provider.fetchSlate(opts);
 
-        // Every book failing is a provider problem, not a slate with no
-        // games. Recording it as "0 events" would make an outage look like
-        // an empty week, so it is reported as an error and no data is touched.
-        if (slate.books_ok.length === 0) {
+        // Record the balance the provider just reported, BEFORE any early
+        // return below. The credit is spent whether or not the slate had
+        // games in it, and this write used to sit past the bail-out: on
+        // exactly the runs that came back empty, the stored balance froze at
+        // whatever the last full ingest reported and the reserve guard then
+        // compared real spending against a stale number. The comment on the
+        // old block claimed this and the placement contradicted it.
+        if (slate.quota) {
+          await rpc("odds_set_setting", {
+            p_key: "provider.quota",
+            p_value: { ...slate.quota, observed_at: new Date().toISOString() },
+          }).catch((e) => console.error("could not persist provider quota:", e));
+        }
+
+        // A failed REQUEST is a provider problem. A successful request with no
+        // games is an empty week, and gets recorded as a normal run so
+        // last_poll_at advances -- otherwise college, which is empty for most
+        // of the year, could never register a successful poll and the retry
+        // and cadence guards downstream would read an idle offseason as a
+        // permanent outage.
+        if (!slate.transport_ok) {
           const reason = slate.books_failed[0]?.reason ?? "no_books_returned";
           await rpc("odds_finish_run", {
             p_run_id: runId,
@@ -2673,16 +2743,6 @@ Deno.serve(async (req) => {
             league,
             books_failed: slate.books_failed,
           });
-        }
-
-        // Record the balance the provider just reported, before anything
-        // below can throw. This is the only moment the real number is known,
-        // and a run that fails later still spent the credit.
-        if (slate.quota) {
-          await rpc("odds_set_setting", {
-            p_key: "provider.quota",
-            p_value: { ...slate.quota, observed_at: new Date().toISOString() },
-          }).catch((e) => console.error("could not persist provider quota:", e));
         }
 
         let written = 0, unchanged = 0, created = 0, seen = 0, rejected = 0;
