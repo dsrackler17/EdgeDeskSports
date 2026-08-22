@@ -3097,11 +3097,28 @@ async function renderCreatorDash(view,me){
     async function slateReadFile(f){
       if(!f)return;
       try{
+        /* .xls is the old binary format, not a zip and not text. The file
+           picker's accept list excludes it, but a DROP bypasses accept
+           entirely and the page's own copy says "CSV or Excel file" — so it
+           arrives, fails the .xlsx test, and gets parsed as text into rows of
+           binary garbage. Say what to do instead. */
+        if(/\.xls$/i.test(f.name)){
+          throw new Error('That is an old-format .xls file, which this reader cannot open. '
+            +'In Excel choose File \u2192 Save As and pick "CSV UTF-8" or ".xlsx", then upload that.');
+        }
         if(/\.xlsx$/i.test(f.name)){
           if(typeof DecompressionStream==='undefined')throw new Error('This browser cannot read Excel files directly. Save as CSV and upload that.');
           await slateLoad(await parseXLSX(await f.arrayBuffer()));
         }else{
-          await slateLoad(parseCSV(await f.text()));
+          var text=await f.text();
+          /* a NUL byte in the first few KB means this is not a text file
+             whatever it is called, and parsing it produces rows that look
+             real */
+          if(text.slice(0,4096).indexOf('\u0000')>=0){
+            throw new Error('That file is not text \u2014 it looks like a binary document '
+              +'saved with a .csv name. Re-save it as CSV UTF-8 and try again.');
+          }
+          await slateLoad(parseCSV(text));
         }
       }catch(e){$('slOut').innerHTML='<div class="errbox">'+esc(e.message||String(e))+'</div>';}
     }

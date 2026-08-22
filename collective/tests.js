@@ -289,6 +289,31 @@ if (typeof sandbox.teamKey === 'function') {
     S.slateUnmatchedTeams([{ label: 'North Carolina at TCU' }],
       [{ home_team: 'TCU', away_team: 'North Carolina' }]).count === 0);
 
+  /* ---- a pick that could mean either side must mean neither ------------
+     slateSide falls back to prefix matching when neither name matches
+     exactly, which is what lets "Ohio" resolve in an Ohio State game. The
+     guard that makes it safe is exclusivity: it only decides when exactly ONE
+     side matches. Verified by execution, and pinned here because losing that
+     guard would silently assign real picks to the wrong team. */
+  chk('a pick that prefixes BOTH teams resolves to neither',
+    S.slateSide('Miami', 'Miami (OH)', 'Miami (FL)') === null
+    && S.slateSide('Texas', 'Texas A&M', 'Texas Tech') === null,
+    'assigning one of them would put a graded pick on the wrong side');
+  chk('a pick that prefixes exactly one team resolves to it',
+    S.slateSide('Ohio', 'Ohio State', 'Michigan') === 'home'
+    && S.slateSide('Miami', 'Miami (FL)', 'Ohio State') === 'home');
+  chk('an exact name always beats a prefix',
+    S.slateSide('Ohio State', 'Ohio State', 'Ohio') === 'home'
+    && S.slateSide('NC State', 'North Carolina', 'NC State') === 'away');
+  chk('home/away words still work',
+    S.slateSide('home', 'A', 'B') === 'home' && S.slateSide('road', 'A', 'B') === 'away');
+  chk('a pick matching neither team resolves to neither',
+    S.slateSide('Rutgers', 'Ohio State', 'Michigan') === null);
+  chk('a one or two letter pick never prefix-matches',
+    S.slateSide('O', 'Ohio State', 'Michigan') === null
+    && S.slateSide('Oh', 'Ohio State', 'Michigan') === null,
+    'a stray initial must not decide a graded pick');
+
   /* ---- one separator per file, chosen from the file --------------------
      Comma and tab were both live delimiters on every input at once. Excel and
      Google Sheets put TAB separated text on the clipboard and quote a cell only
