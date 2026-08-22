@@ -284,6 +284,44 @@ if (typeof sandbox.teamKey === 'function') {
     S.slateUnmatchedTeams([{ label: 'North Carolina at TCU' }],
       [{ home_team: 'TCU', away_team: 'North Carolina' }]).count === 0);
 
+  /* ---- naming the missing team is only half an answer ------------------ */
+  chk('a mascot suffix is recognised as the same school',
+    S.teamSimilarity('TCU', 'TCU Horned Frogs') >= 0.8
+    && S.teamSimilarity('North Carolina', 'North Carolina Tar Heels') >= 0.8);
+  chk('"St" and "State" are recognised as the same school',
+    S.teamSimilarity('Florida State', 'Florida St') >= 0.7
+    && S.teamSimilarity('New Mexico State', 'New Mexico St') >= 0.7);
+  chk('an accented name scores against its unaccented spelling',
+    S.teamSimilarity('San José State', 'San Jose St') >= 0.7);
+  chk('two unrelated schools do not look alike',
+    S.teamSimilarity('Stanford', 'Virginia') < 0.45
+    && S.teamSimilarity('TCU', 'Hawaii') < 0.45);
+  chk('an exact match scores 1',
+    S.teamSimilarity('Ohio State', 'ohio state') === 1);
+  chk('the closest backend spelling is offered for each missing team',
+    (function () {
+      var u = S.slateUnmatchedTeams(
+        [{ label: 'New Mexico St @ Florida St' }],
+        [{ home_team: 'Florida State', away_team: 'New Mexico State' }]);
+      var by = {};
+      u.suggest.forEach(function (x) { by[x.mine] = x.theirs; });
+      return by['Florida State'] === 'Florida St'
+        && by['New Mexico State'] === 'New Mexico St';
+    })(),
+    'a creator cannot fix a spelling they are not shown');
+  chk('nothing is suggested when nothing is close',
+    (function () {
+      var u = S.slateUnmatchedTeams([{ label: 'Dallas @ Philadelphia' }],
+        [{ home_team: 'TCU', away_team: 'North Carolina' }]);
+      return u.suggest.every(function (x) { return x.theirs === null; });
+    })());
+  chk('the backend\'s own spellings are captured, de-duplicated',
+    (function () {
+      var n = S.slateServerNames([{ label: 'A @ B' }, { label: 'B @ C' },
+        { home_team: 'C', away_team: 'A' }]);
+      return n.length === 3;
+    })());
+
   /* ---- the server owns the sport vocabulary --------------------------- */
   chk('a detected sport is translated into the code THIS server uses',
     S.serverSportCode({ sports: [{ code: 'NFL' }, { code: 'NCAAF' }] }, 'CFB') === 'NCAAF',
