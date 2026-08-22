@@ -21,8 +21,12 @@
        params.validation_summary). classifyEdge() therefore never returns a
        tier above RESEARCH_LEAN, and every output carries validated:false
        until the model's own graded CLV says otherwise.
-     - No CFB market backtest exists (no public historical CFB lines), so
-       CFB market gaps are labeled exactly that way.
+     - This v1 CFB layer was trained without any market data, so its CFB
+       market gaps are labeled exactly that way. NOTE: the claim that no
+       public CFB line archive exists is FALSE — cfbfastR-data ships
+       betting/csv/cfb_line_odds.csv.gz (2006-2025, opening and closing,
+       Pinnacle included). football/cfb_p4 trains against it; see
+       football/cfb_p4/research/report/BACKTEST.md.
      - Missing input -> {status:'INSUFFICIENT_DATA', missing:[...]}. The
        engine never guesses, never substitutes, never fakes a projection.
 
@@ -463,7 +467,9 @@
         historical: null,
         basis: sport === 'nfl'
           ? 'NFL 2016-2025 walk-forward vs closing consensus: no gap size cleared p<0.05.'
-          : 'No historical CFB market backtest exists (no public line archive); nothing is validated.' };
+          : 'This v1 CFB layer was trained without market data and validates nothing. A public '
+            + 'CFB line archive DOES exist (cfbfastR-data betting/cfb_line_odds.csv.gz, 2006-2025); '
+            + 'football/cfb_p4 uses it, and its backtest says the model loses to the close.' };
       if (!isNum(gapPts)) { out.recommendation = 'NO_MARKET'; return out; }
       if (P && sport === 'nfl' && P.validation_summary) {
         var tab = marketKind === 'total'

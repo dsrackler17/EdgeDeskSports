@@ -19,6 +19,12 @@ football/
   tests.js      node/browser test suite incl. python-parity goldens (1e-9)
   research/     the full reproducible training pipeline + backtest report
   INTEGRATION.md  how this plugs into the existing EdgeDesk/Supabase stack
+
+  cfb_p4/       the CFB POWER 4 INTELLIGENCE MODEL — a separate, deeper engine
+                for the SEC / Big Ten / Big 12 / ACC, with its own five-layer
+                architecture (strength, talent, situation, matchup,
+                uncertainty), its own parameters, and its own backtest against
+                a real CFB line archive. See cfb_p4/README.md.
 ```
 
 ## The honesty contract
@@ -29,8 +35,19 @@ ships inside `params.js` (`validation_summary`) and the engine's
 `classifyEdge()` therefore never emits anything stronger than
 `RESEARCH_LEAN`, always with `validated:false`. Per EdgeDesk doctrine the
 model is UNPROVEN and counted nowhere until its own graded CLV against real
-captured quotes beats the close. CFB has no public historical line archive,
-so CFB makes **no market claim at all**.
+captured quotes beats the close. The v1 CFB layer was trained
+without market data and therefore makes **no market claim at all**.
+
+**Correction (superseded by `cfb_p4/`):** an earlier version of this file said
+no public historical CFB line archive exists. That was wrong.
+`sportsdataverse/cfbfastR-data` ships `betting/csv/cfb_line_odds.csv.gz` —
+1.18M rows, 2006–2025, spread + total + moneyline, opening and closing, across
+multiple books including Pinnacle, covering 94–100% of FBS-vs-FBS games from
+2012. `football/cfb_p4` trains against it, and the honest answer is that that
+model loses to the closing line by ~0.9 points of MAE
+(`cfb_p4/research/report/BACKTEST.md`). The v1 constants in `params.js` are
+unchanged: they were genuinely trained without market data, and re-labelling
+them would be worse than leaving the record as it stands.
 
 What IS validated out of sample:
 
@@ -42,11 +59,14 @@ What IS validated out of sample:
   probability calibration (Brier 0.183).
 * Key-number mass is learned, sport-specific, and conditioned on the spread:
   P(margin=3 | spread=3) = 8.8% in the NFL; CFB's 3 carries far less mass.
+  (In `cfb_p4` the CFB conditioning variable is the real MARKET spread rather
+  than the model's own projection, which the line archive made possible.)
 
 ## Running the tests
 
 ```
-node football/tests.js     # exit 0 = green (69 checks incl. parity goldens)
+node football/tests.js           # exit 0 = green (69 checks incl. parity goldens)
+node football/cfb_p4/tests.js    # exit 0 = green (65 checks incl. parity goldens)
 ```
 
 ## Regenerating parameters

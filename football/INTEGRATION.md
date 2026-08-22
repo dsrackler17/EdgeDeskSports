@@ -95,6 +95,107 @@ One new table (`nfl_team_features`, RLS enabled, service-role only).
 Nothing else: `signals`, `model_predictions`, grading, CLV and the model
 registry are used exactly as deployed.
 
+## Frontend integration (live now)
+
+* New **Football** research module (research shell, `#research/football`):
+  NFL + CFB + **CFB Power 4** boards computed client-side by
+  `football/engine.js` and `football/cfb_p4/engine.js` from the
+  same public sources the training pipeline uses (nflverse / cfbfastR-data,
+  both CORS-open), matched to live `signals` quotes where capture covers the
+  sport (NCAAF today; NFL when added to capture scope) — all labeled
+  research, UNPROVEN, with the backtest's honesty summary shown in-module.
+* `model_predictions` overlay: the Edges board's MODEL-fair read now also
+  loads `americanfootball_nfl` / `americanfootball_ncaaf` rows (it loaded
+  only `baseball_mlb`). No visible change until server rows exist.
+* Narration layer: the NFL "not ingested" declarations are updated to state
+  the new truth precisely (client-side football engine exists; narration
+  evidence path still not wired), keeping credibility scoring conservative.
+* Nothing else changes: MLB, UFC, WTA, tennis, golf, Collective, odds,
+  grading, settlement and AI behavior are untouched.
+
+The app's Football research module (Research → Football) is independent of
+all of the above — it computes client-side from the same public sources and
+gates honestly. Once `model_predict` writes NFL rows, the Edges board's
+MODEL-fair overlay picks them up automatically (the overlay already loads
+`americanfootball_nfl`/`ncaaf` from `model_predictions`).
+
+## The CFB Power 4 model (`football/cfb_p4/`)
+
+The Power 4 engine is a SEPARATE bundle — its own `engine.js`, `params.js`,
+`goldens.json` and `tests.js` — and it plugs in the same way, with two
+differences worth knowing before deploying it server-side:
+
+* **It has its own global** (`window.EDCfbP4` / `EDCfbP4Params`) and its own
+  `model_version` (`edgedesk_cfb_p4_v1.0.0`). Rows written to
+  `model_predictions` under that version are independently gradeable and can be
+  rolled back without touching the v1 football rows.
+* **Its input contract is much wider** — roster bundles, a starting QB record,
+  injuries, weather, schedule context, off-field signals — and every one of
+  those is OPTIONAL. Anything not supplied is declared missing and widens the
+  distribution instead of moving the mean, so a server-side caller that has
+  only schedules and results still gets a valid, correctly-hedged projection.
+
+Two things the ingest could add that would switch dark layers on, in order of
+value: per-player recruiting star ratings (turns on the blue-chip layer), and
+coaching / coordinator continuity (turns on the staff half of the roster-
+stability score). Both have declared injection points in the engine; neither is
+faked in their absence.
+
+`cfb.lines` is used for book context in the app. The historical backtest does
+NOT use it — it uses the public cfbfastR-data line archive, which carries
+opening numbers as well as closing ones.
+
+## Posting Power 4 slates to the Model Collective
+
+The Power 4 board's **Post to Collective** button downloads the slate and opens
+`collective/#dashboard`. It deliberately does NOT post on the reader's behalf:
+posting is an account action against their own creator profile, and the model,
+week and data-origin choices belong to them.
+
+No column mapping is needed. The Collective's uploader (`SLATE_FIELDS` in
+`collective/index.html`) maps by header name, and this export's headers are
+already in its synonym table:
+
+| export column | maps to |
+|---|---|
+| `home_team` / `away_team` | home / away team |
+| `kickoff_local` | game date |
+| `week`, `game_id` | week, game ref |
+| `model_home_line` | your spread (home side) |
+| `model_fair_total` | your total |
+| `ref_home_line` | market line you saw |
+| `home_win_prob_pct` | home win % |
+| `p_spread_pick_pct` | cover % |
+| `spread_pick` | pick side |
+| `confidence` | confidence |
+
+Columns the uploader does not recognise are ignored, so the Power 4 extras ride
+along harmlessly.
+
+### The one thing that is NOT in this repo
+
+**The Collective's sport vocabulary is server-side.** `meta().sports` comes from
+the `collective_public` function, and `collective_ingest` validates a
+submission's sport against the same list. Until a college-football sport code
+exists there, a CFB slate has no model to attach to and the ingest will reject
+it — nothing in this repository can change that.
+
+What the server needs, once:
+
+1. A college-football sport row in the Collective's sports table (code, current
+   season) so it appears in `meta().sports`.
+2. That code added to `collective_ingest`'s accepted sports.
+3. Schedule/closing-line capture for the sport, so submissions have games to
+   grade against — the Collective grades against its OWN captured closing
+   lines, never self-reported numbers.
+
+The frontend is already ready for it: the sport selector, the per-sport week
+calendar (college football's regular season ends at 15 and its postseason is
+conference championships, bowls and the playoff — not Wild Card through Super
+Bowl), and the creator profile's per-model sport pills all key off whatever
+`meta().sports` returns. The moment the server lists the code, CFB appears
+beside NFL with no further frontend change.
+
 ## Environment variables / secrets
 
 None new. The feeder reads `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`,
@@ -110,11 +211,3 @@ but `model_predict`'s bundle is GENERATED from a module tree
 bundle. Send `supabase/functions/model_predict/{core,models}` if you want
 that built; until then CFB remains research-only in the app's Football
 module, which is fully live client-side.
-
-## Frontend
-
-The app's Football research module (Research → Football) is independent of
-all of the above — it computes client-side from the same public sources and
-gates honestly. Once `model_predict` writes NFL rows, the Edges board's
-MODEL-fair overlay picks them up automatically (the overlay already loads
-`americanfootball_nfl`/`ncaaf` from `model_predictions`).
