@@ -62,7 +62,8 @@ logic inside one function for no benefit.
 ## Frontend integration (this change, live now)
 
 * New **Football** research module (research shell, `#research/football`):
-  NFL + CFB boards computed client-side by `football/engine.js` from the
+  NFL + CFB + **CFB Power 4** boards computed client-side by
+  `football/engine.js` and `football/cfb_p4/engine.js` from the
   same public sources the training pipeline uses (nflverse / cfbfastR-data,
   both CORS-open), matched to live `signals` quotes where capture covers the
   sport (NCAAF today; NFL when added to capture scope) — all labeled
@@ -75,6 +76,32 @@ logic inside one function for no benefit.
   evidence path still not wired), keeping credibility scoring conservative.
 * Nothing else changes: MLB, UFC, WTA, tennis, golf, Collective, odds,
   grading, settlement and AI behavior are untouched.
+
+## The CFB Power 4 model (`football/cfb_p4/`)
+
+The Power 4 engine is a SEPARATE bundle — its own `engine.js`, `params.js`,
+`goldens.json` and `tests.js` — and it plugs in the same way, with two
+differences worth knowing before deploying it server-side:
+
+* **It has its own global** (`window.EDCfbP4` / `EDCfbP4Params`) and its own
+  `model_version` (`edgedesk_cfb_p4_v1.0.0`). Rows written to
+  `model_predictions` under that version are independently gradeable and can be
+  rolled back without touching the v1 football rows.
+* **Its input contract is much wider** — roster bundles, a starting QB record,
+  injuries, weather, schedule context, off-field signals — and every one of
+  those is OPTIONAL. Anything not supplied is declared missing and widens the
+  distribution instead of moving the mean, so a server-side caller that has
+  only schedules and results still gets a valid, correctly-hedged projection.
+
+Two things the ingest could add that would switch dark layers on, in order of
+value: per-player recruiting star ratings (turns on the blue-chip layer), and
+coaching / coordinator continuity (turns on the staff half of the roster-
+stability score). Both have declared injection points in the engine; neither is
+faked in their absence.
+
+`cfb.lines` is used for book context in the app. The historical backtest does
+NOT use it — it uses the public cfbfastR-data line archive, which carries
+opening numbers as well as closing ones.
 
 ## Environment variables / secrets
 

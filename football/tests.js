@@ -187,7 +187,11 @@
     }
     chk('classifyEdge never validates, never exceeds RESEARCH_LEAN', !anyBad);
     cls = E.market.classifyEdge('cfb', 'spread', 6);
-    chk('CFB edge basis admits missing backtest', /No historical CFB market backtest/.test(cls.basis));
+    /* the v1 CFB layer still validates nothing, but the reason has been
+       corrected: a public CFB line archive does exist and football/cfb_p4
+       is trained against it. The assertion now pins the honest claim. */
+    chk('CFB edge basis admits it validates nothing',
+      /validates nothing/.test(cls.basis) && /cfb_p4/.test(cls.basis));
     chk('classifyEdge NO_MARKET without a line', E.market.classifyEdge('nfl', 'spread', null).recommendation === 'NO_MARKET');
     var bl = E.market.blendSpread(-3, -4.5);
     chk('blend spread near market (learned humility)', isFinite(bl) && Math.abs(bl - (-4.5)) < 1.5, bl);
