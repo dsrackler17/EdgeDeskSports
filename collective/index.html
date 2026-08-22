@@ -420,10 +420,18 @@ async function meta(){if(META)return META;META=await api('/v1/meta');return META
    surface — wall, board, model page, market page, embed — asks for the sport
    the reader is actually on, without each call site having to thread the meta
    object through to get there. */
+var SPORT_ODDS_LEAGUE={NFL:'nfl',CFB:'ncaaf',NCAAF:'ncaaf',CFP:'ncaaf'};
 function marketLeague(){
   var code=null;
   try{code=localStorage.getItem(MC_SPORT_KEY);}catch(e){}
-  return window.MCOdds?MCOdds.leagueFor(code||'NFL'):'nfl';
+  code=String(code||'NFL').toUpperCase();
+  /* Guard on the FUNCTION, not on the object. odds.js and this page are two
+     separate uploads and can be out of step -- and when they were, the older
+     odds.js had no leagueFor, this threw, marketBoard's catch turned it into
+     null, and every game on every page read "Market unavailable" over a feed
+     that was working. A version skew should cost the lookup, not the market. */
+  if(window.MCOdds&&typeof MCOdds.leagueFor==='function')return MCOdds.leagueFor(code);
+  return SPORT_ODDS_LEAGUE[code]||code.toLowerCase();
 }
 function marketBoard(opts){
   if(!window.MCOdds)return Promise.resolve(null);
@@ -441,11 +449,28 @@ function marketFor(mkt,g){
   if(!mkt||!mkt.find||!g)return null;
   return mkt.find({game_id:g.game_id,home:g.home,away:g.away});
 }
+/* "Market unavailable" was the same sentence whether the odds service was
+   down, whether it had no route for this sport yet, or whether the feed had
+   simply never polled. Three different causes, three different fixes, and a
+   reader staring at a blank column could not tell which one they had. The
+   status code is already known by the time we get here, so say what happened.
+
+   A 404 on a league route is the specific one worth naming: it means the
+   deployed collective_odds predates this sport, which is invisible from the
+   page and unfixable from it. */
+function marketUnavailableReason(mkt){
+  var e=mkt&&mkt.error, st=e&&e.status;
+  var lg=(e&&e.league)||(mkt&&mkt.league)||marketLeague();
+  if(st===404)return 'The odds service has no '+lg+' route yet \u2014 collective_odds needs redeploying.';
+  if(st===401||st===403)return 'The odds service rejected the request ('+st+').';
+  if(st)return 'The odds service returned '+st+'.';
+  return 'Market unavailable \u2014 the feed has not polled successfully.';
+}
 function marketLineHtml(mkt,g){
   if(!window.MCOdds)return '';
   var m=marketFor(mkt,g);
   if(!m&&(!mkt||mkt.state==='unavailable'))
-    return '<div class="mco-line mco-empty">Market unavailable</div>';
+    return '<div class="mco-line mco-empty">'+esc(marketUnavailableReason(mkt))+'</div>';
   if(!m)return '<div class="mco-line mco-empty">No market posted for this game yet</div>';
   return MCOdds.marketLine(m,mkt);
 }
