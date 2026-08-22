@@ -176,6 +176,53 @@ returns null on any failure — but without them a college-football creator gets
    market back. It should take the model from the query
    (`?model=<slug>`) and fall back to the first only when none is given.
 
+### A model per creator per sport, provisioned automatically
+
+The browser can pick the right model for a slate, and now does — the uploader
+reads the sport out of the file and selects the creator's model for it. What it
+cannot do is CREATE that model: no endpoint in the whole API exposes model
+creation, so a creator whose account predates a sport has nowhere for that
+sport's slates to land, and every row quarantines against the wrong schedule.
+
+This is the failure that produced "0 matched, 90 quarantined,
+unknown_team_home" on a college slate whose team names were, by then, byte-
+identical to the backend's own. `TCU` failed against `TCU`, because the lookup
+was never in the college schedule at all — the submission was attached to the
+account's only model, which was tagged NFL.
+
+The fix is one row per creator per sport, and it should not be the creator's
+job. Two places to do it, in order of preference:
+
+1. **When a sport is added.** Backfill every existing creator at the same time
+   the sport row is inserted:
+
+   ```sql
+   insert into models (creator_id, model_slug, model_name, sport_code)
+   select c.id,
+          c.slug || '-' || lower(:sport_code),
+          c.display_name || ' ' || :sport_name,
+          :sport_code
+     from creators c
+    where not exists (
+      select 1 from models m
+       where m.creator_id = c.id and m.sport_code = :sport_code);
+   ```
+
+2. **On first submission for a sport**, inside `ingest_submission`: if the
+   creator has no model for the envelope's `sport`, create one rather than
+   resolving the slate against another sport's schedule. This is the one that
+   makes it self-healing — a creator who joins after a sport is added, or a
+   sport added while a creator is mid-season, both work with nobody doing
+   anything.
+
+Either way the creator adds nothing. Until one of them exists, the dashboard
+refuses the post and names the missing model instead of letting the slate
+quarantine, which is the honest degradation but not the fix.
+
+**Do not** solve this by letting a submission carry its own sport independent
+of its model. The model is what the record belongs to; a model whose slates are
+half NFL and half college has no meaningful win percentage.
+
 ### The one thing that is NOT in this repo
 
 **The Collective's sport vocabulary is server-side.** `meta().sports` comes from

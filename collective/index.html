@@ -143,12 +143,15 @@ label .opt{color:var(--faint);text-transform:none;letter-spacing:0;font-weight:4
   border:1px solid var(--border);color:var(--dim);background:var(--surface2)}
 .sportchips .sc.live{color:var(--text);border-color:var(--accent)}
 .sportchips .sc.off{opacity:.55}
-.sportpick{display:inline-flex;align-items:center;gap:7px;font-size:12.5px;
+.sportpick{display:inline-flex;align-items:center;gap:9px;font-size:12.5px;
   color:var(--text);background:var(--surface2);border:1px solid var(--border);
-  border-radius:8px;padding:7px 11px;cursor:pointer}
+  border-radius:8px;padding:9px 13px;cursor:pointer;min-width:190px}
 .sportpick.posted{border-color:var(--accent);cursor:default}
-.sportpick input{margin:0;cursor:inherit}
-.sportpick .note{font-size:11px}
+.sportpick input{margin:0;cursor:inherit;flex:0 0 auto}
+.sportpick .sp-txt{display:flex;flex-direction:column;gap:2px;line-height:1.25;min-width:0}
+.sportpick .sp-txt b{font-weight:600;white-space:nowrap}
+.sportpick .sp-sub{color:var(--faint);font-size:10.5px;white-space:nowrap;
+  overflow:hidden;text-overflow:ellipsis}
 .bd-stats .allsports{font-style:normal;color:var(--faint);font-size:9.5px;
   letter-spacing:.08em;text-transform:uppercase;margin-left:4px}
 .toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:9px 16px;font-size:12.5px;z-index:50}
@@ -1425,7 +1428,9 @@ function slateSelectedModel(d){
    use for the same sport — a slate detected as college football has to be
    posted as whatever THIS server calls it, NCAAF or CFB. */
 var SPORTS=[
-  { family:'NFL', name:'NFL', long:'Football', order:1,
+  /* `long` is what a reader is shown. The server calls this one "Football",
+     which is technically true and nobody's word for it — it is the NFL. */
+  { family:'NFL', name:'NFL', long:'NFL', order:1,
     aliases:['NFL','NATIONAL FOOTBALL LEAGUE','PRO FOOTBALL'],
     unit:'week', regular:18, max:22,
     rounds:{19:'Wild Card',20:'Divisional',21:'Conference Championship',22:'Super Bowl'},
@@ -2406,10 +2411,9 @@ async function renderCreatorDash(view,me){
           var posted=!!have[f];
           return '<label class="sportpick'+(posted?' posted':'')+'">'+
             '<input type="checkbox" data-plan="'+esc(sp.code)+'"'+
-            (posted||planned[f]?' checked':'')+(posted?' disabled':'')+'> '+
-            esc(d2.long||sp.code)+
-            (posted?' <span class="note">&mdash; '+esc(have[f])+'</span>'
-                   :' <span class="note">&mdash; no model yet</span>')+
+            (posted||planned[f]?' checked':'')+(posted?' disabled':'')+'>'+
+            '<span class="sp-txt"><b>'+esc(d2.long||sp.code)+'</b>'+
+            '<span class="sp-sub">'+(posted?esc(have[f]):'no model yet')+'</span></span>'+
             '</label>';
         }).join('')+'</div>'+
         '<p class="note" style="margin:10px 0 0">A sport appears on your public profile once you '+
@@ -2429,15 +2433,17 @@ async function renderCreatorDash(view,me){
     html+='<h2>Post a slate</h2><div class="panel">'+
       '<p class="note" style="margin:0 0 10px">Upload a CSV or Excel file with your projections, or paste rows straight from your spreadsheet. Columns map automatically, you check the result, then it posts. Your first live slate flips your profile to Active Contributor.</p>'+
       '<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end">'+
-      /* ALWAYS shown, and the sport is on the label. Hiding it below two models
-         is what let a college slate go up under an NFL model without the
-         creator ever seeing which model it was attached to — and the model's
-         sport is what the server resolves the games in. */
-      (d.models.length?'<div style="min-width:200px"><label>Model</label><select id="slModel">'+
-        d.models.map(function(x){
-          return '<option value="'+esc(x.model_slug)+'">'+esc(x.model_name||x.model_slug)+
-            (x.sport?' \u00b7 '+esc(sportName(x.sport)):'')+'</option>';
-        }).join('')+'</select></div>':'')+
+      /* ONE ROW PER SPORT, not one row per model.
+
+         A creator thinks in sports, not in model slugs: "post my college
+         slate", not "post under edgedesk-p4". So the picker lists every sport
+         the Collective carries, shows the model that will actually receive the
+         slate, and — for a sport with no model yet — says so RIGHT HERE, where
+         the choice is made, instead of in a warning further down. Uploading a
+         college file auto-selects the college row, so the creator never has to
+         notice that the box still said NFL. */
+      '<div style="min-width:230px"><label>Post as</label><select id="slModel">'+
+        sportPickerOptions(d,mMeta)+'</select></div>'+
       '<div style="width:110px"><label>Season</label><input id="slSeason" type="number" value="'+season0+'"></div>'+
       '<div style="min-width:150px"><label>Week</label><select id="slWeek">'+weekOptions(null,(d.models[0]||{}).sport)+'</select></div>'+
       '<div style="min-width:200px"><label>Data type</label><select id="slOrigin">'+
@@ -2586,6 +2592,48 @@ async function renderCreatorDash(view,me){
        college conferences is college football — and the picker is the fallback.
        slateSportMismatch() is what lets the UI say so out loud instead of
        posting the wrong thing quietly. */
+    /* Every sport the Collective offers, each bound to this creator's model for
+       it when one exists. A sport with no model is offered but disabled, so the
+       gap is visible rather than inferred from an absence. */
+    function sportPickerOptions(dash,meta2){
+      var models=(dash&&dash.models)||[];
+      var byFam={};
+      models.forEach(function(mo){if(mo.sport)byFam[sportFamily(mo.sport)]=mo;});
+      var offered=sportList(meta2).slice().sort(function(a,b){
+        return (sportDef(a.code).order||99)-(sportDef(b.code).order||99);
+      });
+      var out=offered.map(function(sp){
+        var f=sportFamily(sp.code),mo=byFam[f],def=sportDef(sp.code);
+        if(mo)return '<option value="'+esc(mo.model_slug)+'" data-fam="'+esc(f)+'">'+
+          esc(def.long||sp.code)+' \u2014 '+esc(mo.model_name||mo.model_slug)+'</option>';
+        return '<option value="" disabled data-fam="'+esc(f)+'">'+
+          esc(def.long||sp.code)+' \u2014 no model yet</option>';
+      });
+      /* a model for a sport the server no longer lists still has to be postable */
+      models.forEach(function(mo){
+        var f=sportFamily(mo.sport);
+        if(offered.some(function(sp){return sportFamily(sp.code)===f;}))return;
+        out.push('<option value="'+esc(mo.model_slug)+'" data-fam="'+esc(f)+'">'+
+          esc(mo.model_name||mo.model_slug)+(mo.sport?' \u00b7 '+esc(mo.sport):'')+'</option>');
+      });
+      return out.join('');
+    }
+    /* Point the picker at the sport the FILE is, when a model for it exists. */
+    function slateAutoSelectModel(){
+      var sel=$('slModel'),fam=sportFamily(slateSportFromFile()||'');
+      if(!sel||!fam)return null;
+      var opts=sel.options,i;
+      for(i=0;i<opts.length;i++){
+        if(opts[i].getAttribute('data-fam')===fam&&!opts[i].disabled){
+          if(sel.value!==opts[i].value)sel.value=opts[i].value;
+          return {ok:true,label:opts[i].textContent};
+        }
+      }
+      for(i=0;i<opts.length;i++)
+        if(opts[i].getAttribute('data-fam')===fam)return {ok:false,label:opts[i].textContent};
+      return null;
+    }
+
     function slateSportFromFile(){
       return slateDetectSport(SLATE.cols,SLATE.rows);
     }
@@ -2712,6 +2760,10 @@ async function renderCreatorDash(view,me){
       /* ...and on the calendar the FILE implies, not whichever sport the
          picker happened to be showing. A college file must offer Bowl Season
          and the CFP rounds, never Wild Card. */
+      /* Point the picker at the sport this file IS, before anything downstream
+         reads it. The creator should not have to notice that the box still
+         said NFL. */
+      SLATE.autoPick=slateAutoSelectModel();
       var wkSport=slateSportCode();
       if(SLATE.multiWeek&&$('slWeek')&&$('slWeek').value)$('slWeek').innerHTML=weekOptions(null,wkSport);
       if(wk!==null&&!SLATE.multiWeek&&$('slWeek')&&!$('slWeek').value)$('slWeek').innerHTML=weekOptions(wk,wkSport);
@@ -2814,7 +2866,21 @@ async function renderCreatorDash(view,me){
          anyway matches the rows against the wrong schedule and quarantines the
          whole slate, so say it here, where there is still time to change the
          picker, rather than in a receipt afterwards. */
-      var mm=slateSportMismatch();
+      /* The picker is now per sport and auto-follows the file, so the common
+         case deserves a confirmation rather than a warning. */
+      if(SLATE.autoPick&&SLATE.autoPick.ok){
+        msg+='<p class="note" style="margin:9px 0 0;border-left:2px solid var(--pos);padding-left:8px">'+
+          '<b style="color:var(--pos)">Posting as '+esc(SLATE.autoPick.label)+'</b> &mdash; '+
+          'chosen from the file, not from whatever the box was last set to.</p>';
+      }else if(SLATE.autoPick&&!SLATE.autoPick.ok){
+        msg+='<p class="note" style="margin:9px 0 0;border-left:2px solid var(--warn);padding-left:8px">'+
+          '<b style="color:var(--warn)">'+esc(SLATE.autoPick.label)+'</b> &mdash; this is a '+
+          esc(sportLongName(slateSportFromFile()))+' file and your account has no model for it yet. '+
+          'A slate is attached to a model and the Collective resolves its games in that '+
+          'model\'s sport, so posting it under another sport\'s model matches it against the '+
+          'wrong schedule.</p>';
+      }
+      var mm=(SLATE.autoPick?null:slateSportMismatch());
       if(mm){
         /* name the code that will ACTUALLY be sent, which is the server's word
            for this sport and not necessarily the one detected from the file */
