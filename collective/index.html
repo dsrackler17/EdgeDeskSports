@@ -415,12 +415,24 @@ async function meta(){if(META)return META;META=await api('/v1/meta');return META
    odds.js and talk only to our own collective_odds function, so no page here
    knows an odds provider exists. A failure returns null and each caller
    renders "market unavailable" rather than a broken view. */
+/* Which league's market this page is looking at.
+   Read from the same localStorage key the sport switcher writes, so every
+   surface — wall, board, model page, market page, embed — asks for the sport
+   the reader is actually on, without each call site having to thread the meta
+   object through to get there. */
+function marketLeague(){
+  var code=null;
+  try{code=localStorage.getItem(MC_SPORT_KEY);}catch(e){}
+  return window.MCOdds?MCOdds.leagueFor(code||'NFL'):'nfl';
+}
 function marketBoard(opts){
   if(!window.MCOdds)return Promise.resolve(null);
   try{
     MCOdds.configure({api:API});
     MCOdds.injectCss(document.head);
-    return MCOdds.board(opts||{days:10}).catch(function(){return null;});
+    opts=opts||{days:10};
+    if(!opts.league)opts.league=marketLeague();
+    return MCOdds.board(opts).catch(function(){return null;});
   }catch(e){return Promise.resolve(null);}
 }
 /* Match a Collective game to its market. Prefers the server side link, falls
@@ -994,14 +1006,14 @@ async function renderMarketGame(view,eventId){
     if(!g){
       /* The board is a time window; a game outside it is fetched directly so
          an old link still opens. */
-      var one=await MCOdds.event(eventId).catch(function(){return null;});
+      var one=await MCOdds.event(eventId,{league:marketLeague()}).catch(function(){return null;});
       if(one){g=one.game;mkt=one;}
     }
     if(!g){
       view.innerHTML='<h1>Game not found</h1><p class="lede">No stored market for that game. <a href="#market">Back to the market</a></p>';
       return;
     }
-    var hist=await MCOdds.history(eventId,{market:'spread'}).catch(function(){return null;});
+    var hist=await MCOdds.history(eventId,{market:'spread',league:marketLeague()}).catch(function(){return null;});
     var head='<h1>'+esc(g.away_name||g.away)+' at '+esc(g.home_name||g.home)+'</h1>'+
       '<p class="lede">'+esc(kickoffFmt(g.commence_time))+
       (g.market_closed?' &middot; market closed':'')+'</p>';
