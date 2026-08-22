@@ -64,6 +64,7 @@ out of sample:
 | quarterback layer | 10.1 points of spread per 1.0 EPA/dropback of QB edge; tune r2 0.00656, TEST r2 0.00809, permutation p 0.0 |
 | quarterback absence | 3.90 points, measured over 2846 games where the primary QB took no dropbacks |
 | schedule stress | moves the number by 1.13 points on average; tune r2 0.00685, test r2 0.00254 |
+| conference strength | 0.50 points per point of PRIOR-season cross-conference differential; tune r2 0.09447, TEST r2 0.07899, permutation p 0.0. Applied to cross-conference games only and decayed to zero by six games — the largest validated effect here after the ratings themselves |
 | stylistic matchup | explains 1.99% of what the ratings leave behind |
 
 ## What was offered to the model and REJECTED by it
@@ -78,6 +79,12 @@ honestly and came back at or near zero:
   out reading like a top-25 poll. On held-out seasons it moved MAE from 13.2891 to 13.271 —
   0.018 of a point, bought by absorbing team quality into stadium names. The table
   does not ship; the single league constant does.
+- **Player development (Section VII).** A program's efficiency above what its
+  experience, continuity and returning production predict does **not repeat**:
+  year-over-year correlation of the development delta is **0.0445** over 690 program
+  pairs. "This staff develops players" is not visible in this data, so no
+  per-program development value ships. (Recruiting pedigree is absent from the
+  baseline, so this measures development on top of continuity, not on top of talent.)
 - **Travel.** r2 = 0.001976 on 6419 road games (mean trip 512.3 miles). Distance, time
   zones and altitude barely move the mean once team strength is accounted for.
 - **Rivalry volatility.** 467 detected pairs; only **42%** of them are actually

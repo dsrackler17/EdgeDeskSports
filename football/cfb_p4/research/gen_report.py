@@ -127,6 +127,14 @@ def main():
     if sc.get('mean_abs_points'):
         rows.append(['schedule stress', 'moves the number by %.2f points on average; tune r2 %s, test r2 %s'
                      % (sc['mean_abs_points'], sc.get('r2_tune'), sc.get('r2_test'))])
+    cf = repl.get('conference', {})
+    if cf.get('shipped'):
+        rows.append(['conference strength', '%.2f points per point of PRIOR-season '
+                     'cross-conference differential; tune r2 %s, TEST r2 %s, permutation p %s. '
+                     'Applied to cross-conference games only and decayed to zero by six games — '
+                     'the largest validated effect here after the ratings themselves'
+                     % (cf['points_per_strength'], cf.get('r2_tune'), cf.get('r2_test'),
+                        cf.get('permutation_p'))])
     mm = rep.get('matchup', {})
     if mm.get('r2_on_residual'):
         rows.append(['stylistic matchup', 'explains %.2f%% of what the ratings leave behind'
@@ -149,6 +157,15 @@ def main():
     A('  %.3f of a point, bought by absorbing team quality into stadium names. The table'
       % (float(v.get('improvement') or 0)))
     A('  does not ship; the single league constant does.')
+    dv = repl.get('development', {})
+    if dv and not dv.get('shipped'):
+        A('- **Player development (Section VII).** A program\'s efficiency above what its')
+        A('  experience, continuity and returning production predict does **not repeat**:')
+        A('  year-over-year correlation of the development delta is **%s** over %s program'
+          % (dv.get('delta_persistence_year_over_year'), dv.get('n_pairs')))
+        A('  pairs. "This staff develops players" is not visible in this data, so no')
+        A('  per-program development value ships. (Recruiting pedigree is absent from the')
+        A('  baseline, so this measures development on top of continuity, not on top of talent.)')
     tv = rep.get('travel', {})
     A('- **Travel.** r2 = %s on %s road games (mean trip %s miles). Distance, time'
       % (tv.get('r2'), tv.get('n'), tv.get('mean_miles')))

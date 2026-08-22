@@ -774,13 +774,18 @@
         return M(live.strength, { n: live.n, confidence: clamp(live.n / 30, 0.3, 1),
           source: 'in-season cross-conference results', basis: 'updated live' });
       }
+      /* PRIOR season only. Using this season's cross-conference record to
+         price a this-season game launders the result into the projection —
+         and it is the difference between a validated effect and a lie. */
       var tab = P.conference.by_season || {};
-      var row = tab[String(season)] && tab[String(season)][confName];
+      var prior = isNum(season) ? String(season - 1) : null;
+      var row = prior && tab[prior] && tab[prior][confName];
       if (row && isNum(row.strength)) {
         return M(row.strength, { n: row.n, confidence: 0.7,
-          source: 'trained conference strength ' + season, basis: 'cross-conference margin' });
+          source: 'conference strength, ' + prior + ' cross-conference results',
+          basis: 'prior season only — never this season\u2019s own results' });
       }
-      return M.missing('no conference strength for ' + confName + ' in ' + season);
+      return M.missing('no prior-season conference strength for ' + confName);
     }
   };
 
@@ -1380,12 +1385,15 @@
       : M.missing('no schedule context supplied');
     var wx = context.weather(req.weather, H.strength, A.strength);
 
+    var gpMin = Math.min(H.blended.games_played == null ? 99 : H.blended.games_played,
+                         A.blended.games_played == null ? 99 : A.blended.games_played);
     var confGap = (avail(H.conference) && avail(A.conference) && H.supplied.conference !== A.supplied.conference)
       ? M(((P.conference && P.conference.points_per_strength) || 0)
           * (H.conference.value - A.conference.value)
-          * clamp(1 - Math.min(H.strength.games, A.strength.games) / 6, 0, 1), {
-          confidence: 0.4, source: 'conference strength differential',
-          basis: 'only material while in-season samples are thin; decays to 0 by six games' })
+          * clamp(1 - gpMin / 6, 0, 1), {
+          confidence: 0.6, source: 'prior-season conference strength differential',
+          basis: 'cross-conference only, decayed to zero by six games played — the '
+            + 'window in which league quality is the best information available' })
       : M(0, { confidence: 0.6, source: 'same conference or no conference table',
           basis: 'no cross-conference adjustment applies' });
 

@@ -21,6 +21,13 @@ WHAT IS MEASURED HERE
   zones in the last three games, and the strength of the previous and next
   opponent — all computed pregame, then regressed on the residual.
 * TOTAL / PACE. Combined tempo against the total residual.
+* PLAYER DEVELOPMENT (VII). Whether a program consistently produces more than
+  its roster profile predicts, and — the part that matters — whether that
+  overperformance PERSISTS. A development delta that does not predict next
+  season's delta is noise wearing a coach's name, and the fit says which.
+* CONFERENCE STRENGTH (XIII). Fitted on cross-conference games using the
+  PRIOR season's conference strength, never the current one, so it cannot
+  launder this season's results into this season's projection.
 * SCORE WEIGHTS. The roster-stability, youth-volatility and confidence scores
   weight their inputs by each input's MEASURED association with error, so the
   0-100 numbers the app shows are not arbitrary index arithmetic.
@@ -372,6 +379,114 @@ def total_layer(oos, tg, report):
 # ===========================================================================
 # score weights
 # ===========================================================================
+def development_layer(oos, tg, rs, report):
+    """Section VII. Does a program beat what its roster profile predicts, and
+    does that edge REPEAT?
+
+    The baseline is deliberately built from what is observable: experience,
+    continuity and returning production, plus last season's own efficiency.
+    Recruiting pedigree is NOT in it, because no per-player recruiting data
+    exists in this corpus — so the delta measures development-on-top-of-
+    continuity, not development-on-top-of-talent, and the report says so.
+    """
+    if tg is None or rs is None:
+        report['development'] = {'note': 'needs both team_game and roster tables'}
+        return None
+    ts = (tg.groupby(['team_key', 'season'])
+            .agg(epa=('epa_per_play', 'mean'), n=('game_id', 'nunique')).reset_index())
+    ts = ts[ts.n >= 8]
+    ts['prev_epa'] = ts.sort_values('season').groupby('team_key').epa.shift(1)
+    r = rs[['team_key', 'season', 'experience', 'returning_share', 'returning_production']]
+    d = ts.merge(r, on=['team_key', 'season'], how='left').dropna(
+        subset=['epa', 'prev_epa', 'returning_share', 'returning_production'])
+    if 'experience' in d.columns and d.experience.notna().mean() > 0.5:
+        feats = ['prev_epa', 'returning_share', 'returning_production', 'experience']
+        d = d.dropna(subset=['experience'])
+    else:
+        feats = ['prev_epa', 'returning_share', 'returning_production']
+    if len(d) < 200:
+        report['development'] = {'note': 'too few team-seasons with a full roster profile',
+                                 'n': int(len(d))}
+        return None
+    X = np.column_stack([d[c].values for c in feats] + [np.ones(len(d))])
+    w = _ols(X, d.epa.values)
+    d = d.assign(expected=X @ w)
+    d['delta'] = d.epa - d.expected
+
+    # THE test: does a program's delta predict its NEXT delta?
+    d = d.sort_values(['team_key', 'season'])
+    d['next_delta'] = d.groupby('team_key').delta.shift(-1)
+    pair = d.dropna(subset=['delta', 'next_delta'])
+    persist = float(pair.delta.corr(pair.next_delta)) if len(pair) > 100 else float('nan')
+    table = {}
+    if len(pair) > 100 and persist > 0.1:
+        k = max(0.5, (1.0 - persist) / persist)
+        prog = d.groupby('team_key').delta.agg(['mean', 'size'])
+        for t, row in prog.iterrows():
+            shr = row['size'] / (row['size'] + k)
+            table[t] = round(float(row['mean'] * shr), 5)
+    report['development'] = {
+        'n_team_seasons': int(len(d)), 'features': feats,
+        'baseline_r2': round(_r2(d.epa.values, X @ w), 5),
+        'n_pairs': int(len(pair)),
+        'delta_persistence_year_over_year': None if np.isnan(persist) else round(persist, 4),
+        'shipped': bool(table),
+        'note': ('a program\'s development delta repeats year over year at r=%.3f, so a '
+                 'shrunk per-program value ships' % persist) if table else
+                ('a program\'s development delta does NOT repeat year over year '
+                 '(r=%s). It is noise, and no per-program development value ships.'
+                 % (None if np.isnan(persist) else round(persist, 4)))}
+    return {'baseline_features': feats, 'by_program': table,
+            'persistence': None if np.isnan(persist) else round(persist, 4),
+            'basis': 'efficiency minus what experience, continuity and returning '
+                     'production predict; recruiting pedigree is absent from the baseline'} if table else None
+
+
+def conference_layer(oos, games, report):
+    """Section XIII, leak-free. Conference strength for season Y comes from
+    season Y-1, and is only allowed to matter while the in-season sample is
+    thin — which is exactly when a cross-conference game is hard to price."""
+    d = oos[oos.both_fbs & (oos.known >= 3)].merge(
+        games[['game_id', 'home_conf', 'away_conf']], on='game_id', how='left')
+    d = d[d.home_conf.notna() & d.away_conf.notna() & (d.home_conf != d.away_conf)].copy()
+    d['resid'] = d.margin - d.pred_margin
+    cross = pd.concat([
+        d.assign(conf=d.home_conf, val=d.margin - d.hfa_used),
+        d.assign(conf=d.away_conf, val=-(d.margin - d.hfa_used))])
+    strength = cross.groupby(['season', 'conf']).val.mean().rename('strength').reset_index()
+    strength['season'] = strength.season + 1          # PRIOR season only
+    d = d.merge(strength.rename(columns={'conf': 'home_conf', 'strength': 'h_str'}),
+                on=['season', 'home_conf'], how='left')
+    d = d.merge(strength.rename(columns={'conf': 'away_conf', 'strength': 'a_str'}),
+                on=['season', 'away_conf'], how='left')
+    d['gap'] = (d.h_str - d.a_str) * (1 - (d.gs_min / 6.0).clip(0, 1))
+    tr = d[(d.season >= B_LO) & (d.season <= B_HI)].dropna(subset=['gap', 'resid'])
+    if len(tr) < 300:
+        report['conference'] = {'note': 'too few early-season cross-conference games'}
+        return None
+    X = np.column_stack([tr.gap.values, np.ones(len(tr))])
+    w = _ols(X, tr.resid.values)
+    r2 = _r2(tr.resid.values, X @ w)
+    p = _perm_p(X, tr.resid.values, r2)
+    te = d[d.season >= TEST_LO].dropna(subset=['gap', 'resid'])
+    r2_te = None
+    if len(te) > 150:
+        r2_te = _r2(te.resid.values, np.column_stack([te.gap.values, np.ones(len(te))]) @ w)
+    report['conference'] = {'n_tune': int(len(tr)), 'r2_tune': round(r2, 5),
+                            'r2_test': None if r2_te is None else round(r2_te, 5),
+                            'permutation_p': round(p, 3),
+                            'points_per_strength': round(float(w[0]), 4),
+                            'note': 'applied only to cross-conference games and decayed to '
+                                    'zero by six games played; conference strength is the '
+                                    'PRIOR season\'s, never the current one'}
+    if p > 0.2 or abs(float(w[0])) < 1e-3:
+        report['conference']['shipped'] = False
+        return None
+    report['conference']['shipped'] = True
+    return {'points_per_strength': round(float(w[0]), 4),
+            'basis': 'prior-season cross-conference margin, decayed to zero by six games'}
+
+
 def score_weights(oos, rs, report):
     """Weight each position group by how strongly its continuity and class mix
     actually associate with prediction error. A group whose continuity tells
@@ -463,11 +578,14 @@ def main():
             tvm[r.team_key] = {'lat': float(r.latitude), 'lon': float(r.longitude),
                                'tz': common.tz_hours(r.timezone)}
 
+    games_c = common.attach_conferences(common.fbs_games(both=True))
     qb, _ = qb_layer(oos, qg, rep)
     inj = qb_absence(oos, qg, rep)
     sched_tbl = build_team_schedule(games, oos, tvm)
     sched = schedule_layer(oos, sched_tbl, rep)
     tot = total_layer(oos, tg, rep)
+    dev = development_layer(oos, tg, rs, rep)
+    conf = conference_layer(oos, games_c, rep)
     cont_w, youth_w = score_weights(oos, rs, rep)
     conf_w = confidence_weights(qb, sched, True, rep)
 
@@ -480,6 +598,10 @@ def main():
         params['schedule'] = sched
     if tot:
         params['total'] = tot
+    if dev:
+        params['development'] = dev
+    if conf:
+        params['conference_coefficient'] = conf
     if cont_w:
         params['stability'] = {'weights': {'new_hc': 0.10, 'new_oc': 0.05, 'new_dc': 0.05},
                                'group_weights': cont_w,

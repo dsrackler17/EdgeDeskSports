@@ -91,6 +91,13 @@ Measured out of sample, with permutation tests:
   primary QB took no dropbacks. This is the only injury effect public data can
   observe, so it is the only position weight that ships.
 * **Schedule stress** — 1.13 points on average.
+* **Conference strength** — 0.50 points per point of *prior-season*
+  cross-conference differential, applied to cross-conference games only and
+  decayed to zero by six games played (tune r² 0.094, **test** r² 0.079,
+  permutation p 0.0). After the ratings themselves this is the largest
+  validated effect in the model — and it is leak-free by construction: the
+  current season's cross-conference record is never used to price a current
+  season game.
 * **Stylistic matchup** — explains 2.0% of what the ratings leave behind.
 * **Regression constants** — each statistic's own measured game-to-game
   persistence. Turnovers repeat at r = 0.077; anyone reading turnover margin as
@@ -103,6 +110,11 @@ Offered to the model and **rejected by it**:
   stadium, so whatever the ratings have not absorbed about the team lands on
   the venue, and the "loudest stadiums" come out reading like a top-25 poll.
   It improved held-out MAE by 0.018 points. The league constant ships instead.
+* **Player development (Section VII).** A program's efficiency above what its
+  experience, continuity and returning production predict does **not repeat**
+  — year-over-year correlation 0.044 over 690 program pairs. "This staff
+  develops players" is not visible in this data, so no per-program development
+  value ships.
 * **Travel** — r² 0.0018 over 6,419 road games. Distance, time zones and
   altitude barely move the mean once strength is accounted for.
 * **Rivalry volatility** — 467 detected pairs, only **43%** more volatile than

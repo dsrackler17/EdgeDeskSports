@@ -161,9 +161,16 @@ def main():
 
     # merge the layer parameters in
     for k in ('qb', 'injury', 'schedule', 'total', 'stability', 'confidence',
-              'offfield', 'market'):
+              'offfield', 'market', 'development'):
         if k in L:
             P[k] = L[k]
+    if 'conference_coefficient' in L:
+        P.setdefault('conference', {}).update(L['conference_coefficient'])
+        # by_season is keyed by the season it DESCRIBES; the engine reads
+        # season-1, because using the current season's cross-conference record
+        # to price a current-season game is laundering the result into the
+        # projection.
+        P['conference']['lookup'] = 'prior_season'
     if 'volatility_youth_group_weights' in L:
         P.setdefault('volatility', {})['youth_group_weights'] = L['volatility_youth_group_weights']
 
