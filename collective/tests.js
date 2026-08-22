@@ -80,7 +80,7 @@ var CODE = blocks.join('\n;\n');
 
   /* legitimate all-caps globals and DOM/browser names */
   ('JSON NaN URL API CFG DOM CSS HTML XML UTC GET POST PUT HEAD ID IDS OK URI'
-    + ' MCOdds EDCfbP4 EDCfbP4Params SVG UI TZ NFL CFB CSV').split(' ')
+    + ' MCOdds EDCfbP4 EDCfbP4Params SVG UI TZ NFL CFB CSV GMT UT').split(' ')
     .forEach(function (n) { declared[n] = 1; });
 
   var missing = Object.create(null);
@@ -202,6 +202,46 @@ if (typeof sandbox.teamKey === 'function') {
     S.weekCalendar('QUIDDITCH').regular === 18);
   chk('WEEK_NAMES is gone and nothing still reaches for it',
     typeof S.WEEK_NAMES === 'undefined' && !/\bWEEK_NAMES\b/.test(CODE));
+
+  /* ---- a kickoff means the same instant for everyone -------------------
+     "2026-08-29 19:00" carries no timezone, and new Date() on that form is
+     specified to mean the READER'S local time. In US Pacific that rolled four
+     of five games in a college slate into the next UTC day, so they stopped
+     matching the schedule. The file declares kickoff_tz; honour it, and read
+     an undeclared wall-clock as UTC rather than as wherever the laptop is. */
+  chk('a declared UTC kickoff is read as UTC',
+    S.slateKick('2026-08-29 19:00', 'UTC') === '2026-08-29T19:00:00.000Z',
+    { got: S.slateKick('2026-08-29 19:00', 'UTC') });
+  chk('an UNDECLARED kickoff is read as UTC, not as local time',
+    S.slateKick('2026-08-29 19:00') === '2026-08-29T19:00:00.000Z',
+    { got: S.slateKick('2026-08-29 19:00'),
+      note: 'this is the assertion that fails if the browser timezone leaks in' });
+  chk('a named zone is resolved at that instant, daylight saving included',
+    S.slateKick('2026-08-29 19:00', 'America/New_York') === '2026-08-29T23:00:00.000Z',
+    { got: S.slateKick('2026-08-29 19:00', 'America/New_York') });
+  chk('a numeric offset is honoured',
+    S.slateKick('2026-08-29 19:00', '-07:00') === '2026-08-30T02:00:00.000Z',
+    { got: S.slateKick('2026-08-29 19:00', '-07:00') });
+  chk('a value that already carries Z is left alone',
+    S.slateKick('2026-08-29T19:00:00Z', 'America/Los_Angeles') === '2026-08-29T19:00:00.000Z');
+  chk('an unparseable zone falls back to UTC rather than to local',
+    S.slateKick('2026-08-29 19:00', 'Mars/Olympus') === '2026-08-29T19:00:00.000Z');
+  chk('the whole slate lands on one day regardless of where it is opened',
+    (function () {
+      var ks = ['16:00', '19:00', '19:30', '23:00'].map(function (t) {
+        return S.slateKick('2026-08-29 ' + t, 'UTC').slice(0, 10);
+      });
+      return ks.every(function (d) { return d === '2026-08-29'; });
+    })());
+
+  chk('the season is a mapped field, so it can come from the file',
+    S.SLATE_FIELDS.some(function (fd) {
+      return fd.f === 'season' && fd.syn.indexOf('season') >= 0;
+    }));
+  chk('the kickoff timezone is a mapped field',
+    S.SLATE_FIELDS.some(function (fd) {
+      return fd.f === 'kickoff_tz' && fd.syn.indexOf('kickoff_tz') >= 0;
+    }));
 
   /* ---- will the server be able to match this? -------------------------
      The failure that survived every client-side fix: a slate reads perfectly,
