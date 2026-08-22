@@ -461,6 +461,91 @@
           && c.spread_mae_model !== P.validation_summary.market.spread_mae_model;
       })());
 
+    /* ================================================================
+       The engine must not publish two answers to one question.
+       ================================================================ */
+    chk('cover probability does not systematically contradict win probability',
+      (function () {
+        /* The spread-conditioned table is built by a Gaussian kernel over the
+           market spread, which shrinks every bucket's conditional mean toward
+           the dense centre. Keyed and used raw it drifted monotonically away
+           from the win probability -- +0.051 at a fair spread of -14 down to
+           -0.031 at +21, i.e. the same object answering "does the home team
+           win?" two different ways. Re-centred on the model's own mean, what
+           remains is key-number structure, not drift. */
+        var sb = P.volatility.sigma_base, sg = P.distributions.sigma_margin;
+        var xs = [-21, -14, -7, -3, 0, 3, 7, 14, 21], i, worst = 0, signed = 0, n = 0;
+        for (i = 0; i < xs.length; i++) {
+          var cp = E.dist.coverProbSpread(xs[i], 0, sg, sb);
+          if (!cp) continue;
+          var d = (cp.win + 0.5 * cp.push) - E.dist.winProb(xs[i], sg);
+          worst = Math.max(worst, Math.abs(d));
+          signed += d; n++;
+        }
+        return n >= 7 && worst < 0.035 && Math.abs(signed / n) < 0.02;
+      })(),
+      'cover and win probability must describe the same distribution');
+    chk('the margin table is keyed on the variable it was conditioned on',
+      (function () {
+        /* conditioned on the market close, so two different projections against
+           the SAME market line must read the same bucket -- and differ only by
+           where the model has re-centred it */
+        var sb = P.volatility.sigma_base, sg = P.distributions.sigma_margin;
+        var a = E.dist.coverProbSpread(3, 3, sg, sb);
+        var b = E.dist.coverProbSpread(10, 3, sg, sb);
+        return a && b && a.basis === b.basis
+          && (b.win + 0.5 * b.push) > (a.win + 0.5 * a.push) + 0.1;
+      })(),
+      'a model that likes the home team by 10 on a 3-point line must show a '
+      + 'higher cover probability than one that agrees with the line');
+
+    /* ================================================================
+       Stale and thin inputs have to say so.
+       ================================================================ */
+    chk('the efficiency seed is labelled a seed, not this week\'s form',
+      (function () {
+        var st = E.strength.newState();
+        var pr = E.strength.profile(st, 'alabama', true);
+        var m = pr.efficiency.epa_per_play;
+        return pr.efficiency_is_seed === true && m.available
+          && /TRAINED SEED/.test(m.source || '') && /season \d{4}/.test(m.as_of || '');
+      })(),
+      'the browser has no play-level feed, so this value never updates there');
+    chk('efficiency confidence decays as the seed ages',
+      (function () {
+        var st = E.strength.newState();
+        var c0 = E.strength.profile(st, 'alabama', true).efficiency.epa_per_play.confidence;
+        st.season = st.seededThrough + 2;
+        var c2 = E.strength.profile(st, 'alabama', true).efficiency.epa_per_play.confidence;
+        return c0 > c2 && c2 > 0;
+      })());
+    chk('absorbing play-level data makes efficiency current again',
+      (function () {
+        var st = E.strength.newState();
+        E.ingest.absorbGame(st, { home: 'Alabama', away: 'Auburn',
+          home_points: 31, away_points: 17,
+          team_stats: { home: { epa_per_play: 0.15 }, away: { epa_per_play: -0.02 } } });
+        var pr = E.strength.profile(st, 'alabama', true);
+        return pr.efficiency_is_seed === false
+          && /updated this season/.test(pr.efficiency.epa_per_play.source || '');
+      })());
+
+    chk('the volatility index states how many drivers it rests on',
+      (function () {
+        var st = E.strength.newState();
+        var o = E.projectGame({ season: P.trained_through_season, week: 1, state: st,
+          game: { home: 'Alabama', away: 'Auburn', neutral_site: false },
+          teams: { home: { conference: 'SEC' }, away: { conference: 'SEC' } } });
+        if (o.status !== 'PREDICTED') return false;
+        var live = Object.keys(P.volatility.lambda || {}).filter(function (k) {
+          return P.volatility.lambda[k] > 0;
+        });
+        return typeof o.scores.volatility_basis === 'string'
+          && o.scores.volatility_basis.length > 20
+          && o.scores.volatility_discriminates === (live.length > 1);
+      })(),
+      'an index of 100 driven by one input must not read as a game-specific judgement');
+
     return finish();
   }
 

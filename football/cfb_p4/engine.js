@@ -161,29 +161,47 @@
       }
       return (lo + hi) / 2;
     },
-    /* P(home covers `line`). Primary path is the LEARNED margin PMF
-       conditioned on the market spread — CFB key numbers are real but they
-       are NOT the NFL's, and a pooled residual table smears them away.
+    /* P(home covers `line`), as the MODEL sees it.
+
+       The learned table is conditioned on the MARKET closing spread, so it is
+       looked up by the market number — that is the variable it was built on,
+       and keying it by the model's own projection asks it a question it was
+       never asked. What the table contributes is SHAPE: CFB key numbers are
+       real, they are not the NFL's, and a pooled residual table smears them
+       away.
+
+       The shape is then RE-CENTRED on the model's fair spread. Without that
+       step the engine publishes two contradictory answers to the same
+       question: at a fair spread of -14 the win probability said 17.4% while
+       the cover probability at pick'em said 22.4%, because the kernel used to
+       build the table shrinks every bucket's conditional mean toward zero. The
+       grid is shifted by a whole number of points so integer margins stay
+       integral and the key numbers survive the move.
+
        When this game's sigma differs from the table's baseline the PMF is
-       stretched about the line, so a high-volatility game does not borrow a
-       low-volatility game's key-number mass. */
+       stretched about the projection, so a high-volatility game does not
+       borrow a low-volatility game's key-number mass. */
     coverProbSpread: function (fairSpread, line, sigma, sigmaBase) {
       var P = params(); if (!P) return null;
       var D = P.distributions;
       if (!D || !isNum(fairSpread) || !isNum(line)) return null;
       var tab = D.margin_pmf_by_spread, rng = D.pmf_spread_range;
       var stretch = (isNum(sigma) && isNum(sigmaBase) && sigmaBase > 0) ? sigma / sigmaBase : 1;
-      var win = 0, push = 0, tot = 0, i, es, key, pmf, need, m;
-      if (tab && rng && fairSpread >= rng[0] && fairSpread <= rng[1]) {
-        key = (Math.round(fairSpread * 2) / 2).toFixed(1);
+      var win = 0, push = 0, tot = 0, i, es, key, pmf, need, m, shift;
+      if (tab && rng && line >= rng[0] && line <= rng[1]) {
+        key = (Math.round(line * 2) / 2).toFixed(1);
         if (key === '-0.0') key = '0.0';
-        pmf = tab[key] || tab[Math.round(fairSpread).toFixed(1)];
+        pmf = tab[key] || tab[Math.round(line).toFixed(1)];
         if (pmf) {
           es = pmfEntries(pmf);
+          /* re-centre the borrowed shape on THIS model's mean */
+          var em = 0, ew = 0;
+          for (i = 0; i < es.length; i++) { em += es[i][0] * es[i][1]; ew += es[i][1]; }
+          shift = ew > 0 ? Math.round(fairSpread - em / ew) : 0;
           for (i = 0; i < es.length; i++) {
             /* stretch about the projection, keeping integer margins integral
                so key numbers survive: only the WEIGHTS move, never the grid */
-            m = es[i][0];
+            m = es[i][0] + shift;
             tot += es[i][1];
             if (Math.abs(m - line) < 1e-9) push += es[i][1];
             else if (m > line) win += es[i][1];
@@ -197,7 +215,7 @@
                normal densities at the game sigma vs the table baseline */
             var w2 = 0, p2 = 0, t2 = 0, z0, z1, wgt;
             for (i = 0; i < es.length; i++) {
-              m = es[i][0];
+              m = es[i][0] + shift;
               z0 = (m - fairSpread) / (sigmaBase || 1);
               z1 = (m - fairSpread) / (sigma || 1);
               wgt = es[i][1] * Math.exp(-0.5 * (z1 * z1 - z0 * z0)) / stretch;
@@ -462,6 +480,7 @@
           perf = v - lm - (cf && pre[opp] && isNum(pre[opp][cf]) ? pre[opp][cf] : 0);
           st.eff[t][f] = (1 - a) * st.eff[t][f] + a * perf;
           st.effMean[f] = (1 - aL) * lm + aL * v;
+          (st.effFresh || (st.effFresh = {}))[t] = (st.effFresh[t] || 0) + 1;
         }
       }
     },
@@ -485,12 +504,35 @@
           : M.missing('no scoring history'),
         efficiency: {}
       };
+      /* The efficiency EWMAs ship as a SEED: the closing snapshot of the season
+         the parameters were trained through. They only become current if a
+         caller feeds `team_stats` into absorbGame, and the browser board has no
+         play-level source to feed. Publishing a season-old snapshot at full
+         confidence, with no as-of, invites it to be read as this week's form —
+         so a team whose efficiency has not been updated says so, and its
+         confidence decays with every season the state has advanced past the
+         seed. */
+      var fresh = (st.effFresh && st.effFresh[teamKey]) || 0;
+      var seasonsStale = (isNum(st.season) && isNum(st.seededThrough))
+        ? Math.max(0, st.season - st.seededThrough) : 0;
+      var effConf = fresh ? conf : clamp(1 - 0.35 * seasonsStale, 0.15, 0.85);
+      var effSrc = fresh
+        ? 'opponent-adjusted EWMA (play-level), updated this season'
+        : 'opponent-adjusted EWMA (play-level) — TRAINED SEED, not updated since';
+      var effBasis = fresh
+        ? fresh + ' play-level game(s) absorbed for this team'
+        : 'closing snapshot of season ' + st.seededThrough
+          + (seasonsStale ? ', ' + seasonsStale + ' season(s) old' : '')
+          + '. No play-level feed has updated it; supply game.team_stats to absorbGame '
+          + 'and it becomes current.';
       var fs = effFeats(), i;
       for (i = 0; i < fs.length; i++) {
         out.efficiency[fs[i]] = (e && isNum(e[fs[i]]))
-          ? M(e[fs[i]], { n: n, confidence: conf, source: 'opponent-adjusted EWMA (play-level)' })
+          ? M(e[fs[i]], { n: n, confidence: effConf, source: effSrc, basis: effBasis,
+              as_of: fresh ? null : 'season ' + st.seededThrough })
           : M.missing('no play-level data absorbed for this team');
       }
+      out.efficiency_is_seed = !fresh;
       return out;
     },
     /* Section XXI — regression of unstable statistics. The shrinkage factor
@@ -893,7 +935,24 @@
       sigma = clamp(sigma, lo, hi);
       drivers.sort(function (a, b) { return b.add - a.add; });
       var idx = clamp(100 * (sigma - lo) / Math.max(1e-9, hi - lo), 0, 100);
-      return { sigma: sigma, sigma_base: base, index: idx, drivers: drivers, mult: mult };
+      /* How many drivers the maximum-likelihood fit actually kept decides what
+         this index can mean. Six were offered and one survived, so the index is
+         very nearly a restatement of how early in the season it is: a week-1
+         game reads 100 not because it is unusually wild but because every
+         week-1 game does. Say that here rather than let a 0-100 number imply a
+         game-specific judgement it cannot support. */
+      var live = [], lk;
+      for (lk in lam) if (has(lam, lk) && lam[lk] > 0) live.push(lk);
+      var basis = live.length === 0
+        ? 'no volatility driver survived the fit — every game reports the base spread'
+        : (live.length === 1
+            ? 'ONE driver survived the fit (' + live[0] + '), so this index is very '
+              + 'nearly a restatement of that single input and does not discriminate '
+              + 'between games that share it'
+            : live.length + ' drivers survived the fit: ' + live.join(', '));
+      return { sigma: sigma, sigma_base: base, index: idx, drivers: drivers, mult: mult,
+        live_drivers: live, discriminating: live.length > 1, basis: basis,
+        range: [lo, hi] };
     },
     /* CONFIDENCE is NOT the inverse of volatility. Confidence answers "how
        good is my information?"; volatility answers "how wide is the real
@@ -1524,6 +1583,11 @@
       scores: {
         confidence: confPct,
         volatility: vol ? vol.index : null,
+        /* the index is a rescaling of this game's sigma across the fitted
+           range, so what it can mean depends on how many drivers the fit
+           kept — see uncertainty.volatility */
+        volatility_basis: vol ? vol.basis : null,
+        volatility_discriminates: vol ? vol.discriminating : null,
         roster_stability: (avail(H.stability) && avail(A.stability))
           ? (H.stability.value + A.stability.value) / 2
           : (avail(H.stability) ? H.stability.value : (avail(A.stability) ? A.stability.value : null)),
