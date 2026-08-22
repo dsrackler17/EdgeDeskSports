@@ -451,6 +451,28 @@ if (typeof sandbox.teamKey === 'function') {
       return n.length === 3;
     })());
 
+  /* ---- a slate belongs to a model, and the model carries the sport ----
+     The failure no spelling could reach: a submission is attached to a model
+     and the Collective resolves its games in that MODEL'S sport, so a college
+     slate attached to an NFL model is looked up in the NFL schedule and every
+     row returns unknown_team_home. The proof was "TCU" — three characters, no
+     accent, no truncation, present in the backend's own CFB schedule — failing
+     against itself. sportFamily is what decides whether an account has a model
+     that can carry a given file. */
+  chk('an account with only an NFL model cannot carry a CFB slate',
+    (function () {
+      var models = [{ model_slug: 'edgedesk-model', sport: 'NFL' }];
+      return !models.some(function (m) { return S.sportFamily(m.sport) === S.sportFamily('CFB'); });
+    })());
+  chk('an account with a CFB model can',
+    (function () {
+      var models = [{ model_slug: 'nfl', sport: 'NFL' }, { model_slug: 'p4', sport: 'CFB' }];
+      return models.some(function (m) { return S.sportFamily(m.sport) === S.sportFamily('CFB'); });
+    })());
+  chk('a model registered under NCAAF still carries a CFB file',
+    S.sportFamily('NCAAF') === S.sportFamily('CFB'),
+    'the server may name the sport either way; the family is what matches');
+
   /* ---- the server owns the sport vocabulary --------------------------- */
   chk('a detected sport is translated into the code THIS server uses',
     S.serverSportCode({ sports: [{ code: 'NFL' }, { code: 'NCAAF' }] }, 'CFB') === 'NCAAF',

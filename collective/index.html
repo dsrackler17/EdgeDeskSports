@@ -2290,7 +2290,8 @@ async function renderCreatorDash(view,me){
       var ms=m&&m.sport;
       if(!ms)return null;
       return sportFamily(f)===sportFamily(ms)?null
-        :{file:f,model:ms,modelName:(m&&(m.display_name||m.model_slug))||'the selected model'};
+        :{file:f,model:ms,
+          modelName:(m&&(m.model_name||m.display_name||m.model_slug))||'the selected model'};
     }
 
     function slatePaintMap(){
@@ -2641,6 +2642,26 @@ async function renderCreatorDash(view,me){
     async function slatePreflight(sportCode,season,week){
       var fam=sportFamily(sportCode);
       var known=(mMeta&&mMeta.sports)||[];
+
+      /* Does the ACCOUNT have a model for this sport?
+
+         This is the one the receipts kept hiding. A submission is attached to a
+         model, and the server resolves its games in that MODEL'S sport — the
+         sibling ingest function does exactly this, reading
+         auth.models[0]?.sport_code ?? "NFL". So a college slate attached to an
+         NFL model is looked up in the NFL schedule, and every row comes back
+         unknown_team_home no matter how the teams are spelled. The proof is
+         that "TCU" — three characters, no accent, no truncation, present in the
+         backend's own CFB schedule — failed against itself.
+
+         No spelling fix reaches this. It needs a model of the right sport on
+         the account, so say that instead of letting another slate quarantine. */
+      var models=(d&&d.models)||[];
+      if(models.length&&!models.some(function(m){return sportFamily(m.sport)===fam;})){
+        return {level:'no-model',sport:sportCode,
+          have:models.map(function(m){
+            return (m.model_name||m.display_name||m.model_slug)+' ('+(m.sport||'?')+')';})};
+      }
       var listed=known.some(function(x){return sportFamily(x.code)===fam;});
       if(known.length&&!listed){
         return {level:'no-sport',sport:sportCode,
@@ -2670,7 +2691,16 @@ async function renderCreatorDash(view,me){
     function slatePreflightHTML(p){
       if(!p)return '';
       var head,body;
-      if(p.level==='no-sport'){
+      if(p.level==='no-model'){
+        head='Your account has no '+esc(p.sport)+' model for this slate to belong to.';
+        body='You have '+(p.have.length?'<span class="mono">'+p.have.map(esc).join('</span>, <span class="mono">')+'</span>':'no models')+
+          '. A submission is attached to a model, and the Collective resolves a slate\'s games in '+
+          'that <b>model\'s</b> sport &mdash; so a college slate attached to an NFL model is looked up '+
+          'in the NFL schedule and every row comes back <span class="mono">unknown_team_home</span>, '+
+          'whatever the team names say. No change to this file or its spellings can reach that. '+
+          'Add a '+esc(p.sport)+' model on your account (or set the existing model\'s sport to '+
+          esc(p.sport)+') and post again.';
+      }else if(p.level==='no-sport'){
         head='Your Collective backend does not list '+esc(p.sport)+' as a sport.';
         body='It lists '+(p.listed.length?'<span class="mono">'+p.listed.map(esc).join('</span>, <span class="mono">')+'</span>':'nothing')+
           '. Every row would be saved but matched against nothing, which is what "quarantined" means. '+
