@@ -1203,17 +1203,25 @@ async function parseXLSX(buf){
    nothing to compute from. */
 var AMBIGUOUS_SPREAD=['spread','line'];
 
+/* The EdgeDesk Football export (app.html Research → Football → Download CSV,
+   44 columns) is auto-mapped by name below — model_home_line is already the
+   home side in betting sign, ref_home_line is the market number, percentages
+   arrive as 0-100 and the existing /100 normalisation handles them, and
+   spread_pick carries a bare team code that slatePick() resolves exactly.
+   model_home_margin (the OPPOSITE sign convention) is deliberately in no
+   synonym list, so it can never be mapped by accident. */
 var SLATE_FIELDS=[
   {f:'home_team',label:'Home team',req:true,syn:['home','home_team','hometeam','h','home team']},
   {f:'away_team',label:'Away team',req:true,syn:['away','road','away_team','visitor','a','away team']},
-  {f:'kickoff',label:'Game date',req:true,syn:['date','kickoff','game_date','datetime','start','start_time','gamedate','game date']},
+  {f:'kickoff',label:'Game date',req:true,syn:['date','kickoff','game_date','datetime','start','start_time','gamedate','game date','kickoff_local']},
   {f:'week',label:'Week',req:false,syn:['week','wk']},
-  {f:'projected_spread',label:'Your spread (home side)',req:false,syn:['projected_spread','proj_spread','spread','line','my_line','model_spread','my line']},
-  {f:'projected_total',label:'Your total',req:false,syn:['projected_total','proj_total','total','ou','over_under','over/under']},
-  {f:'line_at_submission',label:'Market line you saw',req:false,syn:['line_at_submission','book_line','market_line','vegas_line','book line','market line']},
-  {f:'home_win_probability',label:'Home win % (moneyline)',req:false,syn:['ml_prob_home','home_win_probability','home_win_prob','win_prob','home_wp','ml_home','winprob','win prob','home win prob']},
-  {f:'cover_probability',label:'Cover % (at your line)',req:false,syn:['cover_prob_0','cover_probability','cover_prob','cover']},
-  {f:'pick_side',label:'Pick (home/away)',req:false,syn:['pick','pick_side','side','selection']},
+  {f:'game_ref',label:'Game id (optional)',req:false,syn:['game_id','game_ref']},
+  {f:'projected_spread',label:'Your spread (home side)',req:false,syn:['projected_spread','proj_spread','spread','line','my_line','model_spread','my line','model_home_line']},
+  {f:'projected_total',label:'Your total',req:false,syn:['projected_total','proj_total','total','ou','over_under','over/under','model_fair_total']},
+  {f:'line_at_submission',label:'Market line you saw',req:false,syn:['line_at_submission','book_line','market_line','vegas_line','book line','market line','ref_home_line']},
+  {f:'home_win_probability',label:'Home win % (moneyline)',req:false,syn:['ml_prob_home','home_win_probability','home_win_prob','win_prob','home_wp','ml_home','winprob','win prob','home win prob','home_win_prob_pct']},
+  {f:'cover_probability',label:'Cover % (at your line)',req:false,syn:['cover_prob_0','cover_probability','cover_prob','cover','p_spread_pick_pct']},
+  {f:'pick_side',label:'Pick (home/away)',req:false,syn:['pick','pick_side','side','selection','spread_pick']},
   {f:'proj_home_score',label:'Projected home score',req:false,syn:['proj_home_score','home_pts','home_score','home_points','home pts']},
   {f:'proj_away_score',label:'Projected away score',req:false,syn:['proj_away_score','road_pts','away_pts','away_score','away_points','away pts','road pts']},
   {f:'confidence',label:'Confidence (your scale)',req:false,syn:['confidence','conf']}
@@ -1318,6 +1326,9 @@ function slateKick(v){
     return new Date(Math.round((n-25569)*86400*1000)).toISOString();
   }
   var s=String(v).trim();
+  /* "2026-09-09 20:20" (the EdgeDesk export) parses everywhere once the space
+     is a T; Safari rejects the space form. */
+  if(/^\d{4}-\d{2}-\d{2} \d{1,2}:\d{2}/.test(s))s=s.replace(' ','T');
   if(/^\d{4}-\d{2}-\d{2}$/.test(s))return s+'T17:00:00Z';
   if(/^\d{1,2}\/\d{1,2}\/\d{2,4}$/.test(s)){
     var p=s.split('/');var y=p[2].length===2?'20'+p[2]:p[2];
@@ -1336,8 +1347,12 @@ function slateBuildRows(season,week){
     if(!home||!away){problems.push('Row '+(r+1)+': needs both home and away.');continue;}
     var kick=slateKick(g('kickoff'));
     if(!kick){problems.push('Row '+(r+1)+': could not read the date "'+esc(String(g('kickoff')))+'".');continue;}
+    /* A real game id from the file (the EdgeDesk export carries nflverse ids
+       like 2026_01_NE_SEA) beats a synthesised row ref: it survives renames
+       and makes quarantine resolution on the admin side trivial. */
+    var gref=String(g('game_ref')||'').trim().toUpperCase().replace(/[^A-Z0-9_]/g,'');
     var o={
-      game_ref:('R'+r+'_'+away+'_'+home).toUpperCase().replace(/[^A-Z0-9_]/g,''),
+      game_ref:gref||('R'+r+'_'+away+'_'+home).toUpperCase().replace(/[^A-Z0-9_]/g,''),
       home_team:home,away_team:away,kickoff:kick
     };
     var wk=slateNum(g('week'));if(wk===null&&week)wk=+week;if(wk!==null)o.week=wk;
@@ -1363,6 +1378,143 @@ function slateBuildRows(season,week){
     out.push(o);
   }
   return {rows:out,problems:problems};
+}
+
+/* ---- what will actually be posted, counted on the values ----------------
+   A mapped header proves nothing: a column can be mapped and empty, and a
+   slate posted that way reaches the wall as "SEA -" for every game, with no
+   consensus, no cover probability and no closing line value — and nobody
+   finds out until it is already public. So count the built rows, field by
+   field, and report the count rather than the mapping. */
+var SLATE_WIRE=[
+  {f:'projected_spread',label:'your spread',key:true},
+  {f:'projected_total',label:'your total'},
+  {f:'line_at_submission',label:'market line',key:true},
+  {f:'home_win_probability',label:'home win %'},
+  {f:'cover_probability',label:'cover %'},
+  {f:'pick_side',label:'pick side'},
+  {f:'week',label:'week'},
+  {f:'confidence',label:'confidence'}
+];
+function slateWireStats(season,week){
+  var built=slateBuildRows(season,week);
+  var counts={},n=built.rows.length;
+  SLATE_WIRE.forEach(function(w){
+    counts[w.f]=built.rows.filter(function(o){return o[w.f]!==undefined&&o[w.f]!==null;}).length;
+  });
+  return {
+    n:n,counts:counts,problems:built.problems,
+    /* No spread and no market line on any row: there is no number on the
+       wire at all. That is the one state worth refusing to post. */
+    numberless:n>0&&counts.projected_spread===0&&counts.line_at_submission===0
+  };
+}
+function slateWireHTML(st){
+  if(!st.n)return '';
+  var cells=SLATE_WIRE.map(function(w){
+    var c=st.counts[w.f],all=c===st.n,none=c===0;
+    var col=all?'var(--pos)':(none?(w.key?'var(--neg)':'var(--faint)'):'var(--warn)');
+    return '<span class="f" style="color:'+col+';border-color:'+(none&&!w.key?'transparent':col)+'">'+
+      esc(w.label)+' <b class="mono">'+c+'/'+st.n+'</b></span>';
+  }).join('');
+  return '<div style="margin-top:10px"><h4 style="margin:0 0 6px">What will be posted, counted on the rows</h4>'+
+    '<div class="found">'+cells+'</div>'+
+    (st.numberless
+      ? '<p class="note warn" style="margin:9px 0 0"><b>No numbers on any row.</b> Every game would reach the wall as '+
+        '&ldquo;TEAM -&rdquo;: no spread, no consensus, no cover probability and no closing line value. '+
+        'Map <b>your spread</b> (your own number, home side) or <b>market line</b> in the mapping below, then check again. '+
+        'Posting is blocked until one of them carries a value.</p>'
+      : (st.counts.projected_spread===0
+        ? '<p class="note warn" style="margin:9px 0 0">No column carries <b>your own spread</b>, so these post as picks against the market line. '+
+          'They still grade, but the wall shows the market number rather than your model&rsquo;s, and margin accuracy cannot be scored.</p>'
+        : (st.counts.projected_spread<st.n
+          ? '<p class="note" style="margin:9px 0 0">'+(st.n-st.counts.projected_spread)+' row'+((st.n-st.counts.projected_spread)===1?'':'s')+
+            ' carry no spread of your own. Check those rows are not blank in your file.</p>'
+          : '')))+
+    '</div>';
+}
+
+/* ---- EdgeDesk Football export: detection + full-data read ---------------
+   The 44-column export carries far more than the Collective's wire schema
+   (gaps, cover probabilities at the market number, recommendations, and —
+   once games are final — grading columns). The wire keeps its own schema and
+   the Collective still grades every pick itself from final scores; this
+   board displays EVERYTHING in the file so the creator can see their whole
+   read in one place before and after posting. Display only — nothing here
+   is sent. */
+function edSlateIdx(){
+  var ix={};SLATE.cols.forEach(function(h,i){ix[String(h).toLowerCase().trim()]=i;});
+  return ix;
+}
+function edSlateDetect(){
+  var ix=edSlateIdx();
+  return ix['game_id']!==undefined&&ix['model_home_line']!==undefined&&ix['model_version']!==undefined;
+}
+function edgedeskBoardHTML(){
+  var ix=edSlateIdx();
+  function v(row,k){var i=ix[k];return i===undefined?null:(row[i]!==undefined&&String(row[i])!==''?String(row[i]):null);}
+  function n2(row,k){var s=v(row,k);if(s==null)return null;var x=+s;return isFinite(x)?x:null;}
+  function resChip(res){
+    if(!res)return '<span class="note">-</span>';
+    var col=res==='win'?'var(--pos)':res==='loss'?'var(--neg)':'var(--dim)';
+    return '<span class="mono" style="color:'+col+'">'+esc(res)+'</span>';
+  }
+  function recTag(x){
+    if(x==='RESEARCH_LEAN')return '<span style="color:var(--warn)">lean</span>';
+    if(x==='NO_MARKET')return '<span class="note">no mkt</span>';
+    return x?'<span class="note">pass</span>':'<span class="note">-</span>';
+  }
+  var rows='',shown=0,total=0;
+  var rec={sw:0,sl:0,sp:0,tw:0,tl:0,tp:0,mw:0,mlo:0,mp:0,graded:0};
+  var CAP=100;
+  for(var r=1;r<SLATE.rows.length;r++){
+    var row=SLATE.rows[r]||[];
+    var away=v(row,'away_team'),home=v(row,'home_team');
+    if(!away||!home)continue;
+    total++;
+    var sr=v(row,'spread_result'),tr=v(row,'total_result'),mr=v(row,'ml_result');
+    if(sr||tr||mr){
+      rec.graded++;
+      if(sr==='win')rec.sw++;else if(sr==='loss')rec.sl++;else if(sr==='push')rec.sp++;
+      if(tr==='win')rec.tw++;else if(tr==='loss')rec.tl++;else if(tr==='push')rec.tp++;
+      if(mr==='win')rec.mw++;else if(mr==='loss')rec.mlo++;else if(mr==='push')rec.mp++;
+    }
+    if(shown>=CAP)continue;
+    shown++;
+    var hs=v(row,'home_score'),as=v(row,'away_score');
+    var recS=v(row,'recommendation_spread'),recT=v(row,'recommendation_total');
+    var sPickP=n2(row,'p_spread_pick_pct'),tPickP=n2(row,'p_total_pick_pct'),mPickP=n2(row,'p_ml_pick_pct');
+    rows+='<tr>'+
+      '<td>'+esc(away)+' @ '+esc(home)+(hs!=null&&as!=null?' <span class="mono note">'+esc(as)+'-'+esc(hs)+'</span>':'')+'</td>'+
+      '<td class="num">'+esc(v(row,'week')||'-')+'</td>'+
+      '<td class="num">'+esc((v(row,'kickoff_local')||'').slice(0,10)||'-')+'</td>'+
+      '<td class="num">'+fmtSpread(n2(row,'model_home_line'))+' / '+(n2(row,'model_fair_total')!=null?n2(row,'model_fair_total'):'-')+'</td>'+
+      '<td class="num">'+fmtSpread(n2(row,'ref_home_line'))+' / '+(n2(row,'ref_total')!=null?n2(row,'ref_total'):'-')+'</td>'+
+      '<td class="num">'+fmtSpread(n2(row,'spread_gap_pts'))+' / '+fmtSpread(n2(row,'total_gap_pts'))+'</td>'+
+      '<td>'+(v(row,'spread_pick')?esc(v(row,'spread_pick'))+(sPickP!=null?' <span class="note">'+sPickP.toFixed(1)+'%</span>':''):'<span class="note">-</span>')+
+        (sr?' '+resChip(sr):'')+'</td>'+
+      '<td>'+(v(row,'total_pick')?esc(v(row,'total_pick'))+(tPickP!=null?' <span class="note">'+tPickP.toFixed(1)+'%</span>':''):'<span class="note">-</span>')+
+        (tr?' '+resChip(tr):'')+'</td>'+
+      '<td>'+(v(row,'ml_pick')?esc(v(row,'ml_pick'))+(mPickP!=null?' <span class="note">'+mPickP.toFixed(1)+'%</span>':''):'<span class="note">-</span>')+
+        (mr?' '+resChip(mr):'')+'</td>'+
+      '<td>'+recTag(recS)+' / '+recTag(recT)+'</td>'+
+    '</tr>';
+  }
+  if(!total)return '';
+  var summary='';
+  if(rec.graded){
+    summary='<p style="margin:8px 0 0;font-size:13px"><b>Graded in this file ('+rec.graded+' games):</b> '+
+      '<span class="mono">ATS '+rec.sw+'-'+rec.sl+(rec.sp?('-'+rec.sp):'')+
+      ' &middot; O/U '+rec.tw+'-'+rec.tl+(rec.tp?('-'+rec.tp):'')+
+      ' &middot; ML '+rec.mw+'-'+rec.mlo+(rec.mp?('-'+rec.mp):'')+'</span>'+
+      '<span class="note"> &mdash; the file’s own grading, shown for reference. The Collective’s official record comes only from its own grading of posted picks against final scores.</span></p>';
+  }
+  return '<label style="margin-top:14px">Full EdgeDesk read &middot; '+total+' game'+(total===1?'':'s')+
+      (total>shown?' (first '+shown+' shown)':'')+'</label>'+
+    '<div class="tblwrap mini"><table style="min-width:0"><thead><tr>'+
+      '<th>Game</th><th>Wk</th><th>Date</th><th>Model ln/tot</th><th>Ref ln/tot</th><th>Gap s/t</th><th>ATS</th><th>O/U</th><th>ML</th><th>Rec</th>'+
+    '</tr></thead><tbody>'+rows+'</tbody></table></div>'+summary+
+    '<p class="note" style="margin:6px 0 0">Everything in your file, displayed here for you. What posts to the Collective is the schema in the preview above; every posted pick is graded by the Collective itself from final scores. The export’s own basis: unproven research — its backtest did not beat the closing line.</p>';
 }
 
 /* ================= dashboard: one door, three rooms =================
@@ -1674,7 +1826,8 @@ async function renderCreatorDash(view,me){
       $('slPrev').innerHTML='<label style="margin-top:10px">Preview: '+built.rows.length+' game'+(built.rows.length===1?'':'s')+(built.rows.length>8?' (first 8 shown)':'')+'</label>'+
         '<div class="tblwrap mini"><table style="min-width:0"><thead><tr>'+head.map(function(h){return '<th>'+h+'</th>';}).join('')+'</tr></thead><tbody>'+
         (body||'<tr><td colspan="6" class="note" style="text-align:center;padding:12px">Nothing parsed yet. Check the required mappings above.</td></tr>')+'</tbody></table></div>'+
-        (built.problems.length?'<p class="warnnote" style="margin-top:6px">'+built.problems.slice(0,5).map(esc).join('<br>')+'</p>':'');
+        (built.problems.length?'<p class="warnnote" style="margin-top:6px">'+built.problems.slice(0,5).map(esc).join('<br>')+'</p>':'')+
+        (edSlateDetect()?edgedeskBoardHTML():'');
     }
     async function slateLoad(rows2d){
       if(!rows2d||rows2d.length<2){toast('Need a header row plus at least one game');return;}
@@ -1698,8 +1851,21 @@ async function renderCreatorDash(view,me){
         ? String(SLATE.cols[spi]) : null;
 
       var wk=slateDetectWeek(rows2d,SLATE.map['week']);
-      if(wk!==null&&$('slWeek')&&!$('slWeek').value)$('slWeek').innerHTML=weekOptions(wk);
-      SLATE.detectedWeek=wk;
+      /* A file spanning several weeks (a season export) must NOT be forced
+         under one week: each row already carries its own. Only preselect the
+         week when the file is single-week. */
+      var wkSet={},wi=SLATE.map['week'];
+      if(wi!==undefined)for(var wr=1;wr<rows2d.length;wr++){
+        var wv=parseInt(String((rows2d[wr]||[])[wi]||'').replace(/[^0-9]/g,''),10);
+        if(isFinite(wv)&&wv>=1&&wv<=22)wkSet[wv]=1;
+      }
+      SLATE.multiWeek=Object.keys(wkSet).length>1;
+      /* A week left selected from the previous upload would travel with a
+         season file as "this whole slate is Week 1". Clear it: the rows carry
+         their own. */
+      if(SLATE.multiWeek&&$('slWeek')&&$('slWeek').value)$('slWeek').innerHTML=weekOptions();
+      if(wk!==null&&!SLATE.multiWeek&&$('slWeek')&&!$('slWeek').value)$('slWeek').innerHTML=weekOptions(wk);
+      SLATE.detectedWeek=SLATE.multiWeek?null:wk;
       slatePaintScan();
       slatePaintMap();$('slGo').disabled=true;$('slOut').innerHTML='';
     }
@@ -1737,6 +1903,7 @@ async function renderCreatorDash(view,me){
       var msg='<div class="scan"><h4>What I read from your file</h4>'+
         '<p style="margin:0 0 9px"><strong>'+n+'</strong> game'+(n===1?'':'s')+
         (SLATE.detectedWeek?', <strong>'+esc(WEEK_NAMES[SLATE.detectedWeek]||('Week '+SLATE.detectedWeek))+'</strong> (from your week column)':'')+
+        (SLATE.multiWeek?', <strong>multiple weeks</strong> — each row keeps its own week from the file':'')+
         '</p><div class="found">'+
         chip(have('home_team'),'home team')+chip(have('away_team'),'away team')+
         chip(have('kickoff'),'date')+
@@ -1746,6 +1913,16 @@ async function renderCreatorDash(view,me){
         chip(have('projected_total'),'your total')+
         chip(have('home_win_probability'),'home win %')+
         '</div>';
+
+      if(edSlateDetect()){
+        msg+='<p class="note" style="margin:9px 0 0;border-left:2px solid var(--pos);padding-left:8px">'+
+          '<b style="color:var(--pos)">EdgeDesk Football export detected</b> &mdash; columns mapped automatically: '+
+          'your spread &larr; <span class="mono">model_home_line</span> (already the home side, betting sign), '+
+          'total &larr; <span class="mono">model_fair_total</span>, market line &larr; <span class="mono">ref_home_line</span>, '+
+          'win % &larr; <span class="mono">home_win_prob_pct</span>, pick &larr; <span class="mono">spread_pick</span>, '+
+          'game id &larr; <span class="mono">game_id</span>. Any result/grading columns in the file are displayed below '+
+          'but never sent &mdash; the Collective grades every pick itself from final scores.</p>';
+      }
 
       if(SLATE.ambiguousSpread){
         msg+='<div class="ask"><div class="ask-q">Your column <strong>&ldquo;'+esc(SLATE.ambiguousSpread)+'&rdquo;</strong> could mean two things. Which is it?</div>'+
@@ -1761,7 +1938,11 @@ async function renderCreatorDash(view,me){
         msg+='<p class="note" style="margin:9px 0 0">The number in your pick column was read as the market line, in home terms. '+
           '"NE +3.5" with NE on the road is stored as -3.5, the home team\'s number, which is what every model on the wall is measured against.</p>';
       }
-      if(withSide>0&&withLine<withSide){
+      /* Only when there is no line column at all. A file whose pick cell is a
+         bare team code but which carries market_line for every row has a
+         number on every pick, and saying otherwise sent creators looking for
+         a problem that was not there. */
+      if(withSide>0&&!have('line_at_submission')&&withLine<withSide){
         msg+='<p class="note warn" style="margin:9px 0 0">'+(withSide-withLine)+' pick'+((withSide-withLine)===1?'':'s')+
           ' carry no number. Those still grade, but they show as "TEAM -" on the wall and cannot produce a cover probability or closing line value.</p>';
       }
@@ -1773,6 +1954,12 @@ async function renderCreatorDash(view,me){
       if(SLATE.missingRequired){
         msg+='<p class="note warn" style="margin:9px 0 0">Home team, away team and date are required. Set them in the mapping below.</p>';
       }
+      /* Counted on the built rows, not on the headers: this is the check that
+         catches a slate that would post with nothing on it. */
+      var wst=slateWireStats($('slSeason')?$('slSeason').value:'',$('slWeek')?$('slWeek').value:'');
+      SLATE.numberless=wst.numberless;
+      msg+=slateWireHTML(wst);
+      if(SLATE.numberless){SLATE.checked=false;if($('slGo'))$('slGo').disabled=true;}
       msg+='</div>';
       $('slScan').innerHTML=msg;
       document.querySelectorAll('[data-spreadis]').forEach(function(b){
@@ -1832,6 +2019,14 @@ async function renderCreatorDash(view,me){
     async function slateSend(dry){
       var built=slateBuildRows($('slSeason').value,$('slWeek').value);
       if(!built.rows.length){toast('No rows to send');return;}
+      /* The dry run stays available — it is how you diagnose this — but a
+         slate with no number on any row never gets posted, including through
+         hands-off mode. */
+      if(!dry&&SLATE.numberless){
+        $('slOut').innerHTML='<div class="errbox">Not posted: no row carries a spread or a market line. '+
+          'Map <b>your spread</b> or <b>market line</b> in the column mapping, run the check again, then post.</div>';
+        $('slGo').disabled=true;return;
+      }
       var env={
         sport:(d.models[0]&&d.models[0].sport)||'NFL',
         season:+$('slSeason').value,
@@ -1856,7 +2051,7 @@ async function renderCreatorDash(view,me){
             '<p style="margin:8px 0 0"><b style="color:var(--pos)">Your slate is in.</b> <a href="#/'+esc(c.slug)+'">See your profile</a> or <a href="#">the wall</a>.</p>')+
           '</div>';
         if(dry){
-          SLATE.checked=true;$('slGo').disabled=false;
+          SLATE.checked=!SLATE.numberless;$('slGo').disabled=!!SLATE.numberless;
           /* hands-off mode: a clean check posts on its own */
           if($('slAuto')&&$('slAuto').checked&&(c2.rejected||0)===0&&!built.problems.length){slateSend(false);return;}
         }else{
@@ -1868,7 +2063,9 @@ async function renderCreatorDash(view,me){
       }
     }
     $('slCheck').onclick=function(){slateSend(true);};
-    $('slGo').onclick=function(){if(SLATE.checked)slateSend(false);else toast('Run the check first');};
+    /* A numberless slate goes through slateSend so the creator gets the real
+       reason, not "run the check first" after they just ran it. */
+    $('slGo').onclick=function(){if(SLATE.checked||SLATE.numberless)slateSend(false);else toast('Run the check first');};
 
     function wireCopy(){
       document.querySelectorAll('[data-copy]').forEach(function(b){
