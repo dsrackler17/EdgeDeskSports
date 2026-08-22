@@ -22,7 +22,7 @@ function csv(text) {
   const hd = rows[0];
   return rows.slice(1).map(r => Object.fromEntries(hd.map((h, i) => [h, (r[i] === '' || r[i] === 'NA') ? null : r[i]])));
 }
-const num = x => { const v = +x; return isFinite(v) ? v : null; };
+const num = x => { if (x == null || x === '') return null; const v = +x; return isFinite(v) ? v : null; };
 
 (async () => {
   let failures = 0;
