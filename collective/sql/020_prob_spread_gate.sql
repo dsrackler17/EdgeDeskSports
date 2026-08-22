@@ -20,19 +20,19 @@
 -- Show the check as it is deployed, with 30 lines of context. Paste the
 -- output back if you want the exact replacement written for you.
 
-with d as (
-  select pg_get_functiondef(p.oid) as src
-  from pg_proc p
-  join pg_namespace n on n.oid = p.pronamespace
-  where n.nspname = 'collective' and p.proname = 'ingest_submission'
-),
-lines as (
-  select i, ln from d, unnest(string_to_array(d.src, chr(10))) with ordinality as t(ln, i)
-),
-hit as (select min(i) as i from lines where ln ilike '%contradict%')
+-- The keyword filter first used here missed the comparison itself: the
+-- readout returned the comments on lines 157-158 and the reason on line 160,
+-- but not the condition on 159, which contains none of those words. Dump the
+-- window instead of guessing which words are in it.
+
 select l.i as line_no, l.ln as source
-from lines l, hit
-where hit.i is not null and l.i between hit.i - 30 and hit.i + 10
+from pg_proc p
+join pg_namespace n on n.oid = p.pronamespace
+cross join lateral unnest(string_to_array(pg_get_functiondef(p.oid), chr(10)))
+       with ordinality as l(ln, i)
+where n.nspname = 'collective'
+  and p.proname = 'ingest_submission'
+  and l.i between 140 and 175
 order by l.i;
 
 -- ---------------------------------------------------------------- STEP 2
