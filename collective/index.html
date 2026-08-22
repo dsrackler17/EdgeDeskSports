@@ -1434,6 +1434,45 @@ function slateWireHTML(st){
     '</div>';
 }
 
+/* ---- the API refused the spread/probability pair -----------------------
+   The submit endpoint cross-checks home_win_probability against
+   projected_spread with a straight-line rule of about 2.5 points of win
+   probability per point of spread. That approximation holds near a pick'em
+   and drifts badly past about four points: fed the closing market's own
+   spread and moneyline for Week 1 2026, it contradicts the market itself on
+   six of sixteen games. So a rejection here is not evidence that the number
+   is wrong, and this offers the creator the one move that does not involve
+   inventing a different probability: post the games without it. Everything
+   else — spread, total, market line, pick, cover probability — still posts
+   and still grades, and the wall shows the cover probability in its place.
+   The real fix is on the API side, and it is a one-line change: compare the
+   probability to the spread through a normal margin model rather than a
+   straight line. */
+var PROB_REJECTS=null;
+function probRejectHTML(resp,opts){
+  PROB_REJECTS=((resp&&resp.rows)||[]).filter(function(x){
+    return x.status==='rejected'&&/probabilit/i.test(String(x.reason||''));
+  }).map(function(x){return x.game_ref;});
+  if(!PROB_REJECTS.length)return '';
+  var n=PROB_REJECTS.length;
+  if(opts&&opts.dropProb){
+    return '<p class="note warn" style="margin:10px 0 0">'+n+' game'+(n===1?'':'s')+
+      ' still refused with the win probability already withheld. That is a different problem: '+
+      'read the reason above before sending anything else.</p>';
+  }
+  return '<div style="margin-top:10px;border-left:2px solid var(--warn);padding-left:10px">'+
+    '<b>'+n+' game'+(n===1?'':'s')+' refused on the spread/probability pair.</b>'+
+    '<p class="note" style="margin:6px 0 0">The API checks your win probability against your spread with a '+
+    'straight-line rule of about 2.5 points per point. Every refused game here is a favourite of four points or more, '+
+    'where that line stops holding: run the same check on the closing market&rsquo;s own spread and moneyline for this '+
+    'week and it contradicts the market on six of sixteen games. Your numbers were not changed and nothing was invented.</p>'+
+    '<p class="note" style="margin:6px 0 0">You can post these games without the win probability. The spread, total, '+
+    'market line, pick and cover probability all still post and still grade, and the wall shows the cover probability '+
+    'where the win probability would have been. The probability is withheld, never altered.</p>'+
+    '<button class="btn" id="slDropProb" style="margin-top:8px">Post '+n+' game'+(n===1?'':'s')+' without the win probability</button>'+
+    '</div>';
+}
+
 /* ---- EdgeDesk Football export: detection + full-data read ---------------
    The 44-column export carries far more than the Collective's wire schema
    (gaps, cover probabilities at the market number, recommendations, and —
@@ -2016,9 +2055,17 @@ async function renderCreatorDash(view,me){
       var t=this.value.trim();
       if(t.split('\n').length>=2)slateLoad(parseCSV(t));
     };
-    async function slateSend(dry){
+    async function slateSend(dry,opts){
+      opts=opts||{};
       var built=slateBuildRows($('slSeason').value,$('slWeek').value);
-      if(!built.rows.length){toast('No rows to send');return;}
+      var sendRows=built.rows;
+      /* Retry path: a subset of games, and/or a field withheld because the
+         API refused the pair. Both are explicit creator choices made from the
+         receipt below, never a silent transformation of what was uploaded. */
+      if(opts.only)sendRows=sendRows.filter(function(o){return opts.only[o.game_ref];});
+      if(opts.dropProb)sendRows=sendRows.map(function(o){
+        var c={},k;for(k in o)if(o.hasOwnProperty(k)&&k!=='home_win_probability')c[k]=o[k];return c;});
+      if(!sendRows.length){toast('No rows to send');return;}
       /* The dry run stays available — it is how you diagnose this — but a
          slate with no number on any row never gets posted, including through
          hands-off mode. */
@@ -2031,11 +2078,11 @@ async function renderCreatorDash(view,me){
         sport:(d.models[0]&&d.models[0].sport)||'NFL',
         season:+$('slSeason').value,
         data_origin:$('slOrigin').value,
-        rows:built.rows,dry_run:dry
+        rows:sendRows,dry_run:dry
       };
       if($('slWeek').value)env.week=+$('slWeek').value;
       if($('slModel'))env.model=$('slModel').value;
-      $('slOut').innerHTML='<p class="note">'+(dry?'Checking':'Posting')+' '+built.rows.length+' games&hellip;</p>';
+      $('slOut').innerHTML='<p class="note">'+(dry?'Checking':'Posting')+' '+sendRows.length+' games&hellip;</p>';
       try{
         var r=await api('/v1/dashboard/submit',{method:'POST',auth:true,headers:{'content-type':'application/json'},body:env});
         var c2=r.counts||{};
@@ -2049,7 +2096,14 @@ async function renderCreatorDash(view,me){
           ((c2.quarantined||0)>0?'<p class="note" style="margin:8px 0 0">Quarantined games could not be matched to the schedule (usually a team name). They are saved and get resolved on the admin side; nothing is lost.</p>':'')+
           (dry?'<p class="note" style="margin:8px 0 0">Nothing was saved. If this looks right, hit Post slate.</p>':
             '<p style="margin:8px 0 0"><b style="color:var(--pos)">Your slate is in.</b> <a href="#/'+esc(c.slug)+'">See your profile</a> or <a href="#">the wall</a>.</p>')+
+          probRejectHTML(r,opts)+
           '</div>';
+        if($('slDropProb')){
+          $('slDropProb').onclick=function(){
+            var only={};(PROB_REJECTS||[]).forEach(function(x){only[x]=1;});
+            slateSend(false,{dropProb:true,only:only});
+          };
+        }
         if(dry){
           SLATE.checked=!SLATE.numberless;$('slGo').disabled=!!SLATE.numberless;
           /* hands-off mode: a clean check posts on its own */
