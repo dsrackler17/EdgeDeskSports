@@ -1240,14 +1240,39 @@ var SLATE_FIELDS=[
   {f:'confidence',label:'Confidence (your scale)',req:false,syn:['confidence','conf']}
 ];
 var SLATE={cols:[],rows:[],map:{},checked:false};
+/* Columns whose value is stated from the PICKED side rather than the home
+   side. Mapping one of these onto a home-relative field is only correct for
+   home picks, so record which convention the file used and let the row builder
+   turn it around. */
+var PICK_RELATIVE_COVER=['p_spread_pick_pct'];
+/* Is this column a PERCENT (0-100) or a PROBABILITY (0-1)? Guessing from the
+   value breaks on exactly the values that matter: spread_push_pct holds "0.9"
+   meaning nine tenths of one percent, and a magnitude test reads that as 90%.
+   The header knows, so ask the header first and only fall back to magnitude. */
+function slatePctCol(header){
+  var n=String(header||'').toLowerCase();
+  return /(^|[^a-z])pct([^a-z]|$)|_pct$|percent|%/.test(n);
+}
+function slateProb(value,header){
+  var n=slateNum(value);
+  if(n===null)return null;
+  if(slatePctCol(header))return n/100;
+  if(n>1&&n<=100)return n/100;
+  return n;
+}
 function slateGuessMap(){
   SLATE.map={};
+  SLATE.coverIsPickSide=false;
   SLATE.cols.forEach(function(h,i){
     var n=String(h).toLowerCase().trim();
     SLATE_FIELDS.forEach(function(fd){
       if(SLATE.map[fd.f]===undefined&&fd.syn.indexOf(n)>=0)SLATE.map[fd.f]=i;
     });
+    if(n==='spread_push_pct')SLATE.map['__push']=i;
   });
+  var ci=SLATE.map['cover_probability'];
+  if(ci!==undefined&&PICK_RELATIVE_COVER.indexOf(String(SLATE.cols[ci]).toLowerCase().trim())>=0)
+    SLATE.coverIsPickSide=true;
 }
 function slateNum(v){
   if(v==null)return null;
@@ -1311,6 +1336,21 @@ var WEEK_CALENDARS={
 };
 /* server codes vary; map the ones that mean college football onto one calendar */
 var SPORT_ALIAS={NCAAF:'CFB',CFB:'CFB','CFB-P4':'CFB',COLLEGE:'CFB','NCAA FOOTBALL':'CFB',NFL:'NFL'};
+/* A conference column naming any of these means the file is college football,
+   whoever produced it. Kept as a declared table rather than a magic regex so it
+   can be read, extended and tested. */
+var CFB_CONFERENCES=['SEC','ACC','Big Ten','Big 12','Pac-12','Pac-10','Mountain West',
+  'Conference USA','C-USA','Sun Belt','American','American Athletic','AAC','Mid-American',
+  'MAC','Big Sky','FBS Independents','FCS','Southland','Big South','Ivy','Patriot',
+  'Missouri Valley','Colonial','WAC','Western Athletic'];
+function looksLikeCfbConference(text){
+  var t=' '+String(text||'').toLowerCase().replace(/[^a-z0-9]+/g,' ')+' ';
+  for(var i=0;i<CFB_CONFERENCES.length;i++){
+    var c=' '+CFB_CONFERENCES[i].toLowerCase().replace(/[^a-z0-9]+/g,' ')+' ';
+    if(t.indexOf(c)>=0)return true;
+  }
+  return false;
+}
 function weekCalendar(code){
   var k=SPORT_ALIAS[String(code||'').toUpperCase()]||String(code||'').toUpperCase();
   return WEEK_CALENDARS[k]||WEEK_CALENDARS.NFL;
@@ -1375,8 +1415,38 @@ function slatePick(raw,home,away){
    or NE at NO books the away pick as the home one. An ambiguous name returns
    nothing, because a coin flip that picks the wrong side still renders
    perfectly and is wrong forever. */
+/* Team names have to be compared on a canonical key, and for college football
+   that key MUST fold accents rather than strip them. Deleting the character
+   turns "San José State" into "sanjosstate", which can never equal the
+   "sanjosestate" the schedule carries, so the game is silently quarantined and
+   the creator is told nothing useful. This is the same rule as normKey() in
+   football/cfb_p4/engine.js, deliberately, so a slate the engine produced and
+   the list it is matched against agree on what a name is.
+
+   String.normalize('NFD') does the work where it exists; the explicit table is
+   the fallback and covers every accented character that appears in FBS and NFL
+   team names. */
+function teamKey(s){
+  if(s==null)return '';
+  /* built on first call, so this function never depends on module load order */
+  if(!teamKey.ACCENTS){
+    teamKey.ACCENTS={};
+    var from='\u00e0\u00e1\u00e2\u00e3\u00e4\u00e5\u00e7\u00e8\u00e9\u00ea\u00eb'
+      +'\u00ec\u00ed\u00ee\u00ef\u00f1\u00f2\u00f3\u00f4\u00f5\u00f6\u00f8'
+      +'\u00f9\u00fa\u00fb\u00fc\u00fd\u00ff\u0161\u017e\u010d\u0107';
+    var to='aaaaaaceeeeiiiinoooooouuuuyyszcc';
+    for(var j=0;j<from.length;j++)teamKey.ACCENTS[from.charAt(j)]=to.charAt(j);
+  }
+  var t=String(s).trim().toLowerCase(),out='',i,c;
+  if(t.normalize){
+    try{t=t.normalize('NFD').replace(/[\u0300-\u036f]/g,'');}catch(e){}
+  }
+  for(i=0;i<t.length;i++){c=t.charAt(i);out+=(teamKey.ACCENTS[c]||c);}
+  return out.replace(/[^a-z0-9]+/g,'');
+}
+
 function slateSide(team,home,away){
-  function k(s){return String(s||'').toLowerCase().replace(/[^a-z0-9]/g,'');}
+  var k=teamKey;
   var t=k(team),h=k(home),a=k(away);
   if(!t)return null;
   if(t==='home'||t==='h')return 'home';
@@ -1430,12 +1500,24 @@ function slateBuildRows(season,week){
       var n=slateNum(g(f));if(n!==null)o[f]=n;
     });
     ['home_win_probability','cover_probability'].forEach(function(f){
-      var n=slateNum(g(f));
-      if(n!==null){if(n>1&&n<=100)n=n/100;o[f]=n;}
+      var n=slateProb(g(f),SLATE.cols[SLATE.map[f]]);
+      if(n!==null)o[f]=n;
     });
     var parsedPick=slatePick(g('pick_side'),home,away);
     if(parsedPick){
       o.pick_side=parsedPick.side;
+      /* EVERY number on this wire is stated from the home side — the spread,
+         the win probability, the market line. A cover column that is stated
+         from the PICKED side therefore has to be turned around when the pick
+         is the away team, or half a slate posts its cover probability
+         inverted. The EdgeDesk export's p_spread_pick_pct is exactly such a
+         column: it is P(the side I picked covers). With the push mass also
+         supplied, P(home covers) = 1 - push - P(away covers) exactly. */
+      if(o.cover_probability!==undefined&&parsedPick.side==='away'&&SLATE.coverIsPickSide){
+        var pushI=SLATE.map['__push'];
+        var pu=pushI===undefined?null:slateProb(row[pushI],SLATE.cols[pushI]);
+        o.cover_probability=Math.max(0,Math.min(1,1-(pu||0)-o.cover_probability));
+      }
       /* An explicit line column always wins. This only fills a gap. */
       if(parsedPick.line!==null&&o.line_at_submission===undefined)
         o.line_at_submission=parsedPick.line;
@@ -1896,6 +1978,61 @@ async function renderCreatorDash(view,me){
     $('soBtn').onclick=function(){clearSession();renderDashboard(view);};
 
     /* ---- slate upload wiring ---- */
+    /* WHICH SPORT IS THIS SLATE?
+
+       The picker is one answer and the file is another, and when they disagree
+       the file is the one that knows: a College Football export posted under
+       sport NFL is matched against the wrong schedule and every game comes back
+       quarantined. So the file is read first — an EdgeDesk export stamps its own
+       model_version, and any file at all that carries conference columns naming
+       college conferences is college football — and the picker is the fallback.
+       slateSportMismatch() is what lets the UI say so out loud instead of
+       posting the wrong thing quietly. */
+    function slateSportFromFile(){
+      if(!SLATE.cols||!SLATE.cols.length)return null;
+      var ix=edSlateIdx(),i,v;
+      i=ix['model_version'];
+      if(i!==undefined){
+        for(var r=1;r<SLATE.rows.length;r++){
+          v=String((SLATE.rows[r]||[])[i]||'').toLowerCase();
+          if(!v)continue;
+          if(v.indexOf('cfb')>=0||v.indexOf('ncaa')>=0||v.indexOf('college')>=0)return 'CFB';
+          if(v.indexOf('nfl')>=0)return 'NFL';
+        }
+      }
+      i=ix['feature_version'];
+      if(i!==undefined){
+        for(var r2=1;r2<SLATE.rows.length;r2++){
+          v=String((SLATE.rows[r2]||[])[i]||'').toLowerCase();
+          if(v.indexOf('cfb')>=0)return 'CFB';
+        }
+      }
+      /* no EdgeDesk stamp: fall back to what the conference columns say */
+      var ci=ix['home_conference'],ai=ix['away_conference'];
+      if(ci!==undefined||ai!==undefined){
+        for(var r3=1;r3<SLATE.rows.length;r3++){
+          var row=SLATE.rows[r3]||[];
+          var cs=String((ci!==undefined?row[ci]:'')||'')+' '+String((ai!==undefined?row[ai]:'')||'');
+          if(looksLikeCfbConference(cs))return 'CFB';
+        }
+      }
+      return null;
+    }
+    function slateSportCode(){
+      var m=slateSelectedModel(d);
+      return slateSportFromFile()||(m&&m.sport)||currentSport(mMeta).code||'NFL';
+    }
+    /* the picked model says one sport and the file says another */
+    function slateSportMismatch(){
+      var f=slateSportFromFile();
+      if(!f)return null;
+      var m=slateSelectedModel(d);
+      var ms=m&&m.sport;
+      if(!ms)return null;
+      var norm=function(x){return SPORT_ALIAS[String(x||'').toUpperCase()]||String(x||'').toUpperCase();};
+      return norm(f)===norm(ms)?null:{file:f,model:ms,modelName:(m&&(m.display_name||m.model_slug))||'the selected model'};
+    }
+
     function slatePaintMap(){
       var opts='<option value="">not in my file</option>'+SLATE.cols.map(function(h,i){return '<option value="'+i+'">'+esc(String(h))+'</option>';}).join('');
       var rows=SLATE_FIELDS.map(function(fd){
@@ -2011,7 +2148,8 @@ async function renderCreatorDash(view,me){
 
       var msg='<div class="scan"><h4>What I read from your file</h4>'+
         '<p style="margin:0 0 9px"><strong>'+n+'</strong> game'+(n===1?'':'s')+
-        (SLATE.detectedWeek?', <strong>'+esc(WEEK_NAMES[SLATE.detectedWeek]||('Week '+SLATE.detectedWeek))+'</strong> (from your week column)':'')+
+        (SLATE.detectedWeek?', <strong>'+esc(weekCalendar(slateSportCode()).names[SLATE.detectedWeek]
+          ||('Week '+SLATE.detectedWeek))+'</strong> (from your week column)':'')+
         (SLATE.multiWeek?', <strong>multiple weeks</strong> — each row keeps its own week from the file':'')+
         '</p><div class="found">'+
         chip(have('home_team'),'home team')+chip(have('away_team'),'away team')+
@@ -2151,8 +2289,11 @@ async function renderCreatorDash(view,me){
          what a creator with an NFL model and a CFB model hits the first time
          they post a college slate. */
       var selModel=slateSelectedModel(d);
+      /* The file wins over the picker when the two disagree — see
+         slateSportCode(). Posting a college slate as NFL matches it against the
+         wrong schedule and quarantines every game. */
       var env={
-        sport:(selModel&&selModel.sport)||'NFL',
+        sport:slateSportCode(),
         season:+$('slSeason').value,
         data_origin:$('slOrigin').value,
         rows:sendRows,dry_run:dry
