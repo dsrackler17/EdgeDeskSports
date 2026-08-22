@@ -1352,8 +1352,24 @@ function looksLikeCfbConference(text){
   return false;
 }
 function weekCalendar(code){
-  var k=SPORT_ALIAS[String(code||'').toUpperCase()]||String(code||'').toUpperCase();
-  return WEEK_CALENDARS[k]||WEEK_CALENDARS.NFL;
+  return WEEK_CALENDARS[sportFamily(code)]||WEEK_CALENDARS.NFL;
+}
+/* Which FAMILY of sport a code belongs to, independent of what the server
+   happens to call it. */
+function sportFamily(code){
+  var k=String(code||'').toUpperCase().trim();
+  return SPORT_ALIAS[k]||k;
+}
+/* The server owns the vocabulary, so a sport detected from a file has to be
+   translated into whichever code THIS server uses before it is sent. Detecting
+   "college football" and posting the literal string CFB to a server that calls
+   it NCAAF is a rejection with a confusing message. Falls back to the detected
+   code when the server lists nothing that matches — better a clear server-side
+   rejection than silently posting it as the wrong sport. */
+function serverSportCode(meta,family){
+  var list=(meta&&meta.sports)||[],i,f=sportFamily(family);
+  for(i=0;i<list.length;i++)if(sportFamily(list[i].code)===f)return list[i].code;
+  return family;
 }
 function weekOptions(sel,code){
   var cal=weekCalendar(code);
@@ -2020,7 +2036,9 @@ async function renderCreatorDash(view,me){
     }
     function slateSportCode(){
       var m=slateSelectedModel(d);
-      return slateSportFromFile()||(m&&m.sport)||currentSport(mMeta).code||'NFL';
+      var detected=slateSportFromFile();
+      if(detected)return serverSportCode(mMeta,detected);
+      return (m&&m.sport)||currentSport(mMeta).code||'NFL';
     }
     /* the picked model says one sport and the file says another */
     function slateSportMismatch(){
@@ -2029,8 +2047,8 @@ async function renderCreatorDash(view,me){
       var m=slateSelectedModel(d);
       var ms=m&&m.sport;
       if(!ms)return null;
-      var norm=function(x){return SPORT_ALIAS[String(x||'').toUpperCase()]||String(x||'').toUpperCase();};
-      return norm(f)===norm(ms)?null:{file:f,model:ms,modelName:(m&&(m.display_name||m.model_slug))||'the selected model'};
+      return sportFamily(f)===sportFamily(ms)?null
+        :{file:f,model:ms,modelName:(m&&(m.display_name||m.model_slug))||'the selected model'};
     }
 
     function slatePaintMap(){
@@ -2109,8 +2127,12 @@ async function renderCreatorDash(view,me){
       /* A week left selected from the previous upload would travel with a
          season file as "this whole slate is Week 1". Clear it: the rows carry
          their own. */
-      if(SLATE.multiWeek&&$('slWeek')&&$('slWeek').value)$('slWeek').innerHTML=weekOptions();
-      if(wk!==null&&!SLATE.multiWeek&&$('slWeek')&&!$('slWeek').value)$('slWeek').innerHTML=weekOptions(wk);
+      /* ...and on the calendar the FILE implies, not whichever sport the
+         picker happened to be showing. A college file must offer Bowl Season
+         and the CFP rounds, never Wild Card. */
+      var wkSport=slateSportCode();
+      if(SLATE.multiWeek&&$('slWeek')&&$('slWeek').value)$('slWeek').innerHTML=weekOptions(null,wkSport);
+      if(wk!==null&&!SLATE.multiWeek&&$('slWeek')&&!$('slWeek').value)$('slWeek').innerHTML=weekOptions(wk,wkSport);
       SLATE.detectedWeek=SLATE.multiWeek?null:wk;
       slatePaintScan();
       slatePaintMap();$('slGo').disabled=true;$('slOut').innerHTML='';
@@ -2161,9 +2183,22 @@ async function renderCreatorDash(view,me){
         chip(have('home_win_probability'),'home win %')+
         '</div>';
 
+      /* The file says one sport and the selected model says another. Posting
+         anyway matches the rows against the wrong schedule and quarantines the
+         whole slate, so say it here, where there is still time to change the
+         picker, rather than in a receipt afterwards. */
+      var mm=slateSportMismatch();
+      if(mm){
+        msg+='<p class="note" style="margin:9px 0 0;border-left:2px solid var(--warn);padding-left:8px">'+
+          '<b style="color:var(--warn)">This looks like a '+esc(mm.file==='CFB'?'College Football':mm.file)+' file</b>, '+
+          'but <span class="mono">'+esc(mm.modelName)+'</span> is a '+esc(mm.model)+' model. '+
+          'It will be posted as <b>'+esc(mm.file)+'</b> so it matches the right schedule. '+
+          'If that is wrong, pick the other model above.</p>';
+      }
       if(edSlateDetect()){
         msg+='<p class="note" style="margin:9px 0 0;border-left:2px solid var(--pos);padding-left:8px">'+
-          '<b style="color:var(--pos)">EdgeDesk Football export detected</b> &mdash; columns mapped automatically: '+
+          '<b style="color:var(--pos)">EdgeDesk '+esc(slateSportCode()==='CFB'?'College Football':'Football')+
+          ' export detected</b> &mdash; columns mapped automatically: '+
           'your spread &larr; <span class="mono">model_home_line</span> (already the home side, betting sign), '+
           'total &larr; <span class="mono">model_fair_total</span>, market line &larr; <span class="mono">ref_home_line</span>, '+
           'win % &larr; <span class="mono">home_win_prob_pct</span>, pick &larr; <span class="mono">spread_pick</span>, '+

@@ -197,6 +197,19 @@ if (typeof sandbox.teamKey === 'function') {
   chk('WEEK_NAMES is gone and nothing still reaches for it',
     typeof S.WEEK_NAMES === 'undefined' && !/\bWEEK_NAMES\b/.test(CODE));
 
+  /* ---- the server owns the sport vocabulary --------------------------- */
+  chk('a detected sport is translated into the code THIS server uses',
+    S.serverSportCode({ sports: [{ code: 'NFL' }, { code: 'NCAAF' }] }, 'CFB') === 'NCAAF',
+    { got: S.serverSportCode({ sports: [{ code: 'NFL' }, { code: 'NCAAF' }] }, 'CFB') });
+  chk('an exact match is returned unchanged',
+    S.serverSportCode({ sports: [{ code: 'CFB' }] }, 'CFB') === 'CFB');
+  chk('a server that lists nothing matching keeps the detected code',
+    S.serverSportCode({ sports: [{ code: 'NFL' }] }, 'CFB') === 'CFB');
+  chk('sportFamily collapses every college alias onto one family',
+    ['CFB', 'NCAAF', 'CFB-P4', 'College'].every(function (c) {
+      return S.sportFamily(c) === 'CFB';
+    }));
+
   /* ---- percent vs probability ---------------------------------------- */
   chk('a _pct header is a percent even when its value is below 1',
     near(S.slateProb('0.9', 'spread_push_pct'), 0.009));
