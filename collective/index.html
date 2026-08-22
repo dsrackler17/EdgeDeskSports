@@ -441,11 +441,28 @@ function marketFor(mkt,g){
   if(!mkt||!mkt.find||!g)return null;
   return mkt.find({game_id:g.game_id,home:g.home,away:g.away});
 }
+/* "Market unavailable" was the same sentence whether the odds service was
+   down, whether it had no route for this sport yet, or whether the feed had
+   simply never polled. Three different causes, three different fixes, and a
+   reader staring at a blank column could not tell which one they had. The
+   status code is already known by the time we get here, so say what happened.
+
+   A 404 on a league route is the specific one worth naming: it means the
+   deployed collective_odds predates this sport, which is invisible from the
+   page and unfixable from it. */
+function marketUnavailableReason(mkt){
+  var e=mkt&&mkt.error, st=e&&e.status;
+  var lg=(e&&e.league)||(mkt&&mkt.league)||marketLeague();
+  if(st===404)return 'The odds service has no '+lg+' route yet \u2014 collective_odds needs redeploying.';
+  if(st===401||st===403)return 'The odds service rejected the request ('+st+').';
+  if(st)return 'The odds service returned '+st+'.';
+  return 'Market unavailable \u2014 the feed has not polled successfully.';
+}
 function marketLineHtml(mkt,g){
   if(!window.MCOdds)return '';
   var m=marketFor(mkt,g);
   if(!m&&(!mkt||mkt.state==='unavailable'))
-    return '<div class="mco-line mco-empty">Market unavailable</div>';
+    return '<div class="mco-line mco-empty">'+esc(marketUnavailableReason(mkt))+'</div>';
   if(!m)return '<div class="mco-line mco-empty">No market posted for this game yet</div>';
   return MCOdds.marketLine(m,mkt);
 }

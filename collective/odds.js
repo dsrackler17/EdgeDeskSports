@@ -104,7 +104,16 @@
            parses perfectly well as JSON with no `games` key, which the
            renderers would read as "this game has no market" rather than
            "we could not reach the market". */
-        if (!r.ok) throw new Error('odds request failed (' + r.status + ')');
+        if (!r.ok) {
+          /* Carry the status out with the error. Every failure used to arrive
+             at the renderers as the same bare "unavailable", so a sport the
+             deployed function has no route for looked identical to a feed
+             that had never polled -- and those need completely different
+             fixes. */
+          var e404 = new Error('odds request failed (' + r.status + ')');
+          e404.status = r.status;
+          throw e404;
+        }
         return r.json();
       })
       .then(function (d) {
@@ -118,12 +127,18 @@
         delete inflight[url];
         /* A failed request is "unavailable", never an empty board that could
            be mistaken for a week with no games. */
+        var lg = (path.match(/^\/v1\/([a-z0-9]+)\//) || [])[1] || CFG.league;
         return {
           state: 'unavailable',
+          league: lg,
           last_updated: (hit && hit.data && hit.data.last_updated) || null,
           age_seconds: null,
           notice: 'Odds unavailable.',
-          error: { message: (e && e.message) || 'request failed' },
+          error: {
+            message: (e && e.message) || 'request failed',
+            status: (e && e.status) || null,
+            league: lg
+          },
           games: []
         };
       });
