@@ -143,15 +143,25 @@ label .opt{color:var(--faint);text-transform:none;letter-spacing:0;font-weight:4
   border:1px solid var(--border);color:var(--dim);background:var(--surface2)}
 .sportchips .sc.live{color:var(--text);border-color:var(--accent)}
 .sportchips .sc.off{opacity:.55}
-.sportpick{display:inline-flex;align-items:center;gap:9px;font-size:12.5px;
+/* The sport cards. Laid out as a grid rather than inline-flex: a fixed
+   min-width with nowrap text was pushing the label clean outside the border on
+   a narrow column. The grid gives each card a real track, the text wraps
+   inside it, and the row reflows instead of overflowing. */
+.sportgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));
+  gap:8px;margin-top:12px}
+.sportpick{display:flex;align-items:flex-start;gap:10px;font-size:12.5px;
   color:var(--text);background:var(--surface2);border:1px solid var(--border);
-  border-radius:8px;padding:9px 13px;cursor:pointer;min-width:190px}
+  border-radius:8px;padding:10px 12px;cursor:pointer;box-sizing:border-box}
 .sportpick.posted{border-color:var(--accent);cursor:default}
-.sportpick input{margin:0;cursor:inherit;flex:0 0 auto}
-.sportpick .sp-txt{display:flex;flex-direction:column;gap:2px;line-height:1.25;min-width:0}
-.sportpick .sp-txt b{font-weight:600;white-space:nowrap}
-.sportpick .sp-sub{color:var(--faint);font-size:10.5px;white-space:nowrap;
-  overflow:hidden;text-overflow:ellipsis}
+.sportpick input{margin:2px 0 0;cursor:inherit;flex:0 0 auto}
+.sportpick .sp-txt{display:flex;flex-direction:column;gap:3px;line-height:1.3;
+  min-width:0;flex:1 1 auto}
+.sportpick .sp-txt b{font-weight:600;overflow-wrap:anywhere}
+.sportpick .sp-sub{color:var(--faint);font-size:10.5px;overflow-wrap:anywhere}
+.sportpick .sp-add{color:var(--accent);font-size:10.5px;text-decoration:underline}
+.sqlbox{width:100%;font-family:'JetBrains Mono',monospace;font-size:11px;line-height:1.5;
+  background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:6px;
+  padding:9px;white-space:pre;overflow:auto}
 .bd-stats .allsports{font-style:normal;color:var(--faint);font-size:9.5px;
   letter-spacing:.08em;text-transform:uppercase;margin-left:4px}
 .toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:9px 16px;font-size:12.5px;z-index:50}
@@ -1009,11 +1019,24 @@ async function renderRankings(view){
     /* /v1/rankings carries no sport, so the sport of each ranked model is read
        off the wall rows it shares a slug with. A model the wall does not know
        is kept rather than hidden. */
+    /* A rankings row carries rank, creator_slug, creator_name, model_name,
+       value and graded — and NOT model_slug. Keying this map on the slug meant
+       every lookup was "creator/undefined", every sport came back undefined,
+       and the sp==null escape hatch then passed every row: the filter silently
+       filtered nothing and all three boards showed every sport under one
+       sport's heading. Both sides do carry model_name, so index on both and
+       try the slug first. */
     var smap={};res[1].forEach(function(r){
-      if(r.model_slug)smap[r.creator_slug+'/'+r.model_slug]=r.sport;
+      if(r.model_slug)smap[r.creator_slug+'/s/'+r.model_slug]=r.sport;
+      if(r.model_name)smap[r.creator_slug+'/n/'+r.model_name]=r.sport;
     });
+    function rankedSport(r){
+      var sp=r.model_slug?smap[r.creator_slug+'/s/'+r.model_slug]:null;
+      if(sp==null&&r.model_name)sp=smap[r.creator_slug+'/n/'+r.model_name];
+      return sp==null?null:sp;
+    }
     function inSport(r){
-      var sp=smap[r.creator_slug+'/'+r.model_slug];
+      var sp=rankedSport(r);
       return sp==null||sportFamily(sp)===sportFamily(rkSport.code);
     }
     function board(title,rows,fmt,sub){
@@ -1452,9 +1475,13 @@ var SPORTS=[
                'Western Athletic'] } }
 ];
 /* A sport the server offers that this registry has never heard of still has to
-   render. It gets the neutral shape rather than an NFL-shaped guess. */
+   render — and it must NOT be given the NFL's shape. The neutral fallback used
+   to carry regular:18/max:22, so an unrecognised sport was offered a 22-week
+   season whose last round was called the Super Bowl. Zero weeks is the honest
+   answer: the week picker then offers only "Read it from my file", and
+   slateSend already omits the week when the box is empty. */
 var SPORT_FALLBACK={ family:null, name:'?', long:'', order:99, aliases:[],
-  unit:'week', regular:18, max:22, rounds:{}, seasonSpan:1, detect:{} };
+  unit:'date', regular:0, max:0, rounds:{}, seasonSpan:1, detect:{} };
 
 function sportDef(code){
   var want=String(code||'').toUpperCase().trim(),i,j;
@@ -2394,6 +2421,50 @@ async function renderCreatorDash(view,me){
       '<span><div class="k">Model numbers posted</div><div class="v">'+postedN+'</div></span>'+
       (nextK?'<span><div class="k">Next kickoff</div><div class="v" style="font-size:13px">'+kickoffFmt(nextK)+'</div></span>':'')+
       '</div><p class="note" style="margin:10px 0 0"><a href="#board">Open the board &rarr;</a> &middot; <a href="#models">All models &rarr;</a> &middot; <a href="#rankings">Rankings &rarr;</a></p></div>';
+    /* ADD A MODEL FOR A SPORT.
+
+       There is no endpoint for this — the whole API exposes no model creation —
+       so the honest "with ease" is to hand over the exact statement, already
+       filled in with this creator's slug and the sport's code, rather than
+       leave someone to work out a schema they have never seen. The column
+       names come from the live database: models(slug, name, sport_code), and
+       the table lives in whichever schema this deployment uses, so the SQL
+       finds it instead of assuming `public`. */
+    function addModelSQL(creatorSlug,creatorName,sportCode){
+      var d2=sportDef(sportCode);
+      var long=d2.long||sportCode;
+      var mslug=creatorSlug+'-'+String(sportCode).toLowerCase().replace(/[^a-z0-9]+/g,'');
+      var mname=creatorName+' '+long;
+      return ''
+        +'-- Add a '+long+' model for '+creatorName+'.\n'
+        +'-- The Collective\'s tables are not in the public schema; this finds\n'
+        +'-- the right one instead of guessing at it.\n'
+        +'do $$\n'
+        +'declare\n'
+        +'  s text;\n'
+        +'  cid uuid;\n'
+        +'begin\n'
+        +'  select table_schema into s\n'
+        +'    from information_schema.tables\n'
+        +'   where table_name = \'models\' limit 1;\n'
+        +'  if s is null then raise exception \'no models table found\'; end if;\n\n'
+        +'  execute format(\'select id from %I.creators where slug = $1\', s)\n'
+        +'    into cid using \''+creatorSlug+'\';\n'
+        +'  if cid is null then raise exception \'no creator with slug '+creatorSlug+'\'; end if;\n\n'
+        +'  execute format($f$\n'
+        +'    insert into %I.models (creator_id, slug, name, sport_code, is_listed)\n'
+        +'    select $1, $2, $3, $4, true\n'
+        +'     where not exists (\n'
+        +'       select 1 from %I.models\n'
+        +'        where creator_id = $1 and upper(sport_code) = upper($4))\n'
+        +'  $f$, s, s) using cid, \''+mslug+'\', \''+mname+'\', \''+sportCode+'\';\n'
+        +'end $$;\n\n'
+        +'-- check it landed\n'
+        +'select c.slug, m.slug, m.name, m.sport_code\n'
+        +'  from models m join creators c on c.id = m.creator_id\n'
+        +' where c.slug = \''+creatorSlug+'\';\n';
+    }
+
     /* ---- what this creator covers ------------------------------------- */
     (function(){
       var covered=creatorSports(d.models,declaredSports(c.slug));
@@ -2405,7 +2476,7 @@ async function renderCreatorDash(view,me){
       var planned={};declaredSports(c.slug).forEach(function(x){planned[sportFamily(x)]=1;});
       html+='<h2>Sports you cover</h2><div class="panel">'+
         sportChipsHTML(covered,mMeta)+
-        '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">'+
+        '<div class="sportgrid">'+
         offered.map(function(sp){
           var f=sportFamily(sp.code),d2=sportDef(sp.code);
           var posted=!!have[f];
@@ -2413,7 +2484,9 @@ async function renderCreatorDash(view,me){
             '<input type="checkbox" data-plan="'+esc(sp.code)+'"'+
             (posted||planned[f]?' checked':'')+(posted?' disabled':'')+'>'+
             '<span class="sp-txt"><b>'+esc(d2.long||sp.code)+'</b>'+
-            '<span class="sp-sub">'+(posted?esc(have[f]):'no model yet')+'</span></span>'+
+            '<span class="sp-sub">'+(posted?esc(have[f])
+              :'no model yet \u00b7 <a href="#" class="sp-add" data-addmodel="'+esc(sp.code)+'">add one</a>')+
+            '</span></span>'+
             '</label>';
         }).join('')+'</div>'+
         '<p class="note" style="margin:10px 0 0">A sport appears on your public profile once you '+
@@ -2569,6 +2642,39 @@ async function renderCreatorDash(view,me){
         toast('Profile saved');
       }catch(e){toast(e.message);}
     };
+    /* "add one" next to a sport with no model: show the statement, ready to
+       paste into the SQL editor, with a copy button. */
+    document.querySelectorAll('[data-addmodel]').forEach(function(a){
+      a.onclick=function(ev){
+        ev.preventDefault();ev.stopPropagation();
+        var code=a.getAttribute('data-addmodel');
+        var sql=addModelSQL(c.slug,c.display_name||c.slug,code);
+        var box=$('addModelBox');
+        if(!box){
+          box=document.createElement('div');box.id='addModelBox';
+          box.className='panel';box.style.marginTop='10px';
+          a.closest('.panel').appendChild(box);
+        }
+        box.innerHTML='<b>Add a '+esc(sportLongName(code))+' model</b>'+
+          '<p class="note" style="margin:6px 0 8px">The Collective has no endpoint for creating a '+
+          'model, so this is the statement to run once in your Supabase SQL editor. It finds the '+
+          'right schema itself, and it will not duplicate a model that already exists.</p>'+
+          '<textarea id="addModelSql" readonly rows="10" class="sqlbox">'+esc(sql)+'</textarea>'+
+          '<div style="display:flex;gap:8px;margin-top:8px">'+
+          '<button class="btn" id="addModelCopy">Copy SQL</button>'+
+          '<button class="ghost" id="addModelClose">Close</button></div>';
+        $('addModelCopy').onclick=function(){
+          var t=$('addModelSql');t.select();
+          try{
+            if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(t.value);
+            else document.execCommand('copy');
+            toast('SQL copied');
+          }catch(e){toast('Select the text and copy it');}
+        };
+        $('addModelClose').onclick=function(){box.remove();};
+      };
+    });
+
     document.querySelectorAll('[data-plan]').forEach(function(cb){
       cb.onchange=function(){
         var picked=[];

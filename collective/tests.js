@@ -199,7 +199,12 @@ if (typeof sandbox.teamKey === 'function') {
   chk('NCAAF and CFB-P4 alias onto the CFB calendar',
     S.weekCalendar('NCAAF').regular === 15 && S.weekCalendar('CFB-P4').regular === 15);
   chk('an unknown sport falls back rather than throwing',
-    S.weekCalendar('QUIDDITCH').regular === 18);
+    (function () {
+      var c = S.weekCalendar('QUIDDITCH');
+      return c && c.regular === 0 && c.max === 0 && c.names
+        && Object.keys(c.names).length === 0;
+    })(),
+    'falling back must not mean inheriting the NFL calendar');
   chk('WEEK_NAMES is gone and nothing still reaches for it',
     typeof S.WEEK_NAMES === 'undefined' && !/\bWEEK_NAMES\b/.test(CODE));
 
@@ -476,13 +481,24 @@ if (typeof sandbox.teamKey === 'function') {
   chk('a server alias resolves to its family',
     S.sportDef('NCAAF').family === 'CFB' && S.sportDef('CFB-P4').family === 'CFB'
     && S.sportDef('nfl').family === 'NFL');
-  chk('a sport the registry has never heard of still renders',
+  chk('a sport the registry has never heard of does NOT borrow the NFL\'s shape',
     (function () {
       var d = S.sportDef('KABADDI');
-      return d.family === null && d.name === 'KABADDI' && d.regular > 0
-        && S.weekCalendar('KABADDI').max > 0;
+      return d.family === null && d.name === 'KABADDI'
+        && d.regular === 0 && d.max === 0 && d.unit === 'date';
     })(),
-    'an unknown server sport must not crash the board or borrow NFL rounds');
+    'the fallback used to carry 18 weeks and a Super Bowl round, so an '
+    + 'unrecognised sport was offered a 22-week NFL season');
+  chk('an unknown sport gets only "read it from my file" for a week',
+    (function () {
+      var o = S.weekOptions(null, 'KABADDI');
+      return (o.match(/<option/g) || []).length === 1 && /Read it from my file/.test(o);
+    })());
+  chk('a known sport still gets its full week list',
+    (function () {
+      var o = S.weekOptions(null, 'CFB');
+      return (o.match(/<option/g) || []).length === 21 && /Bowl Season/.test(o);
+    })());
   chk('two unknown sports do not merge into one family',
     S.sportFamily('KABADDI') !== S.sportFamily('SEPAKTAKRAW'));
   chk('display names come from the registry, not from the server',
@@ -511,6 +527,36 @@ if (typeof sandbox.teamKey === 'function') {
     S.sportsInRows(MIXED).join(',') === 'NFL,CFB');
   chk('rows with no sport at all yield no sports',
     S.sportsInRows([{ creator_slug: 'x' }]).length === 0);
+
+  /* ---- a filter that filters nothing is worse than no filter -----------
+     The rankings boards were "filtered by sport" using a key built from
+     r.model_slug — a field a rankings row does not carry. Every lookup was
+     "creator/undefined", every sport read back undefined, and the null escape
+     hatch then passed every row. Three boards claimed to show one sport and
+     showed all of them. This asserts the join actually joins. */
+  chk('a ranked model is matched to its sport by name when it has no slug',
+    (function () {
+      var wall = [{ creator_slug:'a', model_slug:'a1', model_name:'Alpha One', sport:'CFB' },
+                  { creator_slug:'a', model_slug:'a2', model_name:'Alpha Two', sport:'NFL' }];
+      /* exactly the shape /v1/rankings returns: NO model_slug */
+      var ranked = [{ rank:1, creator_slug:'a', creator_name:'A', model_name:'Alpha One',
+                      value:0.6, graded:12 },
+                    { rank:2, creator_slug:'a', creator_name:'A', model_name:'Alpha Two',
+                      value:0.5, graded:12 }];
+      var smap = {};
+      wall.forEach(function (r) {
+        if (r.model_slug) smap[r.creator_slug + '/s/' + r.model_slug] = r.sport;
+        if (r.model_name) smap[r.creator_slug + '/n/' + r.model_name] = r.sport;
+      });
+      function look(r) {
+        var sp = r.model_slug ? smap[r.creator_slug + '/s/' + r.model_slug] : null;
+        if (sp == null && r.model_name) sp = smap[r.creator_slug + '/n/' + r.model_name];
+        return sp == null ? null : sp;
+      }
+      return look(ranked[0]) === 'CFB' && look(ranked[1]) === 'NFL';
+    })(),
+    'keyed on model_slug alone this returned null for both, and the filter '
+    + 'passed every row');
 
   /* ---- what a creator covers is DERIVED from their models --------------- */
   chk('sports covered come from the models, in registry order',
