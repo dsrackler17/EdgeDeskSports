@@ -2189,10 +2189,19 @@ async function renderCreatorDash(view,me){
          picker, rather than in a receipt afterwards. */
       var mm=slateSportMismatch();
       if(mm){
+        /* name the code that will ACTUALLY be sent, which is the server's word
+           for this sport and not necessarily the one detected from the file */
+        /* "an NFL model", not "a NFL model": for the initialisms these codes
+           actually are, the article follows how the first LETTER is said, and
+           F, H, L, M, N, R, S and X all begin with a vowel sound. */
+        var an=function(x){
+          var c=String(x||'').charAt(0).toUpperCase();
+          return (/[AEIOU]/.test(c)||(x===String(x).toUpperCase()&&'FHLMNRSX'.indexOf(c)>=0))?'an ':'a ';
+        };
         msg+='<p class="note" style="margin:9px 0 0;border-left:2px solid var(--warn);padding-left:8px">'+
           '<b style="color:var(--warn)">This looks like a '+esc(mm.file==='CFB'?'College Football':mm.file)+' file</b>, '+
-          'but <span class="mono">'+esc(mm.modelName)+'</span> is a '+esc(mm.model)+' model. '+
-          'It will be posted as <b>'+esc(mm.file)+'</b> so it matches the right schedule. '+
+          'but <span class="mono">'+esc(mm.modelName)+'</span> is '+an(mm.model)+esc(mm.model)+' model. '+
+          'It will be posted as <b>'+esc(slateSportCode())+'</b> so it matches the right schedule. '+
           'If that is wrong, pick the other model above.</p>';
       }
       if(edSlateDetect()){

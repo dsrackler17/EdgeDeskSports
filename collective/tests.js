@@ -17,6 +17,12 @@
         80-column EdgeDesk CFB export, run inside a small DOM shim.
 
    Run:  node collective/tests.js
+
+   There is also an end-to-end harness that drives the REAL dashboard in
+   Chromium — real file input, real buttons, backend stubbed so the exact POST
+   body can be inspected. It needs playwright and a static server, so it is not
+   part of this suite; see the PR for the recipe. This file is what runs
+   anywhere node does.
    =========================================================================== */
 'use strict';
 
