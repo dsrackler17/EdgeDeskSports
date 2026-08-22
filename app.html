@@ -22228,12 +22228,27 @@ function fbP4Schedule(season,signal){
         return {game_id:r.game_id,season:+r.season,week:fbNum(r.week),
           start_date:r.start_date,completed:!!r.completed,neutral_site:!!r.neutral_site,
           conference_game:!!r.conference_game,venue_id:null,venue:r.venue,
-          home_team:r.home_team,home_conference:r.home_conference,home_division:'fbs',
-          away_team:r.away_team,away_conference:r.away_conference,away_division:'fbs',
+          home_team:r.home_team,home_conference:r.home_conference,home_division:null,
+          away_team:r.away_team,away_conference:r.away_conference,away_division:null,
+          division_src:'absent from this feed',
           home_points:fbNum(r.home_points),away_points:fbNum(r.away_points)};
       })};
     }).catch(function(e){throw e;});
   });
+}
+
+/* The GitHub schedule carries `home_division` truthfully. The Supabase fallback
+   does not carry it at all, and an earlier build filled in 'fbs' for every row —
+   which tells the rating engine that an FCS opponent is a rated FBS team, so a
+   September blowout gets absorbed as though it were an FBS result. The only FBS
+   list the browser actually has is the trained seed table, so that is what
+   resolves it, and the board says when it had to. */
+function fbP4IsFbs(division,teamName){
+  if(division==='fbs')return true;
+  if(division&&division!=='fbs')return false;
+  var P=window.EDCfbP4Params,E=window.EDCfbP4;
+  if(!P||!E||!P.rating||!P.rating.seed_ratings)return true;
+  return Object.prototype.hasOwnProperty.call(P.rating.seed_ratings,E.normKey(teamName));
 }
 
 function fbP4Load(force,signal){
@@ -22255,15 +22270,21 @@ function fbP4Load(force,signal){
         E.ingest.seasonBreak(st);
         return fbP4Schedule(yy,signal).then(function(res){
           var rows=res.rows.slice().sort(function(a,b){return String(a.start_date).localeCompare(String(b.start_date));});
-          var n=0;
+          var n=0,inferredDiv=0;
           rows.forEach(function(r){
             if(!r.completed||r.home_points==null||r.away_points==null)return;
             E.ingest.absorbGame(st,{home:r.home_team,away:r.away_team,
-              home_fbs:r.home_division==='fbs',away_fbs:r.away_division==='fbs',
+              home_fbs:fbP4IsFbs(r.home_division,r.home_team),
+              away_fbs:fbP4IsFbs(r.away_division,r.away_team),
               neutral_site:r.neutral_site,home_points:r.home_points,away_points:r.away_points});
+            if(r.division_src)inferredDiv++;
             n++;
           });
           S.absorbed+=n;
+          if(inferredDiv)S.notes.push(yy+': this feed does not carry FBS/FCS division, so it '
+            +'was resolved against the trained team list for '+inferredDiv+' game'
+            +(inferredDiv===1?'':'s')+'. A team the model has never rated is treated as '
+            +'a non-FBS opponent rather than absorbed as a rated one.');
           if(yy===cur){S.sched=res;S.schedSrc=res.src;}
           if(!n&&yy===cur)S.notes.push('No completed '+yy+' games in the feed yet — ratings are the trained '
             +P.trained_through_season+' seeds with the learned season carry-over applied, and the preseason '
