@@ -161,29 +161,47 @@
       }
       return (lo + hi) / 2;
     },
-    /* P(home covers `line`). Primary path is the LEARNED margin PMF
-       conditioned on the market spread — CFB key numbers are real but they
-       are NOT the NFL's, and a pooled residual table smears them away.
+    /* P(home covers `line`), as the MODEL sees it.
+
+       The learned table is conditioned on the MARKET closing spread, so it is
+       looked up by the market number — that is the variable it was built on,
+       and keying it by the model's own projection asks it a question it was
+       never asked. What the table contributes is SHAPE: CFB key numbers are
+       real, they are not the NFL's, and a pooled residual table smears them
+       away.
+
+       The shape is then RE-CENTRED on the model's fair spread. Without that
+       step the engine publishes two contradictory answers to the same
+       question: at a fair spread of -14 the win probability said 17.4% while
+       the cover probability at pick'em said 22.4%, because the kernel used to
+       build the table shrinks every bucket's conditional mean toward zero. The
+       grid is shifted by a whole number of points so integer margins stay
+       integral and the key numbers survive the move.
+
        When this game's sigma differs from the table's baseline the PMF is
-       stretched about the line, so a high-volatility game does not borrow a
-       low-volatility game's key-number mass. */
+       stretched about the projection, so a high-volatility game does not
+       borrow a low-volatility game's key-number mass. */
     coverProbSpread: function (fairSpread, line, sigma, sigmaBase) {
       var P = params(); if (!P) return null;
       var D = P.distributions;
       if (!D || !isNum(fairSpread) || !isNum(line)) return null;
       var tab = D.margin_pmf_by_spread, rng = D.pmf_spread_range;
       var stretch = (isNum(sigma) && isNum(sigmaBase) && sigmaBase > 0) ? sigma / sigmaBase : 1;
-      var win = 0, push = 0, tot = 0, i, es, key, pmf, need, m;
-      if (tab && rng && fairSpread >= rng[0] && fairSpread <= rng[1]) {
-        key = (Math.round(fairSpread * 2) / 2).toFixed(1);
+      var win = 0, push = 0, tot = 0, i, es, key, pmf, need, m, shift;
+      if (tab && rng && line >= rng[0] && line <= rng[1]) {
+        key = (Math.round(line * 2) / 2).toFixed(1);
         if (key === '-0.0') key = '0.0';
-        pmf = tab[key] || tab[Math.round(fairSpread).toFixed(1)];
+        pmf = tab[key] || tab[Math.round(line).toFixed(1)];
         if (pmf) {
           es = pmfEntries(pmf);
+          /* re-centre the borrowed shape on THIS model's mean */
+          var em = 0, ew = 0;
+          for (i = 0; i < es.length; i++) { em += es[i][0] * es[i][1]; ew += es[i][1]; }
+          shift = ew > 0 ? Math.round(fairSpread - em / ew) : 0;
           for (i = 0; i < es.length; i++) {
             /* stretch about the projection, keeping integer margins integral
                so key numbers survive: only the WEIGHTS move, never the grid */
-            m = es[i][0];
+            m = es[i][0] + shift;
             tot += es[i][1];
             if (Math.abs(m - line) < 1e-9) push += es[i][1];
             else if (m > line) win += es[i][1];
@@ -197,7 +215,7 @@
                normal densities at the game sigma vs the table baseline */
             var w2 = 0, p2 = 0, t2 = 0, z0, z1, wgt;
             for (i = 0; i < es.length; i++) {
-              m = es[i][0];
+              m = es[i][0] + shift;
               z0 = (m - fairSpread) / (sigmaBase || 1);
               z1 = (m - fairSpread) / (sigma || 1);
               wgt = es[i][1] * Math.exp(-0.5 * (z1 * z1 - z0 * z0)) / stretch;
@@ -356,6 +374,15 @@
       var carried = strength.rating(st, teamKey, isFbs);
       if (isFbs === false) return { value: carried, prior_weight: 1, carried: carried,
         this_season: carried, games_played: null, basis: 'FCS bucket' };
+      /* An FBS team the rating state has never seen has NO rating. Falling back
+         to init_rating here would hand back a confident number for a team the
+         model has never heard of — the exact fabrication the core invariant
+         forbids. Say so instead and let the caller refuse. */
+      if (!has(st.r, teamKey) && !(st.n && st.n[teamKey])) {
+        return { value: null, unrated: true, prior_weight: 1, carried: null,
+          this_season: null, games_played: 0,
+          basis: 'never observed — no seed rating and no absorbed games' };
+      }
       var played = (st.gamesThisSeason && st.gamesThisSeason[teamKey]) || 0;
       var fresh = strength.freshRating(st, teamKey, isFbs);
       var pw = priorWeight(week, played);
@@ -453,6 +480,7 @@
           perf = v - lm - (cf && pre[opp] && isNum(pre[opp][cf]) ? pre[opp][cf] : 0);
           st.eff[t][f] = (1 - a) * st.eff[t][f] + a * perf;
           st.effMean[f] = (1 - aL) * lm + aL * v;
+          (st.effFresh || (st.effFresh = {}))[t] = (st.effFresh[t] || 0) + 1;
         }
       }
     },
@@ -476,12 +504,35 @@
           : M.missing('no scoring history'),
         efficiency: {}
       };
+      /* The efficiency EWMAs ship as a SEED: the closing snapshot of the season
+         the parameters were trained through. They only become current if a
+         caller feeds `team_stats` into absorbGame, and the browser board has no
+         play-level source to feed. Publishing a season-old snapshot at full
+         confidence, with no as-of, invites it to be read as this week's form —
+         so a team whose efficiency has not been updated says so, and its
+         confidence decays with every season the state has advanced past the
+         seed. */
+      var fresh = (st.effFresh && st.effFresh[teamKey]) || 0;
+      var seasonsStale = (isNum(st.season) && isNum(st.seededThrough))
+        ? Math.max(0, st.season - st.seededThrough) : 0;
+      var effConf = fresh ? conf : clamp(1 - 0.35 * seasonsStale, 0.15, 0.85);
+      var effSrc = fresh
+        ? 'opponent-adjusted EWMA (play-level), updated this season'
+        : 'opponent-adjusted EWMA (play-level) — TRAINED SEED, not updated since';
+      var effBasis = fresh
+        ? fresh + ' play-level game(s) absorbed for this team'
+        : 'closing snapshot of season ' + st.seededThrough
+          + (seasonsStale ? ', ' + seasonsStale + ' season(s) old' : '')
+          + '. No play-level feed has updated it; supply game.team_stats to absorbGame '
+          + 'and it becomes current.';
       var fs = effFeats(), i;
       for (i = 0; i < fs.length; i++) {
         out.efficiency[fs[i]] = (e && isNum(e[fs[i]]))
-          ? M(e[fs[i]], { n: n, confidence: conf, source: 'opponent-adjusted EWMA (play-level)' })
+          ? M(e[fs[i]], { n: n, confidence: effConf, source: effSrc, basis: effBasis,
+              as_of: fresh ? null : 'season ' + st.seededThrough })
           : M.missing('no play-level data absorbed for this team');
       }
+      out.efficiency_is_seed = !fresh;
       return out;
     },
     /* Section XXI — regression of unstable statistics. The shrinkage factor
@@ -685,8 +736,14 @@
       var tz = (isNum(awayVenue.tz) && isNum(homeVenue.tz)) ? (homeVenue.tz - awayVenue.tz) : null;
       var alt = (isNum(awayVenue.elev) && isNum(homeVenue.elev)) ? (homeVenue.elev - awayVenue.elev) : null;
       var w = (P && P.travel) || null;
+      /* The coefficients are published so the trip can be described, but they do
+         NOT move the number: out of sample every specification of this layer
+         raised MAE, and the timezone and altitude slopes reverse sign after the
+         tune window. `points_applied` in params is the switch, and it is the
+         training run — not this file — that decides it. */
+      var applyTravel = !!(w && w.points_applied);
       var ptsVal = null;
-      if (w && !neutral) {
+      if (w && applyTravel && !neutral) {
         ptsVal = (w.per_1000_miles || 0) * (miles / 1000)
           + (w.per_tz_hour || 0) * (isNum(tz) ? Math.abs(tz) : 0)
           + (w.per_1000m_altitude || 0) * (isNum(alt) ? Math.max(0, alt) / 1000 : 0);
@@ -697,7 +754,12 @@
         altitude_delta: isNum(alt) ? M(alt, { confidence: 0.9, source: 'venue elevation (metres)' }) : M.missing('elevation missing for a venue'),
         points: isNum(ptsVal) ? M(ptsVal, { confidence: w && w.confidence != null ? w.confidence : 0.4,
           source: 'learned travel coefficients', basis: w && w.basis || 'walk-forward residual regression' })
-          : M.missing(neutral ? 'neutral site — no travel asymmetry modelled' : 'travel coefficients not trained')
+          : M.missing(neutral ? 'neutral site — no travel asymmetry modelled'
+              : (w && !applyTravel
+                  ? 'travel measured but NOT applied — every specification raised '
+                    + 'held-out MAE and two of three coefficients reverse sign after '
+                    + 'the tune window, so travel contributes zero to the mean'
+                  : 'travel coefficients not trained'))
       };
     },
     haversine: function (lat1, lon1, lat2, lon2) {
@@ -873,7 +935,24 @@
       sigma = clamp(sigma, lo, hi);
       drivers.sort(function (a, b) { return b.add - a.add; });
       var idx = clamp(100 * (sigma - lo) / Math.max(1e-9, hi - lo), 0, 100);
-      return { sigma: sigma, sigma_base: base, index: idx, drivers: drivers, mult: mult };
+      /* How many drivers the maximum-likelihood fit actually kept decides what
+         this index can mean. Six were offered and one survived, so the index is
+         very nearly a restatement of how early in the season it is: a week-1
+         game reads 100 not because it is unusually wild but because every
+         week-1 game does. Say that here rather than let a 0-100 number imply a
+         game-specific judgement it cannot support. */
+      var live = [], lk;
+      for (lk in lam) if (has(lam, lk) && lam[lk] > 0) live.push(lk);
+      var basis = live.length === 0
+        ? 'no volatility driver survived the fit — every game reports the base spread'
+        : (live.length === 1
+            ? 'ONE driver survived the fit (' + live[0] + '), so this index is very '
+              + 'nearly a restatement of that single input and does not discriminate '
+              + 'between games that share it'
+            : live.length + ' drivers survived the fit: ' + live.join(', '));
+      return { sigma: sigma, sigma_base: base, index: idx, drivers: drivers, mult: mult,
+        live_drivers: live, discriminating: live.length > 1, basis: basis,
+        range: [lo, hi] };
     },
     /* CONFIDENCE is NOT the inverse of volatility. Confidence answers "how
        good is my information?"; volatility answers "how wide is the real
@@ -1347,13 +1426,19 @@
     var riv = situation.rivalry(H.key, A.key);
 
     /* ---------- Layer 1: the football number ---------- */
-    var ratingGap = M(H.blended.value - A.blended.value, {
-      n: Math.min(H.strength.games, A.strength.games),
-      confidence: clamp(Math.min(H.strength.games, A.strength.games)
-        / ((P.rating.games_for_full_confidence) || 6), 0.15, 1),
-      source: 'opponent-adjusted rating',
-      basis: 'preseason prior weighted ' + Math.round(100 * H.blended.prior_weight) + '% at '
-        + (H.blended.games_played == null ? '?' : H.blended.games_played) + ' games played' });
+    var unrated = [];
+    if (H.blended.unrated) unrated.push(H.name);
+    if (A.blended.unrated) unrated.push(A.name);
+    var ratingGap = unrated.length
+      ? M.missing('no opponent-adjusted rating for ' + unrated.join(' or ')
+          + ' — the team has never been observed by this model')
+      : M(H.blended.value - A.blended.value, {
+          n: Math.min(H.strength.games, A.strength.games),
+          confidence: clamp(Math.min(H.strength.games, A.strength.games)
+            / ((P.rating.games_for_full_confidence) || 6), 0.15, 1),
+          source: 'opponent-adjusted rating',
+          basis: 'preseason prior weighted ' + Math.round(100 * H.blended.prior_weight) + '% at '
+            + (H.blended.games_played == null ? '?' : H.blended.games_played) + ' games played' });
 
     /* ---------- Layer 4: matchup ---------- */
     var mHome = matchup.evaluate(H.strength, A.strength, 'home offence vs away defence');
@@ -1411,6 +1496,23 @@
     ];
     var fairSpread = 0, i;
     for (i = 0; i < terms.length; i++) fairSpread += pts(terms[i].m);
+
+    /* The rating gap IS the model's football content. Every other term is a
+       correction to it. With it unavailable the remaining terms would still sum
+       to a number, and that number would look like a projection — so refuse to
+       publish one rather than dress up home-field advantage as an opinion. */
+    if (unrated.length) {
+      return { status: 'INSUFFICIENT_DATA',
+        reason: 'no rating for ' + unrated.join(' and ')
+          + '. This model rates the teams it has observed; it does not assign a '
+          + 'default rating to a team it has never seen. Absorb results for '
+          + (unrated.length > 1 ? 'these teams' : 'this team')
+          + ', or project a matchup between rated teams.',
+        missing: unrated.map(function (t) { return 'rating:' + t; }),
+        unrated_teams: unrated.slice(),
+        warnings: (q.warnings || []).slice(),
+        model_version: P.model_version, prediction_timestamp: nowIso };
+    }
 
     /* ---------- total ---------- */
     var scoringBase = strength.predictScoring(st, H.key, A.key);
@@ -1481,6 +1583,11 @@
       scores: {
         confidence: confPct,
         volatility: vol ? vol.index : null,
+        /* the index is a rescaling of this game's sigma across the fitted
+           range, so what it can mean depends on how many drivers the fit
+           kept — see uncertainty.volatility */
+        volatility_basis: vol ? vol.basis : null,
+        volatility_discriminates: vol ? vol.discriminating : null,
         roster_stability: (avail(H.stability) && avail(A.stability))
           ? (H.stability.value + A.stability.value) / 2
           : (avail(H.stability) ? H.stability.value : (avail(A.stability) ? A.stability.value : null)),
