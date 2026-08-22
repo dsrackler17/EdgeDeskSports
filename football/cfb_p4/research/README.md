@@ -12,6 +12,11 @@ python3 build_team_game.py out     # play feed -> team-game efficiency + QB game
 python3 features_roster.py out     # rosters -> continuity, portal, class mix
 python3 train_p4.py out            # ratings, venue, rivalry, blend, volatility, market backtest
 python3 train_layers.py out        # QB, QB absence, schedule, total, score weights
+node backtest_engine.js --data "$CFB_P4_DATA" --from 2022 --to 2025
+                                   # replays the SHIPPED engine over the held-out
+                                   # seasons; this is the headline, because
+                                   # train_p4.py scores the rating core rather
+                                   # than the nine-term number engine.js emits
 python3 make_params.py out         # -> ../params.js
 python3 gen_goldens.py out         # -> ../goldens.json
 python3 gen_report.py out          # -> report/BACKTEST.md

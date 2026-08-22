@@ -356,6 +356,15 @@
       var carried = strength.rating(st, teamKey, isFbs);
       if (isFbs === false) return { value: carried, prior_weight: 1, carried: carried,
         this_season: carried, games_played: null, basis: 'FCS bucket' };
+      /* An FBS team the rating state has never seen has NO rating. Falling back
+         to init_rating here would hand back a confident number for a team the
+         model has never heard of — the exact fabrication the core invariant
+         forbids. Say so instead and let the caller refuse. */
+      if (!has(st.r, teamKey) && !(st.n && st.n[teamKey])) {
+        return { value: null, unrated: true, prior_weight: 1, carried: null,
+          this_season: null, games_played: 0,
+          basis: 'never observed — no seed rating and no absorbed games' };
+      }
       var played = (st.gamesThisSeason && st.gamesThisSeason[teamKey]) || 0;
       var fresh = strength.freshRating(st, teamKey, isFbs);
       var pw = priorWeight(week, played);
@@ -685,8 +694,14 @@
       var tz = (isNum(awayVenue.tz) && isNum(homeVenue.tz)) ? (homeVenue.tz - awayVenue.tz) : null;
       var alt = (isNum(awayVenue.elev) && isNum(homeVenue.elev)) ? (homeVenue.elev - awayVenue.elev) : null;
       var w = (P && P.travel) || null;
+      /* The coefficients are published so the trip can be described, but they do
+         NOT move the number: out of sample every specification of this layer
+         raised MAE, and the timezone and altitude slopes reverse sign after the
+         tune window. `points_applied` in params is the switch, and it is the
+         training run — not this file — that decides it. */
+      var applyTravel = !!(w && w.points_applied);
       var ptsVal = null;
-      if (w && !neutral) {
+      if (w && applyTravel && !neutral) {
         ptsVal = (w.per_1000_miles || 0) * (miles / 1000)
           + (w.per_tz_hour || 0) * (isNum(tz) ? Math.abs(tz) : 0)
           + (w.per_1000m_altitude || 0) * (isNum(alt) ? Math.max(0, alt) / 1000 : 0);
@@ -697,7 +712,12 @@
         altitude_delta: isNum(alt) ? M(alt, { confidence: 0.9, source: 'venue elevation (metres)' }) : M.missing('elevation missing for a venue'),
         points: isNum(ptsVal) ? M(ptsVal, { confidence: w && w.confidence != null ? w.confidence : 0.4,
           source: 'learned travel coefficients', basis: w && w.basis || 'walk-forward residual regression' })
-          : M.missing(neutral ? 'neutral site — no travel asymmetry modelled' : 'travel coefficients not trained')
+          : M.missing(neutral ? 'neutral site — no travel asymmetry modelled'
+              : (w && !applyTravel
+                  ? 'travel measured but NOT applied — every specification raised '
+                    + 'held-out MAE and two of three coefficients reverse sign after '
+                    + 'the tune window, so travel contributes zero to the mean'
+                  : 'travel coefficients not trained'))
       };
     },
     haversine: function (lat1, lon1, lat2, lon2) {
@@ -1347,13 +1367,19 @@
     var riv = situation.rivalry(H.key, A.key);
 
     /* ---------- Layer 1: the football number ---------- */
-    var ratingGap = M(H.blended.value - A.blended.value, {
-      n: Math.min(H.strength.games, A.strength.games),
-      confidence: clamp(Math.min(H.strength.games, A.strength.games)
-        / ((P.rating.games_for_full_confidence) || 6), 0.15, 1),
-      source: 'opponent-adjusted rating',
-      basis: 'preseason prior weighted ' + Math.round(100 * H.blended.prior_weight) + '% at '
-        + (H.blended.games_played == null ? '?' : H.blended.games_played) + ' games played' });
+    var unrated = [];
+    if (H.blended.unrated) unrated.push(H.name);
+    if (A.blended.unrated) unrated.push(A.name);
+    var ratingGap = unrated.length
+      ? M.missing('no opponent-adjusted rating for ' + unrated.join(' or ')
+          + ' — the team has never been observed by this model')
+      : M(H.blended.value - A.blended.value, {
+          n: Math.min(H.strength.games, A.strength.games),
+          confidence: clamp(Math.min(H.strength.games, A.strength.games)
+            / ((P.rating.games_for_full_confidence) || 6), 0.15, 1),
+          source: 'opponent-adjusted rating',
+          basis: 'preseason prior weighted ' + Math.round(100 * H.blended.prior_weight) + '% at '
+            + (H.blended.games_played == null ? '?' : H.blended.games_played) + ' games played' });
 
     /* ---------- Layer 4: matchup ---------- */
     var mHome = matchup.evaluate(H.strength, A.strength, 'home offence vs away defence');
@@ -1411,6 +1437,23 @@
     ];
     var fairSpread = 0, i;
     for (i = 0; i < terms.length; i++) fairSpread += pts(terms[i].m);
+
+    /* The rating gap IS the model's football content. Every other term is a
+       correction to it. With it unavailable the remaining terms would still sum
+       to a number, and that number would look like a projection — so refuse to
+       publish one rather than dress up home-field advantage as an opinion. */
+    if (unrated.length) {
+      return { status: 'INSUFFICIENT_DATA',
+        reason: 'no rating for ' + unrated.join(' and ')
+          + '. This model rates the teams it has observed; it does not assign a '
+          + 'default rating to a team it has never seen. Absorb results for '
+          + (unrated.length > 1 ? 'these teams' : 'this team')
+          + ', or project a matchup between rated teams.',
+        missing: unrated.map(function (t) { return 'rating:' + t; }),
+        unrated_teams: unrated.slice(),
+        warnings: (q.warnings || []).slice(),
+        model_version: P.model_version, prediction_timestamp: nowIso };
+    }
 
     /* ---------- total ---------- */
     var scoringBase = strength.predictScoring(st, H.key, A.key);

@@ -7,24 +7,37 @@ pipeline in this directory from public data; nothing is quoted from memory.
 
 | | model | closing market |
 |---|---|---|
-| spread MAE, 2022-2025 | **12.989** | **12.029** |
-| total MAE, 2022-2025 | 12.893 | 12.497 |
+| spread MAE, 2022-2025 | **12.769** | **12.015** |
+| total MAE, 2022-2025 | 12.913 | 12.501 |
 
-The model is roughly **1.0 points per game worse than the closing line** on the
-spread and 0.4 worse on the total, over 3113 games in seasons that no layer of it
+The model is roughly **0.8 points per game worse than the closing line** on the
+spread and 0.4 worse on the total, over 3127 games in seasons that no layer of it
 was tuned on. It does not beat the market.
+
+**What is being measured.** `model.fair_spread` exactly as
+`football/cfb_p4/engine.js` publishes it, from a cold replay in kickoff order:
+each game is projected from state containing only games already played, and
+absorbed only afterwards. That distinction matters because the training run
+scores `blended_margin` — the opponent-adjusted rating difference plus
+home-field advantage — which is the model's core but not its output. The
+engine sums nine terms. Scoring the core and calling it the product would
+describe a number no user ever sees; on this window the core alone is
+12.989, so the additional layers are worth 0.220 points of MAE.
+
+5 of 3132 games in the window were REFUSED rather than projected: a team had
+no rating yet, and the engine declines to invent one.
 
 Against the close, by size of disagreement:
 
 | gap >= | n | wins | win % | one-sided p |
 |---|---|---|---|---|
-| 0.5 | 2824 | 1402 | 49.65% | 0.6536 |
-| 1 | 2569 | 1264 | 49.20% | 0.7963 |
-| 1.5 | 2340 | 1145 | 48.93% | 0.8541 |
-| 2 | 2123 | 1041 | 49.03% | 0.819 |
-| 3 | 1722 | 850 | 49.36% | 0.7103 |
-| 4 | 1395 | 694 | 49.75% | 0.5848 |
-| 6 | 839 | 392 | 46.72% | 0.9734 |
+| 0.5 | 2829 | 1399 | 49.45% | 0.7263 |
+| 1 | 2599 | 1298 | 49.94% | 0.5313 |
+| 1.5 | 2366 | 1178 | 49.79% | 0.5895 |
+| 2 | 2140 | 1053 | 49.21% | 0.7754 |
+| 3 | 1652 | 790 | 47.82% | 0.9638 |
+| 4 | 1261 | 594 | 47.11% | 0.9814 |
+| 6 | 722 | 335 | 46.40% | 0.9757 |
 
 Not one threshold clears break-even, and the biggest disagreements are the
 *worst* — the classic signature of a projection noisier than the market it is
@@ -60,7 +73,7 @@ out of sample:
 | layer | measured |
 |---|---|
 | home-field advantage | a single league constant of 4.082 pts — the per-venue table was tested and rejected (see below) |
-| win-probability calibration | Brier 0.19008 over 3113 games (a market-free baseline of 0.25 is a coin flip) |
+| win-probability calibration | Brier 0.19016 over 3113 games (a market-free baseline of 0.25 is a coin flip) |
 | quarterback layer | 10.1 points of spread per 1.0 EPA/dropback of QB edge; tune r2 0.00656, TEST r2 0.00809, permutation p 0.0 |
 | quarterback absence | 3.90 points, measured over 2846 games where the primary QB took no dropbacks |
 | schedule stress | moves the number by 1.13 points on average; tune r2 0.00685, test r2 0.00254 |
@@ -100,9 +113,18 @@ validated one.
 
 ## Regression constants (Section XXI), measured rather than assumed
 
-Game-to-game persistence of each statistic within a season. A statistic with
-near-zero persistence is almost entirely regressed to the mean; one that repeats
-is barely touched. Nothing here was chosen by hand.
+Game-to-game persistence of each statistic within a season, measured rather
+than assumed. Nothing here was chosen by hand.
+
+**These constants are published, not applied.** `strength.regress()` is a public
+helper on the engine's strength API and a caller can shrink any statistic by its
+own measured persistence, but the projection path does not call it. The reason is
+specific: the matchup pair weights were fitted against the unregressed,
+opponent-adjusted efficiency EWMAs, so regressing those same inputs at read time
+would move them off the surface the weights were trained on. Applying the table
+inside the projection means refitting the matchup layer on regressed inputs and
+showing that it helps out of sample — which has not been done, so the table stays
+a measurement and this section does not claim otherwise.
 
 | statistic | n | lag-1 correlation |
 |---|---|---|
@@ -150,21 +172,21 @@ The preseason belief is half gone by four or five games and under 15% by twelve.
 
 | absolute margin | share of games |
 |---|---|
-| 1 | 3.37% |
-| 2 | 3.28% |
-| 3 | 10.79% |
-| 4 | 3.73% |
-| 6 | 3.41% |
-| 7 | 8.77% |
-| 8 | 2.89% |
-| 10 | 4.82% |
-| 13 | 2.22% |
-| 14 | 4.14% |
-| 17 | 4.18% |
-| 21 | 3.60% |
+| 1 | 3.46% |
+| 2 | 2.53% |
+| 3 | 9.26% |
+| 4 | 3.39% |
+| 6 | 3.34% |
+| 7 | 8.51% |
+| 8 | 2.57% |
+| 10 | 4.61% |
+| 13 | 1.58% |
+| 14 | 4.61% |
+| 17 | 3.34% |
+| 21 | 3.93% |
 
 Conditioned on the market number — which the line archive makes possible —
-**P(margin = 3 | spread = 3) = 6.66%** in the Power 4, against the **8.8%** this
+**P(margin = 3 | spread = 3) = 6.67%** in the Power 4, against the **8.8%** this
 repo ships for the NFL. The three is real in college football, but it is worth
 appreciably less, and a model that reuses NFL key-number mass mis-prices every
 field-goal-sized spread.
@@ -177,23 +199,45 @@ pick'em never gets a fabricated push.
 
 | predicted bin | n | mean predicted | observed |
 |---|---|---|---|
-| 0.0-0.1 | 30 | 0.07 | 0.1 |
-| 0.1-0.2 | 102 | 0.158 | 0.098 |
-| 0.2-0.3 | 210 | 0.257 | 0.248 |
-| 0.3-0.4 | 296 | 0.353 | 0.338 |
-| 0.4-0.5 | 370 | 0.45 | 0.395 |
-| 0.5-0.6 | 429 | 0.55 | 0.55 |
-| 0.6-0.7 | 503 | 0.651 | 0.602 |
-| 0.7-0.8 | 476 | 0.752 | 0.748 |
-| 0.8-0.9 | 409 | 0.848 | 0.844 |
-| 0.9-1.0 | 288 | 0.942 | 0.941 |
+| 0.0-0.1 | 36 | 0.068 | 0.083 |
+| 0.1-0.2 | 107 | 0.154 | 0.112 |
+| 0.2-0.3 | 217 | 0.253 | 0.249 |
+| 0.3-0.4 | 288 | 0.352 | 0.344 |
+| 0.4-0.5 | 360 | 0.449 | 0.397 |
+| 0.5-0.6 | 408 | 0.55 | 0.551 |
+| 0.6-0.7 | 477 | 0.65 | 0.591 |
+| 0.7-0.8 | 461 | 0.75 | 0.74 |
+| 0.8-0.9 | 434 | 0.847 | 0.82 |
+| 0.9-1.0 | 325 | 0.944 | 0.945 |
 
 ## Firewall
 
 - layer A (ratings, venue, travel, rivalry, conference): tuned 2001-2013
 - layer B (efficiency, matchup, blend, QB, schedule, total): tuned 2014-2019
 - layer C (roster continuity, volatility, confidence): tuned 2018-2021
+- distributional layer (sigma, residual PMFs, spread-conditioned margin table):
+  fitted **2014-2021**
 - headline test window: **2022-2025**, untouched by every layer
+
+### A breach that was here, and what it was worth
+
+An earlier build fitted sigma by maximum likelihood **on 2022-2025** and then
+reported that fit's own Brier score as a held-out result. That is the fit's
+maximised objective, not evidence, and the calibration table and residual PMFs
+were built the same way. Everything distributional is now fitted on 2014-2021
+and applied to the headline window unchanged.
+
+The correction is worth stating precisely, because the honest answer is that
+it was small:
+
+| window | Brier | log loss |
+|---|---|---|
+| in-sample optimum (2014-2021, where sigma was fitted) | 0.17899 | 0.53123 |
+| held out (2022-2025, sigma applied unchanged) | 0.19016 | 0.55878 |
+
+So the reported number barely moved. That does not make the earlier version
+acceptable — a claim of "untouched by every layer" either holds or it does
+not, and the size of the error is not what decides that.
 
 Secondary window 2014-2021 (layers A only were frozen by then): model spread MAE 13.398
 vs market 12.464.

@@ -358,6 +358,109 @@
     chk('venue geography ships for the P4 (travel and weather need it)',
       Object.keys(P.universe.venues).length > 60);
 
+    /* ================================================================
+       Terms that failed out of sample must not move the number.
+       Each of these was applied by an earlier build, and each was
+       refuted by execution rather than by opinion.
+       ================================================================ */
+    chk('rivalry ships with a ZERO mean adjustment on every pair',
+      (function () {
+        var ps = P.rivalry.pairs || {}, k;
+        for (k in ps) if (ps[k].mean_points) return false;
+        return Object.keys(ps).length > 100;
+      })(),
+      'a per-pair constant that always favours the same side is the '
+      + '"Team A always beats Team B" adjustment the layer must not be');
+    chk('the rivalry record says WHY the mean adjustment was rejected',
+      /REJECTED/.test((P.validation_summary.rivalry || {}).mean_points_verdict || ''));
+
+    chk('travel is measured but NOT applied',
+      P.travel && P.travel.points_applied === false
+      && /NOT APPLIED/.test(P.travel.basis || ''));
+    chk('travel contributes exactly 0 points to a real projection',
+      (function () {
+        var st = E.strength.newState();
+        var o = E.projectGame({ season: P.trained_through_season, week: 6, state: st,
+          game: { home: 'Alabama', away: 'Auburn', neutral_site: false },
+          teams: { home: { conference: 'SEC' }, away: { conference: 'SEC' } },
+          venue: { home: { lat: 33.2, lon: -87.5, tz: -6, elev: 70 },
+                   away: { lat: 32.6, lon: -85.5, tz: -6, elev: 200 } } });
+        if (o.status !== 'PREDICTED') return false;
+        var t = null, i;
+        for (i = 0; i < o.contributions.length; i++)
+          if (o.contributions[i].key === 'travel') t = o.contributions[i];
+        return t && t.points === 0 && /NOT applied|not applied/.test(
+          (o.layers.situation.travel.points.reason || '') + (t.basis || ''));
+      })(),
+      'travel raised held-out MAE at every specification and two of its three '
+      + 'coefficients reverse sign after the tune window');
+
+    /* ================================================================
+       A team the model has never rated gets a refusal, not a number.
+       ================================================================ */
+    chk('an unrated FBS team produces INSUFFICIENT_DATA, never a spread',
+      (function () {
+        var st = E.strength.newState();
+        var o = E.projectGame({ season: P.trained_through_season, week: 1, state: st,
+          game: { home: 'Zzz Nonexistent State', away: 'Alabama', neutral_site: false },
+          teams: { home: { conference: 'SEC' }, away: { conference: 'SEC' } } });
+        return o.status === 'INSUFFICIENT_DATA' && !o.model
+          && (o.unrated_teams || []).length === 1;
+      })(),
+      'falling back to init_rating would publish a confident number for a team '
+      + 'the model has never seen');
+    chk('two unrated teams are both named in the refusal',
+      (function () {
+        var st = E.strength.newState();
+        var o = E.projectGame({ season: P.trained_through_season, week: 1, state: st,
+          game: { home: 'Podunk Tech', away: 'Nowhere A&M', neutral_site: false },
+          teams: { home: { conference: 'SEC' }, away: { conference: 'SEC' } } });
+        return o.status === 'INSUFFICIENT_DATA' && (o.unrated_teams || []).length === 2;
+      })());
+
+    /* ================================================================
+       The distributional layer is a distribution, and it was not fitted
+       on the window it is reported on.
+       ================================================================ */
+    chk('every spread-conditioned PMF bucket sums to 1',
+      (function () {
+        var t = P.distributions.margin_pmf_by_spread, k, m, sum, n = 0;
+        for (k in t) {
+          sum = 0;
+          for (m in t[k]) sum += t[k][m];
+          if (Math.abs(sum - 1) > 1e-5) return false;
+          n++;
+        }
+        return n > 100;
+      })(),
+      'cover and no-cover have to add up');
+    chk('sigma was fitted OUTSIDE the window its score is reported on',
+      (function () {
+        var w = P.validation_summary.winprob || {};
+        return /fitted on 2014-2021/.test(w.basis || '') && w.window === '2022-2025';
+      })(),
+      'a maximum-likelihood fit scored on its own fitting window reports its '
+      + 'objective, not evidence');
+    chk('the firewall record names the distributional window',
+      /2014-2021/.test((P.validation_summary.firewall || {}).distributional || ''));
+
+    /* ================================================================
+       The headline must describe what the engine publishes.
+       ================================================================ */
+    chk('the headline measures the engine output, not a proxy for it',
+      (function () {
+        var m = P.validation_summary.market || {};
+        return /engine\.js publishes/.test(m.measures || '')
+          && m.engine_replay && m.engine_replay.n_projected > 2000;
+      })(),
+      'train_p4.py scores blended_margin; engine.js publishes a nine-term sum');
+    chk('the rating core is reported beside the engine, not instead of it',
+      (function () {
+        var c = (P.validation_summary.market || {}).core_only || {};
+        return c.spread_mae_model > 0
+          && c.spread_mae_model !== P.validation_summary.market.spread_mae_model;
+      })());
+
     return finish();
   }
 

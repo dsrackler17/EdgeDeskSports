@@ -8,7 +8,7 @@ football/cfb_p4/
   engine.js     the five-layer engine (browser + node, ES5)
   params.js     GENERATED trained parameters, provenance and the record
   goldens.json  GENERATED python-parity vectors
-  tests.js      65 checks: maths, python parity at 1e-9, honesty invariants
+  tests.js      76 checks: maths, python parity at 1e-9, honesty invariants
   research/     the fully reproducible pipeline + report/BACKTEST.md
 ```
 
@@ -18,15 +18,31 @@ Held out on **2022–2025**, seasons no layer of the model was tuned on:
 
 | | model | closing market |
 |---|---|---|
-| spread MAE | 12.99 | **12.03** |
-| total MAE | 12.89 | **12.50** |
+| spread MAE | 12.77 | **12.02** |
+| total MAE | 12.91 | **12.50** |
 
 **It does not beat the closing line.** Against the close, its win rate is
-47.3–50.0% at every disagreement threshold, and it gets *worse* as it disagrees
+46.4–49.9% at every disagreement threshold, and it gets *worse* as it disagrees
 more — the signature of a projection noisier than the market. So `classifyEdge`
 never returns anything above `RESEARCH_LEAN`, every projection carries
 `unproven: true`, and nothing here is counted anywhere until this model's own
 graded CLV beats the close.
+
+Those numbers score `model.fair_spread` **exactly as `engine.js` publishes it**,
+from a cold replay in kickoff order — each game projected from state holding only
+games already played, then absorbed. That is not the same as scoring the training
+frame: `train_p4.py` scores the rating core (rating difference + home-field
+advantage, blended), which is the model's engine room but not its output. The
+core alone is 12.99, so the layers stacked on top are worth 0.22 points of MAE.
+Five games in the window were **refused** rather than projected, because a team
+had no rating yet and the engine does not invent one.
+
+The distributional layer — sigma, the residual PMFs, the spread-conditioned
+margin table — is fitted on **2014–2021** and applied to the window above
+unchanged. An earlier build fitted sigma by maximum likelihood on 2022–2025 and
+quoted that fit's own Brier score as held-out evidence; that is the fit's
+objective, not a result. Corrected, the held-out Brier is 0.19016 against an
+in-sample optimum of 0.17899.
 
 That result exists at all because of a correction: the v1 engine in `football/`
 states that no public historical CFB line archive exists. It does —
@@ -121,8 +137,21 @@ Offered to the model and **rejected by it**:
   — year-over-year correlation 0.044 over 690 program pairs. "This staff
   develops players" is not visible in this data, so no per-program development
   value ships.
-* **Travel** — r² 0.0018 over 6,419 road games. Distance, time zones and
-  altitude barely move the mean once strength is accounted for.
+* **Travel, as a points adjustment.** r² 0.0018 over 6,419 tune-window road
+  games, and a permutation test says that fit is not luck. It is also not
+  useful: out of sample *every* specification raises MAE (+0.043 points on
+  2022–2025 for the shipped three-term form), and two of the three coefficients
+  reverse sign — time zone from +0.76 to −0.68, altitude from −0.96 to +0.36.
+  A layer that cannot hold the sign of its own coefficient does not move a
+  spread. The coefficients ship for inspection with `points_applied: false`,
+  and travel contributes exactly 0.
+* **Rivalry, as a points adjustment.** The per-pair mean residual persists at
+  r = **−0.042** from the tune window into 2014–2025, and applying it *raises*
+  held-out MAE by 0.063 points on 2022–2025. A per-pair constant that always
+  favours the same side is precisely the "Team A always beats Team B"
+  adjustment this layer is not allowed to be, and the data refuses to support
+  it. `mean_points` ships as 0.0 on all 467 pairs; rivalry stays an intensity
+  and volatility signal.
 * **Rivalry volatility** — 467 detected pairs, only **43%** more volatile than
   a typical game. Rivalry games are not reliably wilder.
 * **Roster turnover, youth, rivalry, travel, scoring environment and mismatch**
