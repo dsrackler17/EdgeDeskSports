@@ -1532,6 +1532,68 @@ function teamSimilarity(a,b){
   return score;
 }
 
+/* Resolve a team name onto the SCHEDULE'S OWN spelling.
+
+   The backend stores its team identifiers uppercased, stripped of punctuation
+   and TRUNCATED TO TEN CHARACTERS — "Florida State" is FLORIDASTA, "New Mexico
+   State" is NEWMEXICOS — and it matches a submitted slate literally against
+   those. So every team whose canonical name fits in ten characters resolved
+   and every longer one quarantined, which is exactly the split a real slate
+   produced: TCU, USC, Virginia, Stanford, NC State and Hawai'i through; North
+   Carolina, San José State, Florida State and New Mexico State rejected.
+
+   Guessing at the rule is not the fix. The schedule is the dictionary: look
+   each name up in it and send back the string it already uses. A truncation is
+   only accepted when it is UNAMBIGUOUS — "MISSISSIPP" could be Mississippi or
+   Mississippi State, and silently picking one would be worse than quarantining
+   both. */
+function slateNameIndex(games){
+  var byKey={},names=slateServerNames(games),i,k;
+  for(i=0;i<names.length;i++){k=teamKey(names[i]);if(k&&!byKey[k])byKey[k]=names[i];}
+  return byKey;
+}
+function slateResolveName(byKey,team){
+  var k=teamKey(team);
+  if(!k)return null;
+  if(byKey[k])return {name:byKey[k],how:'exact'};
+  var keys=Object.keys(byKey),hits=[],i;
+  /* the backend's key is a truncation of ours */
+  for(i=0;i<keys.length;i++)
+    if(keys[i].length>=6&&keys[i].length<k.length&&k.indexOf(keys[i])===0)hits.push(keys[i]);
+  if(hits.length===1)return {name:byKey[hits[0]],how:'truncated'};
+  if(hits.length>1)return {ambiguous:hits.map(function(x){return byKey[x];})};
+  /* or ours is the start of theirs — "TCU" against "TCU Horned Frogs" */
+  hits=[];
+  for(i=0;i<keys.length;i++)
+    if(k.length>=6&&keys[i].length>k.length&&keys[i].indexOf(k)===0)hits.push(keys[i]);
+  if(hits.length===1)return {name:byKey[hits[0]],how:'expanded'};
+  if(hits.length>1)return {ambiguous:hits.map(function(x){return byKey[x];})};
+  return null;
+}
+/* Rewrite a built slate onto the schedule's spellings. Returns new rows plus
+   what was changed, so the creator is told rather than surprised. */
+function slateAlignToSchedule(games,rows){
+  var byKey=slateNameIndex(games);
+  if(!Object.keys(byKey).length)return {rows:rows,changed:[],ambiguous:[],unresolved:[]};
+  var changed=[],ambiguous=[],unresolved=[],seen={};
+  var out=(rows||[]).map(function(o){
+    var c={},k;
+    for(k in o)if(Object.prototype.hasOwnProperty.call(o,k))c[k]=o[k];
+    ['home_team','away_team'].forEach(function(f){
+      var r=slateResolveName(byKey,c[f]);
+      if(!r){if(!seen['u'+c[f]]){seen['u'+c[f]]=1;unresolved.push(c[f]);}return;}
+      if(r.ambiguous){if(!seen['a'+c[f]]){seen['a'+c[f]]=1;
+        ambiguous.push({mine:c[f],options:r.ambiguous});}return;}
+      if(r.name!==c[f]){
+        if(!seen['c'+c[f]]){seen['c'+c[f]]=1;changed.push({from:c[f],to:r.name,how:r.how});}
+        c[f]=r.name;
+      }
+    });
+    return c;
+  });
+  return {rows:out,changed:changed,ambiguous:ambiguous,unresolved:unresolved};
+}
+
 function slateUnmatchedTeams(games,rows){
   var have=slateServerTeams(games),miss={},n=0,matched=0;
   /* keep the server's own spelling, not just its key, so a mismatch can be
@@ -2494,9 +2556,14 @@ async function renderCreatorDash(view,me){
       try{srv=await api('/v1/games'+q,{auth:true});}
       catch(e){return null;}                 /* cannot check — never block on that */
       var list=(srv&&srv.games)||[];
+      SLATE.serverGames=list;                /* reused to align names before sending */
       if(!list.length)return {level:'no-games',sport:sportCode,season:season,week:week};
 
-      var u=slateUnmatchedTeams(list,slateBuildRows(season,week).rows);
+      /* Check what will ACTUALLY be sent, which is the slate after it has been
+         aligned onto the schedule's own spellings — otherwise this warns about
+         four teams that the alignment is about to resolve. */
+      var aligned=slateAlignToSchedule(list,slateBuildRows(season,week).rows);
+      var u=slateUnmatchedTeams(list,aligned.rows);
       if(!u.count)return null;
       return {level:u.none?'no-teams-at-all':'no-teams',
         sport:sportCode,season:season,week:week,
@@ -2604,7 +2671,34 @@ async function renderCreatorDash(view,me){
         }
       }
 
-      $('slOut').innerHTML=pfHtml+
+      /* Send the schedule its own spellings. The pre-flight has just fetched the
+         game list; use it as the dictionary rather than hoping the backend
+         normalises the way this page does. */
+      var align={changed:[],ambiguous:[]};
+      if(SLATE.serverGames&&SLATE.serverGames.length){
+        align=slateAlignToSchedule(SLATE.serverGames,sendRows);
+        sendRows=align.rows;
+        env.rows=sendRows;
+      }
+      var alignHtml='';
+      if(align.changed.length){
+        alignHtml='<p class="note" style="margin:0 0 6px;border-left:2px solid var(--pos);padding-left:8px">'+
+          '<b style="color:var(--pos)">Matched to your schedule\'s own names</b> &mdash; '+
+          align.changed.slice(0,8).map(function(c){
+            return '<span class="mono">'+esc(c.from)+'</span> &rarr; <span class="mono">'+esc(c.to)+'</span>';
+          }).join(', ')+
+          (align.changed.length>8?' and '+(align.changed.length-8)+' more':'')+'.</p>';
+      }
+      if(align.ambiguous.length){
+        alignHtml+='<p class="note" style="margin:0 0 6px;border-left:2px solid var(--warn);padding-left:8px">'+
+          '<b style="color:var(--warn)">Ambiguous on your backend</b> &mdash; '+
+          align.ambiguous.slice(0,5).map(function(a){
+            return '<span class="mono">'+esc(a.mine)+'</span> could be '+
+              a.options.map(function(o){return '<span class="mono">'+esc(o)+'</span>';}).join(' or ');
+          }).join('; ')+'. Left as written rather than guessed at.</p>';
+      }
+
+      $('slOut').innerHTML=pfHtml+alignHtml+
         '<p class="note">'+(dry?'Checking':'Posting')+' '+sendRows.length+' games&hellip;</p>';
       try{
         var r=await api('/v1/dashboard/submit',{method:'POST',auth:true,headers:{'content-type':'application/json'},body:env});
@@ -2613,7 +2707,7 @@ async function renderCreatorDash(view,me){
           var col={late:'var(--warn)',quarantined:'var(--warn)',rejected:'var(--neg)'}[x.status]||'var(--dim)';
           return '<div style="color:'+col+'" class="mono">'+esc(x.status.toUpperCase())+' '+esc(x.game_ref)+(x.reason?': '+esc(x.reason):'')+'</div>';
         }).join('');
-        $('slOut').innerHTML=pfHtml+'<div class="panel" style="margin-top:10px;border-color:'+((c2.rejected||0)>0?'rgba(217,154,43,.5)':'rgba(47,180,124,.5)')+'">'+
+        $('slOut').innerHTML=pfHtml+alignHtml+'<div class="panel" style="margin-top:10px;border-color:'+((c2.rejected||0)>0?'rgba(217,154,43,.5)':'rgba(47,180,124,.5)')+'">'+
           '<b>'+(dry?'Dry run:':'Posted:')+'</b> <span class="mono">'+(c2.resolved||0)+' matched, '+(c2.first||0)+' first submissions, '+(c2.movement||0)+' revisions, '+(c2.late||0)+' late, '+(c2.quarantined||0)+' quarantined, '+(c2.rejected||0)+' rejected</span>'+
           (lines?'<div style="margin-top:8px;font-size:12px">'+lines+'</div>':'')+
           ((c2.quarantined||0)>0?'<p class="note" style="margin:8px 0 0">Quarantined games could not be matched to the schedule (usually a team name). They are saved and get resolved on the admin side; nothing is lost.</p>':'')+

@@ -284,6 +284,78 @@ if (typeof sandbox.teamKey === 'function') {
     S.slateUnmatchedTeams([{ label: 'North Carolina at TCU' }],
       [{ home_team: 'TCU', away_team: 'North Carolina' }]).count === 0);
 
+  /* ---- send the schedule its own names ---------------------------------
+     The backend stores team identifiers uppercased, punctuation stripped and
+     TRUNCATED TO TEN CHARACTERS, and matches a submitted slate literally
+     against them. Every team whose canonical name fits in ten characters
+     resolved and every longer one quarantined -- TCU, USC, Virginia, Stanford,
+     NC State and Hawai'i through; North Carolina, San José State, Florida
+     State and New Mexico State rejected. The schedule is the dictionary. */
+  var TRUNC = [{ label: 'NORTHCAROL @ TCU' }, { label: 'SANJOSESTA @ USC' },
+               { label: 'NCSTATE @ VIRGINIA' }, { label: 'NEWMEXICOS @ FLORIDASTA' },
+               { label: 'HAWAII @ STANFORD' }];
+  var SLATE_IN = [{ home_team: 'TCU', away_team: 'North Carolina' },
+                  { home_team: 'USC', away_team: 'San José State' },
+                  { home_team: 'Virginia', away_team: 'NC State' },
+                  { home_team: 'Florida State', away_team: 'New Mexico State' },
+                  { home_team: 'Stanford', away_team: "Hawai'i" }];
+
+  chk('a ten-character truncation resolves to the backend\'s own spelling',
+    (function () {
+      var ix = S.slateNameIndex(TRUNC);
+      var r = S.slateResolveName(ix, 'Florida State');
+      return r && r.name === 'FLORIDASTA' && r.how === 'truncated';
+    })());
+  chk('a name that already fits resolves exactly, case and all',
+    (function () {
+      var ix = S.slateNameIndex(TRUNC);
+      var r = S.slateResolveName(ix, 'Virginia');
+      return r && r.name === 'VIRGINIA' && r.how === 'exact';
+    })());
+  chk('a mascot suffix resolves the other way',
+    (function () {
+      var ix = S.slateNameIndex([{ label: 'North Carolina Tar Heels @ TCU Horned Frogs' }]);
+      var r = S.slateResolveName(ix, 'North Carolina');
+      return r && r.name === 'North Carolina Tar Heels' && r.how === 'expanded';
+    })());
+  chk('an AMBIGUOUS truncation is refused, never guessed',
+    (function () {
+      /* both of these are a prefix of "mississippistate", so the truncation
+         genuinely cannot be resolved to one school */
+      var ix = S.slateNameIndex([{ label: 'MISSISSIPP @ Alpha' }, { label: 'MISSISSIPPI @ Beta' }]);
+      var r = S.slateResolveName(ix, 'Mississippi State');
+      return r && r.ambiguous && r.ambiguous.length === 2;
+    })(),
+    'silently picking one would be worse than quarantining both');
+  chk('the whole slate aligns onto the schedule, every row',
+    (function () {
+      var a = S.slateAlignToSchedule(TRUNC, SLATE_IN);
+      var sent = a.rows.map(function (r) { return r.away_team + ' @ ' + r.home_team; });
+      return sent.join('|') === 'NORTHCAROL @ TCU|SANJOSESTA @ USC|NCSTATE @ VIRGINIA|'
+        + 'NEWMEXICOS @ FLORIDASTA|HAWAII @ STANFORD';
+    })(), { got: S.slateAlignToSchedule(TRUNC, SLATE_IN).rows });
+  chk('nothing is left unmatched once the slate is aligned',
+    S.slateUnmatchedTeams(TRUNC, S.slateAlignToSchedule(TRUNC, SLATE_IN).rows).count === 0,
+    'this is the "0 matched, 5 quarantined" case, resolved');
+  chk('alignment reports what it changed',
+    (function () {
+      var a = S.slateAlignToSchedule(TRUNC, SLATE_IN);
+      var by = {}; a.changed.forEach(function (c) { by[c.from] = c.to; });
+      return by['Florida State'] === 'FLORIDASTA' && by['North Carolina'] === 'NORTHCAROL';
+    })());
+  chk('alignment does not touch rows when the server list is empty',
+    (function () {
+      var a = S.slateAlignToSchedule([], SLATE_IN);
+      return a.rows === SLATE_IN && a.changed.length === 0;
+    })());
+  chk('a team genuinely absent from the schedule stays unresolved',
+    (function () {
+      var a = S.slateAlignToSchedule(TRUNC,
+        [{ home_team: 'Rutgers', away_team: 'TCU' }]);
+      return a.unresolved.indexOf('Rutgers') >= 0
+        && a.rows[0].home_team === 'Rutgers';
+    })());
+
   /* ---- naming the missing team is only half an answer ------------------ */
   chk('a mascot suffix is recognised as the same school',
     S.teamSimilarity('TCU', 'TCU Horned Frogs') >= 0.8
