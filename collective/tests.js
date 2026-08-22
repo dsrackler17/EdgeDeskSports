@@ -284,6 +284,45 @@ if (typeof sandbox.teamKey === 'function') {
     S.slateUnmatchedTeams([{ label: 'North Carolina at TCU' }],
       [{ home_team: 'TCU', away_team: 'North Carolina' }]).count === 0);
 
+  /* ---- one separator per file, chosen from the file --------------------
+     Comma and tab were both live delimiters on every input at once. Excel and
+     Google Sheets put TAB separated text on the clipboard and quote a cell only
+     when it contains a tab, a newline or a quote -- never one that merely
+     contains a comma -- so a notes column reading "early lean, low conf" split
+     into two cells and shifted every column to its right. Measured on a real
+     paste, the model's own line was filed as the MARKET line: the number
+     closing-line value is graded against. */
+  var TSV = 'home_team\taway_team\tdate\tnotes\tmy_line\tmarket_line\n'
+    + 'TCU\tNorth Carolina\t2026-08-29 16:00\tearly lean, low conf\t-14.6\t-10.5';
+
+  chk('a spreadsheet paste is read as tab separated',
+    S.sniffDelim(TSV) === '\t', { got: JSON.stringify(S.sniffDelim(TSV)) });
+  chk('a bare comma inside a tab-separated cell no longer splits it',
+    (function () {
+      var r = S.parseCSV(TSV);
+      return r[0].length === 6 && r[1].length === 6
+        && r[1][3] === 'early lean, low conf' && r[1][4] === '-14.6';
+    })(),
+    'the model number used to land in the market-line column');
+  chk('an ordinary CSV is still read as comma separated',
+    S.sniffDelim('a,b,c\n1,2,3') === ',');
+  chk('a quoted comma in a CSV is still one cell',
+    (function () {
+      var r = S.parseCSV('a,b,c\n1,"x, y",3');
+      return r[1].length === 3 && r[1][1] === 'x, y';
+    })());
+  chk('a semicolon file is read as semicolon separated',
+    (function () {
+      var r = S.parseCSV('a;b;c\n1;2;3');
+      return S.sniffDelim('a;b;c\n1;2;3') === ';' && r[1].length === 3;
+    })());
+  chk('quoted regions of the header do not vote on the separator',
+    S.sniffDelim('"a,b,c,d"\tx\ty') === '\t');
+  chk('a single-column file falls back to comma rather than throwing',
+    S.sniffDelim('team\nTCU') === ',');
+  chk('the real 80-column CFB export is still comma separated',
+    S.sniffDelim(CSV) === ',');
+
   /* ---- send the schedule its own names ---------------------------------
      The backend stores team identifiers uppercased, punctuation stripped and
      TRUNCATED TO TEN CHARACTERS, and matches a submitted slate literally
