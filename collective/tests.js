@@ -485,9 +485,10 @@ if (typeof sandbox.teamKey === 'function') {
     'an unknown server sport must not crash the board or borrow NFL rounds');
   chk('two unknown sports do not merge into one family',
     S.sportFamily('KABADDI') !== S.sportFamily('SEPAKTAKRAW'));
-  chk('display names come from the registry',
+  chk('display names come from the registry, not from the server',
     S.sportName('NCAAF') === 'CFB' && S.sportLongName('NCAAF') === 'College Football'
-    && S.sportLongName('NFL') === 'Football');
+    && S.sportLongName('NFL') === 'NFL',
+    'the server calls the NFL "Football"; nobody else does');
 
   /* ---- one sport at a time, on every surface --------------------------- */
   var MIXED = [
