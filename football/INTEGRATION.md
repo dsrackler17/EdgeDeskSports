@@ -103,6 +103,57 @@ faked in their absence.
 NOT use it — it uses the public cfbfastR-data line archive, which carries
 opening numbers as well as closing ones.
 
+## Posting Power 4 slates to the Model Collective
+
+The Power 4 board's **Post to Collective** button downloads the slate and opens
+`collective/#dashboard`. It deliberately does NOT post on the reader's behalf:
+posting is an account action against their own creator profile, and the model,
+week and data-origin choices belong to them.
+
+No column mapping is needed. The Collective's uploader (`SLATE_FIELDS` in
+`collective/index.html`) maps by header name, and this export's headers are
+already in its synonym table:
+
+| export column | maps to |
+|---|---|
+| `home_team` / `away_team` | home / away team |
+| `kickoff_local` | game date |
+| `week`, `game_id` | week, game ref |
+| `model_home_line` | your spread (home side) |
+| `model_fair_total` | your total |
+| `ref_home_line` | market line you saw |
+| `home_win_prob_pct` | home win % |
+| `p_spread_pick_pct` | cover % |
+| `spread_pick` | pick side |
+| `confidence` | confidence |
+
+Columns the uploader does not recognise are ignored, so the Power 4 extras ride
+along harmlessly.
+
+### The one thing that is NOT in this repo
+
+**The Collective's sport vocabulary is server-side.** `meta().sports` comes from
+the `collective_public` function, and `collective_ingest` validates a
+submission's sport against the same list. Until a college-football sport code
+exists there, a CFB slate has no model to attach to and the ingest will reject
+it — nothing in this repository can change that.
+
+What the server needs, once:
+
+1. A college-football sport row in the Collective's sports table (code, current
+   season) so it appears in `meta().sports`.
+2. That code added to `collective_ingest`'s accepted sports.
+3. Schedule/closing-line capture for the sport, so submissions have games to
+   grade against — the Collective grades against its OWN captured closing
+   lines, never self-reported numbers.
+
+The frontend is already ready for it: the sport selector, the per-sport week
+calendar (college football's regular season ends at 15 and its postseason is
+conference championships, bowls and the playoff — not Wild Card through Super
+Bowl), and the creator profile's per-model sport pills all key off whatever
+`meta().sports` returns. The moment the server lists the code, CFB appears
+beside NFL with no further frontend change.
+
 ## Environment variables / secrets
 
 None. All runtime sources are public and keyless; Supabase reads reuse the
