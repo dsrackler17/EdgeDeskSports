@@ -2531,11 +2531,14 @@ async function renderCreatorDash(view,me){
       var long=d2.long||sportCode;
       var mslug=creatorSlug+'-'+String(sportCode).toLowerCase().replace(/[^a-z0-9]+/g,'');
       var mname=creatorName+' '+long;
-      /* Finds the creator three ways before giving up, because the slug the
-         dashboard shows is not guaranteed to be the slug in the table, and a
-         "no creator with that slug" error is a dead end for someone who did
-         not write the schema. Falls back to the owner of an existing model,
-         which is correct whenever the account already posts anything at all. */
+      /* Finds the creator by slug, then by display name, and then STOPS.
+         It used to fall back to "whoever owns a model already" -- which on a
+         shared Collective is not a fallback, it is a cross-account write: a
+         new creator whose slug lookup missed would silently attach their
+         model to the oldest account in the table, and then see a stranger's
+         model in their own dashboard. There is no safe guess about whose
+         account a row belongs to, so a miss now raises and says exactly how
+         to find the right id. */
       return ''
         +'-- Add a '+long+' model for '+creatorName+'.\n'
         +'-- Finds your schema and your creator row itself. Safe to run twice.\n'
@@ -2543,6 +2546,7 @@ async function renderCreatorDash(view,me){
         +'declare\n'
         +'  s text;\n'
         +'  cid uuid;\n'
+        +'  who text;\n'
         +'begin\n'
         +'  select table_schema into s\n'
         +'    from information_schema.tables\n'
@@ -2556,13 +2560,10 @@ async function renderCreatorDash(view,me){
         +'    execute format(\'select id from %I.creators where display_name = $1\', s)\n'
         +'      into cid using \''+creatorName+'\';\n'
         +'  end if;\n\n'
-        +'  -- 3. whoever owns a model already\n'
+        +'  -- No third guess. A model attached to the wrong creator shows up in\n'
+        +'  -- someone else\'s dashboard, and they cannot tell it is not theirs.\n'
         +'  if cid is null then\n'
-        +'    execute format(\'select creator_id from %I.models order by created_at limit 1\', s)\n'
-        +'      into cid;\n'
-        +'  end if;\n\n'
-        +'  if cid is null then\n'
-        +'    raise exception \'could not find your creator row - run: select id, slug, display_name from %.creators\', s;\n'
+        +'    raise exception \'no creator row matched slug %% or name %% - find yours with: select id, slug, display_name from '+'%I'+'.creators\', \''+creatorSlug+'\', \''+creatorName+'\';\n'
         +'  end if;\n\n'
         +'  execute format($f$\n'
         +'    insert into %I.models (creator_id, slug, name, sport_code, is_listed)\n'
@@ -2571,7 +2572,11 @@ async function renderCreatorDash(view,me){
         +'       select 1 from %I.models\n'
         +'        where creator_id = $1 and upper(sport_code) = upper($4))\n'
         +'  $f$, s, s) using cid, \''+mslug+'\', \''+mname+'\', \''+sportCode+'\';\n\n'
-        +'  raise notice \'done - reload the dashboard\';\n'
+        +'  -- Say whose account received it. A silent success is how the wrong\n'
+        +'  -- creator ends up owning a model without anyone noticing.\n'
+        +'  execute format(\'select slug from %I.creators where id = $1\', s)\n'
+        +'    into who using cid;\n'
+        +'  raise notice \'added % for creator % - reload the dashboard\', \''+mname+'\', who;\n'
         +'end $$;\n';
     }
 
