@@ -247,6 +247,114 @@ label .opt{color:var(--faint);text-transform:none;letter-spacing:0;font-weight:4
   border-radius:9px;background:rgba(90,130,255,.07)}
 .scan .ask-q{font-size:13px;margin-bottom:9px}
 .scan .ask-btns{display:flex;gap:8px;flex-wrap:wrap}
+
+/* ======================================================================
+   PHONE
+   Measured in a real engine at iPhone SE (375), 14 (390) and 14 Pro Max
+   (430), device scale and touch on -- not guessed from breakpoints. Four
+   things were actually wrong and each block below fixes one of them.
+   ====================================================================== */
+
+/* 1. SAFE AREAS. viewport-fit=cover was set in the <head> without a single
+      env() anywhere in the sheet. Cover without insets is worse than no
+      cover: it promises the notch and home-indicator area and then draws
+      content under both. max() keeps the desktop padding when the inset is
+      zero. */
+.wrap{padding-left:max(14px,env(safe-area-inset-left));
+      padding-right:max(14px,env(safe-area-inset-right))}
+.hd-in{padding-left:max(14px,env(safe-area-inset-left));
+       padding-right:max(14px,env(safe-area-inset-right))}
+body{padding-bottom:env(safe-area-inset-bottom)}
+.toast{bottom:calc(18px + env(safe-area-inset-bottom));
+       max-width:calc(100vw - 32px)}
+
+/* 2. LONG STRINGS. A URL is not a word, so it never breaks: the API endpoint
+      on the dashboard measured 570px wide inside a 390px screen and dragged
+      the entire page sideways. Every surface that can hold a URL, a key or a
+      team code now breaks anywhere rather than pushing the layout. */
+.note,.mono,.lede,.actrow,.copybox .val,.gc-hd .lbl,.emptybox{overflow-wrap:anywhere}
+.copybox .val{word-break:break-all}
+
+/* 3. iOS TEXT INFLATION. Safari resizes text on rotation unless told not to,
+      which reflows a data table mid-read. */
+html{-webkit-text-size-adjust:100%}
+/* The default tap flash is a grey box that lands on whole table rows. */
+a,button,tr.rowlink,.sportpick,.wk button,.sportsw button{
+  -webkit-tap-highlight-color:rgba(77,141,255,.15)}
+
+/* 4. HORIZONTAL TABLES. The directory and rankings are 760px minimum, so on
+      a phone they scroll sideways -- correct, but you lose track of which
+      row you are reading. Pinning the identity column keeps the name on
+      screen while the numbers move under it, and the shadow says there is
+      more to the right rather than leaving it to be discovered. */
+.tblwrap{-webkit-overflow-scrolling:touch}
+@media(max-width:760px){
+  .tblwrap th:first-child,.tblwrap td:first-child{
+    position:sticky;left:0;z-index:3;
+    box-shadow:1px 0 0 var(--border), 6px 0 10px -8px rgba(0,0,0,.85)}
+  .tblwrap td:first-child{background:var(--surface)}
+  .tblwrap th:first-child{background:var(--surface2);z-index:4}
+  .tblwrap tr.rowlink:hover td:first-child{background:var(--surface2)}
+}
+
+/* 5. TAP TARGETS AND FIELD ZOOM.
+      Apple's floor is 44x44. Measured: nav 29, week picker 27, sport tabs
+      32, buttons 36, the sport checkboxes 15.
+      And iOS zooms the whole page in when a focused field is under 16px,
+      then leaves you zoomed with the layout shifted -- every input here was
+      13px, so tapping any of them threw the page. 16px is not a preference,
+      it is the threshold. Desktop sizes are untouched. */
+@media(max-width:760px){
+  input,select,textarea{font-size:16px;padding:11px 12px}
+  .sortsel select,select{min-height:44px}
+  /* WRAP, do not scroll. A sideways-scrolling nav hides half the site behind
+     a gesture nobody is told about -- Rules, About and Dashboard were all off
+     the right edge with nothing to suggest they existed. Two visible rows
+     cost 44px and make every section discoverable, which on the page people
+     land on from a link is worth more than the height. */
+  nav.tabs{flex-wrap:wrap;overflow-x:visible;gap:4px;justify-content:flex-start}
+  nav.tabs a{min-height:44px;display:flex;align-items:center;padding:0 12px;
+             font-size:13px;flex:0 0 auto}
+  .wk button,.sportsw button{min-height:44px}
+  .btn{min-height:44px;display:inline-flex;align-items:center;justify-content:center;
+       padding:0 18px;font-size:14px}
+  .wk button,.sportsw button{padding:0 14px;font-size:13px}
+  /* ONE ROW, not five. A 22-week picker wrapped at 44px tall is ~250px of
+     buttons before the first game -- on an 844px screen you scroll past the
+     whole season to reach the thing you opened the page for. A single snapped
+     strip costs 44px and keeps the current week where it already was: first.
+     Unlike the nav, discovery is not at stake here; the week you want is
+     either selected or one flick away, and the buttons run to the edge so it
+     is obvious the row continues. */
+  .wk{flex-wrap:nowrap;overflow-x:auto;scroll-snap-type:x proximity;
+      scrollbar-width:none;-ms-overflow-style:none;-webkit-overflow-scrolling:touch;
+      padding-bottom:2px;margin-right:calc(-1 * max(14px,env(safe-area-inset-right)))}
+  .wk::-webkit-scrollbar{display:none}
+  .wk button{flex:0 0 auto;scroll-snap-align:start}
+  .sportsw button{padding-bottom:2px}
+  .sportpick{padding:14px 13px;min-height:56px}
+  .sportpick input{width:22px;height:22px;min-height:0}
+  .copybox .val{font-size:12px}
+  .copybox button{min-height:44px;white-space:nowrap}
+  /* a bare text link in a paragraph is not a tap target, but one standing
+     alone as an action is */
+  .sp-add,.links a{display:inline-block;padding:6px 0;min-height:32px}
+  body{font-size:15px}
+  .lede{font-size:14px}
+  h1{font-size:21px}
+  .view{padding:14px 0 40px}
+}
+
+/* 6. THE BOARD ROW at the narrowest width. Its four tracks have a combined
+      minimum of 316px plus 28px of padding, which clears 375 and nothing
+      below it. Below 380 the model column gives up its minimum first, since
+      a truncated team code still reads and a clipped number does not. */
+@media(max-width:380px){
+  .gb-row{grid-template-columns:minmax(84px,1.5fr) minmax(88px,1fr) 52px 14px;
+          gap:6px;padding:6px 10px}
+  .gb-hd,.bd-hd,.bd-stats{padding-left:10px;padding-right:10px}
+  .bd-stats{gap:14px}
+}
 </style>
 </head>
 <body>
