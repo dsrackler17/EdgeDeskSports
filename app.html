@@ -22009,42 +22009,72 @@ function fbLiveLineGaps(){
     status:broken.length?'fail':((median>lim.median||outliers.length)?'warn':'pass')};
 }
 
-/* ---- Model health panel ------------------------------------------------ */
+/* ---- Model health panel ------------------------------------------------
+   SCOPED PER BOARD: the NFL board reports the NFL checks, the Power 4
+   board the Power 4 checks — a college-football fault is never rendered
+   as the NFL board's own headline. Other boards' failures appear as one
+   muted cross-reference line pointing at the board they belong to. The
+   shared engine-test checks travel with the board whose engine they
+   exercise (football/tests.js covers the NFL + CFB v1 engine; the Power 4
+   engine has its own suite). */
 function fbHealthGlyph(st){return st==='pass'?'✓':(st==='warn'?'⚠':'✗');}
 function fbHealthColor(st){return st==='pass'?'var(--pos)':(st==='warn'?'var(--warn)':'var(--neg)');}
+function fbHealthOwns(id){
+  if(id==='engine_tests')return true;                 /* tests-skipped marker concerns every board */
+  if(FB.sport==='p4')return id.indexOf('p4_')===0||id==='engine_tests_p4';
+  if(FB.sport==='cfb')return id==='engine_tests_nfl'; /* the shared football engine powers the CFB v1 board */
+  return id.indexOf('nfl_')===0||id==='engine_tests_nfl';
+}
+function fbHealthBoardOf(id){
+  if(id.indexOf('p4_')===0||id==='engine_tests_p4')return 'CFB Power 4';
+  if(id.indexOf('nfl_')===0||id==='engine_tests_nfl')return 'NFL';
+  return 'Football';
+}
 function fbHealthHTML(){
   var h=FB.health,body='',worst='pass';
   function bump(st){if(st==='fail')worst='fail';else if(st==='warn'&&worst!=='fail')worst='warn';}
+  var boardName=FB.sport==='p4'?'Power 4':(FB.sport==='cfb'?'CFB':'NFL');
   if(!h){
     bump('warn');
     body+='<p style="margin:0 0 6px">The daily self-check has not published a run this app can read '
       +'(football/health.json '+(FB.healthErr?('— '+fbEsc(FB.healthErr)):'missing')+'). '
       +'Freshness falls back to the trained parameter build date, and only the live guard below is checking anything.</p>';
   }else{
-    var t=rsParseStamp(h.generated_at),ok=!!h.ok;
-    var fails=(h.checks||[]).filter(function(c){return c.status==='fail';});
-    var warns=(h.checks||[]).filter(function(c){return c.status==='warn';});
-    bump(ok?(warns.length?'warn':'pass'):'fail');
-    body+='<p style="margin:0 0 6px"><b style="color:'+fbHealthColor(ok?'pass':'fail')+'">'
-      +(ok?'Self-check passed':'Self-check FAILED')+'</b> — '+(h.checks||[]).length+' checks, '
-      +fails.length+' failed, '+warns.length+' warning'+(warns.length===1?'':'s')
+    var t=rsParseStamp(h.generated_at);
+    var all=h.checks||[];
+    var own=all.filter(function(c){return fbHealthOwns(c.id);});
+    var ownFails=own.filter(function(c){return c.status==='fail';});
+    var ownWarns=own.filter(function(c){return c.status==='warn';});
+    var otherFails=all.filter(function(c){return !fbHealthOwns(c.id)&&c.status==='fail';});
+    bump(ownFails.length?'fail':(ownWarns.length?'warn':'pass'));
+    body+='<p style="margin:0 0 6px"><b style="color:'+fbHealthColor(ownFails.length?'fail':'pass')+'">'
+      +boardName+' self-check '+(ownFails.length?'FAILED':'passed')+'</b> — '+own.length+' check'+(own.length===1?'':'s')
+      +' on this board, '+ownFails.length+' failed, '+ownWarns.length+' warning'+(ownWarns.length===1?'':'s')
       +(t?(' · run '+fbEsc(ago(t))):'')
-      +(!ok&&h.last_ok_at?(' · last clean run '+fbEsc(ago(rsParseStamp(h.last_ok_at)))):'')+'</p>';
+      +((ownFails.length&&h.last_ok_at)?(' · last clean run '+fbEsc(ago(rsParseStamp(h.last_ok_at)))):'')+'</p>';
     var L=h.learning||{};
-    var learn=[];
-    if(L.nfl)learn.push('NFL '+(L.nfl.absorbed||0)+' of '+(L.nfl.completed_in_feed||0)+' completed games absorbed'
-      +(L.nfl.data_through?(' (through '+fbEsc(L.nfl.data_through)+')'):''));
-    if(L.p4)learn.push('Power 4 '+(L.p4.absorbed||0)+' of '+(L.p4.completed_in_feed||0)+' absorbed'
-      +(L.p4.data_through?(' (through '+fbEsc(L.p4.data_through)+')'):''));
-    if(learn.length)body+='<p style="margin:0 0 6px" class="mut">Learned in that run: '+learn.join(' · ')+'.</p>';
-    fails.concat(warns).slice(0,6).forEach(function(c){
+    if(FB.sport==='nfl'&&L.nfl){
+      body+='<p style="margin:0 0 6px" class="mut">Learned in that run: '+(L.nfl.absorbed||0)+' of '+(L.nfl.completed_in_feed||0)
+        +' completed NFL games absorbed'+(L.nfl.data_through?(' (through '+fbEsc(L.nfl.data_through)+')'):'')+'.</p>';
+    }else if(FB.sport==='p4'&&L.p4){
+      body+='<p style="margin:0 0 6px" class="mut">Learned in that run: '+(L.p4.absorbed||0)+' of '+(L.p4.completed_in_feed||0)
+        +' completed games absorbed'+(L.p4.data_through?(' (through '+fbEsc(L.p4.data_through)+')'):'')+'.</p>';
+    }else if(FB.sport==='cfb'){
+      body+='<p style="margin:0 0 6px" class="mut">The daily self-check exercises the NFL and Power 4 data paths; this board’s own feed gates live on load.</p>';
+    }
+    ownFails.concat(ownWarns).slice(0,6).forEach(function(c){
       body+='<p style="margin:0 0 4px;color:'+fbHealthColor(c.status)+'">'+fbHealthGlyph(c.status)+' '
         +fbEsc(c.label)+(c.detail?(' — <span class="mut">'+fbEsc(c.detail)+'</span>'):'')+'</p>';
     });
-    if(h.checks&&h.checks.length){
+    if(otherFails.length){
+      var byBoard={};otherFails.forEach(function(c){byBoard[fbHealthBoardOf(c.id)]=1;});
+      body+='<p style="margin:0 0 4px" class="mut">Other boards: '+otherFails.length+' failing check'
+        +(otherFails.length===1?'':'s')+' ('+Object.keys(byBoard).map(fbEsc).join(', ')+') — shown on that board, not this one.</p>';
+    }
+    if(own.length){
       body+='<details style="margin:4px 0 2px"><summary class="mut" style="cursor:pointer">All '
-        +h.checks.length+' checks</summary>'
-        +h.checks.map(function(c){
+        +own.length+' '+boardName+' checks</summary>'
+        +own.map(function(c){
           return '<p style="margin:4px 0 0"><span style="color:'+fbHealthColor(c.status)+'">'+fbHealthGlyph(c.status)
             +'</span> '+fbEsc(c.label)+(c.detail?(' — <span class="mut">'+fbEsc(c.detail)+'</span>'):'')+'</p>';
         }).join('')+'</details>';

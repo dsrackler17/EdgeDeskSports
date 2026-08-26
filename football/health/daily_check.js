@@ -508,19 +508,24 @@ async function main() {
   out.ok = !overallFail;
   if (out.ok) out.last_ok_at = now;
 
+  /* each ledger row reports ONLY its own checks — a projection-bound fault
+     must not paint the ingest row red (the first live run did exactly that) */
   const st = s => s ? 'ok' : 'error';
+  const failIn = re => checks.some(c => re.test(c.id) && c.status === 'fail');
   const ln = out.lines;
   out.pipeline_meta = {
     daily_check_last_run: now, daily_check_last_status: st(out.ok),
     engine_tests_last_run: now, engine_tests_last_status: st(testsOk),
     nfl_ingest_last_run: now,
-    nfl_ingest_last_status: st(!checks.some(c => c.id.startsWith('nfl_') && c.status === 'fail')),
+    nfl_ingest_last_status: st(!failIn(/^nfl_(schedule|stats|ingest|pipeline|season_window)/)),
     row_count_nfl_ingest: (out.learning.nfl && out.learning.nfl.absorbed) || 0,
     p4_ingest_last_run: now,
-    p4_ingest_last_status: st(!checks.some(c => c.id.startsWith('p4_') && c.status === 'fail')),
+    p4_ingest_last_status: st(!failIn(/^p4_(schedule|ingest|roster|pipeline|season_window)/)),
     row_count_p4_ingest: (out.learning.p4 && out.learning.p4.absorbed) || 0,
+    projection_guard_last_run: now,
+    projection_guard_last_status: st(!failIn(/^(nfl|p4)_projections$/)),
     line_guard_last_run: now,
-    line_guard_last_status: st(!checks.some(c => /_lines(_market)?$/.test(c.id) && c.status === 'fail')),
+    line_guard_last_status: st(!failIn(/^(nfl|p4)_lines(_market|_src)?$/)),
     row_count_line_guard: ((ln.nfl && ln.nfl.compared) || 0) + ((ln.p4 && ln.p4.compared) || 0)
   };
 
