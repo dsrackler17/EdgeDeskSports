@@ -823,6 +823,88 @@ if (typeof sandbox.teamKey === 'function') {
       return o.cover_probability === undefined
         || (o.cover_probability >= 0 && o.cover_probability <= 1);
     }));
+
+  /* the CFB export's own-number column is HOME convention already; the
+     pick-stated conversion below must never touch it, away pick or not */
+  chk('an away pick does NOT flip a home-named spread column',
+    near(r1.projected_spread, -34.82), { got: r1.projected_spread });
+
+  /* ---- a pick-centric sheet: the column is stated from the PICK ---------
+     The file that put "NE -3.5" on the wall for a model that was on NE
+     +3.5: a creator's own sheet with pick_line (the picked team's number),
+     pick_prob (P(the pick covers)) and pick_team. Stored raw, every away
+     pick posts with its sign turned around and the wall — correctly
+     inverting away picks — shows the exact opposite of the model's number.
+     The header says whose number it is, so ingestion turns it onto the
+     home side using each row's own pick, exactly as it already did for
+     p_spread_pick_pct cover probabilities. */
+  var MOOSE = [
+    'date,game_id,season,week,away,home,pick_team,pick_side,pick_line,pick_claim,pick_prob,home_win_prob,model_total',
+    '2026-09-09,2026_01_NE_SEA,2026,1,NE,SEA,NE,away,3.5,covers,0.5258,0.6247,41.65',
+    '2026-09-10,2026_01_SF_LA,2026,1,SF,LA,LA,home,-3.5,covers,0.5239,0.6599,53.21',
+    '2026-09-13,2026_01_CHI_CAR,2026,1,CHI,CAR,CHI,away,-2.5,covers,0.6004,0.3344,45.49',
+    '2026-09-13,2026_01_BUF_HOU,2026,1,BUF,HOU,BUF,away,0,covers,0.608,0.392,42.35',
+    '2026-09-13,2026_01_NO_DET,2026,1,NO,DET,,,7,covers,0.597,0.6739,48.76'
+  ].join('\n');
+  var moose2d = parseCsv(MOOSE);
+  S.SLATE.cols = moose2d[0]; S.SLATE.rows = moose2d; S.SLATE.map = {};
+  S.slateGuessMap();
+  var mcol = function (f) { return S.SLATE.cols[S.SLATE.map[f]]; };
+
+  chk('pick_line maps to the spread field', mcol('projected_spread') === 'pick_line',
+    { got: mcol('projected_spread') });
+  chk('pick_prob maps to the cover field and is flagged pick-stated',
+    mcol('cover_probability') === 'pick_prob' && S.SLATE.coverIsPickSide === true);
+  chk('pick_team resolves the picked side', mcol('pick_side') === 'pick_team');
+  chk('model_total maps to the total', mcol('projected_total') === 'model_total');
+  chk('pick_line is in the "which is it?" list, like spread and line',
+    S.AMBIGUOUS_SPREAD.indexOf('pick_line') >= 0);
+
+  var mb = S.slateBuildRows('2026', '1');
+  var m0 = mb.rows[0], m1 = mb.rows[1], m2 = mb.rows[2], m3 = mb.rows[3], m4 = mb.rows[4];
+  chk('every Moose row builds', mb.rows.length === 5, { n: mb.rows.length });
+  chk('an away pick_line is stored as the home side\'s number',
+    m0.pick_side === 'away' && near(m0.projected_spread, -3.5),
+    { got: m0.projected_spread });
+  chk('a home pick_line is stored unchanged',
+    m1.pick_side === 'home' && near(m1.projected_spread, -3.5));
+  chk('an away FAVOURITE\'s pick_line turns positive on the home side',
+    m2.pick_side === 'away' && near(m2.projected_spread, 2.5),
+    { got: m2.projected_spread });
+  chk('an away pick\'em stores 0, never -0',
+    m3.projected_spread === 0 && (1 / m3.projected_spread) === Infinity);
+  chk('the implied line rides the converted home number',
+    near(m0.line_at_submission, -3.5), { got: m0.line_at_submission });
+  chk('a pick-stated cover probability is turned onto the home side',
+    near(m0.cover_probability, 1 - 0.5258) && near(m1.cover_probability, 0.5239),
+    { away: m0.cover_probability, home: m1.cover_probability });
+  chk('a row with no readable pick withholds the pick-stated number and says why',
+    m4.projected_spread === undefined
+    && mb.problems.some(function (p) { return /pick_line/.test(p) && /Row 6/.test(p); }),
+    { got: m4.projected_spread, problems: mb.problems });
+
+  /* the round trip that was broken: file → wire → wall */
+  chk('the wall reads Moose\'s picks back exactly as written',
+    S.pickDisp({ home: 'SEA', away: 'NE' }, m0) === 'NE +3.5'
+    && S.pickDisp({ home: 'LA', away: 'SF' }, m1) === 'LA -3.5'
+    && S.pickDisp({ home: 'CAR', away: 'CHI' }, m2) === 'CHI -2.5'
+    && S.pickDisp({ home: 'HOU', away: 'BUF' }, m3) === 'BUF 0.0',
+    { got: [S.pickDisp({ home: 'SEA', away: 'NE' }, m0),
+            S.pickDisp({ home: 'LA', away: 'SF' }, m1),
+            S.pickDisp({ home: 'CAR', away: 'CHI' }, m2),
+            S.pickDisp({ home: 'HOU', away: 'BUF' }, m3)] });
+
+  /* the conversion follows the mapping the creator actually set, not the
+     one the guesser produced: hand-move pick_line onto the market-line
+     field (the ambiguous-spread button does exactly this) and it is still
+     read as pick-stated */
+  S.SLATE.map['line_at_submission'] = S.SLATE.map['projected_spread'];
+  delete S.SLATE.map['projected_spread'];
+  var mb2 = S.slateBuildRows('2026', '1');
+  chk('a hand-remapped pick_line converts on the market-line field too',
+    near(mb2.rows[0].line_at_submission, -3.5)
+    && mb2.rows[0].projected_spread === undefined,
+    { got: mb2.rows[0].line_at_submission });
 }
 
 /* ---- report ------------------------------------------------------------ */

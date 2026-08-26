@@ -1591,7 +1591,7 @@ async function parseXLSX(buf){
    a market line stored as a projection measures your accuracy against the
    market instead of against the result, and leaves closing line value with
    nothing to compute from. */
-var AMBIGUOUS_SPREAD=['spread','line'];
+var AMBIGUOUS_SPREAD=['spread','line','pick_line'];
 
 /* The EdgeDesk Football export (app.html Research → Football → Download CSV,
    44 columns) is auto-mapped by name below — model_home_line is already the
@@ -1612,12 +1612,12 @@ var SLATE_FIELDS=[
      wall-clock time is read in the reader's own timezone. */
   {f:'kickoff_tz',label:'Kickoff timezone',req:false,syn:['kickoff_tz','timezone','tz','kickoff timezone']},
   {f:'game_ref',label:'Game id (optional)',req:false,syn:['game_id','game_ref']},
-  {f:'projected_spread',label:'Your spread (home side)',req:false,syn:['projected_spread','proj_spread','spread','line','my_line','model_spread','my line','model_home_line']},
-  {f:'projected_total',label:'Your total',req:false,syn:['projected_total','proj_total','total','ou','over_under','over/under','model_fair_total']},
+  {f:'projected_spread',label:'Your spread (home side)',req:false,syn:['projected_spread','proj_spread','spread','line','my_line','model_spread','my line','model_home_line','pick_line']},
+  {f:'projected_total',label:'Your total',req:false,syn:['projected_total','proj_total','total','ou','over_under','over/under','model_fair_total','model_total']},
   {f:'line_at_submission',label:'Market line you saw',req:false,syn:['line_at_submission','book_line','market_line','vegas_line','book line','market line','ref_home_line']},
   {f:'home_win_probability',label:'Home win % (moneyline)',req:false,syn:['ml_prob_home','home_win_probability','home_win_prob','win_prob','home_wp','ml_home','winprob','win prob','home win prob','home_win_prob_pct']},
-  {f:'cover_probability',label:'Cover % (at your line)',req:false,syn:['cover_prob_0','cover_probability','cover_prob','cover','p_spread_pick_pct']},
-  {f:'pick_side',label:'Pick (home/away)',req:false,syn:['pick','pick_side','side','selection','spread_pick']},
+  {f:'cover_probability',label:'Cover % (at your line)',req:false,syn:['cover_prob_0','cover_probability','cover_prob','cover','p_spread_pick_pct','pick_prob']},
+  {f:'pick_side',label:'Pick (home/away)',req:false,syn:['pick','pick_side','side','selection','spread_pick','pick_team']},
   {f:'proj_home_score',label:'Projected home score',req:false,syn:['proj_home_score','home_pts','home_score','home_points','home pts']},
   {f:'proj_away_score',label:'Projected away score',req:false,syn:['proj_away_score','road_pts','away_pts','away_score','away_points','away pts','road pts']},
   {f:'confidence',label:'Confidence (your scale)',req:false,syn:['confidence','conf']}
@@ -1628,6 +1628,26 @@ var SLATE={cols:[],rows:[],map:{},checked:false};
    home picks, so record which convention the file used and let the row builder
    turn it around. */
 var PICK_RELATIVE_COVER=['p_spread_pick_pct'];
+/* Is the column feeding this wire field stated from the PICKED team?
+
+   The wire is home convention throughout, but a creator's own sheet is
+   usually pick-centric: a column NAMED pick_line holds "3.5" for NE +3.5
+   with NE on the road, and storing that as the home side's number posts
+   every away pick with its sign turned around — the wall then (correctly)
+   inverts it back and shows "NE -3.5" for a model that is on NE +3.5.
+   That is exactly the class of bug PICK_RELATIVE_COVER already handles for
+   cover probabilities, so the same rule generalises: a header that says
+   "pick" is describing the pick, and the row builder converts it onto the
+   home side using the row's own pick. Decided from the CURRENT mapping at
+   build time, never cached, so a hand-set or remembered mapping is read
+   the same way as a guessed one. */
+function slateColIsPickStated(field){
+  var i=SLATE.map[field];
+  if(i===undefined||i===null)return false;
+  var n=String(SLATE.cols[i]||'').toLowerCase().trim();
+  if(field==='cover_probability'&&PICK_RELATIVE_COVER.indexOf(n)>=0)return true;
+  return n.indexOf('pick')>=0;
+}
 /* Is this column a PERCENT (0-100) or a PROBABILITY (0-1)? Guessing from the
    value breaks on exactly the values that matter: spread_push_pct holds "0.9"
    meaning nine tenths of one percent, and a magnitude test reads that as 90%.
@@ -1653,9 +1673,7 @@ function slateGuessMap(){
     });
     if(n==='spread_push_pct')SLATE.map['__push']=i;
   });
-  var ci=SLATE.map['cover_probability'];
-  if(ci!==undefined&&PICK_RELATIVE_COVER.indexOf(String(SLATE.cols[ci]).toLowerCase().trim())>=0)
-    SLATE.coverIsPickSide=true;
+  SLATE.coverIsPickSide=slateColIsPickStated('cover_probability');
 }
 function slateNum(v){
   if(v==null)return null;
@@ -2293,6 +2311,13 @@ function slateKick(v,tz){
 }
 function slateBuildRows(season,week){
   var out=[],problems=[];
+  /* read the conventions off the CURRENT mapping, not off whatever
+     slateGuessMap concluded before the creator touched the dropdowns */
+  SLATE.coverIsPickSide=slateColIsPickStated('cover_probability');
+  var pickStated={
+    projected_spread:slateColIsPickStated('projected_spread'),
+    line_at_submission:slateColIsPickStated('line_at_submission')
+  };
   for(var r=1;r<SLATE.rows.length;r++){
     var row=SLATE.rows[r];
     function g(f){var i=SLATE.map[f];return i===undefined||i===null?null:(row[i]!==undefined?row[i]:null);}
@@ -2318,6 +2343,23 @@ function slateBuildRows(season,week){
       if(n!==null)o[f]=n;
     });
     var parsedPick=slatePick(g('pick_side'),home,away);
+    /* A spread or line column stated from the PICKED team becomes the home
+       side's number here, before anything downstream reads it: a home pick
+       is already the home number, an away pick is its exact inverse, and a
+       row whose pick cannot be read has a number that MEANS nothing on this
+       wire — posting it anyway would be right only when the pick happened
+       to be home, so it is reported and withheld instead. */
+    ['projected_spread','line_at_submission'].forEach(function(f){
+      if(o[f]===undefined||!pickStated[f])return;
+      if(parsedPick){
+        if(parsedPick.side==='away')o[f]=o[f]===0?0:-o[f];
+      }else{
+        problems.push('Row '+(r+1)+': "'+esc(String(SLATE.cols[SLATE.map[f]]))+
+          '" is stated from your picked team, but this row has no readable pick, '+
+          'so the number cannot be turned into the home side. It was left off this row.');
+        delete o[f];
+      }
+    });
     if(parsedPick){
       o.pick_side=parsedPick.side;
       /* EVERY number on this wire is stated from the home side — the spread,
@@ -3288,6 +3330,16 @@ async function renderCreatorDash(view,me){
           'Your own number is scored for accuracy against the final margin. The market line is the number your pick is measured against for closing line value. '+
           'Right now it is being read as <strong>your own number</strong>.</p></div>';
       }
+      /* A pick-named number column is being turned onto the home side. Say
+         so, with the example, because the silent version of this is a wall
+         full of away picks with their signs turned around. */
+      ['projected_spread','line_at_submission'].forEach(function(f){
+        if(!have(f)||!slateColIsPickStated(f))return;
+        msg+='<p class="note" style="margin:9px 0 0">Your <b>&ldquo;'+esc(String(SLATE.cols[SLATE.map[f]]))+'&rdquo;</b> column is read as stated from your <b>picked team</b>, because its name says so. '+
+          'It is stored as the home team\'s number: "NE +3.5" with NE on the road is stored as -3.5. '+
+          'The wall shows it from your picked team again, so it reads back exactly as you wrote it. '+
+          'A row whose pick cannot be read does not post this number.</p>';
+      });
       if(lineFromPick){
         msg+='<p class="note" style="margin:9px 0 0">The number in your pick column was read as the market line, in home terms. '+
           '"NE +3.5" with NE on the road is stored as -3.5, the home team\'s number, which is what every model on the wall is measured against.</p>';
