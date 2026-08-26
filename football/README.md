@@ -112,6 +112,18 @@ from the core API group, tops each roster up past the site endpoint's
 100-player cap via the core athlete index, and refuses to commit a
 wrong-shaped dataset.
 
+In the app, CFB lives entirely under the Football tab: the **CFB Rosters**
+segment browses every FBS team's player-level roster (each player's
+observed status — returning, transfer with the program they left, or new
+to the covered set), and every Power 4 game card opens a **Rosters
+head-to-head** panel: five players to watch per side (ordered by position
+value — EdgeDesk view weights, not trained parameters — seniority, portal
+status and the previous program's seed rating) plus a position-by-position
+comparison graded on returning share + class-mix experience. Both say
+plainly that production and per-player talent exist in no public feed:
+they are roster-construction reads, never performance rankings, and no
+model number reads them.
+
 `espn_to_bundles.js` (browser + node) turns those datasets into the exact
 roster bundles the Power 4 engine's talent layer reads: returning share
 and portal in/out from athlete-id diffs against the previous season's

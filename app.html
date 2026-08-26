@@ -1655,7 +1655,7 @@ button:focus-visible,select:focus-visible,input:focus-visible,a:focus-visible{ou
       <button class="rs-tool" id="rsSavedBtn" onclick="rsToggleSaved()">Saved</button></div>
     <div id="rsSearchWrap" class="rs-srch hide" style="margin-bottom:12px"></div>
     <div id="rsSavedWrap" class="hide" style="margin-bottom:12px"></div>
-    <div class="stseg research-sub" style="margin-bottom:12px"><button data-sub="cfb" onclick="researchGo('cfb')">CFB</button><button data-sub="football" onclick="researchGo('football')">Football</button><button data-sub="ufc" onclick="researchGo('ufc')">UFC</button><button data-sub="wta" onclick="researchGo('wta')">WTA</button><button data-sub="tennis" onclick="researchGo('tennis')">Tennis</button><button data-sub="stats" onclick="researchGo('stats')">Stats</button><button data-sub="props" onclick="researchGo('props')">Props</button><button data-sub="lab" onclick="researchGo('lab')">Lab</button></div>
+    <div class="stseg research-sub" style="margin-bottom:12px"><button data-sub="football" onclick="researchGo('football')">Football</button><button data-sub="ufc" onclick="researchGo('ufc')">UFC</button><button data-sub="wta" onclick="researchGo('wta')">WTA</button><button data-sub="tennis" onclick="researchGo('tennis')">Tennis</button><button data-sub="stats" onclick="researchGo('stats')">Stats</button><button data-sub="props" onclick="researchGo('props')">Props</button><button data-sub="lab" onclick="researchGo('lab')">Lab</button></div>
     <!-- CFB (College Football research) -->
     <div id="v-cfb" class="rpanel hide">
     <div class="row-between"><h2 style="margin:0">CFB</h2><span class="spacer"></span><span class="freshness" id="cfbFresh">&mdash;</span><button class="refreshbtn" title="Refresh" onclick="researchRefresh('cfb')">&#8635;</button></div>
@@ -1679,7 +1679,7 @@ button:focus-visible,select:focus-visible,input:focus-visible,a:focus-visible{ou
     <div id="rsMeta-football" class="rs-panelwrap"></div>
     <p class="lede">EdgeDesk&rsquo;s own football engine &mdash; opponent-adjusted EPA ratings, a learned QB layer, sport-specific key numbers and market comparison for the NFL and NCAA FBS. <b style="color:var(--warn)">Research context, not edges.</b> The walk-forward record ships with the model and says so plainly: it has not beaten the closing line, and nothing here is counted anywhere until its own graded CLV does.</p>
     <div class="flbanner demo" id="fbBanner">Loading football engine&hellip;</div>
-    <div class="stseg" id="fbSeg" style="margin-bottom:12px"><button class="on" onclick="fbSetSport('nfl')">NFL</button><button onclick="fbSetSport('cfb')">CFB</button><button onclick="fbSetSport('p4')">CFB Power 4</button></div>
+    <div class="stseg" id="fbSeg" style="margin-bottom:12px"><button class="on" onclick="fbSetSport('nfl')">NFL</button><button onclick="fbSetSport('cfb')">CFB Rosters</button><button onclick="fbSetSport('p4')">CFB Power 4</button></div>
     <div id="fbCtl" style="display:none;align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap"></div>
     <div id="fbBody"><div class="empty">Loading&hellip;</div></div>
     </div>
@@ -2843,9 +2843,13 @@ function show(v){if(v==='ai'){try{window.EDAI.open();}catch(_){}return;}/*ADDED:
    to exactly that ordering trap). */
 var RESEARCH_MODULES={};
 function researchRegister(m){RESEARCH_MODULES[m.id]=m;m._={loading:null,ctrl:null};}
-var RESEARCH_SUB='cfb';
+var RESEARCH_SUB='football';
 window.researchGo=function(sub){
-  if(!RESEARCH_MODULES[sub])sub='cfb';
+  /* the standalone CFB tab was folded into Football (rosters live on its
+     middle segment, Power 4 carries the matchups); old links and saved
+     prefs land on Football instead of a hidden panel */
+  if(sub==='cfb')sub='football';
+  if(!RESEARCH_MODULES[sub])sub='football';
   var prev=RESEARCH_SUB;
   RESEARCH_SUB=sub;
   var s=document.querySelectorAll('.view');for(var i=0;i<s.length;i++)s[i].classList.toggle('hide',s[i].id!=='v-research');
@@ -22022,7 +22026,7 @@ function fbHealthColor(st){return st==='pass'?'var(--pos)':(st==='warn'?'var(--w
 function fbHealthOwns(id){
   if(id==='engine_tests')return true;                 /* tests-skipped marker concerns every board */
   if(FB.sport==='p4')return id.indexOf('p4_')===0||id==='engine_tests_p4';
-  if(FB.sport==='cfb')return id==='engine_tests_nfl'; /* the shared football engine powers the CFB v1 board */
+  if(FB.sport==='cfb')return id==='p4_roster';        /* the Rosters view renders exactly what this check verifies */
   return id.indexOf('nfl_')===0||id==='engine_tests_nfl';
 }
 function fbHealthBoardOf(id){
@@ -22033,7 +22037,7 @@ function fbHealthBoardOf(id){
 function fbHealthHTML(){
   var h=FB.health,body='',worst='pass';
   function bump(st){if(st==='fail')worst='fail';else if(st==='warn'&&worst!=='fail')worst='warn';}
-  var boardName=FB.sport==='p4'?'Power 4':(FB.sport==='cfb'?'CFB':'NFL');
+  var boardName=FB.sport==='p4'?'Power 4':(FB.sport==='cfb'?'Rosters':'NFL');
   if(!h){
     bump('warn');
     body+='<p style="margin:0 0 6px">The daily self-check has not published a run this app can read '
@@ -22060,7 +22064,7 @@ function fbHealthHTML(){
       body+='<p style="margin:0 0 6px" class="mut">Learned in that run: '+(L.p4.absorbed||0)+' of '+(L.p4.completed_in_feed||0)
         +' completed games absorbed'+(L.p4.data_through?(' (through '+fbEsc(L.p4.data_through)+')'):'')+'.</p>';
     }else if(FB.sport==='cfb'){
-      body+='<p style="margin:0 0 6px" class="mut">The daily self-check exercises the NFL and Power 4 data paths; this board’s own feed gates live on load.</p>';
+      body+='<p style="margin:0 0 6px" class="mut">The daily self-check exercises the NFL and Power 4 data paths; this Rosters view reads the same weekly ESPN sync the Power 4 talent layer uses.</p>';
     }
     ownFails.concat(ownWarns).slice(0,6).forEach(function(c){
       body+='<p style="margin:0 0 4px;color:'+fbHealthColor(c.status)+'">'+fbHealthGlyph(c.status)+' '
@@ -22102,7 +22106,11 @@ function fbHealthHTML(){
 
 /* ---- module load/render contract ---- */
 window.loadFootball=function(force,signal){
-  if(force)fbP4Reload();   /* ↻ and the auto-refresh re-run the Power 4 board too, once it has been opened */
+  if(force){
+    fbP4Reload();   /* ↻ and the auto-refresh re-run the Power 4 board too, once it has been opened */
+    /* a forced refresh also rebuilds the roster dataset (keeping the picked team) */
+    FB.espn={sel:FB.espn?FB.espn.sel:null,meta:null,bundles:null,details:null,err:null,_p:null};
+  }
   if(!force&&FB.at&&(Date.now()-FB.at)<10*60*1000){window.renderFootball();return Promise.resolve();}
   if(FB.loading)return FB.loading;
   var ban=$('fbBanner');
@@ -22111,7 +22119,8 @@ window.loadFootball=function(force,signal){
     FB.engineErr=null;
     FB.builtAt=(function(){try{return Date.parse(window.EDFootballParams.built_at)||null;}catch(_){return null;}})();
     FB._pred={};
-    return Promise.all([fbLoadNfl(signal),fbLoadCfb(signal),fbHealthLoad(signal)]);
+    /* the CFB v1 board retired with its segment; its loader no longer runs */
+    return Promise.all([fbLoadNfl(signal),fbHealthLoad(signal)]);
   }).then(function(){
     /* the daily self-check pipeline is a REAL build of this data path, so a
        clean run supersedes the offline params build date for freshness. A
@@ -22569,9 +22578,17 @@ function fbP4EspnFile(season,signal){
     return j;
   });
 }
-function fbP4EspnRosters(season,signal){
-  var S=FB.p4;
-  return fbScript('football/rosters/espn_to_bundles.js').then(function(){
+/* One shared load of the ESPN roster datasets for the whole module: the
+   Power 4 talent-layer fallback, the CFB Rosters browser and the per-game
+   head-to-head panel all read this. Fetched once, built once. */
+FB.espn={sel:null,meta:null,bundles:null,details:null,err:null,_p:null};
+function fbEspnData(signal){
+  if(FB.espn.details)return Promise.resolve(FB.espn);
+  if(FB.espn._p)return FB.espn._p;
+  var season=fbP4Season();
+  FB.espn._p=fbP4Ensure().then(function(){
+    return fbScript('football/rosters/espn_to_bundles.js');
+  }).then(function(){
     if(!window.EDEspnRosterBundles)throw new Error('bundle builder failed to load');
     return Promise.all([
       fbP4EspnFile(season,signal),
@@ -22581,13 +22598,228 @@ function fbP4EspnRosters(season,signal){
     var cur=r[0],prev=r[1];
     var built=window.EDEspnRosterBundles.build(cur,prev,window.EDCfbP4.normKey);
     if(!built||!built.teams)throw new Error('bundle build produced nothing');
-    S.roster=built.bundles;S.rosterSeason=season;
+    var byName={},k;
+    for(k in built.details)if(built.details.hasOwnProperty(k)){
+      var nm=built.details[k].team;
+      if(nm&&!byName[nm])byName[nm]=k;
+    }
+    var names=Object.keys(byName).sort().map(function(n){return {name:n,key:byName[n]};});
+    FB.espn.bundles=built.bundles;FB.espn.details=built.details;
+    FB.espn.meta={season:season,prev_season:prev?(season-1):null,teams:built.teams,
+      with_continuity:built.with_continuity,retrieved_at:cur.retrieved_at,team_names:names};
+    FB.espn.err=null;FB.espn._p=null;
+    return FB.espn;
+  }).catch(function(e){
+    FB.espn.err=(e&&e.message)||'load failed';FB.espn._p=null;throw e;
+  });
+  return FB.espn._p;
+}
+function fbP4EspnRosters(season,signal){
+  var S=FB.p4;
+  return fbEspnData(signal).then(function(E){
+    if(E.meta.season!==season)throw new Error('roster dataset season mismatch');
+    S.roster=E.bundles;S.rosterSeason=season;
     S.rosterNote='cfbfastR has not published '+season+' rosters, so rosters come from the repo’s ESPN sync: '
-      +built.teams+' FBS teams fetched '+String(cur.retrieved_at).slice(0,10)
-      +(prev?(' · continuity and portal diffed against the '+(season-1)+' ESPN rosters ('+built.with_continuity+' teams)')
-        :(' · no '+(season-1)+' dataset yet, so continuity and portal stay unavailable'))
+      +E.meta.teams+' FBS teams fetched '+String(E.meta.retrieved_at).slice(0,10)
+      +(E.meta.prev_season?(' · continuity and portal diffed against the '+E.meta.prev_season+' ESPN rosters ('+E.meta.with_continuity+' teams)')
+        :(' · no previous-season dataset yet, so continuity and portal stay unavailable'))
       +' · experience is current class mix (redshirts read young) · per-player recruiting talent remains in no public feed.';
   });
+}
+
+/* ═══ CFB ROSTERS — the Football module's middle segment ═══════════════════
+   Replaces the old CFB v1 matchup board (redundant with the Power 4 board,
+   and its schedule feed goes unpublished until the season starts). A
+   browser over the same weekly ESPN sync the Power 4 talent layer reads:
+   every FBS team's full roster, each player with an OBSERVED status —
+   returning, transfer (with the program they left), or new to the covered
+   set. Facts only; no player is rated, because production and recruiting
+   pedigree exist in no public feed this app reads. */
+var FB_GROUP_ORDER=['QB','RB','WR','TE','OL','EDGE','DL','LB','CB','S','DB','K','P','LS','RET','ATH'];
+function fbRosterStatusChip(p){
+  if(p.status==='returning')return '<span class="ec" style="color:var(--pos)">returning</span>';
+  if(p.status==='transfer')return '<span class="ec" style="color:var(--warn)">transfer · '+fbEsc(p.from||'?')+'</span>';
+  if(p.status==='new')return '<span class="ec mut">new</span>';
+  return '<span class="ec mut">status unknown</span>';
+}
+window.fbRostersPick=function(name){FB.espn.sel=name;window.renderFootball();};
+function fbRostersTeamHTML(sel){
+  var M=FB.espn.meta,key=null,i;
+  for(i=0;i<M.team_names.length;i++)if(M.team_names[i].name===sel){key=M.team_names[i].key;break;}
+  var d=key?FB.espn.details[key]:null,b=key?FB.espn.bundles[key]:null;
+  if(!d)return '<div class="empty">No roster found for '+fbEsc(sel)+'.</div>';
+  var tot=d.players.length,ret=0,tin=0,fresh=0;
+  d.players.forEach(function(p){if(p.status==='returning')ret++;else if(p.status==='transfer')tin++;else if(p.status==='new')fresh++;});
+  var html='<div class="gd-modelnote"><b>'+fbEsc(d.team)+'</b> · '+tot+' players'
+    +(d.has_prev?(' · '+ret+' returning · '+tin+' transfers in · '+fresh+' new')
+      :' · continuity unknown — this program is not in the previous season’s FBS dataset')+'</div>';
+  FB_GROUP_ORDER.forEach(function(grp){
+    var ps=d.players.filter(function(p){return p.group===grp;});
+    if(!ps.length)return;
+    var g=b&&b.by_group?b.by_group[grp]:null;
+    var hdr=grp+' · '+ps.length;
+    if(g&&g.returning_share!=null)hdr+=' · '+Math.round(g.returning_share*100)+'% returning';
+    if(g&&g.experience!=null)hdr+=' · exp '+g.experience.toFixed(2);
+    if(g&&g.transfers_in!=null)hdr+=' · portal +'+g.transfers_in+(g.transfers_out!=null?('/−'+g.transfers_out):'');
+    html+='<div class="gd-sec">'+fbEsc(hdr)+'</div>';
+    ps.sort(function(a,z){return a.name.localeCompare(z.name);});
+    ps.forEach(function(p){
+      html+='<div class="gd-line"><span class="l">'+(p.jersey?('#'+fbEsc(p.jersey)+' '):'')+fbEsc(p.name)
+        +' <span class="mut">'+fbEsc(p.pos||'')+(p.cls?(' · '+fbEsc(p.cls)):'')+'</span></span>'
+        +'<span class="v">'+fbRosterStatusChip(p)
+        +' <span class="mut">'+fbEsc([p.height,p.weight].filter(Boolean).join(' · '))+'</span></span></div>';
+    });
+  });
+  var other=d.players.filter(function(p){return !p.group;});
+  if(other.length){
+    html+='<div class="gd-sec">Other · '+other.length+'</div>';
+    other.forEach(function(p){
+      html+='<div class="gd-line"><span class="l">'+fbEsc(p.name)+' <span class="mut">'+fbEsc(p.pos||'?')+'</span></span>'
+        +'<span class="v">'+fbRosterStatusChip(p)+'</span></div>';
+    });
+  }
+  return html;
+}
+function fbRostersRender(host){
+  var html=fbHealthHTML();
+  if(FB.espn.err){
+    host.innerHTML=html+'<div class="flbanner demo">⛔ The roster sync is unreachable: '+fbEsc(FB.espn.err)
+      +'. Nothing is shown rather than something invented — refresh to retry.</div>';return;
+  }
+  if(!FB.espn.details){
+    host.innerHTML=html+'<div class="empty">Loading the FBS roster sync…</div>';
+    fbEspnData().then(function(){window.renderFootball();}).catch(function(){window.renderFootball();});
+    return;
+  }
+  var M=FB.espn.meta;
+  html+='<div class="gd-modelnote"><b>FBS rosters, player level.</b> '+M.teams+' teams from the repo’s weekly ESPN sync '
+    +'(fetched '+fbEsc(String(M.retrieved_at).slice(0,10))+'), '+M.with_continuity+' with continuity diffed against '
+    +(M.prev_season!=null?M.prev_season:'—')+'. Status is observed from athlete-id diffs: '
+    +'<span style="color:var(--pos)">returning</span> · <span style="color:var(--warn)">transfer</span> (with the program they left) · new to the covered set. '
+    +'No player is rated — production and recruiting pedigree are in no public feed. The Power 4 board’s talent layer reads these same rosters.</div>';
+  html+='<div style="margin:10px 0"><select onchange="fbRostersPick(this.value)" '
+    +'style="width:100%;background:var(--surface2);color:var(--text);border:1px solid var(--border);border-radius:9px;padding:9px 10px;font:inherit">'
+    +'<option value=""'+(FB.espn.sel?'':' selected')+' disabled>Pick a team — all '+M.team_names.length+' FBS programs</option>'
+    +M.team_names.map(function(t){
+      return '<option value="'+fbEsc(t.name)+'"'+(FB.espn.sel===t.name?' selected':'')+'>'+fbEsc(t.name)+'</option>';
+    }).join('')+'</select></div>';
+  if(FB.espn.sel)html+=fbRostersTeamHTML(FB.espn.sel);
+  else html+='<div class="empty">Pick a program above to see its full roster — or open a game on the CFB Power 4 board and hit “Rosters head-to-head”.</div>';
+  host.innerHTML=html;
+}
+
+/* ═══ Power 4 per-game ROSTERS HEAD-TO-HEAD ════════════════════════════════
+   "Who are the five people to know, and which position rooms tilt which
+   way?" Built strictly from what the roster data observes: position value
+   (EdgeDesk VIEW weights — an editorial research lens, NOT trained
+   parameters; the engine's numbers never read them), seniority (class
+   mix), returning-vs-portal status, and for transfers the seed rating of
+   the program they left. Production, snap counts and recruiting stars are
+   in no public feed, so this is a roster-construction read — never a
+   performance ranking, and it moves no model number. */
+var FB_POSW={QB:1,OL:.9,EDGE:.85,DL:.8,CB:.75,WR:.7,S:.65,LB:.65,RB:.55,TE:.55,DB:.5,ATH:.4,K:.3,P:.25,RET:.2,LS:.15};
+function fbP4Pedigree(fromKey){
+  try{
+    var seeds=window.EDCfbP4Params.rating.seed_ratings;
+    if(!fromKey||!seeds||seeds[fromKey]==null)return 0.4;   /* unrated previous program: neutral-low, not zero */
+    return Math.max(0,Math.min(1,(seeds[fromKey]+34.3)/63.1));
+  }catch(_){return 0.4;}
+}
+function fbP4Spotlight(d){
+  var out=[];
+  (d.players||[]).forEach(function(p){
+    if(!p.group)return;
+    var pw=FB_POSW[p.group]||0.3;
+    var cw=p.w==null?0.3:p.w;
+    var boost=p.status==='returning'?1:(p.status==='transfer'?(0.75+0.5*fbP4Pedigree(p.fromKey)):0.45);
+    out.push({p:p,score:pw*(0.35+0.65*cw)*boost});
+  });
+  out.sort(function(a,z){return z.score-a.score;});
+  return out.slice(0,5);
+}
+function fbP4GroupScore(g){
+  if(!g||g.returning_share==null||g.experience==null)return null;
+  return Math.round(100*(0.55*g.returning_share+0.45*g.experience));
+}
+function fbP4HthSide(name){
+  var k=window.EDCfbP4.normKey(name);
+  return {name:name,d:FB.espn.details?FB.espn.details[k]:null,b:FB.espn.bundles?FB.espn.bundles[k]:null};
+}
+var FB_CLS_ABBR={Freshman:'Fr',Sophomore:'So',Junior:'Jr',Senior:'Sr',Graduate:'Gr'};
+function fbP4WatchList(side){
+  var rows=fbP4Spotlight(side.d);
+  return rows.map(function(r,i){
+    var p=r.p;
+    var why=p.status==='returning'?'returning':(p.status==='transfer'?('transfer · '+fbEsc(p.from||'?')):(p.status==='new'?'newcomer':'status unknown'));
+    return '<div style="margin:3px 0">'+(i+1)+'. <b>'+fbEsc(p.name)+'</b> <span class="mut">'
+      +fbEsc(((FB_CLS_ABBR[p.cls]||p.cls||'')+' '+(p.pos||'')).trim())+' · '+why+'</span></div>';
+  }).join('');
+}
+window.fbP4Hth=function(id){
+  var el=document.getElementById('p4hth-'+id);if(!el)return;
+  if(el.getAttribute('data-open')){el.innerHTML='';el.removeAttribute('data-open');return;}
+  el.setAttribute('data-open','1');
+  if(!FB.espn.details){
+    el.innerHTML='<div class="gd-modelnote">Loading the roster sync…</div>';
+    fbEspnData().then(function(){
+      var e2=document.getElementById('p4hth-'+id);
+      if(e2&&e2.getAttribute('data-open'))e2.innerHTML=fbP4HthHTML(id);
+    }).catch(function(){
+      var e2=document.getElementById('p4hth-'+id);
+      if(e2&&e2.getAttribute('data-open'))e2.innerHTML='<div class="gd-modelnote">The roster sync is unreachable right now — nothing is shown rather than something invented.</div>';
+    });
+    return;
+  }
+  el.innerHTML=fbP4HthHTML(id);
+};
+function fbP4HthHTML(id){
+  var u=null;FB.p4.up.forEach(function(x){if(String(x.g.game_id)===String(id))u=x;});
+  if(!u)return '<div class="gd-modelnote">Game not on the board.</div>';
+  var g=u.g,A=fbP4HthSide(g.away_team),H=fbP4HthSide(g.home_team);
+  var html='<div class="gd-sec" style="margin-top:10px">Rosters head-to-head <span class="unproven">CONTEXT</span></div>';
+  if(!A.d&&!H.d)return html+'<div class="gd-modelnote">Neither roster is in the FBS dataset — no comparison.</div>';
+  if(!A.d||!H.d){
+    var missing=!A.d?g.away_team:g.home_team;
+    html+='<div class="gd-modelnote">'+fbEsc(missing)+' is not in the FBS roster dataset (a non-FBS opponent), so there is no player-level comparison — the engine already widens its uncertainty for this game. '
+      +fbEsc((!A.d?g.home_team:g.away_team))+'’s five to watch:</div>'
+      +'<div style="font-size:11.5px;line-height:1.5">'+fbP4WatchList(A.d?A:H)+'</div>';
+    return html;
+  }
+  html+='<div style="display:flex;gap:14px;flex-wrap:wrap;font-size:11.5px;line-height:1.5;margin-bottom:6px">'
+    +'<div style="flex:1;min-width:220px"><div class="gd-sec">'+fbEsc(g.away_team)+' — five to watch</div>'+fbP4WatchList(A)+'</div>'
+    +'<div style="flex:1;min-width:220px"><div class="gd-sec">'+fbEsc(g.home_team)+' — five to watch</div>'+fbP4WatchList(H)+'</div></div>';
+  html+='<div class="gd-sec">Position by position</div>'
+    +'<div style="display:grid;grid-template-columns:44px 1fr 120px 1fr;gap:3px 8px;font-size:11px;line-height:1.45;align-items:center">'
+    +'<span class="mut"></span><span class="mut">'+fbEsc(g.away_team)+'</span><span class="mut" style="text-align:center">advantage</span><span class="mut">'+fbEsc(g.home_team)+'</span>';
+  FB_GROUP_ORDER.forEach(function(grp){
+    if(grp==='LS'||grp==='RET')return;
+    var ga=A.b&&A.b.by_group?A.b.by_group[grp]:null;
+    var gh=H.b&&H.b.by_group?H.b.by_group[grp]:null;
+    if(!ga&&!gh)return;
+    function cell(x){
+      if(!x)return '<span class="mut">—</span>';
+      var s=x.n+' men';
+      if(x.returning_share!=null)s+=' · '+Math.round(x.returning_share*100)+'% ret';
+      if(x.experience!=null)s+=' · exp '+x.experience.toFixed(2);
+      return fbEsc(s);
+    }
+    var sa=fbP4GroupScore(ga),sh=fbP4GroupScore(gh),adv;
+    if(sa==null||sh==null)adv='<span class="mut">not graded</span>';
+    else{
+      var diff=sh-sa;
+      if(Math.abs(diff)<3)adv='<span class="mut">even</span>';
+      else{
+        var who=diff>0?g.home_team:g.away_team;
+        adv='<span style="color:var(--warn)">'+(diff>0?'▸ ':'◂ ')+fbEsc(who)+' '+(Math.abs(diff)>=8?'clear':'slight')+'</span>';
+      }
+    }
+    html+='<span class="mono" style="color:var(--dim)">'+grp+'</span><span>'+cell(ga)+'</span>'
+      +'<span style="text-align:center">'+adv+'</span><span>'+cell(gh)+'</span>';
+  });
+  html+='</div>';
+  html+='<div class="gd-modelnote" style="margin-top:6px">Roster construction only: ordered by position value (EdgeDesk view weights, not trained parameters), seniority, returning-vs-portal status and the seed rating of each transfer’s previous program. '
+    +'Group grades = 55% returning share + 45% class-mix experience. Production, snap counts and recruiting stars exist in no public feed — this is NOT a performance ranking, and no model number reads it.</div>';
+  return html;
 }
 
 /* ---- weather, keyless, joined on the venue coordinates in params.js ---- */
@@ -23043,7 +23275,9 @@ function fbP4Card(u){
         +ex.data_quality.map(function(d){return '<li>'+fbEsc(d.level.replace(/_/g,' '))+': '+fbEsc(d.text)+'</li>';}).join('')+'</ul>';
     }
   }
-  return '<div class="mdl-card">'+head+'<div style="padding:0 12px 12px">'+L+chips+why+'</div></div>';
+  var hth='<div style="margin-top:8px"><button class="btn ghost sm" onclick="fbP4Hth(\''+fbEsc(String(g.game_id))+'\')">Rosters head-to-head</button></div>'
+    +'<div id="p4hth-'+fbEsc(String(g.game_id))+'"></div>';
+  return '<div class="mdl-card">'+head+'<div style="padding:0 12px 12px">'+L+chips+why+hth+'</div></div>';
 }
 function fbP4EdgeTag(cls){
   if(!cls)return '';
@@ -23117,29 +23351,30 @@ window.renderFootball=function(){
     }
     fbP4Render(host);return;
   }
+  /* CFB Rosters: the player-level browser over the weekly ESPN sync. It has
+     its own loader and does not depend on the NFL/CFB v1 data path at all. */
+  if(FB.sport==='cfb'){
+    if(ban){ban.className='flbanner hide';ban.innerHTML='';}
+    if(ctl)ctl.style.display='none';
+    var frr=$('fbFresh');
+    if(frr)frr.textContent=(FB.espn.meta&&FB.espn.meta.retrieved_at)
+      ?('rosters synced '+String(FB.espn.meta.retrieved_at).slice(0,10)):'—';
+    fbRostersRender(host);return;
+  }
   if(FB.engineErr)return;
   if(!FB.at){host.innerHTML='<div class="empty">Loading…</div>';if(ctl)ctl.style.display='none';return;}
   var fr=$('fbFresh');if(fr)fr.textContent='engine loaded '+ago(FB.at);
   if(ban){ban.className='flbanner hide';ban.innerHTML='';}
-  var S=FB.sport==='cfb'?FB.cfb:FB.nfl;
+  /* only the NFL board remains on this path: p4 and the rosters browser
+     returned above, and the old CFB v1 matchup board was retired in favour
+     of the Power 4 board + the CFB Rosters segment */
+  var S=FB.nfl;
   if(ctl){
     if(FB.sport==='nfl'){ctl.style.display='flex';ctl.innerHTML=fbCtlHTML();}
     else{ctl.style.display='none';}
   }
   var html=fbModelCard()+fbHealthHTML();
   if(S.notes&&S.notes.length)html+='<div class="flbanner demo" style="margin-bottom:10px">'+S.notes.map(fbEsc).join('<br>')+'</div>';
-  if(FB.sport==='cfb'){
-    if(FB.cfb.gate){
-      html+='<div class="flbanner demo" style="margin-bottom:10px">'+fbEsc(FB.cfb.gate)+'</div>'+fbRatingsBoard('cfb');
-      host.innerHTML=html;return;
-    }
-    if(!S.up.length){
-      html+='<div class="empty" style="margin-bottom:12px">No FBS games inside the next '+FB_LOOKAHEAD_D+' days in the schedule feed.</div>'+fbRatingsBoard('cfb');
-      host.innerHTML=html;return;
-    }
-    html+=S.up.map(fbGameCardCfb).join('')+fbRatingsBoard('cfb');
-    host.innerHTML=html;return;
-  }
   /* NFL: scoped board — auto window, one week (predictions + grading), or season */
   if(FB.scope==='season'){
     html+=fbSeasonTableHTML()+fbRatingsBoard('nfl');
