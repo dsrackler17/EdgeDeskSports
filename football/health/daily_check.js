@@ -267,8 +267,12 @@ async function nflSection(out) {
     if (!p || p.status !== 'PREDICTED') continue;
     predicted++;
     const m = p.model;
+    /* a null total is the engine DECLARING the number unavailable, which is
+       its honest state — only a total that is present and outside bounds
+       (or NaN) is insane. isFinite(null) is true in JS, so null must be
+       excluded explicitly or it reads as a 0-point total. */
     if (!isFinite(m.fair_spread) || Math.abs(m.fair_spread) > 30
-      || !isFinite(m.fair_total) || m.fair_total < 20 || m.fair_total > 80
+      || (m.fair_total != null && (!isFinite(m.fair_total) || m.fair_total < 20 || m.fair_total > 80))
       || !(m.home_win_prob >= 0) || !(m.home_win_prob <= 1)) {
       insane.push(`${g.away_team} @ ${g.home_team}: spread ${r2(m.fair_spread)}, total ${r2(m.fair_total)}, p ${r2(m.home_win_prob)}`);
     }
@@ -432,8 +436,16 @@ async function p4Section(out) {
     if (!p || p.status !== 'PREDICTED') continue;
     predicted++;
     const m = p.model;
-    if (!isFinite(m.fair_spread) || Math.abs(m.fair_spread) > 45
-      || !isFinite(m.fair_total) || m.fair_total < 20 || m.fair_total > 100
+    /* Two honest cases the first run flagged as insane, wrongly:
+       - fair_total is null for an FCS opponent (no scoring profile) — that
+         is the engine declaring the number unavailable, not a bad number;
+         and isFinite(null) is true in JS, so null must be excluded
+         explicitly or it reads as a 0-point total.
+       - the seeds span roughly +29 to the −28 FCS prior, so a real FCS
+         blowout projects near 60 points; the bound has to sit above that
+         (it catches NaN and sign flips, not honest mismatches). */
+    if (!isFinite(m.fair_spread) || Math.abs(m.fair_spread) > 65
+      || (m.fair_total != null && (!isFinite(m.fair_total) || m.fair_total < 20 || m.fair_total > 100))
       || !(m.home_win_prob >= 0) || !(m.home_win_prob <= 1)) {
       insane.push(`${g.away_team} @ ${g.home_team}: spread ${r2(m.fair_spread)}, total ${r2(m.fair_total)}, p ${r2(m.home_win_prob)}`);
     }
