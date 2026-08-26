@@ -1773,12 +1773,25 @@
     }
     if (counters.length < 3 && L.uncertainty.context
         && L.uncertainty.context.information_missing > 0.4) {
+      /* Name what is ACTUALLY missing, mirroring the information_missing
+         probes — a canned list claimed "no roster context" even when the
+         caller supplied full rosters, which was a lie once it did. */
+      var missBits = [];
+      if (!avail(L.offensive_line.home.continuity) || !avail(L.offensive_line.away.continuity)) missBits.push('roster');
+      if (!avail(L.qb.home.value) || !avail(L.qb.away.value)) missBits.push('starter');
+      if (!avail(L.injuries.home.points) || !avail(L.injuries.away.points)) missBits.push('injury');
+      if (!avail(L.situation.schedule_home) || !avail(L.situation.schedule_away)) missBits.push('schedule');
+      if (!avail(L.talent.home.overall) || !avail(L.talent.away.overall)) missBits.push('per-player talent');
+      var missTxt = missBits.length
+        ? ('no ' + (missBits.length > 1
+            ? missBits.slice(0, -1).join(', ') + ' or ' + missBits[missBits.length - 1]
+            : missBits[0]) + ' context reached it')
+        : 'several of its inputs were unavailable';
       counters.push({ key: 'information_missing', widening_pct: null,
         text: 'The projection could be wrong because '
           + Math.round(100 * L.uncertainty.context.information_missing)
-          + '% of the model’s own input contract was empty for this game — no roster, '
-          + 'starter, injury or schedule context reached it, so the number is a team-strength '
-          + 'read and little more.' });
+          + '% of the model’s own input contract was empty for this game — ' + missTxt
+          + ', so the number leans on team strength more than it should.' });
     }
     if (counters.length < 3 && o.market.spread_gap != null && Math.abs(o.market.spread_gap) >= 3) {
       counters.push({ key: 'market_disagreement', widening_pct: null,
