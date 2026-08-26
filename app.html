@@ -2461,9 +2461,18 @@ function calSvg(filled){
 
 /* ===== De-vig engine (two-way) for method-disagreement. Real math, ready now;
    the panel self-gates until capture stores the raw two-way Pinnacle price. ===== */
-function devigMult(qs){var s=qs.reduce(function(a,b){return a+b;},0);return qs.map(function(q){return q/s;});}
-function devigPower(qs){var lo=0.5,hi=12;function sum(k){return qs.reduce(function(a,q){return a+Math.pow(q,k);},0);}for(var i=0;i<60;i++){var m=(lo+hi)/2;if(sum(m)>1)lo=m;else hi=m;}var k=(lo+hi)/2;return qs.map(function(q){return Math.pow(q,k);});}
-function devigShin(qs){var O=qs.reduce(function(a,b){return a+b;},0);function P(z){return qs.map(function(q){return (Math.sqrt(z*z+4*(1-z)*q*q/O)-z)/(2*(1-z));});}function sum(z){return P(z).reduce(function(a,b){return a+b;},0);}var lo=0,hi=0.9;for(var i=0;i<80;i++){var m=(lo+hi)/2;if(sum(m)>1)lo=m;else hi=m;}return P((lo+hi)/2);}
+/* ONE authoritative de-vig implementation: GE.devig (defined below). These three
+   wrappers previously carried a SECOND, independently-written copy of the multiplicative
+   / power / Shin math with different solver bounds (power k in [0.5,12] vs GE's [0.5,6];
+   Shin z in [0,0.9] vs GE's [1e-6,0.5]). They were proven numerically equivalent to GE
+   across every realistic two-way market (max divergence 9e-11 — see the devig-equivalence
+   test), so rather than maintain two engines that could drift, they now DELEGATE to
+   GE.devig. Same Shin/power/multiplicative methodology, one deterministic source of truth.
+   Their one caller (methodFairBetSide -> the gated method-sensitivity panel) passes raw
+   implied probs (qs = 1/dec); GE.devig re-derives q from decimals, so hand it 1/q back. */
+function devigMult(qs){return GE.devig(qs.map(function(q){return 1/q;}),'multiplicative');}
+function devigPower(qs){return GE.devig(qs.map(function(q){return 1/q;}),'power');}
+function devigShin(qs){return GE.devig(qs.map(function(q){return 1/q;}),'shin');}
 function methodFairBetSide(d1,d2){var qs=[1/d1,1/d2];var m=devigMult(qs)[0],p=devigPower(qs)[0],s=devigShin(qs)[0];var mn=Math.min(m,p,s),mx=Math.max(m,p,s);return {mult:m,power:p,shin:s,spread:mx-mn};}
 async function renderMethodSensitivity(){
   var host=$('recMethod');if(!host)return;
@@ -2604,13 +2613,29 @@ function anchorNote(e){var a=anchorOf(e);
    so on the page rather than print "95%" and hope nobody checks the instrument.
    ======================================================================== */
 var BOOT_ITERS=2000;
+/* DETERMINISTIC resampling for the bootstrap. The confidence interval is a displayed
+   ANALYTIC — the same graded rows must always produce the same interval, not a number
+   that jitters on every render. Math.random() made it non-reproducible (and therefore
+   non-auditable: two people reading the same Record page saw different CIs). The
+   methodology is UNCHANGED — percentile bootstrap, BOOT_ITERS resamples with replacement,
+   2.5th/97.5th percentiles — only the entropy source changes: a PRNG seeded from the data
+   itself (mulberry32 over an FNV-1a hash of the values), so the interval is a stable,
+   reproducible function of its input. This is not seeding for its own sake: a bootstrap
+   is a resampling estimate of sampling uncertainty, and the DISPLAY of that estimate
+   should be a deterministic function of the sample. */
+function _fnv1a(s){var h=2166136261>>>0;for(var i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619);}return h>>>0;}
+function _mulberry32(a){a=a>>>0;return function(){a=(a+0x6D2B79F5)>>>0;var t=Math.imul(a^(a>>>15),1|a);t=(t+Math.imul(t^(t>>>7),61|t))^t;return ((t^(t>>>14))>>>0)/4294967296;};}
 function bootCI(arr,iters){
   var n=arr.length;if(n<2)return null;
   iters=iters||BOOT_ITERS;
+  /* seed from the sample: length + the values (fixed precision so tiny float noise
+     does not change the seed) → identical input always yields the identical interval. */
+  var seedStr=n+'|';for(var k=0;k<n;k++)seedStr+=(+arr[k]).toFixed(6)+',';
+  var rnd=_mulberry32(_fnv1a(seedStr));
   var means=new Float64Array(iters);
   for(var b=0;b<iters;b++){
     var s=0;
-    for(var i=0;i<n;i++)s+=arr[(Math.random()*n)|0];
+    for(var i=0;i<n;i++)s+=arr[(rnd()*n)|0];
     means[b]=s/n;
   }
   var srt=Array.prototype.slice.call(means).sort(function(a,b){return a-b;});
@@ -2765,6 +2790,14 @@ function $(id){return document.getElementById(id);}
    is safe inside single-quoted HTML attributes too. Non-quantitative: it only
    escapes display strings and never touches a computed number. */
 function edEsc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+/* Canonical HTML-text/attribute escaper for the &<>" set (does NOT touch the single
+   quote). This is the ONE implementation behind the file's five historically-duplicated
+   escapers — rsEsc/recEsc/flEsc/stEsc/fbEsc — which now all delegate here. It is kept
+   deliberately distinct from edEsc: several call sites (e.g. the __brief re-run buttons)
+   sit a value inside a SINGLE-QUOTED JS string in an inline handler and escape the quote
+   themselves afterwards, so an escaper that turned ' into &#39; would break them. String-
+   coercion also fixes the old flEsc/stEsc (s||'') bug that threw on a numeric argument. */
+function _escHtml(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
 /* Safe payload for a value that will sit inside a SINGLE-QUOTED JavaScript
    string inside an inline handler attribute, e.g. onclick="f('HERE')". Escapes
    the backslash and single quote for the JS-string layer, then HTML-escapes for
@@ -2971,7 +3004,7 @@ researchRegister({id:'lab',label:'Lab',schema:'public',cadenceMs:null,
    string. Nothing here stubs, guesses, or fills in a model's record. */
 /* Escapes for innerHTML without changing what a value stringifies to: callers
    pass (''+v) so null/undefined keep rendering exactly as they do today. */
-function rsEsc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function rsEsc(s){return _escHtml(s);}   /* delegates to the canonical escaper (was a duplicate &<>" impl) */
 var RS_TIER={
   T0:{l:'Observed',c:'rs-t0',d:'A recorded fact from the source feed. Nothing is estimated or modeled.'},
   T1:{l:'Estimated',c:'rs-t1',d:'An estimate built from historical rates over a stated sample. It describes the past, not the future.'},
@@ -3750,13 +3783,22 @@ function moveLabel(e){
   if(d>=0.02)return{cls:'mv-drift',txt:'drifting (market fading it)'};
   return{cls:'mv-flat',txt:'flat since first seen'};
 }
+var LOAD_EDGES_GEN=0, LOAD_EDGES_BUSY=false;
 async function loadEdges(){
+  /* Race guard. The 60s auto-refresh, the manual refresh button and pgOnUnlock can all
+     call this concurrently. A generation token makes the LATEST call the only one that
+     commits the primary board (EDGES) and paints, so a slow older response can never
+     overwrite newer state or repaint stale prices. LOAD_EDGES_BUSY additionally stops
+     the interval from stacking a second load on top of one already in flight. */
+  var _gen=++LOAD_EDGES_GEN; LOAD_EDGES_BUSY=true;
   try{
     await loadWeights();
     var nowIso=new Date().toISOString();
     var horizonIso=new Date(Date.now()+14*24*3600*1000).toISOString(); // widened so far-out openers load; per-sport horizon applied at render
     /* ACTIVE BOARD — flagged signals only. See BOARD_FLAG_FILTER. */
-    EDGES=await sbGet('signals?select=event_id,sport_title,sport_key,market,selection,point,best_dec,first_best_dec,best_book,sharp_fair,consensus_fair,edge,n_books,n_books_eff,commence_time,home_team,away_team,last_seen_at,has_sharp,corrob_n,corrob_ref,corrob_levels,is_fav,'+BOARD_FLAG_COLS+'&'+BOARD_FLAG_FILTER+'&commence_time=gte.'+nowIso+'&commence_time=lte.'+horizonIso+'&edge=gt.0&order=edge.desc&limit=600');
+    var _edgesFetched=await sbGet('signals?select=event_id,sport_title,sport_key,market,selection,point,best_dec,first_best_dec,best_book,sharp_fair,consensus_fair,edge,n_books,n_books_eff,commence_time,home_team,away_team,last_seen_at,has_sharp,corrob_n,corrob_ref,corrob_levels,is_fav,'+BOARD_FLAG_COLS+'&'+BOARD_FLAG_FILTER+'&commence_time=gte.'+nowIso+'&commence_time=lte.'+horizonIso+'&edge=gt.0&order=edge.desc&limit=600');
+    if(_gen!==LOAD_EDGES_GEN)return;                 // superseded by a newer load — never clobber EDGES with a stale response
+    EDGES=_edgesFetched;
     /* BOTH guards, and the second one is not redundant. capture cannot flag a
        lay market today — backable() refuses it before flaggable() runs. But
        phase C is guarded on `flagged_at IS NULL`, so a row flagged by an OLDER
@@ -3824,11 +3866,13 @@ async function loadEdges(){
     try{var cq=await sbGet('signals?select=event_id,sport_title,sport_key,market,selection,point,best_dec,first_best_dec,first_seen_at,best_book,sharp_fair,consensus_fair,edge,n_books,n_books_eff,commence_time,home_team,away_team,last_seen_at,has_sharp,corrob_n,corrob_ref,corrob_levels,is_fav,'+BOARD_FLAG_COLS+'&'+BOARD_FLAG_FILTER+'&consensus_fair=not.is.null&n_books=gte.'+MINBOOKS+'&commence_time=gte.'+nowIso+'&commence_time=lte.'+horizonIso+'&limit=900');window.CONS_POOL=onlyFlagged(cq);}catch(_){window.CONS_POOL=[];}
     await resolveModelMeta();
     await loadSliceStats();
+    if(_gen!==LOAD_EDGES_GEN)return;                 // a newer load started — let it paint, don't repaint stale data
     renderEdges();
     renderDaily();
     renderQuickAdd();
     renderEngineSections();
   }catch(e){$('dbPill').textContent='DB error';$('dbPill').className='pill err';setStale(0);$('feed').innerHTML='<div class="empty">Could not reach the database: '+e.message+'</div>';$('leadWrap').classList.add('hide');}
+  finally{ if(_gen===LOAD_EDGES_GEN) LOAD_EDGES_BUSY=false; }   // only the latest load clears the in-flight flag
 }
 /* ===== BOARDS tab: MLB elimination watch + all real odds, de-vigged ===== */
 function flImpl(a){return a>=0?100/(a+100):-a/(-a+100);}
@@ -4907,7 +4951,7 @@ function recPc0(v,dp){if(v==null||isNaN(v))return '\u2014';dp=dp==null?1:dp;retu
 function recCls(v){return v==null||isNaN(v)?'rmut':(v>0?'rpos':(v<0?'rneg':'rmut'));}
 function recD(ts){if(!ts)return '\u2014';var d=new Date(ts);if(isNaN(d))return '\u2014';return (d.getMonth()+1)+'/'+d.getDate()+'/'+String(d.getFullYear()).slice(2);}
 function recDT(ts){if(!ts)return '\u2014';var d=new Date(ts);if(isNaN(d))return '\u2014';return d.toLocaleString([],{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});}
-function recEsc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function recEsc(s){return _escHtml(s);}   /* delegates to the canonical escaper (was a duplicate &<>" impl) */
 function recMean(a){if(!a.length)return null;var s=0;for(var i=0;i<a.length;i++)s+=a[i];return s/a.length;}
 function recPearson(xs,ys){var n=xs.length;if(n<3)return null;var mx=recMean(xs),my=recMean(ys),sxy=0,sxx=0,syy=0;for(var i=0;i<n;i++){var dx=xs[i]-mx,dy=ys[i]-my;sxy+=dx*dy;sxx+=dx*dx;syy+=dy*dy;}if(!sxx||!syy)return null;return sxy/Math.sqrt(sxx*syy);}
 function recDownload(name,mime,content){try{var blob=new Blob([content],{type:mime});var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();setTimeout(function(){URL.revokeObjectURL(a.href);a.remove();},400);}catch(e){alert('Export failed: '+e.message);}}
@@ -7303,7 +7347,7 @@ async function loadFaultDetail(){
   }
   try{var g=await sbGet('golf_stats?select=*&limit=1000');(g||[]).forEach(function(r){FL_DETAIL.golf[flNormTeam(r.player||r.name)]=r;});}catch(e){}
 }
-function flEsc(s){return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function flEsc(s){return _escHtml(s);}   /* delegates to the canonical escaper; String-coercion also fixes the old (s||'') throw on numeric input */
 function flIsGolf(league){var L=(league||'').toUpperCase();return L.indexOf('GOLF')>=0||L==='PGA'||L==='LIV'||L==='DPWT'||L==='PGA TOUR'||L==='LPGA';}
 /* "here's why" — decompose a golf projection into its REAL drivers (no fabricated factors) */
 function xrow(label,val,note,est){return '<div class="xw-row"><span class="xw-l">'+flEsc(label)+(est?' <span class="xw-est">est</span>':'')+'</span><span class="xw-v">'+flEsc(val)+'</span>'+(note?'<span class="xw-n">'+flEsc(note)+'</span>':'')+'</div>';}
@@ -7723,7 +7767,7 @@ var ST_CATORDER=['points','passing','rushing','receiving','hr','rbi','era','whip
 var ST_ASC={era:1,whip:1};  /* lower is better — sort these leaderboards ascending */
 function stFmt(v){v=+v;if(!isFinite(v))return '';return (v%1===0)?v.toLocaleString():v.toFixed(1);}
 function stLeadNum(s){if(!s)return -1;var m=String(s).replace(/,/g,'').match(/-?\d+(\.\d+)?/);return m?parseFloat(m[0]):-1;}
-function stEsc(s){return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function stEsc(s){return _escHtml(s);}   /* delegates to the canonical escaper; String-coercion also fixes the old (s||'') throw on numeric input */
 function stKey(r){return (r.league||'')+'|'+(r.team||'')+'|'+(r.player||'');}
 async function stFetchAll(tableSelect,orderBy,signal){return rsFetchAll(null,tableSelect,orderBy||'player',60,signal);}
 async function loadStats(force,signal){
@@ -9215,6 +9259,30 @@ function ufcClvHTML(g) {
 
 
 
+/* Per-user data ownership guard. Logout clears everything, but it cannot cover the
+   SWITCH-WITHOUT-LOGOUT case: if user B signs in on index.html while user A never
+   signed out, app.html boots with B's session yet A's per-user browser state (the
+   edgedesk_bets ledger, saved research, prefs, favourites) is still present. This
+   stamps the owning uid and, on any boot where the session's uid differs from the
+   stored owner, purges every per-user key (everything under edgedesk_ except the
+   session and this marker) so B can never inherit A's private state. Runs BEFORE
+   the first read of per-user data below. */
+function edEnforceOwner(){
+  try{
+    var u=(typeof edUser==='function')?edUser():null;
+    var uid=(u&&u.id)?String(u.id):null;
+    if(!uid)return;                         // no identifiable user — leave state untouched
+    var owner=null; try{owner=localStorage.getItem('edgedesk_owner');}catch(_){}
+    if(owner&&owner!==uid){
+      var kill=[];
+      for(var i=0;i<localStorage.length;i++){var k=localStorage.key(i);
+        if(k&&k.indexOf('edgedesk_')===0&&k!=='edgedesk_session'&&k!=='edgedesk_owner')kill.push(k);}
+      kill.forEach(function(k){try{localStorage.removeItem(k);}catch(_){}});
+    }
+    if(owner!==uid){try{localStorage.setItem('edgedesk_owner',uid);}catch(_){}}
+  }catch(_){}
+}
+edEnforceOwner();
 renderLedger();loadEdges();
 /* refresh buttons — wired in JS (not inline) with a visible spin so they never feel dead.
    The spin is hard-capped: it ALWAYS stops within ~900ms whether the fetch resolves,
@@ -9244,7 +9312,7 @@ function edSignOut(){
   location.replace('./index.html');
 }
 setInterval(function(){try{edToken();}catch(_){}},10*60*1000);   // keep the session alive
-setInterval(function(){var on=!$('v-edges').classList.contains('hide');if(on)loadEdges();
+setInterval(function(){var on=!$('v-edges').classList.contains('hide');if(on&&!LOAD_EDGES_BUSY)loadEdges();   // don't stack a refresh on a load already in flight
   if(!$('v-faults').classList.contains('hide'))loadFaults();
   if(!$('v-news').classList.contains('hide'))loadNews();
   if(!$('v-ledger').classList.contains('hide'))autoSettle().then(refreshLiveCLV).then(function(){renderLedger();});},60000);
@@ -21597,7 +21665,7 @@ function FB_URL_STW(y){return 'https://github.com/nflverse/nflverse-data/release
 function FB_URL_CFB(y){return 'https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/schedules/csv/cfb_schedules_'+y+'.csv';}
 var FB_NFL_NAMES={'Arizona Cardinals':'ARI','Atlanta Falcons':'ATL','Baltimore Ravens':'BAL','Buffalo Bills':'BUF','Carolina Panthers':'CAR','Chicago Bears':'CHI','Cincinnati Bengals':'CIN','Cleveland Browns':'CLE','Dallas Cowboys':'DAL','Denver Broncos':'DEN','Detroit Lions':'DET','Green Bay Packers':'GB','Houston Texans':'HOU','Indianapolis Colts':'IND','Jacksonville Jaguars':'JAX','Kansas City Chiefs':'KC','Los Angeles Rams':'LA','Los Angeles Chargers':'LAC','Las Vegas Raiders':'LV','Miami Dolphins':'MIA','Minnesota Vikings':'MIN','New England Patriots':'NE','New Orleans Saints':'NO','New York Giants':'NYG','New York Jets':'NYJ','Philadelphia Eagles':'PHI','Pittsburgh Steelers':'PIT','Seattle Seahawks':'SEA','San Francisco 49ers':'SF','Tampa Bay Buccaneers':'TB','Tennessee Titans':'TEN','Washington Commanders':'WAS'};
 var FB_CODE_NAMES={};(function(){for(var k in FB_NFL_NAMES)if(FB_NFL_NAMES.hasOwnProperty(k))FB_CODE_NAMES[FB_NFL_NAMES[k]]=k;})();
-function fbEsc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function fbEsc(s){return _escHtml(s);}   /* delegates to the canonical escaper (was a duplicate &<>" impl) */
 function fbNorm(s){return String(s||'').toLowerCase().replace(/[^a-z0-9]/g,'');}
 /* null/'' MUST come back null, not 0: +null===0, and a 0 here is a real value
    (0°F, a pick'em line) that the engine will believe. */
