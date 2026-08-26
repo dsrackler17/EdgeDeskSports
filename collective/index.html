@@ -3124,14 +3124,22 @@ async function renderCreatorDash(view,me){
     }
     function slatePaintPrev(){
       var built=slateBuildRows($('slSeason').value,$('slWeek').value);
-      var head=['Game','Date','Spread','Total','Home win %','Pick'];
+      /* Two statements of the same number, both labelled. The wire stores the
+         HOME side, so a creator whose file is pick-centric saw a preview full
+         of "flipped" signs sitting right next to their own sheet — correct,
+         and indistinguishable from the bug it had just fixed. The spread now
+         carries the home team's code, and the pick is read back through the
+         same pickDisp() the wall uses, so the creator's own numbers reappear
+         exactly as they wrote them. */
+      var head=['Game','Date','Spread (home side)','Total','Home win %','Pick'];
       var body=built.rows.slice(0,8).map(function(o){
+        var g={home:o.home_team,away:o.away_team};
         return '<tr><td>'+esc(o.away_team)+' @ '+esc(o.home_team)+'</td>'+
           '<td class="num">'+esc(o.kickoff.slice(0,10))+'</td>'+
-          '<td class="num">'+(o.projected_spread!==undefined?fmtSpread(o.projected_spread):'-')+'</td>'+
+          '<td class="num">'+(o.projected_spread!==undefined?esc(o.home_team)+' '+fmtSpread(o.projected_spread):'-')+'</td>'+
           '<td class="num">'+(o.projected_total!==undefined?o.projected_total:'-')+'</td>'+
           '<td class="num">'+(o.home_win_probability!==undefined?Math.round(100*o.home_win_probability)+'%':'-')+'</td>'+
-          '<td class="num">'+(o.pick_side||'-')+'</td></tr>';
+          '<td class="num">'+(o.pick_side?pickDisp(g,o):'-')+'</td></tr>';
       }).join('');
       $('slPrev').innerHTML='<label style="margin-top:10px">Preview: '+built.rows.length+' game'+(built.rows.length===1?'':'s')+(built.rows.length>8?' (first 8 shown)':'')+'</label>'+
         '<div class="tblwrap mini"><table style="min-width:0"><thead><tr>'+head.map(function(h){return '<th>'+h+'</th>';}).join('')+'</tr></thead><tbody>'+
