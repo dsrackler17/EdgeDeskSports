@@ -2945,6 +2945,9 @@ researchRegister({id:'football',label:'Football',schema:'public',cadenceMs:86400
   search:function(q){return [];},
   openEntity:null,closeEntity:null,entityOpen:null,
   freshness:function(){return {loadedAt:(window.FB&&window.FB.at)||null,builtAt:(window.FB&&window.FB.builtAt)||null};},
+  /* the pipeline ledger reads the daily self-check record the model-health
+     workflow commits (football/health.json); absent record -> no ledger */
+  pipeline:function(){return (window.FB&&window.FB.health&&window.FB.health.pipeline_meta)||null;},
   availability:function(){return null;},limitations:function(){return [];},provenance:{}});
 researchRegister({id:'ufc',label:'UFC',schema:'ufc',cadenceMs:604800000,
   load:function(force,signal){return window.loadUFC(force,signal);},
@@ -21937,8 +21940,139 @@ function fbLoadCfb(signal){
   });
 }
 
+/* ---- daily self-check record (football/health.json) --------------------
+   Written by the scheduled model-health pipeline (.github/workflows/
+   model-health.yml -> football/health/daily_check.js), which re-runs this
+   module's whole data path headless every day: engine golden tests, absorb
+   the latest completed games, project the slate, guard the lines against
+   the market. The app READS that record; it never invents one. No file
+   means the pipeline has not published a run, and the module says so. */
+function fbHealthLoad(signal){
+  return fetch('football/health.json',{signal:signal,cache:'no-store'})
+    .then(function(r){if(!r.ok)throw new Error('HTTP '+r.status);return r.json();})
+    .then(function(j){
+      if(!j||j.schema!=='edgedesk_football_health_v1')throw new Error('unrecognised schema');
+      FB.health=j;FB.healthErr=null;
+    })
+    .catch(function(e){FB.health=null;FB.healthErr=(e&&e.message)||'unreachable';});
+}
+
+/* Re-run the Power 4 board's own loader. Only once it has been opened —
+   a board nobody has looked at has nothing to keep current. */
+function fbP4Reload(){
+  if(!FB.p4.loadedAt||FB.p4._loading)return;
+  FB.p4.loadedAt=0;FB.p4.engineErr=null;
+  FB.p4._loading=fbP4LoadGuarded(true).then(function(){FB.p4._loading=null;window.renderFootball();})
+    .catch(function(){FB.p4._loading=null;window.renderFootball();});
+}
+
+/* ---- live line guard ---------------------------------------------------
+   "Are the lines right, right now?" — computed from the numbers already on
+   the board: for every upcoming game with a market number joined, the gap
+   between the model's fair spread and the market spread. A gap beyond the
+   hard bound is treated as a probable DATA FAULT (a bad join, a sign flip,
+   an FCS team absorbed as FBS) — a model disagreeing with the market by
+   20+ points is far more likely broken input than insight, and the panel
+   says so instead of presenting it as an edge. The CFB v1 board makes no
+   market claim (see fbModelCard), so it has no guard. */
+var FB_GUARD={nfl:{game:14,outlier:7,median:5},p4:{game:21,outlier:10,median:7}};
+function fbLiveLineGaps(){
+  var rows=[],lim,basis;
+  try{
+    if(FB.sport==='p4'){
+      if(!FB.p4.state||!window.EDCfbP4)return null;
+      lim=FB_GUARD.p4;basis='captured quotes, then cfb.lines';
+      FB.p4.up.forEach(function(u){
+        var mkt=fbP4Market(u);if(mkt.spread_line==null)return;
+        var p;try{p=window.EDCfbP4.projectGame(fbP4Request(u));}catch(_){return;}
+        if(!p||p.status!=='PREDICTED'||p.model.fair_spread==null||!isFinite(p.model.fair_spread))return;
+        rows.push({label:u.g.away_team+' @ '+u.g.home_team,gap:Math.abs(p.model.fair_spread-mkt.spread_line)});
+      });
+    }else if(FB.sport==='nfl'){
+      if(!FB.nfl.state||!window.EDFootball)return null;
+      lim=FB_GUARD.nfl;basis='captured quotes, then the nflverse reference number';
+      FB.nfl.up.forEach(function(u){
+        var g=u.g,mk=fbNflMarketFor(g,u.t);
+        if(mk.mkt.spread_line==null)return;
+        var p;try{p=fbPredict('nfl',fbNflGameReq(g),mk.mkt,FB.nfl.curSeason);}catch(_){return;}
+        if(!p||p.status!=='PREDICTED'||p.model.fair_spread==null||!isFinite(p.model.fair_spread))return;
+        rows.push({label:g.away_team+' @ '+g.home_team,gap:Math.abs(p.model.fair_spread-mk.mkt.spread_line)});
+      });
+    }else return null;
+  }catch(_){return null;}
+  if(!rows.length)return {n:0,basis:basis,status:'none'};
+  rows.sort(function(a,b){return b.gap-a.gap;});
+  var median=rows.slice().sort(function(a,b){return a.gap-b.gap;})[Math.floor(rows.length/2)].gap;
+  var outliers=rows.filter(function(r){return r.gap>lim.outlier;}).slice(0,5);
+  var broken=rows.filter(function(r){return r.gap>lim.game;});
+  return {n:rows.length,median:median,max:rows[0].gap,outliers:outliers,broken:broken,lim:lim,basis:basis,
+    status:broken.length?'fail':((median>lim.median||outliers.length)?'warn':'pass')};
+}
+
+/* ---- Model health panel ------------------------------------------------ */
+function fbHealthGlyph(st){return st==='pass'?'✓':(st==='warn'?'⚠':'✗');}
+function fbHealthColor(st){return st==='pass'?'var(--pos)':(st==='warn'?'var(--warn)':'var(--neg)');}
+function fbHealthHTML(){
+  var h=FB.health,body='',worst='pass';
+  function bump(st){if(st==='fail')worst='fail';else if(st==='warn'&&worst!=='fail')worst='warn';}
+  if(!h){
+    bump('warn');
+    body+='<p style="margin:0 0 6px">The daily self-check has not published a run this app can read '
+      +'(football/health.json '+(FB.healthErr?('— '+fbEsc(FB.healthErr)):'missing')+'). '
+      +'Freshness falls back to the trained parameter build date, and only the live guard below is checking anything.</p>';
+  }else{
+    var t=rsParseStamp(h.generated_at),ok=!!h.ok;
+    var fails=(h.checks||[]).filter(function(c){return c.status==='fail';});
+    var warns=(h.checks||[]).filter(function(c){return c.status==='warn';});
+    bump(ok?(warns.length?'warn':'pass'):'fail');
+    body+='<p style="margin:0 0 6px"><b style="color:'+fbHealthColor(ok?'pass':'fail')+'">'
+      +(ok?'Self-check passed':'Self-check FAILED')+'</b> — '+(h.checks||[]).length+' checks, '
+      +fails.length+' failed, '+warns.length+' warning'+(warns.length===1?'':'s')
+      +(t?(' · run '+fbEsc(ago(t))):'')
+      +(!ok&&h.last_ok_at?(' · last clean run '+fbEsc(ago(rsParseStamp(h.last_ok_at)))):'')+'</p>';
+    var L=h.learning||{};
+    var learn=[];
+    if(L.nfl)learn.push('NFL '+(L.nfl.absorbed||0)+' of '+(L.nfl.completed_in_feed||0)+' completed games absorbed'
+      +(L.nfl.data_through?(' (through '+fbEsc(L.nfl.data_through)+')'):''));
+    if(L.p4)learn.push('Power 4 '+(L.p4.absorbed||0)+' of '+(L.p4.completed_in_feed||0)+' absorbed'
+      +(L.p4.data_through?(' (through '+fbEsc(L.p4.data_through)+')'):''));
+    if(learn.length)body+='<p style="margin:0 0 6px" class="mut">Learned in that run: '+learn.join(' · ')+'.</p>';
+    fails.concat(warns).slice(0,6).forEach(function(c){
+      body+='<p style="margin:0 0 4px;color:'+fbHealthColor(c.status)+'">'+fbHealthGlyph(c.status)+' '
+        +fbEsc(c.label)+(c.detail?(' — <span class="mut">'+fbEsc(c.detail)+'</span>'):'')+'</p>';
+    });
+    if(h.checks&&h.checks.length){
+      body+='<details style="margin:4px 0 2px"><summary class="mut" style="cursor:pointer">All '
+        +h.checks.length+' checks</summary>'
+        +h.checks.map(function(c){
+          return '<p style="margin:4px 0 0"><span style="color:'+fbHealthColor(c.status)+'">'+fbHealthGlyph(c.status)
+            +'</span> '+fbEsc(c.label)+(c.detail?(' — <span class="mut">'+fbEsc(c.detail)+'</span>'):'')+'</p>';
+        }).join('')+'</details>';
+    }
+  }
+  var live=fbLiveLineGaps();
+  if(live){
+    if(live.status==='none'){
+      body+='<p style="margin:0" class="mut">Live line guard: no market number is joined to any upcoming game right now — nothing to compare.</p>';
+    }else{
+      bump(live.status);
+      body+='<p style="margin:0;color:'+(live.status==='pass'?'var(--dim)':fbHealthColor(live.status))+'">'
+        +fbHealthGlyph(live.status)+' Live line guard ('+live.n+' game'+(live.n===1?'':'s')+', '+fbEsc(live.basis)
+        +'): median model–market spread gap '+live.median.toFixed(1)+' pts, max '+live.max.toFixed(1)+'.'
+        +(live.broken.length?(' Beyond the '+live.lim.game+'-pt bound — treat as a data fault, not an edge: '
+          +live.broken.slice(0,3).map(function(r){return fbEsc(r.label)+' ('+r.gap.toFixed(1)+')';}).join(', ')+'.')
+          :(live.outliers.length?(' Largest: '+live.outliers.slice(0,3).map(function(r){return fbEsc(r.label)+' ('+r.gap.toFixed(1)+')';}).join(', ')+'.'):''))
+        +'</p>';
+    }
+  }
+  return '<div class="rs-lim" style="margin-bottom:12px;font-size:11.5px;line-height:1.55"><h4'+(worst!=='pass'?(' style="color:'+fbHealthColor(worst)+'"'):'')
+    +'>Model health · '+(worst==='pass'?'no faults detected':(worst==='warn'?'attention needed':'FAULT DETECTED'))
+    +'</h4>'+body+'</div>';
+}
+
 /* ---- module load/render contract ---- */
 window.loadFootball=function(force,signal){
+  if(force)fbP4Reload();   /* ↻ and the auto-refresh re-run the Power 4 board too, once it has been opened */
   if(!force&&FB.at&&(Date.now()-FB.at)<10*60*1000){window.renderFootball();return Promise.resolve();}
   if(FB.loading)return FB.loading;
   var ban=$('fbBanner');
@@ -21947,8 +22081,15 @@ window.loadFootball=function(force,signal){
     FB.engineErr=null;
     FB.builtAt=(function(){try{return Date.parse(window.EDFootballParams.built_at)||null;}catch(_){return null;}})();
     FB._pred={};
-    return Promise.all([fbLoadNfl(signal),fbLoadCfb(signal)]);
+    return Promise.all([fbLoadNfl(signal),fbLoadCfb(signal),fbHealthLoad(signal)]);
   }).then(function(){
+    /* the daily self-check pipeline is a REAL build of this data path, so a
+       clean run supersedes the offline params build date for freshness. A
+       failed run publishes no new clean stamp — freshness then measures from
+       the last run that passed, and a broken pipeline goes visibly stale
+       instead of quietly looking fresh. */
+    var t=FB.health?rsParseStamp(FB.health.ok?FB.health.generated_at:FB.health.last_ok_at):null;
+    if(t)FB.builtAt=Math.max(FB.builtAt||0,t);
     FB.at=Date.now();FB.loading=null;window.renderFootball();
   }).catch(function(e){
     FB.loading=null;FB.engineErr=(e&&e.message)||'load failed';
@@ -22445,7 +22586,9 @@ function fbP4IsFbs(division,teamName){
 
 function fbP4Load(force,signal){
   var S=FB.p4,E=null;
-  S.notes=[];S.gate=null;
+  /* absorbed counts THIS build of the state; without the reset a reload
+     (manual ↻ or the auto-refresh) would double-count every game */
+  S.notes=[];S.gate=null;S.absorbed=0;
   return fbP4Ensure().then(function(){
     E=window.EDCfbP4;S.engineErr=null;
     var P=window.EDCfbP4Params;
@@ -22864,7 +23007,7 @@ function fbP4Render(host){
       +'. Nothing is shown rather than something invented.</div>';return;
   }
   if(!S.loadedAt){host.innerHTML='<div class="empty">Loading the Power 4 model…</div>';return;}
-  var html=fbP4ModelCard();
+  var html=fbP4ModelCard()+fbHealthHTML();
   if(S.gate)html+='<div class="flbanner demo" style="margin-bottom:10px">'+fbEsc(S.gate)+'</div>';
   var notes=S.notes.slice();
   if(S.rosterNote)notes.push(S.rosterNote);
@@ -22911,7 +23054,7 @@ window.renderFootball=function(){
     if(FB.sport==='nfl'){ctl.style.display='flex';ctl.innerHTML=fbCtlHTML();}
     else{ctl.style.display='none';}
   }
-  var html=fbModelCard();
+  var html=fbModelCard()+fbHealthHTML();
   if(S.notes&&S.notes.length)html+='<div class="flbanner demo" style="margin-bottom:10px">'+S.notes.map(fbEsc).join('<br>')+'</div>';
   if(FB.sport==='cfb'){
     if(FB.cfb.gate){
@@ -22949,6 +23092,26 @@ window.renderFootball=function(){
   html+=fbRatingsBoard('nfl');
   host.innerHTML=html;
 };
+
+/* ---- keep the model current on its own -------------------------------
+   The loader already refetches on open once its 10-minute TTL lapses; this
+   covers the tab that stays open on the Football module for days. When the
+   loaded data is older than the re-learn interval the whole data path is
+   re-run — new completed games absorb into the ratings, the health record
+   refetches, the boards repaint — without anyone pressing ↻. Nothing runs
+   while the tab is hidden or another module is on screen; coming back to
+   the module triggers the same check instead. */
+var FB_RELEARN_MS=6*3600e3;
+function fbAutoRefresh(){
+  try{
+    if(document.hidden||window.RESEARCH_SUB!=='football')return;
+    var stale=FB.at&&(Date.now()-FB.at>FB_RELEARN_MS);
+    var p4stale=FB.p4.loadedAt&&(Date.now()-FB.p4.loadedAt>FB_RELEARN_MS);
+    if(stale||p4stale)window.researchRefresh('football');
+  }catch(_){}
+}
+setInterval(fbAutoRefresh,15*60*1000);
+document.addEventListener('visibilitychange',function(){if(!document.hidden)fbAutoRefresh();});
 })();
 /* ================= end FOOTBALL ENGINE module ================= */
 </script>

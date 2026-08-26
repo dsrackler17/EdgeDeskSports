@@ -69,6 +69,40 @@ node football/tests.js           # exit 0 = green (69 checks incl. parity golden
 node football/cfb_p4/tests.js    # exit 0 = green (65 checks incl. parity goldens)
 ```
 
+## Daily self-check & model health
+
+The models learn at runtime — every board load absorbs the latest completed
+games into the trained seeds — and a scheduled job proves that path still
+works every day:
+
+```
+node football/health/daily_check.js     # the same run the workflow does
+```
+
+`.github/workflows/model-health.yml` runs it daily (09:30 UTC, plus manual
+dispatch and on engine/params changes). It re-runs the app's whole data path
+headless: both engine test suites (python-parity goldens), the NFL and Power 4
+ingest against the live feeds, projections over the upcoming slate with sanity
+bounds, and a **line guard** that compares model fair spreads to the joined
+market numbers — a gap beyond the hard bound (14 pts NFL / 21 pts CFB) is
+flagged as a probable data fault (bad join, sign flip, FCS absorbed as FBS),
+never presented as an edge. It also says loudly when the current season is
+about to leave the engines' `trained_through + 1` window and a retrain is due.
+
+The run commits `football/health.json`. The app reads that record and nothing
+else: a clean run advances the Football module's freshness stamp (so the
+"Stale — past its expected cadence" banner clears only when the pipeline
+really ran), the per-job results render in the pipeline ledger, and every
+board shows a **Model health** panel — the daily results plus a live line
+guard computed from the numbers on screen right now. A failed run keeps the
+last clean stamp, so a broken pipeline goes visibly stale instead of quietly
+looking fresh; a missing file renders as "no published run", never invented.
+The workflow turns red on any failing check so the repo owner is notified.
+
+In the browser the module also re-runs its own load (and re-absorbs new
+results) when the tab has sat on it for 6+ hours — the model keeps itself
+current without anyone pressing refresh.
+
 ## Regenerating parameters
 
 See `research/README.md`. Parameters are trained through the 2025 season;
