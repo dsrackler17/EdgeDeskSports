@@ -1,0 +1,86 @@
+# EdgeDesk Football — daily model health & learning run.
+#
+# Every day this re-runs the SAME data path the app runs in the browser,
+# headless (football/health/daily_check.js): engine golden tests, absorb the
+# latest completed games into the trained seeds, project the upcoming slate,
+# and guard the model's lines against the joined market numbers. The result
+# is committed as football/health.json, which the app reads to drive its
+# freshness stamp, pipeline ledger and Model Health panel.
+#
+# A failing check turns this run RED (so the repo owner is notified by
+# GitHub) but the report is still committed — the app must be able to SHOW
+# the failure, never hide it. Commits made here use GITHUB_TOKEN, which does
+# not retrigger workflows, so no loop is possible.
+name: Model health & daily learning
+
+on:
+  schedule:
+    - cron: '30 9 * * *'   # daily 09:30 UTC — after the overnight nflverse/cfbfastR mirror updates
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'football/engine.js'
+      - 'football/params.js'
+      - 'football/cfb_p4/engine.js'
+      - 'football/cfb_p4/params.js'
+      - 'football/health/daily_check.js'
+      - '.github/workflows/model-health.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: model-health
+  cancel-in-progress: false
+
+jobs:
+  health:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Daily self-check & learning run
+        id: check
+        run: |
+          set +e
+          node football/health/daily_check.js --out football/health.json
+          code=$?
+          echo "exit=$code" >> "$GITHUB_OUTPUT"
+          # 1 = crashed before a report existed: nothing to publish, fail now.
+          # 0/2 = a report was written (healthy/unhealthy): publish it either way.
+          if [ "$code" -eq 1 ]; then exit 1; fi
+          exit 0
+
+      - name: Publish health record
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add football/health.json
+          if git diff --cached --quiet; then
+            echo 'health.json unchanged — nothing to publish'
+            exit 0
+          fi
+          git commit -m 'model health: daily self-check & learning run'
+          # a concurrent push to main loses the race politely, not the record
+          for i in 1 2 3 4; do
+            git push origin main && exit 0
+            git pull --rebase origin main || true
+            sleep $((2 ** i))
+          done
+          echo 'could not push the health record after 4 attempts'
+          exit 1
+
+      - name: Surface failing checks
+        if: steps.check.outputs.exit != '0'
+        run: |
+          echo 'The daily self-check recorded at least one FAILING check.'
+          echo 'The report was still committed so the app shows the failure honestly.'
+          echo 'See the "Daily self-check & learning run" step log and football/health.json.'
+          exit 1
