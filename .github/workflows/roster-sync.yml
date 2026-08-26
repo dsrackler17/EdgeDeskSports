@@ -1,0 +1,64 @@
+# EdgeDesk Football — FBS roster sync.
+#
+# Pulls the current FBS team list and every team's roster for the season
+# from ESPN's public JSON API (football/rosters/fetch_rosters.js) and
+# commits the dataset to football/rosters/. Runs weekly during the season
+# and on demand; commits use GITHUB_TOKEN, which does not retrigger
+# workflows, so no loop is possible. Fields the source does not carry stay
+# empty — nothing is invented (see the script header).
+name: Roster sync
+
+on:
+  workflow_dispatch:
+    inputs:
+      season:
+        description: 'Season year (default: current, Jan/Feb -> prior year)'
+        required: false
+        default: ''
+  schedule:
+    - cron: '0 10 * * 1'   # Mondays 10:00 UTC — after the weekend's roster moves
+
+permissions:
+  contents: write
+
+concurrency:
+  group: roster-sync
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Fetch FBS rosters
+        run: |
+          if [ -n "${{ github.event.inputs.season }}" ]; then
+            node football/rosters/fetch_rosters.js --season "${{ github.event.inputs.season }}"
+          else
+            node football/rosters/fetch_rosters.js
+          fi
+
+      - name: Commit roster dataset
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add football/rosters/*.json football/rosters/*.csv
+          if git diff --cached --quiet; then
+            echo 'rosters unchanged — nothing to commit'
+            exit 0
+          fi
+          git commit -m 'roster sync: FBS rosters from ESPN public API'
+          for i in 1 2 3 4; do
+            git push origin "${{ github.ref_name }}" && exit 0
+            git pull --rebase origin "${{ github.ref_name }}" || true
+            sleep $((2 ** i))
+          done
+          echo 'could not push the roster dataset after 4 attempts'
+          exit 1
