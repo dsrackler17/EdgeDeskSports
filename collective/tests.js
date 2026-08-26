@@ -418,6 +418,46 @@ if (typeof sandbox.teamKey === 'function') {
         && a.rows[0].home_team === 'Rutgers';
     })());
 
+  /* ---- the game id settles what a bare name cannot ---------------------
+     "LA" is the nflverse code for the Rams and a prefix of both LAR and
+     LAC, so as a name it is rightly refused. But the row carries the
+     schedule's own game id, and on 2026_01_SF_LA the home side can only be
+     the team the schedule spells LAR. The id fills only the slots the name
+     pass left open: clean names always win, so a wrong ref cannot
+     reassign a row whose names already resolve. */
+  var NFLSRV = [
+    { game_id: '2026_01_SF_LA',   label: 'SF @ LAR' },
+    { game_id: '2026_01_ARI_LAC', label: 'ARI @ LAC' }
+  ];
+  chk('LA on game 2026_01_SF_LA aligns to the schedule\'s LAR',
+    (function () {
+      var a = S.slateAlignToSchedule(NFLSRV,
+        [{ home_team: 'LA', away_team: 'SF', game_ref: '2026_01_SF_LA' }]);
+      var by = {}; a.changed.forEach(function (c) { by[c.from] = c; });
+      return a.rows[0].home_team === 'LAR' && a.rows[0].away_team === 'SF'
+        && by['LA'] && by['LA'].to === 'LAR' && by['LA'].how === 'game id'
+        && a.unresolved.length === 0;
+    })(), { got: S.slateAlignToSchedule(NFLSRV,
+      [{ home_team: 'LA', away_team: 'SF', game_ref: '2026_01_SF_LA' }]) });
+  chk('nothing is left unmatched once the id has spoken',
+    S.slateUnmatchedTeams(NFLSRV, S.slateAlignToSchedule(NFLSRV,
+      [{ home_team: 'LA',  away_team: 'SF',  game_ref: '2026_01_SF_LA' },
+       { home_team: 'LAC', away_team: 'ARI', game_ref: '2026_01_ARI_LAC' }]).rows).count === 0);
+  chk('a clean name beats a wrong game_ref',
+    (function () {
+      var a = S.slateAlignToSchedule(NFLSRV,
+        [{ home_team: 'LAC', away_team: 'ARI', game_ref: '2026_01_SF_LA' }]);
+      return a.rows[0].home_team === 'LAC' && a.rows[0].away_team === 'ARI';
+    })(),
+    'the id only fills slots the name pass could not resolve');
+  chk('without a matching id, LA stays refused rather than guessed',
+    (function () {
+      var a = S.slateAlignToSchedule(NFLSRV,
+        [{ home_team: 'LA', away_team: 'SF' }]);
+      return a.rows[0].home_team === 'LA' && a.unresolved.indexOf('LA') >= 0;
+    })(),
+    'a bare two-letter prefix of two teams is still a coin flip');
+
   /* ---- naming the missing team is only half an answer ------------------ */
   chk('a mascot suffix is recognised as the same school',
     S.teamSimilarity('TCU', 'TCU Horned Frogs') >= 0.8
@@ -635,6 +675,104 @@ if (typeof sandbox.teamKey === 'function') {
       return S.sportFamily(c) === 'CFB';
     }));
 
+  /* ---- the picked team's number, one helper for every surface ----------
+     The wire is HOME convention throughout: projected_spread is the model's
+     number for the home side, line_at_submission is the market line for the
+     home side, and pick_side says — authoritatively — which team the model
+     actually took. pickedSide()/pickDisp() are the ONLY place the display
+     layer turns that home number into the picked team's number; the wall,
+     the board and the model pages all read through them. The regression
+     being pinned: an away pick shows the EXACT INVERSE of the home number,
+     a home pick shows it unchanged, and the sign of the spread never gets
+     a vote on which side was picked. */
+  chk('the pick helpers exist and are shared',
+    typeof S.pickedSide === 'function' && typeof S.pickDisp === 'function'
+    && typeof S.pickNum === 'function' && typeof S.pickSideNorm === 'function');
+
+  var PICKS = [
+    /* away dog: invert the home number, show plus */
+    { g:{home:'SEA',away:'NE'},  mr:{pick_side:'away',projected_spread:-3.5},  want:'NE +3.5' },
+    /* home favourite: home number unchanged, stays negative */
+    { g:{home:'LA', away:'SF'},  mr:{pick_side:'home',projected_spread:-3.5},  want:'LA -3.5' },
+    { g:{home:'LAC',away:'ARI'}, mr:{pick_side:'home',projected_spread:-10.5}, want:'LAC -10.5' },
+    { g:{home:'PIT',away:'ATL'}, mr:{pick_side:'away',projected_spread:-3.0},  want:'ATL +3.0' },
+    { g:{home:'MIN',away:'GB'},  mr:{pick_side:'away',projected_spread:-1.5},  want:'GB +1.5' },
+    { g:{home:'TEN',away:'NYJ'}, mr:{pick_side:'home',projected_spread:-2.5},  want:'TEN -2.5' },
+    { g:{home:'KC', away:'DEN'}, mr:{pick_side:'away',projected_spread:-2.5},  want:'DEN +2.5' },
+    /* home dog keeps its plus */
+    { g:{home:'IND',away:'BAL'}, mr:{pick_side:'home',projected_spread:3.5},   want:'IND +3.5' },
+    /* away favourite: a POSITIVE home number inverts to minus */
+    { g:{home:'CAR',away:'CHI'}, mr:{pick_side:'away',projected_spread:2.5},   want:'CHI -2.5' },
+    /* pick'em, away side: no -0 */
+    { g:{home:'HOU',away:'BUF'}, mr:{pick_side:'away',projected_spread:0},     want:'BUF 0.0' },
+    /* college names ride the same rail, accents and all */
+    { g:{home:'USC',away:'San José State'},
+      mr:{pick_side:'away',projected_spread:-34.82}, want:'San José State +34.8' }
+  ];
+  PICKS.forEach(function (t) {
+    chk('wall shows ' + t.want + ' for ' + t.g.away + ' @ ' + t.g.home
+        + ' (' + t.mr.pick_side + ' pick on home ' + t.mr.projected_spread + ')',
+      S.pickDisp(t.g, t.mr) === t.want, { got: S.pickDisp(t.g, t.mr) });
+  });
+
+  chk('the SIGN of the spread does not pick the side',
+    (function () {
+      /* same stored number, opposite explicit sides: both must be honoured */
+      var g = { home: 'SEA', away: 'NE' };
+      return S.pickDisp(g, { pick_side: 'home', projected_spread: -3.5 }) === 'SEA -3.5'
+        && S.pickDisp(g, { pick_side: 'away', projected_spread: -3.5 }) === 'NE +3.5';
+    })());
+  chk('pick_side is read case- and whitespace-insensitively',
+    (function () {
+      var g = { home: 'SEA', away: 'NE' };
+      return S.pickDisp(g, { pick_side: 'AWAY', projected_spread: -3.5 }) === 'NE +3.5'
+        && S.pickDisp(g, { pick_side: ' Home ', projected_spread: -3.5 }) === 'SEA -3.5'
+        && S.pickSideNorm({ pick_side: 'AWAY' }) === 'away'
+        && S.pickSideNorm({ pick_side: 'neither' }) === null;
+    })(),
+    'a capitalised side used to fall through and show the home team instead');
+  chk('a number that arrives as a string is still a number',
+    S.pickDisp({ home: 'SEA', away: 'NE' },
+      { pick_side: 'away', projected_spread: '-3.5' }) === 'NE +3.5');
+  chk('with no spread of its own the market line fills in, same convention',
+    (function () {
+      var g = { home: 'SEA', away: 'NE' };
+      var p = S.pickedSide(g, { pick_side: 'away', line_at_submission: -3.5 });
+      return S.pickDisp(g, { pick_side: 'away', line_at_submission: -3.5 }) === 'NE +3.5'
+        && p.own === false && near(p.spread, 3.5);
+    })(),
+    'the fallback must not be inverted a second time anywhere upstream');
+  chk('the model\'s own number beats the market line',
+    (function () {
+      var p = S.pickedSide({ home: 'SEA', away: 'NE' },
+        { pick_side: 'away', projected_spread: -1.5, line_at_submission: -3.5 });
+      return near(p.spread, 1.5) && p.own === true;
+    })());
+  chk('an away pick\'em is 0, never -0',
+    (function () {
+      var p = S.pickedSide({ home: 'HOU', away: 'BUF' },
+        { pick_side: 'away', projected_spread: 0 });
+      return p.spread === 0 && (1 / p.spread) === Infinity;
+    })());
+  chk('no usable side falls back to the HOME team with the home number',
+    S.pickDisp({ home: 'SEA', away: 'NE' }, { projected_spread: -3.5 }) === 'SEA -3.5'
+    && S.pickDisp({ home: 'SEA', away: 'NE' },
+         { pick_side: 'NE', projected_spread: -3.5 }) === 'SEA -3.5',
+    'a side the helper cannot read must never be guessed from the sign');
+  chk('a pick with no number at all still names the picked team',
+    S.pickDisp({ home: 'SEA', away: 'NE' }, { pick_side: 'away' }) === 'NE -'
+    && S.pickDisp({ home: 'SEA', away: 'NE' }, {}) === '-');
+  chk('pickedSide names the picked team, both sides',
+    (function () {
+      var g = { home: 'SEA', away: 'NE' };
+      return S.pickedSide(g, { pick_side: 'away', projected_spread: -3.5 }).team === 'NE'
+        && S.pickedSide(g, { pick_side: 'home', projected_spread: -3.5 }).team === 'SEA';
+    })());
+  chk('the win probability flips with the picked side, case-insensitively',
+    near(S.pickProb({ pick_side: 'away', home_win_probability: 0.7 }), 0.3)
+    && near(S.pickProb({ pick_side: 'AWAY', home_win_probability: 0.7 }), 0.3)
+    && near(S.pickProb({ pick_side: 'home', home_win_probability: 0.7 }), 0.7));
+
   /* ---- percent vs probability ---------------------------------------- */
   chk('a _pct header is a percent even when its value is below 1',
     near(S.slateProb('0.9', 'spread_push_pct'), 0.009));
@@ -725,6 +863,88 @@ if (typeof sandbox.teamKey === 'function') {
       return o.cover_probability === undefined
         || (o.cover_probability >= 0 && o.cover_probability <= 1);
     }));
+
+  /* the CFB export's own-number column is HOME convention already; the
+     pick-stated conversion below must never touch it, away pick or not */
+  chk('an away pick does NOT flip a home-named spread column',
+    near(r1.projected_spread, -34.82), { got: r1.projected_spread });
+
+  /* ---- a pick-centric sheet: the column is stated from the PICK ---------
+     The file that put "NE -3.5" on the wall for a model that was on NE
+     +3.5: a creator's own sheet with pick_line (the picked team's number),
+     pick_prob (P(the pick covers)) and pick_team. Stored raw, every away
+     pick posts with its sign turned around and the wall — correctly
+     inverting away picks — shows the exact opposite of the model's number.
+     The header says whose number it is, so ingestion turns it onto the
+     home side using each row's own pick, exactly as it already did for
+     p_spread_pick_pct cover probabilities. */
+  var MOOSE = [
+    'date,game_id,season,week,away,home,pick_team,pick_side,pick_line,pick_claim,pick_prob,home_win_prob,model_total',
+    '2026-09-09,2026_01_NE_SEA,2026,1,NE,SEA,NE,away,3.5,covers,0.5258,0.6247,41.65',
+    '2026-09-10,2026_01_SF_LA,2026,1,SF,LA,LA,home,-3.5,covers,0.5239,0.6599,53.21',
+    '2026-09-13,2026_01_CHI_CAR,2026,1,CHI,CAR,CHI,away,-2.5,covers,0.6004,0.3344,45.49',
+    '2026-09-13,2026_01_BUF_HOU,2026,1,BUF,HOU,BUF,away,0,covers,0.608,0.392,42.35',
+    '2026-09-13,2026_01_NO_DET,2026,1,NO,DET,,,7,covers,0.597,0.6739,48.76'
+  ].join('\n');
+  var moose2d = parseCsv(MOOSE);
+  S.SLATE.cols = moose2d[0]; S.SLATE.rows = moose2d; S.SLATE.map = {};
+  S.slateGuessMap();
+  var mcol = function (f) { return S.SLATE.cols[S.SLATE.map[f]]; };
+
+  chk('pick_line maps to the spread field', mcol('projected_spread') === 'pick_line',
+    { got: mcol('projected_spread') });
+  chk('pick_prob maps to the cover field and is flagged pick-stated',
+    mcol('cover_probability') === 'pick_prob' && S.SLATE.coverIsPickSide === true);
+  chk('pick_team resolves the picked side', mcol('pick_side') === 'pick_team');
+  chk('model_total maps to the total', mcol('projected_total') === 'model_total');
+  chk('pick_line is in the "which is it?" list, like spread and line',
+    S.AMBIGUOUS_SPREAD.indexOf('pick_line') >= 0);
+
+  var mb = S.slateBuildRows('2026', '1');
+  var m0 = mb.rows[0], m1 = mb.rows[1], m2 = mb.rows[2], m3 = mb.rows[3], m4 = mb.rows[4];
+  chk('every Moose row builds', mb.rows.length === 5, { n: mb.rows.length });
+  chk('an away pick_line is stored as the home side\'s number',
+    m0.pick_side === 'away' && near(m0.projected_spread, -3.5),
+    { got: m0.projected_spread });
+  chk('a home pick_line is stored unchanged',
+    m1.pick_side === 'home' && near(m1.projected_spread, -3.5));
+  chk('an away FAVOURITE\'s pick_line turns positive on the home side',
+    m2.pick_side === 'away' && near(m2.projected_spread, 2.5),
+    { got: m2.projected_spread });
+  chk('an away pick\'em stores 0, never -0',
+    m3.projected_spread === 0 && (1 / m3.projected_spread) === Infinity);
+  chk('the implied line rides the converted home number',
+    near(m0.line_at_submission, -3.5), { got: m0.line_at_submission });
+  chk('a pick-stated cover probability is turned onto the home side',
+    near(m0.cover_probability, 1 - 0.5258) && near(m1.cover_probability, 0.5239),
+    { away: m0.cover_probability, home: m1.cover_probability });
+  chk('a row with no readable pick withholds the pick-stated number and says why',
+    m4.projected_spread === undefined
+    && mb.problems.some(function (p) { return /pick_line/.test(p) && /Row 6/.test(p); }),
+    { got: m4.projected_spread, problems: mb.problems });
+
+  /* the round trip that was broken: file → wire → wall */
+  chk('the wall reads Moose\'s picks back exactly as written',
+    S.pickDisp({ home: 'SEA', away: 'NE' }, m0) === 'NE +3.5'
+    && S.pickDisp({ home: 'LA', away: 'SF' }, m1) === 'LA -3.5'
+    && S.pickDisp({ home: 'CAR', away: 'CHI' }, m2) === 'CHI -2.5'
+    && S.pickDisp({ home: 'HOU', away: 'BUF' }, m3) === 'BUF 0.0',
+    { got: [S.pickDisp({ home: 'SEA', away: 'NE' }, m0),
+            S.pickDisp({ home: 'LA', away: 'SF' }, m1),
+            S.pickDisp({ home: 'CAR', away: 'CHI' }, m2),
+            S.pickDisp({ home: 'HOU', away: 'BUF' }, m3)] });
+
+  /* the conversion follows the mapping the creator actually set, not the
+     one the guesser produced: hand-move pick_line onto the market-line
+     field (the ambiguous-spread button does exactly this) and it is still
+     read as pick-stated */
+  S.SLATE.map['line_at_submission'] = S.SLATE.map['projected_spread'];
+  delete S.SLATE.map['projected_spread'];
+  var mb2 = S.slateBuildRows('2026', '1');
+  chk('a hand-remapped pick_line converts on the market-line field too',
+    near(mb2.rows[0].line_at_submission, -3.5)
+    && mb2.rows[0].projected_spread === undefined,
+    { got: mb2.rows[0].line_at_submission });
 }
 
 /* ---- report ------------------------------------------------------------ */
