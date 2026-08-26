@@ -2192,19 +2192,49 @@ function slateResolveName(byKey,team){
 function slateAlignToSchedule(games,rows){
   var byKey=slateNameIndex(games);
   if(!Object.keys(byKey).length)return {rows:rows,changed:[],ambiguous:[],unresolved:[]};
+  /* The schedule's games by their own id. A row that carries the same game
+     id IS that game, so the id can settle a spelling that name-matching
+     alone cannot: "LA" is the nflverse code for the Rams and a prefix of
+     both LAR and LAC — unresolvable as a bare name — but on game
+     2026_01_SF_LA it can only be the home side, and the schedule spells
+     that side LAR. The id fills ONLY the slots the name pass left open;
+     a name that resolves cleanly always wins, so a stale or wrong ref can
+     never overwrite a row whose names already match the schedule. */
+  var byId={};
+  (games||[]).forEach(function(g){
+    var id=String(g.game_id||g.game_ref||'').trim().toUpperCase().replace(/[^A-Z0-9_]/g,'');
+    if(!id)return;
+    var home=g.home_team||g.home,away=g.away_team||g.away;
+    if((!home||!away)&&g.label){
+      var p=String(g.label).split(/\s+@\s+|\s+at\s+/i);
+      if(p.length===2){if(!away)away=p[0].trim();if(!home)home=p[1].trim();}
+    }
+    if(home&&away)byId[id]={home_team:String(home),away_team:String(away)};
+  });
   var changed=[],ambiguous=[],unresolved=[],seen={};
   var out=(rows||[]).map(function(o){
     var c={},k;
     for(k in o)if(Object.prototype.hasOwnProperty.call(o,k))c[k]=o[k];
+    var hit=c.game_ref?byId[String(c.game_ref).trim().toUpperCase().replace(/[^A-Z0-9_]/g,'')]:null;
     ['home_team','away_team'].forEach(function(f){
       var r=slateResolveName(byKey,c[f]);
-      if(!r){if(!seen['u'+c[f]]){seen['u'+c[f]]=1;unresolved.push(c[f]);}return;}
-      if(r.ambiguous){if(!seen['a'+c[f]]){seen['a'+c[f]]=1;
-        ambiguous.push({mine:c[f],options:r.ambiguous});}return;}
-      if(r.name!==c[f]){
-        if(!seen['c'+c[f]]){seen['c'+c[f]]=1;changed.push({from:c[f],to:r.name,how:r.how});}
-        c[f]=r.name;
+      if(r&&!r.ambiguous){
+        if(r.name!==c[f]){
+          if(!seen['c'+c[f]]){seen['c'+c[f]]=1;changed.push({from:c[f],to:r.name,how:r.how});}
+          c[f]=r.name;
+        }
+        return;
       }
+      if(hit&&hit[f]){
+        if(hit[f]!==c[f]){
+          if(!seen['c'+c[f]]){seen['c'+c[f]]=1;changed.push({from:c[f],to:hit[f],how:'game id'});}
+          c[f]=hit[f];
+        }
+        return;
+      }
+      if(!r){if(!seen['u'+c[f]]){seen['u'+c[f]]=1;unresolved.push(c[f]);}return;}
+      if(!seen['a'+c[f]]){seen['a'+c[f]]=1;
+        ambiguous.push({mine:c[f],options:r.ambiguous});}
     });
     return c;
   });

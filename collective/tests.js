@@ -418,6 +418,46 @@ if (typeof sandbox.teamKey === 'function') {
         && a.rows[0].home_team === 'Rutgers';
     })());
 
+  /* ---- the game id settles what a bare name cannot ---------------------
+     "LA" is the nflverse code for the Rams and a prefix of both LAR and
+     LAC, so as a name it is rightly refused. But the row carries the
+     schedule's own game id, and on 2026_01_SF_LA the home side can only be
+     the team the schedule spells LAR. The id fills only the slots the name
+     pass left open: clean names always win, so a wrong ref cannot
+     reassign a row whose names already resolve. */
+  var NFLSRV = [
+    { game_id: '2026_01_SF_LA',   label: 'SF @ LAR' },
+    { game_id: '2026_01_ARI_LAC', label: 'ARI @ LAC' }
+  ];
+  chk('LA on game 2026_01_SF_LA aligns to the schedule\'s LAR',
+    (function () {
+      var a = S.slateAlignToSchedule(NFLSRV,
+        [{ home_team: 'LA', away_team: 'SF', game_ref: '2026_01_SF_LA' }]);
+      var by = {}; a.changed.forEach(function (c) { by[c.from] = c; });
+      return a.rows[0].home_team === 'LAR' && a.rows[0].away_team === 'SF'
+        && by['LA'] && by['LA'].to === 'LAR' && by['LA'].how === 'game id'
+        && a.unresolved.length === 0;
+    })(), { got: S.slateAlignToSchedule(NFLSRV,
+      [{ home_team: 'LA', away_team: 'SF', game_ref: '2026_01_SF_LA' }]) });
+  chk('nothing is left unmatched once the id has spoken',
+    S.slateUnmatchedTeams(NFLSRV, S.slateAlignToSchedule(NFLSRV,
+      [{ home_team: 'LA',  away_team: 'SF',  game_ref: '2026_01_SF_LA' },
+       { home_team: 'LAC', away_team: 'ARI', game_ref: '2026_01_ARI_LAC' }]).rows).count === 0);
+  chk('a clean name beats a wrong game_ref',
+    (function () {
+      var a = S.slateAlignToSchedule(NFLSRV,
+        [{ home_team: 'LAC', away_team: 'ARI', game_ref: '2026_01_SF_LA' }]);
+      return a.rows[0].home_team === 'LAC' && a.rows[0].away_team === 'ARI';
+    })(),
+    'the id only fills slots the name pass could not resolve');
+  chk('without a matching id, LA stays refused rather than guessed',
+    (function () {
+      var a = S.slateAlignToSchedule(NFLSRV,
+        [{ home_team: 'LA', away_team: 'SF' }]);
+      return a.rows[0].home_team === 'LA' && a.unresolved.indexOf('LA') >= 0;
+    })(),
+    'a bare two-letter prefix of two teams is still a coin flip');
+
   /* ---- naming the missing team is only half an answer ------------------ */
   chk('a mascot suffix is recognised as the same school',
     S.teamSimilarity('TCU', 'TCU Horned Frogs') >= 0.8
