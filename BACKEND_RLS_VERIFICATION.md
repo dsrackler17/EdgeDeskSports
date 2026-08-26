@@ -34,9 +34,32 @@ callable by clients.
 
 ---
 
-## P0 (potential — must confirm before ship)
+## UPDATE — query [A] returned: these P0s are now CONFIRMED
 
-### P0-candidate: `public.edge_call` is a service-role escalation primitive
+The execute-grant dump shows **`anon=X` and `authenticated=X`** on `public.edge_call`,
+on `collective.get_config/cfg/cfg_int/cfg_bool`, on
+`collective.settle_game/mint_invite/upsert_games`, on
+`collective.billing_upsert_subscriber/billing_post_invoice/billing_post_refund`,
+on `collective.admin_resolve_quarantine/admin_reresolve/grade_game/ingest_submission`,
+and on `public.guarantee_sweep` + the `research_*` mutators. The frontend makes no
+direct `/rpc/` calls (verified), so these grants are pure attack surface. The
+candidates below are therefore **confirmed exploitable**. Ready-to-run fix:
+**`BACKEND_FIX_ship_gate.sql`**. (Correctly locked to `service_role`/`postgres`
+only: `rotate_key`, `revoke_invite`, `mark_closing_line`, `record_market_snapshots`,
+`market_at`, and all `odds_*` — so this was an oversight on the older functions,
+not a global miss.)
+
+**Confirmed exploit chain:** anon calls `collective.get_config('admin.user_ids')`
+→ reads the admin uid → passes it as `p_admin` to `settle_game`/`mint_invite`/
+`upsert_games` → performs admin writes. Separately, anon calls
+`billing_upsert_subscriber` (no auth check) → grants itself an active Collective
+subscription and writes the payout ledger. Separately, anon calls
+`public.edge_call('settle', …)` → triggers any privileged Edge Function with the
+vault service-role key + cron secret.
+
+## P0 (CONFIRMED)
+
+### P0 #1: `public.edge_call` is a service-role escalation primitive — anon-executable
 `edge_call(slug, body, timeout_ms, query)` is `SECURITY DEFINER`, reads
 `cron_secret` **and** `service_role_key` from `vault.decrypted_secrets`, and
 `net.http_post`s to **any** `…/functions/v1/<slug>` with
@@ -195,7 +218,24 @@ Rows returned → **P0 cross-user financial exposure**. `[]` or
 
 ---
 
-## FINAL STATUS
+## FINAL STATUS (updated after query [A])
+
+**DO NOT SHIP — confirmed P0.**
+
+Query [A] confirmed `anon`/`authenticated` hold EXECUTE on `public.edge_call`, the
+`collective` admin/billing/config RPCs, and the `public` research/guarantee
+mutators. `edge_call` alone — anon-executable, hands out the vault service-role
+key with no caller check — is a critical service-role escalation and is enough on
+its own to block ship. Apply **`BACKEND_FIX_ship_gate.sql`** (revokes the client
+EXECUTE grants; safe because the frontend calls none of these directly), then
+re-run query [A] to confirm each function lists only `postgres=`/`service_role=`.
+After that, the remaining items are P1/P2 (financial-view grants — included in the
+fix; paywall consistency; `CLOSE_REQUIRE_SHARP`) and the status moves to
+**SHIP AFTER FIXES**. None of this touches `app.html`.
+
+---
+
+### (superseded) original pre-[A] status
 
 **DO NOT SHIP — pending check [A].**
 
