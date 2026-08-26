@@ -61,14 +61,20 @@
 
   /* cur/prev: parsed fbs_<season>_espn.json objects (prev may be null).
      normKey: the engine's own normaliser (EDCfbP4.normKey). Returns
-     { bundles: {key -> bundle}, teams: n, with_continuity: n }. */
+     { bundles: {key -> bundle}, details: {key -> team detail}, teams: n,
+       with_continuity: n }. `details` carries the player-level view the
+     roster browser and head-to-head panel render: each player with the
+     SAME observed status the bundles aggregate (returning / transfer with
+     origin / new-to-the-covered-set / unknown when the team itself was
+     not covered last season). */
   function build(cur, prev, normKey) {
-    var prevTeam = {}, prevPos = {}, prevKeys = {}, curTeam = {}, i, j, t, p;
+    var prevTeam = {}, prevPos = {}, prevKeys = {}, prevName = {}, curTeam = {}, i, j, t, p;
     if (prev && prev.teams) {
       for (i = 0; i < prev.teams.length; i++) {
         t = prev.teams[i];
         var pk = teamKeyOf(t, normKey);
         prevKeys[pk] = true;
+        prevName[pk] = t.location || t.display_name || '';
         for (j = 0; j < t.players.length; j++) {
           p = t.players[j];
           if (!p.espn_id) continue;
@@ -86,7 +92,7 @@
       }
     }
 
-    var bundles = {}, withCont = 0;
+    var bundles = {}, details = {}, withCont = 0;
     var source = 'ESPN rosters ' + cur.requested_season
       + (prev ? (' vs ' + prev.requested_season) : '')
       + ' (repo roster sync; experience = current class mix, redshirts read young)';
@@ -99,19 +105,29 @@
          that nobody returned. transfers_in stays real — presence on another
          covered team last season is an observation either way. */
       var hasPrev = !!(prev && prevKeys[tk]);
-      var acc = {};
+      var acc = {}, plist = [];
       for (j = 0; j < t.players.length; j++) {
         p = t.players[j];
         var grp = POS[String(p.position || '').toUpperCase()];
+        var w = CLASS_W[String(p['class'] || '').toLowerCase()];
+        var was = (prev && p.espn_id) ? prevTeam[p.espn_id] : undefined;
+        var status = !prev ? 'unknown'
+          : (was === tk ? 'returning'
+            : (was !== undefined ? 'transfer'
+              : (hasPrev ? 'new' : 'unknown')));
+        plist.push({ name: p.name, pos: p.position, group: grp || null,
+          cls: p['class'] || '', w: (w === undefined ? null : w),
+          jersey: p.jersey || '', height: p.height || '', weight: p.weight || '',
+          hometown: p.hometown || '', status: status,
+          from: status === 'transfer' ? (prevName[was] || '') : null,
+          fromKey: status === 'transfer' ? was : null });
         if (!grp) continue;
         var g = acc[grp] || (acc[grp] = { n: 0, ret: 0, tin: 0, tout: 0, expSum: 0, expN: 0 });
         g.n++;
         if (prev) {
-          var was = p.espn_id ? prevTeam[p.espn_id] : undefined;
           if (was === tk) g.ret++;
           else if (was !== undefined) g.tin++;
         }
-        var w = CLASS_W[String(p['class'] || '').toLowerCase()];
         if (w !== undefined) { g.expSum += w; g.expN++; }
       }
       /* outgoing portal: on this team last season, on another team now */
@@ -140,13 +156,14 @@
       }
       if (!any) continue;
       if (hasPrev) withCont++;
+      var detail = { team: t.location || t.display_name, has_prev: hasPrev, players: plist };
       var names = [t.location, t.display_name, t.short_name], k;
       for (j = 0; j < names.length; j++) {
         k = names[j] ? normKey(names[j]) : null;
-        if (k && !bundles[k]) bundles[k] = bundle;
+        if (k && !bundles[k]) { bundles[k] = bundle; details[k] = detail; }
       }
     }
-    return { bundles: bundles, teams: cur.teams.length, with_continuity: withCont };
+    return { bundles: bundles, details: details, teams: cur.teams.length, with_continuity: withCont };
   }
 
   var API = { build: build, POS: POS, CLASS_W: CLASS_W };
