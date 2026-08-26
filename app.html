@@ -22952,6 +22952,18 @@ function fbP4Load(force,signal){
       S.up=S.up.slice(0,30);
       if(!S.up.length)S.notes.push('No Power 4 game kicks off inside the next '+FBP4_LOOKAHEAD_D
         +' days in the '+S.schedSrc+' feed.');
+      /* per-team season index for the engine's schedule-stress layer:
+         every game a team plays this season, in kickoff order, with
+         road/opponent context. Built once per load. */
+      S.schedIdx={};
+      S.sched.rows.forEach(function(r){
+        var t=Date.parse(r.start_date);if(!isFinite(t))return;
+        var hk=fbP4Key(r.home_team),ak=fbP4Key(r.away_team);
+        if(hk)(S.schedIdx[hk]=S.schedIdx[hk]||[]).push({gid:r.game_id,t:t,road:false,oppKey:ak});
+        if(ak)(S.schedIdx[ak]=S.schedIdx[ak]||[]).push({gid:r.game_id,t:t,road:!r.neutral_site,oppKey:hk});
+      });
+      for(var sk in S.schedIdx)if(S.schedIdx.hasOwnProperty(sk))
+        S.schedIdx[sk].sort(function(a,b){return a.t-b.t;});
     });
   }).then(function(){
     return fbP4LoadRosters(FB.p4.season,signal).catch(function(){});
@@ -22970,9 +22982,10 @@ function fbP4Load(force,signal){
     return fbSignals('americanfootball_ncaaf',signal);
   }).then(function(sig){
     FB.p4.sig=sig||{};
-    /* weather is fetched only for the games actually on the board */
+    /* weather is fetched for every game on the board (open-meteo is keyless
+       and the forecast horizon covers the whole lookahead window) */
     var P=window.EDCfbP4Params,V=(P.universe&&P.universe.venues)||{};
-    var jobs=FB.p4.up.slice(0,12).map(function(u){
+    var jobs=FB.p4.up.map(function(u){
       var vk=fbP4Key(u.g.home_team),ven=V[vk]||null;
       if(u.g.neutral_site)return Promise.resolve();
       return fbP4Weather(ven,u.g.start_date).then(function(w){
@@ -23024,6 +23037,31 @@ function fbP4Market(u){
   if(out.total_line==null&&line&&line.over_under!=null){out.total_line=+line.over_under;out.book=out.book||('cfb.lines · '+(line.provider||'consensus'));}
   return out;
 }
+/* Schedule geometry for one side of one game, computed from the season
+   schedule the board already loaded plus the current rating state: rest
+   days, road stretch, and the strength of the previous and next opponent.
+   Travel miles/time zones are NOT computed (no venue-to-venue join is
+   wired) and stay absent rather than guessed. Week 1 has no prior game,
+   so rest components stay honestly unknown while lookahead is real. */
+function fbP4SchedCtx(g,which){
+  var S=FB.p4,tk=fbP4Key(which==='home'?g.home_team:g.away_team);
+  var list=S.schedIdx&&S.schedIdx[tk];if(!list||!list.length)return null;
+  var i=-1,j;for(j=0;j<list.length;j++)if(String(list[j].gid)===String(g.game_id)){i=j;break;}
+  if(i<0)return null;
+  var r=(S.state&&S.state.r)||{};
+  var prev=i>0?list[i-1]:null,next=(i+1<list.length)?list[i+1]:null;
+  var consec=0;for(j=i-1;j>=0&&list[j].road;j--)consec++;
+  var road3=0;for(j=Math.max(0,i-3);j<i;j++)if(list[j].road)road3++;
+  var out={
+    rest_days:prev?Math.round((list[i].t-prev.t)/864e5):null,
+    consecutive_road:i>0?consec:null,
+    road_last3:i>0?road3:null,
+    prev_opp_rating:(prev&&r[prev.oppKey]!=null)?r[prev.oppKey]:null,
+    next_opp_rating:(next&&r[next.oppKey]!=null)?r[next.oppKey]:null
+  };
+  var any=false,k;for(k in out)if(out.hasOwnProperty(k)&&out[k]!=null)any=true;
+  return any?out:null;
+}
 function fbP4Request(u){
   var g=u.g,P=window.EDCfbP4Params;
   var V=(P.universe&&P.universe.venues)||{};
@@ -23035,9 +23073,9 @@ function fbP4Request(u){
       home_fbs:g.home_division==='fbs',away_fbs:g.away_division==='fbs'},
     teams:{
       home:{conference:g.home_conference,roster:FB.p4.roster[hk]||null,
-        qb:null,injuries:null,news:null,coaching:null,schedule:null},
+        qb:null,injuries:null,news:null,coaching:null,schedule:fbP4SchedCtx(g,'home')},
       away:{conference:g.away_conference,roster:FB.p4.roster[ak]||null,
-        qb:null,injuries:null,news:null,coaching:null,schedule:null}
+        qb:null,injuries:null,news:null,coaching:null,schedule:fbP4SchedCtx(g,'away')}
     },
     venue:{home:V[hk]||null,away:V[ak]||null},
     weather:FB.p4.weather[g.game_id]||null,
