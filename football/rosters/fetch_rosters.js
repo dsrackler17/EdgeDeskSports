@@ -187,6 +187,13 @@ async function main() {
     teams: []
   };
 
+  /* ESPN parks all-star / exhibition placeholders inside group 80
+     ("SOUTH All-Stars", "Team Gaither", "American", …). A rosterless entry
+     matching these shapes is not a competing FBS program; it is excluded
+     and RECORDED, never silently dropped — and the pattern alone can never
+     exclude a team that actually has players. */
+  const NON_TEAM = /all-?stars|^team\s|\bstars$|^american$|^national$/i;
+  out.excluded_non_teams = [];
   let totalPlayers = 0, emptyTeams = 0, toppedUp = 0;
   for (const id of teamIds) {
     let meta = {}, err = null, players = [], reported = null;
@@ -228,6 +235,13 @@ async function main() {
     } catch (e) { err = (e && e.message) || 'fetch failed'; }
 
     players.sort((x, y) => x.name.localeCompare(y.name));
+    const name = meta.display_name || String(id);
+    if (!players.length && NON_TEAM.test(name)) {
+      out.excluded_non_teams.push({ espn_id: S(id), display_name: name });
+      console.log(`${name}: excluded — all-star/exhibition placeholder with no roster`);
+      await sleep(150);
+      continue;
+    }
     out.teams.push({
       espn_id: S(id), ...meta,
       season_reported: reported != null ? reported : null,
@@ -239,14 +253,15 @@ async function main() {
     });
     totalPlayers += players.length;
     if (!players.length) emptyTeams++;
-    console.log(`${meta.display_name || id}: site ${siteCount} · core ${coreCount} · merged ${players.length}`
+    console.log(`${name}: site ${siteCount} · core ${coreCount} · merged ${players.length}`
       + (reported != null && reported !== season ? ` (API reports season ${reported}!)` : '')
       + (err ? ` FETCH ERROR: ${err}` : ''));
     await sleep(150);
   }
-  console.log(`total ${totalPlayers} players · ${toppedUp} recovered past the site cap · ${emptyTeams} empty teams`);
+  out.team_count = out.teams.length;
+  console.log(`total ${totalPlayers} players · ${toppedUp} recovered past the site cap · ${emptyTeams} empty teams · ${out.excluded_non_teams.length} placeholders excluded`);
   if (totalPlayers < 12000) throw new Error(`dataset too small for FBS (${totalPlayers} players — expected ~14k)`);
-  if (emptyTeams > 5) throw new Error(`${emptyTeams} FBS teams came back empty — refusing to commit a hollow dataset`);
+  if (emptyTeams > 2) throw new Error(`${emptyTeams} FBS teams came back empty — refusing to commit a hollow dataset`);
 
   fs.writeFileSync(path.join(OUT_DIR, `fbs_${season}_espn.json`), JSON.stringify(out, null, 1) + '\n');
 
