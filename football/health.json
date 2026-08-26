@@ -1,8 +1,8 @@
 {
   "schema": "edgedesk_football_health_v1",
-  "generated_at": "2026-08-26T17:06:41.403Z",
-  "ok": false,
-  "last_ok_at": null,
+  "generated_at": "2026-08-26T17:24:39.735Z",
+  "ok": true,
+  "last_ok_at": "2026-08-26T17:24:39.735Z",
   "run": {
     "trigger": "push",
     "runner": "github-actions",
@@ -143,8 +143,8 @@
     {
       "id": "p4_projections",
       "label": "CFB P4: upcoming slate projects to sane numbers",
-      "status": "fail",
-      "detail": "Massachusetts @ Rutgers: spread 46.33, total 53.59, p 1; Bethune-Cookman @ UCF: spread 27.63, total null, p 0.96; Eastern Illinois @ Minnesota: spread 30.77, total null, p 0.98; Arkansas-Pine Bluff @ Missouri: spread 37.23, total null, p 0.99; Idaho @ Utah: spread 44.4, total null, p 1"
+      "status": "pass",
+      "detail": "30/30 upcoming P4 games PREDICTED, all inside bounds"
     },
     {
       "id": "p4_lines_market",
@@ -160,17 +160,19 @@
     }
   ],
   "pipeline_meta": {
-    "daily_check_last_run": "2026-08-26T17:06:41.403Z",
-    "daily_check_last_status": "error",
-    "engine_tests_last_run": "2026-08-26T17:06:41.403Z",
+    "daily_check_last_run": "2026-08-26T17:24:39.735Z",
+    "daily_check_last_status": "ok",
+    "engine_tests_last_run": "2026-08-26T17:24:39.735Z",
     "engine_tests_last_status": "ok",
-    "nfl_ingest_last_run": "2026-08-26T17:06:41.403Z",
+    "nfl_ingest_last_run": "2026-08-26T17:24:39.735Z",
     "nfl_ingest_last_status": "ok",
     "row_count_nfl_ingest": 0,
-    "p4_ingest_last_run": "2026-08-26T17:06:41.403Z",
-    "p4_ingest_last_status": "error",
+    "p4_ingest_last_run": "2026-08-26T17:24:39.735Z",
+    "p4_ingest_last_status": "ok",
     "row_count_p4_ingest": 0,
-    "line_guard_last_run": "2026-08-26T17:06:41.403Z",
+    "projection_guard_last_run": "2026-08-26T17:24:39.735Z",
+    "projection_guard_last_status": "ok",
+    "line_guard_last_run": "2026-08-26T17:24:39.735Z",
     "line_guard_last_status": "ok",
     "row_count_line_guard": 21
   }
