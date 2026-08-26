@@ -267,8 +267,12 @@ async function nflSection(out) {
     if (!p || p.status !== 'PREDICTED') continue;
     predicted++;
     const m = p.model;
+    /* a null total is the engine DECLARING the number unavailable, which is
+       its honest state — only a total that is present and outside bounds
+       (or NaN) is insane. isFinite(null) is true in JS, so null must be
+       excluded explicitly or it reads as a 0-point total. */
     if (!isFinite(m.fair_spread) || Math.abs(m.fair_spread) > 30
-      || !isFinite(m.fair_total) || m.fair_total < 20 || m.fair_total > 80
+      || (m.fair_total != null && (!isFinite(m.fair_total) || m.fair_total < 20 || m.fair_total > 80))
       || !(m.home_win_prob >= 0) || !(m.home_win_prob <= 1)) {
       insane.push(`${g.away_team} @ ${g.home_team}: spread ${r2(m.fair_spread)}, total ${r2(m.fair_total)}, p ${r2(m.home_win_prob)}`);
     }
@@ -432,8 +436,16 @@ async function p4Section(out) {
     if (!p || p.status !== 'PREDICTED') continue;
     predicted++;
     const m = p.model;
-    if (!isFinite(m.fair_spread) || Math.abs(m.fair_spread) > 45
-      || !isFinite(m.fair_total) || m.fair_total < 20 || m.fair_total > 100
+    /* Two honest cases the first run flagged as insane, wrongly:
+       - fair_total is null for an FCS opponent (no scoring profile) — that
+         is the engine declaring the number unavailable, not a bad number;
+         and isFinite(null) is true in JS, so null must be excluded
+         explicitly or it reads as a 0-point total.
+       - the seeds span roughly +29 to the −28 FCS prior, so a real FCS
+         blowout projects near 60 points; the bound has to sit above that
+         (it catches NaN and sign flips, not honest mismatches). */
+    if (!isFinite(m.fair_spread) || Math.abs(m.fair_spread) > 65
+      || (m.fair_total != null && (!isFinite(m.fair_total) || m.fair_total < 20 || m.fair_total > 100))
       || !(m.home_win_prob >= 0) || !(m.home_win_prob <= 1)) {
       insane.push(`${g.away_team} @ ${g.home_team}: spread ${r2(m.fair_spread)}, total ${r2(m.fair_total)}, p ${r2(m.home_win_prob)}`);
     }
@@ -496,19 +508,24 @@ async function main() {
   out.ok = !overallFail;
   if (out.ok) out.last_ok_at = now;
 
+  /* each ledger row reports ONLY its own checks — a projection-bound fault
+     must not paint the ingest row red (the first live run did exactly that) */
   const st = s => s ? 'ok' : 'error';
+  const failIn = re => checks.some(c => re.test(c.id) && c.status === 'fail');
   const ln = out.lines;
   out.pipeline_meta = {
     daily_check_last_run: now, daily_check_last_status: st(out.ok),
     engine_tests_last_run: now, engine_tests_last_status: st(testsOk),
     nfl_ingest_last_run: now,
-    nfl_ingest_last_status: st(!checks.some(c => c.id.startsWith('nfl_') && c.status === 'fail')),
+    nfl_ingest_last_status: st(!failIn(/^nfl_(schedule|stats|ingest|pipeline|season_window)/)),
     row_count_nfl_ingest: (out.learning.nfl && out.learning.nfl.absorbed) || 0,
     p4_ingest_last_run: now,
-    p4_ingest_last_status: st(!checks.some(c => c.id.startsWith('p4_') && c.status === 'fail')),
+    p4_ingest_last_status: st(!failIn(/^p4_(schedule|ingest|roster|pipeline|season_window)/)),
     row_count_p4_ingest: (out.learning.p4 && out.learning.p4.absorbed) || 0,
+    projection_guard_last_run: now,
+    projection_guard_last_status: st(!failIn(/^(nfl|p4)_projections$/)),
     line_guard_last_run: now,
-    line_guard_last_status: st(!checks.some(c => /_lines(_market)?$/.test(c.id) && c.status === 'fail')),
+    line_guard_last_status: st(!failIn(/^(nfl|p4)_lines(_market|_src)?$/)),
     row_count_line_guard: ((ln.nfl && ln.nfl.compared) || 0) + ((ln.p4 && ln.p4.compared) || 0)
   };
 
