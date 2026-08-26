@@ -267,9 +267,26 @@
         var who = '<span class="nm" style="font-size:12px">' + esc(m.creator_slug) + '</span>';
         if (m.locked) return '<div class="mrow">' + who + '<span class="sp"></span><span class="lock">Subscriber number</span></div>';
         var grade = m.grade ? ' <span class="mono ' + esc(m.grade.pick_result) + '">' + esc(m.grade.pick_result) + '</span>' : '';
+        /* Same convention as pickedSide() in collective/index.html, which is
+           the canonical statement of it: projected_spread (and the
+           line_at_submission fallback) arrive in HOME convention, pick_side
+           says which team was picked, and an AWAY pick displays the exact
+           inverse. "pick away · spr -3.5" read as the away team laying 3.5;
+           the pick is now stated from the picked team, and the raw home
+           number keeps its home label. */
+        var side = String(m.pick_side || '').trim().toLowerCase();
+        if (side !== 'home' && side !== 'away') side = null;
+        var team = side === 'home' ? g.home : (side === 'away' ? g.away : null);
+        var v = m.projected_spread != null ? Number(m.projected_spread)
+          : (m.line_at_submission != null ? Number(m.line_at_submission) : null);
+        if (v != null && !isFinite(v)) v = null;
+        var pspr = v == null ? null : (side === 'away' ? (v === 0 ? 0 : -v) : v);
         return '<div class="mrow">' + who + '<span class="sp"></span>' +
-          '<span class="mono">' + (m.pick_side ? 'pick ' + esc(m.pick_side) : 'no pick') + '</span>' +
-          '<span class="mono">spr ' + spr(m.projected_spread) + '</span>' +
+          '<span class="mono">' + (team != null ? 'pick ' + esc(team) + ' ' + (pspr == null ? '-' : spr(pspr))
+            : (m.pick_side ? 'pick ' + esc(m.pick_side) : 'no pick')) + '</span>' +
+          (m.projected_spread != null
+            ? '<span class="mono" title="the model’s own spread, stated for the home side">spr ' + esc(g.home) + ' ' + spr(m.projected_spread) + '</span>'
+            : '') +
           (m.home_win_probability != null ? '<span class="mono">hw ' + pct(m.home_win_probability, 0) + '</span>' : '') +
           (mktSpread != null && m.projected_spread != null
             ? '<span class="mono">' + MARKET.M.edgeHtml(m.projected_spread, mktSpread, g.home, g.away) + '</span>'
