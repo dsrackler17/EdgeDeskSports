@@ -1,0 +1,177 @@
+{
+  "schema": "edgedesk_football_health_v1",
+  "generated_at": "2026-08-26T17:04:58.237Z",
+  "ok": false,
+  "last_ok_at": null,
+  "run": {
+    "trigger": "workflow_dispatch",
+    "runner": "github-actions",
+    "params_built_at": {
+      "football": "2026-08-21T19:18:15+00:00",
+      "cfb_p4": "2026-08-22T17:43:03+00:00"
+    },
+    "model_versions": {
+      "football": "edgedesk_football_v1.0.0",
+      "cfb_p4": "edgedesk_cfb_p4_v1.0.0"
+    }
+  },
+  "seasons": {
+    "nfl": 2026,
+    "cfb": 2026
+  },
+  "learning": {
+    "nfl": {
+      "completed_in_feed": 0,
+      "absorbed": 0,
+      "join_missed": 0,
+      "data_through": null,
+      "source": "nflverse games.csv + stats_team_week"
+    },
+    "p4": {
+      "completed_in_feed": 0,
+      "absorbed": 0,
+      "data_through": null,
+      "schedule_source": "cfb.games (Supabase ingest) 2026"
+    }
+  },
+  "lines": {
+    "nfl": {
+      "compared": 0,
+      "median_gap": null,
+      "max_gap": null,
+      "outliers": []
+    },
+    "p4": {
+      "compared": 21,
+      "median_gap": 4.14,
+      "max_gap": 15.83,
+      "outliers": [
+        {
+          "game": "Massachusetts @ Rutgers",
+          "gap": 15.83,
+          "model": 46.33,
+          "market": 30.5
+        },
+        {
+          "game": "East Carolina @ Alabama",
+          "gap": 10.1,
+          "model": 15.4,
+          "market": 25.5
+        }
+      ]
+    }
+  },
+  "checks": [
+    {
+      "id": "engine_tests_nfl",
+      "label": "engine test suite football/tests.js (incl. python-parity goldens)",
+      "status": "pass",
+      "detail": "ALL GREEN 69 passed, 0 failed"
+    },
+    {
+      "id": "engine_tests_p4",
+      "label": "engine test suite football/cfb_p4/tests.js (incl. python-parity goldens)",
+      "status": "pass",
+      "detail": "ALL GREEN 82 passed, 0 failed"
+    },
+    {
+      "id": "nfl_schedule",
+      "label": "NFL: nflverse games.csv reachable",
+      "status": "pass",
+      "detail": "7548 rows"
+    },
+    {
+      "id": "nfl_season_window",
+      "label": "NFL: current season inside the trained window",
+      "status": "pass",
+      "detail": "season 2026 vs seeds through 2025"
+    },
+    {
+      "id": "nfl_ingest",
+      "label": "NFL: completed games absorb into the ratings",
+      "status": "pass",
+      "detail": "no completed 2026 games in the feed yet — seeds + season carry-over is the correct state"
+    },
+    {
+      "id": "nfl_projections",
+      "label": "NFL: upcoming slate projects to sane numbers",
+      "status": "pass",
+      "detail": "no NFL game inside the next 10 days"
+    },
+    {
+      "id": "nfl_lines_market",
+      "label": "NFL: market lines plausible",
+      "status": "pass",
+      "detail": "no market lines to test"
+    },
+    {
+      "id": "nfl_lines",
+      "label": "NFL: model vs market line guard",
+      "status": "pass",
+      "detail": "no market number joined to any upcoming game — nothing to compare"
+    },
+    {
+      "id": "p4_season_window",
+      "label": "CFB P4: current season inside the trained window",
+      "status": "pass",
+      "detail": "season 2026 vs trained through 2025"
+    },
+    {
+      "id": "p4_schedule",
+      "label": "CFB P4: 2026 schedule reachable",
+      "status": "pass",
+      "detail": "cfb.games (Supabase ingest) 2026 · 888 rows"
+    },
+    {
+      "id": "p4_ingest",
+      "label": "CFB P4: completed games absorb into the ratings",
+      "status": "pass",
+      "detail": "no completed 2026 games in the feed yet — seeds + season carry-over is the correct state"
+    },
+    {
+      "id": "p4_roster",
+      "label": "CFB P4: 2026 roster file published",
+      "status": "warn",
+      "detail": "not published yet — the engine widens its uncertainty instead of assuming last year’s roster (expected preseason)"
+    },
+    {
+      "id": "p4_lines_src",
+      "label": "CFB P4: cfb.lines market source reachable",
+      "status": "pass",
+      "detail": "21 of 30 upcoming games have a book number"
+    },
+    {
+      "id": "p4_projections",
+      "label": "CFB P4: upcoming slate projects to sane numbers",
+      "status": "fail",
+      "detail": "Massachusetts @ Rutgers: spread 46.33, total 53.59, p 1; Bethune-Cookman @ UCF: spread 27.63, total null, p 0.96; Eastern Illinois @ Minnesota: spread 30.77, total null, p 0.98; Arkansas-Pine Bluff @ Missouri: spread 37.23, total null, p 0.99; Idaho @ Utah: spread 44.4, total null, p 1"
+    },
+    {
+      "id": "p4_lines_market",
+      "label": "CFB P4: market lines plausible",
+      "status": "pass",
+      "detail": "21 lines inside plausible bounds"
+    },
+    {
+      "id": "p4_lines",
+      "label": "CFB P4: model vs market line guard",
+      "status": "warn",
+      "detail": "median gap 4.14 pts over 21 games; 2 game(s) beyond 10 pts"
+    }
+  ],
+  "pipeline_meta": {
+    "daily_check_last_run": "2026-08-26T17:04:58.237Z",
+    "daily_check_last_status": "error",
+    "engine_tests_last_run": "2026-08-26T17:04:58.237Z",
+    "engine_tests_last_status": "ok",
+    "nfl_ingest_last_run": "2026-08-26T17:04:58.237Z",
+    "nfl_ingest_last_status": "ok",
+    "row_count_nfl_ingest": 0,
+    "p4_ingest_last_run": "2026-08-26T17:04:58.237Z",
+    "p4_ingest_last_status": "error",
+    "row_count_p4_ingest": 0,
+    "line_guard_last_run": "2026-08-26T17:04:58.237Z",
+    "line_guard_last_status": "ok",
+    "row_count_line_guard": 21
+  }
+}
