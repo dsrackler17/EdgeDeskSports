@@ -22501,11 +22501,16 @@ function fbP4LoadRosters(season,signal){
   ]).then(function(r){
     var cur=r[0],prev=r[1];
     if(!cur){
-      S.roster={};S.rosterSeason=null;
-      S.rosterNote='The '+season+' roster file is not published yet, so talent, continuity, '
-        +'portal and youth are UNAVAILABLE for every team. The engine widens its uncertainty '
-        +'instead of assuming last year’s roster.';
-      return;
+      /* cfbfastR has not published this season — fall back to the repo's own
+         ESPN roster sync (football/rosters/, refreshed weekly by CI) rather
+         than running the talent layer blind. Only if THAT is also missing
+         does the layer stay dark, and it says so. */
+      return fbP4EspnRosters(season,signal).catch(function(){
+        S.roster={};S.rosterSeason=null;
+        S.rosterNote='The '+season+' roster file is not published yet, so talent, continuity, '
+          +'portal and youth are UNAVAILABLE for every team. The engine widens its uncertainty '
+          +'instead of assuming last year’s roster.';
+      });
     }
     var prevTeam={};
     if(prev)for(var i=0;i<prev.length;i++){if(prev[i].athlete_id)prevTeam[prev[i].athlete_id]=fbP4Key(prev[i].team);}
@@ -22545,6 +22550,43 @@ function fbP4LoadRosters(season,signal){
     S.roster=out;S.rosterSeason=season;
     S.rosterNote=prev?null:('The '+(season-1)+' roster file is missing, so continuity and portal '
       +'flow could not be computed; class-mix experience is still real.');
+  });
+}
+
+/* ---- ESPN roster fallback ---------------------------------------------
+   The repo's weekly roster sync (.github/workflows/roster-sync.yml ->
+   football/rosters/fetch_rosters.js) commits full FBS rosters from ESPN's
+   public feed. When cfbfastR has not published the season, those datasets
+   feed the SAME engine bundle shape via football/rosters/espn_to_bundles.js:
+   continuity and portal from athlete-id diffs against the previous season's
+   ESPN dataset, experience from current class mix. Anything the feed does
+   not carry stays null and the engine widens instead of guessing. */
+function fbP4EspnFile(season,signal){
+  return fbFetchText('football/rosters/fbs_'+season+'_espn.json',signal).then(function(t){
+    var j=JSON.parse(t);
+    if(!j||j.schema!=='edgedesk_fbs_rosters_v2'||+j.requested_season!==+season)
+      throw new Error('roster dataset missing or wrong season');
+    return j;
+  });
+}
+function fbP4EspnRosters(season,signal){
+  var S=FB.p4;
+  return fbScript('football/rosters/espn_to_bundles.js').then(function(){
+    if(!window.EDEspnRosterBundles)throw new Error('bundle builder failed to load');
+    return Promise.all([
+      fbP4EspnFile(season,signal),
+      fbP4EspnFile(season-1,signal).catch(function(){return null;})
+    ]);
+  }).then(function(r){
+    var cur=r[0],prev=r[1];
+    var built=window.EDEspnRosterBundles.build(cur,prev,window.EDCfbP4.normKey);
+    if(!built||!built.teams)throw new Error('bundle build produced nothing');
+    S.roster=built.bundles;S.rosterSeason=season;
+    S.rosterNote='cfbfastR has not published '+season+' rosters, so rosters come from the repo’s ESPN sync: '
+      +built.teams+' FBS teams fetched '+String(cur.retrieved_at).slice(0,10)
+      +(prev?(' · continuity and portal diffed against the '+(season-1)+' ESPN rosters ('+built.with_continuity+' teams)')
+        :(' · no '+(season-1)+' dataset yet, so continuity and portal stay unavailable'))
+      +' · experience is current class mix (redshirts read young) · per-player recruiting talent remains in no public feed.';
   });
 }
 

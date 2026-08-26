@@ -374,16 +374,39 @@ async function p4Section(out) {
       completedInFeed ? `${absorbed}/${completedInFeed} absorbed, data through ${dataThrough}`
         : `no completed ${cur} games in the feed yet — seeds + season carry-over is the correct state`);
   }
-  if (!curSched) return;
-
-  /* roster availability is a widened-uncertainty note, not a failure */
+  /* Roster sources, in the order the app uses them: cfbfastR (primary),
+     then the repo's own ESPN sync (football/rosters/, committed weekly by
+     roster-sync.yml). The ESPN bundles also feed the projection check
+     below, so this run exercises the same roster-aware path the app runs.
+     Checked BEFORE the no-schedule early return — the roster sources are
+     independent of the schedule feed and must always report. */
+  let cfbfastrLive = false;
+  try { await fetchText(URL_CFB_ROSTER(cur)); cfbfastrLive = true; } catch (_) {}
+  let rosterBundles = null, bundleNote = '', bundleAge = null;
   try {
-    await fetchText(URL_CFB_ROSTER(cur));
-    check('p4_roster', `CFB P4: ${cur} roster file published`, 'pass', 'talent/continuity layers have data');
-  } catch (_) {
-    check('p4_roster', `CFB P4: ${cur} roster file published`, 'warn',
-      'not published yet — the engine widens its uncertainty instead of assuming last year’s roster (expected preseason)');
+    const curDs = JSON.parse(fs.readFileSync(path.join(REPO, 'football', 'rosters', `fbs_${cur}_espn.json`), 'utf8'));
+    let prevDs = null;
+    try { prevDs = JSON.parse(fs.readFileSync(path.join(REPO, 'football', 'rosters', `fbs_${cur - 1}_espn.json`), 'utf8')); } catch (_) {}
+    const B = require(path.join(REPO, 'football', 'rosters', 'espn_to_bundles.js'));
+    const built = B.build(curDs, prevDs, E4.normKey);
+    rosterBundles = built.bundles;
+    bundleAge = (Date.now() - Date.parse(curDs.retrieved_at)) / 864e5;
+    bundleNote = `${built.teams} teams, ${built.with_continuity} with continuity vs ${cur - 1}, fetched ${String(curDs.retrieved_at).slice(0, 10)}`
+      + (prevDs ? '' : ` — no ${cur - 1} dataset, continuity unavailable`);
+  } catch (_) { /* reported below */ }
+  if (cfbfastrLive) {
+    check('p4_roster', `CFB P4: ${cur} roster source`, 'pass',
+      'cfbfastR published (the app’s primary source)' + (rosterBundles ? `; ESPN sync also present (${bundleNote})` : ''));
+  } else if (rosterBundles) {
+    const fresh = bundleAge != null && bundleAge <= 8;
+    check('p4_roster', `CFB P4: ${cur} roster source`, fresh ? 'pass' : 'warn',
+      `cfbfastR unpublished — the repo ESPN sync feeds the talent layer: ${bundleNote}`
+      + (fresh ? '' : ` — ${Math.round(bundleAge)} days old; the weekly roster sync has missed a run`));
+  } else {
+    check('p4_roster', `CFB P4: ${cur} roster source`, 'warn',
+      'neither cfbfastR nor the repo ESPN sync has a usable dataset — the engine widens its uncertainty instead of assuming last year’s roster');
   }
+  if (!curSched) return;
 
   /* upcoming P4 slate: project and guard */
   const P4CONF = (P4.universe && P4.universe.p4_conferences) || ['SEC', 'Big Ten', 'Big 12', 'ACC'];
@@ -413,13 +436,16 @@ async function p4Section(out) {
       : `${Object.keys(lines).length} of ${ids.length} upcoming games have a book number`);
 
   const V = (P4.universe && P4.universe.venues) || {};
-  let predicted = 0; const insane = [], guardRows = [];
+  let predicted = 0, rostered = 0; const insane = [], guardRows = [];
   for (const g of up) {
     const hk = E4.normKey(g.home_team), ak = E4.normKey(g.away_team);
     const line = lines[g.game_id];
     const mkt = {};
     if (line && line.spread != null) mkt.spread_line = -(+line.spread);
     if (line && line.over_under != null) mkt.total_line = +line.over_under;
+    const hR = rosterBundles ? (rosterBundles[hk] || null) : null;
+    const aR = rosterBundles ? (rosterBundles[ak] || null) : null;
+    if (hR && aR) rostered++;
     let p;
     try {
       p = E4.projectGame({ season: cur, week: g.week, state: st,
@@ -427,8 +453,8 @@ async function p4Section(out) {
           venue_id: g.venue_id, kickoff: g.start_date,
           home_fbs: p4IsFbs(g.home_division, g.home_team), away_fbs: p4IsFbs(g.away_division, g.away_team) },
         teams: {
-          home: { conference: g.home_conference, roster: null, qb: null, injuries: null, news: null, coaching: null, schedule: null },
-          away: { conference: g.away_conference, roster: null, qb: null, injuries: null, news: null, coaching: null, schedule: null }
+          home: { conference: g.home_conference, roster: hR, qb: null, injuries: null, news: null, coaching: null, schedule: null },
+          away: { conference: g.away_conference, roster: aR, qb: null, injuries: null, news: null, coaching: null, schedule: null }
         },
         venue: { home: V[hk] || null, away: V[ak] || null },
         weather: null, market: mkt });
@@ -457,6 +483,7 @@ async function p4Section(out) {
     insane.length ? 'fail' : 'pass',
     insane.length ? insane.slice(0, 5).join('; ')
       : (up.length ? `${predicted}/${up.length} upcoming P4 games PREDICTED, all inside bounds`
+        + ` · roster bundles joined on ${rostered}/${up.length}`
         : 'no P4 game inside the next ' + LOOKAHEAD_D + ' days'));
   out.lines.p4 = lineGuard('p4_lines', 'CFB P4', guardRows, GUARD.p4);
 }
