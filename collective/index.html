@@ -728,18 +728,45 @@ function pickNum(mr){
   if(mr.line_at_submission!=null)return {v:mr.line_at_submission,own:false};
   return null;
 }
+/* ---- the one place a stored number becomes the picked team's number ----
+   The wire contract, every sport, every model:
+     mr.pick_side           'home' | 'away' — authoritative. Never inferred
+                            from the sign of any spread.
+     mr.projected_spread    the model's own spread, HOME convention.
+     mr.line_at_submission  the market line it posted against, HOME
+                            convention too (slatePick already turned any
+                            pick-relative input around at ingestion).
+   So a HOME pick displays the stored number unchanged and an AWAY pick
+   displays its exact inverse. That flip happens HERE and nowhere else in
+   the display layer; grading, consensus and the market never pass through
+   this function. */
+function pickSideNorm(mr){
+  var s=String((mr&&mr.pick_side)||'').trim().toLowerCase();
+  return (s==='home'||s==='away')?s:null;
+}
+function pickedSide(g,mr){
+  var side=pickSideNorm(mr);
+  var n=pickNum(mr||{});
+  var v=n==null?null:Number(n.v);
+  if(v!=null&&!isFinite(v))v=null;
+  return {
+    team:side==='home'?(g&&g.home):(side==='away'?(g&&g.away):null),
+    side:side,
+    /* with no usable side the number stays as stored: home convention */
+    spread:v==null?null:(side==='away'?(v===0?0:-v):v),
+    own:n==null?null:n.own
+  };
+}
 function pickDisp(g,mr){
-  var n=pickNum(mr);
-  var num=n==null?'-':fmtSpread(mr.pick_side==='away'?-n.v:n.v);
-  var side=mr.pick_side==='away'?g.away:(mr.pick_side==='home'?g.home:null);
-  if(side==null)return n==null?'-':esc(g.home)+' '+fmtSpread(n.v);
-  return esc(side)+' '+num;
+  var p=pickedSide(g,mr);
+  if(p.team==null)return p.spread==null?'-':esc(g.home)+' '+fmtSpread(p.spread);
+  return esc(p.team)+' '+(p.spread==null?'-':fmtSpread(p.spread));
 }
 /* Probability for the picked side: moneyline if given, else the cover
    probability, which is already stated at the model's own line. */
 function pickProb(mr){
   if(mr.home_win_probability!=null)
-    return mr.pick_side==='away'?1-mr.home_win_probability:mr.home_win_probability;
+    return pickSideNorm(mr)==='away'?1-mr.home_win_probability:mr.home_win_probability;
   if(mr.cover_probability!=null)return mr.cover_probability;
   return null;
 }
@@ -966,7 +993,7 @@ async function renderModel(view,cs,ms){
           var mSpread=mg?MCOdds.consensusSpread(mg):null;
           rows.push('<tr><td>'+esc(g.label||((g.away||'')+' @ '+(g.home||'')))+
             '<br><span class="sb" style="color:var(--faint);font-size:11px">'+esc(kickoffFmt(g.kickoff_at))+'</span></td>'+
-            '<td class="num">'+(mr.projected_spread!=null?fmtSpread(mr.projected_spread):'<span class="note">no spread</span>')+'</td>'+
+            '<td class="num">'+(mr.projected_spread!=null?esc(g.home)+' '+fmtSpread(mr.projected_spread):'<span class="note">no spread</span>')+'</td>'+
             '<td class="num">'+(mSpread!=null?esc(g.home)+' '+MCOdds.line(mSpread):'<span class="note">market unavailable</span>')+'</td>'+
             '<td class="num">'+MCOdds.edgeHtml(mr.projected_spread,mSpread,g.home,g.away)+'</td>'+
             '<td class="num">'+(mg?'<a href="#market/'+esc(mg.event_id)+'">books</a>':'')+'</td></tr>');
@@ -1054,13 +1081,21 @@ async function renderBoard(view){
           rows+='<div class="mrow">'+who+'<span class="spacer"></span><span class="lock">Subscriber number</span></div>';
         }else{
           var grade=mr.grade?('<span class="mono grade-'+mr.grade.pick_result+'">'+mr.grade.pick_result+'</span> <span class="note mono">err '+fmtNum(mr.grade.margin_error)+' &middot; brier '+fmtNum(mr.grade.brier,3)+'</span>'):'';
+          /* The pick is stated from the PICKED team, through the same
+             pickedSide()/pickDisp() the wall uses — "pick NE +3.5", never
+             "pick away" beside a home-convention number, which read as the
+             picked team laying the home side's spread. The raw spread and
+             line stay visible for research, labelled with the home team so
+             their convention is on the screen rather than in a doc. */
+          var pk=pickedSide(g,mr);
           rows+='<div class="mrow">'+who+(mr.late?'<span class="chip late">Late, ungraded</span>':'')+
             '<span class="spacer"></span>'+
-            '<span class="mono">'+(mr.pick_side?('pick '+mr.pick_side):'no pick')+'</span>'+
+            '<span class="mono">'+(pk.team!=null?('pick '+pickDisp(g,mr))
+              :(mr.pick_side?('pick '+esc(mr.pick_side)):'no pick'))+'</span>'+
             (mr.projected_spread!=null
-              ? '<span class="mono">spr '+fmtSpread(mr.projected_spread)+'</span>'
+              ? '<span class="mono" title="the model&#39;s own spread, stated for the home side">spr '+esc(g.home)+' '+fmtSpread(mr.projected_spread)+'</span>'
               : (mr.line_at_submission!=null
-                  ? '<span class="mono" title="the market line this pick was posted against">line '+fmtSpread(mr.line_at_submission)+'</span>'
+                  ? '<span class="mono" title="the market line this pick was posted against, stated for the home side">line '+esc(g.home)+' '+fmtSpread(mr.line_at_submission)+'</span>'
                   : ''))+
             (mr.projected_total!=null?'<span class="mono">tot '+fmtNum(mr.projected_total)+'</span>':'')+
             (mktSpread!=null&&mr.projected_spread!=null&&window.MCOdds

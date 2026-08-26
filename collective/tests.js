@@ -635,6 +635,104 @@ if (typeof sandbox.teamKey === 'function') {
       return S.sportFamily(c) === 'CFB';
     }));
 
+  /* ---- the picked team's number, one helper for every surface ----------
+     The wire is HOME convention throughout: projected_spread is the model's
+     number for the home side, line_at_submission is the market line for the
+     home side, and pick_side says — authoritatively — which team the model
+     actually took. pickedSide()/pickDisp() are the ONLY place the display
+     layer turns that home number into the picked team's number; the wall,
+     the board and the model pages all read through them. The regression
+     being pinned: an away pick shows the EXACT INVERSE of the home number,
+     a home pick shows it unchanged, and the sign of the spread never gets
+     a vote on which side was picked. */
+  chk('the pick helpers exist and are shared',
+    typeof S.pickedSide === 'function' && typeof S.pickDisp === 'function'
+    && typeof S.pickNum === 'function' && typeof S.pickSideNorm === 'function');
+
+  var PICKS = [
+    /* away dog: invert the home number, show plus */
+    { g:{home:'SEA',away:'NE'},  mr:{pick_side:'away',projected_spread:-3.5},  want:'NE +3.5' },
+    /* home favourite: home number unchanged, stays negative */
+    { g:{home:'LA', away:'SF'},  mr:{pick_side:'home',projected_spread:-3.5},  want:'LA -3.5' },
+    { g:{home:'LAC',away:'ARI'}, mr:{pick_side:'home',projected_spread:-10.5}, want:'LAC -10.5' },
+    { g:{home:'PIT',away:'ATL'}, mr:{pick_side:'away',projected_spread:-3.0},  want:'ATL +3.0' },
+    { g:{home:'MIN',away:'GB'},  mr:{pick_side:'away',projected_spread:-1.5},  want:'GB +1.5' },
+    { g:{home:'TEN',away:'NYJ'}, mr:{pick_side:'home',projected_spread:-2.5},  want:'TEN -2.5' },
+    { g:{home:'KC', away:'DEN'}, mr:{pick_side:'away',projected_spread:-2.5},  want:'DEN +2.5' },
+    /* home dog keeps its plus */
+    { g:{home:'IND',away:'BAL'}, mr:{pick_side:'home',projected_spread:3.5},   want:'IND +3.5' },
+    /* away favourite: a POSITIVE home number inverts to minus */
+    { g:{home:'CAR',away:'CHI'}, mr:{pick_side:'away',projected_spread:2.5},   want:'CHI -2.5' },
+    /* pick'em, away side: no -0 */
+    { g:{home:'HOU',away:'BUF'}, mr:{pick_side:'away',projected_spread:0},     want:'BUF 0.0' },
+    /* college names ride the same rail, accents and all */
+    { g:{home:'USC',away:'San José State'},
+      mr:{pick_side:'away',projected_spread:-34.82}, want:'San José State +34.8' }
+  ];
+  PICKS.forEach(function (t) {
+    chk('wall shows ' + t.want + ' for ' + t.g.away + ' @ ' + t.g.home
+        + ' (' + t.mr.pick_side + ' pick on home ' + t.mr.projected_spread + ')',
+      S.pickDisp(t.g, t.mr) === t.want, { got: S.pickDisp(t.g, t.mr) });
+  });
+
+  chk('the SIGN of the spread does not pick the side',
+    (function () {
+      /* same stored number, opposite explicit sides: both must be honoured */
+      var g = { home: 'SEA', away: 'NE' };
+      return S.pickDisp(g, { pick_side: 'home', projected_spread: -3.5 }) === 'SEA -3.5'
+        && S.pickDisp(g, { pick_side: 'away', projected_spread: -3.5 }) === 'NE +3.5';
+    })());
+  chk('pick_side is read case- and whitespace-insensitively',
+    (function () {
+      var g = { home: 'SEA', away: 'NE' };
+      return S.pickDisp(g, { pick_side: 'AWAY', projected_spread: -3.5 }) === 'NE +3.5'
+        && S.pickDisp(g, { pick_side: ' Home ', projected_spread: -3.5 }) === 'SEA -3.5'
+        && S.pickSideNorm({ pick_side: 'AWAY' }) === 'away'
+        && S.pickSideNorm({ pick_side: 'neither' }) === null;
+    })(),
+    'a capitalised side used to fall through and show the home team instead');
+  chk('a number that arrives as a string is still a number',
+    S.pickDisp({ home: 'SEA', away: 'NE' },
+      { pick_side: 'away', projected_spread: '-3.5' }) === 'NE +3.5');
+  chk('with no spread of its own the market line fills in, same convention',
+    (function () {
+      var g = { home: 'SEA', away: 'NE' };
+      var p = S.pickedSide(g, { pick_side: 'away', line_at_submission: -3.5 });
+      return S.pickDisp(g, { pick_side: 'away', line_at_submission: -3.5 }) === 'NE +3.5'
+        && p.own === false && near(p.spread, 3.5);
+    })(),
+    'the fallback must not be inverted a second time anywhere upstream');
+  chk('the model\'s own number beats the market line',
+    (function () {
+      var p = S.pickedSide({ home: 'SEA', away: 'NE' },
+        { pick_side: 'away', projected_spread: -1.5, line_at_submission: -3.5 });
+      return near(p.spread, 1.5) && p.own === true;
+    })());
+  chk('an away pick\'em is 0, never -0',
+    (function () {
+      var p = S.pickedSide({ home: 'HOU', away: 'BUF' },
+        { pick_side: 'away', projected_spread: 0 });
+      return p.spread === 0 && (1 / p.spread) === Infinity;
+    })());
+  chk('no usable side falls back to the HOME team with the home number',
+    S.pickDisp({ home: 'SEA', away: 'NE' }, { projected_spread: -3.5 }) === 'SEA -3.5'
+    && S.pickDisp({ home: 'SEA', away: 'NE' },
+         { pick_side: 'NE', projected_spread: -3.5 }) === 'SEA -3.5',
+    'a side the helper cannot read must never be guessed from the sign');
+  chk('a pick with no number at all still names the picked team',
+    S.pickDisp({ home: 'SEA', away: 'NE' }, { pick_side: 'away' }) === 'NE -'
+    && S.pickDisp({ home: 'SEA', away: 'NE' }, {}) === '-');
+  chk('pickedSide names the picked team, both sides',
+    (function () {
+      var g = { home: 'SEA', away: 'NE' };
+      return S.pickedSide(g, { pick_side: 'away', projected_spread: -3.5 }).team === 'NE'
+        && S.pickedSide(g, { pick_side: 'home', projected_spread: -3.5 }).team === 'SEA';
+    })());
+  chk('the win probability flips with the picked side, case-insensitively',
+    near(S.pickProb({ pick_side: 'away', home_win_probability: 0.7 }), 0.3)
+    && near(S.pickProb({ pick_side: 'AWAY', home_win_probability: 0.7 }), 0.3)
+    && near(S.pickProb({ pick_side: 'home', home_win_probability: 0.7 }), 0.7));
+
   /* ---- percent vs probability ---------------------------------------- */
   chk('a _pct header is a percent even when its value is below 1',
     near(S.slateProb('0.9', 'spread_push_pct'), 0.009));
