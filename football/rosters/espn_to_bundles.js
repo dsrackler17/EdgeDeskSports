@@ -63,11 +63,12 @@
      normKey: the engine's own normaliser (EDCfbP4.normKey). Returns
      { bundles: {key -> bundle}, teams: n, with_continuity: n }. */
   function build(cur, prev, normKey) {
-    var prevTeam = {}, prevPos = {}, curTeam = {}, i, j, t, p;
+    var prevTeam = {}, prevPos = {}, prevKeys = {}, curTeam = {}, i, j, t, p;
     if (prev && prev.teams) {
       for (i = 0; i < prev.teams.length; i++) {
         t = prev.teams[i];
         var pk = teamKeyOf(t, normKey);
+        prevKeys[pk] = true;
         for (j = 0; j < t.players.length; j++) {
           p = t.players[j];
           if (!p.espn_id) continue;
@@ -92,6 +93,12 @@
     for (i = 0; i < cur.teams.length; i++) {
       t = cur.teams[i];
       var tk = teamKeyOf(t, normKey);
+      /* A team ABSENT from the previous dataset (an FBS newcomer that was
+         FCS last season) has UNKNOWN continuity, not zero: its players'
+         absence from the prev set means the set didn't cover the team, not
+         that nobody returned. transfers_in stays real — presence on another
+         covered team last season is an observation either way. */
+      var hasPrev = !!(prev && prevKeys[tk]);
       var acc = {};
       for (j = 0; j < t.players.length; j++) {
         p = t.players[j];
@@ -108,7 +115,7 @@
         if (w !== undefined) { g.expSum += w; g.expN++; }
       }
       /* outgoing portal: on this team last season, on another team now */
-      if (prev) {
+      if (hasPrev) {
         for (var aid in prevTeam) {
           if (prevTeam[aid] !== tk) continue;
           var nowTk = curTeam[aid];
@@ -124,15 +131,15 @@
         var a = acc[gn];
         bundle.by_group[gn] = {
           n: a.n,
-          returning_share: prev ? (a.ret / a.n) : null,
+          returning_share: hasPrev ? (a.ret / a.n) : null,
           transfers_in: prev ? a.tin : null,
-          transfers_out: prev ? a.tout : null,
+          transfers_out: hasPrev ? a.tout : null,
           experience: a.expN ? (a.expSum / a.expN) : null
         };
         any = true;
       }
       if (!any) continue;
-      if (prev) withCont++;
+      if (hasPrev) withCont++;
       var names = [t.location, t.display_name, t.short_name], k;
       for (j = 0; j < names.length; j++) {
         k = names[j] ? normKey(names[j]) : null;

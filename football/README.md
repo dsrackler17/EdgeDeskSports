@@ -103,6 +103,27 @@ In the browser the module also re-runs its own load (and re-absorbs new
 results) when the tab has sat on it for 6+ hours — the model keeps itself
 current without anyone pressing refresh.
 
+## Rosters
+
+`.github/workflows/roster-sync.yml` commits full FBS rosters from ESPN's
+public APIs to `football/rosters/` (weekly, and on demand with any
+`--season`). `fetch_rosters.js` takes the season's true FBS membership
+from the core API group, tops each roster up past the site endpoint's
+100-player cap via the core athlete index, and refuses to commit a
+wrong-shaped dataset.
+
+`espn_to_bundles.js` (browser + node) turns those datasets into the exact
+roster bundles the Power 4 engine's talent layer reads: returning share
+and portal in/out from athlete-id diffs against the previous season's
+dataset, experience as the trained (class−1)/3 mix from ESPN's live
+current class. The app uses cfbfastR as the primary roster source and
+falls back to these bundles when cfbfastR has not published the season;
+an FBS newcomer absent from the previous dataset gets continuity =
+unknown, never zero. What the roster layer can and cannot move is the
+engine's own honest contract: stability, youth, OL and volatility inputs
+and fewer declared unknowns — the mean spread shifts only on per-player
+recruiting stars, which no public feed carries.
+
 ## Regenerating parameters
 
 See `research/README.md`. Parameters are trained through the 2025 season;

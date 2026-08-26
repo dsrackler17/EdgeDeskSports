@@ -374,12 +374,12 @@ async function p4Section(out) {
       completedInFeed ? `${absorbed}/${completedInFeed} absorbed, data through ${dataThrough}`
         : `no completed ${cur} games in the feed yet — seeds + season carry-over is the correct state`);
   }
-  if (!curSched) return;
-
   /* Roster sources, in the order the app uses them: cfbfastR (primary),
      then the repo's own ESPN sync (football/rosters/, committed weekly by
      roster-sync.yml). The ESPN bundles also feed the projection check
-     below, so this run exercises the same roster-aware path the app runs. */
+     below, so this run exercises the same roster-aware path the app runs.
+     Checked BEFORE the no-schedule early return — the roster sources are
+     independent of the schedule feed and must always report. */
   let cfbfastrLive = false;
   try { await fetchText(URL_CFB_ROSTER(cur)); cfbfastrLive = true; } catch (_) {}
   let rosterBundles = null, bundleNote = '', bundleAge = null;
@@ -406,6 +406,7 @@ async function p4Section(out) {
     check('p4_roster', `CFB P4: ${cur} roster source`, 'warn',
       'neither cfbfastR nor the repo ESPN sync has a usable dataset — the engine widens its uncertainty instead of assuming last year’s roster');
   }
+  if (!curSched) return;
 
   /* upcoming P4 slate: project and guard */
   const P4CONF = (P4.universe && P4.universe.p4_conferences) || ['SEC', 'Big Ten', 'Big 12', 'ACC'];
