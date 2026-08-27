@@ -809,6 +809,80 @@ function hwCell(mr){
       t:'the model’s probability that the home side covers at the posted line — it posted no outright win probability'};
   return null;
 }
+/* ---- calibration: do the percentages mean anything? --------------------
+   Bucket every graded pick by the CLAIMED probability of the side the model
+   favoured, then compare claimed to what actually happened. A model that
+   says 65% should be right about 65% of the time it says it; Brier carries
+   the same information but nobody reads a Brier score. Folded onto the
+   favoured side (q = max(p, 1-p)) so "claimed 65%" means the same thing
+   whether the model liked the home team or the road team. Ties and picks
+   posted without a win probability are excluded, and counted so the reader
+   can see how much of the record the readout stands on. */
+var CAL_BUCKETS=[[0.5,0.6],[0.6,0.7],[0.7,0.8],[0.8,0.9],[0.9,1.0000001]];
+function calibrationBuckets(points){
+  var out=CAL_BUCKETS.map(function(b){return {lo:b[0],hi:Math.min(b[1],1),n:0,claimed:0,hits:0};});
+  var n=0,skipped=0;
+  (points||[]).forEach(function(pt){
+    var p=pt&&pt.p,y=pt&&pt.y;
+    if(typeof p!=='number'||!(p>=0&&p<=1)||(y!==0&&y!==1)){skipped++;return;}
+    var q=p>=0.5?p:1-p;
+    var hit=p>=0.5?y===1:y===0;
+    for(var i=0;i<CAL_BUCKETS.length;i++){
+      if(q>=CAL_BUCKETS[i][0]&&q<CAL_BUCKETS[i][1]){
+        out[i].n++;out[i].claimed+=q;if(hit)out[i].hits++;n++;break;
+      }
+    }
+  });
+  return {n:n,skipped:skipped,buckets:out.map(function(b){
+    return {lo:b.lo,hi:b.hi,n:b.n,
+      claimed:b.n?b.claimed/b.n:null,
+      actual:b.n?b.hits/b.n:null};
+  })};
+}
+/* Harvest this model's calibration points from settled games: the claimed
+   home win probability against whether the home team actually won. Late
+   picks are excluded exactly as the record excludes them. */
+function calibrationPoints(games,cs,ms){
+  var pts=[];
+  (games||[]).forEach(function(g){
+    if(!g||!g.result||g.result.home_score==null||g.result.away_score==null)return;
+    if(g.result.home_score===g.result.away_score)return;   /* tie: no winner to score */
+    var y=g.result.home_score>g.result.away_score?1:0;
+    (g.models||[]).forEach(function(mr){
+      if(mr.locked||mr.late)return;
+      if(mr.creator_slug!==cs||mr.model_slug!==ms)return;
+      if(mr.home_win_probability==null)return;
+      pts.push({p:mr.home_win_probability,y:y});
+    });
+  });
+  return pts;
+}
+function calibrationHTML(cal){
+  if(!cal||!cal.n)return '';
+  var rows=cal.buckets.filter(function(b){return b.n>0;}).map(function(b){
+    var claimed=Math.round(100*b.claimed),actual=Math.round(100*b.actual);
+    var gap=Math.abs(claimed-actual);
+    /* color only when the sample can carry the claim: a 3-pick bucket that
+       reads 33% is noise, not overconfidence */
+    var col=b.n<10?'var(--dim)':(gap<=5?'var(--pos)':(gap<=12?'var(--warn)':'var(--neg)'));
+    return '<tr><td class="num">'+Math.round(100*b.lo)+'\u2013'+Math.round(100*b.hi)+'%</td>'+
+      '<td class="num">'+claimed+'%</td>'+
+      '<td class="num" style="color:'+col+'">'+actual+'%</td>'+
+      '<td class="num">'+b.n+(b.n<10?' <span class="note">thin</span>':'')+'</td></tr>';
+  }).join('');
+  return '<h2>Calibration</h2>'+
+    '<div class="tblwrap mini"><table style="min-width:420px"><thead><tr>'+
+    '<th class="num" title="picks bucketed by the claimed probability of the side this model favoured">Claimed</th>'+
+    '<th class="num" title="average claimed probability inside the bucket">Avg claimed</th>'+
+    '<th class="num" title="how often the favoured side actually won">Actually won</th>'+
+    '<th class="num">Picks</th>'+
+    '</tr></thead><tbody>'+rows+'</tbody></table></div>'+
+    '<p class="note" style="margin-top:8px">When this model says 65%, how often does that side actually win? '+
+    'Claimed probabilities are folded onto the side the model favoured, graded on final scores from settled games. '+
+    'Buckets under 10 picks are shown dim \u2014 too thin to accuse anyone of anything. '+
+    'Computed from '+cal.n+' graded pick'+(cal.n===1?'':'s')+' with a posted win probability'+
+    (cal.skipped?'; '+cal.skipped+' excluded (no probability, or a tie)':'')+'.</p>';
+}
 /* One stable key for a game across the wall and the board. The board's games
    carry a game_id; a game the odds feed has not linked yet is still uniquely
    named by its two teams. */
@@ -1089,6 +1163,30 @@ async function renderModel(view,cs,ms){
       marketBoard()]);
     var d=res[0], slate=res[1], mkt=res[2];
     var rec=d.record;
+    /* Calibration needs the season's SETTLED games, and the games endpoint
+       serves a week at a time — so ask for exactly the weeks this model
+       covered (the coverage table already names them), newest first, capped
+       at a season's worth. Settled games are public, so this works signed
+       out; any week that fails to load is simply absent from the sample and
+       the readout says how many picks it stands on. */
+    var calCal=null;
+    try{
+      var calWeeks=(d.coverage||[]).map(function(c){return {season:c.season,week:c.week};})
+        .filter(function(c){return c.season!=null&&c.week!=null;});
+      var seen={};calWeeks=calWeeks.filter(function(c){var k=c.season+'w'+c.week;if(seen[k])return false;seen[k]=1;return true;})
+        .sort(function(a,b){return b.season-a.season||b.week-a.week;}).slice(0,25);
+      if(calWeeks.length){
+        var calPages=await Promise.all(calWeeks.map(function(c){
+          return api('/v1/games?sport='+encodeURIComponent(d.model.sport)+'&season='+c.season+'&week='+c.week,{auth:true})
+            .catch(function(){return null;});
+        }));
+        var calPts=[];
+        calPages.forEach(function(pg){
+          if(pg&&pg.games)calPts=calPts.concat(calibrationPoints(pg.games,cs,ms));
+        });
+        if(calPts.length)calCal=calibrationBuckets(calPts);
+      }
+    }catch(_){calCal=null;}
     var head='<h1>'+esc(d.model.model_name)+' <span class="pill">'+esc(d.model.sport)+'</span></h1>'+
       '<p class="lede">by <a href="#/'+esc(d.creator.slug)+'">'+esc(d.creator.display_name)+'</a>'+foundBadge(d.creator)+'</p>';
     var stats=rec?'<div class="panel"><div class="kv">'+
@@ -1149,7 +1247,8 @@ async function renderModel(view,cs,ms){
       '<div class="sortsel"><span class="note">Show</span><select id="glFilter"><option value="">All results</option><option value="win">Wins</option><option value="loss">Losses</option><option value="push">Pushes</option></select></div>'+
       '<div class="tblwrap"><table id="glTbl"><thead><tr><th>Game</th><th class="num">Pick</th><th class="num">Close</th><th class="num">Final</th><th class="num">Result</th><th class="num">Margin err</th><th class="num">Brier</th><th class="num">Movement</th></tr></thead><tbody>'+glRows+'</tbody></table></div>'+
       '<p class="note" style="margin-top:8px">Each game is graded on the model’s first pre-kickoff live submission. Later revisions are stored as movement, never regraded.</p>':'';
-    view.innerHTML=head+stats+vs+method+cov+gl+'<p style="margin-top:22px"><a href="#/'+esc(d.creator.slug)+'">← '+esc(d.creator.display_name)+'</a> &middot; <a href="#models">Model directory</a> &middot; <a href="#performance">Compare models</a></p>';
+    var cal=calibrationHTML(calCal);
+    view.innerHTML=head+stats+cal+vs+method+cov+gl+'<p style="margin-top:22px"><a href="#/'+esc(d.creator.slug)+'">← '+esc(d.creator.display_name)+'</a> &middot; <a href="#models">Model directory</a> &middot; <a href="#performance">Compare models</a></p>';
     if($('glFilter'))$('glFilter').onchange=function(){
       var v=this.value;
       document.querySelectorAll('#glTbl tbody tr').forEach(function(tr){
