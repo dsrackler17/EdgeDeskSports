@@ -1087,6 +1087,48 @@ if (typeof sandbox.teamKey === 'function') {
     { doc: S.SLATE_TEMPLATE_DOC.map(function (x) { return x.c; }) });
   chk('every example row is as wide as the header',
     S.SLATE_TEMPLATE_EXAMPLE.every(function (r) { return r.length === S.SLATE_TEMPLATE_COLS.length; }));
+
+  /* ---- a FINAL score must never post as a PROJECTED one ----------------
+     The EdgeDesk exports name the final score home_score / away_score, which
+     is also a legitimate name for a creator's projected scores. Mapped as a
+     projection, a finished game posts the actual result as the model's
+     expectation — and margin accuracy is graded from projected scores in
+     preference to the spread, so that is a fabricated perfect projection.
+     Verified against the REAL export header. */
+  var FINALHEAD = ['season','week','game_id','kickoff_local','away_team','home_team',
+    'model_home_line','model_fair_total','home_win_prob_pct','ref_home_line','spread_pick',
+    'home_score','away_score','final_margin','final_total','spread_result','total_result','ml_result'];
+  var FINALROW = ['2026','1','2026_01_NE_SEA','2026-09-09 20:20','NE','SEA',
+    '-5.01','43.7','68','-3.5','SEA',
+    '31','13','18','44','loss','over','win'];
+  chk('score columns beside result columns are read as FINALS',
+    S.slateScoresAreFinal(FINALHEAD) === true);
+  S.SLATE.cols = FINALHEAD; S.SLATE.rows = [FINALHEAD, FINALROW]; S.SLATE.map = {};
+  S.slateGuessMap();
+  chk('a final score never maps as a projected score',
+    S.SLATE.map['proj_home_score'] === undefined && S.SLATE.map['proj_away_score'] === undefined,
+    { home: S.SLATE.cols[S.SLATE.map['proj_home_score']], away: S.SLATE.cols[S.SLATE.map['proj_away_score']] });
+  var fb = S.slateBuildRows('2026', '1');
+  chk('the built row carries no invented projection',
+    fb.rows[0].proj_home_score === undefined && fb.rows[0].proj_away_score === undefined,
+    { row: fb.rows[0] });
+  chk('everything else on that row still posts normally',
+    near(fb.rows[0].projected_spread, -5.01) && near(fb.rows[0].home_win_probability, 0.68)
+      && fb.rows[0].pick_side === 'home', { row: fb.rows[0] });
+
+  /* a sheet that really is projecting scores keeps them */
+  var PROJHEAD = ['home_team','away_team','kickoff','home_score','away_score'];
+  chk('score columns with no result columns stay projections',
+    S.slateScoresAreFinal(PROJHEAD) === false);
+  S.SLATE.cols = PROJHEAD;
+  S.SLATE.rows = [PROJHEAD, ['SEA', 'NE', '2026-09-09', '24', '19']];
+  S.SLATE.map = {}; S.slateGuessMap();
+  var pb = S.slateBuildRows('2026', '1');
+  chk('a projecting sheet still posts its projected scores',
+    pb.rows[0].proj_home_score === 24 && pb.rows[0].proj_away_score === 19,
+    { row: pb.rows[0] });
+  chk('a sheet with result columns but no score columns is unaffected',
+    S.slateScoresAreFinal(['home_team','away_team','spread_result']) === false);
 }
 
 /* ---- report ------------------------------------------------------------ */
