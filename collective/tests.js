@@ -922,6 +922,69 @@ if (typeof sandbox.teamKey === 'function') {
     S.pickLeadText({ projected_spread: -3 }, KICK) === '');
   chk('a timestamp with no kickoff yields nothing',
     S.pickLeadText({ submitted_at: KICK }, null) === '');
+
+  /* ---- calibration: claimed vs actual, folded onto the favoured side --- */
+  function pts(list) { return list.map(function (x) { return { p: x[0], y: x[1] }; }); }
+  var cal = S.calibrationBuckets(pts([
+    [0.70, 1], [0.70, 1], [0.70, 1], [0.70, 1], [0.70, 1], [0.70, 1], [0.70, 1],
+    [0.70, 0], [0.70, 0], [0.70, 0]
+  ]));
+  var b70 = cal.buckets[2];
+  chk('a 70% claim that wins 7 of 10 reads as calibrated',
+    cal.n === 10 && b70.n === 10 && near(b70.claimed, 0.7) && near(b70.actual, 0.7),
+    { b70: b70 });
+  chk('an away favourite folds onto the favoured side',
+    (function () {
+      /* p(home)=0.30 means the model favours the AWAY side at 70%; the away
+         side winning (y=0) is a hit */
+      var c = S.calibrationBuckets(pts([[0.30, 0], [0.30, 0], [0.30, 1]]));
+      var b = c.buckets[2];
+      return b.n === 3 && near(b.claimed, 0.7) && near(b.actual, 2 / 3, 1e-9);
+    })());
+  chk('a dead-even 50% lands in the lowest bucket as a home call',
+    (function () {
+      var c = S.calibrationBuckets(pts([[0.5, 1], [0.5, 0]]));
+      var b = c.buckets[0];
+      return b.n === 2 && near(b.claimed, 0.5) && near(b.actual, 0.5);
+    })());
+  chk('a certainty lands in the top bucket instead of falling off the end',
+    (function () {
+      var c = S.calibrationBuckets(pts([[1, 1]]));
+      return c.buckets[4].n === 1 && near(c.buckets[4].claimed, 1);
+    })());
+  chk('overconfidence is visible, not averaged away',
+    (function () {
+      /* claims 90%+, wins half: actual should read ~0.5 in the top bucket */
+      var c = S.calibrationBuckets(pts([[0.92, 1], [0.94, 0], [0.9, 1], [0.96, 0]]));
+      var b = c.buckets[4];
+      return b.n === 4 && near(b.actual, 0.5) && b.claimed > 0.9;
+    })());
+  chk('garbage points are counted as skipped, never binned',
+    (function () {
+      var c = S.calibrationBuckets(pts([[0.7, 1], [null, 1], [0.6, null], [2, 1]]));
+      return c.n === 1 && c.skipped === 3;
+    })());
+  chk('an empty record yields an empty readout, and no markup',
+    S.calibrationBuckets([]).n === 0 && S.calibrationHTML(S.calibrationBuckets([])) === '');
+
+  /* the harvest: settled games only, this model only, late excluded, tie skipped */
+  var CALGAMES = [
+    { result: { home_score: 24, away_score: 17 }, models: [
+      { creator_slug: 'edgedesk', model_slug: 'nfl', home_win_probability: 0.7 },
+      { creator_slug: 'edgedesk', model_slug: 'nfl', home_win_probability: 0.9, late: true },
+      { creator_slug: 'other', model_slug: 'x', home_win_probability: 0.5 },
+      { creator_slug: 'edgedesk', model_slug: 'nfl', locked: true },
+      { creator_slug: 'edgedesk', model_slug: 'nfl', cover_probability: 0.5 }
+    ] },
+    { result: { home_score: 20, away_score: 20 }, models: [
+      { creator_slug: 'edgedesk', model_slug: 'nfl', home_win_probability: 0.6 }
+    ] },
+    { models: [{ creator_slug: 'edgedesk', model_slug: 'nfl', home_win_probability: 0.6 }] }
+  ];
+  var harvest = S.calibrationPoints(CALGAMES, 'edgedesk', 'nfl');
+  chk('the harvest keeps one point: settled, this model, on time, with a probability',
+    harvest.length === 1 && near(harvest[0].p, 0.7) && harvest[0].y === 1,
+    { harvest: harvest });
 }
 
 /* ---- report ------------------------------------------------------------ */
