@@ -85,6 +85,7 @@ label .opt{color:var(--faint);text-transform:none;letter-spacing:0;font-weight:4
 .lock{color:var(--faint);font-size:12px}
 .lock:before{content:"\1F512\FE0E ";opacity:.7}
 .grade-win{color:var(--pos)}.grade-loss{color:var(--neg)}.grade-push{color:var(--warn)}
+tr.consrow td{color:var(--accent);border-top:1px dashed var(--border)}
 .gamecard{background:var(--surface);border:1px solid var(--border);border-radius:10px;margin-bottom:12px;overflow:hidden}
 .gamecard .gc-hd{display:flex;align-items:baseline;gap:10px;padding:11px 13px;border-bottom:1px solid var(--border);flex-wrap:wrap}
 .gc-hd .lbl{font-weight:700}
@@ -190,6 +191,7 @@ label .opt{color:var(--faint);text-transform:none;letter-spacing:0;font-weight:4
 .gb-row .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;letter-spacing:.05em;text-transform:uppercase}
 .gb-row .num{text-align:right}
 .gb-row .win{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.gb-row.ghead{color:var(--faint);font-size:9.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding-top:7px;padding-bottom:3px}
 .gb-row.cons{border-top:1px dashed var(--border);color:var(--accent);margin-top:2px;padding-top:7px}
 .gb-row.cons .nm{color:var(--accent)}
 .gb-dot{width:7px;height:7px;border-radius:50%;display:inline-block;justify-self:end}
@@ -769,17 +771,12 @@ function pickDisp(g,mr){
   if(p.team==null)return p.spread==null?'-':esc(g.home)+' '+fmtSpread(p.spread);
   return esc(p.team)+' '+(p.spread==null?'-':fmtSpread(p.spread));
 }
-/* The model's OUTRIGHT (moneyline) call, split from the spread pick. A
-   bare "61%" next to "pick ARI +10.5" read as the spread pick's chance,
-   and a home-stated "hw 61%" still asked the reader to keep a convention
-   in their head. A NAMED team needs neither: the outright winner is the
-   side the model's win probability favours, shown with that side's own
-   probability — "LAC 61%" is unambiguous next to any pick. The wire stays
-   home-stated; only the statement is turned onto the named side (exact —
-   there is no push mass on a win). The cover fallback is what a model
-   that posted without a win probability has (the API refuses some
-   spread/probability pairs; see probRejectHTML): a cover number carries
-   no outright winner, so it stays home-stated and labelled cv. */
+/* The model's OUTRIGHT (moneyline) call for the upload preview, where one
+   compact cell is worth having: the winner is the side the model's win
+   probability favours, shown with that side's own probability — "LAC 61%"
+   is unambiguous in a single cell. The wire stays home-stated; only the
+   statement is turned onto the named side (exact — there is no push mass
+   on a win). */
 function outrightCell(g,mr){
   var p=mr.home_win_probability;
   if(p!=null){
@@ -787,6 +784,21 @@ function outrightCell(g,mr){
     return {txt:esc(h?g.home:g.away)+' '+Math.round(100*(h?p:1-p))+'%',
       t:'the model’s outright (moneyline) winner and its chance to win the game'};
   }
+  if(mr.cover_probability!=null)
+    return {txt:'cv '+Math.round(100*mr.cover_probability)+'%',
+      t:'the model’s probability that the home side covers at the posted line — it posted no outright win probability'};
+  return null;
+}
+/* The HOME WIN % column, under a header that says so — a bare value under
+   a labelled column is what averages cleanly into the consensus row, which
+   states the same mean under the same header. The cover fallback is what a
+   model that posted without a win probability has (the API refuses some
+   spread/probability pairs; see probRejectHTML): a cover number is a
+   different quantity, so it keeps its cv label inside the cell. */
+function hwCell(mr){
+  if(mr.home_win_probability!=null)
+    return {txt:Math.round(100*mr.home_win_probability)+'%',
+      t:'the model’s probability that the home team wins outright (moneyline)'};
   if(mr.cover_probability!=null)
     return {txt:'cv '+Math.round(100*mr.cover_probability)+'%',
       t:'the model’s probability that the home side covers at the posted line — it posted no outright win probability'};
@@ -825,7 +837,7 @@ async function renderWall(view){
           lines+='<div class="gb-row">'+who+'<span class="lock" style="grid-column:2/4">Subscriber number</span><span class="gb-dot" style="background:var(--faint)"></span></div>';
           return;
         }
-        var p=outrightCell(g,mr);
+        var p=hwCell(mr);
         var dot=mr.grade
           ?({win:'var(--pos)',loss:'var(--neg)',push:'var(--warn)'}[mr.grade.pick_result]||'var(--dim)')
           :(memDot[wr.membership]||'var(--dim)');
@@ -834,16 +846,22 @@ async function renderWall(view){
           '<span class="num win"'+(p?' title="'+p.t+'"':'')+'>'+(p==null?'-':p.txt)+'</span>'+
           '<span class="gb-dot" style="background:'+dot+'"></span></div>';
       });
-      if(!g.models||!g.models.length)lines='<div class="gb-empty">No model has posted this game yet</div>';
+      if(!g.models||!g.models.length){
+        lines='<div class="gb-empty">No model has posted this game yet</div>';
+      }else{
+        /* headers, so a spread pick and a win probability stop reading as
+           two statements of one number jumbled into a column */
+        lines='<div class="gb-row ghead"><span>Model</span>'+
+          '<span class="num">Spread pick</span><span class="num">Home win %</span><span></span></div>'+lines;
+      }
       /* the market, above the model numbers: it is the thing they are all
          being measured against */
       lines=marketLineHtml(mkt,g)+lines;
       var c=g.consensus;
       if(c&&!c.locked&&c.n>1){
-        var cp=c.home_win_prob_mean==null?null:outrightCell(g,{home_win_probability:c.home_win_prob_mean});
         lines+='<div class="gb-row cons"><span class="nm">Consensus</span>'+
           '<span class="num">'+esc(g.home)+' '+fmtSpread(c.spread_mean)+'</span>'+
-          '<span class="num win" title="the models&#39; average outright call for this game">'+(cp==null?'-':cp.txt)+'</span><span></span></div>';
+          '<span class="num win" title="the mean home team win probability across the models that posted one">'+(c.home_win_prob_mean==null?'-':Math.round(100*c.home_win_prob_mean)+'%')+'</span><span></span></div>';
       }else if(c&&c.locked){
         lines+='<div class="gb-row cons"><span class="nm">Consensus</span><span class="lock" style="grid-column:2/4">Subscriber number</span><span></span></div>';
       }
@@ -1092,52 +1110,68 @@ async function renderBoard(view){
         if(g.consensus.locked){
           cons='<div class="consline"><span class="lock">Consensus is a subscriber number</span></div>';
         }else if(g.consensus.n){
-          cons='<div class="consline"><span>consensus <b>'+fmtSpread(g.consensus.spread_mean)+'</b></span><span>median <b>'+fmtSpread(g.consensus.spread_median)+'</b></span><span>spread σ <b>'+fmtNum(g.consensus.spread_stdev)+'</b></span><span>total <b>'+fmtNum(g.consensus.total_mean)+'</b></span><span>home win <b>'+fmtPct(g.consensus.home_win_prob_mean,0)+'</b></span><span>agreement <b>'+fmtPct(g.consensus.agreement,0)+'</b></span><span class="note">'+g.consensus.n+' models</span></div>';
+          /* only the stats the table's consensus row cannot carry — the
+             means sit in the table under the headers they were averaged
+             from, so repeating them here just said everything twice */
+          cons='<div class="consline"><span>spread median <b>'+fmtSpread(g.consensus.spread_median)+'</b></span><span>spread σ <b>'+fmtNum(g.consensus.spread_stdev)+'</b></span><span>agreement <b>'+fmtPct(g.consensus.agreement,0)+'</b></span></div>';
         }
       }
       var mg=marketFor(mkt,g);
       var mktSpread=(window.MCOdds&&mg)?MCOdds.consensusSpread(mg):null;
+      /* One TABLE per game, one stat per HEADED column — the chip row put
+         the outright call, the spread pick and their probabilities side by
+         side in one line, which read as one jumbled statement. Every
+         home-side column says so in its header, every model's missing
+         entry is a plain "-", and the consensus row states its means under
+         the same headers they were averaged from. */
       var rows='';
       (g.models||[]).forEach(function(mr){
         var who='<a href="#/'+esc(mr.creator_slug)+'">'+esc(mr.creator_slug)+'</a> <span class="note">'+esc(mr.model_slug)+'</span>';
         if(mr.locked){
-          rows+='<div class="mrow">'+who+'<span class="spacer"></span><span class="lock">Subscriber number</span></div>';
-        }else{
-          var grade=mr.grade?('<span class="mono grade-'+mr.grade.pick_result+'">'+mr.grade.pick_result+'</span> <span class="note mono">err '+fmtNum(mr.grade.margin_error)+' &middot; brier '+fmtNum(mr.grade.brier,3)+'</span>'):'';
-          /* The pick is stated from the PICKED team, through the same
-             pickedSide()/pickDisp() the wall uses — "pick NE +3.5", never
-             "pick away" beside a home-convention number, which read as the
-             picked team laying the home side's spread. The raw spread and
-             line stay visible for research, labelled with the home team so
-             their convention is on the screen rather than in a doc. */
-          var pk=pickedSide(g,mr);
-          rows+='<div class="mrow">'+who+(mr.late?'<span class="chip late">Late, ungraded</span>':'')+
-            '<span class="spacer"></span>'+
-            '<span class="mono">'+(pk.team!=null?('pick '+pickDisp(g,mr))
-              :(mr.pick_side?('pick '+esc(mr.pick_side)):'no pick'))+'</span>'+
-            (mr.projected_spread!=null
-              ? '<span class="mono" title="the model&#39;s own spread, stated for the home side">spr '+esc(g.home)+' '+fmtSpread(mr.projected_spread)+'</span>'
-              : (mr.line_at_submission!=null
-                  ? '<span class="mono" title="the market line this pick was posted against, stated for the home side">line '+esc(g.home)+' '+fmtSpread(mr.line_at_submission)+'</span>'
-                  : ''))+
-            (mr.projected_total!=null?'<span class="mono">tot '+fmtNum(mr.projected_total)+'</span>':'')+
-            (mktSpread!=null&&mr.projected_spread!=null&&window.MCOdds
-              ? '<span class="mono" title="Model spread minus the market consensus, both in home convention">vs mkt '+
-                MCOdds.edgeHtml(mr.projected_spread,mktSpread,g.home,g.away)+'</span>'
-              : '')+
-            /* the outright (moneyline) call, split from the spread pick and
-               stated for the NAMED winner — see outrightCell */
-            (function(){var oc=mr.home_win_probability!=null?outrightCell(g,mr):null;
-              return oc?'<span class="mono" title="'+oc.t+'">ml '+oc.txt+'</span>':'';})()+
-            /* home-stated, like every number on this wire — the old title said
-               "this pick covers", which is the exact inverse (less the push
-               mass) whenever the pick is the away team */
-            (mr.home_win_probability==null&&mr.cover_probability!=null
-              ? '<span class="mono" title="the model&#39;s probability that the home side covers at the posted line">cover '+esc(g.home)+' '+fmtPct(mr.cover_probability,0)+'</span>':'')+
-            grade+'</div>';
+          rows+='<tr><td>'+who+'</td><td colspan="8"><span class="lock">Subscriber number</span></td></tr>';
+          return;
         }
+        var grade=mr.grade?('<span class="mono grade-'+mr.grade.pick_result+'">'+mr.grade.pick_result+'</span> <span class="note mono">err '+fmtNum(mr.grade.margin_error)+' &middot; brier '+fmtNum(mr.grade.brier,3)+'</span>'):'-';
+        var hw=mr.home_win_probability;
+        var vsMkt=(mktSpread!=null&&mr.projected_spread!=null&&window.MCOdds)
+          ? '<span title="Model spread minus the market consensus, both in home convention"> '+MCOdds.edgeHtml(mr.projected_spread,mktSpread,g.home,g.away)+'</span>':'';
+        rows+='<tr>'+
+          '<td>'+who+(mr.late?' <span class="chip late">Late, ungraded</span>':'')+'</td>'+
+          '<td>'+(hw!=null?esc(hw>=0.5?g.home:g.away):'-')+'</td>'+
+          '<td class="num">'+(hw!=null?fmtPct(hw,0):'-')+'</td>'+
+          '<td class="num">'+(mr.projected_spread!=null?fmtSpread(mr.projected_spread)+vsMkt:'-')+'</td>'+
+          '<td class="num">'+(mr.line_at_submission!=null?fmtSpread(mr.line_at_submission):'-')+'</td>'+
+          '<td>'+(pickSideNorm(mr)?pickDisp(g,mr):'-')+'</td>'+
+          '<td class="num">'+(mr.cover_probability!=null?fmtPct(mr.cover_probability,0):'-')+'</td>'+
+          '<td class="num">'+(mr.projected_total!=null?fmtNum(mr.projected_total):'-')+'</td>'+
+          '<td>'+grade+'</td></tr>';
       });
-      if(!g.models||!g.models.length)rows='<div class="mrow"><span class="note">No model has submitted this game yet.</span></div>';
+      var c0=g.consensus;
+      if(rows&&c0&&!c0.locked&&c0.n>1){
+        rows+='<tr class="consrow">'+
+          '<td>Consensus <span class="note">'+c0.n+' models</span></td>'+
+          '<td>'+(c0.home_win_prob_mean!=null?esc(c0.home_win_prob_mean>=0.5?g.home:g.away):'-')+'</td>'+
+          '<td class="num">'+(c0.home_win_prob_mean!=null?fmtPct(c0.home_win_prob_mean,0):'-')+'</td>'+
+          '<td class="num">'+(c0.spread_mean!=null?fmtSpread(c0.spread_mean):'-')+'</td>'+
+          '<td class="num">-</td><td>-</td><td class="num">-</td>'+
+          '<td class="num">'+(c0.total_mean!=null?fmtNum(c0.total_mean):'-')+'</td>'+
+          '<td>-</td></tr>';
+      }
+      if(rows){
+        rows='<div class="tblwrap" style="margin:10px 13px 12px"><table><thead><tr>'+
+          '<th>Model</th>'+
+          '<th title="the outright (moneyline) winner this model calls">ML pick</th>'+
+          '<th class="num" title="the model&#39;s probability that the HOME team wins outright — the number the consensus averages">Home win %</th>'+
+          '<th class="num" title="the model&#39;s own projected spread, stated for the home side">Spread (home)</th>'+
+          '<th class="num" title="the market line the pick was posted against, stated for the home side">Market (home)</th>'+
+          '<th title="the spread pick, stated from the picked team at the market line">Spread pick</th>'+
+          '<th class="num" title="the model&#39;s probability that the HOME side covers at the posted line">Home cover %</th>'+
+          '<th class="num" title="the model&#39;s projected total points">Total</th>'+
+          '<th>Result</th>'+
+          '</tr></thead><tbody>'+rows+'</tbody></table></div>';
+      }else{
+        rows='<div class="mrow"><span class="note">No model has submitted this game yet.</span></div>';
+      }
       var mktRow=marketLineHtml(mkt,g);
       cards+='<div class="gamecard">'+hd+mktRow+cons+rows+
         (mg?'<div class="note" style="margin-top:6px"><a href="#market/'+esc(mg.event_id)+'">Full market, every book, line movement &rarr;</a></div>':'')+

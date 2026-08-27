@@ -754,6 +754,18 @@ if (typeof sandbox.teamKey === 'function') {
   chk('a row with no probability at all yields no cell',
     S.outrightCell({ home: 'LAC', away: 'ARI' }, { pick_side: 'home' }) === null);
 
+  /* the Home win % column: a bare value under a labelled header, matching
+     the number the consensus averages; the cover fallback keeps its cv
+     label inside the cell because it is a different quantity */
+  chk('the home win cell is the bare home-stated percentage',
+    (function () { var c = S.hwCell({ home_win_probability: 0.62, pick_side: 'away' });
+      return c && c.txt === '62%'; })());
+  chk('the home win cell cover fallback keeps its cv label',
+    (function () { var c = S.hwCell({ cover_probability: 0.44 });
+      return c && c.txt === 'cv 44%'; })());
+  chk('the home win cell is empty with nothing to show',
+    S.hwCell({ pick_side: 'home' }) === null);
+
   /* the pick is stated at the line it was made against, never at the
      model's own projection — stating it at the projection is how "your
      spread" got hand-mapped onto the market line to make the pick look
