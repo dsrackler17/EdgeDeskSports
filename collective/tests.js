@@ -865,6 +865,63 @@ if (typeof sandbox.teamKey === 'function') {
   S.slateGuessMap();
   chk('an EdgeDesk export keeps its canonical mapping over a remembered one',
     S.slateRememberedMap({ cols: rows2d[0].slice(), map: { projected_spread: 11 } }) === null);
+
+  /* ---- board reading aids: split flags, group-vs-market, lead time -----
+     Three additions driven by "what is worth looking at on this board".
+     None of them invent a number: sigma and the consensus mean are already
+     computed per game, and the lead time reads a timestamp the games
+     payload may or may not carry. */
+  var SPLITSET = [
+    { game_id: 1, consensus: { n: 3, spread_stdev: 4.2 } },   /* widest */
+    { game_id: 2, consensus: { n: 3, spread_stdev: 2.6 } },
+    { game_id: 3, consensus: { n: 3, spread_stdev: 1.9 } },
+    { game_id: 4, consensus: { n: 3, spread_stdev: 1.7 } },   /* 4th, over floor */
+    { game_id: 5, consensus: { n: 3, spread_stdev: 0.4 } },   /* under the floor */
+    { game_id: 6, consensus: { n: 1, spread_stdev: 9.9 } },   /* one model is not a split */
+    { game_id: 7, consensus: { n: 3, spread_stdev: 9.9, locked: true } }
+  ];
+  var flags = S.splitGames(SPLITSET);
+  chk('only the widest few games are flagged as split',
+    Object.keys(flags).length === 3, { got: Object.keys(flags) });
+  chk('the split flags are the widest three by sigma',
+    flags['1'] === 4.2 && flags['2'] === 2.6 && flags['3'] === 1.9, { got: flags });
+  chk('a game inside a key number of agreement is never flagged',
+    flags['5'] === undefined);
+  chk('a single model is not a disagreement',
+    flags['6'] === undefined);
+  chk('a locked consensus is not flagged',
+    flags['7'] === undefined);
+  chk('a slate nobody split on gets no flags',
+    Object.keys(S.splitGames([{ game_id: 9, consensus: { n: 4, spread_stdev: 0.2 } }])).length === 0);
+  chk('a game with no id is still keyed uniquely by its teams',
+    S.gameKey({ home: 'SEA', away: 'NE' }) === 'NE@SEA');
+
+  /* the group-vs-market edge needs BOTH numbers and a real consensus; it
+     is rendered through MCOdds, which this offline suite does not load, so
+     what is asserted here is that it refuses rather than throws */
+  chk('no group edge without a market number',
+    S.consensusEdge({ home: 'SEA', away: 'NE' }, { n: 3, spread_mean: -3.5 }, null) === null);
+  chk('no group edge from a single model',
+    S.consensusEdge({ home: 'SEA', away: 'NE' }, { n: 1, spread_mean: -3.5 }, -2.0) === null);
+  chk('no group edge from a locked consensus',
+    S.consensusEdge({ home: 'SEA', away: 'NE' }, { n: 3, spread_mean: -3.5, locked: true }, -2.0) === null);
+  chk('the group edge badge is empty rather than broken markup',
+    S.consensusEdgeBadge({ home: 'SEA', away: 'NE' }, null, null) === '');
+
+  /* lead time: dormant until the games payload carries a timestamp */
+  var KICK = '2026-09-13T17:00:00Z';
+  chk('a pick posted three days out reads in days',
+    S.pickLeadText({ submitted_at: '2026-09-10T17:00:00Z' }, KICK) === 'posted 3d before kickoff');
+  chk('a pick posted the same morning reads in hours',
+    S.pickLeadText({ submitted_at: '2026-09-13T09:00:00Z' }, KICK) === 'posted 8h before kickoff');
+  chk('a pick posted after kickoff says so',
+    S.pickLeadText({ submitted_at: '2026-09-13T19:00:00Z' }, KICK) === 'posted after kickoff');
+  chk('either timestamp field the API might grow is read',
+    S.pickLeadText({ received_at: '2026-09-11T17:00:00Z' }, KICK) === 'posted 2d before kickoff');
+  chk('no timestamp yields nothing at all, never a bare label',
+    S.pickLeadText({ projected_spread: -3 }, KICK) === '');
+  chk('a timestamp with no kickoff yields nothing',
+    S.pickLeadText({ submitted_at: KICK }, null) === '');
 }
 
 /* ---- report ------------------------------------------------------------ */
