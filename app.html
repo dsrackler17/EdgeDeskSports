@@ -22507,9 +22507,11 @@ function fbP4Ensure(){
   if(window.EDCfbP4&&window.EDCfbP4Params)return Promise.resolve();
   return fbScript('football/cfb_p4/params.js')
     .then(function(){return fbScript('football/cfb_p4/engine.js');})
-    /* the v1.1 calibration record is display-only and optional: it changes
-       no number, so a missing artifact must not gate the board */
+    /* the v1.1 calibration and v1.2 experiment records are display-only and
+       optional: they change no number, so a missing artifact must not gate
+       the board */
     .then(function(){return fbScript('football/cfb_p4/calibration.js').catch(function(){});})
+    .then(function(){return fbScript('football/cfb_p4/v12_correction.js').catch(function(){});})
     .then(function(){ if(!window.EDCfbP4||!window.EDCfbP4Params)throw new Error('Power 4 engine loaded but globals missing'); });
 }
 function fbP4Season(){
@@ -23318,6 +23320,38 @@ function fbP4ModelCard(){
       +'<span class="mono">football/cfb_p4/research/report/error_slices.json</span> · '
       +'<span class="mono" style="color:var(--faint)">'+fbEsc(C.calibration_version)+' · generated '
       +fbEsc(String(C.generated_at).slice(0,10))+'</span></div>';
+  }
+  /* v1.2 experiment record — the dashboard's targeted fixes tested walk-forward
+     as hypotheses. Nothing survived, so no adjusted number exists anywhere:
+     every spread on this board is still the raw v1.0 control. */
+  var V=window.EDCfbP4V12;
+  if(V&&V.directional_robustness_headline){
+    var pre=V.preseason_prior||{},dog=V.home_dog||{},mv=V.movement_model||{};
+    var H=V.directional_robustness_headline;
+    var pP=H.preseason_wk0_2_3plus,pI=H.in_season_wk3p_3plus,p7=H.in_season_wk3p_7plus;
+    var dogGain=(dog.record_oos&&dog.record_oos.mae_before!=null)
+      ?(dog.record_oos.mae_before-dog.record_oos.mae_after).toFixed(2):null;
+    s+='<div class="mdl-warn" style="margin-bottom:12px"><b>v1.2 correction experiments.</b> '
+      +'The dashboard’s targets, each tested walk-forward as a hypothesis: a weeks 0–2 rescale of the raw '
+      +'spread, a home-dog de-bias (keyed on the model’s own call — never the market’s), and a movement '
+      +'model on the directional signal. '
+      +'<b>All three rejected out of sample'
+      +((pre.survived||dog.survived||mv.survived)?' — except as flagged below':'')+'.</b> '
+      +'The preseason rescale made MAE worse'
+      +(pre.record_oos?(' ('+fbEsc(String(pre.record_oos.mae_raw))+' raw vs '+fbEsc(String(pre.record_oos['mae_'+(pre.winner||'shrink')]))+')'):'')
+      +' — the weeks 0–2 gap is missing information, not a fixable scale. The home-dog de-bias helped'
+      +(dogGain!=null?(' only '+dogGain+' pts'):'')+', under the pre-registered 0.05 bar — it stays a hypothesis. '
+      +'The movement logistic could not beat the constant rate'
+      +(mv.record_oos?(' (Brier '+fbEsc(String(mv.record_oos.brier_model))+' vs '+fbEsc(String(mv.record_oos.brier_constant_base))+')'):'')+'. '
+      +'So <b>no adjusted number exists</b>: every spread here remains the raw v1.0 control. '
+      +'What the robustness sweep DID establish: <b>the toward-model signal is in-season only</b> — '
+      +(pP?('weeks 0–2 are a coin flip ('+fbEsc(String(pP.toward_pct))+'% at 3+, n='+pP.n+')'):'')
+      +(pI?(', weeks 3+ run '+fbEsc(String(pI.toward_pct))+'%'):'')
+      +(p7?(' and reach '+fbEsc(String(p7.toward_pct))+'% on 7+ point disagreements'):'')
+      +'. Treat preseason disagreements as information deficits, not signals. Full record: '
+      +'<span class="mono">football/cfb_p4/research/report/v12_experiments.json</span> · '
+      +'<span class="mono" style="color:var(--faint)">'+fbEsc(V.correction_version)+' · generated '
+      +fbEsc(String(V.generated_at).slice(0,10))+'</span></div>';
   }
   return s;
 }
