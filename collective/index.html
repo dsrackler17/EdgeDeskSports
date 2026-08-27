@@ -1979,6 +1979,26 @@ async function parseXLSX(buf){
    market instead of against the result, and leaves closing line value with
    nothing to compute from. */
 var AMBIGUOUS_SPREAD=['spread','line','pick_line'];
+/* home_score / away_score are a creator's PROJECTED scores in some sheets
+   and the FINAL score in others — the EdgeDesk exports call the final score
+   exactly that, right beside final_margin and spread_result. Mapped as a
+   projection, a finished game posts the actual result as what the model
+   expected, and because margin accuracy is graded from projected scores in
+   preference to the spread, that is a fabricated perfect projection.
+
+   The file itself resolves the ambiguity: a sheet carrying final_margin or
+   spread_result is reporting what happened, so its score columns are
+   results and are left unmapped. A sheet with score columns and no result
+   columns is projecting, and they map as before. A creator who really does
+   mean them as projections can still say so in the mapping dropdowns —
+   an explicit choice is always honoured. */
+var SLATE_RESULT_MARKERS=['final_margin','final_total','spread_result','total_result','ml_result'];
+var AMBIGUOUS_SCORE=['home_score','away_score'];
+function slateScoresAreFinal(cols){
+  var have={};(cols||[]).forEach(function(h){have[String(h).toLowerCase().trim()]=1;});
+  if(!AMBIGUOUS_SCORE.some(function(n){return have[n];}))return false;
+  return SLATE_RESULT_MARKERS.some(function(n){return have[n];});
+}
 
 /* The EdgeDesk Football export (app.html Research → Football → Download CSV,
    44 columns) is auto-mapped by name below — model_home_line is already the
@@ -2132,8 +2152,10 @@ function slateWinProb(value,header){
 function slateGuessMap(){
   SLATE.map={};
   SLATE.coverIsPickSide=false;
+  SLATE.finalScoreCols=slateScoresAreFinal(SLATE.cols);
   SLATE.cols.forEach(function(h,i){
     var n=String(h).toLowerCase().trim();
+    if(SLATE.finalScoreCols&&AMBIGUOUS_SCORE.indexOf(n)>=0)return;
     SLATE_FIELDS.forEach(function(fd){
       if(SLATE.map[fd.f]===undefined&&fd.syn.indexOf(n)>=0)SLATE.map[fd.f]=i;
     });
@@ -3627,6 +3649,10 @@ async function renderCreatorDash(view,me){
           '<td><select data-slf="'+fd.f+'">'+opts.replace('value="'+sel+'"','value="'+sel+'" selected')+'</select></td></tr>';
       }).join('');
       var ignored=SLATE.cols.filter(function(h){var n=String(h).toLowerCase().trim();return ['result','win','won','w/l','grade'].indexOf(n)>=0;});
+      /* the final-score columns are ignored for the same reason, but only
+         when the file's own result columns prove that is what they are */
+      if(SLATE.finalScoreCols)ignored=ignored.concat(SLATE.cols.filter(function(h){
+        return AMBIGUOUS_SCORE.indexOf(String(h).toLowerCase().trim())>=0;}));
       $('slMap').innerHTML='<details style="margin-top:12px"'+(SLATE.missingRequired?' open':'')+'>'+
         '<summary style="cursor:pointer;font-size:12px;color:var(--dim);letter-spacing:.08em;text-transform:uppercase">'+
         'Column mapping'+(SLATE.remembered?' &middot; remembered from your last slate':'')+'</summary>'+

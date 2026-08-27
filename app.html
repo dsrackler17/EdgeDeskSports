@@ -23254,9 +23254,59 @@ window.fbP4CsvDownload=function(){
    This does NOT post on the reader's behalf. Posting is an account action
    against their own creator profile, so the button hands them the file and
    opens the dashboard; they choose the model, week and data type there. */
+/* ---- market line sanity: every home team a dog is a SIGN ERROR --------
+   fbP4Market reads cfb.lines.spread as a home-side BETTING number and
+   negates it into the engine's margin convention, so a lines table filled
+   with positive magnitudes ("USC 38.5" for a USC favourite) arrives with
+   every line inverted. Nothing downstream can tell: the gaps just come out
+   enormous, the recommendations fire on them, and a slate built from that
+   reads as a model with a 40-point edge on the field.
+
+   Home teams are favoured in most college games, so a board on which EVERY
+   home team is a market underdog is not a slate — it is a sign error. Pure
+   and given the numbers rather than the state, so it can be reasoned about
+   and tested on its own. */
+function fbP4SpreadSanity(lines){
+  var n=0,dogs=0;
+  (lines||[]).forEach(function(v){
+    if(v==null||!isFinite(v))return;
+    n++;if(v<0)dogs++;      /* margin convention: <0 = home NOT favoured */
+  });
+  /* Under six games a real slate can genuinely be all road favourites. */
+  if(n<6||dogs!==n)return null;
+  return {n:n,dogs:dogs};
+}
+function fbP4LineSanity(){
+  return fbP4SpreadSanity((FB.p4.up||[]).map(function(u){
+    var m=fbP4Market(u);return m?m.spread_line:null;}));
+}
+function fbP4LineWarnHTML(){
+  var bad=fbP4LineSanity();
+  if(!bad)return '';
+  return '<div class="gd-modelnote" style="flex-basis:100%;border-left:3px solid var(--bad,#e26044);padding-left:10px">'
+    +'<b style="color:var(--bad,#e26044)">Market lines look inverted.</b> All '+bad.n
+    +' games with a book number have the HOME team as an underdog, which does not happen on a real slate. '
+    +'The most likely cause is that <span class="mono">cfb.lines.spread</span> holds positive magnitudes '
+    +'(<span class="mono">38.5</span> for a home favourite) where a home-side betting number '
+    +'(<span class="mono">-38.5</span>) is expected, so every line — and every gap and recommendation '
+    +'built on it — is turned around. Posting this slate would put those numbers on the public record. '
+    +'Fix the source lines, reload the board, and the warning clears.</div>';
+}
 var FBP4_COLLECTIVE_URL='https://edgedesksports.com/collective/#dashboard';
 window.fbP4PostToCollective=function(){
   if(!FB.p4.up.length){alert('No Power 4 games on the board to post yet.');return;}
+  /* The Collective's record is public and graded; a slate built on inverted
+     lines does not belong on it. The CSV download stays available so the
+     numbers can still be inspected. */
+  var bad=fbP4LineSanity();
+  if(bad){
+    alert('Not posting: the market lines look inverted.\n\nAll '+bad.n+' games with a book number have '
+      +'the home team as an underdog, which does not happen on a real slate. Every spread gap and '
+      +'recommendation on this board is built on those lines.\n\nFix cfb.lines (a home favourite is a '
+      +'NEGATIVE home-side number), reload the board, then post. Download CSV still works if you want to '
+      +'inspect the numbers first.');
+    return;
+  }
   window.fbP4CsvDownload();
   setTimeout(function(){
     try{window.open(FBP4_COLLECTIVE_URL,'_blank','noopener');}catch(_){}
@@ -23268,6 +23318,7 @@ function fbP4CtlHTML(){
     +'<button class="btn ghost sm" onclick="fbP4PostToCollective()">Post to Collective</button>'
     +'<span class="ec mut">'+n+' Power 4 game'+(n===1?'':'s')
     +' · one row per game, same columns as the NFL export · research, unproven</span>'
+    +fbP4LineWarnHTML()
     +'<div class="gd-modelnote" style="flex-basis:100%">'
     +'<b>Posting to the Collective.</b> The download\u2019s column names are the ones the '
     +'Collective\u2019s uploader already recognises, so the slate maps with nothing to fix by '
