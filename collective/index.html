@@ -192,6 +192,11 @@ tr.consrow td{color:var(--accent);border-top:1px dashed var(--border)}
 .gb-row .num{text-align:right}
 .gb-row .win{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .gb-row.ghead{color:var(--faint);font-size:9.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding-top:7px;padding-bottom:3px}
+/* game flags: where the group leaves the market, and where it splits */
+.gflag{font-family:'JetBrains Mono',monospace;font-size:9.5px;font-weight:700;letter-spacing:.04em;border-radius:9px;padding:2px 7px;white-space:nowrap;border:1px solid}
+.gflag.edge{color:var(--accent);border-color:rgba(77,141,255,.42);background:rgba(77,141,255,.09)}
+.gflag.split{color:var(--warn);border-color:rgba(217,154,43,.42);background:rgba(217,154,43,.09)}
+.gc-hd .gflag,.gb-hd .gflag{margin-left:2px}
 .gb-row.cons{border-top:1px dashed var(--border);color:var(--accent);margin-top:2px;padding-top:7px}
 .gb-row.cons .nm{color:var(--accent)}
 .gb-dot{width:7px;height:7px;border-radius:50%;display:inline-block;justify-self:end}
@@ -804,6 +809,73 @@ function hwCell(mr){
       t:'the model’s probability that the home side covers at the posted line — it posted no outright win probability'};
   return null;
 }
+/* One stable key for a game across the wall and the board. The board's games
+   carry a game_id; a game the odds feed has not linked yet is still uniquely
+   named by its two teams. */
+function gameKey(g){
+  if(!g)return '';
+  return String(g.game_id!=null?g.game_id:(String(g.away)+'@'+String(g.home)));
+}
+/* ---- where the GROUP departs from the market --------------------------
+   The consensus mean and the market close are both home convention, so the
+   difference between them is the one number the Collective produces that
+   no single model can: where the room collectively leaves the price. It is
+   computed through MCOdds.edge so "toward SEA" means exactly what it means
+   in every other edge readout on the site, rather than being a second
+   definition that drifts. */
+function consensusEdge(g,c,mktSpread){
+  if(!g||!c||c.locked||!(c.n>1))return null;
+  if(c.spread_mean==null||mktSpread==null)return null;
+  if(!window.MCOdds||typeof MCOdds.edge!=='function')return null;
+  var e=MCOdds.edge(c.spread_mean,mktSpread,g.home,g.away);
+  return (e&&e.side)?e:null;
+}
+function consensusEdgeBadge(g,c,mktSpread){
+  var e=consensusEdge(g,c,mktSpread);
+  if(!e)return '';
+  return '<span class="gflag edge" title="The models\u2019 mean spread minus the market consensus, both stated for the home side">'+
+    'GROUP '+esc(fmtNum(e.points))+' \u2192 '+esc(e.side)+'</span>';
+}
+/* ---- the games the models split hardest -------------------------------
+   Spread sigma is computed per game already; what it lacked was a reader.
+   The widest few get a badge, with a floor so a slate everyone agrees on is
+   never told it is split: inside a point and a half the models sit within
+   one key number of each other, which is agreement. Ranked across the games
+   actually on screen, so "widest this week" means what it says. */
+var SPLIT_MIN_SIGMA=1.5;
+var SPLIT_MAX_FLAGS=3;
+function splitGames(games){
+  var out={};
+  (games||[]).map(function(g){
+    var c=g&&g.consensus;
+    return (c&&!c.locked&&c.n>1&&c.spread_stdev!=null&&c.spread_stdev>=SPLIT_MIN_SIGMA)
+      ?{k:gameKey(g),s:c.spread_stdev}:null;
+  }).filter(Boolean).sort(function(a,b){return b.s-a.s;})
+    .slice(0,SPLIT_MAX_FLAGS).forEach(function(x){out[x.k]=x.s;});
+  return out;
+}
+function splitBadge(flags,g){
+  var s=flags?flags[gameKey(g)]:null;
+  if(s==null)return '';
+  return '<span class="gflag split" title="The models disagree most on this game \u2014 standard deviation of their spreads">'+
+    'SPLIT \u03c3 '+esc(fmtNum(s))+'</span>';
+}
+/* ---- how long before kickoff a pick was posted ------------------------
+   A verified record persuades only if a reader can see nothing was posted
+   after the fact. The games payload does not carry a per-pick timestamp
+   yet (only the creator's own submissions feed does), so this reads
+   whichever field the API grows and renders nothing until one exists. */
+function pickLeadText(mr,kickoffIso){
+  var t=mr&&(mr.submitted_at||mr.received_at||mr.posted_at);
+  if(!t||!kickoffIso)return '';
+  var ms=new Date(kickoffIso).getTime()-new Date(t).getTime();
+  if(!isFinite(ms))return '';
+  if(ms<0)return 'posted after kickoff';
+  var h=ms/3600000;
+  if(h<1)return 'posted '+Math.max(1,Math.round(ms/60000))+'m before kickoff';
+  if(h<48)return 'posted '+Math.round(h)+'h before kickoff';
+  return 'posted '+Math.round(h/24)+'d before kickoff';
+}
 async function renderWall(view){
   view.innerHTML='<div class="emptybox">Loading the wall&hellip;</div>';
   try{
@@ -824,9 +896,14 @@ async function renderWall(view){
 
     /* the board: every game on the current slate, every model's number */
     var boards='';
-    ((board&&board.games)||[]).slice(0,12).forEach(function(g){
+    var shownGames=((board&&board.games)||[]).slice(0,12);
+    var splitFlags=splitGames(shownGames);
+    shownGames.forEach(function(g){
+      var mgW=marketFor(mkt,g);
+      var mktSpreadW=(window.MCOdds&&mgW)?MCOdds.consensusSpread(mgW):null;
       var hd='<div class="gb-hd"><span>'+esc(g.away)+' @ '+esc(g.home)+'</span>'+
         '<span class="tm">'+kickoffFmt(g.kickoff_at)+'</span>'+
+        consensusEdgeBadge(g,g.consensus,mktSpreadW)+splitBadge(splitFlags,g)+
         (g.result?'<span class="fin">FINAL '+g.result.away_score+' - '+g.result.home_score+'</span>':'')+
         '</div>';
       var lines='';
@@ -841,7 +918,8 @@ async function renderWall(view){
         var dot=mr.grade
           ?({win:'var(--pos)',loss:'var(--neg)',push:'var(--warn)'}[mr.grade.pick_result]||'var(--dim)')
           :(memDot[wr.membership]||'var(--dim)');
-        lines+='<div class="gb-row">'+who+
+        var lead=pickLeadText(mr,g.kickoff_at);
+        lines+='<div class="gb-row"'+(lead?' title="'+esc(lead)+'"':'')+'>'+who+
           '<span class="num">'+pickDisp(g,mr)+(mr.late?' <span style="color:var(--warn)">LATE</span>':'')+'</span>'+
           '<span class="num win"'+(p?' title="'+p.t+'"':'')+'>'+(p==null?'-':p.txt)+'</span>'+
           '<span class="gb-dot" style="background:'+dot+'"></span></div>';
@@ -1101,8 +1179,14 @@ async function renderBoard(view){
     wk+='</div>';
     var head='<h1>The Board</h1><p class="lede">Every game on the slate with each model’s number and, after settlement, its grade. Pre-kickoff numbers and consensus are for subscribers. Settled games are the public record.</p>'+wk;
     var cards='';
+    var boardSplit=splitGames(d.games||[]);
     (d.games||[]).forEach(function(g){
+      /* the market is needed for the header badge, so it is resolved before
+         the header rather than beside the model rows */
+      var mg=marketFor(mkt,g);
+      var mktSpread=(window.MCOdds&&mg)?MCOdds.consensusSpread(mg):null;
       var hd='<div class="gc-hd"><span class="lbl">'+esc(g.label)+'</span><span class="tm">'+kickoffFmt(g.kickoff_at)+'</span>'+
+        consensusEdgeBadge(g,g.consensus,mktSpread)+splitBadge(boardSplit,g)+
         (g.result?'<span class="spacer"></span><span class="fin">'+g.result.away_score+' - '+g.result.home_score+'</span><span class="tm">close '+fmtSpread(g.result.closing_spread)+' / '+fmtNum(g.result.closing_total)+'</span>':'')+
         '</div>';
       var cons='';
@@ -1116,8 +1200,6 @@ async function renderBoard(view){
           cons='<div class="consline"><span>spread median <b>'+fmtSpread(g.consensus.spread_median)+'</b></span><span>spread σ <b>'+fmtNum(g.consensus.spread_stdev)+'</b></span><span>agreement <b>'+fmtPct(g.consensus.agreement,0)+'</b></span></div>';
         }
       }
-      var mg=marketFor(mkt,g);
-      var mktSpread=(window.MCOdds&&mg)?MCOdds.consensusSpread(mg):null;
       /* One TABLE per game, one stat per HEADED column — the chip row put
          the outright call, the spread pick and their probabilities side by
          side in one line, which read as one jumbled statement. Every
@@ -1135,8 +1217,10 @@ async function renderBoard(view){
         var hw=mr.home_win_probability;
         var vsMkt=(mktSpread!=null&&mr.projected_spread!=null&&window.MCOdds)
           ? '<span title="Model spread minus the market consensus, both in home convention"> '+MCOdds.edgeHtml(mr.projected_spread,mktSpread,g.home,g.away)+'</span>':'';
+        var lead=pickLeadText(mr,g.kickoff_at);
         rows+='<tr>'+
-          '<td>'+who+(mr.late?' <span class="chip late">Late, ungraded</span>':'')+'</td>'+
+          '<td>'+who+(mr.late?' <span class="chip late">Late, ungraded</span>':'')+
+            (lead?'<br><span class="note" style="font-size:11px">'+esc(lead)+'</span>':'')+'</td>'+
           '<td>'+(hw!=null?esc(hw>=0.5?g.home:g.away):'-')+'</td>'+
           '<td class="num">'+(hw!=null?fmtPct(hw,0):'-')+'</td>'+
           '<td class="num">'+(mr.projected_spread!=null?fmtSpread(mr.projected_spread)+vsMkt:'-')+'</td>'+
