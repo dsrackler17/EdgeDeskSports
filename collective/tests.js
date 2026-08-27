@@ -734,19 +734,46 @@ if (typeof sandbox.teamKey === 'function') {
      column posted raw, inverting every away pick; and ml_home — a synonym
      for this field — usually holds a PRICE, which read +100 as certainty. */
 
-  /* the board cell: home-stated whatever the pick, labelled with its kind */
-  chk('the board probability cell is home-stated even for an away pick',
+  /* the outright call is split from the spread pick and NAMES its winner,
+     so no reader needs a sign convention to know which team a % belongs to */
+  chk('the outright cell names the favoured side with its own chance',
     (function () {
-      var c = S.homeProbCell({ home_win_probability: 0.62, pick_side: 'away' });
-      return c && near(c.v, 0.62) && c.k === 'hw';
+      var c = S.outrightCell({ home: 'LAC', away: 'ARI' }, { home_win_probability: 0.61, pick_side: 'away' });
+      return c && c.txt === 'LAC 61%';
     })());
-  chk('the cover fallback keeps the wire value and is labelled as cover',
+  chk('a home dog outright call names the away team',
     (function () {
-      var c = S.homeProbCell({ cover_probability: 0.44, pick_side: 'away' });
-      return c && near(c.v, 0.44) && c.k === 'cv';
+      var c = S.outrightCell({ home: 'IND', away: 'BAL' }, { home_win_probability: 0.38 });
+      return c && c.txt === 'BAL 62%';
+    })());
+  chk('the cover fallback stays home-stated and labelled cv',
+    (function () {
+      var c = S.outrightCell({ home: 'LAC', away: 'ARI' }, { cover_probability: 0.44, pick_side: 'away' });
+      return c && c.txt === 'cv 44%';
     })());
   chk('a row with no probability at all yields no cell',
-    S.homeProbCell({ pick_side: 'home' }) === null);
+    S.outrightCell({ home: 'LAC', away: 'ARI' }, { pick_side: 'home' }) === null);
+
+  /* the pick is stated at the line it was made against, never at the
+     model's own projection — stating it at the projection is how "your
+     spread" got hand-mapped onto the market line to make the pick look
+     right, posting the market as the model on every game */
+  chk('pickNum prefers the market line the pick was made against',
+    (function () {
+      var n = S.pickNum({ projected_spread: -4.9, line_at_submission: -10.5 });
+      return n && near(n.v, -10.5) && n.own === false;
+    })());
+  chk('a pick with no market line falls back to the model own spread',
+    (function () {
+      var n = S.pickNum({ projected_spread: -4.9 });
+      return n && near(n.v, -4.9) && n.own === true;
+    })());
+  chk('an away pick displays the market line exact inverse',
+    S.pickDisp({ home: 'LAC', away: 'ARI' },
+      { pick_side: 'away', projected_spread: -4.9, line_at_submission: -10.5 }) === 'ARI +10.5');
+  chk('the model own spread never leaks into the pick statement',
+    S.pickDisp({ home: 'LAC', away: 'ARI' },
+      { pick_side: 'home', projected_spread: -4.9, line_at_submission: -10.5 }) === 'LAC -10.5');
 
   /* the price-shaped values a win-probability column actually receives */
   chk('a home moneyline price reads as its implied probability',
@@ -809,6 +836,23 @@ if (typeof sandbox.teamKey === 'function') {
   chk('an ML-pick probability with no readable ml_pick is withheld',
     mBuilt.rows[2].home_win_probability === undefined,
     { got: mBuilt.rows[2].home_win_probability });
+
+  /* ---- a remembered mapping never overrides the known EdgeDesk auto-map --
+     A hand-flip of "your spread" onto ref_home_line was remembered across
+     uploads: every slate posted the market line as the model own number,
+     the wall showed a spread the model own win probability contradicted,
+     and the API rejected the spread/probability pair. */
+  chk('a remembered mapping is reused for an ordinary file',
+    (function () {
+      var m2 = S.slateRememberedMap({ cols: mRows[0].slice(), map: { home_team: 0 } });
+      return m2 && m2.home_team === 0;
+    })());
+  chk('a remembered mapping with different headers is ignored',
+    S.slateRememberedMap({ cols: ['a', 'b'], map: { home_team: 0 } }) === null);
+  S.SLATE.cols = rows2d[0]; S.SLATE.rows = rows2d; S.SLATE.map = {};
+  S.slateGuessMap();
+  chk('an EdgeDesk export keeps its canonical mapping over a remembered one',
+    S.slateRememberedMap({ cols: rows2d[0].slice(), map: { projected_spread: 11 } }) === null);
 }
 
 /* ---- report ------------------------------------------------------------ */

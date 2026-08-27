@@ -268,17 +268,17 @@
         if (m.locked) return '<div class="mrow">' + who + '<span class="sp"></span><span class="lock">Subscriber number</span></div>';
         var grade = m.grade ? ' <span class="mono ' + esc(m.grade.pick_result) + '">' + esc(m.grade.pick_result) + '</span>' : '';
         /* Same convention as pickedSide() in collective/index.html, which is
-           the canonical statement of it: projected_spread (and the
-           line_at_submission fallback) arrive in HOME convention, pick_side
-           says which team was picked, and an AWAY pick displays the exact
-           inverse. "pick away · spr -3.5" read as the away team laying 3.5;
-           the pick is now stated from the picked team, and the raw home
-           number keeps its home label. */
+           the canonical statement of it: line_at_submission and
+           projected_spread arrive in HOME convention, pick_side says which
+           team was picked, and an AWAY pick displays the exact inverse. The
+           pick is stated at the MARKET line it was made against (the model's
+           own spread is the spr chip's fact, not the pick's number), falling
+           back to the model's spread only when no market line was posted. */
         var side = String(m.pick_side || '').trim().toLowerCase();
         if (side !== 'home' && side !== 'away') side = null;
         var team = side === 'home' ? g.home : (side === 'away' ? g.away : null);
-        var v = m.projected_spread != null ? Number(m.projected_spread)
-          : (m.line_at_submission != null ? Number(m.line_at_submission) : null);
+        var v = m.line_at_submission != null ? Number(m.line_at_submission)
+          : (m.projected_spread != null ? Number(m.projected_spread) : null);
         if (v != null && !isFinite(v)) v = null;
         var pspr = v == null ? null : (side === 'away' ? (v === 0 ? 0 : -v) : v);
         return '<div class="mrow">' + who + '<span class="sp"></span>' +
@@ -287,7 +287,14 @@
           (m.projected_spread != null
             ? '<span class="mono" title="the model’s own spread, stated for the home side">spr ' + esc(g.home) + ' ' + spr(m.projected_spread) + '</span>'
             : '') +
-          (m.home_win_probability != null ? '<span class="mono" title="the model’s home team win probability (moneyline)">hw ' + pct(m.home_win_probability, 0) + '</span>' : '') +
+          /* the outright (moneyline) call, split from the spread pick and
+             stated for the NAMED winner — the side the win probability
+             favours, with that side's own chance */
+          (m.home_win_probability != null ? (function () {
+            var p = m.home_win_probability, h = p >= 0.5;
+            return '<span class="mono" title="the model’s outright (moneyline) winner and its chance to win the game">ml '
+              + esc(h ? g.home : g.away) + ' ' + pct(h ? p : 1 - p, 0) + '</span>';
+          })() : '') +
           /* what a model that posted without a win probability has; home-stated
              on the wire, like every number here, so it is labelled as such */
           (m.home_win_probability == null && m.cover_probability != null

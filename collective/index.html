@@ -185,10 +185,11 @@ label .opt{color:var(--faint);text-transform:none;letter-spacing:0;font-weight:4
 .gb-hd{display:flex;gap:12px;align-items:baseline;padding:8px 14px;background:var(--surface2);font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:700;letter-spacing:.06em}
 .gb-hd .tm{color:var(--faint);font-weight:400;font-size:11px;letter-spacing:.03em}
 .gb-hd .fin{margin-left:auto;color:var(--text)}
-.gb-row{display:grid;grid-template-columns:minmax(120px,1.6fr) minmax(96px,1fr) 66px 18px;gap:8px;padding:6px 14px;font-family:'JetBrains Mono',monospace;font-size:12px;align-items:center}
+.gb-row{display:grid;grid-template-columns:minmax(120px,1.6fr) minmax(96px,1fr) minmax(76px,.9fr) 18px;gap:8px;padding:6px 14px;font-family:'JetBrains Mono',monospace;font-size:12px;align-items:center}
 .gb-row a{color:var(--text)}
 .gb-row .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;letter-spacing:.05em;text-transform:uppercase}
 .gb-row .num{text-align:right}
+.gb-row .win{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .gb-row.cons{border-top:1px dashed var(--border);color:var(--accent);margin-top:2px;padding-top:7px}
 .gb-row.cons .nm{color:var(--accent)}
 .gb-dot{width:7px;height:7px;border-radius:50%;display:inline-block;justify-self:end}
@@ -350,7 +351,7 @@ a,button,tr.rowlink,.sportpick,.wk button,.sportsw button{
       below it. Below 380 the model column gives up its minimum first, since
       a truncated team code still reads and a clipped number does not. */
 @media(max-width:380px){
-  .gb-row{grid-template-columns:minmax(84px,1.5fr) minmax(88px,1fr) 58px 14px;
+  .gb-row{grid-template-columns:minmax(84px,1.5fr) minmax(88px,1fr) minmax(60px,.8fr) 14px;
           gap:6px;padding:6px 10px}
   .gb-hd,.bd-hd,.bd-stats{padding-left:10px;padding-right:10px}
   .bd-stats{gap:14px}
@@ -719,13 +720,19 @@ function boardClock(){
     el.textContent=new Date().toLocaleTimeString('en-US',{timeZone:'America/Chicago',hour12:false})+' CT';
   }catch(e){el.textContent=new Date().toLocaleTimeString();}
 }
-/* The number to show beside a pick: the model's own projected spread when it
-   has one, otherwise the market line it posted the pick against. A model that
-   picks sides at the market line has no projection of its own, and showing a
-   dash made perfectly good submissions look empty. */
+/* The number to show beside a pick: the MARKET line the pick was actually
+   made against, when the model posted one. A spread pick is a bet at a
+   market number; stating it at the model's own projection instead showed
+   "ARI +4.9" for a pick made at +10.5 — which read as a broken mapping and
+   got "fixed" upstream by mapping the market line in as the model's own
+   spread, corrupting the wire (the wall then showed a spread the model's
+   own win probability contradicted, and the API rejected the pair). The
+   model's own number is its own fact, carried by the spr chip beside the
+   pick. Only a pick with no market line on the wire falls back to the
+   projection, so good submissions never show a dash. */
 function pickNum(mr){
-  if(mr.projected_spread!=null)return {v:mr.projected_spread,own:true};
   if(mr.line_at_submission!=null)return {v:mr.line_at_submission,own:false};
+  if(mr.projected_spread!=null)return {v:mr.projected_spread,own:true};
   return null;
 }
 /* ---- the one place a stored number becomes the picked team's number ----
@@ -762,23 +769,27 @@ function pickDisp(g,mr){
   if(p.team==null)return p.spread==null?'-':esc(g.home)+' '+fmtSpread(p.spread);
   return esc(p.team)+' '+(p.spread==null?'-':fmtSpread(p.spread));
 }
-/* The probability cell on the game board, stated for the HOME side. The
-   wire is home convention throughout, and so is every other statement of
-   this number — the consensus row in the SAME column, the "hw" chips on
-   the Board page, the embed. This cell used to show the PICKED side's
-   probability instead, so an away pick read as the home team's chance
-   turned around — and its cover fallback did not even do that: it showed
-   the home side's cover probability under a pick-side reading. One column,
-   one convention, each value labelled with which number it is. The cover
-   fallback is what a model that posted without a win probability has (the
-   API refuses some spread/probability pairs; see probRejectHTML). */
-function homeProbCell(mr){
-  if(mr.home_win_probability!=null)
-    return {v:mr.home_win_probability,k:'hw',
-      t:'the model’s home team win probability (moneyline)'};
+/* The model's OUTRIGHT (moneyline) call, split from the spread pick. A
+   bare "61%" next to "pick ARI +10.5" read as the spread pick's chance,
+   and a home-stated "hw 61%" still asked the reader to keep a convention
+   in their head. A NAMED team needs neither: the outright winner is the
+   side the model's win probability favours, shown with that side's own
+   probability — "LAC 61%" is unambiguous next to any pick. The wire stays
+   home-stated; only the statement is turned onto the named side (exact —
+   there is no push mass on a win). The cover fallback is what a model
+   that posted without a win probability has (the API refuses some
+   spread/probability pairs; see probRejectHTML): a cover number carries
+   no outright winner, so it stays home-stated and labelled cv. */
+function outrightCell(g,mr){
+  var p=mr.home_win_probability;
+  if(p!=null){
+    var h=p>=0.5;
+    return {txt:esc(h?g.home:g.away)+' '+Math.round(100*(h?p:1-p))+'%',
+      t:'the model’s outright (moneyline) winner and its chance to win the game'};
+  }
   if(mr.cover_probability!=null)
-    return {v:mr.cover_probability,k:'cv',
-      t:'the model’s probability that the home side covers at the posted line'};
+    return {txt:'cv '+Math.round(100*mr.cover_probability)+'%',
+      t:'the model’s probability that the home side covers at the posted line — it posted no outright win probability'};
   return null;
 }
 async function renderWall(view){
@@ -814,13 +825,13 @@ async function renderWall(view){
           lines+='<div class="gb-row">'+who+'<span class="lock" style="grid-column:2/4">Subscriber number</span><span class="gb-dot" style="background:var(--faint)"></span></div>';
           return;
         }
-        var p=homeProbCell(mr);
+        var p=outrightCell(g,mr);
         var dot=mr.grade
           ?({win:'var(--pos)',loss:'var(--neg)',push:'var(--warn)'}[mr.grade.pick_result]||'var(--dim)')
           :(memDot[wr.membership]||'var(--dim)');
         lines+='<div class="gb-row">'+who+
           '<span class="num">'+pickDisp(g,mr)+(mr.late?' <span style="color:var(--warn)">LATE</span>':'')+'</span>'+
-          '<span class="num"'+(p?' title="'+p.t+'"':'')+'>'+(p==null?'-':p.k+' '+Math.round(100*p.v)+'%')+'</span>'+
+          '<span class="num win"'+(p?' title="'+p.t+'"':'')+'>'+(p==null?'-':p.txt)+'</span>'+
           '<span class="gb-dot" style="background:'+dot+'"></span></div>';
       });
       if(!g.models||!g.models.length)lines='<div class="gb-empty">No model has posted this game yet</div>';
@@ -829,9 +840,10 @@ async function renderWall(view){
       lines=marketLineHtml(mkt,g)+lines;
       var c=g.consensus;
       if(c&&!c.locked&&c.n>1){
+        var cp=c.home_win_prob_mean==null?null:outrightCell(g,{home_win_probability:c.home_win_prob_mean});
         lines+='<div class="gb-row cons"><span class="nm">Consensus</span>'+
           '<span class="num">'+esc(g.home)+' '+fmtSpread(c.spread_mean)+'</span>'+
-          '<span class="num" title="average home team win probability across the models on this game">'+(c.home_win_prob_mean==null?'-':'hw '+Math.round(100*c.home_win_prob_mean)+'%')+'</span><span></span></div>';
+          '<span class="num win" title="the models&#39; average outright call for this game">'+(cp==null?'-':cp.txt)+'</span><span></span></div>';
       }else if(c&&c.locked){
         lines+='<div class="gb-row cons"><span class="nm">Consensus</span><span class="lock" style="grid-column:2/4">Subscriber number</span><span></span></div>';
       }
@@ -1113,7 +1125,10 @@ async function renderBoard(view){
               ? '<span class="mono" title="Model spread minus the market consensus, both in home convention">vs mkt '+
                 MCOdds.edgeHtml(mr.projected_spread,mktSpread,g.home,g.away)+'</span>'
               : '')+
-            (mr.home_win_probability!=null?'<span class="mono" title="the model&#39;s home team win probability (moneyline)">hw '+fmtPct(mr.home_win_probability,0)+'</span>':'')+
+            /* the outright (moneyline) call, split from the spread pick and
+               stated for the NAMED winner — see outrightCell */
+            (function(){var oc=mr.home_win_probability!=null?outrightCell(g,mr):null;
+              return oc?'<span class="mono" title="'+oc.t+'">ml '+oc.txt+'</span>':'';})()+
             /* home-stated, like every number on this wire — the old title said
                "this pick covers", which is the exact inverse (less the push
                mass) whenever the pick is the away team */
@@ -2604,6 +2619,20 @@ function edSlateDetect(){
   var ix=edSlateIdx();
   return ix['game_id']!==undefined&&ix['model_home_line']!==undefined&&ix['model_version']!==undefined;
 }
+/* The mapping remembered from the last posted slate applies — UNLESS the
+   file is a recognised EdgeDesk export, whose columns are known and whose
+   automatic mapping is definitionally right. A remembered hand-flip of
+   "your spread" onto ref_home_line survived here across uploads: every
+   slate posted the market line as the model's own number, the wall showed
+   a spread the model's own win probability contradicted, and the API
+   rejected the spread/probability pair. The dropdowns still override for
+   the upload on screen; the override just no longer haunts the next one. */
+function slateRememberedMap(saved){
+  if(edSlateDetect())return null;
+  if(saved&&saved.cols&&saved.cols.join('\u0001')===SLATE.cols.map(String).join('\u0001'))
+    return saved.map||null;
+  return null;
+}
 function edgedeskBoardHTML(){
   var ix=edSlateIdx();
   function v(row,k){var i=ix[k];return i===undefined?null:(row[i]!==undefined&&String(row[i])!==''?String(row[i]):null);}
@@ -3208,19 +3237,27 @@ async function renderCreatorDash(view,me){
          carries the home team's code, and the pick is read back through the
          same pickDisp() the wall uses, so the creator's own numbers reappear
          exactly as they wrote them. */
-      var head=['Game','Date','Spread (home side)','Total','Home win %','Pick'];
+      /* Your spread and the market line are SEPARATE columns, and the outright
+         call names its winner. One "Spread (home side)" column could not say
+         which of the two numbers it held, so a creator whose pick displayed at
+         the model's own number "fixed" it by mapping the market line in as
+         their spread — and the wire posted the market as the model. With both
+         columns on screen, a wrong mapping is visible instead of plausible. */
+      var head=['Game','Date','Your spread (home)','Market line (home)','Total','Outright (ML)','Pick'];
       var body=built.rows.slice(0,8).map(function(o){
         var g={home:o.home_team,away:o.away_team};
+        var oc=o.home_win_probability!==undefined?outrightCell(g,o):null;
         return '<tr><td>'+esc(o.away_team)+' @ '+esc(o.home_team)+'</td>'+
           '<td class="num">'+esc(o.kickoff.slice(0,10))+'</td>'+
           '<td class="num">'+(o.projected_spread!==undefined?esc(o.home_team)+' '+fmtSpread(o.projected_spread):'-')+'</td>'+
+          '<td class="num">'+(o.line_at_submission!==undefined?esc(o.home_team)+' '+fmtSpread(o.line_at_submission):'-')+'</td>'+
           '<td class="num">'+(o.projected_total!==undefined?o.projected_total:'-')+'</td>'+
-          '<td class="num">'+(o.home_win_probability!==undefined?Math.round(100*o.home_win_probability)+'%':'-')+'</td>'+
+          '<td class="num">'+(oc?oc.txt:'-')+'</td>'+
           '<td class="num">'+(o.pick_side?pickDisp(g,o):'-')+'</td></tr>';
       }).join('');
       $('slPrev').innerHTML='<label style="margin-top:10px">Preview: '+built.rows.length+' game'+(built.rows.length===1?'':'s')+(built.rows.length>8?' (first 8 shown)':'')+'</label>'+
         '<div class="tblwrap mini"><table style="min-width:0"><thead><tr>'+head.map(function(h){return '<th>'+h+'</th>';}).join('')+'</tr></thead><tbody>'+
-        (body||'<tr><td colspan="6" class="note" style="text-align:center;padding:12px">Nothing parsed yet. Check the required mappings above.</td></tr>')+'</tbody></table></div>'+
+        (body||'<tr><td colspan="7" class="note" style="text-align:center;padding:12px">Nothing parsed yet. Check the required mappings above.</td></tr>')+'</tbody></table></div>'+
         (built.problems.length?'<p class="warnnote" style="margin-top:6px">'+built.problems.slice(0,5).map(esc).join('<br>')+'</p>':'')+
         (edSlateDetect()?edgedeskBoardHTML():'');
     }
@@ -3241,10 +3278,8 @@ async function renderCreatorDash(view,me){
       /* same headers as a slate you already posted: reuse that mapping */
       SLATE.remembered=false;
       try{
-        var sv=JSON.parse(localStorage.getItem('mc_slate_map')||'null');
-        if(sv&&sv.cols&&sv.cols.join('')===SLATE.cols.map(String).join('')){
-          SLATE.map=sv.map||SLATE.map;SLATE.remembered=true;
-        }
+        var rm=slateRememberedMap(JSON.parse(localStorage.getItem('mc_slate_map')||'null'));
+        if(rm){SLATE.map=rm;SLATE.remembered=true;}
       }catch(e){}
       /* Week, read from the file when the file says. The creator can still
          override it; this only removes the step where they had to know. */
