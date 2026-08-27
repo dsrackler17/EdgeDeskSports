@@ -23292,6 +23292,204 @@ function fbP4LineWarnHTML(){
     +'built on it — is turned around. Posting this slate would put those numbers on the public record. '
     +'Fix the source lines, reload the board, and the warning clears.</div>';
 }
+/* ---- posting straight to the Collective's ingest API ------------------
+   The download-and-open-the-dashboard route stays (it is the right default
+   for a reader who is not the operator of this site), but the operator can
+   also post from here in one action, against their own creator key.
+
+   THE KEY IS NEVER IN THIS FILE. app.html is a public static page: a key
+   pasted into its source would be a live credential handed to every visitor
+   who opens View Source. It is asked for at post time and kept only in this
+   browser's localStorage, which no other reader and no deploy can see. It
+   is never logged, never sent anywhere but the Collective's own ingest
+   endpoint over HTTPS, and "Forget key" removes it. A shared or public
+   machine should use Forget key when finished.
+
+   collective_ingest allows any origin and accepts x-collective-key on the
+   preflight, so the browser can post directly with no proxy in between. */
+var FBP4_INGEST_BASE=SB_URL+'/functions/v1/collective_ingest';
+var FBP4_KEY_STORE='edgedesk_collective_key';
+/* Whitespace is dealt with at the storage boundary and nowhere else, so
+   every consumer downstream is handling an exact key and the shape check
+   below can be strict about what it accepts. */
+function fbP4Key$get(){try{return String(localStorage.getItem(FBP4_KEY_STORE)||'').trim();}catch(_){return '';}}
+function fbP4Key$set(k){try{localStorage.setItem(FBP4_KEY_STORE,String(k||'').trim());}catch(_){}}
+function fbP4Key$clear(){try{localStorage.removeItem(FBP4_KEY_STORE);}catch(_){}}
+/* Shape check only, so an obvious paste error is caught before a round trip.
+   Whether the key is VALID is the server's answer, never this page's. */
+function fbP4KeyLooksReal(k){return /^mck_(live|test)_[0-9A-Za-z]{40}$/.test(String(k||''));}
+function fbP4KeyMasked(){
+  var k=fbP4Key$get();if(!k)return '';
+  return k.slice(0,13)+'\u2026'+k.slice(-4);
+}
+window.fbP4KeyForget=function(){
+  fbP4Key$clear();
+  var el=document.getElementById('fbp4PostOut');
+  if(el)el.innerHTML='<span class="ec mut">Key forgotten. You will be asked for it next time you post.</span>';
+  if(typeof fbP4Paint==='function')try{fbP4Paint();}catch(_){}
+};
+/* Ask once, keep it, and never echo it back into the DOM in the clear. */
+function fbP4KeyEnsure(){
+  var k=fbP4Key$get();
+  if(fbP4KeyLooksReal(k))return k;
+  var got=prompt('Paste your Model Collective submission key.\n\n'
+    +'It is stored only in this browser and sent only to the Collective. '
+    +'Find or rotate it at collective \u2192 Dashboard \u2192 Your key.');
+  if(got==null)return '';
+  got=String(got).trim();
+  if(!fbP4KeyLooksReal(got)){
+    alert('That does not look like a Collective key.\n\nThey look like mck_live_ followed by 40 characters.');
+    return '';
+  }
+  fbP4Key$set(got);
+  return got;
+}
+
+/* The wire rows the Collective stores: home convention throughout, exactly
+   the schema its own uploader builds. Derived from the same projection the
+   CSV export uses, so the two doors cannot disagree about what this model
+   said. A game the engine could not project is skipped rather than sent
+   half-filled. */
+function fbP4WireRows(){
+  var rows=[],skipped=[];
+  (FB.p4.up||[]).forEach(function(u){
+    var g=u.g,p;
+    try{p=window.EDCfbP4.projectGame(fbP4Request(u));}catch(e){p=null;}
+    if(!p||p.status!=='PREDICTED'){skipped.push((g.away_team||'?')+' @ '+(g.home_team||'?'));return;}
+    var m=p.model,mkt=fbP4Market(u),cov=p.cover;
+    var sGap=p.market?p.market.spread_gap:null;
+    var o={
+      game_ref:String(g.game_id||''),
+      home_team:g.home_team,away_team:g.away_team,
+      kickoff:g.start_date||null
+    };
+    if(g.week!=null)o.week=+g.week;
+    /* betting sign, home side — the inverse of the engine's margin */
+    if(m.fair_spread!=null)o.projected_spread=Math.round(-m.fair_spread*100)/100;
+    if(m.fair_total!=null)o.projected_total=Math.round(m.fair_total*10)/10;
+    if(mkt&&mkt.spread_line!=null)o.line_at_submission=Math.round(-mkt.spread_line*10)/10;
+    if(m.home_win_prob!=null)o.home_win_probability=m.home_win_prob;
+    /* cov.win is P(HOME covers) — the wire is home-stated, so it goes as is
+       rather than through the CSV's pick-relative p_spread_pick_pct */
+    if(cov&&cov.win!=null)o.cover_probability=cov.win;
+    if(sGap!=null&&Math.abs(sGap)>1e-9)o.pick_side=sGap>0?'home':'away';
+    if(p.scores&&p.scores.confidence!=null)o.confidence=Math.round(p.scores.confidence);
+    rows.push(o);
+  });
+  return {rows:rows,skipped:skipped};
+}
+
+/* Which model on the account this college slate belongs to.
+   collective_ingest refuses an ambiguous envelope rather than guessing —
+   an account with an NFL model and a CFB model gets a 422 naming both — so
+   ask /v1/me and pick the college one by SPORT. That is also the check that
+   the key works at all, and it costs one cheap GET before anything is sent.
+   Resolved once per page load; a rotated key re-resolves on its next use. */
+var FBP4_MODEL_CACHE=null;
+function fbP4IsCollegeSport(x){
+  return /^(CFB|NCAAF|CFB-P4|COLLEGE)/i.test(String(x||'').trim());
+}
+async function fbP4ResolveModel(key){
+  if(FBP4_MODEL_CACHE&&FBP4_MODEL_CACHE.key===key)return FBP4_MODEL_CACHE;
+  var r=await fetch(FBP4_INGEST_BASE+'/v1/me',{headers:{'x-collective-key':key}});
+  var t=await r.text(),j=null;try{j=t?JSON.parse(t):null;}catch(_){}
+  if(r.status===401)return {key:key,error:'invalid_key'};
+  if(!r.ok)return {key:key,error:((j&&j.error&&j.error.message)||('HTTP '+r.status))};
+  var models=(j&&j.models)||[];
+  var college=models.filter(function(m){return fbP4IsCollegeSport(m.sport);});
+  var out={key:key,creator:(j&&j.creator&&j.creator.slug)||null,models:models,kind:(j&&j.key&&j.key.kind)||null};
+  if(college.length===1)out.model=college[0].model;
+  else if(college.length>1)out.error='This account has '+college.length+' college models ('
+    +college.map(function(m){return m.model;}).join(', ')+'). Post those from the dashboard so the right one is chosen.';
+  else if(models.length===1&&models[0].sport==null)out.model=models[0].model;
+  else out.error='No college-football model on this account. The Collective files a slate under a model, '
+    +'and resolves its games in that model\u2019s sport, so a college slate needs a college model. '
+    +'Models found: '+(models.map(function(m){return m.model+' ('+(m.sport||'no sport')+')';}).join(', ')||'none');
+  FBP4_MODEL_CACHE=out;
+  return out;
+}
+async function fbP4Ingest(path,key,body){
+  var r=await fetch(FBP4_INGEST_BASE+path,{
+    method:'POST',
+    headers:{'content-type':'application/json','x-collective-key':key},
+    body:JSON.stringify(body)
+  });
+  var t=await r.text(),j=null;
+  try{j=t?JSON.parse(t):null;}catch(_){}
+  return {ok:r.ok,status:r.status,body:j,raw:t};
+}
+function fbP4PostOut(html){
+  var el=document.getElementById('fbp4PostOut');
+  if(el)el.innerHTML=html;
+}
+/* Dry run, then post — never post without the dry run passing first. The
+   receipt is the server's, quoted rather than summarised. */
+window.fbP4ApiPost=async function(live){
+  if(!FB.p4.up.length){alert('No Power 4 games on the board to post yet.');return;}
+  var bad=fbP4LineSanity();
+  if(bad){
+    fbP4PostOut('<span class="ec" style="color:var(--bad,#e26044)"><b>Not posting.</b> All '+bad.n
+      +' games with a book number have the home team as an underdog \u2014 the market lines are inverted. '
+      +'Fix cfb.lines and reload before posting.</span>');
+    return;
+  }
+  var key=fbP4KeyEnsure();
+  if(!key)return;
+  var built=fbP4WireRows();
+  if(!built.rows.length){fbP4PostOut('<span class="ec mut">Nothing to post: no game on the board produced a projection.</span>');return;}
+  fbP4PostOut('<span class="ec mut">Checking your key\u2026</span>');
+  var who;
+  try{who=await fbP4ResolveModel(key);}
+  catch(e){fbP4PostOut('<span class="ec" style="color:var(--bad,#e26044)">Could not reach the Collective: '+fbEsc(e.message||String(e))+'</span>');return;}
+  if(who.error==='invalid_key'){
+    fbP4Key$clear();FBP4_MODEL_CACHE=null;
+    fbP4PostOut('<span class="ec" style="color:var(--bad,#e26044)">That key was rejected, so it has been forgotten. '
+      +'Copy or rotate it at collective \u2192 Dashboard \u2192 Your key, then retry.</span>');
+    return;
+  }
+  if(who.error){fbP4PostOut('<span class="ec" style="color:var(--bad,#e26044)">'+fbEsc(who.error)+'</span>');return;}
+  var env={season:FB.p4.season,data_origin:'live',model:who.model,rows:built.rows};
+  var wk=built.rows[0].week;
+  if(wk!=null&&built.rows.every(function(r){return r.week===wk;}))env.week=wk;
+  fbP4PostOut('<span class="ec mut">'+(live?'Posting':'Checking')+' '+built.rows.length+' game'
+    +(built.rows.length===1?'':'s')+'\u2026</span>');
+  var res;
+  try{
+    res=await fbP4Ingest(live?'/v1/projections':'/v1/projections/dry-run',key,env);
+  }catch(e){
+    fbP4PostOut('<span class="ec" style="color:var(--bad,#e26044)">Could not reach the Collective: '+fbEsc(e.message||String(e))+'</span>');
+    return;
+  }
+  if(res.status===401){
+    fbP4Key$clear();
+    fbP4PostOut('<span class="ec" style="color:var(--bad,#e26044)">That key was rejected, so it has been forgotten. '
+      +'Rotate or copy it again from collective \u2192 Dashboard \u2192 Your key, then retry.</span>');
+    return;
+  }
+  if(!res.ok){
+    var er=(res.body&&res.body.error)||{};
+    fbP4PostOut('<span class="ec" style="color:var(--bad,#e26044)"><b>'+fbEsc(er.code||('HTTP '+res.status))+'.</b> '
+      +fbEsc(er.message||res.raw||'The submission was refused.')+'</span>');
+    return;
+  }
+  var b=res.body||{};
+  var counts=[
+    (b.resolved!=null?b.resolved+' matched':null),
+    (b.first!=null?b.first+' first submissions':null),
+    (b.movement!=null?b.movement+' revisions':null),
+    (b.late!=null?b.late+' late':null),
+    (b.quarantined!=null?b.quarantined+' quarantined':null),
+    (b.rejected!=null?b.rejected+' rejected':null)
+  ].filter(Boolean).join(', ');
+  var rej=((b.rows||[]).filter(function(x){return x.status==='rejected';}));
+  fbP4PostOut('<span class="ec"><b>'+(live?'Posted':'Dry run')+':</b> '+fbEsc(counts||'no counts returned')
+      +' <span class="mut">\u00b7 '+fbEsc((b.model||who.model||'')+(b.kind==='test'?' (test key \u2014 not graded)':''))+'</span></span>'
+    +(built.skipped.length?'<div class="ec mut" style="margin-top:4px">'+built.skipped.length
+      +' game'+(built.skipped.length===1?'':'s')+' skipped (no projection): '+fbEsc(built.skipped.slice(0,4).join(', '))+'</div>':'')
+    +(rej.length?'<div class="ec mut" style="margin-top:4px">'+rej.slice(0,4).map(function(x){
+        return fbEsc(x.game_ref+': '+(x.reason||'rejected'));}).join('<br>')+'</div>':'')
+    +(live?'':'<div class="ec mut" style="margin-top:4px">Nothing was stored. If this looks right, hit <b>Post to Collective (API)</b>.</div>'));
+};
 var FBP4_COLLECTIVE_URL='https://edgedesksports.com/collective/#dashboard';
 window.fbP4PostToCollective=function(){
   if(!FB.p4.up.length){alert('No Power 4 games on the board to post yet.');return;}
@@ -23314,16 +23512,26 @@ window.fbP4PostToCollective=function(){
 };
 function fbP4CtlHTML(){
   var n=FB.p4.up.length;
+  var keyed=fbP4KeyMasked();
   return '<button class="btn ghost sm" onclick="fbP4CsvDownload()">Download CSV</button>'
-    +'<button class="btn ghost sm" onclick="fbP4PostToCollective()">Post to Collective</button>'
+    +'<button class="btn ghost sm" onclick="fbP4PostToCollective()">Download &amp; open dashboard</button>'
+    /* the operator's one-action path: dry run first, then post */
+    +'<button class="btn ghost sm" onclick="fbP4ApiPost(false)">Check via API</button>'
+    +'<button class="btn ghost sm" onclick="fbP4ApiPost(true)">Post to Collective (API)</button>'
+    +(keyed?'<span class="ec mut">key '+fbEsc(keyed)+' \u00b7 <a href="#" onclick="fbP4KeyForget();return false;">forget</a></span>':'')
+    +'<div id="fbp4PostOut" class="ec mut" style="flex-basis:100%;margin-top:2px"></div>'
     +'<span class="ec mut">'+n+' Power 4 game'+(n===1?'':'s')
     +' · one row per game, same columns as the NFL export · research, unproven</span>'
     +fbP4LineWarnHTML()
     +'<div class="gd-modelnote" style="flex-basis:100%">'
-    +'<b>Posting to the Collective.</b> The download\u2019s column names are the ones the '
-    +'Collective\u2019s uploader already recognises, so the slate maps with nothing to fix by '
-    +'hand: drop the file on <span class="mono">Dashboard \u2192 Post a slate</span>, pick your '
-    +'college-football model, set the week, run the dry check, post. Your record there is graded '
+    +'<b>Posting to the Collective.</b> Two doors, same pipeline. '
+    +'<b>Download &amp; open dashboard</b> hands you the file and opens '
+    +'<span class="mono">Dashboard \u2192 Post a slate</span> \u2014 its column names are already the ones '
+    +'the uploader recognises, so it maps with nothing to fix by hand. '
+    +'<b>Post to Collective (API)</b> sends the same rows straight to the ingest endpoint under your own '
+    +'submission key: run <b>Check via API</b> first (a dry run that stores nothing), then post. '
+    +'Your key is asked for once and kept only in this browser \u2014 it is never part of this page, and '
+    +'<span class="mono">forget</span> removes it. Your record there is graded '
     +'by the Collective against its own captured closing lines \u2014 not by this engine, and not '
     +'self-reported.</div>';
 }
