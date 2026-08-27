@@ -22507,6 +22507,9 @@ function fbP4Ensure(){
   if(window.EDCfbP4&&window.EDCfbP4Params)return Promise.resolve();
   return fbScript('football/cfb_p4/params.js')
     .then(function(){return fbScript('football/cfb_p4/engine.js');})
+    /* the v1.1 calibration record is display-only and optional: it changes
+       no number, so a missing artifact must not gate the board */
+    .then(function(){return fbScript('football/cfb_p4/calibration.js').catch(function(){});})
     .then(function(){ if(!window.EDCfbP4||!window.EDCfbP4Params)throw new Error('Power 4 engine loaded but globals missing'); });
 }
 function fbP4Season(){
@@ -23295,6 +23298,27 @@ function fbP4ModelCard(){
     +'Everything below is research, counted nowhere, until this model’s own graded CLV beats the close. '
     +'<span class="mono" style="color:var(--faint)">'+fbEsc(M.model_version)+' · trained through '
     +fbEsc(String(M.trained_through))+' · built '+fbEsc(String(M.built_at).slice(0,10))+'</span></div>';
+  /* v1.1 calibration verdict — the walk-forward experiment's finding, stated
+     rather than dressed up as a new number. Raw is never overwritten. */
+  var C=window.EDCfbP4Calibration;
+  if(C&&C.record){
+    var clv3=C.clv_proxy_vs_open&&C.clv_proxy_vs_open['3'];
+    var clv5=C.clv_proxy_vs_open&&C.clv_proxy_vs_open['5'];
+    s+='<div class="mdl-warn" style="margin-bottom:12px"><b>v1.1 calibration verdict.</b> '
+      +'Walk-forward '+fbEsc(C.record.window)+' (n='+C.record.n+'): the optimal market blend puts '
+      +'<b>zero weight on the raw model</b> at every week and disagreement bucket (α '
+      +fbEsc(String(C.alpha.global_unclamped))+' unclamped) — a calibrated number would simply equal the close '
+      +'('+fbEsc(String(C.record.mae_calibrated))+' vs raw '+fbEsc(String(C.record.mae_raw))+'), so none is shown. '
+      +'The model’s one measured signal is direction: when it disagreed with the OPENING line, the close moved toward it '
+      +(clv3?(fbEsc(String(clv3.moved_toward_model_pct))+'% at 3+ pts (n='+clv3.n+')'):'')
+      +(clv5?(' and '+fbEsc(String(clv5.moved_toward_model_pct))+'% at 5+ (n='+clv5.n+')'):'')
+      +' — direction only; a blend did not beat the open at predicting the close, and moving toward ≠ covering the vig. '
+      +'Preseason is the measured weak spot (weeks 0–2 gap to market 1.38 pts, weeks 6+ 0.63), and the model over-rates '
+      +'home dogs by +3.7 pts — the next evidence-driven fixes. Full dashboard: '
+      +'<span class="mono">football/cfb_p4/research/report/error_slices.json</span> · '
+      +'<span class="mono" style="color:var(--faint)">'+fbEsc(C.calibration_version)+' · generated '
+      +fbEsc(String(C.generated_at).slice(0,10))+'</span></div>';
+  }
   return s;
 }
 function fbP4Card(u){

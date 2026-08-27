@@ -406,6 +406,20 @@ async function p4Section(out) {
     check('p4_roster', `CFB P4: ${cur} roster source`, 'warn',
       'neither cfbfastR nor the repo ESPN sync has a usable dataset — the engine widens its uncertainty instead of assuming last year’s roster');
   }
+  /* the v1.1 calibration record: display-only, but it must be present,
+     parseable and internally consistent for the app's verdict to be real.
+     Independent of the schedule feed, so it reports before the early return. */
+  try {
+    const C = require(path.join(REPO, 'football', 'cfb_p4', 'calibration.js'));
+    const ok = C && C.calibration_version && C.record && C.record.mae_raw != null
+      && C.record.mae_market != null && C.alpha && C.clv_proxy_vs_open;
+    check('p4_calibration', 'CFB P4: calibration record artifact', ok ? 'pass' : 'fail',
+      ok ? `${C.calibration_version} · window ${C.record.window} · raw ${C.record.mae_raw} vs market ${C.record.mae_market} · alpha ${C.alpha.global}`
+        : 'artifact present but missing required fields');
+  } catch (_) {
+    check('p4_calibration', 'CFB P4: calibration record artifact', 'warn',
+      'football/cfb_p4/calibration.js not present — the model card shows no calibration verdict');
+  }
   if (!curSched) return;
 
   /* upcoming P4 slate: project and guard */
