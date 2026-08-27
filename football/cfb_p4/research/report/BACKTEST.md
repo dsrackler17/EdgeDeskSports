@@ -319,3 +319,73 @@ OOS window 2015–2025):
 
 Reproduce: `fetch_data.sh` (schedules + betting archive) →
 `build_market.py out` → `node calibrate.js --data <dir>`.
+
+## v1.2 — the correction experiments and the phase discovery (2026-08-27)
+
+v1.1 named the targets; v1.2 tested the fixes **as hypotheses**, walk-forward
+on the byte-identical frame (`v12.js` recomputes the frame and refuses to
+write artifacts unless n / raw MAE / market MAE match the v1.1 record
+exactly — they do: n=7,845, 13.0567, 12.2915). Pre-registered survival
+criteria: pooled OOS MAE improvement ≥ 0.05 pts AND better in a majority of
+eval years (corrections); pooled OOS Brier beats the constant base rate by
+≥ 0.002 (movement model). The scientific lineage stands: **v1.0 raw engine =
+the untouched control · v1.1 = the calibration experiment · v1.2 = this
+correction experiment.**
+
+**E1 — preseason prior (weeks 0–2 only, market-independent). REJECTED.**
+Two rescales of the raw spread fitted walk-forward on weeks 0–2 games:
+`b·m` (shrink) and `a + b·m` (affine). Both LOSE to raw out of sample —
+pooled weeks 0–2 MAE: raw 13.353 · shrink 13.369 · affine 13.381 (shrink
+better in only 6/11 years; final full-frame fits b=0.980, a=0.67/b=0.96 —
+essentially the identity). The weeks 0–2 gap to market is **missing
+information** (transfers, coaching, QB battles the market knows and the
+model cannot see), not a fixable scale or bias. The evidence now says the
+preseason fix is a data source, not a coefficient.
+
+**E2 — home-dog de-bias (a hypothesis, not a permanent adjustment).
+REJECTED at the pre-registered bar — the closest call.** Keyed on the
+model's OWN call (projected home margin < 0; keying on the market's call
+would make the model market-dependent, so it can never ship — recorded as a
+diagnostic: model-defined bias +2.11 vs the dashboard's market-defined
++3.70). A constant walk-forward de-bias (final δ = −1.96) improved the
+subset's pooled OOS MAE 13.303 → 13.262 — **+0.041 pts, under the 0.05
+bar**, though better in 8/11 years. It stays a hypothesis; the 2026 season
+is the right next test, not a bigger fit.
+
+**E3 — opening→closing movement model (direction only, never the number).
+REJECTED.** Logistic on features knowable at the open (disagreement size,
+preseason flag, model-home-dog, power-conference host): pooled OOS Brier
+0.2513 vs 0.2510 for the constant base rate. Nothing in these features
+turns the flat 54.7% into a per-game probability.
+
+**E4 — directional robustness: the sweep that found the real structure.**
+Toward-model rates with Wilson 95% CIs across thresholds × slices
+(15/33 slices robust at 3+). The discovery:
+
+| toward-model % | 1+ | 3+ | 5+ | 7+ |
+|---|---|---|---|---|
+| **weeks 0–2** | 49.5 | 49.7 | 49.7 | 47.5 |
+| **weeks 3+**  | 54.2 | 55.7 | 57.7 | **59.2** |
+
+**The toward-model signal is an in-season phenomenon.** Preseason it is a
+coin flip at every threshold (CIs straddle 50); in-season it is robust at
+every threshold and strengthens monotonically with disagreement. This
+coheres with E1: in weeks 0–2 the model lacks information, so its
+disagreements carry nothing; from week 3 its disagreements with the opener
+are real (direction-only) signal. Also robust at 3+: both model-fav and
+model-dog sides, SEC / Sun Belt / American / Mountain West hosts;
+season-by-season it swings (2013–14 ≈ 63%, 2019 43%, 2025 57%) — robust
+pooled, not uniform.
+
+**Verdict: nothing ships as an adjustment.** No stage survived, so no
+adjusted number exists anywhere — every spread the app shows remains the
+raw v1.0 control, and the artifact (`v12_correction.js`) records the
+rejections, the near-miss, the final fits, and the phase finding. The daily
+health run verifies the artifact and that its frame stamp still matches the
+v1.1 record. Per the v1.2 design this closes the build phase: the next move
+is to let the 2026 season grade v1.0's raw record, the direction proxy, and
+the home-dog near-miss on games none of these fits have seen.
+
+Reproduce: `fetch_data.sh` → `build_market.py out` →
+`node v12.js --data <dir>` (requires `calibration.js` from `calibrate.js`
+first — the frame check reads it).

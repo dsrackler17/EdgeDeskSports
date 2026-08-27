@@ -1,0 +1,2045 @@
+{
+ "what": "v1.2 experiment record — full walk-forward tables and the complete directional robustness grid",
+ "generated_at": "2026-08-27T13:55:55.274Z",
+ "frame_check": {
+  "n": 7845,
+  "mae_raw": 13.0567,
+  "mae_market": 12.2915,
+  "v11_record": {
+   "n": 7845,
+   "mae_raw": 13.0567,
+   "mae_market": 12.2915
+  },
+  "matches_v11": true
+ },
+ "criteria": "a correction SURVIVES only if pooled walk-forward OOS MAE improves by >= 0.05 pts AND it beats raw in a majority of eval years; the movement model survives only if pooled OOS Brier beats the constant base rate by >= 0.002. Rejected fits are recorded, not shipped.",
+ "preseason_prior": {
+  "what": "weeks 0-2 only; market-independent correction of the raw spread",
+  "survived": false,
+  "winner": "shrink",
+  "record_oos": {
+   "n": 1077,
+   "mae_raw": 13.3526,
+   "mae_shrink": 13.369,
+   "mae_affine": 13.3811,
+   "years_better": "6/11"
+  },
+  "final_fit": {
+   "shrink_b": 0.9802,
+   "affine": {
+    "a": 0.6654,
+    "b": 0.9613
+   }
+  },
+  "walk_forward": [
+   {
+    "year": 2015,
+    "n_fit": 412,
+    "n_eval": 89,
+    "shrink_b": 0.9454,
+    "affine": {
+     "a": 1.3568,
+     "b": 0.912
+    },
+    "mae_raw": 12.2605,
+    "mae_shrink": 12.3691,
+    "mae_affine": 12.3841,
+    "bias_raw": -1.1169,
+    "bias_affine": -0.5154
+   },
+   {
+    "year": 2016,
+    "n_fit": 501,
+    "n_eval": 87,
+    "shrink_b": 0.948,
+    "affine": {
+     "a": 1.4345,
+     "b": 0.9137
+    },
+    "mae_raw": 12.8113,
+    "mae_shrink": 12.8751,
+    "mae_affine": 12.9815,
+    "bias_raw": -0.4318,
+    "bias_affine": -0.0606
+   },
+   {
+    "year": 2017,
+    "n_fit": 588,
+    "n_eval": 89,
+    "shrink_b": 0.964,
+    "affine": {
+     "a": 1.2916,
+     "b": 0.9309
+    },
+    "mae_raw": 13.2167,
+    "mae_shrink": 13.2062,
+    "mae_affine": 13.355,
+    "bias_raw": 2.2921,
+    "bias_affine": 2.9806
+   },
+   {
+    "year": 2018,
+    "n_fit": 677,
+    "n_eval": 93,
+    "shrink_b": 0.9639,
+    "affine": {
+     "a": 0.789,
+     "b": 0.9435
+    },
+    "mae_raw": 14.407,
+    "mae_shrink": 14.4367,
+    "mae_affine": 14.4738,
+    "bias_raw": 0.7766,
+    "bias_affine": 1.0959
+   },
+   {
+    "year": 2019,
+    "n_fit": 770,
+    "n_eval": 91,
+    "shrink_b": 0.9699,
+    "affine": {
+     "a": 0.5516,
+     "b": 0.9555
+    },
+    "mae_raw": 12.4356,
+    "mae_shrink": 12.3888,
+    "mae_affine": 12.336,
+    "bias_raw": -1.6916,
+    "bias_affine": -1.574
+   },
+   {
+    "year": 2020,
+    "n_fit": 861,
+    "n_eval": 19,
+    "shrink_b": 0.9743,
+    "affine": {
+     "a": 0.7184,
+     "b": 0.9555
+    },
+    "mae_raw": 18.3681,
+    "mae_shrink": 18.249,
+    "mae_affine": 18.2753,
+    "bias_raw": 6.3262,
+    "bias_affine": 6.5591
+   },
+   {
+    "year": 2021,
+    "n_fit": 880,
+    "n_eval": 95,
+    "shrink_b": 0.9652,
+    "affine": {
+     "a": 0.64,
+     "b": 0.9484
+    },
+    "mae_raw": 14.6722,
+    "mae_shrink": 14.7257,
+    "mae_affine": 14.7339,
+    "bias_raw": -1.2165,
+    "bias_affine": -0.8963
+   },
+   {
+    "year": 2022,
+    "n_fit": 975,
+    "n_eval": 99,
+    "shrink_b": 0.9726,
+    "affine": {
+     "a": 0.6751,
+     "b": 0.9544
+    },
+    "mae_raw": 12.16,
+    "mae_shrink": 12.2293,
+    "mae_affine": 12.2405,
+    "bias_raw": 1.099,
+    "bias_affine": 1.3539
+   },
+   {
+    "year": 2023,
+    "n_fit": 1074,
+    "n_eval": 139,
+    "shrink_b": 0.9824,
+    "affine": {
+     "a": 0.4032,
+     "b": 0.9714
+    },
+    "mae_raw": 15.0874,
+    "mae_shrink": 15.069,
+    "mae_affine": 15.0314,
+    "bias_raw": -1.0813,
+    "bias_affine": -0.8647
+   },
+   {
+    "year": 2024,
+    "n_fit": 1213,
+    "n_eval": 133,
+    "shrink_b": 0.9722,
+    "affine": {
+     "a": 0.6439,
+     "b": 0.9546
+    },
+    "mae_raw": 13.5164,
+    "mae_shrink": 13.5077,
+    "mae_affine": 13.5067,
+    "bias_raw": 0.4372,
+    "bias_affine": 0.7594
+   },
+   {
+    "year": 2025,
+    "n_fit": 1346,
+    "n_eval": 143,
+    "shrink_b": 0.9689,
+    "affine": {
+     "a": 0.5843,
+     "b": 0.9527
+    },
+    "mae_raw": 11.788,
+    "mae_shrink": 11.78,
+    "mae_affine": 11.735,
+    "bias_raw": -1.7962,
+    "bias_affine": -1.5823
+   }
+  ]
+ },
+ "home_dog": {
+  "what": "constant de-bias on games the MODEL calls a home dog (after the preseason stage); a hypothesis, not a permanent adjustment",
+  "survived": false,
+  "final_delta": -1.9597,
+  "record_oos": {
+   "n": 2692,
+   "mae_before": 13.3028,
+   "mae_after": 13.2622,
+   "years_better": "8/11"
+  },
+  "diagnostics": {
+   "model_defined": {
+    "n": 2642,
+    "bias_raw": 2.109
+   },
+   "market_defined": {
+    "n": 3038,
+    "bias_raw": 3.7,
+    "note": "this is the dashboard’s +3.70 slice; a correction keyed on the market line would make the model market-dependent, so it can never ship"
+   }
+  },
+  "walk_forward": [
+   {
+    "year": 2015,
+    "n_fit": 1197,
+    "n_eval": 249,
+    "delta": -1.6442,
+    "mae_before": 13.0199,
+    "mae_after": 12.9664,
+    "bias_before": 2.506,
+    "bias_after": 0.8618
+   },
+   {
+    "year": 2016,
+    "n_fit": 1446,
+    "n_eval": 245,
+    "delta": -1.7926,
+    "mae_before": 13.3798,
+    "mae_after": 13.3979,
+    "bias_before": 1.2606,
+    "bias_after": -0.532
+   },
+   {
+    "year": 2017,
+    "n_fit": 1691,
+    "n_eval": 248,
+    "delta": -1.7155,
+    "mae_before": 13.6788,
+    "mae_after": 13.5054,
+    "bias_before": 2.5243,
+    "bias_after": 0.8088
+   },
+   {
+    "year": 2018,
+    "n_fit": 1939,
+    "n_eval": 258,
+    "delta": -1.819,
+    "mae_before": 13.9047,
+    "mae_after": 13.7587,
+    "bias_before": 2.2693,
+    "bias_after": 0.4503
+   },
+   {
+    "year": 2019,
+    "n_fit": 2197,
+    "n_eval": 251,
+    "delta": -1.8718,
+    "mae_before": 13.5957,
+    "mae_after": 13.5038,
+    "bias_before": 2.5937,
+    "bias_after": 0.7219
+   },
+   {
+    "year": 2020,
+    "n_fit": 2448,
+    "n_eval": 171,
+    "delta": -1.9459,
+    "mae_before": 14.4299,
+    "mae_after": 14.2295,
+    "bias_before": 4.2305,
+    "bias_after": 2.2847
+   },
+   {
+    "year": 2021,
+    "n_fit": 2619,
+    "n_eval": 241,
+    "delta": -2.095,
+    "mae_before": 13.4714,
+    "mae_after": 13.4244,
+    "bias_before": 3.1974,
+    "bias_after": 1.1023
+   },
+   {
+    "year": 2022,
+    "n_fit": 2860,
+    "n_eval": 235,
+    "delta": -2.1879,
+    "mae_before": 12.9606,
+    "mae_after": 13.1683,
+    "bias_before": 1.1834,
+    "bias_after": -1.0046
+   },
+   {
+    "year": 2023,
+    "n_fit": 3095,
+    "n_eval": 271,
+    "delta": -2.1116,
+    "mae_before": 12.9146,
+    "mae_after": 12.8979,
+    "bias_before": 1.7006,
+    "bias_after": -0.411
+   },
+   {
+    "year": 2024,
+    "n_fit": 3366,
+    "n_eval": 260,
+    "delta": -2.0786,
+    "mae_before": 12.4022,
+    "mae_after": 12.4674,
+    "bias_before": 0.8222,
+    "bias_after": -1.2563
+   },
+   {
+    "year": 2025,
+    "n_fit": 3626,
+    "n_eval": 263,
+    "delta": -1.9885,
+    "mae_before": 12.9831,
+    "mae_after": 12.9363,
+    "bias_before": 1.5637,
+    "bias_after": -0.4247
+   }
+  ]
+ },
+ "combined_record_oos": {
+  "window": "2015-2025",
+  "n": 8010,
+  "mae_raw": 13.0218,
+  "mae_v12": 13.0218,
+  "note": "the full shipped pipeline (surviving stages only) vs raw over every frame game; identical when nothing survived"
+ },
+ "movement_model": {
+  "what": "predicts DIRECTION only — whether the close moves toward the model when it disagrees with the open by 1+; never a closing number",
+  "survived": false,
+  "record_oos": {
+   "n": 5379,
+   "brier_model": 0.2513,
+   "brier_constant_base": 0.251,
+   "accuracy_pct": 51.76
+  },
+  "final_weights": {
+   "intercept": 0.0917,
+   "gap_scaled": 0.3081,
+   "preseason": -0.219,
+   "model_home_dog": -0.0054,
+   "power_conf_host": -0.0685,
+   "gap_ge5": 0.071
+  },
+  "walk_forward": [
+   {
+    "year": 2015,
+    "n_fit": 1487,
+    "n_eval": 514,
+    "base_rate_fit": 0.5905,
+    "brier_model": 0.2488,
+    "brier_base": 0.2504,
+    "weights": [
+     0.286,
+     0.1617,
+     -0.669,
+     0.0918,
+     0.0191,
+     0.2023
+    ]
+   },
+   {
+    "year": 2016,
+    "n_fit": 2001,
+    "n_eval": 507,
+    "base_rate_fit": 0.5782,
+    "brier_model": 0.2546,
+    "brier_base": 0.2526,
+    "weights": [
+     0.1737,
+     0.372,
+     -0.5497,
+     0.1143,
+     -0.0113,
+     0.1996
+    ]
+   },
+   {
+    "year": 2017,
+    "n_fit": 2508,
+    "n_eval": 506,
+    "base_rate_fit": 0.567,
+    "brier_model": 0.2533,
+    "brier_base": 0.2526,
+    "weights": [
+     0.0978,
+     0.5587,
+     -0.4224,
+     0.0742,
+     -0.0092,
+     0.1013
+    ]
+   },
+   {
+    "year": 2018,
+    "n_fit": 3014,
+    "n_eval": 499,
+    "base_rate_fit": 0.5581,
+    "brier_model": 0.2471,
+    "brier_base": 0.2481,
+    "weights": [
+     0.0523,
+     0.641,
+     -0.3366,
+     0.0225,
+     -0.0037,
+     0.067
+    ]
+   },
+   {
+    "year": 2019,
+    "n_fit": 3513,
+    "n_eval": 506,
+    "base_rate_fit": 0.5562,
+    "brier_model": 0.261,
+    "brier_base": 0.2587,
+    "weights": [
+     0.0446,
+     0.6869,
+     -0.2895,
+     0.0615,
+     -0.0496,
+     0.0445
+    ]
+   },
+   {
+    "year": 2021,
+    "n_fit": 4019,
+    "n_eval": 537,
+    "base_rate_fit": 0.5429,
+    "brier_model": 0.2527,
+    "brier_base": 0.2513,
+    "weights": [
+     0.0782,
+     0.4977,
+     -0.2473,
+     0.0039,
+     -0.0998,
+     0.0798
+    ]
+   },
+   {
+    "year": 2022,
+    "n_fit": 4556,
+    "n_eval": 517,
+    "base_rate_fit": 0.5386,
+    "brier_model": 0.2506,
+    "brier_base": 0.2513,
+    "weights": [
+     0.0976,
+     0.4217,
+     -0.2308,
+     -0.0247,
+     -0.1045,
+     0.0649
+    ]
+   },
+   {
+    "year": 2023,
+    "n_fit": 5073,
+    "n_eval": 627,
+    "base_rate_fit": 0.535,
+    "brier_model": 0.2478,
+    "brier_base": 0.2492,
+    "weights": [
+     0.0904,
+     0.445,
+     -0.1984,
+     -0.04,
+     -0.1215,
+     0.0474
+    ]
+   },
+   {
+    "year": 2024,
+    "n_fit": 5700,
+    "n_eval": 574,
+    "base_rate_fit": 0.5344,
+    "brier_model": 0.2513,
+    "brier_base": 0.249,
+    "weights": [
+     0.1025,
+     0.3441,
+     -0.2488,
+     -0.0252,
+     -0.1103,
+     0.0848
+    ]
+   },
+   {
+    "year": 2025,
+    "n_fit": 6274,
+    "n_eval": 592,
+    "base_rate_fit": 0.5341,
+    "brier_model": 0.2475,
+    "brier_base": 0.2478,
+    "weights": [
+     0.1056,
+     0.2911,
+     -0.2323,
+     -0.0057,
+     -0.0899,
+     0.0674
+    ]
+   }
+  ]
+ },
+ "directional_robustness": {
+  "th_1": {
+   "overall": {
+    "n": 6866,
+    "toward_pct": 53.54,
+    "ci95": [
+     52.36,
+     54.72
+    ],
+    "robust": true
+   },
+   "by": {
+    "week_bucket": {
+     "0_2": {
+      "n": 985,
+      "toward_pct": 49.54,
+      "ci95": [
+       46.43,
+       52.66
+      ],
+      "robust": false
+     },
+     "3_5": {
+      "n": 1505,
+      "toward_pct": 52.56,
+      "ci95": [
+       50.03,
+       55.07
+      ],
+      "robust": true
+     },
+     "6p": {
+      "n": 4376,
+      "toward_pct": 54.78,
+      "ci95": [
+       53.3,
+       56.25
+      ],
+      "robust": true
+     }
+    },
+    "phase": {
+     "preseason_wk0_2": {
+      "n": 985,
+      "toward_pct": 49.54,
+      "ci95": [
+       46.43,
+       52.66
+      ],
+      "robust": false
+     },
+     "in_season_wk3p": {
+      "n": 5881,
+      "toward_pct": 54.21,
+      "ci95": [
+       52.93,
+       55.48
+      ],
+      "robust": true
+     }
+    },
+    "model_call": {
+     "model_home_fav": {
+      "n": 4524,
+      "toward_pct": 53.47,
+      "ci95": [
+       52.01,
+       54.92
+      ],
+      "robust": true
+     },
+     "model_home_dog": {
+      "n": 2342,
+      "toward_pct": 53.67,
+      "ci95": [
+       51.65,
+       55.68
+      ],
+      "robust": true
+     }
+    },
+    "market_call": {
+     "market_home_fav": {
+      "n": 4200,
+      "toward_pct": 54.86,
+      "ci95": [
+       53.35,
+       56.36
+      ],
+      "robust": true
+     },
+     "market_home_dog": {
+      "n": 2644,
+      "toward_pct": 51.48,
+      "ci95": [
+       49.57,
+       53.38
+      ],
+      "robust": false
+     }
+    },
+    "home_conference": {
+     "ACC": {
+      "n": 765,
+      "toward_pct": 51.5,
+      "ci95": [
+       47.96,
+       55.03
+      ],
+      "robust": false
+     },
+     "American Athletic": {
+      "n": 593,
+      "toward_pct": 52.95,
+      "ci95": [
+       48.93,
+       56.94
+      ],
+      "robust": false
+     },
+     "Big 12": {
+      "n": 624,
+      "toward_pct": 51.28,
+      "ci95": [
+       47.36,
+       55.18
+      ],
+      "robust": false
+     },
+     "Big Ten": {
+      "n": 899,
+      "toward_pct": 53.62,
+      "ci95": [
+       50.35,
+       56.85
+      ],
+      "robust": true
+     },
+     "Conference USA": {
+      "n": 567,
+      "toward_pct": 53.79,
+      "ci95": [
+       49.68,
+       57.86
+      ],
+      "robust": false
+     },
+     "FBS Independents": {
+      "n": 231,
+      "toward_pct": 54.11,
+      "ci95": [
+       47.67,
+       60.42
+      ],
+      "robust": false
+     },
+     "Mid-American": {
+      "n": 603,
+      "toward_pct": 52.57,
+      "ci95": [
+       48.58,
+       56.53
+      ],
+      "robust": false
+     },
+     "Mountain West": {
+      "n": 562,
+      "toward_pct": 53.91,
+      "ci95": [
+       49.78,
+       58
+      ],
+      "robust": false
+     },
+     "Pac-12": {
+      "n": 572,
+      "toward_pct": 51.92,
+      "ci95": [
+       47.83,
+       55.99
+      ],
+      "robust": false
+     },
+     "SEC": {
+      "n": 868,
+      "toward_pct": 54.38,
+      "ci95": [
+       51.05,
+       57.66
+      ],
+      "robust": true
+     },
+     "Sun Belt": {
+      "n": 529,
+      "toward_pct": 58.6,
+      "ci95": [
+       54.36,
+       62.72
+      ],
+      "robust": true
+     }
+    },
+    "season": {
+     "2012": {
+      "n": 469,
+      "toward_pct": 55.22,
+      "ci95": [
+       50.7,
+       59.66
+      ],
+      "robust": true
+     },
+     "2013": {
+      "n": 503,
+      "toward_pct": 60.04,
+      "ci95": [
+       55.7,
+       64.23
+      ],
+      "robust": true
+     },
+     "2014": {
+      "n": 514,
+      "toward_pct": 61.48,
+      "ci95": [
+       57.2,
+       65.59
+      ],
+      "robust": true
+     },
+     "2015": {
+      "n": 514,
+      "toward_pct": 54.28,
+      "ci95": [
+       49.96,
+       58.54
+      ],
+      "robust": false
+     },
+     "2016": {
+      "n": 507,
+      "toward_pct": 52.27,
+      "ci95": [
+       47.92,
+       56.58
+      ],
+      "robust": false
+     },
+     "2017": {
+      "n": 506,
+      "toward_pct": 51.38,
+      "ci95": [
+       47.03,
+       55.71
+      ],
+      "robust": false
+     },
+     "2018": {
+      "n": 499,
+      "toward_pct": 54.51,
+      "ci95": [
+       50.12,
+       58.83
+      ],
+      "robust": true
+     },
+     "2019": {
+      "n": 506,
+      "toward_pct": 45.06,
+      "ci95": [
+       40.78,
+       49.42
+      ],
+      "robust": false
+     },
+     "2021": {
+      "n": 537,
+      "toward_pct": 50.65,
+      "ci95": [
+       46.43,
+       54.86
+      ],
+      "robust": false
+     },
+     "2022": {
+      "n": 517,
+      "toward_pct": 50.29,
+      "ci95": [
+       45.99,
+       54.58
+      ],
+      "robust": false
+     },
+     "2023": {
+      "n": 627,
+      "toward_pct": 52.95,
+      "ci95": [
+       49.04,
+       56.83
+      ],
+      "robust": false
+     },
+     "2024": {
+      "n": 574,
+      "toward_pct": 53.14,
+      "ci95": [
+       49.05,
+       57.18
+      ],
+      "robust": false
+     },
+     "2025": {
+      "n": 592,
+      "toward_pct": 54.9,
+      "ci95": [
+       50.87,
+       58.86
+      ],
+      "robust": true
+     }
+    }
+   }
+  },
+  "th_2": {
+   "overall": {
+    "n": 5444,
+    "toward_pct": 54.21,
+    "ci95": [
+     52.88,
+     55.53
+    ],
+    "robust": true
+   },
+   "by": {
+    "week_bucket": {
+     "0_2": {
+      "n": 835,
+      "toward_pct": 49.46,
+      "ci95": [
+       46.08,
+       52.85
+      ],
+      "robust": false
+     },
+     "3_5": {
+      "n": 1217,
+      "toward_pct": 53.08,
+      "ci95": [
+       50.27,
+       55.87
+      ],
+      "robust": true
+     },
+     "6p": {
+      "n": 3392,
+      "toward_pct": 55.78,
+      "ci95": [
+       54.1,
+       57.44
+      ],
+      "robust": true
+     }
+    },
+    "phase": {
+     "preseason_wk0_2": {
+      "n": 835,
+      "toward_pct": 49.46,
+      "ci95": [
+       46.08,
+       52.85
+      ],
+      "robust": false
+     },
+     "in_season_wk3p": {
+      "n": 4609,
+      "toward_pct": 55.07,
+      "ci95": [
+       53.63,
+       56.5
+      ],
+      "robust": true
+     }
+    },
+    "model_call": {
+     "model_home_fav": {
+      "n": 3574,
+      "toward_pct": 53.86,
+      "ci95": [
+       52.22,
+       55.49
+      ],
+      "robust": true
+     },
+     "model_home_dog": {
+      "n": 1870,
+      "toward_pct": 54.87,
+      "ci95": [
+       52.6,
+       57.11
+      ],
+      "robust": true
+     }
+    },
+    "market_call": {
+     "market_home_fav": {
+      "n": 3277,
+      "toward_pct": 55.66,
+      "ci95": [
+       53.95,
+       57.35
+      ],
+      "robust": true
+     },
+     "market_home_dog": {
+      "n": 2149,
+      "toward_pct": 52.07,
+      "ci95": [
+       49.96,
+       54.18
+      ],
+      "robust": false
+     }
+    },
+    "home_conference": {
+     "ACC": {
+      "n": 622,
+      "toward_pct": 50.16,
+      "ci95": [
+       46.24,
+       54.08
+      ],
+      "robust": false
+     },
+     "American Athletic": {
+      "n": 464,
+      "toward_pct": 54.53,
+      "ci95": [
+       49.98,
+       59
+      ],
+      "robust": false
+     },
+     "Big 12": {
+      "n": 512,
+      "toward_pct": 51.56,
+      "ci95": [
+       47.24,
+       55.86
+      ],
+      "robust": false
+     },
+     "Big Ten": {
+      "n": 704,
+      "toward_pct": 53.84,
+      "ci95": [
+       50.14,
+       57.49
+      ],
+      "robust": true
+     },
+     "Conference USA": {
+      "n": 442,
+      "toward_pct": 53.39,
+      "ci95": [
+       48.73,
+       58
+      ],
+      "robust": false
+     },
+     "FBS Independents": {
+      "n": 182,
+      "toward_pct": 54.4,
+      "ci95": [
+       47.14,
+       61.47
+      ],
+      "robust": false
+     },
+     "Mid-American": {
+      "n": 475,
+      "toward_pct": 53.26,
+      "ci95": [
+       48.77,
+       57.71
+      ],
+      "robust": false
+     },
+     "Mountain West": {
+      "n": 432,
+      "toward_pct": 57.87,
+      "ci95": [
+       53.16,
+       62.44
+      ],
+      "robust": true
+     },
+     "Pac-12": {
+      "n": 449,
+      "toward_pct": 52.78,
+      "ci95": [
+       48.16,
+       57.36
+      ],
+      "robust": false
+     },
+     "SEC": {
+      "n": 714,
+      "toward_pct": 55.46,
+      "ci95": [
+       51.8,
+       59.07
+      ],
+      "robust": true
+     },
+     "Sun Belt": {
+      "n": 406,
+      "toward_pct": 60.1,
+      "ci95": [
+       55.26,
+       64.75
+      ],
+      "robust": true
+     }
+    },
+    "season": {
+     "2012": {
+      "n": 380,
+      "toward_pct": 55.26,
+      "ci95": [
+       50.24,
+       60.19
+      ],
+      "robust": true
+     },
+     "2013": {
+      "n": 406,
+      "toward_pct": 62.07,
+      "ci95": [
+       57.26,
+       66.65
+      ],
+      "robust": true
+     },
+     "2014": {
+      "n": 402,
+      "toward_pct": 62.94,
+      "ci95": [
+       58.11,
+       67.51
+      ],
+      "robust": true
+     },
+     "2015": {
+      "n": 377,
+      "toward_pct": 57.03,
+      "ci95": [
+       51.99,
+       61.93
+      ],
+      "robust": true
+     },
+     "2016": {
+      "n": 392,
+      "toward_pct": 54.34,
+      "ci95": [
+       49.39,
+       59.2
+      ],
+      "robust": false
+     },
+     "2017": {
+      "n": 395,
+      "toward_pct": 51.9,
+      "ci95": [
+       46.98,
+       56.78
+      ],
+      "robust": false
+     },
+     "2018": {
+      "n": 401,
+      "toward_pct": 55.86,
+      "ci95": [
+       50.97,
+       60.64
+      ],
+      "robust": true
+     },
+     "2019": {
+      "n": 404,
+      "toward_pct": 44.55,
+      "ci95": [
+       39.78,
+       49.43
+      ],
+      "robust": false
+     },
+     "2021": {
+      "n": 423,
+      "toward_pct": 51.06,
+      "ci95": [
+       46.31,
+       55.8
+      ],
+      "robust": false
+     },
+     "2022": {
+      "n": 416,
+      "toward_pct": 50.24,
+      "ci95": [
+       45.46,
+       55.02
+      ],
+      "robust": false
+     },
+     "2023": {
+      "n": 518,
+      "toward_pct": 52.51,
+      "ci95": [
+       48.21,
+       56.78
+      ],
+      "robust": false
+     },
+     "2024": {
+      "n": 472,
+      "toward_pct": 52.75,
+      "ci95": [
+       48.25,
+       57.22
+      ],
+      "robust": false
+     },
+     "2025": {
+      "n": 457,
+      "toward_pct": 55.14,
+      "ci95": [
+       50.56,
+       59.64
+      ],
+      "robust": true
+     }
+    }
+   }
+  },
+  "th_3": {
+   "overall": {
+    "n": 4214,
+    "toward_pct": 54.7,
+    "ci95": [
+     53.19,
+     56.2
+    ],
+    "robust": true
+   },
+   "by": {
+    "week_bucket": {
+     "0_2": {
+      "n": 696,
+      "toward_pct": 49.71,
+      "ci95": [
+       46.01,
+       53.42
+      ],
+      "robust": false
+     },
+     "3_5": {
+      "n": 964,
+      "toward_pct": 53.32,
+      "ci95": [
+       50.16,
+       56.45
+      ],
+      "robust": true
+     },
+     "6p": {
+      "n": 2554,
+      "toward_pct": 56.58,
+      "ci95": [
+       54.65,
+       58.49
+      ],
+      "robust": true
+     }
+    },
+    "phase": {
+     "preseason_wk0_2": {
+      "n": 696,
+      "toward_pct": 49.71,
+      "ci95": [
+       46.01,
+       53.42
+      ],
+      "robust": false
+     },
+     "in_season_wk3p": {
+      "n": 3518,
+      "toward_pct": 55.69,
+      "ci95": [
+       54.04,
+       57.32
+      ],
+      "robust": true
+     }
+    },
+    "model_call": {
+     "model_home_fav": {
+      "n": 2758,
+      "toward_pct": 53.99,
+      "ci95": [
+       52.12,
+       55.84
+      ],
+      "robust": true
+     },
+     "model_home_dog": {
+      "n": 1456,
+      "toward_pct": 56.04,
+      "ci95": [
+       53.48,
+       58.57
+      ],
+      "robust": true
+     }
+    },
+    "market_call": {
+     "market_home_fav": {
+      "n": 2499,
+      "toward_pct": 55.7,
+      "ci95": [
+       53.75,
+       57.64
+      ],
+      "robust": true
+     },
+     "market_home_dog": {
+      "n": 1703,
+      "toward_pct": 53.26,
+      "ci95": [
+       50.88,
+       55.62
+      ],
+      "robust": true
+     }
+    },
+    "home_conference": {
+     "ACC": {
+      "n": 480,
+      "toward_pct": 51.88,
+      "ci95": [
+       47.41,
+       56.31
+      ],
+      "robust": false
+     },
+     "American Athletic": {
+      "n": 364,
+      "toward_pct": 56.04,
+      "ci95": [
+       50.91,
+       61.05
+      ],
+      "robust": true
+     },
+     "Big 12": {
+      "n": 386,
+      "toward_pct": 53.37,
+      "ci95": [
+       48.38,
+       58.29
+      ],
+      "robust": false
+     },
+     "Big Ten": {
+      "n": 557,
+      "toward_pct": 54.04,
+      "ci95": [
+       49.89,
+       58.14
+      ],
+      "robust": false
+     },
+     "Conference USA": {
+      "n": 336,
+      "toward_pct": 54.76,
+      "ci95": [
+       49.42,
+       60
+      ],
+      "robust": false
+     },
+     "FBS Independents": {
+      "n": 151,
+      "toward_pct": 52.98,
+      "ci95": [
+       45.04,
+       60.77
+      ],
+      "robust": false
+     },
+     "Mid-American": {
+      "n": 364,
+      "toward_pct": 52.2,
+      "ci95": [
+       47.07,
+       57.28
+      ],
+      "robust": false
+     },
+     "Mountain West": {
+      "n": 334,
+      "toward_pct": 55.39,
+      "ci95": [
+       50.03,
+       60.63
+      ],
+      "robust": true
+     },
+     "Pac-12": {
+      "n": 343,
+      "toward_pct": 54.81,
+      "ci95": [
+       49.52,
+       60
+      ],
+      "robust": false
+     },
+     "SEC": {
+      "n": 563,
+      "toward_pct": 56.13,
+      "ci95": [
+       52,
+       60.17
+      ],
+      "robust": true
+     },
+     "Sun Belt": {
+      "n": 304,
+      "toward_pct": 59.54,
+      "ci95": [
+       53.94,
+       64.9
+      ],
+      "robust": true
+     }
+    },
+    "season": {
+     "2012": {
+      "n": 296,
+      "toward_pct": 55.74,
+      "ci95": [
+       50.05,
+       61.29
+      ],
+      "robust": false
+     },
+     "2013": {
+      "n": 325,
+      "toward_pct": 63.38,
+      "ci95": [
+       58.02,
+       68.44
+      ],
+      "robust": true
+     },
+     "2014": {
+      "n": 304,
+      "toward_pct": 63.49,
+      "ci95": [
+       57.94,
+       68.7
+      ],
+      "robust": true
+     },
+     "2015": {
+      "n": 275,
+      "toward_pct": 61.82,
+      "ci95": [
+       55.95,
+       67.36
+      ],
+      "robust": false
+     },
+     "2016": {
+      "n": 297,
+      "toward_pct": 54.88,
+      "ci95": [
+       49.2,
+       60.44
+      ],
+      "robust": false
+     },
+     "2017": {
+      "n": 306,
+      "toward_pct": 52.94,
+      "ci95": [
+       47.35,
+       58.46
+      ],
+      "robust": false
+     },
+     "2018": {
+      "n": 313,
+      "toward_pct": 55.91,
+      "ci95": [
+       50.37,
+       61.31
+      ],
+      "robust": true
+     },
+     "2019": {
+      "n": 327,
+      "toward_pct": 43.43,
+      "ci95": [
+       38.16,
+       48.84
+      ],
+      "robust": false
+     },
+     "2021": {
+      "n": 325,
+      "toward_pct": 50.15,
+      "ci95": [
+       44.75,
+       55.56
+      ],
+      "robust": false
+     },
+     "2022": {
+      "n": 343,
+      "toward_pct": 49.85,
+      "ci95": [
+       44.59,
+       55.12
+      ],
+      "robust": false
+     },
+     "2023": {
+      "n": 412,
+      "toward_pct": 52.67,
+      "ci95": [
+       47.85,
+       57.44
+      ],
+      "robust": false
+     },
+     "2024": {
+      "n": 338,
+      "toward_pct": 52.37,
+      "ci95": [
+       47.05,
+       57.63
+      ],
+      "robust": false
+     },
+     "2025": {
+      "n": 353,
+      "toward_pct": 56.94,
+      "ci95": [
+       51.73,
+       62
+      ],
+      "robust": true
+     }
+    }
+   }
+  },
+  "th_5": {
+   "overall": {
+    "n": 2313,
+    "toward_pct": 56.07,
+    "ci95": [
+     54.04,
+     58.09
+    ],
+    "robust": true
+   },
+   "by": {
+    "week_bucket": {
+     "0_2": {
+      "n": 473,
+      "toward_pct": 49.68,
+      "ci95": [
+       45.2,
+       54.17
+      ],
+      "robust": false
+     },
+     "3_5": {
+      "n": 555,
+      "toward_pct": 55.86,
+      "ci95": [
+       51.7,
+       59.93
+      ],
+      "robust": true
+     },
+     "6p": {
+      "n": 1285,
+      "toward_pct": 58.52,
+      "ci95": [
+       55.81,
+       61.19
+      ],
+      "robust": true
+     }
+    },
+    "phase": {
+     "preseason_wk0_2": {
+      "n": 473,
+      "toward_pct": 49.68,
+      "ci95": [
+       45.2,
+       54.17
+      ],
+      "robust": false
+     },
+     "in_season_wk3p": {
+      "n": 1840,
+      "toward_pct": 57.72,
+      "ci95": [
+       55.45,
+       59.96
+      ],
+      "robust": true
+     }
+    },
+    "model_call": {
+     "model_home_fav": {
+      "n": 1518,
+      "toward_pct": 55.8,
+      "ci95": [
+       53.29,
+       58.28
+      ],
+      "robust": true
+     },
+     "model_home_dog": {
+      "n": 795,
+      "toward_pct": 56.6,
+      "ci95": [
+       53.13,
+       60.01
+      ],
+      "robust": true
+     }
+    },
+    "market_call": {
+     "market_home_fav": {
+      "n": 1326,
+      "toward_pct": 57.32,
+      "ci95": [
+       54.64,
+       59.95
+      ],
+      "robust": true
+     },
+     "market_home_dog": {
+      "n": 980,
+      "toward_pct": 54.29,
+      "ci95": [
+       51.16,
+       57.38
+      ],
+      "robust": true
+     }
+    },
+    "home_conference": {
+     "ACC": {
+      "n": 278,
+      "toward_pct": 50.72,
+      "ci95": [
+       44.87,
+       56.55
+      ],
+      "robust": false
+     },
+     "American Athletic": {
+      "n": 194,
+      "toward_pct": 58.25,
+      "ci95": [
+       51.21,
+       64.96
+      ],
+      "robust": false
+     },
+     "Big 12": {
+      "n": 224,
+      "toward_pct": 54.02,
+      "ci95": [
+       47.48,
+       60.42
+      ],
+      "robust": false
+     },
+     "Big Ten": {
+      "n": 293,
+      "toward_pct": 52.22,
+      "ci95": [
+       46.51,
+       57.87
+      ],
+      "robust": false
+     },
+     "Conference USA": {
+      "n": 173,
+      "toward_pct": 61.27,
+      "ci95": [
+       53.84,
+       68.21
+      ],
+      "robust": false
+     },
+     "Mid-American": {
+      "n": 184,
+      "toward_pct": 47.83,
+      "ci95": [
+       40.73,
+       55.01
+      ],
+      "robust": false
+     },
+     "Mountain West": {
+      "n": 163,
+      "toward_pct": 58.28,
+      "ci95": [
+       50.61,
+       65.58
+      ],
+      "robust": false
+     },
+     "Pac-12": {
+      "n": 172,
+      "toward_pct": 56.4,
+      "ci95": [
+       48.92,
+       63.59
+      ],
+      "robust": false
+     },
+     "SEC": {
+      "n": 342,
+      "toward_pct": 58.19,
+      "ci95": [
+       52.9,
+       63.3
+      ],
+      "robust": true
+     },
+     "Sun Belt": {
+      "n": 169,
+      "toward_pct": 67.46,
+      "ci95": [
+       60.07,
+       74.06
+      ],
+      "robust": false
+     }
+    },
+    "season": {
+     "2012": {
+      "n": 161,
+      "toward_pct": 56.52,
+      "ci95": [
+       48.8,
+       63.94
+      ],
+      "robust": false
+     },
+     "2013": {
+      "n": 170,
+      "toward_pct": 64.12,
+      "ci95": [
+       56.67,
+       70.94
+      ],
+      "robust": false
+     },
+     "2014": {
+      "n": 157,
+      "toward_pct": 65.61,
+      "ci95": [
+       57.88,
+       72.58
+      ],
+      "robust": false
+     },
+     "2015": {
+      "n": 153,
+      "toward_pct": 62.09,
+      "ci95": [
+       54.2,
+       69.39
+      ],
+      "robust": false
+     },
+     "2016": {
+      "n": 169,
+      "toward_pct": 55.62,
+      "ci95": [
+       48.09,
+       62.9
+      ],
+      "robust": false
+     },
+     "2017": {
+      "n": 161,
+      "toward_pct": 55.9,
+      "ci95": [
+       48.18,
+       63.34
+      ],
+      "robust": false
+     },
+     "2018": {
+      "n": 162,
+      "toward_pct": 58.02,
+      "ci95": [
+       50.33,
+       65.35
+      ],
+      "robust": false
+     },
+     "2019": {
+      "n": 168,
+      "toward_pct": 46.43,
+      "ci95": [
+       39.05,
+       53.97
+      ],
+      "robust": false
+     },
+     "2021": {
+      "n": 195,
+      "toward_pct": 49.74,
+      "ci95": [
+       42.8,
+       56.7
+      ],
+      "robust": false
+     },
+     "2022": {
+      "n": 206,
+      "toward_pct": 52.91,
+      "ci95": [
+       46.11,
+       59.61
+      ],
+      "robust": false
+     },
+     "2023": {
+      "n": 244,
+      "toward_pct": 55.74,
+      "ci95": [
+       49.46,
+       61.83
+      ],
+      "robust": false
+     },
+     "2024": {
+      "n": 183,
+      "toward_pct": 49.73,
+      "ci95": [
+       42.56,
+       56.9
+      ],
+      "robust": false
+     },
+     "2025": {
+      "n": 184,
+      "toward_pct": 59.78,
+      "ci95": [
+       52.57,
+       66.6
+      ],
+      "robust": false
+     }
+    }
+   }
+  },
+  "th_7": {
+   "overall": {
+    "n": 1140,
+    "toward_pct": 56.32,
+    "ci95": [
+     53.42,
+     59.17
+    ],
+    "robust": true
+   },
+   "by": {
+    "week_bucket": {
+     "0_2": {
+      "n": 278,
+      "toward_pct": 47.48,
+      "ci95": [
+       41.69,
+       53.35
+      ],
+      "robust": false
+     },
+     "3_5": {
+      "n": 320,
+      "toward_pct": 56.56,
+      "ci95": [
+       51.09,
+       61.88
+      ],
+      "robust": true
+     },
+     "6p": {
+      "n": 542,
+      "toward_pct": 60.7,
+      "ci95": [
+       56.53,
+       64.72
+      ],
+      "robust": true
+     }
+    },
+    "phase": {
+     "preseason_wk0_2": {
+      "n": 278,
+      "toward_pct": 47.48,
+      "ci95": [
+       41.69,
+       53.35
+      ],
+      "robust": false
+     },
+     "in_season_wk3p": {
+      "n": 862,
+      "toward_pct": 59.16,
+      "ci95": [
+       55.85,
+       62.4
+      ],
+      "robust": true
+     }
+    },
+    "model_call": {
+     "model_home_fav": {
+      "n": 754,
+      "toward_pct": 57.16,
+      "ci95": [
+       53.6,
+       60.65
+      ],
+      "robust": true
+     },
+     "model_home_dog": {
+      "n": 386,
+      "toward_pct": 54.66,
+      "ci95": [
+       49.68,
+       59.56
+      ],
+      "robust": false
+     }
+    },
+    "market_call": {
+     "market_home_fav": {
+      "n": 640,
+      "toward_pct": 57.66,
+      "ci95": [
+       53.79,
+       61.43
+      ],
+      "robust": true
+     },
+     "market_home_dog": {
+      "n": 495,
+      "toward_pct": 54.34,
+      "ci95": [
+       49.94,
+       58.68
+      ],
+      "robust": false
+     }
+    },
+    "home_conference": {
+     "ACC": {
+      "n": 154,
+      "toward_pct": 51.3,
+      "ci95": [
+       43.47,
+       59.06
+      ],
+      "robust": false
+     },
+     "SEC": {
+      "n": 184,
+      "toward_pct": 58.7,
+      "ci95": [
+       51.47,
+       65.56
+      ],
+      "robust": false
+     }
+    },
+    "season": {
+     "2012": {
+      "n": 73,
+      "toward_pct": 50.68,
+      "ci95": [
+       39.47,
+       61.83
+      ],
+      "robust": false
+     },
+     "2013": {
+      "n": 94,
+      "toward_pct": 68.09,
+      "ci95": [
+       58.11,
+       76.64
+      ],
+      "robust": false
+     },
+     "2014": {
+      "n": 77,
+      "toward_pct": 62.34,
+      "ci95": [
+       51.17,
+       72.33
+      ],
+      "robust": false
+     },
+     "2015": {
+      "n": 74,
+      "toward_pct": 59.46,
+      "ci95": [
+       48.08,
+       69.91
+      ],
+      "robust": false
+     },
+     "2016": {
+      "n": 77,
+      "toward_pct": 57.14,
+      "ci95": [
+       46.01,
+       67.6
+      ],
+      "robust": false
+     },
+     "2017": {
+      "n": 74,
+      "toward_pct": 58.11,
+      "ci95": [
+       46.74,
+       68.68
+      ],
+      "robust": false
+     },
+     "2018": {
+      "n": 74,
+      "toward_pct": 60.81,
+      "ci95": [
+       49.42,
+       71.14
+      ],
+      "robust": false
+     },
+     "2019": {
+      "n": 82,
+      "toward_pct": 40.24,
+      "ci95": [
+       30.3,
+       51.06
+      ],
+      "robust": false
+     },
+     "2021": {
+      "n": 109,
+      "toward_pct": 51.38,
+      "ci95": [
+       42.11,
+       60.55
+      ],
+      "robust": false
+     },
+     "2022": {
+      "n": 98,
+      "toward_pct": 57.14,
+      "ci95": [
+       47.26,
+       66.49
+      ],
+      "robust": false
+     },
+     "2023": {
+      "n": 130,
+      "toward_pct": 53.85,
+      "ci95": [
+       45.29,
+       62.18
+      ],
+      "robust": false
+     },
+     "2024": {
+      "n": 84,
+      "toward_pct": 52.38,
+      "ci95": [
+       41.83,
+       62.72
+      ],
+      "robust": false
+     },
+     "2025": {
+      "n": 94,
+      "toward_pct": 61.7,
+      "ci95": [
+       51.6,
+       70.89
+      ],
+      "robust": false
+     }
+    }
+   }
+  }
+ }
+}

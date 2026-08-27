@@ -420,6 +420,29 @@ async function p4Section(out) {
     check('p4_calibration', 'CFB P4: calibration record artifact', 'warn',
       'football/cfb_p4/calibration.js not present — the model card shows no calibration verdict');
   }
+  /* the v1.2 experiment record: also display-only, but its frame-integrity
+     stamp must agree with the v1.1 record or the lineage claim is broken. */
+  try {
+    const C2 = require(path.join(REPO, 'football', 'cfb_p4', 'calibration.js'));
+    const V = require(path.join(REPO, 'football', 'cfb_p4', 'v12_correction.js'));
+    const shape = V && V.correction_version && V.frame_check && V.preseason_prior
+      && V.home_dog && V.movement_model && V.directional_robustness_headline
+      && typeof V.preseason_prior.survived === 'boolean'
+      && typeof V.home_dog.survived === 'boolean'
+      && typeof V.movement_model.survived === 'boolean';
+    const frameOk = shape && V.frame_check.matches_v11 === true
+      && C2 && C2.record && V.frame_check.mae_raw === C2.record.mae_raw
+      && V.frame_check.mae_market === C2.record.mae_market
+      && V.frame_check.n === C2.record.n;
+    check('p4_v12', 'CFB P4: v1.2 experiment record artifact', frameOk ? 'pass' : 'fail',
+      frameOk
+        ? `${V.correction_version} · frame matches v1.1 (n ${V.frame_check.n}) · preseason ${V.preseason_prior.survived ? 'SURVIVED' : 'rejected'} · home-dog ${V.home_dog.survived ? 'SURVIVED' : 'rejected'} · movement ${V.movement_model.survived ? 'SURVIVED' : 'rejected'}`
+        : (shape ? 'frame stamp disagrees with the v1.1 record — the lineage claim is broken'
+          : 'artifact present but missing required fields'));
+  } catch (_) {
+    check('p4_v12', 'CFB P4: v1.2 experiment record artifact', 'warn',
+      'football/cfb_p4/v12_correction.js not present — the model card shows no v1.2 verdict');
+  }
   if (!curSched) return;
 
   /* upcoming P4 slate: project and guard */
