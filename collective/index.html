@@ -883,6 +883,64 @@ function calibrationHTML(cal){
     'Computed from '+cal.n+' graded pick'+(cal.n===1?'':'s')+' with a posted win probability'+
     (cal.skipped?'; '+cal.skipped+' excluded (no probability, or a tie)':'')+'.</p>';
 }
+/* The straight outright record the calibration points already imply: how
+   often the side the model favoured actually won, before any bucketing. */
+function mlOutrightRecord(points){
+  var w=0,l=0;
+  (points||[]).forEach(function(pt){
+    if(!pt||typeof pt.p!=='number'||!(pt.p>=0&&pt.p<=1)||(pt.y!==0&&pt.y!==1))return;
+    if(pt.p>=0.5?pt.y===1:pt.y===0)w++;else l++;
+  });
+  return {n:w+l,w:w,l:l,pct:(w+l)?w/(w+l):null};
+}
+/* ---- the Collective graded as ONE model ------------------------------
+   The consensus makes calls too: a majority pick side and a mean win
+   probability. Grade them by exactly the member rules — the majority side
+   against the Collective's own captured close, the mean probability
+   against the final score. Only a real aggregate counts: games with fewer
+   than two models, dead-even splits, and (for the outright call) ties are
+   excluded rather than guessed at. */
+function consensusSeasonStats(games){
+  var ats={w:0,l:0,push:0},mlPts=[];
+  (games||[]).forEach(function(g){
+    var c=g&&g.consensus,r=g&&g.result;
+    if(!c||c.locked||!(c.n>=2)||!r||r.home_score==null||r.away_score==null)return;
+    var margin=r.home_score-r.away_score;
+    if(c.home_win_prob_mean!=null&&margin!==0)
+      mlPts.push({p:c.home_win_prob_mean,y:margin>0?1:0});
+    if(c.pct_picks_home!=null&&r.closing_spread!=null&&c.pct_picks_home!==0.5){
+      var side=c.pct_picks_home>0.5?'home':'away';
+      var covers=margin+r.closing_spread;   /* home convention: >0 home covers */
+      if(covers===0)ats.push++;
+      else if((side==='home')===(covers>0))ats.w++;
+      else ats.l++;
+    }
+  });
+  return {ats:ats,ml:mlOutrightRecord(mlPts),mlPts:mlPts};
+}
+/* Season's settled games, one fetch per week that has already been played,
+   cached for the session: the games endpoint serves a week at a time, and
+   the payload of a week-less call names the current week, which bounds the
+   sweep. Settled games are public, so this works signed out. */
+var SEASON_GAMES={};
+async function seasonSettledGames(sport,season){
+  var key=sport+'|'+season;
+  if(SEASON_GAMES[key])return SEASON_GAMES[key];
+  var head=await api('/v1/games?sport='+encodeURIComponent(sport)+'&season='+encodeURIComponent(season),{auth:true});
+  var games=(head&&head.games)||[];
+  var cur=head&&head.week;
+  if(cur!=null&&cur>1){
+    var weeks=[];for(var w=1;w<cur;w++)weeks.push(w);
+    var pages=await Promise.all(weeks.map(function(wk2){
+      return api('/v1/games?sport='+encodeURIComponent(sport)+'&season='+encodeURIComponent(season)+'&week='+wk2,{auth:true})
+        .catch(function(){return null;});
+    }));
+    pages.forEach(function(pg){if(pg&&pg.games)games=games.concat(pg.games);});
+  }
+  var settled=games.filter(function(g){return g&&g.result&&g.result.home_score!=null;});
+  SEASON_GAMES[key]=settled;
+  return settled;
+}
 /* One stable key for a game across the wall and the board. The board's games
    carry a game_id; a game the odds feed has not linked yet is still uniquely
    named by its two teams. */
@@ -1169,7 +1227,7 @@ async function renderModel(view,cs,ms){
        at a season's worth. Settled games are public, so this works signed
        out; any week that fails to load is simply absent from the sample and
        the readout says how many picks it stands on. */
-    var calCal=null;
+    var calCal=null,calMl=null;
     try{
       var calWeeks=(d.coverage||[]).map(function(c){return {season:c.season,week:c.week};})
         .filter(function(c){return c.season!=null&&c.week!=null;});
@@ -1184,14 +1242,15 @@ async function renderModel(view,cs,ms){
         calPages.forEach(function(pg){
           if(pg&&pg.games)calPts=calPts.concat(calibrationPoints(pg.games,cs,ms));
         });
-        if(calPts.length)calCal=calibrationBuckets(calPts);
+        if(calPts.length){calCal=calibrationBuckets(calPts);calMl=mlOutrightRecord(calPts);}
       }
-    }catch(_){calCal=null;}
+    }catch(_){calCal=null;calMl=null;}
     var head='<h1>'+esc(d.model.model_name)+' <span class="pill">'+esc(d.model.sport)+'</span></h1>'+
       '<p class="lede">by <a href="#/'+esc(d.creator.slug)+'">'+esc(d.creator.display_name)+'</a>'+foundBadge(d.creator)+'</p>';
     var stats=rec?'<div class="panel"><div class="kv">'+
-      '<span><div class="k">Record</div><div class="v">'+rec.wins+'-'+rec.losses+'-'+rec.pushes+'</div></span>'+
+      '<span><div class="k">Record (ATS)</div><div class="v">'+rec.wins+'-'+rec.losses+'-'+rec.pushes+'</div></span>'+
       '<span><div class="k">Win %</div><div class="v">'+fmtPct(rec.win_pct)+'</div></span>'+
+      (calMl&&calMl.n?'<span><div class="k" title="how often the side this model favoured on the moneyline actually won">Outright (ML)</div><div class="v">'+calMl.w+'-'+calMl.l+' &middot; '+fmtPct(calMl.pct,0)+'</div></span>':'')+
       '<span><div class="k">Margin MAE</div><div class="v">'+fmtNum(rec.margin_mae)+'</div></span>'+
       '<span><div class="k">Brier</div><div class="v">'+fmtNum(rec.brier,3)+'</div></span>'+
       '<span><div class="k">Coverage</div><div class="v">'+fmtNum(d.coverage_pct,0)+'%</div></span>'+
@@ -1500,6 +1559,14 @@ async function renderRankings(view){
       meta().catch(function(){return {sports:[]};})]);
     var d=res[0],mMeta3=res[2];
     var rkSport=currentSport(mMeta3);
+    /* the Collective's own record, graded from the season's settled games;
+       absent early season rather than a panel of zeros */
+    var collStats=null;
+    try{
+      var seasonG=await seasonSettledGames(rkSport.code,rkSport.season);
+      var cs2=consensusSeasonStats(seasonG);
+      if(cs2.ats.w+cs2.ats.l+cs2.ats.push>0||cs2.ml.n>0)collStats=cs2;
+    }catch(_){collStats=null;}
     var fmap={};res[1].forEach(function(r){if(r.founding)fmap[r.creator_slug]=true;});
     /* /v1/rankings carries no sport, so the sport of each ranked model is read
        off the wall rows it shares a slug with. A model the wall does not know
@@ -1546,6 +1613,16 @@ async function renderRankings(view){
         board('Margin MAE',d.boards.margin_mae,function(v){return fmtNum(v);},'lower is better')+
         board('Brier',d.boards.brier,function(v){return fmtNum(v,3);},'lower is better')+
       '</div>'+
+      (collStats?(function(){
+        var a=collStats.ats,m2=collStats.ml;
+        var atsN=a.w+a.l;
+        return '<h2>The Collective as one model</h2>'+
+          '<div class="panel"><div class="kv">'+
+          (atsN+a.push>0?'<span><div class="k" title="the majority pick, graded against the Collective&#39;s own captured closing line">Consensus ATS</div><div class="v">'+a.w+'-'+a.l+(a.push?'-'+a.push:'')+(atsN?' &middot; '+fmtPct(a.w/atsN,0):'')+'</div></span>':'')+
+          (m2.n>0?'<span><div class="k" title="the side the mean win probability favoured, graded on the final score">Consensus outright</div><div class="v">'+m2.w+'-'+m2.l+' &middot; '+fmtPct(m2.pct,0)+'</div></span>':'')+
+          '</div><div class="note" style="margin-top:8px">The consensus graded by the member rules: the majority pick against the Collective&#39;s own captured close, the mean win probability against the final score. Games with fewer than two models, dead-even splits, and ties are excluded &mdash; an aggregate of one is just a model.</div></div>'+
+          calibrationHTML(calibrationBuckets(collStats.mlPts));
+      })():'')+
       (un?'<h2>Not yet ranked</h2><ul style="color:var(--dim);font-size:13px;line-height:1.9">'+un+'</ul>':'')+
       '<p class="note"><a href="#rules">How grading works →</a> &middot; <a href="#performance">Compare any two models side by side →</a></p>';
     bindSportSwitcher(function(){renderRankings(view);});

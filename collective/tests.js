@@ -985,6 +985,53 @@ if (typeof sandbox.teamKey === 'function') {
   chk('the harvest keeps one point: settled, this model, on time, with a probability',
     harvest.length === 1 && near(harvest[0].p, 0.7) && harvest[0].y === 1,
     { harvest: harvest });
+
+  /* ---- the outright record, and the Collective graded as one model ----- */
+  chk('the outright record counts favoured-side wins, either side of 50',
+    (function () {
+      var r = S.mlOutrightRecord(pts([[0.7, 1], [0.3, 0], [0.6, 0], [null, 1]]));
+      return r.n === 3 && r.w === 2 && r.l === 1 && near(r.pct, 2 / 3, 1e-9);
+    })());
+  chk('an empty outright record has a null percentage, never NaN',
+    (function () { var r = S.mlOutrightRecord([]); return r.n === 0 && r.pct === null; })());
+
+  var CONSGAMES = [
+    /* majority home at -3 close, home wins by 7: ATS win, outright hit */
+    { consensus: { n: 3, home_win_prob_mean: 0.7, pct_picks_home: 0.67 },
+      result: { home_score: 24, away_score: 17, closing_spread: -3 } },
+    /* majority away as home dog +3, home loses by 10: away covers, ATS win;
+       mean favours away (0.4), away won: outright hit */
+    { consensus: { n: 2, home_win_prob_mean: 0.4, pct_picks_home: 0.33 },
+      result: { home_score: 10, away_score: 20, closing_spread: 3 } },
+    /* lands exactly on the close: a push, not a result */
+    { consensus: { n: 3, home_win_prob_mean: 0.8, pct_picks_home: 1 },
+      result: { home_score: 27, away_score: 20, closing_spread: -7 } },
+    /* dead-even split: no ATS call to grade; outright still counts (a miss) */
+    { consensus: { n: 4, home_win_prob_mean: 0.55, pct_picks_home: 0.5 },
+      result: { home_score: 13, away_score: 17, closing_spread: -1 } },
+    /* one model is not an aggregate */
+    { consensus: { n: 1, home_win_prob_mean: 0.9, pct_picks_home: 1 },
+      result: { home_score: 30, away_score: 0, closing_spread: -10 } },
+    /* locked consensus never grades */
+    { consensus: { locked: true, n: 5, home_win_prob_mean: 0.9, pct_picks_home: 1 },
+      result: { home_score: 30, away_score: 0, closing_spread: -10 } },
+    /* not settled yet */
+    { consensus: { n: 3, home_win_prob_mean: 0.6, pct_picks_home: 0.8 } }
+  ];
+  var cons = S.consensusSeasonStats(CONSGAMES);
+  chk('the consensus ATS record grades the majority side against the close',
+    cons.ats.w === 2 && cons.ats.l === 0 && cons.ats.push === 1, { ats: cons.ats });
+  chk('the consensus outright record includes the push and even-split games',
+    cons.ml.n === 4 && cons.ml.w === 3 && cons.ml.l === 1, { ml: cons.ml },
+    /* the ATS push still grades outright: home at 80% won the game */
+    undefined);
+  chk('the consensus calibration points carry the mean probabilities',
+    cons.mlPts.length === 4 && near(cons.mlPts[0].p, 0.7) && cons.mlPts[0].y === 1);
+  chk('no settled aggregates yields empty records, not zeros pretending to grade',
+    (function () {
+      var c = S.consensusSeasonStats([{ consensus: { n: 1 }, result: { home_score: 1, away_score: 0, closing_spread: -1 } }]);
+      return c.ats.w === 0 && c.ats.l === 0 && c.ats.push === 0 && c.ml.n === 0;
+    })());
 }
 
 /* ---- report ------------------------------------------------------------ */
