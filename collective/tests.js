@@ -725,6 +725,90 @@ if (typeof sandbox.teamKey === 'function') {
       return o.cover_probability === undefined
         || (o.cover_probability >= 0 && o.cover_probability <= 1);
     }));
+
+  /* ---- the HW % field is the HOME team's chance, every time -------------
+     Reported from the live board: "the HW % field isn't always showing the
+     % chance of the home team winning outright." Three ways it happened:
+     the wall's probability cell was stated from the PICKED side while the
+     consensus row in the same column stated home; a pick-stated win-prob
+     column posted raw, inverting every away pick; and ml_home — a synonym
+     for this field — usually holds a PRICE, which read +100 as certainty. */
+
+  /* the board cell: home-stated whatever the pick, labelled with its kind */
+  chk('the board probability cell is home-stated even for an away pick',
+    (function () {
+      var c = S.homeProbCell({ home_win_probability: 0.62, pick_side: 'away' });
+      return c && near(c.v, 0.62) && c.k === 'hw';
+    })());
+  chk('the cover fallback keeps the wire value and is labelled as cover',
+    (function () {
+      var c = S.homeProbCell({ cover_probability: 0.44, pick_side: 'away' });
+      return c && near(c.v, 0.44) && c.k === 'cv';
+    })());
+  chk('a row with no probability at all yields no cell',
+    S.homeProbCell({ pick_side: 'home' }) === null);
+
+  /* the price-shaped values a win-probability column actually receives */
+  chk('a home moneyline price reads as its implied probability',
+    near(S.slateWinProb('-150', 'ml_home'), 0.6));
+  chk('an even-money +100 price is 50%, never 100%',
+    near(S.slateWinProb('+100', 'ml_home'), 0.5));
+  chk('an underdog price converts too',
+    near(S.slateWinProb('+150', 'ml_home'), 0.4));
+  chk('a 100 in a percent-marked column is still 100%',
+    near(S.slateWinProb('100', 'home_win_prob_pct'), 1));
+  chk('a value that cannot be a probability is withheld, not posted',
+    S.slateWinProb('150', 'win_prob') === null);
+  chk('ordinary percentages and probabilities pass through unchanged',
+    near(S.slateWinProb('81.4', 'home_win_prob_pct'), 0.814)
+    && near(S.slateWinProb('0.64', 'home_win_probability'), 0.64));
+
+  /* a win-prob column stated from the picked team: same treatment as a
+     pick-stated spread — turned onto the home side, or withheld */
+  var PICKCSV = [
+    'home_team,away_team,date,pick,pick_win_prob',
+    'TCU,North Carolina,2026-08-29 16:00,TCU,70',
+    'TCU,North Carolina,2026-08-29 16:00,North Carolina,70',
+    'TCU,North Carolina,2026-08-29 16:00,,70'
+  ].join('\n');
+  var pRows = parseCsv(PICKCSV);
+  S.SLATE.cols = pRows[0]; S.SLATE.rows = pRows; S.SLATE.map = {};
+  S.slateGuessMap();
+  S.SLATE.map['home_win_probability'] = 4;   /* the creator maps it by hand */
+  var pBuilt = S.slateBuildRows('2026', '1');
+  chk('a pick-stated win probability keeps a home pick as given',
+    near(pBuilt.rows[0].home_win_probability, 0.70, 1e-9),
+    { got: pBuilt.rows[0].home_win_probability });
+  chk('a pick-stated win probability is turned around for an away pick',
+    near(pBuilt.rows[1].home_win_probability, 0.30, 1e-9),
+    { got: pBuilt.rows[1].home_win_probability });
+  chk('a pick-stated win probability with no readable pick is withheld',
+    pBuilt.rows[2].home_win_probability === undefined
+    && pBuilt.problems.some(function (p) { return /pick_win_prob/.test(p); }),
+    { problems: pBuilt.problems });
+
+  /* an ML column follows the ML pick, which is not the spread pick whenever
+     the model likes the dog against the number */
+  var MLCSV = [
+    'home_team,away_team,date,spread_pick,ml_pick,p_ml_pick_pct',
+    'TCU,North Carolina,2026-08-29 16:00,North Carolina,TCU,81.4',
+    'TCU,North Carolina,2026-08-29 16:00,TCU,North Carolina,60',
+    'TCU,North Carolina,2026-08-29 16:00,TCU,,60'
+  ].join('\n');
+  var mRows = parseCsv(MLCSV);
+  S.SLATE.cols = mRows[0]; S.SLATE.rows = mRows; S.SLATE.map = {};
+  S.slateGuessMap();
+  S.SLATE.map['home_win_probability'] = 5;   /* the creator maps it by hand */
+  var mBuilt = S.slateBuildRows('2026', '1');
+  chk('an ML-pick probability follows ml_pick, not the spread pick',
+    near(mBuilt.rows[0].home_win_probability, 0.814, 1e-9),
+    { got: mBuilt.rows[0].home_win_probability });
+  chk('an away ML pick is turned onto the home side',
+    near(mBuilt.rows[1].home_win_probability, 0.40, 1e-9),
+    { got: mBuilt.rows[1].home_win_probability });
+  chk('an ML-pick probability with no readable ml_pick is withheld',
+    mBuilt.rows[2].home_win_probability === undefined,
+    { got: mBuilt.rows[2].home_win_probability });
 }
 
 /* ---- report ------------------------------------------------------------ */

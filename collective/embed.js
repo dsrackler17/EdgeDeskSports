@@ -287,7 +287,11 @@
           (m.projected_spread != null
             ? '<span class="mono" title="the model’s own spread, stated for the home side">spr ' + esc(g.home) + ' ' + spr(m.projected_spread) + '</span>'
             : '') +
-          (m.home_win_probability != null ? '<span class="mono">hw ' + pct(m.home_win_probability, 0) + '</span>' : '') +
+          (m.home_win_probability != null ? '<span class="mono" title="the model’s home team win probability (moneyline)">hw ' + pct(m.home_win_probability, 0) + '</span>' : '') +
+          /* what a model that posted without a win probability has; home-stated
+             on the wire, like every number here, so it is labelled as such */
+          (m.home_win_probability == null && m.cover_probability != null
+            ? '<span class="mono" title="the model’s probability that the home side covers at the posted line">cv ' + pct(m.cover_probability, 0) + '</span>' : '') +
           (mktSpread != null && m.projected_spread != null
             ? '<span class="mono">' + MARKET.M.edgeHtml(m.projected_spread, mktSpread, g.home, g.away) + '</span>'
             : '') +

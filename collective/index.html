@@ -185,7 +185,7 @@ label .opt{color:var(--faint);text-transform:none;letter-spacing:0;font-weight:4
 .gb-hd{display:flex;gap:12px;align-items:baseline;padding:8px 14px;background:var(--surface2);font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:700;letter-spacing:.06em}
 .gb-hd .tm{color:var(--faint);font-weight:400;font-size:11px;letter-spacing:.03em}
 .gb-hd .fin{margin-left:auto;color:var(--text)}
-.gb-row{display:grid;grid-template-columns:minmax(120px,1.6fr) minmax(96px,1fr) 58px 18px;gap:8px;padding:6px 14px;font-family:'JetBrains Mono',monospace;font-size:12px;align-items:center}
+.gb-row{display:grid;grid-template-columns:minmax(120px,1.6fr) minmax(96px,1fr) 66px 18px;gap:8px;padding:6px 14px;font-family:'JetBrains Mono',monospace;font-size:12px;align-items:center}
 .gb-row a{color:var(--text)}
 .gb-row .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;letter-spacing:.05em;text-transform:uppercase}
 .gb-row .num{text-align:right}
@@ -350,7 +350,7 @@ a,button,tr.rowlink,.sportpick,.wk button,.sportsw button{
       below it. Below 380 the model column gives up its minimum first, since
       a truncated team code still reads and a clipped number does not. */
 @media(max-width:380px){
-  .gb-row{grid-template-columns:minmax(84px,1.5fr) minmax(88px,1fr) 52px 14px;
+  .gb-row{grid-template-columns:minmax(84px,1.5fr) minmax(88px,1fr) 58px 14px;
           gap:6px;padding:6px 10px}
   .gb-hd,.bd-hd,.bd-stats{padding-left:10px;padding-right:10px}
   .bd-stats{gap:14px}
@@ -762,12 +762,23 @@ function pickDisp(g,mr){
   if(p.team==null)return p.spread==null?'-':esc(g.home)+' '+fmtSpread(p.spread);
   return esc(p.team)+' '+(p.spread==null?'-':fmtSpread(p.spread));
 }
-/* Probability for the picked side: moneyline if given, else the cover
-   probability, which is already stated at the model's own line. */
-function pickProb(mr){
+/* The probability cell on the game board, stated for the HOME side. The
+   wire is home convention throughout, and so is every other statement of
+   this number — the consensus row in the SAME column, the "hw" chips on
+   the Board page, the embed. This cell used to show the PICKED side's
+   probability instead, so an away pick read as the home team's chance
+   turned around — and its cover fallback did not even do that: it showed
+   the home side's cover probability under a pick-side reading. One column,
+   one convention, each value labelled with which number it is. The cover
+   fallback is what a model that posted without a win probability has (the
+   API refuses some spread/probability pairs; see probRejectHTML). */
+function homeProbCell(mr){
   if(mr.home_win_probability!=null)
-    return pickSideNorm(mr)==='away'?1-mr.home_win_probability:mr.home_win_probability;
-  if(mr.cover_probability!=null)return mr.cover_probability;
+    return {v:mr.home_win_probability,k:'hw',
+      t:'the model’s home team win probability (moneyline)'};
+  if(mr.cover_probability!=null)
+    return {v:mr.cover_probability,k:'cv',
+      t:'the model’s probability that the home side covers at the posted line'};
   return null;
 }
 async function renderWall(view){
@@ -803,13 +814,13 @@ async function renderWall(view){
           lines+='<div class="gb-row">'+who+'<span class="lock" style="grid-column:2/4">Subscriber number</span><span class="gb-dot" style="background:var(--faint)"></span></div>';
           return;
         }
-        var p=pickProb(mr);
+        var p=homeProbCell(mr);
         var dot=mr.grade
           ?({win:'var(--pos)',loss:'var(--neg)',push:'var(--warn)'}[mr.grade.pick_result]||'var(--dim)')
           :(memDot[wr.membership]||'var(--dim)');
         lines+='<div class="gb-row">'+who+
           '<span class="num">'+pickDisp(g,mr)+(mr.late?' <span style="color:var(--warn)">LATE</span>':'')+'</span>'+
-          '<span class="num">'+(p==null?'-':Math.round(100*p)+'%')+'</span>'+
+          '<span class="num"'+(p?' title="'+p.t+'"':'')+'>'+(p==null?'-':p.k+' '+Math.round(100*p.v)+'%')+'</span>'+
           '<span class="gb-dot" style="background:'+dot+'"></span></div>';
       });
       if(!g.models||!g.models.length)lines='<div class="gb-empty">No model has posted this game yet</div>';
@@ -820,7 +831,7 @@ async function renderWall(view){
       if(c&&!c.locked&&c.n>1){
         lines+='<div class="gb-row cons"><span class="nm">Consensus</span>'+
           '<span class="num">'+esc(g.home)+' '+fmtSpread(c.spread_mean)+'</span>'+
-          '<span class="num">'+(c.home_win_prob_mean==null?'-':Math.round(100*c.home_win_prob_mean)+'%')+'</span><span></span></div>';
+          '<span class="num" title="average home team win probability across the models on this game">'+(c.home_win_prob_mean==null?'-':'hw '+Math.round(100*c.home_win_prob_mean)+'%')+'</span><span></span></div>';
       }else if(c&&c.locked){
         lines+='<div class="gb-row cons"><span class="nm">Consensus</span><span class="lock" style="grid-column:2/4">Subscriber number</span><span></span></div>';
       }
@@ -1102,9 +1113,12 @@ async function renderBoard(view){
               ? '<span class="mono" title="Model spread minus the market consensus, both in home convention">vs mkt '+
                 MCOdds.edgeHtml(mr.projected_spread,mktSpread,g.home,g.away)+'</span>'
               : '')+
-            (mr.home_win_probability!=null?'<span class="mono">hw '+fmtPct(mr.home_win_probability,0)+'</span>':'')+
+            (mr.home_win_probability!=null?'<span class="mono" title="the model&#39;s home team win probability (moneyline)">hw '+fmtPct(mr.home_win_probability,0)+'</span>':'')+
+            /* home-stated, like every number on this wire — the old title said
+               "this pick covers", which is the exact inverse (less the push
+               mass) whenever the pick is the away team */
             (mr.home_win_probability==null&&mr.cover_probability!=null
-              ? '<span class="mono" title="the model\'s probability that this pick covers">cover '+fmtPct(mr.cover_probability,0)+'</span>':'')+
+              ? '<span class="mono" title="the model&#39;s probability that the home side covers at the posted line">cover '+esc(g.home)+' '+fmtPct(mr.cover_probability,0)+'</span>':'')+
             grade+'</div>';
         }
       });
@@ -1662,6 +1676,31 @@ function slateProb(value,header){
   if(slatePctCol(header))return n/100;
   if(n>1&&n<=100)return n/100;
   return n;
+}
+/* The win-probability column specifically, because its synonym list invites
+   a PRICE: ml_home maps here, and in most sheets an ml_home column holds the
+   home moneyline (-150, +120) — which slateProb read as "-150" or, for +100,
+   as a 100% certainty. An american price is read as the model's FAIR price,
+   whose implied probability IS its win probability (exactly how the EdgeDesk
+   export derives model_fair_home_ml from home_win_prob_pct). Recognition is
+   by value where the value is unambiguous — no probability or percentage is
+   ever negative-three-digits, and no american price sits inside (-100,100) —
+   and by header for the one ambiguous point, +100, which is even money in a
+   price column and certainty in a percentage column. A percent-marked header
+   is never read as a price. Whatever cannot be read as a probability in
+   [0,1] is withheld rather than posted: a 150 on this wire is not a number
+   that means anything, and the wall would show it as "hw 15000%". */
+function slateWinProb(value,header){
+  var n=slateNum(value);
+  if(n===null)return null;
+  if(!slatePctCol(header)){
+    if(n<=-100)return (-n)/((-n)+100);
+    var h=String(header||'').toLowerCase();
+    if(n>=100&&/(^|[^a-z])ml([^a-z]|$)|money|price|odds/.test(h)&&!/prob|pct|percent|%|wp/.test(h))
+      return 100/(n+100);
+  }
+  var p=slateProb(value,header);
+  return (p!==null&&p>=0&&p<=1)?p:null;
 }
 function slateGuessMap(){
   SLATE.map={};
@@ -2348,6 +2387,22 @@ function slateBuildRows(season,week){
     projected_spread:slateColIsPickStated('projected_spread'),
     line_at_submission:slateColIsPickStated('line_at_submission')
   };
+  /* A win-probability column stated from the PICKED team, mapped onto a
+     home-relative wire field. The spread, line and cover columns already get
+     this treatment; the win probability used to be the one number that
+     slipped through raw, posting every away pick with its probability
+     inverted — a wall of "hw 38%" home favourites. Which pick it is stated
+     from matters: an ML column (p_ml_pick_pct) follows the ML pick, which is
+     NOT the row's spread pick whenever the model likes the dog against the
+     number, so the file's own ml_pick column names the side when there is
+     one, and the row's pick is only trusted for non-ML pick columns. */
+  var probIsPickStated=slateColIsPickStated('home_win_probability');
+  var probHdr=probIsPickStated?String(SLATE.cols[SLATE.map['home_win_probability']]||'').toLowerCase().trim():'';
+  var probIsMl=/(^|[^a-z])ml([^a-z]|$)/.test(probHdr);
+  var mlPickIdx=-1;
+  if(probIsMl)SLATE.cols.forEach(function(h,i){
+    if(mlPickIdx<0&&String(h).toLowerCase().trim()==='ml_pick')mlPickIdx=i;
+  });
   for(var r=1;r<SLATE.rows.length;r++){
     var row=SLATE.rows[r];
     function g(f){var i=SLATE.map[f];return i===undefined||i===null?null:(row[i]!==undefined?row[i]:null);}
@@ -2369,8 +2424,9 @@ function slateBuildRows(season,week){
       var n=slateNum(g(f));if(n!==null)o[f]=n;
     });
     ['home_win_probability','cover_probability'].forEach(function(f){
-      var n=slateProb(g(f),SLATE.cols[SLATE.map[f]]);
-      if(n!==null)o[f]=n;
+      var hdr=SLATE.cols[SLATE.map[f]];
+      var n=f==='home_win_probability'?slateWinProb(g(f),hdr):slateProb(g(f),hdr);
+      if(n!==null&&n>=0&&n<=1)o[f]=n;
     });
     var parsedPick=slatePick(g('pick_side'),home,away);
     /* A spread or line column stated from the PICKED team becomes the home
@@ -2390,6 +2446,27 @@ function slateBuildRows(season,week){
         delete o[f];
       }
     });
+    /* same rule for a pick-stated win probability: turned onto the home side
+       from the side it is stated from (the moneyline flip is exact — there is
+       no push mass on a win), or withheld when that side cannot be read,
+       because posting it anyway is right only when the pick happened to be
+       home. */
+    if(o.home_win_probability!==undefined&&probIsPickStated){
+      var statedSide=null;
+      if(probIsMl){
+        var mlPk=mlPickIdx>=0?slatePick(row[mlPickIdx],home,away):null;
+        statedSide=mlPk?mlPk.side:null;
+      }else{
+        statedSide=parsedPick?parsedPick.side:null;
+      }
+      if(statedSide==='away')o.home_win_probability=1-o.home_win_probability;
+      else if(statedSide!=='home'){
+        problems.push('Row '+(r+1)+': "'+esc(String(SLATE.cols[SLATE.map['home_win_probability']]))+
+          '" is stated from a picked team, but this row does not say which side that is, '+
+          'so it cannot be turned into the home team’s win probability. It was left off this row.');
+        delete o.home_win_probability;
+      }
+    }
     if(parsedPick){
       o.pick_side=parsedPick.side;
       /* EVERY number on this wire is stated from the home side — the spread,
