@@ -21952,13 +21952,20 @@ function fbLoadCfb(signal){
    the market. The app READS that record; it never invents one. No file
    means the pipeline has not published a run, and the module says so. */
 function fbHealthLoad(signal){
-  return fetch('football/health.json',{signal:signal,cache:'no-store'})
-    .then(function(r){if(!r.ok)throw new Error('HTTP '+r.status);return r.json();})
-    .then(function(j){
-      if(!j||j.schema!=='edgedesk_football_health_v1')throw new Error('unrecognised schema');
-      FB.health=j;FB.healthErr=null;
-    })
-    .catch(function(e){FB.health=null;FB.healthErr=(e&&e.message)||'unreachable';});
+  function attempt(){
+    return fetch('football/health.json',{signal:signal,cache:'no-store'})
+      .then(function(r){if(!r.ok)throw new Error('HTTP '+r.status);return r.json();})
+      .then(function(j){
+        if(!j||j.schema!=='edgedesk_football_health_v1')throw new Error('unrecognised schema');
+        FB.health=j;FB.healthErr=null;
+      });
+  }
+  /* one retry after a beat — a CDN blip or mid-deploy 404 must not paint the
+     board as faulted; a record that is genuinely gone still reports honestly */
+  return attempt().catch(function(){
+    return new Promise(function(res){setTimeout(res,2000);}).then(attempt)
+      .catch(function(e){if(!FB.health){FB.health=null;FB.healthErr=(e&&e.message)||'unreachable';}});
+  });
 }
 
 /* Re-run the Power 4 board's own loader. Only once it has been opened —
@@ -21985,13 +21992,21 @@ function fbLiveLineGaps(){
   try{
     if(FB.sport==='p4'){
       if(!FB.p4.state||!window.EDCfbP4)return null;
-      lim=FB_GUARD.p4;basis='captured quotes, then cfb.lines';
+      lim=FB_GUARD.p4;basis='fresh quotes and cfb.lines';
+      var staleN=0,thinN=0;
       FB.p4.up.forEach(function(u){
         var mkt=fbP4Market(u);if(mkt.spread_line==null)return;
+        /* a week-old captured quote is stale market data, not a live check;
+           and a PASS_LOW_CONFIDENCE game (unrated FCS opponent) is EXPECTED
+           to sit far from the market — neither is a model fault to grade */
+        if(mkt.stale){staleN++;return;}
         var p;try{p=window.EDCfbP4.projectGame(fbP4Request(u));}catch(_){return;}
         if(!p||p.status!=='PREDICTED'||p.model.fair_spread==null||!isFinite(p.model.fair_spread))return;
+        if(p.edge&&p.edge.spread&&p.edge.spread.recommendation==='PASS_LOW_CONFIDENCE'){thinN++;return;}
         rows.push({label:u.g.away_team+' @ '+u.g.home_team,gap:Math.abs(p.model.fair_spread-mkt.spread_line)});
       });
+      if(staleN||thinN)basis+=' · excluded '+(staleN?staleN+' stale-quote':'')
+        +(staleN&&thinN?' and ':'')+(thinN?thinN+' thin-data':'')+' game'+((staleN+thinN)===1?'':'s');
     }else if(FB.sport==='nfl'){
       if(!FB.nfl.state||!window.EDFootball)return null;
       lim=FB_GUARD.nfl;basis='captured quotes, then the nflverse reference number';
@@ -22115,13 +22130,19 @@ window.loadFootball=function(force,signal){
   if(FB.loading)return FB.loading;
   var ban=$('fbBanner');
   if(ban){ban.className='flbanner demo';ban.innerHTML='Loading football engine…';}
-  FB.loading=fbEnsureEngine().then(function(){
-    FB.engineErr=null;
-    FB.builtAt=(function(){try{return Date.parse(window.EDFootballParams.built_at)||null;}catch(_){return null;}})();
-    FB._pred={};
-    /* the CFB v1 board retired with its segment; its loader no longer runs */
-    return Promise.all([fbLoadNfl(signal),fbHealthLoad(signal)]);
-  }).then(function(){
+  /* the health record loads INDEPENDENTLY of the engine and data feeds: a
+     feed hiccup must not blank the pipeline ledger or the build stamp */
+  var healthP=fbHealthLoad(signal);
+  FB.loading=Promise.all([
+    fbEnsureEngine().then(function(){
+      FB.engineErr=null;
+      FB.builtAt=(function(){try{return Date.parse(window.EDFootballParams.built_at)||null;}catch(_){return null;}})();
+      FB._pred={};
+      /* the CFB v1 board retired with its segment; its loader no longer runs */
+      return fbLoadNfl(signal);
+    }),
+    healthP
+  ]).then(function(){
     /* the daily self-check pipeline is a REAL build of this data path, so a
        clean run supersedes the offline params build date for freshness. A
        failed run publishes no new clean stamp — freshness then measures from
@@ -22132,6 +22153,12 @@ window.loadFootball=function(force,signal){
     FB.at=Date.now();FB.loading=null;window.renderFootball();
   }).catch(function(e){
     FB.loading=null;FB.engineErr=(e&&e.message)||'load failed';
+    /* even on a failed load the health record's build stamp stays truthful */
+    healthP.then(function(){
+      var t=FB.health?rsParseStamp(FB.health.ok?FB.health.generated_at:FB.health.last_ok_at):null;
+      if(t)FB.builtAt=Math.max(FB.builtAt||0,t);
+      try{rsMetaRender('football');}catch(_){}
+    });
     /* this failure belongs to the NFL/CFB loader only — if the reader is on
        the Power 4 board, say nothing and let that board render its own state */
     if(FB.sport==='p4'){try{window.renderFootball();}catch(_){}return;}
@@ -23018,23 +23045,37 @@ function fbP4LoadGuarded(force,signal){
   return fbP4Load(force,signal).then(done,function(e){done();throw e;});
 }
 
+/* Joins the FRESHEST real number, in this order: a live captured quote,
+   the cfb.lines book consensus once the capture has gone stale (offseason
+   quotes sit for weeks and a 200-hour-old price is not a market), and a
+   stale capture only when nothing fresher exists — labelled with its age
+   and flagged `stale` so the live guard and the board can treat it as
+   stale market data rather than a model fault. */
+var FBP4_QUOTE_FRESH_MS=72*3600e3;
 function fbP4Market(u){
-  var g=u.g,out={spread_line:null,total_line:null,quotes_h2h:null,book:null,as_of:null};
+  var g=u.g,out={spread_line:null,total_line:null,quotes_h2h:null,book:null,as_of:null,stale:false};
   var hN=fbNorm(g.home_team),ev=null,k;
   for(k in FB.p4.sig)if(FB.p4.sig.hasOwnProperty(k)){
     var e2=FB.p4.sig[k];
     if(fbNorm(e2.home).indexOf(hN)===0&&fbNorm(e2.away).indexOf(fbNorm(g.away_team))===0
       &&Math.abs(Date.parse(e2.t)-u.t)<36*3600e3){ev=e2;break;}
   }
-  if(ev){
-    var m=fbMarketFromEvent(ev,ev.home);
-    if(m.spread_line!=null){out.spread_line=m.spread_line;out.book='captured · '+(m.spread_book||'');out.as_of=m.at;}
-    if(m.total_line!=null){out.total_line=m.total_line;out.book=out.book||'captured';out.as_of=out.as_of||m.at;}
-    if(m.quotes_h2h)out.quotes_h2h=m.quotes_h2h;
-  }
+  var m=ev?fbMarketFromEvent(ev,ev.home):null;
   var line=FB.p4.lines[g.game_id];
-  if(out.spread_line==null&&line&&line.spread!=null){out.spread_line=-(+line.spread);out.book='cfb.lines · '+(line.provider||'consensus');}
-  if(out.total_line==null&&line&&line.over_under!=null){out.total_line=+line.over_under;out.book=out.book||('cfb.lines · '+(line.provider||'consensus'));}
+  var capAge=(m&&m.at)?(Date.now()-Date.parse(m.at)):null;
+  var capFresh=capAge!=null&&capAge<FBP4_QUOTE_FRESH_MS;
+  if(m&&m.spread_line!=null&&capFresh){
+    out.spread_line=m.spread_line;out.book='captured · '+(m.spread_book||'');out.as_of=m.at;
+  }else if(line&&line.spread!=null){
+    out.spread_line=-(+line.spread);out.book='cfb.lines · '+(line.provider||'consensus');
+  }else if(m&&m.spread_line!=null){
+    out.spread_line=m.spread_line;out.as_of=m.at;out.stale=true;
+    out.book='captured (stale '+Math.round(capAge/3600e3)+'h) · '+(m.spread_book||'');
+  }
+  if(m&&m.total_line!=null&&capFresh){out.total_line=m.total_line;out.book=out.book||('captured · '+(m.total_book||''));out.as_of=out.as_of||m.at;}
+  else if(line&&line.over_under!=null){out.total_line=+line.over_under;out.book=out.book||('cfb.lines · '+(line.provider||'consensus'));}
+  else if(m&&m.total_line!=null){out.total_line=m.total_line;out.stale=out.spread_line==null?true:out.stale;out.book=out.book||'captured (stale)';out.as_of=out.as_of||m.at;}
+  if(m&&m.quotes_h2h&&capFresh)out.quotes_h2h=m.quotes_h2h;
   return out;
 }
 /* Schedule geometry for one side of one game, computed from the season
@@ -23258,8 +23299,8 @@ function fbP4ModelCard(){
 }
 function fbP4Card(u){
   var g=u.g,E=window.EDCfbP4;
-  var p;
-  try{p=E.projectGame(fbP4Request(u));}catch(err){p={status:'BLOCKED',reason:(err&&err.message)||'engine threw'};}
+  var p=FB.p4._proj&&FB.p4._proj[String(g.game_id)];
+  if(!p){try{p=E.projectGame(fbP4Request(u));}catch(err){p={status:'BLOCKED',reason:(err&&err.message)||'engine threw'};}}
   var head='<div class="mdl-card-h"><div class="mdl-card-match">'+fbEsc(g.away_team)+' @ '+fbEsc(g.home_team)+'</div>'
     +'<div class="mdl-card-when">'+fbEsc(g.away_conference||'')+' at '+fbEsc(g.home_conference||'')
     +' · wk '+fbEsc(String(g.week))+' · '+fbEsc(whenLabel(new Date(u.t).toISOString()))+'</div></div>';
@@ -23293,6 +23334,17 @@ function fbP4Card(u){
     +fbP4Score('sched stress H',sc.schedule_stress_home)+fbP4Score('sched stress A',sc.schedule_stress_away)
     +'</div>';
 
+  /* the differentiator, front and centre: how much of the model's own input
+     contract actually reached this projection */
+  var ctx=(p.layers&&p.layers.uncertainty&&p.layers.uncertainty.context)||null;
+  var compl='';
+  if(ctx&&ctx.information_missing!=null){
+    var cpc=Math.round((1-ctx.information_missing)*100),blocks='',bi;
+    for(bi=0;bi<10;bi++)blocks+=(bi<Math.round(cpc/10))?'▮':'░';
+    compl='<div class="mono" style="font-size:11px;color:var(--dim);margin:0 0 6px">DATA COMPLETENESS '+cpc+'% '
+      +'<span style="letter-spacing:2px;color:'+(cpc>=60?'var(--pos)':(cpc>=30?'var(--warn)':'var(--neg)'))+'">'+blocks+'</span>'
+      +' <span class="mut">share of the model’s input contract that reached this projection</span></div>';
+  }
   var why='';
   if(ex){
     why+='<div class="gd-modelnote">'+fbEsc(ex.summary)+'</div>';
@@ -23315,7 +23367,7 @@ function fbP4Card(u){
   }
   var hth='<div style="margin-top:8px"><button class="btn ghost sm" onclick="fbP4Hth(\''+fbEsc(String(g.game_id))+'\')">Rosters head-to-head</button></div>'
     +'<div id="p4hth-'+fbEsc(String(g.game_id))+'"></div>';
-  return '<div class="mdl-card">'+head+'<div style="padding:0 12px 12px">'+L+chips+why+hth+'</div></div>';
+  return '<div class="mdl-card">'+head+'<div style="padding:0 12px 12px">'+L+chips+compl+why+hth+'</div></div>';
 }
 function fbP4EdgeTag(cls){
   if(!cls)return '';
@@ -23334,6 +23386,96 @@ function fbP4Ratings(){
   return '<div class="gd-sec">Top 25 · opponent-adjusted rating (points vs an average FBS team)</div>'
     +rows.slice(0,25).map(function(r,i){return '<div class="gd-line"><span class="l">'+(i+1)+'. '+fbEsc(r[0])+'</span>'
       +'<span class="v mut">'+fbPts(r[1])+' <span class="mut">'+r[2]+' g</span></span></div>';}).join('');
+}
+/* ═══ POWER 4 DEPARTURES BOARD ═════════════════════════════════════════════
+   The terminal view: one row per matchup — kickoff, teams, model line,
+   market line, gap, operational status. Clicking a row opens that game's
+   full gate in place: the projection, drivers, data health, completeness
+   and the rosters head-to-head. Statuses are honest operational reads,
+   never picks — DATA FAULT and INVESTIGATE mean "find out why the model
+   and the market disagree", and with this model's record a big gap is more
+   often missing information than an edge. */
+function fbP4StatusFor(p,mkt){
+  if(!p||p.status!=='PREDICTED')return {t:'AWAITING DATA',c:'var(--faint)'};
+  if(!mkt||mkt.spread_line==null)return {t:'NO MARKET',c:'var(--faint)'};
+  if(p.edge&&p.edge.spread&&p.edge.spread.recommendation==='PASS_LOW_CONFIDENCE')
+    return {t:'THIN DATA',c:'var(--dim)'};
+  if(mkt.stale)return {t:'STALE QUOTE',c:'var(--dim)'};
+  var gap=Math.abs(p.model.fair_spread-mkt.spread_line);
+  if(gap>FB_GUARD.p4.game)return {t:'DATA FAULT',c:'var(--neg)'};
+  if(gap>=7)return {t:'INVESTIGATE',c:'var(--warn)'};
+  return {t:'RESEARCH',c:'var(--accent)'};
+}
+function fbP4Line(team,fairSpread){
+  if(fairSpread==null||!isFinite(fairSpread))return '—';
+  var v=-fairSpread;   /* home book-line convention: home favoured by 7 -> "TEAM -7.0" */
+  return fbEsc(team)+' '+(v>0?'+':'')+v.toFixed(1);
+}
+function fbP4KickLabel(t){
+  var d=new Date(t),days=['SUN','MON','TUE','WED','THU','FRI','SAT'];
+  var h=d.getHours(),m=d.getMinutes();
+  return days[d.getDay()]+' '+((h%12)||12)+':'+(m<10?'0':'')+m+(h<12?'a':'p');
+}
+window.fbP4Gate=function(gid){
+  var el=document.getElementById('p4gate-'+gid);if(!el)return;
+  var ar=document.getElementById('p4arr-'+gid);
+  if(el.getAttribute('data-open')){el.innerHTML='';el.removeAttribute('data-open');if(ar)ar.textContent='▸';return;}
+  el.setAttribute('data-open','1');if(ar)ar.textContent='▾';
+  var u=null;FB.p4.up.forEach(function(x){if(String(x.g.game_id)===String(gid))u=x;});
+  el.innerHTML=u?('<div style="margin:8px 0 12px">'+fbP4Card(u)+'</div>'):'';
+};
+function fbP4StatusStrip(){
+  var S=FB.p4,h=FB.health;
+  function chip(label,txt,color){
+    return '<span class="mono" style="font-size:11px;margin-right:14px"><span class="mut">'+label+'</span> '
+      +'<span style="color:'+color+'">●</span> '+txt+'</span>';
+  }
+  var dataOk=!!S.sched&&!S.gate;
+  var hTxt,hCol;
+  if(!h){hTxt='NO RECORD';hCol='var(--warn)';}
+  else if(h.ok){hTxt='OK';hCol='var(--pos)';}
+  else{hTxt='ATTENTION';hCol='var(--warn)';}
+  return '<div style="margin:2px 0 8px">'
+    +chip('DATA',dataOk?'LIVE':'ISSUE',dataOk?'var(--pos)':'var(--neg)')
+    +chip('MODEL','UNPROVEN · RESEARCH','var(--mdl)')
+    +chip('HEALTH',hTxt,hCol)+'</div>';
+}
+function fbP4BoardHTML(){
+  var S=FB.p4;
+  var wk=S.up.length?S.up[0].g.week:'—';
+  var sync=new Date(S.loadedAt||Date.now());
+  var head='<div class="mono" style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:6px;font-size:11px;color:var(--dim);margin-bottom:4px">'
+    +'<span><b style="color:var(--text)">EDGEDESK // FOOTBALL OPERATIONS</b> · POWER 4 · WEEK '+fbEsc(String(wk))+' · '+S.up.length+' GAMES</span>'
+    +'<span>LAST SYNC '+('0'+sync.getHours()).slice(-2)+':'+('0'+sync.getMinutes()).slice(-2)+'</span></div>';
+  var grid='display:grid;grid-template-columns:14px 76px minmax(170px,1fr) 116px 122px 46px 100px;gap:2px 8px;align-items:center';
+  var html=head+fbP4StatusStrip()
+    +'<div style="overflow-x:auto"><div class="mono" style="font-size:11px;min-width:620px">'
+    +'<div style="'+grid+';color:var(--faint);border-bottom:1px solid var(--border);padding:4px 2px">'
+    +'<span></span><span>KICK</span><span>GAME</span><span>MODEL</span><span>MARKET</span><span>GAP</span><span>STATUS</span></div>';
+  S.up.forEach(function(u){
+    var g=u.g,gid=String(g.game_id);
+    var p=S._proj[gid],mkt=S._mkt[gid]||{};
+    var st=fbP4StatusFor(p,mkt);
+    var model=(p&&p.status==='PREDICTED')?fbP4Line(g.home_team,p.model.fair_spread):'—';
+    var market=(mkt.spread_line!=null)?fbP4Line(g.home_team,mkt.spread_line):'—';
+    var gap=(p&&p.status==='PREDICTED'&&mkt.spread_line!=null)
+      ?Math.abs(p.model.fair_spread-mkt.spread_line).toFixed(1):'—';
+    html+='<div onclick="fbP4Gate(\''+fbEsc(gid)+'\')" style="'+grid+';cursor:pointer;border-bottom:1px solid var(--border);padding:7px 2px;color:var(--text)">'
+      +'<span id="p4arr-'+fbEsc(gid)+'" style="color:var(--faint)">▸</span>'
+      +'<span class="mut">'+fbP4KickLabel(u.t)+'</span>'
+      +'<span>'+fbEsc(g.away_team)+' <span class="mut">→</span> '+fbEsc(g.home_team)+'</span>'
+      +'<span>'+model+'</span>'
+      +'<span class="mut">'+market+'</span>'
+      +'<span>'+gap+'</span>'
+      +'<span style="color:'+st.c+'">'+st.t+'</span></div>'
+      +'<div id="p4gate-'+fbEsc(gid)+'"></div>';
+  });
+  html+='</div></div>'
+    +'<div class="gd-modelnote" style="margin-top:8px">Statuses are operational reads, never picks. '
+    +'DATA FAULT and INVESTIGATE mean “find out why the model and the market disagree” — with this model’s record, a big gap is more often missing information than an edge. '
+    +'THIN DATA marks games the model refuses to grade (an unrated opponent); STALE QUOTE means the only market number is an old capture. '
+    +'Click a row for the full gate: projection, drivers, data completeness, and the rosters head-to-head.</div>';
+  return html;
 }
 function fbP4Render(host){
   var S=FB.p4;
@@ -23358,7 +23500,16 @@ function fbP4Render(host){
   if(S.schedSrc)notes.push('Schedule source: '+S.schedSrc+' · '+S.absorbed+' completed games absorbed into the ratings since the trained seeds.');
   if(notes.length)html+='<div class="flbanner demo" style="margin-bottom:10px">'+notes.map(fbEsc).join('<br>')+'</div>';
   if(!S.up.length){host.innerHTML=html+fbP4Ratings();return;}
-  html+=S.up.map(fbP4Card).join('')+fbP4Ratings();
+  /* one projection + market join per game per render, shared by the board
+     rows and the gates a click opens */
+  S._proj={};S._mkt={};
+  S.up.forEach(function(u){
+    var gid=String(u.g.game_id);
+    S._mkt[gid]=fbP4Market(u);
+    try{S._proj[gid]=window.EDCfbP4.projectGame(fbP4Request(u));}
+    catch(err){S._proj[gid]={status:'BLOCKED',reason:(err&&err.message)||'engine threw'};}
+  });
+  html+=fbP4BoardHTML()+fbP4Ratings();
   host.innerHTML=html;
 }
 /* ================= end CFB POWER 4 board ================= */
