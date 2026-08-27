@@ -1032,6 +1032,61 @@ if (typeof sandbox.teamKey === 'function') {
       var c = S.consensusSeasonStats([{ consensus: { n: 1 }, result: { home_score: 1, away_score: 0, closing_spread: -1 } }]);
       return c.ats.w === 0 && c.ats.l === 0 && c.ats.push === 0 && c.ml.n === 0;
     })());
+
+  /* ---- the blank template must be right BY CONSTRUCTION ----------------
+     The template is what a creator is handed when they ask "how do I format
+     this". If its own headers did not map, or its example rows did not mean
+     what the page says they mean, it would teach the exact convention drift
+     it exists to prevent. So: parse it with the real parser, map it with the
+     real mapper, build it with the real row builder, and assert the values
+     that come out are the ones the format page promises. */
+  var tpl = parseCsv(S.slateTemplateCsv(true));
+  chk('every template column is a canonical wire field name',
+    S.SLATE_TEMPLATE_COLS.every(function (c) {
+      return S.SLATE_FIELDS.some(function (fd) { return fd.f === c || fd.syn.indexOf(c) >= 0; });
+    }), { cols: S.SLATE_TEMPLATE_COLS });
+  S.SLATE.cols = tpl[0]; S.SLATE.rows = tpl; S.SLATE.map = {};
+  S.slateGuessMap();
+  chk('the template maps with nothing left for the creator to correct',
+    S.SLATE_TEMPLATE_COLS.every(function (c) { return S.SLATE.map[c] !== undefined; }),
+    { unmapped: S.SLATE_TEMPLATE_COLS.filter(function (c) { return S.SLATE.map[c] === undefined; }) });
+  chk('no required field is missing from the template',
+    S.SLATE_FIELDS.filter(function (fd) { return fd.req && S.SLATE.map[fd.f] === undefined; }).length === 0);
+  chk('the template is not mistaken for an EdgeDesk export',
+    S.edSlateDetect() === false);
+  chk('no template column is read as pick-stated',
+    !S.slateColIsPickStated('projected_spread') && !S.slateColIsPickStated('line_at_submission')
+      && !S.slateColIsPickStated('home_win_probability'));
+
+  var tb = S.slateBuildRows('2026', '1');
+  chk('both template example rows build with no problems reported',
+    tb.rows.length === 2 && tb.problems.length === 0,
+    { n: tb.rows.length, problems: tb.problems });
+  var t0 = tb.rows[0], t1 = tb.rows[1];
+  chk('the home favourite example keeps its negative home spread',
+    near(t0.projected_spread, -5.0) && near(t0.line_at_submission, -3.5), { t0: t0 });
+  chk('a 0-100 percentage in the template is read as a probability',
+    near(t0.home_win_probability, 0.68) && near(t0.cover_probability, 0.507), { t0: t0 });
+  chk('the template pick names a team and resolves to a side',
+    t0.pick_side === 'home' && t1.pick_side === 'away',
+    { t0: t0.pick_side, t1: t1.pick_side });
+  chk('the home-dog example keeps its POSITIVE home spread',
+    near(t1.projected_spread, 2.6) && near(t1.line_at_submission, 2.5), { t1: t1 });
+  chk('the away-pick example is not silently turned around',
+    near(t1.home_win_probability, 0.403),
+    { got: t1.home_win_probability, why: 'a home-stated column is home-stated whatever the pick' });
+  chk('template scores survive as projections',
+    t0.proj_home_score === 24 && t0.proj_away_score === 19);
+  chk('the headers-only template carries no rows to post',
+    parseCsv(S.slateTemplateCsv(false)).length === 1);
+
+  /* the example rows must mean what the format page says they mean */
+  chk('the format doc documents every template column, in order',
+    S.SLATE_TEMPLATE_DOC.length === S.SLATE_TEMPLATE_COLS.length &&
+    S.SLATE_TEMPLATE_DOC.every(function (x, i) { return x.c === S.SLATE_TEMPLATE_COLS[i]; }),
+    { doc: S.SLATE_TEMPLATE_DOC.map(function (x) { return x.c; }) });
+  chk('every example row is as wide as the header',
+    S.SLATE_TEMPLATE_EXAMPLE.every(function (r) { return r.length === S.SLATE_TEMPLATE_COLS.length; }));
 }
 
 /* ---- report ------------------------------------------------------------ */

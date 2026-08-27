@@ -706,6 +706,7 @@ function route(){
   if(h==='performance'){markTab('rankings');return renderPerformance(view);}
   if(h==='rankings'){markTab('rankings');return renderRankings(view);}
   if(h==='rules'){markTab('rules');return renderRules(view);}
+  if(h==='format'){markTab('rules');return renderFormat(view);}
   if(h==='about'||h==='join'){markTab('about');return renderAbout(view,h==='join');}
   if(h==='dashboard'){markTab('dashboard');return renderDashboard(view);}
   if(h.indexOf('/model/')===0||h.indexOf('model/')===0){var p=h.replace(/^\//,'').split('/');return renderModel(view,p[1],p[2]);}
@@ -1315,6 +1316,69 @@ async function renderModel(view,cs,ms){
       });
     };
   }catch(e){fail(view,e);}
+}
+
+/* ================= slate format: the shareable spec =================
+   A public page a creator can be pointed at — no account, no sign-in — so
+   "how do I format my slate" is a link rather than somebody's own CSV
+   passed around as a de-facto standard. Every column here is the canonical
+   name the uploader maps first, so the page and the template cannot drift
+   apart: both are generated from SLATE_TEMPLATE_COLS. */
+async function renderFormat(view){
+  var rows=SLATE_TEMPLATE_DOC.map(function(x){
+    var col=x.need==='required'?'var(--warn)':(x.need==='strongly recommended'?'var(--accent)':'var(--faint)');
+    return '<tr><td class="mono" style="white-space:nowrap">'+esc(x.c)+'</td>'+
+      '<td style="white-space:nowrap;color:'+col+';font-size:11.5px">'+esc(x.need)+'</td>'+
+      '<td>'+x.d+'</td></tr>';
+  }).join('');
+  var ex='<div class="tblwrap"><table><thead><tr>'+
+    SLATE_TEMPLATE_COLS.map(function(c){return '<th class="mono" style="font-size:9.5px">'+esc(c)+'</th>';}).join('')+
+    '</tr></thead><tbody>'+
+    SLATE_TEMPLATE_EXAMPLE.map(function(r){
+      return '<tr>'+r.map(function(v){return '<td class="mono" style="font-size:11.5px">'+esc(v)+'</td>';}).join('')+'</tr>';
+    }).join('')+
+    '</tbody></table></div>';
+  view.innerHTML='<h1>Slate format</h1>'+
+    '<p class="lede">One row per game. Every number stated from the <b>home</b> side. That is the whole convention — '+
+    'the uploader maps your column names automatically, so you do not have to rename anything to match this page.</p>'+
+    '<div class="panel" style="margin-bottom:16px;display:flex;gap:12px;align-items:center;flex-wrap:wrap">'+
+      '<button class="btn primary" onclick="slateTemplateDownload(true)">Download the blank template</button>'+
+      '<button class="btn" onclick="slateTemplateDownload(false)">Headers only</button>'+
+      '<span class="note">CSV. Delete the example rows, keep the header, fill in your slate.</span>'+
+    '</div>'+
+    '<h2>The three rules that cause every problem</h2>'+
+    '<div class="panel"><div style="display:flex;flex-direction:column;gap:10px">'+
+      '<div><b>1. One row per game.</b> <span class="note">Not one row per pick side, and not one per team. '+
+        'A game your model has no opinion on is simply left out.</span></div>'+
+      '<div><b>2. Every number is the HOME side\u2019s.</b> <span class="note">Spreads in betting sign, so a home favourite '+
+        'is <span class="mono">-5</span> and a home dog is <span class="mono">+3</span>. Win and cover percentages are the '+
+        'HOME team\u2019s, never the team you picked \u2014 the board turns them around for display, and it can only do that '+
+        'if what arrives is home-stated. If your own sheet is pick-centric, name the column with the word '+
+        '<span class="mono">pick</span> in it and the uploader converts it for you.</span></div>'+
+      '<div><b>3. Percentages can be 0-100 or 0-1.</b> <span class="note">Both are read correctly. '+
+        'What is <i>not</i> a percentage is a moneyline price \u2014 if a column holds <span class="mono">-150</span>, '+
+        'it is read as a fair price and converted, not as a probability.</span></div>'+
+    '</div></div>'+
+    '<h2>Columns</h2>'+
+    '<div class="tblwrap"><table><thead><tr><th>Column</th><th>Need</th><th>What it is</th></tr></thead><tbody>'+
+      rows+'</tbody></table></div>'+
+    '<p class="note" style="margin-top:8px">Your own column names almost certainly work already: the uploader knows the '+
+    'common spellings for each of these (<span class="mono">home</span>, <span class="mono">my_line</span>, '+
+    '<span class="mono">market_line</span>, <span class="mono">win_prob</span> and so on), shows you exactly what it '+
+    'mapped, and lets you correct any of it before anything is sent. A column it does not recognise is ignored, never guessed at.</p>'+
+    '<h2>What a filled-in slate looks like</h2>'+ex+
+    '<p class="note" style="margin-top:8px">Two games. In the first the home team is a 5-point favourite the model likes '+
+    'at the market\u2019s -3.5; in the second the home team is a 2.6-point dog and the model is on the road team. '+
+    'Scores are optional \u2014 supply them and margin accuracy is graded from them instead of from the spread.</p>'+
+    '<h2>What happens after you upload</h2>'+
+    '<div class="panel"><p class="note" style="margin:0">Your columns are mapped and shown back to you, then a dry run '+
+    'checks every row against the Collective\u2019s own schedule without storing anything. You see exactly what will post '+
+    '\u2014 counted per field, not per column \u2014 and post only when it looks right. Every pick is graded by the '+
+    'Collective itself on final scores against its own captured closing line, never on a result column from your file: '+
+    'any <span class="mono">result</span>, <span class="mono">win</span> or <span class="mono">grade</span> column you '+
+    'happen to have is ignored on purpose. <a href="#rules">Full grading rules \u2192</a></p></div>'+
+    '<p class="note" style="margin-top:18px"><a href="#dashboard">Post a slate \u2192</a> &middot; '+
+    '<a href="#about">How the Collective works \u2192</a></p>';
 }
 
 /* ================= board ================= */
@@ -1944,6 +2008,60 @@ var SLATE_FIELDS=[
   {f:'proj_home_score',label:'Projected home score',req:false,syn:['proj_home_score','home_pts','home_score','home_points','home pts']},
   {f:'proj_away_score',label:'Projected away score',req:false,syn:['proj_away_score','road_pts','away_pts','away_score','away_points','away pts','road pts']},
   {f:'confidence',label:'Confidence (your scale)',req:false,syn:['confidence','conf']}
+];
+/* ---- the blank template ------------------------------------------------
+   Every data bug this board has had came from convention drift between one
+   creator's sheet and another's: a spread stated from the picked team, a
+   percentage that was really a moneyline price, a market line with its sign
+   turned around. A creator cannot be expected to infer the conventions from
+   a synonym table, so this hands them a file that is right by construction.
+
+   The headers are the CANONICAL name of each wire field — every one of them
+   is its own first synonym, so a file built from this template maps with
+   nothing to correct. The example row is a real game shape with the
+   conventions visible in the numbers themselves: a home favourite carries a
+   NEGATIVE spread, percentages are 0-100, and the pick names a team rather
+   than a side. Delete the example, keep the header, fill in your slate. */
+var SLATE_TEMPLATE_COLS=['home_team','away_team','kickoff','week','season',
+  'projected_spread','projected_total','line_at_submission',
+  'home_win_probability','cover_probability','pick_side',
+  'proj_home_score','proj_away_score','confidence'];
+var SLATE_TEMPLATE_EXAMPLE=[
+  ['SEA','NE','2026-09-09 20:20','1','2026','-5.0','43.7','-3.5','68','50.7','SEA','24','19','7'],
+  ['CAR','CHI','2026-09-13 13:00','1','2026','2.6','44.7','2.5','40.3','52.8','CHI','21','24','5']
+];
+function slateTemplateCsv(withExample){
+  var q=function(x){x=String(x==null?'':x);return /[",\n]/.test(x)?'"'+x.replace(/"/g,'""')+'"':x;};
+  var lines=[SLATE_TEMPLATE_COLS.join(',')];
+  if(withExample)SLATE_TEMPLATE_EXAMPLE.forEach(function(r){lines.push(r.map(q).join(','));});
+  return lines.join('\n')+'\n';
+}
+window.slateTemplateDownload=function(withExample){
+  var csv=slateTemplateCsv(withExample!==false);
+  var blob=new Blob([csv],{type:'text/csv;charset=utf-8'});
+  var a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download='model_collective_slate_template.csv';
+  document.body.appendChild(a);a.click();
+  setTimeout(function(){URL.revokeObjectURL(a.href);a.remove();},2000);
+};
+/* What each template column means, and the convention that governs it. One
+   source of truth for the format page and the uploader panel alike. */
+var SLATE_TEMPLATE_DOC=[
+  {c:'home_team',need:'required',d:'The home team. Any name your sheet uses — full name, city, or code; the Collective matches it against its own schedule.'},
+  {c:'away_team',need:'required',d:'The away team, same rules.'},
+  {c:'kickoff',need:'required',d:'Game date. YYYY-MM-DD is safest; a date and time is better. Add a kickoff_tz column if your times are local.'},
+  {c:'week',need:'optional',d:'Week number. Read from the file when present, so a multi-week file keeps each row on its own week.'},
+  {c:'season',need:'optional',d:'Season year. Belongs to the file, not to whatever the page has selected.'},
+  {c:'projected_spread',need:'strongly recommended',d:'YOUR spread, stated for the HOME side, in betting sign: home favoured by 5 is <b>-5</b>, home getting 3 is <b>+3</b>. This is your model\u2019s own number, never the market\u2019s.'},
+  {c:'projected_total',need:'optional',d:'Your projected total points for the game.'},
+  {c:'line_at_submission',need:'strongly recommended',d:'The MARKET line you saw when you made the pick, also home side, betting sign. This is what your pick is stated against and what closing line value is measured from.'},
+  {c:'home_win_probability',need:'optional',d:'Your probability that the HOME team wins outright. 0-100 or 0-1, either is read correctly. Always the home team \u2014 never the team you picked.'},
+  {c:'cover_probability',need:'optional',d:'Your probability that the HOME side covers at your line. Same scale rules.'},
+  {c:'pick_side',need:'optional',d:'The team you are on. Name the team (<span class="mono">SEA</span>), not a side \u2014 "home"/"away" also work.'},
+  {c:'proj_home_score',need:'optional',d:'Projected home score, if your model produces scores. When you supply scores, margin accuracy is graded from them rather than from the spread.'},
+  {c:'proj_away_score',need:'optional',d:'Projected away score.'},
+  {c:'confidence',need:'optional',d:'Your own confidence scale, whatever it means to you. Stored and displayed, never blended into grading.'}
 ];
 var SLATE={cols:[],rows:[],map:{},checked:false};
 /* Columns whose value is stated from the PICKED side rather than the home
@@ -3260,6 +3378,10 @@ async function renderCreatorDash(view,me){
         '<option value="backfill">Backfill: history, shown separately</option>'+
         '<option value="test">Test: throwaway</option></select></div>'+
       '</div>'+
+      '<p class="note" style="margin:10px 0 0">New to this, or setting up a sheet from scratch? '+
+        '<a href="#" onclick="slateTemplateDownload(true);return false;">Download the blank template</a> '+
+        '(its columns map with nothing to correct), or read the '+
+        '<a href="#format">slate format</a>.</p>'+
       '<div id="slDrop" class="dropzone">'+
         '<div class="dz-main">Drop your CSV or Excel file here</div>'+
         '<div class="dz-sub">or <button class="btn" id="slPick" type="button">choose a file</button>'+
