@@ -186,11 +186,16 @@ tr.consrow td{color:var(--accent);border-top:1px dashed var(--border)}
 .gb-hd{display:flex;gap:12px;align-items:baseline;padding:8px 14px;background:var(--surface2);font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:700;letter-spacing:.06em}
 .gb-hd .tm{color:var(--faint);font-weight:400;font-size:11px;letter-spacing:.03em}
 .gb-hd .fin{margin-left:auto;color:var(--text)}
-.gb-row{display:grid;grid-template-columns:minmax(120px,1.6fr) minmax(96px,1fr) minmax(76px,.9fr) 18px;gap:8px;padding:6px 14px;font-family:'JetBrains Mono',monospace;font-size:12px;align-items:center}
+.gb-row{display:grid;grid-template-columns:minmax(96px,1.35fr) minmax(80px,1fr) 60px 52px 42px 14px;gap:8px;padding:6px 14px;font-family:'JetBrains Mono',monospace;font-size:12px;align-items:center}
 .gb-row a{color:var(--text)}
 .gb-row .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;letter-spacing:.05em;text-transform:uppercase}
 .gb-row .num{text-align:right}
 .gb-row .win{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* the difference from the market: magnitude carried by weight, never by a
+   good/bad colour — the Collective states the gap, it does not grade it */
+.gb-row .dmkt{text-align:right;color:var(--faint)}
+.gb-row .dmkt.big{color:var(--text);font-weight:700}
+.gb-row .age{text-align:right;color:var(--faint);font-size:11px}
 .gb-row.ghead{color:var(--faint);font-size:9.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding-top:7px;padding-bottom:3px}
 /* game flags: where the group leaves the market, and where it splits */
 .gflag{font-family:'JetBrains Mono',monospace;font-size:9.5px;font-weight:700;letter-spacing:.04em;border-radius:9px;padding:2px 7px;white-space:nowrap;border:1px solid}
@@ -358,8 +363,11 @@ a,button,tr.rowlink,.sportpick,.wk button,.sportsw button{
       below it. Below 380 the model column gives up its minimum first, since
       a truncated team code still reads and a clipped number does not. */
 @media(max-width:380px){
-  .gb-row{grid-template-columns:minmax(84px,1.5fr) minmax(88px,1fr) minmax(60px,.8fr) 14px;
+  /* the age column is the first thing to go when there is no room: it is
+     context, where the line and the difference are the point */
+  .gb-row{grid-template-columns:minmax(76px,1.3fr) minmax(74px,1fr) 54px 46px 0 12px;
           gap:6px;padding:6px 10px}
+  .gb-row .age{display:none}
   .gb-hd,.bd-hd,.bd-stats{padding-left:10px;padding-right:10px}
   .bd-stats{gap:14px}
 }
@@ -801,13 +809,50 @@ function outrightCell(g,mr){
    model that posted without a win probability has (the API refuses some
    spread/probability pairs; see probRejectHTML): a cover number is a
    different quantity, so it keeps its cv label inside the cell. */
+/* How long ago this projection was received, compactly. The wall answers
+   "how fresh is this number" at a glance; the exact stamp is the title. */
+function fmtAgeShort(iso){
+  if(!iso)return '';
+  var ms=Date.now()-new Date(iso).getTime();
+  if(!isFinite(ms)||ms<0)return '';
+  var h=ms/3600000;
+  if(h<1)return Math.max(1,Math.round(ms/60000))+'m';
+  if(h<48)return Math.round(h)+'h';
+  return Math.round(h/24)+'d';
+}
+/* The model's own line against the market's, both home-stated in betting
+   sign, so the sign says which way the model leans: negative is further
+   onto the home team than the market, positive further onto the road team.
+   This is the one number a reader cannot compute in their head from the
+   rest of the row, and it is a pure comparison — the Collective states the
+   difference and never calls it an edge. */
+function deltaMarket(modelLine,mktSpread){
+  if(modelLine==null||mktSpread==null)return null;
+  var a=Number(modelLine),b=Number(mktSpread);
+  if(!isFinite(a)||!isFinite(b))return null;
+  return Math.round((a-b)*10)/10;
+}
+function deltaCell(modelLine,mktSpread,g){
+  var d=deltaMarket(modelLine,mktSpread);
+  if(d==null)return '<span class="dmkt">-</span>';
+  var side=d<0?(g&&g.home):(g&&g.away);
+  var t=d===0?'This model is on the market\u2019s number'
+    :(Math.abs(d).toFixed(1)+' points further onto '+String(side||'one side')+' than the market');
+  return '<span class="dmkt'+(Math.abs(d)>=3?' big':'')+'" title="'+esc(t)+'">'
+    +(d>0?'+':'')+d.toFixed(1)+'</span>';
+}
 function hwCell(mr){
   if(mr.home_win_probability!=null)
     return {txt:Math.round(100*mr.home_win_probability)+'%',
       t:'the model’s probability that the home team wins outright (moneyline)'};
+  /* A cover probability is a DIFFERENT quantity, and putting it under a
+     column headed "Home win %" is the same mislabelling this board has
+     been chasing all week. A model that did not submit a win probability
+     shows nothing here; what it did submit is named in the title. */
   if(mr.cover_probability!=null)
-    return {txt:'cv '+Math.round(100*mr.cover_probability)+'%',
-      t:'the model’s probability that the home side covers at the posted line — it posted no outright win probability'};
+    return {txt:'-',
+      t:'this model submitted no outright win probability — its home cover probability is '
+        +Math.round(100*mr.cover_probability)+'%'};
   return null;
 }
 /* ---- calibration: do the percentages mean anything? --------------------
@@ -990,7 +1035,14 @@ function splitGames(games){
 function splitBadge(flags,g){
   var s=flags?flags[gameKey(g)]:null;
   if(s==null)return '';
-  return '<span class="gflag split" title="The models disagree most on this game \u2014 standard deviation of their spreads">'+
+  /* sigma is the cleaner statistic, so it stays the badge; the raw spread
+     between the furthest-apart models rides along in the title rather than
+     costing a whole column */
+  var c=g&&g.consensus,rng='';
+  if(c&&c.spread_min!=null&&c.spread_max!=null)
+    rng=' \u00b7 range '+fmtNum(Math.abs(c.spread_max-c.spread_min))+' pts ('
+      +esc(g.home)+' '+fmtSpread(c.spread_min)+' \u2194 '+fmtSpread(c.spread_max)+')';
+  return '<span class="gflag split" title="The models disagree most on this game \u2014 standard deviation of their submitted lines'+esc(rng)+'">'+
     'SPLIT \u03c3 '+esc(fmtNum(s))+'</span>';
 }
 /* ---- how long before kickoff a pick was posted ------------------------
@@ -1044,7 +1096,7 @@ async function renderWall(view){
         var wr=byCreator[mr.creator_slug]||{};
         var who='<a href="#/'+esc(mr.creator_slug)+'" class="nm">'+esc(wr.creator_name||mr.creator_slug)+'</a>';
         if(mr.locked){
-          lines+='<div class="gb-row">'+who+'<span class="lock" style="grid-column:2/4">Subscriber number</span><span class="gb-dot" style="background:var(--faint)"></span></div>';
+          lines+='<div class="gb-row">'+who+'<span class="lock" style="grid-column:2/6">Subscriber number</span><span class="gb-dot" style="background:var(--faint)"></span></div>';
           return;
         }
         var p=hwCell(mr);
@@ -1052,9 +1104,24 @@ async function renderWall(view){
           ?({win:'var(--pos)',loss:'var(--neg)',push:'var(--warn)'}[mr.grade.pick_result]||'var(--dim)')
           :(memDot[wr.membership]||'var(--dim)');
         var lead=pickLeadText(mr,g.kickoff_at);
+        /* The model's OWN submitted line, home-stated and untouched — never
+           the market number it posted against, which is what made this
+           column incomparable between a model that supplied a market line
+           and one that did not. What the model picked is named in the
+           title; the difference below says which way it leans. */
+        var ml=mr.projected_spread;
+        var mlTxt=ml!=null?(esc(g.home)+' '+fmtSpread(ml)):'-';
+        var mlTitle=ml!=null
+          ? ('this model\u2019s own line, stated for '+g.home
+             +(pickSideNorm(mr)?('; it picked '+pickDisp(g,mr)):'; it submitted no pick side'))
+          : 'this model submitted no line of its own'
+            +(mr.line_at_submission!=null?(' \u2014 it posted against '+g.home+' '+fmtSpread(mr.line_at_submission)):'');
+        var age=fmtAgeShort(mr.received_at);
         lines+='<div class="gb-row"'+(lead?' title="'+esc(lead)+'"':'')+'>'+who+
-          '<span class="num">'+pickDisp(g,mr)+(mr.late?' <span style="color:var(--warn)">LATE</span>':'')+'</span>'+
-          '<span class="num win"'+(p?' title="'+p.t+'"':'')+'>'+(p==null?'-':p.txt)+'</span>'+
+          '<span class="num" title="'+esc(mlTitle)+'">'+mlTxt+(mr.late?' <span style="color:var(--warn)">LATE</span>':'')+'</span>'+
+          deltaCell(ml,mktSpreadW,g)+
+          '<span class="num win"'+(p?' title="'+esc(p.t)+'"':'')+'>'+(p==null?'-':p.txt)+'</span>'+
+          '<span class="age"'+(mr.received_at?' title="submitted '+esc(String(mr.received_at))+'"':'')+'>'+esc(age||'-')+'</span>'+
           '<span class="gb-dot" style="background:'+dot+'"></span></div>';
       });
       if(!g.models||!g.models.length){
@@ -1063,18 +1130,25 @@ async function renderWall(view){
         /* headers, so a spread pick and a win probability stop reading as
            two statements of one number jumbled into a column */
         lines='<div class="gb-row ghead"><span>Model</span>'+
-          '<span class="num">Spread pick</span><span class="num">Home win %</span><span></span></div>'+lines;
+          '<span class="num" title="the model\u2019s own submitted line, stated for the home team">Model line</span>'+
+          '<span class="num" title="model line minus the captured market line — a comparison, not a verdict">\u0394 Mkt</span>'+
+          '<span class="num" title="the model\u2019s own probability that the home team wins outright; blank when it submitted none">Home %</span>'+
+          '<span class="num" title="time since this projection was received">Age</span>'+
+          '<span></span></div>'+lines;
       }
       /* the market, above the model numbers: it is the thing they are all
          being measured against */
       lines=marketLineHtml(mkt,g)+lines;
       var c=g.consensus;
       if(c&&!c.locked&&c.n>1){
-        lines+='<div class="gb-row cons"><span class="nm">Consensus</span>'+
-          '<span class="num">'+esc(g.home)+' '+fmtSpread(c.spread_mean)+'</span>'+
-          '<span class="num win" title="the mean home team win probability across the models that posted one">'+(c.home_win_prob_mean==null?'-':Math.round(100*c.home_win_prob_mean)+'%')+'</span><span></span></div>';
+        lines+='<div class="gb-row cons">'+
+          '<span class="nm" title="the Collective\u2019s own average across the models that submitted a line">Consensus &middot; n='+c.n+'</span>'+
+          '<span class="num">'+(c.spread_mean==null?'-':esc(g.home)+' '+fmtSpread(c.spread_mean))+'</span>'+
+          deltaCell(c.spread_mean,mktSpreadW,g)+
+          '<span class="num win" title="the mean home team win probability across the models that submitted one">'+(c.home_win_prob_mean==null?'-':Math.round(100*c.home_win_prob_mean)+'%')+'</span>'+
+          '<span class="age"></span><span></span></div>';
       }else if(c&&c.locked){
-        lines+='<div class="gb-row cons"><span class="nm">Consensus</span><span class="lock" style="grid-column:2/4">Subscriber number</span><span></span></div>';
+        lines+='<div class="gb-row cons"><span class="nm">Consensus</span><span class="lock" style="grid-column:2/6">Subscriber number</span><span></span></div>';
       }
       boards+='<div class="gamebd">'+hd+lines+'</div>';
     });

@@ -760,11 +760,46 @@ if (typeof sandbox.teamKey === 'function') {
   chk('the home win cell is the bare home-stated percentage',
     (function () { var c = S.hwCell({ home_win_probability: 0.62, pick_side: 'away' });
       return c && c.txt === '62%'; })());
-  chk('the home win cell cover fallback keeps its cv label',
+  /* a cover probability is a different quantity: it must NOT appear under a
+     column headed "Home win %", but what the model did submit is not lost */
+  chk('a model with only a cover probability shows nothing in the win column',
     (function () { var c = S.hwCell({ cover_probability: 0.44 });
-      return c && c.txt === 'cv 44%'; })());
+      return c && c.txt === '-' && /cover probability is 44%/.test(c.t); })());
   chk('the home win cell is empty with nothing to show',
     S.hwCell({ pick_side: 'home' }) === null);
+
+  /* ---- Delta Market: the one number a reader cannot do in their head ----
+     Model line minus captured market line, both home-stated in betting
+     sign. Negative means further onto the home team than the market. */
+  chk('a model further onto the home team reads negative',
+    near(S.deltaMarket(-5.0, -3.5), -1.5));
+  chk('a model further onto the road team reads positive',
+    near(S.deltaMarket(-2.5, -3.0), 0.5));
+  chk('a model on the market number reads zero',
+    S.deltaMarket(-3.0, -3.0) === 0);
+  chk('the reviewer\'s worked example reproduces exactly',
+    near(S.deltaMarket(-10.6, -3.0), -7.6) && near(S.deltaMarket(-6.0, -3.0), -3.0));
+  chk('no market number yields no difference, never a fabricated zero',
+    S.deltaMarket(-5.0, null) === null && S.deltaMarket(null, -3.0) === null);
+  chk('a non-finite line yields no difference',
+    S.deltaMarket(Infinity, -3) === null && S.deltaMarket(-3, NaN) === null);
+  chk('the difference cell names the side it leans, not a verdict',
+    (function () {
+      var h = S.deltaCell(-5.0, -3.5, { home: 'SEA', away: 'NE' });
+      return /further onto SEA/.test(h) && /-1\.5/.test(h) && !/edge/i.test(h);
+    })());
+  chk('a missing market renders a dash cell rather than broken markup',
+    S.deltaCell(-5.0, null, { home: 'SEA', away: 'NE' }) === '<span class="dmkt">-</span>');
+
+  /* ---- Age: how fresh this specific projection is ---------------------- */
+  chk('an hours-old projection reads in hours',
+    S.fmtAgeShort(new Date(Date.now() - 17 * 3600e3).toISOString()) === '17h');
+  chk('a days-old projection reads in days',
+    S.fmtAgeShort(new Date(Date.now() - 4 * 86400e3).toISOString()) === '4d');
+  chk('a minutes-old projection reads in minutes',
+    S.fmtAgeShort(new Date(Date.now() - 5 * 60e3).toISOString()) === '5m');
+  chk('no timestamp yields nothing at all',
+    S.fmtAgeShort(null) === '' && S.fmtAgeShort(undefined) === '');
 
   /* the pick is stated at the line it was made against, never at the
      model's own projection — stating it at the projection is how "your
