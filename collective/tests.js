@@ -1257,9 +1257,38 @@ if (typeof sandbox.teamKey === 'function') {
   chk('a cover probability does not invent a market line',
     cb.rows[0].line_at_submission === undefined &&
     cb.rows[1].line_at_submission === undefined, { row: cb.rows[0] });
-  chk('the creator own spread and cover probability still post',
-    near(cb.rows[0].projected_spread, -3.5) &&
-    cb.rows[0].cover_probability != null, { row: cb.rows[0] });
+  chk('the creator own spread still posts',
+    near(cb.rows[0].projected_spread, -3.5), { row: cb.rows[0] });
+  /* The API refuses cover_probability on a row with no line_at_submission
+     ("cover_probability requires line_at_submission"), and it is right to:
+     a cover percentage is P(covers AT a line). Two ways to satisfy that,
+     one of them honest -- withhold the cover, never invent the line. */
+  chk('a cover probability with no market line is withheld, not sent',
+    cb.rows[0].cover_probability === undefined &&
+    cb.rows[1].cover_probability === undefined, { row: cb.rows[0] });
+  chk('the withholding is counted so the creator can be told',
+    cb.coverWithheld === 2, { count: cb.coverWithheld });
+  /* and it is the LINE that decides, not the cover: given a real market
+     line, the cover posts untouched */
+  var COVHEAD2 = ['home_team','away_team','kickoff','spread','market_line','cover_prob','pick'];
+  S.SLATE.cols = COVHEAD2;
+  S.SLATE.rows = [COVHEAD2, ['SEA','NE','2026-09-09','-3.5','-4.5','0.55','SEA']];
+  S.SLATE.map = {}; S.slateGuessMap();
+  var cb2 = S.slateBuildRows('2026', '1');
+  chk('a cover probability WITH a market line posts untouched',
+    cb2.rows[0].cover_probability != null && near(cb2.rows[0].line_at_submission, -4.5)
+      && cb2.coverWithheld === 0, { row: cb2.rows[0] });
+  /* the rejection classifier must not read "cover_probability requires
+     line_at_submission" as the spread/probability rule */
+  chk('a missing-line rejection is not treated as a probability rejection',
+    S.probRejectHTML({ rows: [
+      { status: 'rejected', game_ref: '401856766',
+        reason: 'cover_probability requires line_at_submission' }] }) === '');
+  chk('a real spread/probability rejection is still caught',
+    S.probRejectHTML({ rows: [
+      { status: 'rejected', game_ref: '2026_01_MIA_LV',
+        reason: 'home_win_probability contradicts projected_spread; check that the probability is moneyline' }] })
+      .indexOf('refused on the spread/probability pair') >= 0);
 
   /* ---- one column mapped into both spread fields ------------------------
      Equal on every row is not a model agreeing with the market; it is a
