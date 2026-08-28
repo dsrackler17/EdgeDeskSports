@@ -186,13 +186,19 @@ tr.consrow td{color:var(--accent);border-top:1px dashed var(--border)}
 .gb-hd{display:flex;gap:12px;align-items:baseline;padding:8px 14px;background:var(--surface2);font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:700;letter-spacing:.06em}
 .gb-hd .tm{color:var(--faint);font-weight:400;font-size:11px;letter-spacing:.03em}
 .gb-hd .fin{margin-left:auto;color:var(--text)}
-.gb-row{display:grid;grid-template-columns:minmax(96px,1.35fr) minmax(80px,1fr) 60px 52px 42px 14px;gap:8px;padding:6px 14px;font-family:'JetBrains Mono',monospace;font-size:12px;align-items:center}
+.gb-row{display:grid;grid-template-columns:minmax(84px,1.15fr) minmax(82px,1fr) minmax(78px,.95fr) 56px 48px 40px 14px;gap:8px;padding:6px 14px;font-family:'JetBrains Mono',monospace;font-size:12px;align-items:center}
 .gb-row a{color:var(--text)}
 .gb-row .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;letter-spacing:.05em;text-transform:uppercase}
 .gb-row .num{text-align:right}
 .gb-row .win{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 /* the difference from the market: magnitude carried by weight, never by a
    good/bad colour — the Collective states the gap, it does not grade it */
+.gb-row .pk{text-align:right}
+.gb-row .mline{text-align:right;color:var(--dim)}
+/* a row whose own numbers contradict its pick side: never rendered as
+   though the Collective believes it */
+.gb-row .mline.bad{color:var(--warn)}
+.gb-row .mline.bad b{font-weight:700;cursor:help}
 .gb-row .dmkt{text-align:right;color:var(--faint)}
 .gb-row .dmkt.big{color:var(--text);font-weight:700}
 .gb-row .age{text-align:right;color:var(--faint);font-size:11px}
@@ -373,9 +379,9 @@ a,button,tr.rowlink,.sportpick,.wk button,.sportsw button{
 @media(max-width:380px){
   /* the age column is the first thing to go when there is no room: it is
      context, where the line and the difference are the point */
-  .gb-row{grid-template-columns:minmax(76px,1.3fr) minmax(74px,1fr) 54px 46px 0 12px;
+  .gb-row{grid-template-columns:minmax(70px,1.15fr) minmax(76px,1fr) 0 52px 44px 0 12px;
           gap:6px;padding:6px 10px}
-  .gb-row .age{display:none}
+  .gb-row .age,.gb-row .mline{display:none}
   .gb-hd,.bd-hd,.bd-stats{padding-left:10px;padding-right:10px}
   .bd-stats{gap:14px}
 }
@@ -793,6 +799,42 @@ function pickDisp(g,mr){
   if(p.team==null)return p.spread==null?'-':esc(g.home)+' '+fmtSpread(p.spread);
   return esc(p.team)+' '+(p.spread==null?'-':fmtSpread(p.spread));
 }
+/* ---- when a row's own three numbers disagree with each other ----------
+   A submission carries a pick side AND two spreads, and the two spreads
+   already imply a side: a model whose own line has the home team more
+   favoured than the market's line is, by its own arithmetic, on the home
+   team. When that implication contradicts the stated pick_side, the row is
+   internally inconsistent and there is no way to display it that is not
+   partly wrong -- show the pick and the model line looks inverted, show the
+   model line and the pick looks inverted.
+
+   This is exactly the shape of a slate uploaded with one column stated for
+   the picked team instead of the home team: pick_side survives the mapping
+   because it is a word, the spread does not because it is a number.
+
+   So the board says so, out loud, on the row. pick_side stays authoritative
+   for what the model picked -- that is the wire contract -- and the model's
+   own line is flagged rather than quietly rendered as fact. Same test the
+   research terminal runs before it will post a row (fbWireRowSelfConsistent);
+   it lives here too because rows posted before that guard existed are
+   already stored.
+
+   Returns the side the NUMBERS imply, only when that differs from the side
+   the row claims. null means consistent, or not enough to tell. */
+function wireContradiction(mr){
+  if(!mr)return null;
+  var side=pickSideNorm(mr);
+  if(!side)return null;
+  var a=Number(mr.line_at_submission),b=Number(mr.projected_spread);
+  if(mr.line_at_submission==null||mr.projected_spread==null)return null;
+  if(!isFinite(a)||!isFinite(b))return null;
+  var gap=a-b;
+  /* a model sitting exactly on the market's number leans neither way, so
+     its pick side cannot contradict anything */
+  if(Math.abs(gap)<1e-9)return null;
+  var implied=gap>0?'home':'away';
+  return implied===side?null:implied;
+}
 /* The model's OUTRIGHT (moneyline) call for the upload preview, where one
    compact cell is worth having: the winner is the side the model's win
    probability favours, shown with that side's own probability — "LAC 61%"
@@ -826,6 +868,9 @@ function outrightCell(g,mr){
    `short` is what fits under the board. `long` is the same claim with the
    part that actually confuses people spelled out. */
 var BOARD_LEGEND=[
+  {k:'Pick',
+   short:'the team this model picked, at the line it posted against',
+   long:'The side the creator actually called, stated for the team they picked \u2014 so <span class="mono">ARI +10.5</span> means that model is on Arizona getting 10.5. This is the only column stated for the picked team rather than the home team; every other number on the row is home-stated. It comes from the pick side the creator submitted, which the Collective treats as authoritative and never infers from the sign of a spread.'},
   {k:'Model line',
    short:'the creator\u2019s own submitted spread, stated for the home team',
    long:'The creator\u2019s own number, exactly as they submitted it, stated for the HOME team in betting sign \u2014 so <span class="mono">SEA -3.5</span> means that model has Seattle favoured by 3.5 at home. It is never the market\u2019s number and never adjusted by the Collective. A model that submitted no line of its own shows <span class="mono">-</span> rather than borrowing one.'},
@@ -841,6 +886,9 @@ var BOARD_LEGEND=[
   {k:'Consensus &middot; n=',
    short:'the Collective\u2019s own average across the models that submitted, and how many did',
    long:'The Collective\u2019s own average across the models that submitted a number for that game, with <span class="mono">n</span> being how many. A consensus of two models and a consensus of twenty are different claims, so the count is never hidden.'},
+  {k:'! on a model line',
+   short:'that row\u2019s own numbers put it on the other team',
+   long:'The row contradicts itself: the creator\u2019s own line, compared with the line they posted against, leans the opposite way from the pick side they submitted. Almost always one column was submitted stated for the picked team instead of for the home team. The <b>Pick</b> shown is still what the creator said, because the pick side is a word on the wire and survives that mistake \u2014 but the model line is flagged and its <span class="mono">\u0394 Mkt</span> withheld until the creator resubmits, because the Collective will not print a number the row itself disagrees with.'},
   {k:'GROUP',
    short:'how far the consensus sits from the market',
    long:'A badge on games where the whole room departs from the market, pointing at the side it leans to. It is the consensus\u2019s own \u0394 Mkt, promoted to the game header because where the models collectively leave the price is the most interesting thing the Collective produces.'},
@@ -1145,7 +1193,7 @@ async function renderWall(view){
         var wr=byCreator[mr.creator_slug]||{};
         var who='<a href="#/'+esc(mr.creator_slug)+'" class="nm">'+esc(wr.creator_name||mr.creator_slug)+'</a>';
         if(mr.locked){
-          lines+='<div class="gb-row">'+who+'<span class="lock" style="grid-column:2/6">Subscriber number</span><span class="gb-dot" style="background:var(--faint)"></span></div>';
+          lines+='<div class="gb-row">'+who+'<span class="lock" style="grid-column:2/7">Subscriber number</span><span class="gb-dot" style="background:var(--faint)"></span></div>';
           return;
         }
         var p=hwCell(mr);
@@ -1153,22 +1201,50 @@ async function renderWall(view){
           ?({win:'var(--pos)',loss:'var(--neg)',push:'var(--warn)'}[mr.grade.pick_result]||'var(--dim)')
           :(memDot[wr.membership]||'var(--dim)');
         var lead=pickLeadText(mr,g.kickoff_at);
+        /* WHO the model picked, stated for the team it picked, at the line
+           it posted against. This is what a reader opens the board for and
+           it is the column that must never move: pick_side is a word on the
+           wire, so it survives every mapping mistake a spreadsheet can make.
+
+           It sits beside — not instead of — the model's own home-stated
+           line, which is the number that is comparable between models and
+           the one Δ Mkt is computed from. Showing only the home-stated
+           line meant an away pick changed both team and sign against what
+           the board said the day before, and the pick itself survived only
+           in a tooltip. Both facts are the model's own; both get a column. */
+        var pk=pickDisp(g,mr);
+        var pkT=pickSideNorm(mr)
+          ? ('what this model picked, at the line it posted against'
+             +(pickNum(mr)&&pickNum(mr).own?' — no market line on the wire, so this is its own number':''))
+          : 'this model submitted no pick side';
         /* The model's OWN submitted line, home-stated and untouched — never
            the market number it posted against, which is what made this
            column incomparable between a model that supplied a market line
-           and one that did not. What the model picked is named in the
-           title; the difference below says which way it leans. */
+           and one that did not. */
         var ml=mr.projected_spread;
+        var bad=wireContradiction(mr);
         var mlTxt=ml!=null?(esc(g.home)+' '+fmtSpread(ml)):'-';
         var mlTitle=ml!=null
-          ? ('this model\u2019s own line, stated for '+g.home
+          ? ('this model’s own line, stated for '+g.home
              +(pickSideNorm(mr)?('; it picked '+pickDisp(g,mr)):'; it submitted no pick side'))
           : 'this model submitted no line of its own'
-            +(mr.line_at_submission!=null?(' \u2014 it posted against '+g.home+' '+fmtSpread(mr.line_at_submission)):'');
+            +(mr.line_at_submission!=null?(' — it posted against '+g.home+' '+fmtSpread(mr.line_at_submission)):'');
+        /* Its own numbers put it on the other team. Say so on the row
+           rather than pick a side of the contradiction and render it as
+           fact — the creator has to restate it; nobody else can. */
+        if(bad){
+          mlTitle='This row contradicts itself. It says it picked '
+            +pickDisp(g,mr)+', but its own line ('+g.home+' '+fmtSpread(ml)
+            +') against the line it posted at ('+g.home+' '+fmtSpread(mr.line_at_submission)
+            +') puts it on '+(bad==='home'?g.home:g.away)
+            +'. Usually one column was submitted for the picked team instead of the home team. '
+            +'The pick shown is what the model stated; this line is not trusted until the creator resubmits.';
+        }
         var age=fmtAgeShort(mr.received_at);
         lines+='<div class="gb-row"'+(lead?' title="'+esc(lead)+'"':'')+'>'+who+
-          '<span class="num" title="'+esc(mlTitle)+'">'+mlTxt+(mr.late?' <span style="color:var(--warn)">LATE</span>':'')+'</span>'+
-          deltaCell(ml,mktSpreadW,g)+
+          '<span class="num pk" title="'+esc(pkT)+'">'+pk+(mr.late?' <span style="color:var(--warn)">LATE</span>':'')+'</span>'+
+          '<span class="mline'+(bad?' bad':'')+'" title="'+esc(mlTitle)+'">'+mlTxt+(bad?' <b>!</b>':'')+'</span>'+
+          (bad?'<span class="dmkt" title="'+esc(mlTitle)+'">-</span>':deltaCell(ml,mktSpreadW,g))+
           '<span class="num win"'+(p?' title="'+esc(p.t)+'"':'')+'>'+(p==null?'-':p.txt)+'</span>'+
           '<span class="age"'+(mr.received_at?' title="submitted '+esc(String(mr.received_at))+'"':'')+'>'+esc(age||'-')+'</span>'+
           '<span class="gb-dot" style="background:'+dot+'"></span></div>';
@@ -1179,6 +1255,7 @@ async function renderWall(view){
         /* headers, so a spread pick and a win probability stop reading as
            two statements of one number jumbled into a column */
         lines='<div class="gb-row ghead"><span>Model</span>'+
+          '<span class="num" title="the team this model picked, at the line it posted against">Pick</span>'+
           '<span class="num" title="the model\u2019s own submitted line, stated for the home team">Model line</span>'+
           '<span class="num" title="model line minus the captured market line — a comparison, not a verdict">\u0394 Mkt</span>'+
           '<span class="num" title="the model\u2019s own probability that the home team wins outright; blank when it submitted none">Home %</span>'+
@@ -1192,12 +1269,13 @@ async function renderWall(view){
       if(c&&!c.locked&&c.n>1){
         lines+='<div class="gb-row cons">'+
           '<span class="nm" title="the Collective\u2019s own average across the models that submitted a line">Consensus &middot; n='+c.n+'</span>'+
-          '<span class="num">'+(c.spread_mean==null?'-':esc(g.home)+' '+fmtSpread(c.spread_mean))+'</span>'+
+          '<span class="num pk" title="the Collective averages the numbers its members submit; it does not make a pick of its own"></span>'+
+          '<span class="mline">'+(c.spread_mean==null?'-':esc(g.home)+' '+fmtSpread(c.spread_mean))+'</span>'+
           deltaCell(c.spread_mean,mktSpreadW,g)+
           '<span class="num win" title="the mean home team win probability across the models that submitted one">'+(c.home_win_prob_mean==null?'-':Math.round(100*c.home_win_prob_mean)+'%')+'</span>'+
           '<span class="age"></span><span></span></div>';
       }else if(c&&c.locked){
-        lines+='<div class="gb-row cons"><span class="nm">Consensus</span><span class="lock" style="grid-column:2/6">Subscriber number</span><span></span></div>';
+        lines+='<div class="gb-row cons"><span class="nm">Consensus</span><span class="lock" style="grid-column:2/7">Subscriber number</span><span></span></div>';
       }
       boards+='<div class="gamebd">'+hd+lines+'</div>';
     });

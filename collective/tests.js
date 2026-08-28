@@ -808,7 +808,7 @@ if (typeof sandbox.teamKey === 'function') {
   chk('every column on the board is explained',
     (function () {
       var keys = S.BOARD_LEGEND.map(function (x) { return x.k; });
-      return ['Model line', '\u0394 Mkt', 'Home %', 'Age'].every(function (k) {
+      return ['Pick', 'Model line', '\u0394 Mkt', 'Home %', 'Age'].every(function (k) {
         return keys.indexOf(k) >= 0;
       });
     })(), { keys: S.BOARD_LEGEND.map(function (x) { return x.k; }) });
@@ -864,6 +864,40 @@ if (typeof sandbox.teamKey === 'function') {
   chk('the model own spread never leaks into the pick statement',
     S.pickDisp({ home: 'LAC', away: 'ARI' },
       { pick_side: 'home', projected_spread: -4.9, line_at_submission: -10.5 }) === 'LAC -10.5');
+
+  /* ---- a row whose own numbers disagree with its pick side -------------
+     The failure this catches is a slate uploaded with one spread column
+     stated for the picked team instead of the home team. pick_side is a
+     word and survives that; the number does not. Both are on the wire, so
+     the contradiction is detectable without asking anyone. */
+  chk('a consistent home pick is not flagged',
+    S.wireContradiction(
+      { pick_side: 'home', projected_spread: -7.0, line_at_submission: -3.0 }) === null);
+  chk('a consistent away pick is not flagged',
+    S.wireContradiction(
+      { pick_side: 'away', projected_spread: -3.0, line_at_submission: -7.0 }) === null);
+  chk('a pick side that contradicts the row own two spreads is flagged',
+    S.wireContradiction(
+      { pick_side: 'away', projected_spread: -7.0, line_at_submission: -3.0 }) === 'home');
+  chk('the flag names the side the numbers imply, not the side claimed',
+    S.wireContradiction(
+      { pick_side: 'home', projected_spread: -3.0, line_at_submission: -7.0 }) === 'away');
+  chk('a model sitting exactly on the market number cannot contradict itself',
+    S.wireContradiction(
+      { pick_side: 'away', projected_spread: -3.5, line_at_submission: -3.5 }) === null);
+  chk('a row missing either spread is never guessed at',
+    S.wireContradiction({ pick_side: 'home', projected_spread: -3.5 }) === null &&
+    S.wireContradiction({ pick_side: 'home', line_at_submission: -3.5 }) === null);
+  chk('a row with no pick side has nothing to contradict',
+    S.wireContradiction(
+      { projected_spread: -7.0, line_at_submission: -3.0 }) === null);
+  /* the exact shape reported on the board: the pick still reads correctly
+     off pick_side even when the model line beside it is inverted */
+  chk('a contradicted row still states the pick the creator submitted',
+    S.pickDisp({ home: 'CAR', away: 'CHI' },
+      { pick_side: 'away', projected_spread: -7.0, line_at_submission: -2.5 }) === 'CHI +2.5' &&
+    S.wireContradiction(
+      { pick_side: 'away', projected_spread: -7.0, line_at_submission: -2.5 }) === 'home');
 
   /* the price-shaped values a win-probability column actually receives */
   chk('a home moneyline price reads as its implied probability',
