@@ -23438,7 +23438,12 @@ function fbP4WireRows(){
     if(p.scores&&p.scores.confidence!=null)o.confidence=Math.round(p.scores.confidence);
     rows.push(o);
   });
-  return {rows:rows,skipped:skipped};
+  /* never post a row that contradicts itself */
+  var part=fbWirePartition(rows);
+  part.bad.forEach(function(o){
+    skipped.push(o.away_team+' @ '+o.home_team+' (pick disagrees with its own numbers)');
+  });
+  return {rows:part.good,skipped:skipped,inconsistent:part.bad};
 }
 
 /* Which model on the account this college slate belongs to.
@@ -23551,6 +23556,40 @@ window.fbP4ApiRetract=async function(){
     +' removed.</span><div class="ec mut" style="margin-top:4px">'+fbEsc(b2.note||'')
     +' Now run <b>Check via API</b> and then <b>Post to Collective (API)</b> so the corrected slate lands as the first submission.</div>');
 };
+/* ---- a row must not contradict itself ---------------------------------
+   Three of this model's stored Week 1 NFL rows displayed a pick on one
+   side while carrying the market number for the other, and nothing on the
+   posting path noticed, because each number was individually plausible.
+   The relationship between them is what was wrong.
+
+   The invariant, from the engine's own definition of the gap: the pick is
+   the home team exactly when the model's line sits further onto the home
+   team than the market's. In betting sign that is
+
+       market_line - model_line > 0  ->  home
+
+   A row that says otherwise has one of its three fields turned around, and
+   which one cannot be known from here — so it is reported and withheld
+   rather than guessed at and posted. A row missing either number is not
+   contradictory, just incomplete, and passes. */
+function fbWireRowSelfConsistent(o){
+  if(!o||o.pick_side==null)return true;
+  if(o.projected_spread==null||o.line_at_submission==null)return true;
+  var gap=Number(o.line_at_submission)-Number(o.projected_spread);
+  if(!isFinite(gap)||Math.abs(gap)<1e-9)return true;   /* a pick'em implies no side */
+  return o.pick_side===(gap>0?'home':'away');
+}
+/* Split the rows a board wants to post into the ones that agree with
+   themselves and the ones that do not, so the caller can post the first
+   and name the second. */
+function fbWirePartition(rows){
+  var good=[],bad=[];
+  (rows||[]).forEach(function(o){
+    (fbWireRowSelfConsistent(o)?good:bad).push(o);
+  });
+  return {good:good,bad:bad};
+}
+
 /* ---- the NFL board's wire rows -----------------------------------------
    The same schema, the same home convention, and deliberately the same
    helpers as the Power 4 path (key handling, model resolution, ingest,
@@ -23601,7 +23640,12 @@ function fbNflWireRows(){
     if(sGap!=null&&Math.abs(sGap)>1e-9)o.pick_side=sGap>0?'home':'away';
     rows.push(o);
   });
-  return {rows:rows,skipped:skipped};
+  /* never post a row that contradicts itself */
+  var part=fbWirePartition(rows);
+  part.bad.forEach(function(o){
+    skipped.push(o.away_team+' @ '+o.home_team+' (pick disagrees with its own numbers)');
+  });
+  return {rows:part.good,skipped:skipped,inconsistent:part.bad};
 }
 /* The NFL model on the account, by sport, the same way the college path
    resolves its own — collective_ingest refuses an ambiguous envelope. */
