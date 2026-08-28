@@ -196,6 +196,14 @@ tr.consrow td{color:var(--accent);border-top:1px dashed var(--border)}
 .gb-row .dmkt{text-align:right;color:var(--faint)}
 .gb-row .dmkt.big{color:var(--text);font-weight:700}
 .gb-row .age{text-align:right;color:var(--faint);font-size:11px}
+/* the note under the board: quiet enough to ignore, present enough to find */
+.legend{margin:10px 0 0;color:var(--faint);font-size:11.5px;line-height:1.75}
+.legend b.k{color:var(--dim);font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700}
+.legend .sep{margin:0 7px;opacity:.5}
+.legend a{color:var(--dim)}
+.legend a:hover{color:var(--accent)}
+.lgdtbl td{vertical-align:top;padding:9px 10px;font-size:13px;white-space:normal}
+.lgdtbl td.k{white-space:nowrap;font-family:'JetBrains Mono',monospace;font-weight:700;color:var(--accent);width:1%}
 .gb-row.ghead{color:var(--faint);font-size:9.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding-top:7px;padding-bottom:3px}
 /* game flags: where the group leaves the market, and where it splits */
 .gflag{font-family:'JetBrains Mono',monospace;font-size:9.5px;font-weight:700;letter-spacing:.04em;border-radius:9px;padding:2px 7px;white-space:nowrap;border:1px solid}
@@ -809,6 +817,47 @@ function outrightCell(g,mr){
    model that posted without a win probability has (the API refuses some
    spread/probability pairs; see probRejectHTML): a cover number is a
    different quantity, so it keeps its cv label inside the cell. */
+/* ---- what every column on the board means -----------------------------
+   Written once and rendered in two places: a compact line under the board,
+   and the full version on the rules page. A reader who does not know what
+   a column is should never have to ask a person, and the two explanations
+   cannot drift because there is only one of them.
+
+   `short` is what fits under the board. `long` is the same claim with the
+   part that actually confuses people spelled out. */
+var BOARD_LEGEND=[
+  {k:'Model line',
+   short:'the creator\u2019s own submitted spread, stated for the home team',
+   long:'The creator\u2019s own number, exactly as they submitted it, stated for the HOME team in betting sign \u2014 so <span class="mono">SEA -3.5</span> means that model has Seattle favoured by 3.5 at home. It is never the market\u2019s number and never adjusted by the Collective. A model that submitted no line of its own shows <span class="mono">-</span> rather than borrowing one.'},
+  {k:'\u0394 Mkt',
+   short:'model line minus the captured market line \u2014 a comparison, not a verdict',
+   long:'The model line minus the Collective\u2019s own captured market line. Negative means the model is further onto the HOME team than the market; positive, further onto the road team. <span class="mono">-7.6</span> means seven and a half points further onto the home side than the market is. It says how far apart a model and the market are, and deliberately nothing about who is right \u2014 the Collective does not call a difference an edge.'},
+  {k:'Home %',
+   short:'the model\u2019s own probability that the home team wins outright',
+   long:'The creator\u2019s own probability that the HOME team wins the game outright \u2014 the moneyline, not the spread. Always the home team, never the team the model picked. Shown only when the creator actually submitted one; the Collective never infers a probability from a spread.'},
+  {k:'Age',
+   short:'time since that projection reached the Collective',
+   long:'How long ago this particular projection was received, so a number posted an hour ago is not mistaken for one posted last Tuesday. Grading always uses the FIRST pre-kickoff submission on a game, whatever the age shown here.'},
+  {k:'Consensus &middot; n=',
+   short:'the Collective\u2019s own average across the models that submitted, and how many did',
+   long:'The Collective\u2019s own average across the models that submitted a number for that game, with <span class="mono">n</span> being how many. A consensus of two models and a consensus of twenty are different claims, so the count is never hidden.'},
+  {k:'GROUP',
+   short:'how far the consensus sits from the market',
+   long:'A badge on games where the whole room departs from the market, pointing at the side it leans to. It is the consensus\u2019s own \u0394 Mkt, promoted to the game header because where the models collectively leave the price is the most interesting thing the Collective produces.'},
+  {k:'SPLIT \u03c3',
+   short:'the games the models disagree on most',
+   long:'The standard deviation of the submitted lines, badged on the few games where the models are furthest apart. Hover it for the raw range. Disagreement is part of the product here, so it is surfaced rather than smoothed away.'},
+  {k:'The dot',
+   short:'graded result once a game settles, membership status before that',
+   long:'Before a game settles, the creator\u2019s membership status. After it settles, the graded result of that pick \u2014 green won, red lost, amber pushed \u2014 decided by the Collective on the final score against its own captured closing line, never on anything a creator reports.'}
+];
+function boardLegendShort(){
+  return '<div class="legend"><b>Reading the board.</b> '+
+    BOARD_LEGEND.map(function(x){
+      return '<span class="lgd"><b class="k">'+x.k+'</b> '+x.short+'</span>';
+    }).join('<span class="sep">&middot;</span>')+
+    ' <a href="#rules">Full explanation and grading rules \u2192</a></div>';
+}
 /* How long ago this projection was received, compactly. The wall answers
    "how fresh is this number" at a glance; the exact stamp is the title. */
 function fmtAgeShort(iso){
@@ -1171,6 +1220,7 @@ async function renderWall(view){
         '<span title="across every sport"><b>'+m.counts.graded_games+'</b> settled <i class="allsports">all sports</i></span>'+
       '</div>'+
       boards+'</div>'+
+      boardLegendShort()+
       '<p class="lede">Independent models, one independently graded record. Every pick is graded on the actual final score, measured against the Collective&#39;s own captured closing line so every model faces the same number, never self-reported. Each creator keeps their own site, price, and methodology.</p>';
 
     if(!rows.length){
@@ -1905,6 +1955,14 @@ async function renderRules(view){
     view.innerHTML='<h1>Grading rules</h1>'+
       '<p class="lede">Published in full so every number on this site is reproducible from the raw submissions by someone who does not trust us. Version '+d.version+'.</p>'+
       '<div class="panel"><ol style="margin:4px 0;padding-left:22px;font-size:13.5px">'+lis+'</ol></div>'+
+      '<h2 id="reading">Reading the board</h2>'+
+      '<p class="lede" style="max-width:760px">Every column is either something a creator submitted, untouched, or something the Collective computes the same way for everybody. Nothing here is the Collective\u2019s opinion of anyone\u2019s model.</p>'+
+      '<div class="tblwrap"><table class="lgdtbl"><tbody>'+
+        BOARD_LEGEND.map(function(x){
+          return '<tr><td class="k">'+x.k+'</td><td>'+x.long+'</td></tr>';
+        }).join('')+
+      '</tbody></table></div>'+
+      '<p class="note" style="margin-top:8px">Posting a slate is a different question \u2014 see the <a href="#format">slate format</a>.</p>'+
       '<h2>Why the first submission is the graded one</h2>'+
       '<p class="lede" style="max-width:760px">Creators can see each other’s numbers before kickoff, so anyone submitting later is anchored whether they mean to be or not. Every submission is timestamped when the server receives it, and each model’s first pre-kickoff live submission on a game is the one that counts for grading, rankings, and consensus. Revisions are stored and shown as movement. Submissions received after kickoff are stored, flagged late, and excluded. Backfilled history and test data are stored and shown separately, and are never graded, ranked, or blended into consensus.</p>';
   }catch(e){fail(view,e);}
