@@ -2605,11 +2605,23 @@ function slatePick(raw,home,away){
   return {side:side,line:line};
 }
 
-/* Which side a name refers to. Exact first, then a prefix match with a
-   three character floor: a two letter code must match exactly or not at all,
-   or NE at NO books the away pick as the home one. An ambiguous name returns
-   nothing, because a coin flip that picks the wrong side still renders
-   perfectly and is wrong forever. */
+/* Which side a name refers to. Exact first, then a prefix match. An ambiguous
+   name returns nothing, because a coin flip that picks the wrong side still
+   renders perfectly and is wrong forever.
+
+   The prefix floor used to be three characters on both sides, so a two letter
+   code could only ever match exactly. That is right against a spelled out
+   name — "NE" beside a home team of "New Orleans" is New England, a team that
+   is not playing in this game, and prefix matching would book the pick on the
+   wrong side of it. It is wrong against another CODE: the EdgeDesk NFL export
+   writes LAR in its team columns and LA in its pick columns, so every Rams
+   game lost its pick side and reported an unreadable pick.
+
+   So the floor is on what is being matched, not on length alone: a two letter
+   code may latch onto another code (four characters is the longest any of
+   these files use), never onto a name. LA against LAR is the Rams; LA in a
+   Rams-Chargers game hits both and is refused below as ambiguous, which is
+   the right answer. */
 /* Team names have to be compared on a canonical key, and for college football
    that key MUST fold accents rather than strip them. Deleting the character
    turns "San José State" into "sanjosstate", which can never equal the
@@ -3062,7 +3074,12 @@ function slateSide(team,home,away){
   if(t==='away'||t==='a'||t==='road')return 'away';
   if(t===h)return 'home';
   if(t===a)return 'away';
-  function hit(x){return t.length>=3&&x.length>=3&&(x.indexOf(t)===0||t.indexOf(x)===0);}
+  function hit(x){
+    if(x.indexOf(t)!==0&&t.indexOf(x)!==0)return false;
+    var min=Math.min(t.length,x.length);
+    if(min>=3)return true;                        /* three characters of agreement */
+    return min>=2&&t.length<=4&&x.length<=4;      /* or one code against another */
+  }
   var hh=hit(h),aa=hit(a);
   if(hh&&!aa)return 'home';
   if(aa&&!hh)return 'away';
@@ -3108,6 +3125,19 @@ function slateKick(v,tz){
   /* "2026-09-09 20:20" (the EdgeDesk export) parses everywhere once the space
      is a T; Safari rejects the space form. */
   if(/^\d{4}-\d{2}-\d{2} \d{1,2}:\d{2}/.test(s))s=s.replace(' ','T');
+  /* "9/13/2026 13:00" — what the EdgeDesk NFL export writes in kickoff_local,
+     and a bare wall clock exactly like the ISO form above. It used to fall all
+     the way through to `new Date(s)`, which is specified to read it as the
+     READER'S local time: the same file then meant a different instant for
+     every creator who opened it, and a night game opened in US Central landed
+     on the next UTC day. Rewritten to the naive ISO form so the one pinning
+     branch below handles both. */
+  var us=s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})[ T](\d{1,2}):(\d{2})(?::(\d{2}))?$/);
+  if(us){
+    var uy=us[3].length===2?'20'+us[3]:us[3];
+    s=uy+'-'+String(us[1]).padStart(2,'0')+'-'+String(us[2]).padStart(2,'0')+
+      'T'+String(us[4]).padStart(2,'0')+':'+us[5]+(us[6]?':'+us[6]:'');
+  }
   /* a date-time with no designator: pin it instead of letting the runtime guess */
   if(/^\d{4}-\d{2}-\d{2}T\d{1,2}:\d{2}(:\d{2})?$/.test(s)){
     var naive=Date.parse(s+'Z');
@@ -3215,20 +3245,37 @@ function slateBuildRows(season,week){
         delete o.home_win_probability;
       }
     }
+    /* EVERY number on this wire is stated from the home side — the spread,
+       the win probability, the market line. A cover column that is stated
+       from the PICKED side therefore has to be turned around when the pick
+       is the away team, or half a slate posts its cover probability
+       inverted. The EdgeDesk export's p_spread_pick_pct is exactly such a
+       column: it is P(the side I picked covers). With the push mass also
+       supplied, P(home covers) = 1 - push - P(away covers) exactly.
+
+       And when the pick cannot be read, the number is withheld rather than
+       posted as it stands — the same rule the spread, the market line and
+       the win probability already follow. This block used to sit inside
+       `if(parsedPick)`, so an unreadable pick fell straight past it and
+       posted P(my side covers) as P(home covers): right when the pick
+       happened to be home, silently inverted when it was away, and
+       indistinguishable from a real number either way. */
+    if(o.cover_probability!==undefined&&SLATE.coverIsPickSide){
+      if(parsedPick){
+        if(parsedPick.side==='away'){
+          var pushI=SLATE.map['__push'];
+          var pu=pushI===undefined?null:slateProb(row[pushI],SLATE.cols[pushI]);
+          o.cover_probability=Math.max(0,Math.min(1,1-(pu||0)-o.cover_probability));
+        }
+      }else{
+        problems.push('Row '+(r+1)+': "'+esc(String(SLATE.cols[SLATE.map['cover_probability']]))+
+          '" is stated from your picked team, but this row has no readable pick, '+
+          'so it cannot be turned into the home team\u2019s cover probability. It was left off this row.');
+        delete o.cover_probability;
+      }
+    }
     if(parsedPick){
       o.pick_side=parsedPick.side;
-      /* EVERY number on this wire is stated from the home side — the spread,
-         the win probability, the market line. A cover column that is stated
-         from the PICKED side therefore has to be turned around when the pick
-         is the away team, or half a slate posts its cover probability
-         inverted. The EdgeDesk export's p_spread_pick_pct is exactly such a
-         column: it is P(the side I picked covers). With the push mass also
-         supplied, P(home covers) = 1 - push - P(away covers) exactly. */
-      if(o.cover_probability!==undefined&&parsedPick.side==='away'&&SLATE.coverIsPickSide){
-        var pushI=SLATE.map['__push'];
-        var pu=pushI===undefined?null:slateProb(row[pushI],SLATE.cols[pushI]);
-        o.cover_probability=Math.max(0,Math.min(1,1-(pu||0)-o.cover_probability));
-      }
       /* An explicit line column always wins. This only fills a gap. */
       if(parsedPick.line!==null&&o.line_at_submission===undefined)
         o.line_at_submission=parsedPick.line;
@@ -3450,6 +3497,20 @@ function slateRememberedMap(saved){
     return saved.map||null;
   return null;
 }
+/* The date as the file writes it, whichever way that is. This column read
+   `kickoff_local.slice(0,10)`, which is the right cut for "2026-09-13 13:00"
+   and cuts "9/9/2026 20:20" — the NFL export's own format — to "9/9/2026 2".
+   Nothing downstream depends on it; it is simply the wrong date on screen,
+   on the one table a creator reads to check their file was understood. */
+function edDateCell(v){
+  var t=String(v||'').trim();
+  if(!t)return '-';
+  if(/^\d{4}-\d{2}-\d{2}/.test(t))return t.slice(0,10);
+  var m=t.match(/^\d{1,2}\/\d{1,2}\/\d{2,4}/);
+  if(m)return m[0];
+  var sp=t.indexOf(' ');
+  return sp>0?t.slice(0,sp):t;
+}
 function edgedeskBoardHTML(){
   var ix=edSlateIdx();
   function v(row,k){var i=ix[k];return i===undefined?null:(row[i]!==undefined&&String(row[i])!==''?String(row[i]):null);}
@@ -3487,7 +3548,7 @@ function edgedeskBoardHTML(){
     rows+='<tr>'+
       '<td>'+esc(away)+' @ '+esc(home)+(hs!=null&&as!=null?' <span class="mono note">'+esc(as)+'-'+esc(hs)+'</span>':'')+'</td>'+
       '<td class="num">'+esc(v(row,'week')||'-')+'</td>'+
-      '<td class="num">'+esc((v(row,'kickoff_local')||'').slice(0,10)||'-')+'</td>'+
+      '<td class="num">'+esc(edDateCell(v(row,'kickoff_local')))+'</td>'+
       '<td class="num">'+fmtSpread(n2(row,'model_home_line'))+' / '+(n2(row,'model_fair_total')!=null?n2(row,'model_fair_total'):'-')+'</td>'+
       '<td class="num">'+fmtSpread(n2(row,'ref_home_line'))+' / '+(n2(row,'ref_total')!=null?n2(row,'ref_total'):'-')+'</td>'+
       '<td class="num">'+fmtSpread(n2(row,'spread_gap_pts'))+' / '+fmtSpread(n2(row,'total_gap_pts'))+'</td>'+
@@ -4386,7 +4447,19 @@ async function renderCreatorDash(view,me){
         }
       }catch(e){$('slOut').innerHTML='<div class="errbox">'+esc(e.message||String(e))+'</div>';}
     }
-    $('slFile').onchange=function(){slateReadFile(this.files&&this.files[0]);};
+    /* Clear the input BEFORE reading, so choosing the same file again is a
+       change. A file input only fires `change` when its value differs from
+       what is already there, and the value is the file's name — so after a
+       slate was posted, re-exporting the week and picking the same
+       edgedesk_nfl_2026_week1.csv did nothing at all: no preview, no error,
+       no sign the click had registered. That reads as "I can't upload my
+       CSV any more", and it is the single most common thing a creator does
+       between one post and the next. */
+    $('slFile').onchange=function(){
+      var f=this.files&&this.files[0];
+      this.value='';
+      slateReadFile(f);
+    };
     $('slPick').onclick=function(){$('slFile').click();};
 
     /* Drag and drop, with the whole panel as the target rather than a small
@@ -4674,7 +4747,33 @@ async function renderCreatorDash(view,me){
         if(dry){
           SLATE.checked=!SLATE.numberless;$('slGo').disabled=!!SLATE.numberless;
           /* hands-off mode: a clean check posts on its own */
-          if($('slAuto')&&$('slAuto').checked&&(c2.rejected||0)===0&&!built.problems.length){slateSend(false);return;}
+          var autoOn=!!($('slAuto')&&$('slAuto').checked);
+          var autoBlock=(c2.rejected||0)>0
+            ? (c2.rejected)+' row'+((c2.rejected)===1?'':'s')+' were refused by the server'
+            : (built.problems.length
+              ? built.problems.length+' row'+(built.problems.length===1?'':'s')+' could not be built in full'
+              : null);
+          if(autoOn&&!autoBlock){slateSend(false);return;}
+          /* ...and when it does NOT post, it says so. This receipt could read
+             "16 matched, 0 rejected" under a ticked "post automatically when
+             the check is clean" and still post nothing, because a row-level
+             problem the server never sees — an unreadable pick, a withheld
+             number — held it back with no word anywhere on screen. A creator
+             reasonably reads that as posted, and then cannot find their slate
+             on the wall. Hands-off standing down is an event; print it. */
+          if(autoOn)$('slOut').insertAdjacentHTML('beforeend',
+            '<div class="errbox" style="border-color:rgba(217,154,43,.55);margin-top:10px">'+
+            '<b style="color:var(--warn)">Not posted automatically \u2014 '+esc(autoBlock)+'.</b>'+
+            '<div class="note" style="margin:6px 0 0">Hands-off mode only posts a slate with nothing '+
+            'flagged on any row. The detail is in <b>the preview above</b>'+
+            ((c2.rejected||0)>0?' and on the refused rows listed here':'')+'. '+
+            'Nothing was saved and nothing is on the wall yet \u2014 fix it and check again, or '+
+            'hit <b>Post slate</b> to send it as it stands.</div>'+
+            (built.problems.length?'<div class="note" style="margin:6px 0 0">'+
+              built.problems.slice(0,5).map(esc).join('<br>')+
+              (built.problems.length>5?'<br>&hellip; and '+(built.problems.length-5)+' more':'')+
+              '</div>':'')+
+            '</div>');
         }else{
           $('slGo').disabled=true;SLATE.checked=false;
           try{localStorage.setItem('mc_slate_map',JSON.stringify({cols:SLATE.cols.map(String),map:SLATE.map}));}catch(e){}
