@@ -3038,6 +3038,7 @@ function slateKick(v,tz){
   return isNaN(d.getTime())?null:d.toISOString();
 }
 function slateBuildRows(season,week){
+  var coverWithheld=0;
   var out=[],problems=[];
   /* read the conventions off the CURRENT mapping, not off whatever
      slateGuessMap concluded before the creator touched the dropdowns */
@@ -3146,6 +3147,25 @@ function slateBuildRows(season,week){
     }else if(String(g('pick_side')||'').trim()){
       problems.push('Row '+(r+1)+': could not tell which side "'+esc(String(g('pick_side')))+'" means. Expected '+esc(away)+' or '+esc(home)+'.');
     }
+    /* The API refuses cover_probability on a row that carries no
+       line_at_submission -- "cover_probability requires line_at_submission"
+       -- and it is right to: a cover percentage is P(covers AT a line), so
+       without one it is a number with no question attached.
+
+       There are exactly two ways to satisfy that rule, and only one of them
+       is honest. Inventing a market line (see below) is what this code used
+       to do and it corrupted the record. So the cover probability is the
+       thing that is withheld: it is the value that is unstateable here, not
+       the line. The creator's spread, total, win probability and pick all
+       post and all grade, and the withholding is reported rather than
+       silent.
+
+       Withheld, never altered -- the same posture the win-probability
+       rejection already takes. */
+    if(o.cover_probability!==undefined&&o.line_at_submission===undefined){
+      coverWithheld++;
+      delete o.cover_probability;
+    }
     /* A cover probability used to fill an absent market line with the
        model's OWN spread here, on the reasoning that a cover percentage
        needs a line to mean anything. It does — but the line it needs is
@@ -3169,7 +3189,7 @@ function slateBuildRows(season,week){
        board already says so wherever it shows one. */
     out.push(o);
   }
-  return {rows:out,problems:problems};
+  return {rows:out,problems:problems,coverWithheld:coverWithheld};
 }
 
 /* ---- what will actually be posted, counted on the values ----------------
@@ -3221,6 +3241,7 @@ function slateWireStats(season,week){
   return {
     n:n,counts:counts,problems:built.problems,
     twinned:slateSpreadsIdentical(built.rows),
+    coverWithheld:built.coverWithheld||0,
     /* No spread and no market line on any row: there is no number on the
        wire at all. That is the one state worth refusing to post. */
     numberless:n>0&&counts.projected_spread===0&&counts.line_at_submission===0
@@ -3242,8 +3263,14 @@ function slateWireHTML(st){
     'Posted as-is these still grade, but every one reports <span class="mono">\u0394 Mkt 0.0</span>, no closing line value and no line movement, '+
     'because your pick would be measured against your own number. '+
     'Check the two spread rows in the mapping below: if you only have one of them, map that one and leave the other blank.</p>'):'';
+  var cw=st.coverWithheld?('<p class="note" style="margin:9px 0 0">'+
+    '<b>Cover % withheld on '+st.coverWithheld+' row'+(st.coverWithheld===1?'':'s')+'</b> \u2014 those rows carry no market line, '+
+    'and a cover percentage is the chance of covering AT a line, so without one there is no question for it to answer. '+
+    'The API refuses the pair for the same reason. Your spread, total, win % and pick post and grade as normal.<br>'+
+    'To post the cover % too, add the market line you took each pick at and map it to <b>market line</b>. '+
+    'Nothing is altered either way \u2014 the number is withheld, never adjusted.</p>'):'';
   return '<div style="margin-top:10px"><h4 style="margin:0 0 6px">What will be posted, counted on the rows</h4>'+
-    '<div class="found">'+cells+'</div>'+twin+
+    '<div class="found">'+cells+'</div>'+twin+cw+
     (st.numberless
       ? '<p class="note warn" style="margin:9px 0 0"><b>No numbers on any row.</b> Every game would reach the wall as '+
         '&ldquo;TEAM -&rdquo;: no spread, no consensus, no cover probability and no closing line value. '+
@@ -3275,8 +3302,15 @@ function slateWireHTML(st){
    straight line. */
 var PROB_REJECTS=null;
 function probRejectHTML(resp,opts){
+  /* Match the PAIR check, not the word. /probabilit/ also matches
+     "cover_probability requires line_at_submission", which is a missing
+     market line and has nothing to do with the spread/probability rule --
+     so a creator with no market line was told to drop their win probability,
+     which fixes nothing and loses a real number. */
   PROB_REJECTS=((resp&&resp.rows)||[]).filter(function(x){
-    return x.status==='rejected'&&/probabilit/i.test(String(x.reason||''));
+    var why=String(x.reason||'');
+    return x.status==='rejected'&&
+      /home_win_probability/i.test(why)&&/contradict/i.test(why);
   }).map(function(x){return x.game_ref;});
   if(!PROB_REJECTS.length)return '';
   var n=PROB_REJECTS.length;
@@ -4514,7 +4548,17 @@ async function renderCreatorDash(view,me){
           ((c2.quarantined||0)>0?'<p class="note" style="margin:8px 0 0">Quarantined games could not be matched to the schedule (usually a team name). They are saved and get resolved on the admin side; nothing is lost.</p>'
             +slateQuarantineForensics(sendRows):'')+
           (dry?'<p class="note" style="margin:8px 0 0">Nothing was saved. If this looks right, hit Post slate.</p>':
-            '<p style="margin:8px 0 0"><b style="color:var(--pos)">Your slate is in.</b> <a href="#/'+esc(c.slug)+'">See your profile</a> or <a href="#">the wall</a>.</p>')+
+            /* "Your slate is in" was printed on the count of rows SENT, not
+               the count that landed -- so a post where all 48 games were
+               rejected still announced success in green, directly above the
+               48 red rejection lines. Say what actually happened. */
+            (((c2.resolved||0)+(c2.quarantined||0))===0
+              ? '<p style="margin:8px 0 0"><b style="color:var(--neg)">Nothing was posted.</b> '+
+                'Every row was refused, so the wall is unchanged and there is nothing to undo. '+
+                'The reason is on each line above.</p>'
+              : '<p style="margin:8px 0 0"><b style="color:var(--pos)">Your slate is in.</b>'+
+                ((c2.rejected||0)>0?' <span class="mono">'+(c2.rejected)+'</span> row'+((c2.rejected)===1?'':'s')+' were refused and did not post.':'')+
+                ' <a href="#/'+esc(c.slug)+'">See your profile</a> or <a href="#">the wall</a>.</p>'))+
           probRejectHTML(r,opts)+
           '</div>';
         if($('slDropProb')){
