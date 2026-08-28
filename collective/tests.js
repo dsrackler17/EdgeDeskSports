@@ -1241,6 +1241,55 @@ if (typeof sandbox.teamKey === 'function') {
     { row: pb.rows[0] });
   chk('a sheet with result columns but no score columns is unaffected',
     S.slateScoresAreFinal(['home_team','away_team','spread_result']) === false);
+
+  /* ---- a market line is never invented from the model's own number ------
+     A cover probability used to fill an absent market line with the model's
+     own spread, which claimed the creator had supplied a market line they
+     had not: closing line value then measured the model against itself and
+     delta Mkt was 0.0 on every row by construction. */
+  var COVHEAD = ['home_team','away_team','kickoff','spread','cover_prob','pick'];
+  S.SLATE.cols = COVHEAD;
+  S.SLATE.rows = [COVHEAD,
+    ['SEA', 'NE', '2026-09-09', '-3.5', '0.55', 'SEA'],
+    ['LAC', 'ARI', '2026-09-13', '-10.5', '0.58', 'ARI']];
+  S.SLATE.map = {}; S.slateGuessMap();
+  var cb = S.slateBuildRows('2026', '1');
+  chk('a cover probability does not invent a market line',
+    cb.rows[0].line_at_submission === undefined &&
+    cb.rows[1].line_at_submission === undefined, { row: cb.rows[0] });
+  chk('the creator own spread and cover probability still post',
+    near(cb.rows[0].projected_spread, -3.5) &&
+    cb.rows[0].cover_probability != null, { row: cb.rows[0] });
+
+  /* ---- one column mapped into both spread fields ------------------------
+     Equal on every row is not a model agreeing with the market; it is a
+     mapping mistake, and it silently zeroes delta Mkt and closing line
+     value. Counted on built rows, so it catches the mapping however the
+     duplication happened. */
+  chk('two spread columns identical on every row are flagged',
+    S.slateSpreadsIdentical([
+      { projected_spread: -3.5, line_at_submission: -3.5 },
+      { projected_spread: -10.5, line_at_submission: -10.5 },
+      { projected_spread: 2.5, line_at_submission: 2.5 }]) === 3);
+  chk('a model that genuinely differs anywhere is not flagged',
+    S.slateSpreadsIdentical([
+      { projected_spread: -3.5, line_at_submission: -3.5 },
+      { projected_spread: -10.5, line_at_submission: -9.5 },
+      { projected_spread: 2.5, line_at_submission: 2.5 }]) === 0);
+  chk('agreeing on one or two games is never called a mapping mistake',
+    S.slateSpreadsIdentical([
+      { projected_spread: -3.5, line_at_submission: -3.5 },
+      { projected_spread: -7.0, line_at_submission: -7.0 }]) === 0);
+  chk('rows missing either spread are not counted as agreement',
+    S.slateSpreadsIdentical([
+      { projected_spread: -3.5 },
+      { line_at_submission: -7.0 },
+      { projected_spread: 2.5, line_at_submission: 2.5 }]) === 0);
+  /* the twin case makes the self-consistency guard blind, which is the
+     reason it has to be caught at upload rather than on the wall */
+  chk('twinned spreads leave nothing for the contradiction guard to see',
+    S.wireContradiction(
+      { pick_side: 'away', projected_spread: -3.5, line_at_submission: -3.5 }) === null);
 }
 
 /* ---- report ------------------------------------------------------------ */

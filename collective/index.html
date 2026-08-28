@@ -3146,9 +3146,27 @@ function slateBuildRows(season,week){
     }else if(String(g('pick_side')||'').trim()){
       problems.push('Row '+(r+1)+': could not tell which side "'+esc(String(g('pick_side')))+'" means. Expected '+esc(away)+' or '+esc(home)+'.');
     }
-    if(o.cover_probability!==undefined&&o.line_at_submission===undefined&&o.projected_spread!==undefined){
-      o.line_at_submission=o.projected_spread;
-    }
+    /* A cover probability used to fill an absent market line with the
+       model's OWN spread here, on the reasoning that a cover percentage
+       needs a line to mean anything. It does — but the line it needs is
+       the model's own number, which is already on the wire, and storing a
+       copy of it under line_at_submission claims the creator supplied a
+       MARKET line they never supplied. The damage is not cosmetic:
+
+         - closing line value is measured from line_at_submission, so every
+           such row grades the model against its own number and reports no
+           movement, forever;
+         - Delta Mkt is 0.0 by construction on every row, so the model looks
+           like it agrees with the market on all sixteen games;
+         - wireContradiction compares the two spreads, so a slate that had
+           one column stated for the picked team can no longer be caught —
+           the two numbers are equal, so they can never disagree;
+         - the "what will be posted" counter reported market line 16/16,
+           telling the creator they had supplied the one thing they had not.
+
+       So it is left undefined. A cover probability without a market line is
+       still a complete, gradeable claim at the model's own number, and the
+       board already says so wherever it shows one. */
     out.push(o);
   }
   return {rows:out,problems:problems};
@@ -3170,6 +3188,30 @@ var SLATE_WIRE=[
   {f:'week',label:'week'},
   {f:'confidence',label:'confidence'}
 ];
+/* ---- two columns carrying one number ----------------------------------
+   The model's own spread and the market line it posted against are the two
+   halves of every comparison this board makes: Delta Mkt is their
+   difference, closing line value is measured from the market one, and the
+   self-consistency check reads both. When they are equal on every row that
+   comparison is not close to zero, it IS zero, and nothing downstream can
+   tell a model that genuinely sits on the market from a file that mapped
+   one column into both fields.
+
+   A model landing on the market's exact number on one or two games is
+   ordinary. Landing on it to the decimal on EVERY game of a slate does not
+   happen — so counting the agreement separates the two cases without
+   guessing at anyone's methodology. Reported, never corrected: which column
+   is the wrong one is the creator's to say. */
+function slateSpreadsIdentical(rows){
+  var both=0,same=0;
+  (rows||[]).forEach(function(o){
+    if(o.projected_spread==null||o.line_at_submission==null)return;
+    both++;
+    if(Math.abs(Number(o.projected_spread)-Number(o.line_at_submission))<1e-9)same++;
+  });
+  /* Enough rows to be a pattern rather than a coincidence. */
+  return (both>=3&&same===both)?both:0;
+}
 function slateWireStats(season,week){
   var built=slateBuildRows(season,week);
   var counts={},n=built.rows.length;
@@ -3178,6 +3220,7 @@ function slateWireStats(season,week){
   });
   return {
     n:n,counts:counts,problems:built.problems,
+    twinned:slateSpreadsIdentical(built.rows),
     /* No spread and no market line on any row: there is no number on the
        wire at all. That is the one state worth refusing to post. */
     numberless:n>0&&counts.projected_spread===0&&counts.line_at_submission===0
@@ -3191,8 +3234,16 @@ function slateWireHTML(st){
     return '<span class="f" style="color:'+col+';border-color:'+(none&&!w.key?'transparent':col)+'">'+
       esc(w.label)+' <b class="mono">'+c+'/'+st.n+'</b></span>';
   }).join('');
+  var twin=st.twinned?('<p class="note warn" style="margin:9px 0 0">'+
+    '<b>Your spread and the market line are the same number on all '+st.twinned+' rows.</b> '+
+    'Those are meant to be two different things \u2014 your own number, and the market line you posted against \u2014 '+
+    'and a model matching the market to the decimal on every game of a slate is not something that happens. '+
+    'Almost always one column got mapped into both fields.<br>'+
+    'Posted as-is these still grade, but every one reports <span class="mono">\u0394 Mkt 0.0</span>, no closing line value and no line movement, '+
+    'because your pick would be measured against your own number. '+
+    'Check the two spread rows in the mapping below: if you only have one of them, map that one and leave the other blank.</p>'):'';
   return '<div style="margin-top:10px"><h4 style="margin:0 0 6px">What will be posted, counted on the rows</h4>'+
-    '<div class="found">'+cells+'</div>'+
+    '<div class="found">'+cells+'</div>'+twin+
     (st.numberless
       ? '<p class="note warn" style="margin:9px 0 0"><b>No numbers on any row.</b> Every game would reach the wall as '+
         '&ldquo;TEAM -&rdquo;: no spread, no consensus, no cover probability and no closing line value. '+
