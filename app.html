@@ -22318,8 +22318,12 @@ function fbCtlHTML(){
     opts+='<option value="'+w.week+'"'+(FB.scope===w.week?' selected':'')+'>'+lbl+'</option>';
   });
   opts+='<option value="season"'+(FB.scope==='season'?' selected':'')+'>Full season</option>';
+  var keyed=fbP4KeyMasked();
   return '<select onchange="fbSetScope(this.value)" style="padding:8px 10px;border-radius:9px;border:1px solid rgba(255,255,255,.18);background:transparent;color:var(--fg,#e8eef7);font-size:12.5px">'+opts+'</select>'
     +'<button class="btn ghost sm" onclick="fbCsvDownload()">Download CSV</button>'
+    +'<button class="btn primary sm" onclick="fbNflApiSync()" title="Dry-run, replace this model\u2019s stored pre-kickoff rows, and post this scope as the first submission \u2014 one confirmed action">Sync to Collective (API)</button>'
+    +(keyed?'<span class="ec mut">key '+fbEsc(keyed)+' \u00b7 <a href="#" onclick="fbP4KeyForget();return false;">forget</a></span>':'')
+    +'<div id="fbnflPostOut" class="ec mut" style="flex-basis:100%;margin-top:2px"></div>'
     +'<span class="ec mut">picks + grading, one row per game — research export, unproven</span>';
 }
 /* ---- CSV export: identical columns to the offline generator, so a sheet
@@ -23547,6 +23551,188 @@ window.fbP4ApiRetract=async function(){
     +' removed.</span><div class="ec mut" style="margin-top:4px">'+fbEsc(b2.note||'')
     +' Now run <b>Check via API</b> and then <b>Post to Collective (API)</b> so the corrected slate lands as the first submission.</div>');
 };
+/* ---- the NFL board's wire rows -----------------------------------------
+   The same schema, the same home convention, and deliberately the same
+   helpers as the Power 4 path (key handling, model resolution, ingest,
+   receipts) so the two boards cannot drift into posting different shapes
+   of the same claim. Only the row builder differs, because only the data
+   source differs.
+
+   Scope is what the CSV export scopes to: the games the current scope
+   selector has on screen, so what posts is what the operator is looking
+   at. A game the engine could not project is skipped and named. */
+function fbNflScopedItems(){
+  var S=FB.nfl,now=Date.now();
+  if(!S||!S.games)return [];
+  if(FB.scope==='season')return S.games.slice();
+  if(FB.scope==='auto')return S.games.filter(function(it){
+    return !it.done&&it.t>=now-6*3600e3&&it.t<=now+FB_LOOKAHEAD_D*864e5;});
+  return S.games.filter(function(it){return it.week===FB.scope;});
+}
+function fbNflWireRows(){
+  var rows=[],skipped=[];
+  fbNflScopedItems().forEach(function(it){
+    var g=it.g;
+    /* never post a game that has already started: the Collective marks it
+       late and it is graded nowhere, so sending it is noise on the record */
+    if(it.done||it.t<=Date.now()){skipped.push((g.away_team||'?')+' @ '+(g.home_team||'?')+' (started)');return;}
+    var M=fbNflMarketFor(g,it.t),mkt=M.mkt;
+    var ref=fbNflRefMarket(g);
+    if(mkt.home_ml==null)mkt.home_ml=ref.home_ml;
+    if(mkt.away_ml==null)mkt.away_ml=ref.away_ml;
+    var p;
+    try{p=fbPredict('nfl',fbNflGameReq(g),mkt,fbNum(g.season));}catch(e){p=null;}
+    if(!p||p.status!=='PREDICTED'){skipped.push((g.away_team||'?')+' @ '+(g.home_team||'?'));return;}
+    var m=p.model,cov=p.cover,sGap=p.market?p.market.spread_gap:null;
+    var o={
+      game_ref:String(g.game_id||''),
+      home_team:g.home_team,away_team:g.away_team,
+      kickoff:((g.gameday||'')+(g.gametime?(' '+g.gametime):'')).trim()||null
+    };
+    if(g.week!=null)o.week=+g.week;
+    /* betting sign, home side — the inverse of the engine's margin */
+    if(m.fair_spread!=null)o.projected_spread=Math.round(-m.fair_spread*100)/100;
+    if(m.fair_total!=null)o.projected_total=Math.round(m.fair_total*10)/10;
+    if(mkt&&mkt.spread_line!=null)o.line_at_submission=Math.round(-mkt.spread_line*10)/10;
+    if(m.home_win_prob!=null)o.home_win_probability=m.home_win_prob;
+    /* cov.win is P(HOME covers): the wire is home-stated throughout, never
+       the CSV's pick-relative p_spread_pick_pct */
+    if(cov&&cov.win!=null)o.cover_probability=cov.win;
+    if(sGap!=null&&Math.abs(sGap)>1e-9)o.pick_side=sGap>0?'home':'away';
+    rows.push(o);
+  });
+  return {rows:rows,skipped:skipped};
+}
+/* The NFL model on the account, by sport, the same way the college path
+   resolves its own — collective_ingest refuses an ambiguous envelope. */
+function fbNflIsNflSport(x){return /^NFL$/i.test(String(x||'').trim());}
+var FBNFL_MODEL_CACHE=null;
+async function fbNflResolveModel(key){
+  if(FBNFL_MODEL_CACHE&&FBNFL_MODEL_CACHE.key===key)return FBNFL_MODEL_CACHE;
+  var r=await fetch(FBP4_INGEST_BASE+'/v1/me',{headers:{'x-collective-key':key}});
+  var t=await r.text(),j=null;try{j=t?JSON.parse(t):null;}catch(_){}
+  if(r.status===401)return {key:key,error:'invalid_key'};
+  if(!r.ok)return {key:key,error:((j&&j.error&&j.error.message)||('HTTP '+r.status))};
+  var models=(j&&j.models)||[];
+  var nfl=models.filter(function(m){return fbNflIsNflSport(m.sport);});
+  var out={key:key,models:models,kind:(j&&j.key&&j.key.kind)||null};
+  if(nfl.length===1)out.model=nfl[0].model;
+  else if(nfl.length>1)out.error='This account has '+nfl.length+' NFL models ('
+    +nfl.map(function(m){return m.model;}).join(', ')+'). Post those from the dashboard so the right one is chosen.';
+  else out.error='No NFL model on this account. Models found: '
+    +(models.map(function(m){return m.model+' ('+(m.sport||'no sport')+')';}).join(', ')||'none');
+  FBNFL_MODEL_CACHE=out;
+  return out;
+}
+function fbNflPostOut(html){
+  var el=document.getElementById('fbnflPostOut');
+  if(el)el.innerHTML=html;
+}
+/* The NFL board's one action, step for step the college one: dry run,
+   preview the retract, one confirmation stating both halves, retract,
+   post — with every degradation spoken rather than silently skipped. */
+window.fbNflApiSync=async function(){
+  var built=fbNflWireRows();
+  if(!built.rows.length){
+    fbNflPostOut('<span class="ec mut">Nothing to post in this scope'
+      +(built.skipped.length?' \u2014 '+built.skipped.length+' game'+(built.skipped.length===1?'':'s')+' skipped (started, or no projection)':'')
+      +'.</span>');
+    return;
+  }
+  var key=fbP4KeyEnsure();
+  if(!key)return;
+  fbNflPostOut('<span class="ec mut">Checking your key\u2026</span>');
+  var who;
+  try{who=await fbNflResolveModel(key);}
+  catch(e){fbNflPostOut('<span class="ec" style="color:var(--bad,#e26044)">Could not reach the Collective: '+fbEsc(e.message||String(e))+'</span>');return;}
+  if(who.error==='invalid_key'){
+    fbP4Key$clear();FBNFL_MODEL_CACHE=null;FBP4_MODEL_CACHE=null;
+    fbNflPostOut('<span class="ec" style="color:var(--bad,#e26044)">That key was rejected, so it has been forgotten. Copy it again from the dashboard and retry.</span>');
+    return;
+  }
+  if(who.error){fbNflPostOut('<span class="ec" style="color:var(--bad,#e26044)">'+fbEsc(who.error)+'</span>');return;}
+
+  var env={season:FB.nfl.curSeason,data_origin:'live',model:who.model,rows:built.rows};
+  var wks={},wkOne=null,wkN=0;
+  built.rows.forEach(function(r){if(r.week!=null&&!wks[r.week]){wks[r.week]=1;wkOne=+r.week;wkN++;}});
+  if(wkN===1)env.week=wkOne;
+
+  fbNflPostOut('<span class="ec mut">Dry-running '+built.rows.length+' game'+(built.rows.length===1?'':'s')+'\u2026</span>');
+  var dry;
+  try{dry=await fbP4Ingest('/v1/projections/dry-run',key,env);}
+  catch(e){fbNflPostOut('<span class="ec" style="color:var(--bad,#e26044)">Could not reach the Collective: '+fbEsc(e.message||String(e))+'</span>');return;}
+  if(dry.status===401){fbP4Key$clear();FBNFL_MODEL_CACHE=null;
+    fbNflPostOut('<span class="ec" style="color:var(--bad,#e26044)">That key was rejected, so it has been forgotten.</span>');return;}
+  if(!dry.ok){var de=(dry.body&&dry.body.error)||{};
+    fbNflPostOut('<span class="ec" style="color:var(--bad,#e26044)"><b>'+fbEsc(de.code||('HTTP '+dry.status))+'.</b> '+fbEsc(de.message||dry.raw||'The dry run was refused.')+' Nothing was retracted.</span>');return;}
+  var db=dry.body||{};
+  if((db.rejected||0)>0){
+    var rj=((db.rows||[]).filter(function(x){return x.status==='rejected';}));
+    fbNflPostOut('<span class="ec" style="color:var(--bad,#e26044)"><b>'+db.rejected+' game'+(db.rejected===1?'':'s')+' would be rejected \u2014 nothing was retracted or posted.</b></span>'
+      +(rj.length?'<div class="ec mut" style="margin-top:4px">'+rj.slice(0,4).map(function(x){return fbEsc(x.game_ref+': '+(x.reason||'rejected'));}).join('<br>')+'</div>':''));
+    return;
+  }
+
+  var renv={model:who.model,season:FB.nfl.curSeason};
+  if(env.week!=null)renv.week=env.week;
+  var rprev;
+  try{rprev=await fbP4Ingest('/v1/projections/retract',key,renv);}
+  catch(e){fbNflPostOut('<span class="ec" style="color:var(--bad,#e26044)">Could not reach the Collective: '+fbEsc(e.message||String(e))+'</span>');return;}
+  var canRetract=rprev.status!==404;
+  var toRemove=0,rGames=0;
+  if(canRetract&&rprev.ok){toRemove=(rprev.body||{}).would_remove||0;rGames=((rprev.body||{}).games||[]).length;}
+
+  var head2='Sync '+built.rows.length+' NFL game'+(built.rows.length===1?'':'s')+(env.week!=null?' (week '+env.week+')':'')+' to the Collective?\n\n';
+  var msg;
+  if(toRemove>0){
+    msg=head2+'1. Remove '+toRemove+' stored pre-kickoff row'+(toRemove===1?'':'s')+' across '+rGames+' game'+(rGames===1?'':'s')+'.\n'
+      +'2. Post this slate \u2014 it becomes your FIRST submission, the one that grades.\n\nGames already kicked off are never touched.';
+  }else if(!canRetract){
+    msg=head2+'The deployed ingest API has no retract route, so stored rows stay pinned as the first submission and this lands as a REVISION (movement, never graded).\n\nPost as a revision anyway?';
+  }else if(!rprev.ok){
+    var re2=(rprev.body&&rprev.body.error)||{};
+    msg=head2+'The retract preview failed ('+String(re2.code||('HTTP '+rprev.status))+': '+String(re2.message||'').slice(0,180)+').\n\nPost as a revision anyway?';
+  }else{
+    msg=head2+'No stored pre-kickoff rows to replace \u2014 this post lands as your first submission.';
+  }
+  if(!confirm(msg))return;
+
+  if(toRemove>0){
+    fbNflPostOut('<span class="ec mut">Removing '+toRemove+' stored row'+(toRemove===1?'':'s')+'\u2026</span>');
+    renv.confirm=true;
+    var rr;
+    try{rr=await fbP4Ingest('/v1/projections/retract',key,renv);}
+    catch(e){fbNflPostOut('<span class="ec" style="color:var(--bad,#e26044)">Could not reach the Collective mid-sync: '+fbEsc(e.message||String(e))+' \u2014 nothing was posted.</span>');return;}
+    if(!rr.ok){var re3=(rr.body&&rr.body.error)||{};
+      fbNflPostOut('<span class="ec" style="color:var(--bad,#e26044)"><b>Retract failed \u2014 stopped before posting.</b> '
+        +fbEsc((re3.code||('HTTP '+rr.status))+': '+(re3.message||rr.raw||''))+'</span>');return;}
+  }
+
+  fbNflPostOut('<span class="ec mut">Posting\u2026</span>');
+  var pres;
+  try{pres=await fbP4Ingest('/v1/projections',key,env);}
+  catch(e){fbNflPostOut('<span class="ec" style="color:var(--bad,#e26044)">Could not reach the Collective for the post'
+    +(toRemove>0?' \u2014 the old rows are already removed, so retry Sync as soon as you can':'')+': '+fbEsc(e.message||String(e))+'</span>');return;}
+  if(!pres.ok){var pe=(pres.body&&pres.body.error)||{};
+    fbNflPostOut('<span class="ec" style="color:var(--bad,#e26044)"><b>'+fbEsc(pe.code||('HTTP '+pres.status))+'.</b> '+fbEsc(pe.message||pres.raw||'The post was refused.')
+      +(toRemove>0?' The old rows are already removed \u2014 retry Sync as soon as you can.':'')+'</span>');return;}
+  var pb2=pres.body||{};
+  var counts=[
+    (pb2.resolved!=null?pb2.resolved+' matched':null),
+    (pb2.first!=null?pb2.first+' first submissions':null),
+    (pb2.movement!=null?pb2.movement+' revisions':null),
+    (pb2.late!=null?pb2.late+' late':null),
+    (pb2.quarantined!=null?pb2.quarantined+' quarantined':null),
+    (pb2.rejected!=null?pb2.rejected+' rejected':null)
+  ].filter(Boolean).join(', ');
+  var firstN=pb2.first!=null?+pb2.first:null;
+  fbNflPostOut('<span class="ec"><b>Synced:</b> '+fbEsc(counts||'no counts returned')+'</span>'
+    +(toRemove>0&&firstN===0
+      ? '<div class="ec" style="color:var(--bad,#e26044);margin-top:4px">Rows were removed but the post still counted 0 first submissions \u2014 something else holds the slot. Tell Claude exactly this.</div>'
+      : (firstN>0?'<div class="ec mut" style="margin-top:4px">The wall now grades THIS slate. Hard-refresh the Collective page to see it.</div>':''))
+    +(built.skipped.length?'<div class="ec mut" style="margin-top:4px">'+built.skipped.length+' skipped: '+fbEsc(built.skipped.slice(0,4).join(', '))+'</div>':''));
+};
+
 /* ONE action: make the Collective show what this board shows.
    Dry-run the post first (nothing is retracted for a slate that would not
    post), preview the retract, state BOTH halves in one confirmation, then
