@@ -23072,7 +23072,9 @@ function fbP4Market(u){
   if(m&&m.spread_line!=null&&capFresh){
     out.spread_line=m.spread_line;out.book='captured · '+(m.spread_book||'');out.as_of=m.at;
   }else if(line&&line.spread!=null){
-    out.spread_line=-(+line.spread);out.book='cfb.lines · '+(line.provider||'consensus');
+    out.spread_line=fbP4LineToMargin(line.spread);
+    out.book='cfb.lines · '+(line.provider||'consensus')
+      +(fbP4LinesConv()==='margin'?' · margin convention':'');
   }else if(m&&m.spread_line!=null){
     out.spread_line=m.spread_line;out.as_of=m.at;out.stale=true;
     out.book='captured (stale '+Math.round(capAge/3600e3)+'h) · '+(m.spread_book||'');
@@ -23254,6 +23256,38 @@ window.fbP4CsvDownload=function(){
    This does NOT post on the reader's behalf. Posting is an account action
    against their own creator profile, so the button hands them the file and
    opens the dashboard; they choose the model, week and data type there. */
+/* ---- what cfb.lines.spread MEANS ---------------------------------------
+   Two conventions are in circulation and they are exact negations, so a
+   table in the wrong one produces numbers that look real and are backwards:
+
+     betting  a home favourite is NEGATIVE   (TCU -7.5)   <- assumed here
+     margin   a home favourite is POSITIVE   (TCU  7.5)
+
+   The engine wants margin ("+ = home favoured by"), so the betting reading
+   is negated and the margin reading is taken as it stands. Which one a
+   given lines table uses is a fact about that DATA, not something this page
+   can safely infer — guessing conventions from values is what produced
+   every board bug this project has had. So the operator declares it once,
+   the board is honest about what it assumed, and the sanity check below
+   catches the case where the declaration is plainly wrong. */
+var FBP4_LINES_CONV_STORE='edgedesk_cfb_lines_convention';
+function fbP4LinesConv(){
+  try{return localStorage.getItem(FBP4_LINES_CONV_STORE)==='margin'?'margin':'betting';}
+  catch(_){return 'betting';}
+}
+window.fbP4SetLinesConv=function(v){
+  try{localStorage.setItem(FBP4_LINES_CONV_STORE,v==='margin'?'margin':'betting');}catch(_){}
+  /* the market feeds the projection, so every number on the board is
+     downstream of this: repaint rather than leave a stale mix on screen */
+  try{if(typeof renderFootball==='function')renderFootball();}catch(_){}
+};
+/* cfb.lines.spread -> the engine's margin convention, per the declaration. */
+function fbP4LineToMargin(spread){
+  var v=+spread;
+  if(!isFinite(v))return null;
+  return fbP4LinesConv()==='margin'?v:-v;
+}
+
 /* ---- market line sanity: every home team a dog is a SIGN ERROR --------
    fbP4Market reads cfb.lines.spread as a home-side BETTING number and
    negates it into the engine's margin convention, so a lines table filled
@@ -23283,14 +23317,24 @@ function fbP4LineSanity(){
 function fbP4LineWarnHTML(){
   var bad=fbP4LineSanity();
   if(!bad)return '';
+  var conv=fbP4LinesConv();
   return '<div class="gd-modelnote" style="flex-basis:100%;border-left:3px solid var(--bad,#e26044);padding-left:10px">'
     +'<b style="color:var(--bad,#e26044)">Market lines look inverted.</b> All '+bad.n
     +' games with a book number have the HOME team as an underdog, which does not happen on a real slate. '
-    +'The most likely cause is that <span class="mono">cfb.lines.spread</span> holds positive magnitudes '
-    +'(<span class="mono">38.5</span> for a home favourite) where a home-side betting number '
-    +'(<span class="mono">-38.5</span>) is expected, so every line — and every gap and recommendation '
-    +'built on it — is turned around. Posting this slate would put those numbers on the public record. '
-    +'Fix the source lines, reload the board, and the warning clears.</div>';
+    +'This board is reading <span class="mono">cfb.lines.spread</span> as a <b>'+conv+'</b> number'
+    +(conv==='betting'
+      ? ' (a home favourite is negative). If that table actually stores magnitudes '
+        +'(<span class="mono">38.5</span> for a home favourite), every line — and every gap, pick and '
+        +'recommendation built on it — is turned around.'
+      : ' (a home favourite is positive). If that table actually stores betting numbers, every line is turned around.')
+    +' Posting this slate would put those numbers on the public record, so it is blocked until this reads right.'
+    +'<div style="margin-top:6px">'
+    +(conv==='betting'
+      ? '<button class="btn ghost sm" onclick="fbP4SetLinesConv(\'margin\')">Read cfb.lines as margin (home favourite positive)</button>'
+      : '<button class="btn ghost sm" onclick="fbP4SetLinesConv(\'betting\')">Read cfb.lines as betting (home favourite negative)</button>')
+    +' <span class="ec mut">Changing this re-projects the whole board. Fixing the signs in '
+    +'<span class="mono">cfb.lines</span> itself is the durable fix; this is the switch for a table that '
+    +'is consistent but opposite.</span></div></div>';
 }
 /* ---- posting straight to the Collective's ingest API ------------------
    The download-and-open-the-dashboard route stays (it is the right default
@@ -23519,6 +23563,12 @@ function fbP4CtlHTML(){
     +'<button class="btn ghost sm" onclick="fbP4ApiPost(false)">Check via API</button>'
     +'<button class="btn ghost sm" onclick="fbP4ApiPost(true)">Post to Collective (API)</button>'
     +(keyed?'<span class="ec mut">key '+fbEsc(keyed)+' \u00b7 <a href="#" onclick="fbP4KeyForget();return false;">forget</a></span>':'')
+    /* a non-default line convention is a standing assumption about the data,
+       so it stays on screen once the warning that prompted it has cleared —
+       otherwise it is invisible state nobody can find to undo */
+    +(fbP4LinesConv()==='margin'
+      ? '<span class="ec mut">cfb.lines read as <b>margin</b> \u00b7 <a href="#" onclick="fbP4SetLinesConv(\'betting\');return false;">use betting</a></span>'
+      : '')
     +'<div id="fbp4PostOut" class="ec mut" style="flex-basis:100%;margin-top:2px"></div>'
     +'<span class="ec mut">'+n+' Power 4 game'+(n===1?'':'s')
     +' · one row per game, same columns as the NFL export · research, unproven</span>'
