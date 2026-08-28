@@ -801,6 +801,49 @@ if (typeof sandbox.teamKey === 'function') {
   chk('no timestamp yields nothing at all',
     S.fmtAgeShort(null) === '' && S.fmtAgeShort(undefined) === '');
 
+  /* ---- the board legend: one source, two renderings -------------------
+     A reader who does not know what a column is should never have to ask a
+     person, and the short note under the board must not drift from the full
+     table on the rules page, because there is only one definition of each. */
+  chk('every column on the board is explained',
+    (function () {
+      var keys = S.BOARD_LEGEND.map(function (x) { return x.k; });
+      return ['Model line', '\u0394 Mkt', 'Home %', 'Age'].every(function (k) {
+        return keys.indexOf(k) >= 0;
+      });
+    })(), { keys: S.BOARD_LEGEND.map(function (x) { return x.k; }) });
+  chk('the game badges and the result dot are explained too',
+    (function () {
+      var keys = S.BOARD_LEGEND.map(function (x) { return x.k; }).join('|');
+      return /GROUP/.test(keys) && /SPLIT/.test(keys) && /dot/i.test(keys);
+    })());
+  chk('every entry carries both a short and a long form',
+    S.BOARD_LEGEND.every(function (x) {
+      return x.k && typeof x.short === 'string' && x.short.length > 10
+        && typeof x.long === 'string' && x.long.length > x.short.length;
+    }));
+  chk('the short note names every column and points at the full one',
+    (function () {
+      var h = S.boardLegendShort();
+      return S.BOARD_LEGEND.every(function (x) { return h.indexOf(x.k) >= 0; })
+        && /href="#rules"/.test(h);
+    })());
+  chk('the legend states the home convention where it actually confuses people',
+    (function () {
+      var ml = S.BOARD_LEGEND.filter(function (x) { return x.k === 'Model line'; })[0];
+      return /HOME/.test(ml.long) && /betting sign/i.test(ml.long);
+    })());
+  chk('delta market is described as a comparison, never as an edge',
+    (function () {
+      var d = S.BOARD_LEGEND.filter(function (x) { return x.k === '\u0394 Mkt'; })[0];
+      return !/\bedge\b/i.test(d.short) && /not call a difference an edge/i.test(d.long);
+    })());
+  chk('home % is described as submitted-only, never inferred',
+    (function () {
+      var h = S.BOARD_LEGEND.filter(function (x) { return x.k === 'Home %'; })[0];
+      return /never infers/i.test(h.long);
+    })());
+
   /* the pick is stated at the line it was made against, never at the
      model's own projection — stating it at the projection is how "your
      spread" got hand-mapped onto the market line to make the pick look
