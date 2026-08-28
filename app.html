@@ -23547,6 +23547,125 @@ window.fbP4ApiRetract=async function(){
     +' removed.</span><div class="ec mut" style="margin-top:4px">'+fbEsc(b2.note||'')
     +' Now run <b>Check via API</b> and then <b>Post to Collective (API)</b> so the corrected slate lands as the first submission.</div>');
 };
+/* ONE action: make the Collective show what this board shows.
+   Dry-run the post first (nothing is retracted for a slate that would not
+   post), preview the retract, state BOTH halves in one confirmation, then
+   retract and post. Every dependency degrades with its own words: an
+   ingest deployment without the retract route offers to post as a revision
+   and says exactly what that means, it never silently pretends. */
+window.fbP4ApiSync=async function(){
+  if(!FB.p4.up.length){alert('No Power 4 games on the board to post yet.');return;}
+  var bad=fbP4LineSanity();
+  if(bad){
+    fbP4PostOut('<span class="ec" style="color:var(--bad,#e26044)"><b>Not syncing.</b> All '+bad.n
+      +' games with a book number have the home team as an underdog \u2014 the market lines are inverted. '
+      +'Fix the reading (or cfb.lines) and reload before posting anything.</span>');
+    return;
+  }
+  var key=fbP4KeyEnsure();
+  if(!key)return;
+  fbP4PostOut('<span class="ec mut">Checking your key\u2026</span>');
+  var who;
+  try{who=await fbP4ResolveModel(key);}
+  catch(e){fbP4PostOut('<span class="ec" style="color:var(--bad,#e26044)">Could not reach the Collective: '+fbEsc(e.message||String(e))+'</span>');return;}
+  if(who.error==='invalid_key'){
+    fbP4Key$clear();FBP4_MODEL_CACHE=null;
+    fbP4PostOut('<span class="ec" style="color:var(--bad,#e26044)">That key was rejected, so it has been forgotten. Copy it again from the dashboard and retry.</span>');
+    return;
+  }
+  if(who.error){fbP4PostOut('<span class="ec" style="color:var(--bad,#e26044)">'+fbEsc(who.error)+'</span>');return;}
+  var built=fbP4WireRows();
+  if(!built.rows.length){fbP4PostOut('<span class="ec mut">Nothing to post: no game on the board produced a projection.</span>');return;}
+  var env={season:FB.p4.season,data_origin:'live',model:who.model,rows:built.rows};
+  var wks={},wkOne=null,wkN=0;
+  (FB.p4.up||[]).forEach(function(u){var w=u.g&&u.g.week;if(w!=null&&!wks[w]){wks[w]=1;wkOne=+w;wkN++;}});
+  if(wkN===1)env.week=wkOne;
+
+  /* 1. would this slate even post? */
+  fbP4PostOut('<span class="ec mut">Dry-running '+built.rows.length+' game'+(built.rows.length===1?'':'s')+'\u2026</span>');
+  var dry;
+  try{dry=await fbP4Ingest('/v1/projections/dry-run',key,env);}
+  catch(e){fbP4PostOut('<span class="ec" style="color:var(--bad,#e26044)">Could not reach the Collective: '+fbEsc(e.message||String(e))+'</span>');return;}
+  if(dry.status===401){fbP4Key$clear();FBP4_MODEL_CACHE=null;
+    fbP4PostOut('<span class="ec" style="color:var(--bad,#e26044)">That key was rejected, so it has been forgotten. Copy it again and retry.</span>');return;}
+  if(!dry.ok){var de=(dry.body&&dry.body.error)||{};
+    fbP4PostOut('<span class="ec" style="color:var(--bad,#e26044)"><b>'+fbEsc(de.code||('HTTP '+dry.status))+'.</b> '+fbEsc(de.message||dry.raw||'The dry run was refused.')+' Nothing was retracted.</span>');return;}
+  var db=dry.body||{};
+  if((db.rejected||0)>0){
+    var rej=((db.rows||[]).filter(function(x){return x.status==='rejected';}));
+    fbP4PostOut('<span class="ec" style="color:var(--bad,#e26044)"><b>'+db.rejected+' game'+(db.rejected===1?'':'s')+' would be rejected \u2014 nothing was retracted or posted.</b></span>'
+      +(rej.length?'<div class="ec mut" style="margin-top:4px">'+rej.slice(0,4).map(function(x){return fbEsc(x.game_ref+': '+(x.reason||'rejected'));}).join('<br>')+'</div>':''));
+    return;
+  }
+
+  /* 2. what would the retract remove? */
+  var renv={model:who.model,season:FB.p4.season};
+  if(env.week!=null)renv.week=env.week;
+  var rprev;
+  try{rprev=await fbP4Ingest('/v1/projections/retract',key,renv);}
+  catch(e){fbP4PostOut('<span class="ec" style="color:var(--bad,#e26044)">Could not reach the Collective: '+fbEsc(e.message||String(e))+'</span>');return;}
+  var canRetract=rprev.status!==404;
+  var toRemove=0,rGames=0;
+  if(canRetract&&rprev.ok){toRemove=(rprev.body||{}).would_remove||0;rGames=((rprev.body||{}).games||[]).length;}
+
+  /* 3. one confirmation, both halves stated */
+  var head2='Sync '+built.rows.length+' game'+(built.rows.length===1?'':'s')+(env.week!=null?' (week '+env.week+')':'')+' to the Collective?\n\n';
+  var msg;
+  if(toRemove>0){
+    msg=head2+'1. Remove '+toRemove+' stored pre-kickoff row'+(toRemove===1?'':'s')+' across '+rGames+' game'+(rGames===1?'':'s')+'.\n'
+      +'2. Post this slate \u2014 it becomes your FIRST submission, the one that grades.\n\n'
+      +'Games already kicked off are never touched.';
+  }else if(!canRetract){
+    msg=head2+'The deployed ingest API has no retract route, so any stored rows stay pinned as the first submission '
+      +'and this post lands as a REVISION (shown as movement, never graded).\n\n'
+      +'Deploy the updated collective_ingest bundle to enable replacement. Post as a revision anyway?';
+  }else if(!rprev.ok){
+    var re2=(rprev.body&&rprev.body.error)||{};
+    msg=head2+'The retract preview failed ('+String(re2.code||('HTTP '+rprev.status))+': '
+      +String(re2.message||'').slice(0,180)+').\n\nPost as a revision anyway?';
+  }else{
+    msg=head2+'No stored pre-kickoff rows to replace \u2014 this post lands as your first submission.';
+  }
+  if(!confirm(msg))return;
+
+  /* 4. retract, when there is something to retract */
+  if(toRemove>0){
+    fbP4PostOut('<span class="ec mut">Removing '+toRemove+' stored row'+(toRemove===1?'':'s')+'\u2026</span>');
+    renv.confirm=true;
+    var rr;
+    try{rr=await fbP4Ingest('/v1/projections/retract',key,renv);}
+    catch(e){fbP4PostOut('<span class="ec" style="color:var(--bad,#e26044)">Could not reach the Collective mid-sync: '+fbEsc(e.message||String(e))+' \u2014 nothing was posted.</span>');return;}
+    if(!rr.ok){var re3=(rr.body&&rr.body.error)||{};
+      fbP4PostOut('<span class="ec" style="color:var(--bad,#e26044)"><b>Retract failed \u2014 stopped before posting.</b> '
+        +fbEsc((re3.code||('HTTP '+rr.status))+': '+(re3.message||rr.raw||''))+'</span>');return;}
+  }
+
+  /* 5. post */
+  fbP4PostOut('<span class="ec mut">Posting\u2026</span>');
+  var pres;
+  try{pres=await fbP4Ingest('/v1/projections',key,env);}
+  catch(e){fbP4PostOut('<span class="ec" style="color:var(--bad,#e26044)">Could not reach the Collective for the post'
+    +(toRemove>0?' \u2014 the old rows are already removed, so retry Sync as soon as you can':'')+': '+fbEsc(e.message||String(e))+'</span>');return;}
+  if(!pres.ok){var pe=(pres.body&&pres.body.error)||{};
+    fbP4PostOut('<span class="ec" style="color:var(--bad,#e26044)"><b>'+fbEsc(pe.code||('HTTP '+pres.status))+'.</b> '
+      +fbEsc(pe.message||pres.raw||'The post was refused.')
+      +(toRemove>0?' The old rows are already removed \u2014 retry Sync as soon as you can so the slate is not missing at kickoff.':'')+'</span>');return;}
+  var pb2=pres.body||{};
+  var counts=[
+    (pb2.resolved!=null?pb2.resolved+' matched':null),
+    (pb2.first!=null?pb2.first+' first submissions':null),
+    (pb2.movement!=null?pb2.movement+' revisions':null),
+    (pb2.late!=null?pb2.late+' late':null),
+    (pb2.quarantined!=null?pb2.quarantined+' quarantined':null),
+    (pb2.rejected!=null?pb2.rejected+' rejected':null)
+  ].filter(Boolean).join(', ');
+  var firstN=pb2.first!=null?+pb2.first:null;
+  fbP4PostOut('<span class="ec"><b>Synced:</b> '+fbEsc(counts||'no counts returned')+'</span>'
+    +(toRemove>0&&firstN===0
+      ? '<div class="ec" style="color:var(--bad,#e26044);margin-top:4px">The retract removed rows but the post still counted 0 first submissions \u2014 something else holds the first-submission slot. Tell me exactly this and I will dig.</div>'
+      : (firstN>0?'<div class="ec mut" style="margin-top:4px">The wall now grades THIS slate. Hard-refresh the Collective page to see it.</div>':''))
+    +(built.skipped.length?'<div class="ec mut" style="margin-top:4px">'+built.skipped.length+' game'+(built.skipped.length===1?'':'s')+' skipped (no projection).</div>':''));
+};
 /* Dry run, then post — never post without the dry run passing first. The
    receipt is the server's, quoted rather than summarised. */
 window.fbP4ApiPost=async function(live){
@@ -23642,8 +23761,10 @@ function fbP4CtlHTML(){
     +'<button class="btn ghost sm" onclick="fbP4PostToCollective()">Download &amp; open dashboard</button>'
     /* the operator's one-action path: dry run first, then post */
     +'<button class="btn ghost sm" onclick="fbP4ApiPost(false)">Check via API</button>'
-    +'<button class="btn ghost sm" onclick="fbP4ApiPost(true)">Post to Collective (API)</button>'
-    +'<button class="btn ghost sm" onclick="fbP4ApiRetract()" title="Remove this model\u2019s stored pre-kickoff rows so a corrected slate can land as the first submission">Retract pre-kickoff (API)</button>'
+    /* the one action: dry run, retract what is replaceable, post as the
+       first submission — a single confirmation states both halves. The
+       separate post/retract functions stay callable for surgical use. */
+    +'<button class="btn primary sm" onclick="fbP4ApiSync()" title="Dry-run, replace this model\u2019s stored pre-kickoff rows, and post this board as the first submission \u2014 one confirmed action">Sync to Collective (API)</button>'
     +(keyed?'<span class="ec mut">key '+fbEsc(keyed)+' \u00b7 <a href="#" onclick="fbP4KeyForget();return false;">forget</a></span>':'')
     /* a non-default line convention is a standing assumption about the data,
        so it stays on screen once the warning that prompted it has cleared —
