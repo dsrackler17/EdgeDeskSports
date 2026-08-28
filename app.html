@@ -23466,6 +23466,66 @@ function fbP4PostOut(html){
   var el=document.getElementById('fbp4PostOut');
   if(el)el.innerHTML=html;
 }
+/* Retract this model's pre-kickoff rows for the season, so a corrected
+   slate can land as the FIRST submission again. Two calls by design: the
+   endpoint's dry run comes back with exactly what would be removed, that
+   list is put in front of the operator, and only their explicit OK sends
+   confirm:true. Pre-kickoff-only is enforced server-side; this button
+   cannot touch a game that has started, whatever it asks for. Needs the
+   updated collective_ingest deployed — an older deployment answers 404 and
+   is reported as that, not as an error in the slate. */
+window.fbP4ApiRetract=async function(){
+  var key=fbP4KeyEnsure();
+  if(!key)return;
+  fbP4PostOut('<span class="ec mut">Checking your key\u2026</span>');
+  var who;
+  try{who=await fbP4ResolveModel(key);}
+  catch(e){fbP4PostOut('<span class="ec" style="color:var(--bad,#e26044)">Could not reach the Collective: '+fbEsc(e.message||String(e))+'</span>');return;}
+  if(who.error==='invalid_key'){
+    fbP4Key$clear();FBP4_MODEL_CACHE=null;
+    fbP4PostOut('<span class="ec" style="color:var(--bad,#e26044)">That key was rejected, so it has been forgotten. Copy it again from the dashboard and retry.</span>');
+    return;
+  }
+  if(who.error){fbP4PostOut('<span class="ec" style="color:var(--bad,#e26044)">'+fbEsc(who.error)+'</span>');return;}
+  var env={model:who.model,season:FB.p4.season};
+  fbP4PostOut('<span class="ec mut">Asking what would be removed\u2026</span>');
+  var res;
+  try{res=await fbP4Ingest('/v1/projections/retract',key,env);}
+  catch(e){fbP4PostOut('<span class="ec" style="color:var(--bad,#e26044)">Could not reach the Collective: '+fbEsc(e.message||String(e))+'</span>');return;}
+  if(res.status===404){
+    fbP4PostOut('<span class="ec" style="color:var(--bad,#e26044)">The deployed ingest API predates retract. '
+      +'Paste the updated <span class="mono">collective_ingest</span> bundle in the Supabase dashboard, then retry.</span>');
+    return;
+  }
+  if(!res.ok){
+    var er=(res.body&&res.body.error)||{};
+    fbP4PostOut('<span class="ec" style="color:var(--bad,#e26044)"><b>'+fbEsc(er.code||('HTTP '+res.status))+'.</b> '+fbEsc(er.message||res.raw||'Refused.')+'</span>');
+    return;
+  }
+  var b=res.body||{};
+  if(!b.would_remove){
+    fbP4PostOut('<span class="ec mut">Nothing to retract: '+fbEsc(b.note||'this model has no live pre-kickoff rows this season.')+'</span>');
+    return;
+  }
+  var names=(b.games||[]).slice(0,10).map(function(g){return g.label||g.game_id;});
+  if(!confirm('Remove '+b.would_remove+' stored row'+(b.would_remove===1?'':'s')+' for '+fbEsc(who.model)
+    +' across '+(b.games||[]).length+' pre-kickoff game'+((b.games||[]).length===1?'':'s')+'?\n\n'
+    +names.join('\n')+((b.games||[]).length>10?'\n\u2026':'')
+    +'\n\nGames already kicked off are never touched. Your NEXT post for these games becomes the first submission \u2014 post the corrected slate right after this.'))return;
+  env.confirm=true;
+  fbP4PostOut('<span class="ec mut">Removing\u2026</span>');
+  try{res=await fbP4Ingest('/v1/projections/retract',key,env);}
+  catch(e){fbP4PostOut('<span class="ec" style="color:var(--bad,#e26044)">Could not reach the Collective: '+fbEsc(e.message||String(e))+'</span>');return;}
+  if(!res.ok){
+    var er2=(res.body&&res.body.error)||{};
+    fbP4PostOut('<span class="ec" style="color:var(--bad,#e26044)"><b>'+fbEsc(er2.code||('HTTP '+res.status))+'.</b> '+fbEsc(er2.message||res.raw||'Refused.')+'</span>');
+    return;
+  }
+  var b2=res.body||{};
+  fbP4PostOut('<span class="ec"><b>Retracted:</b> '+fbEsc(String(b2.retracted||0))+' row'+(b2.retracted===1?'':'s')
+    +' removed.</span><div class="ec mut" style="margin-top:4px">'+fbEsc(b2.note||'')
+    +' Now run <b>Check via API</b> and then <b>Post to Collective (API)</b> so the corrected slate lands as the first submission.</div>');
+};
 /* Dry run, then post — never post without the dry run passing first. The
    receipt is the server's, quoted rather than summarised. */
 window.fbP4ApiPost=async function(live){
@@ -23562,6 +23622,7 @@ function fbP4CtlHTML(){
     /* the operator's one-action path: dry run first, then post */
     +'<button class="btn ghost sm" onclick="fbP4ApiPost(false)">Check via API</button>'
     +'<button class="btn ghost sm" onclick="fbP4ApiPost(true)">Post to Collective (API)</button>'
+    +'<button class="btn ghost sm" onclick="fbP4ApiRetract()" title="Remove this model\u2019s stored pre-kickoff rows so a corrected slate can land as the first submission">Retract pre-kickoff (API)</button>'
     +(keyed?'<span class="ec mut">key '+fbEsc(keyed)+' \u00b7 <a href="#" onclick="fbP4KeyForget();return false;">forget</a></span>':'')
     /* a non-default line convention is a standing assumption about the data,
        so it stays on screen once the warning that prompted it has cleared —
