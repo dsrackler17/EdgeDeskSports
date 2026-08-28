@@ -110,6 +110,21 @@ section.band{padding:84px 0;border-top:1px solid var(--line)}
 .head p{color:var(--dim);margin-top:15px;font-size:16px;line-height:1.62;max-width:60ch}
 .head p b{color:var(--text);font-weight:600}
 .teach{margin-top:22px;font-family:'JetBrains Mono',monospace;font-size:11.5px;letter-spacing:.03em;color:var(--faint);display:flex;gap:9px;align-items:flex-start;line-height:1.6}
+/* ---- what is actually behind this: the four cards under the hero ----
+   A visitor should learn in one screen that there is a football model and
+   a collective here, not on the ninth scroll. Cards are links, so the
+   strip doubles as the page's real navigation. */
+.band.tight{padding-top:52px;padding-bottom:52px}
+.stack-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(238px,1fr));gap:14px;margin-top:34px}
+.scard{display:flex;flex-direction:column;gap:7px;padding:19px 18px 17px;background:var(--panel);border:1px solid var(--line);border-radius:12px;transition:border-color .18s,transform .18s,background .18s}
+.scard:hover,.scard:focus-visible{border-color:var(--line2);background:var(--raised);transform:translateY(-2px);outline:none}
+.scard:focus-visible{border-color:var(--obs)}
+.scard .sk{font-family:'JetBrains Mono',monospace;font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--faint)}
+.scard b{font-family:'Space Grotesk',Inter,sans-serif;font-size:16.5px;font-weight:600;color:var(--text);line-height:1.28;letter-spacing:-.01em}
+.scard .sd{font-size:13px;color:var(--dim);line-height:1.62;flex:1}
+.scard .sgo{font-family:'JetBrains Mono',monospace;font-size:10.5px;letter-spacing:.06em;color:var(--obs);margin-top:3px}
+.scard:hover .sgo{color:var(--val)}
+@media(max-width:560px){.stack-grid{gap:10px}.scard{padding:16px 15px 14px}}
 /* ---- football engine: the layer stack, and the Collective wall ----
    Both reuse the page's term/card grammar; only what those two panels
    genuinely need is defined here, prefixed so nothing collides. */
@@ -700,11 +715,10 @@ footer{border-top:1px solid var(--line);background:#0a0c10;padding:38px 0 48px}
   <div class="wrap nav-in">
     <a class="logo" href="#top"><span class="mk"></span>EdgeDesk <small>Research Terminal</small></a>
     <span class="nav-sp"></span>
-    <a class="nlink hideS" href="#how">How it works</a>
-    <a class="nlink hideS" href="#work">The work it replaces</a>
-    <a class="nlink hideS" href="#evidence">Evidence</a>
     <a class="nlink hideS" href="#football">Football model</a>
     <a class="nlink hideS" href="#collective">Collective</a>
+    <a class="nlink hideS" href="#how">How it works</a>
+    <a class="nlink hideS" href="#evidence">Evidence</a>
     <a class="nlink hideS" href="#record">Record</a>
     <a class="nlink hideS" href="#pricing">Pricing</a>
     <button class="btn ghost" id="navLogin" onclick="openAuth('login')">Log in</button>
@@ -724,7 +738,7 @@ footer{border-top:1px solid var(--line);background:#0a0c10;padding:38px 0 48px}
       </div>
       <span class="ey" id="heroEy"><b>&#9642;</b> Sports betting research terminal</span>
       <h1>Stop buying picks.<br><span class="g">Start pricing the market.</span></h1>
-      <p class="sub">EdgeDesk scans the market, compares every price against de-vigged fair value, researches the matchup, attacks its own thesis, and tracks whether your number actually beat the close. <b>It never tells you what to bet.</b></p>
+      <p class="sub">A football research terminal with its own NFL and college model, a collective of independent modellers graded on one scoreboard, and every price checked against de-vigged fair value. It shows its work, publishes where its model loses, and <b>never tells you what to bet.</b></p>
       <div class="cta">
         <button class="btn primary lg" id="heroStart" onclick="startSubscribe()">Start 7 days free &#8594;</button>
         <a class="btn ghost lg" href="#how">See how it works</a>
@@ -791,39 +805,110 @@ footer{border-top:1px solid var(--line);background:#0a0c10;padding:38px 0 48px}
   </div>
 </header>
 
-<!-- ============================ AUDIENCE BRIDGE ============================
-     Hidden by default. Revealed only for traffic that arrives with a partner
-     referral or ?aud=, so cold traffic never sees a pitch written for someone
-     else. Content is swapped by edAudience() from the ?ref= / ?aud= params.
-     ========================================================================= -->
-<section class="bridge" id="bridge">
-  <div class="wrap bridge-in">
-    <div class="bridge-top">
-      <span class="ey" id="brdEy"><b>&#9642;</b> For competitive golfers</span>
-      <span class="refchip" id="brdChip" style="display:none"></span>
+<!-- ============================ WHAT THIS IS ============================
+     Directly under the hero on purpose. A visitor should not have to scroll
+     sixteen sections to learn that there is a football model and a model
+     collective behind this. Each card is the shortest true sentence about a
+     thing that exists, and links to the section that proves it.
+     ===================================================================== -->
+<section class="band tight" id="stack">
+  <div class="wrap">
+    <div class="head rv">
+      <span class="ey"><b>&#9642;</b> What is actually behind this</span>
+      <h2>Football research, all the way down.</h2>
+      <p>Four things run under the terminal. Every one of them publishes what it can prove and what it cannot &mdash; and every one is open below, not behind the paywall.</p>
     </div>
-    <h2 id="brdH">You already grade yourself against the field.<br><span class="g">This grades a betting market the same way.</span></h2>
-    <p class="blede" id="brdLede">Strokes gained didn't tell you whether you played well. It told you how you performed <b>against the expected value of every shot</b> &mdash; the baseline the field produces from that lie, that distance, that day. It replaced &ldquo;I shot 74&rdquo; with a number that survives a good bounce and a bad one. <b>EdgeDesk runs that exact move on a betting market.</b></p>
+    <div class="stack-grid rv">
+      <a class="scard" href="#football">
+        <span class="sk">Our own model</span>
+        <b>NFL &amp; college football engine</b>
+        <span class="sd">Opponent-adjusted EPA ratings, a learned quarterback layer, key numbers. Take a projection apart layer by layer &mdash; and read its held-out record, which says it does not beat the close.</span>
+        <span class="sgo">Pull it apart &rarr;</span>
+      </a>
+      <a class="scard" href="#collective">
+        <span class="sk">The network</span>
+        <b>The Model Collective</b>
+        <span class="sd">Independent modellers, one graded record. Everyone is scored the same way against captured closing lines, never self-reported. See where a room of models leaves the market.</span>
+        <span class="sgo">See the wall &rarr;</span>
+      </a>
+      <a class="scard" href="#how">
+        <span class="sk">The loop</span>
+        <b>Board &rarr; evidence &rarr; attack</b>
+        <span class="sd">Every market priced against de-vigged fair value, the research packet behind each flagged number, then the terminal arguing against its own thesis before you do.</span>
+        <span class="sgo">Watch it run &rarr;</span>
+      </a>
+      <a class="scard" href="#clv">
+        <span class="sk">The scoreboard</span>
+        <b>Closing line value, graded</b>
+        <span class="sd">Whether the number you took beat the number the market closed at. The one measure that survives a bad beat, tracked on every pick this site has ever shown.</span>
+        <span class="sgo">See the record &rarr;</span>
+      </a>
+    </div>
+  </div>
+</section>
 
-    <div class="xwalk" id="brdWalk">
-      <div class="xw"><span class="xk">Your baseline</span><div class="xa">Strokes gained measures your shot against what the field averages from the same spot.</div><div class="xb">De-vigged fair value is the field: 22 books, the house margin stripped out.</div></div>
-      <div class="xw"><span class="xk">Your process signal</span><div class="xa">You judge a swing by the strike and the number, not by whether the putt dropped.</div><div class="xb">Closing line value judges the price you took, not whether the game went your way.</div></div>
-      <div class="xw"><span class="xk">Your sample</span><div class="xa">One round proves nothing. A season of differentials is the only honest index.</div><div class="xb">Every flagged edge is graded and stored. The record is public before it is flattering.</div></div>
+<!-- ============================ FOOTBALL ENGINE ============================ -->
+<section class="band" id="football">
+  <div class="wrap">
+    <div class="head rv">
+      <span class="ey"><b>&#9642;</b> EdgeDesk's own football model</span>
+      <h2>A model that publishes<br><span class="g">its own report card.</span></h2>
+      <p>EdgeDesk runs its own engine for the NFL and NCAA FBS &mdash; opponent-adjusted EPA ratings, a learned quarterback layer, sport-specific key numbers, and market comparison. Every projection is built from layers you can take apart, and the model's out-of-sample record ships inside the model rather than in a marketing line.</p>
     </div>
 
-    <p class="blede" style="margin-top:26px"><b>And golf is already in the terminal.</b> Not as a someday-roadmap line &mdash; as a live surface, because the same question that makes a betting market tractable makes a tournament field tractable: <b>who is actually here, and what does the money think of them versus what the ranking thinks of them?</b></p>
-
-    <div class="fieldp">
-      <div class="fieldp-h">
-        <div class="fieldp-t"><span class="gf">&#9971;</span> Top of the field &mdash; who&rsquo;s actually contending at Rocket Classic</div>
-        <p class="fieldp-s">The live leaderboard of who&rsquo;s really playing this week &mdash; not the futures board. Tap a name for their season fundamentals. Context only, not a call.</p>
+    <div class="term rv" style="margin-top:38px">
+      <div class="term-bar">
+        <span class="tt"><i></i><i></i><i></i></span>
+        <span class="nm">EdgeDesk &middot; Power 4 &middot; North Carolina @ TCU</span>
+        <span class="tag">Interactive example</span>
       </div>
-      <div class="lb"><div class="lbr"><span class="pos">1</span><span class="who">Michael Thorbjornsen</span><span class="wr">rank #38</span><span class="sc">-18</span></div><div class="lbr"><span class="pos">2</span><span class="who">Xander Schauffele</span><span class="wr">rank #12</span><span class="sc">-16</span></div><div class="lbr"><span class="pos">3</span><span class="who">Davis Riley</span><span class="wr">rank #103</span><span class="sc">-15</span></div><div class="lbr"><span class="pos">4</span><span class="who">Rasmus H&oslash;jgaard</span><span class="wr">rank #99</span><span class="sc">-14</span></div><div class="lbr"><span class="pos">T5</span><span class="who">Hideki Matsuyama</span><span class="wr">rank #28</span><span class="sc">-13</span></div><div class="lbr"><span class="pos">T5</span><span class="who">Matt Wallace</span><span class="wr">rank #78</span><span class="sc">-13</span></div><div class="lbr"><span class="pos">T5</span><span class="who">Kristoffer Ventura</span><span class="wr">rank #101</span><span class="sc">-13</span></div><div class="lbr"><span class="pos">T8</span><span class="who">Ryan Gerard</span><span class="wr">rank #18</span><span class="sc">-12</span></div><div class="lbr"><span class="pos">T8</span><span class="who">Chris Kirk</span><span class="wr">rank #123</span><span class="sc">-12</span></div><div class="lbr"><span class="pos">T8</span><span class="who">Rickie Fowler</span><span class="wr">rank #25</span><span class="sc">-12</span></div><div class="lbr"><span class="pos">T8</span><span class="who">Cameron Young</span><span class="wr">rank #2</span><span class="sc">-12</span></div><div class="lbr"><span class="pos">T8</span><span class="who">Davis Thompson</span><span class="wr">rank #89</span><span class="sc">-12</span></div></div>
-      <div class="fieldp-f">&#9971; Full field &mdash; 147 actually playing at Rocket Classic &rsaquo;</div>
-      <p class="fieldp-cap"><b>Screenshot of the product, not a mockup.</b> The world ranking sits next to the score on purpose: a field where #103 and #99 are on the leaderboard and #2 is five back is the market&rsquo;s pricing problem, stated in one screen. EdgeDesk reads it the same way it reads a moneyline &mdash; what does the price say, what does the field say, and where do those two disagree.</p>
+      <div class="mkrow">
+        <span class="mktag">Market</span><span>TCU <b>&minus;7.5</b></span>
+        <span class="mktag">Total</span><span><b>47.5</b></span>
+        <span class="mktag">Captured</span><span>consensus across books</span>
+      </div>
+      <div class="lyr" id="fbLayers" role="group" aria-label="Model layers"></div>
+      <div class="fsum" id="fbSum"></div>
+      <div class="term-foot">Turn a layer off to see what it was contributing. The layers are the model's actual structure, not a visualisation invented for this page.</div>
     </div>
 
-    <p class="bclose" id="brdClose">You don't have to be a sports bettor to read this product. You have to be someone who already accepts that <b>outcome and process are different measurements</b>, and who wants the second one. That is the entire audience EdgeDesk was built for &mdash; it just happens that competitive golf teaches it faster than betting does. Everything below is the same terminal, unedited. <b>The rest of the page is the proof, not the pitch.</b></p>
+    <div class="legend rv" style="margin-top:22px">
+      <span class="lbl">Held-out 2022&ndash;2025:</span>
+      <span class="pv exp">Model spread MAE 12.769</span>
+      <span class="pv val">Closing market 12.015</span>
+      <span class="pv una">Does not beat the close</span>
+    </div>
+    <p class="teach rv"><b>&#8250;</b> <b>Teaches:</b> a model worth trusting tells you where it loses. This one is held to seasons no layer of it was tuned on, and it is counted nowhere until its own graded closing-line value says otherwise.</p>
+  </div>
+</section>
+
+<!-- ============================ MODEL COLLECTIVE ============================ -->
+<section class="band" id="collective">
+  <div class="wrap">
+    <div class="head rv">
+      <span class="ey"><b>&#9642;</b> The Model Collective</span>
+      <h2>Independent models.<br><span class="g">One graded record.</span></h2>
+      <p>Shared infrastructure for people who build their own models. Every creator keeps their own model, site, price and methodology &mdash; the Collective only does the part nobody can do for themselves: grade everyone the same way, against its own captured closing lines, on the actual final score. Never self-reported.</p>
+    </div>
+
+    <div class="term rv" style="margin-top:38px">
+      <div class="term-bar">
+        <span class="tt"><i></i><i></i><i></i></span>
+        <span class="nm">Model Collective &middot; the wall</span>
+        <span class="tag">Interactive example</span>
+      </div>
+      <div class="tabs" id="mcTabs" role="tablist" aria-label="Games"></div>
+      <div id="mcPanel" role="tabpanel" tabindex="0"></div>
+      <div class="term-foot">Every column is either a number a creator submitted, untouched, or one the Collective computes identically for everybody. It never adjusts or infers anyone's methodology.</div>
+    </div>
+
+    <div class="legend rv" style="margin-top:22px">
+      <span class="lbl">Read as:</span>
+      <span class="pv val">Model line &mdash; the creator's own number</span>
+      <span class="pv est">&#916; Mkt &mdash; distance from the market</span>
+      <span class="pv exp">A comparison, never a verdict</span>
+    </div>
+    <p class="teach rv"><b>&#8250;</b> <b>Teaches:</b> the interesting question is not which model is right tonight. It is where a room of independent models collectively leaves the price &mdash; and whether each one's stated probabilities survive contact with results.</p>
   </div>
 </section>
 
@@ -1087,41 +1172,6 @@ footer{border-top:1px solid var(--line);background:#0a0c10;padding:38px 0 48px}
   </div>
 </section>
 
-<!-- ============================ FOOTBALL ENGINE ============================ -->
-<section class="band" id="football">
-  <div class="wrap">
-    <div class="head rv">
-      <span class="ey"><b>&#9642;</b> EdgeDesk's own football model</span>
-      <h2>A model that publishes<br><span class="g">its own report card.</span></h2>
-      <p>EdgeDesk runs its own engine for the NFL and NCAA FBS &mdash; opponent-adjusted EPA ratings, a learned quarterback layer, sport-specific key numbers, and market comparison. Every projection is built from layers you can take apart, and the model's out-of-sample record ships inside the model rather than in a marketing line.</p>
-    </div>
-
-    <div class="term rv" style="margin-top:38px">
-      <div class="term-bar">
-        <span class="tt"><i></i><i></i><i></i></span>
-        <span class="nm">EdgeDesk &middot; Power 4 &middot; North Carolina @ TCU</span>
-        <span class="tag">Interactive example</span>
-      </div>
-      <div class="mkrow">
-        <span class="mktag">Market</span><span>TCU <b>&minus;7.5</b></span>
-        <span class="mktag">Total</span><span><b>47.5</b></span>
-        <span class="mktag">Captured</span><span>consensus across books</span>
-      </div>
-      <div class="lyr" id="fbLayers" role="group" aria-label="Model layers"></div>
-      <div class="fsum" id="fbSum"></div>
-      <div class="term-foot">Turn a layer off to see what it was contributing. The layers are the model's actual structure, not a visualisation invented for this page.</div>
-    </div>
-
-    <div class="legend rv" style="margin-top:22px">
-      <span class="lbl">Held-out 2022&ndash;2025:</span>
-      <span class="pv exp">Model spread MAE 12.769</span>
-      <span class="pv val">Closing market 12.015</span>
-      <span class="pv una">Does not beat the close</span>
-    </div>
-    <p class="teach rv"><b>&#8250;</b> <b>Teaches:</b> a model worth trusting tells you where it loses. This one is held to seasons no layer of it was tuned on, and it is counted nowhere until its own graded closing-line value says otherwise.</p>
-  </div>
-</section>
-
 <!-- ============================ P2 · AI AS ANALYST ============================ -->
 <section class="band" id="ai">
   <div class="wrap">
@@ -1213,36 +1263,6 @@ footer{border-top:1px solid var(--line);background:#0a0c10;padding:38px 0 48px}
   </div>
 </section>
 
-<!-- ============================ MODEL COLLECTIVE ============================ -->
-<section class="band" id="collective">
-  <div class="wrap">
-    <div class="head rv">
-      <span class="ey"><b>&#9642;</b> The Model Collective</span>
-      <h2>Independent models.<br><span class="g">One graded record.</span></h2>
-      <p>Shared infrastructure for people who build their own models. Every creator keeps their own model, site, price and methodology &mdash; the Collective only does the part nobody can do for themselves: grade everyone the same way, against its own captured closing lines, on the actual final score. Never self-reported.</p>
-    </div>
-
-    <div class="term rv" style="margin-top:38px">
-      <div class="term-bar">
-        <span class="tt"><i></i><i></i><i></i></span>
-        <span class="nm">Model Collective &middot; the wall</span>
-        <span class="tag">Interactive example</span>
-      </div>
-      <div class="tabs" id="mcTabs" role="tablist" aria-label="Games"></div>
-      <div id="mcPanel" role="tabpanel" tabindex="0"></div>
-      <div class="term-foot">Every column is either a number a creator submitted, untouched, or one the Collective computes identically for everybody. It never adjusts or infers anyone's methodology.</div>
-    </div>
-
-    <div class="legend rv" style="margin-top:22px">
-      <span class="lbl">Read as:</span>
-      <span class="pv val">Model line &mdash; the creator's own number</span>
-      <span class="pv est">&#916; Mkt &mdash; distance from the market</span>
-      <span class="pv exp">A comparison, never a verdict</span>
-    </div>
-    <p class="teach rv"><b>&#8250;</b> <b>Teaches:</b> the interesting question is not which model is right tonight. It is where a room of independent models collectively leaves the price &mdash; and whether each one's stated probabilities survive contact with results.</p>
-  </div>
-</section>
-
 <!-- ============================ P3 · CASUAL ENTRY ============================ -->
 <section class="band" id="casual">
   <div class="wrap">
@@ -1325,6 +1345,42 @@ footer{border-top:1px solid var(--line);background:#0a0c10;padding:38px 0 48px}
         <p style="font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--faint);letter-spacing:.03em;margin-top:12px">No account. No login. Not behind the paywall.</p>
       </div>
     </div>
+  </div>
+</section>
+
+<!-- ============================ AUDIENCE BRIDGE ============================
+     Hidden by default. Revealed only for traffic that arrives with a partner
+     referral or ?aud=, so cold traffic never sees a pitch written for someone
+     else. Content is swapped by edAudience() from the ?ref= / ?aud= params.
+     ========================================================================= -->
+<section class="bridge" id="bridge">
+  <div class="wrap bridge-in">
+    <div class="bridge-top">
+      <span class="ey" id="brdEy"><b>&#9642;</b> For competitive golfers</span>
+      <span class="refchip" id="brdChip" style="display:none"></span>
+    </div>
+    <h2 id="brdH">You already grade yourself against the field.<br><span class="g">This grades a betting market the same way.</span></h2>
+    <p class="blede" id="brdLede">Strokes gained didn't tell you whether you played well. It told you how you performed <b>against the expected value of every shot</b> &mdash; the baseline the field produces from that lie, that distance, that day. It replaced &ldquo;I shot 74&rdquo; with a number that survives a good bounce and a bad one. <b>EdgeDesk runs that exact move on a betting market.</b></p>
+
+    <div class="xwalk" id="brdWalk">
+      <div class="xw"><span class="xk">Your baseline</span><div class="xa">Strokes gained measures your shot against what the field averages from the same spot.</div><div class="xb">De-vigged fair value is the field: 22 books, the house margin stripped out.</div></div>
+      <div class="xw"><span class="xk">Your process signal</span><div class="xa">You judge a swing by the strike and the number, not by whether the putt dropped.</div><div class="xb">Closing line value judges the price you took, not whether the game went your way.</div></div>
+      <div class="xw"><span class="xk">Your sample</span><div class="xa">One round proves nothing. A season of differentials is the only honest index.</div><div class="xb">Every flagged edge is graded and stored. The record is public before it is flattering.</div></div>
+    </div>
+
+    <p class="blede" style="margin-top:26px"><b>And golf is already in the terminal.</b> Not as a someday-roadmap line &mdash; as a live surface, because the same question that makes a betting market tractable makes a tournament field tractable: <b>who is actually here, and what does the money think of them versus what the ranking thinks of them?</b></p>
+
+    <div class="fieldp">
+      <div class="fieldp-h">
+        <div class="fieldp-t"><span class="gf">&#9971;</span> Top of the field &mdash; who&rsquo;s actually contending at Rocket Classic</div>
+        <p class="fieldp-s">The live leaderboard of who&rsquo;s really playing this week &mdash; not the futures board. Tap a name for their season fundamentals. Context only, not a call.</p>
+      </div>
+      <div class="lb"><div class="lbr"><span class="pos">1</span><span class="who">Michael Thorbjornsen</span><span class="wr">rank #38</span><span class="sc">-18</span></div><div class="lbr"><span class="pos">2</span><span class="who">Xander Schauffele</span><span class="wr">rank #12</span><span class="sc">-16</span></div><div class="lbr"><span class="pos">3</span><span class="who">Davis Riley</span><span class="wr">rank #103</span><span class="sc">-15</span></div><div class="lbr"><span class="pos">4</span><span class="who">Rasmus H&oslash;jgaard</span><span class="wr">rank #99</span><span class="sc">-14</span></div><div class="lbr"><span class="pos">T5</span><span class="who">Hideki Matsuyama</span><span class="wr">rank #28</span><span class="sc">-13</span></div><div class="lbr"><span class="pos">T5</span><span class="who">Matt Wallace</span><span class="wr">rank #78</span><span class="sc">-13</span></div><div class="lbr"><span class="pos">T5</span><span class="who">Kristoffer Ventura</span><span class="wr">rank #101</span><span class="sc">-13</span></div><div class="lbr"><span class="pos">T8</span><span class="who">Ryan Gerard</span><span class="wr">rank #18</span><span class="sc">-12</span></div><div class="lbr"><span class="pos">T8</span><span class="who">Chris Kirk</span><span class="wr">rank #123</span><span class="sc">-12</span></div><div class="lbr"><span class="pos">T8</span><span class="who">Rickie Fowler</span><span class="wr">rank #25</span><span class="sc">-12</span></div><div class="lbr"><span class="pos">T8</span><span class="who">Cameron Young</span><span class="wr">rank #2</span><span class="sc">-12</span></div><div class="lbr"><span class="pos">T8</span><span class="who">Davis Thompson</span><span class="wr">rank #89</span><span class="sc">-12</span></div></div>
+      <div class="fieldp-f">&#9971; Full field &mdash; 147 actually playing at Rocket Classic &rsaquo;</div>
+      <p class="fieldp-cap"><b>Screenshot of the product, not a mockup.</b> The world ranking sits next to the score on purpose: a field where #103 and #99 are on the leaderboard and #2 is five back is the market&rsquo;s pricing problem, stated in one screen. EdgeDesk reads it the same way it reads a moneyline &mdash; what does the price say, what does the field say, and where do those two disagree.</p>
+    </div>
+
+    <p class="bclose" id="brdClose">You don't have to be a sports bettor to read this product. You have to be someone who already accepts that <b>outcome and process are different measurements</b>, and who wants the second one. That is the entire audience EdgeDesk was built for &mdash; it just happens that competitive golf teaches it faster than betting does. Everything above is the same terminal, unedited &mdash; its own football model, a collective of independent modellers, and every graded record it has. <b>The rest of the page is the proof, not the pitch.</b></p>
   </div>
 </section>
 
