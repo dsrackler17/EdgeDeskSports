@@ -23502,6 +23502,12 @@ window.fbP4ApiRetract=async function(){
   }
   if(who.error){fbP4PostOut('<span class="ec" style="color:var(--bad,#e26044)">'+fbEsc(who.error)+'</span>');return;}
   var env={model:who.model,season:FB.p4.season};
+  /* Scope the retract to the week on screen when the board is a single
+     week: the endpoint would otherwise consider the whole season, which is
+     a far larger blast radius than the operator is looking at. */
+  var wks={},wkOne=null,wkN=0;
+  (FB.p4.up||[]).forEach(function(u){var w=u.g&&u.g.week;if(w!=null&&!wks[w]){wks[w]=1;wkOne=+w;wkN++;}});
+  if(wkN===1)env.week=wkOne;
   fbP4PostOut('<span class="ec mut">Asking what would be removed\u2026</span>');
   var res;
   try{res=await fbP4Ingest('/v1/projections/retract',key,env);}
@@ -23523,6 +23529,7 @@ window.fbP4ApiRetract=async function(){
   }
   var names=(b.games||[]).slice(0,10).map(function(g){return g.label||g.game_id;});
   if(!confirm('Remove '+b.would_remove+' stored row'+(b.would_remove===1?'':'s')+' for '+fbEsc(who.model)
+    +(env.week!=null?' in week '+env.week:' this season')
     +' across '+(b.games||[]).length+' pre-kickoff game'+((b.games||[]).length===1?'':'s')+'?\n\n'
     +names.join('\n')+((b.games||[]).length>10?'\n\u2026':'')
     +'\n\nGames already kicked off are never touched. Your NEXT post for these games becomes the first submission \u2014 post the corrected slate right after this.'))return;
