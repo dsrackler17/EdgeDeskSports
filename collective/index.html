@@ -2885,6 +2885,61 @@ function slateResolveName(byKey,team){
   }
 
 }
+/* ---- the schedule truncates its team names, and two schools can collide --
+   The backend stores names cut to ten characters — the board's own receipt
+   reads "North Carolina -> NORTHCAROL", "San Jose State -> SANJOSESTA". For
+   most schools that is harmless. For four it is not, because the school and
+   its State sibling are identical in the first ten characters:
+
+     Washington     / Washington State      -> WASHINGTON
+     Mississippi    / Mississippi State     -> MISSISSIPP
+     North Carolina / North Carolina State  -> NORTH CARO
+     South Carolina / South Carolina State  -> SOUTH CARO
+
+   Matching each name on its own cannot separate those: "Washington State"
+   has no exact key, falls to the truncation pass, finds WASHINGTON, and is
+   rewritten to it with how:"truncated" and no warning — the same string the
+   actual Washington resolves to.
+
+   A GAME can be separated even when its teams cannot, because a game is a
+   PAIR. "Washington State @ Utah" matches exactly one scheduled game however
+   the schedule spells the visitor, so the pair identifies the game and the
+   game carries its own id. That id is what the row is matched on, so a
+   collision in the names can no longer misfile anyone's numbers.
+
+   What the pair cannot fix is that the schedule still has one name for two
+   schools. That is a backend defect, not something to paper over here, so it
+   is reported: see `collisions` on the return. */
+function slateNameMatches(mine,their){
+  var a=teamKey(mine),b=teamKey(their);
+  if(!a||!b)return false;
+  if(a===b)return true;
+  /* the schedule's name is a truncation of ours */
+  return b.length>=6&&b.length<a.length&&a.indexOf(b)===0;
+}
+/* The schedule's two sides, however this game happens to carry them. */
+function slateGameSides(g){
+  if(!g)return null;
+  var home=g.home_team||g.home,away=g.away_team||g.away;
+  if((!home||!away)&&g.label){
+    var p=String(g.label).split(/\s+@\s+|\s+at\s+/i);
+    if(p.length===2){if(!away)away=p[0].trim();if(!home)home=p[1].trim();}
+  }
+  return (home&&away)?{home:String(home),away:String(away),
+    game_id:String(g.game_id||g.game_ref||'').trim()}:null;
+}
+/* The one scheduled game whose BOTH sides match this row, or null. Two
+   candidates is not a near miss, it is a refusal: nothing in the pair says
+   which, and guessing is how a slate gets filed under the wrong school. */
+function slatePairGame(games,awayName,homeName){
+  var hits=[],i,sides;
+  for(i=0;i<(games||[]).length;i++){
+    sides=slateGameSides(games[i]);
+    if(!sides)continue;
+    if(slateNameMatches(awayName,sides.away)&&slateNameMatches(homeName,sides.home))hits.push(sides);
+  }
+  return hits.length===1?hits[0]:null;
+}
 /* Rewrite a built slate onto the schedule's spellings. Returns new rows plus
    what was changed, so the creator is told rather than surprised. */
 function slateAlignToSchedule(games,rows){
@@ -2909,25 +2964,47 @@ function slateAlignToSchedule(games,rows){
     }
     if(home&&away)byId[id]={home_team:String(home),away_team:String(away)};
   });
-  var changed=[],ambiguous=[],unresolved=[],seen={};
+  var changed=[],ambiguous=[],unresolved=[],seen={},landedOn={};
   var out=(rows||[]).map(function(o){
     var c={},k;
     for(k in o)if(Object.prototype.hasOwnProperty.call(o,k))c[k]=o[k];
     var hit=c.game_ref?byId[String(c.game_ref).trim().toUpperCase().replace(/[^A-Z0-9_]/g,'')]:null;
+    /* PAIR FIRST, when the row does not already name its game. Both sides
+       together identify a game that neither side alone can — which is the
+       only thing that separates Washington from Washington State on a
+       schedule that spells both WASHINGTON. Adopting the game's id as well
+       as its spellings is the part that matters: the row is then matched on
+       an id, so a name the schedule cannot make unique cannot misfile it. */
+    if(!hit){
+      var pair=slatePairGame(games,c.away_team,c.home_team);
+      if(pair){
+        if(pair.game_id&&!c.game_ref){
+          c.game_ref=pair.game_id;
+          if(!seen['g'+pair.game_id]){seen['g'+pair.game_id]=1;
+            changed.push({from:c.away_team+' @ '+c.home_team,to:pair.game_id,how:'matched as a game'});}
+        }
+        hit={home_team:pair.home,away_team:pair.away};
+      }
+    }
     ['home_team','away_team'].forEach(function(f){
+      /* A pair or an explicit id used strictly more information than a name
+         on its own, so it settles the spelling. The per-name pass only runs
+         where neither was available. */
+      if(hit&&hit[f]){
+        if(hit[f]!==c[f]){
+          if(!seen['c'+c[f]]){seen['c'+c[f]]=1;changed.push({from:c[f],to:hit[f],how:'game id'});}
+          c[f]=hit[f];
+        }
+        landedOn[c[f]]=landedOn[c[f]]||{};landedOn[c[f]][String(o[f])]=1;
+        return;
+      }
       var r=slateResolveName(byKey,c[f]);
       if(r&&!r.ambiguous){
         if(r.name!==c[f]){
           if(!seen['c'+c[f]]){seen['c'+c[f]]=1;changed.push({from:c[f],to:r.name,how:r.how});}
           c[f]=r.name;
         }
-        return;
-      }
-      if(hit&&hit[f]){
-        if(hit[f]!==c[f]){
-          if(!seen['c'+c[f]]){seen['c'+c[f]]=1;changed.push({from:c[f],to:hit[f],how:'game id'});}
-          c[f]=hit[f];
-        }
+        landedOn[c[f]]=landedOn[c[f]]||{};landedOn[c[f]][String(o[f])]=1;
         return;
       }
       if(!r){if(!seen['u'+c[f]]){seen['u'+c[f]]=1;unresolved.push(c[f]);}return;}
@@ -2936,7 +3013,18 @@ function slateAlignToSchedule(games,rows){
     });
     return c;
   });
-  return {rows:out,changed:changed,ambiguous:ambiguous,unresolved:unresolved};
+  /* Two of the creator's OWN names landing on one schedule name. The pair
+     pass has already put each row on its right game, so nothing is misfiled
+     — but the schedule genuinely has one name for two schools, and a board
+     that shows both as WASHINGTON is showing something false. Reported with
+     both source names, because only the schedule can fix it. */
+  var collisions=[];
+  Object.keys(landedOn).forEach(function(name){
+    var mine=Object.keys(landedOn[name]);
+    if(mine.length>1)collisions.push({schedule_name:name,yours:mine});
+  });
+  return {rows:out,changed:changed,ambiguous:ambiguous,
+    unresolved:unresolved,collisions:collisions};
 }
 
 function slateUnmatchedTeams(games,rows){
@@ -4523,6 +4611,22 @@ async function renderCreatorDash(view,me){
             return '<span class="mono">'+esc(c.from)+'</span> &rarr; <span class="mono">'+esc(c.to)+'</span>';
           }).join(', ')+
           (align.changed.length>8?' and '+(align.changed.length-8)+' more':'')+'.</p>';
+      }
+      /* The schedule cannot spell these two schools differently. Every row
+         is still on its right game — the pair pass put it there and pinned
+         the game id — but a board that prints one name for two schools is
+         printing something false, and only the schedule can fix that. */
+      if((align.collisions||[]).length){
+        alignHtml+='<p class="note warn" style="margin:6px 0 0">'+
+          '<b style="color:var(--warn)">The schedule has one name for two schools</b> &mdash; '+
+          align.collisions.slice(0,4).map(function(x){
+            return x.yours.map(function(y){return '<span class="mono">'+esc(y)+'</span>';}).join(' and ')+
+              ' both come back as <span class="mono">'+esc(x.schedule_name)+'</span>';
+          }).join('; ')+'. '+
+          'The schedule stores team names cut to ten characters, and these are identical that far in. '+
+          '<b>Your rows are still on the right games</b> &mdash; each was matched on both teams at once and '+
+          'now carries its own game id, so nothing is filed under the wrong school. '+
+          'But the board will show one name for both until the schedule carries the full spelling.</p>';
       }
       if(align.ambiguous.length){
         alignHtml+='<p class="note" style="margin:0 0 6px;border-left:2px solid var(--warn);padding-left:8px">'+

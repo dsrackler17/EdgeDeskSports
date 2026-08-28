@@ -1242,6 +1242,58 @@ if (typeof sandbox.teamKey === 'function') {
   chk('a sheet with result columns but no score columns is unaffected',
     S.slateScoresAreFinal(['home_team','away_team','spread_result']) === false);
 
+  /* ---- the schedule truncates names, and four school pairs collide ------
+     Washington / Washington State, Mississippi / Mississippi State, and the
+     two Carolinas are identical in the first ten characters, which is how
+     the schedule stores them. Matching each name alone cannot separate them;
+     matching the PAIR can, because a game is two teams and only one
+     scheduled game has both. */
+  var SCHED = [
+    { game_id: '2026_01_WASH_OREG', home: 'OREGON', away: 'WASHINGTON' },
+    { game_id: '2026_01_WSU_UTAH',  home: 'UTAH',   away: 'WASHINGTON' },
+    { game_id: '2026_01_MISS_LSU',  home: 'LSU',    away: 'MISSISSIPP' }];
+
+  chk('the schedule name matches ours exactly, or as its own truncation',
+    S.slateNameMatches('Washington', 'WASHINGTON') === true &&
+    S.slateNameMatches('Washington State', 'WASHINGTON') === true &&
+    S.slateNameMatches('Oregon', 'WASHINGTON') === false);
+  chk('a pair identifies the game that neither name can',
+    S.slatePairGame(SCHED, 'Washington State', 'Utah').game_id === '2026_01_WSU_UTAH' &&
+    S.slatePairGame(SCHED, 'Washington', 'Oregon').game_id === '2026_01_WASH_OREG');
+  chk('a pair matching two games is refused, never guessed',
+    S.slatePairGame([SCHED[0], SCHED[0]], 'Washington', 'Oregon') === null);
+  chk('a pair matching nothing is null, not a near miss',
+    S.slatePairGame(SCHED, 'Washington', 'Alabama') === null);
+
+  var al = S.slateAlignToSchedule(SCHED, [
+    { home_team: 'Oregon', away_team: 'Washington',       projected_spread: -7 },
+    { home_team: 'Utah',   away_team: 'Washington State', projected_spread: -3 }]);
+  /* the substantive fix: each row carries the id of ITS game, so a name the
+     schedule cannot make unique can no longer misfile anyone's numbers */
+  chk('each row is pinned to its own game id',
+    al.rows[0].game_ref === '2026_01_WASH_OREG' &&
+    al.rows[1].game_ref === '2026_01_WSU_UTAH',
+    { refs: al.rows.map(function (r) { return r.game_ref; }) });
+  chk('Washington State is not filed on the Washington game',
+    al.rows[1].game_ref !== al.rows[0].game_ref);
+  /* what the pair CANNOT fix is the schedule having one name for two
+     schools, so that is reported rather than papered over */
+  chk('the name collision is reported with both of the creator names',
+    al.collisions.length === 1 &&
+    al.collisions[0].schedule_name === 'WASHINGTON' &&
+    al.collisions[0].yours.indexOf('Washington') >= 0 &&
+    al.collisions[0].yours.indexOf('Washington State') >= 0,
+    { collisions: al.collisions });
+  /* a slate with no collision must not raise one */
+  var clean = S.slateAlignToSchedule(SCHED, [
+    { home_team: 'Oregon', away_team: 'Washington', projected_spread: -7 }]);
+  chk('an ordinary slate reports no collision',
+    clean.collisions.length === 0, { collisions: clean.collisions });
+  chk('an explicit game_ref is still never overwritten by pairing',
+    S.slateAlignToSchedule(SCHED, [
+      { game_ref: '2026_01_WSU_UTAH', home_team: 'Utah', away_team: 'Washington State' }])
+      .rows[0].game_ref === '2026_01_WSU_UTAH');
+
   /* ---- a market line is never invented from the model's own number ------
      A cover probability used to fill an absent market line with the model's
      own spread, which claimed the creator had supplied a market line they
