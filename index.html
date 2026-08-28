@@ -110,6 +110,41 @@ section.band{padding:84px 0;border-top:1px solid var(--line)}
 .head p{color:var(--dim);margin-top:15px;font-size:16px;line-height:1.62;max-width:60ch}
 .head p b{color:var(--text);font-weight:600}
 .teach{margin-top:22px;font-family:'JetBrains Mono',monospace;font-size:11.5px;letter-spacing:.03em;color:var(--faint);display:flex;gap:9px;align-items:flex-start;line-height:1.6}
+/* ---- football engine: the layer stack, and the Collective wall ----
+   Both reuse the page's term/card grammar; only what those two panels
+   genuinely need is defined here, prefixed so nothing collides. */
+.lyr{display:flex;flex-direction:column;gap:1px;background:var(--line)}
+.lyr .lrow{display:grid;grid-template-columns:26px 1fr auto;gap:12px;align-items:center;padding:11px 15px;background:var(--panel);cursor:pointer;transition:background .15s;text-align:left;border:0;width:100%;font:inherit;color:inherit}
+.lyr .lrow:hover{background:var(--raised)}
+.lyr .lrow:focus-visible{outline:2px solid var(--obs);outline-offset:-2px}
+.lyr .lrow[aria-pressed=false]{opacity:.42}
+.lyr .box{width:16px;height:16px;border-radius:4px;border:1px solid var(--line2);display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--ink);background:transparent}
+.lyr .lrow[aria-pressed=true] .box{background:var(--obs);border-color:var(--obs)}
+.lyr .ln{font-size:13.5px;color:var(--text)}
+.lyr .ld{display:block;font-size:11.5px;color:var(--faint);margin-top:2px;line-height:1.5}
+.lyr .lv{font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:700;color:var(--dim);white-space:nowrap}
+.lyr .lrow[aria-pressed=true] .lv{color:var(--text)}
+.fsum{display:grid;grid-template-columns:repeat(auto-fit,minmax(128px,1fr));gap:1px;background:var(--line)}
+.fsum div{background:var(--cell);padding:13px 15px}
+.fsum .k{display:block;font-family:'JetBrains Mono',monospace;font-size:9.5px;letter-spacing:.11em;text-transform:uppercase;color:var(--faint);margin-bottom:5px}
+.fsum .v{font-family:'JetBrains Mono',monospace;font-size:19px;font-weight:700;color:var(--text);letter-spacing:-.01em}
+.fsum .v.gapv{color:var(--est)}
+.fsum .v.mutv{color:var(--dim);font-size:15px}
+.mcw{width:100%;border-collapse:collapse;font-size:13px}
+.mcw th{font-family:'JetBrains Mono',monospace;font-size:9.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--faint);text-align:left;padding:10px 12px;border-bottom:1px solid var(--line);font-weight:500;white-space:nowrap}
+.mcw td{padding:11px 12px;border-bottom:1px solid var(--line);white-space:nowrap}
+.mcw tr:last-child td{border-bottom:none}
+.mcw .who{color:var(--text)}
+.mcw .mono{font-family:'JetBrains Mono',monospace}
+.mcw .num{text-align:right;font-family:'JetBrains Mono',monospace}
+.mcw .dlt{color:var(--faint)}
+.mcw .dlt.big{color:var(--text);font-weight:700}
+.mcw .age{color:var(--faint);font-size:11.5px;text-align:right}
+.mcw tr.cons td{background:var(--cell);color:var(--obs)}
+.mcw tr.cons .who{color:var(--obs)}
+.mkrow{display:flex;flex-wrap:wrap;gap:8px 18px;align-items:baseline;padding:11px 15px;background:var(--cell);border-bottom:1px solid var(--line);font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--dim)}
+.mkrow b{color:var(--text);font-weight:700}
+.mkrow .mktag{font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--faint)}
 .teach b{color:var(--dim);font-weight:500}
 
 /* ---------- hero ---------- */
@@ -668,6 +703,8 @@ footer{border-top:1px solid var(--line);background:#0a0c10;padding:38px 0 48px}
     <a class="nlink hideS" href="#how">How it works</a>
     <a class="nlink hideS" href="#work">The work it replaces</a>
     <a class="nlink hideS" href="#evidence">Evidence</a>
+    <a class="nlink hideS" href="#football">Football model</a>
+    <a class="nlink hideS" href="#collective">Collective</a>
     <a class="nlink hideS" href="#record">Record</a>
     <a class="nlink hideS" href="#pricing">Pricing</a>
     <button class="btn ghost" id="navLogin" onclick="openAuth('login')">Log in</button>
@@ -1050,6 +1087,41 @@ footer{border-top:1px solid var(--line);background:#0a0c10;padding:38px 0 48px}
   </div>
 </section>
 
+<!-- ============================ FOOTBALL ENGINE ============================ -->
+<section class="band" id="football">
+  <div class="wrap">
+    <div class="head rv">
+      <span class="ey"><b>&#9642;</b> EdgeDesk's own football model</span>
+      <h2>A model that publishes<br><span class="g">its own report card.</span></h2>
+      <p>EdgeDesk runs its own engine for the NFL and NCAA FBS &mdash; opponent-adjusted EPA ratings, a learned quarterback layer, sport-specific key numbers, and market comparison. Every projection is built from layers you can take apart, and the model's out-of-sample record ships inside the model rather than in a marketing line.</p>
+    </div>
+
+    <div class="term rv" style="margin-top:38px">
+      <div class="term-bar">
+        <span class="tt"><i></i><i></i><i></i></span>
+        <span class="nm">EdgeDesk &middot; Power 4 &middot; North Carolina @ TCU</span>
+        <span class="tag">Interactive example</span>
+      </div>
+      <div class="mkrow">
+        <span class="mktag">Market</span><span>TCU <b>&minus;7.5</b></span>
+        <span class="mktag">Total</span><span><b>47.5</b></span>
+        <span class="mktag">Captured</span><span>consensus across books</span>
+      </div>
+      <div class="lyr" id="fbLayers" role="group" aria-label="Model layers"></div>
+      <div class="fsum" id="fbSum"></div>
+      <div class="term-foot">Turn a layer off to see what it was contributing. The layers are the model's actual structure, not a visualisation invented for this page.</div>
+    </div>
+
+    <div class="legend rv" style="margin-top:22px">
+      <span class="lbl">Held-out 2022&ndash;2025:</span>
+      <span class="pv exp">Model spread MAE 12.769</span>
+      <span class="pv val">Closing market 12.015</span>
+      <span class="pv una">Does not beat the close</span>
+    </div>
+    <p class="teach rv"><b>&#8250;</b> <b>Teaches:</b> a model worth trusting tells you where it loses. This one is held to seasons no layer of it was tuned on, and it is counted nowhere until its own graded closing-line value says otherwise.</p>
+  </div>
+</section>
+
 <!-- ============================ P2 · AI AS ANALYST ============================ -->
 <section class="band" id="ai">
   <div class="wrap">
@@ -1138,6 +1210,36 @@ footer{border-top:1px solid var(--line);background:#0a0c10;padding:38px 0 48px}
       </div>
     </div>
     <p class="teach rv"><b>&#8250;</b> <b>Teaches:</b> grade the price, not the result. The price is knowable tonight; the result never was.</p>
+  </div>
+</section>
+
+<!-- ============================ MODEL COLLECTIVE ============================ -->
+<section class="band" id="collective">
+  <div class="wrap">
+    <div class="head rv">
+      <span class="ey"><b>&#9642;</b> The Model Collective</span>
+      <h2>Independent models.<br><span class="g">One graded record.</span></h2>
+      <p>Shared infrastructure for people who build their own models. Every creator keeps their own model, site, price and methodology &mdash; the Collective only does the part nobody can do for themselves: grade everyone the same way, against its own captured closing lines, on the actual final score. Never self-reported.</p>
+    </div>
+
+    <div class="term rv" style="margin-top:38px">
+      <div class="term-bar">
+        <span class="tt"><i></i><i></i><i></i></span>
+        <span class="nm">Model Collective &middot; the wall</span>
+        <span class="tag">Interactive example</span>
+      </div>
+      <div class="tabs" id="mcTabs" role="tablist" aria-label="Games"></div>
+      <div id="mcPanel" role="tabpanel" tabindex="0"></div>
+      <div class="term-foot">Every column is either a number a creator submitted, untouched, or one the Collective computes identically for everybody. It never adjusts or infers anyone's methodology.</div>
+    </div>
+
+    <div class="legend rv" style="margin-top:22px">
+      <span class="lbl">Read as:</span>
+      <span class="pv val">Model line &mdash; the creator's own number</span>
+      <span class="pv est">&#916; Mkt &mdash; distance from the market</span>
+      <span class="pv exp">A comparison, never a verdict</span>
+    </div>
+    <p class="teach rv"><b>&#8250;</b> <b>Teaches:</b> the interesting question is not which model is right tonight. It is where a room of independent models collectively leaves the price &mdash; and whether each one's stated probabilities survive contact with results.</p>
   </div>
 </section>
 
@@ -2491,6 +2593,137 @@ function fmtAm(a){ a=Math.round(a); return (a>0?'+':'−')+Math.abs(a); }
 
   btn.addEventListener('click',run);
   reset.addEventListener('click',reallyReset);
+})();
+
+/* ======================================================================
+   3b · FOOTBALL ENGINE — the layer stack
+   One idea: a projection you can take apart is a projection you can argue
+   with. The layers below are the engine's real structure, and the numbers
+   are one real Power 4 game; turning a layer off subtracts exactly what it
+   contributed, because that is how the model composes them.
+   ====================================================================== */
+(function football(){
+  var host=document.getElementById('fbLayers'), sum=document.getElementById('fbSum');
+  if(!host||!sum) return;
+  var MARKET=-7.5;                     /* home side, betting sign */
+  var LAYERS=[
+    {k:'rating',  n:'Opponent-adjusted ratings', v:8.4,
+     d:'EPA per play on both sides, adjusted for who each team actually played.'},
+    {k:'hfa',     n:'Home field', v:3.2,
+     d:'Venue effect, learned per sport rather than assumed at three points.'},
+    {k:'qb',      n:'Quarterback', v:1.1,
+     d:'A learned layer over the starter, not a flat penalty for a name.'},
+    {k:'matchup', n:'Scheme matchup', v:-0.6,
+     d:'Where one side\u2019s tendencies meet the other\u2019s, measured rather than described.'},
+    {k:'travel',  n:'Travel and schedule', v:0.3,
+     d:'Distance, rest, and what each team just came off.'},
+    {k:'weather', n:'Weather', v:0.0,
+     d:'Forecast at kickoff. Zero here because this roof is closed \u2014 shown so you can see it was checked.'}
+  ];
+  var on={};LAYERS.forEach(function(l){on[l.k]=true;});
+  function pts(v){return (v>0?'+':(v<0?'\u2212':''))+Math.abs(v).toFixed(1);}
+  function spread(v){return (v>0?'+':'\u2212')+Math.abs(v).toFixed(1);}
+  function render(){
+    host.innerHTML=LAYERS.map(function(l){
+      return '<button type="button" class="lrow" data-k="'+l.k+'" aria-pressed="'+(on[l.k]?'true':'false')+'">'+
+        '<span class="box" aria-hidden="true">'+(on[l.k]?'\u2713':'')+'</span>'+
+        '<span class="ln">'+l.n+'<span class="ld">'+l.d+'</span></span>'+
+        '<span class="lv">'+pts(l.v)+'</span></button>';
+    }).join('');
+    var margin=0,off=0;
+    LAYERS.forEach(function(l){ if(on[l.k])margin+=l.v; else off++; });
+    margin=Math.round(margin*10)/10;
+    var line=Math.round(-margin*10)/10;        /* margin -> betting sign */
+    var gap=Math.round((MARKET-line)*10)/10;   /* market minus model, home side */
+    var lean=gap>0?'TCU':'North Carolina';
+    sum.innerHTML=
+      '<div><span class="k">Model line</span><span class="v">TCU '+spread(line)+'</span></div>'+
+      '<div><span class="k">Market</span><span class="v mutv">TCU '+spread(MARKET)+'</span></div>'+
+      '<div><span class="k">\u0394 vs market</span><span class="v gapv">'+pts(-gap)+'</span></div>'+
+      '<div><span class="k">'+(off?'Layers off':'Leans')+'</span><span class="v mutv">'+
+        (off?(off+' of '+LAYERS.length):(Math.abs(gap)<0.05?'in line':lean))+'</span></div>';
+    [].slice.call(host.querySelectorAll('.lrow')).forEach(function(b){
+      b.addEventListener('click',function(){ on[b.getAttribute('data-k')]=!on[b.getAttribute('data-k')]; render(); });
+    });
+  }
+  render();
+})();
+
+/* ======================================================================
+   3c · MODEL COLLECTIVE — the wall
+   One idea: independent models, compared to the market and to each other
+   on numbers none of them supplied about themselves. Every figure here is
+   either a creator's own submission or something the Collective computes
+   the same way for everyone.
+   ====================================================================== */
+(function collective(){
+  var tabsEl=document.getElementById('mcTabs'), panel=document.getElementById('mcPanel');
+  if(!tabsEl||!panel) return;
+  var GAMES=[
+    {k:'NYJ @ TEN', home:'TEN', away:'NYJ', market:-3.0, total:39,
+     rows:[
+       {m:'MooseMetrics',  line:-2.5,  hw:null, age:'43h'},
+       {m:'EdgeDesk',      line:-3.0,  hw:0.67, age:'17h'},
+       {m:'+EV Model',     line:-10.6, hw:0.82, age:'42h'}
+     ], cons:{line:-6.0, hw:0.75, n:3}},
+    {k:'ARI @ LAC', home:'LAC', away:'ARI', market:-10.5, total:45.5,
+     rows:[
+       {m:'MooseMetrics',  line:-6.2,  hw:null, age:'44h'},
+       {m:'EdgeDesk',      line:-4.9,  hw:0.68, age:'17h'},
+       {m:'+EV Model',     line:-2.3,  hw:0.57, age:'42h'}
+     ], cons:{line:-4.5, hw:0.62, n:3}},
+    {k:'CLE @ JAX', home:'JAX', away:'CLE', market:null, total:null,
+     rows:[
+       {m:'MooseMetrics',  line:-2.1,  hw:null, age:'43h'},
+       {m:'EdgeDesk',      line:-8.1,  hw:0.78, age:'17h'},
+       {m:'+EV Model',     line:-12.4, hw:0.85, age:'42h'}
+     ], cons:{line:-7.5, hw:0.81, n:3}}
+  ];
+  var cur=0;
+  function spread(v){return v==null?'\u2014':((v>0?'+':'\u2212')+Math.abs(v).toFixed(1));}
+  function delta(line,mkt,g){
+    if(line==null||mkt==null)return '<span class="dlt">\u2014</span>';
+    var d=Math.round((line-mkt)*10)/10;
+    var side=d<0?g.home:g.away;
+    var t=d===0?'on the market\u2019s number'
+      :(Math.abs(d).toFixed(1)+' points further onto '+side+' than the market');
+    /* a model sitting exactly on the number is 0.0, never a signed zero */
+    var txt=d===0?'0.0':((d>0?'+':'\u2212')+Math.abs(d).toFixed(1));
+    return '<span class="dlt'+(Math.abs(d)>=3?' big':'')+'" title="'+t+'">'+txt+'</span>';
+  }
+  function paint(){
+    var g=GAMES[cur];
+    tabsEl.innerHTML=GAMES.map(function(x,i){
+      return '<button role="tab" aria-selected="'+(i===cur)+'" data-i="'+i+'">'+x.k+'</button>';
+    }).join('');
+    var mk=g.market==null
+      ? '<div class="mkrow"><span class="mktag">Market</span><span>no price captured for this game yet</span></div>'
+      : '<div class="mkrow"><span class="mktag">Market</span><span>'+g.home+' <b>'+spread(g.market)+'</b></span>'+
+        '<span class="mktag">Total</span><span><b>'+g.total.toFixed(1)+'</b></span>'+
+        '<span class="mktag">Captured</span><span>consensus across books</span></div>';
+    var body=g.rows.map(function(r){
+      return '<tr><td class="who">'+r.m+'</td>'+
+        '<td class="mono">'+g.home+' '+spread(r.line)+'</td>'+
+        '<td class="num">'+delta(r.line,g.market,g)+'</td>'+
+        '<td class="num">'+(r.hw==null?'\u2014':Math.round(100*r.hw)+'%')+'</td>'+
+        '<td class="age">'+r.age+'</td></tr>';
+    }).join('');
+    panel.innerHTML=mk+
+      '<div style="overflow-x:auto"><table class="mcw"><thead><tr>'+
+      '<th>Model</th><th>Model line</th><th style="text-align:right">&#916; Mkt</th>'+
+      '<th style="text-align:right">Home %</th><th style="text-align:right">Age</th>'+
+      '</tr></thead><tbody>'+body+
+      '<tr class="cons"><td class="who">Consensus &middot; n='+g.cons.n+'</td>'+
+      '<td class="mono">'+g.home+' '+spread(g.cons.line)+'</td>'+
+      '<td class="num">'+delta(g.cons.line,g.market,g)+'</td>'+
+      '<td class="num">'+Math.round(100*g.cons.hw)+'%</td>'+
+      '<td class="age"></td></tr>'+
+      '</tbody></table></div>';
+    [].slice.call(tabsEl.querySelectorAll('button')).forEach(function(b){
+      b.addEventListener('click',function(){ cur=+b.getAttribute('data-i'); paint(); });
+    });
+  }
+  paint();
 })();
 
 /* ======================================================================
