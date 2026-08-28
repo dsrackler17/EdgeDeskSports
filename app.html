@@ -21915,7 +21915,7 @@ function fbLoadCfb(signal){
     S.up=[];
     for(i=0;i<rows.length;i++){
       r=rows[i];
-      var hFbs=(r.home_division==='fbs'),aFbs=(r.away_division==='fbs');
+      var hFbs=fbP4IsFbs(r.home_division,r.home_team),aFbs=fbP4IsFbs(r.away_division,r.away_team);
       if(!hFbs&&!aFbs)continue;
       var done=(String(r.completed).toUpperCase()==='TRUE')&&r.home_points!=null&&r.away_points!=null;
       if(done){
@@ -22912,9 +22912,17 @@ function fbP4Schedule(season,signal){
    September blowout gets absorbed as though it were an FBS result. The only FBS
    list the browser actually has is the trained seed table, so that is what
    resolves it, and the board says when it had to. */
+/* Is this team FBS? The division string when the feed carries a usable one
+   — read case-insensitively, because 'fbs', 'FBS' and 'Football Bowl
+   Subdivision' have all been seen in the wild and a strict === turned a
+   vocabulary change into every team silently derated to the FCS floor —
+   and the shipped seed table when it does not: a team the model has a
+   seed rating for is an FBS team by construction. */
 function fbP4IsFbs(division,teamName){
-  if(division==='fbs')return true;
-  if(division&&division!=='fbs')return false;
+  var d=String(division==null?'':division).toLowerCase().trim();
+  if(d==='fbs'||d.indexOf('bowl')>=0||d==='i-a'||d==='ia')return true;
+  if(d==='fcs'||d.indexOf('championship')>=0||d==='i-aa'||d==='iaa'||d==='ii'||d==='iii')return false;
+  if(d&&d!=='fbs')return false;
   var P=window.EDCfbP4Params,E=window.EDCfbP4;
   if(!P||!E||!P.rating||!P.rating.seed_ratings)return true;
   return Object.prototype.hasOwnProperty.call(P.rating.seed_ratings,E.normKey(teamName));
@@ -23118,7 +23126,13 @@ function fbP4Request(u){
     season:g.season,week:g.week,state:FB.p4.state,
     game:{home:g.home_team,away:g.away_team,neutral_site:g.neutral_site,
       venue_id:g.venue_id,kickoff:g.start_date,
-      home_fbs:g.home_division==='fbs',away_fbs:g.away_division==='fbs'},
+      /* the same classifier the slate builder uses — the strict === here is
+         what flattened the whole board when the feed's division vocabulary
+         changed: every team read non-FBS, the engine derated everyone to
+         the FCS floor, and TCU -11 became TCU -0.8 with nothing on screen
+         saying why */
+      home_fbs:fbP4IsFbs(g.home_division,g.home_team),
+      away_fbs:fbP4IsFbs(g.away_division,g.away_team)},
     teams:{
       home:{conference:g.home_conference,roster:FB.p4.roster[hk]||null,
         qb:null,injuries:null,news:null,coaching:null,schedule:fbP4SchedCtx(g,'home')},
