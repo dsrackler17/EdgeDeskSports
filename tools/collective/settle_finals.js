@@ -93,16 +93,42 @@ function teamsAgree(a, b) {
   if (!x || !y) return false;
   if (x === y) return true;
   const n = Math.min(x.length, y.length);
-  if (n < 6) return false;
-  return x.slice(0, n) === y.slice(0, n);
+  if (x.slice(0, n) !== y.slice(0, n)) return false;
+  /* Six characters of agreement is the bar for spelled-out NAMES, where a
+     shorter overlap is a coincidence ("Miami" and "Michigan" share nothing,
+     but "North Caro..." and "North Texas" would on a looser rule). */
+  if (n >= 6) return true;
+  /* CODES are the other case, and they need their own rule: nflverse spells
+     the Rams "LA" while the Collective's schedule says "LAR", so a Rams game
+     matched nothing at all and would never have settled. This is the same
+     collision the slate uploader hits between a file's team column and its
+     pick column, and it takes the same answer: a short code may latch onto
+     another CODE (four characters is the longest any of these sources use),
+     never onto a spelled-out name. "LAR" still refuses "LAC", and "NE" still
+     refuses "NO" — neither is a prefix of the other. */
+  return n >= 2 && x.length <= 4 && y.length <= 4;
+}
+
+/* A feed row carries every spelling its source knows for a team -- ESPN alone
+   gives location, displayName, shortDisplayName and abbreviation for the same
+   school ("TCU", "TCU Horned Frogs", "Horned Frogs", "TCU"). The Collective
+   stores exactly one, truncated. Agreeing on ANY of them is what makes the
+   join work across sources that each spell teams their own way. */
+function namesOf(row, side) {
+  const list = row[side + '_names'];
+  return (Array.isArray(list) && list.length ? list : [row[side + '_team']])
+    .filter(Boolean);
+}
+function teamsAgreeAny(mine, candidates) {
+  return (candidates || []).some(c => teamsAgree(mine, c));
 }
 
 /* Both sides, in one call, so a row is only ever matched as a GAME. Matching
    a single team is how a slate lands on the wrong game when a team plays
    twice in a window. */
 function gameMatches(collectiveGame, feedRow) {
-  return teamsAgree(collectiveGame.home, feedRow.home_team) &&
-         teamsAgree(collectiveGame.away, feedRow.away_team);
+  return teamsAgreeAny(collectiveGame.home, namesOf(feedRow, 'home')) &&
+         teamsAgreeAny(collectiveGame.away, namesOf(feedRow, 'away'));
 }
 
 function ymd(v) {
@@ -135,7 +161,10 @@ function isFinalScore(v) {
    ambiguity check below costs nothing per game. */
 function feedTeamKeys(feedRows) {
   const set = new Set();
-  (feedRows || []).forEach(r => { set.add(teamKey(r.home_team)); set.add(teamKey(r.away_team)); });
+  (feedRows || []).forEach(r => {
+    namesOf(r, 'home').forEach(n => set.add(teamKey(n)));
+    namesOf(r, 'away').forEach(n => set.add(teamKey(n)));
+  });
   set.delete('');
   return set;
 }
@@ -178,8 +207,12 @@ function truncationIsAmbiguous(name, keys) {
  */
 function findFinal(game, feedRows, keys) {
   const dated = (feedRows || []).filter(r => datesAgree(game.kickoff_at, r.start_date));
-  const eq = (a, b) => teamKey(a) === teamKey(b) && teamKey(a) !== '';
-  const exact = dated.filter(r => eq(game.home, r.home_team) && eq(game.away, r.away_team));
+  const eqAny = (mine, cands) => {
+    const k = teamKey(mine);
+    return !!k && (cands || []).some(c => teamKey(c) === k);
+  };
+  const exact = dated.filter(r =>
+    eqAny(game.home, namesOf(r, 'home')) && eqAny(game.away, namesOf(r, 'away')));
   const loose = dated.filter(r => gameMatches(game, r));
 
   let row = null, how = 'exact';
@@ -202,7 +235,10 @@ function findFinal(game, feedRows, keys) {
      also playing that day: that is the near miss. */
   const teamKeys = keys || feedTeamKeys(feedRows);
   const sameDayKeys = new Set();
-  dated.forEach(r => { sameDayKeys.add(teamKey(r.home_team)); sameDayKeys.add(teamKey(r.away_team)); });
+  dated.forEach(r => {
+    namesOf(r, 'home').forEach(n => sameDayKeys.add(teamKey(n)));
+    namesOf(r, 'away').forEach(n => sameDayKeys.add(teamKey(n)));
+  });
   const rival = (mine, matched) => {
     const k = teamKey(mine), mk = teamKey(matched);
     if (!k || k === mk) return false;      /* exact -- no truncation was guessed */
@@ -273,7 +309,7 @@ function normNfl(r) {
     /* nflverse marks a played game by carrying both scores; there is no
        completed flag, and an unplayed row has them empty. */
     completed: isFinalScore(r.home_score) && isFinalScore(r.away_score),
-    season: r.season, week: r.week,
+    season: r.season, week: r.week, source: 'nflverse',
   };
 }
 function normCfb(r) {
@@ -282,7 +318,50 @@ function normCfb(r) {
     home_team: r.home_team, away_team: r.away_team,
     home_points: r.home_points, away_points: r.away_points,
     completed: TRUEISH(r.completed),
-    season: r.season, week: r.week,
+    season: r.season, week: r.week, source: 'cfbfastR',
+  };
+}
+
+/* ESPN's public scoreboard: the LIVE source, and the only one of these that
+   carries a game minutes after it ends.
+ *
+ * The season CSVs below are how this repo already reads football, and they
+ * are excellent for a finished week and useless for a finished GAME:
+ * cfbfastR had published no 2026 file at all while the 2026 college season
+ * was under way, so a board waiting on it would never have graded a single
+ * Saturday. nflverse carries 2026 but fills scores on its own cadence.
+ *
+ * ESPN is keyless, public, per-day, and already trusted elsewhere in this
+ * repo (football/rosters/fetch_rosters.js reads the same API for rosters).
+ * A search engine would be the wrong instrument here: no stable contract, no
+ * completed flag, and a score parsed out of rendered HTML is exactly the kind
+ * of number that must never grade a model's record.
+ *
+ * Every spelling ESPN knows is carried through, because the Collective stores
+ * one truncated name and the join has to survive that. */
+function normEspn(ev) {
+  const comp = (ev && ev.competitions && ev.competitions[0]) || {};
+  const st = (comp.status && comp.status.type) || {};
+  const sideOf = ha => (comp.competitors || []).find(c => c.homeAway === ha) || {};
+  const home = sideOf('home'), away = sideOf('away');
+  const names = c => {
+    const t = c.team || {};
+    return [t.location, t.displayName, t.shortDisplayName, t.abbreviation, t.name,
+            t.nickname, t.slug].filter(Boolean).map(String);
+  };
+  const score = c => (c.score === undefined || c.score === null || c.score === '')
+    ? '' : String(c.score);
+  return {
+    start_date: ev.date || comp.date || '',
+    home_team: (home.team && (home.team.location || home.team.displayName)) || '',
+    away_team: (away.team && (away.team.location || away.team.displayName)) || '',
+    home_names: names(home), away_names: names(away),
+    home_points: score(home), away_points: score(away),
+    /* ESPN says so itself. `completed` is the flag; state "post" is the
+       corroboration. Neither is inferred from the clock or the score. */
+    completed: st.completed === true || String(st.state).toLowerCase() === 'post',
+    espn_status: st.name || st.description || '',
+    source: 'espn',
   };
 }
 
@@ -292,20 +371,133 @@ async function fetchText(url) {
   return await res.text();
 }
 
-const FEED_CACHE = new Map();
-async function feedRows(kind, season) {
-  const key = `${kind}:${season}`;
-  if (FEED_CACHE.has(key)) return FEED_CACHE.get(key);
-  let rows;
-  if (kind === 'nfl') {
-    rows = parseCsv(await fetchText(URL_NFL))
-      .filter(r => String(r.season) === String(season))
-      .map(normNfl);
-  } else {
-    rows = parseCsv(await fetchText(URL_CFB(season))).map(normCfb);
+/* ---- the source chain -------------------------------------------------- */
+/* Tried in order, and it heals itself: a source that is unreachable, that has
+   not published the season, or that simply does not carry this game is
+   skipped and the next one answers. cfbfastR publishing no 2026 file is not
+   an outage to wait out -- it is a Tuesday, and the board still has to grade.
+
+   Every source that DOES carry the game is kept, because two sources that
+   disagree about a final is the one case where settling would be worse than
+   waiting. */
+const ESPN_PATH = { nfl: 'football/nfl', cfb: 'football/college-football' };
+function espnUrl(kind, yyyymmdd) {
+  const groups = kind === 'cfb' ? '&groups=80' : '';
+  return `https://site.api.espn.com/apis/site/v2/sports/${ESPN_PATH[kind]}/scoreboard` +
+    `?dates=${yyyymmdd}&limit=400${groups}`;
+}
+function compactDate(iso) { return ymd(iso).replace(/-/g, ''); }
+
+const CACHE = new Map();
+async function cached(key, fn) {
+  if (CACHE.has(key)) return CACHE.get(key);
+  const v = await fn();
+  CACHE.set(key, v);
+  return v;
+}
+
+/* ESPN, one call per calendar day the slate actually touches -- a Saturday
+   board asks for one day, not a season. Failures are returned, never thrown:
+   a dead source must not take the run down with it. */
+async function espnRows(kind, dates, notes) {
+  const out = [];
+  for (const d of dates) {
+    if (!d) continue;
+    try {
+      const txt = await cached(`espn:${kind}:${d}`, () => fetchText(espnUrl(kind, d)));
+      const j = JSON.parse(txt);
+      const rows = (j.events || []).map(normEspn);
+      out.push(...rows);
+      notes.push({ source: 'espn', date: d, events: rows.length,
+        completed: rows.filter(r => r.completed).length });
+    } catch (e) {
+      notes.push({ source: 'espn', date: d, error: String(e.message).slice(0, 140) });
+    }
   }
-  FEED_CACHE.set(key, rows);
-  return rows;
+  return out;
+}
+
+async function csvRows(kind, season, notes) {
+  try {
+    if (kind === 'nfl') {
+      const rows = parseCsv(await cached('nfl:all', () => fetchText(URL_NFL)))
+        .filter(r => String(r.season) === String(season)).map(normNfl);
+      notes.push({ source: 'nflverse', season, rows: rows.length,
+        completed: rows.filter(r => r.completed).length });
+      return rows;
+    }
+    const rows = parseCsv(await cached(`cfb:${season}`, () => fetchText(URL_CFB(season)))).map(normCfb);
+    notes.push({ source: 'cfbfastR', season, rows: rows.length,
+      completed: rows.filter(r => r.completed).length });
+    return rows;
+  } catch (e) {
+    notes.push({ source: kind === 'nfl' ? 'nflverse' : 'cfbfastR', season,
+      error: String(e.message).slice(0, 140) });
+    return [];
+  }
+}
+
+/* The repo's own mirror, the same fallback football/health/daily_check.js
+   already uses when cfbfastR has not published a season. Read-only anon key,
+   RLS select only -- the identical public key the site ships. */
+async function mirrorRows(kind, season, notes) {
+  if (kind !== 'cfb') return [];
+  try {
+    const url = `${SB_URL}/rest/v1/games?select=start_date,completed,home_team,home_points,` +
+      `away_team,away_points,season,week&season=eq.${encodeURIComponent(season)}&limit=2000`;
+    const res = await fetch(url, { headers: { apikey: ANON, Authorization: `Bearer ${ANON}` } });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const rows = (await res.json()).map(r => ({
+      start_date: r.start_date, home_team: r.home_team, away_team: r.away_team,
+      home_points: r.home_points, away_points: r.away_points,
+      completed: !!r.completed, season: r.season, week: r.week, source: 'cfb.games mirror',
+    }));
+    notes.push({ source: 'cfb.games mirror', season, rows: rows.length,
+      completed: rows.filter(r => r.completed).length });
+    return rows;
+  } catch (e) {
+    notes.push({ source: 'cfb.games mirror', season, error: String(e.message).slice(0, 140) });
+    return [];
+  }
+}
+
+/* Every source that answered, in preference order. */
+async function allSources(kind, season, dates, notes) {
+  const espn = await espnRows(kind, dates, notes);
+  const csv = await csvRows(kind, season, notes);
+  const mirror = (espn.length || csv.length) ? [] : await mirrorRows(kind, season, notes);
+  return [
+    { name: 'espn', rows: espn },
+    { name: kind === 'nfl' ? 'nflverse' : 'cfbfastR', rows: csv },
+    { name: 'cfb.games mirror', rows: mirror },
+  ].filter(s => s.rows.length);
+}
+
+/* One game, every source that has it. Agreement is required, not assumed:
+   the first source to answer does NOT get the last word when a second one
+   contradicts it, because a contested final grades every model on the game
+   against a number two feeds could not agree on. */
+function findAcrossSources(game, sources) {
+  const found = [];
+  for (const src of sources) {
+    const f = findFinal(game, src.rows);
+    if (f.ok) found.push({ ...f, source: src.name });
+    else found.push({ ok: false, reason: f.reason, source: src.name });
+  }
+  const hits = found.filter(f => f.ok);
+  if (!hits.length) {
+    const why = found.map(f => `${f.source}:${f.reason}`).join(', ');
+    return { ok: false, reason: 'no_source_has_a_final', detail: why };
+  }
+  const disagree = hits.some(h =>
+    h.home_score !== hits[0].home_score || h.away_score !== hits[0].away_score);
+  if (disagree) {
+    return { ok: false, reason: 'sources_disagree',
+      detail: hits.map(h => `${h.source} ${h.away_score}-${h.home_score}`).join(' vs ') };
+  }
+  /* Prefer the exact-matched, most corroborated answer for its metadata. */
+  const best = hits.find(h => h.matched_by === 'exact') || hits[0];
+  return { ...best, agreed_by: hits.map(h => h.source), sources_checked: found.length };
 }
 
 /* ---- the Collective's own API ------------------------------------------ */
@@ -388,10 +580,11 @@ async function capturedClose(sport, gameId, token) {
 /* ---- the run ------------------------------------------------------------ */
 
 function parseArgs(argv) {
-  const a = { commit: false, json: false, sport: null, season: null, limit: 200 };
+  const a = { commit: false, json: false, verify: false, sport: null, season: null, limit: 200 };
   for (let i = 0; i < argv.length; i++) {
     const v = argv[i];
     if (v === '--commit') a.commit = true;
+    else if (v === '--verify') a.verify = true;
     else if (v === '--json') a.json = true;
     else if (v === '--sport') a.sport = argv[++i];
     else if (v === '--season') a.season = Number(argv[++i]);
@@ -412,9 +605,14 @@ function needsSettling(games, nowMs) {
 async function main() {
   const args = parseArgs(process.argv.slice(2));
   const log = args.json ? () => {} : (...m) => console.log(...m);
-  const report = { checked: 0, settled: 0, skipped: [], failed: [], dry_run: !args.commit };
+  const report = { checked: 0, settled: 0, skipped: [], failed: [], sources: [],
+                   dry_run: !args.commit, verify_only: args.verify };
 
-  const token = await accessToken();
+  /* --verify proves the SOURCES, and needs no admin credential to do it:
+     the game list and whether a game has a result are public. That is the
+     point -- you can confirm the feeds are live and the matcher agrees
+     before you hand this job a key to anything. */
+  const token = args.verify ? null : await accessToken();
   const meta = await apiGet('collective_public', '/v1/meta', null);
   let sports = (meta.sports || []).map(s => ({ code: s.code, season: s.season }));
   if (args.sport) sports = sports.filter(s => s.code.toUpperCase() === args.sport.toUpperCase());
@@ -435,29 +633,51 @@ async function main() {
     log(`- ${sp.code} ${sp.season}: ${need.length} finished game(s) with no result yet`);
     if (!need.length) continue;
 
-    let rows;
-    try { rows = await feedRows(kind, sp.season); }
-    catch (e) {
-      report.failed.push({ sport: sp.code, reason: 'feed_unreachable', detail: e.message });
-      log(`  ! ${sp.code}: finals feed unreachable (${e.message})`);
+    /* Only the days this slate actually touches -- a Saturday board asks
+       ESPN for one day, not a season. */
+    const dates = [...new Set(need.flatMap(g => {
+      const d = compactDate(g.kickoff_at);
+      if (!d) return [];
+      const t = Date.parse(ymd(g.kickoff_at) + 'T00:00:00Z');
+      return [compactDate(new Date(t - 86400000).toISOString()), d,
+              compactDate(new Date(t + 86400000).toISOString())];
+    }))].filter(Boolean);
+
+    const notes = [];
+    const sources = await allSources(kind, sp.season, dates, notes);
+    report.sources.push({ sport: sp.code, season: sp.season, tried: notes,
+      answered: sources.map(s2 => `${s2.name} (${s2.rows.length} rows)`) });
+    notes.forEach(n => log(`    [${n.source}${n.date ? ' ' + n.date : ''}] ` +
+      (n.error ? `unavailable: ${n.error}` : `${n.rows ?? n.events} rows, ${n.completed} completed`)));
+    if (!sources.length) {
+      report.failed.push({ sport: sp.code, reason: 'no_source_answered' });
+      log(`  ! ${sp.code}: no finals source answered. Nothing settled, nothing guessed.`);
       continue;
     }
 
-    const teamKeys = feedTeamKeys(rows);
     for (const g of need.slice(0, args.limit)) {
       report.checked++;
-      const fin = findFinal(g, rows, teamKeys);
+      const fin = findAcrossSources(g, sources);
       if (!fin.ok) {
-        report.skipped.push({ game_id: g.game_id, label: g.label, reason: fin.reason });
-        log(`  · ${g.label}: ${fin.reason}`);
+        report.skipped.push({ game_id: g.game_id, label: g.label, reason: fin.reason, detail: fin.detail });
+        log(`  · ${g.label}: ${fin.reason}${fin.detail ? ' — ' + fin.detail : ''}`);
         continue;
       }
-      const close = await capturedClose(sp.code, g.game_id, token);
+      const close = args.verify ? null : await capturedClose(sp.code, g.game_id, token);
       const body = settleBody(g, fin, close);
-      batch.push({ sport: sp.code, label: g.label, body });
+      batch.push({ sport: sp.code, label: g.label, body, meta: fin });
       log(`  ✓ ${g.label}: ${fin.away_score}-${fin.home_score}` +
-        (close ? ` (close ${body.closing_spread})` : ' (no captured close — settling on the score alone)'));
+        `  [${fin.agreed_by.join('+')}${fin.matched_by === 'truncated' ? ', name truncated' : ''}]` +
+        (fin.needs_review ? '  ⚠ REVIEW: ' + fin.joined : '') +
+        (close ? '' : '  (no captured close — settling on the score alone)'));
     }
+  }
+
+  if (args.verify) {
+    log(`\nVerify: ${report.checked} game(s) checked, ${batch.length} have an agreed final, ` +
+      `${report.skipped.length} do not. Nothing was written and no credential was used to settle.`);
+    if (args.json) console.log(JSON.stringify(report, null, 2));
+    return report.failed.length ? 2 : 0;
   }
 
   if (!batch.length) {
@@ -485,8 +705,9 @@ async function main() {
 }
 
 module.exports = {
-  teamKey, teamsAgree, gameMatches, datesAgree, ymd, isFinalScore,
-  findFinal, settleBody, needsSettling, parseCsv, normNfl, normCfb, parseArgs,
+  teamKey, teamsAgree, teamsAgreeAny, namesOf, gameMatches, datesAgree, ymd, isFinalScore,
+  findFinal, findAcrossSources, settleBody, needsSettling, parseCsv,
+  normNfl, normCfb, normEspn, espnUrl, compactDate, parseArgs,
   feedTeamKeys, truncationIsAmbiguous,
   FEED, ODDS_LEAGUE,
 };

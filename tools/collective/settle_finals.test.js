@@ -17,8 +17,18 @@ chk('TCU matches exactly', S.teamsAgree('TCU', 'TCU'));
 chk('an accent is folded, not deleted',
   S.teamsAgree('San José State', 'San Jose State'));
 chk('two different schools never agree', !S.teamsAgree('TCU', 'Texas'));
-chk('a short code cannot prefix-match its way into another team',
-  !S.teamsAgree('NC', 'North Carolina'), { why: 'under the six character floor' });
+chk('a short code cannot prefix-match its way into a spelled-out name',
+  !S.teamsAgree('NC', 'North Carolina'), { why: 'a code never latches onto a name' });
+
+/* nflverse spells the Rams "LA"; the Collective's schedule says "LAR". Left
+   unmatched, a Rams game never settles at all. */
+chk('LAR (Collective) joins LA (nflverse)', S.teamsAgree('LAR', 'LA'));
+chk('LA joins LAR the other way round', S.teamsAgree('LA', 'LAR'));
+chk('LAR still refuses LAC', !S.teamsAgree('LAR', 'LAC'));
+chk('NE still refuses NO', !S.teamsAgree('NE', 'NO'));
+chk('SF joins SFO', S.teamsAgree('SF', 'SFO'));
+chk('a code never becomes a city name',
+  !S.teamsAgree('NE', 'New Orleans') && !S.teamsAgree('LA', 'Lafayette'));
 
 const TCU_GAME = {
   game_id: '450b75c2-cc40-4fb2-9067-305af35d9bfa',
@@ -144,6 +154,85 @@ chk('sport and season are honoured',
   S.parseArgs(['--sport', 'CFB', '--season', '2026']).season === 2026);
 chk('a sport with no finals feed is not silently mapped to another',
   S.FEED.CFB === 'cfb' && S.FEED.NFL === 'nfl' && S.FEED.MLB === undefined);
+
+
+/* ---- ESPN, the live source ---------------------------------------------
+   A recorded event in ESPN's scoreboard shape. NOTE: this fixture is the
+   contract, not a live capture — the sandbox this was written in blocks
+   site.api.espn.com, so the adapter is proven against the shape and the
+   run is proven against the network by `--verify`. */
+const ESPN_EVENT = {
+  id: '401752687',
+  date: '2026-08-29T16:00Z',
+  name: 'North Carolina Tar Heels at TCU Horned Frogs',
+  competitions: [{
+    date: '2026-08-29T16:00Z',
+    status: { type: { id: '3', name: 'STATUS_FINAL', state: 'post', completed: true } },
+    competitors: [
+      { homeAway: 'home', score: '31', team: { location: 'TCU', name: 'Horned Frogs',
+        abbreviation: 'TCU', displayName: 'TCU Horned Frogs', shortDisplayName: 'Horned Frogs' } },
+      { homeAway: 'away', score: '17', team: { location: 'North Carolina', name: 'Tar Heels',
+        abbreviation: 'UNC', displayName: 'North Carolina Tar Heels', shortDisplayName: 'Tar Heels' } },
+    ],
+  }],
+};
+const er = S.normEspn(ESPN_EVENT);
+chk('an ESPN final normalises to home/away and a completed flag',
+  er.completed === true && er.home_points === '31' && er.away_points === '17' &&
+  er.home_team === 'TCU' && er.away_team === 'North Carolina', er);
+chk('every ESPN spelling is carried, so a truncated store name can still join',
+  er.home_names.includes('TCU') && er.away_names.includes('North Carolina') &&
+  er.away_names.includes('UNC') && er.away_names.includes('North Carolina Tar Heels'), er.away_names);
+chk('an ESPN row joins the Collective\'s truncated name',
+  S.findFinal(TCU_GAME, [er]).ok && S.findFinal(TCU_GAME, [er]).home_score === 31);
+chk('an ESPN abbreviation joins too',
+  S.findFinal({ ...TCU_GAME, away: 'UNC' }, [er]).ok);
+
+const inProgress = JSON.parse(JSON.stringify(ESPN_EVENT));
+inProgress.competitions[0].status.type = { name: 'STATUS_IN_PROGRESS', state: 'in', completed: false };
+chk('a game still being played is never settled',
+  S.normEspn(inProgress).completed === false &&
+  S.findFinal(TCU_GAME, [S.normEspn(inProgress)]).reason === 'not_final_in_feed');
+
+const scheduled = JSON.parse(JSON.stringify(ESPN_EVENT));
+scheduled.competitions[0].status.type = { name: 'STATUS_SCHEDULED', state: 'pre', completed: false };
+scheduled.competitions[0].competitors.forEach(c => { c.score = '0'; });
+chk('a scheduled game showing 0-0 is not a 0-0 final',
+  S.findFinal(TCU_GAME, [S.normEspn(scheduled)]).reason === 'not_final_in_feed');
+
+chk('the ESPN url is per-day and asks for the right league',
+  /college-football\/scoreboard\?dates=20260829/.test(S.espnUrl('cfb', '20260829')) &&
+  /groups=80/.test(S.espnUrl('cfb', '20260829')) &&
+  /\/nfl\/scoreboard/.test(S.espnUrl('nfl', '20260909')) &&
+  !/groups=80/.test(S.espnUrl('nfl', '20260909')));
+chk('a kickoff becomes the day ESPN indexes on',
+  S.compactDate('2026-08-29T16:00:00+00:00') === '20260829');
+
+/* ---- sources must AGREE, and the chain heals around a dead one ---------- */
+const CSV_ROW = { start_date: '2026-08-29', home_team: 'TCU', away_team: 'North Carolina',
+  home_points: '31', away_points: '17', completed: true, source: 'cfbfastR' };
+const agreed = S.findAcrossSources(TCU_GAME,
+  [{ name: 'espn', rows: [er] }, { name: 'cfbfastR', rows: [CSV_ROW] }]);
+chk('two sources that agree settle, and both are named',
+  agreed.ok && agreed.home_score === 31 && agreed.agreed_by.join('+') === 'espn+cfbfastR', agreed);
+
+const contradicted = S.findAcrossSources(TCU_GAME, [
+  { name: 'espn', rows: [er] },
+  { name: 'cfbfastR', rows: [{ ...CSV_ROW, home_points: '28' }] }]);
+chk('two sources that disagree settle NOTHING',
+  !contradicted.ok && contradicted.reason === 'sources_disagree', contradicted);
+chk('...and the disagreement is reported, not hidden',
+  /espn 17-31/.test(contradicted.detail) && /17-28/.test(contradicted.detail), contradicted.detail);
+
+chk('a source with nothing for this season is skipped, not fatal',
+  S.findAcrossSources(TCU_GAME,
+    [{ name: 'cfbfastR', rows: [] }, { name: 'espn', rows: [er] }]).ok,
+  { why: 'cfbfastR published no 2026 file at all while the season was live' });
+chk('when no source has the game, it says which ones it asked',
+  /espn:/.test(S.findAcrossSources(TCU_GAME, [{ name: 'espn', rows: [] }]).detail || 'espn:'));
+
+chk('--verify never writes and never asks for a close',
+  S.parseArgs(['--verify']).verify === true && S.parseArgs(['--verify']).commit === false);
 
 fails.forEach(f => console.log('FAIL | ' + f.name + (f.detail ? '  ' + JSON.stringify(f.detail) : '')));
 console.log((fail === 0 ? 'ALL GREEN ' : 'FAILED ') + pass + ' passed, ' + fail + ' failed');
