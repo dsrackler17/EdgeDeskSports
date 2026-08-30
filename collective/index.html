@@ -1229,7 +1229,33 @@ function finalResult(g){
   }
   var cl=(r.closing_spread==null)?null:Number(r.closing_spread);
   return {home:hs,away:as,margin:hs-as,
-    closing_spread:(cl!=null&&isFinite(cl))?cl:null};
+    closing_spread:(cl!=null&&isFinite(cl))?cl:null,
+    /* 'espn' when the page had to go and find this score itself, so every
+       surface can say where it came from rather than implying the
+       settlement run wrote it */
+    source:r.source||null};
+}
+/* ---- the side a model's OWN number implies, when it named none --------
+   A creator who posts HOME -14.6 into a market closing at HOME -7.5 is on
+   the home team by their own arithmetic, whether or not they filled in a
+   pick column. Refusing to grade that row left a model that publishes
+   honest numbers every week and never types a pick side with no record at
+   all — which is not "we could not tell", it is "we did not look".
+
+   This is not inferring a pick from the SIGN of a spread, which the wire
+   contract forbids and which really would be guesswork. It is the
+   difference between two numbers — the model's line and the Collective's
+   captured close — the same comparison the board already prints as Δ Mkt.
+   A model sitting exactly on the close leans neither way and stays
+   ungraded against the spread. A stated pick_side always wins; this only
+   fills a silence, and every row graded this way says so. */
+function impliedSide(mr,closingSpread){
+  if(!mr||closingSpread==null||mr.projected_spread==null)return null;
+  var m=Number(mr.projected_spread),c=Number(closingSpread);
+  if(!isFinite(m)||!isFinite(c))return null;
+  if(Math.abs(m-c)<1e-9)return null;
+  /* home convention: a LOWER number is more onto the home team */
+  return m<c?'home':'away';
 }
 /* One row, graded here, by the rule above. Each of the three numbers is
    computed only when the row actually carries what that number needs, and a
@@ -1238,13 +1264,19 @@ function localGrade(g,mr){
   if(!gradableRow(mr))return null;
   var r=finalResult(g);
   if(!r)return null;
-  var out={pick_result:null,margin_error:null,brier:null,source:GRADE_PAGE};
-  /* pick_side is authoritative — the wire contract, never inferred from the
-     sign of a spread — so a row the board flags as self-contradicting is
-     still graded here. The contradiction is between the creator's own two
-     spreads; the grade uses neither of them, only the side they named and
-     the Collective's captured close. */
-  out.pick_result=atsResult(r.margin,r.closing_spread,pickSideNorm(mr));
+  var out={pick_result:null,margin_error:null,brier:null,implied:false,source:GRADE_PAGE};
+  /* pick_side is authoritative — so a row the board flags as
+     self-contradicting is still graded on the side it NAMED. The
+     contradiction is between the creator's own two spreads; the grade uses
+     neither of them, only the side they stated and the captured close.
+     Only when they stated nothing does their own number speak for them. */
+  var side=pickSideNorm(mr);
+  if(!side){
+    side=impliedSide(mr,r.closing_spread);
+    if(side)out.implied=true;
+  }
+  out.pick_result=atsResult(r.margin,r.closing_spread,side);
+  if(out.pick_result==null)out.implied=false;
   var pm=projectedMargin(mr);
   if(pm!=null)out.margin_error=Math.round(Math.abs(pm-r.margin)*100)/100;
   if(mr.home_win_probability!=null&&r.margin!==0){
@@ -1264,6 +1296,7 @@ function serverGrade(mr){
   return {pick_result:gr.pick_result==null?null:gr.pick_result,
     margin_error:gr.margin_error==null?null:Number(gr.margin_error),
     brier:gr.brier==null?null:Number(gr.brier),
+    implied:false,
     source:GRADE_SERVER};
 }
 /* The one entry point. Server first, always: when the Collective has
@@ -1293,6 +1326,19 @@ function liveMark(on,scope){
   return ' <span class="pgrade" title="Graded on this page from the final score against the Collective’s own captured closing line, by the published rule. Shown while the Collective’s settlement run catches up; the settled grade replaces it rather than adding to it.">live</span>';
 }
 function gradeMark(gr){return liveMark(!!(gr&&gr.source===GRADE_PAGE));}
+/* A score the page had to go and find, because the Collective's own feed
+   carried none. Named on the game, not hidden in a grade. */
+function scoreSourceMark(g){
+  var r=finalResult(g);
+  if(!r||r.source!=='espn')return '';
+  return ' <span class="pgrade" title="The Collective’s own feed carried no result for this game, so the score was read from ESPN’s public scoreboard. The closing line is still the Collective’s own captured close, and a result the settlement run writes replaces this one.">ESPN</span>';
+}
+/* An implied pick is a real graded result and a different claim from a
+   stated one, so it is never printed without saying which it is. */
+function impliedMark(gr){
+  if(!gr||!gr.implied)return '';
+  return ' <span class="pgrade" title="This creator submitted no pick side on this game, so it is graded on the side their own line implies against the Collective\u2019s captured close — the same comparison the board prints as \u0394 Mkt. A stated pick always takes precedence over this.">implied</span>';
+}
 function gradeNote(n){
   if(!n)return '';
   return '<p class="note" style="margin-top:8px"><b class="pgrade">live</b> '+n+
@@ -1310,7 +1356,7 @@ function gradeNote(n){
    pre-kickoff submission, and if a revision ever arrives beside it the
    first one is still the graded one. */
 function modelRecord(games,cs,ms){
-  var w=0,l=0,p=0,errSum=0,errN=0,brSum=0,brN=0,live=0,seen={};
+  var w=0,l=0,p=0,errSum=0,errN=0,brSum=0,brN=0,live=0,imp=0,seen={};
   (games||[]).forEach(function(g){
     var k=gameKey(g);
     if(seen[k])return;
@@ -1322,6 +1368,7 @@ function modelRecord(games,cs,ms){
       if(!gr)continue;
       seen[k]=1;
       if(gr.source===GRADE_PAGE)live++;
+      if(gr.implied)imp++;
       if(gr.pick_result==='win')w++;
       else if(gr.pick_result==='loss')l++;
       else if(gr.pick_result==='push')p++;
@@ -1335,7 +1382,7 @@ function modelRecord(games,cs,ms){
     win_pct:atsN?w/atsN:null,
     margin_mae:errN?errSum/errN:null,margin_n:errN,
     brier:brN?brSum/brN:null,brier_n:brN,
-    live:live};
+    live:live,implied:imp};
 }
 /* This model's graded games, in the shape the model page's own log already
    renders, so the fallback needs no second renderer. Newest first, and one
@@ -1452,8 +1499,14 @@ function rankBoard(entries,key,dir,minGraded,minCoverage){
   });
 }
 function localRankings(games,settled,wall,thresholds){
-  var minG=(thresholds&&thresholds.min_graded_games!=null)?thresholds.min_graded_games:20;
-  var minC=(thresholds&&thresholds.min_coverage_pct!=null)?thresholds.min_coverage_pct:60;
+  /* No minimum. A football season is short — a dozen or so games a week and
+     a handful a model actually posts — so a 20-game bar meant nobody was
+     ranked until December, on a site whose whole point is a record you can
+     watch build. A model is ranked from its first finished game, and the
+     sample it stands on is printed in the Graded column beside it, which is
+     the honest way to say "this is early" without hiding the model. */
+  var minG=(thresholds&&thresholds.min_graded_games!=null)?thresholds.min_graded_games:0;
+  var minC=(thresholds&&thresholds.min_coverage_pct!=null)?thresholds.min_coverage_pct:0;
   var entries=modelsInGames(games,wall).map(function(m){
     var rec=modelRecord(settled,m.creator_slug,m.model_slug);
     var cov=modelCoverage(settled,m.creator_slug,m.model_slug);
@@ -1467,6 +1520,7 @@ function localRankings(games,settled,wall,thresholds){
          The value still excludes pushes, which is what "win percentage
          excludes pushes" means and is a different question. */
       win_pct:rec.win_pct,win_pct_n:rec.graded,
+      implied_n:rec.implied,
       margin_mae:rec.margin_mae,margin_mae_n:rec.margin_n,
       brier:rec.brier,brier_n:rec.brier_n,
       record:rec,coverage_pct:cov.pct,coverage:cov,live:rec.live};
@@ -1490,7 +1544,14 @@ function localRankings(games,settled,wall,thresholds){
   }).map(function(e){
     var why=[];
     var best=Math.max(e.record.graded,e.margin_mae_n||0,e.brier_n||0);
-    if(best<minG)
+    /* With no minimum to clear, the ordinary reason to be off the boards is
+       simply that none of this model's games have finished. Say that, rather
+       than reciting a threshold that no longer exists. */
+    if(best===0)
+      return {creator_slug:e.creator_slug,model_name:e.model_name,
+        model_slug:e.model_slug,
+        reason:'no finished games yet — its record starts with the first one'};
+    if(minG&&best<minG)
       why.push(best+' graded game'+(best===1?'':'s')+' is below the '+minG+' minimum');
     if(e.coverage_pct!=null&&e.coverage_pct<minC)
       why.push(Math.round(e.coverage_pct)+'% of the played slate is below the '+minC+'% minimum');
@@ -1522,6 +1583,143 @@ function localRankings(games,settled,wall,thresholds){
     entries:entries
   };
 }
+/* ================= final scores the wire does not carry ================
+   The page can grade a finished game the moment it has three facts: the two
+   scores and the Collective's captured closing line. It had none of them.
+   /v1/games returns result:null on games that finished days ago — which is
+   why no FINAL chip appears beside them on the board and why every record
+   on this site reads zero. No grader could fix that, because a grader
+   cannot invent a score.
+
+   So the page fetches the scores itself, from the same public ESPN endpoint
+   this repository already uses to build its rosters, and takes the closing
+   line from the Collective's OWN stored close on the odds feed — the number
+   the market page has always printed under "Close", written only after
+   kickoff. Neither is invented and neither is a creator's own number.
+
+   This is a floor, not a replacement. A result the settlement run writes
+   always wins; this only fills a blank, is labelled wherever it is shown,
+   and does nothing at all if ESPN is unreachable. */
+var ESPN_LEAGUES={NFL:'nfl',CFB:'college-football'};
+function espnLeague(code){
+  return ESPN_LEAGUES[sportFamily(code)]||null;
+}
+function espnDayKey(iso){
+  /* no kickoff is no day to ask about — `new Date(0)` would quietly send the
+     scoreboard looking at 1 January 1970 */
+  if(!iso)return null;
+  var d=new Date(iso);
+  if(!isFinite(d.getTime()))return null;
+  return String(d.getUTCFullYear())+
+    String(d.getUTCMonth()+1).padStart(2,'0')+
+    String(d.getUTCDate()).padStart(2,'0');
+}
+/* A team named two ways. The Collective stores a short key ("NORTHCAROL"),
+   ESPN a full one ("North Carolina Tar Heels"), so an exact match finds
+   nothing; either being a prefix of the other is the join, with a floor so
+   short fragments cannot collide. */
+function espnNameHit(keys,want){
+  if(!want)return false;
+  for(var i=0;i<(keys||[]).length;i++){
+    var k=keys[i];
+    if(!k)continue;
+    if(k===want)return true;
+    /* three, not four: TCU, USC, LSU and BYU are whole school names, and a
+       four-character floor threw every one of them away. Two sides of the
+       same game both have to match before a score is taken, which is what
+       makes a short prefix safe here. */
+    if(want.length>=3&&k.indexOf(want)===0)return true;
+    if(k.length>=3&&want.indexOf(k)===0)return true;
+  }
+  return false;
+}
+function espnSideKeys(t){
+  var team=(t&&t.team)||{};
+  return [team.displayName,team.shortDisplayName,team.name,team.location,
+    team.nickname,team.abbreviation]
+    .filter(Boolean).map(function(x){return teamKey(x);});
+}
+var ESPN_DAYS={};
+async function espnFinals(sportCode,day){
+  var lg=espnLeague(sportCode);
+  if(!lg||!day)return [];
+  var key=lg+'|'+day;
+  if(ESPN_DAYS[key])return ESPN_DAYS[key];
+  var out=[];
+  try{
+    var url='https://site.api.espn.com/apis/site/v2/sports/football/'+lg+
+      '/scoreboard?limit=400&dates='+encodeURIComponent(day)+
+      (lg==='college-football'?'&groups=80':'');
+    var r=await fetch(url);
+    if(r.ok){
+      var d=await r.json();
+      ((d&&d.events)||[]).forEach(function(ev){
+        var c=((ev&&ev.competitions)||[])[0];
+        var st=c&&c.status&&c.status.type;
+        if(!st||!st.completed)return;              /* only a FINAL counts */
+        var home=null,away=null;
+        ((c.competitors)||[]).forEach(function(t){
+          if(t&&t.homeAway==='home')home=t;
+          else if(t&&t.homeAway==='away')away=t;
+        });
+        if(!home||!away)return;
+        var hs=Number(home.score),as=Number(away.score);
+        if(!isFinite(hs)||!isFinite(as))return;
+        out.push({home:hs,away:as,
+          homeKeys:espnSideKeys(home),awayKeys:espnSideKeys(away)});
+      });
+    }
+  }catch(e){/* unreachable or blocked: the page simply has no scores */}
+  ESPN_DAYS[key]=out;
+  return out;
+}
+function espnMatch(list,g){
+  var h=teamKey(g&&g.home),a=teamKey(g&&g.away);
+  for(var i=0;i<(list||[]).length;i++){
+    if(espnNameHit(list[i].homeKeys,h)&&espnNameHit(list[i].awayKeys,a))
+      return list[i];
+  }
+  return null;
+}
+/* The Collective's own stored closing line for a game, off the odds feed —
+   the same number the market page prints under "Close". */
+function marketClose(mg){
+  var c=mg&&mg.closing&&mg.closing['spread:home'];
+  if(!c||c.line==null)return null;
+  var v=Number(c.line);
+  return isFinite(v)?v:null;
+}
+/* Fill in the finished games the wire left blank. Returns how many it
+   filled, so a caller can tell whether anything actually changed. */
+async function enrichFinals(games,sportCode,mkt){
+  var need=(games||[]).filter(function(g){
+    if(!g||finalResult(g)!=null)return false;
+    var k=new Date(g.kickoff_at||0).getTime();
+    /* three hours past kickoff at the earliest: a game in progress has a
+       score too, and half of one is not a result */
+    return isFinite(k)&&k>0&&k<Date.now()-3*3600000;
+  });
+  if(!need.length)return 0;
+  var days={};
+  need.forEach(function(g){var d=espnDayKey(g.kickoff_at);if(d)days[d]=1;});
+  var lists=await Promise.all(Object.keys(days).map(function(d){
+    return espnFinals(sportCode,d).catch(function(){return [];});
+  }));
+  var all=[];
+  lists.forEach(function(l){all=all.concat(l||[]);});
+  if(!all.length)return 0;
+  var n=0;
+  need.forEach(function(g){
+    var hit=espnMatch(all,g);
+    if(!hit)return;
+    g.result={home_score:hit.home,away_score:hit.away,
+      closing_spread:marketClose(marketFor(mkt,g)),
+      closing_total:null,source:'espn'};
+    n++;
+  });
+  return n;
+}
+
 /* Season's settled games, one fetch per week that has already been played,
    cached for the session: the games endpoint serves a week at a time, and
    the payload of a week-less call names the current week, which bounds the
@@ -1560,6 +1758,9 @@ async function seasonGames(sport,season){
     if(seen[k])return;
     seen[k]=1;all.push(g);
   });
+  /* Every record on this site is computed from this sweep, so this is the
+     one place worth going and finding the scores the wire left out. */
+  try{await enrichFinals(all,sport,await marketBoard());}catch(e){}
   /* One week that failed to load is a hole in every record computed from
      this sweep, and caching it for the session makes that hole permanent:
      the reader would see a short record all day and never find out why.
@@ -1606,6 +1807,28 @@ function shownRecord(serverRec,localMap,cs,ms){
   var lr=localMap&&localMap[cs+'/'+ms];
   if(hasRecord(lr))return {rec:lr,live:true};
   return {rec:serverRec||null,live:false};
+}
+/* ---- what a reader wants at the top ------------------------------------
+   The wall arrived in whatever order the server sent, which on a Sunday
+   meant last Saturday's finished games sitting above everything, forever.
+   A live board leads with what has not happened yet, soonest first, and
+   keeps the finished games underneath it, most recent first — still there,
+   still the public record, just no longer in the way. */
+function slateOrder(games){
+  var now=Date.now();
+  function kick(g){
+    var t=new Date((g&&g.kickoff_at)||0).getTime();
+    return isFinite(t)?t:0;
+  }
+  function done(g){
+    return finalResult(g)!=null||(kick(g)>0&&kick(g)<now);
+  }
+  return (games||[]).slice().sort(function(a,b){
+    var da=done(a)?1:0,db=done(b)?1:0;
+    if(da!==db)return da-db;                 /* upcoming first */
+    return da?kick(b)-kick(a)               /* finished: newest first */
+             :kick(a)-kick(b);              /* upcoming: soonest first */
+  });
 }
 /* One stable key for a game across the wall and the board. The board's games
    carry a game_id; a game the odds feed has not linked yet is still uniquely
@@ -1701,6 +1924,9 @@ async function renderWall(view){
     var gq='?sport='+encodeURIComponent(sport.code)+'&season='+encodeURIComponent(sport.season||'');
     var results=await Promise.all([wallRows(),api('/v1/games'+gq,{auth:true}).catch(function(){return null;}),api('/v1/activity').catch(function(){return null;}),marketBoard()]);
     var allRows=results[0],board=results[1],act=results[2],mkt=results[3];
+    /* the slate on screen, graded: a finished game the wire left blank gets
+       its score before a single row is drawn */
+    try{await enrichFinals((board&&board.games)||[],sport.code,mkt);}catch(e){}
     var rows=rowsForSport(allRows,sport.code);
     var activeN=rows.filter(function(r){return r.membership==='ACTIVE CONTRIBUTOR';}).length;
     var sportCode=sportLongName(sport.code).toUpperCase()||sport.code;
@@ -1709,7 +1935,7 @@ async function renderWall(view){
 
     /* the board: every game on the current slate, every model's number */
     var boards='';
-    var shownGames=((board&&board.games)||[]).slice(0,12);
+    var shownGames=slateOrder((board&&board.games)||[]).slice(0,12);
     var splitFlags=splitGames(shownGames);
     shownGames.forEach(function(g){
       var mgW=marketFor(mkt,g);
@@ -1717,7 +1943,7 @@ async function renderWall(view){
       var hd='<div class="gb-hd"><span>'+esc(g.away)+' @ '+esc(g.home)+'</span>'+
         '<span class="tm">'+kickoffFmt(g.kickoff_at)+'</span>'+
         consensusEdgeBadge(g,g.consensus,mktSpreadW)+splitBadge(splitFlags,g)+
-        (g.result?'<span class="fin">FINAL '+g.result.away_score+' - '+g.result.home_score+'</span>':'')+
+        (g.result?'<span class="fin">FINAL '+g.result.away_score+' - '+g.result.home_score+'</span>'+scoreSourceMark(g):'')+
         '</div>';
       var lines='';
       (g.models||[]).forEach(function(mr){
@@ -2224,6 +2450,7 @@ async function renderBoard(view){
     var q='?sport='+encodeURIComponent(sport.code)+'&season='+sport.season+(BOARD_WEEK?'&week='+BOARD_WEEK:'');
     var both=await Promise.all([api('/v1/games'+q,{auth:true}),marketBoard()]);
     var d=both[0],mkt=both[1];
+    try{await enrichFinals((d&&d.games)||[],sport.code,mkt);}catch(e){}
     var cal=weekCalendar(sport.code);
     var wk=sportSwitcherHTML(m)+'<div class="wk"><button class="'+(BOARD_WEEK?'':'on')+'" data-w="">Current</button>';
     for(var i=1;i<=cal.regular;i++)wk+='<button class="'+(BOARD_WEEK===i?'on':'')+'" data-w="'+i+'">W'+i+'</button>';
@@ -2235,14 +2462,14 @@ async function renderBoard(view){
     var head='<h1>The Board</h1><p class="lede">Every game on the slate with each model’s number and, once it is final, its grade. Pre-kickoff numbers and consensus are for subscribers. Finished games are the public record.</p>'+wk;
     var cards='';
     var boardSplit=splitGames(d.games||[]);
-    (d.games||[]).forEach(function(g){
+    slateOrder(d.games||[]).forEach(function(g){
       /* the market is needed for the header badge, so it is resolved before
          the header rather than beside the model rows */
       var mg=marketFor(mkt,g);
       var mktSpread=(window.MCOdds&&mg)?MCOdds.consensusSpread(mg):null;
       var hd='<div class="gc-hd"><span class="lbl">'+esc(g.label)+'</span><span class="tm">'+kickoffFmt(g.kickoff_at)+'</span>'+
         consensusEdgeBadge(g,g.consensus,mktSpread)+splitBadge(boardSplit,g)+
-        (g.result?'<span class="spacer"></span><span class="fin">'+g.result.away_score+' - '+g.result.home_score+'</span><span class="tm">close '+fmtSpread(g.result.closing_spread)+' / '+fmtNum(g.result.closing_total)+'</span>':'')+
+        (g.result?'<span class="spacer"></span><span class="fin">'+g.result.away_score+' - '+g.result.home_score+'</span>'+scoreSourceMark(g)+'<span class="tm">close '+fmtSpread(g.result.closing_spread)+' / '+fmtNum(g.result.closing_total)+'</span>':'')+
         '</div>';
       var cons='';
       if(g.consensus){
@@ -2276,8 +2503,8 @@ async function renderBoard(view){
         if(gr){
           grade=(gr.pick_result
               ?'<span class="mono grade-'+esc(gr.pick_result)+'">'+esc(gr.pick_result)+'</span>'
-              :'<span class="note mono" title="no against-the-spread result: this row carried no pick side, or the game carries no captured closing line to grade it against">no ATS</span>')+
-            gradeMark(gr)+
+              :'<span class="note mono" title="no against-the-spread result: this row named no pick side and its own line sits exactly on the close, or the game carries no captured closing line to grade it against">no ATS</span>')+
+            gradeMark(gr)+impliedMark(gr)+
             ' <span class="note mono"'+
               (gr.source===GRADE_PAGE&&gr.margin_error!=null&&(mr.proj_home_score==null||mr.proj_away_score==null)
                 ?' title="Margin error from this model\u2019s own spread. A model that supplied projected scores is graded on those instead once the Collective settles the game, so this number can move."':'')+
@@ -2502,7 +2729,10 @@ async function renderRankings(view){
          same three boards are computed here from the same finished games, by
          the same published rule, so the standings move the moment a game
          does. The server's boards still win wherever it has published one. */
-      local=localRankings(seasonAll,seasonG,res[1],d.thresholds);
+      /* deliberately NOT d.thresholds: the server still publishes a
+         twenty-game bar, and the whole point of this board is that a model
+         is ranked from its first finished game */
+      local=localRankings(seasonAll,seasonG,res[1],null);
     }catch(_){collStats=null;local=null;}
     var fmap={};res[1].forEach(function(r){if(r.founding)fmap[r.creator_slug]=true;});
     /* /v1/rankings carries no sport, so the sport of each ranked model is read
@@ -2576,7 +2806,9 @@ async function renderRankings(view){
           '<td class="num" style="font-weight:700">'+fmt(r.value)+liveMark(pick.live)+'</td>'+
           '<td class="num" style="color:var(--dim)">'+r.graded+'</td></tr>';
       }).join('');
-      if(!body)body='<tr><td colspan="4" class="note" style="text-align:center;padding:18px">Nobody has cleared the minimums yet.</td></tr>';
+      /* There is no minimum to clear any more, so an empty board means one
+         thing only: nothing on this slate has finished yet. */
+      if(!body)body='<tr><td colspan="4" class="note" style="text-align:center;padding:18px">No finished games yet. Every model appears here after its first one.</td></tr>';
       return '<div><h2 style="margin-top:0">'+title+' <span class="note" style="font-weight:400">'+sub+'</span></h2>'+
         '<div class="tblwrap mini"><table style="min-width:0"><thead><tr><th class="num">#</th><th>Model</th><th class="num">Value</th><th class="num">Graded</th></tr></thead><tbody>'+body+'</tbody></table></div></div>';
     }
@@ -2640,7 +2872,7 @@ async function renderRankings(view){
     }).join('');
     if(!paint(view,tok,'<h1>Rankings</h1>'+
       sportSwitcherHTML(mMeta3)+
-      '<p class="lede">Three separate boards, never blended into one score. A model must have '+d.thresholds.min_graded_games+' graded games and have covered at least '+d.thresholds.min_coverage_pct+'% of the games played since it joined. Counting a mid-season member against games from before they arrived would keep them off these boards forever; counting only the games they chose would be the cherry-picking the rule exists to stop.</p>'+
+      '<p class="lede">Three separate boards, never blended into one score. There is no minimum: a model is ranked from its first finished game, and the <b>Graded</b> column beside every row says exactly how many games that number stands on. A football season is short, so a twenty-game bar meant nobody was ranked until December &mdash; on a record whose whole point is that you can watch it build. Read the sample, not just the rank.</p>'+
       '<div class="boards3">'+
         board('Win %','win_pct',function(v){return fmtPct(v);},'vs closing line')+
         board('Margin MAE','margin_mae',function(v){return fmtNum(v);},'lower is better')+
