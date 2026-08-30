@@ -1814,10 +1814,12 @@ function shownRecord(serverRec,localMap,cs,ms){
    A live board leads with what has not happened yet, soonest first, and
    keeps the finished games underneath it, most recent first — still there,
    still the public record, just no longer in the way. */
-function slateOrder(games){
+function slateOrder(games,kickField){
   var now=Date.now();
   function kick(g){
-    var t=new Date((g&&g.kickoff_at)||0).getTime();
+    /* the market feed names this commence_time, the games feed kickoff_at;
+       one ordering rule serves both rather than two that can drift */
+    var t=new Date((g&&g[kickField||'kickoff_at'])||0).getTime();
     return isFinite(t)?t:0;
   }
   function done(g){
@@ -2595,17 +2597,28 @@ async function renderMarket(view){
       view.innerHTML='<div class="errbox">The odds components did not load. Refresh the page.</div>';
       return;
     }
+    var tok=ROUTE_TOKEN;
+    var mMkt=await meta().catch(function(){return {sports:[]};});
+    var mktSport=currentSport(mMkt);
+    /* This page said "NFL" in its own copy while showing whatever sport the
+       reader had chosen, so a college slate sat under a heading about the
+       NFL. The league it fetches has always come from the sport switcher;
+       now the words do too, and the switcher is on the page so a reader can
+       see which league they are looking at and change it. */
+    var mktName=sportLongName(mktSport.code)||mktSport.code;
     var res=await Promise.all([marketBoard({books:true}),
       api('/v1/games',{auth:true}).catch(function(){return null;})]);
     var mkt=res[0], board=res[1];
     var head='<h1>The market</h1>'+
-      '<p class="lede">Current NFL prices across sportsbooks, captured by the Collective on a schedule and stored so every move stays recoverable. This is the number every model on the wall is measured against.</p>';
+      sportSwitcherHTML(mMkt)+
+      '<p class="lede">'+esc(mktName)+' prices across sportsbooks, captured by the Collective on a schedule and stored so every move stays recoverable. This is the number every model on the wall is measured against, and the number a finished game is graded on.</p>';
 
     if(!mkt||mkt.state==='unavailable'||!(mkt.games||[]).length){
       var when=mkt&&mkt.last_updated?(' Last updated '+MCOdds.ago(MCOdds.ageOf(mkt.last_updated))+'.'):'';
-      view.innerHTML=head+'<div class="emptybox"><b style="color:var(--text)">Odds unavailable.</b><br>'+
-        'No current prices are stored for the NFL right now.'+esc(when)+
-        ' Nothing is shown rather than an estimate.</div>';
+      if(!paint(view,tok,head+'<div class="emptybox"><b style="color:var(--text)">Odds unavailable.</b><br>'+
+        'No prices are stored for '+esc(mktName)+' right now.'+esc(when)+
+        ' Nothing is shown rather than an estimate.</div>'))return;
+      bindSportSwitcher(function(){renderMarket(view);});
       return;
     }
 
@@ -2627,7 +2640,11 @@ async function renderMarket(view){
       var sa=(a.consensus&&a.consensus.spread&&a.consensus.spread.stdev)||0;
       var sb=(b.consensus&&b.consensus.spread&&b.consensus.spread.stdev)||0;
       return sb-sa;});
-    else games.sort(function(a,b){return new Date(a.commence_time)-new Date(b.commence_time);});
+    /* Kickoff order used to be plain ascending, so a market closed eight days
+       ago led a page headed "prices across sportsbooks" and the games still
+       to be priced were somewhere below the fold. Same rule as the wall:
+       what has not happened yet, soonest first; what has, newest first. */
+    else games=slateOrder(games,'commence_time');
 
     /* Models that posted a number on this game, so the market and the models
        sit side by side instead of on two different pages. */
@@ -2658,9 +2675,10 @@ async function renderMarket(view){
         '<div class="note" style="margin-top:6px"><a href="#market/'+esc(g.event_id)+'">Line movement and every stored price &rarr;</a></div></div>';
     }).join('');
 
-    view.innerHTML=head+banner+cards+
-      '<p class="note" style="margin-top:14px">Consensus is the median across retail books; the moneyline consensus is a median of de-vigged probabilities, never an average of American prices. Sharp books are shown separately and are not folded into the consensus. Prices are grouped by line, so a better price on a different number is never presented as a better bet. Research and information only, not betting advice.</p>';
+    if(!paint(view,tok,head+banner+cards+
+      '<p class="note" style="margin-top:14px">Consensus is the median across retail books; the moneyline consensus is a median of de-vigged probabilities, never an average of American prices. Sharp books are shown separately and are not folded into the consensus. Prices are grouped by line, so a better price on a different number is never presented as a better bet. A closed market’s stored close is the number every model on that game is graded against. Research and information only, not betting advice.</p>'))return;
 
+    bindSportSwitcher(function(){renderMarket(view);});
     if($('mktSort')){
       $('mktSort').value=MKT_SORT;
       $('mktSort').onchange=function(){MKT_SORT=this.value;renderMarket(view);};
@@ -5970,7 +5988,7 @@ var LIVE_SEASON_EVERY=10;
 /* Views that are a read of the record, and so are safe to redraw underneath
    somebody. The dashboard, the join flow and the uploader are not: they hold
    form state, a half-mapped slate, a pasted invite code. */
-var LIVE_ROUTES={'':1,'/':1,'board':1,'rankings':1,'models':1,'performance':1};
+var LIVE_ROUTES={'':1,'/':1,'board':1,'rankings':1,'models':1,'performance':1,'market':1};
 function liveRoute(){
   var h=location.hash.replace(/^#/,'');
   if(/access_token=/.test(h))return false;
@@ -6015,6 +6033,17 @@ async function liveTick(){
     var d=await api('/v1/games?sport='+encodeURIComponent(sp.code)+
       '&season='+encodeURIComponent(sp.season||''),{auth:true});
     var fp=liveFingerprint(d&&d.games);
+    /* The market is deliberately kept OUT of the fingerprint everywhere else:
+       prices move constantly, and a page that redrew every time a book shaded
+       a total would be unusable. But on the market page those prices are the
+       content, so there — and only there — a new poll is a reason to redraw.
+       It is the feed's own stamp, not the prices, so it moves once per poll. */
+    if(location.hash.replace(/^#/,'')==='market'){
+      try{
+        var mb=await marketBoard();
+        fp+='||mkt:'+String((mb&&mb.last_updated)||'');
+      }catch(e){}
+    }
     /* first look, or the reader changed sport: take a baseline rather than
        redrawing a page that was just drawn */
     if(LIVE_FP===null||LIVE_SPORT!==sp.code){LIVE_FP=fp;LIVE_SPORT=sp.code;return;}
