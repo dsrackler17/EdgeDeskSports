@@ -406,6 +406,50 @@ var S=sandbox;
     },
     {perf:perf.slice(0,300)});
 
+  /* ---- a failed repaint must never be permanent -----------------------
+     The tick used to record the new fingerprint BEFORE redrawing, so one
+     failed repaint was forever: it had already agreed it had drawn this
+     state and never looked again, and the reader sat in front of an error
+     box until they reloaded the page. */
+  S.SEASON_GAMES={};S.LOCALREC={};S.META=null;S.WALLC=null;
+  S.LIVE_FP=null;S.LIVE_SPORT=null;S.LIVE_BUSY=false;
+  S.location.hash='';
+  await S.liveTick();
+  chk('the tick has a baseline to lose', S.LIVE_FP!=null);
+  GAMES.push(G(11,'X','Y',24,21,-2.5,[M('blerm','blerm-s-model','home',-4,-2.5,0.6)]));
+  var realRoute=S.route;
+  var baseline=S.LIVE_FP, insideFp=null;
+  S.route=function(){insideFp=S.LIVE_FP;throw new Error('repaint failed');};
+  await S.liveTick();
+  S.route=realRoute;
+  chk('the new fingerprint is not recorded until the repaint has happened',
+    insideFp===baseline,
+    {baseline:String(baseline).slice(0,40),insideRepaint:String(insideFp).slice(0,40)});
+  chk('a redraw that throws leaves the tick looking again next minute',
+    S.LIVE_FP===null,
+    'recording the fingerprint before the repaint made one failure permanent');
+  await S.liveTick();
+  chk('and it recovers on its own once the repaint works', S.LIVE_FP!=null);
+
+  /* ---- the reader navigating mid-redraw wins --------------------------- */
+  S.LIVE_FP=null;S.LIVE_SPORT=null;
+  S.location.hash='';
+  await S.liveTick();
+  GAMES.push(G(12,'P','Q',31,17,-6.5,[M('blerm','blerm-s-model','home',-9,-6.5,0.7)]));
+  var routed=[];
+  S.route=function(){
+    routed.push(S.location.hash);
+    if(routed.length===1)S.location.hash='#board';   /* the reader moves mid-flight */
+    return Promise.resolve();
+  };
+  await S.liveTick();
+  S.route=realRoute;
+  chk('a redraw that finished for a page the reader has left draws again',
+    routed.length===2 && routed[1]==='#board',
+    {routed:routed});
+  S.location.hash='';S.LIVE_FP=null;S.LIVE_SPORT=null;
+  GAMES.length=3;
+
   fails.forEach(function(f){console.log('FAIL | '+f.n+(f.d?'  '+JSON.stringify(f.d).slice(0,400):''));});
   console.log((fail===0?'ALL GREEN ':'FAILED ')+pass+' passed, '+fail+' failed');
   process.exit(fail===0?0:1);

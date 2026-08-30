@@ -1785,6 +1785,31 @@ if (typeof sandbox.localGrade === 'function') try {
       var c2 = rk.unranked.filter(function (u) { return u.creator_slug === 'c2'; })[0];
       return c2 && /below the 20 minimum/.test(c2.reason) && /below the 60% minimum/.test(c2.reason);
     })());
+  /* A model can clear both minimums and still be on no board: every one of
+     its graded games a push, so it has a record and no win percentage, and
+     no spread or probability to score either. "Not yet ranked" with a blank
+     reason beside it tells the creator nothing. */
+  chk('an unranked model always says why, even when it cleared the minimums',
+    function () {
+      var pushes = [1, 2, 3].map(function (i) {
+        return gm({ id: 'pu' + i, hs: 27, as: 20, close: -7,
+          kickoff: '2020-11-0' + i + 'T17:00:00Z',
+          models: [mr({ pick_side: 'home' })] });        /* no spread, no probability */
+      });
+      var rk = G.localRankings(pushes, pushes, WALLFX, { min_graded_games: 2, min_coverage_pct: 60 });
+      var rec = G.modelRecord(pushes, 'c', 'm');
+      return rec.graded === 3 && rec.pushes === 3 && rec.win_pct === null
+        && rk.boards.win_pct.length === 0 && rk.boards.margin_mae.length === 0
+        && rk.boards.brier.length === 0
+        && rk.unranked.length === 1 && rk.unranked[0].reason.length > 0
+        && /no win percentage, margin error or win probability/.test(rk.unranked[0].reason);
+    });
+  chk('every unranked entry carries a non-empty reason, whatever the shape',
+    function () {
+      var rk = G.localRankings(RECGAMES, SETTLED, WALLFX, { min_graded_games: 20, min_coverage_pct: 60 });
+      return rk.unranked.length > 0
+        && rk.unranked.every(function (u) { return u.reason && u.reason.length > 0; });
+    });
   chk('the thresholds default to the published ones when none are supplied',
     (function () {
       var rk = G.localRankings(RECGAMES, SETTLED, WALLFX, null);

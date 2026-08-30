@@ -704,7 +704,8 @@ function modelCard(r,localMap){
     '<div class="mc-sub">'+esc(r.model_name)+' <span class="pill">'+esc(r.sport)+'</span></div></div></div>'+
     '<div>'+chipFor(r.membership)+'</div>'+
     '<div class="mc-rec">'+(rec
-      ?(recATSText(rec)||'<span class="note" title="'+esc(NO_ATS_TITLE)+'">no ATS picks</span>')+' &middot; '+fmtPct(rec.win_pct,0)+' &middot; '+rec.graded+' graded'+liveMark(sr.live)
+      ?(recATSText(rec)||'<span class="note" title="'+esc(NO_ATS_TITLE)+'">no ATS picks</span>')+' &middot; '+fmtPct(rec.win_pct,0)+' &middot; '+
+        (rec.graded||rec.margin_n||rec.brier_n||0)+' graded'+liveMark(sr.live)
       :'Building sample &middot; no graded games yet')+'</div>'+
     '<div class="mc-rec">'+(r.coverage_pct!=null?covCell(r.coverage_pct):'')+'</div>'+
     '<div class="mc-foot"><span class="note">'+rel(r.last_submission_at)+'</span>'+
@@ -1455,6 +1456,13 @@ function localRankings(games,settled,wall,thresholds){
       why.push(Math.round(e.coverage_pct)+'% of the played slate is below the '+minC+'% minimum');
     if(e.record.graded===0&&best>0)
       why.push('no pick side submitted, so there is no win-loss record to rank');
+    /* A model can clear both minimums and still be on no board — every one
+       of its graded games a push, say, so it has a record and no win
+       percentage, and no spread or probability to score either. An empty
+       reason under a "Not yet ranked" heading tells a creator nothing. */
+    if(!why.length)
+      why.push(e.record.graded+' graded game'+(e.record.graded===1?'':'s')+
+        ', but no win percentage, margin error or win probability to rank on');
     return {creator_slug:e.creator_slug,model_name:e.model_name,
       model_slug:e.model_slug,reason:why.join(' · ')};
   });
@@ -2571,6 +2579,10 @@ async function renderRankings(view){
 }
 
 /* ================= model directory ================= */
+/* same reason as WALL_TOKEN: the season sweep lands after the paint that
+   asked for it, and a reader who has changed sport in between must not get
+   the other sport's records written into their cards */
+var MODELS_TOKEN=0;
 async function renderModels(view){
   loading(view,'Loading the directory&hellip;');
   try{
@@ -2591,12 +2603,22 @@ async function renderModels(view){
       return;
     }
     var search=rows.length>=9?'<div class="sortsel"><input id="mdq" placeholder="Filter by creator, model, or sport" style="width:260px"></div>':'';
-    /* the page-graded records for this sport, so the directory is not a wall
-       of "no graded games yet" about models whose slate has been played */
-    var mdLocal=null;
-    try{mdLocal=await localRecords(sp.code,sp.season);}catch(_){mdLocal=null;}
-    view.innerHTML=head+search+'<div class="cards" id="mdCards">'+
-      rows.map(function(r){return modelCard(r,mdLocal);}).join('')+'</div>';
+    /* The page-graded records for this sport, so the directory is not a wall
+       of "no graded games yet" about models whose slate has been played.
+       The sweep is a fetch per played week, so it does not hold up the
+       paint: the cards go up with whatever the server has settled and are
+       replaced when it lands. It is usually already cached — the wall warms
+       it on the way in. */
+    function mdCards(localMap){
+      return rows.map(function(r){return modelCard(r,localMap);}).join('');
+    }
+    view.innerHTML=head+search+'<div class="cards" id="mdCards">'+mdCards(null)+'</div>';
+    var mdToken=++MODELS_TOKEN;
+    localRecords(sp.code,sp.season).then(function(map){
+      if(mdToken!==MODELS_TOKEN)return;
+      var box=$('mdCards');
+      if(box)box.innerHTML=mdCards(map);
+    }).catch(function(){});
     bindSportSwitcher(function(){renderModels(view);});
     if($('mdq'))$('mdq').oninput=function(){
       var q=this.value.toLowerCase();
@@ -5656,15 +5678,25 @@ async function liveTick(){
        redrawing a page that was just drawn */
     if(LIVE_FP===null||LIVE_SPORT!==sp.code){LIVE_FP=fp;LIVE_SPORT=sp.code;return;}
     if(fp===LIVE_FP)return;
-    LIVE_FP=fp;
     var y=0;try{y=window.scrollY||0;}catch(e){}
+    var was=location.hash;
     bustLiveCaches();
     LIVE_QUIET=true;
     try{await route();}finally{LIVE_QUIET=false;}
+    /* Only now. Recording the new fingerprint BEFORE the redraw meant one
+       failed repaint was permanent: the tick had already agreed it had
+       drawn this state, so it never looked again and the reader sat in
+       front of an error box until they reloaded. */
+    LIVE_FP=fp;
+    /* the reader navigated while that was in flight, so the render that
+       just finished is for a page they have left — draw where they are */
+    if(location.hash!==was){route();return;}
     try{window.scrollTo(0,y);}catch(e){}
   }catch(e){
-    /* the API is briefly unreachable, or the reader is signed out of a
-       subscriber view: the next tick tries again and nothing is shown */
+    /* The API is briefly unreachable, or the reader is signed out of a
+       subscriber view. Drop the baseline so the next tick re-reads rather
+       than concluding from a failed request that nothing has changed. */
+    LIVE_FP=null;
   }finally{LIVE_BUSY=false;}
 }
 function startLive(){
