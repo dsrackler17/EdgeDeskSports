@@ -3242,6 +3242,120 @@ if (typeof sandbox.slateAdminGames === 'function') {
   chk('the schedule loader is defined', false);
 }
 
+/* =======================================================================
+   8. "THIS ACCOUNT IS NOT ON YOUR BACKEND'S ADMIN LIST."
+
+   The schedule loader shipped, the creator pressed it, and collective_admin
+   answered 403 -- correctly: requireAdmin checks the caller's user id against
+   the admin.user_ids config list, and the site's owner was not on it. The
+   page said so and stopped there, which is a dead end wearing the clothes of
+   an explanation. The remedy needs exactly one value the person cannot look
+   up without going and digging in the auth dashboard: their own user id. It
+   is in the session token they are already holding.
+   ======================================================================= */
+if (typeof sandbox.sessionUserId === 'function') {
+  var S8 = sandbox;
+
+  /* a real-shaped JWT: header.payload.signature, payload base64url */
+  function jwt(payload) {
+    var b64 = Buffer.from(JSON.stringify(payload)).toString('base64')
+      .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+    return 'x.' + b64 + '.y';
+  }
+  function withSession(v, fn) {
+    var store = {};
+    var realGet = S8.localStorage.getItem;
+    S8.localStorage.getItem = function (k) {
+      return k === 'collective_session' ? (v === null ? null : JSON.stringify(v)) : null;
+    };
+    try { return fn(); } finally { S8.localStorage.getItem = realGet; }
+  }
+
+  chk('the user id is read out of the session the page already holds',
+    function () {
+      return withSession({ access_token: jwt({ sub: 'a1b2c3d4-0000-4000-8000-000000000000' }) },
+        function () { return S8.sessionUserId() === 'a1b2c3d4-0000-4000-8000-000000000000'; });
+    },
+    { got: withSession({ access_token: jwt({ sub: 'a1b2c3d4-0000-4000-8000-000000000000' }) },
+        function () { return S8.sessionUserId(); }) });
+  chk('base64url padding and alphabet are both handled',
+    function () {
+      /* a payload whose base64 needs padding, and whose alphabet uses - and _ */
+      return withSession({ access_token: jwt({ sub: 'ab', extra: '?????>>>>>' }) },
+        function () { return S8.sessionUserId() === 'ab'; });
+    });
+  chk('no session, no id, no crash',
+    function () { return withSession(null, function () { return S8.sessionUserId() === null; }); });
+  chk('a token that is not a JWT is null, not an exception',
+    function () {
+      return withSession({ access_token: 'not-a-jwt' }, function () { return S8.sessionUserId() === null; })
+        && withSession({ access_token: 'a.!!!!.c' }, function () { return S8.sessionUserId() === null; })
+        && withSession({}, function () { return S8.sessionUserId() === null; });
+    });
+  chk('a payload with no subject claims nothing',
+    function () {
+      return withSession({ access_token: jwt({ email: 'a@b.c' }) },
+        function () { return S8.sessionUserId() === null; });
+    });
+
+  /* ---- the statement that grants it ---------------------------------- */
+  chk('the grant names the account it is granting',
+    function () { return S8.adminGrantSQL('uid-1').indexOf('"uid-1"') >= 0; });
+  chk('the grant targets the key the backend actually reads',
+    function () {
+      /* requireAdmin reads get_config('admin.user_ids') */
+      return /admin\.user_ids/.test(S8.adminGrantSQL('u'));
+    });
+  chk('the grant finds its own schema rather than assuming public',
+    function () {
+      var q = S8.adminGrantSQL('u');
+      return /information_schema\.tables/.test(q) && !/\bpublic\.config\b/.test(q);
+    },
+    'the rest of this page writes SQL that way for a reason');
+  chk('the conflict clause references the target row the way Postgres allows',
+    function () {
+      /* Inside ON CONFLICT DO UPDATE the target is `config.value`;
+         `collective.config.value` there is an invalid FROM-clause reference
+         and the statement fails outright. */
+      var q = S8.adminGrantSQL('u');
+      return /coalesce\(config\.value/.test(q) && !/%I\.config\.value/.test(q);
+    },
+    { got: (S8.adminGrantSQL('u').match(/coalesce\([^,]*/) || [])[0] });
+  chk('the grant is safe to run twice and never drops an existing admin',
+    function () {
+      var q = S8.adminGrantSQL('u');
+      return /on conflict/i.test(q) && /jsonb_agg\(distinct/.test(q)
+        && /config\.value/.test(q);
+    },
+    'a grant that replaced the array would lock out every other administrator');
+
+  /* ---- and that the refusal actually offers it ----------------------- */
+  chk('the 403 hands over the id and the statement',
+    function () {
+      return /sessionUserId\(\)/.test(CODE) && /adminGrantSQL\(uid\)/.test(CODE);
+    });
+  chk('the refusal explains that this gates the admin page too',
+    function () { return /if that page has never let you in, this is why/.test(CODE); },
+    'the same list; somebody who could not use the admin page now knows why');
+
+  /* ---- the two questions are no longer phrased as one ---------------- */
+  chk('the pre-flight asks about games, and says so',
+    function () {
+      /* Comments quote the old wording while explaining why it changed, and
+         that is prose about the code, not copy the reader sees. Strip them
+         before asserting on what the page actually renders -- the same thing
+         the static scan at the top of this file does, for the same reason. */
+      var shown = CODE.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/\/\/[^\n]*/g, ' ');
+      return /neither team has a game on that schedule/.test(shown)
+        && !/neither team is on that schedule/.test(shown);
+    },
+    'the receipt says the backend HAS the home team; "is not on that schedule" read as a contradiction');
+  chk('the page states that a known team can still have no game',
+    function () { return /still have no game on this week/.test(CODE); });
+} else {
+  chk('the admin grant path is defined', false);
+}
+
 /* ---- report ------------------------------------------------------------ */
 failures.forEach(function (f) {
   console.log('FAIL | ' + f.name + (f.detail ? '  ' + JSON.stringify(f.detail) : ''));
