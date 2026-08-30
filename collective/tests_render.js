@@ -370,23 +370,35 @@ var S=sandbox;
     'best win % first, computed from the same record the cells print');
   S.WALL_SORT='canonical';
 
-  /* ---- the compare page must not draw a push that never happened ------ */
+  /* ---- the compare page must not draw a push that never happened ------
+     blizzard-performance posts a spread on every game and NO pick side, so
+     it has three graded games and not one against-the-spread result. The
+     old strip mapped anything that was not a win or a loss to 'p' and drew
+     it three pushes it never got. */
   S.SEASON_GAMES={};S.LOCALREC={};
-  S.PERF.a='blerm/blerm-s-model';S.PERF.b='mustbemoose/edgedesk-cfb-p4';
+  S.PERF.a='blizzard-performance/cfb-model';S.PERF.b='blerm/blerm-s-model';
   S.location.hash='#performance';
   var v5=node();
   await S.renderPerformance(v5);
   await new Promise(function(r){setTimeout(r,80);});
-  chk('the form strip counts what it drew, and draws only real results',
+  var perf=(S.document.getElementById('pfOut')||{innerHTML:''}).innerHTML||'';
+  chk('a model with no ATS result gets no form strip at all',
     function(){
-      var html=(S.document.getElementById('pfOut')||{innerHTML:''}).innerHTML||v5.innerHTML;
-      var lab=/Last (\d+) graded/.exec(html);
-      if(!lab)return true;                       /* nothing rendered: nothing to get wrong */
-      var n=+lab[1];
-      var marks=(html.match(/<i class="[wlp]">/g)||[]).length;
-      return marks===n||marks%n===0;
+      /* it IS graded — three margin errors — it just has no win/loss/push */
+      var log=S.localGameLog(GAMES,'blizzard-performance','cfb-model');
+      return log.length===3
+        && log.every(function(g){return g.pick_result===null;})
+        && perf.indexOf('<i class="p">')<0;
     },
-    'a game with no against-the-spread result used to fall through to "push"');
+    {drew:(perf.match(/<i class="[wlp]">/g)||[]),label:(/Last (\d+) graded/.exec(perf)||[])[0]});
+  chk('the "Last N graded" label counts exactly the marks beside it',
+    function(){
+      var lab=/Last (\d+) graded/.exec(perf);
+      var marks=(perf.match(/<i class="[wlp]">/g)||[]).length;
+      if(!lab)return marks===0;
+      return marks===+lab[1];
+    },
+    {perf:perf.slice(0,300)});
 
   fails.forEach(function(f){console.log('FAIL | '+f.n+(f.d?'  '+JSON.stringify(f.d).slice(0,400):''));});
   console.log((fail===0?'ALL GREEN ':'FAILED ')+pass+' passed, '+fail+' failed');
