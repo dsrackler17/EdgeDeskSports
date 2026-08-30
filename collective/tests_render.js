@@ -182,6 +182,13 @@ var S=sandbox;
     /<b>3<\/b> settled/.test(wall), {got:(/(<b>\d+<\/b> settled)/.exec(wall)||[])[1]});
   chk('the wall colours a graded row green or red, not by membership',
     wall.indexOf('var(--pos)')>=0 && wall.indexOf('var(--neg)')>=0);
+  /* Colour alone cannot say which grades are settled and which the page
+     worked out, and a reader should not have to hover every row to find
+     out. A page-graded dot is drawn hollow. */
+  chk('a page-graded dot is visibly different, not only in its title',
+    (wall.match(/class="gb-dot pg"/g)||[]).length>=6,
+    {hollow:(wall.match(/class="gb-dot pg"/g)||[]).length,
+     all:(wall.match(/class="gb-dot/g)||[]).length});
   chk('a graded dot says what it graded, in its title',
     /title="WIN &#8212; graded|title="WIN — graded|WIN/.test(wall));
   chk('the model directory shows a record instead of "awaiting results"',
@@ -271,6 +278,28 @@ var S=sandbox;
     {reasons:(rank.match(/\d+ graded games? is below[^<]*/g)||[])});
   chk('the Collective grades itself as one model too',
     rank.indexOf('The Collective as one model')>=0);
+  /* The whole standings table is the page's own grading. Printing a record
+     with no marker under a rules page that promises every one is marked is
+     the kind of quiet claim this site cannot afford. */
+  chk('the live standings say they are the page\u2019s own grading',
+    function(){
+      var i=rank.indexOf('Live standings');
+      if(i<0)return false;
+      var st=rank.slice(i);
+      var note=st.indexOf('The marked rows are'), tbl=st.indexOf('<table');
+      /* the note has to be above the table, where a reader meets it before
+         the numbers, not somewhere further down the page */
+      return note>=0 && tbl>=0 && note<tbl && st.slice(0,tbl).indexOf('published rule')>=0;
+    },
+    {head:rank.slice(rank.indexOf('Live standings'),rank.indexOf('Live standings')+260)});
+  chk('every page-graded record on the rankings carries a marker',
+    function(){
+      var st=rank.slice(rank.indexOf('Live standings'));
+      var recs=(st.match(/<span class="mono">\d+-\d+-\d+<\/span>/g)||[]).length;
+      var marks=(st.match(/class="pgrade"/g)||[]).length;
+      return recs>0 && marks>=recs;
+    },
+    {section:rank.slice(rank.indexOf('Live standings'),rank.indexOf('Live standings')+200)});
 
   /* ---- the live refresh notices a score and redraws ---- */
   S.location.hash='';

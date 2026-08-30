@@ -223,6 +223,10 @@ tr.consrow td{color:var(--accent);border-top:1px dashed var(--border)}
 .gb-row.cons{border-top:1px dashed var(--border);color:var(--accent);margin-top:2px;padding-top:7px}
 .gb-row.cons .nm{color:var(--accent)}
 .gb-dot{width:7px;height:7px;border-radius:50%;display:inline-block;justify-self:end}
+/* A grade this page worked out is drawn hollow: the same colour, ringed
+   rather than filled, so a reader can see which results are settled and
+   which are the page keeping up — without having to hover every row. */
+.gb-dot.pg{background:transparent!important;border:1.5px solid;box-sizing:border-box;width:8px;height:8px}
 .gb-empty{padding:10px 14px;color:var(--faint);font-family:'JetBrains Mono',monospace;font-size:12px}
 /* member ecosystem */
 .fstar{color:var(--gold);cursor:default;font-size:12px}
@@ -414,7 +418,7 @@ a,button,tr.rowlink,.sportpick,.wk button,.sportsw button{
 
 <footer class="footer"><div class="wrap">
   <div><b style="color:var(--dim)">MODEL COLLECTIVE</b> &middot; shared infrastructure for independent sports model creators. Part of <a href="https://edgedesksports.com">EdgeDesk Sports</a>.</div>
-  <div>Every model here belongs to its creator. Records are graded by the Collective on actual results, against its own captured closing lines. Research and information only, not betting or financial advice. No guaranteed results. 21+. Gamble responsibly: 1-800-GAMBLER.</div>
+  <div>Every model here belongs to its creator. Records are graded on actual results, against the Collective&rsquo;s own captured closing lines, by <a href="#rules">one published rule</a>. Research and information only, not betting or financial advice. No guaranteed results. 21+. Gamble responsibly: 1-800-GAMBLER.</div>
 </div></footer>
 
 <!-- The odds components. One file, shared by this page, the embed and the
@@ -488,8 +492,8 @@ function recATSHtml(rec,cls){
   if(t!=null)return '<span class="'+(cls||'mono')+'">'+t+'</span>';
   return '<span class="note" title="'+esc(NO_ATS_TITLE)+'">no ATS picks</span>';
 }
-function recCell(rec,lastSubmissionAt,live){
-  if(rec)return recATSHtml(rec)+liveMark(live);
+function recCell(rec,lastSubmissionAt,live,scope){
+  if(rec)return recATSHtml(rec)+liveMark(live,scope);
   if(lastSubmissionAt)return '<span class="note">submitted, awaiting results</span>';
   return '<span class="note">first submission pending</span>';
 }
@@ -705,7 +709,7 @@ function modelCard(r,localMap){
     '<div>'+chipFor(r.membership)+'</div>'+
     '<div class="mc-rec">'+(rec
       ?(recATSText(rec)||'<span class="note" title="'+esc(NO_ATS_TITLE)+'">no ATS picks</span>')+' &middot; '+fmtPct(rec.win_pct,0)+' &middot; '+
-        (rec.graded||rec.margin_n||rec.brier_n||0)+' graded'+liveMark(sr.live)
+        Math.max(rec.graded||0,rec.margin_n||0,rec.brier_n||0)+' graded'+liveMark(sr.live)
       :'Building sample &middot; no graded games yet')+'</div>'+
     '<div class="mc-rec">'+(r.coverage_pct!=null?covCell(r.coverage_pct):'')+'</div>'+
     '<div class="mc-foot"><span class="note">'+rel(r.last_submission_at)+'</span>'+
@@ -955,7 +959,7 @@ var BOARD_LEGEND=[
    long:'The standard deviation of the submitted lines, badged on the few games where the models are furthest apart. Hover it for the raw range. Disagreement is part of the product here, so it is surfaced rather than smoothed away.'},
   {k:'The dot',
    short:'graded result once a game settles, membership status before that',
-   long:'Before a game settles, the creator\u2019s membership status. After it settles, the graded result of that pick \u2014 green won, red lost, amber pushed \u2014 decided by the Collective on the final score against its own captured closing line, never on anything a creator reports. Hover it for the numbers behind the colour.'},
+   long:'Before a game settles, the creator\u2019s membership status. After it settles, the graded result of that pick \u2014 green won, red lost, amber pushed \u2014 decided on the final score against the Collective\u2019s own captured closing line, never on anything a creator reports. A FILLED dot is a settled grade; a HOLLOW ring of the same colour is one this page worked out while settlement catches up. Hover it for the numbers behind the colour.'},
   {k:'<span class="pgrade">live</span>',
    short:'graded on this page from the final score, while settlement catches up',
    long:'The Collective settles games on its own schedule, and a record that only moves when that run finishes leaves finished games showing no result at all \u2014 which is what this site used to do for as long as the run was behind. So the page grades them itself, from the final score against the same captured closing line, by the same published rule, and marks every number it worked out that way. It is not a second standard and it is never mixed with a settled one: the moment the Collective settles a game, its grade replaces the page\u2019s rather than being averaged with it. Two things the page cannot see: whether a submission was backfilled or test data, which is a column only the settlement run reads, and a creator\u2019s projected scores, which the games feed does not carry \u2014 so a margin error marked <span class="mono">live</span> is computed from that model\u2019s own spread and can move when the game settles.'}
@@ -1153,8 +1157,10 @@ function consensusSeasonStats(games){
      Brier    the claimed home win probability against what happened. A tie
               has no winner, so there is nothing to score.
 
-   Late rows, subscriber-locked rows and anything that is not live data are
-   excluded here exactly as the published rules exclude them. */
+   Late rows and subscriber-locked rows are excluded here exactly as the
+   published rules exclude them. Backfill and test data are excluded too
+   wherever the wire says so — see gradableRow for what this page can and
+   cannot see. */
 var GRADE_PAGE='page';
 var GRADE_SERVER='server';
 
@@ -1280,8 +1286,10 @@ function rowGrade(g,mr){
    is the same rule on the same numbers — but a reader is owed the
    difference between a settled record and one the page worked out while
    settlement catches up. */
-function liveMark(on){
+function liveMark(on,scope){
   if(!on)return '';
+  if(scope==='week')
+    return ' <span class="pgrade" title="Graded on this page from this week’s finished games while the rest of the season loads. It is not the model’s full record yet.">week</span>';
   return ' <span class="pgrade" title="Graded on this page from the final score against the Collective’s own captured closing line, by the published rule. Shown while the Collective’s settlement run catches up; the settled grade replaces it rather than adding to it.">live</span>';
 }
 function gradeMark(gr){return liveMark(!!(gr&&gr.source===GRADE_PAGE));}
@@ -1368,18 +1376,32 @@ function localGameLog(games,cs,ms){
    by anybody until December. Of the games that have happened, how many did
    you post? That is the question the rule is asking. */
 function modelCoverage(settled,cs,ms){
-  var n=0,slate=0,seen={};
+  /* Counted from the first game this model posted, not from the first game
+     of the season. A creator who joined in week eight cannot have posted
+     week one, and holding it against them means a mid-season member can
+     never clear the coverage minimum however completely they post from the
+     day they arrive. The rule is anti-cherry-picking — post the slate, not
+     the three games you like — and that question only starts when they do. */
+  var rows=[],seen={},first=null;
   (settled||[]).forEach(function(g){
     if(!g)return;
     var k=gameKey(g);
     if(seen[k])return;
-    seen[k]=1;slate++;
+    seen[k]=1;
     var hit=((g.models)||[]).some(function(mr){
       return mr&&mr.creator_slug===cs&&mr.model_slug===ms&&gradableRow(mr);});
-    if(hit)n++;
+    var t=new Date(g.kickoff_at||0).getTime();
+    if(!isFinite(t))t=0;
+    if(hit&&(first===null||t<first))first=t;
+    rows.push({t:t,hit:hit});
   });
-  return {submitted:n,slate:slate,pct:slate?100*n/slate:null};
+  if(first===null)return {submitted:0,slate:rows.length,pct:rows.length?0:null,since:null};
+  var scope=rows.filter(function(r){return r.t>=first;});
+  var n=scope.filter(function(r){return r.hit;}).length;
+  return {submitted:n,slate:scope.length,
+    pct:scope.length?100*n/scope.length:null,since:first};
 }
+
 /* Every model that appears anywhere in a set of games, named from the wall
    rows where the wall knows them. The games payload carries slugs only, so
    a model the wall has not heard of keeps its slug as its name rather than
@@ -1755,7 +1777,8 @@ async function renderWall(view){
           (bad?'<span class="dmkt" title="'+esc(mlTitle)+'">-</span>':deltaCell(ml,mktSpreadW,g))+
           '<span class="num win"'+(p?' title="'+esc(p.t)+'"':'')+'>'+(p==null?'-':p.txt)+'</span>'+
           '<span class="age"'+(mr.received_at?' title="submitted '+esc(String(mr.received_at))+'"':'')+'>'+esc(age||'-')+'</span>'+
-          '<span class="gb-dot" title="'+esc(dotT)+'" style="background:'+dot+'"></span></div>';
+          '<span class="gb-dot'+(grW&&grW.pick_result&&grW.source===GRADE_PAGE?' pg':'')+
+            '" title="'+esc(dotT)+'" style="background:'+dot+';border-color:'+dot+'"></span></div>';
       });
       if(!g.models||!g.models.length){
         lines='<div class="gb-empty">No model has posted this game yet</div>';
@@ -1835,7 +1858,7 @@ async function renderWall(view){
        cells read the SAME record through shownRecord — sorting on the
        server's record while displaying the page's meant "sort by Win %"
        did nothing at all to a column full of numbers. */
-    var dirLocal=null;
+    var dirLocal=null,dirScope='week';
     function dirRec(r){return shownRecord(r.record,dirLocal,r.creator_slug,r.model_slug);}
     function dirSorted(){
       var out=rows.slice(),S=WALL_SORT;
@@ -1854,7 +1877,7 @@ async function renderWall(view){
         return '<tr class="rowlink" data-slug="'+esc(r.creator_slug)+'">'+
           '<td><span class="who">'+avatar(r)+'<span><span class="nm">'+esc(r.creator_name)+'</span>'+foundStar(r)+'<br><span class="sb">'+esc(r.model_name)+' &middot; '+esc(r.sport)+'</span></span></span></td>'+
           '<td>'+chipFor(r.membership)+'</td>'+
-          '<td class="num">'+recCell(rec,r.last_submission_at,sr.live)+'</td>'+
+          '<td class="num">'+recCell(rec,r.last_submission_at,sr.live,dirScope)+'</td>'+
           '<td class="num">'+(rec?fmtPct(rec.win_pct):'-')+'</td>'+
           '<td class="num">'+(rec?fmtNum(rec.margin_mae):'-')+'</td>'+
           '<td class="num">'+(rec?fmtNum(rec.brier,3):'-')+'</td>'+
@@ -1918,7 +1941,7 @@ async function renderWall(view){
       var elS=$('bdSettled');
       if(elS&&nSettled>settledNow)
         elS.innerHTML='<b>'+nSettled+'</b> settled <i class="allsports">'+esc(sportCode)+'</i>';
-      dirLocal=map;
+      dirLocal=map;dirScope='season';
       var tb=document.querySelector('#walltbl tbody');
       if(tb){tb.innerHTML=dirBody();wireDirRows();}
     }).catch(function(){});
@@ -2536,7 +2559,7 @@ async function renderRankings(view){
           '<td class="num" style="color:var(--faint)">'+(i+1)+'</td>'+
           '<td><span class="nm">'+esc(e.creator_name)+'</span>'+(fmap[e.creator_slug]?' <span class="fstar" title="Founding Member">&#9733;</span>':'')+
             '<br><span class="sb" style="color:var(--faint);font-size:11px">'+esc(e.model_name)+'</span></td>'+
-          '<td class="num">'+recATSHtml(r)+'</td>'+
+          '<td class="num">'+recATSHtml(r)+liveMark(r.live>0)+'</td>'+
           '<td class="num" style="font-weight:700">'+fmtPct(r.win_pct)+'</td>'+
           '<td class="num">'+fmtNum(r.margin_mae)+'</td>'+
           '<td class="num">'+fmtNum(r.brier,3)+'</td>'+
@@ -2547,7 +2570,9 @@ async function renderRankings(view){
       ['win_pct','margin_mae','brier'].forEach(function(k){
         (((d.boards&&d.boards[k])||[])).forEach(function(r){ranked[r.creator_slug]=1;});
       });
+      var anyLiveSt=st.some(function(e){return e.record.live>0;});
       return '<h2>Live standings <span class="note" style="font-weight:400">every model, every graded game, no minimums</span></h2>'+
+        (anyLiveSt?gradeNote('The marked rows are'):'')+
         '<div class="tblwrap"><table id="standtbl"><thead><tr>'+
           '<th class="num">#</th><th>Model</th><th class="num">Record</th>'+
           '<th class="num" title="excludes pushes">Win %</th>'+
@@ -2572,7 +2597,7 @@ async function renderRankings(view){
     }).join('');
     if(!paint(view,tok,'<h1>Rankings</h1>'+
       sportSwitcherHTML(mMeta3)+
-      '<p class="lede">Three separate boards, never blended into one score. A model must cover at least '+d.thresholds.min_coverage_pct+'% of the season slate and have '+d.thresholds.min_graded_games+' graded games to be ranked. Cherry-picking a slate is the fastest way off these boards.</p>'+
+      '<p class="lede">Three separate boards, never blended into one score. A model must have '+d.thresholds.min_graded_games+' graded games and have covered at least '+d.thresholds.min_coverage_pct+'% of the games played since it joined. Counting a mid-season member against games from before they arrived would keep them off these boards forever; counting only the games they chose would be the cherry-picking the rule exists to stop.</p>'+
       '<div class="boards3">'+
         board('Win %','win_pct',function(v){return fmtPct(v);},'vs closing line')+
         board('Margin MAE','margin_mae',function(v){return fmtNum(v);},'lower is better')+
@@ -2693,6 +2718,7 @@ async function renderPerformance(view){
           if(sn==null)return Promise.resolve([]);
           return seasonGames(dd.model.sport,sn).catch(function(){return [];});
         }));
+        var liveSeen=[];
         var cols=ds.map(function(d,di){
           var rec=d.record,recLive=false;
           var lg=locals[di]||[];
@@ -2700,6 +2726,7 @@ async function renderPerformance(view){
             var lr=modelRecord(lg,d.creator.slug,d.model.model_slug);
             if(hasRecord(lr)){rec=lr;recLive=true;}
           }
+          liveSeen.push(recLive);
           var logRows=(d.recent_graded&&d.recent_graded.length)
             ?d.recent_graded:localGameLog(lg,d.creator.slug,d.model.model_slug);
           /* Anything that is not a win or a loss used to fall through to
@@ -2728,6 +2755,10 @@ async function renderPerformance(view){
               :'<p class="note" style="margin:6px 0 0">Building sample: no graded games yet.</p>')+
             '<p style="margin:12px 0 0;font-size:12px"><a href="#/model/'+esc(d.creator.slug)+'/'+esc(d.model.model_slug)+'">Full game log &rarr;</a></p></div>';
         }).join('');
+        /* Two panels graded by two different graders is still one rule and
+           one set of closing lines, but it is not one sample, and a reader
+           comparing them closely is owed that. */
+        var liveCols=liveSeen.length>1&&liveSeen.some(Boolean)&&!liveSeen.every(Boolean);
         /* Same games, same market, side by side. This is where a comparison
            becomes concrete: two models are only really being compared when
            they are looking at the same number. */
@@ -2768,6 +2799,7 @@ async function renderPerformance(view){
           }
         }
         out.innerHTML='<div class="duo">'+cols+'</div>'+head2+
+          (liveCols?'<p class="note" style="margin-top:10px"><b class="pgrade">live</b> One of these records was graded on this page from the final scores while the Collective&rsquo;s settlement run catches up, and the other was not. Same rule and the same closing lines either way, but a settled record and a page-graded one are not the same sample, so read a close comparison with that in mind.</p>':'')+
           '<p class="note" style="margin-top:10px">Win percentage excludes pushes. Margin MAE is the average error of the projected margin against the final score, lower is better. Brier scores the win probability, lower is better. Minimums for the ranked boards still apply on <a href="#rankings">Rankings</a>.</p>';
       }catch(e){out.innerHTML='<div class="errbox">'+esc(e.message||String(e))+'</div>';}
     }
@@ -2795,7 +2827,7 @@ async function renderRules(view){
       '</tbody></table></div>'+
       '<p class="note" style="margin-top:8px">Posting a slate is a different question \u2014 see the <a href="#format">slate format</a>.</p>'+
       '<h2>When a game is graded</h2>'+
-      '<p class="lede" style="max-width:760px">The moment it is final. The Collective settles games on its own schedule, and while that run is behind, this page grades the finished games itself \u2014 the same rule, the same captured closing line, the same exclusions \u2014 so a record never sits empty next to a printed final score. Anything graded that way is marked <span class="pgrade">live</span> wherever it appears, and a settled grade always replaces it rather than being averaged with it. The one place the two can differ: margin accuracy is graded from a creator\u2019s projected scores when they supplied them, and the games feed does not carry those, so a <span class="pgrade">live</span> margin error is computed from that model\u2019s own spread instead. Win, loss and push never differ \u2014 they are the final score against the closing line, and there is only one of each. A finished game the Collective captured no closing line for has no against-the-spread result for anybody, and is counted by nobody rather than being graded against a number a creator supplied themselves.</p>'+
+      '<p class="lede" style="max-width:760px">The moment it is final. The Collective settles games on its own schedule, and while that run is behind, this page grades the finished games itself \u2014 the same rule, the same captured closing line, and every exclusion it can see \u2014 so a record never sits empty next to a printed final score. Anything graded that way is marked <span class="pgrade">live</span> wherever it appears, and a settled grade always replaces it rather than being averaged with it. The one place the two can differ: margin accuracy is graded from a creator\u2019s projected scores when they supplied them, and the games feed does not carry those, so a <span class="pgrade">live</span> margin error is computed from that model\u2019s own spread instead. Win, loss and push never differ \u2014 they are the final score against the closing line, and there is only one of each. A finished game the Collective captured no closing line for has no against-the-spread result for anybody, and is counted by nobody rather than being graded against a number a creator supplied themselves.</p>'+
       '<h2>Why the first submission is the graded one</h2>'+
       '<p class="lede" style="max-width:760px">Creators can see each other’s numbers before kickoff, so anyone submitting later is anchored whether they mean to be or not. Every submission is timestamped when the server receives it, and each model’s first pre-kickoff live submission on a game is the one that counts for grading, rankings, and consensus. Revisions are stored and shown as movement. Submissions received after kickoff are stored, flagged late, and excluded. Backfilled history and test data are stored and shown separately, and are never graded, ranked, or blended into consensus.</p>';
   }catch(e){fail(view,e);}

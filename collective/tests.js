@@ -1682,6 +1682,34 @@ if (typeof sandbox.localGrade === 'function') try {
       var late = [gm({ id: 'L', hs: 30, as: 20, models: [mr({ pick_side: 'home', late: true })] })];
       return G.modelCoverage(late, 'c', 'm').submitted === 0;
     })(), 'otherwise a model clears the coverage minimum on rows the rules exclude');
+  /* A creator who joined in week eight cannot have posted week one, and
+     measuring them against it means a mid-season member can never clear the
+     coverage minimum however completely they post from the day they arrive. */
+  chk('coverage starts at the first game a model actually posted',
+    function () {
+      var early = [1, 2, 3].map(function (i) {
+        return gm({ id: 'e' + i, hs: 30, as: 20, close: -7,
+          kickoff: '2020-09-0' + i + 'T17:00:00Z' });          /* nobody posted these */
+      });
+      var late = [4, 5, 6].map(function (i) {
+        return gm({ id: 'e' + i, hs: 30, as: 20, close: -7,
+          kickoff: '2020-09-0' + i + 'T17:00:00Z',
+          models: [mr({ pick_side: 'home' })] });               /* joined here, posted all */
+      });
+      var cov = G.modelCoverage(early.concat(late), 'c', 'm');
+      return cov.slate === 3 && cov.submitted === 3 && near(cov.pct, 100);
+    },
+    'measuring a week-eight joiner against week one keeps them off the boards forever');
+  chk('and it still catches a model that skips games after it joined',
+    function () {
+      var all = [1, 2, 3, 4].map(function (i) {
+        return gm({ id: 'f' + i, hs: 30, as: 20, close: -7,
+          kickoff: '2020-09-0' + i + 'T17:00:00Z',
+          models: (i === 1 || i === 4) ? [mr({ pick_side: 'home' })] : [] });
+      });
+      var cov = G.modelCoverage(all, 'c', 'm');
+      return cov.slate === 4 && cov.submitted === 2 && near(cov.pct, 50);
+    });
   chk('a model that skipped games covers less of the slate',
     (function () {
       var settled = RECGAMES.filter(function (g) { return G.finalResult(g) !== null; });
@@ -1876,6 +1904,36 @@ if (typeof sandbox.localGrade === 'function') try {
   chk('the marker and the rules page agree that a settled grade REPLACES it',
     /replaces it rather than adding to it/.test(G.liveMark(true))
       && /replaces it rather than being averaged/.test(CODE));
+  /* "no ATS picks · - · 0 graded" told a reader this model had been graded
+     on nothing, next to a populated margin column. The card counts the
+     largest sample it actually has. */
+  chk('a card counts the biggest sample it has, not the first non-zero one',
+    function () {
+      var card = G.modelCard({ creator_slug: 'c', model_slug: 'm', creator_name: 'Cee',
+        model_name: 'Model C', sport: 'CFB', membership: 'MEMBER', monogram: 'C',
+        record: { wins: 0, losses: 0, pushes: 0, graded: 0, win_pct: null,
+                  margin_n: 2, brier_n: 5, margin_mae: 6.1, brier: 0.21 } }, null);
+      return card.indexOf('5 graded') >= 0 && card.indexOf('2 graded') < 0
+        && card.indexOf('no ATS picks') >= 0;
+    });
+  chk('the marker distinguishes a provisional week-only record from a season one',
+    function () {
+      return /pgrade/.test(G.liveMark(true, 'week'))
+        && />week</.test(G.liveMark(true, 'week'))
+        && />live</.test(G.liveMark(true))
+        && G.liveMark(false, 'week') === '';
+    },
+    'a one-week record presented as the model record is a smaller lie than "awaiting results" but still one');
+  chk('the wall legend explains the hollow dot, not just the colour',
+    G.BOARD_LEGEND.some(function (x) {
+      return x.k === 'The dot' && /HOLLOW/.test(x.long) && /FILLED/.test(x.long);
+    }),
+    'the colour alone cannot say which grades are settled and which the page worked out');
+  chk('the rankings page states the coverage rule the code actually enforces',
+    !/% of the season slate/.test(CODE) && /played since it joined/.test(CODE),
+    'the lede said "of the season slate" while the boards enforce the games played since a model joined');
+  chk('the footer no longer attributes every record to the settlement run',
+    !/Records are graded by the Collective on actual results/.test(CODE));
   chk('the legend explains the marker to a reader who has not asked',
     G.BOARD_LEGEND.some(function (x) { return /pgrade/.test(x.k) && /published rule/.test(x.long); }));
   chk('the page no longer claims a grade it computed came from the settlement run',
