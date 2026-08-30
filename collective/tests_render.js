@@ -715,6 +715,35 @@ var S=sandbox;
   RANKINGS.boards.win_pct=[];
   S.SEASON_GAMES={};S.LOCALREC={};S.location.hash='';
 
+  /* ---- the sweep must not stop at one week -----------------------------
+     The week-less payload names the current week, and that is what bounds
+     the sweep. When it does not, the games it returned still do — reading
+     one week and calling it a season would quietly build every record on
+     this site out of a single slate. */
+  S.SEASON_GAMES={};S.LOCALREC={};
+  var realFetch4=S.fetch;
+  function wkGame(n){
+    var g=G(900+n,'A'+n,'B'+n,24,17,-3.5,[M('blerm','blerm-s-model','home',-6,-3.5,0.6)]);
+    g.week=n;return g;
+  }
+  S.fetch=function(u){
+    var q=String(u);
+    if(q.indexOf('/v1/games')<0)return realFetch4(u);
+    var m=/[?&]week=(\d+)/.exec(q);
+    if(m)return reply({games:[wkGame(+m[1])],entitled:true});
+    /* deliberately no top-level week on the head payload */
+    return reply({games:[wkGame(3)],entitled:true});
+  };
+  var swept=await S.seasonGames('CFB',2026);
+  chk('a payload that names no week is bounded by the games it returned',
+    swept.length===3
+      && [1,2,3].every(function(w){
+           return swept.some(function(g){return g.week===w;});
+         }),
+    {weeks:swept.map(function(g){return g.week;})});
+  S.fetch=realFetch4;
+  S.SEASON_GAMES={};S.LOCALREC={};
+
   fails.forEach(function(f){console.log('FAIL | '+f.n+(f.d?'  '+JSON.stringify(f.d).slice(0,400):''));});
   console.log((fail===0?'ALL GREEN ':'FAILED ')+pass+' passed, '+fail+' failed');
   process.exit(fail===0?0:1);
