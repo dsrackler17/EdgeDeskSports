@@ -16,6 +16,7 @@ on:
       - 'app.html'
       - 'collective/index.html'
       - 'collective/embed.js'
+      - 'collective/admin.html'
       - 'tools/collective/**'
       - '.github/workflows/collective-tests.yml'
   pull_request:
@@ -23,6 +24,7 @@ on:
       - 'app.html'
       - 'collective/index.html'
       - 'collective/embed.js'
+      - 'collective/admin.html'
       - 'tools/collective/**'
       - '.github/workflows/collective-tests.yml'
   workflow_dispatch:
@@ -57,6 +59,11 @@ jobs:
       # A credential the host page hands over, and the rules it travels under.
       - name: The embed only vouches for a real reader, and only to us
         run: node tools/collective/embed_auth.test.js
+
+      # The founder pool is divided by a CONFIGURED count, not by a count of
+      # people; these hold the screen that has to say when the two disagree.
+      - name: The founder split says when its divisor is stale
+        run: node tools/collective/founder_split.test.js
 
       - name: Schedule matching
         run: node tools/collective/sync_schedule.test.js
