@@ -160,6 +160,24 @@ section.band{padding:84px 0;border-top:1px solid var(--line)}
 .mkrow{display:flex;flex-wrap:wrap;gap:8px 18px;align-items:baseline;padding:11px 15px;background:var(--cell);border-bottom:1px solid var(--line);font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--dim)}
 .mkrow b{color:var(--text);font-weight:700}
 .mkrow .mktag{font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--faint)}
+/* live-panel additions: a reload control in the terminal bar, a secondary tab
+   strip under the primary one, and the two cell states a live row has that a
+   worked example never does — locked, and a sub-label under a name */
+.term-bar .tbtn{flex:none;font-family:inherit;font-size:8.5px;letter-spacing:.11em;text-transform:uppercase;color:var(--dim);background:transparent;border:1px solid var(--line2);border-radius:5px;padding:3px 8px;cursor:pointer;transition:.15s}
+.term-bar .tbtn:hover{color:var(--text);border-color:var(--obs)}
+.term-bar .tbtn[disabled]{opacity:.4;cursor:default}
+.term-bar .tag.live{color:var(--val);border-color:rgba(63,184,131,.42)}
+.tabs.sub{background:#0b0e13;padding:0 10px}
+.tabs.sub button{border-radius:0;border:none;border-bottom:2px solid transparent;padding:8px 11px;font-size:10px}
+.tabs.sub button[aria-selected=true]{background:transparent;color:var(--obs);border-bottom-color:var(--obs)}
+.mcw .mlk{color:var(--faint);font-family:'JetBrains Mono',monospace;font-size:11.5px}
+.mcw .sb{display:block;color:var(--faint);font-size:11px;margin-top:3px}
+.mcw .chip{display:inline-block;font-family:'JetBrains Mono',monospace;font-size:8.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--faint);border:1px solid var(--line2);border-radius:4px;padding:2px 5px;margin-left:7px;white-space:nowrap}
+.mcw .chip.fnd{color:var(--est);border-color:rgba(217,164,65,.42)}
+.mcnote{padding:16px 15px;font-family:'JetBrains Mono',monospace;font-size:11.5px;line-height:1.7;color:var(--faint)}
+.mcnote a{color:var(--obs)}
+.mcnote b{color:var(--text);font-weight:700}
+.mcnote .mtag{display:inline-block;color:var(--dim);border:1px solid var(--line2);border-radius:5px;padding:2px 7px;margin:4px 4px 0 0}
 .teach b{color:var(--dim);font-weight:500}
 
 /* ---------- hero ---------- */
@@ -889,23 +907,31 @@ footer{border-top:1px solid var(--line);background:#0a0c10;padding:38px 0 48px}
       <span class="ey"><b>&#9642;</b> The Model Collective</span>
       <h2>Independent models.<br><span class="g">One graded record.</span></h2>
       <p>Shared infrastructure for people who build their own models. Every creator keeps their own model, site, price and methodology &mdash; the Collective only does the part nobody can do for themselves: grade everyone the same way, against its own captured closing lines, on the actual final score. Never self-reported.</p>
+      <p style="margin-top:12px">The panel below is the real thing, not a mock-up of it: <b>the wall</b> is every model currently in the Collective with its graded record, <b>the board</b> is what is actually on the slate right now, and <b>how it reads</b> is a worked example for the columns. The wall and the board are open to everyone. The only paid part is a model's number before kickoff &mdash; which is the only part that could be sold to anybody.</p>
     </div>
 
+    <!-- Live from collective_public, with the worked example kept as a view of
+         its own and as the floor. Nothing here is asked for until the section
+         is scrolled to, and every request can fail without taking the panel
+         down: see the collective() block for what each failure leaves behind. -->
     <div class="term rv" style="margin-top:38px">
       <div class="term-bar">
         <span class="tt"><i></i><i></i><i></i></span>
-        <span class="nm">Model Collective &middot; the wall</span>
-        <span class="tag">Interactive example</span>
+        <span class="nm">Model Collective</span>
+        <span class="tag" id="mcTag">Interactive example</span>
+        <button type="button" class="tbtn" id="mcRefresh" aria-label="Reload the Collective">Refresh</button>
       </div>
-      <div class="tabs" id="mcTabs" role="tablist" aria-label="Games"></div>
+      <div class="tabs" id="mcViews" role="tablist" aria-label="Collective views"></div>
+      <div class="tabs sub" id="mcTabs" role="tablist" aria-label="Games"></div>
       <div id="mcPanel" role="tabpanel" tabindex="0"></div>
-      <div class="term-foot">Every column is either a number a creator submitted, untouched, or one the Collective computes identically for everybody. It never adjusts or infers anyone's methodology.</div>
+      <div class="term-foot" id="mcFoot">Every column is either a number a creator submitted, untouched, or one the Collective computes identically for everybody. It never adjusts or infers anyone&rsquo;s methodology.</div>
     </div>
 
     <div class="legend rv" style="margin-top:22px">
       <span class="lbl">Read as:</span>
       <span class="pv val">Model line &mdash; the creator's own number</span>
       <span class="pv est">&#916; Mkt &mdash; distance from the market</span>
+      <span class="pv val">MAE / Brier &mdash; graded, not claimed</span>
       <span class="pv exp">A comparison, never a verdict</span>
     </div>
     <p class="teach rv"><b>&#8250;</b> <b>Teaches:</b> the interesting question is not which model is right tonight. It is where a room of independent models collectively leaves the price &mdash; and whether each one's stated probabilities survive contact with results.</p>
@@ -2706,16 +2732,53 @@ function fmtAm(a){ a=Math.round(a); return (a>0?'+':'−')+Math.abs(a); }
 })();
 
 /* ======================================================================
-   3c · MODEL COLLECTIVE — the wall
+   3c · MODEL COLLECTIVE — the interactive
    One idea: independent models, compared to the market and to each other
    on numbers none of them supplied about themselves. Every figure here is
    either a creator's own submission or something the Collective computes
    the same way for everyone.
+
+   WHY THIS TALKS TO THE REAL API. This was three hardcoded games. It read
+   well and it proved nothing: the one question a first-time reader actually
+   has about a "collective" is whether anybody is in it, and an invented
+   slate cannot answer that. So the panel now asks collective_public — the
+   same API the Collective's own site runs on — for the wall, for the sports
+   it runs, and for each sport's board:
+
+     /v1/meta                    the sports and their seasons
+     /v1/wall                    every model, in canonical order, PUBLIC
+     /v1/games?sport=&season=    that sport's slate, auth-aware
+
+   Three properties matter here more than on any other page, because this is
+   the first thing a stranger sees:
+
+   1. THE PAGE CANNOT BREAK. The worked example stays, as a view of its own
+      and as the floor. Every request has its own timeout and its own catch,
+      the whole load has a deadline, and if the network never answers at all
+      the reader still gets the example that was here before — labelled as
+      an example, which it always was.
+   2. NOTHING IS ASKED FOR UNTIL IT IS LOOKED AT. This section is far below
+      the fold; firing three requests during first paint would cost the page
+      its load time to show something most visitors scroll past.
+   3. THE WALL IS THE HEADLINE. It needs no subscription, no account and no
+      unlock — graded records, computed identically for everyone, against
+      the Collective's own captured closing lines. Pre-kickoff numbers are
+      the paid part and say so in their own words.
    ====================================================================== */
 (function collective(){
-  var tabsEl=document.getElementById('mcTabs'), panel=document.getElementById('mcPanel');
-  if(!tabsEl||!panel) return;
-  var GAMES=[
+  var tabsEl =document.getElementById('mcTabs'),
+      panel  =document.getElementById('mcPanel'),
+      viewsEl=document.getElementById('mcViews'),
+      tagEl  =document.getElementById('mcTag'),
+      footEl =document.getElementById('mcFoot'),
+      btn    =document.getElementById('mcRefresh');
+  if(!tabsEl||!panel||!viewsEl) return;
+
+  /* ------------------------------------------------------- worked example
+     Not live, never claimed to be, and kept for the reason it was written:
+     the columns have to be readable before a reader knows what a slate is.
+     It is also the floor — if every request fails, this is still here. */
+  var DEMO=[
     {k:'NYJ @ TEN', home:'TEN', away:'NYJ', market:-3.0, total:39,
      rows:[
        {m:'MooseMetrics',  line:-2.5,  hw:null, age:'43h'},
@@ -2735,51 +2798,434 @@ function fmtAm(a){ a=Math.round(a); return (a>0?'+':'−')+Math.abs(a); }
        {m:'+EV Model',     line:-12.4, hw:0.85, age:'42h'}
      ], cons:{line:-7.5, hw:0.81, n:3}}
   ];
-  var cur=0;
-  function spread(v){return v==null?'\u2014':((v>0?'+':'\u2212')+Math.abs(v).toFixed(1));}
+
+  var S={view:'demo',game:0,touched:false,
+         wall:[],games:[],sports:[],mkt:{},
+         ran:false,busy:false,entitled:false,identified:false,failed:{}};
+
+  /* Resolved when a request is made, never when this file is parsed: this is
+     a different <script> from the one that declares SB_URL, and blocks run in
+     order. The literal is the same host already in that block, so a missing
+     declaration costs nothing. */
+  function api(){
+    var b=(typeof SB_URL!=='undefined'&&SB_URL)||window.SB_URL
+        ||'https://iattxbkbufslbauoumga.supabase.co';
+    return String(b).replace(/\/+$/,'')+'/functions/v1';
+  }
+  /* The reader's own token, or nothing. The publishable anon key is not an
+     identity and must never be sent as one. */
+  function token(){
+    try{
+      if(typeof sessionValid==='function'&&!sessionValid())return null;
+      var s=(typeof edSession==='function')?edSession():null;
+      var t=s&&s.access_token;
+      if(!t)return null;
+      if(typeof SB_KEY!=='undefined'&&t===SB_KEY)return null;
+      return t;
+    }catch(_){return null;}
+  }
+  /* One request, allowed to fail on its own. */
+  function get(path,tok){
+    var h={};
+    if(tok)h.authorization='Bearer '+tok;
+    var c=(typeof AbortController!=='undefined')?new AbortController():null;
+    var tm=setTimeout(function(){if(c)c.abort();},9000);
+    return fetch(api()+'/collective_public'+path,c?{headers:h,signal:c.signal}:{headers:h})
+      .then(function(r){
+        clearTimeout(tm);
+        if(!r.ok)throw new Error('HTTP '+r.status);
+        return r.json();
+      },function(e){clearTimeout(tm);throw e;});
+  }
+
+  /* ------------------------------------------------------------- reading */
+  function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){
+    return c==='&'?'&amp;':c==='<'?'&lt;':c==='>'?'&gt;':'&quot;';});}
+  function n1(x){return (x==null||!isFinite(x))?null:Number(x);}
+  /* A model sitting exactly on the number is 0.0, never a signed zero. */
+  function spread(v){
+    v=n1(v); if(v==null)return '—';
+    if(v===0)return '0.0';
+    return (v>0?'+':'−')+Math.abs(v).toFixed(1);
+  }
+  function pc(x){x=n1(x);return x==null?'—':Math.round(100*x)+'%';}
+  function fx(x,d){x=n1(x);return x==null?'—':x.toFixed(d);}
   function delta(line,mkt,g){
-    if(line==null||mkt==null)return '<span class="dlt">\u2014</span>';
+    line=n1(line);mkt=n1(mkt);
+    if(line==null||mkt==null)return '<span class="dlt">—</span>';
     var d=Math.round((line-mkt)*10)/10;
     var side=d<0?g.home:g.away;
-    var t=d===0?'on the market\u2019s number'
+    var t=d===0?'on the market’s number'
       :(Math.abs(d).toFixed(1)+' points further onto '+side+' than the market');
-    /* a model sitting exactly on the number is 0.0, never a signed zero */
-    var txt=d===0?'0.0':((d>0?'+':'\u2212')+Math.abs(d).toFixed(1));
-    return '<span class="dlt'+(Math.abs(d)>=3?' big':'')+'" title="'+t+'">'+txt+'</span>';
+    var txt=d===0?'0.0':((d>0?'+':'−')+Math.abs(d).toFixed(1));
+    return '<span class="dlt'+(Math.abs(d)>=3?' big':'')+'" title="'+esc(t)+'">'+txt+'</span>';
   }
-  function paint(){
-    var g=GAMES[cur];
-    tabsEl.innerHTML=GAMES.map(function(x,i){
-      return '<button role="tab" aria-selected="'+(i===cur)+'" data-i="'+i+'">'+x.k+'</button>';
+  function ko(iso){
+    if(!iso)return '';
+    try{return new Date(iso).toLocaleString([],
+      {weekday:'short',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});}
+    catch(_){return String(iso).slice(0,16).replace('T',' ');}
+  }
+  function byKick(a,z){return String(a.kickoff_at||'').localeCompare(String(z.kickoff_at||''));}
+  function label(g){return g.k||g.label||((g.away||'?')+' @ '+(g.home||'?'));}
+
+  /* --------------------------------------------------------- the market
+     From the Collective's own odds components, so a line shown here is the
+     line shown there. Entirely optional: if odds.js does not load, the board
+     simply has no market row and the delta column is empty, which is exactly
+     what a game with no captured price already shows. */
+  function oddsReady(){
+    if(window.MCOdds)return Promise.resolve(window.MCOdds);
+    if(oddsReady._p)return oddsReady._p;
+    oddsReady._p=new Promise(function(res){
+      var el=document.createElement('script');
+      el.src='/collective/odds.js';el.async=true;
+      el.onload=function(){res(window.MCOdds||null);};
+      el.onerror=function(){res(null);};
+      document.head.appendChild(el);
+    });
+    return oddsReady._p;
+  }
+  /* ONE BOARD PER SPORT. odds.js is league-scoped and defaults to the NFL, so
+     a single board() call leaves every college game with no market at all —
+     the same shape of bug that once hid college football entirely. */
+  function loadMarket(){
+    var codes=S.sports.length?S.sports.map(function(s){return s.code;}):['NFL'];
+    return oddsReady().then(function(M){
+      if(!M)return null;
+      try{M.configure({api:api()});}catch(_){return null;}
+      return Promise.all(codes.map(function(c){
+        return M.board({league:c,days:12,books:false})
+          .then(function(b){S.mkt[c]=b;})
+          .catch(function(){});
+      })).then(function(){paint();});
+    }).catch(function(){});
+  }
+  function mktGame(g){
+    var b=S.mkt[g.sport]||S.mkt.NFL;
+    if(!b||!b.find)return null;
+    try{return b.find({home:g.home,away:g.away,game_id:g.game_id});}catch(_){return null;}
+  }
+  function mktSpread(g){
+    var mg=mktGame(g);
+    if(!mg||!window.MCOdds)return null;
+    try{return n1(MCOdds.consensusSpread(mg));}catch(_){return null;}
+  }
+  function mktTotal(g){
+    var mg=mktGame(g);
+    if(!mg||!window.MCOdds)return null;
+    try{return n1(MCOdds.consensusTotal(mg));}catch(_){return null;}
+  }
+
+  /* ---------------------------------------------------------------- load
+     Capped PER SPORT and then merged, never on one shared total: an NFL
+     Sunday is sixteen games and would fill any shared limit on its own,
+     which is exactly how college football used to vanish from a board. */
+  function flatten(boards){
+    var now=Date.now(),up=[],done=[];
+    (boards||[]).forEach(function(bd){
+      var a=[],z=[];
+      ((bd&&bd.games)||[]).forEach(function(g){
+        if(g.result)z.push(g);
+        else if(new Date(g.kickoff_at).getTime()>now)a.push(g);
+      });
+      a.sort(byKick);z.sort(function(x,y){return byKick(y,x);});
+      up=up.concat(a.slice(0,6));
+      done=done.concat(z.slice(0,3));
+    });
+    up.sort(byKick);done.sort(function(x,y){return byKick(y,x);});
+    return up.concat(done);
+  }
+  function load(force){
+    if(S.busy)return;
+    if(S.ran&&!force)return;
+    S.busy=true;S.failed={};
+    if(btn)btn.disabled=true;
+    paint();
+    var settled=false;
+    function finish(){
+      if(settled)return;
+      settled=true;clearTimeout(wd);
+      S.busy=false;S.ran=true;
+      if(btn)btn.disabled=false;
+      pickView();paint();
+    }
+    /* NOTHING MAY SIT ON "LOADING" INDEFINITELY. Every request below has its
+       own timeout and its own catch, and the screen still gets a deadline of
+       its own: a promise that never settles for a reason nobody anticipated
+       is the failure this panel must not be able to have. */
+    var wd=setTimeout(function(){S.failed.timeout=true;finish();},12000);
+    var tok=token();
+    S.identified=!!tok;
+    get('/v1/meta').catch(function(){S.failed.meta=true;return null;})
+      .then(function(meta){
+        S.sports=(meta&&meta.sports)||[];
+        var wallP=get('/v1/wall').then(function(d){return (d&&d.rows)||[];})
+          .catch(function(){S.failed.wall=true;return [];});
+        var boardsP=S.sports.length
+          ? Promise.all(S.sports.map(function(sp){
+              return get('/v1/games?sport='+encodeURIComponent(sp.code)
+                  +'&season='+encodeURIComponent(sp.season==null?'':sp.season),tok)
+                .then(function(d){
+                  /* tag the sport we asked for: a payload built before games
+                     carried one would otherwise be unlabelled in a mixed list */
+                  ((d&&d.games)||[]).forEach(function(g){if(!g.sport)g.sport=sp.code;});
+                  return d;
+                })
+                .catch(function(){S.failed[sp.code]=true;return null;});
+            }))
+          : get('/v1/games',tok).then(function(d){return [d];})
+              .catch(function(){S.failed.board=true;return [];});
+        return Promise.all([wallP,boardsP]);
+      })
+      .then(function(res){
+        S.wall=(res&&res[0])||[];
+        var boards=((res&&res[1])||[]).filter(Boolean);
+        S.entitled=boards.some(function(b){return b&&b.entitled===true;});
+        S.games=flatten(boards);
+        finish();
+        loadMarket();
+      })
+      .catch(function(){finish();});
+  }
+
+  /* --------------------------------------------------------------- views
+     Only what actually arrived is offered. A tab that opens onto "did not
+     load" is worse than no tab. The reader's own choice is never overridden
+     by a later refresh — S.touched is the record of it. */
+  function views(){
+    var v=[];
+    if(S.wall.length)v.push({k:'wall',t:'The wall'});
+    v.push({k:'demo',t:'How it reads'});
+    if(S.games.length)v.push({k:'board',t:'On the board'});
+    return v;
+  }
+  function pickView(){
+    if(S.touched)return;
+    S.view=S.wall.length?'wall':(S.games.length?'board':'demo');
+  }
+  function listFor(){
+    return S.view==='demo'?DEMO:(S.view==='board'?S.games:[]);
+  }
+
+  /* --------------------------------------------------------------- paint */
+  function tableHTML(head,body){
+    return '<div style="overflow-x:auto"><table class="mcw"><thead><tr>'+head+
+      '</tr></thead><tbody>'+body+'</tbody></table></div>';
+  }
+  function wallHTML(){
+    if(!S.wall.length)
+      return '<div class="mcnote">The wall did not load just now. '+
+        '<a href="/collective/" target="_blank" rel="noopener">Open the Collective directly →</a></div>';
+    var rows=S.wall.map(function(r){
+      var rec=r.record;
+      return '<tr><td class="who">'+esc(r.creator_name||r.creator_slug||'—')+
+        (r.founding?'<span class="chip fnd">Founding</span>':'')+
+        '<span class="sb">'+esc(r.model_name||'model')+
+        (r.sport?' · '+esc(r.sport):'')+'</span></td>'+
+        '<td class="mono">'+(rec?esc(rec.wins+'-'+rec.losses+'-'+rec.pushes)
+          :'<span class="mlk">pending</span>')+'</td>'+
+        '<td class="num">'+(rec?(rec.win_pct==null?'—':fx(100*rec.win_pct,1)+'%'):'—')+'</td>'+
+        '<td class="num">'+(rec?fx(rec.margin_mae,2):'—')+'</td>'+
+        '<td class="num">'+(rec?fx(rec.brier,3):'—')+'</td></tr>';
     }).join('');
+    return tableHTML('<th>Creator &amp; model</th><th>Record</th>'+
+      '<th style="text-align:right">Win %</th>'+
+      '<th style="text-align:right">Spread MAE</th>'+
+      '<th style="text-align:right">Brier</th>',rows);
+  }
+  function demoHTML(g){
+    if(!g)return '';
     var mk=g.market==null
       ? '<div class="mkrow"><span class="mktag">Market</span><span>no price captured for this game yet</span></div>'
       : '<div class="mkrow"><span class="mktag">Market</span><span>'+g.home+' <b>'+spread(g.market)+'</b></span>'+
         '<span class="mktag">Total</span><span><b>'+g.total.toFixed(1)+'</b></span>'+
         '<span class="mktag">Captured</span><span>consensus across books</span></div>';
     var body=g.rows.map(function(r){
-      return '<tr><td class="who">'+r.m+'</td>'+
+      return '<tr><td class="who">'+esc(r.m)+'</td>'+
         '<td class="mono">'+g.home+' '+spread(r.line)+'</td>'+
         '<td class="num">'+delta(r.line,g.market,g)+'</td>'+
-        '<td class="num">'+(r.hw==null?'\u2014':Math.round(100*r.hw)+'%')+'</td>'+
-        '<td class="age">'+r.age+'</td></tr>';
-    }).join('');
-    panel.innerHTML=mk+
-      '<div style="overflow-x:auto"><table class="mcw"><thead><tr>'+
-      '<th>Model</th><th>Model line</th><th style="text-align:right">&#916; Mkt</th>'+
-      '<th style="text-align:right">Home %</th><th style="text-align:right">Age</th>'+
-      '</tr></thead><tbody>'+body+
+        '<td class="num">'+pc(r.hw)+'</td>'+
+        '<td class="age">'+esc(r.age)+'</td></tr>';
+    }).join('')+
       '<tr class="cons"><td class="who">Consensus &middot; n='+g.cons.n+'</td>'+
       '<td class="mono">'+g.home+' '+spread(g.cons.line)+'</td>'+
       '<td class="num">'+delta(g.cons.line,g.market,g)+'</td>'+
-      '<td class="num">'+Math.round(100*g.cons.hw)+'%</td>'+
-      '<td class="age"></td></tr>'+
-      '</tbody></table></div>';
+      '<td class="num">'+pc(g.cons.hw)+'</td>'+
+      '<td class="age"></td></tr>';
+    return mk+tableHTML('<th>Model</th><th>Model line</th>'+
+      '<th style="text-align:right">&#916; Mkt</th>'+
+      '<th style="text-align:right">Home %</th>'+
+      '<th style="text-align:right">Age</th>',body);
+  }
+  function boardHTML(g){
+    if(!g)return '<div class="mcnote">Nothing is on the Collective’s slate right now.</div>';
+    var ms=mktSpread(g),mt=mktTotal(g),bits=[];
+    /* The panel names its own game. The tab strip does too, but it scrolls
+       and a college matchup is long enough to be cut off in it. */
+    bits.push('<span class="mktag">Game</span><span><b>'+esc(label(g))+'</b></span>');
+    if(g.sport)bits.push('<span class="mktag">Sport</span><span><b>'+esc(g.sport)+'</b></span>');
+    if(ms==null)bits.push('<span class="mktag">Market</span><span>no price captured yet</span>');
+    else{
+      bits.push('<span class="mktag">Market</span><span>'+esc(g.home)+' <b>'+spread(ms)+'</b></span>');
+      if(mt!=null)bits.push('<span class="mktag">Total</span><span><b>'+fx(mt,1)+'</b></span>');
+    }
+    if(g.result)bits.push('<span class="mktag">Final</span><span><b>'+esc(String(g.result.away_score))+
+      '–'+esc(String(g.result.home_score))+'</b></span>');
+    else if(g.kickoff_at)bits.push('<span class="mktag">Kickoff</span><span>'+esc(ko(g.kickoff_at))+'</span>');
+    var mk='<div class="mkrow">'+bits.join('')+'</div>';
+
+    var models=g.models||[];
+    var c=g.consensus;
+    /* A COLUMN OF IDENTICAL "Subscriber number" CELLS TELLS A STRANGER NOTHING
+       and reads as a broken table. What is genuinely public about a game
+       nobody is entitled to yet is WHO posted it — so say that once, name the
+       paid part once, and drop the four empty columns. */
+    if(models.length&&models.every(function(m){return m.locked;})&&(!c||c.locked))
+      return mk+'<div class="mcnote"><b>'+models.length+' model'+
+        (models.length===1?'':'s')+'</b> posted this game: '+
+        models.map(function(m){
+          return '<span class="mtag">'+esc(m.creator_slug||m.creator_name||'model')+'</span>';
+        }).join(' ')+
+        '<br>Their lines, their win probabilities and the consensus of them unlock before '+
+        'kickoff for subscribers, and are graded here for everyone afterwards. '+
+        '<a href="#pricing">See the plan</a>.</div>';
+    var body=models.map(function(m){
+      var who='<td class="who">'+esc(m.creator_slug||m.creator_name||'model')+'</td>';
+      if(m.locked)
+        return '<tr>'+who+'<td class="mlk" colspan="4">Subscriber number '+
+          '— held back until this game is graded</td></tr>';
+      /* line_at_submission and projected_spread arrive in HOME convention and
+         pick_side names the team; an away pick displays the exact inverse.
+         Same convention as pickedSide() in collective/index.html. */
+      var v=n1(m.projected_spread);
+      var side=String(m.pick_side||'').trim().toLowerCase();
+      if(side!=='home'&&side!=='away')side=null;
+      var team=side==='home'?g.home:(side==='away'?g.away:null);
+      var raw=m.line_at_submission!=null?n1(m.line_at_submission):v;
+      var pl=raw==null?null:(side==='away'?(raw===0?0:-raw):raw);
+      var pick=team==null?'—':(esc(team)+' '+spread(pl));
+      var grade=(m.grade&&m.grade.pick_result)
+        ? '<span class="chip">'+esc(m.grade.pick_result)+'</span>':'';
+      return '<tr><td class="who">'+esc(m.creator_slug||m.creator_name||'model')+grade+'</td>'+
+        '<td class="mono">'+esc(g.home)+' '+spread(v)+'</td>'+
+        '<td class="num">'+delta(v,ms,g)+'</td>'+
+        '<td class="num">'+pc(m.home_win_probability!=null?m.home_win_probability:null)+'</td>'+
+        '<td class="age">'+pick+'</td></tr>';
+    }).join('');
+    var cons='';
+    if(c&&!c.locked&&c.n)
+      cons='<tr class="cons"><td class="who">Consensus &middot; n='+esc(String(c.n))+'</td>'+
+        '<td class="mono">'+esc(g.home)+' '+spread(c.spread_mean)+'</td>'+
+        '<td class="num">'+delta(c.spread_mean,ms,g)+'</td>'+
+        '<td class="num">'+pc(c.home_win_prob_mean)+'</td>'+
+        '<td class="age"></td></tr>';
+    else if(c&&c.locked)
+      cons='<tr class="cons"><td class="who">Consensus</td>'+
+        '<td class="mlk" colspan="4">Also a subscriber number</td></tr>';
+    if(!models.length&&!cons)
+      return mk+'<div class="mcnote">No model has posted this game yet.</div>';
+    return mk+tableHTML('<th>Model</th><th>Model line</th>'+
+      '<th style="text-align:right">&#916; Mkt</th>'+
+      '<th style="text-align:right">Home %</th>'+
+      '<th style="text-align:right">Pick</th>',body+cons);
+  }
+  /* WHICH OF THE THINGS HAPPENED, IN THE READER'S WORDS. A locked row looks
+     identical whichever reason it is, and "Subscriber number" on every one
+     of them invites the wrong guess — that the page is broken. */
+  function footHTML(){
+    var lost=Object.keys(S.failed).filter(function(k){return k!=='meta'&&k!=='timeout';});
+    var warn='';
+    if(S.view!=='demo'){
+      if(S.failed.timeout)
+        warn='<br>The Collective did not answer in time, so this may be short — press Refresh.';
+      else if(lost.length)
+        warn='<br>Did not load: '+esc(lost.join(', '))+
+          '. Everything else on the page is unaffected — press Refresh.';
+    }
+    if(S.view==='wall')
+      return 'Live from the Collective. Records are graded on the final score against the '+
+        'Collective’s own captured closing lines, computed identically for every model '+
+        'and never self-reported.'+warn;
+    if(S.view==='board'){
+      if(S.entitled)
+        return 'Live from the Collective, and unlocked on your account. Every column is either a '+
+          'number a creator submitted, untouched, or one the Collective computes identically '+
+          'for everybody.'+warn;
+      return 'Live from the Collective. The games, the market and the graded record are open to '+
+        'everyone; pre-kickoff model numbers are what a subscription buys — '+
+        '<a href="#pricing">see the plan</a> or '+
+        '<a href="/collective/" target="_blank" rel="noopener">open the Collective →</a>.'+warn;
+    }
+    return 'A worked example, so the columns can be read before there is a slate. Every column '+
+      'is either a number a creator submitted, untouched, or one the Collective computes '+
+      'identically for everybody. It never adjusts or infers anyone’s methodology.';
+  }
+  function tagText(){
+    if(S.busy)return 'Loading…';
+    if(S.view==='wall')return 'Live · '+S.wall.length+' model'+(S.wall.length===1?'':'s');
+    if(S.view==='board')return 'Live · '+S.games.length+' game'+(S.games.length===1?'':'s');
+    return 'Interactive example';
+  }
+  function paint(){
+    var vs=views(),list=listFor();
+    if(S.game>=list.length)S.game=0;
+    viewsEl.innerHTML=vs.map(function(v){
+      return '<button role="tab" aria-selected="'+(v.k===S.view)+'" data-v="'+v.k+'">'+
+        esc(v.t)+'</button>';
+    }).join('');
+    viewsEl.style.display=vs.length>1?'':'none';
+    if(list.length){
+      tabsEl.style.display='';
+      tabsEl.innerHTML=list.map(function(g,i){
+        return '<button role="tab" aria-selected="'+(i===S.game)+'" data-i="'+i+'">'+
+          esc(label(g))+'</button>';
+      }).join('');
+    }else{tabsEl.style.display='none';tabsEl.innerHTML='';}
+    panel.innerHTML=S.view==='wall'?wallHTML()
+      :(S.view==='demo'?demoHTML(list[S.game]):boardHTML(list[S.game]));
+    if(tagEl){
+      tagEl.textContent=tagText();
+      tagEl.className='tag'+((!S.busy&&S.view!=='demo')?' live':'');
+    }
+    if(footEl)footEl.innerHTML=footHTML();
+    wire();
+  }
+  function wire(){
+    [].slice.call(viewsEl.querySelectorAll('button')).forEach(function(b){
+      b.addEventListener('click',function(){
+        S.view=b.getAttribute('data-v');S.touched=true;S.game=0;paint();
+      });
+    });
     [].slice.call(tabsEl.querySelectorAll('button')).forEach(function(b){
-      b.addEventListener('click',function(){ cur=+b.getAttribute('data-i'); paint(); });
+      b.addEventListener('click',function(){S.game=+b.getAttribute('data-i');paint();});
     });
   }
+
+  /* -------------------------------------------------------------- arming
+     Asked for when it is scrolled to, not on first paint: this section is a
+     long way down a long page, and a landing page pays for every request it
+     makes before the reader has asked for anything. */
+  function arm(){
+    var sec=document.getElementById('collective');
+    if(!sec||typeof IntersectionObserver==='undefined'){load();return;}
+    var io=new IntersectionObserver(function(es){
+      for(var i=0;i<es.length;i++){
+        if(es[i].isIntersecting){io.disconnect();load();return;}
+      }
+    },{rootMargin:'320px 0px'});
+    io.observe(sec);
+  }
+  if(btn)btn.addEventListener('click',function(){load(true);});
+
   paint();
+  arm();
+
+  /* A small surface, for the console and for the tests that cut this block
+     out of the page and run it against a stub DOM. */
+  window.EDCollective={state:S,refresh:function(){load(true);},repaint:paint,
+    flatten:flatten,views:views,pickView:pickView,
+    html:{wall:wallHTML,demo:demoHTML,board:boardHTML,foot:footHTML,tag:tagText}};
 })();
 
 /* ======================================================================
