@@ -174,6 +174,7 @@ section.band{padding:84px 0;border-top:1px solid var(--line)}
 .mcw .sb{display:block;color:var(--faint);font-size:11px;margin-top:3px}
 .mcw .chip{display:inline-block;font-family:'JetBrains Mono',monospace;font-size:8.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--faint);border:1px solid var(--line2);border-radius:4px;padding:2px 5px;margin-left:7px;white-space:nowrap}
 .mcw .chip.fnd{color:var(--est);border-color:rgba(217,164,65,.42)}
+.mcw .chip.ok{color:var(--val);border-color:rgba(63,184,131,.42)}
 .mcnote{padding:16px 15px;font-family:'JetBrains Mono',monospace;font-size:11.5px;line-height:1.7;color:var(--faint)}
 .mcnote a{color:var(--obs)}
 .mcnote b{color:var(--text);font-weight:700}
@@ -907,13 +908,13 @@ footer{border-top:1px solid var(--line);background:#0a0c10;padding:38px 0 48px}
       <span class="ey"><b>&#9642;</b> The Model Collective</span>
       <h2>Independent models.<br><span class="g">One graded record.</span></h2>
       <p>Shared infrastructure for people who build their own models. Every creator keeps their own model, site, price and methodology &mdash; the Collective only does the part nobody can do for themselves: grade everyone the same way, against its own captured closing lines, on the actual final score. Never self-reported.</p>
-      <p style="margin-top:12px">The panel below is the real thing, not a mock-up of it: <b>the wall</b> is every model currently in the Collective with its graded record, <b>the board</b> is what is actually on the slate right now, and <b>how it reads</b> is a worked example for the columns. The wall and the board are open to everyone. The only paid part is a model's number before kickoff &mdash; which is the only part that could be sold to anybody.</p>
+      <p style="margin-top:12px">The panel below is live, and it is deliberately only proof that this exists: <b>the wall</b> is who is actually in the Collective, <b>the board</b> is the real slate and who has posted each game, and <b>how it reads</b> is a worked example with invented numbers so you can see the shape of it. What every model actually said, and how every model actually graded, is inside &mdash; that is what the subscription is.</p>
     </div>
 
-    <!-- Live from collective_public, with the worked example kept as a view of
-         its own and as the floor. Nothing here is asked for until the section
-         is scrolled to, and every request can fail without taking the panel
-         down: see the collective() block for what each failure leaves behind. -->
+    <!-- Live from collective_public, and deliberately thin: names, sports,
+         matchups, kickoffs and counts. Every graded number a subscription
+         buys is absent from this panel for every reader, which is why it
+         sends no token. See the collective() block. -->
     <div class="term rv" style="margin-top:38px">
       <div class="term-bar">
         <span class="tt"><i></i><i></i><i></i></span>
@@ -931,7 +932,6 @@ footer{border-top:1px solid var(--line);background:#0a0c10;padding:38px 0 48px}
       <span class="lbl">Read as:</span>
       <span class="pv val">Model line &mdash; the creator's own number</span>
       <span class="pv est">&#916; Mkt &mdash; distance from the market</span>
-      <span class="pv val">MAE / Brier &mdash; graded, not claimed</span>
       <span class="pv exp">A comparison, never a verdict</span>
     </div>
     <p class="teach rv"><b>&#8250;</b> <b>Teaches:</b> the interesting question is not which model is right tonight. It is where a room of independent models collectively leaves the price &mdash; and whether each one's stated probabilities survive contact with results.</p>
@@ -2738,32 +2738,39 @@ function fmtAm(a){ a=Math.round(a); return (a>0?'+':'−')+Math.abs(a); }
    either a creator's own submission or something the Collective computes
    the same way for everyone.
 
-   WHY THIS TALKS TO THE REAL API. This was three hardcoded games. It read
-   well and it proved nothing: the one question a first-time reader actually
-   has about a "collective" is whether anybody is in it, and an invented
-   slate cannot answer that. So the panel now asks collective_public — the
-   same API the Collective's own site runs on — for the wall, for the sports
-   it runs, and for each sport's board:
+   WHAT THIS PANEL IS ALLOWED TO SAY. It asks collective_public — the same
+   API the Collective's own site runs on — so that it can prove the thing a
+   hardcoded example never could: that the Collective is real, that people
+   are in it, and that there is a slate on it tonight.
 
      /v1/meta                    the sports and their seasons
-     /v1/wall                    every model, in canonical order, PUBLIC
-     /v1/games?sport=&season=    that sport's slate, auth-aware
+     /v1/wall                    who is in the Collective
+     /v1/games?sport=&season=    what is on the slate
 
-   Three properties matter here more than on any other page, because this is
-   the first thing a stranger sees:
+   IT PROVES EXISTENCE AND NOTHING ELSE. THE GRADED RECORD IS THE MOAT —
+   every model's win rate, spread MAE, Brier, its line on a game, its pick,
+   the consensus of the room — and all of it is what a subscription buys. So
+   NONE of it is rendered here, for anybody, signed in or out. This page
+   shows names, sports, matchups, kickoffs and counts. The moment a number
+   that a subscriber pays for appears in this block, the block is wrong.
 
-   1. THE PAGE CANNOT BREAK. The worked example stays, as a view of its own
-      and as the floor. Every request has its own timeout and its own catch,
-      the whole load has a deadline, and if the network never answers at all
-      the reader still gets the example that was here before — labelled as
-      an example, which it always was.
+   That is also why no reader's token is sent from here. There is nothing on
+   this page an entitled reader would unlock, so there is no reason to ask
+   who they are — and no way for this page to leak a paid number even to
+   someone who is entitled to it somewhere else.
+
+   The only numbers in the panel are in "How it reads", which is fabricated
+   and labelled as an example — that is its whole job.
+
+   Two more properties, because this is the first thing a stranger sees:
+
+   1. THE PAGE CANNOT BREAK. The worked example is a view of its own and
+      also the floor. Every request has its own timeout and its own catch,
+      the whole load has a deadline, and if the network never answers the
+      reader still gets the example that was here before.
    2. NOTHING IS ASKED FOR UNTIL IT IS LOOKED AT. This section is far below
       the fold; firing three requests during first paint would cost the page
       its load time to show something most visitors scroll past.
-   3. THE WALL IS THE HEADLINE. It needs no subscription, no account and no
-      unlock — graded records, computed identically for everyone, against
-      the Collective's own captured closing lines. Pre-kickoff numbers are
-      the paid part and say so in their own words.
    ====================================================================== */
 (function collective(){
   var tabsEl =document.getElementById('mcTabs'),
@@ -2800,8 +2807,8 @@ function fmtAm(a){ a=Math.round(a); return (a>0?'+':'−')+Math.abs(a); }
   ];
 
   var S={view:'demo',game:0,touched:false,
-         wall:[],games:[],sports:[],mkt:{},
-         ran:false,busy:false,entitled:false,identified:false,failed:{}};
+         wall:[],games:[],sports:[],
+         ran:false,busy:false,failed:{}};
 
   /* Resolved when a request is made, never when this file is parsed: this is
      a different <script> from the one that declares SB_URL, and blocks run in
@@ -2812,22 +2819,11 @@ function fmtAm(a){ a=Math.round(a); return (a>0?'+':'−')+Math.abs(a); }
         ||'https://iattxbkbufslbauoumga.supabase.co';
     return String(b).replace(/\/+$/,'')+'/functions/v1';
   }
-  /* The reader's own token, or nothing. The publishable anon key is not an
-     identity and must never be sent as one. */
-  function token(){
-    try{
-      if(typeof sessionValid==='function'&&!sessionValid())return null;
-      var s=(typeof edSession==='function')?edSession():null;
-      var t=s&&s.access_token;
-      if(!t)return null;
-      if(typeof SB_KEY!=='undefined'&&t===SB_KEY)return null;
-      return t;
-    }catch(_){return null;}
-  }
-  /* One request, allowed to fail on its own. */
-  function get(path,tok){
+  /* One request, anonymous, allowed to fail on its own. NO BEARER IS EVER
+     SENT FROM THIS PAGE. Nothing rendered here is gated, so identifying the
+     reader could only ever unlock something this panel must not print. */
+  function get(path){
     var h={};
-    if(tok)h.authorization='Bearer '+tok;
     var c=(typeof AbortController!=='undefined')?new AbortController():null;
     var tm=setTimeout(function(){if(c)c.abort();},9000);
     return fetch(api()+'/collective_public'+path,c?{headers:h,signal:c.signal}:{headers:h})
@@ -2849,7 +2845,6 @@ function fmtAm(a){ a=Math.round(a); return (a>0?'+':'−')+Math.abs(a); }
     return (v>0?'+':'−')+Math.abs(v).toFixed(1);
   }
   function pc(x){x=n1(x);return x==null?'—':Math.round(100*x)+'%';}
-  function fx(x,d){x=n1(x);return x==null?'—':x.toFixed(d);}
   function delta(line,mkt,g){
     line=n1(line);mkt=n1(mkt);
     if(line==null||mkt==null)return '<span class="dlt">—</span>';
@@ -2868,54 +2863,6 @@ function fmtAm(a){ a=Math.round(a); return (a>0?'+':'−')+Math.abs(a); }
   }
   function byKick(a,z){return String(a.kickoff_at||'').localeCompare(String(z.kickoff_at||''));}
   function label(g){return g.k||g.label||((g.away||'?')+' @ '+(g.home||'?'));}
-
-  /* --------------------------------------------------------- the market
-     From the Collective's own odds components, so a line shown here is the
-     line shown there. Entirely optional: if odds.js does not load, the board
-     simply has no market row and the delta column is empty, which is exactly
-     what a game with no captured price already shows. */
-  function oddsReady(){
-    if(window.MCOdds)return Promise.resolve(window.MCOdds);
-    if(oddsReady._p)return oddsReady._p;
-    oddsReady._p=new Promise(function(res){
-      var el=document.createElement('script');
-      el.src='/collective/odds.js';el.async=true;
-      el.onload=function(){res(window.MCOdds||null);};
-      el.onerror=function(){res(null);};
-      document.head.appendChild(el);
-    });
-    return oddsReady._p;
-  }
-  /* ONE BOARD PER SPORT. odds.js is league-scoped and defaults to the NFL, so
-     a single board() call leaves every college game with no market at all —
-     the same shape of bug that once hid college football entirely. */
-  function loadMarket(){
-    var codes=S.sports.length?S.sports.map(function(s){return s.code;}):['NFL'];
-    return oddsReady().then(function(M){
-      if(!M)return null;
-      try{M.configure({api:api()});}catch(_){return null;}
-      return Promise.all(codes.map(function(c){
-        return M.board({league:c,days:12,books:false})
-          .then(function(b){S.mkt[c]=b;})
-          .catch(function(){});
-      })).then(function(){paint();});
-    }).catch(function(){});
-  }
-  function mktGame(g){
-    var b=S.mkt[g.sport]||S.mkt.NFL;
-    if(!b||!b.find)return null;
-    try{return b.find({home:g.home,away:g.away,game_id:g.game_id});}catch(_){return null;}
-  }
-  function mktSpread(g){
-    var mg=mktGame(g);
-    if(!mg||!window.MCOdds)return null;
-    try{return n1(MCOdds.consensusSpread(mg));}catch(_){return null;}
-  }
-  function mktTotal(g){
-    var mg=mktGame(g);
-    if(!mg||!window.MCOdds)return null;
-    try{return n1(MCOdds.consensusTotal(mg));}catch(_){return null;}
-  }
 
   /* ---------------------------------------------------------------- load
      Capped PER SPORT and then merged, never on one shared total: an NFL
@@ -2955,8 +2902,6 @@ function fmtAm(a){ a=Math.round(a); return (a>0?'+':'−')+Math.abs(a); }
        its own: a promise that never settles for a reason nobody anticipated
        is the failure this panel must not be able to have. */
     var wd=setTimeout(function(){S.failed.timeout=true;finish();},12000);
-    var tok=token();
-    S.identified=!!tok;
     get('/v1/meta').catch(function(){S.failed.meta=true;return null;})
       .then(function(meta){
         S.sports=(meta&&meta.sports)||[];
@@ -2965,7 +2910,7 @@ function fmtAm(a){ a=Math.round(a); return (a>0?'+':'−')+Math.abs(a); }
         var boardsP=S.sports.length
           ? Promise.all(S.sports.map(function(sp){
               return get('/v1/games?sport='+encodeURIComponent(sp.code)
-                  +'&season='+encodeURIComponent(sp.season==null?'':sp.season),tok)
+                  +'&season='+encodeURIComponent(sp.season==null?'':sp.season))
                 .then(function(d){
                   /* tag the sport we asked for: a payload built before games
                      carried one would otherwise be unlabelled in a mixed list */
@@ -2974,17 +2919,14 @@ function fmtAm(a){ a=Math.round(a); return (a>0?'+':'−')+Math.abs(a); }
                 })
                 .catch(function(){S.failed[sp.code]=true;return null;});
             }))
-          : get('/v1/games',tok).then(function(d){return [d];})
+          : get('/v1/games').then(function(d){return [d];})
               .catch(function(){S.failed.board=true;return [];});
         return Promise.all([wallP,boardsP]);
       })
       .then(function(res){
         S.wall=(res&&res[0])||[];
-        var boards=((res&&res[1])||[]).filter(Boolean);
-        S.entitled=boards.some(function(b){return b&&b.entitled===true;});
-        S.games=flatten(boards);
+        S.games=flatten(((res&&res[1])||[]).filter(Boolean));
         finish();
-        loadMarket();
       })
       .catch(function(){finish();});
   }
@@ -3013,26 +2955,29 @@ function fmtAm(a){ a=Math.round(a); return (a>0?'+':'−')+Math.abs(a); }
     return '<div style="overflow-x:auto"><table class="mcw"><thead><tr>'+head+
       '</tr></thead><tbody>'+body+'</tbody></table></div>';
   }
+  /* WHO IS IN THE COLLECTIVE. Names, what they model, and whether they have
+     a graded record yet — never what that record says. Win rate, spread MAE
+     and Brier are the whole product; printing them here would give away the
+     thing a subscription exists to sell. */
   function wallHTML(){
     if(!S.wall.length)
       return '<div class="mcnote">The wall did not load just now. '+
         '<a href="/collective/" target="_blank" rel="noopener">Open the Collective directly →</a></div>';
     var rows=S.wall.map(function(r){
-      var rec=r.record;
+      var graded=!!(r.record&&(r.record.wins!=null||r.record.losses!=null));
       return '<tr><td class="who">'+esc(r.creator_name||r.creator_slug||'—')+
         (r.founding?'<span class="chip fnd">Founding</span>':'')+
-        '<span class="sb">'+esc(r.model_name||'model')+
-        (r.sport?' · '+esc(r.sport):'')+'</span></td>'+
-        '<td class="mono">'+(rec?esc(rec.wins+'-'+rec.losses+'-'+rec.pushes)
-          :'<span class="mlk">pending</span>')+'</td>'+
-        '<td class="num">'+(rec?(rec.win_pct==null?'—':fx(100*rec.win_pct,1)+'%'):'—')+'</td>'+
-        '<td class="num">'+(rec?fx(rec.margin_mae,2):'—')+'</td>'+
-        '<td class="num">'+(rec?fx(rec.brier,3):'—')+'</td></tr>';
+        '<span class="sb">'+esc(r.model_name||'model')+'</span></td>'+
+        '<td class="mono">'+esc(r.sport||'—')+'</td>'+
+        '<td class="num"><span class="chip'+(graded?' ok':'')+'">'+
+        (graded?'Graded':'Pending first grade')+'</span></td></tr>';
     }).join('');
-    return tableHTML('<th>Creator &amp; model</th><th>Record</th>'+
-      '<th style="text-align:right">Win %</th>'+
-      '<th style="text-align:right">Spread MAE</th>'+
-      '<th style="text-align:right">Brier</th>',rows);
+    return tableHTML('<th>Creator &amp; model</th><th>Sport</th>'+
+      '<th style="text-align:right">Record</th>',rows)+
+      '<div class="mcnote">Every one of these is graded the same way &mdash; on the final '+
+      'score, against the Collective&rsquo;s own captured closing lines, never self-reported. '+
+      '<b>What each record says is the part you subscribe for.</b> '+
+      '<a href="#pricing">See the plan</a>.</div>';
   }
   function demoHTML(g){
     if(!g)return '';
@@ -3058,81 +3003,34 @@ function fmtAm(a){ a=Math.round(a); return (a>0?'+':'−')+Math.abs(a); }
       '<th style="text-align:right">Home %</th>'+
       '<th style="text-align:right">Age</th>',body);
   }
+  /* WHAT IS ON THE SLATE. The matchup, the sport, the kickoff, and how many
+     models have posted it — all of which is true of the fixture, not of
+     anybody's model. No line, no probability, no pick, no consensus, for
+     any reader: those are the numbers a subscription buys, and this is a
+     public page. */
   function boardHTML(g){
-    if(!g)return '<div class="mcnote">Nothing is on the Collective’s slate right now.</div>';
-    var ms=mktSpread(g),mt=mktTotal(g),bits=[];
-    /* The panel names its own game. The tab strip does too, but it scrolls
-       and a college matchup is long enough to be cut off in it. */
-    bits.push('<span class="mktag">Game</span><span><b>'+esc(label(g))+'</b></span>');
+    if(!g)return '<div class="mcnote">Nothing is on the Collective\u2019s slate right now.</div>';
+    var bits=['<span class="mktag">Game</span><span><b>'+esc(label(g))+'</b></span>'];
     if(g.sport)bits.push('<span class="mktag">Sport</span><span><b>'+esc(g.sport)+'</b></span>');
-    if(ms==null)bits.push('<span class="mktag">Market</span><span>no price captured yet</span>');
-    else{
-      bits.push('<span class="mktag">Market</span><span>'+esc(g.home)+' <b>'+spread(ms)+'</b></span>');
-      if(mt!=null)bits.push('<span class="mktag">Total</span><span><b>'+fx(mt,1)+'</b></span>');
-    }
-    if(g.result)bits.push('<span class="mktag">Final</span><span><b>'+esc(String(g.result.away_score))+
-      '–'+esc(String(g.result.home_score))+'</b></span>');
+    if(g.result)bits.push('<span class="mktag">Status</span><span><b>Final, and graded</b></span>');
     else if(g.kickoff_at)bits.push('<span class="mktag">Kickoff</span><span>'+esc(ko(g.kickoff_at))+'</span>');
     var mk='<div class="mkrow">'+bits.join('')+'</div>';
-
     var models=g.models||[];
-    var c=g.consensus;
-    /* A COLUMN OF IDENTICAL "Subscriber number" CELLS TELLS A STRANGER NOTHING
-       and reads as a broken table. What is genuinely public about a game
-       nobody is entitled to yet is WHO posted it — so say that once, name the
-       paid part once, and drop the four empty columns. */
-    if(models.length&&models.every(function(m){return m.locked;})&&(!c||c.locked))
-      return mk+'<div class="mcnote"><b>'+models.length+' model'+
-        (models.length===1?'':'s')+'</b> posted this game: '+
-        models.map(function(m){
-          return '<span class="mtag">'+esc(m.creator_slug||m.creator_name||'model')+'</span>';
-        }).join(' ')+
-        '<br>Their lines, their win probabilities and the consensus of them unlock before '+
-        'kickoff for subscribers, and are graded here for everyone afterwards. '+
-        '<a href="#pricing">See the plan</a>.</div>';
-    var body=models.map(function(m){
-      var who='<td class="who">'+esc(m.creator_slug||m.creator_name||'model')+'</td>';
-      if(m.locked)
-        return '<tr>'+who+'<td class="mlk" colspan="4">Subscriber number '+
-          '— held back until this game is graded</td></tr>';
-      /* line_at_submission and projected_spread arrive in HOME convention and
-         pick_side names the team; an away pick displays the exact inverse.
-         Same convention as pickedSide() in collective/index.html. */
-      var v=n1(m.projected_spread);
-      var side=String(m.pick_side||'').trim().toLowerCase();
-      if(side!=='home'&&side!=='away')side=null;
-      var team=side==='home'?g.home:(side==='away'?g.away:null);
-      var raw=m.line_at_submission!=null?n1(m.line_at_submission):v;
-      var pl=raw==null?null:(side==='away'?(raw===0?0:-raw):raw);
-      var pick=team==null?'—':(esc(team)+' '+spread(pl));
-      var grade=(m.grade&&m.grade.pick_result)
-        ? '<span class="chip">'+esc(m.grade.pick_result)+'</span>':'';
-      return '<tr><td class="who">'+esc(m.creator_slug||m.creator_name||'model')+grade+'</td>'+
-        '<td class="mono">'+esc(g.home)+' '+spread(v)+'</td>'+
-        '<td class="num">'+delta(v,ms,g)+'</td>'+
-        '<td class="num">'+pc(m.home_win_probability!=null?m.home_win_probability:null)+'</td>'+
-        '<td class="age">'+pick+'</td></tr>';
-    }).join('');
-    var cons='';
-    if(c&&!c.locked&&c.n)
-      cons='<tr class="cons"><td class="who">Consensus &middot; n='+esc(String(c.n))+'</td>'+
-        '<td class="mono">'+esc(g.home)+' '+spread(c.spread_mean)+'</td>'+
-        '<td class="num">'+delta(c.spread_mean,ms,g)+'</td>'+
-        '<td class="num">'+pc(c.home_win_prob_mean)+'</td>'+
-        '<td class="age"></td></tr>';
-    else if(c&&c.locked)
-      cons='<tr class="cons"><td class="who">Consensus</td>'+
-        '<td class="mlk" colspan="4">Also a subscriber number</td></tr>';
-    if(!models.length&&!cons)
+    if(!models.length)
       return mk+'<div class="mcnote">No model has posted this game yet.</div>';
-    return mk+tableHTML('<th>Model</th><th>Model line</th>'+
-      '<th style="text-align:right">&#916; Mkt</th>'+
-      '<th style="text-align:right">Home %</th>'+
-      '<th style="text-align:right">Pick</th>',body+cons);
+    return mk+'<div class="mcnote"><b>'+models.length+' model'+
+      (models.length===1?'':'s')+'</b> posted this game: '+
+      models.map(function(m){
+        return '<span class="mtag">'+esc(m.creator_slug||m.creator_name||'model')+'</span>';
+      }).join(' ')+
+      '<br>'+(g.result
+        ? 'Their lines, their calls and how each one graded are in the Collective. '
+        : 'Their lines, their win probabilities and the consensus of them are in the Collective, '+
+          'and every one of them is graded there after the whistle. ')+
+      '<a href="#pricing">See the plan</a> or '+
+      '<a href="/collective/" target="_blank" rel="noopener">open the Collective →</a>.</div>';
   }
-  /* WHICH OF THE THINGS HAPPENED, IN THE READER'S WORDS. A locked row looks
-     identical whichever reason it is, and "Subscriber number" on every one
-     of them invites the wrong guess — that the page is broken. */
+  /* What the reader is looking at, and what is deliberately not in it. */
   function footHTML(){
     var lost=Object.keys(S.failed).filter(function(k){return k!=='meta'&&k!=='timeout';});
     var warn='';
@@ -3144,22 +3042,15 @@ function fmtAm(a){ a=Math.round(a); return (a>0?'+':'−')+Math.abs(a); }
           '. Everything else on the page is unaffected — press Refresh.';
     }
     if(S.view==='wall')
-      return 'Live from the Collective. Records are graded on the final score against the '+
-        'Collective’s own captured closing lines, computed identically for every model '+
-        'and never self-reported.'+warn;
-    if(S.view==='board'){
-      if(S.entitled)
-        return 'Live from the Collective, and unlocked on your account. Every column is either a '+
-          'number a creator submitted, untouched, or one the Collective computes identically '+
-          'for everybody.'+warn;
-      return 'Live from the Collective. The games, the market and the graded record are open to '+
-        'everyone; pre-kickoff model numbers are what a subscription buys — '+
-        '<a href="#pricing">see the plan</a> or '+
-        '<a href="/collective/" target="_blank" rel="noopener">open the Collective →</a>.'+warn;
-    }
-    return 'A worked example, so the columns can be read before there is a slate. Every column '+
-      'is either a number a creator submitted, untouched, or one the Collective computes '+
-      'identically for everybody. It never adjusts or infers anyone’s methodology.';
+      return 'Live from the Collective: who is in it, and what they model. '+
+        'How each one has actually graded is inside.'+warn;
+    if(S.view==='board')
+      return 'Live from the Collective: the real slate, and who has posted each game. '+
+        'The lines, the probabilities and the consensus are inside.'+warn;
+    return 'A worked example with invented numbers, so the columns can be read before there '+
+      'is a slate in front of you. On the real board every column is either a number a '+
+      'creator submitted, untouched, or one the Collective computes identically for '+
+      'everybody. It never adjusts or infers anyone’s methodology.';
   }
   function tagText(){
     if(S.busy)return 'Loading…';

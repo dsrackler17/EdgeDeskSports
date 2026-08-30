@@ -2,26 +2,35 @@
 /* ===========================================================================
    Tests for the Model Collective panel on the LANDING PAGE (index.html).
 
-   WHY THIS EXISTS. That panel used to be three hardcoded games. It read well
-   and it proved nothing: the one question a first-time reader has about a
-   "collective" is whether anybody is actually in it, and an invented slate
-   cannot answer that. So it now asks collective_public — /v1/meta, /v1/wall
-   and /v1/games?sport=&season= — the same API the Collective's own site runs
-   on, one sport at a time and with the reader's token when they have one.
+   WHAT THE PANEL IS FOR. It used to be three hardcoded games — a worked
+   example that read well and proved nothing, because the one question a
+   stranger has about a "collective" is whether anybody is in it. So it asks
+   collective_public (/v1/meta, /v1/wall, /v1/games?sport=&season=) and shows
+   that the Collective is real: who is in it, what is on the slate, and who
+   has posted each game.
 
-   That is a network dependency on the first thing a stranger ever sees, so
-   what is held here is the set of properties that makes it safe to have:
+   AND NOTHING ELSE. THE GRADED RECORD IS THE MOAT. A model's win rate,
+   spread MAE, Brier, its line on a game, its win probability, its pick and
+   the consensus of the room are what a subscription buys. None of it may
+   appear on this page, for any reader — so the bulk of what is held here is
+   the ABSENCE of those numbers, checked against payloads that carry them in
+   full. If a future change starts rendering them, these fail.
 
-     - the worked example survives as a view of its own AND as the floor, so
-       total network failure still leaves a readable panel;
+   That is also why the panel sends no bearer: nothing here is gated, so
+   identifying the reader could only unlock something that must not print.
+
+   The rest is the properties that make a network dependency safe on the
+   first thing a stranger sees:
+
+     - the worked example is a view of its own AND the floor, so total
+       network failure still leaves a readable panel;
      - every sport in meta is asked for by name and capped PER SPORT, because
-       an NFL Sunday filling a shared limit is exactly how college football
-       vanished from a merged board before;
+       an NFL Sunday filling a shared limit is how college football vanished
+       from a merged board before;
      - one section failing is one section missing, never the panel;
      - nothing at all is requested until the section is scrolled to;
      - the API base is resolved per request, never at parse time — this block
-       is in a different <script> from the one that declares SB_URL;
-     - a locked row says which of the reasons it is, in the reader's words.
+       is in a different <script> from the one that declares SB_URL.
 
    Run: node tools/collective/landing_collective.test.js
    =========================================================================== */
@@ -58,7 +67,7 @@ chk('the section the observer watches is still #collective',
 
 /* the CSS the live states need, which a worked example never had */
 ['.term-bar .tbtn{', '.term-bar .tag.live{', '.tabs.sub{',
- '.mcw .mlk{', '.mcw .sb{', '.mcw .chip{', '.mcw .chip.fnd{', '.mcnote{'
+ '.mcw .sb{', '.mcw .chip{', '.mcw .chip.fnd{', '.mcw .chip.ok{', '.mcnote{'
 ].forEach(sel => chk('styles ' + sel.replace('{', ''), IDX.includes(sel)));
 
 /* -------------------------------------------- the renderer, cut out of it */
@@ -73,6 +82,15 @@ chk('the block is the one that talks to collective_public',
   SRC.includes('/collective_public'));
 chk('and it asks for every sport meta names, not meta.sports[0]',
   SRC.includes('S.sports.map(') && !/sports\s*\[\s*0\s*\]/.test(SRC));
+/* THE MOAT, ENFORCED IN THE SOURCE. A bearer header is the mechanism by
+   which a paid number could ever reach this page, so the block must not
+   contain one at all — not a disabled one, not a conditional one. */
+chk('the block never builds an authorization header',
+  !/authorization/i.test(SRC), { found: (/.{0,60}authorization.{0,60}/i.exec(SRC) || [])[0] });
+chk('and never reads a session or a token',
+  !/edSession|access_token|sessionValid|SB_KEY/.test(SRC));
+chk('and has no notion of an entitled reader, because nothing here is gated',
+  !/entitled/i.test(SRC));
 
 /* ------------------------------------------------------------- a stub DOM */
 function el(id) {
@@ -291,19 +309,33 @@ const settle = () => new Promise(r => setTimeout(r, 0));
     { got: DOM.mcTag.textContent });
   chk('and wears the live colour', /\blive\b/.test(DOM.mcTag.className));
   chk('the wall names the creators', DOM.mcPanel.innerHTML.includes('MooseMetrics'));
-  chk('with their graded record', DOM.mcPanel.innerHTML.includes('41-33-2'));
-  chk('their win rate to one decimal', DOM.mcPanel.innerHTML.includes('55.4%'));
-  chk('their spread MAE to two', DOM.mcPanel.innerHTML.includes('10.42'));
-  chk('their Brier to three', DOM.mcPanel.innerHTML.includes('0.221'));
+  chk('and what they model', DOM.mcPanel.innerHTML.includes('Moose NFL'));
+  chk('and which sport it is for', DOM.mcPanel.innerHTML.includes('NFL'));
   chk('a founding member is marked as one',
     /chip fnd">Founding</.test(DOM.mcPanel.innerHTML));
-  chk('a model with no graded games says pending rather than 0-0-0',
-    DOM.mcPanel.innerHTML.includes('pending'));
-  chk('and its empty metrics are em dashes, never zeros',
-    !/>0\.000</.test(DOM.mcPanel.innerHTML));
+  chk('a model that has been graded says so',
+    /chip ok">Graded</.test(DOM.mcPanel.innerHTML));
+  chk('and one that has not says that instead of an empty row',
+    /Pending first grade/.test(DOM.mcPanel.innerHTML));
+
+  /* THE MOAT. The fixture above carries a complete record for MooseMetrics —
+     41-33-2, 55.4%, MAE 10.42, Brier 0.2213. Not one of those numbers may
+     reach a public page: they are the entire thing a subscription buys. */
+  {
+    const h = DOM.mcPanel.innerHTML;
+    chk('the wall does not publish the win-loss record', !/41-33-2|41\s*-\s*33/.test(h), { h });
+    chk('nor the win rate', !/55\.4|0\.554/.test(h), { h });
+    chk('nor the spread MAE', !/10\.42/.test(h), { h });
+    chk('nor the Brier score', !/0\.22|0\.2213/.test(h), { h });
+    chk('nor coverage', !/88/.test(h), { h });
+    chk('in fact the wall prints no decimal number at all', !/\d\.\d/.test(h), { h });
+  }
   chk('the wall view offers no game tabs', DOM.mcTabs.style.display === 'none');
-  chk('the footer says the record is graded, not self-reported',
-    /never self-reported/.test(DOM.mcFoot.innerHTML), { got: DOM.mcFoot.innerHTML });
+  chk('the footer says the records exist and are inside, not what they say',
+    /How each one has actually graded is inside/.test(DOM.mcFoot.innerHTML),
+    { got: DOM.mcFoot.innerHTML });
+  chk('and the wall itself points at the plan',
+    DOM.mcPanel.innerHTML.includes('href="#pricing"'));
 
   /* --------------------------------------------------------- the live board */
   const boardTab = DOM.mcViews.querySelectorAll().find(b => b.getAttribute('data-v') === 'board');
@@ -314,24 +346,17 @@ const settle = () => new Promise(r => setTimeout(r, 0));
   chk('and says which sport it is', /Sport<\/span><span><b>NFL/.test(DOM.mcPanel.innerHTML));
   chk('both sports reached the tab strip',
     DOM.mcTabs.innerHTML.includes('NYJ @ TEN') && DOM.mcTabs.querySelectorAll().length === 2);
-  chk('a signed-out reader sees the models by name',
+  chk('the board names the models that posted it',
     DOM.mcPanel.innerHTML.includes('moosemetrics'));
-  chk('and is told how many posted it, which is the public fact about the game',
+  chk('and how many there were, which is a fact about the game, not about a model',
     /<b>2 models<\/b> posted this game/.test(DOM.mcPanel.innerHTML),
     { html: DOM.mcPanel.innerHTML });
-  chk('a fully locked game is one honest line, not a column of identical cells',
-    (DOM.mcPanel.innerHTML.match(/unlock before/g) || []).length === 1 &&
-    !/<table/.test(DOM.mcPanel.innerHTML), { html: DOM.mcPanel.innerHTML });
-  chk('and it names when they unlock rather than only that they are locked',
-    /unlock before[\s\S]*kickoff for subscribers/.test(DOM.mcPanel.innerHTML));
-  chk('and that they are graded in the open afterwards',
-    /graded here for everyone afterwards/.test(DOM.mcPanel.innerHTML));
-  chk('the footer tells a signed-out reader what is open and what is paid',
-    /pre-kickoff model numbers are what a subscription buys/i.test(DOM.mcFoot.innerHTML),
-    { got: DOM.mcFoot.innerHTML });
-  chk('and points at the plan on this same page', DOM.mcFoot.innerHTML.includes('href="#pricing"'));
-  chk('a market that never loaded is stated as missing, not invented',
-    /no price captured yet/.test(DOM.mcPanel.innerHTML));
+  chk('the board is never a table of numbers', !/<table/.test(DOM.mcPanel.innerHTML));
+  chk('it says where the numbers are instead',
+    /are in the Collective/.test(DOM.mcPanel.innerHTML));
+  chk('and points at the plan', DOM.mcPanel.innerHTML.includes('href="#pricing"'));
+  chk('and at the Collective itself',
+    DOM.mcPanel.innerHTML.includes('href="/collective/"'));
 
   /* the reader's own choice survives a refresh */
   serve({});
@@ -340,38 +365,37 @@ const settle = () => new Promise(r => setTimeout(r, 0));
   chk('a refresh does not yank the reader back to the wall',
     EC.state.view === 'board', { got: EC.state.view });
 
-  /* ------------------------------------------------------ an entitled reader */
+  /* ------------------------------------------------------------- THE MOAT
+     The board payload here is the FULLY UNLOCKED one — every model's spread,
+     its win probability, its pick at the line it was made against, its grade,
+     and the consensus of the room. That is what the API returns to somebody
+     who has paid. This is a public page, so none of it may be rendered even
+     when it is sitting right there in the payload. */
   global.edSession = () => ({ access_token: 'real-token' });
   global.sessionValid = () => true;
   serve({ entitled: true });
   EC.refresh();
   for (let i = 0; i < 12; i++) await settle();
-  chk('a signed-in reader sends their own token on the board request',
-    fetches.filter(f => f.url.includes('/v1/games'))
-      .every(f => f.opts.headers && f.opts.headers.authorization === 'Bearer real-token'),
-    { sent: fetches.filter(f => f.url.includes('/v1/games')).map(f => f.opts.headers) });
-  chk('and the panel knows it is entitled', EC.state.entitled === true);
-  chk('the numbers are there now', DOM.mcPanel.innerHTML.includes('TEN −2.5'),
-    { html: DOM.mcPanel.innerHTML });
-  chk('and nothing says Subscriber number', !/Subscriber number/.test(DOM.mcPanel.innerHTML));
-  chk('the consensus row is a number, not a lock',
-    /Consensus &middot; n=3/.test(DOM.mcPanel.innerHTML));
-  chk('an away pick is displayed in the away side\'s own convention',
-    DOM.mcPanel.innerHTML.includes('NYJ +3.0'), { html: DOM.mcPanel.innerHTML });
-  chk('a home pick is displayed in the home side\'s',
-    DOM.mcPanel.innerHTML.includes('TEN −3.0'));
-  chk('a graded pick carries its result', /chip">WIN</.test(DOM.mcPanel.innerHTML));
-  chk('the footer says so rather than selling to someone who already bought',
-    /unlocked on your account/.test(DOM.mcFoot.innerHTML), { got: DOM.mcFoot.innerHTML });
-
-  /* the anon key is not an identity */
-  global.edSession = () => ({ access_token: 'anon-key' });
-  serve({});
-  EC.refresh();
-  for (let i = 0; i < 12; i++) await settle();
-  chk('the publishable anon key is never sent as a bearer',
+  chk('a signed-in reader is still asked for anonymously — nothing here is gated',
     fetches.every(f => !(f.opts.headers && f.opts.headers.authorization)),
     { sent: fetches.map(f => f.opts.headers) });
+  {
+    const h = DOM.mcPanel.innerHTML;
+    chk('an unlocked payload still yields no model spread',
+      !/-?2\.5|−2\.5|10\.6/.test(h), { h });
+    chk('no win probability', !/61%|82%|0\.61|0\.82/.test(h), { h });
+    chk('no pick', !/pick/i.test(h) && !/\+3\.0|−3\.0/.test(h), { h });
+    chk('no grade', !/\bWIN\b/.test(h), { h });
+    chk('no consensus figure — the word may appear in prose, the number may not',
+      !/Consensus\s*(&middot;|·)\s*n=/.test(h) && !/-?6\.0|−6\.0|75%/.test(h), { h });
+    chk('no total', !/41\.5/.test(h), { h });
+    chk('the board prints no decimal number at all', !/\d\.\d/.test(h), { h });
+    chk('what it does print is who posted it',
+      /<b>2 models<\/b> posted this game/.test(h), { h });
+  }
+  chk('and the footer says the same to everyone, paid or not',
+    /The lines, the probabilities and the consensus are inside/.test(DOM.mcFoot.innerHTML),
+    { got: DOM.mcFoot.innerHTML });
   global.edSession = () => null;
   global.sessionValid = () => false;
 
@@ -438,9 +462,9 @@ const settle = () => new Promise(r => setTimeout(r, 0));
     EC.html.board({ home: 'A', away: 'B', models: [{ creator_slug: '<img src=x>', locked: true }] })
       .includes('&lt;img src=x&gt;'));
 
-  /* One model unlocked and the rest not is a real state — an entitled reader
-     whose subscription covers one sport, or a creator seeing their own row —
-     and it is the only case where the per-row lock is still what renders. */
+  /* A payload where the API unlocked SOME rows — an account entitled to one
+     sport, or a creator seeing their own row. The lock flag on the wire is
+     not what keeps numbers off this page; the renderer is. */
   {
     const mixed = EC.html.board({
       home: 'TEN', away: 'NYJ', label: 'NYJ @ TEN', sport: 'NFL',
@@ -449,17 +473,27 @@ const settle = () => new Promise(r => setTimeout(r, 0));
                  pick_side: 'home', line_at_submission: -3, home_win_probability: 0.58 },
                { creator_slug: 'theirs', locked: true }]
     });
-    chk('a partly locked game still renders as a table', /<table/.test(mixed));
-    chk('with the unlocked number shown', mixed.includes('TEN −3.5'), { mixed });
-    chk('and the locked row saying so in its own cells',
-      /Subscriber number/.test(mixed) && /colspan="4"/.test(mixed));
-    chk('an unlocked consensus is a number even when a row above it is locked',
-      /Consensus &middot; n=2/.test(mixed));
+    chk('an unlocked row is still not printed', !/3\.5|−3\.5/.test(mixed), { mixed });
+    chk('an unlocked consensus is still not printed',
+      !/n=2/.test(mixed) && !/58%|60%/.test(mixed), { mixed });
+    chk('both models are still named, which is the point of the row',
+      mixed.includes('mine') && mixed.includes('theirs'));
+    chk('and the count counts both', /<b>2 models<\/b>/.test(mixed));
   }
-  chk('a locked consensus under unlocked rows is still named as locked',
-    /Also a subscriber number/.test(EC.html.board({
-      home: 'TEN', away: 'NYJ', sport: 'NFL', consensus: { locked: true },
-      models: [{ creator_slug: 'mine', locked: false, projected_spread: -3 }] })));
+  /* A settled game is the one place a number would be safe — the final score
+     is public — but the models' grades are not, so it stays a pointer. */
+  {
+    const done = EC.html.board({
+      home: 'TEN', away: 'NYJ', label: 'NYJ @ TEN', sport: 'NFL',
+      result: { home_score: 20, away_score: 17 },
+      consensus: { n: 2, spread_mean: -4, locked: false },
+      models: [{ creator_slug: 'mine', locked: false, projected_spread: -3.5,
+                 grade: { pick_result: 'WIN' } }]
+    });
+    chk('a settled game says it is final and graded', /Final, and graded/.test(done));
+    chk('without printing how anybody graded', !/\bWIN\b/.test(done), { done });
+    chk('and points inside for it', /are in the Collective/.test(done));
+  }
 
   /* ------------------------------------------------------------------ done */
   const total = pass + fail;
