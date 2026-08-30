@@ -741,6 +741,7 @@ function activityRows(rows,limit){
 function route(){
   var h=location.hash.replace(/^#/,'');
   if(/access_token=/.test(h))return;
+  ROUTE_TOKEN++;
   var view=$('view');
   document.querySelectorAll('nav.tabs a').forEach(function(a){a.classList.remove('on');});
   function markTab(r){var a=document.querySelector('nav.tabs a[data-r="'+r+'"]');if(a)a.classList.add('on');}
@@ -761,6 +762,19 @@ function route(){
 }
 window.addEventListener('hashchange',route);
 
+/* ---- one view on screen at a time ------------------------------------
+   Every render here ends in a single view.innerHTML=, and every render has
+   awaits before it. So a render that started for the page a reader was on a
+   moment ago can finish AFTER the page they are on now, and paint over it —
+   which the once-a-minute refresh turns from a rare race into a routine
+   one. route() stamps a token; a render that no longer holds it has been
+   overtaken and paints nothing. */
+var ROUTE_TOKEN=0;
+function paint(view,tok,html){
+  if(tok!==ROUTE_TOKEN)return false;
+  view.innerHTML=html;
+  return true;
+}
 /* An automatic refresh must never flash "Loading…" over a page somebody is
    reading. Every view that the live refresh can re-enter announces its load
    through here, so a refresh repaints when the new data lands and not
@@ -771,6 +785,10 @@ function loading(view,msg){
   view.innerHTML='<div class="emptybox">'+msg+'</div>';
 }
 function fail(view,e){
+  /* An automatic refresh must not swap a page the reader is looking at for
+     an error box because one request had a bad minute. Keep the last good
+     view and drop the baseline so the next tick tries again. */
+  if(LIVE_QUIET){LIVE_FP=null;return;}
   view.innerHTML='<div class="errbox"><b>The Collective could not load this view.</b><br>'+esc(e.message||e)+'<br><span class="note">The API may be briefly unreachable. Refresh in a moment.</span></div>';
 }
 
@@ -1642,6 +1660,7 @@ function pickLeadText(mr,kickoffIso){
 }
 async function renderWall(view){
   loading(view,'Loading the wall&hellip;');
+  var tok=ROUTE_TOKEN;
   try{
     var m=await meta();
     var sport=currentSport(m);
@@ -1800,12 +1819,12 @@ async function renderWall(view){
       '<p class="lede">Independent models, one independently graded record. Every pick is graded on the actual final score, measured against the Collective&#39;s own captured closing line so every model faces the same number, never self-reported. Each creator keeps their own site, price, and methodology.</p>';
 
     if(!rows.length){
-      view.innerHTML=hd+'<div class="emptybox">'+
+      if(!paint(view,tok,hd+'<div class="emptybox">'+
         (allRows.length
           ? 'No '+esc(sportLongName(sport.code))+' model has posted yet. '
             +'Other sports have '+allRows.length+' model'+(allRows.length===1?'':'s')+' \u2014 switch above.'
           : 'The wall is waiting on its first model. Creators join by invite and appear here the moment their profile is created.')+
-        '</div>';
+        '</div>'))return;
       bindSportSwitcher(function(){renderWall(view);});
       boardClock();if(!CLOCK_TIMER)CLOCK_TIMER=setInterval(boardClock,1000);
       return;
@@ -1857,7 +1876,7 @@ async function renderWall(view){
       });
     })();
     var body=dirBody();
-    view.innerHTML=hd+
+    if(!paint(view,tok,hd+
       '<h2 style="letter-spacing:.1em;text-transform:uppercase;font-size:12px;color:var(--dim)">Model directory</h2>'+
       '<div class="sortsel"><span class="note">Sort</span><select id="wallsort">'+
         '<option value="canonical">Status, then record</option>'+
@@ -1872,7 +1891,7 @@ async function renderWall(view){
       '</tr></thead><tbody>'+body+'</tbody></table></div>'+
       '<p class="note" style="margin-top:10px">Win percentage excludes pushes. Coverage is the share of the season slate this model has submitted. Models below the coverage or sample minimums appear here but are not ranked. Tap a row for the full profile. <span class="fstar">&#9733;</span> marks a founding member.</p>'+
       '<h2 style="letter-spacing:.1em;text-transform:uppercase;font-size:12px;color:var(--dim)">Recent activity</h2>'+
-      '<div class="panel">'+activityRows(act&&act.rows,10)+'</div>';
+      '<div class="panel">'+activityRows(act&&act.rows,10)+'</div>'))return;
     boardClock();if(!CLOCK_TIMER)CLOCK_TIMER=setInterval(boardClock,1000);
     $('wallsort').value=WALL_SORT;
     bindSportSwitcher(function(){renderWall(view);});
@@ -1909,6 +1928,7 @@ async function renderWall(view){
 /* ================= creator profile ================= */
 async function renderCreator(view,slug){
   loading(view,'Loading profile&hellip;');
+  var tok=ROUTE_TOKEN;
   try{
     var d=await api('/v1/creators/'+encodeURIComponent(slug));
     var c=d.creator;
@@ -1969,9 +1989,9 @@ async function renderCreator(view,slug){
         body+='<div class="panel" style="margin-top:10px;border-style:dashed"><b>Backfilled history:</b> <span class="mono">'+mo.backfill.rows+'</span> games. <span class="note">'+esc(mo.backfill.note)+'. Backfill never counts toward the record, rankings, or consensus.</span></div>';
       }
     });
-    view.innerHTML=head+body+'<p style="margin-top:22px"><a href="#">← Back to the wall</a></p>';
+    if(!paint(view,tok,head+body+'<p style="margin-top:22px"><a href="#">← Back to the wall</a></p>'))return;
   }catch(e){
-    if(e.status===404){view.innerHTML='<div class="emptybox">No creator at this address. <a href="#">Back to the wall</a></div>';return;}
+    if(e.status===404){if(!paint(view,tok,'<div class="emptybox">No creator at this address. <a href="#">Back to the wall</a></div>'))return;return;}
     fail(view,e);
   }
 }
@@ -1979,6 +1999,7 @@ async function renderCreator(view,slug){
 /* ================= model detail ================= */
 async function renderModel(view,cs,ms){
   loading(view,'Loading model&hellip;');
+  var tok=ROUTE_TOKEN;
   try{
     var res=await Promise.all([
       api('/v1/models/'+encodeURIComponent(cs)+'/'+encodeURIComponent(ms)),
@@ -2088,7 +2109,7 @@ async function renderModel(view,cs,ms){
       '<div class="tblwrap"><table id="glTbl"><thead><tr><th>Game</th><th class="num">Pick</th><th class="num">Close</th><th class="num">Final</th><th class="num">Result</th><th class="num">Margin err</th><th class="num">Brier</th><th class="num">Movement</th></tr></thead><tbody>'+glRows+'</tbody></table></div>'+
       '<p class="note" style="margin-top:8px">Each game is graded on the model’s first pre-kickoff live submission. Later revisions are stored as movement, never regraded.</p>':'';
     var cal=calibrationHTML(calCal);
-    view.innerHTML=head+stats+cal+vs+method+cov+gl+'<p style="margin-top:22px"><a href="#/'+esc(d.creator.slug)+'">← '+esc(d.creator.display_name)+'</a> &middot; <a href="#models">Model directory</a> &middot; <a href="#performance">Compare models</a></p>';
+    if(!paint(view,tok,head+stats+cal+vs+method+cov+gl+'<p style="margin-top:22px"><a href="#/'+esc(d.creator.slug)+'">← '+esc(d.creator.display_name)+'</a> &middot; <a href="#models">Model directory</a> &middot; <a href="#performance">Compare models</a></p>'))return;
     if($('glFilter'))$('glFilter').onchange=function(){
       var v=this.value;
       document.querySelectorAll('#glTbl tbody tr').forEach(function(tr){
@@ -2165,6 +2186,7 @@ async function renderFormat(view){
 var BOARD_WEEK=null;
 async function renderBoard(view){
   loading(view,'Loading the board&hellip;');
+  var tok=ROUTE_TOKEN;
   try{
     var m=await meta();
     var sport=currentSport(m);
@@ -2290,7 +2312,7 @@ async function renderBoard(view){
     });
     if(!cards)cards='<div class="emptybox">No games on this slate yet. Games appear when the schedule is loaded.</div>';
     var sub=(d.entitled===false)?'<div class="panel" style="margin-bottom:14px"><b>Locked numbers are for subscribers.</b> <span class="note">One subscription unlocks every model here: '+cents(m.pricing.monthly_cents)+' a month'+(m.pricing.annual_cents>0?' or '+cents(m.pricing.annual_cents)+' a year':'')+'. '+(m.billing_live?'':'Billing opens soon.')+'</span> <a href="#about">Details →</a></div>':'';
-    view.innerHTML=head+sub+cards;
+    if(!paint(view,tok,head+sub+cards))return;
     /* scoped to [data-w] on purpose: the sport switcher shares the .wk styling
        and would otherwise be caught by the week handler and silently reset the
        week to Current */
@@ -2423,6 +2445,7 @@ async function renderMarketGame(view,eventId){
 /* ================= rankings ================= */
 async function renderRankings(view){
   loading(view,'Loading rankings&hellip;');
+  var tok=ROUTE_TOKEN;
   try{
     var res=await Promise.all([api('/v1/rankings').catch(function(){return null;}),
       wallRows().catch(function(){return [];}),
@@ -2547,7 +2570,7 @@ async function renderRankings(view){
     var un=unSrc.map(function(u){
       return '<li><b>'+esc(u.model_name)+'</b> <span class="note">('+esc(u.creator_slug)+'): '+esc(u.reason)+'</span></li>';
     }).join('');
-    view.innerHTML='<h1>Rankings</h1>'+
+    if(!paint(view,tok,'<h1>Rankings</h1>'+
       sportSwitcherHTML(mMeta3)+
       '<p class="lede">Three separate boards, never blended into one score. A model must cover at least '+d.thresholds.min_coverage_pct+'% of the season slate and have '+d.thresholds.min_graded_games+' graded games to be ranked. Cherry-picking a slate is the fastest way off these boards.</p>'+
       '<div class="boards3">'+
@@ -2572,7 +2595,7 @@ async function renderRankings(view){
       })():'')+
       (un?'<h2>Not yet ranked</h2><ul style="color:var(--dim);font-size:13px;line-height:1.9">'+un+'</ul>'+
         (unLive?gradeNote('These counts are'):''):'')+
-      '<p class="note"><a href="#rules">How grading works →</a> &middot; <a href="#performance">Compare any two models side by side →</a></p>';
+      '<p class="note"><a href="#rules">How grading works →</a> &middot; <a href="#performance">Compare any two models side by side →</a></p>'))return;
     bindSportSwitcher(function(){renderRankings(view);});
     document.querySelectorAll('.rowlink').forEach(function(tr){tr.onclick=function(){location.hash='#/'+tr.getAttribute('data-slug');};});
   }catch(e){fail(view,e);}
@@ -2585,6 +2608,7 @@ async function renderRankings(view){
 var MODELS_TOKEN=0;
 async function renderModels(view){
   loading(view,'Loading the directory&hellip;');
+  var tok=ROUTE_TOKEN;
   try{
     var allRows=await wallRows();
     var mMeta2=await meta().catch(function(){return {sports:[]};});
@@ -2594,11 +2618,11 @@ async function renderModels(view){
       '<p class="lede">Every model in the Collective: who built it, what it covers, and how it has actually done. One click into any card gives the full graded game log. <span class="fstar">&#9733;</span> marks a founding member.</p>'+
       sportSwitcherHTML(mMeta2);
     if(!rows.length){
-      view.innerHTML=head+'<div class="emptybox">'+
+      if(!paint(view,tok,head+'<div class="emptybox">'+
         (allRows.length
           ? 'No '+esc(sportLongName(sp.code))+' model yet \u2014 switch above to see the others.'
           : 'The directory is waiting on its first model. Creators join by invite and appear here the moment their profile is created.')+
-        '</div>';
+        '</div>'))return;
       bindSportSwitcher(function(){renderModels(view);});
       return;
     }
@@ -2612,7 +2636,7 @@ async function renderModels(view){
     function mdCards(localMap){
       return rows.map(function(r){return modelCard(r,localMap);}).join('');
     }
-    view.innerHTML=head+search+'<div class="cards" id="mdCards">'+mdCards(null)+'</div>';
+    if(!paint(view,tok,head+search+'<div class="cards" id="mdCards">'+mdCards(null)+'</div>'))return;
     var mdToken=++MODELS_TOKEN;
     localRecords(sp.code,sp.season).then(function(map){
       if(mdToken!==MODELS_TOKEN)return;
@@ -2633,6 +2657,7 @@ async function renderModels(view){
 var PERF={a:'',b:''};
 async function renderPerformance(view){
   loading(view,'Loading&hellip;');
+  var tok=ROUTE_TOKEN;
   try{
     var rows=await wallRows();
     var opts=function(sel){
@@ -2643,12 +2668,12 @@ async function renderPerformance(view){
     };
     var head='<h1>Performance explorer</h1>'+
       '<p class="lede">Put any two models side by side: record, accuracy, calibration, coverage, and recent form, all from the same independently graded record. Same rules for everyone, so the comparison is fair by construction.</p>';
-    if(!rows.length){view.innerHTML=head+'<div class="emptybox">Nothing to compare yet. Models appear here once creators join.</div>';return;}
-    view.innerHTML=head+
+    if(!rows.length){if(!paint(view,tok,head+'<div class="emptybox">Nothing to compare yet. Models appear here once creators join.</div>'))return;return;}
+    if(!paint(view,tok,head+
       '<div class="duo" style="margin-bottom:14px">'+
       '<div><label>Model A</label><select id="pfA">'+opts(PERF.a)+'</select></div>'+
       '<div><label>Model B</label><select id="pfB">'+opts(PERF.b)+'</select></div></div>'+
-      '<div id="pfOut"><div class="emptybox">Pick two models above. Records, margin accuracy, Brier calibration, and each model&#39;s last ten graded games appear side by side.</div></div>';
+      '<div id="pfOut"><div class="emptybox">Pick two models above. Records, margin accuracy, Brier calibration, and each model&#39;s last ten graded games appear side by side.</div></div>'))return;
     async function paint(){
       var out=$('pfOut');
       var picks=[PERF.a,PERF.b].filter(Boolean);
@@ -5633,6 +5658,8 @@ var LIVE_TIMER=null;
 var LIVE_FP=null;
 var LIVE_SPORT=null;
 var LIVE_BUSY=false;
+var LIVE_TICKS=0;
+var LIVE_SEASON_EVERY=10;
 /* Views that are a read of the record, and so are safe to redraw underneath
    somebody. The dashboard, the join flow and the uploader are not: they hold
    form state, a half-mapped slate, a pasted invite code. */
@@ -5668,6 +5695,13 @@ async function liveTick(){
   if(LIVE_BUSY||!liveRoute())return;
   try{if(document.hidden)return;}catch(e){}
   LIVE_BUSY=true;
+  /* The fingerprint watches the CURRENT week, because that is the week
+     whose games are finishing. A settlement run reaching back to grade an
+     earlier one would go unseen, so the season caches are dropped on a
+     slower cycle: no repaint, no request, just a guarantee that the next
+     render this reader triggers reads the season again rather than a sweep
+     from an hour ago. */
+  if(++LIVE_TICKS%LIVE_SEASON_EVERY===0){SEASON_GAMES={};LOCALREC={};}
   try{
     var m=await meta();
     var sp=currentSport(m);
@@ -5678,6 +5712,12 @@ async function liveTick(){
        redrawing a page that was just drawn */
     if(LIVE_FP===null||LIVE_SPORT!==sp.code){LIVE_FP=fp;LIVE_SPORT=sp.code;return;}
     if(fp===LIVE_FP)return;
+    /* Checked again HERE, not only on the way in. Two requests happened
+       above, and in that time the reader can have opened the dashboard or
+       the uploader — views that hold work nobody has saved. Redrawing one
+       of those from a background timer would throw away a half-mapped
+       slate. */
+    if(!liveRoute())return;
     var y=0;try{y=window.scrollY||0;}catch(e){}
     var was=location.hash;
     bustLiveCaches();
@@ -5691,7 +5731,11 @@ async function liveTick(){
     /* the reader navigated while that was in flight, so the render that
        just finished is for a page they have left — draw where they are */
     if(location.hash!==was){route();return;}
-    try{window.scrollTo(0,y);}catch(e){}
+    /* Only when the repaint is what lost the position. A reader who scrolled
+       while it was in flight is where they meant to be, and yanking them
+       back to where they were a second ago is worse than the scroll reset
+       this is here to undo. */
+    try{if(y&&!window.scrollY)window.scrollTo(0,y);}catch(e){}
   }catch(e){
     /* The API is briefly unreachable, or the reader is signed out of a
        subscriber view. Drop the baseline so the next tick re-reads rather
@@ -5711,9 +5755,6 @@ try{
     if(!document.hidden)liveTick();
   });
 }catch(e){}
-/* a hash change is a fresh view, so the next tick re-baselines against it
-   instead of redrawing what was just drawn */
-window.addEventListener('hashchange',function(){LIVE_FP=null;});
 
 route();
 startLive();

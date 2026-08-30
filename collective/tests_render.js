@@ -450,6 +450,133 @@ var S=sandbox;
   S.location.hash='';S.LIVE_FP=null;S.LIVE_SPORT=null;
   GAMES.length=3;
 
+  /* ---- the reader opening the uploader mid-tick ----------------------
+     liveRoute() was checked only on the way in. Two requests happen after
+     that, and in them a reader can open the dashboard — a view holding a
+     half-mapped slate nobody has saved. */
+  S.SEASON_GAMES={};S.LOCALREC={};S.META=null;S.WALLC=null;
+  S.LIVE_FP=null;S.LIVE_SPORT=null;S.LIVE_BUSY=false;
+  S.location.hash='';
+  await S.liveTick();
+  GAMES.push(G(13,'R','S',28,14,-3.5,[M('blerm','blerm-s-model','home',-7,-3.5,0.66)]));
+  var drew=[];
+  S.route=function(){drew.push(S.location.hash);return Promise.resolve();};
+  var realFetch2=S.fetch;
+  S.fetch=function(u){
+    /* the reader opens the uploader while the tick is waiting on its data */
+    if(String(u).indexOf('/v1/games')>=0)S.location.hash='#dashboard';
+    return realFetch2(u);
+  };
+  await S.liveTick();
+  S.fetch=realFetch2;S.route=realRoute;
+  chk('a tick never redraws a view the reader opened while it was waiting',
+    drew.length===0, {drew:drew});
+  S.location.hash='';S.LIVE_FP=null;S.LIVE_SPORT=null;
+
+  /* ---- an unreachable API must not replace the page with an error box -- */
+  chk('a failed automatic refresh leaves the last good view alone',
+    function(){
+      var v=node();
+      v.innerHTML='<h1>the page the reader is looking at</h1>';
+      S.LIVE_QUIET=true;S.LIVE_FP='something';
+      S.fail(v,new Error('briefly unreachable'));
+      var kept=v.innerHTML.indexOf('the page the reader is looking at')>=0
+        && S.LIVE_FP===null;
+      S.LIVE_QUIET=false;
+      /* and a reader-initiated failure still says so */
+      S.fail(v,new Error('briefly unreachable'));
+      return kept && v.innerHTML.indexOf('could not load')>=0;
+    });
+
+  /* ---- the season caches cannot go stale forever ----------------------
+     The fingerprint watches the CURRENT week, because that is the week
+     whose games are finishing. A settlement run reaching back to grade an
+     earlier one would never be seen, so the season sweep is dropped on a
+     slower cycle. */
+  S.route=function(){return Promise.resolve();};
+  S.LIVE_FP=null;S.LIVE_SPORT=null;S.LIVE_BUSY=false;S.location.hash='';
+  await S.liveTick();
+  S.SEASON_GAMES={'CFB|2026':[1,2,3]};S.LOCALREC={'CFB|2026':{}};
+  S.LIVE_TICKS=0;
+  chk('the slower cycle is genuinely slower than the tick',
+    S.LIVE_SEASON_EVERY>=5,
+    'dropping the season sweep every minute turns a one-request poll into a per-week storm');
+  var kept=0;
+  for(var t=0;t<S.LIVE_SEASON_EVERY-1;t++){
+    await S.liveTick();
+    if(Object.keys(S.SEASON_GAMES).length)kept++;
+  }
+  chk('an unchanged slate leaves the season sweep in place',
+    kept===S.LIVE_SEASON_EVERY-1&&kept>=4, {kept:kept,of:S.LIVE_SEASON_EVERY-1});
+  await S.liveTick();
+  chk('and the sweep is dropped on the slower cycle, with no repaint',
+    Object.keys(S.SEASON_GAMES).length===0
+      && Object.keys(S.LOCALREC).length===0,
+    {season:Object.keys(S.SEASON_GAMES),local:Object.keys(S.LOCALREC)});
+  S.route=realRoute;S.LIVE_TICKS=0;
+  GAMES.length=3;
+
+  /* ---- one view on screen at a time -----------------------------------
+     Every render ends in one innerHTML= and has awaits before it, so a
+     render for the page a reader was on can finish after the page they are
+     on now and paint over it. The refresh turns that from a rare race into
+     a routine one. */
+  chk('a render overtaken by a newer route paints nothing',
+    function(){
+      var v=node();v.innerHTML='<h1>the page the reader is on</h1>';
+      var stale=S.ROUTE_TOKEN;
+      S.ROUTE_TOKEN++;
+      return S.paint(v,stale,'<h1>overtaken</h1>')===false
+        && v.innerHTML.indexOf('the page the reader is on')>=0;
+    });
+  chk('and the render that still holds the token paints',
+    function(){
+      var v=node();
+      return S.paint(v,S.ROUTE_TOKEN,'<h1>drawn</h1>')===true
+        && v.innerHTML.indexOf('drawn')>=0;
+    });
+  chk('every route stamps a new token',
+    function(){
+      var before=S.ROUTE_TOKEN;
+      S.location.hash='#models';S.route();
+      var mid=S.ROUTE_TOKEN;
+      S.location.hash='#rankings';S.route();
+      S.location.hash='';
+      return mid>before&&S.ROUTE_TOKEN>mid;
+    });
+  /* end to end: a board render caught mid-flight by a route change */
+  S.SEASON_GAMES={};S.LOCALREC={};
+  S.location.hash='#board';
+  var vB=node();
+  var flight=S.renderBoard(vB);
+  S.ROUTE_TOKEN++;                       /* the reader navigated */
+  await flight;
+  chk('a board render overtaken mid-flight never reaches the page',
+    vB.innerHTML.indexOf('The Board')<0,
+    {left:vB.innerHTML.slice(0,120)});
+  S.location.hash='';
+
+  /* ---- the scroll restore must not yank a reader who moved ------------- */
+  S.SEASON_GAMES={};S.LOCALREC={};S.META=null;S.WALLC=null;
+  S.LIVE_FP=null;S.LIVE_SPORT=null;S.LIVE_BUSY=false;S.LIVE_TICKS=0;
+  var scrolls=[];
+  S.scrollTo=function(x,y){scrolls.push(y);S.scrollY=y;};
+  await S.liveTick();
+  GAMES.push(G(14,'T','U',35,7,-10.5,[M('blerm','blerm-s-model','home',-14,-10.5,0.8)]));
+  S.scrollY=500;
+  S.route=function(){S.scrollY=200;return Promise.resolve();};   /* the reader scrolled */
+  await S.liveTick();
+  chk('a reader who scrolled during the repaint is left where they are',
+    scrolls.length===0, {scrolls:scrolls});
+  GAMES.push(G(15,'V','W',20,17,-1.5,[M('blerm','blerm-s-model','home',-3,-1.5,0.6)]));
+  S.scrollY=500;
+  S.route=function(){S.scrollY=0;return Promise.resolve();};     /* the repaint lost it */
+  await S.liveTick();
+  chk('but a repaint that lost the position puts it back',
+    scrolls.length===1&&scrolls[0]===500, {scrolls:scrolls});
+  S.route=realRoute;S.scrollY=0;GAMES.length=3;
+  S.LIVE_FP=null;S.LIVE_SPORT=null;
+
   fails.forEach(function(f){console.log('FAIL | '+f.n+(f.d?'  '+JSON.stringify(f.d).slice(0,400):''));});
   console.log((fail===0?'ALL GREEN ':'FAILED ')+pass+' passed, '+fail+' failed');
   process.exit(fail===0?0:1);
