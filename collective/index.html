@@ -4485,6 +4485,78 @@ function slateKickSpan(list,pick){
   return lo===null?null:{from:lo,to:hi};
 }
 
+/* THE BACKEND'S OWN VERDICT, IN WORDS, NAMING THE TEAM IT MEANT.
+
+   The receipt printed the wire code and nothing else:
+
+     QUARANTINED 401856767: unknown_team_away
+
+   Every part of that is true and none of it is usable. It names the game by
+   an id and the problem by a field name. But the row those refer to is right
+   there in what was just sent, so the line can say which game and, above all,
+   WHICH TEAM — which is the entire answer:
+
+     Bethune-Cookman @ UCF — your backend does not have Bethune-Cookman
+
+   It also settles something the pre-flight can only guess at. The pre-flight
+   reads /v1/games for the week, and a team missing from THAT is not
+   necessarily missing from the backend: UCF is absent from the week's games
+   and present in the backend's teams, so "neither team is on that schedule"
+   was true of the games feed and misleading about the backend.
+   `unknown_team_away` says exactly which side could not be resolved, and it
+   comes from the thing doing the resolving. It wins. */
+function slateExplainRow(x,row){
+  var code=String((x&&x.reason)||'').trim().toLowerCase();
+  var label=row&&row.away_team&&row.home_team
+    ? row.away_team+' @ '+row.home_team
+    : String((x&&x.game_ref)||'');
+  var team=null;
+  if(row){
+    if(code==='unknown_team_away')team=row.away_team;
+    else if(code==='unknown_team_home')team=row.home_team;
+  }
+  var say;
+  if(team)say='your backend does not have '+team;
+  else if(code==='unknown_game')say='your backend has no such game in this season and week';
+  else if(code.indexOf('unknown_team')===0)say='your backend does not have one of these teams';
+  else say=code;
+  return {label:label,team:team,code:code,say:say,side:
+    code==='unknown_team_away'?'away':code==='unknown_team_home'?'home':null};
+}
+/* Sent rows by the ref they were sent under, so a receipt line can find the
+   game it is talking about. */
+function slateRowsByRef(rows){
+  var by={};
+  (rows||[]).forEach(function(o){
+    var k=slateGameIdKey(o&&o.game_ref);
+    if(k&&!by[k])by[k]=o;
+  });
+  return by;
+}
+/* ONE SENTENCE OVER THE WHOLE QUARANTINE.
+
+   Ten lines that all say the same thing are not ten findings, they are one
+   finding printed ten times, and the reader has to spot that themselves. When
+   every quarantined row failed on the same SIDE, that is the finding — the
+   backend is short a set of teams, not a set of spellings — and it is worth
+   saying once, plainly, with the names. */
+function slateQuarantineCause(rows,sent){
+  var by=slateRowsByRef(sent),out=[],sides={},codes={},teams=[],seen={};
+  (rows||[]).forEach(function(x){
+    if(!x||x.status!=='quarantined')return;
+    var e=slateExplainRow(x,by[slateGameIdKey(x.game_ref)]);
+    out.push(e);
+    codes[e.code]=(codes[e.code]||0)+1;
+    if(e.side)sides[e.side]=(sides[e.side]||0)+1;
+    if(e.team&&!seen[e.team]){seen[e.team]=1;teams.push(e.team);}
+  });
+  var sideKeys=Object.keys(sides);
+  return {rows:out,n:out.length,teams:teams,codes:codes,
+    /* every failure on one side, and a team named for each: the backend is
+       missing those teams and nothing else is wrong */
+    oneSide:(out.length>1&&sideKeys.length===1&&teams.length===out.length)?sideKeys[0]:null};
+}
+
 function slateUnmatchedTeams(games,rows){
   var have=slateServerTeams(games),miss={},n=0,matched=0;
   /* keep the server's own spelling, not just its key, so a mismatch can be
@@ -6262,14 +6334,31 @@ async function renderCreatorDash(view,me){
       try{
         var r=await api('/v1/dashboard/submit',{method:'POST',auth:true,headers:{'content-type':'application/json'},body:env});
         var c2=r.counts||{};
-        var lines=(r.rows||[]).filter(function(x){return x.status!=='resolved';}).slice(0,10).map(function(x){
+        /* Say which GAME and which TEAM, not which id and which field. */
+        var byRef=slateRowsByRef(sendRows);
+        var lines=(r.rows||[]).filter(function(x){return x.status!=='resolved';}).slice(0,12).map(function(x){
           var col={late:'var(--warn)',quarantined:'var(--warn)',rejected:'var(--neg)'}[x.status]||'var(--dim)';
-          return '<div style="color:'+col+'" class="mono">'+esc(x.status.toUpperCase())+' '+esc(x.game_ref)+(x.reason?': '+esc(x.reason):'')+'</div>';
+          var e=slateExplainRow(x,byRef[slateGameIdKey(x.game_ref)]);
+          return '<div style="color:'+col+'" class="mono">'+esc(x.status.toUpperCase())+' '+esc(e.label)+
+            (e.say?' <span class="note">&mdash; '+esc(e.say)+'</span>':'')+'</div>';
         }).join('');
+        var qc=slateQuarantineCause(r.rows,sendRows);
         $('slOut').innerHTML=pfHtml+alignHtml+'<div class="panel" style="margin-top:10px;border-color:'+((c2.rejected||0)>0?'rgba(217,154,43,.5)':'rgba(47,180,124,.5)')+'">'+
           '<b>'+(dry?'Dry run:':'Posted:')+'</b> <span class="mono">'+(c2.resolved||0)+' matched, '+(c2.first||0)+' first submissions, '+(c2.movement||0)+' revisions, '+(c2.late||0)+' late, '+(c2.quarantined||0)+' quarantined, '+(c2.rejected||0)+' rejected</span>'+
           (lines?'<div style="margin-top:8px;font-size:12px">'+lines+'</div>':'')+
-          ((c2.quarantined||0)>0?'<p class="note" style="margin:8px 0 0">Quarantined games could not be matched to the schedule (usually a team name). They are saved and get resolved on the admin side; nothing is lost.</p>'
+          ((c2.quarantined||0)>0?
+            /* The finding, once, rather than ten lines of it. When every
+               quarantined row failed on the same side and each names a team,
+               the backend is short those teams and the file is not wrong. */
+            (qc.oneSide
+              ? '<p class="note" style="margin:8px 0 0"><b style="color:var(--warn)">All '+qc.n+
+                ' failed on the '+esc(qc.oneSide)+' team, and your backend named which.</b> It does not have '+
+                qc.teams.slice(0,12).map(esc).join(', ')+
+                (qc.teams.length>12?' and '+(qc.teams.length-12)+' more':'')+
+                '. <b>Nothing in your file is wrong</b> &mdash; these are teams the backend has never been given, so no '+
+                'spelling here can reach them. They stay saved and resolve the moment the backend carries those teams.</p>'
+              : '<p class="note" style="margin:8px 0 0">Quarantined games could not be matched. Each line above says what your '+
+                'backend could not resolve. They are saved and get resolved on the admin side; nothing is lost.</p>')
             +slateQuarantineForensics(sendRows):'')+
           (dry?'<p class="note" style="margin:8px 0 0">Nothing was saved. If this looks right, hit Post slate.</p>':
             /* "Your slate is in" was printed on the count of rows SENT, not
@@ -6640,6 +6729,62 @@ async function liveTick(){
     LIVE_FP=null;
   }finally{LIVE_BUSY=false;}
 }
+/* IS THIS TAB RUNNING YESTERDAY'S CODE?
+
+   The Collective is one page, and every tab of it is a long-lived one: the
+   nav is hash routing, so clicking Wall, Board or Dashboard never re-fetches
+   the script. A tab opened before a deploy goes on running the build it
+   loaded, silently, for as long as it stays open.
+
+   That is not a cosmetic problem. A fix can ship, merge, deploy green, and
+   the tab still shows the exact message it was meant to remove — which reads,
+   correctly from where the reader is sitting, as "it is still broken". The
+   page has no way to know unless it asks.
+
+   So it asks. One HEAD against its own URL on the refresh tick that is
+   already running: if the validator moved, a newer build is live and the tab
+   says so instead of pretending to be current. The first answer is only a
+   baseline, never a prompt. It fails silent — a HEAD that errors, or a host
+   that sends no validator, is not a reason to nag anybody. */
+var BUILD_TAG=null;
+var BUILD_STALE=false;
+async function buildTag(){
+  var r=await fetch(location.pathname+'?v='+Date.now(),{method:'HEAD',cache:'no-store'});
+  if(!r||!r.ok)return null;
+  return r.headers.get('etag')||r.headers.get('last-modified')||null;
+}
+async function checkBuild(){
+  if(BUILD_STALE)return false;
+  var t=null;
+  try{t=await buildTag();}catch(e){return false;}
+  if(!t)return false;
+  if(BUILD_TAG===null){BUILD_TAG=t;return false;}   /* first answer is the baseline */
+  if(t===BUILD_TAG)return false;
+  BUILD_STALE=true;
+  paintStale();
+  return true;
+}
+/* Says what happened and offers the one action, and does not take the action
+   itself: a reload in the middle of a slate upload would lose the file. */
+function paintStale(){
+  try{
+    if(document.getElementById('bldbar'))return;
+    var d=document.createElement('div');
+    d.id='bldbar';
+    d.setAttribute('style','position:fixed;left:0;right:0;bottom:0;z-index:9999;'
+      +'background:#d99a2b;color:#111;padding:10px 14px;font-size:13px;line-height:1.5;'
+      +'display:flex;gap:10px;align-items:center;justify-content:center;flex-wrap:wrap;'
+      +'box-shadow:0 -2px 12px rgba(0,0,0,.35)');
+    d.innerHTML='<b>A newer version of this page is live.</b>'
+      +'<span>This tab is still running the copy it loaded when you opened it, '
+      +'so anything fixed since then will still look broken here.</span>'
+      +'<button id="bldgo" style="background:#111;color:#fff;border:0;border-radius:6px;'
+      +'padding:6px 14px;font:inherit;font-weight:600;cursor:pointer">Reload</button>';
+    document.body.appendChild(d);
+    var b=document.getElementById('bldgo');
+    if(b)b.onclick=function(){location.reload();};
+  }catch(e){}
+}
 function startLive(){
   if(LIVE_TIMER)clearInterval(LIVE_TIMER);
   LIVE_TIMER=setInterval(liveTick,LIVE_MS);
@@ -6655,6 +6800,9 @@ try{
 
 route();
 startLive();
+/* Take the baseline now, then re-ask on the tick that is already running. */
+checkBuild();
+try{setInterval(checkBuild,LIVE_MS*5);}catch(e){}
 </script>
 </body>
 </html>

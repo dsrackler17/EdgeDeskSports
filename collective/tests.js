@@ -2980,6 +2980,154 @@ if (typeof sandbox.weekProjections === 'function') {
   chk('the participation floor is defined', false);
 }
 
+/* =======================================================================
+   6. THE RECEIPT, IN WORDS — and the tab that was reading yesterday's code.
+
+   The real receipt from the upload above, verbatim:
+
+     QUARANTINED 401856767: unknown_team_away
+     QUARANTINED 401856663: unknown_team_away
+     ... (nine of these)
+     QUARANTINED 401858435: unknown_game
+
+   Every part of that is true and none of it is usable: the game is named by
+   an id and the problem by a field name. And it carries the answer the
+   pre-flight could only guess at — `unknown_team_away` says the backend
+   resolved UCF perfectly well and could not resolve Bethune-Cookman, which
+   is the opposite of what "neither team is on that schedule" implies. The
+   backend is the thing doing the resolving, so it wins.
+   ======================================================================= */
+if (typeof sandbox.slateExplainRow === 'function') {
+  var S6 = sandbox;
+
+  /* the ten rows exactly as they came back, and what was sent under them */
+  var SENT = [
+    { game_ref: '401856767', away_team: 'Bethune-Cookman', home_team: 'UCF' },
+    { game_ref: '401856663', away_team: 'Arkansas-Pine Bluff', home_team: 'Missouri' },
+    { game_ref: '401858422', away_team: 'Eastern Illinois', home_team: 'Minnesota' },
+    { game_ref: '401856768', away_team: 'Idaho', home_team: 'Utah' },
+    { game_ref: '401858435', away_team: 'Indiana State', home_team: 'Purdue' },
+    { game_ref: '401856769', away_team: 'Long Island University', home_team: 'Kansas' },
+    { game_ref: '401858208', away_team: 'New Hampshire', home_team: 'Syracuse' },
+    { game_ref: '401856779', away_team: 'Southeast Missouri State', home_team: 'Iowa State' },
+    { game_ref: '401856659', away_team: 'Youngstown State', home_team: 'Kentucky' },
+    { game_ref: '401856658', away_team: 'Tennessee State', home_team: 'Georgia' },
+    { game_ref: '401858423', away_team: 'Massachusetts', home_team: 'Rutgers' }
+  ];
+  var GOT = [
+    { status: 'quarantined', game_ref: '401856767', reason: 'unknown_team_away' },
+    { status: 'quarantined', game_ref: '401856663', reason: 'unknown_team_away' },
+    { status: 'quarantined', game_ref: '401858422', reason: 'unknown_team_away' },
+    { status: 'quarantined', game_ref: '401856768', reason: 'unknown_team_away' },
+    { status: 'quarantined', game_ref: '401858435', reason: 'unknown_game' },
+    { status: 'quarantined', game_ref: '401856769', reason: 'unknown_team_away' },
+    { status: 'quarantined', game_ref: '401858208', reason: 'unknown_team_away' },
+    { status: 'quarantined', game_ref: '401856779', reason: 'unknown_team_away' },
+    { status: 'quarantined', game_ref: '401856659', reason: 'unknown_team_away' },
+    { status: 'quarantined', game_ref: '401856658', reason: 'unknown_team_away' },
+    { status: 'resolved', game_ref: '401858423' }
+  ];
+
+  chk('a wire code becomes a game and a team',
+    function () {
+      var e = S6.slateExplainRow(GOT[0], SENT[0]);
+      return e.label === 'Bethune-Cookman @ UCF'
+        && e.team === 'Bethune-Cookman'
+        && /does not have Bethune-Cookman/.test(e.say);
+    },
+    { got: S6.slateExplainRow(GOT[0], SENT[0]) });
+  chk('the HOME code names the home team, not the away one',
+    function () {
+      var e = S6.slateExplainRow({ reason: 'unknown_team_home' }, SENT[0]);
+      return e.team === 'UCF' && e.side === 'home';
+    });
+  chk('unknown_game is not reported as a team problem',
+    function () {
+      var e = S6.slateExplainRow(GOT[4], SENT[4]);
+      return e.team === null && e.side === null && /no such game/.test(e.say);
+    },
+    { got: S6.slateExplainRow(GOT[4], SENT[4]) });
+  chk('a code nobody has seen before is passed through, never swallowed',
+    function () {
+      var e = S6.slateExplainRow({ reason: 'some_new_code' }, SENT[0]);
+      return e.say === 'some_new_code';
+    },
+    'a receipt that hides what the server said is worse than a raw code');
+  chk('a row the page cannot find still names its game ref',
+    function () {
+      var e = S6.slateExplainRow({ reason: 'unknown_team_away', game_ref: '999' }, null);
+      return e.label === '999' && e.team === null;
+    });
+
+  chk('the ten rows are read as one finding, not ten',
+    function () {
+      var q = S6.slateQuarantineCause(GOT, SENT);
+      return q.n === 10 && q.teams.length === 9;
+    },
+    { got: S6.slateQuarantineCause(GOT, SENT) });
+  chk('one unknown_game among them stops the single-cause claim',
+    function () {
+      /* nine name a team and one does not, so "all of them are the away
+         team" is not true and must not be printed */
+      return S6.slateQuarantineCause(GOT, SENT).oneSide === null;
+    },
+    'a summary that is nearly true is a summary that misleads');
+  chk('when every row IS the same side, that is said',
+    function () {
+      var got = GOT.filter(function (x) { return x.reason !== 'unknown_game'; });
+      var q = S6.slateQuarantineCause(got, SENT);
+      return q.oneSide === 'away' && q.n === 9
+        && q.teams.indexOf('Bethune-Cookman') >= 0
+        && q.teams.indexOf('Tennessee State') >= 0;
+    },
+    { got: S6.slateQuarantineCause(
+        GOT.filter(function (x) { return x.reason !== 'unknown_game'; }), SENT) });
+  chk('a resolved row is not a quarantine',
+    function () {
+      var q = S6.slateQuarantineCause(GOT, SENT);
+      return q.rows.every(function (e) { return e.label !== 'Massachusetts @ Rutgers'; });
+    });
+  chk('one quarantine alone is never dressed up as a pattern',
+    function () {
+      var q = S6.slateQuarantineCause(
+        [{ status: 'quarantined', game_ref: '401856767', reason: 'unknown_team_away' }], SENT);
+      return q.n === 1 && q.oneSide === null;
+    });
+  chk('the receipt prints the words, not the wire code',
+    function () {
+      return /slateExplainRow\(x,byRef\[/.test(CODE)
+        && !/esc\(x\.game_ref\)\+\(x\.reason\?': '\+esc\(x\.reason\)/.test(CODE);
+    },
+    'the old line was: QUARANTINED 401856767: unknown_team_away');
+  chk('the summary refuses to say the file is wrong when it is not',
+    function () { return /<b>Nothing in your file is wrong<\/b>/.test(CODE); });
+
+  /* ---- the tab that was reading yesterday's code -------------------- */
+  chk('the page checks whether a newer build is live',
+    function () { return typeof S6.checkBuild === 'function' && typeof S6.buildTag === 'function'; });
+  chk('the first answer is a baseline, never a prompt',
+    function () {
+      /* BUILD_TAG starts null; the first observation records it and returns
+         false. A page that nagged on load would nag every single load. */
+      return /if\(BUILD_TAG===null\)\{BUILD_TAG=t;return false;\}/.test(CODE);
+    });
+  chk('an unchanged validator is not a new build',
+    function () { return /if\(t===BUILD_TAG\)return false;/.test(CODE); });
+  chk('a failed or validator-less HEAD never nags',
+    function () {
+      return /catch\(e\)\{return false;\}/.test(CODE) && /if\(!t\)return false;/.test(CODE);
+    },
+    'a host that sends no etag is not evidence of anything');
+  chk('the banner offers the reload rather than taking it',
+    function () {
+      return /bldgo/.test(CODE) && /location\.reload\(\)/.test(CODE)
+        && !/BUILD_STALE=true;\s*location\.reload/.test(CODE);
+    },
+    'reloading mid-upload would lose the file the creator just picked');
+} else {
+  chk('the receipt explains itself', false);
+}
+
 /* ---- report ------------------------------------------------------------ */
 failures.forEach(function (f) {
   console.log('FAIL | ' + f.name + (f.detail ? '  ' + JSON.stringify(f.detail) : ''));
