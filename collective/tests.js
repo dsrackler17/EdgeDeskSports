@@ -3128,6 +3128,110 @@ if (typeof sandbox.slateExplainRow === 'function') {
   chk('the receipt explains itself', false);
 }
 
+/* =======================================================================
+   7. STOP DESCRIBING THE PROBLEM AND FIX IT.
+
+   "10 of your 30 games are not on your backend's schedule" is a true
+   sentence and it is still half a tool. The backend has a schedule loader,
+   /v1/admin/games, which wants week, kickoff, home and away — and every one
+   of those is already in the file the creator just uploaded. The rows that
+   quarantine because the schedule has never been told those games exist
+   ARE the rows that would tell it.
+
+   So the pre-flight offers to load them. Separate button, because writing
+   the schedule everybody is matched against is not what posting a slate
+   means.
+   ======================================================================= */
+if (typeof sandbox.slateAdminGames === 'function') {
+  var S7 = sandbox;
+
+  var MISS = [
+    { row: 2, away: 'Bethune-Cookman', home: 'UCF', kickoff: '2026-09-03T23:00:00Z', week: 1 },
+    { row: 5, away: 'Eastern Illinois', home: 'Minnesota', kickoff: '2026-09-04T00:00:00Z', week: 1 },
+    { row: 6, away: 'Idaho', home: 'Utah', kickoff: '2026-09-04T01:00:00Z', week: 1 }
+  ];
+
+  chk('the missing games become exactly what the schedule loader takes',
+    function () {
+      var g = S7.slateAdminGames(MISS, 1);
+      return g.length === 3
+        && g[0].week === 1 && g[0].home === 'UCF' && g[0].away === 'Bethune-Cookman'
+        && g[0].kickoff === '2026-09-03T23:00:00Z'
+        && Object.keys(g[0]).sort().join(',') === 'away,home,kickoff,week';
+    },
+    { got: S7.slateAdminGames(MISS, 1) });
+  chk('the creator\'s own spelling is sent, not a rewrite of it',
+    function () {
+      /* these are teams the backend has never heard of, so there is no
+         schedule spelling to prefer — sending anything but what the file
+         said would be inventing one */
+      return S7.slateAdminGames(MISS, 1)[0].away === 'Bethune-Cookman';
+    });
+  chk('the row\'s own week beats the upload box',
+    function () { return S7.slateAdminGames([{ away: 'A', home: 'B', kickoff: 'x', week: 4 }], 1)[0].week === 4; });
+  chk('the upload box fills in for a row that has no week',
+    function () {
+      return S7.slateAdminGames([{ away: 'A', home: 'B', kickoff: 'x', week: null }], 2)[0].week === 2;
+    });
+  chk('a game with no week at all is dropped, never guessed',
+    function () {
+      return S7.slateAdminGames([{ away: 'A', home: 'B', kickoff: 'x', week: null }], null).length === 0
+        && S7.slateAdminGames([{ away: 'A', home: 'B', kickoff: 'x', week: null }], '').length === 0;
+    },
+    'a game filed under the wrong week is worse than a missing one: it looks present');
+  chk('a half-formed row is dropped',
+    function () {
+      return S7.slateAdminGames([
+        { away: 'A', home: '', kickoff: 'x', week: 1 },
+        { away: '', home: 'B', kickoff: 'x', week: 1 },
+        { away: 'A', home: 'B', kickoff: null, week: 1 }], 1).length === 0;
+    });
+  chk('nothing missing means nothing to send',
+    function () { return S7.slateAdminGames([], 1).length === 0 && S7.slateAdminGames(null, 1).length === 0; });
+
+  /* ---- the week has to survive alignment to be sendable -------------- */
+  chk('a missing game carries the week it was built with',
+    function () {
+      var a = S7.slateAlignToSchedule(
+        [{ label: 'AKRON @ WAKEFOREST' }],
+        [{ away_team: 'Bethune-Cookman', home_team: 'UCF', kickoff: '2026-09-03T23:00:00Z', week: 1 }]);
+      return a.missing.length === 1 && a.missing[0].week === 1;
+    },
+    { got: S7.slateAlignToSchedule([{ label: 'AKRON @ WAKEFOREST' }],
+        [{ away_team: 'Bethune-Cookman', home_team: 'UCF', kickoff: '2026-09-03T23:00:00Z', week: 1 }]).missing });
+  chk('the report hands the loader a usable payload end to end',
+    function () {
+      var rows = [
+        { away_team: 'Bethune-Cookman', home_team: 'UCF', kickoff: '2026-09-03T23:00:00Z', week: 1 },
+        { away_team: 'Akron', home_team: 'Wake Forest', kickoff: '2026-09-03T23:00:00Z', week: 1 }
+      ];
+      var r = S7.slateScheduleReport([{ label: 'AKRON @ WAKEFOREST' }], rows);
+      var g = S7.slateAdminGames(r.missing, 1);
+      return r.missing.length === 1 && g.length === 1 && g[0].home === 'UCF';
+    },
+    'the game that matched must not be re-added to the schedule');
+
+  /* ---- and it is the right kind of action ---------------------------- */
+  chk('the loader is a separate button, not part of posting',
+    function () { return /id="slAddGames"/.test(CODE) && !/slAddGames[\s\S]{0,200}auto/.test(CODE); });
+  chk('it writes through the admin function, with the session already held',
+    function () {
+      return /\/v1\/admin\/games'[\s\S]{0,120}fn:'collective_admin'/.test(CODE);
+    });
+  chk('a non-admin is told that plainly, not shown a broken button',
+    function () {
+      return /e\.status===401\|\|e\.status===403/.test(CODE)
+        && /not on your backend\\u2019s admin list/.test(CODE);
+    });
+  chk('a team the backend does not know is reported, not silently dropped',
+    function () { return /does not know one of the teams/.test(CODE); });
+  chk('the receipt says which build of the page produced it',
+    function () { return /Page build: <span class="mono">'\+\s*esc\(String\(document\.lastModified/.test(CODE); },
+    'it cost a round trip of "this is fixed" / "it is not" to work that out from wording alone');
+} else {
+  chk('the schedule loader is defined', false);
+}
+
 /* ---- report ------------------------------------------------------------ */
 failures.forEach(function (f) {
   console.log('FAIL | ' + f.name + (f.detail ? '  ' + JSON.stringify(f.detail) : ''));

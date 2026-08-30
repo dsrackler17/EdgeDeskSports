@@ -4419,7 +4419,7 @@ function slateAlignToSchedule(games,rows){
         ambiguous.push({mine:c[f],options:r.ambiguous});}
     });
     missing.push({row:idx,away:String(o.away_team||''),home:String(o.home_team||''),
-      kickoff:o.kickoff||null,game_ref:o.game_ref||null,
+      kickoff:o.kickoff||null,game_ref:o.game_ref||null,week:o.week==null?null:o.week,
       awayKnown:!!byKey[teamKey(o.away_team)],homeKnown:!!byKey[teamKey(o.home_team)]});
     return c;
   });
@@ -4555,6 +4555,31 @@ function slateQuarantineCause(rows,sent){
     /* every failure on one side, and a team named for each: the backend is
        missing those teams and nothing else is wrong */
     oneSide:(out.length>1&&sideKeys.length===1&&teams.length===out.length)?sideKeys[0]:null};
+}
+
+/* THE GAMES THE SCHEDULE IS MISSING, AS THE SCHEDULE WANTS THEM.
+
+   Everything /v1/admin/games needs — week, kickoff, home, away — is already
+   in the file the creator just uploaded. That is the whole point: a slate
+   that quarantines because the backend has never been told those games exist
+   carries, in itself, the exact rows that would tell it.
+
+   Sending them is a separate, explicit action, never part of posting a slate:
+   posting is a creator writing their own numbers, and this writes the
+   schedule everybody is matched against. Different thing, different button.
+
+   A row with no week is dropped rather than guessed at: the schedule is keyed
+   on it, and a game filed under the wrong week is worse than one that is
+   missing, because it looks present. */
+function slateAdminGames(missing,week){
+  var out=[];
+  (missing||[]).forEach(function(m){
+    var w=(m&&m.week!=null)?m.week:(week==null||week===''?null:+week);
+    if(w==null||!isFinite(w))return;
+    if(!m.home||!m.away||!m.kickoff)return;
+    out.push({week:+w,kickoff:m.kickoff,home:m.home,away:m.away});
+  });
+  return out;
 }
 
 function slateUnmatchedTeams(games,rows){
@@ -6190,6 +6215,22 @@ async function renderCreatorDash(view,me){
           ' game'+((r.total-miss.length)===1?'':'s')+' post'+((r.total-miss.length)===1?'s':'')+
           ' normally. These '+miss.length+' are still saved and quarantined, and resolve by themselves '+
           'as soon as the schedule carries them.</p>';
+        /* AND THE WAY TO MAKE THEM CARRY IT, HERE, NOW.
+
+           Telling somebody their schedule is missing ten games and leaving it
+           there is half a tool. Everything the schedule loader wants — week,
+           kickoff, home, away — is in the file that was just read, so the fix
+           is one request, and it belongs next to the sentence describing the
+           problem rather than on another page. It stays a separate button
+           because it writes the schedule everyone is matched against, which
+           is not what posting a slate means. */
+        var addable=slateAdminGames(miss,p.week);
+        if(addable.length)body+='<p style="margin:10px 0 0">'+
+          '<button class="btn" id="slAddGames">Add '+addable.length+' game'+
+          (addable.length===1?'':'s')+' to your '+esc(p.sport)+' schedule</button> '+
+          '<span class="note">Loads them from this file &mdash; then re-post and they resolve. '+
+          'Needs an admin account; nothing else about your slate changes.</span></p>'+
+          '<div id="slAddOut"></div>';
       }
       var roster=(p.serverNames&&p.serverNames.length)
         ? '<details style="margin-top:8px"><summary class="note">What your backend has for '
@@ -6203,6 +6244,56 @@ async function renderCreatorDash(view,me){
         roster+'</div>';
     }
 
+    /* WIRE THE SCHEDULE LOADER, wherever the pre-flight has just been drawn.
+
+       The button lives inside the pre-flight's HTML, and that HTML is written
+       into slOut more than once during a post, so the handler is attached
+       after each write rather than once. Idempotent: re-attaching to the same
+       button replaces the same handler.
+
+       The write goes to collective_admin, which takes the same session token
+       the dashboard already holds and gates on the admin list — so for an
+       owner it just works, and for everybody else it 403s and says so
+       plainly rather than looking broken. */
+    function wireAddGames(pf,env){
+      var b=$('slAddGames');
+      if(!b||!pf||!pf.report)return;
+      b.onclick=async function(){
+        var games=slateAdminGames(pf.report.missing,pf.week);
+        if(!games.length){toast('Nothing to add');return;}
+        b.disabled=true;
+        var out=$('slAddOut');
+        if(out)out.innerHTML='<p class="note">Loading '+games.length+' games into your schedule&hellip;</p>';
+        try{
+          var r=await api('/v1/admin/games',{method:'POST',auth:true,fn:'collective_admin',
+            headers:{'content-type':'application/json'},
+            body:{sport:pf.sport,season:+pf.season,games:games}});
+          var fails=(r&&r.failed)||[],up=(r&&r.upserted)||0;
+          if(out)out.innerHTML='<div class="panel" style="margin-top:8px;border-color:'+
+            (fails.length?'rgba(217,154,43,.5)':'rgba(47,180,124,.5)')+'">'+
+            '<b style="color:'+(fails.length?'var(--warn)':'var(--pos)')+'">'+up+' game'+
+            (up===1?'':'s')+' added to the schedule.</b>'+
+            (fails.length
+              ? '<p class="note" style="margin:6px 0 0">'+fails.length+' could not be added because your backend '+
+                'does not know one of the teams &mdash; a team has to exist before a game can reference it. '+
+                'Add it as an alias under <span class="mono">Quarantine</span> on the admin page, then press this again.</p>'+
+                '<div class="mono" style="font-size:11px;margin-top:6px;white-space:pre-wrap">'+
+                esc(JSON.stringify(fails.slice(0,8),null,1))+'</div>'
+              : '<p class="note" style="margin:6px 0 0">Re-post the slate and these rows resolve.</p>')+
+            (up?'<p style="margin:8px 0 0"><button class="btn primary" id="slReCheck">Re-check the slate</button></p>':'')+
+            '</div>';
+          var rb=$('slReCheck');
+          if(rb)rb.onclick=function(){slateSend(true,env&&env.opts);};
+        }catch(e){
+          var why=(e&&(e.status===401||e.status===403))
+            ? 'This account is not on your backend\u2019s admin list, so it cannot write the schedule. '+
+              'Load these games from the admin page, or have whoever runs the Collective do it.'
+            : esc(e.message||'Could not reach the schedule loader.');
+          if(out)out.innerHTML='<div class="errbox" style="margin-top:8px">'+why+'</div>';
+          b.disabled=false;
+        }
+      };
+    }
     async function slateSend(dry,opts){
       opts=opts||{};
       var built=slateBuildRows($('slSeason').value,$('slWeek').value);
@@ -6331,6 +6422,7 @@ async function renderCreatorDash(view,me){
 
       $('slOut').innerHTML=pfHtml+alignHtml+
         '<p class="note">'+(dry?'Checking':'Posting')+' '+sendRows.length+' games&hellip;</p>';
+      wireAddGames(pf,{opts:opts});
       try{
         var r=await api('/v1/dashboard/submit',{method:'POST',auth:true,headers:{'content-type':'application/json'},body:env});
         var c2=r.counts||{};
@@ -6360,6 +6452,16 @@ async function renderCreatorDash(view,me){
               : '<p class="note" style="margin:8px 0 0">Quarantined games could not be matched. Each line above says what your '+
                 'backend could not resolve. They are saved and get resolved on the admin side; nothing is lost.</p>')
             +slateQuarantineForensics(sendRows):'')+
+          /* WHICH COPY OF THIS PAGE PRODUCED THIS RECEIPT.
+
+             The Collective is one page and its tabs are long-lived, so a
+             receipt can be generated by a build that shipped days ago and
+             read as current. It cost a round trip of "this is fixed" / "it is
+             not fixed" to work that out from the wording alone. The page
+             knows its own Last-Modified; printing it means a pasted receipt
+             says, on its face, what it was produced by. */
+          '<p class="note" style="margin:8px 0 0;opacity:.65">Page build: <span class="mono">'+
+            esc(String(document.lastModified||'unknown'))+'</span></p>'+
           (dry?'<p class="note" style="margin:8px 0 0">Nothing was saved. If this looks right, hit Post slate.</p>':
             /* "Your slate is in" was printed on the count of rows SENT, not
                the count that landed -- so a post where all 48 games were
@@ -6374,6 +6476,7 @@ async function renderCreatorDash(view,me){
                 ' <a href="#/'+esc(c.slug)+'">See your profile</a> or <a href="#">the wall</a>.</p>'))+
           probRejectHTML(r,opts)+
           '</div>';
+        wireAddGames(pf,{opts:opts});
         if($('slDropProb')){
           $('slDropProb').onclick=function(){
             var only={};(PROB_REJECTS||[]).forEach(function(x){only[x]=1;});
