@@ -221,8 +221,16 @@
       viewer: ent ? !!ent.identified : VIEWER,
       entitled: ent ? !!ent.entitled : !locked,
       via: ent && ent.via ? String(ent.via) : null,
+      handoff: HANDOFF,
       forbidden: false,
     };
+  }
+  /* The identified request can settle AFTER the floor has already painted,
+     and when it settles badly there is nothing new to draw -- only something
+     new to say. Re-announce without repainting. */
+  function refreshState() {
+    if (!LAST) return;
+    emitState(stateFrom(LAST, !!(LAST.upcoming && LAST.upcoming.entitled === false)));
   }
 
   function emitState(detail) {
@@ -237,7 +245,8 @@
       '<a href="' + esc(SITE) + REFQ + '" target="_blank" rel="noopener">Open the Collective directly →</a>' +
       (forbidden ? '<br><br><span class="note">Site owner: register this domain in your Collective dashboard to activate the embed here.</span>' : '') +
       '</div>';
-    emitState({ ok: false, viewer: VIEWER, entitled: null, via: null, forbidden: !!forbidden });
+    emitState({ ok: false, viewer: VIEWER, entitled: null, via: null,
+                handoff: HANDOFF, forbidden: !!forbidden });
   }
 
   var MARKET = null;
@@ -417,6 +426,15 @@
      two reasons it is, rather than pitching a subscription at somebody who
      already has one. */
   var VIEWER = false;
+  /* Whether this page's reader was actually handed over, and how it went.
+     'none'    nothing to hand over -- signed out on the host page
+     'pending' the identified request is still in flight
+     'ok'      the API answered it, and that answer is what is on screen
+     'refused' the API would not take it: not updated to read the header,
+               the token was rejected, a preflight blocked it. Three
+               different causes, one consequence, and NONE of them is the
+               reader's doing -- which is the thing worth telling them. */
+  var HANDOFF = 'none';
   function viewerToken() {
     if (API !== DEFAULT_API) return Promise.resolve(null);
     var fn = window.MCEmbedToken;
@@ -440,16 +458,33 @@
   }
 
   /* ---------- fetch ---------- */
-  /* Each attempt owns its own timeout and abort controller. The first version
-     of this shared one controller across a retry, so a retry after the timer
-     had fired inherited an already-aborted signal and died instantly. */
+  /* THE ANONYMOUS BOARD IS THE FLOOR, AND IT IS NEVER GAMBLED.
+
+     The first version of this sent the token INSTEAD of asking anonymously
+     and recovered afterwards if that failed. It turned a locked board into
+     no board at all -- "temporarily unreachable" -- against any deployment
+     that does not accept the header, which is every deployment until the API
+     ships. A recovery path is not good enough for that: it only runs after
+     something has already gone wrong, and anything it does not anticipate
+     (a render that throws, a redirect, a proxy) still costs the whole panel.
+
+     So the anonymous request is made ALWAYS, exactly as it was before there
+     was an identity to send, and it alone decides whether the panel renders
+     or falls back. The identified request rides alongside as an UPGRADE: if
+     it comes back, its answer replaces what is on screen; if anything at all
+     goes wrong with it, nobody hears about it and the floor stands.
+
+     Two requests for a signed-in reader is the price, and the anonymous one
+     is the cacheable one. Being unable to make the board worse is worth it. */
   var BOOT = API + '/collective_embed/v1/embed/bootstrap?theme=' + THEME
     + (HOST ? '&host=' + encodeURIComponent(HOST) : '');
 
   viewerToken().then(function (tok) {
-    var sent = !!tok;
-    if (sent) VIEWER = true;
+    if (tok) HANDOFF = 'pending';
 
+    /* Each attempt owns its own timeout and abort controller. Sharing one
+       across attempts meant the second inherited an already-aborted signal
+       whenever the first had timed out, and died instantly. */
     function ask(withToken) {
       var c = typeof AbortController !== 'undefined' ? new AbortController() : null;
       var t = setTimeout(function () { if (c) c.abort(); }, TIMEOUT_MS);
@@ -460,34 +495,52 @@
         function (e) { clearTimeout(t); throw e; });
     }
 
-    /* An identity the API refuses is not a reason to show nothing: drop it
-       and ask again as a stranger, which is exactly what this did before
-       there was an identity to send. */
-    function handle(r) {
-      if (r.status === 401 && sent) { sent = false; VIEWER = false; return ask(false).then(handle); }
-      if (r.status === 403) { fallback(true); return null; }
-      if (!r.ok) { fallback(false); return null; }
+    /* Ranked, because the two answers race and the better one has to win
+       whichever order they land in. */
+    var best = 0;
+    var floorFailed = 0;   /* 0 fine, 1 unreachable, 2 origin not registered */
+
+    function paint(d, rank) {
+      if (!d || rank < best) return;
+      best = rank;
+      render(d);
+    }
+    /* "Unreachable" is only true once there is nothing on screen AND nothing
+       still coming. Falling back the moment the anonymous request failed
+       would flash an error over a board the identified request was about to
+       deliver -- and would report an outage that is not happening. */
+    function settle() {
+      if (best || HANDOFF === 'pending' || !floorFailed) return;
+      fallback(floorFailed === 2);
+    }
+
+    ask(false).then(function (r) {
+      if (r.status === 403) { floorFailed = 2; return null; }
+      if (!r.ok) { floorFailed = 1; return null; }
       return r.json();
-    }
+    }).then(function (d) {
+      paint(d, 1);
+      settle();
+    }).catch(function () {
+      floorFailed = 1;
+      settle();
+    });
 
-    /* And a deployment whose CORS preflight does not allow the Authorization
-       header kills the request BEFORE it leaves the browser -- which reaches
-       JavaScript as a plain network error, indistinguishable from the API
-       being down. Either way, an identity is not worth losing the whole panel
-       over: retry once as a stranger, and only then say it is unreachable.
-       Otherwise sending a token to a server that has not been updated for it
-       turns a locked board into no board at all. */
-    function boom() {
-      if (!sent) { fallback(false); return null; }
-      sent = false; VIEWER = false;
-      return ask(false).then(handle)
-        .then(function (d) { if (d) render(d); return null; })
-        .catch(function () { fallback(false); return null; });
+    if (tok) {
+      ask(true).then(function (r) {
+        return r.ok ? r.json() : null;
+      }).then(function (d) {
+        if (d) { HANDOFF = 'ok'; VIEWER = true; paint(d, 2); }
+        else { HANDOFF = 'refused'; refreshState(); }
+        settle();
+      }).catch(function () {
+        /* Never fatal on its own: the floor decides whether there is a panel.
+           All this does is stop claiming the reader was recognised. */
+        HANDOFF = 'refused';
+        refreshState();
+        settle();
+      });
     }
-
-    return ask(!!tok).then(handle)
-      .then(function (d) { if (d) render(d); })
-      .catch(boom);
   });
 
   /* When the market arrives, inject its styles into the shadow tree and

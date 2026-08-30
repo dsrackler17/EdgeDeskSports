@@ -126,80 +126,100 @@ async function ask(fn, api) {
   async function boot(opts) {
     opts = opts || {};
     const sent = [];
-    let statuses = opts.statuses ? opts.statuses.slice() : [200];
+    const painted = [];
+    const fell = [];
     global.API = global.DEFAULT_API;
     if (opts.hook === undefined) delete global.MCEmbedToken; else global.MCEmbedToken = opts.hook;
-    const done = {};
-    const settled = new Promise(res => { done.res = res; });
-    let throws = opts.throws || 0;
+    /* Answers are keyed by whether the request carried an identity, because
+       that is the whole point: the two can differ, and the anonymous one is
+       the floor that must survive whatever happens to the other. */
+    const plan = { anon: opts.anon || { status: 200 }, auth: opts.auth || { status: 200 } };
     global.fetch = function (url, init) {
-      sent.push({ url: String(url), headers: (init && init.headers) || null });
-      /* A preflight the server refuses reaches JS as a plain network error,
-         which is what `throws` stands in for here. */
-      if (throws > 0) { throws--; return Promise.reject(new TypeError('Failed to fetch')); }
-      const status = statuses.length > 1 ? statuses.shift() : statuses[0];
+      const auth = !!(init && init.headers && init.headers.authorization);
+      sent.push({ auth, headers: (init && init.headers) || null });
+      const p = auth ? plan.auth : plan.anon;
+      if (p.throws) return Promise.reject(new TypeError('Failed to fetch'));
       return Promise.resolve({
-        status, ok: status >= 200 && status < 300,
-        json: () => Promise.resolve({ wall: [] })
+        status: p.status, ok: p.status >= 200 && p.status < 300,
+        json: () => Promise.resolve(p.body || { wall: [], upcoming: { entitled: !auth ? false : true } })
       });
     };
-    global.render = d => done.res({ what: 'render', viewer: global.VIEWER, sent, d });
-    global.fallback = f => done.res({ what: 'fallback', forbidden: !!f, viewer: global.VIEWER, sent });
+    global.render = d => { global.LAST = d; painted.push({ d, viewer: global.VIEWER, handoff: global.HANDOFF }); };
+    global.fallback = f => fell.push(!!f);
+    global.LAST = null;
     vm.runInThisContext(BLOCK, { filename: 'collective/embed.js [bootstrap]' });
-    return settled;
+    /* every stubbed promise is immediate; a few turns of the loop is plenty */
+    for (let i = 0; i < 12; i++) await Promise.resolve();
+    await new Promise(r => setTimeout(r, 0));
+    return { sent, painted, fell, viewer: global.VIEWER, handoff: global.HANDOFF };
   }
-  const authOf = r => (r.sent[0] && r.sent[0].headers && r.sent[0].headers.authorization) || null;
+
+  const anonReqs = r => r.sent.filter(x => !x.auth).length;
+  const authReqs = r => r.sent.filter(x => x.auth).length;
+  const last = r => r.painted[r.painted.length - 1];
 
   let r = await boot({ hook: () => PERSON });
-  chk('a signed-in reader\'s token actually reaches the bootstrap request',
-    authOf(r) === 'Bearer ' + PERSON, { got: authOf(r) });
-  chk('and render is told it is looking at a known reader',
-    r.what === 'render' && r.viewer === true, { got: r.what + '/' + r.viewer });
+  chk('a signed-in reader is asked for both ways: the floor and the upgrade',
+    anonReqs(r) === 1 && authReqs(r) === 1, { got: r.sent });
+  chk('the identity really is on the identified request',
+    r.sent.find(x => x.auth).headers.authorization === 'Bearer ' + PERSON);
+  chk('and never on the anonymous one',
+    r.sent.filter(x => !x.auth).every(x => x.headers == null || !x.headers.authorization));
+  chk('the identified answer is what ends up on screen',
+    last(r).handoff === 'ok' && last(r).viewer === true, { got: last(r) });
+  chk('nothing fell back', r.fell.length === 0);
 
   r = await boot({ hook: undefined });
-  chk('a signed-out reader sends no Authorization header at all',
-    authOf(r) === null && (r.sent[0].headers == null), { got: r.sent[0] });
-  chk('and render is told so',
-    r.what === 'render' && r.viewer === false, { got: r.what + '/' + r.viewer });
+  chk('a signed-out reader makes exactly one request, with no header',
+    r.sent.length === 1 && !r.sent[0].auth);
+  chk('and is reported as never handed over', r.handoff === 'none', { got: r.handoff });
 
   r = await boot({ hook: () => ANON });
-  chk('the anon key never reaches the wire either', authOf(r) === null, { got: authOf(r) });
+  chk('the publishable anon key never reaches the wire', authReqs(r) === 0, { got: r.sent });
 
-  r = await boot({ hook: () => PERSON, statuses: [401, 200] });
-  chk('a refused identity is retried WITHOUT it rather than showing nothing',
-    r.what === 'render' && r.sent.length === 2
-    && authOf(r) === 'Bearer ' + PERSON
-    && (r.sent[1].headers == null || !r.sent[1].headers.authorization), { got: r.sent });
-  chk('and the panel is not told a reader was recognised after a 401',
-    r.viewer === false, { got: r.viewer });
+  /* THE CASE THAT BROKE THE PANEL. An API that does not allow the
+     Authorization header on its preflight kills that request in the browser
+     -- and the board must not notice. */
+  r = await boot({ hook: () => PERSON, auth: { throws: true } });
+  chk('a refused preflight does NOT take the board down',
+    r.painted.length >= 1 && r.fell.length === 0, { painted: r.painted.length, fell: r.fell });
+  chk('the anonymous board is what is showing', anonReqs(r) === 1);
+  chk('and it says the hand-off was refused, not that the reader is signed out',
+    r.handoff === 'refused', { got: r.handoff });
 
-  /* The case that matters while the API catches up: a deployment whose CORS
-     preflight does not allow Authorization kills the request before it
-     leaves the browser. Sending a token must never turn a locked board into
-     no board at all. */
-  r = await boot({ hook: () => PERSON, throws: 1 });
-  chk('a blocked preflight is retried as a stranger, not turned into an outage',
-    r.what === 'render' && r.sent.length === 2
-    && (r.sent[1].headers == null || !r.sent[1].headers.authorization), { got: r.sent });
-  chk('and the panel is not told a reader was recognised', r.viewer === false, { got: r.viewer });
+  r = await boot({ hook: () => PERSON, auth: { status: 401 } });
+  chk('a rejected token is the same: board stands, hand-off refused',
+    r.painted.length >= 1 && r.fell.length === 0 && r.handoff === 'refused', { got: r });
+  r = await boot({ hook: () => PERSON, auth: { status: 500 } });
+  chk('so is a server error on the identified request',
+    r.painted.length >= 1 && r.fell.length === 0 && r.handoff === 'refused');
+  r = await boot({ hook: () => PERSON, auth: { status: 403 } });
+  chk('and a 403 on it is not the host-not-registered fallback either',
+    r.fell.length === 0 && r.handoff === 'refused', { got: r.fell });
 
-  r = await boot({ hook: undefined, throws: 1 });
-  chk('a genuine outage with no identity to drop falls back at once',
-    r.what === 'fallback' && r.sent.length === 1, { got: r.sent.length });
+  /* "Unreachable" means nothing on screen and nothing still coming. */
+  r = await boot({ hook: undefined, anon: { status: 403 } });
+  chk('a 403 with nothing else coming is the host-not-registered fallback',
+    r.fell.length === 1 && r.fell[0] === true, { got: r.fell });
+  r = await boot({ hook: undefined, anon: { status: 500 } });
+  chk('a server error falls back', r.fell.length === 1 && r.fell[0] === false);
+  r = await boot({ hook: undefined, anon: { throws: true } });
+  chk('a genuine outage falls back', r.fell.length === 1);
+  r = await boot({ hook: () => PERSON, anon: { throws: true }, auth: { throws: true } });
+  chk('both failing is a real outage, and falls back exactly once',
+    r.fell.length === 1 && r.painted.length === 0, { got: r });
 
-  r = await boot({ hook: () => PERSON, throws: 2 });
-  chk('if the anonymous retry fails too, it is an outage and says so',
-    r.what === 'fallback' && r.sent.length === 2, { got: r.sent.length });
+  /* The race that would otherwise flash an error over a board about to
+     arrive, and report an outage that is not happening. */
+  r = await boot({ hook: () => PERSON, anon: { throws: true } });
+  chk('a floor failure is NOT an outage while the identified answer is still coming',
+    r.painted.length === 1 && r.fell.length === 0, { painted: r.painted.length, fell: r.fell });
+  chk('and that answer is the one on screen', last(r).handoff === 'ok');
+  r = await boot({ hook: () => PERSON, anon: { status: 403 } });
+  chk('the same holds for a 403 on the floor when an identity is in flight',
+    r.fell.length === 0 && r.painted.length === 1, { got: r.fell });
 
-  r = await boot({ hook: () => PERSON, statuses: [403] });
-  chk('a 403 is the host-not-registered fallback, not a lock',
-    r.what === 'fallback' && r.forbidden === true, { got: r });
-
-  r = await boot({ hook: () => PERSON, statuses: [500] });
-  chk('any other failure falls back rather than rendering nothing',
-    r.what === 'fallback' && r.forbidden === false, { got: r });
-
-  /* ---- what the host page is told, and what it says -------------------
+    /* ---- what the host page is told, and what it says -------------------
      A locked row looks the same whichever reason it is. The Collective's
      payload now names the reason; these hold the translation of it, because
      a diagnostic that is itself wrong is worse than none -- it sends the
@@ -229,14 +249,25 @@ async function ask(fn, api) {
   chk('except for a creator, whose access is not a subscription',
     /creator/.test(why({ ok: true, viewer: true, entitled: true, via: 'creator' })));
   chk('signed out says signed out, and not that you failed to pay',
-    /signed out/i.test(why({ ok: true, viewer: false, entitled: false }))
-    && !/paid/.test(why({ ok: true, viewer: false, entitled: false })));
+    /signed out/i.test(why({ ok: true, viewer: false, entitled: false, handoff: 'none' }))
+    && !/paid/.test(why({ ok: true, viewer: false, entitled: false, handoff: 'none' })));
   chk('signed in without paid access says exactly that',
-    /no paid access/i.test(why({ ok: true, viewer: true, entitled: false, via: null })));
+    /no paid access/i.test(why({ ok: true, viewer: true, entitled: false, via: null, handoff: 'ok' })));
   chk('and says a free account is not enough, since that is the rule',
-    /free EdgeDesk account does not unlock/.test(why({ ok: true, viewer: true, entitled: false })));
+    /free EdgeDesk account does not unlock/.test(
+      why({ ok: true, viewer: true, entitled: false, handoff: 'ok' })));
   chk('it never promises the page can fix it',
-    /Nothing on this page can/.test(why({ ok: true, viewer: true, entitled: false })));
+    /Nothing on this page can/.test(why({ ok: true, viewer: true, entitled: false, handoff: 'ok' })));
+  /* The state the product is actually in until the API ships. */
+  const refused = why({ ok: true, viewer: false, entitled: false, handoff: 'refused' });
+  chk('a refused hand-off is NOT reported as the reader being signed out',
+    !/signed out/i.test(refused), { got: refused });
+  chk('it names the function that has to be deployed',
+    /collective_embed/.test(refused) && /server deployment/.test(refused), { got: refused });
+  chk('and does not blame the reader for not paying',
+    !/no paid access/i.test(refused));
+  chk('a hand-off still in flight says nothing rather than guessing',
+    why({ ok: true, viewer: false, entitled: false, handoff: 'pending' }) === '');
   chk('nothing at all is survivable', why() === '' || typeof why() === 'string');
 
   failures.forEach(f => console.log('FAIL | ' + f.name
