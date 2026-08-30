@@ -2700,6 +2700,173 @@ if (typeof sandbox.slateMatchRow === 'function') {
   chk('the game-level matcher is defined', false);
 }
 
+/* =======================================================================
+   5. THE PARTICIPATION FLOOR.
+
+   A collective record is worth nothing if the models in it go quiet. The
+   floor is three eligible projections a week, and the whole point of it is
+   that nobody learns about it from being removed -- so it has to be on the
+   invite before anyone accepts, on the public rules, and as a live count on
+   the member's own dashboard while there is still time to act on it.
+
+   These are the checks that it says the same thing in every one of those
+   places, and that the count is the one that will actually be graded.
+   ======================================================================= */
+if (typeof sandbox.weekProjections === 'function') {
+  var S5 = sandbox;
+
+  chk('the floor is three, in one place',
+    function () { return S5.PARTICIPATION.min === 3; },
+    { got: S5.PARTICIPATION && S5.PARTICIPATION.min });
+  chk('the statement carries all three parts of the rule',
+    function () {
+      var all = S5.PARTICIPATION.lines.join(' ');
+      return /3 eligible model projections per week/.test(all)
+        && /declared sport or scope/.test(all)
+        && /moved to inactive or removed/.test(all)
+        && /Personal betting activity does not matter/.test(all)
+        && /not only the games you choose to bet/.test(all);
+    },
+    { got: S5.PARTICIPATION.lines });
+  chk('every surface renders the statement from that one source',
+    function () {
+      var h = S5.participationHTML('p', 'note');
+      return S5.PARTICIPATION.lines.every(function (l) { return h.indexOf(l) >= 0; });
+    });
+
+  /* ---- the count is the count that gets graded ----------------------- */
+  function slate(rows) {
+    return rows.map(function (r, i) {
+      return { game_ref: 'G' + i, models: r };
+    });
+  }
+  var MINE = { creator_slug: 'blerm', model_slug: 'blerm-cfb', data_origin: 'live' };
+  function mine(extra) {
+    var o = {}, k;
+    for (k in MINE) o[k] = MINE[k];
+    for (k in (extra || {})) o[k] = extra[k];
+    return o;
+  }
+
+  chk('one row per game is one projection',
+    function () {
+      return S5.weekProjections(slate([[mine()], [mine()], [mine()]]), 'blerm', null) === 3;
+    });
+  chk('two rows on the SAME game are still one projection',
+    function () {
+      /* a revision is not a second projection, and the graded record counts
+         the first pre-kickoff submission once */
+      return S5.weekProjections(slate([[mine(), mine()]]), 'blerm', null) === 1;
+    });
+  chk('somebody else’s rows are not yours',
+    function () {
+      return S5.weekProjections(
+        slate([[{ creator_slug: 'other', model_slug: 'x', data_origin: 'live' }],
+               [mine()]]), 'blerm', null) === 1;
+    });
+  chk('a late row does not count, because it is never graded',
+    function () {
+      return S5.weekProjections(slate([[mine({ late: true })], [mine()]]), 'blerm', null) === 1;
+    },
+    'counting it would tell a member they are clear on a number the boards will not honour');
+  chk('a locked row does not count either',
+    function () {
+      return S5.weekProjections(slate([[mine({ locked: true })], [mine()]]), 'blerm', null) === 1;
+    });
+  chk('backfilled history does not count as this week’s work',
+    function () {
+      return S5.weekProjections(
+        slate([[mine({ data_origin: 'backfill' })], [mine({ data_origin: 'test' })],
+               [mine()]]), 'blerm', null) === 1;
+    });
+  chk('a row with no stated origin is taken as live',
+    function () {
+      return S5.weekProjections(slate([[{ creator_slug: 'blerm', model_slug: 'b' }]]), 'blerm', null) === 1;
+    });
+  chk('a single model can be counted on its own',
+    function () {
+      var g = slate([[mine()], [mine({ model_slug: 'blerm-nfl' })]]);
+      return S5.weekProjections(g, 'blerm', 'blerm-cfb') === 1
+        && S5.weekProjections(g, 'blerm', null) === 2;
+    });
+  chk('an empty slate is zero, not a crash',
+    function () {
+      return S5.weekProjections([], 'blerm', null) === 0
+        && S5.weekProjections(null, 'blerm', null) === 0
+        && S5.weekProjections([{ }, { models: null }], 'blerm', null) === 0;
+    });
+
+  /* ---- and that it is actually printed where it has to be ------------ */
+  var SURFACES = [
+    ['the public rules page', /Staying in the Collective/],
+    ['the dashboard, next to the button that fixes it', /Staying active/],
+    ['the dashboard stat grid, as a live count', /This week<\/div><div class="v/],
+    ['the creator pitch on the about page', /What membership asks of you/],
+    ['the status chip, so a reader knows what Inactive means', /PARTICIPATION\.short/],
+    ['the model directory', /keeping to the Collective\\u2019s participation floor/]
+  ];
+  SURFACES.forEach(function (x) {
+    chk('the floor is stated on ' + x[0], function () { return x[1].test(CODE); });
+  });
+  chk('no surface hard-codes the number instead of reading it',
+    function () {
+      /* The one place a literal 3 is allowed is the declaration itself. A
+         second copy is how the page ends up promising two different rules. */
+      var body = CODE.replace(/var PARTICIPATION=\{[\s\S]*?\n\};/, '');
+      return !/3 eligible model projections/.test(body);
+    },
+    { found: /3 eligible model projections/.test(
+        CODE.replace(/var PARTICIPATION=\{[\s\S]*?\n\};/, '')) });
+
+  /* ---- the invite says it before anyone accepts ---------------------- */
+  var JOIN = fs.readFileSync(path.join(HERE, 'join.html'), 'utf8');
+  chk('the invite screen states the floor before the email field',
+    function () {
+      var i = JOIN.indexOf('You are joining the Model Collective');
+      var p = JOIN.indexOf('participationBlock()', i);
+      var e = JOIN.indexOf("id=\"jEmail\"", i);
+      return i >= 0 && p > i && e > p;
+    },
+    'agreeing to something means seeing it first');
+  chk('the invite states all three parts of the rule',
+    function () {
+      /* the count itself is interpolated from PARTICIPATION_MIN, which the
+         next check pins to the page's own number */
+      return /eligible model projections per week/.test(JOIN)
+        && /declared sport or scope/.test(JOIN)
+        && /moved to inactive or removed/.test(JOIN)
+        && /Personal betting activity does not matter/.test(JOIN)
+        && /not only the games you choose to bet/.test(JOIN);
+    });
+  chk('the finish screen says it again, with where to watch the count',
+    function () {
+      var i = JOIN.indexOf('You are in');
+      return i >= 0 && JOIN.indexOf('participationBlock()', i) > i
+        && /count for the current slate is on your/.test(JOIN.slice(i));
+    });
+  chk('the invite and the page agree on the number',
+    function () {
+      var m = JOIN.match(/var PARTICIPATION_MIN=(\d+);/);
+      return !!m && Number(m[1]) === S5.PARTICIPATION.min;
+    },
+    { join: (JOIN.match(/var PARTICIPATION_MIN=(\d+);/) || [])[1], page: S5.PARTICIPATION.min });
+
+  /* ---- and the admin minting the invite knows what it promised ------- */
+  var ADMIN = fs.readFileSync(path.join(HERE, 'admin.html'), 'utf8');
+  chk('the invite screen in admin repeats what the creator is told',
+    function () {
+      return /What the invite tells them/.test(ADMIN)
+        && /3 eligible model projections/.test(ADMIN);
+    });
+  chk('the members list carries the standard it is read against',
+    function () {
+      return /ACTIVE_NOTE/.test(ADMIN)
+        && /Last slate<\/b> is the/.test(ADMIN);
+    });
+} else {
+  chk('the participation floor is defined', false);
+}
+
 /* ---- report ------------------------------------------------------------ */
 failures.forEach(function (f) {
   console.log('FAIL | ' + f.name + (f.detail ? '  ' + JSON.stringify(f.detail) : ''));

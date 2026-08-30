@@ -458,10 +458,17 @@ function kickoffFmt(iso){
   var d=new Date(iso);
   return d.toLocaleDateString(undefined,{weekday:'short',month:'short',day:'numeric'})+' '+d.toLocaleTimeString(undefined,{hour:'numeric',minute:'2-digit'});
 }
+/* A status chip that explains itself. "Inactive" is a judgement about a
+   member's participation, and it appeared on public pages with nothing
+   anywhere saying what the standard was — so a reader could not tell whether
+   it meant "posted nothing all season" or "missed one Tuesday", and the
+   member wearing it had no published bar to clear. The title carries the
+   standard onto every surface the chip reaches. */
 function chipFor(m){
-  if(m==='ACTIVE CONTRIBUTOR')return '<span class="chip active">Active Contributor</span>';
-  if(m==='INACTIVE')return '<span class="chip inactive">Inactive</span>';
-  return '<span class="chip member">Member</span>';
+  var t=' title="'+esc(PARTICIPATION.short)+'"';
+  if(m==='ACTIVE CONTRIBUTOR')return '<span class="chip active"'+t+'>Active Contributor</span>';
+  if(m==='INACTIVE')return '<span class="chip inactive"'+t+'>Inactive</span>';
+  return '<span class="chip member"'+t+'>Member</span>';
 }
 function avatar(r){
   var mg=String((r&&r.monogram)||'?').replace(/[^A-Za-z0-9?]/g,'')||'?';
@@ -929,6 +936,60 @@ function outrightCell(g,mr){
 
    `short` is what fits under the board. `long` is the same claim with the
    part that actually confuses people spelled out. */
+/* ACTIVE PARTICIPATION — one statement, rendered everywhere it matters.
+
+   A collective record is only worth anything if the models in it keep
+   posting. A member who goes quiet in the middle of a season does not just
+   stop building their own sample: they thin the consensus, leave gaps in the
+   coverage every other member is measured against, and make the boards read
+   as though the whole group went quiet. So there is a floor, and it is
+   published — on the rules page, on the join page, in the invite itself, and
+   as a live count on the member's own dashboard — because nobody should ever
+   learn about it from being removed.
+
+   Held here as data rather than prose in six places so the number and the
+   wording cannot drift apart. */
+var PARTICIPATION={
+  min:3,
+  short:'At least 3 eligible model projections per week, in your declared sport and scope.',
+  lines:[
+    'Active participation requires at least <b>3 eligible model projections per week</b> within your declared sport or scope.',
+    'Members who repeatedly submit fewer than that, or who miss weeks without communication, may be moved to inactive or removed.',
+    'Personal betting activity does not matter. Submit the <b>model\u2019s output</b>, not only the games you choose to bet.'
+  ],
+  why:'A quiet week is not just a gap in your own record \u2014 it thins the consensus and leaves a hole in the '+
+      'coverage every other member is measured against. Say so in advance and it is a conversation; go quiet in the '+
+      'middle of a season and it is not.'
+};
+/* The statement as a block. `tag` is the element each line becomes, so the
+   same words sit correctly in a panel, a list, or a run of paragraphs. */
+function participationHTML(tag,cls){
+  var t=tag||'p',k=cls?' class="'+cls+'"':'';
+  return PARTICIPATION.lines.map(function(l){
+    return '<'+t+k+' style="margin:6px 0">'+l+'</'+t+'>';
+  }).join('');
+}
+/* HOW MANY ELIGIBLE PROJECTIONS DOES THIS MODEL HAVE ON THIS SLATE?
+
+   Counted in GAMES, not in submissions: a slate posted in three batches is
+   three submissions and one week's work, and a revision to a game already
+   posted is not a second projection. Eligibility is the same rule the boards
+   use — a live row, submitted before kickoff and not locked — because a
+   member should be measured against the number that is actually going to be
+   graded, never a larger one that flatters the dashboard. */
+function weekProjections(games,creatorSlug,modelSlug){
+  var n=0;
+  (games||[]).forEach(function(g){
+    var hit=((g&&g.models)||[]).some(function(mr){
+      if(!mr||mr.creator_slug!==creatorSlug)return false;
+      if(modelSlug&&mr.model_slug!==modelSlug)return false;
+      if(mr.late||mr.locked)return false;
+      return mr.data_origin==null||mr.data_origin==='live';
+    });
+    if(hit)n++;
+  });
+  return n;
+}
 var BOARD_LEGEND=[
   {k:'Pick',
    short:'the team this model picked, at the line it posted against',
@@ -2179,6 +2240,9 @@ async function renderWall(view){
       '<th>Creator / model</th><th>Status</th><th class="num">Record</th><th class="num">Win %</th><th class="num">Margin MAE</th><th class="num">Brier</th><th>Coverage</th><th class="num">Last slate</th>'+
       '</tr></thead><tbody>'+body+'</tbody></table></div>'+
       '<p class="note" style="margin-top:10px">Win percentage excludes pushes. Coverage is the share of the season slate this model has submitted. Models below the coverage or sample minimums appear here but are not ranked. Tap a row for the full profile. <span class="fstar">&#9733;</span> marks a founding member.</p>'+
+      '<p class="note" style="margin-top:6px"><b>Active Contributor</b> means the model is keeping to the Collective\u2019s participation floor: '+
+      esc(PARTICIPATION.short)+' Members who repeatedly fall short, or miss weeks without communication, may be moved to '+
+      'inactive or removed. <a href="#rules">The rule in full &rarr;</a></p>'+
       '<h2 style="letter-spacing:.1em;text-transform:uppercase;font-size:12px;color:var(--dim)">Recent activity</h2>'+
       '<div class="panel">'+activityRows(act&&act.rows,10)+'</div>'))return;
     boardClock();if(!CLOCK_TIMER)CLOCK_TIMER=setInterval(boardClock,1000);
@@ -3176,6 +3240,19 @@ async function renderRules(view){
       '<p class="note" style="margin-top:8px">Posting a slate is a different question \u2014 see the <a href="#format">slate format</a>.</p>'+
       '<h2>When a game is graded</h2>'+
       '<p class="lede" style="max-width:760px">The moment it is final. The Collective settles games on its own schedule, and while that run is behind, this page grades the finished games itself \u2014 the same rule, the same captured closing line, and every exclusion it can see \u2014 so a record never sits empty next to a printed final score. Anything graded that way is marked <span class="pgrade">live</span> wherever it appears, and a settled grade always replaces it rather than being averaged with it. The one place the two can differ: margin accuracy is graded from a creator\u2019s projected scores when they supplied them, and the games feed does not carry those, so a <span class="pgrade">live</span> margin error is computed from that model\u2019s own spread instead. Win, loss and push never differ \u2014 they are the final score against the closing line, and there is only one of each. A finished game the Collective captured no closing line for has no against-the-spread result for anybody, and is counted by nobody rather than being graded against a number a creator supplied themselves.</p>'+
+      '<h2 id="active">Staying in the Collective</h2>'+
+      '<p class="lede" style="max-width:760px">The record is a shared asset. A model that goes quiet mid-season stops '+
+      'building its own sample, thins the consensus every other member is measured against, and leaves gaps in the '+
+      'coverage the boards are computed from. So there is a floor, and it is published here rather than applied as a '+
+      'surprise.</p>'+
+      '<div class="panel" style="max-width:760px">'+participationHTML('p','')+
+      '<p class="note" style="margin:10px 0 0">'+PARTICIPATION.why+' Eligible means what it means everywhere else on '+
+      'this page: a live submission, received before kickoff, in the sport your model is declared in. Backfilled '+
+      'history, test data and late rows are stored but are not eligible, because they are not graded either. '+
+      'Projections are counted in games \u2014 a slate posted in batches is one week&rsquo;s work, and a revision to a '+
+      'game already posted is not a second projection.</p>'+
+      '<p class="note" style="margin:6px 0 0">Members see their own count for the current slate on their '+
+      '<a href="#dashboard">dashboard</a>, before the week ends.</p></div>'+
       '<h2>Why the first submission is the graded one</h2>'+
       '<p class="lede" style="max-width:760px">Creators can see each other’s numbers before kickoff, so anyone submitting later is anchored whether they mean to be or not. Every submission is timestamped when the server receives it, and each model’s first pre-kickoff live submission on a game is the one that counts for grading, rankings, and consensus. Revisions are stored and shown as movement. Submissions received after kickoff are stored, flagged late, and excluded. Backfilled history and test data are stored and shown separately, and are never graded, ranked, or blended into consensus.</p>';
   }catch(e){fail(view,e);}
@@ -3199,6 +3276,10 @@ async function renderAbout(view,jump){
       '</div>'+
       '<h2>For creators</h2>'+
       '<p class="lede" style="max-width:760px">Membership is by invite. You keep your model, your site, your customers, and your pricing. You send finished numbers to one endpoint (or upload a spreadsheet from your dashboard), your verified record and profile appear on the wall, and your own site gets a Collective tab that turns every member&#39;s audience into yours. Ask any member for an invite, or reach out through EdgeDesk.</p>'+
+      '<div class="panel" style="max-width:760px;border-color:rgba(217,154,43,.45)">'+
+      '<b style="color:var(--warn)">What membership asks of you</b>'+
+      participationHTML('p','note')+
+      '<p class="note" style="margin:6px 0 0">'+PARTICIPATION.why+' <a href="#rules">The full rules &rarr;</a></p></div>'+
       '<p class="note">Already a member? <a href="#dashboard">Your dashboard →</a></p>';
     if(m.billing_live&&$('subBtn'))$('subBtn').onclick=function(){
       var ref='';try{var r=JSON.parse(localStorage.getItem('mc_ref')||'null');if(r)ref=r.slug;}catch(e){}
@@ -4915,7 +4996,7 @@ function renderSignIn(view){
     '<div style="margin-top:12px"><button class="btn primary" id="dbSend">Send my sign-in link</button></div>'+
     '<p class="note hide" id="dbSent" style="margin-top:10px"></p></div>'+
     '<div class="duo" style="margin-top:16px;max-width:760px">'+
-    '<div class="panel"><b>Creators</b><p class="note" style="margin:6px 0 0">Post slates from the browser or the API, watch your verified record build, edit your public profile, and put the Collective tab on your own site. Membership is by invite: <a href="#about">how it works &rarr;</a></p></div>'+
+    '<div class="panel"><b>Creators</b><p class="note" style="margin:6px 0 0">Post slates from the browser or the API, watch your verified record build, edit your public profile, and put the Collective tab on your own site. Membership is by invite, and asks for '+PARTICIPATION.min+' eligible projections a week: <a href="#about">how it works &rarr;</a></p></div>'+
     '<div class="panel"><b>Readers</b><p class="note" style="margin:6px 0 0">Every model&#39;s pre-kickoff numbers, the consensus, and the full graded record, side by side. The historical record and rankings are free forever. <a href="#models">Meet the models &rarr;</a></p></div>'+
     '</div>';
   $('dbSend').onclick=async function(){
@@ -4956,6 +5037,15 @@ async function renderCreatorDash(view,me){
     var todays=subs.filter(function(s){return s.data_origin==='live'&&sameDayCT(s.received_at);});
     var season0=(mMeta.sports[0]&&mMeta.sports[0].season)||new Date().getFullYear();
 
+    /* WHERE THIS MEMBER STANDS AGAINST THE PARTICIPATION FLOOR, on the slate
+       they are being measured on, on the screen they post from. The floor is
+       published on the rules and join pages, but a member should never have
+       to go and read a policy to find out they are one game short this week
+       — the number is right here, next to the button that fixes it. */
+    var wkGames=(games&&games.games)||[];
+    var wkPosted=weekProjections(wkGames,c.slug,null);
+    var wkShort=Math.max(0,PARTICIPATION.min-wkPosted);
+
     var html='<div class="dash-hd"><h1>Welcome back, '+esc(c.display_name)+'</h1>'+foundBadge(c)+' '+chipFor(c.membership)+'</div>'+
       '<p class="lede">'+(c.founding
         ?'One of the founding members of the Collective. Founding status is permanent.'
@@ -4964,6 +5054,7 @@ async function renderCreatorDash(view,me){
     /* the ten second answers: who am I, did I submit, how am I doing */
     html+='<div class="statgrid">'+
       '<div class="st"><div class="k">Today&#39;s slate</div><div class="v '+(todays.length?'ok':'warn')+'">'+(todays.length?'Submitted':'Not yet')+'</div></div>'+
+      '<div class="st"><div class="k">This week</div><div class="v '+(wkShort?'warn':'ok')+'">'+wkPosted+' / '+PARTICIPATION.min+'</div></div>'+
       '<div class="st"><div class="k">Model</div><div class="v">'+esc(m0?m0.model_name:(d.models[0]?d.models[0].model_name:'-'))+'</div></div>'+
       '<div class="st"><div class="k">Record</div><div class="v">'+(rec?recATSHtml(rec,''):'building')+'</div></div>'+
       '<div class="st"><div class="k">Win %</div><div class="v">'+(rec?fmtPct(rec.win_pct):'-')+'</div></div>'+
@@ -5010,6 +5101,29 @@ async function renderCreatorDash(view,me){
         '<a href="#/model/'+esc(c.slug)+'/'+esc(mo.model_slug)+'">View my model &rarr;</a></div></div>';
     });
     html+='</div>';
+
+    /* The rule in full, on the dashboard, whether or not this member is
+       short. Somebody who is comfortably clear still needs to know what the
+       number is before the week they are not. */
+    html+='<h2>Staying active</h2><div class="panel" style="border-color:'+
+      (wkShort?'rgba(217,154,43,.55)':'rgba(47,180,124,.4)')+'">'+
+      '<div style="font-size:14px;margin-bottom:2px">'+
+      (wkGames.length===0
+        ? '<b>No slate is open yet.</b> Nothing is required until one is.'
+        : wkShort
+          ? '<b style="color:var(--warn)">'+wkShort+' more projection'+(wkShort===1?'':'s')+
+            ' this week.</b> You have posted '+wkPosted+' of the '+PARTICIPATION.min+
+            ' this week&rsquo;s slate needs, on '+wkGames.length+' available game'+
+            (wkGames.length===1?'':'s')+'.'
+          : '<b style="color:var(--pos)">You are active this week.</b> '+wkPosted+
+            ' eligible projection'+(wkPosted===1?'':'s')+' posted, against a floor of '+
+            PARTICIPATION.min+'.')+'</div>'+
+      participationHTML('p','note')+
+      '<p class="note" style="margin:6px 0 0">'+PARTICIPATION.why+'</p>'+
+      '<p class="note" style="margin:6px 0 0">Counted in games, not in uploads: a slate posted in three batches is '+
+      'one week&rsquo;s work, and a revision to a game you already posted is not a second projection. Late rows do not '+
+      'count, because they are not graded. <a href="#rules">The full rules &rarr;</a></p>'+
+      '</div>';
 
     /* what the organization is doing right now */
     var gN=(games&&games.games)?games.games.length:0;

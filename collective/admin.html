@@ -236,6 +236,17 @@ async function secInvites(app){
   }).join('');
   var pf=IV_PREFILL||{};IV_PREFILL=null;
   app.innerHTML='<h1>Invite a Creator</h1><p class="lede">One action mints the whole onboarding package: link, profile shell, model, source, founding status, key, prompt, and embed. You send the link; the creator does the rest in about a minute.</p>'+
+    /* The invite page states the participation floor before anyone accepts.
+       Repeated here so whoever mints the link knows exactly what the person
+       on the other end has been told, and can say the same thing. */
+    '<div class="panel" style="border-color:rgba(217,154,43,.45)">'+
+    '<b style="color:var(--warn)">What the invite tells them</b>'+
+    '<p class="note" style="margin:6px 0">Active participation requires at least <b>3 eligible model projections '+
+    'per week</b> within their declared sport or scope. Members who repeatedly submit fewer than that, or who miss '+
+    'weeks without communication, may be moved to inactive or removed. Personal betting activity does not matter \u2014 '+
+    'they submit the model\u2019s output, not only the games they choose to bet.</p>'+
+    '<p class="note" style="margin:0">This is on the invite screen before they accept, on their finish screen, on the '+
+    'public rules page, and as a live count on their own dashboard. Nobody should learn it from being removed.</p></div>'+
     '<div class="panel"><div class="grid2">'+
     '<div><label>Name</label><input id="ivName" placeholder="Their public name" value="'+esc(pf.display_name||'')+'"></div>'+
     '<div><label>Email <span style="text-transform:none;letter-spacing:0">(optional)</span></label><input id="ivEmail" placeholder="them@example.com" value="'+esc(pf.email||'')+'"></div>'+
@@ -356,9 +367,17 @@ async function secMembers(app,detailSlug){
       '<td class="note">'+esc(srcs.join(', ')||'not set')+'</td>'+
       '<td class="note">'+rel(r.last_submission_at)+'</td></tr>';
   }).join('');
+  /* The standard this list is read against, next to the list. "Last slate"
+     is the column that decides whether somebody is participating, and it
+     means nothing without the number it is being judged against. */
+  var ACTIVE_NOTE='<p class="note" style="margin:8px 0 0">Active participation is at least '+
+    '<b>3 eligible model projections per week</b> in the member\u2019s declared sport or scope. Members who '+
+    'repeatedly fall short, or miss weeks without communication, may be moved to inactive or removed \u2014 they are '+
+    'told this on the invite, on the rules page, and by a live count on their own dashboard. <b>Last slate</b> is the '+
+    'column to read it against.</p>';
   app.innerHTML='<h1>Members</h1><p class="lede">Everyone in the Collective. Click a member for the full picture: identity, model, source, activity, and economics. Membership status is derived from submissions, never set by hand.</p>'+
     '<div class="tblwrap"><table><thead><tr><th>Name</th><th>Model</th><th>Role</th><th>Status</th><th>Source</th><th>Last slate</th></tr></thead><tbody>'+
-    (rows||'<tr><td colspan="6" class="note" style="text-align:center;padding:14px">No members yet. Mint an invite under Invites.</td></tr>')+'</tbody></table></div>';
+    (rows||'<tr><td colspan="6" class="note" style="text-align:center;padding:14px">No members yet. Mint an invite under Invites.</td></tr>')+'</tbody></table></div>'+ACTIVE_NOTE;
   app.querySelectorAll('tr[data-m]').forEach(function(tr){
     tr.onclick=function(){secMembers(app,tr.getAttribute('data-m'));};
   });
