@@ -362,11 +362,32 @@ The payload now carries `entitlement: { identified, entitled, via }`, so a
 locked reader can be told which check failed rather than left to guess — the
 app's Collective tab turns it into one line naming the case.
 
-**Client side**, `embed.js` retries once anonymously when the request throws:
-a preflight refused for the `Authorization` header reaches JavaScript as a
-plain network error, indistinguishable from an outage, and sending a token to
-a deployment that has not been updated for it must never turn a locked board
-into no board at all.
+**Client side, the anonymous board is the floor and is never gambled.** The
+first attempt at this sent the token *instead* of asking anonymously and
+recovered afterwards if that failed — and against a deployment that does not
+accept the header, which is every deployment until the API above ships, it
+turned a locked board into **no board at all**: *"The Model Collective is
+temporarily unreachable from this page."* A recovery path is not good enough
+there. It only runs after something has already gone wrong, and anything it
+does not anticipate still costs the whole panel.
+
+So `embed.js` always makes the anonymous request, exactly as it did before
+there was an identity to send, and that request alone decides whether the
+panel renders or falls back. The identified request rides alongside as an
+upgrade: its answer replaces what is on screen if it arrives, and if anything
+goes wrong with it nobody hears about it. Two requests for a signed-in reader
+is the price; the anonymous one is the cacheable one.
+
+"Unreachable" is only reported once there is nothing on screen **and** nothing
+still coming, so a slow identity cannot flash an outage over a board that is
+about to arrive.
+
+The state event carries `handoff`: `none` (signed out here), `pending`, `ok`,
+or `refused` — three different causes for `refused` (header not read, token
+rejected, preflight blocked), one consequence, and none of them the reader's
+doing. That is the case the product is in until the function above is
+deployed, and the Collective tab now says so by name rather than reporting the
+reader as signed out.
 
 ### The one thing that is NOT in this repo
 

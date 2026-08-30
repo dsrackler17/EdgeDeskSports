@@ -1825,9 +1825,20 @@ function mcWhyMessage(st){
     msg=st.via==='creator'
       ? 'Unlocked because this account is a Collective creator.'
       : '';
-  }else if(!st.viewer){
+  }else if(st.handoff==='none'||(!st.viewer&&st.handoff!=='refused'&&st.handoff!=='pending')){
     msg='<b>You are signed out in this app</b>, so the Collective is being asked anonymously '
       +'\u2014 and an anonymous reader is entitled to nothing. Sign in, then reopen this tab.';
+  }else if(st.handoff==='pending'){
+    /* The identified request is still in flight. Saying anything now would
+       be a guess, and the board repaints when it lands. */
+    msg='';
+  }else if(st.handoff==='refused'){
+    msg='<b>The Collective\u2019s API would not take your sign-in.</b> You are signed in here and the '
+      +'board still asked anonymously, because the request carrying your identity was refused '
+      +'\u2014 the deployed <span class="mono">collective_embed</span> function has not been updated '
+      +'to read it. That is a server deployment, not something this page can do: until it ships, every '
+      +'pre-kickoff number stays locked for everyone. The board above is the anonymous one, which is '
+      +'exactly what it has always been.';
   }else{
     msg='<b>Signed in, and no paid access on this account.</b> The Collective recognised you and '
       +'found no active EdgeDesk subscription, no Collective subscription, and no creator profile '
