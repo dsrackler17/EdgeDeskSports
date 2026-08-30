@@ -1531,7 +1531,7 @@ async function seasonGames(sport,season){
   var key=sport+'|'+season;
   if(SEASON_GAMES[key])return SEASON_GAMES[key];
   var head=await api('/v1/games?sport='+encodeURIComponent(sport)+'&season='+encodeURIComponent(season),{auth:true});
-  var games=(head&&head.games)||[];
+  var games=(head&&head.games)||[],missed=0;
   var cur=(head&&head.week!=null)?head.week:null;
   /* The week-less payload names the current week, which is what bounds the
      sweep. When it does not, the games it returned still do — and reading
@@ -1546,7 +1546,10 @@ async function seasonGames(sport,season){
       return api('/v1/games?sport='+encodeURIComponent(sport)+'&season='+encodeURIComponent(season)+'&week='+wk2,{auth:true})
         .catch(function(){return null;});
     }));
-    pages.forEach(function(pg){if(pg&&pg.games)games=games.concat(pg.games);});
+    pages.forEach(function(pg){
+      if(pg&&pg.games)games=games.concat(pg.games);
+      else missed++;
+    });
   }
   /* the week-less head payload IS one of the weeks, so the sweep sees some
      games twice — and a game counted twice is a record counted twice */
@@ -1557,7 +1560,11 @@ async function seasonGames(sport,season){
     if(seen[k])return;
     seen[k]=1;all.push(g);
   });
-  SEASON_GAMES[key]=all;
+  /* One week that failed to load is a hole in every record computed from
+     this sweep, and caching it for the session makes that hole permanent:
+     the reader would see a short record all day and never find out why.
+     Return what arrived, remember nothing, and let the next call retry. */
+  if(!missed)SEASON_GAMES[key]=all;
   return all;
 }
 /* The played half of that season. finalResult() decides, so "settled" means
@@ -1611,7 +1618,8 @@ function gameKey(g){
      championship — and a key that collided would drop the second one from
      the season sweep and out of the record entirely. The kickoff day
      separates them. */
-  return String(g.away)+'@'+String(g.home)+'|'+String(g.kickoff_at||'').slice(0,10);
+  return String(g.away)+'@'+String(g.home)+'|'+String(g.kickoff_at||'').slice(0,10)+
+    '|'+String(g.week==null?'':g.week);
 }
 /* ---- where the GROUP departs from the market --------------------------
    The consensus mean and the market close are both home convention, so the
@@ -2524,14 +2532,44 @@ async function renderRankings(view){
        has published one; where it has published nothing, the same board
        computed here from the same finished games appears in its place,
        marked, rather than an empty table under a slate of played games. */
+    /* Which models this page can confirm belong to the sport on screen,
+       indexed the way a server row can be looked up: it carries no
+       model_slug, only a name. */
+    var knownHere={};
+    ((local&&local.entries)||[]).forEach(function(e){
+      knownHere[e.creator_slug+'|'+e.model_name]=1;
+      knownHere[e.creator_slug+'/'+e.model_slug]=1;
+    });
+    function knownRow(r){
+      return !!(knownHere[r.creator_slug+'|'+r.model_name]
+        ||(r.model_slug&&knownHere[r.creator_slug+'/'+r.model_slug]));
+    }
     function boardRows(key){
       var srv=(((d.boards&&d.boards[key])||[])).filter(inSport);
-      if(srv.length)return {rows:srv,live:false};
       var loc=(local&&local.boards&&local.boards[key])||[];
+      /* inSport keeps a row whose sport it cannot resolve, deliberately: an
+         unlabelled model is the server's omission and hiding it would be
+         worse than showing it twice. But that also means a single
+         unresolvable row from another sport could stand in for a whole
+         board and suppress the one this page computed for the sport the
+         reader is actually on. The server's board wins when this page can
+         confirm at least one of its rows belongs here — or when it has
+         nothing of its own to offer. */
+      if(srv.length&&(!loc.length||srv.some(knownRow)))return {rows:srv,live:false};
       return {rows:loc,live:loc.length>0};
     }
+    /* Decided once, so the boards and the "not yet ranked" list below them
+       cannot disagree about the same model. */
+    var picks={},rankedNow={};
+    ['win_pct','margin_mae','brier'].forEach(function(k){
+      picks[k]=boardRows(k);
+      picks[k].rows.forEach(function(r){
+        rankedNow[r.creator_slug+'|'+r.model_name]=1;
+        if(r.model_slug)rankedNow[r.creator_slug+'/'+r.model_slug]=1;
+      });
+    });
     function board(title,key,fmt,sub){
-      var pick=boardRows(key);
+      var pick=picks[key];
       var body=pick.rows.map(function(r){
         return '<tr class="rowlink" data-slug="'+esc(r.creator_slug)+'"><td class="num" style="color:var(--faint)">'+r.rank+'</td>'+
           '<td><span class="nm">'+esc(r.creator_name)+'</span>'+(fmap[r.creator_slug]?' <span class="fstar" title="Founding Member">&#9733;</span>':'')+'<br><span class="sb" style="color:var(--faint);font-size:11px">'+esc(r.model_name)+'</span></td>'+
@@ -2566,10 +2604,6 @@ async function renderRankings(view){
           '<td class="num" style="color:var(--dim)">'+r.graded+'</td>'+
           '<td>'+covCell(e.coverage_pct)+'</td></tr>';
       }).join('');
-      var ranked={};
-      ['win_pct','margin_mae','brier'].forEach(function(k){
-        (((d.boards&&d.boards[k])||[])).forEach(function(r){ranked[r.creator_slug]=1;});
-      });
       var anyLiveSt=st.some(function(e){return e.record.live>0;});
       return '<h2>Live standings <span class="note" style="font-weight:400">every model, every graded game, no minimums</span></h2>'+
         (anyLiveSt?gradeNote('The marked rows are'):'')+
@@ -2592,6 +2626,15 @@ async function renderRankings(view){
        it is the same rule applied to the same finished games. */
     var unSrc=(local&&local.unranked&&local.unranked.length)?local.unranked:(d.unranked||[]);
     var unLive=!!(local&&local.unranked&&local.unranked.length);
+    /* The reasons come from the page's own grading and the boards above may
+       be the server's, so without this a model could stand on a board and be
+       listed under "Not yet ranked" on the same screen. Whatever is ranked
+       up there is not unranked down here. */
+    unSrc=unSrc.filter(function(u){
+      return !rankedNow[u.creator_slug+'|'+u.model_name]
+        &&!(u.model_slug&&rankedNow[u.creator_slug+'/'+u.model_slug]);
+    });
+    if(!unSrc.length)unLive=false;
     var un=unSrc.map(function(u){
       return '<li><b>'+esc(u.model_name)+'</b> <span class="note">('+esc(u.creator_slug)+'): '+esc(u.reason)+'</span></li>';
     }).join('');
@@ -2603,10 +2646,10 @@ async function renderRankings(view){
         board('Margin MAE','margin_mae',function(v){return fmtNum(v);},'lower is better')+
         board('Brier','brier',function(v){return fmtNum(v,3);},'lower is better')+
       '</div>'+
-      (function(){
-        var anyLive=['win_pct','margin_mae','brier'].some(function(k){return boardRows(k).live;});
-        return anyLive?gradeNote('These boards are'):'';
-      })()+
+      /* One board can be the page's and another the Collective's, so the
+         note points at the marker rather than claiming all three. */
+      (['win_pct','margin_mae','brier'].some(function(k){return picks[k].live;})
+        ?gradeNote('The values marked live are'):'')+
       standingsHTML()+
       (collStats?(function(){
         var a=collStats.ats,m2=collStats.ml;

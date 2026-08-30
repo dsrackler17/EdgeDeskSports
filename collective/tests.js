@@ -1030,6 +1030,11 @@ if (typeof sandbox.teamKey === 'function') {
   chk('the same pairing on two different days is two games',
     S.gameKey({ home: 'SEA', away: 'NE', kickoff_at: '2026-09-13T17:00:00Z' })
       !== S.gameKey({ home: 'SEA', away: 'NE', kickoff_at: '2026-12-06T17:00:00Z' }));
+  /* a doubleheader, or a rematch the schedule puts on the same date: the
+     day alone is not enough to tell two games apart */
+  chk('the same pairing on one day in two different weeks is two games',
+    S.gameKey({ home: 'SEA', away: 'NE', kickoff_at: '2026-09-13T13:00:00Z', week: 2 })
+      !== S.gameKey({ home: 'SEA', away: 'NE', kickoff_at: '2026-09-13T20:00:00Z', week: 15 }));
   chk('the same game read twice keeps one key',
     S.gameKey({ home: 'SEA', away: 'NE', kickoff_at: '2026-09-13T17:00:00Z' })
       === S.gameKey({ home: 'SEA', away: 'NE', kickoff_at: '2026-09-13T17:00:00Z' }));
@@ -1932,6 +1937,11 @@ if (typeof sandbox.localGrade === 'function') try {
   chk('the rankings page states the coverage rule the code actually enforces',
     !/% of the season slate/.test(CODE) && /played since it joined/.test(CODE),
     'the lede said "of the season slate" while the boards enforce the games played since a model joined');
+  /* one board can be the page's and another the Collective's, so the note
+     under them points at the marker rather than claiming all three */
+  chk('the boards note points at the marker, not at all three boards',
+    /The values marked live are/.test(CODE)
+      && !/gradeNote\('These boards are'\)/.test(CODE));
   chk('the footer no longer attributes every record to the settlement run',
     !/Records are graded by the Collective on actual results/.test(CODE));
   chk('the legend explains the marker to a reader who has not asked',

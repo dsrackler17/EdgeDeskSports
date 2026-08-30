@@ -281,6 +281,27 @@ var S=sandbox;
   /* The whole standings table is the page's own grading. Printing a record
      with no marker under a rules page that promises every one is marked is
      the kind of quiet claim this site cannot afford. */
+  /* A stale server row for another sport passes inSport (it keeps a row
+     whose sport it cannot resolve, deliberately), and it used to stand in
+     for the whole board and suppress the one this page computed. */
+  chk('one unresolvable server row does not suppress the page\u2019s own board',
+    function(){
+      return rank.indexOf('Live standings')>=0
+        && rank.indexOf('Nobody has cleared the minimums yet')>=0;
+    });
+  /* nobody may be ranked and unranked on the same screen */
+  chk('no model is on a board and under "Not yet ranked" at once',
+    function(){
+      var un=rank.indexOf('Not yet ranked');
+      if(un<0)return true;
+      var boards=rank.slice(0,rank.indexOf('Live standings'));
+      var listed=(rank.slice(un).match(/<b>([^<]+)<\/b>/g)||[])
+        .map(function(x){return x.replace(/<\/?b>/g,'');});
+      return listed.length>0 && listed.every(function(n){
+        return boards.indexOf('>'+n+'<')<0;
+      });
+    },
+    {listed:(rank.slice(rank.indexOf('Not yet ranked')).match(/<b>([^<]+)<\/b>/g)||[])});
   chk('the live standings say they are the page\u2019s own grading',
     function(){
       var i=rank.indexOf('Live standings');
@@ -605,6 +626,80 @@ var S=sandbox;
     scrolls.length===1&&scrolls[0]===500, {scrolls:scrolls});
   S.route=realRoute;S.scrollY=0;GAMES.length=3;
   S.LIVE_FP=null;S.LIVE_SPORT=null;
+
+  /* ---- a week that failed to load must not be cached as a season ------
+     One missing week is a hole in every record computed from the sweep, and
+     caching it makes the hole permanent for the whole session. */
+  S.SEASON_GAMES={};S.LOCALREC={};
+  var realFetch3=S.fetch;
+  S.fetch=function(u){
+    if(/[?&]week=2/.test(String(u)))
+      return Promise.resolve({ok:false,status:500,json:function(){return Promise.resolve({});}});
+    if(String(u).indexOf('/v1/games')>=0&&!/[?&]week=/.test(String(u)))
+      return reply({games:GAMES,week:3,entitled:true});
+    return realFetch3(u);
+  };
+  var partial=await S.seasonGames('CFB',2026);
+  chk('a sweep with a failed week still returns what arrived',
+    partial.length>0);
+  chk('but it is not remembered, so the next look retries',
+    Object.keys(S.SEASON_GAMES).length===0,
+    'a short record all day, and the reader never finds out why');
+  S.fetch=realFetch3;
+  S.SEASON_GAMES={};S.LOCALREC={};
+  var full=await S.seasonGames('CFB',2026);
+  chk('and a complete sweep is remembered',
+    full.length>0 && Object.keys(S.SEASON_GAMES).length===1);
+  S.SEASON_GAMES={};S.LOCALREC={};
+
+  /* ---- a stale server row must not stand in for a whole board ---------
+     inSport keeps a row whose sport it cannot resolve, deliberately: an
+     unlabelled model is the server's omission and hiding it is worse. But
+     one such row used to suppress the board this page computed for the
+     sport the reader is actually on. */
+  S.SEASON_GAMES={};S.LOCALREC={};
+  RANKINGS.thresholds={min_graded_games:2,min_coverage_pct:60};
+  RANKINGS.boards.win_pct=[{rank:1,creator_slug:'ghost',creator_name:'Ghost Analytics',
+    model_name:'Ghost NFL Model',value:0.62,graded:41}];
+  S.location.hash='#rankings';
+  var rG=node();
+  await S.renderRankings(rG);
+  var hijack=rG.innerHTML;
+  /* scoped to the Win % board itself: every model also appears in the live
+     standings further down, so an unscoped search passes either way */
+  function boardSlice(html,from,to){
+    var a=html.indexOf(from);if(a<0)return '';
+    var b=html.indexOf(to,a);return html.slice(a,b<0?html.length:b);
+  }
+  var winBoard=boardSlice(hijack,'>Win %','>Margin MAE');
+  chk('a board the page can fill is not surrendered to an unplaceable row',
+    winBoard.length>0 && winBoard.indexOf('Ghost Analytics')<0
+      && /EdgeDesk Model|Must Be Moose|CFB MODEL/.test(winBoard),
+    {board:winBoard.slice(0,400)});
+
+  /* ---- and nobody is ranked and unranked at once ---------------------- */
+  S.SEASON_GAMES={};S.LOCALREC={};
+  RANKINGS.thresholds={min_graded_games:20,min_coverage_pct:60};
+  /* a model name with no apostrophe: esc() would turn one into &#39; and
+     the search would pass whatever the code did */
+  RANKINGS.boards.win_pct=[{rank:1,creator_slug:'edgedesksports',creator_name:'EdgeDesk Sports',
+    model_name:'EdgeDesk Model',value:0.58,graded:34}];
+  var rU=node();
+  await S.renderRankings(rU);
+  var both=rU.innerHTML;
+  chk('the server-ranked model is on the board',
+    boardSlice(both,'>Win %','>Margin MAE').indexOf('EdgeDesk Sports')>=0);
+  chk('and is not ALSO listed under "Not yet ranked"',
+    function(){
+      var un=both.indexOf('Not yet ranked');
+      if(un<0)return false;                     /* the list must exist to be tested */
+      var list=both.slice(un);
+      return list.indexOf('EdgeDesk Model')<0
+        && /<b>[^<]+<\/b>/.test(list);          /* other models still listed */
+    },
+    {tail:both.slice(both.indexOf('Not yet ranked'),both.indexOf('Not yet ranked')+400)});
+  RANKINGS.boards.win_pct=[];
+  S.SEASON_GAMES={};S.LOCALREC={};S.location.hash='';
 
   fails.forEach(function(f){console.log('FAIL | '+f.n+(f.d?'  '+JSON.stringify(f.d).slice(0,400):''));});
   console.log((fail===0?'ALL GREEN ':'FAILED ')+pass+' passed, '+fail+' failed');
