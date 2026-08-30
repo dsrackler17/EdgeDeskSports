@@ -1681,6 +1681,36 @@ function espnMatch(list,g){
   }
   return null;
 }
+/* ---- what a finished game did to its own closing line -----------------
+   A closed market on the market page was a price board with the prices
+   frozen: same shape as a live game, no score, nothing to say the thing had
+   happened. The whole point of storing a close is what the game did to it,
+   so a finished game says it — the final, which side covered, and whether
+   the total went over — instead of sitting there looking live. */
+function marketResultStrip(g,mg){
+  var r=finalResult(g);
+  if(!r)return '';
+  var home=(g&&g.home)||'HOME',away=(g&&g.away)||'AWAY';
+  var bits='<span class="fin">FINAL '+esc(away)+' '+r.away+' &ndash; '+esc(home)+' '+r.home+'</span>'+
+    scoreSourceMark(g);
+  var close=r.closing_spread;
+  if(close==null&&window.MCOdds&&mg)close=marketClose(mg);
+  if(close!=null){
+    var res=atsResult(r.margin,close,'home');
+    bits+='<span class="tm">close '+esc(home)+' '+fmtSpread(close)+' &rarr; '+
+      (res==='push'?'<b>push</b>'
+        :'<b>'+esc(res==='win'?home:away)+'</b> covered')+'</span>';
+  }
+  /* the total, only when a closing total was actually stored: the live
+     consensus total is a different number and would be a guess */
+  var ct=(g&&g.result&&g.result.closing_total!=null)?Number(g.result.closing_total):null;
+  if(ct!=null&&isFinite(ct)){
+    var pts=r.home+r.away;
+    bits+='<span class="tm">total '+fmtNum(ct)+' &rarr; <b>'+
+      (pts===ct?'push':(pts>ct?'over':'under'))+'</b> ('+pts+')</span>';
+  }
+  return '<div class="gb-hd" style="border-radius:10px;margin-top:8px">'+bits+'</div>';
+}
 /* The Collective's own stored closing line for a game, off the odds feed —
    the same number the market page prints under "Close". */
 function marketClose(mg){
@@ -2646,6 +2676,9 @@ async function renderMarket(view){
        what has not happened yet, soonest first; what has, newest first. */
     else games=slateOrder(games,'commence_time');
 
+    /* the finished games on this page need their scores before the cards are
+       built, so a closed market can say what the game did to its close */
+    try{await enrichFinals((board&&board.games)||[],mktSport.code,mkt);}catch(e){}
     /* Models that posted a number on this game, so the market and the models
        sit side by side instead of on two different pages. */
     var modelsByGame={};
@@ -2671,7 +2704,8 @@ async function renderMarket(view){
           (mrows||'<div class="note">'+(locked?'Model numbers on this game are a subscriber number.':'No model has posted this game yet.')+'</div>')+
           '</div>';
       }
-      return '<div style="margin-bottom:14px">'+MCOdds.marketCard(g,mkt,{footer:false})+modelRow+
+      return '<div style="margin-bottom:14px">'+MCOdds.marketCard(g,mkt,{footer:false})+
+        marketResultStrip(linked,g)+modelRow+
         '<div class="note" style="margin-top:6px"><a href="#market/'+esc(g.event_id)+'">Line movement and every stored price &rarr;</a></div></div>';
     }).join('');
 
@@ -2825,8 +2859,13 @@ async function renderRankings(view){
           '<td class="num" style="color:var(--dim)">'+r.graded+'</td></tr>';
       }).join('');
       /* There is no minimum to clear any more, so an empty board means one
-         thing only: nothing on this slate has finished yet. */
-      if(!body)body='<tr><td colspan="4" class="note" style="text-align:center;padding:18px">No finished games yet. Every model appears here after its first one.</td></tr>';
+         thing only: nothing on this slate has finished yet.
+
+         white-space:normal because every td on this site is nowrap — right
+         for a row of numbers, wrong for a sentence. Without it this message
+         forced the table wider than its card, which put a scrollbar under
+         each empty board and pushed the Graded column out of sight. */
+      if(!body)body='<tr><td colspan="4" class="note" style="text-align:center;padding:18px;white-space:normal">No finished games yet. Every model appears here after its first one.</td></tr>';
       return '<div><h2 style="margin-top:0">'+title+' <span class="note" style="font-weight:400">'+sub+'</span></h2>'+
         '<div class="tblwrap mini"><table style="min-width:0"><thead><tr><th class="num">#</th><th>Model</th><th class="num">Value</th><th class="num">Graded</th></tr></thead><tbody>'+body+'</tbody></table></div></div>';
     }
