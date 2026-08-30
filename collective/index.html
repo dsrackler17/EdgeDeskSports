@@ -1229,8 +1229,16 @@ function serverGrade(mr){
 }
 /* The one entry point. Server first, always: when the Collective has
    settled a game its grade is the record, and this page never second
-   guesses it. */
+   guesses its numbers.
+
+   The exclusions are checked here too, and on both graders. A settlement
+   run that publishes a grade on a late row would otherwise put a win in a
+   record on the same board that prints "Late, ungraded" beside it — one
+   row stating two things — and the published rule is that a late
+   submission is excluded, not that it is excluded unless somebody graded
+   it anyway. */
 function rowGrade(g,mr){
+  if(!gradableRow(mr))return null;
   return serverGrade(mr)||localGrade(g,mr);
 }
 /* A grade this page computed says so, everywhere it is shown. The claim on
@@ -1396,7 +1404,14 @@ function localRankings(games,settled,wall,thresholds){
     var cov=modelCoverage(settled,m.creator_slug,m.model_slug);
     return {creator_slug:m.creator_slug,creator_name:m.creator_name,
       model_slug:m.model_slug,model_name:m.model_name,
-      win_pct:rec.win_pct,win_pct_n:rec.wins+rec.losses,
+      /* The minimum is 20 GRADED GAMES, and a push is a graded game: it is
+         printed in every record on this site as the third number of
+         12-8-1. Sizing this board on wins+losses meant a model with a
+         handful of pushes was held off it while its own profile said it
+         had cleared the sample — two pages disagreeing about one rule.
+         The value still excludes pushes, which is what "win percentage
+         excludes pushes" means and is a different question. */
+      win_pct:rec.win_pct,win_pct_n:rec.graded,
       margin_mae:rec.margin_mae,margin_mae_n:rec.margin_n,
       brier:rec.brier,brier_n:rec.brier_n,
       record:rec,coverage_pct:cov.pct,coverage:cov,live:rec.live};
@@ -1773,22 +1788,27 @@ async function renderWall(view){
       boardClock();if(!CLOCK_TIMER)CLOCK_TIMER=setInterval(boardClock,1000);
       return;
     }
-    var sorted=rows.slice();
-    var S=WALL_SORT;
-    var rank={'ACTIVE CONTRIBUTOR':0,'MEMBER':1,'INACTIVE':2};
-    if(S==='win_pct')sorted.sort(function(a,b){return ((b.record&&b.record.win_pct)||-1)-((a.record&&a.record.win_pct)||-1);});
-    else if(S==='margin_mae')sorted.sort(function(a,b){return ((a.record&&a.record.margin_mae)||1e9)-((b.record&&b.record.margin_mae)||1e9);});
-    else if(S==='brier')sorted.sort(function(a,b){return ((a.record&&a.record.brier)||1e9)-((b.record&&b.record.brier)||1e9);});
-    else if(S==='coverage')sorted.sort(function(a,b){return (b.coverage_pct||0)-(a.coverage_pct||0);});
-    else if(S==='name')sorted.sort(function(a,b){return a.creator_name.localeCompare(b.creator_name);});
     var search=rows.length>=20?'<input id="wallq" placeholder="Filter by creator or model" style="width:220px">':'';
-    /* built twice: once immediately from whatever the server has settled,
-       and again when the season sweep lands with the records this page
-       graded itself. A reader should never sit in front of an empty
-       directory waiting on a settlement run. */
-    function dirBody(localMap){
-      return sorted.map(function(r){
-        var sr=shownRecord(r.record,localMap,r.creator_slug,r.model_slug);
+    /* The directory is built twice: once immediately from the week already
+       in hand, and again when the season sweep lands. Both the sort and the
+       cells read the SAME record through shownRecord — sorting on the
+       server's record while displaying the page's meant "sort by Win %"
+       did nothing at all to a column full of numbers. */
+    var dirLocal=null;
+    function dirRec(r){return shownRecord(r.record,dirLocal,r.creator_slug,r.model_slug);}
+    function dirSorted(){
+      var out=rows.slice(),S=WALL_SORT;
+      function v(r){return dirRec(r).rec;}
+      if(S==='win_pct')out.sort(function(a,b){return ((v(b)&&v(b).win_pct)||-1)-((v(a)&&v(a).win_pct)||-1);});
+      else if(S==='margin_mae')out.sort(function(a,b){return ((v(a)&&v(a).margin_mae)||1e9)-((v(b)&&v(b).margin_mae)||1e9);});
+      else if(S==='brier')out.sort(function(a,b){return ((v(a)&&v(a).brier)||1e9)-((v(b)&&v(b).brier)||1e9);});
+      else if(S==='coverage')out.sort(function(a,b){return (b.coverage_pct||0)-(a.coverage_pct||0);});
+      else if(S==='name')out.sort(function(a,b){return a.creator_name.localeCompare(b.creator_name);});
+      return out;
+    }
+    function dirBody(){
+      return dirSorted().map(function(r){
+        var sr=dirRec(r);
         var rec=sr.rec;
         return '<tr class="rowlink" data-slug="'+esc(r.creator_slug)+'">'+
           '<td><span class="who">'+avatar(r)+'<span><span class="nm">'+esc(r.creator_name)+'</span>'+foundStar(r)+'<br><span class="sb">'+esc(r.model_name)+' &middot; '+esc(r.sport)+'</span></span></span></td>'+
@@ -1807,14 +1827,14 @@ async function renderWall(view){
        model read "submitted, awaiting results" for a moment — which is the
        exact sentence this whole change exists to stop being wrong. The sweep
        then widens it from one week to the season. */
-    var weekRecs={};
+    dirLocal={};
     (function(){
       var wg=(board&&board.games)||[];
       modelsInGames(wg,null).forEach(function(mm){
-        weekRecs[mm.creator_slug+'/'+mm.model_slug]=modelRecord(wg,mm.creator_slug,mm.model_slug);
+        dirLocal[mm.creator_slug+'/'+mm.model_slug]=modelRecord(wg,mm.creator_slug,mm.model_slug);
       });
     })();
-    var body=dirBody(weekRecs);
+    var body=dirBody();
     view.innerHTML=hd+
       '<h2 style="letter-spacing:.1em;text-transform:uppercase;font-size:12px;color:var(--dim)">Model directory</h2>'+
       '<div class="sortsel"><span class="note">Sort</span><select id="wallsort">'+
@@ -1832,7 +1852,7 @@ async function renderWall(view){
       '<h2 style="letter-spacing:.1em;text-transform:uppercase;font-size:12px;color:var(--dim)">Recent activity</h2>'+
       '<div class="panel">'+activityRows(act&&act.rows,10)+'</div>';
     boardClock();if(!CLOCK_TIMER)CLOCK_TIMER=setInterval(boardClock,1000);
-    $('wallsort').value=S;
+    $('wallsort').value=WALL_SORT;
     bindSportSwitcher(function(){renderWall(view);});
     $('wallsort').onchange=function(){WALL_SORT=this.value;renderWall(view);};
     if($('wallq'))$('wallq').oninput=function(){
@@ -1857,8 +1877,9 @@ async function renderWall(view){
       var elS=$('bdSettled');
       if(elS&&nSettled>settledNow)
         elS.innerHTML='<b>'+nSettled+'</b> settled <i class="allsports">'+esc(sportCode)+'</i>';
+      dirLocal=map;
       var tb=document.querySelector('#walltbl tbody');
-      if(tb){tb.innerHTML=dirBody(map);wireDirRows();}
+      if(tb){tb.innerHTML=dirBody();wireDirRows();}
     }).catch(function(){});
   }catch(e){fail(view,e);}
 }
@@ -2622,7 +2643,15 @@ async function renderPerformance(view){
           }
           var logRows=(d.recent_graded&&d.recent_graded.length)
             ?d.recent_graded:localGameLog(lg,d.creator.slug,d.model.model_slug);
-          var form=logRows.slice(0,10).map(function(g){
+          /* Anything that is not a win or a loss used to fall through to
+             'p', so a game with NO against-the-spread result — no captured
+             close, or no pick side — was drawn as a push the model never
+             got. Only real results go in the strip, and the label counts
+             what it drew. */
+          var formRows=logRows.filter(function(g){
+            return g.pick_result==='win'||g.pick_result==='loss'||g.pick_result==='push';
+          }).slice(0,10);
+          var form=formRows.map(function(g){
             var k=g.pick_result==='win'?'w':(g.pick_result==='loss'?'l':'p');
             return '<i class="'+k+'">'+k.toUpperCase()+'</i>';
           }).join('');
@@ -2636,7 +2665,7 @@ async function renderPerformance(view){
                '<span><div class="k">Brier</div><div class="v">'+fmtNum(rec.brier,3)+'</div></span>'+
                '<span><div class="k">Graded</div><div class="v">'+rec.graded+'</div></span>'+
                '<span><div class="k">Coverage</div><div class="v">'+fmtNum(d.coverage_pct,0)+'%</div></span></div>'+
-               (form?'<label style="margin-top:12px">Last '+Math.min(10,logRows.length)+' graded</label><span class="frm">'+form+'</span>':'')
+               (form?'<label style="margin-top:12px">Last '+formRows.length+' graded</label><span class="frm">'+form+'</span>':'')
               :'<p class="note" style="margin:6px 0 0">Building sample: no graded games yet.</p>')+
             '<p style="margin:12px 0 0;font-size:12px"><a href="#/model/'+esc(d.creator.slug)+'/'+esc(d.model.model_slug)+'">Full game log &rarr;</a></p></div>';
         }).join('');

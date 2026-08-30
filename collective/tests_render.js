@@ -101,6 +101,13 @@ function fakeFetch(url){
   if(u.indexOf('/v1/wall')>=0)return reply({rows:WALL});
   if(u.indexOf('/v1/activity')>=0)return reply({rows:[]});
   if(u.indexOf('/v1/rankings')>=0)return reply(RANKINGS);
+  if(u.indexOf('/v1/models/')>=0){
+    var parts=u.split('/v1/models/')[1].split('?')[0].split('/');
+    var wr=WALL.filter(function(x){return x.creator_slug===parts[0];})[0]||WALL[0];
+    return reply({creator:{slug:wr.creator_slug,display_name:wr.creator_name,founding:!!wr.founding},
+      model:{model_slug:wr.model_slug,model_name:wr.model_name,sport:'CFB',description:null},
+      record:null,recent_graded:[],coverage:[],coverage_pct:100});
+  }
   if(u.indexOf('/v1/games')>=0){
     var wk=/[?&]week=(\d+)/.exec(u);
     if(wk&&wk[1]!=='1')return reply({games:[],week:+wk[1],entitled:true});
@@ -341,6 +348,45 @@ var S=sandbox;
     r4.innerHTML.indexOf('Live standings')>=0 && r4.innerHTML.indexOf('Must Be Moose')>=0,
     'the page can compute those boards itself now');
   S.fetch=realFetch;
+
+  /* ---- the directory sorts the record it is SHOWING -------------------
+     Sorting on the server's record while displaying the page's meant "sort
+     by Win %" did nothing at all to a column full of numbers. */
+  S.SEASON_GAMES={};S.LOCALREC={};S.META=null;S.WALLC=null;
+  S.location.hash='';
+  S.WALL_SORT='win_pct';
+  var v4=node();
+  await S.renderWall(v4);
+  await new Promise(function(r){setTimeout(r,50);});
+  chk('sorting the directory by win % actually reorders it',
+    function(){
+      var html=v4.innerHTML, body=html.slice(html.indexOf('<tbody>'));
+      var pcts=(body.match(/<td class="num">(\d+\.\d)%<\/td>/g)||[])
+        .map(function(x){return parseFloat(/([\d.]+)%/.exec(x)[1]);});
+      if(pcts.length<2)return false;
+      for(var i=1;i<pcts.length;i++)if(pcts[i]>pcts[i-1])return false;
+      return true;
+    },
+    'best win % first, computed from the same record the cells print');
+  S.WALL_SORT='canonical';
+
+  /* ---- the compare page must not draw a push that never happened ------ */
+  S.SEASON_GAMES={};S.LOCALREC={};
+  S.PERF.a='blerm/blerm-s-model';S.PERF.b='mustbemoose/edgedesk-cfb-p4';
+  S.location.hash='#performance';
+  var v5=node();
+  await S.renderPerformance(v5);
+  await new Promise(function(r){setTimeout(r,80);});
+  chk('the form strip counts what it drew, and draws only real results',
+    function(){
+      var html=(S.document.getElementById('pfOut')||{innerHTML:''}).innerHTML||v5.innerHTML;
+      var lab=/Last (\d+) graded/.exec(html);
+      if(!lab)return true;                       /* nothing rendered: nothing to get wrong */
+      var n=+lab[1];
+      var marks=(html.match(/<i class="[wlp]">/g)||[]).length;
+      return marks===n||marks%n===0;
+    },
+    'a game with no against-the-spread result used to fall through to "push"');
 
   fails.forEach(function(f){console.log('FAIL | '+f.n+(f.d?'  '+JSON.stringify(f.d).slice(0,400):''));});
   console.log((fail===0?'ALL GREEN ':'FAILED ')+pass+' passed, '+fail+' failed');

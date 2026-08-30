@@ -1594,6 +1594,30 @@ if (typeof sandbox.localGrade === 'function') try {
       var r = G.rowGrade(g, g.models[0]);
       return r.source === 'server' && r.margin_error === null && r.brier === null;
     })(), 'two graders averaged together is a third number nobody published');
+  /* One exclusion rule, whichever grader produced the grade. A settlement
+     run that published a grade on a late row would otherwise put a win in a
+     record on the same board that prints "Late, ungraded" beside it. */
+  chk('a LATE row is excluded even when the server graded it',
+    function () {
+      var g = gm({ hs: 30, as: 20, close: -7,
+        models: [mr({ pick_side: 'home', late: true,
+                      grade: { pick_result: 'win', margin_error: 2, brier: 0.1 } })] });
+      return G.rowGrade(g, g.models[0]) === null
+        && G.modelRecord([g], 'c', 'm').graded === 0;
+    },
+    'the rule is that a late submission is excluded, not that it is excluded unless somebody graded it anyway');
+  chk('a LOCKED row is excluded even when the server graded it',
+    function () {
+      var g = gm({ hs: 30, as: 20, close: -7,
+        models: [mr({ pick_side: 'home', locked: true, grade: { pick_result: 'win' } })] });
+      return G.rowGrade(g, g.models[0]) === null;
+    });
+  chk('a BACKFILLED row is excluded even when the server graded it',
+    function () {
+      var g = gm({ hs: 30, as: 20, close: -7,
+        models: [mr({ pick_side: 'home', data_origin: 'backfill', grade: { pick_result: 'win' } })] });
+      return G.rowGrade(g, g.models[0]) === null;
+    }, 'backfill never counts toward the record, rankings, or consensus');
   chk('a grade only ever names one of the three published results',
     (function () {
       var out = {}, i, cases = [[30, 20], [27, 20], [24, 20], [20, 20]];
@@ -1679,8 +1703,19 @@ if (typeof sandbox.localGrade === 'function') try {
     (function () {
       var rk = G.localRankings(RECGAMES, SETTLED, WALLFX, { min_graded_games: 2, min_coverage_pct: 60 });
       return rk.boards.win_pct.length === 1 && rk.boards.win_pct[0].creator_slug === 'c'
-        && rk.boards.win_pct[0].rank === 1 && rk.boards.win_pct[0].graded === 2;
-    })(), 'c2 is excluded on coverage: it posted one of four played games');
+        && rk.boards.win_pct[0].rank === 1 && rk.boards.win_pct[0].graded === 3;
+    })(), 'c2 is excluded on its sample: it was graded on one of four played games');
+  /* a push is a graded game — it is the third number in every record this
+     site prints — so it counts toward the sample the board is sized on,
+     even though the percentage itself excludes it */
+  chk('a push counts toward the sample minimum, and not toward the percentage',
+    function () {
+      var rk = G.localRankings(RECGAMES, SETTLED, WALLFX, { min_graded_games: 3, min_coverage_pct: 60 });
+      var row = rk.boards.win_pct[0];
+      return row && row.graded === 3 && near(row.value, 0.5)
+        && G.modelRecord(SETTLED, 'c', 'm').pushes === 1;
+    },
+    'sizing this board on wins+losses held a model off it while its own profile said it had cleared the sample');
   chk('a ranking row carries every field the boards renderer reads',
     (function () {
       var r = G.localRankings(RECGAMES, SETTLED, WALLFX, { min_graded_games: 2, min_coverage_pct: 60 })
