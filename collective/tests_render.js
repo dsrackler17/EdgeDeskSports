@@ -305,6 +305,62 @@ var S=sandbox;
     {reasons:(rank.match(/\d+ graded games? is below[^<]*/g)||[])});
   chk('the Collective grades itself as one model too',
     rank.indexOf('The Collective as one model')>=0);
+
+  /* ---- the server's unranked list must never reach the page -------------
+     What the reader actually saw: models sitting on the boards above, and
+     NFL models on the College Football page, all captioned "0 graded games
+     is below the 20 minimum" — a threshold this page no longer applies.
+     It leaked because every model in the fixture posted games, so the
+     page's own list was never empty and the server's was never reached. */
+  S.SEASON_GAMES={};S.LOCALREC={};S.WALLC=null;
+  RANKINGS.unranked=[
+    {creator_slug:'jadedbettor-murse2-0',model_name:'NFL Math Madness',
+     reason:'0 graded games is below the 20 minimum'},
+    {creator_slug:'tiltdatalabs',model_name:'NoFunLeague',
+     reason:'0 graded games is below the 20 minimum'},
+    {creator_slug:'blerm',model_name:"Blerm's Model",
+     reason:'0 graded games is below the 20 minimum'}
+  ];
+  /* a College Football model on the wall that has posted nothing... */
+  WALL.push({creator_slug:'newcomer',creator_name:'Newcomer',model_slug:'debut',
+    model_name:'Debut Model',sport:'CFB',membership:'MEMBER',
+    record:null,coverage_pct:0,last_submission_at:null,monogram:'NC'});
+  /* ...and an NFL one, which must not appear on this page at all. Without
+     it here, dropping the sport filter changes nothing and the test that
+     guards it passes for free. */
+  WALL.push({creator_slug:'tiltdatalabs',creator_name:'Tilt Data Labs',
+    model_slug:'nofunleague',model_name:'NoFunLeague',sport:'NFL',
+    membership:'MEMBER',record:null,coverage_pct:0,last_submission_at:null,monogram:'TD'});
+  var rN=node();
+  await S.renderRankings(rN);
+  var un=rN.innerHTML;
+  WALL.pop();WALL.pop();RANKINGS.unranked=[];
+  chk('no model is told it is below a minimum that no longer exists',
+    !/is below the \d+ minimum/.test(un),
+    {found:(un.match(/[^<]*is below the \d+ minimum[^<]*/g)||[])});
+  chk('a model already on a board is never listed as not-yet-ranked',
+    function(){
+      var i=un.indexOf('Not yet ranked');
+      return i>=0 && un.slice(i).indexOf('Blerm')<0;
+    },
+    {tail:un.slice(un.indexOf('Not yet ranked'),un.indexOf('Not yet ranked')+300)});
+  chk('another sport’s models stay off this sport’s page',
+    function(){
+      return un.indexOf('NFL Math Madness')<0 && un.indexOf('NoFunLeague')<0;
+    },
+    'the server’s list carries no sport, so NFL models were listed under College Football');
+  chk('and a model of THIS sport that has played nothing is listed, honestly',
+    function(){
+      var i=un.indexOf('Not yet ranked');
+      if(i<0)return false;
+      var list=un.slice(i);
+      return list.indexOf('Debut Model')>=0 && /no finished games yet/.test(list);
+    },
+    {tail:un.slice(un.indexOf('Not yet ranked'),un.indexOf('Not yet ranked')+300)});
+  chk('the standings no longer claim the boards keep a minimum',
+    !/boards above keep their minimums/.test(un)
+      && !/has posted two games has not earned a rank/.test(un));
+  S.SEASON_GAMES={};S.LOCALREC={};S.WALLC=null;
   /* The whole standings table is the page's own grading. Printing a record
      with no marker under a rules page that promises every one is marked is
      the kind of quiet claim this site cannot afford. */

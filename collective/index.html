@@ -2865,26 +2865,41 @@ async function renderRankings(view){
           '<th class="num" title="games with an against-the-spread result">Graded</th>'+
           '<th title="share of the games PLAYED so far that this model posted">Coverage</th>'+
         '</tr></thead><tbody>'+body+'</tbody></table></div>'+
-        '<p class="note" style="margin-top:8px">This is a running record, not a ranking: it ignores the coverage and sample minimums so every graded game shows up the moment it is final. '+
-        'The three boards above keep their minimums, because a model that has posted two games has not earned a rank. '+
+        '<p class="note" style="margin-top:8px">Every metric for every model in one table, so a model that leads one board and trails another is one row rather than three. '+
+        'The boards above carry no minimum either &mdash; a model appears on each of them from its first finished game, on whichever numbers it has posted. '+
         'Win percentage excludes pushes; each column counts only the games that carry the number it measures, so the graded counts can differ between them. '+
         'A finished game the Collective captured no closing line for has no against-the-spread result at all \u2014 it is not a loss, it is not counted, and the coverage column is where that gap shows.</p>';
     }
-    /* the server's reasons are computed from the server's grades, so while
-       settlement is behind every one of them reads "0 graded games" about a
-       model that has played. Prefer the page's own list whenever it has one:
-       it is the same rule applied to the same finished games. */
-    var unSrc=(local&&local.unranked&&local.unranked.length)?local.unranked:(d.unranked||[]);
-    var unLive=!!(local&&local.unranked&&local.unranked.length);
-    /* The reasons come from the page's own grading and the boards above may
-       be the server's, so without this a model could stand on a board and be
-       listed under "Not yet ranked" on the same screen. Whatever is ranked
-       up there is not unranked down here. */
-    unSrc=unSrc.filter(function(u){
-      return !rankedNow[u.creator_slug+'|'+u.model_name]
-        &&!(u.model_slug&&rankedNow[u.creator_slug+'/'+u.model_slug]);
+    /* ---- who is genuinely not on a board yet ---------------------------
+       This list is built here and NEVER from /v1/rankings. The server's own
+       unranked list is wrong twice over: it recites a twenty-game minimum
+       this page no longer applies, so it said "0 graded games is below the
+       20 minimum" about models sitting on the boards directly above it, and
+       it carries no sport, so NFL models were listed under College Football.
+
+       Two sources, both sport-scoped: models that appear in this season's
+       games (from the page's own ranking pass) and models on the wall for
+       this sport that have not posted a finished game at all. Minus anyone
+       already ranked above. */
+    var unMap={};
+    ((local&&local.unranked)||[]).forEach(function(u){
+      unMap[u.creator_slug+'/'+(u.model_slug||u.model_name)]=u;
     });
-    if(!unSrc.length)unLive=false;
+    rowsForSport(res[1]||[],rkSport.code).forEach(function(r){
+      if(!r||!r.creator_slug||!r.model_slug)return;
+      var k=r.creator_slug+'/'+r.model_slug;
+      if(unMap[k])return;
+      unMap[k]={creator_slug:r.creator_slug,model_name:r.model_name||r.model_slug,
+        model_slug:r.model_slug,
+        reason:'no finished games yet — its record starts with the first one'};
+    });
+    /* Whatever is ranked up there is not unranked down here. */
+    var unSrc=Object.keys(unMap).map(function(k){return unMap[k];})
+      .filter(function(u){
+        return !rankedNow[u.creator_slug+'|'+u.model_name]
+          &&!(u.model_slug&&rankedNow[u.creator_slug+'/'+u.model_slug]);
+      })
+      .sort(function(a,b){return String(a.model_name).localeCompare(String(b.model_name));});
     var un=unSrc.map(function(u){
       return '<li><b>'+esc(u.model_name)+'</b> <span class="note">('+esc(u.creator_slug)+'): '+esc(u.reason)+'</span></li>';
     }).join('');
@@ -2911,8 +2926,9 @@ async function renderRankings(view){
           '</div><div class="note" style="margin-top:8px">The consensus graded by the member rules: the majority pick against the Collective&#39;s own captured close, the mean win probability against the final score. Games with fewer than two models, dead-even splits, and ties are excluded &mdash; an aggregate of one is just a model.</div></div>'+
           calibrationHTML(calibrationBuckets(collStats.mlPts));
       })():'')+
-      (un?'<h2>Not yet ranked</h2><ul style="color:var(--dim);font-size:13px;line-height:1.9">'+un+'</ul>'+
-        (unLive?gradeNote('These counts are'):''):'')+
+      /* "Not yet ranked" now means one thing — nothing of theirs has
+         finished — so it needs no note about which grader counted it. */
+      (un?'<h2>Not yet ranked</h2><ul style="color:var(--dim);font-size:13px;line-height:1.9">'+un+'</ul>':'')+
       '<p class="note"><a href="#rules">How grading works →</a> &middot; <a href="#performance">Compare any two models side by side →</a></p>'))return;
     bindSportSwitcher(function(){renderRankings(view);});
     document.querySelectorAll('.rowlink').forEach(function(tr){tr.onclick=function(){location.hash='#/'+tr.getAttribute('data-slug');};});
