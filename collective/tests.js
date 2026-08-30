@@ -39,7 +39,17 @@ var HERE = __dirname;
 var PAGE = path.join(HERE, 'index.html');
 var pass = 0, fail = 0, failures = [];
 
+/* An assertion must FAIL, never crash. A throw inside one takes the report
+   at the bottom of this file down with it and hides every other result --
+   which is exactly what happened the first time a deliberate mutation was
+   run against the grading section. Pass a function and it is evaluated
+   here, in a try, so a broken implementation produces one red line instead
+   of a stack trace and no report at all. */
 function chk(name, ok, detail) {
+  if (typeof ok === 'function') {
+    try { ok = ok(); }
+    catch (e) { ok = false; detail = { threw: String((e && e.message) || e) }; }
+  }
   if (ok) { pass++; return; }
   fail++; failures.push({ name: name, detail: detail });
 }
@@ -1399,7 +1409,7 @@ if (typeof sandbox.teamKey === 'function') {
    server-side settlement run that was behind. The page now applies the
    published rule itself. These tests are the rule.
    ======================================================================= */
-if (typeof sandbox.localGrade === 'function') {
+if (typeof sandbox.localGrade === 'function') try {
   var G = sandbox;
   var PAST = '2020-09-13T17:00:00Z';
   var FUTURE = '2099-09-13T17:00:00Z';
@@ -1590,7 +1600,8 @@ if (typeof sandbox.localGrade === 'function') {
       for (i = 0; i < cases.length; i++) {
         var g = gm({ hs: cases[i][0], as: cases[i][1], close: -7,
           models: [mr({ pick_side: 'home' })] });
-        out[String(G.localGrade(g, g.models[0]).pick_result)] = 1;
+        var one = G.localGrade(g, g.models[0]);
+        out[String(one && one.pick_result)] = 1;
       }
       return Object.keys(out).every(function (k) { return k === 'win' || k === 'loss' || k === 'push'; });
     })(), 'pick_result is interpolated into a class attribute, so a sentinel string would be unstyled and unescaped');
@@ -1693,6 +1704,29 @@ if (typeof sandbox.localGrade === 'function') {
         && rk.boards.brier[0].creator_slug === 'c'
         && rk.boards.brier[0].value < rk.boards.brier[1].value;
     })());
+  /* The other minimum, on its own. c2 above is kept off the boards by its
+     SAMPLE, so deleting the coverage filter entirely would not have shown
+     up anywhere — this is a model that clears the sample and is held off by
+     coverage and nothing else. */
+  chk('the coverage minimum alone can keep a model off the boards',
+    function () {
+      var posted = function (id, day) {
+        return gm({ id: id, hs: 30, as: 20, close: -7, kickoff: '2020-10-' + day + 'T17:00:00Z',
+          models: [mr({ pick_side: 'home', projected_spread: -10, home_win_probability: 0.8 })] });
+      };
+      var skipped = function (id, day) {
+        return gm({ id: id, hs: 30, as: 20, close: -7, kickoff: '2020-10-' + day + 'T17:00:00Z' });
+      };
+      var all = [posted('k1', '01'), posted('k2', '08'), skipped('k3', '15'), skipped('k4', '22')];
+      var rk = G.localRankings(all, all, WALLFX, { min_graded_games: 2, min_coverage_pct: 60 });
+      return G.modelRecord(all, 'c', 'm').graded === 2          /* clears the sample */
+        && G.modelCoverage(all, 'c', 'm').pct === 50            /* misses the coverage */
+        && rk.boards.win_pct.length === 0 && rk.boards.margin_mae.length === 0
+        && rk.boards.brier.length === 0
+        && rk.standings.length === 1                            /* still tracked */
+        && /50% of the played slate is below the 60% minimum/.test(rk.unranked[0].reason);
+    },
+    'cherry-picking a slate is the fastest way off these boards');
   chk('the live standings rank every model with a graded game, no minimums',
     (function () {
       var rk = G.localRankings(RECGAMES, SETTLED, WALLFX, { min_graded_games: 20, min_coverage_pct: 60 });
@@ -1787,6 +1821,9 @@ if (typeof sandbox.localGrade === 'function') {
   chk('the page no longer claims a grade it computed came from the settlement run',
     !/Graded by the Collective against its own closing lines/.test(CODE),
     'that sentence sat directly above a record this page may have graded itself');
+} catch (e) {
+  chk('the grading section runs to the end without throwing', false,
+    { threw: String((e && e.stack) || e) });
 }
 
 /* ---- report ------------------------------------------------------------ */

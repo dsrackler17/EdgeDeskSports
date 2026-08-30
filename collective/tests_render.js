@@ -31,7 +31,12 @@ while((m=re.exec(html))!==null)if(m[1].trim())blocks.push(m[1]);
 var CODE=blocks.join('\n;\n');
 
 var pass=0,fail=0,fails=[];
-function chk(n,ok,d){if(ok){pass++;return;}fail++;fails.push({n:n,d:d});}
+/* a thunk is evaluated here, in a try: an assertion must FAIL, never crash */
+function chk(n,ok,d){
+  if(typeof ok==='function'){try{ok=ok();}catch(e){ok=false;d={threw:String((e&&e.message)||e)};}}
+  if(ok){pass++;return;}
+  fail++;fails.push({n:n,d:d});
+}
 
 function G(id,away,home,hs,as,close,models){
   return {game_id:id,label:away+' @ '+home,home:home,away:away,week:1,season:2026,
@@ -217,16 +222,21 @@ var S=sandbox;
       return S.rowGrade(g,g.models[0]).pick_result==='loss'
         && S.rowGrade(g,g.models[2]).pick_result==='win';
     })());
+  /* The whole point of one shared closing line: a model that posted at its
+     own better number is graded on the Collective's, not on the one it
+     picked at. Driven through the real grader, not through atsResult --
+     grading on line_at_submission is a one-word change inside localGrade
+     and the arithmetic below is identical either way, so only the grader
+     itself can tell the two apart. */
   chk('the page grades against the CAPTURED close, not the line a model posted',
-    (function(){
-      /* edgedesksports posted TCU at -6.5 and the close was -7.5; a 7-point
-         TCU win covers its own number and not the Collective's, so grading
-         on the posted line would flip this result */
-      var g=S.finalResult({kickoff_at:'2026-08-29T16:00:00Z',
-        result:{home_score:27,away_score:20,closing_spread:-7.5}});
-      return S.atsResult(g.margin,g.closing_spread,'home')==='loss'
-        && S.atsResult(g.margin,-6.5,'home')==='win';
-    })());
+    function(){
+      var g=G(99,'AWAY','HOME',27,20,-7.5,[
+        M('c','m','home',-9,-6.5,0.7)]);       /* posted at -6.5, close -7.5 */
+      var gr=S.rowGrade(g,g.models[0]);
+      return gr.pick_result==='loss'
+        && S.atsResult(7,-6.5,'home')==='win';  /* its own number would have covered */
+    },
+    'a 7-point win covers -6.5 and does not cover -7.5');
 
   /* ---- THE RANKINGS ---- */
   S.location.hash='#rankings';
