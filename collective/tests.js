@@ -3225,6 +3225,16 @@ if (typeof sandbox.slateAdminGames === 'function') {
     });
   chk('a team the backend does not know is reported, not silently dropped',
     function () { return /does not know one of the teams/.test(CODE); });
+  chk('it does not send a college creator to a form that cannot accept them',
+    function () {
+      /* collective_admin's alias route validates the team code against
+         /^[A-Z0-9]{2,5}$/ and every CFB code on this backend is longer:
+         GEORGIATEC, MASSACHUSE, WAKEFOREST. Pointing somebody at that form
+         is sending them to a guaranteed 422. */
+      return !/Add it as an alias under/.test(CODE)
+        && /2 to 5 characters/.test(CODE);
+    },
+    'the advice has to be true for the sport the creator is actually posting');
   chk('the receipt says which build of the page produced it',
     function () { return /Page build: <span class="mono">'\+\s*esc\(String\(document\.lastModified/.test(CODE); },
     'it cost a round trip of "this is fixed" / "it is not" to work that out from wording alone');

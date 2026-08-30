@@ -6275,8 +6275,12 @@ async function renderCreatorDash(view,me){
             (up===1?'':'s')+' added to the schedule.</b>'+
             (fails.length
               ? '<p class="note" style="margin:6px 0 0">'+fails.length+' could not be added because your backend '+
-                'does not know one of the teams &mdash; a team has to exist before a game can reference it. '+
-                'Add it as an alias under <span class="mono">Quarantine</span> on the admin page, then press this again.</p>'+
+                'does not know one of the teams &mdash; a team has to exist in the backend\u2019s team table '+
+                'before a game can reference it. This is not something the file can fix and, for college '+
+                'football, not something the admin page can fix either: its alias form accepts a team code of '+
+                '2 to 5 characters, and every CFB code on this backend is longer than that '+
+                '(<span class="mono">GEORGIATEC</span>, <span class="mono">MASSACHUSE</span>, '+
+                '<span class="mono">WAKEFOREST</span>). The team has to be inserted server-side first.</p>'+
                 '<div class="mono" style="font-size:11px;margin-top:6px;white-space:pre-wrap">'+
                 esc(JSON.stringify(fails.slice(0,8),null,1))+'</div>'
               : '<p class="note" style="margin:6px 0 0">Re-post the slate and these rows resolve.</p>')+
