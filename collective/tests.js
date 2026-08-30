@@ -2540,6 +2540,18 @@ if (typeof sandbox.slateMatchRow === 'function') {
         [{ label: 'WASHINGTONSTATE @ OREGON', game_id: 'X' },
          { label: 'WASHINGTON @ OREGON', game_id: 'Y' }],
         { away_team: 'Washington State', home_team: 'Oregon' }) });
+  chk('the pair pass itself prefers the exact spelling, before any fallback',
+    function () {
+      /* Isolated from slateMatchRow, whose rename branch would reach the same
+         answer by another route and hide a regression here. */
+      var g = S4.slatePairGame(
+        [{ label: 'WASHINGTONSTATE @ OREGON', game_id: 'X' },
+         { label: 'WASHINGTON @ OREGON', game_id: 'Y' }], 'Washington State', 'Oregon');
+      return g && g.game_id === 'X';
+    },
+    { got: S4.slatePairGame(
+        [{ label: 'WASHINGTONSTATE @ OREGON', game_id: 'X' },
+         { label: 'WASHINGTON @ OREGON', game_id: 'Y' }], 'Washington State', 'Oregon') });
   chk('a shortening is only a shortening at the schedule\'s clip width',
     function () {
       /* INDIANA is seven characters on a schedule that clips at ten, so it is
