@@ -1,0 +1,94 @@
+# EdgeDesk Model Collective — settle finished games automatically.
+#
+# A game ends and the board should grade it. Settling used to mean a person
+# opening collective/admin.html and typing two scores into a row, which is
+# fine for one game and hopeless for a Saturday: nothing grades, no record
+# moves, and every creator's wall sits stale until somebody has time.
+#
+# This runs the same settle the admin screen runs
+# (tools/collective/settle_finals.js): it asks the Collective which of its own
+# past games have no result, looks the final up in the SAME public keyless
+# feeds the rest of this repo trusts, offers the Collective's own captured
+# closing line, and POSTs /v1/admin/results.
+#
+# It never invents a score and never invents a closing line. A game the feed
+# does not carry as completed, with two real scores, is skipped and named in
+# the run log rather than settled on a guess.
+#
+# SECRET (one, required to write):
+#   COLLECTIVE_ADMIN_REFRESH_TOKEN  a Supabase refresh token for an
+#     allowlisted admin account. Get it once from a signed-in admin session:
+#       JSON.parse(localStorage.getItem(
+#         Object.keys(localStorage).find(k => k.endsWith('-auth-token'))
+#       )).refresh_token
+#     Without it this workflow still runs `--verify`, which needs no
+#     credential at all: it reports which sources answered, what they carry,
+#     and which games have an agreed final. Nothing is written either way
+#     until the secret exists.
+name: Settle finished games
+
+on:
+  schedule:
+    # Every hour. Games end at all hours across NFL Sunday/Monday/Thursday and
+    # the college Saturday, and an hour is the difference between a board that
+    # grades itself and one that looks broken.
+    - cron: '0 * * * *'
+  workflow_dispatch:
+    inputs:
+      sport:
+        description: 'Limit to one sport code (NFL, CFB). Blank = all.'
+        required: false
+        default: ''
+      season:
+        description: 'Override the season. Blank = whatever the Collective says is current.'
+        required: false
+        default: ''
+      commit:
+        description: 'Actually settle. Unchecked is a dry run.'
+        type: boolean
+        required: false
+        default: false
+
+concurrency:
+  # Two runs settling the same game race each other into the same POST.
+  group: settle-finals
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  settle:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Matching logic must pass before it is allowed to write
+        run: node tools/collective/settle_finals.test.js
+
+      - name: Prove the sources are live before anything is written
+        run: node tools/collective/settle_finals.js --verify || true
+
+      - name: Settle
+        env:
+          COLLECTIVE_ADMIN_REFRESH_TOKEN: ${{ secrets.COLLECTIVE_ADMIN_REFRESH_TOKEN }}
+        run: |
+          ARGS=""
+          # A scheduled run commits. A manual run commits only when asked, so
+          # the dry run stays the way you inspect a matcher you cannot see.
+          if [ "${{ github.event_name }}" = "schedule" ] || [ "${{ inputs.commit }}" = "true" ]; then
+            ARGS="$ARGS --commit"
+          fi
+          if [ -n "${{ inputs.sport }}" ];  then ARGS="$ARGS --sport ${{ inputs.sport }}"; fi
+          if [ -n "${{ inputs.season }}" ]; then ARGS="$ARGS --season ${{ inputs.season }}"; fi
+          if [ -z "$COLLECTIVE_ADMIN_REFRESH_TOKEN" ]; then
+            echo "::warning::COLLECTIVE_ADMIN_REFRESH_TOKEN is not set — nothing can be settled."
+            echo "The verify step above still shows which sources answered and what they carry."
+            exit 0
+          fi
+          node tools/collective/settle_finals.js $ARGS
