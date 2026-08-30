@@ -1402,6 +1402,119 @@ if (typeof sandbox.teamKey === 'function') {
   chk('twinned spreads leave nothing for the contradiction guard to see',
     S.wireContradiction(
       { pick_side: 'away', projected_spread: -3.5, line_at_submission: -3.5 }) === null);
+
+  /* ---- the real 44-column NFL export ------------------------------------
+     Reported from the dashboard: a Week 1 2026 NFL slate checked clean
+     ("16 matched, 0 quarantined, 0 rejected") under a ticked "post
+     automatically when the check is clean", and never reached the wall.
+     The file's team columns spell the Rams LAR and its pick columns spell
+     them LA, so one row could not resolve its pick side; that put an entry
+     in built.problems, and hands-off mode declines on any problem without
+     saying a word. Two bugs, and the second one hid the first. */
+  var NFL = [
+    'season,week,game_id,kickoff_local,away_team,home_team,model_version,feature_version,'
+      + 'model_home_line,model_fair_total,home_win_prob_pct,ref_home_line,spread_pick,'
+      + 'p_spread_pick_pct,spread_push_pct,ml_pick,p_ml_pick_pct',
+    '2026,1,2026_01_NE_SEA,9/9/2026 20:20,NE,SEA,edgedesk_football_v1.0.0,nfl_fv1,'
+      + '-5.01,43.7,68,-3.5,SEA,50.7,0,SEA,68',
+    '2026,1,2026_01_SF_LA,9/10/2026 20:35,SF,LAR,edgedesk_football_v1.0.0,nfl_fv1,'
+      + '-5.18,50.7,68.6,-3.5,LA,50.7,0,LA,68.6',
+    '2026,1,2026_01_ARI_LAC,9/13/2026 16:25,ARI,LAC,edgedesk_football_v1.0.0,nfl_fv1,'
+      + '-4.93,45.3,67.8,-10.5,ARI,70.8,0,LAC,67.8'
+  ].join('\n');
+  var nrows = parseCsv(NFL);
+  S.SLATE.cols = nrows[0]; S.SLATE.rows = nrows; S.SLATE.map = {};
+  S.slateGuessMap();
+  chk('the EdgeDesk NFL export is recognised like its CFB sibling',
+    S.edSlateDetect() === true);
+  chk('the NFL export is detected as NFL',
+    S.slateDetectSport(S.SLATE.cols, S.SLATE.rows) === 'NFL',
+    { got: S.slateDetectSport(S.SLATE.cols, S.SLATE.rows) });
+  var nb = S.slateBuildRows('2026', '1');
+  chk('every NFL export row builds with no problems reported',
+    nb.rows.length === 3 && nb.problems.length === 0,
+    { n: nb.rows.length, problems: nb.problems });
+  chk('LA in the pick column resolves against LAR in the team column',
+    nb.rows[1].pick_side === 'home',
+    { got: nb.rows[1].pick_side, why: 'the same franchise, two codes, one file' });
+  chk('an away pick beside a LAC home team still resolves',
+    nb.rows[2].pick_side === 'away', { got: nb.rows[2].pick_side });
+
+  /* ---- a two letter code may match a code, never a name ----------------- */
+  chk('LA resolves to LAR when LAR is the only Los Angeles side',
+    S.slateSide('LA', 'LAR', 'SF') === 'home');
+  chk('LA resolves to LAC the same way', S.slateSide('LA', 'SF', 'LAC') === 'away');
+  chk('LA in a Rams-Chargers game is refused as ambiguous',
+    S.slateSide('LA', 'LAR', 'LAC') === null);
+  chk('LAR still resolves when the schedule is the one saying LA',
+    S.slateSide('LAR', 'LA', 'SF') === 'home');
+  chk('a two letter code never latches onto a spelled out name',
+    S.slateSide('NE', 'New Orleans', 'Miami') === null,
+    { why: 'NE is New England, which is not playing in this game' });
+  chk('NE at NO is still refused', S.slateSide('NE', 'NO', 'MIA') === null);
+  chk('NY in a Giants-Jets game is refused as ambiguous',
+    S.slateSide('NY', 'NYG', 'NYJ') === null);
+  chk('a three letter prefix of a full name still resolves',
+    S.slateSide('Ala', 'Alabama', 'Auburn') === 'home');
+
+  /* ---- a pick-stated cover % is withheld when the pick cannot be read ----
+     The spread, the market line and the win probability are all withheld
+     when the side they are stated from is unreadable. The cover probability
+     was not: its flip sat inside `if(parsedPick)`, so an unreadable pick
+     fell past it and posted P(my side covers) as P(home covers) — correct
+     when the pick happened to be home, silently inverted when it was away,
+     and indistinguishable from a real number either way. */
+  var UNREAD = [
+    'season,week,game_id,kickoff_local,away_team,home_team,model_version,feature_version,'
+      + 'model_home_line,model_fair_total,home_win_prob_pct,ref_home_line,spread_pick,'
+      + 'p_spread_pick_pct,spread_push_pct',
+    '2026,1,2026_01_X_Y,9/13/2026 13:00,BUF,MIA,edgedesk_football_v1.0.0,nfl_fv1,'
+      + '-3.5,44.5,58,-3,Rutgers,70.9,0'
+  ].join('\n');
+  var urows = parseCsv(UNREAD);
+  S.SLATE.cols = urows[0]; S.SLATE.rows = urows; S.SLATE.map = {};
+  S.slateGuessMap();
+  var ub = S.slateBuildRows('2026', '1');
+  chk('an unreadable pick withholds the pick-stated cover probability',
+    ub.rows.length === 1 && ub.rows[0].cover_probability === undefined,
+    { got: ub.rows[0] && ub.rows[0].cover_probability });
+  chk('withholding the cover probability is reported, not silent',
+    ub.problems.some(function (x) { return /cover/i.test(x); }),
+    { problems: ub.problems });
+  chk('the rest of the row still posts',
+    near(ub.rows[0].projected_spread, -3.5) && near(ub.rows[0].line_at_submission, -3),
+    { row: ub.rows[0] });
+
+  /* ---- a bare wall clock means one instant, whoever opens the file ------
+     "9/13/2026 13:00" is the NFL export's kickoff_local and carries no
+     designator. It used to fall through to new Date(), which is specified
+     to read it as the READER'S local time, so the same file meant a
+     different instant for every creator and a night game opened in US
+     Central landed on the next UTC day. */
+  chk('an M/D/YYYY wall clock is pinned, not read as the reader\'s local time',
+    S.slateKick('9/13/2026 13:00') === '2026-09-13T13:00:00.000Z',
+    { got: S.slateKick('9/13/2026 13:00') });
+  chk('a late kickoff does not roll into the next UTC day',
+    S.slateKick('9/9/2026 20:20') === '2026-09-09T20:20:00.000Z',
+    { got: S.slateKick('9/9/2026 20:20') });
+  chk('a declared timezone is still honoured on that form',
+    S.slateKick('9/13/2026 13:00', 'America/Chicago') === '2026-09-13T18:00:00.000Z',
+    { got: S.slateKick('9/13/2026 13:00', 'America/Chicago') });
+  chk('the ISO form is unchanged by all this',
+    S.slateKick('2026-08-29 16:00') === '2026-08-29T16:00:00.000Z');
+  chk('a date with no time still gets the midday default',
+    S.slateKick('9/13/2026') === '2026-09-13T17:00:00Z');
+  chk('an explicit offset in the value still wins',
+    S.slateKick('2026-09-13T13:00:00-05:00') === '2026-09-13T18:00:00.000Z');
+
+  /* ---- the file's own date, shown the way the file writes it ------------ */
+  chk('an M/D/YYYY kickoff is not cut mid-year',
+    S.edDateCell('9/9/2026 20:20') === '9/9/2026',
+    { got: S.edDateCell('9/9/2026 20:20') });
+  chk('an ISO kickoff still shows its date',
+    S.edDateCell('2026-08-29 16:00') === '2026-08-29');
+  chk('an empty kickoff shows a dash', S.edDateCell('') === '-'
+    && S.edDateCell(null) === '-');
 }
 
 
