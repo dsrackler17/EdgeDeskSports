@@ -262,6 +262,76 @@ var S=sandbox;
   chk('a game finishing changes the fingerprint and drops the caches',
     S.LIVE_FP!==before && Object.keys(S.SEASON_GAMES).length===0);
 
+  /* ---- the normal path must not regress -------------------------------
+     Everything above is the page standing in for a settlement run that is
+     behind. When the run is NOT behind, its grades are the record and the
+     page must show them untouched and unmarked. */
+  S.SEASON_GAMES={};S.LOCALREC={};S.META=null;S.WALLC=null;
+  GAMES.length=3;
+  GAMES[0].models[0].grade={pick_result:'loss',margin_error:9.9,brier:0.99};
+  S.location.hash='#board';
+  var b2=node();
+  await S.renderBoard(b2);
+  var board2=b2.innerHTML;
+  chk('a settled grade is shown exactly as the Collective published it',
+    board2.indexOf('err 9.9')>=0 && board2.indexOf('brier 0.990')>=0
+      && /grade-loss/.test(board2),
+    'the page recomputed win for this row and must not have used it');
+  chk('a settled grade carries no live marker',
+    (function(){
+      var i=board2.indexOf('err 9.9');
+      return board2.slice(Math.max(0,i-400),i).indexOf('pgrade')<0;
+    })());
+  chk('the rest of the slate is still graded by the page beside it',
+    board2.indexOf('pgrade')>=0);
+  GAMES[0].models[0].grade=null;
+
+  /* ---- a finished game the Collective captured no close for ------------ */
+  S.SEASON_GAMES={};S.LOCALREC={};
+  var noClose=G(9,'A','B',30,20,null,[M('blerm','blerm-s-model','home',-12.5,null,0.8)]);
+  chk('no captured close means no win, no loss, and no push',
+    (function(){
+      var gr=S.rowGrade(noClose,noClose.models[0]);
+      return gr && gr.pick_result===null && gr.margin_error!=null && gr.brier!=null;
+    })(),
+    'grading it against the model own posted line would be self-reporting');
+  chk('and it is counted by nobody rather than counted as a loss',
+    (function(){
+      var rec=S.modelRecord([noClose],'blerm','blerm-s-model');
+      return rec.graded===0 && rec.losses===0 && rec.margin_n===1 && rec.brier_n===1;
+    })());
+
+  /* ---- the API being unreachable must not blank the page --------------- */
+  S.SEASON_GAMES={};S.LOCALREC={};S.META=null;S.WALLC=null;
+  var realFetch=S.fetch;
+  S.fetch=function(u){
+    if(String(u).indexOf('/v1/games')>=0)
+      return Promise.resolve({ok:false,status:503,json:function(){return Promise.resolve({});}});
+    return realFetch(u);
+  };
+  S.location.hash='';
+  var v3=node();
+  await S.renderWall(v3);
+  chk('the wall still renders when the games endpoint is down',
+    v3.innerHTML.indexOf('LIVE MODEL WALL')>=0 && v3.innerHTML.indexOf('Must Be Moose')>=0);
+  S.location.hash='#rankings';
+  var r3=node();
+  await S.renderRankings(r3);
+  chk('the rankings still render when the games endpoint is down',
+    r3.innerHTML.indexOf('Rankings')>=0 && r3.innerHTML.indexOf('could not load')<0);
+  S.fetch=function(u){
+    if(String(u).indexOf('/v1/rankings')>=0)
+      return Promise.resolve({ok:false,status:503,json:function(){return Promise.resolve({});}});
+    return realFetch(u);
+  };
+  S.SEASON_GAMES={};S.LOCALREC={};
+  var r4=node();
+  await S.renderRankings(r4);
+  chk('the rankings endpoint being down is no longer an error page',
+    r4.innerHTML.indexOf('Live standings')>=0 && r4.innerHTML.indexOf('Must Be Moose')>=0,
+    'the page can compute those boards itself now');
+  S.fetch=realFetch;
+
   fails.forEach(function(f){console.log('FAIL | '+f.n+(f.d?'  '+JSON.stringify(f.d).slice(0,400):''));});
   console.log((fail===0?'ALL GREEN ':'FAILED ')+pass+' passed, '+fail+' failed');
   process.exit(fail===0?0:1);
