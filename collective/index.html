@@ -761,6 +761,13 @@ function fail(view,e){
 
 /* ================= wall: the live market board ================= */
 var WALL_SORT='canonical';
+/* renderWall is re-entered from its own sort control, its sport switcher, the
+   router and the live refresh, and its season sweep lands well after the
+   paint that started it. Without a token, a sweep started on the College
+   Football wall could repaint the table of an NFL wall the reader had since
+   switched to — with college rows. Each paint claims the token; a sweep that
+   no longer holds it drops its result. */
+var WALL_TOKEN=0;
 var CLOCK_TIMER=null;
 function boardClock(){
   var el=$('bdClock');if(!el){if(CLOCK_TIMER){clearInterval(CLOCK_TIMER);CLOCK_TIMER=null;}return;}
@@ -1394,24 +1401,37 @@ function localRankings(games,settled,wall,thresholds){
       brier:rec.brier,brier_n:rec.brier_n,
       record:rec,coverage_pct:cov.pct,coverage:cov,live:rec.live};
   });
+  var boards={
+    win_pct:rankBoard(entries,'win_pct',-1,minG,minC),
+    margin_mae:rankBoard(entries,'margin_mae',1,minG,minC),
+    brier:rankBoard(entries,'brier',1,minG,minC)
+  };
+  /* Unranked means "on none of the three boards". Testing the ATS count
+     alone called a model that posts spreads and probabilities but no pick
+     side "0 graded games" while it had a full season of margin errors — the
+     boards already count each metric's own sample, and this has to agree
+     with them. */
+  var ranked={};
+  ['win_pct','margin_mae','brier'].forEach(function(k){
+    boards[k].forEach(function(r){ranked[r.creator_slug+'/'+r.model_slug]=1;});
+  });
   var unranked=entries.filter(function(e){
-    return !(e.record.graded>=minG&&(e.coverage_pct==null||e.coverage_pct>=minC));
+    return !ranked[e.creator_slug+'/'+e.model_slug];
   }).map(function(e){
     var why=[];
-    if(e.record.graded<minG)
-      why.push(e.record.graded+' graded game'+(e.record.graded===1?'':'s')+' is below the '+minG+' minimum');
+    var best=Math.max(e.record.graded,e.margin_mae_n||0,e.brier_n||0);
+    if(best<minG)
+      why.push(best+' graded game'+(best===1?'':'s')+' is below the '+minG+' minimum');
     if(e.coverage_pct!=null&&e.coverage_pct<minC)
       why.push(Math.round(e.coverage_pct)+'% of the played slate is below the '+minC+'% minimum');
+    if(e.record.graded===0&&best>0)
+      why.push('no pick side submitted, so there is no win-loss record to rank');
     return {creator_slug:e.creator_slug,model_name:e.model_name,
       model_slug:e.model_slug,reason:why.join(' · ')};
   });
   return {
     thresholds:{min_graded_games:minG,min_coverage_pct:minC},
-    boards:{
-      win_pct:rankBoard(entries,'win_pct',-1,minG,minC),
-      margin_mae:rankBoard(entries,'margin_mae',1,minG,minC),
-      brier:rankBoard(entries,'brier',1,minG,minC)
-    },
+    boards:boards,
     /* every model, every graded game, no minimums: the running table the
        minimums deliberately keep off the ranked boards */
     standings:entries.filter(function(e){return e.record.graded>0||e.margin_mae_n>0||e.brier_n>0;})
@@ -1435,7 +1455,14 @@ async function seasonGames(sport,season){
   if(SEASON_GAMES[key])return SEASON_GAMES[key];
   var head=await api('/v1/games?sport='+encodeURIComponent(sport)+'&season='+encodeURIComponent(season),{auth:true});
   var games=(head&&head.games)||[];
-  var cur=head&&head.week;
+  var cur=(head&&head.week!=null)?head.week:null;
+  /* The week-less payload names the current week, which is what bounds the
+     sweep. When it does not, the games it returned still do — and reading
+     one week and calling it a season would quietly build every record out
+     of a single slate. */
+  if(cur==null){
+    games.forEach(function(g){if(g&&g.week!=null&&(cur==null||g.week>cur))cur=g.week;});
+  }
   if(cur!=null&&cur>1){
     var weeks=[];for(var w=1;w<cur;w++)weeks.push(w);
     var pages=await Promise.all(weeks.map(function(wk2){
@@ -1501,7 +1528,13 @@ function shownRecord(serverRec,localMap,cs,ms){
    named by its two teams. */
 function gameKey(g){
   if(!g)return '';
-  return String(g.game_id!=null?g.game_id:(String(g.away)+'@'+String(g.home)));
+  if(g.game_id!=null)return String(g.game_id);
+  /* No id on the wire. Two teams name a game uniquely inside one week, but a
+     season can hold the same pairing twice — a rematch in a conference
+     championship — and a key that collided would drop the second one from
+     the season sweep and out of the record entirely. The kickoff day
+     separates them. */
+  return String(g.away)+'@'+String(g.home)+'|'+String(g.kickoff_at||'').slice(0,10);
 }
 /* ---- where the GROUP departs from the market --------------------------
    The consensus mean and the market close are both home convention, so the
@@ -1700,6 +1733,7 @@ async function renderWall(view){
     });
     if(!boards)boards='<div class="gb-empty">The slate loads here the moment games are scheduled.</div>';
 
+    var wallToken=++WALL_TOKEN;
     var settledNow=((board&&board.games)||[]).filter(function(g){return finalResult(g)!=null;}).length;
     var hd=sportSwitcherHTML(m)+'<div class="bd">'+
       '<div class="bd-hd"><span class="bd-title"><span class="bd-live"></span>LIVE MODEL WALL</span>'+
@@ -1768,7 +1802,19 @@ async function renderWall(view){
         '</tr>';
       }).join('');
     }
-    var body=dirBody(null);
+    /* The current week is already in hand, so the directory shows a real
+       record from the FIRST paint. Waiting for the season sweep meant every
+       model read "submitted, awaiting results" for a moment — which is the
+       exact sentence this whole change exists to stop being wrong. The sweep
+       then widens it from one week to the season. */
+    var weekRecs={};
+    (function(){
+      var wg=(board&&board.games)||[];
+      modelsInGames(wg,null).forEach(function(mm){
+        weekRecs[mm.creator_slug+'/'+mm.model_slug]=modelRecord(wg,mm.creator_slug,mm.model_slug);
+      });
+    })();
+    var body=dirBody(weekRecs);
     view.innerHTML=hd+
       '<h2 style="letter-spacing:.1em;text-transform:uppercase;font-size:12px;color:var(--dim)">Model directory</h2>'+
       '<div class="sortsel"><span class="note">Sort</span><select id="wallsort">'+
@@ -1805,6 +1851,7 @@ async function renderWall(view){
        wall: the settled count and the records land when they land, and the
        first paint is whatever the server already knew. */
     localRecords(sport.code,sport.season).then(function(map){
+      if(wallToken!==WALL_TOKEN)return;   /* a newer wall is on screen */
       var sg=SEASON_GAMES[sport.code+'|'+sport.season]||[];
       var nSettled=sg.filter(function(g){return finalResult(g)!=null;}).length;
       var elS=$('bdSettled');
@@ -2423,7 +2470,9 @@ async function renderRankings(view){
           '<td class="num" style="color:var(--faint)">'+(i+1)+'</td>'+
           '<td><span class="nm">'+esc(e.creator_name)+'</span>'+(fmap[e.creator_slug]?' <span class="fstar" title="Founding Member">&#9733;</span>':'')+
             '<br><span class="sb" style="color:var(--faint);font-size:11px">'+esc(e.model_name)+'</span></td>'+
-          '<td class="num mono">'+r.wins+'-'+r.losses+'-'+r.pushes+'</td>'+
+          '<td class="num mono">'+(r.graded
+            ?(r.wins+'-'+r.losses+'-'+r.pushes)
+            :'<span class="note" title="this model submitted no pick side on these games, so it has no against-the-spread record — its margin and Brier numbers still count">no ATS picks</span>')+'</td>'+
           '<td class="num" style="font-weight:700">'+fmtPct(r.win_pct)+'</td>'+
           '<td class="num">'+fmtNum(r.margin_mae)+'</td>'+
           '<td class="num">'+fmtNum(r.brier,3)+'</td>'+

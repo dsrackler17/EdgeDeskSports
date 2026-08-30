@@ -18,6 +18,11 @@
 
    Run:  node collective/tests.js
 
+   A second suite, collective/tests_render.js, drives the real renderWall,
+   renderBoard and renderRankings against a stubbed API and reads the HTML
+   they produce. It is the regression test for the day a finished slate
+   showed no grades at all. Run both.
+
    There is also an end-to-end harness that drives the REAL dashboard in
    Chromium — real file input, real buttons, backend stubbed so the exact POST
    body can be inspected. It needs playwright and a static server, so it is not
@@ -1005,8 +1010,19 @@ if (typeof sandbox.teamKey === 'function') {
     flags['7'] === undefined);
   chk('a slate nobody split on gets no flags',
     Object.keys(S.splitGames([{ game_id: 9, consensus: { n: 4, spread_stdev: 0.2 } }])).length === 0);
-  chk('a game with no id is still keyed uniquely by its teams',
-    S.gameKey({ home: 'SEA', away: 'NE' }) === 'NE@SEA');
+  chk('a game with no id is still keyed by its teams',
+    S.gameKey({ home: 'SEA', away: 'NE' }).indexOf('NE@SEA') === 0);
+  chk('an id, when there is one, is the whole key',
+    S.gameKey({ game_id: 401856766, home: 'SEA', away: 'NE' }) === '401856766');
+  /* the season sweep dedupes on this key, so a pairing a season holds twice
+     — a regular-season game and a championship rematch — must not collapse
+     into one game and take the second one out of every record */
+  chk('the same pairing on two different days is two games',
+    S.gameKey({ home: 'SEA', away: 'NE', kickoff_at: '2026-09-13T17:00:00Z' })
+      !== S.gameKey({ home: 'SEA', away: 'NE', kickoff_at: '2026-12-06T17:00:00Z' }));
+  chk('the same game read twice keeps one key',
+    S.gameKey({ home: 'SEA', away: 'NE', kickoff_at: '2026-09-13T17:00:00Z' })
+      === S.gameKey({ home: 'SEA', away: 'NE', kickoff_at: '2026-09-13T17:00:00Z' }));
 
   /* the group-vs-market edge needs BOTH numbers and a real consensus; it
      is rendered through MCOdds, which this offline suite does not load, so
