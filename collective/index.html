@@ -4222,8 +4222,14 @@ function slateGameIdKey(v){
 
    The rename branch demands an EXACT match on the side it pivots off. A
    clipped match there would let "Indiana State @ Purdue" pivot off INDIANA
-   and propose renaming Purdue to whoever Indiana is really playing. */
-var SLATE_RENAME_MIN=0.62;
+   and propose renaming Purdue to whoever Indiana is really playing.
+   The bar sits above plain token overlap on purpose. "San Diego State" and
+   "San Jose State" share two words of three and score 0.67 with nothing else
+   to separate them, and they are two schools. Only the two structural
+   signals — one name being the whole start of the other, or every word of a
+   two-word name appearing in the other — clear this, and both are worth 0.75
+   or better. */
+var SLATE_RENAME_MIN=0.7;
 function slateMatchRow(games,row){
   if(!row)return null;
   var list=games||[],i,sides,g;

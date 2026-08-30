@@ -2388,6 +2388,26 @@ if (typeof sandbox.slateMatchRow === 'function') {
       function () { return S4.teamSimilarity(pr[0], pr[1]) < S4.SLATE_RENAME_MIN; },
       { score: S4.teamSimilarity(pr[0], pr[1]), bar: S4.SLATE_RENAME_MIN });
   });
+  chk('the two Miamis are not each other, though they share five letters',
+    function () {
+      /* This file carries both. A raw shared-prefix ratio scored them 0.71 --
+         over any bar worth having -- because MIAMIFL and MIAMIOH agree for
+         five of their seven characters. */
+      return S4.teamSimilarity('Miami (FL)', 'Miami (OH)') < S4.SLATE_RENAME_MIN;
+    },
+    { score: S4.teamSimilarity('Miami (FL)', 'Miami (OH)') });
+  chk('two schools sharing two words of three are still two schools',
+    function () {
+      return S4.teamSimilarity('San Diego State', 'San Jose State') < S4.SLATE_RENAME_MIN;
+    },
+    { score: S4.teamSimilarity('San Diego State', 'San Jose State') });
+  chk('a real spelling difference still clears the bar comfortably',
+    function () {
+      return S4.teamSimilarity('Florida State', 'FLORIDASTA') >= S4.SLATE_RENAME_MIN
+        && S4.teamSimilarity("Hawai'i", 'Hawaii Rainbow Warriors') >= S4.SLATE_RENAME_MIN
+        && S4.teamSimilarity('San Jose State', 'San Jose St') >= S4.SLATE_RENAME_MIN;
+    },
+    'a bar that refuses the real differences strands the games it was raised to protect');
   chk('the whole slate produces no rename suggestion at all',
     function () {
       var u = S4.slateUnmatchedTeams(P4, S4.slateAlignToSchedule(P4, rows30(false)).rows);
