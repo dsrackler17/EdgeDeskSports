@@ -258,8 +258,14 @@ var S=sandbox;
       && rank.indexOf('Must Be Moose')>=0 && rank.indexOf('Blerm')>=0
       && rank.indexOf('EdgeDesk Model')>=0 && rank.indexOf('CFB MODEL')>=0);
   chk('the standings carry a real record, not zeroes',
-    /<td class="num mono">[1-9]-\d-\d<\/td>/.test(rank),
-    {rows:(rank.match(/<td class="num mono">\d-\d-\d<\/td>/g)||[])});
+    /<span class="mono">[1-9]-\d-\d<\/span>/.test(rank),
+    {rows:(rank.match(/<span class="mono">\d-\d-\d<\/span>/g)||[])});
+  /* blizzard-performance posts a spread on every game and no pick side: it
+     has three graded games and no win-loss record, and "0-0-0" would read
+     as "has played nothing" */
+  chk('a model with no pick sides says so instead of printing 0-0-0',
+    rank.indexOf('no ATS picks')>=0 && !/<span class="mono">0-0-0<\/span>/.test(rank),
+    {zeroes:(rank.match(/<span class="mono">0-0-0<\/span>/g)||[])});
   chk('"not yet ranked" counts the games that were played, not zero',
     rank.indexOf('0 graded games is below')<0 && /graded games? is below the 20 minimum/.test(rank),
     {reasons:(rank.match(/\d+ graded games? is below[^<]*/g)||[])});

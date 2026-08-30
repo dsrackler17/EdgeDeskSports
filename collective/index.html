@@ -474,8 +474,22 @@ function covCell(p){
    posted a full slate an hour ago and is waiting on Sunday — which reads as
    "your upload failed" to the person who just uploaded. Those are different
    states and the copy now says which. */
+/* The against-the-spread line of a record, or an honest statement that there
+   is not one. A model that posts spreads and probabilities but never a pick
+   side has graded games and no win-loss record, and printing "0-0-0" for it
+   reads as "has played nothing" — a different claim, and an untrue one. Its
+   margin and Brier numbers are real and stay on screen beside this. */
+var NO_ATS_TITLE='this model submitted no pick side on its graded games, so it has no against-the-spread record — its margin and Brier numbers still count';
+function recATSText(rec){
+  return (rec&&rec.graded)?(rec.wins+'-'+rec.losses+'-'+rec.pushes):null;
+}
+function recATSHtml(rec,cls){
+  var t=recATSText(rec);
+  if(t!=null)return '<span class="'+(cls||'mono')+'">'+t+'</span>';
+  return '<span class="note" title="'+esc(NO_ATS_TITLE)+'">no ATS picks</span>';
+}
 function recCell(rec,lastSubmissionAt,live){
-  if(rec)return '<span class="mono">'+rec.wins+'-'+rec.losses+'-'+rec.pushes+'</span>'+liveMark(live);
+  if(rec)return recATSHtml(rec)+liveMark(live);
   if(lastSubmissionAt)return '<span class="note">submitted, awaiting results</span>';
   return '<span class="note">first submission pending</span>';
 }
@@ -690,7 +704,7 @@ function modelCard(r,localMap){
     '<div class="mc-sub">'+esc(r.model_name)+' <span class="pill">'+esc(r.sport)+'</span></div></div></div>'+
     '<div>'+chipFor(r.membership)+'</div>'+
     '<div class="mc-rec">'+(rec
-      ?rec.wins+'-'+rec.losses+'-'+rec.pushes+' &middot; '+fmtPct(rec.win_pct,0)+' &middot; '+rec.graded+' graded'+liveMark(sr.live)
+      ?(recATSText(rec)||'<span class="note" title="'+esc(NO_ATS_TITLE)+'">no ATS picks</span>')+' &middot; '+fmtPct(rec.win_pct,0)+' &middot; '+rec.graded+' graded'+liveMark(sr.live)
       :'Building sample &middot; no graded games yet')+'</div>'+
     '<div class="mc-rec">'+(r.coverage_pct!=null?covCell(r.coverage_pct):'')+'</div>'+
     '<div class="mc-foot"><span class="note">'+rel(r.last_submission_at)+'</span>'+
@@ -1931,7 +1945,7 @@ async function renderCreator(view,slug){
       body+='<h2>'+esc(mo.model_name)+' <span class="pill">'+esc(mo.sport)+'</span></h2>';
       if(rec){
         body+='<div class="panel"><div class="kv">'+
-          '<span><div class="k">Record</div><div class="v">'+rec.wins+'-'+rec.losses+'-'+rec.pushes+liveMark(recLive)+'</div></span>'+
+          '<span><div class="k">Record</div><div class="v">'+recATSHtml(rec,'')+liveMark(recLive)+'</div></span>'+
           '<span><div class="k">Win %</div><div class="v">'+fmtPct(rec.win_pct)+'</div></span>'+
           '<span><div class="k">Margin MAE</div><div class="v">'+fmtNum(rec.margin_mae)+'</div></span>'+
           '<span><div class="k">Brier</div><div class="v">'+fmtNum(rec.brier,3)+'</div></span>'+
@@ -2004,7 +2018,7 @@ async function renderModel(view,cs,ms){
     var head='<h1>'+esc(d.model.model_name)+' <span class="pill">'+esc(d.model.sport)+'</span></h1>'+
       '<p class="lede">by <a href="#/'+esc(d.creator.slug)+'">'+esc(d.creator.display_name)+'</a>'+foundBadge(d.creator)+'</p>';
     var stats=rec?'<div class="panel"><div class="kv">'+
-      '<span><div class="k">Record (ATS)</div><div class="v">'+rec.wins+'-'+rec.losses+'-'+rec.pushes+liveMark(recLive)+'</div></span>'+
+      '<span><div class="k">Record (ATS)</div><div class="v">'+recATSHtml(rec,'')+liveMark(recLive)+'</div></span>'+
       '<span><div class="k">Win %</div><div class="v">'+fmtPct(rec.win_pct)+'</div></span>'+
       (calMl&&calMl.n?'<span><div class="k" title="how often the side this model favoured on the moneyline actually won">Outright (ML)</div><div class="v">'+calMl.w+'-'+calMl.l+' &middot; '+fmtPct(calMl.pct,0)+'</div></span>':'')+
       '<span><div class="k">Margin MAE</div><div class="v">'+fmtNum(rec.margin_mae)+'</div></span>'+
@@ -2491,9 +2505,7 @@ async function renderRankings(view){
           '<td class="num" style="color:var(--faint)">'+(i+1)+'</td>'+
           '<td><span class="nm">'+esc(e.creator_name)+'</span>'+(fmap[e.creator_slug]?' <span class="fstar" title="Founding Member">&#9733;</span>':'')+
             '<br><span class="sb" style="color:var(--faint);font-size:11px">'+esc(e.model_name)+'</span></td>'+
-          '<td class="num mono">'+(r.graded
-            ?(r.wins+'-'+r.losses+'-'+r.pushes)
-            :'<span class="note" title="this model submitted no pick side on these games, so it has no against-the-spread record — its margin and Brier numbers still count">no ATS picks</span>')+'</td>'+
+          '<td class="num">'+recATSHtml(r)+'</td>'+
           '<td class="num" style="font-weight:700">'+fmtPct(r.win_pct)+'</td>'+
           '<td class="num">'+fmtNum(r.margin_mae)+'</td>'+
           '<td class="num">'+fmtNum(r.brier,3)+'</td>'+
@@ -2659,7 +2671,7 @@ async function renderPerformance(view){
             '<div class="mc-sub">'+esc(d.creator.display_name)+foundStar(d.creator)+' &middot; '+esc(d.model.sport)+'</div></div></div>'+
             (rec
               ?'<div class="kv">'+
-               '<span><div class="k">Record</div><div class="v">'+rec.wins+'-'+rec.losses+'-'+rec.pushes+liveMark(recLive)+'</div></span>'+
+               '<span><div class="k">Record</div><div class="v">'+recATSHtml(rec,'')+liveMark(recLive)+'</div></span>'+
                '<span><div class="k">Win %</div><div class="v">'+fmtPct(rec.win_pct)+'</div></span>'+
                '<span><div class="k">Margin MAE</div><div class="v">'+fmtNum(rec.margin_mae)+'</div></span>'+
                '<span><div class="k">Brier</div><div class="v">'+fmtNum(rec.brier,3)+'</div></span>'+
@@ -4298,7 +4310,7 @@ async function renderCreatorDash(view,me){
     html+='<div class="statgrid">'+
       '<div class="st"><div class="k">Today&#39;s slate</div><div class="v '+(todays.length?'ok':'warn')+'">'+(todays.length?'Submitted':'Not yet')+'</div></div>'+
       '<div class="st"><div class="k">Model</div><div class="v">'+esc(m0?m0.model_name:(d.models[0]?d.models[0].model_name:'-'))+'</div></div>'+
-      '<div class="st"><div class="k">Record</div><div class="v">'+(rec?rec.wins+'-'+rec.losses+'-'+rec.pushes:'building')+'</div></div>'+
+      '<div class="st"><div class="k">Record</div><div class="v">'+(rec?recATSHtml(rec,''):'building')+'</div></div>'+
       '<div class="st"><div class="k">Win %</div><div class="v">'+(rec?fmtPct(rec.win_pct):'-')+'</div></div>'+
       '<div class="st"><div class="k">Coverage</div><div class="v">'+(m0&&m0.coverage_pct!=null?fmtNum(m0.coverage_pct,0)+'%':'-')+'</div></div>'+
       '<div class="st"><div class="k">Last slate</div><div class="v">'+rel(m0?m0.last_submission_at:null)+'</div></div>'+
