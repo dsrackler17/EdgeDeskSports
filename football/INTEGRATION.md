@@ -389,6 +389,38 @@ doing. That is the case the product is in until the function above is
 deployed, and the Collective tab now says so by name rather than reporting the
 reader as signed out.
 
+### Deploying an edge function is not the same as calling one
+
+Worth writing down because it cost a day. This:
+
+```sql
+select net.http_post(
+  url := 'https://<project>.supabase.co/functions/v1/collective_embed',
+  headers := jsonb_build_object('Content-Type','application/json'),
+  body := '{}'::jsonb);
+```
+
+does **not** deploy anything. `pg_net`'s `http_post` makes an HTTP request
+*to* a function — it is how a scheduled job invokes one — and the code
+answering that URL stays whatever was last uploaded. Against
+`collective_embed` it is not even a useful invocation: the router answers
+`GET /v1/embed/bootstrap` and `POST /v1/embed/events`, so a POST to the
+function root falls through to `not_found` and returns 404.
+
+Deploying is one of:
+
+* **Dashboard** → Edge Functions → the function → Code → paste `index.ts` →
+  Deploy. Then, in that function's settings, turn **"Enforce JWT
+  verification" OFF** — it resolves the token itself and anonymous callers
+  have to keep working.
+* **CLI** — `supabase functions deploy collective_embed --no-verify-jwt`.
+
+One more trap, for the dashboard route specifically: **paste from the file,
+not from a chat message or anything else that renders markdown.** A hostname
+written next to the `www` prefix gets auto-linked in transit, and the bundle
+has arrived corrupted that way twice. The current source builds that
+comparison by concatenation so there is no literal for a renderer to eat.
+
 ### The one thing that is NOT in this repo
 
 **The Collective's sport vocabulary is server-side.** `meta().sports` comes from
