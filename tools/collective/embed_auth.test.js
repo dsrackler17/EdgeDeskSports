@@ -33,15 +33,24 @@ function chk(name, ok, detail) { if (ok) { pass++; return; } fail++; failures.pu
 
 const SRC = fs.readFileSync(path.join(__dirname, '..', '..', 'collective', 'embed.js'), 'utf8');
 const a = SRC.indexOf('  var VIEWER = false;');
-const b = SRC.indexOf('  /* ---------- fetch ---------- */', a);
+const b = SRC.indexOf('  /* When the market arrives', a);
 if (a < 0 || b < 0) {
   console.log('FAIL | collective/embed.js no longer carries the viewerToken block between its markers');
   process.exit(1);
 }
+const BLOCK = SRC.slice(a, b);
 global.window = global;
 global.DEFAULT_API = 'https://iattxbkbufslbauoumga.supabase.co/functions/v1';
 global.API = global.DEFAULT_API;
-vm.runInThisContext(SRC.slice(a, b), { filename: 'collective/embed.js [viewerToken]' });
+global.THEME = 'dark';
+global.HOST = '';
+global.TIMEOUT_MS = 6000;
+/* The block runs its bootstrap fetch on load, so give it somewhere harmless
+   to land before the pure checks below re-run it for real. */
+global.fetch = () => new Promise(() => {});
+global.render = () => {};
+global.fallback = () => {};
+vm.runInThisContext(BLOCK, { filename: 'collective/embed.js [viewer + bootstrap]' });
 
 const b64u = o => Buffer.from(JSON.stringify(o)).toString('base64')
   .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
@@ -90,6 +99,66 @@ async function ask(fn, api) {
     (await ask(() => PERSON, 'https://not-the-collective.example/functions/v1')) === null);
   chk('not even to something that merely looks like the real one',
     (await ask(() => PERSON, global.DEFAULT_API + '.evil.example')) === null);
+
+  /* ---- the wire: what actually leaves the page -------------------------
+     viewerToken() deciding correctly is half of it. The half that was never
+     covered is whether the decision reaches the request, and whether VIEWER
+     is true at the moment render() reads it to choose what the locked panel
+     says. A reader looking at a grey board cannot tell those apart, so the
+     suite has to. */
+  async function boot(opts) {
+    opts = opts || {};
+    const sent = [];
+    let statuses = opts.statuses ? opts.statuses.slice() : [200];
+    global.API = global.DEFAULT_API;
+    if (opts.hook === undefined) delete global.MCEmbedToken; else global.MCEmbedToken = opts.hook;
+    const done = {};
+    const settled = new Promise(res => { done.res = res; });
+    global.fetch = function (url, init) {
+      sent.push({ url: String(url), headers: (init && init.headers) || null });
+      const status = statuses.length > 1 ? statuses.shift() : statuses[0];
+      return Promise.resolve({
+        status, ok: status >= 200 && status < 300,
+        json: () => Promise.resolve({ wall: [] })
+      });
+    };
+    global.render = d => done.res({ what: 'render', viewer: global.VIEWER, sent, d });
+    global.fallback = f => done.res({ what: 'fallback', forbidden: !!f, viewer: global.VIEWER, sent });
+    vm.runInThisContext(BLOCK, { filename: 'collective/embed.js [bootstrap]' });
+    return settled;
+  }
+  const authOf = r => (r.sent[0] && r.sent[0].headers && r.sent[0].headers.authorization) || null;
+
+  let r = await boot({ hook: () => PERSON });
+  chk('a signed-in reader\'s token actually reaches the bootstrap request',
+    authOf(r) === 'Bearer ' + PERSON, { got: authOf(r) });
+  chk('and render is told it is looking at a known reader',
+    r.what === 'render' && r.viewer === true, { got: r.what + '/' + r.viewer });
+
+  r = await boot({ hook: undefined });
+  chk('a signed-out reader sends no Authorization header at all',
+    authOf(r) === null && (r.sent[0].headers == null), { got: r.sent[0] });
+  chk('and render is told so',
+    r.what === 'render' && r.viewer === false, { got: r.what + '/' + r.viewer });
+
+  r = await boot({ hook: () => ANON });
+  chk('the anon key never reaches the wire either', authOf(r) === null, { got: authOf(r) });
+
+  r = await boot({ hook: () => PERSON, statuses: [401, 200] });
+  chk('a refused identity is retried WITHOUT it rather than showing nothing',
+    r.what === 'render' && r.sent.length === 2
+    && authOf(r) === 'Bearer ' + PERSON
+    && (r.sent[1].headers == null || !r.sent[1].headers.authorization), { got: r.sent });
+  chk('and the panel is not told a reader was recognised after a 401',
+    r.viewer === false, { got: r.viewer });
+
+  r = await boot({ hook: () => PERSON, statuses: [403] });
+  chk('a 403 is the host-not-registered fallback, not a lock',
+    r.what === 'fallback' && r.forbidden === true, { got: r });
+
+  r = await boot({ hook: () => PERSON, statuses: [500] });
+  chk('any other failure falls back rather than rendering nothing',
+    r.what === 'fallback' && r.forbidden === false, { got: r });
 
   failures.forEach(f => console.log('FAIL | ' + f.name
     + (f.detail ? '  ' + JSON.stringify(f.detail).slice(0, 300) : '')));

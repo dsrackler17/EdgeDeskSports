@@ -1794,6 +1794,9 @@ button:focus-visible,select:focus-visible,input:focus-visible,a:focus-visible{ou
   <h2 style="margin:4px 0 6px">Model Collective</h2>
   <p class="lede">Independent sports model creators, one independently graded record. Every model here keeps its own site, price, and methodology; the Collective grades every one of them the same way against its own captured closing lines. <b style="color:var(--warn)">Research, not advice.</b></p>
   <div id="model-collective"></div>
+  <!-- Why the board looks the way it does. Empty until the embed reports,
+       and empty when there is nothing to explain. -->
+  <p id="mcWhy" style="font-size:12px;color:var(--dim);margin-top:10px"></p>
   <p style="font-size:12px;color:var(--dim);margin-top:10px">
     <a href="/collective/" target="_blank" rel="noopener">Open the full Collective site ↗</a>
     <span style="margin:0 6px">&middot;</span>
@@ -1834,6 +1837,43 @@ function loadCollective(){
       return (t&&t!==SB_KEY)?t:null;
     }catch(_){return null;}
   };
+  /* WHY THE BOARD IS GREY. A locked row looks identical whichever reason it
+     is, and there are three: this app did not hand over an identity, the
+     Collective did not recognise the one it got, or it could not be reached
+     at all. Guessing between them is not something a reader can do, and
+     "Subscriber number" on every row invites the wrong guess -- that the
+     page is broken, or that a subscription they already hold is not working.
+
+     So the embed reports what happened and this says which it was. It cannot
+     UNLOCK anything: locked rows arrive with no numbers in them, and
+     entitlement is the Collective service's to grant. Naming the reason is
+     the honest thing a static page can do. */
+  var mountEl=document.getElementById('model-collective');
+  if(mountEl&&!mountEl.__mcWhyWired){
+    mountEl.__mcWhyWired=true;
+    mountEl.addEventListener('mc-state',function(ev){
+      var st=(ev&&ev.detail)||{},el=document.getElementById('mcWhy');
+      if(!el)return;
+      var msg='';
+      if(!st.ok){
+        msg='The Collective did not answer just now, so nothing above is a verdict on your access '
+          +'\u2014 it is an outage, not a lock.';
+      }else if(st.entitled){
+        msg='';
+      }else if(!st.viewer){
+        msg='<b>You are signed out in this app</b>, so the Collective is being asked anonymously '
+          +'\u2014 and an anonymous reader is entitled to nothing. Sign in, then reopen this tab.';
+      }else{
+        msg='<b>Your sign-in was handed to the Collective and it did not recognise this account as a '
+          +'subscriber</b>, so the pre-kickoff numbers stay locked. An EdgeDesk subscription does not '
+          +'unlock the Collective yet: that mapping lives in the Collective service, and no version of '
+          +'this page can grant it \u2014 locked rows arrive with no numbers in them. '
+          +'<a href="/collective/" target="_blank" rel="noopener">Open the full Collective</a> and check '
+          +'the same account there: if it is locked in both places, it is the entitlement, not the app.';
+      }
+      el.innerHTML=msg;
+    });
+  }
   var s=document.createElement('script');
   s.src='/collective/embed.js';
   s.setAttribute('data-theme','dark');
