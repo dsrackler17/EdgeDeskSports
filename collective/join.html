@@ -172,11 +172,34 @@ function badToken(){
   };
 }
 
+/* WHAT MEMBERSHIP ASKS, ON THE INVITE ITSELF.
+
+   Somebody accepting an invite is agreeing to something, and the thing they
+   are agreeing to should be on the screen where they agree to it. A member
+   removed for going quiet in the middle of a season should be able to point
+   at this page and say they were told — and, more to the point, should have
+   been told early enough to not go quiet. Held once here and rendered on
+   both the invite screen and the finish screen so the wording cannot drift. */
+var PARTICIPATION_MIN=3;
+function participationBlock(){
+  return '<div class="panel" style="border-color:rgba(217,154,43,.5);margin:14px 0">'+
+    '<b style="color:var(--warn)">What membership asks of you</b>'+
+    '<p class="note" style="margin:6px 0">Active participation requires at least <b>'+PARTICIPATION_MIN+
+    ' eligible model projections per week</b> within your declared sport or scope.</p>'+
+    '<p class="note" style="margin:6px 0">Members who repeatedly submit fewer than that, or who miss weeks '+
+    'without communication, may be moved to inactive or removed.</p>'+
+    '<p class="note" style="margin:6px 0">Personal betting activity does not matter. Submit the '+
+    '<b>model\u2019s output</b>, not only the games you choose to bet.</p>'+
+    '<p class="note" style="margin:6px 0 0">A quiet week is not just a gap in your own record \u2014 it thins the '+
+    'consensus and leaves a hole in the coverage every other member is measured against. Your count for the '+
+    'current slate is on your dashboard from day one, so this never arrives as a surprise.</p></div>';
+}
 function screen1(){
   var f=STATE.info.founding?'<p class="warnnote" style="margin:-8px 0 14px"><span class="chip">&#9733; Founding Member</span> &nbsp;This invite makes you one of the founding members of the Collective. Founding status is permanent.</p>':'';
   $('app').innerHTML=steps(1)+
     '<h1>You are joining the Model Collective</h1>'+
     '<p class="lede">Shared infrastructure for independent sports models. You keep your model, your site, and your customers. The Collective grades your record independently and puts it in front of every member’s audience.</p>'+f+
+    participationBlock()+
     '<div class="panel"><label>Email</label><input id="jEmail" type="email" autocomplete="email" placeholder="you@example.com" autofocus>'+
     '<button class="btn" id="jSend">Send my sign-in link</button>'+
     '<p class="note" style="margin:12px 0 0">No password to invent. We email you a one-time link that continues right here.</p>'+
@@ -301,7 +324,11 @@ function screen3(){
     '<div class="copyblk"><div class="t">3 &middot; Your Collective tab</div><div class="s">Paste this where you want the Collective to render on your site.</div>'+
       '<div class="copybox"><div class="val" id="cEmbed">'+esc(r.embed_snippet)+'</div><button data-copy="cEmbed">Copy</button></div></div>'+
     '<p class="note" style="margin:6px 0 0">What happens next: your first live submission flips your profile to Active Contributor automatically. Payout details are only asked for after your first successful submission, from your <a href="'+esc(r.dashboard_url)+'">dashboard</a>.</p>'+
-    '</div>';
+    '</div>'+
+    participationBlock()+
+    '<p class="note">Your count for the current slate is on your <a href="'+esc(r.dashboard_url)+'">dashboard</a>, '+
+    'updated as you post. If something comes up and you are going to be short, say so before the week ends rather '+
+    'than after.</p>';
   copyWire();
   try{localStorage.removeItem('mc_join_token');}catch(e){}
 }
