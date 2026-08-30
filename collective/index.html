@@ -517,6 +517,56 @@ function copyText(txt,btn){
 
 /* ================= session (magic link) ================= */
 function session(){try{return JSON.parse(localStorage.getItem('collective_session')||'null');}catch(e){return null;}}
+/* THE SIGNED-IN ACCOUNT'S USER ID, read out of the session token itself.
+
+   Needed for exactly one thing: when the backend refuses an admin write, the
+   answer is to put this id on the admin.user_ids config list — and the id is
+   the one piece of that instruction nobody can look up without going and
+   digging in the auth dashboard. "You are not an admin" is a dead end;
+   "you are not an admin, here is your id and here is the statement that
+   grants it" is a fix.
+
+   The payload is read WITHOUT verifying the signature, and that is fine
+   because nothing is trusted on the strength of it: it is displayed, so the
+   person holding the session can copy their own id. Every actual
+   authorisation decision is made server-side against the real token. */
+function sessionUserId(){
+  try{
+    var s=session();
+    var t=s&&s.access_token;
+    if(!t)return null;
+    var parts=String(t).split('.');
+    if(parts.length<2)return null;
+    var b=parts[1].replace(/-/g,'+').replace(/_/g,'/');
+    while(b.length%4)b+='=';
+    var p=JSON.parse(decodeURIComponent(escape(atob(b))));
+    return (p&&p.sub)?String(p.sub):null;
+  }catch(e){return null;}
+}
+/* The statement that grants it, filled in. Written the way the rest of this
+   page writes SQL for a creator (see addModelSQL): find the schema rather
+   than assume `public`, and be safe to run twice. */
+function adminGrantSQL(uid){
+  return ''
+    +'-- Put this account on the Collective admin list.\n'
+    +'-- Finds the schema itself. Safe to run twice.\n'
+    +'do $$\n'
+    +'declare s text;\n'
+    +'begin\n'
+    +'  select table_schema into s from information_schema.tables\n'
+    +'   where table_name = \'config\' limit 1;\n'
+    +'  if s is null then raise exception \'no config table in any schema\'; end if;\n'
+    +'  execute format(\n'
+    /* Inside ON CONFLICT DO UPDATE the target row is referenced by the
+       table's own alias -- `config.value`. Schema-qualifying it there is an
+       invalid FROM-clause reference and the whole statement fails. */
+    +'    \'insert into %I.config (key, value) values ($1, $2)\n'
+    +'       on conflict (key) do update set value =\n'
+    +'         (select jsonb_agg(distinct x) from jsonb_array_elements(\n'
+    +'            coalesce(config.value, \'\'[]\'\'::jsonb) || $2) x)\', s)\n'
+    +'    using \'admin.user_ids\', \'["'+String(uid||'')+'"]\'::jsonb;\n'
+    +'end $$;';
+}
 function saveSession(s){try{localStorage.setItem('collective_session',JSON.stringify(s));}catch(e){}}
 function clearSession(){localStorage.removeItem('collective_session');}
 /* magic link returns tokens in the location hash; capture BEFORE routing */
@@ -6189,8 +6239,8 @@ async function renderCreatorDash(view,me){
           esc(p.season)+(p.week?' week '+esc(p.week):'')+' schedule.';
         body='<div style="margin:6px 0">'+miss.slice(0,14).map(function(m){
           var tag=(!m.awayKnown&&!m.homeKnown)
-            ? 'neither team is on that schedule'
-            : (m.awayKnown?esc(m.away):esc(m.home))+' is, but this game is not';
+            ? 'neither team has a game on that schedule'
+            : (m.awayKnown?esc(m.away):esc(m.home))+' has a game there, but not this one';
           return '<div class="mono" style="margin:2px 0">'+esc(m.away)+' @ '+esc(m.home)+
             ' <span class="note">&mdash; '+tag+'</span></div>';
         }).join('')+
@@ -6199,11 +6249,20 @@ async function renderCreatorDash(view,me){
            spelling the creator can fix, or a game only the backend can add. */
         if(r.neither===miss.length){
           body+='<p class="note" style="margin:6px 0 0"><b>Nothing in your file is wrong.</b> '+
-            'Neither team in any of these appears anywhere in your backend\'s '+
+            'Neither team in any of these has a game in your backend\'s '+
             (r.serverGames?r.serverGames+'-game ':'')+'schedule for this week, so it is the '+
             'schedule that is short of games &mdash; the usual cause is a feed that carries only '+
             'part of the slate, so a team hosting an opponent outside that set has no game to match. '+
-            'No spelling change here can reach it.</p>';
+            'No spelling change here can reach it.</p>'+
+            /* This is read against the receipt below, which names the ONE team
+               the backend could not resolve. A team can be in the backend and
+               still have no game this week, and saying "not on that schedule"
+               where the receipt says "does not have X" reads as the page
+               contradicting itself. It is two different questions. */
+            '<p class="note" style="margin:6px 0 0">This is asked of the week&rsquo;s <b>games</b>. '+
+            'Once posted, your backend answers a narrower question &mdash; which <b>team</b> it could not '+
+            'resolve &mdash; and names it on each row below. A team can be known to your backend and '+
+            'still have no game on this week&rsquo;s slate.</p>';
         }else{
           body+='<p class="note" style="margin:6px 0 0">Where one team is on the schedule and the '+
             'other is not, the schedule has that team playing somebody else this week &mdash; so this '+
@@ -6289,10 +6348,28 @@ async function renderCreatorDash(view,me){
           var rb=$('slReCheck');
           if(rb)rb.onclick=function(){slateSend(true,env&&env.opts);};
         }catch(e){
-          var why=(e&&(e.status===401||e.status===403))
-            ? 'This account is not on your backend\u2019s admin list, so it cannot write the schedule. '+
-              'Load these games from the admin page, or have whoever runs the Collective do it.'
-            : esc(e.message||'Could not reach the schedule loader.');
+          var why;
+          if(e&&(e.status===401||e.status===403)){
+            /* The refusal names the remedy AND supplies the one value the
+               remedy needs. Being told "you are not an administrator" and
+               left to find your own auth user id is how a two-minute fix
+               becomes an afternoon. */
+            var uid=sessionUserId();
+            why='<b style="color:var(--warn)">This account is not on your backend\u2019s admin list</b>, '+
+              'so it cannot write the schedule. That list is the <span class="mono">admin.user_ids</span> '+
+              'key in your <span class="mono">config</span> table, and it gates the admin page too &mdash; '+
+              'so if that page has never let you in, this is why.'+
+              (uid
+                ? '<p class="note" style="margin:8px 0 4px">This account is '+
+                  '<span class="mono">'+esc(uid)+'</span>. Run this on your database and press the button again:</p>'+
+                  '<pre class="mono" style="font-size:11px;white-space:pre-wrap;margin:0;'+
+                  'background:var(--bg);padding:8px;border-radius:6px;overflow-x:auto">'+
+                  esc(adminGrantSQL(uid))+'</pre>'
+                : '<p class="note" style="margin:8px 0 0">Add your auth user id to that key, then press the '+
+                  'button again.</p>');
+          }else{
+            why=esc(e.message||'Could not reach the schedule loader.');
+          }
           if(out)out.innerHTML='<div class="errbox" style="margin-top:8px">'+why+'</div>';
           b.disabled=false;
         }
