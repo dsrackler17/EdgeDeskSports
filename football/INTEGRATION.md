@@ -277,6 +277,48 @@ Until one of those exists, a corrected slate lands as movement and the wall
 keeps grading the first submission. That is the honest degradation, and it is
 what the button now says out loud — but it is not the fix.
 
+### The Collective tab is locked because it asks anonymously
+
+`collective/embed.js` fetched `collective_embed /v1/embed/bootstrap` with no
+credential at all. An anonymous reader is entitled to nothing, so the payload
+came back with `entitled: false` and every pre-kickoff row carrying no numbers
+to show — for **everyone**, including a reader signed in to the very site the
+embed is running on. In the app's Collective tab that is the whole board greyed
+out for somebody who is paying for EdgeDesk, with no way from that screen to
+say so. Client-side unlocking is not an option and never was: the values are
+simply absent from the payload.
+
+**What app.html does now.** EdgeDesk and the Collective run on the same
+Supabase project, so the reader signed in to the app is already an identity the
+Collective can recognise. The tab sets `window.MCEmbedToken`, the embed calls it
+and sends `Authorization: Bearer <access token>` on the bootstrap. Two rules,
+because the embed also runs on other people's sites, and both are covered by
+`tools/collective/embed_auth.test.js`:
+
+* the token travels through a **function**, never a `data-` attribute — a
+  credential in the DOM is readable by anything else on the page;
+* it is sent **only** when the API base is the Collective's own. `data-api` is
+  there for testing and a credential must never follow it.
+
+The publishable anon key is itself a JWT, so it is rejected explicitly: the
+token is decoded and must carry `role: "authenticated"` and a subject. A `401`
+falls back to the anonymous request, and the locked panel now distinguishes
+"you are not signed in" from "you are signed in and the Collective does not
+have this account as a subscriber" instead of pitching a subscription at
+somebody who already has one.
+
+**What the server still needs.** Sending an identity is the ask, not the grant.
+For an EdgeDesk subscription to unlock the Collective, `collective_embed`
+(and `collective_public`, which the standalone site uses) must:
+
+1. read the bearer token on `/v1/embed/bootstrap` — if it ignores the header,
+   nothing above changes what the reader sees;
+2. treat an active row in EdgeDesk's own `subscriptions` table for that
+   `auth.uid()` as entitlement, alongside a Collective subscription.
+
+Until (2) exists an EdgeDesk subscriber is still shown locked rows — accurately
+now, and with the reason named, but still locked.
+
 ### The one thing that is NOT in this repo
 
 **The Collective's sport vocabulary is server-side.** `meta().sports` comes from

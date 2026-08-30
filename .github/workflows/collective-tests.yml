@@ -14,11 +14,15 @@ on:
     branches: [main]
     paths:
       - 'app.html'
+      - 'collective/index.html'
+      - 'collective/embed.js'
       - 'tools/collective/**'
       - '.github/workflows/collective-tests.yml'
   pull_request:
     paths:
       - 'app.html'
+      - 'collective/index.html'
+      - 'collective/embed.js'
       - 'tools/collective/**'
       - '.github/workflows/collective-tests.yml'
   workflow_dispatch:
@@ -41,6 +45,18 @@ jobs:
       # fails loudly if the block it slices moves instead of testing nothing.
       - name: The research boards can still post to the Collective
         run: node tools/collective/app_sync.test.js
+
+      # The workbook the boards download, rebuilt from a real cleaned file.
+      - name: The download is the format the operator cleaned up by hand
+        run: node tools/collective/app_export.test.js
+
+      # Writer and reader together: what app.html emits, the uploader opens.
+      - name: An exported workbook still uploads
+        run: node tools/collective/slate_upload.test.js
+
+      # A credential the host page hands over, and the rules it travels under.
+      - name: The embed only vouches for a real reader, and only to us
+        run: node tools/collective/embed_auth.test.js
 
       - name: Schedule matching
         run: node tools/collective/sync_schedule.test.js

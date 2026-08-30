@@ -323,7 +323,9 @@
 
       (upcoming ? '<div class="sec"><h3>Upcoming</h3>' +
         (locked ? '<div class="mrow" style="border:1px solid ' + T.border + ';border-radius:8px;margin-bottom:8px;background:' + T.surface + '">' +
-          '<span style="font-size:12px">Pre-kickoff numbers and consensus are one subscription across every model here.</span>' +
+          '<span style="font-size:12px">' + (VIEWER
+            ? 'Signed in, and the Collective does not have this account as a subscriber \u2014 so pre-kickoff numbers and consensus stay locked. One subscription covers every model here.'
+            : 'Pre-kickoff numbers and consensus are one subscription across every model here.') + '</span>' +
           '<span class="sp"></span><a class="cta" href="' + esc(d.subscribe_url || SITE) + '" target="_blank" rel="noopener" data-sub>Unlock the board</a></div>' : '') +
         upcoming + '</div>' : '') +
 
@@ -353,19 +355,79 @@
     });
   }
 
+  /* ---------- who is reading ----------
+     The embed used to ask for the bootstrap anonymously, always. An anonymous
+     reader is entitled to nothing, so every pre-kickoff number came back
+     locked -- including for a reader signed in to the very site the embed is
+     running on. Inside the EdgeDesk app that is the whole board greyed out
+     for somebody who is paying, with no way from here to say so.
+
+     So a host page that can vouch for its reader may hand over their access
+     token. Two rules, because this script also runs on other people's sites:
+
+       - through a FUNCTION, never a data- attribute. A credential in the DOM
+         is readable by anything else on the page.
+       - only to the Collective's own API. A host can repoint `data-api` for
+         testing, and a credential must never follow it there.
+
+     What the token buys is decided server side, as it has to be: this asks,
+     it does not grant. A reader the Collective does not recognise as a
+     subscriber still sees locked rows -- and now the panel says which of the
+     two reasons it is, rather than pitching a subscription at somebody who
+     already has one. */
+  var VIEWER = false;
+  function viewerToken() {
+    if (API !== DEFAULT_API) return Promise.resolve(null);
+    var fn = window.MCEmbedToken;
+    if (typeof fn !== 'function') return Promise.resolve(null);
+    return Promise.resolve().then(fn).then(function (t) {
+      t = t && String(t).trim();
+      /* A JWT for a real person. The project's anon key is also a JWT, and
+         sending it would be indistinguishable from sending nothing while
+         making the panel claim a reader is signed in. */
+      if (!t) return null;
+      var parts = t.split('.');
+      if (parts.length !== 3) return null;
+      try {
+        var b = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+        while (b.length % 4) b += '=';
+        var claims = JSON.parse(atob(b));
+        if (claims.role !== 'authenticated' || !claims.sub) return null;
+      } catch (e) { return null; }
+      return t;
+    }).catch(function () { return null; });
+  }
+
   /* ---------- fetch ---------- */
-  var ctrl = typeof AbortController !== 'undefined' ? new AbortController() : null;
-  var timer = setTimeout(function () { if (ctrl) ctrl.abort(); }, TIMEOUT_MS);
-  fetch(API + '/collective_embed/v1/embed/bootstrap?theme=' + THEME + (HOST ? '&host=' + encodeURIComponent(HOST) : ''),
-    ctrl ? { signal: ctrl.signal } : {})
-    .then(function (r) {
-      clearTimeout(timer);
-      if (r.status === 403) { fallback(true); return null; }
-      if (!r.ok) { fallback(false); return null; }
-      return r.json();
-    })
-    .then(function (d) { if (d) render(d); })
-    .catch(function () { clearTimeout(timer); fallback(false); });
+  viewerToken().then(function (tok) {
+    var ctrl = typeof AbortController !== 'undefined' ? new AbortController() : null;
+    var timer = setTimeout(function () { if (ctrl) ctrl.abort(); }, TIMEOUT_MS);
+    var opts = ctrl ? { signal: ctrl.signal } : {};
+    if (tok) { VIEWER = true; opts.headers = { authorization: 'Bearer ' + tok }; }
+    return fetch(API + '/collective_embed/v1/embed/bootstrap?theme=' + THEME
+      + (HOST ? '&host=' + encodeURIComponent(HOST) : ''), opts)
+      .then(function (r) {
+        clearTimeout(timer);
+        /* An identity the API refuses is not a reason to show nothing: drop
+           it and ask again as a stranger, which is exactly what this did
+           before there was an identity to send. */
+        if (r.status === 401 && tok) {
+          VIEWER = false;
+          return fetch(API + '/collective_embed/v1/embed/bootstrap?theme=' + THEME
+            + (HOST ? '&host=' + encodeURIComponent(HOST) : ''), ctrl ? { signal: ctrl.signal } : {});
+        }
+        return r;
+      })
+      .then(function (r) {
+        if (!r) return null;
+        clearTimeout(timer);
+        if (r.status === 403) { fallback(true); return null; }
+        if (!r.ok) { fallback(false); return null; }
+        return r.json();
+      })
+      .then(function (d) { if (d) render(d); })
+      .catch(function () { clearTimeout(timer); fallback(false); });
+  });
 
   /* When the market arrives, inject its styles into the shadow tree and
      repaint. The panel is already usable before this resolves. */
