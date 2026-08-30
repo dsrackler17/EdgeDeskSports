@@ -1870,32 +1870,61 @@ if (typeof sandbox.localGrade === 'function') try {
       return st.length === 2 && st[0].creator_slug === 'c' && st[1].creator_slug === 'c2'
         && st[0].win_pct > st[1].win_pct;
     });
-  chk('a model that submitted no pick side is told that is why',
+  /* A model that posts a line every week and never types a pick side used to
+     have no win-loss record at all. Its own number says which side it is on
+     — that is what Δ Mkt has always meant — so it is graded on that. */
+  chk('a model that named no pick side is graded on the side its number implies',
     function () {
       var all = [1, 2, 3].map(function (i) {
         return gm({ id: 'ns' + i, hs: 30, as: 20, close: -7,
           kickoff: '2020-12-1' + i + 'T17:00:00Z',
           models: [mr({ projected_spread: -10, home_win_probability: 0.8 })] });
       });
-      var rk = G.localRankings(all, all, WALLFX, { min_graded_games: 20, min_coverage_pct: 60 });
-      var u = rk.unranked[0];
-      return rk.unranked.length === 1
-        && /3 graded games is below the 20 minimum/.test(u.reason)
-        && /no pick side submitted/.test(u.reason);
+      var rk = G.localRankings(all, all, WALLFX, null);
+      var rec = G.modelRecord(all, 'c', 'm');
+      /* -10 into a -7 close is onto the home team, and home covered */
+      return rec.graded === 3 && rec.wins === 3 && rec.implied === 3
+        && rk.boards.win_pct.length === 1 && rk.unranked.length === 0;
     },
-    'three margin errors and no win-loss record is a different story from "0 graded games"');
-  chk('and with a low enough minimum it ranks on the sample it does have',
+    'publishing an honest number every week and never typing a pick is not "no record"');
+  chk('but a row with no pick side AND no line of its own still has no ATS result',
     function () {
-      var all = [1, 2, 3].map(function (i) {
-        return gm({ id: 'nr' + i, hs: 30, as: 20, close: -7,
-          kickoff: '2020-12-2' + i + 'T17:00:00Z',
-          models: [mr({ projected_spread: -10, home_win_probability: 0.8 })] });
-      });
-      var rk = G.localRankings(all, all, WALLFX, { min_graded_games: 2, min_coverage_pct: 60 });
-      return rk.boards.margin_mae.length === 1 && rk.boards.brier.length === 1
-        && rk.boards.win_pct.length === 0 && rk.unranked.length === 0;
+      var g = gm({ hs: 30, as: 20, close: -7,
+        models: [mr({ home_win_probability: 0.8 })] });
+      var gr = G.rowGrade(g, g.models[0]);
+      return gr && gr.pick_result === null && gr.implied === false
+        && gr.brier != null;
     },
-    'no pick side is not no model: its margin and Brier still stand on their own samples');
+    'there is nothing to imply a side from');
+  chk('a model sitting exactly on the close leans neither way',
+    function () {
+      var g = gm({ hs: 30, as: 20, close: -7,
+        models: [mr({ projected_spread: -7 })] });
+      var gr = G.rowGrade(g, g.models[0]);
+      /* no side to imply, so no against-the-spread result — but its margin
+         error is still real and still counts */
+      return G.impliedSide(g.models[0], -7) === null
+        && gr && gr.pick_result === null && gr.implied === false
+        && near(gr.margin_error, 3);
+    });
+  chk('the implied side is the difference between two numbers, not a sign',
+    function () {
+      /* both these models are on the home team, and one of them has a
+         positive spread — a sign test would get it wrong */
+      return G.impliedSide({ projected_spread: -14.6 }, -7.5) === 'home'
+        && G.impliedSide({ projected_spread: 3 }, 7) === 'home'
+        && G.impliedSide({ projected_spread: -2 }, -7.5) === 'away'
+        && G.impliedSide({ projected_spread: -10 }, null) === null
+        && G.impliedSide({}, -7) === null;
+    });
+  chk('a STATED pick always beats the one a number implies',
+    function () {
+      var g = gm({ hs: 30, as: 20, close: -7,
+        models: [mr({ pick_side: 'away', projected_spread: -14.6 })] });
+      var gr = G.rowGrade(g, g.models[0]);
+      /* its number is on home; it said away; away is what it is graded on */
+      return gr.pick_result === 'loss' && gr.implied === false;
+    });
   chk('a model with no graded game is not in the standings either',
     (function () {
       var only = [gm({ id: 'n', models: [mr({ pick_side: 'home' })] })];
@@ -1939,11 +1968,31 @@ if (typeof sandbox.localGrade === 'function') try {
       return rk.unranked.length > 0
         && rk.unranked.every(function (u) { return u.reason && u.reason.length > 0; });
     });
-  chk('the thresholds default to the published ones when none are supplied',
-    (function () {
+  /* There is no minimum any more. A football season is short — a dozen or
+     so games a week and a handful a model actually posts — so a 20-game bar
+     meant nobody was ranked until December on a site whose whole point is a
+     record you can watch build. A model is ranked from its first finished
+     game and the Graded column says what it stands on. */
+  chk('there is no sample or coverage minimum by default',
+    function () {
       var rk = G.localRankings(RECGAMES, SETTLED, WALLFX, null);
-      return rk.thresholds.min_graded_games === 20 && rk.thresholds.min_coverage_pct === 60;
-    })());
+      return rk.thresholds.min_graded_games === 0 && rk.thresholds.min_coverage_pct === 0;
+    });
+  chk('one finished game is enough to be ranked',
+    function () {
+      var one = [gm({ id: 'one', hs: 30, as: 20, close: -7,
+        models: [mr({ pick_side: 'home', projected_spread: -10, home_win_probability: 0.8 })] })];
+      var rk = G.localRankings(one, one, WALLFX, null);
+      return rk.boards.win_pct.length === 1 && rk.boards.win_pct[0].graded === 1
+        && rk.boards.margin_mae.length === 1 && rk.boards.brier.length === 1
+        && rk.unranked.length === 0;
+    },
+    'the whole complaint was that a record nobody can see until December is not a record');
+  chk('and every model with a graded game is on the boards, not just some',
+    function () {
+      var rk = G.localRankings(RECGAMES, SETTLED, WALLFX, null);
+      return rk.boards.win_pct.length === 2 && rk.unranked.length === 0;
+    });
   chk('a model the wall has never heard of keeps its slug rather than vanishing',
     (function () {
       var rk = G.localRankings(RECGAMES, SETTLED, [], { min_graded_games: 2, min_coverage_pct: 60 });
@@ -2005,6 +2054,90 @@ if (typeof sandbox.localGrade === 'function') try {
     })(), 'away - home, the same order the FINAL chip prints');
   chk('the game log skips games that are not final and rows that are late',
     G.localGameLog(RECGAMES, 'c', 'm').length === 3);
+
+  /* ---- a live board leads with what has not happened yet ---------------
+     The wall arrived in whatever order the server sent, which on a Sunday
+     meant last Saturday's finished games sitting above everything. */
+  chk('finished games sort below the ones still to come',
+    function () {
+      var soon = gm({ id: 'soon', kickoff: '2099-01-02T17:00:00Z' });
+      var later = gm({ id: 'later', kickoff: '2099-01-09T17:00:00Z' });
+      var old = gm({ id: 'old', hs: 30, as: 20, kickoff: '2020-09-01T17:00:00Z' });
+      var recent = gm({ id: 'recent', hs: 30, as: 20, kickoff: '2020-09-20T17:00:00Z' });
+      var out = G.slateOrder([old, later, recent, soon]).map(function (g) { return g.game_id; });
+      /* upcoming soonest-first, then finished newest-first */
+      return out.join(',') === 'soon,later,recent,old';
+    });
+  chk('a game past its kickoff counts as done even with no score yet',
+    function () {
+      var played = gm({ id: 'played', kickoff: '2020-09-01T17:00:00Z' });
+      var upcoming = gm({ id: 'upcoming', kickoff: '2099-01-02T17:00:00Z' });
+      return G.slateOrder([played, upcoming])[0].game_id === 'upcoming';
+    },
+    'a kicked-off game is not "upcoming" just because the wire has no result for it');
+  chk('ordering never drops or duplicates a game',
+    function () {
+      var out = G.slateOrder(RECGAMES);
+      return out.length === RECGAMES.length;
+    });
+
+  /* ---- the scores the wire does not carry ------------------------------
+     /v1/games returns result:null on games that finished days ago, which is
+     why every record on the site read zero. A grader cannot invent a score,
+     so the page goes and reads one. */
+  chk('a team named two ways still matches',
+    function () {
+      var espn = ['northcarolinatarheels', 'northcarolina', 'tarheels', 'unc'];
+      return G.espnNameHit(espn, G.teamKey('NORTHCAROL'))      /* truncated key */
+        && G.espnNameHit(espn, G.teamKey('North Carolina'))
+        && G.espnNameHit(['sanjosestatespartans'], G.teamKey('SANJOSESTA'))
+        && G.espnNameHit(['texasam'], G.teamKey('Texas A&M'));
+    });
+  /* A four-character floor threw away every three-letter school, and three
+     letters is a whole name for a lot of them. */
+  chk('a three-letter school is a whole name, not a fragment',
+    function () {
+      return G.espnNameHit(['tcuhornedfrogs'], G.teamKey('TCU'))
+        && G.espnNameHit(['usctrojans'], G.teamKey('USC'))
+        && G.espnNameHit(['lsutigers'], G.teamKey('LSU'))
+        && G.espnNameHit(['byucougars'], G.teamKey('BYU'));
+    });
+  chk('a different school does not match, and an empty name never does',
+    function () {
+      return !G.espnNameHit(['miamihurricanes'], G.teamKey('Miami (OH)'))
+        && !G.espnNameHit(['alabamacrimsontide'], G.teamKey('AUB'))
+        && !G.espnNameHit([], G.teamKey('TCU'))
+        && !G.espnNameHit(['tcuhornedfrogs'], '');
+    });
+  /* Naming the limit rather than pretending it is not there: prefix matching
+     means "Ohio" also matches "Ohio State". It is why a match must agree on
+     BOTH sides of a game before a score is accepted — the pairing is the
+     real key, and two schools whose names nest are never each other's
+     opponent in the same fixture. */
+  chk('a nesting name is why both sides must agree before a score is taken',
+    function () {
+      var nests = G.espnNameHit(['ohiostatebuckeyes'], G.teamKey('Ohio'));
+      var list = [{ homeKeys: ['ohiostatebuckeyes'], awayKeys: ['michiganwolverines'],
+                    home: 30, away: 20 }];
+      /* Ohio at Michigan is NOT Michigan at Ohio State, and is refused */
+      return nests === true
+        && G.espnMatch(list, { home: 'MICHIGAN', away: 'OHIO' }) === null
+        && G.espnMatch(list, { home: 'OHIOSTATE', away: 'MICHIGAN' }) !== null;
+    });
+  chk('the scoreboard is asked for the day the game kicked off, in UTC',
+    function () {
+      return G.espnDayKey('2026-08-29T16:00:00Z') === '20260829'
+        && G.espnDayKey('2026-01-02T03:00:00Z') === '20260102'
+        && G.espnDayKey('nonsense') === null && G.espnDayKey(null) === null;
+    });
+  chk('the closing line comes from the Collective’s own stored close',
+    function () {
+      return G.marketClose({ closing: { 'spread:home': { line: -7.5 } } }) === -7.5
+        && G.marketClose({ closing: {} }) === null
+        && G.marketClose({ closing: { 'spread:home': { line: null } } }) === null
+        && G.marketClose(null) === null;
+    },
+    'never a live price, and never a number a creator supplied');
 
   /* ---- the live refresh ----------------------------------------------- */
   chk('the fingerprint is stable when nothing has changed',
@@ -2076,9 +2209,11 @@ if (typeof sandbox.localGrade === 'function') try {
       return x.k === 'The dot' && /HOLLOW/.test(x.long) && /FILLED/.test(x.long);
     }),
     'the colour alone cannot say which grades are settled and which the page worked out');
-  chk('the rankings page states the coverage rule the code actually enforces',
-    !/% of the season slate/.test(CODE) && /played since it joined/.test(CODE),
-    'the lede said "of the season slate" while the boards enforce the games played since a model joined');
+  chk('the rankings page no longer advertises a minimum it does not enforce',
+    !/% of the season slate/.test(CODE)
+      && !/Nobody has cleared the minimums yet/.test(CODE)
+      && /There is no minimum/.test(CODE),
+    'the lede recited a 20-game bar that the boards stopped applying');
   /* one board can be the page's and another the Collective's, so the note
      under them points at the marker rather than claiming all three */
   chk('the boards note points at the marker, not at all three boards',
