@@ -1414,6 +1414,23 @@ if (typeof sandbox.teamKey === 'function') {
    server-side settlement run that was behind. The page now applies the
    published rule itself. These tests are the rule.
    ======================================================================= */
+/* A guarded section that silently skips itself is a suite that reports ALL
+   GREEN having tested nothing. Name what has to exist, so a rename shows up
+   as a red line rather than as a smaller number nobody was watching. */
+chk('the page defines the grading functions this section tests',
+  ['atsResult', 'finalResult', 'projectedMargin', 'gradableRow', 'localGrade',
+   'serverGrade', 'rowGrade', 'modelRecord', 'modelCoverage', 'modelsInGames',
+   'rankBoard', 'localRankings', 'localGameLog', 'shownRecord', 'hasRecord',
+   'recATSText', 'recATSHtml', 'liveMark', 'gradeMark', 'gradeNote',
+   'liveFingerprint', 'liveRoute', 'liveTick', 'paint', 'seasonGames'
+  ].every(function (n) { return typeof sandbox[n] === 'function'; }),
+  { missing: ['atsResult', 'finalResult', 'projectedMargin', 'gradableRow', 'localGrade',
+      'serverGrade', 'rowGrade', 'modelRecord', 'modelCoverage', 'modelsInGames',
+      'rankBoard', 'localRankings', 'localGameLog', 'shownRecord', 'hasRecord',
+      'recATSText', 'recATSHtml', 'liveMark', 'gradeMark', 'gradeNote',
+      'liveFingerprint', 'liveRoute', 'liveTick', 'paint', 'seasonGames']
+      .filter(function (n) { return typeof sandbox[n] !== 'function'; }) });
+
 if (typeof sandbox.localGrade === 'function') try {
   var G = sandbox;
   var PAST = '2020-09-13T17:00:00Z';
@@ -1537,6 +1554,23 @@ if (typeof sandbox.localGrade === 'function') try {
       var r = G.localGrade(g, g.models[0]);
       return r && r.pick_result === null && near(r.margin_error, 2.5) && near(r.brier, 0.04);
     })(), 'grading against the model own posted line instead would be self-reporting');
+  /* The reason every model faces ONE number. A creator who posted at their
+     own better line is graded on the Collective's close, and the two
+     disagree on exactly the games where it matters. */
+  chk('the grade uses the captured close, not the line the creator posted at',
+    function () {
+      var g = gm({ hs: 27, as: 20, close: -7.5,          /* a 7-point win */
+        models: [mr({ pick_side: 'home', line_at_submission: -6.5 })] });
+      return G.localGrade(g, g.models[0]).pick_result === 'loss'
+        && G.atsResult(7, -6.5, 'home') === 'win';       /* its own number covered */
+    },
+    'grading on line_at_submission would let every creator pick the number they are scored against');
+  chk('and a creator who posted at a WORSE number is not punished for it',
+    function () {
+      var g = gm({ hs: 27, as: 20, close: -6.5,
+        models: [mr({ pick_side: 'home', line_at_submission: -7.5 })] });
+      return G.localGrade(g, g.models[0]).pick_result === 'win';
+    });
   chk('a LATE row is never graded',
     (function () {
       var g = gm({ hs: 30, as: 20, models: [mr({ pick_side: 'home', late: true })] });
@@ -1623,6 +1657,12 @@ if (typeof sandbox.localGrade === 'function') try {
         models: [mr({ pick_side: 'home', data_origin: 'backfill', grade: { pick_result: 'win' } })] });
       return G.rowGrade(g, g.models[0]) === null;
     }, 'backfill never counts toward the record, rankings, or consensus');
+  chk('and neither does a TEST row',
+    function () {
+      var g = gm({ hs: 30, as: 20, close: -7,
+        models: [mr({ pick_side: 'home', data_origin: 'test' })] });
+      return G.rowGrade(g, g.models[0]) === null && G.gradableRow(g.models[0]) === false;
+    });
   chk('a grade only ever names one of the three published results',
     (function () {
       var out = {}, i, cases = [[30, 20], [27, 20], [24, 20], [20, 20]];
@@ -1666,11 +1706,29 @@ if (typeof sandbox.localGrade === 'function') try {
     (function () { var r = G.modelRecord(RECGAMES, 'c2', 'm');
       return r.graded === 1 && r.wins === 0 && r.losses === 1; })());
   chk('one game contributes at most one graded row to a model',
-    (function () {
+    function () {
       var dup = gm({ id: 'z', hs: 30, as: 20, close: -7,
         models: [mr({ pick_side: 'home' }), mr({ pick_side: 'home' })] });
       return G.modelRecord([dup], 'c', 'm').graded === 1;
-    })(), 'the first pre-kickoff submission is the graded one');
+    }, 'the first pre-kickoff submission is the graded one');
+  /* the season sweep reads the week-less payload AND the week it belongs
+     to, so the same game arriving twice is the normal case, not a freak one */
+  chk('the SAME game passed twice is still one graded game',
+    function () {
+      var g = gm({ id: 'z2', hs: 30, as: 20, close: -7,
+        models: [mr({ pick_side: 'home', projected_spread: -10, home_win_probability: 0.8 })] });
+      var once = G.modelRecord([g], 'c', 'm'), twice = G.modelRecord([g, g], 'c', 'm');
+      return twice.graded === once.graded && twice.wins === 1
+        && twice.margin_n === 1 && twice.brier_n === 1;
+    });
+  chk('and so is the same game arriving as two separate objects',
+    function () {
+      var one = gm({ id: 'z3', hs: 30, as: 20, close: -7,
+        models: [mr({ pick_side: 'home' })] });
+      var copy = gm({ id: 'z3', hs: 30, as: 20, close: -7,
+        models: [mr({ pick_side: 'home' })] });
+      return G.modelRecord([one, copy], 'c', 'm').graded === 1;
+    });
   chk('a page-graded record says how much of it the page graded',
     G.modelRecord(RECGAMES, 'c', 'm').live === 3);
 
@@ -1800,6 +1858,44 @@ if (typeof sandbox.localGrade === 'function') try {
       var rk = G.localRankings(RECGAMES, SETTLED, WALLFX, { min_graded_games: 20, min_coverage_pct: 60 });
       return rk.standings.length === 2 && rk.boards.win_pct.length === 0;
     })(), 'unranked is not the same as untracked');
+  chk('the standings are ordered by win percentage, best first',
+    function () {
+      var g = function (id, day, aRes, bRes) {
+        return gm({ id: id, hs: 30, as: 20, close: -7, kickoff: '2020-12-' + day + 'T17:00:00Z',
+          models: [mr({ pick_side: aRes }), mr({ cs: 'c2', pick_side: bRes })] });
+      };
+      /* c wins two of two, c2 wins one of two */
+      var all = [g('s1', '01', 'home', 'home'), g('s2', '02', 'home', 'away')];
+      var st = G.localRankings(all, all, WALLFX, { min_graded_games: 2, min_coverage_pct: 60 }).standings;
+      return st.length === 2 && st[0].creator_slug === 'c' && st[1].creator_slug === 'c2'
+        && st[0].win_pct > st[1].win_pct;
+    });
+  chk('a model that submitted no pick side is told that is why',
+    function () {
+      var all = [1, 2, 3].map(function (i) {
+        return gm({ id: 'ns' + i, hs: 30, as: 20, close: -7,
+          kickoff: '2020-12-1' + i + 'T17:00:00Z',
+          models: [mr({ projected_spread: -10, home_win_probability: 0.8 })] });
+      });
+      var rk = G.localRankings(all, all, WALLFX, { min_graded_games: 20, min_coverage_pct: 60 });
+      var u = rk.unranked[0];
+      return rk.unranked.length === 1
+        && /3 graded games is below the 20 minimum/.test(u.reason)
+        && /no pick side submitted/.test(u.reason);
+    },
+    'three margin errors and no win-loss record is a different story from "0 graded games"');
+  chk('and with a low enough minimum it ranks on the sample it does have',
+    function () {
+      var all = [1, 2, 3].map(function (i) {
+        return gm({ id: 'nr' + i, hs: 30, as: 20, close: -7,
+          kickoff: '2020-12-2' + i + 'T17:00:00Z',
+          models: [mr({ projected_spread: -10, home_win_probability: 0.8 })] });
+      });
+      var rk = G.localRankings(all, all, WALLFX, { min_graded_games: 2, min_coverage_pct: 60 });
+      return rk.boards.margin_mae.length === 1 && rk.boards.brier.length === 1
+        && rk.boards.win_pct.length === 0 && rk.unranked.length === 0;
+    },
+    'no pick side is not no model: its margin and Brier still stand on their own samples');
   chk('a model with no graded game is not in the standings either',
     (function () {
       var only = [gm({ id: 'n', models: [mr({ pick_side: 'home' })] })];
@@ -1853,6 +1949,52 @@ if (typeof sandbox.localGrade === 'function') try {
       var rk = G.localRankings(RECGAMES, SETTLED, [], { min_graded_games: 2, min_coverage_pct: 60 });
       return rk.entries.length === 2 && rk.entries[0].model_name === 'm';
     })());
+
+  /* ---- which record a surface prints ----------------------------------
+     shownRecord decides, on every card, row and profile on the site, whose
+     grading a reader is looking at. */
+  chk('the Collective\u2019s own record wins whenever it has one',
+    function () {
+      var srv = { wins: 9, losses: 1, pushes: 0, graded: 10, win_pct: 0.9 };
+      var loc = { 'c/m': { wins: 1, losses: 9, pushes: 0, graded: 10, win_pct: 0.1 } };
+      var sr = G.shownRecord(srv, loc, 'c', 'm');
+      return sr.rec === srv && sr.live === false;
+    });
+  chk('the page\u2019s own fills a hole, and says it did',
+    function () {
+      var loc = { 'c/m': { wins: 2, losses: 1, pushes: 0, graded: 3, win_pct: 0.667 } };
+      var sr = G.shownRecord(null, loc, 'c', 'm');
+      return sr.rec === loc['c/m'] && sr.live === true;
+    });
+  chk('an empty server record is a hole, not a record',
+    function () {
+      var srv = { wins: 0, losses: 0, pushes: 0, graded: 0, win_pct: null };
+      var loc = { 'c/m': { wins: 2, losses: 1, pushes: 0, graded: 3, win_pct: 0.667 } };
+      return G.shownRecord(srv, loc, 'c', 'm').live === true;
+    },
+    'this is the whole bug: a settlement run that has reached a model and scored nothing');
+  chk('a model neither grader knows shows nothing rather than zeroes',
+    function () {
+      var sr = G.shownRecord(null, {}, 'nobody', 'nothing');
+      return sr.rec === null && sr.live === false;
+    });
+  /* hasRecord decides whether there is anything to show at all; gating it on
+     the ATS count alone hid the margin and Brier numbers of a model that
+     posts spreads and probabilities and never a pick side */
+  chk('a record exists when ANY of its three samples does',
+    function () {
+      return G.hasRecord({ graded: 3 }) && G.hasRecord({ graded: 0, margin_n: 2 })
+        && G.hasRecord({ graded: 0, brier_n: 5 }) && G.hasRecord({ margin_mae: 6.1 })
+        && !G.hasRecord({ graded: 0, margin_n: 0, brier_n: 0 })
+        && !G.hasRecord(null);
+    });
+  chk('and the ATS line says so when there is no ATS record',
+    function () {
+      return G.recATSText({ graded: 3, wins: 2, losses: 1, pushes: 0 }) === '2-1-0'
+        && G.recATSText({ graded: 0, wins: 0, losses: 0, pushes: 0 }) === null
+        && /no ATS picks/.test(G.recATSHtml({ graded: 0, margin_n: 4 }))
+        && !/0-0-0/.test(G.recATSHtml({ graded: 0, margin_n: 4 }));
+    });
 
   /* ---- the game log --------------------------------------------------- */
   chk('the game log is newest first and states the final the way the board does',

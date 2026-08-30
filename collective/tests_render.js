@@ -173,6 +173,20 @@ catch(e){console.log('[boot] '+e.message);}
 
 var S=sandbox;
 (async function(){
+  /* A suite that skips itself reports green having tested nothing, so name
+     what has to exist before anything runs. */
+  chk('the page defines the functions this suite drives',
+    ['renderWall','renderBoard','renderRankings','renderPerformance','route',
+     'rowGrade','localGrade','atsResult','finalResult','modelRecord',
+     'modelCoverage','localGameLog','localRankings','seasonGames','liveTick',
+     'liveRoute','liveFingerprint','paint','fail','recATSHtml'
+    ].every(function(n){return typeof S[n]==='function';}),
+    {missing:['renderWall','renderBoard','renderRankings','renderPerformance','route',
+      'rowGrade','localGrade','atsResult','finalResult','modelRecord',
+      'modelCoverage','localGameLog','localRankings','seasonGames','liveTick',
+      'liveRoute','liveFingerprint','paint','fail','recATSHtml']
+      .filter(function(n){return typeof S[n]!=='function';})});
+
   /* ---- THE WALL ---- */
   var v=node();
   await S.renderWall(v);
@@ -215,27 +229,27 @@ var S=sandbox;
      the road side did. Every model is graded on the side it named, against
      the Collective's captured close and nothing else. */
   chk('the side that covered wins and the side that did not loses',
-    (function(){
+    function(){
       var g=GAMES[0];
       return S.rowGrade(g,g.models[0]).pick_result==='win'      /* picked TCU  */
         && S.rowGrade(g,g.models[2]).pick_result==='win'        /* picked TCU  */
         && S.rowGrade(g,g.models[3]).pick_result==='loss'       /* picked UNC  */
         && S.rowGrade(g,g.models[1])!==null                     /* no pick side, still margin-graded */
         && S.rowGrade(g,g.models[1]).pick_result===null;
-    })());
+    });
   chk('a favourite that wins by less than the number does NOT cover',
-    (function(){
+    function(){
       var g=GAMES[1];
       return S.rowGrade(g,g.models[0]).pick_result==='loss'     /* picked USC -38.5 */
         && S.rowGrade(g,g.models[2]).pick_result==='win'        /* picked SJSU      */
         && S.rowGrade(g,g.models[3]).pick_result==='win';
-    })(), 'USC won by 31 on a 38.5 line');
+    }, 'USC won by 31 on a 38.5 line');
   chk('an outright upset grades the road side a winner',
-    (function(){
+    function(){
       var g=GAMES[2];
       return S.rowGrade(g,g.models[0]).pick_result==='loss'
         && S.rowGrade(g,g.models[2]).pick_result==='win';
-    })());
+    });
   /* The whole point of one shared closing line: a model that posted at its
      own better number is graded on the Collective's, not on the one it
      picked at. Driven through the real grader, not through atsResult --
@@ -351,10 +365,10 @@ var S=sandbox;
       && /grade-loss/.test(board2),
     'the page recomputed win for this row and must not have used it');
   chk('a settled grade carries no live marker',
-    (function(){
+    function(){
       var i=board2.indexOf('err 9.9');
       return board2.slice(Math.max(0,i-400),i).indexOf('pgrade')<0;
-    })());
+    });
   chk('the rest of the slate is still graded by the page beside it',
     board2.indexOf('pgrade')>=0);
   GAMES[0].models[0].grade=null;
@@ -363,16 +377,16 @@ var S=sandbox;
   S.SEASON_GAMES={};S.LOCALREC={};
   var noClose=G(9,'A','B',30,20,null,[M('blerm','blerm-s-model','home',-12.5,null,0.8)]);
   chk('no captured close means no win, no loss, and no push',
-    (function(){
+    function(){
       var gr=S.rowGrade(noClose,noClose.models[0]);
       return gr && gr.pick_result===null && gr.margin_error!=null && gr.brier!=null;
-    })(),
+    },
     'grading it against the model own posted line would be self-reporting');
   chk('and it is counted by nobody rather than counted as a loss',
-    (function(){
+    function(){
       var rec=S.modelRecord([noClose],'blerm','blerm-s-model');
       return rec.graded===0 && rec.losses===0 && rec.margin_n===1 && rec.brier_n===1;
-    })());
+    });
 
   /* ---- the API being unreachable must not blank the page --------------- */
   S.SEASON_GAMES={};S.LOCALREC={};S.META=null;S.WALLC=null;
