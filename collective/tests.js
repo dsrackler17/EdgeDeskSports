@@ -2080,6 +2080,47 @@ if (typeof sandbox.localGrade === 'function') try {
       var out = G.slateOrder(RECGAMES);
       return out.length === RECGAMES.length;
     });
+  /* the market feed names its kickoff commence_time, so one ordering rule
+     has to serve both rather than two that drift apart */
+  chk('the same rule orders the market feed, under its own field name',
+    function () {
+      var soon = { event_id: 'soon', commence_time: '2099-01-02T17:00:00Z' };
+      var old = { event_id: 'old', commence_time: '2020-09-01T17:00:00Z' };
+      var recent = { event_id: 'recent', commence_time: '2020-09-20T17:00:00Z' };
+      var out = G.slateOrder([old, recent, soon], 'commence_time')
+        .map(function (g) { return g.event_id; });
+      return out.join(',') === 'soon,recent,old';
+    },
+    'a market that closed eight days ago led a page headed "prices across sportsbooks"');
+  chk('and ordering the market by the WRONG field would put everything at once',
+    function () {
+      /* guards the field name: reading kickoff_at off a market game gives
+         every row the same epoch and the sort silently does nothing */
+      var a = { event_id: 'a', commence_time: '2099-01-02T17:00:00Z' };
+      var b = { event_id: 'b', commence_time: '2020-09-01T17:00:00Z' };
+      var wrong = G.slateOrder([b, a]).map(function (g) { return g.event_id; });
+      var right = G.slateOrder([b, a], 'commence_time').map(function (g) { return g.event_id; });
+      return right.join(',') === 'a,b' && wrong.join(',') !== right.join(',');
+    });
+
+  /* ---- the market page named the wrong sport in its own copy -----------
+     It fetched whatever league the sport switcher said and then described it
+     as the NFL, so a college slate sat under NFL wording. */
+  chk('no page hardcodes the NFL into copy about the current sport',
+    !/Current NFL prices across sportsbooks/.test(CODE)
+      && !/No current prices are stored for the NFL/.test(CODE),
+    'the league came from the switcher; the words did not');
+  chk('the market page names its sport from the same place it fetches it',
+    /esc\(mktName\)\+' prices across sportsbooks/.test(CODE)
+      && /var mktName=sportLongName\(mktSport\.code\)/.test(CODE));
+  chk('and the market page carries the sport switcher, like every other view',
+    function () {
+      var market = CODE.slice(CODE.indexOf('async function renderMarket'),
+        CODE.indexOf('async function renderMarketGame'));
+      return /sportSwitcherHTML\(mMkt\)/.test(market)
+        && /bindSportSwitcher\(function\(\)\{renderMarket\(view\);\}\)/.test(market);
+    },
+    'you could not tell which league you were looking at, or change it');
 
   /* ---- the scores the wire does not carry ------------------------------
      /v1/games returns result:null on games that finished days ago, which is

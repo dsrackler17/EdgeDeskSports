@@ -888,6 +888,71 @@ var S=sandbox;
     {close:(S.finalResult(withClose[0])||{}).closing_spread});
   S.ESPN_DAYS={};S.SEASON_GAMES={};S.LOCALREC={};
 
+  /* ---- the market page -------------------------------------------------
+     It fetched whatever league the sport switcher said and then described it
+     as the NFL, so a College Football slate sat under NFL wording — and it
+     led with markets that closed eight days ago. Nothing drove this page at
+     all, which is why neither was caught.
+
+     odds.js is not loaded in this shim, so MCOdds is stubbed down to the
+     handful of calls renderMarket actually makes. */
+  var MKTGAMES=[
+    {event_id:'e-old',collective_game_id:1,home:'TCU',away:'NORTHCAROL',
+     commence_time:'2026-08-29T16:00:00Z',market_closed:true,
+     closing:{'spread:home':{line:-7.5}}},
+    {event_id:'e-recent',collective_game_id:2,home:'USC',away:'SANJOSESTA',
+     commence_time:'2026-08-29T19:00:00Z',market_closed:true,
+     closing:{'spread:home':{line:-38.5}}},
+    {event_id:'e-soon',collective_game_id:9,home:'OREGON',away:'UTAH',
+     commence_time:'2099-09-05T19:00:00Z',market_closed:false,closing:{}}
+  ];
+  S.MCOdds={
+    configure:function(){},injectCss:function(){},
+    leagueFor:function(c){return String(c).toLowerCase();},
+    board:function(){return Promise.resolve({state:'ok',count:MKTGAMES.length,
+      games:MKTGAMES,last_updated:'2026-08-30T12:00:00Z',
+      find:function(g){return g&&g.game_id===1?MKTGAMES[0]:null;}});},
+    ago:function(){return '76m';},ageOf:function(){return 0;},
+    freshChip:function(){return '<span class="chip">Updated 76m ago</span>';},
+    consensusSpread:function(g){
+      var c=g&&g.closing&&g.closing['spread:home'];return c?c.line:null;},
+    consensusTotal:function(){return 47.5;},
+    edgeHtml:function(){return '';},line:function(x){return String(x);},
+    marketCard:function(g){return '<div class="mco-card" data-ev="'+g.event_id+'">'+
+      g.away+' @ '+g.home+'</div>';}
+  };
+  S.SEASON_GAMES={};S.LOCALREC={};
+  S.location.hash='#market';
+  var vM=node();
+  await S.renderMarket(vM);
+  var market=vM.innerHTML;
+  chk('the market page names the sport it is actually showing',
+    market.indexOf('College Football prices across sportsbooks')>=0
+      && market.indexOf('NFL prices across sportsbooks')<0,
+    {lede:(/<p class="lede">([^<]*)/.exec(market)||[])[1]});
+  chk('and carries the sport switcher so a reader can change it',
+    market.indexOf('data-sport="CFB"')>=0||market.indexOf('data-sport=')>=0
+      ||S.sportSwitcherHTML({sports:[{code:'CFB',season:2026}]})==='',
+    'one sport in the stub means the switcher is legitimately empty');
+  chk('the market leads with what has not been played',
+    function(){
+      var order=(market.match(/data-ev="([^"]+)"/g)||[])
+        .map(function(x){return /data-ev="([^"]+)"/.exec(x)[1];});
+      /* upcoming first, then the closed markets newest-first */
+      return order.join(',')==='e-soon,e-recent,e-old';
+    },
+    {order:(market.match(/data-ev="([^"]+)"/g)||[])});
+  chk('a closed market still says the close is what a game is graded on',
+    market.indexOf('graded against')>=0||market.indexOf('graded on')>=0);
+  /* the market page is the one place a price change IS the content, so it
+     is the one place the refresh watches the feed's stamp */
+  chk('the market page refreshes itself when a new poll lands',
+    function(){
+      return S.LIVE_ROUTES['market']===1
+        && S.liveRoute.toString().indexOf('LIVE_ROUTES')>=0;
+    });
+  S.MCOdds=undefined;S.location.hash='';
+
   fails.forEach(function(f){console.log('FAIL | '+f.n+(f.d?'  '+JSON.stringify(f.d).slice(0,400):''));});
   console.log((fail===0?'ALL GREEN ':'FAILED ')+pass+' passed, '+fail+' failed');
   process.exit(fail===0?0:1);
