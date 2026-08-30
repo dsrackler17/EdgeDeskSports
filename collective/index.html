@@ -3813,9 +3813,60 @@ function slateServerTeams(games){
   });
   return have;
 }
-/* How alike are two team names, once they are canonical? Token overlap plus a
-   shared-prefix bonus, which is enough to put "Florida St" next to "Florida
-   State" and "UNC" next to "North Carolina" without pretending to be clever. */
+/* A word that turns a university into a DIFFERENT university.
+
+   "Iowa" and "Iowa State" are two schools; so are Georgia and Georgia Tech,
+   Illinois and Eastern Illinois, Missouri State and Southeast Missouri State.
+   Every one of those pairs looks nearly identical to a string comparison and
+   is nothing alike in fact, and telling them apart is the whole job here.
+
+   "st" maps onto "state" on purpose: "Florida St" and "Florida State" are one
+   school spelled two ways, so both carry the same qualifier and neither is
+   apart from the other. */
+var TEAM_QUALIFIERS={state:'state',st:'state',tech:'tech',am:'am',
+  southern:'southern',northern:'northern',eastern:'eastern',western:'western',
+  central:'central',southeast:'southeast',southwest:'southwest',
+  northeast:'northeast',northwest:'northwest',international:'international',
+  poly:'poly',polytechnic:'poly',atlantic:'atlantic',pacific:'pacific'};
+/* The same qualifiers read off a name that has no spaces left in it.
+
+   A schedule that clips its names to a fixed width hands back one squashed
+   token with the tail cut off: "Florida State" arrives as FLORIDASTA and
+   "Georgia Tech" as GEORGIATEC. Reading qualifiers off whitespace alone would
+   say neither carries one, and then Florida State and FLORIDASTA look like
+   two different schools while Georgia and GEORGIATEC look like one. Both
+   regexes therefore accept the clipped forms — `sta`, `stat`, `tec`. */
+var TEAM_QUAL_EDGE={state:/st(a(te?)?)?$/,tech:/tech?$/,am:/am$/,
+  eastern:/^eastern/,western:/^western/,northern:/^northern/,southern:/^southern/,
+  central:/^central/,southeast:/^southeast/,southwest:/^southwest/,
+  northeast:/^northeast/,northwest:/^northwest/};
+function teamQualifiers(tokens,key){
+  var out={},i,q;
+  for(i=0;i<(tokens||[]).length;i++){q=TEAM_QUALIFIERS[tokens[i]];if(q)out[q]=1;}
+  for(q in TEAM_QUAL_EDGE)if(TEAM_QUAL_EDGE[q].test(String(key||'')))out[q]=1;
+  return out;
+}
+/* Do these two names carry DIFFERENT qualifiers? If so they are two schools
+   however alike they read. */
+function teamQualifierApart(ta,ka,tb,kb){
+  var a=teamQualifiers(ta,ka),b=teamQualifiers(tb,kb),k;
+  for(k in a)if(!b[k])return true;
+  for(k in b)if(!a[k])return true;
+  return false;
+}
+/* How alike are two team names, once they are canonical?
+
+   Token overlap, plus a bonus when one name is the WHOLE start of the other.
+
+   What this must not do is score two unrelated schools as close because their
+   names happen to begin with the same couple of letters. A raw shared-prefix
+   ratio did exactly that: "UCF" against "UCLA" shares U and C and scored 0.5,
+   "Utah" against "UTEP" shares U and T and scored 0.5, and both cleared the
+   bar the pre-flight used -- so a creator whose file was entirely correct was
+   told the closest thing to UCF was UCLA and the closest thing to Utah was
+   UTEP. Two shared letters are a coincidence of the alphabet, not evidence.
+   Only a prefix covering the whole of the shorter name counts, and not even
+   that one when the extra words name a different school. */
 function teamSimilarity(a,b){
   var ka=teamKey(a),kb=teamKey(b);
   if(!ka||!kb)return 0;
@@ -3830,18 +3881,26 @@ function teamSimilarity(a,b){
       shared++;used[j]=1;break;
     }
   }
-  var tok=shared/Math.max(ta.length,tb.length);
-  var pre=0,lim=Math.min(ka.length,kb.length);
-  while(pre<lim&&ka.charAt(pre)===kb.charAt(pre))pre++;
-  var score=Math.max(tok,pre/Math.max(ka.length,kb.length));
+  var score=shared/Math.max(ta.length,tb.length);
+  var lim=Math.min(ka.length,kb.length);
+  /* A HARD CEILING, not a withheld bonus. Two names that differ by a
+     qualifier are two schools, and every other signal here will happily say
+     otherwise: "Georgia" is a clean token prefix of GEORGIATEC and scores a
+     flat 1.0 on token overlap alone. Capping below the bar a rename has to
+     clear is the only thing that holds. */
+  if(teamQualifierApart(ta,ka,tb,kb))return Math.min(score,0.5);
   /* One name being the whole start of the other is the single strongest signal
      there is: "TCU" inside "TCU Horned Frogs", "North Carolina" inside "North
      Carolina Tar Heels". Token counting alone scores those low precisely
      because the longer name carries extra words. */
   if(lim>=3&&(ka.indexOf(kb)===0||kb.indexOf(ka)===0))score=Math.max(score,0.85);
-  /* every word of the shorter name appearing in the longer one is nearly as
-     strong: "Florida St" against "Florida State" */
-  if(shared===Math.min(ta.length,tb.length))score=Math.max(score,0.75);
+  /* Every word of the shorter name appearing in the longer one is nearly as
+     strong: "Florida St" against "Florida State". It needs TWO words to mean
+     anything, though. Against a clipped one-word schedule name it collapses
+     into "the schedule's name starts with any one of my words", which put
+     New Hampshire next to NEWMEXICOS at 0.75. */
+  if(Math.min(ta.length,tb.length)>=2&&shared===Math.min(ta.length,tb.length))
+    score=Math.max(score,0.75);
   return score;
 }
 
@@ -3990,19 +4049,54 @@ function slateNameIndex(games){
   for(i=0;i<names.length;i++){k=teamKey(names[i]);if(k&&!byKey[k])byKey[k]=names[i];}
   return byKey;
 }
+/* DOES THIS SCHEDULE CLIP ITS TEAM NAMES, AND AT WHAT WIDTH?
+
+   Everything downstream turns on this. "Is the schedule's shorter name a
+   shortening of mine, or a different school?" has opposite answers depending
+   on it. On a schedule that clips at ten, INDIANASTA is Indiana State clipped
+   and INDIANA is Indiana -- a different school that also plays that week --
+   and the ONLY thing separating them is that one is exactly ten characters
+   and the other is not.
+
+   Without this test the old rule accepted any key of six or more characters
+   that started our name, so a real slate had "Indiana State" rewritten to
+   Indiana and "Georgia" expanded to Georgia Tech, each with a green "matched
+   to your schedule's own names" printed beside it.
+
+   A clip is only claimed when SEVERAL names land on the same longest length
+   and that length is long enough to be a clip rather than an accident. A
+   schedule whose longest name is eight characters because nobody on it is
+   longer is not clipping anything, and a lone longest name is just a long
+   name. */
+var SLATE_MIN_TRUNC=8;
+function slateTruncWidth(byKey){
+  var keys=Object.keys(byKey||{}),width=0,at=0,i;
+  for(i=0;i<keys.length;i++)if(keys[i].length>width)width=keys[i].length;
+  if(width<SLATE_MIN_TRUNC)return 0;
+  for(i=0;i<keys.length;i++)if(keys[i].length===width)at++;
+  return at>=2?width:0;
+}
 function slateResolveName(byKey,team){
   var k=teamKey(team);
   if(!k)return null;
   if(byKey[k])return {name:byKey[k],how:'exact'};
   var keys=Object.keys(byKey),hits=[],i;
-  /* the backend's key is a truncation of ours */
-  for(i=0;i<keys.length;i++)
-    if(keys[i].length>=6&&keys[i].length<k.length&&k.indexOf(keys[i])===0)hits.push(keys[i]);
+  var width=slateTruncWidth(byKey);
+  /* the backend's key is a truncation of ours — but only where the schedule
+     actually clips, and only AT the width it clips to. A shorter key that
+     happens to start our name is a different school, not a shortening. */
+  if(width)for(i=0;i<keys.length;i++)
+    if(keys[i].length===width&&width<k.length&&k.indexOf(keys[i])===0)hits.push(keys[i]);
   if(hits.length)return pickLongest(hits,'truncated');
-  /* or ours is the start of theirs — "TCU" against "TCU Horned Frogs" */
+  /* or ours is the start of theirs — "TCU" against "TCU Horned Frogs".
+     Never onto a key sitting at the clip width, though: that key is not a
+     longer spelling of our name, it is some other name cut off at the same
+     place. GEORGIATEC is ten characters on a schedule that clips at ten, so
+     it is not "Georgia" written out in full. */
   hits=[];
   for(i=0;i<keys.length;i++)
-    if(k.length>=6&&keys[i].length>k.length&&keys[i].indexOf(k)===0)hits.push(keys[i]);
+    if(k.length>=6&&keys[i].length>k.length&&keys[i].indexOf(k)===0
+       &&!(width&&keys[i].length===width))hits.push(keys[i]);
   if(hits.length===1)return {name:byKey[hits[0]],how:'expanded'};
   /* More than one school starts with this name — "Miami" against MIAMIFL and
      MIAMIOH. Unlike a truncation, nothing in the name says which, whatever
@@ -4068,15 +4162,89 @@ function slateGameSides(g){
   return (home&&away)?{home:String(home),away:String(away),
     game_id:String(g.game_id||g.game_ref||'').trim()}:null;
 }
+/* When did the schedule say this game starts? Written once because /v1/games,
+   the odds feed and a built slate row each spell the field differently. */
+function slateGameKick(g){
+  if(!g)return null;
+  return g.kickoff_at||g.kickoff||g.commence_time||g.start_time||null;
+}
+/* Two kickoffs a day and a half apart are not the same game. A window rather
+   than an equality because a schedule and a model file disagree about
+   kickoff times constantly — TBD windows, timezone stamps, a listed 3:30 that
+   moved — and none of that should refuse a match. What it does refuse is
+   Saturday afternoon standing in for Thursday night. A missing or unreadable
+   kickoff on either side is not a disagreement, so it does not block. */
+var SLATE_KICK_WINDOW_MS=36*3600*1000;
+function slateKickAgrees(a,b){
+  if(!a||!b)return true;
+  var ta=Date.parse(a),tb=Date.parse(b);
+  if(!isFinite(ta)||!isFinite(tb))return true;
+  return Math.abs(ta-tb)<=SLATE_KICK_WINDOW_MS;
+}
 /* The one scheduled game whose BOTH sides match this row, or null. Two
    candidates is not a near miss, it is a refusal: nothing in the pair says
    which, and guessing is how a slate gets filed under the wrong school. */
-function slatePairGame(games,awayName,homeName){
-  var hits=[],i,sides;
+function slatePairGame(games,awayName,homeName,kick){
+  var exact=[],clipped=[],i,g,sides;
   for(i=0;i<(games||[]).length;i++){
-    sides=slateGameSides(games[i]);
+    g=games[i];sides=slateGameSides(g);
     if(!sides)continue;
-    if(slateNameMatches(awayName,sides.away)&&slateNameMatches(homeName,sides.home))hits.push(sides);
+    if(!slateNameMatches(awayName,sides.away)||!slateNameMatches(homeName,sides.home))continue;
+    if(!slateKickAgrees(kick,slateGameKick(g)))continue;
+    if(teamKey(awayName)===teamKey(sides.away)&&teamKey(homeName)===teamKey(sides.home))exact.push(sides);
+    else clipped.push(sides);
+  }
+  /* An exact pair beats one that had to shorten a name to fit. On a schedule
+     that clips at ten, "Washington State @ Oregon" also matches a scheduled
+     WASHINGTON @ OREGON — but if the real Washington's game is the one on
+     that schedule, only it matches exactly, and the exact one is the answer. */
+  if(exact.length)return exact.length===1?exact[0]:null;
+  return clipped.length===1?clipped[0]:null;
+}
+/* Every schedule id and every row's game ref through the same normaliser, so
+   "401858423" and " 401858423 " are one id and a stale ref never half-matches. */
+function slateGameIdKey(v){
+  return String(v==null?'':v).trim().toUpperCase().replace(/[^A-Z0-9_]/g,'');
+}
+/* WHICH SCHEDULED GAME IS THIS ROW? — and, just as importantly, how we know.
+
+     'id'     the row named its game and the schedule has that id. Definitive.
+     'pair'   both sides match one scheduled game and only one. Definitive.
+     'rename' ONE side matches the schedule exactly and the other is a
+              recognisable spelling of that game's other side. Offered.
+     null     the schedule does not have this game.
+
+   That last answer is the one the old code could not give. It asked "does
+   this TEAM appear anywhere on the schedule", team by team, and a team that
+   did not was handed the nearest string in the whole list — which is how a
+   correct file came back reading "UCF → UCLA (closest on your backend)".
+   A game is the unit that can actually be looked up, so a game is the unit.
+
+   The rename branch demands an EXACT match on the side it pivots off. A
+   clipped match there would let "Indiana State @ Purdue" pivot off INDIANA
+   and propose renaming Purdue to whoever Indiana is really playing. */
+var SLATE_RENAME_MIN=0.62;
+function slateMatchRow(games,row){
+  if(!row)return null;
+  var list=games||[],i,sides,g;
+  var want=slateGameIdKey(row.game_ref);
+  if(want)for(i=0;i<list.length;i++){
+    sides=slateGameSides(list[i]);
+    if(sides&&sides.game_id&&slateGameIdKey(sides.game_id)===want)
+      return {how:'id',home:sides.home,away:sides.away,game_id:sides.game_id};
+  }
+  var pair=slatePairGame(list,row.away_team,row.home_team,row.kickoff);
+  if(pair)return {how:'pair',home:pair.home,away:pair.away,game_id:pair.game_id};
+  var hits=[],hk=teamKey(row.home_team),ak=teamKey(row.away_team),homeExact,other;
+  for(i=0;i<list.length;i++){
+    g=list[i];sides=slateGameSides(g);
+    if(!sides)continue;
+    if(!slateKickAgrees(row.kickoff,slateGameKick(g)))continue;
+    homeExact=!!hk&&teamKey(sides.home)===hk;
+    if(!homeExact&&!(ak&&teamKey(sides.away)===ak))continue;
+    other=homeExact?[row.away_team,sides.away]:[row.home_team,sides.home];
+    if(teamSimilarity(other[0],other[1])<SLATE_RENAME_MIN)continue;
+    hits.push({how:'rename',home:sides.home,away:sides.away,game_id:sides.game_id});
   }
   return hits.length===1?hits[0]:null;
 }
@@ -4084,87 +4252,129 @@ function slatePairGame(games,awayName,homeName){
    what was changed, so the creator is told rather than surprised. */
 function slateAlignToSchedule(games,rows){
   var byKey=slateNameIndex(games);
-  if(!Object.keys(byKey).length)return {rows:rows,changed:[],ambiguous:[],unresolved:[]};
-  /* The schedule's games by their own id. A row that carries the same game
-     id IS that game, so the id can settle a spelling that name-matching
-     alone cannot: "LA" is the nflverse code for the Rams and a prefix of
-     both LAR and LAC — unresolvable as a bare name — but on game
-     2026_01_SF_LA it can only be the home side, and the schedule spells
-     that side LAR. The id fills ONLY the slots the name pass left open;
-     a name that resolves cleanly always wins, so a stale or wrong ref can
-     never overwrite a row whose names already match the schedule. */
-  var byId={};
-  (games||[]).forEach(function(g){
-    var id=String(g.game_id||g.game_ref||'').trim().toUpperCase().replace(/[^A-Z0-9_]/g,'');
-    if(!id)return;
-    var home=g.home_team||g.home,away=g.away_team||g.away;
-    if((!home||!away)&&g.label){
-      var p=String(g.label).split(/\s+@\s+|\s+at\s+/i);
-      if(p.length===2){if(!away)away=p[0].trim();if(!home)home=p[1].trim();}
-    }
-    if(home&&away)byId[id]={home_team:String(home),away_team:String(away)};
-  });
-  var changed=[],ambiguous=[],unresolved=[],seen={},landedOn={};
-  var out=(rows||[]).map(function(o){
+  if(!Object.keys(byKey).length)return {rows:rows,changed:[],ambiguous:[],
+    unresolved:[],collisions:[],missing:[],matched:[]};
+  var changed=[],ambiguous=[],unresolved=[],seen={},landedOn={},missing=[],matched=[];
+  var HOWLABEL={id:'game id',pair:'matched as a game',rename:'closest game'};
+  var out=(rows||[]).map(function(o,idx){
     var c={},k;
     for(k in o)if(Object.prototype.hasOwnProperty.call(o,k))c[k]=o[k];
-    var hit=c.game_ref?byId[String(c.game_ref).trim().toUpperCase().replace(/[^A-Z0-9_]/g,'')]:null;
-    /* PAIR FIRST, when the row does not already name its game. Both sides
-       together identify a game that neither side alone can — which is the
-       only thing that separates Washington from Washington State on a
-       schedule that spells both WASHINGTON. Adopting the game's id as well
-       as its spellings is the part that matters: the row is then matched on
-       an id, so a name the schedule cannot make unique cannot misfile it. */
-    if(!hit){
-      var pair=slatePairGame(games,c.away_team,c.home_team);
-      if(pair){
-        if(pair.game_id&&!c.game_ref){
-          c.game_ref=pair.game_id;
-          if(!seen['g'+pair.game_id]){seen['g'+pair.game_id]=1;
-            changed.push({from:c.away_team+' @ '+c.home_team,to:pair.game_id,how:'matched as a game'});}
+    /* WHOLE ROW FIRST. A game the schedule can be shown to have settles both
+       of its spellings at once, using strictly more information than either
+       name carries on its own — which is the only thing that separates
+       Washington from Washington State on a schedule that spells both
+       WASHINGTON. Adopting the game's id as well as its spellings is the part
+       that matters: the row is then matched on an id, so a name the schedule
+       cannot make unique can no longer misfile it. */
+    var hit=slateMatchRow(games,c);
+    if(hit){
+      if(hit.game_id&&!c.game_ref)c.game_ref=hit.game_id;
+      ['home_team','away_team'].forEach(function(f){
+        var want=f==='home_team'?hit.home:hit.away;
+        if(want&&want!==c[f]){
+          if(!seen['c'+c[f]]){seen['c'+c[f]]=1;
+            changed.push({from:c[f],to:want,how:HOWLABEL[hit.how]||hit.how});}
+          c[f]=want;
         }
-        hit={home_team:pair.home,away_team:pair.away};
-      }
-    }
-    ['home_team','away_team'].forEach(function(f){
-      /* A pair or an explicit id used strictly more information than a name
-         on its own, so it settles the spelling. The per-name pass only runs
-         where neither was available. */
-      if(hit&&hit[f]){
-        if(hit[f]!==c[f]){
-          if(!seen['c'+c[f]]){seen['c'+c[f]]=1;changed.push({from:c[f],to:hit[f],how:'game id'});}
-          c[f]=hit[f];
-        }
+        /* Only a row that LANDED ON A GAME counts toward a collision. Two
+           unmatched rows that both got rewritten to one name are not "one
+           schedule name for two schools", they are two bad rewrites — and
+           reporting them as the former is how the page came to print "your
+           rows are still on the right games" above rows that were not. */
         landedOn[c[f]]=landedOn[c[f]]||{};landedOn[c[f]][String(o[f])]=1;
-        return;
-      }
+      });
+      matched.push({row:idx,how:hit.how,game_ref:c.game_ref,
+        away:c.away_team,home:c.home_team,
+        yourAway:String(o.away_team||''),yourHome:String(o.home_team||'')});
+      return c;
+    }
+    /* No scheduled game is this row. Each name is still put onto the
+       schedule's own spelling where the schedule unambiguously HAS that team,
+       because a backend that matches literally needs it and because the admin
+       side resolves quarantine on these strings. What no longer happens is a
+       rewrite onto a school the schedule never confirmed: slateResolveName
+       now refuses a shortening that is not at the schedule's clip width and
+       an expansion onto a name that is, so "Indiana State" stays Indiana
+       State and "Georgia" stays Georgia instead of becoming Indiana and
+       Georgia Tech. */
+    ['home_team','away_team'].forEach(function(f){
       var r=slateResolveName(byKey,c[f]);
       if(r&&!r.ambiguous){
         if(r.name!==c[f]){
           if(!seen['c'+c[f]]){seen['c'+c[f]]=1;changed.push({from:c[f],to:r.name,how:r.how});}
           c[f]=r.name;
         }
-        landedOn[c[f]]=landedOn[c[f]]||{};landedOn[c[f]][String(o[f])]=1;
         return;
       }
       if(!r){if(!seen['u'+c[f]]){seen['u'+c[f]]=1;unresolved.push(c[f]);}return;}
       if(!seen['a'+c[f]]){seen['a'+c[f]]=1;
         ambiguous.push({mine:c[f],options:r.ambiguous});}
     });
+    missing.push({row:idx,away:String(o.away_team||''),home:String(o.home_team||''),
+      kickoff:o.kickoff||null,game_ref:o.game_ref||null,
+      awayKnown:!!byKey[teamKey(o.away_team)],homeKnown:!!byKey[teamKey(o.home_team)]});
     return c;
   });
-  /* Two of the creator's OWN names landing on one schedule name. The pair
-     pass has already put each row on its right game, so nothing is misfiled
-     — but the schedule genuinely has one name for two schools, and a board
-     that shows both as WASHINGTON is showing something false. Reported with
-     both source names, because only the schedule can fix it. */
+  /* Two of the creator's own names landing on one schedule name, both on
+     games the schedule confirmed. Nothing is misfiled — each row is on its
+     own game and carries that game's id — but the schedule genuinely has one
+     name for two schools, and a board that shows both as WASHINGTON is
+     showing something false. Reported with both source names, because only
+     the schedule can fix it. */
   var collisions=[];
   Object.keys(landedOn).forEach(function(name){
     var mine=Object.keys(landedOn[name]);
     if(mine.length>1)collisions.push({schedule_name:name,yours:mine});
   });
-  return {rows:out,changed:changed,ambiguous:ambiguous,
-    unresolved:unresolved,collisions:collisions};
+  return {rows:out,changed:changed,ambiguous:ambiguous,unresolved:unresolved,
+    collisions:collisions,missing:missing,matched:matched};
+}
+
+/* WILL THE BACKEND BE ABLE TO MATCH THIS SLATE? — game by game.
+
+   Team by team was the wrong question and it gave the wrong answer. A file
+   that was entirely correct came back as "17 teams will not match your
+   backend's schedule" over a list of renames that were all wrong, because a
+   team was looked up alone and the nearest string in the schedule was offered
+   whatever it was: UCF → UCLA, Utah → UTEP, Iowa State → Iowa. What had
+   actually happened is that ten GAMES were absent from the backend's week —
+   every one of them an FBS team hosting an opponent the schedule feed does
+   not carry — and no spelling anywhere in that file could have fixed one of
+   them.
+
+   So this reports games, and separates the two causes that need different
+   answers from the creator:
+
+     renamed  the game IS on the schedule under other spellings. Already
+              applied by slateAlignToSchedule; shown so it is not a surprise.
+     missing  the schedule does not have this game. Nothing to fix in the file.
+
+   `neither` counts the missing games where NEITHER team appears anywhere in
+   the schedule's week, which is the strongest evidence that the schedule is
+   short of games rather than the file short of spellings. */
+function slateScheduleReport(games,rows){
+  var al=slateAlignToSchedule(games,rows);
+  var renamed=al.matched.filter(function(m){return m.how==='rename';});
+  var missing=al.missing;
+  return {total:(rows||[]).length,matched:al.matched.length,
+    renamed:renamed,missing:missing,
+    neither:missing.filter(function(m){return !m.awayKnown&&!m.homeKnown;}).length,
+    serverGames:(games||[]).length,serverNames:slateServerNames(games),
+    theirs:slateKickSpan(games,slateGameKick),
+    yours:slateKickSpan(rows,function(r){return r&&r.kickoff;})};
+}
+/* The first and last kickoff in a list, as epoch ms, or null. Two spans that
+   do not overlap are the likeliest reason a whole week comes back missing:
+   the file's week 1 and the backend's week 1 are different weekends. */
+function slateKickSpan(list,pick){
+  var lo=null,hi=null;
+  (list||[]).forEach(function(x){
+    var t=Date.parse(pick?pick(x):x);
+    if(!isFinite(t))return;
+    if(lo===null||t<lo)lo=t;
+    if(hi===null||t>hi)hi=t;
+  });
+  return lo===null?null:{from:lo,to:hi};
 }
 
 function slateUnmatchedTeams(games,rows){
@@ -4186,7 +4396,10 @@ function slateUnmatchedTeams(games,rows){
       var sc=teamSimilarity(mine,their);
       if(sc>bestScore){bestScore=sc;best=their;}
     });
-    return {mine:mine,theirs:bestScore>=0.45?best:null,score:+bestScore.toFixed(2)};
+    /* The same bar a rename has to clear to be applied. A suggestion nobody
+       should act on is worse than none: "UCF -> UCLA" at 0.5 was the whole
+       reason this screen stopped being believable. */
+    return {mine:mine,theirs:bestScore>=SLATE_RENAME_MIN?best:null,score:+bestScore.toFixed(2)};
   });
   return {missing:Object.keys(miss).map(function(k){return miss[k];}),
     suggest:suggest,serverNames:names,
@@ -5611,16 +5824,36 @@ async function renderCreatorDash(view,me){
 
       /* Check what will ACTUALLY be sent, which is the slate after it has been
          aligned onto the schedule's own spellings — otherwise this warns about
-         four teams that the alignment is about to resolve. */
-      var aligned=slateAlignToSchedule(list,slateBuildRows(season,week).rows);
-      var u=slateUnmatchedTeams(list,aligned.rows);
-      if(!u.count)return null;
-      return {level:u.none?'no-teams-at-all':'no-teams',
-        sport:sportCode,season:season,week:week,
-        missing:u.missing,suggest:u.suggest,serverNames:u.serverNames,
-        serverTeams:u.serverTeams};
+         four teams that the alignment is about to resolve.
+
+         Asked as "which GAMES will not match", never "which teams". The team
+         question has no useful answer: a team missing from the schedule is
+         usually a game missing from the schedule, and the nearest-string reply
+         it produced was wrong every time it mattered. */
+      var built=slateBuildRows(season,week).rows;
+      var rep=slateScheduleReport(list,built);
+      var u=slateUnmatchedTeams(list,slateAlignToSchedule(list,built).rows);
+      if(!rep.missing.length)return null;
+      return {level:(u.none||!rep.matched)?'no-teams-at-all':'games-missing',
+        sport:sportCode,season:season,week:week,report:rep,
+        serverNames:rep.serverNames,serverTeams:u.serverTeams};
     }
 
+    /* The likeliest reason a whole week comes back missing is that the two
+       sides do not mean the same week. Said only when the dates actually
+       disagree, so it never becomes noise on a slate that is merely short a
+       few games. */
+    function slateSpanNote(r){
+      if(!r||!r.theirs||!r.yours)return '';
+      var d=function(t){return new Date(t).toISOString().slice(0,10);};
+      var gap=r.yours.from>r.theirs.to||r.yours.to<r.theirs.from;
+      if(!gap)return '';
+      return '<b style="color:var(--warn)">Your file and your backend do not mean the same week.</b> '+
+        'This file kicks off '+esc(d(r.yours.from))+(d(r.yours.from)===d(r.yours.to)?'':' to '+esc(d(r.yours.to)))+
+        ', and the schedule you are being matched against runs '+esc(d(r.theirs.from))+
+        (d(r.theirs.from)===d(r.theirs.to)?'':' to '+esc(d(r.theirs.to)))+
+        '. Change the week on this upload to the one your backend uses for these dates.';
+    }
     function slatePreflightHTML(p){
       if(!p)return '';
       var head,body;
@@ -5647,17 +5880,42 @@ async function renderCreatorDash(view,me){
         body='The server has '+p.serverTeams+' team'+(p.serverTeams===1?'':'s')+' on that slate and none of them match yours, '+
           'which usually means the schedule loaded there is for a different sport or a different season — not that your spellings are wrong.';
       }else{
-        head=p.missing.length+' team'+(p.missing.length===1?'':'s')+' will not match your backend\'s schedule.';
-        /* Naming the missing team is half an answer. The other half is what the
-           backend calls it instead — put the two spellings side by side and the
-           mismatch is obvious rather than a guessing game. */
-        var lines=(p.suggest||[]).map(function(x){
-          return '<div class="mono" style="margin:2px 0">'+esc(x.mine)+
-            (x.theirs?' <span style="color:var(--dim)">&rarr;</span> <span style="color:var(--warn)">'
-              +esc(x.theirs)+'</span> <span class="note">(closest on your backend)</span>'
-              :' <span class="note">&mdash; nothing similar on your backend</span>')+'</div>';
-        }).join('');
-        body=lines+'<p class="note" style="margin:6px 0 0">Those rows will quarantine; the rest will post normally.</p>';
+        /* GAMES, not teams. The old message counted team names and offered the
+           nearest string on the backend for each — which told a creator whose
+           file was perfect that seventeen of their teams were wrong and that
+           UCF should be UCLA. The schedule was simply missing ten games. */
+        var r=p.report,miss=r.missing;
+        head=miss.length+' of your '+r.total+' game'+(r.total===1?'':'s')+
+          ' '+(miss.length===1?'is':'are')+' not on your backend\'s '+esc(p.sport)+' '+
+          esc(p.season)+(p.week?' week '+esc(p.week):'')+' schedule.';
+        body='<div style="margin:6px 0">'+miss.slice(0,14).map(function(m){
+          var tag=(!m.awayKnown&&!m.homeKnown)
+            ? 'neither team is on that schedule'
+            : (m.awayKnown?esc(m.away):esc(m.home))+' is, but this game is not';
+          return '<div class="mono" style="margin:2px 0">'+esc(m.away)+' @ '+esc(m.home)+
+            ' <span class="note">&mdash; '+tag+'</span></div>';
+        }).join('')+
+        (miss.length>14?'<div class="note">and '+(miss.length-14)+' more</div>':'')+'</div>';
+        /* The distinction that decides whether there is anything to do: a
+           spelling the creator can fix, or a game only the backend can add. */
+        if(r.neither===miss.length){
+          body+='<p class="note" style="margin:6px 0 0"><b>Nothing in your file is wrong.</b> '+
+            'Neither team in any of these appears anywhere in your backend\'s '+
+            (r.serverGames?r.serverGames+'-game ':'')+'schedule for this week, so it is the '+
+            'schedule that is short of games &mdash; the usual cause is a feed that carries only '+
+            'part of the slate, so a team hosting an opponent outside that set has no game to match. '+
+            'No spelling change here can reach it.</p>';
+        }else{
+          body+='<p class="note" style="margin:6px 0 0">Where one team is on the schedule and the '+
+            'other is not, the schedule has that team playing somebody else this week &mdash; so this '+
+            'is a missing game, not a mis-spelled one, unless the name above is genuinely wrong.</p>';
+        }
+        var sp=slateSpanNote(r);
+        if(sp)body+='<p class="note" style="margin:6px 0 0">'+sp+'</p>';
+        body+='<p class="note" style="margin:6px 0 0">Your other '+(r.total-miss.length)+
+          ' game'+((r.total-miss.length)===1?'':'s')+' post'+((r.total-miss.length)===1?'s':'')+
+          ' normally. These '+miss.length+' are still saved and quarantined, and resolve by themselves '+
+          'as soon as the schedule carries them.</p>';
       }
       var roster=(p.serverNames&&p.serverNames.length)
         ? '<details style="margin-top:8px"><summary class="note">What your backend has for '
@@ -5722,7 +5980,11 @@ async function renderCreatorDash(view,me){
       try{pf=await slatePreflight(env.sport,env.season,env.week);}catch(e){pf=null;}
       if(pf&&!opts.ignorePreflight){
         pfHtml=slatePreflightHTML(pf);
-        var blocking=(pf.level!=='no-teams');
+        /* A slate that is merely short a few games still posts the rest —
+           blocking that would strand twenty good games over ten the backend
+           has not ingested. Everything else (wrong sport, wrong model, no
+           schedule at all) is a real stop. */
+        var blocking=(pf.level!=='games-missing');
         if(!dry&&blocking){
           $('slOut').innerHTML=slatePreflightHTML(pf)+
             '<p class="note" style="margin:8px 0 0">Nothing was posted. '+
@@ -5763,10 +6025,26 @@ async function renderCreatorDash(view,me){
             return x.yours.map(function(y){return '<span class="mono">'+esc(y)+'</span>';}).join(' and ')+
               ' both come back as <span class="mono">'+esc(x.schedule_name)+'</span>';
           }).join('; ')+'. '+
-          'The schedule stores team names cut to ten characters, and these are identical that far in. '+
-          '<b>Your rows are still on the right games</b> &mdash; each was matched on both teams at once and '+
-          'now carries its own game id, so nothing is filed under the wrong school. '+
-          'But the board will show one name for both until the schedule carries the full spelling.</p>';
+          'The schedule clips team names to a fixed width and these are identical that far in. '+
+          '<b>Both rows are still on the right games</b> &mdash; only a row the schedule '+
+          'confirmed as a game is counted here, and each carries that game\'s own id, so nothing is '+
+          'filed under the wrong school. But the board will show one name for both until the '+
+          'schedule carries the full spelling.</p>';
+      }
+      /* A name changed on the strength of ONE side matching. The game is real
+         and the schedule's own spelling is what gets sent, but the creator
+         should see it rather than find it on the board. */
+      var byOne=(align.matched||[]).filter(function(m){return m.how==='rename';});
+      if(byOne.length){
+        alignHtml+='<p class="note" style="margin:6px 0 0;border-left:2px solid var(--warn);padding-left:8px">'+
+          '<b style="color:var(--warn)">Matched on one team</b> &mdash; '+
+          byOne.slice(0,5).map(function(m){
+            return '<span class="mono">'+esc(m.yourAway)+' @ '+esc(m.yourHome)+'</span> was posted as '+
+              '<span class="mono">'+esc(m.away)+' @ '+esc(m.home)+'</span>';
+          }).join('; ')+
+          (byOne.length>5?' and '+(byOne.length-5)+' more':'')+
+          '. One side matched your backend exactly and the other was close enough to be the same '+
+          'school on the same date. Check these are the games you meant.</p>';
       }
       if(align.ambiguous.length){
         alignHtml+='<p class="note" style="margin:0 0 6px;border-left:2px solid var(--warn);padding-left:8px">'+

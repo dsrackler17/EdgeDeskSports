@@ -2272,6 +2272,352 @@ if (typeof sandbox.localGrade === 'function') try {
     { threw: String((e && e.stack) || e) });
 }
 
+/* =======================================================================
+   4. THE UPLOAD THAT WAS TOLD SEVENTEEN OF ITS TEAMS WERE WRONG.
+
+   A real CFB week-1 file, thirty games, every name correct, uploaded against
+   a backend whose schedule clips team names to ten characters and carries
+   only part of the slate. What came back:
+
+     "17 teams will not match your backend's schedule."
+       UCF                      -> UCLA        (closest on your backend)
+       Utah                     -> UTEP        (closest on your backend)
+       Iowa State               -> IOWA        (closest on your backend)
+       Eastern Illinois         -> ILLINOIS    (closest on your backend)
+       Arkansas-Pine Bluff      -> ARKANSASST  (closest on your backend)
+       New Hampshire            -> NEWMEXICOS  (closest on your backend)
+       Southeast Missouri State -> MISSOURIST  (closest on your backend)
+       Minnesota, Idaho, Purdue, Kansas, Syracuse, Kentucky, Bethune-Cookman,
+       Long Island University, Youngstown State, Tennessee State
+                                -- nothing similar on your backend
+
+   Every one of those suggestions is a different school. Worse, two names were
+   not merely suggested but silently REWRITTEN before posting -- "Georgia"
+   into Georgia Tech and "Indiana State" into Indiana -- under a green
+   "Matched to your schedule's own names", with a note underneath assuring the
+   creator that "your rows are still on the right games".
+
+   Nothing in the file was wrong. Ten of its thirty games were simply absent
+   from the backend's week, every one of them an FBS team hosting an opponent
+   the schedule feed does not carry. This section is that upload.
+   ======================================================================= */
+if (typeof sandbox.slateMatchRow === 'function') {
+  var S4 = sandbox;
+
+  /* The backend as it actually answers: names clipped to ten characters,
+     upper-cased, punctuation gone, and twenty of the thirty games present. */
+  function clip(n) { return S4.teamKey(n).toUpperCase().slice(0, 10); }
+  var P4 = [
+    ['Massachusetts', 'Rutgers', '401858423', '2026-09-03T22:00:00Z'],
+    ['Akron', 'Wake Forest', '401858204', '2026-09-03T23:00:00Z'],
+    ['Colorado', 'Georgia Tech', '401856776', '2026-09-04T00:00:00Z'],
+    ['UAB', 'Illinois', '401858424', '2026-09-04T01:00:00Z'],
+    ['UTEP', 'Oklahoma', '401856664', '2026-09-05T00:00:00Z'],
+    ['Toledo', 'Michigan State', '401858429', '2026-09-05T00:00:00Z'],
+    ['Miami', 'Stanford', '401858206', '2026-09-05T01:00:00Z'],
+    ['Fresno State', 'USC', '401858436', '2026-09-05T01:00:00Z'],
+    ['East Carolina', 'Alabama', '401856634', '2026-09-05T16:00:00Z'],
+    ['North Texas', 'Indiana', '401858425', '2026-09-05T16:00:00Z'],
+    ['Ohio', 'Nebraska', '401858430', '2026-09-05T16:00:00Z'],
+    ['Oregon State', 'Houston', '401856778', '2026-09-05T16:00:00Z'],
+    ['Coastal Carolina', 'West Virginia', '401856780', '2026-09-05T16:00:00Z'],
+    ['Ball State', 'Ohio State', '401858432', '2026-09-05T16:30:00Z'],
+    ['Miami (OH)', 'Pittsburgh', '401858207', '2026-09-05T16:30:00Z'],
+    ['Kent State', 'South Carolina', '401856665', '2026-09-05T16:45:00Z'],
+    ['Marshall', 'Penn State', '401858434', '2026-09-05T19:30:00Z'],
+    ['Tulane', 'Duke', '401858209', '2026-09-05T19:30:00Z'],
+    ['Baylor', 'Auburn', '401856636', '2026-09-05T19:30:00Z'],
+    ['Texas State', 'Texas', '401856667', '2026-09-05T19:30:00Z'],
+    /* two more real week-1 games, so IOWA and UCLA are on the backend
+       exactly as they were when it offered them to Iowa State and UCF */
+    ['Iowa', 'Kansas State', '401999001', '2026-09-05T18:00:00Z'],
+    ['UCLA', 'New Mexico State', '401999002', '2026-09-05T22:00:00Z']
+  ].map(function (g) {
+    return { label: clip(g[0]) + ' @ ' + clip(g[1]), game_id: g[2], kickoff_at: g[3] };
+  });
+
+  /* The creator's thirty rows, spelled the way the file spells them. The ten
+     the backend has no game for are marked. */
+  var FILE30 = [
+    ['Massachusetts', 'Rutgers', '401858423', '2026-09-03T22:00:00Z', 1],
+    ['Akron', 'Wake Forest', '401858204', '2026-09-03T23:00:00Z', 1],
+    ['Bethune-Cookman', 'UCF', '401856767', '2026-09-03T23:00:00Z', 0],
+    ['Arkansas-Pine Bluff', 'Missouri', '401856663', '2026-09-04T00:00:00Z', 0],
+    ['Colorado', 'Georgia Tech', '401856776', '2026-09-04T00:00:00Z', 1],
+    ['Eastern Illinois', 'Minnesota', '401858422', '2026-09-04T00:00:00Z', 0],
+    ['Idaho', 'Utah', '401856768', '2026-09-04T01:00:00Z', 0],
+    ['UAB', 'Illinois', '401858424', '2026-09-04T01:00:00Z', 1],
+    ['Indiana State', 'Purdue', '401858435', '2026-09-04T23:00:00Z', 0],
+    ['Long Island University', 'Kansas', '401856769', '2026-09-05T00:00:00Z', 0],
+    ['UTEP', 'Oklahoma', '401856664', '2026-09-05T00:00:00Z', 1],
+    ['Toledo', 'Michigan State', '401858429', '2026-09-05T00:00:00Z', 1],
+    ['Miami', 'Stanford', '401858206', '2026-09-05T01:00:00Z', 1],
+    ['Fresno State', 'USC', '401858436', '2026-09-05T01:00:00Z', 1],
+    ['East Carolina', 'Alabama', '401856634', '2026-09-05T16:00:00Z', 1],
+    ['North Texas', 'Indiana', '401858425', '2026-09-05T16:00:00Z', 1],
+    ['Ohio', 'Nebraska', '401858430', '2026-09-05T16:00:00Z', 1],
+    ['New Hampshire', 'Syracuse', '401858208', '2026-09-05T16:00:00Z', 0],
+    ['Oregon State', 'Houston', '401856778', '2026-09-05T16:00:00Z', 1],
+    ['Coastal Carolina', 'West Virginia', '401856780', '2026-09-05T16:00:00Z', 1],
+    ['Ball State', 'Ohio State', '401858432', '2026-09-05T16:30:00Z', 1],
+    ['Miami (OH)', 'Pittsburgh', '401858207', '2026-09-05T16:30:00Z', 1],
+    ['Kent State', 'South Carolina', '401856665', '2026-09-05T16:45:00Z', 1],
+    ['Southeast Missouri State', 'Iowa State', '401856779', '2026-09-05T17:00:00Z', 0],
+    ['Youngstown State', 'Kentucky', '401856659', '2026-09-05T17:00:00Z', 0],
+    ['Tennessee State', 'Georgia', '401856658', '2026-09-05T19:00:00Z', 0],
+    ['Marshall', 'Penn State', '401858434', '2026-09-05T19:30:00Z', 1],
+    ['Tulane', 'Duke', '401858209', '2026-09-05T19:30:00Z', 1],
+    ['Baylor', 'Auburn', '401856636', '2026-09-05T19:30:00Z', 1],
+    ['Texas State', 'Texas', '401856667', '2026-09-05T19:30:00Z', 1]
+  ];
+  function rows30(withIds) {
+    return FILE30.map(function (r, i) {
+      return { game_ref: withIds ? r[2] : 'R' + i, away_team: r[0], home_team: r[1], kickoff: r[3] };
+    });
+  }
+  var ONSCHEDULE = FILE30.filter(function (r) { return r[4]; }).length;   /* 20 */
+  var ABSENT = FILE30.length - ONSCHEDULE;                                /* 10 */
+
+  /* ---- the seven wrong suggestions, one test each -------------------- */
+  [['UCF', 'UCLA'], ['Utah', 'UTEP'], ['Iowa State', 'IOWA'],
+   ['Eastern Illinois', 'ILLINOIS'], ['Arkansas-Pine Bluff', 'ARKANSASST'],
+   ['New Hampshire', 'NEWMEXICOS'], ['Southeast Missouri State', 'MISSOURIST'],
+   ['Kansas', 'KANSASSTA'], ['Georgia', 'GEORGIATEC'],
+   ['Indiana State', 'INDIANA']].forEach(function (pr) {
+    chk('"' + pr[0] + '" is not close enough to ' + pr[1] + ' to be offered as it',
+      function () { return S4.teamSimilarity(pr[0], pr[1]) < S4.SLATE_RENAME_MIN; },
+      { score: S4.teamSimilarity(pr[0], pr[1]), bar: S4.SLATE_RENAME_MIN });
+  });
+  chk('the whole slate produces no rename suggestion at all',
+    function () {
+      var u = S4.slateUnmatchedTeams(P4, S4.slateAlignToSchedule(P4, rows30(false)).rows);
+      return u.suggest.every(function (x) { return x.theirs === null; });
+    },
+    { got: S4.slateUnmatchedTeams(P4, S4.slateAlignToSchedule(P4, rows30(false)).rows).suggest
+        .filter(function (x) { return x.theirs; }) });
+
+  /* ---- the two silent rewrites --------------------------------------- */
+  chk('"Georgia" is no longer rewritten into Georgia Tech',
+    function () {
+      var a = S4.slateAlignToSchedule(P4, rows30(false));
+      return a.rows[25].home_team === 'Georgia';
+    },
+    { got: S4.slateAlignToSchedule(P4, rows30(false)).rows[25] });
+  chk('"Indiana State" is no longer rewritten into Indiana',
+    function () {
+      var a = S4.slateAlignToSchedule(P4, rows30(false));
+      return a.rows[8].away_team === 'Indiana State';
+    },
+    { got: S4.slateAlignToSchedule(P4, rows30(false)).rows[8] });
+  chk('neither rewrite is reported as a match either',
+    function () {
+      var a = S4.slateAlignToSchedule(P4, rows30(false));
+      return a.changed.every(function (c) {
+        return c.from !== 'Georgia' && c.from !== 'Indiana State';
+      });
+    });
+  chk('nothing is claimed as a name collision when no game was matched',
+    function () { return S4.slateAlignToSchedule(P4, rows30(false)).collisions.length === 0; },
+    'the page printed "your rows are still on the right games" over rows that were not');
+
+  /* ---- what it should say instead ------------------------------------ */
+  chk('the twenty games the backend has all match',
+    function () {
+      var r = S4.slateScheduleReport(P4, rows30(false));
+      return r.matched === ONSCHEDULE && r.total === 30;
+    },
+    { got: S4.slateScheduleReport(P4, rows30(false)) });
+  chk('the ten games the backend does not have are reported as GAMES, not teams',
+    function () {
+      var r = S4.slateScheduleReport(P4, rows30(false));
+      return r.missing.length === ABSENT
+        && r.missing.every(function (m) { return m.away && m.home; });
+    },
+    { got: S4.slateScheduleReport(P4, rows30(false)).missing.length });
+  chk('every absent game is one the file actually named',
+    function () {
+      var r = S4.slateScheduleReport(P4, rows30(false));
+      var want = {};
+      FILE30.forEach(function (x) { if (!x[4]) want[x[0] + '@' + x[1]] = 1; });
+      return r.missing.length === ABSENT
+        && r.missing.every(function (m) { return want[m.away + '@' + m.home]; });
+    },
+    { got: S4.slateScheduleReport(P4, rows30(false)).missing
+        .map(function (m) { return m.away + '@' + m.home; }) });
+  chk('a game whose two teams are both unknown is counted as the schedule\'s gap',
+    function () {
+      var r = S4.slateScheduleReport(P4, rows30(false));
+      return r.neither >= 6 && r.neither <= r.missing.length;
+    },
+    { neither: S4.slateScheduleReport(P4, rows30(false)).neither });
+  chk('no game is matched on one team only, on this file',
+    function () { return S4.slateScheduleReport(P4, rows30(false)).renamed.length === 0; },
+    { got: S4.slateScheduleReport(P4, rows30(false)).renamed });
+
+  /* ---- the file's own game ids -------------------------------------- */
+  chk('the game id in the file matches the schedule outright',
+    function () {
+      var hit = S4.slateMatchRow(P4, rows30(true)[0]);
+      return hit && hit.how === 'id' && hit.home === 'RUTGERS';
+    },
+    { got: S4.slateMatchRow(P4, rows30(true)[0]) });
+  chk('an id settles a spelling that the names could not',
+    function () {
+      /* the id is right, the home name is a school the schedule also carries */
+      var hit = S4.slateMatchRow(P4, { game_ref: '401858425', away_team: 'North Texas',
+        home_team: 'Indiana State', kickoff: '2026-09-05T16:00:00Z' });
+      return hit && hit.how === 'id' && hit.home === 'INDIANA';
+    });
+  chk('an id the schedule does not have does not match anything by force',
+    function () {
+      return S4.slateMatchRow(P4, { game_ref: '401856767', away_team: 'Bethune-Cookman',
+        home_team: 'UCF', kickoff: '2026-09-03T23:00:00Z' }) === null;
+    });
+  chk('a row matched by id carries that id onward',
+    function () {
+      var a = S4.slateAlignToSchedule(P4, rows30(true));
+      return a.rows[0].game_ref === '401858423' && a.rows[0].home_team === 'RUTGERS';
+    });
+  chk('ids do not rescue games the schedule is missing',
+    function () { return S4.slateScheduleReport(P4, rows30(true)).missing.length === ABSENT; },
+    'the ids are correct; the games are absent, and no id can add them');
+
+  /* ---- the clip width, which is what makes all of it decidable ------- */
+  chk('a schedule that clips at ten is recognised as clipping at ten',
+    function () { return S4.slateTruncWidth(S4.slateNameIndex(P4)) === 10; },
+    { got: S4.slateTruncWidth(S4.slateNameIndex(P4)) });
+  chk('a schedule that merely has one long name is not called a clip',
+    function () {
+      return S4.slateTruncWidth(S4.slateNameIndex(
+        [{ label: 'TCU @ North Carolina' }, { label: 'USC @ Ohio' }])) === 0;
+    },
+    'width is only a clip when several names land on it');
+  chk('a clipped name still resolves, at the clip width',
+    function () {
+      var ix = S4.slateNameIndex(P4.concat([{ label: 'FLORIDASTA @ MIAMIFL' }]));
+      var r = S4.slateResolveName(ix, 'Florida State');
+      return r && r.name === 'FLORIDASTA' && r.how === 'truncated';
+    },
+    'the clip guard must not break the case it was built for');
+  chk('a shorter name that is not at the clip width is a different school',
+    function () { return S4.slateResolveName(S4.slateNameIndex(P4), 'Indiana State') === null; });
+  chk('an expansion onto a name sitting at the clip width is refused',
+    function () { return S4.slateResolveName(S4.slateNameIndex(P4), 'Georgia') === null; },
+    'GEORGIATEC is ten characters on a schedule that clips at ten, so it is not "Georgia" spelled out');
+
+  /* ---- a pair still beats a clipped collision ------------------------ */
+  var WASH = [{ label: 'WASHINGTON @ OREGON', game_id: 'G1' },
+              { label: 'UTAH @ WASHINGTON', game_id: 'G2' }];
+  chk('an exact pair wins over one that had to shorten a name',
+    function () {
+      var hit = S4.slateMatchRow(WASH, { away_team: 'Washington', home_team: 'Oregon' });
+      return hit && hit.game_id === 'G1';
+    });
+  chk('a clipped pair still matches when nothing exact competes',
+    function () {
+      var hit = S4.slateMatchRow([{ label: 'WASHINGTON @ OREGON', game_id: 'G1' }],
+        { away_team: 'Washington State', home_team: 'Oregon' });
+      return hit && hit.how === 'pair';
+    },
+    'the schedule spells both schools WASHINGTON; the pair is all there is');
+
+  /* ---- kickoffs ------------------------------------------------------ */
+  chk('a game a week away is not this row\'s game',
+    function () {
+      return S4.slateMatchRow([{ label: 'AKRON @ WAKEFOREST', kickoff_at: '2026-09-12T23:00:00Z' }],
+        { away_team: 'Akron', home_team: 'Wake Forest', kickoff: '2026-09-03T23:00:00Z' }) === null;
+    });
+  chk('a kickoff that merely moved a few hours still matches',
+    function () {
+      return !!S4.slateMatchRow([{ label: 'AKRON @ WAKEFOREST', kickoff_at: '2026-09-04T03:30:00Z' }],
+        { away_team: 'Akron', home_team: 'Wake Forest', kickoff: '2026-09-03T23:00:00Z' });
+    });
+  chk('a missing kickoff on either side is not a disagreement',
+    function () {
+      return !!S4.slateMatchRow([{ label: 'AKRON @ WAKEFOREST' }],
+        { away_team: 'Akron', home_team: 'Wake Forest', kickoff: '2026-09-03T23:00:00Z' })
+        && !!S4.slateMatchRow([{ label: 'AKRON @ WAKEFOREST', kickoff_at: '2026-09-03T23:00:00Z' }],
+          { away_team: 'Akron', home_team: 'Wake Forest' });
+    });
+
+  /* ---- one side exact, the other a real spelling difference ---------- */
+  chk('a genuine spelling difference on one side still matches its game',
+    function () {
+      var hit = S4.slateMatchRow([{ label: 'SANJOSEST @ USC', game_id: 'G9' }],
+        { away_team: 'San José State', home_team: 'USC' });
+      return hit && hit.game_id === 'G9';
+    });
+  chk('a rename never pivots off a clipped match',
+    function () {
+      /* INDIANA is a clipped-schedule match for "Indiana State", so pivoting
+         off it would propose renaming Purdue to whoever Indiana is playing */
+      return S4.slateMatchRow(P4, { away_team: 'Indiana State', home_team: 'Purdue',
+        kickoff: '2026-09-04T23:00:00Z' }) === null;
+    });
+  chk('a shortening that fits two schedule names is settled by the qualifier',
+    function () {
+      /* "Florida State" is a shortening of both FLORIDAST and FLORIDA, so the
+         pair pass refuses it — but FLORIDA carries no "State" and Florida
+         State does, which settles it without guessing. Getting this right is
+         the difference between a game matched and a game stranded. */
+      var hit = S4.slateMatchRow(
+        [{ label: 'FLORIDAST @ MIAMI', game_id: 'A' }, { label: 'FLORIDA @ MIAMI', game_id: 'B' }],
+        { away_team: 'Florida State', home_team: 'Miami' });
+      return hit && hit.game_id === 'A';
+    },
+    { got: S4.slateMatchRow(
+        [{ label: 'FLORIDAST @ MIAMI', game_id: 'A' }, { label: 'FLORIDA @ MIAMI', game_id: 'B' }],
+        { away_team: 'Florida State', home_team: 'Miami' }) });
+  chk('the plain school is never handed the State school\'s game',
+    function () {
+      return S4.slateMatchRow(
+        [{ label: 'FLORIDAST @ MIAMI', game_id: 'A' }],
+        { away_team: 'Florida', home_team: 'Miami' }) === null;
+    });
+  chk('when nothing separates two candidates it refuses, and says nothing',
+    function () {
+      return S4.slateMatchRow(
+        [{ label: 'FLORIDAST @ MIAMI', game_id: 'A' }, { label: 'FLORIDASTA @ MIAMI', game_id: 'B' }],
+        { away_team: 'Florida State', home_team: 'Miami' }) === null;
+    },
+    'both are Florida State shortened; picking one is how a slate gets misfiled');
+  chk('but an exact spelling among them is not ambiguous at all',
+    function () {
+      var hit = S4.slateMatchRow(
+        [{ label: 'FLORIDAST @ MIAMI', game_id: 'A' }, { label: 'FLORIDA @ MIAMI', game_id: 'B' }],
+        { away_team: 'Florida St', home_team: 'Miami' });
+      return hit && hit.game_id === 'A';
+    });
+
+  /* ---- weeks that do not mean the same thing ------------------------- */
+  chk('the two date spans are reported so a week mismatch can be seen',
+    function () {
+      var r = S4.slateScheduleReport(P4, rows30(false));
+      return r.yours && r.theirs
+        && new Date(r.yours.from).toISOString().slice(0, 10) === '2026-09-03';
+    },
+    { got: S4.slateScheduleReport(P4, rows30(false)).yours });
+  chk('a file for a different weekend leaves every game missing',
+    function () {
+      var far = rows30(false).map(function (o) {
+        return { game_ref: o.game_ref, away_team: o.away_team, home_team: o.home_team,
+                 kickoff: o.kickoff.replace('2026-09-0', '2026-10-0') };
+      });
+      var r = S4.slateScheduleReport(P4, far);
+      return r.matched === 0 && r.missing.length === 30;
+    });
+
+  /* ---- and the honest headline -------------------------------------- */
+  chk('the page can say how many GAMES are absent, not how many teams',
+    function () {
+      var r = S4.slateScheduleReport(P4, rows30(false));
+      return r.missing.length === 10 && r.total === 30 && (r.total - r.missing.length) === 20;
+    },
+    'the old message counted 17 teams; the truth is 10 games');
+} else {
+  chk('the game-level matcher is defined', false);
+}
+
 /* ---- report ------------------------------------------------------------ */
 failures.forEach(function (f) {
   console.log('FAIL | ' + f.name + (f.detail ? '  ' + JSON.stringify(f.detail) : ''));
