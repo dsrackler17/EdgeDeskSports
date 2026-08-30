@@ -1807,6 +1807,38 @@ button:focus-visible,select:focus-visible,input:focus-visible,a:focus-visible{ou
 /* ADDED: Model Collective tab loader. Injects the embed script once, on first
    open, so the app pays nothing for the tab until it is used. The embed runs
    in its own shadow root and cannot affect the rest of the app. */
+/* Which of the four things happened, in the reader's words. Named and pure
+   so the wording is something a test can hold: a diagnostic that is itself
+   wrong is worse than none, because it sends the reader after the wrong
+   thing. */
+function mcWhyMessage(st){
+  st=st||{};
+  var msg='';
+  if(!st.ok){
+    msg='The Collective did not answer just now, so nothing above is a verdict on your access '
+      +'\u2014 it is an outage, not a lock.';
+  }else if(st.entitled){
+    /* Open. Say how it was earned only where that is worth knowing: a
+       creator sees the board because they build it, which is not a
+       subscription and should not be mistaken for one when it is the
+       only thing holding the door. */
+    msg=st.via==='creator'
+      ? 'Unlocked because this account is a Collective creator.'
+      : '';
+  }else if(!st.viewer){
+    msg='<b>You are signed out in this app</b>, so the Collective is being asked anonymously '
+      +'\u2014 and an anonymous reader is entitled to nothing. Sign in, then reopen this tab.';
+  }else{
+    msg='<b>Signed in, and no paid access on this account.</b> The Collective recognised you and '
+      +'found no active EdgeDesk subscription, no Collective subscription, and no creator profile '
+      +'\u2014 so the pre-kickoff numbers stay locked. A free EdgeDesk account does not unlock '
+      +'them. Nothing on this page can: a locked row arrives with no numbers in it. '
+      +'<a href="./index.html#pricing">See the plan</a> \u00b7 '
+      +'<a href="/collective/" target="_blank" rel="noopener">open the full Collective</a> and '
+      +'check the same account there.';
+  }
+  return msg;
+}
 var _mcLoaded=false;
 function loadCollective(){
   if(_mcLoaded)return;_mcLoaded=true;
@@ -1854,24 +1886,7 @@ function loadCollective(){
     mountEl.addEventListener('mc-state',function(ev){
       var st=(ev&&ev.detail)||{},el=document.getElementById('mcWhy');
       if(!el)return;
-      var msg='';
-      if(!st.ok){
-        msg='The Collective did not answer just now, so nothing above is a verdict on your access '
-          +'\u2014 it is an outage, not a lock.';
-      }else if(st.entitled){
-        msg='';
-      }else if(!st.viewer){
-        msg='<b>You are signed out in this app</b>, so the Collective is being asked anonymously '
-          +'\u2014 and an anonymous reader is entitled to nothing. Sign in, then reopen this tab.';
-      }else{
-        msg='<b>Your sign-in was handed to the Collective and it did not recognise this account as a '
-          +'subscriber</b>, so the pre-kickoff numbers stay locked. An EdgeDesk subscription does not '
-          +'unlock the Collective yet: that mapping lives in the Collective service, and no version of '
-          +'this page can grant it \u2014 locked rows arrive with no numbers in them. '
-          +'<a href="/collective/" target="_blank" rel="noopener">Open the full Collective</a> and check '
-          +'the same account there: if it is locked in both places, it is the entitlement, not the app.';
-      }
-      el.innerHTML=msg;
+      el.innerHTML=mcWhyMessage(st);
     });
   }
   var s=document.createElement('script');

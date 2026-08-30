@@ -338,9 +338,29 @@ response built for one reader is `private, no-store`; the shared cache window
 applies only to the anonymous board. `Vary` carries `Authorization` as well as
 `Origin`.
 
-Note that with `billing.enabled` false — the current setting — `isEntitled()`
-already returns true for any signed-in account, so the board unlocks the
-moment the caller is resolved at all.
+Two more defects came out of the same file once it was read properly:
+
+* **Only one sport ever reached the board.** `const sport = meta.sports[0]` —
+  the first sport in the list and only that one — so a Collective running
+  college football alongside the NFL put *no* college slate on the embed at
+  all. Four models on its own wall had nothing to show for themselves there,
+  which is the whole reason they are on it. Every active sport is built now,
+  capped **per sport** and then merged by kickoff: one shared cap is the same
+  bug wearing a hat, because an NFL Sunday is sixteen games and fills any
+  total limit on its own. Each game carries its `sport`, and the embed shows
+  it as a chip — a mixed list sorted by kickoff is unreadable otherwise.
+  `embed.upcoming_per_sport` (16) and `embed.settled_per_sport` (6) tune it.
+
+* **A free account counted as paid.** `isEntitled()` short-circuited on
+  `billing.enabled !== true` and returned true for anybody holding a session.
+  With identity resolution fixed, that would have handed the paid board to
+  every signed-in free account the moment it started working. The branch is
+  gone: the ways in are an active EdgeDesk subscription, an active Collective
+  subscription, or being a creator.
+
+The payload now carries `entitlement: { identified, entitled, via }`, so a
+locked reader can be told which check failed rather than left to guess — the
+app's Collective tab turns it into one line naming the case.
 
 **Client side**, `embed.js` retries once anonymously when the request throws:
 a preflight refused for the `Authorization` header reaches JavaScript as a

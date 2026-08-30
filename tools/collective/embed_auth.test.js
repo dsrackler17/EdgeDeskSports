@@ -38,6 +38,21 @@ if (a < 0 || b < 0) {
   console.log('FAIL | collective/embed.js no longer carries the viewerToken block between its markers');
   process.exit(1);
 }
+/* stateFrom lives above the block, beside the emitter it feeds. */
+const sfA = SRC.indexOf('  function stateFrom(d, locked) {');
+const sfB = SRC.indexOf('  function emitState(detail) {', sfA);
+if (sfA < 0 || sfB < 0) {
+  console.log('FAIL | collective/embed.js no longer carries stateFrom between its markers');
+  process.exit(1);
+}
+/* The wording the reader is shown, out of the page that shows it. */
+const APP = fs.readFileSync(path.join(__dirname, '..', '..', 'app.html'), 'utf8');
+const wA = APP.indexOf('function mcWhyMessage(st){');
+const wB = APP.indexOf('var _mcLoaded=false;', wA);
+if (wA < 0 || wB < 0) {
+  console.log('FAIL | app.html no longer carries mcWhyMessage between its markers');
+  process.exit(1);
+}
 const BLOCK = SRC.slice(a, b);
 global.window = global;
 global.DEFAULT_API = 'https://iattxbkbufslbauoumga.supabase.co/functions/v1';
@@ -51,6 +66,8 @@ global.fetch = () => new Promise(() => {});
 global.render = () => {};
 global.fallback = () => {};
 vm.runInThisContext(BLOCK, { filename: 'collective/embed.js [viewer + bootstrap]' });
+vm.runInThisContext(SRC.slice(sfA, sfB), { filename: 'collective/embed.js [stateFrom]' });
+vm.runInThisContext(APP.slice(wA, wB), { filename: 'app.html [mcWhyMessage]' });
 
 const b64u = o => Buffer.from(JSON.stringify(o)).toString('base64')
   .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
@@ -181,6 +198,46 @@ async function ask(fn, api) {
   r = await boot({ hook: () => PERSON, statuses: [500] });
   chk('any other failure falls back rather than rendering nothing',
     r.what === 'fallback' && r.forbidden === false, { got: r });
+
+  /* ---- what the host page is told, and what it says -------------------
+     A locked row looks the same whichever reason it is. The Collective's
+     payload now names the reason; these hold the translation of it, because
+     a diagnostic that is itself wrong is worse than none -- it sends the
+     reader after the wrong thing. */
+  global.VIEWER = true;
+  let st = global.stateFrom({ entitlement: { identified: true, entitled: true, via: 'edgedesk' } }, true);
+  chk('the API\'s own answer beats the local guess about the lock',
+    st.entitled === true && st.via === 'edgedesk' && st.viewer === true, { got: st });
+  st = global.stateFrom({ entitlement: { identified: true, entitled: false, via: null } }, true);
+  chk('recognised but not paid is carried through as exactly that',
+    st.viewer === true && st.entitled === false && st.via === null, { got: st });
+  st = global.stateFrom({ entitlement: { identified: false, entitled: false, via: null } }, true);
+  chk('an unidentified reader is reported unidentified even when a token was sent',
+    st.viewer === false, { got: st });
+  global.VIEWER = true;
+  st = global.stateFrom({ wall: [] }, false);
+  chk('a payload with no entitlement block falls back to what it always used',
+    st.viewer === true && st.entitled === true && st.via === null, { got: st });
+  st = global.stateFrom({ wall: [] }, true);
+  chk('and to the lock when there is one', st.entitled === false, { got: st });
+
+  const why = global.mcWhyMessage;
+  chk('an outage is not reported as a lock',
+    /outage, not a lock/.test(why({ ok: false })));
+  chk('an open board says nothing at all',
+    why({ ok: true, viewer: true, entitled: true, via: 'edgedesk' }) === '');
+  chk('except for a creator, whose access is not a subscription',
+    /creator/.test(why({ ok: true, viewer: true, entitled: true, via: 'creator' })));
+  chk('signed out says signed out, and not that you failed to pay',
+    /signed out/i.test(why({ ok: true, viewer: false, entitled: false }))
+    && !/paid/.test(why({ ok: true, viewer: false, entitled: false })));
+  chk('signed in without paid access says exactly that',
+    /no paid access/i.test(why({ ok: true, viewer: true, entitled: false, via: null })));
+  chk('and says a free account is not enough, since that is the rule',
+    /free EdgeDesk account does not unlock/.test(why({ ok: true, viewer: true, entitled: false })));
+  chk('it never promises the page can fix it',
+    /Nothing on this page can/.test(why({ ok: true, viewer: true, entitled: false })));
+  chk('nothing at all is survivable', why() === '' || typeof why() === 'string');
 
   failures.forEach(f => console.log('FAIL | ' + f.name
     + (f.detail ? '  ' + JSON.stringify(f.detail).slice(0, 300) : '')));
