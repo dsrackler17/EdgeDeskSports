@@ -1787,124 +1787,304 @@ button:focus-visible,select:focus-visible,input:focus-visible,a:focus-visible{ou
   <!-- ADDED: BET DISCIPLINE view -->
   <section id="v-discipline" class="view hide"></section>
 
-<!-- ===== ADDED: MODEL COLLECTIVE tab view. Scoped to this section only:
-     one mount div plus one lazily injected script (collective/embed.js).
-     It touches nothing else in the app and nothing else touches it. ===== -->
+<!-- ===== MODEL COLLECTIVE tab. Rendered HERE, from the Collective's own
+     public API, rather than by injecting collective/embed.js. See the note
+     over mcLoad() for why. ===== -->
 <section class="view hide" id="v-collective">
   <h2 style="margin:4px 0 6px">Model Collective</h2>
   <p class="lede">Independent sports model creators, one independently graded record. Every model here keeps its own site, price, and methodology; the Collective grades every one of them the same way against its own captured closing lines. <b style="color:var(--warn)">Research, not advice.</b></p>
-  <div id="model-collective"></div>
-  <!-- Why the board looks the way it does. Empty until the embed reports,
-       and empty when there is nothing to explain. -->
-  <p id="mcWhy" style="font-size:12px;color:var(--dim);margin-top:10px"></p>
+  <div id="mcWall" class="mcsec"></div>
+  <div id="mcBoard" class="mcsec"></div>
+  <!-- Why the board looks the way it does. Empty when there is nothing to explain. -->
+  <p id="mcWhy" class="mcwhy"></p>
   <p style="font-size:12px;color:var(--dim);margin-top:10px">
     <a href="/collective/" target="_blank" rel="noopener">Open the full Collective site ↗</a>
     <span style="margin:0 6px">&middot;</span>
     <a href="/collective/#dashboard" target="_blank" rel="noopener">Creator dashboard ↗</a>
   </p>
 </section>
+<style>
+#v-collective .mcsec{margin-top:16px}
+#v-collective .mc-h{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--dim);font-weight:700;margin:0 0 8px}
+#v-collective .mc-tw{overflow-x:auto;border:1px solid var(--border);border-radius:12px;background:var(--surface)}
+#v-collective .mc-tw table{border-collapse:collapse;width:100%;font-size:12.5px;min-width:660px}
+#v-collective .mc-tw th{text-align:left;font-size:10px;letter-spacing:.05em;text-transform:uppercase;color:var(--faint);font-weight:700;padding:9px 10px;border-bottom:1px solid var(--border);white-space:nowrap}
+#v-collective .mc-tw td{padding:9px 10px;border-bottom:1px solid rgba(38,44,54,.6);vertical-align:top}
+#v-collective .mc-tw tr:last-child td{border-bottom:0}
+#v-collective .mc-tw .n,#v-collective .mono{font-family:'JetBrains Mono',monospace}
+#v-collective .mc-tw th.n,#v-collective .mc-tw td.n{text-align:right}
+#v-collective .mc-sb{font-size:11px;color:var(--faint)}
+#v-collective .mc-g{border:1px solid var(--border);border-radius:12px;background:var(--surface);margin-bottom:8px;overflow:hidden}
+#v-collective .mc-ghd{display:flex;align-items:center;gap:8px;padding:9px 11px;background:var(--surface2);border-bottom:1px solid var(--border);flex-wrap:wrap}
+#v-collective .mc-ghd .l{font-weight:700;font-size:13px}
+#v-collective .mc-ghd .t{font-size:11px;color:var(--dim)}
+#v-collective .mc-fin{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--text)}
+#v-collective .mc-row{display:flex;align-items:center;gap:7px;padding:7px 11px;font-size:12px;border-bottom:1px solid rgba(38,44,54,.5);flex-wrap:wrap}
+#v-collective .mc-row:last-child{border-bottom:0}
+#v-collective .mc-sp{flex:1}
+#v-collective .mc-dim{color:var(--dim)}
+#v-collective .mc-lock{color:var(--faint);font-size:11px}
+#v-collective .mc-chip{font-size:9px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;border:1px solid var(--border);border-radius:9px;padding:1px 6px;color:var(--dim);white-space:nowrap}
+#v-collective .mc-chip.fnd{color:var(--gold);border-color:rgba(227,184,77,.45)}
+#v-collective .mc-note{font-size:12px;color:var(--dim);padding:10px 11px}
+#v-collective .mcwhy{font-size:12px;color:var(--dim);margin-top:12px;line-height:1.55}
+</style>
 <script>
-/* ADDED: Model Collective tab loader. Injects the embed script once, on first
-   open, so the app pays nothing for the tab until it is used. The embed runs
-   in its own shadow root and cannot affect the rest of the app. */
-/* Which of the four things happened, in the reader's words. Named and pure
-   so the wording is something a test can hold: a diagnostic that is itself
-   wrong is worse than none, because it sends the reader after the wrong
-   thing. */
-function mcWhyMessage(st){
-  st=st||{};
-  var msg='';
-  if(!st.ok){
-    msg='The Collective did not answer just now, so nothing above is a verdict on your access '
-      +'\u2014 it is an outage, not a lock.';
-  }else if(st.entitled){
-    /* Open. Say how it was earned only where that is worth knowing: a
-       creator sees the board because they build it, which is not a
-       subscription and should not be mistaken for one when it is the
-       only thing holding the door. */
-    msg=st.via==='creator'
-      ? 'Unlocked because this account is a Collective creator.'
-      : '';
-  }else if(st.handoff==='none'||(!st.viewer&&st.handoff!=='refused'&&st.handoff!=='pending')){
-    msg='<b>You are signed out in this app</b>, so the Collective is being asked anonymously '
-      +'\u2014 and an anonymous reader is entitled to nothing. Sign in, then reopen this tab.';
-  }else if(st.handoff==='pending'){
-    /* The identified request is still in flight. Saying anything now would
-       be a guess, and the board repaints when it lands. */
-    msg='';
-  }else if(st.handoff==='refused'){
-    msg='<b>The Collective\u2019s API would not take your sign-in.</b> You are signed in here and the '
-      +'board still asked anonymously, because the request carrying your identity was refused '
-      +'\u2014 the deployed <span class="mono">collective_embed</span> function has not been updated '
-      +'to read it. That is a server deployment, not something this page can do: until it ships, every '
-      +'pre-kickoff number stays locked for everyone. The board above is the anonymous one, which is '
-      +'exactly what it has always been.';
-  }else{
-    msg='<b>Signed in, and no paid access on this account.</b> The Collective recognised you and '
-      +'found no active EdgeDesk subscription, no Collective subscription, and no creator profile '
-      +'\u2014 so the pre-kickoff numbers stay locked. A free EdgeDesk account does not unlock '
-      +'them. Nothing on this page can: a locked row arrives with no numbers in it. '
-      +'<a href="./index.html#pricing">See the plan</a> \u00b7 '
-      +'<a href="/collective/" target="_blank" rel="noopener">open the full Collective</a> and '
-      +'check the same account there.';
-  }
-  return msg;
-}
+/* ---- the Collective, rendered HERE ---------------------------------------
+   This tab used to be one script tag: collective/embed.js, which asks the
+   collective_embed function for a single bootstrap payload carrying the
+   wall, the creators and the board together. One endpoint, one point of
+   failure -- and when that function started answering 500 the whole tab read
+   "temporarily unreachable", with nothing on this side able to do a thing
+   about it. Before that it showed one sport, because that payload asks for
+   meta.sports[0] and stops, and locked rows for everybody, because its
+   entitled flag was a literal.
+
+   Every piece of that payload has its own endpoint on collective_public --
+   the API the Collective's own site at /collective/ has always used:
+
+     /v1/meta                        the sports and their seasons
+     /v1/wall                        every model, in canonical order
+     /v1/games?sport=&season=        the board, ONE SPORT AT A TIME, and
+                                     auth-aware: it is how that site unlocks
+                                     numbers for a subscriber
+
+   So this asks them directly. Three consequences, all of them the point:
+   collective_embed can be broken without this tab noticing; EVERY sport is
+   asked for by name rather than whichever one an endpoint decided to return;
+   and each section fails on its own, so a slate that will not load leaves
+   the wall standing and vice versa. There is no longer a single request that
+   can take this screen down. */
+var MC_PUB=SB_URL+'/functions/v1/collective_public';
 var _mcLoaded=false;
+var MC={sports:[],wall:[],boards:[],mkt:null,entitled:false,identified:false,ran:false,failed:{}};
+
+function mcEsc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){
+  return c==='&'?'&amp;':c==='<'?'&lt;':c==='>'?'&gt;':'&quot;';});}
+function mcNum(x,d){return (x==null||!isFinite(x))?'\u2014':Number(x).toFixed(d==null?1:d);}
+function mcPct(x,d){return (x==null||!isFinite(x))?'\u2014':(100*Number(x)).toFixed(d==null?1:d)+'%';}
+function mcSpr(x){if(x==null||!isFinite(x))return '\u2014';var n=Number(x);return (n>0?'+':'')+n.toFixed(1);}
+function mcByKick(a,z){return String(a.kickoff_at||'').localeCompare(String(z.kickoff_at||''));}
+function mcKo(iso){
+  if(!iso)return '';
+  try{return new Date(iso).toLocaleString([],{weekday:'short',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});}
+  catch(_){return String(iso).slice(0,16).replace('T',' ');}
+}
+/* The reader's own token, or nothing. edToken() falls back to the publishable
+   anon key when signed out, and that is not an identity. */
+async function mcToken(){
+  try{
+    var sess=edSession();
+    if(!sess||!sess.access_token)return null;
+    var t=await edToken();
+    return (t&&t!==SB_KEY)?t:null;
+  }catch(_){return null;}
+}
+/* One request, allowed to fail on its own. */
+async function mcGet(path,tok){
+  var h={};
+  if(tok)h.authorization='Bearer '+tok;
+  var c=(typeof AbortController!=='undefined')?new AbortController():null;
+  var tm=setTimeout(function(){if(c)c.abort();},9000);
+  try{
+    var r=await fetch(MC_PUB+path,c?{headers:h,signal:c.signal}:{headers:h});
+    clearTimeout(tm);
+    if(!r.ok)throw new Error('HTTP '+r.status);
+    return await r.json();
+  }catch(e){clearTimeout(tm);throw e;}
+}
+/* The market, from the Collective's own odds components -- the same file
+   /collective/ renders its prices from, so a line shown here is the line
+   shown there. Entirely optional: if it does not load, the board simply has
+   no market row, which is what it had before. */
+function mcOddsReady(){
+  if(window.MCOdds)return Promise.resolve(window.MCOdds);
+  return new Promise(function(res){
+    var el=document.createElement('script');
+    el.src='/collective/odds.js';el.async=true;
+    el.onload=function(){res(window.MCOdds||null);};
+    el.onerror=function(){res(null);};
+    document.head.appendChild(el);
+  });
+}
+async function mcLoad(){
+  MC.ran=true;
+  var tok=await mcToken();
+  MC.identified=!!tok;
+  /* meta first: it names the sports, and without it there is still a board
+     to be had from the endpoint's own default. */
+  var meta=await mcGet('/v1/meta').catch(function(){MC.failed.meta=true;return null;});
+  MC.sports=(meta&&meta.sports)||[];
+  var wallP=mcGet('/v1/wall').then(function(d){return (d&&d.rows)||[];})
+    .catch(function(){MC.failed.wall=true;return [];});
+  var boardsP=MC.sports.length
+    ? Promise.all(MC.sports.map(function(sp){
+        return mcGet('/v1/games?sport='+encodeURIComponent(sp.code)
+            +'&season='+encodeURIComponent(sp.season==null?'':sp.season),tok)
+          .then(function(d){
+            /* tag the sport we asked for: a payload built before games
+               carried one would otherwise be unlabelled in a mixed list */
+            ((d&&d.games)||[]).forEach(function(g){if(!g.sport)g.sport=sp.code;});
+            return d;
+          })
+          .catch(function(){MC.failed[sp.code]=true;return null;});
+      }))
+    : mcGet('/v1/games',tok).then(function(d){return [d];})
+        .catch(function(){MC.failed.board=true;return [];});
+  var res=await Promise.all([wallP,boardsP]);
+  MC.wall=res[0]||[];
+  MC.boards=(res[1]||[]).filter(Boolean);
+  MC.entitled=MC.boards.some(function(b){return b&&b.entitled===true;});
+  mcPaint();
+  /* and the market, once the board is already readable */
+  mcOddsReady().then(function(M){
+    if(!M)return null;
+    try{
+      M.configure({api:SB_URL+'/functions/v1'});
+      M.injectCss(document.head);
+      return M.board({days:12,books:false}).then(function(b){MC.mkt=b;mcPaint();});
+    }catch(_){return null;}
+  }).catch(function(){});
+}
+function mcPaint(){
+  var w=document.getElementById('mcWall'),b=document.getElementById('mcBoard'),y=document.getElementById('mcWhy');
+  if(w)w.innerHTML=mcWallHTML();
+  if(b)b.innerHTML=mcBoardHTML();
+  if(y)y.innerHTML=mcWhyHTML();
+}
+function mcMemberLabel(m){
+  return m==='ACTIVE CONTRIBUTOR'?'Active':(m==='INACTIVE'?'Inactive':'Member');
+}
+function mcWallHTML(){
+  if(MC.failed.wall)
+    return '<div class="mc-h">The model wall</div><div class="mc-g"><div class="mc-note">'
+      +'The wall did not load. Everything below is unaffected.</div></div>';
+  if(!MC.wall.length)return '';
+  var rows=MC.wall.map(function(r){
+    var rec=r.record;
+    return '<tr><td><b>'+mcEsc(r.creator_name)+'</b>'
+      +(r.founding?' <span class="mc-chip fnd">Founding</span>':'')
+      +'<br><span class="mc-sb">'+mcEsc(r.model_name)+' \u00b7 '+mcEsc(r.sport)+'</span></td>'
+      +'<td><span class="mc-chip">'+mcEsc(mcMemberLabel(r.membership))+'</span></td>'
+      +'<td class="n">'+(rec?(rec.wins+'-'+rec.losses+'-'+rec.pushes):'<span class="mc-sb">pending</span>')+'</td>'
+      +'<td class="n">'+(rec?mcPct(rec.win_pct,1):'\u2014')+'</td>'
+      +'<td class="n">'+(rec?mcNum(rec.margin_mae):'\u2014')+'</td>'
+      +'<td class="n">'+(rec?mcNum(rec.brier,3):'\u2014')+'</td>'
+      +'<td class="n">'+(r.coverage_pct!=null?mcNum(r.coverage_pct,0)+'%':'\u2014')+'</td></tr>';
+  }).join('');
+  return '<div class="mc-h">The model wall \u00b7 '+MC.wall.length+' model'+(MC.wall.length===1?'':'s')+'</div>'
+    +'<div class="mc-tw"><table><thead><tr><th>Creator / model</th><th>Status</th>'
+    +'<th class="n">Record</th><th class="n">Win %</th><th class="n">MAE</th>'
+    +'<th class="n">Brier</th><th class="n">Coverage</th></tr></thead><tbody>'
+    +rows+'</tbody></table></div>';
+}
+function mcMarketRow(g){
+  if(!(window.MCOdds&&MC.mkt&&MC.mkt.find))return '';
+  try{
+    var mg=MC.mkt.find({home:g.home,away:g.away});
+    if(!mg)return '';
+    return '<div class="mc-row">'+MCOdds.marketLine(mg,MC.mkt)+'</div>';
+  }catch(_){return '';}
+}
+function mcModelRow(g,m){
+  if(m.locked)
+    return '<div class="mc-row"><b>'+mcEsc(m.creator_slug)+'</b><span class="mc-sp"></span>'
+      +'<span class="mc-lock">Subscriber number</span></div>';
+  var bits=[];
+  if(m.pick_side)bits.push('<b>'+mcEsc(m.pick_side==='home'?g.home:g.away)+'</b>');
+  if(m.projected_spread!=null)bits.push('<span class="mono">'+mcSpr(m.projected_spread)+'</span>');
+  if(m.projected_total!=null)bits.push('<span class="mono">O/U '+mcNum(m.projected_total)+'</span>');
+  if(m.home_win_probability!=null)
+    bits.push('<span class="mono">'+mcPct(m.home_win_probability,0)+' '+mcEsc(g.home)+'</span>');
+  else if(m.cover_probability!=null)bits.push('<span class="mono">cv '+mcPct(m.cover_probability,0)+'</span>');
+  var grade=(m.grade&&m.grade.pick_result)?' <span class="mc-chip">'+mcEsc(m.grade.pick_result)+'</span>':'';
+  return '<div class="mc-row"><b>'+mcEsc(m.creator_slug)+'</b><span class="mc-sp"></span>'
+    +bits.join(' \u00b7 ')+grade+(m.late?' <span class="mc-chip">late</span>':'')+'</div>';
+}
+function mcGameHTML(g){
+  var c=g.consensus,cons='';
+  if(c&&!c.locked&&c.n)
+    cons='<div class="mc-row"><span class="mc-dim">consensus</span> <span class="mono">'+mcSpr(c.spread_mean)
+      +'</span> \u00b7 total <span class="mono">'+mcNum(c.total_mean)
+      +'</span> \u00b7 home win <span class="mono">'+mcPct(c.home_win_prob_mean,0)
+      +'</span> \u00b7 '+c.n+' models</div>';
+  else if(c&&c.locked)
+    cons='<div class="mc-row"><span class="mc-lock">Consensus is a subscriber number</span></div>';
+  var rows=(g.models||[]).map(function(m){return mcModelRow(g,m);}).join('');
+  return '<div class="mc-g"><div class="mc-ghd"><span class="l">'
+    +mcEsc(g.label||((g.away||'?')+' @ '+(g.home||'?')))+'</span>'
+    +(g.sport?'<span class="mc-chip">'+mcEsc(g.sport)+'</span>':'')
+    +'<span class="t">'+mcEsc(mcKo(g.kickoff_at))+'</span>'
+    +(g.result?'<span class="mc-sp"></span><span class="mc-fin">'+mcEsc(String(g.result.away_score))
+      +' \u2013 '+mcEsc(String(g.result.home_score))+'</span>':'')
+    +'</div>'+mcMarketRow(g)+cons
+    +(rows||'<div class="mc-note">No model has posted this game yet.</div>')+'</div>';
+}
+function mcBoardHTML(){
+  if(!MC.ran)return '';
+  var now=Date.now(),up=[],done=[];
+  /* Capped PER SPORT and then merged, never on one shared total: an NFL
+     Sunday is sixteen games and would fill any shared limit on its own,
+     which is exactly how college used to disappear from this board. */
+  MC.boards.forEach(function(bd){
+    var a=[],z=[];
+    ((bd&&bd.games)||[]).forEach(function(g){
+      if(g.result)z.push(g);
+      else if(new Date(g.kickoff_at).getTime()>now)a.push(g);
+    });
+    a.sort(mcByKick);z.sort(function(x,y){return mcByKick(y,x);});
+    up=up.concat(a.slice(0,20));
+    done=done.concat(z.slice(0,8));
+  });
+  up.sort(mcByKick);
+  done.sort(function(x,y){return mcByKick(y,x);});
+  var lost=Object.keys(MC.failed).filter(function(k){return k!=='wall'&&k!=='meta';});
+  var note=lost.length
+    ? '<div class="mc-g"><div class="mc-note">No slate loaded for '+mcEsc(lost.join(', '))
+      +'. Everything else on this page is unaffected.</div></div>'
+    : '';
+  if(!up.length&&!done.length)
+    return note||'<div class="mc-h">Upcoming</div><div class="mc-g"><div class="mc-note">'
+      +'No games on the slate right now.</div></div>';
+  return note
+    +(up.length?'<div class="mc-h">Upcoming \u00b7 '+up.length+' game'+(up.length===1?'':'s')+'</div>'
+      +up.map(mcGameHTML).join(''):'')
+    +(done.length?'<div class="mc-h" style="margin-top:14px">Settled, the public record</div>'
+      +done.map(mcGameHTML).join(''):'');
+}
+/* Which of the four things happened, in the reader's words. A locked row
+   looks identical whichever reason it is, and "Subscriber number" on every
+   one of them invites the wrong guess -- that the page is broken, or that a
+   subscription already held is not working. */
+function mcWhyHTML(){
+  if(!MC.ran)return '';
+  if(MC.entitled)return '';
+  if(!MC.boards.length)
+    return 'The Collective did not answer just now, so nothing above is a verdict on your access '
+      +'\u2014 it is an outage, not a lock.';
+  if(!MC.identified)
+    return '<b>You are signed out in this app</b>, so the Collective is being asked anonymously '
+      +'\u2014 and an anonymous reader is entitled to nothing. Sign in, then reopen this tab.';
+  return '<b>Signed in, and this account is not entitled.</b> The Collective recognised you and found '
+    +'no active subscription and no creator profile on it, so the pre-kickoff numbers stay locked. '
+    +'Nothing on this page can change that: a locked row arrives with no numbers in it. '
+    +'<a href="./index.html#pricing">See the plan</a> \u00b7 '
+    +'<a href="/collective/" target="_blank" rel="noopener">open the full Collective</a> and check the '
+    +'same account there \u2014 locked in both places is the entitlement, not this app.';
+}
 function loadCollective(){
   if(_mcLoaded)return;_mcLoaded=true;
-  /* WHO IS READING. The Collective runs on the same Supabase project as this
-     app, so the reader signed in here is already an identity it can
-     recognise. The embed used to ask for its data anonymously, and an
-     anonymous reader is entitled to nothing -- which is why this tab showed
-     "Subscriber number" on every pre-kickoff row, to everybody, including a
-     reader who is paying for EdgeDesk right now and has no way from this
-     screen to say so.
-
-     Handing over the token is the ask. What it BUYS is the server's decision
-     and has to be: entitlement is not something a static page can grant
-     itself. A reader the Collective does not recognise still sees locked
-     rows -- but the panel now says that is why, instead of pitching a
-     subscription at somebody who already has one.
-
-     Through a function rather than a data- attribute, so the token is never
-     sitting in the DOM; and the embed only calls it for the Collective's own
-     API, never for a host-supplied one. */
-  window.MCEmbedToken=async function(){
-    try{
-      var sess=edSession();
-      if(!sess||!sess.access_token)return null;
-      var t=await edToken();
-      /* edToken() falls back to the publishable anon key for a signed-out
-         reader. That is not an identity and must not be sent as one. */
-      return (t&&t!==SB_KEY)?t:null;
-    }catch(_){return null;}
-  };
-  /* WHY THE BOARD IS GREY. A locked row looks identical whichever reason it
-     is, and there are three: this app did not hand over an identity, the
-     Collective did not recognise the one it got, or it could not be reached
-     at all. Guessing between them is not something a reader can do, and
-     "Subscriber number" on every row invites the wrong guess -- that the
-     page is broken, or that a subscription they already hold is not working.
-
-     So the embed reports what happened and this says which it was. It cannot
-     UNLOCK anything: locked rows arrive with no numbers in them, and
-     entitlement is the Collective service's to grant. Naming the reason is
-     the honest thing a static page can do. */
-  var mountEl=document.getElementById('model-collective');
-  if(mountEl&&!mountEl.__mcWhyWired){
-    mountEl.__mcWhyWired=true;
-    mountEl.addEventListener('mc-state',function(ev){
-      var st=(ev&&ev.detail)||{},el=document.getElementById('mcWhy');
-      if(!el)return;
-      el.innerHTML=mcWhyMessage(st);
-    });
-  }
-  var s=document.createElement('script');
-  s.src='/collective/embed.js';
-  s.setAttribute('data-theme','dark');
-  s.async=true;
-  document.getElementById('v-collective').appendChild(s);
+  var b=document.getElementById('mcBoard');
+  if(b)b.innerHTML='<div class="mc-g"><div class="mc-note">Loading the Collective\u2026</div></div>';
+  mcLoad().catch(function(e){
+    /* Only reached if the whole load threw, which the per-section catches
+       above are there to prevent. Say so rather than showing nothing. */
+    MC.ran=true;mcPaint();
+    if(b&&!MC.wall.length&&!MC.boards.length)
+      b.innerHTML='<div class="mc-g"><div class="mc-note">The Collective could not be reached from '
+        +'this page. <a href="/collective/" target="_blank" rel="noopener">Open it directly \u2197</a>'
+        +'</div></div>';
+  });
 }
 </script>
 <nav class="bottomnav" role="navigation" aria-label="Primary">

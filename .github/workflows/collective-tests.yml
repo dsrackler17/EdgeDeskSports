@@ -60,6 +60,10 @@ jobs:
       - name: The embed only vouches for a real reader, and only to us
         run: node tools/collective/embed_auth.test.js
 
+      # The Collective tab renders itself now, from collective_public.
+      - name: Every sport reaches the board, and a lock says why
+        run: node tools/collective/app_collective.test.js
+
       # The founder pool is divided by a CONFIGURED count, not by a count of
       # people; these hold the screen that has to say when the two disagree.
       - name: The founder split says when its divisor is stale

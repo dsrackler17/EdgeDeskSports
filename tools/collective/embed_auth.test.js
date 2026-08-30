@@ -45,14 +45,6 @@ if (sfA < 0 || sfB < 0) {
   console.log('FAIL | collective/embed.js no longer carries stateFrom between its markers');
   process.exit(1);
 }
-/* The wording the reader is shown, out of the page that shows it. */
-const APP = fs.readFileSync(path.join(__dirname, '..', '..', 'app.html'), 'utf8');
-const wA = APP.indexOf('function mcWhyMessage(st){');
-const wB = APP.indexOf('var _mcLoaded=false;', wA);
-if (wA < 0 || wB < 0) {
-  console.log('FAIL | app.html no longer carries mcWhyMessage between its markers');
-  process.exit(1);
-}
 const BLOCK = SRC.slice(a, b);
 global.window = global;
 global.DEFAULT_API = 'https://iattxbkbufslbauoumga.supabase.co/functions/v1';
@@ -67,7 +59,6 @@ global.render = () => {};
 global.fallback = () => {};
 vm.runInThisContext(BLOCK, { filename: 'collective/embed.js [viewer + bootstrap]' });
 vm.runInThisContext(SRC.slice(sfA, sfB), { filename: 'collective/embed.js [stateFrom]' });
-vm.runInThisContext(APP.slice(wA, wB), { filename: 'app.html [mcWhyMessage]' });
 
 const b64u = o => Buffer.from(JSON.stringify(o)).toString('base64')
   .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
@@ -240,35 +231,6 @@ async function ask(fn, api) {
     st.viewer === true && st.entitled === true && st.via === null, { got: st });
   st = global.stateFrom({ wall: [] }, true);
   chk('and to the lock when there is one', st.entitled === false, { got: st });
-
-  const why = global.mcWhyMessage;
-  chk('an outage is not reported as a lock',
-    /outage, not a lock/.test(why({ ok: false })));
-  chk('an open board says nothing at all',
-    why({ ok: true, viewer: true, entitled: true, via: 'edgedesk' }) === '');
-  chk('except for a creator, whose access is not a subscription',
-    /creator/.test(why({ ok: true, viewer: true, entitled: true, via: 'creator' })));
-  chk('signed out says signed out, and not that you failed to pay',
-    /signed out/i.test(why({ ok: true, viewer: false, entitled: false, handoff: 'none' }))
-    && !/paid/.test(why({ ok: true, viewer: false, entitled: false, handoff: 'none' })));
-  chk('signed in without paid access says exactly that',
-    /no paid access/i.test(why({ ok: true, viewer: true, entitled: false, via: null, handoff: 'ok' })));
-  chk('and says a free account is not enough, since that is the rule',
-    /free EdgeDesk account does not unlock/.test(
-      why({ ok: true, viewer: true, entitled: false, handoff: 'ok' })));
-  chk('it never promises the page can fix it',
-    /Nothing on this page can/.test(why({ ok: true, viewer: true, entitled: false, handoff: 'ok' })));
-  /* The state the product is actually in until the API ships. */
-  const refused = why({ ok: true, viewer: false, entitled: false, handoff: 'refused' });
-  chk('a refused hand-off is NOT reported as the reader being signed out',
-    !/signed out/i.test(refused), { got: refused });
-  chk('it names the function that has to be deployed',
-    /collective_embed/.test(refused) && /server deployment/.test(refused), { got: refused });
-  chk('and does not blame the reader for not paying',
-    !/no paid access/i.test(refused));
-  chk('a hand-off still in flight says nothing rather than guessing',
-    why({ ok: true, viewer: false, entitled: false, handoff: 'pending' }) === '');
-  chk('nothing at all is survivable', why() === '' || typeof why() === 'string');
 
   failures.forEach(f => console.log('FAIL | ' + f.name
     + (f.detail ? '  ' + JSON.stringify(f.detail).slice(0, 300) : '')));
