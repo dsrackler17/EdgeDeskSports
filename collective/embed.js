@@ -205,6 +205,26 @@
      with its own accounts (the EdgeDesk app is one) can name the right one
      instead of leaving the reader to guess. Fire-and-forget: a host that is
      not listening is the normal case. */
+  /* The Collective's own answer about this reader, when it sends one:
+     whether it recognised anybody, and which entitlement it found. A host
+     page can then say "signed in, not on a paid plan" instead of showing the
+     same grey box for every reason.
+
+     Older payloads carry no entitlement block, and this has to keep working
+     against one: an embed is deployed on other people's sites and cannot
+     assume the API moved first. Then VIEWER and the lock are the fallback
+     they always were. */
+  function stateFrom(d, locked) {
+    var ent = (d && d.entitlement) || null;
+    return {
+      ok: true,
+      viewer: ent ? !!ent.identified : VIEWER,
+      entitled: ent ? !!ent.entitled : !locked,
+      via: ent && ent.via ? String(ent.via) : null,
+      forbidden: false,
+    };
+  }
+
   function emitState(detail) {
     try { mount.dispatchEvent(new CustomEvent('mc-state', { detail: detail, bubbles: true })); }
     catch (e) {}
@@ -217,7 +237,7 @@
       '<a href="' + esc(SITE) + REFQ + '" target="_blank" rel="noopener">Open the Collective directly →</a>' +
       (forbidden ? '<br><br><span class="note">Site owner: register this domain in your Collective dashboard to activate the embed here.</span>' : '') +
       '</div>';
-    emitState({ ok: false, viewer: VIEWER, entitled: null, forbidden: !!forbidden });
+    emitState({ ok: false, viewer: VIEWER, entitled: null, via: null, forbidden: !!forbidden });
   }
 
   var MARKET = null;
@@ -260,7 +280,13 @@
     }).join('');
 
     function gameBlock(g, entitled) {
-      var hd = '<div class="g-hd"><span class="l">' + esc(g.label) + '</span><span class="t">' + ko(g.kickoff_at) + '</span>' +
+      /* The board carries every sport the Collective runs, not just the
+         first one, so a row has to name its own: "Massachusetts @ Rutgers"
+         next to "NE @ SEA", sorted together by kickoff, is unreadable
+         otherwise. Absent on a payload that predates it, and then the chip
+         simply is not there. */
+      var sport = g.sport ? '<span class="chip" style="margin-left:6px">' + esc(g.sport) + '</span>' : '';
+      var hd = '<div class="g-hd"><span class="l">' + esc(g.label) + sport + '</span><span class="t">' + ko(g.kickoff_at) + '</span>' +
         (g.result ? '<span class="f">' + g.result.away_score + ' - ' + g.result.home_score + '</span>' : '') + '</div>';
       var cons = '';
       if (g.consensus && !g.consensus.locked && g.consensus.n) {
@@ -356,7 +382,7 @@
       wireBox(box);
       ev('impression');
     }
-    emitState({ ok: true, viewer: VIEWER, entitled: !locked, forbidden: false });
+    emitState(stateFrom(d, locked));
   }
 
   function wireBox(box) {
