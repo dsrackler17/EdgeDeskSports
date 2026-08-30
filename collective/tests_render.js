@@ -85,6 +85,30 @@ var WALL=[
    model_name:"Blerm's Model",sport:'CFB',membership:'ACTIVE CONTRIBUTOR',
    record:null,coverage_pct:100,last_submission_at:'2026-08-29T02:00:00Z',monogram:'BL'}
 ];
+/* An NFL slate of its own. Everything on this page is meant to be sport
+   agnostic — the league it fetches, the scoreboard it reads, the season it
+   sweeps all come from the sport switcher — but "meant to be" is not
+   evidence, and the NFL side had never been driven once. */
+var NFLGAMES=[
+  /* KC -6.5 close, KC wins by 10: home covered */
+  G(101,'BAL','KC',31,21,-6.5,[
+    M('jadedbettor-murse2-0','nfl-math-madness','home',-9,-6.5,0.72),
+    M('tiltdatalabs','nofunleague','away',-3,-6.5,0.55)]),
+  /* SF -3 close, SF wins by 2: road side covered */
+  G(102,'SEA','SF',24,22,-3,[
+    M('jadedbettor-murse2-0','nfl-math-madness','home',-7,-3,0.68),
+    M('tiltdatalabs','nofunleague','away',-1,-3,0.48)])
+];
+var NFLWALL=[
+  {creator_slug:'jadedbettor-murse2-0',creator_name:'Jaded Bettor',
+   model_slug:'nfl-math-madness',model_name:'NFL Math Madness',sport:'NFL',
+   membership:'ACTIVE CONTRIBUTOR',record:null,coverage_pct:100,
+   last_submission_at:'2026-09-12T12:00:00Z',monogram:'JB'},
+  {creator_slug:'tiltdatalabs',creator_name:'Tilt Data Labs',
+   model_slug:'nofunleague',model_name:'NoFunLeague',sport:'NFL',
+   membership:'ACTIVE CONTRIBUTOR',record:null,coverage_pct:100,
+   last_submission_at:'2026-09-12T12:00:00Z',monogram:'TD'}
+];
 var RANKINGS={thresholds:{min_graded_games:20,min_coverage_pct:60},
   boards:{win_pct:[],margin_mae:[],brier:[]},
   unranked:WALL.map(function(r){return {creator_slug:r.creator_slug,model_name:r.model_name,
@@ -95,7 +119,11 @@ var CALLS=[];
 function fakeFetch(url){
   CALLS.push(url);
   var u=String(url);
-  if(u.indexOf('/v1/meta')>=0)return reply({sports:[{code:'CFB',season:2026,in_season:true}],
+  /* Both sports, because "it works for College Football" is not evidence
+     that it works for the NFL — every sport-scoped path has to be driven. */
+  if(u.indexOf('/v1/meta')>=0)return reply({sports:[
+      {code:'CFB',season:2026,in_season:true},
+      {code:'NFL',season:2026,in_season:true}],
     counts:{live_projections:351,graded_games:0},pricing:{monthly_cents:2900,annual_cents:0},
     billing_live:false});
   if(u.indexOf('/v1/wall')>=0)return reply({rows:WALL});
@@ -110,7 +138,9 @@ function fakeFetch(url){
   }
   if(u.indexOf('/v1/games')>=0){
     var wk=/[?&]week=(\d+)/.exec(u);
+    var isNFL=/[?&]sport=NFL/.test(u);
     if(wk&&wk[1]!=='1')return reply({games:[],week:+wk[1],entitled:true});
+    if(isNFL)return reply({games:NFLGAMES,week:1,entitled:true});
     return reply({games:GAMES,week:1,entitled:true});
   }
   return reply({});
@@ -1000,6 +1030,33 @@ var S=sandbox;
     {order:(market.match(/data-ev="([^"]+)"/g)||[])});
   chk('a closed market still says the close is what a game is graded on',
     market.indexOf('graded against')>=0||market.indexOf('graded on')>=0);
+  /* A closed market was a price board with the prices frozen: same shape as
+     a live game, no score, nothing to say the thing had happened. */
+  chk('a finished game says what it did to its own closing line',
+    function(){
+      /* USC closed -38.5 and won 59-28, by 31: the road side covered */
+      return /FINAL SANJOSESTA 28 &ndash; USC 59/.test(market)
+        && /close USC -38\.5/.test(market)
+        && /<b>SANJOSESTA<\/b> covered/.test(market);
+    },
+    {strip:(/<div class="gb-hd"[^>]*>[\s\S]{0,240}/.exec(market)||[])[0]});
+  chk('and a game that has not been played says nothing of the kind',
+    function(){
+      var at=market.indexOf('data-ev="e-soon"');
+      if(at<0)return false;
+      var soon=market.slice(at);
+      /* from 1, not 0: the slice STARTS with the marker, so searching from
+         zero finds itself, the window is empty and this passes for free */
+      var next=soon.indexOf('data-ev="',1);
+      var card=next<0?soon:soon.slice(0,next);
+      return card.indexOf('FINAL')<0 && card.indexOf('covered')<0;
+    },
+    {card:(function(){
+      var at=market.indexOf('data-ev="e-soon"');
+      if(at<0)return '(no upcoming card)';
+      var soon=market.slice(at),n=soon.indexOf('data-ev="',1);
+      return (n<0?soon:soon.slice(0,n)).slice(0,200);
+    })()});
   /* the market page is the one place a price change IS the content, so it
      is the one place the refresh watches the feed's stamp */
   chk('the market page refreshes itself when a new poll lands',
@@ -1008,6 +1065,98 @@ var S=sandbox;
         && S.liveRoute.toString().indexOf('LIVE_ROUTES')>=0;
     });
   S.MCOdds=undefined;S.location.hash='';
+
+  /* ---- THE NFL SIDE, driven for the first time -------------------------
+     Every sport-scoped path is supposed to read the switcher: the league the
+     odds feed is asked for, the scoreboard league, the season sweep, the
+     rankings. None of it had ever been exercised for the NFL, so none of it
+     was evidence of anything. */
+  chk('the NFL maps to its own scoreboard league, not college football',
+    S.espnLeague('NFL')==='nfl' && S.espnLeague('CFB')==='college-football'
+      && S.espnLeague('NCAAF')==='college-football'   /* alias folds to CFB */
+      && S.espnLeague('QUIDDITCH')===null,
+    'an unknown sport asks nobody for a score rather than guessing a league');
+  S.SEASON_GAMES={};S.LOCALREC={};S.META=null;S.WALLC=null;S.ESPN_DAYS={};
+  S.localStorage.setItem('mc_sport','NFL');
+  WALL.push(NFLWALL[0]);WALL.push(NFLWALL[1]);
+  S.location.hash='#rankings';
+  var rNFL=node();
+  await S.renderRankings(rNFL);
+  var nfl=rNFL.innerHTML;
+  chk('the NFL boards fill from NFL games',
+    function(){
+      var win=boardSlice(nfl,'>Win %','>Margin MAE');
+      return win.indexOf('NFL Math Madness')>=0 && win.indexOf('NoFunLeague')>=0
+        && win.indexOf('No finished games yet')<0;
+    },
+    {board:boardSlice(nfl,'>Win %','>Margin MAE').slice(0,300)});
+  chk('and no College Football model leaks onto the NFL page',
+    function(){
+      var upTo=nfl.slice(0,nfl.indexOf('Not yet ranked')<0?nfl.length:nfl.indexOf('Not yet ranked'));
+      return upTo.indexOf('CFB MODEL')<0 && upTo.indexOf('Blerm')<0
+        && upTo.indexOf('MustBeMoose College Football')<0;
+    });
+  chk('the NFL records are graded by the same rule, and are correct',
+    function(){
+      /* KC -6.5, won by 10: the home side covered.
+         SF -3, won by 2: the road side covered. */
+      var mm=S.modelRecord(NFLGAMES,'jadedbettor-murse2-0','nfl-math-madness');
+      var nf=S.modelRecord(NFLGAMES,'tiltdatalabs','nofunleague');
+      return mm.wins===1 && mm.losses===1 && nf.wins===1 && nf.losses===1;
+    },
+    {mm:S.modelRecord(NFLGAMES,'jadedbettor-murse2-0','nfl-math-madness')});
+  /* the scoreboard the NFL side would actually ask, when a result is missing */
+  S.ESPN_DAYS={};
+  var espnAsked=[];
+  var realFetch6=S.fetch;
+  S.fetch=function(u){
+    if(String(u).indexOf('site.api.espn.com')>=0){
+      espnAsked.push(String(u));
+      return Promise.resolve({ok:true,status:200,json:function(){
+        return Promise.resolve({events:[{competitions:[{status:{type:{completed:true}},
+          competitors:[
+            {homeAway:'home',score:'31',team:{displayName:'Kansas City Chiefs',abbreviation:'KC'}},
+            {homeAway:'away',score:'21',team:{displayName:'Baltimore Ravens',abbreviation:'BAL'}}]}]}]});}});
+    }
+    return realFetch6(u);
+  };
+  var blankNFL=[JSON.parse(JSON.stringify(NFLGAMES[0]))];
+  blankNFL[0].result=null;
+  var filledNFL=await S.enrichFinals(blankNFL,'NFL',null);
+  S.fetch=realFetch6;
+  chk('a missing NFL result is read from the NFL scoreboard',
+    filledNFL===1 && espnAsked.length===1
+      && espnAsked[0].indexOf('/football/nfl/scoreboard')>=0,
+    {asked:espnAsked});
+  chk('and the college-only group filter is not sent for the NFL',
+    espnAsked.length===1 && espnAsked[0].indexOf('groups=80')<0,
+    'groups=80 is the FBS group; it means nothing to an NFL scoreboard');
+  WALL.pop();WALL.pop();
+  S.localStorage.setItem('mc_sport','CFB');
+  S.SEASON_GAMES={};S.LOCALREC={};S.META=null;S.WALLC=null;S.ESPN_DAYS={};
+  S.location.hash='';
+
+  /* ---- an empty board must not break its own card ---------------------
+     Rendered with NO games at all, so the empty message is actually on the
+     page — asserting it against a board that filled passes for free. */
+  S.SEASON_GAMES={};S.LOCALREC={};S.META=null;S.WALLC=null;
+  var realFetch7=S.fetch;
+  S.fetch=function(u){
+    if(String(u).indexOf('/v1/games')>=0)
+      return reply({games:[],week:1,entitled:true});
+    return realFetch7(u);
+  };
+  var rEmpty=node();
+  await S.renderRankings(rEmpty);
+  S.fetch=realFetch7;
+  var emptyHtml=rEmpty.innerHTML;
+  chk('an empty board says so',
+    (emptyHtml.match(/No finished games yet/g)||[]).length===3,
+    {found:(emptyHtml.match(/No finished games yet/g)||[]).length});
+  chk('and its message wraps instead of forcing a scrollbar',
+    /white-space:normal[^>]*>\s*No finished games yet/.test(emptyHtml),
+    {cell:(/<td[^>]*>\s*No finished games yet[^<]*/.exec(emptyHtml)||[])[0]});
+  S.SEASON_GAMES={};S.LOCALREC={};S.META=null;S.WALLC=null;
 
   fails.forEach(function(f){console.log('FAIL | '+f.n+(f.d?'  '+JSON.stringify(f.d).slice(0,400):''));});
   console.log((fail===0?'ALL GREEN ':'FAILED ')+pass+' passed, '+fail+' failed');
