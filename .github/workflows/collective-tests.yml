@@ -14,6 +14,7 @@ on:
     branches: [main]
     paths:
       - 'app.html'
+      - 'index.html'
       - 'collective/index.html'
       - 'collective/embed.js'
       - 'collective/admin.html'
@@ -22,6 +23,7 @@ on:
   pull_request:
     paths:
       - 'app.html'
+      - 'index.html'
       - 'collective/index.html'
       - 'collective/embed.js'
       - 'collective/admin.html'
@@ -63,6 +65,11 @@ jobs:
       # The Collective tab renders itself now, from collective_public.
       - name: Every sport reaches the board, and a lock says why
         run: node tools/collective/app_collective.test.js
+
+      # The landing page's Collective panel, which is the first thing a
+      # stranger sees and now makes network requests to be it.
+      - name: The landing page shows the real Collective, and cannot break trying
+        run: node tools/collective/landing_collective.test.js
 
       # The founder pool is divided by a CONFIGURED count, not by a count of
       # people; these hold the screen that has to say when the two disagree.
