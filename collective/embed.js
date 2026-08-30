@@ -197,6 +197,19 @@
   box.innerHTML = '<div class="hd"><span class="wm"><span class="mk"></span>MODEL COLLECTIVE</span><span class="sp"></span><span class="sub">loading</span></div>' +
     '<div class="fallback">Loading the Collective…</div>';
 
+  /* What the host page cannot see from the outside, and needs to, when its
+     reader is looking at locked rows: whether an identity was handed over at
+     all, and whether the payload came back entitled. Those are two different
+     reasons for the same grey board -- "you are signed out here" and "you are
+     signed in and the Collective does not know this account" -- and a host
+     with its own accounts (the EdgeDesk app is one) can name the right one
+     instead of leaving the reader to guess. Fire-and-forget: a host that is
+     not listening is the normal case. */
+  function emitState(detail) {
+    try { mount.dispatchEvent(new CustomEvent('mc-state', { detail: detail, bubbles: true })); }
+    catch (e) {}
+  }
+
   function fallback(forbidden) {
     box.innerHTML =
       '<div class="hd"><a class="wm" href="' + esc(SITE) + '" target="_blank" rel="noopener"><span class="mk"></span>MODEL COLLECTIVE</a><span class="sp"></span><span class="sub">independent models, one record</span></div>' +
@@ -204,6 +217,7 @@
       '<a href="' + esc(SITE) + REFQ + '" target="_blank" rel="noopener">Open the Collective directly →</a>' +
       (forbidden ? '<br><br><span class="note">Site owner: register this domain in your Collective dashboard to activate the embed here.</span>' : '') +
       '</div>';
+    emitState({ ok: false, viewer: VIEWER, entitled: null, forbidden: !!forbidden });
   }
 
   var MARKET = null;
@@ -342,6 +356,7 @@
       wireBox(box);
       ev('impression');
     }
+    emitState({ ok: true, viewer: VIEWER, entitled: !locked, forbidden: false });
   }
 
   function wireBox(box) {
