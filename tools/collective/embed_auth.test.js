@@ -114,8 +114,12 @@ async function ask(fn, api) {
     if (opts.hook === undefined) delete global.MCEmbedToken; else global.MCEmbedToken = opts.hook;
     const done = {};
     const settled = new Promise(res => { done.res = res; });
+    let throws = opts.throws || 0;
     global.fetch = function (url, init) {
       sent.push({ url: String(url), headers: (init && init.headers) || null });
+      /* A preflight the server refuses reaches JS as a plain network error,
+         which is what `throws` stands in for here. */
+      if (throws > 0) { throws--; return Promise.reject(new TypeError('Failed to fetch')); }
       const status = statuses.length > 1 ? statuses.shift() : statuses[0];
       return Promise.resolve({
         status, ok: status >= 200 && status < 300,
@@ -151,6 +155,24 @@ async function ask(fn, api) {
     && (r.sent[1].headers == null || !r.sent[1].headers.authorization), { got: r.sent });
   chk('and the panel is not told a reader was recognised after a 401',
     r.viewer === false, { got: r.viewer });
+
+  /* The case that matters while the API catches up: a deployment whose CORS
+     preflight does not allow Authorization kills the request before it
+     leaves the browser. Sending a token must never turn a locked board into
+     no board at all. */
+  r = await boot({ hook: () => PERSON, throws: 1 });
+  chk('a blocked preflight is retried as a stranger, not turned into an outage',
+    r.what === 'render' && r.sent.length === 2
+    && (r.sent[1].headers == null || !r.sent[1].headers.authorization), { got: r.sent });
+  chk('and the panel is not told a reader was recognised', r.viewer === false, { got: r.viewer });
+
+  r = await boot({ hook: undefined, throws: 1 });
+  chk('a genuine outage with no identity to drop falls back at once',
+    r.what === 'fallback' && r.sent.length === 1, { got: r.sent.length });
+
+  r = await boot({ hook: () => PERSON, throws: 2 });
+  chk('if the anonymous retry fails too, it is an outage and says so',
+    r.what === 'fallback' && r.sent.length === 2, { got: r.sent.length });
 
   r = await boot({ hook: () => PERSON, statuses: [403] });
   chk('a 403 is the host-not-registered fallback, not a lock',

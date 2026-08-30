@@ -414,34 +414,54 @@
   }
 
   /* ---------- fetch ---------- */
+  /* Each attempt owns its own timeout and abort controller. The first version
+     of this shared one controller across a retry, so a retry after the timer
+     had fired inherited an already-aborted signal and died instantly. */
+  var BOOT = API + '/collective_embed/v1/embed/bootstrap?theme=' + THEME
+    + (HOST ? '&host=' + encodeURIComponent(HOST) : '');
+
   viewerToken().then(function (tok) {
-    var ctrl = typeof AbortController !== 'undefined' ? new AbortController() : null;
-    var timer = setTimeout(function () { if (ctrl) ctrl.abort(); }, TIMEOUT_MS);
-    var opts = ctrl ? { signal: ctrl.signal } : {};
-    if (tok) { VIEWER = true; opts.headers = { authorization: 'Bearer ' + tok }; }
-    return fetch(API + '/collective_embed/v1/embed/bootstrap?theme=' + THEME
-      + (HOST ? '&host=' + encodeURIComponent(HOST) : ''), opts)
-      .then(function (r) {
-        clearTimeout(timer);
-        /* An identity the API refuses is not a reason to show nothing: drop
-           it and ask again as a stranger, which is exactly what this did
-           before there was an identity to send. */
-        if (r.status === 401 && tok) {
-          VIEWER = false;
-          return fetch(API + '/collective_embed/v1/embed/bootstrap?theme=' + THEME
-            + (HOST ? '&host=' + encodeURIComponent(HOST) : ''), ctrl ? { signal: ctrl.signal } : {});
-        }
-        return r;
-      })
-      .then(function (r) {
-        if (!r) return null;
-        clearTimeout(timer);
-        if (r.status === 403) { fallback(true); return null; }
-        if (!r.ok) { fallback(false); return null; }
-        return r.json();
-      })
+    var sent = !!tok;
+    if (sent) VIEWER = true;
+
+    function ask(withToken) {
+      var c = typeof AbortController !== 'undefined' ? new AbortController() : null;
+      var t = setTimeout(function () { if (c) c.abort(); }, TIMEOUT_MS);
+      var opts = c ? { signal: c.signal } : {};
+      if (withToken) opts.headers = { authorization: 'Bearer ' + tok };
+      return fetch(BOOT, opts).then(
+        function (r) { clearTimeout(t); return r; },
+        function (e) { clearTimeout(t); throw e; });
+    }
+
+    /* An identity the API refuses is not a reason to show nothing: drop it
+       and ask again as a stranger, which is exactly what this did before
+       there was an identity to send. */
+    function handle(r) {
+      if (r.status === 401 && sent) { sent = false; VIEWER = false; return ask(false).then(handle); }
+      if (r.status === 403) { fallback(true); return null; }
+      if (!r.ok) { fallback(false); return null; }
+      return r.json();
+    }
+
+    /* And a deployment whose CORS preflight does not allow the Authorization
+       header kills the request BEFORE it leaves the browser -- which reaches
+       JavaScript as a plain network error, indistinguishable from the API
+       being down. Either way, an identity is not worth losing the whole panel
+       over: retry once as a stranger, and only then say it is unreachable.
+       Otherwise sending a token to a server that has not been updated for it
+       turns a locked board into no board at all. */
+    function boom() {
+      if (!sent) { fallback(false); return null; }
+      sent = false; VIEWER = false;
+      return ask(false).then(handle)
+        .then(function (d) { if (d) render(d); return null; })
+        .catch(function () { fallback(false); return null; });
+    }
+
+    return ask(!!tok).then(handle)
       .then(function (d) { if (d) render(d); })
-      .catch(function () { clearTimeout(timer); fallback(false); });
+      .catch(boom);
   });
 
   /* When the market arrives, inject its styles into the shadow tree and
