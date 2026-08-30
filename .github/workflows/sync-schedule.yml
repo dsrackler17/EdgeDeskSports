@@ -1,0 +1,78 @@
+name: Sync the Collective schedule
+
+# A slate can only attach to a game the Collective already holds, so a week
+# the schedule is short of is a week creators lose rows to -- silently, and
+# with no fix available from their side. This keeps the schedule complete
+# without anybody remembering to.
+#
+# Daily rather than weekly on purpose: a week is not loaded all at once.
+# Kickoffs get set, non-conference games get added, and a creator posting on
+# Tuesday for a Saturday slate needs the games that appeared on Wednesday.
+# Nothing is rewritten, so a day where nothing changed costs one request.
+on:
+  schedule:
+    - cron: '20 9 * * *'
+  workflow_dispatch:
+    inputs:
+      sport:
+        description: 'Limit to one sport code (NFL, CFB). Blank = all.'
+        required: false
+        default: ''
+      season:
+        description: 'Override the season. Blank = whatever the Collective says is current.'
+        required: false
+        default: ''
+      week:
+        description: 'One specific week. Blank = the current week and the next.'
+        required: false
+        default: ''
+      commit:
+        description: 'Actually load the missing games. Unchecked is a dry run.'
+        type: boolean
+        required: false
+        default: false
+
+concurrency:
+  # Two runs loading the same week race each other into the same upsert.
+  group: sync-schedule
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Matching logic must pass before it is allowed to write
+        run: node tools/collective/sync_schedule.test.js
+
+      - name: Prove the source is live before anything is written
+        run: node tools/collective/sync_schedule.js --verify || true
+
+      - name: Sync
+        env:
+          COLLECTIVE_ADMIN_REFRESH_TOKEN: ${{ secrets.COLLECTIVE_ADMIN_REFRESH_TOKEN }}
+        run: |
+          ARGS=""
+          # A scheduled run loads. A manual run loads only when asked, so the
+          # dry run stays the way you inspect a week before writing it.
+          if [ "${{ github.event_name }}" = "schedule" ] || [ "${{ inputs.commit }}" = "true" ]; then
+            ARGS="$ARGS --commit"
+          fi
+          if [ -n "${{ inputs.sport }}" ];  then ARGS="$ARGS --sport ${{ inputs.sport }}"; fi
+          if [ -n "${{ inputs.season }}" ]; then ARGS="$ARGS --season ${{ inputs.season }}"; fi
+          if [ -n "${{ inputs.week }}" ];   then ARGS="$ARGS --week ${{ inputs.week }}"; fi
+          if [ -z "$COLLECTIVE_ADMIN_REFRESH_TOKEN" ]; then
+            echo "::warning::COLLECTIVE_ADMIN_REFRESH_TOKEN is not set — nothing can be loaded."
+            echo "The verify step above still shows whether the source answered."
+            exit 0
+          fi
+          node tools/collective/sync_schedule.js $ARGS
