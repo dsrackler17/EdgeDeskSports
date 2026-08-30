@@ -307,17 +307,46 @@ falls back to the anonymous request, and the locked panel now distinguishes
 have this account as a subscriber" instead of pitching a subscription at
 somebody who already has one.
 
-**What the server still needs.** Sending an identity is the ask, not the grant.
-For an EdgeDesk subscription to unlock the Collective, `collective_embed`
-(and `collective_public`, which the standalone site uses) must:
+**What the server was doing.** Nothing. `collective_embed`'s bootstrap had the
+entitlement hardcoded:
 
-1. read the bearer token on `/v1/embed/bootstrap` — if it ignores the header,
-   nothing above changes what the reader sees;
-2. treat an active row in EdgeDesk's own `subscriptions` table for that
-   `auth.uid()` as entitlement, alongside a Collective subscription.
+```ts
+const board = sport ? await buildGames(sport.code, sport.season, null, false) : ...
+...
+upcoming: { entitled: false, games: upcoming },
+```
 
-Until (2) exists an EdgeDesk subscriber is still shown locked rows — accurately
-now, and with the reason named, but still locked.
+Two literals. It never read the Authorization header, never resolved a user,
+and never called `isEntitled()` — which already existed in `_shared/reads.ts`
+and already did the right thing. Every pre-kickoff row was locked for
+everyone, permanently, subscribers and creators included.
+
+Its `corsFor()` compounded it by allowing only `content-type`, so a
+cross-origin GET carrying `Authorization` was refused at the preflight and
+blocked by the browser before it left. (The shared `corsHeaders()` in
+`_shared/http.ts` allows it; the embed function was overriding that with a
+narrower set.)
+
+**The fix, applied to the deployed bundle:** resolve the caller with
+`GET /auth/v1/user` — verified by the auth server, never decoded in the
+function, and with the publishable anon key rejected explicitly since it is
+itself a JWT — then pass the result of `isEntitled()` into `buildGames()` and
+the `upcoming` envelope. `isEntitled()` gained EdgeDesk's own `subscriptions`
+table, read from the **public** schema (no `Accept-Profile`) and best-effort,
+so a rename there costs that one check rather than the whole board. A
+response built for one reader is `private, no-store`; the shared cache window
+applies only to the anonymous board. `Vary` carries `Authorization` as well as
+`Origin`.
+
+Note that with `billing.enabled` false — the current setting — `isEntitled()`
+already returns true for any signed-in account, so the board unlocks the
+moment the caller is resolved at all.
+
+**Client side**, `embed.js` retries once anonymously when the request throws:
+a preflight refused for the `Authorization` header reaches JavaScript as a
+plain network error, indistinguishable from an outage, and sending a token to
+a deployment that has not been updated for it must never turn a locked board
+into no board at all.
 
 ### The one thing that is NOT in this repo
 
