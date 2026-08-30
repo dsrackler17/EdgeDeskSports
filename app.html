@@ -1793,6 +1793,10 @@ button:focus-visible,select:focus-visible,input:focus-visible,a:focus-visible{ou
 <section class="view hide" id="v-collective">
   <h2 style="margin:4px 0 6px">Model Collective</h2>
   <p class="lede">Independent sports model creators, one independently graded record. Every model here keeps its own site, price, and methodology; the Collective grades every one of them the same way against its own captured closing lines. <b style="color:var(--warn)">Research, not advice.</b></p>
+  <div class="mc-bar">
+    <button class="btn ghost sm" onclick="mcRefresh()">Refresh</button>
+    <span id="mcStatus" class="mc-sb"></span>
+  </div>
   <div id="mcWall" class="mcsec"></div>
   <div id="mcBoard" class="mcsec"></div>
   <!-- Why the board looks the way it does. Empty when there is nothing to explain. -->
@@ -1828,6 +1832,7 @@ button:focus-visible,select:focus-visible,input:focus-visible,a:focus-visible{ou
 #v-collective .mc-chip.fnd{color:var(--gold);border-color:rgba(227,184,77,.45)}
 #v-collective .mc-note{font-size:12px;color:var(--dim);padding:10px 11px}
 #v-collective .mcwhy{font-size:12px;color:var(--dim);margin-top:12px;line-height:1.55}
+#v-collective .mc-bar{display:flex;align-items:center;gap:10px;margin-top:12px}
 </style>
 <script>
 /* ---- the Collective, rendered HERE ---------------------------------------
@@ -1855,9 +1860,21 @@ button:focus-visible,select:focus-visible,input:focus-visible,a:focus-visible{ou
    and each section fails on its own, so a slate that will not load leaves
    the wall standing and vice versa. There is no longer a single request that
    can take this screen down. */
-var MC_PUB=SB_URL+'/functions/v1/collective_public';
+/* State first, and NOTHING above it that can throw. This block is a separate
+   <script> from the one that declares SB_URL, and separate blocks execute in
+   order: reading SB_URL out here threw a ReferenceError before block 3 had
+   declared it. Function declarations were already hoisted so loadCollective()
+   still existed, but every top-level `var` after the throwing line -- MC
+   among them -- never ran. mcLoad() then threw on `MC.ran`, its own catch
+   touched MC and threw again, and the tab sat on "Loading the Collective..."
+   forever with an unhandled rejection nobody was looking at.
+
+   So the API base is resolved when a request is made, not when this file is
+   parsed. By then block 3 has long since run. */
 var _mcLoaded=false;
-var MC={sports:[],wall:[],boards:[],mkt:null,entitled:false,identified:false,ran:false,failed:{}};
+var MC={sports:[],wall:[],boards:[],mkt:null,entitled:false,identified:false,
+        ran:false,busy:false,failed:{}};
+function mcApi(){return SB_URL+'/functions/v1';}
 
 function mcEsc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){
   return c==='&'?'&amp;':c==='<'?'&lt;':c==='>'?'&gt;':'&quot;';});}
@@ -1880,6 +1897,19 @@ async function mcToken(){
     return (t&&t!==SB_KEY)?t:null;
   }catch(_){return null;}
 }
+/* A TOKEN THAT WILL NOT ARRIVE MUST NOT HOLD THE BOARD HOSTAGE.
+   edToken() can go to the network to refresh an expiring session, and that
+   refresh has no timeout of its own. One stalled request there and this tab
+   sits on "Loading the Collective..." forever with nothing else even
+   attempted -- which is exactly what it did. Whatever an identity is worth,
+   it is worth less than a board: after four seconds the board is asked for
+   anonymously, which is strictly what it would have shown anyway. */
+function mcTokenSoon(){
+  return Promise.race([
+    mcToken().catch(function(){return null;}),
+    new Promise(function(res){setTimeout(function(){res(null);},4000);})
+  ]);
+}
 /* One request, allowed to fail on its own. */
 async function mcGet(path,tok){
   var h={};
@@ -1887,7 +1917,7 @@ async function mcGet(path,tok){
   var c=(typeof AbortController!=='undefined')?new AbortController():null;
   var tm=setTimeout(function(){if(c)c.abort();},9000);
   try{
-    var r=await fetch(MC_PUB+path,c?{headers:h,signal:c.signal}:{headers:h});
+    var r=await fetch(mcApi()+'/collective_public'+path,c?{headers:h,signal:c.signal}:{headers:h});
     clearTimeout(tm);
     if(!r.ok)throw new Error('HTTP '+r.status);
     return await r.json();
@@ -1909,7 +1939,7 @@ function mcOddsReady(){
 }
 async function mcLoad(){
   MC.ran=true;
-  var tok=await mcToken();
+  var tok=await mcTokenSoon();
   MC.identified=!!tok;
   /* meta first: it names the sports, and without it there is still a board
      to be had from the endpoint's own default. */
@@ -1940,7 +1970,7 @@ async function mcLoad(){
   mcOddsReady().then(function(M){
     if(!M)return null;
     try{
-      M.configure({api:SB_URL+'/functions/v1'});
+      M.configure({api:mcApi()});
       M.injectCss(document.head);
       return M.board({days:12,books:false}).then(function(b){MC.mkt=b;mcPaint();});
     }catch(_){return null;}
@@ -2043,9 +2073,15 @@ function mcBoardHTML(){
     ? '<div class="mc-g"><div class="mc-note">No slate loaded for '+mcEsc(lost.join(', '))
       +'. Everything else on this page is unaffected.</div></div>'
     : '';
-  if(!up.length&&!done.length)
+  if(!up.length&&!done.length){
+    if(MC.failed.timeout)
+      return '<div class="mc-g"><div class="mc-note">The Collective did not answer in time. '
+        +'Tap <b>Refresh</b> to try again, or '
+        +'<a href="/collective/" target="_blank" rel="noopener">open it directly \u2197</a>.'
+        +'</div></div>';
     return note||'<div class="mc-h">Upcoming</div><div class="mc-g"><div class="mc-note">'
       +'No games on the slate right now.</div></div>';
+  }
   return note
     +(up.length?'<div class="mc-h">Upcoming \u00b7 '+up.length+' game'+(up.length===1?'':'s')+'</div>'
       +up.map(mcGameHTML).join(''):'')
@@ -2060,8 +2096,11 @@ function mcWhyHTML(){
   if(!MC.ran)return '';
   if(MC.entitled)return '';
   if(!MC.boards.length)
-    return 'The Collective did not answer just now, so nothing above is a verdict on your access '
-      +'\u2014 it is an outage, not a lock.';
+    return MC.failed.timeout
+      ? 'The Collective did not answer in time, so nothing above is a verdict on your access '
+        +'\u2014 tap Refresh.'
+      : 'The Collective did not answer just now, so nothing above is a verdict on your access '
+        +'\u2014 it is an outage, not a lock.';
   if(!MC.identified)
     return '<b>You are signed out in this app</b>, so the Collective is being asked anonymously '
       +'\u2014 and an anonymous reader is entitled to nothing. Sign in, then reopen this tab.';
@@ -2072,20 +2111,48 @@ function mcWhyHTML(){
     +'<a href="/collective/" target="_blank" rel="noopener">open the full Collective</a> and check the '
     +'same account there \u2014 locked in both places is the entitlement, not this app.';
 }
-function loadCollective(){
-  if(_mcLoaded)return;_mcLoaded=true;
+function mcSetStatus(t){var el=document.getElementById('mcStatus');if(el)el.textContent=t||'';}
+function mcStamp(){
+  try{return 'updated '+new Date().toLocaleTimeString([],{hour:'numeric',minute:'2-digit'});}
+  catch(_){return 'updated';}
+}
+/* NOTHING MAY SIT ON "LOADING" INDEFINITELY. Every request inside mcLoad has
+   its own timeout and its own catch, which should be enough -- and was not,
+   because the one await that had neither was the token. A promise that never
+   settles for a reason nobody anticipated is the failure this screen keeps
+   having, so the screen itself gets a deadline: whatever has arrived is
+   drawn, and the reader is told to try again rather than left watching a
+   word. */
+function loadCollective(force){
+  if(MC.busy)return;
+  if(_mcLoaded&&!force)return;
+  _mcLoaded=true;MC.busy=true;MC.failed={};
+  mcSetStatus('loading\u2026');
   var b=document.getElementById('mcBoard');
-  if(b)b.innerHTML='<div class="mc-g"><div class="mc-note">Loading the Collective\u2026</div></div>';
+  if(b&&!MC.boards.length)
+    b.innerHTML='<div class="mc-g"><div class="mc-note">Loading the Collective\u2026</div></div>';
+  var settled=false;
+  var watchdog=setTimeout(function(){
+    if(settled)return;
+    settled=true;MC.busy=false;MC.ran=true;MC.failed.timeout=true;
+    mcPaint();mcSetStatus('timed out \u2014 tap Refresh');
+  },15000);
   mcLoad().catch(function(e){
     /* Only reached if the whole load threw, which the per-section catches
-       above are there to prevent. Say so rather than showing nothing. */
-    MC.ran=true;mcPaint();
-    if(b&&!MC.wall.length&&!MC.boards.length)
-      b.innerHTML='<div class="mc-g"><div class="mc-note">The Collective could not be reached from '
-        +'this page. <a href="/collective/" target="_blank" rel="noopener">Open it directly \u2197</a>'
-        +'</div></div>';
+       are there to prevent. It still must not leave the word on screen. */
+    try{console.error('collective load failed:',e);}catch(_){}
+  }).then(function(){
+    if(settled)return;
+    settled=true;clearTimeout(watchdog);MC.busy=false;MC.ran=true;
+    mcPaint();mcSetStatus(mcStamp());
   });
 }
+/* The button. Re-asks every endpoint, keeps whatever is already on screen
+   until the new answer lands, and cannot be double-fired into two loads. */
+window.mcRefresh=function(){
+  if(MC.busy){mcSetStatus('still loading\u2026');return;}
+  loadCollective(true);
+};
 </script>
 <nav class="bottomnav" role="navigation" aria-label="Primary">
   <!-- Order is deliberate: the scanner people open the app for, then the depth

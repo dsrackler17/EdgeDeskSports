@@ -43,20 +43,41 @@ function chk(name, ok, detail) {
 
 /* ---- the renderer, cut out of the page that ships it ------------------- */
 const APP = fs.readFileSync(path.join(__dirname, '..', '..', 'app.html'), 'utf8');
-const A = APP.indexOf('var MC_PUB=SB_URL+');
-const B = APP.indexOf('function loadCollective(){', A);
+const A = APP.indexOf('/* State first, and NOTHING above it that can throw.');
+const B = APP.indexOf('function mcSetStatus(', A);
 if (A < 0 || B < 0) {
   console.log('FAIL | app.html no longer carries the Collective renderer between its markers');
   process.exit(1);
 }
 global.window = global;
-global.SB_URL = 'https://db.test';
-global.SB_KEY = 'anon-key';
 global.document = { getElementById: () => null, createElement: () => ({ style: {} }),
                     head: { appendChild() {} } };
+
+/* SB_URL IS DELIBERATELY NOT DEFINED YET.
+   This block lives in a different <script> from the one that declares it, and
+   separate blocks execute in order — so at the moment this code runs, SB_URL
+   does not exist. Reading it at parse time threw a ReferenceError, which
+   skipped every top-level `var` after it (MC among them) while leaving the
+   hoisted function declarations in place. loadCollective() then wrote
+   "Loading the Collective…", mcLoad() threw on MC.ran, its own catch touched
+   MC and threw again, and the tab sat on that word forever.
+   Defining SB_URL before this line would hide exactly that bug. */
+let blockThrew = null;
+try { vm.runInThisContext(APP.slice(A, B), { filename: 'app.html [collective]' }); }
+catch (e) { blockThrew = String((e && e.message) || e); }
+chk('the block runs before SB_URL exists, as it really does', blockThrew === null,
+  { threw: blockThrew });
+chk('so its state object is actually built',
+  global.MC && typeof global.MC === 'object', { got: typeof global.MC });
+chk('and the API base is resolved per request, not at parse time',
+  typeof global.mcApi === 'function');
+
+/* Now block 3 has run, as it will have by the time anyone opens the tab. */
+global.SB_URL = 'https://db.test';
+global.SB_KEY = 'anon-key';
 global.edSession = () => null;
 global.edToken = async () => 'anon-key';
-vm.runInThisContext(APP.slice(A, B), { filename: 'app.html [collective]' });
+chk('and it resolves once SB_URL is there', global.mcApi() === 'https://db.test/functions/v1');
 
 const KICK = t => new Date(Date.now() + t * 3600e3).toISOString();
 const PAST = t => new Date(Date.now() - t * 3600e3).toISOString();
@@ -170,6 +191,19 @@ chk('while the sport that did load is still on screen', /mc-g"/.test(board));
 reset({ boards: [] });
 chk('no games at all says so rather than rendering nothing',
   /No games on the slate/.test(global.mcBoardHTML()));
+
+/* A load that never settles is the failure this screen keeps having, so it
+   is a state with its own words and a way out, not a word left on screen. */
+reset({ boards: [], failed: { timeout: true } });
+let timedOut = global.mcBoardHTML();
+chk('a load that timed out says so, and points at Refresh',
+  /did not answer in time/.test(timedOut) && /Refresh/.test(timedOut), { timedOut });
+chk('and offers the Collective directly as the other way through',
+  /open it directly/.test(timedOut));
+reset({ boards: [], failed: { timeout: true }, identified: true });
+chk('a timeout is not reported as a verdict on entitlement',
+  /nothing above is a verdict on your access/.test(global.mcWhyHTML())
+  && !/not entitled/i.test(global.mcWhyHTML()), { why: global.mcWhyHTML() });
 
 /* ---- why a locked board is locked -------------------------------------- */
 reset({ boards: [nfl], entitled: true, identified: true });
