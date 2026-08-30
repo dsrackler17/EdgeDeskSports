@@ -23489,6 +23489,47 @@ function fbP4PostOut(html){
   var el=document.getElementById('fbp4PostOut');
   if(el)el.innerHTML=html;
 }
+/* ---- when the store will not give a row back --------------------------
+   collective.projections is append-only in the DATABASE, not merely by
+   convention: a trigger raises P0001 "collective.projections is append-only
+   (rule 8.3); use the service maintenance path" on any DELETE. The ingest
+   API's retract route removes rows with an ordinary PostgREST DELETE, so
+   against that database it cannot ever succeed — its dry run happily
+   counts rows it will never be allowed to remove, and the confirmed call
+   comes back "Removed 0 row(s), then a chunk failed".
+
+   That is a server-side fact and no static page can change it. What this
+   page can stop doing is turning it into a dead end. Until now a blocked
+   retract ABORTED the sync, so a board whose games already had stored rows
+   could not reach the Collective at all: the failed removal took the post
+   down with it, even though the post was fine on its own and the retract
+   had changed nothing. Now the refusal is named in the operator's language,
+   they are asked once, and the slate still goes up — as a revision,
+   said plainly, because the stored rows keep the first-submission slot.
+
+   Recognised by the database's own words rather than by a status code: the
+   route wraps the refusal in a retract_failed envelope and only the message
+   inside says what actually happened. */
+function fbRetractBlockedBy(err,raw){
+  var s=String((err&&err.message)||'')+' '+String((err&&err.code)||'')+' '+String(raw||'');
+  if(/append[-\s]?only/i.test(s)||/rule\s*8\.3/i.test(s))return 'append_only';
+  return null;
+}
+/* Said the same way on every screen that can hit it, so an operator does not
+   have to recognise one refusal in three different wordings. */
+function fbRetractBlockedWhy(kind,err,status,raw){
+  if(kind==='append_only')
+    return 'The Collective stores projections append-only, so its database refuses to delete them '
+      +'(rule 8.3 \u2014 removal has to go through the service maintenance path). The ingest API\u2019s '
+      +'retract route deletes rows directly, so it cannot succeed against this deployment whatever its '
+      +'dry run counted. Nothing was removed, and nothing is half-done.';
+  return 'The retract was refused ('+String((err&&err.code)||('HTTP '+status))+': '
+    +String((err&&err.message)||raw||'no reason given').slice(0,200)+').';
+}
+/* One page load, one discovery. Once the store has refused a delete in this
+   tab, every later sync states that up front instead of offering a removal
+   it cannot perform and asking the operator twice. */
+var FB_RETRACT_BLOCKED=null;
 /* Retract this model's pre-kickoff rows for the season, so a corrected
    slate can land as the FIRST submission again. Two calls by design: the
    endpoint's dry run comes back with exactly what would be removed, that
@@ -23548,7 +23589,16 @@ window.fbP4ApiRetract=async function(){
   catch(e){fbP4PostOut('<span class="ec" style="color:var(--bad,#e26044)">Could not reach the Collective: '+fbEsc(e.message||String(e))+'</span>');return;}
   if(!res.ok){
     var er2=(res.body&&res.body.error)||{};
-    fbP4PostOut('<span class="ec" style="color:var(--bad,#e26044)"><b>'+fbEsc(er2.code||('HTTP '+res.status))+'.</b> '+fbEsc(er2.message||res.raw||'Refused.')+'</span>');
+    var k2=fbRetractBlockedBy(er2,res.raw);
+    if(k2)FB_RETRACT_BLOCKED=k2;
+    fbP4PostOut('<span class="ec" style="color:var(--bad,#e26044)"><b>Nothing was retracted.</b> '
+      +fbEsc(fbRetractBlockedWhy(k2,er2,res.status,res.raw))+'</span>'
+      +(k2==='append_only'
+        ? '<div class="ec mut" style="margin-top:4px">Your stored rows keep the first-submission slot, so a new post '
+          +'for these games lands as a revision \u2014 movement, never graded. Removing them is the Collective '
+          +'service\u2019s job, not this page\u2019s: the retract route has to go through the maintenance path '
+          +'before this button can do anything.</div>'
+        : ''));
     return;
   }
   var b2=res.body||{};
@@ -23725,10 +23775,21 @@ window.fbNflApiSync=async function(){
   var canRetract=rprev.status!==404;
   var toRemove=0,rGames=0;
   if(canRetract&&rprev.ok){toRemove=(rprev.body||{}).would_remove||0;rGames=((rprev.body||{}).games||[]).length;}
+  /* This tab has already watched the store refuse a delete, so the removal
+     is known to be impossible: say so instead of offering it again and
+     promising a first submission that cannot happen. The preview's count is
+     still worth keeping — it is what stays behind. */
+  var blocked=FB_RETRACT_BLOCKED,stored=toRemove,keptRows=false;
+  if(blocked){toRemove=0;keptRows=stored>0;}
 
   var head2='Sync '+built.rows.length+' NFL game'+(built.rows.length===1?'':'s')+(env.week!=null?' (week '+env.week+')':'')+' to the Collective?\n\n';
   var msg;
-  if(toRemove>0){
+  if(keptRows){
+    msg=head2+fbRetractBlockedWhy(blocked,null,0,'')+'\n\n'
+      +stored+' stored pre-kickoff row'+(stored===1?'':'s')+' across '+rGames+' game'+(rGames===1?'':'s')
+      +' stay'+(stored===1?'s':'')+' in place and keep the first-submission slot, so this post lands as a '
+      +'REVISION \u2014 shown as movement, never graded.\n\nPost it anyway?';
+  }else if(toRemove>0){
     msg=head2+'1. Remove '+toRemove+' stored pre-kickoff row'+(toRemove===1?'':'s')+' across '+rGames+' game'+(rGames===1?'':'s')+'.\n'
       +'2. Post this slate \u2014 it becomes your FIRST submission, the one that grades.\n\nGames already kicked off are never touched.';
   }else if(!canRetract){
@@ -23747,9 +23808,23 @@ window.fbNflApiSync=async function(){
     var rr;
     try{rr=await fbP4Ingest('/v1/projections/retract',key,renv);}
     catch(e){fbNflPostOut('<span class="ec" style="color:var(--bad,#e26044)">Could not reach the Collective mid-sync: '+fbEsc(e.message||String(e))+' \u2014 nothing was posted.</span>');return;}
-    if(!rr.ok){var re3=(rr.body&&rr.body.error)||{};
-      fbNflPostOut('<span class="ec" style="color:var(--bad,#e26044)"><b>Retract failed \u2014 stopped before posting.</b> '
-        +fbEsc((re3.code||('HTTP '+rr.status))+': '+(re3.message||rr.raw||''))+'</span>');return;}
+    if(!rr.ok){
+      var re3=(rr.body&&rr.body.error)||{};
+      var k3=fbRetractBlockedBy(re3,rr.raw);
+      if(k3)FB_RETRACT_BLOCKED=k3;
+      var why3=fbRetractBlockedWhy(k3,re3,rr.status,rr.raw);
+      /* The removal changed nothing, so the post is exactly as valid as it
+         was a moment ago. Stopping here used to leave the board with no way
+         onto the wall at all; ask instead, and let the operator decide. */
+      if(!confirm('The stored rows were NOT removed.\n\n'+why3
+        +'\n\nPost this slate anyway? It lands as a REVISION \u2014 shown as movement, never graded, '
+        +'because the rows already stored keep the first-submission slot.')){
+        fbNflPostOut('<span class="ec" style="color:var(--bad,#e26044)"><b>Stopped \u2014 nothing removed, nothing posted.</b> '
+          +fbEsc(why3)+'</span>');
+        return;
+      }
+      stored=toRemove;toRemove=0;keptRows=true;
+    }
   }
 
   fbNflPostOut('<span class="ec mut">Posting\u2026</span>');
@@ -23771,9 +23846,14 @@ window.fbNflApiSync=async function(){
   ].filter(Boolean).join(', ');
   var firstN=pb2.first!=null?+pb2.first:null;
   fbNflPostOut('<span class="ec"><b>Synced:</b> '+fbEsc(counts||'no counts returned')+'</span>'
-    +(toRemove>0&&firstN===0
-      ? '<div class="ec" style="color:var(--bad,#e26044);margin-top:4px">Rows were removed but the post still counted 0 first submissions \u2014 something else holds the slot. Tell Claude exactly this.</div>'
-      : (firstN>0?'<div class="ec mut" style="margin-top:4px">The wall now grades THIS slate. Hard-refresh the Collective page to see it.</div>':''))
+    +(keptRows
+      ? '<div class="ec mut" style="margin-top:4px"><b>Posted as a revision.</b> The '+stored+' row'+(stored===1?'':'s')
+        +' already stored still hold'+(stored===1?'s':'')+' the first-submission slot, so the wall grades those, not '
+        +'this slate. These numbers show as movement. Clearing the slot needs the Collective service \u2014 the store '
+        +'refuses deletes from the ingest API.</div>'
+      : (toRemove>0&&firstN===0
+        ? '<div class="ec" style="color:var(--bad,#e26044);margin-top:4px">Rows were removed but the post still counted 0 first submissions \u2014 something else holds the slot. Tell Claude exactly this.</div>'
+        : (firstN>0?'<div class="ec mut" style="margin-top:4px">The wall now grades THIS slate. Hard-refresh the Collective page to see it.</div>':'')))
     +(built.skipped.length?'<div class="ec mut" style="margin-top:4px">'+built.skipped.length+' skipped: '+fbEsc(built.skipped.slice(0,4).join(', '))+'</div>':''));
 };
 
@@ -23837,11 +23917,22 @@ window.fbP4ApiSync=async function(){
   var canRetract=rprev.status!==404;
   var toRemove=0,rGames=0;
   if(canRetract&&rprev.ok){toRemove=(rprev.body||{}).would_remove||0;rGames=((rprev.body||{}).games||[]).length;}
+  /* This tab has already watched the store refuse a delete, so the removal
+     is known to be impossible: say so instead of offering it again and
+     promising a first submission that cannot happen. The preview's count is
+     still worth keeping — it is what stays behind. */
+  var blocked=FB_RETRACT_BLOCKED,stored=toRemove,keptRows=false;
+  if(blocked){toRemove=0;keptRows=stored>0;}
 
   /* 3. one confirmation, both halves stated */
   var head2='Sync '+built.rows.length+' game'+(built.rows.length===1?'':'s')+(env.week!=null?' (week '+env.week+')':'')+' to the Collective?\n\n';
   var msg;
-  if(toRemove>0){
+  if(keptRows){
+    msg=head2+fbRetractBlockedWhy(blocked,null,0,'')+'\n\n'
+      +stored+' stored pre-kickoff row'+(stored===1?'':'s')+' across '+rGames+' game'+(rGames===1?'':'s')
+      +' stay'+(stored===1?'s':'')+' in place and keep the first-submission slot, so this post lands as a '
+      +'REVISION \u2014 shown as movement, never graded.\n\nPost it anyway?';
+  }else if(toRemove>0){
     msg=head2+'1. Remove '+toRemove+' stored pre-kickoff row'+(toRemove===1?'':'s')+' across '+rGames+' game'+(rGames===1?'':'s')+'.\n'
       +'2. Post this slate \u2014 it becomes your FIRST submission, the one that grades.\n\n'
       +'Games already kicked off are never touched.';
@@ -23865,9 +23956,23 @@ window.fbP4ApiSync=async function(){
     var rr;
     try{rr=await fbP4Ingest('/v1/projections/retract',key,renv);}
     catch(e){fbP4PostOut('<span class="ec" style="color:var(--bad,#e26044)">Could not reach the Collective mid-sync: '+fbEsc(e.message||String(e))+' \u2014 nothing was posted.</span>');return;}
-    if(!rr.ok){var re3=(rr.body&&rr.body.error)||{};
-      fbP4PostOut('<span class="ec" style="color:var(--bad,#e26044)"><b>Retract failed \u2014 stopped before posting.</b> '
-        +fbEsc((re3.code||('HTTP '+rr.status))+': '+(re3.message||rr.raw||''))+'</span>');return;}
+    if(!rr.ok){
+      var re3=(rr.body&&rr.body.error)||{};
+      var k3=fbRetractBlockedBy(re3,rr.raw);
+      if(k3)FB_RETRACT_BLOCKED=k3;
+      var why3=fbRetractBlockedWhy(k3,re3,rr.status,rr.raw);
+      /* The removal changed nothing, so the post is exactly as valid as it
+         was a moment ago. Stopping here used to leave the board with no way
+         onto the wall at all; ask instead, and let the operator decide. */
+      if(!confirm('The stored rows were NOT removed.\n\n'+why3
+        +'\n\nPost this slate anyway? It lands as a REVISION \u2014 shown as movement, never graded, '
+        +'because the rows already stored keep the first-submission slot.')){
+        fbP4PostOut('<span class="ec" style="color:var(--bad,#e26044)"><b>Stopped \u2014 nothing removed, nothing posted.</b> '
+          +fbEsc(why3)+'</span>');
+        return;
+      }
+      stored=toRemove;toRemove=0;keptRows=true;
+    }
   }
 
   /* 5. post */
@@ -23891,9 +23996,14 @@ window.fbP4ApiSync=async function(){
   ].filter(Boolean).join(', ');
   var firstN=pb2.first!=null?+pb2.first:null;
   fbP4PostOut('<span class="ec"><b>Synced:</b> '+fbEsc(counts||'no counts returned')+'</span>'
-    +(toRemove>0&&firstN===0
-      ? '<div class="ec" style="color:var(--bad,#e26044);margin-top:4px">The retract removed rows but the post still counted 0 first submissions \u2014 something else holds the first-submission slot. Tell me exactly this and I will dig.</div>'
-      : (firstN>0?'<div class="ec mut" style="margin-top:4px">The wall now grades THIS slate. Hard-refresh the Collective page to see it.</div>':''))
+    +(keptRows
+      ? '<div class="ec mut" style="margin-top:4px"><b>Posted as a revision.</b> The '+stored+' row'+(stored===1?'':'s')
+        +' already stored still hold'+(stored===1?'s':'')+' the first-submission slot, so the wall grades those, not '
+        +'this board. These numbers show as movement. Clearing the slot needs the Collective service \u2014 the store '
+        +'refuses deletes from the ingest API.</div>'
+      : (toRemove>0&&firstN===0
+        ? '<div class="ec" style="color:var(--bad,#e26044);margin-top:4px">The retract removed rows but the post still counted 0 first submissions \u2014 something else holds the first-submission slot. Tell me exactly this and I will dig.</div>'
+        : (firstN>0?'<div class="ec mut" style="margin-top:4px">The wall now grades THIS slate. Hard-refresh the Collective page to see it.</div>':'')))
     +(built.skipped.length?'<div class="ec mut" style="margin-top:4px">'+built.skipped.length+' game'+(built.skipped.length===1?'':'s')+' skipped (no projection).</div>':''));
 };
 /* Dry run, then post — never post without the dry run passing first. The
@@ -24011,8 +24121,10 @@ function fbP4CtlHTML(){
     +'<b>Download &amp; open dashboard</b> hands you the file and opens '
     +'<span class="mono">Dashboard \u2192 Post a slate</span> \u2014 its column names are already the ones '
     +'the uploader recognises, so it maps with nothing to fix by hand. '
-    +'<b>Post to Collective (API)</b> sends the same rows straight to the ingest endpoint under your own '
-    +'submission key: run <b>Check via API</b> first (a dry run that stores nothing), then post. '
+    +'<b>Sync to Collective (API)</b> sends the same rows straight to the ingest endpoint under your own '
+    +'submission key: one confirmed action that dry-runs the slate, replaces this model\u2019s stored '
+    +'pre-kickoff rows where the store allows it, and posts. <b>Check via API</b> is the dry run on its '
+    +'own and stores nothing. '
     +'Your key is asked for once and kept only in this browser \u2014 it is never part of this page, and '
     +'<span class="mono">forget</span> removes it. Your record there is graded '
     +'by the Collective against its own captured closing lines \u2014 not by this engine, and not '

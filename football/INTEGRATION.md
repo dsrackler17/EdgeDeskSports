@@ -223,6 +223,60 @@ quarantine, which is the honest degradation but not the fix.
 of its model. The model is what the record belongs to; a model whose slates are
 half NFL and half college has no meaningful win percentage.
 
+### Retract cannot work against an append-only store
+
+`collective.projections` is append-only in the **database**, not merely by
+convention. A trigger raises
+
+```
+P0001  collective.projections is append-only (rule 8.3); use the service maintenance path
+```
+
+on any `DELETE`. `collective_ingest`'s `/v1/projections/retract` removes rows
+with an ordinary PostgREST `DELETE`, so against that database it can never
+succeed. Its dry run is worse than useless: it happily counts rows it will
+never be allowed to remove, so it reports `would_remove: 12` and the confirmed
+call comes back
+
+```
+retract_failed: Removed 0 row(s), then a chunk failed: DELETE projections failed: 400 …
+```
+
+Nothing is removed and nothing is half-done — the refusal lands on the first
+chunk, before anything is touched.
+
+**What that cost.** Both research boards' *Sync to Collective (API)* treated the
+refusal as fatal and returned before posting. The removal had changed nothing
+and the post was still valid, but a board whose games already had stored rows
+could not reach the Collective **at all**. One server-side rule took the NFL and
+Power 4 sync offline.
+
+**What app.html does now** (`fbRetractBlockedBy` / `fbRetractBlockedWhy`): it
+recognises the refusal by the database's own words, says what happened in the
+operator's language instead of pasting a 400 body at them, asks once, and posts
+the slate anyway if they say yes — as a **revision**, stated plainly, because
+the stored rows keep the first-submission slot. Once a store has refused in a
+tab, later syncs skip the doomed call and state the revision up front rather
+than promising a first submission they cannot deliver.
+`tools/collective/app_sync.test.js` drives that flow out of `app.html` itself
+against the exact message the live database sent.
+
+**What the server still needs**, for replacement to actually work again — none
+of it is in this repository:
+
+1. `retract` routed through the service maintenance path the trigger names (a
+   `security definer` function that is allowed to remove pre-kickoff rows),
+   rather than a direct `DELETE` PostgREST will always have refused; **or**
+2. a supersede column on `projections` — the retract marks rows superseded and
+   the grader ignores them — which keeps the store genuinely append-only and
+   needs no delete privilege anywhere; **and either way**
+3. the dry run answering from the same path it will actually use, so
+   `would_remove` can never again count rows the confirmed call cannot touch.
+
+Until one of those exists, a corrected slate lands as movement and the wall
+keeps grading the first submission. That is the honest degradation, and it is
+what the button now says out loud — but it is not the fix.
+
 ### The one thing that is NOT in this repo
 
 **The Collective's sport vocabulary is server-side.** `meta().sports` comes from
