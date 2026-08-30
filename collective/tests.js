@@ -2526,13 +2526,33 @@ if (typeof sandbox.slateMatchRow === 'function') {
     'GEORGIATEC is ten characters on a schedule that clips at ten, so it is not "Georgia" spelled out');
 
   /* ---- a pair still beats a clipped collision ------------------------ */
-  var WASH = [{ label: 'WASHINGTON @ OREGON', game_id: 'G1' },
-              { label: 'UTAH @ WASHINGTON', game_id: 'G2' }];
   chk('an exact pair wins over one that had to shorten a name',
     function () {
-      var hit = S4.slateMatchRow(WASH, { away_team: 'Washington', home_team: 'Oregon' });
-      return hit && hit.game_id === 'G1';
+      /* A schedule carrying both spellings. "Washington State" shortens onto
+         WASHINGTON, so both games match it — and only one of them is it. */
+      var hit = S4.slateMatchRow(
+        [{ label: 'WASHINGTONSTATE @ OREGON', game_id: 'X' },
+         { label: 'WASHINGTON @ OREGON', game_id: 'Y' }],
+        { away_team: 'Washington State', home_team: 'Oregon' });
+      return hit && hit.game_id === 'X';
+    },
+    { got: S4.slateMatchRow(
+        [{ label: 'WASHINGTONSTATE @ OREGON', game_id: 'X' },
+         { label: 'WASHINGTON @ OREGON', game_id: 'Y' }],
+        { away_team: 'Washington State', home_team: 'Oregon' }) });
+  chk('a shortening is only a shortening at the schedule\'s clip width',
+    function () {
+      /* INDIANA is seven characters on a schedule that clips at ten, so it is
+         Indiana entire — not Indiana State cut short. Pairing on it put a row
+         on another school's game with both sides apparently agreeing. */
+      return S4.slateNameMatches('Indiana State', 'INDIANA', 10) === false
+        && S4.slateNameMatches('Massachusetts', 'MASSACHUSE', 10) === true;
     });
+  chk('with no clip to go on, the old six-character floor still stands',
+    function () {
+      return S4.slateNameMatches('Washington State', 'WASHINGTON', 0) === true;
+    },
+    'it is all there is, and the pair still has to agree on both sides');
   chk('a clipped pair still matches when nothing exact competes',
     function () {
       var hit = S4.slateMatchRow([{ label: 'WASHINGTON @ OREGON', game_id: 'G1' }],
@@ -2540,6 +2560,17 @@ if (typeof sandbox.slateMatchRow === 'function') {
       return hit && hit.how === 'pair';
     },
     'the schedule spells both schools WASHINGTON; the pair is all there is');
+
+  chk('a schedule of short names is not mistaken for a clipped one',
+    function () {
+      /* Four names, all four characters, all the same length — which is a
+         coincidence, not a clip. Reading it as a clip at four makes "Iowa
+         State" resolve onto IOWA. */
+      var ix = S4.slateNameIndex([{ label: 'IOWA @ OHIO' }, { label: 'UTAH @ DUKE' }]);
+      return S4.slateTruncWidth(ix) === 0 && S4.slateResolveName(ix, 'Iowa State') === null;
+    },
+    { width: S4.slateTruncWidth(S4.slateNameIndex(
+        [{ label: 'IOWA @ OHIO' }, { label: 'UTAH @ DUKE' }])) });
 
   /* ---- kickoffs ------------------------------------------------------ */
   chk('a game a week away is not this row\'s game',
@@ -2607,6 +2638,25 @@ if (typeof sandbox.slateMatchRow === 'function') {
         [{ label: 'FLORIDAST @ MIAMI', game_id: 'A' }, { label: 'FLORIDA @ MIAMI', game_id: 'B' }],
         { away_team: 'Florida St', home_team: 'Miami' });
       return hit && hit.game_id === 'A';
+    });
+
+  chk('a game matched on one side only is reported as exactly that',
+    function () {
+      /* The schedule carries mascots, the file does not. Neither name is a
+         shortening of the other, so the pair pass cannot see it; USC matching
+         exactly is what makes the other side safe to read. */
+      var r = S4.slateScheduleReport([{ label: 'TCU Horned Frogs @ USC', game_id: 'G9' }],
+        [{ away_team: 'TCU', home_team: 'USC' }]);
+      return r.renamed.length === 1 && r.missing.length === 0
+        && r.renamed[0].yourAway === 'TCU' && r.renamed[0].away === 'TCU Horned Frogs';
+    },
+    { got: S4.slateScheduleReport([{ label: 'TCU Horned Frogs @ USC', game_id: 'G9' }],
+        [{ away_team: 'TCU', home_team: 'USC' }]) });
+  chk('a game matched on both sides is not reported as a one-sided match',
+    function () {
+      var r = S4.slateScheduleReport([{ label: 'AKRON @ WAKEFOREST', game_id: 'G8' }],
+        [{ away_team: 'Akron', home_team: 'Wake Forest' }]);
+      return r.renamed.length === 0 && r.matched === 1;
     });
 
   /* ---- weeks that do not mean the same thing ------------------------- */

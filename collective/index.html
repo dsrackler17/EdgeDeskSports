@@ -4144,12 +4144,19 @@ function slateResolveName(byKey,team){
    What the pair cannot fix is that the schedule still has one name for two
    schools. That is a backend defect, not something to paper over here, so it
    is reported: see `collisions` on the return. */
-function slateNameMatches(mine,their){
+function slateNameMatches(mine,their,width){
   var a=teamKey(mine),b=teamKey(their);
   if(!a||!b)return false;
   if(a===b)return true;
-  /* the schedule's name is a truncation of ours */
-  return b.length>=6&&b.length<a.length&&a.indexOf(b)===0;
+  if(b.length>=a.length||a.indexOf(b)!==0)return false;
+  /* The schedule's name is a shortening of ours — but on a schedule KNOWN to
+     clip at a width, only a name sitting at that width is a shortening.
+     INDIANA on a ten-character schedule is Indiana, complete, and pairing
+     "Indiana State @ Purdue" against a game it appears in is how a row ends
+     up on another school's game with both sides apparently agreeing.
+     Where no clip is detectable the old floor of six characters stands: it is
+     all there is to go on, and the pair still has to agree on both sides. */
+  return width?b.length===width:b.length>=6;
 }
 /* The schedule's two sides, however this game happens to carry them. */
 function slateGameSides(g){
@@ -4186,10 +4193,12 @@ function slateKickAgrees(a,b){
    which, and guessing is how a slate gets filed under the wrong school. */
 function slatePairGame(games,awayName,homeName,kick){
   var exact=[],clipped=[],i,g,sides;
+  var width=slateTruncWidth(slateNameIndex(games));
   for(i=0;i<(games||[]).length;i++){
     g=games[i];sides=slateGameSides(g);
     if(!sides)continue;
-    if(!slateNameMatches(awayName,sides.away)||!slateNameMatches(homeName,sides.home))continue;
+    if(!slateNameMatches(awayName,sides.away,width)||
+       !slateNameMatches(homeName,sides.home,width))continue;
     if(!slateKickAgrees(kick,slateGameKick(g)))continue;
     if(teamKey(awayName)===teamKey(sides.away)&&teamKey(homeName)===teamKey(sides.home))exact.push(sides);
     else clipped.push(sides);
