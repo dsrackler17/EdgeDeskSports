@@ -223,6 +223,102 @@ quarantine, which is the honest degradation but not the fix.
 of its model. The model is what the record belongs to; a model whose slates are
 half NFL and half college has no meaningful win percentage.
 
+### Retract cannot work against an append-only store
+
+`collective.projections` is append-only in the **database**, not merely by
+convention. A trigger raises
+
+```
+P0001  collective.projections is append-only (rule 8.3); use the service maintenance path
+```
+
+on any `DELETE`. `collective_ingest`'s `/v1/projections/retract` removes rows
+with an ordinary PostgREST `DELETE`, so against that database it can never
+succeed. Its dry run is worse than useless: it happily counts rows it will
+never be allowed to remove, so it reports `would_remove: 12` and the confirmed
+call comes back
+
+```
+retract_failed: Removed 0 row(s), then a chunk failed: DELETE projections failed: 400 …
+```
+
+Nothing is removed and nothing is half-done — the refusal lands on the first
+chunk, before anything is touched.
+
+**What that cost.** Both research boards' *Sync to Collective (API)* treated the
+refusal as fatal and returned before posting. The removal had changed nothing
+and the post was still valid, but a board whose games already had stored rows
+could not reach the Collective **at all**. One server-side rule took the NFL and
+Power 4 sync offline.
+
+**What app.html does now** (`fbRetractBlockedBy` / `fbRetractBlockedWhy`): it
+recognises the refusal by the database's own words, says what happened in the
+operator's language instead of pasting a 400 body at them, asks once, and posts
+the slate anyway if they say yes — as a **revision**, stated plainly, because
+the stored rows keep the first-submission slot. Once a store has refused in a
+tab, later syncs skip the doomed call and state the revision up front rather
+than promising a first submission they cannot deliver.
+`tools/collective/app_sync.test.js` drives that flow out of `app.html` itself
+against the exact message the live database sent.
+
+**What the server still needs**, for replacement to actually work again — none
+of it is in this repository:
+
+1. `retract` routed through the service maintenance path the trigger names (a
+   `security definer` function that is allowed to remove pre-kickoff rows),
+   rather than a direct `DELETE` PostgREST will always have refused; **or**
+2. a supersede column on `projections` — the retract marks rows superseded and
+   the grader ignores them — which keeps the store genuinely append-only and
+   needs no delete privilege anywhere; **and either way**
+3. the dry run answering from the same path it will actually use, so
+   `would_remove` can never again count rows the confirmed call cannot touch.
+
+Until one of those exists, a corrected slate lands as movement and the wall
+keeps grading the first submission. That is the honest degradation, and it is
+what the button now says out loud — but it is not the fix.
+
+### The Collective tab is locked because it asks anonymously
+
+`collective/embed.js` fetched `collective_embed /v1/embed/bootstrap` with no
+credential at all. An anonymous reader is entitled to nothing, so the payload
+came back with `entitled: false` and every pre-kickoff row carrying no numbers
+to show — for **everyone**, including a reader signed in to the very site the
+embed is running on. In the app's Collective tab that is the whole board greyed
+out for somebody who is paying for EdgeDesk, with no way from that screen to
+say so. Client-side unlocking is not an option and never was: the values are
+simply absent from the payload.
+
+**What app.html does now.** EdgeDesk and the Collective run on the same
+Supabase project, so the reader signed in to the app is already an identity the
+Collective can recognise. The tab sets `window.MCEmbedToken`, the embed calls it
+and sends `Authorization: Bearer <access token>` on the bootstrap. Two rules,
+because the embed also runs on other people's sites, and both are covered by
+`tools/collective/embed_auth.test.js`:
+
+* the token travels through a **function**, never a `data-` attribute — a
+  credential in the DOM is readable by anything else on the page;
+* it is sent **only** when the API base is the Collective's own. `data-api` is
+  there for testing and a credential must never follow it.
+
+The publishable anon key is itself a JWT, so it is rejected explicitly: the
+token is decoded and must carry `role: "authenticated"` and a subject. A `401`
+falls back to the anonymous request, and the locked panel now distinguishes
+"you are not signed in" from "you are signed in and the Collective does not
+have this account as a subscriber" instead of pitching a subscription at
+somebody who already has one.
+
+**What the server still needs.** Sending an identity is the ask, not the grant.
+For an EdgeDesk subscription to unlock the Collective, `collective_embed`
+(and `collective_public`, which the standalone site uses) must:
+
+1. read the bearer token on `/v1/embed/bootstrap` — if it ignores the header,
+   nothing above changes what the reader sees;
+2. treat an active row in EdgeDesk's own `subscriptions` table for that
+   `auth.uid()` as entitlement, alongside a Collective subscription.
+
+Until (2) exists an EdgeDesk subscriber is still shown locked rows — accurately
+now, and with the reason named, but still locked.
+
 ### The one thing that is NOT in this repo
 
 **The Collective's sport vocabulary is server-side.** `meta().sports` comes from

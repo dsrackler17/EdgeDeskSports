@@ -3388,11 +3388,58 @@ function parseCSV(text,delim){
   return rows.filter(function(r){return r.some(function(c){return String(c).trim()!=='';});});
 }
 /* Minimal .xlsx reader: an xlsx is a zip; modern browsers can inflate its
-   entries natively with DecompressionStream, so no library is needed. */
+   entries natively with DecompressionStream, so no library is needed.
+
+   It reads the WORKBOOK, not "sheet 1". Two things kept breaking here and
+   both looked to the creator like "my own file will not upload":
+
+     - a workbook with more than one sheet. The research boards export three
+       -- a readable Board, the model's Drivers, and the raw export whose
+       column names this uploader is built around -- and the raw one is
+       last, because that is the order a person wants to read them in.
+     - a header that is not on row 1. Any tidied sheet has a title above it,
+       usually a summary strip too, so the header row lands third or sixth.
+
+   Either way the old reader took row 1 of sheet 1 and handed on a slate
+   whose header was "EdgeDesk CFB Power 4 - Research Board", which maps to
+   nothing. So: read every sheet, score every plausible header row in each
+   against the same synonym table the mapper uses, and take the best. When
+   nothing scores, fall back to exactly the old behaviour rather than
+   refusing a file a creator could have mapped by hand. */
 async function parseXLSX(buf){
   var u8=new Uint8Array(buf);
   var dv=new DataView(buf);
-  function findEntry(name){
+  /* The central directory, which is where a zip actually says what it holds.
+     The old scan for local-header signatures had to walk the whole file per
+     lookup and would trust any PK\x03\x04 it happened to find inside an
+     entry's own bytes. */
+  function readCentral(){
+    var eocd=-1,i;
+    for(i=u8.length-22;i>=0&&i>u8.length-22-65536;i--){
+      if(dv.getUint32(i,true)===0x06054b50){eocd=i;break;}
+    }
+    if(eocd<0)return null;
+    var n=dv.getUint16(eocd+10,true),p=dv.getUint32(eocd+16,true),map={},k;
+    var dec=new TextDecoder();
+    for(k=0;k<n;k++){
+      if(p+46>u8.length||dv.getUint32(p,true)!==0x02014b50)return null;
+      var method=dv.getUint16(p+10,true),csize=dv.getUint32(p+20,true);
+      var nlen=dv.getUint16(p+28,true),elen=dv.getUint16(p+30,true),clen=dv.getUint16(p+32,true);
+      var off=dv.getUint32(p+42,true);
+      if(off+30>u8.length)return null;
+      var nm=dec.decode(u8.subarray(p+46,p+46+nlen));
+      var lnlen=dv.getUint16(off+26,true),lelen=dv.getUint16(off+28,true);
+      var st=off+30+lnlen+lelen;
+      map[nm]={method:method,data:u8.slice(st,st+csize)};
+      p+=46+nlen+elen+clen;
+    }
+    return map;
+  }
+  var CENTRAL=null;
+  try{CENTRAL=readCentral();}catch(_){CENTRAL=null;}
+  /* The original scan, kept as the fallback for an archive whose directory
+     this cannot read -- a file that used to open must keep opening. */
+  function scanEntry(name){
     for(var i=0;i<u8.length-4;i++){
       if(u8[i]===0x50&&u8[i+1]===0x4b&&u8[i+2]===0x03&&u8[i+3]===0x04){
         var nlen=dv.getUint16(i+26,true),xlen=dv.getUint16(i+28,true);
@@ -3405,6 +3452,10 @@ async function parseXLSX(buf){
       }
     }
     return null;
+  }
+  function findEntry(name){
+    if(CENTRAL)return CENTRAL[name]||null;
+    return scanEntry(name);
   }
   async function inflate(e){
     if(!e)return null;
@@ -3420,31 +3471,105 @@ async function parseXLSX(buf){
     var sis=sdoc.getElementsByTagName('si');
     for(var s2=0;s2<sis.length;s2++)shared.push(sis[s2].textContent);
   }
-  var wx=await inflate(findEntry('xl/worksheets/sheet1.xml'));
-  if(!wx)throw new Error('Could not read the first worksheet. Save the file as CSV and upload that instead.');
-  var doc=new DOMParser().parseFromString(wx,'text/xml');
-  var out=[];
-  var rowsXml=doc.getElementsByTagName('row');
-  for(var r2=0;r2<rowsXml.length;r2++){
-    var cells=rowsXml[r2].getElementsByTagName('c');
-    var row=[];
-    for(var c2=0;c2<cells.length;c2++){
-      var cell=cells[c2];
-      var ref=cell.getAttribute('r')||'';
-      var col=0;
-      for(var k2=0;k2<ref.length;k2++){var cc=ref.charCodeAt(k2);if(cc>=65&&cc<=90)col=col*26+(cc-64);else break;}
-      var idx=Math.max(0,col-1);
-      var t=cell.getAttribute('t');
-      var v=cell.getElementsByTagName('v')[0];
-      var val=v?v.textContent:'';
-      if(t==='s')val=shared[+val]!==undefined?shared[+val]:'';
-      else if(t==='inlineStr'){var is2=cell.getElementsByTagName('t')[0];val=is2?is2.textContent:'';}
-      while(row.length<idx)row.push('');
-      row[idx]=val;
-    }
-    if(row.some(function(c3){return String(c3).trim()!=='';}))out.push(row);
+  /* Which parts are the worksheets, in the order the workbook lists them.
+     Read from workbook.xml and its relationships, because sheetN.xml is a
+     part name and not a position: a workbook whose sheets were reordered
+     keeps the old file names. */
+  var WORKBOOK_XML=await inflate(findEntry('xl/workbook.xml'));
+  var WORKBOOK_RELS=await inflate(findEntry('xl/_rels/workbook.xml.rels'));
+  function sheetParts(){
+    var out=[];
+    try{
+      var wbx=WORKBOOK_XML,relx=WORKBOOK_RELS;
+      if(!wbx||!relx)return null;
+      var rel={},rdoc=new DOMParser().parseFromString(relx,'text/xml');
+      var rs=rdoc.getElementsByTagName('Relationship');
+      for(var i=0;i<rs.length;i++)rel[rs[i].getAttribute('Id')]=rs[i].getAttribute('Target');
+      var wdoc=new DOMParser().parseFromString(wbx,'text/xml');
+      var shs=wdoc.getElementsByTagName('sheet');
+      for(var k=0;k<shs.length;k++){
+        var id=shs[k].getAttribute('r:id')||shs[k].getAttributeNS
+          ('http://schemas.openxmlformats.org/officeDocument/2006/relationships','id');
+        var t=id&&rel[id];
+        if(!t)continue;
+        t=String(t).replace(/^\/xl\//,'').replace(/^\.?\//,'');
+        out.push({name:shs[k].getAttribute('name')||('Sheet'+(k+1)),part:'xl/'+t});
+      }
+    }catch(_){return null;}
+    return out.length?out:null;
   }
-  return out;
+  var parts=sheetParts();
+  if(!parts){
+    /* No usable workbook part: probe the conventional names instead, so a
+       single-sheet file still opens. */
+    parts=[];
+    for(var pi=1;pi<=12;pi++){
+      if(findEntry('xl/worksheets/sheet'+pi+'.xml'))parts.push({name:'Sheet'+pi,part:'xl/worksheets/sheet'+pi+'.xml'});
+    }
+  }
+  if(!parts.length)throw new Error('Could not find a worksheet in that file. Save it as CSV and upload that instead.');
+
+  function rowsOf(wx){
+    var doc=new DOMParser().parseFromString(wx,'text/xml');
+    var out=[];
+    var rowsXml=doc.getElementsByTagName('row');
+    for(var r2=0;r2<rowsXml.length;r2++){
+      var cells=rowsXml[r2].getElementsByTagName('c');
+      var row=[];
+      for(var c2=0;c2<cells.length;c2++){
+        var cell=cells[c2];
+        var ref=cell.getAttribute('r')||'';
+        var col=0;
+        for(var k2=0;k2<ref.length;k2++){var cc=ref.charCodeAt(k2);if(cc>=65&&cc<=90)col=col*26+(cc-64);else break;}
+        var idx=Math.max(0,col-1);
+        var t=cell.getAttribute('t');
+        var v=cell.getElementsByTagName('v')[0];
+        var val=v?v.textContent:'';
+        if(t==='s')val=shared[+val]!==undefined?shared[+val]:'';
+        else if(t==='inlineStr'){var is2=cell.getElementsByTagName('t')[0];val=is2?is2.textContent:'';}
+        while(row.length<idx)row.push('');
+        row[idx]=val;
+      }
+      if(row.some(function(c3){return String(c3).trim()!=='';}))out.push(row);
+    }
+    return out;
+  }
+
+  var sheets=[],bad=0;
+  for(var q=0;q<parts.length;q++){
+    var wx=await inflate(findEntry(parts[q].part));
+    if(!wx){bad++;continue;}
+    sheets.push({name:parts[q].name,rows:rowsOf(wx)});
+  }
+  if(!sheets.length)throw new Error('Could not read any worksheet in that file. Save it as CSV and upload that instead.');
+
+  /* The slate is the sheet whose header row fills most of the wire. The two
+     teams and a kickoff are what a submission cannot be built without, so a
+     row missing any of them is not a header however much else it matches --
+     that is what stops a summary strip of counts scoring above the real
+     thing. Ties go to the earliest sheet and the earliest row, which is
+     what a person pointing at the file would pick. */
+  var best=null;
+  sheets.forEach(function(sh,si){
+    var limit=Math.min(sh.rows.length,12);
+    for(var r=0;r<limit;r++){
+      if(sh.rows.length-r<2)break;
+      var score=slateHeaderScore(sh.rows[r]);
+      if(score>0&&(!best||score>best.score))best={score:score,si:si,row:r};
+    }
+  });
+  var chosen=best?sheets[best.si]:sheets[0];
+  var from=best?best.row:0;
+  var rows=chosen.rows.slice(from);
+  /* Trailing blank cells are simply absent from a worksheet row -- that is
+     how the format works, not a file cut on the wrong separator. Pad to the
+     header so the ragged-row check downstream, which exists for CSV, does
+     not reject every spreadsheet ever saved. */
+  var width=(rows[0]||[]).length;
+  for(var w=1;w<rows.length;w++){
+    while(rows[w].length<width)rows[w].push('');
+  }
+  return rows;
 }
 /* Headers that genuinely mean either thing, depending on the creator.
    "spread" and "line" are each used both for "the number my model produced"
@@ -3494,17 +3619,48 @@ var SLATE_FIELDS=[
   /* Declared alongside the kickoff by the EdgeDesk export; without it a bare
      wall-clock time is read in the reader's own timezone. */
   {f:'kickoff_tz',label:'Kickoff timezone',req:false,syn:['kickoff_tz','timezone','tz','kickoff timezone']},
-  {f:'game_ref',label:'Game id (optional)',req:false,syn:['game_id','game_ref']},
-  {f:'projected_spread',label:'Your spread (home side)',req:false,syn:['projected_spread','proj_spread','spread','line','my_line','model_spread','my line','model_home_line','pick_line']},
-  {f:'projected_total',label:'Your total',req:false,syn:['projected_total','proj_total','total','ou','over_under','over/under','model_fair_total','model_total']},
-  {f:'line_at_submission',label:'Market line you saw',req:false,syn:['line_at_submission','book_line','market_line','vegas_line','book line','market line','ref_home_line']},
+  {f:'game_ref',label:'Game id (optional)',req:false,syn:['game_id','game_ref','game id']},
+  {f:'projected_spread',label:'Your spread (home side)',req:false,syn:['projected_spread','proj_spread','spread','line','my_line','model_spread','my line','model_home_line','pick_line','model home spread']},
+  {f:'projected_total',label:'Your total',req:false,syn:['projected_total','proj_total','total','ou','over_under','over/under','model_fair_total','model_total','model total']},
+  {f:'line_at_submission',label:'Market line you saw',req:false,syn:['line_at_submission','book_line','market_line','vegas_line','book line','market line','ref_home_line','market home spread']},
   {f:'home_win_probability',label:'Home win % (moneyline)',req:false,syn:['ml_prob_home','home_win_probability','home_win_prob','win_prob','home_wp','ml_home','winprob','win prob','home win prob','home_win_prob_pct']},
-  {f:'cover_probability',label:'Cover % (at your line)',req:false,syn:['cover_prob_0','cover_probability','cover_prob','cover','p_spread_pick_pct','pick_prob']},
-  {f:'pick_side',label:'Pick (home/away)',req:false,syn:['pick','pick_side','side','selection','spread_pick','pick_team']},
+  {f:'cover_probability',label:'Cover % (at your line)',req:false,syn:['cover_prob_0','cover_probability','cover_prob','cover','p_spread_pick_pct','pick_prob','spread pick %']},
+  {f:'pick_side',label:'Pick (home/away)',req:false,syn:['pick','pick_side','side','selection','spread_pick','pick_team','spread pick']},
   {f:'proj_home_score',label:'Projected home score',req:false,syn:['proj_home_score','home_pts','home_score','home_points','home pts']},
   {f:'proj_away_score',label:'Projected away score',req:false,syn:['proj_away_score','road_pts','away_pts','away_score','away_points','away pts','road pts']},
   {f:'confidence',label:'Confidence (your scale)',req:false,syn:['confidence','conf']}
 ];
+/* Which wire field a column name is, by the same table the mapper uses --
+   so the sheet a workbook is read from and the columns that get mapped out
+   of it can never be decided by two different rules. */
+/* A header, reduced to the part that carries meaning. The unit or the zone
+   in brackets is for the reader -- "Kickoff (CT)" and "Kickoff (ET)" are the
+   same column, and a synonym table that had to enumerate every timezone
+   would be a table that goes stale. */
+function slateHeaderKey(h){
+  return String(h==null?'':h).toLowerCase().replace(/\([^)]*\)/g,' ').replace(/\s+/g,' ').trim();
+}
+function slateFieldFor(name){
+  var k=slateHeaderKey(name);
+  if(!k)return null;
+  for(var i=0;i<SLATE_FIELDS.length;i++)
+    if(SLATE_FIELDS[i].syn.indexOf(k)>=0)return SLATE_FIELDS[i].f;
+  return null;
+}
+/* How much of a submission this row could be the header for. Zero unless it
+   carries both teams and a kickoff: without those there is no game to
+   attach anything to, so a row matching six other columns is still not a
+   header. That is what keeps a summary strip, or a Drivers sheet that
+   happens to hold a Confidence column, from outscoring the real slate. */
+function slateHeaderScore(cells){
+  var hit={},n=0;
+  (cells||[]).forEach(function(c){
+    var f=slateFieldFor(c);
+    if(f&&!hit[f]){hit[f]=1;n++;}
+  });
+  return (hit.home_team&&hit.away_team&&hit.kickoff)?n:0;
+}
+
 /* ---- the blank template ------------------------------------------------
    Every data bug this board has had came from convention drift between one
    creator's sheet and another's: a spread stated from the picked team, a
@@ -3630,10 +3786,10 @@ function slateGuessMap(){
   SLATE.coverIsPickSide=false;
   SLATE.finalScoreCols=slateScoresAreFinal(SLATE.cols);
   SLATE.cols.forEach(function(h,i){
-    var n=String(h).toLowerCase().trim();
+    var n=String(h).toLowerCase().trim(),key=slateHeaderKey(h);
     if(SLATE.finalScoreCols&&AMBIGUOUS_SCORE.indexOf(n)>=0)return;
     SLATE_FIELDS.forEach(function(fd){
-      if(SLATE.map[fd.f]===undefined&&fd.syn.indexOf(n)>=0)SLATE.map[fd.f]=i;
+      if(SLATE.map[fd.f]===undefined&&fd.syn.indexOf(key)>=0)SLATE.map[fd.f]=i;
     });
     if(n==='spread_push_pct')SLATE.map['__push']=i;
   });

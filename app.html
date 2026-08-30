@@ -1807,6 +1807,33 @@ button:focus-visible,select:focus-visible,input:focus-visible,a:focus-visible{ou
 var _mcLoaded=false;
 function loadCollective(){
   if(_mcLoaded)return;_mcLoaded=true;
+  /* WHO IS READING. The Collective runs on the same Supabase project as this
+     app, so the reader signed in here is already an identity it can
+     recognise. The embed used to ask for its data anonymously, and an
+     anonymous reader is entitled to nothing -- which is why this tab showed
+     "Subscriber number" on every pre-kickoff row, to everybody, including a
+     reader who is paying for EdgeDesk right now and has no way from this
+     screen to say so.
+
+     Handing over the token is the ask. What it BUYS is the server's decision
+     and has to be: entitlement is not something a static page can grant
+     itself. A reader the Collective does not recognise still sees locked
+     rows -- but the panel now says that is why, instead of pitching a
+     subscription at somebody who already has one.
+
+     Through a function rather than a data- attribute, so the token is never
+     sitting in the DOM; and the embed only calls it for the Collective's own
+     API, never for a host-supplied one. */
+  window.MCEmbedToken=async function(){
+    try{
+      var sess=edSession();
+      if(!sess||!sess.access_token)return null;
+      var t=await edToken();
+      /* edToken() falls back to the publishable anon key for a signed-out
+         reader. That is not an identity and must not be sent as one. */
+      return (t&&t!==SB_KEY)?t:null;
+    }catch(_){return null;}
+  };
   var s=document.createElement('script');
   s.src='/collective/embed.js';
   s.setAttribute('data-theme','dark');
@@ -22320,12 +22347,340 @@ function fbCtlHTML(){
   opts+='<option value="season"'+(FB.scope==='season'?' selected':'')+'>Full season</option>';
   var keyed=fbP4KeyMasked();
   return '<select onchange="fbSetScope(this.value)" style="padding:8px 10px;border-radius:9px;border:1px solid rgba(255,255,255,.18);background:transparent;color:var(--fg,#e8eef7);font-size:12.5px">'+opts+'</select>'
-    +'<button class="btn ghost sm" onclick="fbCsvDownload()">Download CSV</button>'
+    +'<button class="btn ghost sm" onclick="fbXlsxDownload()" title="Board + the raw export, one workbook">Download Excel</button>'
+    +'<button class="btn ghost sm" onclick="fbCsvDownload()" title="The raw export on its own, as CSV">CSV (raw)</button>'
     +'<button class="btn primary sm" onclick="fbNflApiSync()" title="Dry-run, replace this model\u2019s stored pre-kickoff rows, and post this scope as the first submission \u2014 one confirmed action">Sync to Collective (API)</button>'
     +(keyed?'<span class="ec mut">key '+fbEsc(keyed)+' \u00b7 <a href="#" onclick="fbP4KeyForget();return false;">forget</a></span>':'')
     +'<div id="fbnflPostOut" class="ec mut" style="flex-basis:100%;margin-top:2px"></div>'
     +'<span class="ec mut">picks + grading, one row per game — research export, unproven</span>';
 }
+/* ---- a workbook, written by hand ---------------------------------------
+   An .xlsx is a zip of XML, and a browser can write one with no library at
+   all. Entries go in STORED (uncompressed): that is a legal zip everything
+   opens, it needs no CompressionStream, and a thirty-game board is small
+   either way. Which matters, because this page ships as one static file
+   with no build step and no CDN, and a spreadsheet export is not worth
+   being the first thing to break that.
+
+   Only what these boards need is implemented -- strings, numbers, dates, a
+   few named styles, column widths, a frozen header and an autofilter.
+   Anything beyond that the operator can do in Excel. */
+var EDXlsx=(function(){
+  var CRC=(function(){
+    var t=new Int32Array(256),c,n,k;
+    for(n=0;n<256;n++){c=n;for(k=0;k<8;k++)c=(c&1)?(0xEDB88320^(c>>>1)):(c>>>1);t[n]=c;}
+    return t;
+  })();
+  function crc32(b){
+    var c=-1;
+    for(var i=0;i<b.length;i++)c=CRC[(c^b[i])&0xFF]^(c>>>8);
+    return (c^-1)>>>0;
+  }
+  var TE=new TextEncoder();
+  function bytes(s){return TE.encode(s);}
+
+  /* Every entry stored, every timestamp the same 1980-01-01: a workbook
+     built twice from the same board is byte-identical, so a diff between
+     two exports is a difference in the football and never in the clock. */
+  function zip(files){
+    var parts=[],central=[],offset=0;
+    files.forEach(function(f){
+      var name=bytes(f.name),data=f.data,crc=crc32(data);
+      var lh=new Uint8Array(30+name.length),dv=new DataView(lh.buffer);
+      dv.setUint32(0,0x04034b50,true);dv.setUint16(4,20,true);dv.setUint16(6,0x0800,true);
+      dv.setUint16(8,0,true);dv.setUint16(10,0,true);dv.setUint16(12,0x0021,true);
+      dv.setUint32(14,crc,true);dv.setUint32(18,data.length,true);dv.setUint32(22,data.length,true);
+      dv.setUint16(26,name.length,true);dv.setUint16(28,0,true);
+      lh.set(name,30);
+      parts.push(lh,data);
+      var ch=new Uint8Array(46+name.length),cv=new DataView(ch.buffer);
+      cv.setUint32(0,0x02014b50,true);cv.setUint16(4,20,true);cv.setUint16(6,20,true);
+      cv.setUint16(8,0x0800,true);cv.setUint16(10,0,true);
+      cv.setUint16(12,0,true);cv.setUint16(14,0x0021,true);
+      cv.setUint32(16,crc,true);cv.setUint32(20,data.length,true);cv.setUint32(24,data.length,true);
+      cv.setUint16(28,name.length,true);cv.setUint16(30,0,true);cv.setUint16(32,0,true);
+      cv.setUint16(34,0,true);cv.setUint16(36,0,true);cv.setUint32(38,0,true);
+      cv.setUint32(42,offset,true);
+      ch.set(name,46);
+      central.push(ch);
+      offset+=lh.length+data.length;
+    });
+    var cd=0;central.forEach(function(c){cd+=c.length;});
+    var end=new Uint8Array(22),ev=new DataView(end.buffer);
+    ev.setUint32(0,0x06054b50,true);
+    ev.setUint16(8,files.length,true);ev.setUint16(10,files.length,true);
+    ev.setUint32(12,cd,true);ev.setUint32(16,offset,true);
+    return new Blob(parts.concat(central,[end]),
+      {type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+  }
+
+  /* A stray control character makes the whole workbook unopenable, which is
+     a worse failure than losing the character. XML 1.0 forbids them. */
+  function esc(s){
+    return String(s)
+      .replace(/[&<>]/g,function(c){return c==='&'?'&amp;':c==='<'?'&lt;':'&gt;';})
+      .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g,'');
+  }
+  function colName(n){var s='';while(n>0){var r=(n-1)%26;s=String.fromCharCode(65+r)+s;n=(n-r-1)/26;}return s;}
+  /* Excel counts days from 1899-12-30. Built from wall-clock parts the
+     caller has already decided on, never from a timestamp, so the cell
+     holds the time its column header claims rather than a zone conversion
+     of it. */
+  function serial(y,mo,d,h,mi){
+    return (Date.UTC(y,mo-1,d)/86400000)+25569+(((h||0)*3600+(mi||0)*60)/86400);
+  }
+
+  /* The named styles. Indexes into cellXfs below; the callers use the names. */
+  var S={GEN:0,TITLE:1,MUTED:2,KPI_L:3,KPI_V:4,HEAD:5,DATE:6,N1:7,N2:8,INT:9,WRAP:10};
+  var STYLES='<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+    +'<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">'
+    +'<numFmts count="4">'
+      +'<numFmt numFmtId="164" formatCode="yyyy\\-mm\\-dd\\ hh:mm"/>'
+      +'<numFmt numFmtId="165" formatCode="0.0"/>'
+      +'<numFmt numFmtId="166" formatCode="0.00"/>'
+      +'<numFmt numFmtId="167" formatCode="0"/>'
+    +'</numFmts>'
+    +'<fonts count="6">'
+      +'<font><sz val="11"/><color theme="1"/><name val="Calibri"/></font>'
+      +'<font><b/><sz val="16"/><color rgb="FF16202B"/><name val="Calibri"/></font>'
+      +'<font><sz val="10"/><color rgb="FF6B7684"/><name val="Calibri"/></font>'
+      +'<font><b/><sz val="9"/><color rgb="FF6B7684"/><name val="Calibri"/></font>'
+      +'<font><b/><sz val="14"/><color rgb="FF16202B"/><name val="Calibri"/></font>'
+      +'<font><b/><sz val="10"/><color rgb="FFFFFFFF"/><name val="Calibri"/></font>'
+    +'</fonts>'
+    +'<fills count="3">'
+      +'<fill><patternFill patternType="none"/></fill>'
+      +'<fill><patternFill patternType="gray125"/></fill>'
+      +'<fill><patternFill patternType="solid"><fgColor rgb="FF16202B"/><bgColor indexed="64"/></patternFill></fill>'
+    +'</fills>'
+    +'<borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders>'
+    +'<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>'
+    +'<cellXfs count="11">'
+      +'<xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>'
+      +'<xf numFmtId="0" fontId="1" fillId="0" borderId="0" xfId="0" applyFont="1"/>'
+      +'<xf numFmtId="0" fontId="2" fillId="0" borderId="0" xfId="0" applyFont="1"/>'
+      +'<xf numFmtId="0" fontId="3" fillId="0" borderId="0" xfId="0" applyFont="1"/>'
+      +'<xf numFmtId="0" fontId="4" fillId="0" borderId="0" xfId="0" applyFont="1"/>'
+      +'<xf numFmtId="0" fontId="5" fillId="2" borderId="0" xfId="0" applyFont="1" applyFill="1" applyAlignment="1">'
+        +'<alignment horizontal="left" vertical="center" wrapText="1"/></xf>'
+      +'<xf numFmtId="164" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1"/>'
+      +'<xf numFmtId="165" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1"/>'
+      +'<xf numFmtId="166" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1"/>'
+      +'<xf numFmtId="167" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1"/>'
+      +'<xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0" applyAlignment="1">'
+        +'<alignment vertical="top" wrapText="1"/></xf>'
+    +'</cellXfs>'
+    +'<cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles>'
+    +'</styleSheet>';
+
+  /* A cell is a bare value, or {v,k,s}: k is 'n' number, 's' text, 'd' a
+     date already converted to a serial. Blank stays blank -- an empty cell
+     and a cell holding "" read differently to every consumer downstream. */
+  function norm(c){
+    if(c==null||c==='')return null;
+    if(typeof c==='number')return isFinite(c)?{v:c,k:'n',s:0}:null;
+    if(typeof c==='string')return {v:c,k:'s',s:0};
+    if(typeof c.v!=='object'&&(c.v!=null&&c.v!==''))
+      return {v:c.v,k:c.k||(typeof c.v==='number'?'n':'s'),s:c.s||0};
+    return null;
+  }
+
+  function sheetXml(sh,strIdx,strList){
+    var rows=sh.rows||[],maxCol=1,body='';
+    rows.forEach(function(r){if(r&&r.length>maxCol)maxCol=r.length;});
+    rows.forEach(function(r,ri){
+      if(!r)return;
+      var cells='';
+      for(var ci=0;ci<r.length;ci++){
+        var c=norm(r[ci]);
+        if(!c)continue;
+        var ref=colName(ci+1)+(ri+1);
+        if(c.k==='s'){
+          var key=String(c.v);
+          if(!(key in strIdx)){strIdx[key]=strList.length;strList.push(key);}
+          cells+='<c r="'+ref+'" s="'+c.s+'" t="s"><v>'+strIdx[key]+'</v></c>';
+        }else{
+          cells+='<c r="'+ref+'" s="'+c.s+'"><v>'+c.v+'</v></c>';
+        }
+      }
+      if(cells)body+='<row r="'+(ri+1)+'">'+cells+'</row>';
+    });
+    var cols='';
+    (sh.cols||[]).forEach(function(w,i){
+      cols+='<col min="'+(i+1)+'" max="'+(i+1)+'" width="'+w+'" customWidth="1"/>';
+    });
+    var pane='';
+    if(sh.freeze)pane='<pane ySplit="'+sh.freeze+'" topLeftCell="A'+(sh.freeze+1)
+      +'" activePane="bottomLeft" state="frozen"/><selection pane="bottomLeft"/>';
+    return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+      +'<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">'
+      +'<dimension ref="A1:'+colName(maxCol)+Math.max(1,rows.length)+'"/>'
+      +'<sheetViews><sheetView showGridLines="0" workbookViewId="0">'+pane+'</sheetView></sheetViews>'
+      +'<sheetFormatPr defaultRowHeight="15"/>'
+      +(cols?'<cols>'+cols+'</cols>':'')
+      +'<sheetData>'+body+'</sheetData>'
+      +(sh.filter?'<autoFilter ref="'+sh.filter+'"/>':'')
+      +((sh.merges&&sh.merges.length)
+        ? '<mergeCells count="'+sh.merges.length+'">'
+          +sh.merges.map(function(m){return '<mergeCell ref="'+m+'"/>';}).join('')+'</mergeCells>'
+        : '')
+      +'</worksheet>';
+  }
+
+  /* Excel refuses a sheet name over 31 characters or carrying []:*?/\ */
+  function sheetName(n,i){
+    var s=String(n||('Sheet'+(i+1))).replace(/[\[\]:*?\/\\]/g,' ').slice(0,31).trim();
+    return s||('Sheet'+(i+1));
+  }
+
+  function build(sheets){
+    var strIdx={},strList=[],parts=[];
+    var xml=sheets.map(function(sh){return sheetXml(sh,strIdx,strList);});
+    var ct='<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+      +'<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">'
+      +'<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>'
+      +'<Default Extension="xml" ContentType="application/xml"/>'
+      +'<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>'
+      +sheets.map(function(_,i){return '<Override PartName="/xl/worksheets/sheet'+(i+1)
+        +'.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>';}).join('')
+      +'<Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>'
+      +'<Override PartName="/xl/sharedStrings.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sharedStrings+xml"/>'
+      +'</Types>';
+    var rels='<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+      +'<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
+      +'<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/>'
+      +'</Relationships>';
+    var wbRels='<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+      +'<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
+      +sheets.map(function(_,i){return '<Relationship Id="rId'+(i+1)
+        +'" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet'+(i+1)+'.xml"/>';}).join('')
+      +'<Relationship Id="rId'+(sheets.length+1)+'" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>'
+      +'<Relationship Id="rId'+(sheets.length+2)+'" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/sharedStrings" Target="sharedStrings.xml"/>'
+      +'</Relationships>';
+    var wb='<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+      +'<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"'
+      +' xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets>'
+      +sheets.map(function(sh,i){return '<sheet name="'+esc(sheetName(sh.name,i))+'" sheetId="'+(i+1)
+        +'" r:id="rId'+(i+1)+'"/>';}).join('')
+      +'</sheets></workbook>';
+    var ss='<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+      +'<sst xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" count="'+strList.length
+      +'" uniqueCount="'+strList.length+'">'
+      +strList.map(function(s){return '<si><t xml:space="preserve">'+esc(s)+'</t></si>';}).join('')
+      +'</sst>';
+    parts.push({name:'[Content_Types].xml',data:bytes(ct)});
+    parts.push({name:'_rels/.rels',data:bytes(rels)});
+    parts.push({name:'xl/workbook.xml',data:bytes(wb)});
+    parts.push({name:'xl/_rels/workbook.xml.rels',data:bytes(wbRels)});
+    parts.push({name:'xl/styles.xml',data:bytes(STYLES)});
+    parts.push({name:'xl/sharedStrings.xml',data:bytes(ss)});
+    xml.forEach(function(x,i){parts.push({name:'xl/worksheets/sheet'+(i+1)+'.xml',data:bytes(x)});});
+    return zip(parts);
+  }
+
+  return {S:S,serial:serial,colName:colName,build:build};
+})();
+
+/* ---- the pieces both boards' workbooks are built from ------------------ */
+/* The zone the reader is actually in, collapsed to the name people use for
+   it: a kickoff column headed CDT in September and CST in December is the
+   same column, and it is read as Central either way. */
+function fbTzLabel(){
+  var n='';
+  try{
+    var parts=new Intl.DateTimeFormat('en-US',{timeZoneName:'short'}).formatToParts(new Date());
+    for(var i=0;i<parts.length;i++)if(parts[i].type==='timeZoneName'){n=parts[i].value;break;}
+  }catch(_){}
+  var m=/^([CEMP])[SD]T$/.exec(n);
+  return m?(m[1]+'T'):(n||'local');
+}
+/* A kickoff string is UTC unless it says otherwise. Guessing the reader's
+   own zone for a bare wall clock is how a Saturday noon game becomes a
+   Friday night one, so the assumption is stated rather than inferred. */
+function fbParseUtc(x){
+  if(x==null||x==='')return null;
+  var t=x instanceof Date?x.getTime():(typeof x==='number'?x:null);
+  if(t==null){
+    var str=String(x).trim();
+    if(!str)return null;
+    t=Date.parse(/[zZ]|[+-]\d\d:?\d\d$/.test(str)?str:(str.replace(' ','T')+'Z'));
+  }
+  return isFinite(t)?t:null;
+}
+/* Excel has no timezone: a date cell is a wall clock and nothing else. So
+   the conversion happens here, once, and the column header says which clock
+   the number is on. */
+function fbXlKick(ms){
+  if(ms==null)return null;
+  var d=new Date(ms);
+  if(isNaN(d.getTime()))return null;
+  return {v:EDXlsx.serial(d.getFullYear(),d.getMonth()+1,d.getDate(),d.getHours(),d.getMinutes()),
+          k:'n',s:EDXlsx.S.DATE};
+}
+/* What is wrong with this row, IN the row. The board's caveats are spread
+   across four columns -- no book number, no total, odds hours stale, an
+   unknown quarterback, a rating still resting on a thin sample -- and an
+   operator scanning thirty games should not have to reassemble them each
+   time. A row with nothing to say says so, because a blank there is
+   indistinguishable from a check that never ran. */
+function fbQualityFlag(o){
+  var f=[];
+  if(o.spread==null||o.spread==='')f.push('NO LINE');
+  if(o.total==null||o.total==='')f.push('NO TOTAL');
+  /* how stale is already spelled out in Market Source, beside the book that
+     went stale -- repeating the hours here would only crowd the flag */
+  if(/\bstale\b/i.test(String(o.source||'')))f.push('STALE MARKET');
+  if(/thin sample/i.test(String(o.notes||'')))f.push('THIN SAMPLE');
+  if(String(o.qb||'').trim())f.push('QB UNKNOWN');
+  return f.length?f.join(' \u00b7 '):'CLEAN';
+}
+function fbXlHead(names){
+  return names.map(function(h){return {v:h,k:'s',s:EDXlsx.S.HEAD};});
+}
+function fbXlNum(v,style){
+  if(v==null||v==='')return null;
+  var n=typeof v==='number'?v:parseFloat(v);
+  return isFinite(n)?{v:n,k:'n',s:style==null?EDXlsx.S.GEN:style}:{v:String(v),k:'s',s:EDXlsx.S.GEN};
+}
+function fbXlText(v,style){
+  if(v==null||v==='')return null;
+  return {v:String(v),k:'s',s:style==null?EDXlsx.S.GEN:style};
+}
+/* The raw sheet keeps the export's own typing, with one exception: an id
+   stays TEXT however numeric it looks, because a game reference rounded
+   into scientific notation is a game reference that no longer resolves. */
+function fbXlRaw(v,head){
+  if(v==null||v==='')return null;
+  if(/(^|_)id$/.test(head)||head==='game_ref')return {v:String(v),k:'s',s:EDXlsx.S.GEN};
+  if(typeof v==='number')return isFinite(v)?{v:v,k:'n',s:EDXlsx.S.GEN}:null;
+  return {v:String(v),k:'s',s:EDXlsx.S.GEN};
+}
+/* The strip across the top of every board sheet: label over value, laid out
+   `span` columns apart so a long label has room. A count is useless without
+   the word beside it, and a merge is what gives it that room. */
+function fbXlKpiStrip(pairs,row,span){
+  span=span||4;
+  var labels=[],values=[],merges=[];
+  pairs.forEach(function(p,i){
+    var at=i*span;
+    while(labels.length<at){labels.push(null);values.push(null);}
+    labels[at]={v:p[0],k:'s',s:EDXlsx.S.KPI_L};
+    values[at]=p[1]==null?null:(typeof p[1]==='object'?p[1]:{v:p[1],k:typeof p[1]==='number'?'n':'s',s:EDXlsx.S.KPI_V});
+    if(span>1)merges.push(EDXlsx.colName(at+1)+row+':'+EDXlsx.colName(at+span)+row,
+                          EDXlsx.colName(at+1)+(row+1)+':'+EDXlsx.colName(at+span)+(row+1));
+  });
+  return {labels:labels,values:values,merges:merges};
+}
+/* One download path for both boards, so a workbook cannot be built one way
+   here and another way there. */
+function fbXlSave(sheets,name){
+  var blob=EDXlsx.build(sheets);
+  var a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);a.download=name;
+  document.body.appendChild(a);a.click();
+  setTimeout(function(){URL.revokeObjectURL(a.href);a.remove();},2000);
+}
+
 /* ---- CSV export: identical columns to the offline generator, so a sheet
    built from either source lines up. One row per game; blank grading columns
    until the game is final. */
@@ -22340,8 +22695,11 @@ var FB_CSV_HEAD=['season','week','game_id','kickoff_local','away_team','home_tea
 'recommendation_spread','recommendation_total','recommendation_basis',
 'qb_status','data_status','unproven','generated_at',
 'home_score','away_score','final_margin','final_total','spread_result','total_result','ml_result'];
-function fbCsvRow(it){
-  var g=it.g,q=function(s){s=String(s==null?'':s);return /[",\n]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s;};
+/* The row's VALUES, once. The CSV quotes them and the workbook types them,
+   but neither builds its own: a column that meant one thing in the file and
+   another in the sheet would be a difference nobody could see. */
+function fbNflRowValues(it){
+  var g=it.g;
   var r2=function(v){return v==null?'':(Math.round(v*100)/100);};
   var r1=function(v){return v==null?'':(Math.round(v*10)/10);};
   var pc=function(v){return v==null?'':(Math.round(v*1000)/10);};
@@ -22359,7 +22717,7 @@ function fbCsvRow(it){
     row[6]=p&&p.model_version||'';row[7]=p&&p.feature_version||'';
     row[34]=p?p.status:'NO_PREDICTION';row[35]='true';row[36]=new Date().toISOString();
     row[37]=g.home_score==null?'':g.home_score;row[38]=g.away_score==null?'':g.away_score;
-    return row.map(q).join(',');
+    return row;
   }
   var m=p.model,cov=p.cover,ov=p.over,sGap=p.market.spread_gap,tGap=p.market.total_gap;
   var sPick=(sGap!=null&&Math.abs(sGap)>1e-9)?(sGap>0?g.home_team:g.away_team):'';
@@ -22383,22 +22741,138 @@ function fbCsvRow(it){
     g.home_score==null?'':g.home_score,g.away_score==null?'':g.away_score,
     G&&G.margin!=null?G.margin:'',G&&G.total!=null?G.total:'',
     G&&G.spread?G.spread:'',G&&G.total_ou?G.total_ou:'',G&&G.ml?G.ml:''
-  ]).map(q).join(',');
+  ]);
+}
+function fbCsvQuote(s){s=String(s==null?'':s);return /[",\n]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s;}
+function fbCsvRow(it){return fbNflRowValues(it).map(fbCsvQuote).join(',');}
+/* Which games this scope puts on screen. The exports scope to exactly what
+   the operator is looking at, so the file and the board are the same slate. */
+function fbScopedItems(){
+  var S=FB.nfl,now=Date.now();
+  if(!S.games.length)return [];
+  return FB.scope==='season'?S.games.slice()
+    :FB.scope==='auto'?S.games.filter(function(it){return !it.done&&it.t>=now-6*3600e3&&it.t<=now+FB_LOOKAHEAD_D*864e5;})
+    :S.games.filter(function(it){return it.week===FB.scope;});
+}
+function fbScopeLabel(){
+  return FB.scope==='season'?'Full season':FB.scope==='auto'?'Next up':('Week '+FB.scope);
+}
+function fbScopeSlug(){
+  return FB.scope==='season'?'season':FB.scope==='auto'?'upcoming':('week'+FB.scope);
 }
 window.fbCsvDownload=function(){
   var S=FB.nfl;
   if(!S.games.length){alert('No season slate loaded yet.');return;}
-  var items=FB.scope==='season'?S.games
-    :FB.scope==='auto'?S.games.filter(function(it){var now=Date.now();return !it.done&&it.t>=now-6*3600e3&&it.t<=now+FB_LOOKAHEAD_D*864e5;})
-    :S.games.filter(function(it){return it.week===FB.scope;});
+  var items=fbScopedItems();
   if(!items.length){alert('No games in this scope.');return;}
   var lines=[FB_CSV_HEAD.join(',')];
   items.forEach(function(it){lines.push(fbCsvRow(it));});
-  var name='edgedesk_nfl_'+S.curSeason+'_'+(FB.scope==='season'?'season':FB.scope==='auto'?'upcoming':('week'+FB.scope))+'.csv';
+  var name='edgedesk_nfl_'+S.curSeason+'_'+fbScopeSlug()+'.csv';
   var blob=new Blob([lines.join('\n')+'\n'],{type:'text/csv'});
   var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;
   document.body.appendChild(a);a.click();
   setTimeout(function(){URL.revokeObjectURL(a.href);a.remove();},2000);
+};
+
+/* ---- the workbook the NFL board downloads ------------------------------
+   The 44-column export is the truth and stays exactly as it is, on its own
+   sheet, unchanged, for audit. What it is not is READABLE: nobody scans
+   forty-four columns to find the three games that disagree with the book.
+   So the download is a workbook -- a Board sheet that is the screen, and
+   the raw export underneath it.
+
+   Both sheets are built from ONE row of values per game, so they cannot
+   disagree about what this model said. The raw sheet stays last and stays
+   canonical, because it is the sheet the Collective's uploader maps and the
+   sheet an argument about a number gets settled on. */
+var FBNFL_IX=null;
+function fbNflIx(){
+  if(!FBNFL_IX){FBNFL_IX={};FB_CSV_HEAD.forEach(function(h,i){FBNFL_IX[h]=i;});}
+  return FBNFL_IX;
+}
+var FBNFL_BOARD_HEAD=['Kickoff','Away','Home','Market Home Spread','Model Home Spread','Spread Gap',
+  'Spread Pick','Spread Pick %','Spread Rec','Market Total','Model Total','Total Gap','Total Pick',
+  'Total Pick %','ML Pick','ML Pick %','QB Status','Quality Flag','Market Source','Game ID',
+  'Home Score','Away Score','Spread Result','Total Result','ML Result'];
+var FBNFL_BOARD_W=[17,20,20,13,13,11,18,12,17,12,12,10,10,11,18,10,26,24,30,12,11,11,12,12,10];
+/* Pure: raw values in, board cells out. The board sheet is a VIEW of the
+   export and never a second opinion about it. */
+function fbNflBoardRow(v,kickMs){
+  var X=EDXlsx.S,I=fbNflIx();
+  return [
+    fbXlKick(kickMs),
+    fbXlText(v[I.away_team]),fbXlText(v[I.home_team]),
+    fbXlNum(v[I.ref_home_line],X.N1),fbXlNum(v[I.model_home_line],X.N2),fbXlNum(v[I.spread_gap_pts],X.N2),
+    fbXlText(v[I.spread_pick]),fbXlNum(v[I.p_spread_pick_pct],X.N1),fbXlText(v[I.recommendation_spread]),
+    fbXlNum(v[I.ref_total],X.N1),fbXlNum(v[I.model_fair_total],X.N1),fbXlNum(v[I.total_gap_pts],X.N2),
+    fbXlText(v[I.total_pick]),fbXlNum(v[I.p_total_pick_pct],X.N1),
+    fbXlText(v[I.ml_pick]),fbXlNum(v[I.p_ml_pick_pct],X.N1),
+    fbXlText(v[I.qb_status]),
+    fbXlText(fbQualityFlag({spread:v[I.ref_home_line],total:v[I.ref_total],
+      source:v[I.ref_source],qb:v[I.qb_status],notes:''})),
+    fbXlText(v[I.ref_source]),fbXlText(v[I.game_id]),
+    fbXlNum(v[I.home_score],X.INT),fbXlNum(v[I.away_score],X.INT),
+    fbXlText(v[I.spread_result]),fbXlText(v[I.total_result]),fbXlText(v[I.ml_result])
+  ];
+}
+function fbNflWorkbook(){
+  var S=FB.nfl,X=EDXlsx.S,I=fbNflIx(),tz=fbTzLabel();
+  var items=fbScopedItems();
+  var board=[],raw=[],leans=0,passes=0,noMkt=0,gapSum=0,gapN=0;
+  items.forEach(function(it){
+    var v=fbNflRowValues(it);
+    board.push(fbNflBoardRow(v,fbParseUtc(it.t)));
+    raw.push(FB_CSV_HEAD.map(function(h,i){return fbXlRaw(v[i],h);}));
+    var rec=String(v[I.recommendation_spread]||'');
+    if(rec==='RESEARCH_LEAN')leans++;
+    else if(rec.indexOf('PASS')===0)passes++;
+    else if(rec==='NO_MARKET')noMkt++;
+    var gp=v[I.spread_gap_pts];
+    if(gp!==''&&gp!=null&&isFinite(gp)){gapSum+=Math.abs(gp);gapN++;}
+  });
+  var now=new Date();
+  var kpi=fbXlKpiStrip([
+    ['Games',board.length],
+    ['Research Leans',leans],
+    ['Pass / Low Conf.',passes],
+    ['No Market',noMkt],
+    ['Avg |Spread Gap|',gapN?{v:Math.round(gapSum/gapN*100)/100,k:'n',s:X.N2}:null],
+    ['Generated ('+tz+')',fbXlKick(now.getTime())]
+  ],3,4);
+  var head=FBNFL_BOARD_HEAD.slice();head[0]='Kickoff ('+tz+')';
+  var lastCol=EDXlsx.colName(head.length);
+  var boardSheet={
+    name:'Board',freeze:6,filter:'A6:'+lastCol+'6',cols:FBNFL_BOARD_W,
+    merges:['A1:'+lastCol+'1','A2:'+lastCol+'2'].concat(kpi.merges),
+    rows:[
+      [{v:'EdgeDesk NFL \u2014 '+S.curSeason+' \u00b7 '+fbScopeLabel(),k:'s',s:X.TITLE}],
+      [{v:'Research context, not edges. This model is UNPROVEN versus the closing market and is counted '
+        +'nowhere until its own graded CLV beats the close. Nothing here is betting advice.',k:'s',s:X.MUTED}],
+      kpi.labels,kpi.values,[],
+      fbXlHead(head)
+    ].concat(board)
+  };
+  var rawLast=EDXlsx.colName(FB_CSV_HEAD.length);
+  var rawSheet={
+    name:'Raw Export',freeze:3,filter:'A3:'+rawLast+'3',
+    cols:FB_CSV_HEAD.map(function(h){return Math.min(46,Math.max(11,h.length+4));}),
+    merges:['A1:'+rawLast+'1'],
+    rows:[
+      [{v:'Original '+FB_CSV_HEAD.length+'-column export \u2014 preserved unchanged for audit, and the '
+        +'sheet the Collective\u2019s uploader reads',k:'s',s:X.MUTED}],
+      [],
+      fbXlHead(FB_CSV_HEAD)
+    ].concat(raw)
+  };
+  return {sheets:[boardSheet,rawSheet],
+          name:'edgedesk_nfl_'+S.curSeason+'_'+fbScopeSlug()+'.xlsx',
+          games:board.length};
+}
+window.fbXlsxDownload=function(){
+  if(!FB.nfl.games.length){alert('No season slate loaded yet.');return;}
+  var wb=fbNflWorkbook();
+  if(!wb.games){alert('No games in this scope.');return;}
+  fbXlSave(wb.sheets,wb.name);
 };
 function fbSeasonTableHTML(){
   var html='<div class="gd-sec">Season scan — '+fbEsc(String(FB.nfl.curSeason))+'</div>';
@@ -23191,9 +23665,11 @@ function fbP4Contrib(p,key){
   var c=(p.contributions||[]).filter(function(x){return x.key===key;})[0];
   return c?Math.round(c.points*100)/100:'';
 }
-function fbP4CsvRow(u){
+/* The row's VALUES, once. The CSV quotes them and the workbook types them,
+   but neither builds its own: a column that meant one thing in the file and
+   another in the sheet would be a difference nobody could see. */
+function fbP4RowValues(u){
   var g=u.g;
-  var qq=function(x){x=String(x==null?'':x);return /[",\n]/.test(x)?'"'+x.replace(/"/g,'""')+'"':x;};
   var r2=function(v){return v==null?'':Math.round(v*100)/100;};
   var r1=function(v){return v==null?'':Math.round(v*10)/10;};
   var pc=function(v){return v==null?'':Math.round(v*1000)/10;};
@@ -23209,7 +23685,7 @@ function fbP4CsvRow(u){
     row[44]='UTC';row[45]=g.neutral_site?'true':'false';row[46]=g.venue||'';
     row[47]=g.home_conference||'';row[48]=g.away_conference||'';
     row[FBP4_CSV_HEAD.length-1]=(p&&(p.reason||(p.missing||[]).join('; ')))||'';
-    return row.map(qq).join(',');
+    return row;
   }
   var m=p.model,sc=p.scores,cov=p.cover,ov=p.over;
   var sGap=p.market.spread_gap,tGap=p.market.total_gap;
@@ -23250,8 +23726,9 @@ function fbP4CsvRow(u){
     (ex.primary_drivers[2]||{}).text||'',(ex.counterarguments[0]||{}).text||'',
     ex.unpredictable_variables.map(function(x){return x.item;}).join('; '),
     ex.data_quality.map(function(x){return x.text;}).join('; ')
-  ]).map(qq).join(',');
+  ]);
 }
+function fbP4CsvRow(u){return fbP4RowValues(u).map(fbCsvQuote).join(',');}
 window.fbP4CsvDownload=function(){
   var S=FB.p4;
   if(!S.up.length){alert('No Power 4 games on the board to export yet.');return;}
@@ -23263,6 +23740,154 @@ window.fbP4CsvDownload=function(){
   document.body.appendChild(a);a.click();
   setTimeout(function(){URL.revokeObjectURL(a.href);a.remove();},2000);
 };
+
+/* ---- the workbook the Power 4 board downloads --------------------------
+   The 80-column export is the truth and stays exactly as it is, on its own
+   sheet, unchanged, for audit. What it is not is READABLE: nobody scans
+   eighty columns to find the three games that disagree with the book, and
+   the model's reasoning -- three drivers, a counterargument, everything it
+   could not see -- is prose sitting in columns BW through CB, where it
+   crushes every number beside it.
+
+   So the download is a workbook. A Board sheet that is the screen, a
+   Drivers sheet holding the reasoning where it has room to be read, and the
+   raw export underneath both. All three are built from ONE row of values
+   per game, so they cannot disagree about what this model said, and the raw
+   sheet stays canonical: it is what the Collective's uploader maps, and
+   what an argument about a number gets settled on. */
+var FBP4_IX=null;
+function fbP4Ix(){
+  if(!FBP4_IX){FBP4_IX={};FBP4_CSV_HEAD.forEach(function(h,i){FBP4_IX[h]=i;});}
+  return FBP4_IX;
+}
+var FBP4_BOARD_HEAD=['Kickoff','Away','Home','Market Home Spread','Model Home Spread','Spread Gap',
+  'Spread Pick','Spread Pick %','Spread Rec','Market Total','Model Total','Total Gap','Total Pick',
+  'Total Pick %','ML Pick','ML Pick %','Confidence','Volatility','Roster Stability','QB Status',
+  'Quality Flag','Market Source','Venue','Game ID'];
+var FBP4_BOARD_W=[17,22,22,13,13,11,20,12,19,12,12,10,10,11,20,10,11,11,14,28,26,30,32,12];
+/* The contributions carry a unit rather than repeating the board's own
+   column names: "Matchup" as both a fixture and a points contribution in
+   one header row is a sheet nobody can write a lookup against. */
+var FBP4_DRIVERS_HEAD=['Kickoff','Matchup','Spread Rec','Confidence','Volatility','Model Margin',
+  'Sigma Margin','P10 Margin','Median Margin','P90 Margin',
+  'Rating (pts)','HFA (pts)','QB (pts)','Matchup (pts)','Conference (pts)','Travel (pts)',
+  'Schedule (pts)','Injury (pts)','Rivalry (pts)',
+  'Primary Driver 1','Primary Driver 2','Primary Driver 3','Counterargument',
+  'Unavailable Inputs','Data Quality Notes'];
+var FBP4_DRIVERS_W=[17,34,19,11,11,13,13,12,14,12,12,10,10,13,15,11,12,11,12,64,64,64,64,54,54];
+/* Pure: raw values in, board cells out. The board sheet is a VIEW of the
+   export and never a second opinion about it. */
+function fbP4BoardRow(v,kickMs){
+  var X=EDXlsx.S,I=fbP4Ix();
+  return [
+    fbXlKick(kickMs),
+    fbXlText(v[I.away_team]),fbXlText(v[I.home_team]),
+    fbXlNum(v[I.ref_home_line],X.N1),fbXlNum(v[I.model_home_line],X.N2),fbXlNum(v[I.spread_gap_pts],X.N2),
+    fbXlText(v[I.spread_pick]),fbXlNum(v[I.p_spread_pick_pct],X.N1),fbXlText(v[I.recommendation_spread]),
+    fbXlNum(v[I.ref_total],X.N1),fbXlNum(v[I.model_fair_total],X.N1),fbXlNum(v[I.total_gap_pts],X.N2),
+    fbXlText(v[I.total_pick]),fbXlNum(v[I.p_total_pick_pct],X.N1),
+    fbXlText(v[I.ml_pick]),fbXlNum(v[I.p_ml_pick_pct],X.N1),
+    fbXlNum(v[I.confidence],X.INT),fbXlNum(v[I.volatility],X.INT),fbXlNum(v[I.roster_stability],X.INT),
+    fbXlText(v[I.qb_status]),
+    fbXlText(fbQualityFlag({spread:v[I.ref_home_line],total:v[I.ref_total],source:v[I.ref_source],
+      qb:v[I.qb_status],notes:v[I.data_quality_notes]})),
+    fbXlText(v[I.ref_source]),fbXlText(v[I.venue]),fbXlText(v[I.game_id])
+  ];
+}
+function fbP4DriverRow(v,kickMs){
+  var X=EDXlsx.S,I=fbP4Ix(),W=X.WRAP;
+  return [
+    fbXlKick(kickMs),
+    fbXlText(String(v[I.away_team]||'?')+' @ '+String(v[I.home_team]||'?')),
+    fbXlText(v[I.recommendation_spread]),
+    fbXlNum(v[I.confidence],X.INT),fbXlNum(v[I.volatility],X.INT),
+    fbXlNum(v[I.model_home_margin],X.N2),
+    fbXlNum(v[I.sigma_margin],X.N1),fbXlNum(v[I.p10_margin],X.N1),
+    fbXlNum(v[I.median_margin],X.N1),fbXlNum(v[I.p90_margin],X.N1),
+    fbXlNum(v[I.contrib_rating],X.N2),fbXlNum(v[I.contrib_hfa],X.N2),fbXlNum(v[I.contrib_qb],X.N2),
+    fbXlNum(v[I.contrib_matchup],X.N2),fbXlNum(v[I.contrib_conference],X.N2),
+    fbXlNum(v[I.contrib_travel],X.N2),fbXlNum(v[I.contrib_schedule],X.N2),
+    fbXlNum(v[I.contrib_injury],X.N2),fbXlNum(v[I.contrib_rivalry],X.N2),
+    fbXlText(v[I.primary_driver_1],W),fbXlText(v[I.primary_driver_2],W),fbXlText(v[I.primary_driver_3],W),
+    fbXlText(v[I.counterargument_1],W),fbXlText(v[I.unavailable_inputs],W),
+    fbXlText(v[I.data_quality_notes],W)
+  ];
+}
+function fbP4Workbook(){
+  var S=FB.p4,X=EDXlsx.S,I=fbP4Ix(),tz=fbTzLabel();
+  var board=[],drivers=[],raw=[],leans=0,passes=0,noMkt=0,gapSum=0,gapN=0;
+  S.up.forEach(function(u){
+    var v=fbP4RowValues(u),kick=fbParseUtc(u.g&&u.g.start_date);
+    board.push(fbP4BoardRow(v,kick));
+    drivers.push(fbP4DriverRow(v,kick));
+    raw.push(FBP4_CSV_HEAD.map(function(h,i){return fbXlRaw(v[i],h);}));
+    var rec=String(v[I.recommendation_spread]||'');
+    if(rec==='RESEARCH_LEAN')leans++;
+    else if(rec.indexOf('PASS')===0)passes++;
+    else if(rec==='NO_MARKET')noMkt++;
+    var gp=v[I.spread_gap_pts];
+    if(gp!==''&&gp!=null&&isFinite(gp)){gapSum+=Math.abs(gp);gapN++;}
+  });
+  var kpi=fbXlKpiStrip([
+    ['Games',board.length],
+    ['Research Leans',leans],
+    ['Pass / Low Conf.',passes],
+    ['No Market',noMkt],
+    ['Avg |Spread Gap|',gapN?{v:Math.round(gapSum/gapN*100)/100,k:'n',s:X.N2}:null],
+    ['Generated ('+tz+')',fbXlKick(Date.now())]
+  ],3,4);
+  var bHead=FBP4_BOARD_HEAD.slice();bHead[0]='Kickoff ('+tz+')';
+  var bLast=EDXlsx.colName(bHead.length);
+  var boardSheet={
+    name:'Board',freeze:6,filter:'A6:'+bLast+'6',cols:FBP4_BOARD_W,
+    merges:['A1:'+bLast+'1','A2:'+bLast+'2'].concat(kpi.merges),
+    rows:[
+      [{v:'EdgeDesk CFB Power 4 \u2014 '+S.season+' Research Board',k:'s',s:X.TITLE}],
+      [{v:'Research context, not edges. This model is UNPROVEN versus the closing market \u2014 use the '
+        +'board to surface disagreements worth researching, never as automatic betting advice.',k:'s',s:X.MUTED}],
+      kpi.labels,kpi.values,[],
+      fbXlHead(bHead)
+    ].concat(board)
+  };
+  var dHead=FBP4_DRIVERS_HEAD.slice();dHead[0]='Kickoff ('+tz+')';
+  var dLast=EDXlsx.colName(dHead.length);
+  var driversSheet={
+    name:'Drivers',freeze:4,filter:'A4:'+dLast+'4',cols:FBP4_DRIVERS_W,
+    merges:['A1:'+dLast+'1','A2:'+dLast+'2'],
+    rows:[
+      [{v:'Model Drivers & Diagnostics',k:'s',s:X.TITLE}],
+      [{v:'The model\u2019s reasoning, kept off the board so the numbers stay readable. Contributions are '
+        +'in home-team margin points and sum toward Model Margin; what the model could NOT see is in '
+        +'Unavailable Inputs, and is the honest limit on every number to its left.',k:'s',s:X.MUTED}],
+      [],
+      fbXlHead(dHead)
+    ].concat(drivers)
+  };
+  var rLast=EDXlsx.colName(FBP4_CSV_HEAD.length);
+  var rawSheet={
+    name:'Raw Export',freeze:3,filter:'A3:'+rLast+'3',
+    cols:FBP4_CSV_HEAD.map(function(h){return Math.min(46,Math.max(11,h.length+4));}),
+    merges:['A1:'+rLast+'1'],
+    rows:[
+      [{v:'Original '+FBP4_CSV_HEAD.length+'-column export \u2014 preserved unchanged for audit, and the '
+        +'sheet the Collective\u2019s uploader reads',k:'s',s:X.MUTED}],
+      [],
+      fbXlHead(FBP4_CSV_HEAD)
+    ].concat(raw)
+  };
+  return {sheets:[boardSheet,driversSheet,rawSheet],
+          name:'edgedesk_cfb_p4_'+S.season+'_upcoming.xlsx',
+          games:board.length};
+}
+window.fbP4XlsxDownload=function(){
+  if(!FB.p4.up.length){alert('No Power 4 games on the board to export yet.');return;}
+  fbP4PostOut('<span class="ec mut">Building the workbook\u2026</span>');
+  var wb=fbP4Workbook();
+  fbXlSave(wb.sheets,wb.name);
+  fbP4PostOut('<span class="ec mut">Downloaded <span class="mono">'+fbEsc(wb.name)+'</span> \u2014 '
+    +wb.games+' game'+(wb.games===1?'':'s')+' across Board, Drivers and Raw Export.</span>');
+};
+
 /* ---- posting a slate to the Model Collective ---------------------------
    The Collective's slate uploader maps columns by name, and this export's
    headers are already the ones it recognises: home_team, away_team,
@@ -23489,6 +24114,47 @@ function fbP4PostOut(html){
   var el=document.getElementById('fbp4PostOut');
   if(el)el.innerHTML=html;
 }
+/* ---- when the store will not give a row back --------------------------
+   collective.projections is append-only in the DATABASE, not merely by
+   convention: a trigger raises P0001 "collective.projections is append-only
+   (rule 8.3); use the service maintenance path" on any DELETE. The ingest
+   API's retract route removes rows with an ordinary PostgREST DELETE, so
+   against that database it cannot ever succeed — its dry run happily
+   counts rows it will never be allowed to remove, and the confirmed call
+   comes back "Removed 0 row(s), then a chunk failed".
+
+   That is a server-side fact and no static page can change it. What this
+   page can stop doing is turning it into a dead end. Until now a blocked
+   retract ABORTED the sync, so a board whose games already had stored rows
+   could not reach the Collective at all: the failed removal took the post
+   down with it, even though the post was fine on its own and the retract
+   had changed nothing. Now the refusal is named in the operator's language,
+   they are asked once, and the slate still goes up — as a revision,
+   said plainly, because the stored rows keep the first-submission slot.
+
+   Recognised by the database's own words rather than by a status code: the
+   route wraps the refusal in a retract_failed envelope and only the message
+   inside says what actually happened. */
+function fbRetractBlockedBy(err,raw){
+  var s=String((err&&err.message)||'')+' '+String((err&&err.code)||'')+' '+String(raw||'');
+  if(/append[-\s]?only/i.test(s)||/rule\s*8\.3/i.test(s))return 'append_only';
+  return null;
+}
+/* Said the same way on every screen that can hit it, so an operator does not
+   have to recognise one refusal in three different wordings. */
+function fbRetractBlockedWhy(kind,err,status,raw){
+  if(kind==='append_only')
+    return 'The Collective stores projections append-only, so its database refuses to delete them '
+      +'(rule 8.3 \u2014 removal has to go through the service maintenance path). The ingest API\u2019s '
+      +'retract route deletes rows directly, so it cannot succeed against this deployment whatever its '
+      +'dry run counted. Nothing was removed, and nothing is half-done.';
+  return 'The retract was refused ('+String((err&&err.code)||('HTTP '+status))+': '
+    +String((err&&err.message)||raw||'no reason given').slice(0,200)+').';
+}
+/* One page load, one discovery. Once the store has refused a delete in this
+   tab, every later sync states that up front instead of offering a removal
+   it cannot perform and asking the operator twice. */
+var FB_RETRACT_BLOCKED=null;
 /* Retract this model's pre-kickoff rows for the season, so a corrected
    slate can land as the FIRST submission again. Two calls by design: the
    endpoint's dry run comes back with exactly what would be removed, that
@@ -23548,7 +24214,16 @@ window.fbP4ApiRetract=async function(){
   catch(e){fbP4PostOut('<span class="ec" style="color:var(--bad,#e26044)">Could not reach the Collective: '+fbEsc(e.message||String(e))+'</span>');return;}
   if(!res.ok){
     var er2=(res.body&&res.body.error)||{};
-    fbP4PostOut('<span class="ec" style="color:var(--bad,#e26044)"><b>'+fbEsc(er2.code||('HTTP '+res.status))+'.</b> '+fbEsc(er2.message||res.raw||'Refused.')+'</span>');
+    var k2=fbRetractBlockedBy(er2,res.raw);
+    if(k2)FB_RETRACT_BLOCKED=k2;
+    fbP4PostOut('<span class="ec" style="color:var(--bad,#e26044)"><b>Nothing was retracted.</b> '
+      +fbEsc(fbRetractBlockedWhy(k2,er2,res.status,res.raw))+'</span>'
+      +(k2==='append_only'
+        ? '<div class="ec mut" style="margin-top:4px">Your stored rows keep the first-submission slot, so a new post '
+          +'for these games lands as a revision \u2014 movement, never graded. Removing them is the Collective '
+          +'service\u2019s job, not this page\u2019s: the retract route has to go through the maintenance path '
+          +'before this button can do anything.</div>'
+        : ''));
     return;
   }
   var b2=res.body||{};
@@ -23725,10 +24400,21 @@ window.fbNflApiSync=async function(){
   var canRetract=rprev.status!==404;
   var toRemove=0,rGames=0;
   if(canRetract&&rprev.ok){toRemove=(rprev.body||{}).would_remove||0;rGames=((rprev.body||{}).games||[]).length;}
+  /* This tab has already watched the store refuse a delete, so the removal
+     is known to be impossible: say so instead of offering it again and
+     promising a first submission that cannot happen. The preview's count is
+     still worth keeping — it is what stays behind. */
+  var blocked=FB_RETRACT_BLOCKED,stored=toRemove,keptRows=false;
+  if(blocked){toRemove=0;keptRows=stored>0;}
 
   var head2='Sync '+built.rows.length+' NFL game'+(built.rows.length===1?'':'s')+(env.week!=null?' (week '+env.week+')':'')+' to the Collective?\n\n';
   var msg;
-  if(toRemove>0){
+  if(keptRows){
+    msg=head2+fbRetractBlockedWhy(blocked,null,0,'')+'\n\n'
+      +stored+' stored pre-kickoff row'+(stored===1?'':'s')+' across '+rGames+' game'+(rGames===1?'':'s')
+      +' stay'+(stored===1?'s':'')+' in place and keep the first-submission slot, so this post lands as a '
+      +'REVISION \u2014 shown as movement, never graded.\n\nPost it anyway?';
+  }else if(toRemove>0){
     msg=head2+'1. Remove '+toRemove+' stored pre-kickoff row'+(toRemove===1?'':'s')+' across '+rGames+' game'+(rGames===1?'':'s')+'.\n'
       +'2. Post this slate \u2014 it becomes your FIRST submission, the one that grades.\n\nGames already kicked off are never touched.';
   }else if(!canRetract){
@@ -23747,9 +24433,23 @@ window.fbNflApiSync=async function(){
     var rr;
     try{rr=await fbP4Ingest('/v1/projections/retract',key,renv);}
     catch(e){fbNflPostOut('<span class="ec" style="color:var(--bad,#e26044)">Could not reach the Collective mid-sync: '+fbEsc(e.message||String(e))+' \u2014 nothing was posted.</span>');return;}
-    if(!rr.ok){var re3=(rr.body&&rr.body.error)||{};
-      fbNflPostOut('<span class="ec" style="color:var(--bad,#e26044)"><b>Retract failed \u2014 stopped before posting.</b> '
-        +fbEsc((re3.code||('HTTP '+rr.status))+': '+(re3.message||rr.raw||''))+'</span>');return;}
+    if(!rr.ok){
+      var re3=(rr.body&&rr.body.error)||{};
+      var k3=fbRetractBlockedBy(re3,rr.raw);
+      if(k3)FB_RETRACT_BLOCKED=k3;
+      var why3=fbRetractBlockedWhy(k3,re3,rr.status,rr.raw);
+      /* The removal changed nothing, so the post is exactly as valid as it
+         was a moment ago. Stopping here used to leave the board with no way
+         onto the wall at all; ask instead, and let the operator decide. */
+      if(!confirm('The stored rows were NOT removed.\n\n'+why3
+        +'\n\nPost this slate anyway? It lands as a REVISION \u2014 shown as movement, never graded, '
+        +'because the rows already stored keep the first-submission slot.')){
+        fbNflPostOut('<span class="ec" style="color:var(--bad,#e26044)"><b>Stopped \u2014 nothing removed, nothing posted.</b> '
+          +fbEsc(why3)+'</span>');
+        return;
+      }
+      stored=toRemove;toRemove=0;keptRows=true;
+    }
   }
 
   fbNflPostOut('<span class="ec mut">Posting\u2026</span>');
@@ -23771,9 +24471,14 @@ window.fbNflApiSync=async function(){
   ].filter(Boolean).join(', ');
   var firstN=pb2.first!=null?+pb2.first:null;
   fbNflPostOut('<span class="ec"><b>Synced:</b> '+fbEsc(counts||'no counts returned')+'</span>'
-    +(toRemove>0&&firstN===0
-      ? '<div class="ec" style="color:var(--bad,#e26044);margin-top:4px">Rows were removed but the post still counted 0 first submissions \u2014 something else holds the slot. Tell Claude exactly this.</div>'
-      : (firstN>0?'<div class="ec mut" style="margin-top:4px">The wall now grades THIS slate. Hard-refresh the Collective page to see it.</div>':''))
+    +(keptRows
+      ? '<div class="ec mut" style="margin-top:4px"><b>Posted as a revision.</b> The '+stored+' row'+(stored===1?'':'s')
+        +' already stored still hold'+(stored===1?'s':'')+' the first-submission slot, so the wall grades those, not '
+        +'this slate. These numbers show as movement. Clearing the slot needs the Collective service \u2014 the store '
+        +'refuses deletes from the ingest API.</div>'
+      : (toRemove>0&&firstN===0
+        ? '<div class="ec" style="color:var(--bad,#e26044);margin-top:4px">Rows were removed but the post still counted 0 first submissions \u2014 something else holds the slot. Tell Claude exactly this.</div>'
+        : (firstN>0?'<div class="ec mut" style="margin-top:4px">The wall now grades THIS slate. Hard-refresh the Collective page to see it.</div>':'')))
     +(built.skipped.length?'<div class="ec mut" style="margin-top:4px">'+built.skipped.length+' skipped: '+fbEsc(built.skipped.slice(0,4).join(', '))+'</div>':''));
 };
 
@@ -23837,11 +24542,22 @@ window.fbP4ApiSync=async function(){
   var canRetract=rprev.status!==404;
   var toRemove=0,rGames=0;
   if(canRetract&&rprev.ok){toRemove=(rprev.body||{}).would_remove||0;rGames=((rprev.body||{}).games||[]).length;}
+  /* This tab has already watched the store refuse a delete, so the removal
+     is known to be impossible: say so instead of offering it again and
+     promising a first submission that cannot happen. The preview's count is
+     still worth keeping — it is what stays behind. */
+  var blocked=FB_RETRACT_BLOCKED,stored=toRemove,keptRows=false;
+  if(blocked){toRemove=0;keptRows=stored>0;}
 
   /* 3. one confirmation, both halves stated */
   var head2='Sync '+built.rows.length+' game'+(built.rows.length===1?'':'s')+(env.week!=null?' (week '+env.week+')':'')+' to the Collective?\n\n';
   var msg;
-  if(toRemove>0){
+  if(keptRows){
+    msg=head2+fbRetractBlockedWhy(blocked,null,0,'')+'\n\n'
+      +stored+' stored pre-kickoff row'+(stored===1?'':'s')+' across '+rGames+' game'+(rGames===1?'':'s')
+      +' stay'+(stored===1?'s':'')+' in place and keep the first-submission slot, so this post lands as a '
+      +'REVISION \u2014 shown as movement, never graded.\n\nPost it anyway?';
+  }else if(toRemove>0){
     msg=head2+'1. Remove '+toRemove+' stored pre-kickoff row'+(toRemove===1?'':'s')+' across '+rGames+' game'+(rGames===1?'':'s')+'.\n'
       +'2. Post this slate \u2014 it becomes your FIRST submission, the one that grades.\n\n'
       +'Games already kicked off are never touched.';
@@ -23865,9 +24581,23 @@ window.fbP4ApiSync=async function(){
     var rr;
     try{rr=await fbP4Ingest('/v1/projections/retract',key,renv);}
     catch(e){fbP4PostOut('<span class="ec" style="color:var(--bad,#e26044)">Could not reach the Collective mid-sync: '+fbEsc(e.message||String(e))+' \u2014 nothing was posted.</span>');return;}
-    if(!rr.ok){var re3=(rr.body&&rr.body.error)||{};
-      fbP4PostOut('<span class="ec" style="color:var(--bad,#e26044)"><b>Retract failed \u2014 stopped before posting.</b> '
-        +fbEsc((re3.code||('HTTP '+rr.status))+': '+(re3.message||rr.raw||''))+'</span>');return;}
+    if(!rr.ok){
+      var re3=(rr.body&&rr.body.error)||{};
+      var k3=fbRetractBlockedBy(re3,rr.raw);
+      if(k3)FB_RETRACT_BLOCKED=k3;
+      var why3=fbRetractBlockedWhy(k3,re3,rr.status,rr.raw);
+      /* The removal changed nothing, so the post is exactly as valid as it
+         was a moment ago. Stopping here used to leave the board with no way
+         onto the wall at all; ask instead, and let the operator decide. */
+      if(!confirm('The stored rows were NOT removed.\n\n'+why3
+        +'\n\nPost this slate anyway? It lands as a REVISION \u2014 shown as movement, never graded, '
+        +'because the rows already stored keep the first-submission slot.')){
+        fbP4PostOut('<span class="ec" style="color:var(--bad,#e26044)"><b>Stopped \u2014 nothing removed, nothing posted.</b> '
+          +fbEsc(why3)+'</span>');
+        return;
+      }
+      stored=toRemove;toRemove=0;keptRows=true;
+    }
   }
 
   /* 5. post */
@@ -23891,9 +24621,14 @@ window.fbP4ApiSync=async function(){
   ].filter(Boolean).join(', ');
   var firstN=pb2.first!=null?+pb2.first:null;
   fbP4PostOut('<span class="ec"><b>Synced:</b> '+fbEsc(counts||'no counts returned')+'</span>'
-    +(toRemove>0&&firstN===0
-      ? '<div class="ec" style="color:var(--bad,#e26044);margin-top:4px">The retract removed rows but the post still counted 0 first submissions \u2014 something else holds the first-submission slot. Tell me exactly this and I will dig.</div>'
-      : (firstN>0?'<div class="ec mut" style="margin-top:4px">The wall now grades THIS slate. Hard-refresh the Collective page to see it.</div>':''))
+    +(keptRows
+      ? '<div class="ec mut" style="margin-top:4px"><b>Posted as a revision.</b> The '+stored+' row'+(stored===1?'':'s')
+        +' already stored still hold'+(stored===1?'s':'')+' the first-submission slot, so the wall grades those, not '
+        +'this board. These numbers show as movement. Clearing the slot needs the Collective service \u2014 the store '
+        +'refuses deletes from the ingest API.</div>'
+      : (toRemove>0&&firstN===0
+        ? '<div class="ec" style="color:var(--bad,#e26044);margin-top:4px">The retract removed rows but the post still counted 0 first submissions \u2014 something else holds the first-submission slot. Tell me exactly this and I will dig.</div>'
+        : (firstN>0?'<div class="ec mut" style="margin-top:4px">The wall now grades THIS slate. Hard-refresh the Collective page to see it.</div>':'')))
     +(built.skipped.length?'<div class="ec mut" style="margin-top:4px">'+built.skipped.length+' game'+(built.skipped.length===1?'':'s')+' skipped (no projection).</div>':''));
 };
 /* Dry run, then post — never post without the dry run passing first. The
@@ -23968,18 +24703,22 @@ var FBP4_COLLECTIVE_URL='https://edgedesksports.com/collective/#dashboard';
 window.fbP4PostToCollective=function(){
   if(!FB.p4.up.length){alert('No Power 4 games on the board to post yet.');return;}
   /* The Collective's record is public and graded; a slate built on inverted
-     lines does not belong on it. The CSV download stays available so the
-     numbers can still be inspected. */
+     lines does not belong on it. The downloads stay available so the numbers
+     can still be inspected. */
   var bad=fbP4LineSanity();
   if(bad){
     alert('Not posting: the market lines look inverted.\n\nAll '+bad.n+' games with a book number have '
       +'the home team as an underdog, which does not happen on a real slate. Every spread gap and '
       +'recommendation on this board is built on those lines.\n\nFix cfb.lines (a home favourite is a '
-      +'NEGATIVE home-side number), reload the board, then post. Download CSV still works if you want to '
-      +'inspect the numbers first.');
+      +'NEGATIVE home-side number), reload the board, then post. Download Excel still works if you want '
+      +'to inspect the numbers first.');
     return;
   }
-  window.fbP4CsvDownload();
+  /* The workbook, not the flat CSV: the uploader reads the Raw Export sheet
+     -- the same canonical columns it has always mapped -- and the operator
+     gets the Board and Drivers sheets in the same file rather than having to
+     download twice to read what they are about to post. */
+  window.fbP4XlsxDownload();
   setTimeout(function(){
     try{window.open(FBP4_COLLECTIVE_URL,'_blank','noopener');}catch(_){}
   },600);
@@ -23987,7 +24726,8 @@ window.fbP4PostToCollective=function(){
 function fbP4CtlHTML(){
   var n=FB.p4.up.length;
   var keyed=fbP4KeyMasked();
-  return '<button class="btn ghost sm" onclick="fbP4CsvDownload()">Download CSV</button>'
+  return '<button class="btn ghost sm" onclick="fbP4XlsxDownload()" title="Board, Drivers and the raw export, one workbook">Download Excel</button>'
+    +'<button class="btn ghost sm" onclick="fbP4CsvDownload()" title="The raw export on its own, as CSV">CSV (raw)</button>'
     +'<button class="btn ghost sm" onclick="fbP4PostToCollective()">Download &amp; open dashboard</button>'
     /* the operator's one-action path: dry run first, then post */
     +'<button class="btn ghost sm" onclick="fbP4ApiPost(false)">Check via API</button>'
@@ -24008,11 +24748,17 @@ function fbP4CtlHTML(){
     +fbP4LineWarnHTML()
     +'<div class="gd-modelnote" style="flex-basis:100%">'
     +'<b>Posting to the Collective.</b> Two doors, same pipeline. '
-    +'<b>Download &amp; open dashboard</b> hands you the file and opens '
+    +'<b>Download Excel</b> hands you a workbook: a <b>Board</b> sheet that is this screen, a '
+    +'<b>Drivers</b> sheet with the model\u2019s reasoning where it has room to be read, and the '
+    +'<b>Raw Export</b> sheet \u2014 the full '+FBP4_CSV_HEAD.length+'-column export, unchanged, and the '
+    +'sheet the uploader maps. <b>CSV (raw)</b> is that last sheet on its own. '
+    +'<b>Download &amp; open dashboard</b> hands you the workbook and opens '
     +'<span class="mono">Dashboard \u2192 Post a slate</span> \u2014 its column names are already the ones '
     +'the uploader recognises, so it maps with nothing to fix by hand. '
-    +'<b>Post to Collective (API)</b> sends the same rows straight to the ingest endpoint under your own '
-    +'submission key: run <b>Check via API</b> first (a dry run that stores nothing), then post. '
+    +'<b>Sync to Collective (API)</b> sends the same rows straight to the ingest endpoint under your own '
+    +'submission key: one confirmed action that dry-runs the slate, replaces this model\u2019s stored '
+    +'pre-kickoff rows where the store allows it, and posts. <b>Check via API</b> is the dry run on its '
+    +'own and stores nothing. '
     +'Your key is asked for once and kept only in this browser \u2014 it is never part of this page, and '
     +'<span class="mono">forget</span> removes it. Your record there is graded '
     +'by the Collective against its own captured closing lines \u2014 not by this engine, and not '

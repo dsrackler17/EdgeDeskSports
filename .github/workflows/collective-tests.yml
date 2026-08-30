@@ -1,0 +1,72 @@
+# EdgeDesk Model Collective — the suites that guard the posting path.
+#
+# These already existed and already gate the jobs that write (sync-schedule
+# and settle-finals each run their own suite before they are allowed to touch
+# the Collective). Nothing ran them on a change, so a break in the posting
+# path was only discovered by the next scheduled write — or, for app.html's
+# Sync to Collective button, by a creator finding they could not post at all.
+#
+# No network, no credentials, nothing written: every suite here is offline.
+name: Collective suites
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'app.html'
+      - 'collective/index.html'
+      - 'collective/embed.js'
+      - 'collective/admin.html'
+      - 'tools/collective/**'
+      - '.github/workflows/collective-tests.yml'
+  pull_request:
+    paths:
+      - 'app.html'
+      - 'collective/index.html'
+      - 'collective/embed.js'
+      - 'collective/admin.html'
+      - 'tools/collective/**'
+      - '.github/workflows/collective-tests.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  suites:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      # Reads the real functions out of app.html rather than a copy, so it
+      # fails loudly if the block it slices moves instead of testing nothing.
+      - name: The research boards can still post to the Collective
+        run: node tools/collective/app_sync.test.js
+
+      # The workbook the boards download, rebuilt from a real cleaned file.
+      - name: The download is the format the operator cleaned up by hand
+        run: node tools/collective/app_export.test.js
+
+      # Writer and reader together: what app.html emits, the uploader opens.
+      - name: An exported workbook still uploads
+        run: node tools/collective/slate_upload.test.js
+
+      # A credential the host page hands over, and the rules it travels under.
+      - name: The embed only vouches for a real reader, and only to us
+        run: node tools/collective/embed_auth.test.js
+
+      # The founder pool is divided by a CONFIGURED count, not by a count of
+      # people; these hold the screen that has to say when the two disagree.
+      - name: The founder split says when its divisor is stale
+        run: node tools/collective/founder_split.test.js
+
+      - name: Schedule matching
+        run: node tools/collective/sync_schedule.test.js
+
+      - name: Settle matching
+        run: node tools/collective/settle_finals.test.js

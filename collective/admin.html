@@ -120,7 +120,65 @@ async function api(path,opts){
 
 var SEC='overview';
 var IV_PREFILL=null;
-function pct(bps){return (bps/100)%1===0?(bps/100)+'%':(bps/100).toFixed(1)+'%';}
+/* A percentage the server did not send is not 0%. It used to render as one,
+   which reads as "the platform takes nothing" rather than "nobody said". */
+function pct(bps){
+  if(bps==null||bps===''||!isFinite(+bps))return '\u2014';
+  bps=+bps;
+  return (bps/100)%1===0?(bps/100)+'%':(bps/100).toFixed(1)+'%';
+}
+/* ---- the founder split, and the two numbers behind it -------------------
+   THE POOL IS DIVIDED BY A CONFIGURED NUMBER, NOT BY A COUNT OF PEOPLE.
+   econ.founder_count is set in config and the payout math reads it
+   independently. Clearing somebody's founding_member flag -- marking them
+   departed -- changes who the founding members ARE and changes nothing at
+   all about that divisor.
+
+   The pool then splits N ways among fewer than N people. A departed
+   member's share is paid to nobody, every remaining founder is quietly
+   short, and no screen said so, because the count of actual founding
+   members (overview) and the configured divisor (earnings) had never been
+   in the same place.
+
+   They are now. This returns both, and whether they disagree. It does not
+   fix the payout -- the backend owns that -- it makes the drift impossible
+   to miss on the screen where the money is divided. */
+function founderSplit(s,actual){
+  s=s||{};
+  var pool=(s.founder_pool_bps==null||!isFinite(+s.founder_pool_bps))?null:+s.founder_pool_bps;
+  var cfg=(s.founder_count==null||s.founder_count===''||!isFinite(+s.founder_count))?null:+s.founder_count;
+  var act=(actual==null||actual===''||!isFinite(+actual))?null:+actual;
+  return {
+    pool_bps:pool,
+    configured:cfg,
+    actual:act,
+    /* what the payout math is actually doing */
+    per_configured_bps:(pool!=null&&cfg!=null&&cfg>0)?Math.round(pool/cfg):null,
+    /* what an equal split across the people who really hold the status would be */
+    per_actual_bps:(pool!=null&&act!=null&&act>0)?Math.round(pool/act):null,
+    /* positive: more founders than seats. negative: seats nobody holds. */
+    drift:(cfg!=null&&act!=null)?(act-cfg):0
+  };
+}
+/* Said once, so the earnings screen, the overview and a member's own page
+   cannot describe the same disagreement three different ways. */
+function founderDriftHTML(f){
+  if(!f||!f.drift)return '';
+  var short=f.drift<0;
+  return '<p class="warnnote" style="margin:10px 0 0"><b>The configured founder count does not match the roll.</b> '
+    +'The split is being computed against <b class="mono">'+f.configured+'</b> founding seat'+(f.configured===1?'':'s')
+    +', but <b class="mono">'+f.actual+'</b> account'+(f.actual===1?'':'s')
+    +' currently carr'+(f.actual===1?'ies':'y')+' founding status'
+    +(short
+      ? ' \u2014 so '+Math.abs(f.drift)+' seat'+(Math.abs(f.drift)===1?' is':'s are')+' held by nobody and '
+        +'that share is paid to no one. Each remaining founder is being paid '
+        +pct(f.per_configured_bps)+' where an equal split of the pool would be '+pct(f.per_actual_bps)+'.'
+      : ' \u2014 so '+f.drift+' founder'+(f.drift===1?'':'s')+' beyond the configured seats '
+        +'share a pool sized for fewer. Each is being paid against '+pct(f.per_configured_bps)
+        +' where an equal split would be '+pct(f.per_actual_bps)+'.')
+    +' Clearing a founding_member flag does not decrement econ.founder_count: the payout math reads that '
+    +'number independently, so it has to be changed in config as well.</p>';
+}
 function linkCache(){try{return JSON.parse(localStorage.getItem('mc_admin_links')||'{}');}catch(e){return {};}}
 function cacheLink(id,url){try{var c=linkCache();c[id]=url;localStorage.setItem('mc_admin_links',JSON.stringify(c));}catch(e){}}
 function nav(){
@@ -198,7 +256,11 @@ async function secOverview(app){
       ['Operating reserve ('+pct(e.reserve_bps)+')',cents(e.reserve_cents)],
       ['Platform ('+pct(e.platform_bps)+')',cents(e.platform_cents)],
       ['Founder pool ('+pct(e.founder_pool_bps)+')',cents(e.pool_cents)],
-      ['Per founding member',cents(e.per_founder_cents)]])+
+      ['Per founding member',cents(e.per_founder_cents),
+        founderSplit(e,c.founding_members).drift?'var(--warn)':null]])+
+    /* Both numbers are on this screen already -- the roll under Collective,
+       the divisor under Earnings -- and nothing compared them. */
+    founderDriftHTML(founderSplit(e,c.founding_members))+
     '<p class="note" style="margin:10px 0 0"><a href="#" data-go="earnings">Full breakdown &rarr;</a></p></div>';
   app.querySelectorAll('[data-go]').forEach(function(a){
     a.onclick=function(ev){ev.preventDefault();SEC=a.getAttribute('data-go');nav();render();};
@@ -386,7 +448,7 @@ async function secMembers(app,detailSlug){
 function memberDetail(app,r,esum){
   var econ;
   if(r.founding&&esum){
-    var per=pct(Math.round(esum.founder_pool_bps/esum.founder_count));
+    var per=pct(founderSplit(esum,null).per_configured_bps);
     econ='<b>Founding Member Distribution</b><p class="note" style="margin:6px 0 0">Each founding member receives an equal share of the '+pct(esum.founder_pool_bps)+' Collective founder pool.</p>'+
       '<p style="margin:8px 0 0">Current founder share: <b class="mono">'+per+'</b> of Collective revenue'+(esum.mrr_cents?', currently <b class="mono">'+cents(esum.per_founder_cents)+'</b> a month':'')+'.</p>';
   }else if(r.founding){
@@ -720,7 +782,15 @@ async function secOdds(app){
 async function secEarnings(app){
   var d=await api('/v1/admin/earnings');
   var s=d.summary||{};
-  var per=pct(Math.round((s.founder_pool_bps||6000)/(s.founder_count||6)));
+  /* The count of accounts that really hold founding status lives on the
+     overview, and the divisor the payout uses lives here. Neither endpoint
+     has ever seen the other's number. A failure to read the roll must not
+     take the earnings screen down -- it only costs the comparison. */
+  var roll=null;
+  try{var ov=await api('/v1/admin/overview');roll=ov&&ov.collective&&ov.collective.founding_members;}
+  catch(e){roll=null;}
+  var f=founderSplit(s,roll);
+  var per=pct(f.per_configured_bps);
   var rows=(d.rows||[]).map(function(r){
     return '<tr><td>'+esc(r.creator_slug)+'</td><td class="mono">'+esc(r.month)+'</td><td class="mono">'+cents(r.earned_cents)+'</td><td class="mono">'+cents(r.clawed_cents)+'</td><td class="mono">'+cents(r.paid_cents)+'</td><td class="mono">'+cents(r.balance_cents)+'</td><td class="mono">'+cents(r.available_cents)+'</td></tr>';
   }).join('');
@@ -735,15 +805,21 @@ async function secEarnings(app){
       line('Price',cents(s.price_cents)+'<span class="note">/month</span>')+
       line('Subscribers',String(s.subscribers||0))+
       line('Monthly recurring revenue',cents(s.mrr_cents))+
-      line('Operating reserve <span class="chip">'+pct(s.reserve_bps||1000)+'</span>',cents(s.reserve_cents),'Infrastructure, data, APIs, processing')+
-      line('Platform allocation <span class="chip">'+pct(s.platform_bps||3000)+'</span>',cents(s.platform_cents),'EdgeDesk: platform, billing, hosting, development')+
-      line('Founding Collective Pool <span class="chip warn">'+pct(s.founder_pool_bps||6000)+'</span>',cents(s.pool_cents),'Divided equally across '+(s.founder_count||6)+' founding seats')+
+      line('Operating reserve <span class="chip">'+pct(s.reserve_bps)+'</span>',cents(s.reserve_cents),'Infrastructure, data, APIs, processing')+
+      line('Platform allocation <span class="chip">'+pct(s.platform_bps)+'</span>',cents(s.platform_cents),'EdgeDesk: platform, billing, hosting, development')+
+      line('Founding Collective Pool <span class="chip warn">'+pct(s.founder_pool_bps)+'</span>',cents(s.pool_cents),
+        'Divided equally across '+(f.configured==null?'an unset number of':f.configured)+' configured founding seat'
+        +(f.configured===1?'':'s')
+        +(f.actual==null?'':' \u00b7 '+f.actual+' account'+(f.actual===1?'':'s')
+          +' hold'+(f.actual===1?'s':'')+' founding status')
+        +(f.drift?' <b style="color:var(--warn)">\u2014 these disagree</b>':''))+
       '<div style="display:flex;justify-content:space-between;gap:14px;padding:8px 0"><span><b>Per founding member</b></span><span class="mono" style="font-weight:700;color:var(--pos)">'+cents(s.per_founder_cents)+'</span></div>'+
     '</div><div class="panel">'+
       '<b>Founding Member Distribution</b>'+
-      '<p class="note" style="margin:8px 0 0">Each founding member receives an equal share of the '+pct(s.founder_pool_bps||6000)+' Collective founder pool.</p>'+
+      '<p class="note" style="margin:8px 0 0">Each founding member receives an equal share of the '+pct(s.founder_pool_bps)+' Collective founder pool.</p>'+
       '<p style="margin:10px 0 0">Current founder share: <b class="mono">'+per+'</b> of Collective revenue.</p>'+
-      '<p class="note" style="margin:10px 0 0">Referral is a separate customer acquisition share, currently '+pct(s.referral_bps||0)+', and never reduces a founder&#39;s pool share.</p>'+
+      founderDriftHTML(f)+
+      '<p class="note" style="margin:10px 0 0">Referral is a separate customer acquisition share, currently '+pct(s.referral_bps)+', and never reduces a founder&#39;s pool share.</p>'+
       (s.billing_live?'':'<p class="warnnote" style="margin:10px 0 0">Billing is not live yet: these figures stay at zero until it opens. The structure is already wired, so turning billing on changes nothing here but the numbers.</p>')+
     '</div></div>'+
     '<h2>Ledger</h2><p class="lede">Per creator per month. Net 30, $50 minimum rolls forward, 60-day clawback window.</p>'+
