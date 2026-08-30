@@ -1,8 +1,8 @@
 {
   "schema": "edgedesk_football_health_v1",
-  "generated_at": "2026-08-29T14:38:48.938Z",
+  "generated_at": "2026-08-30T14:29:49.109Z",
   "ok": true,
-  "last_ok_at": "2026-08-29T14:38:48.938Z",
+  "last_ok_at": "2026-08-30T14:29:49.109Z",
   "run": {
     "trigger": "schedule",
     "runner": "github-actions",
@@ -28,10 +28,10 @@
       "source": "nflverse games.csv + stats_team_week"
     },
     "p4": {
-      "completed_in_feed": 0,
-      "absorbed": 0,
-      "data_through": null,
-      "schedule_source": "cfb.games (Supabase ingest) 2026"
+      "completed_in_feed": 5,
+      "absorbed": 5,
+      "data_through": "2026-08-29",
+      "schedule_source": "cfbfastR-data schedules 2026"
     }
   },
   "lines": {
@@ -42,8 +42,8 @@
       "outliers": []
     },
     "p4": {
-      "compared": 21,
-      "median_gap": 4.14,
+      "compared": 20,
+      "median_gap": 4.2,
       "max_gap": 15.83,
       "outliers": [
         {
@@ -120,19 +120,19 @@
       "id": "p4_schedule",
       "label": "CFB P4: 2026 schedule reachable",
       "status": "pass",
-      "detail": "cfb.games (Supabase ingest) 2026 · 888 rows"
+      "detail": "cfbfastR-data schedules 2026 · 888 rows"
     },
     {
       "id": "p4_ingest",
       "label": "CFB P4: completed games absorb into the ratings",
       "status": "pass",
-      "detail": "no completed 2026 games in the feed yet — seeds + season carry-over is the correct state"
+      "detail": "5/5 absorbed, data through 2026-08-29"
     },
     {
       "id": "p4_roster",
       "label": "CFB P4: 2026 roster source",
       "status": "pass",
-      "detail": "cfbfastR unpublished — the repo ESPN sync feeds the talent layer: 138 teams, 136 with continuity vs 2025, fetched 2026-08-26"
+      "detail": "cfbfastR published (the app’s primary source); ESPN sync also present (138 teams, 136 with continuity vs 2025, fetched 2026-08-26)"
     },
     {
       "id": "p4_calibration",
@@ -150,42 +150,42 @@
       "id": "p4_lines_src",
       "label": "CFB P4: cfb.lines market source reachable",
       "status": "pass",
-      "detail": "21 of 30 upcoming games have a book number"
+      "detail": "20 of 30 upcoming games have a book number"
     },
     {
       "id": "p4_projections",
       "label": "CFB P4: upcoming slate projects to sane numbers",
       "status": "pass",
-      "detail": "30/30 upcoming P4 games PREDICTED, all inside bounds · roster bundles joined on 21/30"
+      "detail": "30/30 upcoming P4 games PREDICTED, all inside bounds · roster bundles joined on 20/30"
     },
     {
       "id": "p4_lines_market",
       "label": "CFB P4: market lines plausible",
       "status": "pass",
-      "detail": "21 lines inside plausible bounds"
+      "detail": "20 lines inside plausible bounds"
     },
     {
       "id": "p4_lines",
       "label": "CFB P4: model vs market line guard",
       "status": "warn",
-      "detail": "median gap 4.14 pts over 21 games; 2 game(s) beyond 10 pts"
+      "detail": "median gap 4.2 pts over 20 games; 2 game(s) beyond 10 pts"
     }
   ],
   "pipeline_meta": {
-    "daily_check_last_run": "2026-08-29T14:38:48.938Z",
+    "daily_check_last_run": "2026-08-30T14:29:49.109Z",
     "daily_check_last_status": "ok",
-    "engine_tests_last_run": "2026-08-29T14:38:48.938Z",
+    "engine_tests_last_run": "2026-08-30T14:29:49.109Z",
     "engine_tests_last_status": "ok",
-    "nfl_ingest_last_run": "2026-08-29T14:38:48.938Z",
+    "nfl_ingest_last_run": "2026-08-30T14:29:49.109Z",
     "nfl_ingest_last_status": "ok",
     "row_count_nfl_ingest": 0,
-    "p4_ingest_last_run": "2026-08-29T14:38:48.938Z",
+    "p4_ingest_last_run": "2026-08-30T14:29:49.109Z",
     "p4_ingest_last_status": "ok",
-    "row_count_p4_ingest": 0,
-    "projection_guard_last_run": "2026-08-29T14:38:48.938Z",
+    "row_count_p4_ingest": 5,
+    "projection_guard_last_run": "2026-08-30T14:29:49.109Z",
     "projection_guard_last_status": "ok",
-    "line_guard_last_run": "2026-08-29T14:38:48.938Z",
+    "line_guard_last_run": "2026-08-30T14:29:49.109Z",
     "line_guard_last_status": "ok",
-    "row_count_line_guard": 21
+    "row_count_line_guard": 20
   }
 }
