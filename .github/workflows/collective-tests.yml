@@ -45,6 +45,18 @@ jobs:
         with:
           node-version: '20'
 
+      # The Collective page's own two suites. This workflow already ran on
+      # every change to collective/index.html and then tested everything
+      # except collective/index.html — so the suite written BECAUSE a
+      # finished slate showed no grades at all was not gating the file it
+      # guards, and a change that emptied every record again would have gone
+      # green. Both are offline and take seconds.
+      - name: The upload path and the page's pure functions
+        run: node collective/tests.js
+
+      - name: The record appears when the game ends
+        run: node collective/tests_render.js
+
       # Reads the real functions out of app.html rather than a copy, so it
       # fails loudly if the block it slices moves instead of testing nothing.
       - name: The research boards can still post to the Collective
