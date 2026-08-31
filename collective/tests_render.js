@@ -972,7 +972,95 @@ var S=sandbox;
       return r.closing_spread===-7.5 && gr.pick_result==='loss';
     },
     {close:(S.finalResult(withClose[0])||{}).closing_spread});
-  S.ESPN_DAYS={};S.SEASON_GAMES={};S.LOCALREC={};
+  S.ESPN_DAYS={};S.SEASON_GAMES={};S.LOCALREC={};S.CLOSING={};
+
+  /* ---- THE SECOND HALF OF THE SAME BUG --------------------------------
+     The board is a FORWARD window — odds.js says so itself: "a game that
+     finished days ago is not in it". So the close above, read off the
+     board, is only ever there for a game that has just finished. Every
+     game from last week had a score and no close, atsResult() returned
+     null on all of them, and the site reported "no ATS picks" and 0 graded
+     against models whose closing lines were sitting in the Collective's
+     own database the whole time.
+
+     The Collective serves that number by name. Ask for it. */
+  var lastWeek=[JSON.parse(JSON.stringify(BLANK[0]))];
+  lastWeek[0].result={home_score:48,away_score:14,closing_spread:null,
+                      closing_total:null,source:'espn'};
+  var closingAsked=[];
+  var realFetch6=S.fetch;
+  S.fetch=function(u){
+    var q=String(u);
+    if(q.indexOf('/closing/')>=0){
+      closingAsked.push(q);
+      return reply({available:true,closing_spread:-7.5,closing_total:52.5,books:8});
+    }
+    return realFetch6(u);
+  };
+  /* Through the real entry point every surface calls, with mkt null: the
+     board has nothing, exactly as it has nothing for any game that finished
+     before its window opened. Driving fillCapturedCloses directly would
+     prove the function works and not that anything ever calls it. */
+  await S.enrichFinals(lastWeek,'CFB',null);
+  S.fetch=realFetch6;
+  chk('a game the board no longer carries is asked for by name',
+    closingAsked.length===1
+      && /\/collective_odds\/v1\/ncaaf\/closing\/1(\?|$)/.test(closingAsked[0]),
+    {asked:closingAsked});
+  chk('the captured close lands on the game and the record finally grades',
+    function(){
+      var r=S.finalResult(lastWeek[0]);
+      var gr=S.rowGrade(lastWeek[0],lastWeek[0].models[3]);  /* blerm, on UNC */
+      var rec=S.modelRecord(lastWeek,'blerm','blerm-s-model');
+      return r.closing_spread===-7.5 && lastWeek[0].result.closing_total===52.5
+        && gr.pick_result==='loss' && rec.graded===1 && rec.losses===1;
+    },
+    'THE BUG: this is the number whose absence emptied every ATS record');
+  chk('and the sport names the league, never the tab the reader is on',
+    /\/ncaaf\//.test(closingAsked[0]||'') ,
+    'a College Football close asked of the NFL route comes back empty');
+
+  /* An unavailable close is not a loss and is never invented: the game
+     stays graded on its score alone, exactly as before. */
+  S.CLOSING={};
+  var noClose=[JSON.parse(JSON.stringify(BLANK[0]))];
+  noClose[0].result={home_score:48,away_score:14,closing_spread:null,
+                     closing_total:null,source:'espn'};
+  var realFetch7=S.fetch;
+  S.fetch=function(u){
+    if(String(u).indexOf('/closing/')>=0)
+      return reply({available:false,reason:'no_pregame_capture'});
+    return realFetch7(u);
+  };
+  var nNone=await S.fillCapturedCloses(noClose,'CFB',null);
+  S.fetch=realFetch7;
+  chk('a close the Collective never captured is left alone, not guessed',
+    function(){
+      var rec=S.modelRecord(noClose,'blerm','blerm-s-model');
+      return nNone===0 && S.finalResult(noClose[0]).closing_spread===null
+        && rec.graded===0 && rec.margin_n===1;
+    },
+    {filled:nNone});
+
+  /* The board is free and already in hand, so it is tried first and the
+     endpoint is never asked about a game the board can already answer. */
+  S.CLOSING={};
+  var onBoard=[JSON.parse(JSON.stringify(BLANK[0]))];
+  onBoard[0].result={home_score:48,away_score:14,closing_spread:null,
+                     closing_total:null,source:'espn'};
+  var askedAnyway=0;
+  var realFetch8=S.fetch;
+  S.fetch=function(u){
+    if(String(u).indexOf('/closing/')>=0){askedAnyway++;return reply({available:false});}
+    return realFetch8(u);
+  };
+  await S.fillCapturedCloses(onBoard,'CFB',
+    {find:function(g){return g&&g.game_id===1?{closing:{'spread:home':{line:-7.5}}}:null;}});
+  S.fetch=realFetch8;
+  chk('the board answers first and costs no extra request',
+    askedAnyway===0 && S.finalResult(onBoard[0]).closing_spread===-7.5,
+    {asked:askedAnyway});
+  S.ESPN_DAYS={};S.SEASON_GAMES={};S.LOCALREC={};S.CLOSING={};
 
   /* ---- the market page -------------------------------------------------
      It fetched whatever league the sport switcher said and then described it
@@ -1157,6 +1245,97 @@ var S=sandbox;
     /white-space:normal[^>]*>\s*No finished games yet/.test(emptyHtml),
     {cell:(/<td[^>]*>\s*No finished games yet[^<]*/.exec(emptyHtml)||[])[0]});
   S.SEASON_GAMES={};S.LOCALREC={};S.META=null;S.WALLC=null;
+
+  /* ---- THE MODEL'S OWN PAGE -------------------------------------------
+     Never driven by this suite, and it was broken in the way that matters
+     most: the page built its game log out of the weeks named in the
+     SERVER's coverage table, so a model the settlement run had not reached
+     had an empty coverage list, no weeks were fetched, and the profile
+     rendered with no record and no picks at all — about a model whose
+     games had all been played and which the rankings page was ranking off
+     those very games at that moment.
+
+     The stub returns exactly that state: record null, recent_graded [],
+     coverage []. */
+  S.SEASON_GAMES={};S.LOCALREC={};S.META=null;S.WALLC=null;S.CLOSING={};
+  S.location.hash='#/model/blerm/blerm-s-model';
+  var vMod=node();
+  await S.renderModel(vMod,'blerm','blerm-s-model');
+  var mod=vMod.innerHTML;
+  chk('a profile the server has no coverage for still shows its games',
+    /Every graded game/.test(mod)&&mod.indexOf('No game of this model')<0,
+    {sample:mod.slice(0,300)});
+  chk('every game this model posted is on the page, with its own pick',
+    (mod.match(/data-res="(win|loss|push)"/g)||[]).length===3,
+    {rows:(mod.match(/data-res="[a-z]*"/g)||[])});
+  /* The picks themselves, not just "three rows appeared". blerm is on the
+     road side of all three: UNC lost into TCU -7.5, SJSU covered +38.5,
+     NC State covered +5.5. */
+  chk('and each one says whether it won or lost',
+    (mod.match(/>WIN</g)||[]).length===2&&(mod.match(/>LOSS</g)||[]).length===1,
+    {win:(mod.match(/>WIN</g)||[]).length,loss:(mod.match(/>LOSS</g)||[]).length});
+  chk('the log adds up to the record printed above it',
+    /Against the spread/.test(mod)&&/2-1/.test(mod),
+    {ats:(/Against the spread[\s\S]{0,160}/.exec(mod)||[])[0]});
+  chk('the closing line each pick was graded against is on the row',
+    /-7\.5/.test(mod)&&/-38\.5/.test(mod),
+    'a record nobody can check against a number is just a claim');
+  chk('the game log comes before the supporting charts, not after them',
+    mod.indexOf('Every graded game')<mod.indexOf('Methodology')
+      &&(mod.indexOf('Calibration')<0||mod.indexOf('Every graded game')<mod.indexOf('Calibration')),
+    {log:mod.indexOf('Every graded game'),cal:mod.indexOf('Calibration'),
+     method:mod.indexOf('Methodology')});
+  chk('a record the page graded itself still says so',
+    /class="pgrade"/.test(mod),
+    'a settled record and one computed here are different claims');
+  S.SEASON_GAMES={};S.LOCALREC={};S.META=null;S.WALLC=null;S.location.hash='';
+
+  /* ---- getting there ---------------------------------------------------
+     The rankings named every model and linked to none of them: a row went
+     to the CREATOR, who may run several models, so the one number a reader
+     had just clicked led to a page that did not show its picks. */
+  S.SEASON_GAMES={};S.LOCALREC={};S.META=null;S.WALLC=null;
+  var rLink=node();
+  await S.renderRankings(rLink);
+  var lnk=rLink.innerHTML;
+  chk('every standings row links to the model whose record it is',
+    /href="#\/model\/blerm\/blerm-s-model"/.test(lnk)
+      &&/href="#\/model\/mustbemoose\/edgedesk-cfb-p4"/.test(lnk),
+    {hrefs:(lnk.match(/href="#\/model\/[^"]*"/g)||[]).slice(0,6)});
+  chk('the ranked boards link to the model too, not just the creator',
+    (lnk.match(/href="#\/model\/[^"]*"/g)||[]).length>=6,
+    {n:(lnk.match(/href="#\/model\/[^"]*"/g)||[]).length});
+  chk('and the row carries the same destination as the name inside it',
+    (function(){
+      var rows=lnk.match(/<tr class="rowlink" data-href="([^"]*)"/g)||[];
+      return rows.length>0&&rows.every(function(r){return /#\//.test(r);});
+    })(),
+    {rows:(lnk.match(/data-href="[^"]*"/g)||[]).slice(0,4)});
+  chk('the standings offer the game log in as many words',
+    /picks &rarr;|picks →/.test(lnk),
+    'the link has to be findable without knowing the name is one');
+  /* Once the closing lines arrive, a model that never types a pick side
+     gets a full win-loss record decided entirely by the comparison between
+     its own line and the close. That is a real graded result and a
+     DIFFERENT claim from a stated pick, and a bare "3-0" beside its name
+     claims something the creator never said. The per-row marker on the
+     board was the only place this was ever admitted. */
+  function standingsRow(name){
+    var t=lnk.slice(lnk.indexOf('<table id="standtbl"'));
+    t=t.slice(0,t.indexOf('</table>'));
+    var rows=t.split('<tr').filter(function(r){return r.indexOf(name)>=0;});
+    return rows[0]||'';
+  }
+  chk('a record built from implied sides says so where the record is shown',
+    /implied/.test(standingsRow('CFB MODEL')),   /* posts no pick side at all */
+    {row:standingsRow('CFB MODEL').slice(0,420)||'not in the standings'});
+  chk('and a record of stated picks is not labelled implied',
+    (function(){
+      var r=standingsRow('Blerm&#39;s Model')||standingsRow("Blerm's Model");
+      return r.length>0&&!/implied/.test(r);
+    })(),
+    'labelling an honest stated record as implied is the opposite mistake');
+  S.SEASON_GAMES={};S.LOCALREC={};S.META=null;S.WALLC=null;S.location.hash='';
 
   fails.forEach(function(f){console.log('FAIL | '+f.n+(f.d?'  '+JSON.stringify(f.d).slice(0,400):''));});
   console.log((fail===0?'ALL GREEN ':'FAILED ')+pass+' passed, '+fail+' failed');

@@ -499,6 +499,31 @@ function recATSHtml(rec,cls){
   if(t!=null)return '<span class="'+(cls||'mono')+'">'+t+'</span>';
   return '<span class="note" title="'+esc(NO_ATS_TITLE)+'">no ATS picks</span>';
 }
+/* WIN / LOSS / PUSH, said in a word and coloured, on a row a reader is
+   scanning for exactly that. A dash is a real answer here and keeps its
+   explanation: a finished game the Collective captured no closing line for
+   has no against-the-spread result at all, and reading that cell as a loss
+   is the one misreading this table must not invite. */
+function resultPill(res){
+  if(res!=='win'&&res!=='loss'&&res!=='push')
+    return '<span class="note" title="no against-the-spread result: the Collective captured no closing line for this game, so it is not graded either way">&ndash;</span>';
+  return '<b class="grade-'+res+'">'+(res==='win'?'WIN':res==='loss'?'LOSS':'PUSH')+'</b>';
+}
+/* What a game log adds up to. Counted from the ROWS ON SCREEN rather than
+   recomputed from the games behind them, so the summary above a table can
+   never disagree with the table it is summarising. */
+function logTally(rows){
+  var w=0,l=0,p=0,u=0;
+  (rows||[]).forEach(function(g){
+    if(!g)return;
+    if(g.pick_result==='win')w++;
+    else if(g.pick_result==='loss')l++;
+    else if(g.pick_result==='push')p++;
+    else u++;
+  });
+  return {n:(rows||[]).length,wins:w,losses:l,pushes:p,ungraded:u,
+    ats:w+l+p,win_pct:(w+l)?w/(w+l):null};
+}
 function recCell(rec,lastSubmissionAt,live,scope){
   if(rec)return recATSHtml(rec)+liveMark(live,scope);
   if(lastSubmissionAt)return '<span class="note">submitted, awaiting results</span>';
@@ -638,10 +663,12 @@ async function meta(){if(META)return META;META=await api('/v1/meta');return META
    the reader is actually on, without each call site having to thread the meta
    object through to get there. */
 var SPORT_ODDS_LEAGUE={NFL:'nfl',CFB:'ncaaf',NCAAF:'ncaaf',CFP:'ncaaf'};
-function marketLeague(){
-  var code=null;
-  try{code=localStorage.getItem(MC_SPORT_KEY);}catch(e){}
-  code=String(code||'NFL').toUpperCase();
+/* The odds league for a sport this page NAMES, rather than the one the
+   switcher happens to be on. The season sweep grades College Football while
+   a reader sits on the NFL tab, and asking the NFL route for a college
+   game's closing line returns nothing at all. */
+function oddsLeagueFor(code){
+  code=String(code||'').toUpperCase();
   /* Guard on the FUNCTION, not on the object. odds.js and this page are two
      separate uploads and can be out of step -- and when they were, the older
      odds.js had no leagueFor, this threw, marketBoard's catch turned it into
@@ -649,6 +676,11 @@ function marketLeague(){
      that was working. A version skew should cost the lookup, not the market. */
   if(window.MCOdds&&typeof MCOdds.leagueFor==='function')return MCOdds.leagueFor(code);
   return SPORT_ODDS_LEAGUE[code]||code.toLowerCase();
+}
+function marketLeague(){
+  var code=null;
+  try{code=localStorage.getItem(MC_SPORT_KEY);}catch(e){}
+  return oddsLeagueFor(code||'NFL');
 }
 /* Everything MCOdds.board() does, for a league it cannot be asked about.
    Only reached when the deployed odds.js predates league-aware routing: that
@@ -766,7 +798,7 @@ function modelCard(r,localMap){
     '<div>'+chipFor(r.membership)+'</div>'+
     '<div class="mc-rec">'+(rec
       ?(recATSText(rec)||'<span class="note" title="'+esc(NO_ATS_TITLE)+'">no ATS picks</span>')+' &middot; '+fmtPct(rec.win_pct,0)+' &middot; '+
-        Math.max(rec.graded||0,rec.margin_n||0,rec.brier_n||0)+' graded'+liveMark(sr.live)
+        Math.max(rec.graded||0,rec.margin_n||0,rec.brier_n||0)+' graded'+liveMark(sr.live)+impliedRecMark(rec)
       :'Building sample &middot; no graded games yet')+'</div>'+
     '<div class="mc-rec">'+(r.coverage_pct!=null?covCell(r.coverage_pct):'')+'</div>'+
     '<div class="mc-foot"><span class="note">'+rel(r.last_submission_at)+'</span>'+
@@ -1446,6 +1478,21 @@ function scoreSourceMark(g){
 }
 /* An implied pick is a real graded result and a different claim from a
    stated one, so it is never printed without saying which it is. */
+/* The same statement about a whole RECORD rather than one row. It matters
+   more here than it looks: a model that posts lines and probabilities but
+   never types a pick side has every one of its graded games decided by the
+   comparison between its own number and the close, and a bare "8-4" beside
+   its name claims something it never actually said. The per-row marker was
+   the only place this was ever admitted, and nobody reads a record row by
+   row. Silent above about a third of the sample, explicit above that. */
+function impliedRecMark(rec){
+  var n=rec&&rec.implied,g=rec&&rec.graded;
+  if(!n||!g||n/g<0.34)return '';
+  return ' <span class="pgrade" title="'+
+    (n>=g?'Every game on this record':n+' of these '+g+' graded games')+
+    ' was graded on the side this model’s own line implies against the Collective’s captured close — it submitted no pick side. A stated pick always takes precedence over this.">'+
+    (n>=g?'implied':'part implied')+'</span>';
+}
 function impliedMark(gr){
   if(!gr||!gr.implied)return '';
   return ' <span class="pgrade" title="This creator submitted no pick side on this game, so it is graded on the side their own line implies against the Collective\u2019s captured close — the same comparison the board prints as \u0394 Mkt. A stated pick always takes precedence over this.">implied</span>';
@@ -1830,9 +1877,125 @@ function marketClose(mg){
   var v=Number(c.line);
   return isFinite(v)?v:null;
 }
-/* Fill in the finished games the wire left blank. Returns how many it
-   filled, so a caller can tell whether anything actually changed. */
+/* ---- the closing line a played game was graded against -----------------
+   THE MISSING NUMBER. A final score alone grades two of the three metrics:
+   the margin error and the Brier score need nothing else. The against-the-
+   spread record — the record, the one every reader means by "how did we
+   do" — needs the closing line as well, and every finished game on this
+   site had a score and no close.
+
+   Not because the Collective never captured one. It captures a close on
+   every game it prices, stores it, and serves it: the admin screen's "Use
+   captured close" button and the settlement run both read it from
+   collective_odds /v1/<league>/closing/<game_id>. The page just never
+   asked. It looked for the close on the ODDS BOARD instead, and the board
+   is a forward window — odds.js says so in as many words: "a game that
+   finished days ago is not in it". So the close was always null on exactly
+   the games that needed it, atsResult() returned null on every row, and
+   the site reported "no ATS picks" and 0 graded against models whose games
+   had all been played and whose closing lines were sitting in the
+   Collective's own database.
+
+   So ask for it, by the one route built to answer. Nothing is invented: an
+   unavailable close leaves the game graded on its score alone, exactly as
+   before, and the reason the feed gives is kept for the board to explain. */
+var CLOSING={};       /* league|game_id -> {at, spread, total, reason} */
+var CLOSING_TTL=300000;  /* how long a NEGATIVE answer is believed */
+var CLOSING_MAX=200;     /* most games asked about in one pass */
+var CLOSING_BATCH=6;     /* asked at a time, so a sweep is not a stampede */
+function closingCached(key){
+  var c=CLOSING[key];
+  if(!c)return null;
+  /* A negative answer is remembered too — asking the same unavailable game
+     on every one-minute refresh is a request storm — but not forever: a
+     game that finished an hour ago may simply not have had its close
+     written yet, and "not yet" must not become "never" for the session. */
+  if(c.spread==null&&(Date.now()-c.at)>CLOSING_TTL)return null;
+  return c;
+}
+function closingDirect(league,gameId){
+  var url=String(API||'').replace(/\/$/,'')+'/collective_odds/v1/'+
+    encodeURIComponent(league)+'/closing/'+encodeURIComponent(gameId);
+  return fetch(url).then(function(r){return r.ok?r.json():null;})
+    .catch(function(){return null;});
+}
+/* One game's captured close. Prefers the shared odds component so the
+   request is cached and deduped with every other odds call on the page, and
+   falls back to the same URL directly when the deployed odds.js predates
+   the helper — the two files are separate uploads and WILL drift. */
+function capturedClose(league,gameId){
+  var key=league+'|'+gameId;
+  var hit=closingCached(key);
+  if(hit)return Promise.resolve(hit);
+  var req;
+  if(window.MCOdds&&typeof MCOdds.closingForGame==='function'){
+    try{req=MCOdds.closingForGame(gameId,{league:league});}
+    catch(e){req=closingDirect(league,gameId);}
+  }else req=closingDirect(league,gameId);
+  return Promise.resolve(req).catch(function(){return null;}).then(function(d){
+    var n=function(v){var x=Number(v);return (v==null||!isFinite(x))?null:x;};
+    var out=(d&&d.available)
+      ?{at:Date.now(),spread:n(d.closing_spread),total:n(d.closing_total),reason:null}
+      :{at:Date.now(),spread:null,total:null,reason:(d&&d.reason)||null};
+    CLOSING[key]=out;
+    return out;
+  });
+}
+/* Every finished game that has a score and no close, given one. The board
+   is tried first because it is already in hand and costs nothing; only what
+   it cannot answer is asked for by name. Returns how many games gained a
+   closing line, so a caller can tell whether a record just changed. */
+async function fillCapturedCloses(games,sportCode,mkt){
+  var league=oddsLeagueFor(sportCode);
+  if(!league)return 0;
+  var need=[],n=0;
+  (games||[]).forEach(function(g){
+    var r=finalResult(g);
+    if(!r||r.closing_spread!=null)return;
+    /* free, and already fetched: the board carries a close on any game
+       still inside its window */
+    var bc=marketClose(marketFor(mkt,g));
+    if(bc!=null){g.result.closing_spread=bc;n++;return;}
+    if(g.game_id!=null)need.push(g);
+  });
+  if(!need.length)return n;
+  /* A cap the reader can see the effect of rather than a silent truncation:
+     the oldest games are the ones already settled by the run, so ask about
+     the most recent first and say in the console what was left. */
+  need.sort(function(a,b){
+    return (new Date(b.kickoff_at||0).getTime()||0)-(new Date(a.kickoff_at||0).getTime()||0);
+  });
+  if(need.length>CLOSING_MAX){
+    try{console.warn('closing lines: asking for the most recent '+CLOSING_MAX+
+      ' of '+need.length+' finished games without one');}catch(e){}
+    need=need.slice(0,CLOSING_MAX);
+  }
+  for(var i=0;i<need.length;i+=CLOSING_BATCH){
+    var batch=need.slice(i,i+CLOSING_BATCH);
+    var got=await Promise.all(batch.map(function(g){
+      return capturedClose(league,g.game_id).catch(function(){return null;});
+    }));
+    batch.forEach(function(g,j){
+      var c=got[j];
+      if(!c||c.spread==null||!g.result)return;
+      g.result.closing_spread=c.spread;
+      if(g.result.closing_total==null&&c.total!=null)g.result.closing_total=c.total;
+      n++;
+    });
+  }
+  return n;
+}
+/* Fill in the finished games the wire left blank. Returns how many SCORES
+   it filled, so a caller can tell whether anything actually changed; the
+   closing-line pass runs on every call either way, because a game the
+   server scored and never priced needs one just as much as a game this
+   page had to go and find. */
 async function enrichFinals(games,sportCode,mkt){
+  var n=await enrichScores(games,sportCode);
+  try{await fillCapturedCloses(games,sportCode,mkt);}catch(e){}
+  return n;
+}
+async function enrichScores(games,sportCode){
   var need=(games||[]).filter(function(g){
     if(!g||finalResult(g)!=null)return false;
     var k=new Date(g.kickoff_at||0).getTime();
@@ -1853,9 +2016,10 @@ async function enrichFinals(games,sportCode,mkt){
   need.forEach(function(g){
     var hit=espnMatch(all,g);
     if(!hit)return;
+    /* score only: the closing line is the Collective's own and is filled by
+       fillCapturedCloses immediately after, from the board or by name */
     g.result={home_score:hit.home,away_score:hit.away,
-      closing_spread:marketClose(marketFor(mkt,g)),
-      closing_total:null,source:'espn'};
+      closing_spread:null,closing_total:null,source:'espn'};
     n++;
   });
   return n;
@@ -2251,8 +2415,14 @@ async function renderWall(view){
       return dirSorted().map(function(r){
         var sr=dirRec(r);
         var rec=sr.rec;
-        return '<tr class="rowlink" data-slug="'+esc(r.creator_slug)+'">'+
-          '<td><span class="who">'+avatar(r)+'<span><span class="nm">'+esc(r.creator_name)+'</span>'+foundStar(r)+'<br><span class="sb">'+esc(r.model_name)+' &middot; '+esc(r.sport)+'</span></span></span></td>'+
+        /* Every row here is a MODEL, so it opens that model's own page —
+           its picks, game by game, and how each one graded. It used to open
+           the creator, who may run more than one, leaving the reader to find
+           their way back to the row they had just clicked. */
+        var dHref=r.model_slug?('#/model/'+esc(r.creator_slug)+'/'+esc(r.model_slug))
+                              :('#/'+esc(r.creator_slug));
+        return '<tr class="rowlink" data-href="'+dHref+'">'+
+          '<td><span class="who">'+avatar(r)+'<span><a href="'+dHref+'" class="nm">'+esc(r.creator_name)+'</a>'+foundStar(r)+'<br><span class="sb">'+esc(r.model_name)+' &middot; '+esc(r.sport)+'</span></span></span></td>'+
           '<td>'+chipFor(r.membership)+'</td>'+
           '<td class="num">'+recCell(rec,r.last_submission_at,sr.live,dirScope)+'</td>'+
           '<td class="num">'+(rec?fmtPct(rec.win_pct):'-')+'</td>'+
@@ -2307,7 +2477,12 @@ async function renderWall(view){
     };
     function wireDirRows(){
       document.querySelectorAll('#walltbl tr.rowlink').forEach(function(tr){
-        tr.onclick=function(){location.hash='#/'+tr.getAttribute('data-slug');};
+        tr.onclick=function(ev){
+          /* a real link inside the row handles its own click */
+          if(ev&&ev.target&&typeof ev.target.closest==='function'&&ev.target.closest('a'))return;
+          var h=tr.getAttribute('data-href');
+          if(h)location.hash=h.replace(/^#/,'');
+        };
       });
     }
     wireDirRows();
@@ -2376,7 +2551,7 @@ async function renderCreator(view,slug){
       body+='<h2>'+esc(mo.model_name)+' <span class="pill">'+esc(mo.sport)+'</span></h2>';
       if(rec){
         body+='<div class="panel"><div class="kv">'+
-          '<span><div class="k">Record</div><div class="v">'+recATSHtml(rec,'')+liveMark(recLive)+'</div></span>'+
+          '<span><div class="k">Record</div><div class="v">'+recATSHtml(rec,'')+liveMark(recLive)+impliedRecMark(rec)+'</div></span>'+
           '<span><div class="k">Win %</div><div class="v">'+fmtPct(rec.win_pct)+'</div></span>'+
           '<span><div class="k">Margin MAE</div><div class="v">'+fmtNum(rec.margin_mae)+'</div></span>'+
           '<span><div class="k">Brier</div><div class="v">'+fmtNum(rec.brier,3)+'</div></span>'+
@@ -2410,12 +2585,14 @@ async function renderModel(view,cs,ms){
       marketBoard()]);
     var d=res[0], slate=res[1], mkt=res[2];
     var rec=d.record;
-    /* Calibration needs the season's SETTLED games, and the games endpoint
-       serves a week at a time — so ask for exactly the weeks this model
-       covered (the coverage table already names them), newest first, capped
-       at a season's worth. Settled games are public, so this works signed
-       out; any week that fails to load is simply absent from the sample and
-       the readout says how many picks it stands on. */
+    /* The games endpoint serves a week at a time, so ask for exactly the
+       weeks this model covered (the coverage table names them), newest
+       first, capped at a season's worth. Settled games are public, so this
+       works signed out; any week that fails to load is simply absent from
+       the sample and the readouts say how many games they stand on. This is
+       the only source that can reach a PREVIOUS season — the sweep below
+       covers the current one and is what carries a model the server has
+       written no coverage for at all. */
     var calCal=null,calMl=null,calGames=[];
     try{
       var calWeeks=(d.coverage||[]).map(function(c){return {season:c.season,week:c.week};})
@@ -2427,35 +2604,77 @@ async function renderModel(view,cs,ms){
           return api('/v1/games?sport='+encodeURIComponent(d.model.sport)+'&season='+c.season+'&week='+c.week,{auth:true})
             .catch(function(){return null;});
         }));
-        var calPts=[];
-        calPages.forEach(function(pg){
-          if(pg&&pg.games)calPts=calPts.concat(calibrationPoints(pg.games,cs,ms));
-        });
         /* those same pages are every game this model has posted, already in
            hand — so the record and the game log come out of them for free
            when the settlement run has not produced either yet */
         calPages.forEach(function(pg){if(pg&&pg.games)calGames=calGames.concat(pg.games);});
-        if(calPts.length){calCal=calibrationBuckets(calPts);calMl=mlOutrightRecord(calPts);}
       }
+    }catch(_){calGames=[];}
+    /* ---- every game this model has played, from wherever it can be found --
+       The coverage table was the only source, and it comes from the server:
+       a model the settlement run has not reached yet has an EMPTY coverage
+       list, so this page asked for no weeks, found no games, and rendered a
+       profile with no record and no game log at all — about a model whose
+       whole slate had been played and which the rankings page was ranking
+       at that moment off the very same games.
+
+       So fall back to the season sweep the rankings already do, cached and
+       shared with them, which means the profile and the boards are reading
+       one set of games and cannot disagree about a model's record. The
+       coverage weeks are still merged in: they can name an EARLIER season
+       the sweep does not cover. */
+    var logGames=calGames;
+    try{
+      var mAllM=await meta().catch(function(){return null;});
+      var snM=null;
+      ((mAllM&&mAllM.sports)||[]).forEach(function(x){
+        if(sportFamily(x.code)===sportFamily(d.model.sport))snM=x.season;
+      });
+      if(snM!=null){
+        var sweepM=await seasonGames(d.model.sport,snM).catch(function(){return [];});
+        var seenM={};logGames=[];
+        calGames.concat(sweepM||[]).forEach(function(g){
+          if(!g)return;
+          var k=gameKey(g);
+          if(seenM[k])return;
+          seenM[k]=1;logGames.push(g);
+        });
+      }
+    }catch(_){logGames=calGames;}
+    /* Calibration off the SAME deduped set, for the same reason: computed
+       from the coverage pages alone it was empty on exactly the models whose
+       coverage the server had not written yet. */
+    try{
+      var calPts=calibrationPoints(logGames,cs,ms);
+      if(calPts.length){calCal=calibrationBuckets(calPts);calMl=mlOutrightRecord(calPts);}
     }catch(_){calCal=null;calMl=null;}
     /* The record the page SHOWS. The Collective's own whenever it has one;
        otherwise the same games graded here, marked as such. Never a blend. */
     var recLive=false;
-    if(!hasRecord(rec)&&calGames.length){
-      var lrec=modelRecord(calGames,cs,ms);
+    if(!hasRecord(rec)&&logGames.length){
+      var lrec=modelRecord(logGames,cs,ms);
       if(hasRecord(lrec)){rec=lrec;recLive=true;}
     }
-    var logRows=(d.recent_graded&&d.recent_graded.length)?d.recent_graded:localGameLog(calGames,cs,ms);
+    /* Coverage the same way, and for the same reason: the server's number is
+       written by the settlement run, so the profile of a model it has not
+       reached read "-%" beside a full record. Measured against the games
+       actually PLAYED, exactly as the rankings measure it. */
+    var covPct=d.coverage_pct;
+    if(covPct==null&&logGames.length){
+      var covLocal=modelCoverage(logGames.filter(function(g){return finalResult(g)!=null;}),cs,ms);
+      if(covLocal&&covLocal.pct!=null)covPct=covLocal.pct;
+    }
+    var logRows=(d.recent_graded&&d.recent_graded.length)?d.recent_graded:localGameLog(logGames,cs,ms);
     var logLive=!(d.recent_graded&&d.recent_graded.length)&&logRows.length>0;
     var head='<h1>'+esc(d.model.model_name)+' <span class="pill">'+esc(d.model.sport)+'</span></h1>'+
       '<p class="lede">by <a href="#/'+esc(d.creator.slug)+'">'+esc(d.creator.display_name)+'</a>'+foundBadge(d.creator)+'</p>';
     var stats=rec?'<div class="panel"><div class="kv">'+
-      '<span><div class="k">Record (ATS)</div><div class="v">'+recATSHtml(rec,'')+liveMark(recLive)+'</div></span>'+
+      '<span><div class="k">Record (ATS)</div><div class="v">'+recATSHtml(rec,'')+liveMark(recLive)+impliedRecMark(rec)+'</div></span>'+
       '<span><div class="k">Win %</div><div class="v">'+fmtPct(rec.win_pct)+'</div></span>'+
       (calMl&&calMl.n?'<span><div class="k" title="how often the side this model favoured on the moneyline actually won">Outright (ML)</div><div class="v">'+calMl.w+'-'+calMl.l+' &middot; '+fmtPct(calMl.pct,0)+'</div></span>':'')+
       '<span><div class="k">Margin MAE</div><div class="v">'+fmtNum(rec.margin_mae)+'</div></span>'+
       '<span><div class="k">Brier</div><div class="v">'+fmtNum(rec.brier,3)+'</div></span>'+
-      '<span><div class="k">Coverage</div><div class="v">'+fmtNum(d.coverage_pct,0)+'%</div></span>'+
+      '<span><div class="k">Coverage</div><div class="v">'+fmtNum(covPct,0)+'%</div></span>'+
       '</div><div class="note" style="margin-top:8px">Graded on actual final scores against the Collective&#39;s own captured closing lines, never self-reported. <a href="#rules">Grading rules</a></div>'+
       (recLive?gradeNote('This record is'):'')+'</div>'
       :'<div class="emptybox"><b style="color:var(--text)">Building sample.</b><br>Performance metrics appear once enough graded games are on the record. Every pick is graded on the actual final score against the Collective&#39;s captured closing line.</div>';
@@ -2495,24 +2714,43 @@ async function renderModel(view,cs,ms){
     }).join('');
     var cov=covRows?'<h2>Slate coverage by week</h2><div class="tblwrap mini"><table style="min-width:420px"><thead><tr><th class="num">Season</th><th class="num">Week</th><th class="num">Submitted</th><th>Coverage</th></tr></thead><tbody>'+covRows+'</tbody></table></div>':'';
     var glRows=logRows.map(function(g){
-      var cls=g.pick_result?('grade-'+g.pick_result):'';
       /* the games feed does not always carry a week, and "Wundefined" is
          worse than no week at all */
       return '<tr data-res="'+esc(g.pick_result||'')+'"><td>'+esc(g.label)+'<br><span class="sb" style="color:var(--faint);font-size:11px">'+(g.week!=null?'W'+esc(g.week)+' &middot; ':'')+kickoffFmt(g.kickoff_at)+'</span></td>'+
         '<td class="num">'+esc(g.pick_side||'-')+'</td>'+
         '<td class="num">'+fmtSpread(g.closing_spread)+'</td>'+
         '<td class="num">'+esc(g.final||'-')+'</td>'+
-        '<td class="num '+cls+'">'+esc(g.pick_result||'-')+'</td>'+
+        '<td class="num">'+resultPill(g.pick_result)+'</td>'+
         '<td class="num">'+fmtNum(g.margin_error)+'</td>'+
         '<td class="num">'+fmtNum(g.brier,3)+'</td>'+
         '<td class="num" style="color:var(--dim)">'+(g.movement_n>1?g.movement_n+' subs':'-')+'</td></tr>';
     }).join('');
-    var gl=glRows?'<h2>Recent graded games</h2>'+(logLive?gradeNote('These games are'):'')+
+    /* What the log adds up to, stated above it. A reader scrolling a table
+       of twenty rows should not have to count the greens themselves, and
+       the count they would arrive at has to be the number at the top of the
+       page — so it is computed from the very rows on screen. */
+    var glTally=logTally(logRows);
+    var gl=glRows?'<h2>Every graded game <span class="note" style="font-weight:400">'+
+        glTally.n+' game'+(glTally.n===1?'':'s')+', newest first</span></h2>'+
+      '<div class="panel" style="margin-bottom:10px"><div class="kv">'+
+        '<span><div class="k">Against the spread</div><div class="v">'+
+          (glTally.ats?esc(glTally.wins+'-'+glTally.losses+(glTally.pushes?'-'+glTally.pushes:'')):
+            '<span class="note" title="'+esc(NO_ATS_TITLE)+'">no ATS picks</span>')+
+          liveMark(logLive)+'</div></span>'+
+        (glTally.ats?'<span><div class="k" title="excludes pushes">Win %</div><div class="v">'+fmtPct(glTally.win_pct,0)+'</div></span>':'')+
+        '<span><div class="k" title="games on this log with no against-the-spread result — the Collective captured no closing line for them">Ungraded ATS</div><div class="v">'+glTally.ungraded+'</div></span>'+
+      '</div></div>'+
+      (logLive?gradeNote('These games are'):'')+
       '<div class="sortsel"><span class="note">Show</span><select id="glFilter"><option value="">All results</option><option value="win">Wins</option><option value="loss">Losses</option><option value="push">Pushes</option></select></div>'+
       '<div class="tblwrap"><table id="glTbl"><thead><tr><th>Game</th><th class="num">Pick</th><th class="num">Close</th><th class="num">Final</th><th class="num">Result</th><th class="num">Margin err</th><th class="num">Brier</th><th class="num">Movement</th></tr></thead><tbody>'+glRows+'</tbody></table></div>'+
-      '<p class="note" style="margin-top:8px">Each game is graded on the model’s first pre-kickoff live submission. Later revisions are stored as movement, never regraded.</p>':'';
+      '<p class="note" style="margin-top:8px">Each game is graded on the model’s first pre-kickoff live submission. Later revisions are stored as movement, never regraded. '+
+      'A game with no result against the spread is one the Collective captured no closing line for &mdash; it is not a loss and is not counted.</p>'
+      :'<h2>Every graded game</h2><div class="emptybox">No game of this model&rsquo;s has finished yet. Every pick it posts appears here the moment its game does, with the closing line it was graded against and whether it won.</div>';
     var cal=calibrationHTML(calCal);
-    if(!paint(view,tok,head+stats+cal+vs+method+cov+gl+'<p style="margin-top:22px"><a href="#/'+esc(d.creator.slug)+'">← '+esc(d.creator.display_name)+'</a> &middot; <a href="#models">Model directory</a> &middot; <a href="#performance">Compare models</a></p>'))return;
+    /* The game log is the page. A reader who clicks a model wants to see
+       the picks and how they did, not a calibration chart and a methodology
+       note first — those are the supporting evidence and now sit under it. */
+    if(!paint(view,tok,head+stats+gl+cal+vs+method+cov+'<p style="margin-top:22px"><a href="#/'+esc(d.creator.slug)+'">← '+esc(d.creator.display_name)+'</a> &middot; <a href="#models">Model directory</a> &middot; <a href="#performance">Compare models</a></p>'))return;
     if($('glFilter'))$('glFilter').onchange=function(){
       var v=this.value;
       document.querySelectorAll('#glTbl tbody tr').forEach(function(tr){
@@ -2915,6 +3153,28 @@ async function renderRankings(view){
       if(r.model_slug)smap[r.creator_slug+'/s/'+r.model_slug]=r.sport;
       if(r.model_name)smap[r.creator_slug+'/n/'+r.model_name]=r.sport;
     });
+    /* ---- where a row on this page GOES --------------------------------
+       Every row here is a model, and a reader who wants the picks behind a
+       number has one question: which games, and did they win. That page
+       exists — it is the model's own — and nothing on this page linked to
+       it: a row clicked through to the CREATOR, who may run several models,
+       and the reader had to find their way from there to the one they had
+       just clicked. So a row goes to the model it names.
+
+       A rankings row from the server carries a model_name and no
+       model_slug, so the slug is looked up from the wall rows by name; a
+       row this page computed has carried the slug all along. When neither
+       can name it, the creator's profile is still a better answer than
+       nothing, and the link says which one it is. */
+    var nameSlug={};res[1].forEach(function(r){
+      if(r.model_name&&r.model_slug)nameSlug[r.creator_slug+'/n/'+r.model_name]=r.model_slug;
+    });
+    function modelSlugOf(r){
+      return r.model_slug||nameSlug[r.creator_slug+'/n/'+r.model_name]||null;
+    }
+    function profHref(cs,msl){
+      return msl?('#/model/'+esc(cs)+'/'+esc(msl)):('#/'+esc(cs));
+    }
     function rankedSport(r){
       var sp=r.model_slug?smap[r.creator_slug+'/s/'+r.model_slug]:null;
       if(sp==null&&r.model_name)sp=smap[r.creator_slug+'/n/'+r.model_name];
@@ -2967,8 +3227,9 @@ async function renderRankings(view){
     function board(title,key,fmt,sub){
       var pick=picks[key];
       var body=pick.rows.map(function(r){
-        return '<tr class="rowlink" data-slug="'+esc(r.creator_slug)+'"><td class="num" style="color:var(--faint)">'+r.rank+'</td>'+
-          '<td><span class="nm">'+esc(r.creator_name)+'</span>'+(fmap[r.creator_slug]?' <span class="fstar" title="Founding Member">&#9733;</span>':'')+'<br><span class="sb" style="color:var(--faint);font-size:11px">'+esc(r.model_name)+'</span></td>'+
+        var href=profHref(r.creator_slug,modelSlugOf(r));
+        return '<tr class="rowlink" data-href="'+href+'"><td class="num" style="color:var(--faint)">'+r.rank+'</td>'+
+          '<td><a href="'+href+'" class="nm">'+esc(r.creator_name)+'</a>'+(fmap[r.creator_slug]?' <span class="fstar" title="Founding Member">&#9733;</span>':'')+'<br><span class="sb" style="color:var(--faint);font-size:11px">'+esc(r.model_name)+'</span></td>'+
           '<td class="num" style="font-weight:700">'+fmt(r.value)+liveMark(pick.live)+'</td>'+
           '<td class="num" style="color:var(--dim)">'+r.graded+'</td></tr>';
       }).join('');
@@ -2996,16 +3257,20 @@ async function renderRankings(view){
       if(!st.length)return '';
       var body=st.map(function(e,i){
         var r=e.record;
-        return '<tr class="rowlink" data-slug="'+esc(e.creator_slug)+'">'+
+        var href=profHref(e.creator_slug,e.model_slug);
+        return '<tr class="rowlink" data-href="'+href+'">'+
           '<td class="num" style="color:var(--faint)">'+(i+1)+'</td>'+
-          '<td><span class="nm">'+esc(e.creator_name)+'</span>'+(fmap[e.creator_slug]?' <span class="fstar" title="Founding Member">&#9733;</span>':'')+
+          '<td><a href="'+href+'" class="nm">'+esc(e.creator_name)+'</a>'+(fmap[e.creator_slug]?' <span class="fstar" title="Founding Member">&#9733;</span>':'')+
             '<br><span class="sb" style="color:var(--faint);font-size:11px">'+esc(e.model_name)+'</span></td>'+
-          '<td class="num">'+recATSHtml(r)+liveMark(r.live>0)+'</td>'+
+          /* the record is what this table is FOR: it reads at the weight of
+             an answer rather than as one number among seven */
+          '<td class="num" style="font-weight:700;font-size:14px">'+recATSHtml(r)+liveMark(r.live>0)+impliedRecMark(r)+'</td>'+
           '<td class="num" style="font-weight:700">'+fmtPct(r.win_pct)+'</td>'+
           '<td class="num">'+fmtNum(r.margin_mae)+'</td>'+
           '<td class="num">'+fmtNum(r.brier,3)+'</td>'+
           '<td class="num" style="color:var(--dim)">'+r.graded+'</td>'+
-          '<td>'+covCell(e.coverage_pct)+'</td></tr>';
+          '<td>'+covCell(e.coverage_pct)+'</td>'+
+          '<td class="num"><a href="'+href+'">picks &rarr;</a></td></tr>';
       }).join('');
       var anyLiveSt=st.some(function(e){return e.record.live>0;});
       return '<h2>Live standings <span class="note" style="font-weight:400">every model, every graded game, no minimums</span></h2>'+
@@ -3017,6 +3282,7 @@ async function renderRankings(view){
           '<th class="num" title="scores the posted win probability against the actual winner, lower is better">Brier</th>'+
           '<th class="num" title="games with an against-the-spread result">Graded</th>'+
           '<th title="share of the games PLAYED so far that this model posted">Coverage</th>'+
+          '<th class="num" title="every game this model has been graded on, with the pick and the result">Game log</th>'+
         '</tr></thead><tbody>'+body+'</tbody></table></div>'+
         '<p class="note" style="margin-top:8px">Every metric for every model in one table, so a model that leads one board and trails another is one row rather than three. '+
         'The boards above carry no minimum either &mdash; a model appears on each of them from its first finished game, on whichever numbers it has posted. '+
@@ -3084,7 +3350,17 @@ async function renderRankings(view){
       (un?'<h2>Not yet ranked</h2><ul style="color:var(--dim);font-size:13px;line-height:1.9">'+un+'</ul>':'')+
       '<p class="note"><a href="#rules">How grading works →</a> &middot; <a href="#performance">Compare any two models side by side →</a></p>'))return;
     bindSportSwitcher(function(){renderRankings(view);});
-    document.querySelectorAll('.rowlink').forEach(function(tr){tr.onclick=function(){location.hash='#/'+tr.getAttribute('data-slug');};});
+    /* data-href, not data-slug: the row already knows exactly where it goes
+       and the anchor inside it goes to the same place, so a click on the row
+       and a click on the name can never land on two different pages. */
+    document.querySelectorAll('.rowlink').forEach(function(tr){
+      tr.onclick=function(ev){
+        /* a real link inside the row handles its own click */
+        if(ev&&ev.target&&typeof ev.target.closest==='function'&&ev.target.closest('a'))return;
+        var h=tr.getAttribute('data-href');
+        if(h)location.hash=h.replace(/^#/,'');
+      };
+    });
   }catch(e){fail(view,e);}
 }
 
@@ -3207,7 +3483,7 @@ async function renderPerformance(view){
             '<div class="mc-sub">'+esc(d.creator.display_name)+foundStar(d.creator)+' &middot; '+esc(d.model.sport)+'</div></div></div>'+
             (rec
               ?'<div class="kv">'+
-               '<span><div class="k">Record</div><div class="v">'+recATSHtml(rec,'')+liveMark(recLive)+'</div></span>'+
+               '<span><div class="k">Record</div><div class="v">'+recATSHtml(rec,'')+liveMark(recLive)+impliedRecMark(rec)+'</div></span>'+
                '<span><div class="k">Win %</div><div class="v">'+fmtPct(rec.win_pct)+'</div></span>'+
                '<span><div class="k">Margin MAE</div><div class="v">'+fmtNum(rec.margin_mae)+'</div></span>'+
                '<span><div class="k">Brier</div><div class="v">'+fmtNum(rec.brier,3)+'</div></span>'+
