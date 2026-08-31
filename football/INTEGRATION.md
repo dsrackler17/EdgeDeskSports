@@ -261,6 +261,16 @@ than promising a first submission they cannot deliver.
 `tools/collective/app_sync.test.js` drives that flow out of `app.html` itself
 against the exact message the live database sent.
 
+**The change set for option 2 is now written down**, in `supabase/` — a
+read-only preflight that reports the column names this repository cannot see, a
+migration adding `superseded_at` plus a `security definer` maintenance function,
+and the exact predicate the three readers and the retract endpoint each need.
+It is specified and reviewable, **not applied**: applying it needs Supabase
+project access. It deliberately does not give open replacement — a creator gets
+a 30-minute correction window and an admin gets the maintenance path, because a
+number anyone can revise after reading the room is not worth grading. See
+`supabase/README.md`.
+
 **What the server still needs**, for replacement to actually work again — none
 of it is in this repository:
 
