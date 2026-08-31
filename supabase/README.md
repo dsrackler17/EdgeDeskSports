@@ -84,7 +84,12 @@ Reversible at every step. Rolling back is
 `update collective.projections set superseded_at = null` — every row is still
 there, which is the point of doing it this way.
 
-## `functions/collective_public.PATCH.md` — four fixes to the live function
+## `functions/collective_public.bundle.ts` — the whole fixed function
+
+Paste as `index.ts`. `collective_public.PATCH.md` is the same four changes as
+individual find-and-replace blocks if you would rather apply them by hand.
+
+## The four fixes
 
 Separate from the migration, and applicable on their own today. From reading
 the deployed `collective_public` bundle:
