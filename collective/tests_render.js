@@ -1470,6 +1470,55 @@ var S=sandbox;
       return r.length>0&&!/implied/.test(r);
     })(),
     'labelling an honest stated record as implied is the opposite mistake');
+  /* ---- the wall says a model has posted this game again ----------------
+     The board shows, and the Collective grades, the FIRST pre-kickoff
+     submission -- the anti-anchoring rule, which is not in question here.
+     What the board never said is that a LATER one had arrived. So a creator
+     who re-uploaded a corrected slate came to the wall, found the numbers
+     they had just replaced under an age of "8d", and reported the uploader
+     as broken. It had worked; nothing on screen could say so. */
+  S.SEASON_GAMES={};S.LOCALREC={};S.META=null;S.WALLC=null;S.location.hash='';
+  var mv=node();
+  await S.renderWall(mv);
+  chk('a model that posted once carries no revision marker',
+    mv.innerHTML.indexOf('class="rev"')<0,
+    'the marker must mean something, so it cannot be on every row');
+  /* the exact case from the report: a slate posted, then re-posted twice */
+  GAMES[0].models[0].movement_n=3;
+  S.SEASON_GAMES={};S.LOCALREC={};S.META=null;S.WALLC=null;
+  var mv2=node();
+  await S.renderWall(mv2);
+  chk('a re-posted game shows how many further submissions arrived',
+    /class="rev"[^>]*>\+2<\/sup>/.test(mv2.innerHTML),
+    {row:(function(){
+      var i=mv2.innerHTML.indexOf('class="rev"');
+      return i<0?'no marker rendered':mv2.innerHTML.slice(Math.max(0,i-260),i+120);
+    })()});
+  chk('and says why the board is still showing the first one',
+    (function(){
+      var i=mv2.innerHTML.indexOf('class="rev"');
+      if(i<0)return false;
+      var seg=mv2.innerHTML.slice(i,i+700);
+      return /first pre-kickoff/.test(seg) && /stored as movement/.test(seg)
+        && /do not move the board/.test(seg);
+    })(),
+    'a bare +2 with no explanation is a new question, not an answer');
+  chk('the marker rides with the pick, so it survives the mobile board',
+    (function(){
+      var i=mv2.innerHTML.indexOf('class="rev"');
+      var seg=mv2.innerHTML.slice(Math.max(0,i-300),i);
+      /* the age cell is display:none under the narrow grid; the pick is not */
+      return seg.lastIndexOf('class="num pk"')>seg.lastIndexOf('class="age"');
+    })());
+  /* a single submission is not a revision, and 0/absent must not print +-1 */
+  GAMES[0].models[0].movement_n=1;
+  S.SEASON_GAMES={};S.LOCALREC={};S.META=null;S.WALLC=null;
+  var mv3=node();
+  await S.renderWall(mv3);
+  chk('one submission is not reported as a revision',
+    mv3.innerHTML.indexOf('class="rev"')<0);
+  delete GAMES[0].models[0].movement_n;
+
   S.SEASON_GAMES={};S.LOCALREC={};S.META=null;S.WALLC=null;S.location.hash='';
 
   fails.forEach(function(f){console.log('FAIL | '+f.n+(f.d?'  '+JSON.stringify(f.d).slice(0,400):''));});
