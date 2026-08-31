@@ -3356,6 +3356,265 @@ if (typeof sandbox.sessionUserId === 'function') {
   chk('the admin grant path is defined', false);
 }
 
+/* =======================================================================
+   RE-UPLOADING A SLATE THAT IS ALREADY POSTED.
+
+   `collective.projections` is append-only and the games feed serves each
+   model's FIRST pre-kickoff submission, so a corrected slate is stored as
+   movement and the board keeps the number it already had. That rule is
+   deliberate and is not what these tests are about.
+
+   What they are about is that the page said nothing about it anywhere. Two
+   creators in one week reported the uploader as broken -- "I re-uploaded my
+   week 1 picks and my upload from 5d ago is still showing on the wall" --
+   because "Your slate is in", in green, beside a link to the wall, is
+   indistinguishable from an upload that worked. It had worked. Nothing on
+   screen could tell them so.
+   ======================================================================= */
+if (typeof sandbox.slateRevisionScan === 'function') {
+  var SR = sandbox;
+
+  /* one scheduled game, with whatever model rows a case needs */
+  function srGame(id, away, home, models) {
+    return { game_id: id, away: away, home: home,
+             kickoff_at: '2026-09-03T20:00:00Z', models: models || [] };
+  }
+  function srRow(away, home, ref) {
+    var o = { away_team: away, home_team: home, kickoff: '2026-09-03T20:00:00Z' };
+    if (ref !== undefined) o.game_ref = ref;
+    return o;
+  }
+  var SR_MINE = { creator_slug: 'moose', model_slug: 'moose-cfb',
+                  received_at: '2026-08-23T14:00:00Z' };
+
+  /* ---- which prior rows actually hold the first-submission slot ------- */
+  chk('a live pre-kickoff row from this model is a prior submission',
+    SR.priorSubmission(srGame('G1', 'UMASS', 'RUTGERS', [SR_MINE]),
+      'moose', 'moose-cfb') !== null);
+  chk('another creator\'s row on the same game is not this model\'s submission',
+    SR.priorSubmission(srGame('G1', 'UMASS', 'RUTGERS',
+      [{ creator_slug: 'blerm', model_slug: 'blerm-cfb' }]), 'moose', 'moose-cfb') === null);
+  chk('another MODEL of the same creator is not this model\'s submission',
+    SR.priorSubmission(srGame('G1', 'UMASS', 'RUTGERS',
+      [{ creator_slug: 'moose', model_slug: 'moose-nfl' }]), 'moose', 'moose-cfb') === null);
+  /* these three are stored but hold no slot, so a new pre-kickoff live post
+     is still a first submission and must not be reported as a revision */
+  chk('a late row holds no slot, so re-posting over it is not a revision',
+    SR.priorSubmission(srGame('G1', 'UMASS', 'RUTGERS',
+      [{ creator_slug: 'moose', model_slug: 'moose-cfb', late: true }]),
+      'moose', 'moose-cfb') === null);
+  chk('test and backfill rows hold no slot either',
+    SR.priorSubmission(srGame('G1', 'UMASS', 'RUTGERS',
+      [{ creator_slug: 'moose', model_slug: 'moose-cfb', data_origin: 'test' }]),
+      'moose', 'moose-cfb') === null
+    && SR.priorSubmission(srGame('G1', 'UMASS', 'RUTGERS',
+      [{ creator_slug: 'moose', model_slug: 'moose-cfb', data_origin: 'backfill' }]),
+      'moose', 'moose-cfb') === null);
+  chk('a row with no data_origin at all is live, as the rest of the page reads it',
+    SR.priorSubmission(srGame('G1', 'UMASS', 'RUTGERS',
+      [{ creator_slug: 'moose', model_slug: 'moose-cfb' }]), 'moose', 'moose-cfb') !== null);
+
+  /* ---- the scan, against the schedule the pre-flight already fetched --- */
+  var SR_SCHED = [srGame('G1', 'UMASS', 'RUTGERS', [SR_MINE]),
+                  srGame('G2', 'TOLEDO', 'MICHIGAN STATE', []),
+                  srGame('G3', 'FRESNO STATE', 'USC', [SR_MINE])];
+  chk('the scan separates games already posted from ones that are new',
+    (function () {
+      var s = SR.slateRevisionScan(SR_SCHED,
+        [srRow('UMASS', 'RUTGERS'), srRow('TOLEDO', 'MICHIGAN STATE'),
+         srRow('FRESNO STATE', 'USC')], 'moose', 'moose-cfb');
+      return s.n === 2 && s.fresh === 1 && s.unmatched === 0;
+    })(), { got: SR.slateRevisionScan(SR_SCHED,
+      [srRow('UMASS', 'RUTGERS'), srRow('TOLEDO', 'MICHIGAN STATE'),
+       srRow('FRESNO STATE', 'USC')], 'moose', 'moose-cfb') });
+  chk('the scan names the games, so the warning can list them',
+    (function () {
+      var s = SR.slateRevisionScan(SR_SCHED, [srRow('UMASS', 'RUTGERS')], 'moose', 'moose-cfb');
+      return s.revised.length === 1 && s.revised[0].home === 'RUTGERS'
+        && s.revised[0].away === 'UMASS'
+        && s.revised[0].received_at === '2026-08-23T14:00:00Z';
+    })());
+  chk('a row on no scheduled game is counted apart, never guessed at',
+    (function () {
+      var s = SR.slateRevisionScan(SR_SCHED, [srRow('NOWHERE STATE', 'ATLANTIS')],
+        'moose', 'moose-cfb');
+      return s.unmatched === 1 && s.n === 0 && s.fresh === 0;
+    })());
+  chk('a first-time slate reports no revisions at all',
+    (function () {
+      var s = SR.slateRevisionScan(SR_SCHED,
+        [srRow('TOLEDO', 'MICHIGAN STATE')], 'moose', 'moose-cfb');
+      return s.n === 0 && s.fresh === 1;
+    })());
+
+  /* ---- and says so before the creator posts --------------------------- */
+  chk('nothing is said when nothing is a revision',
+    SR.slateRevisionHTML({ revised: [], n: 0, fresh: 4, unmatched: 0 }) === '');
+  chk('the warning states that the board will not change, and names the games',
+    (function () {
+      var h = SR.slateRevisionHTML(SR.slateRevisionScan(SR_SCHED,
+        [srRow('UMASS', 'RUTGERS'), srRow('TOLEDO', 'MICHIGAN STATE')],
+        'moose', 'moose-cfb'));
+      return /will not change the board/.test(h) && /RUTGERS/.test(h)
+        && /1 game here has no submission yet/.test(h);
+    })(), { got: SR.slateRevisionHTML(SR.slateRevisionScan(SR_SCHED,
+      [srRow('UMASS', 'RUTGERS'), srRow('TOLEDO', 'MICHIGAN STATE')],
+      'moose', 'moose-cfb')) });
+  chk('a slate where every game is already posted says nothing will move',
+    (function () {
+      var h = SR.slateRevisionHTML(SR.slateRevisionScan(SR_SCHED,
+        [srRow('UMASS', 'RUTGERS'), srRow('FRESNO STATE', 'USC')], 'moose', 'moose-cfb'));
+      return /No game here is a first submission/.test(h)
+        && /nothing on the wall will move/.test(h);
+    })());
+
+  /* ---- the receipt, from the server's own counts ----------------------- */
+  chk('a post with no revisions adds nothing to the receipt',
+    SR.slateMovementHTML({ resolved: 9, first: 9, movement: 0 }) === '');
+  chk('a mixed post says how many landed as revisions and how many are on the wall',
+    (function () {
+      var h = SR.slateMovementHTML({ resolved: 12, first: 4, movement: 8 });
+      return /8 rows landed as revisions/.test(h)
+        && /does not change the wall/.test(h)
+        && /4 rows were first submissions and are on the wall now/.test(h);
+    })(), { got: SR.slateMovementHTML({ resolved: 12, first: 4, movement: 8 }) });
+  chk('a re-post of an already-posted week says the wall is unchanged',
+    (function () {
+      var h = SR.slateMovementHTML({ resolved: 16, first: 0, movement: 16 });
+      return /No row on this post was a first submission/.test(h)
+        && /the wall is unchanged/.test(h);
+    })());
+  chk('the receipt never suggests the numbers were lost',
+    (function () {
+      var h = SR.slateMovementHTML({ resolved: 16, first: 0, movement: 16 });
+      return /Nothing was lost/.test(h) && /My submissions/.test(h);
+    })());
+  /* the exact misreading that produced the reports: green "slate is in"
+     beside a link to a wall the post could not have changed */
+  chk('an all-revision post is not headlined as a slate that is in',
+    function () {
+      var shown = CODE.replace(/\/\*[\s\S]*?\*\//g, ' ');
+      return /Stored as revisions/.test(shown)
+        && /\(c2\.movement\|\|0\)>0&&\(c2\.first\|\|0\)===0/.test(shown);
+    },
+    'the all-revision branch of the receipt headline');
+  /* A function nobody calls explains nothing. These two hold the WIRING --
+     both of these were removable with every other test on this page still
+     green, which is the same shape of gap that let a suite pass over an
+     uploader creators could not use. */
+  chk('the receipt actually prints the movement note',
+    function () {
+      var i = CODE.indexOf('async function slateSend');
+      if (i < 0) return false;
+      var body = CODE.slice(i, i + 22000);
+      return body.indexOf('slateMovementHTML(c2)') >= 0
+        && body.indexOf('slateMovementHTML(c2)') > body.indexOf('Dry run:');
+    },
+    'the server counts revisions and the creator has to be told what that means');
+  chk('the check run actually prints the pre-post revision warning',
+    function () {
+      var i = CODE.indexOf('async function slateSend');
+      if (i < 0) return false;
+      var body = CODE.slice(i, i + 22000);
+      return /revHtml=slateRevisionHTML\(slateRevisionScan\(/.test(body)
+        && /innerHTML=pfHtml\+alignHtml\+revHtml\+/.test(body);
+    },
+    'finding out on the wall afterwards is what this is meant to replace');
+
+  /* ---- the wall row carries the count -------------------------------- */
+  chk('the board explains the +n it now prints beside a pick',
+    (function () {
+      var e = SR.BOARD_LEGEND.filter(function (x) { return /\+n/.test(x.k); })[0];
+      return e && /first/i.test(e.long) && /movement/i.test(e.long);
+    })(), { keys: SR.BOARD_LEGEND.map(function (x) { return x.k; }) });
+  /* a revision changes nothing the fingerprint used to look at, so a wall
+     left open on screen kept saying nothing had arrived */
+  chk('the live fingerprint notices a revision arriving',
+    (function () {
+      var g0 = { game_id: 'G1', home: 'RUTGERS', away: 'UMASS', kickoff_at: '2026-09-03T20:00:00Z',
+                 models: [{ creator_slug: 'moose', model_slug: 'moose-cfb', movement_n: 1 }] };
+      var g1 = { game_id: 'G1', home: 'RUTGERS', away: 'UMASS', kickoff_at: '2026-09-03T20:00:00Z',
+                 models: [{ creator_slug: 'moose', model_slug: 'moose-cfb', movement_n: 2 }] };
+      return SR.liveFingerprint([g0]) !== SR.liveFingerprint([g1]);
+    })());
+} else {
+  chk('the re-upload path is defined', false);
+}
+
+/* ---- a row's identity is its GAME, not its line number in a spreadsheet -
+   slateAlignToSchedule has always said adopting the schedule's id is "the
+   part that matters", and the condition guarding it (`!c.game_ref`) could
+   never be true: slateBuildRows gives every row a ref, synthesising one from
+   the file's ROW NUMBER when the file carries no id. So a game re-exported
+   with one more game above it arrived under a different ref than the same
+   game the week before. */
+if (typeof sandbox.slateAlignToSchedule === 'function' && typeof sandbox.SLATE_SYNTH_REF !== 'undefined') {
+  var SA = sandbox;
+  var SA_SCHED = [{ game_id: '2026_01_UMASS_RUT', away: 'UMASS', home: 'RUTGERS',
+                    kickoff_at: '2026-09-03T20:00:00Z' }];
+  chk('a ref this page synthesised is replaced by the schedule\'s own game id',
+    (function () {
+      var a = SA.slateAlignToSchedule(SA_SCHED,
+        [{ game_ref: 'R7_UMASS_RUTGERS', away_team: 'UMASS', home_team: 'RUTGERS',
+           kickoff: '2026-09-03T20:00:00Z' }]);
+      return a.rows[0].game_ref === '2026_01_UMASS_RUT';
+    })(), { got: SA.slateAlignToSchedule(SA_SCHED,
+      [{ game_ref: 'R7_UMASS_RUTGERS', away_team: 'UMASS', home_team: 'RUTGERS',
+         kickoff: '2026-09-03T20:00:00Z' }]).rows[0] });
+  chk('the same game at a different row number lands on the same ref',
+    (function () {
+      var one = SA.slateAlignToSchedule(SA_SCHED,
+        [{ game_ref: 'R2_UMASS_RUTGERS', away_team: 'UMASS', home_team: 'RUTGERS',
+           kickoff: '2026-09-03T20:00:00Z' }]).rows[0].game_ref;
+      var two = SA.slateAlignToSchedule(SA_SCHED,
+        [{ game_ref: 'R41_UMASS_RUTGERS', away_team: 'UMASS', home_team: 'RUTGERS',
+           kickoff: '2026-09-03T20:00:00Z' }]).rows[0].game_ref;
+      return one === two && one === '2026_01_UMASS_RUT';
+    })(), 'this is what made a corrected slate unrecognisable as the same picks');
+  chk('a ref the creator\'s own file supplied is never overwritten',
+    (function () {
+      var a = SA.slateAlignToSchedule(SA_SCHED,
+        [{ game_ref: '2026_01_NE_SEA', away_team: 'UMASS', home_team: 'RUTGERS',
+           kickoff: '2026-09-03T20:00:00Z' }]);
+      return a.rows[0].game_ref === '2026_01_NE_SEA';
+    })(), 'the export carries real ids and they are the creator\'s, not ours');
+  chk('a row that matches no scheduled game keeps the ref it arrived with',
+    (function () {
+      var a = SA.slateAlignToSchedule(SA_SCHED,
+        [{ game_ref: 'R3_NOWHERE_ATLANTIS', away_team: 'NOWHERE STATE',
+           home_team: 'ATLANTIS', kickoff: '2026-09-03T20:00:00Z' }]);
+      return a.rows[0].game_ref === 'R3_NOWHERE_ATLANTIS';
+    })());
+  chk('the synthesised-ref shape is the one slateBuildRows actually builds',
+    SA.SLATE_SYNTH_REF.test('R7_UMASS_RUTGERS') && !SA.SLATE_SYNTH_REF.test('2026_01_NE_SEA'));
+} else {
+  chk('the schedule-id adoption path is defined', false);
+}
+
+/* ---- the alignment dictionary belongs to one pre-flight ---------------- */
+chk('the pre-flight clears the schedule it aligns against before it can return',
+  function () {
+    var i = CODE.indexOf('async function slatePreflight');
+    if (i < 0) return false;
+    var head = CODE.slice(i, i + 6000);
+    var clear = head.indexOf('SLATE.serverGames=null');
+    var ret = head.indexOf('return {level:');
+    var fill = head.indexOf('SLATE.serverGames=list');
+    /* cleared BEFORE any path can return, and refilled only from a list this
+       pre-flight actually fetched for this sport, season and week */
+    return clear >= 0 && ret > 0 && fill > 0 && clear < ret && clear < fill;
+  },
+  'an NFL slate left its schedule behind and a college slate was aligned against it');
+
+/* ---- the week the FILE states, not the one the box is still holding ----- */
+chk('a second upload is not posted under the previous upload\'s week',
+  function () {
+    var shown = CODE.replace(/\/\*[\s\S]*?\*\//g, ' ');
+    return /if\(wk!==null&&!SLATE\.multiWeek&&\$\('slWeek'\)\)/.test(shown)
+      && !/!SLATE\.multiWeek&&\$\('slWeek'\)&&!\$\('slWeek'\)\.value/.test(shown);
+  },
+  'the guard was true only on the first upload of a session');
+
 /* ---- report ------------------------------------------------------------ */
 failures.forEach(function (f) {
   console.log('FAIL | ' + f.name + (f.detail ? '  ' + JSON.stringify(f.detail) : ''));

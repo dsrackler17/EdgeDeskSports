@@ -277,6 +277,28 @@ Until one of those exists, a corrected slate lands as movement and the wall
 keeps grading the first submission. That is the honest degradation, and it is
 what the button now says out loud — but it is not the fix.
 
+**The Collective's own surfaces say it too, now.** They did not, and that cost
+more than the missing feature did. A creator re-uploading a corrected week got
+`Your slate is in.` in green beside a link to the wall, went to the wall, and
+found the numbers they had just corrected sitting under an age of `8d` — which
+reads as an upload that silently failed, and was reported as one by two
+creators in the same week. Three places in `collective/index.html` state the
+rule instead of leaving it to be inferred:
+
+* `slateRevisionScan` / `slateRevisionHTML` — **before** the post, counted
+  against the game list the pre-flight has already fetched: how many of these
+  games already carry a submission from this model, and how many are genuinely
+  new.
+* `slateMovementHTML` — on the receipt, from the server's own `movement` and
+  `first` counts. A post where every row was a revision is no longer headlined
+  as a slate that is in.
+* the `+n` beside a pick on the wall, from `movement_n`, which the games feed
+  already carried and only the model page's *finished*-game log ever rendered —
+  the one place nobody is asking.
+
+None of this replaces anything: the first pre-kickoff submission is still the
+graded one, which is the anti-anchoring rule and is the point.
+
 ### The Collective tab is locked because it asks anonymously
 
 `collective/embed.js` fetched `collective_embed /v1/embed/bootstrap` with no

@@ -198,6 +198,7 @@ tr.consrow td{color:var(--accent);border-top:1px dashed var(--border)}
 /* the difference from the market: magnitude carried by weight, never by a
    good/bad colour — the Collective states the gap, it does not grade it */
 .gb-row .pk{text-align:right}
+.gb-row .rev{color:var(--warn);font-size:9px;font-weight:700;margin-left:2px;cursor:help}
 .gb-row .mline{text-align:right;color:var(--dim)}
 /* a row whose own numbers contradict its pick side: never rendered as
    though the Collective believes it */
@@ -1072,6 +1073,103 @@ function weekProjections(games,creatorSlug,modelSlug){
   });
   return n;
 }
+/* ================= what a re-upload can and cannot do =================
+   `collective.projections` is append-only in the database, and the games feed
+   serves each model's FIRST pre-kickoff submission on a game. That is the
+   anti-anchoring rule and it is deliberate: creators can read each other's
+   numbers before kickoff, so a number that could be quietly replaced after
+   reading the room would not be worth grading. football/INTEGRATION.md
+   records why replacement cannot be restored from this repository at all.
+
+   What no surface on this page said out loud is what that means for the
+   person who just corrected their slate. They re-upload, the receipt says
+   "Your slate is in" beside a link to the wall, and the wall shows the
+   numbers they came to replace under an age of "8d". Nothing failed. But
+   "stored as movement" and "my upload is broken" look identical from the
+   outside, and every creator who has hit this has reported it as the latter —
+   which is the worst possible outcome for a collective whose whole product is
+   creators posting.
+
+   So the rule is now stated in the three places it actually gets asked about:
+   before posting (slateRevisionScan), on the receipt (slateMovementHTML), and
+   on the wall row itself (the +n beside a pick). */
+
+/* A submission this model already holds on this game, or null. Only a row
+   that holds the FIRST-SUBMISSION SLOT counts: a late row, a test row and a
+   backfill row are all stored and none of them is what a new pre-kickoff live
+   post would be competing with, so a slate re-posted over those is not a
+   revision in the sense that matters here. A locked row is one this reader is
+   not entitled to see the numbers of — it is still a submission, and a
+   creator reading their own dashboard never sees their own rows locked. */
+function priorSubmission(g,creatorSlug,modelSlug){
+  var rows=(g&&g.models)||[],i,mr;
+  for(i=0;i<rows.length;i++){
+    mr=rows[i];
+    if(!mr||mr.creator_slug!==creatorSlug)continue;
+    if(modelSlug&&mr.model_slug!==modelSlug)continue;
+    if(mr.late)continue;
+    if(mr.data_origin!=null&&mr.data_origin!=='live')continue;
+    return mr;
+  }
+  return null;
+}
+/* Which games on this slate will land as revisions, answered BEFORE the post
+   from the game list the pre-flight has already fetched — so it costs no
+   extra request and it reads the same schedule the rows are about to be
+   matched against. A row that matches no scheduled game is counted apart
+   rather than guessed at: the pre-flight already reports those. */
+function slateRevisionScan(games,rows,creatorSlug,modelSlug){
+  var byId={};
+  (games||[]).forEach(function(g){
+    var s=slateGameSides(g);
+    if(s&&s.game_id)byId[slateGameIdKey(s.game_id)]=g;
+  });
+  var revised=[],fresh=0,unmatched=0;
+  (rows||[]).forEach(function(o){
+    var hit=slateMatchRow(games,o);
+    if(!hit){unmatched++;return;}
+    var g=hit.game_id?byId[slateGameIdKey(hit.game_id)]:null;
+    var prior=g?priorSubmission(g,creatorSlug,modelSlug):null;
+    if(prior)revised.push({away:hit.away,home:hit.home,received_at:prior.received_at||null});
+    else fresh++;
+  });
+  return {revised:revised,n:revised.length,fresh:fresh,unmatched:unmatched};
+}
+function slateRevisionHTML(scan){
+  if(!scan||!scan.n)return '';
+  var n=scan.n;
+  return '<p class="note" style="margin:9px 0 0;border-left:2px solid var(--warn);padding-left:8px">'+
+    '<b style="color:var(--warn)">'+n+' of these game'+(n===1?' already carries':'s already carry')+
+    ' a submission from this model, so posting '+(n===1?'it':'them')+' again will not change the board.</b> '+
+    'The Collective grades and shows each model’s first pre-kickoff submission on a game and stores every '+
+    'later one as movement. That is what stops anyone moving their number after reading the room, and it '+
+    'applies to corrections too. '+
+    (scan.fresh
+      ? scan.fresh+' game'+(scan.fresh===1?'':'s')+' here '+(scan.fresh===1?'has':'have')+
+        ' no submission yet and will appear on the wall. '
+      : 'No game here is a first submission, so nothing on the wall will move. ')+
+    'Already posted: '+
+    scan.revised.slice(0,6).map(function(x){
+      return '<span class="mono">'+esc(x.away)+' @ '+esc(x.home)+'</span>';}).join(', ')+
+    (n>6?' and '+(n-6)+' more':'')+'. <a href="#rules">The rule is published</a>.</p>';
+}
+/* The same fact on the receipt, from the count the SERVER returned rather
+   than the one this page predicted — and the one place a creator who never
+   ran the check still reads it. */
+function slateMovementHTML(counts){
+  var c=counts||{},mv=+c.movement||0,fr=+c.first||0;
+  if(!mv)return '';
+  return '<p class="note" style="margin:8px 0 0;border-left:2px solid var(--warn);padding-left:8px">'+
+    '<b style="color:var(--warn)">'+mv+' row'+(mv===1?'':'s')+' landed as '+
+    (mv===1?'a revision':'revisions')+', which does not change the wall.</b> '+
+    'Those games already had a submission from this model, and the Collective grades and shows each model’s '+
+    'first pre-kickoff submission on a game — later ones are stored as movement and never replace it. '+
+    (fr?fr+' row'+(fr===1?'':'s')+' '+(fr===1?'was a first submission and is':'were first submissions and are')+
+        ' on the wall now. '
+      :'No row on this post was a first submission, so the wall is unchanged. ')+
+    'Nothing was lost — the revised numbers are stored against your model and listed in My submissions below. '+
+    'Replacing a posted number is not something an upload can do; <a href="#rules">the rule is published</a>.</p>';
+}
 var BOARD_LEGEND=[
   {k:'Pick',
    short:'the team this model picked, at the line it posted against',
@@ -1087,7 +1185,10 @@ var BOARD_LEGEND=[
    long:'The creator\u2019s own probability that the HOME team wins the game outright \u2014 the moneyline, not the spread. Always the home team, never the team the model picked. Shown only when the creator actually submitted one; the Collective never infers a probability from a spread.'},
   {k:'Age',
    short:'time since that projection reached the Collective',
-   long:'How long ago this particular projection was received, so a number posted an hour ago is not mistaken for one posted last Tuesday. Grading always uses the FIRST pre-kickoff submission on a game, whatever the age shown here.'},
+   long:'How long ago this particular projection was received, so a number posted an hour ago is not mistaken for one posted last Tuesday. Grading always uses the FIRST pre-kickoff submission on a game, whatever the age shown here — so this is that submission’s age, and a <span class="mono">+n</span> beside the pick says how many times the model has posted the game since.'},
+  {k:'+n beside a pick',
+   short:'the model has posted that game again since — the board still shows its first submission',
+   long:'The model has submitted this game more than once. The Collective grades and shows each model’s FIRST pre-kickoff submission and stores every later one as movement, because creators can read each other’s numbers before kickoff and a number that could be replaced after reading the room would not be worth grading. <span class="mono">+2</span> means two further submissions were received and stored. It is not an error and nothing was lost: the board is showing the number that counts, and this says the newer ones arrived.'},
   {k:'Consensus &middot; n=',
    short:'the Collective\u2019s own average across the models that submitted, and how many did',
    long:'The Collective\u2019s own average across the models that submitted a number for that game, with <span class="mono">n</span> being how many. A consensus of two models and a consensus of twenty are different claims, so the count is never hidden.'},
@@ -2312,8 +2413,32 @@ async function renderWall(view){
             +'The pick shown is what the model stated; this line is not trusted until the creator resubmits.';
         }
         var age=fmtAgeShort(mr.received_at);
+        /* HAS THIS MODEL POSTED THIS GAME AGAIN SINCE?
+
+           The board shows — and the Collective grades — the first pre-kickoff
+           submission. That is the anti-anchoring rule and it is not up for
+           negotiation. But the board said nothing whatever about later ones,
+           so a creator who re-uploaded a corrected slate came here and found
+           the numbers they had just replaced, under an age of "8d", with no
+           evidence anywhere on the page that the Collective had received the
+           new ones. There is exactly one way to read that from the outside,
+           and every creator who has hit it read it that way: my upload is
+           broken. It is the most expensive misreading this page can produce,
+           because the thing it makes people stop doing is posting.
+
+           The count is already on the wire and already rendered in the model
+           page's game log — but only for games that have FINISHED, which is
+           the one time nobody is asking. It belongs here, on the upcoming
+           game, where the question is actually being asked. */
+        var revN=Number(mr.movement_n||0);
+        var rev=revN>1
+          ? '<sup class="rev" title="'+esc('This model has posted '+revN+' submissions on this game. '
+              +'The board shows the first pre-kickoff one, because that is the one the Collective grades — '
+              +'later revisions are stored as movement and never replace it. The newer numbers were '
+              +'received and stored; they do not move the board.')+'">+'+(revN-1)+'</sup>'
+          : '';
         lines+='<div class="gb-row"'+(lead?' title="'+esc(lead)+'"':'')+'>'+who+
-          '<span class="num pk" title="'+esc(pkT)+'">'+pk+(mr.late?' <span style="color:var(--warn)">LATE</span>':'')+'</span>'+
+          '<span class="num pk" title="'+esc(pkT)+'">'+pk+rev+(mr.late?' <span style="color:var(--warn)">LATE</span>':'')+'</span>'+
           '<span class="mline'+(bad?' bad':'')+'" title="'+esc(mlTitle)+'">'+mlTxt+(bad?' <b>!</b>':'')+'</span>'+
           (bad?'<span class="dmkt" title="'+esc(mlTitle)+'">-</span>':deltaCell(ml,mktSpreadW,g))+
           '<span class="num win"'+(p?' title="'+esc(p.t)+'"':'')+'>'+(p==null?'-':p.txt)+'</span>'+
@@ -4884,7 +5009,28 @@ function slateAlignToSchedule(games,rows){
        cannot make unique can no longer misfile it. */
     var hit=slateMatchRow(games,c);
     if(hit){
-      if(hit.game_id&&!c.game_ref)c.game_ref=hit.game_id;
+      /* ADOPT THE SCHEDULE'S OWN ID. The paragraph above calls this "the part
+         that matters", and it had never once happened: the guard was
+         `!c.game_ref`, and slateBuildRows gives EVERY row a ref — the file's
+         own id when it has one, and otherwise a ref synthesised from the
+         file's ROW NUMBER (`R7_UMASS_RUTGERS`). So the condition was false on
+         every row of every slate ever posted and the id was always dropped.
+
+         What that cost is the thing creators kept reporting. A row's identity
+         on the wire was its POSITION IN A SPREADSHEET, so the same game
+         re-exported with one more game above it arrived under a different
+         ref, and a corrected slate could not be lined up against the one it
+         was correcting. Now a row that matched a scheduled game is identified
+         by that game, which is stable across re-exports, re-orderings and
+         renames alike.
+
+         The file's own id still wins when it has one: it is the creator's,
+         the export carries real ones (`2026_01_NE_SEA`), and it is what makes
+         quarantine resolvable on the admin side. Only a ref this page
+         synthesised is replaced — a file id that happens to look synthesised
+         keeps its own, which is exactly today's behaviour. */
+      if(hit.game_id&&SLATE_SYNTH_REF.test(String(c.game_ref||'')))c.game_ref=hit.game_id;
+      else if(hit.game_id&&!c.game_ref)c.game_ref=hit.game_id;
       ['home_team','away_team'].forEach(function(f){
         var want=f==='home_team'?hit.home:hit.away;
         if(want&&want!==c[f]){
@@ -5209,6 +5355,11 @@ function slateKick(v,tz){
   var d=new Date(s);
   return isNaN(d.getTime())?null:d.toISOString();
 }
+/* A row ref THIS PAGE invented, told apart from one the creator's file
+   supplied. Only the invented kind is replaced by the schedule's own game id
+   in slateAlignToSchedule — a creator's id is theirs and is never overwritten.
+   The two places must agree on the shape, so it is written down once. */
+var SLATE_SYNTH_REF=/^R\d+_/;
 function slateBuildRows(season,week){
   var coverWithheld=0;
   var out=[],problems=[];
@@ -6300,8 +6451,17 @@ async function renderCreatorDash(view,me){
          said NFL. */
       SLATE.autoPick=slateAutoSelectModel();
       var wkSport=slateSportCode();
+      /* The week the FILE states wins over whatever the box is still holding
+         from the last upload. The guard here was `!$('slWeek').value` — true
+         only on the first upload of a session — so every slate after it kept
+         the previous slate's week: upload week 1, then upload week 2, and week
+         2 is posted as week 1, matched against week 1's schedule, and either
+         quarantines or lands on the wrong week's board. The comment above has
+         said to clear it since it was written; nothing ever did. A week the
+         creator picks BY HAND after the file loads is untouched — this runs
+         only when a new file is read. */
       if(SLATE.multiWeek&&$('slWeek')&&$('slWeek').value)$('slWeek').innerHTML=weekOptions(null,wkSport);
-      if(wk!==null&&!SLATE.multiWeek&&$('slWeek')&&!$('slWeek').value)$('slWeek').innerHTML=weekOptions(wk,wkSport);
+      if(wk!==null&&!SLATE.multiWeek&&$('slWeek'))$('slWeek').innerHTML=weekOptions(wk,wkSport);
       SLATE.detectedWeek=SLATE.multiWeek?null:wk;
       slatePaintScan();
       slatePaintMap();$('slGo').disabled=true;
@@ -6593,6 +6753,21 @@ async function renderCreatorDash(view,me){
        The last one is the useful one: it names the spellings that will fail
        while there is still time to fix them. */
     async function slatePreflight(sportCode,season,week){
+      /* THE ALIGNMENT DICTIONARY BELONGS TO THIS PRE-FLIGHT, AND ONLY THIS ONE.
+
+         It was assigned once, further down, and never cleared. Every path that
+         returns before that point — the account has no model for this sport,
+         the backend does not list the sport, the games call itself failed —
+         left the PREVIOUS slate's schedule sitting in it. And slateSend aligns
+         against whatever is in it, unconditionally, right before posting.
+
+         So a creator who posted an NFL slate and then a college one had their
+         college team names rewritten onto NFL spellings by a dictionary for
+         the wrong sport, in the same tab, with the receipt reporting the
+         renames as if they were corrections. Cleared before anything can
+         return, and refilled only from a list actually fetched for this sport,
+         season and week. */
+      SLATE.serverGames=null;
       var fam=sportFamily(sportCode);
       var known=(mMeta&&mMeta.sports)||[];
 
@@ -6959,7 +7134,21 @@ async function renderCreatorDash(view,me){
           }).join('; ')+'. Left as written rather than guessed at.</p>';
       }
 
-      $('slOut').innerHTML=pfHtml+alignHtml+
+      /* WHICH OF THESE GAMES WILL NOT MOVE THE BOARD, said BEFORE the post
+         rather than discovered on the wall afterwards. The pre-flight has
+         just fetched this week's games and they carry each model's rows, so
+         the answer is already in hand and costs no request. On a dry run this
+         is the whole point of running one: a creator re-posting a corrected
+         slate finds out here that the correction is stored as movement, and
+         decides knowing that, instead of reading "Your slate is in" and then
+         finding last week's numbers still on the wall. */
+      var revHtml='';
+      try{
+        if(SLATE.serverGames&&SLATE.serverGames.length)
+          revHtml=slateRevisionHTML(slateRevisionScan(SLATE.serverGames,sendRows,
+            c.slug,selModel&&selModel.model_slug));
+      }catch(e){revHtml='';}
+      $('slOut').innerHTML=pfHtml+alignHtml+revHtml+
         '<p class="note">'+(dry?'Checking':'Posting')+' '+sendRows.length+' games&hellip;</p>';
       wireAddGames(pf,{opts:opts});
       try{
@@ -6974,7 +7163,10 @@ async function renderCreatorDash(view,me){
             (e.say?' <span class="note">&mdash; '+esc(e.say)+'</span>':'')+'</div>';
         }).join('');
         var qc=slateQuarantineCause(r.rows,sendRows);
-        $('slOut').innerHTML=pfHtml+alignHtml+'<div class="panel" style="margin-top:10px;border-color:'+((c2.rejected||0)>0?'rgba(217,154,43,.5)':'rgba(47,180,124,.5)')+'">'+
+        /* The receipt states this from the SERVER's own counts rather than
+           the page's prediction, so revHtml stands down here rather than
+           saying the same thing twice from a weaker source. */
+        $('slOut').innerHTML=pfHtml+alignHtml+(c2.movement?'':revHtml)+'<div class="panel" style="margin-top:10px;border-color:'+((c2.rejected||0)>0?'rgba(217,154,43,.5)':'rgba(47,180,124,.5)')+'">'+
           '<b>'+(dry?'Dry run:':'Posted:')+'</b> <span class="mono">'+(c2.resolved||0)+' matched, '+(c2.first||0)+' first submissions, '+(c2.movement||0)+' revisions, '+(c2.late||0)+' late, '+(c2.quarantined||0)+' quarantined, '+(c2.rejected||0)+' rejected</span>'+
           (lines?'<div style="margin-top:8px;font-size:12px">'+lines+'</div>':'')+
           ((c2.quarantined||0)>0?
@@ -7010,9 +7202,22 @@ async function renderCreatorDash(view,me){
               ? '<p style="margin:8px 0 0"><b style="color:var(--neg)">Nothing was posted.</b> '+
                 'Every row was refused, so the wall is unchanged and there is nothing to undo. '+
                 'The reason is on each line above.</p>'
-              : '<p style="margin:8px 0 0"><b style="color:var(--pos)">Your slate is in.</b>'+
-                ((c2.rejected||0)>0?' <span class="mono">'+(c2.rejected)+'</span> row'+((c2.rejected)===1?'':'s')+' were refused and did not post.':'')+
-                ' <a href="#/'+esc(c.slug)+'">See your profile</a> or <a href="#">the wall</a>.</p>'))+
+              /* "Your slate is in", in green, beside a link to the wall, on a
+                 post where every single row was a revision. It is true that
+                 the rows are in — and it is read as "the wall now shows these
+                 numbers", which is the one thing that post cannot do. A
+                 creator re-posting a corrected week clicked that link and
+                 found the numbers they had just corrected, and reported the
+                 uploader as broken. Same facts, said so they cannot be read
+                 that way. */
+              : ((c2.movement||0)>0&&(c2.first||0)===0
+                ? '<p style="margin:8px 0 0"><b style="color:var(--warn)">Stored as revisions — the wall does not change.</b>'+
+                  ((c2.rejected||0)>0?' <span class="mono">'+(c2.rejected)+'</span> row'+((c2.rejected)===1?'':'s')+' were refused and did not post.':'')+
+                  ' <a href="#/'+esc(c.slug)+'">See your profile</a>.</p>'
+                : '<p style="margin:8px 0 0"><b style="color:var(--pos)">Your slate is in.</b>'+
+                  ((c2.rejected||0)>0?' <span class="mono">'+(c2.rejected)+'</span> row'+((c2.rejected)===1?'':'s')+' were refused and did not post.':'')+
+                  ' <a href="#/'+esc(c.slug)+'">See your profile</a> or <a href="#">the wall</a>.</p>')))+
+          slateMovementHTML(c2)+
           probRejectHTML(r,opts)+
           '</div>';
         wireAddGames(pf,{opts:opts});
@@ -7298,7 +7503,13 @@ function liveFingerprint(games){
           '@'+(r.closing_spread==null?'':r.closing_spread)):'')+':'+
       ((g&&g.models)||[]).map(function(mr){
         var sg=serverGrade(mr);
+        /* The submission COUNT is part of what the board draws now — the +n
+           beside a pick — so it has to be part of what tells the board it has
+           changed. Without it a creator sitting on an open wall re-posts a
+           slate and the page, which is polling, keeps showing a row that says
+           nothing arrived until they reload by hand. */
         return String(mr&&mr.creator_slug)+'/'+String(mr&&mr.model_slug)+
+          (mr&&mr.movement_n?('*'+mr.movement_n):'')+
           (sg&&sg.pick_result?('='+sg.pick_result):'');
       }).sort().join(',');
   }).sort().join('|');
