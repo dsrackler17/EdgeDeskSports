@@ -2593,10 +2593,58 @@ async function renderModel(view,cs,ms){
        the only source that can reach a PREVIOUS season — the sweep below
        covers the current one and is what carries a model the server has
        written no coverage for at all. */
-    var calCal=null,calMl=null,calGames=[];
+    var calCal=null,calMl=null;
+    /* ---- every game this model has played, from wherever it can be found --
+       Two sources, and how they combine is the whole thing.
+
+       The sweep is the shared one the rankings already do: cached, and —
+       critically — already run through enrichFinals, so its games carry the
+       final scores the wire left blank and the Collective's own captured
+       closing lines. The coverage pages are raw: whatever /v1/games
+       returned, which for a finished game is routinely result:null.
+
+       Merged coverage-first, the raw copy of a game won the dedupe and threw
+       the enriched copy away. A model whose coverage table was EMPTY — one
+       the settlement run had not reached — was unaffected and looked fine,
+       which is exactly the case the tests covered; a model with a populated
+       coverage table read "no game of this model's has finished yet" over a
+       slate it had posted 35 games into.
+
+       Three things stop that now, in order of what does the work:
+
+         1. A coverage week is only fetched for a season the sweep does not
+            reach. For the ordinary single-season model that is none of them,
+            so the raw copies never exist to shadow anything — and 25
+            requests re-reading the current season go away with them.
+         2. The merged set is enriched, so a game that IS only reachable
+            through a coverage page (an earlier season, or a sweep that
+            failed) is graded like any other rather than left blank for
+            having been read from the wrong place.
+         3. The sweep is merged FIRST, so if a game ever does arrive twice
+            the enriched copy is the one kept. Redundant while (1) holds,
+            which is the point of it. */
+    var snM=null;
     try{
+      var mAllM=await meta().catch(function(){return null;});
+      ((mAllM&&mAllM.sports)||[]).forEach(function(x){
+        if(sportFamily(x.code)===sportFamily(d.model.sport))snM=x.season;
+      });
+    }catch(_){snM=null;}
+    var sweepM=[];
+    if(snM!=null){
+      try{sweepM=(await seasonGames(d.model.sport,snM))||[];}catch(_){sweepM=[];}
+    }
+    var calGames=[];
+    try{
+      /* Only a season the sweep did not cover. If the sweep came back empty
+         — it failed, or this model predates it — every coverage week is back
+         on the table rather than silently dropped. */
+      var sweepHas=sweepM.length>0;
       var calWeeks=(d.coverage||[]).map(function(c){return {season:c.season,week:c.week};})
-        .filter(function(c){return c.season!=null&&c.week!=null;});
+        .filter(function(c){
+          if(c.season==null||c.week==null)return false;
+          return !sweepHas||snM==null||Number(c.season)!==Number(snM);
+        });
       var seen={};calWeeks=calWeeks.filter(function(c){var k=c.season+'w'+c.week;if(seen[k])return false;seen[k]=1;return true;})
         .sort(function(a,b){return b.season-a.season||b.week-a.week;}).slice(0,25);
       if(calWeeks.length){
@@ -2604,43 +2652,21 @@ async function renderModel(view,cs,ms){
           return api('/v1/games?sport='+encodeURIComponent(d.model.sport)+'&season='+c.season+'&week='+c.week,{auth:true})
             .catch(function(){return null;});
         }));
-        /* those same pages are every game this model has posted, already in
-           hand — so the record and the game log come out of them for free
-           when the settlement run has not produced either yet */
         calPages.forEach(function(pg){if(pg&&pg.games)calGames=calGames.concat(pg.games);});
       }
     }catch(_){calGames=[];}
-    /* ---- every game this model has played, from wherever it can be found --
-       The coverage table was the only source, and it comes from the server:
-       a model the settlement run has not reached yet has an EMPTY coverage
-       list, so this page asked for no weeks, found no games, and rendered a
-       profile with no record and no game log at all — about a model whose
-       whole slate had been played and which the rankings page was ranking
-       at that moment off the very same games.
-
-       So fall back to the season sweep the rankings already do, cached and
-       shared with them, which means the profile and the boards are reading
-       one set of games and cannot disagree about a model's record. The
-       coverage weeks are still merged in: they can name an EARLIER season
-       the sweep does not cover. */
-    var logGames=calGames;
-    try{
-      var mAllM=await meta().catch(function(){return null;});
-      var snM=null;
-      ((mAllM&&mAllM.sports)||[]).forEach(function(x){
-        if(sportFamily(x.code)===sportFamily(d.model.sport))snM=x.season;
-      });
-      if(snM!=null){
-        var sweepM=await seasonGames(d.model.sport,snM).catch(function(){return [];});
-        var seenM={};logGames=[];
-        calGames.concat(sweepM||[]).forEach(function(g){
-          if(!g)return;
-          var k=gameKey(g);
-          if(seenM[k])return;
-          seenM[k]=1;logGames.push(g);
-        });
-      }
-    }catch(_){logGames=calGames;}
+    /* Sweep first: its copies carry the score and the close. */
+    var logGames=[],seenM={};
+    sweepM.concat(calGames).forEach(function(g){
+      if(!g)return;
+      var k=gameKey(g);
+      if(seenM[k])return;
+      seenM[k]=1;logGames.push(g);
+    });
+    /* Whatever came from the coverage pages has been through no grader at
+       all, so give the merged set the same pass every other surface gets.
+       The sweep's games already have theirs and are skipped. */
+    try{await enrichFinals(logGames,d.model.sport,mkt);}catch(_){}
     /* Calibration off the SAME deduped set, for the same reason: computed
        from the coverage pages alone it was empty on exactly the models whose
        coverage the server had not written yet. */
