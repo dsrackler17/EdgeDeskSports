@@ -109,6 +109,11 @@ var NFLWALL=[
    membership:'ACTIVE CONTRIBUTOR',record:null,coverage_pct:100,
    last_submission_at:'2026-09-12T12:00:00Z',monogram:'TD'}
 ];
+/* What the SERVER says this model covered. Empty is the state of a model the
+   settlement run has not reached; a populated list is the ordinary state of
+   one it has, and the two took completely different paths through the model
+   page — so both have to be driven. */
+var MODEL_COVERAGE=[];
 var RANKINGS={thresholds:{min_graded_games:20,min_coverage_pct:60},
   boards:{win_pct:[],margin_mae:[],brier:[]},
   unranked:WALL.map(function(r){return {creator_slug:r.creator_slug,model_name:r.model_name,
@@ -134,7 +139,7 @@ function fakeFetch(url){
     var wr=WALL.filter(function(x){return x.creator_slug===parts[0];})[0]||WALL[0];
     return reply({creator:{slug:wr.creator_slug,display_name:wr.creator_name,founding:!!wr.founding},
       model:{model_slug:wr.model_slug,model_name:wr.model_name,sport:'CFB',description:null},
-      record:null,recent_graded:[],coverage:[],coverage_pct:100});
+      record:null,recent_graded:[],coverage:MODEL_COVERAGE,coverage_pct:100});
   }
   if(u.indexOf('/v1/games')>=0){
     var wk=/[?&]week=(\d+)/.exec(u);
@@ -1289,6 +1294,136 @@ var S=sandbox;
     /class="pgrade"/.test(mod),
     'a settled record and one computed here are different claims');
   S.SEASON_GAMES={};S.LOCALREC={};S.META=null;S.WALLC=null;S.location.hash='';
+
+  /* ---- THE REPORTED BUG, second half ----------------------------------
+     The profile above was driven with an EMPTY server coverage list, which
+     is the state of a model the settlement run has not reached. The ordinary
+     state is the opposite: a POPULATED coverage table — "2026 W1, 35 of 59
+     submitted" — and that took a completely different path through this
+     page and was still broken.
+
+     The coverage weeks are fetched raw from /v1/games, which returns
+     result:null on a finished game. The season sweep fetches the same games
+     and runs them through enrichFinals, so its copies carry the final score
+     and the captured close. Merged coverage-first, the RAW copy won the
+     dedupe and the enriched one was thrown away — so a model that had
+     posted 35 games into a played slate rendered "No game of this model's
+     has finished yet" and "Building sample.".
+
+     Same page, same model, the only difference being what the server says
+     about coverage. */
+  S.SEASON_GAMES={};S.LOCALREC={};S.META=null;S.WALLC=null;S.CLOSING={};S.ESPN_DAYS={};
+  MODEL_COVERAGE=[{season:2026,week:1,games_submitted:35,games_available:59},
+                  {season:2026,week:2,games_submitted:0,games_available:47}];
+  var realFetchC=S.fetch;
+  var coverageWeekAsked=[];
+  S.fetch=function(u){
+    var q=String(u);
+    /* the wire as it actually answers on a finished slate */
+    if(q.indexOf('/v1/games')>=0){
+      if(/[?&]week=/.test(q))coverageWeekAsked.push(q);
+      var wk=/[?&]week=(\d+)/.exec(q);
+      if(wk&&wk[1]!=='1')return reply({games:[],week:+wk[1],entitled:true});
+      var blanked=GAMES.map(function(g){
+        var c=JSON.parse(JSON.stringify(g));c.result=null;return c;
+      });
+      return reply({games:blanked,week:1,entitled:true});
+    }
+    if(q.indexOf('site.api.espn.com')>=0)
+      return Promise.resolve({ok:true,status:200,json:function(){
+        return Promise.resolve({events:[
+          {competitions:[{status:{type:{completed:true}},competitors:[
+            {homeAway:'home',score:'48',team:{displayName:'TCU Horned Frogs'}},
+            {homeAway:'away',score:'14',team:{displayName:'North Carolina Tar Heels'}}]}]},
+          {competitions:[{status:{type:{completed:true}},competitors:[
+            {homeAway:'home',score:'59',team:{displayName:'USC Trojans'}},
+            {homeAway:'away',score:'28',team:{displayName:'San Jose State Spartans'}}]}]}
+        ]});}});
+    if(q.indexOf('/closing/')>=0){
+      /* the Collective's own captured close, by game id */
+      var id=q.split('/closing/')[1].split('?')[0];
+      var byId={'1':-7.5,'2':-38.5};
+      return byId[id]==null?reply({available:false,reason:'no_pregame_capture'})
+                           :reply({available:true,closing_spread:byId[id]});
+    }
+    return realFetchC(u);
+  };
+  var vCov=node();
+  S.location.hash='#/model/blerm/blerm-s-model';
+  await S.renderModel(vCov,'blerm','blerm-s-model');
+  S.fetch=realFetchC;
+  var cov=vCov.innerHTML;
+  chk('a populated coverage table does not hide the finished games',
+    cov.indexOf('No game of this model')<0 && cov.indexOf('Building sample')<0,
+    {sample:cov.slice(cov.indexOf('Every graded game'),cov.indexOf('Every graded game')+260)
+      ||cov.slice(0,260)});
+  chk('the enriched copy of a game wins the merge, not the raw one',
+    (cov.match(/data-res="(win|loss|push)"/g)||[]).length===2,
+    {rows:(cov.match(/data-res="[a-z]*"/g)||[])});
+  chk('and it is graded against the captured close, so it has a record',
+    /-7\.5/.test(cov)&&/-38\.5/.test(cov)&&/>WIN<|>LOSS</.test(cov),
+    {ats:(/Against the spread[\s\S]{0,200}/.exec(cov)||[])[0]});
+  chk('the current season is not re-fetched week by week behind the sweep',
+    coverageWeekAsked.length===0,
+    {asked:coverageWeekAsked});
+  MODEL_COVERAGE=[];
+  S.SEASON_GAMES={};S.LOCALREC={};S.META=null;S.WALLC=null;S.CLOSING={};S.ESPN_DAYS={};
+  S.location.hash='';
+
+  /* ---- and when the sweep is the thing that fails ----------------------
+     The season sweep is one fetch, and one fetch can fail. Then the coverage
+     weeks are the only source left — and they are raw, straight off
+     /v1/games, which answers result:null on a finished game. So the merged
+     set gets the same grading pass every other surface on this site gets,
+     rather than being the one path where a finished game is left ungraded
+     because of where it happened to be read from. */
+  S.SEASON_GAMES={};S.LOCALREC={};S.META=null;S.WALLC=null;S.CLOSING={};S.ESPN_DAYS={};
+  MODEL_COVERAGE=[{season:2026,week:1,games_submitted:35,games_available:59}];
+  var realFetchS=S.fetch;
+  S.fetch=function(u){
+    var q=String(u);
+    if(q.indexOf('/v1/games')>=0){
+      /* the sweep's own head call comes back with nothing */
+      if(!/[?&]week=/.test(q))return reply({games:[],entitled:true});
+      var wk=/[?&]week=(\d+)/.exec(q);
+      if(wk[1]!=='1')return reply({games:[],week:+wk[1],entitled:true});
+      return reply({games:GAMES.map(function(g){
+        var c=JSON.parse(JSON.stringify(g));c.result=null;return c;
+      }),week:1,entitled:true});
+    }
+    if(q.indexOf('site.api.espn.com')>=0)
+      return Promise.resolve({ok:true,status:200,json:function(){
+        return Promise.resolve({events:[
+          {competitions:[{status:{type:{completed:true}},competitors:[
+            {homeAway:'home',score:'48',team:{displayName:'TCU Horned Frogs'}},
+            {homeAway:'away',score:'14',team:{displayName:'North Carolina Tar Heels'}}]}]},
+          {competitions:[{status:{type:{completed:true}},competitors:[
+            {homeAway:'home',score:'59',team:{displayName:'USC Trojans'}},
+            {homeAway:'away',score:'28',team:{displayName:'San Jose State Spartans'}}]}]}
+        ]});}});
+    if(q.indexOf('/closing/')>=0){
+      var id=q.split('/closing/')[1].split('?')[0];
+      var byId={'1':-7.5,'2':-38.5};
+      return byId[id]==null?reply({available:false,reason:'no_pregame_capture'})
+                           :reply({available:true,closing_spread:byId[id]});
+    }
+    return realFetchS(u);
+  };
+  var vFall=node();
+  S.location.hash='#/model/blerm/blerm-s-model';
+  await S.renderModel(vFall,'blerm','blerm-s-model');
+  S.fetch=realFetchS;
+  var fall=vFall.innerHTML;
+  chk('with the sweep empty the coverage weeks still carry the games',
+    fall.indexOf('No game of this model')<0&&fall.indexOf('Building sample')<0,
+    {sample:fall.slice(0,240)});
+  chk('and games read only from coverage are graded like any others',
+    (fall.match(/data-res="(win|loss|push)"/g)||[]).length===2
+      &&/>WIN<|>LOSS</.test(fall)&&/-7\.5/.test(fall),
+    {rows:(fall.match(/data-res="[a-z]*"/g)||[])});
+  MODEL_COVERAGE=[];
+  S.SEASON_GAMES={};S.LOCALREC={};S.META=null;S.WALLC=null;S.CLOSING={};S.ESPN_DAYS={};
+  S.location.hash='';
 
   /* ---- getting there ---------------------------------------------------
      The rankings named every model and linked to none of them: a row went

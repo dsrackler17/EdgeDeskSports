@@ -18,6 +18,11 @@ on:
       - 'collective/index.html'
       - 'collective/embed.js'
       - 'collective/admin.html'
+      # The page's own suites now RUN here, so a change to one of them has to
+      # be able to trigger the job that runs it. Without these two lines a PR
+      # touching only a test file went green without executing it.
+      - 'collective/tests.js'
+      - 'collective/tests_render.js'
       - 'tools/collective/**'
       - '.github/workflows/collective-tests.yml'
   pull_request:
@@ -27,6 +32,11 @@ on:
       - 'collective/index.html'
       - 'collective/embed.js'
       - 'collective/admin.html'
+      # The page's own suites now RUN here, so a change to one of them has to
+      # be able to trigger the job that runs it. Without these two lines a PR
+      # touching only a test file went green without executing it.
+      - 'collective/tests.js'
+      - 'collective/tests_render.js'
       - 'tools/collective/**'
       - '.github/workflows/collective-tests.yml'
   workflow_dispatch:
