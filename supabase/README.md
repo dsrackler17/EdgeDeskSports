@@ -84,6 +84,29 @@ Reversible at every step. Rolling back is
 `update collective.projections set superseded_at = null` — every row is still
 there, which is the point of doing it this way.
 
+## `functions/collective_public.PATCH.md` — four fixes to the live function
+
+Separate from the migration, and applicable on their own today. From reading
+the deployed `collective_public` bundle:
+
+1. **`/v1/games` carries no `sport` and no `week`.** The `collective_embed`
+   copy of the same "shared" `buildGames` carries both; this one drifted. It is
+   why `collective/index.html` works around `Wundefined` on the model page.
+2. **One row per model per game, and a real `movement_n`.** The function maps
+   every row `board_models` returns and has no opinion of its own, so the site's
+   new `+n` marker renders only if that view happens to expose the column. The
+   patch states the rule in the function, counts submissions when it sees them,
+   falls back to the view when it does not, and filters `superseded_at` — inert
+   until the migration lands, so deploy order stays free.
+3. **The free-tier hole.** `isEntitled` still returns `true` for any signed-in
+   account while billing is off. `collective_embed` lists this as its own
+   defect 3 and removed it, so the embed and the site now disagree about the
+   same reader. **Read that patch before applying it** — closing it is a
+   product decision about who sees pre-kickoff numbers today.
+4. **`?season=` empties the board.** `""` survives `??`, `Number("")` is `0`,
+   `0` is finite — so the season becomes 0, nothing matches, and the response is
+   a valid empty board with no error. The site builds exactly that URL.
+
 ## What the client already does
 
 No client change is needed for this to work, and none is included here.
