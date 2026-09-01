@@ -4581,6 +4581,13 @@ function teamFormRows(e){
 function mMatch(s){var n=(s||'').toLowerCase().replace(/[^a-z0-9]/g,'');return n.indexOf('athletics')>=0?'athletics':n;}
 function modelKey(ev,market,sel,point){
   if(market==='totals')return ev+'|totals|'+(((sel||'').toLowerCase().indexOf('over')>=0)?'over':'under')+'|'+(point==null?'':point);
+  /* spreads is a distinct market on the same team as the moneyline: model_predict
+     writes NFL/WNBA rows as market='spreads', selection=<team>, point=<signed handicap>.
+     Folding it into '|h2h|' (the old default) collided a spread-cover probability with
+     the moneyline price for the same team, fabricating the model overlay/EV shown for
+     that price. Key spreads by their own market AND signed point (as totals keys by
+     point) so a -3.5 model row only matches a -3.5 board price and never a moneyline. */
+  if(market==='spreads')return ev+'|spreads|'+mMatch(sel)+'|'+(point==null?'':point);
   return ev+'|h2h|'+mMatch(sel);
 }
 function modelFor(e){var m=window.MODELP||{};return e&&e.event_id?(m[modelKey(e.event_id,e.market,e.selection,e.point)]||null):null;}
