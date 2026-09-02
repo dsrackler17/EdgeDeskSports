@@ -16807,7 +16807,7 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
   }
   function cleanBoardHTML(scanned,leads,expired,hbTxt){
     return '<div class="dk-clean"><div class="t">✓ Clean board</div>'
-      +'<div class="s">No current market qualifies for stronger action. Capture is live ('+esc(hbTxt)+') and the board agrees with itself.</div>'
+      +'<div class="s">No current market qualifies for stronger action. '+(scanned>0?'Capture is live ('+esc(hbTxt)+') and the board agrees with itself.':'Capture is live ('+esc(hbTxt)+') but has not priced a selection in this window yet.')+'</div>'
       +'<div class="grid">'
       +stat(scanned,'selections scanned','mut')
       +stat(0,'confirmed opportunities','pos')
@@ -16851,7 +16851,7 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
       else if(worth){title=worth+' thing'+(worth===1?'':'s')+' deserve'+(worth===1?'s':'')+' attention.';sub='Ranked by evidence, not by size. Each card says why it is here, what could be wrong, and what to research next.';}
       else{title='Nothing to force right now.';sub='Everything on the desk is a PASS or a research lead. That is the terminal doing its job.';}
       var stats='<div class="dk-stats">'
-        +stat(q.length?worth:0,'worth reviewing',worth?'acc':'mut',"deskGo('queue','')")
+        +stat((q.length&&!hb.red)?worth:0,'worth reviewing',(worth&&!hb.red)?'acc':'mut',"deskGo('queue','')",hb.red?'Nothing is ranked as live while capture is stale':'')
         +stat(h?h.improving:'…','strengthening',h&&h.improving?'pos':'mut',"deskGo('discovery','')",'Edge larger now than when it opened')
         +stat(h?h.steam:'…','market-confirmed moves',h&&h.steam?'pos':'mut',"deskGo('discovery','')",'Price moved toward the side since it opened')
         +stat(h?h.expired:'…','expired',h&&h.expired?'neg':'mut',"deskGo('discovery','')",'Opened above fair, now gone')
@@ -16861,7 +16861,7 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
       if(hb.red)body+='<div class="dk-stale">⛔ Stale board. Nothing below is treated as live. Fix or wait for capture before trusting any price here.</div>';
       else if(hb.amber)body+='<div class="dk-stale amber">⚠ Running behind: last capture '+esc(agoS(hb.hb))+'. Prices may have moved.</div>';
       if(q.length){
-        body+='<div class="dk-h">Primary research queue <span class="n">'+q.length+' of '+scanned+' scanned</span><span class="r">'+(focus?'Focus mode':'Level 1 · tap a card for the evidence')+'</span></div>';
+        body+='<div class="dk-h">'+(hb.red?'Last known queue · stale':'Primary research queue')+' <span class="n">'+q.length+' of '+scanned+' scanned</span><span class="r">'+(focus?'Focus mode':'Level 1 · tap a card for the evidence')+'</span></div>';
         body+=q.map(ucHTML).join('');
       }
       if(!hb.red&&!locked&&!marketStrong){

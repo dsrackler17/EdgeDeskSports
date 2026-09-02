@@ -82,7 +82,7 @@ nav{position:sticky;top:0;z-index:40;background:rgba(11,13,17,.84);backdrop-filt
 .logo .mk{width:10px;height:19px;background:linear-gradient(180deg,var(--obs),var(--exp));border-radius:2px;transform:skewX(-11deg);flex:none}
 .logo small{font-family:'JetBrains Mono',monospace;font-size:8.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--faint);border:1px solid var(--line2);border-radius:11px;padding:2px 8px;font-weight:600}
 .nav-sp{flex:1}
-.nlink{color:var(--dim);font-size:13.5px;font-weight:500;padding:8px 11px;border-radius:7px}
+.nlink{color:var(--dim);font-size:13.5px;font-weight:500;padding:8px 11px;border-radius:7px;white-space:nowrap}
 .nlink:hover{color:var(--text)}
 .btn{font-family:'Inter',sans-serif;font-weight:600;font-size:14px;border-radius:9px;padding:9px 16px;cursor:pointer;border:1px solid transparent;transition:.15s;display:inline-flex;align-items:center;justify-content:center;gap:8px;text-align:center}
 /* Nav buttons must never wrap: the trial copy made two of them two lines tall. */
@@ -832,7 +832,7 @@ section.band.lp-quiet{padding:56px 0}
 .lp-contact a{color:var(--obs);border-bottom:1px solid rgba(92,157,255,.45)}
 .lp-contact a:hover{border-bottom-color:var(--obs)}
 /* the two new nav links go first when the bar tightens, before hideS kicks in */
-@media(max-width:1240px){.nlink.lp-nav{display:none}}
+@media(max-width:1360px){.nlink.lp-nav{display:none}}
 
 /* ---------- motion ---------- */
 .rv{opacity:0;transform:translateY(12px);transition:opacity .6s ease-out,transform .6s ease-out}
