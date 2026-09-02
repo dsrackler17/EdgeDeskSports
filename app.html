@@ -1655,7 +1655,7 @@ button:focus-visible,select:focus-visible,input:focus-visible,a:focus-visible{ou
       <button class="rs-tool" id="rsSavedBtn" onclick="rsToggleSaved()">Saved</button></div>
     <div id="rsSearchWrap" class="rs-srch hide" style="margin-bottom:12px"></div>
     <div id="rsSavedWrap" class="hide" style="margin-bottom:12px"></div>
-    <div class="stseg research-sub" style="margin-bottom:12px"><button data-sub="football" onclick="researchGo('football')">Football</button><button data-sub="ufc" onclick="researchGo('ufc')">UFC</button><button data-sub="wta" onclick="researchGo('wta')">WTA</button><button data-sub="tennis" onclick="researchGo('tennis')">Tennis</button><button data-sub="stats" onclick="researchGo('stats')">Stats</button><button data-sub="props" onclick="researchGo('props')">Props</button><button data-sub="lab" onclick="researchGo('lab')">Lab</button></div>
+    <div class="stseg research-sub" style="margin-bottom:12px"><button data-sub="football" onclick="researchGo('football')">Football</button><button data-sub="ufc" onclick="researchGo('ufc')">UFC</button><button data-sub="tennis" onclick="researchGo('tennis')">Tennis</button><button data-sub="stats" onclick="researchGo('stats')">Stats</button><button data-sub="props" onclick="researchGo('props')">Props</button><button data-sub="lab" onclick="researchGo('lab')">Lab</button></div>
     <!-- CFB (College Football research) -->
     <div id="v-cfb" class="rpanel hide">
     <div class="row-between"><h2 style="margin:0">CFB</h2><span class="spacer"></span><span class="freshness" id="cfbFresh">&mdash;</span><button class="refreshbtn" title="Refresh" onclick="researchRefresh('cfb')">&#8635;</button></div>
@@ -1699,27 +1699,33 @@ button:focus-visible,select:focus-visible,input:focus-visible,a:focus-visible{ou
       <div id="ufcModalCard" style="max-width:580px;margin:24px auto;background:#0f141b;border:1px solid rgba(255,255,255,.12);border-radius:16px;padding:18px;position:relative"></div>
     </div>
     </div>
-    <!-- WTA (research engine) -->
-    <div id="v-wta" class="rpanel hide">
-    <div class="row-between"><h2 style="margin:0">WTA</h2><span class="spacer"></span><span class="freshness" id="wtaFresh">—</span><button class="refreshbtn" title="Refresh" onclick="researchRefresh('wta')">&#8635;</button></div>
+    <!-- TENNIS: the ATP + WTA record (licensed tennis schema) plus the WTA
+         daily research engine (isolated wta schema), one panel, one segment
+         row. The standalone WTA tab was folded in here; its block keeps every
+         id (rsMeta-wta, wtaFresh, wtaBanner, wtaSeg, wtaBody) so the wta
+         module's loader, renderer and state cards are untouched — the tennis
+         panel only owns which block is visible. The two stay separate data
+         sources on purpose: the record is published facts, the engine is a
+         frozen pipeline that grades a slate. -->
+    <div id="v-tennis" class="rpanel hide">
+    <div class="row-between"><h2 style="margin:0">Tennis</h2><span class="spacer"></span><span class="freshness" id="tddFresh">—</span><span class="freshness hide" id="wtaFresh">—</span><button class="refreshbtn" title="Refresh" onclick="tddRefresh()">&#8635;</button></div>
+    <div class="stseg" id="tddTour" style="margin-bottom:10px"><button class="on" onclick="tddSetTour('ATP')">ATP</button><button onclick="tddSetTour('WTA')">WTA</button><button onclick="tddSetTour('RESEARCH')">WTA research</button></div>
+    <div id="tddRecord">
+    <div id="rsMeta-tennis" class="rs-panelwrap"></div>
+    <p class="lede">The tour record for both tours &mdash; rankings, results, surface splits and head-to-head, counted from the matches on file. <b style="color:var(--warn)">Research context, not edges.</b> Every number is a published fact or arithmetic over published facts; no model, no projection and no CLV claim. The WTA research segment is a different thing: that is the daily research engine.</p>
+    <div class="flbanner demo" id="tddBanner">Loading tennis record&hellip;</div>
+    <div class="stseg" id="tddSeg" style="margin-bottom:12px"><button class="on" onclick="tddSetSeg('rankings')">Rankings</button><button onclick="tddSetSeg('results')">Results</button><button onclick="tddSetSeg('players')">Players</button></div>
+    <input class="stsearch" id="tddQ" placeholder="Search a player&hellip;" style="margin-bottom:12px;display:none" oninput="renderTennis()">
+    <div id="tddBody"><div class="empty">Loading&hellip;</div></div>
+    </div>
+    <!-- WTA research engine (was its own tab) -->
+    <div id="tddResearch" class="hide">
     <div id="rsMeta-wta" class="rs-panelwrap"></div>
     <p class="lede">Automated match research, not picks. EdgeDesk asks <b>which matches deserve attention</b>, grades the evidence, and hands the decision back to you. <b style="color:var(--warn)">Research context, not edges.</b> Records are historical; the edge still lives in CLV against Pinnacle.</p>
     <div class="flbanner demo" id="wtaBanner">Loading WTA research…</div>
     <div class="stseg" id="wtaSeg" style="margin-bottom:12px"><button class="on" onclick="wtaSetSeg('research')">Today’s research</button><button onclick="wtaSetSeg('watchlist')">Watchlist</button></div>
     <div id="wtaBody"><div class="empty">Loading…</div></div>
     </div>
-    <!-- TENNIS deep dive (ATP + WTA) — reads the licensed tennis schema.
-         Separate from the WTA tab on purpose: that one is the daily research
-         engine and its own frozen pipeline; this is the historical record. -->
-    <div id="v-tennis" class="rpanel hide">
-    <div class="row-between"><h2 style="margin:0">Tennis</h2><span class="spacer"></span><span class="freshness" id="tddFresh">—</span><button class="refreshbtn" title="Refresh" onclick="researchRefresh('tennis')">&#8635;</button></div>
-    <div id="rsMeta-tennis" class="rs-panelwrap"></div>
-    <p class="lede">The tour record for both tours &mdash; rankings, results, surface splits and head-to-head, counted from the matches on file. <b style="color:var(--warn)">Research context, not edges.</b> Every number is a published fact or arithmetic over published facts; no model, no projection and no CLV claim. The WTA tab is a different thing: that is the daily research engine.</p>
-    <div class="stseg" id="tddTour" style="margin-bottom:10px"><button class="on" onclick="tddSetTour('ATP')">ATP</button><button onclick="tddSetTour('WTA')">WTA</button></div>
-    <div class="flbanner demo" id="tddBanner">Loading tennis record&hellip;</div>
-    <div class="stseg" id="tddSeg" style="margin-bottom:12px"><button class="on" onclick="tddSetSeg('rankings')">Rankings</button><button onclick="tddSetSeg('results')">Results</button><button onclick="tddSetSeg('players')">Players</button></div>
-    <input class="stsearch" id="tddQ" placeholder="Search a player&hellip;" style="margin-bottom:12px;display:none" oninput="renderTennis()">
-    <div id="tddBody"><div class="empty">Loading&hellip;</div></div>
     <div id="tddModal" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.72);overflow-y:auto" onclick="if(event.target===this)tddClosePlayer()">
       <div id="tddModalCard" style="max-width:580px;margin:24px auto;background:#0f141b;border:1px solid rgba(255,255,255,.12);border-radius:16px;padding:18px;position:relative"></div>
     </div>
@@ -3189,6 +3195,11 @@ window.researchGo=function(sub){
      middle segment, Power 4 carries the matchups); old links and saved
      prefs land on Football instead of a hidden panel */
   if(sub==='cfb')sub='football';
+  /* the standalone WTA tab was folded into Tennis the same way (its tour
+     toggle carries ATP record / WTA record / WTA research); old links, search
+     hits and saved prefs land on Tennis with the research segment selected */
+  var tddView=null;
+  if(sub==='wta'){sub='tennis';tddView='RESEARCH';}
   if(!RESEARCH_MODULES[sub])sub='football';
   var prev=RESEARCH_SUB;
   RESEARCH_SUB=sub;
@@ -3200,7 +3211,10 @@ window.researchGo=function(sub){
   plStop();
   try{var _pp=prefs();_pp.lastTab='research';_pp.lastResearchSub=sub;localStorage.setItem('edgedesk_prefs',JSON.stringify(_pp));}catch(_){}
   if(prev!==sub)researchDeactivate(prev);
-  researchActivate(sub,false);
+  /* Tennis activates through its segment switch so the visible block (record
+     or WTA research) is the one that loads; null keeps the current segment */
+  if(sub==='tennis'&&typeof window.tddSetTour==='function')window.tddSetTour(tddView);
+  else researchActivate(sub,false);
   researchSetHash(sub,null,false);
 };
 window.researchRefresh=function(sub){researchActivate(sub,true);};
@@ -9670,9 +9684,10 @@ setInterval(function(){var on=!$('v-edges').classList.contains('hide');if(on&&!L
    run through the same code with a tour switch: there is no second copy of this
    module for the second tour.
 
-   This is the historical RECORD. It is deliberately separate from the WTA tab,
-   which is the daily research engine and its own frozen pipeline — the two
-   answer different questions and are never mixed.
+   This is the historical RECORD. It is deliberately separate from the WTA
+   research engine (the third segment of the same Tennis panel, its own frozen
+   pipeline and its own wta module) — the two answer different questions and
+   are never mixed; the panel only shares the segment row.
 
    Every figure here is a published fact (T0) or a count over published facts
    (T2). No model, no projection, no closing-line claim. The schema refuses to
@@ -9682,7 +9697,11 @@ setInterval(function(){var on=!$('v-edges').classList.contains('hide');if(on&&!L
 async function sbGetTennis(q,signal){return sbFetch(q,{"accept-profile":"tennis"},signal);}
 
 var TDD_TOURS=['ATP','WTA'];
-var TDD={tour:'ATP',
+/* segment row = the two tour records plus the WTA research engine; view is the
+   selected segment, tour is the last RECORD tour so the engine never becomes a
+   tour of its own */
+var TDD_VIEWS=['ATP','WTA','RESEARCH'];
+var TDD={tour:'ATP',view:'ATP',
   ATP:{rank:[],byId:{},matches:[],meta:{},seg:'rankings',at:0,prof:{},state:null,q:''},
   WTA:{rank:[],byId:{},matches:[],meta:{},seg:'rankings',at:0,prof:{},state:null,q:''}};
 function tddT(tour){return TDD[tour||TDD.tour];}
@@ -9715,14 +9734,22 @@ async function loadTennis(force,signal){
     renderTennis();
   }
 }
-window.tddSetTour=function(tour){
-  if(TDD_TOURS.indexOf(tour)<0)return;
-  TDD.tour=tour;
+window.tddSetTour=function(view){
+  if(view==null)view=TDD.view;                 /* researchGo: keep the current segment */
+  if(TDD_VIEWS.indexOf(view)<0)return;
+  var research=(view==='RESEARCH');
+  TDD.view=view;if(!research)TDD.tour=view;
   var b=$('tddTour').querySelectorAll('button');
-  for(var i=0;i<b.length;i++)b[i].classList.toggle('on',TDD_TOURS[i]===tour);
+  for(var i=0;i<b.length;i++)b[i].classList.toggle('on',TDD_VIEWS[i]===view);
+  var rec=$('tddRecord'),rs=$('tddResearch');
+  if(rec)rec.classList.toggle('hide',research);if(rs)rs.classList.toggle('hide',!research);
+  var f1=$('tddFresh'),f2=$('wtaFresh');
+  if(f1)f1.classList.toggle('hide',research);if(f2)f2.classList.toggle('hide',!research);
+  if(research){researchActivate('wta',false);return;}   /* the wta module owns that block */
   researchActivate('tennis',false);            /* loads that tour on first view */
   renderTennis();
 };
+window.tddRefresh=function(){researchRefresh(TDD.view==='RESEARCH'?'wta':'tennis');};
 window.tddSetSeg=function(s){
   var t=tddT();t.seg=s;
   var b=$('tddSeg').querySelectorAll('button');
@@ -9884,6 +9911,7 @@ researchRegister({id:'tennis',label:'Tennis',schema:'tennis',cadenceMs:86400000,
   openEntity:function(id){window.tddOpenPlayer(id);},
   closeEntity:function(){window.tddClosePlayer();},
   entityOpen:function(){var m=$('tddModal');return !!(m&&m.style.display==='block');},
+  deactivate:function(){researchDeactivate('wta');},   /* the engine block lives in this panel */
   /* this module registers after the stage-2 attach pass, so it wires its own
      metadata. It is also the only module whose pipeline publishes a build time,
      so the only one whose freshness SLA can actually be checked. */
