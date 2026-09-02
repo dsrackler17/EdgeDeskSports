@@ -1,0 +1,1097 @@
+/*__EDPRES_START__*/
+/* ============================================================================
+   EdgeDesk PRESENTATION LAYER — "deep engine, simple answer".
+
+   ONE FILE, THREE HOSTS. This exact block is inlined into:
+     - supabase/functions/edgedesk_ai/index.ts   (server: builds `presentation`)
+     - app.html                                   (browser: decision cards, briefs)
+     - brief.html                                 (public share page)
+   tools/presentation/presentation_sync.test.js fails if the copies drift.
+   The canonical source is supabase/functions/edgedesk_ai/_presentation.js.
+
+   THE ONE RULE
+     Nothing here computes, adjusts or overrides a probability, fair price,
+     edge, EV, CLV, confidence, score, max-playable, break-even or verdict.
+     Every one of those arrives from EdgeDesk's deterministic engine and is
+     TRANSLATED into sportsbook language. The American-odds conversion is
+     display-only and is never fed back into anything.
+
+     AI copy (headline / why / watch / change trigger / market read) is
+     OPTIONAL and VALIDATED. When it is missing or rejected, the templated
+     deterministic copy stands. Narration failure never takes the card down.
+   ============================================================================ */
+(function (root, factory) {
+  var api = factory();
+  if (typeof module === 'object' && module && module.exports) module.exports = api;
+  root.EDPRES = api;
+})(typeof globalThis !== 'undefined' ? globalThis : this, function () {
+  'use strict';
+
+  var VERSION = 1;
+  var VERDICTS = ['BET', 'LEAN', 'WAIT', 'PASS'];
+  var VERDICT_RANK = { BET: 0, LEAN: 1, WAIT: 2, PASS: 3 };
+  /* Words publisher copy may never carry. Matched case-insensitively. */
+  var HYPE = /\b(lock|locks|guaranteed?|guarantees|hammer|hammered|can'?t[- ]miss|cannot miss|free money|ai says|our algorithm guarantees|sure thing|slam[- ]dunk|mortal lock|no[- ]brainer|easy money|100% winner)\b/i;
+
+  /* ---------------------------------------------------------------- utils */
+  function esc(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
+  function num(v) { if (v == null || v === '') return null; var n = +v; return isFinite(n) ? n : null; }
+  function isStr(s) { return typeof s === 'string'; }
+  function clean(s) { return String(s == null ? '' : s).replace(/\s+/g, ' ').trim(); }
+  function sentence(s) {
+    s = clean(s);
+    if (!s) return '';
+    s = s.charAt(0).toUpperCase() + s.slice(1);
+    if (!/[.!?]$/.test(s)) s += '.';
+    return s;
+  }
+  function normVerdict(v) {
+    v = String(v == null ? '' : v).toUpperCase().trim();
+    if (v === 'NO BET' || v === 'NO SIGNAL') return 'PASS';
+    if (v === 'STRONG SIGNAL') return 'BET';
+    return VERDICTS.indexOf(v) >= 0 ? v : null;
+  }
+  function toMs(t) {
+    if (t == null || t === '') return null;
+    if (typeof t === 'number') return isFinite(t) ? t : null;
+    var ms = Date.parse(String(t));
+    return isFinite(ms) ? ms : null;
+  }
+
+  /* ----------------------------------------------------------- odds (display) */
+  /* Decimal -> American. DISPLAY ONLY. The result is never fed back into an
+     edge, EV or fair-price calculation — the engine keeps its own numbers. */
+  function decToAmerican(dec) {
+    var d = num(dec);
+    if (d == null || d <= 1) return null;
+    return d >= 2 ? Math.round((d - 1) * 100) : Math.round(-100 / (d - 1));
+  }
+  function fmtAmerican(am) {
+    var a = num(am);
+    if (a == null) return null;
+    a = Math.round(a);
+    return (a > 0 ? '+' : '') + a;
+  }
+  /* Sportsbook-native selection: "Texas Tech -3.5", "Over 47.5", "Chiefs ML". */
+  function selectionLabel(market, selection, point) {
+    var m = String(market == null ? '' : market).toLowerCase().trim();
+    var s = clean(selection);
+    if (!s) return null;
+    var p = num(point);
+    if (m === 'totals' || m === 'total') {
+      var side = /^over/i.test(s) ? 'Over' : /^under/i.test(s) ? 'Under' : s;
+      return p != null ? side + ' ' + p : side;
+    }
+    if (m === 'spreads' || m === 'spread') {
+      if (p == null) return s;
+      return s + ' ' + (p > 0 ? '+' : '') + p;
+    }
+    if (m === 'h2h' || m === 'ml' || m === 'moneyline') return /\bML$/.test(s) ? s : s + ' ML';
+    return p != null ? s + ' ' + p : s;
+  }
+  function marketLabel(market) {
+    var m = String(market == null ? '' : market).toLowerCase().trim();
+    if (m === 'h2h' || m === 'ml' || m === 'moneyline') return 'Moneyline';
+    if (m === 'spreads' || m === 'spread') return 'Spread';
+    if (m === 'totals' || m === 'total') return 'Total';
+    return market == null ? null : String(market);
+  }
+
+  /* --------------------------------------------------- language translation */
+  /* Internal terminology -> what an intelligent sportsbook bettor would say.
+     Applied ONLY to simple/publisher copy. Full Research keeps the precise
+     terms. Longest phrases first so "sharp fair" is not half-replaced. */
+  var TERMS = [
+    ['pinnacle de-vig fair', 'the sharper market’s fair line'],
+    ['pinnacle (sharp reference)', 'the sharper market'],
+    ['sharp reference', 'sharper market'],
+    ['sharp-confirmed', 'confirmed by the sharper market'],
+    ['sharp confirmation', 'confirmation from the sharper market'],
+    ['sharp fair', 'sharper market fair line'],
+    ['sharp print', 'quote from the sharper market'],
+    ['consensus fair', 'the average fair line across books'],
+    ['max-playable', 'good to'],
+    ['max playable', 'good to'],
+    ['market residual', 'the move beyond what the opening difference normally explains'],
+    ['data integrity warning', 'some of the underlying data needs verification'],
+    ['evidence integrity', 'data check'],
+    ['calibration', 'how similar EdgeDesk signals have held up'],
+    ['market edge', 'the current price is better than the sharper market suggests'],
+    ['closing line value', 'closing line value'],
+    ['de-vigged', 'fair'],
+    ['de-vig', 'fair'],
+    ['falsifier', 'what would break the case'],
+    ['thesis', 'case'],
+    ['pinnacle', 'the sharper market'],
+    ['clv', 'closing line value'],
+    ['ev', 'expected value']
+  ];
+  function translate(term) {
+    var t = clean(term).toLowerCase();
+    for (var i = 0; i < TERMS.length; i++) if (TERMS[i][0] === t) return TERMS[i][1];
+    return term;
+  }
+  function translateText(text) {
+    var s = clean(text);
+    if (!s) return s;
+    for (var i = 0; i < TERMS.length; i++) {
+      var from = TERMS[i][0], to = TERMS[i][1];
+      var re = new RegExp('(^|[^a-z0-9])' + from.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '(?=$|[^a-z0-9])', 'gi');
+      s = s.replace(re, function (m, pre) { return pre + to; });
+    }
+    return s;
+  }
+
+  /* Engine reasons are precise strings; each known shape gets a plain
+     sentence. Unknown ones fall through the dictionary. */
+  var REASON_MAP = [
+    [/^([+-]?[\d.]+%) estimated edge vs (.+)$/i, function (m) { return 'The price is ' + m[1].replace(/^\+/, '') + ' better than ' + translateText(m[2]) + '.'; }],
+    [/pinnacle \(sharp reference\) is quoting this side/i, 'The sharper market is quoting the same side.'],
+    [/best price is at a us-regulated book/i, 'The best price is at a US-regulated book.'],
+    [/^(\d+) books? behind the fair line$/i, function (m) { return m[1] + ' books stand behind the fair line.'; }],
+    [/corroborated across (\d+) sharp level/i, function (m) { return 'The number is corroborated at ' + m[1] + ' sharp level' + (m[1] === '1' ? '' : 's') + '.'; }],
+    [/beat the close \(clv ([^)]+)\)/i, function (m) { return 'This signal already beat the closing line (' + m[1] + ').'; }],
+    [/best price is offshore/i, 'The best price is at an offshore book, which is less reliable.'],
+    [/only (\d+) books? quot/i, function (m) { return 'Only ' + m[1] + ' book' + (m[1] === '1' ? ' is' : 's are') + ' quoting the fair line.'; }],
+    [/priced (\d+)m ago .*verify/i, function (m) { return 'The price is ' + m[1] + ' minutes old. Check it is still live.'; }],
+    [/stale: last re-priced (\d+)m ago/i, function (m) { return 'The price is stale: last updated ' + m[1] + ' minutes ago.'; }],
+    [/edge this large on a game line is often a stale/i, 'An edge this large is often a stale or wrong price. Confirm it before trusting it.'],
+    [/over half the detection edge has already decayed \((\d+)% remains\)/i, function (m) { return 'Most of the original edge is gone. ' + m[1] + '% remains.'; }],
+    [/no sharp \(pinnacle\) confirmation on this exact side/i, 'The sharper market is not quoting this exact side.'],
+    [/failed to beat the close \(clv ([^)]+)\)/i, function (m) { return 'This signal did not beat the closing line (' + m[1] + ').'; }],
+    [/mlb caveat: lineups are probable/i, 'Lineups are probable, not confirmed. A late scratch moves the number.'],
+    [/price keeps moving against you: (\d+)% .* past (\S+) the ev/i, function (m) { return 'If the price moves past ' + m[2] + ', the edge is gone. ' + m[1] + '% of the original edge remains.'; }],
+    [/pinnacle never prints this side/i, 'The sharper market never quotes this side, so the fair line rests on softer books.'],
+    [/the last capture \((\d+)m ago\) is stale/i, function (m) { return 'The price is ' + m[1] + ' minutes old and the real number may be worse.'; }],
+    [/offshore best price is not actually available/i, 'The offshore price may not be available to you at size.'],
+    [/edge this large is usually a bad or stale line/i, 'An edge this large is usually a bad or stale line. One correction erases it.'],
+    [/late scratch or lineup change moves the number/i, 'A late scratch or lineup change would move the number.'],
+    [/already failed to beat the close/i, 'It already failed to beat the close. The market moved through this number.'],
+    [/nothing structural stands out/i, 'Nothing structural stands out. Size normally rather than pressing.'],
+    [/the edge existed at detection \(([^)]+)\) but the current price has moved to ([^,]+), pulling ev below the ([\d.]+%) floor/i,
+      function (m) { return 'The edge existed at ' + m[1] + ', but the price has moved to ' + m[2] + '. That puts it below EdgeDesk’s ' + m[3] + ' floor.'; }],
+    [/current price is below fair/i, 'The current price is below the fair line, so there is no value at this number.'],
+    [/no fair price available to judge this number against/i, 'EdgeDesk has no fair price on file to judge this number against.'],
+    [/best price is offshore and only (\d+) books?/i, function (m) { return 'The best price is offshore and only ' + m[1] + ' book' + (m[1] === '1' ? '' : 's') + ' quote the fair line. Too thin to trust.'; }],
+    [/last re-priced (\d+)m ago\. treat as stale/i, function (m) { return 'The price was last updated ' + m[1] + ' minutes ago. It needs a fresh capture.'; }],
+    [/clears the bar with real liquidity: ([+-]?[\d.]+%)/i, function (m) { return 'The price is ' + m[1].replace(/^\+/, '') + ' better than fair at a US-regulated book, and the sharper market agrees.'; }],
+    [/positive and qualifying, but with caveats/i, 'The number is positive and qualifies, but with caveats worth reading.'],
+    [/no fair price is on file yet/i, 'No fair price is on file yet, so there is nothing to judge this number against.'],
+    [/qualified on the last number, but it was captured (\d+)m ago/i, function (m) { return 'It qualified on the last number, but that price is ' + m[1] + ' minutes old. A fresh capture has to confirm it is still live.'; }],
+    [/a probable starter is still missing/i, 'A probable starter is still missing for this game. Pitching is the largest input in a baseball number.']
+  ];
+  function plainReason(s) {
+    var t = clean(s);
+    if (!t) return '';
+    for (var i = 0; i < REASON_MAP.length; i++) {
+      var m = t.match(REASON_MAP[i][0]);
+      if (m) { var out = REASON_MAP[i][1]; return typeof out === 'function' ? out(m) : out; }
+    }
+    return sentence(translateText(t.replace(/\s+[—-]\s+/g, '. ')));
+  }
+
+  /* --------------------------------------------------------------- freshness */
+  function ageText(min) {
+    if (min == null || !isFinite(min)) return null;
+    if (min < 1) return 'just now';
+    if (min < 60) return Math.round(min) + ' min ago';
+    var h = min / 60;
+    if (h < 24) return (h < 10 ? (Math.round(h * 10) / 10).toString().replace(/\.0$/, '') : Math.round(h)) + ' h ago';
+    return Math.round(h / 24) + ' d ago';
+  }
+  /* o: { price_at, research_at, now, stale_min (the engine's own limit) } */
+  function freshness(o) {
+    o = o || {};
+    var now = toMs(o.now) != null ? toMs(o.now) : Date.now();
+    var limit = num(o.stale_min) != null && num(o.stale_min) > 0 ? num(o.stale_min) : 90;
+    var pAt = toMs(o.price_at), rAt = toMs(o.research_at);
+    var pAge = pAt != null ? Math.max(0, (now - pAt) / 60000) : (num(o.price_age_min));
+    var rAge = rAt != null ? Math.max(0, (now - rAt) / 60000) : (num(o.research_age_min));
+    var status = pAge == null ? 'UNKNOWN' : pAge >= limit ? 'STALE' : pAge >= limit / 2 ? 'AGING' : 'CURRENT';
+    var warning = status === 'STALE' ? 'This price needs refreshing before it can be used.'
+      : status === 'UNKNOWN' ? 'EdgeDesk cannot tell how old this price is.'
+      : status === 'AGING' ? 'This price is getting old. Check it is still live.' : null;
+    return {
+      status: status,
+      price_age_min: pAge == null ? null : Math.round(pAge * 10) / 10,
+      research_age_min: rAge == null ? null : Math.round(rAge * 10) / 10,
+      price_text: pAge == null ? 'Price age unknown' : 'Price updated ' + ageText(pAge),
+      research_text: rAge == null ? null : 'Research refreshed ' + ageText(rAge),
+      price_captured_at: pAt != null ? new Date(pAt).toISOString() : null,
+      limit_min: limit,
+      warning: warning
+    };
+  }
+
+  /* ---------------------------------------------------------------- playable */
+  /* The playable threshold is a PRICE the engine owns (max_playable). It is
+     never a line threshold, because the engine owns none. */
+  function playable(o) {
+    o = o || {};
+    var v = normVerdict(o.verdict);
+    var maxAm = num(o.max_playable_am), needs = num(o.needs_price_am);
+    var lim = fmtAmerican(maxAm);
+    if (maxAm == null) {
+      return { kind: 'NONE', label: null, limit_odds: null,
+        text: 'EdgeDesk has no fair price on file, so there is no playable limit yet.' };
+    }
+    if (v === 'PASS' && needs != null) {
+      return { kind: 'NEEDS', label: 'Needs ' + fmtAmerican(needs) + ' or better', limit_odds: fmtAmerican(needs),
+        text: 'The current price is past EdgeDesk’s limit. It only becomes a bet again at ' + fmtAmerican(needs) + ' or better.' };
+    }
+    if (v === 'PASS') {
+      return { kind: 'LIMIT', label: 'Limit ' + lim, limit_odds: lim,
+        text: 'EdgeDesk’s limit for this number is ' + lim + '. The current price does not qualify.' };
+    }
+    return { kind: 'GOOD_TO', label: 'Good to ' + lim, limit_odds: lim,
+      text: 'EdgeDesk still likes this at ' + lim + '. Past that number the edge is no longer strong enough.' };
+  }
+
+  /* ------------------------------------------------------------ price status */
+  function priceStatus(o) {
+    o = o || {};
+    var v = normVerdict(o.verdict);
+    var det = num(o.detect_am), cur = num(o.current_am), maxAm = num(o.max_playable_am);
+    var edge = num(o.edge), dEdge = num(o.detect_edge), floor = num(o.floor);
+    var fr = o.freshness || {};
+    if (cur == null) {
+      return { kind: 'NO_PRICE', text: 'No current price is on file for this selection.', was: null, now: null };
+    }
+    var moved = det != null && det !== cur;
+    if (v === 'PASS' && dEdge != null && floor != null && dEdge >= floor && edge != null && edge < floor) {
+      return { kind: 'PAST_LIMIT', was: 'PLAYABLE', now: 'PASS',
+        text: 'Was playable at ' + fmtAmerican(det) + '. Now PASS: the price moved to ' + fmtAmerican(cur) + '.'
+          + (maxAm != null ? ' EdgeDesk’s limit was ' + fmtAmerican(maxAm) + '.' : '') };
+    }
+    if (fr.status === 'STALE') {
+      return { kind: 'STALE', text: 'This price needs refreshing before it can be used.', was: null, now: null };
+    }
+    if (moved) {
+      var inside = maxAm != null && v !== 'PASS';
+      return { kind: 'MOVED', was: fmtAmerican(det), now: fmtAmerican(cur),
+        text: 'Price moved from ' + fmtAmerican(det) + ' to ' + fmtAmerican(cur) + ' since EdgeDesk first flagged it.'
+          + (inside ? ' Still inside the limit of ' + fmtAmerican(maxAm) + '.' : '') };
+    }
+    return { kind: 'HOLDING', was: null, now: fmtAmerican(cur), text: 'The price has held since EdgeDesk flagged it.' };
+  }
+
+  /* ---------------------------------------------------------------- integrity */
+  function integrityStatus(g) {
+    if (!g || !g.verdict) return { status: 'OK', reason: null, known: false };
+    var v = String(g.verdict).toUpperCase();
+    var failed = (g.failed || g.checks || []).filter(function (c) { return c && c.status && String(c.status).toUpperCase() !== 'PASS'; });
+    var first = failed[0];
+    var reason = first ? (String(first.name || '').replace(/_/g, ' ') + ': ' + clean(first.detail)) : (g.summary || g.headline || null);
+    if (reason) reason = translateText(String(reason).slice(0, 260));
+    if (v === 'FAIL') return { status: 'FAILED', reason: reason || 'a data check failed', known: true };
+    if (v === 'WARNING' || v === 'LOCALIZED') return { status: 'PROVISIONAL', reason: reason || 'some of the underlying data needs verification', known: true };
+    return { status: 'OK', reason: null, known: true };
+  }
+
+  /* Availability / data gaps. A missing injury report is NOT "no injuries". */
+  function gapSentences(gaps) {
+    var out = [];
+    (gaps || []).forEach(function (g) {
+      var k = String(g && (g.field || g) || '').toLowerCase();
+      if (!k) return;
+      if (/injur|availab|lineup/.test(k)) out.push('Injury and availability data is not on file. Do not read that as a clean injury report.');
+      else if (/weather/.test(k)) out.push('Weather is not on file for this game.');
+      else if (/quarterback|qb/.test(k)) out.push('The starting quarterback is not confirmed in EdgeDesk’s data.');
+      else if (/starter|pitch/.test(k)) out.push('A probable starter is missing from EdgeDesk’s data.');
+      else out.push(translateText(k.replace(/_/g, ' ')) + ' is not on file.');
+    });
+    var seen = {}, uniq = [];
+    out.forEach(function (s) { if (!seen[s]) { seen[s] = 1; uniq.push(s); } });
+    return uniq;
+  }
+
+  /* ------------------------------------------------------------------ SIMPLE */
+  /* The client packet shape (askAI / EDAI.packetOf) is the contract:
+       { game:{matchup,sport,sport_key,commence,away,home,event_id},
+         market, market_key, selection, selection_raw, point,
+         prices:{detect,current,fair,fair_src,best_seen,max_playable,pinnacle,book,trusted},
+         edge:{detect,current,ev,remaining,floor},
+         confirmation:{has_sharp,n_books,n_books_eff,corrob,book,trusted},
+         timing:{stale_min,last_seen_at,research_at},
+         price_sensitivity:{breakeven,max_playable,needs_price_for_ev},
+         deterministic:{verdict,display_verdict,is_wait,wait_reason,confidence,why,score,band,
+                        reasons_for,reasons_against,falsifiers} }
+     All prices in the packet are ALREADY American (the engine's own display
+     transform). Decimal inputs are accepted too and converted for display. */
+  function simpleFromPacket(p, ctx) {
+    p = p || {}; ctx = ctx || {};
+    var det = p.deterministic || {};
+    var prices = p.prices || {};
+    var ps = p.price_sensitivity || {};
+    var edge = p.edge || {};
+    var conf = p.confirmation || {};
+    var timing = p.timing || {};
+    var game = p.game || {};
+    var now = toMs(ctx.now) != null ? toMs(ctx.now) : Date.now();
+
+    var engineVerdict = normVerdict(det.verdict);
+    var verdict = normVerdict(det.display_verdict) || engineVerdict;
+    var integ = integrityStatus(ctx.integrity || p.integrity || null);
+
+    var curAm = num(prices.current) != null ? num(prices.current) : decToAmerican(prices.current_dec);
+    var detAm = num(prices.detect) != null ? num(prices.detect) : decToAmerican(prices.detect_dec);
+    var fairAm = num(prices.fair) != null ? num(prices.fair) : decToAmerican(prices.fair_dec);
+    var maxAm = num(ps.max_playable) != null ? num(ps.max_playable) : (num(prices.max_playable) != null ? num(prices.max_playable) : decToAmerican(prices.max_playable_dec));
+    var needsAm = num(ps.needs_price_for_ev);
+    var beAm = num(ps.breakeven) != null ? num(ps.breakeven) : fairAm;
+    var book = clean(prices.book || conf.book || '') || null;
+    var trusted = (prices.trusted != null) ? !!prices.trusted : (conf.trusted != null ? !!conf.trusted : null);
+
+    var marketKey = p.market_key || p.market || null;
+    var selectionRaw = p.selection_raw || p.selection || null;
+    var selLabel = p.selection_raw ? selectionLabel(marketKey, selectionRaw, p.point) : (p.selection ? clean(p.selection) : null);
+    if (selLabel && /^(h2h|ml|moneyline)$/i.test(String(marketKey || '')) && !/\bML$/.test(selLabel)) selLabel += ' ML';
+    var mktLabel = marketLabel(marketKey) || (p.market ? String(p.market) : null);
+
+    var priceAt = timing.last_seen_at != null ? toMs(timing.last_seen_at)
+      : (num(timing.stale_min) != null ? now - num(timing.stale_min) * 60000 : null);
+    var fr = freshness({ price_at: priceAt, research_at: timing.research_at || ctx.research_at || null, now: now,
+      stale_min: num(ctx.stale_limit_min) != null ? num(ctx.stale_limit_min) : num(timing.stale_limit_min) });
+
+    var play = playable({ verdict: verdict, max_playable_am: maxAm, needs_price_am: needsAm });
+    var pst = priceStatus({ verdict: verdict, detect_am: detAm, current_am: curAm, max_playable_am: maxAm,
+      edge: edge.current, detect_edge: edge.detect, floor: edge.floor, freshness: fr });
+
+    /* ---- suppression: integrity FAIL never shows a recommendation ---- */
+    var suppressed = false, displayVerdict = verdict;
+    if (integ.status === 'FAILED' && (verdict === 'BET' || verdict === 'LEAN')) { suppressed = true; displayVerdict = 'WAIT'; }
+    if (verdict == null) { displayVerdict = null; }
+
+    var odds = fmtAmerican(curAm);
+    var noPrice = curAm == null;
+
+    /* ---- deterministic copy ---- */
+    var whyRaw = (det.reasons_for || []).slice();
+    var why = [];
+    whyRaw.forEach(function (r) { var s = plainReason(r); if (s && why.indexOf(s) < 0) why.push(s); });
+    if (!why.length && det.why) why.push(plainReason(det.why));
+    /* Strongest drivers only: the engine lists them in priority order. */
+    why = why.slice(0, 3).map(function (t) { return { text: t, source: 'deterministic', evidence_ids: [] }; });
+
+    var gaps = gapSentences(ctx.gaps || p.gaps || []);
+    var against = (det.reasons_against || []).map(plainReason).filter(Boolean);
+    var fals = (det.falsifiers || []).map(plainReason).filter(Boolean);
+    var watchText, changeText;
+    if (displayVerdict === 'WAIT' && (det.is_wait || suppressed)) {
+      watchText = suppressed ? 'EdgeDesk cannot safely publish a decision until ' + (integ.reason || 'the data check passes') + '.'
+        : (det.wait_reason ? plainReason(det.wait_reason) : 'Something still needs to confirm before this is a decision.');
+      changeText = suppressed ? 'A clean data check would restore the decision.'
+        : 'A fresh price capture or a confirmed lineup would resolve this.';
+    } else if (displayVerdict === 'PASS') {
+      watchText = det.why ? plainReason(det.why) : 'EdgeDesk does not see enough value at the current price.';
+      changeText = needsAm != null ? 'It becomes interesting again at ' + fmtAmerican(needsAm) + ' or better.'
+        : (fals[0] || 'A better price would be needed for EdgeDesk to reconsider.');
+    } else {
+      watchText = against[0] || fals[0] || 'Nothing structural stands out.';
+      changeText = fals[0] || 'A worse price would weaken the case.';
+    }
+    /* An actionable call must carry the availability caveat in its own watch
+       line; a PASS or WAIT already leads with a stronger reason, and the gap
+       still shows as a flag on the card. */
+    if (gaps.length && /injur|availab/i.test(gaps[0]) && !/injur/i.test(watchText)
+      && (displayVerdict === 'BET' || displayVerdict === 'LEAN')) watchText = gaps[0] + ' ' + watchText;
+
+    var headline;
+    if (suppressed) headline = 'DATA CHECK FAILED: EdgeDesk cannot safely publish a decision until ' + (integ.reason || 'the data check passes') + '.';
+    else if (displayVerdict == null) headline = 'EdgeDesk has no decision on file for this selection.';
+    else if (noPrice) headline = 'WAIT: no current price is on file for ' + (selLabel || 'this selection') + '.';
+    else if (displayVerdict === 'BET') headline = 'BET: ' + selLabel + ' at ' + odds + '.';
+    else if (displayVerdict === 'LEAN') headline = 'LEAN: ' + selLabel + ' at ' + odds + '. Positive, with caveats.';
+    else if (displayVerdict === 'WAIT') headline = 'WAIT: ' + selLabel + ' at ' + odds + '. Something still needs to confirm.';
+    else headline = 'PASS: EdgeDesk does not see enough value in ' + (selLabel || 'this selection') + ' at ' + odds + '.';
+    if (noPrice && displayVerdict != null && !suppressed) displayVerdict = 'WAIT';
+
+    var flags = [];
+    if (suppressed) flags.push({ kind: 'DATA_CHECK_FAILED', text: 'Data check failed' + (integ.reason ? ': ' + integ.reason : '') });
+    else if (integ.status === 'PROVISIONAL') flags.push({ kind: 'PROVISIONAL', text: 'Provisional' + (integ.reason ? ': ' + integ.reason : ': some of the underlying data needs verification') });
+    if (fr.status === 'STALE') flags.push({ kind: 'STALE_PRICE', text: 'Price needs refreshing (' + fr.price_text.replace(/^Price updated /, '') + ')' });
+    else if (fr.status === 'UNKNOWN' && !noPrice) flags.push({ kind: 'PRICE_AGE_UNKNOWN', text: 'Price age unknown' });
+    if (noPrice) flags.push({ kind: 'NO_PRICE', text: 'No current price on file' });
+    if (book && trusted === false) flags.push({ kind: 'OFFSHORE', text: 'Best price is at an offshore book' });
+    gaps.forEach(function (g) { flags.push({ kind: 'DATA_GAP', text: g.split('. ')[0].replace(/\.$/, '') }); });
+
+    return {
+      version: VERSION,
+      available: displayVerdict != null,
+      verdict: displayVerdict,
+      engine_verdict: engineVerdict,
+      display_verdict: displayVerdict,
+      suppressed: suppressed,
+      headline: headline,
+      selection: selLabel,
+      selection_raw: selectionRaw,
+      market: marketKey,
+      market_label: mktLabel,
+      line: num(p.point),
+      odds: odds,
+      odds_format: 'american',
+      odds_display: odds ? odds + (book ? ' · ' + book : '') : (book ? '— · ' + book : '—'),
+      book: book,
+      book_trusted: trusted,
+      fair_odds: fmtAmerican(fairAm),
+      breakeven_odds: fmtAmerican(beAm),
+      playable_to: play,
+      price_status: pst,
+      why: why,
+      watch: { text: watchText, source: 'deterministic' },
+      change_trigger: { text: changeText, source: 'deterministic' },
+      market_read: { text: marketReadText({ has_sharp: conf.has_sharp, n_books: conf.n_books, corrob: conf.corrob, price_status: pst, book: book, trusted: trusted }), source: 'deterministic' },
+      freshness: fr,
+      integrity_status: integ.status,
+      integrity_reason: integ.reason,
+      flags: flags,
+      gaps: gaps,
+      confidence: det.confidence || null,
+      score: num(det.score),
+      copy_source: 'deterministic',
+      game: {
+        matchup: game.matchup || null, away: game.away || null, home: game.home || null,
+        sport_key: game.sport_key || null, sport_label: game.sport || null,
+        commence: game.commence || null, event_id: game.event_id || null
+      },
+      /* the engine's numbers, verbatim, for Full Research and the internal snapshot */
+      engine: {
+        current_am: curAm, detect_am: detAm, fair_am: fairAm, max_playable_am: maxAm, breakeven_am: beAm,
+        needs_price_am: needsAm, edge: num(edge.current), detect_edge: num(edge.detect), ev: num(edge.ev),
+        remaining: num(edge.remaining), floor: num(edge.floor), has_sharp: conf.has_sharp == null ? null : !!conf.has_sharp,
+        n_books: num(conf.n_books), confidence: det.confidence || null, score: num(det.score), band: det.band || null,
+        why: det.why || null, reasons_for: (det.reasons_for || []).slice(), reasons_against: (det.reasons_against || []).slice(),
+        falsifiers: (det.falsifiers || []).slice(), is_wait: !!det.is_wait, wait_reason: det.wait_reason || null
+      }
+    };
+  }
+
+  function marketReadText(o) {
+    var bits = [];
+    if (o.has_sharp === true) bits.push('The sharper market is quoting the same side.');
+    else if (o.has_sharp === false) bits.push('The sharper market is not quoting this exact side, so the fair line rests on softer books.');
+    var nb = num(o.n_books);
+    if (nb != null) bits.push(nb + ' book' + (nb === 1 ? ' is' : 's are') + ' behind the fair line.');
+    if (o.price_status && o.price_status.kind === 'MOVED') bits.push(o.price_status.text);
+    else if (o.price_status && o.price_status.kind === 'PAST_LIMIT') bits.push(o.price_status.text);
+    if (o.book && o.trusted === false) bits.push('The best price is at an offshore book.');
+    return bits.join(' ') || 'No market read is available for this selection.';
+  }
+
+  /* Board rows (EDAI.buildBoard) carry the same facts under different keys. */
+  function packetFromBoardRow(r) {
+    if (!r) return null;
+    var price = r.price || {}, edge = r.edge || {}, conf = r.confirmation || {}, det = r.deterministic || {};
+    return {
+      game: { matchup: r.game || null, sport: r.sport || null, commence: r.starts || null, event_id: r.event_id || null },
+      market: r.market || null, market_key: r.market_key || r.market || null,
+      selection: r.selection || null, selection_raw: r.selection_raw || null, point: r.point,
+      prices: { detect: price.detection, current: price.current, fair: price.fair, fair_src: price.fair_src,
+        best_seen: price.best_seen, max_playable: price.max_playable, pinnacle: price.pinnacle, book: price.book },
+      edge: { detect: edge.detection, current: edge.current, ev: edge.ev, remaining: edge.remaining, floor: edge.floor },
+      confirmation: { has_sharp: conf.has_sharp, n_books: conf.n_books, n_books_eff: conf.n_books_eff, corrob: conf.corrob, trusted: conf.trusted_book, book: price.book },
+      timing: { stale_min: r.freshness ? r.freshness.stale_min : null },
+      price_sensitivity: { breakeven: price.breakeven, max_playable: price.max_playable, needs_price_for_ev: null },
+      deterministic: { verdict: det.verdict, display_verdict: det.display_verdict, is_wait: det.is_wait, wait_reason: det.wait_reason,
+        confidence: det.confidence, score: det.score, band: det.band, why: det.why,
+        reasons_for: det.reasons_for || [], reasons_against: det.reasons_against || [], falsifiers: det.falsifiers || [] }
+    };
+  }
+
+  /* ------------------------------------------------------------ AI copy gate */
+  /* Which numbers the copy may quote: only the ones the engine owns. */
+  function knownNumbers(simple) {
+    var s = simple || {}, e = s.engine || {};
+    var odds = [s.odds, s.fair_odds, s.breakeven_odds, s.playable_to && s.playable_to.limit_odds,
+      fmtAmerican(e.detect_am), fmtAmerican(e.needs_price_am)].filter(Boolean);
+    var pcts = [e.edge, e.detect_edge, e.ev, e.floor].filter(function (x) { return x != null; }).map(function (x) { return x * 100; });
+    if (e.remaining != null) pcts.push(e.remaining * 100);
+    return { odds: odds, pcts: pcts };
+  }
+  function textOk(text, verdict, known, max) {
+    var t = clean(text);
+    if (!t) return 'empty';
+    if (t.length > (max || 200)) return 'too long';
+    if (HYPE.test(t)) return 'hype';
+    var vm = t.match(/\b(BET|LEAN|WAIT|PASS)\b(?=[:\s.,!])/g);
+    if (vm && verdict) {
+      for (var i = 0; i < vm.length; i++) {
+        if (vm[i] !== verdict && !/would (pass|wait)|not a bet|no bet/i.test(t)) return 'contradicts verdict';
+      }
+    }
+    var oddsIn = t.match(/[+-]\d{3,4}\b/g) || [];
+    for (var j = 0; j < oddsIn.length; j++) if (known.odds.indexOf(oddsIn[j]) < 0) return 'invented price ' + oddsIn[j];
+    var pctIn = t.match(/(\d+(?:\.\d+)?)\s?%/g) || [];
+    for (var k = 0; k < pctIn.length; k++) {
+      var v = parseFloat(pctIn[k]);
+      var hit = known.pcts.some(function (p) { return Math.abs(p - v) < 0.06 || Math.abs(Math.round(p) - v) < 0.5 || Math.abs(Math.round(p * 10) / 10 - v) < 0.06; });
+      if (!hit) return 'invented percentage ' + pctIn[k];
+    }
+    return null;
+  }
+  function validateCopy(copy, simple, opts) {
+    opts = opts || {};
+    var errors = [], out = {};
+    if (!copy || typeof copy !== 'object') return { ok: false, errors: ['no copy'], cleaned: null };
+    var verdict = simple && simple.verdict;
+    var known = knownNumbers(simple);
+    var ids = opts.known_evidence_ids || null;
+    function keep(field, text, max) {
+      var err = textOk(text, verdict, known, max);
+      if (err) { errors.push(field + ': ' + err); return null; }
+      return sentence(text);
+    }
+    if (isStr(copy.headline)) {
+      var h = clean(copy.headline);
+      if (verdict && h.toUpperCase().indexOf(verdict + ':') !== 0 && h.toUpperCase().indexOf(verdict + ' ') !== 0) errors.push('headline: must start with the verdict');
+      else { var hk = keep('headline', h, 160); if (hk) out.headline = hk; }
+    }
+    if (Array.isArray(copy.why)) {
+      var why = [];
+      copy.why.slice(0, 3).forEach(function (w, i) {
+        var text = isStr(w) ? w : (w && w.text);
+        var t = keep('why[' + i + ']', text, 170);
+        if (!t) return;
+        var ev = (w && Array.isArray(w.evidence_ids)) ? w.evidence_ids.filter(function (x) { return isStr(x) && (!ids || ids.indexOf(x) >= 0); }) : [];
+        why.push({ text: t, source: 'ai', evidence_ids: ev });
+      });
+      if (why.length) out.why = why;
+    }
+    ['watch', 'change_trigger', 'market_read', 'plain_english', 'biggest_risk'].forEach(function (f) {
+      if (isStr(copy[f])) { var t = keep(f, copy[f], f === 'plain_english' ? 420 : 240); if (t) out[f] = t; }
+    });
+    return { ok: Object.keys(out).length > 0, errors: errors, cleaned: out };
+  }
+  /* Returns a NEW simple object. The deterministic fields are untouched;
+     only translation/copy fields change, and only when they pass the gate. */
+  function applyAiCopy(simple, copy, opts) {
+    if (!simple) return { simple: simple, accepted: false, rejected: ['no simple'] };
+    var v = validateCopy(copy, simple, opts);
+    var out = JSON.parse(JSON.stringify(simple));
+    if (!v.ok) return { simple: out, accepted: false, rejected: v.errors };
+    var c = v.cleaned;
+    /* A suppressed or price-less card keeps its deterministic headline: the AI
+       may not talk over a data-check failure or a missing price. */
+    if (c.headline && !simple.suppressed && simple.price_status.kind !== 'NO_PRICE') out.headline = c.headline;
+    if (c.why) {
+      /* AI bullets lead; deterministic bullets fill in behind them so a card
+         never gets thinner because one AI bullet was rejected. */
+      var merged = c.why.slice();
+      (simple.why || []).forEach(function (w) {
+        if (merged.length >= 3) return;
+        var dup = merged.some(function (m) { return m.text.toLowerCase() === w.text.toLowerCase(); });
+        if (!dup) merged.push({ text: w.text, source: 'deterministic', evidence_ids: [] });
+      });
+      out.why = merged.slice(0, 3);
+    }
+    if (c.watch && !simple.suppressed) out.watch = { text: c.watch, source: 'ai' };
+    if (c.change_trigger) out.change_trigger = { text: c.change_trigger, source: 'ai' };
+    if (c.market_read) out.market_read = { text: c.market_read, source: 'ai' };
+    if (c.plain_english) out.plain_english = { text: c.plain_english, source: 'ai' };
+    if (c.biggest_risk && !simple.suppressed) out.biggest_risk = { text: c.biggest_risk, source: 'ai' };
+    out.copy_source = 'ai';
+    out.copy_rejections = v.errors;
+    return { simple: out, accepted: true, rejected: v.errors };
+  }
+  /* The model returns prose plus ONE fenced block. Split them. */
+  function parseAiCopyBlock(text) {
+    var s = String(text == null ? '' : text);
+    var re = /```\s*edgedesk_copy\s*\n([\s\S]*?)```/i;
+    var m = s.match(re);
+    if (!m) {
+      var m2 = s.match(/<edgedesk_copy>([\s\S]*?)<\/edgedesk_copy>/i);
+      if (!m2) return { answer: s.trim(), copy: null, error: 'no block' };
+      m = m2;
+    }
+    var copy = null, error = null;
+    try { copy = JSON.parse(m[1]); } catch (e) { error = 'bad json'; }
+    return { answer: s.replace(m[0], '').trim(), copy: copy, error: error };
+  }
+
+  /* -------------------------------------------------------------- explain */
+  var EXPLAIN = {
+    good_to: function (s) {
+      var lim = s.playable_to && s.playable_to.limit_odds;
+      if (!lim) return 'EdgeDesk needs a fair price on file before it can say how far the price stays playable.';
+      if (s.playable_to.kind === 'NEEDS') return 'The price is past EdgeDesk’s limit. If the book offers ' + lim + ' or better, the number qualifies again.';
+      return 'EdgeDesk still likes the bet at ' + lim + '. If the price gets worse than ' + lim + ', the current edge is no longer strong enough.';
+    },
+    verdict: function (s) {
+      if (s.suppressed) return 'A data check failed, so EdgeDesk will not publish a recommendation until it is repaired.';
+      if (s.verdict === 'BET') return 'BET means the price clears EdgeDesk’s bar with real liquidity behind it and the sharper market agrees.';
+      if (s.verdict === 'LEAN') return 'LEAN means the number is positive and qualifies, but with caveats worth weighing.';
+      if (s.verdict === 'WAIT') return 'WAIT means something needed to decide is missing, stale or unconfirmed. It is not a rejection.';
+      if (s.verdict === 'PASS') return 'PASS means EdgeDesk looked and does not see enough value at this price. A calm no is a good answer.';
+      return 'EdgeDesk has no decision on file for this selection.';
+    },
+    price: function (s) {
+      return 'The recommendation is the side AND the price together. ' + (s.selection || 'This side') + ' at ' + (s.odds || 'no price') + ' is the bet; a worse price can turn it into a pass.';
+    },
+    provisional: function (s) {
+      return 'Provisional means some of the underlying data needs verification' + (s.integrity_reason ? ': ' + s.integrity_reason : '') + '. The decision stands but treat it with care.';
+    },
+    freshness: function (s) {
+      return 'Prices move. ' + (s.freshness.price_text || 'Price age unknown') + '. ' + (s.freshness.warning || 'This one is current enough to act on.');
+    },
+    book: function (s) {
+      if (!s.book) return 'EdgeDesk did not record which book is offering this price.';
+      return s.book + ' is the book offering the best price EdgeDesk found.' + (s.book_trusted === false ? ' It is offshore, which is less reliable.' : '');
+    }
+  };
+  function explain(key, simple) {
+    var f = EXPLAIN[key];
+    return f ? f(simple || {}) : null;
+  }
+
+  /* -------------------------------------------------------------- publisher */
+  var PRESETS = {
+    GAME: { title: 'EdgeDesk Game Brief', kicker: null },
+    TNF: { title: 'EdgeDesk Game Brief', kicker: 'Thursday Night Football' },
+    SNF: { title: 'EdgeDesk Game Brief', kicker: 'Sunday Night Football' },
+    MNF: { title: 'EdgeDesk Game Brief', kicker: 'Monday Night Football' },
+    CFB: { title: 'EdgeDesk College Football Brief', kicker: 'College Football' },
+    SLATE: { title: 'EdgeDesk Slate Brief', kicker: null }
+  };
+  function dataCheck(simple) {
+    var s = simple || {};
+    var status, text;
+    if (s.suppressed) { status = 'Data check failed'; text = 'EdgeDesk cannot safely publish a decision until ' + (s.integrity_reason || 'the data check passes') + '.'; }
+    else if (s.freshness && s.freshness.status === 'STALE') { status = 'Needs refresh'; text = 'The price on file is stale. Refresh before publishing a number.'; }
+    else if (s.integrity_status === 'PROVISIONAL') { status = 'Provisional'; text = s.integrity_reason ? 'Some of the underlying data needs verification: ' + s.integrity_reason : 'Some of the underlying data needs verification.'; }
+    else if (s.freshness && s.freshness.status === 'UNKNOWN') { status = 'Provisional'; text = 'EdgeDesk cannot tell how old this price is.'; }
+    else { status = 'Current'; text = 'Prices and research are current as of capture.'; }
+    return { status: status, text: text, price_captured_at: s.freshness ? s.freshness.price_captured_at : null };
+  }
+  function callText(s) {
+    if (!s || !s.available) return 'No decision on file.';
+    if (s.suppressed) return 'DATA CHECK FAILED';
+    var v = s.verdict;
+    var sel = s.selection || 'this selection';
+    if (v === 'PASS') return 'PASS — ' + sel + (s.odds ? ' (' + s.odds + ')' : '');
+    if (v === 'WAIT') return 'WAIT — ' + sel + (s.odds ? ' (' + s.odds + ')' : '');
+    return v + ' — ' + sel + (s.odds ? ' (' + s.odds + ')' : '');
+  }
+  /* Article-ready copy, strictly from the simple object. */
+  function publisher(simple, ctx) {
+    ctx = ctx || {};
+    var s = simple || {};
+    var preset = PRESETS[ctx.preset] ? ctx.preset : 'GAME';
+    var P = PRESETS[preset];
+    var v = s.verdict;
+    var whyLines = (s.why || []).map(function (w) { return w.text; });
+    if (!whyLines.length) whyLines.push(v === 'PASS' ? 'EdgeDesk does not see enough value at the current price.' : 'EdgeDesk’s current research favors this number.');
+    var risk = (s.biggest_risk && s.biggest_risk.text) || (s.watch && s.watch.text) || 'The price could move before kickoff.';
+    var change = (s.change_trigger && s.change_trigger.text) || 'A worse price would change the call.';
+    var goodTo = s.playable_to || {};
+    var market = (s.market_read && s.market_read.text) || '';
+    var lede;
+    if (s.suppressed) lede = 'EdgeDesk is withholding a call on this game until a data check is repaired.';
+    else if (!s.available) lede = 'EdgeDesk has no decision on file for this game.';
+    else if (v === 'BET') lede = 'EdgeDesk’s current research favors ' + s.selection + ' at ' + s.odds + (goodTo.limit_odds ? ', and the number remains playable through ' + goodTo.limit_odds : '') + '.';
+    else if (v === 'LEAN') lede = 'EdgeDesk leans toward ' + s.selection + ' at ' + s.odds + ', with caveats.' + (goodTo.limit_odds ? ' The number stays playable through ' + goodTo.limit_odds + '.' : '');
+    else if (v === 'WAIT') lede = 'EdgeDesk is not ready to call ' + s.selection + ' at ' + s.odds + '. ' + ((s.watch && s.watch.text) || 'Something still needs to confirm.');
+    else lede = 'At the current price, EdgeDesk passes on ' + (s.selection || 'this market') + '.' + (goodTo.kind === 'NEEDS' ? ' It would take ' + goodTo.limit_odds + ' or better to change that.' : '');
+    return {
+      version: VERSION,
+      preset: preset,
+      title: ctx.title || P.title,
+      kicker: ctx.kicker || P.kicker || (s.game && s.game.sport_label) || null,
+      event_label: ctx.event_label || (s.game && s.game.away && s.game.home ? s.game.away + ' at ' + s.game.home : (s.game && s.game.matchup) || null),
+      when_label: ctx.when_label || null,
+      sport_label: ctx.sport_label || (s.game && s.game.sport_label) || null,
+      lede: lede,
+      call: { verdict: s.suppressed ? 'DATA CHECK FAILED' : (v || null), selection: s.selection, odds: s.odds, book: s.book, text: callText(s) },
+      good_to: { label: goodTo.label || null, text: goodTo.text || null, limit_odds: goodTo.limit_odds || null },
+      why: whyLines.slice(0, 3),
+      biggest_risk: risk,
+      change_call: change,
+      market_read: market,
+      data_check: dataCheck(s),
+      freshness_text: s.freshness ? s.freshness.price_text : null,
+      powered_by: 'Powered by EdgeDesk Sports'
+    };
+  }
+
+  /* ----------------------------------------------------------------- slate */
+  function rankCards(cards) {
+    return (cards || []).slice().sort(function (a, b) {
+      var ra = VERDICT_RANK[a.verdict] != null ? VERDICT_RANK[a.verdict] : 9;
+      var rb = VERDICT_RANK[b.verdict] != null ? VERDICT_RANK[b.verdict] : 9;
+      if (ra !== rb) return ra - rb;
+      return (num(b.score) || 0) - (num(a.score) || 0);
+    });
+  }
+  /* mode: 'top' (default, max N BET decisions), 'all' (every BET/LEAN), 'single'. */
+  function slate(cards, opts) {
+    opts = opts || {};
+    var mode = opts.mode || 'top';
+    var max = num(opts.max) != null && num(opts.max) > 0 ? Math.floor(num(opts.max)) : 3;
+    var all = rankCards((cards || []).filter(function (c) { return c && c.available; }));
+    var usable = all.filter(function (c) { return !c.suppressed; });
+    var bets = usable.filter(function (c) { return c.verdict === 'BET' && c.freshness.status !== 'STALE'; });
+    var counts = { bet: 0, lean: 0, wait: 0, pass: 0, failed: 0 };
+    all.forEach(function (c) { if (c.suppressed) counts.failed++; else if (c.verdict === 'BET') counts.bet++; else if (c.verdict === 'LEAN') counts.lean++; else if (c.verdict === 'WAIT') counts.wait++; else counts.pass++; });
+    var picks, watch;
+    if (mode === 'single') { picks = all.slice(0, 1); }
+    else if (mode === 'all') { picks = usable.filter(function (c) { return c.verdict === 'BET' || c.verdict === 'LEAN'; }); }
+    else { picks = bets.slice(0, max); }
+    var picked = {};
+    picks.forEach(function (c) { picked[cardKey(c)] = 1; });
+    /* Never pad. The strongest non-BET research sits underneath, labelled. */
+    watch = all.filter(function (c) { return !picked[cardKey(c)]; }).slice(0, Math.max(max, 3));
+    var noBet = !picks.some(function (c) { return c.verdict === 'BET'; });
+    var bestWatch = watch.filter(function (c) { return c.verdict === 'LEAN' || c.verdict === 'WAIT'; })[0] || null;
+    return {
+      mode: mode, max: max,
+      picks: picks, watch: watch,
+      no_bet: noBet,
+      headline: noBet ? 'NO QUALIFYING BETS' : (picks.length + ' qualifying bet' + (picks.length === 1 ? '' : 's')),
+      counts: counts,
+      best_price_to_watch: bestWatch ? { selection: bestWatch.selection, odds: bestWatch.odds, book: bestWatch.book, verdict: bestWatch.verdict,
+        limit: bestWatch.playable_to && bestWatch.playable_to.label, text: bestWatch.watch && bestWatch.watch.text } : null
+    };
+  }
+  function cardKey(c) {
+    return [c.game && c.game.event_id, c.market, c.selection_raw || c.selection, c.line].join('|');
+  }
+
+  /* -------------------------------------------------------------- snapshot */
+  /* A publisher brief is a SNAPSHOT. It does not change when live odds do.
+     `refresh` returns a NEW snapshot with a higher version; the old one is
+     untouched, and every public price carries its capture timestamp. */
+  function worst(a, b, order) { return order.indexOf(a) >= order.indexOf(b) ? a : b; }
+  function snapshot(o) {
+    o = o || {};
+    var now = toMs(o.now) != null ? toMs(o.now) : Date.now();
+    var cards = (o.cards || []).map(function (c) { return JSON.parse(JSON.stringify(c)); });
+    var preset = PRESETS[o.preset] ? o.preset : (o.report_type === 'SLATE' ? 'SLATE' : 'GAME');
+    var reportType = o.report_type === 'SLATE' ? 'SLATE' : 'GAME';
+    var sl = reportType === 'SLATE' ? slate(cards, { mode: o.mode, max: o.max }) : null;
+    var primary = reportType === 'SLATE' ? (sl.picks.concat(sl.watch)) : cards.slice(0, 1);
+    var pubCards = (reportType === 'SLATE' ? sl.picks : cards.slice(0, 1)).map(function (c, i) {
+      return { rank: i + 1, brief: publisher(c, { preset: preset, event_label: c.game && c.game.away && c.game.home ? c.game.away + ' at ' + c.game.home : (c.game && c.game.matchup) || null, when_label: c.game && c.game.commence ? whenLabel(c.game.commence, o.tz) : null, sport_label: o.sport_label || (c.game && c.game.sport_label) || null }) };
+    });
+    var watchCards = reportType === 'SLATE' ? sl.watch.map(function (c, i) {
+      return { rank: i + 1, brief: publisher(c, { preset: preset, event_label: c.game && c.game.away && c.game.home ? c.game.away + ' at ' + c.game.home : (c.game && c.game.matchup) || null, when_label: c.game && c.game.commence ? whenLabel(c.game.commence, o.tz) : null, sport_label: o.sport_label || null }) };
+    }) : [];
+    var fresh = 'CURRENT', integ = 'OK';
+    primary.forEach(function (c) {
+      fresh = worst(fresh, c.freshness && c.freshness.status || 'UNKNOWN', ['CURRENT', 'AGING', 'UNKNOWN', 'STALE']);
+      integ = worst(integ, c.integrity_status || 'OK', ['OK', 'PROVISIONAL', 'FAILED']);
+    });
+    var prices = primary.map(function (c) {
+      return { event_id: c.game && c.game.event_id, matchup: c.game && c.game.matchup, market: c.market_label, selection: c.selection,
+        line: c.line, odds: c.odds, book: c.book, captured_at: c.freshness && c.freshness.price_captured_at || null };
+    });
+    var eventIds = [];
+    primary.forEach(function (c) { var id = c.game && c.game.event_id; if (id && eventIds.indexOf(id) < 0) eventIds.push(id); });
+    var P = PRESETS[preset];
+    var title = o.title || P.title;
+    var first = cards[0];
+    var eventLabel = o.event_label || (reportType === 'GAME' && first && first.game ? (first.game.away && first.game.home ? first.game.away + ' at ' + first.game.home : first.game.matchup) : null);
+    return {
+      version: VERSION,
+      version_no: num(o.version_no) || 1,
+      parent_key: o.parent_key || null,
+      report_key: o.report_key || (reportType + ':' + preset + ':' + (eventIds.join(',') || 'none')),
+      report_type: reportType,
+      preset: preset,
+      sport: o.sport || (first && first.game && first.game.sport_key) || null,
+      sport_label: o.sport_label || (first && first.game && first.game.sport_label) || null,
+      title: title,
+      kicker: o.kicker || P.kicker || null,
+      event_label: eventLabel,
+      when_label: o.when_label || (reportType === 'GAME' && first && first.game && first.game.commence ? whenLabel(first.game.commence, o.tz) : null),
+      generated_at: new Date(now).toISOString(),
+      event_ids: eventIds,
+      price_snapshot: prices,
+      freshness_status: fresh,
+      integrity_status: integ,
+      public: {
+        cards: pubCards,
+        watch: watchCards,
+        slate: sl ? { headline: sl.headline, no_bet: sl.no_bet, counts: sl.counts, mode: sl.mode, max: sl.max, best_price_to_watch: sl.best_price_to_watch } : null,
+        data_status: publicDataStatus(fresh, integ, prices)
+      },
+      internal: { cards: cards, slate: sl },
+      is_public: false,
+      share_slug: null
+    };
+  }
+  function publicDataStatus(fresh, integ, prices) {
+    var status = integ === 'FAILED' ? 'Data check failed' : fresh === 'STALE' ? 'Needs refresh' : (integ === 'PROVISIONAL' || fresh === 'UNKNOWN') ? 'Provisional' : 'Current';
+    var latest = null;
+    prices.forEach(function (p) { if (p.captured_at && (!latest || p.captured_at > latest)) latest = p.captured_at; });
+    return { status: status, price_captured_at: latest, prices: prices };
+  }
+  function refresh(prev, o) {
+    o = o || {};
+    var next = snapshot({
+      cards: o.cards, report_type: prev.report_type, preset: prev.preset, mode: o.mode || (prev.internal && prev.internal.slate && prev.internal.slate.mode),
+      max: o.max || (prev.internal && prev.internal.slate && prev.internal.slate.max), sport: prev.sport, sport_label: prev.sport_label,
+      title: prev.title, kicker: prev.kicker, event_label: o.event_label || prev.event_label, when_label: o.when_label || prev.when_label,
+      now: o.now, tz: o.tz, version_no: (num(prev.version_no) || 1) + 1, parent_key: prev.report_key, report_key: prev.report_key
+    });
+    return next;
+  }
+  /* Only what is meant to be published. Engine internals never leave. */
+  function publicPayload(snap) {
+    if (!snap) return null;
+    return {
+      version: snap.version, version_no: snap.version_no, report_key: snap.report_key, report_type: snap.report_type, preset: snap.preset,
+      sport: snap.sport, sport_label: snap.sport_label, title: snap.title, kicker: snap.kicker, event_label: snap.event_label,
+      when_label: snap.when_label, generated_at: snap.generated_at, event_ids: snap.event_ids,
+      freshness_status: snap.freshness_status, integrity_status: snap.integrity_status,
+      cards: snap.public.cards, watch: snap.public.watch, slate: snap.public.slate, data_status: snap.public.data_status
+    };
+  }
+  function whenLabel(iso, tz) {
+    var ms = toMs(iso);
+    if (ms == null) return null;
+    try {
+      return new Intl.DateTimeFormat('en-US', { timeZone: tz || 'America/New_York', weekday: 'long', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }).format(new Date(ms)) + ' ET';
+    } catch (e) { return new Date(ms).toUTCString(); }
+  }
+  /* ET calendar facts for primetime resolution. */
+  function etParts(iso, tz) {
+    var ms = toMs(iso);
+    if (ms == null) return null;
+    try {
+      var f = new Intl.DateTimeFormat('en-US', { timeZone: tz || 'America/New_York', weekday: 'short', hour: 'numeric', hour12: false, year: 'numeric', month: '2-digit', day: '2-digit' });
+      var parts = {};
+      f.formatToParts(new Date(ms)).forEach(function (p) { parts[p.type] = p.value; });
+      var wd = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 }[parts.weekday];
+      var hour = parseInt(parts.hour, 10); if (hour === 24) hour = 0;
+      return { weekday: wd, hour: hour, date: parts.year + '-' + parts.month + '-' + parts.day, ms: ms };
+    } catch (e) { var d = new Date(ms); return { weekday: d.getUTCDay(), hour: d.getUTCHours(), date: d.toISOString().slice(0, 10), ms: ms }; }
+  }
+  /* kind: TNF | SNF | MNF. rows carry {sport_key, commence_time}. Picks the
+     next primetime kickoff by ET weekday and a 7pm+ ET start. Nothing is
+     hardcoded: the game is whatever the schedule says it is. */
+  function primetime(rows, kind, opts) {
+    opts = opts || {};
+    var now = toMs(opts.now) != null ? toMs(opts.now) : Date.now();
+    var want = { TNF: 4, SNF: 0, MNF: 1 }[kind];
+    if (want == null) return null;
+    /* Nine days, not seven: the next Thursday game can be a full week plus
+       kickoff-hours away, and a horizon that ends at the same clock time on
+       the seventh day misses an 8:15 pm ET start on the eighth. */
+    var horizon = now + (num(opts.days) || 9) * 86400000;
+    var best = null;
+    (rows || []).forEach(function (r) {
+      if (!r || String(r.sport_key || '').indexOf('americanfootball_nfl') !== 0) return;
+      var p = etParts(r.commence_time || r.commence || r.t, opts.tz);
+      if (!p || p.weekday !== want || p.hour < 19) return;
+      if (p.ms < now - 4 * 3600000 || p.ms > horizon) return;
+      if (!best || p.ms < best.ms) best = { ms: p.ms, row: r, date: p.date };
+    });
+    return best;
+  }
+
+  /* ------------------------------------------------------------ renderers */
+  function whatMeans(key, simple) {
+    var t = explain(key, simple);
+    if (!t) return '';
+    return '<details class="dcard-what"><summary>What does this mean?</summary><p>' + esc(t) + '</p></details>';
+  }
+  /* The 5-second view. opts: { actions:[{label, onclick, primary}], compact, id, show_what } */
+  function cardHTML(s, opts) {
+    opts = opts || {};
+    if (!s) return '';
+    var v = s.suppressed ? 'FAILED' : (s.verdict || 'NONE');
+    var vcls = s.suppressed ? 'dc-failed' : s.verdict === 'BET' ? 'dc-bet' : s.verdict === 'LEAN' ? 'dc-lean' : s.verdict === 'WAIT' ? 'dc-wait' : s.verdict === 'PASS' ? 'dc-pass' : 'dc-none';
+    var vtext = s.suppressed ? 'DATA CHECK FAILED' : (s.verdict || 'NO DECISION');
+    var goodTo = s.playable_to || {};
+    var h = '<article class="dcard ' + vcls + (opts.compact ? ' compact' : '') + '"' + (opts.id ? ' id="' + esc(opts.id) + '"' : '') + ' data-verdict="' + esc(v) + '">';
+    h += '<div class="dcard-hero">'
+      + '<div class="dcard-eyebrow">EdgeDesk says</div>'
+      + '<div class="dcard-verdict">' + esc(vtext) + '</div>'
+      + '<div class="dcard-sel">' + esc(s.selection || '—') + '</div>'
+      + '<div class="dcard-price">' + esc(s.odds_display || '—') + '</div>'
+      + '<div class="dcard-goodto' + (goodTo.kind === 'NEEDS' ? ' needs' : goodTo.kind === 'NONE' ? ' none' : '') + '">'
+      + '<span class="k">' + (goodTo.kind === 'GOOD_TO' ? 'Good to' : goodTo.kind === 'NEEDS' ? 'Needs' : goodTo.kind === 'LIMIT' ? 'Limit' : 'Playable to') + '</span> '
+      + '<b>' + esc(goodTo.kind === 'GOOD_TO' || goodTo.kind === 'LIMIT' ? (goodTo.limit_odds || '—') : goodTo.kind === 'NEEDS' ? goodTo.limit_odds + ' or better' : '—') + '</b>'
+      + '</div>'
+      + '</div>';
+    /* The compact strip shows only what changes the decision at a glance:
+       a failed check, a provisional read, a stale or missing price. Named
+       data gaps stay on the full card, where the watch line explains them. */
+    var flags = (s.flags || []).filter(function (f) { return !opts.compact || f.kind !== 'DATA_GAP'; });
+    if (flags.length) {
+      h += '<div class="dcard-flags">' + flags.map(function (f) {
+        var c = f.kind === 'DATA_CHECK_FAILED' ? 'bad' : (f.kind === 'STALE_PRICE' || f.kind === 'NO_PRICE') ? 'bad' : 'warn';
+        return '<span class="dcard-flag ' + c + '">' + esc(f.text) + '</span>';
+      }).join('') + '</div>';
+    }
+    if (!opts.compact) {
+      h += '<div class="dcard-body">'
+        + '<div class="dcard-head">' + esc(s.headline || '') + '</div>'
+        + '<div class="dcard-h">Why</div><ul class="dcard-why">'
+        + (s.why || []).map(function (w) { return '<li>' + esc(w.text) + '</li>'; }).join('')
+        + '</ul>'
+        + '<div class="dcard-h">' + (s.verdict === 'WAIT' ? 'Waiting on' : s.verdict === 'PASS' ? 'Why pass' : 'Watch') + '</div>'
+        + '<p class="dcard-watch">' + esc(s.watch && s.watch.text || '') + '</p>'
+        + (s.change_trigger && s.change_trigger.text ? '<div class="dcard-h">What would change it</div><p class="dcard-change">' + esc(s.change_trigger.text) + '</p>' : '')
+        + '<div class="dcard-fresh' + (s.freshness && s.freshness.status === 'STALE' ? ' bad' : '') + '">' + esc(s.freshness ? s.freshness.price_text : '') + (s.freshness && s.freshness.research_text ? ' · ' + esc(s.freshness.research_text) : '') + '</div>'
+        + (opts.show_what !== false ? whatMeans('good_to', s) + whatMeans('verdict', s) : '')
+        + '</div>';
+    } else {
+      h += '<div class="dcard-line">' + esc((s.why && s.why[0] && s.why[0].text) || s.headline || '') + '</div>';
+    }
+    if (opts.actions && opts.actions.length) {
+      h += '<div class="dcard-actions">' + opts.actions.map(function (a) {
+        return '<button type="button" class="dcard-btn' + (a.primary ? ' primary' : '') + '" onclick="' + esc(a.onclick) + '">' + esc(a.label) + '</button>';
+      }).join('') + '</div>';
+    }
+    return h + '</article>';
+  }
+
+  function briefCardHTML(pc, opts) {
+    var b = pc.brief, r = pc.rank;
+    var v = b.call.verdict || 'NONE';
+    var vcls = v === 'BET' ? 'dc-bet' : v === 'LEAN' ? 'dc-lean' : v === 'WAIT' ? 'dc-wait' : v === 'PASS' ? 'dc-pass' : 'dc-failed';
+    var h = '<section class="edb-pick ' + vcls + '">';
+    if (opts && opts.numbered) h += '<div class="edb-rank">#' + r + '</div>';
+    if (b.event_label && (opts && opts.showEvent)) h += '<div class="edb-ev">' + esc(b.event_label) + (b.when_label ? ' <span class="edb-when">' + esc(b.when_label) + '</span>' : '') + '</div>';
+    h += '<div class="edb-call"><span class="edb-verdict">' + esc(v === 'DATA CHECK FAILED' ? v : v) + '</span>'
+      + '<span class="edb-sel">' + esc(b.call.selection || '—') + (b.call.odds ? ' (' + esc(b.call.odds) + ')' : '') + '</span></div>';
+    if (b.good_to && b.good_to.label) h += '<div class="edb-goodto">' + esc(b.good_to.label) + '</div>';
+    h += '<div class="edb-h">' + (v === 'PASS' ? 'Why EdgeDesk passes' : v === 'WAIT' ? 'Waiting for' : 'Why EdgeDesk likes it') + '</div><ol class="edb-why">'
+      + b.why.map(function (w) { return '<li>' + esc(w) + '</li>'; }).join('') + '</ol>';
+    h += '<div class="edb-h">The biggest risk</div><p>' + esc(b.biggest_risk) + '</p>';
+    h += '<div class="edb-h">What would change the call</div><p>' + esc(b.change_call) + '</p>';
+    if (b.market_read) h += '<div class="edb-h">Market read</div><p>' + esc(b.market_read) + '</p>';
+    return h + '</section>';
+  }
+  /* The one-page brief. opts: { public:true } strips nothing (the public
+     payload already contains only publishable fields), it only changes chrome. */
+  function briefHTML(snap, opts) {
+    opts = opts || {};
+    if (!snap) return '';
+    var pub = snap.public || snap;   /* accepts a full snapshot or a public payload */
+    var cards = pub.cards || [], watch = pub.watch || [], sl = pub.slate || null, ds = pub.data_status || {};
+    var h = '<article class="edb" data-report="' + esc(snap.report_type || '') + '" data-preset="' + esc(snap.preset || '') + '">';
+    h += '<header class="edb-hd"><div class="edb-brand">EdgeDesk</div><h1 class="edb-title">' + esc(snap.title || 'EdgeDesk Brief') + '</h1>'
+      + (snap.kicker ? '<div class="edb-kicker">' + esc(snap.kicker) + '</div>' : '')
+      + (snap.event_label ? '<div class="edb-event">' + esc(snap.event_label) + '</div>' : '')
+      + (snap.when_label ? '<div class="edb-when">' + esc(snap.when_label) + '</div>' : '')
+      + '</header>';
+    if (snap.report_type === 'SLATE') {
+      h += '<div class="edb-slatehead' + (sl && sl.no_bet ? ' nobet' : '') + '">' + esc(sl ? sl.headline : '') + '</div>';
+      if (sl && sl.no_bet) h += '<p class="edb-nobet">EdgeDesk found no qualifying bet on this slate at current prices. That is a real answer. The strongest research is below, labelled for what it is.</p>';
+      cards.forEach(function (pc) { h += briefCardHTML(pc, { numbered: true, showEvent: true }); });
+      if (watch.length) {
+        h += '<div class="edb-h edb-sec">' + (sl && sl.no_bet ? 'Strongest research (not bets)' : 'Also on the board') + '</div>';
+        watch.forEach(function (pc) { h += briefCardHTML(pc, { numbered: false, showEvent: true }); });
+      }
+      if (sl && sl.best_price_to_watch) {
+        var bp = sl.best_price_to_watch;
+        h += '<div class="edb-h edb-sec">Best price to watch</div><p class="edb-bpw"><b>' + esc(bp.selection || '') + '</b>' + (bp.odds ? ' at ' + esc(bp.odds) : '') + (bp.limit ? ' · ' + esc(bp.limit) : '') + (bp.text ? '. ' + esc(bp.text) : '') + '</p>';
+      }
+    } else {
+      cards.forEach(function (pc) {
+        var b = pc.brief;
+        h += '<div class="edb-h edb-sec">The EdgeDesk call</div>';
+        h += '<p class="edb-lede">' + esc(b.lede) + '</p>';
+        h += briefCardHTML(pc, { numbered: false, showEvent: false });
+      });
+    }
+    h += '<footer class="edb-ft"><div class="edb-h">EdgeDesk data check</div><p><b>' + esc(ds.status || 'Current') + '</b>'
+      + (ds.price_captured_at ? ' · Price captured at ' + esc(fmtStamp(ds.price_captured_at)) : '') + '</p>'
+      + (ds.prices && ds.prices.length > 1 ? '<ul class="edb-prices">' + ds.prices.map(function (p) { return '<li>' + esc(p.selection || '') + (p.odds ? ' ' + esc(p.odds) : '') + (p.book ? ' · ' + esc(p.book) : '') + (p.captured_at ? ' · captured ' + esc(fmtStamp(p.captured_at)) : '') + '</li>'; }).join('') + '</ul>' : '')
+      + '<p class="edb-gen">Generated ' + esc(fmtStamp(snap.generated_at)) + (snap.version_no > 1 ? ' · version ' + snap.version_no : '') + '</p>'
+      + '<p class="edb-powered">Powered by EdgeDesk Sports</p></footer>';
+    return h + '</article>';
+  }
+  function fmtStamp(iso) {
+    var ms = toMs(iso);
+    if (ms == null) return String(iso || '');
+    try { return new Intl.DateTimeFormat('en-US', { timeZone: 'America/New_York', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }).format(new Date(ms)) + ' ET'; }
+    catch (e) { return new Date(ms).toISOString(); }
+  }
+  /* Clean semantic HTML for a CMS paste: headings, paragraphs, lists, no classes. */
+  function briefCmsHTML(snap) {
+    var pub = snap.public || snap, ds = pub.data_status || {};
+    var h = '<h1>' + esc(snap.title || 'EdgeDesk Brief') + '</h1>';
+    if (snap.kicker) h += '<p><strong>' + esc(snap.kicker) + '</strong></p>';
+    if (snap.event_label) h += '<p>' + esc(snap.event_label) + (snap.when_label ? ' · ' + esc(snap.when_label) : '') + '</p>';
+    function pick(pc, numbered) {
+      var b = pc.brief, s = '';
+      if (numbered) s += '<h2>#' + pc.rank + ' ' + esc(b.call.text) + (b.event_label ? ' — ' + esc(b.event_label) : '') + '</h2>';
+      else { s += '<h2>The EdgeDesk call</h2><p><strong>' + esc(b.call.text) + '</strong></p>'; }
+      if (b.good_to && b.good_to.label) s += '<p><strong>' + esc(b.good_to.label) + '</strong></p>';
+      if (!numbered) s += '<p>' + esc(b.lede) + '</p>';
+      s += '<h3>' + (b.call.verdict === 'PASS' ? 'Why EdgeDesk passes' : b.call.verdict === 'WAIT' ? 'Waiting for' : 'Why EdgeDesk likes it') + '</h3><ol>' + b.why.map(function (w) { return '<li>' + esc(w) + '</li>'; }).join('') + '</ol>';
+      s += '<h3>The biggest risk</h3><p>' + esc(b.biggest_risk) + '</p>';
+      s += '<h3>What would change the call</h3><p>' + esc(b.change_call) + '</p>';
+      if (b.market_read) s += '<h3>Market read</h3><p>' + esc(b.market_read) + '</p>';
+      return s;
+    }
+    if (snap.report_type === 'SLATE') {
+      h += '<h2>' + esc(pub.slate ? pub.slate.headline : '') + '</h2>';
+      if (pub.slate && pub.slate.no_bet) h += '<p>EdgeDesk found no qualifying bet on this slate at current prices. The strongest research is below, labelled for what it is.</p>';
+      (pub.cards || []).forEach(function (pc) { h += pick(pc, true); });
+      if ((pub.watch || []).length) { h += '<h2>' + (pub.slate && pub.slate.no_bet ? 'Strongest research (not bets)' : 'Also on the board') + '</h2>'; pub.watch.forEach(function (pc) { h += pick(pc, true); }); }
+    } else {
+      (pub.cards || []).forEach(function (pc) { h += pick(pc, false); });
+    }
+    h += '<h3>EdgeDesk data check</h3><p>' + esc(ds.status || 'Current') + (ds.price_captured_at ? ' · Price captured at ' + esc(fmtStamp(ds.price_captured_at)) : '') + '</p>';
+    h += '<p><em>Powered by EdgeDesk Sports</em></p>';
+    return h;
+  }
+  /* Article-ready plain text. */
+  function briefText(snap) {
+    var pub = snap.public || snap, ds = pub.data_status || {};
+    var L = [];
+    L.push((snap.title || 'EdgeDesk Brief').toUpperCase());
+    if (snap.kicker) L.push(snap.kicker);
+    if (snap.event_label) L.push(snap.event_label + (snap.when_label ? ' · ' + snap.when_label : ''));
+    L.push('');
+    function pick(pc, numbered) {
+      var b = pc.brief;
+      if (numbered) L.push('#' + pc.rank + '  ' + b.call.text + (b.event_label ? '  —  ' + b.event_label : ''));
+      else { L.push('THE EDGEDESK CALL'); L.push(b.call.text); }
+      if (b.good_to && b.good_to.label) L.push(b.good_to.label.toUpperCase());
+      if (!numbered) { L.push(''); L.push(b.lede); }
+      L.push('');
+      L.push(b.call.verdict === 'PASS' ? 'WHY EDGEDESK PASSES' : b.call.verdict === 'WAIT' ? 'WAITING FOR' : 'WHY EDGEDESK LIKES IT');
+      b.why.forEach(function (w, i) { L.push((i + 1) + '. ' + w); });
+      L.push(''); L.push('THE BIGGEST RISK'); L.push(b.biggest_risk);
+      L.push(''); L.push('WHAT WOULD CHANGE THE CALL'); L.push(b.change_call);
+      if (b.market_read) { L.push(''); L.push('MARKET READ'); L.push(b.market_read); }
+      L.push('');
+    }
+    if (snap.report_type === 'SLATE') {
+      L.push(pub.slate ? pub.slate.headline : ''); L.push('');
+      if (pub.slate && pub.slate.no_bet) { L.push('EdgeDesk found no qualifying bet on this slate at current prices. The strongest research is below, labelled for what it is.'); L.push(''); }
+      (pub.cards || []).forEach(function (pc) { pick(pc, true); });
+      if ((pub.watch || []).length) { L.push(pub.slate && pub.slate.no_bet ? 'STRONGEST RESEARCH (NOT BETS)' : 'ALSO ON THE BOARD'); L.push(''); pub.watch.forEach(function (pc) { pick(pc, true); }); }
+    } else {
+      (pub.cards || []).forEach(function (pc) { pick(pc, false); });
+    }
+    L.push('EDGEDESK DATA CHECK');
+    L.push((ds.status || 'Current') + (ds.price_captured_at ? ' · Price captured at ' + fmtStamp(ds.price_captured_at) : ''));
+    L.push(''); L.push('Powered by EdgeDesk Sports');
+    return L.join('\n');
+  }
+
+  return {
+    VERSION: VERSION, VERDICTS: VERDICTS, HYPE: HYPE, PRESETS: PRESETS,
+    esc: esc, num: num, sentence: sentence, normVerdict: normVerdict,
+    decToAmerican: decToAmerican, fmtAmerican: fmtAmerican, selectionLabel: selectionLabel, marketLabel: marketLabel,
+    translate: translate, translateText: translateText, plainReason: plainReason,
+    freshness: freshness, ageText: ageText, playable: playable, priceStatus: priceStatus, integrityStatus: integrityStatus,
+    gapSentences: gapSentences,
+    simpleFromPacket: simpleFromPacket, packetFromBoardRow: packetFromBoardRow,
+    validateCopy: validateCopy, applyAiCopy: applyAiCopy, parseAiCopyBlock: parseAiCopyBlock,
+    explain: explain, publisher: publisher, slate: slate, rankCards: rankCards,
+    snapshot: snapshot, refresh: refresh, publicPayload: publicPayload,
+    whenLabel: whenLabel, etParts: etParts, primetime: primetime, fmtStamp: fmtStamp,
+    cardHTML: cardHTML, briefHTML: briefHTML, briefCmsHTML: briefCmsHTML, briefText: briefText
+  };
+});
+/*__EDPRES_END__*/
