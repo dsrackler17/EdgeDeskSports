@@ -1,125 +1,106 @@
-# Server-side change set: making a correction actually correct
+# Server-side change set: the lock rule
 
 The Edge Functions and SQL for this project live in the Supabase project
 (`iattxbkbufslbauoumga`) and are **not** in this repository — `football/INTEGRATION.md`
 has said so from the start. This directory is not a deployable Supabase project.
-It is the change set for the one server-side gap the client cannot close,
-written down and version-controlled so it is reviewable, applied deliberately,
-and not lost in a chat log.
+It is the change set for the server-side half of a rule the client already
+enforces, written down and version-controlled so it is reviewable, applied
+deliberately, and not lost in a chat log.
 
-## The problem it closes
+## The rule
 
-`collective.projections` is append-only in the database. A trigger refuses any
-`DELETE`:
+**Every game locks 30 minutes before kickoff. Each model's latest live
+submission received before the lock is the one that counts** — the one the
+board shows, the consensus blends and the grader grades. Every earlier
+submission stays stored as movement. A submission received at or after the
+lock is stored, flagged late, and excluded, whoever posts it.
 
-```
-P0001  collective.projections is append-only (rule 8.3); use the service maintenance path
-```
+This replaces the first-submission rule. That rule stopped anyone moving a
+number after reading the room — and it also stopped every creator who fixed a
+mapping, or adjusted for weather, injuries or a line move, from ever correcting
+the wall. Two creators reported the uploader as broken in one week
+("my upload from 5d ago is still showing on the wall"; "tried reuploading but
+no change"). The group decided: the latest upload is the master, and a lock-out
+before kickoff protects the record. The lock is the anti-anchoring rule now.
 
-`collective_ingest`'s `/v1/projections/retract` issues an ordinary PostgREST
-`DELETE`, so it has never once succeeded against this database. The consequence
-a creator sees is that a corrected slate is stored as movement and the wall
-keeps the number it already had — for good.
+Nothing is ever deleted. The store stays append-only, no delete privilege is
+needed anywhere, and the retract endpoint that the append-only trigger has
+always refused no longer has to work for a correction to count.
 
-## What it does not do
+The earlier change set here (`01_supersede.sql`, a 30-minute correction window
+*after* posting plus a maintenance function) is withdrawn. It solved a narrower
+problem with more machinery; this needs no new column.
 
-It does **not** turn re-uploading into open replacement.
+## What the client already does
 
-Creators can read each other's numbers before kickoff. That is the entire
-reason the first pre-kickoff submission is the graded one, and it is the reason
-the record is worth anything. If any number could be revised after seeing the
-others, the record stops being evidence of a model and starts being evidence of
-patience.
+`collective/index.html` ships the rule now, and works against the server as it
+is today:
 
-So supersede is bounded:
+* every `/v1/games` response is collapsed on arrival to one row per model per
+  game — the latest live row received before the lock. A feed that already
+  collapsed passes through unchanged; a feed that returns every row is
+  collapsed on the page. So the wall, the model page, the record and the
+  coverage all agree whether the server has adopted the predicate yet or not;
+* a row received after the lock that the server did not flag is flagged late
+  on the client, on a copy, so it is shown as `LATE` and never graded there;
+* the lock length is read from `/v1/meta` `lock_minutes` when present and is
+  30 otherwise; every surface that states the rule prints that number;
+* the dashboard says, before a post, which games it will replace numbers on
+  and which have already locked; the receipt says the same from the server's
+  own `first` / `movement` / `late` counts; the rules page, the legend, the
+  game header (`LOCKS IN 2H` / `LOCKED`) and the `+n` beside a pick all state
+  the lock rule;
+* `app.html`'s *Sync to Collective (API)* no longer retracts anything: a dry
+  run, one confirmation, and a post.
 
-* a **creator** may supersede their own row inside a correction window
-  (30 minutes, one constant in `01_supersede.sql`) — enough to fix a slate they
-  have just noticed was mapped wrong, and nothing else;
-* an **admin** may supersede any pre-kickoff row through the maintenance path,
-  which is what the trigger's own error message has always pointed at;
-* **nobody** may supersede anything once the game has kicked off.
-
-Widening the window to `infinity` is one line and gives open replacement. It is
-a decision about what the record claims, not a technical one.
-
-Nothing is ever deleted. A superseded row stays in the table, stays auditable,
-and stops counting — so the store is still genuinely append-only and no delete
-privilege is needed anywhere.
+**But the wall is built from what `board_models` returns.** If that view still
+collapses to the first submission, the page never sees the later rows and
+cannot show them. That is the server change below, and it is the one that
+makes a re-upload actually reach the wall.
 
 ## How to apply it
 
 1. **`migrations/00_preflight.sql`** — read-only, changes nothing. Run it in the
-   Supabase SQL editor and keep the output. It reports the real column names,
-   the primary key's type, whether the append-only trigger also fires on
-   `UPDATE`, and every routine that reads `projections`.
+   Supabase SQL editor and keep the output. It reports the real column names
+   on `projections`, `games` and `config`, whether the append-only trigger also
+   fires on `UPDATE`, and every routine and view that reads `projections`.
 
-   These cannot be read from this repository, so `01` leaves them as
-   `>>>PLACEHOLDERS<<<` rather than guessing. A migration that guesses a column
-   name against a live projections table is how a season of picks gets lost.
+2. **`migrations/01_lock_rule.sql`** — fill in the names from step 1, then run.
+   It adds the config key `submission.lock_minutes = 30`, two helper functions
+   (`collective.lock_minutes()`, `collective.lock_at(kickoff)`), and one index.
+   It refuses to run against a schema without `collective.projections`, and
+   every statement is idempotent. At this point nothing has changed for
+   anybody: no reader uses the helpers yet.
 
-2. **`migrations/01_supersede.sql`** — fill in the four names from step 1, then
-   run. It adds two columns, one partial index, and one `security definer`
-   function. It refuses to run against a schema without
-   `collective.projections`, and every statement is idempotent.
+3. **The readers** — section 4 of `01_lock_rule.sql` writes the predicate out
+   once. Apply it to `board_models` (what `/v1/games` reads), the grader /
+   settlement run, consensus and the coverage counts. In words: *the latest
+   live row per model per game with `received_at < lock_at(kickoff)`*, and
+   `movement_n` counted over all of that model's rows on the game.
 
-   At this point nothing has changed for anybody: no reader looks at the new
-   column yet.
+   **`board_models` is the one that matters for the creators who reported the
+   uploader as broken.** `select pg_get_viewdef('collective.board_models'::regclass, true);`
+   shows the current definition; the change is `received_at asc` → `desc` in
+   its per-model pick, plus the lock predicate.
 
-3. **The three readers** — `/v1/games` in `collective_public`, the grader /
-   settlement run, and the consensus + coverage counts. Each needs
-   `superseded_at is null` added to the predicate that already picks the first
-   pre-kickoff live submission. Section 4 of `01_supersede.sql` names them and
-   says why each one matters. Still inert: nothing writes the column yet.
+4. **`functions/collective_public.PATCH.md`** — Patch 2's `collapseModels` now
+   states the same rule in the function (latest pre-lock row wins, one row per
+   model per game, `movement_n` counted), so the site renders correctly even
+   if the view returns every row. Patch 5 publishes `lock_minutes` on
+   `/v1/meta`.
 
-4. **`collective_ingest`'s `/v1/projections/retract`** — stop issuing the
-   `DELETE`; call `collective.supersede_projection(id)` per row. Make the **dry
-   run answer from the same path**, so `would_remove` can never again count
-   rows the confirmed call is not allowed to touch — that mismatch is
-   `INTEGRATION.md` item 3 and is what made the old dry run worse than useless.
+5. **`functions/collective_ingest.PATCH.md`** — `late` is decided by the lock
+   rather than by kickoff, and `first` / `movement` are counted against the
+   new rule. This is where a row posted 20 minutes before kickoff stops
+   counting.
 
-   Corrections take effect from here.
-
-Reversible at every step. Rolling back is
-`update collective.projections set superseded_at = null` — every row is still
-there, which is the point of doing it this way.
-
-## `functions/collective_public.PATCH.md` — four fixes to the live function
-
-Separate from the migration, and applicable on their own today. From reading
-the deployed `collective_public` bundle:
-
-1. **`/v1/games` carries no `sport` and no `week`.** The `collective_embed`
-   copy of the same "shared" `buildGames` carries both; this one drifted. It is
-   why `collective/index.html` works around `Wundefined` on the model page.
-2. **One row per model per game, and a real `movement_n`.** The function maps
-   every row `board_models` returns and has no opinion of its own, so the site's
-   new `+n` marker renders only if that view happens to expose the column. The
-   patch states the rule in the function, counts submissions when it sees them,
-   falls back to the view when it does not, and filters `superseded_at` — inert
-   until the migration lands, so deploy order stays free.
-3. **The free-tier hole.** `isEntitled` still returns `true` for any signed-in
-   account while billing is off. `collective_embed` lists this as its own
-   defect 3 and removed it, so the embed and the site now disagree about the
-   same reader. **Read that patch before applying it** — closing it is a
-   product decision about who sees pre-kickoff numbers today.
-4. **`?season=` empties the board.** `""` survives `??`, `Number("")` is `0`,
-   `0` is finite — so the season becomes 0, nothing matches, and the response is
-   a valid empty board with no error. The site builds exactly that URL.
-
-## What the client already does
-
-No client change is needed for this to work, and none is included here.
-
-`collective/index.html` states the *current* rule in three places — the
-pre-post revision scan, the receipt's movement note, and the `+n` beside a pick
-on the wall. All three are driven by the server's own `movement` / `first`
-counts and by `movement_n`, not by anything the page decides. When step 4
-lands, a correction inside the window stops being movement and those surfaces
-stop firing on it on their own. Nothing has to be un-shipped.
+Reversible at every step: the helpers and the config key can stay, and putting
+`asc` back in `board_models` restores the old rule exactly. No row is touched.
 
 ## Status
 
 Specified and reviewable; **not applied and not tested against the live
 schema** — applying it needs Supabase project access, which the session that
-wrote it did not have and did not seek. Treat step 1 as the next action.
+wrote it did not have. The client half is shipped and tested. Treat step 1 as
+the next action, and step 3's `board_models` change as the one that makes the
+creators' re-uploads land.

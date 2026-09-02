@@ -88,3 +88,26 @@ select schemaname, viewname
 --      group by 1,2
 --     having count(*) > 1
 --   ) x;
+
+-- 6 ---- the config table, for the lock ------------------------------------
+--    01_lock_rule.sql adds one key, submission.lock_minutes, to the same
+--    table admin.user_ids and econ.founder_count already live in. Its column
+--    names and the value column's type decide how that insert is written.
+select column_name, data_type
+  from information_schema.columns
+ where table_schema = 'collective'
+   and table_name   = 'config'
+ order by ordinal_position;
+
+select * from collective.config
+ where >>>CONFIG_KEY_COL<<< in ('admin.user_ids', 'econ.founder_count', 'embed.upcoming_per_sport');
+
+-- 7 ---- the games table's kickoff column and primary key ------------------
+--    The lock is computed from kickoff, so every reader joins projections to
+--    games on these two names.
+select column_name, data_type
+  from information_schema.columns
+ where table_schema = 'collective'
+   and table_name   = 'games'
+   and (column_name ilike '%kick%' or column_name ilike '%start%' or column_name ilike '%id')
+ order by ordinal_position;

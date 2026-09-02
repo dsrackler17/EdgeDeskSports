@@ -1823,7 +1823,7 @@ if (typeof sandbox.localGrade === 'function') try {
       var dup = gm({ id: 'z', hs: 30, as: 20, close: -7,
         models: [mr({ pick_side: 'home' }), mr({ pick_side: 'home' })] });
       return G.modelRecord([dup], 'c', 'm').graded === 1;
-    }, 'the first pre-kickoff submission is the graded one');
+    }, 'the latest submission received before the lock is the graded one');
   /* the season sweep reads the week-less payload AND the week it belongs
      to, so the same game arriving twice is the normal case, not a freak one */
   chk('the SAME game passed twice is still one graded game',
@@ -3375,9 +3375,9 @@ if (typeof sandbox.slateRevisionScan === 'function') {
   var SR = sandbox;
 
   /* one scheduled game, with whatever model rows a case needs */
-  function srGame(id, away, home, models) {
+  function srGame(id, away, home, models, kickoff) {
     return { game_id: id, away: away, home: home,
-             kickoff_at: '2026-09-03T20:00:00Z', models: models || [] };
+             kickoff_at: kickoff || '2026-09-03T20:00:00Z', models: models || [] };
   }
   function srRow(away, home, ref) {
     var o = { away_team: away, home_team: home, kickoff: '2026-09-03T20:00:00Z' };
@@ -3386,9 +3386,134 @@ if (typeof sandbox.slateRevisionScan === 'function') {
   }
   var SR_MINE = { creator_slug: 'moose', model_slug: 'moose-cfb',
                   received_at: '2026-08-23T14:00:00Z' };
+  /* "now": two hours before the fixture's kickoff, so nothing has locked */
+  var SR_NOW = new Date('2026-09-03T18:00:00Z').getTime();
 
-  /* ---- which prior rows actually hold the first-submission slot ------- */
-  chk('a live pre-kickoff row from this model is a prior submission',
+  /* ---- the lock itself ------------------------------------------------ */
+  chk('the lock is thirty minutes before kickoff by default',
+    SR.LOCK_MIN === 30 && SR.lockMinutes({}) === 30 && SR.lockMinutes(null) === 30);
+  chk('the server can state a different lock, and nonsense falls back',
+    SR.lockMinutes({ lock_minutes: 45 }) === 45 && SR.lockMinutes({ lock_minutes: 'x' }) === 30
+    && SR.lockMinutes({ lock_minutes: -5 }) === 30);
+  chk('a game locks exactly LOCK_MIN minutes before its kickoff',
+    SR.lockAt(srGame('G1', 'A', 'B')) === new Date('2026-09-03T19:30:00Z').getTime());
+  chk('a game with no kickoff never locks and never reports a lock',
+    SR.lockAt({}) === null && SR.gameLocked({}, SR_NOW) === false && SR.lockText({}, SR_NOW) === '');
+  chk('before the lock the game is open; at and after it, locked',
+    !SR.gameLocked(srGame('G1', 'A', 'B'), new Date('2026-09-03T19:29:59Z').getTime())
+    && SR.gameLocked(srGame('G1', 'A', 'B'), new Date('2026-09-03T19:30:00Z').getTime())
+    && SR.gameLocked(srGame('G1', 'A', 'B'), new Date('2026-09-03T21:00:00Z').getTime()));
+  chk('the header chip counts down to the lock, then says LOCKED',
+    /LOCKS IN 2H/.test(SR.lockChip(srGame('G1', 'A', 'B'), SR_NOW - 30 * 60000))
+    && /LOCKS IN 5M/.test(SR.lockChip(srGame('G1', 'A', 'B'), new Date('2026-09-03T19:25:00Z').getTime()))
+    && /class="gflag lock on"[^>]*>LOCKED</.test(SR.lockChip(srGame('G1', 'A', 'B'), new Date('2026-09-03T19:31:00Z').getTime())),
+    { chip: SR.lockChip(srGame('G1', 'A', 'B'), SR_NOW - 30 * 60000) });
+  chk('a finished game carries no lock chip -- the score says it all',
+    SR.lockChip({ kickoff_at: '2026-09-03T20:00:00Z', result: { home_score: 1, away_score: 0 } }, SR_NOW) === '');
+  chk('a row received after the lock is known to be after the lock',
+    SR.rowAfterLock(srGame('G1', 'A', 'B'), { received_at: '2026-09-03T19:45:00Z' })
+    && !SR.rowAfterLock(srGame('G1', 'A', 'B'), { received_at: '2026-09-03T19:00:00Z' })
+    && !SR.rowAfterLock(srGame('G1', 'A', 'B'), {})
+    && !SR.rowAfterLock({}, { received_at: '2026-09-03T19:45:00Z' }));
+  chk('the lead text names a post inside the lock window for what it is',
+    /after the lock/.test(SR.pickLeadText({ received_at: '2026-09-03T19:45:00Z' }, '2026-09-03T20:00:00Z'))
+    && !/after the lock/.test(SR.pickLeadText({ received_at: '2026-09-03T19:00:00Z' }, '2026-09-03T20:00:00Z')));
+
+  /* ---- one row per model per game: the latest one before the lock ----- */
+  function srSub(at, extra) {
+    var o = { creator_slug: 'moose', model_slug: 'moose-cfb', received_at: at,
+              pick_side: 'home', projected_spread: -36.5 };
+    for (var k in (extra || {})) o[k] = extra[k];
+    return o;
+  }
+  var SR_FEED = srGame('G1', 'UMASS', 'RUTGERS', [
+    srSub('2026-08-25T12:00:00Z', { line_at_submission: -36.5 }),
+    srSub('2026-09-01T12:00:00Z', { line_at_submission: -28.5 }),
+    { creator_slug: 'blerm', model_slug: 'blerm-cfb', received_at: '2026-08-30T12:00:00Z', pick_side: 'away' }
+  ]);
+  chk('the feed is collapsed to one row per model per game',
+    (function () {
+      var g = SR.collapseGameModels(JSON.parse(JSON.stringify(SR_FEED)));
+      return g.models.length === 2;
+    })());
+  chk('and the row kept is the LATEST submission received before the lock',
+    (function () {
+      var g = SR.collapseGameModels(JSON.parse(JSON.stringify(SR_FEED)));
+      var mine = g.models.filter(function (m) { return m.creator_slug === 'moose'; })[0];
+      return mine && mine.line_at_submission === -28.5 && mine.received_at === '2026-09-01T12:00:00Z';
+    })());
+  chk('the count of submissions rides with the kept row',
+    (function () {
+      var g = SR.collapseGameModels(JSON.parse(JSON.stringify(SR_FEED)));
+      var mine = g.models.filter(function (m) { return m.creator_slug === 'moose'; })[0];
+      var other = g.models.filter(function (m) { return m.creator_slug === 'blerm'; })[0];
+      return mine.movement_n === 2 && other.movement_n === undefined;
+    })(), 'one submission is not a revision and must not print +0');
+  chk('the order the feed sent the rows in does not decide which one wins',
+    (function () {
+      var g = JSON.parse(JSON.stringify(SR_FEED));
+      g.models.reverse();
+      var mine = SR.collapseGameModels(g).models.filter(function (m) { return m.creator_slug === 'moose'; })[0];
+      return mine.line_at_submission === -28.5;
+    })());
+  chk('a submission received after the lock never takes the slot, however new it is',
+    (function () {
+      var g = JSON.parse(JSON.stringify(SR_FEED));
+      g.models.push(srSub('2026-09-03T19:45:00Z', { line_at_submission: -20.5 }));
+      var mine = SR.collapseGameModels(g).models.filter(function (m) { return m.creator_slug === 'moose'; })[0];
+      return mine.line_at_submission === -28.5 && mine.movement_n === 3;
+    })());
+  chk('a row the server left unflagged but that arrived after the lock is flagged late here',
+    (function () {
+      var g = srGame('G1', 'UMASS', 'RUTGERS', [srSub('2026-09-03T19:45:00Z')]);
+      var mine = SR.collapseGameModels(g).models[0];
+      return mine.late === true && mine.after_lock === true && !SR.gradableRow(mine);
+    })(), 'nothing posted inside the lock window counts, whoever posts it');
+  chk('the server\'s own row is not rewritten to do it',
+    (function () {
+      var row = srSub('2026-09-03T19:45:00Z');
+      SR.collapseGameModels(srGame('G1', 'UMASS', 'RUTGERS', [row]));
+      return row.late === undefined;
+    })());
+  chk('a late row is shown only when the model has nothing before the lock',
+    (function () {
+      var g = srGame('G1', 'UMASS', 'RUTGERS', [srSub('2026-09-03T19:45:00Z'), srSub('2026-09-03T19:50:00Z')]);
+      var rows = SR.collapseGameModels(g).models;
+      return rows.length === 1 && rows[0].late === true && rows[0].received_at === '2026-09-03T19:50:00Z';
+    })());
+  chk('test and backfill rows never take the slot from a live one',
+    (function () {
+      var g = srGame('G1', 'UMASS', 'RUTGERS', [
+        srSub('2026-08-25T12:00:00Z', { line_at_submission: -30 }),
+        srSub('2026-09-01T12:00:00Z', { line_at_submission: -10, data_origin: 'test' })]);
+      var mine = SR.collapseGameModels(g).models[0];
+      return mine.line_at_submission === -30;
+    })());
+  chk('a feed that already collapsed keeps the server\'s larger count',
+    (function () {
+      var g = srGame('G1', 'UMASS', 'RUTGERS', [srSub('2026-09-01T12:00:00Z', { movement_n: 4 })]);
+      return SR.collapseGameModels(g).models[0].movement_n === 4;
+    })(), 'a feed showing one row can still know there were four');
+  chk('a paywalled row is kept as it came',
+    (function () {
+      var g = srGame('G1', 'UMASS', 'RUTGERS', [{ creator_slug: 'moose', model_slug: 'moose-cfb', locked: true }]);
+      var rows = SR.collapseGameModels(g).models;
+      return rows.length === 1 && rows[0].locked === true && rows[0].late === undefined;
+    })());
+  chk('a game with no rows is left alone',
+    SR.collapseGameModels(srGame('G1', 'A', 'B', [])).models.length === 0
+    && SR.collapseGames(null) === null);
+  chk('every games feed passes through the collapse on arrival',
+    function () {
+      var i = CODE.indexOf('async function api(');
+      var body = CODE.slice(i, i + 1500);
+      return /path\.indexOf\('\/v1\/games'\)===0\)collapseGames\(d\.games\)/.test(body);
+    }, 'a reader that bypassed it could render a replaced number as current');
+  chk('the lock length is read from meta when the server states one',
+    /LOCK_MIN=lockMinutes\(META\)/.test(CODE));
+
+  /* ---- which prior row a new post would replace ----------------------- */
+  chk('a live pre-lock row from this model is a prior submission',
     SR.priorSubmission(srGame('G1', 'UMASS', 'RUTGERS', [SR_MINE]),
       'moose', 'moose-cfb') !== null);
   chk('another creator\'s row on the same game is not this model\'s submission',
@@ -3397,13 +3522,13 @@ if (typeof sandbox.slateRevisionScan === 'function') {
   chk('another MODEL of the same creator is not this model\'s submission',
     SR.priorSubmission(srGame('G1', 'UMASS', 'RUTGERS',
       [{ creator_slug: 'moose', model_slug: 'moose-nfl' }]), 'moose', 'moose-cfb') === null);
-  /* these three are stored but hold no slot, so a new pre-kickoff live post
-     is still a first submission and must not be reported as a revision */
-  chk('a late row holds no slot, so re-posting over it is not a revision',
+  /* these three are stored but are not on the wall, so a new pre-lock live
+     post is a first submission and must not be reported as a replacement */
+  chk('a late row is not on the wall, so re-posting over it is a first submission',
     SR.priorSubmission(srGame('G1', 'UMASS', 'RUTGERS',
       [{ creator_slug: 'moose', model_slug: 'moose-cfb', late: true }]),
       'moose', 'moose-cfb') === null);
-  chk('test and backfill rows hold no slot either',
+  chk('test and backfill rows are not on the wall either',
     SR.priorSubmission(srGame('G1', 'UMASS', 'RUTGERS',
       [{ creator_slug: 'moose', model_slug: 'moose-cfb', data_origin: 'test' }]),
       'moose', 'moose-cfb') === null
@@ -3413,23 +3538,29 @@ if (typeof sandbox.slateRevisionScan === 'function') {
   chk('a row with no data_origin at all is live, as the rest of the page reads it',
     SR.priorSubmission(srGame('G1', 'UMASS', 'RUTGERS',
       [{ creator_slug: 'moose', model_slug: 'moose-cfb' }]), 'moose', 'moose-cfb') !== null);
+  chk('with several prior rows the latest is the one being replaced',
+    (function () {
+      var p = SR.priorSubmission(srGame('G1', 'UMASS', 'RUTGERS',
+        [srSub('2026-08-25T12:00:00Z'), srSub('2026-09-01T12:00:00Z')]), 'moose', 'moose-cfb');
+      return p && p.received_at === '2026-09-01T12:00:00Z';
+    })());
 
   /* ---- the scan, against the schedule the pre-flight already fetched --- */
   var SR_SCHED = [srGame('G1', 'UMASS', 'RUTGERS', [SR_MINE]),
                   srGame('G2', 'TOLEDO', 'MICHIGAN STATE', []),
                   srGame('G3', 'FRESNO STATE', 'USC', [SR_MINE])];
-  chk('the scan separates games already posted from ones that are new',
+  chk('the scan separates games being replaced from ones that are new',
     (function () {
       var s = SR.slateRevisionScan(SR_SCHED,
         [srRow('UMASS', 'RUTGERS'), srRow('TOLEDO', 'MICHIGAN STATE'),
-         srRow('FRESNO STATE', 'USC')], 'moose', 'moose-cfb');
-      return s.n === 2 && s.fresh === 1 && s.unmatched === 0;
+         srRow('FRESNO STATE', 'USC')], 'moose', 'moose-cfb', SR_NOW);
+      return s.n === 2 && s.fresh === 1 && s.unmatched === 0 && s.nLocked === 0;
     })(), { got: SR.slateRevisionScan(SR_SCHED,
       [srRow('UMASS', 'RUTGERS'), srRow('TOLEDO', 'MICHIGAN STATE'),
-       srRow('FRESNO STATE', 'USC')], 'moose', 'moose-cfb') });
-  chk('the scan names the games, so the warning can list them',
+       srRow('FRESNO STATE', 'USC')], 'moose', 'moose-cfb', SR_NOW) });
+  chk('the scan names the games, so the note can list them',
     (function () {
-      var s = SR.slateRevisionScan(SR_SCHED, [srRow('UMASS', 'RUTGERS')], 'moose', 'moose-cfb');
+      var s = SR.slateRevisionScan(SR_SCHED, [srRow('UMASS', 'RUTGERS')], 'moose', 'moose-cfb', SR_NOW);
       return s.revised.length === 1 && s.revised[0].home === 'RUTGERS'
         && s.revised[0].away === 'UMASS'
         && s.revised[0].received_at === '2026-08-23T14:00:00Z';
@@ -3437,67 +3568,90 @@ if (typeof sandbox.slateRevisionScan === 'function') {
   chk('a row on no scheduled game is counted apart, never guessed at',
     (function () {
       var s = SR.slateRevisionScan(SR_SCHED, [srRow('NOWHERE STATE', 'ATLANTIS')],
-        'moose', 'moose-cfb');
+        'moose', 'moose-cfb', SR_NOW);
       return s.unmatched === 1 && s.n === 0 && s.fresh === 0;
     })());
-  chk('a first-time slate reports no revisions at all',
+  chk('a first-time slate reports nothing being replaced',
     (function () {
       var s = SR.slateRevisionScan(SR_SCHED,
-        [srRow('TOLEDO', 'MICHIGAN STATE')], 'moose', 'moose-cfb');
+        [srRow('TOLEDO', 'MICHIGAN STATE')], 'moose', 'moose-cfb', SR_NOW);
       return s.n === 0 && s.fresh === 1;
     })());
+  chk('a game that has already locked is counted as locked, not as new or replaced',
+    (function () {
+      var lockedNow = new Date('2026-09-03T19:40:00Z').getTime();
+      var s = SR.slateRevisionScan(SR_SCHED,
+        [srRow('UMASS', 'RUTGERS'), srRow('TOLEDO', 'MICHIGAN STATE')], 'moose', 'moose-cfb', lockedNow);
+      return s.nLocked === 2 && s.n === 0 && s.fresh === 0 && s.locked[0].home === 'RUTGERS';
+    })(), { got: SR.slateRevisionScan(SR_SCHED,
+        [srRow('UMASS', 'RUTGERS'), srRow('TOLEDO', 'MICHIGAN STATE')], 'moose', 'moose-cfb',
+        new Date('2026-09-03T19:40:00Z').getTime()) });
 
   /* ---- and says so before the creator posts --------------------------- */
-  chk('nothing is said when nothing is a revision',
-    SR.slateRevisionHTML({ revised: [], n: 0, fresh: 4, unmatched: 0 }) === '');
-  chk('the warning states that the board will not change, and names the games',
+  chk('nothing is said when nothing is replaced and nothing is locked',
+    SR.slateRevisionHTML({ revised: [], n: 0, fresh: 4, unmatched: 0, locked: [], nLocked: 0 }) === '');
+  chk('the note says the post REPLACES the numbers on the wall, and names the games',
     (function () {
       var h = SR.slateRevisionHTML(SR.slateRevisionScan(SR_SCHED,
         [srRow('UMASS', 'RUTGERS'), srRow('TOLEDO', 'MICHIGAN STATE')],
-        'moose', 'moose-cfb'));
-      return /will not change the board/.test(h) && /RUTGERS/.test(h)
-        && /1 game here has no submission yet/.test(h);
+        'moose', 'moose-cfb', SR_NOW));
+      return /replaces it on the wall/.test(h) && /RUTGERS/.test(h)
+        && /latest submission received before the lock, 30 minutes before kickoff/.test(h)
+        && /1 game here has no submission yet/.test(h)
+        && !/will not change the board/.test(h);
     })(), { got: SR.slateRevisionHTML(SR.slateRevisionScan(SR_SCHED,
       [srRow('UMASS', 'RUTGERS'), srRow('TOLEDO', 'MICHIGAN STATE')],
-      'moose', 'moose-cfb')) });
-  chk('a slate where every game is already posted says nothing will move',
+      'moose', 'moose-cfb', SR_NOW)) });
+  chk('a slate whose games have locked is warned that those rows will not count',
     (function () {
       var h = SR.slateRevisionHTML(SR.slateRevisionScan(SR_SCHED,
-        [srRow('UMASS', 'RUTGERS'), srRow('FRESNO STATE', 'USC')], 'moose', 'moose-cfb'));
-      return /No game here is a first submission/.test(h)
-        && /nothing on the wall will move/.test(h);
+        [srRow('UMASS', 'RUTGERS'), srRow('FRESNO STATE', 'USC')], 'moose', 'moose-cfb',
+        new Date('2026-09-03T19:40:00Z').getTime()));
+      return /2 games here have already locked/.test(h) && /will not count/.test(h)
+        && /RUTGERS/.test(h) && /USC/.test(h);
     })());
 
   /* ---- the receipt, from the server's own counts ----------------------- */
-  chk('a post with no revisions adds nothing to the receipt',
-    SR.slateMovementHTML({ resolved: 9, first: 9, movement: 0 }) === '');
-  chk('a mixed post says how many landed as revisions and how many are on the wall',
+  chk('a post that replaced nothing and was not late adds nothing to the receipt',
+    SR.slateMovementHTML({ resolved: 9, first: 9, movement: 0, late: 0 }) === '');
+  chk('a mixed post says how many numbers were replaced and how many were new',
     (function () {
       var h = SR.slateMovementHTML({ resolved: 12, first: 4, movement: 8 });
-      return /8 rows landed as revisions/.test(h)
-        && /does not change the wall/.test(h)
-        && /4 rows were first submissions and are on the wall now/.test(h);
+      return /8 rows replaced numbers you had already posted/.test(h)
+        && /the wall shows the new ones now/.test(h)
+        && /4 rows were new on the wall/.test(h)
+        && !/does not change the wall/.test(h);
     })(), { got: SR.slateMovementHTML({ resolved: 12, first: 4, movement: 8 }) });
-  chk('a re-post of an already-posted week says the wall is unchanged',
+  chk('a re-post of an already-posted week says the wall now shows it',
     (function () {
       var h = SR.slateMovementHTML({ resolved: 16, first: 0, movement: 16 });
-      return /No row on this post was a first submission/.test(h)
-        && /the wall is unchanged/.test(h);
+      return /16 rows replaced numbers/.test(h) && /shows the new ones now/.test(h)
+        && /keep posting and editing a game until it locks/.test(h);
     })());
-  chk('the receipt never suggests the numbers were lost',
+  chk('the receipt says where the replaced numbers went',
     (function () {
       var h = SR.slateMovementHTML({ resolved: 16, first: 0, movement: 16 });
-      return /Nothing was lost/.test(h) && /My submissions/.test(h);
+      return /stored as movement/.test(h) && /My submissions/.test(h);
     })());
-  /* the exact misreading that produced the reports: green "slate is in"
-     beside a link to a wall the post could not have changed */
-  chk('an all-revision post is not headlined as a slate that is in',
+  chk('rows that arrived after the lock are named as not counting',
+    (function () {
+      var h = SR.slateMovementHTML({ resolved: 10, first: 0, movement: 10, late: 3 });
+      return /3 rows arrived after their games locked and do not count/.test(h)
+        && /30 minutes before kickoff/.test(h);
+    })(), { got: SR.slateMovementHTML({ resolved: 10, first: 0, movement: 10, late: 3 }) });
+  /* the old headline branch is gone: a re-post IS a slate that is in */
+  chk('a re-post is headlined as a slate that is in, and says the wall moved',
     function () {
       var shown = CODE.replace(/\/\*[\s\S]*?\*\//g, ' ');
-      return /Stored as revisions/.test(shown)
-        && /\(c2\.movement\|\|0\)>0&&\(c2\.first\|\|0\)===0/.test(shown);
+      return !/Stored as revisions/.test(shown)
+        && /the wall shows these numbers now/.test(shown);
     },
-    'the all-revision branch of the receipt headline');
+    'the receipt headline');
+  chk('an all-late post is not reported as refused',
+    function () {
+      var shown = CODE.replace(/\/\*[\s\S]*?\*\//g, ' ');
+      return /Every row arrived after its game locked/.test(shown);
+    });
   /* A function nobody calls explains nothing. These two hold the WIRING --
      both of these were removable with every other test on this page still
      green, which is the same shape of gap that let a suite pass over an
@@ -3510,8 +3664,8 @@ if (typeof sandbox.slateRevisionScan === 'function') {
       return body.indexOf('slateMovementHTML(c2)') >= 0
         && body.indexOf('slateMovementHTML(c2)') > body.indexOf('Dry run:');
     },
-    'the server counts revisions and the creator has to be told what that means');
-  chk('the check run actually prints the pre-post revision warning',
+    'the server counts replacements and the creator has to be told what that means');
+  chk('the check run actually prints the pre-post note',
     function () {
       var i = CODE.indexOf('async function slateSend');
       if (i < 0) return false;
@@ -3522,14 +3676,26 @@ if (typeof sandbox.slateRevisionScan === 'function') {
     'finding out on the wall afterwards is what this is meant to replace');
 
   /* ---- the wall row carries the count -------------------------------- */
-  chk('the board explains the +n it now prints beside a pick',
+  chk('the board explains the +n it prints beside a pick',
     (function () {
       var e = SR.BOARD_LEGEND.filter(function (x) { return /\+n/.test(x.k); })[0];
-      return e && /first/i.test(e.long) && /movement/i.test(e.long);
+      return e && /latest/i.test(e.long) && /movement/i.test(e.long) && /lock/i.test(e.long);
     })(), { keys: SR.BOARD_LEGEND.map(function (x) { return x.k; }) });
-  /* a revision changes nothing the fingerprint used to look at, so a wall
-     left open on screen kept saying nothing had arrived */
-  chk('the live fingerprint notices a revision arriving',
+  chk('and explains the lock chip on a game header',
+    (function () {
+      var e = SR.BOARD_LEGEND.filter(function (x) { return /LOCK/.test(x.k); })[0];
+      return e && /thirty minutes before kickoff/.test(e.long);
+    })());
+  chk('the rules page states the lock rule, not the first-submission one',
+    (function () {
+      var shown = CODE.replace(/\/\*[\s\S]*?\*\//g, ' ');
+      return /latest live submission received before the lock/.test(shown)
+        && !/Why the first submission is the graded one/.test(shown)
+        && !/first pre-kickoff submission on a game is the one that counts/.test(shown);
+    })());
+  /* a replacement changes nothing the fingerprint used to look at, so a
+     wall left open on screen kept saying nothing had arrived */
+  chk('the live fingerprint notices a replacement arriving',
     (function () {
       var g0 = { game_id: 'G1', home: 'RUTGERS', away: 'UMASS', kickoff_at: '2026-09-03T20:00:00Z',
                  models: [{ creator_slug: 'moose', model_slug: 'moose-cfb', movement_n: 1 }] };

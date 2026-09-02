@@ -220,6 +220,8 @@ tr.consrow td{color:var(--accent);border-top:1px dashed var(--border)}
 .gflag{font-family:'JetBrains Mono',monospace;font-size:9.5px;font-weight:700;letter-spacing:.04em;border-radius:9px;padding:2px 7px;white-space:nowrap;border:1px solid}
 .gflag.edge{color:var(--accent);border-color:rgba(77,141,255,.42);background:rgba(77,141,255,.09)}
 .gflag.split{color:var(--warn);border-color:rgba(217,154,43,.42);background:rgba(217,154,43,.09)}
+.gflag.lock{color:var(--dim);border-color:rgba(255,255,255,.14)}
+.gflag.lock.on{color:var(--warn);border-color:rgba(217,154,43,.42);background:rgba(217,154,43,.09)}
 .gc-hd .gflag,.gb-hd .gflag{margin-left:2px}
 .gb-row.cons{border-top:1px dashed var(--border);color:var(--accent);margin-top:2px;padding-top:7px}
 .gb-row.cons .nm{color:var(--accent)}
@@ -648,10 +650,14 @@ async function api(path,opts){
     var msg=(d&&d.error&&d.error.message)||('Request failed ('+r.status+')');
     var err=new Error(msg);err.status=r.status;err.code=d&&d.error&&d.error.code;throw err;
   }
+  /* Every games feed passes through the lock rule once, here, so no reader
+     on this page can render a superseded number or a row posted after the
+     lock as if it counted. */
+  if(d&&d.games&&path.indexOf('/v1/games')===0)collapseGames(d.games);
   return d;
 }
 var META=null;
-async function meta(){if(META)return META;META=await api('/v1/meta');return META;}
+async function meta(){if(META)return META;META=await api('/v1/meta');LOCK_MIN=lockMinutes(META);return META;}
 
 /* ================= market odds =================
    One entry point for every surface on this page. The components live in
@@ -1073,102 +1079,242 @@ function weekProjections(games,creatorSlug,modelSlug){
   });
   return n;
 }
-/* ================= what a re-upload can and cannot do =================
-   `collective.projections` is append-only in the database, and the games feed
-   serves each model's FIRST pre-kickoff submission on a game. That is the
-   anti-anchoring rule and it is deliberate: creators can read each other's
-   numbers before kickoff, so a number that could be quietly replaced after
-   reading the room would not be worth grading. football/INTEGRATION.md
-   records why replacement cannot be restored from this repository at all.
+/* ================= the lock: which submission counts ====================
+   Every game LOCKS a fixed number of minutes before kickoff (LOCK_MIN,
+   thirty by default, read from meta.lock_minutes when the server states
+   one). Up to the lock a creator can post a game as many times as they
+   like, and the LATEST live submission received before the lock is the one
+   the board shows, the consensus blends and the grader grades. Every
+   earlier number stays stored as movement, timestamped, and is never
+   deleted. A submission received at or after the lock is stored, flagged
+   late, and excluded.
 
-   What no surface on this page said out loud is what that means for the
-   person who just corrected their slate. They re-upload, the receipt says
-   "Your slate is in" beside a link to the wall, and the wall shows the
-   numbers they came to replace under an age of "8d". Nothing failed. But
-   "stored as movement" and "my upload is broken" look identical from the
-   outside, and every creator who has hit this has reported it as the latter —
-   which is the worst possible outcome for a collective whose whole product is
-   creators posting.
+   This replaced the first-submission rule. That rule was built to stop
+   anyone moving a number after reading the room, and it did -- by also
+   stopping every creator who corrected a mapping, a weather adjustment or
+   an injury from ever reaching the wall again. Two creators reported the
+   uploader as broken in one week, and the group chose this instead: the
+   latest upload is the master, and a lock-out before kickoff is what
+   protects the record. The lock is the anti-anchoring rule now; nothing
+   posted inside the last thirty minutes counts, whoever posts it.
 
-   So the rule is now stated in the three places it actually gets asked about:
-   before posting (slateRevisionScan), on the receipt (slateMovementHTML), and
-   on the wall row itself (the +n beside a pick). */
+   The games feed may carry one row per model per game (the server already
+   collapsed) or every submission (it did not). collapseGames() makes both
+   shapes render the same: one row per model per game, the latest one
+   received before the lock, with movement_n saying how many there were. */
+var LOCK_MINUTES_DEFAULT=30;
+var LOCK_MIN=LOCK_MINUTES_DEFAULT;
+function lockMinutes(m){
+  var v=(m&&m.lock_minutes!=null&&m.lock_minutes!=='')?Number(m.lock_minutes):NaN;
+  return (isFinite(v)&&v>=0)?v:LOCK_MINUTES_DEFAULT;
+}
+/* When this game locks, as a millisecond timestamp, or null when the
+   schedule carries no kickoff. */
+function lockAt(g,mins){
+  var k=g&&g.kickoff_at?new Date(g.kickoff_at).getTime():NaN;
+  if(!isFinite(k))return null;
+  return k-(mins==null?LOCK_MIN:mins)*60000;
+}
+function gameLocked(g,now,mins){
+  var l=lockAt(g,mins);
+  return l!=null&&(now==null?Date.now():now)>=l;
+}
+/* Was this row received after its game locked? Only answerable when the
+   row carries a receipt time and the game a kickoff; otherwise the server's
+   own late flag stands alone. */
+function rowAfterLock(g,mr,mins){
+  var l=lockAt(g,mins);
+  var t=mr&&mr.received_at?new Date(mr.received_at).getTime():NaN;
+  if(l==null||!isFinite(t))return false;
+  return t>=l;
+}
+/* The lock, stated for a game header: how long until it, or that it has
+   passed. Nothing on a finished game -- the score says it all. */
+function lockText(g,now,mins){
+  if(!g||g.result)return '';
+  var l=lockAt(g,mins);
+  if(l==null)return '';
+  var ms=l-(now==null?Date.now():now);
+  if(ms<=0)return 'locked';
+  var h=ms/3600000;
+  if(h<1)return 'locks in '+Math.max(1,Math.round(ms/60000))+'m';
+  if(h<48)return 'locks in '+Math.round(h)+'h';
+  return 'locks in '+Math.round(h/24)+'d';
+}
+function lockChip(g,now,mins){
+  var t=lockText(g,now,mins);
+  if(!t)return '';
+  var m=(mins==null?LOCK_MIN:mins);
+  var title=t==='locked'
+    ? 'This game locked '+m+' minutes before kickoff. Its numbers no longer move: anything posted since is stored late and does not count.'
+    : 'Numbers on this game can be posted and replaced until '+m+' minutes before kickoff. After that they are locked for grading.';
+  return '<span class="gflag lock'+(t==='locked'?' on':'')+'" title="'+esc(title)+'">'+esc(t.toUpperCase())+'</span>';
+}
+/* A live row: not late, not test, not backfill. The only rows that can hold
+   a game's counting slot. */
+function liveRow(mr){
+  if(!mr||mr.late)return false;
+  return mr.data_origin==null||mr.data_origin==='live';
+}
+function receivedMs(mr){
+  var t=mr&&mr.received_at?new Date(mr.received_at).getTime():NaN;
+  return isFinite(t)?t:0;
+}
+function copyRow(mr,extra){
+  var o={},k;
+  for(k in mr)if(Object.prototype.hasOwnProperty.call(mr,k))o[k]=mr[k];
+  for(k in extra)if(Object.prototype.hasOwnProperty.call(extra,k))o[k]=extra[k];
+  return o;
+}
+/* ONE ROW PER MODEL PER GAME: the latest live submission received before
+   the lock. A row the server did not flag late but that arrived after the
+   lock is flagged here, on a copy, so the server's own object is not
+   rewritten. movement_n is how many submissions were seen -- or the
+   server's count when that is larger, because a feed that already collapsed
+   shows this page one row and still knows there were three. A locked
+   (paywalled) row carries no numbers and no receipt time, so it is kept as
+   it came. */
+function countingRow(g,rows,mins){
+  var cand=[],all=[],i,mr,n;
+  for(i=0;i<rows.length;i++){
+    mr=rows[i];
+    if(!mr)continue;
+    if(!mr.late&&!mr.locked&&rowAfterLock(g,mr,mins))mr=copyRow(mr,{late:true,after_lock:true});
+    all.push(mr);
+    if(mr.locked||liveRow(mr))cand.push(mr);
+  }
+  if(!all.length)return null;
+  var pool=cand.length?cand:all;
+  var best=pool[0];
+  for(i=1;i<pool.length;i++)if(receivedMs(pool[i])>=receivedMs(best))best=pool[i];
+  var seen=all.length,fromWire=0;
+  for(i=0;i<all.length;i++){n=Number(all[i].movement_n);if(isFinite(n)&&n>fromWire)fromWire=n;}
+  var total=Math.max(seen,fromWire);
+  if(total!==Number(best.movement_n)&&(total>1||best.movement_n!=null))best=copyRow(best,{movement_n:total});
+  return best;
+}
+function collapseGameModels(g,mins){
+  var rows=(g&&g.models)||[];
+  if(!rows.length)return g;
+  var by={},order=[],i,mr,k;
+  for(i=0;i<rows.length;i++){
+    mr=rows[i];if(!mr)continue;
+    k=String(mr.creator_slug)+'/'+String(mr.model_slug);
+    if(!by[k]){by[k]=[];order.push(k);}
+    by[k].push(mr);
+  }
+  var out=[];
+  for(i=0;i<order.length;i++){
+    var r=countingRow(g,by[order[i]],mins);
+    if(r)out.push(r);
+  }
+  g.models=out;
+  return g;
+}
+function collapseGames(games,mins){
+  (games||[]).forEach(function(g){if(g)collapseGameModels(g,mins);});
+  return games;
+}
 
-/* A submission this model already holds on this game, or null. Only a row
-   that holds the FIRST-SUBMISSION SLOT counts: a late row, a test row and a
-   backfill row are all stored and none of them is what a new pre-kickoff live
-   post would be competing with, so a slate re-posted over those is not a
-   revision in the sense that matters here. A locked row is one this reader is
-   not entitled to see the numbers of — it is still a submission, and a
-   creator reading their own dashboard never sees their own rows locked. */
+/* The row this model already holds on this game, or null -- the one a new
+   post would REPLACE on the wall. Only a live pre-lock row counts: a late
+   row, a test row and a backfill row are all stored and none of them is on
+   the wall, so a slate posted over those is a first submission, not an
+   update. A locked row is one this reader is not entitled to see the numbers
+   of -- it is still a submission, and a creator reading their own dashboard
+   never sees their own rows locked. */
 function priorSubmission(g,creatorSlug,modelSlug){
-  var rows=(g&&g.models)||[],i,mr;
+  var rows=(g&&g.models)||[],i,mr,best=null;
   for(i=0;i<rows.length;i++){
     mr=rows[i];
     if(!mr||mr.creator_slug!==creatorSlug)continue;
     if(modelSlug&&mr.model_slug!==modelSlug)continue;
     if(mr.late)continue;
     if(mr.data_origin!=null&&mr.data_origin!=='live')continue;
-    return mr;
+    if(!best||receivedMs(mr)>=receivedMs(best))best=mr;
   }
-  return null;
+  return best;
 }
-/* Which games on this slate will land as revisions, answered BEFORE the post
-   from the game list the pre-flight has already fetched — so it costs no
-   extra request and it reads the same schedule the rows are about to be
-   matched against. A row that matches no scheduled game is counted apart
-   rather than guessed at: the pre-flight already reports those. */
-function slateRevisionScan(games,rows,creatorSlug,modelSlug){
+/* What this slate will do, answered BEFORE the post from the game list the
+   pre-flight has already fetched -- so it costs no extra request and it
+   reads the same schedule the rows are about to be matched against. Three
+   answers per row: it replaces a number already on the wall, it is new, or
+   its game has already locked and the row will be stored late. A row that
+   matches no scheduled game is counted apart rather than guessed at: the
+   pre-flight already reports those. */
+function slateRevisionScan(games,rows,creatorSlug,modelSlug,now,mins){
   var byId={};
   (games||[]).forEach(function(g){
     var s=slateGameSides(g);
     if(s&&s.game_id)byId[slateGameIdKey(s.game_id)]=g;
   });
-  var revised=[],fresh=0,unmatched=0;
+  var revised=[],locked=[],fresh=0,unmatched=0;
   (rows||[]).forEach(function(o){
     var hit=slateMatchRow(games,o);
     if(!hit){unmatched++;return;}
     var g=hit.game_id?byId[slateGameIdKey(hit.game_id)]:null;
+    if(g&&gameLocked(g,now,mins)){
+      locked.push({away:hit.away,home:hit.home,kickoff_at:g.kickoff_at||null});
+      return;
+    }
     var prior=g?priorSubmission(g,creatorSlug,modelSlug):null;
     if(prior)revised.push({away:hit.away,home:hit.home,received_at:prior.received_at||null});
     else fresh++;
   });
-  return {revised:revised,n:revised.length,fresh:fresh,unmatched:unmatched};
+  return {revised:revised,n:revised.length,fresh:fresh,unmatched:unmatched,
+    locked:locked,nLocked:locked.length};
 }
-function slateRevisionHTML(scan){
-  if(!scan||!scan.n)return '';
-  var n=scan.n;
-  return '<p class="note" style="margin:9px 0 0;border-left:2px solid var(--warn);padding-left:8px">'+
-    '<b style="color:var(--warn)">'+n+' of these game'+(n===1?' already carries':'s already carry')+
-    ' a submission from this model, so posting '+(n===1?'it':'them')+' again will not change the board.</b> '+
-    'The Collective grades and shows each model’s first pre-kickoff submission on a game and stores every '+
-    'later one as movement. That is what stops anyone moving their number after reading the room, and it '+
-    'applies to corrections too. '+
-    (scan.fresh
-      ? scan.fresh+' game'+(scan.fresh===1?'':'s')+' here '+(scan.fresh===1?'has':'have')+
-        ' no submission yet and will appear on the wall. '
-      : 'No game here is a first submission, so nothing on the wall will move. ')+
-    'Already posted: '+
-    scan.revised.slice(0,6).map(function(x){
-      return '<span class="mono">'+esc(x.away)+' @ '+esc(x.home)+'</span>';}).join(', ')+
-    (n>6?' and '+(n-6)+' more':'')+'. <a href="#rules">The rule is published</a>.</p>';
+function slateRevisionHTML(scan,mins){
+  if(!scan)return '';
+  var m=(mins==null?LOCK_MIN:mins);
+  var n=scan.n||0,k=scan.nLocked||0,html='';
+  if(n){
+    html+='<p class="note" style="margin:9px 0 0;border-left:2px solid var(--accent);padding-left:8px">'+
+      '<b>'+n+' of these game'+(n===1?' already carries':'s already carry')+
+      ' a number from this model, and posting '+(n===1?'it':'them')+' again replaces '+(n===1?'it':'them')+' on the wall.</b> '+
+      'The Collective shows and grades each model’s latest submission received before the lock, '+m+' minutes before kickoff; '+
+      'the numbers being replaced stay stored as movement. '+
+      (scan.fresh
+        ? scan.fresh+' game'+(scan.fresh===1?'':'s')+' here '+(scan.fresh===1?'has':'have')+
+          ' no submission yet and will appear on the wall for the first time. '
+        : '')+
+      'Being replaced: '+
+      scan.revised.slice(0,6).map(function(x){
+        return '<span class="mono">'+esc(x.away)+' @ '+esc(x.home)+'</span>';}).join(', ')+
+      (n>6?' and '+(n-6)+' more':'')+'. <a href="#rules">The rule is published</a>.</p>';
+  }
+  if(k){
+    html+='<p class="note" style="margin:9px 0 0;border-left:2px solid var(--warn);padding-left:8px">'+
+      '<b style="color:var(--warn)">'+k+' game'+(k===1?' here has':'s here have')+' already locked, so '+
+      (k===1?'that row':'those rows')+' will be stored late and will not count.</b> '+
+      'A game locks '+m+' minutes before kickoff and its numbers do not move after that, whoever posts. '+
+      'Locked: '+scan.locked.slice(0,6).map(function(x){
+        return '<span class="mono">'+esc(x.away)+' @ '+esc(x.home)+'</span>';}).join(', ')+
+      (k>6?' and '+(k-6)+' more':'')+'.</p>';
+  }
+  return html;
 }
-/* The same fact on the receipt, from the count the SERVER returned rather
-   than the one this page predicted — and the one place a creator who never
-   ran the check still reads it. */
-function slateMovementHTML(counts){
-  var c=counts||{},mv=+c.movement||0,fr=+c.first||0;
-  if(!mv)return '';
-  return '<p class="note" style="margin:8px 0 0;border-left:2px solid var(--warn);padding-left:8px">'+
-    '<b style="color:var(--warn)">'+mv+' row'+(mv===1?'':'s')+' landed as '+
-    (mv===1?'a revision':'revisions')+', which does not change the wall.</b> '+
-    'Those games already had a submission from this model, and the Collective grades and shows each model’s '+
-    'first pre-kickoff submission on a game — later ones are stored as movement and never replace it. '+
-    (fr?fr+' row'+(fr===1?'':'s')+' '+(fr===1?'was a first submission and is':'were first submissions and are')+
-        ' on the wall now. '
-      :'No row on this post was a first submission, so the wall is unchanged. ')+
-    'Nothing was lost — the revised numbers are stored against your model and listed in My submissions below. '+
-    'Replacing a posted number is not something an upload can do; <a href="#rules">the rule is published</a>.</p>';
+/* The same facts on the receipt, from the counts the SERVER returned rather
+   than the ones this page predicted -- and the one place a creator who
+   never ran the check still reads them. `first` is rows that were new on
+   the wall, `movement` rows that replaced a number already there, `late`
+   rows that arrived after their game locked. */
+function slateMovementHTML(counts,mins){
+  var c=counts||{},mv=+c.movement||0,fr=+c.first||0,lt=+c.late||0,m=(mins==null?LOCK_MIN:mins),html='';
+  if(mv){
+    html+='<p class="note" style="margin:8px 0 0;border-left:2px solid var(--accent);padding-left:8px">'+
+      '<b>'+mv+' row'+(mv===1?'':'s')+' replaced '+(mv===1?'a number':'numbers')+' you had already posted — the wall shows the new '+(mv===1?'one':'ones')+' now.</b> '+
+      (fr?fr+' row'+(fr===1?' was':'s were')+' new on the wall. ':'')+
+      'The Collective shows and grades each model’s latest submission received before the lock, '+m+' minutes before kickoff; '+
+      'the numbers you replaced stay stored as movement and are listed in My submissions below. '+
+      'You can keep posting and editing a game until it locks; <a href="#rules">the rule is published</a>.</p>';
+  }
+  if(lt){
+    html+='<p class="note" style="margin:8px 0 0;border-left:2px solid var(--warn);padding-left:8px">'+
+      '<b style="color:var(--warn)">'+lt+' row'+(lt===1?'':'s')+' arrived after '+(lt===1?'its game':'their games')+' locked and '+(lt===1?'does':'do')+' not count.</b> '+
+      'A game locks '+m+' minutes before kickoff. '+(lt===1?'That row is':'Those rows are')+' stored and flagged late, never graded, and the wall keeps whatever was posted before the lock.</p>';
+  }
+  return html;
 }
 var BOARD_LEGEND=[
   {k:'Pick',
@@ -1185,10 +1331,13 @@ var BOARD_LEGEND=[
    long:'The creator\u2019s own probability that the HOME team wins the game outright \u2014 the moneyline, not the spread. Always the home team, never the team the model picked. Shown only when the creator actually submitted one; the Collective never infers a probability from a spread.'},
   {k:'Age',
    short:'time since that projection reached the Collective',
-   long:'How long ago this particular projection was received, so a number posted an hour ago is not mistaken for one posted last Tuesday. Grading always uses the FIRST pre-kickoff submission on a game, whatever the age shown here — so this is that submission’s age, and a <span class="mono">+n</span> beside the pick says how many times the model has posted the game since.'},
+   long:'How long ago this particular projection was received, so a number posted an hour ago is not mistaken for one posted last Tuesday. The row on the board is the model’s LATEST submission received before the game locked — the one the Collective grades — so this is that submission’s age, and a <span class="mono">+n</span> beside the pick says how many earlier numbers it replaced.'},
   {k:'+n beside a pick',
-   short:'the model has posted that game again since — the board still shows its first submission',
-   long:'The model has submitted this game more than once. The Collective grades and shows each model’s FIRST pre-kickoff submission and stores every later one as movement, because creators can read each other’s numbers before kickoff and a number that could be replaced after reading the room would not be worth grading. <span class="mono">+2</span> means two further submissions were received and stored. It is not an error and nothing was lost: the board is showing the number that counts, and this says the newer ones arrived.'},
+   short:'the model has posted that game more than once — the board shows its latest number received before the lock',
+   long:'The model has submitted this game more than once. The Collective shows and grades each model’s LATEST submission received before the lock, which is thirty minutes before kickoff, and stores every earlier one as movement — so a creator can correct a mapping or react to news right up to the lock, and nothing posted after it counts. <span class="mono">+2</span> means two earlier numbers were replaced. It is not an error and nothing was lost: the earlier numbers are timestamped and stored, and this says how many there were.'},
+  {k:'LOCKED / LOCKS IN',
+   short:'when this game’s numbers stop moving',
+   long:'Every game locks thirty minutes before kickoff. Until then a model can post and replace its number on the game; from the lock onward a submission is stored, flagged late, and never graded — whoever posts it. The chip on a game header says how long is left, or that the lock has passed.'},
   {k:'Consensus &middot; n=',
    short:'the Collective\u2019s own average across the models that submitted, and how many did',
    long:'The Collective\u2019s own average across the models that submitted a number for that game, with <span class="mono">n</span> being how many. A consensus of two models and a consensus of twenty are different claims, so the count is never hidden.'},
@@ -1645,7 +1794,8 @@ function modelRecord(games,cs,ms){
 }
 /* This model's graded games, in the shape the model page's own log already
    renders, so the fallback needs no second renderer. Newest first, and one
-   row per game — the first pre-kickoff submission is the graded one. */
+   row per game — the latest submission received before the lock is the
+   graded one (the games feed is collapsed to that row on arrival). */
 function localGameLog(games,cs,ms){
   var out=[];
   (games||[]).forEach(function(g){
@@ -2314,6 +2464,7 @@ function pickLeadText(mr,kickoffIso){
   var ms=new Date(kickoffIso).getTime()-new Date(t).getTime();
   if(!isFinite(ms))return '';
   if(ms<0)return 'posted after kickoff';
+  if(ms<LOCK_MIN*60000)return 'posted after the lock, '+Math.max(1,Math.round(ms/60000))+'m before kickoff';
   var h=ms/3600000;
   if(h<1)return 'posted '+Math.max(1,Math.round(ms/60000))+'m before kickoff';
   if(h<48)return 'posted '+Math.round(h)+'h before kickoff';
@@ -2349,7 +2500,7 @@ async function renderWall(view){
       var mgW=marketFor(mkt,g);
       var mktSpreadW=(window.MCOdds&&mgW)?MCOdds.consensusSpread(mgW):null;
       var hd='<div class="gb-hd"><span>'+esc(g.away)+' @ '+esc(g.home)+'</span>'+
-        '<span class="tm">'+kickoffFmt(g.kickoff_at)+'</span>'+
+        '<span class="tm">'+kickoffFmt(g.kickoff_at)+'</span>'+lockChip(g)+
         consensusEdgeBadge(g,g.consensus,mktSpreadW)+splitBadge(splitFlags,g)+
         (g.result?'<span class="fin">FINAL '+g.result.away_score+' - '+g.result.home_score+'</span>'+scoreSourceMark(g):'')+
         '</div>';
@@ -2413,32 +2564,23 @@ async function renderWall(view){
             +'The pick shown is what the model stated; this line is not trusted until the creator resubmits.';
         }
         var age=fmtAgeShort(mr.received_at);
-        /* HAS THIS MODEL POSTED THIS GAME AGAIN SINCE?
+        /* HAS THIS MODEL POSTED THIS GAME MORE THAN ONCE?
 
-           The board shows — and the Collective grades — the first pre-kickoff
-           submission. That is the anti-anchoring rule and it is not up for
-           negotiation. But the board said nothing whatever about later ones,
-           so a creator who re-uploaded a corrected slate came here and found
-           the numbers they had just replaced, under an age of "8d", with no
-           evidence anywhere on the page that the Collective had received the
-           new ones. There is exactly one way to read that from the outside,
-           and every creator who has hit it read it that way: my upload is
-           broken. It is the most expensive misreading this page can produce,
-           because the thing it makes people stop doing is posting.
-
-           The count is already on the wire and already rendered in the model
-           page's game log — but only for games that have FINISHED, which is
-           the one time nobody is asking. It belongs here, on the upcoming
-           game, where the question is actually being asked. */
+           The board shows — and the Collective grades — the latest submission
+           received before the lock. The +n says how many earlier numbers it
+           replaced, so a creator who just re-uploaded can see that the new
+           number is the one on the wall, and a reader can see that it moved.
+           The count is on the wire as movement_n and belongs here, on the
+           upcoming game, where the question is actually being asked. */
         var revN=Number(mr.movement_n||0);
         var rev=revN>1
           ? '<sup class="rev" title="'+esc('This model has posted '+revN+' submissions on this game. '
-              +'The board shows the first pre-kickoff one, because that is the one the Collective grades — '
-              +'later revisions are stored as movement and never replace it. The newer numbers were '
-              +'received and stored; they do not move the board.')+'">+'+(revN-1)+'</sup>'
+              +'The board shows the latest one received before the lock, because that is the one the Collective grades — '
+              +'the '+(revN-1)+' earlier '+(revN===2?'number was':'numbers were')+' replaced and stored as movement. '
+              +'Nothing posted after the lock counts.')+'">+'+(revN-1)+'</sup>'
           : '';
         lines+='<div class="gb-row"'+(lead?' title="'+esc(lead)+'"':'')+'>'+who+
-          '<span class="num pk" title="'+esc(pkT)+'">'+pk+rev+(mr.late?' <span style="color:var(--warn)">LATE</span>':'')+'</span>'+
+          '<span class="num pk" title="'+esc(pkT)+'">'+pk+rev+(mr.late?' <span style="color:var(--warn)" title="'+esc(mr.after_lock?'received after the lock, '+LOCK_MIN+' minutes before kickoff — stored, never graded':'received late — stored, never graded')+'">LATE</span>':'')+'</span>'+
           '<span class="mline'+(bad?' bad':'')+'" title="'+esc(mlTitle)+'">'+mlTxt+(bad?' <b>!</b>':'')+'</span>'+
           (bad?'<span class="dmkt" title="'+esc(mlTitle)+'">-</span>':deltaCell(ml,mktSpreadW,g))+
           '<span class="num win"'+(p?' title="'+esc(p.t)+'"':'')+'>'+(p==null?'-':p.txt)+'</span>'+
@@ -2456,7 +2598,7 @@ async function renderWall(view){
           '<span class="num" title="the model\u2019s own submitted line, stated for the home team">Model line</span>'+
           '<span class="num" title="model line minus the captured market line — a comparison, not a verdict">\u0394 Mkt</span>'+
           '<span class="num" title="the model\u2019s own probability that the home team wins outright; blank when it submitted none">Home %</span>'+
-          '<span class="num" title="time since this projection was received">Age</span>'+
+          '<span class="num" title="time since this projection was received — the latest one before the lock, which is the one that counts">Age</span>'+
           '<span></span></div>'+lines;
       }
       /* the market, above the model numbers: it is the thing they are all
@@ -2894,7 +3036,7 @@ async function renderModel(view,cs,ms){
       (logLive?gradeNote('These games are'):'')+
       '<div class="sortsel"><span class="note">Show</span><select id="glFilter"><option value="">All results</option><option value="win">Wins</option><option value="loss">Losses</option><option value="push">Pushes</option></select></div>'+
       '<div class="tblwrap"><table id="glTbl"><thead><tr><th>Game</th><th class="num">Pick</th><th class="num">Close</th><th class="num">Final</th><th class="num">Result</th><th class="num">Margin err</th><th class="num">Brier</th><th class="num">Movement</th></tr></thead><tbody>'+glRows+'</tbody></table></div>'+
-      '<p class="note" style="margin-top:8px">Each game is graded on the model’s first pre-kickoff live submission. Later revisions are stored as movement, never regraded. '+
+      '<p class="note" style="margin-top:8px">Each game is graded on the model’s latest live submission received before the lock, '+LOCK_MIN+' minutes before kickoff. Earlier numbers are stored as movement, never regraded. '+
       'A game with no result against the spread is one the Collective captured no closing line for &mdash; it is not a loss and is not counted.</p>'
       :'<h2>Every graded game</h2><div class="emptybox">No game of this model&rsquo;s has finished yet. Every pick it posts appears here the moment its game does, with the closing line it was graded against and whether it won.</div>';
     var cal=calibrationHTML(calCal);
@@ -3002,7 +3144,7 @@ async function renderBoard(view){
          the header rather than beside the model rows */
       var mg=marketFor(mkt,g);
       var mktSpread=(window.MCOdds&&mg)?MCOdds.consensusSpread(mg):null;
-      var hd='<div class="gc-hd"><span class="lbl">'+esc(g.label)+'</span><span class="tm">'+kickoffFmt(g.kickoff_at)+'</span>'+
+      var hd='<div class="gc-hd"><span class="lbl">'+esc(g.label)+'</span><span class="tm">'+kickoffFmt(g.kickoff_at)+'</span>'+lockChip(g)+
         consensusEdgeBadge(g,g.consensus,mktSpread)+splitBadge(boardSplit,g)+
         (g.result?'<span class="spacer"></span><span class="fin">'+g.result.away_score+' - '+g.result.home_score+'</span>'+scoreSourceMark(g)+'<span class="tm">close '+fmtSpread(g.result.closing_spread)+' / '+fmtNum(g.result.closing_total)+'</span>':'')+
         '</div>';
@@ -3730,8 +3872,8 @@ async function renderRules(view){
       'game already posted is not a second projection.</p>'+
       '<p class="note" style="margin:6px 0 0">Members see their own count for the current slate on their '+
       '<a href="#dashboard">dashboard</a>, before the week ends.</p></div>'+
-      '<h2>Why the first submission is the graded one</h2>'+
-      '<p class="lede" style="max-width:760px">Creators can see each other’s numbers before kickoff, so anyone submitting later is anchored whether they mean to be or not. Every submission is timestamped when the server receives it, and each model’s first pre-kickoff live submission on a game is the one that counts for grading, rankings, and consensus. Revisions are stored and shown as movement. Submissions received after kickoff are stored, flagged late, and excluded. Backfilled history and test data are stored and shown separately, and are never graded, ranked, or blended into consensus.</p>';
+      '<h2 id="lock">Which submission is the graded one</h2>'+
+      '<p class="lede" style="max-width:760px">Every game locks <b>'+LOCK_MIN+' minutes before kickoff</b>. Up to the lock a creator can post a game as many times as they like — to fix a mapping, to react to weather, injuries or a line move — and each model’s <b>latest live submission received before the lock</b> is the one that counts for grading, rankings, and consensus. Every submission is timestamped when the server receives it; the earlier numbers are stored and shown as movement, and nothing is ever deleted. A submission received at or after the lock is stored, flagged late, and excluded — whoever posts it. Backfilled history and test data are stored and shown separately, and are never graded, ranked, or blended into consensus.</p>';
   }catch(e){fail(view,e);}
 }
 
@@ -6120,7 +6262,7 @@ async function renderCreatorDash(view,me){
         '</tr>';
       }).join('');
       html+='<div class="tblwrap"><table style="min-width:640px"><thead><tr><th>Received</th><th>Model</th><th>Status</th><th class="num">Rows</th><th class="num">Matched</th><th class="num">Quarantined</th><th class="num">Late</th></tr></thead><tbody>'+subRows+'</tbody></table></div>'+
-        '<p class="note" style="margin-top:8px">Each row is one posted slate, timestamped when the server received it. Quarantined games are saved and matched on the admin side; late rows are stored but never graded. Your first pre-kickoff submission on a game is the one that counts.</p>';
+        '<p class="note" style="margin-top:8px">Each row is one posted slate, timestamped when the server received it. Quarantined games are saved and matched on the admin side; late rows are stored but never graded. Your latest submission on a game received before it locks ('+LOCK_MIN+' minutes before kickoff) is the one that counts; the earlier ones stay stored as movement.</p>';
     }else{
       html+='<div class="emptybox"><b style="color:var(--text)">No submissions yet.</b><br>Your slates appear here the moment you post one, with the server receipt time and exactly what happened to every row.<br><br><a href="#dashboard" onclick="document.getElementById(\'slFile\')&&document.getElementById(\'slFile\').scrollIntoView({behavior:\'smooth\',block:\'center\'});return false;">Post your first slate &uarr;</a></div>';
     }
@@ -7134,14 +7276,12 @@ async function renderCreatorDash(view,me){
           }).join('; ')+'. Left as written rather than guessed at.</p>';
       }
 
-      /* WHICH OF THESE GAMES WILL NOT MOVE THE BOARD, said BEFORE the post
-         rather than discovered on the wall afterwards. The pre-flight has
-         just fetched this week's games and they carry each model's rows, so
-         the answer is already in hand and costs no request. On a dry run this
-         is the whole point of running one: a creator re-posting a corrected
-         slate finds out here that the correction is stored as movement, and
-         decides knowing that, instead of reading "Your slate is in" and then
-         finding last week's numbers still on the wall. */
+      /* WHAT THIS POST WILL DO TO THE BOARD, said BEFORE the post rather
+         than discovered on the wall afterwards: which games it replaces a
+         number on, which are new, and which have already locked so the row
+         will land late. The pre-flight has just fetched this week's games
+         and they carry each model's rows, so the answer is already in hand
+         and costs no request. */
       var revHtml='';
       try{
         if(SLATE.serverGames&&SLATE.serverGames.length)
@@ -7166,8 +7306,8 @@ async function renderCreatorDash(view,me){
         /* The receipt states this from the SERVER's own counts rather than
            the page's prediction, so revHtml stands down here rather than
            saying the same thing twice from a weaker source. */
-        $('slOut').innerHTML=pfHtml+alignHtml+(c2.movement?'':revHtml)+'<div class="panel" style="margin-top:10px;border-color:'+((c2.rejected||0)>0?'rgba(217,154,43,.5)':'rgba(47,180,124,.5)')+'">'+
-          '<b>'+(dry?'Dry run:':'Posted:')+'</b> <span class="mono">'+(c2.resolved||0)+' matched, '+(c2.first||0)+' first submissions, '+(c2.movement||0)+' revisions, '+(c2.late||0)+' late, '+(c2.quarantined||0)+' quarantined, '+(c2.rejected||0)+' rejected</span>'+
+        $('slOut').innerHTML=pfHtml+alignHtml+((c2.movement||c2.late)?'':revHtml)+'<div class="panel" style="margin-top:10px;border-color:'+((c2.rejected||0)>0?'rgba(217,154,43,.5)':'rgba(47,180,124,.5)')+'">'+
+          '<b>'+(dry?'Dry run:':'Posted:')+'</b> <span class="mono">'+(c2.resolved||0)+' matched, '+(c2.first||0)+' new, '+(c2.movement||0)+' replaced, '+(c2.late||0)+' late, '+(c2.quarantined||0)+' quarantined, '+(c2.rejected||0)+' rejected</span>'+
           (lines?'<div style="margin-top:8px;font-size:12px">'+lines+'</div>':'')+
           ((c2.quarantined||0)>0?
             /* The finding, once, rather than ten lines of it. When every
@@ -7199,24 +7339,24 @@ async function renderCreatorDash(view,me){
                rejected still announced success in green, directly above the
                48 red rejection lines. Say what actually happened. */
             (((c2.resolved||0)+(c2.quarantined||0))===0
-              ? '<p style="margin:8px 0 0"><b style="color:var(--neg)">Nothing was posted.</b> '+
-                'Every row was refused, so the wall is unchanged and there is nothing to undo. '+
-                'The reason is on each line above.</p>'
-              /* "Your slate is in", in green, beside a link to the wall, on a
-                 post where every single row was a revision. It is true that
-                 the rows are in — and it is read as "the wall now shows these
-                 numbers", which is the one thing that post cannot do. A
-                 creator re-posting a corrected week clicked that link and
-                 found the numbers they had just corrected, and reported the
-                 uploader as broken. Same facts, said so they cannot be read
-                 that way. */
-              : ((c2.movement||0)>0&&(c2.first||0)===0
-                ? '<p style="margin:8px 0 0"><b style="color:var(--warn)">Stored as revisions — the wall does not change.</b>'+
+              /* A post where every row arrived after its game locked is not
+                 a refusal: the rows are stored, flagged late, and the wall
+                 keeps whatever was posted before the lock. Say that, not
+                 "refused" -- the reason is the clock, not the file. */
+              ? ((c2.late||0)>0
+                ? '<p style="margin:8px 0 0"><b style="color:var(--warn)">Every row arrived after its game locked — the wall does not change.</b> '+
+                  'A game locks '+LOCK_MIN+' minutes before kickoff. These rows are stored and flagged late, never graded. '+
+                  '<a href="#/'+esc(c.slug)+'">See your profile</a>.</p>'
+                : '<p style="margin:8px 0 0"><b style="color:var(--neg)">Nothing was posted.</b> '+
+                  'Every row was refused, so the wall is unchanged and there is nothing to undo. '+
+                  'The reason is on each line above.</p>')
+              /* A re-post replaces the numbers on the wall now, so "Your
+                 slate is in" beside a link to the wall is finally the truth
+                 it always read as -- and it says so when numbers moved. */
+              : '<p style="margin:8px 0 0"><b style="color:var(--pos)">Your slate is in'+
+                  ((c2.movement||0)>0?' — the wall shows these numbers now':'')+'.</b>'+
                   ((c2.rejected||0)>0?' <span class="mono">'+(c2.rejected)+'</span> row'+((c2.rejected)===1?'':'s')+' were refused and did not post.':'')+
-                  ' <a href="#/'+esc(c.slug)+'">See your profile</a>.</p>'
-                : '<p style="margin:8px 0 0"><b style="color:var(--pos)">Your slate is in.</b>'+
-                  ((c2.rejected||0)>0?' <span class="mono">'+(c2.rejected)+'</span> row'+((c2.rejected)===1?'':'s')+' were refused and did not post.':'')+
-                  ' <a href="#/'+esc(c.slug)+'">See your profile</a> or <a href="#">the wall</a>.</p>')))+
+                  ' <a href="#/'+esc(c.slug)+'">See your profile</a> or <a href="#">the wall</a>.</p>'))+
           slateMovementHTML(c2)+
           probRejectHTML(r,opts)+
           '</div>';
