@@ -59,7 +59,7 @@ per model per game, `late` is decided by the lock, and the number of
 submissions is counted here rather than hoped for.
 
 `lockMinutes` reads `submission.lock_minutes` from config (the key
-`migrations/01_lock_rule.sql` adds) and is 30 when the key does not exist yet,
+`lock_rule.sql` adds) and is 30 when the key does not exist yet,
 so this can be deployed before or after the migration.
 
 **Find** (immediately above `async function buildGames`):
@@ -177,7 +177,7 @@ block above), read the lock once per request:
 **If `board_models` already collapses to the first submission**, this patch
 cannot un-collapse it: the function only ever sees the row the view chose.
 Change the view's per-model pick from `received_at asc` to `desc` with the lock
-predicate (`migrations/01_lock_rule.sql`, section 4a). The function-side
+ordering (`lock_rule.sql`, step 4, does it for you). The function-side
 collapse then holds either way.
 
 ---
@@ -339,7 +339,7 @@ view**, which is SQL and is not in anything supplied. Patch 2 makes the function
 state the rule and count the submissions, so the site's `+n` marker works
 either way — but if that view collapses to the first submission, the later
 rows never reach the function and the fix is in the view
-(`migrations/01_lock_rule.sql`, section 4a).
+(`lock_rule.sql`, step 4).
 
 Two artifacts settle it, and nothing else is needed:
 

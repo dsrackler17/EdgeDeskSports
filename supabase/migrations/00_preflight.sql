@@ -1,6 +1,7 @@
 -- ===========================================================================
--- PREFLIGHT — read-only. Run this FIRST, in the Supabase SQL editor, and keep
--- the output. It changes nothing.
+-- PREFLIGHT — read-only, OPTIONAL. supabase/lock_rule.sql discovers all of
+-- this itself and prints it in its report; run this only if you want to look
+-- before applying anything. It changes nothing.
 --
 -- Why it exists: the Edge Functions and SQL for this project are not in this
 -- repository (football/INTEGRATION.md says so), so the exact column names on
@@ -99,8 +100,7 @@ select column_name, data_type
    and table_name   = 'config'
  order by ordinal_position;
 
-select * from collective.config
- where >>>CONFIG_KEY_COL<<< in ('admin.user_ids', 'econ.founder_count', 'embed.upcoming_per_sport');
+select * from collective.config limit 20;
 
 -- 7 ---- the games table's kickoff column and primary key ------------------
 --    The lock is computed from kickoff, so every reader joins projections to
