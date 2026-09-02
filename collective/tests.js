@@ -3781,6 +3781,123 @@ chk('a second upload is not posted under the previous upload\'s week',
   },
   'the guard was true only on the first upload of a session');
 
+/* =======================================================================
+   THE AUDIT PASS: the security helpers and the answer layer.
+   ======================================================================= */
+(function auditPass() {
+  var S9 = sandbox;
+  if (typeof S9.safeUrl !== 'function') { chk('the page defines safeUrl', false); return; }
+
+  /* ---- URLs a creator supplied go into href/src: only http(s) survives -- */
+  chk('an https URL is kept as written', S9.safeUrl('https://example.com/a?b=1') === 'https://example.com/a?b=1');
+  chk('an http URL is kept', S9.safeUrl('http://example.com') === 'http://example.com/');
+  chk('a javascript: URL is refused even though it escapes cleanly',
+    S9.safeUrl('javascript:alert(1)') === '' && S9.safeUrl('JAVASCRIPT:alert(1)') === '');
+  chk('a data: URL is refused', S9.safeUrl('data:text/html,<b>x</b>') === '');
+  chk('a bare path or an empty value is not a link', S9.safeUrl('/x') === '' && S9.safeUrl('') === '' && S9.safeUrl(null) === '');
+  chk('an X handle is reduced to what x.com routes',
+    S9.safeHandle('@edge_desk') === 'edge_desk' && S9.safeHandle('../evil?x') === 'evilx');
+  chk('the profile links use the safe forms',
+    /safeUrl\(c\.website_url\)/.test(CODE) && /safeHandle\(c\.x_handle\)/.test(CODE)
+    && /safeUrl\(r\.logo_url\)/.test(CODE));
+
+  /* ---- the session token goes to the API base, so the base is guarded -- */
+  chk('a staging function on supabase can be named in the URL',
+    S9.apiOverrideAllowed('https://abc.supabase.co/functions/v1') === true);
+  chk('a local server can be named in the URL',
+    S9.apiOverrideAllowed('http://localhost:54321/functions/v1') === true);
+  chk('an arbitrary host cannot be handed the session from a link',
+    S9.apiOverrideAllowed('https://attacker.example/functions/v1') === false
+    && S9.apiOverrideAllowed('https://supabase.co.attacker.example/') === false);
+  chk('a plain-http remote host is refused', S9.apiOverrideAllowed('http://abc.supabase.co/') === false);
+  chk('the API base is resolved through that guard', /var API = resolveApiBase\(\);/.test(CODE));
+  chk('sign-out revokes the refresh token at the auth server, not only locally',
+    /auth\/v1\/logout/.test(CODE.slice(CODE.indexOf('function clearSession'), CODE.indexOf('function clearSession') + 900)));
+  chk('the schedule loader is drawn only for an account the server calls admin',
+    function () {
+      var i = CODE.indexOf('var isAdmin=!!(me&&me.admin)');
+      return i > 0 && /if\(addable\.length&&isAdmin\)body\+=/.test(CODE.slice(i, i + 900));
+    });
+  chk('the page ships the same CSP baseline as the research terminal',
+    /http-equiv="Content-Security-Policy" content="object-src 'none'; base-uri 'self'/.test(html));
+
+  /* ---- the answer layer: one vocabulary for a game --------------------- */
+  chk('disagreement is banded on sigma and nothing else',
+    S9.disagreementLevel(0.4) === 'LOW' && S9.disagreementLevel(1.2) === 'MODERATE'
+    && S9.disagreementLevel(1.5) === 'HIGH' && S9.disagreementLevel(null) === null);
+  chk('a home-stated spread is said for the team it favours',
+    S9.favSpread({ home: 'IND', away: 'BAL' }, -4) === 'IND -4.0'
+    && S9.favSpread({ home: 'IND', away: 'BAL' }, 2.5) === 'BAL -2.5'
+    && S9.favSpread({ home: 'IND', away: 'BAL' }, 0) === 'PK');
+  function mk(cs, side, spread) {
+    return { creator_slug: cs, model_slug: cs + '-m', pick_side: side, projected_spread: spread,
+      received_at: '2026-09-01T12:00:00Z', locked: false, late: false };
+  }
+  var room = { game_id: 'g1', home: 'IND', away: 'BAL', kickoff_at: '2099-01-01T00:00:00Z',
+    consensus: { locked: false, n: 3, spread_mean: 1.2, spread_median: 1.0, spread_stdev: 2.8,
+      spread_min: -2.5, spread_max: 4.0, pct_picks_home: 0.67 },
+    models: [mk('a', 'home', -2.5), mk('b', 'home', 1.0), mk('c', 'away', 4.0)] };
+  var gs = S9.gameSummary(room, null);
+  chk('the summary counts the reporting models and the pick split from the rows on screen',
+    gs && gs.n === 3 && gs.nPicks === 3 && gs.lean === 'home' && gs.leanN === 2);
+  chk('range and disagreement come straight from the consensus row',
+    gs && gs.range === 6.5 && gs.level === 'HIGH');
+  chk('the sentence describes, escapes, and never recommends',
+    function () {
+      var t = S9.gameWhyText(S9.gameSummary({ game_id: 'g2', home: '<b>H', away: 'A',
+        kickoff_at: '2099-01-01T00:00:00Z',
+        consensus: { locked: false, n: 3, spread_mean: 1, spread_median: 1, spread_stdev: 2.8, spread_min: -2, spread_max: 4 },
+        models: [mk('a', 'home', -2), mk('b', 'home', 1), mk('c', 'away', 4)] }, null));
+      return t.indexOf('&lt;b&gt;H') >= 0 && t.indexOf('<b>H') < 0 && !/bet|edge|should/i.test(t);
+    });
+  chk('a locked game keeps its count and yields no number',
+    function () {
+      var l = S9.gameSummary({ game_id: 'g3', home: 'H', away: 'A', consensus: { locked: true, n: 4 },
+        models: [{ creator_slug: 'x', model_slug: 'y', locked: true }] }, null);
+      return l.locked && l.n === 4 && l.median === null && l.sigma === null
+        && S9.gameCardHTML(l, {}).indexOf('member view') >= 0 && S9.gameWhyText(l) === '';
+    });
+  chk('the room picks each game once, for one reason, upcoming and open only',
+    function () {
+      var settled = { game_id: 'g4', home: 'H', away: 'A', kickoff_at: '2020-01-01T00:00:00Z',
+        result: { home_score: 1, away_score: 0, closing_spread: -1 },
+        consensus: { locked: false, n: 5, spread_mean: -3, spread_median: -3, spread_stdev: 5, spread_min: -9, spread_max: 1 },
+        models: [mk('a', 'home', -9), mk('b', 'home', 1)] };
+      var out = S9.roomHighlights([room, settled], null);
+      var keys = out.map(function (x) { return x.s.key; });
+      return out.length === 1 && keys[0] === 'g1' && out[0].tag === 'Most divided';
+    });
+  chk('the splits table renders the open games ranked by sigma',
+    /Disagreement/.test(S9.splitsTableHTML([room], null, 5)) && S9.splitsTableHTML([], null, 5) === '');
+
+  /* ---- behaviour, computed only from what is on the wire --------------- */
+  chk('behaviour needs three games and says its sample',
+    function () {
+      var g = function (id, sp, mn) {
+        return { game_id: id, home: 'H', away: 'A', kickoff_at: '2020-01-01T00:00:00Z',
+          result: { home_score: 1, away_score: 0, closing_spread: -3 },
+          models: [{ creator_slug: 'c', model_slug: 'm', projected_spread: sp, pick_side: 'home', movement_n: mn }] };
+      };
+      var b = S9.modelBehavior([g(1, -5, 1), g(2, -3, 2), g(3, -1, 1)], 'c', 'm');
+      return b.rows === 3 && b.deltaN === 3 && near(b.absDelta, 4 / 3) && near(b.revPct, 1 / 3)
+        && S9.modelBehaviorHTML(S9.modelBehavior([g(1, -5, 1)], 'c', 'm'), null) === ''
+        && /n=3/.test(S9.modelBehaviorHTML(b, 50));
+    });
+
+  /* ---- the upload path names its stages ------------------------------- */
+  chk('the seven stages are the seven the panel walks',
+    S9.SLATE_STEPS.join('|') === 'Upload|Detect|Map|Verify|Dry run|Post|Receipt');
+  chk('the strip marks the current stage and the ones behind it',
+    function () {
+      var h = S9.slateStepsHTML(4);
+      return (h.match(/class="done"/g) || []).length === 3 && (h.match(/class="on"/g) || []).length === 1;
+    });
+  chk('a post ends on the receipt and a dry run stops before it',
+    /if\(!dry\)slateStep\(7\)/.test(CODE) && /slateStep\(\(\(c2\.rejected\|\|0\)>0/.test(CODE));
+  chk('the receipt is the server\'s counts and says whose clock it printed',
+    /Server received/.test(CODE) && /Posted from this device/.test(CODE) && /LAST_RECEIPT=\{/.test(CODE));
+})();
+
 /* ---- report ------------------------------------------------------------ */
 failures.forEach(function (f) {
   console.log('FAIL | ' + f.name + (f.detail ? '  ' + JSON.stringify(f.detail) : ''));

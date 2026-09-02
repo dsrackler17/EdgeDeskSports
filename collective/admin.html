@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Collective Admin</title>
 <meta name="robots" content="noindex">
+<meta http-equiv="Content-Security-Policy" content="object-src 'none'; base-uri 'self'; form-action 'self'">
+<meta name="referrer" content="strict-origin-when-cross-origin">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
@@ -76,7 +78,27 @@ window.COLLECTIVE_CONFIG = {
   API: "https://iattxbkbufslbauoumga.supabase.co/functions/v1"
 };
 var CFG=window.COLLECTIVE_CONFIG;
-var API=(new URLSearchParams(location.search).get('api'))||localStorage.getItem('COLLECTIVE_API_OVERRIDE')||CFG.API;
+function apiOverrideAllowed(u){
+  try{
+    var url=new URL(String(u||''),location.href);
+    if(url.protocol!=='https:'&&url.protocol!=='http:')return false;
+    var h=url.hostname.toLowerCase();
+    if(h==='localhost'||h==='127.0.0.1'||h==='[::1]')return true;
+    if(url.protocol!=='https:')return false;
+    return /(^|\.)supabase\.co$/.test(h)||/(^|\.)supabase\.in$/.test(h)||/(^|\.)edgedesksports\.com$/.test(h);
+  }catch(e){return false;}
+}
+function resolveApiBase(){
+  var q=null,ls=null;
+  try{q=new URLSearchParams(location.search).get('api');}catch(e){}
+  if(q&&apiOverrideAllowed(q))return q;
+  try{ls=localStorage.getItem('COLLECTIVE_API_OVERRIDE');}catch(e){}
+  return ls||CFG.API;
+}
+/* The session token goes to whatever API base this resolves to, so a URL
+   override is honoured only for hosts a Collective deployment can live on.
+   See collective/index.html for the full note. */
+var API=resolveApiBase();
 function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
 function $(id){return document.getElementById(id);}
 function toast(m){var t=document.createElement('div');t.className='toast';t.textContent=m;document.body.appendChild(t);setTimeout(function(){t.remove();},2000);}
