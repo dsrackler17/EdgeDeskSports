@@ -24,6 +24,9 @@ on:
       - 'collective/tests.js'
       - 'collective/tests_render.js'
       - 'tools/collective/**'
+      - 'brief.html'
+      - 'supabase/functions/edgedesk_ai/**'
+      - 'tools/presentation/**'
       - '.github/workflows/collective-tests.yml'
   pull_request:
     paths:
@@ -38,6 +41,9 @@ on:
       - 'collective/tests.js'
       - 'collective/tests_render.js'
       - 'tools/collective/**'
+      - 'brief.html'
+      - 'supabase/functions/edgedesk_ai/**'
+      - 'tools/presentation/**'
       - '.github/workflows/collective-tests.yml'
   workflow_dispatch:
 
@@ -103,3 +109,22 @@ jobs:
 
       - name: Settle matching
         run: node tools/collective/settle_finals.test.js
+
+      # DEEP ENGINE, SIMPLE ANSWER. The presentation layer that turns the
+      # deterministic verdict into the 5-second card and the publisher brief.
+      # One canonical library is inlined into three hosts; drift fails here.
+      - name: Presentation library is identical in every host
+        run: node tools/presentation/presentation_sync.test.js
+
+      - name: Verdicts survive translation, AI copy is gated, snapshots hold their prices
+        run: node tools/presentation/presentation.test.js
+
+      # The deployed edge function, imported under Node's native type stripping
+      # with a Deno shim and a mocked network: old callers, the additive
+      # presentation contract, and the deterministic card surviving AI failure.
+      - name: edgedesk_ai keeps its contract and never lets the model own the verdict
+        run: node tools/presentation/edgedesk_ai.test.js
+
+      # The card and the publisher desk as wired into app.html.
+      - name: The decision card leads every surface and mobile keeps it above the fold
+        run: node tools/presentation/app_presentation.test.js

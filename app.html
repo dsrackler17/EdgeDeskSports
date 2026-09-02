@@ -2037,6 +2037,7 @@ body.focus .dk-focusnote{display:block}
     </div>
     <div class="row-between"><h2 style="margin:0">Top edges</h2><span class="spacer"></span><span class="freshness" id="fresh">—</span><button class="refreshbtn" title="Refresh" data-refresh="edges">&#8635;</button></div>
     <p class="lede">The best live edges on games in your window — positive after the sharp fair line, with the liquidity to mean something. Ranked by edge × how this kind of signal has beaten the close. Tap any row for the receipt.</p>
+    <div id="pubDesk"></div>
     <div id="edgeStale" class="stalebanner hide"></div>
     <div id="discovery" class="disco hide"></div>
     <div class="lead" id="leadWrap"><h3 id="t10title">★ Top edges — this week</h3><div id="leadList"></div></div>
@@ -5836,12 +5837,18 @@ function receiptHTML(e){
 }
 /* wrap any edge into a tappable card with the shared receipt */
 function receiptInner(e,domid){
-  return ((typeof window.mvtHTML==='function')?window.mvtHTML(e):'')+
+  /* LAYER 1 first: the 5-second decision card. LAYER 2 — every receipt block
+     that already existed — sits behind "Full research". When the card cannot
+     be built (no engine, no verdict) the full receipt shows as before. */
+  var card=(typeof window.dcardReceiptHTML==='function')?window.dcardReceiptHTML(e,domid):'';
+  var full=((typeof window.ucLeadHTML==='function')?'<div class="lead-read-wrap">'+window.ucLeadHTML(e)+'</div>':'')+
+    ((typeof window.mvtHTML==='function')?window.mvtHTML(e):'')+
     receiptHTML(e)+
     ((typeof window.rnextHTML==='function')?window.rnextHTML(e,domid):'')+
     '<button class="edai-analyze" onclick="event.stopPropagation();edaiAnalyze(\''+domid+'\')">'+
       '<svg viewBox="0 0 24 24"><path d="M12 3l2.2 5.8L20 11l-5.8 2.2L12 19l-2.2-5.8L4 11l5.8-2.2L12 3z"/></svg>Analyze with EdgeDesk Intelligence</button>'+
     '<button class="btn ghost sm" onclick="__trackId(\''+domid+'\')" style="margin-top:8px">Track this to my ledger</button>';
+  return card?(card+'<div class="rcpt-full" id="'+domid+'_full">'+full+'</div>'):full;
 }
 function expandItem(e,domid,headerInner){
   window.RCPT=window.RCPT||{};window.RCPT[domid]=e;
@@ -5859,7 +5866,7 @@ function edgeRow(e,i){
     '<div class="lead-meta">'+favStar(e)+mktLabel(e.market)+' \u00b7 '+(e.away_team||'')+' @ '+(e.home_team||'')+' \u00b7 '+whenLabel(e.commence_time)+'</div>'+
     /* the human read first (evidence quality, market state, decision, one sentence);
        the compact chips stay underneath for anyone who reads them at a glance */
-    ((typeof window.ucLeadHTML==='function')?window.ucLeadHTML(e):'')+
+    ((typeof window.dcardLeadHTML==='function')?window.dcardLeadHTML(e,'t10_'+i):'')+
     edgeChips(e)+'</div>'+
     '<span class="lead-ev">+'+(e.edge*100).toFixed(1)+'%</span>';
   return expandItem(e,'t10_'+i,header);
@@ -18962,6 +18969,135 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
   <span class="fk">AI</span>
 </button>
 <div id="edaiScrim" onclick="EDAI.close()"></div>
+
+<style id="edcard-css">
+/*__EDCARD_CSS_START__*/
+/* ---- THE 5-SECOND VIEW. Verdict and market dominate; everything else is quiet. ---- */
+.dcard{background:var(--surface);border:1px solid var(--border);border-left:4px solid var(--border);border-radius:14px;overflow:hidden;margin:0 0 10px;font-family:'Inter',sans-serif;color:var(--text)}
+.dcard.dc-bet{border-left-color:var(--pos)}.dcard.dc-lean{border-left-color:var(--warn)}.dcard.dc-wait{border-left-color:var(--mdl)}.dcard.dc-pass{border-left-color:var(--faint)}.dcard.dc-failed{border-left-color:var(--neg)}
+.dcard-hero{padding:14px 16px 12px;display:grid;grid-template-columns:auto minmax(0,1fr);gap:3px 14px;align-items:baseline}
+.dcard-eyebrow{grid-column:1/-1;font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--faint);margin-bottom:2px}
+.dcard-verdict{grid-row:span 3;align-self:start;font-family:'JetBrains Mono',monospace;font-weight:800;font-size:26px;letter-spacing:.06em;line-height:1;padding-top:2px}
+.dc-bet .dcard-verdict{color:var(--pos)}.dc-lean .dcard-verdict{color:var(--warn)}.dc-wait .dcard-verdict{color:var(--mdl)}.dc-pass .dcard-verdict{color:var(--dim)}.dc-failed .dcard-verdict{color:var(--neg);font-size:15px;line-height:1.2;max-width:110px}
+.dcard-sel{font-size:19px;font-weight:800;letter-spacing:-.01em;line-height:1.15;overflow-wrap:anywhere}
+.dcard-price{font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--dim)}
+.dcard-goodto{font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--text);margin-top:2px}
+.dcard-goodto .k{color:var(--faint);text-transform:uppercase;font-size:10px;letter-spacing:.12em;margin-right:6px}
+.dcard-goodto.needs b{color:var(--warn)}.dcard-goodto.none b{color:var(--faint)}
+.dcard-flags{display:flex;flex-wrap:wrap;gap:6px;padding:0 16px 10px}
+.dcard-flag{font-size:11px;font-weight:600;border-radius:7px;padding:3px 8px;border:1px solid;line-height:1.35}
+.dcard-flag.warn{color:var(--warn);border-color:rgba(217,154,43,.45);background:rgba(217,154,43,.1)}
+.dcard-flag.bad{color:var(--neg);border-color:rgba(226,96,68,.45);background:rgba(226,96,68,.1)}
+.dcard-body{border-top:1px solid var(--border);padding:12px 16px 8px}
+.dcard-head{font-size:14px;font-weight:700;margin-bottom:6px;line-height:1.4}
+.dcard-h{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--faint);margin:10px 0 4px}
+.dcard-why{margin:0;padding-left:18px;font-size:13.5px;line-height:1.5}
+.dcard-why li{margin:2px 0}
+.dcard-watch,.dcard-change{margin:0;font-size:13.5px;line-height:1.5}
+.dcard-fresh{font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--faint);margin-top:10px}
+.dcard-fresh.bad{color:var(--neg)}
+.dcard-what{margin-top:8px;font-size:12px;color:var(--dim)}
+.dcard-what summary{cursor:pointer;color:var(--accent);font-weight:600;list-style:none;display:inline}
+.dcard-what summary::-webkit-details-marker{display:none}
+.dcard-what p{margin:4px 0 0;line-height:1.5}
+.dcard-actions{display:flex;gap:8px;flex-wrap:wrap;padding:10px 16px 14px;border-top:1px solid var(--border)}
+.dcard-btn{background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:9px;padding:8px 12px;font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer;line-height:1.2}
+.dcard-btn:active{transform:scale(.98)}
+.dcard-btn.primary{background:var(--accent);color:#06122b;border-color:transparent}
+/* compact: the Top-edges strip */
+.dcard.compact{margin:7px 0 0;border-radius:10px}
+.dcard.compact .dcard-hero{padding:9px 12px 7px;gap:1px 12px}
+.dcard.compact .dcard-eyebrow{display:none}
+.dcard.compact .dcard-verdict{font-size:17px;grid-row:span 3}
+.dcard.compact .dcard-sel{font-size:14.5px;white-space:normal}
+.dcard.compact .dcard-price,.dcard.compact .dcard-goodto{font-size:12px}
+.dcard-line{padding:0 12px 9px;font-size:12.5px;color:var(--dim);line-height:1.45;white-space:normal}
+.dcard.compact .dcard-flags{padding:0 12px 8px}
+.dcard.compact .dcard-actions{padding:6px 12px 10px;border-top:none}
+.dcard.compact .dcard-btn{padding:5px 9px;font-size:11.5px}
+.lead-row .dcard.compact{cursor:default}
+@media(max-width:480px){
+  .dcard-hero{grid-template-columns:auto minmax(0,1fr);gap:2px 10px;padding:12px 13px 10px}
+  .dcard-verdict{font-size:22px}
+  .dcard-sel{font-size:17px}
+  .dcard-body,.dcard-actions{padding-left:13px;padding-right:13px}
+}
+/* the receipt: card first, full research behind one tap */
+.rcpt-full{display:none}.rcpt-full.open{display:block}
+.lead-read-wrap{padding-top:2px}
+/* publisher desk strip */
+.pubdesk{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:0 0 12px;padding:10px 12px;border:1px solid var(--border);border-radius:12px;background:var(--surface)}
+.pubdesk .t{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--faint);margin-right:4px}
+/* the brief overlay */
+#briefHost{position:fixed;inset:0;z-index:9998;background:rgba(0,0,0,.74);overflow-y:auto;display:none;padding-bottom:calc(var(--nav) + var(--foot) + env(safe-area-inset-bottom) + 24px);-webkit-overflow-scrolling:touch}
+#briefHost.open{display:block}
+.brief-card{max-width:720px;margin:18px auto;padding:0 12px}
+.brief-bar{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin:0 0 10px;background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:8px}
+.brief-bar .sp{flex:1}
+.brief-bar select.dcard-btn{appearance:none;-webkit-appearance:none}
+.brief-note{font-size:12px;color:var(--dim);margin:8px 2px;line-height:1.5}
+.brief-share{margin:8px 0;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--surface);font-size:12.5px;word-break:break-all;line-height:1.5}
+.brief-share a{color:var(--accent)}
+@media print{
+  body.printing-brief > *:not(#briefHost){display:none!important}
+  body.printing-brief #briefHost{position:static;display:block;background:#fff;padding:0;overflow:visible}
+  body.printing-brief .brief-bar,body.printing-brief .brief-note,body.printing-brief .brief-share{display:none!important}
+  body.printing-brief .brief-card{max-width:none;margin:0;padding:0}
+}
+/*__EDCARD_CSS_END__*/
+/*__EDB_CSS_START__*/
+/* ---- EdgeDesk publisher brief: one page, editorial, no dashboard chrome ---- */
+.edb{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:22px 22px 18px;color:var(--text);line-height:1.5;font-family:'Inter',system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+.edb-hd{border-bottom:1px solid var(--border);padding-bottom:14px;margin-bottom:14px}
+.edb-brand{font-family:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,monospace;font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--faint)}
+.edb-title{margin:6px 0 2px;font-size:22px;font-weight:800;letter-spacing:-.01em;line-height:1.15}
+.edb-kicker{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--accent);font-weight:700;margin-top:4px}
+.edb-event{font-size:17px;font-weight:700;margin-top:10px}
+.edb-when{font-size:12.5px;color:var(--dim);margin-top:2px}
+.edb-h{font-family:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,monospace;font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--faint);margin:16px 0 6px}
+.edb-h.edb-sec{margin-top:22px;color:var(--dim)}
+.edb-lede{font-size:15.5px;line-height:1.55;margin:0 0 4px;color:var(--text)}
+.edb-pick{border:1px solid var(--border);border-radius:14px;padding:14px 16px;margin:10px 0 0;background:rgba(255,255,255,.015);border-left-width:4px}
+.edb-pick.dc-bet{border-left-color:var(--pos)}
+.edb-pick.dc-lean{border-left-color:var(--warn)}
+.edb-pick.dc-wait{border-left-color:var(--mdl)}
+.edb-pick.dc-pass{border-left-color:var(--faint)}
+.edb-pick.dc-failed{border-left-color:var(--neg)}
+.edb-rank{font-family:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11px;color:var(--faint);letter-spacing:.1em}
+.edb-ev{font-size:14px;font-weight:700;margin:4px 0 2px}
+.edb-ev .edb-when{display:inline;margin-left:6px;font-weight:400}
+.edb-call{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-top:4px}
+.edb-verdict{font-family:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,monospace;font-weight:800;font-size:22px;letter-spacing:.06em}
+.dc-bet .edb-verdict{color:var(--pos)}.dc-lean .edb-verdict{color:var(--warn)}.dc-wait .edb-verdict{color:var(--mdl)}.dc-pass .edb-verdict{color:var(--dim)}.dc-failed .edb-verdict{color:var(--neg)}
+.edb-sel{font-size:19px;font-weight:800;letter-spacing:-.01em}
+.edb-goodto{font-family:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,monospace;font-size:13px;font-weight:700;color:var(--text);margin-top:4px;text-transform:uppercase;letter-spacing:.04em}
+.edb-pick .edb-h{margin-top:12px}
+.edb-why{margin:0;padding-left:20px;font-size:14.5px}
+.edb-why li{margin:3px 0}
+.edb-pick p{margin:0;font-size:14.5px}
+.edb-slatehead{font-family:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,monospace;font-size:13px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--pos);margin:2px 0 4px}
+.edb-slatehead.nobet{color:var(--dim)}
+.edb-nobet{font-size:14px;color:var(--dim);margin:0 0 6px}
+.edb-bpw{font-size:14px;margin:0}
+.edb-ft{border-top:1px solid var(--border);margin-top:18px;padding-top:10px}
+.edb-ft p{margin:0;font-size:13px;color:var(--dim)}
+.edb-ft b{color:var(--text)}
+.edb-prices{margin:6px 0 0;padding-left:18px;font-size:12px;color:var(--dim)}
+.edb-gen{margin-top:6px!important;font-size:11.5px!important;color:var(--faint)!important}
+.edb-powered{margin-top:8px!important;font-family:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,monospace;font-size:10.5px!important;letter-spacing:.12em;text-transform:uppercase;color:var(--faint)!important}
+@media(max-width:480px){.edb{padding:16px 14px 14px;border-radius:12px}.edb-title{font-size:19px}.edb-verdict{font-size:19px}.edb-sel{font-size:17px}}
+@media print{
+  html,body{background:#fff;color:#111}
+  .edb{background:#fff;color:#111;border-color:#ccc;box-shadow:none;border-radius:0;padding:0}
+  .edb-pick{background:#fff;border-color:#ccc;break-inside:avoid}
+  .edb-h,.edb-brand,.edb-rank,.edb-powered,.edb-gen,.edb-ft p,.edb-when,.edb-nobet,.edb-prices{color:#555!important}
+  .edb-lede,.edb-why,.edb-pick p,.edb-bpw,.edb-sel,.edb-event,.edb-title,.edb-goodto{color:#111!important}
+  .edb-kicker{color:#1a4fb4}
+  .dc-bet .edb-verdict{color:#157a4f}.dc-lean .edb-verdict{color:#9a6a12}.dc-wait .edb-verdict{color:#5b4ec7}.dc-pass .edb-verdict{color:#555}.dc-failed .edb-verdict{color:#b3391f}
+  .pg-top,.pg-actions,.no-print{display:none!important}
+}
+/*__EDB_CSS_END__*/
+</style>
 <div id="edaiPanel" role="dialog" aria-label="EdgeDesk Intelligence">
   <div class="edai-top">
     <span class="edai-dot"></span>
@@ -18982,6 +19118,1105 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
   </div>
 </div>
 
+<script>
+/*__EDPRES_START__*/
+/* ============================================================================
+   EdgeDesk PRESENTATION LAYER — "deep engine, simple answer".
+
+   ONE FILE, THREE HOSTS. This exact block is inlined into:
+     - supabase/functions/edgedesk_ai/index.ts   (server: builds `presentation`)
+     - app.html                                   (browser: decision cards, briefs)
+     - brief.html                                 (public share page)
+   tools/presentation/presentation_sync.test.js fails if the copies drift.
+   The canonical source is supabase/functions/edgedesk_ai/_presentation.js.
+
+   THE ONE RULE
+     Nothing here computes, adjusts or overrides a probability, fair price,
+     edge, EV, CLV, confidence, score, max-playable, break-even or verdict.
+     Every one of those arrives from EdgeDesk's deterministic engine and is
+     TRANSLATED into sportsbook language. The American-odds conversion is
+     display-only and is never fed back into anything.
+
+     AI copy (headline / why / watch / change trigger / market read) is
+     OPTIONAL and VALIDATED. When it is missing or rejected, the templated
+     deterministic copy stands. Narration failure never takes the card down.
+   ============================================================================ */
+(function (root, factory) {
+  var api = factory();
+  if (typeof module === 'object' && module && module.exports) module.exports = api;
+  root.EDPRES = api;
+})(typeof globalThis !== 'undefined' ? globalThis : this, function () {
+  'use strict';
+
+  var VERSION = 1;
+  var VERDICTS = ['BET', 'LEAN', 'WAIT', 'PASS'];
+  var VERDICT_RANK = { BET: 0, LEAN: 1, WAIT: 2, PASS: 3 };
+  /* Words publisher copy may never carry. Matched case-insensitively. */
+  var HYPE = /\b(lock|locks|guaranteed?|guarantees|hammer|hammered|can'?t[- ]miss|cannot miss|free money|ai says|our algorithm guarantees|sure thing|slam[- ]dunk|mortal lock|no[- ]brainer|easy money|100% winner)\b/i;
+
+  /* ---------------------------------------------------------------- utils */
+  function esc(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
+  function num(v) { if (v == null || v === '') return null; var n = +v; return isFinite(n) ? n : null; }
+  function isStr(s) { return typeof s === 'string'; }
+  function clean(s) { return String(s == null ? '' : s).replace(/\s+/g, ' ').trim(); }
+  function sentence(s) {
+    s = clean(s);
+    if (!s) return '';
+    s = s.charAt(0).toUpperCase() + s.slice(1);
+    if (!/[.!?]$/.test(s)) s += '.';
+    return s;
+  }
+  function normVerdict(v) {
+    v = String(v == null ? '' : v).toUpperCase().trim();
+    if (v === 'NO BET' || v === 'NO SIGNAL') return 'PASS';
+    if (v === 'STRONG SIGNAL') return 'BET';
+    return VERDICTS.indexOf(v) >= 0 ? v : null;
+  }
+  function toMs(t) {
+    if (t == null || t === '') return null;
+    if (typeof t === 'number') return isFinite(t) ? t : null;
+    var ms = Date.parse(String(t));
+    return isFinite(ms) ? ms : null;
+  }
+
+  /* ----------------------------------------------------------- odds (display) */
+  /* Decimal -> American. DISPLAY ONLY. The result is never fed back into an
+     edge, EV or fair-price calculation — the engine keeps its own numbers. */
+  function decToAmerican(dec) {
+    var d = num(dec);
+    if (d == null || d <= 1) return null;
+    return d >= 2 ? Math.round((d - 1) * 100) : Math.round(-100 / (d - 1));
+  }
+  function fmtAmerican(am) {
+    var a = num(am);
+    if (a == null) return null;
+    a = Math.round(a);
+    return (a > 0 ? '+' : '') + a;
+  }
+  /* Sportsbook-native selection: "Texas Tech -3.5", "Over 47.5", "Chiefs ML". */
+  function selectionLabel(market, selection, point) {
+    var m = String(market == null ? '' : market).toLowerCase().trim();
+    var s = clean(selection);
+    if (!s) return null;
+    var p = num(point);
+    if (m === 'totals' || m === 'total') {
+      var side = /^over/i.test(s) ? 'Over' : /^under/i.test(s) ? 'Under' : s;
+      return p != null ? side + ' ' + p : side;
+    }
+    if (m === 'spreads' || m === 'spread') {
+      if (p == null) return s;
+      return s + ' ' + (p > 0 ? '+' : '') + p;
+    }
+    if (m === 'h2h' || m === 'ml' || m === 'moneyline') return /\bML$/.test(s) ? s : s + ' ML';
+    return p != null ? s + ' ' + p : s;
+  }
+  function marketLabel(market) {
+    var m = String(market == null ? '' : market).toLowerCase().trim();
+    if (m === 'h2h' || m === 'ml' || m === 'moneyline') return 'Moneyline';
+    if (m === 'spreads' || m === 'spread') return 'Spread';
+    if (m === 'totals' || m === 'total') return 'Total';
+    return market == null ? null : String(market);
+  }
+
+  /* --------------------------------------------------- language translation */
+  /* Internal terminology -> what an intelligent sportsbook bettor would say.
+     Applied ONLY to simple/publisher copy. Full Research keeps the precise
+     terms. Longest phrases first so "sharp fair" is not half-replaced. */
+  var TERMS = [
+    ['pinnacle de-vig fair', 'the sharper market’s fair line'],
+    ['pinnacle (sharp reference)', 'the sharper market'],
+    ['sharp reference', 'sharper market'],
+    ['sharp-confirmed', 'confirmed by the sharper market'],
+    ['sharp confirmation', 'confirmation from the sharper market'],
+    ['sharp fair', 'sharper market fair line'],
+    ['sharp print', 'quote from the sharper market'],
+    ['consensus fair', 'the average fair line across books'],
+    ['max-playable', 'good to'],
+    ['max playable', 'good to'],
+    ['market residual', 'the move beyond what the opening difference normally explains'],
+    ['data integrity warning', 'some of the underlying data needs verification'],
+    ['evidence integrity', 'data check'],
+    ['calibration', 'how similar EdgeDesk signals have held up'],
+    ['market edge', 'the current price is better than the sharper market suggests'],
+    ['closing line value', 'closing line value'],
+    ['de-vigged', 'fair'],
+    ['de-vig', 'fair'],
+    ['falsifier', 'what would break the case'],
+    ['thesis', 'case'],
+    ['pinnacle', 'the sharper market'],
+    ['clv', 'closing line value'],
+    ['ev', 'expected value']
+  ];
+  function translate(term) {
+    var t = clean(term).toLowerCase();
+    for (var i = 0; i < TERMS.length; i++) if (TERMS[i][0] === t) return TERMS[i][1];
+    return term;
+  }
+  function translateText(text) {
+    var s = clean(text);
+    if (!s) return s;
+    for (var i = 0; i < TERMS.length; i++) {
+      var from = TERMS[i][0], to = TERMS[i][1];
+      var re = new RegExp('(^|[^a-z0-9])' + from.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '(?=$|[^a-z0-9])', 'gi');
+      s = s.replace(re, function (m, pre) { return pre + to; });
+    }
+    return s;
+  }
+
+  /* Engine reasons are precise strings; each known shape gets a plain
+     sentence. Unknown ones fall through the dictionary. */
+  var REASON_MAP = [
+    [/^([+-]?[\d.]+%) estimated edge vs (.+)$/i, function (m) { return 'The price is ' + m[1].replace(/^\+/, '') + ' better than ' + translateText(m[2]) + '.'; }],
+    [/pinnacle \(sharp reference\) is quoting this side/i, 'The sharper market is quoting the same side.'],
+    [/best price is at a us-regulated book/i, 'The best price is at a US-regulated book.'],
+    [/^(\d+) books? behind the fair line$/i, function (m) { return m[1] + ' books stand behind the fair line.'; }],
+    [/corroborated across (\d+) sharp level/i, function (m) { return 'The number is corroborated at ' + m[1] + ' sharp level' + (m[1] === '1' ? '' : 's') + '.'; }],
+    [/beat the close \(clv ([^)]+)\)/i, function (m) { return 'This signal already beat the closing line (' + m[1] + ').'; }],
+    [/best price is offshore/i, 'The best price is at an offshore book, which is less reliable.'],
+    [/only (\d+) books? quot/i, function (m) { return 'Only ' + m[1] + ' book' + (m[1] === '1' ? ' is' : 's are') + ' quoting the fair line.'; }],
+    [/priced (\d+)m ago .*verify/i, function (m) { return 'The price is ' + m[1] + ' minutes old. Check it is still live.'; }],
+    [/stale: last re-priced (\d+)m ago/i, function (m) { return 'The price is stale: last updated ' + m[1] + ' minutes ago.'; }],
+    [/edge this large on a game line is often a stale/i, 'An edge this large is often a stale or wrong price. Confirm it before trusting it.'],
+    [/over half the detection edge has already decayed \((\d+)% remains\)/i, function (m) { return 'Most of the original edge is gone. ' + m[1] + '% remains.'; }],
+    [/no sharp \(pinnacle\) confirmation on this exact side/i, 'The sharper market is not quoting this exact side.'],
+    [/failed to beat the close \(clv ([^)]+)\)/i, function (m) { return 'This signal did not beat the closing line (' + m[1] + ').'; }],
+    [/mlb caveat: lineups are probable/i, 'Lineups are probable, not confirmed. A late scratch moves the number.'],
+    [/price keeps moving against you: (\d+)% .* past (\S+) the ev/i, function (m) { return 'If the price moves past ' + m[2] + ', the edge is gone. ' + m[1] + '% of the original edge remains.'; }],
+    [/pinnacle never prints this side/i, 'The sharper market never quotes this side, so the fair line rests on softer books.'],
+    [/the last capture \((\d+)m ago\) is stale/i, function (m) { return 'The price is ' + m[1] + ' minutes old and the real number may be worse.'; }],
+    [/offshore best price is not actually available/i, 'The offshore price may not be available to you at size.'],
+    [/edge this large is usually a bad or stale line/i, 'An edge this large is usually a bad or stale line. One correction erases it.'],
+    [/late scratch or lineup change moves the number/i, 'A late scratch or lineup change would move the number.'],
+    [/already failed to beat the close/i, 'It already failed to beat the close. The market moved through this number.'],
+    [/nothing structural stands out/i, 'Nothing structural stands out. Size normally rather than pressing.'],
+    [/the edge existed at detection \(([^)]+)\) but the current price has moved to ([^,]+), pulling ev below the ([\d.]+%) floor/i,
+      function (m) { return 'The edge existed at ' + m[1] + ', but the price has moved to ' + m[2] + '. That puts it below EdgeDesk’s ' + m[3] + ' floor.'; }],
+    [/current price is below fair/i, 'The current price is below the fair line, so there is no value at this number.'],
+    [/no fair price available to judge this number against/i, 'EdgeDesk has no fair price on file to judge this number against.'],
+    [/best price is offshore and only (\d+) books?/i, function (m) { return 'The best price is offshore and only ' + m[1] + ' book' + (m[1] === '1' ? '' : 's') + ' quote the fair line. Too thin to trust.'; }],
+    [/last re-priced (\d+)m ago\. treat as stale/i, function (m) { return 'The price was last updated ' + m[1] + ' minutes ago. It needs a fresh capture.'; }],
+    [/clears the bar with real liquidity: ([+-]?[\d.]+%)/i, function (m) { return 'The price is ' + m[1].replace(/^\+/, '') + ' better than fair at a US-regulated book, and the sharper market agrees.'; }],
+    [/positive and qualifying, but with caveats/i, 'The number is positive and qualifies, but with caveats worth reading.'],
+    [/no fair price is on file yet/i, 'No fair price is on file yet, so there is nothing to judge this number against.'],
+    [/qualified on the last number, but it was captured (\d+)m ago/i, function (m) { return 'It qualified on the last number, but that price is ' + m[1] + ' minutes old. A fresh capture has to confirm it is still live.'; }],
+    [/a probable starter is still missing/i, 'A probable starter is still missing for this game. Pitching is the largest input in a baseball number.']
+  ];
+  function plainReason(s) {
+    var t = clean(s);
+    if (!t) return '';
+    for (var i = 0; i < REASON_MAP.length; i++) {
+      var m = t.match(REASON_MAP[i][0]);
+      if (m) { var out = REASON_MAP[i][1]; return typeof out === 'function' ? out(m) : out; }
+    }
+    return sentence(translateText(t.replace(/\s+[—-]\s+/g, '. ')));
+  }
+
+  /* --------------------------------------------------------------- freshness */
+  function ageText(min) {
+    if (min == null || !isFinite(min)) return null;
+    if (min < 1) return 'just now';
+    if (min < 60) return Math.round(min) + ' min ago';
+    var h = min / 60;
+    if (h < 24) return (h < 10 ? (Math.round(h * 10) / 10).toString().replace(/\.0$/, '') : Math.round(h)) + ' h ago';
+    return Math.round(h / 24) + ' d ago';
+  }
+  /* o: { price_at, research_at, now, stale_min (the engine's own limit) } */
+  function freshness(o) {
+    o = o || {};
+    var now = toMs(o.now) != null ? toMs(o.now) : Date.now();
+    var limit = num(o.stale_min) != null && num(o.stale_min) > 0 ? num(o.stale_min) : 90;
+    var pAt = toMs(o.price_at), rAt = toMs(o.research_at);
+    var pAge = pAt != null ? Math.max(0, (now - pAt) / 60000) : (num(o.price_age_min));
+    var rAge = rAt != null ? Math.max(0, (now - rAt) / 60000) : (num(o.research_age_min));
+    var status = pAge == null ? 'UNKNOWN' : pAge >= limit ? 'STALE' : pAge >= limit / 2 ? 'AGING' : 'CURRENT';
+    var warning = status === 'STALE' ? 'This price needs refreshing before it can be used.'
+      : status === 'UNKNOWN' ? 'EdgeDesk cannot tell how old this price is.'
+      : status === 'AGING' ? 'This price is getting old. Check it is still live.' : null;
+    return {
+      status: status,
+      price_age_min: pAge == null ? null : Math.round(pAge * 10) / 10,
+      research_age_min: rAge == null ? null : Math.round(rAge * 10) / 10,
+      price_text: pAge == null ? 'Price age unknown' : 'Price updated ' + ageText(pAge),
+      research_text: rAge == null ? null : 'Research refreshed ' + ageText(rAge),
+      price_captured_at: pAt != null ? new Date(pAt).toISOString() : null,
+      limit_min: limit,
+      warning: warning
+    };
+  }
+
+  /* ---------------------------------------------------------------- playable */
+  /* The playable threshold is a PRICE the engine owns (max_playable). It is
+     never a line threshold, because the engine owns none. */
+  function playable(o) {
+    o = o || {};
+    var v = normVerdict(o.verdict);
+    var maxAm = num(o.max_playable_am), needs = num(o.needs_price_am);
+    var lim = fmtAmerican(maxAm);
+    if (maxAm == null) {
+      return { kind: 'NONE', label: null, limit_odds: null,
+        text: 'EdgeDesk has no fair price on file, so there is no playable limit yet.' };
+    }
+    if (v === 'PASS' && needs != null) {
+      return { kind: 'NEEDS', label: 'Needs ' + fmtAmerican(needs) + ' or better', limit_odds: fmtAmerican(needs),
+        text: 'The current price is past EdgeDesk’s limit. It only becomes a bet again at ' + fmtAmerican(needs) + ' or better.' };
+    }
+    if (v === 'PASS') {
+      return { kind: 'LIMIT', label: 'Limit ' + lim, limit_odds: lim,
+        text: 'EdgeDesk’s limit for this number is ' + lim + '. The current price does not qualify.' };
+    }
+    return { kind: 'GOOD_TO', label: 'Good to ' + lim, limit_odds: lim,
+      text: 'EdgeDesk still likes this at ' + lim + '. Past that number the edge is no longer strong enough.' };
+  }
+
+  /* ------------------------------------------------------------ price status */
+  function priceStatus(o) {
+    o = o || {};
+    var v = normVerdict(o.verdict);
+    var det = num(o.detect_am), cur = num(o.current_am), maxAm = num(o.max_playable_am);
+    var edge = num(o.edge), dEdge = num(o.detect_edge), floor = num(o.floor);
+    var fr = o.freshness || {};
+    if (cur == null) {
+      return { kind: 'NO_PRICE', text: 'No current price is on file for this selection.', was: null, now: null };
+    }
+    var moved = det != null && det !== cur;
+    if (v === 'PASS' && dEdge != null && floor != null && dEdge >= floor && edge != null && edge < floor) {
+      return { kind: 'PAST_LIMIT', was: 'PLAYABLE', now: 'PASS',
+        text: 'Was playable at ' + fmtAmerican(det) + '. Now PASS: the price moved to ' + fmtAmerican(cur) + '.'
+          + (maxAm != null ? ' EdgeDesk’s limit was ' + fmtAmerican(maxAm) + '.' : '') };
+    }
+    if (fr.status === 'STALE') {
+      return { kind: 'STALE', text: 'This price needs refreshing before it can be used.', was: null, now: null };
+    }
+    if (moved) {
+      var inside = maxAm != null && v !== 'PASS';
+      return { kind: 'MOVED', was: fmtAmerican(det), now: fmtAmerican(cur),
+        text: 'Price moved from ' + fmtAmerican(det) + ' to ' + fmtAmerican(cur) + ' since EdgeDesk first flagged it.'
+          + (inside ? ' Still inside the limit of ' + fmtAmerican(maxAm) + '.' : '') };
+    }
+    return { kind: 'HOLDING', was: null, now: fmtAmerican(cur), text: 'The price has held since EdgeDesk flagged it.' };
+  }
+
+  /* ---------------------------------------------------------------- integrity */
+  function integrityStatus(g) {
+    if (!g || !g.verdict) return { status: 'OK', reason: null, known: false };
+    var v = String(g.verdict).toUpperCase();
+    var failed = (g.failed || g.checks || []).filter(function (c) { return c && c.status && String(c.status).toUpperCase() !== 'PASS'; });
+    var first = failed[0];
+    var reason = first ? (String(first.name || '').replace(/_/g, ' ') + ': ' + clean(first.detail)) : (g.summary || g.headline || null);
+    if (reason) reason = translateText(String(reason).slice(0, 260));
+    if (v === 'FAIL') return { status: 'FAILED', reason: reason || 'a data check failed', known: true };
+    if (v === 'WARNING' || v === 'LOCALIZED') return { status: 'PROVISIONAL', reason: reason || 'some of the underlying data needs verification', known: true };
+    return { status: 'OK', reason: null, known: true };
+  }
+
+  /* Availability / data gaps. A missing injury report is NOT "no injuries". */
+  function gapSentences(gaps) {
+    var out = [];
+    (gaps || []).forEach(function (g) {
+      var k = String(g && (g.field || g) || '').toLowerCase();
+      if (!k) return;
+      if (/injur|availab|lineup/.test(k)) out.push('Injury and availability data is not on file. Do not read that as a clean injury report.');
+      else if (/weather/.test(k)) out.push('Weather is not on file for this game.');
+      else if (/quarterback|qb/.test(k)) out.push('The starting quarterback is not confirmed in EdgeDesk’s data.');
+      else if (/starter|pitch/.test(k)) out.push('A probable starter is missing from EdgeDesk’s data.');
+      else out.push(translateText(k.replace(/_/g, ' ')) + ' is not on file.');
+    });
+    var seen = {}, uniq = [];
+    out.forEach(function (s) { if (!seen[s]) { seen[s] = 1; uniq.push(s); } });
+    return uniq;
+  }
+
+  /* ------------------------------------------------------------------ SIMPLE */
+  /* The client packet shape (askAI / EDAI.packetOf) is the contract:
+       { game:{matchup,sport,sport_key,commence,away,home,event_id},
+         market, market_key, selection, selection_raw, point,
+         prices:{detect,current,fair,fair_src,best_seen,max_playable,pinnacle,book,trusted},
+         edge:{detect,current,ev,remaining,floor},
+         confirmation:{has_sharp,n_books,n_books_eff,corrob,book,trusted},
+         timing:{stale_min,last_seen_at,research_at},
+         price_sensitivity:{breakeven,max_playable,needs_price_for_ev},
+         deterministic:{verdict,display_verdict,is_wait,wait_reason,confidence,why,score,band,
+                        reasons_for,reasons_against,falsifiers} }
+     All prices in the packet are ALREADY American (the engine's own display
+     transform). Decimal inputs are accepted too and converted for display. */
+  function simpleFromPacket(p, ctx) {
+    p = p || {}; ctx = ctx || {};
+    var det = p.deterministic || {};
+    var prices = p.prices || {};
+    var ps = p.price_sensitivity || {};
+    var edge = p.edge || {};
+    var conf = p.confirmation || {};
+    var timing = p.timing || {};
+    var game = p.game || {};
+    var now = toMs(ctx.now) != null ? toMs(ctx.now) : Date.now();
+
+    var engineVerdict = normVerdict(det.verdict);
+    var verdict = normVerdict(det.display_verdict) || engineVerdict;
+    var integ = integrityStatus(ctx.integrity || p.integrity || null);
+
+    var curAm = num(prices.current) != null ? num(prices.current) : decToAmerican(prices.current_dec);
+    var detAm = num(prices.detect) != null ? num(prices.detect) : decToAmerican(prices.detect_dec);
+    var fairAm = num(prices.fair) != null ? num(prices.fair) : decToAmerican(prices.fair_dec);
+    var maxAm = num(ps.max_playable) != null ? num(ps.max_playable) : (num(prices.max_playable) != null ? num(prices.max_playable) : decToAmerican(prices.max_playable_dec));
+    var needsAm = num(ps.needs_price_for_ev);
+    var beAm = num(ps.breakeven) != null ? num(ps.breakeven) : fairAm;
+    var book = clean(prices.book || conf.book || '') || null;
+    var trusted = (prices.trusted != null) ? !!prices.trusted : (conf.trusted != null ? !!conf.trusted : null);
+
+    var marketKey = p.market_key || p.market || null;
+    var selectionRaw = p.selection_raw || p.selection || null;
+    var selLabel = p.selection_raw ? selectionLabel(marketKey, selectionRaw, p.point) : (p.selection ? clean(p.selection) : null);
+    if (selLabel && /^(h2h|ml|moneyline)$/i.test(String(marketKey || '')) && !/\bML$/.test(selLabel)) selLabel += ' ML';
+    var mktLabel = marketLabel(marketKey) || (p.market ? String(p.market) : null);
+
+    var priceAt = timing.last_seen_at != null ? toMs(timing.last_seen_at)
+      : (num(timing.stale_min) != null ? now - num(timing.stale_min) * 60000 : null);
+    var fr = freshness({ price_at: priceAt, research_at: timing.research_at || ctx.research_at || null, now: now,
+      stale_min: num(ctx.stale_limit_min) != null ? num(ctx.stale_limit_min) : num(timing.stale_limit_min) });
+
+    var play = playable({ verdict: verdict, max_playable_am: maxAm, needs_price_am: needsAm });
+    var pst = priceStatus({ verdict: verdict, detect_am: detAm, current_am: curAm, max_playable_am: maxAm,
+      edge: edge.current, detect_edge: edge.detect, floor: edge.floor, freshness: fr });
+
+    /* ---- suppression: integrity FAIL never shows a recommendation ---- */
+    var suppressed = false, displayVerdict = verdict;
+    if (integ.status === 'FAILED' && (verdict === 'BET' || verdict === 'LEAN')) { suppressed = true; displayVerdict = 'WAIT'; }
+    if (verdict == null) { displayVerdict = null; }
+
+    var odds = fmtAmerican(curAm);
+    var noPrice = curAm == null;
+
+    /* ---- deterministic copy ---- */
+    var whyRaw = (det.reasons_for || []).slice();
+    var why = [];
+    whyRaw.forEach(function (r) { var s = plainReason(r); if (s && why.indexOf(s) < 0) why.push(s); });
+    if (!why.length && det.why) why.push(plainReason(det.why));
+    /* Strongest drivers only: the engine lists them in priority order. */
+    why = why.slice(0, 3).map(function (t) { return { text: t, source: 'deterministic', evidence_ids: [] }; });
+
+    var gaps = gapSentences(ctx.gaps || p.gaps || []);
+    var against = (det.reasons_against || []).map(plainReason).filter(Boolean);
+    var fals = (det.falsifiers || []).map(plainReason).filter(Boolean);
+    var watchText, changeText;
+    if (displayVerdict === 'WAIT' && (det.is_wait || suppressed)) {
+      watchText = suppressed ? 'EdgeDesk cannot safely publish a decision until ' + (integ.reason || 'the data check passes') + '.'
+        : (det.wait_reason ? plainReason(det.wait_reason) : 'Something still needs to confirm before this is a decision.');
+      changeText = suppressed ? 'A clean data check would restore the decision.'
+        : 'A fresh price capture or a confirmed lineup would resolve this.';
+    } else if (displayVerdict === 'PASS') {
+      watchText = det.why ? plainReason(det.why) : 'EdgeDesk does not see enough value at the current price.';
+      changeText = needsAm != null ? 'It becomes interesting again at ' + fmtAmerican(needsAm) + ' or better.'
+        : (fals[0] || 'A better price would be needed for EdgeDesk to reconsider.');
+    } else {
+      watchText = against[0] || fals[0] || 'Nothing structural stands out.';
+      changeText = fals[0] || 'A worse price would weaken the case.';
+    }
+    /* An actionable call must carry the availability caveat in its own watch
+       line; a PASS or WAIT already leads with a stronger reason, and the gap
+       still shows as a flag on the card. */
+    if (gaps.length && /injur|availab/i.test(gaps[0]) && !/injur/i.test(watchText)
+      && (displayVerdict === 'BET' || displayVerdict === 'LEAN')) watchText = gaps[0] + ' ' + watchText;
+
+    var headline;
+    if (suppressed) headline = 'DATA CHECK FAILED: EdgeDesk cannot safely publish a decision until ' + (integ.reason || 'the data check passes') + '.';
+    else if (displayVerdict == null) headline = 'EdgeDesk has no decision on file for this selection.';
+    else if (noPrice) headline = 'WAIT: no current price is on file for ' + (selLabel || 'this selection') + '.';
+    else if (displayVerdict === 'BET') headline = 'BET: ' + selLabel + ' at ' + odds + '.';
+    else if (displayVerdict === 'LEAN') headline = 'LEAN: ' + selLabel + ' at ' + odds + '. Positive, with caveats.';
+    else if (displayVerdict === 'WAIT') headline = 'WAIT: ' + selLabel + ' at ' + odds + '. Something still needs to confirm.';
+    else headline = 'PASS: EdgeDesk does not see enough value in ' + (selLabel || 'this selection') + ' at ' + odds + '.';
+    if (noPrice && displayVerdict != null && !suppressed) displayVerdict = 'WAIT';
+
+    var flags = [];
+    if (suppressed) flags.push({ kind: 'DATA_CHECK_FAILED', text: 'Data check failed' + (integ.reason ? ': ' + integ.reason : '') });
+    else if (integ.status === 'PROVISIONAL') flags.push({ kind: 'PROVISIONAL', text: 'Provisional' + (integ.reason ? ': ' + integ.reason : ': some of the underlying data needs verification') });
+    if (fr.status === 'STALE') flags.push({ kind: 'STALE_PRICE', text: 'Price needs refreshing (' + fr.price_text.replace(/^Price updated /, '') + ')' });
+    else if (fr.status === 'UNKNOWN' && !noPrice) flags.push({ kind: 'PRICE_AGE_UNKNOWN', text: 'Price age unknown' });
+    if (noPrice) flags.push({ kind: 'NO_PRICE', text: 'No current price on file' });
+    if (book && trusted === false) flags.push({ kind: 'OFFSHORE', text: 'Best price is at an offshore book' });
+    gaps.forEach(function (g) { flags.push({ kind: 'DATA_GAP', text: g.split('. ')[0].replace(/\.$/, '') }); });
+
+    return {
+      version: VERSION,
+      available: displayVerdict != null,
+      verdict: displayVerdict,
+      engine_verdict: engineVerdict,
+      display_verdict: displayVerdict,
+      suppressed: suppressed,
+      headline: headline,
+      selection: selLabel,
+      selection_raw: selectionRaw,
+      market: marketKey,
+      market_label: mktLabel,
+      line: num(p.point),
+      odds: odds,
+      odds_format: 'american',
+      odds_display: odds ? odds + (book ? ' · ' + book : '') : (book ? '— · ' + book : '—'),
+      book: book,
+      book_trusted: trusted,
+      fair_odds: fmtAmerican(fairAm),
+      breakeven_odds: fmtAmerican(beAm),
+      playable_to: play,
+      price_status: pst,
+      why: why,
+      watch: { text: watchText, source: 'deterministic' },
+      change_trigger: { text: changeText, source: 'deterministic' },
+      market_read: { text: marketReadText({ has_sharp: conf.has_sharp, n_books: conf.n_books, corrob: conf.corrob, price_status: pst, book: book, trusted: trusted }), source: 'deterministic' },
+      freshness: fr,
+      integrity_status: integ.status,
+      integrity_reason: integ.reason,
+      flags: flags,
+      gaps: gaps,
+      confidence: det.confidence || null,
+      score: num(det.score),
+      copy_source: 'deterministic',
+      game: {
+        matchup: game.matchup || null, away: game.away || null, home: game.home || null,
+        sport_key: game.sport_key || null, sport_label: game.sport || null,
+        commence: game.commence || null, event_id: game.event_id || null
+      },
+      /* the engine's numbers, verbatim, for Full Research and the internal snapshot */
+      engine: {
+        current_am: curAm, detect_am: detAm, fair_am: fairAm, max_playable_am: maxAm, breakeven_am: beAm,
+        needs_price_am: needsAm, edge: num(edge.current), detect_edge: num(edge.detect), ev: num(edge.ev),
+        remaining: num(edge.remaining), floor: num(edge.floor), has_sharp: conf.has_sharp == null ? null : !!conf.has_sharp,
+        n_books: num(conf.n_books), confidence: det.confidence || null, score: num(det.score), band: det.band || null,
+        why: det.why || null, reasons_for: (det.reasons_for || []).slice(), reasons_against: (det.reasons_against || []).slice(),
+        falsifiers: (det.falsifiers || []).slice(), is_wait: !!det.is_wait, wait_reason: det.wait_reason || null
+      }
+    };
+  }
+
+  function marketReadText(o) {
+    var bits = [];
+    if (o.has_sharp === true) bits.push('The sharper market is quoting the same side.');
+    else if (o.has_sharp === false) bits.push('The sharper market is not quoting this exact side, so the fair line rests on softer books.');
+    var nb = num(o.n_books);
+    if (nb != null) bits.push(nb + ' book' + (nb === 1 ? ' is' : 's are') + ' behind the fair line.');
+    if (o.price_status && o.price_status.kind === 'MOVED') bits.push(o.price_status.text);
+    else if (o.price_status && o.price_status.kind === 'PAST_LIMIT') bits.push(o.price_status.text);
+    if (o.book && o.trusted === false) bits.push('The best price is at an offshore book.');
+    return bits.join(' ') || 'No market read is available for this selection.';
+  }
+
+  /* Board rows (EDAI.buildBoard) carry the same facts under different keys. */
+  function packetFromBoardRow(r) {
+    if (!r) return null;
+    var price = r.price || {}, edge = r.edge || {}, conf = r.confirmation || {}, det = r.deterministic || {};
+    return {
+      game: { matchup: r.game || null, sport: r.sport || null, commence: r.starts || null, event_id: r.event_id || null },
+      market: r.market || null, market_key: r.market_key || r.market || null,
+      selection: r.selection || null, selection_raw: r.selection_raw || null, point: r.point,
+      prices: { detect: price.detection, current: price.current, fair: price.fair, fair_src: price.fair_src,
+        best_seen: price.best_seen, max_playable: price.max_playable, pinnacle: price.pinnacle, book: price.book },
+      edge: { detect: edge.detection, current: edge.current, ev: edge.ev, remaining: edge.remaining, floor: edge.floor },
+      confirmation: { has_sharp: conf.has_sharp, n_books: conf.n_books, n_books_eff: conf.n_books_eff, corrob: conf.corrob, trusted: conf.trusted_book, book: price.book },
+      timing: { stale_min: r.freshness ? r.freshness.stale_min : null },
+      price_sensitivity: { breakeven: price.breakeven, max_playable: price.max_playable, needs_price_for_ev: null },
+      deterministic: { verdict: det.verdict, display_verdict: det.display_verdict, is_wait: det.is_wait, wait_reason: det.wait_reason,
+        confidence: det.confidence, score: det.score, band: det.band, why: det.why,
+        reasons_for: det.reasons_for || [], reasons_against: det.reasons_against || [], falsifiers: det.falsifiers || [] }
+    };
+  }
+
+  /* ------------------------------------------------------------ AI copy gate */
+  /* Which numbers the copy may quote: only the ones the engine owns. */
+  function knownNumbers(simple) {
+    var s = simple || {}, e = s.engine || {};
+    var odds = [s.odds, s.fair_odds, s.breakeven_odds, s.playable_to && s.playable_to.limit_odds,
+      fmtAmerican(e.detect_am), fmtAmerican(e.needs_price_am)].filter(Boolean);
+    var pcts = [e.edge, e.detect_edge, e.ev, e.floor].filter(function (x) { return x != null; }).map(function (x) { return x * 100; });
+    if (e.remaining != null) pcts.push(e.remaining * 100);
+    return { odds: odds, pcts: pcts };
+  }
+  function textOk(text, verdict, known, max) {
+    var t = clean(text);
+    if (!t) return 'empty';
+    if (t.length > (max || 200)) return 'too long';
+    if (HYPE.test(t)) return 'hype';
+    var vm = t.match(/\b(BET|LEAN|WAIT|PASS)\b(?=[:\s.,!])/g);
+    if (vm && verdict) {
+      for (var i = 0; i < vm.length; i++) {
+        if (vm[i] !== verdict && !/would (pass|wait)|not a bet|no bet/i.test(t)) return 'contradicts verdict';
+      }
+    }
+    var oddsIn = t.match(/[+-]\d{3,4}\b/g) || [];
+    for (var j = 0; j < oddsIn.length; j++) if (known.odds.indexOf(oddsIn[j]) < 0) return 'invented price ' + oddsIn[j];
+    var pctIn = t.match(/(\d+(?:\.\d+)?)\s?%/g) || [];
+    for (var k = 0; k < pctIn.length; k++) {
+      var v = parseFloat(pctIn[k]);
+      var hit = known.pcts.some(function (p) { return Math.abs(p - v) < 0.06 || Math.abs(Math.round(p) - v) < 0.5 || Math.abs(Math.round(p * 10) / 10 - v) < 0.06; });
+      if (!hit) return 'invented percentage ' + pctIn[k];
+    }
+    return null;
+  }
+  function validateCopy(copy, simple, opts) {
+    opts = opts || {};
+    var errors = [], out = {};
+    if (!copy || typeof copy !== 'object') return { ok: false, errors: ['no copy'], cleaned: null };
+    var verdict = simple && simple.verdict;
+    var known = knownNumbers(simple);
+    var ids = opts.known_evidence_ids || null;
+    function keep(field, text, max) {
+      var err = textOk(text, verdict, known, max);
+      if (err) { errors.push(field + ': ' + err); return null; }
+      return sentence(text);
+    }
+    if (isStr(copy.headline)) {
+      var h = clean(copy.headline);
+      if (verdict && h.toUpperCase().indexOf(verdict + ':') !== 0 && h.toUpperCase().indexOf(verdict + ' ') !== 0) errors.push('headline: must start with the verdict');
+      else { var hk = keep('headline', h, 160); if (hk) out.headline = hk; }
+    }
+    if (Array.isArray(copy.why)) {
+      var why = [];
+      copy.why.slice(0, 3).forEach(function (w, i) {
+        var text = isStr(w) ? w : (w && w.text);
+        var t = keep('why[' + i + ']', text, 170);
+        if (!t) return;
+        var ev = (w && Array.isArray(w.evidence_ids)) ? w.evidence_ids.filter(function (x) { return isStr(x) && (!ids || ids.indexOf(x) >= 0); }) : [];
+        why.push({ text: t, source: 'ai', evidence_ids: ev });
+      });
+      if (why.length) out.why = why;
+    }
+    ['watch', 'change_trigger', 'market_read', 'plain_english', 'biggest_risk'].forEach(function (f) {
+      if (isStr(copy[f])) { var t = keep(f, copy[f], f === 'plain_english' ? 420 : 240); if (t) out[f] = t; }
+    });
+    return { ok: Object.keys(out).length > 0, errors: errors, cleaned: out };
+  }
+  /* Returns a NEW simple object. The deterministic fields are untouched;
+     only translation/copy fields change, and only when they pass the gate. */
+  function applyAiCopy(simple, copy, opts) {
+    if (!simple) return { simple: simple, accepted: false, rejected: ['no simple'] };
+    var v = validateCopy(copy, simple, opts);
+    var out = JSON.parse(JSON.stringify(simple));
+    if (!v.ok) return { simple: out, accepted: false, rejected: v.errors };
+    var c = v.cleaned;
+    /* A suppressed or price-less card keeps its deterministic headline: the AI
+       may not talk over a data-check failure or a missing price. */
+    if (c.headline && !simple.suppressed && simple.price_status.kind !== 'NO_PRICE') out.headline = c.headline;
+    if (c.why) {
+      /* AI bullets lead; deterministic bullets fill in behind them so a card
+         never gets thinner because one AI bullet was rejected. */
+      var merged = c.why.slice();
+      (simple.why || []).forEach(function (w) {
+        if (merged.length >= 3) return;
+        var dup = merged.some(function (m) { return m.text.toLowerCase() === w.text.toLowerCase(); });
+        if (!dup) merged.push({ text: w.text, source: 'deterministic', evidence_ids: [] });
+      });
+      out.why = merged.slice(0, 3);
+    }
+    if (c.watch && !simple.suppressed) out.watch = { text: c.watch, source: 'ai' };
+    if (c.change_trigger) out.change_trigger = { text: c.change_trigger, source: 'ai' };
+    if (c.market_read) out.market_read = { text: c.market_read, source: 'ai' };
+    if (c.plain_english) out.plain_english = { text: c.plain_english, source: 'ai' };
+    if (c.biggest_risk && !simple.suppressed) out.biggest_risk = { text: c.biggest_risk, source: 'ai' };
+    out.copy_source = 'ai';
+    out.copy_rejections = v.errors;
+    return { simple: out, accepted: true, rejected: v.errors };
+  }
+  /* The model returns prose plus ONE fenced block. Split them. */
+  function parseAiCopyBlock(text) {
+    var s = String(text == null ? '' : text);
+    var re = /```\s*edgedesk_copy\s*\n([\s\S]*?)```/i;
+    var m = s.match(re);
+    if (!m) {
+      var m2 = s.match(/<edgedesk_copy>([\s\S]*?)<\/edgedesk_copy>/i);
+      if (!m2) return { answer: s.trim(), copy: null, error: 'no block' };
+      m = m2;
+    }
+    var copy = null, error = null;
+    try { copy = JSON.parse(m[1]); } catch (e) { error = 'bad json'; }
+    return { answer: s.replace(m[0], '').trim(), copy: copy, error: error };
+  }
+
+  /* -------------------------------------------------------------- explain */
+  var EXPLAIN = {
+    good_to: function (s) {
+      var lim = s.playable_to && s.playable_to.limit_odds;
+      if (!lim) return 'EdgeDesk needs a fair price on file before it can say how far the price stays playable.';
+      if (s.playable_to.kind === 'NEEDS') return 'The price is past EdgeDesk’s limit. If the book offers ' + lim + ' or better, the number qualifies again.';
+      return 'EdgeDesk still likes the bet at ' + lim + '. If the price gets worse than ' + lim + ', the current edge is no longer strong enough.';
+    },
+    verdict: function (s) {
+      if (s.suppressed) return 'A data check failed, so EdgeDesk will not publish a recommendation until it is repaired.';
+      if (s.verdict === 'BET') return 'BET means the price clears EdgeDesk’s bar with real liquidity behind it and the sharper market agrees.';
+      if (s.verdict === 'LEAN') return 'LEAN means the number is positive and qualifies, but with caveats worth weighing.';
+      if (s.verdict === 'WAIT') return 'WAIT means something needed to decide is missing, stale or unconfirmed. It is not a rejection.';
+      if (s.verdict === 'PASS') return 'PASS means EdgeDesk looked and does not see enough value at this price. A calm no is a good answer.';
+      return 'EdgeDesk has no decision on file for this selection.';
+    },
+    price: function (s) {
+      return 'The recommendation is the side AND the price together. ' + (s.selection || 'This side') + ' at ' + (s.odds || 'no price') + ' is the bet; a worse price can turn it into a pass.';
+    },
+    provisional: function (s) {
+      return 'Provisional means some of the underlying data needs verification' + (s.integrity_reason ? ': ' + s.integrity_reason : '') + '. The decision stands but treat it with care.';
+    },
+    freshness: function (s) {
+      return 'Prices move. ' + (s.freshness.price_text || 'Price age unknown') + '. ' + (s.freshness.warning || 'This one is current enough to act on.');
+    },
+    book: function (s) {
+      if (!s.book) return 'EdgeDesk did not record which book is offering this price.';
+      return s.book + ' is the book offering the best price EdgeDesk found.' + (s.book_trusted === false ? ' It is offshore, which is less reliable.' : '');
+    }
+  };
+  function explain(key, simple) {
+    var f = EXPLAIN[key];
+    return f ? f(simple || {}) : null;
+  }
+
+  /* -------------------------------------------------------------- publisher */
+  var PRESETS = {
+    GAME: { title: 'EdgeDesk Game Brief', kicker: null },
+    TNF: { title: 'EdgeDesk Game Brief', kicker: 'Thursday Night Football' },
+    SNF: { title: 'EdgeDesk Game Brief', kicker: 'Sunday Night Football' },
+    MNF: { title: 'EdgeDesk Game Brief', kicker: 'Monday Night Football' },
+    CFB: { title: 'EdgeDesk College Football Brief', kicker: 'College Football' },
+    SLATE: { title: 'EdgeDesk Slate Brief', kicker: null }
+  };
+  function dataCheck(simple) {
+    var s = simple || {};
+    var status, text;
+    if (s.suppressed) { status = 'Data check failed'; text = 'EdgeDesk cannot safely publish a decision until ' + (s.integrity_reason || 'the data check passes') + '.'; }
+    else if (s.freshness && s.freshness.status === 'STALE') { status = 'Needs refresh'; text = 'The price on file is stale. Refresh before publishing a number.'; }
+    else if (s.integrity_status === 'PROVISIONAL') { status = 'Provisional'; text = s.integrity_reason ? 'Some of the underlying data needs verification: ' + s.integrity_reason : 'Some of the underlying data needs verification.'; }
+    else if (s.freshness && s.freshness.status === 'UNKNOWN') { status = 'Provisional'; text = 'EdgeDesk cannot tell how old this price is.'; }
+    else { status = 'Current'; text = 'Prices and research are current as of capture.'; }
+    return { status: status, text: text, price_captured_at: s.freshness ? s.freshness.price_captured_at : null };
+  }
+  function callText(s) {
+    if (!s || !s.available) return 'No decision on file.';
+    if (s.suppressed) return 'DATA CHECK FAILED';
+    var v = s.verdict;
+    var sel = s.selection || 'this selection';
+    if (v === 'PASS') return 'PASS — ' + sel + (s.odds ? ' (' + s.odds + ')' : '');
+    if (v === 'WAIT') return 'WAIT — ' + sel + (s.odds ? ' (' + s.odds + ')' : '');
+    return v + ' — ' + sel + (s.odds ? ' (' + s.odds + ')' : '');
+  }
+  /* Article-ready copy, strictly from the simple object. */
+  function publisher(simple, ctx) {
+    ctx = ctx || {};
+    var s = simple || {};
+    var preset = PRESETS[ctx.preset] ? ctx.preset : 'GAME';
+    var P = PRESETS[preset];
+    var v = s.verdict;
+    var whyLines = (s.why || []).map(function (w) { return w.text; });
+    if (!whyLines.length) whyLines.push(v === 'PASS' ? 'EdgeDesk does not see enough value at the current price.' : 'EdgeDesk’s current research favors this number.');
+    var risk = (s.biggest_risk && s.biggest_risk.text) || (s.watch && s.watch.text) || 'The price could move before kickoff.';
+    var change = (s.change_trigger && s.change_trigger.text) || 'A worse price would change the call.';
+    var goodTo = s.playable_to || {};
+    var market = (s.market_read && s.market_read.text) || '';
+    var lede;
+    if (s.suppressed) lede = 'EdgeDesk is withholding a call on this game until a data check is repaired.';
+    else if (!s.available) lede = 'EdgeDesk has no decision on file for this game.';
+    else if (v === 'BET') lede = 'EdgeDesk’s current research favors ' + s.selection + ' at ' + s.odds + (goodTo.limit_odds ? ', and the number remains playable through ' + goodTo.limit_odds : '') + '.';
+    else if (v === 'LEAN') lede = 'EdgeDesk leans toward ' + s.selection + ' at ' + s.odds + ', with caveats.' + (goodTo.limit_odds ? ' The number stays playable through ' + goodTo.limit_odds + '.' : '');
+    else if (v === 'WAIT') lede = 'EdgeDesk is not ready to call ' + s.selection + ' at ' + s.odds + '. ' + ((s.watch && s.watch.text) || 'Something still needs to confirm.');
+    else lede = 'At the current price, EdgeDesk passes on ' + (s.selection || 'this market') + '.' + (goodTo.kind === 'NEEDS' ? ' It would take ' + goodTo.limit_odds + ' or better to change that.' : '');
+    return {
+      version: VERSION,
+      preset: preset,
+      title: ctx.title || P.title,
+      kicker: ctx.kicker || P.kicker || (s.game && s.game.sport_label) || null,
+      event_label: ctx.event_label || (s.game && s.game.away && s.game.home ? s.game.away + ' at ' + s.game.home : (s.game && s.game.matchup) || null),
+      when_label: ctx.when_label || null,
+      sport_label: ctx.sport_label || (s.game && s.game.sport_label) || null,
+      lede: lede,
+      call: { verdict: s.suppressed ? 'DATA CHECK FAILED' : (v || null), selection: s.selection, odds: s.odds, book: s.book, text: callText(s) },
+      good_to: { label: goodTo.label || null, text: goodTo.text || null, limit_odds: goodTo.limit_odds || null },
+      why: whyLines.slice(0, 3),
+      biggest_risk: risk,
+      change_call: change,
+      market_read: market,
+      data_check: dataCheck(s),
+      freshness_text: s.freshness ? s.freshness.price_text : null,
+      powered_by: 'Powered by EdgeDesk Sports'
+    };
+  }
+
+  /* ----------------------------------------------------------------- slate */
+  function rankCards(cards) {
+    return (cards || []).slice().sort(function (a, b) {
+      var ra = VERDICT_RANK[a.verdict] != null ? VERDICT_RANK[a.verdict] : 9;
+      var rb = VERDICT_RANK[b.verdict] != null ? VERDICT_RANK[b.verdict] : 9;
+      if (ra !== rb) return ra - rb;
+      return (num(b.score) || 0) - (num(a.score) || 0);
+    });
+  }
+  /* mode: 'top' (default, max N BET decisions), 'all' (every BET/LEAN), 'single'. */
+  function slate(cards, opts) {
+    opts = opts || {};
+    var mode = opts.mode || 'top';
+    var max = num(opts.max) != null && num(opts.max) > 0 ? Math.floor(num(opts.max)) : 3;
+    var all = rankCards((cards || []).filter(function (c) { return c && c.available; }));
+    var usable = all.filter(function (c) { return !c.suppressed; });
+    var bets = usable.filter(function (c) { return c.verdict === 'BET' && c.freshness.status !== 'STALE'; });
+    var counts = { bet: 0, lean: 0, wait: 0, pass: 0, failed: 0 };
+    all.forEach(function (c) { if (c.suppressed) counts.failed++; else if (c.verdict === 'BET') counts.bet++; else if (c.verdict === 'LEAN') counts.lean++; else if (c.verdict === 'WAIT') counts.wait++; else counts.pass++; });
+    var picks, watch;
+    if (mode === 'single') { picks = all.slice(0, 1); }
+    else if (mode === 'all') { picks = usable.filter(function (c) { return c.verdict === 'BET' || c.verdict === 'LEAN'; }); }
+    else { picks = bets.slice(0, max); }
+    var picked = {};
+    picks.forEach(function (c) { picked[cardKey(c)] = 1; });
+    /* Never pad. The strongest non-BET research sits underneath, labelled. */
+    watch = all.filter(function (c) { return !picked[cardKey(c)]; }).slice(0, Math.max(max, 3));
+    var noBet = !picks.some(function (c) { return c.verdict === 'BET'; });
+    var bestWatch = watch.filter(function (c) { return c.verdict === 'LEAN' || c.verdict === 'WAIT'; })[0] || null;
+    return {
+      mode: mode, max: max,
+      picks: picks, watch: watch,
+      no_bet: noBet,
+      headline: noBet ? 'NO QUALIFYING BETS' : (picks.length + ' qualifying bet' + (picks.length === 1 ? '' : 's')),
+      counts: counts,
+      best_price_to_watch: bestWatch ? { selection: bestWatch.selection, odds: bestWatch.odds, book: bestWatch.book, verdict: bestWatch.verdict,
+        limit: bestWatch.playable_to && bestWatch.playable_to.label, text: bestWatch.watch && bestWatch.watch.text } : null
+    };
+  }
+  function cardKey(c) {
+    return [c.game && c.game.event_id, c.market, c.selection_raw || c.selection, c.line].join('|');
+  }
+
+  /* -------------------------------------------------------------- snapshot */
+  /* A publisher brief is a SNAPSHOT. It does not change when live odds do.
+     `refresh` returns a NEW snapshot with a higher version; the old one is
+     untouched, and every public price carries its capture timestamp. */
+  function worst(a, b, order) { return order.indexOf(a) >= order.indexOf(b) ? a : b; }
+  function snapshot(o) {
+    o = o || {};
+    var now = toMs(o.now) != null ? toMs(o.now) : Date.now();
+    var cards = (o.cards || []).map(function (c) { return JSON.parse(JSON.stringify(c)); });
+    var preset = PRESETS[o.preset] ? o.preset : (o.report_type === 'SLATE' ? 'SLATE' : 'GAME');
+    var reportType = o.report_type === 'SLATE' ? 'SLATE' : 'GAME';
+    var sl = reportType === 'SLATE' ? slate(cards, { mode: o.mode, max: o.max }) : null;
+    var primary = reportType === 'SLATE' ? (sl.picks.concat(sl.watch)) : cards.slice(0, 1);
+    var pubCards = (reportType === 'SLATE' ? sl.picks : cards.slice(0, 1)).map(function (c, i) {
+      return { rank: i + 1, brief: publisher(c, { preset: preset, event_label: c.game && c.game.away && c.game.home ? c.game.away + ' at ' + c.game.home : (c.game && c.game.matchup) || null, when_label: c.game && c.game.commence ? whenLabel(c.game.commence, o.tz) : null, sport_label: o.sport_label || (c.game && c.game.sport_label) || null }) };
+    });
+    var watchCards = reportType === 'SLATE' ? sl.watch.map(function (c, i) {
+      return { rank: i + 1, brief: publisher(c, { preset: preset, event_label: c.game && c.game.away && c.game.home ? c.game.away + ' at ' + c.game.home : (c.game && c.game.matchup) || null, when_label: c.game && c.game.commence ? whenLabel(c.game.commence, o.tz) : null, sport_label: o.sport_label || null }) };
+    }) : [];
+    var fresh = 'CURRENT', integ = 'OK';
+    primary.forEach(function (c) {
+      fresh = worst(fresh, c.freshness && c.freshness.status || 'UNKNOWN', ['CURRENT', 'AGING', 'UNKNOWN', 'STALE']);
+      integ = worst(integ, c.integrity_status || 'OK', ['OK', 'PROVISIONAL', 'FAILED']);
+    });
+    var prices = primary.map(function (c) {
+      return { event_id: c.game && c.game.event_id, matchup: c.game && c.game.matchup, market: c.market_label, selection: c.selection,
+        line: c.line, odds: c.odds, book: c.book, captured_at: c.freshness && c.freshness.price_captured_at || null };
+    });
+    var eventIds = [];
+    primary.forEach(function (c) { var id = c.game && c.game.event_id; if (id && eventIds.indexOf(id) < 0) eventIds.push(id); });
+    var P = PRESETS[preset];
+    var title = o.title || P.title;
+    var first = cards[0];
+    var eventLabel = o.event_label || (reportType === 'GAME' && first && first.game ? (first.game.away && first.game.home ? first.game.away + ' at ' + first.game.home : first.game.matchup) : null);
+    return {
+      version: VERSION,
+      version_no: num(o.version_no) || 1,
+      parent_key: o.parent_key || null,
+      report_key: o.report_key || (reportType + ':' + preset + ':' + (eventIds.join(',') || 'none')),
+      report_type: reportType,
+      preset: preset,
+      sport: o.sport || (first && first.game && first.game.sport_key) || null,
+      sport_label: o.sport_label || (first && first.game && first.game.sport_label) || null,
+      title: title,
+      kicker: o.kicker || P.kicker || null,
+      event_label: eventLabel,
+      when_label: o.when_label || (reportType === 'GAME' && first && first.game && first.game.commence ? whenLabel(first.game.commence, o.tz) : null),
+      generated_at: new Date(now).toISOString(),
+      event_ids: eventIds,
+      price_snapshot: prices,
+      freshness_status: fresh,
+      integrity_status: integ,
+      public: {
+        cards: pubCards,
+        watch: watchCards,
+        slate: sl ? { headline: sl.headline, no_bet: sl.no_bet, counts: sl.counts, mode: sl.mode, max: sl.max, best_price_to_watch: sl.best_price_to_watch } : null,
+        data_status: publicDataStatus(fresh, integ, prices)
+      },
+      internal: { cards: cards, slate: sl },
+      is_public: false,
+      share_slug: null
+    };
+  }
+  function publicDataStatus(fresh, integ, prices) {
+    var status = integ === 'FAILED' ? 'Data check failed' : fresh === 'STALE' ? 'Needs refresh' : (integ === 'PROVISIONAL' || fresh === 'UNKNOWN') ? 'Provisional' : 'Current';
+    var latest = null;
+    prices.forEach(function (p) { if (p.captured_at && (!latest || p.captured_at > latest)) latest = p.captured_at; });
+    return { status: status, price_captured_at: latest, prices: prices };
+  }
+  function refresh(prev, o) {
+    o = o || {};
+    var next = snapshot({
+      cards: o.cards, report_type: prev.report_type, preset: prev.preset, mode: o.mode || (prev.internal && prev.internal.slate && prev.internal.slate.mode),
+      max: o.max || (prev.internal && prev.internal.slate && prev.internal.slate.max), sport: prev.sport, sport_label: prev.sport_label,
+      title: prev.title, kicker: prev.kicker, event_label: o.event_label || prev.event_label, when_label: o.when_label || prev.when_label,
+      now: o.now, tz: o.tz, version_no: (num(prev.version_no) || 1) + 1, parent_key: prev.report_key, report_key: prev.report_key
+    });
+    return next;
+  }
+  /* Only what is meant to be published. Engine internals never leave. */
+  function publicPayload(snap) {
+    if (!snap) return null;
+    return {
+      version: snap.version, version_no: snap.version_no, report_key: snap.report_key, report_type: snap.report_type, preset: snap.preset,
+      sport: snap.sport, sport_label: snap.sport_label, title: snap.title, kicker: snap.kicker, event_label: snap.event_label,
+      when_label: snap.when_label, generated_at: snap.generated_at, event_ids: snap.event_ids,
+      freshness_status: snap.freshness_status, integrity_status: snap.integrity_status,
+      cards: snap.public.cards, watch: snap.public.watch, slate: snap.public.slate, data_status: snap.public.data_status
+    };
+  }
+  function whenLabel(iso, tz) {
+    var ms = toMs(iso);
+    if (ms == null) return null;
+    try {
+      return new Intl.DateTimeFormat('en-US', { timeZone: tz || 'America/New_York', weekday: 'long', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }).format(new Date(ms)) + ' ET';
+    } catch (e) { return new Date(ms).toUTCString(); }
+  }
+  /* ET calendar facts for primetime resolution. */
+  function etParts(iso, tz) {
+    var ms = toMs(iso);
+    if (ms == null) return null;
+    try {
+      var f = new Intl.DateTimeFormat('en-US', { timeZone: tz || 'America/New_York', weekday: 'short', hour: 'numeric', hour12: false, year: 'numeric', month: '2-digit', day: '2-digit' });
+      var parts = {};
+      f.formatToParts(new Date(ms)).forEach(function (p) { parts[p.type] = p.value; });
+      var wd = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 }[parts.weekday];
+      var hour = parseInt(parts.hour, 10); if (hour === 24) hour = 0;
+      return { weekday: wd, hour: hour, date: parts.year + '-' + parts.month + '-' + parts.day, ms: ms };
+    } catch (e) { var d = new Date(ms); return { weekday: d.getUTCDay(), hour: d.getUTCHours(), date: d.toISOString().slice(0, 10), ms: ms }; }
+  }
+  /* kind: TNF | SNF | MNF. rows carry {sport_key, commence_time}. Picks the
+     next primetime kickoff by ET weekday and a 7pm+ ET start. Nothing is
+     hardcoded: the game is whatever the schedule says it is. */
+  function primetime(rows, kind, opts) {
+    opts = opts || {};
+    var now = toMs(opts.now) != null ? toMs(opts.now) : Date.now();
+    var want = { TNF: 4, SNF: 0, MNF: 1 }[kind];
+    if (want == null) return null;
+    /* Nine days, not seven: the next Thursday game can be a full week plus
+       kickoff-hours away, and a horizon that ends at the same clock time on
+       the seventh day misses an 8:15 pm ET start on the eighth. */
+    var horizon = now + (num(opts.days) || 9) * 86400000;
+    var best = null;
+    (rows || []).forEach(function (r) {
+      if (!r || String(r.sport_key || '').indexOf('americanfootball_nfl') !== 0) return;
+      var p = etParts(r.commence_time || r.commence || r.t, opts.tz);
+      if (!p || p.weekday !== want || p.hour < 19) return;
+      if (p.ms < now - 4 * 3600000 || p.ms > horizon) return;
+      if (!best || p.ms < best.ms) best = { ms: p.ms, row: r, date: p.date };
+    });
+    return best;
+  }
+
+  /* ------------------------------------------------------------ renderers */
+  function whatMeans(key, simple) {
+    var t = explain(key, simple);
+    if (!t) return '';
+    return '<details class="dcard-what"><summary>What does this mean?</summary><p>' + esc(t) + '</p></details>';
+  }
+  /* The 5-second view. opts: { actions:[{label, onclick, primary}], compact, id, show_what } */
+  function cardHTML(s, opts) {
+    opts = opts || {};
+    if (!s) return '';
+    var v = s.suppressed ? 'FAILED' : (s.verdict || 'NONE');
+    var vcls = s.suppressed ? 'dc-failed' : s.verdict === 'BET' ? 'dc-bet' : s.verdict === 'LEAN' ? 'dc-lean' : s.verdict === 'WAIT' ? 'dc-wait' : s.verdict === 'PASS' ? 'dc-pass' : 'dc-none';
+    var vtext = s.suppressed ? 'DATA CHECK FAILED' : (s.verdict || 'NO DECISION');
+    var goodTo = s.playable_to || {};
+    var h = '<article class="dcard ' + vcls + (opts.compact ? ' compact' : '') + '"' + (opts.id ? ' id="' + esc(opts.id) + '"' : '') + ' data-verdict="' + esc(v) + '">';
+    h += '<div class="dcard-hero">'
+      + '<div class="dcard-eyebrow">EdgeDesk says</div>'
+      + '<div class="dcard-verdict">' + esc(vtext) + '</div>'
+      + '<div class="dcard-sel">' + esc(s.selection || '—') + '</div>'
+      + '<div class="dcard-price">' + esc(s.odds_display || '—') + '</div>'
+      + '<div class="dcard-goodto' + (goodTo.kind === 'NEEDS' ? ' needs' : goodTo.kind === 'NONE' ? ' none' : '') + '">'
+      + '<span class="k">' + (goodTo.kind === 'GOOD_TO' ? 'Good to' : goodTo.kind === 'NEEDS' ? 'Needs' : goodTo.kind === 'LIMIT' ? 'Limit' : 'Playable to') + '</span> '
+      + '<b>' + esc(goodTo.kind === 'GOOD_TO' || goodTo.kind === 'LIMIT' ? (goodTo.limit_odds || '—') : goodTo.kind === 'NEEDS' ? goodTo.limit_odds + ' or better' : '—') + '</b>'
+      + '</div>'
+      + '</div>';
+    /* The compact strip shows only what changes the decision at a glance:
+       a failed check, a provisional read, a stale or missing price. Named
+       data gaps stay on the full card, where the watch line explains them. */
+    var flags = (s.flags || []).filter(function (f) { return !opts.compact || f.kind !== 'DATA_GAP'; });
+    if (flags.length) {
+      h += '<div class="dcard-flags">' + flags.map(function (f) {
+        var c = f.kind === 'DATA_CHECK_FAILED' ? 'bad' : (f.kind === 'STALE_PRICE' || f.kind === 'NO_PRICE') ? 'bad' : 'warn';
+        return '<span class="dcard-flag ' + c + '">' + esc(f.text) + '</span>';
+      }).join('') + '</div>';
+    }
+    if (!opts.compact) {
+      h += '<div class="dcard-body">'
+        + '<div class="dcard-head">' + esc(s.headline || '') + '</div>'
+        + '<div class="dcard-h">Why</div><ul class="dcard-why">'
+        + (s.why || []).map(function (w) { return '<li>' + esc(w.text) + '</li>'; }).join('')
+        + '</ul>'
+        + '<div class="dcard-h">' + (s.verdict === 'WAIT' ? 'Waiting on' : s.verdict === 'PASS' ? 'Why pass' : 'Watch') + '</div>'
+        + '<p class="dcard-watch">' + esc(s.watch && s.watch.text || '') + '</p>'
+        + (s.change_trigger && s.change_trigger.text ? '<div class="dcard-h">What would change it</div><p class="dcard-change">' + esc(s.change_trigger.text) + '</p>' : '')
+        + '<div class="dcard-fresh' + (s.freshness && s.freshness.status === 'STALE' ? ' bad' : '') + '">' + esc(s.freshness ? s.freshness.price_text : '') + (s.freshness && s.freshness.research_text ? ' · ' + esc(s.freshness.research_text) : '') + '</div>'
+        + (opts.show_what !== false ? whatMeans('good_to', s) + whatMeans('verdict', s) : '')
+        + '</div>';
+    } else {
+      h += '<div class="dcard-line">' + esc((s.why && s.why[0] && s.why[0].text) || s.headline || '') + '</div>';
+    }
+    if (opts.actions && opts.actions.length) {
+      h += '<div class="dcard-actions">' + opts.actions.map(function (a) {
+        return '<button type="button" class="dcard-btn' + (a.primary ? ' primary' : '') + '" onclick="' + esc(a.onclick) + '">' + esc(a.label) + '</button>';
+      }).join('') + '</div>';
+    }
+    return h + '</article>';
+  }
+
+  function briefCardHTML(pc, opts) {
+    var b = pc.brief, r = pc.rank;
+    var v = b.call.verdict || 'NONE';
+    var vcls = v === 'BET' ? 'dc-bet' : v === 'LEAN' ? 'dc-lean' : v === 'WAIT' ? 'dc-wait' : v === 'PASS' ? 'dc-pass' : 'dc-failed';
+    var h = '<section class="edb-pick ' + vcls + '">';
+    if (opts && opts.numbered) h += '<div class="edb-rank">#' + r + '</div>';
+    if (b.event_label && (opts && opts.showEvent)) h += '<div class="edb-ev">' + esc(b.event_label) + (b.when_label ? ' <span class="edb-when">' + esc(b.when_label) + '</span>' : '') + '</div>';
+    h += '<div class="edb-call"><span class="edb-verdict">' + esc(v === 'DATA CHECK FAILED' ? v : v) + '</span>'
+      + '<span class="edb-sel">' + esc(b.call.selection || '—') + (b.call.odds ? ' (' + esc(b.call.odds) + ')' : '') + '</span></div>';
+    if (b.good_to && b.good_to.label) h += '<div class="edb-goodto">' + esc(b.good_to.label) + '</div>';
+    h += '<div class="edb-h">' + (v === 'PASS' ? 'Why EdgeDesk passes' : v === 'WAIT' ? 'Waiting for' : 'Why EdgeDesk likes it') + '</div><ol class="edb-why">'
+      + b.why.map(function (w) { return '<li>' + esc(w) + '</li>'; }).join('') + '</ol>';
+    h += '<div class="edb-h">The biggest risk</div><p>' + esc(b.biggest_risk) + '</p>';
+    h += '<div class="edb-h">What would change the call</div><p>' + esc(b.change_call) + '</p>';
+    if (b.market_read) h += '<div class="edb-h">Market read</div><p>' + esc(b.market_read) + '</p>';
+    return h + '</section>';
+  }
+  /* The one-page brief. opts: { public:true } strips nothing (the public
+     payload already contains only publishable fields), it only changes chrome. */
+  function briefHTML(snap, opts) {
+    opts = opts || {};
+    if (!snap) return '';
+    var pub = snap.public || snap;   /* accepts a full snapshot or a public payload */
+    var cards = pub.cards || [], watch = pub.watch || [], sl = pub.slate || null, ds = pub.data_status || {};
+    var h = '<article class="edb" data-report="' + esc(snap.report_type || '') + '" data-preset="' + esc(snap.preset || '') + '">';
+    h += '<header class="edb-hd"><div class="edb-brand">EdgeDesk</div><h1 class="edb-title">' + esc(snap.title || 'EdgeDesk Brief') + '</h1>'
+      + (snap.kicker ? '<div class="edb-kicker">' + esc(snap.kicker) + '</div>' : '')
+      + (snap.event_label ? '<div class="edb-event">' + esc(snap.event_label) + '</div>' : '')
+      + (snap.when_label ? '<div class="edb-when">' + esc(snap.when_label) + '</div>' : '')
+      + '</header>';
+    if (snap.report_type === 'SLATE') {
+      h += '<div class="edb-slatehead' + (sl && sl.no_bet ? ' nobet' : '') + '">' + esc(sl ? sl.headline : '') + '</div>';
+      if (sl && sl.no_bet) h += '<p class="edb-nobet">EdgeDesk found no qualifying bet on this slate at current prices. That is a real answer. The strongest research is below, labelled for what it is.</p>';
+      cards.forEach(function (pc) { h += briefCardHTML(pc, { numbered: true, showEvent: true }); });
+      if (watch.length) {
+        h += '<div class="edb-h edb-sec">' + (sl && sl.no_bet ? 'Strongest research (not bets)' : 'Also on the board') + '</div>';
+        watch.forEach(function (pc) { h += briefCardHTML(pc, { numbered: false, showEvent: true }); });
+      }
+      if (sl && sl.best_price_to_watch) {
+        var bp = sl.best_price_to_watch;
+        h += '<div class="edb-h edb-sec">Best price to watch</div><p class="edb-bpw"><b>' + esc(bp.selection || '') + '</b>' + (bp.odds ? ' at ' + esc(bp.odds) : '') + (bp.limit ? ' · ' + esc(bp.limit) : '') + (bp.text ? '. ' + esc(bp.text) : '') + '</p>';
+      }
+    } else {
+      cards.forEach(function (pc) {
+        var b = pc.brief;
+        h += '<div class="edb-h edb-sec">The EdgeDesk call</div>';
+        h += '<p class="edb-lede">' + esc(b.lede) + '</p>';
+        h += briefCardHTML(pc, { numbered: false, showEvent: false });
+      });
+    }
+    h += '<footer class="edb-ft"><div class="edb-h">EdgeDesk data check</div><p><b>' + esc(ds.status || 'Current') + '</b>'
+      + (ds.price_captured_at ? ' · Price captured at ' + esc(fmtStamp(ds.price_captured_at)) : '') + '</p>'
+      + (ds.prices && ds.prices.length > 1 ? '<ul class="edb-prices">' + ds.prices.map(function (p) { return '<li>' + esc(p.selection || '') + (p.odds ? ' ' + esc(p.odds) : '') + (p.book ? ' · ' + esc(p.book) : '') + (p.captured_at ? ' · captured ' + esc(fmtStamp(p.captured_at)) : '') + '</li>'; }).join('') + '</ul>' : '')
+      + '<p class="edb-gen">Generated ' + esc(fmtStamp(snap.generated_at)) + (snap.version_no > 1 ? ' · version ' + snap.version_no : '') + '</p>'
+      + '<p class="edb-powered">Powered by EdgeDesk Sports</p></footer>';
+    return h + '</article>';
+  }
+  function fmtStamp(iso) {
+    var ms = toMs(iso);
+    if (ms == null) return String(iso || '');
+    try { return new Intl.DateTimeFormat('en-US', { timeZone: 'America/New_York', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }).format(new Date(ms)) + ' ET'; }
+    catch (e) { return new Date(ms).toISOString(); }
+  }
+  /* Clean semantic HTML for a CMS paste: headings, paragraphs, lists, no classes. */
+  function briefCmsHTML(snap) {
+    var pub = snap.public || snap, ds = pub.data_status || {};
+    var h = '<h1>' + esc(snap.title || 'EdgeDesk Brief') + '</h1>';
+    if (snap.kicker) h += '<p><strong>' + esc(snap.kicker) + '</strong></p>';
+    if (snap.event_label) h += '<p>' + esc(snap.event_label) + (snap.when_label ? ' · ' + esc(snap.when_label) : '') + '</p>';
+    function pick(pc, numbered) {
+      var b = pc.brief, s = '';
+      if (numbered) s += '<h2>#' + pc.rank + ' ' + esc(b.call.text) + (b.event_label ? ' — ' + esc(b.event_label) : '') + '</h2>';
+      else { s += '<h2>The EdgeDesk call</h2><p><strong>' + esc(b.call.text) + '</strong></p>'; }
+      if (b.good_to && b.good_to.label) s += '<p><strong>' + esc(b.good_to.label) + '</strong></p>';
+      if (!numbered) s += '<p>' + esc(b.lede) + '</p>';
+      s += '<h3>' + (b.call.verdict === 'PASS' ? 'Why EdgeDesk passes' : b.call.verdict === 'WAIT' ? 'Waiting for' : 'Why EdgeDesk likes it') + '</h3><ol>' + b.why.map(function (w) { return '<li>' + esc(w) + '</li>'; }).join('') + '</ol>';
+      s += '<h3>The biggest risk</h3><p>' + esc(b.biggest_risk) + '</p>';
+      s += '<h3>What would change the call</h3><p>' + esc(b.change_call) + '</p>';
+      if (b.market_read) s += '<h3>Market read</h3><p>' + esc(b.market_read) + '</p>';
+      return s;
+    }
+    if (snap.report_type === 'SLATE') {
+      h += '<h2>' + esc(pub.slate ? pub.slate.headline : '') + '</h2>';
+      if (pub.slate && pub.slate.no_bet) h += '<p>EdgeDesk found no qualifying bet on this slate at current prices. The strongest research is below, labelled for what it is.</p>';
+      (pub.cards || []).forEach(function (pc) { h += pick(pc, true); });
+      if ((pub.watch || []).length) { h += '<h2>' + (pub.slate && pub.slate.no_bet ? 'Strongest research (not bets)' : 'Also on the board') + '</h2>'; pub.watch.forEach(function (pc) { h += pick(pc, true); }); }
+    } else {
+      (pub.cards || []).forEach(function (pc) { h += pick(pc, false); });
+    }
+    h += '<h3>EdgeDesk data check</h3><p>' + esc(ds.status || 'Current') + (ds.price_captured_at ? ' · Price captured at ' + esc(fmtStamp(ds.price_captured_at)) : '') + '</p>';
+    h += '<p><em>Powered by EdgeDesk Sports</em></p>';
+    return h;
+  }
+  /* Article-ready plain text. */
+  function briefText(snap) {
+    var pub = snap.public || snap, ds = pub.data_status || {};
+    var L = [];
+    L.push((snap.title || 'EdgeDesk Brief').toUpperCase());
+    if (snap.kicker) L.push(snap.kicker);
+    if (snap.event_label) L.push(snap.event_label + (snap.when_label ? ' · ' + snap.when_label : ''));
+    L.push('');
+    function pick(pc, numbered) {
+      var b = pc.brief;
+      if (numbered) L.push('#' + pc.rank + '  ' + b.call.text + (b.event_label ? '  —  ' + b.event_label : ''));
+      else { L.push('THE EDGEDESK CALL'); L.push(b.call.text); }
+      if (b.good_to && b.good_to.label) L.push(b.good_to.label.toUpperCase());
+      if (!numbered) { L.push(''); L.push(b.lede); }
+      L.push('');
+      L.push(b.call.verdict === 'PASS' ? 'WHY EDGEDESK PASSES' : b.call.verdict === 'WAIT' ? 'WAITING FOR' : 'WHY EDGEDESK LIKES IT');
+      b.why.forEach(function (w, i) { L.push((i + 1) + '. ' + w); });
+      L.push(''); L.push('THE BIGGEST RISK'); L.push(b.biggest_risk);
+      L.push(''); L.push('WHAT WOULD CHANGE THE CALL'); L.push(b.change_call);
+      if (b.market_read) { L.push(''); L.push('MARKET READ'); L.push(b.market_read); }
+      L.push('');
+    }
+    if (snap.report_type === 'SLATE') {
+      L.push(pub.slate ? pub.slate.headline : ''); L.push('');
+      if (pub.slate && pub.slate.no_bet) { L.push('EdgeDesk found no qualifying bet on this slate at current prices. The strongest research is below, labelled for what it is.'); L.push(''); }
+      (pub.cards || []).forEach(function (pc) { pick(pc, true); });
+      if ((pub.watch || []).length) { L.push(pub.slate && pub.slate.no_bet ? 'STRONGEST RESEARCH (NOT BETS)' : 'ALSO ON THE BOARD'); L.push(''); pub.watch.forEach(function (pc) { pick(pc, true); }); }
+    } else {
+      (pub.cards || []).forEach(function (pc) { pick(pc, false); });
+    }
+    L.push('EDGEDESK DATA CHECK');
+    L.push((ds.status || 'Current') + (ds.price_captured_at ? ' · Price captured at ' + fmtStamp(ds.price_captured_at) : ''));
+    L.push(''); L.push('Powered by EdgeDesk Sports');
+    return L.join('\n');
+  }
+
+  return {
+    VERSION: VERSION, VERDICTS: VERDICTS, HYPE: HYPE, PRESETS: PRESETS,
+    esc: esc, num: num, sentence: sentence, normVerdict: normVerdict,
+    decToAmerican: decToAmerican, fmtAmerican: fmtAmerican, selectionLabel: selectionLabel, marketLabel: marketLabel,
+    translate: translate, translateText: translateText, plainReason: plainReason,
+    freshness: freshness, ageText: ageText, playable: playable, priceStatus: priceStatus, integrityStatus: integrityStatus,
+    gapSentences: gapSentences,
+    simpleFromPacket: simpleFromPacket, packetFromBoardRow: packetFromBoardRow,
+    validateCopy: validateCopy, applyAiCopy: applyAiCopy, parseAiCopyBlock: parseAiCopyBlock,
+    explain: explain, publisher: publisher, slate: slate, rankCards: rankCards,
+    snapshot: snapshot, refresh: refresh, publicPayload: publicPayload,
+    whenLabel: whenLabel, etParts: etParts, primetime: primetime, fmtStamp: fmtStamp,
+    cardHTML: cardHTML, briefHTML: briefHTML, briefCmsHTML: briefCmsHTML, briefText: briefText
+  };
+});
+/*__EDPRES_END__*/
+</script>
 <script>
 /* ===================================================================================
    EdgeDesk Intelligence — decision-support layer.
@@ -20714,7 +21949,7 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
       return '<div class="c"><span class="lbl">'+esc(c.k)+'</span><span class="bar"><i style="width:'+w+'%"></i></span>'
            + '<span class="val">'+Math.round(c.v)+'/'+c.max+'</span></div>';
     }).join('');
-    return '<div class="edai-card">'
+    return (window.EDCARD?EDCARD.cardForX(x):'')+'<div class="edai-card">'
       + '<div class="edai-vhead"><span class="edai-verdict '+vClass(x.dverdict)+'">'+vLabel(x.dverdict)+'</span>'
       +   '<div><div class="edai-vsel">'+esc(x.sel)+'</div><div class="edai-vsub">'+esc(x.market)+' · '+amStr(x.curAm)+' · '+esc(x.book||'')+'</div></div>'
       +   confBadge(x)+'</div>'
@@ -21538,14 +22773,23 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
   }
 
   /* ---- call the AI function; fall back to the local narrative on any failure ---- */
-  async function askAI(mode, question, x, extra){
-    var packet = x? {
-      game:{matchup:x.matchup,sport:x.sport,commence:x.e.commence_time},
-      market:x.market, selection:x.sel,
-      prices:{detect:x.detAm,current:x.curAm,fair:x.fairAm,fair_src:x.fairSrc,best_seen:x.bestAm,max_playable:x.maxAm,pinnacle:x.pinDec?decToAm(x.pinDec):null},
+  /* THE ONE PACKET. Built here and nowhere else: askAI sends it to edgedesk_ai
+     and the decision card (EDCARD) is translated from the same object, so the
+     card and the AI can never disagree about a number. Every price is the
+     engine's own American-odds display transform; nothing is recomputed. */
+  function packetOf(x){
+    if(!x) return null;
+    var e=x.e||{};
+    return {
+      game:{matchup:x.matchup,sport:x.sport,sport_key:e.sport_key||null,commence:e.commence_time,
+        away:e.away_team||null,home:e.home_team||null,event_id:e.event_id||null},
+      market:x.market, market_key:e.market||null, selection:x.sel, selection_raw:e.selection||null,
+      point:(e.point==null?null:e.point),
+      prices:{detect:x.detAm,current:x.curAm,fair:x.fairAm,fair_src:x.fairSrc,best_seen:x.bestAm,max_playable:x.maxAm,
+        pinnacle:x.pinDec?decToAm(x.pinDec):null,book:x.book||null,trusted:x.trusted},
       edge:{detect:x.detEdge,current:x.curEdge,ev:x.evNow,remaining:x.remaining,floor:FLOOR},
       confirmation:{has_sharp:x.sharp,n_books:x.nb,n_books_eff:x.nbe,corrob:x.corr,book:x.book,trusted:x.trusted},
-      timing:{stale_min:Math.round(x.staleM)},
+      timing:{stale_min:Math.round(x.staleM),last_seen_at:e.last_seen_at||null,stale_limit_min:STALE_MIN},
       clv:x.graded?{clv:x.clv,beat_close:x.beat,closing:x.closeP,result:x.result}:null,
       mlb: mlbPacket(x.mlb),
       market_coverage: (window.ED_COVERAGE?ED_COVERAGE.packet(x.e):null),
@@ -21553,7 +22797,42 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
       deterministic:{verdict:x.verdict,display_verdict:x.dverdict,is_wait:x.isWait,wait_reason:x.waitWhy,
         confidence:x.confidence,why:x.why,score:x.score,band:x.band,
         reasons_for:x.reasonsFor,reasons_against:x.reasonsAgainst,falsifiers:x.falsifiers}
-    } : null;
+    };
+  }
+  /* Four PRESENTATIONS of one research engine. The panel picks the shape the
+     button implies; a caller can override with extra.presentation_mode. */
+  var PRES_MODE={why:'SIMPLE',price:'SIMPLE',analyze:'STANDARD',market:'STANDARD',whatchanged:'STANDARD',
+    challenge:'STANDARD',research:'DEEP',trace:'DEEP',slate:'DEEP',board:'DEEP',publisher:'PUBLISHER'};
+  /* The raw call: returns the function's JSON, throws on any failure. askAI
+     wraps it for the panel; the publisher desk uses it directly. */
+  async function callFn(mode, question, x, extra, packet, compareArr){
+    if(packet===undefined) packet=packetOf(x);
+    if(packet && extra && extra.research) packet.research = extra.research;
+    if(extra && extra.board) packet = Object.assign(packet||{}, {board_mode:true, board:extra.board});
+    var pm=(extra&&extra.presentation_mode)||PRES_MODE[mode]||(x?'STANDARD':'DEEP');
+    var tok = (typeof edToken==='function')? await edToken() : (typeof SB_KEY!=='undefined'?SB_KEY:'');
+    var r=await fetch(AI_FN,{method:'POST',
+      headers:{'content-type':'application/json',authorization:'Bearer '+tok,apikey:(typeof SB_KEY!=='undefined'?SB_KEY:'')},
+      body:JSON.stringify({mode:mode,question:question,packet:packet,history:HIST.slice(-6),compare:compareArr||null,
+        presentation_mode:pm, preset:(extra&&extra.preset)||null})});
+    if(!r.ok){
+      var body='';
+      try{ var t=await r.text(); try{ var j=JSON.parse(t); body=j&&(j.error||j.message)||t; }catch(_){ body=t; } }catch(_){}
+      throw new Error('fn '+r.status+(body?' \u2014 '+String(body).slice(0,400):''));
+    }
+    return r.json();
+  }
+  /* The server's decision card, when it carries one. On `analyze` the panel
+     has already drawn the deterministic card, so only AI-copy cards add anything. */
+  function presCardHTML(d, x, mode){
+    try{
+      var p=d&&d.presentation; if(!p||!p.simple||!p.simple.available||!window.EDCARD) return '';
+      if(mode==='analyze' && p.copy_source!=='ai') return '';
+      return EDCARD.serverCardHTML(p, x);
+    }catch(_){ return ''; }
+  }
+  async function askAI(mode, question, x, extra){
+    var packet = packetOf(x);
     if(packet && extra && extra.research) packet.research = extra.research;
     /* BOARD mode rides inside the existing `packet` field — no contract change. The upgraded
        edgedesk_ai reads packet.board and switches to its board prompt; an older deployment
@@ -21561,24 +22840,11 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
     if(extra && extra.board) packet = Object.assign(packet||{}, {board_mode:true, board:extra.board});
     var compareArr = Array.isArray(extra) ? extra : null;
     try{
-      var tok = (typeof edToken==='function')? await edToken() : (typeof SB_KEY!=='undefined'?SB_KEY:'');
-      var r=await fetch(AI_FN,{method:'POST',
-        headers:{'content-type':'application/json',authorization:'Bearer '+tok,apikey:(typeof SB_KEY!=='undefined'?SB_KEY:'')},
-        body:JSON.stringify({mode:mode,question:question,packet:packet,history:HIST.slice(-6),compare:compareArr})});
-      /* THE ERROR WAS ALWAYS IN THE BODY. THIS THREW IT AWAY.
-         edgedesk_ai's top-level catch does `return json({error: <the actual
-         message>}, 502)` — so a 502 from it is not an opaque crash, it is a
-         deliberate report carrying the exception text. Discarding the body and
-         raising "fn 502" turned a named error into a status code, which is why
-         the same failure has been diagnosed by guessing more than once. */
-      if(!r.ok){
-        var body='';
-        try{ var t=await r.text(); try{ var j=JSON.parse(t); body=j&&(j.error||j.message)||t; }catch(_){ body=t; } }catch(_){}
-        throw new Error('fn '+r.status+(body?' — '+String(body).slice(0,400):''));
-      }
-      var d=await r.json();
+      /* THE ERROR WAS ALWAYS IN THE BODY: callFn carries the function's own
+         message through, so a 502 is a named report, not an opaque code. */
+      var d=await callFn(mode, question, x, extra, packet, compareArr);
       if(d&&d.answer){ HIST.push({role:'user',content:question||mode}); HIST.push({role:'assistant',content:d.answer});
-        return {html:integrityHTMLFor(d.research)+mdToHtml(d.answer)+traceHTMLFor(d.research),
+        return {html:presCardHTML(d,x,mode)+integrityHTMLFor(d.research)+mdToHtml(d.answer)+traceHTMLFor(d.research),
           src:d.model?('reasoned by '+d.model+(d.cached?' · cached':'')):null}; }
       throw new Error('empty');
     }catch(err){
@@ -22280,7 +23546,9 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
     var conflicts=findConflicts(ctx, verified, out.unavailable);
     var att=attack(ctx, conflicts);
 
-    var html=rstate('VERIFIED \u00b7 '+verified.length+' item'+(verified.length===1?'':'s'));
+    /* LAYER 1 leads: the 5-second card sits above the verified evidence, so a
+       reader who stops after the first block already has the decision. */
+    var html=(window.EDCARD?EDCARD.cardForX(x):'')+rstate('VERIFIED \u00b7 '+verified.length+' item'+(verified.length===1?'':'s'));
     html+='<div class="edai-card" style="padding:6px 10px">'+verified.map(evRow).join('')+'</div>';
 
     var missing=out.unavailable.slice();
@@ -22948,7 +24216,7 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
       +'</div>';
     var strongestAgainst = (r.conflicts&&r.conflicts.length)?r.conflicts[0]
       : ((x.reasonsAgainst&&x.reasonsAgainst[0])||'No structural objection stands out on owned data.');
-    return '<div class="edai-card" style="margin-bottom:10px">'
+    return (window.EDCARD?EDCARD.cardForX(x):'')+'<div class="edai-card" style="margin-bottom:10px">'
       +'<div class="edai-vhead"><span class="edai-verdict '+badgeCls+'">'+esc(bannerTxt)+'</span>'
       +'<div style="min-width:0"><div class="edai-vsel">'+esc(x.matchup)+'</div>'
       +'<div class="edai-vsub">'+esc(x.sport)+' \u00b7 '+esc(x.sel)+' \u00b7 '+mktL(e.market)+' \u00b7 '+amStr(x.curAm)+' \u00b7 '+pct(x.curEdge)+(ev!=null?' \u00b7 EV '+pct(ev):'')+'</div></div>'
@@ -23951,6 +25219,12 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
       finally{ BUSY=false; var s2=$id('edaiSend'); if(s2)s2.disabled=false; }
     },
     buildBoard:function(force){ return buildBoard(force); },   // inspectable: EDAI.buildBoard(true).then(console.log)
+    /* The deterministic engine and the one packet builder, exposed for the
+       decision card and the publisher desk. Read-only: nothing outside this
+       block computes a number. */
+    evidence:function(e){ return evidence(e); },
+    packetOf:function(x){ return packetOf(x); },
+    callFn:function(mode,q,x,extra){ return callFn(mode,q,x,extra).catch(function(){ return null; }); },
 
     analyzeScan:function(i){ return analyzeScan(i); },
 
@@ -24787,6 +26061,414 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
     }
   }catch(_){}
 })();
+</script>
+<script>
+/*__EDCARD_START__*/
+/* ===================================================================================
+   EdgeDesk DECISION CARD + PUBLISHER DESK — "deep engine, simple answer".
+
+   LAYER 1  the 5-second view (EDCARD)   — verdict · selection · price · good to · why
+   LAYER 2  full research               — everything that already existed, underneath
+   LAYER 3  publisher brief (EDBRIEF)   — a one-page, shareable SNAPSHOT
+
+   Every number on a card comes from the deterministic engine (EDAI.evidence)
+   through EDAI.packetOf, and is translated by the shared EDPRES block. Nothing
+   here computes a probability, edge, price limit or verdict. AI copy arrives
+   only through edgedesk_ai's validated `presentation` object.
+   =================================================================================== */
+(function(){
+  'use strict';
+  var P=window.EDPRES;
+  if(!P){ return; }
+  function $id(x){ return document.getElementById(x); }
+  function esc(s){ return P.esc(s); }
+  function jsAttr(s){ return String(s==null?'':s).replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/"/g,'&quot;'); }
+  function staleLimit(){ return (typeof EDGE_MAX_AGE_MIN!=='undefined'&&EDGE_MAX_AGE_MIN)?EDGE_MAX_AGE_MIN:90; }
+  function engine(e){ try{ return (window.EDAI&&window.EDAI.evidence)?window.EDAI.evidence(e):null; }catch(_){ return null; } }
+  function packetOf(x){ try{ return (window.EDAI&&window.EDAI.packetOf)?window.EDAI.packetOf(x):null; }catch(_){ return null; } }
+
+  /* Football has no injury report anywhere in EdgeDesk. The card says so,
+     as a named gap, rather than letting the absence read as a clean sheet. */
+  function gapsFor(x){
+    var k=(x&&x.e&&x.e.sport_key)||'';
+    if(k.indexOf('americanfootball')===0) return ['injury_report'];
+    return [];
+  }
+
+  /* ---------------------------------------------------------------- cards */
+  var REG={}, SEQ=0;                       // card id -> {e, x, s}
+  function register(e,x,s){ var id='dc'+(++SEQ); REG[id]={e:e,x:x,s:s}; return id; }
+
+  function simpleFromX(x, ctx){
+    if(!x) return null;
+    var pk=packetOf(x); if(!pk) return null;
+    var s=P.simpleFromPacket(pk, Object.assign({stale_limit_min:staleLimit(), gaps:gapsFor(x)}, ctx||{}));
+    return s;
+  }
+  function simpleFromSignal(e, ctx){ var x=engine(e); return x?simpleFromX(x, ctx):null; }
+
+  /* Top edges: the compact strip under the selection line. Buttons stop the
+     row's own click so "View why" opens the receipt and "Create brief" does
+     not also toggle it. */
+  function leadHTML(e, domid){
+    try{
+      var x=engine(e); if(!x) return '';
+      var s=simpleFromX(x); if(!s||!s.available) return '';
+      var id=register(e,x,s);
+      var acts=[
+        {label:'View why', onclick:"event.stopPropagation();toggleRcptId('"+jsAttr(domid)+"')"},
+        {label:'Create brief', onclick:"event.stopPropagation();EDBRIEF.openCard('"+id+"')"}
+      ];
+      return P.cardHTML(s,{compact:true, actions:acts});
+    }catch(_){ return ''; }
+  }
+
+  /* The receipt: the full 5-second card leads, and the research that was
+     already there sits underneath behind "Full research". */
+  function receiptHTML(e, domid){
+    try{
+      var x=engine(e); if(!x) return '';
+      var s=simpleFromX(x); if(!s||!s.available) return '';
+      var id=register(e,x,s);
+      var acts=[
+        {label:'Full research', primary:true, onclick:"event.stopPropagation();EDCARD.toggleFull('"+jsAttr(domid)+"',this)"},
+        {label:'Create brief', onclick:"event.stopPropagation();EDBRIEF.openCard('"+id+"')"},
+        {label:'Ask EdgeDesk', onclick:"event.stopPropagation();edaiAnalyze('"+jsAttr(domid)+"')"}
+      ];
+      return P.cardHTML(s,{actions:acts, id:'dcard_'+domid});
+    }catch(_){ return ''; }
+  }
+  function toggleFull(domid, btn){
+    var el=$id(domid+'_full'); if(!el) return;
+    el.classList.toggle('open');
+    if(btn) btn.textContent=el.classList.contains('open')?'Hide full research':'Full research';
+  }
+
+  /* AI panel: a card for an evidence object the panel already holds. */
+  function cardForX(x, opts){
+    try{
+      var s=simpleFromX(x, opts&&opts.ctx); if(!s||!s.available) return '';
+      var id=register(x.e,x,s);
+      var acts=(opts&&opts.actions)||[
+        {label:'Full research', onclick:"EDAI.action('research')"},
+        {label:'Create brief', onclick:"EDBRIEF.openCard('"+id+"')"}
+      ];
+      return P.cardHTML(s, Object.assign({actions:acts}, opts||{}, {actions:acts}));
+    }catch(_){ return ''; }
+  }
+
+  /* A card the server built (edgedesk_ai `presentation`). The deterministic
+     fields came from our own packet; the copy may be the validated AI copy. */
+  function serverCardHTML(pres, x){
+    try{
+      if(!pres||!pres.simple||!pres.simple.available) return '';
+      var s=pres.simple;
+      var acts=[];
+      if(x){ var id=register(x.e,x,s); acts=[{label:'Full research', onclick:"EDAI.action('research')"},{label:'Create brief', onclick:"EDBRIEF.openCard('"+id+"')"}]; }
+      var src=pres.copy_source==='ai'
+        ? 'Copy written by EdgeDesk Intelligence and checked against the engine’s numbers'
+        : 'Copy from EdgeDesk’s own templates'+(pres.ai_copy_error?' ('+esc(pres.ai_copy_error)+')':'');
+      return P.cardHTML(s,{actions:acts})+'<div class="edai-src" style="border:none;margin-top:-4px">'+src+'</div>';
+    }catch(_){ return ''; }
+  }
+
+  window.EDCARD={
+    simpleFromSignal:simpleFromSignal, simpleFromX:simpleFromX,
+    leadHTML:leadHTML, receiptHTML:receiptHTML, cardForX:cardForX, serverCardHTML:serverCardHTML,
+    toggleFull:toggleFull, get:function(id){ return REG[id]||null; },
+    explain:function(key, id){ var r=REG[id]; return r?P.explain(key, r.s):null; }
+  };
+  window.dcardLeadHTML=leadHTML;
+  window.dcardReceiptHTML=receiptHTML;
+
+  /* ============================================================== PUBLISHER */
+  var BR={snap:null, cards:[], source:null, shared:null};
+
+  function pool(){
+    var rows=[].concat(window.EDGES||[], window.D5_POOL||[]);
+    var seen={}, out=[];
+    rows.forEach(function(e){
+      if(!e||!e.event_id) return;
+      var k=e.event_id+'|'+e.market+'|'+e.selection+'|'+(e.point==null?'':e.point);
+      var t=e.last_seen_at?Date.parse(e.last_seen_at):0;
+      var prev=seen[k];
+      if(!prev||t>(prev.last_seen_at?Date.parse(prev.last_seen_at):0)){ seen[k]=e; }
+    });
+    for(var k in seen) out.push(seen[k]);
+    return out;
+  }
+  function norm(s){ return String(s||'').toLowerCase().replace(/[^a-z0-9]/g,''); }
+  function sameTeam(a,b){ a=norm(a); b=norm(b); if(!a||!b) return false; return a===b||a.indexOf(b)>=0||b.indexOf(a)>=0; }
+
+  /* Every priced market on ONE game, ranked by the engine's verdict order and
+     score, one card each. The best card is the game's call. */
+  function cardsForRows(rows){
+    var cards=[];
+    rows.forEach(function(e){ var s=simpleFromSignal(e); if(s&&s.available){ s.__key=e.event_id+'|'+e.market+'|'+e.selection+'|'+(e.point==null?'':e.point); cards.push(s); } });
+    return P.rankCards(cards);
+  }
+  function rowsForGame(q){
+    var all=pool();
+    var byId=q.event_id?all.filter(function(e){ return String(e.event_id)===String(q.event_id); }):[];
+    if(byId.length) return byId;
+    if(!q.home&&!q.away) return [];
+    return all.filter(function(e){
+      if(q.sport_key&&String(e.sport_key||'').indexOf(q.sport_key)!==0) return false;
+      if(!(sameTeam(e.home_team,q.home)&&sameTeam(e.away_team,q.away))) return false;
+      if(q.t&&e.commence_time){ var dt=Math.abs(Date.parse(e.commence_time)-q.t); if(dt>36*3600e3) return false; }
+      return true;
+    });
+  }
+  function presetFor(e){
+    if(!e||String(e.sport_key||'').indexOf('americanfootball_nfl')!==0) return String(e&&e.sport_key||'').indexOf('americanfootball_ncaaf')===0?'CFB':'GAME';
+    var p=P.etParts(e.commence_time); if(!p||p.hour<19) return 'GAME';
+    return p.weekday===4?'TNF':p.weekday===0?'SNF':p.weekday===1?'MNF':'GAME';
+  }
+  function sportLabelOf(e){ try{ return (typeof evSportLabel==='function')?evSportLabel(e):(e.sport_title||''); }catch(_){ return ''; } }
+
+  /* A game with no priced market on file gets an HONEST brief: no call, and a
+     data check that says why. Nothing is manufactured to fill the page. */
+  function unpricedCard(q){
+    return P.simpleFromPacket({
+      game:{matchup:(q.away||'')+' @ '+(q.home||''), sport:q.sport_label||null, sport_key:q.sport_key||null, commence:q.t?new Date(q.t).toISOString():null, away:q.away||null, home:q.home||null, event_id:q.event_id||null},
+      market:null, prices:{}, edge:{}, confirmation:{}, timing:{}, price_sensitivity:{},
+      deterministic:{verdict:'PASS', display_verdict:'WAIT', is_wait:true, wait_reason:'EdgeDesk has no priced market on file for this game yet. A brief needs a captured price before it can carry a call.', reasons_for:[], reasons_against:[], falsifiers:[]}
+    },{stale_limit_min:staleLimit()});
+  }
+
+  function gameSnapshot(cards, q, preset){
+    var first=cards[0];
+    var kick=q&&q.t?q.t:(first&&first.game&&first.game.commence?Date.parse(first.game.commence):null);
+    return P.snapshot({
+      cards:cards, report_type:'GAME', preset:preset||'GAME',
+      sport:(first&&first.game&&first.game.sport_key)||(q&&q.sport_key)||null,
+      sport_label:(first&&first.game&&first.game.sport_label)||(q&&q.sport_label)||null,
+      event_label:first&&first.game&&first.game.away&&first.game.home?first.game.away+' at '+first.game.home:(q&&q.away&&q.home?q.away+' at '+q.home:null),
+      when_label:kick?P.whenLabel(kick):null
+    });
+  }
+
+  function openCard(id){
+    var r=REG[id]; if(!r) return;
+    var rows=r.e&&r.e.event_id?rowsForGame({event_id:r.e.event_id}):[];
+    var cards=rows.length?cardsForRows(rows):[r.s];
+    /* The card the user clicked leads, whatever else is priced on the game. */
+    var key=r.e.event_id+'|'+r.e.market+'|'+r.e.selection+'|'+(r.e.point==null?'':r.e.point);
+    cards.sort(function(a,b){ return (a.__key===key?-1:0)-(b.__key===key?-1:0); });
+    BR.source={kind:'card', id:id, event_id:r.e.event_id};
+    show(gameSnapshot(cards, null, presetFor(r.e)));
+  }
+  function openGame(q){
+    q=q||{};
+    var rows=rowsForGame(q);
+    var cards=rows.length?cardsForRows(rows):[unpricedCard(q)];
+    BR.source={kind:'game', q:q};
+    var preset=q.preset||(rows.length?presetFor(rows[0]):(String(q.sport_key||'').indexOf('americanfootball_ncaaf')===0?'CFB':'GAME'));
+    show(gameSnapshot(cards, q, preset));
+  }
+  function openPrimetime(kind){
+    var nfl=pool().filter(function(e){ return String(e.sport_key||'').indexOf('americanfootball_nfl')===0; });
+    var hit=P.primetime(nfl, kind);
+    if(hit){ BR.source={kind:'primetime', which:kind}; return openGame({event_id:hit.row.event_id, sport_key:'americanfootball_nfl', preset:kind, home:hit.row.home_team, away:hit.row.away_team, t:hit.ms}); }
+    /* No priced primetime game: fall back to the football schedule so the
+       brief can at least name the game and say no market is on file. */
+    var sched=[];
+    try{ (window.FB&&FB.nfl&&FB.nfl.up||[]).forEach(function(u){ sched.push({sport_key:'americanfootball_nfl', commence_time:new Date(u.t).toISOString(), home:(window.FB_CODE_NAMES&&FB_CODE_NAMES[u.g.home_team])||u.g.home_team, away:(window.FB_CODE_NAMES&&FB_CODE_NAMES[u.g.away_team])||u.g.away_team, t:u.t}); }); }catch(_){}
+    var s2=P.primetime(sched, kind);
+    if(s2){ BR.source={kind:'primetime', which:kind}; return openGame({sport_key:'americanfootball_nfl', sport_label:'NFL', preset:kind, home:s2.row.home, away:s2.row.away, t:s2.ms}); }
+    show(null, 'EdgeDesk has no '+({TNF:'Thursday',SNF:'Sunday',MNF:'Monday'}[kind]||'')+' night NFL game on file in the next week. Load the Football research board or wait for capture to price the game.');
+  }
+  function openCfbSlate(mode, max){
+    var now=Date.now();
+    var rows=pool().filter(function(e){
+      if(String(e.sport_key||'').indexOf('americanfootball_ncaaf')!==0) return false;
+      var t=e.commence_time?Date.parse(e.commence_time):0;
+      return t&&t>now-3600e3&&t<now+7*864e5;
+    });
+    openSlateRows(rows,{preset:'CFB', mode:mode||'top', max:max||3, sport_key:'americanfootball_ncaaf', sport_label:'CFB', kicker:'College Football'});
+  }
+  function openSlate(sportKey, mode, max){
+    var now=Date.now();
+    var rows=pool().filter(function(e){
+      if(sportKey&&String(e.sport_key||'').indexOf(sportKey)!==0) return false;
+      var t=e.commence_time?Date.parse(e.commence_time):0;
+      return t&&t>now-3600e3&&t<now+3*864e5;
+    });
+    openSlateRows(rows,{preset:'SLATE', mode:mode||'top', max:max||3, sport_key:sportKey||null, sport_label:sportKey?sportLabelOf({sport_key:sportKey}):'All sports'});
+  }
+  function openSlateRows(rows, o){
+    var byGame={};
+    rows.forEach(function(e){ (byGame[e.event_id]=byGame[e.event_id]||[]).push(e); });
+    var cards=[];
+    Object.keys(byGame).forEach(function(id){ var c=cardsForRows(byGame[id]); if(c[0]) cards.push(c[0]); });
+    BR.source={kind:'slate', o:o, count:cards.length};
+    var wk=null; try{ if(window.FB&&FB.p4&&FB.p4.up&&FB.p4.up.length) wk=FB.p4.up[0].g.week; }catch(_){}
+    show(P.snapshot({cards:cards, report_type:'SLATE', preset:o.preset, mode:o.mode, max:o.max, sport:o.sport_key, sport_label:o.sport_label, kicker:o.kicker||null,
+      when_label:o.preset==='CFB'?('Saturday'+(wk?' · Week '+wk:'')):P.whenLabel(Date.now())}), cards.length?null:'No priced games on file for this slate in the window. Nothing is manufactured to fill the page.');
+  }
+
+  /* -------------------------------------------------------------- overlay */
+  function host(){
+    var h=$id('briefHost');
+    if(!h){ h=document.createElement('div'); h.id='briefHost'; h.setAttribute('role','dialog'); h.setAttribute('aria-label','EdgeDesk publisher brief');
+      h.onclick=function(ev){ if(ev.target===h) close(); }; document.body.appendChild(h); }
+    return h;
+  }
+  function barHTML(snap){
+    var hasSnap=!!snap;
+    return '<div class="brief-bar no-print">'
+      +'<button class="dcard-btn" onclick="EDBRIEF.close()">Close</button>'
+      +(hasSnap?'<button class="dcard-btn" onclick="EDBRIEF.copyCms()">Copy for CMS</button>'
+        +'<button class="dcard-btn" onclick="EDBRIEF.copyText()">Copy plain text</button>'
+        +'<button class="dcard-btn" onclick="EDBRIEF.print()">Print / Save PDF</button>'
+        +'<button class="dcard-btn" onclick="EDBRIEF.share()">Share brief</button>'
+        +'<button class="dcard-btn" onclick="EDBRIEF.refresh()">Refresh from current data</button>'
+        +(snap.report_type==='GAME'?'<button class="dcard-btn" onclick="EDBRIEF.polish()">Polish copy</button>':'')
+        +(snap.report_type==='SLATE'&&snap.preset==='CFB'?'<span class="sp"></span><select class="dcard-btn" onchange="EDBRIEF.openCfbSlate(this.value)"><option value="top"'+(snap.internal.slate.mode==='top'?' selected':'')+'>Top decisions</option><option value="all"'+(snap.internal.slate.mode==='all'?' selected':'')+'>All actionable games</option></select>':'')
+        :'')
+      +'</div>';
+  }
+  function show(snap, note){
+    BR.snap=snap; BR.shared=null;
+    var h=host();
+    var body=snap?P.briefHTML(snap):'';
+    var v=snap&&snap.version_no>1?'<div class="brief-note">Version '+snap.version_no+' · generated '+esc(P.fmtStamp(snap.generated_at))+'. Earlier versions are unchanged; a shared link always shows the version it was shared from.</div>':'';
+    var n=note?'<div class="brief-note">'+esc(note)+'</div>':'';
+    h.innerHTML='<div class="brief-card">'+barHTML(snap)+n+v+'<div id="briefShare"></div>'+body+'</div>';
+    h.classList.add('open'); document.body.classList.add('printing-brief-ready');
+    try{ h.scrollTop=0; }catch(_){}
+  }
+  function close(){ var h=$id('briefHost'); if(h){ h.classList.remove('open'); h.innerHTML=''; } document.body.classList.remove('printing-brief'); }
+  function toast(msg){ try{ var d=document.createElement('div'); d.className='brief-toast'; d.textContent=msg; d.style.cssText='position:fixed;left:50%;bottom:calc(var(--nav) + 24px);transform:translateX(-50%);background:#1b2740;color:#e7eaf0;border:1px solid #2b3b5c;border-radius:10px;padding:9px 14px;font-size:13px;z-index:99999'; document.body.appendChild(d); setTimeout(function(){ d.remove(); },1900); }catch(_){} }
+  function copyRich(html, text){
+    try{
+      if(window.ClipboardItem&&navigator.clipboard&&navigator.clipboard.write){
+        return navigator.clipboard.write([new ClipboardItem({'text/html':new Blob([html],{type:'text/html'}),'text/plain':new Blob([text],{type:'text/plain'})})]).then(function(){ toast('Copied for your CMS'); }, function(){ copyPlain(text,'Copied as plain text'); });
+      }
+    }catch(_){}
+    copyPlain(text,'Copied as plain text');
+  }
+  function copyPlain(text, msg){
+    try{ if(navigator.clipboard&&navigator.clipboard.writeText){ navigator.clipboard.writeText(text).then(function(){ toast(msg||'Copied'); }, function(){ legacyCopy(text,msg); }); return; } }catch(_){}
+    legacyCopy(text,msg);
+  }
+  function legacyCopy(text,msg){ try{ var ta=document.createElement('textarea'); ta.value=text; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove(); toast(msg||'Copied'); }catch(_){ toast('Copy failed'); } }
+
+  function refresh(){
+    var s=BR.snap, src=BR.source; if(!s||!src) return;
+    var cards=[];
+    if(src.kind==='card'||src.kind==='game'||src.kind==='primetime'){
+      var q=src.q||{event_id:src.event_id};
+      var rows=rowsForGame(q);
+      cards=rows.length?cardsForRows(rows):[unpricedCard(q)];
+    } else if(src.kind==='slate'){
+      var o=src.o, now=Date.now();
+      var rows2=pool().filter(function(e){ if(o.sport_key&&String(e.sport_key||'').indexOf(o.sport_key)!==0) return false; var t=e.commence_time?Date.parse(e.commence_time):0; return t&&t>now-3600e3&&t<now+(o.preset==='CFB'?7:3)*864e5; });
+      var byGame={}; rows2.forEach(function(e){ (byGame[e.event_id]=byGame[e.event_id]||[]).push(e); });
+      Object.keys(byGame).forEach(function(id){ var c=cardsForRows(byGame[id]); if(c[0]) cards.push(c[0]); });
+    }
+    /* Deliberate: a NEW version. The previous snapshot (and any link shared
+       from it) is untouched. */
+    show(P.refresh(s,{cards:cards}), 'Refreshed from the current board.');
+  }
+  function randomSlug(){
+    var a='abcdefghijklmnopqrstuvwxyz0123456789', out='';
+    try{ var buf=new Uint8Array(16); crypto.getRandomValues(buf); for(var i=0;i<16;i++) out+=a[buf[i]%a.length]; return out; }catch(_){ for(var j=0;j<16;j++) out+=a[Math.floor(Math.random()*a.length)]; return out; }
+  }
+  async function share(){
+    var s=BR.snap; if(!s) return;
+    var sess=null; try{ sess=(typeof edSession==='function')?edSession():null; }catch(_){}
+    var box=$id('briefShare');
+    if(!sess||!sess.access_token){ if(box) box.innerHTML='<div class="brief-share">Sign in to share a brief. Copy for CMS and Print work without an account.</div>'; return; }
+    if(BR.shared){ if(box) box.innerHTML=shareBox(BR.shared); return; }
+    if(box) box.innerHTML='<div class="brief-share">Publishing this snapshot…</div>';
+    var slug=randomSlug();
+    var pub=P.publicPayload(s);
+    var row={report_key:s.report_key, report_type:s.report_type, preset:s.preset, version_no:s.version_no, sport:s.sport, sport_label:s.sport_label,
+      event_ids:s.event_ids, title:s.title, kicker:s.kicker, event_label:s.event_label, when_label:s.when_label, generated_at:s.generated_at,
+      price_captured_at:(s.public.data_status&&s.public.data_status.price_captured_at)||null,
+      integrity_status:s.integrity_status, freshness_status:s.freshness_status, public_payload:pub, is_public:true, share_slug:slug};
+    try{
+      var tok=await edToken();
+      var r=await fetch(SB_URL+'/rest/v1/publisher_briefs',{method:'POST',headers:{apikey:SB_KEY,authorization:'Bearer '+tok,'content-type':'application/json',prefer:'return=representation'},body:JSON.stringify(row)});
+      if(!r.ok){ var t=await r.text().catch(function(){return '';}); throw new Error('db '+r.status+(t?' — '+t.slice(0,160):'')); }
+      var ins=await r.json(); var id=ins&&ins[0]&&ins[0].id;
+      /* Internals live in their own owner-only table. Best-effort: a failure
+         here never un-publishes the public row. */
+      if(id){ try{ await fetch(SB_URL+'/rest/v1/publisher_brief_internal',{method:'POST',headers:{apikey:SB_KEY,authorization:'Bearer '+tok,'content-type':'application/json',prefer:'return=minimal'},body:JSON.stringify({brief_id:id, internal_payload:{cards:s.internal.cards, slate:s.internal.slate}})}); }catch(_){} }
+      var url=location.href.replace(/[^/]*$/,'')+'brief.html?s='+slug;
+      BR.shared={url:url, slug:slug, id:id};
+      if(box) box.innerHTML=shareBox(BR.shared);
+    }catch(e){
+      if(box) box.innerHTML='<div class="brief-share">Could not publish: '+esc(String(e&&e.message||e))+'. If the table is missing, run supabase/publisher_briefs.sql.</div>';
+    }
+  }
+  function shareBox(sh){
+    return '<div class="brief-share">Shared as a snapshot: <a href="'+esc(sh.url)+'" target="_blank" rel="noopener">'+esc(sh.url)+'</a> '
+      +'<button class="dcard-btn" style="margin-left:6px" onclick="EDBRIEF.copyLink()">Copy link</button>'
+      +'<div class="brief-note" style="margin:6px 0 0">Live odds will not change this page. Refreshing creates a new version with its own link.</div></div>';
+  }
+  /* Optional AI polish of the publisher copy, through edgedesk_ai's validated
+     `presentation` object. One call, PUBLISHER mode, same packet. Rejected
+     copy leaves the deterministic copy in place. */
+  async function polish(){
+    var s=BR.snap; if(!s||s.report_type!=='GAME') return;
+    var card=s.internal.cards[0]; if(!card) return;
+    var src=BR.source; var e=null;
+    if(src&&src.kind==='card'&&REG[src.id]) e=REG[src.id].e;
+    else { var rows=rowsForGame(src&&src.q?src.q:{event_id:src&&src.event_id}); e=rows.filter(function(r){ return r.event_id+'|'+r.market+'|'+r.selection+'|'+(r.point==null?'':r.point)===card.__key; })[0]||rows[0]||null; }
+    if(!e||!window.EDAI||!EDAI.callFn){ toast('Polish needs a priced signal and EdgeDesk Intelligence'); return; }
+    toast('Asking EdgeDesk Intelligence…');
+    var x=engine(e);
+    var d=await EDAI.callFn('publisher','Write the publisher brief for this game from EdgeDesk’s decision and evidence.',x,{presentation_mode:'PUBLISHER', preset:s.preset});
+    if(!d||!d.presentation||!d.presentation.simple){ toast('No polished copy came back; the deterministic copy stands'); return; }
+    var polished=d.presentation.simple;
+    if(polished.copy_source!=='ai'){ toast('The copy did not pass validation; the deterministic copy stands'); return; }
+    /* Deterministic fields are re-derived locally; only copy fields are taken. */
+    var fresh=simpleFromX(x); if(!fresh) return;
+    fresh.why=polished.why; fresh.watch=polished.watch; fresh.change_trigger=polished.change_trigger; fresh.market_read=polished.market_read;
+    if(polished.biggest_risk) fresh.biggest_risk=polished.biggest_risk;
+    if(polished.headline&&fresh.verdict===polished.verdict&&!fresh.suppressed) fresh.headline=polished.headline;
+    fresh.copy_source='ai'; fresh.__key=card.__key;
+    var others=s.internal.cards.slice(1);
+    show(P.refresh(s,{cards:[fresh].concat(others)}),'Copy polished by EdgeDesk Intelligence and checked against the engine’s numbers. This is a new version.');
+  }
+
+  window.EDBRIEF={
+    openCard:openCard, openGame:openGame, openPrimetime:openPrimetime, openCfbSlate:openCfbSlate, openSlate:openSlate,
+    close:close, refresh:refresh, share:share, polish:polish,
+    print:function(){ document.body.classList.add('printing-brief'); try{ window.print(); }finally{ setTimeout(function(){ document.body.classList.remove('printing-brief'); },500); } },
+    copyCms:function(){ if(BR.snap) copyRich(P.briefCmsHTML(BR.snap), P.briefText(BR.snap)); },
+    copyText:function(){ if(BR.snap) copyPlain(P.briefText(BR.snap),'Plain text copied'); },
+    copyLink:function(){ if(BR.shared) copyPlain(BR.shared.url,'Link copied'); },
+    current:function(){ return BR.snap; },
+    /* The preset strip. Static: every button resolves its game from the live
+       board at click time, so nothing is hardcoded. */
+    deskHTML:function(where){
+      return '<div class="pubdesk"><span class="t">Publisher desk</span>'
+        +'<button class="dcard-btn" onclick="EDBRIEF.openPrimetime(\'TNF\')">Thursday Night Football</button>'
+        +'<button class="dcard-btn" onclick="EDBRIEF.openPrimetime(\'SNF\')">Sunday Night Football</button>'
+        +'<button class="dcard-btn" onclick="EDBRIEF.openPrimetime(\'MNF\')">Monday Night Football</button>'
+        +'<button class="dcard-btn" onclick="EDBRIEF.openCfbSlate(\'top\',3)">College Football brief</button>'
+        +(where==='edges'?'<button class="dcard-btn" onclick="EDBRIEF.openSlate(null,\'top\',3)">Slate brief</button>':'')
+        +'</div>';
+    }
+  };
+  /* Football boards: one "Game brief" button per card, built from the
+     schedule row so it works whether or not the game is priced yet. */
+  window.fbBriefBtn=function(sport, g, u, homeName, awayName){
+    try{
+      var q={sport_key:sport==='nfl'?'americanfootball_nfl':'americanfootball_ncaaf', sport_label:sport==='nfl'?'NFL':'CFB',
+        home:homeName||g.home_team, away:awayName||g.away_team, t:u&&u.t?u.t:null};
+      return '<div class="dcard-actions" style="border-top:none;padding:6px 10px 10px"><button class="dcard-btn" onclick="event.stopPropagation();EDBRIEF.openGame('+esc(JSON.stringify(q))+')">Game brief</button></div>';
+    }catch(_){ return ''; }
+  };
+  /* Paint the desk strip into the Edges view once the DOM is there. */
+  try{
+    var pd=$id('pubDesk'); if(pd) pd.innerHTML=window.EDBRIEF.deskHTML('edges');
+  }catch(_){}
+})();
+/*__EDCARD_END__*/
 </script>
  <script>
 /*__EDINT_MODULE_START__*/
@@ -26220,7 +27902,7 @@ function fbGameCardNfl(u){
   return '<div class="mdl-card" id="fbg-nfl-'+fbEsc(String(g.game_id))+'">'
     +'<div class="mdl-card-h"><div class="mdl-card-match">'+fbEsc(awayName)+' @ '+fbEsc(homeName)+'</div>'
     +'<div class="mdl-card-when">NFL · week '+fbEsc(String(g.week))+' · '+fbEsc(whenLabel(new Date(u.t).toISOString()))+'</div></div>'
-    +lines+qb+fbQualityLine(p,extra)+'</div>';
+    +lines+qb+fbQualityLine(p,extra)+(window.fbBriefBtn?fbBriefBtn('nfl',g,u,homeName,awayName):'')+'</div>';
 }
 
 /* ---- week scan, grading and CSV export (NFL) --------------------------------
@@ -26890,7 +28572,7 @@ function fbGameCardCfb(u){
   return '<div class="mdl-card">'
     +'<div class="mdl-card-h"><div class="mdl-card-match">'+fbEsc(g.away_team)+' @ '+fbEsc(g.home_team)+'</div>'
     +'<div class="mdl-card-when">CFB · week '+fbEsc(String(g.week))+' · '+fbEsc(whenLabel(new Date(u.t).toISOString()))+'</div></div>'
-    +lines+fbQualityLine(p,['no market backtest exists for CFB — gaps are context, not edges'])+'</div>';
+    +lines+fbQualityLine(p,['no market backtest exists for CFB — gaps are context, not edges'])+(window.fbBriefBtn?fbBriefBtn('cfb',g,u):'')+'</div>';
 }
 function fbRatingsBoard(sport){
   var E=window.EDFootball;
@@ -28807,7 +30489,7 @@ window.fbP4Gate=function(gid){
   if(el.getAttribute('data-open')){el.innerHTML='';el.removeAttribute('data-open');if(ar)ar.textContent='▸';return;}
   el.setAttribute('data-open','1');if(ar)ar.textContent='▾';
   var u=null;FB.p4.up.forEach(function(x){if(String(x.g.game_id)===String(gid))u=x;});
-  el.innerHTML=u?('<div style="margin:8px 0 12px">'+fbP4Card(u)+'</div>'):'';
+  el.innerHTML=u?('<div style="margin:8px 0 12px">'+fbP4Card(u)+(window.fbBriefBtn?fbBriefBtn('cfb',u.g,u):'')+'</div>'):'';
 };
 function fbP4StatusStrip(){
   var S=FB.p4,h=FB.health;
@@ -29263,6 +30945,7 @@ function fbOverviewHTML(){
     +fbToolHTML('team','Team research','FBS rosters by position group, class mix and returning production.')
     +fbToolHTML('ratings','Ratings & models','Power ratings, week-by-week projections and the graded season.')
     +'</div>';
+  html+=(window.EDBRIEF?EDBRIEF.deskHTML('football'):'');
   var fr=fbFocusRow(rows);
   if(fr)html+='<div class="fb-sechd"><span>Market vs research</span><span class="r">tap a signal above to compare it</span></div><div class="fb-card">'+fbMvmForRow(fr)+'</div>';
   html+=fbModelStatusHTML();
