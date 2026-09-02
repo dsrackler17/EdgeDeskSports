@@ -1702,6 +1702,275 @@ button:focus-visible,select:focus-visible,input:focus-visible,a:focus-visible{ou
 .dc-sparkwrap .note{font-size:9.5px;color:var(--faint);font-family:'JetBrains Mono',monospace;margin-top:3px}
 .disco-note{font-size:10.5px;color:var(--faint);margin-top:10px;line-height:1.55;font-family:'JetBrains Mono',monospace}
 </style>
+<style id="desk-css">
+/* =====================================================================
+   COMMAND CENTER — Today's Desk, the universal research card language,
+   Market Health, the movement timeline, Research Next, first-run welcome,
+   the research flow and Focus Mode. Presentation only: every value shown
+   is read from rows the board already holds. Tokens come from :root.
+   ===================================================================== */
+/* ---- engine taxonomy: MARKET blue · MODEL purple · CONSENSUS neutral ---- */
+.ebadge.market{color:#7fb0ff;background:rgba(77,141,255,.12);border-color:rgba(77,141,255,.42)}
+.ebadge.model{color:#b3a7ff;background:rgba(155,140,255,.12);border-color:rgba(155,140,255,.45)}
+.ebadge.consensus{color:#a9b4c6;background:rgba(138,147,162,.12);border-color:rgba(138,147,162,.42)}
+.echip.on.market{color:#7fb0ff;border-color:rgba(77,141,255,.5);background:rgba(77,141,255,.1)}
+.echip.on.model{color:#b3a7ff;border-color:rgba(155,140,255,.5);background:rgba(155,140,255,.1)}
+.echip.on.consensus{color:#a9b4c6;border-color:rgba(138,147,162,.5);background:rgba(138,147,162,.1)}
+.engine-sec#modelSec{border-left:2px solid rgba(155,140,255,.45);padding-left:10px}
+.engine-sec#consensusSec{border-left:2px solid rgba(138,147,162,.4);padding-left:10px}
+.lead:not(.side){border-left:2px solid rgba(77,141,255,.55)}
+/* ---- the desk ---- */
+.desk{margin:0 0 14px}
+.dk{background:var(--surface);border:1px solid var(--border);border-radius:var(--rad);padding:14px 14px 12px;position:relative}
+.dk-top{display:flex;align-items:flex-start;gap:10px;flex-wrap:wrap;margin-bottom:10px}
+.dk-ey{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);font-weight:700;display:flex;align-items:center;gap:7px}
+.dk-ey .st{color:var(--faint);font-weight:500;letter-spacing:.04em;text-transform:none}
+.dk-t{font-size:20px;font-weight:800;letter-spacing:-.01em;color:var(--text);margin-top:3px;line-height:1.15}
+.dk-sub{font-size:12.5px;color:var(--dim);margin-top:4px;line-height:1.5;max-width:64ch}
+.dk-tools{margin-left:auto;display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.dk-tool{background:var(--surface2);border:1px solid var(--border);color:var(--dim);border-radius:8px;padding:6px 10px;font-size:11.5px;font-family:inherit;cursor:pointer;min-height:32px;display:inline-flex;align-items:center;gap:5px}
+.dk-tool:hover{color:var(--text);border-color:var(--accent)}
+.dk-tool.on{color:var(--accent);border-color:rgba(77,141,255,.55);background:rgba(77,141,255,.08)}
+.dk-stats{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin:12px 0 4px}
+.dk-stat{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:9px 10px;min-width:0;cursor:default}
+.dk-stat[onclick]{cursor:pointer}
+.dk-stat[onclick]:hover{border-color:var(--accent)}
+.dk-stat .n{font-family:'JetBrains Mono',monospace;font-size:21px;font-weight:800;line-height:1;color:var(--text);font-variant-numeric:tabular-nums}
+.dk-stat .l{font-size:9.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--faint);margin-top:5px;line-height:1.25}
+.dk-stat.acc .n{color:var(--accent)}.dk-stat.pos .n{color:var(--pos)}.dk-stat.warn .n{color:var(--warn)}.dk-stat.neg .n{color:var(--neg)}.dk-stat.mut .n{color:var(--dim)}
+.dk-stat .n small{font-size:11px;font-weight:600;color:var(--faint);margin-left:2px}
+@media(max-width:640px){.dk-stats{grid-template-columns:repeat(3,1fr)}.dk-stat .n{font-size:18px}}
+@media(max-width:400px){.dk-stats{grid-template-columns:repeat(2,1fr)}}
+.dk-skel{height:14px;border-radius:6px;background:linear-gradient(90deg,var(--surface2),rgba(255,255,255,.06),var(--surface2));background-size:200% 100%;animation:dkshim 1.2s linear infinite;margin:6px 0}
+@keyframes dkshim{0%{background-position:200% 0}100%{background-position:-200% 0}}
+.dk-note{font-size:11px;color:var(--faint);margin-top:8px;line-height:1.5}
+.dk-stale{border:1px solid rgba(226,96,68,.45);background:rgba(226,96,68,.08);color:#ffb4a6;border-radius:10px;padding:9px 12px;font-size:12px;line-height:1.5;margin-top:10px}
+.dk-stale.amber{border-color:rgba(217,154,43,.45);background:rgba(217,154,43,.08);color:var(--warn)}
+/* section header inside the desk */
+.dk-h{display:flex;align-items:center;gap:8px;margin:16px 0 8px;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--dim);font-weight:700}
+.dk-h .n{font-family:'JetBrains Mono',monospace;color:var(--faint);font-weight:500;letter-spacing:.02em}
+.dk-h .r{margin-left:auto;font-weight:500;text-transform:none;letter-spacing:0;color:var(--faint);font-size:11px}
+/* ---- queue item = the universal research card, decision summary by default ---- */
+.uc{border:1px solid var(--border);border-radius:12px;background:var(--surface2);margin-bottom:8px;overflow:hidden;border-left-width:3px}
+.uc.market{border-left-color:#4d8dff}.uc.model{border-left-color:#9b8cff}.uc.consensus{border-left-color:#8a93a2}.uc.movement{border-left-color:var(--warn)}
+.uc-hd{display:flex;align-items:flex-start;gap:10px;padding:11px 12px 0;cursor:pointer}
+.uc-rank{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--faint);min-width:18px;padding-top:2px}
+.uc-mid{flex:1;min-width:0}
+.uc-line1{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.uc-sel{font-weight:700;font-size:15px;letter-spacing:-.01em;color:var(--text)}
+.uc-meta{font-size:11px;color:var(--dim);font-family:'JetBrains Mono',monospace;margin-top:3px;white-space:normal;line-height:1.5}
+.uc-num{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:8px}
+.uc-num .c{display:flex;flex-direction:column;gap:1px;min-width:64px}
+.uc-num .k{font-size:8.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--faint);font-family:'JetBrains Mono',monospace}
+.uc-num .v{font-size:13px;font-family:'JetBrains Mono',monospace;color:var(--text);font-weight:600}
+.uc-num .v.pos{color:var(--pos)}.uc-num .v.neg{color:var(--neg)}.uc-num .v.mdl{color:var(--mdl)}.uc-num .v.mut{color:var(--dim);font-weight:500}
+.uc-badges{display:flex;flex-wrap:wrap;gap:4px;margin-top:9px;align-items:center}
+.uc-dec{margin-left:auto;flex:none;align-self:flex-start}
+.uc-why{padding:9px 12px 0 12px;font-size:12.5px;line-height:1.55;color:var(--text)}
+.uc-why b{font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:var(--faint);display:block;margin-bottom:2px;font-weight:700}
+.uc-why.risk{color:var(--dim)}
+.uc-why.risk b{color:var(--warn)}
+.uc-ft{display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding:10px 12px 11px}
+.uc-body{display:none;padding:4px 12px 12px;border-top:1px dashed var(--border);margin-top:8px}
+.uc.open .uc-body{display:block}
+.uc .receipt{display:block;padding:0}
+.uc .rchev{transition:transform .16s}
+.uc.open .rchev{transform:rotate(90deg)}
+/* evidence / state / decision badges — icon or text carries the meaning, colour is secondary */
+.evb{display:inline-flex;align-items:center;gap:4px;font-family:'JetBrains Mono',monospace;font-size:8.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;padding:2px 6px;border-radius:5px;border:1px solid var(--border);background:var(--surface);color:var(--dim);white-space:nowrap}
+.evb.ok{color:#7fd4b0;border-color:rgba(47,180,124,.4)}
+.evb.warn{color:var(--warn);border-color:rgba(217,154,43,.45)}
+.evb.neg{color:#ffb4a6;border-color:rgba(226,96,68,.45)}
+.evb.mut{color:var(--faint)}
+.evb.mdl{color:#b3a7ff;border-color:rgba(155,140,255,.45)}
+.evb.acc{color:#7fb0ff;border-color:rgba(77,141,255,.45)}
+.dec{display:inline-flex;align-items:center;gap:5px;font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;padding:4px 9px;border-radius:7px;border:1px solid;white-space:nowrap}
+.dec.RESEARCH{color:#7fd4b0;border-color:rgba(47,180,124,.5);background:rgba(47,180,124,.1)}
+.dec.WATCH{color:var(--warn);border-color:rgba(217,154,43,.5);background:rgba(217,154,43,.09)}
+.dec.PASS{color:var(--dim);border-color:var(--border);background:var(--surface)}
+.dec.MISSED{color:#ffb4a6;border-color:rgba(226,96,68,.45);background:rgba(226,96,68,.08)}
+.dec.INSUFFICIENT{color:var(--warn);border-color:rgba(217,154,43,.4);background:transparent}
+.dec.EXPERIMENTAL{color:#b3a7ff;border-color:rgba(155,140,255,.5);background:rgba(155,140,255,.08)}
+.dec i{font-style:normal;font-size:11px;line-height:1}
+/* ---- research next ---- */
+.rn{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.rn-l{font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:var(--faint);font-weight:700;margin-right:2px}
+.rn-a{background:transparent;border:1px solid var(--border);color:var(--text);border-radius:8px;padding:6px 10px;font-size:11.5px;font-family:inherit;cursor:pointer;min-height:30px;display:inline-flex;align-items:center;gap:5px;transition:border-color .12s,color .12s}
+.rn-a:hover{border-color:var(--accent);color:var(--accent)}
+.rn-a.pri{border-color:rgba(77,141,255,.55);color:#7fb0ff}
+.rn-a .ar{font-family:'JetBrains Mono',monospace;color:var(--faint)}
+.rn.foot{margin-top:10px;padding-top:9px;border-top:1px dashed var(--border)}
+/* ---- clean board ---- */
+.dk-clean{border:1px solid rgba(47,180,124,.35);background:linear-gradient(180deg,rgba(47,180,124,.07),transparent);border-radius:12px;padding:14px;margin-top:12px}
+.dk-clean .t{font-size:16px;font-weight:800;color:#7fd4b0;letter-spacing:.02em;display:flex;align-items:center;gap:8px}
+.dk-clean .s{font-size:12.5px;color:var(--text);margin-top:4px;line-height:1.5}
+.dk-clean .q{font-size:12px;color:var(--dim);font-style:italic;margin-top:8px}
+.dk-clean .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:11px}
+@media(max-width:520px){.dk-clean .grid{grid-template-columns:repeat(2,1fr)}}
+/* ---- market health strip ---- */
+.mh{border:1px solid var(--border);border-radius:12px;background:var(--surface2);padding:11px 12px;margin-top:12px}
+.mh-top{display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+.mh-state{font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:800;letter-spacing:.1em;padding:4px 9px;border-radius:7px;border:1px solid;display:inline-flex;align-items:center;gap:6px}
+.mh-state i{width:7px;height:7px;border-radius:50%;background:currentColor;font-style:normal}
+.mh-state.QUIET{color:var(--dim);border-color:var(--border)}
+.mh-state.ACTIVE{color:#7fb0ff;border-color:rgba(77,141,255,.5)}
+.mh-state.FAST{color:var(--warn);border-color:rgba(217,154,43,.5)}
+.mh-state.DISLOCATED{color:#7fd4b0;border-color:rgba(47,180,124,.5)}
+.mh-state.STALE{color:#ffb4a6;border-color:rgba(226,96,68,.5)}
+.mh-state.EMPTY{color:var(--faint);border-color:var(--border)}
+.mh-lbl{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--dim);font-weight:700}
+.mh-read{font-size:12.5px;color:var(--text);line-height:1.55;margin-top:8px}
+.mh-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:10px}
+@media(max-width:560px){.mh-grid{grid-template-columns:repeat(2,1fr)}}
+.mh-m{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:7px 9px;min-width:0}
+.mh-m .n{font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mh-m .l{font-size:9px;text-transform:uppercase;letter-spacing:.05em;color:var(--faint);margin-top:2px;line-height:1.2}
+.mh-m.pos .n{color:var(--pos)}.mh-m.warn .n{color:var(--warn)}.mh-m.neg .n{color:var(--neg)}.mh-m.acc .n{color:var(--accent)}
+.mh-foot{font-size:10.5px;color:var(--faint);margin-top:8px;line-height:1.5}
+/* ---- lead rows: the human read comes first, the chips stay ---- */
+.lead-read{display:flex;flex-wrap:wrap;gap:4px;align-items:center;margin-top:6px}
+.lead-why{font-size:12px;color:var(--text);line-height:1.5;margin-top:6px;font-family:'Inter',sans-serif;white-space:normal}
+.lead-why .wk{color:var(--dim)}
+.lead-mid .echips{margin-top:7px;opacity:.9}
+@media(max-width:640px){.lead-sel{white-space:normal;line-height:1.35}}
+.lead-px{font-size:11px;color:var(--dim);font-family:'JetBrains Mono',monospace;margin-top:5px;white-space:normal;line-height:1.5}
+.lead-px b{color:var(--text);font-weight:600}
+/* ---- movement timeline (receipt) ---- */
+.mvt{margin:12px 0 4px}
+.mvt-h{display:flex;align-items:center;gap:8px;font-size:9px;text-transform:uppercase;letter-spacing:.06em;color:var(--faint);font-weight:700;font-family:'JetBrains Mono',monospace;margin-bottom:8px}
+.mvt-h .st{margin-left:auto}
+.mvt-track{position:relative;display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.mvt-track::before{content:"";position:absolute;left:8%;right:8%;top:11px;height:2px;background:var(--border);z-index:0}
+.mvt-n{position:relative;z-index:1;text-align:center;min-width:0}
+.mvt-n i{display:block;width:10px;height:10px;border-radius:50%;background:var(--surface2);border:2px solid var(--dim);margin:6px auto 7px;font-style:normal}
+.mvt-n.open i{border-color:var(--dim)}.mvt-n.flag i{border-color:var(--accent);background:var(--accent)}
+.mvt-n.cur i{border-color:var(--text);background:var(--text)}
+.mvt-n.close i{border-color:var(--faint);border-style:dashed}
+.mvt-n.close.done i{border-color:var(--gold);background:var(--gold);border-style:solid}
+.mvt-n .p{font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:700;color:var(--text);white-space:nowrap}
+.mvt-n .p.mut{color:var(--faint);font-weight:500;font-size:11.5px}
+.mvt-n .l{font-size:8.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--faint);margin-top:2px;font-family:'JetBrains Mono',monospace}
+.mvt-n .s{font-size:10px;color:var(--dim);margin-top:1px;font-family:'JetBrains Mono',monospace}
+.mvt-e{display:flex;gap:14px;flex-wrap:wrap;margin-top:10px;align-items:flex-end}
+.mvt-e .c{display:flex;flex-direction:column}
+.mvt-e .k{font-size:8.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--faint);font-family:'JetBrains Mono',monospace}
+.mvt-e .v{font-family:'JetBrains Mono',monospace;font-size:16px;font-weight:700}
+.mvt-e .v.pos{color:var(--pos)}.mvt-e .v.neg{color:var(--neg)}.mvt-e .v.mut{color:var(--dim)}
+.mvt-e .dec{margin-left:auto}
+.mvt-x{font-size:12px;color:var(--dim);line-height:1.5;margin-top:8px;border-left:2px solid var(--border);padding-left:9px}
+@media(max-width:400px){.mvt-n .p{font-size:12.5px}}
+/* ---- model / consensus card reads ---- */
+.mdl-why{font-size:11.5px;color:var(--dim);line-height:1.5;padding:6px 12px 10px 12px;border-top:1px dashed var(--border)}
+.mdl-why b{color:var(--text);font-weight:600}
+.cons-why{font-size:11.5px;color:var(--dim);line-height:1.5;padding:0 12px 9px}
+.cons-why b{color:var(--text);font-weight:600}
+/* ---- welcome (first run) ---- */
+.wel{position:fixed;inset:0;z-index:9998;background:rgba(6,8,12,.82);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);display:none;overflow-y:auto;padding:18px 12px calc(var(--nav) + var(--foot) + env(safe-area-inset-bottom) + 18px)}
+.wel.on{display:block}
+.wel-card{max-width:560px;margin:4vh auto 0;background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:22px 20px 18px;box-shadow:0 30px 80px rgba(0,0,0,.55)}
+.wel-ey{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:700}
+.wel-t{font-size:23px;font-weight:800;letter-spacing:-.02em;margin-top:6px;line-height:1.15}
+.wel-p{font-size:13.5px;color:var(--dim);line-height:1.6;margin-top:10px}
+.wel-p b{color:var(--text);font-weight:600}
+.wel-eng{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:16px}
+@media(max-width:520px){.wel-eng{grid-template-columns:1fr}}
+.wel-e{border:1px solid var(--border);border-radius:11px;padding:11px 12px;background:var(--surface2);border-top-width:3px}
+.wel-e.market{border-top-color:#4d8dff}.wel-e.model{border-top-color:#9b8cff}.wel-e.consensus{border-top-color:#8a93a2}
+.wel-e b{display:block;font-family:'JetBrains Mono',monospace;font-size:10.5px;letter-spacing:.1em}
+.wel-e.market b{color:#7fb0ff}.wel-e.model b{color:#b3a7ff}.wel-e.consensus b{color:#a9b4c6}
+.wel-e p{margin:5px 0 0;font-size:12px;color:var(--dim);line-height:1.5}
+.wel-ind{font-size:11px;color:var(--faint);margin-top:8px;font-family:'JetBrains Mono',monospace}
+.wel-goal{margin-top:16px;border-left:2px solid var(--accent);padding:2px 0 2px 12px}
+.wel-goal b{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--faint)}
+.wel-goal p{margin:4px 0 0;font-size:14px;color:var(--text);line-height:1.55}
+.wel-act{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:18px}
+.wel-act .btn{width:auto;padding:11px 18px;font-size:13.5px}
+.wel-act label{font-size:12px;color:var(--dim);display:inline-flex;align-items:center;gap:6px;cursor:pointer;margin-left:auto}
+.wel-act input{width:auto;padding:0;margin:0}
+.wel-legal{font-size:10.5px;color:var(--faint);margin-top:12px;line-height:1.5}
+/* ---- research flow (shared component) ---- */
+.flow{display:grid;grid-template-columns:repeat(6,1fr);gap:6px}
+@media(max-width:760px){.flow{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:400px){.flow{grid-template-columns:repeat(2,1fr)}}
+.flow-s{border:1px solid var(--border);border-radius:10px;padding:9px 9px 8px;background:var(--surface2);min-width:0}
+.flow-s .n{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--accent);font-weight:700}
+.flow-s b{display:block;font-size:11.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--text);margin-top:2px}
+.flow-s p{margin:3px 0 0;font-size:11px;color:var(--dim);line-height:1.45}
+.flow.compact .flow-s p{display:none}
+.flow-wrap{border:1px solid var(--border);border-radius:12px;background:var(--surface);padding:11px 12px;margin:0 0 12px}
+.flow-wrap .fw-h{display:flex;align-items:center;gap:8px;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--dim);font-weight:700;margin-bottom:9px}
+.flow-wrap .fw-h button{margin-left:auto}
+/* ---- how EdgeDesk works (sequence) ---- */
+.hiw{position:fixed;inset:0;z-index:9998;background:rgba(6,8,12,.8);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);display:none;overflow-y:auto;padding:18px 12px calc(var(--nav) + var(--foot) + env(safe-area-inset-bottom) + 18px)}
+.hiw.on{display:block}
+.hiw-card{max-width:600px;margin:4vh auto 0;background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:20px 18px 16px;box-shadow:0 30px 80px rgba(0,0,0,.55)}
+.hiw-hd{display:flex;align-items:flex-start;gap:10px}
+.hiw-x{margin-left:auto;background:var(--surface2);border:1px solid var(--border);color:var(--text);width:34px;height:34px;border-radius:9px;font-size:18px;cursor:pointer;flex:none}
+.hiw-step{display:flex;gap:12px;align-items:flex-start;padding:11px 0;border-top:1px solid var(--border);cursor:pointer;border-radius:8px}
+.hiw-step:hover .hiw-n{color:var(--accent);border-color:var(--accent)}
+.hiw-n{font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:700;color:var(--dim);border:1px solid var(--border);border-radius:8px;width:30px;height:30px;display:flex;align-items:center;justify-content:center;flex:none}
+.hiw-b{flex:1;min-width:0}
+.hiw-b b{font-size:13.5px;color:var(--text)}
+.hiw-b p{margin:2px 0 0;font-size:12px;color:var(--dim);line-height:1.5}
+.hiw-b .q{font-style:italic;color:var(--text)}
+.hiw-go{font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--accent);flex:none;align-self:center}
+/* ---- focus mode: presentation only, nothing recalculated ---- */
+body.focus #v-edges > :not(#deskHost):not(#edgeStale):not(#todayResearchCta){display:none!important}
+body.focus #todayResearchCta{margin-top:0}
+.dk-focusnote{display:none;margin-top:12px;text-align:center}
+body.focus .dk-focusnote{display:block}
+/* ---- research desk landing ---- */
+.rd-hero{border:1px solid var(--border);border-radius:14px;background:var(--surface);padding:14px;margin-bottom:12px}
+.rd-hero .t{font-size:19px;font-weight:800;letter-spacing:-.01em}
+.rd-hero .s{font-size:12.5px;color:var(--dim);margin-top:4px;line-height:1.5}
+.rd-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
+@media(max-width:640px){.rd-grid{grid-template-columns:1fr}}
+.rd-op{border:1px solid var(--border);border-radius:12px;background:var(--surface);padding:11px 12px;cursor:pointer;min-width:0;border-left:3px solid var(--border);transition:border-color .12s}
+.rd-op:hover{border-color:var(--accent)}
+.rd-op.major{border-left-color:var(--accent)}.rd-op.neg{border-left-color:var(--neg)}.rd-op.warn{border-left-color:var(--warn)}.rd-op.mdl{border-left-color:var(--mdl)}.rd-op.ok{border-left-color:var(--pos)}
+.rd-op .k{font-family:'JetBrains Mono',monospace;font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--dim);font-weight:700;display:flex;align-items:center;gap:6px}
+.rd-op .k .go{margin-left:auto;color:var(--accent);font-weight:500;letter-spacing:.02em;text-transform:none}
+.rd-op .v{font-size:14px;font-weight:700;color:var(--text);margin-top:5px;line-height:1.3}
+.rd-op .d{font-size:11.5px;color:var(--dim);margin-top:3px;line-height:1.5}
+.rd-op .d b{color:var(--text);font-weight:600;font-family:'JetBrains Mono',monospace;font-size:11px}
+.rd-mods{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-bottom:12px}
+@media(max-width:640px){.rd-mods{grid-template-columns:repeat(2,1fr)}}
+.rd-mod{border:1px solid var(--border);border-radius:10px;background:var(--surface2);padding:9px 10px;cursor:pointer;text-align:left;font-family:inherit;color:var(--text);min-width:0}
+.rd-mod:hover{border-color:var(--accent)}
+.rd-mod b{display:block;font-size:12.5px}
+.rd-mod small{display:block;font-size:10.5px;color:var(--dim);margin-top:2px;line-height:1.4}
+/* ---- record: the proof layer ---- */
+.ph{border:1px solid rgba(227,184,77,.3);border-radius:14px;background:linear-gradient(180deg,rgba(227,184,77,.06),transparent);padding:14px;margin-bottom:14px}
+.ph .ey{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);font-weight:700}
+.ph .t{font-size:15px;font-weight:700;margin-top:4px;line-height:1.35}
+.ph-two{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:11px}
+@media(max-width:520px){.ph-two{grid-template-columns:1fr}}
+.ph-c{border:1px solid var(--border);border-radius:10px;background:var(--surface2);padding:9px 11px}
+.ph-c b{display:block;font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--dim)}
+.ph-c .q{font-size:13.5px;font-weight:700;color:var(--text);margin-top:3px}
+.ph-c p{margin:3px 0 0;font-size:11.5px;color:var(--dim);line-height:1.5}
+.ph-c.evid{border-color:rgba(227,184,77,.35)}
+.ph-c.evid b{color:var(--gold)}
+.ph-chain{display:flex;flex-wrap:wrap;gap:4px 0;margin-top:10px;font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--dim)}
+.ph-chain span{padding:0 8px 0 0}
+.ph-chain span+span::before{content:"\2192";margin-right:8px;color:var(--faint)}
+/* ---- lab groups ---- */
+.lab-grp{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:10px}
+@media(max-width:760px){.lab-grp{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:480px){.lab-grp{grid-template-columns:1fr}}
+.lab-g{border:1px solid var(--border);border-radius:11px;background:var(--surface);padding:10px 11px;min-width:0}
+.lab-g .k{font-family:'JetBrains Mono',monospace;font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--dim);font-weight:700}
+.lab-g .q{font-size:12px;color:var(--text);margin-top:3px;line-height:1.4}
+.lab-g .tl{display:flex;flex-wrap:wrap;gap:4px;margin-top:8px}
+.lab-g .tl button{background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:7px;padding:5px 8px;font-size:11px;font-family:inherit;cursor:pointer;min-height:28px}
+.lab-g .tl button:hover{border-color:var(--accent);color:var(--accent)}
+.lab-mat{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:10px;align-items:center;font-size:11px;color:var(--faint)}
+/* ---- about additions ---- */
+.set-beyond{display:flex;flex-wrap:wrap;gap:4px 12px;margin:8px 0 0;font-family:'JetBrains Mono',monospace;font-size:10.5px;letter-spacing:.04em;color:var(--dim)}
+.set-beyond span::before{content:"\00b7";margin-right:8px;color:var(--faint)}
+.set-beyond span:first-child::before{content:none}
+@media (prefers-reduced-motion:reduce){.dk-skel{animation:none}}
+</style>
 
 </head>
 <body>
@@ -1723,6 +1992,7 @@ button:focus-visible,select:focus-visible,input:focus-visible,a:focus-visible{ou
       <button onclick="__avGo('feedback')">Release notes</button>
       <button onclick="__avGo('feedback')">Feedback</button>
       <button onclick="__avGo('about')">Help &amp; support</button>
+      <button onclick="try{var m=document.getElementById('avMenu');if(m)m.classList.remove('open');window.hiwOpen&&window.hiwOpen()}catch(_){}">How EdgeDesk works</button>
       <hr><button class="danger" onclick="edSignOut()">Log out</button>
     </div>
   </div>
@@ -1741,6 +2011,11 @@ button:focus-visible,select:focus-visible,input:focus-visible,a:focus-visible{ou
          can show a first-run state before any packet exists and a measured
          funnel afterwards; the static markup here is only the pre-script
          fallback, which still carries a working RUN button. -->
+    <!-- TODAY'S DESK — the command center. Answers "what deserves my attention?"
+         from rows the board already holds (EDGES, D5_POOL, CONS_POOL, the
+         discovery pool, MODEL_EDGES, the football engine when loaded). Rendered
+         by renderDesk() in the desk-js block; nothing here is a new pipeline. -->
+    <div id="deskHost" class="desk"><div class="dk"><div class="dk-ey">Today&rsquo;s desk</div><div class="dk-t">Reading the board&hellip;</div><div class="dk-skel" style="width:70%"></div><div class="dk-skel" style="width:45%"></div></div></div>
     <div id="todayResearchCta">
       <div style="border:1px solid var(--border);border-radius:14px;padding:13px 14px;margin:0 0 12px">
         <div style="font-size:15px;font-weight:700;color:var(--text)">Today’s research</div>
@@ -1786,6 +2061,18 @@ button:focus-visible,select:focus-visible,input:focus-visible,a:focus-visible{ou
   <section id="v-record" class="view hide">
     <div class="row-between"><h2 style="margin:0">Records</h2><span class="spacer"></span><span class="freshness" id="recFresh">&#8212;</span><button class="refreshbtn" title="Refresh" id="recRefresh">&#8635;</button></div>
     <p class="lede">The auto-graded closing-line record of the <b style="color:var(--text);font-weight:600">edges the system flagged</b>. Entry prices are frozen at flag time, the close is snapshotted, and every row grades itself after the game. Nothing here is typed in by hand and nothing is estimated.</p>
+    <!-- THE PROOF LAYER — static framing only; every number stays in the
+         renderers below (recHero, recKpis, the proof pane). -->
+    <div class="ph" id="recProofHead">
+      <div class="ey">The proof layer</div>
+      <div class="t">Every flagged price is frozen, tracked to close, and graded automatically.</div>
+      <div class="ph-chain"><span>Frozen entry</span><span>Closing snapshot</span><span>CLV</span><span>Auto grading</span><span>Public record</span></div>
+      <div class="ph-two">
+        <div class="ph-c"><b>Outcome</b><div class="q">Did the bet win?</div><p>Wins and losses are shown as a flat one-unit simulation. They are real results, but a short run of them proves very little.</p></div>
+        <div class="ph-c evid"><b>Price quality</b><div class="q">Did the entry beat the closing market?</div><p>The closing line is the market&rsquo;s final vote. Beating it consistently is the only evidence that a signal class is real. This is the layer EdgeDesk grades itself on.</p></div>
+      </div>
+      <div class="dk-note">Poor segments, thin samples and faults stay visible below. Nothing is filtered out to make the record look better.</div>
+    </div>
 
     <div class="stseg" id="recSeg">
       <button data-rt="overview" class="on">Overview</button>
@@ -1919,7 +2206,12 @@ button:focus-visible,select:focus-visible,input:focus-visible,a:focus-visible{ou
     <div id="rsSearchWrap" class="rs-srch hide" style="margin-bottom:12px"></div>
     <div id="rsDrawer" class="fb-drawer" style="display:none" onclick="if(event.target===this)rsTkDrawerClose()"><div class="fb-drawer-card" id="rsDrawerCard"></div></div>
     <div id="rsSavedWrap" class="hide" style="margin-bottom:12px"></div>
-    <div class="stseg research-sub" style="margin-bottom:12px"><button data-sub="football" onclick="researchGo('football')">Football</button><button data-sub="ufc" onclick="researchGo('ufc')">UFC</button><button data-sub="tennis" onclick="researchGo('tennis')">Tennis</button><button data-sub="stats" onclick="researchGo('stats')">Stats</button><button data-sub="lab" onclick="researchGo('lab')">Lab</button></div>
+    <div class="stseg research-sub" style="margin-bottom:12px"><button data-sub="rdesk" onclick="researchGo('rdesk')">Desk</button><button data-sub="football" onclick="researchGo('football')">Football</button><button data-sub="ufc" onclick="researchGo('ufc')">UFC</button><button data-sub="tennis" onclick="researchGo('tennis')">Tennis</button><button data-sub="stats" onclick="researchGo('stats')">Stats</button><button data-sub="lab" onclick="researchGo('lab')">Lab</button></div>
+    <!-- RESEARCH DESK — the landing state of the Research shell. Answers
+         "where should I research?" from the football engine's own today-items,
+         the board's model/market disagreements and the data warnings the
+         modules already compute. Rendered by renderResearchDesk() (desk-js). -->
+    <div id="v-rdesk" class="rpanel hide"><div id="rdeskHost"><div class="empty">Loading&hellip;</div></div></div>
     <!-- CFB (College Football research) -->
     <div id="v-cfb" class="rpanel hide">
     <div class="row-between"><h2 style="margin:0">CFB</h2><span class="spacer"></span><span class="freshness" id="cfbFresh">&mdash;</span><button class="refreshbtn" title="Refresh" onclick="researchRefresh('cfb')">&#8635;</button></div>
@@ -2061,6 +2353,9 @@ button:focus-visible,select:focus-visible,input:focus-visible,a:focus-visible{ou
   </section>
 </main>
 
+<!-- first-run welcome + "How EdgeDesk works" sequence: overlays, rendered by desk-js -->
+<div id="welHost" class="wel" role="dialog" aria-modal="true" aria-label="Welcome to EdgeDesk"></div>
+<div id="hiwHost" class="hiw" role="dialog" aria-modal="true" aria-label="How EdgeDesk works" onclick="if(event.target===this)hiwClose()"></div>
 <div class="foot" id="edFoot" role="contentinfo"><b class="footlink" onclick="show('terms')">Research tool only — not betting advice.</b> Signals can be wrong.<span class="sep">·</span>21+<span class="sep">·</span>1-800-GAMBLER</div>
 <script>
 /* the disclaimer's real height becomes --foot, so page padding and overlay
@@ -3661,6 +3956,20 @@ researchRegister({id:'lab',label:'Lab',schema:'public',cadenceMs:null,
   entityKey:function(){return (window.LABX&&LABX.tool)||null;},
   freshness:function(){return {loadedAt:(window.LABX&&LABX.at)||null,builtAt:null};},
   availability:function(){return null;},limitations:function(){return [];},provenance:{}});
+/* RESEARCH DESK — the shell's landing state. It holds no data of its own: it
+   reads the football engine's today-items, the board's model/market
+   disagreements and the modules' data warnings, and links into each module.
+   Loading the football engine is the one fetch it starts, because "where
+   should I research?" cannot be answered without the model's own read. */
+researchRegister({id:'rdesk',label:'Desk',schema:'public',cadenceMs:null,
+  load:function(force,signal){return (typeof window.loadResearchDesk==='function')?window.loadResearchDesk(force,signal):Promise.resolve();},
+  render:function(){if(typeof window.renderResearchDesk==='function')window.renderResearchDesk();},
+  hasData:function(){return true;},
+  search:function(q){return [];},
+  openEntity:function(){},closeEntity:function(){},entityOpen:function(){return false;},entityKey:function(){return null;},
+  freshness:function(){return {loadedAt:null,builtAt:null};},
+  availability:function(){return null;},limitations:function(){return [];},provenance:{}});
+RESEARCH_SUB='rdesk';
 
 /* ═══ RESEARCH: provenance, maturity, honest states, freshness ═══════════
    Two INDEPENDENT axes, both read from data:
@@ -5505,7 +5814,9 @@ function receiptHTML(e){
 }
 /* wrap any edge into a tappable card with the shared receipt */
 function receiptInner(e,domid){
-  return receiptHTML(e)+
+  return ((typeof window.mvtHTML==='function')?window.mvtHTML(e):'')+
+    receiptHTML(e)+
+    ((typeof window.rnextHTML==='function')?window.rnextHTML(e,domid):'')+
     '<button class="edai-analyze" onclick="event.stopPropagation();edaiAnalyze(\''+domid+'\')">'+
       '<svg viewBox="0 0 24 24"><path d="M12 3l2.2 5.8L20 11l-5.8 2.2L12 19l-2.2-5.8L4 11l5.8-2.2L12 3z"/></svg>Analyze with EdgeDesk Intelligence</button>'+
     '<button class="btn ghost sm" onclick="__trackId(\''+domid+'\')" style="margin-top:8px">Track this to my ledger</button>';
@@ -5523,7 +5834,11 @@ function edgeRow(e,i){
   var tags=(e.edge>0.06?' <span class="suspect">\u26a0 verify</span>':'')+(isTrusted(e.best_book)?'':' <span class="suspect">offshore</span>');
   var header='<span class="rank">'+(i+1)+'</span>'+
     '<div class="lead-mid"><div class="lead-sel"><span class="ebadge market">MARKET</span>'+selLabel(e)+anchorBadge(e)+'<span class="corrslot" id="cs_t10_'+i+'">'+corrobBadge(e)+limitBadge(e)+'</span>'+tags+'</div>'+
-    '<div class="lead-meta">'+favStar(e)+mktLabel(e.market)+' \u00b7 '+(e.away_team||'')+' @ '+(e.home_team||'')+' \u00b7 '+whenLabel(e.commence_time)+'</div>'+edgeChips(e)+'</div>'+
+    '<div class="lead-meta">'+favStar(e)+mktLabel(e.market)+' \u00b7 '+(e.away_team||'')+' @ '+(e.home_team||'')+' \u00b7 '+whenLabel(e.commence_time)+'</div>'+
+    /* the human read first (evidence quality, market state, decision, one sentence);
+       the compact chips stay underneath for anyone who reads them at a glance */
+    ((typeof window.ucLeadHTML==='function')?window.ucLeadHTML(e):'')+
+    edgeChips(e)+'</div>'+
     '<span class="lead-ev">+'+(e.edge*100).toFixed(1)+'%</span>';
   return expandItem(e,'t10_'+i,header);
 }
@@ -11898,6 +12213,7 @@ function modelMarketLine(m,gi,k){
       '<span class="mdl-tag">'+stars+' '+stEsc(tagLabel)+'</span>'+
       '<span class="rchev">\u203a</span></div>'+
     beat+
+    ((typeof window.mdlWhyHTML==='function')?window.mdlWhyHTML(m):'')+
     '<div class="receipt" id="'+domid+'">'+modelReceiptHTML(m)+'</div></div>';
 }
 
@@ -12412,6 +12728,7 @@ function renderConsensusEngine(){
       '<div class="top"><span class="ebadge consensus">CONSENSUS '+engineStars(4)+'</span>'+
       '<span class="sel">'+stEsc(selLabel(e))+flag+'</span><span class="ev">+'+(e._ce*100).toFixed(2)+'%</span><span class="rchev">\u203a</span></div>'+
       '<div class="meta">'+stEsc(meta)+'</div></div>'+
+      ((typeof window.consWhyHTML==='function')?window.consWhyHTML(e,ctx):'')+
       '<div class="cinsight"><div class="cih">CONSENSUS INSIGHT</div>'+
       '<div id="ci-'+did+'">'+buildConsensusInsight(ctx)+'</div>'+
       '<div class="cifoot">\u24d8 Generated from live cross-book pricing. Describes market structure, not a prediction.</div></div>'+
@@ -12897,6 +13214,18 @@ function renderSetAbout(){
      ['Record','Your graded track record \u2014 the number that actually matters.']
     ].map(function(u){return '<div class="set-use-i"><b>'+stEsc(u[0])+'</b><span>'+stEsc(u[1])+'</span></div>';}).join('')+'</div>'+
     '<div class="set-note">A signal is a starting point for research, never an instruction. Prices move, models are wrong, and a clean board with nothing on it is a normal and correct outcome.</div>');
+
+  /* The research flow and the demo sequence live here too, so a user can
+     find them after the first-run welcome has been dismissed. */
+  out+=setCard('The research process','Six steps. The same loop every session.',
+    ((typeof window.flowHTML==='function')?window.flowHTML(false):'')+
+    '<div class="set-note" style="margin-top:10px">PASS is a valid answer at step four. The closing market grades step six; EdgeDesk does not grade itself.</div>'+
+    '<div style="margin-top:10px"><button class="rbtn" onclick="try{window.hiwOpen()}catch(_){}">How EdgeDesk works &rarr;</button> <button class="rbtn" onclick="try{window.welOpen(true)}catch(_){}">Show the welcome again</button></div>');
+
+  out+=setCard('Built beyond picks',null,
+    '<p class="set-p">EdgeDesk is designed as research infrastructure. The same market, model, grading and evidence layers can support bettors, analysts, creators and partners without changing the underlying record.</p>'+
+    '<div class="set-beyond"><span>Consumer research</span><span>Creator networks</span><span>Market intelligence</span><span>Model comparison</span><span>Data-driven editorial</span><span>B2B integrations</span></div>'+
+    '<div class="set-note" style="margin-top:10px">For partnerships: <a href="mailto:'+PG_SUPPORT+'?subject=Partnerships">'+stEsc(PG_SUPPORT)+'</a></div>');
 
   /* Core values: how the company operates. Same six values as the landing
      page, compacted for the settings shell. Icons are inline stroke SVGs,
@@ -15911,25 +16240,61 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
       + '</div></div>';
   }
 
-  function healthHtml(pool){
+  /* MARKET HEALTH — one diagnostic read of the scoped pool: a state, the
+     metrics behind it and a one-sentence interpretation. Market structure
+     only; nothing here predicts anything. Shared with Today's Desk through
+     window.__discoApi so both surfaces read the same numbers. */
+  function healthCalc(pool){
     var midnight=new Date(); midnight.setHours(0,0,0,0); var m=midnight.getTime();
-    var openersToday=0, sumO=0, nO=0, sumC=0, nC=0, opened=0, steam=0, impr=0, closing=0;
+    var openersToday=0, sumO=0, nO=0, sumC=0, nC=0, opened=0, steam=0, impr=0, closing=0, missed=0, live=0;
     pool.forEach(function(e){ var f=facts(e), st=lifecycle(f);
       if(tms(e.first_seen_at)>=m) openersToday++;
       if(f.o>0){ sumO+=f.o; nO++; opened++; }
-      if(f.c>0){ sumC+=f.c; nC++; }
-      if(st.k==='steam')steam++; if(st.k==='improving')impr++; if(st.k==='closing')closing++;
+      if(f.c>0){ sumC+=f.c; nC++; live++; }
+      if(st.k==='steam')steam++; if(st.k==='improving')impr++; if(st.k==='closing')closing++; if(st.k==='missed')missed++;
     });
-    var avgO=nO?fmtE(sumO/nO):'—', avgC=nC?fmtE(sumC/nC):'—';
+    var avgO=nO?sumO/nO:null, avgC=nC?sumC/nC:null;
     var confirmed=opened?Math.round((steam/opened)*100):0;
+    var hb=window.__edgeLatest||0, hbMin=hb?(Date.now()-hb)/60000:null;
+    var redMin=(typeof STALE_RED_MIN!=='undefined')?STALE_RED_MIN:120;
+    var state, read;
+    if(hbMin==null||hbMin>=redMin){
+      state='STALE';
+      read=hb?'Capture last reported '+ago(hb)+'. The counts below are old prices, not a live read of the board.':'Capture has not reported. There is no live read of the board.';
+    }else if(!pool.length){
+      state='EMPTY';
+      read='No flagged price has opened above the sharp fair line in this window. There is no market structure to read yet.';
+    }else if(opened&&(steam+closing)/opened>=0.4){
+      state='FAST';
+      read='Several prices are moving toward the sharp fair line. Research quickly because current edges are decaying.';
+    }else if(opened&&live/opened>=0.5&&avgC!=null&&avgC>=0.02){
+      state='DISLOCATED';
+      read='Many opened prices are still sitting away from the sharp fair line. The market has not corrected most of them yet; that is unusual and worth verifying before trusting.';
+    }else if(openersToday>=5||impr>=3){
+      state='ACTIVE';
+      read='New prices are opening and '+(impr?impr+' '+(impr===1?'is':'are')+' strengthening':'the board is moving')+'. Nothing here is a call; it is where the market is busy.';
+    }else{
+      state='QUIET';
+      read='The board is quiet. Very few current prices are strengthening and most earlier discrepancies have already been corrected.';
+    }
+    return {state:state, read:read, openersToday:openersToday, avgO:avgO, avgC:avgC, confirmed:confirmed, improving:impr, closing:closing, expired:missed, steam:steam, opened:opened, live:live, n:pool.length, hb:hb, hbMin:hbMin};
+  }
+  window.__discoApi={loadPool:loadPool, scope:scope, facts:facts, lifecycle:lifecycle, health:healthCalc};
+  function healthHtml(pool){
+    var h=healthCalc(pool);
+    var avgO=h.avgO!=null?fmtE(h.avgO):'—', avgC=h.avgC!=null?fmtE(h.avgC):'—';
     function stat(n,l,cls){ return '<div class="dh-stat '+(cls||'')+'"><div class="n">'+n+'</div><div class="l">'+l+'</div></div>'; }
-    return '<div class="disco-card"><h4>Market Health</h4><div class="dh-stats">'
-      + stat(openersToday,'openers today','acc')
+    return '<div class="disco-card"><h4>Market Health <span class="mh-state '+h.state+'" style="margin-left:6px"><i></i>'+h.state+'</span></h4>'
+      + '<div class="mh-read" style="margin:0 0 9px">'+esc(h.read)+'</div>'
+      + '<div class="dh-stats">'
+      + stat(h.openersToday,'openers today','acc')
       + stat(avgO,'avg edge @ open','')
       + stat(avgC,'avg remaining','')
-      + stat(confirmed+'%','confirmed by market','pos')
-      + stat(impr,'improving','pos')
-      + stat(closing,'closing fast','warn')
+      + stat(h.confirmed+'%','confirmed by market','pos')
+      + stat(h.improving,'improving','pos')
+      + stat(h.closing,'closing fast','warn')
+      + stat(h.expired,'expired','neg')
+      + stat(h.hb?ago(h.hb):'—','capture freshness',h.hbMin!=null&&h.hbMin<45?'':'warn')
       + '</div></div>';
   }
 
@@ -15979,6 +16344,8 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
       host.innerHTML=html;
       host.classList.remove('hide');
     }catch(_e){ host.classList.add('hide'); }
+    /* the desk reads the same pool for its movement counts and health strip */
+    try{ if(window.renderDesk) window.renderDesk(); }catch(_e2){}
   };
 
   // Replay: inline edge/price sparkline from signal_ticks. Honest empty state
@@ -16023,6 +16390,694 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
   }
   // persist this visit as the new baseline (once), a beat after first paint so the hero reads the delta first
   setTimeout(function(){ try{ window.renderDiscovery(); localStorage.setItem(LV_KEY, Date.now()); }catch(_e){} }, 1200);
+})();
+</script>
+
+<script id="desk-js">
+/* ============================================================================
+   EDGEDESK COMMAND CENTER — Today's Desk, the universal research card read,
+   the movement timeline, Research Next, the first-run welcome, the research
+   flow, "How EdgeDesk works", Focus Mode and the Research Desk landing.
+
+   PRESENTATION ONLY. Every number here is read from rows the board already
+   holds (EDGES, D5_POOL, CONS_POOL, the discovery pool, MODEL_EDGES, the
+   football engine's own rows when that module is loaded) through the same
+   pure functions the receipts use (eqsCompute, anchorOf, sliceStat,
+   moveLabel, nbUse, lifecycle). Nothing is recomputed, blended or invented;
+   MARKET, MODEL and CONSENSUS stay separate on every card. Fail-soft: any
+   throw leaves the board exactly as it was.
+   ========================================================================== */
+(function(){
+  var FOCUS_KEY='edgedesk_focus', WEL_KEY='edgedesk_welcome_seen';
+  function $id(i){return document.getElementById(i);}
+  function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+  function od(dec){try{return (dec!=null&&+dec>1)?GE.fmtPrice(+dec):'—';}catch(_){return '—';}}
+  function pctS(x,d){if(x==null||!isFinite(x))return '—';return (x>=0?'+':'')+(x*100).toFixed(d==null?1:d)+'%';}
+  function fairDec(e){return (e&&e.sharp_fair!=null&&e.sharp_fair>0)?1/Math.max(0.0001,e.sharp_fair):null;}
+  function tms(iso){try{var t=new Date(iso).getTime();return isFinite(t)?t:0;}catch(_){return 0;}}
+  function keyOf(e){try{return consKey(e);}catch(_){return (e.event_id||'')+'|'+(e.market||'')+'|'+(e.selection||'')+'|'+(e.point!=null?e.point:'');}}
+  function sportOf(e){try{return evSportLabel(e)||'';}catch(_){return e.sport_title||'';}}
+  function isFootball(e){var k=String((e&&e.sport_key)||'').toLowerCase();return k.indexOf('americanfootball')===0;}
+  function nrm(s){return String(s||'').toLowerCase().replace(/[^a-z0-9]/g,'');}
+  function agoS(ms){try{return ago(ms);}catch(_){return '';}}
+  /* the discovery module owns facts()/lifecycle(); read through its api so the
+     desk and the movement board never disagree about what "missed" means */
+  function facts(e){
+    var api=window.__discoApi; if(api&&api.facts)return api.facts(e);
+    var o=(e.first_edge!=null?e.first_edge:e.edge), c=(e.edge!=null?e.edge:0);
+    var od_=e.first_best_dec||e.best_dec||0, cd=e.best_dec||0;
+    var age=(Date.now()-tms(e.first_seen_at))/60000;
+    return {o:o,c:c,od:od_,cd:cd,age:age,removed:(o>0)?(o-c)/o:0};
+  }
+  function lifecycle(f){
+    var api=window.__discoApi; if(api&&api.lifecycle)return api.lifecycle(f);
+    var fl=(typeof REAL_FLOOR!=='undefined')?REAL_FLOOR:0.005;
+    if(f.o>0&&f.c<=0)return {k:'missed',t:'Missed'};
+    if(f.c>f.o+0.005&&f.c>fl)return {k:'improving',t:'Improving'};
+    if(Math.abs(f.c)<=fl)return {k:'fair',t:'Fair'};
+    if(f.o>0&&f.c>0&&f.removed>=0.5)return {k:'closing',t:'Closing'};
+    if(f.o>0&&f.c<f.o&&f.c>fl)return {k:'steam',t:'Steaming'};
+    if(f.age<=60)return {k:'new',t:'New'};
+    return {k:'fair',t:'Live'};
+  }
+  function badge(t,c){return '<span class="evb '+(c||'mut')+'">'+esc(t)+'</span>';}
+  function decHTML(d){
+    var lbl=d==='INSUFFICIENT'?'Insufficient evidence':d;
+    var ic={RESEARCH:'▸',WATCH:'○',PASS:'—',MISSED:'✕',INSUFFICIENT:'?',EXPERIMENTAL:'◇'}[d]||'';
+    return '<span class="dec '+d+'"><i>'+ic+'</i>'+esc(lbl)+'</span>';
+  }
+  function plain(html){return String(html||'').replace(/&mdash;/g,'—').replace(/&middot;/g,'·').replace(/&amp;/g,'&');}
+
+  /* ------------------------------------------------------------------ */
+  /* THE UNIVERSAL READ of one MARKET row. Evidence quality, market state,
+     decision, one plain sentence for why and one for the weak link. */
+  window.ucRead=function(e){
+    var q=eqsCompute(e), a=anchorOf(e), nb=nbUse(e), st=sliceStat(e), mv=moveLabel(e), f=facts(e), lc=lifecycle(f);
+    var ls=e.last_seen_at?tms(e.last_seen_at):0, staleMin=ls?(Date.now()-ls)/60000:999;
+    var edge=+e.edge||0, corr=null;
+    try{corr=(typeof corroboration==='function')?corroboration(e):null;}catch(_){corr=null;}
+    var ev=[];
+    if(a.kind==='sharp')ev.push({t:'Sharp anchored',c:'ok'});
+    else if(a.kind==='soft')ev.push({t:'Soft consensus',c:'warn'});
+    else if(a.kind==='none')ev.push({t:'No sharp reference',c:'neg'});
+    else ev.push({t:'Anchor unknown',c:'mut'});
+    if(nb>=5)ev.push({t:nb+' books',c:'ok'});
+    else if(nb>=3)ev.push({t:nb+' books',c:'mut'});
+    else ev.push({t:nb<=1?'Lone book':nb+' books',c:'neg'});
+    if(corr&&corr.kind==='lone')ev.push({t:'Lone book vs sharp',c:'warn'});
+    if(st&&st.rate!=null&&st.n>=40)ev.push({t:(st.rate*100).toFixed(0)+'% beat close · n'+st.n,c:st.rate>=0.54?'ok':(st.rate<0.5?'neg':'mut')});
+    else if(st&&st.rate!=null)ev.push({t:'Thin sample · n'+st.n,c:'warn'});
+    else ev.push({t:'CLV unproven',c:'warn'});
+    if(staleMin>=45)ev.push({t:'Stale · '+Math.round(staleMin)+'m',c:'neg'});
+    if(edge>0.06)ev.push({t:'Verify',c:'neg'});
+    var state;
+    if(lc.k==='missed')state='MISSED';
+    else if(lc.k==='improving')state='IMPROVING';
+    else if(lc.k==='closing')state='CLOSING';
+    else if(lc.k==='steam')state='STEAMING';
+    else if(mv&&mv.cls==='mv-steam')state='STEAMING';
+    else if(mv&&mv.cls==='mv-drift')state='DRIFTING';
+    else if(lc.k==='new')state='NEW';
+    else state='FLAT';
+    var stateC={MISSED:'neg',IMPROVING:'ok',CLOSING:'warn',STEAMING:'ok',DRIFTING:'warn',NEW:'acc',FLAT:'mut'}[state];
+    var decision;
+    if(lc.k==='missed')decision='MISSED';
+    else if(nb<3||a.kind==='none')decision='INSUFFICIENT';
+    else if(q.decision==='BET')decision='RESEARCH';
+    else decision=q.decision;   /* WATCH or PASS, straight from the same rule the chips use */
+    var clvTxt=(st&&st.rate!=null&&st.n>=40)?('this signal class has beaten the close '+(st.rate*100).toFixed(0)+'% over '+st.n+' graded'):null;
+    var why;
+    if(decision==='MISSED')why='The apparent edge disappeared after the market moved ('+od(f.od)+' → '+od(f.cd)+'). EdgeDesk marks it MISSED rather than advertising the stale number.';
+    else if(decision==='INSUFFICIENT')why=(a.kind==='none'?'No fair line is stored for this selection':'Only '+nb+' book'+(nb===1?'':'s')+' quote'+(nb===1?'s':'')+' it')+', so EdgeDesk cannot say whether the price is good. The data is missing, not the edge.';
+    else if(decision==='RESEARCH')why='The price ('+od(e.best_dec)+') clears the sharp fair line ('+od(fairDec(e))+') by '+pctS(edge)+', and '+clvTxt+'. Worth researching now, not betting blind.';
+    else if(decision==='WATCH')why='The price ('+od(e.best_dec)+') is above the de-vigged '+(a.kind==='sharp'?'sharp':'consensus')+' fair line ('+od(fairDec(e))+') by '+pctS(edge)+', but this signal class has not yet demonstrated reliable closing-line value.';
+    else if(st&&st.rate!=null&&st.n>=40&&st.rate<0.5&&st.clv<0)why='The price beats fair at the slip by '+pctS(edge)+', but this class fades by close ('+(st.rate*100).toFixed(0)+'% beat over '+st.n+'). PASS is the answer the record gives.';
+    else why='The price clears fair by '+pctS(edge)+', but this signal class has not shown enough closing-line success to promote it beyond PASS.';
+    if(decision!=='MISSED'){
+      if(state==='STEAMING')why+=' The market has moved toward it since first capture.';
+      else if(state==='DRIFTING')why+=' The market is moving the other way.';
+      else if(state==='IMPROVING')why+=' The edge has grown since first capture.';
+      else if(state==='CLOSING')why+=' Most of the opening edge is already gone.';
+    }
+    var risk=q.risk.length?plain(q.risk[0]):(decision==='RESEARCH'?'Prices move; verify it is still live before acting.':'');
+    return {q:q,a:a,nb:nb,st:st,mv:mv,f:f,lc:lc,evidence:ev,state:state,stateC:stateC,decision:decision,why:why,risk:risk,stale:staleMin>=45};
+  };
+  function evidenceHTML(r,withState){
+    var h=r.evidence.map(function(b){return badge(b.t,b.c);}).join('');
+    if(withState!==false)h+=badge(r.state,r.stateC);
+    return h;
+  }
+  /* the lead-row read: sits between the meta line and the chips on Top edges */
+  window.ucLeadHTML=function(e){
+    try{
+      var r=window.ucRead(e);
+      return '<div class="lead-px"><b>'+od(e.best_dec)+'</b> best · <b>'+od(fairDec(e))+'</b> '+(r.a.kind==='sharp'?'sharp fair':'fair')+' · edge <b>'+pctS(e.edge)+'</b></div>'
+        +'<div class="lead-read">'+r.evidence.slice(1).map(function(b){return badge(b.t,b.c);}).join('')+badge(r.state,r.stateC)+decHTML(r.decision)+'</div>'
+        +'<div class="lead-why">'+esc(r.why)+(r.risk?' <span class="wk">Weak link: '+esc(r.risk)+'</span>':'')+'</div>';
+    }catch(_){return '';}
+  };
+
+  /* ------------------------------------------------------------------ */
+  /* MOVEMENT TIMELINE — OPEN · FLAG · CURRENT · CLOSE for one row. Opening
+     and flag prices are frozen by capture; close is the de-vigged sharp fair
+     at close once the closing job has run; nothing is drawn that is not
+     stored. */
+  window.mvtHTML=function(e){
+    try{
+      if(!e||!e.best_dec)return '';
+      var openD=e.first_best_dec||null, flagD=(isFinite(+e.flagged_best_dec)&&+e.flagged_best_dec>1)?+e.flagged_best_dec:null, curD=+e.best_dec;
+      var closeD=(e.closing_sharp_fair!=null&&e.closing_sharp_fair>0)?1/e.closing_sharp_fair:null;
+      var f=facts(e), lc=lifecycle(f);
+      var edgeFlag=(e.flagged_edge!=null)?+e.flagged_edge:(e.first_edge!=null?+e.first_edge:null), edgeNow=(e.edge!=null)?+e.edge:null;
+      var r=window.ucRead(e);
+      var status=r.decision==='MISSED'?'MISSED':r.state;
+      var x;
+      if(lc.k==='missed')x='The price moved through EdgeDesk’s estimated fair line. The original opportunity is no longer available.';
+      else if(lc.k==='steam')x='The market has moved toward this side since it was first priced. Part of the opening edge has been taken back, part remains.';
+      else if(lc.k==='closing')x='Most of the opening edge is gone. What is left is decaying; if it is worth researching, it is worth researching now.';
+      else if(lc.k==='improving')x='The price has moved away from the fair line since first capture. The edge is larger than when it opened, which is not the same as the market agreeing.';
+      else if(closeD!=null)x='The closing job has run. The entry is graded against the closing sharp fair below, not against the result of the game.';
+      else x='No material move since first capture. The close will grade it; until then this is a placement read.';
+      function node(cls,label,dec,sub,pending){
+        return '<div class="mvt-n '+cls+'"><i></i><div class="p'+(pending?' mut':'')+'">'+(pending?'pending':od(dec))+'</div><div class="l">'+label+'</div>'+(sub?'<div class="s">'+esc(sub)+'</div>':'')+'</div>';
+      }
+      return '<div class="mvt"><div class="mvt-h">Movement <span class="st">'+badge(status,r.stateC)+'</span></div>'
+        +'<div class="mvt-track">'
+        +node('open','Open',openD,e.first_seen_at?agoS(tms(e.first_seen_at)):'',openD==null)
+        +node('flag','Flag',flagD,e.flagged_at?agoS(tms(e.flagged_at)):'',flagD==null)
+        +node('cur','Current',curD,e.last_seen_at?agoS(tms(e.last_seen_at)):'',false)
+        +node('close'+(closeD!=null?' done':''),'Close',closeD,closeD!=null?'sharp fair':'',closeD==null)
+        +'</div>'
+        +'<div class="mvt-e">'
+        +(edgeFlag!=null?'<div class="c"><span class="k">Edge at flag</span><span class="v '+(edgeFlag>0?'pos':'neg')+'">'+pctS(edgeFlag)+'</span></div>':'')
+        +'<div class="c"><span class="k">Edge now</span><span class="v '+(edgeNow>0?'pos':edgeNow<0?'neg':'mut')+'">'+pctS(edgeNow)+'</span></div>'
+        +(e.clv!=null?'<div class="c"><span class="k">CLV</span><span class="v '+(e.clv>0?'pos':'neg')+'">'+pctS(e.clv)+'</span></div>':'<div class="c"><span class="k">CLV</span><span class="v mut">after close</span></div>')
+        +decHTML(r.decision)
+        +'</div>'
+        +'<div class="mvt-x">'+esc(x)+'</div></div>';
+    }catch(_){return '';}
+  };
+
+  /* ------------------------------------------------------------------ */
+  /* RESEARCH NEXT — links chosen from what the row already carries. */
+  function nextActions(e,domid){
+    var acts=[];
+    var k=keyOf(e);
+    if(domid&&domid.indexOf('dk_')!==0)acts.push({t:'Open research',fn:"deskGo('receipt','"+edAttrJs(domid)+"')",pri:true});
+    acts.push({t:'View movement',fn:"deskGo('movement','"+edAttrJs(k)+"')"});
+    var hasModel=false;try{hasModel=!!modelFor(e);}catch(_){}
+    if(isFootball(e))acts.push({t:'Compare model',fn:"deskGo('football','"+edAttrJs(k)+"')"});
+    else if(hasModel)acts.push({t:'Compare model',fn:"deskGo('model','"+edAttrJs(k)+"')"});
+    acts.push({t:'Check matchup',fn:"deskGo('matchup','"+edAttrJs(k)+"')"});
+    acts.push({t:'View signal class record',fn:"deskGo('record','"+edAttrJs(k)+"')"});
+    if(domid)acts.push({t:'Track in Ledger',fn:"__trackId('"+edAttrJs(domid)+"')"});
+    return acts;
+  }
+  function rnHTML(acts,cls){
+    return '<div class="rn '+(cls||'')+'"><span class="rn-l">Research next</span>'+acts.map(function(a){
+      return '<button class="rn-a'+(a.pri?' pri':'')+'" onclick="event.stopPropagation();'+a.fn+'">'+esc(a.t)+' <span class="ar">→</span></button>';
+    }).join('')+'</div>';
+  }
+  window.rnextHTML=function(e,domid){
+    try{ if(domid&&domid.indexOf('dk_')===0)return ''; return rnHTML(nextActions(e,domid).filter(function(a){return a.t!=='Open research'&&a.t!=='Track in Ledger';}),'foot'); }catch(_){return '';}
+  };
+  /* one sentence under a MODEL card line: what the model says vs what the price
+     says, and the reminder that this engine is on probation */
+  window.mdlWhyHTML=function(m){
+    try{
+      var d=modelMeta(m), sig=(window.SIGKEY||{})[modelKey(m.event_id,m.market,m.selection,m.point)]||null;
+      var px=modelBookPrice(m,sig);
+      var prob=(m.model_prob!=null&&isFinite(+m.model_prob))?(+m.model_prob<=1?+m.model_prob:+m.model_prob/100):null;
+      if(prob==null)return '';
+      var s='<b>Why it’s here.</b> The model gives '+esc(selLabel(m))+' '+(prob*100).toFixed(1)+'% ';
+      if(px&&px.dec>1){var impl=1/px.dec;s+='against a price that implies '+(impl*100).toFixed(1)+'% ('+od(px.dec)+'), a gap of '+((prob-impl)*100).toFixed(1)+' pts. ';}
+      else s+='and has no live price to compare it with. ';
+      if(sig&&sig.edge!=null)s+=sig.edge>0?'The MARKET engine reads '+pctS(sig.edge)+' on the same line against the sharp fair. ':'The MARKET engine reads no value on the same line. ';
+      s+='Experimental: an independent opinion to research, counted nowhere until its own CLV proves out.';
+      return '<div class="mdl-why">'+s+'</div>';
+    }catch(_){return '';}
+  };
+  window.consWhyHTML=function(e,ctx){
+    try{
+      var nb=nbUse(e), ce=e._ce;
+      var s='<b>Why it’s here.</b> '+nbLabel(e)+' disagree with each other on this price: the best quote ('+esc(e.best_book||'')+' '+od(e.best_dec)+') sits '+pctS(ce)+' above the multi-book median fair. ';
+      if(e.has_sharp===true&&e.edge!=null)s+='Pinnacle does quote it, and the MARKET engine reads '+pctS(e.edge)+' against that sharp line. ';
+      else if(e.has_sharp===false)s+='No sharp quote exists for this selection, so there is nothing to anchor it to. ';
+      s+='Cross-book disagreement, not a prediction.';
+      return '<div class="cons-why">'+s+'</div>';
+    }catch(_){return '';}
+  };
+
+  /* ------------------------------------------------------------------ */
+  /* TODAY'S DESK */
+  window.DESKQ={};
+  var DESK={pool:null,poolAt:0,poolLoading:false};
+  function scopedPool(){
+    var api=window.__discoApi; if(!api||!DESK.pool)return null;
+    try{return api.scope(DESK.pool);}catch(_){return DESK.pool;}
+  }
+  function ensurePool(){
+    var api=window.__discoApi; if(!api||DESK.poolLoading)return;
+    DESK.poolLoading=true;
+    Promise.resolve(api.loadPool()).then(function(p){DESK.pool=p||[];DESK.poolAt=Date.now();DESK.poolLoading=false;render(true);})
+      .catch(function(){DESK.pool=[];DESK.poolLoading=false;});
+  }
+  function heartbeat(){
+    var hb=window.__edgeLatest||0, mins=hb?(Date.now()-hb)/60000:null;
+    var red=(typeof STALE_RED_MIN!=='undefined')?STALE_RED_MIN:120, amber=(typeof STALE_AMBER_MIN!=='undefined')?STALE_AMBER_MIN:45;
+    return {hb:hb,mins:mins,red:mins==null||mins>=red,amber:mins!=null&&mins>=amber&&mins<red};
+  }
+  /* --- candidates --- */
+  function marketItems(){
+    var rows=(window.T10||[]).slice(0,6), out=[];
+    rows.forEach(function(e,i){
+      try{
+        var r=window.ucRead(e);
+        out.push({kind:'market',e:e,read:r,t10:i,score:r.q.score,key:keyOf(e),
+          sel:selLabel(e),sport:sportOf(e),
+          nums:[{k:'Best',v:od(e.best_dec)},{k:(r.a.kind==='sharp'?'Sharp fair':'Fair'),v:od(fairDec(e)),c:'mut'},{k:'Market edge',v:pctS(e.edge),c:e.edge>0?'pos':'neg'},{k:'Books',v:String(r.nb),c:'mut'}],
+          decision:r.decision,why:r.why,risk:r.risk,badges:evidenceHTML(r)});
+      }catch(_){}
+    });
+    out.sort(function(a,b){return b.score-a.score;});
+    return out;
+  }
+  function modelItem(){
+    try{
+      if(typeof resolveModelConflicts!=='function')return null;
+      var rows=resolveModelConflicts(window.MODEL_EDGES||[]).filter(function(m){return !m.__uncertain;});
+      rows.sort(function(a,b){return (modelEvOf(b)||0)-(modelEvOf(a)||0);});
+      var sport=$id('fSport')?$id('fSport').value:'';
+      for(var i=0;i<rows.length;i++){
+        var m=rows[i], d=modelMeta(m); if(!d.home||!d.away)continue; if(sport&&d.sport!==sport)continue;
+        var sig=(window.SIGKEY||{})[modelKey(m.event_id,m.market,m.selection,m.point)]||null;
+        var px=modelBookPrice(m,sig);
+        var prob=(m.model_prob!=null&&isFinite(+m.model_prob))?(+m.model_prob<=1?+m.model_prob:+m.model_prob/100):null;
+        if(prob==null)continue;
+        var impl=(px&&px.dec>1)?1/px.dec:null, gap=(impl!=null)?(prob-impl)*100:null;
+        var mr=sig?window.ucRead(sig):null;
+        var why='The model gives '+selLabel(m)+' '+(prob*100).toFixed(1)+'%'+(impl!=null?', the price implies '+(impl*100).toFixed(1)+'% (gap '+gap.toFixed(1)+' pts)':'')+'. '
+          +(sig&&sig.edge!=null?(sig.edge>0?'The market engine sees only '+pctS(sig.edge)+' value on the same line':'The market engine sees no value on the same line'):'There is no priced market line to compare')+'. Independent systems disagree; that deserves research rather than automatic action.';
+        var badges=badge('Model only','mdl')+badge('Experimental','mdl')+(mr?evidenceHTML(mr,false):badge('No market line','warn'));
+        return {kind:'model',m:m,sig:sig,key:'m|'+m.event_id+'|'+m.market+'|'+m.selection,sel:selLabel(m),sport:d.sport||'',
+          meta:[d.sport,mktLabel(m.market),d.away+' @ '+d.home,d.when?whenLabel(d.when):''].filter(Boolean).join(' · '),
+          nums:[{k:'Model implies',v:(prob*100).toFixed(1)+'%',c:'mdl'},{k:'Price implies',v:impl!=null?(impl*100).toFixed(1)+'%':'—',c:'mut'},{k:'Model gap',v:gap!=null?(gap>=0?'+':'')+gap.toFixed(1)+' pts':'—',c:'mdl'},{k:'Market edge',v:sig&&sig.edge!=null?pctS(sig.edge):'none',c:sig&&sig.edge>0?'pos':'mut'}],
+          decision:mr?(mr.decision==='RESEARCH'?'RESEARCH':'WATCH'):'WATCH',why:why,
+          risk:'The model is experimental and counted nowhere. Its number is an opinion until its own closing-line record says otherwise.',badges:badges};
+      }
+    }catch(_){}
+    return null;
+  }
+  function footballItem(){
+    try{
+      if(!(window.FB&&FB.at)||typeof fbGameRows!=='function')return null;
+      var rows=fbGameRows().filter(function(x){return x.ok&&!x.fault&&!x.stale&&x.gapS!=null&&x.mkt&&x.mkt.spread_line!=null;});
+      rows.sort(function(a,b){return Math.abs(b.gapS)-Math.abs(a.gapS);});
+      var r=rows[0]; if(!r||Math.abs(r.gapS)<1)return null;
+      var side=fbSideOf(r,r.gapS);
+      /* the MARKET engine's read of the same game, matched by team names */
+      var sig=null, pool=(window.EDGES||[]).concat(window.D5_POOL||[],window.CONS_POOL||[]);
+      var hn=nrm(r.home), an=nrm(r.away), sn=nrm(side);
+      for(var i=0;i<pool.length;i++){var e=pool[i];if(e.market!=='spreads')continue;
+        var eh=nrm(e.home_team), ea=nrm(e.away_team);
+        if((eh.indexOf(hn)>=0||hn.indexOf(eh)>=0)&&(ea.indexOf(an)>=0||an.indexOf(ea)>=0)&&nrm(e.selection).indexOf(sn)>=0){sig=e;break;}}
+      var mr=sig?window.ucRead(sig):null;
+      var why='The football model makes '+r.home+' '+fbHomeLine(r.p.model.fair_spread)+' where the market has '+r.home+' '+fbHomeLine(r.mkt.spread_line)+', a '+Math.abs(r.gapS).toFixed(1)+'-point disagreement leaning '+side+'. '
+        +(sig&&sig.edge!=null?(sig.edge>0?'The market-pricing engine sees only '+pctS(sig.edge)+' value on that side':'The market-pricing engine sees no value on that side'):'The market-pricing engine has no flagged price on that side')+'. That disagreement deserves research rather than automatic action.';
+      var badges=badge('Model only','mdl')+badge(r.sport==='p4'?'Power 4 model':'NFL model','mdl')+(r.warn&&r.warn.length?badge('Data warning','warn'):'')+(r.thin?badge('Thin sample','warn'):'')+(mr?evidenceHTML(mr,false):'');
+      return {kind:'football',r:r,sig:sig,key:'fb|'+r.sport+'|'+r.gid,sel:side+' (model lean)',sport:r.sport==='p4'?'CFB':'NFL',
+        meta:[(r.sport==='p4'?'CFB':'NFL'),'Spread',r.away+' @ '+r.home,r.t?whenLabel(new Date(r.t).toISOString()):''].filter(Boolean).join(' · '),
+        nums:[{k:'Market',v:r.home+' '+fbHomeLine(r.mkt.spread_line)},{k:'Model',v:r.home+' '+fbHomeLine(r.p.model.fair_spread),c:'mdl'},{k:'Gap',v:Math.abs(r.gapS).toFixed(1)+' pts',c:'mdl'},{k:'Market edge',v:sig&&sig.edge!=null?pctS(sig.edge):'none',c:sig&&sig.edge>0?'pos':'mut'}],
+        decision:mr?(mr.decision==='RESEARCH'?'RESEARCH':'WATCH'):'WATCH',why:why,
+        risk:Math.abs(r.gapS)>=7?'At this size, missing information (a starter, a scratch) is the likelier explanation than a mispriced market.':'The model is unproven against the closing line. Treat its number as a question, not an answer.',badges:badges};
+    }catch(_){return null;}
+  }
+  function consensusItem(){
+    try{
+      var e=(window.CONSENSUS_EDGES||[])[0]; if(!e||e._ce==null)return null;
+      var nb=nbUse(e);
+      var why=nbLabel(e)+' disagree with each other here: the best price ('+(e.best_book||'')+' '+od(e.best_dec)+') sits '+pctS(e._ce)+' above the multi-book median fair. '
+        +(e.has_sharp===true&&e.edge!=null?('Pinnacle does quote it, and the MARKET engine reads '+pctS(e.edge)+' against that sharp line. '):e.has_sharp===false?'No sharp quote exists for this selection, so nothing anchors it. ':'')
+        +'Cross-book disagreement, not a prediction.';
+      return {kind:'consensus',e:e,key:'c|'+keyOf(e),sel:selLabel(e),sport:sportOf(e),
+        meta:[sportOf(e),mktLabel(e.market),(e.away_team||'')+' @ '+(e.home_team||''),whenLabel(e.commence_time)].filter(Boolean).join(' · '),
+        nums:[{k:'Best',v:od(e.best_dec)},{k:'Median fair',v:od(e.consensus_fair>0?1/e.consensus_fair:null),c:'mut'},{k:'Consensus gap',v:pctS(e._ce),c:'pos'},{k:'Books',v:String(nb),c:'mut'}],
+        decision:e._ce>=0.02?'WATCH':'PASS',why:why,
+        risk:e.has_sharp===false?'No sharp reference. A thin board where books clone one number can look like disagreement and carry no information.':'Book disagreement is a screening signal. It says where to look, not what is true.',
+        badges:badge(nb+' books',nb>=5?'ok':'mut')+badge(e.has_sharp===true?'Sharp quoted':'No sharp reference',e.has_sharp===true?'ok':'warn')};
+    }catch(_){return null;}
+  }
+  function movementItem(exclude){
+    try{
+      var p=scopedPool(); if(!p||!p.length)return null;
+      var best=null, bestV=-1, label='';
+      p.forEach(function(e){var f=facts(e), lc=lifecycle(f); if(exclude[keyOf(e)])return;
+        var v=null; if(lc.k==='improving'){v=1000+(f.c-f.o);label='IMPROVING';} else if(lc.k==='steam'){v=100+f.removed;label='STEAMING';}
+        if(v!=null&&v>bestV){bestV=v;best=e;}});
+      var kind='improving';
+      if(!best){p.forEach(function(e){var f=facts(e), lc=lifecycle(f); if(exclude[keyOf(e)])return; if(lc.k==='missed'&&f.o>bestV){bestV=f.o;best=e;}});kind='missed';}
+      if(!best)return null;
+      var r=window.ucRead(best), f=facts(best);
+      var why=kind==='missed'?r.why:(r.state==='IMPROVING'
+        ?'The edge has grown since first capture ('+pctS(f.o)+' → '+pctS(f.c)+'). The market has not moved toward this side yet, which is not the same as agreement.'
+        :'The market has moved toward this side since it opened ('+od(f.od)+' → '+od(f.cd)+'), confirming the direction while taking back '+Math.round(f.removed*100)+'% of the opening edge.');
+      return {kind:'movement',e:best,read:r,key:keyOf(best),sel:selLabel(best),sport:sportOf(best),
+        nums:[{k:'Open',v:od(f.od),c:'mut'},{k:'Current',v:od(f.cd)},{k:'Edge open → now',v:pctS(f.o)+' → '+pctS(f.c),c:f.c>=f.o?'pos':'neg'},{k:'Books',v:String(r.nb),c:'mut'}],
+        decision:r.decision,why:why,risk:r.risk,badges:evidenceHTML(r)};
+    }catch(_){return null;}
+  }
+  function buildQueue(){
+    var seen={}, q=[];
+    function add(it){ if(!it||seen[it.key])return; seen[it.key]=1; q.push(it); }
+    var mk=marketItems();
+    if(mk[0])add(mk[0]);
+    add(footballItem());
+    add(modelItem());
+    if(mk[1])add(mk[1]);
+    add(consensusItem());
+    add(movementItem(seen));
+    for(var i=2;i<mk.length&&q.length<5;i++)add(mk[i]);
+    return q.slice(0,5);
+  }
+  /* --- html --- */
+  function stat(n,l,cls,onclick,title){
+    return '<div class="dk-stat '+(cls||'')+'"'+(onclick?' onclick="'+onclick+'" role="button" tabindex="0"':'')+(title?' title="'+esc(title)+'"':'')+'><div class="n">'+n+'</div><div class="l">'+l+'</div></div>';
+  }
+  function ucHTML(it,i){
+    var id='dk_'+i; window.DESKQ[id]=it;
+    var eng={market:'MARKET',model:'MODEL',football:'MODEL',consensus:'CONSENSUS',movement:'MARKET'}[it.kind];
+    var engCls={market:'market',model:'model',football:'model',consensus:'consensus',movement:'market'}[it.kind];
+    var meta=it.meta||(it.e?[it.sport,mktLabel(it.e.market),(it.e.away_team||'')+' @ '+(it.e.home_team||''),whenLabel(it.e.commence_time)].filter(Boolean).join(' · '):'');
+    var head=(it.kind==='model'||it.kind==='football')?'Model disagreement':it.kind==='consensus'?'Cross-book disagreement':it.kind==='movement'?(it.read&&it.read.state==='IMPROVING'?'Edge strengthening':it.read&&it.read.lc.k==='missed'?'Opportunity expired':'Market-confirmed move'):'Price vs sharp fair';
+    var acts=[];
+    if(it.kind==='market'||it.kind==='movement'){
+      acts.push({t:'Open research',fn:"deskToggle('"+id+"')",pri:true});
+      acts=acts.concat(nextActions(it.e,id).filter(function(a){return a.t!=='Open research'&&a.t!=='View signal class record';}));
+    }else if(it.kind==='model'){
+      acts.push({t:'Open research',fn:"deskToggle('"+id+"')",pri:true});
+      acts.push({t:'Model engine',fn:"deskGo('model','')"});
+      if(it.sig){acts.push({t:'View movement',fn:"deskGo('movement','"+edAttrJs(keyOf(it.sig))+"')"});}
+      acts.push({t:'Check matchup',fn:"deskGo('matchup','"+(it.sig?edAttrJs(keyOf(it.sig)):'')+"')"});
+    }else if(it.kind==='football'){
+      acts.push({t:'Compare model',fn:"deskGo('fbgame','"+edAttrJs(it.r.sport)+"|"+edAttrJs(String(it.r.gid))+"')",pri:true});
+      acts.push({t:'Open roster matchup',fn:"deskGo('roster','')"});
+      if(it.sig){acts.push({t:'View movement',fn:"deskGo('movement','"+edAttrJs(keyOf(it.sig))+"')"});}
+    }else if(it.kind==='consensus'){
+      acts.push({t:'Open consensus read',fn:"deskGo('consensus','')",pri:true});
+      acts.push({t:'View movement',fn:"deskGo('movement','"+edAttrJs(keyOf(it.e))+"')"});
+      acts.push({t:'Check matchup',fn:"deskGo('matchup','"+edAttrJs(keyOf(it.e))+"')"});
+    }
+    var expandable=(it.kind==='market'||it.kind==='movement'||it.kind==='model');
+    return '<div class="uc '+engCls+'" id="'+id+'">'
+      +'<div class="uc-hd"'+(expandable?' onclick="deskToggle(\''+id+'\')" role="button" tabindex="0"':'')+'>'
+      +'<span class="uc-rank">'+(i<9?'0':'')+(i+1)+'</span>'
+      +'<div class="uc-mid">'
+      +'<div class="uc-line1"><span class="ebadge '+engCls+'">'+eng+'</span><span class="uc-sel">'+esc(it.sel)+'</span><span class="evb mut" style="font-weight:500">'+esc(head)+'</span></div>'
+      +'<div class="uc-meta">'+esc(meta)+'</div>'
+      +'<div class="uc-num">'+(it.nums||[]).map(function(c){return '<div class="c"><span class="k">'+esc(c.k)+'</span><span class="v '+(c.c||'')+'">'+esc(c.v)+'</span></div>';}).join('')+'</div>'
+      +'<div class="uc-badges">'+(it.badges||'')+'</div>'
+      +'</div>'
+      +'<span class="uc-dec">'+decHTML(it.decision)+'</span>'+(expandable?'<span class="rchev">›</span>':'')
+      +'</div>'
+      +'<div class="uc-why"><b>Why it’s here</b>'+esc(it.why)+'</div>'
+      +(it.risk?'<div class="uc-why risk"><b>Weak link</b>'+esc(it.risk)+'</div>':'')
+      +'<div class="uc-ft">'+rnHTML(acts)+'</div>'
+      +(expandable?'<div class="uc-body" id="'+id+'_body"></div>':'')
+      +'</div>';
+  }
+  function healthStrip(){
+    var api=window.__discoApi, p=scopedPool();
+    if(!api||!p){
+      return '<div class="mh"><div class="mh-top"><span class="mh-lbl">Market health</span><span class="mh-state EMPTY"><i></i>'+(DESK.poolLoading?'READING':'—')+'</span></div><div class="mh-read">'+(DESK.poolLoading?'Reading opening-vs-current prices for this window…':'Movement is read from the discovery pool once it loads.')+'</div></div>';
+    }
+    var h=api.health(p);
+    function m(n,l,c){return '<div class="mh-m '+(c||'')+'"><div class="n">'+n+'</div><div class="l">'+l+'</div></div>';}
+    return '<div class="mh"><div class="mh-top"><span class="mh-lbl">Market health</span><span class="mh-state '+h.state+'"><i></i>'+h.state+'</span><span class="evb mut" style="margin-left:auto">'+h.n+' opened above fair · '+(($id('fScope')&&$id('fScope').value==='day')?'today':'this window')+'</span></div>'
+      +'<div class="mh-read">'+esc(h.read)+'</div>'
+      +'<div class="mh-grid">'
+      +m(h.openersToday,'openers today','acc')
+      +m(h.avgO!=null?pctS(h.avgO):'—','avg edge at open')
+      +m(h.avgC!=null?pctS(h.avgC):'—','avg edge remaining')
+      +m(h.confirmed+'%','market confirmed','pos')
+      +m(h.improving,'improving','pos')
+      +m(h.closing,'closing fast','warn')
+      +m(h.expired,'expired','neg')
+      +m(h.hb?agoS(h.hb):'—','capture freshness',(h.hbMin!=null&&h.hbMin<45)?'':'warn')
+      +'</div><div class="mh-foot">Market structure only. Opening vs current price off the sharp fair line; no prediction is made here.</div></div>';
+  }
+  function cleanBoardHTML(scanned,leads,expired,hbTxt){
+    return '<div class="dk-clean"><div class="t">✓ Clean board</div>'
+      +'<div class="s">No current market qualifies for stronger action. Capture is live ('+esc(hbTxt)+') and the board agrees with itself.</div>'
+      +'<div class="grid">'
+      +stat(scanned,'selections scanned','mut')
+      +stat(0,'confirmed opportunities','pos')
+      +stat(leads,'research leads',leads?'warn':'mut')
+      +stat(expired,'prices already expired',expired?'neg':'mut')
+      +'</div><div class="q">“Nothing to force right now.” PASS is the terminal doing its job.</div>'
+      +'<div class="rn" style="margin-top:10px"><span class="rn-l">Instead</span>'
+      +'<button class="rn-a" onclick="deskGo(\'model\',\'\')">Review strongest disagreement <span class="ar">→</span></button>'
+      +'<button class="rn-a" onclick="deskGo(\'discovery\',\'\')">View market movement <span class="ar">→</span></button>'
+      +'<button class="rn-a" onclick="researchGo(\'rdesk\')">Study upcoming slate <span class="ar">→</span></button>'
+      +'<button class="rn-a" onclick="researchGo(\'lab\')">Open Research Lab <span class="ar">→</span></button>'
+      +'</div></div>';
+  }
+  function render(fromPool){
+    var host=$id('deskHost'); if(!host)return;
+    try{
+      var focus=window.deskFocusOn();
+      var hb=heartbeat();
+      var loaded=(window.__edgeLatest!==undefined)||(window.EDGES&&EDGES.length)||(window.D5_POOL&&D5_POOL.length);
+      var locked=(window.SUB===null&&window.PAYWALL_LIVE===true);
+      var tools='<div class="dk-tools">'
+        +'<button class="dk-tool'+(focus?' on':'')+'" onclick="deskFocus(!deskFocusOn())" aria-pressed="'+(focus?'true':'false')+'" title="Focus mode shows the desk only. Nothing is recalculated.">'+(focus?'◉ Focus':'○ Focus')+'</button>'
+        +'<button class="dk-tool" onclick="hiwOpen()">How it works</button></div>';
+      var top='<div class="dk-top"><div><div class="dk-ey">Today’s desk <span class="st">'+(hb.hb?'updated '+esc(agoS(hb.hb)):'no capture yet')+'</span></div>';
+      if(!loaded&&!locked){
+        host.innerHTML='<div class="dk">'+top+'<div class="dk-t">Reading the board…</div><div class="dk-sub">Prices, fair lines and movement are loading from the last capture.</div></div>'+tools+'</div><div class="dk-skel" style="width:60%"></div><div class="dk-skel" style="width:40%"></div></div>';
+        return;
+      }
+      if(!DESK.pool&&!DESK.poolLoading&&window.__discoApi)ensurePool();
+      var q=buildQueue();
+      var worth=q.filter(function(it){return it.decision==='RESEARCH'||it.decision==='WATCH';}).length;
+      var api=window.__discoApi, p=scopedPool(), h=(api&&p)?api.health(p):null;
+      var scanned=Math.max((window.CONS_POOL||[]).length,window.__boardStored||0,(window.EDGES||[]).length);
+      var fl=(window.FL&&FL.live)?FL.faults.length:null;
+      var marketStrong=q.some(function(it){return (it.kind==='market'||it.kind==='movement')&&(it.decision==='RESEARCH'||it.decision==='WATCH');});
+      var leads=q.filter(function(it){return it.kind!=='market'&&it.kind!=='movement';}).length;
+      var title, sub;
+      if(hb.red){title='Nothing here is current.';sub=hb.hb?'Capture last reported '+agoS(hb.hb)+'. Prices below are old and the desk will not rank them as live.':'The capture pipeline has not reported. There is no live board to read.';}
+      else if(locked){title='The desk is locked.';sub='Live signals are part of the EdgeDesk Research Terminal.';}
+      else if(!q.length){title='Nothing qualifies right now.';sub='EdgeDesk scanned the priced board in your window and found nothing worth pushing to the top of the desk.';}
+      else if(worth){title=worth+' thing'+(worth===1?'':'s')+' deserve'+(worth===1?'s':'')+' attention.';sub='Ranked by evidence, not by size. Each card says why it is here, what could be wrong, and what to research next.';}
+      else{title='Nothing to force right now.';sub='Everything on the desk is a PASS or a research lead. That is the terminal doing its job.';}
+      var stats='<div class="dk-stats">'
+        +stat(q.length?worth:0,'worth reviewing',worth?'acc':'mut',"deskGo('queue','')")
+        +stat(h?h.improving:'…','strengthening',h&&h.improving?'pos':'mut',"deskGo('discovery','')",'Edge larger now than when it opened')
+        +stat(h?h.steam:'…','market-confirmed moves',h&&h.steam?'pos':'mut',"deskGo('discovery','')",'Price moved toward the side since it opened')
+        +stat(h?h.expired:'…','expired',h&&h.expired?'neg':'mut',"deskGo('discovery','')",'Opened above fair, now gone')
+        +stat(fl==null?'—<small>not scanned</small>':fl,'structural faults',fl?'warn':'mut',"show('faults')",fl==null?'Open Faults to scan the futures boards':'')
+        +'</div>';
+      var body='';
+      if(hb.red)body+='<div class="dk-stale">⛔ Stale board. Nothing below is treated as live. Fix or wait for capture before trusting any price here.</div>';
+      else if(hb.amber)body+='<div class="dk-stale amber">⚠ Running behind: last capture '+esc(agoS(hb.hb))+'. Prices may have moved.</div>';
+      if(q.length){
+        body+='<div class="dk-h">Primary research queue <span class="n">'+q.length+' of '+scanned+' scanned</span><span class="r">'+(focus?'Focus mode':'Level 1 · tap a card for the evidence')+'</span></div>';
+        body+=q.map(ucHTML).join('');
+      }
+      if(!hb.red&&!locked&&!marketStrong){
+        body+=cleanBoardHTML(scanned,leads,h?h.expired:0,'last run '+agoS(hb.hb));
+      }
+      body+=healthStrip();
+      body+='<div class="rn foot"><span class="rn-l">Research next</span>'
+        +'<button class="rn-a pri" onclick="try{window.EDAI.todaysResearch()}catch(e){}">Run today’s research <span class="ar">→</span></button>'
+        +'<button class="rn-a" onclick="researchGo(\'rdesk\')">Research desk <span class="ar">→</span></button>'
+        +'<button class="rn-a" onclick="show(\'ledger\')">Open Ledger <span class="ar">→</span></button>'
+        +'<button class="rn-a" onclick="show(\'record\')">Check the record <span class="ar">→</span></button>'
+        +'</div>';
+      body+='<div class="dk-focusnote"><button class="dk-tool" onclick="deskFocus(false)">Show full terminal ↓</button></div>';
+      body+='<div class="dk-note">Research tool only — not betting advice. Every number above is read from the same rows as the board below; MARKET, MODEL and CONSENSUS are never combined into one score.</div>';
+      host.innerHTML='<div class="dk">'+top+'<div class="dk-t">'+esc(title)+'</div><div class="dk-sub">'+esc(sub)+'</div></div>'+tools+'</div>'+stats+body+'</div>';
+    }catch(err){
+      try{host.innerHTML='<div class="dk"><div class="dk-ey">Today’s desk</div><div class="dk-t">The desk could not render.</div><div class="dk-sub">The board below is unaffected. '+esc(err&&err.message||'')+'</div></div>';}catch(_){}
+    }
+  }
+  window.renderDesk=function(){render(false);};
+  window.deskToggle=function(id){
+    var el=$id(id); if(!el)return;
+    var open=el.classList.toggle('open');
+    var body=$id(id+'_body'), it=window.DESKQ[id];
+    if(open&&body&&!body.innerHTML&&it){
+      try{
+        if(it.kind==='market'||it.kind==='movement'){window.RCPT=window.RCPT||{};window.RCPT[id]=it.e;body.innerHTML='<div class="receipt">'+receiptInner(it.e,id)+'</div>';}
+        else if(it.kind==='model'){body.innerHTML='<div class="receipt">'+modelReceiptHTML(it.m)+'</div>';}
+      }catch(e){body.innerHTML='<div class="empty" style="padding:12px">The receipt could not render: '+esc(e&&e.message||'')+'</div>';}
+    }
+  };
+  /* --- navigation from a card: every target is an existing surface --- */
+  function scrollTo_(id){var el=$id(id);if(!el)return;setTimeout(function(){try{el.scrollIntoView({behavior:'smooth',block:'start'});}catch(_){}},60);}
+  function rowByKey(key){
+    var pools=[window.T10||[],window.EDGES||[],window.D5_POOL||[],window.CONS_POOL||[],DESK.pool||[]];
+    for(var p=0;p<pools.length;p++)for(var i=0;i<pools[p].length;i++)if(keyOf(pools[p][i])===key)return pools[p][i];
+    return null;
+  }
+  window.deskGo=function(kind,arg){
+    try{
+      var e=arg?rowByKey(arg):null;
+      if(kind==='queue'){scrollTo_('deskHost');return;}
+      if(kind==='receipt'){var el=$id(arg);if(el){if(window.deskFocusOn())window.deskFocus(false);el.classList.add('open');scrollTo_(arg);}return;}
+      if(kind==='movement'){
+        if(arg&&window.__openMovement){window.__openMovement(arg);return;}
+        if(window.deskFocusOn())window.deskFocus(false);
+        var d=$id('discovery');if(d&&!d.classList.contains('hide')){scrollTo_('discovery');}else scrollTo_('mktPulse');return;
+      }
+      if(kind==='discovery'){
+        if(window.deskFocusOn())window.deskFocus(false);
+        var d2=$id('discovery');if(d2&&!d2.classList.contains('hide'))scrollTo_('discovery');else{var mp=$id('mktPulse');if(mp&&!mp.classList.contains('hide')){mp.classList.add('open');scrollTo_('mktPulse');}else scrollTo_('leadWrap');}
+        return;
+      }
+      if(kind==='model'){if(window.deskFocusOn())window.deskFocus(false);scrollTo_('modelSec');return;}
+      if(kind==='consensus'){if(window.deskFocusOn())window.deskFocus(false);scrollTo_('consensusSec');return;}
+      if(kind==='football'){researchGo('football');return;}
+      if(kind==='roster'){researchGo('football');setTimeout(function(){try{window.fbSetSport('cfb');}catch(_){}},80);return;}
+      if(kind==='fbgame'){var parts=String(arg).split('|');researchGo('football');setTimeout(function(){try{window.fbOpenGame(parts[0],parts[1]);}catch(_){}},80);return;}
+      if(kind==='matchup'){
+        if(e&&isFootball(e)){researchGo('football');return;}
+        var sk=String((e&&e.sport_key)||'').toLowerCase();
+        if(sk.indexOf('mma')===0||sk.indexOf('ufc')>=0){researchGo('ufc');return;}
+        if(sk.indexOf('tennis')===0){researchGo('tennis');return;}
+        researchGo('stats');return;
+      }
+      if(kind==='record'){show('record');return;}
+    }catch(_){}
+  };
+  /* --- focus mode: a presentation preference, stored on this device --- */
+  window.deskFocusOn=function(){try{return localStorage.getItem(FOCUS_KEY)==='1';}catch(_){return false;}};
+  window.deskFocus=function(on){
+    try{localStorage.setItem(FOCUS_KEY,on?'1':'0');}catch(_){}
+    document.body.classList.toggle('focus',!!on);
+    render(false);
+  };
+  try{document.body.classList.toggle('focus',window.deskFocusOn());}catch(_){}
+
+  /* ------------------------------------------------------------------ */
+  /* THE RESEARCH FLOW — one component, used by the welcome, About and the
+     Research Desk. */
+  var FLOW=[
+    ['Scan','Find an unusual price or a model disagreement.'],
+    ['Verify','Check the sharp anchor, book count, movement and data quality.'],
+    ['Research','Study the matchup, roster, stats, model context and news.'],
+    ['Decide','PASS, WATCH, or research further.'],
+    ['Track','Freeze the price in the Ledger.'],
+    ['Grade','Compare the entry against the closing market.']
+  ];
+  window.flowHTML=function(compact){
+    return '<div class="flow'+(compact?' compact':'')+'">'+FLOW.map(function(s,i){return '<div class="flow-s"><div class="n">'+(i+1)+'</div><b>'+s[0]+'</b><p>'+esc(s[1])+'</p></div>';}).join('')+'</div>';
+  };
+
+  /* ------------------------------------------------------------------ */
+  /* FIRST-RUN WELCOME — once per device, no backend. */
+  window.welOpen=function(force){
+    var host=$id('welHost'); if(!host)return;
+    if(!force){try{if(localStorage.getItem(WEL_KEY))return;}catch(_){return;}}
+    host.innerHTML='<div class="wel-card">'
+      +'<div class="wel-ey">Welcome to EdgeDesk</div>'
+      +'<div class="wel-t">EdgeDesk is not here to give you picks.</div>'
+      +'<div class="wel-p">It is here to tell you <b>where the market deserves investigation</b>, what evidence supports the signal, what contradicts it, and whether the price eventually beat the close.</div>'
+      +'<div class="wel-eng">'
+      +'<div class="wel-e market"><b>MARKET</b><p>Where live prices disagree with sharp fair value.</p></div>'
+      +'<div class="wel-e model"><b>MODEL</b><p>Where an independent prediction engine disagrees with the market.</p></div>'
+      +'<div class="wel-e consensus"><b>CONSENSUS</b><p>Where sportsbooks disagree with each other.</p></div>'
+      +'</div>'
+      +'<div class="wel-ind">These three are independent. They are never combined into one score.</div>'
+      +'<div class="wel-goal"><b>The goal</b><p>Find the question. Research the evidence. Track the price. Let the closing market grade the thesis.</p></div>'
+      +'<div style="margin-top:16px">'+window.flowHTML(true)+'</div>'
+      +'<div class="wel-act"><button class="btn" onclick="welClose()">Enter the desk</button>'
+      +'<label><input type="checkbox" id="welDont" checked> Don’t show again</label></div>'
+      +'<div class="wel-legal">Research tool only — not betting advice. Signals can be wrong. PASS is a valid answer. 21+ · 1-800-GAMBLER.</div>'
+      +'</div>';
+    host.classList.add('on');
+    setTimeout(function(){try{host.querySelector('.btn').focus();}catch(_){}},30);
+  };
+  window.welClose=function(){
+    var host=$id('welHost'); if(!host)return;
+    var dont=true; try{var c=$id('welDont');dont=c?c.checked:true;}catch(_){}
+    try{if(dont)localStorage.setItem(WEL_KEY,String(Date.now()));}catch(_){}
+    host.classList.remove('on'); host.innerHTML='';
+    /* a first visit starts in Focus mode; the full terminal is one tap away */
+    try{if(localStorage.getItem(FOCUS_KEY)==null)window.deskFocus(true);}catch(_){}
+  };
+
+  /* ------------------------------------------------------------------ */
+  /* HOW EDGEDESK WORKS — the demo sequence, each step a real surface. */
+  var HIW=[
+    ['Today’s desk','This is what deserves attention.','What is worth reviewing, why, and how strong the evidence is.',function(){show('edges');window.deskGo('queue','');}],
+    ['Market movement','This is how prices changed.','Open, flag, current and close for every flagged price.',function(){show('edges');setTimeout(function(){window.deskGo('discovery','');},250);}],
+    ['Market vs model','Independent systems can disagree.','A sharp-anchored fair line beside an experimental model. Never blended.',function(){show('edges');setTimeout(function(){window.deskGo('model','');},250);}],
+    ['Research','This is the evidence behind the game.','Matchups, rosters, stats and model context.',function(){researchGo('rdesk');}],
+    ['Record','This is how the system grades itself.','Frozen entries, closing snapshots, CLV, auto-grading.',function(){show('record');}],
+    ['Faults','This is where the product admits its own weaknesses.','Structural mispricings and data faults, with receipts.',function(){show('faults');}],
+    ['Collective','This is the network layer.','Independent model creators on one graded record.',function(){show('collective');}]
+  ];
+  window.hiwOpen=function(){
+    var host=$id('hiwHost'); if(!host)return;
+    host.innerHTML='<div class="hiw-card"><div class="hiw-hd"><div><div class="wel-ey">How EdgeDesk works</div><div class="wel-t" style="font-size:19px">Seven surfaces, one record.</div><div class="wel-p" style="margin-top:6px">Tap a step to open it. Every screen is live data, not a demo.</div></div><button class="hiw-x" onclick="hiwClose()" aria-label="Close">×</button></div>'
+      +'<div style="margin-top:12px">'+HIW.map(function(s,i){return '<div class="hiw-step" role="button" tabindex="0" onclick="hiwGo('+i+')" onkeydown="if(event.key===\'Enter\')hiwGo('+i+')"><span class="hiw-n">'+(i+1)+'</span><div class="hiw-b"><b>'+esc(s[0])+'</b><p><span class="q">“'+esc(s[1])+'”</span> '+esc(s[2])+'</p></div><span class="hiw-go">open →</span></div>';}).join('')+'</div>'
+      +'<div class="wel-legal">Research tool only — not betting advice. 21+ · 1-800-GAMBLER.</div></div>';
+    host.classList.add('on');
+  };
+  window.hiwClose=function(){var host=$id('hiwHost');if(host){host.classList.remove('on');host.innerHTML='';}};
+  window.hiwGo=function(i){var s=HIW[i];window.hiwClose();try{s[3]();}catch(_){}};
+  document.addEventListener('keydown',function(ev){if(ev.key==='Escape'){try{window.hiwClose();}catch(_){}}});
+
+  /* ------------------------------------------------------------------ */
+  /* RESEARCH DESK — "where should I research?" */
+  window.loadResearchDesk=function(force,signal){
+    var m=(window.RESEARCH_MODULES||{}).football, p=Promise.resolve();
+    try{ if(m&&m.load&&!(m.hasData&&m.hasData())) p=Promise.resolve(m.load(false,signal)).catch(function(){}); }catch(_){}
+    return p.then(function(){try{window.renderResearchDesk();}catch(_){}});
+  };
+  function opCard(cls,k,v,d,onclick){
+    return '<div class="rd-op '+cls+'" role="button" tabindex="0" onclick="'+onclick+'" onkeydown="if(event.key===\'Enter\'){'+onclick+'}"><div class="k">'+esc(k)+'<span class="go">open →</span></div><div class="v">'+v+'</div><div class="d">'+d+'</div></div>';
+  }
+  window.renderResearchDesk=function(){
+    var host=$id('rdeskHost'); if(!host)return;
+    try{
+      var ops=[];
+      var byKHas=function(list,k){return list.some(function(h){return h.indexOf('>'+k+'<')>=0;});};
+      var fbOn=!!(window.FB&&FB.at&&typeof fbGameRows==='function');
+      var fbLoading=!!(window.FB&&FB.loading&&!FB.at);
+      if(fbOn){
+        var rows=fbGameRows(), items=fbTodayItems(rows), byK={};
+        items.forEach(function(it){byK[it.k]=it;});
+        function fbOp(k,label,cls){
+          var it=byK[k]; if(!it)return;
+          var r=it.r, oc="fbOpenGameFromDesk('"+edAttrJs(r.sport)+"','"+edAttrJs(String(r.gid))+"')";
+          var cells=(it.cells||[]).map(function(c){return '<b>'+esc(c.v)+'</b> '+esc(c.l.toLowerCase());}).join(' · ');
+          ops.push(opCard(cls,label,esc(r.away+' @ '+r.home),cells+'<br>'+it.note,oc));
+        }
+        fbOp('Largest spread disagreement','Largest spread disagreement','mdl');
+        fbOp('Largest total disagreement','Largest total disagreement','mdl');
+        fbOp('QB adjustment pending','Most uncertain QB input','warn');
+        fbOp('Data-quality warning','Most important data warning','neg');
+        if(!byK['Data-quality warning'])fbOp('Stale market quote','Most important data warning','warn');
+        /* recent model agreement: the smallest live disagreement on the slate */
+        var agree=rows.filter(function(x){return x.ok&&!x.fault&&!x.stale&&x.gapS!=null&&x.mkt&&x.mkt.spread_line!=null;}).sort(function(a,b){return Math.abs(a.gapS)-Math.abs(b.gapS);})[0];
+        if(agree)ops.push(opCard('ok','Recent model agreement',esc(agree.away+' @ '+agree.home),'<b>'+esc(agree.home+' '+fbHomeLine(agree.p.model.fair_spread))+'</b> model · <b>'+esc(agree.home+' '+fbHomeLine(agree.mkt.spread_line))+'</b> market · '+Math.abs(agree.gapS).toFixed(1)+' pts apart. Agreement is not evidence of an edge; it is the model behaving.',"fbOpenGameFromDesk('"+edAttrJs(agree.sport)+"','"+edAttrJs(String(agree.gid))+"')"));
+      }
+      /* market / model conflict from the board's own model engine */
+      var mi=null; try{mi=modelItem();}catch(_){}
+      if(mi)ops.push(opCard('major','Market / model conflict',esc(mi.sel)+' <span class="evb mdl">model</span>','<b>'+esc(mi.nums[0].v)+'</b> model · <b>'+esc(mi.nums[1].v)+'</b> price · <b>'+esc(mi.nums[3].v)+'</b> market edge. '+esc(mi.why.split('. ').slice(-1)[0]),"show('edges');setTimeout(function(){deskGo('model','')},250)"));
+      var fi=null; try{fi=footballItem();}catch(_){}
+      if(fi&&!byKHas(ops,'Market / model conflict'))ops.push(opCard('major','Market / model conflict',esc(fi.r.away+' @ '+fi.r.home),'<b>'+esc(fi.nums[0].v)+'</b> market · <b>'+esc(fi.nums[1].v)+'</b> model · <b>'+esc(fi.nums[3].v)+'</b> market edge on the lean.',"fbOpenGameFromDesk('"+edAttrJs(fi.r.sport)+"','"+edAttrJs(String(fi.r.gid))+"')"));
+      var opsHtml;
+      if(ops.length)opsHtml='<div class="rd-grid">'+ops.join('')+'</div>';
+      else if(fbLoading)opsHtml='<div class="empty" style="padding:16px">Loading the football model so the desk can compare it with the market…</div>';
+      else if(!fbOn)opsHtml='<div class="empty" style="padding:16px"><b>No model read loaded yet.</b><br>Open Football to load the engine; the desk then lists the largest spread and total disagreements, QB uncertainty and data warnings here.<div style="margin-top:10px"><button class="rbtn" onclick="researchGo(\'football\')">Open Football</button></div></div>';
+      else opsHtml='<div class="empty" style="padding:16px"><b>No research opportunity on the slate.</b><br>The model and the market agree within a point everywhere a market number exists, and no data warning is open. Nothing to force.</div>';
+      var mods=[['football','Football','NFL + FBS model, rosters, Power 4 ratings'],['ufc','UFC','Fighter records, live fight center'],['tennis','Tennis','ATP/WTA record, WTA daily engine'],['stats','Stats','Teams, players, leaders, projections'],['lab','Lab','Model inspection, sensitivity, autopsy, calibration']];
+      host.innerHTML='<div class="rd-hero"><div class="dk-ey">Research desk <span class="st">experimental context, not edges</span></div><div class="t">Understand the matchup behind the number.</div><div class="s">Where should I research? The cards below are the largest live disagreements and the most important data warnings the modules already compute. Each one opens the module that owns it.</div></div>'
+        +'<div class="dk-h">Active research opportunities'+(fbOn?' <span class="n">model '+esc(agoS(FB.at))+'</span>':'')+'</div>'+opsHtml
+        +'<div class="dk-h">Modules</div><div class="rd-mods">'+mods.map(function(m){return '<button class="rd-mod" onclick="researchGo(\''+m[0]+'\')"><b>'+m[1]+'</b><small>'+esc(m[2])+'</small></button>';}).join('')+'</div>'
+        +'<div class="flow-wrap"><div class="fw-h">Research process</div>'+window.flowHTML(false)+'</div>'
+        +'<div class="dk-note">Every module here is research context: experimental models, published records, season stats. None of it is an edge. The edge, if there is one, still lives in CLV.</div>';
+    }catch(err){host.innerHTML='<div class="empty">The research desk could not render: '+esc(err&&err.message||'')+'</div>';}
+  };
+  window.fbOpenGameFromDesk=function(sport,gid){researchGo('football');setTimeout(function(){try{window.fbOpenGame(sport,gid);}catch(_){}},80);};
+
+  /* ------------------------------------------------------------------ */
+  /* wiring: re-render with the board, and once at boot */
+  if(typeof window.renderEdges==='function'&&!window.__deskWrapped){
+    var _re=window.renderEdges;
+    window.renderEdges=function(){var r=_re.apply(this,arguments);try{render(false);}catch(_){}return r;};
+    window.__deskWrapped=true;
+  }
+  if(typeof window.renderConsensusEngine==='function'&&!window.__deskWrappedC){
+    var _rc=window.renderConsensusEngine;
+    window.renderConsensusEngine=function(){var r=_rc.apply(this,arguments);try{render(false);}catch(_){}return r;};
+    window.__deskWrappedC=true;
+  }
+  setTimeout(function(){try{render(false);}catch(_){}},80);
+  setTimeout(function(){try{window.welOpen(false);}catch(_){}},900);
 })();
 </script>
 
@@ -16205,6 +17260,9 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
     bd.innerHTML=render(row,books,ticks);
   }
 
+  /* Today's Desk and the receipt's Research Next open the same movement
+     detail for a row by its sig_key; the modal stays the single owner of it */
+  window.__openMovement=function(key){ try{ openDetail(encodeURIComponent(key)); }catch(_){ } };
   // row click -> detail (but let the inline "replay" link do its own thing)
   document.addEventListener('click',function(ev){
     var t=ev.target;
@@ -16936,10 +17994,23 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
     h+=sec('Model lifecycle');
     h+='<div class="fb-card">'+lifecycle('tracked')+'<p class="fb-ms-d" style="margin-top:10px">EdgeDesk does not promote experimental research into production until predefined validation requirements are satisfied. A stage is read from the record — a walk-forward report, a registered validation bar, a graded closing-line result — never asserted.</p>'
       +'<div class="lab-kv small">'+[['Idea','a hypothesis without a frozen bar'],['Experiment','a method and a sample, results recorded'],['Tracked','out-of-sample record shipped with the model'],['Validating','a pre-registered bar (sample, CLV, holdout) being measured'],['Validated','every registered bar cleared'],['Production','active in the product with a graded record']].map(function(r){return '<div class="r"><span class="k">'+r[0]+'</span><span class="v">'+r[1]+'</span></div>';}).join('')+'</div></div>';
-    h+=sec('Core lab tools');
-    h+='<div class="fb-tools">'+TOOLS.slice(0,6).map(function(t){return rsTkTool(t.ic,t.t,t.d,"labOpen('"+t.id+"')");}).join('')+'</div>';
-    h+='<div class="fb-more"><button class="fb-tgl" id="labMoreBtn" aria-expanded="'+(RS_TK_OPEN.labMore?'true':'false')+'" aria-controls="labMoreCol" onclick="rsTkColToggle(\'labMore\',\'Fewer tools\',\'Advanced tools\')">'+(RS_TK_OPEN.labMore?'Fewer tools':'Advanced tools')+'</button></div>'
-      +'<div class="fb-col'+(RS_TK_OPEN.labMore?' open':'')+'" id="labMoreCol"><div><div class="fb-tools" style="margin-top:var(--sp2)">'+TOOLS.slice(6).map(function(t){return rsTkTool(t.ic,t.t,t.d,"labOpen('"+t.id+"')");}).join('')+'</div></div></div>';
+    /* The tools grouped by the question each one answers. Same twelve tools,
+       same labOpen targets; the grouping is the map, the tool is the room. */
+    h+=sec('Lab tools','by question');
+    h+='<div class="lab-mat"><span>Outputs here are labelled</span>'+badge('experimental')+badge('validating')+badge('validated')+'<span>and never look like a board edge.</span></div>';
+    var GROUPS=[
+      ['Model inspection','Why did the model produce this number?',['sandbox','features','versions']],
+      ['Sensitivity','What inputs move the projection most?',['sensitivity','scenario']],
+      ['Market comparison','Where does the model disagree with the market?',['marketlab']],
+      ['Autopsy','What happened to previous signals?',['autopsy','record']],
+      ['Calibration','Does the model behave how it claims?',['calibration','walkforward']],
+      ['Data quality','Which inputs are missing or weak?',['provenance','failure']]
+    ];
+    h+='<div class="lab-grp">'+GROUPS.map(function(g){
+      return '<div class="lab-g"><div class="k">'+esc(g[0])+'</div><div class="q">'+esc(g[1])+'</div><div class="tl">'
+        +g[2].map(function(id){var t=toolById(id);return t?'<button onclick="labOpen(\''+t.id+'\')" title="'+esc(t.d)+'">'+esc(t.t)+'</button>':'';}).join('')
+        +'</div></div>';
+    }).join('')+'</div>';
     h+=sec('Model scorecard','only measured metrics');
     h+=scorecard();
     h+=sec('Walk-forward testing','out-of-sample');
