@@ -1000,6 +1000,12 @@ textarea{min-height:110px;font-family:'JetBrains Mono',monospace;resize:vertical
 .set-use-i:last-child{border-bottom:none}
 .set-use-i b{font-size:12.5px;font-weight:600;color:var(--text)}
 .set-use-i span{font-size:11.5px;color:var(--faint);line-height:1.55}
+/* core values card (About): compact 3-up grid that collapses with the settings shell */
+.set-cv{display:grid;grid-template-columns:repeat(auto-fit,minmax(max(200px,30%),1fr));gap:8px}
+.set-cv-i{display:flex;flex-direction:column;gap:5px;background:var(--bg);border:1px solid var(--border);border-radius:9px;padding:10px 11px;min-width:0}
+.set-cv-h{display:flex;align-items:center;gap:7px;font-size:12.5px;font-weight:600;color:var(--text);line-height:1.3}
+.set-cv-h svg{width:15px;height:15px;fill:none;stroke:var(--accent);stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.set-cv-d{font-size:11.5px;color:var(--faint);line-height:1.5}
 /* avatar menu */
 .edav-wrap{position:relative;margin-left:8px}
 .edav{width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,var(--accent),#7b6cff);color:#fff;border:none;font-size:10.5px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center}
@@ -12876,6 +12882,28 @@ function renderSetAbout(){
      ['Record','Your graded track record \u2014 the number that actually matters.']
     ].map(function(u){return '<div class="set-use-i"><b>'+stEsc(u[0])+'</b><span>'+stEsc(u[1])+'</span></div>';}).join('')+'</div>'+
     '<div class="set-note">A signal is a starting point for research, never an instruction. Prices move, models are wrong, and a clean board with nothing on it is a normal and correct outcome.</div>');
+
+  /* Core values: how the company operates. Same six values as the landing
+     page, compacted for the settings shell. Icons are inline stroke SVGs,
+     matching the app's existing icon approach. */
+  var cvIco={
+    eye:'<svg viewBox="0 0 24 24"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>',
+    check:'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M8.5 12.3l2.4 2.4 4.8-5"/></svg>',
+    target:'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3.5"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>',
+    users:'<svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.2"/><path d="M3 20v-1.5a5 5 0 0 1 5-5h2a5 5 0 0 1 5 5V20"/><path d="M16 4.6a3.2 3.2 0 0 1 0 6.3"/><path d="M18.6 14a5 5 0 0 1 2.4 4.3V20"/></svg>',
+    scale:'<svg viewBox="0 0 24 24"><path d="M12 3v18M5 21h14M5 7h14"/><path d="M6 7l-3 7a3 3 0 0 0 6 0L6 7z"/><path d="M18 7l-3 7a3 3 0 0 0 6 0l-3-7z"/></svg>',
+    vault:'<svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="12" cy="12" r="3.5"/><path d="M12 8.5v1.2M12 14.3v1.2M8.5 12h1.2M14.3 12h1.2"/></svg>'
+  };
+  out+=setCard('Our Core Values','The standards behind the product matter as much as the numbers inside it.',
+    '<div class="set-cv">'+
+    [['eye','Tell the Truth','Good data or bad, we don\u2019t hide what the record says.'],
+     ['check','Keep Your Word','Do what you said you would do. Simple as that.'],
+     ['target','Own the Result','No excuses. Fix what\u2019s broken and learn from it.'],
+     ['users','Protect the Room','Work hard. Have fun. Treat people well. Keep unnecessary drama outside.'],
+     ['scale','Stay Humble','Confidence never outranks evidence.'],
+     ['vault','Be a Good Steward','Take care of the people, money, time, technology, and opportunities entrusted to us.']
+    ].map(function(v){return '<div class="set-cv-i"><div class="set-cv-h">'+cvIco[v[0]]+stEsc(v[1])+'</div><span class="set-cv-d">'+stEsc(v[2])+'</span></div>';}).join('')+'</div>'+
+    '<div class="set-note">Built with faith. Run with integrity. Open to everyone.</div>');
 
   out+=setCard('Status','Read live from this session.',
     setRow('Data connection','<span class="set-val '+(db.indexOf('\u2713')>=0?'pos':'')+'">'+stEsc(db||'\u2014')+'</span>')+
