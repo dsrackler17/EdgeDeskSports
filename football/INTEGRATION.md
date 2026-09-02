@@ -281,7 +281,7 @@ own counts, and the rules page, the legend, the game header (`LOCKS IN 2H` /
 `LOCKED`) and the `+n` beside a pick all state the lock rule.
 
 **What the server still needs** — none of it is in this repository, all of it
-is written down in `supabase/` (`migrations/01_lock_rule.sql`,
+is written down in `supabase/` (`lock_rule.sql`, one paste with no placeholders,
 `functions/collective_public.PATCH.md`, `functions/collective_ingest.PATCH.md`):
 
 1. `board_models` (what `/v1/games` reads), the grader, consensus and the
