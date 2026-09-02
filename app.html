@@ -1799,7 +1799,7 @@ button:focus-visible,select:focus-visible,input:focus-visible,a:focus-visible{ou
 .rn-a:hover{border-color:var(--accent);color:var(--accent)}
 .rn-a.pri{border-color:rgba(77,141,255,.55);color:#7fb0ff}
 .rn-a .ar{font-family:'JetBrains Mono',monospace;color:var(--faint)}
-.rn.foot{margin-top:10px;padding-top:9px;border-top:1px dashed var(--border)}
+.rn.rn-foot{margin-top:10px;padding-top:9px;border-top:1px dashed var(--border)}
 /* ---- clean board ---- */
 .dk-clean{border:1px solid rgba(47,180,124,.35);background:linear-gradient(180deg,rgba(47,180,124,.07),transparent);border-radius:12px;padding:14px;margin-top:12px}
 .dk-clean .t{font-size:16px;font-weight:800;color:#7fd4b0;letter-spacing:.02em;display:flex;align-items:center;gap:8px}
@@ -16579,7 +16579,7 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
     }).join('')+'</div>';
   }
   window.rnextHTML=function(e,domid){
-    try{ if(domid&&domid.indexOf('dk_')===0)return ''; return rnHTML(nextActions(e,domid).filter(function(a){return a.t!=='Open research'&&a.t!=='Track in Ledger';}),'foot'); }catch(_){return '';}
+    try{ if(domid&&domid.indexOf('dk_')===0)return ''; return rnHTML(nextActions(e,domid).filter(function(a){return a.t!=='Open research'&&a.t!=='Track in Ledger';}),'rn-foot'); }catch(_){return '';}
   };
   /* one sentence under a MODEL card line: what the model says vs what the price
      says, and the reminder that this engine is on probation */
@@ -16868,7 +16868,7 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
         body+=cleanBoardHTML(scanned,leads,h?h.expired:0,'last run '+agoS(hb.hb));
       }
       body+=healthStrip();
-      body+='<div class="rn foot"><span class="rn-l">Research next</span>'
+      body+='<div class="rn rn-foot"><span class="rn-l">Research next</span>'
         +'<button class="rn-a pri" onclick="try{window.EDAI.todaysResearch()}catch(e){}">Run today’s research <span class="ar">→</span></button>'
         +'<button class="rn-a" onclick="researchGo(\'rdesk\')">Research desk <span class="ar">→</span></button>'
         +'<button class="rn-a" onclick="show(\'ledger\')">Open Ledger <span class="ar">→</span></button>'
