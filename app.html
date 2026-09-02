@@ -630,6 +630,20 @@ textarea{min-height:110px;font-family:'JetBrains Mono',monospace;resize:vertical
 .mdl-warn{border:1px solid rgba(155,140,255,.35);background:rgba(155,140,255,.07);border-radius:9px;padding:9px 11px;margin-top:10px;font-size:11.5px;line-height:1.55;color:var(--dim)}
 .mdl-warn b{color:var(--mdl)}
 .gd-nodata{font-size:11.5px;color:var(--faint);line-height:1.5;padding:6px 0}
+/* NFL card: the quarterback block (roster membership + the schedule feed's starter when it has one) */
+.gd-qb{padding:8px 12px 6px;border-top:1px dashed rgba(38,44,54,.6)}
+.gd-qb-h{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:baseline;gap:2px 8px;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--dim);font-weight:700;margin-bottom:6px}
+.gd-qb-h .f{font-family:'JetBrains Mono',monospace;font-weight:500;letter-spacing:0;text-transform:none;color:var(--faint);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.gd-qb-g{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+@media(max-width:359px){.gd-qb-g{grid-template-columns:1fr}}
+.gd-qb-side{min-width:0;background:var(--surface2);border:1px solid var(--border);border-radius:9px;padding:8px 10px}
+.gd-qb-side .k{font-size:9.5px;letter-spacing:.07em;text-transform:uppercase;color:var(--faint);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gd-qb-side .st{font-size:13px;font-weight:700;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--text)}
+.gd-qb-side .st.unc{color:var(--warn);font-weight:600;white-space:normal}
+.gd-qb-side .tg{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--dim);margin-top:2px;line-height:1.4}
+.gd-qb-side .rm{font-size:11.5px;color:var(--dim);margin-top:5px;line-height:1.45;word-break:break-word}
+.gd-qb-side .rm i{font-style:normal;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--faint)}
+.gd-qb-side .rl{font-family:'JetBrains Mono',monospace;font-size:9.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--faint);margin-right:6px}
 /* ===== RESEARCH TERMINAL LAYER (research header + football overview) =====
    Dark, dense, institutional. Same tokens as the rest of the app: blue is
    the one accent, amber marks research / experimental states, green is
@@ -3682,6 +3696,7 @@ var RS_PROV={
   football:[
     {nm:'NFL schedule, results, rest, starting QBs, closing consensus lines',tier:'T0',src:'nflverse/nfldata games.csv — public keyless dataset, fetched browser-direct (CORS-open)'},
     {nm:'NFL team-week EPA/efficiency aggregates',tier:'T0',src:'nflverse-data stats_team_week — public keyless dataset, fetched browser-direct'},
+    {nm:'NFL active QB rooms (identity, jersey, GSIS/ESPN ids, active status)',tier:'T0',src:'nflverse-data rosters roster_<season>.csv — public keyless dataset, fetched browser-direct, refreshed every 6h, last good sync kept in localStorage; bundled 2026-09-02 roster-cut snapshot as the floor. Roster membership only: never a starter, injury or availability source.'},
     {nm:'CFB schedule, scores, divisions, pregame Elo',tier:'T0',src:'sportsdataverse/cfbfastR-data schedules — public keyless dataset, fetched browser-direct'},
     {nm:'Team ratings, fair spread/total/ML, win probability',tier:'T3',model:'football.engine_v1',src:'EdgeDesk football engine (football/engine.js) — parameters learned by walk-forward training; provenance and out-of-sample record ship inside football/params.js'},
     {nm:'Cover / key-number probabilities',tier:'T3',model:'football.engine_v1',src:'Margin PMF conditioned on the spread, learned from 1999-2025 margins (kernel bandwidth chosen by held-out log-likelihood)'},
@@ -3748,7 +3763,7 @@ var RS_LIMITS={
   football:['The model is UNPROVEN by EdgeDesk’s own standard: its 2016–2025 walk-forward record does NOT beat the NFL closing line (48.7–50.8% ATS by gap size), and the module says so on every card.',
        'No public historical CFB betting-line archive exists, so the CFB side makes no market claim at all; its benchmarks are margin accuracy vs a third-party Elo and home-field-only.',
        'NFL and NCAAF quotes join from live captured signals where they exist; outside a capture window the cards show the engine’s numbers with reference lines clearly labeled as such.',
-       'Starting QBs for upcoming games are unknown to the public schedule feed until close to kickoff; affected cards carry an explicit QB-unknown flag instead of a guessed adjustment.',
+       'Starting QBs for upcoming games are unknown to the public schedule feed until close to kickoff; cards show the team’s active QB room from the nflverse roster with the starter marked unconfirmed, and never promote a QB from roster order, jersey number or experience.',
        'Parameters are trained through the 2025 season and the engine BLOCKS predictions beyond its supported window rather than silently going stale.',
        'Weather is not wired for football venues yet; no weather adjustment is applied or implied.'],
   ufc:['The dataset is descriptive history. Nothing here is a prediction.',
@@ -18483,7 +18498,7 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
     americanfootball_ncaaf:{ qb:'No college passing-efficiency layer is ingested; the cfb schema carries roster names, not per-play QB production.',
                  line_play:'No line-play or trench metrics are ingested for college football.',
                  roster_turnover:'Returning production / portal movement is not ingested.' },
-    americanfootball_nfl:{ qb:'The Football research module carries a learned QB layer (nflverse, client-side), but it is not wired into this narration evidence path — and upcoming-game starters are unknown to the public feed until near kickoff.',
+    americanfootball_nfl:{ qb:'The Football module’s NFL QB roster registry (nflverse rosters, client-side) is read here once the Football tab has loaded; until then no QB identity is available in this path. Roster membership never satisfies the QB-quality input, and upcoming-game starters are unknown to the public feed until near kickoff.',
                  offense_efficiency:'NFL EPA/efficiency ratings exist client-side in the Football research module (nflverse team-week aggregates); this narration engine does not read them yet, so the slot stays unsatisfied here rather than double-counted.',
                  defense_efficiency:'Same as offense: computed in the Football module, not wired into this evidence path.',
                  injuries:'No NFL injury report is ingested anywhere in the product.',
@@ -18498,6 +18513,15 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
   CONTRACT_SLOT_METRICS.icehockey_nhl = {goalie:[], xg_for:[], xg_against:[], special_teams:[], rest:[]};
   CONTRACT_SLOT_UNSOURCED.icehockey_nhl = {goalie:_NO_NHL, xg_for:_NO_NHL, xg_against:_NO_NHL, special_teams:_NO_NHL, rest:_NO_NHL};
   function unsourcedSlots(sportKey){ return CONTRACT_SLOT_UNSOURCED[String(sportKey||'')]||null; }
+  /* IDENTITY-ONLY slots: a source exists and is loaded, but it answers "who",
+     not "how good" — so the slot stays unsatisfied for credibility while the
+     narration stops claiming that no source exists. Today: the NFL QB roster
+     registry in the Football module. */
+  function partialSlots(sportKey,x){
+    if(String(sportKey||'')!=='americanfootball_nfl') return null;
+    var f=null;try{ f=(typeof window.fbQbNarration==='function')?window.fbQbNarration(x&&x.e):null; }catch(_){ f=null; }
+    return f?{qb:f}:null;
+  }
 
   /* ---- SPORT CORE ----------------------------------------------------------
      The same hoisting discipline MLB_CORE already uses, for the same reason: the
@@ -18918,10 +18942,13 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
        findings with different fixes, and reporting them as one sentence is how a
        missing pipeline reads as a quiet slate. Split at the point of reporting. */
     var _uns=unsourcedSlots(x&&x.e&&x.e.sport_key)||{};
+    var _part=partialSlots(x&&x.e&&x.e.sport_key,x)||{};
     var _absent=need.filter(function(k){ return !have[k]; });
-    var _noSource=_absent.filter(function(k){ return !!_uns[k]; });
-    var _empty=_absent.filter(function(k){ return !_uns[k]; });
+    var _identity=_absent.filter(function(k){ return !!_part[k]; });
+    var _noSource=_absent.filter(function(k){ return !!_uns[k]&&!_part[k]; });
+    var _empty=_absent.filter(function(k){ return !_uns[k]&&!_part[k]; });
     if(_empty.length) flags.push('Missing '+_empty.length+' of '+need.length+' inputs this sport needs: '+_empty.join(', ')+'.');
+    _identity.forEach(function(k){ flags.push(_part[k]); });
     if(_noSource.length) flags.push('EdgeDesk ingests no source for '+_noSource.join(', ')+' in this sport — that is a pipeline gap, not an empty row, and it cannot be filled by rescanning.');
     if(!need.length) flags.push('No sport contract on file, so evidence completeness cannot be assessed.');
     if(prof){
@@ -24114,7 +24141,9 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
    ========================================================================== */
 (function(){
 var FB=window.FB={sport:'nfl',scope:'auto',at:0,builtAt:null,loading:null,engineErr:null,
-  nfl:{state:null,up:[],games:[],weekPreds:{},absorbed:0,curSeason:null,notes:[],sig:{}},
+  nfl:{state:null,up:[],games:[],weekPreds:{},absorbed:0,curSeason:null,notes:[],sig:{},
+    /* active QB registry (see fbLoadQbs): who is rostered at QB, never who starts */
+    qbs:[],qbsByTeam:{},qbByGsis:{},qbByEspn:{},qbReserve:[],qbSource:null,qbSeason:null,qbUpdatedAt:null,qbCheckedAt:null,qbError:null,qbLoading:null},
   cfb:{state:null,up:[],absorbed:0,curSeason:null,notes:[],gate:null,sig:{},lines:{}},
   _cache:{},_pred:{}};
 var FB_TTL_MS=30*60*1000, FB_LOOKAHEAD_D=12;
@@ -24263,6 +24292,227 @@ function fbGradeGame(g,p){
   return out;
 }
 
+/* ---- NFL quarterback registry ------------------------------------------
+   WHO is on each team's active roster at quarterback. One public nflverse
+   season roster file (roster_<season>.csv), fetched browser-direct through the
+   same fbFetchText/fbCsv path as the rest of the NFL data, filtered to
+   position QB with status ACT, indexed by team / GSIS id / ESPN id and kept
+   for six hours. The last good sync survives in localStorage; the bundled
+   September 2 2026 snapshot (from the roster cuts) is the floor no failed
+   fetch can remove. Priority: fresh nflverse > last good sync > snapshot.
+
+   HONESTY RULE: roster membership is identity. It never names a starter. A
+   starter is shown only when games.csv carries home_qb_id / away_qb_id, and
+   the roster order (Excel, nflverse, jersey, experience) is never read as a
+   depth chart. Nothing here touches the trained model. */
+function FB_URL_ROSTER(y){return 'https://github.com/nflverse/nflverse-data/releases/download/rosters/roster_'+y+'.csv';}
+var FB_QB_TTL_MS=6*3600e3, FB_QB_STORE='edgedesk_nfl_qbs_v1', FB_QB_SEED_ASOF='2026-09-02', FB_QB_SEED_SEASON=2026;
+/* nflverse and older feeds spell a few franchises differently; the site's codes win */
+var FB_NFL_TEAM_ALIAS={JAC:'JAX',LAR:'LA',STL:'LA',WSH:'WAS',OAK:'LV',SD:'LAC',HST:'HOU',BLT:'BAL',CLV:'CLE',ARZ:'ARI'};
+function fbNflTeamCode(c){c=String(c||'').toUpperCase().trim();c=FB_NFL_TEAM_ALIAS[c]||c;return FB_CODE_NAMES[c]?c:null;}
+/* Active 53-man QB rooms after the 2026 cuts and immediate waiver moves, as
+   compiled on 2026-09-02 (EdgeDesk roster workbook, NFL_QBs sheet; 32 teams,
+   87 quarterbacks). List order is the workbook's compiled order and carries
+   NO depth-chart meaning. Reserve / IR / practice-squad QBs are excluded. */
+var FB_NFL_QB_SEED_2026={
+  ARI:["Jacoby Brissett", "Gardner Minshew II", "Carson Beck"],
+  ATL:["Michael Penix Jr.", "Tua Tagovailoa", "Cooper Rush", "Jack Strand"],
+  BAL:["Lamar Jackson", "Tyler Huntley", "Joe Fagnano"],
+  BUF:["Josh Allen", "Kyle Allen"],
+  CAR:["Bryce Young", "Kenny Pickett", "Haynes King"],
+  CHI:["Caleb Williams", "Tyson Bagent", "Case Keenum"],
+  CIN:["Joe Burrow", "Joe Flacco"],
+  CLE:["Shedeur Sanders", "Deshaun Watson", "Taylen Green"],
+  DAL:["Dak Prescott", "Sam Howell"],
+  DEN:["Bo Nix", "Jarrett Stidham", "Sam Ehlinger"],
+  DET:["Jared Goff", "Josh Dobbs"],
+  GB:["Jordan Love", "Tyrod Taylor"],
+  HOU:["C.J. Stroud", "Davis Mills"],
+  IND:["Daniel Jones", "Anthony Richardson Sr.", "Riley Leonard"],
+  JAX:["Trevor Lawrence", "Quinn Ewers"],
+  KC:["Patrick Mahomes", "Justin Fields", "Garrett Nussmeier"],
+  LA:["Matthew Stafford", "Stetson Bennett IV", "Ty Simpson"],
+  LAC:["Justin Herbert", "Trey Lance"],
+  LV:["Kirk Cousins", "Fernando Mendoza", "Aidan O'Connell"],
+  MIA:["Malik Willis", "Kyle McCord", "Brady Cook"],
+  MIN:["Kyler Murray", "J.J. McCarthy", "Carson Wentz"],
+  NE:["Drake Maye", "Tommy DeVito", "Behren Morton"],
+  NO:["Tyler Shough", "Spencer Rattler", "Zach Wilson"],
+  NYG:["Jaxson Dart", "Jameis Winston"],
+  NYJ:["Geno Smith", "Cade Klubnik"],
+  PHI:["Jalen Hurts", "Tanner McKee", "Andy Dalton", "Cole Payton"],
+  PIT:["Aaron Rodgers", "Mason Rudolph", "Will Howard", "Drew Allar"],
+  SEA:["Sam Darnold", "Drew Lock", "Jalen Milroe"],
+  SF:["Brock Purdy", "Mac Jones", "Kurtis Rourke"],
+  TB:["Baker Mayfield", "Jalon Daniels"],
+  TEN:["Cam Ward", "Mitchell Trubisky"],
+  WAS:["Jayden Daniels", "Marcus Mariota", "Athan Kaliakmanis"]
+};
+function fbQbSeedList(){
+  var out=[],t,i,names,code;
+  for(t in FB_NFL_QB_SEED_2026)if(FB_NFL_QB_SEED_2026.hasOwnProperty(t)){
+    code=fbNflTeamCode(t);if(!code)continue;names=FB_NFL_QB_SEED_2026[t];
+    for(i=0;i<names.length;i++)out.push({season:FB_QB_SEED_SEASON,team:code,name:names[i],position:'QB',status:'ACT',jersey:null,depthChartPosition:null,gsisId:null,espnId:null,yearsExp:null,headshotUrl:null,source:'seed'});
+  }
+  return out;
+}
+function fbQbFromRow(r,season){
+  var code=fbNflTeamCode(r.team);if(!code)return null;
+  var name=r.full_name||((r.first_name||'')+' '+(r.last_name||'')).trim();if(!name)return null;
+  return {season:fbNum(r.season)||season,team:code,name:name,position:String(r.position||'').toUpperCase(),status:String(r.status||'').toUpperCase(),
+    jersey:fbNum(r.jersey_number),depthChartPosition:r.depth_chart_position||null,gsisId:r.gsis_id||null,espnId:r.espn_id||null,
+    yearsExp:fbNum(r.years_exp),headshotUrl:r.headshot_url||null,source:'nflverse'};
+}
+/* active = position QB AND status ACT, nothing else. Every other QB row
+   (RES, PUP, DEV, CUT, ...) is kept aside in qbReserve for reference. A
+   GSIS id seen twice keeps the later row (the season file lists the latest stint). */
+function fbQbParse(rows,season){
+  var active=[],reserve=[],seen={},i,q;
+  for(i=0;i<rows.length;i++){
+    q=fbQbFromRow(rows[i],season);if(!q||q.position!=='QB')continue;
+    if(q.status!=='ACT'){reserve.push(q);continue;}
+    if(q.gsisId&&seen[q.gsisId]!=null){active[seen[q.gsisId]]=q;continue;}
+    if(q.gsisId)seen[q.gsisId]=active.length;
+    active.push(q);
+  }
+  return {active:active,reserve:reserve};
+}
+/* a parse that produced too few QBs or too few teams is a broken file, not a roster */
+function fbQbSane(list){var teams={},i;for(i=0;i<list.length;i++)teams[list[i].team]=1;return list.length>=40&&list.length<=200&&Object.keys(teams).length>=28;}
+function fbQbApply(list,source,fetchedAt,reserve){
+  var S=FB.nfl,byTeam={},byG={},byE={},i,q;
+  for(i=0;i<list.length;i++){q=list[i];(byTeam[q.team]=byTeam[q.team]||[]).push(q);if(q.gsisId)byG[String(q.gsisId)]=q;if(q.espnId)byE[String(q.espnId)]=q;}
+  S.qbs=list;S.qbsByTeam=byTeam;S.qbByGsis=byG;S.qbByEspn=byE;S.qbReserve=reserve||[];
+  S.qbSource=source;S.qbUpdatedAt=fetchedAt||null;S.qbSeason=list.length?list[0].season:null;
+  return S;
+}
+function fbQbStoreRead(){
+  try{
+    var raw=localStorage.getItem(FB_QB_STORE);if(!raw)return null;
+    var o=JSON.parse(raw);
+    if(!o||!Array.isArray(o.qbs)||!o.qbs.length||!isFinite(+o.fetchedAt))return null;
+    var ok=o.qbs.every(function(q){return q&&typeof q.name==='string'&&q.position==='QB'&&q.status==='ACT'&&fbNflTeamCode(q.team)===q.team;});
+    if(!ok||!fbQbSane(o.qbs))return null;
+    return {season:fbNum(o.season),fetchedAt:+o.fetchedAt,qbs:o.qbs,reserve:Array.isArray(o.reserve)?o.reserve:[]};
+  }catch(_){return null;}   /* a corrupt entry is ignored, never fatal */
+}
+function fbQbStoreWrite(season,fetchedAt,qbs,reserve){try{localStorage.setItem(FB_QB_STORE,JSON.stringify({season:season,fetchedAt:fetchedAt,qbs:qbs,reserve:reserve||[]}));}catch(_){}}
+/* the floor: last good sync if it post-dates the bundled snapshot, else the snapshot */
+function fbQbFloor(){
+  var c=fbQbStoreRead();
+  if(c&&c.fetchedAt>=Date.parse(FB_QB_SEED_ASOF+'T00:00:00Z'))fbQbApply(c.qbs,'cache',c.fetchedAt,c.reserve);
+  else fbQbApply(fbQbSeedList(),'seed',null,[]);
+}
+function fbLoadQbs(season,signal){
+  var S=FB.nfl,now=Date.now();
+  if(!S.qbs.length)fbQbFloor();
+  if(S.qbSource==='nflverse'&&S.qbSeason===season&&S.qbUpdatedAt&&(now-S.qbUpdatedAt)<FB_QB_TTL_MS)return Promise.resolve(S);
+  if(S.qbLoading)return S.qbLoading;
+  S.qbLoading=fbFetchText(FB_URL_ROSTER(season),signal).then(function(txt){
+    var p=fbQbParse(fbCsv(txt),season);
+    if(!fbQbSane(p.active))throw new Error('roster_'+season+'.csv parsed to '+p.active.length+' active QBs; rejected as implausible');
+    var at=Date.now();
+    fbQbApply(p.active,'nflverse',at,p.reserve);S.qbError=null;S.qbCheckedAt=at;
+    fbQbStoreWrite(season,at,p.active,p.reserve);
+    return S;
+  }).catch(function(e){
+    if(e&&e.name==='AbortError')throw e;
+    S.qbError=(e&&e.message)||'roster fetch failed';S.qbCheckedAt=Date.now();
+    return S;                       /* last-known-good (sync or snapshot) stays in place */
+  }).then(function(r){S.qbLoading=null;return r;},function(e){S.qbLoading=null;throw e;});
+  return S.qbLoading;
+}
+window.fbQbsForTeam=function(team){var c=fbNflTeamCode(team);return c?(FB.nfl.qbsByTeam[c]||[]):[];};
+window.fbQbByGsis=function(id){return id?(FB.nfl.qbByGsis[String(id)]||null):null;};
+window.fbResolveQb=function(id){return window.fbQbByGsis(id);};
+window.fbQbApply=fbQbApply;         /* dev: simulate a transaction, then renderFootball() */
+/* the learned QB layer is keyed by GSIS id: identity from the roster, value from the model */
+function fbQbLearned(id){var st=FB.nfl.state;if(!id||!st||!st.qb)return null;var q=st.qb[String(id)];return q?{n:q.n,v:q.v}:null;}
+/* one side of a game. starter is set ONLY from the game-level id the schedule
+   feed publishes; with no id the side is "unconfirmed" and shows its room. */
+function fbSideQb(team,qbId,feedName){
+  var code=fbNflTeamCode(team),room=code?(FB.nfl.qbsByTeam[code]||[]):[];
+  var out={team:code||team,room:room,starter:null,confirmed:!!qbId,onRoster:null,learned:null,feedName:feedName||null};
+  if(qbId){
+    var q=FB.nfl.qbByGsis[String(qbId)]||null;
+    /* the bundled snapshot carries names but no ids: match the feed's name
+       inside this team's room before giving up on the identity */
+    if(!q&&feedName){var fn=fbNorm(feedName);for(var i=0;i<room.length;i++)if(fbNorm(room[i].name)===fn){q=room[i];out.byName=true;break;}}
+    if(q){out.starter=q;out.onRoster=q.team===code;}
+    else out.starter={name:feedName||('GSIS '+qbId),gsisId:qbId,team:code,jersey:null,status:null,source:'games.csv'};
+    out.learned=fbQbLearned(qbId);
+  }
+  return out;
+}
+window.fbGameQbContext=function(g){return {home:fbSideQb(g.home_team,g.home_qb_id,g.home_qb_name),away:fbSideQb(g.away_team,g.away_qb_id,g.away_qb_name),source:FB.nfl.qbSource,updatedAt:FB.nfl.qbUpdatedAt};};
+function fbQbSeedDate(){try{return new Date(FB_QB_SEED_ASOF+'T12:00:00').toLocaleDateString([],{month:'short',day:'numeric'});}catch(_){return FB_QB_SEED_ASOF;}}
+function fbQbFreshLabel(){
+  var S=FB.nfl;
+  if(!S.qbs.length)return 'QB rosters · not loaded';
+  if(S.qbSource==='nflverse')return 'QB rosters · nflverse · refreshed '+ago(S.qbUpdatedAt);
+  if(S.qbSource==='cache')return 'QB rosters · cached · last successful sync '+ago(S.qbUpdatedAt);
+  return 'QB rosters · fallback snapshot · '+fbQbSeedDate();
+}
+function fbQbSideHTML(s,label){
+  var h='<div class="gd-qb-side"><div class="k">'+fbEsc(label)+' · '+fbEsc(FB_CODE_NAMES[s.team]||s.team)+'</div>';
+  if(s.starter){
+    var q=s.starter,tags=[];
+    if(q.jersey!=null)tags.push('#'+q.jersey);
+    tags.push(s.onRoster===true?('active roster'+(s.byName?' · matched by name':'')):(s.onRoster===false?('rostered by '+q.team):'id not in the roster registry'));
+    tags.push(s.learned?(s.learned.n+' learned starts'):'no learned value · prior');
+    var others=s.room.filter(function(x){return x!==q&&!(q.gsisId&&x.gsisId===q.gsisId);});
+    h+='<div class="st" title="'+fbEsc(q.name)+'">'+fbEsc(q.name)+'</div><div class="tg">starter · games.csv · '+fbEsc(tags.join(' · '))+'</div>'
+      +'<div class="rm"><span class="rl">Room</span>'+(others.length?others.map(function(x){return fbEsc(x.name);}).join(', '):'no other active QB')+'</div>';
+  }else{
+    h+='<div class="st unc">Starter unconfirmed</div>'
+      +'<div class="rm"><span class="rl">Active room</span>'+(s.room.length?s.room.map(function(x){return fbEsc(x.name)+(x.jersey!=null?(' <i>#'+x.jersey+'</i>'):'');}).join(', '):'no roster loaded')+'</div>';
+  }
+  return h+'</div>';
+}
+function fbQbBlockHTML(g){
+  var c=window.fbGameQbContext(g);
+  return '<div class="gd-qb"><div class="gd-qb-h"><span>Quarterback</span><span class="f">'+fbEsc(fbQbFreshLabel())+'</span></div>'
+    +'<div class="gd-qb-g">'+fbQbSideHTML(c.away,'Away')+fbQbSideHTML(c.home,'Home')+'</div></div>';
+}
+/* narration evidence: what the registry can honestly say about one event. Identity only. */
+window.fbQbNarration=function(e){
+  var S=FB.nfl;if(!S.qbs.length||!e)return null;
+  var hc=fbNflTeamCode(FB_NFL_NAMES[e.home_team]||e.home_team),ac=fbNflTeamCode(FB_NFL_NAMES[e.away_team]||e.away_team);
+  var g=null;S.up.forEach(function(u){if(u.g.home_team===hc&&u.g.away_team===ac)g=u.g;});
+  var src=fbQbFreshLabel();
+  if(!g)return 'QB roster loaded ('+src+'), but this game is outside the NFL slate window, so no starter can be read from the schedule feed. Roster membership is identity only and does not satisfy the QB input.';
+  var c=window.fbGameQbContext(g);
+  function side(s,lbl){return lbl+': '+(s.starter?('starter confirmed by games.csv, '+s.starter.name):('starter unconfirmed; active room '+(s.room.length?s.room.map(function(q){return q.name;}).join(', '):'unknown')));}
+  return 'QB roster loaded ('+src+'). '+side(c.home,'Home')+'. '+side(c.away,'Away')+'. Identity only: it says who is rostered, not how the QB plays, so the QB input stays unsatisfied for credibility.';
+};
+/* dev validation: console PASS/FAIL per check; never gates rendering */
+window.fbValidateQbRegistry=function(){
+  var S=FB.nfl,checks=[],teams=Object.keys(S.qbsByTeam),i,q,seenG={};
+  function ck(name,ok,detail){checks.push({name:name,ok:!!ok,detail:detail||''});}
+  ck('32 NFL teams represented',teams.length===32,teams.length+' teams'+(teams.length<32?(' · missing '+Object.keys(FB_CODE_NAMES).filter(function(t){return !S.qbsByTeam[t];}).join(', ')):''));
+  var badT=teams.filter(function(t){return !FB_CODE_NAMES[t];});
+  ck('team abbreviations normalized to the site’s 32 codes',!badT.length,badT.length?('unknown: '+badT.join(', ')):'all normalized');
+  ck('every player has position QB',S.qbs.every(function(x){return x.position==='QB';}));
+  ck('every player has active status',S.qbs.every(function(x){return x.status==='ACT';}));
+  var dupG=[],twoTeams=[];
+  for(i=0;i<S.qbs.length;i++){q=S.qbs[i];if(!q.gsisId)continue;if(seenG[q.gsisId]){dupG.push(q.gsisId);if(seenG[q.gsisId]!==q.team)twoTeams.push(q.name);}seenG[q.gsisId]=q.team;}
+  ck('no duplicate GSIS ids',!dupG.length,dupG.join(', ')||(S.qbSource==='seed'?'snapshot carries no ids':''));
+  ck('no player on two active teams',!twoTeams.length,twoTeams.join(', '));
+  ck('QB count within a sane NFL range (48–140)',S.qbs.length>=48&&S.qbs.length<=140,S.qbs.length+' active QBs');
+  ck('every team carries 1–5 active QBs',teams.every(function(t){var n=S.qbsByTeam[t].length;return n>=1&&n<=5;}));
+  var slate=S.up.concat(S.games||[]),bad=[];
+  slate.forEach(function(x){[x.g.home_team,x.g.away_team].forEach(function(t){var c=fbNflTeamCode(t);if(!c||!S.qbsByTeam[c])bad.push(String(t));});});
+  bad=bad.filter(function(v,j,a){return a.indexOf(v)===j;});
+  ck('every scheduled team resolves to a QB room',!bad.length,bad.length?('unresolved: '+bad.join(', ')):(slate.length+' games checked'));
+  ck('source recorded',!!S.qbSource,String(S.qbSource)+(S.qbUpdatedAt?(' · '+ago(S.qbUpdatedAt)):'')+(S.qbError?(' · last error: '+S.qbError):''));
+  var pass=checks.every(function(c){return c.ok;});
+  try{
+    console.log('%c[EdgeDesk] QB registry validation: '+(pass?'PASS':'FAIL'),'font-weight:bold;color:'+(pass?'#2fb47c':'#e26044'));
+    checks.forEach(function(c){console.log((c.ok?'  PASS  ':'  FAIL  ')+c.name+(c.detail?('  —  '+c.detail):''));});
+  }catch(_){}
+  return {ok:pass,checks:checks,source:S.qbSource,count:S.qbs.length,teams:teams.length};
+};
+
 /* ---- NFL load: seeds -> season break(s) -> absorb completed -> predict ---- */
 function fbLoadNfl(signal){
   var E=window.EDFootball,S=FB.nfl;
@@ -24272,6 +24522,9 @@ function fbLoadNfl(signal){
     var maxSeason=0;
     for(i=0;i<rows.length;i++){var sn=fbNum(rows[i].season);if(sn&&sn>maxSeason)maxSeason=sn;}
     S.curSeason=maxSeason;
+    /* the QB roster request runs beside the team-week fetches; it resolves to
+       the floor on any failure and never fails the module */
+    var qbP=fbLoadQbs(maxSeason,signal).catch(function(e){if(e&&e.name==='AbortError')throw e;return S;});
     var st=E.nfl.newState();
     var y;
     for(y=st.seededThrough;y<maxSeason;y++)E.nfl.seasonBreak(st);
@@ -24349,6 +24602,13 @@ function fbLoadNfl(signal){
     }).then(function(sig){
       S.sig=sig;
       if(!Object.keys(sig).length)S.notes.push('No captured NFL quotes in this window (offseason, or capture has not priced NFL yet); nflverse reference numbers shown where published are a consensus close, not a bettable price.');
+      /* wait briefly for the roster; a slow roster host never holds the board */
+      var settled=false;
+      qbP.then(function(){if(settled&&FB.at&&window.RESEARCH_SUB==='football'){try{window.renderFootball();}catch(_){}}});
+      return Promise.race([qbP,new Promise(function(res){setTimeout(res,12000);})]).then(function(){
+        settled=true;
+        if(S.qbs.length&&S.qbSource!=='nflverse')S.notes.push('QB rosters: nflverse roster_'+maxSeason+'.csv '+(S.qbError?('unavailable ('+S.qbError+')'):'not yet checked')+' — showing '+(S.qbSource==='cache'?('the last successful sync from '+ago(S.qbUpdatedAt)):('the bundled '+fbQbSeedDate()+' snapshot'))+'. Roster membership only; no starter is inferred from it.');
+      });
     });
   });
 }
@@ -24698,10 +24958,11 @@ function fbGameCardNfl(u){
     lines+='<div class="gd-nodata">No market number is available for this game yet — the model number stands alone and no edge of any kind is claimed.</div>';
   var extra=[];
   if(src==='nflverse reference'&&(mkt.spread_line!=null||mkt.total_line!=null))extra.push('market numbers are nflverse consensus reference, not a live bettable quote');
+  var qb='';try{qb=fbQbBlockHTML(g);}catch(_){qb='';}
   return '<div class="mdl-card" id="fbg-nfl-'+fbEsc(String(g.game_id))+'">'
     +'<div class="mdl-card-h"><div class="mdl-card-match">'+fbEsc(awayName)+' @ '+fbEsc(homeName)+'</div>'
     +'<div class="mdl-card-when">NFL · week '+fbEsc(String(g.week))+' · '+fbEsc(whenLabel(new Date(u.t).toISOString()))+'</div></div>'
-    +lines+fbQualityLine(p,extra)+'</div>';
+    +lines+qb+fbQualityLine(p,extra)+'</div>';
 }
 
 /* ---- week scan, grading and CSV export (NFL) --------------------------------
@@ -25167,12 +25428,23 @@ function fbNflRowValues(it){
     mlPick,pc(m.home_win_prob>=0.5?m.home_win_prob:1-m.home_win_prob),
     p.edge.spread.recommendation,p.edge.total.recommendation,
     'UNPROVEN: 2016-2025 walk-forward did NOT beat the close (48.7-50.8% ATS); research only, counted nowhere until graded CLV',
-    (g.home_qb_id?'':'home QB unknown; ')+(g.away_qb_id?'':'away QB unknown'),p.status,'true',new Date().toISOString(),
+    fbQbCsvNote(g),p.status,'true',new Date().toISOString(),
     g.home_score==null?'':g.home_score,g.away_score==null?'':g.away_score,
     G&&G.margin!=null?G.margin:'',G&&G.total!=null?G.total:'',
     G&&G.spread?G.spread:'',G&&G.total_ou?G.total_ou:'',G&&G.ml?G.ml:''
   ]);
 }
+/* the QB column: the flag reader keys on "unknown", so an unconfirmed side keeps that
+   word and gains its active room; a confirmed side names the resolved starter */
+function fbQbCsvNote(g){
+  var c;try{c=window.fbGameQbContext(g);}catch(_){c=null;}
+  function side(lbl,id,s){
+    if(id)return s&&s.starter&&s.starter.source!=='games.csv'?(lbl+' QB '+s.starter.name+' (games.csv id, active roster)'):'';
+    return lbl+' QB unknown'+(s&&s.room.length?(' (active room: '+s.room.map(function(q){return q.name;}).join('/')+')'):'');
+  }
+  return [side('home',g.home_qb_id,c&&c.home),side('away',g.away_qb_id,c&&c.away)].filter(Boolean).join('; ');
+}
+window.fbQbCsvNote=fbQbCsvNote;   /* dev: inspect the CSV QB column for one games.csv row */
 function fbCsvQuote(s){s=String(s==null?'':s);return /[",\n]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s;}
 function fbCsvRow(it){return fbNflRowValues(it).map(fbCsvQuote).join(',');}
 /* Which games this scope puts on screen. The exports scope to exactly what
@@ -27583,6 +27855,7 @@ function fbModelStatusHTML(){
     ?'Five-layer Power 4 model — strength, talent, situation, matchup and uncertainty — projected against a real CFB line archive.'
     :'Opponent-adjusted EPA, QB adjustments, matchup factors and market comparison across NFL and FBS.';
   var ver=M?(fbEsc(M.model_version)+' · trained through '+fbEsc(String(isP4?M.trained_through:(M.nfl&&M.nfl.trained_through)))+' · built '+fbEsc(String(M.built_at).slice(0,10))):'engine metadata not loaded';
+  if(!isP4&&FB.nfl.qbs.length)ver+='<br>'+fbEsc(fbQbFreshLabel())+' · '+FB.nfl.qbs.length+' active QBs · '+Object.keys(FB.nfl.qbsByTeam).length+' teams';
   return '<div class="fb-card"><div class="fb-ms-h"><span class="t">Model status</span><span class="n">'+fbEsc(name)+'</span></div>'
     +'<div class="fb-badges">'+badges.map(function(b){return '<span class="fb-badge '+b[0]+'"><i></i>'+fbEsc(b[1])+'</span>';}).join('')+'</div>'
     +'<p class="fb-ms-d">'+fbEsc(desc)+'</p><div class="fb-ms-v">'+ver+'</div>'
@@ -27674,18 +27947,33 @@ function fbSystemHTML(){
     if(warns.length)bits.push(warns.length+' check warning'+(warns.length===1?'':'s'));
     if(live&&live.status==='warn')bits.push('line guard attention');
     if(fr&&fr.stale)bits.push('build stale');
+    if(FB.nfl.qbs.length&&FB.nfl.qbSource!=='nflverse')bits.push('QB rosters on '+(FB.nfl.qbSource==='cache'?'the last sync':'the bundled snapshot'));
     if(bits.length){level='warn';tt='Attention needed';}
     else tt='All football research systems operational';
   }
   var ts=(bits.length?(bits.join(' · ')+' · research still usable · '):'')+'Last refresh '+(FB.at?ago(FB.at):'—')+((h&&h.generated_at)?(' · self-check '+ago(rsParseStamp(h.generated_at))):'')+(FB.builtAt?(' · build '+ago(FB.builtAt)):'');
   var open=FB.ui.sysOpen;
   var body=fbPipelineRowsHTML(h&&h.pipeline_meta);
+  try{body+=fbQbSysRowsHTML();}catch(_){}
   try{body+=fbHealthHTML();}catch(_){}
   body+='<div id="rsMeta-football" class="rs-panelwrap"></div>';
   var gl=level==='ok'?'✓':(level==='warn'?'⚠':(level==='neg'?'✗':'·'));
   return '<div class="fb-card fb-sys"><div class="fb-sys-h"><span class="dot '+level+'"></span><div class="tx"><div class="tt '+(level==='ok'||level==='mut'?'':level)+'"><span class="gl'+(level==='ok'?' ok':'')+'" aria-hidden="true">'+gl+'</span>'+fbEsc(tt)+'</div><div class="ts">'+fbEsc(ts)+'</div></div>'
     +'<button class="fb-tgl" id="fbSysBtn" aria-expanded="'+(open?'true':'false')+'" aria-controls="fbSysCol" onclick="fbSysToggle()">'+(open?'Hide details':'View pipeline details')+'</button></div>'
     +'<div class="fb-col'+(open?' open':'')+'" id="fbSysCol"><div>'+body+'</div></div></div>';
+}
+/* the QB registry as a pipeline ledger: source, sync, size, last error */
+function fbQbSysRowsHTML(){
+  var S=FB.nfl;if(!S.qbs.length)return '';
+  var srcLbl={nflverse:'nflverse roster_'+S.qbSeason+'.csv',cache:'last successful sync (localStorage)',seed:'bundled snapshot '+FB_QB_SEED_ASOF}[S.qbSource]||String(S.qbSource);
+  var rows=[
+    ['source',srcLbl,S.qbSource==='nflverse'?'':'warn',''],
+    ['synced',S.qbUpdatedAt?ago(S.qbUpdatedAt):'never (snapshot)',S.qbUpdatedAt?'':'mut',S.qbCheckedAt?('checked '+ago(S.qbCheckedAt)):''],
+    ['active QBs',S.qbs.length+' on '+Object.keys(S.qbsByTeam).length+' teams','',S.qbReserve.length?(S.qbReserve.length+' reserve/inactive kept aside'):''],
+    ['refresh','every 6h while the tab is open; last good sync survives reloads','','']
+  ];
+  if(S.qbError)rows.push(['last fetch',S.qbError,'neg','floor kept']);
+  return '<div class="fb-pipe"><div class="fb-pipe-t">QB roster registry</div>'+rows.map(function(r){return '<div class="fb-pipe-row"><span class="d '+r[2]+'"></span><span class="id">'+fbEsc(r[0])+'</span><span class="st '+r[2]+'">'+fbEsc(r[1])+'</span><span class="rw">'+fbEsc(r[3])+'</span></div>';}).join('')+'</div>';
 }
 window.fbSysToggle=function(){
   FB.ui.sysOpen=!FB.ui.sysOpen;
