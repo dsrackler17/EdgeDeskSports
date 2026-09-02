@@ -2010,8 +2010,14 @@ button:focus-visible,select:focus-visible,input:focus-visible,a:focus-visible{ou
     </div>
     <!-- LAB (EdgeDesk Lab) -->
     <div id="v-lab" class="rpanel hide">
-    <div class="row-between fb-panelhd"><h2 style="margin:0">Lab</h2><span class="spacer"></span><span class="freshness" id="labFresh">research library</span><button class="refreshbtn" id="labRefreshBtn" title="Refresh" aria-label="Refresh lab" onclick="rsTkRefresh('labRefreshBtn',['lab'])">&#8635;</button></div>
-    <div class="lab-lede">EDGEDESK LAB &middot; research library. An idea moves exploratory &rarr; validating &rarr; promoted &rarr; active only by clearing closing-line value, never by assertion. Nothing here is a bet.</div>
+    <div class="row-between fb-panelhd"><h2 style="margin:0">Lab</h2><span class="fb-badge blue" id="labFresh" title="Research and development"><i></i>EdgeDesk R&amp;D</span><span class="spacer"></span><button class="refreshbtn" id="labRefreshBtn" title="Refresh" aria-label="Refresh lab" onclick="labRefreshClick()">&#8635;</button></div>
+    <div class="lab-hero"><div class="t">Test assumptions. Inspect models. Break things safely.</div><div class="s">Experimental tools, validation, model diagnostics, and research methodology. Every number here is read from a stored record or a live rerun of the shipped engine; nothing is a bet.</div></div>
+    <div class="lab-grid">
+      <aside id="labLeft" class="lab-left" aria-label="Lab navigation"></aside>
+      <div id="labCenter" class="lab-center"></div>
+      <aside id="labRight" class="lab-right" aria-label="Lab status"></aside>
+    </div>
+    <div class="fb-sechd" id="labNotesHd"><span>Research notes</span><span class="r">validation gate</span></div>
     <div id="labHost"></div>
     <div id="rsSys-lab" class="fb-ov" style="margin-top:var(--sp5)"></div>
     </div>
@@ -3550,7 +3556,9 @@ window.addEventListener('hashchange',function(){
   var shell=document.getElementById('v-research');
   if(RESEARCH_SUB!==r.sub||!shell||shell.classList.contains('hide'))researchGo(r.sub);
   var m=RESEARCH_MODULES[r.sub];if(!m)return;
-  if(r.entity!=null){if(m.openEntity&&(!m.entityOpen||!m.entityOpen()))m.openEntity(r.entity);}
+  /* entityKey (optional): the id of the entity now open, so Back/Forward
+     between two entities of one module switches instead of being ignored */
+  if(r.entity!=null){if(m.openEntity&&(!m.entityOpen||!m.entityOpen()||(m.entityKey&&m.entityKey()!==r.entity)))m.openEntity(r.entity);}
   else if(m.entityOpen&&m.entityOpen()&&m.closeEntity){m.closeEntity();}
 });
 
@@ -3623,11 +3631,14 @@ researchRegister({id:'props',label:'Props',schema:'public',cadenceMs:86400000,
   availability:function(){return null;},limitations:function(){return [];},provenance:{}});
 researchRegister({id:'lab',label:'Lab',schema:'public',cadenceMs:null,
   load:function(force,signal){return (typeof window.loadLab==='function')?window.loadLab(force,signal):Promise.resolve();},
-  render:function(){},
-  hasData:function(){return false;},                            /* Lab has no cache: always refetches */
+  render:function(){if(typeof window.labRender==='function')window.labRender();},
+  hasData:function(){return !!(window.LABX&&LABX.at);},        /* the R&D records cache 5 min; notes always refetch */
   search:function(q){return [];},                              /* stage 2 */
-  openEntity:null,closeEntity:null,entityOpen:null,
-  freshness:function(){return {loadedAt:null,builtAt:null};},
+  openEntity:function(id){if(typeof window.labOpen==='function')window.labOpen(id,true);},
+  closeEntity:function(){if(typeof window.labGoHome==='function')window.labGoHome(true);},
+  entityOpen:function(){return !!(window.LABX&&LABX.tool);},
+  entityKey:function(){return (window.LABX&&LABX.tool)||null;},
+  freshness:function(){return {loadedAt:(window.LABX&&LABX.at)||null,builtAt:null};},
   availability:function(){return null;},limitations:function(){return [];},provenance:{}});
 
 /* ═══ RESEARCH: provenance, maturity, honest states, freshness ═══════════
@@ -4007,7 +4018,8 @@ function rsPipelineHTML(modId){
 }
 function rsMetaRender(modId){
   var sys=$('rsSys-'+modId);
-  if(sys){var lbl={stats:'Stats',props:'Props',lab:'Lab'}[modId]||modId;sys.innerHTML=rsTkModuleSysCard(modId,lbl);}
+  /* the Lab paints its own system card (records loaded, validation jobs) once its R&D records are in */
+  if(sys&&!(modId==='lab'&&window.LABX&&LABX.at)){var lbl={stats:'Stats',props:'Props',lab:'Lab'}[modId]||modId;sys.innerHTML=rsTkModuleSysCard(modId,lbl);}
   var host=$('rsMeta-'+modId);if(!host)return;
   host.innerHTML=rsFreshHTML(modId)+rsStateHTML(modId)+rsPipelineHTML(modId)+rsProvHTML(modId)+rsFieldsHTML(modId)+rsLimitsHTML(modId)+rsDatasetHTML(modId);
   rsFreshApply(modId);
@@ -16429,6 +16441,988 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
 })();
 </script>
 
+<style>
+/* ---- EdgeDesk Lab · R&D center (prefixed lab-) ---- */
+.lab-hero{border:1px solid var(--border);border-radius:var(--rad);background:linear-gradient(180deg,rgba(155,140,255,.07),rgba(155,140,255,.015));padding:var(--sp4);margin-bottom:var(--sp3)}
+.lab-hero .t{font-size:15px;font-weight:700;letter-spacing:-.01em;line-height:1.35}
+.lab-hero .s{font-size:12.5px;color:var(--dim);line-height:1.5;margin-top:4px}
+.lab-grid{display:grid;grid-template-columns:minmax(0,1fr);gap:var(--sp3)}
+.lab-left{display:none}
+.lab-center{min-width:0}
+.lab-right{min-width:0}
+.lab-rail-h{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.09em;text-transform:uppercase;color:var(--faint);margin:0 0 6px;font-weight:700}
+.lab-nav{display:flex;flex-direction:column;align-items:flex-start;width:100%;background:none;border:1px solid transparent;border-radius:9px;padding:7px 9px;color:var(--dim);font:600 12.5px/1.3 inherit;font-family:inherit;text-align:left;cursor:pointer;transition:background-color .15s ease,color .15s ease}
+.lab-nav small{font-family:'JetBrains Mono',monospace;font-size:9.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--faint);margin-top:1px}
+.lab-nav:hover{background:var(--surface2);color:var(--text)}
+.lab-nav.on{background:rgba(155,140,255,.1);border-color:rgba(155,140,255,.35);color:var(--text)}
+.lab-nav:focus-visible{outline:2px solid var(--accent);outline-offset:-1px}
+.lab-exps{display:grid;grid-template-columns:minmax(0,1fr);gap:var(--sp2)}
+@media(min-width:640px){.lab-exps{grid-template-columns:1fr 1fr}}
+.lab-exp{background:var(--surface);border:1px solid var(--border);border-radius:var(--rad);padding:var(--sp3) var(--sp4);cursor:pointer;min-width:0;transition:border-color .18s ease,background-color .18s ease}
+.lab-exp:hover{border-color:rgba(155,140,255,.5);background:var(--surface2)}
+.lab-exp:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.lab-exp .hd{display:flex;align-items:flex-start;justify-content:space-between;gap:8px}
+.lab-exp .nm{font-size:13.5px;font-weight:700;line-height:1.3;min-width:0}
+.lab-exp .sub{font-size:10.5px;color:var(--faint);margin-top:3px;word-break:break-word}
+.lab-exp .ft{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:8px;font-size:11px;color:var(--faint)}
+.lab-exp .lnk{color:var(--accent);font-weight:700;font-size:11px;letter-spacing:.06em;text-transform:uppercase}
+.lab-mets{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:10px 0 8px}
+.lab-mets.three{grid-template-columns:repeat(3,minmax(0,1fr))}
+.lab-mc{background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:8px 10px;min-width:0}
+.lab-mc .v{font-family:'JetBrains Mono',monospace;font-size:17px;font-weight:700;letter-spacing:-.01em;line-height:1.15;word-break:break-word}
+.lab-mc .v.mdl{color:var(--mdl)}
+.lab-mc .k{font-size:9.5px;letter-spacing:.07em;text-transform:uppercase;color:var(--faint);margin-top:3px}
+.lab-mc .s{font-size:10.5px;color:var(--dim);margin-top:2px}
+.lab-life{display:flex;flex-wrap:wrap;align-items:center;gap:4px 2px;font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.05em;text-transform:uppercase}
+.lab-life .st{padding:3px 7px;border-radius:7px;border:1px solid var(--border);color:var(--faint);background:var(--bg)}
+.lab-life .st.done{color:var(--dim);border-color:rgba(47,180,124,.35)}
+.lab-life .st.now{color:var(--text);background:rgba(155,140,255,.14);border-color:rgba(155,140,255,.55);font-weight:700}
+.lab-life .ar{color:var(--faint);padding:0 1px}
+.lab-life.compact{font-size:8.5px;gap:3px 1px}
+.lab-life.compact .st{padding:2px 5px}
+.lab-crit .row{display:grid;grid-template-columns:18px minmax(0,1fr) auto;gap:8px;align-items:baseline;padding:6px 0;border-top:1px solid var(--border);font-size:12.5px}
+.lab-crit .row:first-child{border-top:none;padding-top:0}
+.lab-crit .mk{font-family:'JetBrains Mono',monospace;font-weight:700}
+.lab-crit .mk.pass{color:var(--pos)}.lab-crit .mk.fail{color:var(--neg)}.lab-crit .mk.pend{color:var(--faint)}
+.lab-crit .lbl{color:var(--text);min-width:0}
+.lab-crit .val{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--dim);text-align:right}
+.lab-crit .sum{font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--faint);margin-top:8px;padding-top:8px;border-top:1px dashed var(--border)}
+.lab-none{font-size:12.5px;color:var(--dim);line-height:1.5;padding:10px 12px;border:1px dashed var(--border);border-radius:10px;background:var(--bg)}
+.lab-kv .r{display:grid;grid-template-columns:minmax(0,.9fr) minmax(0,1.3fr);gap:10px;padding:6px 0;border-top:1px solid var(--border);font-size:12.5px;line-height:1.45}
+.lab-kv .r:first-child{border-top:none;padding-top:0}
+.lab-kv .k{color:var(--dim)}
+.lab-kv .v{color:var(--text);min-width:0;word-break:break-word}
+.lab-kv.small .r{font-size:11.5px;padding:4px 0}
+.lab-kv.small .k{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--faint)}
+.lab-bars .row{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(70px,1fr) auto;gap:8px;align-items:center;padding:4px 0;font-size:12px}
+.lab-bars .l{color:var(--dim);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lab-bars .trk{position:relative;height:8px;background:var(--bg);border:1px solid var(--border);border-radius:4px;overflow:hidden}
+.lab-bars .trk:before{content:'';position:absolute;left:50%;top:0;bottom:0;width:1px;background:var(--border)}
+.lab-bars .bar{position:absolute;top:0;bottom:0;background:var(--pos);border-radius:2px}
+.lab-bars .bar.neg{background:var(--neg)}
+.lab-bars .v{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text);white-space:nowrap}
+.lab-bars .v.neg{color:var(--neg)}
+.lab-wf-h{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px;flex-wrap:wrap}
+.lab-wf-h .nm{font-size:13px;font-weight:700}
+.lab-cal{display:grid;grid-template-columns:44px minmax(0,1fr) 52px auto;gap:8px;align-items:center;padding:3px 0;font-size:11px}
+.lab-cal .b{font-family:'JetBrains Mono',monospace;color:var(--dim)}
+.lab-cal .trk{position:relative;height:10px;background:var(--bg);border:1px solid var(--border);border-radius:5px}
+.lab-cal .pred{position:absolute;left:0;top:0;bottom:0;background:rgba(155,140,255,.35);border-radius:5px}
+.lab-cal .obs{position:absolute;top:50%;width:8px;height:8px;margin:-4px 0 0 -4px;border-radius:50%;background:var(--text);box-shadow:0 0 0 2px var(--surface)}
+.lab-cal .n{font-family:'JetBrains Mono',monospace;color:var(--faint);text-align:right}
+.lab-cal .v{font-family:'JetBrains Mono',monospace;color:var(--dim);white-space:nowrap}
+.lab-cal .v b{color:var(--text)}
+.lab-cal-h{display:flex;justify-content:space-between;font-family:'JetBrains Mono',monospace;font-size:9.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--faint);margin:10px 0 4px}
+.lab-log .e{display:grid;grid-template-columns:auto auto minmax(0,1fr);gap:6px 10px;padding:7px 0;border-top:1px solid var(--border);font-size:12.5px;line-height:1.45}
+.lab-log .e:first-child{border-top:none;padding-top:0}
+.lab-log .v{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--mdl);font-weight:700}
+.lab-log .d{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--faint)}
+.lab-log .t{color:var(--dim);grid-column:1/-1}
+@media(min-width:640px){.lab-log .t{grid-column:auto}}
+.lab-out{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:10px 0}
+.lab-out .c{background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:9px 10px;min-width:0}
+.lab-out .c.p{border-color:rgba(155,140,255,.45);grid-column:1/-1}
+.lab-out .k{font-size:9.5px;letter-spacing:.07em;text-transform:uppercase;color:var(--faint)}
+.lab-out .v{font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;margin-top:2px;line-height:1.2;word-break:break-word}
+.lab-out .v.mdl{color:var(--mdl)}.lab-out .v.pos{color:var(--pos)}.lab-out .v.neg{color:var(--neg)}.lab-out .v.warn{color:var(--warn)}.lab-out .v.mut{color:var(--dim)}
+.lab-out .v.txt{font-family:inherit;font-size:14px}
+.lab-out .v.cl{font-size:12.5px;letter-spacing:.05em;word-break:normal;line-height:1.35}
+.lab-out .s{font-size:11px;color:var(--dim);margin-top:3px}
+@media(min-width:640px){.lab-out{grid-template-columns:repeat(3,minmax(0,1fr))}.lab-out .c.p{grid-column:auto}.lab-out.two{grid-template-columns:1fr 1fr}}
+.lab-ctls{display:grid;grid-template-columns:minmax(0,1fr);gap:8px;margin-top:10px}
+@media(min-width:640px){.lab-ctls{grid-template-columns:1fr 1fr}}
+.lab-ctl{background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:9px 11px;min-width:0}
+.lab-ctl label{display:flex;justify-content:space-between;gap:8px;font-size:12px;color:var(--text);font-weight:600;margin-bottom:5px}
+.lab-ctl .cur{color:var(--mdl);font-size:12px}
+.lab-ctl input[type=range]{width:100%;margin:2px 0;accent-color:var(--mdl)}
+.lab-ctl .rng{font-size:10.5px;color:var(--faint);margin-top:3px;line-height:1.4}
+.lab-seg{margin-bottom:0}
+.lab-seg button{padding:7px 6px;font-size:11.5px;font-family:inherit;cursor:pointer;min-height:32px}
+.lab-sel{margin-bottom:10px;font-size:13px}
+.lab-scrub{width:100%;accent-color:var(--mdl);margin:4px 0 8px}
+.lab-tl .p{display:grid;grid-template-columns:auto auto minmax(0,1fr);gap:4px 10px;align-items:baseline;padding:6px 0 6px 12px;border-left:2px solid var(--border);font-size:12px;opacity:.5;transition:opacity .15s ease,border-color .15s ease}
+.lab-tl .p.seen{opacity:1}
+.lab-tl .p.at{border-left-color:var(--mdl);background:rgba(155,140,255,.06)}
+.lab-tl .p .t{font-size:10.5px;color:var(--faint);white-space:nowrap}
+.lab-tl .p .k{font-weight:700;color:var(--text)}
+.lab-tl .p.flag .k{color:var(--mdl)}.lab-tl .p.close .k{color:var(--warn)}.lab-tl .p.pos .k{color:var(--pos)}.lab-tl .p.neg .k{color:var(--neg)}.lab-tl .p.tick .k{color:var(--dim);font-weight:500}
+.lab-tl .p .v{font-size:11px;color:var(--dim);grid-column:1/-1;word-break:break-word}
+@media(min-width:640px){.lab-tl .p .v{grid-column:auto}}
+.lab-books{display:flex;flex-wrap:wrap;gap:6px}
+.lab-book{background:var(--bg);border:1px solid var(--border);border-radius:9px;padding:6px 9px;color:var(--text);font:500 11.5px/1.3 inherit;font-family:inherit;cursor:pointer}
+.lab-book b{font-family:'JetBrains Mono',monospace;margin-left:4px}
+.lab-book i{font-style:normal;color:var(--dim);margin-left:4px;font-family:'JetBrains Mono',monospace;font-size:10.5px}
+.lab-book s{text-decoration:none;color:var(--mdl);font-size:9.5px;letter-spacing:.06em;text-transform:uppercase;margin-left:5px}
+.lab-book.sharp{border-color:rgba(155,140,255,.4)}
+.lab-book.off{opacity:.4;text-decoration:line-through}
+.lab-dist{display:flex;align-items:center;gap:8px;font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--faint);margin:6px 0}
+.lab-dist .trk{position:relative;flex:1;height:8px;background:var(--bg);border:1px solid var(--border);border-radius:4px}
+.lab-dist .med{position:absolute;top:-3px;width:3px;height:12px;margin-left:-1px;background:var(--mdl);border-radius:2px}
+.lab-prov{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:7px 0;border-top:1px solid var(--border);font-size:12.5px}
+.lab-prov:first-child{border-top:none;padding-top:0}
+.lab-prov .nm{display:flex;flex-direction:column;min-width:0}
+.lab-prov .nm small{font-size:10.5px;color:var(--faint)}
+.lab-filters{display:grid;grid-template-columns:1fr;gap:6px;margin-bottom:6px}
+@media(min-width:520px){.lab-filters{grid-template-columns:repeat(3,minmax(0,1fr))}}
+.lab-filters .lab-sel{margin-bottom:0}
+.lab-row{cursor:pointer}.lab-row:hover td{background:var(--surface2)}
+.lab-exp-hd{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;margin-bottom:10px}
+.lab-exp-hd .nm{font-size:16px;font-weight:700;letter-spacing:-.01em;flex:1 1 100%}
+.lab-exp-hd .mono{font-size:10.5px;color:var(--faint)}
+.lab-tool-hd{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.lab-tool-hd .t{font-size:14px;font-weight:700;letter-spacing:-.01em}
+.lab-score .hd{display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap;margin-bottom:8px}
+.lab-score .nm{font-size:13px;font-weight:700}
+.lab-score .mono{font-size:10.5px;color:var(--faint)}
+.lab-score .fb-btns{margin-top:10px}
+#labHost .lab-card{margin-top:0}
+#labHost .mcov-research{min-width:0;overflow-x:auto}
+#labHost .mcov-rtbl{white-space:nowrap}
+#v-lab .fb-tbl td,#v-lab .fb-tbl th{white-space:nowrap}
+#v-lab .fb-tbl td:first-child{white-space:normal;min-width:110px}
+@media(min-width:960px){
+  .lab-grid{grid-template-columns:200px minmax(0,1fr) 250px;gap:var(--sp4);align-items:start}
+  .lab-left{display:block;position:sticky;top:var(--sp3);max-height:calc(100vh - 120px);overflow-y:auto;padding-right:4px}
+  .lab-right{position:sticky;top:var(--sp3)}
+  .lab-exps{grid-template-columns:1fr 1fr}
+  .lab-hero .t{font-size:17px}
+}
+/* the Lab is a three-column workspace: give it the room the other panels do not need */
+@media(min-width:1100px){#v-research:has(#v-lab:not(.hide)){max-width:1240px}.lab-grid{grid-template-columns:220px minmax(0,1fr) 280px}}
+</style>
+<script>
+/* ============================================================================
+   EdgeDesk :: LAB — the R&D and model-validation center.
+
+   Every number on this panel is read from a record that already exists:
+     · the shipped walk-forward reports (football/research/report/*.json,
+       football/cfb_p4/research/report/*.json) and the engines' own metadata
+     · the Power 4 calibration and v1.2 correction records (calibration.js,
+       v12_correction.js) — real experiments with recorded, mostly negative,
+       results
+     · public.research_notes + note_validations (the validation gate)
+     · public.research_model_current (the model registry)
+     · public.signals (graded research output), signal_ticks, book_quotes
+     · football/health.json (the daily self-check and its pipeline stamps)
+     · the football engines running in the browser (sandbox, scenarios and
+       per-feature contributions are the shipped engine re-run, never a
+       re-trained or invented number)
+   A tool whose data is absent renders an honest state and says what it
+   would need. Nothing here is a pick.
+   ========================================================================== */
+(function(){
+  var L=window.LABX={at:0,tool:null,reports:{},repErr:{},health:null,sigs:null,sigsErr:null,quotes:{},ticks:{},sel:{},loading:null,sb:{}};
+  var esc=function(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});};
+  var $=function(id){return document.getElementById(id);};
+  function n1(v,d){return (v==null||!isFinite(+v))?'—':(+v).toFixed(d==null?1:d);}
+  function pct(v,d){return (v==null||!isFinite(+v))?'—':((+v*100).toFixed(d==null?1:d)+'%');}
+  function sgn(v,d){return (v==null||!isFinite(+v))?'—':((+v>0?'+':'')+(+v).toFixed(d==null?1:d));}
+  function agoOf(x){var t=x?rsParseStamp(x):null;return t?ago(t):'—';}
+  function dateOf(x){return x?String(x).slice(0,10):'—';}
+  function attr(s){return edAttrJs(String(s==null?'':s));}
+
+  /* ---------------------------------------------------------------- data */
+  function fetchJson(key,url){
+    if(L.reports[key]!==undefined)return Promise.resolve(L.reports[key]);
+    return fetch(url,{cache:'no-store'}).then(function(r){if(!r.ok)throw new Error('HTTP '+r.status);return r.json();})
+      .then(function(j){L.reports[key]=j;return j;}).catch(function(e){L.reports[key]=null;L.repErr[key]=(e&&e.message)||'unreachable';return null;});
+  }
+  function loadReports(){
+    return Promise.all([
+      fetchJson('nfl','football/research/report/report_nfl.json'),
+      fetchJson('cfb','football/research/report/report_cfb.json'),
+      fetchJson('slices','football/cfb_p4/research/report/error_slices.json'),
+      fetchJson('v12','football/cfb_p4/research/report/v12_experiments.json'),
+      fetchJson('health','football/health.json')
+    ]);
+  }
+  /* the Power 4 calibration / correction records ship as scripts next to the engine */
+  function loadP4Records(){
+    if(window.EDCfbP4Calibration&&window.EDCfbP4V12)return Promise.resolve();
+    function one(src){return new Promise(function(res){var s=document.createElement('script');s.src=src;s.onload=res;s.onerror=res;document.head.appendChild(s);});}
+    return Promise.all([one('football/cfb_p4/calibration.js'),one('football/cfb_p4/v12_correction.js')]);
+  }
+  var SIG_COLS='id,sig_key,event_id,sport_title,sport_key,market,selection,point,home_team,away_team,best_book,commence_time,first_seen_at,flagged_at,graded_at,first_best_dec,flagged_best_dec,best_dec,flagged_edge,edge,clv,result,beat_close,sharp_fair,first_sharp_fair,consensus_fair,closing_sharp_fair,n_books,is_fav';
+  function loadSignals(){
+    return sbGet('signals?select='+SIG_COLS+'&graded_at=not.is.null&order=graded_at.desc&limit=150')
+      .then(function(rows){L.sigs=rows||[];L.sigsErr=null;}).catch(function(e){L.sigs=null;L.sigsErr=(e&&e.message)||'read failed';});
+  }
+  function loadTicks(key){
+    if(L.ticks[key]!==undefined)return Promise.resolve(L.ticks[key]);
+    return sbGet('signal_ticks?select=created_at,best_dec,sharp_fair,edge&sig_key=eq.'+encodeURIComponent(key)+'&order=created_at.asc&limit=400')
+      .then(function(r){L.ticks[key]=r||[];return L.ticks[key];}).catch(function(){L.ticks[key]=null;return null;});
+  }
+  function loadQuotes(key){
+    if(L.quotes[key]!==undefined)return Promise.resolve(L.quotes[key]);
+    return sbGet('book_quotes?select=book_title,dec,fair,is_sharp&sig_key=eq.'+encodeURIComponent(key)+'&order=dec.desc&limit=40')
+      .then(function(r){L.quotes[key]=r||[];return L.quotes[key];}).catch(function(){L.quotes[key]=null;return null;});
+  }
+  L.load=function(force){
+    if(L.loading)return L.loading;
+    if(!force&&L.at&&(Date.now()-L.at)<300000){labRender();return Promise.resolve();}
+    L.loading=Promise.all([loadReports(),loadP4Records(),loadSignals(),(function(){try{return rsModelsLoad();}catch(_){return Promise.resolve();}})()])
+      .then(function(){L.at=Date.now();L.loading=null;labRender();})
+      .catch(function(){L.at=Date.now();L.loading=null;labRender();});
+    return L.loading;
+  };
+
+  /* ---------------------------------------------------------- components */
+  var STATUS={idea:['mut','Idea'],experimental:['amber','Experimental'],tracked:['blue','Tracked'],validating:['amber','Validating'],validated:['green','Validated'],production:['green','Production'],paused:['mut','Paused'],failed:['red','Failed'],rejected:['red','Rejected'],archived:['mut','Archived'],current:['green','Current']};
+  function badge(st){var b=STATUS[st]||STATUS.idea;return '<span class="fb-badge '+b[0]+'"><i></i>'+b[1]+'</span>';}
+  function metric(k,v,sub,c){return '<div class="lab-mc"><div class="v '+(c||'')+'">'+esc(v)+'</div><div class="k">'+esc(k)+'</div>'+(sub?'<div class="s">'+esc(sub)+'</div>':'')+'</div>';}
+  var STAGES=['idea','experiment','tracked','validating','validated','production'];
+  var STAGE_L={idea:'Idea',experiment:'Experiment',tracked:'Tracked',validating:'Validating',validated:'Validated',production:'Production'};
+  function lifecycle(stage,compact){
+    var i=STAGES.indexOf(stage);
+    return '<div class="lab-life'+(compact?' compact':'')+'" role="list" aria-label="Research lifecycle">'+STAGES.map(function(s,j){
+      return '<span class="st'+(j<i?' done':'')+(j===i?' now':'')+'" role="listitem">'+STAGE_L[s]+'</span>'+(j<STAGES.length-1?'<span class="ar" aria-hidden="true">›</span>':'');
+    }).join('')+'</div>';
+  }
+  /* criteria: [{label, pass:true|false|null, val}] */
+  function criteria(list,note){
+    if(!list||!list.length)return '<div class="lab-none">Validation requirements have not been configured for this experiment.</div>';
+    var met=list.filter(function(c){return c.pass===true;}).length;
+    return '<div class="lab-crit">'+list.map(function(c){
+      var mk=c.pass===true?'<span class="mk pass">✓</span>':(c.pass===false?'<span class="mk fail">✗</span>':'<span class="mk pend">○</span>');
+      return '<div class="row">'+mk+'<span class="lbl">'+esc(c.label)+'</span><span class="val">'+esc(c.val||'')+'</span></div>';}).join('')
+      +'<div class="sum">'+met+' / '+list.length+' requirements met'+(note?(' · '+esc(note)):'')+'</div></div>';
+  }
+  function limits(list){return rsTkLimits(list);}
+  function none(t){return '<div class="lab-none">'+t+'</div>';}
+  function sec(t,r){return '<div class="fb-sechd"><span>'+esc(t)+'</span>'+(r?'<span class="r">'+esc(r)+'</span>':'')+'</div>';}
+  function kv(rows){return '<div class="lab-kv">'+rows.map(function(r){return '<div class="r"><span class="k">'+esc(r[0])+'</span><span class="v">'+(r[2]?r[1]:esc(r[1]))+'</span></div>';}).join('')+'</div>';}
+  function bars(rows,unit){ /* rows: [{l, v}] signed contributions */
+    var mx=0;rows.forEach(function(r){mx=Math.max(mx,Math.abs(+r.v||0));});mx=mx||1;
+    return '<div class="lab-bars">'+rows.map(function(r){var v=+r.v||0,w=Math.abs(v)/mx*50;
+      return '<div class="row"><span class="l">'+esc(r.l)+'</span><span class="trk"><span class="bar '+(v<0?'neg':'pos')+'" style="'+(v<0?('right:50%;width:'+w.toFixed(1)+'%'):('left:50%;width:'+w.toFixed(1)+'%'))+'"></span></span><span class="v '+(v<0?'neg':'')+'">'+sgn(v,2)+(unit||'')+'</span></div>';}).join('')+'</div>';
+  }
+  function tbl(head,rows){return '<div class="fb-tbl-wrap"><table class="fb-tbl"><tr>'+head.map(function(h){return '<th>'+esc(h)+'</th>';}).join('')+'</tr>'+rows.map(function(r){return '<tr>'+r.map(function(c,i){return '<td>'+(i===0?esc(c):(typeof c==='string'&&c.indexOf('<')===0?c:esc(c)))+'</td>';}).join('')+'</tr>';}).join('')+'</table></div>';}
+  function toolBtn(label,onclick,pri){return '<button class="fb-btn'+(pri?' pri':'')+'" onclick="'+onclick+'">'+esc(label)+'</button>';}
+  function ece(bins){var n=0,s=0;(bins||[]).forEach(function(b){n+=b.n;s+=b.n*Math.abs(b.p_obs-b.p_pred);});return n?{n:n,ece:s/n}:null;}
+
+  /* ------------------------------------------------------------ registry */
+  function regRow(key){try{return rsModelRow(key);}catch(_){return null;}}
+  function regStatus(key,fallback){var r=regRow(key);if(!r)return fallback;var st=String(rsField(r,['status','model_status'])||'').toLowerCase();return st==='validated'?'validated':(st==='production'||st==='active'?'production':fallback);}
+  function regKV(key){var r=regRow(key);if(!r)return none('No registry row for <span class="mono">'+esc(key)+'</span>. Until a version and a holdout result are registered, this model reads as Experimental.');
+    return kv([['Version',rsField(r,['version','model_version'])||'—'],['Status',rsField(r,['status','model_status'])||'—'],['Training window',rsField(r,['training_window','train_window'])||'—'],['Validation window',rsField(r,['validation_window','valid_window'])||'—'],['Objective',rsField(r,['objective','goal'])||'—'],['Holdout',(function(){var res=rsField(r,['holdout_result','result','results','holdout','metrics','computed_metrics']);return res==null?'not recorded':(typeof res==='object'?JSON.stringify(res):String(res))+(r.passed==null?'':(r.passed?' · passed':' · did not pass'));})()],['Updated',dateOf(rsField(r,['updated_at','registered_at','created_at']))]]);}
+
+  /* --------------------------------------------------------- experiments */
+  /* every experiment is an object the cards, the list and the detail view share:
+     {id, name, sport, model, stage, status, sample, metric:{k,v}, updated, hypothesis, method, results:[[k,v]], criteria:[..], changelog:[..], limits:[..], sources:[..], note} */
+  function fbMeta(){try{return window.EDFootball?window.EDFootball.meta():null;}catch(_){return null;}}
+  function p4Meta(){try{return window.EDCfbP4?window.EDCfbP4.meta():null;}catch(_){return null;}}
+  function healthChecks(prefix){var h=L.reports.health;if(!h||!h.checks)return null;var own=h.checks.filter(function(c){return prefix==='all'||c.id.indexOf(prefix)===0||c.id==='engine_tests'||(prefix==='nfl_'&&c.id==='engine_tests_nfl')||(prefix==='p4_'&&c.id==='engine_tests_p4');});var pass=own.filter(function(c){return c.status==='pass';}).length;return {n:own.length,pass:pass,fails:own.filter(function(c){return c.status==='fail';}),at:h.generated_at};}
+  function experiments(){
+    var out=[],R=L.reports,nfl=R.nfl,cfb=R.cfb,sl=R.slices,v12=R.v12,cal=window.EDCfbP4Calibration,M=fbMeta(),P=p4Meta(),H=L.reports.health;
+    var vs=(M&&M.validation)||(window.EDFootballParams&&window.EDFootballParams.validation_summary)||null;
+    var ver=(M&&M.model_version)||(window.EDFootballParams&&window.EDFootballParams.model_version)||'edgedesk_football_v1.0.0';
+    var built=(M&&M.built_at)||(window.EDFootballParams&&window.EDFootballParams.built_at)||null;
+    var hn=healthChecks('nfl_');
+    var vn=vs&&vs.nfl;
+    out.push({id:'football_nfl',name:'Football engine · NFL layer',sport:'NFL',model:ver,stage:'tracked',status:regStatus('football.engine_v1','tracked'),
+      sample:nfl?nfl.spread_model.test_2016_2025.n:(vn?vn.ats_vs_close['0.5'].n:null),sampleL:'OOS games',
+      metric:{k:'Spread MAE',v:vn?n1(vn.spread_mae_model,2):'—',sub:vn?('market '+n1(vn.spread_mae_closing_market,3)):''},
+      updated:(H&&H.generated_at)||built,
+      hypothesis:'An opponent-adjusted EPA rating recursion with a learned QB layer projects NFL margins and totals well enough to be useful research context beside the market.',
+      method:[['Training','1999–2015 seasons; hyperparameters frozen on ≤2015'],['Test','2016–2025, chronological walk-forward, no random splits'],['Sample',nfl?(nfl.spread_model.test_2016_2025.n+' out-of-sample games ('+nfl.n_games_scored+' scored in all)'):'see report'],['Variables',(window.EDFootballParams&&window.EDFootballParams.nfl.spread_feats||[]).join(', ')||'net EPA, pass, rush, points, QB adjustment, rest, divisional'],['Baseline','closing consensus spread (nflverse)'],['Treatment','model spread vs the close; ATS by size of disagreement']],
+      results:vn?[['Spread MAE (model / close)',n1(vn.spread_mae_model,2)+' / '+n1(vn.spread_mae_closing_market,3)],['Total MAE (model / close)',n1(vn.total_mae_model,3)+' / '+n1(vn.total_mae_closing_market,3)],['Win-prob Brier (model / no-vig market)',n1(vn.winprob_brier_model,4)+' / '+n1(vn.winprob_brier_market_novig,4)],['ATS at 2+ pts vs close',vn.ats_vs_close['2'].win_pct+'% (n='+vn.ats_vs_close['2'].n+', p='+vn.ats_vs_close['2'].binom_p_one_sided+')'],['Beats the closing line',vn.beats_closing_line?'yes':'no']]:[],
+      criteria:[{label:'500+ out-of-sample observations',pass:nfl?nfl.spread_model.test_2016_2025.n>=500:null,val:nfl?String(nfl.spread_model.test_2016_2025.n):'—'},{label:'Walk-forward tested, hyperparameters frozen before the test window',pass:true,val:'2016–2025'},{label:'No hindsight: pregame snapshots only',pass:true,val:'by construction'},{label:'Calibration measured',pass:!!(nfl&&nfl.calibration_2016_2025),val:nfl?'9 bins':'—'},{label:'Beats the closing line out of sample',pass:vn?!!vn.beats_closing_line:null,val:vn?(vn.beats_closing_line?'yes':'no'):'—'},{label:'Own graded CLV against captured quotes',pass:null,val:'not yet measured'},{label:'Daily self-check passing',pass:hn?hn.fails.length===0:null,val:hn?(hn.pass+'/'+hn.n):'no record'}],
+      changelog:[{v:ver,d:dateOf(built),t:'Initial shipped parameters, trained through 2025 (feature version '+((window.EDFootballParams&&window.EDFootballParams.nfl.feature_version)||'nfl_fv1')+'). No later parameter release is on file.'}],
+      limits:(window.RS_LIMITS&&RS_LIMITS.football)||[],sources:(window.RS_PROV&&RS_PROV.football)||[],note:vn?vn.note:''});
+    var vc=vs&&vs.cfb;
+    out.push({id:'football_cfb',name:'Football engine · CFB v1 layer',sport:'CFB',model:ver,stage:'tracked',status:'tracked',
+      sample:cfb?cfb.test_2016_2025.n:null,sampleL:'OOS games',metric:{k:'Margin MAE',v:vc?n1(vc.margin_mae_model,3):'—',sub:vc?('Elo '+n1(vc.margin_mae_elo_benchmark,3)):''},updated:built,
+      hypothesis:'A capped-margin iterative rating with the CFB’s own learned constants projects FBS margins at least as well as a third-party pregame Elo.',
+      method:[['Training','2006–2015; hyperparameters frozen on ≤2015'],['Test','2016–2025 walk-forward'],['Sample',cfb?(cfb.test_2016_2025.n+' out-of-sample games'):'see report'],['Baseline','third-party pregame Elo; home-field only'],['Market','no market backtest — no line archive was in the training data']],
+      results:vc?[['Margin MAE (model / Elo / HFA-only)',n1(vc.margin_mae_model,3)+' / '+n1(vc.margin_mae_elo_benchmark,3)+' / '+n1(vc.margin_mae_hfa_only,3)],['Total MAE',n1(vc.total_mae_model,3)],['Win-prob Brier',n1(vc.winprob_brier_model,4)],['Market backtest','none']]:[],
+      criteria:[{label:'500+ out-of-sample observations',pass:cfb?cfb.test_2016_2025.n>=500:null,val:cfb?String(cfb.test_2016_2025.n):'—'},{label:'Walk-forward tested',pass:true,val:'2016–2025'},{label:'Calibration measured',pass:!!(cfb&&cfb.calibration_test),val:cfb?'10 bins':'—'},{label:'Market comparison',pass:false,val:'no archive in training'},{label:'Own graded CLV',pass:null,val:'not yet measured'}],
+      changelog:[{v:ver,d:dateOf(built),t:'Shipped with the NFL layer; superseded for Power 4 research by the separate cfb_p4 engine, which is held to a real line archive.'}],
+      limits:['No public CFB line archive was in the training data, so this layer makes no market claim.','Retired from the Football tab’s board; the Power 4 engine carries the market comparison.'],sources:(window.RS_PROV&&RS_PROV.football)||[],note:vc?vc.note:''});
+    var pv=P&&P.validation&&P.validation.market,hp=healthChecks('p4_');
+    var ov=sl&&sl.overall;
+    out.push({id:'cfb_p4',name:'CFB Power 4 model · v1.0 raw engine',sport:'CFB P4',model:(P&&P.model_version)||'edgedesk_cfb_p4_v1.0.0',stage:'tracked',status:regStatus('cfb_p4.engine_v1','tracked'),
+      sample:ov?ov.n:(pv?null:null),sampleL:'OOS games',metric:{k:'Spread MAE',v:ov?n1(ov.mae_raw,3):(pv?n1(pv.spread_mae_model,3):'—'),sub:ov?('market '+n1(ov.mae_market,3)):(pv?('market '+n1(pv.spread_mae_market,3)):'')},
+      updated:(H&&H.generated_at)||(P&&P.built_at)||null,
+      hypothesis:'A five-layer model (strength, talent, situation, matchup, uncertainty) projects Power 4 spreads; its value is measured against a real closing-line archive.',
+      method:[['Frame','cold shipped-engine replay in kickoff order, FBS-vs-FBS games with a closing line'],['Window',(sl&&sl.what)?'2015–2025':'see report'],['Sample',ov?(ov.n+' games'):'—'],['Baseline','closing line (cfbfastR-data betting archive)'],['Treatment','raw model spread vs the close; error sliced by week, season, disagreement, side and conference']],
+      results:ov?[['Spread MAE (raw / market)',n1(ov.mae_raw,3)+' / '+n1(ov.mae_market,3)],['RMSE (raw)',n1(ov.rmse_raw,3)],['Bias (raw)',sgn(ov.bias_raw,3)],['ATS at 1+ pts vs close',ov.ats_raw_1plus.win_pct+'% (n='+ov.ats_raw_1plus.n+')'],['Close moved toward model, 3+ pt disagreement',sl.clv_proxy_vs_open['3'].moved_toward_model_pct+'% (n='+sl.clv_proxy_vs_open['3'].n+')']]:(pv?[['Spread MAE (model / market)',n1(pv.spread_mae_model,3)+' / '+n1(pv.spread_mae_market,3)],['Best ATS',String(pv.best_ats||'—')]]:[]),
+      criteria:[{label:'500+ out-of-sample observations',pass:ov?ov.n>=500:null,val:ov?String(ov.n):'—'},{label:'Walk-forward tested against a real line archive',pass:true,val:'2015–2025'},{label:'No hindsight: cold replay in kickoff order',pass:true,val:'by construction'},{label:'Beats the closing line',pass:ov?ov.mae_raw<ov.mae_market:(pv?!!pv.beats_closing_line:null),val:ov?(n1(ov.mae_raw,2)+' vs '+n1(ov.mae_market,2)):'—'},{label:'Directional close-anticipation robust in season',pass:v12&&v12.directional_robustness&&v12.directional_robustness.th_3?!!v12.directional_robustness.th_3.overall.robust:null,val:v12&&v12.directional_robustness?(v12.directional_robustness.th_3.overall.toward_pct+'% at 3+'):'—'},{label:'Own graded CLV against captured quotes',pass:null,val:'not yet measured'},{label:'Daily self-check passing',pass:hp?hp.fails.length===0:null,val:hp?(hp.pass+'/'+hp.n):'no record'}],
+      changelog:[{v:(P&&P.model_version)||'v1.0.0',d:dateOf(P&&P.built_at),t:'Raw engine: the untouched control every later experiment is measured against.'},{v:cal?cal.calibration_version:'cfb_p4_cal_v1.1.0',d:dateOf(cal&&cal.generated_at),t:'Calibration experiment: optimal market blend put zero weight on the raw model. Recorded, not shipped.'},{v:v12?(window.EDCfbP4V12?EDCfbP4V12.correction_version:'cfb_p4_v1.2.0'):'cfb_p4_v1.2.0',d:dateOf(v12&&v12.generated_at),t:'Correction experiments: preseason prior, home-dog de-bias and movement model all rejected out of sample. Raw stays the shipped number.'}],
+      limits:['The raw model is about 0.8 pts of MAE worse than the closing line; a large disagreement is more often missing information than an edge.','Preseason (weeks 0–2) is the measured weak spot.','The model over-rates home dogs by roughly +3.7 pts on the market-defined slice.'],sources:[{nm:'Closing and opening lines',tier:'T0',src:'sportsdataverse/cfbfastR-data betting archive, 2006–2025, Pinnacle included'},{nm:'Schedules, scores, divisions',tier:'T0',src:'cfbfastR-data schedules'},{nm:'Rosters and talent composites',tier:'T0',src:'ESPN weekly sync (football/rosters)'},{nm:'Projection, drivers, outcome range',tier:'T3',model:'cfb_p4.engine_v1',src:'football/cfb_p4/engine.js'}],note:(cal&&cal.record&&cal.record.note)||''});
+    if(cal&&cal.record){
+      var cr=cal.record;
+      out.push({id:'p4_v11',name:'Power 4 v1.1 · market calibration',sport:'CFB P4',model:cal.calibration_version,stage:'experiment',status:'rejected',
+        sample:cr.n,sampleL:'games',metric:{k:'Blend weight on raw',v:String(cal.alpha.global),sub:'unclamped '+cal.alpha.global_unclamped},updated:cal.generated_at,
+        hypothesis:'A walk-forward least-squares shrinkage of the raw spread toward the closing line produces a calibrated number that beats both.',
+        method:[['Method',cal.method],['Basis',cal.basis],['Scheme',cal.scheme+' (also week and disagreement buckets)'],['Window',cr.window],['Sample',cr.n+' games']],
+        results:[['MAE raw / calibrated / market',n1(cr.mae_raw,4)+' / '+n1(cr.mae_calibrated,4)+' / '+n1(cr.mae_market,4)],['Optimal weight on the raw model','0 at every week and disagreement bucket'],['Close anticipation β',String(cal.beta_close_anticipation.global)],['Anticipated close vs open alone (MAE)',n1(cal.beta_close_anticipation.record_oos.mae_anticipated_vs_close,4)+' vs '+n1(cal.beta_close_anticipation.record_oos.mae_open_alone_vs_close,4)],['Close moved toward model at 3+ pts',cal.clv_proxy_vs_open['3'].moved_toward_model_pct+'% (n='+cal.clv_proxy_vs_open['3'].n+')']],
+        criteria:[{label:'Walk-forward: alpha fitted only on prior seasons',pass:true,val:'per year'},{label:'Calibrated number beats the raw model',pass:cr.mae_calibrated<cr.mae_raw,val:n1(cr.mae_calibrated,2)+' vs '+n1(cr.mae_raw,2)},{label:'Calibrated number beats the close',pass:cr.mae_calibrated<cr.mae_market,val:'equals the close (α = 0)'},{label:'Shipped as a number',pass:false,val:'none shown — a blend would equal the close'}],
+        changelog:[{v:cal.calibration_version,d:dateOf(cal.generated_at),t:cr.note}],limits:['Cold replay without the live efficiency feed, matching how the browser runs between trainings.'],sources:[{nm:'Opening and closing lines',tier:'T0',src:'cfbfastR-data betting archive'}],note:''});
+    }
+    if(v12){
+      function wf(x,k){return x&&x.record_oos?x.record_oos[k]:null;}
+      var pre=v12.preseason_prior,dog=v12.home_dog,mv=v12.movement_model,cb=v12.combined_record_oos;
+      out.push({id:'p4_v12',name:'Power 4 v1.2 · prior and correction experiments',sport:'CFB P4',model:(window.EDCfbP4V12&&EDCfbP4V12.correction_version)||'cfb_p4_v1.2.0',stage:'experiment',status:(pre.survived||dog.survived||mv.survived)?'validating':'rejected',
+        sample:cb?cb.n:null,sampleL:'games',metric:{k:'MAE raw → v1.2',v:cb?(n1(cb.mae_raw,3)+' → '+n1(cb.mae_v12,3)):'—',sub:'nothing survived'},updated:v12.generated_at,
+        hypothesis:'Three targeted corrections from the error dashboard improve the raw spread out of sample: a preseason rescale, a home-dog de-bias keyed on the model’s own call, and a movement model on the directional signal.',
+        method:[['Criteria',v12.criteria],['Frame check',cb?('n='+cb.n+', raw MAE '+n1(cb.mae_raw,4)+' matches the v1.1 frame'):'—'],['Preseason prior',pre.what],['Home-dog de-bias',dog.what],['Movement model',mv.what]],
+        results:[['Preseason prior (n='+wf(pre,'n')+')','raw '+n1(wf(pre,'mae_raw'),4)+' vs shrink '+n1(wf(pre,'mae_shrink'),4)+' · better in '+wf(pre,'years_better')+' years · '+(pre.survived?'survived':'rejected')],['Home-dog de-bias (n='+wf(dog,'n')+')','before '+n1(wf(dog,'mae_before'),4)+' vs after '+n1(wf(dog,'mae_after'),4)+' (Δ '+n1(wf(dog,'mae_before')-wf(dog,'mae_after'),3)+', bar 0.05) · '+(dog.survived?'survived':'rejected')],['Movement model (n='+wf(mv,'n')+')','Brier '+n1(wf(mv,'brier_model'),4)+' vs constant '+n1(wf(mv,'brier_constant_base'),4)+' · accuracy '+wf(mv,'accuracy_pct')+'% · '+(mv.survived?'survived':'rejected')],['Combined pipeline vs raw',cb?(n1(cb.mae_v12,4)+' vs '+n1(cb.mae_raw,4)+' — identical, surviving stages only'):'—']],
+        criteria:[{label:'Pooled OOS MAE improves by ≥ 0.05 pts (preseason prior)',pass:pre.survived===true?true:false,val:n1(wf(pre,'mae_raw')-wf(pre,'mae_shrink'),3)+' pts'},{label:'Beats raw in a majority of years (preseason prior)',pass:(function(){var y=String(wf(pre,'years_better')||'').split('/');return y.length===2?(+y[0]>+y[1]/2):null;})(),val:String(wf(pre,'years_better')||'—')},{label:'Pooled OOS MAE improves by ≥ 0.05 pts (home-dog)',pass:dog.survived===true,val:n1(wf(dog,'mae_before')-wf(dog,'mae_after'),3)+' pts'},{label:'Movement Brier beats base rate by ≥ 0.002',pass:mv.survived===true,val:n1(wf(mv,'brier_constant_base')-wf(mv,'brier_model'),4)},{label:'Shipped as an adjusted number',pass:false,val:'none — raw v1.0 remains the control'}],
+        changelog:[{v:(window.EDCfbP4V12&&EDCfbP4V12.correction_version)||'v1.2.0',d:dateOf(v12.generated_at),t:'All three corrections rejected out of sample. The robustness sweep established that the toward-model signal is in-season only.'}],
+        limits:['A correction keyed on the market line can never ship: it would make the model market-dependent.','Preseason weeks 0–2 are an information deficit, not a fixable scale.'],sources:[{nm:'Walk-forward tables',tier:'T2',src:'football/cfb_p4/research/report/v12_experiments.json'}],note:''});
+    }
+    if(window.WTA&&WTA.at){
+      var agg=null;try{agg=tddClvAgg();}catch(_){}
+      out.push({id:'wta_engine',name:'WTA research engine',sport:'WTA',model:'wta.research_score',stage:agg?'validating':'tracked',status:regStatus('wta.research_score',agg?'validating':'tracked'),
+        sample:agg?agg.n:null,sampleL:'graded CLV events',metric:{k:'Avg CLV vs close',v:agg?(sgn(agg.avg*100,2)+'%'):'—',sub:agg?('beat close '+Math.round(agg.beat*100)+'%'):'no graded CLV yet'},updated:WTA.meta&&(WTA.meta['last_research']||WTA.meta['wta_research_last']),
+        hypothesis:'A server-side grade on rank gap, dominance, upset risk, surface and form identifies the matches worth research attention; its calls are graded against the close on the watchlist.',
+        method:[['Grade','computed server-side by wta_research; the app never recomputes it'],['Slate',WTA.slate||'—'],['Watchlist',WTA.watch.length+' players'],['Evidence','graded CLV against the close, stored per player']],
+        results:agg?[['Pooled CLV vs close',sgn(agg.avg*100,2)+'%'],['Beat-close rate',Math.round(agg.beat*100)+'%'],['Graded events',String(agg.n)]]:[['Graded CLV','none yet']],
+        criteria:[{label:'Graded closing-line events on file',pass:agg?agg.n>0:false,val:agg?String(agg.n):'0'},{label:'Positive pooled CLV',pass:agg?agg.avg>0:null,val:agg?(sgn(agg.avg*100,2)+'%'):'—'},{label:'Registry status validated',pass:regStatus('wta.research_score','tracked')==='validated',val:regStatus('wta.research_score','tracked')}],
+        changelog:[],limits:(window.RS_LIMITS&&RS_LIMITS.wta)||[],sources:(window.RS_PROV&&RS_PROV.wta)||[],note:''});
+    }
+    /* research notes from the validation gate */
+    var LAB=window.LAB;
+    if(LAB&&LAB.notes)LAB.notes.forEach(function(nn){
+      var vals=(LAB.vals&&LAB.vals[nn.id])||[],v=null;
+      if(nn.promoted_by)v=vals.filter(function(x){return x.id===nn.promoted_by;})[0];
+      if(!v&&vals.length)v=vals[vals.length-1];
+      var hm=(nn.findings&&nn.findings.headline_metric)||{};
+      var stage={exploratory:'experiment',validating:'validating',promoted:'validated',active:'production',retired:'experiment'}[nn.status]||'idea';
+      var status={exploratory:'experimental',validating:'validating',promoted:'validated',active:'production',retired:'archived'}[nn.status]||'idea';
+      var crit=null;
+      if(v){var st=v.sample_target,sa=v.sample_actual,th=v.clv_threshold,cm=v.clv_measured,hc=v.holdout_clv;
+        crit=[{label:'Sample ≥ '+(st!=null?st:'—'),pass:(sa==null||st==null)?null:(+sa>=+st),val:st==null?'no bar registered':(sa==null?'not run':(sa+' / '+st))},
+              {label:'CLV > '+(th!=null?th+'%':'—'),pass:(cm==null||th==null)?null:(+cm>+th),val:th==null?'no bar registered':(cm==null?'not run':(sgn(cm,2)+'%'))},
+              {label:'Holdout CLV > '+(th!=null?th+'%':'—'),pass:(hc==null||th==null)?null:(+hc>+th),val:th==null?'no bar registered':(hc==null?'not run':(sgn(hc,2)+'%'))}];}
+      out.push({id:'note_'+nn.id,name:nn.title||('Research note #'+nn.note_no),sport:String(nn.sport||'').toUpperCase(),model:'research_notes #'+String(nn.note_no==null?'':nn.note_no).padStart(3,'0'),stage:stage,status:status,
+        sample:hm.sample!=null?hm.sample:null,sampleL:'observations',metric:{k:'Headline',v:hm.value!=null?String(hm.value):'—',sub:hm.baseline?('baseline '+hm.baseline):''},updated:nn.updated_at||nn.promoted_at||nn.created_at,
+        hypothesis:nn.hypothesis||'',method:[['Summary',nn.summary||'—'],['Governing validation',v?('#'+v.seq):'none registered']],
+        results:hm.value!=null?[['Headline metric',String(hm.value)+(hm.sample!=null?(' (n='+hm.sample+')'):'')],['Baseline',hm.baseline||'—']]:[],
+        criteria:crit,changelog:[],limits:Array.isArray(nn.limitations)?nn.limitations:[],sources:[{nm:'Findings',tier:'T3',src:'public.research_notes.findings'},{nm:'Validation bars and measured CLV',tier:'T2',src:'public.note_validations'}],note:nn.status==='retired'?('Retired: '+(nn.retired_reason||'no reason recorded')):''});
+    });
+    return out;
+  }
+  function expById(id){var xs=experiments();for(var i=0;i<xs.length;i++)if(xs[i].id===id)return xs[i];return null;}
+  function expCard(x){
+    return '<div class="lab-exp" role="button" tabindex="0" onclick="labOpen(\'exp:'+attr(x.id)+'\')">'
+      +'<div class="hd"><span class="nm">'+esc(x.name)+'</span>'+badge(x.status)+'</div>'
+      +'<div class="sub mono">'+esc(x.sport)+' · '+esc(x.model)+'</div>'
+      +'<div class="mets">'+metric(x.sampleL||'sample',x.sample!=null?String(x.sample):'—')+metric(x.metric.k,x.metric.v,x.metric.sub,'mdl')+'</div>'
+      +lifecycle(x.stage,true)
+      +'<div class="ft"><span>Updated '+esc(agoOf(x.updated))+'</span><span class="lnk">Open experiment ›</span></div></div>';
+  }
+
+  /* ----------------------------------------------------------- scorecard */
+  function scorecard(){
+    var xs=experiments().filter(function(x){return ['football_nfl','football_cfb','cfb_p4','wta_engine'].indexOf(x.id)>=0;});
+    var nfl=L.reports.nfl,cfb=L.reports.cfb,sl=L.reports.slices;
+    return xs.map(function(x){
+      var rows=[];
+      rows.push(['Status',badge(x.status),true]);
+      rows.push(['Sample',x.sample!=null?(x.sample+' '+x.sampleL):'not yet measured']);
+      rows.push([x.metric.k,x.metric.v+(x.metric.sub?(' · '+x.metric.sub):'')]);
+      if(x.id==='football_nfl'){var e1=nfl?ece(nfl.calibration_2016_2025):null;rows.push(['Calibration error (ECE)',e1?n1(e1.ece*100,1)+' pp over '+e1.n:'not yet measured']);rows.push(['CLV','not yet measured · no graded CLV of its own']);var h1=healthChecks('nfl_');rows.push(['Data health',h1?(Math.round(h1.pass/h1.n*100)+'% checks passing ('+h1.pass+'/'+h1.n+')'):'no self-check record']);}
+      if(x.id==='football_cfb'){var e2=cfb?ece(cfb.calibration_test):null;rows.push(['Calibration error (ECE)',e2?n1(e2.ece*100,1)+' pp over '+e2.n:'not yet measured']);rows.push(['CLV','not measured · no line archive in training']);}
+      if(x.id==='cfb_p4'){rows.push(['ATS at 1+ pts vs close',sl?(sl.overall.ats_raw_1plus.win_pct+'%'):'—']);rows.push(['Close moved toward model (3+)',sl?(sl.clv_proxy_vs_open['3'].moved_toward_model_pct+'%'):'—']);rows.push(['CLV','not yet measured · direction only']);var h2=healthChecks('p4_');rows.push(['Data health',h2?(Math.round(h2.pass/h2.n*100)+'% checks passing ('+h2.pass+'/'+h2.n+')'):'no self-check record']);}
+      if(x.id==='wta_engine'){rows.push(['Calibration','not yet measured']);}
+      return '<div class="fb-card lab-score"><div class="hd"><span class="nm">'+esc(x.name)+'</span><span class="mono">'+esc(x.model)+'</span></div>'+kv(rows)+'<div class="fb-btns"><button class="fb-btn" onclick="labOpen(\'exp:'+attr(x.id)+'\')">Open experiment</button></div></div>';
+    }).join('');
+  }
+
+  /* -------------------------------------------------------------- home */
+  var TOOLS=[
+    {id:'sandbox',ic:'ratings',t:'Model sandbox',d:'Change supported assumptions and rerun the shipped engine.'},
+    {id:'scenario',ic:'research',t:'Scenario tester',d:'Measure sensitivity to player, venue, weather and market changes.'},
+    {id:'sensitivity',ic:'market',t:'Model sensitivity',d:'Which inputs contribute most to a projection.'},
+    {id:'calibration',ic:'watch',t:'Calibration lab',d:'Compare forecast confidence with observed results.'},
+    {id:'autopsy',ic:'history',t:'Signal autopsy',d:'Reconstruct what EdgeDesk knew before the close.'},
+    {id:'versions',ic:'rankings',t:'Model versions',d:'Compare releases and their recorded performance.'},
+    {id:'failure',ic:'team',t:'Failure analysis',d:'Where the models perform poorly, by slice.'},
+    {id:'walkforward',ic:'live',t:'Walk-forward testing',d:'Out-of-sample windows, folds and metrics.'},
+    {id:'marketlab',ic:'market',t:'Market lab',d:'Consensus, sharp-only, no-vig and best price from stored quotes.'},
+    {id:'features',ic:'game',t:'Feature explorer',d:'Definition, source, transformation and distribution of every input.'},
+    {id:'provenance',ic:'fighter',t:'Data provenance',d:'Where every model input came from, and how fresh it is.'},
+    {id:'record',ic:'history',t:'Research record',d:'Historical research output, graded against the close.'}
+  ];
+  function toolById(id){for(var i=0;i<TOOLS.length;i++)if(TOOLS[i].id===id)return TOOLS[i];return null;}
+  function homeHTML(){
+    var xs=experiments(),active=xs.filter(function(x){return ['rejected','archived','failed'].indexOf(x.status)<0;}),hist=xs.filter(function(x){return ['rejected','archived','failed'].indexOf(x.status)>=0;});
+    var h='';
+    h+=sec('Active experiments',active.length+' running');
+    h+=active.length?('<div class="lab-exps">'+active.map(expCard).join('')+'</div>'):none('No active experiment is on file.');
+    h+=sec('Model lifecycle');
+    h+='<div class="fb-card">'+lifecycle('tracked')+'<p class="fb-ms-d" style="margin-top:10px">EdgeDesk does not promote experimental research into production until predefined validation requirements are satisfied. A stage is read from the record — a walk-forward report, a registered validation bar, a graded closing-line result — never asserted.</p>'
+      +'<div class="lab-kv small">'+[['Idea','a hypothesis without a frozen bar'],['Experiment','a method and a sample, results recorded'],['Tracked','out-of-sample record shipped with the model'],['Validating','a pre-registered bar (sample, CLV, holdout) being measured'],['Validated','every registered bar cleared'],['Production','active in the product with a graded record']].map(function(r){return '<div class="r"><span class="k">'+r[0]+'</span><span class="v">'+r[1]+'</span></div>';}).join('')+'</div></div>';
+    h+=sec('Core lab tools');
+    h+='<div class="fb-tools">'+TOOLS.slice(0,6).map(function(t){return rsTkTool(t.ic,t.t,t.d,"labOpen('"+t.id+"')");}).join('')+'</div>';
+    h+='<div class="fb-more"><button class="fb-tgl" id="labMoreBtn" aria-expanded="'+(RS_TK_OPEN.labMore?'true':'false')+'" aria-controls="labMoreCol" onclick="rsTkColToggle(\'labMore\',\'Fewer tools\',\'Advanced tools\')">'+(RS_TK_OPEN.labMore?'Fewer tools':'Advanced tools')+'</button></div>'
+      +'<div class="fb-col'+(RS_TK_OPEN.labMore?' open':'')+'" id="labMoreCol"><div><div class="fb-tools" style="margin-top:var(--sp2)">'+TOOLS.slice(6).map(function(t){return rsTkTool(t.ic,t.t,t.d,"labOpen('"+t.id+"')");}).join('')+'</div></div></div>';
+    h+=sec('Model scorecard','only measured metrics');
+    h+=scorecard();
+    h+=sec('Walk-forward testing','out-of-sample');
+    h+=walkforwardSummary();
+    if(hist.length){h+=sec('Experiment history',hist.length+' closed');h+='<div class="lab-exps">'+hist.map(expCard).join('')+'</div>';}
+    h+=sec('Data provenance');
+    h+=provenanceSummary();
+    return h;
+  }
+
+  /* -------------------------------------------------------- walk-forward */
+  function walkforwardSummary(){
+    var nfl=L.reports.nfl,cal=window.EDCfbP4Calibration,cfb=L.reports.cfb;
+    var h='';
+    if(nfl){var t=nfl.spread_model.test_2016_2025,u=nfl.spread_model.tune_2003_2015;
+      h+='<div class="fb-card"><div class="lab-wf-h"><span class="nm">Football engine · NFL</span><span class="fb-badge mut"><i></i>Out-of-sample</span></div>'
+        +kv([['Training (tune)','2003–2015 · '+u.n+' games · hyperparameters frozen on ≤2015'],['Test','2016–2025 · '+t.n+' games · 10 chronological season folds'],['Spread MAE / RMSE',n1(t.mae_model,3)+' / '+n1(t.rmse_model,3)+' · market '+n1(t.mae_market,3)],['Brier / log loss',n1(nfl.winprob_model.brier,4)+' / '+n1(nfl.winprob_model.log_loss,4)+' · no-vig market '+n1(nfl.winprob_market_novig.brier,4)]])
+        +'<div class="fb-btns"><button class="fb-btn" onclick="labOpen(\'walkforward\')">Open walk-forward</button></div></div>';}
+    else h+=none('The NFL walk-forward report (football/research/report/report_nfl.json) did not load'+(L.repErr.nfl?(': '+esc(L.repErr.nfl)):'.'));
+    if(cal&&cal.walk_forward){var last=cal.walk_forward[cal.walk_forward.length-1];
+      h+='<div class="fb-card"><div class="lab-wf-h"><span class="nm">Power 4 · calibration frame</span><span class="fb-badge mut"><i></i>Out-of-sample</span></div>'
+        +kv([['Window',cal.record.window+' · '+cal.record.n+' games · '+cal.walk_forward.length+' yearly folds'],['Fit rule','alpha fitted only on seasons before each evaluated season'],['MAE raw / market',n1(cal.record.mae_raw,3)+' / '+n1(cal.record.mae_market,3)],['Latest fold',last.year+' · n='+last.n+' · raw '+n1(last.mae_raw,3)+' · market '+n1(last.mae_market,3)]])+'</div>';}
+    h+='<div class="fb-note">Each evaluation period uses only information available before that period. No random splits anywhere.</div>';
+    return h;
+  }
+  function walkforwardTool(){
+    var nfl=L.reports.nfl,cfb=L.reports.cfb,cal=window.EDCfbP4Calibration,v12=L.reports.v12,h='';
+    h+='<p class="fb-ms-d">Each evaluation period uses only information available before that period. Training windows tune hyperparameters; test windows are never touched by the fit. <b>Every metric below is out-of-sample unless labelled TRAINING.</b></p>';
+    if(nfl){
+      var sm=nfl.spread_model,tm=nfl.total_model;
+      h+=sec('Football engine · NFL','model '+((window.EDFootballParams&&EDFootballParams.model_version)||''));
+      h+='<div class="fb-card">'+kv([['Training window','2003–2015 (data from 1999) · '+sm.tune_2003_2015.n+' games'],['Test window','2016–2025 · '+sm.test_2016_2025.n+' games'],['Folds','10 chronological seasons; the season blend is refit each season on prior seasons'],['Games scored in all',String(nfl.n_games_scored)]])
+        +tbl(['Window','n','Spread MAE','RMSE','Market MAE','corr'],[['TRAINING 2003–2015',sm.tune_2003_2015.n,n1(sm.tune_2003_2015.mae_model,3),n1(sm.tune_2003_2015.rmse_model,3),n1(sm.tune_2003_2015.mae_market,3),n1(sm.tune_2003_2015.corr_with_market,3)],['TEST 2016–2025',sm.test_2016_2025.n,n1(sm.test_2016_2025.mae_model,3),n1(sm.test_2016_2025.rmse_model,3),n1(sm.test_2016_2025.mae_market,3),n1(sm.test_2016_2025.corr_with_market,3)]])
+        +tbl(['Totals','n','Total MAE','RMSE','Market MAE','corr'],[['TRAINING',tm.tune_2003_2015.n,n1(tm.tune_2003_2015.mae_model,3),n1(tm.tune_2003_2015.rmse_model,3),n1(tm.tune_2003_2015.mae_market,3),n1(tm.tune_2003_2015.corr_with_market,3)],['TEST',tm.test_2016_2025.n,n1(tm.test_2016_2025.mae_model,3),n1(tm.test_2016_2025.rmse_model,3),n1(tm.test_2016_2025.mae_market,3),n1(tm.test_2016_2025.corr_with_market,3)]])
+        +tbl(['Win probability (TEST)','n','Brier','Log loss'],[['Model',nfl.winprob_model.n,n1(nfl.winprob_model.brier,4),n1(nfl.winprob_model.log_loss,4)],['No-vig market',nfl.winprob_market_novig.n,n1(nfl.winprob_market_novig.brier,4),n1(nfl.winprob_market_novig.log_loss,4)]])
+        +'<div class="lab-h6">Season blend weights (refit each season, prior seasons only)</div>'
+        +tbl(['Season','Model weight','Market weight','Intercept'],Object.keys(nfl.spread_blend.blend_coefs_by_season).sort().map(function(y){var c=nfl.spread_blend.blend_coefs_by_season[y];return [y,n1(c[0],3),n1(c[1],3),n1(c[2],3)];}))
+        +'<div class="fb-note">Blend MAE '+n1(nfl.spread_blend.test_mae_blend,3)+' vs market '+n1(nfl.spread_blend.test_mae_market,3)+': the market carries almost all of the weight in every season. CLV: not measured — only closing lines are archived, so no opener-to-close test exists for this model.</div></div>';
+    }
+    if(cfb){
+      h+=sec('Football engine · CFB v1');
+      h+='<div class="fb-card">'+tbl(['Window','n','Margin MAE','RMSE','Elo bench','HFA only','Total MAE'],['2006_2013','2014_2020','2021_2025_portal','test_2016_2025'].map(function(k){var r=cfb[k];return [k.replace(/_/g,' ')+(k==='test_2016_2025'?' (TEST)':''),r.n,n1(r.mae_margin_model,3),n1(r.rmse_margin_model,3),n1(r.mae_margin_elo_benchmark,3),n1(r.mae_margin_hfa_only,3),n1(r.mae_total_model,3)];}))
+        +'<div class="fb-note">Brier '+n1(cfb.winprob_model_test.brier,4)+' · log loss '+n1(cfb.winprob_model_test.log_loss,4)+' on the test window. No market metric: no line archive was in the training data.</div></div>';
+    }
+    if(cal&&cal.walk_forward){
+      h+=sec('Power 4 · yearly folds','calibration frame');
+      h+='<div class="fb-card">'+tbl(['Year','n','Raw MAE','Market MAE','α (raw weight)','β (close anticipation)'],cal.walk_forward.map(function(y){return [String(y.year),y.n,n1(y.mae_raw,3),n1(y.mae_market,3),String(y.alpha_global),n1(y.beta_close_anticipation,3)];}))
+        +'<div class="fb-note">'+esc(cal.basis)+'</div></div>';
+    }
+    if(v12&&v12.preseason_prior&&v12.preseason_prior.walk_forward){
+      h+=sec('Power 4 · v1.2 preseason prior folds');
+      h+='<div class="fb-card">'+tbl(['Year','fit n','eval n','Raw MAE','Shrink MAE','Affine MAE'],v12.preseason_prior.walk_forward.map(function(y){return [String(y.year),y.n_fit,y.n_eval,n1(y.mae_raw,3),n1(y.mae_shrink,3),n1(y.mae_affine,3)];}))+'</div>';
+    }
+    if(!nfl&&!cfb&&!cal)h+=none('No walk-forward report is reachable from this session.');
+    return h;
+  }
+
+  /* ---------------------------------------------------------- calibration */
+  function calPanel(bins,o){
+    var e=ece(bins);
+    var rows=bins.map(function(b){var pp=Math.round(b.p_pred*100),po=Math.round(b.p_obs*100);
+      return '<div class="lab-cal"><span class="b">'+esc(b.bin)+'</span><span class="trk"><span class="pred" style="width:'+pp+'%"></span><span class="obs" style="left:'+po+'%"></span></span><span class="n">n='+b.n+'</span><span class="v">'+pp+'% → <b>'+po+'%</b></span></div>';}).join('');
+    return '<div class="fb-card"><div class="lab-wf-h"><span class="nm">'+esc(o.name)+'</span><span class="fb-badge '+(e&&e.n>=1000?'blue':'amber')+'"><i></i>'+(e?('n='+e.n):'no sample')+'</span></div>'
+      +kv([['What','home win probability from the fair spread vs observed home wins'],['Window',o.window],['Model version',o.version],['Sample',e?(e.n+' games in '+bins.length+' bins'):'—'],['Calibration error (ECE)',e?(n1(e.ece*100,1)+' pp, weighted by bin count'):'—'],['Brier',o.brier!=null?n1(o.brier,4):'not measured']])
+      +'<div class="lab-cal-h"><span>Predicted bin</span><span>predicted ▮ vs observed ●</span></div>'+rows
+      +'<div class="fb-note">Bins under 50 observations are shown but should not be read as evidence. Calibration here is the shipped walk-forward test; no live re-calibration is performed.</div></div>';
+  }
+  function calibrationTool(){
+    var nfl=L.reports.nfl,cfb=L.reports.cfb,h='';
+    h+='<p class="fb-ms-d">Does forecast confidence match what happened? A well-calibrated 60% bin wins about 60% of the time. Only the shipped out-of-sample tests are shown; nothing is re-fit here.</p>';
+    if(nfl&&nfl.calibration_2016_2025)h+=calPanel(nfl.calibration_2016_2025,{name:'NFL win probability',window:'2016–2025 out-of-sample',version:(window.EDFootballParams&&EDFootballParams.model_version)||'edgedesk_football_v1.0.0',brier:nfl.winprob_model.brier});
+    if(cfb&&cfb.calibration_test)h+=calPanel(cfb.calibration_test,{name:'CFB v1 win probability',window:'2016–2025 out-of-sample',version:(window.EDFootballParams&&EDFootballParams.model_version)||'edgedesk_football_v1.0.0',brier:cfb.winprob_model_test.brier});
+    h+='<div class="fb-card"><div class="lab-wf-h"><span class="nm">Power 4 spread intervals</span><span class="fb-badge mut"><i></i>Not yet measured</span></div><p class="fb-ms-d">The Power 4 calibration record measures a spread blend against the close (α = 0, see Model versions), not probability bins. Interval coverage for p10–p90 has not been measured.</p></div>';
+    h+='<div class="fb-card"><div class="lab-wf-h"><span class="nm">Research grades · WTA</span><span class="fb-badge mut"><i></i>Not yet measured</span></div><p class="fb-ms-d">Grade-level calibration would need graded outcomes per grade bucket; the watchlist stores CLV per player, not per grade. Insufficient observations for reliable calibration.</p></div>';
+    if(!nfl&&!cfb)h+=none('No calibration report is reachable from this session.');
+    return h;
+  }
+
+  /* ------------------------------------------------------------ versions */
+  function versionsTool(){
+    var P=window.EDFootballParams,Q=window.EDCfbP4Params,cal=window.EDCfbP4Calibration,V=window.EDCfbP4V12,sl=L.reports.slices,nfl=L.reports.nfl,h='';
+    h+='<p class="fb-ms-d">Every release on file, with its recorded out-of-sample performance. A version that did not survive its own criteria is kept here rather than hidden.</p>';
+    h+=sec('Power 4 lineage','raw v1.0 is the control');
+    var rows=[];
+    rows.push(['<b>v1.0.0 raw engine</b>',badge('current'),dateOf(Q&&Q.built_at),sl?String(sl.overall.n):'—',sl?n1(sl.overall.mae_raw,3):'—',sl?n1(sl.overall.mae_market,3):'—',sl?(sl.overall.ats_raw_1plus.win_pct+'%'):'—']);
+    if(cal)rows.push(['<b>v1.1.0 calibration</b>',badge('archived'),dateOf(cal.generated_at),String(cal.record.n),n1(cal.record.mae_calibrated,3)+' (= close, α 0)',n1(cal.record.mae_market,3),'—']);
+    if(V)rows.push(['<b>v1.2.0 corrections</b>',badge('rejected'),dateOf(V.generated_at),V.combined_record_oos?String(V.combined_record_oos.n):'—',V.combined_record_oos?n1(V.combined_record_oos.mae_v12,3):'—',V.frame_check?n1(V.frame_check.mae_market,3):'—','—']);
+    h+='<div class="fb-card">'+tbl(['Version','Status','Deployed','n','Spread MAE','Market MAE','ATS 1+'],rows.map(function(r){return [r[0].replace(/<[^>]+>/g,''),r[1],r[2],r[3],r[4],r[5],r[6]];}))
+      +'<div class="lab-h6">Changelog</div>'
+      +'<div class="lab-log"><div class="e"><span class="v">'+esc(Q?Q.model_version||'v1.0.0':'v1.0.0')+'</span><span class="d">'+esc(dateOf(Q&&Q.built_at))+'</span><span class="t">Raw engine shipped: five layers, trained through '+esc(String(Q&&Q.trained_through_season||'2025'))+'. The untouched control.</span></div>'
+      +(cal?'<div class="e"><span class="v">'+esc(cal.calibration_version)+'</span><span class="d">'+esc(dateOf(cal.generated_at))+'</span><span class="t">'+esc(cal.record.note)+'</span></div>':'')
+      +(V?'<div class="e"><span class="v">'+esc(V.correction_version)+'</span><span class="d">'+esc(dateOf(V.generated_at))+'</span><span class="t">'+esc(V.lineage)+' Criteria: '+esc(V.criteria)+'</span></div>':'')+'</div></div>';
+    h+=sec('Football engine · NFL + CFB v1');
+    var vs=P&&P.validation_summary;
+    h+='<div class="fb-card">'+kv([['Version',(P&&P.model_version)||'—'],['Status',badge('current'),true],['Deployed',dateOf(P&&P.built_at)],['Trained through',String(P&&P.nfl.trained_through_season||'—')],['NFL spread MAE / market',vs?(n1(vs.nfl.spread_mae_model,2)+' / '+n1(vs.nfl.spread_mae_closing_market,3)):'—'],['Sample',nfl?(nfl.spread_model.test_2016_2025.n+' OOS games'):'—'],['Ablation (spread MAE without…)',nfl?('QB layer '+n1(nfl.ablation_spread_mae_test.no_qb,3)+' · carry-over '+n1(nfl.ablation_spread_mae_test.no_carryover,3)+' · points only '+n1(nfl.ablation_spread_mae_test.points_only,3)+' · full '+n1(nfl.ablation_spread_mae_test.full_model,3)):'—']])
+      +'<div class="lab-h6">Changelog</div><div class="lab-log"><div class="e"><span class="v">'+esc((P&&P.model_version)||'v1.0.0')+'</span><span class="d">'+esc(dateOf(P&&P.built_at))+'</span><span class="t">Initial release. No previous version is on file, so there is nothing to compare against yet; the next parameter build will appear here beside it.</span></div></div></div>';
+    h+=sec('Model registry','research_model_current');
+    var rows2=(window.RS_MODELS&&RS_MODELS.rows)||null;
+    if(!rows2||!rows2.length)h+=none(RS_MODELS&&RS_MODELS.state==='unavailable'?'The model registry could not be read this session.':'The registry holds no rows. Until a version and a holdout result are registered, every model reads as Experimental.');
+    else h+='<div class="fb-card">'+tbl(['Model','Version','Status','Holdout','Updated'],rows2.map(function(r){var res=rsField(r,['holdout_result','result','results','holdout','metrics','computed_metrics']);return [String(rsField(r,['model_key','key','name','model_name','model'])||'—'),String(rsField(r,['version','model_version'])||'—'),String(rsField(r,['status','model_status'])||'—'),res==null?'not recorded':(typeof res==='object'?JSON.stringify(res).slice(0,60):String(res)),dateOf(rsField(r,['updated_at','registered_at','created_at']))];}))+'</div>';
+    return h;
+  }
+
+  /* ------------------------------------------------------------- failure */
+  function sliceTable(title,obj,keyLabel){
+    var ks=Object.keys(obj);
+    return '<div class="fb-card"><div class="lab-wf-h"><span class="nm">'+esc(title)+'</span></div>'+tbl([keyLabel,'n','Raw MAE','Market MAE','Excess','Bias','RMSE','ATS 1+'],ks.map(function(k){var r=obj[k];return [k.replace(/_/g,' '),r.n,n1(r.mae_raw,2),n1(r.mae_market,2),sgn(r.mae_raw-r.mae_market,2),sgn(r.bias_raw,2),n1(r.rmse_raw,2),r.ats_raw_1plus?(r.ats_raw_1plus.win_pct+'%'):'—'];}))+'</div>';
+  }
+  function failureTool(){
+    var sl=L.reports.slices,nfl=L.reports.nfl,h='';
+    h+='<p class="fb-ms-d">Where does the model break? Error is sliced exactly as the shipped dashboard sliced it. <b>Excess</b> is raw MAE minus market MAE on the same games: the cost of using the model number instead of the close.</p>';
+    if(sl){
+      var modes=[];
+      function push(group,obj){Object.keys(obj).forEach(function(k){var r=obj[k];if(r.n>=50)modes.push({g:group,k:k,ex:r.mae_raw-r.mae_market,n:r.n,bias:r.bias_raw});});}
+      push('disagreement',sl.by_disagreement);push('week bucket',sl.by_week_bucket);push('side',sl.by_fav_dog);push('season',sl.by_season);push('home conference',sl.by_home_conference);
+      modes.sort(function(a,b){return b.ex-a.ex;});
+      h+=sec('Common failure modes · Power 4','computed from the shipped slices');
+      h+='<div class="fb-card"><div class="lab-h6">Largest excess error over the close (n ≥ 50)</div>'+bars(modes.slice(0,6).map(function(m){return {l:m.g+' · '+m.k.replace(/_/g,' ')+' (n='+m.n+')',v:m.ex};}),' pts')
+        +'<div class="fb-note">Reading: the model’s error explodes as its disagreement with the close grows — at 14+ pts of disagreement the raw MAE is '+n1(sl.by_disagreement.ge14.mae_raw,1)+' against '+n1(sl.by_disagreement.ge14.mae_market,1)+' for the close. Big gaps are missing information, not edges. The home-dog slice carries a '+sgn(sl.by_fav_dog.home_dog.bias_raw,1)+' pt bias.</div></div>';
+      h+=sliceTable('By disagreement with the close',sl.by_disagreement,'Gap');
+      h+=sliceTable('By week bucket',sl.by_week_bucket,'Weeks');
+      h+=sliceTable('By side',sl.by_fav_dog,'Side');
+      h+=sliceTable('By season',sl.by_season,'Season');
+      h+=sliceTable('By home conference',sl.by_home_conference,'Conference');
+      h+='<div class="fb-note">Overall n='+sl.overall.n+' · raw MAE '+n1(sl.overall.mae_raw,3)+' · market '+n1(sl.overall.mae_market,3)+'. Median error and the worst decile are not in the shipped record and are not estimated here. CLV: direction only ('+sl.clv_proxy_vs_open['3'].moved_toward_model_pct+'% of 3+ pt disagreements saw the close move toward the model).</div>';
+    }else h+=none('The Power 4 error dashboard (error_slices.json) did not load'+(L.repErr.slices?(': '+esc(L.repErr.slices)):'.'));
+    if(nfl){
+      h+=sec('NFL · by size of disagreement','ATS vs the close, out of sample');
+      h+='<div class="fb-card">'+tbl(['Gap ≥','n','Wins','Win %','p (one-sided)'],Object.keys(nfl.ats_spread_vs_close_test).sort(function(a,b){return +a-+b;}).map(function(k){var r=nfl.ats_spread_vs_close_test[k];return [k+' pts',r.n,r.wins,r.win_pct+'%',String(r.binom_p_one_sided)];}))
+        +'<div class="lab-h6">What each layer is worth (ablation, spread MAE on the test window)</div>'+bars([{l:'Remove QB layer',v:nfl.ablation_spread_mae_test.no_qb-nfl.ablation_spread_mae_test.full_model},{l:'Remove season carry-over',v:nfl.ablation_spread_mae_test.no_carryover-nfl.ablation_spread_mae_test.full_model},{l:'Points only (no EPA)',v:nfl.ablation_spread_mae_test.points_only-nfl.ablation_spread_mae_test.full_model}],' MAE')
+        +'<div class="fb-note">Error by QB uncertainty, injury status, weather or confidence bucket is not in the shipped NFL record and is not estimated here.</div></div>';
+    }
+    return h;
+  }
+
+  /* -------------------------------------------- football bridge helpers */
+  function FBL(){return window.FBLab||null;}
+  function needFootball(tool){
+    var B=FBL();
+    if(!B)return '<div class="fb-card">'+none('The football engine module has not parsed yet. Reload the page.')+'</div>';
+    if(B.ready())return null;
+    if(B.loading&&B.loading())return '<div class="fb-card"><div class="fb-skel" style="height:14px;width:60%;margin-bottom:8px"></div><div class="fb-skel" style="height:14px;width:40%"></div><div class="fb-note" style="margin-top:8px">Loading the football engine and the slate…</div></div>';
+    return '<div class="fb-card"><p class="fb-ms-d">This tool re-runs the shipped football engine in the browser. Load it first: the NFL slate, ratings and market joins come from the same loaders the Football tab uses.</p><div class="fb-btns"><button class="fb-btn pri" onclick="labEnsureFootball(\''+tool+'\')">Load football engine</button></div></div>';
+  }
+  window.labEnsureFootball=function(tool){var B=FBL();if(!B)return;labRender();B.ensure().then(function(){labRender();}).catch(function(){labRender();});};
+  function gameSelect(games,cur,onchange){
+    return '<select class="stsearch lab-sel" onchange="'+onchange+'">'+games.map(function(g){return '<option value="'+esc(g.gid)+'"'+(g.gid===cur?' selected':'')+'>'+esc(g.label)+'</option>';}).join('')+'</select>';
+  }
+  function pickGame(games,key){var cur=L.sel[key];for(var i=0;i<games.length;i++)if(games[i].gid===cur)return games[i];return games[0]||null;}
+  function homeLine(v){return (v==null||!isFinite(v))?'—':((-v>0?'+':'')+(-v).toFixed(1));}
+
+  /* -------------------------------------------------------------- sandbox */
+  var SB_DEF={home_rest:null,away_rest:null,home_qb:true,away_qb:true,div_game:null,roof:null,temp:null,wind:null,week:null,spread:null,total:null};
+  L.sb=L.sb||{};
+  function sbState(g){var s=L.sb[g.gid];if(!s){s={};for(var k in SB_DEF)s[k]=SB_DEF[k];L.sb[g.gid]=s;}return s;}
+  function sbReq(g,s){
+    var r={};for(var k in g.req)r[k]=g.req[k];
+    if(s.home_rest!=null)r.home_rest=+s.home_rest;if(s.away_rest!=null)r.away_rest=+s.away_rest;
+    if(s.home_qb===false)r.home_qb_id=null;if(s.away_qb===false)r.away_qb_id=null;
+    if(s.div_game!=null)r.div_game=s.div_game?1:0;
+    if(s.roof!=null)r.roof=s.roof;if(s.temp!=null)r.temp=+s.temp;if(s.wind!=null)r.wind=+s.wind;if(s.week!=null)r.week=+s.week;
+    return r;
+  }
+  function sbMkt(g,s){var m={};for(var k in g.mkt)m[k]=g.mkt[k];if(s.spread!=null)m.spread_line=-(+s.spread);if(s.total!=null)m.total_line=+s.total;return m;}
+  window.labSbSet=function(gid,k,v){var s=L.sb[gid];if(!s)return;if(v===''||v==null)s[k]=null;else if(k==='home_qb'||k==='away_qb')s[k]=(v==='1');else if(k==='div_game')s[k]=(v==='1');else if(k==='roof')s[k]=v;else s[k]=+v;labRender();};
+  window.labSbReset=function(gid){delete L.sb[gid];labRender();};
+  window.labSel=function(key,v){L.sel[key]=v;labRender();};
+  function ctl(gid,k,label,cur,base,type,opts){
+    var id='sb_'+gid.replace(/[^a-z0-9]/gi,'_')+'_'+k;
+    var h='<div class="lab-ctl"><label for="'+id+'"><span>'+esc(label)+'</span><span class="cur mono">'+esc(cur)+'</span></label>';
+    if(type==='range')h+='<input id="'+id+'" type="range" min="'+opts.min+'" max="'+opts.max+'" step="'+(opts.step||1)+'" value="'+esc(cur)+'" oninput="labSbSet(\''+attr(gid)+'\',\''+k+'\',this.value)" aria-label="'+esc(label)+'">';
+    else if(type==='toggle')h+='<div class="stseg lab-seg" role="group" aria-label="'+esc(label)+'">'+opts.map(function(o){return '<button class="'+(String(cur)===String(o[0])?'on':'')+'" onclick="labSbSet(\''+attr(gid)+'\',\''+k+'\',\''+o[0]+'\')">'+esc(o[1])+'</button>';}).join('')+'</div>';
+    h+='<div class="rng">'+esc(opts.range||'')+(base!=null?(' · feed: '+esc(base)):'')+'</div></div>';
+    return h;
+  }
+  function sandboxTool(){
+    var gate=needFootball('sandbox');if(gate)return '<p class="fb-ms-d">Change supported assumptions and see how the projection responds. Only inputs the shipped engine actually reads are exposed.</p>'+gate;
+    var B=FBL(),games=B.nflGames();
+    if(!games.length)return none('No NFL game inside the next 12 days in the schedule feed. The sandbox needs an upcoming game to rerun.');
+    var g=pickGame(games,'sandbox'),s=sbState(g),q=g.req,mk=g.mkt;
+    var base=B.nflPredict(q,mk,g.season),adj=B.nflPredict(sbReq(g,s),sbMkt(g,s),g.season);
+    var h='<p class="fb-ms-d">Re-runs the shipped NFL engine in the browser with the same trained parameters. Nothing is re-trained; the inputs below are the ones the engine reads. Sensitivity research, not an alternate projection.</p>';
+    h+='<div class="fb-card">'+gameSelect(games,g.gid,"labSel('sandbox',this.value)");
+    if(base.status!=='PREDICTED')return h+none('The engine returned '+esc(base.status)+' for this game: '+esc(base.reason||''))+'</div>';
+    var ok=adj.status==='PREDICTED';
+    var d=ok?(adj.model.fair_spread-base.model.fair_spread):null,dt=ok?(adj.model.fair_total-base.model.fair_total):null,dp=ok?(adj.model.home_win_prob-base.model.home_win_prob):null;
+    h+='<div class="lab-out"><div class="c"><div class="k">Baseline</div><div class="v mdl">'+esc(g.home)+' '+homeLine(base.model.fair_spread)+'</div><div class="s">total '+n1(base.model.fair_total)+' · home '+pct(base.model.home_win_prob,0)+'</div></div>'
+      +'<div class="c"><div class="k">Adjusted</div><div class="v">'+(ok?(esc(g.home)+' '+homeLine(adj.model.fair_spread)):esc(adj.status))+'</div><div class="s">'+(ok?('total '+n1(adj.model.fair_total)+' · home '+pct(adj.model.home_win_prob,0)):esc(adj.reason||''))+'</div></div>'
+      +'<div class="c p"><div class="k">Impact</div><div class="v">'+(ok?(sgn(-d)+' pts'):'—')+'</div><div class="s">'+(ok?('total '+sgn(dt)+' · win prob '+sgn(dp*100,1)+' pp'):'')+'</div></div></div>';
+    if(ok&&mk.spread_line!=null){var gb=base.market.spread_gap,ga=adj.market.spread_gap;h+='<div class="fb-note">Gap to the market line ('+esc(g.home)+' '+homeLine(mk.spread_line)+'): '+sgn(gb)+' → '+sgn(ga)+' pts'+(adj.cover?(' · P(home covers) '+pct(base.cover?base.cover.win:null)+' → '+pct(adj.cover.win)):'')+'.</div>';}
+    h+='<div class="lab-ctls">'
+      +ctl(g.gid,'home_rest','Home rest (days)',s.home_rest!=null?s.home_rest:(q.home_rest!=null?q.home_rest:7),q.home_rest!=null?q.home_rest:'unknown (7)','range',{min:3,max:14,range:'3–14 days'})
+      +ctl(g.gid,'away_rest','Away rest (days)',s.away_rest!=null?s.away_rest:(q.away_rest!=null?q.away_rest:7),q.away_rest!=null?q.away_rest:'unknown (7)','range',{min:3,max:14,range:'3–14 days'})
+      +ctl(g.gid,'home_qb','Home starting QB',s.home_qb===false?'0':'1',q.home_qb_id?'known':'unknown','toggle',[['1','As in feed'],['0','Unavailable']])
+      +ctl(g.gid,'away_qb','Away starting QB',s.away_qb===false?'0':'1',q.away_qb_id?'known':'unknown','toggle',[['1','As in feed'],['0','Unavailable']])
+      +ctl(g.gid,'div_game','Divisional game',s.div_game==null?(q.div_game?'1':'0'):(s.div_game?'1':'0'),q.div_game?'yes':'no','toggle',[['1','Yes'],['0','No']])
+      +ctl(g.gid,'roof','Roof',s.roof!=null?s.roof:(q.roof||'outdoors'),q.roof||'unknown','toggle',[['outdoors','Outdoors'],['dome','Dome']])
+      +ctl(g.gid,'temp','Temperature (°F)',s.temp!=null?s.temp:(q.temp!=null?q.temp:68),q.temp!=null?q.temp:'unknown (68)','range',{min:0,max:100,range:'0–100 °F · ignored in a dome'})
+      +ctl(g.gid,'wind','Wind (mph)',s.wind!=null?s.wind:(q.wind!=null?q.wind:0),q.wind!=null?q.wind:'unknown (0)','range',{min:0,max:30,range:'0–30 mph · ignored in a dome'})
+      +ctl(g.gid,'week','Week',s.week!=null?s.week:(q.week||9),q.week||'unknown','range',{min:1,max:18,range:'1–18'})
+      +ctl(g.gid,'spread','Market spread · home line',s.spread!=null?s.spread:(mk.spread_line!=null?(-mk.spread_line):0),mk.spread_line!=null?homeLine(mk.spread_line):'none joined','range',{min:-21,max:21,step:0.5,range:'−21 to +21 · affects gap and blend, not the fair spread'})
+      +'</div><div class="fb-btns"><button class="fb-btn" onclick="labSbReset(\''+attr(g.gid)+'\')">Reset to feed</button><button class="fb-btn pri" onclick="labOpen(\'sensitivity\')">Model sensitivity</button></div>'
+      +'<div class="fb-note">Unsupported here: home-field toggle, travel, roster continuity, injury and opponent weighting — the NFL engine has no such inputs, so none is offered. Power 4 scenarios live in the Scenario tester.</div></div>';
+    return h;
+  }
+
+  /* ------------------------------------------------------------ scenario */
+  function scenarioTool(){
+    var gate=needFootball('scenario');
+    var h='<p class="fb-ms-d">How sensitive is the projection to this assumption? Each scenario re-runs the shipped engine with one input changed and reports the difference. Sensitivity research, not alternate-universe predictions.</p>';
+    if(gate)return h+gate;
+    var B=FBL(),games=B.nflGames();
+    if(games.length){
+      var g=pickGame(games,'scenario'),q=g.req,mk=g.mkt,base=B.nflPredict(q,mk,g.season);
+      h+='<div class="fb-card">'+gameSelect(games,g.gid,"labSel('scenario',this.value)");
+      if(base.status!=='PREDICTED')h+=none('The engine returned '+esc(base.status)+' for this game.');
+      else{
+        function run(name,mod,mmod){var r={};for(var k in q)r[k]=q[k];var m={};for(var k2 in mk)m[k2]=mk[k2];mod(r);if(mmod)mmod(m);var p=B.nflPredict(r,m,g.season);return {name:name,p:p};}
+        var sc=[
+          run('Home starting QB unavailable',function(r){r.home_qb_id=null;}),
+          run('Away starting QB unavailable',function(r){r.away_qb_id=null;}),
+          run('Home on a short week (4 days)',function(r){r.home_rest=4;}),
+          run('Home off a bye (14 days)',function(r){r.home_rest=14;}),
+          run('Away on a short week (4 days)',function(r){r.away_rest=4;}),
+          run('Played in a dome',function(r){r.roof='dome';}),
+          run('Cold and windy (25 °F, 20 mph)',function(r){r.roof='outdoors';r.temp=25;r.wind=20;}),
+          run('Divisional flag flipped',function(r){r.div_game=r.div_game?0:1;}),
+          run('Market moves 1 pt toward home',function(r){},function(m){if(m.spread_line!=null)m.spread_line=m.spread_line+1;}),
+          run('Market moves 1 pt toward away',function(r){},function(m){if(m.spread_line!=null)m.spread_line=m.spread_line-1;})
+        ];
+        var rows=sc.map(function(x){var ok=x.p.status==='PREDICTED';var ds=ok?(x.p.model.fair_spread-base.model.fair_spread):null,dtt=ok?(x.p.model.fair_total-base.model.fair_total):null,dg=(ok&&x.p.market.spread_gap!=null&&base.market.spread_gap!=null)?(x.p.market.spread_gap-base.market.spread_gap):null;return {name:x.name,ok:ok,ds:ds,dt:dtt,dg:dg,sp:ok?x.p.model.fair_spread:null};});
+        var most=rows.filter(function(r){return r.ok&&r.ds!=null;}).sort(function(a,b){return Math.abs(b.ds)-Math.abs(a.ds);})[0];
+        h+='<div class="lab-out"><div class="c"><div class="k">Baseline</div><div class="v mdl">'+esc(g.home)+' '+homeLine(base.model.fair_spread)+'</div><div class="s">total '+n1(base.model.fair_total)+'</div></div><div class="c p"><div class="k">Most affected input</div><div class="v">'+(most&&Math.abs(most.ds)>0.05?esc(most.name):'none moves the number')+'</div><div class="s">'+(most&&Math.abs(most.ds)>0.05?(sgn(-most.ds)+' pts on the spread'):'')+'</div></div></div>';
+        h+=tbl(['Scenario','Spread','Δ spread','Δ total','Δ gap'],rows.map(function(r){return [r.name,r.ok?(esc(g.home)+' '+homeLine(r.sp)):'—',r.ok?sgn(-r.ds):'—',r.ok?sgn(r.dt):'—',r.dg!=null?sgn(r.dg):'—'];}));
+        h+='<div class="fb-note">Market scenarios change the gap and the blend, never the fair spread — the engine does not read the market into its own number. QB scenarios use the feed’s starter ids; an unknown starter falls back to the team’s carried QB value, which is exactly what the engine does live when the feed has not published one.</div>';
+      }
+      h+='</div>';
+    }else h+=none('No NFL game inside the next 12 days to test.');
+    /* Power 4 */
+    if(B.p4Ready&&B.p4Ready()){
+      var pg=B.p4Games();
+      if(pg.length){
+        var p=pickGame(pg,'scenario_p4'),req0=B.p4Request(p.u),b0=B.p4Project(req0);
+        h+=sec('Power 4 scenarios');
+        h+='<div class="fb-card">'+gameSelect(pg,p.gid,"labSel('scenario_p4',this.value)");
+        if(b0.status!=='PREDICTED')h+=none('The Power 4 engine returned '+esc(b0.status)+': '+esc(b0.reason||''));
+        else{
+          function prun(name,mod){var r=JSON.parse(JSON.stringify(req0));r.state=req0.state;mod(r);var out;try{out=B.p4Project(r);}catch(e){out={status:'BLOCKED',reason:e.message};}return {name:name,p:out};}
+          var ps=[prun('Neutral field',function(r){r.game.neutral_site=true;}),prun('Weather record removed',function(r){r.weather=null;}),prun('Rosters removed (talent layer blind)',function(r){r.teams.home.roster=null;r.teams.away.roster=null;}),prun('Market moves 3 pts toward home',function(r){if(r.market&&r.market.spread_line!=null)r.market.spread_line+=3;}),prun('Market removed',function(r){r.market={spread_line:null,total_line:null,quotes_h2h:null};})];
+          var prow=ps.map(function(x){var ok=x.p.status==='PREDICTED';return {name:x.name,ok:ok,ds:ok?(x.p.model.fair_spread-b0.model.fair_spread):null,sp:ok?x.p.model.fair_spread:null,s10:ok?x.p.model.p10_margin:null,s90:ok?x.p.model.p90_margin:null,why:ok?'':(x.p.reason||x.p.status)};});
+          var pm=prow.filter(function(r){return r.ok;}).sort(function(a,b){return Math.abs(b.ds)-Math.abs(a.ds);})[0];
+          h+='<div class="lab-out"><div class="c"><div class="k">Baseline</div><div class="v mdl">'+esc(p.home)+' '+homeLine(b0.model.fair_spread)+'</div><div class="s">p10 '+sgn(b0.model.p10_margin)+' · p90 '+sgn(b0.model.p90_margin)+'</div></div><div class="c p"><div class="k">Most affected input</div><div class="v">'+(pm&&Math.abs(pm.ds)>0.05?esc(pm.name):'none moves the number')+'</div><div class="s">'+(pm&&Math.abs(pm.ds)>0.05?(sgn(-pm.ds)+' pts'):'')+'</div></div></div>';
+          h+=tbl(['Scenario','Spread','Δ spread','p10–p90'],prow.map(function(r){return [r.name,r.ok?(esc(p.home)+' '+homeLine(r.sp)):esc(r.why),r.ok?sgn(-r.ds):'—',r.ok?(sgn(r.s10)+' … '+sgn(r.s90)):'—'];}));
+          h+='<div class="fb-note">A missing input never moves the Power 4 mean; it widens the outcome range through the uncertainty layer. That is why removing weather or rosters mostly changes p10–p90, not the spread.</div>';
+        }
+        h+='</div>';
+      }
+    }else h+='<div class="fb-card"><p class="fb-ms-d">Power 4 scenarios (neutral field, weather removed, roster layer removed, market moved) need the Power 4 engine.</p><div class="fb-btns"><button class="fb-btn" onclick="labEnsureP4()">Load Power 4 engine</button></div></div>';
+    h+='<div class="fb-card"><div class="lab-wf-h"><span class="nm">Tennis and UFC scenarios</span><span class="fb-badge mut"><i></i>Requires server-side support</span></div><p class="fb-ms-d">The WTA grade is computed server-side and the UFC panel has no EdgeDesk model, so there is no engine to re-run in the browser for surface, ranking, layoff or replacement scenarios. Interactive reruns for these require server-side simulation support; none is faked here.</p></div>';
+    return h;
+  }
+  window.labEnsureP4=function(){var B=FBL();if(!B||!B.p4Ensure)return;labRender();B.p4Ensure().then(function(){labRender();}).catch(function(){labRender();});};
+
+  /* --------------------------------------------------------- sensitivity */
+  var FEAT_L={net_pts:'Net points (rating)',net_epa:'Net EPA / play',net_pass:'Net pass EPA / dropback',net_rush:'Net rush EPA / attempt',qb_adj_diff:'QB adjustment',rest_diff:'Rest differential',div_game:'Divisional game',home_short:'Home short week',away_short:'Away short week',home_off_bye:'Home off bye',away_off_bye:'Away off bye',week_frac:'Season progress',is_dome:'Dome',grass:'Grass surface'};
+  function sensitivityTool(){
+    var h='<p class="fb-ms-d">Projection contribution: each input’s value times its trained weight, summed to the model spread. This is the linear layer the engine actually computes — read it as arithmetic, not causality.</p>';
+    var gate=needFootball('sensitivity');if(gate)return h+gate;
+    var B=FBL(),games=B.nflGames(),P=window.EDFootballParams&&EDFootballParams.nfl;
+    if(games.length&&P){
+      var g=pickGame(games,'sensitivity'),F=B.nflFeatures(g.req);
+      var sf=P.spread_feats||['net_pts','net_epa','net_pass','net_rush','qb_adj_diff','rest_diff','div_game'],cf=P.ctx_feats||[];
+      var rows=sf.map(function(f,i){return {l:FEAT_L[f]||f,v:F.spread[f]*P.w_spread[i],raw:F.spread[f]};});
+      var crow=cf.map(function(f,i){return {l:FEAT_L[f]||f,v:F.ctx[f]*P.w_ctx[i]};});
+      var inter=P.w_spread[P.w_spread.length-1]+P.w_ctx[P.w_ctx.length-1];
+      var all=rows.concat(crow).filter(function(r){return Math.abs(r.v)>0.005;}).sort(function(a,b){return Math.abs(b.v)-Math.abs(a.v);});
+      var pred=B.nflPredict(g.req,g.mkt,g.season);
+      h+='<div class="fb-card">'+gameSelect(games,g.gid,"labSel('sensitivity',this.value)");
+      h+='<div class="lab-out"><div class="c"><div class="k">Model spread</div><div class="v mdl">'+esc(g.home)+' '+(pred.status==='PREDICTED'?homeLine(pred.model.fair_spread):'—')+'</div><div class="s">intercept + home field '+sgn(inter,2)+' pts (home margin)</div></div><div class="c p"><div class="k">Most sensitive input</div><div class="v">'+(all[0]?esc(all[0].l):'—')+'</div><div class="s">'+(all[0]?(sgn(all[0].v,2)+' pts of home margin'):'')+'</div></div></div>';
+      h+='<div class="lab-h6">Projection contribution · home margin, points</div>'+bars(all,' pts');
+      h+='<div class="fb-note">Contributions are in home-margin points (positive favours '+esc(g.home)+'). Feature values are the opponent-adjusted ratings after this season’s absorbed games; QB known: home '+(g.req.home_qb_id?'yes':'no')+', away '+(g.req.away_qb_id?'yes':'no')+'. The spread you see on the board is this sum, the koerner and context layers together.</div></div>';
+    }else h+=none('No NFL game to decompose.');
+    if(B.p4Ready&&B.p4Ready()){
+      var pg=B.p4Games();
+      if(pg.length){var p=pickGame(pg,'sensitivity_p4'),pr=B.p4Project(B.p4Request(p.u));
+        h+=sec('Power 4 drivers','engine explanation');
+        h+='<div class="fb-card">'+gameSelect(pg,p.gid,"labSel('sensitivity_p4',this.value)");
+        if(pr.status==='PREDICTED'&&pr.explanation){var ex=pr.explanation,dr=(ex.primary_drivers||[]).map(function(d){return {l:d.text,v:d.points};});
+          h+='<div class="lab-out"><div class="c"><div class="k">Model spread</div><div class="v mdl">'+esc(p.home)+' '+homeLine(pr.model.fair_spread)+'</div><div class="s">p10 '+sgn(pr.model.p10_margin)+' · p90 '+sgn(pr.model.p90_margin)+'</div></div><div class="c p"><div class="k">Most sensitive input</div><div class="v">'+(dr[0]?esc(dr[0].l.slice(0,60)):'—')+'</div><div class="s">'+(dr[0]?(sgn(dr[0].v,1)+' pts'):'')+'</div></div></div>';
+          h+=dr.length?('<div class="lab-h6">Primary drivers · points</div>'+bars(dr,' pts')):none('The engine listed no primary driver for this game.');
+          if(ex.counterarguments&&ex.counterarguments.length)h+='<div class="lab-h6">Counterarguments</div><ul class="lab-lim">'+ex.counterarguments.map(function(c){return '<li>'+esc(c.text)+'</li>';}).join('')+'</ul>';
+          if(ex.data_quality&&ex.data_quality.length)h+='<div class="lab-h6">Data quality</div><ul class="lab-lim">'+ex.data_quality.map(function(c){return '<li>'+esc(c.level.replace(/_/g,' '))+': '+esc(c.text)+'</li>';}).join('')+'</ul>';
+        }else h+=none('The Power 4 engine returned '+esc(pr.status)+' for this game.');
+        h+='</div>';
+      }
+    }else h+='<div class="fb-card"><p class="fb-ms-d">Power 4 drivers (strength, talent, situation, matchup) come from the engine’s own explanation record.</p><div class="fb-btns"><button class="fb-btn" onclick="labEnsureP4()">Load Power 4 engine</button></div></div>';
+    return h;
+  }
+
+  /* ------------------------------------------------------------- autopsy */
+  function sigLabel(s){return (s.away_team&&s.home_team)?(s.away_team+' @ '+s.home_team):(s.selection||s.event_id);}
+  function am(dec){try{if(typeof GE!=='undefined'&&GE&&GE.fmtPrice&&dec)return GE.fmtPrice(+dec);}catch(_){}return dec?(+dec).toFixed(2):'—';}
+  function fairPx(f){return (f!=null&&+f>0)?am(1/Math.max(0.0001,+f)):'—';}
+  function classify(s,ticks){
+    if(s.closing_sharp_fair==null)return {c:'INSUFFICIENT EVIDENCE',cls:'mut',why:'no qualified closing fair line is stored for this signal, so what the market did by the bell cannot be measured.'};
+    if(s.flagged_best_dec==null&&s.first_best_dec==null)return {c:'DATA FAULT',cls:'neg',why:'graded without a stored entry price; the receipt is incomplete.'};
+    var clv=s.clv!=null?+s.clv:null;
+    if(clv==null)return {c:'INSUFFICIENT EVIDENCE',cls:'mut',why:'no CLV was computed for this signal.'};
+    if(clv>0)return {c:'MARKET CAUGHT UP',cls:'pos',why:'the closing fair line moved toward the signal after entry: positive CLV of '+sgn(clv*100,2)+'%.'+(s.result==='loss'?' The bet itself lost — CLV and outcome are different questions.':'')};
+    if(clv<0)return {c:'SIGNAL DECAYED',cls:'warn',why:'the closing fair line moved away from the signal after entry: CLV '+sgn(clv*100,2)+'%.'+(s.result==='win'?' The bet won anyway — outcome noise, not validation.':'')};
+    return {c:'SIGNAL HELD',cls:'mut',why:'the close matched the entry fair line; CLV 0.'};
+  }
+  function autopsyTool(){
+    var h='<p class="fb-ms-d">Reconstruct what EdgeDesk knew at each point before a market closed, from the captured values only. The model is never re-run; the timeline is the stored tick history.</p>';
+    if(L.sigs===null&&L.sigsErr)return h+none('Graded signals could not be read: '+esc(L.sigsErr)+'.');
+    if(!L.sigs)return h+'<div class="fb-skel" style="height:40px"></div>';
+    if(!L.sigs.length)return h+none('No graded research signal is on file yet. The autopsy needs settled signals with a stored close.');
+    var cur=L.sel.autopsy||L.sigs[0].sig_key,s=null;for(var i=0;i<L.sigs.length;i++)if(L.sigs[i].sig_key===cur)s=L.sigs[i];
+    if(!s)s=L.sigs[0];
+    h+='<div class="fb-card"><select class="stsearch lab-sel" onchange="labSel(\'autopsy\',this.value)">'+L.sigs.slice(0,80).map(function(x){return '<option value="'+esc(x.sig_key)+'"'+(x.sig_key===s.sig_key?' selected':'')+'>'+esc(dateOf(x.commence_time))+' · '+esc(sigLabel(x))+' · '+esc(x.market)+' '+esc(x.selection)+'</option>';}).join('')+'</select>';
+    var ticks=L.ticks[s.sig_key];
+    if(ticks===undefined){loadTicks(s.sig_key).then(function(){labRender();});h+='<div class="fb-skel" style="height:60px;margin-top:8px"></div></div>';return h;}
+    var pts=[];
+    if(s.first_seen_at)pts.push({t:s.first_seen_at,k:'First seen',v:'best '+am(s.first_best_dec)+(s.first_sharp_fair!=null?(' · sharp fair '+fairPx(s.first_sharp_fair)):''),cls:''});
+    (ticks||[]).forEach(function(t){pts.push({t:t.created_at,k:'Tick',v:'best '+am(t.best_dec)+(t.sharp_fair!=null?(' · sharp fair '+fairPx(t.sharp_fair)):'')+(t.edge!=null?(' · edge '+sgn(+t.edge*100,2)+'%'):''),cls:'tick'});});
+    if(s.flagged_at)pts.push({t:s.flagged_at,k:'Flagged',v:'entry '+am(s.flagged_best_dec)+(s.flagged_edge!=null?(' · edge '+sgn(+s.flagged_edge*100,2)+'%'):''),cls:'flag'});
+    pts.sort(function(a,b){return String(a.t).localeCompare(String(b.t));});
+    pts.push({t:s.commence_time,k:'Close',v:s.closing_sharp_fair!=null?('sharp fair '+fairPx(s.closing_sharp_fair)):'no qualified close stored',cls:'close'});
+    pts.push({t:s.graded_at,k:'Result',v:(s.result||'—')+(s.clv!=null?(' · CLV '+sgn(+s.clv*100,2)+'%'):'')+(s.beat_close!=null?(' · '+(s.beat_close?'beat the close':'did not beat the close')):''),cls:s.result==='win'?'pos':(s.result==='loss'?'neg':'')});
+    var idx=L.sel.autopsyIdx!=null?Math.min(L.sel.autopsyIdx,pts.length-1):pts.length-1;
+    var cl=classify(s,ticks);
+    h+='<div class="lab-out"><div class="c"><div class="k">Signal</div><div class="v txt">'+esc(sigLabel(s))+'</div><div class="s">'+esc(s.market)+' '+esc(s.selection)+(s.point!=null?(' '+esc(String(s.point))):'')+' · '+esc(s.sport_title||'')+'</div></div><div class="c p"><div class="k">Classification</div><div class="v cl '+cl.cls+'">'+cl.c+'</div><div class="s">from stored values</div></div></div>';
+    h+='<div class="fb-note">'+esc(cl.why)+'</div>';
+    h+='<div class="lab-h6" style="margin-top:12px">Timeline · '+pts.length+' points'+(ticks===null?' · tick history unreadable':((ticks||[]).length?'':' · no ticks stored'))+'</div>';
+    h+='<input type="range" class="lab-scrub" min="0" max="'+(pts.length-1)+'" value="'+idx+'" oninput="labScrub(this.value)" aria-label="Scrub the timeline">';
+    h+='<div class="lab-tl">'+pts.map(function(p,i){return '<div class="p'+(i<=idx?' seen':'')+(i===idx?' at':'')+' '+p.cls+'"><span class="t mono">'+esc(p.t?new Date(p.t).toLocaleString([],{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}):'—')+'</span><span class="k">'+esc(p.k)+'</span><span class="v mono">'+esc(p.v)+'</span></div>';}).join('')+'</div>';
+    h+='<div class="fb-note">Entry is the price the capture froze at the flag (or the opener); close is the stored closing sharp fair line; CLV is that closing fair against the entry price. No EdgeDesk model number is stored per signal, so “model missed” cannot be classified from this record.</div>';
+    h+='<div class="fb-btns"><button class="fb-btn" onclick="labOpen(\'marketlab\')">Market lab for this signal</button><button class="fb-btn" onclick="labOpen(\'record\')">Research record</button></div></div>';
+    return h;
+  }
+  window.labScrub=function(v){L.sel.autopsyIdx=+v;var els=document.querySelectorAll('#labCenter .lab-tl .p');for(var i=0;i<els.length;i++){els[i].classList.toggle('seen',i<=+v);els[i].classList.toggle('at',i===+v);}};
+
+  /* ----------------------------------------------------------- market lab */
+  function marketTool(){
+    var h='<p class="fb-ms-d">Compare market constructions for one signal from the stored per-book quotes: consensus, sharp-only, no-vig fair, best price, opening vs current. Every value traces to a captured row.</p>';
+    if(!L.sigs||!L.sigs.length)return h+none(L.sigsErr?('Signals could not be read: '+esc(L.sigsErr)):'No signal with stored quotes is on file yet.');
+    var cur=L.sel.autopsy||L.sigs[0].sig_key,s=null;for(var i=0;i<L.sigs.length;i++)if(L.sigs[i].sig_key===cur)s=L.sigs[i];if(!s)s=L.sigs[0];
+    h+='<div class="fb-card"><select class="stsearch lab-sel" onchange="labSel(\'autopsy\',this.value)">'+L.sigs.slice(0,80).map(function(x){return '<option value="'+esc(x.sig_key)+'"'+(x.sig_key===s.sig_key?' selected':'')+'>'+esc(dateOf(x.commence_time))+' · '+esc(sigLabel(x))+' · '+esc(x.market)+' '+esc(x.selection)+'</option>';}).join('')+'</select>';
+    var q=L.quotes[s.sig_key];
+    if(q===undefined){loadQuotes(s.sig_key).then(function(){labRender();});return h+'<div class="fb-skel" style="height:60px;margin-top:8px"></div></div>';}
+    var ex=L.sel.exBooks||{};
+    var use=(q||[]).filter(function(b){return !ex[b.book_title];}),sharp=use.filter(function(b){return b.is_sharp;});
+    function mean(a){if(!a.length)return null;var s2=0;a.forEach(function(x){s2+=+x;});return s2/a.length;}
+    var cons=mean(use.filter(function(b){return b.fair!=null;}).map(function(b){return b.fair;})),sh=mean(sharp.filter(function(b){return b.fair!=null;}).map(function(b){return b.fair;}));
+    var best=use.length?use.slice().sort(function(a,b){return +b.dec-+a.dec;})[0]:null;
+    var rows=[];
+    rows.push({l:'Consensus fair',sub:use.length+' book'+(use.length===1?'':'s')+' included · mean of stored no-vig fairs',v:cons!=null?(pct(cons,1)+' · '+fairPx(cons)):'—',c:cons==null?'mut':''});
+    rows.push({l:'Sharp-only fair',sub:sharp.length+' sharp book'+(sharp.length===1?'':'s'),v:sh!=null?(pct(sh,1)+' · '+fairPx(sh)):'—',c:sh==null?'mut':''});
+    rows.push({l:'Best price',sub:best?best.book_title:'no book',v:best?am(best.dec):'—'});
+    rows.push({l:'Opening · capture',sub:'first seen '+agoOf(s.first_seen_at),v:am(s.first_best_dec)+(s.first_sharp_fair!=null?(' · sharp fair '+fairPx(s.first_sharp_fair)):'')});
+    rows.push({l:'Current / last · capture',sub:'stored consensus fair '+(s.consensus_fair!=null?pct(s.consensus_fair,1):'—'),v:am(s.best_dec)+(s.sharp_fair!=null?(' · sharp fair '+fairPx(s.sharp_fair)):'')});
+    rows.push({l:'Closing sharp fair',sub:'from the close pipeline',v:s.closing_sharp_fair!=null?fairPx(s.closing_sharp_fair):'not stored',c:s.closing_sharp_fair==null?'mut':''});
+    var mdl=null;try{var B=FBL();if(B&&B.ready()&&/americanfootball_nfl/.test(s.sport_key||'')&&s.market==='spreads'){var gm=B.nflGames().filter(function(g){return g.homeName===s.home_team&&g.awayName===s.away_team;})[0];if(gm){var p=B.nflPredict(gm.req,gm.mkt,gm.season);if(p.status==='PREDICTED')mdl={home:gm.home,v:p.model.fair_spread};}}}catch(_){}
+    rows.push({l:'EdgeDesk model',sub:mdl?'football engine, live rerun':'no EdgeDesk model prices this market',v:mdl?(mdl.home+' '+homeLine(mdl.v)):'—',c:mdl?'mdl':'mut'});
+    h+=rsTkMvm({title:'Market constructions',game:sigLabel(s),when:s.market+' '+s.selection+(s.point!=null?(' '+s.point):'')+' · '+(s.sport_title||''),rows:rows});
+    if(q&&q.length){
+      h+='<div class="lab-h6" style="margin-top:12px">Books · tap to exclude</div><div class="lab-books">'+q.map(function(b){return '<button class="lab-book'+(ex[b.book_title]?' off':'')+(b.is_sharp?' sharp':'')+'" onclick="labBook(\''+attr(b.book_title)+'\')" aria-pressed="'+(ex[b.book_title]?'false':'true')+'">'+esc(b.book_title)+' <b>'+esc(am(b.dec))+'</b>'+(b.fair!=null?' <i>'+esc(pct(b.fair,1))+'</i>':'')+(b.is_sharp?' <s>sharp</s>':'')+'</button>';}).join('')+'</div>'
+        +'<div class="fb-btns"><button class="fb-btn" onclick="labBooks(\'sharp\')">Sharp-only</button><button class="fb-btn" onclick="labBooks(\'all\')">Include all</button></div>';
+    }else h+=none(q===null?'Per-book quotes could not be read for this signal.':'No per-book quotes are stored for this signal; only the capture’s stored consensus and sharp fair are available.');
+    h+='<div class="fb-note">Consensus and sharp-only are means over the stored per-book no-vig fairs, computed in the browser and labelled as such. No composite is invented where books are missing.</div></div>';
+    return h;
+  }
+  window.labBook=function(name){L.sel.exBooks=L.sel.exBooks||{};L.sel.exBooks[name]=!L.sel.exBooks[name];labRender();};
+  window.labBooks=function(mode){var cur=L.sel.autopsy||(L.sigs&&L.sigs[0]&&L.sigs[0].sig_key),q=L.quotes[cur]||[];L.sel.exBooks={};if(mode==='sharp')q.forEach(function(b){if(!b.is_sharp)L.sel.exBooks[b.book_title]=true;});labRender();};
+
+  /* ------------------------------------------------------------ features */
+  var FEATS_NFL=[
+    {k:'off_epa_play',l:'Offensive EPA / play',d:'Expected points added per offensive play.'},{k:'def_epa_play',l:'Defensive EPA / play',d:'EPA allowed per play (lower is better).'},
+    {k:'pass_epa_db',l:'Pass EPA / dropback',d:'EPA per dropback.'},{k:'def_pass_epa_db',l:'Pass EPA allowed / dropback',d:''},
+    {k:'rush_epa_att',l:'Rush EPA / attempt',d:''},{k:'def_rush_epa_att',l:'Rush EPA allowed / attempt',d:''},
+    {k:'expl_pass',l:'Explosive pass rate',d:'Share of passes gaining 20+ yards.'},{k:'expl_rush',l:'Explosive rush rate',d:'Share of rushes gaining 10+ yards.'},
+    {k:'def_expl_pass',l:'Explosive passes allowed',d:''},{k:'def_expl_rush',l:'Explosive rushes allowed',d:''},
+    {k:'sack_rate_all',l:'Sack rate allowed',d:''},{k:'sack_rate_made',l:'Sack rate made',d:''},{k:'pass_rate',l:'Pass rate',d:'Share of plays that are dropbacks.'},{k:'plays',l:'Plays per game',d:'Pace.'},
+    {k:'pts_for',l:'Points for (rating)',d:'Opponent-adjusted points scored.'},{k:'pts_against',l:'Points against (rating)',d:'Opponent-adjusted points allowed.'}];
+  function dist(vals){var a=vals.filter(function(v){return v!=null&&isFinite(v);}).sort(function(x,y){return x-y;});if(!a.length)return null;return {n:a.length,min:a[0],med:a[Math.floor(a.length/2)],max:a[a.length-1]};}
+  function featuresTool(){
+    var h='<p class="fb-ms-d">Every model input: what it is, where it comes from, how it is transformed and how it is distributed across the teams the engine currently rates.</p>';
+    var B=FBL(),P=window.EDFootballParams,st=B&&B.ready()?B.nflState():null;
+    h+=sec('Football engine · NFL rate features','opponent-adjusted');
+    if(!st)h+=needFootball('features')||'';
+    else{
+      var teams=Object.keys(st.team),sp=P&&P.nfl,hp=sp&&sp.hyperparams;
+      var cur=L.sel.feature||FEATS_NFL[0].k,f=FEATS_NFL.filter(function(x){return x.k===cur;})[0]||FEATS_NFL[0];
+      h+='<div class="fb-card"><select class="stsearch lab-sel" onchange="labSel(\'feature\',this.value)">'+FEATS_NFL.map(function(x){return '<option value="'+x.k+'"'+(x.k===f.k?' selected':'')+'>'+esc(x.l)+'</option>';}).join('')+'</select>';
+      var d=dist(teams.map(function(t){return st.team[t][f.k];}));
+      var usedBy=(sp&&sp.spread_feats||[]).filter(function(s){return ({net_epa:['off_epa_play','def_epa_play'],net_pass:['pass_epa_db','def_pass_epa_db'],net_rush:['rush_epa_att','def_rush_epa_att'],net_pts:['pts_for','pts_against']}[s]||[]).indexOf(f.k)>=0;});
+      var usedByT=(sp&&sp.total_feats||[]).filter(function(s){return ({off_epa_sum:['off_epa_play'],def_epa_sum:['def_epa_play'],pass_matchup:['pass_epa_db','def_pass_epa_db'],rush_matchup:['rush_epa_att','def_rush_epa_att'],expl_sum:['expl_pass','def_expl_pass'],sack_env:['sack_rate_all','sack_rate_made'],pace_sum:['plays'],pts_env:['pts_for','pts_against']}[s]||[]).indexOf(f.k)>=0;});
+      h+=kv([['Definition',f.d||f.l],['Source',(sp&&sp.data_provenance&&sp.data_provenance.team_stats)||'nflverse-data stats_team_week'],['Transformation','opponent-adjusted rating recursion (α '+(hp?hp.alpha:'—')+', season carry-over '+(hp?hp.carry:'—')+'), expressed as deviation from the league mean'],['Model usage',(usedBy.length||usedByT.length)?('spread: '+(usedBy.join(', ')||'—')+' · total: '+(usedByT.join(', ')||'—')):'context only'],['Sample',teams.length+' teams · '+(window.FB&&FB.nfl?FB.nfl.absorbed:0)+' games absorbed this season on top of the trained seeds'],['Last updated',(window.FB&&FB.at)?ago(FB.at):'—']]);
+      if(d){h+='<div class="lab-h6">Distribution across '+d.n+' teams</div><div class="lab-dist"><span>min '+n1(d.min,3)+'</span><span class="trk"><span class="med" style="left:'+(((d.med-d.min)/((d.max-d.min)||1))*100).toFixed(1)+'%"></span></span><span>max '+n1(d.max,3)+'</span></div><div class="fb-note">median '+n1(d.med,3)+'. Values are rating deviations, not raw box-score averages.</div>';
+        var top=teams.map(function(t){return [t,st.team[t][f.k]];}).sort(function(a,b){return b[1]-a[1];});
+        h+=tbl(['Team','Value'],top.slice(0,5).concat([['…','']]).concat(top.slice(-3)).map(function(r){return [r[0],r[1]===''?'':n1(r[1],3)];}));}
+      h+='</div>';
+    }
+    h+=sec('Tennis and UFC inputs','from provenance');
+    h+='<div class="fb-card">'+rsTkProvRows(((window.RS_PROV&&RS_PROV.wta)||[]).concat((window.RS_PROV&&RS_PROV.tennis)||[]).filter(function(p){return p.tier!=='T3';}).slice(0,6))+'<div class="fb-note">Hold and break percentages are not ingested; surface record, rankings and form come from the licensed tennis record. Distributions appear once the Tennis tab has loaded a tour.</div></div>';
+    var uf=window.UFC&&UFC.fighters&&UFC.fighters.length?UFC.fighters:null;
+    h+='<div class="fb-card"><div class="lab-wf-h"><span class="nm">UFC · finish rate</span></div>'+(uf?(function(){var d2=dist(uf.map(function(x){return x.d&&x.d.finish_rate!=null?+x.d.finish_rate:null;}));return d2?(kv([['Definition','share of wins ending inside the distance'],['Source','ufc.fighter_derived_metrics, computed from the loaded fight history'],['Model usage','none — no EdgeDesk UFC model'],['Sample',d2.n+' fighters with a computed rate']])+'<div class="lab-dist"><span>min '+pct(d2.min,0)+'</span><span class="trk"><span class="med" style="left:'+(d2.med*100).toFixed(0)+'%"></span></span><span>max '+pct(d2.max,0)+'</span></div>'):none('No fighter carries a computed finish rate.');})():'<p class="fb-ms-d">Open the UFC tab to load the fighter dataset; the distribution is computed from it.</p>')+'</div>';
+    return h;
+  }
+
+  /* ----------------------------------------------------------- provenance */
+  function freshState(modId){
+    var m=window.RESEARCH_MODULES&&RESEARCH_MODULES[modId];if(!m)return {s:'missing',t:'Missing'};
+    var st=m._.uistate&&m._.uistate.state;if(st&&st!=='ok'&&st!=='empty'&&st!=='zero-qualifying')return {s:'failed',t:'Failed'};
+    var f=null;try{f=rsFreshness(modId);}catch(_){}
+    if(!f||!f.published)return {s:'missing',t:'No build time'};
+    if(!f.stale)return {s:'current',t:'Current · built '+ago(f.builtAt)};
+    if(m.cadenceMs&&f.age<=2*m.cadenceMs)return {s:'aging',t:'Aging · built '+ago(f.builtAt)};
+    return {s:'stale',t:'Stale · built '+ago(f.builtAt)};
+  }
+  function provenanceSummary(){
+    var mods=[['football','Football engine data','edgedesk_football_v1.0.0, cfb_p4'],['ufc','UFC dataset','none (descriptive)'],['wta','WTA research engine','wta.research_score'],['tennis','Tennis record','none (published facts)'],['stats','Stats feed','props projections']];
+    var cls={current:'green',aging:'amber',stale:'amber',failed:'red',missing:'mut'};
+    return '<div class="fb-card">'+mods.map(function(m){var f=freshState(m[0]);return '<div class="lab-prov"><span class="nm">'+esc(m[1])+'<small>used by '+esc(m[2])+'</small></span><span class="fb-badge '+cls[f.s]+'"><i></i>'+esc(f.t)+'</span></div>';}).join('')+'<div class="fb-btns" style="margin-top:10px"><button class="fb-btn" onclick="labOpen(\'provenance\')">Open provenance explorer</button></div></div>';
+  }
+  function provenanceTool(){
+    var h='<p class="fb-ms-d">Where every model input came from, what transformed it, which model reads it, and how fresh it is. Freshness is measured against each pipeline’s published build time; a dataset with no build time says so rather than looking fresh.</p>';
+    var groups=[['football','Football (NFL + FBS)','Football engine v1.0 · Power 4 v1.0'],['wta','WTA research engine','wta.research_score'],['tennis','Tennis record','no model'],['ufc','UFC dataset and live feed','no model'],['stats','Stats feed','props projections'],['cfb','CFB data (retired board)','SP+ and Elo, third-party']];
+    var cls={current:'green',aging:'amber',stale:'amber',failed:'red',missing:'mut'};
+    groups.forEach(function(g){var rows=(window.RS_PROV&&RS_PROV[g[0]])||[];if(!rows.length)return;var f=freshState(g[0]);
+      h+='<div class="fb-card"><div class="lab-wf-h"><span class="nm">'+esc(g[1])+'</span><span class="fb-badge '+cls[f.s]+'"><i></i>'+esc(f.t)+'</span></div><div class="fb-note" style="margin-bottom:8px">Used by: '+esc(g[2])+'</div>'+rsTkProvRows(rows)+'</div>';});
+    var sp=window.EDFootballParams&&EDFootballParams.nfl&&EDFootballParams.nfl.data_provenance;
+    if(sp)h+='<div class="fb-card"><div class="lab-wf-h"><span class="nm">Training data · football params</span><span class="fb-badge mut"><i></i>built '+esc(dateOf(EDFootballParams.built_at))+'</span></div>'+kv(Object.keys(sp).map(function(k){return [k.replace(/_/g,' '),String(sp[k])];}))+'</div>';
+    return h;
+  }
+
+  /* --------------------------------------------------------------- record */
+  function recordTool(){
+    var h='<p class="fb-ms-d"><b>Historical research output.</b> Every graded signal the capture flagged, against the close it later recorded. This is not a picks record: a row is a research claim and its closing-line result.</p>';
+    if(!L.sigs)return h+(L.sigsErr?none('Signals could not be read: '+esc(L.sigsErr)):'<div class="fb-skel" style="height:60px"></div>');
+    if(!L.sigs.length)return h+none('No graded signal is on file yet.');
+    var f=L.sel.rec||{sport:'',result:'',clv:''},sports={};L.sigs.forEach(function(s){if(s.sport_title)sports[s.sport_title]=1;});
+    var rows=L.sigs.filter(function(s){return (!f.sport||s.sport_title===f.sport)&&(!f.result||s.result===f.result)&&(!f.clv||(f.clv==='pos'?(+s.clv>0):(f.clv==='neg'?(+s.clv<0):s.clv==null)));});
+    h+='<div class="fb-card"><div class="lab-filters"><select class="stsearch lab-sel" onchange="labRec(\'sport\',this.value)"><option value="">All sports</option>'+Object.keys(sports).sort().map(function(s){return '<option'+(f.sport===s?' selected':'')+'>'+esc(s)+'</option>';}).join('')+'</select>'
+      +'<select class="stsearch lab-sel" onchange="labRec(\'result\',this.value)"><option value="">Any result</option><option value="win"'+(f.result==='win'?' selected':'')+'>Win</option><option value="loss"'+(f.result==='loss'?' selected':'')+'>Loss</option><option value="push"'+(f.result==='push'?' selected':'')+'>Push</option></select>'
+      +'<select class="stsearch lab-sel" onchange="labRec(\'clv\',this.value)"><option value="">Any CLV</option><option value="pos"'+(f.clv==='pos'?' selected':'')+'>Positive CLV</option><option value="neg"'+(f.clv==='neg'?' selected':'')+'>Negative CLV</option><option value="none"'+(f.clv==='none'?' selected':'')+'>No CLV</option></select></div>';
+    var n=rows.length,clv=rows.filter(function(s){return s.clv!=null;}),beat=clv.filter(function(s){return s.beat_close;}).length,avg=clv.length?clv.reduce(function(a,s){return a+(+s.clv);},0)/clv.length:null;
+    h+=rsTkKpis([{n:n,l:'Rows'},{n:clv.length,l:'With CLV',c:clv.length?'':'mut'},{n:avg!=null?(sgn(avg*100,2)+'%'):'—',l:'Avg CLV',c:avg==null?'mut':(avg>0?'pos':'neg')},{n:clv.length?(Math.round(beat/clv.length*100)+'%'):'—',l:'Beat close',c:clv.length?'':'mut'}]);
+    h+='<div class="fb-tbl-wrap"><table class="fb-tbl"><tr><th>Date</th><th>Event</th><th>Market</th><th>Entry</th><th>Close fair</th><th>CLV</th><th>Result</th></tr>'+rows.slice(0,60).map(function(s){return '<tr class="lab-row" onclick="labOpenSig(\''+attr(s.sig_key)+'\')"><td>'+esc(dateOf(s.commence_time))+'</td><td style="white-space:normal">'+esc(sigLabel(s))+'</td><td>'+esc(s.market+' '+s.selection+(s.point!=null?(' '+s.point):''))+'</td><td>'+esc(am(s.flagged_best_dec||s.first_best_dec))+'</td><td>'+esc(fairPx(s.closing_sharp_fair))+'</td><td class="'+(s.clv>0?'pos':(s.clv<0?'neg':''))+'">'+(s.clv!=null?sgn(+s.clv*100,2)+'%':'—')+'</td><td>'+esc(s.result||'—')+'</td></tr>';}).join('')+'</table></div>';
+    if(rows.length>60)h+='<div class="fb-note">Showing 60 of '+rows.length+'. The full record, with receipts, lives on the Record tab.</div>';
+    h+='<div class="fb-btns"><button class="fb-btn pri" onclick="show(\'record\')">Open full record</button></div>'
+      +'<div class="fb-note">The 150 most recently graded signals are loaded here. Tap a row for its autopsy.</div></div>';
+    return h;
+  }
+  window.labRec=function(k,v){L.sel.rec=L.sel.rec||{sport:'',result:'',clv:''};L.sel.rec[k]=v;labRender();};
+  window.labOpenSig=function(key){L.sel.autopsy=key;L.sel.autopsyIdx=null;labOpen('autopsy');};
+
+  /* ----------------------------------------------------- experiment page */
+  function expDetail(x){
+    var h='<div class="lab-exp-hd"><div class="nm">'+esc(x.name)+'</div><div class="mono">'+esc(x.sport)+' · '+esc(x.model)+'</div>'+badge(x.status)+'</div>';
+    h+=lifecycle(x.stage);
+    h+='<div class="lab-mets" style="margin:12px 0">'+metric(x.sampleL||'sample',x.sample!=null?String(x.sample):'—')+metric(x.metric.k,x.metric.v,x.metric.sub,'mdl')+metric('Updated',agoOf(x.updated))+'</div>';
+    h+=sec('Hypothesis');h+='<div class="fb-card"><p class="lab-hyp" style="margin:0">'+(x.hypothesis?esc(x.hypothesis):'No hypothesis recorded.')+'</p></div>';
+    h+=sec('Method');h+='<div class="fb-card">'+(x.method&&x.method.length?kv(x.method):none('No method recorded.'))+'</div>';
+    h+=sec('Results');h+='<div class="fb-card">'+(x.results&&x.results.length?kv(x.results):none('Not yet measured.'))+(x.note?'<div class="fb-note" style="margin-top:8px">'+esc(x.note)+'</div>':'')+'</div>';
+    h+=sec('Validation','graduation criteria');h+='<div class="fb-card">'+criteria(x.criteria)+'</div>';
+    h+=sec('Changelog');h+='<div class="fb-card">'+(x.changelog&&x.changelog.length?('<div class="lab-log">'+x.changelog.map(function(c){return '<div class="e"><span class="v">'+esc(c.v)+'</span><span class="d">'+esc(c.d)+'</span><span class="t">'+esc(c.t)+'</span></div>';}).join('')+'</div>'):none('No changelog entries on file.'))+'</div>';
+    h+=sec('Known limitations');h+='<div class="fb-card">'+(x.limits&&x.limits.length?limits(x.limits):none('No limitations recorded.'))+'</div>';
+    h+=sec('Data sources');h+='<div class="fb-card">'+(x.sources&&x.sources.length?rsTkProvRows(x.sources):none('No sources recorded.'))+'</div>';
+    if(['football_nfl','football_cfb','cfb_p4'].indexOf(x.id)>=0)h+='<div class="fb-btns"><button class="fb-btn" onclick="labOpen(\'walkforward\')">Walk-forward</button><button class="fb-btn" onclick="labOpen(\'failure\')">Failure analysis</button><button class="fb-btn" onclick="labOpen(\'calibration\')">Calibration</button></div>';
+    return h;
+  }
+
+  /* --------------------------------------------------------- rails/render */
+  function leftRail(){
+    var xs=experiments();
+    return '<div class="lab-rail-h">Tools</div>'+TOOLS.map(function(t){return '<button class="lab-nav'+(L.tool===t.id?' on':'')+'" onclick="labOpen(\''+t.id+'\')">'+esc(t.t)+'</button>';}).join('')
+      +'<div class="lab-rail-h" style="margin-top:12px">Experiments</div>'+xs.map(function(x){return '<button class="lab-nav'+(L.tool==='exp:'+x.id?' on':'')+'" onclick="labOpen(\'exp:'+attr(x.id)+'\')">'+esc(x.name)+'<small>'+esc(STATUS[x.status]?STATUS[x.status][1]:x.status)+'</small></button>';}).join('');
+  }
+  function rightRail(){
+    var h='<div class="lab-rail-h">Trust principle</div><div class="fb-card"><ul class="lab-lim" style="margin:0">'+['what changed','why it changed','what data was used','when it was known','how large the sample is','whether evaluation was out-of-sample','where the model fails','whether the market later agreed'].map(function(t){return '<li>'+t+'</li>';}).join('')+'</ul><div class="fb-note" style="margin-top:6px">Every tool here answers one of these from a stored record. Transparency is part of the product.</div></div>';
+    h+='<div class="lab-rail-h">Data freshness</div>'+provenanceSummary();
+    var hc=healthChecks('all');
+    h+='<div class="lab-rail-h">Validation jobs</div><div class="fb-card">'+(hc?kv([['Daily self-check',hc.pass+'/'+hc.n+' passing'],['Run',agoOf(hc.at)],['Failing',hc.fails.length?hc.fails.map(function(c){return c.id;}).join(', '):'none']]):none('No self-check record loaded.'))+'</div>';
+    return h;
+  }
+  function centerHTML(){
+    var t=L.tool;
+    if(!t)return homeHTML();
+    var head='<div class="lab-tool-hd"><button class="fb-tgl" onclick="labGoHome()" aria-label="Back to Lab">‹ Lab</button>';
+    if(t.indexOf('exp:')===0){var x=expById(t.slice(4));if(!x)return head+'</div>'+none('That experiment is no longer on file.');return head+'<span class="t">Experiment</span></div>'+expDetail(x);}
+    var tool=toolById(t);if(!tool)return head+'</div>'+none('Unknown tool.');
+    var body={sandbox:sandboxTool,scenario:scenarioTool,sensitivity:sensitivityTool,calibration:calibrationTool,autopsy:autopsyTool,versions:versionsTool,failure:failureTool,walkforward:walkforwardTool,marketlab:marketTool,features:featuresTool,provenance:provenanceTool,record:recordTool}[t];
+    var out;try{out=body();}catch(e){out=none('This tool hit an error while rendering: '+esc(e&&e.message)+'. Nothing is shown rather than something wrong.');}
+    return head+'<span class="t">'+esc(tool.t)+'</span></div>'+out;
+  }
+  window.labRender=function(){
+    var c=$('labCenter');if(!c)return;
+    if(!L.at&&!L.loading){L.load();}
+    if(!L.at){c.innerHTML=rsTkSkel();return;}
+    c.innerHTML=centerHTML();
+    var lft=$('labLeft'),rgt=$('labRight');if(lft)lft.innerHTML=leftRail();if(rgt)rgt.innerHTML=rightRail();
+    var host=$('labHost'),nh=$('labNotesHd');if(host)host.classList.toggle('hide',!!L.tool);if(nh)nh.classList.toggle('hide',!!L.tool);
+    try{labSys();}catch(_){}
+  };
+  /* fromHash: the shell is applying #research/lab/<tool> (deep link, Back
+     button) — render only, never touch history again */
+  window.labOpen=function(id,fromHash){
+    if(L.tool===id&&fromHash)return;
+    L.tool=id;L.sel.autopsyIdx=null;labRender();
+    if(!fromHash){try{researchSetHash('lab',id,true);}catch(_){}}
+    var v=$('v-lab');if(v)setTimeout(function(){try{v.scrollIntoView({behavior:'smooth',block:'start'});}catch(_){}},30);
+  };
+  window.labGoHome=function(fromHash){
+    L.tool=null;labRender();
+    if(!fromHash){try{var r=researchParseHash();if(r&&r.sub==='lab'&&r.entity!=null)history.replaceState(null,'',location.pathname+location.search+'#research/lab');}catch(_){}}
+    var v=$('v-lab');if(v)setTimeout(function(){try{v.scrollIntoView({behavior:'smooth',block:'start'});}catch(_){}},30);
+  };
+  window.labRefreshClick=function(){L.at=0;L.ticks={};L.quotes={};L.sigs=null;rsTkRefresh('labRefreshBtn',['lab']);};
+
+  /* ------------------------------------------------------- system health */
+  function labSys(){
+    var host=$('rsSys-lab');if(!host)return;
+    var H=L.reports.health,hc=healthChecks('all'),bits=[],level='ok',tt;
+    if(!H){level=L.at?'warn':'mut';tt=L.at?'Attention needed':'Waiting for the records';if(L.at)bits.push('no daily self-check record');}
+    else if(hc&&hc.fails.length){level='neg';tt=hc.fails.length+' validation job'+(hc.fails.length===1?'':'s')+' failing';}
+    else{if(L.sigsErr)bits.push('graded signals unreadable');['nfl','cfb','slices','v12'].forEach(function(k){if(L.reports[k]===null)bits.push(k+' report missing');});if(RS_MODELS&&RS_MODELS.state==='unavailable')bits.push('model registry unreadable');if(bits.length){level='warn';tt='Attention needed';}else tt='Research systems operational';}
+    var ts=(bits.length?(bits.join(' · ')+' · '):'')+'Last refresh '+(L.at?ago(L.at):'—')+(H?(' · self-check '+agoOf(H.generated_at)):'');
+    var body=rsTkPipeRows(H&&H.pipeline_meta,'Model validation and ingestion jobs');
+    body+='<div class="fb-pipe"><div class="fb-pipe-t">Records loaded</div>'+[['report_nfl.json',L.reports.nfl],['report_cfb.json',L.reports.cfb],['error_slices.json',L.reports.slices],['v12_experiments.json',L.reports.v12],['calibration.js',window.EDCfbP4Calibration],['research_notes',window.LAB&&window.LAB.notes],['research_model_current',RS_MODELS&&RS_MODELS.rows],['signals (graded)',L.sigs]].map(function(r){var ok=!!r[1];return '<div class="fb-pipe-row"><span class="d '+(ok?'':'neg')+'"></span><span class="id">'+esc(r[0])+'</span><span class="st '+(ok?'':'neg')+'">'+(ok?'loaded':'not loaded')+'</span><span class="rw">'+(Array.isArray(r[1])?(r[1].length+' rows'):'')+'</span></div>';}).join('')+'</div>';
+    body+='<div id="rsMeta-lab" class="rs-panelwrap"></div>';
+    host.innerHTML=rsTkSysCard({level:level,tt:tt,ts:ts,key:'rsSyslab',body:body});
+    try{rsMetaRender('lab');}catch(_){}
+  }
+  L.sys=labSys;
+
+  /* The notes loader (research_notes + note_validations) stays untouched; the
+     R&D records load beside it, and the coverage research block mounts under
+     the notes exactly as its wrapper intended. */
+  (function(){
+    var orig=window.loadLab;
+    window.loadLab=function(force,signal){
+      var a=arguments,self=this,p;
+      try{p=Promise.resolve(orig?orig.apply(self,a):null);}catch(e){p=Promise.reject(e);}
+      var q=L.load(!!force);
+      return Promise.all([p.catch(function(){}),q.catch(function(){})]).then(function(){
+        try{var host=$('labHost');if(host&&window.ED_COVERAGE&&host.querySelector('.lab-card')){window.__MCOV_DS=undefined;window.__MCOV_SUM=undefined;window.__MCOV_LOADING=null;ED_COVERAGE.mountResearch(host);}}catch(_){}
+        labRender();
+      });
+    };
+  })();
+
+  /* Cold start: the shell activates the remembered or deep-linked module at
+     boot, before this block has parsed, so the Lab loader resolved to nothing.
+     Now that it exists, run that activation and apply any #research/lab/<id>. */
+  try{
+    if(window.RESEARCH_SUB==='lab'&&!L.at&&!L.loading&&typeof researchActivate==='function'){
+      var _rm=window.RESEARCH_MODULES&&window.RESEARCH_MODULES.lab;
+      if(!_rm||!_rm._.loading)researchActivate('lab',false);
+      var _r=researchParseHash();if(_r&&_r.sub==='lab'&&_r.entity!=null)labOpen(_r.entity,true);
+    }
+  }catch(_){}
+})();
+</script>
+
 <!-- ==================== EdgeDesk Intelligence (AI decision layer) ==================== -->
 <style>
 /* Native to EdgeDesk's token system: reuses --bg/--surface/--accent/--pos/--neg/--warn/--gold/--mdl. */
@@ -26792,6 +27786,23 @@ function fbAutoRefresh(){
 }
 setInterval(fbAutoRefresh,15*60*1000);
 document.addEventListener('visibilitychange',function(){if(!document.hidden)fbAutoRefresh();});
+/* Lab bridge: the Lab's sandbox, scenario, sensitivity and feature tools
+   re-run THIS engine on THIS slate. Everything the bridge exposes is a
+   function the Football tab already calls; nothing is re-trained. */
+window.FBLab={
+  ready:function(){return !!(FB.at&&FB.nfl.state&&window.EDFootball);},
+  loading:function(){return !!FB.loading;},
+  ensure:function(){if(this.ready())return Promise.resolve();try{return Promise.resolve(window.loadFootball(false,null));}catch(e){return Promise.reject(e);}},
+  nflGames:function(){return FB.nfl.up.map(function(u){var M=fbNflMarketFor(u.g,u.t);return {gid:String(u.g.game_id),label:M.awayName+' @ '+M.homeName,home:u.g.home_team,away:u.g.away_team,homeName:M.homeName,awayName:M.awayName,t:u.t,season:fbNum(u.g.season),req:fbNflGameReq(u.g),mkt:M.mkt,src:M.src};});},
+  nflPredict:function(req,mkt,season){return window.EDFootball.predictGame({sport:'nfl',state:FB.nfl.state,game:req,season:season,market:mkt||{}});},
+  nflFeatures:function(req){return window.EDFootball.nfl.gameFeatures(FB.nfl.state,req);},
+  nflState:function(){return FB.nfl.state;},
+  p4Ready:function(){return !!(FB.p4.loadedAt&&FB.p4.state&&window.EDCfbP4&&window.EDCfbP4Params&&!FB.p4.engineErr);},
+  p4Ensure:function(){if(this.p4Ready())return Promise.resolve();if(!FB.p4._labLoading){FB.p4._labLoading=Promise.resolve().then(function(){return fbP4LoadGuarded(false,null);}).then(function(){FB.p4._labLoading=null;},function(){FB.p4._labLoading=null;});}return FB.p4._labLoading;},
+  p4Games:function(){return FB.p4.up.map(function(u){return {gid:String(u.g.game_id),label:u.g.away_team+' @ '+u.g.home_team,home:u.g.home_team,away:u.g.away_team,t:u.t,u:u};});},
+  p4Request:function(u){return fbP4Request(u);},
+  p4Project:function(req){return window.EDCfbP4.projectGame(req);}
+};
 /* Cold start on the Football sub-tab: the shell activates the remembered or
    deep-linked module while this block is still unparsed, so its late-bound
    loader resolved to nothing and the panel sat on "Loading…" until the tab
