@@ -1,8 +1,8 @@
 {
   "schema": "edgedesk_football_health_v1",
-  "generated_at": "2026-09-01T14:15:31.029Z",
+  "generated_at": "2026-09-02T13:48:03.023Z",
   "ok": true,
-  "last_ok_at": "2026-09-01T14:15:31.029Z",
+  "last_ok_at": "2026-09-02T13:48:03.023Z",
   "run": {
     "trigger": "schedule",
     "runner": "github-actions",
@@ -28,9 +28,9 @@
       "source": "nflverse games.csv + stats_team_week"
     },
     "p4": {
-      "completed_in_feed": 5,
-      "absorbed": 5,
-      "data_through": "2026-08-29",
+      "completed_in_feed": 8,
+      "absorbed": 8,
+      "data_through": "2026-08-30",
       "schedule_source": "cfbfastR-data schedules 2026"
     }
   },
@@ -42,7 +42,7 @@
       "outliers": []
     },
     "p4": {
-      "compared": 20,
+      "compared": 19,
       "median_gap": 4.2,
       "max_gap": 15.83,
       "outliers": [
@@ -126,7 +126,7 @@
       "id": "p4_ingest",
       "label": "CFB P4: completed games absorb into the ratings",
       "status": "pass",
-      "detail": "5/5 absorbed, data through 2026-08-29"
+      "detail": "8/8 absorbed, data through 2026-08-30"
     },
     {
       "id": "p4_roster",
@@ -150,42 +150,42 @@
       "id": "p4_lines_src",
       "label": "CFB P4: cfb.lines market source reachable",
       "status": "pass",
-      "detail": "20 of 30 upcoming games have a book number"
+      "detail": "19 of 30 upcoming games have a book number"
     },
     {
       "id": "p4_projections",
       "label": "CFB P4: upcoming slate projects to sane numbers",
       "status": "pass",
-      "detail": "30/30 upcoming P4 games PREDICTED, all inside bounds · roster bundles joined on 20/30"
+      "detail": "30/30 upcoming P4 games PREDICTED, all inside bounds · roster bundles joined on 19/30"
     },
     {
       "id": "p4_lines_market",
       "label": "CFB P4: market lines plausible",
       "status": "pass",
-      "detail": "20 lines inside plausible bounds"
+      "detail": "19 lines inside plausible bounds"
     },
     {
       "id": "p4_lines",
       "label": "CFB P4: model vs market line guard",
       "status": "warn",
-      "detail": "median gap 4.2 pts over 20 games; 2 game(s) beyond 10 pts"
+      "detail": "median gap 4.2 pts over 19 games; 2 game(s) beyond 10 pts"
     }
   ],
   "pipeline_meta": {
-    "daily_check_last_run": "2026-09-01T14:15:31.029Z",
+    "daily_check_last_run": "2026-09-02T13:48:03.023Z",
     "daily_check_last_status": "ok",
-    "engine_tests_last_run": "2026-09-01T14:15:31.029Z",
+    "engine_tests_last_run": "2026-09-02T13:48:03.023Z",
     "engine_tests_last_status": "ok",
-    "nfl_ingest_last_run": "2026-09-01T14:15:31.029Z",
+    "nfl_ingest_last_run": "2026-09-02T13:48:03.023Z",
     "nfl_ingest_last_status": "ok",
     "row_count_nfl_ingest": 0,
-    "p4_ingest_last_run": "2026-09-01T14:15:31.029Z",
+    "p4_ingest_last_run": "2026-09-02T13:48:03.023Z",
     "p4_ingest_last_status": "ok",
-    "row_count_p4_ingest": 5,
-    "projection_guard_last_run": "2026-09-01T14:15:31.029Z",
+    "row_count_p4_ingest": 8,
+    "projection_guard_last_run": "2026-09-02T13:48:03.023Z",
     "projection_guard_last_status": "ok",
-    "line_guard_last_run": "2026-09-01T14:15:31.029Z",
+    "line_guard_last_run": "2026-09-02T13:48:03.023Z",
     "line_guard_last_status": "ok",
-    "row_count_line_guard": 22
+    "row_count_line_guard": 21
   }
 }
