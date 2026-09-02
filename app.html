@@ -43,7 +43,7 @@
 </script>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
-:root{--bg:#0d0f13;--surface:#13161c;--surface2:#191d25;--border:#262c36;--text:#e7eaf0;--fg:#e7eaf0;--dim:#8a93a2;--faint:#78818f;--accent:#4d8dff;--pos:#2fb47c;--neg:#e26044;--warn:#d99a2b;--gold:#e3b84d;--mdl:#9b8cff;--nav:62px}
+:root{--bg:#0d0f13;--surface:#13161c;--surface2:#191d25;--border:#262c36;--text:#e7eaf0;--fg:#e7eaf0;--dim:#8a93a2;--faint:#78818f;--accent:#4d8dff;--pos:#2fb47c;--neg:#e26044;--warn:#d99a2b;--gold:#e3b84d;--mdl:#9b8cff;--nav:62px;--foot:30px;--sp2:8px;--sp3:12px;--sp4:16px;--sp5:20px;--sp6:24px;--sp8:32px;--rad:14px;--rad-s:11px}
 *{box-sizing:border-box}html,body{margin:0}
 body{background:var(--bg);color:var(--text);font-family:'Inter',system-ui,sans-serif;-webkit-font-smoothing:antialiased;-webkit-tap-highlight-color:transparent}
 .mono{font-family:'JetBrains Mono',monospace}a{color:var(--accent);text-decoration:none}.hide{display:none!important}
@@ -53,7 +53,8 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',system-ui,sans-s
 .logo .mk{width:10px;height:16px;background:linear-gradient(180deg,var(--accent),#7db0ff);border-radius:2px;transform:skewX(-12deg)}
 .tag{font-size:9px;letter-spacing:.05em;text-transform:uppercase;color:var(--warn);border:1px solid var(--warn);border-radius:14px;padding:2px 6px;font-weight:600}
 .spacer{flex:1}.pill{font-size:10px;color:var(--dim);border:1px solid var(--border);border-radius:12px;padding:3px 8px}.pill.ok{color:var(--pos);border-color:rgba(47,180,124,.4)}.pill.err{color:var(--neg);border-color:rgba(226,96,68,.4)}
-.view{padding:14px 14px calc(var(--nav) + env(safe-area-inset-bottom) + 30px);max-width:960px;margin:0 auto}.view.hide{display:none}
+/* bottom padding = nav + the measured disclaimer height (--foot, set by the script after .foot) + safe area: content can never end under either */
+.view{padding:14px 14px calc(var(--nav) + var(--foot) + env(safe-area-inset-bottom) + 16px);max-width:960px;margin:0 auto}.view.hide{display:none}
 /* research shell panels: layout comes from the parent .view box, panels only toggle */
 .rpanel.hide{display:none}
 /* ---- research provenance / maturity / state system ---- */
@@ -257,7 +258,9 @@ textarea{min-height:110px;font-family:'JetBrains Mono',monospace;resize:vertical
 .bottomnav .ic{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:2;flex:none}
 @media(max-width:359px){.bottomnav button{font-size:7.5px;gap:3px}.bottomnav .ic{width:17px;height:17px}}
 @media(min-width:760px){.bottomnav{justify-content:center;gap:4px}.bottomnav button{flex:0 0 96px;font-size:10px}.bottomnav .ic{width:20px;height:20px}}
-.foot{position:fixed;bottom:var(--nav);left:0;right:0;background:var(--surface2);border-top:1px solid var(--border);font-size:10px;color:var(--faint);text-align:center;padding:5px 10px;padding-bottom:env(safe-area-inset-bottom);z-index:25}.foot b{color:var(--warn)}
+/* the disclaimer sits ABOVE the nav (nav height + its own safe-area pad); one compact line, wrapping only when the width demands it */
+.foot{position:fixed;bottom:calc(var(--nav) + 1px + env(safe-area-inset-bottom));left:0;right:0;background:color-mix(in srgb,var(--surface2) 94%,transparent);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border-top:1px solid var(--border);font-size:10px;line-height:1.3;color:var(--dim);text-align:center;padding:4px 10px;z-index:25;text-wrap:balance}.foot b{color:var(--warn)}.foot .sep{color:var(--faint);margin:0 3px}
+.fb-drawer,.rs-dossier,#ufcModal,#tddModal,#cfbModal{padding-bottom:calc(var(--nav) + var(--foot) + env(safe-area-inset-bottom) + 24px)}
 @media(min-width:760px){.filters{grid-template-columns:repeat(4,1fr)}.kpis{grid-template-columns:repeat(4,1fr)}}
 /* ===== faultline ===== */
 .flchips{display:flex;gap:7px;overflow-x:auto;padding-bottom:4px;margin-bottom:12px;-webkit-overflow-scrolling:touch}
@@ -801,6 +804,71 @@ textarea{min-height:110px;font-family:'JetBrains Mono',monospace;resize:vertical
 .fb-split .lab .c{color:var(--faint);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .fb-split .bar{height:6px;border-radius:3px;background:#5d8def;overflow:hidden;margin-top:6px}
 .fb-split .bar span{display:block;height:100%}
+/* ===== terminal polish: one spacing/typography system across every research panel =====
+   roles — panel title .fb-panelhd h2 · section title .fb-sechd · card title .fb-snap-h .t / .fb-ms-h .t
+   metric value .fb-kpi .n · metric label .fb-kpi .l · body 13px · metadata 11px (--dim, never fainter)
+   technical/monospace .mono, .fb-sig-f, .fb-mvm-w */
+.fb-card{padding:var(--sp4);border-radius:var(--rad);margin-bottom:var(--sp3)}
+.fb-sechd{margin:var(--sp5) 0 var(--sp2)}
+.fb-kpis{gap:var(--sp2);margin:var(--sp3) 0}
+.fb-kpi{padding:10px 6px 8px;min-height:66px;display:flex;flex-direction:column;justify-content:center}
+.fb-kpi .l{color:var(--dim)}
+.fb-note,.fb-sig-f,.fb-mvm-w,.fb-ms-v,.fb-sys-h .ts,.fb-range .lab,.fb-range .leg,.fb-split .lab,.fb-quiet small,.fb-drawer-card .sub{color:var(--dim)}
+.fb-defs{display:grid;grid-template-columns:auto minmax(0,1fr);gap:3px 10px;font-size:12px;line-height:1.4;margin:0}
+.fb-defs b{color:var(--text);font-weight:600;font-size:11.5px;letter-spacing:.02em}
+.fb-defs span{color:var(--dim)}
+.fb-how{background:none;border:none;color:var(--accent);font:600 10.5px 'Inter',system-ui,sans-serif;letter-spacing:.07em;text-transform:uppercase;padding:8px 0 0;cursor:pointer;display:inline-flex;align-items:center;gap:4px}
+.fb-how:hover{text-decoration:underline}
+.fb-howbody{font-size:11.5px;color:var(--dim);line-height:1.5;padding-top:6px}
+.fb-howbody b{color:var(--dim);font-weight:600}
+.fb-cta{margin-top:var(--sp3);padding:13px;min-height:44px}
+.fb-tools{gap:var(--sp2)}
+.fb-tool{padding:10px 12px;gap:10px;min-height:56px}
+.fb-tool .ic{width:30px;height:30px}
+.fb-tool .ic svg{width:15px;height:15px}
+.fb-tool .tt{font-size:11.5px}
+.fb-tool .td{font-size:11.5px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.fb-today{gap:var(--sp2)}
+.fb-sig{padding:11px 12px}
+.fb-sig.major{border-color:rgba(77,141,255,.45)}
+.fb-sig.major .fb-sig-k{color:var(--accent)}
+.fb-sig .pri{font-family:'JetBrains Mono',monospace;font-size:8.5px;letter-spacing:.07em;text-transform:uppercase;border:1px solid var(--border);border-radius:5px;padding:2px 5px;color:var(--dim);flex:none;font-weight:600}
+.fb-sig .pri.pri-warn{color:var(--warn);border-color:rgba(217,154,43,.45)}
+.fb-sig .pri.pri-neg{color:var(--neg);border-color:rgba(226,96,68,.45)}
+.fb-sig .pri.pri-major{color:var(--accent);border-color:rgba(77,141,255,.45)}
+.fb-sig .pri.pri-info{color:var(--faint)}
+.fb-sig-grid .c .v.p{font-size:19px;color:var(--warn);font-weight:700}
+.fb-sig-grid .c .v.p.pos{color:var(--pos)}.fb-sig-grid .c .v.p.neg{color:var(--neg)}.fb-sig-grid .c .v.p.mdl{color:var(--mdl)}.fb-sig-grid .c .v.p.txt{font-size:15px;color:var(--text)}
+.fb-sig-grid .c .v:not(.p){color:var(--dim);font-weight:500}
+.fb-sig-grid .c .v.mdl:not(.p){color:var(--mdl)}
+.fb-more{display:flex;justify-content:center;margin-top:var(--sp2)}
+.fb-mvm-row.p{padding:9px 0}
+.fb-mvm-row.p .l{color:var(--text);font-weight:600}
+.fb-mvm-row.p .v{font-size:19px;color:var(--warn)}
+.fb-mvm-row.p .v.mdl{color:var(--mdl)}
+.fb-btns{gap:var(--sp2)}
+.fb-btn{padding:11px 8px;min-height:40px}
+.fb-tgl{min-height:34px}
+.fb-sys-h .tt .gl{margin-right:6px;font-weight:700}
+.fb-sys-h .tt.warn .gl{color:var(--warn)}.fb-sys-h .tt.neg .gl{color:var(--neg)}.fb-sys-h .tt .gl.ok{color:var(--pos)}
+.fb-panelhd{margin:var(--sp2) 0 var(--sp2)}
+/* system-health header: the toggle drops under the status line when the column is narrow, so the status never squeezes */
+.fb-sys-h{flex-wrap:wrap}
+.fb-sys-h .tx{flex:1 1 210px;min-width:0}
+.fb-sys-h .fb-tgl{margin-left:auto}
+/* long signal titles wrap; the priority badge and sport tag follow on the next line if needed */
+.fb-sig-k{flex-wrap:wrap;row-gap:4px}
+.fb-sig-k .kk{white-space:normal;flex:1 1 auto;line-height:1.3}
+.fb-panelhd .freshness{color:var(--dim)}
+.fb-tool:focus-visible,.fb-btn:focus-visible,.fb-lnk:focus-visible,.fb-cta:focus-visible,.fb-tgl:focus-visible,.fb-sig:focus-visible,.fb-how:focus-visible,.stseg button:focus-visible,.rs-tool:focus-visible,.refreshbtn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+/* sport tabs: six labels fit a 360px column without a min-width, so nothing clips; scroll stays as the fallback */
+.stseg.research-sub button{min-width:0;flex:1 1 auto;padding:9px 6px;font-size:12px;min-height:38px;scroll-snap-align:center}
+.stseg.research-sub{scroll-snap-type:x proximity;-webkit-overflow-scrolling:touch}
+@media(max-width:340px){.stseg.research-sub button{font-size:11px;padding:9px 4px}}
+/* shared frames on the non-sport panels */
+.rs-lede{color:var(--dim);font-size:12.5px;line-height:1.5;margin:0 0 var(--sp3)}
+.rs-lede b{color:var(--warn);font-weight:600}
+@media(min-width:760px){.fb-kpi .n{font-size:28px}.fb-sig-grid .c .v.p{font-size:20px}}
 
 /* clickable ledger rows + consensus receipts */
 .betcard .bhead{cursor:pointer}
@@ -1921,28 +1989,29 @@ button:focus-visible,select:focus-visible,input:focus-visible,a:focus-visible{ou
     </div>
     <!-- STATS -->
     <div id="v-stats" class="rpanel hide">
-    <div class="row-between"><h2 style="margin:0">Stats</h2><span class="spacer"></span><span class="freshness" id="stFresh">—</span><button class="refreshbtn" title="Refresh" onclick="researchRefresh('stats')">&#8635;</button></div>
-    <div id="rsMeta-stats" class="rs-panelwrap"></div>
-    <p class="lede">The players and teams behind the boards — browse a roster, search a player, or scan the leaders. Fundamentals to sanity-check direction; the edge itself still lives in CLV.</p>
+    <div class="row-between fb-panelhd"><h2 style="margin:0">Stats</h2><span class="spacer"></span><span class="freshness" id="stFresh">—</span><button class="refreshbtn" id="stRefreshBtn" title="Refresh" aria-label="Refresh stats" onclick="rsTkRefresh('stRefreshBtn',['stats'])">&#8635;</button></div>
+    <p class="rs-lede">Players and teams behind the boards: rosters, search, leaders. Fundamentals for direction; the edge still lives in CLV.</p>
     <div class="stchips" id="stLeagues"></div>
     <div class="stseg" id="stSeg"><button data-m="teams" class="on">Teams</button><button data-m="players">Players</button><button data-m="leaders">Leaders</button></div>
     <div id="stControls"></div>
     <div id="stBody"><div class="empty">Loading…</div></div>
+    <div id="rsSys-stats" class="fb-ov" style="margin-top:var(--sp5)"></div>
     </div>
     <!-- PROPS -->
     <div id="v-props" class="rpanel hide">
-    <div class="row-between"><h2 style="margin:0">Props</h2><span class="spacer"></span><span class="freshness" id="prFresh">—</span><button class="refreshbtn" title="Refresh" onclick="researchRefresh('props')">&#8635;</button></div>
-    <div id="rsMeta-props" class="rs-panelwrap"></div>
-    <p class="lede">Model projections for player props &mdash; per-game rate with modeled variance. <b style="color:var(--warn)">Projections, not lines, not edges.</b> An edge only exists once these beat a real book's closing number; until then it's research to sanity-check, never a call.</p>
+    <div class="row-between fb-panelhd"><h2 style="margin:0">Props</h2><span class="spacer"></span><span class="freshness" id="prFresh">—</span><button class="refreshbtn" id="prRefreshBtn" title="Refresh" aria-label="Refresh props" onclick="rsTkRefresh('prRefreshBtn',['props'])">&#8635;</button></div>
+    <p class="rs-lede">Season-rate projections with modeled variance. <b>Projections, not lines, not edges</b> — an edge exists only once these beat a real closing number.</p>
     <div class="stchips" id="prSports"></div>
     <div id="prControls"></div>
     <div id="prBody"><div class="empty">Loading…</div></div>
+    <div id="rsSys-props" class="fb-ov" style="margin-top:var(--sp5)"></div>
     </div>
     <!-- LAB (TILT DATA LABS) -->
     <div id="v-lab" class="rpanel hide">
+    <div class="row-between fb-panelhd"><h2 style="margin:0">Lab</h2><span class="spacer"></span><span class="freshness" id="labFresh">research library</span><button class="refreshbtn" id="labRefreshBtn" title="Refresh" aria-label="Refresh lab" onclick="rsTkRefresh('labRefreshBtn',['lab'])">&#8635;</button></div>
     <div class="lab-lede">TILT DATA LABS &middot; research library. An idea moves exploratory &rarr; validating &rarr; promoted &rarr; active only by clearing closing-line value, never by assertion. Nothing here is a bet.</div>
-    <div id="rsMeta-lab" class="rs-panelwrap"></div>
     <div id="labHost"></div>
+    <div id="rsSys-lab" class="fb-ov" style="margin-top:var(--sp5)"></div>
     </div>
     <div id="rsDossier" class="rs-dossier" role="dialog" aria-modal="true" aria-label="Provenance dossier" onclick="if(event.target===this)rsDossierClose()">
       <div class="rs-dossier-card" id="rsDossierCard"></div>
@@ -1963,7 +2032,19 @@ button:focus-visible,select:focus-visible,input:focus-visible,a:focus-visible{ou
   </section>
 </main>
 
-<div class="foot"><b class="footlink" onclick="show('terms')">Research tool only — not betting advice.</b> Signals can be wrong. 21+. 1-800-GAMBLER.</div>
+<div class="foot" id="edFoot" role="contentinfo"><b class="footlink" onclick="show('terms')">Research tool only — not betting advice.</b> Signals can be wrong.<span class="sep">·</span>21+<span class="sep">·</span>1-800-GAMBLER</div>
+<script>
+/* the disclaimer's real height becomes --foot, so page padding and overlay
+   padding track it through wrapping, font scaling and rotation */
+(function(){
+  var f=document.getElementById('edFoot');if(!f)return;
+  function m(){var h=f.offsetHeight||0;if(h)document.documentElement.style.setProperty('--foot',h+'px');}
+  try{if(window.ResizeObserver)new ResizeObserver(m).observe(f);}catch(_){}
+  window.addEventListener('resize',m);window.addEventListener('orientationchange',m);
+  if(document.fonts&&document.fonts.ready)document.fonts.ready.then(m);
+  m();setTimeout(m,300);
+})();
+</script>
 
 
   <!-- SETTINGS -->
@@ -3395,7 +3476,8 @@ window.researchGo=function(sub){
   var s=document.querySelectorAll('.view');for(var i=0;i<s.length;i++)s[i].classList.toggle('hide',s[i].id!=='v-research');
   var panels=document.querySelectorAll('#v-research .rpanel');for(var p=0;p<panels.length;p++)panels[p].classList.toggle('hide',panels[p].id!=='v-'+sub);
   var b=document.querySelectorAll('.bottomnav button');for(var j=0;j<b.length;j++)b[j].classList.toggle('on',b[j].dataset.v==='research');
-  var bars=document.querySelectorAll('.research-sub button');for(var k=0;k<bars.length;k++)bars[k].classList.toggle('on',bars[k].dataset.sub===sub);
+  var bars=document.querySelectorAll('.research-sub button');for(var k=0;k<bars.length;k++){bars[k].classList.toggle('on',bars[k].dataset.sub===sub);
+    if(bars[k].dataset.sub===sub){try{bars[k].scrollIntoView({block:'nearest',inline:'nearest'});}catch(_){}}}
   window.scrollTo(0,0);
   plStop();
   try{var _pp=prefs();_pp.lastTab='research';_pp.lastResearchSub=sub;localStorage.setItem('edgedesk_prefs',JSON.stringify(_pp));}catch(_){}
@@ -3918,6 +4000,8 @@ function rsPipelineHTML(modId){
     '</ul></div>';
 }
 function rsMetaRender(modId){
+  var sys=$('rsSys-'+modId);
+  if(sys){var lbl={stats:'Stats',props:'Props',lab:'Lab'}[modId]||modId;sys.innerHTML=rsTkModuleSysCard(modId,lbl);}
   var host=$('rsMeta-'+modId);if(!host)return;
   host.innerHTML=rsFreshHTML(modId)+rsStateHTML(modId)+rsPipelineHTML(modId)+rsProvHTML(modId)+rsFieldsHTML(modId)+rsLimitsHTML(modId)+rsDatasetHTML(modId);
   rsFreshApply(modId);
@@ -3946,7 +4030,7 @@ var RS_TK_ICONS={
 function rsTkMvm(o){
   var h='<div class="fb-mvm-h"><span class="t">'+stEsc(o.title||'Model vs market')+'</span>'+(o.game?'<span class="g">'+stEsc(o.game)+'</span>':'')+'</div>';
   if(o.when)h+='<div class="fb-mvm-w">'+stEsc(o.when)+'</div>';
-  h+=(o.rows||[]).map(function(r){return '<div class="fb-mvm-row"><span class="l">'+stEsc(r.l)+(r.sub?'<small>'+stEsc(r.sub)+'</small>':'')+'</span><span class="v '+(r.c||'')+'">'+stEsc(r.v)+'</span></div>';}).join('');
+  h+=(o.rows||[]).map(function(r){return '<div class="fb-mvm-row'+(r.p?' p':'')+'"><span class="l">'+stEsc(r.l)+(r.sub?'<small>'+stEsc(r.sub)+'</small>':'')+'</span><span class="v '+(r.c||'')+'">'+stEsc(r.v)+'</span></div>';}).join('');
   if(o.band)h+=rsTkRange(o.band);
   if(o.split)h+=rsTkSplit(o.split);
   if(o.foot)h+='<div class="fb-note" style="margin-top:8px">'+o.foot+'</div>';
@@ -3992,10 +4076,16 @@ function rsTkBadges(list){
   return '<div class="fb-badges">'+list.map(function(b){return '<span class="fb-badge '+b[0]+'"><i></i>'+stEsc(b[1])+'</span>';}).join('')+'</div>';
 }
 /* signal card: it = {k, cls, tag, title, cells:[{l,v,c}], note, foot, onclick, action:{label,onclick}} */
+/* signal card: it = {k, cls, pri:'warn'|'neg'|'major'|'notable'|'info', tag, title, cells:[{l,v,c,p}], note, foot, onclick, action:{label,onclick}}
+   pri drives a small text badge plus a restrained border; a cell with p:true is
+   the number the card exists for and renders dominant, the others subordinate */
+var RS_TK_PRI={neg:['pri-neg','Data warning'],warn:['pri-warn','Data warning'],major:['pri-major','Major disagreement'],notable:['','Notable'],info:['pri-info','Info']};
 function rsTkSig(it){
-  var cells=(it.cells||[]).map(function(c){return '<div class="c"><div class="l">'+stEsc(c.l)+'</div><div class="v '+(c.c||'')+'">'+stEsc(c.v)+'</div></div>';}).join('');
-  return '<div class="fb-sig '+(it.cls||'')+'"'+(it.onclick?(' onclick="'+it.onclick+'" role="button" tabindex="0"'):'')+'>'
-    +'<div class="fb-sig-k"><span class="kk">'+stEsc(it.k)+'</span>'+(it.tag?'<span class="sp">'+stEsc(it.tag)+'</span>':'')+'</div>'
+  var pri=RS_TK_PRI[it.pri||'info']||RS_TK_PRI.info;
+  var cells=(it.cells||[]).map(function(c){return '<div class="c"><div class="l">'+stEsc(c.l)+'</div><div class="v '+(c.p?'p ':'')+(c.c||'')+'">'+stEsc(c.v)+'</div></div>';}).join('');
+  var cls=(it.cls||'')+(it.pri==='major'?' major':'');
+  return '<div class="fb-sig '+cls+'"'+(it.onclick?(' onclick="'+it.onclick+'" role="button" tabindex="0"'):'')+'>'
+    +'<div class="fb-sig-k"><span class="kk">'+stEsc(it.k)+'</span><span class="pri '+pri[0]+'">'+pri[1]+'</span>'+(it.tag?'<span class="sp">'+stEsc(it.tag)+'</span>':'')+'</div>'
     +'<div class="fb-sig-m">'+stEsc(it.title)+'</div>'
     +(cells?'<div class="fb-sig-grid">'+cells+'</div>':'')
     +(it.note?'<div class="fb-sig-n">'+it.note+'</div>':'')
@@ -4026,16 +4116,19 @@ function rsTkPipeLevel(meta){
 }
 /* the system-health card: o = {level, tt, ts, key, body} — key names the collapsible */
 var RS_TK_OPEN={};
+/* the system-health card: o = {level:'ok'|'warn'|'neg'|'mut', tt, ts, key, body}.
+   The glyph carries the meaning alongside the colour, never colour alone. */
 function rsTkSysCard(o){
   var open=!!RS_TK_OPEN[o.key];
-  return '<div class="fb-card fb-sys"><div class="fb-sys-h"><span class="dot '+o.level+'"></span><div class="tx"><div class="tt '+(o.level==='ok'||o.level==='mut'?'':o.level)+'">'+stEsc(o.tt)+'</div><div class="ts">'+stEsc(o.ts)+'</div></div>'
+  var gl=o.level==='ok'?'✓':(o.level==='warn'?'⚠':(o.level==='neg'?'✗':'·'));
+  return '<div class="fb-card fb-sys"><div class="fb-sys-h"><span class="dot '+o.level+'"></span><div class="tx"><div class="tt '+(o.level==='ok'||o.level==='mut'?'':o.level)+'"><span class="gl'+(o.level==='ok'?' ok':'')+'" aria-hidden="true">'+gl+'</span>'+stEsc(o.tt)+'</div><div class="ts">'+stEsc(o.ts)+'</div></div>'
     +'<button class="fb-tgl" id="'+o.key+'Btn" aria-expanded="'+(open?'true':'false')+'" aria-controls="'+o.key+'Col" onclick="rsTkColToggle(\''+o.key+'\')">'+(open?'Hide details':'View pipeline details')+'</button></div>'
     +'<div class="fb-col'+(open?' open':'')+'" id="'+o.key+'Col"><div>'+o.body+'</div></div></div>';
 }
-window.rsTkColToggle=function(key){
+window.rsTkColToggle=function(key,openLabel,closedLabel){
   RS_TK_OPEN[key]=!RS_TK_OPEN[key];
   var c=$(key+'Col');if(c)c.classList.toggle('open',!!RS_TK_OPEN[key]);
-  var b=$(key+'Btn');if(b){b.textContent=RS_TK_OPEN[key]?'Hide details':'View pipeline details';b.setAttribute('aria-expanded',String(!!RS_TK_OPEN[key]));}
+  var b=$(key+'Btn');if(b){b.textContent=RS_TK_OPEN[key]?(openLabel||'Hide details'):(closedLabel||'View pipeline details');b.setAttribute('aria-expanded',String(!!RS_TK_OPEN[key]));}
 };
 /* the one drawer every research panel shares (#rsDrawer in the shell) */
 window.rsTkDrawerOpen=function(html){
@@ -4077,6 +4170,58 @@ function rsTkScrollTo(el){
   if(!el)return;
   setTimeout(function(){try{el.scrollIntoView({behavior:'smooth',block:'start'});el.classList.add('fb-hl');setTimeout(function(){el.classList.remove('fb-hl');},1700);}catch(_){}},40);
 }
+
+/* standard snapshot card: o = {title, meta, kpis:[{n,l,c}], defs:[[k,d],...], how:html, key, cta:{label,onclick}} */
+function rsTkSnap(o){
+  var defs=(o.defs||[]).map(function(d){return '<b>'+stEsc(d[0])+'</b><span>'+stEsc(d[1])+'</span>';}).join('');
+  var open=!!RS_TK_OPEN[o.key+'How'];
+  return '<div class="fb-card"><div class="fb-snap-h"><span class="t">'+stEsc(o.title)+'</span><span class="m">'+stEsc(o.meta||'')+'</span></div>'
+    +rsTkKpis(o.kpis||[])
+    +(defs?'<div class="fb-defs">'+defs+'</div>':'')
+    +(o.how?'<button class="fb-how" id="'+o.key+'HowBtn" aria-expanded="'+(open?'true':'false')+'" aria-controls="'+o.key+'HowCol" onclick="rsTkColToggle(\''+o.key+'How\',\'Hide\',\'How this is counted →\')">'+(open?'Hide':'How this is counted →')+'</button>'
+      +'<div class="fb-col'+(open?' open':'')+'" id="'+o.key+'HowCol"><div class="fb-howbody">'+o.how+'</div></div>':'')
+    +(o.cta?'<button class="fb-cta" onclick="'+o.cta.onclick+'">'+stEsc(o.cta.label)+' '+RS_TK_ICONS.arrow+'</button>':'')+'</div>';
+}
+/* today section: the top three by priority stay open, the rest fold behind
+   "Show N more" — nothing is dropped. Order: data warnings, major
+   disagreements, notable, informational; ties keep the caller's order. */
+var RS_TK_PRI_RANK={neg:0,warn:0,major:1,notable:2,info:3};
+function rsTkToday(items,key,quiet){
+  if(!items||!items.length)return quiet||'';
+  var sorted=items.map(function(it,i){return [RS_TK_PRI_RANK[it.pri||'info'],i,it];}).sort(function(a,b){return a[0]-b[0]||a[1]-b[1];}).map(function(x){return x[2];});
+  var head=sorted.slice(0,3),rest=sorted.slice(3),open=!!RS_TK_OPEN[key+'More'];
+  var h='<div class="fb-today">'+head.map(rsTkSig).join('')+'</div>';
+  if(rest.length){
+    h+='<div class="fb-col'+(open?' open':'')+'" id="'+key+'MoreCol"><div><div class="fb-today" style="margin-top:var(--sp2)">'+rest.map(rsTkSig).join('')+'</div></div></div>'
+      +'<div class="fb-more"><button class="fb-tgl" id="'+key+'MoreBtn" aria-expanded="'+(open?'true':'false')+'" aria-controls="'+key+'MoreCol" onclick="rsTkColToggle(\''+key+'More\',\'Show fewer\',\'Show '+rest.length+' more\')">'+(open?'Show fewer':('Show '+rest.length+' more'))+'</button></div>';
+  }
+  return h;
+}
+/* a module that has no overview of its own (Stats, Props, Lab) still gets the
+   same collapsed System Health frame: state, freshness and the shell's
+   provenance block, painted into #rsSys-<module> by rsMetaRender */
+function rsTkModuleSysCard(modId,label){
+  var m=RESEARCH_MODULES[modId],st=(m&&m._.uistate&&m._.uistate.state)||null,f=null;
+  try{f=rsFreshness(modId);}catch(_){}
+  var level='ok',tt,bits=[];
+  if(st&&st!=='ok'&&st!=='empty'&&st!=='zero-qualifying'){level='neg';tt='Read failed · '+st;}
+  else if(!st&&!(m&&m.hasData&&m.hasData())){level='mut';tt=modId==='lab'?'Research library':'Waiting for the data';if(modId==='lab')bits.push('no pipeline stamps published · validations are graded server-side');}
+  else{
+    if(f&&f.stale)bits.push('build stale');
+    if(st==='empty')bits.push('no rows ingested');
+    if(bits.length){level='warn';tt='Attention needed';}
+    else tt='All '+label.toLowerCase()+' research systems operational';
+  }
+  var lo=(m&&m.freshness)?(m.freshness()||{}).loadedAt:null;
+  var ts=(level==='warn'?(bits.join(' · ')+' · research still usable · '):(bits.length?(bits.join(' · ')+' · '):''))+(modId==='lab'?'Refreshed on open':('Last refresh '+(lo?ago(lo):'—')+((f&&f.published)?(' · build '+ago(f.builtAt)):' · no build time published')));
+  return rsTkSysCard({level:level,tt:tt,ts:ts,key:'rsSys'+modId,body:'<div id="rsMeta-'+modId+'" class="rs-panelwrap"></div>'});
+}
+/* keyboard: a signal card is a button */
+document.addEventListener('keydown',function(e){
+  if(e.key!=='Enter'&&e.key!==' ')return;
+  var el=e.target;if(!el||!el.classList||!el.classList.contains('fb-sig'))return;
+  e.preventDefault();el.click();
+});
 
 /* ---- cross-module entity search ---------------------------------------- */
 function rsNorm(s){return String(s==null?'':s).toLowerCase();}
@@ -8917,9 +9062,9 @@ function ufcTodayItems(bouts){
   if(e){
     var when='';try{when=whenLabel(e.start_time);}catch(_){}
     var up=e.updated_at?rsParseStamp(e.updated_at):null;
-    items.push({k:pick.mode==='live'?'Live now':(pick.mode==='upcoming'?'Next event':'Live feed stale'),cls:pick.mode==='stale'?'warn':'',tag:'LIVE',
+    items.push({k:pick.mode==='live'?'Live now':(pick.mode==='upcoming'?'Next event':'Live feed stale'),pri:pick.mode==='stale'?'warn':(pick.mode==='live'?'notable':'info'),cls:pick.mode==='stale'?'warn':'',tag:'LIVE',
       title:e.name||'UFC event',
-      cells:[{l:'Starts',v:e.start_time?rsTkWhen(e.start_time):'—'},{l:'Status',v:String(e.status||'—').toUpperCase(),c:pick.mode==='live'?'neg':''},{l:'Poller wrote',v:up?ago(up):'unknown',c:pick.mode==='stale'?'warn':'mut'}],
+      cells:[{l:'Status',v:String(e.status||'—').toUpperCase(),p:true,c:pick.mode==='live'?'neg':(pick.mode==='stale'?'warn':'txt')},{l:'Starts',v:e.start_time?rsTkWhen(e.start_time):'—'},{l:'Poller wrote',v:up?ago(up):'unknown',c:pick.mode==='stale'?'warn':'mut'}],
       note:pick.mode==='stale'?'The most recent event on file is still marked open and the poller has not moved it on. Not shown as live.':(pick.mode==='live'?'Round, clock and strike counts stream from the fight-state poller.':'Fights, corners and pre-fight tendencies appear in the Live Fight Center.'),
       foot:(when?(when+' · '):'')+'ufc.live_events · '+(up?('feed '+ago(up)):'no write stamp'),
       action:{label:'Open Fight Center',onclick:"ufcToolGo('live')"}});
@@ -8927,52 +9072,52 @@ function ufcTodayItems(bouts){
   var mvB=bouts.filter(function(b){return b.move;}).sort(function(x,y){return Math.abs(y.move.pp)-Math.abs(x.move.pp);});
   if(mvB.length&&Math.abs(mvB[0].move.pp)>=1){
     var b=mvB[0],r=b.move.row;
-    items.push({k:'Largest price movement',cls:'',tag:'MARKET',title:b.a.selection+' vs '+b.b.selection,
-      cells:[{l:'Opened',v:ufcPx(r.first_best_dec),c:'mut'},{l:'Now · '+(r.best_book||'best book'),v:ufcPx(r.best_dec)},{l:'Movement',v:rsTkPts(b.move.pp)+' pp',c:'warn'}],
-      note:'Implied probability of '+stEsc(r.selection)+' since the quote was first captured. A market fact, not a model output.',
+    items.push({k:'Largest price movement',pri:'notable',tag:'MARKET',title:b.a.selection+' vs '+b.b.selection,
+      cells:[{l:'Opened',v:ufcPx(r.first_best_dec),c:'mut'},{l:'Now · '+(r.best_book||'best book'),v:ufcPx(r.best_dec)},{l:'Movement',v:rsTkPts(b.move.pp)+' pp',p:true}],
+      note:'Implied probability of '+stEsc(r.selection)+' since first capture. A market fact, not a model output.',
       foot:(b.t?whenLabel(new Date(b.t).toISOString()):'')+(b.at?(' · market '+ago(b.at)):''),
       onclick:"ufcFocusBout('"+edAttrJs(b.key)+"')",action:{label:'Market research',onclick:"ufcToolGo('market')"}});
   }
   var eB=bouts.filter(function(b){return b.edge&&b.edge.row.sharp_fair!=null;}).sort(function(x,y){return Math.abs(y.edge.v)-Math.abs(x.edge.v);});
   if(eB.length&&Math.abs(eB[0].edge.v)>=0.01){
     var b2=eB[0],r2=b2.edge.row;
-    items.push({k:'Widest gap to sharp fair',cls:'',tag:'MARKET',title:b2.a.selection+' vs '+b2.b.selection,
-      cells:[{l:'Best price',v:ufcPx(r2.best_dec)},{l:'Sharp fair',v:ufcPx(1/Math.max(0.0001,+r2.sharp_fair)),c:'mdl'},{l:'Gap',v:(b2.edge.v*100).toFixed(2)+'%',c:'warn'}],
-      note:'On '+stEsc(r2.selection)+'. The gap is the capture’s own stored edge column; whether it is flagged is the Edges board’s decision, not this screen’s.',
+    items.push({k:'Widest gap to sharp fair',pri:Math.abs(b2.edge.v)>=0.03?'major':'notable',tag:'MARKET',title:b2.a.selection+' vs '+b2.b.selection,
+      cells:[{l:'Best price',v:ufcPx(r2.best_dec)},{l:'Sharp fair',v:ufcPx(1/Math.max(0.0001,+r2.sharp_fair)),c:'mdl'},{l:'Gap',v:(b2.edge.v*100).toFixed(2)+'%',p:true}],
+      note:'On '+stEsc(r2.selection)+'. The gap is the capture’s stored edge column; whether it is flagged is the Edges board’s decision.',
       foot:(r2.n_books!=null?(r2.n_books+' books · '):'')+(b2.at?('market '+ago(b2.at)):''),
       onclick:"ufcFocusBout('"+edAttrJs(b2.key)+"')",action:{label:'Market research',onclick:"ufcToolGo('market')"}});
   }
-  if(UFC.market.ok===false)items.push({k:'Market read failed',cls:'neg',tag:'MARKET',title:'public.signals did not answer',
-    cells:[{l:'Quotes',v:'—',c:'mut'},{l:'Sharp fair',v:'—',c:'mut'},{l:'Status',v:'FAILED',c:'neg'}],
+  if(UFC.market.ok===false)items.push({k:'Market read failed',pri:'neg',cls:'neg',tag:'MARKET',title:'public.signals did not answer',
+    cells:[{l:'Status',v:'FAILED',c:'neg',p:true},{l:'Quotes',v:'—',c:'mut'},{l:'Sharp fair',v:'—',c:'mut'}],
     note:'No market context is shown for any bout until the signals table can be read. Nothing is substituted.',foot:'odds capture',action:{label:'Retry',onclick:'ufcRefreshClick()'}});
-  if(h&&h.provider_verified===false)items.push({k:'Live pipeline warning',cls:(h.api_failures>0)?'neg':'warn',tag:'LIVE',title:(h.api_failures>0)?'The live source is failing':'Provider answered, adapter parsed no events',
-    cells:[{l:'API requests',v:String(h.api_requests==null?'—':h.api_requests)},{l:'Failures',v:String(h.api_failures==null?'—':h.api_failures),c:h.api_failures>0?'neg':''},{l:'Events active',v:String(h.events_active==null?'—':h.events_active)}],
-    note:'From ufc.live_pipeline_health. Live rounds and strike counts cannot be trusted while this stands.',foot:'ufc_live_stats',action:{label:'Pipeline details',onclick:"rsTkColToggle('ufcSys')"}});
+  if(h&&h.provider_verified===false)items.push({k:'Live pipeline warning',pri:(h.api_failures>0)?'neg':'warn',cls:(h.api_failures>0)?'neg':'warn',tag:'LIVE',title:(h.api_failures>0)?'The live source is failing':'Provider answered, adapter parsed no events',
+    cells:[{l:'Failures',v:String(h.api_failures==null?'—':h.api_failures),c:h.api_failures>0?'neg':'warn',p:true},{l:'API requests',v:String(h.api_requests==null?'—':h.api_requests)},{l:'Events active',v:String(h.events_active==null?'—':h.events_active)}],
+    note:'From ufc.live_pipeline_health. Live rounds and strike counts cannot be trusted while this stands.',foot:'ufc_live_stats',action:{label:'View pipeline',onclick:"rsTkColToggle('ufcSys')"}});
   var streak=UFC.fighters.filter(function(x){return x.d&&x.d.win_streak>0;}).sort(function(a,b){return b.d.win_streak-a.d.win_streak;});
   if(streak.length){
-    var s=streak[0];
-    items.push({k:'Longest active win streak',cls:'',tag:'DATASET',title:s.full_name+(s.division?(' · '+s.division):''),
-      cells:[{l:'Streak',v:String(s.d.win_streak)+' W'},{l:'Record',v:ufcRec(s)},{l:'Finish rate',v:ufcPct(s.d.finish_rate)}],
+    var st=streak[0];
+    items.push({k:'Longest active win streak',pri:'info',tag:'DATASET',title:st.full_name+(st.division?(' · '+st.division):''),
+      cells:[{l:'Streak',v:String(st.d.win_streak)+' W',p:true,c:'txt'},{l:'Record',v:ufcRec(st)},{l:'Finish rate',v:ufcPct(st.d.finish_rate)}],
       note:'Counted from the loaded fight history. A streak is a fact about the past, not a forecast.',foot:'ufc.fighter_derived_metrics',
-      action:{label:'Fighter profile',onclick:"ufcProfile('"+edAttrJs(String(s.fighter_id))+"')"}});
+      action:{label:'Fighter profile',onclick:"ufcProfile('"+edAttrJs(String(st.fighter_id))+"')"}});
   }
   var fin=UFC.fighters.filter(ufcFinishOK).sort(function(a,b){return b.d.finish_rate-a.d.finish_rate;});
   if(fin.length){
     var f=fin[0];
-    items.push({k:'Highest finish rate · 10+ wins',cls:'',tag:'DATASET',title:f.full_name+(f.division?(' · '+f.division):''),
-      cells:[{l:'Finish rate',v:ufcPct(f.d.finish_rate)},{l:'Last 5',v:ufcPct(f.d.finish_rate_last5)},{l:'Wins',v:String(f.wins==null?'—':f.wins)}],
+    items.push({k:'Highest finish rate · 10+ wins',pri:'info',tag:'DATASET',title:f.full_name+(f.division?(' · '+f.division):''),
+      cells:[{l:'Finish rate',v:ufcPct(f.d.finish_rate),p:true,c:'txt'},{l:'Last 5',v:ufcPct(f.d.finish_rate_last5)},{l:'Wins',v:String(f.wins==null?'—':f.wins)}],
       note:'Share of wins that ended inside the distance, over the fights on file.',foot:'ufc.fighter_derived_metrics',
       action:{label:'Fighter profile',onclick:"ufcProfile('"+edAttrJs(String(f.fighter_id))+"')"}});
   }
   var act=UFC.fighters.filter(function(x){return x.d&&x.d.activity_last365>0;}).sort(function(a,b){return b.d.activity_last365-a.d.activity_last365;});
-  if(act.length&&items.length<6){
+  if(act.length){
     var a=act[0];
-    items.push({k:'Most active · last 12 months',cls:'',tag:'DATASET',title:a.full_name+(a.division?(' · '+a.division):''),
-      cells:[{l:'Fights · 1yr',v:String(a.d.activity_last365)},{l:'Days since last',v:String(a.d.days_since_last_fight==null?'—':a.d.days_since_last_fight)},{l:'Record',v:ufcRec(a)}],
+    items.push({k:'Most active · last 12 months',pri:'info',tag:'DATASET',title:a.full_name+(a.division?(' · '+a.division):''),
+      cells:[{l:'Fights · 1yr',v:String(a.d.activity_last365),p:true,c:'txt'},{l:'Days since last',v:String(a.d.days_since_last_fight==null?'—':a.d.days_since_last_fight)},{l:'Record',v:ufcRec(a)}],
       note:'Activity is a count of dated fights on file.',foot:'ufc.fighter_derived_metrics',
       action:{label:'Fighter profile',onclick:"ufcProfile('"+edAttrJs(String(a.fighter_id))+"')"}});
   }
-  return items.slice(0,6);
+  return items;
 }
 function ufcFocusBout$row(bouts){
   var f=UFC.ov.focus,i;
@@ -8985,7 +9130,7 @@ function ufcMarketSnapHTML(b){
     var rows=[];
     rows.push({l:r.selection,sub:'best price · '+(r.best_book||'best book')+(r.first_best_dec?(' · opened '+ufcPx(r.first_best_dec)):''),v:ufcPx(r.best_dec)});
     if(r.sharp_fair!=null)rows.push({l:'Sharp fair',sub:'de-vigged sharp line, as stored by the capture',v:ufcPx(1/Math.max(0.0001,+r.sharp_fair)),c:'mdl'});
-    if(r.edge!=null)rows.push({l:'Gap',sub:'the capture’s stored edge column',v:(+r.edge*100).toFixed(2)+'%',c:'diff'});
+    if(r.edge!=null)rows.push({l:'Gap',sub:'the capture’s stored edge column',v:(+r.edge*100).toFixed(2)+'%',c:'diff',p:true});
     return rows;
   }
   var when='';try{if(b.t)when=whenLabel(new Date(b.t).toISOString());}catch(_){}
@@ -8994,7 +9139,7 @@ function ufcMarketSnapHTML(b){
     var tot=+b.a.consensus_fair+ +b.b.consensus_fair;
     if(tot>0)split={a:{name:b.a.selection,p:+b.a.consensus_fair/tot,c:'#e0533a'},b:{name:b.b.selection,p:+b.b.consensus_fair/tot,c:'#5d8def'},label:'consensus fair · de-vigged by the capture'};
   }
-  return rsTkMvm({title:'Market snapshot',game:b.a.selection+' vs '+b.b.selection,when:when+(b.at?(' · market '+ago(b.at)):''),
+  return rsTkMvm({title:'Captured price vs sharp fair',game:b.a.selection+' vs '+b.b.selection,when:when+(b.at?(' · market '+ago(b.at)):''),
     rows:side(b.a).concat(side(b.b)),split:split,
     foot:'Read from <span class="mono">public.signals</span> exactly as the odds capture wrote it. Best price is the best captured book, not Pinnacle unless the anchor says so. <b>No EdgeDesk model prices this bout</b>; nothing here is a fair line of EdgeDesk’s own.'});
 }
@@ -9062,11 +9207,11 @@ function ufcSystemHTML(){
     if(pick.mode==='stale')bits.push('live feed stale');
     if(pipe==='warn')bits.push('pipeline warning');
     if(h&&h.provider_verified===false)bits.push('adapter parsed no events');
-    if(bits.length){level='warn';tt='Attention needed · '+bits.join(' · ');}
+    if(bits.length){level='warn';tt='Attention needed';}
     else tt='All UFC research systems operational';
   }
   var up=pick.event&&pick.event.updated_at?rsParseStamp(pick.event.updated_at):null;
-  var ts='Last refresh '+(UFC.at?ago(UFC.at):'—')+((f&&f.published)?(' · build '+ago(f.builtAt)):' · no build time')+(up?(' · live poller '+ago(up)):'')+(UFC.market.at?(' · market '+ago(UFC.market.at)):'');
+  var ts=(bits.length?(bits.join(' · ')+' · research still usable · '):'')+'Last refresh '+(UFC.at?ago(UFC.at):'—')+((f&&f.published)?(' · build '+ago(f.builtAt)):' · no build time')+(up?(' · live poller '+ago(up)):'')+(UFC.market.at?(' · market '+ago(UFC.market.at)):'');
   var body=rsTkPipeRows(UFC.meta,'Dataset pipeline');
   var diag='';try{diag=ufcDiagHTML();}catch(_){}
   body+=diag+'<div id="rsMeta-ufc" class="rs-panelwrap"></div>';
@@ -9078,21 +9223,21 @@ function ufcOverviewHTML(){
   var bouts=ufcBouts(),pick=ufcOvPick(),items=ufcTodayItems(bouts),h=UFC.deep.health;
   var faults=(UFC.market.ok===false?1:0)+((h&&h.db_write_failures>0)?1:0)+((h&&h.provider_verified===false&&h.api_failures>0)?1:0)+(rsTkPipeLevel(UFC.meta)==='neg'?1:0);
   var evTxt=pick.mode==='live'?'LIVE':(pick.mode==='upcoming'?'NEXT':(pick.mode==='stale'?'STALE':'—'));
-  var html='<div class="fb-card"><div class="fb-snap-h"><span class="t">UFC research</span><span class="m">Updated '+stEsc(ago(UFC.at))+' · dataset + live</span></div>'
-    +rsTkKpis([{n:UFC.fighters.length,l:'Fighters'},{n:bouts.length,l:'Priced',c:bouts.length?'':'mut'},{n:evTxt,l:'Event',c:pick.mode==='live'?'neg':(pick.mode==='upcoming'?'':(pick.mode==='stale'?'warn':'mut'))},{n:faults,l:'Faults',c:faults?'neg':'pos'}])
-    +'<div class="fb-note"><b>Priced</b> counts bouts with a captured moneyline in the odds window. <b>Event</b> is the live poller’s state: live, next, stale or none. <b>Faults</b> are failed reads and live-pipeline errors. No model runs here; the dataset is descriptive history.</div>'
-    +'<button class="fb-cta" onclick="ufcToolGo(\'fighters\')">Open fighter research '+RS_TK_ICONS.arrow+'</button></div>';
+  var html=rsTkSnap({title:'UFC research',meta:'Updated '+ago(UFC.at)+' · dataset + live',key:'ufcSnap',
+    kpis:[{n:UFC.fighters.length,l:'Fighters'},{n:bouts.length,l:'Priced',c:bouts.length?'':'mut'},{n:evTxt,l:'Event',c:pick.mode==='live'?'neg':(pick.mode==='upcoming'?'':(pick.mode==='stale'?'warn':'mut'))},{n:faults,l:'Faults',c:faults?'neg':'pos'}],
+    defs:[['Priced','Bouts with a captured moneyline in the odds window.'],['Event','Live poller state: live, next, stale or none.'],['Faults','Failed reads or live-pipeline errors.']],
+    how:'<b>Fighters</b> counts rows loaded from ufc.fighters. <b>Priced</b> counts fixtures with an h2h quote for both fighters in public.signals, 6 hours back to 8 days ahead. <b>Event</b> reads ufc.live_events: LIVE when an event is in progress within an 8-hour window, NEXT when one starts within 3 hours, STALE when the newest row is still marked open but the poller stopped writing. <b>Faults</b> add a failed signals read, live database write failures and a failing live source. No EdgeDesk model runs on this panel; the dataset is descriptive history.',
+    cta:{label:'Open fighter research',onclick:"ufcToolGo('fighters')"}});
   html+='<div class="fb-sechd"><span>Today in UFC</span><span class="r">'+(items.length?(items.length+' signal'+(items.length===1?'':'s')):'quiet')+' · '+stEsc(ago(UFC.ov.at||UFC.at))+'</span></div>';
-  html+=items.length?('<div class="fb-today">'+items.map(rsTkSig).join('')+'</div>')
-    :'<div class="fb-quiet">No major research changes since the last refresh.<small>No live event, no priced bout and no dataset movement to report.</small></div>';
+  html+=rsTkToday(items,'ufcToday','<div class="fb-quiet">No major research changes since the last refresh.<small>No live event, no priced bout and no dataset movement to report.</small></div>');
   html+='<div class="fb-sechd"><span>Research tools</span></div><div class="fb-tools">'
-    +rsTkTool('fighter','Fighter research','Records, dimensions, career microstats, style percentiles and the full fight history with consensus closes.',"ufcToolGo('fighters')")
-    +rsTkTool('live','Live fight center','Event state, round and clock, strikes, takedowns and knockdowns from the poller; pre-fight tendencies from the dataset.',"ufcToolGo('live')")
-    +rsTkTool('market','Market research','Captured moneylines: opening and current price, sharp fair, movement and the graded closing-line record.',"ufcToolGo('market')")
-    +rsTkTool('history','Compare fighters','Side by side: finish rate, streaks, activity, reach and opponent quality for any two fighters.',"ufcToolGo('compare')")
+    +rsTkTool('fighter','Fighter research','Records, microstats, style percentiles and full fight history.',"ufcToolGo('fighters')")
+    +rsTkTool('live','Live fight center','Event state, rounds, strikes and takedowns from the poller.',"ufcToolGo('live')")
+    +rsTkTool('market','Market research','Captured moneylines, sharp fair, movement and the close record.',"ufcToolGo('market')")
+    +rsTkTool('history','Compare fighters','Finish rate, streaks, activity and reach, side by side.',"ufcToolGo('compare')")
     +'</div>';
   var fb=ufcFocusBout$row(bouts);
-  if(fb)html+='<div class="fb-sechd"><span>Market snapshot</span><span class="r">tap a market signal above to compare it</span></div><div class="fb-card">'+ufcMarketSnapHTML(fb)+'</div>';
+  if(fb)html+='<div class="fb-sechd"><span>Market vs research</span><span class="r">tap a market signal above to compare it</span></div><div class="fb-card">'+ufcMarketSnapHTML(fb)+'</div>';
   html+=ufcStatusHTML();
   return html;
 }
@@ -10738,8 +10883,8 @@ function tddTodayItems(){
   var slate=WTA.slate||'—';
   if(WTA.research.length){
     r=WTA.research.slice().sort(function(a,b){return (b.research_score||0)-(a.research_score||0);})[0];
-    items.push({k:'Top graded match',cls:'',tag:'WTA',title:tddMatchTitle(r),
-      cells:[{l:'Grade',v:tddGradeShort(r.grade),c:'mdl'},{l:'Research score',v:String(r.research_score)},{l:'Favourite price',v:r.fav_dec?(+r.fav_dec).toFixed(2):'—',c:r.fav_dec?'':'mut'}],
+    items.push({k:'Top graded match',pri:'notable',tag:'WTA',title:tddMatchTitle(r),
+      cells:[{l:'Research score',v:String(r.research_score),c:'mdl',p:true},{l:'Grade',v:tddGradeShort(r.grade),c:'mdl'},{l:'Favourite price',v:r.fav_dec?(+r.fav_dec).toFixed(2):'—',c:r.fav_dec?'':'mut'}],
       note:(r.summary&&r.summary[0])?stEsc(r.summary[0]):'Grade computed server-side by the pipeline; the app displays it and never recomputes it.',
       foot:(r.tourney_title||'')+(r.surface?(' · '+r.surface):'')+' · slate '+slate,
       onclick:"tddFocusMatch('"+edAttrJs(String(r.fav_id))+"')",action:{label:'Open research',onclick:"tddOpenResearch('"+edAttrJs(String(r.fav_id))+"')"}});
@@ -10747,43 +10892,43 @@ function tddTodayItems(){
   var clv=(WTA.watch||[]).filter(function(p){return (+p.clv_events||0)>=3&&p.clv_avg!=null;}).sort(function(a,b){return (+b.clv_avg)-(+a.clv_avg);});
   if(clv.length){
     var p=clv[0];
-    items.push({k:'Best watchlist CLV',cls:'',tag:'WTA',title:p.full_name+(p.rank!=null?(' · #'+p.rank):''),
-      cells:[{l:'CLV vs close',v:rsTkPts(+p.clv_avg*100)+'%',c:(+p.clv_avg>0)?'pos':'neg'},{l:'Beat close',v:Math.round((+p.beat_close_rate||0)*100)+'%'},{l:'Graded',v:String(p.clv_events)}],
+    items.push({k:'Best watchlist CLV',pri:'notable',tag:'WTA',title:p.full_name+(p.rank!=null?(' · #'+p.rank):''),
+      cells:[{l:'CLV vs close',v:rsTkPts(+p.clv_avg*100)+'%',c:(+p.clv_avg>0)?'pos':'neg',p:true},{l:'Beat close',v:Math.round((+p.beat_close_rate||0)*100)+'%'},{l:'Graded',v:String(p.clv_events)}],
       note:'Graded closing-line arithmetic over stored columns — the only edge evidence on this panel. Reliability is research attention, not profit.',
       foot:'wta.watchlist · '+(p.appearances||0)+' slates',action:{label:'Watchlist',onclick:'tddOpenWatch()'}});
   }
   var onSlate=(WTA.watch||[]).map(function(p){return {p:p,r:wtaTodayRow(p.player_id)};}).filter(function(o){return !!o.r;});
   if(onSlate.length){
     var o=onSlate[0],isFav=o.r.fav_id===o.p.player_id,q=isFav?(o.r.grade==='elite'||o.r.grade==='strong'?'qualifies':'does not qualify'):'underdog today';
-    items.push({k:'Watchlist player on the slate',cls:'',tag:'WTA',title:o.p.full_name+' · '+tddMatchTitle(o.r),
-      cells:[{l:'Reliability',v:Math.round((+o.p.reliability||0)*100)+'%'},{l:'Rank',v:o.p.rank!=null?('#'+o.p.rank):'—'},{l:'Today',v:q,c:q==='qualifies'?'pos':(q==='underdog today'?'mut':'warn')}],
+    items.push({k:'Watchlist player on the slate',pri:'info',tag:'WTA',title:o.p.full_name+' · '+tddMatchTitle(o.r),
+      cells:[{l:'Today',v:q,p:true,c:q==='qualifies'?'pos':(q==='underdog today'?'txt':'warn')},{l:'Reliability',v:Math.round((+o.p.reliability||0)*100)+'%'},{l:'Rank',v:o.p.rank!=null?('#'+o.p.rank):'—'}],
       note:onSlate.length>1?((onSlate.length-1)+' more watchlist player'+(onSlate.length===2?'':'s')+' on this slate.'):'The watchlist builds itself from researched slates.',
       foot:'slate '+slate,action:{label:'Watchlist',onclick:'tddOpenWatch()'}});
   }
   var gap=(WTA.day||[]).filter(function(x){return x.rank_gap!=null;}).sort(function(a,b){return (+b.rank_gap)-(+a.rank_gap);});
-  if(gap.length&&items.length<6){
+  if(gap.length){
     r=gap[0];
-    items.push({k:'Largest rank gap on the slate',cls:'',tag:'WTA',title:tddMatchTitle(r),
-      cells:[{l:'Favourite',v:'#'+(r.fav_rank!=null?r.fav_rank:'—')},{l:'Underdog',v:'#'+(r.dog_rank!=null?r.dog_rank:'—')},{l:'Gap',v:String(r.rank_gap),c:'warn'}],
+    items.push({k:'Largest rank gap on the slate',pri:'notable',tag:'WTA',title:tddMatchTitle(r),
+      cells:[{l:'Gap',v:String(r.rank_gap),p:true},{l:'Favourite',v:'#'+(r.fav_rank!=null?r.fav_rank:'—')},{l:'Underdog',v:'#'+(r.dog_rank!=null?r.dog_rank:'—')}],
       note:'Rank arithmetic. Graded '+tddGradeTxt(r.grade).toLowerCase()+' by the pipeline'+(r.grade==='hidden'?' — excluded, shown for transparency':'')+'.',
       foot:(r.tourney_title||'')+' · slate '+slate,onclick:"tddFocusMatch('"+edAttrJs(String(r.fav_id))+"')",action:{label:'Open research',onclick:"tddOpenResearch('"+edAttrJs(String(r.fav_id))+"')"}});
   }
   var hid=(WTA.day||[]).filter(function(x){return x.grade==='hidden';}).sort(function(a,b){return (b.research_score||0)-(a.research_score||0);});
-  if(hid.length&&items.length<6){
+  if(hid.length){
     r=hid[0];var dq=(r.disqualifiers&&r.disqualifiers[0])?r.disqualifiers[0].label:'reason not published by the pipeline';
-    items.push({k:'Excluded by the grade',cls:'warn',tag:'WTA',title:tddMatchTitle(r),
-      cells:[{l:'Research score',v:String(r.research_score)},{l:'Reason',v:dq,c:'warn'},{l:'Excluded today',v:String(hid.length)}],
+    items.push({k:'Excluded by the grade',pri:'warn',cls:'warn',tag:'WTA',title:tddMatchTitle(r),
+      cells:[{l:'Excluded today',v:String(hid.length),c:'warn',p:true},{l:'Research score',v:String(r.research_score)},{l:'Reason',v:dq,c:'warn'}],
       note:'Reviewed and excluded by the pipeline’s qualifying grade. Shown for transparency — not a recommendation either way.',
       foot:'slate '+slate,action:{label:'Open research',onclick:"tddOpenResearch()"}});
   }
-  if(t.matches&&t.matches.length&&items.length<6){
+  if(t.matches&&t.matches.length){
     var m=t.matches[0];
-    items.push({k:'Latest result on record',cls:'',tag:TDD.tour,title:tddName(m.winner_id)+' def. '+tddName(m.loser_id),
-      cells:[{l:'Score',v:m.score||'—'},{l:'Round',v:m.round||'—'},{l:'Surface',v:m.surface||'—',c:m.surface?'':'mut'}],
+    items.push({k:'Latest result on record',pri:'info',tag:TDD.tour,title:tddName(m.winner_id)+' def. '+tddName(m.loser_id),
+      cells:[{l:'Score',v:m.score||'—',p:true,c:'txt'},{l:'Round',v:m.round||'—'},{l:'Surface',v:m.surface||'—',c:m.surface?'':'mut'}],
       note:'A published fact from the licensed record. No projection is drawn from it.',
       foot:(m.tourney_name||'')+' · '+(m.match_date||''),action:{label:'Results',onclick:'tddOpenResults()'}});
   }
-  return items.slice(0,6);
+  return items;
 }
 function tddFocusRow(){
   var f=TDD.ov.focus,i,all=(WTA.research||[]).concat(WTA.day||[]);
@@ -10793,14 +10938,14 @@ function tddFocusRow(){
 }
 function tddMvmHTML(r){
   var c=r.components||{},imp=tddImplied(r.fav_dec),rows=[];
-  rows.push({l:r.fav_name,sub:'favourite · #'+(r.fav_rank!=null?r.fav_rank:'—')+' · ingested book price'+(imp!=null?(' · implied '+Math.round(imp*100)+'% with vig'):''),v:r.fav_dec?(+r.fav_dec).toFixed(2):'—',c:r.fav_dec?'':'mut'});
-  rows.push({l:r.dog_name,sub:'underdog · #'+(r.dog_rank!=null?r.dog_rank:'—')+' · no price ingested for this side',v:'—',c:'mut'});
-  rows.push({l:'Research score',sub:'wta.research_score · server-side grade',v:String(r.research_score)+' · '+tddGradeTxt(r.grade),c:'mdl'});
+  rows.push({l:'Research score',sub:'wta.research_score · server-side grade · '+tddGradeTxt(r.grade),v:String(r.research_score),c:'mdl',p:true});
+  rows.push({l:'Market · favourite',sub:r.fav_name+' · #'+(r.fav_rank!=null?r.fav_rank:'—')+' · ingested book price, raw implied with vig',v:r.fav_dec?((+r.fav_dec).toFixed(2)+(imp!=null?(' · '+Math.round(imp*100)+'%'):'')):'—',c:r.fav_dec?'':'mut'});
+  rows.push({l:'Underdog',sub:r.dog_name+' · #'+(r.dog_rank!=null?r.dog_rank:'—')+' · no price ingested for this side',v:'—',c:'mut'});
   rows.push({l:'Rank gap',sub:'rank arithmetic',v:String(r.rank_gap!=null?r.rank_gap:'—')});
   var chips='<div style="display:flex;gap:10px;flex-wrap:wrap;margin:10px 0 2px">'+wtaChip('Gap',c.gap||0,20)+wtaChip('Dominance',c.dominance||0,30)+wtaChip('Upset',c.upset||0,20)+wtaChip('Surface',c.surface||0,15)+wtaChip('Form',c.form||0,15)+'</div>';
   var when=(r.tourney_title||'')+(r.surface?(' · '+r.surface):'')+' · slate '+(WTA.slate||'—')+(r.ranking_as_of?(' · rankings as of '+r.ranking_as_of):'');
-  return rsTkMvm({title:'Market vs research',game:tddMatchTitle(r),when:when,rows:rows})+chips
-    +'<div class="fb-note" style="margin-top:8px">'+(r.grade==='hidden'?'<b>Excluded by the grade.</b> ':'')+'The price is the ingested book price for the favourite, shown as raw implied probability. The score and its components are computed server-side by the pipeline. <b>No fair price and no edge is claimed here</b>; the edge, if any, lives in the watchlist’s graded CLV.</div>';
+  return rsTkMvm({title:'Research grade vs market price',game:tddMatchTitle(r),when:when,rows:rows})+chips
+    +'<div class="fb-note" style="margin-top:8px">'+(r.grade==='hidden'?'<b>Excluded by the grade.</b> ':'')+'The score and its components are computed server-side by the pipeline; the price is the ingested book price for the favourite. <b>No fair price and no edge is claimed here</b>; the edge, if any, lives in the watchlist’s graded CLV.</div>';
 }
 function tddStatusHTML(){
   var mat=null;try{mat=rsMaturity('wta.research_score');}catch(_){}
@@ -10868,10 +11013,10 @@ function tddSystemHTML(){
     if(pipe==='warn')bits.push('pipeline warning');
     if(ws==='empty')bits.push('research schema empty');
     if(ts==='empty')bits.push('record empty');
-    if(bits.length){level='warn';tt='Attention needed · '+bits.join(' · ');}
+    if(bits.length){level='warn';tt='Attention needed';}
     else tt='All tennis research systems operational';
   }
-  var line='Last refresh '+ago(Math.max(WTA.at||0,t.at||0)||Date.now())+((wf&&wf.published)?(' · research built '+ago(wf.builtAt)):' · research: no build time')+((tf&&tf.published)?(' · record ingest '+ago(tf.builtAt)):'');
+  var line=(bits.length?(bits.join(' · ')+' · research still usable · '):'')+'Last refresh '+ago(Math.max(WTA.at||0,t.at||0)||Date.now())+((wf&&wf.published)?(' · research built '+ago(wf.builtAt)):' · research: no build time')+((tf&&tf.published)?(' · record ingest '+ago(tf.builtAt)):'');
   var body=rsTkPipeRows(WTA.meta,'Research pipeline');
   var rec='';
   if(t.meta&&(t.meta['last_ingest']||t.meta['rankings_as_of']))rec='<div class="fb-pipe"><div class="fb-pipe-t">Tour record · '+TDD.tour+'</div>'
@@ -10886,20 +11031,20 @@ function tddOverviewHTML(){
   if(!WTA.at&&!t.at&&!errs)return rsTkSkel();
   var items=tddTodayItems(),agg=tddClvAgg();
   var faults=(tddIsErr(ws)?1:0)+(tddIsErr(tddModState('tennis'))?1:0)+(rsTkPipeLevel(WTA.meta)==='neg'?1:0);
+  var upd=ago(Math.max(WTA.at||0,t.at||0)||Date.now());
   var html=errs;
-  html+='<div class="fb-card"><div class="fb-snap-h"><span class="t">Tennis research</span><span class="m">Updated '+stEsc(ago(Math.max(WTA.at||0,t.at||0)||Date.now()))+' · '+(WTA.slate?('slate '+stEsc(WTA.slate)):'no slate')+'</span></div>'
-    +rsTkKpis([{n:WTA.at?WTA.day.length:'—',l:'Slate',c:WTA.day.length?'':'mut'},{n:WTA.at?WTA.research.length:'—',l:'Qualify',c:WTA.research.length?'warn':'mut'},{n:WTA.at?WTA.watch.length:'—',l:'Watched',c:WTA.watch.length?'':'mut'},{n:faults,l:'Faults',c:faults?'neg':'pos'}])
-    +'<div class="fb-note"><b>Slate</b> is every WTA match the pipeline researched today. <b>Qualify</b> counts matches that cleared its qualifying grade (research attention, unproven). <b>Watched</b> is the engine’s watchlist. <b>Faults</b> are failed reads and pipeline errors.'
-    +(agg?(' <b>Watchlist CLV:</b> '+rsTkPts(agg.avg*100,2)+'% average over '+agg.n+' graded, beat close '+Math.round(agg.beat*100)+'% — the only edge evidence here.'):' No graded CLV on the watchlist yet.')+'</div>'
-    +'<button class="fb-cta" onclick="tddOpenResearch()">Open WTA research '+RS_TK_ICONS.arrow+'</button></div>';
-  html+='<div class="fb-sechd"><span>Today in tennis</span><span class="r">'+(items.length?(items.length+' signal'+(items.length===1?'':'s')):'quiet')+' · '+stEsc(ago(Math.max(WTA.at||0,t.at||0)||Date.now()))+'</span></div>';
-  if(items.length)html+='<div class="fb-today">'+items.map(rsTkSig).join('')+'</div>';
-  else html+='<div class="fb-quiet">No major research changes since the last refresh.<small>'+(ws==='empty'?'The research schema answers but holds no rows yet.':(ws==='zero-qualifying'?'The pipeline ran and nothing qualified today.':'No researched slate and no record on file.'))+'</small></div>';
+  html+=rsTkSnap({title:'Tennis research',meta:'Updated '+upd+' · '+(WTA.slate?('slate '+WTA.slate):'no slate'),key:'tddSnap',
+    kpis:[{n:WTA.at?WTA.day.length:'—',l:'Slate',c:WTA.day.length?'':'mut'},{n:WTA.at?WTA.research.length:'—',l:'Qualify',c:WTA.research.length?'warn':'mut'},{n:WTA.at?WTA.watch.length:'—',l:'Watched',c:WTA.watch.length?'':'mut'},{n:faults,l:'Faults',c:faults?'neg':'pos'}],
+    defs:[['Slate','WTA matches the pipeline researched today.'],['Qualify','Matches that cleared the qualifying grade.'],['Watched','Players on the engine’s watchlist.'],['Faults','Failed reads or pipeline errors.']],
+    how:'<b>Slate</b> is every row of wta.daily_research on the latest slate date. <b>Qualify</b> counts rows the pipeline graded elite, strong or worth watching — research attention, unproven. <b>Watched</b> is wta.watchlist: players the engine keeps returning to, with reliability (share of researched matches graded strong or better) and graded CLV against the close. <b>Faults</b> add failed schema reads and pipeline job failures. '+(agg?('<b>Watchlist CLV:</b> '+rsTkPts(agg.avg*100,2)+'% average over '+agg.n+' graded events, beat close '+Math.round(agg.beat*100)+'% — the only edge evidence on this panel.'):'No graded CLV on the watchlist yet; nothing here is validated.'),
+    cta:{label:'Open tennis research',onclick:'tddOpenResearch()'}});
+  html+='<div class="fb-sechd"><span>Today in tennis</span><span class="r">'+(items.length?(items.length+' signal'+(items.length===1?'':'s')):'quiet')+' · '+stEsc(upd)+'</span></div>';
+  html+=rsTkToday(items,'tddToday','<div class="fb-quiet">No major research changes since the last refresh.<small>'+(ws==='empty'?'The research schema answers but holds no rows yet.':(ws==='zero-qualifying'?'The pipeline ran and nothing qualified today.':'No researched slate and no record on file.'))+'</small></div>');
   html+='<div class="fb-sechd"><span>Research tools</span></div><div class="fb-tools">'
-    +rsTkTool('research','Daily research','Every WTA match the pipeline graded today: score, components, match-quality rates and disqualifiers.',"tddToolGo('research')")
-    +rsTkTool('watch','Watchlist','Players the engine keeps returning to, with reliability and graded CLV against the close.',"tddToolGo('watch')")
-    +rsTkTool('rankings','Rankings & results','ATP and WTA rankings and the latest results on the licensed record.',"tddToolGo('rankings')")
-    +rsTkTool('team','Player research','Career record, surface splits, recent form and head-to-head, counted from the matches on file.',"tddToolGo('players')")
+    +rsTkTool('research','Daily research','Every graded match: score, components, rates and disqualifiers.',"tddToolGo('research')")
+    +rsTkTool('watch','Watchlist','Players monitored for reliability and graded CLV.',"tddToolGo('watch')")
+    +rsTkTool('rankings','Rankings & results','Latest rankings and licensed results, ATP and WTA.',"tddToolGo('rankings')")
+    +rsTkTool('team','Player research','Surface splits, form, career and head-to-head context.',"tddToolGo('players')")
     +'</div>';
   var fr=tddFocusRow();
   if(fr)html+='<div class="fb-sechd"><span>Market vs research</span><span class="r">tap a match above to compare it</span></div><div class="fb-card">'+tddMvmHTML(fr)+'</div>';
@@ -26230,67 +26375,62 @@ function fbTodayItems(rows){
   var sp=ok.filter(function(x){return x.gapS!=null&&!x.fault&&!x.stale;}).sort(function(a,b){return Math.abs(b.gapS)-Math.abs(a.gapS);});
   if(sp.length&&Math.abs(sp[0].gapS)>=1){
     r=sp[0];
-    items.push({k:'Largest spread disagreement',cls:Math.abs(r.gapS)>=7?'warn':'',r:r,
-      cells:[{l:'Model',v:fbHomeLine(r.p.model.fair_spread),c:'mdl'},{l:'Market',v:fbHomeLine(r.mkt.spread_line)},{l:'Difference',v:Math.abs(r.gapS).toFixed(1)+' pts',c:'warn'}],
+    items.push({k:'Largest spread disagreement',pri:Math.abs(r.gapS)>=2?'major':'notable',r:r,
+      cells:[{l:'Model',v:fbHomeLine(r.p.model.fair_spread),c:'mdl'},{l:'Market',v:fbHomeLine(r.mkt.spread_line)},{l:'Difference',v:Math.abs(r.gapS).toFixed(1)+' pts',p:true}],
       note:'Home line. Model leans '+fbEsc(fbSideOf(r,r.gapS))+' relative to the market'+(Math.abs(r.gapS)>=7?' — at this size, missing information is the likelier explanation':'')+'.'});
   }
   var tt=ok.filter(function(x){return x.gapT!=null&&!x.stale&&x.p.model.fair_total!=null;}).sort(function(a,b){return Math.abs(b.gapT)-Math.abs(a.gapT);});
   if(tt.length&&Math.abs(tt[0].gapT)>=1){
     r=tt[0];
-    items.push({k:'Largest total disagreement',cls:'',r:r,
-      cells:[{l:'Model total',v:r.p.model.fair_total.toFixed(1),c:'mdl'},{l:'Market total',v:String(r.mkt.total_line)},{l:'Difference',v:Math.abs(r.gapT).toFixed(1)+' pts',c:'warn'}],
+    items.push({k:'Largest total disagreement',pri:Math.abs(r.gapT)>=2?'major':'notable',r:r,
+      cells:[{l:'Model total',v:r.p.model.fair_total.toFixed(1),c:'mdl'},{l:'Market total',v:String(r.mkt.total_line)},{l:'Difference',v:Math.abs(r.gapT).toFixed(1)+' pts',p:true}],
       note:'Model projects '+(r.gapT>0?'more':'fewer')+' points than the market number.'});
   }
   var mv=ok.filter(function(x){return x.move!=null;}).sort(function(a,b){return Math.abs(b.move)-Math.abs(a.move);});
   if(mv.length&&Math.abs(mv[0].move)>=1){
     r=mv[0];var m=r.mkt.h2h_move;
-    items.push({k:'Largest market movement',cls:'',r:r,
-      cells:[{l:'Home price · opened',v:(m.open*100).toFixed(1)+'%',c:'mut'},{l:'Home price · now',v:(m.now*100).toFixed(1)+'%'},{l:'Movement',v:fbPts(r.move,1)+' pp',c:'warn'}],
-      note:'Implied probability of the home side since the quote was first captured'+(m.at?(' ('+fbEsc(ago(Date.parse(m.at)))+')'):'')+'. Movement is a market fact, not a model output.'});
+    items.push({k:'Largest market movement',pri:'notable',r:r,
+      cells:[{l:'Home price · opened',v:(m.open*100).toFixed(1)+'%',c:'mut'},{l:'Home price · now',v:(m.now*100).toFixed(1)+'%'},{l:'Movement',v:fbPts(r.move,1)+' pp',p:true}],
+      note:'Implied probability of the home side since first capture'+(m.at?(' ('+fbEsc(ago(Date.parse(m.at)))+')'):'')+'. A market fact, not a model output.'});
   }
   var cf=ok.filter(function(x){return x.winp!=null;}).sort(function(a,b){return Math.abs(b.winp-.5)-Math.abs(a.winp-.5);});
   if(cf.length){
     r=cf[0];var fav=r.winp>=.5?r.home:r.away,pr=Math.max(r.winp,1-r.winp),ml=r.winp>=.5?r.p.model.fair_home_ml:r.p.model.fair_away_ml;
     var cons=r.p.market&&r.p.market.consensus_fair_home!=null?(r.winp>=.5?r.p.market.consensus_fair_home:1-r.p.market.consensus_fair_home):null;
-    items.push({k:'Most decisive projection',cls:'',r:r,
-      cells:[{l:'Model win prob',v:(pr*100).toFixed(0)+'%',c:'mdl'},{l:'Fair moneyline',v:(ml!=null?((ml>0?'+':'')+ml):'—')},
+    items.push({k:'Most decisive projection',pri:'info',r:r,
+      cells:[{l:'Model win prob',v:(pr*100).toFixed(0)+'%',c:'mdl',p:true},{l:'Fair moneyline',v:(ml!=null?((ml>0?'+':'')+ml):'—')},
         cons!=null?{l:'Market · no-vig',v:(cons*100).toFixed(0)+'%'}:{l:'Market · no-vig',v:'—',c:'mut'}],
       note:'Strongest model favourite on the slate: '+fbEsc(fav)+'. Confidence is a property of the projection, not evidence of an edge.'});
   }
   var ft=rows.filter(function(x){return x.fault;});
   if(ft.length){
     r=ft[0];var lim=r.sport==='p4'?FB_GUARD.p4.game:FB_GUARD.nfl.game;
-    items.push({k:'Data-quality warning',cls:'neg',r:r,
-      cells:[{l:'Model',v:fbHomeLine(r.p.model.fair_spread),c:'mdl'},{l:'Market',v:fbHomeLine(r.mkt.spread_line)},{l:'Gap',v:Math.abs(r.gapS).toFixed(1)+' pts',c:'neg'}],
-      note:'Home line. Beyond the '+lim+'-pt guard bound. Treat as a data fault, not an edge'+(ft.length>1?(' · '+(ft.length-1)+' more game'+(ft.length===2?'':'s')+' flagged on the board'):'')+'.'});
+    items.push({k:'Data-quality warning',pri:'neg',cls:'neg',r:r,
+      cells:[{l:'Model',v:fbHomeLine(r.p.model.fair_spread),c:'mdl'},{l:'Market',v:fbHomeLine(r.mkt.spread_line)},{l:'Gap',v:Math.abs(r.gapS).toFixed(1)+' pts',c:'neg',p:true}],
+      note:'Home line. Beyond the '+lim+'-pt guard bound: treat as a data fault, not an edge'+(ft.length>1?(' · '+(ft.length-1)+' more game'+(ft.length===2?'':'s')+' flagged on the board'):'')+'.'});
   }
   var qb=rows.filter(function(x){return x.ok&&x.warn.some(function(w){return /qb/i.test(w);});});
   if(qb.length){
     r=qb[0];var flags=r.warn.filter(function(w){return /qb/i.test(w);});
-    items.push({k:'QB adjustment pending',cls:'warn',r:r,
-      cells:[{l:'Games flagged',v:String(qb.length),c:'warn'},{l:'Model',v:fbHomeLine(r.p.model.fair_spread),c:'mdl'},{l:'Market',v:fbHomeLine(r.mkt.spread_line)}],
-      note:'Home line. '+fbEsc(flags.join(' · '))+'. The feed has not published the starter, so the QB layer carries the last known value rather than a guess.'});
+    items.push({k:'QB adjustment pending',pri:'warn',cls:'warn',r:r,
+      cells:[{l:'Games flagged',v:String(qb.length),c:'warn',p:true},{l:'Model',v:fbHomeLine(r.p.model.fair_spread),c:'mdl'},{l:'Market',v:fbHomeLine(r.mkt.spread_line)}],
+      note:'Home line. '+fbEsc(flags.join(' · '))+'. The feed has not published the starter; the QB layer carries the last known value, never a guess.'});
   }
   var st=rows.filter(function(x){return x.ok&&x.stale;});
   if(st.length&&!ft.length){
     r=st[0];
-    items.push({k:'Stale market quote',cls:'warn',r:r,
-      cells:[{l:'Model',v:fbHomeLine(r.p.model.fair_spread),c:'mdl'},{l:'Captured',v:fbHomeLine(r.mkt.spread_line),c:'mut'},{l:'Games affected',v:String(st.length),c:'warn'}],
-      note:'Home line. The only market number on file is an old capture; no fresh quote or consensus line has joined. Nothing is compared until one does.'});
+    items.push({k:'Stale market quote',pri:'warn',cls:'warn',r:r,
+      cells:[{l:'Model',v:fbHomeLine(r.p.model.fair_spread),c:'mdl'},{l:'Captured',v:fbHomeLine(r.mkt.spread_line),c:'mut'},{l:'Games affected',v:String(st.length),c:'warn',p:true}],
+      note:'Home line. The only market number on file is an old capture; nothing is compared until a fresh quote joins.'});
   }
-  return items.slice(0,6);
+  return items;
 }
 function fbSignalCardHTML(it){
-  var r=it.r;
-  var cells=it.cells.map(function(c){return '<div class="c"><div class="l">'+fbEsc(c.l)+'</div><div class="v '+(c.c||'')+'">'+fbEsc(c.v)+'</div></div>';}).join('');
-  var when='';try{when=whenLabel(new Date(r.t).toISOString());}catch(_){}
-  return '<div class="fb-sig '+it.cls+'" onclick="fbFocusGame(\''+fbEsc(r.sport)+'\',\''+fbEsc(r.gid)+'\')" role="button" tabindex="0">'
-    +'<div class="fb-sig-k"><span class="kk">'+fbEsc(it.k)+'</span><span class="sp">'+fbSportTag(r)+'</span></div>'
-    +'<div class="fb-sig-m">'+fbEsc(r.away)+' @ '+fbEsc(r.home)+'</div>'
-    +'<div class="fb-sig-grid">'+cells+'</div>'
-    +(it.note?'<div class="fb-sig-n">'+it.note+'</div>':'')
-    +'<div class="fb-sig-f"><span class="ts">'+fbEsc(when)+' · model '+fbEsc(ago(FB.at))+' · '+fbEsc(fbMktAge(r))+'</span>'
-    +'<button class="fb-lnk" onclick="event.stopPropagation();fbOpenGame(\''+fbEsc(r.sport)+'\',\''+fbEsc(r.gid)+'\')">Research matchup</button></div></div>';
+  var r=it.r,when='';try{when=whenLabel(new Date(r.t).toISOString());}catch(_){}
+  return rsTkSig({k:it.k,cls:it.cls||'',pri:it.pri,tag:fbSportTag(r),title:r.away+' @ '+r.home,cells:it.cells,note:it.note,
+    foot:when+' · model '+ago(FB.at)+' · '+fbMktAge(r),
+    onclick:"fbFocusGame('"+edAttrJs(r.sport)+"','"+edAttrJs(r.gid)+"')",
+    action:{label:'Open research',onclick:"fbOpenGame('"+edAttrJs(r.sport)+"','"+edAttrJs(r.gid)+"')"}});
 }
 /* ---- model vs market: one reusable component ------------------------
    o = { title, game, when, rows:[{l,sub,v,c}], band:{lo,med,hi,mkt,loLabel,hiLabel,centre,bandLabel,medLabel}, foot } */
@@ -26311,7 +26451,7 @@ function fbMvmForRow(r){
   rows.push({l:'EdgeDesk fair spread',sub:'model · home line · '+fbSportTag(r),v:fbEsc(r.hc)+' '+fbHomeLine(m.fair_spread),c:'mdl'});
   if(mk.spread_line!=null){
     rows.push({l:'Market spread',sub:(r.book||r.src||'market')+(r.at?(' · '+ago(r.at)):(r.ref?' · nflverse consensus reference':'')),v:fbEsc(r.hc)+' '+fbHomeLine(mk.spread_line)});
-    rows.push({l:'Difference',sub:'toward '+fbSideOf(r,r.gapS),v:Math.abs(r.gapS).toFixed(1)+' pts',c:'diff'});
+    rows.push({l:'Difference',sub:'toward '+fbSideOf(r,r.gapS),v:Math.abs(r.gapS).toFixed(1)+' pts',c:'diff',p:true});
   }else rows.push({l:'Market spread',sub:'no number joined for this game',v:'—',c:'mut'});
   if(m.fair_total!=null)rows.push({l:'Totals',sub:'model · market · difference',v:m.fair_total.toFixed(1)+' · '+(mk.total_line!=null?mk.total_line:'—')+(r.gapT!=null?(' · '+fbPts(r.gapT)):'')});
   if(m.home_win_prob!=null)rows.push({l:'Win probability',sub:'model · fair moneyline',v:fbEsc(r.hc)+' '+(m.home_win_prob*100).toFixed(0)+'% · '+(m.fair_home_ml!=null?((m.fair_home_ml>0?'+':'')+m.fair_home_ml):'—')});
@@ -26329,7 +26469,7 @@ function fbMvmForRow(r){
   var foot=(p.edge&&p.edge.spread&&p.edge.spread.recommendation==='RESEARCH_LEAN')
     ?'<b>Research lean, unproven.</b> The engine flags 2+ pts of disagreement as worth reviewing; its own record says this is not evidence of an edge.'
     :(mk.spread_line==null?'The model number stands alone. No difference, and no edge of any kind, is claimed without a market number.':'Inside the engine’s review threshold. Context, not a signal.');
-  return fbMvmHTML({title:'Model vs market',game:r.away+' @ '+r.home,when:when+(r.week!=null?(' · week '+r.week):''),rows:rows,band:band,foot:foot});
+  return fbMvmHTML({title:'Model spread vs market spread',game:r.away+' @ '+r.home,when:when+(r.week!=null?(' · week '+r.week):''),rows:rows,band:band,foot:foot});
 }
 /* ---- model status ---- */
 function fbModelStatusHTML(){
@@ -26435,21 +26575,22 @@ function fbSystemHTML(){
   var level='ok',tt,bits=[];
   if(fails.length){level='neg';tt=fails.length+' failed check'+(fails.length===1?'':'s')+' in the daily self-check';}
   else if(live&&live.status==='fail'){level='neg';tt='Live line guard: a gap beyond the bound';}
-  else if(FB.engineErr&&FB.at){level='warn';tt='Last refresh failed · showing the previous load';}
-  else if(!h){level=FB.at?'warn':'mut';tt=FB.at?'Self-check record unavailable':'Waiting for the engine';}
+  else if(FB.engineErr&&FB.at){level='warn';tt='Attention needed';bits.push('last refresh failed, showing the previous load');}
+  else if(!h){level=FB.at?'warn':'mut';tt=FB.at?'Attention needed':'Waiting for the engine';if(FB.at)bits.push('self-check record unavailable');}
   else{
-    if(warns.length)bits.push(warns.length+' warning'+(warns.length===1?'':'s'));
+    if(warns.length)bits.push(warns.length+' check warning'+(warns.length===1?'':'s'));
     if(live&&live.status==='warn')bits.push('line guard attention');
     if(fr&&fr.stale)bits.push('build stale');
-    if(bits.length){level='warn';tt='Attention needed · '+bits.join(' · ');}
+    if(bits.length){level='warn';tt='Attention needed';}
     else tt='All football research systems operational';
   }
-  var ts='Last refresh '+(FB.at?ago(FB.at):'—')+((h&&h.generated_at)?(' · self-check '+ago(rsParseStamp(h.generated_at))):'')+(FB.builtAt?(' · build '+ago(FB.builtAt)):'');
+  var ts=(bits.length?(bits.join(' · ')+' · research still usable · '):'')+'Last refresh '+(FB.at?ago(FB.at):'—')+((h&&h.generated_at)?(' · self-check '+ago(rsParseStamp(h.generated_at))):'')+(FB.builtAt?(' · build '+ago(FB.builtAt)):'');
   var open=FB.ui.sysOpen;
   var body=fbPipelineRowsHTML(h&&h.pipeline_meta);
   try{body+=fbHealthHTML();}catch(_){}
   body+='<div id="rsMeta-football" class="rs-panelwrap"></div>';
-  return '<div class="fb-card fb-sys"><div class="fb-sys-h"><span class="dot '+level+'"></span><div class="tx"><div class="tt '+(level==='ok'||level==='mut'?'':level)+'">'+fbEsc(tt)+'</div><div class="ts">'+fbEsc(ts)+'</div></div>'
+  var gl=level==='ok'?'✓':(level==='warn'?'⚠':(level==='neg'?'✗':'·'));
+  return '<div class="fb-card fb-sys"><div class="fb-sys-h"><span class="dot '+level+'"></span><div class="tx"><div class="tt '+(level==='ok'||level==='mut'?'':level)+'"><span class="gl'+(level==='ok'?' ok':'')+'" aria-hidden="true">'+gl+'</span>'+fbEsc(tt)+'</div><div class="ts">'+fbEsc(ts)+'</div></div>'
     +'<button class="fb-tgl" id="fbSysBtn" aria-expanded="'+(open?'true':'false')+'" aria-controls="fbSysCol" onclick="fbSysToggle()">'+(open?'Hide details':'View pipeline details')+'</button></div>'
     +'<div class="fb-col'+(open?' open':'')+'" id="fbSysCol"><div>'+body+'</div></div></div>';
 }
@@ -26467,37 +26608,33 @@ function fbOverviewHTML(){
     return '<div class="rs-state"><h4>Football engine unavailable</h4><p>'+fbEsc(FB.engineErr)+'. Nothing is shown rather than something invented.</p><button onclick="fbRefreshClick()">Try again</button></div>';
   }
   if(!FB.at)return fbSkeletonHTML();
-  var rows=fbGameRows(),s=fbSnapshot(rows),items=fbTodayItems(rows);
+  var rows=fbGameRows(),s=fbSnapshot(rows),items=fbTodayItems(rows).map(function(it){return fbSigItem(it);});
   var p4on=!!(FB.p4&&FB.p4.loadedAt&&!FB.p4.engineErr),p4loading=!!(FB.p4&&FB.p4._loading&&!FB.p4.loadedAt);
   var scope='NFL'+(p4on?' + FBS':(p4loading?' · Power 4 loading':' · Power 4 loads on open'));
-  var html='';
-  /* 1 · snapshot */
-  html+='<div class="fb-card"><div class="fb-snap-h"><span class="t">Football research</span><span class="m">Updated '+fbEsc(ago(FB.at))+' · '+fbEsc(scope)+'</span></div>'
-    +'<div class="fb-kpis">'
-    +'<div class="fb-kpi"><div class="n">'+s.games+'</div><div class="l">Games</div></div>'
-    +'<div class="fb-kpi"><div class="n'+(s.cand?'':' mut')+'">'+s.cand+'</div><div class="l">Review</div></div>'
-    +'<div class="fb-kpi"><div class="n'+(s.dis?' warn':' mut')+'">'+s.dis+'</div><div class="l">Disagree</div></div>'
-    +'<div class="fb-kpi"><div class="n '+(s.faults?'neg':'pos')+'">'+s.faults+'</div><div class="l">Faults</div></div></div>'
-    +'<div class="fb-note"><b>Review</b> counts projected games with a market number joined. <b>Disagree</b> counts the engine’s own review threshold (2+ pts, research lean, unproven). <b>Faults</b> are failed self-checks and gaps beyond the guard bound'
-    +(s.warn?(' · '+s.warn+' game'+(s.warn===1?'':'s')+' carr'+(s.warn===1?'ies':'y')+' a data-quality flag'):'')+'.</div>'
-    +'<button class="fb-cta" onclick="fbToolGo(\'game\')">Open football research '+FB_ICONS.arrow+'</button></div>';
-  /* 2 · today */
+  var html=rsTkSnap({title:'Football research',meta:'Updated '+ago(FB.at)+' · '+scope,key:'fbSnap',
+    kpis:[{n:s.games,l:'Games'},{n:s.cand,l:'Review',c:s.cand?'':'mut'},{n:s.dis,l:'Disagree',c:s.dis?'warn':'mut'},{n:s.faults,l:'Faults',c:s.faults?'neg':'pos'}],
+    defs:[['Review','Projected games with market data joined.'],['Disagree','Model/market gap above the research threshold.'],['Faults','Failed checks or guard-bound violations.']],
+    how:'<b>Games</b> are the upcoming NFL games inside the next '+FB_LOOKAHEAD_D+' days, plus the Power 4 slate once that board has been opened. <b>Review</b> requires a PREDICTED projection and a spread or total joined from captured quotes or the reference line. <b>Disagree</b> uses the engine’s own research-lean classification: 2+ pts of disagreement on the spread or total — research attention, unproven by the model’s own record. <b>Faults</b> add failed daily self-checks to games whose model–market gap exceeds the guard bound ('+FB_GUARD.nfl.game+' pts NFL, '+FB_GUARD.p4.game+' pts Power 4).'+(s.warn?(' '+s.warn+' game'+(s.warn===1?'':'s')+' currently carr'+(s.warn===1?'ies':'y')+' a data-quality flag.'):''),
+    cta:{label:'Open football research',onclick:"fbToolGo('game')"}});
   html+='<div class="fb-sechd"><span>Today in football</span><span class="r">'+(items.length?(items.length+' signal'+(items.length===1?'':'s')):'quiet')+' · '+fbEsc(ago(FB.at))+'</span></div>';
-  if(items.length)html+='<div class="fb-today">'+items.map(fbSignalCardHTML).join('')+'</div>';
-  else html+='<div class="fb-quiet">No major research changes since the last refresh.'+(s.games?'':'<small>No games inside the next '+FB_LOOKAHEAD_D+' days in the schedule feed. Use the week selector on the NFL board to scan any week.</small>')+'</div>';
-  /* 3 · tools */
+  html+=rsTkToday(items,'fbToday','<div class="fb-quiet">No major research changes since the last refresh.'+(s.games?'':'<small>No games inside the next '+FB_LOOKAHEAD_D+' days in the schedule feed. Use the week selector on the NFL board to scan any week.</small>')+'</div>');
   html+='<div class="fb-sechd"><span>Research tools</span></div><div class="fb-tools">'
-    +fbToolHTML('game','Game research','Matchup projections, cover and total probabilities, QB and rest context on every upcoming game.')
-    +fbToolHTML('market','Market research','Captured quotes: opening and current price, consensus, movement and the graded closing-line record.')
-    +fbToolHTML('team','Team research','FBS rosters by position group — class mix, returning production, depth and transfers.')
-    +fbToolHTML('ratings','Ratings & models','Opponent-adjusted power ratings, week-by-week projections, the graded season and methodology.')
+    +fbToolHTML('game','Game research','Projections, cover and total probabilities, QB and rest context.')
+    +fbToolHTML('market','Market research','Captured quotes, consensus, movement and the graded close record.')
+    +fbToolHTML('team','Team research','FBS rosters by position group, class mix and returning production.')
+    +fbToolHTML('ratings','Ratings & models','Power ratings, week-by-week projections and the graded season.')
     +'</div>';
-  /* 4 · model vs market */
   var fr=fbFocusRow(rows);
-  if(fr)html+='<div class="fb-sechd"><span>Model vs market</span><span class="r">tap a signal above to compare it</span></div><div class="fb-card">'+fbMvmForRow(fr)+'</div>';
-  /* 5 · model status */
+  if(fr)html+='<div class="fb-sechd"><span>Market vs research</span><span class="r">tap a signal above to compare it</span></div><div class="fb-card">'+fbMvmForRow(fr)+'</div>';
   html+=fbModelStatusHTML();
   return html;
+}
+function fbSigItem(it){
+  var r=it.r,when='';try{when=whenLabel(new Date(r.t).toISOString());}catch(_){}
+  return {k:it.k,cls:it.cls||'',pri:it.pri,tag:fbSportTag(r),title:r.away+' @ '+r.home,cells:it.cells,note:it.note,
+    foot:when+' · model '+ago(FB.at)+' · '+fbMktAge(r),
+    onclick:"fbFocusGame('"+edAttrJs(r.sport)+"','"+edAttrJs(r.gid)+"')",
+    action:{label:'Open research',onclick:"fbOpenGame('"+edAttrJs(r.sport)+"','"+edAttrJs(r.gid)+"')"}};
 }
 function fbRenderOverview(){var el=$('fbOverview');if(el)el.innerHTML=fbOverviewHTML();}
 function fbRenderSystem(){var el=$('fbSystem');if(!el)return;el.innerHTML=(FB.at||FB.engineErr||FB.health)?fbSystemHTML():'';}
