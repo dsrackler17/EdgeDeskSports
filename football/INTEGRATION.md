@@ -251,63 +251,50 @@ and the post was still valid, but a board whose games already had stored rows
 could not reach the Collective **at all**. One server-side rule took the NFL and
 Power 4 sync offline.
 
-**What app.html does now** (`fbRetractBlockedBy` / `fbRetractBlockedWhy`): it
-recognises the refusal by the database's own words, says what happened in the
-operator's language instead of pasting a 400 body at them, asks once, and posts
-the slate anyway if they say yes — as a **revision**, stated plainly, because
-the stored rows keep the first-submission slot. Once a store has refused in a
-tab, later syncs skip the doomed call and state the revision up front rather
-than promising a first submission they cannot deliver.
-`tools/collective/app_sync.test.js` drives that flow out of `app.html` itself
-against the exact message the live database sent.
+**What changed instead: the rule.** The Collective now shows and grades each
+model's **latest live submission received before the lock**, 30 minutes before
+kickoff. A re-upload replaces the model's number on every game that has not
+locked; every earlier submission stays stored as movement; a submission
+received at or after the lock is stored, flagged late, and excluded — whoever
+posts it. Nothing has to be removed for a correction to count, so the retract
+route's refusal no longer stands between a board and the wall. The group chose
+this after two creators reported the uploader as broken in one week: the
+latest upload is the master, and the lock protects the record.
 
-**The change set for option 2 is now written down**, in `supabase/` — a
-read-only preflight that reports the column names this repository cannot see, a
-migration adding `superseded_at` plus a `security definer` maintenance function,
-and the exact predicate the three readers and the retract endpoint each need.
-It is specified and reviewable, **not applied**: applying it needs Supabase
-project access. It deliberately does not give open replacement — a creator gets
-a 30-minute correction window and an admin gets the maintenance path, because a
-number anyone can revise after reading the room is not worth grading. See
-`supabase/README.md`.
+**What app.html does now.** *Sync to Collective (API)* is a dry run, one
+confirmation that says exactly what the post replaces and when games lock,
+and a post. It never asks the store for a delete. The standalone retract
+button keeps its guard against the append-only refusal (`fbRetractBlockedBy` /
+`fbRetractBlockedWhy`, recognised by the database's own words) and says that
+nothing is lost by it. `tools/collective/app_sync.test.js` drives both flows
+out of `app.html` itself.
 
-**What the server still needs**, for replacement to actually work again — none
-of it is in this repository:
+**What the client does** (`collective/index.html`): every `/v1/games` response
+is collapsed on arrival to one row per model per game — the latest live row
+received before the lock — so the wall, the model page, the record and the
+coverage agree whether or not the server has adopted the predicate yet; a row
+received after the lock that the server did not flag is flagged late on the
+page; the lock length is read from `/v1/meta` `lock_minutes` (30 when
+absent); the dashboard says before a post which games it will replace numbers
+on and which have already locked, the receipt says the same from the server's
+own counts, and the rules page, the legend, the game header (`LOCKS IN 2H` /
+`LOCKED`) and the `+n` beside a pick all state the lock rule.
 
-1. `retract` routed through the service maintenance path the trigger names (a
-   `security definer` function that is allowed to remove pre-kickoff rows),
-   rather than a direct `DELETE` PostgREST will always have refused; **or**
-2. a supersede column on `projections` — the retract marks rows superseded and
-   the grader ignores them — which keeps the store genuinely append-only and
-   needs no delete privilege anywhere; **and either way**
-3. the dry run answering from the same path it will actually use, so
-   `would_remove` can never again count rows the confirmed call cannot touch.
+**What the server still needs** — none of it is in this repository, all of it
+is written down in `supabase/` (`migrations/01_lock_rule.sql`,
+`functions/collective_public.PATCH.md`, `functions/collective_ingest.PATCH.md`):
 
-Until one of those exists, a corrected slate lands as movement and the wall
-keeps grading the first submission. That is the honest degradation, and it is
-what the button now says out loud — but it is not the fix.
+1. `board_models` (what `/v1/games` reads), the grader, consensus and the
+   coverage counts pick *the latest live row per model per game with
+   `received_at < lock_at(kickoff)`* instead of the first pre-kickoff one.
+   **This is the change that makes a re-upload reach the wall**: until the
+   view returns the later row, the page never sees it and cannot show it.
+2. `ingest_submission` sets `late` by the lock rather than by kickoff, and
+   counts `first` / `movement` against the new rule.
+3. `/v1/meta` publishes `lock_minutes`.
 
-**The Collective's own surfaces say it too, now.** They did not, and that cost
-more than the missing feature did. A creator re-uploading a corrected week got
-`Your slate is in.` in green beside a link to the wall, went to the wall, and
-found the numbers they had just corrected sitting under an age of `8d` — which
-reads as an upload that silently failed, and was reported as one by two
-creators in the same week. Three places in `collective/index.html` state the
-rule instead of leaving it to be inferred:
-
-* `slateRevisionScan` / `slateRevisionHTML` — **before** the post, counted
-  against the game list the pre-flight has already fetched: how many of these
-  games already carry a submission from this model, and how many are genuinely
-  new.
-* `slateMovementHTML` — on the receipt, from the server's own `movement` and
-  `first` counts. A post where every row was a revision is no longer headlined
-  as a slate that is in.
-* the `+n` beside a pick on the wall, from `movement_n`, which the games feed
-  already carried and only the model page's *finished*-game log ever rendered —
-  the one place nobody is asking.
-
-None of this replaces anything: the first pre-kickoff submission is still the
-graded one, which is the anti-anchoring rule and is the point.
+Until 1 lands, the wall keeps showing each model's first submission and the
+page can only say so. That is the honest degradation; it is not the fix.
 
 ### The Collective tab is locked because it asks anonymously
 

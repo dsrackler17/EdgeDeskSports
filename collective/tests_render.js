@@ -1470,13 +1470,11 @@ var S=sandbox;
       return r.length>0&&!/implied/.test(r);
     })(),
     'labelling an honest stated record as implied is the opposite mistake');
-  /* ---- the wall says a model has posted this game again ----------------
-     The board shows, and the Collective grades, the FIRST pre-kickoff
-     submission -- the anti-anchoring rule, which is not in question here.
-     What the board never said is that a LATER one had arrived. So a creator
-     who re-uploaded a corrected slate came to the wall, found the numbers
-     they had just replaced under an age of "8d", and reported the uploader
-     as broken. It had worked; nothing on screen could say so. */
+  /* ---- the wall says a model has posted this game more than once -------
+     The board shows, and the Collective grades, the LATEST submission
+     received before the lock. The +n beside the pick says how many earlier
+     numbers it replaced, so a creator who re-uploaded a corrected slate can
+     see on the wall that the new number is the one that counts. */
   S.SEASON_GAMES={};S.LOCALREC={};S.META=null;S.WALLC=null;S.location.hash='';
   var mv=node();
   await S.renderWall(mv);
@@ -1494,13 +1492,13 @@ var S=sandbox;
       var i=mv2.innerHTML.indexOf('class="rev"');
       return i<0?'no marker rendered':mv2.innerHTML.slice(Math.max(0,i-260),i+120);
     })()});
-  chk('and says why the board is still showing the first one',
+  chk('and says the board is showing the latest one received before the lock',
     (function(){
       var i=mv2.innerHTML.indexOf('class="rev"');
       if(i<0)return false;
       var seg=mv2.innerHTML.slice(i,i+700);
-      return /first pre-kickoff/.test(seg) && /stored as movement/.test(seg)
-        && /do not move the board/.test(seg);
+      return /latest one received before the lock/.test(seg) && /stored as movement/.test(seg)
+        && /Nothing posted after the lock counts/.test(seg);
     })(),
     'a bare +2 with no explanation is a new question, not an answer');
   chk('the marker rides with the pick, so it survives the mobile board',
@@ -1518,6 +1516,49 @@ var S=sandbox;
   chk('one submission is not reported as a revision',
     mv3.innerHTML.indexOf('class="rev"')<0);
   delete GAMES[0].models[0].movement_n;
+
+  /* ---- the feed carries every submission: the wall shows the latest -----
+     The exact case from the reports. A model posted a game with its own
+     spread as the market line, then re-uploaded with the real market line
+     and cover %, then posted once more inside the lock window. The wall has
+     to show the re-upload, once, with the +2, and the game header has to
+     say when the numbers lock. */
+  function sub(at,line){
+    var o=M('mustbemoose','edgedesk-cfb-p4','home',-36.5,line,0.98);
+    o.received_at=at;return o;
+  }
+  var early=sub('2026-08-21T12:00:00Z',-36.5);
+  var later=sub('2026-08-28T12:00:00Z',-28.5);
+  var afterLock=sub('2098-12-31T23:45:00Z',-20.5);
+  var openGame=G(4,'UMASS','RUTGERS',null,null,null,[early,later,afterLock,
+    M('blerm','blerm-s-model','away',-29.5,-28.5,null)]);
+  openGame.kickoff_at='2099-01-01T00:00:00Z';
+  GAMES.push(openGame);
+  S.SEASON_GAMES={};S.LOCALREC={};S.META=null;S.WALLC=null;
+  var mv4=node();
+  await S.renderWall(mv4);
+  var blk=(function(){
+    var h=mv4.innerHTML,i=h.indexOf('UMASS @ RUTGERS');
+    if(i<0)return '';
+    var j=h.indexOf('class="gb-hd"',i+1);
+    return h.slice(i,j<0?h.length:j);
+  })();
+  var rowsOf=(blk.match(/class="gb-row"[\s\S]*?gb-dot/g)||[]).filter(function(r){return r.indexOf('#/mustbemoose"')>=0;});
+  chk('the open game reached the wall',blk.length>0);
+  chk('a model with several submissions on a game appears on the wall once',
+    rowsOf.length===1,{rows:rowsOf.length});
+  chk('and the row is the latest submission received before the lock',
+    /-28\.5/.test(rowsOf[0]||'') && !/-20\.5/.test(rowsOf[0]||''),
+    {row:(rowsOf[0]||'').slice(0,400)});
+  chk('the row posted after the lock never wins the slot, even though it is newest',
+    !/-20\.5/.test(blk));
+  chk('and the +n counts every submission the feed carried',
+    /class="rev"[^>]*>\+2<\/sup>/.test(rowsOf[0]||''),{row:(rowsOf[0]||'').slice(0,400)});
+  chk('the game header says when the game locks',
+    /class="gflag lock"[^>]*>LOCKS IN \d+D</.test(blk),{hd:blk.slice(0,300)});
+  chk('a finished game carries no lock chip',
+    !/gflag lock/.test(mv4.innerHTML.slice(0,mv4.innerHTML.indexOf('UMASS @ RUTGERS'))));
+  GAMES.pop();
 
   S.SEASON_GAMES={};S.LOCALREC={};S.META=null;S.WALLC=null;S.location.hash='';
 

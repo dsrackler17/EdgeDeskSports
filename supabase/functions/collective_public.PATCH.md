@@ -1,7 +1,9 @@
-# `collective_public` — four patches
+# `collective_public` — five patches
 
 Apply in the Supabase dashboard editor with find-and-replace. Each block is
-unique in the file. Nothing here changes the first-submission rule.
+unique in the file. Patches 2 and 5 carry the **lock rule** (the latest
+submission received before the lock, 30 minutes before kickoff, is the one
+that counts — see `supabase/README.md`); the other three stand on their own.
 
 Read **Patch 3** before applying it: it is the one that changes who can see
 paid numbers, and it is a product decision, not a bug fix.
@@ -43,30 +45,22 @@ from `/v1/games`.
 
 ---
 
-## Patch 2 — one row per model per game, and say how many submissions there were
+## Patch 2 — one row per model per game: the latest one before the lock
 
 This is the one that matters for the creators who reported the uploader as
 broken.
 
 `buildGames` maps **every** row `board_models` returns for a game. Whether a
-model appears once or three times on the wall is therefore decided entirely by
-that view, and the edge function has no opinion at all. Two consequences:
-
-* if the view ever stops collapsing, the wall renders the same model two or
-  three times on one game with no indication which is graded;
-* `movement_n` — which the site now prints as a `+n` beside a pick, to tell a
-  creator their re-upload **was** received — is passed through only if the view
-  happens to expose it. If it does not, that marker silently never renders and
-  the creators are back where they started.
-
-This makes the function state the rule itself: **the graded row is the earliest
-pre-kickoff live submission**, one row per model per game, and the number of
+model appears once or three times on the wall, and *which* of its submissions
+appears, is therefore decided entirely by that view, and the edge function has
+no opinion at all. This makes the function state the rule itself: **the row
+that counts is the latest live submission received before the lock**, one row
+per model per game, `late` is decided by the lock, and the number of
 submissions is counted here rather than hoped for.
 
-It also filters `superseded_at`, which does nothing until
-`supabase/migrations/01_supersede.sql` is applied and the column is exposed —
-`undefined` is falsy, so every row is kept until it exists. Deploy order stays
-free.
+`lockMinutes` reads `submission.lock_minutes` from config (the key
+`migrations/01_lock_rule.sql` adds) and is 30 when the key does not exist yet,
+so this can be deployed before or after the migration.
 
 **Find** (immediately above `async function buildGames`):
 
@@ -77,35 +71,56 @@ free.
 **Insert this block before that comment:**
 
 ```ts
-/* ONE ROW PER MODEL PER GAME, and how many submissions are behind it.
-   board_models is read ordered by received_at.asc, so the first row seen for
-   a model is its earliest — which is the row the Collective grades. A late
-   row does not hold that slot, so a non-late row always wins it.
+/* THE LOCK. Every game locks lockMinutes before kickoff. A submission
+   received at or after the lock is late: stored, flagged, never graded. */
+let LOCK_MIN_CACHE: number | null = null;
+async function lockMinutes(): Promise<number> {
+  if (LOCK_MIN_CACHE !== null) return LOCK_MIN_CACHE;
+  const v = Number(await rpc<unknown>("get_config", { p_key: "submission.lock_minutes" }));
+  LOCK_MIN_CACHE = Number.isFinite(v) && v >= 0 ? v : 30;
+  return LOCK_MIN_CACHE;
+}
+function lockAtMs(kickoff: string | null | undefined, lockMin: number): number | null {
+  const k = kickoff ? new Date(kickoff).getTime() : NaN;
+  return Number.isFinite(k) ? k - lockMin * 60_000 : null;
+}
+
+/* ONE ROW PER MODEL PER GAME: the LATEST live submission received before
+   the lock. Every earlier one is movement; anything at or after the lock is
+   late and never takes the slot, however new it is. A late row is shown
+   only when the model has nothing before the lock, so the wall can still
+   say "posted, late" rather than nothing at all.
 
    movement_n is counted HERE when this collapse actually sees more than one
-   row, and otherwise passed through from the view. That order matters: if the
-   view already collapses and does not expose the column, counting alone would
-   report 1 for every row and quietly claim no revision had ever arrived --
-   which is the exact false statement the site's +n marker exists to stop.
-
-   superseded_at is filtered for the day 01_supersede.sql is applied. Until
-   the column exists it is undefined, so nothing is filtered and this is a
-   no-op; the readers can be deployed before or after the migration. */
-function collapseModels(rows: BoardModelRow[]): (BoardModelRow & { movement_n: number })[] {
+   row, and otherwise passed through from the view. That order matters: if
+   the view already collapses and does not expose the column, counting alone
+   would report 1 for every row and quietly claim no revision had ever
+   arrived -- which is the exact false statement the site's +n marker exists
+   to stop. */
+function collapseModels(rows: BoardModelRow[], kickoff: string | null | undefined, lockMin: number)
+  : (BoardModelRow & { movement_n: number })[] {
+  const lock = lockAtMs(kickoff, lockMin);
   const by = new Map<string, BoardModelRow[]>();
-  for (const m of rows) {
-    if ((m as { superseded_at?: string | null }).superseded_at) continue;
+  for (const m0 of rows) {
+    let m = m0;
+    const t = m.received_at ? new Date(m.received_at).getTime() : NaN;
+    if (!m.is_late && lock !== null && Number.isFinite(t) && t >= lock) m = { ...m, is_late: true };
     const k = `${m.creator_slug}/${m.model_slug}`;
     const list = by.get(k);
     if (list) list.push(m); else by.set(k, [m]);
   }
+  const ms = (m: BoardModelRow) => { const t = new Date(m.received_at ?? 0).getTime(); return Number.isFinite(t) ? t : 0; };
+  const live = (m: BoardModelRow) => !m.is_late && ((m as { data_origin?: string | null }).data_origin ?? "live") === "live";
   const out: (BoardModelRow & { movement_n: number })[] = [];
   for (const list of by.values()) {
-    const graded = list.find((m) => !m.is_late) ?? list[0];
+    const pool = list.filter(live);
+    const cands = pool.length ? pool : list;
+    let best = cands[0];
+    for (const m of cands) if (ms(m) >= ms(best)) best = m;
     const seen = list.length;
-    const fromView = Number((graded as { movement_n?: unknown }).movement_n);
+    const fromView = Number((best as { movement_n?: unknown }).movement_n);
     out.push({
-      ...graded,
+      ...best,
       movement_n: seen > 1 ? seen : (Number.isFinite(fromView) && fromView > 0 ? fromView : 1),
     });
   }
@@ -138,7 +153,7 @@ function collapseModels(rows: BoardModelRow[]): (BoardModelRow & { movement_n: n
         // locked reader seeing that a model revised a game learns nothing
         // they could bet on. Withholding it would put the creator's own
         // "did my re-upload land?" answer behind the paywall.
-        models: collapseModels(models.filter((m) => m.game_id === g.game_id)).map((m) =>
+        models: collapseModels(models.filter((m) => m.game_id === g.game_id), g.kickoff_at, lockMin).map((m) =>
           unlocked
             ? { creator_slug: m.creator_slug, model_slug: m.model_slug, locked: false,
                 late: m.is_late, pick_side: m.pick_side, projected_spread: m.projected_spread,
@@ -151,6 +166,19 @@ function collapseModels(rows: BoardModelRow[]): (BoardModelRow & { movement_n: n
             : { creator_slug: m.creator_slug, model_slug: m.model_slug, locked: true,
                 movement_n: m.movement_n }),
 ```
+
+and, at the top of `buildGames` (before the `games.map(...)` that contains the
+block above), read the lock once per request:
+
+```ts
+  const lockMin = await lockMinutes();
+```
+
+**If `board_models` already collapses to the first submission**, this patch
+cannot un-collapse it: the function only ever sees the row the view chose.
+Change the view's per-model pick from `received_at asc` to `desc` with the lock
+predicate (`migrations/01_lock_rule.sql`, section 4a). The function-side
+collapse then holds either way.
 
 ---
 
@@ -283,13 +311,35 @@ in each; patch both.
 
 ---
 
+## Patch 5 — `/v1/meta` publishes the lock
+
+The site reads `lock_minutes` from meta and prints it everywhere it states the
+rule (30 when absent). Publishing it means changing the config key changes the
+page too.
+
+**Find** (in the `/v1/meta` handler, wherever the response object is built —
+the line carrying `billing_live` is unique):
+
+```ts
+      billing_live:
+```
+
+**Add, on the line before it:**
+
+```ts
+      lock_minutes: await lockMinutes(),
+```
+
+---
+
 ## What these do not fix
 
 Whether the wall shows a re-upload at all is decided by the **`board_models`
 view**, which is SQL and is not in anything supplied. Patch 2 makes the function
 state the rule and count the submissions, so the site's `+n` marker works
-either way — but if that view is what is dropping a creator's second submission
-entirely, the fix is in the view.
+either way — but if that view collapses to the first submission, the later
+rows never reach the function and the fix is in the view
+(`migrations/01_lock_rule.sql`, section 4a).
 
 Two artifacts settle it, and nothing else is needed:
 
