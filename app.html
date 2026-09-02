@@ -1898,7 +1898,7 @@ button:focus-visible,select:focus-visible,input:focus-visible,a:focus-visible{ou
     <div id="rsSearchWrap" class="rs-srch hide" style="margin-bottom:12px"></div>
     <div id="rsDrawer" class="fb-drawer" style="display:none" onclick="if(event.target===this)rsTkDrawerClose()"><div class="fb-drawer-card" id="rsDrawerCard"></div></div>
     <div id="rsSavedWrap" class="hide" style="margin-bottom:12px"></div>
-    <div class="stseg research-sub" style="margin-bottom:12px"><button data-sub="football" onclick="researchGo('football')">Football</button><button data-sub="ufc" onclick="researchGo('ufc')">UFC</button><button data-sub="tennis" onclick="researchGo('tennis')">Tennis</button><button data-sub="stats" onclick="researchGo('stats')">Stats</button><button data-sub="props" onclick="researchGo('props')">Props</button><button data-sub="lab" onclick="researchGo('lab')">Lab</button></div>
+    <div class="stseg research-sub" style="margin-bottom:12px"><button data-sub="football" onclick="researchGo('football')">Football</button><button data-sub="ufc" onclick="researchGo('ufc')">UFC</button><button data-sub="tennis" onclick="researchGo('tennis')">Tennis</button><button data-sub="stats" onclick="researchGo('stats')">Stats</button><button data-sub="lab" onclick="researchGo('lab')">Lab</button></div>
     <!-- CFB (College Football research) -->
     <div id="v-cfb" class="rpanel hide">
     <div class="row-between"><h2 style="margin:0">CFB</h2><span class="spacer"></span><span class="freshness" id="cfbFresh">&mdash;</span><button class="refreshbtn" title="Refresh" onclick="researchRefresh('cfb')">&#8635;</button></div>
@@ -1998,6 +1998,8 @@ button:focus-visible,select:focus-visible,input:focus-visible,a:focus-visible{ou
     <div id="rsSys-stats" class="fb-ov" style="margin-top:var(--sp5)"></div>
     </div>
     <!-- PROPS -->
+    <!-- Props: panel and module kept (the projections surface inside Stats);
+         no sub-nav tab, and researchGo('props') lands on Stats -->
     <div id="v-props" class="rpanel hide">
     <div class="row-between fb-panelhd"><h2 style="margin:0">Props</h2><span class="spacer"></span><span class="freshness" id="prFresh">—</span><button class="refreshbtn" id="prRefreshBtn" title="Refresh" aria-label="Refresh props" onclick="rsTkRefresh('prRefreshBtn',['props'])">&#8635;</button></div>
     <p class="rs-lede">Season-rate projections with modeled variance. <b>Projections, not lines, not edges</b> — an edge exists only once these beat a real closing number.</p>
@@ -3470,6 +3472,10 @@ window.researchGo=function(sub){
      hits and saved prefs land on Tennis with the research segment selected */
   var tddView=null;
   if(sub==='wta'){sub='tennis';tddView='RESEARCH';}
+  /* Props has no top-level seat until it carries a workflow of its own: its
+     season-rate projections already attach to Stats player rows, so old
+     links and remembered prefs land there */
+  if(sub==='props')sub='stats';
   if(!RESEARCH_MODULES[sub])sub='football';
   var prev=RESEARCH_SUB;
   RESEARCH_SUB=sub;
