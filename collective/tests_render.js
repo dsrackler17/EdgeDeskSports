@@ -315,7 +315,9 @@ var S=sandbox;
       var win=boardSlice(rank,'>Win %','>Margin MAE');
       return (rank.match(/Nobody has cleared the minimums yet/g)||[]).length===0
         && /Must Be Moose|EdgeDesk Sports|Blerm|Blizzard/.test(win)
-        && /<td class="num" style="color:var\(--dim\)">[1-9]<\/td>/.test(win);
+        /* the graded count now carries a colour and a "thin" marker under
+           ten games: the sample is stated beside the value, never hidden */
+        && /<td class="num" style="color:var\(--(dim|warn)\)"[^>]*>[1-9]/.test(win);
     },
     {board:boardSlice(rank,'>Win %','>Margin MAE').slice(0,400)});
   chk('every model is tracked in the live standings',
@@ -1538,7 +1540,9 @@ var S=sandbox;
   var mv4=node();
   await S.renderWall(mv4);
   var blk=(function(){
-    var h=mv4.innerHTML,i=h.indexOf('UMASS @ RUTGERS');
+    /* the command centre above the wall names the same game first; the
+       row under test is the wall's own */
+    var h=mv4.innerHTML,w=h.indexOf('LIVE MODEL WALL'),i=h.indexOf('UMASS @ RUTGERS',w<0?0:w);
     if(i<0)return '';
     var j=h.indexOf('class="gb-hd"',i+1);
     return h.slice(i,j<0?h.length:j);
@@ -1559,6 +1563,70 @@ var S=sandbox;
   chk('a finished game carries no lock chip',
     !/gflag lock/.test(mv4.innerHTML.slice(0,mv4.innerHTML.indexOf('UMASS @ RUTGERS'))));
   GAMES.pop();
+
+  /* ---- the answer layer sits above the wall ---------------------------
+     A first-time reader gets the summary strip and the room before the
+     terminal table, and the strip counts only what is on the page. */
+  S.SEASON_GAMES={};S.LOCALREC={};S.META=null;S.WALLC=null;S.location.hash='';
+  var open2=G(5,'UMASS','RUTGERS',null,null,null,[
+    M('mustbemoose','edgedesk-cfb-p4','home',-36.5,-28.5,0.98),
+    M('blerm','blerm-s-model','away',-29.5,-28.5,null)]);
+  open2.kickoff_at='2099-01-01T00:00:00Z';
+  GAMES.push(open2);
+  var cc=node();
+  await S.renderWall(cc);
+  var ccH=cc.innerHTML;
+  chk('the wall leads with the summary strip and the room, then the terminal wall',
+    ccH.indexOf('What the room is saying')>=0 && ccH.indexOf('What the room is saying')<ccH.indexOf('LIVE MODEL WALL'),
+    {room:ccH.indexOf('What the room is saying'),wall:ccH.indexOf('LIVE MODEL WALL')});
+  chk('the strip counts the models and games on this page',
+    /Active models<\/div><div class="v">4<small>of 4/.test(ccH) && /Games covered<\/div><div class="v">4<small>of 4/.test(ccH),
+    {strip:ccH.slice(ccH.indexOf('cc-stats'),ccH.indexOf('cc-stats')+600)});
+  chk('the open game is described in the room with the universal vocabulary',
+    /class="ugc"/.test(ccH) && /Collective line/.test(ccH) && /Group Δ market/.test(ccH) && /Disagreement/.test(ccH));
+  chk('the room never calls a gap an edge',
+    function(){
+      var sec=ccH.slice(ccH.indexOf('What the room is saying'),ccH.indexOf('LIVE MODEL WALL'));
+      return /not an edge/.test(sec) && !/is an edge|has an edge|edge on /i.test(sec);
+    });
+  chk('the story strip is offered to a new reader and can be closed',
+    /id="mcIntro"/.test(ccH) && /id="mcIntroX"/.test(ccH));
+  GAMES.pop();
+
+  /* ---- the rules page leads with the standard and survives a dead API - */
+  var vr=node();
+  await S.renderRules(vr);
+  chk('the rules page leads with one rule for every model and the grading flow',
+    vr.innerHTML.indexOf('ONE RULE')>=0 && vr.innerHTML.indexOf('Permanent record')>=0
+      && vr.innerHTML.indexOf('ONE RULE')<vr.innerHTML.indexOf('Reading the board'));
+  chk('the flow is the published order',
+    /Submit[\s\S]*Timestamp[\s\S]*Lock[\s\S]*Game[\s\S]*Collective close[\s\S]*Grade[\s\S]*Permanent record/.test(vr.innerHTML));
+
+  /* ---- the about page has the sections a stranger needs ---------------- */
+  var va=node();
+  await S.renderAbout(va,false);
+  chk('about answers what, why, readers, creators, the record, free, paid, standard, ownership, EdgeDesk',
+    ['Why it exists','For readers','For creators','How the record works','What stays free',
+     'What a subscription unlocks','Participation standard','Who owns the models','Relationship to EdgeDesk']
+      .every(function(h){return va.innerHTML.indexOf(h)>=0;}));
+  chk('the proof stays outside the paywall, in words',
+    /never behind the paywall/.test(va.innerHTML));
+  chk('billing stays closed while config says so',
+    /Billing opens soon/.test(va.innerHTML) && !/id="subBtn"/.test(va.innerHTML));
+
+  /* ---- the model page says who it is before what it did ---------------- */
+  S.SEASON_GAMES={};S.LOCALREC={};S.META=null;S.WALLC=null;
+  var vm=node();
+  await S.renderModel(vm,'blerm','blerm-s-model');
+  chk('the model page opens with the profile facts, then the record, then behaviour',
+    function(){
+      var h=vm.innerHTML;
+      return h.indexOf('Creator</div>')>=0 && h.indexOf('How it has performed')>h.indexOf('Creator</div>')
+        && h.indexOf('How it behaves')>h.indexOf('Every graded game');
+    },{who:vm.innerHTML.indexOf('Creator</div>'),perf:vm.innerHTML.indexOf('How it has performed'),
+       beh:vm.innerHTML.indexOf('How it behaves')});
+  chk('behaviour states its sample and is labelled as computed on this page',
+    /n=3/.test(vm.innerHTML) && /Behaviour, not performance/.test(vm.innerHTML));
 
   S.SEASON_GAMES={};S.LOCALREC={};S.META=null;S.WALLC=null;S.location.hash='';
 

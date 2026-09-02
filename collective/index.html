@@ -4,6 +4,11 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Model Collective</title>
+<!-- Defence in depth that the inline-script architecture tolerates. A script-src
+     directive would need every inline block hashed or nonced, which GitHub Pages
+     cannot serve per response; see collective/AUDIT.md for that migration. -->
+<meta http-equiv="Content-Security-Policy" content="object-src 'none'; base-uri 'self'; form-action 'self'">
+<meta name="referrer" content="strict-origin-when-cross-origin">
 <meta name="description" content="Shared infrastructure for independent sports model creators. Verified records, model comparison, and consensus. Every creator keeps their own model, site, and business.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -248,7 +253,7 @@ tr.consrow td{color:var(--accent);border-top:1px dashed var(--border)}
 .stepnum{color:var(--accent);font-family:'JetBrains Mono',monospace;font-weight:700;font-size:11px;letter-spacing:.12em}
 .dash-hd{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin:6px 0 4px}
 .dash-hd h1{margin:0}
-.statgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:1px;background:var(--border);border:1px solid var(--border);border-radius:10px;overflow:hidden;margin:12px 0 4px}
+.statgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(118px,1fr));gap:1px;background:var(--border);border:1px solid var(--border);border-radius:10px;overflow:hidden;margin:12px 0 4px}
 .statgrid .st{background:var(--surface);padding:11px 13px}
 .statgrid .st .k{color:var(--faint);font-size:10px;text-transform:uppercase;letter-spacing:.05em}
 .statgrid .st .v{font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:700;margin-top:3px}
@@ -285,6 +290,96 @@ tr.consrow td{color:var(--accent);border-top:1px dashed var(--border)}
   border-radius:9px;background:rgba(90,130,255,.07)}
 .scan .ask-q{font-size:13px;margin-bottom:9px}
 .scan .ask-btns{display:flex;gap:8px;flex-wrap:wrap}
+
+/* ======================================================================
+   THE COMMAND CENTRE, THE UNIVERSAL GAME CARD AND THE RULE FLOW
+   The first screen answers "what does the room think" before the terminal
+   wall asks anyone to decode a table. Same surfaces, borders and type as
+   everything else on the page: a summary strip, a few cards, a short table.
+   ====================================================================== */
+.cc{margin:0 0 16px}
+.cc-hd{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin:0 0 8px}
+.cc-hd h2{margin:0;font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--dim)}
+.cc-hd .sub{color:var(--faint);font-size:11.5px}
+.cc-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(132px,1fr));gap:1px;background:var(--border);border:1px solid var(--border);border-radius:10px;overflow:hidden;margin:0 0 12px}
+.cc-stats .st{background:var(--surface);padding:10px 12px;min-width:0}
+.cc-stats .k{color:var(--faint);font-size:10px;text-transform:uppercase;letter-spacing:.05em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cc-stats .v{font-family:'JetBrains Mono',monospace;font-size:16px;font-weight:700;margin-top:3px}
+.cc-stats .v small{font-size:10.5px;color:var(--faint);font-weight:400;margin-left:4px;letter-spacing:.04em}
+.cc-stats .v.warn{color:var(--warn)}
+.cc-stats .v.lock{color:var(--faint);font-size:12px;font-weight:500}
+.ugc-wrap{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px}
+.ugc{background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden;display:flex;flex-direction:column}
+.ugc-hd{display:flex;align-items:baseline;gap:10px;padding:10px 13px;border-bottom:1px solid var(--border);flex-wrap:wrap;font-family:'JetBrains Mono',monospace;font-size:12.5px}
+.ugc-hd b{letter-spacing:.05em}
+.ugc-hd .tm{color:var(--faint);font-size:11px;font-family:'Inter',system-ui,sans-serif}
+.ugc-tag{flex-basis:100%;font-size:9.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--accent);font-family:'Inter',system-ui,sans-serif}
+.ugc-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:1px;background:var(--border)}
+.ugc-grid>span{background:var(--surface);padding:8px 13px;min-width:0}
+.ugc-grid .k{color:var(--faint);font-size:9.5px;text-transform:uppercase;letter-spacing:.05em}
+.ugc-grid .v{font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:600;margin-top:2px;overflow-wrap:anywhere}
+.ugc-grid .v .note{font-family:'Inter',system-ui,sans-serif;font-weight:400}
+.ugc-why{padding:10px 13px;border-top:1px solid var(--border);font-size:12.5px;color:var(--dim);line-height:1.5}
+.ugc-acts{margin-top:auto;display:flex;gap:14px;flex-wrap:wrap;padding:9px 13px;border-top:1px solid var(--border);font-size:11.5px;font-weight:600;letter-spacing:.04em;text-transform:uppercase}
+.ugc-acts a{color:var(--dim)}
+.ugc-acts a:hover{color:var(--accent);text-decoration:none}
+.ugc-lock{padding:14px 13px;color:var(--dim);font-size:12.5px;line-height:1.55}
+.lvl{font-weight:700;letter-spacing:.06em}
+.lvl.high{color:var(--warn)}.lvl.moderate{color:var(--text)}.lvl.low{color:var(--pos)}
+.cc-note{color:var(--faint);font-size:11.5px;margin:8px 0 0;line-height:1.6}
+/* the story strip: what a first-time reader needs in twenty seconds */
+.intro{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1px;background:var(--border);border:1px solid var(--border);border-radius:10px;overflow:hidden;margin:0 0 14px;position:relative}
+.intro>div{background:var(--surface);padding:12px 14px}
+.intro .k{font-family:'JetBrains Mono',monospace;font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);font-weight:700}
+.intro b{display:block;margin:4px 0 3px;font-size:13.5px}
+.intro p{margin:0;color:var(--dim);font-size:12.5px;line-height:1.5}
+.intro .go{grid-column:1/-1;display:flex;gap:16px;flex-wrap:wrap;align-items:center;font-size:12px;padding:9px 14px}
+.intro .go .x{margin-left:auto;color:var(--faint);cursor:pointer;background:none;border:0;font:inherit;padding:4px 0}
+.intro .go .x:hover{color:var(--text)}
+/* the grading flow on the rules page */
+.hero{margin:6px 0 14px}
+.hero .big{font-family:'JetBrains Mono',monospace;font-weight:800;font-size:22px;letter-spacing:.06em;line-height:1.2}
+.hero .big i{font-style:normal;color:var(--accent)}
+.flow{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:14px 0}
+.flow span{font-family:'JetBrains Mono',monospace;font-size:11.5px;letter-spacing:.08em;text-transform:uppercase;border:1px solid var(--border);border-radius:8px;padding:8px 12px;background:var(--surface)}
+.flow span.hot{border-color:var(--accent);color:var(--text);background:rgba(77,141,255,.09)}
+.flow i{color:var(--faint);font-style:normal;font-size:13px}
+.guar{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:1px;background:var(--border);border:1px solid var(--border);border-radius:10px;overflow:hidden}
+.guar>div{background:var(--surface);padding:11px 13px;font-size:12.5px;color:var(--dim);line-height:1.5}
+.guar>div b{color:var(--text);display:block;margin-bottom:2px;font-size:12.5px}
+/* the about page: short sections, one idea each */
+.sec{margin:22px 0 0}
+.sec h2{margin:0 0 6px}
+.sec p{margin:0 0 8px;max-width:760px;color:var(--dim);font-size:13px;line-height:1.55}
+.sec ul{margin:4px 0 8px;padding-left:20px;color:var(--dim);font-size:13px;line-height:1.7;max-width:760px}
+.prin{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0}
+.prin span{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.06em;border:1px solid var(--border);border-radius:999px;padding:5px 11px;color:var(--dim)}
+.faith{color:var(--faint);font-size:11.5px;letter-spacing:.06em;text-transform:uppercase}
+/* what needs attention, on the dashboard */
+.att{display:flex;flex-direction:column;gap:1px;background:var(--border);border:1px solid var(--border);border-radius:10px;overflow:hidden}
+.att>div{background:var(--surface);padding:9px 13px;display:flex;gap:10px;align-items:baseline;flex-wrap:wrap;font-size:12.5px}
+.att .dot{width:7px;height:7px;border-radius:50%;flex:none;display:inline-block;vertical-align:middle}
+.att .fix{margin-left:auto;font-size:11.5px;white-space:nowrap}
+/* the upload path, as a strip of stages */
+.steps7{display:flex;gap:4px;flex-wrap:wrap;margin:0 0 10px}
+.steps7 span{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--faint);border:1px solid var(--border);border-radius:6px;padding:4px 8px}
+.steps7 span.done{color:var(--pos);border-color:rgba(47,180,124,.4)}
+.steps7 span.on{color:var(--text);border-color:var(--accent);background:rgba(77,141,255,.09)}
+.receipt{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:1px;background:var(--border);border:1px solid var(--border);border-radius:8px;overflow:hidden;margin:8px 0}
+.receipt span{background:var(--surface);padding:8px 11px}
+.receipt .k{color:var(--faint);font-size:9.5px;text-transform:uppercase;letter-spacing:.05em}
+.receipt .v{font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:700;margin-top:2px;overflow-wrap:anywhere}
+.receipt .v.warn{color:var(--warn)}.receipt .v.ok{color:var(--pos)}.receipt .v.bad{color:var(--neg)}
+.pf{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:1px;background:var(--border);border:1px solid var(--border);border-radius:10px;overflow:hidden;margin:10px 0}
+.pf>span{background:var(--surface);padding:9px 12px;min-width:0}
+.pf .k{color:var(--faint);font-size:9.5px;text-transform:uppercase;letter-spacing:.05em}
+.pf .v{font-size:13px;font-weight:600;margin-top:2px;overflow-wrap:anywhere}
+@media(max-width:620px){
+  .intro{grid-template-columns:1fr}
+  .ugc-wrap{grid-template-columns:1fr}
+  .hero .big{font-size:18px}
+  .flow span{padding:7px 9px;font-size:10.5px}
+}
 
 /* ======================================================================
    PHONE
@@ -420,8 +515,10 @@ a,button,tr.rowlink,.sportpick,.wk button,.sportsw button{
 </main>
 
 <footer class="footer"><div class="wrap">
-  <div><b style="color:var(--dim)">MODEL COLLECTIVE</b> &middot; shared infrastructure for independent sports model creators. Part of <a href="https://edgedesksports.com">EdgeDesk Sports</a>.</div>
+  <div><b style="color:var(--dim)">MODEL COLLECTIVE</b> &middot; independent models, one verified record. Model Collective is part of <a href="https://edgedesksports.com">EdgeDesk Sports</a>: EdgeDesk researches markets; the Collective compares independent models under one record.</div>
+  <div class="prin" aria-label="Operating principles"><span>Independent models stay independent</span><span>The record stays public</span><span>Disagreement stays visible</span><span>Rules apply equally</span><span>History is not rewritten</span></div>
   <div>Every model here belongs to its creator. Records are graded on actual results, against the Collective&rsquo;s own captured closing lines, by <a href="#rules">one published rule</a>. Research and information only, not betting or financial advice. No guaranteed results. 21+. Gamble responsibly: 1-800-GAMBLER.</div>
+  <div class="faith">Built with faith. Run with integrity. Open to everyone.</div>
 </div></footer>
 
 <!-- The odds components. One file, shared by this page, the embed and the
@@ -437,10 +534,56 @@ window.COLLECTIVE_CONFIG = {
   API: "https://iattxbkbufslbauoumga.supabase.co/functions/v1"
 };
 var CFG = window.COLLECTIVE_CONFIG;
-var API = (new URLSearchParams(location.search).get('api')) || localStorage.getItem('COLLECTIVE_API_OVERRIDE') || CFG.API;
+/* WHERE THIS PAGE SENDS THE SESSION TOKEN.
+
+   Every authenticated request carries the signed-in account's bearer token,
+   so whoever controls the API base receives it. `?api=` exists so a page can
+   be pointed at a staging function, and it used to accept any URL at all —
+   which made a crafted link (collective/?api=https://attacker.example) a
+   one-click way to have a signed-in member hand their session to a stranger,
+   and the magic-link redirect preserved the query, so a fresh sign-in landed
+   there too. An override from the URL is now honoured only for hosts a
+   Collective deployment can actually live on; anything else is ignored and
+   never persisted. The localStorage override is unchanged: writing it needs
+   code already running on this origin, which is not a link. */
+function apiOverrideAllowed(u){
+  try{
+    var url=new URL(String(u||''),location.href);
+    if(url.protocol!=='https:'&&url.protocol!=='http:')return false;
+    var h=url.hostname.toLowerCase();
+    if(h==='localhost'||h==='127.0.0.1'||h==='[::1]')return true;
+    if(url.protocol!=='https:')return false;
+    return /(^|\.)supabase\.co$/.test(h)||/(^|\.)supabase\.in$/.test(h)||/(^|\.)edgedesksports\.com$/.test(h);
+  }catch(e){return false;}
+}
+function resolveApiBase(){
+  var q=null,ls=null;
+  try{q=new URLSearchParams(location.search).get('api');}catch(e){}
+  if(q&&apiOverrideAllowed(q))return q;
+  try{ls=localStorage.getItem('COLLECTIVE_API_OVERRIDE');}catch(e){}
+  return ls||CFG.API;
+}
+var API = resolveApiBase();
 
 /* ================= helpers ================= */
 function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+/* A URL a creator supplied is rendered as a link or an image source, and
+   HTML-escaping does nothing to a javascript: or data: scheme inside an
+   href. Only http(s) is ever put into an attribute; anything else renders as
+   no link at all. Returns the string to put in the attribute, or ''. */
+function safeUrl(u){
+  var s=String(u==null?'':u).trim();
+  if(!s)return '';
+  try{
+    var url=new URL(s,'https://invalid.invalid/');
+    if(url.protocol!=='https:'&&url.protocol!=='http:')return '';
+    if(url.hostname==='invalid.invalid')return '';
+    return url.href;
+  }catch(e){return '';}
+}
+/* An X handle is letters, digits and underscores; anything else is dropped
+   rather than pathed onto x.com. */
+function safeHandle(h){return String(h==null?'':h).replace(/^@/,'').replace(/[^A-Za-z0-9_]/g,'').slice(0,32);}
 function $(id){return document.getElementById(id);}
 function el(html){var d=document.createElement('div');d.innerHTML=html;return d;}
 function fmtPct(x,d){return x==null?'-':(100*x).toFixed(d==null?1:d)+'%';}
@@ -475,7 +618,8 @@ function chipFor(m){
 }
 function avatar(r){
   var mg=String((r&&r.monogram)||'?').replace(/[^A-Za-z0-9?]/g,'')||'?';
-  if(r&&r.logo_url)return '<img class="logo" src="'+esc(r.logo_url)+'" alt="" onerror="this.outerHTML=\'<span class=mg>'+mg+'</span>\'">';
+  var src=r&&r.logo_url?safeUrl(r.logo_url):'';
+  if(src)return '<img class="logo" src="'+esc(src)+'" alt="" referrerpolicy="no-referrer" onerror="this.outerHTML=\'<span class=mg>'+mg+'</span>\'">';
   return '<span class="mg">'+mg+'</span>';
 }
 function covCell(p){
@@ -596,7 +740,20 @@ function adminGrantSQL(uid){
     +'end $$;';
 }
 function saveSession(s){try{localStorage.setItem('collective_session',JSON.stringify(s));}catch(e){}}
-function clearSession(){localStorage.removeItem('collective_session');}
+/* Sign out revokes the refresh token at the auth server as well as
+   forgetting it here: a token that only left localStorage could still mint
+   sessions from any copy of it. Best effort — the local state is cleared
+   whether or not the server answers. */
+function clearSession(){
+  var s=session();
+  try{localStorage.removeItem('collective_session');}catch(e){}
+  if(s&&s.access_token){
+    try{
+      fetch(CFG.SB_URL+'/auth/v1/logout',{method:'POST',keepalive:true,
+        headers:{apikey:CFG.SB_ANON,authorization:'Bearer '+s.access_token}}).catch(function(){});
+    }catch(e){}
+  }
+}
 /* magic link returns tokens in the location hash; capture BEFORE routing */
 (function(){
   /* GoTrue appends #access_token=... to the redirect; parse from wherever
@@ -885,6 +1042,9 @@ function loading(view,msg){
   view.innerHTML='<div class="emptybox">'+msg+'</div>';
 }
 function fail(view,e){
+  /* the stack goes to the console, where whoever is debugging can read it;
+     the box on screen carries the message only */
+  try{console.error('collective view failed:',e);}catch(_){}
   /* An automatic refresh must not swap a page the reader is looking at for
      an error box because one request had a bad minute. Keep the last good
      view and drop the baseline so the next tick tries again. */
@@ -1858,6 +2018,44 @@ function modelCoverage(settled,cs,ms){
     pct:scope.length?100*n/scope.length:null,since:first};
 }
 
+/* ---- how a model behaves, as distinct from how it has done ---------------
+   Computed from the same games every other surface reads, and only from
+   numbers already on the wire: the model's own line against the Collective's
+   captured close on settled games, the pick sides it named, and how often it
+   revised before the lock. No metric here is invented; each says the sample
+   it stands on and renders nothing under three games. */
+function modelBehavior(games,cs,ms){
+  var rows=0,rev=0,ph=0,pa=0,dSum=0,dN=0,off=0,homeSide=0;
+  (games||[]).forEach(function(g){
+    var fr=finalResult(g);
+    (g&&g.models||[]).forEach(function(mr){
+      if(!mr||mr.creator_slug!==cs||mr.model_slug!==ms||mr.locked)return;
+      rows++;
+      if(Number(mr.movement_n)>1)rev++;
+      var sd=pickSideNorm(mr);
+      if(sd==='home')ph++;else if(sd==='away')pa++;
+      var close=fr?fr.closing_spread:null;
+      var d=deltaMarket(mr.projected_spread,close);
+      if(d!=null){dSum+=Math.abs(d);dN++;if(Math.abs(d)>=1)off++;if(d<0)homeSide++;}
+    });
+  });
+  return {rows:rows,rev:rev,revPct:rows?rev/rows:null,
+    picks:ph+pa,homePct:(ph+pa)?ph/(ph+pa):null,
+    deltaN:dN,absDelta:dN?dSum/dN:null,offPct:dN?off/dN:null,homeLeanPct:dN?homeSide/dN:null};
+}
+function modelBehaviorHTML(b,coveragePct){
+  if(!b||b.rows<3)return '';
+  var cell=function(k,v,t){return '<span'+(t?' title="'+esc(t)+'"':'')+'><div class="k">'+k+'</div><div class="v">'+v+'</div></span>';};
+  return '<h2>How it behaves</h2><div class="panel"><div class="kv">'+
+    (b.deltaN?cell('Avg distance from close',fmtNum(b.absDelta)+' pts <span class="note">n='+b.deltaN+'</span>','average absolute difference between this model’s line and the Collective’s captured close, on settled games'):'')+
+    (b.deltaN?cell('Off the market ≥1 pt',fmtPct(b.offPct,0),'share of settled games where the line sat a point or more from the captured close'):'')+
+    (b.deltaN?cell('Leans home vs close',fmtPct(b.homeLeanPct,0),'share of settled games where the line was further onto the home side than the close'):'')+
+    (b.picks?cell('Pick sides home',fmtPct(b.homePct,0)+' <span class="note">n='+b.picks+'</span>','share of named pick sides on the home team'):'')+
+    cell('Revised before lock',fmtPct(b.revPct,0)+' <span class="note">of '+b.rows+'</span>','share of games this model posted more than once before the lock')+
+    (coveragePct!=null?cell('Coverage',fmtNum(coveragePct,0)+'%','share of the played slate this model posted'):'')+
+    '</div><p class="note" style="margin-top:8px">Behaviour, not performance: computed on this page from the model’s own submitted lines against the Collective’s captured closing lines and the pick sides it named. A tendency is a description of the model, not a judgement of it.</p></div>';
+}
+
 /* Every model that appears anywhere in a set of games, named from the wall
    rows where the wall knows them. The games payload carries slugs only, so
    a model the wall has not heard of keeps its slug as its name rather than
@@ -2453,6 +2651,252 @@ function splitBadge(flags,g){
   return '<span class="gflag split" title="The models disagree most on this game \u2014 standard deviation of their submitted lines'+esc(rng)+'">'+
     'SPLIT \u03c3 '+esc(fmtNum(s))+'</span>';
 }
+/* ================= the universal game summary ============================
+   ONE VOCABULARY for "what does the room say about this game", computed once
+   and rendered by the wall's command centre, the splits table and the board
+   header. Every number is either the server's own consensus row or the same
+   Δ-market arithmetic the board already prints; the grading, consensus and
+   market maths are untouched and nothing here is a pick.
+
+   Three levels, the same way the research terminal is built:
+     1. the answer      — what the room thinks (these cards)
+     2. the evidence    — which models agree and by how much (the board)
+     3. the receipt     — every projection, timestamp, line and grade (the
+                          model pages and the game log)                       */
+var DISAGREE_LOW=1.0;
+function disagreementLevel(sigma){
+  if(sigma==null)return null;
+  var x=Number(sigma);
+  if(!isFinite(x))return null;
+  if(x<DISAGREE_LOW)return 'LOW';
+  if(x<SPLIT_MIN_SIGMA)return 'MODERATE';
+  return 'HIGH';
+}
+/* A home-stated spread, said for the team it favours: -4 at home is
+   "HOME -4", +2.5 at home is "AWAY -2.5", zero is a pick'em. The rest of the
+   page prints home convention everywhere and the legend explains it; the
+   answer layer says the team instead, because that is how the answer is
+   read. The home-stated form rides in the title. */
+function favSpread(g,x){
+  if(x==null||!isFinite(Number(x)))return '-';
+  var v=Number(x),h=(g&&g.home)||'HOME',a=(g&&g.away)||'AWAY';
+  if(Math.abs(v)<1e-9)return 'PK';
+  return v<0?esc(h)+' '+fmtSpread(v):esc(a)+' '+fmtSpread(-v);
+}
+function gameSummary(g,mkt){
+  if(!g)return null;
+  var c=g.consensus||null;
+  var mg=marketFor(mkt,g);
+  var mktSpread=(window.MCOdds&&mg)?MCOdds.consensusSpread(mg):null;
+  var rows=g.models||[];
+  var reporting=0,last=0,ph=0,pa=0;
+  rows.forEach(function(mr){
+    if(!mr||mr.late)return;
+    reporting++;
+    var t=receivedMs(mr);if(t>last)last=t;
+    if(mr.locked)return;
+    var sd=pickSideNorm(mr);
+    if(sd==='home')ph++;else if(sd==='away')pa++;
+  });
+  var out={game:g,key:gameKey(g),home:g.home,away:g.away,kickoff_at:g.kickoff_at,
+    locked:!!(c&&c.locked),n:c?Number(c.n||0):reporting,reporting:reporting,
+    market:mktSpread,event_id:(mg&&mg.event_id)||null,
+    median:null,mean:null,min:null,max:null,range:null,sigma:null,level:null,
+    picksHome:ph,picksAway:pa,nPicks:ph+pa,lean:null,leanN:null,leanPct:null,
+    delta:null,edge:null,last:last||null,final:finalResult(g)};
+  if(c&&!c.locked&&c.n>0){
+    var num=function(v){var x=Number(v);return (v==null||!isFinite(x))?null:x;};
+    out.median=num(c.spread_median);out.mean=num(c.spread_mean);
+    out.min=num(c.spread_min);out.max=num(c.spread_max);
+    if(out.min!=null&&out.max!=null)out.range=Math.round(Math.abs(out.max-out.min)*10)/10;
+    out.sigma=num(c.spread_stdev);
+    out.level=disagreementLevel(out.sigma);
+    if(out.nPicks>0){
+      out.lean=ph>pa?'home':(pa>ph?'away':'split');
+      out.leanN=Math.max(ph,pa);
+    }else if(c.pct_picks_home!=null){
+      var pp=Number(c.pct_picks_home);
+      out.lean=pp>0.5?'home':(pp<0.5?'away':'split');
+      out.leanPct=pp;
+    }
+    out.edge=consensusEdge(g,c,mktSpread);
+    out.delta=deltaMarket(out.mean,mktSpread);
+  }
+  return out;
+}
+/* The one sentence under a card. It describes what the models are doing and
+   never why, and never calls a gap an edge. */
+function gameWhyText(s){
+  if(!s||s.locked||!(s.n>=2))return '';
+  var bits=[];
+  var leanTeam=s.lean==='home'?s.home:(s.lean==='away'?s.away:null);
+  if(s.lean==='split')bits.push('The pick sides are evenly split.');
+  else if(leanTeam&&s.nPicks)bits.push(s.leanN+' of '+s.nPicks+' models with a pick side lean '+esc(leanTeam)+'.');
+  else if(leanTeam&&s.leanPct!=null)bits.push(Math.round(100*Math.max(s.leanPct,1-s.leanPct))+'% of pick sides lean '+esc(leanTeam)+'.');
+  if(s.edge&&s.edge.side&&s.edge.points>=1)
+    bits.push('The group sits '+fmtNum(s.edge.points)+' points further toward '+esc(s.edge.side)+' than the market.');
+  else if(s.delta!=null&&Math.abs(s.delta)<1)bits.push('The group sits on the market’s number.');
+  if(s.level==='HIGH')bits.push('Disagreement is high: the lines run '+fmtNum(s.range)+' points apart and it is unresolved.');
+  else if(s.level==='MODERATE')bits.push('The models are '+fmtNum(s.range)+' points apart at the widest.');
+  else if(s.level==='LOW')bits.push('The models sit within a key number of each other.');
+  return bits.join(' ');
+}
+function consensusCell(s){
+  if(!s||s.lean==null)return '-';
+  if(s.lean==='split')return 'split';
+  var team=s.lean==='home'?s.home:s.away;
+  if(s.nPicks)return s.leanN+' / '+s.nPicks+' '+esc(team);
+  return Math.round(100*Math.max(s.leanPct,1-s.leanPct))+'% '+esc(team);
+}
+function levelCell(s){
+  if(!s||!s.level)return '-';
+  return '<span class="lvl '+s.level.toLowerCase()+'">'+s.level+'</span>'+
+    (s.sigma!=null?' <span class="note">σ '+fmtNum(s.sigma)+'</span>':'');
+}
+function gameCardHTML(s,opts){
+  opts=opts||{};
+  var g=s.game;
+  var hd='<div class="ugc-hd">'+(opts.tag?'<span class="ugc-tag">'+esc(opts.tag)+'</span>':'')+
+    '<b>'+esc(s.away)+' @ '+esc(s.home)+'</b><span class="tm">'+esc(kickoffFmt(s.kickoff_at))+'</span>'+lockChip(g)+'</div>';
+  var acts='<div class="ugc-acts"><a href="#board">View models</a>'+
+    (s.event_id?'<a href="#market/'+esc(s.event_id)+'">Compare market</a>':'<a href="#market">Market</a>')+
+    '<a href="#rankings">View records</a></div>';
+  if(s.locked){
+    return '<div class="ugc">'+hd+'<div class="ugc-lock"><b style="color:var(--text)">'+s.n+' model'+(s.n===1?'':'s')+' reporting.</b> '+
+      'The room’s numbers on an upcoming game are a member view; the finished record, every profile and the rankings are public. '+
+      '<a href="#dashboard">Sign in</a> or <a href="#about">see what a membership is</a>.</div>'+acts+'</div>';
+  }
+  var cell=function(k,v,t){return '<span'+(t?' title="'+esc(t)+'"':'')+'><div class="k">'+k+'</div><div class="v">'+v+'</div></span>';};
+  var hs=function(x){return x==null?'':(esc(s.home)+' '+fmtSpread(x)+' home-stated');};
+  var grid='<div class="ugc-grid">'+
+    cell('Models','<b>'+s.n+'</b> <span class="note">reporting</span>','models with a live submission received before the lock')+
+    cell('Collective line',s.median!=null?favSpread(g,s.median):'-','median of the submitted lines'+(s.median!=null?' — '+hs(s.median):''))+
+    cell('Market',s.market!=null?favSpread(g,s.market):'<span class="note">unavailable</span>','the Collective’s own captured market consensus'+(s.market!=null?' — '+hs(s.market):''))+
+    cell('Group Δ market',(s.edge&&s.edge.side)?fmtNum(s.edge.points)+' pts → '+esc(s.edge.side):(s.delta!=null?'on the number':'-'),'the models’ mean minus the market: a comparison, not a verdict')+
+    cell('Model range',s.range!=null?favSpread(g,s.min)+' → '+favSpread(g,s.max):'-','the two furthest-apart submitted lines')+
+    cell('Consensus',consensusCell(s),'pick sides among the models that named one')+
+    cell('Disagreement',levelCell(s),'standard deviation of the submitted lines: under '+DISAGREE_LOW+' is low, '+SPLIT_MIN_SIGMA+' and over is high')+
+    cell('Last updated',s.last?rel(new Date(s.last).toISOString()):'-','the newest submission on this game')+
+    '</div>';
+  var why=gameWhyText(s);
+  return '<div class="ugc">'+hd+grid+(why?'<div class="ugc-why">'+why+'</div>':'')+acts+'</div>';
+}
+/* WHAT THE ROOM IS SAYING: at most four games, each chosen for one reason,
+   no game twice, upcoming games only, and only where the numbers are open to
+   this reader. A locked slate is reported as locked rather than guessed at. */
+function roomHighlights(games,mkt){
+  var sums=(games||[]).map(function(g){return gameSummary(g,mkt);})
+    .filter(function(x){return x&&!x.locked&&x.n>=2&&!x.final;});
+  var used={},out=[];
+  function take(tag,score){
+    var best=null;
+    sums.forEach(function(x){
+      if(used[x.key])return;
+      var v=score(x);
+      if(v==null)return;
+      if(!best||v>best.v)best={v:v,s:x};
+    });
+    if(best){used[best.s.key]=1;out.push({tag:tag,s:best.s});}
+  }
+  take('Most divided',function(x){return (x.sigma!=null&&x.sigma>=SPLIT_MIN_SIGMA)?x.sigma:null;});
+  take('Biggest group vs market gap',function(x){return (x.edge&&x.edge.side&&x.edge.points>=1)?x.edge.points:null;});
+  take('Strongest consensus',function(x){
+    if(!(x.nPicks>=3)||x.lean==='split'||x.level==='HIGH')return null;
+    var agree=x.leanN/x.nPicks;
+    return agree>=0.75?agree*100+x.nPicks:null;
+  });
+  take('Highest participation',function(x){return x.n>=3?x.n:null;});
+  return out;
+}
+/* MODEL SPLITS: the games ranked by how far apart the models are. */
+function splitsTableHTML(games,mkt,limit){
+  var sums=(games||[]).map(function(g){return gameSummary(g,mkt);})
+    .filter(function(x){return x&&!x.locked&&x.n>=2&&x.sigma!=null&&!x.final;})
+    .sort(function(a,b){return b.sigma-a.sigma;}).slice(0,limit||5);
+  if(!sums.length)return '';
+  var rows=sums.map(function(x){
+    return '<tr><td>'+esc(x.away)+' @ '+esc(x.home)+'<br><span class="sb" style="color:var(--faint);font-size:11px">'+esc(kickoffFmt(x.kickoff_at))+'</span></td>'+
+      '<td class="num">'+levelCell(x)+'</td>'+
+      '<td class="num">'+(x.range!=null?favSpread(x.game,x.min)+' → '+favSpread(x.game,x.max):'-')+'</td>'+
+      '<td class="num">'+consensusCell(x)+'</td>'+
+      '<td class="num">'+((x.edge&&x.edge.side)?fmtNum(x.edge.points)+' → '+esc(x.edge.side):(x.delta!=null?'on the number':'-'))+'</td>'+
+      '<td class="num">'+x.n+'</td></tr>';
+  }).join('');
+  return '<div class="tblwrap mini"><table style="min-width:560px"><thead><tr>'+
+    '<th>Game</th><th class="num" title="standard deviation of the submitted lines">Disagreement</th>'+
+    '<th class="num" title="the two furthest-apart submitted lines">Model range</th>'+
+    '<th class="num" title="pick sides among the models that named one">Pick split</th>'+
+    '<th class="num" title="the models’ mean against the market, a comparison and not a verdict">Group Δ market</th>'+
+    '<th class="num">Models</th></tr></thead><tbody>'+rows+'</tbody></table></div>';
+}
+/* The story strip. Shown until the reader closes it; the choice is a
+   per-browser convenience and nothing more. */
+var MC_INTRO_KEY='mc_intro_seen';
+function introSeen(){try{return localStorage.getItem(MC_INTRO_KEY)==='1';}catch(e){return false;}}
+function introHTML(){
+  if(introSeen())return '';
+  return '<div class="intro" id="mcIntro">'+
+    '<div><span class="k">Models</span><b>Independent creators keep their methodology.</b><p>Every model here belongs to its creator: their site, their price, their method. The Collective is where they post the finished numbers.</p></div>'+
+    '<div><span class="k">Market</span><b>The Collective captures the line itself.</b><p>Prices are captured on a schedule and the close is stored, so every model is measured against one independent number.</p></div>'+
+    '<div><span class="k">Record</span><b>Every model is graded under the same rule.</b><p>Submissions are timestamped, locked before kickoff and graded on the final score. Disagreement stays visible and history is never rewritten.</p></div>'+
+    '<div class="go"><a href="#rules">How the record works →</a><a href="#about">For creators →</a>'+
+    '<button type="button" class="x" id="mcIntroX" title="Hide this until you clear your browser data">Got it ×</button></div></div>';
+}
+function bindIntro(){
+  var b=$('mcIntroX');
+  if(!b)return;
+  b.onclick=function(){try{localStorage.setItem(MC_INTRO_KEY,'1');}catch(e){}var i=$('mcIntro');if(i)i.remove();};
+}
+/* The summary strip and the room, for one slate. Counts come from the rows
+   on screen and the public wall rows, so a signed-out reader gets true
+   counts and no locked number. */
+function commandCentreHTML(m,sport,rows,games,mkt){
+  var all=games||[];
+  var activeN=rows.filter(function(r){return r.membership==='ACTIVE CONTRIBUTOR';}).length;
+  var proj=0,covered=0,lockedGames=0,divided=0,anyOpen=false;
+  var weekAgo=Date.now()-7*86400000,updated=0;
+  rows.forEach(function(r){var t=r.last_submission_at?new Date(r.last_submission_at).getTime():NaN;if(isFinite(t)&&t>=weekAgo)updated++;});
+  var sums=[];
+  all.forEach(function(g){
+    var x=gameSummary(g,mkt);if(!x)return;
+    sums.push(x);
+    var n=(g.models||[]).filter(function(mr){return mr&&!mr.late;}).length;
+    proj+=n;if(n)covered++;
+    if(x.locked&&!x.final)lockedGames++;
+    if(!x.locked)anyOpen=true;
+    if(x.sigma!=null&&x.sigma>=SPLIT_MIN_SIGMA&&!x.final)divided++;
+  });
+  var long=sportLongName(sport.code)||sport.code;
+  var st=function(k,v,cls){return '<div class="st"><div class="k">'+k+'</div><div class="v'+(cls?' '+cls:'')+'">'+v+'</div></div>';};
+  var stats='<div class="cc-stats">'+
+    st('Active models',activeN+'<small>of '+rows.length+'</small>')+
+    st('Projections on the slate',proj)+
+    st('Games covered',covered+'<small>of '+all.length+'</small>')+
+    st('Models updated · 7d',updated)+
+    (anyOpen?st('Major disagreements',divided,divided?'warn':''):st('Major disagreements','member view','lock'))+
+    '</div>';
+  var room=roomHighlights(all,mkt);
+  var roomHtml;
+  if(room.length){
+    roomHtml='<div class="ugc-wrap">'+room.map(function(x){return gameCardHTML(x.s,{tag:x.tag});}).join('')+'</div>';
+  }else if(lockedGames&&!anyOpen){
+    roomHtml='<div class="emptybox"><b style="color:var(--text)">'+lockedGames+' game'+(lockedGames===1?' has':'s have')+' a room view for members.</b><br>'+
+      'Pre-kickoff numbers and the consensus are a member view. The finished record, every profile and the rankings are public, because the record is the proof. '+
+      '<a href="#dashboard">Sign in</a> or <a href="#about">read what a membership is</a>.</div>';
+  }else if(!all.length){
+    roomHtml='<div class="emptybox">No '+esc(long)+' slate is loaded for '+esc(String(sport.season||''))+' yet. The room appears here the moment games are scheduled and models post them.</div>';
+  }else{
+    roomHtml='<div class="emptybox">No upcoming '+esc(long)+' game has two or more model numbers yet, so there is no room to describe. The full wall below shows every game and every number.</div>';
+  }
+  var splits=anyOpen?splitsTableHTML(all,mkt,5):'';
+  return introHTML()+
+    '<div class="cc"><div class="cc-hd"><h2>'+esc(long)+' · this slate</h2><span class="sub">counted from the rows on this page</span></div>'+stats+
+    '<div class="cc-hd" style="margin-top:14px"><h2>What the room is saying</h2><span class="sub">what the models are doing — not a recommendation</span></div>'+roomHtml+
+    (splits?'<div class="cc-hd" style="margin-top:14px"><h2>Model splits</h2><span class="sub">the games the models disagree on most</span></div>'+splits:'')+
+    '<p class="cc-note">Collective line is the median of the submitted lines and Market is the Collective’s own captured consensus. '+
+    'A gap between the two is a research question, not an edge. The full terminal wall, every model’s number, is below.</p></div>';
+}
+
 /* ---- how long before kickoff a pick was posted ------------------------
    A verified record persuades only if a reader can see nothing was posted
    after the fact. The games payload does not carry a per-pick timestamp
@@ -2589,7 +3033,8 @@ async function renderWall(view){
             '" title="'+esc(dotT)+'" style="background:'+dot+';border-color:'+dot+'"></span></div>';
       });
       if(!g.models||!g.models.length){
-        lines='<div class="gb-empty">No model has posted this game yet</div>';
+        lines='<div class="gb-empty">No model has posted an eligible '+esc(sportLongName(sport.code)||sport.code)+
+          (g.week!=null?' Week '+esc(g.week):'')+' projection for this game yet</div>';
       }else{
         /* headers, so a spread pick and a win probability stop reading as
            two statements of one number jumbled into a column */
@@ -2618,11 +3063,17 @@ async function renderWall(view){
       }
       boards+='<div class="gamebd">'+hd+lines+'</div>';
     });
-    if(!boards)boards='<div class="gb-empty">The slate loads here the moment games are scheduled.</div>';
+    if(!boards)boards='<div class="gb-empty">No '+esc(sportLongName(sport.code)||sport.code)+' games are scheduled for '+esc(String(sport.season||''))+' yet. The slate loads here the moment the schedule carries them.</div>';
 
     var wallToken=++WALL_TOKEN;
     var settledNow=((board&&board.games)||[]).filter(function(g){return finalResult(g)!=null;}).length;
-    var hd=sportSwitcherHTML(m)+'<div class="bd">'+
+    /* LEVEL 1 FIRST. The answer — what the room thinks — sits above the
+       terminal wall, computed from the same games and the same market the
+       wall is about to draw. Nothing is fetched twice and nothing is hidden:
+       the full board is still the next thing on the page. */
+    var cc='';
+    try{cc=commandCentreHTML(m,sport,rows,(board&&board.games)||[],mkt);}catch(e){cc='';}
+    var hd=sportSwitcherHTML(m)+cc+'<div class="bd">'+
       '<div class="bd-hd"><span class="bd-title"><span class="bd-live"></span>LIVE MODEL WALL</span>'+
         '<span class="bd-clock" id="bdClock"></span></div>'+
       /* The model count and the active share are computed from the rows on
@@ -2657,6 +3108,7 @@ async function renderWall(view){
           : 'The wall is waiting on its first model. Creators join by invite and appear here the moment their profile is created.')+
         '</div>'))return;
       bindSportSwitcher(function(){renderWall(view);});
+      bindIntro();
       boardClock();if(!CLOCK_TIMER)CLOCK_TIMER=setInterval(boardClock,1000);
       return;
     }
@@ -2735,6 +3187,7 @@ async function renderWall(view){
     boardClock();if(!CLOCK_TIMER)CLOCK_TIMER=setInterval(boardClock,1000);
     $('wallsort').value=WALL_SORT;
     bindSportSwitcher(function(){renderWall(view);});
+    bindIntro();
     $('wallsort').onchange=function(){WALL_SORT=this.value;renderWall(view);};
     if($('wallq'))$('wallq').oninput=function(){
       var q=this.value.toLowerCase();
@@ -2775,11 +3228,18 @@ async function renderCreator(view,slug){
   loading(view,'Loading profile&hellip;');
   var tok=ROUTE_TOKEN;
   try{
-    var d=await api('/v1/creators/'+encodeURIComponent(slug));
+    var res0=await Promise.all([
+      api('/v1/creators/'+encodeURIComponent(slug)),
+      api('/v1/activity').catch(function(){return null;}),
+      wallRows().catch(function(){return [];})]);
+    var d=res0[0],actAll=(res0[1]&&res0[1].rows)||[],wallAll=res0[2]||[];
     var c=d.creator;
+    var mineRows=wallAll.filter(function(r){return r.creator_slug===c.slug;});
+    var lastAny=null;mineRows.forEach(function(r){if(r.last_submission_at&&(!lastAny||r.last_submission_at>lastAny))lastAny=r.last_submission_at;});
     var links='';
-    if(c.website_url)links+='<a href="'+esc(c.website_url)+'" target="_blank" rel="noopener">'+esc(c.website_url.replace(/^https?:\/\//,''))+' ↗</a>';
-    if(c.x_handle)links+='<a href="https://x.com/'+esc(c.x_handle)+'" target="_blank" rel="noopener">@'+esc(c.x_handle)+' ↗</a>';
+    var site=safeUrl(c.website_url),xh=safeHandle(c.x_handle);
+    if(site)links+='<a href="'+esc(site)+'" target="_blank" rel="noopener noreferrer">'+esc(site.replace(/^https?:\/\//,'').replace(/\/$/,''))+' ↗</a>';
+    if(xh)links+='<a href="https://x.com/'+esc(xh)+'" target="_blank" rel="noopener noreferrer">@'+esc(xh)+' ↗</a>';
     var head='<div class="profhead">'+avatar(c)+
       '<div style="flex:1;min-width:220px"><h1 style="margin:2px 0 4px">'+esc(c.display_name)+
       foundBadge(c)+' '+chipFor(c.membership)+'</h1>'+
@@ -2790,7 +3250,16 @@ async function renderCreator(view,slug){
          claim no visitor can see. Intent belongs in the dashboard. */
       sportChipsHTML(creatorSports(d.models),await meta().catch(function(){return null;}))+
       '<div class="note" style="margin-top:6px">Member since '+new Date(c.joined_at).toLocaleDateString(undefined,{month:'short',year:'numeric'})+'</div>'+
-      '</div></div>';
+      '</div></div>'+
+      /* the résumé header: the facts a reader wants before a number */
+      '<div class="pf">'+
+      '<span><div class="k">Creator</div><div class="v">'+esc(c.display_name)+'</div></span>'+
+      '<span><div class="k">Model'+((d.models||[]).length===1?'':'s')+'</div><div class="v">'+((d.models||[]).map(function(mo){return esc(mo.model_name);}).join(', ')||'<span class="note">none yet</span>')+'</div></span>'+
+      '<span><div class="k">Sports</div><div class="v">'+(creatorSports(d.models).map(function(x){return esc(sportLongName(x.code)||x.code);}).join(', ')||'-')+'</div></span>'+
+      '<span><div class="k">Status</div><div class="v">'+chipFor(c.membership)+'</div></span>'+
+      '<span><div class="k">Founding</div><div class="v">'+(c.founding?'<span class="chip founding">&#9733; Founding Member</span>':'<span class="note">—</span>')+'</div></span>'+
+      '<span><div class="k">Last submission</div><div class="v">'+(lastAny?rel(lastAny):'<span class="note">none yet</span>')+'</div></span>'+
+      '</div>';
     /* The same page-side grading every other surface uses. A creator whose
        whole slate has been played should not be told their record is
        pending because a settlement run has not got to it. */
@@ -2809,13 +3278,13 @@ async function renderCreator(view,slug){
         }).catch(function(){});
       }));
     }catch(_){}
-    var body='';
+    var body='<h2>Verified record</h2>';
     (d.models||[]).forEach(function(mo){
       var rec=mo.record,recLive=false;
       if(!hasRecord(rec)&&creatorLocal[mo.model_slug]){
         rec=creatorLocal[mo.model_slug];recLive=true;
       }
-      body+='<h2>'+esc(mo.model_name)+' <span class="pill">'+esc(mo.sport)+'</span></h2>';
+      body+='<h2 style="margin-top:14px;font-size:13.5px">'+esc(mo.model_name)+' <span class="pill">'+esc(mo.sport)+'</span></h2>';
       if(rec){
         body+='<div class="panel"><div class="kv">'+
           '<span><div class="k">Record</div><div class="v">'+recATSHtml(rec,'')+liveMark(recLive)+impliedRecMark(rec)+'</div></span>'+
@@ -2828,13 +3297,63 @@ async function renderCreator(view,slug){
         '<div class="note" style="margin-top:8px">Graded against the Collective&#39;s own closing lines. <a href="#rules">Grading rules</a> &middot; <a href="#/model/'+esc(c.slug)+'/'+esc(mo.model_slug)+'">Full game log →</a></div>'+
         (recLive?gradeNote('This record is'):'')+'</div>';
       }else{
-        body+='<div class="emptybox"><b style="color:var(--text)">'+esc(c.display_name)+' is on the wall.</b><br>First live submission pending. The record starts the moment their first slate arrives, graded against the Collective’s closing lines.</div>';
+        body+='<div class="emptybox"><b style="color:var(--text)">'+esc(c.display_name)+' is on the wall.</b><br>'+
+          (lastAny?'This model has submitted projections but no eligible game has been graded yet.':'First live submission pending.')+
+          ' The record builds the moment a posted game is final, graded against the Collective’s closing lines.</div>';
       }
       if(mo.backfill&&mo.backfill.rows){
         body+='<div class="panel" style="margin-top:10px;border-style:dashed"><b>Backfilled history:</b> <span class="mono">'+mo.backfill.rows+'</span> games. <span class="note">'+esc(mo.backfill.note)+'. Backfill never counts toward the record, rankings, or consensus.</span></div>';
       }
     });
-    if(!paint(view,tok,head+body+'<p style="margin-top:22px"><a href="#">← Back to the wall</a></p>'))return;
+    /* CURRENT PROJECTIONS: this creator's rows on the current slate of each
+       sport they post in. Read through the same games feed as the wall, so
+       a signed-out reader sees the game and the count and never a locked
+       number. */
+    var nowHtml='';
+    try{
+      var mAllN=await meta().catch(function(){return null;});
+      var fams={};(d.models||[]).forEach(function(mo){if(mo.sport)fams[sportFamily(mo.sport)]=mo.sport;});
+      var sportsNow=((mAllN&&mAllN.sports)||[]).filter(function(x){return fams[sportFamily(x.code)];});
+      var feeds=await Promise.all(sportsNow.map(function(x){
+        return api('/v1/games?sport='+encodeURIComponent(x.code)+'&season='+encodeURIComponent(x.season||''),{auth:true}).catch(function(){return null;});
+      }));
+      var nowRows=[],lockedN=0;
+      feeds.forEach(function(f,i){
+        ((f&&f.games)||[]).forEach(function(g){
+          if(finalResult(g))return;
+          (g.models||[]).forEach(function(mr){
+            if(!mr||mr.creator_slug!==c.slug)return;
+            if(mr.locked){lockedN++;return;}
+            nowRows.push('<tr><td>'+esc(g.label||((g.away||'')+' @ '+(g.home||'')))+'<br><span class="sb" style="color:var(--faint);font-size:11px">'+esc(sportsNow[i].code)+' · '+esc(kickoffFmt(g.kickoff_at))+'</span></td>'+
+              '<td class="num">'+(pickSideNorm(mr)?pickDisp(g,mr):'-')+'</td>'+
+              '<td class="num">'+(mr.projected_spread!=null?esc(g.home)+' '+fmtSpread(mr.projected_spread):'-')+'</td>'+
+              '<td class="num">'+(mr.home_win_probability!=null?Math.round(100*mr.home_win_probability)+'%':'-')+'</td>'+
+              '<td class="num" style="color:var(--dim)">'+(Number(mr.movement_n)>1?'+'+(Number(mr.movement_n)-1)+' rev':'')+' '+esc(fmtAgeShort(mr.received_at)||'')+'</td></tr>');
+          });
+        });
+      });
+      nowHtml='<h2>Current projections</h2>';
+      if(nowRows.length){
+        nowHtml+='<div class="tblwrap"><table><thead><tr><th>Game</th><th class="num">Pick</th><th class="num" title="the creator’s own line, stated for the home team">Model line</th><th class="num">Home %</th><th class="num">Age</th></tr></thead><tbody>'+nowRows.join('')+'</tbody></table></div>'+
+          (lockedN?'<p class="note" style="margin-top:6px">'+lockedN+' more upcoming projection'+(lockedN===1?' is':'s are')+' a member view.</p>':'');
+      }else if(lockedN){
+        nowHtml+='<div class="emptybox">'+lockedN+' upcoming projection'+(lockedN===1?'':'s')+' on the current slate. Pre-kickoff numbers are a member view; the record above is public. <a href="#dashboard">Sign in</a>.</div>';
+      }else{
+        nowHtml+='<div class="emptybox">No eligible projection from '+esc(c.display_name)+' on the current slate yet.</div>';
+      }
+    }catch(_){nowHtml='';}
+    /* methodology, from the models that carry one */
+    var methHtml='';
+    (d.models||[]).forEach(function(mo){
+      if(mo.description)methHtml+='<div class="panel" style="max-width:760px;margin-bottom:8px"><b>'+esc(mo.model_name)+'</b><p class="note" style="margin:4px 0 0">'+esc(mo.description)+'</p></div>';
+    });
+    methHtml='<h2>Methodology</h2>'+(methHtml||'<div class="emptybox">'+esc(c.display_name)+' has not published a methodology summary yet. The record stands on its own either way: same grading, same closing lines, same rule as every model here.</div>');
+    /* activity: this creator's slates, from the shared feed */
+    var mineAct=actAll.filter(function(a){return a&&a.creator_slug===c.slug;});
+    var actHtml='<h2>Recent activity</h2><div class="panel">'+
+      (mineAct.length?activityRows(mineAct,8):'<p class="note" style="padding:8px 0">No slate from '+esc(c.display_name)+' has landed recently. Submissions appear here the moment one does.</p>')+'</div>';
+    var outLinks=(links?'<h2>Creator links</h2><div class="panel"><div class="links">'+links+'</div><p class="note" style="margin:8px 0 0">The Collective exports traffic to its creators on purpose.</p></div>':'');
+    if(!paint(view,tok,head+body+nowHtml+methHtml+actHtml+outLinks+'<p style="margin-top:22px"><a href="#">← Back to the wall</a></p>'))return;
   }catch(e){
     if(e.status===404){if(!paint(view,tok,'<div class="emptybox">No creator at this address. <a href="#">Back to the wall</a></div>'))return;return;}
     fail(view,e);
@@ -2849,8 +3368,10 @@ async function renderModel(view,cs,ms){
     var res=await Promise.all([
       api('/v1/models/'+encodeURIComponent(cs)+'/'+encodeURIComponent(ms)),
       api('/v1/games',{auth:true}).catch(function(){return null;}),
-      marketBoard()]);
+      marketBoard(),
+      wallRows().catch(function(){return [];})]);
     var d=res[0], slate=res[1], mkt=res[2];
+    var wallRow=(res[3]||[]).filter(function(r){return r.creator_slug===cs&&r.model_slug===ms;})[0]||null;
     var rec=d.record;
     /* The games endpoint serves a week at a time, so ask for exactly the
        weeks this model covered (the coverage table names them), newest
@@ -2961,6 +3482,18 @@ async function renderModel(view,cs,ms){
     var logLive=!(d.recent_graded&&d.recent_graded.length)&&logRows.length>0;
     var head='<h1>'+esc(d.model.model_name)+' <span class="pill">'+esc(d.model.sport)+'</span></h1>'+
       '<p class="lede">by <a href="#/'+esc(d.creator.slug)+'">'+esc(d.creator.display_name)+'</a>'+foundBadge(d.creator)+'</p>';
+    /* WHO IS THIS MODEL — the profile facts before any number, so a reader
+       who arrived from a ranking knows what they are looking at */
+    var lastSub=wallRow&&wallRow.last_submission_at;
+    var who='<div class="pf">'+
+      '<span><div class="k">Creator</div><div class="v"><a href="#/'+esc(d.creator.slug)+'">'+esc(d.creator.display_name)+'</a></div></span>'+
+      '<span><div class="k">Model</div><div class="v">'+esc(d.model.model_name)+'</div></span>'+
+      '<span><div class="k">Sport</div><div class="v">'+esc(sportLongName(d.model.sport)||d.model.sport)+'</div></span>'+
+      '<span><div class="k">Status</div><div class="v">'+(wallRow?chipFor(wallRow.membership):'<span class="note">not on the wall</span>')+(d.creator.founding?' <span class="chip founding">&#9733; Founding</span>':'')+'</div></span>'+
+      '<span><div class="k">Last submission</div><div class="v">'+(lastSub?rel(lastSub):'<span class="note">none yet</span>')+'</div></span>'+
+      '<span><div class="k">Coverage</div><div class="v">'+(covPct!=null?fmtNum(covPct,0)+'%':'<span class="note">no played games yet</span>')+'</div></span>'+
+      '</div>'+
+      (d.model.description?'<p class="note" style="max-width:760px;margin:0 0 10px">'+esc(d.model.description)+'</p>':'');
     var stats=rec?'<div class="panel"><div class="kv">'+
       '<span><div class="k">Record (ATS)</div><div class="v">'+recATSHtml(rec,'')+liveMark(recLive)+impliedRecMark(rec)+'</div></span>'+
       '<span><div class="k">Win %</div><div class="v">'+fmtPct(rec.win_pct)+'</div></span>'+
@@ -2970,7 +3503,10 @@ async function renderModel(view,cs,ms){
       '<span><div class="k">Coverage</div><div class="v">'+fmtNum(covPct,0)+'%</div></span>'+
       '</div><div class="note" style="margin-top:8px">Graded on actual final scores against the Collective&#39;s own captured closing lines, never self-reported. <a href="#rules">Grading rules</a></div>'+
       (recLive?gradeNote('This record is'):'')+'</div>'
-      :'<div class="emptybox"><b style="color:var(--text)">Building sample.</b><br>Performance metrics appear once enough graded games are on the record. Every pick is graded on the actual final score against the Collective&#39;s captured closing line.</div>';
+      :'<div class="emptybox"><b style="color:var(--text)">Building sample.</b><br>'+
+        (lastSub?'This model has submitted projections but no eligible game has been graded yet. ':'This model has not posted a projection yet. ')+
+        'Every pick is graded on the actual final score against the Collective&#39;s captured closing line the moment its game is final.</div>';
+    stats='<h2>How it has performed</h2>'+stats;
     /* Model against market, on the games this model has actually posted. A
        difference is only shown where the model published a spread: a pick
        side on its own is not comparable to a market number. */
@@ -2978,6 +3514,9 @@ async function renderModel(view,cs,ms){
     if(window.MCOdds&&slate&&slate.games){
       var rows=[];
       slate.games.forEach(function(g){
+        /* "now" is the games still to be played: a finished game belongs
+           to the graded log above, not to the current read */
+        if(finalResult(g))return;
         (g.models||[]).forEach(function(mr){
           if(mr.creator_slug!==cs||mr.model_slug!==ms||mr.locked)return;
           var mg=marketFor(mkt,g);
@@ -2991,7 +3530,7 @@ async function renderModel(view,cs,ms){
         });
       });
       if(rows.length){
-        vs='<h2>Against the current market</h2>'+
+        vs='<h2>What it says now <span class="note" style="font-weight:400">the current slate against the market</span></h2>'+
           '<div class="tblwrap"><table><thead><tr><th>Game</th><th class="num">Model spread</th>'+
           '<th class="num">Market</th><th class="num">Difference</th><th class="num"></th></tr></thead><tbody>'+
           rows.join('')+'</tbody></table></div>'+
@@ -3040,10 +3579,12 @@ async function renderModel(view,cs,ms){
       'A game with no result against the spread is one the Collective captured no closing line for &mdash; it is not a loss and is not counted.</p>'
       :'<h2>Every graded game</h2><div class="emptybox">No game of this model&rsquo;s has finished yet. Every pick it posts appears here the moment its game does, with the closing line it was graded against and whether it won.</div>';
     var cal=calibrationHTML(calCal);
-    /* The game log is the page. A reader who clicks a model wants to see
-       the picks and how they did, not a calibration chart and a methodology
-       note first — those are the supporting evidence and now sit under it. */
-    if(!paint(view,tok,head+stats+gl+cal+vs+method+cov+'<p style="margin-top:22px"><a href="#/'+esc(d.creator.slug)+'">← '+esc(d.creator.display_name)+'</a> &middot; <a href="#models">Model directory</a> &middot; <a href="#performance">Compare models</a></p>'))return;
+    var behave='';
+    try{behave=modelBehaviorHTML(modelBehavior(logGames,cs,ms),covPct);}catch(_){behave='';}
+    /* Who it is, how it has performed (the record and the log are the
+       page), how it behaves, what it says now, then the methodology and the
+       coverage table: the supporting evidence sits under the answer. */
+    if(!paint(view,tok,head+who+stats+gl+cal+behave+vs+method+cov+'<p style="margin-top:22px"><a href="#/'+esc(d.creator.slug)+'">← '+esc(d.creator.display_name)+'</a> &middot; <a href="#models">Model directory</a> &middot; <a href="#performance">Compare models</a></p>'))return;
     if($('glFilter'))$('glFilter').onchange=function(){
       var v=this.value;
       document.querySelectorAll('#glTbl tbody tr').forEach(function(tr){
@@ -3153,10 +3694,21 @@ async function renderBoard(view){
         if(g.consensus.locked){
           cons='<div class="consline"><span class="lock">Consensus is a subscriber number</span></div>';
         }else if(g.consensus.n){
-          /* only the stats the table's consensus row cannot carry — the
-             means sit in the table under the headers they were averaged
-             from, so repeating them here just said everything twice */
-          cons='<div class="consline"><span>spread median <b>'+fmtSpread(g.consensus.spread_median)+'</b></span><span>spread σ <b>'+fmtNum(g.consensus.spread_stdev)+'</b></span><span>agreement <b>'+fmtPct(g.consensus.agreement,0)+'</b></span></div>';
+          /* The universal game summary, in one line: the same vocabulary as
+             the wall's cards, so a reader moving from the answer to the
+             evidence is not asked to learn a second one. The means still sit
+             in the table under the headers they were averaged from. */
+          var gs=gameSummary(g,mkt);
+          cons='<div class="consline">'+
+            '<span title="models with a live submission received before the lock">models <b>'+gs.n+'</b></span>'+
+            '<span title="median of the submitted lines">collective <b>'+(gs.median!=null?favSpread(g,gs.median):'-')+'</b></span>'+
+            '<span title="the Collective’s own captured market consensus">market <b>'+(gs.market!=null?favSpread(g,gs.market):'-')+'</b></span>'+
+            '<span title="the models’ mean minus the market: a comparison, not a verdict">group Δ market <b>'+((gs.edge&&gs.edge.side)?fmtNum(gs.edge.points)+' → '+esc(gs.edge.side):(gs.delta!=null?'on the number':'-'))+'</b></span>'+
+            '<span title="the two furthest-apart submitted lines">range <b>'+(gs.range!=null?favSpread(g,gs.min)+' → '+favSpread(g,gs.max):'-')+'</b></span>'+
+            '<span title="pick sides among the models that named one">consensus <b>'+consensusCell(gs)+'</b></span>'+
+            '<span title="standard deviation of the submitted lines">disagreement <b>'+levelCell(gs)+'</b></span>'+
+            '<span title="share of models on the majority pick side">agreement <b>'+fmtPct(g.consensus.agreement,0)+'</b></span>'+
+            '</div>';
         }
       }
       /* One TABLE per game, one stat per HEADED column — the chip row put
@@ -3238,14 +3790,14 @@ async function renderBoard(view){
           '<th>Result</th>'+
           '</tr></thead><tbody>'+rows+'</tbody></table></div>';
       }else{
-        rows='<div class="mrow"><span class="note">No model has submitted this game yet.</span></div>';
+        rows='<div class="mrow"><span class="note">No model has posted an eligible '+esc(sportLongName(sport.code)||sport.code)+(g.week!=null?' Week '+esc(g.week):'')+' projection for this game yet.</span></div>';
       }
       var mktRow=marketLineHtml(mkt,g);
       cards+='<div class="gamecard">'+hd+mktRow+cons+rows+
         (mg?'<div class="note" style="margin-top:6px"><a href="#market/'+esc(mg.event_id)+'">Full market, every book, line movement &rarr;</a></div>':'')+
         '</div>';
     });
-    if(!cards)cards='<div class="emptybox">No games on this slate yet. Games appear when the schedule is loaded.</div>';
+    if(!cards)cards='<div class="emptybox">No '+esc(sportLongName(sport.code)||sport.code)+' games are on this slate yet'+(BOARD_WEEK?' for Week '+esc(BOARD_WEEK):'')+'. Games appear the moment the schedule carries them.</div>';
     var sub=(d.entitled===false)?'<div class="panel" style="margin-bottom:14px"><b>Locked numbers are for subscribers.</b> <span class="note">One subscription unlocks every model here: '+cents(m.pricing.monthly_cents)+' a month'+(m.pricing.annual_cents>0?' or '+cents(m.pricing.annual_cents)+' a year':'')+'. '+(m.billing_live?'':'Billing opens soon.')+'</span> <a href="#about">Details →</a></div>':'';
     if(!paint(view,tok,head+sub+cards))return;
     /* scoped to [data-w] on purpose: the sport switcher shares the .wk styling
@@ -3517,14 +4069,23 @@ async function renderRankings(view){
         if(r.model_slug)rankedNow[r.creator_slug+'/'+r.model_slug]=1;
       });
     });
+    /* A 4-0 must never outrank a 57-44 by looking bigger. Every value sits
+       beside its sample, and a sample under the published minimum is dimmed
+       and marked thin rather than hidden. */
+    var THIN=10;
+    function sampleCell(n){
+      var k=Number(n)||0;
+      return '<td class="num" style="color:'+(k<THIN?'var(--warn)':'var(--dim)')+'"'+(k<THIN?' title="under '+THIN+' graded games: read this value as early, not as a rank"':'')+'>'+k+(k<THIN?' <span class="note">thin</span>':'')+'</td>';
+    }
     function board(title,key,fmt,sub){
       var pick=picks[key];
       var body=pick.rows.map(function(r){
         var href=profHref(r.creator_slug,modelSlugOf(r));
+        var thin=(Number(r.graded)||0)<THIN;
         return '<tr class="rowlink" data-href="'+href+'"><td class="num" style="color:var(--faint)">'+r.rank+'</td>'+
           '<td><a href="'+href+'" class="nm">'+esc(r.creator_name)+'</a>'+(fmap[r.creator_slug]?' <span class="fstar" title="Founding Member">&#9733;</span>':'')+'<br><span class="sb" style="color:var(--faint);font-size:11px">'+esc(r.model_name)+'</span></td>'+
-          '<td class="num" style="font-weight:700">'+fmt(r.value)+liveMark(pick.live)+'</td>'+
-          '<td class="num" style="color:var(--dim)">'+r.graded+'</td></tr>';
+          '<td class="num" style="font-weight:700'+(thin?';color:var(--dim)':'')+'">'+fmt(r.value)+liveMark(pick.live)+'</td>'+
+          sampleCell(r.graded)+'</tr>';
       }).join('');
       /* There is no minimum to clear any more, so an empty board means one
          thing only: nothing on this slate has finished yet.
@@ -3561,7 +4122,7 @@ async function renderRankings(view){
           '<td class="num" style="font-weight:700">'+fmtPct(r.win_pct)+'</td>'+
           '<td class="num">'+fmtNum(r.margin_mae)+'</td>'+
           '<td class="num">'+fmtNum(r.brier,3)+'</td>'+
-          '<td class="num" style="color:var(--dim)">'+r.graded+'</td>'+
+          sampleCell(r.graded)+
           '<td>'+covCell(e.coverage_pct)+'</td>'+
           '<td class="num"><a href="'+href+'">picks &rarr;</a></td></tr>';
       }).join('');
@@ -3617,7 +4178,11 @@ async function renderRankings(view){
     }).join('');
     if(!paint(view,tok,'<h1>Rankings</h1>'+
       sportSwitcherHTML(mMeta3)+
-      '<p class="lede">Three separate boards, never blended into one score. There is no minimum: a model is ranked from its first finished game, and the <b>Graded</b> column beside every row says exactly how many games that number stands on. A football season is short, so a twenty-game bar meant nobody was ranked until December &mdash; on a record whose whole point is that you can watch it build. Read the sample, not just the rank.</p>'+
+      '<p class="lede">Three separate boards, never blended into one score. There is no minimum: a model is ranked from its first finished game, and the <b>Graded</b> column beside every row says exactly how many games that number stands on. A football season is short, so a twenty-game bar meant nobody was ranked until December &mdash; on a record whose whole point is that you can watch it build. Read the sample, not just the rank: a value on fewer than '+THIN+' graded games is marked <b>thin</b> and dimmed.</p>'+
+      '<div class="pf" style="margin:0 0 14px"><span><div class="k">Sport · season</div><div class="v">'+esc(sportLongName(rkSport.code)||rkSport.code)+' · '+esc(String(rkSport.season||''))+'</div></span>'+
+      '<span><div class="k">Grading metric</div><div class="v">ATS vs captured close · margin MAE · Brier</div></span>'+
+      '<span><div class="k">Sample</div><div class="v">graded games, per metric, beside every value</div></span>'+
+      '<span><div class="k">Coverage</div><div class="v">share of the played slate posted, on the standings</div></span></div>'+
       '<div class="boards3">'+
         board('Win %','win_pct',function(v){return fmtPct(v);},'vs closing line')+
         board('Margin MAE','margin_mae',function(v){return fmtNum(v);},'lower is better')+
@@ -3841,14 +4406,46 @@ async function renderPerformance(view){
 }
 
 /* ================= rules ================= */
+/* The grading standard is the Collective's biggest trust mechanism, so the
+   page leads with it as a flow a stranger can follow, then the published
+   rules verbatim, then the column legend. The flow and the guarantees are
+   static and render whether or not /v1/rules answers: a rules page that
+   fails outright because one request had a bad minute is the wrong failure. */
+function gradingFlowHTML(){
+  var steps=['Submit','Timestamp','Lock','Game','Collective close','Grade','Permanent record'];
+  return '<div class="flow">'+steps.map(function(x,i){
+    return (i?'<i>→</i>':'')+'<span'+(i===steps.length-1?' class="hot"':'')+'>'+x+'</span>';
+  }).join('')+'</div>';
+}
+function gradingGuaranteesHTML(){
+  var m=LOCK_MIN;
+  var g=[
+    ['Submissions timestamp on arrival','Every row is stamped when the server receives it. Nothing is dated by the creator.'],
+    ['Creators may revise until the lock','A game can be posted and replaced as often as a creator likes until '+m+' minutes before kickoff.'],
+    ['The latest eligible pre-lock submission counts','That row is what the wall shows, the consensus blends and the grader grades.'],
+    ['Prior submissions remain stored','Every earlier number stays, timestamped, and is shown as movement. Nothing is deleted.'],
+    ['Post-lock submissions are marked late','Stored, flagged, never graded — whoever posts them.'],
+    ['Backfill and test data are separate','Shown apart, never counted toward a record, a ranking or the consensus.'],
+    ['Final grades use Collective-captured lines','The close the Collective stored itself is the yardstick, never a line a creator reports.'],
+    ['Creators cannot report their own results','Any result, win or grade column in a file is ignored on purpose. The Collective grades from the final score.']
+  ];
+  return '<div class="guar">'+g.map(function(x){return '<div><b>'+x[0]+'</b>'+x[1]+'</div>';}).join('')+'</div>';
+}
 async function renderRules(view){
   view.innerHTML='<div class="emptybox">Loading rules&hellip;</div>';
   try{
-    var d=await api('/v1/rules');
-    var lis=(d.rules||[]).map(function(r){return '<li style="margin:10px 0">'+esc(r)+'</li>';}).join('');
-    view.innerHTML='<h1>Grading rules</h1>'+
-      '<p class="lede">Published in full so every number on this site is reproducible from the raw submissions by someone who does not trust us. Version '+d.version+'.</p>'+
-      '<div class="panel"><ol style="margin:4px 0;padding-left:22px;font-size:13.5px">'+lis+'</ol></div>'+
+    var d=null,rulesErr=null;
+    try{d=await api('/v1/rules');}catch(e){rulesErr=e;}
+    var lis=((d&&d.rules)||[]).map(function(r){return '<li style="margin:10px 0">'+esc(r)+'</li>';}).join('');
+    var rulesBox=rulesErr
+      ? '<div class="errbox"><b>The published rule text could not be loaded.</b><br>'+esc(rulesErr.message||rulesErr)+'<br><span class="note">The standard below is the same rule in plain words; the numbered text returns when the API answers.</span></div>'
+      : '<div class="panel"><ol style="margin:4px 0;padding-left:22px;font-size:13.5px">'+lis+'</ol></div>';
+    view.innerHTML='<div class="hero"><div class="big">ONE RULE. <i>EVERY MODEL.</i></div>'+
+      '<p class="lede" style="margin-top:8px">Independent models are only comparable if they are graded the same way. This is the way, published in full so every number on this site is reproducible from the raw submissions by someone who does not trust us.</p>'+
+      gradingFlowHTML()+gradingGuaranteesHTML()+'</div>'+
+      '<h1>Grading rules</h1>'+
+      '<p class="lede">The rule text the grader runs under'+(d&&d.version!=null?', version '+esc(d.version):'')+'.</p>'+
+      rulesBox+
       '<h2 id="reading">Reading the board</h2>'+
       '<p class="lede" style="max-width:760px">Every column is either something a creator submitted, untouched, or something the Collective computes the same way for everybody. Nothing here is the Collective\u2019s opinion of anyone\u2019s model.</p>'+
       '<div class="tblwrap"><table class="lgdtbl"><tbody>'+
@@ -3881,26 +4478,56 @@ async function renderRules(view){
 async function renderAbout(view,jump){
   view.innerHTML='<div class="emptybox">Loading&hellip;</div>';
   try{
-    var m=await meta();
+    /* the pricing panel needs meta; every other section is plain language
+       and must not disappear because one request failed */
+    var m=null;try{m=await meta();}catch(e){m=null;}
+    var pricing=m&&m.pricing;
+    var sec=function(title,body){return '<div class="sec"><h2>'+title+'</h2>'+body+'</div>';};
+    var counts=(m&&m.counts)||{};
     view.innerHTML='<h1>What the Collective is</h1>'+
-      '<p class="lede" style="max-width:760px">Independent sports model creators, each with their own site, brand, methodology, and customers, contributing finished projections to one shared, independently graded record. The Collective grades every model the same way against its own captured closing lines, publishes the rules, and shows every creator’s work side by side. Every profile links out to the creator’s own site: the Collective exports traffic on purpose.</p>'+
-      '<h2>For readers</h2>'+
-      '<div class="panel" id="join">'+
-        '<div class="kv"><span><div class="k">Monthly</div><div class="price">'+cents(m.pricing.monthly_cents)+'</div></span>'+
-        (m.pricing.annual_cents>0?'<span><div class="k">Annual</div><div class="price">'+cents(m.pricing.annual_cents)+'</div></span>':'')+'</div>'+
-        '<p class="note" style="margin:10px 0 12px">One subscription, one price everywhere, every model’s pre-kickoff numbers, the consensus, and model comparison. The historical record, profiles, and rankings are free forever.</p>'+
-        (m.billing_live
-          ?'<button class="btn primary" id="subBtn">Subscribe</button>'
-          :'<button class="btn" disabled>Billing opens soon</button> <span class="note">The record is being built in the open first. Subscriptions turn on once the wall has a verified season behind it.</span>')+
-      '</div>'+
-      '<h2>For creators</h2>'+
-      '<p class="lede" style="max-width:760px">Membership is by invite. You keep your model, your site, your customers, and your pricing. You send finished numbers to one endpoint (or upload a spreadsheet from your dashboard), your verified record and profile appear on the wall, and your own site gets a Collective tab that turns every member&#39;s audience into yours. Ask any member for an invite, or reach out through EdgeDesk.</p>'+
-      '<div class="panel" style="max-width:760px;border-color:rgba(217,154,43,.45)">'+
-      '<b style="color:var(--warn)">What membership asks of you</b>'+
-      participationHTML('p','note')+
-      '<p class="note" style="margin:6px 0 0">'+PARTICIPATION.why+' <a href="#rules">The full rules &rarr;</a></p></div>'+
-      '<p class="note">Already a member? <a href="#dashboard">Your dashboard →</a></p>';
-    if(m.billing_live&&$('subBtn'))$('subBtn').onclick=function(){
+      '<p class="lede" style="max-width:760px"><b>Independent models. One verified record.</b> Independent sports model creators, each with their own site, brand, methodology and customers, post finished projections into one shared infrastructure. The Collective timestamps every submission, captures the market itself, grades everyone under the same published rule, keeps the disagreement visible instead of averaging it away, and never lets a creator rewrite history.</p>'+
+      (counts.models?'<p class="note">'+esc(counts.creators||0)+' creator'+(counts.creators===1?'':'s')+' · '+esc(counts.models)+' model'+(counts.models===1?'':'s')+' · '+esc(counts.graded_games||0)+' settled game'+(counts.graded_games===1?'':'s')+' · '+esc(counts.live_projections||0)+' live projections, across every sport.</p>':'')+
+      sec('Why it exists',
+        '<p>A model’s record is only worth what its grading is worth, and a record graded by its own author against lines its author chose is worth very little. The Collective exists so that independent models can be compared on one number, one clock and one rule, by a party that has no model of its own in the comparison. Think of it as a shared, audited ledger for people who build their own models: GitHub for the models, a Bloomberg-style comparison of what they say, and one independently graded record underneath.</p>')+
+      sec('For readers',
+        '<p>Start on the <a href="#">wall</a>. The top of it says what the room thinks; the board under it shows every model’s number on every game; every model’s page carries its full graded log. Where the models disagree is surfaced on purpose. Where the group leaves the market is stated as a difference, never as a pick.</p>'+
+        '<div class="panel" id="join">'+
+          (pricing?'<div class="kv"><span><div class="k">Monthly</div><div class="price">'+cents(pricing.monthly_cents)+'</div></span>'+
+            (pricing.annual_cents>0?'<span><div class="k">Annual</div><div class="price">'+cents(pricing.annual_cents)+'</div></span>':'')+'</div>':'')+
+          '<p class="note" style="margin:10px 0 12px">One subscription, one price everywhere: every model’s pre-kickoff numbers, the consensus, and model comparison. The historical record, profiles and rankings are free forever.</p>'+
+          (m&&m.billing_live
+            ?'<button class="btn primary" id="subBtn">Subscribe</button>'
+            :'<button class="btn" disabled>Billing opens soon</button> <span class="note">The record is being built in the open first. Subscriptions turn on once the wall has a verified season behind it.</span>')+
+        '</div>')+
+      sec('For creators',
+        '<p>Membership is by invite. You keep your model, your site, your customers and your pricing. You post finished numbers from your dashboard (CSV or Excel) or straight to the API, your verified record and profile appear on the wall, and your own site gets a Collective tab. Ask any member for an invite, or reach out through EdgeDesk.</p>'+
+        '<ol style="margin:4px 0 8px;padding-left:20px;color:var(--dim);font-size:13px;line-height:1.8;max-width:760px">'+
+          '<li>Accept your invitation</li><li>Create your profile</li><li>Add your model</li><li>Post your slate</li>'+
+          '<li>Verify the column mapping and the dry run</li><li>Watch the record build, game by game</li><li>Install the Collective tab on your site</li></ol>'+
+        '<div class="panel" style="max-width:760px;border-color:rgba(217,154,43,.45)">'+
+        '<b style="color:var(--warn)">What membership asks of you</b>'+
+        participationHTML('p','note')+
+        '<p class="note" style="margin:6px 0 0">'+PARTICIPATION.why+' <a href="#rules">The full rules &rarr;</a></p></div>'+
+        '<p class="note">Already a member? <a href="#dashboard">Your dashboard →</a></p>')+
+      sec('How the record works',
+        gradingFlowHTML()+
+        '<p>Every submission is timestamped when the server receives it. A game locks '+LOCK_MIN+' minutes before kickoff; the latest eligible submission before the lock is the one that counts, and every earlier one is stored as movement. Once the game is final it is graded on the score against the closing line the Collective captured itself. The grade is permanent. <a href="#rules">The rule in full &rarr;</a></p>')+
+      sec('What stays free',
+        '<ul><li>Every model’s historical record and full graded game log</li><li>Every creator profile, with links out to their own site</li><li>The rankings and the live standings</li><li>The published grading rule and the slate format</li></ul>'+
+        '<p>The public record stays public because it is the proof that makes the paid numbers mean anything. The proof is never behind the paywall.</p>')+
+      sec('What a subscription unlocks',
+        '<ul><li>Every model’s pre-kickoff numbers on the current slate</li><li>The consensus and the model splits</li><li>Model comparison and the live research surfaces</li></ul>'+
+        '<p>Until billing opens, a signed-in account sees these while the record is built in the open. The server decides what an account can see; the page only draws it.</p>')+
+      sec('Participation standard',
+        '<p><b>Active Contributor</b> means the model met the published participation threshold on the current slate. <b>Inactive</b> means it is currently below that threshold. Membership remains membership either way; the label describes participation, not standing.</p>'+
+        participationHTML('p',''))+
+      sec('Who owns the models',
+        '<p>The creators do. Methodology, code, site, pricing and customers stay theirs, and every profile links out. Submissions stay in the historical record if a creator leaves, because a record that can be withdrawn is not a record. Nothing here implies EdgeDesk owns a participating model.</p>')+
+      sec('Relationship to EdgeDesk',
+        '<p>Model Collective is part of EdgeDesk Sports. EdgeDesk researches markets; the Collective compares independent models under one record. The market every model here is measured against is the one EdgeDesk’s infrastructure captures.</p>'+
+        '<div class="prin"><span>Independent models stay independent</span><span>The record stays public</span><span>Disagreement stays visible</span><span>Rules apply equally</span><span>History is not rewritten</span></div>'+
+        '<p class="faith">Built with faith. Run with integrity. Open to everyone.</p>');
+    if(m&&m.billing_live&&$('subBtn'))$('subBtn').onclick=function(){
       var ref='';try{var r=JSON.parse(localStorage.getItem('mc_ref')||'null');if(r)ref=r.slug;}catch(e){}
       location.href=API+'/collective_billing/v1/billing/checkout?plan=monthly'+(ref?'&ref='+encodeURIComponent(ref):'');
     };
@@ -4285,6 +4912,17 @@ var SLATE_TEMPLATE_DOC=[
   {c:'confidence',need:'optional',d:'Your own confidence scale, whatever it means to you. Stored and displayed, never blended into grading.'}
 ];
 var SLATE={cols:[],rows:[],map:{},checked:false};
+/* The upload path, as seven stages the panel walks through. Held as data
+   so the strip, the tests and the copy cannot disagree about the order. */
+var SLATE_STEPS=['Upload','Detect','Map','Verify','Dry run','Post','Receipt'];
+function slateStepsHTML(n){
+  return '<div class="steps7" aria-label="Upload progress">'+SLATE_STEPS.map(function(x,i){
+    var k=i+1,cls=k<n?'done':(k===n?'on':'');
+    return '<span'+(cls?' class="'+cls+'"':'')+'>'+k+' '+x+'</span>';
+  }).join('')+'</div>';
+}
+function slateStep(n){var el=$('slSteps');if(el)el.innerHTML=slateStepsHTML(n);}
+var LAST_RECEIPT=null;
 /* Columns whose value is stated from the PICKED side rather than the home
    side. Mapping one of these onto a home-relative field is only correct for
    home picks, so record which convention the file used and let the row builder
@@ -5535,7 +6173,7 @@ function slateBuildRows(season,week){
     if(!home&&!away)continue;
     if(!home||!away){problems.push('Row '+(r+1)+': needs both home and away.');continue;}
     var kick=slateKick(g('kickoff'),g('kickoff_tz'));
-    if(!kick){problems.push('Row '+(r+1)+': could not read the date "'+esc(String(g('kickoff')))+'".');continue;}
+    if(!kick){problems.push('Row '+(r+1)+': could not read the date "'+String(g('kickoff'))+'".');continue;}
     /* A real game id from the file (the EdgeDesk export carries nflverse ids
        like 2026_01_NE_SEA) beats a synthesised row ref: it survives renames
        and makes quarantine resolution on the admin side trivial. */
@@ -5565,7 +6203,7 @@ function slateBuildRows(season,week){
       if(parsedPick){
         if(parsedPick.side==='away')o[f]=o[f]===0?0:-o[f];
       }else{
-        problems.push('Row '+(r+1)+': "'+esc(String(SLATE.cols[SLATE.map[f]]))+
+        problems.push('Row '+(r+1)+': "'+String(SLATE.cols[SLATE.map[f]])+
           '" is stated from your picked team, but this row has no readable pick, '+
           'so the number cannot be turned into the home side. It was left off this row.');
         delete o[f];
@@ -5586,7 +6224,7 @@ function slateBuildRows(season,week){
       }
       if(statedSide==='away')o.home_win_probability=1-o.home_win_probability;
       else if(statedSide!=='home'){
-        problems.push('Row '+(r+1)+': "'+esc(String(SLATE.cols[SLATE.map['home_win_probability']]))+
+        problems.push('Row '+(r+1)+': "'+String(SLATE.cols[SLATE.map['home_win_probability']])+
           '" is stated from a picked team, but this row does not say which side that is, '+
           'so it cannot be turned into the home team’s win probability. It was left off this row.');
         delete o.home_win_probability;
@@ -5615,7 +6253,7 @@ function slateBuildRows(season,week){
           o.cover_probability=Math.max(0,Math.min(1,1-(pu||0)-o.cover_probability));
         }
       }else{
-        problems.push('Row '+(r+1)+': "'+esc(String(SLATE.cols[SLATE.map['cover_probability']]))+
+        problems.push('Row '+(r+1)+': "'+String(SLATE.cols[SLATE.map['cover_probability']])+
           '" is stated from your picked team, but this row has no readable pick, '+
           'so it cannot be turned into the home team\u2019s cover probability. It was left off this row.');
         delete o.cover_probability;
@@ -5627,7 +6265,7 @@ function slateBuildRows(season,week){
       if(parsedPick.line!==null&&o.line_at_submission===undefined)
         o.line_at_submission=parsedPick.line;
     }else if(String(g('pick_side')||'').trim()){
-      problems.push('Row '+(r+1)+': could not tell which side "'+esc(String(g('pick_side')))+'" means. Expected '+esc(away)+' or '+esc(home)+'.');
+      problems.push('Row '+(r+1)+': could not tell which side "'+String(g('pick_side'))+'" means. Expected '+away+' or '+home+'.');
     }
     /* The API refuses cover_probability on a row that carries no
        line_at_submission -- "cover_probability requires line_at_submission"
@@ -5994,7 +6632,7 @@ async function renderCreatorDash(view,me){
     var m0=mine[0]||null;
     var rec=m0&&m0.record;
     var todays=subs.filter(function(s){return s.data_origin==='live'&&sameDayCT(s.received_at);});
-    var season0=(mMeta.sports[0]&&mMeta.sports[0].season)||new Date().getFullYear();
+    var season0=(sportList(mMeta)[0]&&sportList(mMeta)[0].season)||new Date().getFullYear();
 
     /* WHERE THIS MEMBER STANDS AGAINST THE PARTICIPATION FLOOR, on the slate
        they are being measured on, on the screen they post from. The floor is
@@ -6004,6 +6642,14 @@ async function renderCreatorDash(view,me){
     var wkGames=(games&&games.games)||[];
     var wkPosted=weekProjections(wkGames,c.slug,null);
     var wkShort=Math.max(0,PARTICIPATION.min-wkPosted);
+    /* the next game to lock, so "how long do I have" is answered on the
+       screen a creator posts from */
+    var nextLockG=null,nowMs=Date.now();
+    wkGames.forEach(function(g){
+      var l=lockAt(g);
+      if(l==null||l<=nowMs||finalResult(g))return;
+      if(!nextLockG||l<lockAt(nextLockG))nextLockG=g;
+    });
 
     var html='<div class="dash-hd"><h1>Welcome back, '+esc(c.display_name)+'</h1>'+foundBadge(c)+' '+chipFor(c.membership)+'</div>'+
       '<p class="lede">'+(c.founding
@@ -6019,8 +6665,89 @@ async function renderCreatorDash(view,me){
       '<div class="st"><div class="k">Win %</div><div class="v">'+(rec?fmtPct(rec.win_pct):'-')+'</div></div>'+
       '<div class="st"><div class="k">Coverage</div><div class="v">'+(m0&&m0.coverage_pct!=null?fmtNum(m0.coverage_pct,0)+'%':'-')+'</div></div>'+
       '<div class="st"><div class="k">Last slate</div><div class="v">'+rel(m0?m0.last_submission_at:null)+'</div></div>'+
+      '<div class="st"><div class="k">Next lock</div><div class="v" style="font-size:12.5px"'+(nextLockG?' title="'+esc((nextLockG.away||'')+' @ '+(nextLockG.home||'')+' — '+kickoffFmt(nextLockG.kickoff_at))+'"':'')+'>'+
+        (nextLockG?esc(lockText(nextLockG).replace(/^locks in /,''))+' <span class="note">'+esc(nextLockG.away||'')+' @ '+esc(nextLockG.home||'')+'</span>':'<span class="note">no open game</span>')+'</div></div>'+
       '</div>';
 
+    /* one obvious answer to "where do I put my data": right here */
+    html+='<div style="display:flex;gap:10px;flex-wrap:wrap;margin:12px 0 4px">'+
+      '<button class="btn primary" id="qaPost">'+(todays.length?'Post another slate':'Post today&#39;s slate')+'</button>'+
+      (d.models[0]?'<a class="btn" href="#/model/'+esc(c.slug)+'/'+esc(d.models[0].model_slug)+'">My model</a>':'')+
+      '<a class="btn" href="#board">The board</a>'+
+      '<a class="btn" href="#/'+esc(c.slug)+'">My public profile</a></div>';
+
+    html+='<h2>Post a slate</h2><div class="panel">'+
+      '<div id="slSteps">'+slateStepsHTML(1)+'</div>'+
+      '<p class="note" style="margin:0 0 10px">Upload a CSV or Excel file with your projections, or paste rows straight from your spreadsheet. Columns map automatically, you check the result, then it posts. Your first live slate flips your profile to Active Contributor.</p>'+
+      '<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end">'+
+      /* ONE ROW PER SPORT, not one row per model.
+
+         A creator thinks in sports, not in model slugs: "post my college
+         slate", not "post under edgedesk-p4". So the picker lists every sport
+         the Collective carries, shows the model that will actually receive the
+         slate, and — for a sport with no model yet — says so RIGHT HERE, where
+         the choice is made, instead of in a warning further down. Uploading a
+         college file auto-selects the college row, so the creator never has to
+         notice that the box still said NFL. */
+      '<div style="min-width:230px"><label>Post as</label><select id="slModel">'+
+        sportPickerOptions(d,mMeta)+'</select></div>'+
+      '<div style="width:110px"><label>Season</label><input id="slSeason" type="number" value="'+season0+'"></div>'+
+      '<div style="min-width:150px"><label>Week</label><select id="slWeek">'+weekOptions(null,(d.models[0]||{}).sport)+'</select></div>'+
+      '<div style="min-width:200px"><label>Data type</label><select id="slOrigin">'+
+        '<option value="live">Live: counts toward my record</option>'+
+        '<option value="backfill">Backfill: history, shown separately</option>'+
+        '<option value="test">Test: throwaway</option></select></div>'+
+      '</div>'+
+      '<p class="note" style="margin:10px 0 0">New to this, or setting up a sheet from scratch? '+
+        '<a href="#" onclick="slateTemplateDownload(true);return false;">Download the blank template</a> '+
+        '(its columns map with nothing to correct), or read the '+
+        '<a href="#format">slate format</a>.</p>'+
+      '<div id="slDrop" class="dropzone">'+
+        '<div class="dz-main">Drop your CSV or Excel file here</div>'+
+        '<div class="dz-sub">or <button class="btn" id="slPick" type="button">choose a file</button>'+
+        ' &middot; <button class="btn" id="slPasteBtn" type="button">paste rows</button></div>'+
+        '<input type="file" id="slFile" accept=".csv,.tsv,.txt,.xlsx" class="hide">'+
+      '</div>'+
+      '<div id="slScan"></div>'+
+      '<textarea id="slPaste" class="hide" rows="5" style="margin-top:10px;font-family:\'JetBrains Mono\',monospace;font-size:12px" placeholder="home,away,date,spread,total&#10;KC,BUF,2026-09-20,-2.5,49.5"></textarea>'+
+      '<div id="slMap"></div><div id="slPrev"></div>'+
+      '<div style="display:flex;gap:10px;margin-top:12px;align-items:center;flex-wrap:wrap" id="slBtns" class="hide">'+
+      '<button class="btn" id="slCheck">Check slate (dry run)</button>'+
+      '<button class="btn primary" id="slGo" disabled>Post slate</button>'+
+      '<label style="display:flex;gap:7px;align-items:center;margin:0;text-transform:none;letter-spacing:0;font-size:12px;color:var(--dim)"><input type="checkbox" id="slAuto" style="width:auto"> Post automatically when the check is clean</label></div>'+
+      '<div id="slOut"></div></div>';
+    /* WHAT NEEDS ATTENTION. The dashboard's job is to make the next action
+       obvious; this is the list of things that are currently in the way,
+       each with the place on this page that fixes it. Empty is a real state
+       and is said. */
+    var att=[];
+    var lastLive=subs.filter(function(x){return x.data_origin==='live';})[0]||null;
+    var activeKeys=(d.keys||[]).filter(function(k){return k.status==='active';}).length;
+    if(wkGames.length===0)att.push({lvl:'dim',t:'No '+esc(sportLongName(currentSport(mMeta).code)||'')+' slate is open, so nothing is due this week.',fix:'#board',fixT:'The board'});
+    else if(wkShort)att.push({lvl:'warn',t:wkShort+' more eligible projection'+(wkShort===1?'':'s')+' needed this week ('+wkPosted+' of '+PARTICIPATION.min+' posted).',fix:'slDrop',fixT:'Post a slate'});
+    if(lastLive&&lastLive.quarantined>0)att.push({lvl:'warn',t:lastLive.quarantined+' game'+(lastLive.quarantined===1?'':'s')+' in your last slate could not be matched to the schedule.',fix:'subsSec',fixT:'My submissions'});
+    if(lastLive&&lastLive.late>0)att.push({lvl:'warn',t:lastLive.late+' row'+(lastLive.late===1?'':'s')+' in your last slate arrived after the lock and will not count.',fix:'subsSec',fixT:'My submissions'});
+    if(!c.description)att.push({lvl:'dim',t:'Your profile has no methodology summary yet. Readers see it on your public page.',fix:'pfDesc',fixT:'Profile'});
+    if(!c.website_url)att.push({lvl:'dim',t:'No website on your profile. The Collective exports traffic to creators on purpose.',fix:'pfSite',fixT:'Profile'});
+    if(!activeKeys)att.push({lvl:'dim',t:'No active API key. Only needed for automated posting; the upload here never asks for one.',fix:'rotBtn',fixT:'API keys'});
+    if(!(d.origins||[]).length)att.push({lvl:'dim',t:'Your Collective tab has no allowed domain yet, so the embed will not answer on your site.',fix:'origAdd',fixT:'Your Collective tab'});
+    (function(){
+      var have={};(d.models||[]).forEach(function(mo){if(mo.sport)have[sportFamily(mo.sport)]=1;});
+      sportList(mMeta).forEach(function(sp){
+        if(sp.in_season&&!have[sportFamily(sp.code)])
+          att.push({lvl:'dim',t:'No model for '+esc(sportLongName(sp.code)||sp.code)+', which is in season. A slate for it needs a model of its own.',fix:'sportsSec',fixT:'Sports you cover'});
+      });
+    })();
+    html+='<h2>What needs attention</h2>';
+    if(att.length){
+      html+='<div class="att">'+att.map(function(a){
+        var col=a.lvl==='warn'?'var(--warn)':'var(--faint)';
+        return '<div><span class="dot" style="background:'+col+'"></span><span>'+a.t+'</span>'+
+          '<a class="fix" href="'+(a.fix.charAt(0)==='#'?a.fix:'#dashboard')+'"'+(a.fix.charAt(0)==='#'?'':' data-jump="'+esc(a.fix)+'"')+'>'+esc(a.fixT)+' &rarr;</a></div>';
+      }).join('')+'</div>';
+    }else{
+      html+='<div class="panel" style="border-color:rgba(47,180,124,.4)"><b style="color:var(--pos)">Nothing needs attention.</b> <span class="note">Your slate is posted, matched and on time, and your profile is complete.</span></div>';
+    }
     /* The market this creator is about to submit against, on the same screen
        as the submit button. A creator should not have to leave the
        Collective to see what the books are on. */
@@ -6040,13 +6767,30 @@ async function renderCreatorDash(view,me){
       }
     }
 
-    /* one obvious answer to "where do I put my data": right here */
-    html+='<div style="display:flex;gap:10px;flex-wrap:wrap;margin:12px 0 4px">'+
-      '<button class="btn primary" id="qaPost">'+(todays.length?'Post another slate':'Post today&#39;s slate')+'</button>'+
-      (d.models[0]?'<a class="btn" href="#/model/'+esc(c.slug)+'/'+esc(d.models[0].model_slug)+'">My model</a>':'')+
-      '<a class="btn" href="#board">The board</a>'+
-      '<a class="btn" href="#/'+esc(c.slug)+'">My public profile</a></div>';
-
+    /* the submission center: every slate ever posted, newest first */
+    html+='<h2 id="subsSec">My submissions</h2>';
+    if(subs.length){
+      var subRows=subs.map(function(s){
+        var st,stC;
+        if(s.data_origin!=='live'){st=s.data_origin==='backfill'?'Backfill':'Test';stC='member';}
+        else if(s.quarantined>0&&s.resolved===0){st='Quarantined';stC='late';}
+        else if(s.late>0&&s.resolved===0){st='Late';stC='late';}
+        else{st='Submitted';stC='active';}
+        return '<tr>'+
+          '<td>'+new Date(s.received_at).toLocaleDateString(undefined,{month:'short',day:'numeric'})+' '+new Date(s.received_at).toLocaleTimeString(undefined,{hour:'numeric',minute:'2-digit'})+(sameDayCT(s.received_at)?' <span class="chip active">Today</span>':'')+'</td>'+
+          '<td>'+esc(s.model_name)+' <span class="sb" style="color:var(--faint)">'+esc(s.sport)+'</span></td>'+
+          '<td><span class="chip '+stC+'">'+st+'</span></td>'+
+          '<td class="num">'+s.rows+'</td>'+
+          '<td class="num">'+s.resolved+'</td>'+
+          '<td class="num"'+(s.quarantined?' style="color:var(--warn)"':'')+'>'+s.quarantined+'</td>'+
+          '<td class="num"'+(s.late?' style="color:var(--warn)"':'')+'>'+s.late+'</td>'+
+        '</tr>';
+      }).join('');
+      html+='<div class="tblwrap"><table style="min-width:640px"><thead><tr><th>Received</th><th>Model</th><th>Status</th><th class="num">Rows</th><th class="num">Matched</th><th class="num">Quarantined</th><th class="num">Late</th></tr></thead><tbody>'+subRows+'</tbody></table></div>'+
+        '<p class="note" style="margin-top:8px">Each row is one posted slate, timestamped when the server received it. Quarantined games are saved and matched on the admin side; late rows are stored but never graded. Your latest submission on a game received before it locks ('+LOCK_MIN+' minutes before kickoff) is the one that counts; the earlier ones stay stored as movement.</p>';
+    }else{
+      html+='<div class="emptybox"><b style="color:var(--text)">No submissions yet.</b><br>Your slates appear here the moment you post one, with the server receipt time and exactly what happened to every row.<br><br><a href="#dashboard" onclick="document.getElementById(\'slFile\')&&document.getElementById(\'slFile\').scrollIntoView({behavior:\'smooth\',block:\'center\'});return false;">Post your first slate &uarr;</a></div>';
+    }
     /* my model, one card per model on the account */
     html+='<h2>My model'+(d.models.length>1?'s':'')+'</h2><div class="cards">';
     d.models.forEach(function(mo){
@@ -6168,7 +6912,7 @@ async function renderCreatorDash(view,me){
       var have={};(d.models||[]).forEach(function(mo){
         if(mo.sport)have[sportFamily(mo.sport)]=mo.model_name||mo.model_slug;});
       var planned={};declaredSports(c.slug).forEach(function(x){planned[sportFamily(x)]=1;});
-      html+='<h2>Sports you cover</h2><div class="panel">'+
+      html+='<h2 id="sportsSec">Sports you cover</h2><div class="panel">'+
         sportChipsHTML(covered,mMeta)+
         '<div class="sportgrid">'+
         offered.map(function(sp){
@@ -6203,87 +6947,13 @@ async function renderCreatorDash(view,me){
         '</div>';
     })();
 
-    html+='<h2>Post a slate</h2><div class="panel">'+
-      '<p class="note" style="margin:0 0 10px">Upload a CSV or Excel file with your projections, or paste rows straight from your spreadsheet. Columns map automatically, you check the result, then it posts. Your first live slate flips your profile to Active Contributor.</p>'+
-      '<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end">'+
-      /* ONE ROW PER SPORT, not one row per model.
-
-         A creator thinks in sports, not in model slugs: "post my college
-         slate", not "post under edgedesk-p4". So the picker lists every sport
-         the Collective carries, shows the model that will actually receive the
-         slate, and — for a sport with no model yet — says so RIGHT HERE, where
-         the choice is made, instead of in a warning further down. Uploading a
-         college file auto-selects the college row, so the creator never has to
-         notice that the box still said NFL. */
-      '<div style="min-width:230px"><label>Post as</label><select id="slModel">'+
-        sportPickerOptions(d,mMeta)+'</select></div>'+
-      '<div style="width:110px"><label>Season</label><input id="slSeason" type="number" value="'+season0+'"></div>'+
-      '<div style="min-width:150px"><label>Week</label><select id="slWeek">'+weekOptions(null,(d.models[0]||{}).sport)+'</select></div>'+
-      '<div style="min-width:200px"><label>Data type</label><select id="slOrigin">'+
-        '<option value="live">Live: counts toward my record</option>'+
-        '<option value="backfill">Backfill: history, shown separately</option>'+
-        '<option value="test">Test: throwaway</option></select></div>'+
-      '</div>'+
-      '<p class="note" style="margin:10px 0 0">New to this, or setting up a sheet from scratch? '+
-        '<a href="#" onclick="slateTemplateDownload(true);return false;">Download the blank template</a> '+
-        '(its columns map with nothing to correct), or read the '+
-        '<a href="#format">slate format</a>.</p>'+
-      '<div id="slDrop" class="dropzone">'+
-        '<div class="dz-main">Drop your CSV or Excel file here</div>'+
-        '<div class="dz-sub">or <button class="btn" id="slPick" type="button">choose a file</button>'+
-        ' &middot; <button class="btn" id="slPasteBtn" type="button">paste rows</button></div>'+
-        '<input type="file" id="slFile" accept=".csv,.tsv,.txt,.xlsx" class="hide">'+
-      '</div>'+
-      '<div id="slScan"></div>'+
-      '<textarea id="slPaste" class="hide" rows="5" style="margin-top:10px;font-family:\'JetBrains Mono\',monospace;font-size:12px" placeholder="home,away,date,spread,total&#10;KC,BUF,2026-09-20,-2.5,49.5"></textarea>'+
-      '<div id="slMap"></div><div id="slPrev"></div>'+
-      '<div style="display:flex;gap:10px;margin-top:12px;align-items:center;flex-wrap:wrap" id="slBtns" class="hide">'+
-      '<button class="btn" id="slCheck">Check slate (dry run)</button>'+
-      '<button class="btn primary" id="slGo" disabled>Post slate</button>'+
-      '<label style="display:flex;gap:7px;align-items:center;margin:0;text-transform:none;letter-spacing:0;font-size:12px;color:var(--dim)"><input type="checkbox" id="slAuto" style="width:auto"> Post automatically when the check is clean</label></div>'+
-      '<div id="slOut"></div></div>';
-    /* the submission center: every slate ever posted, newest first */
-    html+='<h2>My submissions</h2>';
-    if(subs.length){
-      var subRows=subs.map(function(s){
-        var st,stC;
-        if(s.data_origin!=='live'){st=s.data_origin==='backfill'?'Backfill':'Test';stC='member';}
-        else if(s.quarantined>0&&s.resolved===0){st='Quarantined';stC='late';}
-        else if(s.late>0&&s.resolved===0){st='Late';stC='late';}
-        else{st='Submitted';stC='active';}
-        return '<tr>'+
-          '<td>'+new Date(s.received_at).toLocaleDateString(undefined,{month:'short',day:'numeric'})+' '+new Date(s.received_at).toLocaleTimeString(undefined,{hour:'numeric',minute:'2-digit'})+(sameDayCT(s.received_at)?' <span class="chip active">Today</span>':'')+'</td>'+
-          '<td>'+esc(s.model_name)+' <span class="sb" style="color:var(--faint)">'+esc(s.sport)+'</span></td>'+
-          '<td><span class="chip '+stC+'">'+st+'</span></td>'+
-          '<td class="num">'+s.rows+'</td>'+
-          '<td class="num">'+s.resolved+'</td>'+
-          '<td class="num"'+(s.quarantined?' style="color:var(--warn)"':'')+'>'+s.quarantined+'</td>'+
-          '<td class="num"'+(s.late?' style="color:var(--warn)"':'')+'>'+s.late+'</td>'+
-        '</tr>';
-      }).join('');
-      html+='<div class="tblwrap"><table style="min-width:640px"><thead><tr><th>Received</th><th>Model</th><th>Status</th><th class="num">Rows</th><th class="num">Matched</th><th class="num">Quarantined</th><th class="num">Late</th></tr></thead><tbody>'+subRows+'</tbody></table></div>'+
-        '<p class="note" style="margin-top:8px">Each row is one posted slate, timestamped when the server received it. Quarantined games are saved and matched on the admin side; late rows are stored but never graded. Your latest submission on a game received before it locks ('+LOCK_MIN+' minutes before kickoff) is the one that counts; the earlier ones stay stored as movement.</p>';
-    }else{
-      html+='<div class="emptybox"><b style="color:var(--text)">No submissions yet.</b><br>Your slates appear here the moment you post one, with the server receipt time and exactly what happened to every row.<br><br><a href="#dashboard" onclick="document.getElementById(\'slFile\')&&document.getElementById(\'slFile\').scrollIntoView({behavior:\'smooth\',block:\'center\'});return false;">Post your first slate &uarr;</a></div>';
-    }
+    html+='<h2 style="letter-spacing:.1em;text-transform:uppercase;font-size:12px;color:var(--dim);margin-top:26px">Tools</h2>';
     /* hands-off posting: the Universal Prompt and the raw endpoint */
     html+='<h2>Automate your posting</h2><div class="panel">'+
       '<p class="note" style="margin:0 0 8px">Two ways to never post by hand. Copy the Universal Prompt and paste it into a Claude (or any assistant) conversation along with your spreadsheet: it formats your rows, dry-runs them, and posts through your API key. Or wire your model to POST the same JSON straight to the ingest endpoint on your own schedule. Either way your picks land here automatically and show up in My submissions.</p>'+
       '<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center"><button class="btn" id="upBtn">Copy the Universal Prompt</button>'+
       '<span class="note">Endpoint: <span class="mono" style="font-size:11px">'+esc(CFG.API)+'/collective_ingest/v1/projections</span></span></div>'+
       '<div id="upOut"></div></div>';
-    html+='<h2>Earnings</h2><div class="panel"><div class="kv">'+
-      '<span><div class="k">This month</div><div class="v">'+cents(d.earnings.this_month_cents)+'</div></span>'+
-      '<span><div class="k">Balance</div><div class="v">'+cents(d.earnings.balance_cents)+'</div></span>'+
-      '<span><div class="k">Available</div><div class="v">'+cents(d.earnings.available_cents)+'</div></span>'+
-      '<span><div class="k">Referred active</div><div class="v">'+d.earnings.referred_active+'</div></span>'+
-      '<span><div class="k">Referred total</div><div class="v">'+d.earnings.referred_total+'</div></span>'+
-      '</div>'+
-      (d.economics?'<p class="note" style="margin:10px 0 0">'+(d.economics.founding
-        ?'Each founding member receives an equal share of the '+(d.economics.founder_pool_bps/100)+'% Founding Collective Pool: currently '+
-          (Math.round(d.economics.founder_pool_bps/d.economics.founder_count)/100)+'% of Collective revenue.'
-        :'Creator terms are set per creator. Referral is a separate share, currently '+(d.economics.referral_bps/100)+'%.')+'</p>':'')+
-      (d.earnings.note?'<p class="note" style="margin:10px 0 0">'+esc(d.earnings.note)+'</p>':'')+'</div>';
     /* keys */
     html+='<h2>API keys</h2><div class="panel">';
     (d.keys||[]).forEach(function(k){
@@ -6304,9 +6974,24 @@ async function renderCreatorDash(view,me){
       '<label>X handle <span class="opt">optional</span></label><input id="pfX" value="'+esc(c.x_handle||'')+'" placeholder="handle, no @">'+
       '<label>Logo URL <span class="opt">optional, monogram used otherwise</span></label><input id="pfLogo" value="'+esc(c.logo_url||'')+'" placeholder="https://">'+
       '<div style="margin-top:14px"><button class="btn primary" id="pfSave">Save profile</button> <a class="note" href="#/'+esc(c.slug)+'">View public profile →</a></div></div>';
+    html+='<h2>Earnings</h2><div class="panel"><div class="kv">'+
+      '<span><div class="k">This month</div><div class="v">'+cents(d.earnings.this_month_cents)+'</div></span>'+
+      '<span><div class="k">Balance</div><div class="v">'+cents(d.earnings.balance_cents)+'</div></span>'+
+      '<span><div class="k">Available</div><div class="v">'+cents(d.earnings.available_cents)+'</div></span>'+
+      '<span><div class="k">Referred active</div><div class="v">'+d.earnings.referred_active+'</div></span>'+
+      '<span><div class="k">Referred total</div><div class="v">'+d.earnings.referred_total+'</div></span>'+
+      '</div>'+
+      (d.economics?'<p class="note" style="margin:10px 0 0">'+(d.economics.founding
+        ?'Each founding member receives an equal share of the '+(d.economics.founder_pool_bps/100)+'% Founding Collective Pool: currently '+
+          (Math.round(d.economics.founder_pool_bps/d.economics.founder_count)/100)+'% of Collective revenue.'
+        :'Creator terms are set per creator. Referral is a separate share, currently '+(d.economics.referral_bps/100)+'%.')+'</p>':'')+
+      (d.earnings.note?'<p class="note" style="margin:10px 0 0">'+esc(d.earnings.note)+'</p>':'')+'</div>';
     html+='<p style="margin-top:22px"><button class="btn" id="soBtn">Sign out</button></p>';
     view.innerHTML=html;
     if($('qaPost'))$('qaPost').onclick=function(){var f=$('slFile');if(f)f.scrollIntoView({behavior:'smooth',block:'center'});};
+    document.querySelectorAll('[data-jump]').forEach(function(a){
+      a.onclick=function(ev){ev.preventDefault();var t=$(a.getAttribute('data-jump'));if(t){t.scrollIntoView({behavior:'smooth',block:'center'});if(t.focus)try{t.focus();}catch(e){}}};
+    });
     $('upBtn').onclick=async function(){
       var b=this;b.disabled=true;
       try{
@@ -6608,6 +7293,7 @@ async function renderCreatorDash(view,me){
       slatePaintScan();
       slatePaintMap();$('slGo').disabled=true;
       $('slOut').innerHTML=SLATE.ragged.length?slateRaggedHTML():'';
+      slateStep((SLATE.missingRequired||SLATE.ambiguousSpread||SLATE.ragged.length)?3:4);
     }
 
     /* When a slate is quarantined even though every name resolved against the
@@ -6793,6 +7479,7 @@ async function renderCreatorDash(view,me){
       if(SLATE.numberless){SLATE.checked=false;if($('slGo'))$('slGo').disabled=true;}
       msg+='</div>';
       $('slScan').innerHTML=msg;
+      if(!SLATE.checked)slateStep((SLATE.missingRequired||SLATE.ambiguousSpread||SLATE.numberless)?3:4);
       document.querySelectorAll('[data-spreadis]').forEach(function(b){
         b.onclick=function(){
           var want=b.getAttribute('data-spreadis');
@@ -7059,7 +7746,19 @@ async function renderCreatorDash(view,me){
            because it writes the schedule everyone is matched against, which
            is not what posting a slate means. */
         var addable=slateAdminGames(miss,p.week);
-        if(addable.length)body+='<p style="margin:10px 0 0">'+
+        /* The loader writes the schedule everyone is matched against, and
+           the backend only lets an admin account do that. Offering the
+           button to every creator meant a non-admin pressed it, got a 403,
+           and was handed database setup instructions for a database they
+           do not run. The server decides who is an admin (/v1/me); this
+           only decides whether to draw the button. A creator sees what is
+           missing and that it is the operator's to fix. */
+        var isAdmin=!!(me&&me.admin);
+        if(addable.length&&!isAdmin)body+='<p class="note" style="margin:8px 0 0">'+
+          'The Collective operator loads the schedule; these games are saved with your slate and '+
+          'resolve on their own once it carries them. If a whole week is missing, say so to the '+
+          'operator rather than re-posting.</p>';
+        if(addable.length&&isAdmin)body+='<p style="margin:10px 0 0">'+
           '<button class="btn" id="slAddGames">Add '+addable.length+' game'+
           (addable.length===1?'':'s')+' to your '+esc(p.sport)+' schedule</button> '+
           '<span class="note">Loads them from this file &mdash; then re-post and they resolve. '+
@@ -7303,10 +8002,31 @@ async function renderCreatorDash(view,me){
             (e.say?' <span class="note">&mdash; '+esc(e.say)+'</span>':'')+'</div>';
         }).join('');
         var qc=slateQuarantineCause(r.rows,sendRows);
-        /* The receipt states this from the SERVER's own counts rather than
-           the page's prediction, so revHtml stands down here rather than
-           saying the same thing twice from a weaker source. */
+        /* THE RECEIPT. A creator should never wonder whether the upload
+           worked: one grid, from the server's own counts, with the time the
+           server stamped when it stamps one, and the page's own clock —
+           labelled as such — when the response carries none. */
+        var recAt=r.received_at||r.submitted_at||r.stored_at||null;
+        var recTime=recAt?(new Date(recAt).toLocaleTimeString('en-US',{timeZone:'America/Chicago',hour12:false})+' CT'):null;
+        var devTime=new Date().toLocaleTimeString('en-US',{timeZone:'America/Chicago',hour12:false})+' CT';
+        LAST_RECEIPT={model:env.model||(selModel&&selModel.model_slug)||null,sport:env.sport,season:env.season,week:env.week==null?null:env.week,
+          data_origin:env.data_origin,dry_run:!!dry,games_sent:sendRows.length,counts:c2,
+          submission_id:r.submission_id||null,trace:r.trace||null,server_received_at:recAt,posted_from_device_at:new Date().toISOString(),
+          rows:(r.rows||[]).filter(function(x){return x.status!=='resolved';})};
+        var rc=function(k,v,cls){return '<span><div class="k">'+k+'</div><div class="v'+(cls?' '+cls:'')+'">'+v+'</div></span>';};
+        var receipt=dry?'':'<div class="receipt">'+
+          rc('Model',esc((selModel&&selModel.model_name)||env.model||'-'))+rc('Season',esc(env.season))+rc('Week',env.week!=null?esc(env.week):'<span class="note">from file</span>')+
+          rc('Games received',sendRows.length)+rc('Accepted',c2.resolved||0,'ok')+
+          rc('Quarantined',c2.quarantined||0,(c2.quarantined||0)?'warn':'')+rc('Late',c2.late||0,(c2.late||0)?'warn':'')+
+          rc('Rejected',c2.rejected||0,(c2.rejected||0)?'bad':'')+
+          rc(recTime?'Server received':'Posted from this device',esc(recTime||devTime))+
+          '</div>'+
+          '<div style="display:flex;gap:10px;flex-wrap:wrap;margin:6px 0 4px">'+
+            '<a class="btn" href="#">View wall</a>'+
+            ((c2.quarantined||0)>0?'<a class="btn" href="#dashboard" data-jump="subsSec">View quarantined rows</a>':'')+
+            '<button class="btn" type="button" id="slCopyReceipt">Copy receipt</button></div>';
         $('slOut').innerHTML=pfHtml+alignHtml+((c2.movement||c2.late)?'':revHtml)+'<div class="panel" style="margin-top:10px;border-color:'+((c2.rejected||0)>0?'rgba(217,154,43,.5)':'rgba(47,180,124,.5)')+'">'+
+          receipt+
           '<b>'+(dry?'Dry run:':'Posted:')+'</b> <span class="mono">'+(c2.resolved||0)+' matched, '+(c2.first||0)+' new, '+(c2.movement||0)+' replaced, '+(c2.late||0)+' late, '+(c2.quarantined||0)+' quarantined, '+(c2.rejected||0)+' rejected</span>'+
           (lines?'<div style="margin-top:8px;font-size:12px">'+lines+'</div>':'')+
           ((c2.quarantined||0)>0?
@@ -7361,6 +8081,12 @@ async function renderCreatorDash(view,me){
           probRejectHTML(r,opts)+
           '</div>';
         wireAddGames(pf,{opts:opts});
+        if($('slCopyReceipt'))$('slCopyReceipt').onclick=function(){copyText(JSON.stringify(LAST_RECEIPT,null,1),this);};
+        document.querySelectorAll('#slOut [data-jump]').forEach(function(a){
+          a.onclick=function(ev){ev.preventDefault();var t=$(a.getAttribute('data-jump'));if(t)t.scrollIntoView({behavior:'smooth',block:'start'});};
+        });
+        if(!dry)slateStep(7);
+        else slateStep(((c2.rejected||0)>0||built.problems.length||SLATE.numberless)?5:6);
         if($('slDropProb')){
           $('slDropProb').onclick=function(){
             var only={};(PROB_REJECTS||[]).forEach(function(x){only[x]=1;});

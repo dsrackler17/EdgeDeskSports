@@ -11,6 +11,8 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Join the Model Collective</title>
 <meta name="robots" content="noindex">
+<meta http-equiv="Content-Security-Policy" content="object-src 'none'; base-uri 'self'; form-action 'self'">
+<meta name="referrer" content="strict-origin-when-cross-origin">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
@@ -72,9 +74,38 @@ window.COLLECTIVE_CONFIG = {
   API: "https://iattxbkbufslbauoumga.supabase.co/functions/v1"
 };
 var CFG=window.COLLECTIVE_CONFIG;
-var API=(new URLSearchParams(location.search).get('api'))||localStorage.getItem('COLLECTIVE_API_OVERRIDE')||CFG.API;
+function apiOverrideAllowed(u){
+  try{
+    var url=new URL(String(u||''),location.href);
+    if(url.protocol!=='https:'&&url.protocol!=='http:')return false;
+    var h=url.hostname.toLowerCase();
+    if(h==='localhost'||h==='127.0.0.1'||h==='[::1]')return true;
+    if(url.protocol!=='https:')return false;
+    return /(^|\.)supabase\.co$/.test(h)||/(^|\.)supabase\.in$/.test(h)||/(^|\.)edgedesksports\.com$/.test(h);
+  }catch(e){return false;}
+}
+function resolveApiBase(){
+  var q=null,ls=null;
+  try{q=new URLSearchParams(location.search).get('api');}catch(e){}
+  if(q&&apiOverrideAllowed(q))return q;
+  try{ls=localStorage.getItem('COLLECTIVE_API_OVERRIDE');}catch(e){}
+  return ls||CFG.API;
+}
+/* The session token goes to whatever API base this resolves to, so a URL
+   override is honoured only for hosts a Collective deployment can live on.
+   See collective/index.html for the full note. */
+var API=resolveApiBase();
 
 function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+/* Only http(s) goes into an href; a server-supplied URL is still a URL. */
+function safeUrl(u){
+  var s=String(u==null?'':u).trim();
+  if(!s)return '';
+  try{var url=new URL(s,'https://invalid.invalid/');
+    if(url.protocol!=='https:'&&url.protocol!=='http:')return '';
+    if(url.hostname==='invalid.invalid')return '';
+    return url.href;}catch(e){return '';}
+}
 function $(id){return document.getElementById(id);}
 
 /* ---- token recovery: the magic-link redirect must not lose the invite ---- */
@@ -210,7 +241,10 @@ function screen1(){
     var em=$('jEmail').value.trim();
     if(!/.+@.+\..+/.test(em)){$('jEmail').focus();return;}
     $('jSend').disabled=true;
-    var redirect=location.origin+location.pathname+'?t='+encodeURIComponent(TOKEN)+(new URLSearchParams(location.search).get('api')?'&api='+encodeURIComponent(new URLSearchParams(location.search).get('api')):'');
+    /* the api override rides along only when it passed the same guard the
+       page applies on load — otherwise a sign-in link would carry it back */
+    var apiQ=new URLSearchParams(location.search).get('api');
+    var redirect=location.origin+location.pathname+'?t='+encodeURIComponent(TOKEN)+((apiQ&&apiOverrideAllowed(apiQ))?'&api='+encodeURIComponent(apiQ):'');
     try{
       var r=await fetch(CFG.SB_URL+'/auth/v1/otp?redirect_to='+encodeURIComponent(redirect),{
         method:'POST',headers:{apikey:CFG.SB_ANON,'content-type':'application/json'},
@@ -317,16 +351,16 @@ function screen3(){
     :'<div class="copyblk"><div class="t">1 &middot; Your API key</div><div class="s">Already issued on a previous visit. Rotate it from your dashboard if you no longer have it.</div></div>';
   $('app').innerHTML=steps(3)+
     '<h1>You are in'+(r.founding?' <span class="chip">Founding member</span>':'')+'</h1>'+
-    '<p class="lede"><a href="'+esc(r.creator.profile_url)+'">Your profile is live right now →</a><br>Three things to copy, then your model connects itself.</p>'+
+    '<p class="lede"><a href="'+esc(safeUrl(r.creator&&r.creator.profile_url)||'/collective/')+'">Your profile is live right now →</a><br>Three things to copy, then your model connects itself.</p>'+
     '<div class="panel">'+keyBlock+
     '<div class="copyblk"><div class="t">2 &middot; The Claude prompt</div><div class="s">Copy the whole prompt, paste it into Claude Code in your project, and it wires your model to the Collective without touching your logic.</div>'+
       '<div class="copybox"><div class="val tall" id="cPrompt">'+esc(r.prompt)+'</div><button data-copy="cPrompt">Copy</button></div></div>'+
     '<div class="copyblk"><div class="t">3 &middot; Your Collective tab</div><div class="s">Paste this where you want the Collective to render on your site.</div>'+
       '<div class="copybox"><div class="val" id="cEmbed">'+esc(r.embed_snippet)+'</div><button data-copy="cEmbed">Copy</button></div></div>'+
-    '<p class="note" style="margin:6px 0 0">What happens next: your first live submission flips your profile to Active Contributor automatically. Payout details are only asked for after your first successful submission, from your <a href="'+esc(r.dashboard_url)+'">dashboard</a>.</p>'+
+    '<p class="note" style="margin:6px 0 0">What happens next: your first live submission flips your profile to Active Contributor automatically. Payout details are only asked for after your first successful submission, from your <a href="'+esc(safeUrl(r.dashboard_url)||'/collective/#dashboard')+'">dashboard</a>.</p>'+
     '</div>'+
     participationBlock()+
-    '<p class="note">Your count for the current slate is on your <a href="'+esc(r.dashboard_url)+'">dashboard</a>, '+
+    '<p class="note">Your count for the current slate is on your <a href="'+esc(safeUrl(r.dashboard_url)||'/collective/#dashboard')+'">dashboard</a>, '+
     'updated as you post. If something comes up and you are going to be short, say so before the week ends rather '+
     'than after.</p>';
   copyWire();
