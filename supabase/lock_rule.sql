@@ -1,35 +1,26 @@
 -- ===========================================================================
--- THE LOCK RULE — one paste, no placeholders.
+-- THE LOCK RULE — one paste, no placeholders. Safe to run again.
 --
--- Paste this whole file into the Supabase SQL editor and run it once. It
--- discovers its own column names, applies what it can, and its RESULT is a
--- report of what it did and what it found. Nothing is deleted; every step
--- that cannot apply says so in the report instead of failing the run.
+-- Every game locks 30 minutes before kickoff. Each model's LATEST live
+-- submission received before the lock is the one that counts: the board, the
+-- consensus, the grader and the record all read the row that carries
+-- is_graded_candidate, so this moves that flag to the newest pre-lock row.
+-- Earlier submissions stay stored (nothing is deleted). A submission received
+-- at or after the lock is stored with is_late = true and never counts.
 --
--- The rule: every game locks 30 minutes before kickoff. Each model's LATEST
--- live submission received before the lock is the one the board shows, the
--- consensus blends and the grader grades. Earlier submissions stay stored as
--- movement. A submission received at or after the lock is stored, flagged
--- late, and excluded.
---
--- What it does:
---   1. collective.lock_minutes() / collective.lock_at(kickoff) — the lock,
---      spelled once. Reads collective.config key submission.lock_minutes
---      through get_config when that exists; 30 otherwise.
---   2. the config key submission.lock_minutes = 30 (whatever the config
---      table's columns are called).
---   3. a BEFORE INSERT trigger on collective.projections that flags a live
---      row late when it arrives at or after its game's lock. This is what
---      makes a post inside the last 30 minutes not count. It fails open: if
---      it cannot decide, the row is stored exactly as the ingest sent it.
---   4. the views that pick "the FIRST submission per model per game"
---      (board_models, consensus) are rewritten to pick the LATEST, by
---      flipping the ordering idiom in their own definition. If a view has no
---      such idiom the report says so and shows the definition.
---   5. the report: every step's outcome, the current definitions of the
---      views and of every routine that reads projections (ingest_submission,
---      the grader), and how projections are distributed — so anything this
---      could not flip is one exact paste away.
+--   1. collective.lock_minutes() / collective.lock_at(kickoff)
+--   2. config key submission.lock_minutes = 30
+--   3. trigger on projections: a live row arriving before the lock takes the
+--      is_graded_candidate slot from the row that held it (through the
+--      maintenance switch the append-only trigger already honours); a row
+--      arriving at or after the lock is stored late. Fails open.
+--   4. backfill for games that have NOT kicked off yet: the newest pre-lock
+--      row becomes the candidate, rows inside the lock window become late.
+--      Games already kicked off keep the grade they have.
+--   5. ingest_submission and admin_resolve_quarantine decide "late" by the
+--      lock instead of by kickoff (their own definitions, one line each).
+--   6. any view that still orders by first submission is flipped to latest.
+--   7. the report.
 -- ===========================================================================
 
 begin;
@@ -44,10 +35,10 @@ begin
     raise exception 'collective.projections does not exist — is this the Collective project?';
   end if;
   insert into lock_rule_report(step, outcome, detail) values
-    ('0 sanity', 'ok', 'collective.projections found; board_models ' ||
-      case when to_regclass('collective.board_models') is null then 'NOT found' else 'found (' ||
-        (select case relkind when 'v' then 'view' when 'm' then 'materialized view' when 'r' then 'table' else relkind::text end
-           from pg_class where oid = 'collective.board_models'::regclass) || ')' end);
+    ('0 sanity', 'ok', 'collective.projections found; is_graded_candidate ' ||
+      case when exists (select 1 from information_schema.columns where table_schema = 'collective' and table_name = 'projections' and column_name = 'is_graded_candidate')
+           then 'found' else 'NOT found' end ||
+      '; board_models ' || case when to_regclass('collective.board_models') is null then 'NOT found' else 'found' end);
 end $do$;
 
 -- 1 ---- the lock, spelled once --------------------------------------------------
@@ -88,8 +79,7 @@ comment on function collective.lock_at(timestamptz) is
   'When a game with this kickoff locks. The latest live submission received before this instant is the one that counts.';
 
 insert into lock_rule_report(step, outcome, detail)
-values ('1 helpers', 'ok', 'collective.lock_minutes() = ' || collective.lock_minutes() ||
-  ' (before the config key is written this is the default); collective.lock_at(kickoff) created');
+values ('1 helpers', 'ok', 'collective.lock_minutes() and collective.lock_at(kickoff) in place');
 
 -- 2 ---- the config key ----------------------------------------------------------
 do $do$
@@ -129,193 +119,257 @@ begin
     kcol, 'submission.lock_minutes');
   execute q;
   insert into lock_rule_report(step, outcome, detail) values
-    ('2 config key', 'ok', 'submission.lock_minutes present in collective.config (' || kcol || '/' || vcol || ' ' || vtype ||
-      '); collective.lock_minutes() now reads ' || collective.lock_minutes());
+    ('2 config key', 'ok', 'submission.lock_minutes present in collective.config; collective.lock_minutes() reads ' || collective.lock_minutes());
 exception when others then
   insert into lock_rule_report(step, outcome, detail) values
     ('2 config key', 'skipped', 'could not write the key (' || sqlerrm || '); the lock stays at the 30-minute default');
 end $do$;
 
--- 3 ---- late is decided by the lock, at insert -----------------------------------
+-- 3 ---- the trigger: the newest pre-lock live row holds the slot -----------------
 do $do$
 declare
-  latecol text; recvcol text; origincol text; kickrel text; kickcol text; body text;
+  has_late boolean; has_status boolean;
 begin
-  select column_name::text into latecol
-    from information_schema.columns
-   where table_schema = 'collective' and table_name = 'projections'
-     and column_name::text in ('is_late', 'late')
-   order by array_position(array['is_late', 'late'], column_name::text) limit 1;
-  select column_name::text into recvcol
-    from information_schema.columns
-   where table_schema = 'collective' and table_name = 'projections'
-     and column_name::text in ('received_at', 'submitted_at', 'created_at')
-   order by array_position(array['received_at', 'submitted_at', 'created_at'], column_name::text) limit 1;
-  select column_name::text into origincol
-    from information_schema.columns
-   where table_schema = 'collective' and table_name = 'projections' and column_name::text = 'data_origin';
-  if latecol is null or recvcol is null then
+  select bool_or(column_name = 'is_late'), bool_or(column_name = 'resolution_status')
+    into has_late, has_status
+    from information_schema.columns where table_schema = 'collective' and table_name = 'projections';
+  if not coalesce(has_late, false) then
     insert into lock_rule_report(step, outcome, detail) values
-      ('3 late-by-lock trigger', 'skipped', 'projections has no late/received column I recognise; columns are: ' ||
-        (select string_agg(column_name::text, ', ' order by ordinal_position)
-           from information_schema.columns where table_schema = 'collective' and table_name = 'projections'));
+      ('3 lock trigger', 'skipped', 'projections has no is_late column; nothing to set');
     return;
   end if;
-  /* where a game's kickoff lives: the game_detail view the board reads
-     (game_id, kickoff_at), else the games table's own kickoff column */
-  if to_regclass('collective.game_detail') is not null
-     and exists (select 1 from information_schema.columns where table_schema = 'collective' and table_name = 'game_detail' and column_name::text = 'kickoff_at') then
-    kickrel := 'collective.game_detail'; kickcol := 'kickoff_at';
-  else
-    select column_name::text into kickcol
-      from information_schema.columns
-     where table_schema = 'collective' and table_name = 'games'
-       and column_name::text in ('kickoff_at', 'kickoff', 'commence_time', 'start_time', 'starts_at')
-     order by array_position(array['kickoff_at', 'kickoff', 'commence_time', 'start_time', 'starts_at'], column_name::text) limit 1;
-    kickrel := 'collective.games';
-  end if;
-  if kickcol is null then
-    insert into lock_rule_report(step, outcome, detail) values
-      ('3 late-by-lock trigger', 'skipped', 'could not find a kickoff column on collective.game_detail or collective.games');
-    return;
-  end if;
-  body := format($f$
-    create or replace function collective.projections_lock_late()
-    returns trigger
-    language plpgsql
-    security definer
-    set search_path = collective, public
-    as $b$
-    declare
-      k timestamptz;
+
+  create or replace function collective.projections_lock_rule()
+  returns trigger
+  language plpgsql
+  security definer
+  set search_path = collective, public
+  as $b$
+  declare
+    k timestamptz;
+    prev_id uuid;
+    prev_at timestamptz;
+  begin
+    /* FAILS OPEN. Anything unexpected here must not cost a creator their
+       slate: the row is stored exactly as the ingest sent it. */
     begin
-      /* FAILS OPEN. Anything unexpected here must not cost a creator their
-         slate: the row is stored exactly as the ingest sent it. */
-      begin
-        if new.game_id is null then return new; end if;
-        %s
-        select %I into k from %s where game_id = new.game_id limit 1;
-        if k is not null and coalesce(new.%I, now()) >= collective.lock_at(k) then
-          new.%I := true;
-        end if;
-      exception when others then
-        raise warning 'projections_lock_late: %% (row stored as sent)', sqlerrm;
-      end;
-      return new;
-    end
-    $b$ $f$,
-    case when origincol is null then '' else format('if coalesce(new.%I, ''live'') <> ''live'' then return new; end if;', origincol) end,
-    kickcol, kickrel, recvcol, latecol);
-  execute body;
+      if new.game_id is null then return new; end if;
+      if new.data_origin::text <> 'live' then return new; end if;
+      if new.resolution_status::text <> 'resolved' then return new; end if;
+      select kickoff_at into k from collective.games where id = new.game_id;
+      if k is null then return new; end if;
+
+      if coalesce(new.received_at, now()) >= collective.lock_at(k) then
+        /* at or after the lock: stored, late, never the counting row */
+        new.is_late := true;
+        new.is_graded_candidate := false;
+        return new;
+      end if;
+      if coalesce(new.is_late, false) then return new; end if;
+
+      /* before the lock: this is the newest live row on the game, so it
+         takes the slot from whichever row held it. The old row stays
+         stored as movement. The update goes through the maintenance
+         switch the append-only trigger already honours. */
+      select id, received_at into prev_id, prev_at
+        from collective.projections
+       where model_id = new.model_id and game_id = new.game_id
+         and is_graded_candidate and id <> new.id
+       limit 1;
+      if prev_id is null then
+        new.is_graded_candidate := true;
+      elsif prev_at <= coalesce(new.received_at, now()) then
+        perform set_config('collective.maintenance', 'on', true);
+        update collective.projections set is_graded_candidate = false where id = prev_id;
+        perform set_config('collective.maintenance', '', true);
+        new.is_graded_candidate := true;
+      end if;
+    exception when others then
+      raise warning 'projections_lock_rule: % (row stored as sent)', sqlerrm;
+    end;
+    return new;
+  end
+  $b$;
+
   execute 'drop trigger if exists projections_lock_late on collective.projections';
-  execute 'create trigger projections_lock_late before insert on collective.projections for each row execute function collective.projections_lock_late()';
+  execute 'drop function if exists collective.projections_lock_late()';
+  execute 'drop trigger if exists projections_lock_rule on collective.projections';
+  execute 'create trigger projections_lock_rule before insert on collective.projections for each row execute function collective.projections_lock_rule()';
+  /* a quarantined row that an admin resolves later is an insert in all but
+     name: it gets the same rule. This only fires when the resolution
+     changes, so the flag update above never re-enters it. */
+  execute 'drop trigger if exists projections_lock_rule_upd on collective.projections';
+  if coalesce(has_status, false) then
+    execute $t$create trigger projections_lock_rule_upd before update of resolution_status, game_id on collective.projections
+      for each row when (new.resolution_status::text = 'resolved' and (old.resolution_status::text is distinct from 'resolved' or old.game_id is distinct from new.game_id))
+      execute function collective.projections_lock_rule()$t$;
+  end if;
   insert into lock_rule_report(step, outcome, detail) values
-    ('3 late-by-lock trigger', 'ok', 'a live row whose ' || recvcol || ' is at or after lock_at(' || kickrel || '.' || kickcol ||
-      ') is stored with ' || latecol || ' = true');
+    ('3 lock trigger', 'ok', 'projections_lock_rule installed (insert' || case when coalesce(has_status, false) then ' + quarantine resolve' else '' end ||
+      '): a live row received before lock_at(kickoff) takes is_graded_candidate; at or after it is stored is_late');
 exception when others then
   insert into lock_rule_report(step, outcome, detail) values
-    ('3 late-by-lock trigger', 'FAILED', sqlerrm);
+    ('3 lock trigger', 'FAILED', sqlerrm);
 end $do$;
 
--- 4 ---- the readers: FIRST submission -> LATEST submission --------------------------
---    A view that collapses to one row per model per game does it with one of
---    a few idioms, all of which order by received_at ascending or take its
---    minimum. Flip them. Late rows must not win the slot, so the ordering
---    puts the late flag first when the view has one.
+-- 4 ---- backfill: games that have not kicked off yet ------------------------------
 do $do$
 declare
-  r record; v text; v2 text; latecol text; before_n bigint; after_n bigint;
+  r record; chosen uuid; n_pairs int := 0; n_moved int := 0; n_late int := 0; k int;
 begin
-  select column_name::text into latecol
-    from information_schema.columns
-   where table_schema = 'collective' and table_name = 'projections'
-     and column_name::text in ('is_late', 'late')
-   order by array_position(array['is_late', 'late'], column_name::text) limit 1;
+  if not exists (select 1 from information_schema.columns where table_schema = 'collective' and table_name = 'projections' and column_name = 'is_graded_candidate') then
+    insert into lock_rule_report(step, outcome, detail) values ('4 backfill', 'skipped', 'no is_graded_candidate column');
+    return;
+  end if;
+  perform set_config('collective.maintenance', 'on', true);
+  for r in
+    select p.model_id, p.game_id, collective.lock_at(g.kickoff_at) as lk
+      from collective.projections p
+      join collective.games g on g.id = p.game_id
+     where g.kickoff_at > now()
+       and p.data_origin::text = 'live' and p.resolution_status::text = 'resolved'
+     group by p.model_id, p.game_id, g.kickoff_at
+  loop
+    n_pairs := n_pairs + 1;
+    /* rows inside the lock window are late and never the counting row */
+    update collective.projections
+       set is_late = true, is_graded_candidate = false
+     where model_id = r.model_id and game_id = r.game_id
+       and data_origin::text = 'live' and resolution_status::text = 'resolved'
+       and received_at >= r.lk and (not coalesce(is_late, false) or is_graded_candidate);
+    get diagnostics k = row_count;
+    n_late := n_late + k;
+    /* the newest pre-lock row is the counting row */
+    select id into chosen
+      from collective.projections
+     where model_id = r.model_id and game_id = r.game_id
+       and data_origin::text = 'live' and resolution_status::text = 'resolved'
+       and received_at < r.lk and not coalesce(is_late, false)
+     order by received_at desc limit 1;
+    if chosen is not null and not exists (select 1 from collective.projections where id = chosen and is_graded_candidate) then
+      update collective.projections set is_graded_candidate = false
+       where model_id = r.model_id and game_id = r.game_id and is_graded_candidate;
+      update collective.projections set is_graded_candidate = true where id = chosen;
+      n_moved := n_moved + 1;
+    end if;
+  end loop;
+  perform set_config('collective.maintenance', '', true);
+  insert into lock_rule_report(step, outcome, detail) values
+    ('4 backfill', 'ok', n_pairs || ' model/game pairs on games not yet kicked off; the counting row moved to the latest pre-lock upload on ' ||
+      n_moved || ' of them; ' || n_late || ' rows inside the lock window marked late. Games already kicked off keep the grade they have.');
+exception when others then
+  perform set_config('collective.maintenance', '', true);
+  insert into lock_rule_report(step, outcome, detail) values ('4 backfill', 'FAILED (nothing changed)', sqlerrm);
+end $do$;
+
+-- 5 ---- the ingest and the admin resolve decide "late" by the lock -----------------
+do $do$
+declare
+  def text; def2 text; oid_ oid; hits int := 0;
+begin
+  for oid_ in
+    select p.oid from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+     where n.nspname = 'collective' and p.proname in ('ingest_submission', 'admin_resolve_quarantine') and p.prokind = 'f'
+  loop
+    def := pg_get_functiondef(oid_);
+    def2 := def;
+    def2 := replace(def2, 'select v_received > g.kickoff_at into v_late', 'select v_received >= collective.lock_at(g.kickoff_at) into v_late');
+    def2 := replace(def2, 'v_late := p.received_at > v_kick;', 'v_late := p.received_at >= collective.lock_at(v_kick);');
+    if def2 <> def then
+      execute def2;
+      hits := hits + 1;
+    end if;
+  end loop;
+  insert into lock_rule_report(step, outcome, detail) values
+    ('5 late by the lock in the routines', case when hits > 0 then 'ok' else 'ok (already)' end,
+     hits || ' routine(s) changed: ingest_submission counts a row inside the lock window as late (it is stored late by the trigger either way), admin_resolve_quarantine likewise');
+exception when others then
+  insert into lock_rule_report(step, outcome, detail) values ('5 late by the lock in the routines', 'FAILED (routines unchanged)', sqlerrm);
+end $do$;
+
+-- 6 ---- any view still ordering by FIRST submission ----------------------------------
+do $do$
+declare
+  r record; v text; v2 text;
+begin
   for r in
     select c.relname::text as relname
       from pg_class c join pg_namespace n on n.oid = c.relnamespace
      where n.nspname = 'collective' and c.relkind = 'v'
-       and c.relname in ('board_models', 'consensus')
+       and c.relname in ('board_models', 'consensus', 'first_submissions', 'model_records', 'model_coverage_totals')
      order by c.relname
   loop
     begin
       v := pg_get_viewdef(('collective.' || quote_ident(r.relname))::regclass, true);
-      v2 := v;
-      /* ORDER BY ... received_at [ASC]  ->  ORDER BY ... received_at DESC
-         (DISTINCT ON, row_number() OVER, first_value() OVER) */
-      v2 := regexp_replace(v2,
+      v2 := regexp_replace(v,
         '(ORDER BY[^;)]*?)((?:[A-Za-z_"]+\.)?received_at)(\s+ASC)?(?![A-Za-z_])(?!\s+DESC)',
         '\1\2 DESC', 'gi');
-      /* min(received_at) -> max(received_at) */
       v2 := regexp_replace(v2, 'min\((\s*(?:[A-Za-z_"]+\.)?received_at\s*)\)', 'max(\1)', 'gi');
       if v2 = v then
-        if v ~* 'ORDER BY[^;)]*?received_at\s+DESC' or v ~* 'max\(\s*(?:[A-Za-z_"]+\.)?received_at\s*\)' then
-          insert into lock_rule_report(step, outcome, detail) values
-            ('4 view ' || r.relname, 'ok (already)', 'already picks the LATEST submission per model per game — nothing to change.');
-        else
-          insert into lock_rule_report(step, outcome, detail) values
-            ('4 view ' || r.relname, 'unchanged', 'no first-submission ordering idiom found in its definition. Either it does not collapse (then the collective_public patch collapses to the latest pre-lock row) or it uses a shape this script does not recognise — its definition is in this report.');
-        end if;
+        insert into lock_rule_report(step, outcome, detail) values
+          ('6 view ' || r.relname, 'ok', case when v ~* 'is_graded_candidate' then 'reads is_graded_candidate — follows the flag, nothing to change'
+                                              else 'has no first-submission ordering; nothing to change' end);
         continue;
       end if;
       execute 'create or replace view collective.' || quote_ident(r.relname) || ' as ' || v2;
       insert into lock_rule_report(step, outcome, detail) values
-        ('4 view ' || r.relname, 'ok', 'now orders received_at DESC where it ordered ASC (the LATEST submission wins the slot). Late rows: ' ||
-          case when latecol is null then 'no late column on projections'
-               when v2 ~* ('\y' || latecol || '\y') then 'the view already reads ' || latecol
-               else 'the view does not reference ' || latecol || ' — check the definition below' end);
+        ('6 view ' || r.relname, 'ok', 'ordered by first submission; now orders by latest');
     exception when others then
       insert into lock_rule_report(step, outcome, detail) values
-        ('4 view ' || r.relname, 'FAILED (left as it was)', sqlerrm);
+        ('6 view ' || r.relname, 'FAILED (left as it was)', sqlerrm);
     end;
   end loop;
 end $do$;
 
--- 5 ---- the report ----------------------------------------------------------------
+-- 7 ---- the report ----------------------------------------------------------------
 insert into lock_rule_report(step, outcome, detail)
-select '5 projections columns', 'info',
-       string_agg(column_name || ' ' || data_type, ', ' order by ordinal_position)
-  from information_schema.columns
- where table_schema = 'collective' and table_name = 'projections';
-
-insert into lock_rule_report(step, outcome, detail)
-select '5 view ' || c.relname || ' (current definition)', 'info', pg_get_viewdef(c.oid, true)
+select '7 view ' || c.relname || ' (current definition)', 'info', pg_get_viewdef(c.oid, true)
   from pg_class c join pg_namespace n on n.oid = c.relnamespace
  where n.nspname = 'collective' and c.relkind = 'v'
-   and c.relname in ('board_models', 'consensus', 'model_wall', 'game_detail')
+   and c.relname in ('first_submissions', 'model_records', 'model_coverage_totals')
  order by c.relname;
 
 insert into lock_rule_report(step, outcome, detail)
-select '5 routine ' || x.proname || ' (reads projections)', 'info', x.def
+select '7 routine ' || x.proname, 'info', x.def
   from (select p.proname, pg_get_functiondef(p.oid) as def
           from (select p.oid, p.proname
                   from pg_proc p join pg_namespace n on n.oid = p.pronamespace
                  where n.nspname = 'collective' and p.prokind in ('f', 'p')
-                   and p.proname <> 'projections_lock_late'
+                   and p.proname in ('block_mutation', 'projections_lock_rule')
                  offset 0) p) x
- where x.def ilike '%projections%'
  order by x.proname;
 
 insert into lock_rule_report(step, outcome, detail)
-select '5 triggers on projections', 'info', string_agg(t.tgname || ': ' || pg_get_triggerdef(t.oid), E'\n')
+select '7 triggers on projections', 'info', string_agg(t.tgname || ': ' || pg_get_triggerdef(t.oid), E'\n')
   from pg_trigger t
  where t.tgrelid = 'collective.projections'::regclass and not t.tgisinternal;
 
 do $do$
 declare
-  d text; multi text;
+  d text; multi text; cand text;
 begin
   begin
-    execute $q$select string_agg(coalesce(data_origin, 'null') || '/' || coalesce(resolution_status::text, 'null') || ': ' || n, ', ')
+    execute $q$select string_agg(coalesce(data_origin::text, 'null') || '/' || coalesce(resolution_status::text, 'null') || ': ' || n, ', ')
                  from (select data_origin, resolution_status, count(*) n from collective.projections group by 1, 2 order by 1, 2) x$q$ into d;
   exception when others then d := 'not readable: ' || sqlerrm; end;
   begin
-    execute $q$select count(*)::text || ' model/game pairs carry more than one live row (the re-uploads this rule is for)'
-                 from (select model_id, game_id from collective.projections where coalesce(data_origin, 'live') = 'live' group by 1, 2 having count(*) > 1) x$q$ into multi;
+    execute $q$select count(*)::text || ' model/game pairs carry more than one live row'
+                 from (select model_id, game_id from collective.projections where data_origin::text = 'live' group by 1, 2 having count(*) > 1) x$q$ into multi;
   exception when others then multi := 'not readable: ' || sqlerrm; end;
+  begin
+    execute $q$select count(*)::text || ' of those pairs on games not yet kicked off now count their NEWEST pre-lock row'
+                 from (select p.model_id, p.game_id
+                         from collective.projections p join collective.games g on g.id = p.game_id
+                        where g.kickoff_at > now() and p.data_origin::text = 'live' and p.resolution_status::text = 'resolved'
+                        group by 1, 2 having count(*) > 1
+                           and bool_or(p.is_graded_candidate and p.received_at = (select max(px.received_at) from collective.projections px
+                                 where px.model_id = p.model_id and px.game_id = p.game_id and px.data_origin::text = 'live'
+                                   and px.resolution_status::text = 'resolved' and not coalesce(px.is_late, false)))) x$q$ into cand;
+  exception when others then cand := 'not readable: ' || sqlerrm; end;
   insert into lock_rule_report(step, outcome, detail) values
-    ('5 projections by origin/status', 'info', d),
-    ('5 re-uploads stored', 'info', multi);
+    ('7 projections by origin/status', 'info', d),
+    ('7 re-uploads stored', 'info', multi),
+    ('7 re-uploads now counting', 'info', cand);
 end $do$;
 
 commit;
