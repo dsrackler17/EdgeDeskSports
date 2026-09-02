@@ -122,8 +122,13 @@ jobs:
       # The deployed edge function, imported under Node's native type stripping
       # with a Deno shim and a mocked network: old callers, the additive
       # presentation contract, and the deterministic card surviving AI failure.
+      # Node 22 strips TypeScript types natively (unflagged from 22.18); the
+      # rest of the job stays on Node 20, which cannot import a .ts file.
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
       - name: edgedesk_ai keeps its contract and never lets the model own the verdict
-        run: node tools/presentation/edgedesk_ai.test.js
+        run: node --experimental-strip-types tools/presentation/edgedesk_ai.test.js
 
       # The card and the publisher desk as wired into app.html.
       - name: The decision card leads every surface and mobile keeps it above the fold
