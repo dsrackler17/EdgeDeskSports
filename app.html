@@ -259,7 +259,7 @@ textarea{min-height:110px;font-family:'JetBrains Mono',monospace;resize:vertical
 @media(max-width:359px){.bottomnav button{font-size:7.5px;gap:3px}.bottomnav .ic{width:17px;height:17px}}
 @media(min-width:760px){.bottomnav{justify-content:center;gap:4px}.bottomnav button{flex:0 0 96px;font-size:10px}.bottomnav .ic{width:20px;height:20px}}
 /* the disclaimer sits ABOVE the nav (nav height + its own safe-area pad); one compact line, wrapping only when the width demands it */
-.foot{position:fixed;bottom:calc(var(--nav) + 1px + env(safe-area-inset-bottom));left:0;right:0;background:color-mix(in srgb,var(--surface2) 94%,transparent);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border-top:1px solid var(--border);font-size:10px;line-height:1.3;color:var(--dim);text-align:center;padding:4px 10px;z-index:25;text-wrap:balance}.foot b{color:var(--warn)}.foot .sep{color:var(--faint);margin:0 3px}
+.foot{position:fixed;bottom:calc(var(--nav) + 1px + env(safe-area-inset-bottom));left:0;right:0;background:color-mix(in srgb,var(--surface2) 94%,transparent);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border-top:1px solid var(--border);font-size:9.5px;line-height:1.25;color:var(--dim);text-align:center;padding:3px 10px;z-index:25;text-wrap:balance}.foot b{color:var(--warn)}.foot .sep{color:var(--faint);margin:0 3px}
 .fb-drawer,.rs-dossier,#ufcModal,#tddModal,#cfbModal{padding-bottom:calc(var(--nav) + var(--foot) + env(safe-area-inset-bottom) + 24px)}
 @media(min-width:760px){.filters{grid-template-columns:repeat(4,1fr)}.kpis{grid-template-columns:repeat(4,1fr)}}
 /* ===== faultline ===== */
@@ -757,7 +757,7 @@ textarea{min-height:110px;font-family:'JetBrains Mono',monospace;resize:vertical
 .fb-sys-h .tx{flex:1;min-width:0}.fb-sys-h .tt{font-size:13px;font-weight:600}
 .fb-sys-h .tt.warn{color:var(--warn)}.fb-sys-h .tt.neg{color:var(--neg)}
 .fb-sys-h .ts{font-size:10.5px;color:var(--faint);font-family:'JetBrains Mono',monospace;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.fb-tgl{background:none;border:1px solid var(--border);color:var(--dim);border-radius:8px;padding:7px 10px;font:600 10.5px 'Inter',system-ui,sans-serif;letter-spacing:.05em;text-transform:uppercase;cursor:pointer;white-space:nowrap;flex:none;transition:border-color .15s ease,color .15s ease}
+.fb-tgl{background:none;border:1px solid var(--border);color:var(--dim);border-radius:9px;padding:7px 10px;font:700 10.5px 'Inter',system-ui,sans-serif;letter-spacing:.06em;text-transform:uppercase;cursor:pointer;white-space:nowrap;flex:none;transition:border-color .15s ease,color .15s ease}
 .fb-tgl:hover{color:var(--text);border-color:rgba(77,141,255,.5)}
 .fb-col{display:grid;grid-template-rows:0fr;transition:grid-template-rows .22s ease}
 .fb-col.open{grid-template-rows:1fr}
@@ -785,9 +785,10 @@ textarea{min-height:110px;font-family:'JetBrains Mono',monospace;resize:vertical
 .fb-drawer-card .mdl-warn{margin-top:0}
 .fb-drawer-x{position:absolute;top:12px;right:12px;background:none;border:1px solid var(--border);color:var(--dim);border-radius:8px;width:30px;height:30px;font-size:15px;cursor:pointer;line-height:1}
 .fb-tbl{width:100%;border-collapse:collapse;font-size:12px;margin:4px 0 8px}
-.fb-tbl th{text-align:right;font-size:9.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--faint);font-weight:600;padding:5px 6px;border-bottom:1px solid var(--border);white-space:nowrap}
+.fb-tbl th{text-align:right;font-size:9.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--dim);font-weight:700;padding:6px 6px;border-bottom:1px solid var(--border);white-space:nowrap}
+.fb-tbl tr:hover td{background:rgba(255,255,255,.025)}
 .fb-tbl th:first-child,.fb-tbl td:first-child{text-align:left}
-.fb-tbl td{padding:6px;border-bottom:1px solid rgba(38,44,54,.6);font-family:'JetBrains Mono',monospace;text-align:right;white-space:nowrap}
+.fb-tbl td{padding:7px 6px;border-bottom:1px solid rgba(38,44,54,.6);font-family:'JetBrains Mono',monospace;text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
 .fb-tbl td:first-child{font-family:'Inter',system-ui,sans-serif;color:var(--dim);white-space:normal}
 .fb-tbl-wrap{overflow-x:auto}
 @media(max-width:400px){.fb-kpi .n{font-size:22px}.fb-sig-grid .c .v{font-size:13px}.fb-btn{font-size:10.5px;padding:10px 6px}}
@@ -2011,7 +2012,7 @@ button:focus-visible,select:focus-visible,input:focus-visible,a:focus-visible{ou
     <!-- LAB (EdgeDesk Lab) -->
     <div id="v-lab" class="rpanel hide">
     <div class="row-between fb-panelhd"><h2 style="margin:0">Lab</h2><span class="fb-badge blue" id="labFresh" title="Research and development"><i></i>EdgeDesk R&amp;D</span><span class="spacer"></span><button class="refreshbtn" id="labRefreshBtn" title="Refresh" aria-label="Refresh lab" onclick="labRefreshClick()">&#8635;</button></div>
-    <div class="lab-hero"><div class="t">Test assumptions. Inspect models. Break things safely.</div><div class="s">Experimental tools, validation, model diagnostics, and research methodology. Every number here is read from a stored record or a live rerun of the shipped engine; nothing is a bet.</div></div>
+    <div class="lab-hero"><div class="t">Test assumptions. Inspect models. Break things safely.</div><div class="s">Experimental tools, validation, model diagnostics, and research methodology. <span class="x">Every number is a stored record or a live rerun of the shipped engine.</span> Nothing here is a bet.</div></div>
     <div class="lab-grid">
       <aside id="labLeft" class="lab-left" aria-label="Lab navigation"></aside>
       <div id="labCenter" class="lab-center"></div>
@@ -16443,16 +16444,25 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
 
 <style>
 /* ---- EdgeDesk Lab · R&D center (prefixed lab-) ---- */
-.lab-hero{border:1px solid var(--border);border-radius:var(--rad);background:linear-gradient(180deg,rgba(155,140,255,.07),rgba(155,140,255,.015));padding:var(--sp4);margin-bottom:var(--sp3)}
-.lab-hero .t{font-size:15px;font-weight:700;letter-spacing:-.01em;line-height:1.35}
-.lab-hero .s{font-size:12.5px;color:var(--dim);line-height:1.5;margin-top:4px}
+.lab-hero{border:1px solid var(--border);border-radius:var(--rad);background:linear-gradient(180deg,rgba(155,140,255,.07),rgba(155,140,255,.015));padding:10px 14px;margin-bottom:var(--sp3)}
+.lab-hero .t{font-size:14px;font-weight:700;letter-spacing:-.01em;line-height:1.3}
+.lab-hero .s{font-size:12px;color:var(--dim);line-height:1.45;margin-top:2px}
+@media(max-width:479px){.lab-hero .s .x{display:none}}
 .lab-grid{display:grid;grid-template-columns:minmax(0,1fr);gap:var(--sp3)}
 .lab-left{display:none}
 .lab-center{min-width:0}
 .lab-right{min-width:0}
-.lab-rail-h{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.09em;text-transform:uppercase;color:var(--faint);margin:0 0 6px;font-weight:700}
-.lab-nav{display:flex;flex-direction:column;align-items:flex-start;width:100%;background:none;border:1px solid transparent;border-radius:9px;padding:7px 9px;color:var(--dim);font:600 12.5px/1.3 inherit;font-family:inherit;text-align:left;cursor:pointer;transition:background-color .15s ease,color .15s ease}
-.lab-nav small{font-family:'JetBrains Mono',monospace;font-size:9.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--faint);margin-top:1px}
+.lab-rail-h{font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:var(--dim);margin:0 0 6px;font-weight:700}
+.lab-rail-h.gap{margin-top:var(--sp4);padding-top:var(--sp3);border-top:1px solid var(--border)}
+.lab-nav{display:flex;flex-direction:column;align-items:flex-start;width:100%;min-width:0;background:none;border:1px solid transparent;border-radius:9px;padding:6px 9px;color:var(--dim);font:600 12.5px/1.3 inherit;font-family:inherit;text-align:left;cursor:pointer;transition:background-color .15s ease,color .15s ease}
+.lab-nav .n{display:block;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lab-nav small{display:block;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-family:'JetBrains Mono',monospace;font-size:9.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--faint);margin-top:1px}
+.lab-exp-list{max-height:38vh;overflow-y:auto;overscroll-behavior:contain;padding-right:2px;scrollbar-width:thin}
+.lab-mnav{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;margin:0 calc(-1*var(--sp3)) var(--sp3);padding:0 var(--sp3) 2px;scroll-snap-type:x proximity}
+.lab-mnav::-webkit-scrollbar{display:none}
+.lab-mnav button{flex:0 0 auto;scroll-snap-align:start;background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:7px 11px;color:var(--dim);font:600 11.5px/1 inherit;font-family:inherit;cursor:pointer;min-height:32px;transition:border-color .15s ease,color .15s ease,background-color .15s ease}
+.lab-mnav button.on{color:var(--text);background:rgba(155,140,255,.12);border-color:rgba(155,140,255,.5)}
+.lab-mnav button:active{transform:scale(.98)}
 .lab-nav:hover{background:var(--surface2);color:var(--text)}
 .lab-nav.on{background:rgba(155,140,255,.1);border-color:rgba(155,140,255,.35);color:var(--text)}
 .lab-nav:focus-visible{outline:2px solid var(--accent);outline-offset:-1px}
@@ -16529,6 +16539,7 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
 .lab-out .v.cl{font-size:12.5px;letter-spacing:.05em;word-break:normal;line-height:1.35}
 .lab-out .s{font-size:11px;color:var(--dim);margin-top:3px}
 @media(min-width:640px){.lab-out{grid-template-columns:repeat(3,minmax(0,1fr))}.lab-out .c.p{grid-column:auto}.lab-out.two{grid-template-columns:1fr 1fr}}
+@media(max-width:400px){.lab-out .v{font-size:16px}.lab-mc .v{font-size:15px}}
 .lab-ctls{display:grid;grid-template-columns:minmax(0,1fr);gap:8px;margin-top:10px}
 @media(min-width:640px){.lab-ctls{grid-template-columns:1fr 1fr}}
 .lab-ctl{background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:9px 11px;min-width:0}
@@ -16540,14 +16551,35 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
 .lab-seg button{padding:7px 6px;font-size:11.5px;font-family:inherit;cursor:pointer;min-height:32px}
 .lab-sel{margin-bottom:10px;font-size:13px}
 .lab-scrub{width:100%;accent-color:var(--mdl);margin:4px 0 8px}
-.lab-tl .p{display:grid;grid-template-columns:auto auto minmax(0,1fr);gap:4px 10px;align-items:baseline;padding:6px 0 6px 12px;border-left:2px solid var(--border);font-size:12px;opacity:.5;transition:opacity .15s ease,border-color .15s ease}
+.lab-tl{margin-top:4px}
+.lab-tl .p{position:relative;display:grid;grid-template-columns:auto minmax(0,1fr);gap:2px 10px;align-items:baseline;padding:6px 8px 6px 18px;margin-left:6px;border-left:2px solid var(--border);border-radius:0 8px 8px 0;font-size:12px;opacity:.45;cursor:pointer;transition:opacity .15s ease,border-color .15s ease,background-color .15s ease}
+.lab-tl .p:before{content:'';position:absolute;left:-6px;top:11px;width:8px;height:8px;border-radius:50%;background:var(--surface);border:2px solid var(--faint);box-sizing:border-box}
 .lab-tl .p.seen{opacity:1}
-.lab-tl .p.at{border-left-color:var(--mdl);background:rgba(155,140,255,.06)}
-.lab-tl .p .t{font-size:10.5px;color:var(--faint);white-space:nowrap}
-.lab-tl .p .k{font-weight:700;color:var(--text)}
-.lab-tl .p.flag .k{color:var(--mdl)}.lab-tl .p.close .k{color:var(--warn)}.lab-tl .p.pos .k{color:var(--pos)}.lab-tl .p.neg .k{color:var(--neg)}.lab-tl .p.tick .k{color:var(--dim);font-weight:500}
-.lab-tl .p .v{font-size:11px;color:var(--dim);grid-column:1/-1;word-break:break-word}
-@media(min-width:640px){.lab-tl .p .v{grid-column:auto}}
+.lab-tl .p:hover{background:rgba(255,255,255,.03)}
+.lab-tl .p.at{border-left-color:var(--mdl);background:rgba(155,140,255,.08)}
+.lab-tl .p.at:before{border-color:var(--mdl);background:var(--mdl)}
+.lab-tl .p.flag:before{border-radius:2px;transform:rotate(45deg);border-color:var(--mdl)}
+.lab-tl .p.close:before{border-radius:2px;border-color:var(--warn)}
+.lab-tl .p.res:before{border-color:var(--text)}
+.lab-tl .p.move:before{border-color:var(--dim);background:var(--dim)}
+.lab-tl .p .t{font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--faint);white-space:nowrap}
+.lab-tl .p .k{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.07em;text-transform:uppercase;font-weight:700;color:var(--text)}
+.lab-tl .p.flag .k{color:var(--mdl)}.lab-tl .p.close .k{color:var(--warn)}.lab-tl .p.tick .k,.lab-tl .p.move .k{color:var(--dim)}
+.lab-tl .p .v{font-size:11.5px;color:var(--dim);grid-column:2;word-break:break-word}
+.lab-tl .p .v b{color:var(--text);font-weight:600}
+.lab-tl .p:focus-visible{outline:2px solid var(--accent);outline-offset:-1px}
+.lab-tl-det{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;margin:8px 0 4px}
+@media(min-width:640px){.lab-tl-det{grid-template-columns:repeat(4,minmax(0,1fr))}}
+.lab-tl-det .c{background:var(--bg);border:1px solid rgba(155,140,255,.35);border-radius:10px;padding:8px 10px;min-width:0}
+.lab-tl-det .k{font-size:9.5px;letter-spacing:.07em;text-transform:uppercase;color:var(--faint)}
+.lab-tl-det .v{font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:700;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lab-tl-det .v.txt{font-family:inherit;font-size:12.5px;white-space:normal}
+.lab-cls{display:flex;align-items:flex-start;gap:10px;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--bg);margin:10px 0}
+.lab-cls .ic{flex:none;width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:700;border:1px solid currentColor;color:var(--dim)}
+.lab-cls .tx{min-width:0}
+.lab-cls .c{font-family:'JetBrains Mono',monospace;font-size:11.5px;letter-spacing:.07em;text-transform:uppercase;font-weight:700;color:var(--text)}
+.lab-cls .w{font-size:12px;color:var(--dim);line-height:1.45;margin-top:2px}
+.lab-cls.pos .ic,.lab-cls.pos .c{color:var(--pos)}.lab-cls.warn .ic,.lab-cls.warn .c{color:var(--warn)}.lab-cls.neg .ic,.lab-cls.neg .c{color:var(--neg)}.lab-cls.mdl .ic,.lab-cls.mdl .c{color:var(--mdl)}.lab-cls.mut .ic{color:var(--faint)}.lab-cls.mut .c{color:var(--dim)}
 .lab-books{display:flex;flex-wrap:wrap;gap:6px}
 .lab-book{background:var(--bg);border:1px solid var(--border);border-radius:9px;padding:6px 9px;color:var(--text);font:500 11.5px/1.3 inherit;font-family:inherit;cursor:pointer}
 .lab-book b{font-family:'JetBrains Mono',monospace;margin-left:4px}
@@ -16558,10 +16590,15 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
 .lab-dist{display:flex;align-items:center;gap:8px;font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--faint);margin:6px 0}
 .lab-dist .trk{position:relative;flex:1;height:8px;background:var(--bg);border:1px solid var(--border);border-radius:4px}
 .lab-dist .med{position:absolute;top:-3px;width:3px;height:12px;margin-left:-1px;background:var(--mdl);border-radius:2px}
-.lab-prov{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:7px 0;border-top:1px solid var(--border);font-size:12.5px}
+.lab-prov{display:flex;flex-direction:column;align-items:flex-start;gap:3px;padding:6px 0;border-top:1px solid var(--border);font-size:12.5px}
 .lab-prov:first-child{border-top:none;padding-top:0}
-.lab-prov .nm{display:flex;flex-direction:column;min-width:0}
+.lab-prov .nm{display:block;max-width:100%;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600}
 .lab-prov .nm small{font-size:10.5px;color:var(--faint)}
+.lab-prov .fb-badge{flex:none}
+.lab-right .fb-card{padding:var(--sp3);margin-bottom:var(--sp3)}
+.lab-right .lab-kv .r{padding:5px 0;font-size:12px}
+.lab-right .fb-btns{margin-top:8px}
+.lab-trust .fb-note{margin-top:6px}
 .lab-filters{display:grid;grid-template-columns:1fr;gap:6px;margin-bottom:6px}
 @media(min-width:520px){.lab-filters{grid-template-columns:repeat(3,minmax(0,1fr))}}
 .lab-filters .lab-sel{margin-bottom:0}
@@ -16569,7 +16606,7 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
 .lab-exp-hd{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;margin-bottom:10px}
 .lab-exp-hd .nm{font-size:16px;font-weight:700;letter-spacing:-.01em;flex:1 1 100%}
 .lab-exp-hd .mono{font-size:10.5px;color:var(--faint)}
-.lab-tool-hd{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.lab-tool-hd{display:flex;align-items:center;gap:10px;margin-bottom:10px;min-height:34px}
 .lab-tool-hd .t{font-size:14px;font-weight:700;letter-spacing:-.01em}
 .lab-score .hd{display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap;margin-bottom:8px}
 .lab-score .nm{font-size:13px;font-weight:700}
@@ -16581,14 +16618,16 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
 #v-lab .fb-tbl td,#v-lab .fb-tbl th{white-space:nowrap}
 #v-lab .fb-tbl td:first-child{white-space:normal;min-width:110px}
 @media(min-width:960px){
-  .lab-grid{grid-template-columns:200px minmax(0,1fr) 250px;gap:var(--sp4);align-items:start}
-  .lab-left{display:block;position:sticky;top:var(--sp3);max-height:calc(100vh - 120px);overflow-y:auto;padding-right:4px}
-  .lab-right{position:sticky;top:var(--sp3)}
+  .lab-grid{grid-template-columns:minmax(168px,20fr) minmax(0,55fr) minmax(208px,25fr);gap:var(--sp4);align-items:start}
+  .lab-left{display:block;position:sticky;top:var(--sp3);max-height:calc(100vh - var(--nav) - var(--foot) - var(--sp6));overflow:hidden;display:flex;flex-direction:column}
+  .lab-exp-list{flex:0 1 auto;max-height:none;min-height:0}
   .lab-exps{grid-template-columns:1fr 1fr}
-  .lab-hero .t{font-size:17px}
+  .lab-hero .t{font-size:15px}
+  .lab-mnav{display:none}
 }
 /* the Lab is a three-column workspace: give it the room the other panels do not need */
-@media(min-width:1100px){#v-research:has(#v-lab:not(.hide)){max-width:1240px}.lab-grid{grid-template-columns:220px minmax(0,1fr) 280px}}
+@media(min-width:1100px){#v-research:has(#v-lab:not(.hide)){max-width:1240px}}
+@media(min-width:1440px){#v-research:has(#v-lab:not(.hide)){max-width:1320px}}
 </style>
 <script>
 /* ============================================================================
@@ -17039,7 +17078,7 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
     if(!games.length)return none('No NFL game inside the next 12 days in the schedule feed. The sandbox needs an upcoming game to rerun.');
     var g=pickGame(games,'sandbox'),s=sbState(g),q=g.req,mk=g.mkt;
     var base=B.nflPredict(q,mk,g.season),adj=B.nflPredict(sbReq(g,s),sbMkt(g,s),g.season);
-    var h='<p class="fb-ms-d">Re-runs the shipped NFL engine in the browser with the same trained parameters. Nothing is re-trained; the inputs below are the ones the engine reads. Sensitivity research, not an alternate projection.</p>';
+    var h='<p class="fb-ms-d">Re-runs the shipped NFL engine with its trained parameters. Nothing is re-trained; only inputs the engine reads are exposed. Sensitivity research, not an alternate projection.</p>';
     h+='<div class="fb-card">'+gameSelect(games,g.gid,"labSel('sandbox',this.value)");
     if(base.status!=='PREDICTED')return h+none('The engine returned '+esc(base.status)+' for this game: '+esc(base.reason||''))+'</div>';
     var ok=adj.status==='PREDICTED';
@@ -17067,7 +17106,7 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
   /* ------------------------------------------------------------ scenario */
   function scenarioTool(){
     var gate=needFootball('scenario');
-    var h='<p class="fb-ms-d">How sensitive is the projection to this assumption? Each scenario re-runs the shipped engine with one input changed and reports the difference. Sensitivity research, not alternate-universe predictions.</p>';
+    var h='<p class="fb-ms-d">Each scenario re-runs the shipped engine with one input changed and reports the difference. Sensitivity research, not alternate predictions.</p>';
     if(gate)return h+gate;
     var B=FBL(),games=B.nflGames();
     if(games.length){
@@ -17161,49 +17200,66 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
   function sigLabel(s){return (s.away_team&&s.home_team)?(s.away_team+' @ '+s.home_team):(s.selection||s.event_id);}
   function am(dec){try{if(typeof GE!=='undefined'&&GE&&GE.fmtPrice&&dec)return GE.fmtPrice(+dec);}catch(_){}return dec?(+dec).toFixed(2):'—';}
   function fairPx(f){return (f!=null&&+f>0)?am(1/Math.max(0.0001,+f)):'—';}
+  /* classification is computed from stored values only; each carries a label,
+     one explanation and a restrained glyph. INSUFFICIENT EVIDENCE is
+     informational, never a failure. */
   function classify(s,ticks){
-    if(s.closing_sharp_fair==null)return {c:'INSUFFICIENT EVIDENCE',cls:'mut',why:'no qualified closing fair line is stored for this signal, so what the market did by the bell cannot be measured.'};
-    if(s.flagged_best_dec==null&&s.first_best_dec==null)return {c:'DATA FAULT',cls:'neg',why:'graded without a stored entry price; the receipt is incomplete.'};
+    if(s.closing_sharp_fair==null)return {c:'INSUFFICIENT EVIDENCE',cls:'mut',ic:'○',why:'No qualified closing fair line was stored, so closing-market behavior cannot be measured.'};
+    if(s.flagged_best_dec==null&&s.first_best_dec==null)return {c:'DATA FAULT',cls:'neg',ic:'!',why:'Graded without a stored entry price. The receipt is incomplete.'};
     var clv=s.clv!=null?+s.clv:null;
-    if(clv==null)return {c:'INSUFFICIENT EVIDENCE',cls:'mut',why:'no CLV was computed for this signal.'};
-    if(clv>0)return {c:'MARKET CAUGHT UP',cls:'pos',why:'the closing fair line moved toward the signal after entry: positive CLV of '+sgn(clv*100,2)+'%.'+(s.result==='loss'?' The bet itself lost — CLV and outcome are different questions.':'')};
-    if(clv<0)return {c:'SIGNAL DECAYED',cls:'warn',why:'the closing fair line moved away from the signal after entry: CLV '+sgn(clv*100,2)+'%.'+(s.result==='win'?' The bet won anyway — outcome noise, not validation.':'')};
-    return {c:'SIGNAL HELD',cls:'mut',why:'the close matched the entry fair line; CLV 0.'};
+    if(clv==null)return {c:'INSUFFICIENT EVIDENCE',cls:'mut',ic:'○',why:'No CLV was computed for this signal.'};
+    if(clv>0)return {c:'MARKET CAUGHT UP',cls:'pos',ic:'✓',why:'The closing fair line moved toward the signal after entry: CLV '+sgn(clv*100,2)+'%.'+(s.result==='loss'?' The bet lost; CLV and outcome are different questions.':'')};
+    if(clv<0)return {c:'SIGNAL DECAYED',cls:'warn',ic:'↓',why:'The closing fair line moved away from the signal after entry: CLV '+sgn(clv*100,2)+'%.'+(s.result==='win'?' The bet won anyway; outcome noise, not validation.':'')};
+    return {c:'SIGNAL SURVIVED',cls:'mdl',ic:'→',why:'The close matched the entry fair line. The edge neither grew nor decayed.'};
   }
+  function clsCard(cl){return '<div class="lab-cls '+cl.cls+'"><span class="ic" aria-hidden="true">'+cl.ic+'</span><div class="tx"><div class="c">'+esc(cl.c)+'</div><div class="w">'+esc(cl.why)+'</div></div></div>';}
   function autopsyTool(){
-    var h='<p class="fb-ms-d">Reconstruct what EdgeDesk knew at each point before a market closed, from the captured values only. The model is never re-run; the timeline is the stored tick history.</p>';
-    if(L.sigs===null&&L.sigsErr)return h+none('Graded signals could not be read: '+esc(L.sigsErr)+'.');
+    var h='<p class="fb-ms-d">What EdgeDesk knew at each point before the close, from captured values only. The model is never re-run; the timeline is the stored tick history.</p>';
+    if(L.sigs===null&&L.sigsErr)return h+none('Graded signals could not be read ('+esc(L.sigsErr)+'). Refresh to retry.');
     if(!L.sigs)return h+'<div class="fb-skel" style="height:40px"></div>';
-    if(!L.sigs.length)return h+none('No graded research signal is on file yet. The autopsy needs settled signals with a stored close.');
+    if(!L.sigs.length)return h+none('No graded signal is on file yet. The autopsy needs settled signals with a stored close; open the Research record once grading has run.');
     var cur=L.sel.autopsy||L.sigs[0].sig_key,s=null;for(var i=0;i<L.sigs.length;i++)if(L.sigs[i].sig_key===cur)s=L.sigs[i];
     if(!s)s=L.sigs[0];
     h+='<div class="fb-card"><select class="stsearch lab-sel" onchange="labSel(\'autopsy\',this.value)">'+L.sigs.slice(0,80).map(function(x){return '<option value="'+esc(x.sig_key)+'"'+(x.sig_key===s.sig_key?' selected':'')+'>'+esc(dateOf(x.commence_time))+' · '+esc(sigLabel(x))+' · '+esc(x.market)+' '+esc(x.selection)+'</option>';}).join('')+'</select>';
     var ticks=L.ticks[s.sig_key];
     if(ticks===undefined){loadTicks(s.sig_key).then(function(){labRender();});h+='<div class="fb-skel" style="height:60px;margin-top:8px"></div></div>';return h;}
+    /* event kinds are read from the stored rows: CAPTURE (first seen), a tick
+       whose price or sharp fair changed is a MARKET MOVE (an unchanged tick is
+       a CAPTURE), FLAGGED, CLOSE, RESULT. No model number is stored per
+       signal, so there is no MODEL CHANGE event to show. */
     var pts=[];
-    if(s.first_seen_at)pts.push({t:s.first_seen_at,k:'First seen',v:'best '+am(s.first_best_dec)+(s.first_sharp_fair!=null?(' · sharp fair '+fairPx(s.first_sharp_fair)):''),cls:''});
-    (ticks||[]).forEach(function(t){pts.push({t:t.created_at,k:'Tick',v:'best '+am(t.best_dec)+(t.sharp_fair!=null?(' · sharp fair '+fairPx(t.sharp_fair)):'')+(t.edge!=null?(' · edge '+sgn(+t.edge*100,2)+'%'):''),cls:'tick'});});
-    if(s.flagged_at)pts.push({t:s.flagged_at,k:'Flagged',v:'entry '+am(s.flagged_best_dec)+(s.flagged_edge!=null?(' · edge '+sgn(+s.flagged_edge*100,2)+'%'):''),cls:'flag'});
+    function ev(t,k,cls,f){return {t:t,k:k,cls:cls,dec:f.dec,fair:f.fair,edge:f.edge,extra:f.extra||''};}
+    if(s.first_seen_at)pts.push(ev(s.first_seen_at,'First seen','',{dec:s.first_best_dec,fair:s.first_sharp_fair}));
+    var prev={dec:s.first_best_dec,fair:s.first_sharp_fair};
+    (ticks||[]).forEach(function(t){var moved=(t.best_dec!=null&&prev.dec!=null&&+t.best_dec!==+prev.dec)||(t.sharp_fair!=null&&prev.fair!=null&&+t.sharp_fair!==+prev.fair);pts.push(ev(t.created_at,moved?'Market move':'Capture',moved?'move':'tick',{dec:t.best_dec,fair:t.sharp_fair,edge:t.edge}));if(t.best_dec!=null)prev.dec=t.best_dec;if(t.sharp_fair!=null)prev.fair=t.sharp_fair;});
+    if(s.flagged_at)pts.push(ev(s.flagged_at,'Flagged','flag',{dec:s.flagged_best_dec,fair:s.sharp_fair,edge:s.flagged_edge,extra:'entry price frozen'}));
     pts.sort(function(a,b){return String(a.t).localeCompare(String(b.t));});
-    pts.push({t:s.commence_time,k:'Close',v:s.closing_sharp_fair!=null?('sharp fair '+fairPx(s.closing_sharp_fair)):'no qualified close stored',cls:'close'});
-    pts.push({t:s.graded_at,k:'Result',v:(s.result||'—')+(s.clv!=null?(' · CLV '+sgn(+s.clv*100,2)+'%'):'')+(s.beat_close!=null?(' · '+(s.beat_close?'beat the close':'did not beat the close')):''),cls:s.result==='win'?'pos':(s.result==='loss'?'neg':'')});
+    pts.push(ev(s.commence_time,'Close','close',{fair:s.closing_sharp_fair,extra:s.closing_sharp_fair==null?'no qualified close stored':''}));
+    pts.push(ev(s.graded_at,'Result','res',{extra:(s.result||'—')+(s.clv!=null?(' · CLV '+sgn(+s.clv*100,2)+'%'):'')+(s.beat_close!=null?(' · '+(s.beat_close?'beat the close':'did not beat the close')):'')}));
+    L.sel.autopsyPts=pts;
     var idx=L.sel.autopsyIdx!=null?Math.min(L.sel.autopsyIdx,pts.length-1):pts.length-1;
     var cl=classify(s,ticks);
-    h+='<div class="lab-out"><div class="c"><div class="k">Signal</div><div class="v txt">'+esc(sigLabel(s))+'</div><div class="s">'+esc(s.market)+' '+esc(s.selection)+(s.point!=null?(' '+esc(String(s.point))):'')+' · '+esc(s.sport_title||'')+'</div></div><div class="c p"><div class="k">Classification</div><div class="v cl '+cl.cls+'">'+cl.c+'</div><div class="s">from stored values</div></div></div>';
-    h+='<div class="fb-note">'+esc(cl.why)+'</div>';
-    h+='<div class="lab-h6" style="margin-top:12px">Timeline · '+pts.length+' points'+(ticks===null?' · tick history unreadable':((ticks||[]).length?'':' · no ticks stored'))+'</div>';
+    h+='<div class="lab-out two"><div class="c"><div class="k">Signal</div><div class="v txt">'+esc(sigLabel(s))+'</div><div class="s">'+esc(s.market)+' '+esc(s.selection)+(s.point!=null?(' '+esc(String(s.point))):'')+' · '+esc(s.sport_title||'')+'</div></div><div class="c"><div class="k">Entry → close</div><div class="v">'+esc(am(s.flagged_best_dec||s.first_best_dec))+' → '+esc(fairPx(s.closing_sharp_fair))+'</div><div class="s">'+(s.clv!=null?('CLV '+sgn(+s.clv*100,2)+'%'):'CLV not computed')+'</div></div></div>';
+    h+=clsCard(cl);
+    h+='<div class="lab-h6" style="margin-top:12px">Timeline · '+pts.length+' events'+(ticks===null?' · tick history unreadable':((ticks||[]).length?'':' · no ticks stored'))+'</div>';
     h+='<input type="range" class="lab-scrub" min="0" max="'+(pts.length-1)+'" value="'+idx+'" oninput="labScrub(this.value)" aria-label="Scrub the timeline">';
-    h+='<div class="lab-tl">'+pts.map(function(p,i){return '<div class="p'+(i<=idx?' seen':'')+(i===idx?' at':'')+' '+p.cls+'"><span class="t mono">'+esc(p.t?new Date(p.t).toLocaleString([],{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}):'—')+'</span><span class="k">'+esc(p.k)+'</span><span class="v mono">'+esc(p.v)+'</span></div>';}).join('')+'</div>';
-    h+='<div class="fb-note">Entry is the price the capture froze at the flag (or the opener); close is the stored closing sharp fair line; CLV is that closing fair against the entry price. No EdgeDesk model number is stored per signal, so “model missed” cannot be classified from this record.</div>';
-    h+='<div class="fb-btns"><button class="fb-btn" onclick="labOpen(\'marketlab\')">Market lab for this signal</button><button class="fb-btn" onclick="labOpen(\'record\')">Research record</button></div></div>';
+    h+='<div id="labTlDet">'+tlDetail(pts[idx])+'</div>';
+    h+='<div class="lab-tl" role="list">'+pts.map(function(p,i){return '<div class="p'+(i<=idx?' seen':'')+(i===idx?' at':'')+' '+p.cls+'" role="listitem" tabindex="0" onclick="labScrub('+i+',true)" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();labScrub('+i+',true);}"><span class="t">'+esc(tlWhen(p.t))+'</span><span class="k">'+esc(p.k)+'</span><span class="v">'+tlLine(p)+'</span></div>';}).join('')+'</div>';
+    h+='<div class="fb-note">Entry is the price frozen at the flag (or the opener). Close is the stored closing sharp fair line. CLV is that close against the entry price. No model number is stored per signal, so “model missed” cannot be classified here.</div>';
+    h+='<div class="fb-btns"><button class="fb-btn pri" onclick="labOpen(\'marketlab\')">Market lab for this signal</button><button class="fb-btn" onclick="labOpen(\'record\')">Research record</button></div></div>';
     return h;
   }
-  window.labScrub=function(v){L.sel.autopsyIdx=+v;var els=document.querySelectorAll('#labCenter .lab-tl .p');for(var i=0;i<els.length;i++){els[i].classList.toggle('seen',i<=+v);els[i].classList.toggle('at',i===+v);}};
+  function tlWhen(t){return t?new Date(t).toLocaleString([],{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}):'—';}
+  function tlLine(p){var b=[];if(p.dec!=null)b.push('best <b>'+esc(am(p.dec))+'</b>');if(p.fair!=null)b.push('sharp fair <b>'+esc(fairPx(p.fair))+'</b>');if(p.edge!=null)b.push('gap '+esc(sgn(+p.edge*100,2))+'%');if(p.extra)b.push(esc(p.extra));return b.join(' · ')||'—';}
+  function tlDetail(p){if(!p)return '';return '<div class="lab-tl-det"><div class="c"><div class="k">Event</div><div class="v txt">'+esc(p.k)+'</div></div><div class="c"><div class="k">Time</div><div class="v txt">'+esc(tlWhen(p.t))+'</div></div><div class="c"><div class="k">Best price</div><div class="v">'+(p.dec!=null?esc(am(p.dec)):'—')+'</div></div><div class="c"><div class="k">Sharp fair · gap</div><div class="v">'+(p.fair!=null?esc(fairPx(p.fair)):'—')+(p.edge!=null?(' <small>'+esc(sgn(+p.edge*100,2))+'%</small>'):'')+'</div></div></div>';}
+  window.labScrub=function(v,syncRange){L.sel.autopsyIdx=+v;var els=document.querySelectorAll('#labCenter .lab-tl .p');for(var i=0;i<els.length;i++){els[i].classList.toggle('seen',i<=+v);els[i].classList.toggle('at',i===+v);}
+    var d=$('labTlDet'),pts=L.sel.autopsyPts||[];if(d)d.innerHTML=tlDetail(pts[+v]);
+    if(syncRange){var r=document.querySelector('#labCenter .lab-scrub');if(r)r.value=String(v);}};
 
   /* ----------------------------------------------------------- market lab */
   function marketTool(){
-    var h='<p class="fb-ms-d">Compare market constructions for one signal from the stored per-book quotes: consensus, sharp-only, no-vig fair, best price, opening vs current. Every value traces to a captured row.</p>';
-    if(!L.sigs||!L.sigs.length)return h+none(L.sigsErr?('Signals could not be read: '+esc(L.sigsErr)):'No signal with stored quotes is on file yet.');
+    var h='<p class="fb-ms-d">Market constructions for one signal from stored per-book quotes: consensus, sharp-only, no-vig fair, best price, opening vs current. Every value traces to a captured row.</p>';
+    if(!L.sigs||!L.sigs.length)return h+none(L.sigsErr?('Graded signals could not be read ('+esc(L.sigsErr)+'). Refresh to retry.'):'No signal with stored quotes is on file yet. Quotes are captured per signal by the market pipeline.');
     var cur=L.sel.autopsy||L.sigs[0].sig_key,s=null;for(var i=0;i<L.sigs.length;i++)if(L.sigs[i].sig_key===cur)s=L.sigs[i];if(!s)s=L.sigs[0];
     h+='<div class="fb-card"><select class="stsearch lab-sel" onchange="labSel(\'autopsy\',this.value)">'+L.sigs.slice(0,80).map(function(x){return '<option value="'+esc(x.sig_key)+'"'+(x.sig_key===s.sig_key?' selected':'')+'>'+esc(dateOf(x.commence_time))+' · '+esc(sigLabel(x))+' · '+esc(x.market)+' '+esc(x.selection)+'</option>';}).join('')+'</select>';
     var q=L.quotes[s.sig_key];
@@ -17273,20 +17329,20 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
     var m=window.RESEARCH_MODULES&&RESEARCH_MODULES[modId];if(!m)return {s:'missing',t:'Missing'};
     var st=m._.uistate&&m._.uistate.state;if(st&&st!=='ok'&&st!=='empty'&&st!=='zero-qualifying')return {s:'failed',t:'Failed'};
     var f=null;try{f=rsFreshness(modId);}catch(_){}
-    if(!f||!f.published)return {s:'missing',t:'No build time'};
+    if(!f||!f.published)return {s:'unknown',t:'Unknown · no build time',title:'This source publishes no build time; freshness cannot be measured.'};
     if(!f.stale)return {s:'current',t:'Current · built '+ago(f.builtAt)};
     if(m.cadenceMs&&f.age<=2*m.cadenceMs)return {s:'aging',t:'Aging · built '+ago(f.builtAt)};
     return {s:'stale',t:'Stale · built '+ago(f.builtAt)};
   }
   function provenanceSummary(){
-    var mods=[['football','Football engine data','edgedesk_football_v1.0.0, cfb_p4'],['ufc','UFC dataset','none (descriptive)'],['wta','WTA research engine','wta.research_score'],['tennis','Tennis record','none (published facts)'],['stats','Stats feed','props projections']];
-    var cls={current:'green',aging:'amber',stale:'amber',failed:'red',missing:'mut'};
-    return '<div class="fb-card">'+mods.map(function(m){var f=freshState(m[0]);return '<div class="lab-prov"><span class="nm">'+esc(m[1])+'<small>used by '+esc(m[2])+'</small></span><span class="fb-badge '+cls[f.s]+'"><i></i>'+esc(f.t)+'</span></div>';}).join('')+'<div class="fb-btns" style="margin-top:10px"><button class="fb-btn" onclick="labOpen(\'provenance\')">Open provenance explorer</button></div></div>';
+    var mods=[['football','Football engine'],['ufc','UFC dataset'],['wta','WTA research engine'],['tennis','Tennis record'],['stats','Stats feed']];
+    var cls={current:'green',aging:'amber',stale:'amber',failed:'red',unknown:'mut'};
+    return '<div class="fb-card">'+mods.map(function(m){var f=freshState(m[0]);return '<div class="lab-prov"><span class="nm">'+esc(m[1])+'</span><span class="fb-badge '+cls[f.s]+'" title="'+esc(f.title||'')+'"><i></i>'+esc(f.t)+'</span></div>';}).join('')+'<div class="fb-btns"><button class="fb-btn" onclick="labOpen(\'provenance\')">Open provenance</button></div></div>';
   }
   function provenanceTool(){
-    var h='<p class="fb-ms-d">Where every model input came from, what transformed it, which model reads it, and how fresh it is. Freshness is measured against each pipeline’s published build time; a dataset with no build time says so rather than looking fresh.</p>';
+    var h='<p class="fb-ms-d">Where every model input came from, what transformed it, which model reads it, and how fresh it is. Freshness is measured against each pipeline’s published build time. <b>Unknown</b> means the source publishes none; it is not a failure.</p>';
     var groups=[['football','Football (NFL + FBS)','Football engine v1.0 · Power 4 v1.0'],['wta','WTA research engine','wta.research_score'],['tennis','Tennis record','no model'],['ufc','UFC dataset and live feed','no model'],['stats','Stats feed','props projections'],['cfb','CFB data (retired board)','SP+ and Elo, third-party']];
-    var cls={current:'green',aging:'amber',stale:'amber',failed:'red',missing:'mut'};
+    var cls={current:'green',aging:'amber',stale:'amber',failed:'red',unknown:'mut'};
     groups.forEach(function(g){var rows=(window.RS_PROV&&RS_PROV[g[0]])||[];if(!rows.length)return;var f=freshState(g[0]);
       h+='<div class="fb-card"><div class="lab-wf-h"><span class="nm">'+esc(g[1])+'</span><span class="fb-badge '+cls[f.s]+'"><i></i>'+esc(f.t)+'</span></div><div class="fb-note" style="margin-bottom:8px">Used by: '+esc(g[2])+'</div>'+rsTkProvRows(rows)+'</div>';});
     var sp=window.EDFootballParams&&EDFootballParams.nfl&&EDFootballParams.nfl.data_provenance;
@@ -17334,25 +17390,34 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
   /* --------------------------------------------------------- rails/render */
   function leftRail(){
     var xs=experiments();
-    return '<div class="lab-rail-h">Tools</div>'+TOOLS.map(function(t){return '<button class="lab-nav'+(L.tool===t.id?' on':'')+'" onclick="labOpen(\''+t.id+'\')">'+esc(t.t)+'</button>';}).join('')
-      +'<div class="lab-rail-h" style="margin-top:12px">Experiments</div>'+xs.map(function(x){return '<button class="lab-nav'+(L.tool==='exp:'+x.id?' on':'')+'" onclick="labOpen(\'exp:'+attr(x.id)+'\')">'+esc(x.name)+'<small>'+esc(STATUS[x.status]?STATUS[x.status][1]:x.status)+'</small></button>';}).join('');
+    return '<div class="lab-rail-h">Lab tools</div><nav class="lab-tools" aria-label="Lab tools">'+TOOLS.map(function(t){return '<button class="lab-nav'+(L.tool===t.id?' on':'')+'" onclick="labOpen(\''+t.id+'\')"'+(L.tool===t.id?' aria-current="page"':'')+'><span class="n">'+esc(t.t)+'</span></button>';}).join('')+'</nav>'
+      +'<div class="lab-rail-h gap">Experiments</div><div class="lab-exp-list" aria-label="Experiments">'+xs.map(function(x){return '<button class="lab-nav'+(L.tool==='exp:'+x.id?' on':'')+'" onclick="labOpen(\'exp:'+attr(x.id)+'\')" title="'+esc(x.name)+'"'+(L.tool==='exp:'+x.id?' aria-current="page"':'')+'><span class="n">'+esc(x.name)+'</span><small>'+esc(x.sport)+' · '+esc(STATUS[x.status]?STATUS[x.status][1]:x.status)+'</small></button>';}).join('')+'</div>';
   }
+  /* the trust principle opens for a first visit and folds afterwards; the
+     freshness and validation cards are what a returning user needs first */
+  function trustOpen(){if(L.trustOpen==null){var seen=null;try{seen=localStorage.getItem('edgedesk_lab_trust');}catch(_){}L.trustOpen=!seen;try{localStorage.setItem('edgedesk_lab_trust','1');}catch(_){}}return L.trustOpen;}
+  window.labTrustToggle=function(){L.trustOpen=!trustOpen();var c=$('labTrustCol'),b=$('labTrustBtn');if(c)c.classList.toggle('open',L.trustOpen);if(b){b.textContent=L.trustOpen?'Hide':'Show';b.setAttribute('aria-expanded',String(L.trustOpen));}};
   function rightRail(){
-    var h='<div class="lab-rail-h">Trust principle</div><div class="fb-card"><ul class="lab-lim" style="margin:0">'+['what changed','why it changed','what data was used','when it was known','how large the sample is','whether evaluation was out-of-sample','where the model fails','whether the market later agreed'].map(function(t){return '<li>'+t+'</li>';}).join('')+'</ul><div class="fb-note" style="margin-top:6px">Every tool here answers one of these from a stored record. Transparency is part of the product.</div></div>';
-    h+='<div class="lab-rail-h">Data freshness</div>'+provenanceSummary();
+    var h='<div class="lab-rail-h">Data freshness</div>'+provenanceSummary();
     var hc=healthChecks('all');
-    h+='<div class="lab-rail-h">Validation jobs</div><div class="fb-card">'+(hc?kv([['Daily self-check',hc.pass+'/'+hc.n+' passing'],['Run',agoOf(hc.at)],['Failing',hc.fails.length?hc.fails.map(function(c){return c.id;}).join(', '):'none']]):none('No self-check record loaded.'))+'</div>';
+    h+='<div class="lab-rail-h">Validation · self-check</div><div class="fb-card">'+(hc?kv([['Daily self-check',hc.pass+'/'+hc.n+' passing'],['Last run',agoOf(hc.at)],['Failing',hc.fails.length?hc.fails.map(function(c){return c.id;}).join(', '):'none']]):none('No self-check record loaded. The daily job writes football/health.json.'))+'</div>';
+    var open=trustOpen();
+    h+='<div class="lab-rail-h" style="display:flex;align-items:center;gap:8px">Trust principle<button class="fb-tgl" id="labTrustBtn" style="margin-left:auto;min-height:26px;padding:4px 8px" aria-expanded="'+(open?'true':'false')+'" aria-controls="labTrustCol" onclick="labTrustToggle()">'+(open?'Hide':'Show')+'</button></div>'
+      +'<div class="fb-col'+(open?' open':'')+'" id="labTrustCol"><div><div class="fb-card lab-trust"><ul class="lab-lim" style="margin:0">'+['what changed','why it changed','what data was used','when it was known','how large the sample is','whether evaluation was out-of-sample','where the model fails','whether the market later agreed'].map(function(t){return '<li>'+t+'</li>';}).join('')+'</ul><div class="fb-note">Every Lab tool answers one of these from a stored record.</div></div></div></div>';
     return h;
+  }
+  function mobileNav(){
+    return '<div class="lab-mnav" role="tablist" aria-label="Lab tools">'+TOOLS.map(function(t){return '<button role="tab" aria-selected="'+(L.tool===t.id?'true':'false')+'" class="'+(L.tool===t.id?'on':'')+'" onclick="labOpen(\''+t.id+'\')">'+esc(t.t)+'</button>';}).join('')+'</div>';
   }
   function centerHTML(){
     var t=L.tool;
     if(!t)return homeHTML();
     var head='<div class="lab-tool-hd"><button class="fb-tgl" onclick="labGoHome()" aria-label="Back to Lab">‹ Lab</button>';
-    if(t.indexOf('exp:')===0){var x=expById(t.slice(4));if(!x)return head+'</div>'+none('That experiment is no longer on file.');return head+'<span class="t">Experiment</span></div>'+expDetail(x);}
-    var tool=toolById(t);if(!tool)return head+'</div>'+none('Unknown tool.');
+    if(t.indexOf('exp:')===0){var x=expById(t.slice(4));if(!x)return head+'<span class="t">Experiment</span></div>'+none('No experiment with that id is on file. Pick one from the list.');return head+'<span class="t">Experiment</span></div>'+expDetail(x);}
+    var tool=toolById(t);if(!tool)return head+'</div>'+none('No tool with that name. Pick one from the list.');
     var body={sandbox:sandboxTool,scenario:scenarioTool,sensitivity:sensitivityTool,calibration:calibrationTool,autopsy:autopsyTool,versions:versionsTool,failure:failureTool,walkforward:walkforwardTool,marketlab:marketTool,features:featuresTool,provenance:provenanceTool,record:recordTool}[t];
-    var out;try{out=body();}catch(e){out=none('This tool hit an error while rendering: '+esc(e&&e.message)+'. Nothing is shown rather than something wrong.');}
-    return head+'<span class="t">'+esc(tool.t)+'</span></div>'+out;
+    var out;try{out=body();}catch(e){out=none('This tool failed to render ('+esc(e&&e.message)+'). Nothing is shown rather than something wrong; refresh to retry.');}
+    return head+'<span class="t">'+esc(tool.t)+'</span></div>'+mobileNav()+out;
   }
   window.labRender=function(){
     var c=$('labCenter');if(!c)return;
