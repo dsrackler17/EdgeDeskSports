@@ -66,6 +66,7 @@ function sandbox(over) {
   const ctx = {
     window: win, document: { getElementById: function (id) { return (over.dom || {})[id] || null; } }, console, Date, JSON, Math, Object, Array, String, Number, RegExp, Promise, encodeURIComponent, setTimeout,
     sbGet: async function (q) { calls.push(q); if (over.sbGet) return over.sbGet(q); return []; },
+    fetch: async function (url) { calls.push('fetch ' + url); if (over.fetch) return over.fetch(url); return { ok: false, status: 404 }; },
     EDAI: { evidence: function (r) { return over.evidence ? over.evidence(r) : { dverdict: r.edge > 0.03 ? 'BET' : r.edge > 0 ? 'LEAN' : 'PASS', toPlayAm: r.edge > 0 ? -118 : null }; } },
     isTrusted: function (b) { return !/bovada/i.test(b || ''); },
     selLabel: function (r) { return r.market === 'totals' ? r.selection + ' ' + r.point : r.market === 'spreads' ? r.selection + ' ' + (r.point > 0 ? '+' : '') + r.point : r.selection + ' ML'; },
@@ -141,19 +142,61 @@ const focal = rows[0];
   chk('a missing probable is said, not filled', /Starter not posted/.test(ma) && /MISSING/.test(ma));
   chk('the MLB card record rides along', /MLB game card · 61-40/.test(mh));
 
-  const espn = { details: { baylor: { team: 'Baylor', players: [
-    { name: 'Sawyer Robertson', pos: 'QB', group: 'QB', cls: 'Senior', w: 1, status: 'returning' },
-    { name: 'Walker White', pos: 'QB', group: 'QB', cls: 'Sophomore', w: 1 / 3, status: 'transfer', from: 'Auburn' },
-    { name: 'Some Lineman', pos: 'OL', group: 'OL' } ] } },
-    bundles: { baylor: { by_group: { QB: { returning_share: 0.5 } } } }, meta: { season: 2026 } };
-  const cfb = sandbox({ FB: { espn: espn }, EDCfbP4: { normKey: function (s) { return String(s).toLowerCase().replace(/[^a-z]/g, ''); } } });
-  const ce = { event_id: 'c1', sport_key: 'americanfootball_ncaaf', home_team: 'Baylor', away_team: 'Texas Tech' };
-  const ch = cfb.E.teamBlock(ce, 'CFB', 'home', { rows: [], index: {} }, null);
-  chk('the CFB QB room lists returning and transfer status and claims no starter', /Sawyer Robertson/.test(ch) && /Senior, returning/.test(ch) && /transfer in from Auburn/.test(ch) && /no starter is claimed/.test(ch) && !/Some Lineman/.test(ch), ch);
-  chk('the roster continuity rides along', /50% of the QB group returning/.test(ch));
-  const ca = cfb.E.teamBlock(ce, 'CFB', 'away', { rows: [], index: {} }, null);
-  chk('a school missing from the roster file gets an honest empty state', /stats_players is empty/.test(ca) && !/pic-players/.test(ca));
+  /* CFB: the repo's own ESPN roster file, matched on the mascot-suffixed board name. */
+  const ROSTER_FILE = { schema: 'edgedesk_fbs_rosters_v2', requested_season: 2026, retrieved_at: '2026-09-01T00:00:00Z', teams: [
+    { display_name: 'Ohio Bobcats', location: 'Ohio', nickname: 'Bobcats', abbreviation: 'OHIO', players: [
+      { name: 'Nick Poulos', position: 'QB', class: 'Senior', jersey: '10', previous_school: '' }, { name: 'Matt Vezza', position: 'QB', class: 'Junior', jersey: '4', previous_school: 'Youngstown State' },
+      { name: 'Hype Grand', position: 'QB', class: 'Freshman', jersey: '18', previous_school: '' }, { name: 'Levi Davis', position: 'QB', class: 'Freshman', jersey: '15', previous_school: '' }, { name: 'Big Guy', position: 'OL', class: 'Senior' } ] },
+    { display_name: 'Ohio State Buckeyes', location: 'Ohio State', nickname: 'Buckeyes', abbreviation: 'OSU', players: [{ name: 'Julian Sayin', position: 'QB', class: 'Sophomore', jersey: '10' }] },
+    { display_name: 'Nebraska Cornhuskers', location: 'Nebraska', nickname: 'Cornhuskers', abbreviation: 'NEB', players: [{ name: 'Dylan Raiola', position: 'QB', class: 'Sophomore', jersey: '15' }, { name: 'TJ Lateef', position: 'QB', class: 'Freshman', jersey: '9' }] },
+    { display_name: 'Miami Hurricanes', location: 'Miami', nickname: 'Hurricanes', abbreviation: 'MIA', players: [{ name: 'Carson Beck', position: 'QB', class: 'Senior' }] },
+    { display_name: 'Miami (OH) RedHawks', location: 'Miami (OH)', nickname: 'RedHawks', abbreviation: 'M-OH', players: [{ name: 'Dequan Finn', position: 'QB', class: 'Senior' }] },
+    { display_name: 'Kicker U', location: 'Kicker U', nickname: 'K', abbreviation: 'KU', players: [{ name: 'Only Kicker', position: 'PK', class: 'Senior' }] },
+  ] };
+  const cfb = sandbox({ fetch: async function (url) { return /fbs_2026_espn\.json/.test(url) ? { ok: true, json: async function () { return ROSTER_FILE; } } : { ok: false, status: 404 }; } });
+  const ce = { event_id: 'c1', sport_key: 'americanfootball_ncaaf', home_team: 'Nebraska Cornhuskers', away_team: 'Ohio Bobcats', selection: 'Ohio Bobcats', market: 'h2h' };
+  chk('before the roster file loads the CFB side is simply absent, not wrong', cfb.E.rosterTeam('Ohio Bobcats') === null);
+  cfb.E.loadRoster().then(function (R) {
+    chk('the roster file loads from the repo path for the current season', R.season === 2026 && R.teams === 6 && cfb.calls.some(c => /^fetch football\/rosters\/fbs_2026_espn\.json/.test(c)), R);
+    chk('a mascot-suffixed board name joins the roster on display_name', cfb.E.rosterTeam('Ohio Bobcats').location === 'Ohio' && cfb.E.rosterTeam('Nebraska Cornhuskers').location === 'Nebraska');
+    chk('Ohio does not swallow Ohio State, and the school alone still matches', cfb.E.rosterTeam('Ohio State Buckeyes').location === 'Ohio State' && cfb.E.rosterTeam('Ohio State').location === 'Ohio State' && cfb.E.rosterTeam('Ohio').location === 'Ohio');
+    chk('the two Miamis stay apart', cfb.E.rosterTeam('Miami Hurricanes').location === 'Miami' && cfb.E.rosterTeam('Miami (OH) RedHawks').location === 'Miami (OH)');
+    chk('a bare ambiguous name is not guessed', cfb.E.rosterTeam('Miam') === null);
+    const away = cfb.E.teamBlock(ce, 'CFB', 'away', { rows: [], index: {} }, null);
+    chk('the CFB away side lists its QB room by class, with jersey and transfer origin, and claims no starter', /Nick Poulos/.test(away) && /Senior · #10/.test(away) && /Matt Vezza/.test(away) && /transfer in from Youngstown State/.test(away) && /no starter is claimed/.test(away) && !/Big Guy/.test(away) && /ROSTER/.test(away), away);
+    chk('at most three quarterbacks, seniors first', (away.match(/pic-pn/g) || []).length === 3 && away.indexOf('Nick Poulos') < away.indexOf('Matt Vezza') && away.indexOf('Matt Vezza') < away.indexOf('Hype Grand') && !/Levi Davis/.test(away));
+    chk('the away side is marked as the pick and cites the roster file', /pic-team pick/.test(away) && /ESPN roster · 2026 · Ohio Bobcats · 5 players/.test(away));
+    const home = cfb.E.teamBlock(ce, 'CFB', 'home', { rows: [], index: {} }, null);
+    chk('the CFB home side reads the same file', /Dylan Raiola/.test(home) && /Sophomore · #15/.test(home));
+    const nq = cfb.E.teamBlock({ sport_key: 'americanfootball_ncaaf', home_team: 'Kicker U', away_team: 'Ohio Bobcats' }, 'CFB', 'home', { rows: [], index: {} }, null);
+    chk('a roster with no QB says so, never invents one', /No quarterback listed/.test(nq) && /MISSING/.test(nq));
+    const unk = cfb.E.teamBlock({ sport_key: 'americanfootball_ncaaf', home_team: 'Nowhere Tech', away_team: 'Ohio Bobcats' }, 'CFB', 'home', { rows: [], index: {} }, null);
+    chk('a school missing from the file is reported by name', /no FBS team matched “Nowhere Tech”/.test(unk) && !/pic-players/.test(unk), unk);
+    /* CFB stat leaders join on the school name the stat table stores. */
+    const cst = [{ league: 'CFB', team: 'Ohio', player: 'Parker Navarro', position: 'QB', stat_line: '1,801 yds · 14 TD', lead_cat: 'passing', lead_val: 1801, leads: { passing: 1801 } },
+      { league: 'CFB', team: 'Ohio State', player: 'Julian Sayin', position: 'QB', stat_line: '2,400 yds', lead_cat: 'passing', lead_val: 2400, leads: { passing: 2400 } },
+      { league: 'CFB', team: 'Nebraska', player: 'Emmett Johnson', position: 'RB', stat_line: '712 yds · 6 TD', lead_cat: 'rushing', lead_val: 712, leads: { rushing: 712 } }];
+    const st = { rows: cst, index: cfb.E.teamIndex(cst) };
+    chk('“Ohio Bobcats” finds Ohio in the stat table, not Ohio State', cfb.E.resolveTeam(st.index, 'Ohio Bobcats').team === 'Ohio' && cfb.E.resolveTeam(st.index, 'Ohio State Buckeyes').team === 'Ohio State');
+    const full = cfb.E.teamBlock(ce, 'CFB', 'away', st, null);
+    chk('the CFB block carries both the QB room and the stat leader with the stat line as the reason', /Nick Poulos/.test(full) && /Parker Navarro/.test(full) && /Team leader in passing yards \(1,801\) · 1,801 yds · 14 TD/.test(full) && /stats_players · 1 rows/.test(full), full);
+    const nb = cfb.E.teamBlock(ce, 'CFB', 'home', st, null);
+    chk('Nebraska Cornhuskers finds Nebraska', /Emmett Johnson/.test(nb) && /Dylan Raiola/.test(nb));
+    /* the stat-sheet QB leads the room, in one line, even when the class sort would have cut him */
+    const deep = { display_name: 'Deep Room U', location: 'Deep Room U', nickname: 'D', abbreviation: 'DRU', players: [
+      { name: 'Aaron Senior', position: 'QB', class: 'Senior', jersey: '1' }, { name: 'Bob Soph', position: 'QB', class: 'Sophomore', jersey: '2' }, { name: 'Carl Soph', position: 'QB', class: 'Sophomore', jersey: '3' }, { name: 'Zed Starter', position: 'QB', class: 'Sophomore', jersey: '4' } ] };
+    cfb.E.ROSTER.index.display['deeproomu'] = deep;
+    const dst = [{ league: 'CFB', team: 'Deep Room U', player: 'Zed Starter', position: 'QB', stat_line: '1,200 yds · 9 TD', lead_cat: 'passing', lead_val: 1200, leads: { passing: 1200 } }];
+    const dr = cfb.E.teamBlock({ sport_key: 'americanfootball_ncaaf', home_team: 'Deep Room U', away_team: 'Ohio Bobcats' }, 'CFB', 'home', { rows: dst, index: cfb.E.teamIndex(dst) }, null);
+    chk('the stat-sheet QB leads the room in ONE merged line and the room is still capped at three', dr.indexOf('Zed Starter') < dr.indexOf('Aaron Senior') && (dr.match(/Zed Starter/g) || []).length === 1 && /Team leader in passing yards \(1,200\) · 1,200 yds · 9 TD · Quarterback room · Sophomore · #4/.test(dr) && !/Carl Soph/.test(dr) && (dr.match(/pic-pn/g) || []).length === 3, dr);
+    cfbDone();
+  }).catch(function (e) { chk('CFB roster path does not throw', false, String(e && e.stack || e)); cfbDone(); });
+  const bad = sandbox({ fetch: async function () { return { ok: false, status: 500 }; } });
+  bad.E.loadRoster().then(function (R) {
+    chk('an unreachable roster file is an outage in words', /roster file 500/.test(R.error) && /ESPN roster file unreachable/.test(bad.E.teamBlock(ce, 'CFB', 'home', { rows: [], index: {} }, null)));
+  });
 }
+var cfbPending = 1; function cfbDone() { cfbPending--; }
 
 /* ---- every priced market ----------------------------------------------------------- */
 {
@@ -195,6 +238,6 @@ const focal = rows[0];
     return sb.E.open('t10_0');
   }).then(function () {
     chk('a second tap closes the panel', dom['t10_0_pic'].innerHTML === '' && dom['t10_0_pic'].attrs['data-open'] === '0');
-    done();
+    (function wait() { if (cfbPending) return setTimeout(wait, 10); done(); })();
   }).catch(function (e) { chk('open() does not throw', false, String(e && e.stack || e)); done(); });
 }
