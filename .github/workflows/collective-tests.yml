@@ -29,6 +29,7 @@ on:
       - 'supabase/functions/edgedesk_ai/**'
       - 'tools/presentation/**'
       - 'tools/record/**'
+      - 'football/injuries/**'
       - '.github/workflows/collective-tests.yml'
   pull_request:
     paths:
@@ -48,6 +49,7 @@ on:
       - 'supabase/functions/edgedesk_ai/**'
       - 'tools/presentation/**'
       - 'tools/record/**'
+      - 'football/injuries/**'
       - '.github/workflows/collective-tests.yml'
   workflow_dispatch:
 
@@ -132,6 +134,11 @@ jobs:
 
       - name: The public record page lists every published call, graded
         run: node tools/record/record_page.test.js
+
+      # The NFL injury report: nflverse's public CSV reduced to the latest
+      # week per team. Never inferred, never last season's shown as this one's.
+      - name: The injury sync reduces the report honestly
+        run: node football/injuries/fetch_injuries.test.js
 
       # The deployed edge function, imported under Node's native type stripping
       # with a Deno shim and a mocked network: old callers, the additive

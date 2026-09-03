@@ -186,4 +186,25 @@ function closeRow(over) {
   chk('args parse', G.parseArgs(['--out', 'x.json', '--json', '--now', 'T']).out === 'x.json');
 }
 
+/* ---- the same book's close ------------------------------------------------ */
+{
+  const pk = G.picksFromBrief(brief())[0];
+  const tick = (o) => Object.assign({ sig_key: 'ev1|spreads|Chiefs|3.5', event_id: 'ev1', market: 'spreads', selection: 'Chiefs', point: 3.5, commence_time: KICK, book_key: 'draftkings', book_title: 'DraftKings', dec: 1.8, fair: 0.54, is_sharp: false, seen_at: '2026-09-11T00:05:00Z', lead_minutes: 10 }, o || {});
+  chk('the signal key is the app’s own event|market|side|line', G.sigKeyOf(pk) === 'ev1|spreads|Chiefs|3.5');
+  const m = G.matchBookClose(pk, [tick(), tick({ book_key: 'fanduel', book_title: 'FanDuel', dec: 1.83 })]);
+  chk('the pick finds its OWN book’s last pre-kickoff quote', m && m.book === 'DraftKings' && m.am === -125 && m.qualified === true, m);
+  chk('a quote six hours or more before kickoff is not a close', G.matchBookClose(pk, [tick({ lead_minutes: 361 })]).qualified === false && G.matchBookClose(pk, [tick({ lead_minutes: 360 })]).qualified === true);
+  chk('a different book, a different line, or no book on the pick matches nothing', G.matchBookClose(pk, [tick({ book_key: 'fanduel', book_title: 'FanDuel' })]) === null && G.matchBookClose(pk, [tick({ sig_key: 'ev1|spreads|Chiefs|4.5' })]) === null && G.matchBookClose(Object.assign({}, pk, { book: null }), [tick()]) === null);
+  const g = G.gradeOne(pk, closeRow(), null, AFTER, { closeSource: 'ok', bookRows: [tick()] });
+  chk('the grade names the book’s close and measures the cents against it', g.grade.close_book_odds === '-125' && g.grade.close_book === 'DraftKings' && g.grade.book_cents === 15 && g.grade.close_book_lead_min === 10, g.grade);
+  chk('the record CLV stays against the fair line, unchanged', Math.abs(g.grade.clv - (0.5556 * (1 + 100 / 110) - 1)) < 1e-4 && g.grade.cents === 15);
+  chk('the receipt reads: closed at the book, fair in brackets, beat the book’s close', g.grade.text === 'Closed -125 at DraftKings (fair -125). Beat the book’s close by 15 cents. Won.', g.grade.text);
+  const stale = G.gradeOne(pk, closeRow(), null, AFTER, { closeSource: 'ok', bookRows: [tick({ lead_minutes: 900, seen_at: '2026-09-10T09:15:00Z' })] });
+  chk('a stale last quote is reported in the note and the grade falls back to the fair close', stale.grade.close_book_odds === null && /900 min before kickoff; not used as the close/.test(stale.note) && stale.grade.text === 'Closed -125. Beat the close by 15 cents. Won.', stale);
+  const noFair = G.gradeOne(pk, null, { ok: true, home_score: 27, away_score: 24, agreed_by: ['espn'] }, AFTER, { closeSource: 'ok', bookRows: [tick({ dec: 1.95 })] });
+  chk('a book close without a fair close still tells the bettor what the book closed at', noFair.status === 'awaiting_close' && noFair.grade.close_book_odds === '-105' && noFair.grade.book_cents === -5 && /Closed -105 at DraftKings\. Missed the book’s close by 5 cents\. Won\./.test(noFair.grade.text), noFair.grade);
+  const rec = G.buildRecord([brief()], [closeRow()], {}, null, AFTER, { closeSource: 'ok', closeSourceName: 'public_brief_closes', bookRows: [tick()], bookCloseSource: 'public_brief_book_closes' });
+  chk('the record carries the book close per pick and names its source', rec.briefs[0].picks[0].grade.close_book === 'DraftKings' && rec.source.book_close === 'public_brief_book_closes');
+}
+
 done();

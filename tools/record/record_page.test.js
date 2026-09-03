@@ -79,6 +79,10 @@ const all = R.listHTML(rec, 'ALL', 12);
 chk('every brief renders, newest first', all.indexOf('Sunday Night Football') < all.indexOf('Thursday Night Football') && all.indexOf('Thursday Night Football') < all.indexOf('College Football'));
 chk('the graded call shows the published price, the close and the receipt', /-110<\/b> DraftKings/.test(all) && /close -125/.test(all) && /Closed -125\. Beat the close by 15 cents\. Won\./.test(all));
 chk('the closing board price is labelled by book', /board -125 FanDuel/.test(all));
+chk('a same-book close, when on file, is shown as closed at the book with the fair beside it', (function () {
+  const r2 = G.buildRecord([rows[0]], closes, {}, null, AFTER, { closeSource: 'ok', bookRows: [{ sig_key: 'ev1|spreads|Chiefs|3.5', book_key: 'draftkings', book_title: 'DraftKings', dec: 1.8, seen_at: '2026-09-11T00:05:00Z', lead_minutes: 10 }] });
+  const h = R.listHTML(r2, 'ALL', 12); return /closed -125 DraftKings · fair -125/.test(h) && /Beat the book’s close by 15 cents/.test(h);
+})());
 chk('a NO QUALIFYING BETS slate is labelled as discipline, not dropped', /No qualifying bets/.test(all) && /RESEARCH/.test(all));
 chk('the research row on the no-bet slate shows its own grade', /Missed the close by 8 cents\. Lost\./.test(all), all.match(/Missed[^<]*/) && all.match(/Missed[^<]*/)[0]);
 chk('a brief whose game has not kicked off waits, visibly', /Not kicked off yet\./.test(all));

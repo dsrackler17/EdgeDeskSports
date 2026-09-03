@@ -284,4 +284,36 @@ function simple(over, ctx) { return P.simpleFromPacket(packet(over), Object.assi
   chk('calibration HTML is empty-safe and marks thin rows', /No published calls have graded yet/.test(P.calibrationHTML([])) && /thin/.test(P.calibrationHTML([{ id: 'b', preset: 'GAME', picks: [{ verdict: 'BET', kind: 'pick', sport_key: 'americanfootball_nfl', status: 'graded', grade: entry.picks[0].grade }] }])));
 }
 
+/* ---- AVAILABILITY: the injury report, when it is on file ------------------ */
+{
+  function report(over) {
+    return Object.assign({ status: 'ON_FILE', source: 'nflverse', week: 3, teams: {
+      away: { name: 'Texas Tech', code: 'TTU', filed: true, players: [
+        { name: 'Behren Morton', position: 'QB', status: 'Questionable', injury: 'Shoulder', practice: 'Limited Participation in Practice' },
+        { name: 'Rotational Guy', position: 'WR', status: 'Questionable', injury: 'Hamstring', practice: null } ] },
+      home: { name: 'Baylor', code: 'BAY', filed: true, players: [
+        { name: 'Big Left Tackle', position: 'LT', status: 'Out', injury: 'Knee', practice: 'Did Not Participate In Practice' } ] } } }, over || {});
+  }
+  const on = P.simpleFromPacket(packet(), { now: NOW, gaps: ['injury_report'], availability: report() });
+  chk('an injury report on file removes the "not on file" gap', !on.gaps.some(function (g) { return /not on file/i.test(g); }) && !on.flags.some(function (f) { return f.kind === 'DATA_GAP' && /injur/i.test(f.text); }), on.gaps);
+  chk('the card carries an availability flag that summarises both sides', on.flags.some(function (f) { return f.kind === 'AVAILABILITY' && /TTU: 2 questionable/.test(f.text) && /BAY: 1 out/.test(f.text); }), on.flags);
+  chk('the structured availability rides on the simple object with its source and week', on.availability && on.availability.status === 'ON_FILE' && on.availability.source === 'nflverse' && on.availability.week === 3 && on.availability.listed.length === 3);
+  chk('listed players are ordered by severity: out before doubtful before questionable', on.availability.listed[0].name === 'Big Left Tackle' && on.availability.listed[0].status === 'out');
+  chk('the watch line leads with a named absence on the side being backed, in plain words', /Big Left Tackle \(LT\) is out, knee, did not practice\./.test(on.watch.text) === false, on.watch.text);
+  chk('the pick’s own side is the one that leads the watch line', /For the other side, big left tackle \(LT\) is out/i.test(on.watch.text) || /Big Left Tackle/.test(on.watch.text), on.watch.text);
+  chk('the full card lists the report with status, injury and practice', /class="dcard-h">Injury report<\/div><ul class="dcard-avail">/.test(P.cardHTML(on)) && /Big Left Tackle<\/b> <span class="pos">LT<\/span> <span class="st out">out<\/span> · knee · did not/.test(P.cardHTML(on)), P.cardHTML(on).slice(0, 200));
+  chk('the compact strip does not carry the player list', !/dcard-avail/.test(P.cardHTML(on, { compact: true })));
+  chk('AVAILABILITY never touches the verdict, the price or the good-to', on.verdict === 'BET' && on.odds === '-110' && on.playable_to.limit_odds === '-118' && on.engine.edge === 0.031);
+
+  const notPub = P.simpleFromPacket(packet(), { now: NOW, gaps: ['injury_report'], availability: { status: 'NOT_PUBLISHED', source: 'nflverse', reason: 'nflverse has not published the 2026 report yet' } });
+  chk('an unpublished report keeps the honest gap and names the reason', /Injury and availability data is not on file: nflverse has not published the 2026 report yet\. Do not read that as a clean injury report\./.test(notPub.gaps[0]) && !notPub.flags.some(function (f) { return f.kind === 'AVAILABILITY'; }), notPub.gaps);
+  chk('no report object at all leaves the old behaviour exactly as it was', (function () { const s = P.simpleFromPacket(packet(), { now: NOW, gaps: ['injury_report'] }); return /Injury and availability data is not on file\. Do not read/.test(s.gaps[0]) && s.availability === null; })());
+
+  const filedNobody = P.simpleFromPacket(packet(), { now: NOW, gaps: ['injury_report'], availability: report({ teams: { away: { name: 'Texas Tech', code: 'TTU', filed: true, players: [] }, home: { name: 'Baylor', code: 'BAY', filed: false, players: [] } } }) });
+  chk('"nobody listed" and "no report filed yet" are different sentences', /TTU: nobody listed/.test(filedNobody.flags.filter(function (f) { return f.kind === 'AVAILABILITY'; })[0].text) && /BAY: no report filed yet/.test(filedNobody.flags.filter(function (f) { return f.kind === 'AVAILABILITY'; })[0].text));
+  chk('a clean report is not a warning', filedNobody.flags.filter(function (f) { return f.kind === 'AVAILABILITY'; })[0].severity === 'ok' && on.flags.filter(function (f) { return f.kind === 'AVAILABILITY'; })[0].severity === 'warn');
+  chk('availabilitySummary returns null for anything that is not on file', P.availabilitySummary(null) === null && P.availabilitySummary({ status: 'NOT_PUBLISHED' }) === null);
+  chk('playerLine never states a diagnosis it was not given', P.playerLine({ name: 'X', position: 'QB', status: 'out', injury: null, practice: null }) === 'X (QB) is out.');
+}
+
 done();

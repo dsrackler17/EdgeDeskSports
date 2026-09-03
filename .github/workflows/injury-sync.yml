@@ -1,0 +1,72 @@
+# EdgeDesk Football — NFL injury report sync.
+#
+# The decision card, the publisher brief and the Full picture used to say
+# "Injury and availability data is not on file" on every NFL edge. nflverse
+# publishes the league's official injury report as a public, keyless CSV.
+# This commits it, reduced to the latest reported week per team, to
+# football/injuries/nfl_<season>.json, which the app reads beside itself.
+#
+# Nothing is inferred: a season nflverse has not published is committed as
+# published:false and the card keeps saying the report is not on file. The
+# file is rewritten only when the rows changed, so quiet days commit nothing.
+name: Injury sync
+
+on:
+  workflow_dispatch:
+    inputs:
+      season:
+        description: 'Season year (default: current, Jan/Feb -> prior year)'
+        required: false
+        default: ''
+  schedule:
+    # Every six hours: the report moves Wednesday to Saturday and on game day.
+    - cron: '15 */6 * * *'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: injury-sync
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Reduction logic must pass before it is allowed to write
+        run: node football/injuries/fetch_injuries.test.js
+
+      - name: Fetch the injury report
+        run: |
+          if [ -n "${{ github.event.inputs.season }}" ]; then
+            node football/injuries/fetch_injuries.js --season "${{ github.event.inputs.season }}"
+          else
+            node football/injuries/fetch_injuries.js
+          fi
+
+      - name: Commit the report
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add football/injuries/*.json
+          if git diff --cached --quiet; then
+            echo 'injury report unchanged — nothing to commit'
+            exit 0
+          fi
+          git commit -m 'injury sync: NFL injury report from nflverse'
+          for i in 1 2 3 4; do
+            git push origin "${{ github.ref_name }}" && exit 0
+            git pull --rebase origin "${{ github.ref_name }}" || true
+            sleep $((2 ** i))
+          done
+          echo 'could not push the injury report after 4 attempts'
+          exit 1

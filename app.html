@@ -19004,6 +19004,14 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
 .edrec-empty{border:1px dashed var(--border);border-radius:9px;padding:14px;color:var(--faint);font-size:12.5px;line-height:1.6}
 .edrec-wrap{overflow-x:auto}
 .dcard-flags{display:flex;flex-wrap:wrap;gap:6px;padding:0 16px 10px}
+.dcard-flag.ok{color:var(--pos);border-color:rgba(47,180,124,.4);background:rgba(47,180,124,.08)}
+.dcard-avail{margin:0;padding-left:18px;font-size:12.5px;line-height:1.5}
+.dcard-avail .pos{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--dim)}
+.dcard-avail .st{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.08em;text-transform:uppercase;border:1px solid var(--border);border-radius:5px;padding:0 5px}
+.dcard-avail .st.out{color:var(--neg);border-color:rgba(226,96,68,.45)}.dcard-avail .st.doubtful{color:var(--warn);border-color:rgba(217,154,43,.45)}.dcard-avail .st.questionable{color:var(--warn);border-color:rgba(217,154,43,.3)}
+.dcard-avail .tm{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--faint)}
+.pic-inj{font-family:'JetBrains Mono',monospace;font-size:10.5px;margin-top:3px}
+.pic-inj.out{color:var(--neg)}.pic-inj.doubtful,.pic-inj.questionable{color:var(--warn)}.pic-inj.practice{color:var(--dim)}
 .dcard-flag{font-size:11px;font-weight:600;border-radius:7px;padding:3px 8px;border:1px solid;line-height:1.35}
 .dcard-flag.warn{color:var(--warn);border-color:rgba(217,154,43,.45);background:rgba(217,154,43,.1)}
 .dcard-flag.bad{color:var(--neg);border-color:rgba(226,96,68,.45);background:rgba(226,96,68,.1)}
@@ -19504,6 +19512,36 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
     return uniq;
   }
 
+  /* ----------------------------------------------------------- availability */
+  /* The injury report, when it IS on file. Shape (built by the app from the
+     nflverse report the repo commits):
+       { status:'ON_FILE'|'NOT_PUBLISHED'|'NO_REPORT', source, week,
+         teams:{ away:{name, code, week, players:[{name, position, status, injury, practice}]},
+                 home:{...} } }
+     Copy only: it never touches a number or a verdict. */
+  var STATUS_RANK = { out: 3, doubtful: 2, questionable: 1 };
+  function statusWord(s) { s = String(s == null ? '' : s).toLowerCase(); return s === 'out' ? 'out' : s === 'doubtful' ? 'doubtful' : s === 'questionable' ? 'questionable' : null; }
+  function availabilitySummary(av) {
+    if (!av || av.status !== 'ON_FILE' || !av.teams) return null;
+    var sides = [], listed = [], worst = 0;
+    ['away', 'home'].forEach(function (k) {
+      var tm = av.teams[k]; if (!tm) return;
+      var ps = (tm.players || []).filter(function (p) { return statusWord(p.status); });
+      var counts = { out: 0, doubtful: 0, questionable: 0 };
+      ps.forEach(function (p) { var w = statusWord(p.status); counts[w]++; worst = Math.max(worst, STATUS_RANK[w]); listed.push({ team: tm.name || tm.code, name: p.name, position: p.position || null, status: w, injury: p.injury || null, practice: p.practice || null }); });
+      var bits = [];
+      if (counts.out) bits.push(counts.out + ' out');
+      if (counts.doubtful) bits.push(counts.doubtful + ' doubtful');
+      if (counts.questionable) bits.push(counts.questionable + ' questionable');
+      var label = (tm.code || tm.name || '');
+      sides.push(label + (tm.filed === false ? ': no report filed yet' : (bits.length ? ': ' + bits.join(', ') : ': nobody listed')));
+    });
+    listed.sort(function (a, b) { return STATUS_RANK[b.status] - STATUS_RANK[a.status] || a.name.localeCompare(b.name); });
+    return { text: 'Injury report on file (' + (av.source || 'league report') + (av.week ? ', week ' + av.week : '') + '): ' + sides.join(' · '), sides: sides, listed: listed, worst: worst };
+  }
+  function normTeamName(s) { return normTeam(s); }
+  function playerLine(p) { return p.name + (p.position ? ' (' + p.position + ')' : '') + ' is ' + p.status + (p.injury ? ', ' + String(p.injury).toLowerCase() : '') + (p.practice && /did not/i.test(p.practice) ? ', did not practice' : p.practice && /limited/i.test(p.practice) ? ', limited in practice' : '') + '.'; }
+
   /* ------------------------------------------------------------------ SIMPLE */
   /* The client packet shape (askAI / EDAI.packetOf) is the contract:
        { game:{matchup,sport,sport_key,commence,away,home,event_id},
@@ -19572,7 +19610,16 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
     /* Strongest drivers only: the engine lists them in priority order. */
     why = why.slice(0, 3).map(function (t) { return { text: t, source: 'deterministic', evidence_ids: [] }; });
 
-    var gaps = gapSentences(ctx.gaps || p.gaps || []);
+    var availability = ctx.availability || p.availability || null;
+    var avail = availabilitySummary(availability);
+    var gapsIn = (ctx.gaps || p.gaps || []).filter(function (g) {
+      /* an injury report on file is not a gap; an unpublished one still is */
+      var k = String(g && (g.field || g) || '').toLowerCase();
+      return !(avail && /injur|availab/.test(k));
+    });
+    if (availability && availability.status === 'NOT_PUBLISHED' && !gapsIn.some(function (g) { return /injur/.test(String(g && (g.field || g) || '')); })) gapsIn.push('injury_report');
+    var gaps = gapSentences(gapsIn);
+    if (availability && availability.status === 'NOT_PUBLISHED' && availability.reason) gaps = gaps.map(function (s) { return /injury and availability/i.test(s) ? 'Injury and availability data is not on file: ' + availability.reason + '. Do not read that as a clean injury report.' : s; });
     var against = (det.reasons_against || []).map(plainReason).filter(Boolean);
     var fals = (det.falsifiers || []).map(plainReason).filter(Boolean);
     var watchText, changeText;
@@ -19594,6 +19641,15 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
        still shows as a flag on the card. */
     if (gaps.length && /injur|availab/i.test(gaps[0]) && !/injur/i.test(watchText)
       && (displayVerdict === 'BET' || displayVerdict === 'LEAN')) watchText = gaps[0] + ' ' + watchText;
+    /* A listed player on the side being backed leads the watch line; an
+       opponent's absence is a watch line too, said as the opponent's. */
+    if (avail && avail.listed.length && (displayVerdict === 'BET' || displayVerdict === 'LEAN' || displayVerdict === 'WAIT')) {
+      var pickTeam = (selectionRaw && game.home && normTeamName(selectionRaw) === normTeamName(game.home)) ? 'home' : (selectionRaw && game.away && normTeamName(selectionRaw) === normTeamName(game.away)) ? 'away' : null;
+      var mine = avail.listed.filter(function (x) { return pickTeam && availability.teams[pickTeam] && x.team === (availability.teams[pickTeam].name || availability.teams[pickTeam].code) && x.status !== 'questionable'; });
+      var theirs = avail.listed.filter(function (x) { return !mine.some(function (m) { return m === x; }) && x.status !== 'questionable'; });
+      var lead = mine.length ? playerLine(mine[0]) + (mine.length > 1 ? ' ' + (mine.length - 1) + ' more on the same side listed.' : '') : (theirs.length ? 'For the other side, ' + playerLine(theirs[0]).charAt(0).toLowerCase() + playerLine(theirs[0]).slice(1) : '');
+      if (lead && !/\bis (out|doubtful)\b/i.test(watchText)) watchText = lead + ' ' + watchText;
+    }
 
     var headline;
     if (suppressed) headline = 'DATA CHECK FAILED: EdgeDesk cannot safely publish a decision until ' + (integ.reason || 'the data check passes') + '.';
@@ -19613,6 +19669,7 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
     if (noPrice) flags.push({ kind: 'NO_PRICE', text: 'No current price on file' });
     if (book && trusted === false) flags.push({ kind: 'OFFSHORE', text: 'Best price is at an offshore book' });
     gaps.forEach(function (g) { flags.push({ kind: 'DATA_GAP', text: g.split('. ')[0].replace(/\.$/, '') }); });
+    if (avail) flags.push({ kind: 'AVAILABILITY', text: avail.text.replace(/^Injury report on file \([^)]*\): /, 'Injury report: '), severity: avail.worst >= 2 ? 'warn' : 'ok' });
 
     return {
       version: VERSION,
@@ -19645,6 +19702,7 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
       integrity_reason: integ.reason,
       flags: flags,
       gaps: gaps,
+      availability: availability ? { status: availability.status, source: availability.source || null, week: availability.week || null, summary: avail ? avail.text : null, listed: avail ? avail.listed.slice(0, 8) : [], sides: avail ? avail.sides : [], reason: availability.reason || null } : null,
       confidence: det.confidence || null,
       score: num(det.score),
       copy_source: 'deterministic',
@@ -20131,7 +20189,7 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
     var flags = (s.flags || []).filter(function (f) { return !opts.compact || f.kind !== 'DATA_GAP'; });
     if (flags.length) {
       h += '<div class="dcard-flags">' + flags.map(function (f) {
-        var c = f.kind === 'DATA_CHECK_FAILED' ? 'bad' : (f.kind === 'STALE_PRICE' || f.kind === 'NO_PRICE') ? 'bad' : 'warn';
+        var c = f.kind === 'DATA_CHECK_FAILED' ? 'bad' : (f.kind === 'STALE_PRICE' || f.kind === 'NO_PRICE') ? 'bad' : f.kind === 'AVAILABILITY' ? (f.severity === 'warn' ? 'warn' : 'ok') : 'warn';
         return '<span class="dcard-flag ' + c + '">' + esc(f.text) + '</span>';
       }).join('') + '</div>';
     }
@@ -20144,6 +20202,7 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
         + '<div class="dcard-h">' + (s.verdict === 'WAIT' ? 'Waiting on' : s.verdict === 'PASS' ? 'Why pass' : 'Watch') + '</div>'
         + '<p class="dcard-watch">' + esc(s.watch && s.watch.text || '') + '</p>'
         + (s.change_trigger && s.change_trigger.text ? '<div class="dcard-h">What would change it</div><p class="dcard-change">' + esc(s.change_trigger.text) + '</p>' : '')
+        + (s.availability && s.availability.listed && s.availability.listed.length ? '<div class="dcard-h">Injury report</div><ul class="dcard-avail">' + s.availability.listed.slice(0, 6).map(function (p) { return '<li><b>' + esc(p.name) + '</b>' + (p.position ? ' <span class="pos">' + esc(p.position) + '</span>' : '') + ' <span class="st ' + esc(p.status) + '">' + esc(p.status) + '</span>' + (p.injury ? ' · ' + esc(String(p.injury).toLowerCase()) : '') + (p.practice ? ' · ' + esc(String(p.practice).replace(/ in practice| participation/gi, '').toLowerCase()) : '') + ' <span class="tm">' + esc(p.team) + '</span></li>'; }).join('') + '</ul>' : '')
         + '<div class="dcard-fresh' + (s.freshness && s.freshness.status === 'STALE' ? ' bad' : '') + '">' + esc(s.freshness ? s.freshness.price_text : '') + (s.freshness && s.freshness.research_text ? ' · ' + esc(s.freshness.research_text) : '') + '</div>'
         + (opts.show_what !== false ? whatMeans('good_to', s) + whatMeans('verdict', s) : '')
         + '</div>';
@@ -20403,6 +20462,9 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
       entry_odds: fmtAmerican(entryAm), entry_am: entryAm,
       close_fair_prob: p, close_fair_odds: fmtAmerican(closeAm), close_fair_am: closeAm,
       close_best_odds: o.close_best_am != null ? fmtAmerican(o.close_best_am) : null, close_best_book: o.close_best_book || null,
+      /* the SAME book's last pre-kickoff quote, when the ticks table has it */
+      close_book_odds: o.close_book_am != null ? fmtAmerican(o.close_book_am) : null, close_book: o.close_book || null,
+      close_book_at: o.close_book_at || null, close_book_lead_min: num(o.close_book_lead_min), book_cents: null,
       closed_at: o.closed_at || null,
       clv: null, beat_close: null, cents: null,
       result: normResult(o.result), result_source: null,
@@ -20414,6 +20476,7 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
       g.beat_close = g.clv > 0;
       g.cents = closeAm != null ? centsBetween(entryAm, closeAm) : null;
     }
+    if (entryAm != null && o.close_book_am != null) g.book_cents = centsBetween(entryAm, parseAmerican(o.close_book_am));
     g.status = (g.clv != null && g.result) ? 'graded' : g.clv != null ? 'awaiting_result' : g.result ? 'awaiting_close' : 'pending';
     g.text = resultText(g);
     return g;
@@ -20422,8 +20485,11 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
   function resultText(g) {
     if (!g) return '';
     var parts = [];
-    if (g.close_fair_odds) parts.push('Closed ' + g.close_fair_odds);
-    if (g.cents != null) parts.push(g.cents > 0 ? 'Beat the close by ' + g.cents + ' cent' + (g.cents === 1 ? '' : 's') : g.cents < 0 ? 'Missed the close by ' + (-g.cents) + ' cent' + (g.cents === -1 ? '' : 's') : 'Matched the close');
+    if (g.close_book_odds) parts.push('Closed ' + g.close_book_odds + ' at ' + (g.close_book || 'the book') + (g.close_fair_odds ? ' (fair ' + g.close_fair_odds + ')' : ''));
+    else if (g.close_fair_odds) parts.push('Closed ' + g.close_fair_odds);
+    var c = g.book_cents != null ? g.book_cents : g.cents;
+    var what = g.book_cents != null ? 'the book’s close' : 'the close';
+    if (c != null) parts.push(c > 0 ? 'Beat ' + what + ' by ' + c + ' cent' + (c === 1 ? '' : 's') : c < 0 ? 'Missed ' + what + ' by ' + (-c) + ' cent' + (c === -1 ? '' : 's') : 'Matched ' + what);
     else if (g.beat_close != null) parts.push(g.beat_close ? 'Beat the close' : 'Did not beat the close');
     if (g.result === 'win') parts.push('Won');
     else if (g.result === 'loss') parts.push('Lost');
@@ -20630,6 +20696,7 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
     normResult: normResult, normTeam: normTeam, sideOf: sideOf, outcomeFromScore: outcomeFromScore, gradePick: gradePick, resultText: resultText, outcomeOf: outcomeOf,
     marketKeyOf: marketKeyOf, parseSelectionLabel: parseSelectionLabel, priceFields: priceFields, gradeKey: gradeKey,
     recordSummary: recordSummary, calibration: calibration, sportGroup: sportGroup, isCall: isCall, tally: tally, flattenPicks: flattenPicks,
+    availabilitySummary: availabilitySummary, playerLine: playerLine,
     calibrationHTML: calibrationHTML, pickStatusText: pickStatusText, resultHTML: resultHTML, briefResultsHTML: briefResultsHTML, briefResultsText: briefResultsText,
     fmtCents: fmtCents, fmtRate: fmtRate, fmtClv: fmtClv
   };
@@ -23212,6 +23279,7 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
       clv:x.graded?{clv:x.clv,beat_close:x.beat,closing:x.closeP,result:x.result,closed_at:e.closed_at||null,graded_at:e.graded_at||null}:null,
       mlb: mlbPacket(x.mlb),
       market_coverage: (window.ED_COVERAGE?ED_COVERAGE.packet(x.e):null),
+      availability: (window.EDCARD&&window.EDCARD.availabilityFor)?window.EDCARD.availabilityFor(x):null,
       price_sensitivity:{breakeven:x.breakevenAm,max_playable:x.toPlayAm,needs_price_for_ev:x.needsPriceForEv},
       deterministic:{verdict:x.verdict,display_verdict:x.dverdict,is_wait:x.isWait,wait_reason:x.waitWhy,
         confidence:x.confidence,why:x.why,score:x.score,band:x.band,
@@ -26506,13 +26574,48 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
   function engine(e){ try{ return (window.EDAI&&window.EDAI.evidence)?window.EDAI.evidence(e):null; }catch(_){ return null; } }
   function packetOf(x){ try{ return (window.EDAI&&window.EDAI.packetOf)?window.EDAI.packetOf(x):null; }catch(_){ return null; } }
 
-  /* Football has no injury report anywhere in EdgeDesk. The card says so,
-     as a named gap, rather than letting the absence read as a clean sheet. */
+  /* THE INJURY REPORT. nflverse publishes the NFL's official report as a
+     public CSV; .github/workflows/injury-sync.yml commits it, reduced to the
+     latest week per team, to football/injuries/nfl_<season>.json. The card
+     reads that file beside itself. Until the season's file is published the
+     card keeps saying the report is not on file, and never shows last
+     season's. College football has no public report at all: it stays a
+     named gap, never a clean sheet. */
+  var INJ={season:null,data:null,error:null,at:0,_p:null};
+  function injSeason(){ var d=new Date(); return d.getMonth()<=1?d.getFullYear()-1:d.getFullYear(); }
+  function loadInjuries(){
+    if(INJ.data&&Date.now()-INJ.at<15*60000) return Promise.resolve(INJ.data);
+    if(INJ._p) return INJ._p;
+    var season=injSeason();
+    INJ._p=fetch('football/injuries/nfl_'+season+'.json',{cache:'no-cache'}).then(function(r){ if(r.status===404) return {schema:'edgedesk_nfl_injuries_v1',requested_season:season,season:null,published:false,reason:'no injury file has been synced yet',teams:{}}; if(!r.ok) throw new Error('injuries '+r.status); return r.json(); })
+      .then(function(j){ INJ.season=season; INJ.data=j; INJ.error=null; INJ.at=Date.now(); INJ._p=null; return j; })
+      .catch(function(e){ INJ.error=String(e&&e.message||e).slice(0,80); INJ._p=null; return null; });
+    return INJ._p;
+  }
+  function nflCode(name){ try{ if(typeof fbNflTeamCode!=='function') return null; return fbNflTeamCode((window.FB_NFL_NAMES&&FB_NFL_NAMES[name])||name); }catch(_){ return null; } }
+  /* Availability facts for one signal, from the committed report. Null for
+     sports the file does not cover; NOT_PUBLISHED while nflverse has no file
+     for the season; ON_FILE with both teams otherwise. A team missing from
+     the latest week is carried as "no report filed yet", never as clean. */
+  function availabilityFor(x){
+    var e=x&&x.e; if(!e) return null;
+    var k=String(e.sport_key||'');
+    if(k.indexOf('americanfootball_nfl')!==0) return null;
+    var d=INJ.data; if(!d) return null;
+    if(!d.published||d.season!==injSeason()) return {status:'NOT_PUBLISHED', source:'nflverse', reason:(d.reason||('nflverse has not published the '+injSeason()+' report yet'))};
+    function side(name){
+      var code=nflCode(name); var tm=code&&d.teams?d.teams[code]:null;
+      return {name:name||code||'', code:code||null, week:tm?tm.week:null, filed:!!tm, players:tm?(tm.players||[]).map(function(p){ return {name:p.name, position:p.position||null, status:p.status||null, injury:p.injury||null, practice:p.practice||null}; }):[]};
+    }
+    return {status:'ON_FILE', source:'nflverse', week:d.latest_week||null, retrieved_at:d.retrieved_at||null, teams:{away:side(e.away_team), home:side(e.home_team)}};
+  }
   function gapsFor(x){
     var k=(x&&x.e&&x.e.sport_key)||'';
+    if(k.indexOf('americanfootball_nfl')===0){ var av=availabilityFor(x); return av&&av.status==='ON_FILE'?[]:['injury_report']; }
     if(k.indexOf('americanfootball')===0) return ['injury_report'];
     return [];
   }
+  try{ loadInjuries(); }catch(_){}
 
   /* ---------------------------------------------------------------- cards */
   var REG={}, SEQ=0;                       // card id -> {e, x, s}
@@ -26521,7 +26624,7 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
   function simpleFromX(x, ctx){
     if(!x) return null;
     var pk=packetOf(x); if(!pk) return null;
-    var s=P.simpleFromPacket(pk, Object.assign({stale_limit_min:staleLimit(), gaps:gapsFor(x)}, ctx||{}));
+    var s=P.simpleFromPacket(pk, Object.assign({stale_limit_min:staleLimit(), gaps:gapsFor(x), availability:availabilityFor(x)}, ctx||{}));
     return s;
   }
   function simpleFromSignal(e, ctx){ var x=engine(e); return x?simpleFromX(x, ctx):null; }
@@ -26594,6 +26697,7 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
   }
 
   window.EDCARD={
+    availabilityFor:availabilityFor, loadInjuries:loadInjuries, injuries:function(){ return INJ; },
     simpleFromSignal:simpleFromSignal, simpleFromX:simpleFromX,
     leadHTML:leadHTML, receiptHTML:receiptHTML, cardForX:cardForX, serverCardHTML:serverCardHTML,
     toggleFull:toggleFull, get:function(id){ return REG[id]||null; },
@@ -27056,6 +27160,24 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
   }
 
   /* ---- starters and rooms from the football and baseball feeds ---------- */
+  function nflCode(name){ try{ if(typeof fbNflTeamCode!=='function') return null; return fbNflTeamCode((window.FB_NFL_NAMES&&FB_NFL_NAMES[name])||name); }catch(_){ return null; } }
+  /* The committed injury report, through the card block's loader. */
+  function injuryOf(e, side, player){
+    try{
+      var av=(window.EDCARD&&window.EDCARD.availabilityFor)?window.EDCARD.availabilityFor({e:e}):null;
+      if(!av||av.status!=='ON_FILE') return null;
+      var tm=av.teams[side]; if(!tm) return null;
+      var k=normTeam(player); var hit=null; (tm.players||[]).forEach(function(p){ if(!hit&&normTeam(p.name)===k) hit=p; });
+      return hit;
+    }catch(_){ return null; }
+  }
+  function injuryHTML(inj){
+    if(!inj) return '';
+    var st=String(inj.status||'').toLowerCase();
+    var cls=st||'practice';
+    var txt=(inj.status?inj.status:'On the report')+(inj.injury?' · '+inj.injury:'')+(inj.practice?' · '+String(inj.practice).replace(/ in practice| participation/gi,''):'');
+    return '<div class="pic-inj '+esc(cls)+'">'+esc(txt)+' <span style="color:var(--faint)">· nflverse injury report</span></div>';
+  }
   function nflSide(e, side){
     try{
       if(!window.FB||!FB.nfl||!FB.nfl.qbs||!FB.nfl.qbs.length||typeof fbNflTeamCode!=='function') return null;
@@ -27180,7 +27302,37 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
      the block says so. */
   var TOTALS={};
   var TOTAL_KEYS={passing:'netPassingYards',rushing:'rushingYards',receiving:'netPassingYards',total:'totalYards'};
+  /* NFL: nflverse stats_team_week, the same public file the football engine
+     already downloads browser-direct. Summed per team for the latest season
+     that has a played regular-season game, and the season is named. */
+  var STW={season:null,map:null,_p:null,error:null};
+  function csvRows(text){ if(typeof fbCsv==='function') return fbCsv(text); var lines=String(text||'').split(/\r?\n/).filter(Boolean); var head=lines.shift().split(','); return lines.map(function(l){ var c=l.split(','), o={}; head.forEach(function(h,i){ o[h]=c[i]; }); return o; }); }
+  async function loadNflTotals(){
+    if(STW.map) return STW;
+    if(STW._p) return STW._p;
+    var season=rosterSeason();
+    STW._p=(async function(){
+      for(var s=season; s>=season-1; s--){
+        try{
+          var url=(typeof FB_URL_STW==='function')?FB_URL_STW(s):('https://github.com/nflverse/nflverse-data/releases/download/stats_team/stats_team_week_'+s+'.csv');
+          var r=await fetch(url,{redirect:'follow'}); if(!r.ok) continue;
+          var rows=csvRows(await r.text()).filter(function(x){ return String(x.season_type||'REG')==='REG'; });
+          if(!rows.length) continue;
+          var map={};
+          rows.forEach(function(x){ var code=String(x.team||'').toUpperCase(); if(!code) return; var m=map[code]=map[code]||{_season:s,_source:'nflverse stats_team_week_'+s,netPassingYards:0,rushingYards:0,totalYards:0,games:0}; var py=num(x.passing_yards)||0, ry=num(x.rushing_yards)||0; m.netPassingYards+=py; m.rushingYards+=ry; m.totalYards+=py+ry; m.games++; });
+          STW.season=s; STW.map=map; STW.error=null; break;
+        }catch(e){ STW.error=String(e&&e.message||e).slice(0,80); }
+      }
+      STW._p=null; return STW;
+    })();
+    return STW._p;
+  }
   async function loadTeamTotals(L, names){
+    if(L==='NFL'){
+      var st=await loadNflTotals(); var o={};
+      if(st.map) names.forEach(function(nm){ var code=nflCode(nm); if(code&&st.map[code]) o[normTeam(nm)]=st.map[code]; });
+      return o;
+    }
     if(L!=='CFB'||typeof rsFetchAll!=='function') return {};
     var out={};
     for(var i=0;i<names.length;i++){
@@ -27191,7 +27343,7 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
       try{
         var rows=await rsFetchAll('cfb','team_season_stats?select=season,team,stat_name,stat_value&team=eq.'+encodeURIComponent(nm),'season.desc',2);
         var season=null; (rows||[]).forEach(function(r){ if(r.season!=null&&(season==null||+r.season>season)) season=+r.season; });
-        if(rows&&rows.length){ map={_season:season}; rows.forEach(function(r){ if(season==null||+r.season===season) map[r.stat_name]=num(r.stat_value); }); }
+        if(rows&&rows.length){ map={_season:season,_source:'cfb.team_season_stats'}; rows.forEach(function(r){ if(season==null||+r.season===season) map[r.stat_name]=num(r.stat_value); }); }
       }catch(_){ map=null; }
       TOTALS[k]={at:Date.now(),map:map}; out[k]=map;
     }
@@ -27296,7 +27448,7 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
         spotNames[normTeam(s.player)]=1;
         var pr=props&&props[normTeam(s.player)];
         return '<div class="pic-spot"><div class="pic-pn">'+esc(s.player)+(s.position?' <span class="pic-pos">'+esc(s.position)+'</span>':'')+' <span class="pic-tag spot">'+esc(s.tag)+'</span></div>'
-          +'<div class="pic-spot-why">'+esc(s.why)+'</div>'
+          +'<div class="pic-spot-why">'+esc(s.why)+'</div>'+injuryHTML(injuryOf(e,side,s.player))
           +'<ul class="pic-rundown">'+(s.rundown||[]).filter(Boolean).map(function(l){ return '<li>'+esc(l)+'</li>'; }).join('')+'</ul>'
           +(pr&&pr.length?'<div class="pic-prop">'+pr.slice(0,2).map(function(p){ return esc((p.market||'').replace(/_/g,' '))+' o'+esc(String(p.line))+' · proj '+esc((+p.proj).toFixed(1))+(p.p_over!=null?' · '+Math.round(+p.p_over)+'% over':''); }).join(' · ')+' <span class="unproven">MODEL</span></div>':'')
           +'</div>';
@@ -27320,12 +27472,24 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
       h+='<div class="pic-also">'+(spots.length?'Also on the sheet':'')+'</div><ul class="pic-players">'+rows.map(function(r){
         var pr=props&&props[normTeam(r.player)];
         return '<li><div class="pic-pn">'+esc(r.player)+(r.position?' <span class="pic-pos">'+esc(r.position)+'</span>':'')+(r.tag?' <span class="pic-tag '+esc(r.tag.toLowerCase())+'">'+esc(r.tag)+'</span>':'')+'</div>'
-          +'<div class="pic-why">'+esc(r.why)+'</div>'
+          +'<div class="pic-why">'+esc(r.why)+'</div>'+injuryHTML(injuryOf(e,side,r.player))
           +(pr&&pr.length?'<div class="pic-prop">'+pr.slice(0,2).map(function(p){ return esc((p.market||'').replace(/_/g,' '))+' o'+esc(String(p.line))+' · proj '+esc((+p.proj).toFixed(1))+(p.p_over!=null?' · '+Math.round(+p.p_over)+'% over':''); }).join(' · ')+' <span class="unproven">MODEL</span></div>':'')
           +'</li>';
       }).join('')+'</ul>';
     }
-    if(spots.length&&spots[0].basis==='production share'&&totals&&totals._season) h+='<div class="pic-src">Share of offense = the player’s stored yards over '+esc(roster&&roster.location||name)+'’s '+esc(String(totals._season))+' season totals (cfb.team_season_stats).</div>';
+    /* everyone else on the injury report for this team */
+    try{
+      var av=(window.EDCARD&&window.EDCARD.availabilityFor)?window.EDCARD.availabilityFor({e:e}):null;
+      if(av&&av.status==='ON_FILE'&&av.teams[side]){
+        var tm=av.teams[side], shown={}; spots.forEach(function(s){ shown[normTeam(s.player)]=1; }); rows.forEach(function(r){ shown[normTeam(r.player)]=1; });
+        var rest=(tm.players||[]).filter(function(p){ return p.status&&!shown[normTeam(p.name)]; }).slice(0,6);
+        h+='<div class="pic-also">Injury report · week '+esc(String(tm.week||av.week||''))+'</div>';
+        if(!tm.filed) h+='<div class="pic-empty">No report filed yet for '+esc(name)+' this week.</div>';
+        else if(!rest.length&&!(tm.players||[]).some(function(p){ return p.status; })) h+='<div class="pic-empty">Nobody listed for '+esc(name)+' on the latest report.</div>';
+        else if(rest.length) h+='<ul class="pic-players">'+rest.map(function(p){ return '<li><div class="pic-pn">'+esc(p.name)+(p.position?' <span class="pic-pos">'+esc(p.position)+'</span>':'')+'</div>'+injuryHTML(p)+'</li>'; }).join('')+'</ul>';
+      } else if(av&&av.status==='NOT_PUBLISHED'){ h+='<div class="pic-empty">Injury report: '+esc(av.reason||'not published yet')+'.</div>'; }
+    }catch(_){}
+    if(spots.length&&spots[0].basis==='production share'&&totals&&totals._season) h+='<div class="pic-src">Share of offense = the player’s stored yards over '+esc(roster&&roster.location||name)+'’s '+esc(String(totals._season))+' season totals ('+esc(totals._source||'the season totals on file')+(totals.games?' · '+totals.games+' games':'')+').</div>';
     else if(spots.length&&spots[0].basis==='stat sheet'&&L==='CFB') h+='<div class="pic-src">Team season totals are not on file for this school, so the spotlight is the category leader, not a share of the offense.</div>';
     if(!res&&stats&&stats.rows&&stats.rows.length&&(feed||roster)) h+='<div class="pic-empty">No '+esc(L)+' stat rows matched “'+esc(name||'')+'”, so only the roster is read.</div>';
     var srcs=[];
@@ -27468,6 +27632,7 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
     var stats=await loadStatsFor(L);
     await ensureFeeds(e,L);
     var totals=null;
+    if(L==='NFL'){ try{ if(window.EDCARD&&window.EDCARD.loadInjuries) await window.EDCARD.loadInjuries(); }catch(_){} totals=await loadTeamTotals(L,[e.away_team,e.home_team]); }
     if(L==='CFB'){
       var schools=[e.away_team,e.home_team].map(function(nm){ var tm=rosterTeam(nm); if(tm&&tm.location) return tm.location; var r=stats&&stats.index?resolveTeam(stats.index,nm):null; return r?r.team:nm; });
       totals=await loadTeamTotals(L, schools);
@@ -27482,7 +27647,7 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
     open:open, pictureHTML:pictureHTML, marketsHTML:marketsHTML, booksHTML:booksHTML, teamBlock:teamBlock,
     keyPlayers:keyPlayers, resolveTeam:resolveTeam, teamIndex:teamIndex, leagueOf:leagueOf, gameRows:gameRows, leadVal:leadVal,
     loadRoster:loadRoster, rosterTeam:rosterTeam, rosterIndex:rosterIndex, ROSTER:ROSTER,
-    spotlight:spotlight, impactOf:impactOf, rosterSpotlight:rosterSpotlight, loadTeamTotals:loadTeamTotals,
+    spotlight:spotlight, impactOf:impactOf, rosterSpotlight:rosterSpotlight, loadTeamTotals:loadTeamTotals, loadNflTotals:loadNflTotals, injuryOf:injuryOf,
     CAT_PRI:CAT_PRI
   };
 })();

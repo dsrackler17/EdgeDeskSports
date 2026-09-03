@@ -527,6 +527,36 @@ footer a:hover{color:var(--text)}
     return uniq;
   }
 
+  /* ----------------------------------------------------------- availability */
+  /* The injury report, when it IS on file. Shape (built by the app from the
+     nflverse report the repo commits):
+       { status:'ON_FILE'|'NOT_PUBLISHED'|'NO_REPORT', source, week,
+         teams:{ away:{name, code, week, players:[{name, position, status, injury, practice}]},
+                 home:{...} } }
+     Copy only: it never touches a number or a verdict. */
+  var STATUS_RANK = { out: 3, doubtful: 2, questionable: 1 };
+  function statusWord(s) { s = String(s == null ? '' : s).toLowerCase(); return s === 'out' ? 'out' : s === 'doubtful' ? 'doubtful' : s === 'questionable' ? 'questionable' : null; }
+  function availabilitySummary(av) {
+    if (!av || av.status !== 'ON_FILE' || !av.teams) return null;
+    var sides = [], listed = [], worst = 0;
+    ['away', 'home'].forEach(function (k) {
+      var tm = av.teams[k]; if (!tm) return;
+      var ps = (tm.players || []).filter(function (p) { return statusWord(p.status); });
+      var counts = { out: 0, doubtful: 0, questionable: 0 };
+      ps.forEach(function (p) { var w = statusWord(p.status); counts[w]++; worst = Math.max(worst, STATUS_RANK[w]); listed.push({ team: tm.name || tm.code, name: p.name, position: p.position || null, status: w, injury: p.injury || null, practice: p.practice || null }); });
+      var bits = [];
+      if (counts.out) bits.push(counts.out + ' out');
+      if (counts.doubtful) bits.push(counts.doubtful + ' doubtful');
+      if (counts.questionable) bits.push(counts.questionable + ' questionable');
+      var label = (tm.code || tm.name || '');
+      sides.push(label + (tm.filed === false ? ': no report filed yet' : (bits.length ? ': ' + bits.join(', ') : ': nobody listed')));
+    });
+    listed.sort(function (a, b) { return STATUS_RANK[b.status] - STATUS_RANK[a.status] || a.name.localeCompare(b.name); });
+    return { text: 'Injury report on file (' + (av.source || 'league report') + (av.week ? ', week ' + av.week : '') + '): ' + sides.join(' · '), sides: sides, listed: listed, worst: worst };
+  }
+  function normTeamName(s) { return normTeam(s); }
+  function playerLine(p) { return p.name + (p.position ? ' (' + p.position + ')' : '') + ' is ' + p.status + (p.injury ? ', ' + String(p.injury).toLowerCase() : '') + (p.practice && /did not/i.test(p.practice) ? ', did not practice' : p.practice && /limited/i.test(p.practice) ? ', limited in practice' : '') + '.'; }
+
   /* ------------------------------------------------------------------ SIMPLE */
   /* The client packet shape (askAI / EDAI.packetOf) is the contract:
        { game:{matchup,sport,sport_key,commence,away,home,event_id},
@@ -595,7 +625,16 @@ footer a:hover{color:var(--text)}
     /* Strongest drivers only: the engine lists them in priority order. */
     why = why.slice(0, 3).map(function (t) { return { text: t, source: 'deterministic', evidence_ids: [] }; });
 
-    var gaps = gapSentences(ctx.gaps || p.gaps || []);
+    var availability = ctx.availability || p.availability || null;
+    var avail = availabilitySummary(availability);
+    var gapsIn = (ctx.gaps || p.gaps || []).filter(function (g) {
+      /* an injury report on file is not a gap; an unpublished one still is */
+      var k = String(g && (g.field || g) || '').toLowerCase();
+      return !(avail && /injur|availab/.test(k));
+    });
+    if (availability && availability.status === 'NOT_PUBLISHED' && !gapsIn.some(function (g) { return /injur/.test(String(g && (g.field || g) || '')); })) gapsIn.push('injury_report');
+    var gaps = gapSentences(gapsIn);
+    if (availability && availability.status === 'NOT_PUBLISHED' && availability.reason) gaps = gaps.map(function (s) { return /injury and availability/i.test(s) ? 'Injury and availability data is not on file: ' + availability.reason + '. Do not read that as a clean injury report.' : s; });
     var against = (det.reasons_against || []).map(plainReason).filter(Boolean);
     var fals = (det.falsifiers || []).map(plainReason).filter(Boolean);
     var watchText, changeText;
@@ -617,6 +656,15 @@ footer a:hover{color:var(--text)}
        still shows as a flag on the card. */
     if (gaps.length && /injur|availab/i.test(gaps[0]) && !/injur/i.test(watchText)
       && (displayVerdict === 'BET' || displayVerdict === 'LEAN')) watchText = gaps[0] + ' ' + watchText;
+    /* A listed player on the side being backed leads the watch line; an
+       opponent's absence is a watch line too, said as the opponent's. */
+    if (avail && avail.listed.length && (displayVerdict === 'BET' || displayVerdict === 'LEAN' || displayVerdict === 'WAIT')) {
+      var pickTeam = (selectionRaw && game.home && normTeamName(selectionRaw) === normTeamName(game.home)) ? 'home' : (selectionRaw && game.away && normTeamName(selectionRaw) === normTeamName(game.away)) ? 'away' : null;
+      var mine = avail.listed.filter(function (x) { return pickTeam && availability.teams[pickTeam] && x.team === (availability.teams[pickTeam].name || availability.teams[pickTeam].code) && x.status !== 'questionable'; });
+      var theirs = avail.listed.filter(function (x) { return !mine.some(function (m) { return m === x; }) && x.status !== 'questionable'; });
+      var lead = mine.length ? playerLine(mine[0]) + (mine.length > 1 ? ' ' + (mine.length - 1) + ' more on the same side listed.' : '') : (theirs.length ? 'For the other side, ' + playerLine(theirs[0]).charAt(0).toLowerCase() + playerLine(theirs[0]).slice(1) : '');
+      if (lead && !/\bis (out|doubtful)\b/i.test(watchText)) watchText = lead + ' ' + watchText;
+    }
 
     var headline;
     if (suppressed) headline = 'DATA CHECK FAILED: EdgeDesk cannot safely publish a decision until ' + (integ.reason || 'the data check passes') + '.';
@@ -636,6 +684,7 @@ footer a:hover{color:var(--text)}
     if (noPrice) flags.push({ kind: 'NO_PRICE', text: 'No current price on file' });
     if (book && trusted === false) flags.push({ kind: 'OFFSHORE', text: 'Best price is at an offshore book' });
     gaps.forEach(function (g) { flags.push({ kind: 'DATA_GAP', text: g.split('. ')[0].replace(/\.$/, '') }); });
+    if (avail) flags.push({ kind: 'AVAILABILITY', text: avail.text.replace(/^Injury report on file \([^)]*\): /, 'Injury report: '), severity: avail.worst >= 2 ? 'warn' : 'ok' });
 
     return {
       version: VERSION,
@@ -668,6 +717,7 @@ footer a:hover{color:var(--text)}
       integrity_reason: integ.reason,
       flags: flags,
       gaps: gaps,
+      availability: availability ? { status: availability.status, source: availability.source || null, week: availability.week || null, summary: avail ? avail.text : null, listed: avail ? avail.listed.slice(0, 8) : [], sides: avail ? avail.sides : [], reason: availability.reason || null } : null,
       confidence: det.confidence || null,
       score: num(det.score),
       copy_source: 'deterministic',
@@ -1154,7 +1204,7 @@ footer a:hover{color:var(--text)}
     var flags = (s.flags || []).filter(function (f) { return !opts.compact || f.kind !== 'DATA_GAP'; });
     if (flags.length) {
       h += '<div class="dcard-flags">' + flags.map(function (f) {
-        var c = f.kind === 'DATA_CHECK_FAILED' ? 'bad' : (f.kind === 'STALE_PRICE' || f.kind === 'NO_PRICE') ? 'bad' : 'warn';
+        var c = f.kind === 'DATA_CHECK_FAILED' ? 'bad' : (f.kind === 'STALE_PRICE' || f.kind === 'NO_PRICE') ? 'bad' : f.kind === 'AVAILABILITY' ? (f.severity === 'warn' ? 'warn' : 'ok') : 'warn';
         return '<span class="dcard-flag ' + c + '">' + esc(f.text) + '</span>';
       }).join('') + '</div>';
     }
@@ -1167,6 +1217,7 @@ footer a:hover{color:var(--text)}
         + '<div class="dcard-h">' + (s.verdict === 'WAIT' ? 'Waiting on' : s.verdict === 'PASS' ? 'Why pass' : 'Watch') + '</div>'
         + '<p class="dcard-watch">' + esc(s.watch && s.watch.text || '') + '</p>'
         + (s.change_trigger && s.change_trigger.text ? '<div class="dcard-h">What would change it</div><p class="dcard-change">' + esc(s.change_trigger.text) + '</p>' : '')
+        + (s.availability && s.availability.listed && s.availability.listed.length ? '<div class="dcard-h">Injury report</div><ul class="dcard-avail">' + s.availability.listed.slice(0, 6).map(function (p) { return '<li><b>' + esc(p.name) + '</b>' + (p.position ? ' <span class="pos">' + esc(p.position) + '</span>' : '') + ' <span class="st ' + esc(p.status) + '">' + esc(p.status) + '</span>' + (p.injury ? ' · ' + esc(String(p.injury).toLowerCase()) : '') + (p.practice ? ' · ' + esc(String(p.practice).replace(/ in practice| participation/gi, '').toLowerCase()) : '') + ' <span class="tm">' + esc(p.team) + '</span></li>'; }).join('') + '</ul>' : '')
         + '<div class="dcard-fresh' + (s.freshness && s.freshness.status === 'STALE' ? ' bad' : '') + '">' + esc(s.freshness ? s.freshness.price_text : '') + (s.freshness && s.freshness.research_text ? ' · ' + esc(s.freshness.research_text) : '') + '</div>'
         + (opts.show_what !== false ? whatMeans('good_to', s) + whatMeans('verdict', s) : '')
         + '</div>';
@@ -1426,6 +1477,9 @@ footer a:hover{color:var(--text)}
       entry_odds: fmtAmerican(entryAm), entry_am: entryAm,
       close_fair_prob: p, close_fair_odds: fmtAmerican(closeAm), close_fair_am: closeAm,
       close_best_odds: o.close_best_am != null ? fmtAmerican(o.close_best_am) : null, close_best_book: o.close_best_book || null,
+      /* the SAME book's last pre-kickoff quote, when the ticks table has it */
+      close_book_odds: o.close_book_am != null ? fmtAmerican(o.close_book_am) : null, close_book: o.close_book || null,
+      close_book_at: o.close_book_at || null, close_book_lead_min: num(o.close_book_lead_min), book_cents: null,
       closed_at: o.closed_at || null,
       clv: null, beat_close: null, cents: null,
       result: normResult(o.result), result_source: null,
@@ -1437,6 +1491,7 @@ footer a:hover{color:var(--text)}
       g.beat_close = g.clv > 0;
       g.cents = closeAm != null ? centsBetween(entryAm, closeAm) : null;
     }
+    if (entryAm != null && o.close_book_am != null) g.book_cents = centsBetween(entryAm, parseAmerican(o.close_book_am));
     g.status = (g.clv != null && g.result) ? 'graded' : g.clv != null ? 'awaiting_result' : g.result ? 'awaiting_close' : 'pending';
     g.text = resultText(g);
     return g;
@@ -1445,8 +1500,11 @@ footer a:hover{color:var(--text)}
   function resultText(g) {
     if (!g) return '';
     var parts = [];
-    if (g.close_fair_odds) parts.push('Closed ' + g.close_fair_odds);
-    if (g.cents != null) parts.push(g.cents > 0 ? 'Beat the close by ' + g.cents + ' cent' + (g.cents === 1 ? '' : 's') : g.cents < 0 ? 'Missed the close by ' + (-g.cents) + ' cent' + (g.cents === -1 ? '' : 's') : 'Matched the close');
+    if (g.close_book_odds) parts.push('Closed ' + g.close_book_odds + ' at ' + (g.close_book || 'the book') + (g.close_fair_odds ? ' (fair ' + g.close_fair_odds + ')' : ''));
+    else if (g.close_fair_odds) parts.push('Closed ' + g.close_fair_odds);
+    var c = g.book_cents != null ? g.book_cents : g.cents;
+    var what = g.book_cents != null ? 'the book’s close' : 'the close';
+    if (c != null) parts.push(c > 0 ? 'Beat ' + what + ' by ' + c + ' cent' + (c === 1 ? '' : 's') : c < 0 ? 'Missed ' + what + ' by ' + (-c) + ' cent' + (c === -1 ? '' : 's') : 'Matched ' + what);
     else if (g.beat_close != null) parts.push(g.beat_close ? 'Beat the close' : 'Did not beat the close');
     if (g.result === 'win') parts.push('Won');
     else if (g.result === 'loss') parts.push('Lost');
@@ -1653,6 +1711,7 @@ footer a:hover{color:var(--text)}
     normResult: normResult, normTeam: normTeam, sideOf: sideOf, outcomeFromScore: outcomeFromScore, gradePick: gradePick, resultText: resultText, outcomeOf: outcomeOf,
     marketKeyOf: marketKeyOf, parseSelectionLabel: parseSelectionLabel, priceFields: priceFields, gradeKey: gradeKey,
     recordSummary: recordSummary, calibration: calibration, sportGroup: sportGroup, isCall: isCall, tally: tally, flattenPicks: flattenPicks,
+    availabilitySummary: availabilitySummary, playerLine: playerLine,
     calibrationHTML: calibrationHTML, pickStatusText: pickStatusText, resultHTML: resultHTML, briefResultsHTML: briefResultsHTML, briefResultsText: briefResultsText,
     fmtCents: fmtCents, fmtRate: fmtRate, fmtClv: fmtClv
   };
@@ -1696,7 +1755,8 @@ footer a:hover{color:var(--text)}
     var g=pk.grade||{};
     var sub=[];
     if(pk.odds) sub.push('<b>'+esc(pk.odds)+'</b>'+(pk.book?' '+esc(pk.book):''));
-    if(g.close_fair_odds) sub.push('close '+esc(g.close_fair_odds));
+    if(g.close_book_odds) sub.push('closed '+esc(g.close_book_odds)+' '+esc(g.close_book||'')+(g.close_fair_odds?' · fair '+esc(g.close_fair_odds):''));
+    else if(g.close_fair_odds) sub.push('close '+esc(g.close_fair_odds));
     if(g.close_best_odds) sub.push('board '+esc(g.close_best_odds)+(g.close_best_book?' '+esc(g.close_best_book):''));
     if(pk.score&&pk.score.home_score!=null) sub.push('final '+esc(pk.score.away||'')+' '+pk.score.away_score+', '+esc(pk.score.home||'')+' '+pk.score.home_score);
     if(pk.matchup) sub.push(esc(pk.matchup));
@@ -1725,7 +1785,7 @@ footer a:hover{color:var(--text)}
   function noteHTML(data){
     if(!data) return '';
     var n=[];
-    n.push('The close is EdgeDesk\u2019s closing fair line for the same selection, the number the CLV record above is graded against. \u201cBoard\u201d is the best price capture saw before kickoff. Cents are the gap between the published price and the close on the sportsbook scale, where -110 to -125 is 15 cents.');
+    n.push('The close is EdgeDesk\u2019s closing fair line for the same selection, the number the CLV record above is graded against. Where the same book\u2019s last pre-kickoff quote is on file it is shown as \u201cclosed \u2026 at\u201d and the cents are measured against it; otherwise \u201cboard\u201d is the best price capture saw before kickoff and cents are against the fair close. -110 to -125 is 15 cents.');
     if(data.source&&data.source.close==null) n.push('<b style="color:var(--warn)">The closing line view is not deployed yet</b>, so no pick can grade until supabase/brief_record.sql runs. Picks wait rather than guess.');
     if(data.generated_at) n.push('Last graded '+esc(P?P.fmtStamp(data.generated_at):data.generated_at)+'. Grades are written by a scheduled job and committed to the repository; the history of this file is the history of the record.');
     return n.join(' ');
