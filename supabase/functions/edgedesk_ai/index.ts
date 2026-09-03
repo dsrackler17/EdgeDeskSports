@@ -2783,8 +2783,11 @@ export class Dal {
     const from = new Date().toISOString();
     const to = new Date(Date.now() + hours * 3600_000).toISOString();
     let q = "signals?select=event_id,sport_key,sport_title,market,selection,point,best_dec,first_best_dec,best_book,"
-      + "sharp_fair,consensus_fair,edge,first_edge,n_books,n_books_eff,has_sharp,corrob_n,pin_dec,pin_opp_dec,"
+      + "sharp_fair,sharp_book_fair,consensus_fair,edge,first_edge,n_books,n_books_eff,has_sharp,corrob_n,pin_dec,pin_opp_dec,"
+      + "reference_type,qual_tier,qual_reason,quality_score,fresh_books,flagged_at,flagged_edge,flagged_best_dec,flagged_best_book,"
       + "home_team,away_team,commence_time,first_seen_at,last_seen_at,clv,beat_close,result,graded_at,closing_sharp_fair"
+      /* FLAGGED ONLY. This is the board, so it reads what the board reads. */
+      + `&flagged_at=not.is.null&flagged_best_dec=not.is.null`
       + `&commence_time=gte.${from}&commence_time=lte.${to}&order=edge.desc.nullslast&limit=120`;
     if (sport) q += `&sport_key=eq.${encodeURIComponent(sport)}`;
     let { rows, error } = await this.read(q, "");
@@ -2799,7 +2802,15 @@ export class Dal {
        Both halves are fixed here: the filter always applies, and what it
        removed becomes visible evidence rather than a silent deletion. */
     const _drop: string[] = [];
-    const _clean = rows.filter((r: any) => { const t = signalTradeable(r); if (!t.ok) _drop.push(t.reason!); return t.ok; });
+    /* BOTH guards, and the second is not redundant. The `flagged_at IS NULL`
+       guard on capture's freeze means a row flagged by an OLDER build stays
+       flagged permanently — the same rule that stops an entry price drifting
+       also preserves a bad historical flag forever. app.html carries this exact
+       pair for this exact reason. */
+    const _clean = rows.filter((r: any) => {
+      if (!signalIsActionable(r)) { _drop.push("not a qualified EdgeDesk signal (no frozen entry)"); return false; }
+      const t = signalTradeable(r); if (!t.ok) _drop.push(t.reason!); return t.ok;
+    });
     const _dropped = rows.length - _clean.length;
     const _why = Array.from(new Set(_drop)).slice(0, 4).join("; ");
     rows = _clean;
@@ -4705,24 +4716,38 @@ export class Dal {
   async getCrossMarket(eventId: string): Promise<{ rows: any[]; ev: Evidence[] }> {
     const { rows, error } = await this.read(
       `signals?select=event_id,market,selection,point,best_dec,first_best_dec,sharp_fair,consensus_fair,`
-      + `edge,first_edge,n_books,has_sharp,pin_dec,pin_opp_dec,home_team,away_team,last_seen_at`
+      + `edge,first_edge,n_books,has_sharp,pin_dec,pin_opp_dec,home_team,away_team,last_seen_at,`
+      + `reference_type,qual_tier,qual_reason,flagged_at,flagged_best_dec`
       + `&event_id=eq.${encodeURIComponent(eventId)}&order=edge.desc.nullslast&limit=40`, "");
     if (error) return { rows: [], ev: [unavailable("signals", "cross_market", `read failed — ${error}`, eventId)] };
-    if (rows.length < 2) {
-      return { rows, ev: [unavailable("signals", "cross_market",
-        "only one market carries a signal on this game — nothing to cross-check", eventId)] };
+    /* Every market on the game is legitimate CONTEXT here — the point of a
+       cross-market read is to see whether the moneyline and the spread agree —
+       but v8 emitted each row's `edge` as VERIFIED evidence with no filter at
+       all, including exchange lay rows, so the model could quote the edge of a
+       price capture had explicitly refused. The rows stay; the CLAIM does not.
+       An unqualified row's edge is nulled out and replaced by the reason it was
+       refused, which capture now writes on every priced row. */
+    const marked = rows.map((r: any) => (signalIsActionable(r) && signalTradeable(r).ok)
+      ? { ...r, edgedesk_signal: true }
+      : { ...r, edgedesk_signal: false, edge: null, first_edge: null,
+          not_a_signal_because: r.qual_reason ?? "not qualified by capture" });
+    if (marked.length < 2) {
+      return { rows: marked, ev: [unavailable("signals", "cross_market",
+        "only one market is priced on this game — nothing to cross-check", eventId)] };
     }
     return {
-      rows,
+      rows: marked,
       ev: [ev({
         source: "signals", entity: eventId, field: "cross_market", relevance: "structure",
-        value: rows.map((r) => ({
+        value: marked.map((r) => ({
           market: r.market, selection: r.selection, point: r.point,
-          price: r.best_dec, edge: r.edge, has_sharp: r.has_sharp, n_books: r.n_books,
+          price: r.best_dec, edge: r.edge, edgedesk_signal: r.edgedesk_signal,
+          not_a_signal_because: r.not_a_signal_because,
+          has_sharp: r.has_sharp, n_books: r.n_books,
         })),
         status: "VERIFIED",
-        source_timestamp: rows[0]?.last_seen_at,
-        freshness: freshnessOf("odds", rows[0]?.last_seen_at),
+        source_timestamp: marked[0]?.last_seen_at,
+        freshness: freshnessOf("odds", marked[0]?.last_seen_at),
       })],
     };
   }
@@ -9349,13 +9374,37 @@ const BACK_MARKETS = new Set(["h2h","spreads","totals","ml","spread","total"]);
 export function signalTradeable(r: any): { ok: boolean; reason: string | null } {
   if (!r) return { ok:false, reason:"empty row" };
   const mkt = String(r.market ?? "");
-  if (/(^|_)lay$/i.test(mkt)) return { ok:false, reason:`exchange lay quote (${mkt}) — the other side of the book` };
+  /* Matches a `_lay` SEGMENT anywhere, not only a suffix. The old `(^|_)lay$`
+     accepted `h2h_lay_1st_half`, which capture's backable() refuses — so the
+     writer and the reader disagreed about what a lay market was. */
+  if (/(^|_)lay(_|$)/i.test(mkt)) return { ok:false, reason:`exchange lay quote (${mkt}) — the other side of the book` };
   if (mkt && !BACK_MARKETS.has(mkt.toLowerCase())) return { ok:false, reason:`unrecognised market type "${mkt}"` };
   const dec = Number(r.best_dec);
   if (!Number.isFinite(dec) || dec <= 1) return { ok:false, reason:"no usable price" };
   if (dec > SIG_MAX_DEC) return { ok:false, reason:`price ${dec.toFixed(2)} above the placeholder bound (${SIG_MAX_DEC})` };
   if (dec < SIG_MIN_DEC) return { ok:false, reason:`price ${dec.toFixed(2)} is an extreme snap` };
   return { ok:true, reason:null };
+}
+
+/**
+ * IS THIS A SIGNAL EDGEDESK PUT ITS NAME ON?
+ *
+ * There is exactly one definition of an actionable EdgeDesk signal and capture
+ * owns it: `flagged_at IS NOT NULL` means qualifySignal() returned actionable,
+ * and the frozen entry travels with it in flagged_best_dec.
+ *
+ * This engine had no such check anywhere. getSlate() described itself as "the
+ * board, server-side" while reading the STORED population — every row capture
+ * priced, including every row it explicitly refused — ordered by edge, and
+ * handed the top of that list to the model as VERIFIED evidence it must quote
+ * numbers from. The app's board and the engine's board were two different
+ * populations with one name, and the engine's was the unfiltered one.
+ *
+ * Deliberately identical to app.html's isFlaggedSignal(). If these two ever
+ * disagree, one of the two surfaces is lying to somebody.
+ */
+export function signalIsActionable(r: any): boolean {
+  return !!(r && r.flagged_at && Number.isFinite(Number(r.flagged_best_dec)) && Number(r.flagged_best_dec) > 1);
 }
 
 /* ========================================================================
