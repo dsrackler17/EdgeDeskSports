@@ -79,7 +79,15 @@ jobs:
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add football/availability/sources.json football/availability/current.json football/availability/current.full.json football/availability/20*/ 2>/dev/null || true
+          # ONE pathspec, and a directory rather than a list. `git add a b c`
+          # stages NOTHING AT ALL if any single path is missing, and the
+          # `|| true` then swallowed the error: every run wrote the dataset,
+          # staged none of it, reported 'availability unchanged', and went
+          # green. That is why football/availability/current.json was never in
+          # the repo despite a successful sync. -A picks up new, changed and
+          # deleted files under the directory and cannot fail on a path that
+          # does not exist yet.
+          git add -A -- football/availability/
           if git diff --cached --quiet; then
             echo 'availability unchanged — nothing to commit'
             exit 0

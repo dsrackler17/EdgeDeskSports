@@ -30210,7 +30210,7 @@ function fbRatingsBoard(sport){
    writes nothing to the database.
    ========================================================================= */
 FB.p4 = {state:null,up:[],notes:[],gate:null,season:null,absorbed:0,
-  roster:{},rosterSeason:null,rosterNote:null,lines:{},sig:{},weather:{},
+  roster:{},rosterSeason:null,rosterAsOf:null,rosterNote:null,lines:{},sig:{},weather:{},
   loadedAt:0,engineErr:null};
 
 var FBP4_LOOKAHEAD_D = 10;
@@ -30261,7 +30261,7 @@ function fbP4LoadRosters(season,signal){
          than running the talent layer blind. Only if THAT is also missing
          does the layer stay dark, and it says so. */
       return fbP4EspnRosters(season,signal).catch(function(){
-        S.roster={};S.rosterSeason=null;
+        S.roster={};S.rosterSeason=null;S.rosterAsOf=null;
         S.rosterNote='The '+season+' roster file is not published yet, so talent, continuity, '
           +'portal and youth are UNAVAILABLE for every team. The engine widens its uncertainty '
           +'instead of assuming last year’s roster.';
@@ -30302,7 +30302,7 @@ function fbP4LoadRosters(season,signal){
       bundle.blue_chip_ratio=null;
       out[k]=bundle;
     }
-    S.roster=out;S.rosterSeason=season;
+    S.roster=out;S.rosterSeason=season;S.rosterAsOf=new Date().toISOString();
     S.rosterNote=prev?null:('The '+(season-1)+' roster file is missing, so continuity and portal '
       +'flow could not be computed; class-mix experience is still real.');
   });
@@ -30364,7 +30364,7 @@ function fbP4EspnRosters(season,signal){
   var S=FB.p4;
   return fbEspnData(signal).then(function(E){
     if(E.meta.season!==season)throw new Error('roster dataset season mismatch');
-    S.roster=E.bundles;S.rosterSeason=season;
+    S.roster=E.bundles;S.rosterSeason=season;S.rosterAsOf=E.meta.retrieved_at||null;
     S.rosterNote='cfbfastR has not published '+season+' rosters, so rosters come from the repo’s ESPN sync: '
       +E.meta.teams+' FBS teams fetched '+String(E.meta.retrieved_at).slice(0,10)
       +(E.meta.prev_season?(' · continuity and portal diffed against the '+E.meta.prev_season+' ESPN rosters ('+E.meta.with_continuity+' teams)')
@@ -30769,7 +30769,12 @@ function fbP4LoadGuarded(force,signal){
     try{window.renderFootball();}catch(_){}
   },FBP4_LOAD_TIMEOUT_MS);
   function done(){clearTimeout(t);}
-  return fbP4Load(force,signal).then(done,function(e){done();throw e;});
+  /* The rating rides along with the load rather than racing the render.
+     It can never fail the board: fbEdrLoad resolves to null on any error and
+     the board says the rating could not be read instead of showing nothing. */
+  var edr=Promise.resolve(null);
+  try{ edr=fbEdrLoad(); }catch(_){}
+  return Promise.all([fbP4Load(force,signal),edr]).then(done,function(e){done();throw e;});
 }
 
 /* Joins the FRESHEST real number, in this order: a live captured quote,
@@ -30832,6 +30837,59 @@ function fbP4SchedCtx(g,which){
   var any=false,k;for(k in out)if(out.hasOwnProperty(k)&&out[k]!=null)any=true;
   return any?out:null;
 }
+/* ---- the availability layer, in the engine's own contract ----------------
+   The engine defines an injury report as
+   [{player, position, starter, snap_share, severity, status, replacement_quality,
+     source, as_of}] and prices exactly what it is given. EdgeDesk's college
+   availability dataset carries the first four honestly and does NOT carry snap
+   share or replacement quality for college football, so those stay null and the
+   engine falls back to its own stated defaults rather than to a number EdgeDesk
+   made up.
+
+   The distinction the availability layer exists to protect is kept here too:
+   a team EdgeDesk could not read returns NULL, which the engine reads as "no
+   injury report supplied" and prices as maximum injury uncertainty. A team
+   EdgeDesk DID read and found nobody on returns [], which is a real report
+   saying everybody is available. Those are different statements and they must
+   not collapse into each other at the edge of the engine. */
+var FBP4_AVAIL_STATUS={OUT:'out',DOUBTFUL:'doubtful',QUESTIONABLE:'questionable',
+  GAME_TIME_DECISION:'questionable',DAY_TO_DAY:'questionable',PROBABLE:'probable',
+  LIMITED:'probable'};
+function fbP4Injuries(teamName){
+  var C=window.EDCARD;
+  if(!C||!C.cavTeam) return null;
+  var t=null; try{ t=C.cavTeam(teamName); }catch(_){ return null; }
+  /* not in the dataset at all, or read with no verified coverage: the engine
+     must hear "unknown", never "clean" */
+  if(!t) return null;
+  var q=String(t.dataQuality||'NONE').toUpperCase();
+  if(q==='NONE'||q==='LIMITED') return null;
+  var out=[];
+  (t.players||[]).forEach(function(p){
+    var st=FBP4_AVAIL_STATUS[String(p.availability_status||'').toUpperCase()];
+    if(!st) return;                       /* an observation is not a designation */
+    out.push({player:p.player_name||null, position:p.position||null,
+      /* the SAME starter test the availability layer itself uses, so one
+         record does not read as a starter in one place and a backup in
+         another; an unknown depth role stays unknown */
+      starter:p.depth_role==null?null:/(^|[^0-9])1($|[^0-9])|starter|^qb1|^rb1|^wr1|^lt$|^rt$/i.test(String(p.depth_role)),
+      snap_share:null,                    /* no public college feed carries it */
+      severity:null,
+      status:st,
+      replacement_quality:null,           /* nor this */
+      source:p.source_name||t.team_name||null,
+      as_of:p.observed_at||t.lastUpdated||null});
+  });
+  return out;
+}
+/* The freshest thing the report is built from, so staleness is measured
+   against when EdgeDesk actually read the sources — not against a date. */
+function fbP4AvailAsOf(){
+  var C=window.EDCARD;
+  if(!C||!C.cfbAvailability) return null;
+  try{ var d=C.cfbAvailability(); return (d&&d.data&&(d.data.generated_at||null))||null; }catch(_){ return null; }
+}
+
 function fbP4Request(u){
   var g=u.g,P=window.EDCfbP4Params;
   var V=(P.universe&&P.universe.venues)||{};
@@ -30848,16 +30906,25 @@ function fbP4Request(u){
       home_fbs:fbP4IsFbs(g.home_division,g.home_team),
       away_fbs:fbP4IsFbs(g.away_division,g.away_team)},
     teams:{
+      /* qb stays null on purpose: college football publishes no depth chart
+         EdgeDesk trusts, so naming a starter would be a guess dressed as an
+         input. The engine prices an unknown starter as minimum stability,
+         which is the honest answer, and the card says so. */
       home:{conference:g.home_conference,roster:FB.p4.roster[hk]||null,
-        qb:null,injuries:null,news:null,coaching:null,schedule:fbP4SchedCtx(g,'home')},
+        qb:null,injuries:fbP4Injuries(g.home_team),news:null,coaching:null,schedule:fbP4SchedCtx(g,'home')},
       away:{conference:g.away_conference,roster:FB.p4.roster[ak]||null,
-        qb:null,injuries:null,news:null,coaching:null,schedule:fbP4SchedCtx(g,'away')}
+        qb:null,injuries:fbP4Injuries(g.away_team),news:null,coaching:null,schedule:fbP4SchedCtx(g,'away')}
     },
     venue:{home:V[hk]||null,away:V[ak]||null},
     weather:FB.p4.weather[g.game_id]||null,
     market:fbP4Market(u),
+    /* WHEN THE DATA WAS READ, not when the season started. The roster stamp
+       used to be manufactured as <season>-08-01, which made a file fetched
+       this week read as eight hundred hours stale and put a false "missing"
+       on teams whose rosters were current. */
     timestamps:{odds:(fbP4Market(u)||{}).as_of||null,
-      roster:FB.p4.rosterSeason?(FB.p4.rosterSeason+'-08-01T00:00:00Z'):null,
+      roster:FB.p4.rosterAsOf||null,
+      injuries:fbP4AvailAsOf(),
       weather:(FB.p4.weather[g.game_id]||{}).as_of||null}
   };
 }
@@ -32028,7 +32095,11 @@ function fbP4Card(u){
   }
   var hth='<div style="margin-top:8px"><button class="btn ghost sm" onclick="fbP4Hth(\''+fbEsc(String(g.game_id))+'\')">Rosters head-to-head</button></div>'
     +'<div id="p4hth-'+fbEsc(String(g.game_id))+'"></div>';
-  return '<div class="mdl-card">'+head+'<div style="padding:0 12px 12px">'+L+chips+compl+why+hth+'</div></div>';
+  /* EdgeDesk's own read on the two teams, underneath the engine's projection
+     and clearly separated from it: the line above is priced by the model, the
+     rating below is context the model did not use. */
+  var edr=fbEdrGameHTML(g);
+  return '<div class="mdl-card">'+head+'<div style="padding:0 12px 12px">'+L+chips+compl+why+edr+hth+'</div></div>';
 }
 function fbP4EdgeTag(cls){
   if(!cls)return '';
@@ -32039,14 +32110,176 @@ function fbP4EdgeTag(cls){
   return '<span class="ec" style="color:var(--warn)">'+fbEsc(String(cls.recommendation).toLowerCase().replace(/_/g,' '))
     +(cls.validated?'':' · unproven')+hist+'</span>';
 }
+/* ═══ THE EDGEDESK RATING ══════════════════════════════════════════════════
+   EdgeDesk's own answer to "how good is this team", in points against an
+   average FBS team. Not a poll, not a service, not somebody else's model.
+   Built by football/rating/build_rating.js (weekly, in CI) out of four things
+   EdgeDesk can check:
+
+     RESULTS       opponent-adjusted margin this season
+     CARRYOVER     the same measure over prior seasons — been there, done that
+     ROSTER        returning production, portal movement, and the level the
+                   transfers came from
+     AVAILABILITY  high-impact absences this week, reversible
+
+   The carryover weight is MEASURED, every week, by regressing each season's
+   ratings on the previous season's. That is the portal/NIL argument answered
+   with arithmetic instead of an opinion: when last season stops predicting
+   this one, the weight falls on its own and the rating reweights itself. The
+   measured slope is on screen so it can be argued with.
+
+   NIL DOLLARS ARE NOT IN IT, because no public feed carries them and EdgeDesk
+   does not invent numbers. What NIL BUYS is observable — who transferred in,
+   and what level of program they left — and that is what ROSTER reads. Every
+   rating names its own gaps rather than hiding them.
+
+   EDR IS RESEARCH CONTEXT. No bet is priced from it: the Power 4 engine's own
+   rating state still produces every line on this board. */
+FB.edr={data:null,error:null,at:0,_p:null,index:null};
+function fbEdrLoad(){
+  var R=FB.edr;
+  if(R.data&&Date.now()-R.at<15*60000)return Promise.resolve(R.data);
+  if(R._p)return R._p;
+  R._p=fetch('football/rating/current.json',{cache:'no-cache'}).then(function(r){
+    if(r.status===404)return null;
+    if(!r.ok)throw new Error('rating '+r.status);
+    return r.json();
+  }).then(function(j){
+    R.data=j;R.error=null;R.at=Date.now();R._p=null;
+    R.index=null;
+    if(j&&j.teams){R.index={};j.teams.forEach(function(t){R.index[t.key]=t;});}
+    return j;
+  }).catch(function(e){R.error=String(e&&e.message||e).slice(0,80);R._p=null;return null;});
+  return R._p;
+}
+/* The same team key the rating job, the roster sync and the engine all use,
+   so one team is one team. */
+function fbEdrFor(name){
+  var R=FB.edr;if(!R.index)return null;
+  var k=fbP4Key(name);
+  if(R.index[k])return R.index[k];
+  /* the odds feed says "Ohio Bobcats"; the rating says "Ohio". Longest unique
+     prefix, and an ambiguous name resolves to nothing rather than the wrong
+     team — "Ohio" must never swallow "Ohio State". */
+  var best=null,bl=0,j;
+  for(j in R.index){if(j.length>=3&&k.indexOf(j)===0&&j.length>bl){best=R.index[j];bl=j.length;}}
+  return best;
+}
+try{ fbEdrLoad(); }catch(_){}
+
+function fbEdrHeadline(){
+  var d=FB.edr.data;if(!d||!d.carryover)return '';
+  var c=d.carryover;
+  if(c.weight==null)return 'Carryover could not be measured yet — '+fbEsc(c.note||'');
+  return 'Measured carryover '+(c.weight*100).toFixed(0)+'% · last season explains '
+    +(c.latest&&c.latest.r2!=null?((c.latest.r2*100).toFixed(0)+'% of this one across '+c.latest.n+' teams'):'an unmeasured share')
+    +' · '+fbEsc(c.note||'');
+}
+/* One team's rating taken apart. Nothing here is a number without a source:
+   each component says what it is, what it was worth, and what it could not
+   see. */
+function fbEdrDetail(t){
+  if(!t)return '';
+  var C=t.components||{},h='';
+  h+='<div class="gd-line"><span class="l">EdgeDesk Rating</span><span class="v">'+fbPts(t.rating)
+    +' <span class="mut">#'+t.rank+' of '+((FB.edr.data&&FB.edr.data.team_count)||'?')+'</span></span></div>';
+  if(C.results)h+='<div class="gd-line"><span class="l">this season · '+C.results.games+' g</span>'
+    +'<span class="v">'+fbPts(C.results.rating)+' <span class="mut">weighted '+(C.results.weight*100).toFixed(0)+'%</span></span></div>';
+  else h+='<div class="gd-line"><span class="l">this season</span><span class="v mut">no completed game yet</span></div>';
+  if(C.carryover)h+='<div class="gd-line"><span class="l">carryover · '
+    +C.carryover.seasons.map(function(x){return x.season;}).join(', ')+'</span>'
+    +'<span class="v">'+fbPts(C.carryover.applied)+' <span class="mut">'+fbPts(C.carryover.blended_prior)
+    +' × '+(C.carryover.measured_weight*100).toFixed(0)+'% measured</span></span></div>';
+  else h+='<div class="gd-line"><span class="l">carryover</span><span class="v mut">no prior season on file</span></div>';
+  if(C.roster&&C.roster.available){
+    h+='<div class="gd-line"><span class="l">roster</span><span class="v">'+fbPts(C.roster.points)+'</span></div>';
+    (C.roster.parts||[]).forEach(function(x){
+      h+='<div class="gd-line"><span class="l" style="padding-left:12px">'+fbEsc(x.name)+'</span>'
+        +'<span class="v mut">'+fbEsc(String(x.value))+' <span class="mut">z '+fbPts(x.z,2)+'</span></span></div>';
+    });
+  } else h+='<div class="gd-line"><span class="l">roster</span><span class="v mut">'
+    +fbEsc((C.roster&&C.roster.reason)||'not on file')+'</span></div>';
+  if(C.availability&&C.availability.available){
+    h+='<div class="gd-line"><span class="l">availability · this week</span><span class="v">'+fbPts(C.availability.points)+'</span></div>';
+    (C.availability.players||[]).forEach(function(x){
+      h+='<div class="gd-line"><span class="l" style="padding-left:12px">'+fbEsc(x.player||'')
+        +(x.position?(' · '+fbEsc(x.position)):'')+'</span>'
+        +'<span class="v mut">'+fbEsc(String(x.status||'').toLowerCase().replace(/_/g,' '))
+        +' <span class="mut">'+fbPts(x.points)+'</span></span></div>';
+    });
+  }
+  h+='<div class="gd-line"><span class="l">built from</span><span class="v mut">'+fbEsc(t.basis||'')
+    +' · confidence '+((t.confidence||0)*100).toFixed(0)+'%</span></div>';
+  (t.unmeasured||[]).forEach(function(u){
+    h+='<div class="gd-line"><span class="l">not measured</span><span class="v mut">'+fbEsc(u)+'</span></div>';
+  });
+  return h;
+}
+/* The two teams in one game, side by side, and what the gap is worth before
+   anybody prices anything from it — which EdgeDesk does not. */
+function fbEdrGameHTML(g){
+  var d=FB.edr.data;
+  if(!d)return '<div class="gd-sec">EdgeDesk Rating</div><div class="gd-line"><span class="l">rating</span>'
+    +'<span class="v mut">'+fbEsc(FB.edr.error?('could not be read ('+FB.edr.error+')'):'not published yet')+'</span></div>';
+  var a=fbEdrFor(g.away_team),h=fbEdrFor(g.home_team);
+  var out='<div class="gd-sec">EdgeDesk Rating · research context, not a line</div>';
+  if(!a||!h){
+    out+='<div class="gd-line"><span class="l">'+fbEsc(!a?g.away_team:g.home_team)+'</span>'
+      +'<span class="v mut">not rated — EdgeDesk holds no results or roster for this program</span></div>';
+    if(!a&&!h)return out;
+  }
+  if(a&&h){
+    var hfa=(d.season_meta&&d.season_meta[d.season]&&d.season_meta[d.season].hfa&&d.season_meta[d.season].hfa.hfa)||0;
+    var gap=Math.round((h.rating-a.rating)*100)/100;
+    var withHome=Math.round((gap+(g.neutral_site?0:hfa))*100)/100;
+    out+='<div class="gd-line"><span class="l">'+fbEsc(h.team)+' vs '+fbEsc(a.team)+'</span>'
+      +'<span class="v">'+fbPts(withHome)+' <span class="mut">'+fbPts(gap)+' on rating'
+      +(g.neutral_site?' · neutral site':(' · '+fbPts(hfa)+' measured home edge'))+'</span></span></div>';
+    out+='<div class="gd-line"><span class="l">confidence</span><span class="v mut">'
+      +(Math.min(a.confidence,h.confidence)*100).toFixed(0)+'% — the lower of the two</span></div>';
+    out+='<div class="gd-line"><span class="l">what this is</span><span class="v mut">research context. '
+      +'The line on this board comes from the Power 4 engine, not from this number.</span></div>';
+  }
+  if(h)out+='<div class="gd-sec">'+fbEsc(h.team)+'</div>'+fbEdrDetail(h);
+  if(a)out+='<div class="gd-sec">'+fbEsc(a.team)+'</div>'+fbEdrDetail(a);
+  return out;
+}
+
 function fbP4Ratings(){
-  var st=FB.p4.state;if(!st)return '';
-  var rows=[],t;
-  for(t in st.r)if(st.r.hasOwnProperty(t))rows.push([t,st.r[t],st.n[t]||0]);
-  rows.sort(function(x,y){return y[1]-x[1];});
-  return '<div class="gd-sec">Top 25 · opponent-adjusted rating (points vs an average FBS team)</div>'
-    +rows.slice(0,25).map(function(r,i){return '<div class="gd-line"><span class="l">'+(i+1)+'. '+fbEsc(r[0])+'</span>'
-      +'<span class="v mut">'+fbPts(r[1])+' <span class="mut">'+r[2]+' g</span></span></div>';}).join('');
+  var out='';
+  var d=FB.edr.data;
+  if(d&&d.teams&&d.teams.length){
+    out+='<div class="gd-sec">EdgeDesk Rating · top 25 (points vs an average FBS team)</div>'
+      +'<div class="gd-line"><span class="l">how it reweights itself</span><span class="v mut">'+fbEdrHeadline()+'</span></div>'
+      +d.teams.slice(0,25).map(function(t){
+        var C=t.components||{};
+        var why=C.results?(C.results.games+' g'):'preseason';
+        if(C.roster&&C.roster.available&&Math.abs(C.roster.points)>=1)why+=' · roster '+fbPts(C.roster.points);
+        if(C.availability&&C.availability.available)why+=' · out '+fbPts(C.availability.points);
+        return '<div class="gd-line"><span class="l">'+t.rank+'. '+fbEsc(t.team)+'</span>'
+          +'<span class="v">'+fbPts(t.rating)+' <span class="mut">'+fbEsc(why)+'</span></span></div>';
+      }).join('')
+      +'<div class="gd-line"><span class="l">what it does not measure</span><span class="v mut">'
+      +fbEsc(((d.method&&d.method.not_included)||[]).join(' · '))+'</span></div>'
+      +'<div class="gd-line"><span class="l">rebuilt</span><span class="v mut">'
+      +fbEsc(String(d.generated_at||'').slice(0,16).replace('T',' '))+' UTC · week '+fbEsc(String(d.week==null?'—':d.week))
+      +' · '+d.team_count+' teams · weekly in CI</span></div>';
+  } else if(FB.edr.error){
+    out+='<div class="gd-sec">EdgeDesk Rating</div><div class="gd-line"><span class="l">rating</span>'
+      +'<span class="v mut">could not be read ('+fbEsc(FB.edr.error)+'). Nothing is shown rather than something invented.</span></div>';
+  }
+  /* the engine's OWN rating state stays on screen underneath, because it — not
+     EDR — is what every line on this board is priced from */
+  var st=FB.p4.state;
+  if(st){
+    var rows=[],t;
+    for(t in st.r)if(st.r.hasOwnProperty(t))rows.push([t,st.r[t],st.n[t]||0]);
+    rows.sort(function(x,y){return y[1]-x[1];});
+    out+='<div class="gd-sec">Power 4 engine state · top 25 (this is what the board’s lines are priced from)</div>'
+      +rows.slice(0,25).map(function(r,i){return '<div class="gd-line"><span class="l">'+(i+1)+'. '+fbEsc(r[0])+'</span>'
+        +'<span class="v mut">'+fbPts(r[1])+' <span class="mut">'+r[2]+' g</span></span></div>';}).join('');
+  }
+  return out;
 }
 /* ═══ POWER 4 DEPARTURES BOARD ═════════════════════════════════════════════
    The terminal view: one row per matchup — kickoff, teams, model line,

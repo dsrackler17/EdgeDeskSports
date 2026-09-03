@@ -57,7 +57,9 @@ jobs:
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add football/injuries/*.json
+          # a directory, not a glob: an unmatched glob is passed through
+          # literally and fails the whole add
+          git add -A -- football/injuries/
           if git diff --cached --quiet; then
             echo 'injury report unchanged — nothing to commit'
             exit 0
