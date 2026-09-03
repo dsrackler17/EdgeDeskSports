@@ -1996,34 +1996,35 @@ export async function handle(req: Request): Promise<Response> {
        `returning: sig_key` is what makes phase B safe: it tells us which rows
        exist, so phase B can never INSERT a row with a NULL opening snapshot that
        nothing would ever be able to fill. */
-    const known = new Set<string>();
+    /* WHICH ROWS ARE SAFE FOR PHASE B.
+       Phase A is an ignore-duplicates upsert, so a chunk that returns without an
+       error leaves EVERY row in it present in the table — either newly inserted
+       or already there. That makes the whole chunk safe for phase B and needs no
+       confirming read.
+
+       What is not safe is a row in a chunk that ERRORED. Those rows may not
+       exist, and phase B is an upsert: sending one would INSERT it with every
+       first_* column NULL, permanently, because phase A ignores duplicates and
+       could never fill them on a later run. So an errored chunk is excluded from
+       phase B entirely and the run reports the write error. A refreshed live
+       column is worth less than an opening snapshot that can never be recovered. */
+    const existing = new Set<string>();
     for (let i = 0; i < rows.length && !outOfTime(); i += 500) {
-      let chunk = dropColumns(rows.slice(i, i + 500), schemaGaps);
+      const slice = rows.slice(i, i + 500);
+      let chunk = dropColumns(slice, schemaGaps);
       for (let attempt = 0; attempt < 12; attempt++) {
         const { rows: got, error } = await rest.insert("signals", chunk, { onConflict: "sig_key", ignoreDuplicates: true, returning: "sig_key" });
-        if (!error) { inserted += got.length; for (const g of got) known.add(g.sig_key); break; }
+        if (!error) {
+          inserted += got.length;
+          for (const r of slice) existing.add(r.sig_key);
+          break;
+        }
         const col = missingColumnFrom(error);
         if (col) { schemaGaps.add(col); chunk = dropColumns(chunk, new Set([col])); continue; }
         if (writeErrors.length < 8) writeErrors.push(explainWriteError("insert", error));
         break;
       }
     }
-    /* Rows phase A did not return are rows that already existed — the ordinary
-       case on every run after the first. Both populations are safe for phase B;
-       what is NOT safe is a row phase A errored on, which is excluded because it
-       is in neither set. */
-    const existing = await (async () => {
-      const s = new Set<string>(known);
-      for (let i = 0; i < rows.length; i += 400) {
-        const keys = rows.slice(i, i + 400).map((r) => r.sig_key).filter((k) => !s.has(k));
-        if (!keys.length) continue;
-        const inList = keys.map((k) => `"${String(k).replace(/"/g, '""')}"`).join(",");
-        const { rows: got, error } = await rest.select(`signals?select=sig_key&sig_key=in.(${encodeURIComponent(inList)})&limit=400`);
-        if (error) { if (writeErrors.length < 8) writeErrors.push(explainWriteError("verify", error)); continue; }
-        for (const g of got) s.add(g.sig_key);
-      }
-      return s;
-    })();
 
     /* ── PHASE B — refresh the live columns. Cannot touch an opening field. ── */
     const live = rows.filter((r) => existing.has(r.sig_key)).map(liveRow);
