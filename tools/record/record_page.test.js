@@ -101,8 +101,15 @@ chk('paging says how many more', /Show 1 more of 3/.test(R.listHTML(rec, 'ALL', 
 
 /* KPIs */
 const k = R.kpisHTML(rec, 'ALL');
-chk('the KPIs count calls (BET + LEAN picks), graded, beat rate, cents and discipline', /3<\/div><div class="l">briefs published/.test(k) && /2<\/div><div class="l">calls published/.test(k) && /100%<\/div><div class="l">beat the close/.test(k) && /\+15<\/div><div class="l">avg cents/.test(k) && /1<\/div><div class="l">no-bet briefs \(discipline\)/.test(k), k);
-chk('the win-loss tile is labelled context only', /W-L[^<]*\(context only\)/.test(k));
+chk('the KPIs count calls (BET + LEAN picks), graded, beat rate, cents and discipline', /3<\/div><div class="l">briefs published/.test(k) && /2<\/div><div class="l">actual calls/.test(k) && /100%<\/div><div class="l">we got the better price/.test(k) && /\+15<\/div><div class="l">how much better, on average/.test(k) && /1<\/div><div class="l">nights we found nothing/.test(k), k);
+/* Every tile says what the number means first and keeps the term of art
+   underneath, so a visitor and a bettor can both read the same row. */
+chk('every KPI tile carries a plain label and the precise term beneath it', (function () {
+  const tiles = k.match(/<div class="kpi">[\s\S]*?<\/div><\/div>/g) || [];
+  return tiles.length === 8 && tiles.every(function (t) { return /<div class="l">/.test(t) && /<div class="s">/.test(t); });
+})(), k.slice(0, 300));
+chk('the precise terms are still on the page for whoever wants them', /avg cents vs close/.test(k) && /avg CLV/.test(k) && /share that beat the close/.test(k) && /no-bet briefs, counted as discipline/.test(k));
+chk('the win-loss tile is labelled context only', /context only, not the scoreboard/.test(k));
 chk('KPIs follow the preset filter', /1<\/div><div class="l">briefs published/.test(R.kpisHTML(rec, 'CFB')));
 
 /* empty + deploy-state notes */

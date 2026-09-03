@@ -129,6 +129,25 @@ function sandbox() {
 
   const btn = sb.win.fbBriefBtn('nfl', { home_team: 'KC', away_team: 'BAL' }, { t: 1 }, 'Kansas City Chiefs', 'Baltimore Ravens');
   chk('football Game brief button carries the schedule row, never a hardcoded team', /EDBRIEF\.openGame\(/.test(btn) && /Kansas City Chiefs/.test(btn) && /americanfootball_nfl/.test(btn));
+  /* THE READER CHECK. A writer can run the five-second checklist on a brief
+     before it leaves the desk, and it reports rather than blocks. */
+  sb.win.EDBRIEF.openCard(sb.win.EDBRIEF.qaHTML ? 'dc1' : 'dc1');
+  chk('the brief bar offers a Reader check', /Reader check/.test(sb.win.EDBRIEF.deskHTML('edges')) || /Reader check/.test(APP));
+  chk('EDBRIEF exposes the reader check as a pure renderer', typeof sb.win.EDBRIEF.qaHTML === 'function' && typeof sb.win.EDBRIEF.openQA === 'function');
+  chk('the reader check reports on every card in the brief', (function () {
+    const card = sb.win.EDCARD.simpleFromSignal(x.e);
+    const html = sb.win.EDBRIEF.qaHTML({ internal: { cards: [card] } });
+    return /Reader check/.test(html) && /The card passes\./.test(html) && /Texas Tech to win by 4 points or more/.test(html);
+  })(), sb.win.EDBRIEF.qaHTML({ internal: { cards: [sb.win.EDCARD.simpleFromSignal(x.e)] } }).slice(0, 400));
+  chk('the reader check names what a reader would trip over', (function () {
+    const card = JSON.parse(JSON.stringify(sb.win.EDCARD.simpleFromSignal(x.e)));
+    card.plain.answer = null;
+    const html = sb.win.EDBRIEF.qaHTML({ internal: { cards: [card] } });
+    return /FIX/.test(html) && /next action is clear/.test(html) && /1 of 1 card/.test(html);
+  })());
+  chk('the reader check never touches a number or a verdict', !/verdict\s*=|playable_to\s*=|\.odds\s*=/.test(String(sb.win.EDBRIEF.qaHTML)));
+  chk('an empty desk says so rather than passing vacuously', /Open a brief first/.test(sb.win.EDBRIEF.qaHTML(null)));
+
   const desk = sb.win.EDBRIEF.deskHTML('edges');
   chk('publisher desk offers TNF / SNF / MNF / CFB / slate presets', /openPrimetime\('TNF'\)/.test(desk) && /openPrimetime\('SNF'\)/.test(desk) && /openPrimetime\('MNF'\)/.test(desk) && /openCfbSlate\('top',3\)/.test(desk) && /openSlate\(null/.test(desk));
 }

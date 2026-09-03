@@ -5,6 +5,14 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex">
 <title>EdgeDesk Brief</title>
+<meta name="description" content="One game, one call, and the reason behind it. EdgeDesk checks what sportsbooks are charging and says when a price is worth a second look — and when it isn't. Research, not betting advice.">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="EdgeDesk">
+<meta property="og:title" content="EdgeDesk Brief">
+<meta property="og:description" content="One game, one call, and the reason behind it. Research, not betting advice. 21+.">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="EdgeDesk Brief">
+<meta name="twitter:description" content="One game, one call, and the reason behind it. Research, not betting advice. 21+.">
 <!-- ===========================================================================
      PUBLIC PUBLISHER BRIEF — the share page.
 
@@ -30,6 +38,10 @@ html,body{margin:0;background:var(--bg);color:var(--text);font-family:'Inter',sy
 .pg-actions{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0 0}
 .pg-btn{background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:10px;padding:9px 13px;font:inherit;font-size:12.5px;font-weight:600;cursor:pointer}
 .pg-btn:active{transform:scale(.98)}
+a.pg-btn{text-decoration:none;display:inline-block}
+.pg-what{margin:0 0 14px;font-size:14px;line-height:1.55;color:var(--dim);border-left:2px solid var(--border);padding-left:11px}
+.pg-legal{margin:16px 0 0;font-size:12.5px;line-height:1.6;color:var(--faint)}
+.pg-legal a{color:var(--dim)}
 /*__EDB_CSS_START__*/
 /* ---- EdgeDesk publisher brief: one page, editorial, no dashboard chrome ---- */
 .edb{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:22px 22px 18px;color:var(--text);line-height:1.5;font-family:'Inter',system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
@@ -133,11 +145,14 @@ html,body{margin:0;background:var(--bg);color:var(--text);font-family:'Inter',sy
 <body>
 <div class="wrap">
   <div class="pg-top"><span>EdgeDesk publisher brief</span><a href="./index.html">edgedesk</a></div>
+  <p class="pg-what no-print">One game, one call, and the reason behind it. EdgeDesk checks what sportsbooks are charging and says when a price is worth a second look &mdash; and when it isn&rsquo;t. It never tells you what to bet.</p>
   <div id="host"><div class="state">Loading the brief&hellip;</div></div>
   <div class="pg-actions no-print" id="actions" hidden>
     <button class="pg-btn" onclick="window.print()">Print / Save as PDF</button>
     <button class="pg-btn" onclick="EDB_PAGE.copyText()">Copy plain text</button>
+    <a class="pg-btn" href="./index.html">What is EdgeDesk? &rarr;</a>
   </div>
+  <p class="pg-legal no-print">EdgeDesk is a sports betting research platform, not betting advice. A call is a judgement about a price, never a prediction of a result. 21+. Gamble responsibly &mdash; <a href="tel:18004262537">1-800-GAMBLER</a>.</p>
 </div>
 
 <script>
@@ -1534,6 +1549,74 @@ html,body{margin:0;background:var(--bg);color:var(--text);font-family:'Inter',sy
     return f ? f(simple || {}) : null;
   }
 
+  /* ------------------------------------------------------------- copy QA */
+  /* THE FIVE-SECOND CHECKLIST, as code. Every card and every brief can be run
+     through this before it is shown to anybody. It answers the only question
+     that matters on a public surface: could a football fan who has never
+     placed a bet read this and know what to do?
+
+     It is a LINT, not a gate — it never suppresses a card, because a card that
+     fails this is still more useful than no card. It exists so a regression is
+     visible instead of silent, and so tools/presentation/public_language.test.js
+     and the publisher desk are checking the same rules. */
+  var QA_JARGON = /\b(de-?vig(?:ged|ging)?|devig|vigorish|no-?vig|clv|closing[- ]line[- ]value|expected value|\bev\b|pinnacle|sharp(?:er)?[- ](?:market|book|books|fair|reference|money|side)|soft(?:er)? books?|fair (?:line|value|price|odds|probability)|max[- ]playable|market residual|consensus dispersion|liquidity|\bshin\b|overround|implied probability)\b/i;
+  /* Words that would turn a judgement about a price into a forecast. */
+  var QA_PREDICTION = /\b(will (win|beat|cover|lose)|going to (win|beat|cover)|expect(?:s|ed)? (?:them |it )?to win|likely to (win|beat|cover)|should win|is winning this)\b/i;
+  function qaStrings(s) {
+    var pl = (s && s.plain) || {};
+    var out = [pl.verdict_subtitle, pl.answer, pl.bet, pl.ticket, pl.guard, pl.risk, pl.change, pl.kills,
+      pl.market_check, pl.payout, pl.push_note, pl.why_heading, pl.risk_heading, pl.change_heading];
+    (pl.why || []).forEach(function (w) { out.push(w); });
+    if (pl.found) { out.push(pl.found.sentence, pl.found.detail); (pl.found.rows || []).forEach(function (r) { out.push(r.k, r.v, r.note); }); }
+    if (pl.price_limit) out.push(pl.price_limit.label, pl.price_limit.value, pl.price_limit.sentence, pl.price_limit.hint);
+    return out.filter(function (x) { return typeof x === 'string' && x; });
+  }
+  /* Returns { pass, checks:[{id, ok, detail}], failed:[id] }. */
+  function copyQA(simple) {
+    var s = simple || {};
+    var pl = s.plain || {};
+    var strings = qaStrings(s);
+    var am = parseAmerican(s.odds);
+    var isML = /^(h2h|ml|moneyline)$/i.test(String(s.market || ''));
+    var longPrice = am != null && (isML ? am >= LONGSHOT_AM : am >= LONGSHOT_OTHER_AM);
+    var jargon = strings.map(function (t) { var m = t.match(QA_JARGON); return m ? { term: m[0], text: t.slice(0, 120) } : null; }).filter(Boolean);
+    var predict = strings.map(function (t) { var m = t.match(QA_PREDICTION); return m ? { phrase: m[0], text: t.slice(0, 120) } : null; }).filter(Boolean);
+    var checks = [
+      { id: 'no_undefined_jargon', ok: jargon.length === 0,
+        why: 'A public surface may not use a word nothing on the page defines.', detail: jargon.slice(0, 3) },
+      { id: 'call_is_stated', ok: !!pl.verdict_label,
+        why: 'The reader has to see the call in one word.', detail: pl.verdict_label || null },
+      { id: 'call_is_glossed', ok: !!(pl.verdict_subtitle && pl.verdict_subtitle.length > 15),
+        why: 'BET, LEAN, WAIT and PASS mean nothing on their own.', detail: pl.verdict_subtitle || null },
+      { id: 'next_action_is_clear', ok: !!(pl.answer && pl.answer.length > 12),
+        why: 'The reader has to know whether to act, wait, or move on.', detail: pl.answer || null },
+      { id: 'bet_in_plain_words', ok: !!(pl.bet && !/\bML$/.test(pl.bet)),
+        why: '"Chiefs ML" is shorthand; "Chiefs to beat the Ravens" is the bet.', detail: pl.bet || null },
+      { id: 'exact_ticket_shown', ok: !!pl.ticket,
+        why: 'The reader still has to find the exact line at the sportsbook.', detail: pl.ticket || null },
+      { id: 'price_that_matters_named', ok: !!(pl.price_limit && pl.price_limit.value && pl.price_limit.sentence),
+        why: 'A call without its price limit is a pick, not research.', detail: pl.price_limit || null },
+      { id: 'what_would_break_it', ok: !!(pl.risk && pl.risk.length > 12),
+        why: 'The reader has to know what could make this wrong.', detail: pl.risk || null },
+      { id: 'what_would_change_it', ok: !!(pl.change && pl.change.length > 12),
+        why: 'The reader has to know what would make the call disappear.', detail: pl.change || null },
+      { id: 'value_is_not_a_prediction', ok: predict.length === 0,
+        why: 'EdgeDesk judges a price. It never forecasts a result.', detail: predict.slice(0, 3) },
+      { id: 'long_price_carries_the_guard', ok: !longPrice || !!pl.guard,
+        why: 'A long payout must say out loud that it is not an upset call.', detail: { odds: s.odds, guard: pl.guard || null } }
+    ];
+    var failed = checks.filter(function (c) { return !c.ok; });
+    return { pass: failed.length === 0, checks: checks, failed: failed.map(function (c) { return c.id; }), failures: failed };
+  }
+  /* Every card in one report, for the publisher desk and for a console sweep. */
+  function copyQABatch(cards) {
+    var rows = (cards || []).map(function (c) {
+      var r = copyQA(c);
+      return { key: (c && c.plain && c.plain.bet) || (c && c.selection) || '—', verdict: c && c.plain && c.plain.verdict_label, pass: r.pass, failed: r.failed };
+    });
+    return { n: rows.length, passing: rows.filter(function (r) { return r.pass; }).length, rows: rows };
+  }
+
   /* -------------------------------------------------------------- publisher */
   var PRESETS = {
     GAME: { title: 'EdgeDesk Game Brief', kicker: null },
@@ -2597,7 +2680,8 @@ html,body{margin:0;background:var(--bg);color:var(--text);font-family:'Inter',sy
     gapSentences: gapSentences,
     simpleFromPacket: simpleFromPacket, packetFromBoardRow: packetFromBoardRow,
     validateCopy: validateCopy, applyAiCopy: applyAiCopy, parseAiCopyBlock: parseAiCopyBlock,
-    explain: explain, WHAT_LABEL: WHAT_LABEL, publisher: publisher, slate: slate, rankCards: rankCards,
+    explain: explain, WHAT_LABEL: WHAT_LABEL, copyQA: copyQA, copyQABatch: copyQABatch, QA_JARGON: QA_JARGON, QA_PREDICTION: QA_PREDICTION,
+    publisher: publisher, slate: slate, rankCards: rankCards,
     snapshot: snapshot, refresh: refresh, publicPayload: publicPayload,
     whenLabel: whenLabel, etParts: etParts, primetime: primetime, fmtStamp: fmtStamp,
     cardHTML: cardHTML, briefHTML: briefHTML, briefCmsHTML: briefCmsHTML, briefText: briefText,
@@ -2651,13 +2735,13 @@ html,body{margin:0;background:var(--bg);color:var(--text);font-family:'Inter',sy
   function fallback(t){ try{ var ta=document.createElement('textarea'); ta.value=t; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove(); toast('Plain text copied'); }catch(_){ toast('Copy failed'); } }
   function toast(msg){ var d=document.createElement('div'); d.textContent=msg; d.style.cssText='position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#1b2740;color:#e7eaf0;border:1px solid #2b3b5c;border-radius:10px;padding:9px 14px;font-size:13px;z-index:99'; document.body.appendChild(d); setTimeout(function(){ d.remove(); },1800); }
   var s=slug();
-  if(!s){ state('<b>No brief selected.</b><br>A shared brief link looks like <code>brief.html?s=…</code>.'); return; }
-  if(typeof EDPRES==='undefined'){ state('<b>The renderer did not load.</b>'); return; }
+  if(!s){ state('<b>No brief selected.</b><br>This link is missing the part that says which brief to open. Ask whoever sent it for the full link.'); return; }
+  if(typeof EDPRES==='undefined'){ state('<b>This page could not start up.</b><br>Try reloading. If it keeps happening, the link still works from <a href="./index.html">edgedesksports.com</a>.'); return; }
   fetch(SB_URL+'/rest/v1/publisher_briefs?select=id,report_type,preset,version_no,sport,sport_label,title,kicker,event_label,when_label,generated_at,event_ids,price_captured_at,integrity_status,freshness_status,public_payload&share_slug=eq.'+encodeURIComponent(s)+'&is_public=eq.true&limit=1',
     {headers:{apikey:SB_KEY,authorization:'Bearer '+SB_KEY,accept:'application/json'}})
     .then(function(r){ if(!r.ok) throw new Error('db '+r.status); return r.json(); })
-    .then(function(rows){ if(!rows||!rows.length){ state('<b>This brief is not public, or the link is wrong.</b><br>The author can share it again from EdgeDesk.'); return; } render(rows[0]); })
-    .catch(function(e){ state('<b>Could not load this brief.</b><br>'+String(e&&e.message||e)); });
+    .then(function(rows){ if(!rows||!rows.length){ state('<b>This brief is not shared publicly, or the link is wrong.</b><br>Whoever wrote it can share it again from EdgeDesk.'); return; } render(rows[0]); })
+    .catch(function(e){ state('<b>Could not load this brief right now.</b><br>Check your connection and reload. <span class="pg-legal" style="display:block;margin-top:8px">'+EDPRES.esc(String(e&&e.message||e))+'</span>'); });
 })();
 </script>
 </body>

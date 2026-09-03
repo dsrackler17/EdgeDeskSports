@@ -471,4 +471,35 @@ CASES.forEach(function (c) {
     /benchmark sportsbook/.test(P.publicText('Pinnacle is quoting this side')));
 }
 
+/* ---- 18 · THE COPY QA CHECKLIST, AS CODE ------------------------------- */
+{
+  /* The same checklist a human would run, so a regression is visible rather
+     than silent. It must pass on every shape — and it must actually fail when
+     the copy is bad, or it is worth nothing. */
+  CASES.forEach(function (c) {
+    const r = P.copyQA(c.s);
+    chk('copy QA passes: ' + c.name, r.pass, r.failures && r.failures.map(function (f) { return { id: f.id, detail: f.detail }; }));
+  });
+  const batch = P.copyQABatch(CASES.map(function (c) { return c.s; }));
+  chk('the batch report counts every card', batch.n === CASES.length && batch.passing === CASES.length, batch.rows.filter(function (r) { return !r.pass; }));
+
+  /* Negative controls: each check has to be able to fire. */
+  function broken(mut) { const s = JSON.parse(JSON.stringify(simple())); mut(s.plain); return P.copyQA(s); }
+  chk('QA catches jargon that slipped through', broken(function (p) { p.risk = 'The de-vigged fair line moved against it.'; }).failed.indexOf('no_undefined_jargon') >= 0);
+  chk('QA catches a call with no gloss', broken(function (p) { p.verdict_subtitle = null; }).failed.indexOf('call_is_glossed') >= 0);
+  chk('QA catches a missing next action', broken(function (p) { p.answer = null; }).failed.indexOf('next_action_is_clear') >= 0);
+  chk('QA catches a bet left as shorthand', broken(function (p) { p.bet = 'Chiefs ML'; }).failed.indexOf('bet_in_plain_words') >= 0);
+  chk('QA catches a missing price limit', broken(function (p) { p.price_limit = null; }).failed.indexOf('price_that_matters_named') >= 0);
+  chk('QA catches a missing "what would change it"', broken(function (p) { p.change = null; }).failed.indexOf('what_would_change_it') >= 0);
+  chk('QA catches copy that predicts a result', broken(function (p) { p.why = ['Texas Tech will win this comfortably.']; }).failed.indexOf('value_is_not_a_prediction') >= 0);
+  chk('QA catches a long price with the guard stripped off', (function () {
+    const f = JSON.parse(JSON.stringify(fresno()));
+    f.plain.guard = null;
+    return P.copyQA(f).failed.indexOf('long_price_carries_the_guard') >= 0;
+  })());
+  chk('QA does not demand a guard where none is warranted', P.copyQA(simple()).checks.filter(function (c) { return c.id === 'long_price_carries_the_guard'; })[0].ok);
+  chk('every check explains itself, so a failure is actionable',
+    P.copyQA(simple()).checks.every(function (c) { return c.id && c.why && c.why.length > 20; }));
+}
+
 done();

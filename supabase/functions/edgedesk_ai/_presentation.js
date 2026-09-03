@@ -1391,6 +1391,74 @@
     return f ? f(simple || {}) : null;
   }
 
+  /* ------------------------------------------------------------- copy QA */
+  /* THE FIVE-SECOND CHECKLIST, as code. Every card and every brief can be run
+     through this before it is shown to anybody. It answers the only question
+     that matters on a public surface: could a football fan who has never
+     placed a bet read this and know what to do?
+
+     It is a LINT, not a gate — it never suppresses a card, because a card that
+     fails this is still more useful than no card. It exists so a regression is
+     visible instead of silent, and so tools/presentation/public_language.test.js
+     and the publisher desk are checking the same rules. */
+  var QA_JARGON = /\b(de-?vig(?:ged|ging)?|devig|vigorish|no-?vig|clv|closing[- ]line[- ]value|expected value|\bev\b|pinnacle|sharp(?:er)?[- ](?:market|book|books|fair|reference|money|side)|soft(?:er)? books?|fair (?:line|value|price|odds|probability)|max[- ]playable|market residual|consensus dispersion|liquidity|\bshin\b|overround|implied probability)\b/i;
+  /* Words that would turn a judgement about a price into a forecast. */
+  var QA_PREDICTION = /\b(will (win|beat|cover|lose)|going to (win|beat|cover)|expect(?:s|ed)? (?:them |it )?to win|likely to (win|beat|cover)|should win|is winning this)\b/i;
+  function qaStrings(s) {
+    var pl = (s && s.plain) || {};
+    var out = [pl.verdict_subtitle, pl.answer, pl.bet, pl.ticket, pl.guard, pl.risk, pl.change, pl.kills,
+      pl.market_check, pl.payout, pl.push_note, pl.why_heading, pl.risk_heading, pl.change_heading];
+    (pl.why || []).forEach(function (w) { out.push(w); });
+    if (pl.found) { out.push(pl.found.sentence, pl.found.detail); (pl.found.rows || []).forEach(function (r) { out.push(r.k, r.v, r.note); }); }
+    if (pl.price_limit) out.push(pl.price_limit.label, pl.price_limit.value, pl.price_limit.sentence, pl.price_limit.hint);
+    return out.filter(function (x) { return typeof x === 'string' && x; });
+  }
+  /* Returns { pass, checks:[{id, ok, detail}], failed:[id] }. */
+  function copyQA(simple) {
+    var s = simple || {};
+    var pl = s.plain || {};
+    var strings = qaStrings(s);
+    var am = parseAmerican(s.odds);
+    var isML = /^(h2h|ml|moneyline)$/i.test(String(s.market || ''));
+    var longPrice = am != null && (isML ? am >= LONGSHOT_AM : am >= LONGSHOT_OTHER_AM);
+    var jargon = strings.map(function (t) { var m = t.match(QA_JARGON); return m ? { term: m[0], text: t.slice(0, 120) } : null; }).filter(Boolean);
+    var predict = strings.map(function (t) { var m = t.match(QA_PREDICTION); return m ? { phrase: m[0], text: t.slice(0, 120) } : null; }).filter(Boolean);
+    var checks = [
+      { id: 'no_undefined_jargon', ok: jargon.length === 0,
+        why: 'A public surface may not use a word nothing on the page defines.', detail: jargon.slice(0, 3) },
+      { id: 'call_is_stated', ok: !!pl.verdict_label,
+        why: 'The reader has to see the call in one word.', detail: pl.verdict_label || null },
+      { id: 'call_is_glossed', ok: !!(pl.verdict_subtitle && pl.verdict_subtitle.length > 15),
+        why: 'BET, LEAN, WAIT and PASS mean nothing on their own.', detail: pl.verdict_subtitle || null },
+      { id: 'next_action_is_clear', ok: !!(pl.answer && pl.answer.length > 12),
+        why: 'The reader has to know whether to act, wait, or move on.', detail: pl.answer || null },
+      { id: 'bet_in_plain_words', ok: !!(pl.bet && !/\bML$/.test(pl.bet)),
+        why: '"Chiefs ML" is shorthand; "Chiefs to beat the Ravens" is the bet.', detail: pl.bet || null },
+      { id: 'exact_ticket_shown', ok: !!pl.ticket,
+        why: 'The reader still has to find the exact line at the sportsbook.', detail: pl.ticket || null },
+      { id: 'price_that_matters_named', ok: !!(pl.price_limit && pl.price_limit.value && pl.price_limit.sentence),
+        why: 'A call without its price limit is a pick, not research.', detail: pl.price_limit || null },
+      { id: 'what_would_break_it', ok: !!(pl.risk && pl.risk.length > 12),
+        why: 'The reader has to know what could make this wrong.', detail: pl.risk || null },
+      { id: 'what_would_change_it', ok: !!(pl.change && pl.change.length > 12),
+        why: 'The reader has to know what would make the call disappear.', detail: pl.change || null },
+      { id: 'value_is_not_a_prediction', ok: predict.length === 0,
+        why: 'EdgeDesk judges a price. It never forecasts a result.', detail: predict.slice(0, 3) },
+      { id: 'long_price_carries_the_guard', ok: !longPrice || !!pl.guard,
+        why: 'A long payout must say out loud that it is not an upset call.', detail: { odds: s.odds, guard: pl.guard || null } }
+    ];
+    var failed = checks.filter(function (c) { return !c.ok; });
+    return { pass: failed.length === 0, checks: checks, failed: failed.map(function (c) { return c.id; }), failures: failed };
+  }
+  /* Every card in one report, for the publisher desk and for a console sweep. */
+  function copyQABatch(cards) {
+    var rows = (cards || []).map(function (c) {
+      var r = copyQA(c);
+      return { key: (c && c.plain && c.plain.bet) || (c && c.selection) || '—', verdict: c && c.plain && c.plain.verdict_label, pass: r.pass, failed: r.failed };
+    });
+    return { n: rows.length, passing: rows.filter(function (r) { return r.pass; }).length, rows: rows };
+  }
+
   /* -------------------------------------------------------------- publisher */
   var PRESETS = {
     GAME: { title: 'EdgeDesk Game Brief', kicker: null },
@@ -2454,7 +2522,8 @@
     gapSentences: gapSentences,
     simpleFromPacket: simpleFromPacket, packetFromBoardRow: packetFromBoardRow,
     validateCopy: validateCopy, applyAiCopy: applyAiCopy, parseAiCopyBlock: parseAiCopyBlock,
-    explain: explain, WHAT_LABEL: WHAT_LABEL, publisher: publisher, slate: slate, rankCards: rankCards,
+    explain: explain, WHAT_LABEL: WHAT_LABEL, copyQA: copyQA, copyQABatch: copyQABatch, QA_JARGON: QA_JARGON, QA_PREDICTION: QA_PREDICTION,
+    publisher: publisher, slate: slate, rankCards: rankCards,
     snapshot: snapshot, refresh: refresh, publicPayload: publicPayload,
     whenLabel: whenLabel, etParts: etParts, primetime: primetime, fmtStamp: fmtStamp,
     cardHTML: cardHTML, briefHTML: briefHTML, briefCmsHTML: briefCmsHTML, briefText: briefText,

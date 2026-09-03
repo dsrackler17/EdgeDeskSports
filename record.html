@@ -48,6 +48,10 @@ h2{font-size:clamp(19px,2.6vw,26px);letter-spacing:-.025em;font-weight:800;margi
 .kpi{border:1px solid var(--border);border-radius:9px;padding:12px;background:var(--surface)}
 .kpi .n{font-family:'JetBrains Mono',monospace;font-size:19px;font-weight:700;letter-spacing:-.02em}
 .kpi .l{font-size:10.5px;color:var(--faint);margin-top:3px}
+.kpi .s{font-family:'JetBrains Mono',ui-monospace,monospace;font-size:10.5px;letter-spacing:.04em;color:var(--faint);margin-top:3px;line-height:1.4}
+.lede-plain{font-size:17px;line-height:1.6;color:var(--text);margin:0 0 14px;max-width:62ch}
+.lede-why{font-size:14.5px;line-height:1.62;color:var(--dim);margin:14px 0 0;max-width:62ch;border-left:2px solid var(--border);padding-left:12px}
+.lede-why b{color:var(--text)}
 .clvhero{border:1px solid var(--border);border-radius:12px;padding:20px;background:var(--surface);margin-top:20px}
 .clvhero-h{display:flex;align-items:baseline;gap:11px;flex-wrap:wrap}
 .clvhero .big{font-family:'JetBrains Mono',monospace;font-size:38px;font-weight:700;letter-spacing:-.03em}
@@ -141,7 +145,9 @@ footer a:hover{color:var(--text)}
   <div class="wrap">
     <span class="ey">Public · No login · Updates on its own</span>
     <h1>Our record, whether we like it or not</h1>
-    <p class="lede">This is the only claim EdgeDesk makes that can be independently checked, so it lives outside the paywall with no account required. It is closing line value: did the prices we flagged beat the number the market settled on. It is not a win rate, because a win rate at this sample proves nothing.</p>
+    <p class="lede-plain">In plain English: every time EdgeDesk says a price is worth a look, we write down that price. After the game starts we check whether the rest of the betting market ended up at a better price or a worse one. If we were consistently getting the better number, the research is doing something. If we were not, it is not.</p>
+    <p class="lede">The precise version: this is the only claim EdgeDesk makes that can be independently checked, so it lives outside the paywall with no account required. It is closing line value &mdash; did the prices we flagged beat the number the market settled on. It is not a win rate, because a win rate at this sample proves nothing.</p>
+    <p class="lede-why"><b>Why not just show a win-loss record?</b> Because over a few hundred bets a bad process wins plenty and a good one loses plenty. Buying a better price than the market closes at is the part that is actually repeatable, so that is what we grade.</p>
   </div>
 </section>
 
@@ -1608,6 +1614,74 @@ footer a:hover{color:var(--text)}
     return f ? f(simple || {}) : null;
   }
 
+  /* ------------------------------------------------------------- copy QA */
+  /* THE FIVE-SECOND CHECKLIST, as code. Every card and every brief can be run
+     through this before it is shown to anybody. It answers the only question
+     that matters on a public surface: could a football fan who has never
+     placed a bet read this and know what to do?
+
+     It is a LINT, not a gate — it never suppresses a card, because a card that
+     fails this is still more useful than no card. It exists so a regression is
+     visible instead of silent, and so tools/presentation/public_language.test.js
+     and the publisher desk are checking the same rules. */
+  var QA_JARGON = /\b(de-?vig(?:ged|ging)?|devig|vigorish|no-?vig|clv|closing[- ]line[- ]value|expected value|\bev\b|pinnacle|sharp(?:er)?[- ](?:market|book|books|fair|reference|money|side)|soft(?:er)? books?|fair (?:line|value|price|odds|probability)|max[- ]playable|market residual|consensus dispersion|liquidity|\bshin\b|overround|implied probability)\b/i;
+  /* Words that would turn a judgement about a price into a forecast. */
+  var QA_PREDICTION = /\b(will (win|beat|cover|lose)|going to (win|beat|cover)|expect(?:s|ed)? (?:them |it )?to win|likely to (win|beat|cover)|should win|is winning this)\b/i;
+  function qaStrings(s) {
+    var pl = (s && s.plain) || {};
+    var out = [pl.verdict_subtitle, pl.answer, pl.bet, pl.ticket, pl.guard, pl.risk, pl.change, pl.kills,
+      pl.market_check, pl.payout, pl.push_note, pl.why_heading, pl.risk_heading, pl.change_heading];
+    (pl.why || []).forEach(function (w) { out.push(w); });
+    if (pl.found) { out.push(pl.found.sentence, pl.found.detail); (pl.found.rows || []).forEach(function (r) { out.push(r.k, r.v, r.note); }); }
+    if (pl.price_limit) out.push(pl.price_limit.label, pl.price_limit.value, pl.price_limit.sentence, pl.price_limit.hint);
+    return out.filter(function (x) { return typeof x === 'string' && x; });
+  }
+  /* Returns { pass, checks:[{id, ok, detail}], failed:[id] }. */
+  function copyQA(simple) {
+    var s = simple || {};
+    var pl = s.plain || {};
+    var strings = qaStrings(s);
+    var am = parseAmerican(s.odds);
+    var isML = /^(h2h|ml|moneyline)$/i.test(String(s.market || ''));
+    var longPrice = am != null && (isML ? am >= LONGSHOT_AM : am >= LONGSHOT_OTHER_AM);
+    var jargon = strings.map(function (t) { var m = t.match(QA_JARGON); return m ? { term: m[0], text: t.slice(0, 120) } : null; }).filter(Boolean);
+    var predict = strings.map(function (t) { var m = t.match(QA_PREDICTION); return m ? { phrase: m[0], text: t.slice(0, 120) } : null; }).filter(Boolean);
+    var checks = [
+      { id: 'no_undefined_jargon', ok: jargon.length === 0,
+        why: 'A public surface may not use a word nothing on the page defines.', detail: jargon.slice(0, 3) },
+      { id: 'call_is_stated', ok: !!pl.verdict_label,
+        why: 'The reader has to see the call in one word.', detail: pl.verdict_label || null },
+      { id: 'call_is_glossed', ok: !!(pl.verdict_subtitle && pl.verdict_subtitle.length > 15),
+        why: 'BET, LEAN, WAIT and PASS mean nothing on their own.', detail: pl.verdict_subtitle || null },
+      { id: 'next_action_is_clear', ok: !!(pl.answer && pl.answer.length > 12),
+        why: 'The reader has to know whether to act, wait, or move on.', detail: pl.answer || null },
+      { id: 'bet_in_plain_words', ok: !!(pl.bet && !/\bML$/.test(pl.bet)),
+        why: '"Chiefs ML" is shorthand; "Chiefs to beat the Ravens" is the bet.', detail: pl.bet || null },
+      { id: 'exact_ticket_shown', ok: !!pl.ticket,
+        why: 'The reader still has to find the exact line at the sportsbook.', detail: pl.ticket || null },
+      { id: 'price_that_matters_named', ok: !!(pl.price_limit && pl.price_limit.value && pl.price_limit.sentence),
+        why: 'A call without its price limit is a pick, not research.', detail: pl.price_limit || null },
+      { id: 'what_would_break_it', ok: !!(pl.risk && pl.risk.length > 12),
+        why: 'The reader has to know what could make this wrong.', detail: pl.risk || null },
+      { id: 'what_would_change_it', ok: !!(pl.change && pl.change.length > 12),
+        why: 'The reader has to know what would make the call disappear.', detail: pl.change || null },
+      { id: 'value_is_not_a_prediction', ok: predict.length === 0,
+        why: 'EdgeDesk judges a price. It never forecasts a result.', detail: predict.slice(0, 3) },
+      { id: 'long_price_carries_the_guard', ok: !longPrice || !!pl.guard,
+        why: 'A long payout must say out loud that it is not an upset call.', detail: { odds: s.odds, guard: pl.guard || null } }
+    ];
+    var failed = checks.filter(function (c) { return !c.ok; });
+    return { pass: failed.length === 0, checks: checks, failed: failed.map(function (c) { return c.id; }), failures: failed };
+  }
+  /* Every card in one report, for the publisher desk and for a console sweep. */
+  function copyQABatch(cards) {
+    var rows = (cards || []).map(function (c) {
+      var r = copyQA(c);
+      return { key: (c && c.plain && c.plain.bet) || (c && c.selection) || '—', verdict: c && c.plain && c.plain.verdict_label, pass: r.pass, failed: r.failed };
+    });
+    return { n: rows.length, passing: rows.filter(function (r) { return r.pass; }).length, rows: rows };
+  }
+
   /* -------------------------------------------------------------- publisher */
   var PRESETS = {
     GAME: { title: 'EdgeDesk Game Brief', kicker: null },
@@ -2671,7 +2745,8 @@ footer a:hover{color:var(--text)}
     gapSentences: gapSentences,
     simpleFromPacket: simpleFromPacket, packetFromBoardRow: packetFromBoardRow,
     validateCopy: validateCopy, applyAiCopy: applyAiCopy, parseAiCopyBlock: parseAiCopyBlock,
-    explain: explain, WHAT_LABEL: WHAT_LABEL, publisher: publisher, slate: slate, rankCards: rankCards,
+    explain: explain, WHAT_LABEL: WHAT_LABEL, copyQA: copyQA, copyQABatch: copyQABatch, QA_JARGON: QA_JARGON, QA_PREDICTION: QA_PREDICTION,
+    publisher: publisher, slate: slate, rankCards: rankCards,
     snapshot: snapshot, refresh: refresh, publicPayload: publicPayload,
     whenLabel: whenLabel, etParts: etParts, primetime: primetime, fmtStamp: fmtStamp,
     cardHTML: cardHTML, briefHTML: briefHTML, briefCmsHTML: briefCmsHTML, briefText: briefText,
@@ -2709,14 +2784,21 @@ footer a:hover{color:var(--text)}
     var briefs=(data&&data.briefs)||[];
     return CHIPS.map(function(c){ var n=cnt(briefs,c[0]); if(c[0]!=='ALL'&&!n) return ''; return '<button type="button" class="edrec-chip'+(preset===c[0]?' on':'')+'" data-preset="'+c[0]+'" onclick="EDREC.filter(\''+c[0]+'\')">'+esc(c[1])+'<span class="n">'+n+'</span></button>'; }).join('');
   }
-  function kpi(n,l){ return '<div class="kpi"><div class="n">'+n+'</div><div class="l">'+l+'</div></div>'; }
+  /* Two lines per tile: what the number means, then the term of art it is
+     known by. A visitor reads the first line; a bettor recognises the second. */
+  function kpi(n,l,sub){ return '<div class="kpi"><div class="n">'+n+'</div><div class="l">'+l+'</div>'+(sub?'<div class="s">'+sub+'</div>':'')+'</div>'; }
   function kpisHTML(data,preset){
     if(!data||!P) return '';
     var s=P.recordSummary(data.briefs||[],{preset:preset}); var c=s.calls;
     var wl=c.win+'-'+c.loss+(c.push?'-'+c.push:'');
-    return kpi(s.briefs,'briefs published')+kpi(c.n,'calls published (BET + LEAN)')+kpi(c.graded,'graded')
-      +kpi(P.fmtRate(c.beat_rate),'beat the close')+kpi(P.fmtCents(c.avg_cents),'avg cents vs close')+kpi(P.fmtClv(c.avg_clv),'avg CLV')
-      +kpi((c.win+c.loss+c.push)?wl:'\u2014','W-L'+(c.push?'-P':'')+' (context only)')+kpi(s.no_bet_briefs,'no-bet briefs (discipline)');
+    return kpi(s.briefs,'briefs published','one per game or slate')
+      +kpi(c.n,'actual calls','the BET and LEAN ones')
+      +kpi(c.graded,'already graded','the game has been played')
+      +kpi(P.fmtRate(c.beat_rate),'we got the better price','share that beat the close')
+      +kpi(P.fmtCents(c.avg_cents),'how much better, on average','avg cents vs close')
+      +kpi(P.fmtClv(c.avg_clv),'average value in the price','avg CLV')
+      +kpi((c.win+c.loss+c.push)?wl:'\u2014','won-lost','context only, not the scoreboard')
+      +kpi(s.no_bet_briefs,'nights we found nothing','no-bet briefs, counted as discipline');
   }
   function pickHTML(pk){
     var v=String(pk.verdict||'').toUpperCase();
