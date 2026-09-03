@@ -249,6 +249,52 @@ var cfbPending = 2; function cfbDone() { cfbPending--; }
   chk('no stored quotes is said, not padded', /No per-book rows stored for this line yet/.test(E.booksHTML([])));
 }
 
+/* ---- AVAILABILITY in the Full picture, and the inspection view ------------ */
+{
+  const sb = sandbox();
+  const ce = { event_id: 'c1', sport_key: 'americanfootball_ncaaf', home_team: 'Kansas Jayhawks', away_team: 'Texas Tech Red Raiders', selection: 'Texas Tech Red Raiders', market: 'h2h' };
+  const AV = { status: 'ON_FILE', source: 'EdgeDesk availability', week: 3, retrieved_at: '2026-09-03T21:00:00Z', teams: {
+    away: { name: 'Texas Tech', code: 'TTU', filed: true, dataQuality: 'STRONG', sources_checked: 3, official_report_found: true, lastUpdated: '2026-09-03T21:00:00Z', players: [
+      { name: 'Behren Morton', position: 'QB', status: 'QUESTIONABLE', injury: 'Shoulder', practice: 'Limited Participation in Practice', confidence: 'CONFIRMED', impact: 'HIGH', verified: true,
+        source_name: 'Texas Tech Athletics', source_url: 'https://texastech.com/report', freshness: 'LIVE', timeline: [{ day: 'Tue', practice_status: 'DNP' }, { day: 'Wed', practice_status: 'LIMITED' }] },
+      { name: 'Rotational Guy', position: 'WR', status: 'QUESTIONABLE', confidence: 'MEDIUM', impact: 'LOW', source_name: 'Beat Reporter' } ] },
+    home: { name: 'Kansas', code: 'KU', filed: true, dataQuality: 'PARTIAL', sources_checked: 2, players: [] } } };
+  sb.win.EDCARD = { availabilityFor: function () { return AV; } };
+  const h = sb.E.availabilitySpotlightHTML(ce);
+  chk('the spotlight names the side with a high-impact uncertainty', /Texas Tech Red Raiders has one high-impact uncertainty\./.test(h), h.slice(0, 300));
+  chk('it names the player, the designation, the injury and the practice level', /QB Behren Morton <span class="pic-tag questionable">questionable<\/span>/.test(h) && /shoulder · limited in practice/.test(h));
+  chk('it says the model does NOT adjust for the absence', /EdgeDesk’s number for this game does not adjust for it — treat it as a variable the model is missing/.test(h));
+  chk('the source, its confidence and the practice trail are on the receipt', /Texas Tech Athletics · confirmed/.test(h) && /href="https:\/\/texastech\.com\/report"/.test(h) && /Tue did not practice · Wed limited/.test(h));
+  chk('the clean side says it has no verified high-impact flags, never "no injuries"', /Kansas Jayhawks has no verified high-impact availability flags\./.test(h) && !/no injur/i.test(h));
+  chk('the lower-impact player is listed but not spotlit', /Rotational Guy/.test(h) && h.indexOf('Behren Morton') < h.indexOf('Rotational Guy'));
+  chk('the coverage sentence closes the section', /Availability coverage: Partial\./.test(h));
+
+  sb.win.EDCARD = { availabilityFor: function () { return { status: 'NOT_PUBLISHED', source: 'EdgeDesk availability', reason: 'neither program is in the availability dataset yet' }; } };
+  chk('a matchup with no dataset entry says exactly that', /No verified availability information found: neither program is in the availability dataset yet\./.test(sb.E.availabilitySpotlightHTML(ce)));
+  sb.win.EDCARD = { availabilityFor: function () { return null; } };
+  chk('a sport with no availability layer shows no section at all', sb.E.availabilitySpotlightHTML({ sport_key: 'baseball_mlb' }) === '');
+  sb.win.EDCARD = { availabilityFor: function () { throw new Error('boom'); } };
+  chk('a broken availability lookup can never break the picture', sb.E.availabilitySpotlightHTML(ce) === '');
+}
+
+/* ---- the availability wiring, as it sits in the page ---------------------- */
+{
+  chk('the inspection view is wired to the publisher desk', /EDBRIEF\.openAvailability\(\)/.test(APP) && /Availability data<\/button>/.test(APP));
+  chk('the app exposes the debug renderer and its loader', /availabilityDebugHTML:availabilityDebugHTML, loadAvailabilityDebug:loadAvailabilityDebug/.test(APP));
+  chk('the debug view reads the FULL dataset, never the lean one', /fetch\('football\/availability\/current\.full\.json'/.test(APP));
+  chk('the card path reads the lean dataset', /fetch\('football\/availability\/current\.json'/.test(APP));
+  chk('the browser never scrapes an availability source itself', (function () {
+    const block = APP.slice(APP.indexOf('/*__EDCARD_START__*/'), APP.indexOf('/*__EDPIC_END__*/'));
+    return !/texastech\.com|huskers\.com|sports\.core\.api\.espn\.com/.test(block);
+  })());
+  chk('both football leagues run through ONE availability function', (function () {
+    const block = APP.slice(APP.indexOf('/*__EDCARD_START__*/'), APP.indexOf('/*__EDCARD_END__*/'));
+    return (block.match(/function availabilityFor\(x\)\{/g) || []).length === 1 && /americanfootball_nfl/.test(block) && /americanfootball_ncaaf/.test(block);
+  })());
+  chk('the card asks for availability on every football signal, and gaps follow it', /gaps:gapsFor\(x\), availability:availabilityFor\(x\)/.test(APP) && /if\(k\.indexOf\('americanfootball'\)===0\)\{ var av=availabilityFor\(x\); return av&&av\.status==='ON_FILE'\?\[\]:\['injury_report'\]; \}/.test(APP));
+  chk('the model receives the same structured facts, additively', /availability: \(window\.EDCARD&&window\.EDCARD\.availabilityFor\)\?window\.EDCARD\.availabilityFor\(x\):null,/.test(APP));
+}
+
 /* ---- the panel, opened through the receipt ----------------------------------------- */
 {
   const dom = {};

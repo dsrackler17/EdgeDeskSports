@@ -418,34 +418,133 @@ html,body{margin:0;background:var(--bg);color:var(--text);font-family:'Inter',sy
   }
 
   /* ----------------------------------------------------------- availability */
-  /* The injury report, when it IS on file. Shape (built by the app from the
-     nflverse report the repo commits):
-       { status:'ON_FILE'|'NOT_PUBLISHED'|'NO_REPORT', source, week,
-         teams:{ away:{name, code, week, players:[{name, position, status, injury, practice}]},
-                 home:{...} } }
-     Copy only: it never touches a number or a verdict. */
-  var STATUS_RANK = { out: 3, doubtful: 2, questionable: 1 };
-  function statusWord(s) { s = String(s == null ? '' : s).toLowerCase(); return s === 'out' ? 'out' : s === 'doubtful' ? 'doubtful' : s === 'questionable' ? 'questionable' : null; }
+  /* WHO IS PLAYING, and how well EdgeDesk actually knows it.
+
+     Two leagues feed this through ONE shape. The NFL files an official injury
+     report and EdgeDesk reads it. College football has no universal report, so
+     EdgeDesk builds its own availability layer out of public evidence and
+     carries the evidence with it: the source, its confidence, how fresh it is,
+     and how much of the field it covers.
+
+     The shape (built by the app, never by this file):
+       { status:'ON_FILE'|'NOT_PUBLISHED', source, week, coverage?,
+         teams:{ away:{ name, code, filed, dataQuality?, sources_checked?,
+                        sources_failed?, official_report_found?, lastUpdated?,
+                        players:[{ name, position, status, injury, practice,
+                                   confidence?, impact?, source_name?,
+                                   source_url?, verified?, contested?,
+                                   freshness?, timeline?, observations? }] },
+                 home:{ ... } } }
+
+     THE DISTINCTION THIS FILE PROTECTS: "nobody is listed on an official
+     report", "EdgeDesk has partial coverage" and "EdgeDesk has no verified
+     data" are three different sentences. They are never collapsed, and none of
+     them is ever written as "no injuries". */
+  var STATUS_RANK = { out: 4, doubtful: 3, game_time_decision: 3, questionable: 2, day_to_day: 2, limited: 1 };
+  var STATUS_WORD = { out: 'out', doubtful: 'doubtful', questionable: 'questionable', game_time_decision: 'a game-time decision',
+    day_to_day: 'day to day', limited: 'limited', probable: 'probable', expected: 'expected to play', available: 'available' };
+  function normTeamName(s) { return normTeam(s); }
+  function statusKey(s) { return String(s == null ? '' : s).toLowerCase().replace(/[^a-z]+/g, '_'); }
+  function statusWord(s) { var k = statusKey(s); return STATUS_RANK[k] ? k : null; }
+  function statusLabel(s) { var k = statusKey(s); return STATUS_WORD[k] || (k ? k.replace(/_/g, ' ') : null); }
+  var QUALITY_COPY = {
+    STRONG: 'Strong', PARTIAL: 'Partial', LIMITED: 'Limited', NONE: 'None'
+  };
+  function sideCoverage(tm) {
+    if (!tm) return null;
+    var q = tm.dataQuality || null;
+    if (!q) return null;
+    return { quality: q, label: QUALITY_COPY[q] || q, sources_checked: num(tm.sources_checked), sources_failed: num(tm.sources_failed),
+      official: !!tm.official_report_found, last_updated: tm.lastUpdated || null };
+  }
+  /* The one sentence that says how much EdgeDesk knows, for the whole game. */
+  function coverageText(av, sides) {
+    if (!av) return null;
+    if (av.status === 'NOT_PUBLISHED') return 'No verified availability information found' + (av.reason ? ': ' + av.reason : '') + '.';
+    var qs = sides.map(function (s) { return s && s.coverage ? s.coverage.quality : null; }).filter(Boolean);
+    if (!qs.length) return null;
+    var rank = { STRONG: 4, PARTIAL: 3, LIMITED: 2, NONE: 1 };
+    var worst = qs.reduce(function (m, q) { return rank[q] < rank[m] ? q : m; }, qs[0]);
+    var official = sides.filter(function (s) { return s && s.coverage && s.coverage.official; }).length;
+    var checked = sides.reduce(function (n, s) { return n + ((s && s.coverage && s.coverage.sources_checked) || 0); }, 0);
+    if (worst === 'NONE') return 'No verified availability information found for this matchup.';
+    if (worst === 'LIMITED') return 'Availability coverage: Limited. EdgeDesk checked ' + checked + ' source' + (checked === 1 ? '' : 's') + ' and found no verified availability information for one side. That is not the same as nobody being hurt.';
+    if (worst === 'PARTIAL') return 'Availability coverage: Partial. EdgeDesk found verified information for some players, but college football does not have a universal injury-reporting system.';
+    return 'Availability coverage: Strong' + (official ? ' · ' + official + ' official source' + (official === 1 ? '' : 's') : '') + '.';
+  }
   function availabilitySummary(av) {
     if (!av || av.status !== 'ON_FILE' || !av.teams) return null;
-    var sides = [], listed = [], worst = 0;
+    var sides = [], listed = [], highImpact = [], worst = 0, anyOfficial = false;
     ['away', 'home'].forEach(function (k) {
       var tm = av.teams[k]; if (!tm) return;
+      var cov = sideCoverage(tm);
+      if (cov && cov.official) anyOfficial = true;
       var ps = (tm.players || []).filter(function (p) { return statusWord(p.status); });
-      var counts = { out: 0, doubtful: 0, questionable: 0 };
-      ps.forEach(function (p) { var w = statusWord(p.status); counts[w]++; worst = Math.max(worst, STATUS_RANK[w]); listed.push({ team: tm.name || tm.code, name: p.name, position: p.position || null, status: w, injury: p.injury || null, practice: p.practice || null }); });
+      var counts = { out: 0, doubtful: 0, questionable: 0, other: 0 };
+      ps.forEach(function (p) {
+        var w = statusWord(p.status);
+        if (counts[w] != null) counts[w]++; else counts.other++;
+        worst = Math.max(worst, STATUS_RANK[w] || 0);
+        var row = { side: k, team: tm.name || tm.code, name: p.name, position: p.position || null, status: w,
+          label: statusLabel(p.status), injury: p.injury || null, practice: p.practice || null,
+          confidence: p.confidence || null, impact: p.impact || null, source_name: p.source_name || null,
+          source_url: p.source_url || null, verified: p.verified == null ? null : !!p.verified,
+          contested: !!p.contested, freshness: p.freshness || null,
+          timeline: (p.timeline || []).filter(function (x) { return x && x.day && x.practice_status; }),
+          observations: p.observations || [] };
+        listed.push(row);
+        if (String(p.impact || '').toUpperCase() === 'HIGH') highImpact.push(row);
+      });
       var bits = [];
       if (counts.out) bits.push(counts.out + ' out');
       if (counts.doubtful) bits.push(counts.doubtful + ' doubtful');
       if (counts.questionable) bits.push(counts.questionable + ' questionable');
+      if (counts.other) bits.push(counts.other + ' listed');
       var label = (tm.code || tm.name || '');
-      sides.push(label + (tm.filed === false ? ': no report filed yet' : (bits.length ? ': ' + bits.join(', ') : ': nobody listed')));
+      /* Three different sentences, kept apart on purpose. */
+      var say;
+      if (tm.filed === false) say = 'no report filed yet';
+      else if (bits.length) say = bits.join(', ');
+      else if (cov && cov.official) say = 'nobody listed on the official report';
+      else if (cov && (cov.quality === 'LIMITED' || cov.quality === 'NONE')) say = 'no verified information found';
+      else say = 'nobody listed';
+      sides.push({ key: k, label: label, text: label + ': ' + say, coverage: cov, counts: counts, filed: tm.filed !== false, name: tm.name || tm.code || '' });
     });
-    listed.sort(function (a, b) { return STATUS_RANK[b.status] - STATUS_RANK[a.status] || a.name.localeCompare(b.name); });
-    return { text: 'Injury report on file (' + (av.source || 'league report') + (av.week ? ', week ' + av.week : '') + '): ' + sides.join(' · '), sides: sides, listed: listed, worst: worst };
+    listed.sort(function (a, b) {
+      var ia = a.impact === 'HIGH' ? 2 : a.impact === 'MEDIUM' ? 1 : 0, ib = b.impact === 'HIGH' ? 2 : b.impact === 'MEDIUM' ? 1 : 0;
+      if (ia !== ib) return ib - ia;
+      return (STATUS_RANK[b.status] || 0) - (STATUS_RANK[a.status] || 0) || String(a.name).localeCompare(String(b.name));
+    });
+    var cov = coverageText(av, sides);
+    return { text: 'Injury report on file (' + (av.source || 'league report') + (av.week ? ', week ' + av.week : '') + '): ' + sides.map(function (s) { return s.text; }).join(' · '),
+      sides: sides, listed: listed, high_impact: highImpact, worst: worst, coverage_text: cov, official: anyOfficial,
+      last_updated: sides.reduce(function (m, s) { var t2 = s.coverage && s.coverage.last_updated; return (t2 && (!m || String(t2) > String(m))) ? t2 : m; }, null) };
   }
-  function normTeamName(s) { return normTeam(s); }
-  function playerLine(p) { return p.name + (p.position ? ' (' + p.position + ')' : '') + ' is ' + p.status + (p.injury ? ', ' + String(p.injury).toLowerCase() : '') + (p.practice && /did not/i.test(p.practice) ? ', did not practice' : p.practice && /limited/i.test(p.practice) ? ', limited in practice' : '') + '.'; }
+  /* One player, in plain words. Never more than the source said. */
+  function playerLine(p) {
+    var label = p.label || statusLabel(p.status) || 'on the report';
+    var verb = /^(a |the )/.test(label) ? ' is ' : ' is ';
+    return p.name + (p.position ? ' (' + p.position + ')' : '') + verb + label
+      + (p.injury ? ', ' + String(p.injury).toLowerCase() : '')
+      + (p.practice && /did not/i.test(p.practice) ? ', did not practice' : p.practice && /limited/i.test(p.practice) ? ', limited in practice' : '')
+      + '.';
+  }
+  /* The practice trail, only for days a source actually reported. */
+  function timelineText(p) {
+    if (!p || !p.timeline || !p.timeline.length) return null;
+    return p.timeline.map(function (x) { return x.day + ' ' + String(x.practice_status).toLowerCase().replace('dnp', 'did not practice'); }).join(' · ');
+  }
+  /* How long ago a timestamp was, in the card's own words. */
+  function agoText(at) { var ms = toMs(at); if (ms == null) return null; return ageText((Date.now() - ms) / 60000); }
+  /* Provenance, for the receipt. */
+  function sourceText(p) {
+    if (!p) return null;
+    var bits = [];
+    if (p.source_name) bits.push(p.source_name);
+    if (p.confidence) bits.push(String(p.confidence).toLowerCase());
+    if (p.freshness && p.freshness !== 'LIVE' && p.freshness !== 'CURRENT') bits.push(String(p.freshness).toLowerCase());
+    return bits.length ? bits.join(' · ') : null;
+  }
 
   /* ------------------------------------------------------------------ SIMPLE */
   /* The client packet shape (askAI / EDAI.packetOf) is the contract:
@@ -549,10 +648,14 @@ html,body{margin:0;background:var(--bg);color:var(--text);font-family:'Inter',sy
     /* A listed player on the side being backed leads the watch line; an
        opponent's absence is a watch line too, said as the opponent's. */
     if (avail && avail.listed.length && (displayVerdict === 'BET' || displayVerdict === 'LEAN' || displayVerdict === 'WAIT')) {
-      var pickTeam = (selectionRaw && game.home && normTeamName(selectionRaw) === normTeamName(game.home)) ? 'home' : (selectionRaw && game.away && normTeamName(selectionRaw) === normTeamName(game.away)) ? 'away' : null;
-      var mine = avail.listed.filter(function (x) { return pickTeam && availability.teams[pickTeam] && x.team === (availability.teams[pickTeam].name || availability.teams[pickTeam].code) && x.status !== 'questionable'; });
-      var theirs = avail.listed.filter(function (x) { return !mine.some(function (m) { return m === x; }) && x.status !== 'questionable'; });
-      var lead = mine.length ? playerLine(mine[0]) + (mine.length > 1 ? ' ' + (mine.length - 1) + ' more on the same side listed.' : '') : (theirs.length ? 'For the other side, ' + playerLine(theirs[0]).charAt(0).toLowerCase() + playerLine(theirs[0]).slice(1) : '');
+      var pickSide = (selectionRaw && game.home && normTeamName(selectionRaw) === normTeamName(game.home)) ? 'home' : (selectionRaw && game.away && normTeamName(selectionRaw) === normTeamName(game.away)) ? 'away' : null;
+      /* The side being backed leads. A high-impact absence outranks a
+         questionable rotation player on either side. */
+      var material = avail.listed.filter(function (x) { return x.impact === 'HIGH' || x.status === 'out' || x.status === 'doubtful'; });
+      var mine = material.filter(function (x) { return pickSide && x.side === pickSide; });
+      var theirs = material.filter(function (x) { return !pickSide || x.side !== pickSide; });
+      var lead = mine.length ? playerLine(mine[0]) + (mine.length > 1 ? ' ' + (mine.length - 1) + ' more on the same side listed.' : '')
+        : (theirs.length ? 'For the other side, ' + playerLine(theirs[0]).charAt(0).toLowerCase() + playerLine(theirs[0]).slice(1) : '');
       if (lead && !/\bis (out|doubtful)\b/i.test(watchText)) watchText = lead + ' ' + watchText;
     }
 
@@ -574,7 +677,7 @@ html,body{margin:0;background:var(--bg);color:var(--text);font-family:'Inter',sy
     if (noPrice) flags.push({ kind: 'NO_PRICE', text: 'No current price on file' });
     if (book && trusted === false) flags.push({ kind: 'OFFSHORE', text: 'Best price is at an offshore book' });
     gaps.forEach(function (g) { flags.push({ kind: 'DATA_GAP', text: g.split('. ')[0].replace(/\.$/, '') }); });
-    if (avail) flags.push({ kind: 'AVAILABILITY', text: avail.text.replace(/^Injury report on file \([^)]*\): /, 'Injury report: '), severity: avail.worst >= 2 ? 'warn' : 'ok' });
+    if (avail) flags.push({ kind: 'AVAILABILITY', text: avail.text.replace(/^Injury report on file \([^)]*\): /, 'Availability: '), severity: avail.worst >= 2 ? 'warn' : 'ok' });
 
     return {
       version: VERSION,
@@ -607,7 +710,10 @@ html,body{margin:0;background:var(--bg);color:var(--text);font-family:'Inter',sy
       integrity_reason: integ.reason,
       flags: flags,
       gaps: gaps,
-      availability: availability ? { status: availability.status, source: availability.source || null, week: availability.week || null, summary: avail ? avail.text : null, listed: avail ? avail.listed.slice(0, 8) : [], sides: avail ? avail.sides : [], reason: availability.reason || null } : null,
+      availability: availability ? { status: availability.status, source: availability.source || null, week: availability.week || null,
+        summary: avail ? avail.text : null, coverage_text: avail ? avail.coverage_text : coverageText(availability, []),
+        listed: avail ? avail.listed.slice(0, 10) : [], high_impact: avail ? avail.high_impact : [], sides: avail ? avail.sides : [],
+        official: avail ? avail.official : false, last_updated: avail ? avail.last_updated : null, reason: availability.reason || null } : null,
       confidence: det.confidence || null,
       score: num(det.score),
       copy_source: 'deterministic',
@@ -870,10 +976,53 @@ html,body{margin:0;background:var(--bg);color:var(--text);font-family:'Inter',sy
       biggest_risk: risk,
       change_call: change,
       market_read: market,
+      availability: availabilityBrief(s),
       data_check: dataCheck(s),
       freshness_text: s.freshness ? s.freshness.price_text : null,
       powered_by: 'Powered by EdgeDesk Sports'
     };
+  }
+
+  /* The brief's availability section. Written for someone with no betting
+     knowledge: who is in doubt, what that means for the game, where it came
+     from and how sure EdgeDesk is. It never states a consequence for the
+     model, because availability does not move a number here. */
+  function availabilityBrief(s) {
+    var av = s && s.availability;
+    if (!av) return null;
+    if (av.status === 'NOT_PUBLISHED') return { headline: 'Availability is unknown', lines: [av.coverage_text || 'No verified availability information found.'], coverage: av.coverage_text || null, players: [], sources: [] };
+    /* A snapshot deep-clones its cards, so identity is not a safe key here. */
+    function key(p) { return (p.team || '') + '|' + (p.name || ''); }
+    var high = (av.high_impact || []).slice(0, 3);
+    var seen = {}; high.forEach(function (p) { seen[key(p)] = 1; });
+    var rest = (av.listed || []).filter(function (p) { return !seen[key(p)]; }).slice(0, 3);
+    var lines = [], sources = [], srcSeen = {};
+    function addSource(p) {
+      if (!p.source_name) return;
+      var k = p.source_name + '|' + (p.confidence || '');
+      if (srcSeen[k]) return;
+      srcSeen[k] = 1;
+      sources.push({ name: p.source_name, url: p.source_url || null, confidence: p.confidence || null });
+    }
+    high.forEach(function (p) {
+      lines.push(sentence(p.team + ' ' + (p.position ? p.position + ' ' : '') + p.name + ' is ' + (p.label || p.status)
+        + (p.injury ? ' with a ' + String(p.injury).toLowerCase() + ' issue' : '')
+        + (p.practice ? ' and was ' + String(p.practice).replace(/ in practice| participation/gi, '').toLowerCase() + ' in practice' : '')));
+      lines.push(sentence(p.status === 'out'
+        ? (p.team + ' is without ' + p.name + ' for this game, and EdgeDesk’s number does not adjust for it')
+        : ('If ' + p.name.split(' ').slice(-1)[0] + ' cannot go, that is a material change to ' + p.team + '’s side of this game, and EdgeDesk’s number does not adjust for it')));
+      addSource(p);
+    });
+    rest.forEach(function (p) {
+      lines.push(sentence(p.team + ' ' + (p.position ? p.position + ' ' : '') + p.name + ' is ' + (p.label || p.status)));
+      addSource(p);
+    });
+    if (!lines.length) lines.push(sentence((av.sides || []).map(function (x) { return x.text; }).join(' · ') || 'Nobody is listed'));
+    var headline;
+    if (!high.length) headline = (av.listed || []).length ? 'Availability notes' : 'No availability flags';
+    else if (high[0].status === 'out') headline = high[0].team + ' is missing its ' + (high[0].position || 'starter');
+    else headline = high[0].team + ' ' + (high[0].position || 'player') + ' status is unresolved';
+    return { headline: headline, lines: lines, coverage: av.coverage_text || null, players: high.concat(rest), sources: sources };
   }
 
   /* ----------------------------------------------------------------- slate */
@@ -1065,6 +1214,45 @@ html,body{margin:0;background:var(--bg);color:var(--text);font-family:'Inter',sy
     if (!t) return '';
     return '<details class="dcard-what"><summary>What does this mean?</summary><p>' + esc(t) + '</p></details>';
   }
+  /* Availability on the card: who is listed, how sure EdgeDesk is, where it
+     came from, and how much of the field it actually covers. */
+  function availabilityHTML(av) {
+    if (!av) return '';
+    if (av.status === 'NOT_PUBLISHED') return av.coverage_text ? '<div class="dcard-h">Availability</div><p class="dcard-avail-none">' + esc(av.coverage_text) + '</p>' : '';
+    var h = '<div class="dcard-h">Availability</div>';
+    if (av.listed && av.listed.length) {
+      h += '<ul class="dcard-avail">' + av.listed.slice(0, 6).map(function (p) {
+        var src = sourceText(p), tl = timelineText(p);
+        return '<li><b>' + esc(p.name) + '</b>' + (p.position ? ' <span class="pos">' + esc(p.position) + '</span>' : '')
+          + ' <span class="st ' + esc(p.status) + '">' + esc(p.label || p.status) + '</span>'
+          + (p.impact === 'HIGH' ? ' <span class="imp">high impact</span>' : '')
+          + (p.injury ? ' · ' + esc(String(p.injury).toLowerCase()) : '')
+          + (p.practice ? ' · ' + esc(String(p.practice).replace(/ in practice| participation/gi, '').toLowerCase()) : '')
+          + ' <span class="tm">' + esc(p.team) + '</span>'
+          + (tl ? '<div class="tl">' + esc(tl) + '</div>' : '')
+          + (src ? '<div class="src">' + (p.source_url ? '<a href="' + esc(p.source_url) + '" target="_blank" rel="noopener">' + esc(src) + '</a>' : esc(src)) + (p.contested ? ' · sources disagree' : '') + '</div>' : '')
+          + '</li>';
+      }).join('') + '</ul>';
+    } else if (av.sides && av.sides.length) {
+      h += '<p class="dcard-avail-none">' + esc(av.sides.map(function (s) { return s.text; }).join(' · ')) + '</p>';
+    }
+    if (av.coverage_text) h += '<p class="dcard-avail-cov">' + esc(av.coverage_text) + (av.last_updated ? ' Updated ' + esc(agoText(av.last_updated) || '') + '.' : '') + '</p>';
+    return h;
+  }
+
+  /* The watchlist line: the two that matter, or a count. Compact on purpose. */
+  function availabilityChip(av) {
+    if (!av || av.status !== 'ON_FILE') return null;
+    var listed = av.listed || [];
+    if (!listed.length) return null;
+    var top = listed.slice(0, 2).map(function (p) {
+      var who = p.impact === 'HIGH' && p.position ? (p.position + (/^(QB|RB|WR|TE)$/.test(p.position) ? '1' : '')) : (p.position || p.name.split(' ').slice(-1)[0]);
+      return who + ' ' + (p.label || p.status);
+    });
+    var text = top.join(' · ') + (listed.length > 2 ? ' · +' + (listed.length - 2) + ' more' : '');
+    return { text: text, warn: listed.some(function (p) { return p.impact === 'HIGH' || p.status === 'out'; }), count: listed.length };
+  }
+
   /* The 5-second view. opts: { actions:[{label, onclick, primary}], compact, id, show_what } */
   function cardHTML(s, opts) {
     opts = opts || {};
@@ -1107,12 +1295,14 @@ html,body{margin:0;background:var(--bg);color:var(--text);font-family:'Inter',sy
         + '<div class="dcard-h">' + (s.verdict === 'WAIT' ? 'Waiting on' : s.verdict === 'PASS' ? 'Why pass' : 'Watch') + '</div>'
         + '<p class="dcard-watch">' + esc(s.watch && s.watch.text || '') + '</p>'
         + (s.change_trigger && s.change_trigger.text ? '<div class="dcard-h">What would change it</div><p class="dcard-change">' + esc(s.change_trigger.text) + '</p>' : '')
-        + (s.availability && s.availability.listed && s.availability.listed.length ? '<div class="dcard-h">Injury report</div><ul class="dcard-avail">' + s.availability.listed.slice(0, 6).map(function (p) { return '<li><b>' + esc(p.name) + '</b>' + (p.position ? ' <span class="pos">' + esc(p.position) + '</span>' : '') + ' <span class="st ' + esc(p.status) + '">' + esc(p.status) + '</span>' + (p.injury ? ' · ' + esc(String(p.injury).toLowerCase()) : '') + (p.practice ? ' · ' + esc(String(p.practice).replace(/ in practice| participation/gi, '').toLowerCase()) : '') + ' <span class="tm">' + esc(p.team) + '</span></li>'; }).join('') + '</ul>' : '')
+        + availabilityHTML(s.availability)
         + '<div class="dcard-fresh' + (s.freshness && s.freshness.status === 'STALE' ? ' bad' : '') + '">' + esc(s.freshness ? s.freshness.price_text : '') + (s.freshness && s.freshness.research_text ? ' · ' + esc(s.freshness.research_text) : '') + '</div>'
         + (opts.show_what !== false ? whatMeans('good_to', s) + whatMeans('verdict', s) : '')
         + '</div>';
     } else {
       h += '<div class="dcard-line">' + esc((s.why && s.why[0] && s.why[0].text) || s.headline || '') + '</div>';
+      var chip = availabilityChip(s.availability);
+      if (chip) h += '<div class="dcard-availchip' + (chip.warn ? ' warn' : '') + '">' + esc(chip.text) + '</div>';
     }
     if (opts.actions && opts.actions.length) {
       h += '<div class="dcard-actions">' + opts.actions.map(function (a) {
@@ -1135,6 +1325,12 @@ html,body{margin:0;background:var(--bg);color:var(--text);font-family:'Inter',sy
     h += '<div class="edb-h">' + (v === 'PASS' ? 'Why EdgeDesk passes' : v === 'WAIT' ? 'Waiting for' : 'Why EdgeDesk likes it') + '</div><ol class="edb-why">'
       + b.why.map(function (w) { return '<li>' + esc(w) + '</li>'; }).join('') + '</ol>';
     h += '<div class="edb-h">The biggest risk</div><p>' + esc(b.biggest_risk) + '</p>';
+    if (b.availability) {
+      h += '<div class="edb-h">' + esc(b.availability.headline) + '</div>'
+        + b.availability.lines.map(function (l) { return '<p>' + esc(l) + '</p>'; }).join('')
+        + (b.availability.coverage ? '<p class="edb-avail-cov">' + esc(b.availability.coverage) + '</p>' : '')
+        + (b.availability.sources.length ? '<p class="edb-avail-src">Source: ' + b.availability.sources.map(function (x) { return esc(x.name) + (x.confidence ? ' · ' + esc(String(x.confidence).toLowerCase()) : ''); }).join(' · ') + '</p>' : '');
+    }
     h += '<div class="edb-h">What would change the call</div><p>' + esc(b.change_call) + '</p>';
     if (b.market_read) h += '<div class="edb-h">Market read</div><p>' + esc(b.market_read) + '</p>';
     return h + '</section>';
@@ -1200,6 +1396,9 @@ html,body{margin:0;background:var(--bg);color:var(--text);font-family:'Inter',sy
       if (!numbered) s += '<p>' + esc(b.lede) + '</p>';
       s += '<h3>' + (b.call.verdict === 'PASS' ? 'Why EdgeDesk passes' : b.call.verdict === 'WAIT' ? 'Waiting for' : 'Why EdgeDesk likes it') + '</h3><ol>' + b.why.map(function (w) { return '<li>' + esc(w) + '</li>'; }).join('') + '</ol>';
       s += '<h3>The biggest risk</h3><p>' + esc(b.biggest_risk) + '</p>';
+      if (b.availability) { s += '<h3>' + esc(b.availability.headline) + '</h3>' + b.availability.lines.map(function (l) { return '<p>' + esc(l) + '</p>'; }).join('')
+        + (b.availability.coverage ? '<p>' + esc(b.availability.coverage) + '</p>' : '')
+        + (b.availability.sources.length ? '<p>Source: ' + b.availability.sources.map(function (x) { return esc(x.name) + (x.confidence ? ' · ' + esc(String(x.confidence).toLowerCase()) : ''); }).join(' · ') + '</p>' : ''); }
       s += '<h3>What would change the call</h3><p>' + esc(b.change_call) + '</p>';
       if (b.market_read) s += '<h3>Market read</h3><p>' + esc(b.market_read) + '</p>';
       return s;
@@ -1235,6 +1434,9 @@ html,body{margin:0;background:var(--bg);color:var(--text);font-family:'Inter',sy
       L.push(b.call.verdict === 'PASS' ? 'WHY EDGEDESK PASSES' : b.call.verdict === 'WAIT' ? 'WAITING FOR' : 'WHY EDGEDESK LIKES IT');
       b.why.forEach(function (w, i) { L.push((i + 1) + '. ' + w); });
       L.push(''); L.push('THE BIGGEST RISK'); L.push(b.biggest_risk);
+      if (b.availability) { L.push(''); L.push(String(b.availability.headline).toUpperCase()); b.availability.lines.forEach(function (l) { L.push(l); });
+        if (b.availability.coverage) L.push(b.availability.coverage);
+        if (b.availability.sources.length) L.push('Source: ' + b.availability.sources.map(function (x) { return x.name + (x.confidence ? ' · ' + String(x.confidence).toLowerCase() : ''); }).join(' · ')); }
       L.push(''); L.push('WHAT WOULD CHANGE THE CALL'); L.push(b.change_call);
       if (b.market_read) { L.push(''); L.push('MARKET READ'); L.push(b.market_read); }
       L.push('');
@@ -1601,7 +1803,8 @@ html,body{margin:0;background:var(--bg);color:var(--text);font-family:'Inter',sy
     normResult: normResult, normTeam: normTeam, sideOf: sideOf, outcomeFromScore: outcomeFromScore, gradePick: gradePick, resultText: resultText, outcomeOf: outcomeOf,
     marketKeyOf: marketKeyOf, parseSelectionLabel: parseSelectionLabel, priceFields: priceFields, gradeKey: gradeKey,
     recordSummary: recordSummary, calibration: calibration, sportGroup: sportGroup, isCall: isCall, tally: tally, flattenPicks: flattenPicks,
-    availabilitySummary: availabilitySummary, playerLine: playerLine,
+    availabilitySummary: availabilitySummary, playerLine: playerLine, availabilityHTML: availabilityHTML, availabilityBrief: availabilityBrief, availabilityChip: availabilityChip,
+    coverageText: coverageText, timelineText: timelineText, sourceText: sourceText, statusLabel: statusLabel, agoText: agoText,
     calibrationHTML: calibrationHTML, pickStatusText: pickStatusText, resultHTML: resultHTML, briefResultsHTML: briefResultsHTML, briefResultsText: briefResultsText,
     fmtCents: fmtCents, fmtRate: fmtRate, fmtClv: fmtClv
   };

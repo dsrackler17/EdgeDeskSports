@@ -30,6 +30,7 @@ on:
       - 'tools/presentation/**'
       - 'tools/record/**'
       - 'football/injuries/**'
+      - 'football/availability/**'
       - '.github/workflows/collective-tests.yml'
   pull_request:
     paths:
@@ -50,6 +51,7 @@ on:
       - 'tools/presentation/**'
       - 'tools/record/**'
       - 'football/injuries/**'
+      - 'football/availability/**'
       - '.github/workflows/collective-tests.yml'
   workflow_dispatch:
 
@@ -139,6 +141,13 @@ jobs:
       # week per team. Never inferred, never last season's shown as this one's.
       - name: The injury sync reduces the report honestly
         run: node football/injuries/fetch_injuries.test.js
+
+      # College football has no universal injury report, so EdgeDesk builds its
+      # own availability layer. Nothing invented, no status stronger than its
+      # source, no low-tier report overwriting an official one, and "no data"
+      # never rendered as "no injuries".
+      - name: CFB availability never invents a status, a player or a source
+        run: node football/availability/availability.test.js
 
       # The deployed edge function, imported under Node's native type stripping
       # with a Deno shim and a mocked network: old callers, the additive

@@ -83,3 +83,20 @@ the `<domid>_pic` host under a receipt on demand:
   the engine's verdict and good-to, open → now, books quoting.
 - **Every book on the line**: `book_quotes` for the selection, best in green,
   sharp starred, each with its own de-vigged fair.
+
+## Availability
+
+One availability path serves every football surface: `EDCARD.availabilityFor(x)`
+builds the facts, `simpleFromPacket` carries them on the card, and the brief,
+the Full picture, the watchlist chip and the AI packet all read the same object.
+
+- **NFL** — the league's official report, from `football/injuries/nfl_<season>.json`
+  (see `.github/workflows/injury-sync.yml`).
+- **College football** — EdgeDesk's own availability layer, from
+  `football/availability/current.json`. See `football/availability/README.md`
+  for the sources, the rules and how to add a school.
+
+The library never decides a status, a confidence or an impact: those arrive with
+the record. It decides only how to say them, and it keeps "no reported
+injuries", "partial coverage" and "no verified data" as three different
+sentences.

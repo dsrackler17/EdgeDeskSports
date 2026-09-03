@@ -301,8 +301,16 @@ function simple(over, ctx) { return P.simpleFromPacket(packet(over), Object.assi
   chk('listed players are ordered by severity: out before doubtful before questionable', on.availability.listed[0].name === 'Big Left Tackle' && on.availability.listed[0].status === 'out');
   chk('the watch line leads with a named absence on the side being backed, in plain words', /Big Left Tackle \(LT\) is out, knee, did not practice\./.test(on.watch.text) === false, on.watch.text);
   chk('the pick’s own side is the one that leads the watch line', /For the other side, big left tackle \(LT\) is out/i.test(on.watch.text) || /Big Left Tackle/.test(on.watch.text), on.watch.text);
-  chk('the full card lists the report with status, injury and practice', /class="dcard-h">Injury report<\/div><ul class="dcard-avail">/.test(P.cardHTML(on)) && /Big Left Tackle<\/b> <span class="pos">LT<\/span> <span class="st out">out<\/span> · knee · did not/.test(P.cardHTML(on)), P.cardHTML(on).slice(0, 200));
-  chk('the compact strip does not carry the player list', !/dcard-avail/.test(P.cardHTML(on, { compact: true })));
+  chk('the full card lists the report with status, injury and practice', /class="dcard-h">Availability<\/div><ul class="dcard-avail">/.test(P.cardHTML(on)) && /Big Left Tackle<\/b> <span class="pos">LT<\/span> <span class="st out">out<\/span> · knee · did not/.test(P.cardHTML(on)), P.cardHTML(on).slice(0, 200));
+  chk('the compact strip carries a one-line chip, never the full player list', (function () {
+    const c = P.cardHTML(on, { compact: true });
+    return !/<ul class="dcard-avail">/.test(c) && /<div class="dcard-availchip warn">/.test(c) && /LT out/.test(c);
+  })(), P.cardHTML(on, { compact: true }).match(/dcard-availchip[^<]*<?[^<]*/));
+  chk('the chip names the two that matter and counts the rest', (function () {
+    const chip = P.availabilityChip(on.availability);
+    return chip && chip.count === 3 && /\+1 more/.test(chip.text) && chip.warn === true;
+  })(), P.availabilityChip(on.availability));
+  chk('no report, no chip', P.availabilityChip(null) === null && P.availabilityChip({ status: 'NOT_PUBLISHED' }) === null);
   chk('AVAILABILITY never touches the verdict, the price or the good-to', on.verdict === 'BET' && on.odds === '-110' && on.playable_to.limit_odds === '-118' && on.engine.edge === 0.031);
 
   const notPub = P.simpleFromPacket(packet(), { now: NOW, gaps: ['injury_report'], availability: { status: 'NOT_PUBLISHED', source: 'nflverse', reason: 'nflverse has not published the 2026 report yet' } });
@@ -314,6 +322,86 @@ function simple(over, ctx) { return P.simpleFromPacket(packet(over), Object.assi
   chk('a clean report is not a warning', filedNobody.flags.filter(function (f) { return f.kind === 'AVAILABILITY'; })[0].severity === 'ok' && on.flags.filter(function (f) { return f.kind === 'AVAILABILITY'; })[0].severity === 'warn');
   chk('availabilitySummary returns null for anything that is not on file', P.availabilitySummary(null) === null && P.availabilitySummary({ status: 'NOT_PUBLISHED' }) === null);
   chk('playerLine never states a diagnosis it was not given', P.playerLine({ name: 'X', position: 'QB', status: 'out', injury: null, practice: null }) === 'X (QB) is out.');
+}
+
+/* ---- AVAILABILITY in the one-page brief ------------------------------------ */
+{
+  const av = { status: 'ON_FILE', source: 'EdgeDesk availability', week: 3, teams: {
+    away: { name: 'Texas Tech', code: 'TTU', filed: true, dataQuality: 'STRONG', sources_checked: 3, official_report_found: true, players: [
+      { name: 'Chris Brown', position: 'OT', status: 'OUT', injury: 'Knee', confidence: 'CONFIRMED', impact: 'HIGH', source_name: 'Texas Tech Athletics', source_url: 'https://texastech.com/r' },
+      { name: 'Behren Morton', position: 'QB', status: 'QUESTIONABLE', injury: 'Shoulder', practice: 'Limited Participation in Practice', confidence: 'CONFIRMED', impact: 'MEDIUM', source_name: 'Texas Tech Athletics' },
+      { name: 'Caleb Douglas', position: 'WR', status: 'QUESTIONABLE', confidence: 'MEDIUM', impact: 'LOW', source_name: 'Beat Reporter' } ] },
+    home: { name: 'Kansas', code: 'KU', filed: true, dataQuality: 'STRONG', sources_checked: 3, official_report_found: true, players: [] } } };
+  const s = P.simpleFromPacket(packet(), { now: NOW, availability: av });
+  const b = P.publisher(s, { preset: 'CFB' });
+  chk('the brief names the out starter in its headline, not "unresolved"', b.availability.headline === 'Texas Tech is missing its OT', b.availability.headline);
+  chk('a questionable high-impact player reads as unresolved instead', (function () {
+    const s2 = P.simpleFromPacket(packet(), { now: NOW, availability: { status: 'ON_FILE', source: 'x', teams: { away: { name: 'Texas Tech', code: 'TTU', filed: true, players: [{ name: 'Behren Morton', position: 'QB', status: 'QUESTIONABLE', impact: 'HIGH', confidence: 'CONFIRMED', source_name: 'Texas Tech Athletics' }] }, home: { name: 'Kansas', code: 'KU', filed: true, players: [] } } } });
+    return P.publisher(s2, {}).availability.headline === 'Texas Tech QB status is unresolved';
+  })());
+  chk('each player is LISTED once, however the snapshot cloned him', (function () {
+    const b2 = P.publisher(JSON.parse(JSON.stringify(s)), {});
+    const listings = b2.availability.lines.filter(function (l) { return /^Texas Tech OT Chris Brown is/.test(l); });
+    return listings.length === 1 && b2.availability.players.filter(function (p) { return p.name === 'Chris Brown'; }).length === 1;
+  })(), P.publisher(JSON.parse(JSON.stringify(s)), {}).availability.lines);
+  chk('a high-impact player gets the fact AND what it would mean, in that order', b.availability.lines[0].indexOf('Chris Brown is out with a knee issue') > 0 && /^Texas Tech is without Chris Brown/.test(b.availability.lines[1]));
+  chk('the same source is credited once, not once per player', b.availability.sources.length === 2 && b.availability.sources[0].name === 'Texas Tech Athletics' && b.availability.sources[1].name === 'Beat Reporter', b.availability.sources);
+  chk('the brief says the model does not adjust for the absence', b.availability.lines.some(function (l) { return /EdgeDesk’s number does not adjust for it/.test(l); }));
+  chk('the coverage sentence travels into the brief', /Availability coverage: Strong/.test(b.availability.coverage));
+  chk('the brief renders availability into HTML, CMS and plain text', (function () {
+    const snap = P.snapshot({ cards: [s], report_type: 'GAME', preset: 'CFB', now: NOW });
+    const html = P.briefHTML(snap), cms = P.briefCmsHTML(snap), txt = P.briefText(snap);
+    return /Texas Tech is missing its OT/.test(html) && /Texas Tech is missing its OT/.test(cms) && /TEXAS TECH IS MISSING ITS OT/.test(txt) && /Source: Texas Tech Athletics · confirmed/.test(html);
+  })());
+  chk('with no availability object the brief carries no availability section', (function () {
+    const plain = P.simpleFromPacket(packet(), { now: NOW });
+    return P.publisher(plain, {}).availability === null && !/Availability coverage/.test(P.briefHTML(P.snapshot({ cards: [plain], report_type: 'GAME', now: NOW })));
+  })());
+  chk('an unpublished report still tells the reader the truth in the brief', (function () {
+    const np = P.simpleFromPacket(packet(), { now: NOW, gaps: ['injury_report'], availability: { status: 'NOT_PUBLISHED', source: 'EdgeDesk availability', reason: 'neither program is in the availability dataset yet' } });
+    const bb = P.publisher(np, {});
+    return bb.availability.headline === 'Availability is unknown' && /No verified availability information found: neither program is in the availability dataset yet\./.test(bb.availability.lines[0]);
+  })());
+}
+
+/* ---- AVAILABILITY: college football, where EdgeDesk owns the evidence ----- */
+{
+  function cfb(over) {
+    return Object.assign({ status: 'ON_FILE', source: 'EdgeDesk availability', week: 3, teams: {
+      away: { name: 'Texas Tech', code: 'TTU', filed: true, dataQuality: 'STRONG', sources_checked: 3, official_report_found: true, lastUpdated: '2026-09-03T21:00:00Z', players: [
+        { name: 'Behren Morton', position: 'QB', status: 'QUESTIONABLE', injury: 'Shoulder', practice: 'Limited Participation in Practice',
+          confidence: 'CONFIRMED', impact: 'HIGH', verified: true, source_name: 'Texas Tech Athletics', source_url: 'https://texastech.com/report',
+          freshness: 'LIVE', timeline: [{ day: 'Tue', practice_status: 'DNP' }, { day: 'Wed', practice_status: 'LIMITED' }] },
+        { name: 'Rotational Guy', position: 'WR', status: 'QUESTIONABLE', confidence: 'MEDIUM', impact: 'LOW', source_name: 'Beat Reporter' } ] },
+      home: { name: 'Kansas', code: 'KU', filed: true, dataQuality: 'PARTIAL', sources_checked: 2, players: [
+        { name: 'Big Tackle', position: 'LT', status: 'OUT', confidence: 'MEDIUM', impact: 'HIGH', source_name: 'Beat Reporter', contested: true } ] } } }, over || {});
+  }
+  const s = P.simpleFromPacket(packet(), { now: NOW, gaps: ['injury_report'], availability: cfb() });
+  chk('a high-impact absence leads the list, whichever side it is on', s.availability.listed[0].name === 'Big Tackle' && s.availability.high_impact.length === 2, s.availability.listed.map(function (x) { return x.name; }));
+  chk('the coverage sentence is the WORSE of the two sides and never says "no injuries"', /Availability coverage: Partial\. EdgeDesk found verified information for some players, but college football does not have a universal injury-reporting system\./.test(s.availability.coverage_text) && !/no injur/i.test(s.availability.coverage_text));
+  chk('each player carries its own source, confidence and impact', s.availability.listed[1].source_name === 'Texas Tech Athletics' && s.availability.listed[1].confidence === 'CONFIRMED' && s.availability.listed[1].impact === 'HIGH' && s.availability.listed[1].verified === true);
+  chk('the practice trail travels, with only the days a source reported', P.timelineText(s.availability.listed[1]) === 'Tue did not practice · Wed limited');
+  chk('provenance renders as source and confidence, linked where there is a url', /Texas Tech Athletics · confirmed/.test(P.availabilityHTML(s.availability)) && /href="https:\/\/texastech\.com\/report"/.test(P.availabilityHTML(s.availability)));
+  chk('a contested record says so on the card', /sources disagree/.test(P.availabilityHTML(s.availability)));
+  chk('the high-impact flag is marked', /<span class="imp">high impact<\/span>/.test(P.availabilityHTML(s.availability)));
+  chk('the watch line leads with the high-impact player on the side being backed', /^Behren Morton \(QB\) is questionable, shoulder, limited in practice\./.test(s.watch.text), s.watch.text);
+  chk('with the other side backed, the opponent’s absence is named as the opponent’s', (function () {
+    const other = P.simpleFromPacket(packet([['selection_raw', 'Baylor'], ['selection', 'Baylor +3.5']]), { now: NOW, availability: cfb({ teams: { away: { name: 'Texas Tech', code: 'TTU', filed: true, players: [] }, home: { name: 'Baylor', code: 'BAY', filed: true, players: [{ name: 'Big Tackle', position: 'LT', status: 'OUT', impact: 'HIGH', confidence: 'MEDIUM', source_name: 'Beat Reporter' }] } } }) });
+    return /^Big Tackle \(LT\) is out\./.test(other.watch.text);
+  })());
+
+  const strong = P.simpleFromPacket(packet(), { now: NOW, availability: cfb({ teams: { away: { name: 'Texas Tech', code: 'TTU', filed: true, dataQuality: 'STRONG', official_report_found: true, sources_checked: 3, players: [] }, home: { name: 'Kansas', code: 'KU', filed: true, dataQuality: 'STRONG', official_report_found: true, sources_checked: 3, players: [] } } }) });
+  chk('an official report listing nobody says exactly that, and is STRONG coverage', /TTU: nobody listed on the official report/.test(strong.availability.summary) && /Availability coverage: Strong · 2 official sources\./.test(strong.availability.coverage_text));
+  chk('"nobody listed on the official report" is never rendered as "no injuries"', !/no injur/i.test(strong.availability.summary) && !/no injur/i.test(strong.availability.coverage_text));
+
+  const limited = P.simpleFromPacket(packet(), { now: NOW, availability: cfb({ teams: { away: { name: 'Texas Tech', code: 'TTU', filed: true, dataQuality: 'STRONG', official_report_found: true, sources_checked: 3, players: [] }, home: { name: 'Kansas', code: 'KU', filed: true, dataQuality: 'LIMITED', sources_checked: 4, players: [] } } }) });
+  chk('one side with no verified data drags the whole matchup to Limited, and says so', /Availability coverage: Limited\. EdgeDesk checked 7 sources and found no verified availability information for one side\. That is not the same as nobody being hurt\./.test(limited.availability.coverage_text), limited.availability.coverage_text);
+  chk('the side with nothing says "no verified information found", not "nobody hurt"', /KU: no verified information found/.test(limited.availability.summary));
+
+  const none = P.simpleFromPacket(packet(), { now: NOW, availability: cfb({ teams: { away: { name: 'Texas Tech', code: 'TTU', filed: true, dataQuality: 'NONE', sources_checked: 0, players: [] }, home: { name: 'Kansas', code: 'KU', filed: true, dataQuality: 'NONE', sources_checked: 0, players: [] } } }) });
+  chk('no coverage at all is the honest sentence', /No verified availability information found for this matchup\./.test(none.availability.coverage_text));
+  chk('a status EdgeDesk does not recognise is never promoted to a designation', (function () { const x = P.simpleFromPacket(packet(), { now: NOW, availability: cfb({ teams: { away: { name: 'A', code: 'A', filed: true, players: [{ name: 'Guy', status: 'UNKNOWN' }] }, home: { name: 'B', code: 'B', filed: true, players: [] } } }) }); return x.availability.listed.length === 0; })());
+  chk('availability never touches the verdict, the price or the good-to', s.verdict === 'BET' && s.odds === '-110' && s.playable_to.limit_odds === '-118' && s.engine.edge === 0.031);
 }
 
 done();

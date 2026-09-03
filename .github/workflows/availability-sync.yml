@@ -1,0 +1,94 @@
+# EdgeDesk Football — College football availability sync.
+#
+# College football has no universal injury report, so EdgeDesk builds its own
+# availability layer out of public evidence and says exactly how good that
+# evidence is. This job reads football/availability/sources.json, collects
+# every configured source for every FBS program, resolves each report to a
+# real roster player, ranks the evidence and commits the canonical dataset the
+# card, the brief, the Full picture and the AI narration all read.
+#
+# ONE FAILED SOURCE NEVER FAILS THE RUN. A team EdgeDesk could not read is
+# recorded as "no verified data", which is a different statement from "no
+# reported injuries", and the dataset carries the difference.
+#
+# Cadence follows the football week (UTC; ET is four hours behind):
+#   Sat            hourly            game day
+#   Sun 00-05 UTC  hourly            Saturday night ET games finishing
+#   Sun, Mon       every six hours   the week resets
+#   Tue-Thu        every three hours practice reports land
+#   Fri            every two hours   the report firms up
+name: Availability sync
+
+on:
+  workflow_dispatch:
+    inputs:
+      season:
+        description: 'Season year (default: current, Jan/Feb -> prior year)'
+        required: false
+        default: ''
+      teams:
+        description: 'Limit to the first N programs (a smoke run)'
+        required: false
+        default: ''
+  schedule:
+    - cron: '5 * * * 6'          # Saturday, hourly
+    - cron: '5 0-5 * * 0'        # Saturday night ET, hourly
+    - cron: '5 6,12,18 * * 0,1'  # Sunday and Monday, every six hours
+    - cron: '5 */3 * * 2,3,4'    # Tuesday to Thursday, every three hours
+    - cron: '5 */2 * * 5'        # Friday, every two hours
+
+permissions:
+  contents: write
+
+concurrency:
+  group: availability-sync
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: The rules must pass before anything is allowed to write
+        run: node football/availability/availability.test.js
+
+      - name: Refresh the source registry
+        run: |
+          if [ -n "${{ github.event.inputs.season }}" ]; then
+            node football/availability/build_sources.js --season "${{ github.event.inputs.season }}"
+          else
+            node football/availability/build_sources.js
+          fi
+
+      - name: Collect availability
+        run: |
+          ARGS=""
+          if [ -n "${{ github.event.inputs.season }}" ]; then ARGS="$ARGS --season ${{ github.event.inputs.season }}"; fi
+          if [ -n "${{ github.event.inputs.teams }}" ]; then ARGS="$ARGS --teams ${{ github.event.inputs.teams }}"; fi
+          node football/availability/fetch_availability.js $ARGS
+
+      - name: Commit the dataset
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add football/availability/sources.json football/availability/current.json football/availability/current.full.json football/availability/20*/ 2>/dev/null || true
+          if git diff --cached --quiet; then
+            echo 'availability unchanged — nothing to commit'
+            exit 0
+          fi
+          git commit -m 'availability sync: college football player availability'
+          for i in 1 2 3 4; do
+            git push origin "${{ github.ref_name }}" && exit 0
+            git pull --rebase origin "${{ github.ref_name }}" || true
+            sleep $((2 ** i))
+          done
+          echo 'could not push the availability dataset after 4 attempts'
+          exit 1
