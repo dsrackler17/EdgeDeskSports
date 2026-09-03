@@ -1048,6 +1048,97 @@ section.band.lp-quiet{padding:56px 0}
   </div>
 </section>
 
+<!-- ============================ B · BOARD TO DECISION ============================ -->
+<section class="band" id="how">
+  <div class="wrap">
+    <div class="head rv">
+      <span class="ey">From board to decision</span>
+      <h2>Don't research the whole board.</h2>
+      <p>The expensive part of betting was never the subscription. It's the hours spent researching games that never deserved your attention. <b>EdgeDesk decides where your research time is worth spending</b>, assembles the evidence, and then goes looking for reasons it's wrong.</p>
+      <p style="margin-top:12px">Walk the loop yourself. One game, four steps, start to finish.</p>
+    </div>
+
+    <div class="stepper rv" id="stepBar" role="group" aria-label="Research loop steps"></div>
+
+    <div class="term rv" style="margin-top:14px">
+      <div class="term-bar">
+        <span class="tt"><i></i><i></i><i></i></span>
+        <span class="nm" id="stepName">MLB board &middot; 87 markets</span>
+        <span class="tag">Interactive product example</span>
+      </div>
+
+      <!-- STEP 1 · SCAN -->
+      <div class="stage on" id="stg0">
+        <div class="scan">
+          <div class="board" id="scanBoard" aria-hidden="true"></div>
+          <div style="display:flex;flex-direction:column">
+            <div class="rail" id="scanRail" role="group" aria-label="Board narrowing stages"></div>
+            <div class="startshere" id="startsHere">Your research starts here.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- STEP 2 · RESEARCH -->
+      <div class="stage" id="stg1">
+        <div class="stagehd">
+          <div><div class="sg">Dodgers ML</div><div class="sm">1 of 87 &middot; the only market that earned the work</div></div>
+          <span class="pv obs">Packet assembled</span>
+        </div>
+        <div class="card-b">
+          <div class="minirow"><div><div class="mn">Market</div><div class="md">22 sportsbooks compared, with the house margin taken out. The bet should be priced around +118.</div></div><span class="pv val">Verified</span></div>
+          <div class="minirow"><div><div class="mn">Pitching</div><div class="md">Both starters posted, with season workload and days of rest measured.</div></div><span class="pv val">Verified</span></div>
+          <div class="minirow"><div><div class="mn">Offense</div><div class="md">Lineups submitted; season splits against this handedness attached.</div></div><span class="pv val">Verified</span></div>
+          <div class="minirow"><div><div class="mn">Bullpen</div><div class="md">Three days of usage measured. Day-of availability is not published by either club.</div></div><span class="pv est">Partial</span></div>
+          <div class="minirow"><div><div class="mn">Line movement</div><div class="md">+140 at open, +132 now, every step timestamped.</div></div><span class="pv val">Verified</span></div>
+          <div class="nextline">You did not open seven tabs. The packet was already built when the market cleared the scan.</div>
+        </div>
+      </div>
+
+      <!-- STEP 3 · ATTACK -->
+      <div class="stage" id="stg2">
+        <div class="stagehd">
+          <div><div class="sg">Dodgers ML</div><div class="sm">Adversarial pass &middot; looking for reasons this is wrong</div></div>
+          <span class="pv neg">3 weaknesses</span>
+        </div>
+        <div class="card-b">
+          <div class="minirow"><div><div class="mn">Starter confirmation</div><div class="md">One starter is probable rather than posted. Part of the matchup case rests on a name that has not been announced.</div></div><span class="pv exp">Unconfirmed</span></div>
+          <div class="minirow"><div><div class="mn">Bullpen completeness</div><div class="md">Day-of availability is unavailable for both clubs, so it is left out of the comparison rather than guessed at.</div></div><span class="pv una">Unavailable</span></div>
+          <div class="minirow"><div><div class="mn">Price movement</div><div class="md">+140 to +132 since open. Some of the move you would be following has already happened.</div></div><span class="pv est">Moved</span></div>
+          <div class="nextline">Three real objections, none fatal. <b>Status: research survives</b> &mdash; weakened, and still standing.</div>
+        </div>
+      </div>
+
+      <!-- STEP 4 · DECIDE -->
+      <div class="stage" id="stg3">
+        <div class="stagehd">
+          <div><div class="sg">Dodgers ML</div><div class="sm">The decision, with the threshold attached</div></div>
+          <span class="pv val">Research survives</span>
+        </div>
+        <div class="card-b">
+          <div class="dec">
+            <div class="dc"><span class="k">Current price</span><span class="v" style="color:var(--obs)">+132</span></div>
+            <div class="dc"><span class="k">EdgeDesk comparison</span><span class="v" style="color:var(--dim)">+118</span></div>
+            <div class="dc"><span class="k">Qualifies above</span><span class="v" style="color:var(--val)">+125</span></div>
+          </div>
+          <div class="decbox">
+            <div class="dh">What this actually tells you</div>
+            <p>Not that the Dodgers will win. That <b>at +132 there is something here, and at +124 there isn't</b> &mdash; same game, same research, decision reversed. If the price drifts through +125 before you act, EdgeDesk stops flagging it and tells you why.</p>
+          </div>
+          <div class="nextline">
+            Carried risks: starter confirmation &middot; bullpen completeness &middot; price movement<br>
+            <b>Next: track the closing line.</b> Whatever happens tonight, the number you bought gets graded against where the market finished.
+          </div>
+        </div>
+      </div>
+
+      <div class="term-foot" id="stepFoot">Each square is one market on tonight's board. Illustrative game, real workflow.</div>
+    </div>
+
+    <p class="scan-note rv"><b>That is the whole loop.</b> Nothing in it told you what to bet. It told you where to look, what the evidence said, what could break it, and the exact price at which the answer changes.</p>
+    <p class="teach rv"><b>&#8250;</b> <b>Teaches:</b> the product isn't more information. It's a decision about where your attention goes.</p>
+  </div>
+</section>
+
 <!-- ============================ THE PROBLEM ============================
      The first thing under the hero: the questions the product asks instead
      of the answer a picks site sells, next to one research card in the
@@ -1063,13 +1154,13 @@ section.band.lp-quiet{padding:56px 0}
       <div>
         <ol class="lp-qs">
           <li><i>01</i>Where did the price come from?</li>
-          <li><i>02</i>What does the sharp market imply?</li>
+          <li><i>02</i>What is the rest of the market charging?</li>
           <li><i>03</i>Did the line move?</li>
           <li><i>04</i>Does an independent model agree?</li>
           <li><i>05</i>How strong is the evidence?</li>
-          <li><i>06</i>Did the signal beat the close?</li>
+          <li><i>06</i>Did we get a better price than the market finished at?</li>
         </ol>
-        <p class="lp-qs-note">Six questions. Every card on the desk has to answer them, or say that it cannot.</p>
+        <p class="lp-qs-note">Six questions. Every card on the desk has to answer them &mdash; or say plainly that it cannot.</p>
       </div>
       <div class="term">
         <div class="term-bar">
@@ -1086,13 +1177,13 @@ section.band.lp-quiet{padding:56px 0}
           </div>
           <div class="lp-lay market">
             <span class="lp-b">Market</span>
-            <span class="lp-t">+0.5% vs sharp fair</span>
+            <span class="lp-t">Barely better than the market</span>
             <span class="lp-st watch">Watch</span>
-            <span class="lp-d">Not enough price value on its own. Model gap noted, not confirmed.</span>
+            <span class="lp-d">Not enough in the price on its own. The model gap is noted, not confirmed.</span>
           </div>
           <div class="lp-kv">
             <span class="k">Why it's here</span>
-            <p>Large model/market disagreement, but the market engine has not independently confirmed significant price value.</p>
+            <p>EdgeDesk’s model sees this game very differently from the market, but the price itself is barely better than the rest of the board. One check without the other is not a call.</p>
           </div>
           <div class="lp-kv">
             <span class="k">Research next &rarr;</span>
@@ -1146,7 +1237,7 @@ section.band.lp-quiet{padding:56px 0}
             <li><span class="k">Close</span><span class="v mut">pending</span></li>
           </ol>
           <div class="lp-tlx">EDGE <b>+8.0%</b> at flag &middot; <b>&minus;5.7%</b> current<br>STATUS <span class="lp-st missed">Missed</span></div>
-          <p class="lp-tlp">The price moved through the estimated fair line. The original opportunity is no longer available.</p>
+          <p class="lp-tlp">The price moved past the point where EdgeDesk saw value. Whatever was here is gone.</p>
         </div>
         <p class="lp-cap">The market moved. The card says so, and the flag is graded on the price it was flagged at, not the one you wish you had.</p>
       </div>
@@ -1174,28 +1265,28 @@ section.band.lp-quiet{padding:56px 0}
 <section class="band" id="engines">
   <div class="wrap">
     <div class="head rv">
-      <span class="ey"><b>&#9642;</b> Three independent engines</span>
-      <h2>Market. Model. Consensus. Never blended.</h2>
-      <p>Each one answers a different question from a different source. Each one is graded on its own.</p>
+      <span class="ey"><b>&#9642;</b> Three separate checks</span>
+      <h2>The price. The model. The books.<br><span class="g">Never blended.</span></h2>
+      <p>Each one answers a different question, from a different source. Each one is graded on its own.</p>
     </div>
     <div class="lp-eng">
       <article class="lp-e market rv">
-        <span class="lp-ek">Market</span>
-        <h3>Price against the sharp book</h3>
-        <p>Where live prices disagree with sharp fair value. De-vigged, anchored to the sharp book, graded by closing-line value.</p>
+        <span class="lp-ek">The price</span>
+        <h3>Is this sportsbook charging less than everyone else?</h3>
+        <p>EdgeDesk takes the house margin out of every sportsbook&rsquo;s number, anchors to the book whose prices move fastest, and compares. Then it grades itself on where the price finished before kickoff.</p>
       </article>
       <article class="lp-e model rv">
-        <span class="lp-ek">Model</span>
-        <h3>An independent prediction engine</h3>
-        <p>Where an independent prediction engine disagrees with the market. Experimental until its own record earns it more.</p>
+        <span class="lp-ek">The model</span>
+        <h3>Does EdgeDesk&rsquo;s own model see the game differently?</h3>
+        <p>A separate football engine that projects the game from scratch. Treated as experimental until its published record earns it more than that.</p>
       </article>
       <article class="lp-e cons rv">
-        <span class="lp-ek">Consensus</span>
-        <h3>Where the books disagree</h3>
-        <p>Where sportsbooks disagree with each other. Cross-book dispersion, not a prediction.</p>
+        <span class="lp-ek">The books</span>
+        <h3>Do the sportsbooks disagree with each other?</h3>
+        <p>How far apart the books are on the same game. That is a measure of how settled the number is &mdash; not a prediction of anything.</p>
       </article>
     </div>
-    <p class="lp-note rv">These three are independent. <b>EdgeDesk never combines them into a single score</b>, because agreement manufactured from unrelated systems is not evidence.</p>
+    <p class="lp-note rv">These three are kept apart on purpose. <b>EdgeDesk never combines them into a single score</b>, and never lets one borrow confidence from another, because agreement manufactured from unrelated systems is not evidence.</p>
   </div>
 </section>
 
@@ -1252,7 +1343,7 @@ section.band.lp-quiet{padding:56px 0}
       <a class="scard" href="#football">
         <span class="sk">Our own model</span>
         <b>NFL &amp; college football engine</b>
-        <span class="sd">Opponent-adjusted EPA ratings, a learned quarterback layer, key numbers. Take a projection apart layer by layer &mdash; and read its held-out record, which says it does not beat the close.</span>
+        <span class="sd">Team ratings built from how much each play actually changes the chance of scoring (EPA), adjusted for who they played, plus a quarterback layer and the key numbers. Take a projection apart layer by layer &mdash; and read its held-out record, which says it does not beat the close.</span>
         <span class="sgo">Pull it apart &rarr;</span>
       </a>
       <a class="scard" href="#collective">
@@ -1264,12 +1355,12 @@ section.band.lp-quiet{padding:56px 0}
       <a class="scard" href="#how">
         <span class="sk">The loop</span>
         <b>Board &rarr; evidence &rarr; attack</b>
-        <span class="sd">Every market priced against de-vigged fair value, the research packet behind each flagged number, then the terminal arguing against its own thesis before you do.</span>
+        <span class="sd">Every bet priced against what the rest of the market is charging, the evidence behind each flagged number, then EdgeDesk arguing against its own case before you do.</span>
         <span class="sgo">Watch it run &rarr;</span>
       </a>
       <a class="scard" href="#clv">
         <span class="sk">The scoreboard</span>
-        <b>Closing line value, graded</b>
+        <b>Graded on where the price finished</b>
         <span class="sd">Whether the number you took beat the number the market closed at. The one measure that survives a bad beat, tracked on every pick this site has ever shown.</span>
         <span class="sgo">See the record &rarr;</span>
       </a>
@@ -1283,7 +1374,7 @@ section.band.lp-quiet{padding:56px 0}
     <div class="head rv">
       <span class="ey"><b>&#9642;</b> EdgeDesk's own football model</span>
       <h2>A model that publishes<br><span class="g">its own report card.</span></h2>
-      <p>EdgeDesk runs its own engine for the NFL and NCAA FBS &mdash; opponent-adjusted EPA ratings, a learned quarterback layer, sport-specific key numbers, and market comparison. Every projection is built from layers you can take apart, and the model's out-of-sample record ships inside the model rather than in a marketing line.</p>
+      <p>EdgeDesk runs its own engine for the NFL and NCAA FBS &mdash; opponent-adjusted ratings built from expected points added per play, a learned quarterback layer, sport-specific key numbers, and market comparison. Every projection is built from layers you can take apart, and the model's out-of-sample record ships inside the model rather than in a marketing line.</p>
     </div>
 
     <div class="term rv" style="margin-top:38px">
@@ -1346,97 +1437,6 @@ section.band.lp-quiet{padding:56px 0}
       <span class="pv exp">A comparison, never a verdict</span>
     </div>
     <p class="teach rv"><b>&#8250;</b> <b>Teaches:</b> the interesting question is not which model is right tonight. It is where a room of independent models collectively leaves the price &mdash; and whether each one's stated probabilities survive contact with results.</p>
-  </div>
-</section>
-
-<!-- ============================ B · BOARD TO DECISION ============================ -->
-<section class="band" id="how">
-  <div class="wrap">
-    <div class="head rv">
-      <span class="ey">From board to decision</span>
-      <h2>Don't research the whole board.</h2>
-      <p>The expensive part of betting was never the subscription. It's the hours spent researching games that never deserved your attention. <b>EdgeDesk decides where your research time is worth spending</b>, assembles the evidence, and then goes looking for reasons it's wrong.</p>
-      <p style="margin-top:12px">Walk the loop yourself. One game, four steps, start to finish.</p>
-    </div>
-
-    <div class="stepper rv" id="stepBar" role="group" aria-label="Research loop steps"></div>
-
-    <div class="term rv" style="margin-top:14px">
-      <div class="term-bar">
-        <span class="tt"><i></i><i></i><i></i></span>
-        <span class="nm" id="stepName">MLB board &middot; 87 markets</span>
-        <span class="tag">Interactive product example</span>
-      </div>
-
-      <!-- STEP 1 · SCAN -->
-      <div class="stage on" id="stg0">
-        <div class="scan">
-          <div class="board" id="scanBoard" aria-hidden="true"></div>
-          <div style="display:flex;flex-direction:column">
-            <div class="rail" id="scanRail" role="group" aria-label="Board narrowing stages"></div>
-            <div class="startshere" id="startsHere">Your research starts here.</div>
-          </div>
-        </div>
-      </div>
-
-      <!-- STEP 2 · RESEARCH -->
-      <div class="stage" id="stg1">
-        <div class="stagehd">
-          <div><div class="sg">Dodgers ML</div><div class="sm">1 of 87 &middot; the only market that earned the work</div></div>
-          <span class="pv obs">Packet assembled</span>
-        </div>
-        <div class="card-b">
-          <div class="minirow"><div><div class="mn">Market</div><div class="md">22 books priced and normalised. Vig removed. Fair value lands at +118.</div></div><span class="pv val">Verified</span></div>
-          <div class="minirow"><div><div class="mn">Pitching</div><div class="md">Both starters posted, with season workload and days of rest measured.</div></div><span class="pv val">Verified</span></div>
-          <div class="minirow"><div><div class="mn">Offense</div><div class="md">Lineups submitted; season splits against this handedness attached.</div></div><span class="pv val">Verified</span></div>
-          <div class="minirow"><div><div class="mn">Bullpen</div><div class="md">Three days of usage measured. Day-of availability is not published by either club.</div></div><span class="pv est">Partial</span></div>
-          <div class="minirow"><div><div class="mn">Line movement</div><div class="md">+140 at open, +132 now, every step timestamped.</div></div><span class="pv val">Verified</span></div>
-          <div class="nextline">You did not open seven tabs. The packet was already built when the market cleared the scan.</div>
-        </div>
-      </div>
-
-      <!-- STEP 3 · ATTACK -->
-      <div class="stage" id="stg2">
-        <div class="stagehd">
-          <div><div class="sg">Dodgers ML</div><div class="sm">Adversarial pass &middot; looking for reasons this is wrong</div></div>
-          <span class="pv neg">3 weaknesses</span>
-        </div>
-        <div class="card-b">
-          <div class="minirow"><div><div class="mn">Starter confirmation</div><div class="md">One starter is probable rather than posted. Part of the matchup case rests on a name that has not been announced.</div></div><span class="pv exp">Unconfirmed</span></div>
-          <div class="minirow"><div><div class="mn">Bullpen completeness</div><div class="md">Day-of availability is unavailable for both clubs, so it is excluded from fair value rather than guessed at.</div></div><span class="pv una">Unavailable</span></div>
-          <div class="minirow"><div><div class="mn">Price movement</div><div class="md">+140 to +132 since open. Some of the move you would be following has already happened.</div></div><span class="pv est">Moved</span></div>
-          <div class="nextline">Three real objections, none fatal. <b>Status: research survives</b> &mdash; weakened, and still standing.</div>
-        </div>
-      </div>
-
-      <!-- STEP 4 · DECIDE -->
-      <div class="stage" id="stg3">
-        <div class="stagehd">
-          <div><div class="sg">Dodgers ML</div><div class="sm">The decision, with the threshold attached</div></div>
-          <span class="pv val">Research survives</span>
-        </div>
-        <div class="card-b">
-          <div class="dec">
-            <div class="dc"><span class="k">Current price</span><span class="v" style="color:var(--obs)">+132</span></div>
-            <div class="dc"><span class="k">Fair value</span><span class="v" style="color:var(--dim)">+118</span></div>
-            <div class="dc"><span class="k">Qualifies above</span><span class="v" style="color:var(--val)">+125</span></div>
-          </div>
-          <div class="decbox">
-            <div class="dh">What this actually tells you</div>
-            <p>Not that the Dodgers will win. That <b>at +132 there is something here, and at +124 there isn't</b> &mdash; same game, same research, decision reversed. If the price drifts through +125 before you act, EdgeDesk stops flagging it and tells you why.</p>
-          </div>
-          <div class="nextline">
-            Carried risks: starter confirmation &middot; bullpen completeness &middot; price movement<br>
-            <b>Next: track the closing line.</b> Whatever happens tonight, the number you bought gets graded against where the market finished.
-          </div>
-        </div>
-      </div>
-
-      <div class="term-foot" id="stepFoot">Each square is one market on tonight's board. Illustrative game, real workflow.</div>
-    </div>
-
-    <p class="scan-note rv"><b>That is the whole loop.</b> Nothing in it told you what to bet. It told you where to look, what the evidence said, what could break it, and the exact price at which the answer changes.</p>
-    <p class="teach rv"><b>&#8250;</b> <b>Teaches:</b> the product isn't more information. It's a decision about where your attention goes.</p>
   </div>
 </section>
 
@@ -1530,7 +1530,7 @@ section.band.lp-quiet{padding:56px 0}
           <div class="claim" id="cl1">
             <div>
               <div class="cn">Favorable price</div>
-              <div class="cd">Offered at &minus;108 against a de-vigged fair value of &minus;121 across 22 books.</div>
+              <div class="cd">Offered at &minus;108. Across 22 sportsbooks, with the house margin removed, the same bet prices around &minus;121.</div>
             </div>
             <span class="pv val" id="cl1t">Verified</span>
           </div>
@@ -1595,7 +1595,7 @@ section.band.lp-quiet{padding:56px 0}
       </div>
       <div class="tabs" id="evTabs" role="tablist" aria-label="Research categories"></div>
       <div class="card-b" id="evPanel" role="tabpanel" tabindex="0"></div>
-      <div class="term-foot">EdgeDesk doesn't fill missing information with guesses. Anything it can't source is shown as missing and excluded from fair value.</div>
+      <div class="term-foot">EdgeDesk doesn’t fill missing information with guesses. Anything it can’t source is shown as missing and left out of the comparison.</div>
     </div>
 
     <div class="legend rv">
@@ -1623,10 +1623,10 @@ section.band.lp-quiet{padding:56px 0}
         <div class="owns det">
           <div class="oh"><span class="pv obs">Engine</span> Owns every number</div>
           <ul>
-            <li>De-vigging and <b>fair probability</b> across the book</li>
-            <li><b>Fair price</b> and edge versus what's offered</li>
-            <li>Line movement, steam and stale-price detection</li>
-            <li><b>Closing line value</b>, graded automatically after the close</li>
+            <li><b>Taking the house margin out</b> of every sportsbook's price (de-vigging)</li>
+            <li><b>What the bet should cost</b>, and how far the offered price is from it</li>
+            <li><b>How the price has moved</b>, and whether the number on file is stale</li>
+            <li><b>How the price compared with where the market finished</b> (closing line value), graded automatically</li>
           </ul>
         </div>
         <div class="owns mod">
@@ -1662,9 +1662,10 @@ section.band.lp-quiet{padding:56px 0}
 <section class="band" id="clv">
   <div class="wrap">
     <div class="head rv">
-      <span class="ey">Closing line value</span>
-      <h2>Winning tonight doesn't prove your process works. Did you beat the close?</h2>
-      <p>The closing line is the market's most accurate price. If you consistently bought a better number than the one the market settled on, your process is finding something. If you didn't, a winning night was luck wearing a disguise. It's the only edge signal that exists <b>before</b> results do.</p>
+      <span class="ey">The only scoreboard that isn't luck</span>
+      <h2>Winning tonight doesn't prove your process works. Did you get the better price?</h2>
+      <p><b>The idea in one line:</b> just before a game starts, every sportsbook has settled on its final number. If the price you took was better than that final number, you bought well &mdash; whatever happened in the game.</p>
+      <p>That final number is the market's most accurate price, and beating it is the only signal that exists <b>before</b> results do. Bettors call it <b>closing line value</b>. If you consistently bought a better number than the market settled on, your process is finding something. If you didn't, a winning night was luck wearing a disguise.</p>
     </div>
 
     <div class="clvpick rv" id="clvPick" role="group" aria-label="Example bets"></div>
@@ -1766,7 +1767,7 @@ section.band.lp-quiet{padding:56px 0}
       <p>A flag is a claim about a price. The proof layer is what happens to that claim after it is made.</p>
     </div>
     <div class="lp-steps rv" aria-label="Proof steps">
-      <span>Frozen entry</span><i>&rarr;</i><span>Closing snapshot</span><i>&rarr;</i><span>CLV</span><i>&rarr;</i><span>Auto grading</span><i>&rarr;</i><span>Public record</span>
+      <span>Price frozen</span><i>&rarr;</i><span>Market's final number</span><i>&rarr;</i><span>Did we beat it?</span><i>&rarr;</i><span>Graded automatically</span><i>&rarr;</i><span>Published</span>
     </div>
     <div class="lp-vs">
       <article class="lp-v outcome rv">
@@ -1878,7 +1879,7 @@ section.band.lp-quiet{padding:56px 0}
           <li><span class="n">01</span><span><span class="t">Where to look</span><span class="s">The board tells you where the research is worth doing, before you spend any of it.</span></span></li>
           <li><span class="n">02</span><span><span class="t">What to research</span><span class="s">The evidence arrives gathered into one decision environment, source tiers attached.</span></span></li>
           <li><span class="n">03</span><span><span class="t">What to question</span><span class="s">The engine actively hunts for the reasons your thesis may be wrong.</span></span></li>
-          <li><span class="n">04</span><span><span class="t">When the price is good</span><span class="s">Fair value, price sensitivity and the risks that are actually load-bearing.</span></span></li>
+          <li><span class="n">04</span><span><span class="t">When the price is good</span><span class="s">What the bet should cost, the price at which the answer flips, and the risks that actually matter.</span></span></li>
           <li><span class="n">05</span><span><span class="t">When to walk away</span><span class="s">The exact number at which the same bet stops being a bet.</span></span></li>
           <li><span class="n">06</span><span><span class="t">Whether your process beat the close</span><span class="s">Graded automatically, so a season of decisions becomes feedback instead of anecdote.</span></span></li>
         </ol>
@@ -1970,7 +1971,7 @@ section.band.lp-quiet{padding:56px 0}
     </div>
     <ol class="lp-wf rv">
       <li class="lp-w"><span class="n">1</span><span class="k">Scan</span><p>Find an unusual price or model disagreement.</p></li>
-      <li class="lp-w"><span class="n">2</span><span class="k">Verify</span><p>Check the sharp anchor, book count, movement and data quality.</p></li>
+      <li class="lp-w"><span class="n">2</span><span class="k">Verify</span><p>Check the benchmark sportsbook, how many books are quoting it, how the price has moved, and whether the data holds up.</p></li>
       <li class="lp-w"><span class="n">3</span><span class="k">Research</span><p>Study the matchup, roster, stats, model context and news.</p></li>
       <li class="lp-w"><span class="n">4</span><span class="k">Decide</span><p>PASS, WATCH, or research further.</p></li>
       <li class="lp-w"><span class="n">5</span><span class="k">Track</span><p>Freeze the price in the Ledger.</p></li>
@@ -2915,10 +2916,10 @@ function fmtAm(a){ a=Math.round(a); return (a>0?'+':'−')+Math.abs(a); }
   var TOTAL=87;
   var STAGES=[
     {n:87,k:'Full board',  d:'Everything available tonight, priced across the whole book before anyone has an opinion.'},
-    {n:14,k:'Signals',     d:'Worth investigating. Prices that disagree with de-vigged fair value by more than the noise floor.'},
-    {n:5, k:'Candidates',  d:'Research deserves attention here. These survived liquidity, timing and stale-price checks.'},
+    {n:14,k:'Signals',     d:'Worth investigating. Prices that disagree with the rest of the market by more than the usual noise.'},
+    {n:5, k:'Candidates',  d:'Research deserves attention here. These survived the checks for real money behind the price, timing, and how old the number is.'},
     {n:3, k:'Watching',    d:'Price or information still matters. Fully researched, waiting on a lineup, a total, or a better number.'},
-    {n:1, k:'Strongest',   d:'Start here. The largest gap between offered price and fair value on the board.'}
+    {n:1, k:'Strongest',   d:'Start here. The biggest gap on the board between what a sportsbook is charging and what the bet should cost.'}
   ];
 
   // deterministic scatter so the survivors look spread out and never re-shuffle
@@ -3031,14 +3032,14 @@ function fmtAm(a){ a=Math.round(a); return (a>0?'+':'−')+Math.abs(a); }
   ];
   var FIELDS=[
     {k:'Price',            v:'+132',                 num:true},
-    {k:'Fair value',       v:'+118',                 num:true},
+    {k:'EdgeDesk comparison', v:'+118', num:true},
     {k:'Edge',             v:'+2.6%',                num:true},
     {k:'Evidence',         v:'7 sources, tiered'},
     {k:'Risks',            v:'3 carried, named'},
     {k:'Thesis attack',    v:'Run · survives'},
     {k:'Price sensitivity',v:'Qualifies above +125'},
     {k:'Decision',         v:'Yours to make'},
-    {k:'CLV tracking',     v:'Armed for the close'}
+    {k:'Grading',          v:'Armed for the close'}
   ];
 
   var opened=[], wins={}, done=false;
@@ -3135,11 +3136,11 @@ function fmtAm(a){ a=Math.round(a); return (a>0?'+':'−')+Math.abs(a); }
      WEAKENED the honest verdict rather than INVALIDATED. */
   var WEAK=[
     {claim:'cl1', tier:'est', tierText:'Moved', t:'The price has already moved',
-     d:'The move you would be following is the reason the number is gone. Fair value has re-anchored at −121 and the offered price is chasing it, not leading it.'},
+     d:'The move you would be following is the reason the number is gone. The rest of the market has already settled at −121 and the price on offer is chasing it, not leading it.'},
     {claim:'cl3', tier:'exp', tierText:'Unconfirmed', t:'Starter is not confirmed',
      d:'One projected starter is probable, not posted. The entire ground-ball argument rests on a name that has not been announced.'},
     {claim:null,  tier:'una', tierText:'Unavailable', t:'Bullpen state is unknowable',
-     d:'Day-of availability is not published by either club. Two high-leverage arms threw on back-to-back days; whether they are available tonight is excluded from fair value rather than guessed at. This does not refute the thesis — it is a hole in it.'}
+     d:'Day-of availability is not published by either club. Two important relievers threw on back-to-back days; whether they can go tonight is left out of the comparison rather than guessed at. This does not break the case — it is a hole in it.'}
   ];
   var timers=[];
   function clear(){ timers.forEach(clearTimeout); timers=[]; }
