@@ -2166,6 +2166,7 @@ body.focus .dk-focusnote{display:block}
         <div class="kpis" id="recKpis"></div>
       </div>
       <div id="recBasis"></div>
+      <div id="recPolicySplit"></div>
       <div id="recAnchor"></div>
       <div id="recCorrob"></div>
       <div id="recBias"></div>
@@ -4962,6 +4963,36 @@ var REAL_FLOOR=0.005;                 // <0.5% after the fair line = noise, not 
    and research reads deliberately do NOT — they are supposed to see the whole
    stored series, and gating them would silently shrink the record. */
 var BOARD_FLAG_FILTER='flagged_at=not.is.null&flagged_best_dec=not.is.null';
+/* capture v9 writes `qual_reason` on EVERY priced row, so a row that is not on
+   the board can say why in a sentence rather than being an unexplained absence.
+   Anything not in this map renders as the raw reason string — visible and ugly,
+   which is the right failure mode for a reason nobody has written copy for yet. */
+var QUAL_REASON_TEXT={
+  ok:'qualified',
+  exchange_lay_not_backable:'it is the lay side of an exchange \u2014 not a price you can take',
+  market_not_understood:'the market type is one EdgeDesk does not rank',
+  no_usable_price:'no usable price',
+  too_close_to_start:'too close to kick-off to place',
+  beyond_actionable_horizon:'too far out to be a live number',
+  best_price_stale:'the best price has not been refreshed recently enough to trust',
+  price_below_tradeable_bound:'the price is shorter than EdgeDesk will grade',
+  price_above_tradeable_bound:'the price is longer than EdgeDesk will grade',
+  best_price_outlier_abs:'the best price sits too far from every other book \u2014 that is a broken feed, not a gift',
+  best_price_outlier_ratio:'the best price is a multiple of what the other books say',
+  best_price_outlier_decimal:'the best price is wildly out of line with the other books',
+  reference_market_not_two_sided:'the sharp reference did not quote a usable two-way market',
+  insufficient_fresh_books:'not enough books have refreshed this line recently',
+  insufficient_independent_books:'the books quoting it are not independent enough to be a consensus',
+  sharp_quote_stale:'the sharp reference has gone stale on this line',
+  consensus_dispersion_too_high:'the books disagree too much for a consensus to mean anything',
+  fair_not_computable:'a fair line could not be computed',
+  edge_not_computable:'the edge could not be computed',
+  edge_implausible_bad_price:'the implied edge is too large to be real for this market',
+  segment_not_qualified_for_action:'EdgeDesk has not demonstrated an advantage in this sport and market, so it takes no action here',
+  below_segment_edge_floor:'the edge is real but below the floor for this sport, market and reference tier',
+  awaiting_confirmation:'seen once \u2014 it has to hold through another capture before EdgeDesk will name it',
+  below_quality_floor:'below the quality floor'
+};
 /* Columns any active-board select must carry so the client-side twin below can
    re-check what the server already filtered. */
 var BOARD_FLAG_COLS='flagged_at,flagged_edge,flagged_best_dec,flagged_best_book';
@@ -5062,7 +5093,7 @@ async function loadEdges(){
        But it must still be a price a person could take — ordering by edge
        alone is precisely what put a 140% exchange LAY quote on screen as the
        "closest to a play". Pull a few and take the first TRADEABLE one. */
-    try{var nm=await sbGet('signals?select=sport_title,selection,market,best_dec,edge,best_book,n_books&commence_time=gte.'+nowIso+'&commence_time=lte.'+horizonIso+'&edge=not.is.null&order=edge.desc.nullslast&limit=40');
+    try{var nm=await sbGet('signals?select=sport_title,selection,market,best_dec,edge,best_book,n_books,flagged_at,qual_reason,qual_tier,reference_type&commence_time=gte.'+nowIso+'&commence_time=lte.'+horizonIso+'&edge=not.is.null&order=edge.desc.nullslast&limit=40');
       var nmOk=filterTradeable(nm||[]).keep;
       if(nmOk.length)window.__bestNearMiss=nmOk[0];}catch(_){}
     // pool of the sharpest lines on the board (any sign) so the wider-net Top 5 is populated every day
@@ -5086,7 +5117,7 @@ async function loadEdges(){
        football/INTEGRATION.md); MLB behavior is byte-identical. */
     try{var mp=await sbGet('model_predictions?select=event_id,market,selection,point,model_prob,model_fair_american,model_edge,model_version&sport_key=in.(baseball_mlb,americanfootball_nfl,americanfootball_ncaaf)&commence_time=gte.'+nowIso+'&commence_time=lte.'+horizonIso+'&order=created_at.asc&limit=1500');window.MODELP={};(mp||[]).forEach(function(r){window.MODELP[modelKey(r.event_id,r.market,r.selection,r.point)]=r;});}catch(_){window.MODELP=window.MODELP||{};}
     try{var me=await sbGet('model_predictions?select=*&model_edge=gt.0&commence_time=gte.'+nowIso+'&commence_time=lte.'+horizonIso+'&order=model_edge.desc.nullslast&limit=400');window.MODEL_EDGES=me||[];}catch(_){window.MODEL_EDGES=[];}
-    try{var cq=await sbGet('signals?select=event_id,sport_title,sport_key,market,selection,point,best_dec,first_best_dec,first_seen_at,best_book,sharp_fair,consensus_fair,edge,n_books,n_books_eff,commence_time,home_team,away_team,last_seen_at,has_sharp,corrob_n,corrob_ref,corrob_levels,is_fav,'+BOARD_FLAG_COLS+'&'+BOARD_FLAG_FILTER+'&consensus_fair=not.is.null&n_books=gte.'+MINBOOKS+'&commence_time=gte.'+nowIso+'&commence_time=lte.'+horizonIso+'&limit=900');window.CONS_POOL=onlyFlagged(cq);}catch(_){window.CONS_POOL=[];}
+    try{var cq=await sbGet('signals?select=event_id,sport_title,sport_key,market,selection,point,best_dec,first_best_dec,first_seen_at,best_book,sharp_fair,consensus_fair,edge,n_books,n_books_eff,commence_time,home_team,away_team,last_seen_at,has_sharp,corrob_n,corrob_ref,corrob_levels,is_fav,'+BOARD_FLAG_COLS+'&'+BOARD_FLAG_FILTER+'&consensus_fair=not.is.null&n_books=gte.'+MINBOOKS+'&commence_time=gte.'+nowIso+'&commence_time=lte.'+horizonIso+'&limit=900');window.CONS_POOL=filterTradeable(onlyFlagged(cq)).keep;}catch(_){window.CONS_POOL=[];}
     await resolveModelMeta();
     await loadSliceStats();
     if(_gen!==LOAD_EDGES_GEN)return;                 // a newer load started — let it paint, don't repaint stale data
@@ -5331,7 +5362,16 @@ function renderEdges(){
     var nm=window.__bestNearMiss;
     if(nm&&nm.edge!=null){
       var ep=(nm.edge*100);
-      funnel+='<div class="sb-sub" style="margin-top:6px;font-family:\'JetBrains Mono\',monospace">sharpest line on the board: <b>'+evSportLabel(nm)+' \u00b7 '+(nm.selection||'')+'</b> at '+(ep>=0?'+':'')+ep.toFixed(2)+'% vs fair ('+(nm.best_book||'')+', '+(nm.n_books||0)+' books)'+(ep<0?' \u2014 below fair, so nothing clears. The scan ran; the board is just efficient.':'')+'</div>';
+      /* THIS ROW IS NOT A SIGNAL AND THE COPY MUST SAY SO.
+         The query above is deliberately NOT flag-gated: its whole job is to prove
+         the scan ran by showing the sharpest line that did NOT qualify. But it
+         used to render that row's raw edge as "+X% vs fair" in the same voice the
+         board uses for real signals, which is the one thing an unqualified row
+         must never be allowed to look like. It now leads with the refusal and
+         names the rule that produced it — which is only possible because capture
+         v9 writes qual_reason on every priced row, qualified or not. */
+      var nmWhy=nm.flagged_at?'':(QUAL_REASON_TEXT[nm.qual_reason]||(nm.qual_reason?('did not qualify \u2014 '+edEsc(String(nm.qual_reason))):'has not been qualified'));
+      funnel+='<div class="sb-sub" style="margin-top:6px;font-family:\'JetBrains Mono\',monospace">sharpest line priced (<b>not an EdgeDesk signal</b>): '+evSportLabel(nm)+' \u00b7 '+(nm.selection||'')+' \u2014 raw gap '+(ep>=0?'+':'')+ep.toFixed(2)+'% vs its own fair ('+(nm.best_book||'')+', '+(nm.n_books||0)+' books)'+(nmWhy?'. <b>Why it is not on the board:</b> '+nmWhy:'')+(ep<0?'. Below fair, so nothing clears. The scan ran; the board is just efficient.':'')+'</div>';
     }
     // PROMOTE the best positive in-window line into a real, loggable card when the
     // strict list is empty — so we never say "no edges" while a genuine +EV line exists.
@@ -6024,9 +6064,14 @@ async function loadRecordProof(){
     else if(nFlagAny>0){EDGEQ=FLAG_ANY;poolLabel='flagged edges \u00b7 edge-magnitude band off';poolKind='flagany';gradedEdges=nFlagAny;}
     else if(nClvAny>0){EDGEQ=CLV_ANY;poolLabel='all graded rows with CLV \u2014 provisional, NOT the flagged-edge record';poolKind='clvany';gradedEdges=nClvAny;}
     else{EDGEQ=FLAG_STRICT;poolLabel='no graded row carries CLV yet';poolKind='empty';gradedEdges=0;}
-    var recFunnel='Pool funnel \u00b7 graded '+graded+' \u2192 flagged '+nFlagAny+' \u2192 flagged & 0.5\u20139.9% '+nStrict+' \u2192 flagged AND scored against a close '+nFlagClv+'. Live pool: '+poolLabel+' ('+gradedEdges+').'+
+    /* NOT a funnel, and not drawn as one. FLAG_CLV requires a scored close but
+       DROPS the 0.5-9.9% band FLAG_STRICT imposes, so nFlagClv can exceed
+       nStrict — a row flagged at an implausible 40% edge is out of the strict
+       pool and inside the scored one. Arrows between counts that can cross are
+       a picture of a relationship that does not hold. */
+    var recFunnel='Pool sizes (four overlapping filters, not a nested chain) \u00b7 graded '+graded+' \u00b7 flagged '+nFlagAny+' \u00b7 flagged and inside the 0.5\u20139.9% band '+nStrict+' \u00b7 flagged and scored against a close '+nFlagClv+'. Live pool: '+poolLabel+' ('+gradedEdges+').'+
       recNoClvSentence(nFlagAny-nFlagClv, await recNoClvBreakdown(FLAG_ANY));
-    var g=poolKind==='empty'?[]:await sbGet('signals?select=clv,result,beat_close,clv_excluded_reason,sharp_fair,consensus_fair,first_has_sharp,first_corrob_n,first_corrob_ref,n_books,first_best_dec,flagged_best_dec,flagged_at,flagged_corrob_n,sport_title,sport_key,market,commence_time&graded_at=not.is.null&'+EDGEQ+'&limit=5000');
+    var g=poolKind==='empty'?[]:await sbGet('signals?select=clv,result,beat_close,clv_excluded_reason,sharp_fair,consensus_fair,first_has_sharp,first_corrob_n,first_corrob_ref,n_books,first_best_dec,flagged_best_dec,flagged_at,flagged_corrob_n,flagged_policy,flagged_tier,flagged_reference_type,sport_title,sport_key,market,commence_time&graded_at=not.is.null&'+EDGEQ+'&limit=5000');
     var w=0,l=0,clvSum=0,beatStored=0,clvArr=[],clvPos=0;
     /* tennis spreads/totals are not gradeable (set scores vs game lines): keep them
        out of every counted stat here, same rule as recStats. */
@@ -6052,6 +6097,7 @@ async function loadRecordProof(){
         (nCLV<100?' Note: this bootstrap was itself tested. Against skewed data it covers ~90% at n=30, not the 95% it claims, so below n=100 the interval is narrower than it should be. It is optimistic, not conservative.':'')+'</div>');
     }
     renderBasisNote(g);
+    renderPolicySplit(g);
     renderLegacyGap();
     renderAnchorSplit(g);
     renderCorrobSplit(g);
@@ -6077,6 +6123,62 @@ async function loadRecordProof(){
     if(total===0)$('recKpis').insertAdjacentHTML('afterend','<div class="empty" style="margin:8px 0">No data yet. The capture job logs signals continuously; grades fill in after games finish.</div>');
   }catch(e){$('dbPill').textContent='DB error';$('dbPill').className='pill err';$('recKpis').innerHTML='<div class="empty">Could not reach the database: '+e.message+'</div>';}
 }
+/* ═══ WHICH SYSTEM PRODUCED THIS RECORD ═══════════════════════════════════
+   A record computed over signals from two different qualification policies is
+   the average of two systems reported as one number, and it is the single
+   easiest way for a rebuild to look better or worse than it is.
+
+   Rows flagged before capture v9 were qualified under rules that did not
+   require a real sharp reference, did not check quote freshness and used one
+   0.5% edge floor for every sport and market. They are real history and they
+   stay in the record exactly as they are — deleting a loss is not on the table.
+   They are SEPARATED, so a claim about the current policy is a claim about the
+   rows the current policy actually produced.
+
+   This panel stays quiet until both populations exist, because a split with one
+   side empty is a header with nothing under it. */
+function renderPolicySplit(rows){
+  var host=$('recPolicySplit'); if(!host)return;
+  var g={};
+  (rows||[]).forEach(function(r){
+    var k=r.flagged_policy||'pre-v9-legacy';
+    var s=g[k]||(g[k]={n:0,w:0,l:0,clvN:0,clvSum:0,beat:0});
+    s.n++;
+    if(r.result==='win')s.w++;else if(r.result==='loss')s.l++;
+    if(r.clv!=null){s.clvN++;s.clvSum+=+r.clv;if(+r.clv>0)s.beat++;}
+  });
+  var keys=Object.keys(g);
+  if(keys.length<2){
+    host.innerHTML=keys.length===1&&/^pre-v9/.test(keys[0])
+      ? '<div class="asplit"><div class="asplit-h">Qualification policy</div><div class="asplit-sub">Every graded signal here was flagged under the pre-v9 rules. Nothing graded has yet been produced by the current policy, so no claim about it can be made from this record. It fills as v9 signals settle.</div></div>'
+      : '';
+    return;
+  }
+  keys.sort(function(a,b){return (/^pre-v9/.test(a)?1:0)-(/^pre-v9/.test(b)?1:0);});
+  var body=keys.map(function(k){
+    var s=g[k],hit=(s.w+s.l)?s.w/(s.w+s.l):null,avg=s.clvN?s.clvSum/s.clvN:null;
+    var ci=(s.w+s.l)>=1?wilson(s.w,s.w+s.l):null;
+    return '<tr><td>'+edEsc(/^pre-v9/.test(k)?'legacy ('+k+')':k)+'</td><td class="mono">'+s.n+'</td>'+
+      '<td class="mono">'+(hit!=null?(hit*100).toFixed(1)+'%':'\u2014')+'</td>'+
+      '<td class="mono">'+(ci?('['+(ci[0]*100).toFixed(0)+'\u2013'+(ci[1]*100).toFixed(0)+'%]'):'\u2014')+'</td>'+
+      '<td class="mono">'+(avg!=null?((avg>=0?'+':'')+(avg*100).toFixed(2)+'%'):'\u2014')+'</td>'+
+      '<td class="mono">'+(s.clvN?((s.beat/s.clvN)*100).toFixed(0)+'%':'\u2014')+'</td></tr>';
+  }).join('');
+  host.innerHTML='<div class="asplit"><div class="asplit-h">Qualification policy \u00b7 the two systems, kept apart</div>'+
+    '<div class="asplit-sub">Signals flagged under different qualification rules are different systems. Averaging them produces a number that describes neither. Legacy rows are kept in full \u2014 nothing is deleted \u2014 and reported separately.</div>'+
+    '<table class="asplit-t"><tr><th>policy</th><th>n</th><th>win %</th><th>95% CI</th><th>avg CLV</th><th>CLV+ rate</th></tr>'+body+'</table>'+
+    '<div class="asplit-read">A win rate with a wide interval over a small n is not a result. Read the interval, not the point estimate.</div></div>';
+}
+
+/* Wilson score interval. A binomial proportion needs an interval, and the
+   normal approximation is badly wrong exactly where a betting record lives:
+   small n and p near 0.5. Wilson is the standard fix and it is three lines. */
+function wilson(k,n,z){
+  if(!n)return null; z=z||1.96;
+  var p=k/n, d=1+z*z/n, c=p+z*z/(2*n), s=z*Math.sqrt(p*(1-p)/n+z*z/(4*n*n));
+  return [Math.max(0,(c-s)/d), Math.min(1,(c+s)/d)];
+}
+
 function renderClvHero(series,avgClv,beatRate,med,posRate,beatStoredRate){
   var host=$('clvChart');if(!host)return;
   var MIN_SAMPLE=30;   // below this, CLV is noise — don't dress a handful of edges up as proof
@@ -6180,7 +6282,12 @@ function recDecOf(r){var d=recNum(r.flagged_best_dec);if(d!=null&&d>1)return d;d
 function recDecIsFlag(r){var d=recNum(r.flagged_best_dec);return d!=null&&d>1;}
 function recAm(d){if(d==null||!(d>1))return null;return d>=2?('+'+Math.round((d-1)*100)):String(Math.round(-100/(d-1)));}
 function recAm2Dec(s){s=String(s||'').trim();if(!s)return null;var a=+s;if(isNaN(a)||a===0)return null;if(Math.abs(a)<100&&a>1)return a;/* already decimal-ish */return a>0?1+a/100:1+100/(-a);}
-function recProfitOf(r){var d=recDecOf(r);if(d==null)return null;if(r.result==='win')return d-1;if(r.result==='loss')return -1;if(r.result==='push')return 0;return null;}
+/* A VOID IS A RETURNED STAKE, NOT AN UNSETTLED BET. _presentation.js folds
+   'void' into 'push' and the brief record has always handled it; this record did
+   not, so a voided row returned null here (reading as "not settled yet") while
+   still counting toward the pool size and, if it carried a clv, toward every CLV
+   average. It diluted every rate it appeared in without ever being scored. */
+function recProfitOf(r){var d=recDecOf(r);if(d==null)return null;if(r.result==='win')return d-1;if(r.result==='loss')return -1;if(r.result==='push'||r.result==='void')return 0;return null;}
 function recCloseFairDec(r){var p=recNum(r.closing_sharp_fair);return (p!=null&&p>0&&p<1)?1/p:null;}
 function recEdgeOf(r){var e=recNum(r.flagged_edge);return e;}
 function recU(v,dp){if(v==null||isNaN(v))return '\u2014';dp=dp==null?2:dp;return (v>=0?'+':'')+v.toFixed(dp)+'u';}
@@ -6199,7 +6306,7 @@ function recEmptyHTML(kind,body,retry){
 }
 
 /* ---- data load ---- */
-var REC_COLS='id,event_id,sport_title,sport_key,market,selection,point,home_team,away_team,best_book,commence_time,first_seen_at,flagged_at,graded_at,first_best_dec,flagged_best_dec,best_dec,flagged_edge,edge,clv,result,beat_close,sharp_fair,consensus_fair,closing_sharp_fair,first_has_sharp,has_sharp,first_corrob_n,first_corrob_ref,n_books,n_books_eff,pin_dec,pin_opp_dec,is_fav';
+var REC_COLS='id,event_id,sport_title,sport_key,market,selection,point,home_team,away_team,best_book,commence_time,first_seen_at,flagged_at,graded_at,first_best_dec,flagged_best_dec,best_dec,flagged_edge,edge,clv,result,beat_close,sharp_fair,consensus_fair,closing_sharp_fair,first_has_sharp,has_sharp,first_corrob_n,first_corrob_ref,n_books,n_books_eff,pin_dec,pin_opp_dec,is_fav,flagged_policy,flagged_tier,flagged_reference_type,qual_reason';
 
 async function loadRecord(force){
   if(REC.loading)return;
@@ -6233,14 +6340,27 @@ async function loadRecord(force){
       sbCount('graded_at=not.is.null&'+FLAG_STRICT),sbCount('graded_at=not.is.null&'+FLAG_ANY),
       sbCount('graded_at=not.is.null&'+CLV_ANY),sbCount('graded_at=not.is.null&'+FLAG_CLV)]);
     total=counts[0];graded=counts[1];nStrict=counts[2];nFlagAny=counts[3];nClvAny=counts[4];nFlagClv=counts[5];
-    var EDGEQ,poolLabel,poolKind;
-    if(nFlagClv>0){EDGEQ=FLAG_CLV;poolLabel='flagged signals with a scored close';poolKind='flagclv';}
-    else if(nStrict>0){EDGEQ=FLAG_STRICT;poolLabel='flagged edges, none scored against a close yet';poolKind='strict';}
-    else if(nFlagAny>0){EDGEQ=FLAG_ANY;poolLabel='flagged edges, edge-magnitude band off';poolKind='flagany';}
-    else if(nClvAny>0){EDGEQ=CLV_ANY;poolLabel='all graded rows with CLV. Provisional, NOT the flagged-edge record';poolKind='clvany';}
-    else{EDGEQ=FLAG_STRICT;poolLabel='no graded row carries CLV yet';poolKind='empty';}
-    REC.pool={kind:poolKind,label:poolLabel,
-      funnel:'Pool funnel: graded '+graded+' \u2192 flagged '+nFlagAny+' \u2192 flagged & 0.5\u20139.9% '+nStrict+' \u2192 flagged AND scored against a close '+nFlagClv+'. Live pool: '+poolLabel+' ('+nFlagClv+').'+
+    var EDGEQ,poolLabel,poolKind,gradedEdges;
+    if(nFlagClv>0){EDGEQ=FLAG_CLV;poolLabel='flagged signals with a scored close';poolKind='flagclv';gradedEdges=nFlagClv;}
+    else if(nStrict>0){EDGEQ=FLAG_STRICT;poolLabel='flagged edges, none scored against a close yet';poolKind='strict';gradedEdges=nStrict;}
+    else if(nFlagAny>0){EDGEQ=FLAG_ANY;poolLabel='flagged edges, edge-magnitude band off';poolKind='flagany';gradedEdges=nFlagAny;}
+    else if(nClvAny>0){EDGEQ=CLV_ANY;poolLabel='all graded rows with CLV. Provisional, NOT the flagged-edge record';poolKind='clvany';gradedEdges=nClvAny;}
+    else{EDGEQ=FLAG_STRICT;poolLabel='no graded row carries CLV yet';poolKind='empty';gradedEdges=0;}
+    /* THE SIZE PRINTED MUST BE THE SIZE RENDERED. This sentence hardcoded
+       nFlagClv, and the ladder only reaches any branch below the first when
+       nFlagClv is 0 — so on every fallback the dashboard announced a live pool
+       of "(0)" above a table showing hundreds of graded signals. The proof
+       layer already used the per-branch count; the two now agree.
+
+       The arrows are gone too. They implied a nested chain, and FLAG_CLV is
+       NOT a subset of FLAG_STRICT: it requires a scored close but drops the
+       0.5-9.9% edge band, so a row flagged at an implausible edge is excluded
+       from the strict pool and included in the scored one. Four counts that can
+       cross cannot be drawn as a funnel. */
+    REC.pool={kind:poolKind,label:poolLabel,gradedEdges:gradedEdges,
+      funnel:'Pool sizes (these are four overlapping filters, not a nested chain): graded '+graded
+        +' \u00b7 flagged '+nFlagAny+' \u00b7 flagged and inside the 0.5\u20139.9% band '+nStrict
+        +' \u00b7 flagged and scored against a close '+nFlagClv+'. Live pool: '+poolLabel+' ('+gradedEdges+').'+
         recNoClvSentence(nFlagAny-nFlagClv, await recNoClvBreakdown(FLAG_ANY)),
       total:total,graded:graded};
     var rows=poolKind==='empty'?[]:await sbGetAll('signals?select='+REC_COLS+'&graded_at=not.is.null&'+EDGEQ+'&order=graded_at.asc',1000,12);
@@ -11836,8 +11956,17 @@ async function resolveModelMeta(){
   for(var i=0;i<need.length;i+=80){
     var ids=need.slice(i,i+80).map(function(id){return '"'+String(id).replace(/"/g,'')+'"';}).join(',');
     try{
+      /* THIS BACKFILL TARGETS THE ROWS THE FLAGGED POOLS DID NOT COVER, so by
+         construction almost everything it returns is a row capture priced and
+         REFUSED. It cannot be flag-gated — its job is to give the model overlay a
+         market price to sit beside on games with no EdgeDesk signal — so it
+         carries the qualification state instead, and the render below is
+         responsible for saying which it is. Selecting flagged_at here is what
+         makes that possible: without it the renderer cannot tell a signal from a
+         stored observation, and it defaulted to calling both an edge. */
       var rows=await sbGet('signals?select=event_id,sport_title,sport_key,market,selection,point,'+
-        'best_dec,best_book,sharp_fair,edge,n_books,home_team,away_team,commence_time,last_seen_at'+
+        'best_dec,best_book,sharp_fair,edge,n_books,home_team,away_team,commence_time,last_seen_at,'+
+        'flagged_at,flagged_best_dec,qual_reason,qual_tier,reference_type'+
         '&event_id=in.('+ids+')&limit=2000');
       indexSignalRows(rows);
     }catch(_){}
@@ -11912,7 +12041,15 @@ function modelReceiptHTML(m){
       (gapPts!=null?'<div class="gd-line"><span class="l">Model minus market</span><span class="v '+(gapPts>=0?'up':'dn')+'">'+(gapPts>=0?'+':'')+gapPts.toFixed(1)+' pts</span></div>':'')+
       (evAt!=null?'<div class="gd-line"><span class="l">EV at this price</span><span class="v '+(evAt>=0?'up':'dn')+'">'+(evAt>=0?'+':'')+evAt.toFixed(1)+'%</span></div>':'')+
       (sig&&sig.sharp_fair!=null?'<div class="gd-line"><span class="l">Pinnacle sharp fair</span><span class="v">'+GE.fmtPrice(1/Math.max(0.0001,sig.sharp_fair))+'</span></div>':'')+
-      (sig&&sig.edge!=null?'<div class="gd-line"><span class="l">MARKET edge on this line</span><span class="v '+(sig.edge>=0?'up':'dn')+'">'+(sig.edge>=0?'+':'')+(sig.edge*100).toFixed(2)+'%</span></div>':'');
+      (sig&&sig.edge!=null
+        ? (isFlaggedSignal(sig)
+            ? '<div class="gd-line"><span class="l">EdgeDesk signal on this line</span><span class="v '+(sig.edge>=0?'up':'dn')+'">'+(sig.edge>=0?'+':'')+(sig.edge*100).toFixed(2)+'%</span></div>'
+            /* NOT a signal. The same number, but it is a raw price-vs-fair gap on
+               a row EdgeDesk refused, and calling it "MARKET edge" put an
+               unqualified number in front of a reader in the engine's own voice. */
+            : '<div class="gd-line"><span class="l">Raw price gap <span class="mut">(not an EdgeDesk signal)</span></span><span class="v mut">'+(sig.edge>=0?'+':'')+(sig.edge*100).toFixed(2)+'%</span></div>'
+              +(sig.qual_reason&&QUAL_REASON_TEXT[sig.qual_reason]?'<div class="gd-line"><span class="l">Why not</span><span class="v mut">'+edEsc(QUAL_REASON_TEXT[sig.qual_reason])+'</span></div>':''))
+        : '');
     bars='<div class="gd-bars">'+
       '<div class="gd-bar"><div class="bn">'+(ev!=null?(ev>=0?'+':'')+ev.toFixed(1)+'%':'\u2014')+'</div><div class="bl">model edge</div></div>'+
       '<div class="gd-bar"><div class="bn">'+(prob!=null?(prob*100).toFixed(0)+'%':'\u2014')+'</div><div class="bl">model</div></div>'+
@@ -13359,7 +13496,13 @@ async function plLoadEvents(){
   var now=Date.now();
   var from=new Date(now-6*3600e3).toISOString();
   var to=new Date(now+96*3600e3).toISOString();
-  var rows=await sbGet('signals?select=event_id,sport_title,sport_key,home_team,away_team,commence_time,edge'+
+  /* `mkts` counts every market priced on the event and is deliberately ungated —
+     it is a coverage number, not a claim. `best` is a claim: it renders as
+     "+X.X% best edge" on every room row and there is a control that sorts the
+     whole board by it. Ungated, the maximum `edge` over every STORED row meant an
+     exchange lay quote or a placeholder price could become a game's headline
+     number. The two are separated below. */
+  var rows=await sbGet('signals?select=event_id,sport_title,sport_key,home_team,away_team,commence_time,edge,'+BOARD_FLAG_COLS+
     '&commence_time=gte.'+from+'&commence_time=lte.'+to+'&order=commence_time.asc&limit=3000');
   var m={};
   (rows||[]).forEach(function(r){
@@ -13368,6 +13511,7 @@ async function plLoadEvents(){
     if(!e)e=m[r.event_id]={event_id:r.event_id,sport_title:r.sport_title||'\u2014',sport_key:r.sport_key,
       home_team:r.home_team,away_team:r.away_team,commence_time:r.commence_time,mkts:0,best:null};
     e.mkts++;
+    if(!isFlaggedSignal(r))return;                 // coverage counted above; the CLAIM is flagged-only
     var ed=+r.edge;
     if(isFinite(ed)&&(e.best===null||ed>e.best))e.best=ed;
   });
@@ -24494,7 +24638,13 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
   async function bestBets(){
     push('u','What are the best opportunities today?');
     thinking(true);
-    var pool=[].concat(window.EDGES||[], window.D5_POOL||[]);
+    /* onlyFlagged AGAIN, on purpose. BOARD_FLAG_FILTER is a URL predicate and a
+       pool assembled by concatenating two other pools cannot inherit one — which
+       is exactly what the contract at BOARD_FLAG_FILTER says and what twelve of
+       the fourteen concatenation sites were not doing. This is the answer to
+       "what are the best opportunities today", so it is the last place that
+       should be trusting an upstream filter it cannot see. */
+    var pool=onlyFlagged([].concat(window.EDGES||[], window.D5_POOL||[]));
     // one side per market, positive edge, fresh-ish, liquid
     var seen={}, cand=[];
     pool.forEach(function(e){
@@ -24524,7 +24674,7 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
 
   /* ======================= COMPARE ======================= */
   async function compare(){
-    var pool=[].concat(window.EDGES||[],window.D5_POOL||[]).filter(function(e){return e&&e.edge!=null&&e.best_dec;});
+    var pool=onlyFlagged([].concat(window.EDGES||[],window.D5_POOL||[])).filter(function(e){return e&&e.edge!=null&&e.best_dec;});
     var seen={},uniq=[];
     pool.forEach(function(e){var k=e.event_id+'|'+e.market+'|'+e.selection;if(!seen[k]){seen[k]=1;uniq.push(e);}});
     uniq.sort(function(a,b){return (b.edge||0)-(a.edge||0);});
@@ -27906,7 +28056,17 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
   var BR={snap:null, cards:[], source:null, shared:null};
 
   function pool(){
-    var rows=[].concat(window.EDGES||[], window.D5_POOL||[]);
+    /* THE PUBLISHER POOL. Everything downstream of this — every decision card,
+       openCard/openGame/openPrimetime/openCfbSlate, and the public_payload that
+       goes into a published brief with EdgeDesk's name on it — comes from here.
+       It is built by concatenation, so it re-asserts the flag rule rather than
+       hoping a URL filter survived a [].concat(). */
+    /* The rule is spelled out here rather than borrowed, because this block is
+       loaded on its own by tools/presentation/app_presentation.test.js and must
+       be correct in isolation. tools/capture/board_contract.test.js asserts this
+       predicate and isFlaggedSignal() are the same rule, so they cannot drift. */
+    var qualified=function(e){ return !!(e && e.flagged_at && isFinite(+e.flagged_best_dec) && +e.flagged_best_dec>1); };
+    var rows=[].concat(window.EDGES||[], window.D5_POOL||[]).filter(qualified);
     var seen={}, out=[];
     rows.forEach(function(e){
       if(!e||!e.event_id) return;

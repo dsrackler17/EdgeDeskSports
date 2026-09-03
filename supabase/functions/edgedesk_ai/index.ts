@@ -2783,8 +2783,11 @@ export class Dal {
     const from = new Date().toISOString();
     const to = new Date(Date.now() + hours * 3600_000).toISOString();
     let q = "signals?select=event_id,sport_key,sport_title,market,selection,point,best_dec,first_best_dec,best_book,"
-      + "sharp_fair,consensus_fair,edge,first_edge,n_books,n_books_eff,has_sharp,corrob_n,pin_dec,pin_opp_dec,"
+      + "sharp_fair,sharp_book_fair,consensus_fair,edge,first_edge,n_books,n_books_eff,has_sharp,corrob_n,pin_dec,pin_opp_dec,"
+      + "reference_type,qual_tier,qual_reason,quality_score,fresh_books,flagged_at,flagged_edge,flagged_best_dec,flagged_best_book,"
       + "home_team,away_team,commence_time,first_seen_at,last_seen_at,clv,beat_close,result,graded_at,closing_sharp_fair"
+      /* FLAGGED ONLY. This is the board, so it reads what the board reads. */
+      + `&flagged_at=not.is.null&flagged_best_dec=not.is.null`
       + `&commence_time=gte.${from}&commence_time=lte.${to}&order=edge.desc.nullslast&limit=120`;
     if (sport) q += `&sport_key=eq.${encodeURIComponent(sport)}`;
     let { rows, error } = await this.read(q, "");
@@ -2799,7 +2802,15 @@ export class Dal {
        Both halves are fixed here: the filter always applies, and what it
        removed becomes visible evidence rather than a silent deletion. */
     const _drop: string[] = [];
-    const _clean = rows.filter((r: any) => { const t = signalTradeable(r); if (!t.ok) _drop.push(t.reason!); return t.ok; });
+    /* BOTH guards, and the second is not redundant. The `flagged_at IS NULL`
+       guard on capture's freeze means a row flagged by an OLDER build stays
+       flagged permanently — the same rule that stops an entry price drifting
+       also preserves a bad historical flag forever. app.html carries this exact
+       pair for this exact reason. */
+    const _clean = rows.filter((r: any) => {
+      if (!signalIsActionable(r)) { _drop.push("not a qualified EdgeDesk signal (no frozen entry)"); return false; }
+      const t = signalTradeable(r); if (!t.ok) _drop.push(t.reason!); return t.ok;
+    });
     const _dropped = rows.length - _clean.length;
     const _why = Array.from(new Set(_drop)).slice(0, 4).join("; ");
     rows = _clean;
@@ -2808,6 +2819,24 @@ export class Dal {
         `all ${_dropped} signal rows in the window failed the tradeable bound (${_why}). `
         + `That is a capture problem, not an empty board — do not describe the slate as quiet.`)] };
     }
+    /* THE TOP ROW OF THIS LIST BECOMES THE ENGINE'S CANDIDATE for a "what should
+       I bet" question, and the list is ordered by edge descending with nulls
+       last. With no sign filter, a slate where every qualified signal has since
+       gone negative still promoted its least-negative row to candidate. A
+       qualified signal whose LIVE edge has gone negative is a signal whose price
+       has moved past the point of being worth taking; it stays in `rows` as
+       context and is marked, so the engine can say the edge is gone rather than
+       recommending it. */
+    rows = rows.map((r: any) => ({ ...r, edge_still_positive: Number(r.edge) > 0 }));
+    const positives = rows.filter((r: any) => r.edge_still_positive);
+    if (!positives.length) {
+      return { rows, ev: [unavailable("signals", "slate",
+        `${rows.length} qualified signal(s) are on the board but every one has moved to a non-positive edge at `
+        + `the current price. The scan ran and the board is not broken — the prices have moved. Do not present `
+        + `any of these as a live opportunity.`)] };
+    }
+    rows = positives.concat(rows.filter((r: any) => !r.edge_still_positive));
+
     const out = rows.map((r) => ev({
       source: "signals", entity: `${r.away_team} @ ${r.home_team}`, field: "signal",
       value: r, status: "VERIFIED", relevance: "market",
@@ -4705,24 +4734,38 @@ export class Dal {
   async getCrossMarket(eventId: string): Promise<{ rows: any[]; ev: Evidence[] }> {
     const { rows, error } = await this.read(
       `signals?select=event_id,market,selection,point,best_dec,first_best_dec,sharp_fair,consensus_fair,`
-      + `edge,first_edge,n_books,has_sharp,pin_dec,pin_opp_dec,home_team,away_team,last_seen_at`
+      + `edge,first_edge,n_books,has_sharp,pin_dec,pin_opp_dec,home_team,away_team,last_seen_at,`
+      + `reference_type,qual_tier,qual_reason,flagged_at,flagged_best_dec`
       + `&event_id=eq.${encodeURIComponent(eventId)}&order=edge.desc.nullslast&limit=40`, "");
     if (error) return { rows: [], ev: [unavailable("signals", "cross_market", `read failed — ${error}`, eventId)] };
-    if (rows.length < 2) {
-      return { rows, ev: [unavailable("signals", "cross_market",
-        "only one market carries a signal on this game — nothing to cross-check", eventId)] };
+    /* Every market on the game is legitimate CONTEXT here — the point of a
+       cross-market read is to see whether the moneyline and the spread agree —
+       but v8 emitted each row's `edge` as VERIFIED evidence with no filter at
+       all, including exchange lay rows, so the model could quote the edge of a
+       price capture had explicitly refused. The rows stay; the CLAIM does not.
+       An unqualified row's edge is nulled out and replaced by the reason it was
+       refused, which capture now writes on every priced row. */
+    const marked = rows.map((r: any) => (signalIsActionable(r) && signalTradeable(r).ok)
+      ? { ...r, edgedesk_signal: true }
+      : { ...r, edgedesk_signal: false, edge: null, first_edge: null,
+          not_a_signal_because: r.qual_reason ?? "not qualified by capture" });
+    if (marked.length < 2) {
+      return { rows: marked, ev: [unavailable("signals", "cross_market",
+        "only one market is priced on this game — nothing to cross-check", eventId)] };
     }
     return {
-      rows,
+      rows: marked,
       ev: [ev({
         source: "signals", entity: eventId, field: "cross_market", relevance: "structure",
-        value: rows.map((r) => ({
+        value: marked.map((r) => ({
           market: r.market, selection: r.selection, point: r.point,
-          price: r.best_dec, edge: r.edge, has_sharp: r.has_sharp, n_books: r.n_books,
+          price: r.best_dec, edge: r.edge, edgedesk_signal: r.edgedesk_signal,
+          not_a_signal_because: r.not_a_signal_because,
+          has_sharp: r.has_sharp, n_books: r.n_books,
         })),
         status: "VERIFIED",
-        source_timestamp: rows[0]?.last_seen_at,
-        freshness: freshnessOf("odds", rows[0]?.last_seen_at),
+        source_timestamp: marked[0]?.last_seen_at,
+        freshness: freshnessOf("odds", marked[0]?.last_seen_at),
       })],
     };
   }
@@ -5957,8 +6000,13 @@ export function buildSnapshot(eventId: string | null, evidence: Evidence[], focu
   if (focus) {
     facts.current_price = focus.best_dec ?? null;
     facts.fair_price = focus.sharp_fair ?? focus.consensus_fair ?? null;
+    /* What KIND of fair line that is. Without it the same field name covers a
+       Pinnacle de-vig and a pack median, and a reader has no way to tell. */
+    facts.fair_price_source = focus.reference_type
+      ?? (focus.has_sharp ? "sharp" : "robust_consensus");
     facts.edge = focus.edge ?? null;
     facts.n_books = focus.n_books ?? null;
+    facts.fresh_books = focus.fresh_books ?? null;
     facts.has_sharp = focus.has_sharp ?? null;
     facts.stale_min = focus.last_seen_at
       ? Math.round((Date.now() - Date.parse(focus.last_seen_at)) / 60000) : null;
@@ -9349,13 +9397,37 @@ const BACK_MARKETS = new Set(["h2h","spreads","totals","ml","spread","total"]);
 export function signalTradeable(r: any): { ok: boolean; reason: string | null } {
   if (!r) return { ok:false, reason:"empty row" };
   const mkt = String(r.market ?? "");
-  if (/(^|_)lay$/i.test(mkt)) return { ok:false, reason:`exchange lay quote (${mkt}) — the other side of the book` };
+  /* Matches a `_lay` SEGMENT anywhere, not only a suffix. The old `(^|_)lay$`
+     accepted `h2h_lay_1st_half`, which capture's backable() refuses — so the
+     writer and the reader disagreed about what a lay market was. */
+  if (/(^|_)lay(_|$)/i.test(mkt)) return { ok:false, reason:`exchange lay quote (${mkt}) — the other side of the book` };
   if (mkt && !BACK_MARKETS.has(mkt.toLowerCase())) return { ok:false, reason:`unrecognised market type "${mkt}"` };
   const dec = Number(r.best_dec);
   if (!Number.isFinite(dec) || dec <= 1) return { ok:false, reason:"no usable price" };
   if (dec > SIG_MAX_DEC) return { ok:false, reason:`price ${dec.toFixed(2)} above the placeholder bound (${SIG_MAX_DEC})` };
   if (dec < SIG_MIN_DEC) return { ok:false, reason:`price ${dec.toFixed(2)} is an extreme snap` };
   return { ok:true, reason:null };
+}
+
+/**
+ * IS THIS A SIGNAL EDGEDESK PUT ITS NAME ON?
+ *
+ * There is exactly one definition of an actionable EdgeDesk signal and capture
+ * owns it: `flagged_at IS NOT NULL` means qualifySignal() returned actionable,
+ * and the frozen entry travels with it in flagged_best_dec.
+ *
+ * This engine had no such check anywhere. getSlate() described itself as "the
+ * board, server-side" while reading the STORED population — every row capture
+ * priced, including every row it explicitly refused — ordered by edge, and
+ * handed the top of that list to the model as VERIFIED evidence it must quote
+ * numbers from. The app's board and the engine's board were two different
+ * populations with one name, and the engine's was the unfiltered one.
+ *
+ * Deliberately identical to app.html's isFlaggedSignal(). If these two ever
+ * disagree, one of the two surfaces is lying to somebody.
+ */
+export function signalIsActionable(r: any): boolean {
+  return !!(r && r.flagged_at && Number.isFinite(Number(r.flagged_best_dec)) && Number(r.flagged_best_dec) > 1);
 }
 
 /* ========================================================================
@@ -10406,12 +10478,26 @@ async function runResearch(
       ? {
         event_id: focus.event_id, market: focus.market, selection: focus.selection, point: focus.point ?? null,
         price: focus.best_dec ?? null, first_price: focus.first_best_dec ?? null,
+        /* `sharp_fair` is THE FAIR EDGEDESK ANCHORED ON, which is not always a
+           sharp book's number — under capture v8 it was the pack median on every
+           row, because Pinnacle was structurally unreachable from the `us`
+           region. The model was handed it under that name and told to quote it
+           exactly, so a consensus median could be described to a reader as the
+           sharp line. reference_type says which it actually is, and
+           sharp_book_fair is NULL whenever there was no reference book. */
         sharp_fair: focus.sharp_fair ?? null, consensus_fair: focus.consensus_fair ?? null,
+        sharp_book_fair: focus.sharp_book_fair ?? null,
+        reference_type: focus.reference_type ?? null,
+        qual_tier: focus.qual_tier ?? null,
         edge: focus.edge ?? null, first_edge: focus.first_edge ?? null,
         n_books: focus.n_books ?? null, n_books_eff: focus.n_books_eff ?? null,
+        fresh_books: focus.fresh_books ?? null,
         has_sharp: focus.has_sharp ?? null, clv: focus.clv ?? null,
         beat_close: focus.beat_close ?? null, result: focus.result ?? null,
-        _note: "Owned by the deterministic engine. READ-ONLY — quote exactly, never recompute.",
+        _note: "Owned by the deterministic engine. READ-ONLY — quote exactly, never recompute. "
+          + "`sharp_fair` is the fair line EdgeDesk anchored on; read `reference_type` before calling it sharp. "
+          + "reference_type 'robust_consensus' means NO sharp book quoted this selection and the number is a "
+          + "trimmed median of independent books — do not describe it as a sharp or Pinnacle line.",
       }
       : null,
   };

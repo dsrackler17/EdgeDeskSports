@@ -32,6 +32,13 @@ on:
       - 'football/injuries/**'
       - 'football/availability/**'
       - 'football/rating/**'
+      # The capture edge function and its suites. Before this, a change to the
+      # single function that decides what EdgeDesk calls a bet triggered no CI
+      # at all — it was not in either path list, because until v9 it was not in
+      # the repository.
+      - 'supabase/functions/capture/**'
+      - 'tools/capture/**'
+      - 'supabase/*.sql'
       - '.github/workflows/collective-tests.yml'
   pull_request:
     paths:
@@ -54,6 +61,13 @@ on:
       - 'football/injuries/**'
       - 'football/availability/**'
       - 'football/rating/**'
+      # The capture edge function and its suites. Before this, a change to the
+      # single function that decides what EdgeDesk calls a bet triggered no CI
+      # at all — it was not in either path list, because until v9 it was not in
+      # the repository.
+      - 'supabase/functions/capture/**'
+      - 'tools/capture/**'
+      - 'supabase/*.sql'
       - '.github/workflows/collective-tests.yml'
   workflow_dispatch:
 
@@ -168,6 +182,29 @@ jobs:
       # app must read the rating file rather than manufacturing timestamps.
       - name: The EdgeDesk Rating measures what it claims to measure
         run: node football/rating/edr.test.js
+
+      # CAPTURE. The single most consequential function in EdgeDesk: it decides
+      # what becomes a signal. Imported here as the DEPLOYED file under Node's
+      # type stripping with a Deno shim and a mocked network — which is only
+      # possible because it has no imports. All 27 adversarial cases from the
+      # capture brief, plus the de-vig, partition and freshness-boundary
+      # properties. No network, nothing written.
+      - name: Capture qualifies a signal only on evidence it can name
+        run: node tools/capture/capture.test.js
+
+      # THE BOARD CONTRACT. An unqualified row with edge > 0 must not render as
+      # an Edge on any surface. Sliced out of the real app.html and the real
+      # edgedesk_ai, so a regression fails here and not on a board someone is
+      # reading.
+      - name: An unqualified positive-edge row cannot reach a user as an Edge
+        run: node tools/capture/board_contract.test.js
+
+      # The backtest harness itself. A backtest is a machine for producing a
+      # number nobody can check, so the machine is checked: the leakage guard
+      # throws, the folds never look forward, and every metric is verified
+      # against a value worked out by hand.
+      - name: The backtest cannot see the future and its arithmetic is right
+        run: node tools/capture/backtest.test.js
 
       # The deployed edge function, imported under Node's native type stripping
       # with a Deno shim and a mocked network: old callers, the additive

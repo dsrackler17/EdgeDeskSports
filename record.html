@@ -2793,13 +2793,22 @@ footer a:hover{color:var(--text)}
     if(!data||!P) return '';
     var s=P.recordSummary(data.briefs||[],{preset:preset}); var c=s.calls;
     var wl=c.win+'-'+c.loss+(c.push?'-'+c.push:'');
+    /* EVERY TILE NAMES ITS OWN DENOMINATOR.
+       These eight numbers are computed over four different populations: briefs,
+       calls, calls with a scored close, and settled calls. Rendered as adjacent
+       tiles with no denominators, a reader has no way to know that "we got the
+       better price 62%" and "won-lost 4-9" are not describing the same bets —
+       and the two can point in opposite directions honestly. Nothing here is
+       recomputed; the populations were always different, they were just never
+       said out loud. */
+    var settled=c.win+c.loss+c.push;
     return kpi(s.briefs,'briefs published','one per game or slate')
       +kpi(c.n,'actual calls','the BET and LEAN ones')
       +kpi(c.graded,'already graded','the game has been played')
-      +kpi(P.fmtRate(c.beat_rate),'we got the better price','share that beat the close')
-      +kpi(P.fmtCents(c.avg_cents),'how much better, on average','avg cents vs close')
-      +kpi(P.fmtClv(c.avg_clv),'average value in the price','avg CLV')
-      +kpi((c.win+c.loss+c.push)?wl:'\u2014','won-lost','context only, not the scoreboard')
+      +kpi(P.fmtRate(c.beat_rate),'we got the better price','share that beat the close \u00b7 of the '+c.with_close+' with a close')
+      +kpi(P.fmtCents(c.avg_cents),'how much better, on average','avg cents vs close \u00b7 of those with a comparable closing price')
+      +kpi(P.fmtClv(c.avg_clv),'average value in the price','avg CLV \u00b7 of the '+c.with_close+' with a close')
+      +kpi(settled?wl:'\u2014','won-lost','of the '+settled+' settled \u00b7 context only, not the scoreboard')
       +kpi(s.no_bet_briefs,'nights we found nothing','no-bet briefs, counted as discipline');
   }
   function pickHTML(pk){

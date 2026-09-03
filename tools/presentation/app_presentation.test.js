@@ -59,7 +59,12 @@ function slice(start, end, label) {
 const block = slice('/*__EDCARD_START__*/', '/*__EDCARD_END__*/', 'the EDCARD block');
 function fixtureX(over) {
   const e = Object.assign({ event_id: 'ev1', sport_key: 'americanfootball_ncaaf', market: 'spreads', selection: 'Texas Tech', point: -3.5,
-    home_team: 'Baylor', away_team: 'Texas Tech', commence_time: '2026-09-05T23:30:00Z', last_seen_at: new Date(Date.now() - 8 * 60000).toISOString(), best_book: 'DraftKings' }, (over && over.e) || {});
+    home_team: 'Baylor', away_team: 'Texas Tech', commence_time: '2026-09-05T23:30:00Z', last_seen_at: new Date(Date.now() - 8 * 60000).toISOString(), best_book: 'DraftKings',
+    /* A row on the board is a QUALIFIED row — capture froze its entry when it
+       became actionable. The publisher pool now requires that, so a fixture
+       without it was not describing a board row at all. */
+    flagged_at: new Date(Date.now() - 20 * 60000).toISOString(), flagged_best_dec: 1.91, flagged_edge: 0.034,
+    qual_tier: 'A', reference_type: 'sharp' }, (over && over.e) || {});
   return Object.assign({
     e: e, sel: 'Texas Tech -3.5', matchup: 'Texas Tech @ Baylor', market: 'Spread', sport: 'CFB',
     curAm: -110, detAm: -108, fairAm: -121, maxAm: -118, bestAm: -108, book: 'DraftKings', trusted: true, pinDec: null,

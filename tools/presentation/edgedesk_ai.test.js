@@ -174,7 +174,11 @@ function req(body, qs, method) {
     globalThis.fetch = async function (url, init) {
       const u = String(url);
       if (u.indexOf('sb.test') >= 0 && /rest\/v1\/signals\?select=event_id/.test(u) && !(init && init.method === 'HEAD')) {
-        const row = { event_id: 'nfl-1', sport_key: 'americanfootball_nfl', market: 'spreads', selection: 'Kansas City Chiefs', point: -3, best_dec: 1.93, first_best_dec: 1.95, best_book: 'FanDuel', sharp_fair: 1.4, consensus_fair: 0.55, edge: 0.024, first_edge: 0.03, n_books: 7, has_sharp: true, pin_dec: 1.87, pin_opp_dec: 1.95, home_team: 'Kansas City Chiefs', away_team: 'Baltimore Ravens', commence_time: new Date(Date.now() + 3600000).toISOString(), last_seen_at: new Date().toISOString() };
+        /* getSlate now reads the FLAGGED population — the same one the app's
+           board reads — so a row without a frozen entry is not on the slate at
+           all. The fixture carries one; the corrupt sharp_fair it is testing is
+           untouched. */
+        const row = { event_id: 'nfl-1', sport_key: 'americanfootball_nfl', market: 'spreads', selection: 'Kansas City Chiefs', point: -3, best_dec: 1.93, first_best_dec: 1.95, best_book: 'FanDuel', sharp_fair: 1.4, consensus_fair: 0.55, edge: 0.024, first_edge: 0.03, n_books: 7, has_sharp: true, pin_dec: 1.87, pin_opp_dec: 1.95, home_team: 'Kansas City Chiefs', away_team: 'Baltimore Ravens', commence_time: new Date(Date.now() + 3600000).toISOString(), last_seen_at: new Date().toISOString(), flagged_at: new Date(Date.now() - 1800000).toISOString(), flagged_best_dec: 1.95, flagged_edge: 0.03, qual_tier: 'A', reference_type: 'sharp' };
         return { ok: true, status: 200, text: async () => JSON.stringify([row]), json: async () => [row] };
       }
       return oldFetch(url, init);
