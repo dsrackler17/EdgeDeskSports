@@ -304,6 +304,16 @@ CASES.forEach(function (c) {
     return pass.plain.verdict_subtitle === 'Not worth it at this price.' && !/Not at this price/.test(pass.plain.answer)
       && /would take -118 or better/.test(pass.plain.answer);
   })());
+  chk('no export repeats the lede as the pick line', (function () {
+    const snap = P.snapshot({ cards: [f], report_type: 'GAME', preset: 'GAME', now: NOW });
+    const txt = P.briefText(snap), cms = P.briefCmsHTML(snap).replace(/<[^>]+>/g, ' ');
+    const phrase = 'It needs a fresh check before EdgeDesk trusts it';
+    return (txt.split(phrase).length - 1) === 1 && (cms.split(phrase).length - 1) === 1;
+  })());
+  chk('a slate pick, which has no lede, keeps its own answer line', (function () {
+    const sl = P.snapshot({ cards: [f], report_type: 'SLATE', preset: 'CFB', max: 3, now: NOW });
+    return /It needs a fresh check before EdgeDesk trusts it/.test(P.briefText(sl));
+  })());
   chk('the price comparison is stated once, not once per section', (function () {
     const html = P.briefHTML(P.snapshot({ cards: [f], report_type: 'GAME', preset: 'GAME', now: NOW })).replace(/<[^>]+>/g, ' ');
     return (html.match(/comparison price for the same bet is about/g) || []).length === 1;
