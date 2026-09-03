@@ -31,6 +31,7 @@ on:
       - 'tools/record/**'
       - 'football/injuries/**'
       - 'football/availability/**'
+      - 'football/rating/**'
       - '.github/workflows/collective-tests.yml'
   pull_request:
     paths:
@@ -52,6 +53,7 @@ on:
       - 'tools/record/**'
       - 'football/injuries/**'
       - 'football/availability/**'
+      - 'football/rating/**'
       - '.github/workflows/collective-tests.yml'
   workflow_dispatch:
 
@@ -151,6 +153,15 @@ jobs:
       # never rendered as "no injuries".
       - name: CFB availability never invents a status, a player or a source
         run: node football/availability/availability.test.js
+
+      # EdgeDesk's own team rating. The recursion must actually adjust for
+      # opponent, home advantage and the season-on-season carryover must stay
+      # MEASURED rather than assumed (that measured slope is the portal/NIL
+      # question answered with arithmetic), roster and availability must stay
+      # bounded, a team with no evidence must get no rating at all, and the
+      # app must read the rating file rather than manufacturing timestamps.
+      - name: The EdgeDesk Rating measures what it claims to measure
+        run: node football/rating/edr.test.js
 
       # The deployed edge function, imported under Node's native type stripping
       # with a Deno shim and a mocked network: old callers, the additive

@@ -1,0 +1,95 @@
+# EdgeDesk Football — the EdgeDesk Rating (EDR).
+#
+# EdgeDesk's own answer to "how good is this team", in points against an
+# average FBS team. Not a poll, not a service, not another model: it is
+# rebuilt from results EdgeDesk can check, the roster EdgeDesk already
+# commits, and the availability layer EdgeDesk already collects.
+#
+# The one thing this job does that a preseason ranking cannot: it MEASURES how
+# much last season still predicts this one, every week, and reweights itself.
+# That measured slope is the portal/NIL argument settled with arithmetic
+# instead of an opinion, and it ships inside the dataset so it can be argued
+# with.
+#
+# Cadence follows the football week (UTC; ET is four hours behind):
+#   Sun 09:00 UTC  the week's results are all in — the full weekly rebuild
+#   Wed 09:00 UTC  midweek, to pick up roster and availability movement
+#   Sat 13:00 UTC  before kickoff, so game day reads a current number
+name: Rating sync
+
+on:
+  workflow_dispatch:
+    inputs:
+      season:
+        description: 'Season year (default: current, Jan/Feb -> prior year)'
+        required: false
+        default: ''
+      seasons:
+        description: 'How many seasons of results to read (default 5)'
+        required: false
+        default: ''
+      week:
+        description: 'Week number to stamp on the dataset'
+        required: false
+        default: ''
+  schedule:
+    - cron: '0 9 * * 0'   # Sunday morning UTC — every result is in
+    - cron: '0 9 * * 3'   # Wednesday — roster and availability movement
+    - cron: '0 13 * * 6'  # Saturday before kickoff
+
+permissions:
+  contents: write
+
+concurrency:
+  group: rating-sync
+  cancel-in-progress: false
+
+jobs:
+  rate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.ref_name }}
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+
+      # The rules come before the write: an opponent-adjusted rating that does
+      # not adjust for opponent, or a carryover weight that stopped being
+      # measured, must never reach the app.
+      - name: The rules must pass before anything is allowed to write
+        run: node football/rating/edr.test.js
+
+      - name: Rebuild the EdgeDesk Rating
+        run: |
+          ARGS=""
+          if [ -n "${{ github.event.inputs.season }}" ]; then ARGS="$ARGS --season ${{ github.event.inputs.season }}"; fi
+          if [ -n "${{ github.event.inputs.seasons }}" ]; then ARGS="$ARGS --seasons ${{ github.event.inputs.seasons }}"; fi
+          if [ -n "${{ github.event.inputs.week }}" ]; then ARGS="$ARGS --week ${{ github.event.inputs.week }}"; fi
+          node football/rating/build_rating.js $ARGS
+
+      # The dataset that just got written has to survive the same rules again —
+      # the shipped-file checks in the suite read football/rating/current.json.
+      - name: The dataset that was written must itself pass
+        run: node football/rating/edr.test.js
+
+      - name: Commit the rating
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add football/rating/current.json football/rating/20*.json 2>/dev/null || true
+          if git diff --cached --quiet; then
+            echo 'rating unchanged — nothing to commit'
+            exit 0
+          fi
+          git commit -m 'rating sync: EdgeDesk Rating rebuilt from results, roster and availability'
+          for i in 1 2 3 4; do
+            git push origin "${{ github.ref_name }}" && exit 0
+            git pull --rebase origin "${{ github.ref_name }}" || true
+            sleep $((2 ** i))
+          done
+          echo 'could not push the rating dataset after 4 attempts'
+          exit 1
