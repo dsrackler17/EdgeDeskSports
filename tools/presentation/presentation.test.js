@@ -244,4 +244,44 @@ function simple(over, ctx) { return P.simpleFromPacket(packet(over), Object.assi
   chk('translate dictionary', P.translate('sharp reference') === 'sharper market' && P.translate('max playable') === 'good to');
 }
 
+/* ---- CLOSE THE LOOP: the receipt on the card, the grade on the brief ---- */
+{
+  /* The engine's graded fields ride the packet verbatim; the card shows them. */
+  const graded = P.simpleFromPacket(packet([['clv', { clv: 0.021, beat_close: true, closing: 0.5556, result: 'win', closed_at: '2026-09-06T00:00:00Z', graded_at: '2026-09-06T03:00:00Z' }]]), { now: NOW });
+  chk('a graded row gives the card a receipt with the engine CLV untouched', graded.outcome && graded.outcome.clv === 0.021 && graded.outcome.beat_close === true && graded.outcome.result === 'win', graded.outcome);
+  chk('the receipt reads like a sportsbook: closed, cents, result', graded.outcome.text === 'Closed -125. Beat the close by 17 cents. Won.', graded.outcome.text);
+  chk('cents are measured from the DETECTION price the engine graded from', graded.outcome.entry_odds === '-108');
+  chk('the verdict is not touched by a result', graded.verdict === 'BET' && graded.engine_verdict === 'BET');
+  chk('the full card carries the Result line', /class="dcard-result win"/.test(P.cardHTML(graded)) && /Closed -125\. Beat the close by 17 cents\. Won\./.test(P.cardHTML(graded)));
+  chk('the compact strip carries it too', /dcard-result/.test(P.cardHTML(graded, { compact: true })));
+  const ungraded = P.simpleFromPacket(packet(), { now: NOW });
+  chk('no graded row, no receipt and no Result line', ungraded.outcome === null && !/dcard-result/.test(P.cardHTML(ungraded)));
+  const lost = P.simpleFromPacket(packet([['clv', { clv: -0.03, beat_close: false, closing: 0.5, result: 'loss' }]]), { now: NOW });
+  chk('a loss is a loss, in red', /dcard-result loss/.test(P.cardHTML(lost)) && /Missed the close by 8 cents\. Lost\./.test(lost.outcome.text), lost.outcome.text);
+  chk('a result never becomes a verdict: PASS with a win stays PASS', (function () {
+    const s = P.simpleFromPacket(packet([['deterministic.verdict', 'PASS'], ['deterministic.display_verdict', 'PASS'], ['clv', { clv: 0.05, beat_close: true, closing: 0.6, result: 'win' }]]), { now: NOW });
+    return s.verdict === 'PASS' && s.outcome.result === 'win';
+  })());
+
+  /* The snapshot's prices carry everything the grader needs. */
+  const snap = P.snapshot({ cards: [graded], report_type: 'GAME', preset: 'GAME', now: NOW });
+  const pr = snap.price_snapshot[0];
+  chk('a snapshot price carries raw market, side, line, American odds, verdict, kickoff and teams', pr.market_key === 'spreads' && pr.selection_raw === 'Texas Tech' && pr.line === -3.5 && pr.odds_am === -110 && pr.verdict === 'BET' && pr.kind === 'pick' && pr.rank === 1 && pr.commence === '2026-09-05T23:30:00Z' && pr.home === 'Baylor' && pr.away === 'Texas Tech' && pr.sport_key === 'americanfootball_ncaaf', pr);
+  chk('the grade key is stable and raw', P.gradeKey(pr) === 'ev1|spreads|Texas Tech|-3.5');
+  chk('a legacy price with labels only still yields the same key', P.gradeKey({ event_id: 'ev1', market: 'Spread', selection: 'Texas Tech -3.5', odds: '-110' }) === 'ev1|spreads|Texas Tech|-3.5');
+  const sl = P.snapshot({ cards: [graded, P.simpleFromPacket(packet([['game.event_id', 'ev2'], ['game.matchup', 'A @ B'], ['game.away', 'A'], ['game.home', 'B'], ['deterministic.verdict', 'LEAN'], ['deterministic.display_verdict', 'LEAN']]), { now: NOW })], report_type: 'SLATE', preset: 'CFB', now: NOW });
+  chk('on a slate, picks are picks and the rest is watch', sl.price_snapshot[0].kind === 'pick' && sl.price_snapshot[1].kind === 'watch' && sl.price_snapshot[1].rank === 1, sl.price_snapshot.map(p => [p.kind, p.rank]));
+  chk('the public payload carries the gradeable prices', P.publicPayload(sl).data_status.prices[0].selection_raw === 'Texas Tech');
+
+  /* The brief renders its grade only when handed one. */
+  const entry = { id: 'x', graded_at: '2026-09-06T03:00:00Z', picks: [{ verdict: 'BET', selection: 'Texas Tech -3.5', odds: '-110', book: 'DraftKings', status: 'graded', grade: P.gradePick({ odds: '-110', close_fair_prob: 0.5556, result: 'win' }), score: { home: 'Baylor', away: 'Texas Tech', home_score: 20, away_score: 24 } }] };
+  const html = P.briefHTML(snap, { grades: entry });
+  chk('a brief with a grade shows How it graded, the final and the receipt', /How it graded/.test(html) && /Final Texas Tech 24, Baylor 20/.test(html) && /Closed -125\. Beat the close by 15 cents\. Won\./.test(html));
+  chk('a brief without a grade is exactly the brief', !/How it graded/.test(P.briefHTML(snap)));
+  chk('plain text carries the grade when asked', /HOW IT GRADED/.test(P.briefText(snap, { grades: entry })) && !/HOW IT GRADED/.test(P.briefText(snap)));
+  chk('CMS copy never carries a grade: the article is the article', !/graded/i.test(P.briefCmsHTML(snap)));
+  chk('pending states are said, not filled', P.pickStatusText({ status: 'pending_kickoff' }) === 'Not kicked off yet.' && /disagree/.test(P.pickStatusText({ status: 'contested' })) && /not deployed/.test(P.pickStatusText({ status: 'no_close_source' })));
+  chk('calibration HTML is empty-safe and marks thin rows', /No published calls have graded yet/.test(P.calibrationHTML([])) && /thin/.test(P.calibrationHTML([{ id: 'b', preset: 'GAME', picks: [{ verdict: 'BET', kind: 'pick', sport_key: 'americanfootball_nfl', status: 'graded', grade: entry.picks[0].grade }] }])));
+}
+
 done();

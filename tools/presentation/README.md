@@ -11,10 +11,10 @@ Three layers over one deterministic engine:
 ## Ownership
 
 `supabase/functions/edgedesk_ai/_presentation.js` is the canonical library. It is
-inlined byte-for-byte into `index.ts`, `app.html` and `brief.html` between
+inlined byte-for-byte into `index.ts`, `app.html`, `brief.html` and `record.html` between
 `/*__EDPRES_START__*/ … /*__EDPRES_END__*/`. Edit the canonical file, then:
 
-    node tools/presentation/inline.js        # sync the three hosts
+    node tools/presentation/inline.js        # sync the four hosts
     node tools/presentation/inline.js --check
 
 The library never computes a probability, edge, price limit or verdict. It
@@ -35,7 +35,9 @@ validates AI copy before a word of it reaches a card.
    `build: edgedesk_ai-2026-09-02-r4-presentation` and `presentation.library_loaded: true`.
 2. Run `supabase/publisher_briefs.sql` in the SQL editor (share links need it;
    copy/print work without it).
-3. Publish `app.html` and `brief.html` together.
+3. Publish `app.html`, `brief.html` and `record.html` together.
+4. Run `supabase/brief_record.sql` so published briefs can grade against the
+   close (see `tools/record/README.md`).
 
 ## Manual checks
 

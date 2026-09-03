@@ -25,8 +25,10 @@ on:
       - 'collective/tests_render.js'
       - 'tools/collective/**'
       - 'brief.html'
+      - 'record.html'
       - 'supabase/functions/edgedesk_ai/**'
       - 'tools/presentation/**'
+      - 'tools/record/**'
       - '.github/workflows/collective-tests.yml'
   pull_request:
     paths:
@@ -42,8 +44,10 @@ on:
       - 'collective/tests_render.js'
       - 'tools/collective/**'
       - 'brief.html'
+      - 'record.html'
       - 'supabase/functions/edgedesk_ai/**'
       - 'tools/presentation/**'
+      - 'tools/record/**'
       - '.github/workflows/collective-tests.yml'
   workflow_dispatch:
 
@@ -118,6 +122,16 @@ jobs:
 
       - name: Verdicts survive translation, AI copy is gated, snapshots hold their prices
         run: node tools/presentation/presentation.test.js
+
+      # CLOSE THE LOOP. Every published brief is graded against the close and
+      # the final by tools/record/grade_briefs.js (its own scheduled workflow
+      # commits record/grades.json). Nothing invented: no close means waiting,
+      # contested finals grade nothing, a graded pick is never re-graded.
+      - name: Published briefs grade against the close, deterministically
+        run: node tools/record/grade_briefs.test.js
+
+      - name: The public record page lists every published call, graded
+        run: node tools/record/record_page.test.js
 
       # The deployed edge function, imported under Node's native type stripping
       # with a Deno shim and a mocked network: old callers, the additive

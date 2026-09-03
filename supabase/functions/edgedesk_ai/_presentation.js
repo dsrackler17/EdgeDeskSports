@@ -2,10 +2,11 @@
 /* ============================================================================
    EdgeDesk PRESENTATION LAYER — "deep engine, simple answer".
 
-   ONE FILE, THREE HOSTS. This exact block is inlined into:
+   ONE FILE, FOUR HOSTS. This exact block is inlined into:
      - supabase/functions/edgedesk_ai/index.ts   (server: builds `presentation`)
      - app.html                                   (browser: decision cards, briefs)
      - brief.html                                 (public share page)
+     - record.html                                (public track record of published briefs)
    tools/presentation/presentation_sync.test.js fails if the copies drift.
    The canonical source is supabase/functions/edgedesk_ai/_presentation.js.
 
@@ -453,6 +454,8 @@
       confidence: det.confidence || null,
       score: num(det.score),
       copy_source: 'deterministic',
+      /* the engine's graded receipt, verbatim (null until the close pipeline grades the row) */
+      outcome: p.clv ? outcomeOf({ clv: p.clv.clv, beat_close: p.clv.beat_close, closing: p.clv.closing, result: p.clv.result, closed_at: p.clv.closed_at, graded_at: p.clv.graded_at, entry_am: detAm != null ? detAm : curAm }) : null,
       game: {
         matchup: game.matchup || null, away: game.away || null, home: game.home || null,
         sport_key: game.sport_key || null, sport_label: game.sport || null,
@@ -783,9 +786,16 @@
       fresh = worst(fresh, c.freshness && c.freshness.status || 'UNKNOWN', ['CURRENT', 'AGING', 'UNKNOWN', 'STALE']);
       integ = worst(integ, c.integrity_status || 'OK', ['OK', 'PROVISIONAL', 'FAILED']);
     });
-    var prices = primary.map(function (c) {
-      return { event_id: c.game && c.game.event_id, matchup: c.game && c.game.matchup, market: c.market_label, selection: c.selection,
-        line: c.line, odds: c.odds, book: c.book, captured_at: c.freshness && c.freshness.price_captured_at || null };
+    var pickN = reportType === 'SLATE' ? sl.picks.length : 1;
+    var prices = primary.map(function (c, i) {
+      /* Every field the grader needs to find this exact selection again
+         after kickoff travels with the price it was published at. */
+      return { event_id: c.game && c.game.event_id, matchup: c.game && c.game.matchup, market: c.market_label, market_key: c.market || null,
+        selection: c.selection, selection_raw: c.selection_raw || null, line: c.line, odds: c.odds, odds_am: c.engine ? c.engine.current_am : parseAmerican(c.odds),
+        book: c.book, captured_at: c.freshness && c.freshness.price_captured_at || null,
+        verdict: c.suppressed ? 'DATA CHECK FAILED' : (c.verdict || null), kind: i < pickN ? 'pick' : 'watch', rank: i < pickN ? i + 1 : i - pickN + 1,
+        commence: c.game && c.game.commence || null, sport_key: c.game && c.game.sport_key || null, sport_label: c.game && c.game.sport_label || null,
+        home: c.game && c.game.home || null, away: c.game && c.game.away || null };
     });
     var eventIds = [];
     primary.forEach(function (c) { var id = c.game && c.game.event_id; if (id && eventIds.indexOf(id) < 0) eventIds.push(id); });
@@ -920,6 +930,10 @@
     /* The compact strip shows only what changes the decision at a glance:
        a failed check, a provisional read, a stale or missing price. Named
        data gaps stay on the full card, where the watch line explains them. */
+    if (s.outcome && s.outcome.text) {
+      var oc = s.outcome.result === 'win' ? 'win' : s.outcome.result === 'loss' ? 'loss' : s.outcome.result === 'push' ? 'push' : 'pend';
+      h += '<div class="dcard-result ' + oc + '"><span class="k">Result</span> ' + esc(s.outcome.text) + '</div>';
+    }
     var flags = (s.flags || []).filter(function (f) { return !opts.compact || f.kind !== 'DATA_GAP'; });
     if (flags.length) {
       h += '<div class="dcard-flags">' + flags.map(function (f) {
@@ -1000,6 +1014,7 @@
         h += briefCardHTML(pc, { numbered: false, showEvent: false });
       });
     }
+    if (opts.grades) h += briefResultsHTML(opts.grades);
     h += '<footer class="edb-ft"><div class="edb-h">EdgeDesk data check</div><p><b>' + esc(ds.status || 'Current') + '</b>'
       + (ds.price_captured_at ? ' · Price captured at ' + esc(fmtStamp(ds.price_captured_at)) : '') + '</p>'
       + (ds.prices && ds.prices.length > 1 ? '<ul class="edb-prices">' + ds.prices.map(function (p) { return '<li>' + esc(p.selection || '') + (p.odds ? ' ' + esc(p.odds) : '') + (p.book ? ' · ' + esc(p.book) : '') + (p.captured_at ? ' · captured ' + esc(fmtStamp(p.captured_at)) : '') + '</li>'; }).join('') + '</ul>' : '')
@@ -1044,7 +1059,8 @@
     return h;
   }
   /* Article-ready plain text. */
-  function briefText(snap) {
+  function briefText(snap, opts) {
+    opts = opts || {};
     var pub = snap.public || snap, ds = pub.data_status || {};
     var L = [];
     L.push((snap.title || 'EdgeDesk Brief').toUpperCase());
@@ -1075,7 +1091,331 @@
     }
     L.push('EDGEDESK DATA CHECK');
     L.push((ds.status || 'Current') + (ds.price_captured_at ? ' · Price captured at ' + fmtStamp(ds.price_captured_at) : ''));
+    if (opts.grades) { var rt = briefResultsText(opts.grades); if (rt) L.push(rt); }
     L.push(''); L.push('Powered by EdgeDesk Sports');
+    return L.join('\n');
+  }
+
+  /* ------------------------------------------------------------- grading */
+  /* CLOSE THE LOOP. A published call is graded against the closing line and
+     the final score, deterministically, and the result travels with the
+     card. Nothing here estimates: the close is the engine's canonical
+     closing fair line (signals.closing_sharp_fair), the CLV arithmetic is
+     the SAME `fair × decimal − 1` the engine and the public record already
+     use, and a result comes from the close pipeline or from a final two
+     feeds agreed on. Where a number is missing the grade says so. */
+  function americanToDec(am) {
+    var a = num(am);
+    if (a == null || a === 0 || (a > -100 && a < 100)) return null;
+    return a > 0 ? 1 + a / 100 : 1 + 100 / (-a);
+  }
+  function parseAmerican(s) {
+    if (s == null || s === '') return null;
+    if (typeof s === 'number') return isFinite(s) ? Math.round(s) : null;
+    var m = String(s).trim().match(/^([+\-−]?)\s*(\d{3,5})$/);
+    if (!m) return null;
+    var v = parseInt(m[2], 10);
+    return (m[1] === '-' || m[1] === '−') ? -v : v;
+  }
+  function probToAmerican(p) {
+    var q = num(p);
+    if (q == null || q <= 0 || q >= 1) return null;
+    return decToAmerican(1 / q);
+  }
+  /* "Cents": the sportsbook scale on which -100 and +100 are the same point.
+     -110 is 10 cents worse than even; +105 is 5 cents better. */
+  function centsOf(am) {
+    var a = num(am);
+    if (a == null) return null;
+    return a > 0 ? a - 100 : a + 100;
+  }
+  /* Positive = the entry price was better than the close. */
+  function centsBetween(entryAm, closeAm) {
+    var a = centsOf(entryAm), b = centsOf(closeAm);
+    if (a == null || b == null) return null;
+    return Math.round(a - b);
+  }
+  function round4(v) { return v == null ? null : Math.round(v * 10000) / 10000; }
+  function normResult(r) {
+    var s = String(r == null ? '' : r).toLowerCase().trim();
+    if (s === 'win' || s === 'won' || s === 'w') return 'win';
+    if (s === 'loss' || s === 'lost' || s === 'lose' || s === 'l') return 'loss';
+    if (s === 'push' || s === 'void' || s === 'tie' || s === 'p') return 'push';
+    return null;
+  }
+  function normTeam(s) {
+    if (s == null) return '';
+    var t = String(s).toLowerCase();
+    try { t = t.normalize("NFD").replace(/[\u0300-\u036f]/g, ""); } catch (e) {}
+    return t.replace(/&/g, 'and').replace(/[^a-z0-9]+/g, '');
+  }
+  /* Which side of the game a selection is. Exact after normalisation, then
+     a containment that must be UNAMBIGUOUS: "Miami" matching both Miami
+     (FL) and Miami (OH) is a null, not a guess. */
+  function sideOf(selection, home, away) {
+    var s = normTeam(selection), h = normTeam(home), a = normTeam(away);
+    if (!s) return null;
+    if (h && s === h) return 'home';
+    if (a && s === a) return 'away';
+    var hIn = h && (h.indexOf(s) >= 0 || s.indexOf(h) >= 0);
+    var aIn = a && (a.indexOf(s) >= 0 || s.indexOf(a) >= 0);
+    if (hIn && !aIn) return 'home';
+    if (aIn && !hIn) return 'away';
+    return null;
+  }
+  /* The outcome of a selection from a final score. Deterministic, and null
+     whenever the inputs do not settle it. */
+  function outcomeFromScore(o) {
+    o = o || {};
+    var hs = num(o.home_score), as = num(o.away_score);
+    if (hs == null || as == null) return null;
+    var m = String(o.market_key || o.market || '').toLowerCase().trim();
+    var pt = num(o.point != null ? o.point : o.line);
+    var sel = String(o.selection_raw || o.selection || '');
+    if (m === 'totals' || m === 'total') {
+      if (pt == null) return null;
+      var over = /^over\b/i.test(sel), under = /^under\b/i.test(sel);
+      if (!over && !under) return null;
+      var tot = hs + as;
+      if (tot === pt) return 'push';
+      return over ? (tot > pt ? 'win' : 'loss') : (tot < pt ? 'win' : 'loss');
+    }
+    var side = sideOf(sel, o.home, o.away);
+    if (!side) return null;
+    var mine = side === 'home' ? hs : as, theirs = side === 'home' ? as : hs;
+    if (m === 'spreads' || m === 'spread') {
+      if (pt == null) return null;
+      var adj = mine + pt - theirs;
+      if (adj === 0) return 'push';
+      return adj > 0 ? 'win' : 'loss';
+    }
+    if (m === 'h2h' || m === 'ml' || m === 'moneyline') {
+      if (mine === theirs) return 'push';
+      return mine > theirs ? 'win' : 'loss';
+    }
+    return null;
+  }
+  /* Grade one published price against the close and the result.
+     o: { odds (American string or number), close_fair_prob, close_best_am,
+          close_best_book, closed_at, result, result_source } */
+  function gradePick(o) {
+    o = o || {};
+    var entryAm = parseAmerican(o.odds_am != null ? o.odds_am : o.odds);
+    var dec = americanToDec(entryAm);
+    var p = num(o.close_fair_prob);
+    if (p != null && (p <= 0 || p >= 1)) p = null;
+    var closeAm = probToAmerican(p);
+    var g = {
+      entry_odds: fmtAmerican(entryAm), entry_am: entryAm,
+      close_fair_prob: p, close_fair_odds: fmtAmerican(closeAm), close_fair_am: closeAm,
+      close_best_odds: o.close_best_am != null ? fmtAmerican(o.close_best_am) : null, close_best_book: o.close_best_book || null,
+      closed_at: o.closed_at || null,
+      clv: null, beat_close: null, cents: null,
+      result: normResult(o.result), result_source: null,
+      status: 'pending'
+    };
+    if (g.result) g.result_source = o.result_source || 'close pipeline';
+    if (dec != null && p != null) {
+      g.clv = round4(p * dec - 1);
+      g.beat_close = g.clv > 0;
+      g.cents = closeAm != null ? centsBetween(entryAm, closeAm) : null;
+    }
+    g.status = (g.clv != null && g.result) ? 'graded' : g.clv != null ? 'awaiting_result' : g.result ? 'awaiting_close' : 'pending';
+    g.text = resultText(g);
+    return g;
+  }
+  /* "Closed -125. Beat the close by 15 cents. Won." */
+  function resultText(g) {
+    if (!g) return '';
+    var parts = [];
+    if (g.close_fair_odds) parts.push('Closed ' + g.close_fair_odds);
+    if (g.cents != null) parts.push(g.cents > 0 ? 'Beat the close by ' + g.cents + ' cent' + (g.cents === 1 ? '' : 's') : g.cents < 0 ? 'Missed the close by ' + (-g.cents) + ' cent' + (g.cents === -1 ? '' : 's') : 'Matched the close');
+    else if (g.beat_close != null) parts.push(g.beat_close ? 'Beat the close' : 'Did not beat the close');
+    if (g.result === 'win') parts.push('Won');
+    else if (g.result === 'loss') parts.push('Lost');
+    else if (g.result === 'push') parts.push('Push');
+    if (!parts.length) return g.status === 'awaiting_close' ? 'Final in. Waiting on the closing line.' : 'Waiting on the close.';
+    if (g.status === 'awaiting_result' && !g.result) parts.push('Final pending');
+    return parts.join('. ') + '.';
+  }
+  /* The in-app card's receipt: the ENGINE's own graded CLV, beat-close and
+     result, verbatim, plus the display-only cents against the entry price.
+     Nothing is recomputed; a card with no graded row gets no receipt. */
+  function outcomeOf(o) {
+    o = o || {};
+    if (o.clv == null && !normResult(o.result)) return null;
+    var closeAm = probToAmerican(o.closing);
+    var g = {
+      clv: num(o.clv), beat_close: o.beat_close == null ? (num(o.clv) != null ? num(o.clv) > 0 : null) : !!o.beat_close,
+      result: normResult(o.result), entry_odds: fmtAmerican(o.entry_am), close_fair_odds: fmtAmerican(closeAm),
+      cents: centsBetween(o.entry_am, closeAm), closed_at: o.closed_at || null, graded_at: o.graded_at || null,
+      source: 'engine', status: (num(o.clv) != null && normResult(o.result)) ? 'graded' : num(o.clv) != null ? 'awaiting_result' : 'awaiting_close'
+    };
+    g.text = resultText(g);
+    return g;
+  }
+  /* Legacy public prices carried only display labels. Recover the raw
+     market key and selection so an older brief can still be matched to its
+     signal row. Newer snapshots carry the fields outright. */
+  function marketKeyOf(label) {
+    var m = String(label == null ? '' : label).toLowerCase().trim();
+    if (m === 'spread' || m === 'spreads') return 'spreads';
+    if (m === 'total' || m === 'totals') return 'totals';
+    if (m === 'moneyline' || m === 'ml' || m === 'h2h') return 'h2h';
+    return m || null;
+  }
+  function parseSelectionLabel(label, marketKey) {
+    var s = clean(label);
+    if (!s) return { selection_raw: null, line: null };
+    var mk = marketKeyOf(marketKey);
+    var m;
+    if (mk === 'totals') { m = s.match(/^(Over|Under)\s+([+\-]?\d+(?:\.\d+)?)$/i); return m ? { selection_raw: m[1].charAt(0).toUpperCase() + m[1].slice(1).toLowerCase(), line: +m[2] } : { selection_raw: s, line: null }; }
+    if (mk === 'spreads') { m = s.match(/^(.*?)\s+([+\-]\d+(?:\.\d+)?)$/); return m ? { selection_raw: m[1], line: +m[2] } : { selection_raw: s, line: null }; }
+    if (mk === 'h2h') return { selection_raw: s.replace(/\s+ML$/, ''), line: null };
+    m = s.match(/^(.*?)\s+([+\-]?\d+(?:\.\d+)?)$/);
+    return m ? { selection_raw: m[1], line: +m[2] } : { selection_raw: s, line: null };
+  }
+  function priceFields(p) {
+    p = p || {};
+    var mk = p.market_key || marketKeyOf(p.market);
+    var parsed = (p.selection_raw != null) ? { selection_raw: p.selection_raw, line: num(p.line) } : parseSelectionLabel(p.selection, mk);
+    return {
+      event_id: p.event_id || null, market_key: mk, selection_raw: parsed.selection_raw,
+      line: num(p.line) != null ? num(p.line) : parsed.line,
+      odds_am: num(p.odds_am) != null ? num(p.odds_am) : parseAmerican(p.odds)
+    };
+  }
+  function gradeKey(p) {
+    var f = priceFields(p);
+    return [f.event_id, f.market_key, f.selection_raw, f.line == null ? '' : f.line].join('|');
+  }
+
+  /* ------------------------------------------------------ the record */
+  /* Aggregates over graded picks. `picks` are the flat rows the grader
+     writes: { verdict, kind, preset, sport_key, sport_label, grade }. A NO
+     QUALIFYING BETS brief counts as discipline, never as a gap. */
+  var ACTIONABLE = { BET: 1, LEAN: 1 };
+  function isCall(pk) { return pk && pk.kind === 'pick' && ACTIONABLE[pk.verdict] === 1; }
+  function tally(rows) {
+    var t = { n: rows.length, graded: 0, with_close: 0, beat: 0, cents_sum: 0, cents_n: 0, clv_sum: 0, clv_n: 0, win: 0, loss: 0, push: 0, pending: 0 };
+    rows.forEach(function (r) {
+      var g = r.grade || {};
+      if (g.clv != null) { t.with_close++; t.clv_sum += g.clv; t.clv_n++; if (g.beat_close) t.beat++; }
+      if (g.cents != null) { t.cents_sum += g.cents; t.cents_n++; }
+      if (g.result === 'win') t.win++; else if (g.result === 'loss') t.loss++; else if (g.result === 'push') t.push++;
+      if (g.status === 'graded') t.graded++; else t.pending++;
+    });
+    t.beat_rate = t.with_close ? t.beat / t.with_close : null;
+    t.avg_cents = t.cents_n ? Math.round(t.cents_sum / t.cents_n * 10) / 10 : null;
+    t.avg_clv = t.clv_n ? round4(t.clv_sum / t.clv_n) : null;
+    delete t.cents_sum; delete t.clv_sum; delete t.cents_n; delete t.clv_n;
+    return t;
+  }
+  function flattenPicks(briefs) {
+    var out = [];
+    (briefs || []).forEach(function (b) {
+      (b.picks || []).forEach(function (pk) {
+        out.push({ brief_id: b.id, preset: b.preset, report_type: b.report_type, sport_key: pk.sport_key || b.sport, sport_label: pk.sport_label || b.sport_label,
+          verdict: pk.verdict, kind: pk.kind, grade: pk.grade, status: pk.status });
+      });
+    });
+    return out;
+  }
+  function recordSummary(briefs, opts) {
+    opts = opts || {};
+    var list = (briefs || []).filter(function (b) { return !opts.preset || opts.preset === 'ALL' || b.preset === opts.preset; });
+    var picks = flattenPicks(list);
+    var calls = picks.filter(isCall);
+    var noBet = list.filter(function (b) { return b.no_bet; }).length;
+    var byPreset = {};
+    list.forEach(function (b) { byPreset[b.preset] = byPreset[b.preset] || { briefs: 0, no_bet: 0, rows: [] }; byPreset[b.preset].briefs++; if (b.no_bet) byPreset[b.preset].no_bet++; });
+    calls.forEach(function (c) { if (byPreset[c.preset]) byPreset[c.preset].rows.push(c); });
+    Object.keys(byPreset).forEach(function (k) { byPreset[k].calls = tally(byPreset[k].rows); delete byPreset[k].rows; });
+    return { briefs: list.length, no_bet_briefs: noBet, calls: tally(calls), research: tally(picks.filter(function (p) { return !isCall(p); })), by_preset: byPreset };
+  }
+  /* How often each verdict beat the close, by sport. The first real
+     feedback on whether the verdict thresholds are set well. */
+  function calibration(briefs) {
+    var picks = flattenPicks(briefs);
+    var cells = {};
+    picks.forEach(function (p) {
+      var v = p.verdict || 'NONE', s = sportGroup(p.sport_key, p.sport_label);
+      var k = v + '|' + s;
+      cells[k] = cells[k] || { verdict: v, sport: s, rows: [] };
+      cells[k].rows.push(p);
+    });
+    var order = { BET: 0, LEAN: 1, WAIT: 2, PASS: 3 };
+    return Object.keys(cells).map(function (k) { var c = cells[k]; var t = tally(c.rows); t.verdict = c.verdict; t.sport = c.sport; return t; })
+      .sort(function (a, b) { var ra = order[a.verdict] != null ? order[a.verdict] : 9, rb = order[b.verdict] != null ? order[b.verdict] : 9; if (ra !== rb) return ra - rb; return a.sport < b.sport ? -1 : a.sport > b.sport ? 1 : 0; });
+  }
+  function sportGroup(key, label) {
+    var k = String(key || '').toLowerCase();
+    if (k.indexOf('americanfootball_nfl') === 0) return 'NFL';
+    if (k.indexOf('americanfootball_ncaaf') === 0) return 'CFB';
+    if (k.indexOf('basketball_nba') === 0) return 'NBA';
+    if (k.indexOf('baseball_mlb') === 0) return 'MLB';
+    if (k.indexOf('icehockey_nhl') === 0) return 'NHL';
+    if (k.indexOf('mma') === 0) return 'MMA';
+    if (k.indexOf('tennis') === 0) return 'Tennis';
+    if (k.indexOf('soccer') === 0) return 'Soccer';
+    return label || (k ? k.split('_')[0].toUpperCase() : 'Other');
+  }
+  function fmtCents(c) { if (c == null) return '—'; return (c > 0 ? '+' : '') + c; }
+  function fmtRate(v) { return v == null ? '—' : Math.round(v * 100) + '%'; }
+  function fmtClv(v) { return v == null ? '—' : (v >= 0 ? '+' : '') + (v * 100).toFixed(1) + '%'; }
+  /* The verdict calibration table. Internal: shown in the app's publisher
+     desk. Below MIN_CAL rows a cell says so instead of pretending. */
+  var MIN_CAL = 20;
+  function calibrationHTML(briefs, opts) {
+    opts = opts || {};
+    var rows = calibration(briefs);
+    if (!rows.length) return '<div class="edrec-empty">No published calls have graded yet. The table fills in as briefs settle against the close.</div>';
+    var h = '<table class="edrec-cal"><thead><tr><th>Verdict</th><th>Sport</th><th>Rows</th><th>With close</th><th>Beat close</th><th>Avg cents</th><th>Avg CLV</th><th>W-L-P</th></tr></thead><tbody>';
+    rows.forEach(function (r) {
+      var thin = r.with_close < (num(opts.min) != null ? num(opts.min) : MIN_CAL);
+      h += '<tr class="' + (thin ? 'thin' : '') + '"><td class="v ' + esc(String(r.verdict).toLowerCase()) + '">' + esc(r.verdict) + '</td><td>' + esc(r.sport) + '</td><td>' + r.n + '</td><td>' + r.with_close + '</td>'
+        + '<td class="' + (r.beat_rate == null ? '' : r.beat_rate >= 0.5 ? 'up' : 'dn') + '">' + fmtRate(r.beat_rate) + '</td>'
+        + '<td class="' + (r.avg_cents == null ? '' : r.avg_cents >= 0 ? 'up' : 'dn') + '">' + fmtCents(r.avg_cents) + '</td>'
+        + '<td class="' + (r.avg_clv == null ? '' : r.avg_clv >= 0 ? 'up' : 'dn') + '">' + fmtClv(r.avg_clv) + '</td>'
+        + '<td>' + r.win + '-' + r.loss + '-' + r.push + (thin ? ' <span class="note">below ' + MIN_CAL + '</span>' : '') + '</td></tr>';
+    });
+    return h + '</tbody></table>';
+  }
+  /* One brief's picks with their grades, for the public record page and
+     the share page. Pending rows say what they are waiting on. */
+  function pickStatusText(pk) {
+    var g = pk.grade || {};
+    if (g.status === 'graded' || g.status === 'awaiting_result' || g.status === 'awaiting_close') return g.text || resultText(g);
+    if (pk.status === 'pending_kickoff') return 'Not kicked off yet.';
+    if (pk.status === 'contested') return 'Sources disagree on the result. Not graded.';
+    if (pk.status === 'no_close_source') return 'Closing line source not deployed yet.';
+    if (pk.status === 'no_odds') return 'Published without a price, so there is nothing to grade against the close.';
+    if (pk.status === 'no_signal_row') return 'Kicked off. No closing line captured for this selection.';
+    return 'Waiting on the close.';
+  }
+  function resultHTML(pk) {
+    var g = pk.grade || {};
+    var cls = g.result === 'win' ? 'win' : g.result === 'loss' ? 'loss' : g.result === 'push' ? 'push' : 'pend';
+    var beat = g.cents != null ? (g.cents > 0 ? 'up' : g.cents < 0 ? 'dn' : '') : (g.beat_close === true ? 'up' : g.beat_close === false ? 'dn' : '');
+    return '<span class="edrec-res ' + cls + ' ' + beat + '">' + esc(pickStatusText(pk)) + '</span>';
+  }
+  function briefResultsHTML(entry) {
+    if (!entry || !entry.picks || !entry.picks.length) return '';
+    var h = '<section class="edb-results"><div class="edb-h edb-sec">How it graded</div><ul class="edb-reslist">';
+    entry.picks.forEach(function (pk) {
+      h += '<li><span class="edb-resv ' + esc(String(pk.verdict || '').toLowerCase()) + '">' + esc(pk.verdict || '') + '</span> <b>' + esc(pk.selection || '') + '</b>' + (pk.odds ? ' <span class="edb-resodds">' + esc(pk.odds) + (pk.book ? ' · ' + esc(pk.book) : '') + '</span>' : '')
+        + (pk.score && pk.score.home_score != null ? ' <span class="edb-resscore">Final ' + esc(pk.score.away || '') + ' ' + pk.score.away_score + ', ' + esc(pk.score.home || '') + ' ' + pk.score.home_score + '</span>' : '')
+        + '<div>' + resultHTML(pk) + '</div></li>';
+    });
+    h += '</ul><p class="edb-resnote">Graded against EdgeDesk’s closing fair line, the same close the public record uses. Prices above are the ones published at the time; nothing was edited after the fact.' + (entry.graded_at ? ' Updated ' + esc(fmtStamp(entry.graded_at)) + '.' : '') + '</p></section>';
+    return h;
+  }
+  function briefResultsText(entry) {
+    if (!entry || !entry.picks || !entry.picks.length) return '';
+    var L = ['', 'HOW IT GRADED'];
+    entry.picks.forEach(function (pk) {
+      L.push((pk.verdict || '') + '  ' + (pk.selection || '') + (pk.odds ? ' (' + pk.odds + (pk.book ? ' · ' + pk.book : '') + ')' : '') + '  —  ' + pickStatusText(pk));
+    });
     return L.join('\n');
   }
 
@@ -1091,7 +1431,13 @@
     explain: explain, publisher: publisher, slate: slate, rankCards: rankCards,
     snapshot: snapshot, refresh: refresh, publicPayload: publicPayload,
     whenLabel: whenLabel, etParts: etParts, primetime: primetime, fmtStamp: fmtStamp,
-    cardHTML: cardHTML, briefHTML: briefHTML, briefCmsHTML: briefCmsHTML, briefText: briefText
+    cardHTML: cardHTML, briefHTML: briefHTML, briefCmsHTML: briefCmsHTML, briefText: briefText,
+    americanToDec: americanToDec, parseAmerican: parseAmerican, probToAmerican: probToAmerican, centsOf: centsOf, centsBetween: centsBetween,
+    normResult: normResult, normTeam: normTeam, sideOf: sideOf, outcomeFromScore: outcomeFromScore, gradePick: gradePick, resultText: resultText, outcomeOf: outcomeOf,
+    marketKeyOf: marketKeyOf, parseSelectionLabel: parseSelectionLabel, priceFields: priceFields, gradeKey: gradeKey,
+    recordSummary: recordSummary, calibration: calibration, sportGroup: sportGroup, isCall: isCall, tally: tally, flattenPicks: flattenPicks,
+    calibrationHTML: calibrationHTML, pickStatusText: pickStatusText, resultHTML: resultHTML, briefResultsHTML: briefResultsHTML, briefResultsText: briefResultsText,
+    fmtCents: fmtCents, fmtRate: fmtRate, fmtClv: fmtClv
   };
 });
 /*__EDPRES_END__*/
