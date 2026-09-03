@@ -1582,6 +1582,22 @@ export function signalRow(c: Candidate, v: Verdict, nowIso: string): any {
     corrob_n: v.corrob_n, corrob_ref: v.corrob_ref, corrob_levels: v.corrob_levels,
 
     // v9 qualification state — written on EVERY row, actionable or not.
+    /* THE CURRENT ACTIONABLE STATE, PERSISTED.
+       `flagged_at` is the FROZEN ENTRY: it records that this selection qualified
+       once, and it is deliberately permanent so the record and CLV cannot be
+       rewritten by later market movement. It is NOT a statement about now. A row
+       flagged on Tuesday whose price has since gone stale, whose books have
+       thinned, or whose edge has decayed below its floor still carries
+       flagged_at forever — correctly.
+
+       Without this column the frontend has no way to ask "is this actionable
+       RIGHT NOW", so it was inferring it from flagged_at and then re-deciding
+       with its own heuristics. Capture knows the answer; it just was not
+       writing it down. `qual_reason === 'ok'` is equivalent by construction —
+       qualifySignal() returns "ok" if and only if actionable is true — and both
+       are written so a reader can assert on either and a drift between them is
+       visible rather than silent. */
+    actionable: v.actionable,
     qual_tier: v.tier,
     qual_reason: v.reason,
     qual_streak: v.confirmations,

@@ -229,17 +229,23 @@ values ('e1|spreads|A|-3.5','americanfootball_nfl','spreads','A',-3.5, now()-int
   const okRows = (out) => (out.match(/\| ok\s*$/gm) || []).length;
   const badRows = (out) => (out.match(/\| CHECK THIS\s*$/gm) || []).length;
 
+  /* Count the report's own rows out of the SQL rather than hardcoding a number
+     that goes stale every time a check is added — which is exactly what happened
+     when signals.actionable arrived. */
+  const REPORT_ROWS = (SQL.match(/union all select \d+/g) || []).length + 1;
+  chk('the report has checks to run', REPORT_ROWS >= 16, REPORT_ROWS);
+
   const first = psql('edt', `-v ON_ERROR_STOP=1 -f ${mig}`);
   chk('the migration runs to completion against a real postgres', /COMMIT/.test(first));
   chk('the report EXECUTES — this is what the reserved word broke', /check_name/.test(first), first.slice(-400));
-  chk('every report row says ok on the first run', okRows(first) === 16 && badRows(first) === 0,
-    { ok: okRows(first), bad: badRows(first), raw: first.slice(-700) });
+  chk('every report row says ok on the first run', okRows(first) === REPORT_ROWS && badRows(first) === 0,
+    { ok: okRows(first), want: REPORT_ROWS, bad: badRows(first), raw: first.slice(-700) });
 
   const second = psql('edt', `-v ON_ERROR_STOP=1 -f ${mig}`);
   chk('running it a second time is clean — the convention says idempotent',
-    okRows(second) === 16 && /COMMIT/.test(second), { ok: okRows(second) });
+    okRows(second) === REPORT_ROWS && /COMMIT/.test(second), { ok: okRows(second) });
   const third = psql('edt', `-v ON_ERROR_STOP=1 -f ${mig}`);
-  chk('and a third time', okRows(third) === 16);
+  chk('and a third time', okRows(third) === REPORT_ROWS, okRows(third));
 
   /* The legacy label: applied once, and never to an unflagged row. */
   const labels = psql('edt', `-tAc "select coalesce(flagged_policy,'unlabelled') as p, count(*) as n from public.signals group by 1 order by 1"`);
