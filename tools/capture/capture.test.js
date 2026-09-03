@@ -588,6 +588,33 @@ function ev(bookmakers, over) {
       cfg0.autoPrefixes.indexOf('americanfootball_ncaaf') >= 0);
   }
 
+  /* ═══ THE COST SHAPE OF THE BOOKMAKER LIST ══════════════════════════════ */
+  {
+    /* The odds endpoint bills at markets x regions, and the bookmakers parameter
+       substitutes for the regions term in groups of ten ROUNDED UP. Ten keys is
+       one region-equivalent; eleven is two. So this list reaches Pinnacle for
+       what the broken us-only configuration cost, and an eleventh key silently
+       doubles the bill — which is exactly the kind of thing that gets added by
+       someone who does not know the rounding rule. */
+    chk('the suggested bookmaker list is exactly ten keys, which is one region-equivalent',
+      M.SUGGESTED_BOOKMAKERS.length === 10, M.SUGGESTED_BOOKMAKERS.length);
+    chk('it contains the reference book, which is the entire reason it exists',
+      M.SUGGESTED_BOOKMAKERS.indexOf('pinnacle') >= 0);
+    chk('every key is a distinct operator family, so n_books_eff is not inflated',
+      new Set(M.SUGGESTED_BOOKMAKERS.map((b) => M.bookFamily(b))).size === 10,
+      M.SUGGESTED_BOOKMAKERS.map((b) => M.bookFamily(b)));
+    const seenUrls = [];
+    const realFetch = globalThis.fetch;
+    globalThis.fetch = async (u) => { seenUrls.push(String(u)); return res(200, [], {}); };
+    await M.fetchOdds('k', 'americanfootball_nfl', cfgWith({ bookmakers: ['pinnacle', 'draftkings'] }));
+    await M.fetchOdds('k', 'americanfootball_nfl', cfgWith({ bookmakers: [] }));
+    globalThis.fetch = realFetch;
+    chk('a bookmaker list REPLACES regions rather than filtering within them',
+      /bookmakers=/.test(seenUrls[0]) && !/regions=/.test(seenUrls[0]), seenUrls[0]);
+    chk('and with no list it falls back to regions',
+      /regions=us%2Ceu/.test(seenUrls[1]) && !/bookmakers=/.test(seenUrls[1]), seenUrls[1]);
+  }
+
   /* ═══ THE FUNNEL IS MONOTONIC ═══════════════════════════════════════════ */
   {
     chk('every rejection reason is mapped to a funnel stage',

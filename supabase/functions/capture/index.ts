@@ -396,6 +396,10 @@ export interface Config {
   /** Minimum minutes to kickoff. A signal inside this window is not research,
       it is a race with the clock. */
   minMinutesToStart: number;
+  /* Only spend an odds request on a sport with an event starting inside this
+     many hours. 0 disables the check. The event index is a FREE endpoint, so
+     this trades a free call for a billed one. */
+  nearHours: number;
   /** Horizon beyond which a game is priced and stored but never made actionable. */
   maxDaysToStart: number;
   /** Treat a quote whose age cannot be determined as fresh. Defaults FALSE: an
@@ -419,18 +423,33 @@ export interface Config {
   familyOverrides: Record<string, string>;
 }
 
-/* The default bookmaker whitelist. See CAPTURE ECONOMICS in the README: an
-   explicit list can reach Pinnacle (an `eu` book) together with the US retail
-   books in one request, where `regions=us` cannot reach Pinnacle at all and
-   `regions=us,eu` costs double. It is EMPTY BY DEFAULT because the exact billing
-   of the `bookmakers` parameter must be measured on the account that will pay for
-   it, not assumed from a docs page — `?probe=1` measures it and prints the answer.
-   Until then the corrected default is `regions=us,eu`, which is the configuration
-   that makes Tier A possible at all. */
+/* EXACTLY TEN, AND THE COUNT IS THE POINT.
+   `/v4/sports/{sport}/odds` bills at markets x regions. The `bookmakers`
+   parameter substitutes for the regions term and is charged in groups of ten,
+   ROUNDED UP: one to ten keys is one region-equivalent, eleven is two.
+
+   So this list reaches Pinnacle — an `eu` book, and the whole reason v8's
+   sharp anchor was structurally unreachable — for the SAME price as the broken
+   `regions=us` configuration it replaces, and for HALF the price of the
+   corrected `regions=us,eu`. An eleventh key would double the bill. If you add
+   one, take one out.
+
+   Every key is chosen to be a distinct operator family, because a family is
+   what `n_books_eff` counts and two brands on one trading desk are one opinion
+   however many rows the feed sends. `bookmakers` is a cross-region selector, so
+   espnbet and hardrockbet (`us2`) are reachable without naming their region.
+
+   Still empty by default: billing must be MEASURED on the account that pays for
+   it, not assumed from a docs page. `?probe=1` measures it and prints the
+   answer. Until it has, the corrected default is `regions=us,eu` — twice the
+   cost, but the only other configuration in which Tier A exists at all. */
 export const SUGGESTED_BOOKMAKERS = [
-  "pinnacle",
-  "draftkings", "fanduel", "betmgm", "caesars", "betrivers",
-  "bovada", "betonlineag", "lowvig", "espnbet", "hardrockbet", "fanatics",
+  "pinnacle",        // eu  — the reference book. The entire point of the list.
+  "betonlineag",     // us  — low-margin, useful as a second reference candidate
+  "draftkings", "fanduel", "betmgm",
+  "williamhill_us",  // us  — Caesars' current key; `caesars` is the older one
+  "betrivers", "bovada",
+  "espnbet", "hardrockbet",   // us2, reachable because bookmakers crosses regions
 ];
 
 function parseJsonEnv<T>(raw: string | undefined, fallback: T): T {
@@ -496,6 +515,7 @@ export function defaultConfig(env: EnvGet): Config {
     maxMadZ: num("CAPTURE_MAX_MAD_Z", 6),
     maxBestVsMedianDec: num("CAPTURE_MAX_BEST_RATIO", 2.0),
     minMinutesToStart: num("CAPTURE_MIN_MINUTES_TO_START", 10),
+    nearHours: num("CAPTURE_NEAR_HOURS", 0),
     maxDaysToStart: num("CAPTURE_MAX_DAYS_TO_START", 14),
     treatMissingTimestampAsFresh: bool("CAPTURE_MISSING_TS_FRESH", false),
     minQualityScore: num("CAPTURE_MIN_QUALITY", 0),
@@ -1479,6 +1499,30 @@ export async function fetchOdds(key: string, sport: string, cfg: Config): Promis
   }
 }
 
+/**
+ * The event index for one sport, WITHOUT odds.
+ *
+ * `/v4/sports/{sport}/events` does not count against the quota. That makes it a
+ * free way to ask "does this sport have anything starting soon" before spending
+ * a billed odds request on it — which is the only honest cadence lever
+ * available, because the odds endpoint returns the whole board per call and a
+ * far-out game therefore costs nothing extra. What costs is calling often, for
+ * sports with nothing to price.
+ *
+ * A failure here returns ok:false and the CALLER CAPTURES THE SPORT ANYWAY.
+ * Skipping a sport because a free optimisation call failed would turn a
+ * cost-saving into an outage.
+ */
+export async function fetchEvents(key: string, sport: string): Promise<{ commences: number[]; ok: boolean }> {
+  try {
+    const r = await fetch(`${ODDS_BASE}/sports/${encodeURIComponent(sport)}/events/?apiKey=${encodeURIComponent(key)}`);
+    if (!r.ok) return { commences: [], ok: false };
+    const list = await r.json();
+    if (!Array.isArray(list)) return { commences: [], ok: false };
+    return { commences: list.map((e: any) => Date.parse(e?.commence_time)).filter((t: number) => Number.isFinite(t)), ok: true };
+  } catch { return { commences: [], ok: false }; }
+}
+
 export async function fetchActiveSports(key: string): Promise<{ keys: string[]; ok: boolean; detail: string }> {
   try {
     const r = await fetch(`${ODDS_BASE}/sports/?apiKey=${encodeURIComponent(key)}`);
@@ -1745,10 +1789,16 @@ export async function handle(req: Request): Promise<Response> {
         books: booksOf(byBooks), reference_present: booksOf(byBooks).some((b) => cfg.referenceBooks.includes(b)),
         cost_charged: byBooks.lastCost, quota_remaining: byBooks.quotaRemaining, timestamps: stampsOf(byBooks),
       },
-      how_to_read: "cost_charged is the provider's x-requests-last header for that single call. If the bookmakers "
-        + "strategy returns the reference book at a lower or equal cost, set CAPTURE_BOOKMAKERS and leave "
-        + "CAPTURE_REGIONS unused. If `timestamps.none` is not 0, the feed is not sending update stamps for some "
-        + "quotes and those quotes will never count as fresh — that is deliberate, but you should know it.",
+      expected_billing: `markets x regions. The bookmakers parameter substitutes for the regions term and is `
+        + `charged in groups of ten, rounded up — so ${SUGGESTED_BOOKMAKERS.length} keys should cost the same as `
+        + `ONE region, and an eleventh would double it. cost_charged below is the provider's own x-requests-last `
+        + `header and is the only authority; if it disagrees with that formula, believe the header.`,
+      how_to_read: "If by_bookmakers.reference_present is true and its cost_charged is at or below by_regions, set "
+        + "CAPTURE_BOOKMAKERS and leave CAPTURE_REGIONS unused: that reaches Pinnacle for what the broken us-only "
+        + "configuration used to cost. If `timestamps.none` is not 0, the feed is not sending update stamps for "
+        + "some quotes and those quotes will never count as fresh — that is deliberate, but you should know it. "
+        + "`market_level` counting 0 while `book_level_only` is large means this account's responses carry only "
+        + "the bookmaker timestamp, which is coarser but still works.",
     });
   }
 
@@ -1776,6 +1826,7 @@ export async function handle(req: Request): Promise<Response> {
   const errored: { sport: string; status: number; detail: string }[] = [];
   const eventErrorSamples: any[] = [];
   const skippedForTime: string[] = [];
+  const skippedNoNearEvents: string[] = [];
   const writeErrors: string[] = [];
   const schemaGaps = new Set<string>();
   const rejected: Record<string, number> = {};
@@ -1797,6 +1848,24 @@ export async function handle(req: Request): Promise<Response> {
 
   for (const sport of sportList) {
     if (outOfTime()) { skippedForTime.push(sport); continue; }
+
+    /* FREE CALL BEFORE A BILLED ONE. Only when explicitly configured — a sport
+       with no near event still has a board worth storing for research, so this
+       is a cadence tier the operator opts into, not a default. */
+    if (cfg.nearHours > 0) {
+      const idx = await fetchEvents(ODDS_KEY, sport);
+      if (idx.ok) {
+        const cutoff = nowMs + cfg.nearHours * 3600000;
+        if (!idx.commences.some((t) => t >= nowMs - 3600000 && t <= cutoff)) {
+          skippedNoNearEvents.push(sport);
+          perSport[sport] = 0;
+          continue;
+        }
+      }
+      /* idx.ok === false: the free call failed, so capture the sport anyway.
+         Skipping because an optimisation call failed would turn a cost saving
+         into an outage. */
+    }
 
     const res = await fetchOdds(ODDS_KEY, sport, cfg);
     if (res.quotaRemaining) quotaRemaining = res.quotaRemaining;
@@ -2145,6 +2214,13 @@ export async function handle(req: Request): Promise<Response> {
     // ── clock and quota ────────────────────────────────────────────────────
     elapsed_ms: elapsed(), budget_ms: cfg.budgetMs,
     ...(Object.keys(eventsSkippedForTime).length ? { events_skipped_for_time: eventsSkippedForTime } : {}),
+    ...(skippedNoNearEvents.length ? {
+      sports_skipped_no_near_events: skippedNoNearEvents,
+      near_hours: cfg.nearHours,
+      cadence_note: `CAPTURE_NEAR_HOURS=${cfg.nearHours}: these sports had no event starting inside the window, `
+        + `so their billed odds request was skipped. The check itself used the free event index. Their boards `
+        + `are NOT being stored while this is set.`,
+    } : {}),
     ...(skippedForTime.length ? {
       sports_skipped_for_time: skippedForTime,
       time_warning: `Ran out of clock after ${elapsed()}ms. ${skippedForTime.length} sport(s) were not captured this `

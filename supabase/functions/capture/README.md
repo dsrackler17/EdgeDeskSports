@@ -79,6 +79,7 @@ rule.
 | `CAPTURE_MISSING_TS_FRESH` | `false` | A quote with no provider timestamp counts as stale. Setting this `true` is a documented downgrade — unknown age is not young age. |
 | `CAPTURE_MIN_MINUTES_TO_START` | `10` | Inside this window a signal is a race with the clock, not research. |
 | `CAPTURE_MAX_DAYS_TO_START` | `14` | Beyond this a game is priced and stored but never made actionable. |
+| `CAPTURE_NEAR_HOURS` | `0` (off) | Skip the billed odds call for a sport with no event starting inside this many hours, decided by the **free** event index. Off by default because a far-out board is still worth storing for research. |
 | `CAPTURE_MAX_ABS_PROB_DEV` | `0.08` | Primary outlier rule: probability points the best price may sit below the pack median. |
 | `CAPTURE_MIN_PROB_RATIO` | `0.60` | Catches a doubled longshot, where the absolute gap stays small. |
 | `CAPTURE_MAX_MAD_Z` | `6` | **Widens** tolerance on a dispersed pack. It never narrows it — see the comment in `qualifySignal`; a z-test that narrows rejects every edge worth having. |
@@ -96,23 +97,57 @@ Unchanged: `CAPTURE_MARKETS`, `CAPTURE_SPORTS`, `CAPTURE_TICKS`, `CAPTURE_FLAG_M
 
 ## API cost
 
-Cost is charged per request as roughly *markets × regions*; the sports list and
-the number of events are free. The levers, in order of size:
+`/v4/sports/{sport}/odds` bills at **markets × regions**. The `bookmakers`
+parameter substitutes for the regions term and is charged **in groups of ten,
+rounded up** — one to ten keys is one region-equivalent, eleven is two.
 
-1. **`us` → `us,eu` doubles the per-request cost.** It is not optional: without a
-   region containing Pinnacle, Tier A is unreachable by construction and every
-   "sharp" claim is a consensus. `?probe=1` measures whether `CAPTURE_BOOKMAKERS`
-   buys the same coverage for one region's worth — if it does, the increase is
-   fully repaid.
-2. **The sports list.** `CAPTURE_SPORTS` is the biggest dial. `CAPTURE_AUTO_PREFIXES`
-   now actually honours being turned off.
-3. **Cadence.** Capture reads the whole board per sport per call, so a far-out game
-   costs nothing extra. What costs is calling often. A defensible split, within
-   the existing cron: one frequent job over a short `CAPTURE_SPORTS` list for
-   sports in season, one slower job for the rest.
+That rounding rule is the whole cost story here:
 
-`quota_spent_this_run`, `quota_used` and `quota_remaining` are all in every
-response, so the bill is observable rather than inferred.
+| configuration | region-equivalents | reaches Pinnacle | relative cost |
+|---|---|---|---|
+| `regions=us` (the v8 default) | 1 | **no** | 1× |
+| `regions=us,eu` (the v9 default) | 2 | yes | 2× |
+| `CAPTURE_BOOKMAKERS` = the 10 suggested keys | 1 | yes | **1×** |
+
+**So the correct configuration is also the cheap one.** Setting
+`CAPTURE_BOOKMAKERS` to `SUGGESTED_BOOKMAKERS` restores the sharp anchor for
+exactly what the broken us-only setup used to cost. The list is ten keys on
+purpose; an eleventh doubles the bill. If you add one, take one out.
+
+It is not the default only because billing must be **measured** on the account
+that pays for it. `?probe=1` runs both strategies against one sport and prints
+the provider's own `x-requests-last` for each — that header is the only
+authority, because free-on-empty responses and the grouping rule can both make
+the actual charge differ from the formula.
+
+The other levers, in order of size:
+
+1. **The sports list.** `CAPTURE_SPORTS` is the biggest dial, and
+   `CAPTURE_AUTO_PREFIXES` now actually honours being turned off — it used to
+   force-append NFL whatever you set.
+2. **Cadence.** The odds endpoint returns the whole board per call, so a far-out
+   game costs nothing extra; what costs is calling often for sports with nothing
+   to price. `CAPTURE_NEAR_HOURS` uses the **free** `/events` index to skip the
+   billed odds call for any sport with no event starting inside the window. A
+   defensible split within the existing cron: one frequent job with
+   `CAPTURE_NEAR_HOURS=12`, one slower job with it unset that stores the whole
+   board for research. If the free call fails, the sport is captured anyway —
+   turning a cost saving into an outage is not a trade worth making.
+3. **Empty responses are free** on the odds endpoint, and `/v4/sports` and
+   `/v4/sports/{sport}/events` are free outright.
+
+`quota_spent_this_run` (summed from `x-requests-last`), `quota_used` and
+`quota_remaining` are in every response, so the bill is observed, not inferred.
+
+### Historical odds, for the backtest
+
+`/v4/historical/sports/{sport}/odds` covers **2020-06-06 onward** at 10-minute
+snapshots (5-minute from September 2022), on a paid plan, at **10 × markets ×
+regions**. This is the route to a real out-of-sample dataset that does not
+require waiting for signals to accrue — expensive, but bounded and honest. The
+`date` parameter resolves to the closest snapshot at or *earlier* than the value
+given, which is the right direction for a backtest: it can never hand you a
+price from after your decision time.
 
 ---
 
