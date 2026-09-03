@@ -177,7 +177,8 @@ function workbook() {
 }
 
 /* Excel deflates every entry; app.html stores them. Both have to open. */
-/* zlib.crc32 only exists from Node 20.15, and CI pins 20. */
+/* zlib.crc32 landed in Node 20.15; the table below keeps this suite
+   independent of whichever Node the runner ships. */
 const CRCT = (function () {
   const t = new Int32Array(256);
   for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1); t[n] = c; }
