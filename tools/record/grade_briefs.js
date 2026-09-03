@@ -60,6 +60,11 @@ const BRIEF_COLS = 'id,share_slug,report_key,report_type,preset,version_no,paren
    it happens to carry the columns. Either missing is reported, not guessed. */
 const CLOSE_VIEWS = ['public_brief_closes', 'public_record'];
 const CLOSE_COLS = 'event_id,sport_key,market,selection,point,home_team,away_team,commence_time,best_dec,best_book,closing_sharp_fair,closed_at,result,graded_at';
+/* The same book's last pre-kickoff quote (supabase/book_quote_ticks.sql). A
+   quote seen more than this long before kickoff did not observe the close. */
+const BOOK_CLOSE_VIEW = 'public_brief_book_closes';
+const BOOK_CLOSE_COLS = 'sig_key,event_id,market,selection,point,commence_time,book_key,book_title,dec,fair,is_sharp,seen_at,lead_minutes';
+const BOOK_CLOSE_MAX_LEAD_MIN = 6 * 60;
 /* A pick past kickoff by this much with no signal row is reported as such
    rather than left looking merely late. */
 const NO_ROW_AFTER_MS = 6 * 3600 * 1000;
@@ -126,10 +131,31 @@ function matchClose(pick, closeRows) {
   return hits.slice().sort((a, b) => (b.graded_at ? 1 : 0) - (a.graded_at ? 1 : 0) || String(b.closed_at || '').localeCompare(String(a.closed_at || '')))[0];
 }
 
+/* ---- pure: the same book's close for one pick -------------------------- */
+function sigKeyOf(pick) {
+  const line = pick.line == null ? '' : pick.line;
+  return `${pick.event_id || ''}|${pick.market_key || ''}|${pick.selection_raw || ''}|${line}`;
+}
+function normBook(s) { return String(s == null ? '' : s).toLowerCase().replace(/[^a-z0-9]/g, ''); }
+function matchBookClose(pick, bookRows) {
+  if (!pick || !pick.book || !bookRows || !bookRows.length) return null;
+  const key = sigKeyOf(pick), want = normBook(pick.book);
+  const hits = bookRows.filter(r => r && r.sig_key === key && (normBook(r.book_title) === want || normBook(r.book_key) === want));
+  if (!hits.length) return null;
+  const r = hits.slice().sort((a, b) => String(b.seen_at || '').localeCompare(String(a.seen_at || '')))[0];
+  const lead = P.num(r.lead_minutes);
+  return { book: r.book_title || r.book_key || pick.book, dec: P.num(r.dec), am: P.decToAmerican(r.dec), at: r.seen_at || null, lead_min: lead,
+    qualified: lead != null && lead >= 0 && lead <= BOOK_CLOSE_MAX_LEAD_MIN };
+}
+
 /* ---- pure: grade one pick ---------------------------------------------- */
 function gradeOne(pick, closeRow, final, nowMs, opts) {
   opts = opts || {};
   const out = { status: 'pending', grade: null, score: null, note: null };
+  const bc = matchBookClose(pick, opts.bookRows);
+  /* A stale last quote is reported, not called a close. */
+  const bookClose = bc && bc.qualified && bc.am != null ? { close_book_am: bc.am, close_book: bc.book, close_book_at: bc.at, close_book_lead_min: bc.lead_min } : {};
+  if (bc && !bc.qualified) out.note = `last ${bc.book} quote was ${bc.lead_min} min before kickoff; not used as the close`;
   if (pick.verdict === 'DATA CHECK FAILED') { out.status = 'not_gradeable'; out.note = 'Published as a failed data check, not a call.'; return out; }
   const kickoff = P.num(Date.parse(pick.commence || (closeRow && closeRow.commence_time) || ''));
   if (kickoff != null && kickoff > nowMs) { out.status = 'pending_kickoff'; return out; }
@@ -158,16 +184,16 @@ function gradeOne(pick, closeRow, final, nowMs, opts) {
     else out.status = 'pending';
     if (result) {
       /* A final without a close still records the outcome; CLV stays null. */
-      out.grade = P.gradePick({ odds_am: pick.odds_am, result, result_source: resultSource });
+      out.grade = P.gradePick(Object.assign({ odds_am: pick.odds_am, result, result_source: resultSource }, bookClose));
       out.status = 'awaiting_close';
     }
     return out;
   }
-  const g = P.gradePick({
+  const g = P.gradePick(Object.assign({
     odds_am: pick.odds_am, close_fair_prob: closeRow.closing_sharp_fair,
     close_best_am: closeRow.best_dec != null ? P.decToAmerican(closeRow.best_dec) : null, close_best_book: closeRow.best_book || null,
     closed_at: closeRow.closed_at || null, result, result_source: resultSource,
-  });
+  }, bookClose));
   out.grade = g;
   out.status = g.status === 'pending' ? 'awaiting_close' : g.status;
   return out;
@@ -192,7 +218,7 @@ function buildRecord(briefRows, closeRows, finalsByEvent, prev, nowMs, opts) {
       if (was && was.status === 'graded') return was;
       const close = matchClose(pick, closeRows);
       const final = finalsByEvent ? finalsByEvent[pick.event_id] : null;
-      const r = gradeOne(pick, close, final, nowMs, opts);
+      const r = gradeOne(pick, close, final, nowMs, Object.assign({}, opts, { bookRows: opts.bookRows }));
       const pk = Object.assign({}, pick, { status: r.status, grade: r.grade, score: r.score, note: r.note });
       if (r.status === 'graded') pk.graded_at = nowIso;
       else if (was && was.graded_at) pk.graded_at = was.graded_at;
@@ -214,6 +240,7 @@ function buildRecord(briefRows, closeRows, finalsByEvent, prev, nowMs, opts) {
     source: {
       briefs: 'publisher_briefs (public rows only)',
       close: opts.closeSourceName || null,
+      book_close: opts.bookCloseSource || null,
       finals: opts.finalsSources || [],
       grader: 'tools/record/grade_briefs.js',
     },
@@ -275,6 +302,23 @@ async function fetchCloses(eventIds, notes) {
     }
   }
   return { rows: [], source: null };
+}
+async function fetchBookCloses(picks, notes) {
+  const keys = Array.from(new Set(picks.map(sigKeyOf).filter(k => k && !/^\|/.test(k))));
+  if (!keys.length) return { rows: [], source: null };
+  const rows = [];
+  try {
+    for (let i = 0; i < keys.length; i += 30) {
+      const chunk = keys.slice(i, i + 30).map(k => encodeURIComponent('"' + k.replace(/"/g, '') + '"')).join(',');
+      rows.push(...await sbGetAll(`${BOOK_CLOSE_VIEW}?select=${BOOK_CLOSE_COLS}&sig_key=in.(${chunk})`));
+    }
+    notes.push({ source: BOOK_CLOSE_VIEW, rows: rows.length });
+    return { rows, source: BOOK_CLOSE_VIEW };
+  } catch (e) {
+    notes.push({ source: BOOK_CLOSE_VIEW, error: String(e.message).slice(0, 160) });
+    if (!e.missing) throw e;
+    return { rows: [], source: null };
+  }
 }
 function feedKind(sportKey) {
   const k = String(sportKey || '');
@@ -359,8 +403,10 @@ async function main() {
   const closes = await fetchCloses(due.map(pk => pk.event_id), notes);
   const needFinal = due.filter(pk => { const c = matchClose(pk, closes.rows); return !(c && P.normResult(c.result)); });
   const finals = await fetchFinals(needFinal, notes);
+  const bookCloses = await fetchBookCloses(due, notes);
   const rec = buildRecord(briefRows, closes.rows, finals.byEvent, prev, nowMs, {
     closeSource: closes.source ? 'ok' : 'unavailable', closeSourceName: closes.source,
+    bookRows: bookCloses.rows, bookCloseSource: bookCloses.source,
     finalsSources: finals.sources, notes: notes.map(n => JSON.stringify(n)),
   });
   const report = { briefs: rec.briefs.length, picks: allPicks.length, graded: rec.summary.calls.graded + rec.summary.research.graded,
@@ -374,7 +420,7 @@ async function main() {
   return 0;
 }
 
-module.exports = { picksFromBrief, briefShell, matchClose, gradeOne, buildRecord, stable, feedKind, seasonOf, parseArgs, VERSION, CLOSE_VIEWS, CLOSE_COLS };
+module.exports = { picksFromBrief, briefShell, matchClose, matchBookClose, sigKeyOf, gradeOne, buildRecord, stable, feedKind, seasonOf, parseArgs, VERSION, CLOSE_VIEWS, CLOSE_COLS, BOOK_CLOSE_VIEW, BOOK_CLOSE_MAX_LEAD_MIN };
 
 if (require.main === module) {
   main().then(code => process.exit(code)).catch(e => { console.error(`[grade] ${e.message}`); process.exit(1); });

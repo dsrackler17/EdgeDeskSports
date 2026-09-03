@@ -19004,6 +19004,30 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
 .edrec-empty{border:1px dashed var(--border);border-radius:9px;padding:14px;color:var(--faint);font-size:12.5px;line-height:1.6}
 .edrec-wrap{overflow-x:auto}
 .dcard-flags{display:flex;flex-wrap:wrap;gap:6px;padding:0 16px 10px}
+.dcard-flag.ok{color:var(--pos);border-color:rgba(47,180,124,.4);background:rgba(47,180,124,.08)}
+.dcard-avail{margin:0;padding-left:18px;font-size:12.5px;line-height:1.5}
+.dcard-avail .pos{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--dim)}
+.dcard-avail .st{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.08em;text-transform:uppercase;border:1px solid var(--border);border-radius:5px;padding:0 5px}
+.dcard-avail .st.out{color:var(--neg);border-color:rgba(226,96,68,.45)}.dcard-avail .st.doubtful{color:var(--warn);border-color:rgba(217,154,43,.45)}.dcard-avail .st.questionable{color:var(--warn);border-color:rgba(217,154,43,.3)}
+.dcard-avail .tm{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--faint)}
+.pic-inj{font-family:'JetBrains Mono',monospace;font-size:10.5px;margin-top:3px}
+.dcard-availchip{margin:0 12px 8px;font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--dim);border-left:2px solid var(--border);padding-left:7px;line-height:1.4}
+.dcard-availchip.warn{color:var(--warn);border-left-color:rgba(217,154,43,.5)}
+.dcard-avail .imp{font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:var(--neg);border:1px solid rgba(226,96,68,.4);border-radius:5px;padding:0 4px}
+.dcard-avail .tl,.dcard-avail .src{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--faint);margin-top:1px}
+.dcard-avail .src a{color:var(--accent)}
+.dcard-avail-none,.dcard-avail-cov{font-size:12.5px;color:var(--dim);line-height:1.5;margin:4px 0 0}
+.dcard-avail-cov{font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--faint)}
+.pic-av-side{border:1px solid var(--border);border-radius:11px;padding:10px 11px;margin-bottom:8px;background:var(--surface2)}
+.pic-av-team{font-size:14px;font-weight:800;letter-spacing:-.01em}
+.pic-av-lead{font-size:13px;font-weight:600;margin-top:3px;line-height:1.4}
+.pic-av-p{border-top:1px dashed rgba(38,44,54,.7);margin-top:7px;padding-top:7px}
+.pic-av-mean{font-size:12px;color:var(--dim);line-height:1.45;margin-top:3px}
+.pic-av-tl{font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--faint);margin-top:2px}
+.pic-tag.out{color:var(--neg);border-color:rgba(226,96,68,.45)}
+.pic-tag.doubtful,.pic-tag.questionable,.pic-tag.game_time_decision,.pic-tag.day_to_day{color:var(--warn);border-color:rgba(217,154,43,.45)}
+.pic-tag.available,.pic-tag.expected,.pic-tag.probable{color:var(--pos);border-color:rgba(47,180,124,.4)}
+.pic-inj.out{color:var(--neg)}.pic-inj.doubtful,.pic-inj.questionable{color:var(--warn)}.pic-inj.practice{color:var(--dim)}
 .dcard-flag{font-size:11px;font-weight:600;border-radius:7px;padding:3px 8px;border:1px solid;line-height:1.35}
 .dcard-flag.warn{color:var(--warn);border-color:rgba(217,154,43,.45);background:rgba(217,154,43,.1)}
 .dcard-flag.bad{color:var(--neg);border-color:rgba(226,96,68,.45);background:rgba(226,96,68,.1)}
@@ -19504,6 +19528,135 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
     return uniq;
   }
 
+  /* ----------------------------------------------------------- availability */
+  /* WHO IS PLAYING, and how well EdgeDesk actually knows it.
+
+     Two leagues feed this through ONE shape. The NFL files an official injury
+     report and EdgeDesk reads it. College football has no universal report, so
+     EdgeDesk builds its own availability layer out of public evidence and
+     carries the evidence with it: the source, its confidence, how fresh it is,
+     and how much of the field it covers.
+
+     The shape (built by the app, never by this file):
+       { status:'ON_FILE'|'NOT_PUBLISHED', source, week, coverage?,
+         teams:{ away:{ name, code, filed, dataQuality?, sources_checked?,
+                        sources_failed?, official_report_found?, lastUpdated?,
+                        players:[{ name, position, status, injury, practice,
+                                   confidence?, impact?, source_name?,
+                                   source_url?, verified?, contested?,
+                                   freshness?, timeline?, observations? }] },
+                 home:{ ... } } }
+
+     THE DISTINCTION THIS FILE PROTECTS: "nobody is listed on an official
+     report", "EdgeDesk has partial coverage" and "EdgeDesk has no verified
+     data" are three different sentences. They are never collapsed, and none of
+     them is ever written as "no injuries". */
+  var STATUS_RANK = { out: 4, doubtful: 3, game_time_decision: 3, questionable: 2, day_to_day: 2, limited: 1 };
+  var STATUS_WORD = { out: 'out', doubtful: 'doubtful', questionable: 'questionable', game_time_decision: 'a game-time decision',
+    day_to_day: 'day to day', limited: 'limited', probable: 'probable', expected: 'expected to play', available: 'available' };
+  function normTeamName(s) { return normTeam(s); }
+  function statusKey(s) { return String(s == null ? '' : s).toLowerCase().replace(/[^a-z]+/g, '_'); }
+  function statusWord(s) { var k = statusKey(s); return STATUS_RANK[k] ? k : null; }
+  function statusLabel(s) { var k = statusKey(s); return STATUS_WORD[k] || (k ? k.replace(/_/g, ' ') : null); }
+  var QUALITY_COPY = {
+    STRONG: 'Strong', PARTIAL: 'Partial', LIMITED: 'Limited', NONE: 'None'
+  };
+  function sideCoverage(tm) {
+    if (!tm) return null;
+    var q = tm.dataQuality || null;
+    if (!q) return null;
+    return { quality: q, label: QUALITY_COPY[q] || q, sources_checked: num(tm.sources_checked), sources_failed: num(tm.sources_failed),
+      official: !!tm.official_report_found, last_updated: tm.lastUpdated || null };
+  }
+  /* The one sentence that says how much EdgeDesk knows, for the whole game. */
+  function coverageText(av, sides) {
+    if (!av) return null;
+    if (av.status === 'NOT_PUBLISHED') return 'No verified availability information found' + (av.reason ? ': ' + av.reason : '') + '.';
+    var qs = sides.map(function (s) { return s && s.coverage ? s.coverage.quality : null; }).filter(Boolean);
+    if (!qs.length) return null;
+    var rank = { STRONG: 4, PARTIAL: 3, LIMITED: 2, NONE: 1 };
+    var worst = qs.reduce(function (m, q) { return rank[q] < rank[m] ? q : m; }, qs[0]);
+    var official = sides.filter(function (s) { return s && s.coverage && s.coverage.official; }).length;
+    var checked = sides.reduce(function (n, s) { return n + ((s && s.coverage && s.coverage.sources_checked) || 0); }, 0);
+    if (worst === 'NONE') return 'No verified availability information found for this matchup.';
+    if (worst === 'LIMITED') return 'Availability coverage: Limited. EdgeDesk checked ' + checked + ' source' + (checked === 1 ? '' : 's') + ' and found no verified availability information for one side. That is not the same as nobody being hurt.';
+    if (worst === 'PARTIAL') return 'Availability coverage: Partial. EdgeDesk found verified information for some players, but college football does not have a universal injury-reporting system.';
+    return 'Availability coverage: Strong' + (official ? ' · ' + official + ' official source' + (official === 1 ? '' : 's') : '') + '.';
+  }
+  function availabilitySummary(av) {
+    if (!av || av.status !== 'ON_FILE' || !av.teams) return null;
+    var sides = [], listed = [], highImpact = [], worst = 0, anyOfficial = false;
+    ['away', 'home'].forEach(function (k) {
+      var tm = av.teams[k]; if (!tm) return;
+      var cov = sideCoverage(tm);
+      if (cov && cov.official) anyOfficial = true;
+      var ps = (tm.players || []).filter(function (p) { return statusWord(p.status); });
+      var counts = { out: 0, doubtful: 0, questionable: 0, other: 0 };
+      ps.forEach(function (p) {
+        var w = statusWord(p.status);
+        if (counts[w] != null) counts[w]++; else counts.other++;
+        worst = Math.max(worst, STATUS_RANK[w] || 0);
+        var row = { side: k, team: tm.name || tm.code, name: p.name, position: p.position || null, status: w,
+          label: statusLabel(p.status), injury: p.injury || null, practice: p.practice || null,
+          confidence: p.confidence || null, impact: p.impact || null, source_name: p.source_name || null,
+          source_url: p.source_url || null, verified: p.verified == null ? null : !!p.verified,
+          contested: !!p.contested, freshness: p.freshness || null,
+          timeline: (p.timeline || []).filter(function (x) { return x && x.day && x.practice_status; }),
+          observations: p.observations || [] };
+        listed.push(row);
+        if (String(p.impact || '').toUpperCase() === 'HIGH') highImpact.push(row);
+      });
+      var bits = [];
+      if (counts.out) bits.push(counts.out + ' out');
+      if (counts.doubtful) bits.push(counts.doubtful + ' doubtful');
+      if (counts.questionable) bits.push(counts.questionable + ' questionable');
+      if (counts.other) bits.push(counts.other + ' listed');
+      var label = (tm.code || tm.name || '');
+      /* Three different sentences, kept apart on purpose. */
+      var say;
+      if (tm.filed === false) say = 'no report filed yet';
+      else if (bits.length) say = bits.join(', ');
+      else if (cov && cov.official) say = 'nobody listed on the official report';
+      else if (cov && (cov.quality === 'LIMITED' || cov.quality === 'NONE')) say = 'no verified information found';
+      else say = 'nobody listed';
+      sides.push({ key: k, label: label, text: label + ': ' + say, coverage: cov, counts: counts, filed: tm.filed !== false, name: tm.name || tm.code || '' });
+    });
+    listed.sort(function (a, b) {
+      var ia = a.impact === 'HIGH' ? 2 : a.impact === 'MEDIUM' ? 1 : 0, ib = b.impact === 'HIGH' ? 2 : b.impact === 'MEDIUM' ? 1 : 0;
+      if (ia !== ib) return ib - ia;
+      return (STATUS_RANK[b.status] || 0) - (STATUS_RANK[a.status] || 0) || String(a.name).localeCompare(String(b.name));
+    });
+    var cov = coverageText(av, sides);
+    return { text: 'Injury report on file (' + (av.source || 'league report') + (av.week ? ', week ' + av.week : '') + '): ' + sides.map(function (s) { return s.text; }).join(' · '),
+      sides: sides, listed: listed, high_impact: highImpact, worst: worst, coverage_text: cov, official: anyOfficial,
+      last_updated: sides.reduce(function (m, s) { var t2 = s.coverage && s.coverage.last_updated; return (t2 && (!m || String(t2) > String(m))) ? t2 : m; }, null) };
+  }
+  /* One player, in plain words. Never more than the source said. */
+  function playerLine(p) {
+    var label = p.label || statusLabel(p.status) || 'on the report';
+    var verb = /^(a |the )/.test(label) ? ' is ' : ' is ';
+    return p.name + (p.position ? ' (' + p.position + ')' : '') + verb + label
+      + (p.injury ? ', ' + String(p.injury).toLowerCase() : '')
+      + (p.practice && /did not/i.test(p.practice) ? ', did not practice' : p.practice && /limited/i.test(p.practice) ? ', limited in practice' : '')
+      + '.';
+  }
+  /* The practice trail, only for days a source actually reported. */
+  function timelineText(p) {
+    if (!p || !p.timeline || !p.timeline.length) return null;
+    return p.timeline.map(function (x) { return x.day + ' ' + String(x.practice_status).toLowerCase().replace('dnp', 'did not practice'); }).join(' · ');
+  }
+  /* How long ago a timestamp was, in the card's own words. */
+  function agoText(at) { var ms = toMs(at); if (ms == null) return null; return ageText((Date.now() - ms) / 60000); }
+  /* Provenance, for the receipt. */
+  function sourceText(p) {
+    if (!p) return null;
+    var bits = [];
+    if (p.source_name) bits.push(p.source_name);
+    if (p.confidence) bits.push(String(p.confidence).toLowerCase());
+    if (p.freshness && p.freshness !== 'LIVE' && p.freshness !== 'CURRENT') bits.push(String(p.freshness).toLowerCase());
+    return bits.length ? bits.join(' · ') : null;
+  }
+
   /* ------------------------------------------------------------------ SIMPLE */
   /* The client packet shape (askAI / EDAI.packetOf) is the contract:
        { game:{matchup,sport,sport_key,commence,away,home,event_id},
@@ -19572,7 +19725,16 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
     /* Strongest drivers only: the engine lists them in priority order. */
     why = why.slice(0, 3).map(function (t) { return { text: t, source: 'deterministic', evidence_ids: [] }; });
 
-    var gaps = gapSentences(ctx.gaps || p.gaps || []);
+    var availability = ctx.availability || p.availability || null;
+    var avail = availabilitySummary(availability);
+    var gapsIn = (ctx.gaps || p.gaps || []).filter(function (g) {
+      /* an injury report on file is not a gap; an unpublished one still is */
+      var k = String(g && (g.field || g) || '').toLowerCase();
+      return !(avail && /injur|availab/.test(k));
+    });
+    if (availability && availability.status === 'NOT_PUBLISHED' && !gapsIn.some(function (g) { return /injur/.test(String(g && (g.field || g) || '')); })) gapsIn.push('injury_report');
+    var gaps = gapSentences(gapsIn);
+    if (availability && availability.status === 'NOT_PUBLISHED' && availability.reason) gaps = gaps.map(function (s) { return /injury and availability/i.test(s) ? 'Injury and availability data is not on file: ' + availability.reason + '. Do not read that as a clean injury report.' : s; });
     var against = (det.reasons_against || []).map(plainReason).filter(Boolean);
     var fals = (det.falsifiers || []).map(plainReason).filter(Boolean);
     var watchText, changeText;
@@ -19594,6 +19756,19 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
        still shows as a flag on the card. */
     if (gaps.length && /injur|availab/i.test(gaps[0]) && !/injur/i.test(watchText)
       && (displayVerdict === 'BET' || displayVerdict === 'LEAN')) watchText = gaps[0] + ' ' + watchText;
+    /* A listed player on the side being backed leads the watch line; an
+       opponent's absence is a watch line too, said as the opponent's. */
+    if (avail && avail.listed.length && (displayVerdict === 'BET' || displayVerdict === 'LEAN' || displayVerdict === 'WAIT')) {
+      var pickSide = (selectionRaw && game.home && normTeamName(selectionRaw) === normTeamName(game.home)) ? 'home' : (selectionRaw && game.away && normTeamName(selectionRaw) === normTeamName(game.away)) ? 'away' : null;
+      /* The side being backed leads. A high-impact absence outranks a
+         questionable rotation player on either side. */
+      var material = avail.listed.filter(function (x) { return x.impact === 'HIGH' || x.status === 'out' || x.status === 'doubtful'; });
+      var mine = material.filter(function (x) { return pickSide && x.side === pickSide; });
+      var theirs = material.filter(function (x) { return !pickSide || x.side !== pickSide; });
+      var lead = mine.length ? playerLine(mine[0]) + (mine.length > 1 ? ' ' + (mine.length - 1) + ' more on the same side listed.' : '')
+        : (theirs.length ? 'For the other side, ' + playerLine(theirs[0]).charAt(0).toLowerCase() + playerLine(theirs[0]).slice(1) : '');
+      if (lead && !/\bis (out|doubtful)\b/i.test(watchText)) watchText = lead + ' ' + watchText;
+    }
 
     var headline;
     if (suppressed) headline = 'DATA CHECK FAILED: EdgeDesk cannot safely publish a decision until ' + (integ.reason || 'the data check passes') + '.';
@@ -19613,6 +19788,7 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
     if (noPrice) flags.push({ kind: 'NO_PRICE', text: 'No current price on file' });
     if (book && trusted === false) flags.push({ kind: 'OFFSHORE', text: 'Best price is at an offshore book' });
     gaps.forEach(function (g) { flags.push({ kind: 'DATA_GAP', text: g.split('. ')[0].replace(/\.$/, '') }); });
+    if (avail) flags.push({ kind: 'AVAILABILITY', text: avail.text.replace(/^Injury report on file \([^)]*\): /, 'Availability: '), severity: avail.worst >= 2 ? 'warn' : 'ok' });
 
     return {
       version: VERSION,
@@ -19645,6 +19821,10 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
       integrity_reason: integ.reason,
       flags: flags,
       gaps: gaps,
+      availability: availability ? { status: availability.status, source: availability.source || null, week: availability.week || null,
+        summary: avail ? avail.text : null, coverage_text: avail ? avail.coverage_text : coverageText(availability, []),
+        listed: avail ? avail.listed.slice(0, 10) : [], high_impact: avail ? avail.high_impact : [], sides: avail ? avail.sides : [],
+        official: avail ? avail.official : false, last_updated: avail ? avail.last_updated : null, reason: availability.reason || null } : null,
       confidence: det.confidence || null,
       score: num(det.score),
       copy_source: 'deterministic',
@@ -19907,10 +20087,53 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
       biggest_risk: risk,
       change_call: change,
       market_read: market,
+      availability: availabilityBrief(s),
       data_check: dataCheck(s),
       freshness_text: s.freshness ? s.freshness.price_text : null,
       powered_by: 'Powered by EdgeDesk Sports'
     };
+  }
+
+  /* The brief's availability section. Written for someone with no betting
+     knowledge: who is in doubt, what that means for the game, where it came
+     from and how sure EdgeDesk is. It never states a consequence for the
+     model, because availability does not move a number here. */
+  function availabilityBrief(s) {
+    var av = s && s.availability;
+    if (!av) return null;
+    if (av.status === 'NOT_PUBLISHED') return { headline: 'Availability is unknown', lines: [av.coverage_text || 'No verified availability information found.'], coverage: av.coverage_text || null, players: [], sources: [] };
+    /* A snapshot deep-clones its cards, so identity is not a safe key here. */
+    function key(p) { return (p.team || '') + '|' + (p.name || ''); }
+    var high = (av.high_impact || []).slice(0, 3);
+    var seen = {}; high.forEach(function (p) { seen[key(p)] = 1; });
+    var rest = (av.listed || []).filter(function (p) { return !seen[key(p)]; }).slice(0, 3);
+    var lines = [], sources = [], srcSeen = {};
+    function addSource(p) {
+      if (!p.source_name) return;
+      var k = p.source_name + '|' + (p.confidence || '');
+      if (srcSeen[k]) return;
+      srcSeen[k] = 1;
+      sources.push({ name: p.source_name, url: p.source_url || null, confidence: p.confidence || null });
+    }
+    high.forEach(function (p) {
+      lines.push(sentence(p.team + ' ' + (p.position ? p.position + ' ' : '') + p.name + ' is ' + (p.label || p.status)
+        + (p.injury ? ' with a ' + String(p.injury).toLowerCase() + ' issue' : '')
+        + (p.practice ? ' and was ' + String(p.practice).replace(/ in practice| participation/gi, '').toLowerCase() + ' in practice' : '')));
+      lines.push(sentence(p.status === 'out'
+        ? (p.team + ' is without ' + p.name + ' for this game, and EdgeDesk’s number does not adjust for it')
+        : ('If ' + p.name.split(' ').slice(-1)[0] + ' cannot go, that is a material change to ' + p.team + '’s side of this game, and EdgeDesk’s number does not adjust for it')));
+      addSource(p);
+    });
+    rest.forEach(function (p) {
+      lines.push(sentence(p.team + ' ' + (p.position ? p.position + ' ' : '') + p.name + ' is ' + (p.label || p.status)));
+      addSource(p);
+    });
+    if (!lines.length) lines.push(sentence((av.sides || []).map(function (x) { return x.text; }).join(' · ') || 'Nobody is listed'));
+    var headline;
+    if (!high.length) headline = (av.listed || []).length ? 'Availability notes' : 'No availability flags';
+    else if (high[0].status === 'out') headline = high[0].team + ' is missing its ' + (high[0].position || 'starter');
+    else headline = high[0].team + ' ' + (high[0].position || 'player') + ' status is unresolved';
+    return { headline: headline, lines: lines, coverage: av.coverage_text || null, players: high.concat(rest), sources: sources };
   }
 
   /* ----------------------------------------------------------------- slate */
@@ -20102,6 +20325,45 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
     if (!t) return '';
     return '<details class="dcard-what"><summary>What does this mean?</summary><p>' + esc(t) + '</p></details>';
   }
+  /* Availability on the card: who is listed, how sure EdgeDesk is, where it
+     came from, and how much of the field it actually covers. */
+  function availabilityHTML(av) {
+    if (!av) return '';
+    if (av.status === 'NOT_PUBLISHED') return av.coverage_text ? '<div class="dcard-h">Availability</div><p class="dcard-avail-none">' + esc(av.coverage_text) + '</p>' : '';
+    var h = '<div class="dcard-h">Availability</div>';
+    if (av.listed && av.listed.length) {
+      h += '<ul class="dcard-avail">' + av.listed.slice(0, 6).map(function (p) {
+        var src = sourceText(p), tl = timelineText(p);
+        return '<li><b>' + esc(p.name) + '</b>' + (p.position ? ' <span class="pos">' + esc(p.position) + '</span>' : '')
+          + ' <span class="st ' + esc(p.status) + '">' + esc(p.label || p.status) + '</span>'
+          + (p.impact === 'HIGH' ? ' <span class="imp">high impact</span>' : '')
+          + (p.injury ? ' · ' + esc(String(p.injury).toLowerCase()) : '')
+          + (p.practice ? ' · ' + esc(String(p.practice).replace(/ in practice| participation/gi, '').toLowerCase()) : '')
+          + ' <span class="tm">' + esc(p.team) + '</span>'
+          + (tl ? '<div class="tl">' + esc(tl) + '</div>' : '')
+          + (src ? '<div class="src">' + (p.source_url ? '<a href="' + esc(p.source_url) + '" target="_blank" rel="noopener">' + esc(src) + '</a>' : esc(src)) + (p.contested ? ' · sources disagree' : '') + '</div>' : '')
+          + '</li>';
+      }).join('') + '</ul>';
+    } else if (av.sides && av.sides.length) {
+      h += '<p class="dcard-avail-none">' + esc(av.sides.map(function (s) { return s.text; }).join(' · ')) + '</p>';
+    }
+    if (av.coverage_text) h += '<p class="dcard-avail-cov">' + esc(av.coverage_text) + (av.last_updated ? ' Updated ' + esc(agoText(av.last_updated) || '') + '.' : '') + '</p>';
+    return h;
+  }
+
+  /* The watchlist line: the two that matter, or a count. Compact on purpose. */
+  function availabilityChip(av) {
+    if (!av || av.status !== 'ON_FILE') return null;
+    var listed = av.listed || [];
+    if (!listed.length) return null;
+    var top = listed.slice(0, 2).map(function (p) {
+      var who = p.impact === 'HIGH' && p.position ? (p.position + (/^(QB|RB|WR|TE)$/.test(p.position) ? '1' : '')) : (p.position || p.name.split(' ').slice(-1)[0]);
+      return who + ' ' + (p.label || p.status);
+    });
+    var text = top.join(' · ') + (listed.length > 2 ? ' · +' + (listed.length - 2) + ' more' : '');
+    return { text: text, warn: listed.some(function (p) { return p.impact === 'HIGH' || p.status === 'out'; }), count: listed.length };
+  }
+
   /* The 5-second view. opts: { actions:[{label, onclick, primary}], compact, id, show_what } */
   function cardHTML(s, opts) {
     opts = opts || {};
@@ -20131,7 +20393,7 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
     var flags = (s.flags || []).filter(function (f) { return !opts.compact || f.kind !== 'DATA_GAP'; });
     if (flags.length) {
       h += '<div class="dcard-flags">' + flags.map(function (f) {
-        var c = f.kind === 'DATA_CHECK_FAILED' ? 'bad' : (f.kind === 'STALE_PRICE' || f.kind === 'NO_PRICE') ? 'bad' : 'warn';
+        var c = f.kind === 'DATA_CHECK_FAILED' ? 'bad' : (f.kind === 'STALE_PRICE' || f.kind === 'NO_PRICE') ? 'bad' : f.kind === 'AVAILABILITY' ? (f.severity === 'warn' ? 'warn' : 'ok') : 'warn';
         return '<span class="dcard-flag ' + c + '">' + esc(f.text) + '</span>';
       }).join('') + '</div>';
     }
@@ -20144,11 +20406,14 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
         + '<div class="dcard-h">' + (s.verdict === 'WAIT' ? 'Waiting on' : s.verdict === 'PASS' ? 'Why pass' : 'Watch') + '</div>'
         + '<p class="dcard-watch">' + esc(s.watch && s.watch.text || '') + '</p>'
         + (s.change_trigger && s.change_trigger.text ? '<div class="dcard-h">What would change it</div><p class="dcard-change">' + esc(s.change_trigger.text) + '</p>' : '')
+        + availabilityHTML(s.availability)
         + '<div class="dcard-fresh' + (s.freshness && s.freshness.status === 'STALE' ? ' bad' : '') + '">' + esc(s.freshness ? s.freshness.price_text : '') + (s.freshness && s.freshness.research_text ? ' · ' + esc(s.freshness.research_text) : '') + '</div>'
         + (opts.show_what !== false ? whatMeans('good_to', s) + whatMeans('verdict', s) : '')
         + '</div>';
     } else {
       h += '<div class="dcard-line">' + esc((s.why && s.why[0] && s.why[0].text) || s.headline || '') + '</div>';
+      var chip = availabilityChip(s.availability);
+      if (chip) h += '<div class="dcard-availchip' + (chip.warn ? ' warn' : '') + '">' + esc(chip.text) + '</div>';
     }
     if (opts.actions && opts.actions.length) {
       h += '<div class="dcard-actions">' + opts.actions.map(function (a) {
@@ -20171,6 +20436,12 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
     h += '<div class="edb-h">' + (v === 'PASS' ? 'Why EdgeDesk passes' : v === 'WAIT' ? 'Waiting for' : 'Why EdgeDesk likes it') + '</div><ol class="edb-why">'
       + b.why.map(function (w) { return '<li>' + esc(w) + '</li>'; }).join('') + '</ol>';
     h += '<div class="edb-h">The biggest risk</div><p>' + esc(b.biggest_risk) + '</p>';
+    if (b.availability) {
+      h += '<div class="edb-h">' + esc(b.availability.headline) + '</div>'
+        + b.availability.lines.map(function (l) { return '<p>' + esc(l) + '</p>'; }).join('')
+        + (b.availability.coverage ? '<p class="edb-avail-cov">' + esc(b.availability.coverage) + '</p>' : '')
+        + (b.availability.sources.length ? '<p class="edb-avail-src">Source: ' + b.availability.sources.map(function (x) { return esc(x.name) + (x.confidence ? ' · ' + esc(String(x.confidence).toLowerCase()) : ''); }).join(' · ') + '</p>' : '');
+    }
     h += '<div class="edb-h">What would change the call</div><p>' + esc(b.change_call) + '</p>';
     if (b.market_read) h += '<div class="edb-h">Market read</div><p>' + esc(b.market_read) + '</p>';
     return h + '</section>';
@@ -20236,6 +20507,9 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
       if (!numbered) s += '<p>' + esc(b.lede) + '</p>';
       s += '<h3>' + (b.call.verdict === 'PASS' ? 'Why EdgeDesk passes' : b.call.verdict === 'WAIT' ? 'Waiting for' : 'Why EdgeDesk likes it') + '</h3><ol>' + b.why.map(function (w) { return '<li>' + esc(w) + '</li>'; }).join('') + '</ol>';
       s += '<h3>The biggest risk</h3><p>' + esc(b.biggest_risk) + '</p>';
+      if (b.availability) { s += '<h3>' + esc(b.availability.headline) + '</h3>' + b.availability.lines.map(function (l) { return '<p>' + esc(l) + '</p>'; }).join('')
+        + (b.availability.coverage ? '<p>' + esc(b.availability.coverage) + '</p>' : '')
+        + (b.availability.sources.length ? '<p>Source: ' + b.availability.sources.map(function (x) { return esc(x.name) + (x.confidence ? ' · ' + esc(String(x.confidence).toLowerCase()) : ''); }).join(' · ') + '</p>' : ''); }
       s += '<h3>What would change the call</h3><p>' + esc(b.change_call) + '</p>';
       if (b.market_read) s += '<h3>Market read</h3><p>' + esc(b.market_read) + '</p>';
       return s;
@@ -20271,6 +20545,9 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
       L.push(b.call.verdict === 'PASS' ? 'WHY EDGEDESK PASSES' : b.call.verdict === 'WAIT' ? 'WAITING FOR' : 'WHY EDGEDESK LIKES IT');
       b.why.forEach(function (w, i) { L.push((i + 1) + '. ' + w); });
       L.push(''); L.push('THE BIGGEST RISK'); L.push(b.biggest_risk);
+      if (b.availability) { L.push(''); L.push(String(b.availability.headline).toUpperCase()); b.availability.lines.forEach(function (l) { L.push(l); });
+        if (b.availability.coverage) L.push(b.availability.coverage);
+        if (b.availability.sources.length) L.push('Source: ' + b.availability.sources.map(function (x) { return x.name + (x.confidence ? ' · ' + String(x.confidence).toLowerCase() : ''); }).join(' · ')); }
       L.push(''); L.push('WHAT WOULD CHANGE THE CALL'); L.push(b.change_call);
       if (b.market_read) { L.push(''); L.push('MARKET READ'); L.push(b.market_read); }
       L.push('');
@@ -20403,6 +20680,9 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
       entry_odds: fmtAmerican(entryAm), entry_am: entryAm,
       close_fair_prob: p, close_fair_odds: fmtAmerican(closeAm), close_fair_am: closeAm,
       close_best_odds: o.close_best_am != null ? fmtAmerican(o.close_best_am) : null, close_best_book: o.close_best_book || null,
+      /* the SAME book's last pre-kickoff quote, when the ticks table has it */
+      close_book_odds: o.close_book_am != null ? fmtAmerican(o.close_book_am) : null, close_book: o.close_book || null,
+      close_book_at: o.close_book_at || null, close_book_lead_min: num(o.close_book_lead_min), book_cents: null,
       closed_at: o.closed_at || null,
       clv: null, beat_close: null, cents: null,
       result: normResult(o.result), result_source: null,
@@ -20414,6 +20694,7 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
       g.beat_close = g.clv > 0;
       g.cents = closeAm != null ? centsBetween(entryAm, closeAm) : null;
     }
+    if (entryAm != null && o.close_book_am != null) g.book_cents = centsBetween(entryAm, parseAmerican(o.close_book_am));
     g.status = (g.clv != null && g.result) ? 'graded' : g.clv != null ? 'awaiting_result' : g.result ? 'awaiting_close' : 'pending';
     g.text = resultText(g);
     return g;
@@ -20422,8 +20703,11 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
   function resultText(g) {
     if (!g) return '';
     var parts = [];
-    if (g.close_fair_odds) parts.push('Closed ' + g.close_fair_odds);
-    if (g.cents != null) parts.push(g.cents > 0 ? 'Beat the close by ' + g.cents + ' cent' + (g.cents === 1 ? '' : 's') : g.cents < 0 ? 'Missed the close by ' + (-g.cents) + ' cent' + (g.cents === -1 ? '' : 's') : 'Matched the close');
+    if (g.close_book_odds) parts.push('Closed ' + g.close_book_odds + ' at ' + (g.close_book || 'the book') + (g.close_fair_odds ? ' (fair ' + g.close_fair_odds + ')' : ''));
+    else if (g.close_fair_odds) parts.push('Closed ' + g.close_fair_odds);
+    var c = g.book_cents != null ? g.book_cents : g.cents;
+    var what = g.book_cents != null ? 'the book’s close' : 'the close';
+    if (c != null) parts.push(c > 0 ? 'Beat ' + what + ' by ' + c + ' cent' + (c === 1 ? '' : 's') : c < 0 ? 'Missed ' + what + ' by ' + (-c) + ' cent' + (c === -1 ? '' : 's') : 'Matched ' + what);
     else if (g.beat_close != null) parts.push(g.beat_close ? 'Beat the close' : 'Did not beat the close');
     if (g.result === 'win') parts.push('Won');
     else if (g.result === 'loss') parts.push('Lost');
@@ -20630,6 +20914,8 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
     normResult: normResult, normTeam: normTeam, sideOf: sideOf, outcomeFromScore: outcomeFromScore, gradePick: gradePick, resultText: resultText, outcomeOf: outcomeOf,
     marketKeyOf: marketKeyOf, parseSelectionLabel: parseSelectionLabel, priceFields: priceFields, gradeKey: gradeKey,
     recordSummary: recordSummary, calibration: calibration, sportGroup: sportGroup, isCall: isCall, tally: tally, flattenPicks: flattenPicks,
+    availabilitySummary: availabilitySummary, playerLine: playerLine, availabilityHTML: availabilityHTML, availabilityBrief: availabilityBrief, availabilityChip: availabilityChip,
+    coverageText: coverageText, timelineText: timelineText, sourceText: sourceText, statusLabel: statusLabel, agoText: agoText,
     calibrationHTML: calibrationHTML, pickStatusText: pickStatusText, resultHTML: resultHTML, briefResultsHTML: briefResultsHTML, briefResultsText: briefResultsText,
     fmtCents: fmtCents, fmtRate: fmtRate, fmtClv: fmtClv
   };
@@ -23212,6 +23498,7 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
       clv:x.graded?{clv:x.clv,beat_close:x.beat,closing:x.closeP,result:x.result,closed_at:e.closed_at||null,graded_at:e.graded_at||null}:null,
       mlb: mlbPacket(x.mlb),
       market_coverage: (window.ED_COVERAGE?ED_COVERAGE.packet(x.e):null),
+      availability: (window.EDCARD&&window.EDCARD.availabilityFor)?window.EDCARD.availabilityFor(x):null,
       price_sensitivity:{breakeven:x.breakevenAm,max_playable:x.toPlayAm,needs_price_for_ev:x.needsPriceForEv},
       deterministic:{verdict:x.verdict,display_verdict:x.dverdict,is_wait:x.isWait,wait_reason:x.waitWhy,
         confidence:x.confidence,why:x.why,score:x.score,band:x.band,
@@ -26506,13 +26793,125 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
   function engine(e){ try{ return (window.EDAI&&window.EDAI.evidence)?window.EDAI.evidence(e):null; }catch(_){ return null; } }
   function packetOf(x){ try{ return (window.EDAI&&window.EDAI.packetOf)?window.EDAI.packetOf(x):null; }catch(_){ return null; } }
 
-  /* Football has no injury report anywhere in EdgeDesk. The card says so,
-     as a named gap, rather than letting the absence read as a clean sheet. */
+  /* THE INJURY REPORT. nflverse publishes the NFL's official report as a
+     public CSV; .github/workflows/injury-sync.yml commits it, reduced to the
+     latest week per team, to football/injuries/nfl_<season>.json. The card
+     reads that file beside itself. Until the season's file is published the
+     card keeps saying the report is not on file, and never shows last
+     season's. College football has no public report at all: it stays a
+     named gap, never a clean sheet. */
+  var INJ={season:null,data:null,error:null,at:0,_p:null};
+  function injSeason(){ var d=new Date(); return d.getMonth()<=1?d.getFullYear()-1:d.getFullYear(); }
+  function loadInjuries(){
+    if(INJ.data&&Date.now()-INJ.at<15*60000) return Promise.resolve(INJ.data);
+    if(INJ._p) return INJ._p;
+    var season=injSeason();
+    INJ._p=fetch('football/injuries/nfl_'+season+'.json',{cache:'no-cache'}).then(function(r){ if(r.status===404) return {schema:'edgedesk_nfl_injuries_v1',requested_season:season,season:null,published:false,reason:'no injury file has been synced yet',teams:{}}; if(!r.ok) throw new Error('injuries '+r.status); return r.json(); })
+      .then(function(j){ INJ.season=season; INJ.data=j; INJ.error=null; INJ.at=Date.now(); INJ._p=null; return j; })
+      .catch(function(e){ INJ.error=String(e&&e.message||e).slice(0,80); INJ._p=null; return null; });
+    return INJ._p;
+  }
+  function nflCode(name){ try{ if(typeof fbNflTeamCode!=='function') return null; return fbNflTeamCode((window.FB_NFL_NAMES&&FB_NFL_NAMES[name])||name); }catch(_){ return null; } }
+
+  /* COLLEGE FOOTBALL AVAILABILITY. There is no universal CFB injury report, so
+     EdgeDesk builds its own layer: .github/workflows/availability-sync.yml
+     collects every configured source per program, resolves each report to a
+     real roster player, ranks the evidence and commits
+     football/availability/current.json. This reads that file. The dataset
+     carries its own coverage quality, so "nobody is listed on an official
+     report", "partial coverage" and "no verified data" stay three different
+     sentences all the way to the card. */
+  var CAV={data:null,error:null,at:0,_p:null,index:null};
+  function cavNorm(s){ try{ return String(s==null?'':s).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/&/g,'and').replace(/[^a-z0-9]/g,''); }catch(_){ return String(s==null?'':s).toLowerCase().replace(/[^a-z0-9]/g,''); } }
+  function cavIndex(d){
+    var ix={display:{},name:{},abbr:{}};
+    Object.keys((d&&d.teams)||{}).forEach(function(id){
+      var t=d.teams[id];
+      var dk=cavNorm(t.team_display), nk=cavNorm(t.team_name), ak=cavNorm(t.team_abbr);
+      if(dk) ix.display[dk]=t; if(nk&&!ix.name[nk]) ix.name[nk]=t; if(ak&&ak.length>=3&&!ix.abbr[ak]) ix.abbr[ak]=t;
+    });
+    return ix;
+  }
+  /* The odds feed says "Ohio Bobcats"; the dataset says "Ohio". Exact display
+     first, then the school as the longest unique prefix — "Ohio" must never
+     swallow "Ohio State", and an ambiguous name resolves to nothing. */
+  function cavTeam(name){
+    if(!CAV.index) return null;
+    var bn=cavNorm(name); if(!bn) return null;
+    if(CAV.index.display[bn]) return CAV.index.display[bn];
+    if(CAV.index.name[bn]) return CAV.index.name[bn];
+    var best=null,bl=0,k;
+    for(k in CAV.index.name){ if(k.length>=3&&bn.indexOf(k)===0&&k.length>bl){ best=CAV.index.name[k]; bl=k.length; } }
+    if(best) return best;
+    var pre=[]; for(k in CAV.index.name){ if(bn.length>=4&&k.indexOf(bn)===0) pre.push(k); }
+    if(pre.length===1) return CAV.index.name[pre[0]];
+    return CAV.index.abbr[bn]||null;
+  }
+  function loadCfbAvailability(){
+    if(CAV.data&&Date.now()-CAV.at<15*60000) return Promise.resolve(CAV.data);
+    if(CAV._p) return CAV._p;
+    CAV._p=fetch('football/availability/current.json',{cache:'no-cache'}).then(function(r){
+      if(r.status===404) return null;
+      if(!r.ok) throw new Error('availability '+r.status);
+      return r.json();
+    }).then(function(j){ CAV.data=j; CAV.index=j?cavIndex(j):null; CAV.error=null; CAV.at=Date.now(); CAV._p=null; return j; })
+      .catch(function(e){ CAV.error=String(e&&e.message||e).slice(0,80); CAV._p=null; return null; });
+    return CAV._p;
+  }
+  function cavSide(name){
+    var t=cavTeam(name);
+    if(!t) return {name:name||'', code:null, filed:false, dataQuality:'NONE', sources_checked:0, players:[]};
+    return {name:t.team_name||name, code:t.team_abbr||null, filed:true,
+      dataQuality:t.dataQuality||'NONE', sources_checked:t.sources_checked||0, sources_failed:t.sources_failed||0,
+      official_report_found:!!t.official_report_found, lastUpdated:t.lastUpdated||null,
+      players:(t.players||[]).map(function(p){
+        return {name:p.player_name, position:p.position||null, status:p.availability_status||null,
+          injury:p.injury_type||p.body_part||null, practice:cavPractice(p.practice_status),
+          confidence:p.confidence||null, impact:p.impact_level||null, verified:!!p.verified,
+          contested:!!p.contested, freshness:p.freshness||null, source_name:p.source_name||null,
+          source_url:p.source_url||null, timeline:p.timeline||[], observations:p.observations||[]};
+      })};
+  }
+  function cavPractice(s){
+    if(s==='DNP') return 'Did Not Participate In Practice';
+    if(s==='LIMITED') return 'Limited Participation in Practice';
+    if(s==='FULL') return 'Full Participation in Practice';
+    return null;
+  }
+  /* Availability facts for one signal. Null for sports EdgeDesk holds no
+     availability layer for; NOT_PUBLISHED when the file for the season is not
+     there; ON_FILE with both teams otherwise. A team missing from the latest
+     report is "no report filed yet", never clean. */
+  function availabilityFor(x){
+    var e=x&&x.e; if(!e) return null;
+    var k=String(e.sport_key||'');
+    if(k.indexOf('americanfootball_nfl')===0){
+      var d=INJ.data; if(!d) return null;
+      if(!d.published||d.season!==injSeason()) return {status:'NOT_PUBLISHED', source:'nflverse', reason:(d.reason||('nflverse has not published the '+injSeason()+' report yet'))};
+      function side(name){
+        var code=nflCode(name); var tm=code&&d.teams?d.teams[code]:null;
+        return {name:name||code||'', code:code||null, week:tm?tm.week:null, filed:!!tm,
+          dataQuality:tm?'STRONG':'LIMITED', sources_checked:1, official_report_found:!!tm, lastUpdated:d.retrieved_at||null,
+          players:tm?(tm.players||[]).map(function(p){ return {name:p.name, position:p.position||null, status:p.status||null, injury:p.injury||null, practice:p.practice||null, confidence:'CONFIRMED', source_name:'NFL injury report (nflverse)', verified:true}; }):[]};
+      }
+      return {status:'ON_FILE', source:'nflverse', week:d.latest_week||null, retrieved_at:d.retrieved_at||null, teams:{away:side(e.away_team), home:side(e.home_team)}};
+    }
+    if(k.indexOf('americanfootball_ncaaf')===0){
+      var c=CAV.data;
+      if(!c) return CAV.error?{status:'NOT_PUBLISHED', source:'EdgeDesk availability', reason:'the availability dataset could not be read ('+CAV.error+')'}:null;
+      var away=cavSide(e.away_team), home=cavSide(e.home_team);
+      if(!away.filed&&!home.filed) return {status:'NOT_PUBLISHED', source:'EdgeDesk availability', reason:'neither program is in the availability dataset yet'};
+      return {status:'ON_FILE', source:'EdgeDesk availability', week:c.week||null, retrieved_at:c.generated_at||null, teams:{away:away, home:home}};
+    }
+    return null;
+  }
   function gapsFor(x){
     var k=(x&&x.e&&x.e.sport_key)||'';
-    if(k.indexOf('americanfootball')===0) return ['injury_report'];
+    if(k.indexOf('americanfootball')===0){ var av=availabilityFor(x); return av&&av.status==='ON_FILE'?[]:['injury_report']; }
     return [];
   }
+  try{ loadInjuries(); }catch(_){}
+  try{ loadCfbAvailability(); }catch(_){}
 
   /* ---------------------------------------------------------------- cards */
   var REG={}, SEQ=0;                       // card id -> {e, x, s}
@@ -26521,7 +26920,7 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
   function simpleFromX(x, ctx){
     if(!x) return null;
     var pk=packetOf(x); if(!pk) return null;
-    var s=P.simpleFromPacket(pk, Object.assign({stale_limit_min:staleLimit(), gaps:gapsFor(x)}, ctx||{}));
+    var s=P.simpleFromPacket(pk, Object.assign({stale_limit_min:staleLimit(), gaps:gapsFor(x), availability:availabilityFor(x)}, ctx||{}));
     return s;
   }
   function simpleFromSignal(e, ctx){ var x=engine(e); return x?simpleFromX(x, ctx):null; }
@@ -26594,6 +26993,8 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
   }
 
   window.EDCARD={
+    availabilityFor:availabilityFor, loadInjuries:loadInjuries, injuries:function(){ return INJ; },
+    loadCfbAvailability:loadCfbAvailability, cfbAvailability:function(){ return CAV; }, cavTeam:cavTeam, cavIndex:cavIndex,
     simpleFromSignal:simpleFromSignal, simpleFromX:simpleFromX,
     leadHTML:leadHTML, receiptHTML:receiptHTML, cardForX:cardForX, serverCardHTML:serverCardHTML,
     toggleFull:toggleFull, get:function(id){ return REG[id]||null; },
@@ -26895,9 +27296,69 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
     catch(e){ h.innerHTML='<div class="brief-card">'+barHTML(null)+'<div class="brief-note">Could not load record/grades.json: '+esc(String(e&&e.message||e))+'. Nothing is shown rather than something made up.</div></div>'; }
   }
 
+  /* AVAILABILITY DATA — the inspection view. Automated extraction meets
+     malformed pages, renamed players and dead links, and this is where that is
+     visible instead of silent: coverage per program, every unresolved report
+     with the text that produced it, and every source that failed. */
+  var AVDBG={data:null,at:0};
+  async function loadAvailabilityDebug(){
+    if(AVDBG.data&&Date.now()-AVDBG.at<5*60000) return AVDBG.data;
+    var r=await fetch('football/availability/current.full.json',{cache:'no-cache'});
+    if(r.status===404) return null;
+    if(!r.ok) throw new Error('availability.full '+r.status);
+    AVDBG.data=await r.json(); AVDBG.at=Date.now(); return AVDBG.data;
+  }
+  function availabilityDebugHTML(d){
+    if(!d) return '<div class="edb"><div class="edb-h">Availability data</div><p>No availability dataset has been committed yet. Run the <b>Availability sync</b> workflow, or see football/availability/README.md.</p></div>';
+    var cov=d.coverage||{};
+    var teams=Object.keys(d.teams||{}).map(function(k){ return d.teams[k]; });
+    var flagged=teams.filter(function(t){ return t.summary&&t.summary.counts.flagged; })
+      .sort(function(a,b){ return b.summary.counts.flagged-a.summary.counts.flagged; });
+    var h='<div class="edb"><header class="edb-hd"><div class="edb-brand">EdgeDesk</div><h1 class="edb-title">Availability data</h1>'
+      +'<div class="edb-kicker">College football · season '+esc(String(d.season||''))+(d.week?' · week '+esc(String(d.week)):'')+'</div>'
+      +'<div class="edb-when">'+(d.generated_at?'Collected '+esc(P.fmtStamp(d.generated_at)):'never collected')+'</div></header>';
+    h+='<div class="edb-h">Coverage</div><div class="edrec-wrap"><table class="edrec-cal"><thead><tr><th>Programs</th><th>Records</th><th>Flagged</th><th>Strong</th><th>Partial</th><th>Limited</th><th>None</th><th>Unresolved</th><th>Failed sources</th></tr></thead><tbody><tr>'
+      +'<td>'+(d.team_count||0)+'</td><td>'+(d.records||0)+'</td><td>'+(d.flagged||0)+'</td>'
+      +'<td class="up">'+(cov.strong||0)+'</td><td>'+(cov.partial||0)+'</td><td>'+(cov.limited||0)+'</td><td class="dn">'+(cov.none||0)+'</td>'
+      +'<td>'+(d.unresolved||0)+'</td><td class="'+((d.failed_sources||0)?'dn':'')+'">'+(d.failed_sources||0)+'</td></tr></tbody></table></div>';
+    h+='<div class="edb-h edb-sec">Programs with flags</div>';
+    if(!flagged.length) h+='<p style="font-size:13px;color:var(--dim)">No program carries a current availability flag. That is what the dataset holds, not a claim that nobody is hurt.</p>';
+    else h+='<div class="edrec-wrap"><table class="edrec-cal"><thead><tr><th>Program</th><th>Coverage</th><th>Player</th><th>Status</th><th>Impact</th><th>Confidence</th><th>Fresh</th><th>Source</th></tr></thead><tbody>'
+      +flagged.slice(0,40).map(function(t){
+        return (t.records||[]).filter(function(r){ return r.availability_status&&r.availability_status!=='AVAILABLE'&&r.availability_status!=='UNKNOWN'; }).slice(0,4).map(function(r,i){
+          return '<tr><td>'+(i?'':esc(t.team_name))+'</td><td>'+(i?'':esc(t.summary.dataQuality))+'</td><td>'+esc(r.player_name)+(r.position?' <span class="note">'+esc(r.position)+(r.depth_role?' · '+esc(r.depth_role):'')+'</span>':'')+'</td>'
+            +'<td class="v '+esc(String(r.availability_status).toLowerCase())+'">'+esc(r.availability_status)+'</td><td>'+esc(r.impact_level)+'</td><td>'+esc(r.confidence)+'</td>'
+            +'<td class="'+(r.freshness==='LIVE'||r.freshness==='CURRENT'?'up':'dn')+'">'+esc(r.freshness)+'</td>'
+            +'<td>'+(r.source_url?'<a href="'+esc(r.source_url)+'" target="_blank" rel="noopener">'+esc(r.source_name||'source')+'</a>':esc(r.source_name||'—'))+(r.contested?' <span class="note">contested</span>':'')+'</td></tr>';
+        }).join('');
+      }).join('')+'</tbody></table></div>';
+    var un=(d.unresolved||[]).slice(0,25);
+    h+='<div class="edb-h edb-sec">Unresolved reports ('+((d.unresolved||[]).length)+')</div>';
+    h+=un.length?('<div class="edrec-wrap"><table class="edrec-cal"><thead><tr><th>Program</th><th>Name in the report</th><th>Why it was not matched</th><th>Source</th><th>Raw text</th></tr></thead><tbody>'
+      +un.map(function(u){ return '<tr><td>'+esc(u.team_name||'')+'</td><td>'+esc(u.player_name||'')+'</td><td>'+esc(u.reason||'')+(u.candidates?' ('+u.candidates+' candidates)':'')+'</td><td>'+esc(u.source_name||'')+'</td><td style="max-width:280px;white-space:normal">'+esc(String(u.raw_text||'').slice(0,160))+'</td></tr>'; }).join('')
+      +'</tbody></table></div><p style="font-size:12px;color:var(--faint);margin-top:6px">These reports were NOT assigned to a player. Assigning them to the wrong player would be worse than leaving them here.</p>')
+      :'<p style="font-size:13px;color:var(--dim)">Every report resolved to a roster player.</p>';
+    var fs=(d.failed_sources||[]).slice(0,25);
+    h+='<div class="edb-h edb-sec">Failed sources ('+((d.failed_sources||[]).length)+')</div>';
+    h+=fs.length?('<div class="edrec-wrap"><table class="edrec-cal"><thead><tr><th>Program</th><th>Source</th><th>Error</th></tr></thead><tbody>'
+      +fs.map(function(f){ return '<tr><td>'+esc(f.team_name||'')+'</td><td style="max-width:260px;white-space:normal">'+esc(String(f.source||'').slice(0,120))+'</td><td class="dn">'+esc(f.error||'')+'</td></tr>'; }).join('')+'</tbody></table></div>')
+      :'<p style="font-size:13px;color:var(--dim)">Every configured source answered.</p>';
+    h+='<footer class="edb-ft"><p>Add a program’s official source in <span class="mono">football/availability/sources.overrides.json</span>; the sync picks it up on its next run. Nothing here is generated by a model.</p></footer></div>';
+    return h;
+  }
+  async function openAvailability(){
+    BR.snap=null; BR.shared=null; BR.source={kind:'availability'};
+    var host2=host();
+    host2.innerHTML='<div class="brief-card">'+barHTML(null)+'<div class="brief-note">Loading the availability dataset…</div></div>';
+    host2.classList.add('open');
+    try{ var d=await loadAvailabilityDebug(); host2.innerHTML='<div class="brief-card">'+barHTML(null)+availabilityDebugHTML(d)+'</div>'; }
+    catch(e){ host2.innerHTML='<div class="brief-card">'+barHTML(null)+'<div class="brief-note">Could not load football/availability/current.full.json: '+esc(String(e&&e.message||e))+'. Nothing is shown rather than something made up.</div></div>'; }
+  }
+
   window.EDBRIEF={
     openCard:openCard, openGame:openGame, openPrimetime:openPrimetime, openCfbSlate:openCfbSlate, openSlate:openSlate,
     openRecord:openRecord, loadRecord:loadRecord, recordHTML:recordHTML,
+    openAvailability:openAvailability, availabilityDebugHTML:availabilityDebugHTML, loadAvailabilityDebug:loadAvailabilityDebug,
     close:close, refresh:refresh, share:share, polish:polish,
     print:function(){ document.body.classList.add('printing-brief'); try{ window.print(); }finally{ setTimeout(function(){ document.body.classList.remove('printing-brief'); },500); } },
     copyCms:function(){ if(BR.snap) copyRich(P.briefCmsHTML(BR.snap), P.briefText(BR.snap)); },
@@ -26914,6 +27375,7 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
         +'<button class="dcard-btn" onclick="EDBRIEF.openCfbSlate(\'top\',3)">College Football brief</button>'
         +(where==='edges'?'<button class="dcard-btn" onclick="EDBRIEF.openSlate(null,\'top\',3)">Slate brief</button>':'')
         +'<button class="dcard-btn" onclick="EDBRIEF.openRecord()" title="How BET, LEAN and WAIT have graded against the close">Verdict calibration</button>'
+        +'<button class="dcard-btn" onclick="EDBRIEF.openAvailability()" title="Coverage, unresolved reports and failed sources">Availability data</button>'
         +'</div>';
     }
   };
@@ -27056,6 +27518,30 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
   }
 
   /* ---- starters and rooms from the football and baseball feeds ---------- */
+  function nflCode(name){ try{ if(typeof fbNflTeamCode!=='function') return null; return fbNflTeamCode((window.FB_NFL_NAMES&&FB_NFL_NAMES[name])||name); }catch(_){ return null; } }
+  /* The committed injury report, through the card block's loader. */
+  function availabilityOf(e){
+    try{ return (window.EDCARD&&window.EDCARD.availabilityFor)?window.EDCARD.availabilityFor({e:e}):null; }catch(_){ return null; }
+  }
+  function injuryOf(e, side, player){
+    try{
+      var av=availabilityOf(e);
+      if(!av||av.status!=='ON_FILE') return null;
+      var tm=av.teams[side]; if(!tm) return null;
+      var k=normTeam(player); var hit=null; (tm.players||[]).forEach(function(p){ if(!hit&&normTeam(p.name)===k) hit=p; });
+      return hit;
+    }catch(_){ return null; }
+  }
+  function injuryHTML(inj, av){
+    if(!inj) return '';
+    var st=String(inj.status||'').toLowerCase();
+    var cls=st.replace(/[^a-z]+/g,'_')||'practice';
+    var txt=(inj.status?P.statusLabel(inj.status)||inj.status:'On the report')+(inj.injury?' · '+String(inj.injury).toLowerCase():'')+(inj.practice?' · '+String(inj.practice).replace(/ in practice| participation/gi,'').toLowerCase():'');
+    /* the record's OWN source, never a league name assumed from the sport */
+    var src=inj.source_name||(av&&av.source)||null;
+    if(inj.confidence) src=(src?src+' · ':'')+String(inj.confidence).toLowerCase();
+    return '<div class="pic-inj '+esc(cls)+'">'+esc(txt)+(src?' <span style="color:var(--faint)">· '+esc(src)+'</span>':'')+'</div>';
+  }
   function nflSide(e, side){
     try{
       if(!window.FB||!FB.nfl||!FB.nfl.qbs||!FB.nfl.qbs.length||typeof fbNflTeamCode!=='function') return null;
@@ -27180,7 +27666,37 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
      the block says so. */
   var TOTALS={};
   var TOTAL_KEYS={passing:'netPassingYards',rushing:'rushingYards',receiving:'netPassingYards',total:'totalYards'};
+  /* NFL: nflverse stats_team_week, the same public file the football engine
+     already downloads browser-direct. Summed per team for the latest season
+     that has a played regular-season game, and the season is named. */
+  var STW={season:null,map:null,_p:null,error:null};
+  function csvRows(text){ if(typeof fbCsv==='function') return fbCsv(text); var lines=String(text||'').split(/\r?\n/).filter(Boolean); var head=lines.shift().split(','); return lines.map(function(l){ var c=l.split(','), o={}; head.forEach(function(h,i){ o[h]=c[i]; }); return o; }); }
+  async function loadNflTotals(){
+    if(STW.map) return STW;
+    if(STW._p) return STW._p;
+    var season=rosterSeason();
+    STW._p=(async function(){
+      for(var s=season; s>=season-1; s--){
+        try{
+          var url=(typeof FB_URL_STW==='function')?FB_URL_STW(s):('https://github.com/nflverse/nflverse-data/releases/download/stats_team/stats_team_week_'+s+'.csv');
+          var r=await fetch(url,{redirect:'follow'}); if(!r.ok) continue;
+          var rows=csvRows(await r.text()).filter(function(x){ return String(x.season_type||'REG')==='REG'; });
+          if(!rows.length) continue;
+          var map={};
+          rows.forEach(function(x){ var code=String(x.team||'').toUpperCase(); if(!code) return; var m=map[code]=map[code]||{_season:s,_source:'nflverse stats_team_week_'+s,netPassingYards:0,rushingYards:0,totalYards:0,games:0}; var py=num(x.passing_yards)||0, ry=num(x.rushing_yards)||0; m.netPassingYards+=py; m.rushingYards+=ry; m.totalYards+=py+ry; m.games++; });
+          STW.season=s; STW.map=map; STW.error=null; break;
+        }catch(e){ STW.error=String(e&&e.message||e).slice(0,80); }
+      }
+      STW._p=null; return STW;
+    })();
+    return STW._p;
+  }
   async function loadTeamTotals(L, names){
+    if(L==='NFL'){
+      var st=await loadNflTotals(); var o={};
+      if(st.map) names.forEach(function(nm){ var code=nflCode(nm); if(code&&st.map[code]) o[normTeam(nm)]=st.map[code]; });
+      return o;
+    }
     if(L!=='CFB'||typeof rsFetchAll!=='function') return {};
     var out={};
     for(var i=0;i<names.length;i++){
@@ -27191,7 +27707,7 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
       try{
         var rows=await rsFetchAll('cfb','team_season_stats?select=season,team,stat_name,stat_value&team=eq.'+encodeURIComponent(nm),'season.desc',2);
         var season=null; (rows||[]).forEach(function(r){ if(r.season!=null&&(season==null||+r.season>season)) season=+r.season; });
-        if(rows&&rows.length){ map={_season:season}; rows.forEach(function(r){ if(season==null||+r.season===season) map[r.stat_name]=num(r.stat_value); }); }
+        if(rows&&rows.length){ map={_season:season,_source:'cfb.team_season_stats'}; rows.forEach(function(r){ if(season==null||+r.season===season) map[r.stat_name]=num(r.stat_value); }); }
       }catch(_){ map=null; }
       TOTALS[k]={at:Date.now(),map:map}; out[k]=map;
     }
@@ -27296,7 +27812,7 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
         spotNames[normTeam(s.player)]=1;
         var pr=props&&props[normTeam(s.player)];
         return '<div class="pic-spot"><div class="pic-pn">'+esc(s.player)+(s.position?' <span class="pic-pos">'+esc(s.position)+'</span>':'')+' <span class="pic-tag spot">'+esc(s.tag)+'</span></div>'
-          +'<div class="pic-spot-why">'+esc(s.why)+'</div>'
+          +'<div class="pic-spot-why">'+esc(s.why)+'</div>'+injuryHTML(injuryOf(e,side,s.player), availabilityOf(e))
           +'<ul class="pic-rundown">'+(s.rundown||[]).filter(Boolean).map(function(l){ return '<li>'+esc(l)+'</li>'; }).join('')+'</ul>'
           +(pr&&pr.length?'<div class="pic-prop">'+pr.slice(0,2).map(function(p){ return esc((p.market||'').replace(/_/g,' '))+' o'+esc(String(p.line))+' · proj '+esc((+p.proj).toFixed(1))+(p.p_over!=null?' · '+Math.round(+p.p_over)+'% over':''); }).join(' · ')+' <span class="unproven">MODEL</span></div>':'')
           +'</div>';
@@ -27320,12 +27836,25 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
       h+='<div class="pic-also">'+(spots.length?'Also on the sheet':'')+'</div><ul class="pic-players">'+rows.map(function(r){
         var pr=props&&props[normTeam(r.player)];
         return '<li><div class="pic-pn">'+esc(r.player)+(r.position?' <span class="pic-pos">'+esc(r.position)+'</span>':'')+(r.tag?' <span class="pic-tag '+esc(r.tag.toLowerCase())+'">'+esc(r.tag)+'</span>':'')+'</div>'
-          +'<div class="pic-why">'+esc(r.why)+'</div>'
+          +'<div class="pic-why">'+esc(r.why)+'</div>'+injuryHTML(injuryOf(e,side,r.player), availabilityOf(e))
           +(pr&&pr.length?'<div class="pic-prop">'+pr.slice(0,2).map(function(p){ return esc((p.market||'').replace(/_/g,' '))+' o'+esc(String(p.line))+' · proj '+esc((+p.proj).toFixed(1))+(p.p_over!=null?' · '+Math.round(+p.p_over)+'% over':''); }).join(' · ')+' <span class="unproven">MODEL</span></div>':'')
           +'</li>';
       }).join('')+'</ul>';
     }
-    if(spots.length&&spots[0].basis==='production share'&&totals&&totals._season) h+='<div class="pic-src">Share of offense = the player’s stored yards over '+esc(roster&&roster.location||name)+'’s '+esc(String(totals._season))+' season totals (cfb.team_season_stats).</div>';
+    /* everyone else on the injury report for this team */
+    try{
+      var av=availabilityOf(e);
+      if(av&&av.status==='ON_FILE'&&av.teams[side]){
+        var tm=av.teams[side], shown={}; spots.forEach(function(s){ shown[normTeam(s.player)]=1; }); rows.forEach(function(r){ shown[normTeam(r.player)]=1; });
+        var rest=(tm.players||[]).filter(function(p){ return p.status&&!shown[normTeam(p.name)]; }).slice(0,6);
+        var wk=tm.week||av.week;
+        h+='<div class="pic-also">Availability'+(wk?' · week '+esc(String(wk)):'')+'</div>';
+        if(!tm.filed) h+='<div class="pic-empty">'+esc(name)+' is not in the availability dataset yet.</div>';
+        else if(!rest.length&&!(tm.players||[]).some(function(p){ return p.status; })) h+='<div class="pic-empty">'+esc(tm.official_report_found?('Nobody is listed for '+name+' on the official report.'):('No verified availability information found for '+name+'.'))+'</div>';
+        else if(rest.length) h+='<ul class="pic-players">'+rest.map(function(p){ return '<li><div class="pic-pn">'+esc(p.name)+(p.position?' <span class="pic-pos">'+esc(p.position)+'</span>':'')+'</div>'+injuryHTML(p, av)+'</li>'; }).join('')+'</ul>';
+      } else if(av&&av.status==='NOT_PUBLISHED'){ h+='<div class="pic-empty">'+esc(P.coverageText(av,[])||'No verified availability information found.')+'</div>'; }
+    }catch(_){}
+    if(spots.length&&spots[0].basis==='production share'&&totals&&totals._season) h+='<div class="pic-src">Share of offense = the player’s stored yards over '+esc(roster&&roster.location||name)+'’s '+esc(String(totals._season))+' season totals ('+esc(totals._source||'the season totals on file')+(totals.games?' · '+totals.games+' games':'')+').</div>';
     else if(spots.length&&spots[0].basis==='stat sheet'&&L==='CFB') h+='<div class="pic-src">Team season totals are not on file for this school, so the spotlight is the category leader, not a share of the offense.</div>';
     if(!res&&stats&&stats.rows&&stats.rows.length&&(feed||roster)) h+='<div class="pic-empty">No '+esc(L)+' stat rows matched “'+esc(name||'')+'”, so only the roster is read.</div>';
     var srcs=[];
@@ -27399,10 +27928,54 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
     h+='<div class="pic-sec">Key players</div>';
     if(!L) h+='<div class="pic-empty">EdgeDesk holds no player tables for this sport, so no player is named.</div>';
     else h+='<div class="pic-teams">'+teamBlock(e,L,'away',data.stats,data.props,data.totals)+teamBlock(e,L,'home',data.stats,data.props,data.totals)+'</div>';
+    h+=availabilitySpotlightHTML(e);
     h+='<div class="pic-sec">Every priced market on this game</div>'+marketsHTML(e,data.rows);
     h+='<div class="pic-sec">Every book on this line</div><div id="'+esc(data.domid||'pic')+'_books">'+(data.books?booksHTML(data.books):'<div class="pic-empty">Loading per-book prices…</div>')+'</div>';
     h+='<div class="pic-src">Players: team leaders from EdgeDesk’s stat tables and the starter feeds, with the stat line as the reason. Prices: the captured signal rows and the engine’s own fair line and verdict. Nothing here is estimated.</div>';
     return h+'</div>';
+  }
+
+  /* THE AVAILABILITY SPOTLIGHT. Who is in doubt, what it would mean, and how
+     much EdgeDesk actually knows. It is CONTEXT: no number on this page moves
+     because of it, and the copy says so. */
+  function availabilitySpotlightHTML(e){
+    var av=null;
+    try{ av=(window.EDCARD&&window.EDCARD.availabilityFor)?window.EDCARD.availabilityFor({e:e}):null; }catch(_){ av=null; }
+    if(!av) return '';
+    var h='<div class="pic-sec">Availability</div>';
+    if(av.status!=='ON_FILE') return h+'<div class="pic-empty">'+esc(P.coverageText(av,[])||'No verified availability information found.')+'</div>';
+    var sum=P.availabilitySummary(av);
+    if(!sum) return h+'<div class="pic-empty">No verified availability information found for this matchup.</div>';
+    var bySide={away:[],home:[]};
+    (sum.listed||[]).forEach(function(p){ (bySide[p.side]=bySide[p.side]||[]).push(p); });
+    ['away','home'].forEach(function(k){
+      var tm=av.teams[k]; if(!tm) return;
+      var name=(k==='away'?e.away_team:e.home_team)||tm.name;
+      var hi=(bySide[k]||[]).filter(function(p){ return p.impact==='HIGH'; });
+      var rest=(bySide[k]||[]).filter(function(p){ return p.impact!=='HIGH'; });
+      h+='<div class="pic-av-side"><div class="pic-av-team">'+esc(name)+'</div>';
+      if(hi.length){
+        h+='<div class="pic-av-lead">'+esc(name+' has '+(hi.length===1?'one high-impact uncertainty':hi.length+' high-impact uncertainties')+'.')+'</div>';
+        hi.forEach(function(p){
+          h+='<div class="pic-av-p"><div class="pic-pn">'+esc((p.position?p.position+' ':'')+p.name)+' <span class="pic-tag '+esc(p.status)+'">'+esc(p.label||p.status)+'</span></div>'
+            +'<div class="pic-why">'+esc([p.injury?String(p.injury).toLowerCase():null,p.practice?String(p.practice).replace(/ in practice| participation/gi,'').toLowerCase()+' in practice':null].filter(Boolean).join(' · ')||'no further detail on file')+'</div>'
+            +'<div class="pic-av-mean">If '+esc(p.name.split(' ').slice(-1)[0])+' cannot go, EdgeDesk’s number for this game does not adjust for it — treat it as a variable the model is missing.</div>'
+            +(P.sourceText(p)?'<div class="pic-src">'+(p.source_url?'<a href="'+esc(p.source_url)+'" target="_blank" rel="noopener">'+esc(P.sourceText(p))+'</a>':esc(P.sourceText(p)))+(p.contested?' · sources disagree':'')+'</div>':'')
+            +(P.timelineText(p)?'<div class="pic-av-tl">'+esc(P.timelineText(p))+'</div>':'')+'</div>';
+        });
+      } else {
+        var side=(sum.sides||[]).filter(function(s2){ return s2.key===k; })[0];
+        h+='<div class="pic-av-lead">'+esc(name+' has no verified high-impact availability flags.')+'</div>'
+          +(side?'<div class="pic-why">'+esc(side.text)+'</div>':'');
+      }
+      if(rest.length) h+='<ul class="pic-players">'+rest.map(function(p){
+        return '<li><div class="pic-pn">'+esc(p.name)+(p.position?' <span class="pic-pos">'+esc(p.position)+'</span>':'')+' <span class="pic-tag '+esc(p.status)+'">'+esc(p.label||p.status)+'</span></div>'
+          +(P.sourceText(p)?'<div class="pic-src">'+esc(P.sourceText(p))+'</div>':'')+'</li>';
+      }).join('')+'</ul>';
+      h+='</div>';
+    });
+    if(sum.coverage_text) h+='<div class="pic-src">'+esc(sum.coverage_text)+(sum.last_updated?' Updated '+esc(P.agoText(sum.last_updated)||''):'')+'</div>';
+    return h;
   }
 
   /* ---- data: stats rows per league, cached ------------------------------- */
@@ -27468,6 +28041,8 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
     var stats=await loadStatsFor(L);
     await ensureFeeds(e,L);
     var totals=null;
+    if(L==='NFL'){ try{ if(window.EDCARD&&window.EDCARD.loadInjuries) await window.EDCARD.loadInjuries(); }catch(_){} totals=await loadTeamTotals(L,[e.away_team,e.home_team]); }
+    if(L==='CFB'){ try{ if(window.EDCARD&&window.EDCARD.loadCfbAvailability) await window.EDCARD.loadCfbAvailability(); }catch(_){} }
     if(L==='CFB'){
       var schools=[e.away_team,e.home_team].map(function(nm){ var tm=rosterTeam(nm); if(tm&&tm.location) return tm.location; var r=stats&&stats.index?resolveTeam(stats.index,nm):null; return r?r.team:nm; });
       totals=await loadTeamTotals(L, schools);
@@ -27482,7 +28057,8 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
     open:open, pictureHTML:pictureHTML, marketsHTML:marketsHTML, booksHTML:booksHTML, teamBlock:teamBlock,
     keyPlayers:keyPlayers, resolveTeam:resolveTeam, teamIndex:teamIndex, leagueOf:leagueOf, gameRows:gameRows, leadVal:leadVal,
     loadRoster:loadRoster, rosterTeam:rosterTeam, rosterIndex:rosterIndex, ROSTER:ROSTER,
-    spotlight:spotlight, impactOf:impactOf, rosterSpotlight:rosterSpotlight, loadTeamTotals:loadTeamTotals,
+    spotlight:spotlight, impactOf:impactOf, rosterSpotlight:rosterSpotlight, loadTeamTotals:loadTeamTotals, loadNflTotals:loadNflTotals, injuryOf:injuryOf,
+    availabilitySpotlightHTML:availabilitySpotlightHTML, injuryHTML:injuryHTML, availabilityOf:availabilityOf,
     CAT_PRI:CAT_PRI
   };
 })();
