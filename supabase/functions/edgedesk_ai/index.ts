@@ -2819,6 +2819,24 @@ export class Dal {
         `all ${_dropped} signal rows in the window failed the tradeable bound (${_why}). `
         + `That is a capture problem, not an empty board — do not describe the slate as quiet.`)] };
     }
+    /* THE TOP ROW OF THIS LIST BECOMES THE ENGINE'S CANDIDATE for a "what should
+       I bet" question, and the list is ordered by edge descending with nulls
+       last. With no sign filter, a slate where every qualified signal has since
+       gone negative still promoted its least-negative row to candidate. A
+       qualified signal whose LIVE edge has gone negative is a signal whose price
+       has moved past the point of being worth taking; it stays in `rows` as
+       context and is marked, so the engine can say the edge is gone rather than
+       recommending it. */
+    rows = rows.map((r: any) => ({ ...r, edge_still_positive: Number(r.edge) > 0 }));
+    const positives = rows.filter((r: any) => r.edge_still_positive);
+    if (!positives.length) {
+      return { rows, ev: [unavailable("signals", "slate",
+        `${rows.length} qualified signal(s) are on the board but every one has moved to a non-positive edge at `
+        + `the current price. The scan ran and the board is not broken — the prices have moved. Do not present `
+        + `any of these as a live opportunity.`)] };
+    }
+    rows = positives.concat(rows.filter((r: any) => !r.edge_still_positive));
+
     const out = rows.map((r) => ev({
       source: "signals", entity: `${r.away_team} @ ${r.home_team}`, field: "signal",
       value: r, status: "VERIFIED", relevance: "market",
@@ -5982,8 +6000,13 @@ export function buildSnapshot(eventId: string | null, evidence: Evidence[], focu
   if (focus) {
     facts.current_price = focus.best_dec ?? null;
     facts.fair_price = focus.sharp_fair ?? focus.consensus_fair ?? null;
+    /* What KIND of fair line that is. Without it the same field name covers a
+       Pinnacle de-vig and a pack median, and a reader has no way to tell. */
+    facts.fair_price_source = focus.reference_type
+      ?? (focus.has_sharp ? "sharp" : "robust_consensus");
     facts.edge = focus.edge ?? null;
     facts.n_books = focus.n_books ?? null;
+    facts.fresh_books = focus.fresh_books ?? null;
     facts.has_sharp = focus.has_sharp ?? null;
     facts.stale_min = focus.last_seen_at
       ? Math.round((Date.now() - Date.parse(focus.last_seen_at)) / 60000) : null;
@@ -10455,12 +10478,26 @@ async function runResearch(
       ? {
         event_id: focus.event_id, market: focus.market, selection: focus.selection, point: focus.point ?? null,
         price: focus.best_dec ?? null, first_price: focus.first_best_dec ?? null,
+        /* `sharp_fair` is THE FAIR EDGEDESK ANCHORED ON, which is not always a
+           sharp book's number — under capture v8 it was the pack median on every
+           row, because Pinnacle was structurally unreachable from the `us`
+           region. The model was handed it under that name and told to quote it
+           exactly, so a consensus median could be described to a reader as the
+           sharp line. reference_type says which it actually is, and
+           sharp_book_fair is NULL whenever there was no reference book. */
         sharp_fair: focus.sharp_fair ?? null, consensus_fair: focus.consensus_fair ?? null,
+        sharp_book_fair: focus.sharp_book_fair ?? null,
+        reference_type: focus.reference_type ?? null,
+        qual_tier: focus.qual_tier ?? null,
         edge: focus.edge ?? null, first_edge: focus.first_edge ?? null,
         n_books: focus.n_books ?? null, n_books_eff: focus.n_books_eff ?? null,
+        fresh_books: focus.fresh_books ?? null,
         has_sharp: focus.has_sharp ?? null, clv: focus.clv ?? null,
         beat_close: focus.beat_close ?? null, result: focus.result ?? null,
-        _note: "Owned by the deterministic engine. READ-ONLY — quote exactly, never recompute.",
+        _note: "Owned by the deterministic engine. READ-ONLY — quote exactly, never recompute. "
+          + "`sharp_fair` is the fair line EdgeDesk anchored on; read `reference_type` before calling it sharp. "
+          + "reference_type 'robust_consensus' means NO sharp book quoted this selection and the number is a "
+          + "trimmed median of independent books — do not describe it as a sharp or Pinnacle line.",
       }
       : null,
   };

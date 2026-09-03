@@ -166,6 +166,25 @@ function slice(src, start, end, label) {
   chk('the engine\'s lay-market rule matches capture\'s _lay SEGMENT rule',
     /\(\^\|_\)lay\(_\|\$\)/.test(AI));
 
+  /* ── 7b. THE MODEL IS NOT TOLD A CONSENSUS IS SHARP ───────────────────── */
+  const detCtx = slice(AI, '    deterministic_context: focus', '      : null,', 'deterministic_context');
+  chk('the model-facing context carries reference_type alongside sharp_fair',
+    /reference_type: focus\.reference_type/.test(detCtx), detCtx.slice(0, 400));
+  chk('and sharp_book_fair, which is NULL when there was no reference book',
+    /sharp_book_fair: focus\.sharp_book_fair/.test(detCtx));
+  chk('the note tells the model to read reference_type before calling it sharp',
+    /read `reference_type` before calling it sharp/.test(detCtx), detCtx.slice(-500));
+  chk('and forbids describing a robust_consensus as a Pinnacle line',
+    /do not describe it as a sharp or Pinnacle line/.test(detCtx));
+  chk('the plain-facts block names the KIND of fair line it is passing on',
+    /fair_price_source/.test(AI));
+
+  /* ── 7c. A SIGNAL WHOSE EDGE HAS GONE IS NOT A CANDIDATE ──────────────── */
+  chk('getSlate refuses to promote a non-positive-edge row to candidate',
+    /every one has moved to a non-positive edge/.test(slateQ), slateQ.slice(-700));
+  chk('but keeps those rows as context rather than deleting them',
+    /edge_still_positive/.test(slateQ));
+
   /* ── 8. THE RECORD MUST NOT WIDEN ITSELF INTO THE STORED POPULATION ───── */
   chk('the record pool is anchored on the flag, not on a live edge band',
     APP.indexOf("var FLAG_STRICT='flagged_at=not.is.null&flagged_edge=gte.0.005&flagged_edge=lte.0.1';") >= 0);
