@@ -27069,26 +27069,81 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
       return {items:items, label:(typeof fbQbFreshLabel==='function')?fbQbFreshLabel():'QB rosters'};
     }catch(_){ return null; }
   }
+  /* CFB reads the repo's own ESPN roster file directly (football/rosters/
+     fbs_<season>_espn.json, refreshed weekly by CI). It does not wait on the
+     Power 4 engine: an Ohio Bobcats edge deserves its QB room whether or not
+     the P4 board was ever opened. Odds-API names carry the mascot ("Ohio
+     Bobcats"); the file carries display_name, location and nickname, so the
+     join is exact on display_name first, then the school (location) as the
+     unique prefix of the board name, never a guess between two schools. */
+  var ROSTER={season:null,index:null,teams:null,error:null,_p:null,meta:null};
+  function rosterSeason(){ try{ if(typeof fbP4Season==='function') return fbP4Season(); }catch(_){} var d=new Date(); return d.getMonth()<=1?d.getFullYear()-1:d.getFullYear(); }
+  function classRank(c){ c=String(c||'').toLowerCase(); if(/grad/.test(c)) return 5; if(/senior/.test(c)) return 4; if(/junior/.test(c)) return 3; if(/sophomore/.test(c)) return 2; if(/freshman/.test(c)) return 1; return 0; }
+  function rosterIndex(j){
+    var ix={display:{},location:{},abbr:{}};
+    (j&&j.teams||[]).forEach(function(tm){
+      if(!tm||!Array.isArray(tm.players)) return;
+      var d=normTeam(tm.display_name), l=normTeam(tm.location), ab=normTeam(tm.abbreviation);
+      if(d) ix.display[d]=tm; if(l&&!ix.location[l]) ix.location[l]=tm; if(ab&&ab.length>=3&&!ix.abbr[ab]) ix.abbr[ab]=tm;
+    });
+    return ix;
+  }
+  function rosterTeam(name){
+    if(!ROSTER.index) return null;
+    var bn=normTeam(name); if(!bn) return null;
+    if(ROSTER.index.display[bn]) return ROSTER.index.display[bn];
+    if(ROSTER.index.location[bn]) return ROSTER.index.location[bn];
+    /* the school as the longest location that prefixes the board name, but
+       "Ohio" must not swallow "Ohio State Buckeyes": longest wins */
+    var best=null,bl=0,k;
+    for(k in ROSTER.index.location){ if(k.length>=3&&bn.indexOf(k)===0&&k.length>bl){ best=ROSTER.index.location[k]; bl=k.length; } }
+    if(best) return best;
+    var pre=[]; for(k in ROSTER.index.location){ if(bn.length>=4&&k.indexOf(bn)===0) pre.push(k); }
+    if(pre.length===1) return ROSTER.index.location[pre[0]];
+    return ROSTER.index.abbr[bn]||null;
+  }
+  async function loadRoster(){
+    if(ROSTER.index) return ROSTER;
+    if(ROSTER._p) return ROSTER._p;
+    var season=rosterSeason();
+    ROSTER._p=(async function(){
+      try{
+        var j=null;
+        if(window.FB&&FB.espn&&FB.espn.rawCurrent) j=FB.espn.rawCurrent;
+        if(!j){
+          var r=await fetch('football/rosters/fbs_'+season+'_espn.json',{cache:'no-cache'});
+          if(!r.ok){ r=await fetch('football/rosters/fbs_'+(season-1)+'_espn.json',{cache:'no-cache'}); season=season-1; }
+          if(!r.ok) throw new Error('roster file '+r.status);
+          j=await r.json();
+        }
+        ROSTER.season=+(j.requested_season||season); ROSTER.index=rosterIndex(j); ROSTER.teams=(j.teams||[]).length; ROSTER.meta={retrieved_at:j.retrieved_at||null};
+      }catch(e){ ROSTER.error=String(e&&e.message||e).slice(0,100); }
+      ROSTER._p=null; return ROSTER;
+    })();
+    return ROSTER._p;
+  }
   function cfbSide(e, side){
     try{
-      if(!window.FB||!FB.espn||!FB.espn.details||!window.EDCfbP4||typeof EDCfbP4.normKey!=='function') return null;
       var name=side==='home'?e.home_team:e.away_team;
-      var d=FB.espn.details[EDCfbP4.normKey(name)];
-      if(!d){ var k=resolveTeam((function(){ var ix={}; Object.keys(FB.espn.details).forEach(function(kk){ ix[normTeam(FB.espn.details[kk].team)]={team:FB.espn.details[kk].team,rows:[kk]}; }); return ix; })(), name); d=k?FB.espn.details[k.rows[0]]:null; }
-      if(!d) return null;
-      var qbs=(d.players||[]).filter(function(p){ return p.group==='QB'; });
-      var ordered=qbs.slice().sort(function(a,b){ return (b.w==null?-1:b.w)-(a.w==null?-1:a.w); }).slice(0,3);
-      var items=ordered.map(function(p){
+      var tm=rosterTeam(name);
+      if(!tm){
+        if(ROSTER.error) return {items:[], label:'ESPN roster file unreachable ('+ROSTER.error+')'};
+        if(ROSTER.index) return {items:[], label:'ESPN roster · no FBS team matched “'+String(name||'')+'”'};
+        return null;
+      }
+      var qbs=(tm.players||[]).filter(function(p){ return String(p.position||'').toUpperCase()==='QB'; })
+        .sort(function(a,b){ return classRank(b['class'])-classRank(a['class'])||String(a.name).localeCompare(String(b.name)); });
+      var items=qbs.map(function(p){
         var bits=[];
-        if(p.cls) bits.push(p.cls);
-        if(p.status==='returning') bits.push('returning');
-        else if(p.status==='transfer') bits.push('transfer in'+(p.from?' from '+p.from:''));
-        else if(p.status==='new') bits.push('new to the roster');
-        return {player:p.name, position:'QB', why:'Quarterback room · '+(bits.join(', ')||'on the ESPN roster')+' · the depth chart is not in any feed, so no starter is claimed', source:'roster', tag:'ROSTER'};
+        if(p['class']) bits.push(p['class']);
+        if(p.jersey) bits.push('#'+p.jersey);
+        if(p.previous_school) bits.push('transfer in from '+p.previous_school);
+        return {player:p.name, position:'QB', why:'Quarterback room · '+(bits.join(' · ')||'on the ESPN roster')+' · the depth chart is not in any feed, so no starter is claimed', source:'roster', tag:'ROSTER'};
       });
-      var b=FB.espn.bundles&&FB.espn.bundles[EDCfbP4.normKey(d.team)];
-      var cont=b&&b.by_group&&b.by_group.QB&&b.by_group.QB.returning_share!=null?Math.round(b.by_group.QB.returning_share*100)+'% of the QB group returning':null;
-      return {items:items, label:'ESPN roster · '+(FB.espn.meta&&FB.espn.meta.season||'')+(cont?' · '+cont:'')};
+      if(!items.length) items.push({player:'No quarterback listed', position:'QB', why:'The ESPN roster file carries no QB for '+(tm.location||name)+'.', source:'roster', tag:'MISSING'});
+      var cont=null;
+      try{ var b=window.FB&&FB.espn&&FB.espn.bundles&&window.EDCfbP4&&FB.espn.bundles[EDCfbP4.normKey(tm.location)]; if(b&&b.by_group&&b.by_group.QB&&b.by_group.QB.returning_share!=null) cont=Math.round(b.by_group.QB.returning_share*100)+'% of the QB group returning'; }catch(_){}
+      return {items:items, label:'ESPN roster · '+(ROSTER.season||'')+' · '+(tm.display_name||tm.location)+' · '+(tm.players||[]).length+' players'+(cont?' · '+cont:'')};
     }catch(_){ return null; }
   }
   function mlbSide(e, side){
@@ -27120,7 +27175,17 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
     var h='<div class="pic-team'+(pick?' pick':'')+'"><div class="pic-tn">'+esc(name||'—')+'<span class="pic-side">'+(side==='home'?'home':'away')+(pick?' · the pick':'')+'</span></div>';
     var rows=[];
     if(feed&&feed.items) feed.items.forEach(function(it){ rows.push(it); });
-    kp.forEach(function(it){ if(!rows.some(function(r){ return normTeam(r.player)===normTeam(it.player); })) rows.push(it); });
+    /* A room player who is also a stat leader is ONE line: the stat reason
+       first, the room facts after, and he leads the room. A roster room is
+       then capped at three, so the stat-sheet QB is never the one cut on an
+       alphabetical tie. */
+    kp.forEach(function(it){
+      var hit=null; rows.forEach(function(r){ if(!hit&&normTeam(r.player)===normTeam(it.player)) hit=r; });
+      if(hit){ hit.why=it.why+' · '+hit.why; hit.position=it.position||hit.position; hit.onSheet=true; }
+      else rows.push(it);
+    });
+    rows.sort(function(a,b){ return (b.onSheet?1:0)-(a.onSheet?1:0); });
+    var roomN=0; rows=rows.filter(function(r){ if(r.source!=='roster') return true; roomN++; return roomN<=3; });
     if(!rows.length){
       h+='<div class="pic-empty">'+(stats&&stats.error?('Player tables unreachable ('+esc(stats.error)+').'):stats&&stats.rows&&stats.rows.length?('No '+esc(L||'')+' stat rows matched “'+esc(name||'')+'” in stats_players.'):('No player stat lines on file for '+esc(L||'this league')+' — stats_players is empty. Run capture_stats.'))+' Nothing is filled in.</div>';
     } else {
@@ -27247,9 +27312,7 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
     CACHE.books[key]={at:Date.now(),rows:rows||[]}; return rows||[];
   }
   async function ensureFeeds(e, L){
-    try{
-      if(L==='CFB'&&typeof fbEspnData==='function'&&!(window.FB&&FB.espn&&FB.espn.details)) await fbEspnData().catch(function(){});
-    }catch(_){}
+    try{ if(L==='CFB') await loadRoster(); }catch(_){}
   }
   function namesFor(e, L, stats){
     var out=[];
@@ -27284,6 +27347,7 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
   window.EDPIC={
     open:open, pictureHTML:pictureHTML, marketsHTML:marketsHTML, booksHTML:booksHTML, teamBlock:teamBlock,
     keyPlayers:keyPlayers, resolveTeam:resolveTeam, teamIndex:teamIndex, leagueOf:leagueOf, gameRows:gameRows, leadVal:leadVal,
+    loadRoster:loadRoster, rosterTeam:rosterTeam, rosterIndex:rosterIndex, ROSTER:ROSTER,
     CAT_PRI:CAT_PRI
   };
 })();
