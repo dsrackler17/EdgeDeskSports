@@ -26,7 +26,7 @@ validates AI copy before a word of it reaches a card.
 
     node tools/presentation/presentation_sync.test.js
     node tools/presentation/presentation.test.js
-    node tools/presentation/edgedesk_ai.test.js      # the deployed function, under Node
+    node tools/presentation/edgedesk_ai.test.js      # the deployed .ts, under Node 22 type stripping
     node tools/presentation/app_presentation.test.js
     node tools/presentation/app_picture.test.js       # full picture: players, markets, books
 
