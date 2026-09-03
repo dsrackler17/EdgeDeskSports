@@ -132,6 +132,12 @@ jobs:
       - name: Verdicts survive translation, AI copy is gated, snapshots hold their prices
         run: node tools/presentation/presentation.test.js
 
+      # THE FIVE-SECOND TEST. Every public surface, every market shape and
+      # every verdict, checked for words a football fan cannot be expected to
+      # know — and checked that an underdog price never reads as a prediction.
+      - name: A football fan can read every public surface
+        run: node tools/presentation/public_language.test.js
+
       # CLOSE THE LOOP. Every published brief is graded against the close and
       # the final by tools/record/grade_briefs.js (its own scheduled workflow
       # commits record/grades.json). Nothing invented: no close means waiting,

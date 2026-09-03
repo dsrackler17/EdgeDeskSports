@@ -110,14 +110,14 @@ function sandbox() {
 
   const lead = sb.win.dcardLeadHTML(x.e, 't10_0');
   chk('Top-edges strip is a compact card', /class="dcard dc-bet compact"/.test(lead));
-  chk('strip shows verdict, selection, price and good-to', /BET/.test(lead) && /Texas Tech -3\.5/.test(lead) && /-110 · DraftKings/.test(lead) && /Good to<\/span> <b>-118/.test(lead), lead.slice(0, 600));
-  chk('strip shows one-line reason', /dcard-line/.test(lead) && /sharper market/.test(lead));
+  chk('strip shows verdict, the bet in football words, the ticket line and the price limit', /BET/.test(lead) && /Texas Tech to win by 4 points or more/.test(lead) && /Spread · Texas Tech -3\.5 · -110 · DraftKings/.test(lead) && /Price limit<\/span> <b>-118 or better/.test(lead), lead.slice(0, 700));
+  chk('strip answers in one line, with no undefined jargon', /dcard-line/.test(lead) && /dcard-sub/.test(lead) && !/sharper market|fair line|de-vig/i.test(lead), lead.slice(0, 700));
   chk('strip has View why + Create brief that do not toggle the row', /View why/.test(lead) && /Create brief/.test(lead) && /event\.stopPropagation\(\);toggleRcptId\((?:'|&#39;)t10_0(?:'|&#39;)\)/.test(lead));
 
   const rc = sb.win.dcardReceiptHTML(x.e, 't10_0');
   chk('receipt card is the full card with Full research first', /dcard-body/.test(rc) && /Full research/.test(rc) && /EDCARD\.toggleFull\((?:'|&#39;)t10_0/.test(rc));
   chk('receipt card offers Create brief and Ask EdgeDesk', /Create brief/.test(rc) && /Ask EdgeDesk/.test(rc));
-  chk('what-does-this-mean expanders are templated', /What does this mean\?/.test(rc));
+  chk('what-does-this-mean expanders are templated and each names its subject', /What does .price limit. mean\?/.test(rc) && /What does this call mean\?/.test(rc) && !/>What does this mean\?</.test(rc));
 
   const s = sb.win.EDCARD.simpleFromSignal(x.e);
   chk('football cards name the injury gap rather than implying a clean sheet', s.flags.some(function (f) { return f.kind === 'DATA_GAP' && /Injury and availability data is not on file/.test(f.text); }));
@@ -125,7 +125,7 @@ function sandbox() {
   const pass = fixtureX({ e: { event_id: 'ev2', selection: 'Baylor', point: 3.5 }, sel: 'Baylor +3.5', verdict: 'PASS', dverdict: 'PASS', curEdge: 0.002, curAm: -125, needsPriceForEv: -118, reasonsFor: [], why: 'The edge existed at detection (-108) but the current price has moved to -125, pulling EV below the 0.5% floor.' });
   sb.xs['ev2|Baylor'] = pass;
   const pl = sb.win.dcardLeadHTML(pass.e, 't10_1');
-  chk('PASS strip is calm, not an error: needs-price shown', /dc-pass/.test(pl) && /Needs<\/span> <b>-118 or better/.test(pl), pl.slice(0, 500));
+  chk('PASS strip is calm, not an error: the price it would take is shown', /dc-pass/.test(pl) && /Price needed<\/span> <b>-118 or better/.test(pl) && /Not worth it at this price/.test(pl), pl.slice(0, 700));
 
   const btn = sb.win.fbBriefBtn('nfl', { home_team: 'KC', away_team: 'BAL' }, { t: 1 }, 'Kansas City Chiefs', 'Baltimore Ravens');
   chk('football Game brief button carries the schedule row, never a hardcoded team', /EDBRIEF\.openGame\(/.test(btn) && /Kansas City Chiefs/.test(btn) && /americanfootball_nfl/.test(btn));

@@ -11,7 +11,7 @@
   gtag('js', new Date());
   gtag('config', 'G-1PXVBV53FZ');
 </script>
-<title>EdgeDesk — Sports betting research terminal, priced against the close</title>
+<title>EdgeDesk — which betting lines are worth a second look, and which aren’t</title>
 <meta name="description" content="EdgeDesk scans the market, compares every price against de-vigged fair value, researches the matchup, attacks its own thesis, and grades every flagged edge against the closing line. A research terminal for sports betting — not a picks service.">
 <link rel="canonical" href="https://edgedesksports.com/">
 <meta name="theme-color" content="#0b0d11">
@@ -196,7 +196,27 @@ h1 .g{background:linear-gradient(92deg,var(--obs),var(--exp));-webkit-background
 .microcta{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--faint);margin-top:18px;letter-spacing:.03em;line-height:1.7}
 .spine{display:flex;gap:8px;flex-wrap:wrap;margin-top:26px;padding-top:22px;border-top:1px solid var(--line)}
 .spine .lbl{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--faint);align-self:center;margin-right:2px}
-@media(max-width:940px){.hero-in{grid-template-columns:1fr;gap:34px}.hero{padding-top:44px}}
+@media(max-width:940px){.hero-in{grid-template-columns:1fr;gap:26px}.hero{padding-top:38px}}
+/* THE FIVE-SECOND MOBILE SCREEN. At 375x667 the first viewport has to carry
+   what this is, what you get, and one next action — so the headline, the
+   sub and the buttons are all tightened rather than the content cut. */
+@media(max-width:560px){
+  .hero{padding:22px 0 30px}
+  h1{font-size:30px;line-height:1.08;margin-top:12px;letter-spacing:-.028em}
+  .sub{font-size:15px;margin-top:14px;line-height:1.55}
+  .cta{margin-top:18px;gap:9px;flex-wrap:nowrap}
+  .cta .btn.lg{padding:12px 14px;font-size:14px;white-space:nowrap;flex:1 1 auto}
+  .microcta{margin-top:12px;font-size:10.5px;line-height:1.6}
+  .spine{margin-top:16px;padding-top:14px;gap:6px}
+  .hero .ey{font-size:10.5px}
+}
+/* 320px: two nowrap buttons on one row are wider than the viewport, which
+   drags the whole page into a horizontal scroll. Let them stack again. */
+@media(max-width:404px){
+  h1{font-size:27px}
+  .cta{flex-wrap:wrap}
+  .cta .btn.lg{flex:1 1 100%;white-space:normal}
+}
 
 /* ---------- shared terminal panel ---------- */
 .term{background:linear-gradient(180deg,var(--panel),#0f1218);border:1px solid var(--line2);border-radius:16px;overflow:hidden;box-shadow:0 40px 90px -50px rgba(0,0,0,.9),0 0 0 1px rgba(92,157,255,.04)}
@@ -206,6 +226,30 @@ h1 .g{background:linear-gradient(92deg,var(--obs),var(--exp));-webkit-background
 .term-bar .tag{margin-left:auto;font-size:8.5px;letter-spacing:.11em;text-transform:uppercase;color:var(--faint);border:1px solid var(--line2);border-radius:5px;padding:3px 7px;flex:none}
 .term-foot{padding:10px 15px;border-top:1px solid var(--line);background:#0e1116;font-family:'JetBrains Mono',monospace;font-size:9.5px;letter-spacing:.05em;color:var(--faint);line-height:1.6}
 
+/* ---------- hero: the product itself, as the reader will meet it ---------- */
+.hcard{padding:16px 18px 18px}
+.hcard-top{display:flex;gap:14px;align-items:baseline;flex-wrap:wrap}
+.hcard-v{font-family:'JetBrains Mono',ui-monospace,monospace;font-weight:800;font-size:26px;letter-spacing:.06em;line-height:1}
+.hcard-v.wait{color:var(--mdl,#9b8cff)}
+.hcard-bet{font-size:20px;font-weight:800;letter-spacing:-.01em;line-height:1.2}
+.hcard-tk{font-family:'JetBrains Mono',ui-monospace,monospace;font-size:12.5px;color:var(--dim);margin-top:3px}
+.hcard-tk b{color:var(--text)}
+.hcard-sub{font-size:15px;color:var(--text);margin:10px 0 0;line-height:1.5}
+.hcard-h{font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--dim);margin:15px 0 5px}
+.hcard-cmp{border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.hcard-cmp>div{display:flex;align-items:baseline;justify-content:space-between;gap:10px;padding:8px 11px;border-bottom:1px solid var(--line)}
+.hcard-cmp>div:last-child{border-bottom:none}
+.hcard-cmp .k{font-size:13px;color:var(--dim)}
+.hcard-cmp b{font-family:'JetBrains Mono',ui-monospace,monospace;font-size:16px;font-weight:800}
+.hcard-cmp b.acc{font-family:inherit;font-size:13.5px;color:var(--val)}
+.hcard-guard{border:1px solid rgba(217,154,43,.4);background:rgba(217,154,43,.08);border-radius:10px;padding:10px 12px;margin-top:13px}
+.hcard-guard .k{display:block;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--est);font-weight:700;margin-bottom:3px}
+.hcard-guard p{margin:0;font-size:13.5px;line-height:1.5}
+.hcard-p{margin:0;font-size:14px;line-height:1.55;color:var(--text)}
+.hcard-lim{margin-top:14px;padding-top:11px;border-top:1px solid var(--line);font-family:'JetBrains Mono',ui-monospace,monospace;font-size:15px;font-weight:800}
+.hcard-lim .k{display:block;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--dim);font-weight:700;margin-bottom:2px}
+.hcard-lim .n{display:block;font-family:inherit;font-size:13px;font-weight:400;color:var(--dim);margin-top:3px}
+@media(max-width:560px){.hcard{padding:14px 14px 16px}.hcard-v{font-size:22px}.hcard-bet{font-size:18px}}
 /* ---------- hero demo: the price slider ---------- */
 .demo-body{padding:16px 16px 18px}
 .demo-game{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap;padding-bottom:14px;border-bottom:1px solid var(--line)}
@@ -220,7 +264,7 @@ h1 .g{background:linear-gradient(92deg,var(--obs),var(--exp));-webkit-background
 .slabel{display:flex;justify-content:space-between;font-family:'JetBrains Mono',monospace;font-size:9.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--faint);margin-bottom:9px}
 .strack{position:relative;padding:6px 0 4px}
 .strack .fairmark{position:absolute;top:-3px;bottom:14px;width:1px;background:var(--est);opacity:.75;pointer-events:none}
-.strack .fairmark span{position:absolute;top:-15px;left:50%;transform:translateX(-50%);font-family:'JetBrains Mono',monospace;font-size:8.5px;letter-spacing:.09em;color:var(--est);white-space:nowrap}
+.strack .fairmark span{position:absolute;top:-16px;left:50%;transform:translateX(-50%);font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.07em;color:var(--est);white-space:nowrap}
 input[type=range].edge{-webkit-appearance:none;appearance:none;width:100%;background:transparent;margin:0;height:30px;cursor:pointer;display:block;position:relative;z-index:2}
 input[type=range].edge::-webkit-slider-runnable-track{height:8px;border-radius:5px;background:linear-gradient(90deg,rgba(63,184,131,.55),rgba(217,164,65,.5) 42%,rgba(226,102,75,.55));border:1px solid var(--line2)}
 input[type=range].edge::-moz-range-track{height:8px;border-radius:5px;background:linear-gradient(90deg,rgba(63,184,131,.55),rgba(217,164,65,.5) 42%,rgba(226,102,75,.55));border:1px solid var(--line2)}
@@ -884,23 +928,74 @@ section.band.lp-quiet{padding:56px 0}
         <span class="hg">&#9971;</span>
         <span id="hookT"><b>Competitive golfer?</b> You already grade yourself against the field instead of against the scoreboard. <a href="#bridge">That is exactly what this does &darr;</a></span>
       </div>
-      <span class="ey" id="heroEy"><b>&#9642;</b> Sports betting research terminal</span>
-      <h1>The research tool that tells you<br><span class="g">when its data isn't good enough to answer.</span></h1>
-      <p class="sub">Research, not picks. Every price is checked against de-vigged sharp fair value. An independent football model publishes its own report card. Every flagged price is frozen and graded against the close in a public record. It <b>never tells you what to bet.</b></p>
+      <span class="ey" id="heroEy"><b>&#9642;</b> Sports betting research</span>
+      <h1>Which betting lines are worth a second look <span class="g">&mdash; and which aren't.</span></h1>
+      <p class="sub">EdgeDesk checks what every sportsbook is charging and gives each bet one call &mdash; <b>BET, LEAN, WAIT or PASS</b> &mdash; with the reason in plain English. When the evidence isn't good enough, it says so instead of guessing.</p>
       <div class="cta">
         <button class="btn primary lg" id="heroStart" onclick="startSubscribe()">Start 7 days free &#8594;</button>
-        <a class="btn ghost lg" href="#how">See how it works</a>
+        <a class="btn ghost lg" href="#how">See how a call works</a>
       </div>
       <p class="microcta"><b style="color:var(--val)">7-day free trial</b> &middot; then $79.99/month, cancel any time before it ends and you are not charged &middot; 21+</p>
       <div class="spine">
-        <span class="lbl">What it can prove:</span>
-        <span class="pv val">Beat the close</span>
-        <span class="pv est">Bad bets avoided</span>
-        <span class="pv obs">Hours saved</span>
+        <span class="lbl">Every call carries:</span>
+        <span class="pv val">The reason</span>
+        <span class="pv est">The price limit</span>
+        <span class="pv obs">A public grade</span>
       </div>
     </div>
 
-    <div class="term" id="heroDemo">
+    <!-- SHOW THE PRODUCT, DO NOT DESCRIBE IT. This is the real card shape a
+         subscriber sees, in the real product's words. Illustrative game. -->
+    <div class="term" id="heroCard">
+      <div class="term-bar">
+        <span class="tt"><i></i><i></i><i></i></span>
+        <span class="nm">EdgeDesk &middot; A call, as it actually reads</span>
+        <span class="tag">Illustrative example</span>
+      </div>
+      <div class="hcard">
+        <div class="hcard-top">
+          <div class="hcard-v wait">WAIT</div>
+          <div>
+            <div class="hcard-bet">Fresno State to beat USC</div>
+            <div class="hcard-tk">Moneyline &middot; Fresno State &middot; <b>+1400</b> &middot; DraftKings</div>
+          </div>
+        </div>
+        <p class="hcard-sub">Interesting price. Not confirmed yet.</p>
+
+        <div class="hcard-h">What EdgeDesk found</div>
+        <div class="hcard-cmp">
+          <div><span class="k">Your sportsbook</span><b>+1400</b></div>
+          <div><span class="k">EdgeDesk comparison</span><b>about +1237</b></div>
+          <div><span class="k">Difference</span><b class="acc">Paying more than expected</b></div>
+        </div>
+
+        <div class="hcard-guard"><span class="k">Read this first</span>
+          <p>Fresno State is a heavy underdog. EdgeDesk is judging the <b>price</b>, not predicting an upset.</p></div>
+
+        <div class="hcard-h">Why wait</div>
+        <p class="hcard-p">EdgeDesk last saw this price 90 minutes ago. Odds move quickly, so it wants a fresh check before trusting it.</p>
+
+        <div class="hcard-lim"><span class="k">Price limit</span> <b>+1237 or better</b>
+          <span class="n">Below that, the value is gone.</span></div>
+      </div>
+      <div class="term-foot">Every call carries the reason, the price limit, and what would make it wrong. Nothing here tells you what to bet.</div>
+    </div>
+  </div>
+</header>
+
+<!-- ====================== THE PRICE IS THE DECISION ======================
+     The interactive that used to sit in the hero. It is the single clearest
+     demonstration of the product's core idea, but it is a second-screen
+     idea, not a five-second one — so it now sits directly under the hero
+     with labels a fan can read. -->
+<section class="band" id="price">
+  <div class="wrap">
+    <div class="head rv">
+      <span class="ey"><b>&#9642;</b> The one idea</span>
+      <h2>Same game. Same research.<br><span class="g">Different price, different answer.</span></h2>
+      <p>A bet is not good or bad on its own. It is good at one price and bad at another. Drag the price and watch the answer flip &mdash; nothing about the game changes.</p>
+    </div>
+    <div class="term rv" id="heroDemo" style="margin-top:14px">
       <div class="term-bar">
         <span class="tt"><i></i><i></i><i></i></span>
         <span class="nm">EdgeDesk &middot; Price sensitivity</span>
@@ -910,21 +1005,21 @@ section.band.lp-quiet{padding:56px 0}
         <div class="demo-game">
           <div>
             <div class="gn">Reds @ Cubs &middot; Under 8.5</div>
-            <div class="gm">Total &middot; Illustrative game</div>
+            <div class="gm">Fewer than 8.5 runs combined &middot; Illustrative game</div>
           </div>
-          <span class="pv obs">De-vigged &middot; 22 books</span>
+          <span class="pv obs">22 sportsbooks compared</span>
         </div>
 
         <div class="pgrid">
-          <div class="pcell"><span class="k">Fair value</span><span class="v mut" id="hdFair">&minus;121</span></div>
+          <div class="pcell"><span class="k">EdgeDesk comparison</span><span class="v mut" id="hdFair">&minus;121</span></div>
           <div class="pcell"><span class="k">Your price</span><span class="v" id="hdPrice">&minus;108</span></div>
-          <div class="pcell"><span class="k">Edge vs fair</span><span class="v" id="hdEdge">+3.0%</span></div>
+          <div class="pcell"><span class="k">Difference</span><span class="v" id="hdEdge">+3.0%</span></div>
         </div>
 
         <div class="slot">
           <div class="slabel"><span>Drag the price</span><span id="hdRange">&minus;105 &rarr; &minus;145</span></div>
           <div class="strack">
-            <div class="fairmark" id="hdFairMark"><span>FAIR</span></div>
+            <div class="fairmark" id="hdFairMark"><span>COMPARISON</span></div>
             <input type="range" class="edge" id="hdSlider" min="0" max="40" step="1" value="3"
                    aria-label="Offered price for Under 8.5, from generous to steep">
           </div>
@@ -932,7 +1027,7 @@ section.band.lp-quiet{padding:56px 0}
           <div class="sladder" aria-hidden="true">
             <div class="sl k-play" id="sl0">QUALIFIES</div>
             <div class="sl k-less" id="sl1">LESS<br>ATTRACTIVE</div>
-            <div class="sl k-fair" id="sl2">FAIR</div>
+            <div class="sl k-fair" id="sl2">NO VALUE<br>LEFT</div>
             <div class="sl k-no" id="sl3">NO LONGER<br>QUALIFIES</div>
           </div>
         </div>
@@ -948,10 +1043,10 @@ section.band.lp-quiet{padding:56px 0}
         </div>
         <div class="breakline" id="hdBreak"></div>
       </div>
-      <div class="term-foot">EdgeDesk is not telling you what to do. It is showing you when a number meets its research criteria &mdash; and when it stops.</div>
+      <div class="term-foot">EdgeDesk is not telling you what to do. It is showing you the price at which a bet stops being worth it &mdash; and saying so out loud.</div>
     </div>
   </div>
-</header>
+</section>
 
 <!-- ============================ THE PROBLEM ============================
      The first thing under the hero: the questions the product asks instead
@@ -2752,7 +2847,7 @@ function fmtAm(a){ a=Math.round(a); return (a>0?'+':'−')+Math.abs(a); }
    ====================================================================== */
 (function heroDemo(){
   var slider=document.getElementById('hdSlider'); if(!slider) return;
-  var BEST=-105, FAIR_P=0.548;           // de-vigged fair probability for the example
+  var BEST=-105, FAIR_P=0.548;           // EdgeDesk's comparison price for the example, as a probability
   var FAIR_A=americanFromImplied(FAIR_P); // ≈ -121
   var elPrice=document.getElementById('hdPrice'), elFair=document.getElementById('hdFair'),
       elEdge=document.getElementById('hdEdge'), box=document.getElementById('hdState'),
@@ -2762,13 +2857,13 @@ function fmtAm(a){ a=Math.round(a); return (a>0?'+':'−')+Math.abs(a); }
   var MAXV=+slider.max;
   var STATES=[
     {min:2.0, cls:'s-play', label:'QUALIFIES',
-     copy:'The price is better than the fair number, so this number meets EdgeDesk’s research criteria.'},
+     copy:'The sportsbook is charging less than EdgeDesk’s comparison price for this bet, so it clears the bar.'},
     {min:0.6, cls:'s-less', label:'LESS ATTRACTIVE',
-     copy:'Still on the right side, but most of the edge has been paid away.'},
-    {min:-0.6, cls:'s-fair', label:'FAIR',
-     copy:'You are now paying exactly what it is worth. No edge left — a coin flip with a fee attached.'},
+     copy:'Still on the right side of the comparison, but most of what made it interesting has been paid away.'},
+    {min:-0.6, cls:'s-fair', label:'NO VALUE LEFT',
+     copy:'You are now paying exactly what the bet is worth. Nothing left over — a coin flip with a fee attached.'},
     {min:-Infinity, cls:'s-no', label:'NO LONGER QUALIFIES',
-     copy:'Same team. Same opinion. Different price. EdgeDesk stops flagging it here.'}
+     copy:'Same team. Same research. Different price. EdgeDesk stops flagging it here.'}
   ];
   function priceAt(v){ return BEST - v; }              // v:0..40  ->  -105..-145
   function edgeAt(v){ return (FAIR_P - impliedFromAmerican(priceAt(v))) * 100; }
@@ -2797,9 +2892,9 @@ function fmtAm(a){ a=Math.round(a); return (a>0?'+':'−')+Math.abs(a); }
     box.className='state '+st.cls;
     elV.textContent=st.label;
     elC.textContent=st.copy;
-    elBreak.innerHTML='<b>Fair value never moved.</b> Past '+fmtAm(deadPrice).replace('−','−')+
+    elBreak.innerHTML='<b>EdgeDesk’s comparison price never moved.</b> Past '+fmtAm(deadPrice).replace('−','−')+
       ' there is nothing left to buy — the same bet, priced out of existence.';
-    slider.setAttribute('aria-valuetext', fmtAm(p).replace('−','minus ')+', edge '+e.toFixed(1)+' percent, '+st.label.toLowerCase());
+    slider.setAttribute('aria-valuetext', fmtAm(p).replace('−','minus ')+', '+e.toFixed(1)+' percent better than the comparison price, '+st.label.toLowerCase());
   }
   slider.addEventListener('input',render);
   slider.addEventListener('change',render);
