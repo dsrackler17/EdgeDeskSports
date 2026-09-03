@@ -93,13 +93,26 @@ book-behaviour study is about.
 
 ## Not in this repository
 
-`public_record.sql` and the `close` and `learn` edge functions are referenced by
-the app and by capture's comments but have never been committed here. They exist
-only in the Supabase dashboard, which means:
+`public_record.sql` is referenced by the app and by capture's comments but has
+never been committed here, so the definitions of `result` and `beat_close` are
+still written by code no checkout can review. Worth fixing the same way `close`
+and `learn` now are.
 
-- every CLV, `result`, `beat_close` and `closing_sharp_fair` value the record
-  reports is written by code no checkout can review, and
-- every claim capture's comments make about `close/index.ts` is unverifiable
-  from here.
+---
 
-Worth fixing by committing them the way `functions/capture/index.ts` now is.
+### `functions/close/index.ts` — the closing line and CLV
+Transcribed from the Supabase dashboard, where it had lived unreviewed since it
+was written. **Diff this against the deployed function before treating it as
+authoritative** — it was pasted in, not exported, and a transcription error here
+would be indistinguishable from a real difference.
+
+It carries its own copy of `devig`, `priceEvent` and `sigKey`, because the
+dashboard bundles only one folder and a `../_shared` import fails the bundle
+silently. The copies have drifted from capture v9 — see
+`functions/capture/README.md` and the audit in `tools/capture/pricer_parity.md`.
+
+### `functions/learn/index.ts` — patterns and calibration
+Pre-registered hypotheses, chronological holdout, Benjamini-Hochberg across the
+family, an effect floor, and expiry for patterns that stop holding. It learns on
+CLV rather than win/loss, which means everything it concludes inherits whatever
+`close` wrote. Same transcription caveat.
