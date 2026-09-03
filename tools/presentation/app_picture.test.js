@@ -67,6 +67,7 @@ function sandbox(over) {
     window: win, document: { getElementById: function (id) { return (over.dom || {})[id] || null; } }, console, Date, JSON, Math, Object, Array, String, Number, RegExp, Promise, encodeURIComponent, setTimeout,
     sbGet: async function (q) { calls.push(q); if (over.sbGet) return over.sbGet(q); return []; },
     fetch: async function (url) { calls.push('fetch ' + url); if (over.fetch) return over.fetch(url); return { ok: false, status: 404 }; },
+    rsFetchAll: async function (schema, sel) { calls.push(schema + ':' + sel); if (over.totals) return over.totals(sel); return []; },
     EDAI: { evidence: function (r) { return over.evidence ? over.evidence(r) : { dverdict: r.edge > 0.03 ? 'BET' : r.edge > 0 ? 'LEAN' : 'PASS', toPlayAm: r.edge > 0 ? -118 : null }; } },
     isTrusted: function (b) { return !/bovada/i.test(b || ''); },
     selLabel: function (r) { return r.market === 'totals' ? r.selection + ' ' + r.point : r.market === 'spreads' ? r.selection + ' ' + (r.point > 0 ? '+' : '') + r.point : r.selection + ' ML'; },
@@ -110,6 +111,8 @@ const focal = rows[0];
   const st = { rows: stats, index: E.teamIndex(stats) };
   const away = E.teamBlock(focal, 'NFL', 'away', st, null);
   chk('the away block names the team, marks it as the pick and lists its leaders with reasons', /pic-team pick/.test(away) && /Chiefs<span class="pic-side">away · the pick/.test(away) && /Patrick Mahomes/.test(away) && /Team leader in passing yards \(2,431\)/.test(away));
+  chk('the NFL spotlight is the passing and rushing leaders in priority order, two of them, each with a rundown', (away.match(/pic-spot"/g) || []).length === 2 && away.indexOf('Patrick Mahomes') < away.indexOf('Isiah Pacheco') && /Spotlight because he leads the team in passing yards/.test(away) && /<li>2,431 yds · 19 TD<\/li>/.test(away) && /Also on the sheet/.test(away) && /Travis Kelce/.test(away));
+  chk('a stat breakdown rides in the rundown as chips', (function () { const r = Object.assign({}, stats[0], { cats: [{ name: 'passing', stats: [{ label: 'Comp', display: '61.2%' }, { label: 'YPA', display: '8.1' }] }] }); return /<li>Comp 61\.2% · YPA 8\.1<\/li>/.test(E.teamBlock(focal, 'NFL', 'away', { rows: [r], index: E.teamIndex([r]) }, null)); })());
   chk('the block cites its source and row count', /stats_players · 5 rows/.test(away));
   const missing = E.teamBlock({ event_id: 'ev2', sport_key: 'americanfootball_nfl', home_team: 'Buffalo Bills', away_team: 'New York Jets', selection: 'Bills' }, 'NFL', 'home', st, null);
   chk('a team the tables cannot match says so and fills nothing', /No NFL stat rows matched “Buffalo Bills” in stats_players\. Nothing is filled in\./.test(missing) && !/pic-players/.test(missing), missing);
@@ -163,8 +166,9 @@ const focal = rows[0];
     chk('the two Miamis stay apart', cfb.E.rosterTeam('Miami Hurricanes').location === 'Miami' && cfb.E.rosterTeam('Miami (OH) RedHawks').location === 'Miami (OH)');
     chk('a bare ambiguous name is not guessed', cfb.E.rosterTeam('Miam') === null);
     const away = cfb.E.teamBlock(ce, 'CFB', 'away', { rows: [], index: {} }, null);
-    chk('the CFB away side lists its QB room by class, with jersey and transfer origin, and claims no starter', /Nick Poulos/.test(away) && /Senior · #10/.test(away) && /Matt Vezza/.test(away) && /transfer in from Youngstown State/.test(away) && /no starter is claimed/.test(away) && !/Big Guy/.test(away) && /ROSTER/.test(away), away);
-    chk('at most three quarterbacks, seniors first', (away.match(/pic-pn/g) || []).length === 3 && away.indexOf('Nick Poulos') < away.indexOf('Matt Vezza') && away.indexOf('Matt Vezza') < away.indexOf('Hype Grand') && !/Levi Davis/.test(away));
+    chk('with no stat line on file the spotlight is a roster-construction read, labelled as such', /Nick Poulos <span class="pic-pos">QB<\/span> <span class="pic-tag spot">SPOTLIGHT · ROSTER/.test(away) && /not a performance read/.test(away) && /Senior · #10/.test(away), away);
+    chk('the roster spotlight is at most two: the senior QB, then the senior lineman by position value, a junior transfer QB behind both', (away.match(/pic-spot"/g) || []).length === 2 && away.indexOf('Nick Poulos') < away.indexOf('Big Guy') && /Big Guy <span class="pic-pos">OL/.test(away) && away.indexOf('Big Guy') < away.indexOf('Matt Vezza'), away);
+    chk('the rest of the QB room follows, capped at three, and claims no starter', /Also on the sheet/.test(away) && /no starter is claimed/.test(away) && /transfer in from Youngstown State/.test(away) && /Hype Grand/.test(away) && /Levi Davis/.test(away) && (away.match(/pic-pn/g) || []).length === 5);
     chk('the away side is marked as the pick and cites the roster file', /pic-team pick/.test(away) && /ESPN roster · 2026 · Ohio Bobcats · 5 players/.test(away));
     const home = cfb.E.teamBlock(ce, 'CFB', 'home', { rows: [], index: {} }, null);
     chk('the CFB home side reads the same file', /Dylan Raiola/.test(home) && /Sophomore · #15/.test(home));
@@ -179,7 +183,18 @@ const focal = rows[0];
     const st = { rows: cst, index: cfb.E.teamIndex(cst) };
     chk('“Ohio Bobcats” finds Ohio in the stat table, not Ohio State', cfb.E.resolveTeam(st.index, 'Ohio Bobcats').team === 'Ohio' && cfb.E.resolveTeam(st.index, 'Ohio State Buckeyes').team === 'Ohio State');
     const full = cfb.E.teamBlock(ce, 'CFB', 'away', st, null);
-    chk('the CFB block carries both the QB room and the stat leader with the stat line as the reason', /Nick Poulos/.test(full) && /Parker Navarro/.test(full) && /Team leader in passing yards \(1,801\) · 1,801 yds · 14 TD/.test(full) && /stats_players · 1 rows/.test(full), full);
+    chk('with a stat line but no team totals, the spotlight is the category leader and says no share is computed', /Parker Navarro <span class="pic-pos">QB<\/span> <span class="pic-tag spot">SPOTLIGHT<\/span>/.test(full) && /Spotlight because he leads the team in passing yards/.test(full) && /team totals not on file, so no share of the offense is computed/.test(full) && /<li>1,801 yds · 14 TD<\/li>/.test(full) && /stats_players · 1 rows/.test(full), full);
+    chk('the QB room still follows the spotlight', /Nick Poulos/.test(full) && /Also on the sheet/.test(full));
+    /* with the school's season totals on file, impact is a share of the offense */
+    const totals = { ohio: { _season: 2026, netPassingYards: 2400, rushingYards: 1500, totalYards: 3900 } };
+    const cst2 = cst.concat([{ league: 'CFB', team: 'Ohio', player: 'Sieh Bangura', position: 'RB', stat_line: '804 yds · 8 TD', lead_cat: 'rushing', lead_val: 804, leads: { rushing: 804, receiving: 120 } }]);
+    const st2 = { rows: cst2, index: cfb.E.teamIndex(cst2) };
+    const shared = cfb.E.teamBlock(ce, 'CFB', 'away', st2, null, totals);
+    chk('the spotlight states the share of total offense with the arithmetic shown', /Spotlight because he carries 46% of the offense/.test(shared) && /Accounts for 46% of Ohio’s total offense \(1,801 of 3,900 yards\) · 1,801 passing \(75% of the team\)/.test(shared), shared);
+    chk('the second spotlight is the next-largest share, with every part of it', /Sieh Bangura/.test(shared) && /Accounts for 24% of Ohio’s total offense \(924 of 3,900 yards\) · 804 rushing \(54% of the team\), 120 receiving \(5% of the team\)/.test(shared), shared);
+    chk('the denominator is named', /Share of offense = the player’s stored yards over Ohio’s 2026 season totals \(cfb\.team_season_stats\)/.test(shared));
+    chk('shares rank the spotlight, not category priority', (function () { const rb = [{ league: 'CFB', team: 'Ohio', player: 'Back', position: 'RB', leads: { rushing: 1400 } }, { league: 'CFB', team: 'Ohio', player: 'Thrower', position: 'QB', leads: { passing: 900 } }]; const h = cfb.E.teamBlock(ce, 'CFB', 'away', { rows: rb, index: cfb.E.teamIndex(rb) }, null, totals); return h.indexOf('Back') < h.indexOf('Thrower'); })());
+    chk('impactOf never invents a share: a missing total leaves it null', cfb.E.impactOf({ leads: { passing: 900 } }, { rushingYards: 1500 }).share === null && cfb.E.impactOf({ leads: { passing: 900 } }, null).share === null);
     const nb = cfb.E.teamBlock(ce, 'CFB', 'home', st, null);
     chk('Nebraska Cornhuskers finds Nebraska', /Emmett Johnson/.test(nb) && /Dylan Raiola/.test(nb));
     /* the stat-sheet QB leads the room, in one line, even when the class sort would have cut him */
@@ -188,15 +203,27 @@ const focal = rows[0];
     cfb.E.ROSTER.index.display['deeproomu'] = deep;
     const dst = [{ league: 'CFB', team: 'Deep Room U', player: 'Zed Starter', position: 'QB', stat_line: '1,200 yds · 9 TD', lead_cat: 'passing', lead_val: 1200, leads: { passing: 1200 } }];
     const dr = cfb.E.teamBlock({ sport_key: 'americanfootball_ncaaf', home_team: 'Deep Room U', away_team: 'Ohio Bobcats' }, 'CFB', 'home', { rows: dst, index: cfb.E.teamIndex(dst) }, null);
-    chk('the stat-sheet QB leads the room in ONE merged line and the room is still capped at three', dr.indexOf('Zed Starter') < dr.indexOf('Aaron Senior') && (dr.match(/Zed Starter/g) || []).length === 1 && /Team leader in passing yards \(1,200\) · 1,200 yds · 9 TD · Quarterback room · Sophomore · #4/.test(dr) && !/Carl Soph/.test(dr) && (dr.match(/pic-pn/g) || []).length === 3, dr);
+    chk('the stat-sheet QB is the spotlight, listed once, with his roster facts; the room behind him is capped at three', dr.indexOf('Zed Starter') < dr.indexOf('Aaron Senior') && (dr.match(/Zed Starter/g) || []).length === 1 && /<li>1,200 yds · 9 TD<\/li><li>Sophomore · #4<\/li>/.test(dr) && /Carl Soph/.test(dr) && (dr.match(/pic-pn/g) || []).length === 4, dr);
     cfbDone();
   }).catch(function (e) { chk('CFB roster path does not throw', false, String(e && e.stack || e)); cfbDone(); });
+  const cdom = {}; function cel(id) { return cdom[id] = cdom[id] || { id, innerHTML: '', attrs: {}, classList: { has: false, contains() { return this.has; }, add() { this.has = true; } }, setAttribute(k, v) { this.attrs[k] = v; }, getAttribute(k) { return this.attrs[k] == null ? null : this.attrs[k]; } }; }
+  cel('c_0'); cel('c_0_pic'); cel('c_0_books');
+  const crow = { event_id: 'c1', sport_key: 'americanfootball_ncaaf', market: 'h2h', selection: 'Ohio Bobcats', point: null, home_team: 'Nebraska Cornhuskers', away_team: 'Ohio Bobcats', best_dec: 17, best_book: 'FanDuel', sharp_fair: 0.06, edge: 0.019, n_books: 6, commence_time: '2026-09-05T16:00:00Z' };
+  const cop = sandbox({ dom: cdom, rows: [crow], fetch: async function (url) { return /fbs_2026_espn\.json/.test(url) ? { ok: true, json: async function () { return ROSTER_FILE; } } : { ok: false, status: 404 }; },
+    sbGet: async function (q) { if (/^stats_players/.test(q)) return [{ league: 'CFB', team: 'Ohio', player: 'Parker Navarro', position: 'QB', stat_line: '1,801 yds · 14 TD', lead_cat: 'passing', lead_val: 1801, leads: { passing: 1801 } }]; return []; },
+    totals: function (sel) { return /team=eq\.Ohio$/.test(sel) ? [{ season: 2025, team: 'Ohio', stat_name: 'totalYards', stat_value: 5000 }, { season: 2026, team: 'Ohio', stat_name: 'totalYards', stat_value: 3900 }, { season: 2026, team: 'Ohio', stat_name: 'netPassingYards', stat_value: 2400 }] : []; } });
+  cop.win.RCPT['c_0'] = crow;
+  cop.E.open('c_0').then(function () {
+    chk('opening a CFB picture pulls the school totals by the roster location, latest season only', cop.calls.some(c => /^cfb:team_season_stats\?select=season,team,stat_name,stat_value&team=eq\.Ohio$/.test(c)) && /Accounts for 46% of Ohio’s total offense \(1,801 of 3,900 yards\)/.test(cdom['c_0_pic'].innerHTML), cop.calls);
+    chk('the opponent with no totals on file says so instead of a share', /Team season totals are not on file for this school|SPOTLIGHT · ROSTER/.test(cdom['c_0_pic'].innerHTML));
+    cfbDone();
+  }).catch(function (e) { chk('CFB open() does not throw', false, String(e && e.stack || e)); cfbDone(); });
   const bad = sandbox({ fetch: async function () { return { ok: false, status: 500 }; } });
   bad.E.loadRoster().then(function (R) {
     chk('an unreachable roster file is an outage in words', /roster file 500/.test(R.error) && /ESPN roster file unreachable/.test(bad.E.teamBlock(ce, 'CFB', 'home', { rows: [], index: {} }, null)));
   });
 }
-var cfbPending = 1; function cfbDone() { cfbPending--; }
+var cfbPending = 2; function cfbDone() { cfbPending--; }
 
 /* ---- every priced market ----------------------------------------------------------- */
 {
@@ -235,6 +262,7 @@ var cfbPending = 1; function cfbDone() { cfbPending--; }
     chk('opening the picture opens the receipt row and fills the host', dom['t10_0'].classList.has === true && /Patrick Mahomes/.test(dom['t10_0_pic'].innerHTML) && /Chiefs \+3\.5/.test(dom['t10_0_pic'].innerHTML));
     chk('the stat query is scoped to the league; the prop query names the key players; the book query uses the signal key', seen.some(q => /^stats_players.*league=ilike\.NFL/.test(q)) && seen.some(q => /^model_props.*Patrick%20Mahomes/.test(q)) && seen.some(q => /^book_quotes.*sig_key=eq\.ev1%7Cspreads%7CChiefs%7C3\.5/.test(q)), seen);
     chk('the per-book table lands in its slot and the prop projection on its player', /DraftKings/.test(dom['t10_0_books'].innerHTML) && /passing yards o275\.5/.test(dom['t10_0_pic'].innerHTML));
+    chk('an NFL picture asks for no CFB totals', !seen.some(q => /team_season_stats/.test(q)) && !sb.calls.some(c => /^cfb:/.test(c)));
     return sb.E.open('t10_0');
   }).then(function () {
     chk('a second tap closes the panel', dom['t10_0_pic'].innerHTML === '' && dom['t10_0_pic'].attrs['data-open'] === '0');

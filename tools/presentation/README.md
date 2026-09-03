@@ -60,13 +60,24 @@ validates AI copy before a word of it reaches a card.
 `EDPIC` (between `/*__EDPIC_START__*/ … /*__EDPIC_END__*/` in `app.html`) fills
 the `<domid>_pic` host under a receipt on demand:
 
-- **Key players** per team: the leader in each priority category from
-  `stats_players` (falling back to `player_stats`), with the stored category
-  and stat line as the reason; plus the NFL starter or QB room from the
-  schedule and roster feeds, the CFB QB room from the ESPN roster file, and
-  the MLB probable pitcher from the game card. `model_props` projections ride
-  along, labelled MODEL. A team the tables cannot match, an empty table or an
-  unreachable one is said in words. Nothing is filled in.
+- **Spotlight** per team, one or two players, chosen by team impact:
+  1. share of the team's total offense, from the stored leader values over
+     the school's season totals (`cfb.team_season_stats`, College Football),
+     with the arithmetic shown ("Accounts for 56% of Ohio's total offense
+     (2,213 of 3,980 yards) · 1,801 passing (78% of the team) …");
+  2. else the category leaders in priority order (the stat sheet), saying
+     that no share is computed;
+  3. else, with no stat line on file, the roster-construction read the
+     Football tab already uses (position value × class × portal status),
+     labelled as not a performance read.
+  The rundown carries the stat line, the stored category breakdown, class,
+  jersey and transfer origin from the roster file, and any `model_props`
+  projection (labelled MODEL).
+- **Also on the sheet**: the remaining stat leaders, the NFL starter or QB
+  room from the schedule and roster feeds, the CFB QB room from
+  `football/rosters/fbs_<season>_espn.json` (joined on the mascot-suffixed
+  board name), the MLB probable pitcher. A team the tables cannot match, an
+  empty table or an unreachable one is said in words. Nothing is filled in.
 - **Every priced market on the game**: both sides of every market from the
   captured signal rows — best book and price, fair line and anchor, edge,
   the engine's verdict and good-to, open → now, books quoting.

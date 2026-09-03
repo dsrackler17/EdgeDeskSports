@@ -19063,6 +19063,14 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
 .pic-tag{font-family:'JetBrains Mono',monospace;font-size:8.5px;letter-spacing:.1em;border:1px solid var(--border);border-radius:5px;padding:1px 5px;color:var(--faint);margin-left:5px;vertical-align:middle}
 .pic-tag.starter{color:var(--pos);border-color:rgba(47,180,124,.45)}.pic-tag.probable,.pic-tag.unconfirmed{color:var(--warn);border-color:rgba(217,154,43,.45)}.pic-tag.missing{color:var(--neg);border-color:rgba(226,96,68,.45)}
 .pic-why{font-size:12px;color:var(--dim);line-height:1.45;margin-top:2px}
+.pic-spots{margin-top:8px}
+.pic-spot{border:1px solid rgba(77,141,255,.35);background:rgba(77,141,255,.06);border-radius:10px;padding:9px 10px;margin-bottom:8px}
+.pic-spot .pic-pn{font-size:14px}
+.pic-tag.spot{color:var(--accent);border-color:rgba(77,141,255,.5)}
+.pic-spot-why{font-size:12.5px;font-weight:600;color:var(--text);margin-top:3px;line-height:1.4}
+.pic-rundown{margin:5px 0 0;padding-left:16px;font-size:12px;color:var(--dim);line-height:1.5}
+.pic-rundown li{margin:1px 0}
+.pic-also{font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--faint);margin-top:6px}
 .pic-prop{font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--mdl);margin-top:3px}
 .pic-empty{font-size:12px;color:var(--faint);line-height:1.5;padding:6px 0 2px}
 .pic-src{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--faint);margin-top:8px;line-height:1.45}
@@ -27165,40 +27173,161 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
     return null;
   }
 
+  /* ---- team totals: the denominator for "share of the offense" ----------- */
+  /* The cfb schema carries season totals per school (team_season_stats), so a
+     College Football player's impact can be stated as a share of what the
+     team produced. Where no totals are on file the share is not computed and
+     the block says so. */
+  var TOTALS={};
+  var TOTAL_KEYS={passing:'netPassingYards',rushing:'rushingYards',receiving:'netPassingYards',total:'totalYards'};
+  async function loadTeamTotals(L, names){
+    if(L!=='CFB'||typeof rsFetchAll!=='function') return {};
+    var out={};
+    for(var i=0;i<names.length;i++){
+      var nm=names[i]; if(!nm) continue;
+      var k=normTeam(nm);
+      if(TOTALS[k]&&Date.now()-TOTALS[k].at<10*60000){ out[k]=TOTALS[k].map; continue; }
+      var map=null;
+      try{
+        var rows=await rsFetchAll('cfb','team_season_stats?select=season,team,stat_name,stat_value&team=eq.'+encodeURIComponent(nm),'season.desc',2);
+        var season=null; (rows||[]).forEach(function(r){ if(r.season!=null&&(season==null||+r.season>season)) season=+r.season; });
+        if(rows&&rows.length){ map={_season:season}; rows.forEach(function(r){ if(season==null||+r.season===season) map[r.stat_name]=num(r.stat_value); }); }
+      }catch(_){ map=null; }
+      TOTALS[k]={at:Date.now(),map:map}; out[k]=map;
+    }
+    return out;
+  }
+  function pct(v){ return v==null?null:Math.round(v*100)+'%'; }
+  /* Production a player accounts for, from the stored leader values and the
+     team's own totals. Nothing is estimated: a missing total leaves the share
+     null and the reason says which total was missing. */
+  function impactOf(r, totals){
+    var pass=leadVal(r,'passing'), rush=leadVal(r,'rushing'), rec=leadVal(r,'receiving');
+    var out={parts:[], share:null, yards:0, basis:null};
+    if(pass!=null){ out.yards+=pass; out.parts.push({cat:'passing',v:pass,share:totals&&totals.netPassingYards>0?pass/totals.netPassingYards:null}); }
+    if(rush!=null){ out.yards+=rush; out.parts.push({cat:'rushing',v:rush,share:totals&&totals.rushingYards>0?rush/totals.rushingYards:null}); }
+    if(rec!=null){ out.yards+=rec; out.parts.push({cat:'receiving',v:rec,share:totals&&totals.netPassingYards>0?rec/totals.netPassingYards:null}); }
+    if(out.yards>0&&totals&&totals.totalYards>0){ out.share=out.yards/totals.totalYards; out.basis='share of total offense'; }
+    else if(out.parts.length&&out.parts[0].share!=null){ out.share=out.parts[0].share; out.basis='share of team '+catLabel(out.parts[0].cat); }
+    return out;
+  }
+  function catChips(r){
+    var chips=[];
+    (r&&r.cats||[]).slice(0,2).forEach(function(c){ (c.stats||[]).slice(0,3).forEach(function(s){ if(s&&s.label&&s.display!=null) chips.push(String(s.label)+' '+String(s.display)); }); });
+    return chips.slice(0,5);
+  }
+  /* THE SPOTLIGHT. One or two players per team, chosen by team impact:
+       1. share of the team's total offense from the stored leader values and
+          the team's season totals (College Football, where totals exist);
+       2. else the category leaders in priority order (the stat sheet);
+       3. else, with no stat line on file at all, the roster-construction read
+          the Football tab already uses: position value × class × portal
+          status. That one is labelled as what it is, not as performance. */
+  function spotlight(rows, L, totals, roster, max){
+    max=max||2;
+    var cands=[];
+    (rows||[]).forEach(function(r){
+      var imp=impactOf(r,totals);
+      var lead=leadVal(r, r.lead_cat)||num(r.lead_val)||0;
+      cands.push({r:r, imp:imp, rank:imp.share!=null?imp.share:0, lead:lead});
+    });
+    if(cands.length){
+      var anyShare=cands.some(function(c){ return c.imp.share!=null; });
+      if(anyShare) cands.sort(function(a,b){ return (b.imp.share||0)-(a.imp.share||0)||b.lead-a.lead; });
+      else {
+        var pri=CAT_PRI[L]||[];
+        cands.forEach(function(c){ var i=pri.indexOf(c.r.lead_cat); c.pri=i<0?99:i; });
+        cands.sort(function(a,b){ return a.pri-b.pri||b.lead-a.lead; });
+      }
+      var seen={}, out=[];
+      cands.forEach(function(c){ if(out.length>=max||seen[normTeam(c.r.player)]) return; seen[normTeam(c.r.player)]=1; out.push(c); });
+      return out.map(function(c){ return spotlightFromStats(c, L, totals, roster, anyShare); });
+    }
+    if(roster&&roster.players&&roster.players.length) return rosterSpotlight(roster, max);
+    return [];
+  }
+  function spotlightFromStats(c, L, totals, roster, anyShare){
+    var r=c.r, imp=c.imp;
+    var lines=[];
+    if(imp.share!=null){
+      var detail=imp.parts.filter(function(p){ return p.v!=null; }).map(function(p){ return fmtVal(p.v)+' '+catLabel(p.cat).replace(' yards','')+(p.share!=null?' ('+pct(p.share)+' of the team)':''); }).join(', ');
+      lines.push('Accounts for '+pct(imp.share)+' of '+(roster&&roster.location||r.team)+'’s '+(imp.basis==='share of total offense'?'total offense':imp.basis.replace('share of team ',''))+(totals&&totals.totalYards&&imp.basis==='share of total offense'?' ('+fmtVal(imp.yards)+' of '+fmtVal(totals.totalYards)+' yards)':'')+(detail?' · '+detail:''));
+    } else if(r.lead_cat){
+      lines.push('Team leader in '+catLabel(r.lead_cat)+(r.lead_val!=null?' ('+fmtVal(r.lead_val)+')':'')+(totals===null||totals===undefined?' · team totals not on file, so no share of the offense is computed':''));
+    } else lines.push('On the stat sheet');
+    if(r.stat_line) lines.push(r.stat_line);
+    var chips=catChips(r); if(chips.length) lines.push(chips.join(' · '));
+    var rp=roster?rosterPlayer(roster, r.player):null;
+    if(rp){ var bits=[]; if(rp['class']) bits.push(rp['class']); if(rp.jersey) bits.push('#'+rp.jersey); if(rp.previous_school) bits.push('transfer in from '+rp.previous_school); if(bits.length) lines.push(bits.join(' · ')); }
+    var why=imp.share!=null?('Spotlight because he carries '+pct(imp.share)+' of the offense'):('Spotlight because he leads the team in '+catLabel(r.lead_cat||'production'));
+    return {player:r.player, position:(rp&&rp.position)||r.position||null, why:why, rundown:lines, source:'stats', tag:'SPOTLIGHT', basis:imp.share!=null?'production share':'stat sheet', share:imp.share};
+  }
+  var POSW={QB:1,OL:.9,OT:.9,OG:.9,G:.9,C:.9,EDGE:.85,DE:.85,DL:.8,DT:.8,NT:.8,CB:.75,WR:.7,S:.65,LB:.65,OLB:.65,ILB:.65,MLB:.65,RB:.55,FB:.55,TE:.55,DB:.5,ATH:.4,PK:.3,K:.3,P:.25,KR:.2,PR:.2,LS:.15};
+  function rosterPlayer(roster, name){ var k=normTeam(name); var hit=null; (roster&&roster.players||[]).forEach(function(p){ if(!hit&&normTeam(p.name)===k) hit=p; }); return hit; }
+  function rosterSpotlight(roster, max){
+    var out=(roster.players||[]).map(function(p){
+      var pw=POSW[String(p.position||'').toUpperCase()]||0.3;
+      var cw=Math.max(0,(classRank(p['class'])-1)/3);
+      var boost=p.previous_school?0.85:1;
+      return {p:p, score:pw*(0.35+0.65*cw)*boost};
+    }).sort(function(a,b){ return b.score-a.score||String(a.p.name).localeCompare(String(b.p.name)); }).slice(0,max);
+    return out.map(function(x){
+      var p=x.p, bits=[]; if(p['class']) bits.push(p['class']); if(p.jersey) bits.push('#'+p.jersey); if(p.previous_school) bits.push('transfer in from '+p.previous_school);
+      return {player:p.name, position:p.position||null, why:'Spotlight by roster construction: '+(p.position||'')+' is a high-value position and he is the most senior there. No stat line is on file for this team, so this is not a performance read.',
+        rundown:[bits.join(' · ')||'on the ESPN roster'], source:'roster', tag:'SPOTLIGHT · ROSTER', basis:'roster construction', share:null};
+    });
+  }
+
   /* ---- one team's block ------------------------------------------------- */
-  function teamBlock(e, L, side, stats, props){
+  function teamBlock(e, L, side, stats, props, totalsMap){
     var name=side==='home'?e.home_team:e.away_team;
     var pick=e.selection&&name&&String(e.selection).indexOf(name)>=0;
     var feed=feedSide(e,L,side);
     var res=stats&&stats.index?resolveTeam(stats.index,name):null;
+    var roster=L==='CFB'?rosterTeam(name):null;
+    var totals=null;
+    if(totalsMap){ var tk=roster?normTeam(roster.location):null; totals=(tk&&totalsMap[tk])||(res?totalsMap[normTeam(res.team)]:null)||totalsMap[normTeam(name)]||null; }
+    var spots=spotlight(res?res.rows:[], L, totals, roster, 2);
     var kp=res?keyPlayers(res.rows,L,4):[];
     var h='<div class="pic-team'+(pick?' pick':'')+'"><div class="pic-tn">'+esc(name||'—')+'<span class="pic-side">'+(side==='home'?'home':'away')+(pick?' · the pick':'')+'</span></div>';
+    var spotNames={};
+    if(spots.length){
+      h+='<div class="pic-spots">'+spots.map(function(s){
+        spotNames[normTeam(s.player)]=1;
+        var pr=props&&props[normTeam(s.player)];
+        return '<div class="pic-spot"><div class="pic-pn">'+esc(s.player)+(s.position?' <span class="pic-pos">'+esc(s.position)+'</span>':'')+' <span class="pic-tag spot">'+esc(s.tag)+'</span></div>'
+          +'<div class="pic-spot-why">'+esc(s.why)+'</div>'
+          +'<ul class="pic-rundown">'+(s.rundown||[]).filter(Boolean).map(function(l){ return '<li>'+esc(l)+'</li>'; }).join('')+'</ul>'
+          +(pr&&pr.length?'<div class="pic-prop">'+pr.slice(0,2).map(function(p){ return esc((p.market||'').replace(/_/g,' '))+' o'+esc(String(p.line))+' · proj '+esc((+p.proj).toFixed(1))+(p.p_over!=null?' · '+Math.round(+p.p_over)+'% over':''); }).join(' · ')+' <span class="unproven">MODEL</span></div>':'')
+          +'</div>';
+      }).join('')+'</div>';
+    }
+    /* the rest: remaining stat leaders, then the feed's starters or room */
     var rows=[];
     if(feed&&feed.items) feed.items.forEach(function(it){ rows.push(it); });
-    /* A room player who is also a stat leader is ONE line: the stat reason
-       first, the room facts after, and he leads the room. A roster room is
-       then capped at three, so the stat-sheet QB is never the one cut on an
-       alphabetical tie. */
     kp.forEach(function(it){
+      if(spotNames[normTeam(it.player)]) return;
       var hit=null; rows.forEach(function(r){ if(!hit&&normTeam(r.player)===normTeam(it.player)) hit=r; });
       if(hit){ hit.why=it.why+' · '+hit.why; hit.position=it.position||hit.position; hit.onSheet=true; }
       else rows.push(it);
     });
+    rows=rows.filter(function(r){ return !spotNames[normTeam(r.player)]; });
     rows.sort(function(a,b){ return (b.onSheet?1:0)-(a.onSheet?1:0); });
     var roomN=0; rows=rows.filter(function(r){ if(r.source!=='roster') return true; roomN++; return roomN<=3; });
-    if(!rows.length){
+    if(!spots.length&&!rows.length){
       h+='<div class="pic-empty">'+(stats&&stats.error?('Player tables unreachable ('+esc(stats.error)+').'):stats&&stats.rows&&stats.rows.length?('No '+esc(L||'')+' stat rows matched “'+esc(name||'')+'” in stats_players.'):('No player stat lines on file for '+esc(L||'this league')+' — stats_players is empty. Run capture_stats.'))+' Nothing is filled in.</div>';
-    } else {
-      h+='<ul class="pic-players">'+rows.map(function(r){
+    } else if(rows.length){
+      h+='<div class="pic-also">'+(spots.length?'Also on the sheet':'')+'</div><ul class="pic-players">'+rows.map(function(r){
         var pr=props&&props[normTeam(r.player)];
         return '<li><div class="pic-pn">'+esc(r.player)+(r.position?' <span class="pic-pos">'+esc(r.position)+'</span>':'')+(r.tag?' <span class="pic-tag '+esc(r.tag.toLowerCase())+'">'+esc(r.tag)+'</span>':'')+'</div>'
           +'<div class="pic-why">'+esc(r.why)+'</div>'
           +(pr&&pr.length?'<div class="pic-prop">'+pr.slice(0,2).map(function(p){ return esc((p.market||'').replace(/_/g,' '))+' o'+esc(String(p.line))+' · proj '+esc((+p.proj).toFixed(1))+(p.p_over!=null?' · '+Math.round(+p.p_over)+'% over':''); }).join(' · ')+' <span class="unproven">MODEL</span></div>':'')
           +'</li>';
       }).join('')+'</ul>';
-      if(res&&res.rows&&!kp.length) h+='<div class="pic-empty">Stat rows exist for this team but carry no leader categories.</div>';
-      if(!res&&stats&&stats.rows&&stats.rows.length&&feed) h+='<div class="pic-empty">No '+esc(L)+' stat rows matched “'+esc(name||'')+'”, so only the feed’s starters are shown.</div>';
     }
+    if(spots.length&&spots[0].basis==='production share'&&totals&&totals._season) h+='<div class="pic-src">Share of offense = the player’s stored yards over '+esc(roster&&roster.location||name)+'’s '+esc(String(totals._season))+' season totals (cfb.team_season_stats).</div>';
+    else if(spots.length&&spots[0].basis==='stat sheet'&&L==='CFB') h+='<div class="pic-src">Team season totals are not on file for this school, so the spotlight is the category leader, not a share of the offense.</div>';
+    if(!res&&stats&&stats.rows&&stats.rows.length&&(feed||roster)) h+='<div class="pic-empty">No '+esc(L)+' stat rows matched “'+esc(name||'')+'”, so only the roster is read.</div>';
     var srcs=[];
     if(feed&&feed.label) srcs.push(feed.label);
     if(res) srcs.push('stats_players · '+res.rows.length+' rows');
@@ -27269,7 +27398,7 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
     h+='<div class="pic-h"><span class="t">Full picture</span><span class="m">'+esc((e.away_team||'')+' @ '+(e.home_team||''))+(e.commence_time&&typeof whenLabel==='function'?' · '+esc(whenLabel(e.commence_time)):'')+'</span></div>';
     h+='<div class="pic-sec">Key players</div>';
     if(!L) h+='<div class="pic-empty">EdgeDesk holds no player tables for this sport, so no player is named.</div>';
-    else h+='<div class="pic-teams">'+teamBlock(e,L,'away',data.stats,data.props)+teamBlock(e,L,'home',data.stats,data.props)+'</div>';
+    else h+='<div class="pic-teams">'+teamBlock(e,L,'away',data.stats,data.props,data.totals)+teamBlock(e,L,'home',data.stats,data.props,data.totals)+'</div>';
     h+='<div class="pic-sec">Every priced market on this game</div>'+marketsHTML(e,data.rows);
     h+='<div class="pic-sec">Every book on this line</div><div id="'+esc(data.domid||'pic')+'_books">'+(data.books?booksHTML(data.books):'<div class="pic-empty">Loading per-book prices…</div>')+'</div>';
     h+='<div class="pic-src">Players: team leaders from EdgeDesk’s stat tables and the starter feeds, with the stat line as the reason. Prices: the captured signal rows and the engine’s own fair line and verdict. Nothing here is estimated.</div>';
@@ -27338,9 +27467,14 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
     host.innerHTML=pictureHTML(e,{domid:domid,rows:gameRows(e)}).replace('<div class="pic-teams">','<div class="pic-teams" data-loading="1">');
     var stats=await loadStatsFor(L);
     await ensureFeeds(e,L);
+    var totals=null;
+    if(L==='CFB'){
+      var schools=[e.away_team,e.home_team].map(function(nm){ var tm=rosterTeam(nm); if(tm&&tm.location) return tm.location; var r=stats&&stats.index?resolveTeam(stats.index,nm):null; return r?r.team:nm; });
+      totals=await loadTeamTotals(L, schools);
+    }
     var props=await loadProps(L, namesFor(e,L,stats));
     if(host.getAttribute('data-open')!=='1') return;
-    host.innerHTML=pictureHTML(e,{domid:domid,rows:gameRows(e),stats:stats,props:props});
+    host.innerHTML=pictureHTML(e,{domid:domid,rows:gameRows(e),stats:stats,props:props,totals:totals});
     var books=await loadBooks(e);
     var bh=$id(domid+'_books'); if(bh) bh.innerHTML=booksHTML(books);
   }
@@ -27348,6 +27482,7 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
     open:open, pictureHTML:pictureHTML, marketsHTML:marketsHTML, booksHTML:booksHTML, teamBlock:teamBlock,
     keyPlayers:keyPlayers, resolveTeam:resolveTeam, teamIndex:teamIndex, leagueOf:leagueOf, gameRows:gameRows, leadVal:leadVal,
     loadRoster:loadRoster, rosterTeam:rosterTeam, rosterIndex:rosterIndex, ROSTER:ROSTER,
+    spotlight:spotlight, impactOf:impactOf, rosterSpotlight:rosterSpotlight, loadTeamTotals:loadTeamTotals,
     CAT_PRI:CAT_PRI
   };
 })();
