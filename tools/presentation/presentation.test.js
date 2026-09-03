@@ -74,7 +74,7 @@ function simple(over, ctx) { return P.simpleFromPacket(packet(over), Object.assi
 
   const wait = simple([['deterministic.verdict', 'LEAN'], ['deterministic.display_verdict', 'WAIT'], ['deterministic.is_wait', true], ['deterministic.wait_reason', 'Qualified on the last number, but it was captured 95m ago. Unconfirmed until a fresh capture verifies the price is still live.']]);
   chk('WAIT stays WAIT', wait.verdict === 'WAIT');
-  chk('WAIT watch says what must confirm', /fresh capture|confirm/i.test(wait.watch.text), wait.watch.text);
+  chk('WAIT watch says what must confirm, in words a fan owns', /fresh check|fresh capture|confirm/i.test(wait.watch.text) && !P.JARGON.test(wait.watch.text), wait.watch.text);
   const waitAi = P.applyAiCopy(wait, { headline: 'BET: Texas Tech -3.5 at -110.' });
   chk('WAIT cannot become BET', waitAi.simple.verdict === 'WAIT' && /^WAIT/.test(waitAi.simple.headline));
 
@@ -92,7 +92,10 @@ function simple(over, ctx) { return P.simpleFromPacket(packet(over), Object.assi
   const failed = simple([], { integrity: { verdict: 'FAIL', summary: 'FAIL: identity_chain', failed: [{ name: 'identity_chain', status: 'FAIL', detail: '2 of 4 starters are attached to a team that is not playing in their own game.' }] } });
   chk('integrity FAIL suppresses the recommendation', failed.suppressed === true && failed.display_verdict !== 'BET' && failed.verdict !== 'BET');
   chk('integrity FAIL keeps the engine verdict on record', failed.engine_verdict === 'BET');
-  chk('integrity FAIL headline says DATA CHECK FAILED', /^DATA CHECK FAILED: EdgeDesk cannot safely publish a decision until/.test(failed.headline), failed.headline);
+  chk('integrity FAIL headline says DATA CHECK FAILED', /^DATA CHECK FAILED: EdgeDesk will not publish a call until it fixes a problem with its own data:/.test(failed.headline), failed.headline);
+  chk('the failure is named in the reader\u2019s words, without the engine\u2019s slug', /2 of 4 starters/.test(failed.headline) && !/identity_chain|identity chain/.test(failed.headline), failed.headline);
+  chk('the check name still travels on the flag for whoever needs it', failed.flags.some(function (f) { return f.kind === 'DATA_CHECK_FAILED' && /identity chain/.test(f.text); }), failed.flags);
+  chk('a withheld call publishes no price limit', failed.plain.price_limit.value === 'Withheld' && failed.plain.price_limit.limit_odds === null && failed.plain.kills === null, failed.plain.price_limit);
   chk('integrity FAIL is flagged above the fold', failed.flags.some(function (f) { return f.kind === 'DATA_CHECK_FAILED'; }));
   const failAi = P.applyAiCopy(failed, { headline: 'BET: Texas Tech -3.5 at -110.', watch: 'Nothing to worry about.' });
   chk('AI cannot talk over a failed data check', /^DATA CHECK FAILED/.test(failAi.simple.headline) && failAi.simple.watch.source === 'deterministic');
@@ -171,7 +174,8 @@ function simple(over, ctx) { return P.simpleFromPacket(packet(over), Object.assi
   const s = simple();
   const pub = P.publisher(s, { preset: 'TNF', event_label: 'Texas Tech at Baylor' });
   chk('publisher kicker resolves from preset', pub.kicker === 'Thursday Night Football');
-  chk('publisher lede is neutral and price-bound', /EdgeDesk’s current research favors Texas Tech -3\.5 at -110, and the number remains playable through -118\./.test(pub.lede), pub.lede);
+  chk('publisher lede leads with the bet as a football sentence, then the price', /^EdgeDesk’s research favors Texas Tech to win by 4 points or more at -110\. The price stays good enough down to -118\.$/.test(pub.lede), pub.lede);
+  chk('publisher lede carries no undefined jargon', !P.JARGON.test(pub.lede), pub.lede);
   chk('publisher copy has no hype', !P.HYPE.test([pub.lede, pub.why.join(' '), pub.biggest_risk, pub.change_call].join(' ')));
   chk('publisher carries powered by', pub.powered_by === 'Powered by EdgeDesk Sports');
 
@@ -224,7 +228,8 @@ function simple(over, ctx) { return P.simpleFromPacket(packet(over), Object.assi
   chk('brief HTML is a one-page report with the call first', /class="edb"/.test(html) && html.indexOf('The EdgeDesk call') < html.indexOf('EdgeDesk data check'));
   chk('brief HTML escapes content', !/<script/i.test(P.briefHTML(P.snapshot({ cards: [simple([['selection_raw', '<script>x</script>']])], report_type: 'GAME' }))));
   const txt = P.briefText(snap);
-  chk('plain text is article-ready', /^EDGEDESK GAME BRIEF/.test(txt) && /THE EDGEDESK CALL\nBET — Texas Tech -3\.5 \(-110\)\nGOOD TO -118/.test(txt), txt.slice(0, 200));
+  chk('plain text is article-ready and plain', /^EDGEDESK GAME BRIEF/.test(txt) && /THE EDGEDESK CALL\nBET — Texas Tech to win by 4 points or more \(-110\)/.test(txt), txt.slice(0, 260));
+  chk('plain text names the sportsbook ticket and the price limit', /At the sportsbook: Spread · Texas Tech -3\.5 · -110 · DraftKings/.test(txt) && /PRICE LIMIT: -118 OR BETTER/.test(txt), txt.slice(0, 400));
   const cms = P.briefCmsHTML(snap);
   chk('CMS HTML is clean semantic markup', /^<h1>/.test(cms) && !/class=/.test(cms));
   const slateSnap = P.snapshot({ cards: [simple([['deterministic.display_verdict', 'PASS'], ['deterministic.verdict', 'PASS']])], report_type: 'SLATE', preset: 'CFB', max: 3, now: NOW });
@@ -239,7 +244,7 @@ function simple(over, ctx) { return P.simpleFromPacket(packet(over), Object.assi
   chk('hero block leads the card', hero >= 0 && hero < body);
   chk('verdict -> selection -> price -> good to, in that order, before the body', verdict < sel && sel < price && price < gt && gt < body);
   chk('actions are present', /Full research/.test(html) && /Create brief/.test(html));
-  chk('what-does-this-mean is templated, not AI', /What does this mean\?/.test(html) && /EdgeDesk still likes the bet at -118/.test(html));
+  chk('what-does-this-mean is templated, not AI, and names its own subject', /What does .price limit. mean\?/.test(html) && /What does this call mean\?/.test(html) && /EdgeDesk still sees value down to -118/.test(html));
   chk('explain is deterministic per key', P.explain('verdict', s).indexOf('BET means') === 0);
   chk('translate dictionary', P.translate('sharp reference') === 'sharper market' && P.translate('max playable') === 'good to');
 }

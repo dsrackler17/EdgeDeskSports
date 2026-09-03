@@ -92,7 +92,7 @@ function req(body, qs, method) {
   {
     const r = await m.handle(req(null, '?probe=1', 'GET'));
     const j = await r.json();
-    chk('probe answers with the build', r.status === 200 && /r4-presentation/.test(j.build), j.build);
+    chk('probe answers with the build', r.status === 200 && /r5-presentation/.test(j.build), j.build);
     chk('probe reports presentation modes', j.presentation && j.presentation.library_loaded === true && j.presentation.modes.length === 4);
     chk('probe made no network calls', calls.length === 0, calls.length);
   }
@@ -105,7 +105,7 @@ function req(body, qs, method) {
       seen = body;
       return { status: 200, json: { model: 'claude-test', content: [{ type: 'text', text:
         'LEAN: Kansas City Chiefs -3 at -108. Good to -115.\n\n- The sharper market is quoting the same side.\n\n```edgedesk_copy\n'
-        + JSON.stringify({ headline: 'BET: Kansas City Chiefs -3 at -108.', why: [{ text: 'The sharper market is quoting the Chiefs side too.', evidence_ids: ['e1'] }, { text: 'This is a lock.' }], watch: 'The price is 12 minutes old, so check it is still live.', change_trigger: 'A move past -115 ends the edge.', market_read: 'Seven books stand behind the fair line.' })
+        + JSON.stringify({ headline: 'BET: Kansas City Chiefs -3 at -108.', why: [{ text: 'Seven sportsbooks are quoting this game, so the number is not resting on one book.', evidence_ids: ['e1'] }, { text: 'This is a lock.' }, { text: 'The sharper market agrees with the fair line here.' }], watch: 'The price is 12 minutes old, so check it is still live.', change_trigger: 'A move past -115 ends the edge.', market_read: 'Seven books stand behind the fair line.' })
         + '\n```' }] } };
     };
     const r = await m.handle(req({ mode: 'why', question: 'Why does EdgeDesk like this?', packet: packet(), history: [] }));
@@ -116,13 +116,18 @@ function req(body, qs, method) {
     chk('verdict comes from the packet, not the model: LEAN stays LEAN', j.presentation.simple.verdict === 'LEAN' && /^LEAN:/.test(j.presentation.simple.headline), j.presentation.simple.headline);
     chk('model headline claiming BET was rejected', j.presentation.copy_rejections.some(function (x) { return /headline/.test(x); }), j.presentation.copy_rejections);
     chk('hype bullet rejected, honest bullet kept', j.presentation.simple.why.some(function (w) { return w.source === 'ai'; }) && !j.presentation.simple.why.some(function (w) { return /lock/i.test(w.text); }), j.presentation.simple.why);
+    chk('a bullet carrying undefined jargon is rejected the same way hype is', j.presentation.copy_rejections.some(function (x) { return /jargon/.test(x); }) && !j.presentation.simple.why.some(function (w) { return /sharper market|fair line/i.test(w.text); }), j.presentation.copy_rejections);
+    chk('jargon in market_read leaves the deterministic plain sentence standing', j.presentation.simple.market_read.source === 'deterministic' && !/fair line/i.test(j.presentation.simple.market_read.text), j.presentation.simple.market_read);
+    chk('nothing the reader sees on the card carries undefined jargon', ![j.presentation.simple.plain.answer, j.presentation.simple.plain.found && j.presentation.simple.plain.found.sentence, j.presentation.simple.market_read.text].concat(j.presentation.simple.plain.why).filter(Boolean).some(function (t) { return require('path') && /\b(de-?vig|pinnacle|fair line|closing line value|\bclv\b)\b/i.test(t); }), j.presentation.simple.plain);
     chk('validated AI watch merged', j.presentation.simple.watch.source === 'ai' && /12 minutes old/.test(j.presentation.simple.watch.text));
     chk('good to is the owned max-playable', j.presentation.simple.playable_to.limit_odds === '-115');
     chk('default mode for an old caller is DEEP (unchanged prompt shape)', j.presentation.mode === 'DEEP' && /PRESENTATION MODE: DEEP/.test(seen.system));
+    chk('DEEP still welcomes precise terminology — Full Research is not dumbed down', /Precise terminology is welcome here/.test(seen.system));
+    chk('the copy contract tells the model which words the gate rejects', /NO BETTING JARGON/.test(seen.messages[seen.messages.length - 1].content) && /max playable/.test(seen.messages[seen.messages.length - 1].content));
     chk('system prompt keeps the honesty contract', /HARD RULES/.test(seen.system) && /VERDICT DISCIPLINE/.test(seen.system));
     chk('user content carries DECISION CARD FACTS + the copy contract', /DECISION CARD FACTS/.test(seen.messages[seen.messages.length - 1].content) && /edgedesk_copy/.test(seen.messages[seen.messages.length - 1].content));
     chk('exactly one model call', calls.filter(function (c) { return /anthropic/.test(c.url); }).length === 1);
-    chk('publisher copy is built from the same card', j.presentation.publisher && /EdgeDesk leans toward Kansas City Chiefs -3 at -108/.test(j.presentation.publisher.lede), j.presentation.publisher && j.presentation.publisher.lede);
+    chk('publisher copy is built from the same card, in football words', j.presentation.publisher && /EdgeDesk leans toward Kansas City Chiefs to win by more than 3 points at -108/.test(j.presentation.publisher.lede), j.presentation.publisher && j.presentation.publisher.lede);
   }
 
   /* ---- SIMPLE mode: short budget, simple prompt ------------------------- */

@@ -110,14 +110,14 @@ function sandbox() {
 
   const lead = sb.win.dcardLeadHTML(x.e, 't10_0');
   chk('Top-edges strip is a compact card', /class="dcard dc-bet compact"/.test(lead));
-  chk('strip shows verdict, selection, price and good-to', /BET/.test(lead) && /Texas Tech -3\.5/.test(lead) && /-110 · DraftKings/.test(lead) && /Good to<\/span> <b>-118/.test(lead), lead.slice(0, 600));
-  chk('strip shows one-line reason', /dcard-line/.test(lead) && /sharper market/.test(lead));
+  chk('strip shows verdict, the bet in football words, the ticket line and the price limit', /BET/.test(lead) && /Texas Tech to win by 4 points or more/.test(lead) && /Spread · Texas Tech -3\.5 · -110 · DraftKings/.test(lead) && /Price limit<\/span> <b>-118 or better/.test(lead), lead.slice(0, 700));
+  chk('strip answers in one line, with no undefined jargon', /dcard-line/.test(lead) && /dcard-sub/.test(lead) && !/sharper market|fair line|de-vig/i.test(lead), lead.slice(0, 700));
   chk('strip has View why + Create brief that do not toggle the row', /View why/.test(lead) && /Create brief/.test(lead) && /event\.stopPropagation\(\);toggleRcptId\((?:'|&#39;)t10_0(?:'|&#39;)\)/.test(lead));
 
   const rc = sb.win.dcardReceiptHTML(x.e, 't10_0');
   chk('receipt card is the full card with Full research first', /dcard-body/.test(rc) && /Full research/.test(rc) && /EDCARD\.toggleFull\((?:'|&#39;)t10_0/.test(rc));
   chk('receipt card offers Create brief and Ask EdgeDesk', /Create brief/.test(rc) && /Ask EdgeDesk/.test(rc));
-  chk('what-does-this-mean expanders are templated', /What does this mean\?/.test(rc));
+  chk('what-does-this-mean expanders are templated and each names its subject', /What does .price limit. mean\?/.test(rc) && /What does this call mean\?/.test(rc) && !/>What does this mean\?</.test(rc));
 
   const s = sb.win.EDCARD.simpleFromSignal(x.e);
   chk('football cards name the injury gap rather than implying a clean sheet', s.flags.some(function (f) { return f.kind === 'DATA_GAP' && /Injury and availability data is not on file/.test(f.text); }));
@@ -125,10 +125,29 @@ function sandbox() {
   const pass = fixtureX({ e: { event_id: 'ev2', selection: 'Baylor', point: 3.5 }, sel: 'Baylor +3.5', verdict: 'PASS', dverdict: 'PASS', curEdge: 0.002, curAm: -125, needsPriceForEv: -118, reasonsFor: [], why: 'The edge existed at detection (-108) but the current price has moved to -125, pulling EV below the 0.5% floor.' });
   sb.xs['ev2|Baylor'] = pass;
   const pl = sb.win.dcardLeadHTML(pass.e, 't10_1');
-  chk('PASS strip is calm, not an error: needs-price shown', /dc-pass/.test(pl) && /Needs<\/span> <b>-118 or better/.test(pl), pl.slice(0, 500));
+  chk('PASS strip is calm, not an error: the price it would take is shown', /dc-pass/.test(pl) && /Price needed<\/span> <b>-118 or better/.test(pl) && /Not worth it at this price/.test(pl), pl.slice(0, 700));
 
   const btn = sb.win.fbBriefBtn('nfl', { home_team: 'KC', away_team: 'BAL' }, { t: 1 }, 'Kansas City Chiefs', 'Baltimore Ravens');
   chk('football Game brief button carries the schedule row, never a hardcoded team', /EDBRIEF\.openGame\(/.test(btn) && /Kansas City Chiefs/.test(btn) && /americanfootball_nfl/.test(btn));
+  /* THE READER CHECK. A writer can run the five-second checklist on a brief
+     before it leaves the desk, and it reports rather than blocks. */
+  sb.win.EDBRIEF.openCard(sb.win.EDBRIEF.qaHTML ? 'dc1' : 'dc1');
+  chk('the brief bar offers a Reader check', /Reader check/.test(sb.win.EDBRIEF.deskHTML('edges')) || /Reader check/.test(APP));
+  chk('EDBRIEF exposes the reader check as a pure renderer', typeof sb.win.EDBRIEF.qaHTML === 'function' && typeof sb.win.EDBRIEF.openQA === 'function');
+  chk('the reader check reports on every card in the brief', (function () {
+    const card = sb.win.EDCARD.simpleFromSignal(x.e);
+    const html = sb.win.EDBRIEF.qaHTML({ internal: { cards: [card] } });
+    return /Reader check/.test(html) && /The card passes\./.test(html) && /Texas Tech to win by 4 points or more/.test(html);
+  })(), sb.win.EDBRIEF.qaHTML({ internal: { cards: [sb.win.EDCARD.simpleFromSignal(x.e)] } }).slice(0, 400));
+  chk('the reader check names what a reader would trip over', (function () {
+    const card = JSON.parse(JSON.stringify(sb.win.EDCARD.simpleFromSignal(x.e)));
+    card.plain.answer = null;
+    const html = sb.win.EDBRIEF.qaHTML({ internal: { cards: [card] } });
+    return /FIX/.test(html) && /next action is clear/.test(html) && /1 of 1 card/.test(html);
+  })());
+  chk('the reader check never touches a number or a verdict', !/verdict\s*=|playable_to\s*=|\.odds\s*=/.test(String(sb.win.EDBRIEF.qaHTML)));
+  chk('an empty desk says so rather than passing vacuously', /Open a brief first/.test(sb.win.EDBRIEF.qaHTML(null)));
+
   const desk = sb.win.EDBRIEF.deskHTML('edges');
   chk('publisher desk offers TNF / SNF / MNF / CFB / slate presets', /openPrimetime\('TNF'\)/.test(desk) && /openPrimetime\('SNF'\)/.test(desk) && /openPrimetime\('MNF'\)/.test(desk) && /openCfbSlate\('top',3\)/.test(desk) && /openSlate\(null/.test(desk));
 }
