@@ -206,6 +206,19 @@ jobs:
       - name: The backtest cannot see the future and its arithmetic is right
         run: node tools/capture/backtest.test.js
 
+      # THE MIGRATION, RUN FOR REAL. It shipped with `as check` — a reserved
+      # keyword — so the whole file died at its last statement and the report
+      # that exists to tell you it worked never ran. Nothing here had ever
+      # executed a line of its SQL. This starts a throwaway postgres, builds a
+      # pre-v9 schema, runs the migration three times, and checks that the
+      # freeze freezes and that every column capture writes exists afterwards.
+      # The runner ships PostgreSQL; if it is ever absent the suite says so and
+      # falls back to the static layer rather than passing quietly.
+      - name: Add postgres to PATH for the migration suite
+        run: ls -d /usr/lib/postgresql/*/bin | tail -1 >> "$GITHUB_PATH"
+      - name: The migration runs, twice, and freezes what it promises to freeze
+        run: node tools/capture/migration.test.js
+
       # The deployed edge function, imported under Node's native type stripping
       # with a Deno shim and a mocked network: old callers, the additive
       # presentation contract, and the deterministic card surviving AI failure.

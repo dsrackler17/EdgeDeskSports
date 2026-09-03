@@ -311,7 +311,7 @@ commit;
 -- ── 6. THE REPORT ─────────────────────────────────────────────────────────
 -- Every row should say ok.
 with checks as (
-  select 1 as n, 'signals.qual_reason exists' as check,
+  select 1 as n, 'signals.qual_reason exists' as check_name,
          (select count(*) from information_schema.columns
            where table_schema='public' and table_name='signals' and column_name='qual_reason')::int as got, 1 as want
   union all select 2, 'signals.reference_type exists',
@@ -360,7 +360,7 @@ with checks as (
          (select count(*) from information_schema.columns
            where table_schema='public' and table_name='book_quotes' and column_name='quote_age_s')::int, 1
 )
-select n, check, got, want, case when got = want then 'ok' else 'CHECK THIS' end as status
+select n, check_name, got, want, case when got = want then 'ok' else 'CHECK THIS' end as status
 from checks order by n;
 
 -- How much history is labelled legacy vs qualified under v9. Run this again in a
