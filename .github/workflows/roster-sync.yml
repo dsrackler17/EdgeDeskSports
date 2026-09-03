@@ -49,7 +49,9 @@ jobs:
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add football/rosters/*.json football/rosters/*.csv
+          # a directory, not two globs: if either glob matches nothing it is
+          # passed through literally and the whole add stages nothing
+          git add -A -- football/rosters/
           if git diff --cached --quiet; then
             echo 'rosters unchanged — nothing to commit'
             exit 0

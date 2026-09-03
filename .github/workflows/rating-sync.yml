@@ -80,7 +80,10 @@ jobs:
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add football/rating/current.json football/rating/20*.json 2>/dev/null || true
+          # one directory pathspec, not a list: `git add a b` stages nothing
+          # at all when either path is missing, which is how the availability
+          # sync went green for weeks while committing nothing
+          git add -A -- football/rating/
           if git diff --cached --quiet; then
             echo 'rating unchanged — nothing to commit'
             exit 0
