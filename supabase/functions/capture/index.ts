@@ -373,6 +373,7 @@ export interface Config {
   autoPrefixes: string[];
   referenceBooks: string[];
   ticks: boolean;
+  bookQuotes: boolean;
   flagMax: number;
   flagConcurrency: number;
   budgetMs: number;
@@ -472,6 +473,19 @@ export function defaultConfig(env: EnvGet): Config {
        information, and that claim belongs in a commit message with evidence. */
     referenceBooks: list("CAPTURE_REFERENCE_BOOKS", "pinnacle").map((s) => s.toLowerCase()),
     ticks: bool("CAPTURE_TICKS", true),
+  /* Per-book quote history, written ONLY for signals that became actionable.
+     `book_quotes` has a trigger, a view and four UI paths built on it, three UI
+     strings that assert capture populates it, and — until now — no writer
+     anywhere. Without it there is no per-book history, and without per-book
+     history the book-quality questions the brief asks (which books lead, which
+     follow, which post stale prices, which move toward the close) cannot be
+     answered from data and would have to be invented, which is not on the table.
+
+     Bounded to actionable signals on purpose: every priced selection at every
+     book would be tens of thousands of rows per run, and book_quote_ticks
+     appends a history row for each change. The actionable set is small and is
+     exactly the population a book-bias study is about. */
+  bookQuotes: bool("CAPTURE_BOOK_QUOTES", true),
     flagMax: num("CAPTURE_FLAG_MAX", 600),
     flagConcurrency: Math.max(1, num("CAPTURE_FLAG_CONCURRENCY", 25)),
     budgetMs: num("CAPTURE_MAX_MS", 110000),
@@ -1552,6 +1566,23 @@ export function signalRow(c: Candidate, v: Verdict, nowIso: string): any {
   };
 }
 
+/** One row per book quoting an ACTIONABLE selection, with the freshness that
+    decided whether it counted. This is the raw material for measuring book
+    behaviour later, and it stores what was true at decision time rather than
+    what a browser can re-fetch afterwards. */
+export function bookQuoteRows(c: Candidate, v: Verdict, cfg: Config, nowIso: string): any[] {
+  const key = sigKey(c);
+  return c.quotes.map((q) => ({
+    sig_key: key, book_key: q.book, book_title: q.title,
+    dec: q.dec, opp_dec: q.oppDec, fair: q.fair,
+    quote_age_s: q.ageS, is_fresh: q.fresh,
+    is_reference: cfg.referenceBooks.includes(q.book),
+    book_family: q.family, book_tier: q.tier,
+    is_best: q.book === v.best_book,
+    updated_at: nowIso,
+  }));
+}
+
 export function tickRow(c: Candidate, v: Verdict, nowIso: string): any {
   return {
     sig_key: sigKey(c),
@@ -1728,6 +1759,7 @@ export async function handle(req: Request): Promise<Response> {
 
   let priced = 0, inserted = 0, updated = 0, flagged = 0;
   let flagDeferred = 0, flagErrors = 0, ticksWritten = 0, tickErrors = 0;
+  let quotesWritten = 0, quoteErrors = 0;
   let dupesDropped = 0, eventErrors = 0, duplicateQuotes = 0, malformedMarkets = 0, missingTimestamps = 0;
   let priorStateTruncated = false, updatedExact = true, ticksExact = true;
   /* THE FLAG CAP IS A RUN CAP. v8 applied FLAG_MAX inside the per-sport loop, so
@@ -1795,7 +1827,7 @@ export async function handle(req: Request): Promise<Response> {
       }
     }
 
-    const rows: any[] = [], ticks: any[] = [], toFlag: any[] = [];
+    const rows: any[] = [], ticks: any[] = [], toFlag: any[] = [], quotes: any[] = [];
     const seen = new Set<string>();
 
     for (const ev of res.data) {
@@ -1874,6 +1906,7 @@ export async function handle(req: Request): Promise<Response> {
             });
           }
           toFlag.push({ row: flagRow(c, v, nowIso), edge: v.edge ?? 0 });
+          if (cfg.bookQuotes) quotes.push(...bookQuoteRows(c, v, cfg, nowIso));
         } else {
           rejected[v.reason] = (rejected[v.reason] ?? 0) + 1;
           if (v.edge != null && v.edge > 0 && rejectSamples.length < 20) {
@@ -1981,6 +2014,22 @@ export async function handle(req: Request): Promise<Response> {
       if (outOfTime()) { flagDeferred += flagNow.length - (i + batch.length); break; }
     }
 
+    /* Per-book quotes for the actionable set. Upserted on (sig_key, book_key) —
+       the database's own trigger appends the changed ones to book_quote_ticks,
+       so the history accumulates without capture having to manage it. */
+    for (let i = 0; cfg.bookQuotes && i < quotes.length && !outOfTime(); i += 500) {
+      let chunk = dropColumns(quotes.slice(i, i + 500), schemaGaps);
+      for (let attempt = 0; attempt < 12; attempt++) {
+        const { error, count } = await rest.insert("book_quotes", chunk, { onConflict: "sig_key,book_key", ignoreDuplicates: false });
+        if (!error) { quotesWritten += count ?? chunk.length; break; }
+        const col = missingColumnFrom(error);
+        if (col) { schemaGaps.add(col); chunk = dropColumns(chunk, new Set([col])); continue; }
+        quoteErrors++;
+        if (writeErrors.length < 8) writeErrors.push(explainWriteError("book_quotes", error));
+        break;
+      }
+    }
+
     /* Tick history: the only thing that can grade a signal whose market key has
        rotated out of existence, and the entire input to the market residual. Its
        errors are checked, never discarded. */
@@ -2078,6 +2127,8 @@ export async function handle(req: Request): Promise<Response> {
     ...(duplicateQuotes ? { duplicate_book_quotes_dropped: duplicateQuotes } : {}),
     ...(malformedMarkets ? { malformed_markets_skipped: malformedMarkets } : {}),
     ticks_enabled: cfg.ticks, ticks_written: ticksWritten, ticks_written_is_exact: ticksExact,
+    book_quotes_enabled: cfg.bookQuotes, book_quotes_written: quotesWritten,
+    ...(quoteErrors ? { book_quote_write_failures: quoteErrors } : {}),
     ...(tickErrors ? { tick_write_failures: tickErrors } : {}),
     ...(writeErrors.length ? { write_errors: writeErrors } : {}),
     ...(schemaGaps.size ? {

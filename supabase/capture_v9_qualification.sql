@@ -243,6 +243,50 @@ comment on table public.book_quality is
   'what this overhaul exists to remove. measured_from/measured_to/frozen_at are not optional metadata: '
   'a weight used on data it was fitted to is leakage.';
 
+-- ── 4b. PER-BOOK QUOTES ───────────────────────────────────────────────────
+-- book_quotes has a trigger (book_quote_ticks.sql), a view, four UI code paths
+-- and three UI strings asserting capture populates it. Nothing ever wrote it.
+-- capture v9 does, for ACTIONABLE signals only — the whole board at every book
+-- would be tens of thousands of rows a run, and the actionable set is exactly
+-- the population a book-behaviour study is about.
+--
+-- Created if absent; if it already exists only the missing columns are added and
+-- nothing is rewritten.
+create table if not exists public.book_quotes (
+  sig_key    text not null,
+  book_key   text not null,
+  book_title text,
+  dec        numeric,
+  opp_dec    numeric,
+  fair       numeric,
+  updated_at timestamptz not null default now()
+);
+alter table public.book_quotes
+  add column if not exists opp_dec     numeric,
+  add column if not exists quote_age_s integer,
+  add column if not exists is_fresh    boolean,
+  add column if not exists is_reference boolean,
+  add column if not exists is_best     boolean,
+  add column if not exists book_family text,
+  add column if not exists book_tier   text;
+
+comment on column public.book_quotes.quote_age_s is
+  'How stale this book''s quote was AT CAPTURE TIME. Stored rather than recomputed because a browser '
+  'refetching quotes later is looking at a different moment and a different sample from the one the '
+  'signal was graded on.';
+
+-- The upsert key. Created only if some unique constraint on the pair is missing.
+do $$
+begin
+  if not exists (
+    select 1 from pg_indexes
+     where schemaname = 'public' and tablename = 'book_quotes'
+       and indexdef like '%UNIQUE%' and indexdef like '%sig_key%' and indexdef like '%book_key%'
+  ) then
+    execute 'create unique index book_quotes_sig_book_uidx on public.book_quotes (sig_key, book_key)';
+  end if;
+end $$;
+
 -- ── 5. INDEXES ────────────────────────────────────────────────────────────
 -- The actionable board: flagged rows inside a commence_time window, ordered by
 -- edge. Partial, because the flagged population is a small fraction of the table.
@@ -309,6 +353,12 @@ with checks as (
            where schemaname='public' and indexname='signals_actionable_board_idx')::int, 1
   union all select 14, 'no flagged row is left without a policy label',
          (select count(*) from public.signals where flagged_at is not null and flagged_policy is null)::int, 0
+  union all select 15, 'book_quotes has a unique key on (sig_key, book_key) so capture can upsert it',
+         (select count(*) from pg_indexes where schemaname='public' and tablename='book_quotes'
+            and indexdef like '%UNIQUE%' and indexdef like '%sig_key%' and indexdef like '%book_key%')::int, 1
+  union all select 16, 'book_quotes.quote_age_s exists',
+         (select count(*) from information_schema.columns
+           where table_schema='public' and table_name='book_quotes' and column_name='quote_age_s')::int, 1
 )
 select n, check, got, want, case when got = want then 'ok' else 'CHECK THIS' end as status
 from checks order by n;
