@@ -7,6 +7,7 @@ Three layers over one deterministic engine:
 | 1 · 5-second view | verdict · selection · price · good-to · why · watch | Top edges strip, every receipt, AI panel answers, daily research headline |
 | 2 · Full research | everything that already existed | behind **Full research** on the receipt; DEEP mode in the AI panel |
 | 3 · Publisher brief | one-page, shareable snapshot | **Create brief** on any card, **Game brief** on football cards, presets on the Edges view and the Football overview |
+| · Full picture | key players per team with the stat line as the reason · every priced market on the game · every book on the line | **Full picture** on the Top-edges strip and every receipt card (`EDPIC`, `app.html`) |
 
 ## Ownership
 
@@ -27,6 +28,7 @@ validates AI copy before a word of it reaches a card.
     node tools/presentation/presentation.test.js
     node tools/presentation/edgedesk_ai.test.js      # the deployed function, under Node
     node tools/presentation/app_presentation.test.js
+    node tools/presentation/app_picture.test.js       # full picture: players, markets, books
 
 ## Deploy / migrate
 
@@ -52,3 +54,21 @@ validates AI copy before a word of it reaches a card.
   Print / Save PDF, Share brief (snapshot + `brief.html?s=<slug>`), Refresh
   from current data (a new version; the old link is unchanged), Polish copy
   (PUBLISHER mode through edgedesk_ai, validated).
+
+## Full picture (players to market price)
+
+`EDPIC` (between `/*__EDPIC_START__*/ … /*__EDPIC_END__*/` in `app.html`) fills
+the `<domid>_pic` host under a receipt on demand:
+
+- **Key players** per team: the leader in each priority category from
+  `stats_players` (falling back to `player_stats`), with the stored category
+  and stat line as the reason; plus the NFL starter or QB room from the
+  schedule and roster feeds, the CFB QB room from the ESPN roster file, and
+  the MLB probable pitcher from the game card. `model_props` projections ride
+  along, labelled MODEL. A team the tables cannot match, an empty table or an
+  unreachable one is said in words. Nothing is filled in.
+- **Every priced market on the game**: both sides of every market from the
+  captured signal rows — best book and price, fair line and anchor, edge,
+  the engine's verdict and good-to, open → now, books quoting.
+- **Every book on the line**: `book_quotes` for the selection, best in green,
+  sharp starred, each with its own de-vigged fair.
