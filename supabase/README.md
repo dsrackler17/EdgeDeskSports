@@ -1,20 +1,105 @@
-# Server side of the lock rule
+# Server side
 
-Every game locks 30 minutes before kickoff. Each model's latest live
-submission received before the lock is the one the board, the consensus and
-the grader use. Earlier ones stay stored. Anything received at or after the
-lock is stored late and never counts.
+Everything in this folder is **pasted, not installed**. There is no migration
+runner and no ordering table: each `.sql` file is written to be run by hand in
+the Supabase SQL editor, and every one of them follows the same three rules.
 
-Two files. Both are pasted, not installed.
+**The convention, stated once.**
 
-1. **`lock_rule.sql`** — paste into the Supabase SQL editor and run. Its result
-   is a report; rows 1–9 should each say `ok`. It moves the `is_graded_candidate`
-   flag to the newest pre-lock row (trigger for new posts, backfill for games
-   that have not kicked off), makes the ingest decide "late" by the lock, and
-   never deletes anything. Safe to run again.
-2. **`functions/collective_ingest/index.ts`** — the deployed ingest bundle with
-   the rule's wording corrected. Paste as `index.ts` for the function
-   `collective_ingest`, "Enforce JWT verification" off.
+1. **Idempotent.** Safe to run again, and again. `add column if not exists`,
+   `create table if not exists`, `create or replace function`, guarded
+   `create index`. Running a file twice must be indistinguishable from running
+   it once.
+2. **Additive.** Nothing is dropped and no existing value is rewritten. Where a
+   file does need to write to existing rows it says so, touches only rows whose
+   target column is still NULL, and changes no measurement — labelling history
+   is allowed, editing it is not.
+3. **It ends in a report.** The last statement is a `select` whose rows each say
+   `ok` or `CHECK THIS`. A migration you cannot verify from its own output is a
+   migration you have to trust, and the point of these files is not having to.
 
-The client (`collective/index.html`, `app.html`) already states and enforces
-the rule and collapses the games feed to the counting row.
+The edge functions in `functions/` are pasted the same way: one file per
+function, **zero imports**, because the dashboard bundles only the folder you
+are editing and an import that cannot resolve fails the bundle, gets the deploy
+rejected, and leaves the previous version serving — indistinguishable from a
+deploy that worked and changed nothing.
+
+---
+
+## The files
+
+### `capture_v9_qualification.sql` — the qualification state
+Adds the columns `capture-v9` writes: the tier, the reason, the reference type,
+the evidence behind each decision, and the corroboration and raw two-way price
+columns that several UI panels have read since they were written and that
+nothing ever wrote. Labels flags made before v9 as `pre-v9-legacy` so the record
+can report the current policy separately instead of averaging two different
+systems and calling the result one number. Rebuilds `preserve_anchor_entry()` so
+the entry-price freeze derives its column list from the row rather than a
+hardcoded list that had already fallen out of date. Creates `book_families` and
+`book_quality` **empty**, with the reason they are empty in the table comment.
+
+Run it **before** deploying capture v9. Capture degrades safely without it —
+it drops the columns the database lacks and names them in `schema_gaps` — but
+until it runs, persistence streaks cannot be stored, so a Tier B candidate can
+never reach its second confirmation and the actionable board stays empty.
+
+See `functions/capture/README.md` for the environment variables and the deploy
+sequence.
+
+### `lock_rule.sql` — the Collective's 30-minute lock
+Every game locks 30 minutes before kickoff. Each model's latest live submission
+received before the lock is the one the board, the consensus and the grader use.
+Earlier ones stay stored. Anything received at or after the lock is stored late
+and never counts. Rows 1–9 of its report should each say `ok`.
+
+Pairs with `functions/collective_ingest/index.ts`, the deployed ingest bundle
+with the rule's wording corrected — paste as `index.ts` for the function
+`collective_ingest`, "Enforce JWT verification" off. The client
+(`collective/index.html`, `app.html`) already states and enforces the rule and
+collapses the games feed to the counting row.
+
+### `publisher_briefs.sql` — shareable snapshots of a decision
+Two tables, because the boundary between what is publishable and what is
+privileged should be a structural fact rather than a policy that has to stay
+correct. `publisher_briefs` holds the publishable payload and is readable by
+anyone once `is_public` is true; `publisher_brief_internal` holds the engine
+internals and is owner-only, always. Refreshing a brief inserts a NEW row with
+`version_no + 1` and a `parent_id`; old rows and old share slugs stay exactly as
+published.
+
+### `brief_record.sql` — the closing line behind every published brief
+`public_brief_closes`, an owner-run view that admits only rows whose game has
+already kicked off, so the keyless grader
+(`tools/record/grade_briefs.js`, run from a scheduled GitHub Action with the
+same anon key every page ships) can read a close without the live board being
+readable. A live price never leaves through it. The paywall is the live board,
+not the history.
+
+### `book_quote_ticks.sql` — a stamped history of every book's price
+`book_quotes` is upserted per `(sig_key, book_key)`, so it holds the latest pass
+only and every earlier price at every book was overwritten. This adds a trigger
+that appends every insert and every changed update to `book_quote_ticks` with a
+timestamp, and `public_brief_book_closes`, the owner-run door giving the grader
+the last tick per book at or before kickoff. A tick after kickoff is a live
+price and is never a close.
+
+Capture v9 is the first build that actually writes `book_quotes` — for
+actionable signals only, since the whole board at every book would be tens of
+thousands of rows per run and the actionable set is exactly the population a
+book-behaviour study is about.
+
+---
+
+## Not in this repository
+
+`public_record.sql` and the `close` and `learn` edge functions are referenced by
+the app and by capture's comments but have never been committed here. They exist
+only in the Supabase dashboard, which means:
+
+- every CLV, `result`, `beat_close` and `closing_sharp_fair` value the record
+  reports is written by code no checkout can review, and
+- every claim capture's comments make about `close/index.ts` is unverifiable
+  from here.
+
+Worth fixing by committing them the way `functions/capture/index.ts` now is.
