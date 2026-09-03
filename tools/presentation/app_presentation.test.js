@@ -138,7 +138,7 @@ function sandbox() {
   const src = slice('function receiptInner(e,domid){', 'function expandItem(e,domid,headerInner){', 'receiptInner');
   chk('receiptInner leads with the decision card', /dcardReceiptHTML\(e,domid\)/.test(src) && src.indexOf('dcardReceiptHTML') < src.indexOf('receiptHTML(e)'));
   chk('everything that existed is preserved behind Full research', /rcpt-full/.test(src) && /mvtHTML/.test(src) && /rnextHTML/.test(src) && /edaiAnalyze/.test(src) && /ucLeadHTML/.test(src));
-  chk('no card -> the old receipt renders untouched', /return card\?\(card\+/.test(src) && /:full;/.test(src));
+  chk('no card -> the old receipt renders untouched (plus the Full picture host)', /return card\?\(card\+pic\+/.test(src) && /:\(pic\+full\);/.test(src));
   const row = slice('function edgeRow(e,i){', 'window.__t10track', 'edgeRow');
   chk('Top edges row carries the decision strip', /dcardLeadHTML\(e,'t10_'\+i\)/.test(row));
 }

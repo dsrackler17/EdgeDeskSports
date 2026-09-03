@@ -5845,10 +5845,13 @@ function receiptInner(e,domid){
     ((typeof window.mvtHTML==='function')?window.mvtHTML(e):'')+
     receiptHTML(e)+
     ((typeof window.rnextHTML==='function')?window.rnextHTML(e,domid):'')+
+    '<button class="btn ghost sm" onclick="event.stopPropagation();EDPIC.open(\''+domid+'\')" style="margin-top:8px">Full picture: players to market price</button>'+
     '<button class="edai-analyze" onclick="event.stopPropagation();edaiAnalyze(\''+domid+'\')">'+
       '<svg viewBox="0 0 24 24"><path d="M12 3l2.2 5.8L20 11l-5.8 2.2L12 19l-2.2-5.8L4 11l5.8-2.2L12 3z"/></svg>Analyze with EdgeDesk Intelligence</button>'+
     '<button class="btn ghost sm" onclick="__trackId(\''+domid+'\')" style="margin-top:8px">Track this to my ledger</button>';
-  return card?(card+'<div class="rcpt-full" id="'+domid+'_full">'+full+'</div>'):full;
+  /* FULL PICTURE host: players to market price, filled on demand by EDPIC.open. */
+  var pic='<div class="rcpt-pic" id="'+domid+'_pic"></div>';
+  return card?(card+pic+'<div class="rcpt-full" id="'+domid+'_full">'+full+'</div>'):(pic+full);
 }
 function expandItem(e,domid,headerInner){
   window.RCPT=window.RCPT||{};window.RCPT[domid]=e;
@@ -19040,6 +19043,42 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
 }
 /* the receipt: card first, full research behind one tap */
 .rcpt-full{display:none}.rcpt-full.open{display:block}
+/* FULL PICTURE: players to market price, one panel */
+.rcpt-pic:empty{display:none}
+.pic{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:12px 14px 10px;margin:0 0 10px;font-family:'Inter',sans-serif}
+.pic-h{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 10px;margin-bottom:4px}
+.pic-h .t{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);font-weight:700}
+.pic-h .m{font-size:12px;color:var(--dim)}
+.pic-sec{font-family:'JetBrains Mono',monospace;font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--faint);font-weight:700;margin:12px 0 6px}
+.pic-teams{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.pic-team{background:var(--surface2);border:1px solid var(--border);border-radius:11px;padding:10px 11px;min-width:0}
+.pic-team.pick{border-color:rgba(47,180,124,.4)}
+.pic-tn{font-size:14px;font-weight:800;letter-spacing:-.01em;overflow-wrap:anywhere}
+.pic-side{font-family:'JetBrains Mono',monospace;font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--faint);margin-left:7px;font-weight:500}
+.pic-team.pick .pic-side{color:var(--pos)}
+.pic-players{list-style:none;margin:8px 0 0;padding:0}
+.pic-players li{padding:6px 0;border-top:1px dashed rgba(38,44,54,.7)}
+.pic-pn{font-size:13px;font-weight:700}
+.pic-pos{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--dim);font-weight:500;margin-left:4px}
+.pic-tag{font-family:'JetBrains Mono',monospace;font-size:8.5px;letter-spacing:.1em;border:1px solid var(--border);border-radius:5px;padding:1px 5px;color:var(--faint);margin-left:5px;vertical-align:middle}
+.pic-tag.starter{color:var(--pos);border-color:rgba(47,180,124,.45)}.pic-tag.probable,.pic-tag.unconfirmed{color:var(--warn);border-color:rgba(217,154,43,.45)}.pic-tag.missing{color:var(--neg);border-color:rgba(226,96,68,.45)}
+.pic-why{font-size:12px;color:var(--dim);line-height:1.45;margin-top:2px}
+.pic-prop{font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--mdl);margin-top:3px}
+.pic-empty{font-size:12px;color:var(--faint);line-height:1.5;padding:6px 0 2px}
+.pic-src{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--faint);margin-top:8px;line-height:1.45}
+.pic-tblwrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+.pic-tbl{width:100%;border-collapse:collapse;font-size:12px;min-width:560px}
+.pic-tbl th{font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:var(--faint);text-align:left;padding:5px 6px;border-bottom:1px solid var(--border);font-weight:700}
+.pic-tbl td{padding:6px 6px;border-bottom:1px dashed rgba(38,44,54,.7);vertical-align:top}
+.pic-tbl td.s{font-weight:700}
+.pic-tbl td.m{font-family:'JetBrains Mono',monospace;white-space:nowrap}
+.pic-tbl td .bk{display:block;font-family:'JetBrains Mono',monospace;font-size:9.5px;color:var(--faint);white-space:nowrap}
+.pic-tbl td.up{color:var(--pos)}.pic-tbl td.dn{color:var(--neg)}
+.pic-tbl td.v{font-family:'JetBrains Mono',monospace;font-weight:800;letter-spacing:.06em}
+.pic-tbl td.v.bet{color:var(--pos)}.pic-tbl td.v.lean{color:var(--warn)}.pic-tbl td.v.wait{color:var(--mdl)}.pic-tbl td.v.pass{color:var(--dim)}
+.pic-tbl tr.focal td{background:rgba(77,141,255,.07)}
+.pic-focal{font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:var(--accent);margin-left:6px}
+@media(max-width:560px){.pic-teams{grid-template-columns:1fr}.pic{padding:10px 11px 8px}}
 .lead-read-wrap{padding-top:2px}
 /* publisher desk strip */
 .pubdesk{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:0 0 12px;padding:10px 12px;border:1px solid var(--border);border-radius:12px;background:var(--surface)}
@@ -26489,6 +26528,7 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
       var id=register(e,x,s);
       var acts=[
         {label:'View why', onclick:"event.stopPropagation();toggleRcptId('"+jsAttr(domid)+"')"},
+        {label:'Full picture', onclick:"event.stopPropagation();EDPIC.open('"+jsAttr(domid)+"',true)"},
         {label:'Create brief', onclick:"event.stopPropagation();EDBRIEF.openCard('"+id+"')"}
       ];
       return P.cardHTML(s,{compact:true, actions:acts});
@@ -26504,6 +26544,7 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
       var id=register(e,x,s);
       var acts=[
         {label:'Full research', primary:true, onclick:"event.stopPropagation();EDCARD.toggleFull('"+jsAttr(domid)+"',this)"},
+        {label:'Full picture', onclick:"event.stopPropagation();EDPIC.open('"+jsAttr(domid)+"')"},
         {label:'Create brief', onclick:"event.stopPropagation();EDBRIEF.openCard('"+id+"')"},
         {label:'Ask EdgeDesk', onclick:"event.stopPropagation();edaiAnalyze('"+jsAttr(domid)+"')"}
       ];
@@ -26883,6 +26924,370 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
   }catch(_){}
 })();
 /*__EDCARD_END__*/
+</script>
+<script>
+/*__EDPIC_START__*/
+/* ===================================================================================
+   EdgeDesk FULL PICTURE — players to market price, one panel per edge.
+
+   Under every edge on the board: the two teams' key players and WHY each one
+   matters, every priced market on the game (both sides, best book, fair line,
+   edge, EdgeDesk's verdict, open → now), and every book's quote for the line
+   in question. One place, one scroll.
+
+   NOTHING HERE IS INVENTED. A key player is a team leader in a stat category
+   from EdgeDesk's own stats tables (stats_players / player_stats), a
+   confirmed or unconfirmed starter from the schedule and roster feeds, or a
+   probable pitcher from the MLB game card. The "why" is the stat line those
+   tables carry. Where a table is empty the panel says which one, and a team
+   the tables cannot match is reported, not guessed. Prices, fair lines, edges
+   and verdicts come from the signal rows and EDAI.evidence, untouched.
+   =================================================================================== */
+(function(){
+  'use strict';
+  var P=window.EDPRES;
+  function $id(x){ return document.getElementById(x); }
+  function esc(s){ return P?P.esc(s):String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];}); }
+  function num(v){ if(v==null||v==='') return null; var n=+v; return isFinite(n)?n:null; }
+  function fold(s){ try{ return String(s==null?'':s).normalize('NFD').replace(/[\u0300-\u036f]/g,''); }catch(_){ return String(s==null?'':s); } }
+  function normTeam(s){ return fold(s).toLowerCase().replace(/&/g,'and').replace(/[^a-z0-9]/g,''); }
+  function decToAm(d){ d=num(d); if(d==null||d<=1) return null; return d>=2?Math.round((d-1)*100):Math.round(-100/(d-1)); }
+  function fmtAm(a){ a=num(a); if(a==null) return '—'; a=Math.round(a); return (a>0?'+':'')+a; }
+  function probAm(p){ p=num(p); if(p==null||p<=0||p>=1) return '—'; return fmtAm(decToAm(1/p)); }
+
+  /* ---- which league's tables an event reads ---------------------------- */
+  function leagueOf(e){
+    var k=String(e&&e.sport_key||'').toLowerCase();
+    if(k.indexOf('americanfootball_nfl')===0) return 'NFL';
+    if(k.indexOf('americanfootball_ncaaf')===0) return 'CFB';
+    if(k.indexOf('basketball_ncaab')===0) return 'CBB';
+    if(k.indexOf('basketball_wnba')===0) return 'WNBA';
+    if(k.indexOf('basketball_nba')===0) return 'NBA';
+    if(k.indexOf('baseball_mlb')===0) return 'MLB';
+    if(k.indexOf('icehockey_nhl')===0) return 'NHL';
+    if(k.indexOf('mma')===0) return 'UFC';
+    return null;
+  }
+  /* Which categories make a player "key", per sport, in order. A category the
+     tables do not carry is simply skipped. */
+  var CAT_PRI={
+    NFL:['passing','rushing','receiving','tackles','sacks','interceptions'],
+    CFB:['passing','rushing','receiving','tackles','sacks','interceptions'],
+    NBA:['points','rebounds','assists','threes','steals','blocks'],
+    WNBA:['points','rebounds','assists','threes','steals','blocks'],
+    CBB:['points','rebounds','assists','threes','steals','blocks'],
+    MLB:['ops','hr','rbi','avg','era','whip','strikeouts','wins','sb'],
+    NHL:['points','goals','assists','saves']
+  };
+  var CAT_LABEL={points:'points',rebounds:'rebounds',assists:'assists',threes:'3-pointers',steals:'steals',blocks:'blocks',minutes:'minutes',
+    passing:'passing yards',rushing:'rushing yards',receiving:'receiving yards',tackles:'tackles',sacks:'sacks',interceptions:'interceptions',
+    avg:'batting average',ops:'OPS',hr:'home runs',rbi:'RBI',sb:'stolen bases',era:'ERA',whip:'WHIP',strikeouts:'strikeouts',wins:'wins',goals:'goals',saves:'saves'};
+  var LOW_GOOD={era:1,whip:1};
+  function catLabel(c){ return CAT_LABEL[c]||String(c||'').replace(/_/g,' '); }
+  function fmtVal(v){ v=num(v); if(v==null) return null; return (v%1===0)?v.toLocaleString():(Math.abs(v)<1?v.toFixed(3).replace(/^0/,''):v.toFixed(1)); }
+
+  /* ---- team resolution: exact, then longest stored prefix (floor 3), then alias ---- */
+  var ALIAS={utsa:'utsanantonio',umass:'massachusetts',ulmonroe:'louisianamonroe'};
+  function teamIndex(rows){
+    var by={};
+    (rows||[]).forEach(function(r){ var k=normTeam(r.team); if(!k) return; (by[k]=by[k]||{team:r.team,rows:[]}).rows.push(r); });
+    return by;
+  }
+  function resolveTeam(index, name){
+    var bn=normTeam(name); if(!bn) return null;
+    if(index[bn]) return index[bn];
+    var best=null,bestLen=0,k;
+    for(k in index){ if(k.length>=3&&bn.indexOf(k)===0&&k.length>bestLen){ best=index[k]; bestLen=k.length; } }
+    if(best) return best;
+    /* The board name as a prefix of the stored one ("Miami" for "Miami
+       Hurricanes"): only when exactly one stored team starts that way. */
+    var pre=[];
+    for(k in index){ if(k.length>=3&&bn.length>=4&&k.indexOf(bn)===0) pre.push(k); }
+    if(pre.length===1) return index[pre[0]];
+    /* Mascot-only against city-plus-mascot ("Chiefs" vs "Kansas City Chiefs"),
+       either way round, but ONLY when exactly one stored team ends that way:
+       an ambiguous suffix is a null, never a guess. */
+    var suf=[];
+    for(k in index){ if(bn.length>=5&&k.length>=5&&(bn.slice(-k.length)===k||k.slice(-bn.length)===bn)) suf.push(k); }
+    if(suf.length===1) return index[suf[0]];
+    for(k in ALIAS){ if(bn.indexOf(k)===0&&index[ALIAS[k]]) return index[ALIAS[k]]; }
+    return null;
+  }
+  function leadVal(r,cat){
+    if(r&&r.leads&&r.leads[cat]!=null) return num(r.leads[cat]);
+    if(r&&r.cats&&r.cats.length){ for(var i=0;i<r.cats.length;i++){ var c=r.cats[i]; if(c&&(c.name===cat)&&c.value!=null) return num(c.value); } }
+    if(r&&r.lead_cat===cat) return num(r.lead_val);
+    return null;
+  }
+  /* The key players of one team: the leader in each priority category, then
+     the highest remaining leader values, up to `max`. Every "why" is the
+     stored category and stat line, nothing else. */
+  function keyPlayers(rows, L, max){
+    max=max||4;
+    var out=[], seen={};
+    var pri=CAT_PRI[L]||[];
+    pri.forEach(function(cat){
+      var best=null,bv=null;
+      (rows||[]).forEach(function(r){
+        var v=leadVal(r,cat); if(v==null) return;
+        if(best==null||(LOW_GOOD[cat]?v<bv:v>bv)){ best=r; bv=v; }
+      });
+      if(!best||seen[best.player]) return;
+      seen[best.player]=1;
+      var val=fmtVal(bv);
+      out.push({player:best.player, position:best.position||null, stat_line:best.stat_line||null, cat:cat,
+        why:'Team leader in '+catLabel(cat)+(val!=null?' ('+val+')':'')+(best.stat_line?' · '+best.stat_line:''), source:'stats'});
+    });
+    if(out.length<max){
+      (rows||[]).slice().sort(function(a,b){ return (num(b.lead_val)||num((b.stat_line||'').replace(/,/g,''))||0)-(num(a.lead_val)||num((a.stat_line||'').replace(/,/g,''))||0); })
+        .forEach(function(r){ if(out.length>=max||seen[r.player]) return; seen[r.player]=1;
+          out.push({player:r.player, position:r.position||null, stat_line:r.stat_line||null, cat:r.lead_cat||null,
+            why:(r.lead_cat?'Team leader in '+catLabel(r.lead_cat)+(r.lead_val!=null?' ('+fmtVal(r.lead_val)+')':''):'On the stat sheet')+(r.stat_line?' · '+r.stat_line:''), source:'stats'}); });
+    }
+    return out.slice(0,max);
+  }
+
+  /* ---- starters and rooms from the football and baseball feeds ---------- */
+  function nflSide(e, side){
+    try{
+      if(!window.FB||!FB.nfl||!FB.nfl.qbs||!FB.nfl.qbs.length||typeof fbNflTeamCode!=='function') return null;
+      var name=side==='home'?e.home_team:e.away_team;
+      var code=fbNflTeamCode((window.FB_NFL_NAMES&&FB_NFL_NAMES[name])||name);
+      if(!code) return null;
+      var g=null; (FB.nfl.up||[]).forEach(function(u){ if(u.g&&u.g[side+'_team']===code) { var other=side==='home'?e.away_team:e.home_team; var oc=fbNflTeamCode((window.FB_NFL_NAMES&&FB_NFL_NAMES[other])||other); if(u.g[(side==='home'?'away':'home')+'_team']===oc) g=u.g; } });
+      var c=g&&typeof fbGameQbContext==='function'?fbGameQbContext(g)[side]:null;
+      var room=(FB.nfl.qbsByTeam&&FB.nfl.qbsByTeam[code])||[];
+      var items=[];
+      if(c&&c.starter){
+        var why='Starting quarterback, confirmed by the schedule feed';
+        if(c.learned&&c.learned.n) why+=' · EdgeDesk’s QB layer rates him '+(c.learned.v>=0?'above':'below')+' league-average passing over '+c.learned.n+' learned start'+(c.learned.n===1?'':'s');
+        else why+=' · no learned QB value yet, the model uses its prior';
+        items.push({player:c.starter.name, position:'QB', why:why, source:'starter', tag:'STARTER'});
+      } else if(room.length){
+        items.push({player:room.map(function(q){ return q.name; }).join(' / '), position:'QB', why:'Active QB room from the roster feed · starter not yet confirmed by the schedule', source:'room', tag:'UNCONFIRMED'});
+      }
+      return {items:items, label:(typeof fbQbFreshLabel==='function')?fbQbFreshLabel():'QB rosters'};
+    }catch(_){ return null; }
+  }
+  function cfbSide(e, side){
+    try{
+      if(!window.FB||!FB.espn||!FB.espn.details||!window.EDCfbP4||typeof EDCfbP4.normKey!=='function') return null;
+      var name=side==='home'?e.home_team:e.away_team;
+      var d=FB.espn.details[EDCfbP4.normKey(name)];
+      if(!d){ var k=resolveTeam((function(){ var ix={}; Object.keys(FB.espn.details).forEach(function(kk){ ix[normTeam(FB.espn.details[kk].team)]={team:FB.espn.details[kk].team,rows:[kk]}; }); return ix; })(), name); d=k?FB.espn.details[k.rows[0]]:null; }
+      if(!d) return null;
+      var qbs=(d.players||[]).filter(function(p){ return p.group==='QB'; });
+      var ordered=qbs.slice().sort(function(a,b){ return (b.w==null?-1:b.w)-(a.w==null?-1:a.w); }).slice(0,3);
+      var items=ordered.map(function(p){
+        var bits=[];
+        if(p.cls) bits.push(p.cls);
+        if(p.status==='returning') bits.push('returning');
+        else if(p.status==='transfer') bits.push('transfer in'+(p.from?' from '+p.from:''));
+        else if(p.status==='new') bits.push('new to the roster');
+        return {player:p.name, position:'QB', why:'Quarterback room · '+(bits.join(', ')||'on the ESPN roster')+' · the depth chart is not in any feed, so no starter is claimed', source:'roster', tag:'ROSTER'};
+      });
+      var b=FB.espn.bundles&&FB.espn.bundles[EDCfbP4.normKey(d.team)];
+      var cont=b&&b.by_group&&b.by_group.QB&&b.by_group.QB.returning_share!=null?Math.round(b.by_group.QB.returning_share*100)+'% of the QB group returning':null;
+      return {items:items, label:'ESPN roster · '+(FB.espn.meta&&FB.espn.meta.season||'')+(cont?' · '+cont:'')};
+    }catch(_){ return null; }
+  }
+  function mlbSide(e, side){
+    try{
+      if(typeof mlbLookup!=='function') return null;
+      var g=mlbLookup(e); if(!g) return null;
+      var nm=side==='home'?g.home_pitcher_name:g.away_pitcher_name, th=side==='home'?g.home_pitcher_throws:g.away_pitcher_throws;
+      var items=[];
+      if(nm) items.push({player:nm, position:'SP'+(th?' ('+th+'HP)':''), why:'Probable starting pitcher, the largest single input in a baseball number · probable, not confirmed', source:'probable', tag:'PROBABLE'});
+      else items.push({player:'Starter not posted', position:'SP', why:'No probable pitcher on the MLB game card yet', source:'probable', tag:'MISSING'});
+      var rec=side==='home'?g.home_record:g.away_record, st=side==='home'?g.home_streak:g.away_streak;
+      return {items:items, label:'MLB game card'+(rec?' · '+rec:'')+(st?' · '+st:'')};
+    }catch(_){ return null; }
+  }
+  function feedSide(e, L, side){
+    if(L==='NFL') return nflSide(e,side);
+    if(L==='CFB') return cfbSide(e,side);
+    if(L==='MLB') return mlbSide(e,side);
+    return null;
+  }
+
+  /* ---- one team's block ------------------------------------------------- */
+  function teamBlock(e, L, side, stats, props){
+    var name=side==='home'?e.home_team:e.away_team;
+    var pick=e.selection&&name&&String(e.selection).indexOf(name)>=0;
+    var feed=feedSide(e,L,side);
+    var res=stats&&stats.index?resolveTeam(stats.index,name):null;
+    var kp=res?keyPlayers(res.rows,L,4):[];
+    var h='<div class="pic-team'+(pick?' pick':'')+'"><div class="pic-tn">'+esc(name||'—')+'<span class="pic-side">'+(side==='home'?'home':'away')+(pick?' · the pick':'')+'</span></div>';
+    var rows=[];
+    if(feed&&feed.items) feed.items.forEach(function(it){ rows.push(it); });
+    kp.forEach(function(it){ if(!rows.some(function(r){ return normTeam(r.player)===normTeam(it.player); })) rows.push(it); });
+    if(!rows.length){
+      h+='<div class="pic-empty">'+(stats&&stats.error?('Player tables unreachable ('+esc(stats.error)+').'):stats&&stats.rows&&stats.rows.length?('No '+esc(L||'')+' stat rows matched “'+esc(name||'')+'” in stats_players.'):('No player stat lines on file for '+esc(L||'this league')+' — stats_players is empty. Run capture_stats.'))+' Nothing is filled in.</div>';
+    } else {
+      h+='<ul class="pic-players">'+rows.map(function(r){
+        var pr=props&&props[normTeam(r.player)];
+        return '<li><div class="pic-pn">'+esc(r.player)+(r.position?' <span class="pic-pos">'+esc(r.position)+'</span>':'')+(r.tag?' <span class="pic-tag '+esc(r.tag.toLowerCase())+'">'+esc(r.tag)+'</span>':'')+'</div>'
+          +'<div class="pic-why">'+esc(r.why)+'</div>'
+          +(pr&&pr.length?'<div class="pic-prop">'+pr.slice(0,2).map(function(p){ return esc((p.market||'').replace(/_/g,' '))+' o'+esc(String(p.line))+' · proj '+esc((+p.proj).toFixed(1))+(p.p_over!=null?' · '+Math.round(+p.p_over)+'% over':''); }).join(' · ')+' <span class="unproven">MODEL</span></div>':'')
+          +'</li>';
+      }).join('')+'</ul>';
+      if(res&&res.rows&&!kp.length) h+='<div class="pic-empty">Stat rows exist for this team but carry no leader categories.</div>';
+      if(!res&&stats&&stats.rows&&stats.rows.length&&feed) h+='<div class="pic-empty">No '+esc(L)+' stat rows matched “'+esc(name||'')+'”, so only the feed’s starters are shown.</div>';
+    }
+    var srcs=[];
+    if(feed&&feed.label) srcs.push(feed.label);
+    if(res) srcs.push('stats_players · '+res.rows.length+' rows');
+    if(srcs.length) h+='<div class="pic-src">'+esc(srcs.join(' · '))+'</div>';
+    return h+'</div>';
+  }
+
+  /* ---- every priced market on the game ---------------------------------- */
+  function gameRows(e){
+    var all=(window.EDGES||[]).filter(function(r){ return r&&String(r.event_id)===String(e.event_id); });
+    if(!all.some(function(r){ return r===e; })&&e.event_id) all.push(e);
+    var order={h2h:0,spreads:1,totals:2};
+    return all.slice().sort(function(a,b){
+      var oa=order[a.market]!=null?order[a.market]:9, ob=order[b.market]!=null?order[b.market]:9;
+      if(oa!==ob) return oa-ob;
+      var pa=num(a.point)||0, pb=num(b.point)||0;
+      if(a.market==='totals'&&pa!==pb) return pa-pb;
+      return String(a.selection||'').localeCompare(String(b.selection||''));
+    });
+  }
+  function verdictOf(r){
+    try{ var x=window.EDAI&&EDAI.evidence?EDAI.evidence(r):null; return x?{v:x.dverdict||x.verdict, max:x.toPlayAm!=null?x.toPlayAm:x.maxAm}:null; }catch(_){ return null; }
+  }
+  function moveText(r){
+    var o=num(r.first_best_dec), n=num(r.best_dec);
+    if(o==null||n==null||o<=1||n<=1) return null;
+    if(Math.abs(o-n)<1e-9) return 'flat';
+    return fmtAm(decToAm(o))+' → '+fmtAm(decToAm(n));
+  }
+  function marketsHTML(e, rows){
+    rows=rows||gameRows(e);
+    if(!rows.length) return '<div class="pic-empty">No priced market is on file for this game.</div>';
+    var h='<div class="pic-tblwrap"><table class="pic-tbl"><thead><tr><th>Market</th><th>Side</th><th>Best</th><th>Fair</th><th>Edge</th><th>Call</th><th>Open → now</th><th>Books</th></tr></thead><tbody>';
+    rows.forEach(function(r){
+      var focal=r===e||(r.event_id===e.event_id&&r.market===e.market&&r.selection===e.selection&&String(r.point==null?'':r.point)===String(e.point==null?'':e.point));
+      var fair=num(r.sharp_fair)!=null?num(r.sharp_fair):num(r.consensus_fair);
+      var anchor=num(r.sharp_fair)!=null?'sharp':(num(r.consensus_fair)!=null?'consensus':null);
+      var edge=num(r.edge);
+      var vd=verdictOf(r);
+      var trusted=(typeof isTrusted==='function')?isTrusted(r.best_book):true;
+      var sel=(typeof selLabel==='function')?selLabel(r):(r.selection+(r.point!=null?' '+r.point:''));
+      h+='<tr class="'+(focal?'focal':'')+'"><td>'+esc((typeof mktLabel==='function')?mktLabel(r.market):r.market)+'</td>'
+        +'<td class="s">'+esc(sel)+(focal?' <span class="pic-focal">this edge</span>':'')+'</td>'
+        +'<td class="m">'+esc(fmtAm(decToAm(r.best_dec)))+'<span class="bk">'+esc(r.best_book||'')+(trusted?'':' · offshore')+'</span></td>'
+        +'<td class="m">'+(fair!=null?esc(probAm(fair))+'<span class="bk">'+anchor+'</span>':'—')+'</td>'
+        +'<td class="m '+(edge==null?'':edge>0?'up':'dn')+'">'+(edge==null?'—':((edge>=0?'+':'')+(edge*100).toFixed(1)+'%'))+'</td>'
+        +'<td class="v '+(vd?String(vd.v).toLowerCase():'')+'">'+(vd?esc(vd.v)+(vd.max!=null&&(vd.v==='BET'||vd.v==='LEAN')?'<span class="bk">good to '+esc(fmtAm(vd.max))+'</span>':''):'—')+'</td>'
+        +'<td class="m">'+esc(moveText(r)||'—')+'</td>'
+        +'<td class="m">'+(r.n_books!=null?r.n_books:'—')+(r.last_seen_at&&typeof ago==='function'?'<span class="bk">'+esc(ago(new Date(r.last_seen_at).getTime()))+'</span>':'')+'</td></tr>';
+    });
+    return h+'</tbody></table></div>';
+  }
+  /* ---- every book's quote for the line in question ----------------------- */
+  function booksHTML(rows){
+    if(!rows||!rows.length) return '<div class="pic-empty">No per-book rows stored for this line yet. book_quotes fills on the next capture pass.</div>';
+    var best=rows[0].dec;
+    return '<table class="bqtbl"><tbody>'+rows.map(function(r){
+      var cls=(r.is_sharp?'sharpbk':(r.dec===best?'bestbk':''));
+      return '<tr class="'+cls+'"><td>'+esc(r.book_title||'—')+(r.is_sharp?' ★':'')+'</td><td>'+esc(fmtAm(decToAm(r.dec)))+'</td><td>'+(r.fair!=null?(r.fair*100).toFixed(1)+'%':'—')+'</td></tr>';
+    }).join('')+'</tbody></table><div class="pic-src">Every book’s price for this selection and its own de-vigged fair. Green = best available. ★ = the sharp book.</div>';
+  }
+
+  /* ---- the panel ---------------------------------------------------------- */
+  function pictureHTML(e, data){
+    data=data||{};
+    var L=leagueOf(e);
+    var h='<div class="pic">';
+    h+='<div class="pic-h"><span class="t">Full picture</span><span class="m">'+esc((e.away_team||'')+' @ '+(e.home_team||''))+(e.commence_time&&typeof whenLabel==='function'?' · '+esc(whenLabel(e.commence_time)):'')+'</span></div>';
+    h+='<div class="pic-sec">Key players</div>';
+    if(!L) h+='<div class="pic-empty">EdgeDesk holds no player tables for this sport, so no player is named.</div>';
+    else h+='<div class="pic-teams">'+teamBlock(e,L,'away',data.stats,data.props)+teamBlock(e,L,'home',data.stats,data.props)+'</div>';
+    h+='<div class="pic-sec">Every priced market on this game</div>'+marketsHTML(e,data.rows);
+    h+='<div class="pic-sec">Every book on this line</div><div id="'+esc(data.domid||'pic')+'_books">'+(data.books?booksHTML(data.books):'<div class="pic-empty">Loading per-book prices…</div>')+'</div>';
+    h+='<div class="pic-src">Players: team leaders from EdgeDesk’s stat tables and the starter feeds, with the stat line as the reason. Prices: the captured signal rows and the engine’s own fair line and verdict. Nothing here is estimated.</div>';
+    return h+'</div>';
+  }
+
+  /* ---- data: stats rows per league, cached ------------------------------- */
+  var CACHE={stats:{},props:{},books:{}};
+  var COLS='league,team,player,position,stat_line,lead_cat,lead_val,cats,leads';
+  async function loadStatsFor(L){
+    if(!L) return null;
+    var c=CACHE.stats[L];
+    if(c&&Date.now()-c.at<5*60000) return c;
+    var out={at:Date.now(),rows:[],index:{},error:null};
+    try{
+      if(typeof sbGet!=='function') throw new Error('no db');
+      var rows=[];
+      try{ rows=await sbGet('stats_players?select='+COLS+'&league=ilike.'+encodeURIComponent(L)+'&limit=3000'); }
+      catch(e1){ try{ rows=await sbGet('player_stats?select=league,team,player,position,stat_line,rank&league=ilike.'+encodeURIComponent(L)+'&limit=3000'); }catch(e2){ throw e1; } }
+      out.rows=rows||[]; out.index=teamIndex(out.rows);
+    }catch(e){ out.error=String(e&&e.message||e).slice(0,120); }
+    CACHE.stats[L]=out; return out;
+  }
+  async function loadProps(L, names){
+    if(!L||!names.length||typeof sbGet!=='function') return null;
+    var key=L+'|'+names.slice().sort().join('|');
+    var c=CACHE.props[key]; if(c&&Date.now()-c.at<5*60000) return c.map;
+    var map={};
+    try{
+      var rows=await sbGet('model_props?select=sport,player,market,proj,line,p_over&sport=ilike.'+encodeURIComponent(L)+'&player=in.('+names.map(function(n){ return encodeURIComponent('"'+String(n).replace(/"/g,'')+'"'); }).join(',')+')&limit=200');
+      (rows||[]).forEach(function(p){ (map[normTeam(p.player)]=map[normTeam(p.player)]||[]).push(p); });
+    }catch(_){}
+    CACHE.props[key]={at:Date.now(),map:map}; return map;
+  }
+  async function loadBooks(e){
+    var key=(e.event_id||'')+'|'+(e.market||'')+'|'+(e.selection||'')+'|'+(e.point!=null?e.point:'');
+    var c=CACHE.books[key]; if(c&&Date.now()-c.at<2*60000) return c.rows;
+    var rows=[];
+    try{ rows=await sbGet('book_quotes?select=book_title,dec,fair,is_sharp&sig_key=eq.'+encodeURIComponent(key)+'&order=dec.desc&limit=40'); }catch(_){ rows=[]; }
+    CACHE.books[key]={at:Date.now(),rows:rows||[]}; return rows||[];
+  }
+  async function ensureFeeds(e, L){
+    try{
+      if(L==='CFB'&&typeof fbEspnData==='function'&&!(window.FB&&FB.espn&&FB.espn.details)) await fbEspnData().catch(function(){});
+    }catch(_){}
+  }
+  function namesFor(e, L, stats){
+    var out=[];
+    ['away','home'].forEach(function(side){
+      var name=side==='home'?e.home_team:e.away_team;
+      var res=stats&&stats.index?resolveTeam(stats.index,name):null;
+      keyPlayers(res?res.rows:[],L,4).forEach(function(k){ out.push(k.player); });
+      var f=feedSide(e,L,side); if(f&&f.items) f.items.forEach(function(it){ if(it.source==='starter'||it.source==='probable') out.push(it.player); });
+    });
+    return out;
+  }
+
+  /* Open (or toggle) the picture under a receipt. The row's own signal is the
+     one already registered for the receipt; nothing is re-fetched to find it. */
+  async function open(domid, force){
+    var host=$id(domid+'_pic'); if(!host) return;
+    var item=$id(domid); if(item&&!item.classList.contains('open')) item.classList.add('open');
+    if(host.getAttribute('data-open')==='1'&&!force){ host.setAttribute('data-open','0'); host.innerHTML=''; return; }
+    host.setAttribute('data-open','1');
+    var e=(window.RCPT||{})[domid]||(window.EDCARD&&EDCARD.get?EDCARD.get(domid):null);
+    if(!e){ host.innerHTML='<div class="pic"><div class="pic-empty">This row is no longer on the board.</div></div>'; return; }
+    var L=leagueOf(e);
+    host.innerHTML=pictureHTML(e,{domid:domid,rows:gameRows(e)}).replace('<div class="pic-teams">','<div class="pic-teams" data-loading="1">');
+    var stats=await loadStatsFor(L);
+    await ensureFeeds(e,L);
+    var props=await loadProps(L, namesFor(e,L,stats));
+    if(host.getAttribute('data-open')!=='1') return;
+    host.innerHTML=pictureHTML(e,{domid:domid,rows:gameRows(e),stats:stats,props:props});
+    var books=await loadBooks(e);
+    var bh=$id(domid+'_books'); if(bh) bh.innerHTML=booksHTML(books);
+  }
+  window.EDPIC={
+    open:open, pictureHTML:pictureHTML, marketsHTML:marketsHTML, booksHTML:booksHTML, teamBlock:teamBlock,
+    keyPlayers:keyPlayers, resolveTeam:resolveTeam, teamIndex:teamIndex, leagueOf:leagueOf, gameRows:gameRows, leadVal:leadVal,
+    CAT_PRI:CAT_PRI
+  };
+})();
+/*__EDPIC_END__*/
 </script>
  <script>
 /*__EDINT_MODULE_START__*/
