@@ -4962,7 +4962,42 @@ var REAL_FLOOR=0.005;                 // <0.5% after the fair line = noise, not 
    Every ACTIVE board query appends this. Historical, graded, replay, movement
    and research reads deliberately do NOT — they are supposed to see the whole
    stored series, and gating them would silently shrink the record. */
+/* ═══ TWO CONCEPTS THAT ARE NOT THE SAME THING ═══════════════════════════
+   Under capture v8 there was only one, and treating them as one was fine.
+   Under v9 it is a bug, and it is the bug that let one selection read WATCH on
+   Today's Desk and BET in the Top 10 at the same moment.
+
+   HISTORICAL — `wasFlaggedSignal(e)`.
+     The immutable anchor. flagged_at / flagged_best_dec / flagged_edge record
+     that this selection qualified ONCE, and capture freezes them so later
+     market movement cannot rewrite the record. Permanent on purpose. Used by
+     the Record, grading, CLV, replay and movement history.
+
+   CURRENT — `isActionableSignal(e)`.
+     What capture said on its most recent pass. A row flagged on Tuesday whose
+     reference quote has since gone stale, whose books have thinned, or whose
+     edge has decayed below its segment floor is STILL flagged and is NOT
+     actionable. Used by every surface that can show a bet.
+
+   `flagged_at != null` proves the first. It proves nothing about the second,
+   which is why the live board no longer asks it. */
+var BOARD_ACTIVE_FILTER='actionable=is.true&qual_reason=eq.ok';
+/* Columns every live MARKET query must carry so the client can obey capture
+   rather than re-deriving it. The flagged_* fields ride along because the
+   ENTRY price and policy still come from the frozen anchor. */
+var BOARD_ACTIVE_COLS='actionable,qual_tier,qual_reason,qual_streak,reference_type,quality_score,'
+  +'fresh_books,ref_quote_age_s,edge_floor,flagged_at,flagged_edge,flagged_best_dec,flagged_best_book,'
+  +'flagged_policy,flagged_tier,flagged_reference_type';
+/* Kept under the old names so historical reads that legitimately want the whole
+   frozen population keep working unchanged. These are NOT the live board. */
 var BOARD_FLAG_FILTER='flagged_at=not.is.null&flagged_best_dec=not.is.null';
+var HISTORY_FLAG_COLS='flagged_at,flagged_edge,flagged_best_dec,flagged_best_book,flagged_policy,flagged_tier,flagged_reference_type';
+
+/* Postgres booleans arrive as real JSON booleans through PostgREST, but this
+   app has defended against string forms since has_sharp, and a verdict gate is
+   the last place to assume. 'f'/'t' cover a raw-CSV path too. */
+function edBool(v){ return v===true||v==='true'||v===1||v==='1'||v==='t'; }
+function edBoolFalse(v){ return v===false||v==='false'||v===0||v==='0'||v==='f'; }
 /* capture v9 writes `qual_reason` on EVERY priced row, so a row that is not on
    the board can say why in a sentence rather than being an unexplained absence.
    Anything not in this map renders as the raw reason string — visible and ugly,
@@ -4995,19 +5030,113 @@ var QUAL_REASON_TEXT={
 };
 /* Columns any active-board select must carry so the client-side twin below can
    re-check what the server already filtered. */
-var BOARD_FLAG_COLS='flagged_at,flagged_edge,flagged_best_dec,flagged_best_book';
+/* The columns a live MARKET query must carry. Renamed in meaning, not in name:
+   it now includes the v9 qualification state, because a pool that cannot see
+   `actionable` cannot obey capture and will fall back to guessing. */
+var BOARD_FLAG_COLS=BOARD_ACTIVE_COLS;
 /* The same rule applied to rows already in memory. Defence in depth: a pool
    assembled by concatenating other pools cannot inherit a URL filter. */
-function isFlaggedSignal(e){
+/* HISTORICAL: did this selection ever qualify? Reads the frozen anchor only.
+   Correct for the Record, CLV, replay and movement — and correct nowhere else. */
+function wasFlaggedSignal(e){
   return !!(e && e.flagged_at && isFinite(+e.flagged_best_dec) && +e.flagged_best_dec>1);
 }
-function onlyFlagged(rows){ return (rows||[]).filter(isFlaggedSignal); }
+/* The old name, kept pointing at the HISTORICAL meaning, because every existing
+   caller of it was asking a historical question. Live surfaces call
+   isActionableSignal() instead. */
+function isFlaggedSignal(e){ return wasFlaggedSignal(e); }
+function onlyFlagged(rows){ return (rows||[]).filter(wasFlaggedSignal); }
+
+/* CURRENT: is capture saying yes RIGHT NOW?
+   Both fields are required. They are equivalent by construction — qualifySignal()
+   returns reason "ok" if and only if actionable is true — so requiring both means
+   a drift between them fails closed and is visible, rather than one of them
+   quietly becoming the whole gate. Nothing here looks at edge, flagged_at or any
+   client-side score: inferring actionability is precisely the thing that went
+   wrong. */
+function isActionableSignal(e){
+  return !!(e && edBool(e.actionable) && e.qual_reason==='ok');
+}
+function onlyActionable(rows){ return (rows||[]).filter(isActionableSignal); }
+
+/* Does this row carry v9 qualification state at all? A row captured before v9,
+   or captured while the migration had not been run, has neither field. Such a
+   row is NOT actionable — but it is also not evidence that the market is quiet,
+   and the board says so rather than rendering an unexplained blank. */
+function hasQualState(e){ return !!(e && (e.qual_reason!=null || e.actionable!=null)); }
+
+/* ═══ THE CANONICAL MARKET VERDICT ═══════════════════════════════════════
+   ONE function. Every MARKET surface that can display a verdict calls it, so a
+   selection cannot read WATCH in one place and BET in another.
+
+   THE INVARIANT, and it only runs one way:
+     capture decides WHETHER a bet is permitted.
+     EQS decides only whether to talk you OUT of one capture already permitted.
+
+     capture actionable -> EQS BET   -> BET (tier A) / LEAN (tier B)
+     capture actionable -> EQS WATCH -> WATCH
+     capture actionable -> EQS PASS  -> PASS
+     capture NOT actionable          -> WATCH if it is merely awaiting a second
+                                        confirmation, PASS otherwise.
+                                        No EQS score, no CLV history and no raw
+                                        edge can move it off that.
+
+   `eqs` is optional. Omitted, the verdict is capture's alone, which is the
+   right default for any surface that has not computed a research score. */
+function canonicalMarketVerdict(e, eqs){
+  if(!e) return 'PASS';
+  /* Seen once, holding, not yet confirmed. This is a real state with its own
+     answer — it is not a refusal, and calling it PASS would hide a candidate
+     that is one capture cycle from qualifying. */
+  if(e.qual_reason==='awaiting_confirmation') return 'WATCH';
+  if(!isActionableSignal(e)) return 'PASS';
+  /* Capture has allowed it. EQS may now DOWNGRADE and may never upgrade. */
+  if(eqs && eqs.decision==='PASS') return 'PASS';
+  if(eqs && eqs.decision==='WATCH') return 'WATCH';
+  if(e.qual_tier==='A') return 'BET';
+  if(e.qual_tier==='B') return 'LEAN';
+  /* actionable with no tier should be impossible — capture writes one on every
+     qualified row. If it happens the schema has drifted, and the safe reading
+     of an unknown state is not "bet". */
+  return 'PASS';
+}
+/* Why the verdict is what it is, in the reader's words, for any surface that
+   wants to explain itself. Never invents a reason capture did not give. */
+function canonicalVerdictWhy(e, eqs){
+  if(!e) return 'No row.';
+  if(e.qual_reason==='awaiting_confirmation')
+    return 'Seen once and holding. EdgeDesk waits for it to survive another capture before naming it.';
+  if(!hasQualState(e))
+    return 'This row was priced before capture v9, so it carries no current qualification state. It is history, not a live call.';
+  if(!isActionableSignal(e))
+    return QUAL_REASON_TEXT[e.qual_reason] || ('capture did not qualify it \u2014 '+String(e.qual_reason||'reason not recorded'));
+  if(eqs && eqs.decision==='PASS') return 'Capture qualified it; the research record argues against it.';
+  if(eqs && eqs.decision==='WATCH') return 'Capture qualified it; the research record is not strong enough to lead with it.';
+  return e.qual_tier==='A'
+    ? 'Capture qualified it against a sharp reference.'
+    : 'Capture qualified it on a robust multi-book consensus, with no sharp reference available.';
+}
 var EDGE_MAX_AGE_MIN=90;              // an edge not re-priced in 90 min is a zombie (capture isn't covering it) — drop it
 var MINBOOKS=3;                       // need >=3 books quoting for a fair line to mean anything
 var STALE_AMBER_MIN=45, STALE_RED_MIN=120;   // ~30-min capture cadence; behind at 45m, down at 2h
 var SLICE=null, SLICE_AT=0;
 function setStale(latest){
   var b=$('edgeStale'),lw=$('leadWrap');if(!b)return;
+  /* THE SCHEMA FAULT OUTRANKS EVERY OTHER BANNER STATE. If capture-v9's
+     qualification columns are missing, every row evaluates to PASS and the board
+     is empty — which is indistinguishable from a genuinely quiet slate unless
+     somebody says so out loud. This is that. */
+  var _qs=window.__QUAL_SCHEMA_ERR||window.__QUAL_SCHEMA_MISSING;
+  if(_qs){
+    b.className='stalebanner red';
+    b.innerHTML='\u26d4 <b>Qualification state is missing from the database</b> \u2014 the board cannot tell which '
+      +'signals are actionable, so it is showing none. This is a deployment fault, not a quiet slate.'
+      +'<div class="sb-sub">Run <span class="mono">supabase/capture_v9_qualification.sql</span>, then let one capture '
+      +'pass write <span class="mono">actionable</span> / <span class="mono">qual_reason</span>. '
+      +'Detail: '+edEsc(String(_qs))+'</div>';
+    if(lw)lw.classList.add('stale');
+    return;
+  }
   if(!latest){b.className='stalebanner red';b.innerHTML='\u26d4 No data loaded \u2014 the capture pipeline hasn\u2019t reported. Nothing below is current; do not trust it.';if(lw)lw.classList.add('stale');return;}
   var mins=(Date.now()-latest)/60000;
   if(mins>=STALE_RED_MIN){b.className='stalebanner red';b.innerHTML='\u26d4 STALE \u2014 last updated '+ago(latest)+'. The capture pipeline is down, so these are old prices. Do not bet off this list.<div class="sb-sub">Healthy refresh is every ~30 min. Fix capture before trusting anything here.</div>';if(lw)lw.classList.add('stale');}
@@ -5017,19 +5146,65 @@ function setStale(latest){
 async function loadSliceStats(){
   if(SLICE&&(Date.now()-SLICE_AT)<300000)return;            // cache 5 min
   try{
-    var g=await sbGet('signals?select=sport_title,market,beat_close,clv&graded_at=not.is.null&beat_close=not.is.null&clv_excluded_reason=is.null&limit=5000');
+    /* ═══ SEGMENTED BY THE POLICY THAT PRODUCED THE SIGNAL ═══════════════
+       This used to bucket every graded row together and hand the result to EQS
+       as evidence about a live signal. So a v9 signal was being judged against
+       ~1000 rows produced under capture v8 — a build with no freshness checks,
+       no real sharp anchor, one 0.5% floor for every sport, and an outlier gate
+       that let a stale two-book quote through at 22%. Those rows are real
+       history and they stay in the Record. They are not evidence about what the
+       current policy does, and presenting their n as if they were is borrowing
+       a sample size the new rules never earned.
+
+       Rows are now keyed by flagged_policy, and sliceStat() looks up the policy
+       of the row it is asked about. A pre-v9 row is labelled and bucketed
+       separately rather than dropped. */
+    var g=await sbGet('signals?select=sport_title,market,beat_close,clv,flagged_policy,flagged_tier,flagged_reference_type&graded_at=not.is.null&beat_close=not.is.null&clv_excluded_reason=is.null&limit=5000');
     var m={};function add(k,r){var s=m[k]||(m[k]={n:0,beat:0,clv:0});s.n++;if(r.beat_close)s.beat++;s.clv+=r.clv||0;}
-    g.forEach(function(r){add('all',r);if(r.sport_title)add('s|'+r.sport_title,r);if(r.sport_title&&r.market)add('sm|'+r.sport_title+'|'+r.market,r);});
+    g.forEach(function(r){
+      var pol=r.flagged_policy||'pre-v9-legacy';
+      add('P|'+pol+'|all',r);
+      if(r.sport_title)add('P|'+pol+'|s|'+r.sport_title,r);
+      if(r.sport_title&&r.market)add('P|'+pol+'|sm|'+r.sport_title+'|'+r.market,r);
+      if(r.flagged_tier)add('P|'+pol+'|t|'+r.flagged_tier,r);
+      if(r.flagged_reference_type)add('P|'+pol+'|r|'+r.flagged_reference_type,r);
+      /* Policy-blind buckets are kept for the Record's historical comparison
+         only. sliceStat() never reads them. */
+      add('all',r);if(r.sport_title)add('s|'+r.sport_title,r);
+      if(r.sport_title&&r.market)add('sm|'+r.sport_title+'|'+r.market,r);
+    });
     SLICE=m;SLICE_AT=Date.now();
   }catch(e){SLICE=SLICE||{};}
 }
+/* The CLV evidence for ONE row, from signals produced by the SAME qualification
+   policy. Never falls back to another policy's history: a number that describes
+   a different system is worse than no number, because it looks like evidence. */
 function sliceStat(e){
   if(!SLICE)return null;
-  var keys=['sm|'+e.sport_title+'|'+e.market,'s|'+e.sport_title,'all'];
-  for(var i=0;i<keys.length;i++){var s=SLICE[keys[i]];if(s&&s.n>=15)return{rate:s.beat/s.n,clv:s.clv/s.n,n:s.n,fine:i===0};}
-  var any=(SLICE['s|'+e.sport_title]&&SLICE['s|'+e.sport_title].n)||(SLICE['all']&&SLICE['all'].n)||0;
-  return{rate:null,n:any,fine:false};
+  /* A live v9 row carries flagged_policy once it has been flagged; before that
+     it is a v9 candidate by construction, since only v9 writes qual_reason. */
+  var pol=(e&&e.flagged_policy)||((e&&e.qual_reason!=null)?CAPTURE_POLICY:'pre-v9-legacy');
+  var keys=['P|'+pol+'|sm|'+e.sport_title+'|'+e.market,
+            'P|'+pol+'|s|'+e.sport_title,
+            'P|'+pol+'|all'];
+  for(var i=0;i<keys.length;i++){
+    var s=SLICE[keys[i]];
+    if(s&&s.n>=SLICE_MIN_N)return{rate:s.beat/s.n,clv:s.clv/s.n,n:s.n,fine:i===0,policy:pol,collecting:false};
+  }
+  /* Not enough graded rows under THIS policy yet. Report the honest count and
+     say what it is, rather than reaching for the old policy's thousand. */
+  var any=(SLICE['P|'+pol+'|all']&&SLICE['P|'+pol+'|all'].n)||0;
+  return{rate:null,n:any,fine:false,policy:pol,collecting:true,
+    label:(pol==='pre-v9-legacy')?('Legacy policy \u00b7 n'+any):('New policy \u00b7 collecting evidence (n'+any+')')};
 }
+/* The policy the current capture build stamps. Kept beside the reader so a
+   version bump is one edit; verdict_authority.test.js asserts it matches
+   capture's POLICY_VERSION. */
+var CAPTURE_POLICY='qual-2026.09.1';
+/* Below this, a slice is not evidence. Deliberately the same 15 the old code
+   used, so this change alters WHICH rows are counted and not how many it takes
+   to count. */
+var SLICE_MIN_N=15;
 function moveLabel(e){
   if(!e.first_best_dec||!e.best_dec)return null;
   var d=(e.best_dec-e.first_best_dec)/e.first_best_dec;
@@ -5046,13 +5221,29 @@ async function loadEdges(){
      the interval from stacking a second load on top of one already in flight. */
   var _gen=++LOAD_EDGES_GEN; LOAD_EDGES_BUSY=true;
   try{
+    /* A missing `actionable` column is a deployment error, not a quiet day. */
+    window.__QUAL_SCHEMA_ERR=null;
     await loadWeights();
     var nowIso=new Date().toISOString();
     var horizonIso=new Date(Date.now()+14*24*3600*1000).toISOString(); // widened so far-out openers load; per-sport horizon applied at render
-    /* ACTIVE BOARD — flagged signals only. See BOARD_FLAG_FILTER. */
-    var _edgesFetched=await sbGet('signals?select=event_id,sport_title,sport_key,market,selection,point,best_dec,first_best_dec,best_book,sharp_fair,consensus_fair,edge,n_books,n_books_eff,commence_time,home_team,away_team,last_seen_at,has_sharp,corrob_n,corrob_ref,corrob_levels,is_fav,'+BOARD_FLAG_COLS+'&'+BOARD_FLAG_FILTER+'&commence_time=gte.'+nowIso+'&commence_time=lte.'+horizonIso+'&edge=gt.0&order=edge.desc&limit=600');
+    /* If capture-v9's qualification state is not in the database, the query
+       below fails on a missing column. That must NEVER be caught and turned into
+       an empty board: "no edges" and "the schema is missing" look identical on
+       screen and could not be more different underneath. It is surfaced as a
+       hard banner and the board renders nothing. */
+    window.__QUAL_SCHEMA_MISSING=null;
+    /* ACTIVE BOARD — CURRENTLY ACTIONABLE signals only. See BOARD_ACTIVE_FILTER.
+       Not `flagged_at != null`: that is the frozen entry and is permanent, so it
+       kept historical rows on the live board forever. */
+    var _edgesFetched=await sbGet('signals?select=event_id,sport_title,sport_key,market,selection,point,best_dec,first_best_dec,best_book,sharp_fair,consensus_fair,edge,n_books,n_books_eff,commence_time,home_team,away_team,last_seen_at,has_sharp,corrob_n,corrob_ref,corrob_levels,is_fav,'+BOARD_FLAG_COLS+'&'+BOARD_ACTIVE_FILTER+'&commence_time=gte.'+nowIso+'&commence_time=lte.'+horizonIso+'&edge=gt.0&order=edge.desc&limit=600');
     if(_gen!==LOAD_EDGES_GEN)return;                 // superseded by a newer load — never clobber EDGES with a stale response
     EDGES=_edgesFetched;
+    /* Belt and braces on the schema: even a 200 that returns rows without the
+       qualification columns means capture has not been able to persist it, and
+       every row would silently evaluate to PASS. Say so. */
+    if(EDGES.length && !EDGES.some(hasQualState)){
+      window.__QUAL_SCHEMA_MISSING='rows returned with no qualification state';
+    }
     /* BOTH guards, and the second one is not redundant. capture cannot flag a
        lay market today — backable() refuses it before flaggable() runs. But
        phase C is guarded on `flagged_at IS NULL`, so a row flagged by an OLDER
@@ -5060,7 +5251,7 @@ async function loadEdges(){
        drifting also preserves a bad historical flag permanently. Three such
        rows exist in this database. flagged_at alone would let them straight
        back onto the board, so the tradeable guard runs too. */
-    var _et=filterTradeable(onlyFlagged(EDGES));
+    var _et=filterTradeable(onlyActionable(EDGES));
     EDGES=_et.keep;
     window.__EDGES_DROPPED=_et.dropped;
     if(_et.dropped.length) try{console.info('EdgeDesk: '+_et.dropped.length+' flagged row(s) excluded from the board as untradeable',_et.dropped.slice(0,8));}catch(_){}
@@ -5100,8 +5291,8 @@ async function loadEdges(){
     window.D5_POOL=[];
     /* Fetch wider than 40 because the guard below removes exchange lays and
        placeholder prices, which previously occupied the entire Top 5. */
-    try{var pool=await sbGet('signals?select=event_id,sport_title,sport_key,market,selection,point,best_dec,first_best_dec,sharp_fair,best_book,edge,n_books,n_books_eff,commence_time,home_team,away_team,last_seen_at,has_sharp,corrob_n,corrob_ref,corrob_levels,is_fav,'+BOARD_FLAG_COLS+'&'+BOARD_FLAG_FILTER+'&commence_time=gte.'+nowIso+'&commence_time=lte.'+horizonIso+'&edge=not.is.null&order=edge.desc.nullslast&limit=120');
-      var ft=filterTradeable(onlyFlagged(pool));
+    try{var pool=await sbGet('signals?select=event_id,sport_title,sport_key,market,selection,point,best_dec,first_best_dec,sharp_fair,best_book,edge,n_books,n_books_eff,commence_time,home_team,away_team,last_seen_at,has_sharp,corrob_n,corrob_ref,corrob_levels,is_fav,'+BOARD_FLAG_COLS+'&'+BOARD_ACTIVE_FILTER+'&commence_time=gte.'+nowIso+'&commence_time=lte.'+horizonIso+'&edge=not.is.null&order=edge.desc.nullslast&limit=120');
+      var ft=filterTradeable(onlyActionable(pool));
       window.D5_POOL=ft.keep.slice(0,40);
       window.D5_DROPPED=ft.dropped;   // visible, not silently discarded
       if(ft.dropped.length) try{console.info('EdgeDesk: '+ft.dropped.length+' row(s) excluded from ranking',ft.dropped.slice(0,8));}catch(_){}
@@ -5117,7 +5308,7 @@ async function loadEdges(){
        football/INTEGRATION.md); MLB behavior is byte-identical. */
     try{var mp=await sbGet('model_predictions?select=event_id,market,selection,point,model_prob,model_fair_american,model_edge,model_version&sport_key=in.(baseball_mlb,americanfootball_nfl,americanfootball_ncaaf)&commence_time=gte.'+nowIso+'&commence_time=lte.'+horizonIso+'&order=created_at.asc&limit=1500');window.MODELP={};(mp||[]).forEach(function(r){window.MODELP[modelKey(r.event_id,r.market,r.selection,r.point)]=r;});}catch(_){window.MODELP=window.MODELP||{};}
     try{var me=await sbGet('model_predictions?select=*&model_edge=gt.0&commence_time=gte.'+nowIso+'&commence_time=lte.'+horizonIso+'&order=model_edge.desc.nullslast&limit=400');window.MODEL_EDGES=me||[];}catch(_){window.MODEL_EDGES=[];}
-    try{var cq=await sbGet('signals?select=event_id,sport_title,sport_key,market,selection,point,best_dec,first_best_dec,first_seen_at,best_book,sharp_fair,consensus_fair,edge,n_books,n_books_eff,commence_time,home_team,away_team,last_seen_at,has_sharp,corrob_n,corrob_ref,corrob_levels,is_fav,'+BOARD_FLAG_COLS+'&'+BOARD_FLAG_FILTER+'&consensus_fair=not.is.null&n_books=gte.'+MINBOOKS+'&commence_time=gte.'+nowIso+'&commence_time=lte.'+horizonIso+'&limit=900');window.CONS_POOL=filterTradeable(onlyFlagged(cq)).keep;}catch(_){window.CONS_POOL=[];}
+    try{var cq=await sbGet('signals?select=event_id,sport_title,sport_key,market,selection,point,best_dec,first_best_dec,first_seen_at,best_book,sharp_fair,consensus_fair,edge,n_books,n_books_eff,commence_time,home_team,away_team,last_seen_at,has_sharp,corrob_n,corrob_ref,corrob_levels,is_fav,'+BOARD_FLAG_COLS+'&'+BOARD_ACTIVE_FILTER+'&consensus_fair=not.is.null&n_books=gte.'+MINBOOKS+'&commence_time=gte.'+nowIso+'&commence_time=lte.'+horizonIso+'&limit=900');window.CONS_POOL=filterTradeable(onlyActionable(cq)).keep;}catch(_){window.CONS_POOL=[];}
     await resolveModelMeta();
     await loadSliceStats();
     if(_gen!==LOAD_EDGES_GEN)return;                 // a newer load started — let it paint, don't repaint stale data
@@ -5125,7 +5316,12 @@ async function loadEdges(){
     renderDaily();
     renderQuickAdd();
     renderEngineSections();
-  }catch(e){$('dbPill').textContent='DB error';$('dbPill').className='pill err';setStale(0);$('feed').innerHTML='<div class="empty">Could not reach the database: '+e.message+'</div>';$('leadWrap').classList.add('hide');}
+  }catch(e){
+    /* A missing column is not a network blip. PostgREST names it, and naming it
+       back turns "the board is empty" into "run the migration". */
+    var _m=String((e&&e.message)||e);
+    if(/actionable|qual_reason|column|schema cache|PGRST/i.test(_m)) window.__QUAL_SCHEMA_ERR=_m.slice(0,300);
+    $('dbPill').textContent='DB error';$('dbPill').className='pill err';setStale(0);$('feed').innerHTML='<div class="empty">Could not reach the database: '+e.message+'</div>';$('leadWrap').classList.add('hide');}
   finally{ if(_gen===LOAD_EDGES_GEN) LOAD_EDGES_BUSY=false; }   // only the latest load clears the in-flight flag
 }
 /* ===== BOARDS tab: MLB elimination watch + all real odds, de-vigged ===== */
@@ -5573,7 +5769,9 @@ function eqsCompute(e){
     clvPts=Math.round(eqsClamp((st.rate-0.50)/0.12,0,1)*18);
     clvVal=(st.rate*100).toFixed(0)+'% beat &middot; thin (n'+st.n+')';
   }else{
-    clvPts=0; clvVal='unproven'+(st&&st.n?' (n'+st.n+')':'');
+    /* Say WHICH policy's evidence is thin. "unproven (n1000)" beside a v9
+       signal was the old lie: those thousand rows were a different system. */
+    clvPts=0; clvVal=(st&&st.label)?st.label:('unproven'+(st&&st.n?' (n'+st.n+')':''));
   }
   parts.push({k:'CLV history',v:clvVal,p:clvPts,m:34});
 
@@ -5607,6 +5805,24 @@ function eqsCompute(e){
   if(hardPass||grade==='PASS')decision='PASS';
   else if(clvProven&&!clvFade&&st.rate>=0.54&&st.clv>=0.003&&edge>0&&score>=62&&a.kind!=='none')decision='BET';
   else decision='WATCH';
+
+  /* ═══ EQS IS A RESEARCH LAYER, NOT AN AUTHORITY ═════════════════════════
+     Everything above is a quality read: CLV history, anchor, book confirmation,
+     raw edge, movement. All of it is worth scoring and worth showing. None of it
+     is entitled to authorise a bet, because none of it knows whether the price
+     is still fresh, whether the books have thinned since capture, or whether the
+     edge still clears its segment floor. capture-v9 knows all three.
+
+     So the score survives intact and the DECISION is clamped: EQS may downgrade
+     a candidate capture allowed, and may never promote one capture refused. This
+     clamp is belt-and-braces — every surface also routes through
+     canonicalMarketVerdict() — but a decision field that can say BET is exactly
+     the kind of thing that gets read directly by the next surface somebody adds,
+     so it cannot be allowed to lie in the first place. */
+  var captureOk=(typeof isActionableSignal==='function')&&isActionableSignal(e);
+  var awaiting=e&&e.qual_reason==='awaiting_confirmation';
+  if(!captureOk&&decision==='BET')decision=awaiting?'WATCH':'PASS';
+  else if(!captureOk&&decision==='WATCH'&&!awaiting)decision='PASS';
 
   /* explainability -- every clause is a true fact about this row, not a prediction */
   var why=[], risk=[];
@@ -5928,6 +6144,14 @@ function renderDaily(){
   var pool=(window.D5_POOL||[]).filter(function(e){
     if(sport&&evSportLabel(e)!==sport)return false;
     if(!(e.best_dec&&e.selection&&e.edge!=null))return false;
+    /* The same two bars renderEdges applies to the Top 10 immediately below this
+       list. Without them the Top 5 only required `edge != null`, so on a slate
+       with fewer than five positives it ranked NEGATIVE-edge rows under a
+       "sharpest on the board" heading, and a two-book line could hold rank 1
+       while the board beneath it correctly excluded the same row. */
+    if(!isActionableSignal(e))return false;
+    if((e.edge||0)<REAL_FLOOR)return false;
+    if((e.n_books||0)<MINBOOKS)return false;
     /* Same zombie drop the Top-10 board applies (renderEdges): a price not
        re-priced within the freshness SLA is stale, and showing it in a
        "sharpest on the board" list presents an old number as a live edge. */
@@ -12042,7 +12266,11 @@ function modelReceiptHTML(m){
       (evAt!=null?'<div class="gd-line"><span class="l">EV at this price</span><span class="v '+(evAt>=0?'up':'dn')+'">'+(evAt>=0?'+':'')+evAt.toFixed(1)+'%</span></div>':'')+
       (sig&&sig.sharp_fair!=null?'<div class="gd-line"><span class="l">Pinnacle sharp fair</span><span class="v">'+GE.fmtPrice(1/Math.max(0.0001,sig.sharp_fair))+'</span></div>':'')+
       (sig&&sig.edge!=null
-        ? (isFlaggedSignal(sig)
+        /* CURRENT, not historical. This sits beside a live model number on a
+           game that has not started; "EdgeDesk signal on this line" has to mean
+           the signal is live, or the label is a claim about the past dressed as
+           one about the present. */
+        ? (isActionableSignal(sig)
             ? '<div class="gd-line"><span class="l">EdgeDesk signal on this line</span><span class="v '+(sig.edge>=0?'up':'dn')+'">'+(sig.edge>=0?'+':'')+(sig.edge*100).toFixed(2)+'%</span></div>'
             /* NOT a signal. The same number, but it is a raw price-vs-fair gap on
                a row EdgeDesk refused, and calling it "MARKET edge" put an
@@ -13511,7 +13739,7 @@ async function plLoadEvents(){
     if(!e)e=m[r.event_id]={event_id:r.event_id,sport_title:r.sport_title||'\u2014',sport_key:r.sport_key,
       home_team:r.home_team,away_team:r.away_team,commence_time:r.commence_time,mkts:0,best:null};
     e.mkts++;
-    if(!isFlaggedSignal(r))return;                 // coverage counted above; the CLAIM is flagged-only
+    if(!isActionableSignal(r))return;              // coverage counted above; the CLAIM is actionable-only
     var ed=+r.edge;
     if(isFinite(ed)&&(e.best===null||ed>e.best))e.best=ed;
   });
@@ -16339,12 +16567,15 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
     // current sign. that's the discovery universe: steam, improving and missed
     // all live here.
     //
-    // ACTIVE BOARD — flagged only. These cards (Fresh Openers / Steam
-    // Confirmed / Improving / Closing Soon / Market Movers / Missed) are an
-    // edge display, and without the flag filter they rendered stored-but-
-    // refused rows: h2h_lay quotes and 140% "edges" capture never backed.
-    // Movement is still read from first_* vs current on the flagged row, so
-    // nothing about the movement maths changes — only which rows qualify.
+    // THE POOL IS HISTORICAL ON PURPOSE, THE VERDICT IS NOT.
+    // These cards (Fresh Openers / Steam Confirmed / Improving / Closing Soon /
+    // Market Movers / Missed) are a MOVEMENT display, and MISSED exists exactly
+    // to show a row whose edge has since gone — so gating the pool on current
+    // actionability would delete the most honest card on the desk.
+    // What must not happen is a row from this pool rendering as a bet because a
+    // client-side score liked it. Every verdict below goes through
+    // canonicalMarketVerdict(), and BOARD_FLAG_COLS now carries the v9 state it
+    // needs to do that.
     var q='signals?select=event_id,sport_title,sport_key,market,selection,point,best_dec,first_best_dec,first_best_book,best_book,edge,first_edge,sharp_fair,n_books,commence_time,home_team,away_team,first_seen_at,last_seen_at,'+BOARD_FLAG_COLS
       +'&'+BOARD_FLAG_FILTER
       +'&first_edge=gt.0&commence_time=gte.'+nowIso+'&commence_time=lte.'+hzIso
@@ -16660,11 +16891,18 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
     else if(lc.k==='new')state='NEW';
     else state='FLAT';
     var stateC={MISSED:'neg',IMPROVING:'ok',CLOSING:'warn',STEAMING:'ok',DRIFTING:'warn',NEW:'acc',FLAT:'mut'}[state];
+    /* ONE AUTHORITY. This used to read `q.decision` — the client-side EQS score —
+       which is how this desk could say WATCH while the Top 10 said BET on the
+       same selection at the same moment: two independent engines, neither of
+       them capture. capture decides; EQS may only downgrade; MISSED and
+       INSUFFICIENT remain desk-specific readings of a row capture already
+       refused, and neither can promote anything. */
+    var cv=canonicalMarketVerdict(e,q);
     var decision;
     if(lc.k==='missed')decision='MISSED';
     else if(nb<3||a.kind==='none')decision='INSUFFICIENT';
-    else if(q.decision==='BET')decision='RESEARCH';
-    else decision=q.decision;   /* WATCH or PASS, straight from the same rule the chips use */
+    else if(cv==='BET'||cv==='LEAN')decision='RESEARCH';
+    else decision=cv;   /* WATCH or PASS, from the same canonical rule every surface uses */
     var clvTxt=(st&&st.rate!=null&&st.n>=40)?('this signal class has beaten the close '+(st.rate*100).toFixed(0)+'% over '+st.n+' graded'):null;
     var why;
     if(decision==='MISSED')why='The apparent edge disappeared after the market moved ('+od(f.od)+' → '+od(f.cd)+'). EdgeDesk marks it MISSED rather than advertising the stale number.';
@@ -23531,7 +23769,28 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
 
     /* ---- verdict (consistent with the app's edgeVerdict philosophy) ---- */
     var reasonsFor=[], reasonsAgainst=[], verdict, why;
-    if(curEdge==null){ verdict='PASS'; why='No fair price available to judge this number against.'; }
+    /* ═══ CAPTURE DECIDES FIRST ═════════════════════════════════════════════
+       This block used to reach BET from raw inputs alone — curEdge >= 3%, a
+       trusted book, 5+ books, has_sharp — with no reference to capture at all.
+       That is the other half of the contradiction: Today's Desk was scoring the
+       same row through EQS and landing on WATCH. Two engines, one selection,
+       two answers.
+       Capture's refusal is now terminal here. Everything below still runs for
+       rows capture allowed, and can still downgrade them. */
+    var _capOk=(typeof isActionableSignal==='function') ? isActionableSignal(e) : false;
+    var _capWhy=(typeof canonicalVerdictWhy==='function') ? canonicalVerdictWhy(e) : 'capture did not qualify it';
+    if(!_capOk && e && e.qual_reason==='awaiting_confirmation'){
+      verdict='WAIT';
+      why='Capture has seen this once and is waiting for it to hold through another capture before naming it. '
+        + 'That is a deliberate pause, not a refusal.';
+    }
+    else if(!_capOk){
+      verdict='PASS';
+      why=(typeof hasQualState==='function' && !hasQualState(e))
+        ? 'This row carries no capture-v9 qualification state, so nothing here can call it live. It is history.'
+        : 'Capture did not qualify this price on its latest pass: ' + _capWhy + '.';
+    }
+    else if(curEdge==null){ verdict='PASS'; why='No fair price available to judge this number against.'; }
     else if(curEdge < FLOOR){
       verdict='PASS';
       why = (detEdge!=null && detEdge>=FLOOR)
@@ -23540,6 +23799,12 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
     } else {
       if(!tr && nb<4){ verdict='PASS'; why='Best price is offshore and only '+nb+' book'+(nb===1?'':'s')+' quote the fair line — structurally too thin to trust.'; }
       else if(staleM>=STALE_MIN){ verdict='PASS'; why='Last re-priced '+Math.round(staleM)+'m ago. Treat as stale until capture confirms it is still live.'; }
+      /* Capture allowed it, so the question is only how strongly to say so, and
+         capture's TIER answers that: A is sharp-anchored, B is a robust
+         consensus with no sharp reference. A tier-B row is a LEAN however good
+         the local inputs look — promoting it to BET here is the same
+         upgrade-from-the-client this whole repair removes. */
+      else if(e && e.qual_tier==='B'){ verdict='LEAN'; why='Capture qualified this on a robust multi-book consensus with no sharp reference available, so it leads as a lean rather than a bet.'; }
       else if(curEdge>=0.03 && tr && nb>=5 && sharp){ verdict='BET'; why='Clears the bar with real liquidity: '+pct(curEdge)+' at a US-regulated book, sharp-confirmed.'; }
       else { verdict='LEAN'; why='Positive and qualifying, but with caveats worth weighing in the research.'; }
     }
@@ -24644,7 +24909,7 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
        the fourteen concatenation sites were not doing. This is the answer to
        "what are the best opportunities today", so it is the last place that
        should be trusting an upstream filter it cannot see. */
-    var pool=onlyFlagged([].concat(window.EDGES||[], window.D5_POOL||[]));
+    var pool=onlyActionable([].concat(window.EDGES||[], window.D5_POOL||[]));
     // one side per market, positive edge, fresh-ish, liquid
     var seen={}, cand=[];
     pool.forEach(function(e){
@@ -24674,7 +24939,7 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
 
   /* ======================= COMPARE ======================= */
   async function compare(){
-    var pool=onlyFlagged([].concat(window.EDGES||[],window.D5_POOL||[])).filter(function(e){return e&&e.edge!=null&&e.best_dec;});
+    var pool=onlyActionable([].concat(window.EDGES||[],window.D5_POOL||[])).filter(function(e){return e&&e.edge!=null&&e.best_dec;});
     var seen={},uniq=[];
     pool.forEach(function(e){var k=e.event_id+'|'+e.market+'|'+e.selection;if(!seen[k]){seen[k]=1;uniq.push(e);}});
     uniq.sort(function(a,b){return (b.edge||0)-(a.edge||0);});
@@ -24790,11 +25055,12 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
        not be ranked here either — the board and the Top 5 were drawing from
        overlapping rows, so filtering one and not the other would have left the
        nonsense visible in the other half of the screen. */
-    /* Both source pools are flag-gated at the query, but a pool built by
-       concatenation cannot inherit a URL filter — re-assert it here so a future
-       change to either source cannot quietly put unflagged rows back on screen. */
+    /* Both source pools are gated on CURRENT actionability at the query, but a
+       pool built by concatenation cannot inherit a URL filter — re-assert it
+       here so a future change to either source cannot quietly put non-actionable
+       rows back on screen. */
     var rawPool=[].concat(window.EDGES||[], window.D5_POOL||[]);
-    if(typeof onlyFlagged==='function') rawPool=onlyFlagged(rawPool);
+    if(typeof onlyActionable==='function') rawPool=onlyActionable(rawPool);
     var _ft=(typeof filterTradeable==='function')?filterTradeable(rawPool):{keep:rawPool,dropped:[]};
     var pool=_ft.keep;
     try{ window.__SCAN_DROPPED=_ft.dropped; }catch(_){}
@@ -27014,7 +27280,7 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
         thinking(true);
         try{ await ensureMlbCore(true); }catch(_){}
         var pool=[].concat(window.EDGES||[], window.D5_POOL||[]);
-        if(typeof onlyFlagged==='function') pool=onlyFlagged(pool);
+        if(typeof onlyActionable==='function') pool=onlyActionable(pool);
         var by={};
         pool.forEach(function(e){
           if(!e||!e.event_id) return;
@@ -28064,8 +28330,12 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
     /* The rule is spelled out here rather than borrowed, because this block is
        loaded on its own by tools/presentation/app_presentation.test.js and must
        be correct in isolation. tools/capture/board_contract.test.js asserts this
-       predicate and isFlaggedSignal() are the same rule, so they cannot drift. */
-    var qualified=function(e){ return !!(e && e.flagged_at && isFinite(+e.flagged_best_dec) && +e.flagged_best_dec>1); };
+       predicate and isActionableSignal() are the same rule, so they cannot drift. */
+    /* CURRENT actionability, not the frozen anchor. Spelled out rather than
+       borrowed because this block is loaded standalone by
+       tools/presentation/app_presentation.test.js; verdict_authority.test.js
+       asserts it is the same rule as isActionableSignal() so the two cannot drift. */
+    var qualified=function(e){ return !!(e && (e.actionable===true||e.actionable==='true') && e.qual_reason==='ok'); };
     var rows=[].concat(window.EDGES||[], window.D5_POOL||[]).filter(qualified);
     var seen={}, out=[];
     rows.forEach(function(e){

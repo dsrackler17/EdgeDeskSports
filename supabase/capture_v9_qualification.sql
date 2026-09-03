@@ -48,7 +48,13 @@ alter table public.signals
   -- nothing downstream could tell the difference.
   add column if not exists sharp_book_fair     numeric,
 
-  -- The decision.
+  -- The decision, AS OF THE LAST CAPTURE PASS.
+  -- `actionable` is the current state; `flagged_at` is the frozen entry and is
+  -- permanent by design. A row can be flagged (it qualified once, and the record
+  -- grades that entry forever) while actionable is false (its price went stale,
+  -- its books thinned, its edge decayed). Confusing the two is how a historical
+  -- signal ends up presented as a live bet.
+  add column if not exists actionable          boolean,
   add column if not exists qual_tier           text,      -- A | B | PASS
   add column if not exists qual_reason         text,
   add column if not exists qual_segment        text,      -- sport|market|tier
@@ -105,6 +111,10 @@ alter table public.signals
   add column if not exists flagged_policy      text,
   add column if not exists flagged_build       text;
 
+comment on column public.signals.actionable is
+  'Whether capture''s qualifySignal() said YES on the most recent pass. This is the ONLY field a live '
+  'board may use to decide what is bettable now. flagged_at is the frozen entry and is permanent: it '
+  'records that the row qualified once, never that it still does.';
 comment on column public.signals.qual_reason is
   'Why this row is or is not actionable, from capture''s qualifySignal(). "ok" means actionable. '
   'Written on EVERY priced row so a refusal is data rather than an absence.';
@@ -288,9 +298,16 @@ begin
 end $$;
 
 -- ── 5. INDEXES ────────────────────────────────────────────────────────────
--- The actionable board: flagged rows inside a commence_time window, ordered by
--- edge. Partial, because the flagged population is a small fraction of the table.
+-- The actionable board: CURRENTLY actionable rows inside a commence_time window,
+-- ordered by edge. Partial, because the actionable population is a small fraction
+-- of the table — smaller than the flagged one, which is the point.
 create index if not exists signals_actionable_board_idx
+  on public.signals (commence_time, edge desc)
+  where actionable is true;
+
+-- The historical/record read, which is a DIFFERENT population: everything that
+-- ever qualified, whether or not it still does.
+create index if not exists signals_flagged_history_idx
   on public.signals (commence_time, edge desc)
   where flagged_at is not null;
 
@@ -359,6 +376,12 @@ with checks as (
   union all select 16, 'book_quotes.quote_age_s exists',
          (select count(*) from information_schema.columns
            where table_schema='public' and table_name='book_quotes' and column_name='quote_age_s')::int, 1
+  union all select 17, 'signals.actionable exists (the live board reads NOTHING else)',
+         (select count(*) from information_schema.columns
+           where table_schema='public' and table_name='signals' and column_name='actionable')::int, 1
+  union all select 18, 'the historical-flag index exists alongside the actionable one',
+         (select count(*) from pg_indexes where schemaname='public'
+            and indexname in ('signals_actionable_board_idx','signals_flagged_history_idx'))::int, 2
 )
 select n, check_name, got, want, case when got = want then 'ok' else 'CHECK THIS' end as status
 from checks order by n;

@@ -53,11 +53,11 @@ function slice(src, start, end, label) {
 (function main() {
   /* ── 1. THE PREDICATE ITSELF, RUN ─────────────────────────────────────── */
   const guardSrc = slice(APP,
-    'function isFlaggedSignal(e){', 'function onlyFlagged(rows){ return (rows||[]).filter(isFlaggedSignal); }',
-    'the flag predicate');
+    'function wasFlaggedSignal(e){', 'function hasQualState(e){ return !!(e && (e.qual_reason!=null || e.actionable!=null)); }',
+    'the predicate block');
   const ctx = { console: console };
   vm.createContext(ctx);
-  vm.runInContext(guardSrc, ctx);
+  vm.runInContext("function edBool(v){ return v===true||v==='true'||v===1||v==='1'||v==='t'; }\n" + guardSrc, ctx);
 
   const flagged = { event_id: 'e1', market: 'spreads', selection: 'A', point: -3.5, flagged_at: '2026-09-05T10:00:00Z', flagged_best_dec: 1.95, edge: 0.03 };
   const stored = { event_id: 'e2', market: 'spreads', selection: 'B', point: -3.5, flagged_at: null, flagged_best_dec: null, edge: 5.05 };
@@ -77,13 +77,15 @@ function slice(src, start, end, label) {
      tools/presentation/app_presentation.test.js. Spelled out means it can drift,
      so this asserts it has not. */
   const poolSrc = slice(APP, '  function pool(){', '    return out;\n  }', 'the publisher pool');
-  const pctx = { console: console, window: { EDGES: [flagged, stored], D5_POOL: [halfFlagged] } };
+  const actionableRow = Object.assign({}, flagged, { actionable: true, qual_reason: 'ok', qual_tier: 'A' });
+  const pctx = { console: console, window: { EDGES: [actionableRow, stored], D5_POOL: [halfFlagged] } };
   vm.createContext(pctx);
   vm.runInContext(poolSrc + '\nthis.__pool = pool;', pctx);
   const pooled = pctx.__pool();
-  chk('the publisher pool admits only qualified signals', pooled.length === 1 && pooled[0].flagged_best_dec === 1.95, pooled);
-  chk('the publisher predicate is the same rule as isFlaggedSignal',
-    /flagged_at\s*&&\s*isFinite\(\+e\.flagged_best_dec\)\s*&&\s*\+e\.flagged_best_dec\s*>\s*1/.test(poolSrc), poolSrc.slice(0, 400));
+  chk('the publisher pool admits only CURRENTLY actionable signals', pooled.length === 1 && pooled[0].qual_reason === 'ok', pooled);
+  chk('the publisher predicate is the CURRENT rule, not the frozen anchor',
+    /e\.actionable===true\|\|e\.actionable==='true'/.test(poolSrc) && /qual_reason==='ok'/.test(poolSrc),
+    poolSrc.slice(0, 500));
 
   /* ── 3. EVERY ACTIVE-BOARD QUERY CARRIES THE FILTER ───────────────────── */
   const boardQueries = [
@@ -96,14 +98,14 @@ function slice(src, start, end, label) {
     chk('active-board query is present: ' + qd[0], i >= 0);
     if (i < 0) return;
     const line = APP.slice(i, APP.indexOf('\n', i));
-    chk(qd[0] + ' filters on the flag server-side', line.indexOf('BOARD_FLAG_FILTER') >= 0, line.slice(0, 260));
+    chk(qd[0] + ' filters on CURRENT actionability server-side', line.indexOf('BOARD_ACTIVE_FILTER') >= 0, line.slice(0, 260));
   });
 
   /* And each is ALSO filtered in memory, because a URL predicate does not
      survive a [].concat() and several pools are built that way. */
-  ['var _et=filterTradeable(onlyFlagged(EDGES));',
-   'var ft=filterTradeable(onlyFlagged(pool));',
-   'window.CONS_POOL=filterTradeable(onlyFlagged(cq)).keep;',
+  ['var _et=filterTradeable(onlyActionable(EDGES));',
+   'var ft=filterTradeable(onlyActionable(pool));',
+   'window.CONS_POOL=filterTradeable(onlyActionable(cq)).keep;',
   ].forEach(function (needle) {
     chk('in-memory guard present: ' + needle.slice(0, 46), APP.indexOf(needle) >= 0, needle);
   });
@@ -112,9 +114,9 @@ function slice(src, start, end, label) {
   /* The contract says a pool built by concatenation must re-assert the rule.
      These four are the ones a user's answer actually comes out of. */
   [['bestBets — "what are the best opportunities today?"',
-    "var pool=onlyFlagged([].concat(window.EDGES||[], window.D5_POOL||[]));"],
+    "var pool=onlyActionable([].concat(window.EDGES||[], window.D5_POOL||[]));"],
    ['compare — the ranked head-to-head',
-    "var pool=onlyFlagged([].concat(window.EDGES||[],window.D5_POOL||[]))"],
+    "var pool=onlyActionable([].concat(window.EDGES||[],window.D5_POOL||[]))"],
   ].forEach(function (c) {
     chk('concatenated pool re-asserts the rule: ' + c[0], APP.indexOf(c[1]) >= 0, c[1]);
   });
@@ -135,8 +137,9 @@ function slice(src, start, end, label) {
     /qual_reason,qual_tier,reference_type/.test(APP));
 
   const overlay = slice(APP, "      (sig&&sig.edge!=null\n", "        : '');", 'the model-overlay market line');
-  chk('the model overlay branches on the canonical predicate',
-    /isFlaggedSignal\(sig\)/.test(overlay), overlay.slice(0, 200));
+  chk('the model overlay branches on CURRENT actionability, not the frozen anchor',
+    /isActionableSignal\(sig\)/.test(overlay) && !/isFlaggedSignal\(sig\)/.test(overlay),
+    overlay.slice(0, 200));
   chk('a qualified row is labelled an EdgeDesk signal', /EdgeDesk signal on this line/.test(overlay));
   chk('27 · an UNqualified row is labelled a raw price gap, not a MARKET edge',
     /not an EdgeDesk signal/.test(overlay) && !/MARKET edge on this line/.test(APP), overlay.slice(0, 400));
@@ -144,10 +147,10 @@ function slice(src, start, end, label) {
   /* ── 6. THE PULSE BOARD ───────────────────────────────────────────────── */
   const pulse = slice(APP, "  var rows=await sbGet('signals?select=event_id,sport_title,sport_key,home_team,away_team,commence_time,edge,",
     'var out=[];for(var k in m)out.push(m[k]);', 'the Pulse room board');
-  chk('the Pulse "best edge" chip is computed from qualified rows only',
-    /if\(!isFlaggedSignal\(r\)\)return;/.test(pulse), pulse.slice(0, 500));
+  chk('the Pulse "best edge" chip is computed from actionable rows only',
+    /if\(!isActionableSignal\(r\)\)return;/.test(pulse), pulse.slice(0, 500));
   chk('but its markets-priced coverage count still sees everything',
-    pulse.indexOf('e.mkts++') < pulse.indexOf('if(!isFlaggedSignal(r))return;'), 'coverage must be counted before the claim is gated');
+    pulse.indexOf('e.mkts++') < pulse.indexOf('if(!isActionableSignal(r))return;'), 'coverage must be counted before the claim is gated');
 
   /* ── 7. THE SERVER-SIDE BOARD ─────────────────────────────────────────── */
   chk('edgedesk_ai exports the canonical predicate', /export function signalIsActionable/.test(AI));
