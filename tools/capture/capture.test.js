@@ -760,6 +760,24 @@ function ev(bookmakers, over) {
     await M.handle(rq());
     chk('when phase A fails, phase B never inserts a row without its opening columns',
       posted.every((b) => b.every((r) => r.first_seen_at !== undefined)), posted.length);
+
+    /* And it does not pay for that safety with a round trip per chunk. Phase A
+       is an ignore-duplicates upsert: a chunk that returns without an error
+       leaves every row in it present, so no confirming SELECT is needed — which
+       matters because on every run after the first, phase A inserts nothing and
+       a naive implementation would read the whole board back. */
+    const gets = [];
+    net.db = (u, method, init) => {
+      if (method === 'GET') gets.push(u);
+      if (method === 'POST' && /signals/.test(u)) {
+        const body = JSON.parse(init.body);
+        return res(200, [], { 'content-range': '*/0' });   // everything already existed
+      }
+      return res(200, [], { 'content-range': '*/0' });
+    };
+    await M.handle(rq());
+    chk('a steady-state run does not read the board back to verify its own writes',
+      gets.filter((u) => /select=sig_key&sig_key=in/.test(u)).length === 0, gets.length);
   }
 
   /* The schema-gap fallback: deploy order must not take the board down. */
