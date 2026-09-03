@@ -8273,7 +8273,9 @@ export function deriveState(history: any[], plan: Plan, packet: any, prev?: Conv
       + '<b>' + esc(limit.value) + '</b>'
       + '</div>'
       + '</div>';
-    if (pl.verdict_subtitle) h += '<p class="dcard-sub">' + esc(pl.verdict_subtitle) + (pl.answer ? ' ' + esc(pl.answer) : '') + '</p>';
+    /* The compact strip carries the answer on its own line below, so the
+       subtitle here would say it twice. */
+    if (pl.verdict_subtitle) h += '<p class="dcard-sub">' + esc(pl.verdict_subtitle) + ((pl.answer && !opts.compact) ? ' ' + esc(pl.answer) : '') + '</p>';
     /* The compact strip shows only what changes the decision at a glance:
        a failed check, a provisional read, a stale or missing price. Named
        data gaps stay on the full card, where the watch line explains them. */

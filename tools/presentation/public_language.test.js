@@ -481,6 +481,19 @@ CASES.forEach(function (c) {
     /benchmark sportsbook/.test(P.publicText('Pinnacle is quoting this side')));
 }
 
+{
+  /* The compact strip is four lines of screen. It cannot afford to say the
+     same sentence twice. */
+  const strip = P.cardHTML(fresno(), { compact: true });
+  const answer = fresno().plain.answer;
+  chk('the compact strip says the answer once', (strip.split(P.esc(answer)).length - 1) === 1, strip.slice(0, 400));
+  chk('the full card still carries the gloss and the answer together', (function () {
+    const full = P.cardHTML(fresno());
+    return full.indexOf(P.esc(fresno().plain.verdict_subtitle) + ' ' + P.esc(answer)) > 0;
+  })());
+  chk('the compact strip still carries the underdog guard, shortened', /dcard-guardchip/.test(strip) && /heavy underdog/.test(strip));
+}
+
 /* ---- 18 · THE COPY QA CHECKLIST, AS CODE ------------------------------- */
 {
   /* The same checklist a human would run, so a regression is visible rather
