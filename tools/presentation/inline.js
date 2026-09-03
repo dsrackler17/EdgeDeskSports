@@ -3,7 +3,7 @@
    Inline the canonical presentation library into every host that carries it.
 
    ONE SOURCE: supabase/functions/edgedesk_ai/_presentation.js
-   THREE HOSTS: supabase/functions/edgedesk_ai/index.ts, app.html, brief.html
+   FOUR HOSTS: supabase/functions/edgedesk_ai/index.ts, app.html, brief.html, record.html
 
    Each host carries a marker pair and this replaces everything between them
    with the canonical block, byte for byte. presentation_sync.test.js fails
@@ -20,6 +20,7 @@ const HOSTS = [
   path.join(ROOT, 'supabase', 'functions', 'edgedesk_ai', 'index.ts'),
   path.join(ROOT, 'app.html'),
   path.join(ROOT, 'brief.html'),
+  path.join(ROOT, 'record.html'),
 ];
 const START = '/*__EDPRES_START__*/';
 const END = '/*__EDPRES_END__*/';

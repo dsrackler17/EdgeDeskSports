@@ -179,4 +179,36 @@ function sandbox() {
   chk('edges view hosts the publisher desk', /<div id="pubDesk"><\/div>/.test(APP));
 }
 
+/* ---- CLOSE THE LOOP: the receipt on the card, the calibration on the desk ---- */
+{
+  const sb = sandbox();
+  const x = fixtureX({ e: { event_id: 'ev7', selection: 'Texas Tech', closed_at: '2026-09-06T00:00:00Z', graded_at: '2026-09-06T03:00:00Z' }, graded: true, clv: 0.021, beat: true, closeP: 0.5556, result: 'win' });
+  sb.xs['ev7|Texas Tech'] = x;
+  const pk = sb.win.EDAI.packetOf(x);
+  chk('packetOf carries the engine receipt whole: clv, beat, closing, result, closed_at, graded_at', pk.clv && pk.clv.clv === 0.021 && pk.clv.beat_close === true && pk.clv.closing === 0.5556 && pk.clv.result === 'win' && pk.clv.closed_at === '2026-09-06T00:00:00Z' && pk.clv.graded_at === '2026-09-06T03:00:00Z', pk.clv);
+  const lead = sb.win.dcardLeadHTML(x.e, 't10_7');
+  chk('a graded edge shows its Result line on the Top-edges strip', /dcard-result win/.test(lead) && /Closed -125\. Beat the close by 17 cents\. Won\./.test(lead), lead.match(/dcard-result[^<]*<[^<]*<[^<]*/) && lead.match(/dcard-result[^<]*<[^<]*<[^<]*/)[0]);
+  chk('the receipt card carries it too, and the verdict is unchanged', /dcard-result win/.test(sb.win.dcardReceiptHTML(x.e, 't10_7')) && /class="dcard dc-bet"/.test(sb.win.dcardReceiptHTML(x.e, 't10_7')));
+  const plain = sb.win.dcardLeadHTML(fixtureX().e, 't10_0');
+  chk('an ungraded edge has no Result line', !/dcard-result/.test(plain));
+  chk('the Result line is styled for the compact strip and the full card', /\.dcard-result\{/.test(APP) && /\.dcard\.compact \.dcard-result\{/.test(APP));
+
+  chk('the publisher desk offers Verdict calibration', /Verdict calibration/.test(sb.win.EDBRIEF.deskHTML('edges')) && /EDBRIEF\.openRecord\(\)/.test(sb.win.EDBRIEF.deskHTML('football')));
+  chk('EDBRIEF exposes openRecord, loadRecord and the pure recordHTML', typeof sb.win.EDBRIEF.openRecord === 'function' && typeof sb.win.EDBRIEF.loadRecord === 'function' && typeof sb.win.EDBRIEF.recordHTML === 'function');
+  const G = require(path.join(ROOT, 'tools', 'record', 'grade_briefs.js'));
+  const AFTER = Date.parse('2026-09-11T09:00:00Z');
+  const rows = [{ id: 'b1', share_slug: 'abcdefghijkl', report_type: 'GAME', preset: 'TNF', version_no: 1, sport: 'americanfootball_nfl', sport_label: 'NFL', title: 'Thursday Night Football', event_label: 'Chiefs at Ravens', generated_at: '2026-09-10T18:05:00Z',
+    public_payload: { cards: [{ rank: 1, brief: { call: { verdict: 'BET' } } }], watch: [], slate: null, data_status: { prices: [{ event_id: 'ev1', market: 'Spread', market_key: 'spreads', selection: 'Chiefs +3.5', selection_raw: 'Chiefs', line: 3.5, odds: '-110', odds_am: -110, book: 'DraftKings', verdict: 'BET', kind: 'pick', rank: 1, commence: '2026-09-11T00:15:00Z', sport_key: 'americanfootball_nfl', home: 'Ravens', away: 'Chiefs' }] } } },
+    { id: 'b2', share_slug: 'mmmmmmmmmmmm', report_type: 'SLATE', preset: 'CFB', version_no: 1, sport: 'americanfootball_ncaaf', sport_label: 'CFB', title: 'College Football', generated_at: '2026-09-04T18:00:00Z', public_payload: { cards: [], watch: [], slate: { headline: 'NO QUALIFYING BETS', no_bet: true, counts: {} }, data_status: { prices: [] } } }];
+  const closes = [{ event_id: 'ev1', market: 'spreads', selection: 'Chiefs', point: 3.5, home_team: 'Ravens', away_team: 'Chiefs', commence_time: '2026-09-11T00:15:00Z', best_dec: 1.8, best_book: 'FanDuel', closing_sharp_fair: 0.5556, closed_at: '2026-09-11T00:10:00Z', result: 'win', graded_at: '2026-09-11T04:00:00Z' }];
+  const rec = G.buildRecord(rows, closes, {}, null, AFTER, { closeSource: 'ok', closeSourceName: 'public_brief_closes' });
+  const html = sb.win.EDBRIEF.recordHTML(rec);
+  chk('the calibration overlay shows the headline record and the verdict × sport table', /Verdict calibration/.test(html) && /1 published · 1 graded · beat the close 100% · avg \+15 cents/.test(html) && /<td class="v bet">BET<\/td><td>NFL<\/td>/.test(html), html.slice(0, 900));
+  chk('a no-bet brief counts as discipline in the overlay', /1 with no qualifying bet\. Those count as discipline\./.test(html) && /<td>CFB<\/td><td>1<\/td><td>1<\/td>/.test(html));
+  chk('thin rows are shown but marked, and nothing here changes a threshold', /below 20/.test(html) && /nothing here changes a threshold/.test(html));
+  chk('the overlay links to the public record', /record\.html#briefs/.test(html));
+  chk('an empty record is an honest empty overlay', /No published calls have graded yet/.test(sb.win.EDBRIEF.recordHTML({ briefs: [], generated_at: null })) && /No briefs published yet/.test(sb.win.EDBRIEF.recordHTML({ briefs: [] })));
+  chk('the record is read from beside the page, never from the database', /record\/grades\.json/.test(block) && !/rest\/v1\/brief/.test(block));
+}
+
 done();

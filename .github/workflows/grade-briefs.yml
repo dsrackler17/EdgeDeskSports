@@ -1,0 +1,65 @@
+# EdgeDesk — grade every published brief against the close and the final.
+#
+# A brief is a published snapshot with a share link. Once its game has kicked
+# off, this looks the selection up again: the engine's closing fair line and
+# the graded result (through the public_brief_closes view), and for football
+# the final score from the same public feeds the settler trusts. The grade
+# is written to record/grades.json and committed, so the public record at
+# record.html, the share page and the app all read one file, and every
+# change to it is a git commit rather than an edit.
+#
+# No secrets. The anon key every page ships is the only credential, and it
+# can read exactly what the pages can read. A graded pick is never
+# re-graded; a missing close or a contested final is reported, not filled.
+name: Grade published briefs
+
+on:
+  schedule:
+    # Twenty past the hour, after the hourly settle has had its turn.
+    - cron: '20 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: grade-briefs
+  cancel-in-progress: false
+
+jobs:
+  grade:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Grading logic must pass before it is allowed to write
+        run: node tools/record/grade_briefs.test.js
+
+      - name: Grade
+        run: node tools/record/grade_briefs.js --out record/grades.json
+
+      - name: Publish the record
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add record/grades.json
+          if git diff --cached --quiet; then
+            echo 'grades.json unchanged — nothing to publish'
+            exit 0
+          fi
+          git commit -m 'record: grade published briefs against the close'
+          # a concurrent push to main loses the race politely, not the record
+          for i in 1 2 3 4; do
+            git push origin main && exit 0
+            git pull --rebase origin main || true
+            sleep $((2 ** i))
+          done
+          echo 'could not push the record after 4 attempts'
+          exit 1
