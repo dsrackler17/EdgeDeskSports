@@ -233,6 +233,71 @@ if (good.json) {
     src.indexOf('rankings') >= 0 && src.indexOf('current.json') >= 0);
 })();
 
+/* ---- the workflows name credentials that can actually resolve -------------
+   A missing secret in GitHub Actions is an empty string, never an error. Both
+   games workflows shipped with a `SUPABASE_SERVICE_KEY` that does not exist,
+   so they silently ran without the credential they were written to use — the
+   challenge board read as anon and the settlement job exited 0 having settled
+   nothing. Nothing failed, which is exactly why it went unnoticed. Pin the
+   names to the ones this repository actually uses. ------------------------- */
+(() => {
+  const WF = path.join(ROOT, '.github', 'workflows');
+  const ALLOWED = ['SB_SERVICE_ROLE', 'SB_URL', 'COLLECTIVE_ADMIN_REFRESH_TOKEN', 'GITHUB_TOKEN'];
+  let files = [];
+  try { files = fs.readdirSync(WF).filter(f => /\.ya?ml$/.test(f)); } catch (_) {}
+  chk('the workflow directory could be read', files.length > 0, String(files.length));
+
+  files.forEach(f => {
+    /* strip comments so a name discussed in prose is not read as a reference */
+    const src = fs.readFileSync(path.join(WF, f), 'utf8')
+      .split('\n').map(l => l.replace(/(^|\s)#.*$/, '')).join('\n');
+    const named = (src.match(/secrets\.[A-Za-z_][A-Za-z0-9_]*/g) || [])
+      .map(m => m.slice('secrets.'.length));
+    const unknown = named.filter(n => ALLOWED.indexOf(n) < 0);
+    chk(f + ' references only credentials this repository defines',
+      unknown.length === 0, unknown.join(','));
+  });
+
+  /* The suites must run on the pull request, not only after the merge. They
+     used to live solely inside games-challenges.yml, which never fires on a
+     pull_request, so every games PR merged with zero checks and the suites
+     first ran against main — where a failure is already live. */
+  (() => {
+    const runners = files.filter(f => {
+      const src = fs.readFileSync(path.join(WF, f), 'utf8');
+      return src.indexOf('games:test') >= 0 && /^\s*pull_request:/m.test(src);
+    });
+    chk('some workflow runs the games suites on a pull request',
+      runners.length > 0, runners.join(',') || 'none');
+    runners.forEach(f => {
+      const src = fs.readFileSync(path.join(WF, f), 'utf8');
+      const on = src.slice(0, src.search(/^jobs:/m) >= 0 ? src.search(/^jobs:/m) : src.length);
+      const pr = on.slice(on.indexOf('pull_request:'));
+      const cut = pr.search(/\n  [a-z_]+:/);
+      const scope = pr.slice(0, cut >= 0 ? cut : pr.length);
+      /* Read the list ENTRIES, not the block. A path named in a comment is
+         prose, and matching it would let the trigger lose the path while the
+         assertion kept passing — which is exactly what happened first. */
+      const globs = (scope.match(/^\s*-\s*'([^']+)'/gm) || [])
+        .map(l => l.replace(/^\s*-\s*'/, '').replace(/'$/, ''));
+      /* the paths that decide whether it triggers must cover what it tests */
+      ['games/**', 'tools/games/**', 'package.json'].forEach(g => {
+        chk(f + ' triggers on changes to ' + g, globs.indexOf(g) >= 0, globs.join(','));
+      });
+    });
+  })();
+
+  ['games-challenges.yml', 'games-settle.yml'].forEach(f => {
+    const src = fs.readFileSync(path.join(WF, f), 'utf8');
+    chk(f + ' passes the service role to the script',
+      src.indexOf('EDGD_SB_SERVICE: ${{ secrets.SB_SERVICE_ROLE }}') >= 0);
+    chk(f + ' passes the project URL alongside it, so the key is not orphaned',
+      src.indexOf('EDGD_SB_URL: ${{ secrets.SB_URL }}') >= 0);
+    chk(f + ' says out loud when the credential is missing, rather than degrading in silence',
+      src.indexOf('::warning::SB_SERVICE_ROLE') >= 0);
+  });
+})();
+
 try { fs.rmSync(TMP, { recursive: true, force: true }); } catch (_) {}
 console.log((fail ? 'FAIL' : 'PASS') + ' | games builder | ' + pass + ' passed, ' + fail + ' failed');
 failures.forEach(f => console.log('  × ' + f));

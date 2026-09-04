@@ -1,0 +1,67 @@
+# EdgeDesk Games — run the suites on the pull request, not after the merge.
+#
+# WHY THIS FILE EXISTS.
+# The games suites (games.test.js, state_parity, attribution_parity, builder,
+# social, sql_security — 769 assertions) only ever ran inside
+# games-challenges.yml, which fires on a schedule, on workflow_dispatch, and on
+# a push to main. Not on a pull request. So every games PR merged with zero
+# checks: the suites first ran against main, after the merge, when a failure is
+# already live. A broken package.json reached main exactly this way.
+#
+# collective-tests.yml already carries the sibling lesson in its own comments —
+# a job that does not trigger on the change it guards is not a guard.
+#
+# This runs the suites and nothing else: no credentials, no network, no commit.
+# It is safe on a fork PR because it needs neither.
+name: Games tests
+
+on:
+  pull_request:
+    paths:
+      - 'games/**'
+      - 'tools/games/**'
+      # The suites are invoked through an npm script, so the manifest that
+      # defines that script is part of what they depend on. package.json was
+      # once merged as invalid JSON and every `npm run` failed until it was
+      # fixed; nothing ran to catch it.
+      - 'package.json'
+      - '.github/workflows/games-tests.yml'
+      # The suites assert over the workflows themselves — that each names only
+      # credentials this repository defines — so a workflow edit must be able
+      # to trigger the job that checks it.
+      - '.github/workflows/games-challenges.yml'
+      - '.github/workflows/games-settle.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'games/**'
+      - 'tools/games/**'
+      - 'package.json'
+      - '.github/workflows/games-tests.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: games-tests-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  suites:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      # A malformed manifest breaks every npm script with a parse error rather
+      # than a test failure, which reads as tooling noise. Say what it is.
+      - name: The manifest parses
+        run: node -e "JSON.parse(require('fs').readFileSync('package.json','utf8'))"
+
+      - name: Suites
+        run: npm run games:test
