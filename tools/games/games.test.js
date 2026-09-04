@@ -42,13 +42,19 @@ function lacks(hay, needle, name) { chk(name, String(hay).indexOf(needle) < 0, '
 const ROOT = path.join(__dirname, '..', '..');
 const G = f => path.join(ROOT, 'games', f);
 
-/* a localStorage the store can actually use */
+/* a localStorage and a cookie jar the store can actually use */
 let MEM = {};
+let COOKIES = {};
 global.localStorage = {
   getItem: k => (MEM[k] == null ? null : MEM[k]),
   setItem: (k, v) => { MEM[k] = String(v); },
   removeItem: k => { delete MEM[k]; }
 };
+global.document = {
+  get cookie() { return Object.keys(COOKIES).map(k => k + '=' + COOKIES[k]).join('; '); },
+  set cookie(v) { const m = String(v).match(/^([^=]+)=([^;]*)/); if (m) COOKIES[m[1]] = m[2]; }
+};
+global.location = { search: '', pathname: '/games/' };
 global.window = global.window || global;
 require(path.join(ROOT, 'football', 'cfb_p4', 'params.js'));
 
@@ -56,6 +62,7 @@ const W = require(G('lib/week.js'));
 const SC = require(G('lib/scoring.js'));
 const CH = require(G('lib/challenge.js'));
 const RS = require(G('lib/research_state.js'));
+const AT = require(G('lib/attribution.js'));
 const ST = require(G('lib/store.js'));
 const LB = require(G('lib/leaderboard.js'));
 
@@ -189,19 +196,39 @@ freshStore();
   eq('an untouched record averages nothing', (freshStore(), ST.priceItRecord().avg_distance), null);
 })();
 
-/* attribution: first touch wins and is never overwritten */
-freshStore();
+/* ATTRIBUTION: Games writes the LANDING PAGE'S ledger, not one of its own.
+   The rule itself (first code-bearing touch wins, organic is an upgradeable
+   placeholder, a credited code is frozen) is proved against index.html's own
+   implementation in tools/games/attribution_parity.test.js. What is checked
+   here is the seam — that Games actually reaches that ledger. */
 (() => {
+  MEM = {}; COOKIES = {}; ST.reset();
   const a = ST.captureAttribution('?utm_source=x&utm_medium=social&utm_campaign=c1', '', T0);
   eq('the campaign is captured', a.utm_source, 'x');
+  chk('and it is written to the landing page’s ledger key',
+    !!MEM[AT.ATTR_KEY], Object.keys(MEM).join(','));
+  eq('the ledger holds the campaign',
+    JSON.parse(MEM[AT.ATTR_KEY]).utm_campaign, 'c1');
   const b = ST.captureAttribution('?utm_source=later', '', T0);
-  eq('a later touch does not overwrite the first', b.utm_source, 'x');
-  freshStore();
-  const c = ST.captureAttribution('', 'https://news.example.com/post', T0);
-  eq('an external referrer is captured when no campaign is present', c.referrer_host, 'news.example.com');
-  freshStore();
-  eq('our own referrer is not treated as an acquisition source',
-    ST.captureAttribution('', 'https://edgedesksports.com/', T0), null);
+  eq('a later touch does not overwrite the credited first', b.utm_source, 'x');
+
+  MEM = {}; COOKIES = {}; ST.reset();
+  ST.captureAttribution('', 'https://news.example.com/post', T0);
+  const organic = JSON.parse(MEM[AT.ATTR_KEY]);
+  eq('an organic visit is recorded as an upgradeable placeholder', organic.organic, true);
+  eq('and it claims no campaign', organic.utm_source, null);
+  ST.captureAttribution('?utm_campaign=later', '', T0);
+  const upgraded = JSON.parse(MEM[AT.ATTR_KEY]);
+  eq('a campaign arriving later upgrades the placeholder', upgraded.utm_campaign, 'later');
+  chk('and the organic history is preserved for a dispute',
+    !!upgraded.organic_first_seen_at);
+
+  MEM = {}; COOKIES = {}; ST.reset();
+  ST.captureAttribution('?ref=partnera', '', T0);
+  ST.captureAttribution('?ref=partnerb', '', T0);
+  eq('a credited referral code is frozen against a later one',
+    JSON.parse(MEM[AT.ATTR_KEY]).ref, 'partnera');
+  eq('and it is mirrored to the shared cookie', COOKIES['ed_ref'], 'partnera');
 })();
 
 /* the account ask waits for real engagement */
@@ -540,9 +567,16 @@ chk('no second analytics vendor is introduced',
   chk('events can carry ' + prop, ALL.indexOf(prop) >= 0);
 });
 chk('events record whether the player was anonymous', JS.indexOf("identity") >= 0);
-['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'ref'].forEach(k => {
-  chk('attribution persists ' + k, fs.readFileSync(G('lib/store.js'), 'utf8').indexOf(k) >= 0);
-});
+(() => {
+  const ATTR = fs.readFileSync(G('lib/attribution.js'), 'utf8');
+  ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'ref'].forEach(k => {
+    chk('attribution persists ' + k, ATTR.indexOf(k) >= 0);
+  });
+  chk('Games keeps NO attribution ledger of its own',
+    fs.readFileSync(G('lib/store.js'), 'utf8').indexOf('s.attribution =') < 0);
+  chk('it writes the ledger the landing page already reads',
+    ATTR.indexOf("'edgedesk_attribution'") >= 0);
+})();
 chk('attribution is first-touch and carried onward', JS.indexOf('withAttribution') >= 0);
 
 /* ── 11. the research funnel ───────────────────────────────────────────── */

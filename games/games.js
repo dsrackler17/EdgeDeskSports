@@ -16,7 +16,7 @@
   var TERMINAL = '/app.html';
   var W = root.EDGamesWeek, ST = root.EDGamesStore,
       CH = root.EDGamesChallenge, SC = root.EDGamesScoring,
-      RS = root.EDGamesResearchState;
+      RS = root.EDGamesResearchState, AT = root.EDGamesAttribution;
 
   /* ── analytics ────────────────────────────────────────────────────────────
      The site already runs Google Analytics 4 (gtag, G-1PXVBV53FZ), declared in
@@ -35,12 +35,15 @@
     'subscription_complete_from_games'];
 
   function track(event, props) {
-    var p = props || {}, a = ST ? ST.attribution() : null, k;
+    var p = props || {}, k;
     p.sport = p.sport || 'americanfootball_ncaaf';
     p.surface = 'games';
     p.identity = 'anonymous';        /* games are anonymous-first; an account
                                         layer flips this when one exists */
-    if (a) for (k in a) if (a.hasOwnProperty(k) && k !== 'first_seen') p['first_' + k] = a[k];
+    /* the campaign fields come from the SHARED ledger the landing page keeps,
+       so a Games event and a subscription record name the same campaign */
+    var a = AT ? AT.eventProps() : {};
+    for (k in a) if (a.hasOwnProperty(k)) p[k] = a[k];
     try { if (typeof root.gtag === 'function') root.gtag('event', event, p); } catch (_) {}
     /* a local mirror so the funnel is debuggable without opening GA */
     try { (root.__edgamesEvents = root.__edgamesEvents || []).push([event, p, Date.now()]); } catch (_) {}
@@ -55,13 +58,17 @@
     try { ST.captureAttribution(root.location.search, root.document.referrer); } catch (_) {}
   }
 
-  /* Append the surviving campaign to an internal URL. */
+  /* Append the surviving campaign to an internal URL, so the terminal, the
+     pricing page and the checkout see what Games saw.
+
+     `ref=games` is appended only when the visitor arrived with NO referral code
+     of their own. Overwriting a real partner code with our own surface name
+     would take a paying customer away from whoever actually sent them, and the
+     landing page's credit rule freezes the first code precisely to stop that. */
   function withAttribution(url, extra) {
-    var a = ST ? ST.attribution() : null;
-    var parts = [], k;
-    if (a) for (k in a) if (a.hasOwnProperty(k) && k !== 'first_seen' && k !== 'referrer_host')
-      parts.push(encodeURIComponent(k) + '=' + encodeURIComponent(a[k]));
-    parts.push('ref=games');
+    var parts = AT ? AT.linkParams() : [], k;
+    var f = AT ? AT.first() : null;
+    if (!f || !f.ref) parts = parts.concat(['ref=games']);
     if (extra) for (k in extra) if (extra.hasOwnProperty(k))
       parts.push(encodeURIComponent(k) + '=' + encodeURIComponent(extra[k]));
     return url + (url.indexOf('?') >= 0 ? '&' : '?') + parts.join('&');

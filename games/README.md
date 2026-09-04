@@ -172,16 +172,58 @@ The existing property (**GA4 `G-1PXVBV53FZ`**, via `gtag`). **No second vendor.*
 `checkout_start_from_games` · `subscription_complete_from_games`
 
 Every event carries `sport`, `game_id`, `game_slug`, `game_type`,
-`research_state` and `identity`, plus the **first-touch** UTM campaign
-(`utm_source/medium/campaign/content/term`, `ref`), which is captured once and
-never overwritten. Internal links out of Games carry it forward, so the terminal,
-the pricing page and signup inherit the campaign that produced the visit.
+`research_state` and `identity`, plus the credited campaign.
 
 The last four events are declared and carried but fire from the terminal and
 checkout, which are outside this change — they exist so the funnel is complete
-the moment those surfaces emit them.
+the moment those surfaces emit them. Paid conversion is answerable without them
+because of the ledger below.
+
+## Attribution — one ledger, shared with the landing page
+
+**Games does not keep its own attribution.** The landing page already runs a
+first-touch system (`attrCapture` in `index.html`): it writes
+`edgedesk_attribution` and `edgedesk_attribution_last` to `localStorage`,
+mirrors a referral code into an `ed_ref` cookie at `path=/`, and hands
+`attrPayload()` to the database when a subscription is created. That record is
+what a partner invoice is reconciled against.
+
+`games/lib/attribution.js` writes **the same keys, in the same shape, under the
+same credit rule**. `localStorage` is per-origin and the cookie is `path=/`, so
+`/games` and `/` genuinely share one record — a visitor who lands on
+`/games?utm_source=x`, plays for three weeks and then subscribes is credited to
+that campaign by machinery that already exists, with no second ledger to
+reconcile.
+
+The credit rule, restated from `index.html` rather than reinvented:
+
+* credit belongs to the **first touch that actually carried a code**;
+* an organic visit is recorded as an **upgradeable placeholder** and never
+  claims the customer;
+* once a code is credited it is **frozen** — a later, different code does not
+  take the customer from whoever created them.
+
+Internal links out of Games carry the campaign forward, and append `ref=games`
+**only** when the visitor arrived with no referral code of their own: overwriting
+a partner's code with our own surface name would take a paying customer away
+from whoever sent them.
+
+`tools/games/attribution_parity.test.js` lifts `attrCapture` straight out of
+`index.html`, replays ten visit sequences through both implementations, and
+fails if the ledger they leave behind ever differs.
 
 ---
+
+## Getting there from the rest of EdgeDesk
+
+* **Landing page** — one nav link (`Games`).
+* **The terminal** — one row in `More`, opening `/games/?ref=app` in a new tab
+  so nobody loses a loaded board. The `ref=app` marks the visit so the funnel
+  can tell an existing subscriber wandering in from a cold visitor arriving on a
+  shared result. They are not the same person and must not be counted as one.
+
+Both are links only. Games is its own acquisition product and the traffic that
+matters runs Games → EdgeDesk, not the other way round.
 
 ## The leaderboard
 

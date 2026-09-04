@@ -246,34 +246,27 @@
   }
 
   /* ── attribution ──────────────────────────────────────────────────────────
-     The FIRST touch wins and is never overwritten, which is what makes a
-     funnel report readable months later. */
+     GAMES DOES NOT KEEP ITS OWN ATTRIBUTION LEDGER. The landing page already
+     runs one — `edgedesk_attribution`, mirrored to an `ed_ref` cookie, handed
+     to the database when a subscription is created — and localStorage is
+     per-origin, so /games and / genuinely share it.
+
+     games/lib/attribution.js writes that same record under that same credit
+     rule. These two functions are the seam: everything in Games that wants to
+     know where a visitor came from asks here, and gets the answer the rest of
+     the business will use. */
+  var ATTR = root.EDGamesAttribution
+    || (typeof require === 'function' ? require('./attribution.js') : null);
+
   function captureAttribution(search, referrer, ms) {
-    return update(function (s) {
-      if (s.attribution) return s.attribution;
-      var q = {}, m;
-      String(search || '').replace(/^\?/, '').split('&').forEach(function (kv) {
-        if (!kv) return;
-        m = kv.split('=');
-        try { q[decodeURIComponent(m[0])] = decodeURIComponent((m[1] || '').replace(/\+/g, ' ')); }
-        catch (_) {}
-      });
-      var keys = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term', 'ref'];
-      var a = { first_seen: new Date(ms == null ? Date.now() : ms).toISOString() }, any = false;
-      keys.forEach(function (k) { if (q[k]) { a[k] = String(q[k]).slice(0, 120); any = true; } });
-      if (!any && referrer) {
-        try {
-          var h = String(referrer).split('/')[2] || '';
-          if (h && h.indexOf('edgedesksports.com') < 0) { a.referrer_host = h.slice(0, 120); any = true; }
-        } catch (_) {}
-      }
-      if (!any) return null;
-      s.attribution = a;
-      return a;
-    });
+    if (!ATTR) return null;
+    var loc = root.location || {};
+    var r = ATTR.capture(search, referrer, loc.pathname || '/games/',
+      new Date(ms == null ? Date.now() : ms).toISOString());
+    return (r && r.first) || null;
   }
 
-  function attribution() { return read().attribution; }
+  function attribution() { return ATTR ? ATTR.first() : null; }
 
   /* ── one-time UI moments ───────────────────────────────────────────────── */
   function seen(k) { return !!read().seen[k]; }

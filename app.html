@@ -15074,7 +15074,8 @@ function loadMore(){
     faults:'<path d="M12 3l9 16H3z"/><path d="M12 10v4"/><path d="M12 17.2v.1"/>',
     method:'<path d="M4 5h11a3 3 0 0 1 3 3v11"/><path d="M4 5v14h11"/><path d="M8 9h6M8 13h4"/>',
     sources:'<ellipse cx="12" cy="6" rx="8" ry="3"/><path d="M4 6v6c0 1.7 3.6 3 8 3s8-1.3 8-3V6"/><path d="M4 12v6c0 1.7 3.6 3 8 3s8-1.3 8-3v-6"/>',
-    settings:'<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M19.1 4.9L17 7M7 17l-2.1 2.1"/>'
+    settings:'<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M19.1 4.9L17 7M7 17l-2.1 2.1"/>',
+    games:'<rect x="2" y="7" width="20" height="10" rx="5"/><path d="M7 12h3M8.5 10.5v3"/><circle cx="15.5" cy="11" r="1"/><circle cx="17.5" cy="13.5" r="1"/>'
   };
   var rows=[];
   rows.push(moreItem(IC.health,'Model & data health','Database, self-check, feeds, build freshness — the same panel as the header status.','sysHealthOpen()'));
@@ -15083,6 +15084,11 @@ function loadMore(){
   if(window.RESEARCH_MODULES&&RESEARCH_MODULES.lab)
     rows.push(moreItem(IC.sources,'Data sources','Where every model input came from, what transformed it, and how fresh it is.','moreGoProvenance()'));
   if($('v-settings'))rows.push(moreItem(IC.settings,'Settings & account','Landing page, filters, odds format, profile and billing.','__avGo(\'edge\')'));
+  /* EdgeDesk Games is a SEPARATE public product, not a view in this app: it
+     needs no account, and its traffic is meant to run Games -> EdgeDesk rather
+     than the other way round. It is listed here so a signed-in reader can find
+     it, and it opens in its own tab so nobody loses a loaded board. */
+  rows.push(moreItem(IC.games,'EdgeDesk Games \u2197','Free football games — price a matchup against the model, or make your weekly five. No account needed.','moreGoGames()'));
   if($('v-terms'))rows.push(moreItem(IC.method,'Terms & disclaimer','Research and information only. Not betting advice.','show(\'terms\')'));
   host.innerHTML=rows.join('');
 }
@@ -15092,7 +15098,15 @@ function moreGoProvenance(){
   try{researchGo('lab');}catch(_){return;}
   setTimeout(function(){try{if(typeof window.labOpen==='function')window.labOpen('provenance');}catch(_){}},60);
 }
-window.loadMore=loadMore;window.moreGoProvenance=moreGoProvenance;
+/* Games is its own site at /games. Opened in a new tab, with the referrer
+   marked so the funnel can tell an existing subscriber wandering in from a
+   cold visitor arriving from a shared result — they are not the same person
+   and must not be counted as one. */
+function moreGoGames(){
+  try{window.open('/games/?ref=app','_blank','noopener');}
+  catch(_){location.href='/games/?ref=app';}
+}
+window.loadMore=loadMore;window.moreGoProvenance=moreGoProvenance;window.moreGoGames=moreGoGames;
 
 /* settings boot: apply prefs, paint avatar, honour landing-page pref */
 try{applyPrefs();renderAvatar();loadSubStatus();
