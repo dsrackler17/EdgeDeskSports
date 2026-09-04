@@ -1,0 +1,74 @@
+# EdgeDesk Football — the feature walk-forward.
+#
+# SEPARATE FROM THE WEEKLY BUILD ON PURPOSE. This is the job that decides
+# whether a new football feature has earned the right to move a projected
+# number, and running that on a schedule would quietly turn "does this predict
+# football" into "does this fit the last few months".
+#
+# So: manual by default. The monthly run is REPORT-ONLY — it recomputes the
+# arms and prints them, without writing the registry, so drift is visible
+# without anything being promoted behind your back. Promotion happens when a
+# human dispatches this with `write: true` and reviews the diff.
+name: Football feature validation
+
+on:
+  workflow_dispatch:
+    inputs:
+      first: { description: 'First season', required: false, default: '2024' }
+      last:  { description: 'Last season',  required: false, default: '2025' }
+      tune:  { description: 'Tune seasons, comma separated',    required: false, default: '2024' }
+      hold:  { description: 'Holdout seasons, comma separated', required: false, default: '2025' }
+      write:
+        description: 'Write football/validation/feature-status.json (a promotion decision)'
+        type: boolean
+        required: false
+        default: false
+  schedule:
+    - cron: '0 6 1 * *'    # the first of the month, report-only
+
+permissions:
+  contents: write
+
+concurrency:
+  group: football-validation
+  cancel-in-progress: false
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install --quiet pyarrow
+      - uses: actions/cache@v4
+        with:
+          path: .cache/football
+          key: football-feeds-${{ github.run_id }}
+          restore-keys: |
+            football-feeds-
+
+      - name: Walk forward
+        run: |
+          node --max-old-space-size=8192 football/validation/validate_features.js \
+            --first ${{ github.event.inputs.first || '2024' }} \
+            --last  ${{ github.event.inputs.last  || '2025' }} \
+            --tune  ${{ github.event.inputs.tune  || '2024' }} \
+            --hold  ${{ github.event.inputs.hold  || '2025' }} \
+            --cache .cache/football \
+            ${{ github.event.inputs.write == 'true' && '--write' || '' }}
+
+      - name: Commit the registry, if this run was allowed to write one
+        if: ${{ github.event.inputs.write == 'true' }}
+        run: |
+          git config user.name  'github-actions[bot]'
+          git config user.email 'github-actions[bot]@users.noreply.github.com'
+          git add football/validation/feature-status.json
+          if git diff --cached --quiet; then echo 'registry unchanged'; exit 0; fi
+          git commit -m "football: feature promotion registry"
+          git push

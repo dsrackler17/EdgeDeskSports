@@ -52,7 +52,37 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',system-ui,sans-s
 .logo{font-weight:800;font-size:16px;display:flex;align-items:center;gap:8px}
 .logo .mk{width:10px;height:16px;background:linear-gradient(180deg,var(--accent),#7db0ff);border-radius:2px;transform:skewX(-12deg)}
 .tag{font-size:9px;letter-spacing:.05em;text-transform:uppercase;color:var(--warn);border:1px solid var(--warn);border-radius:14px;padding:2px 6px;font-weight:600}
-.spacer{flex:1}.pill{font-size:10px;color:var(--dim);border:1px solid var(--border);border-radius:12px;padding:3px 8px}.pill.ok{color:var(--pos);border-color:rgba(47,180,124,.4)}.pill.err{color:var(--neg);border-color:rgba(226,96,68,.4)}
+.spacer{flex:1}
+/* SYSTEM HEALTH control — the header pill group and its popover. Same tokens,
+   same border language and same three status colours as every other badge. */
+.hpbtn{display:flex;align-items:center;gap:6px;background:none;border:none;padding:0;margin:0;cursor:pointer;font-family:inherit}
+.hpbtn:hover .pill{border-color:var(--dim)}
+.hpsum.warn{color:var(--warn);border-color:rgba(214,158,60,.45)}
+.hpsum.err{color:var(--neg);border-color:rgba(226,96,68,.4)}
+/* On a phone the header cannot carry two pills without pushing the bar past
+   the viewport, so the narrow layout keeps the summary and drops the database
+   glance — which the panel still states in full on its first row. */
+@media(max-width:400px){.hpbtn #dbPill{display:none}}
+.hppop{display:none;position:absolute;top:calc(100% - 4px);right:12px;z-index:60;width:min(340px,calc(100vw - 24px));max-height:min(70vh,560px);overflow:auto;background:var(--surface);border:1px solid var(--border);border-radius:12px;box-shadow:0 14px 40px rgba(0,0,0,.5);padding:12px}
+.hppop.on{display:block}
+.hppop .hph{font-size:10px;letter-spacing:.09em;text-transform:uppercase;color:var(--faint);font-weight:700;margin:0 0 8px}
+.hppop .hpr{display:flex;align-items:flex-start;gap:8px;padding:7px 0;border-top:1px solid var(--border)}
+.hppop .hpr:first-of-type{border-top:none}
+.hppop .hpr .l{flex:1 1 auto;min-width:0;font-size:11.5px;color:var(--dim)}
+.hppop .hpr .l i{display:block;font-style:normal;font-size:10.5px;color:var(--faint);margin-top:2px;line-height:1.45}
+.hppop .hpr .v{flex:0 0 auto;font-size:11px;font-family:'JetBrains Mono',monospace;color:var(--text)}
+.hppop .hpr .v.ok{color:var(--pos)}.hppop .hpr .v.warn{color:var(--warn)}.hppop .hpr .v.err{color:var(--neg)}.hppop .hpr .v.mut{color:var(--faint)}
+.hppop .hpact{display:block;width:100%;margin-top:10px;background:none;border:1px solid var(--border);border-radius:9px;color:var(--accent);font-family:inherit;font-size:11.5px;font-weight:600;padding:8px 10px;cursor:pointer;text-align:left}
+.hppop .hpact:hover{border-color:var(--accent)}
+.hppop .hpn{font-size:10.5px;color:var(--faint);line-height:1.5;margin:8px 0 0}
+/* MORE — secondary and system destinations that do not deserve a permanent seat */
+.morelist{display:flex;flex-direction:column;gap:8px}
+.moreitem{display:flex;align-items:center;gap:12px;width:100%;text-align:left;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:13px 14px;color:var(--text);font-family:inherit;font-size:13.5px;font-weight:600;cursor:pointer}
+.moreitem:hover{border-color:var(--dim)}
+.moreitem .ic{width:18px;height:18px;stroke:var(--faint);fill:none;stroke-width:2;flex:none}
+.moreitem span{display:block;font-size:11px;font-weight:400;color:var(--faint);margin-top:2px;line-height:1.45}
+.moreitem .go{margin-left:auto;color:var(--faint);font-size:15px;flex:none}
+.pill{font-size:10px;color:var(--dim);border:1px solid var(--border);border-radius:12px;padding:3px 8px}.pill.ok{color:var(--pos);border-color:rgba(47,180,124,.4)}.pill.err{color:var(--neg);border-color:rgba(226,96,68,.4)}
 /* bottom padding = nav + the measured disclaimer height (--foot, set by the script after .foot) + safe area: content can never end under either */
 .view{padding:14px 14px calc(var(--nav) + var(--foot) + env(safe-area-inset-bottom) + 16px);max-width:960px;margin:0 auto}.view.hide{display:none}
 /* research shell panels: layout comes from the parent .view box, panels only toggle */
@@ -2014,7 +2044,15 @@ body.focus .dk-focusnote{display:block}
   <span class="logo"><span class="mk"></span>EdgeDesk</span>
   <span class="tag">research</span>
   <span class="spacer"></span>
-  <span class="pill" id="dbPill">DB …</span>
+  <!-- SYSTEM HEALTH. The database pill kept its id and its two writers, so
+       every existing call site still sets it; the button around it turns the
+       header's status glance into the way in to model health, feed health and
+       the fault list. Faults are operational transparency beside the product,
+       not one of its primary destinations. -->
+  <button class="hpbtn" id="sysHealthBtn" onclick="sysHealthToggle(event)" aria-haspopup="dialog" aria-expanded="false" aria-controls="sysHealthPop" title="System health">
+    <span class="pill" id="dbPill">DB …</span><span class="pill hpsum" id="sysHealthPill">HEALTH …</span>
+  </button>
+  <div class="hppop" id="sysHealthPop" role="dialog" aria-label="System health" onclick="event.stopPropagation()"></div>
   <div class="edav-wrap">
     <button class="edav" id="edAv" title="Account" onclick="__toggleAvMenu(event)">?</button>
     <div class="avmenu" id="avMenu" onclick="event.stopPropagation()">
@@ -2033,7 +2071,7 @@ body.focus .dk-focusnote{display:block}
 
 <main>
   <!-- EDGES -->
-  <section id="v-edges" class="view">
+  <section id="v-edges" class="view hide">
     <!-- TODAY'S RESEARCH — the primary daily entry point, and deliberately the
          FIRST thing in this view. The whole pipeline (screen -> research ->
          attack -> rank -> record) behind one action, so a user never has to know
@@ -2259,14 +2297,14 @@ body.focus .dk-focusnote{display:block}
   <!-- RESEARCH — single shell: one sub-nav rendered once, six module panels.
        Panels keep their original ids so every existing $() lookup and render
        function is untouched; the shell only owns visibility + activation. -->
-  <section id="v-research" class="view hide">
+  <section id="v-research" class="view">
     <div class="rs-hd"><div class="rs-hd-t"><h2>Research Models <span class="rs-exp">Experimental</span></h2><div class="rs-sub">Understand the game, model, and market.</div></div><span class="spacer"></span>
       <button class="rs-tool ic" id="rsSearchBtn" onclick="rsToggleSearch()" title="Search research" aria-label="Search research"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg></button>
       <button class="rs-tool ic" id="rsSavedBtn" onclick="rsToggleSaved()" title="Saved research" aria-label="Saved research"><svg viewBox="0 0 24 24"><path d="M6 3h12v18l-6-4-6 4z"/></svg></button></div>
     <div id="rsSearchWrap" class="rs-srch hide" style="margin-bottom:12px"></div>
     <div id="rsDrawer" class="fb-drawer" style="display:none" onclick="if(event.target===this)rsTkDrawerClose()"><div class="fb-drawer-card" id="rsDrawerCard"></div></div>
     <div id="rsSavedWrap" class="hide" style="margin-bottom:12px"></div>
-    <div class="stseg research-sub" style="margin-bottom:12px"><button data-sub="rdesk" onclick="researchGo('rdesk')">Desk</button><button data-sub="football" onclick="researchGo('football')">Football</button><button data-sub="ufc" onclick="researchGo('ufc')">UFC</button><button data-sub="tennis" onclick="researchGo('tennis')">Tennis</button><button data-sub="stats" onclick="researchGo('stats')">Stats</button><button data-sub="lab" onclick="researchGo('lab')">Lab</button></div>
+    <div class="stseg research-sub" style="margin-bottom:12px"><button data-sub="rdesk" onclick="researchGo('rdesk')">Desk</button><button data-sub="football" class="on" onclick="researchGo('football')">Football</button><button data-sub="ufc" onclick="researchGo('ufc')">UFC</button><button data-sub="tennis" onclick="researchGo('tennis')">Tennis</button><button data-sub="stats" onclick="researchGo('stats')">Stats</button><button data-sub="lab" onclick="researchGo('lab')">Lab</button></div>
     <!-- RESEARCH DESK — the landing state of the Research shell. Answers
          "where should I research?" from the football engine's own today-items,
          the board's model/market disagreements and the data warnings the
@@ -2295,13 +2333,13 @@ body.focus .dk-focusnote{display:block}
          boards keep their ids and renderers; the pipeline ledger and the
          provenance/limitations block (rsMeta-football, rendered by the shell)
          live inside the collapsed System Health section at the bottom. -->
-    <div id="v-football" class="rpanel hide">
+    <div id="v-football" class="rpanel">
     <div class="row-between fb-panelhd"><h2 style="margin:0">Football</h2><span class="spacer"></span><span class="freshness" id="fbFresh">&mdash;</span><button class="refreshbtn" id="fbRefreshBtn" title="Refresh" aria-label="Refresh football research" onclick="fbRefreshClick()">&#8635;</button></div>
     <div id="fbOverview" class="fb-ov"></div>
     <div class="flbanner demo" id="fbBanner">Loading football engine&hellip;</div>
     <div id="fbModules">
     <div class="fb-sechd"><span>Research modules</span><span class="r">NFL &middot; FBS</span></div>
-    <div class="stseg fb-seg" id="fbSeg" style="margin-bottom:12px"><button class="on" onclick="fbSetSport('nfl')"><b>NFL</b><small>Matchups</small></button><button onclick="fbSetSport('cfb')"><b>CFB Rosters</b><small>Teams &amp; depth</small></button><button onclick="fbSetSport('p4')"><b>CFB Power 4</b><small>Power ratings</small></button><button onclick="fbSetSport('players')"><b>Players</b><small>Quality &amp; matchups</small></button></div>
+    <div class="stseg fb-seg" id="fbSeg" style="margin-bottom:12px"><button class="on" onclick="fbSetSport('nfl')"><b>NFL</b><small>Matchups</small></button><button onclick="fbSetSport('cfb')"><b>CFB Rosters</b><small>Teams &amp; depth</small></button><button onclick="fbSetSport('p4')"><b>CFB Power 4</b><small>Power ratings</small></button><button onclick="fbSetSport('players')"><b>Players</b><small>Quality &amp; matchups</small></button><button onclick="fbSetSport('rankings')"><b>Rankings</b><small>ETSR &amp; national</small></button></div>
     <div id="fbCtl" style="display:none;align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap"></div>
     <div id="fbBody"><div class="empty">Loading&hellip;</div></div>
     </div>
@@ -2400,6 +2438,15 @@ body.focus .dk-focusnote{display:block}
   </section>
 
   <!-- TERMS -->
+  <!-- MORE — the secondary and system destinations. Every row opens something
+       that already exists; a destination this app does not have is left out
+       rather than stubbed. Rendered by loadMore(). -->
+  <section id="v-more" class="view hide">
+    <div class="row-between"><h2 style="margin:0">More</h2></div>
+    <p class="sidenote">Secondary and system destinations. The product lives in Research, Edges, Record and Ledger; what is here is how EdgeDesk is built, what it is running on, and where it is currently wrong.</p>
+    <div class="morelist" id="moreList"></div>
+  </section>
+
   <section id="v-terms" class="view hide terms">
     <h2>Terms &amp; disclaimer</h2>
     <h3>Research and information only</h3>
@@ -2822,14 +2869,17 @@ window.mcRefresh=function(){
        end at runtime, and the old floating action button is retired — two
        entry points to the same panel, one of them hovering over the board,
        was the clutter. -->
-  <button data-v="edges" class="on" aria-label="Edges"><svg class="ic" viewBox="0 0 24 24"><polyline points="3 17 9 11 13 15 21 7"/><polyline points="15 7 21 7 21 13"/></svg>Edges</button>
-  <button data-v="research" aria-label="Research"><svg class="ic" viewBox="0 0 24 24"><path d="M12 3l9 5-9 5-9-5 9-5z"/><path d="M3 13l9 5 9-5"/></svg>Research</button>
+  <button data-v="research" class="on" aria-label="Research"><svg class="ic" viewBox="0 0 24 24"><path d="M12 3l9 5-9 5-9-5 9-5z"/><path d="M3 13l9 5 9-5"/></svg>Research</button>
+  <button data-v="edges" aria-label="Edges"><svg class="ic" viewBox="0 0 24 24"><polyline points="3 17 9 11 13 15 21 7"/><polyline points="15 7 21 7 21 13"/></svg>Edges</button>
   <button data-v="ai" aria-label="AI"><svg class="ic" viewBox="0 0 24 24"><path d="M12 3l2.2 5.8L20 11l-5.8 2.2L12 19l-2.2-5.8L4 11l5.8-2.2L12 3z"/></svg>AI</button>
   <button data-v="collective" aria-label="Collective"><svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="5" r="2"/><circle cx="5" cy="12" r="2"/><circle cx="19" cy="12" r="2"/><circle cx="12" cy="19" r="2"/><path d="M12 7v10M7 12h10"/></svg>Collective</button>
   <button data-v="record" aria-label="Record"><svg class="ic" viewBox="0 0 24 24"><path d="M4 19V5"/><rect x="7" y="11" width="3" height="8"/><rect x="13" y="7" width="3" height="12"/><rect x="19" y="14" width="2" height="5"/></svg>Record</button>
-  <button data-v="ledger" aria-label="Ledger"><svg class="ic" viewBox="0 0 24 24"><path d="M4 5h16v14H4z"/><path d="M4 10h16"/><path d="M9 5v14"/></svg>Ledger</button>
-  <button data-v="faults" aria-label="Faults"><svg class="ic" viewBox="0 0 24 24"><path d="M3 12h4l2-7 4 14 2-7h6"/></svg>Faults</button>
-  <button data-v="news" aria-label="News"><svg class="ic" viewBox="0 0 24 24"><path d="M4 5h16v14H4z"/><path d="M8 9h8M8 13h8M8 17h5"/></svg>News</button>
+  <button data-v="ledger" class="nav-sec" aria-label="Ledger"><svg class="ic" viewBox="0 0 24 24"><path d="M4 5h16v14H4z"/><path d="M4 10h16"/><path d="M9 5v14"/></svg>Ledger</button>
+  <button data-v="news" class="nav-sec" aria-label="News"><svg class="ic" viewBox="0 0 24 24"><path d="M4 5h16v14H4z"/><path d="M8 9h8M8 13h8M8 17h5"/></svg>News</button>
+  <!-- FAULTS left this bar. It is model-health information, not a workflow, and
+       it now lives behind the header health control and inside More. The view,
+       its route and every detector are untouched. -->
+  <button data-v="more" aria-label="More"><svg class="ic" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.4"/><circle cx="12" cy="12" r="1.4"/><circle cx="19" cy="12" r="1.4"/></svg>More</button>
   <!-- HIDDEN for now (owner request): Pulse and Discipline. Restore by
        uncommenting these two buttons; their views and loaders are intact.
   <button data-v="social"><svg class="ic" viewBox="0 0 24 24"><path d="M21 12a8 8 0 0 1-11.6 7.1L3 21l1.9-6.4A8 8 0 1 1 21 12z"/></svg>Pulse</button>
@@ -3822,8 +3872,16 @@ function edSafeUrl(u){
 function show(v){if(v==='ai'){try{window.EDAI.open();}catch(_){}return;}/*ADDED: AI is an overlay panel, not a view — it opens without changing the active tab*/if(v==='social'||v==='discipline')v='edges';/*ADDED: Pulse and Discipline hidden for now; a remembered lastTab lands on Edges*/if(v==='research'){researchGo(RESEARCH_SUB);return;}if(RESEARCH_MODULES[v]){researchGo(v);return;}/* legacy subview ids (old lastTab values) route into the shell */
   if(v==='boards')v='faults';
   researchDeactivate(RESEARCH_SUB);   // leaving the research shell: abort in-flight loads, stop timers
-  var s=document.querySelectorAll('.view');for(var i=0;i<s.length;i++)s[i].classList.toggle('hide',s[i].id!=='v-'+v);var b=document.querySelectorAll('.bottomnav button');for(var j=0;j<b.length;j++)b[j].classList.toggle('on',b[j].dataset.v===v);window.scrollTo(0,0);try{if(v!=='settings'){var _pp=prefs();_pp.lastTab=v;localStorage.setItem('edgedesk_prefs',JSON.stringify(_pp));}}catch(_){}
-  if(v==='record')loadRecord();if(v==='edges')loadEdges();if(v==='faults')loadFaults();if(v==='boards')loadBoards();if(v==='news')loadNews();if(v==='ledger')loadMarket();if(v==='settings')loadSettings();if(v==='discipline')loadDiscipline();/*ADDED*/if(v==='collective')loadCollective();/*ADDED: Model Collective tab*/
+  /* and the URL stops claiming we are still in it. Only a #research/… hash
+     is cleared — #receipt=… and anything else belongs to another view. */
+  try{if(/^#research\//.test(location.hash||''))history.replaceState(null,'',location.pathname+location.search);}catch(_){}
+  var s=document.querySelectorAll('.view');for(var i=0;i<s.length;i++)s[i].classList.toggle('hide',s[i].id!=='v-'+v);/* Faults, Terms and Settings have no seat of their own any more; they are
+     reached through More (or the header health control), so More is the tab
+     that reads active while one of them is open. Without this the bar shows
+     nothing active and a reader loses their place. */
+  var NAV_OWNER={faults:'more',terms:'more',settings:'more'};var navOn=NAV_OWNER[v]||v;
+  var b=document.querySelectorAll('.bottomnav button');for(var j=0;j<b.length;j++)b[j].classList.toggle('on',b[j].dataset.v===navOn);window.scrollTo(0,0);try{if(v!=='settings'){var _pp=prefs();_pp.lastTab=v;localStorage.setItem('edgedesk_prefs',JSON.stringify(_pp));}}catch(_){}
+  if(v==='record')loadRecord();if(v==='edges')loadEdges();if(v==='faults')loadFaults();if(v==='more')loadMore();if(v==='boards')loadBoards();if(v==='news')loadNews();if(v==='ledger')loadMarket();if(v==='settings')loadSettings();if(v==='discipline')loadDiscipline();/*ADDED*/if(v==='collective')loadCollective();/*ADDED: Model Collective tab*/
   if(v==='social')loadSocial();else plStop();}
 
 /* ===== RESEARCH shell: one sub-nav, one module registry ==================
@@ -13813,7 +13871,10 @@ var PREF_DEFAULTS={
   sports:{},                 /* {} = all. keyed by sport_title */
   minEdge:0, hideNoSharp:false, hideResearchOnly:false, onlyPositive:true,
   books:'trusted', window:'week',
-  defaultTab:'edges', rememberTab:true, lastTab:'edges', lastResearchSub:'cfb', savedResearch:[],
+  /* RESEARCH is the default product experience: the deeper workspace is what
+     EdgeDesk is for, and Edges is the signal layer that sits beside it. A
+     user who navigates elsewhere still gets their last tab back. */
+  defaultTab:'research', rememberTab:true, lastTab:'research', lastResearchSub:'football', savedResearch:[],
   compact:false, reduceMotion:false, largeText:false,
   /* FAVOURITE TEAMS. Stored as team names exactly as `signals` spells them, so
      a favourite matches by the same string the board renders. */
@@ -14131,8 +14192,9 @@ function renderSetEdge(){
 
   out+=setCard('Startup',null,
     setRow('Default landing page','<select class="set-sel" onchange="__setPref(\'defaultTab\',this.value)">'+
-      ['edges','faults','boards','record','research','ledger','news','social'].map(function(t){
-        return '<option value="'+t+'"'+(p.defaultTab===t?' selected':'')+'>'+(t==='social'?'Pulse':t.charAt(0).toUpperCase()+t.slice(1))+'</option>';}).join('')+'</select>')+
+      ['research','edges','collective','record','ledger','news','faults'].map(function(t){
+        return '<option value="'+t+'"'+(p.defaultTab===t?' selected':'')+'>'+t.charAt(0).toUpperCase()+t.slice(1)+'</option>';}).join('')+'</select>',
+      'Research is the default. Faults is still selectable; it just no longer holds a seat in the nav bar')+
     setRow('Remember last opened tab',setToggle('rememberTab',p.rememberTab),'Overrides the default landing page'));
 
   /* ODDS FORMAT. Was gated because ~50 sites each formatted their own display
@@ -14685,6 +14747,184 @@ window.__avGo=function(sec){
 };
 document.addEventListener('click',function(){var m=$('avMenu');if(m)m.classList.remove('open');});
 
+/* ═══ SYSTEM HEALTH + MORE ═══════════════════════════════════════════════
+   Faults stopped being a primary destination and became what they always
+   were: operational transparency sitting beside the product. Nothing about
+   fault DETECTION changed — FL, FL_DETECTORS, loadFaults and the Faultline
+   view are untouched, and every route into them still works. What changed is
+   where a reader finds them: the header status glance, and More.
+
+   This panel INVENTS NOTHING. Every row is a number some existing part of the
+   app already computed, or it says it does not know yet. A section whose
+   source has not loaded reads "not loaded", never a reassuring tick. */
+var SH={open:false,health:null,healthErr:null,healthAt:0,pending:null};
+
+/* football/health.json is the daily self-check. The football research module
+   loads it too; if it already has, we read that rather than fetching twice. */
+function sysHealthLoad(force){
+  if(window.FB&&FB.health&&!force){SH.health=FB.health;SH.healthErr=null;return Promise.resolve(SH.health);}
+  if(SH.pending)return SH.pending;
+  if(SH.health&&!force&&(Date.now()-SH.healthAt)<300000)return Promise.resolve(SH.health);
+  SH.pending=fetch('football/health.json',{cache:'no-store'})
+    .then(function(r){if(!r.ok)throw new Error('HTTP '+r.status);return r.json();})
+    .then(function(j){SH.health=j;SH.healthErr=null;SH.healthAt=Date.now();return j;})
+    .catch(function(e){SH.healthErr=(e&&e.message)||'unreachable';return null;})
+    .then(function(j){SH.pending=null;try{sysHealthPaint();}catch(_){}return j;});
+  return SH.pending;
+}
+
+/* THE THREE STATES, KEPT APART ON PURPOSE.
+     ok    everything that reports, reports healthy
+     warn  something needs attention — a stale feed, a structural fault on a
+           board, a self-check warning. Ordinary research warnings live HERE.
+     err   an actual failed system check: the database read failed, or a
+           self-check check reported fail.
+   A fault on a futures board is not a broken system, and colouring it red
+   would teach a reader to ignore red. */
+function sysHealthState(){
+  var db=$('dbPill'),dbc=db?db.className:'',dbErr=/\berr\b/.test(dbc),dbOk=/\bok\b/.test(dbc);
+  var h=SH.health,fails=0,warns=0;
+  if(h&&h.checks)h.checks.forEach(function(c){if(c.status==='fail')fails++;else if(c.status==='warn')warns++;});
+  var faults=(window.FL&&FL.faults)?FL.faults.length:null;
+  var st=dbErr||fails>0?'err':(warns>0||(faults!=null&&faults>0)||!dbOk?'warn':'ok');
+  /* the count belongs to the state it is shown in: a red pill counts failed
+     system checks, an amber one counts the things asking for attention. A red
+     "HEALTH 2" that was really two research warnings would teach a reader that
+     red means nothing. */
+  var n=st==='err'?(fails+(dbErr?1:0)):(warns+(faults||0));
+  return {state:st,fails:fails,warns:warns,faults:faults,n:n,dbOk:dbOk,dbErr:dbErr,health:h};
+}
+function sysHealthPill(){
+  var el=$('sysHealthPill');if(!el)return;
+  var s=sysHealthState();
+  if(!SH.health&&!SH.healthErr&&!s.dbOk&&!s.dbErr){el.textContent='HEALTH …';el.className='pill hpsum';return;}
+  el.textContent=s.state==='ok'?'HEALTH ✓':('HEALTH '+(s.n>0?s.n:(s.state==='err'?'✗':'⚠')));
+  el.className='pill hpsum'+(s.state==='ok'?' ok':(s.state==='err'?' err':' warn'));
+  el.title=s.state==='ok'?'All reporting checks healthy':(s.state==='err'?'A system check failed':'Something needs attention');
+}
+function shRow(label,note,value,cls){
+  return '<div class="hpr"><span class="l">'+edEsc(label)+(note?'<i>'+edEsc(note)+'</i>':'')
+    +'</span><span class="v '+(cls||'')+'">'+edEsc(value)+'</span></div>';
+}
+function shAgo(t){return t?ago(t):'—';}
+function shStamp(iso){var t=iso?new Date(iso).getTime():NaN;return isNaN(t)?null:t;}
+
+function sysHealthHTML(){
+  var s=sysHealthState(),h=s.health,out='';
+  out+='<div class="hph">System health</div>';
+
+  /* 1 · DATABASE */
+  out+=shRow('Database',null,
+    s.dbErr?'read failed':(s.dbOk?'connected':'connecting…'),
+    s.dbErr?'err':(s.dbOk?'ok':'mut'));
+
+  /* 2 · MODEL HEALTH — the daily self-check over the football engines */
+  if(h&&h.checks){
+    var n=h.checks.length;
+    out+=shRow('Model health',s.fails?(s.fails+' failing check'+(s.fails===1?'':'s')):(s.warns?(s.warns+' check'+(s.warns===1?'':'s')+' warning'):'every check passing'),
+      (n-s.fails)+'/'+n,s.fails?'err':(s.warns?'warn':'ok'));
+  } else out+=shRow('Model health',SH.healthErr?('football/health.json '+SH.healthErr):'the daily self-check record has not loaded','not loaded','mut');
+
+  /* 3 · DATA / FEED HEALTH — the capture heartbeat is the one feed every board
+     depends on; the research modules publish their own build times. */
+  var hb=window.__edgeLatest||0;
+  var hbAge=hb?(Date.now()-hb)/60000:null;
+  out+=shRow('Data / feed health',hb?'odds capture heartbeat':'no capture heartbeat read yet',
+    hb?shAgo(hb):'unknown',hb?(hbAge>180?'warn':'ok'):'mut');
+  if(h&&h.pipeline_meta){
+    var pm=h.pipeline_meta,bad=0,tot=0;
+    Object.keys(pm).forEach(function(k){tot++;var v=pm[k];if(v&&(v.ok===false||v.status==='fail'))bad++;});
+    if(tot)out+=shRow('Pipeline jobs',bad?(bad+' reporting a failure'):'all reporting clean',(tot-bad)+'/'+tot,bad?'warn':'ok');
+  }
+
+  /* 4 · FAULTS — the Faultline scan. Not loaded is not zero. */
+  var fl=(window.FL&&FL.faults)?FL.faults:null;
+  out+=shRow('Faults / warnings',
+    fl?(fl.length?'structural faults on the boards under watch':'no structural fault on the boards under watch'):'the fault scan has not run this session',
+    fl?String(fl.length):'not scanned',fl?(fl.length?'warn':'ok'):'mut');
+
+  /* 5 · LAST SUCCESSFUL SYNC */
+  out+=shRow('Last successful sync','most recent odds capture write',hb?shAgo(hb):'—',hb?'':'mut');
+
+  /* 6 · LAST SELF-CHECK */
+  var sc=h?shStamp(h.last_ok_at||h.generated_at):null;
+  out+=shRow('Last self-check',h&&h.run&&h.run.trigger?('run by '+h.run.trigger):null,sc?shAgo(sc):'—',sc?'':'mut');
+
+  /* 7 · BUILD FRESHNESS — when the model parameters the app is reading were
+     built. A rating is only as current as the params behind it. */
+  var pb=h&&h.run&&h.run.params_built_at,newest=null;
+  if(pb)Object.keys(pb).forEach(function(k){var t=shStamp(pb[k]);if(t&&(newest==null||t>newest))newest=t;});
+  out+=shRow('Build freshness',pb?'newest football parameter build':'no parameter build stamp on file',
+    newest?shAgo(newest):'—',newest?'':'mut');
+
+  out+='<button class="hpact" onclick="sysHealthGoFaults()">View all faults &rarr;</button>';
+  out+='<p class="hpn">Faults are structural errors EdgeDesk finds on public boards and in its own pipeline. A clean scan is the correct result, not a missing one. Nothing here is a bet signal.</p>';
+  return out;
+}
+function sysHealthPaint(){
+  sysHealthPill();
+  var pop=$('sysHealthPop');
+  if(pop&&SH.open)pop.innerHTML=sysHealthHTML();
+}
+function sysHealthOpen(){
+  var pop=$('sysHealthPop'),btn=$('sysHealthBtn');if(!pop)return;
+  SH.open=true;pop.classList.add('on');if(btn)btn.setAttribute('aria-expanded','true');
+  pop.innerHTML=sysHealthHTML();sysHealthPill();
+  sysHealthLoad(false);
+}
+function sysHealthClose(){
+  var pop=$('sysHealthPop'),btn=$('sysHealthBtn');
+  SH.open=false;if(pop)pop.classList.remove('on');if(btn)btn.setAttribute('aria-expanded','false');
+}
+function sysHealthToggle(ev){
+  if(ev){try{ev.stopPropagation();}catch(_){}}
+  if(SH.open)sysHealthClose();else sysHealthOpen();
+}
+function sysHealthGoFaults(){sysHealthClose();try{show('faults');}catch(_){}}
+document.addEventListener('click',function(){if(SH.open)sysHealthClose();});
+document.addEventListener('keydown',function(ev){if(ev.key==='Escape'&&SH.open)sysHealthClose();});
+window.sysHealthToggle=sysHealthToggle;window.sysHealthGoFaults=sysHealthGoFaults;
+window.sysHealthOpen=sysHealthOpen;window.sysHealthPaint=sysHealthPaint;
+/* the pill is a summary of things that arrive at different times, so it
+   repaints on a slow tick rather than trying to hook every writer */
+sysHealthLoad(false);setInterval(function(){try{sysHealthPill();}catch(_){}},20000);
+try{sysHealthPill();}catch(_){}
+
+/* ── MORE ──────────────────────────────────────────────────────────────
+   Every row here opens something that already exists. "Do not invent
+   nonfunctional pages" is the rule, so a destination this build does not
+   carry is simply absent. */
+function moreItem(ic,title,note,call){
+  return '<button class="moreitem" onclick="'+call+'"><svg class="ic" viewBox="0 0 24 24">'+ic+'</svg>'
+    +'<b style="font-weight:600">'+edEsc(title)+'<span>'+edEsc(note)+'</span></b><span class="go">&rsaquo;</span></button>';
+}
+function loadMore(){
+  var host=$('moreList');if(!host)return;
+  var IC={
+    health:'<path d="M3 12h4l2-7 4 14 2-7h6"/>',
+    faults:'<path d="M12 3l9 16H3z"/><path d="M12 10v4"/><path d="M12 17.2v.1"/>',
+    method:'<path d="M4 5h11a3 3 0 0 1 3 3v11"/><path d="M4 5v14h11"/><path d="M8 9h6M8 13h4"/>',
+    sources:'<ellipse cx="12" cy="6" rx="8" ry="3"/><path d="M4 6v6c0 1.7 3.6 3 8 3s8-1.3 8-3V6"/><path d="M4 12v6c0 1.7 3.6 3 8 3s8-1.3 8-3v-6"/>',
+    settings:'<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M19.1 4.9L17 7M7 17l-2.1 2.1"/>'
+  };
+  var rows=[];
+  rows.push(moreItem(IC.health,'Model & data health','Database, self-check, feeds, build freshness — the same panel as the header status.','sysHealthOpen()'));
+  if($('v-faults'))rows.push(moreItem(IC.faults,'Faults','Structural errors on the boards under watch, with the receipt for each.','show(\'faults\')'));
+  if(typeof window.hiwOpen==='function')rows.push(moreItem(IC.method,'Methodology','How EdgeDesk prices, grades and proves itself, screen by screen.','hiwOpen()'));
+  if(window.RESEARCH_MODULES&&RESEARCH_MODULES.lab)
+    rows.push(moreItem(IC.sources,'Data sources','Where every model input came from, what transformed it, and how fresh it is.','moreGoProvenance()'));
+  if($('v-settings'))rows.push(moreItem(IC.settings,'Settings & account','Landing page, filters, odds format, profile and billing.','__avGo(\'edge\')'));
+  if($('v-terms'))rows.push(moreItem(IC.method,'Terms & disclaimer','Research and information only. Not betting advice.','show(\'terms\')'));
+  host.innerHTML=rows.join('');
+}
+/* Data sources is the Lab's provenance tool — a real destination with a real
+   deep link (#research/lab/provenance), so this navigates rather than duplicating it. */
+function moreGoProvenance(){
+  try{researchGo('lab');}catch(_){return;}
+  setTimeout(function(){try{if(typeof window.labOpen==='function')window.labOpen('provenance');}catch(_){}},60);
+}
+window.loadMore=loadMore;window.moreGoProvenance=moreGoProvenance;
+
 /* settings boot: apply prefs, paint avatar, honour landing-page pref */
 try{applyPrefs();renderAvatar();loadSubStatus();
   var _u=edUser();if(_u){var _n=$('avName'),_m=$('avMail');
@@ -14699,8 +14939,13 @@ try{applyPrefs();renderAvatar();loadSubStatus();
       w.then(function(){if(rm&&rm.openEntity&&(!rm.entityOpen||!rm.entityOpen()))rm.openEntity(ent);}).catch(function(){});
     })(RESEARCH_MODULES[_rh.sub],_rh.entity);}
   }
-  else if(_t==='research')researchGo(_p.lastResearchSub||'cfb');
-  else if(_t&&_t!=='edges'&&(RESEARCH_MODULES[_t]||$('v-'+_t)))show(_t); /* legacy lastTab ('cfb'…) routes into the shell via show() */
+  else if(_t==='research')researchGo(_p.lastResearchSub||'football');
+  /* The markup now rests on Research -> Football, so EVERY other remembered tab
+     has to be routed explicitly. Before this, 'edges' was the resting state and
+     the branch below skipped it; leaving that skip in place would have stranded
+     an Edges user on Research. */
+  else if(_t&&(RESEARCH_MODULES[_t]||$('v-'+_t)))show(_t); /* legacy lastTab ('cfb'…) routes into the shell via show() */
+  else researchGo(_p.lastResearchSub||'football');          /* no usable memory: the default destination */
 }catch(_e){}
 
 /* ================= ADDED: BET DISCIPLINE ENGINE (window.Discipline) ================= */
@@ -31448,7 +31693,7 @@ window.loadFootball=function(force,signal){
        render its own state. Both are separate engines over separate data; an
        nflverse outage taking down a board that never read nflverse is exactly
        the coupling this module is built to avoid. */
-    if(FB.sport==='p4'||FB.sport==='players'){try{window.renderFootball();}catch(_){}return;}
+    if(FB.sport==='p4'||FB.sport==='players'||FB.sport==='rankings'){try{window.renderFootball();}catch(_){}return;}
     try{fbRenderOverview();fbRenderSystem();}catch(_){}
     var b=$('fbBanner');
     if(b){b.className='flbanner demo';b.innerHTML='⛔ Football engine unavailable: '+fbEsc(FB.engineErr)+'. Nothing is shown rather than something invented.';}
@@ -31457,7 +31702,7 @@ window.loadFootball=function(force,signal){
   return FB.loading;
 };
 window.fbSetSport=function(s){
-  var order=['nfl','cfb','p4','players'];
+  var order=['nfl','cfb','p4','players','rankings'];
   FB.sport=(order.indexOf(s)>=0)?s:'nfl';
   var seg=$('fbSeg');if(seg){var bs=seg.querySelectorAll('button');for(var i=0;i<bs.length;i++)bs[i].classList.toggle('on',order[i]===FB.sport);}
   var ctl=$('fbCtl');if(ctl)ctl.style.display=(FB.sport==='nfl'&&FB.at)?'flex':'none';
@@ -31468,6 +31713,13 @@ window.fbSetSport=function(s){
      failure, exactly as the Power 4 board does */
   if(FB.sport==='players'&&!FB.pq.ready&&!FB.pq._p&&!FB.pq.err){
     fbPqEnsure().then(function(){window.renderFootball();}).catch(function(){window.renderFootball();});
+  }
+  /* the rankings are a committed artifact plus the player manifest for the
+     coverage view; both load on open and neither computes anything here */
+  if(FB.sport==='rankings'&&!FB.rk.data&&!FB.rk._p&&!FB.rk.err){
+    fbRkEnsure().then(function(){return fbRkFeatures();})
+      .then(function(){return fbPqEnsure().catch(function(){});})
+      .then(function(){window.renderFootball();}).catch(function(){window.renderFootball();});
   }
   if(FB.sport==='p4'&&!FB.p4.loadedAt&&!FB.p4._loading){
     FB.p4._loading=fbP4LoadGuarded(false).then(function(){FB.p4._loading=null;window.renderFootball();})
@@ -35027,6 +35279,7 @@ window.fbPqOpen=function(gid){
        already loaded, and asking again is a no-op. If it cannot load, the
        simulator degrades to a rounded normal and the panel says so. */
     .then(function(){return fbP4Ensure().catch(function(){});})
+    .then(function(){return (typeof fbRkFeatures==='function')?fbRkFeatures().catch(function(){}):null;})
     .then(function(){
     return Promise.all([fbPqTeam(fbPqKey(u.g.home_team)),fbPqTeam(fbPqKey(u.g.away_team))]);
   }).then(function(){
@@ -35257,8 +35510,15 @@ function fbPqLadder(lad,u){
   if(!lad.available)return '<div class="pq-note">'+fbPqMiss(lad.reason)+'</div>';
   var h='<div class="pq-note">Five numbers, kept apart on purpose. The first four are EdgeDesk’s own layers, computed without the market; the fifth is the market. '
     +'A rung that moves nothing says so, and why.</div><table class="pq-tbl"><tr><th>rung</th><th>line</th><th>moved</th><th>why</th></tr>';
+  /* WHICH RUNGS ARE TRUSTWORTHY. Not every rung is equally proven, and a
+     ladder that presents them as if they were is the thing this view exists to
+     avoid. The badge comes from the promotion registry, and a rung with no
+     registry entry reads RESEARCH ONLY — the safe direction to fail in. */
+  var RUNG_FEATURE={player_adjusted:'player_quality_v2',scheme_adjusted:'scheme'};
   lad.steps.forEach(function(s){
-    h+='<tr><td>'+fbEsc(s.label)+'</td><td class="mono">'+fbEsc(u.g.home_team)+' '+fbPqN(-s.spread)+'</td>'
+    var feat=RUNG_FEATURE[s.id];
+    var badge=feat?(' '+(typeof fbRkBadge==='function'?fbRkBadge(feat):'')):'';
+    h+='<tr><td>'+fbEsc(s.label)+badge+'</td><td class="mono">'+fbEsc(u.g.home_team)+' '+fbPqN(-s.spread)+'</td>'
       +'<td class="mono">'+(s.delta==null?'—':(s.applied?fbPqN(-s.delta):'<span class="pq-miss">0.0</span>'))+'</td>'
       +'<td class="mut" style="font-size:11px">'+fbEsc(s.applied===false&&s.input!=null?'gap of '+s.input+' matchup points, scalar not applied':(s.basis||''))+'</td></tr>';
   });
@@ -35811,6 +36071,391 @@ function fbPqUnmeasured(p,L){
   return out;
 }
 
+/* ═══ EDGEDESK NATIONAL RANKINGS (ETSR) ════════════════════════════════════
+   The fifth segment of the Football module. GLUE ONLY, like the rest of it.
+
+   Every number comes from football/rankings/current.json, built in GitHub
+   Actions by football/rankings/build_rankings.js out of the player layer, the
+   public play tables and the box-score enrichment. NOTHING on this page is
+   computed in the browser: no rebuild, no re-fit, no Edge Function. The page
+   fetches an artifact and renders it.
+
+   Three things it is built to keep true on screen:
+     * ETSR IS A NEUTRAL-FIELD NUMBER. Home field, travel, rest and the
+       matchup live in the game panel, never in the team rating.
+     * TALENT AND PERFORMANCE STAY APART. They are ranked separately and the
+       gap between them is shown, because "elite roster that has not played
+       like one" is the interesting case.
+     * A FEATURE THAT HAS NOT EARNED IT DOES NOT MOVE A LINE, and the badge
+       on every ladder rung says which is which.
+   ═════════════════════════════════════════════════════════════════════════ */
+FB.rk = { data:null, err:null, at:0, _p:null, features:null, _fp:null,
+  tab:'overall', team:null, sort:null, f:{ conf:'', minConf:0, q:'' } };
+
+var FBRK_URL = 'football/rankings/current.json';
+var FBRK_FEATURES = 'football/validation/feature-status.json';
+
+function fbRkEnsure(){
+  if(FB.rk.data)return Promise.resolve(FB.rk.data);
+  if(FB.rk._p)return FB.rk._p;
+  fbPqStyles();
+  FB.rk._p=fetch(FBRK_URL,{cache:'no-cache'})
+    .then(function(r){ if(!r.ok)throw new Error('rankings '+r.status); return r.json(); })
+    .then(function(j){ FB.rk.data=j; FB.rk.at=Date.now(); FB.rk.err=null; FB.rk._p=null; return j; })
+    .catch(function(e){ FB.rk.err=String(e&&e.message||e).slice(0,140); FB.rk._p=null; throw e; });
+  return FB.rk._p;
+}
+/* the promotion registry: which layers are allowed to move a number. Optional
+   — if it will not load, everything renders as research, which is the safe
+   direction to fail in. */
+function fbRkFeatures(){
+  if(FB.rk.features)return Promise.resolve(FB.rk.features);
+  if(FB.rk._fp)return FB.rk._fp;
+  FB.rk._fp=fetch(FBRK_FEATURES,{cache:'no-cache'})
+    .then(function(r){ return r.ok?r.json():null; })
+    .then(function(j){ FB.rk.features=j||{features:[],unavailable:true}; FB.rk._fp=null; return FB.rk.features; })
+    .catch(function(){ FB.rk.features={features:[],unavailable:true}; FB.rk._fp=null; return FB.rk.features; });
+  return FB.rk._fp;
+}
+window.fbRkStatus=function(name){
+  var reg=FB.rk.features;
+  if(!reg||!reg.features)return {status:'RESEARCH_ONLY',allowed:false,
+    reason:'the promotion registry has not loaded, so nothing is treated as validated'};
+  for(var i=0;i<reg.features.length;i++){
+    if(reg.features[i].feature!==name)continue;
+    var f=reg.features[i];
+    return {status:f.status,allowed:f.status==='VALIDATED',
+      effect:f.effect_size,p:f.p_value,reason:(f.reasons||[]).join('; ')};
+  }
+  return {status:'RESEARCH_ONLY',allowed:false,reason:'not in the promotion registry'};
+};
+function fbRkBadge(name){
+  var s=window.fbRkStatus(name);
+  var col=s.status==='VALIDATED'?'var(--pos)':(s.status==='REJECTED'?'var(--neg)':'var(--warn)');
+  var label=s.status==='VALIDATED'?'VALIDATED':(s.status==='CANDIDATE'?'RESEARCH ONLY · CANDIDATE':'RESEARCH ONLY');
+  return '<span class="pq-chip" style="color:'+col+'" title="'+fbEsc(s.reason||'')+'">'+label+'</span>';
+}
+
+function fbRkN(v,dp){return (v==null||!isFinite(v))?'—':(+v).toFixed(dp==null?1:dp);}
+function fbRkPts(v){return (v==null||!isFinite(v))?'—':((v>0?'+':'')+(+v).toFixed(1));}
+function fbRkPct(v){return (v==null||!isFinite(v))?'—':Math.round(v*100)+'%';}
+function fbRkMove(d){
+  if(d==null||!isFinite(d)||d===0)return '<span class="mut">—</span>';
+  return d>0?('<span style="color:var(--pos)">▲ '+d+'</span>'):('<span style="color:var(--neg)">▼ '+Math.abs(d)+'</span>');
+}
+function fbRkRank(t,cat){
+  var r=t.ranks&&t.ranks[cat];
+  if(!r)return '<span class="pq-miss">—</span>';
+  if(r.unranked)return '<span class="pq-miss" title="'+fbEsc(r.reason||'')+'">unranked</span>';
+  return '#'+r.rank;
+}
+
+/* ---- the segment ---- */
+window.fbRkTab=function(t){FB.rk.tab=t;FB.rk.team=null;window.renderFootball();};
+window.fbRkTeam=function(k){FB.rk.team=k;window.renderFootball();};
+window.fbRkBack=function(){FB.rk.team=null;window.renderFootball();};
+window.fbRkFilter=function(k,v){FB.rk.f[k]=v;window.renderFootball();};
+
+function fbRkRender(host){
+  if(FB.rk.err){
+    host.innerHTML='<div class="rs-state"><h4>National rankings unavailable</h4><p>'+fbEsc(FB.rk.err)
+      +'. Nothing is shown rather than something invented.</p><button onclick="fbSetSport(\'rankings\')">Try again</button></div>';
+    return;
+  }
+  if(!FB.rk.data){
+    host.innerHTML='<div class="empty">Loading the national rankings…</div>';
+    fbRkEnsure().then(function(){return fbRkFeatures();}).then(function(){window.renderFootball();})
+      .catch(function(){window.renderFootball();});
+    return;
+  }
+  var D=FB.rk.data;
+  var h='<div class="mdl-warn" style="margin-bottom:12px"><b>ETSR — points against an average FBS team, on a neutral field.</b> '
+   +'ETSR(A) − ETSR(B) is the neutral-field spread. <b>Home field, travel, rest, injuries and the scheme matchup are NOT in it</b> — '
+   +'those are game facts and the matchup engine applies them on top. '
+   +'Talent and performance are rated and ranked separately on purpose. '
+   +'<b>No language model produced, ranked or explained any number here</b>, and nothing on this page is computed in your browser. '
+   +'<span class="mono" style="color:var(--faint)">'+fbEsc(D.versions.team_rating)+' · '+D.season+' '+fbEsc(D.week_label)
+   +' · '+D.team_count+' teams · data as of '+fbEsc(String(D.data_as_of).slice(0,10))+'</span></div>';
+
+  var reg=FB.rk.features;
+  if(reg&&reg.statement){
+    h+='<div class="flbanner demo" style="margin-bottom:12px;font-size:12px"><b>What is allowed to move a line.</b> '
+      +fbEsc(reg.statement)+'</div>';
+  }
+
+  if(FB.rk.team)return void(host.innerHTML=h+fbRkTeamHTML(FB.rk.team));
+
+  h+=fbRkCoverage(D);
+  h+=fbRkTabs();
+  h+=(FB.rk.tab==='overall')?fbRkTop25(D):'';
+  h+=fbRkTable(D);
+  host.innerHTML=h;
+}
+
+/* ---- §29 the data coverage view: WHY confidence is limited ---- */
+function fbRkCoverage(D){
+  var pq=FB.pq&&FB.pq.manifest?FB.pq.manifest:null;
+  var rows=[];
+  function add(label,v,basis){rows.push({label:label,v:v,basis:basis});}
+  if(pq&&pq.quality){
+    var q=pq.quality.dimensions;
+    add('Recruiting',q.recruiting?q.recruiting.value:0,q.recruiting?q.recruiting.basis:'');
+    add('Player production',q.production?q.production.value:null,q.production?q.production.basis:'');
+    add('Player data',q.player_data?q.player_data.value:null,q.player_data?q.player_data.basis:'');
+    add('Availability',q.availability?q.availability.value:null,q.availability?q.availability.basis:'');
+    add('Scheme',q.scheme?q.scheme.value:null,q.scheme?q.scheme.basis:'');
+  }
+  var bx=pq&&pq.box_enrichment;
+  if(bx&&bx.available){
+    add('Box score (tackles, TFL, hurries, punting)',
+      bx.usable_columns.length/(bx.usable_columns.length+bx.failed_columns.length),
+      bx.usable_columns.length+' of '+(bx.usable_columns.length+bx.failed_columns.length)
+        +' columns cleared their coverage floor this season; '+bx.players_joined+' players joined on athlete id');
+  } else if(bx) add('Box score',0,bx.reason||'not loaded');
+  add('Participation', bx&&bx.available?0.64:0,
+    'box-score appearances plus touch share. NOT a snap count — no public college feed publishes one.');
+  add('Coaching / coordinator', 0,
+    'no public, keyless feed carries coordinator history. The input is contracted for and stays absent rather than being guessed.');
+  var conv=D.performance_diagnostics&&D.performance_diagnostics.all_converged;
+  add('Play-by-play',conv?1:0.5,'the opponent adjustment '+(conv?'converged on every metric':'did NOT converge — see the diagnostics'));
+
+  var h='<div class="pq-sec">Data coverage — why confidence is limited</div><div class="pq-grid">';
+  rows.forEach(function(r){
+    var col=r.v>=0.7?'var(--pos)':(r.v>=0.4?'var(--warn)':'var(--neg)');
+    h+='<div><div class="pq-kv"><span class="l">'+fbEsc(r.label)+'</span><span class="mono" style="color:'+col+'">'
+      +(r.v==null?'—':fbRkPct(r.v))+'</span></div>'+fbPqBar((r.v||0)*100,100,col)
+      +'<div class="pq-note">'+fbEsc(r.basis||'')+'</div></div>';
+  });
+  h+='</div>';
+  h+='<div class="pq-note"><b>Where coverage is low, the number is labelled rather than dressed up.</b> '
+    +'A unit with weak individual evidence shows its confidence beside it, and a category with too little data shows UNRANKED rather than a rank that looks like the others.</div>';
+  return h;
+}
+
+var FBRK_TABS=[['overall','Overall'],['talent','Talent'],['performance','Performance'],
+  ['offense','Offense'],['defense','Defense'],['run_offense','Run O'],['pass_offense','Pass O'],
+  ['run_defense','Run D'],['pass_defense','Pass D'],['qb','QB'],['ol','OL'],['wr','WR'],
+  ['rb','RB'],['dl','DL'],['lb','LB'],['secondary','Secondary'],['depth','Depth'],['continuity','Continuity']];
+function fbRkTabs(){
+  return '<div class="pq-sec">National rankings</div><div class="pq-filters">'
+    +FBRK_TABS.map(function(t){
+      return '<button class="btn '+(FB.rk.tab===t[0]?'':'ghost')+' sm" onclick="fbRkTab(\''+t[0]+'\')">'+fbEsc(t[1])+'</button>';
+    }).join('')+'</div>';
+}
+
+function fbRkTop25(D){
+  var list=fbRkSorted(D,'overall').slice(0,25);
+  var h='<div class="pq-sec">EdgeDesk top 25</div><table class="pq-tbl">'
+    +'<tr><th>#</th><th>team</th><th>ETSR</th><th>talent</th><th>offense</th><th>defense</th><th>run D</th><th>conf</th><th>Δ wk</th></tr>';
+  list.forEach(function(t){
+    h+='<tr class="click" onclick="fbRkTeam(\''+fbEsc(t.key)+'\')">'
+      +'<td class="mono">'+(t.rank==null?'—':t.rank)+'</td>'
+      +'<td><b>'+fbEsc(t.team)+'</b> <span class="mut">'+fbEsc(t.conference||'')+'</span></td>'
+      +'<td class="mono"><b>'+fbRkPts(t.etsr)+'</b></td>'
+      +'<td class="mono">'+fbRkN(t.talent.rating)+' <span class="mut">'+fbRkRank(t,'talent')+'</span></td>'
+      +'<td class="mono">'+fbRkN(t.performance.offense)+' <span class="mut">'+fbRkRank(t,'offense')+'</span></td>'
+      +'<td class="mono">'+fbRkN(t.performance.defense)+' <span class="mut">'+fbRkRank(t,'defense')+'</span></td>'
+      +'<td class="mono">'+fbRkN(t.run_defence_power.score)+'</td>'
+      +'<td class="mono">'+fbRkPct(t.confidence.value)+'</td>'
+      +'<td class="mono">'+fbRkMove(t.movement&&t.movement.rank?t.movement.rank.delta:null)+'</td></tr>';
+  });
+  return h+'</table>';
+}
+
+function fbRkSorted(D,cat){
+  var out=[],k;
+  for(k in D.teams){ if(D.teams.hasOwnProperty(k)) out.push(D.teams[k]); }
+  out.sort(function(a,b){
+    var ra=a.ranks&&a.ranks[cat], rb=b.ranks&&b.ranks[cat];
+    var xa=(ra&&!ra.unranked&&ra.rank!=null)?ra.rank:1e6;
+    var xb=(rb&&!rb.unranked&&rb.rank!=null)?rb.rank:1e6;
+    if(xa!==xb)return xa-xb;
+    return (a.team<b.team)?-1:1;
+  });
+  return out;
+}
+
+/* ---- §16 the Linemaker power table ---- */
+function fbRkTable(D){
+  var cat=FB.rk.tab, f=FB.rk.f;
+  var confs={},k;
+  for(k in D.teams){ if(D.teams[k].conference) confs[D.teams[k].conference]=1; }
+  var list=fbRkSorted(D,cat).filter(function(t){
+    if(f.q&&String(t.team).toLowerCase().indexOf(String(f.q).toLowerCase())<0)return false;
+    if(f.conf&&t.conference!==f.conf)return false;
+    if(f.minConf&&t.confidence.value<+f.minConf)return false;
+    return true;
+  });
+  var h='<div class="pq-filters">'
+    +'<input placeholder="search a team" value="'+fbEsc(f.q)+'" oninput="fbRkFilter(\'q\',this.value)" style="min-width:150px">'
+    +'<select onchange="fbRkFilter(\'conf\',this.value)"><option value="">any conference</option>'
+    +Object.keys(confs).sort().map(function(c){return '<option'+(f.conf===c?' selected':'')+'>'+fbEsc(c)+'</option>';}).join('')
+    +'</select>'
+    +'<select onchange="fbRkFilter(\'minConf\',this.value)"><option value="">any confidence</option>'
+    +[[0.4,'40%+'],[0.6,'60%+'],[0.8,'80%+']].map(function(o){return '<option value="'+o[0]+'"'+(String(f.minConf)===String(o[0])?' selected':'')+'>'+o[1]+' confidence</option>';}).join('')
+    +'</select></div>';
+  h+='<div class="pq-note">'+list.length+' teams. Tap a team for its full rating, its weekly history and why it moved. '
+    +'A category with too little data reads <b>unranked</b> rather than being given a rank that looks like the others.</div>';
+  h+='<div style="overflow-x:auto"><table class="pq-tbl">'
+    +'<tr><th>#</th><th>team</th><th>ETSR</th><th>Tal</th><th>Off</th><th>Def</th><th>Run O</th><th>Pass O</th>'
+    +'<th>Run D</th><th>Pass D</th><th>QB</th><th>OL</th><th>DL</th><th>Sec</th><th>conf</th><th>Δ wk</th><th>mkt</th></tr>';
+  function u(t,g){var x=t.units&&t.units[g];return (x&&x.rating!=null)?fbRkN(x.rating):'<span class="pq-miss">—</span>';}
+  list.forEach(function(t){
+    var r=t.ranks&&t.ranks[cat];
+    var pos=(r&&!r.unranked&&r.rank!=null)?r.rank:null;
+    h+='<tr class="click" onclick="fbRkTeam(\''+fbEsc(t.key)+'\')">'
+      +'<td class="mono">'+(pos==null?'<span class="pq-miss">ur</span>':pos)+'</td>'
+      +'<td>'+fbEsc(t.team)+'</td>'
+      +'<td class="mono"><b>'+fbRkPts(t.etsr)+'</b></td>'
+      +'<td class="mono">'+fbRkN(t.talent.rating)+'</td>'
+      +'<td class="mono">'+fbRkN(t.performance.offense)+'</td>'
+      +'<td class="mono">'+fbRkN(t.performance.defense)+'</td>'
+      +'<td class="mono">'+fbRkN(t.performance.run_offense)+'</td>'
+      +'<td class="mono">'+fbRkN(t.performance.pass_offense)+'</td>'
+      +'<td class="mono">'+fbRkN(t.run_defence_power.score)+'</td>'
+      +'<td class="mono">'+fbRkN(t.performance.pass_defense)+'</td>'
+      +'<td class="mono">'+u(t,'QB')+'</td><td class="mono">'+u(t,'OL')+'</td>'
+      +'<td class="mono">'+u(t,'DL')+'</td><td class="mono">'+u(t,'SECONDARY')+'</td>'
+      +'<td class="mono">'+fbRkPct(t.confidence.value)+'</td>'
+      +'<td class="mono">'+fbRkMove(t.movement&&t.movement.rank?t.movement.rank.delta:null)+'</td>'
+      +'<td class="mono">'+(t.market&&t.market.available?fbRkPts(t.market.difference):'<span class="pq-miss">—</span>')+'</td></tr>';
+  });
+  return h+'</table></div>';
+}
+
+/* ---- §17 team detail ---- */
+function fbRkTeamHTML(key){
+  var D=FB.rk.data, t=D.teams[key];
+  if(!t)return '<div class="empty">That team is not on the board.</div>';
+  var h='<div style="margin-bottom:10px"><button class="btn ghost sm" onclick="fbRkBack()">← back to the rankings</button></div>';
+  h+='<div class="mdl-card"><div class="mdl-card-h"><div class="mdl-card-match">'+fbEsc(t.team)+'</div>'
+    +'<div class="mdl-card-when">'+fbEsc(t.conference||'')+' · '+D.season+' '+fbEsc(D.week_label)+'</div></div><div style="padding:0 12px 12px">';
+
+  h+='<div class="pq-grid" style="margin:8px 0">'
+    +'<div><div class="pq-sec" style="margin-top:0">Overall</div>'
+    +'<div style="font-size:30px;font-weight:800;line-height:1">'+(t.rank==null?'unranked':'#'+t.rank)+'</div>'
+    +'<div style="font-size:18px;font-weight:700">'+fbRkPts(t.etsr)+' <span class="mut" style="font-size:12px">vs an average FBS team, neutral field</span></div>'
+    +'<div class="pq-note">confidence '+fbRkPct(t.confidence.value)+'</div></div>'
+    +'<div><div class="pq-sec" style="margin-top:0">Talent</div>'
+    +'<div style="font-size:24px;font-weight:800">'+fbRkN(t.talent.rating)+' <span class="mut" style="font-size:13px">'+fbRkRank(t,'talent')+'</span></div>'
+    +'<div class="pq-note">how much football ability is on the roster. It does not react to a result.</div></div>'
+    +'<div><div class="pq-sec" style="margin-top:0">Performance</div>'
+    +'<div style="font-size:24px;font-weight:800">'+fbRkN(t.performance.rating)+' <span class="mut" style="font-size:13px">'+fbRkRank(t,'performance')+'</span></div>'
+    +'<div class="pq-note">'+fbEsc(t.achievement&&t.achievement.state!=='UNKNOWN'
+      ?(t.achievement.state+' — talent '+fbRkRank(t,'talent').replace(/<[^>]+>/g,'')+', performance '+fbRkRank(t,'performance').replace(/<[^>]+>/g,''))
+      :(t.achievement?t.achievement.reason:''))+'</div></div>'
+    +'</div>';
+
+  /* every component, ranked */
+  h+='<div class="pq-sec">Every component</div><div style="overflow-x:auto"><table class="pq-tbl"><tr><th>component</th><th>rating</th><th>rank</th></tr>';
+  [['offense','Offense',t.performance.offense],['defense','Defense',t.performance.defense],
+   ['run_offense','Run offense',t.performance.run_offense],['pass_offense','Pass offense',t.performance.pass_offense],
+   ['run_defense','Run defense',t.run_defence_power.score],['pass_defense','Pass defense',t.performance.pass_defense],
+   ['qb','QB room',t.units.QB&&t.units.QB.rating],['ol','OL',t.units.OL&&t.units.OL.rating],
+   ['wr','WR / TE',t.units.WR&&t.units.WR.rating],['rb','RB',t.units.RB&&t.units.RB.rating],
+   ['dl','DL',t.units.DL&&t.units.DL.rating],['lb','LB',t.units.LB&&t.units.LB.rating],
+   ['secondary','Secondary',t.units.SECONDARY&&t.units.SECONDARY.rating],
+   ['depth','Depth',t.depth.rating],['continuity','Continuity',t.continuity.rating],
+   ['scheme_fit','Personnel–tendency fit',t.scheme_fit.rating],
+   ['availability','Availability',t.availability.rating]].forEach(function(row){
+    h+='<tr><td>'+fbEsc(row[1])+'</td><td class="mono">'+(row[2]==null?'<span class="pq-miss">—</span>':fbRkN(row[2]))
+      +'</td><td class="mono">'+fbRkRank(t,row[0])+'</td></tr>';
+  });
+  h+='</table></div>';
+
+  /* §30 why */
+  if(t.why){
+    h+='<div class="pq-grid" style="margin-top:8px">'
+      +'<div><div class="pq-sec">Why it is rated here</div><ul style="margin:0;padding-left:18px;font-size:12px;line-height:1.6">'
+      +(t.why.strengths.length?t.why.strengths.map(function(s){return '<li>'+fbEsc(s.label)+' <b>#'+s.rank+'</b> of '+s.of+'</li>';}).join('')
+        :'<li class="mut">nothing ranks in the top tier</li>')
+      +(t.why.notes||[]).map(function(n){return '<li>'+fbEsc(n.text)+'</li>';}).join('')
+      +'</ul></div>'
+      +'<div><div class="pq-sec">Where it is weak</div><ul style="margin:0;padding-left:18px;font-size:12px;line-height:1.6">'
+      +(t.why.weaknesses.length?t.why.weaknesses.map(function(s){return '<li>'+fbEsc(s.label)+' <b>#'+s.rank+'</b> of '+s.of+'</li>';}).join('')
+        :'<li class="mut">nothing ranks in the bottom tier</li>')+'</ul></div></div>'
+      +'<div class="pq-note">'+fbEsc(t.why.basis)+'</div>';
+  }
+
+  /* §9 movement, differenced */
+  h+='<div class="pq-sec">Why the rating moved</div>';
+  if(t.movement&&t.movement.available){
+    h+='<div class="gd-line"><span class="l">ETSR</span><span class="v mdl">'+fbRkPts(t.movement.etsr.from)+' → '
+      +fbRkPts(t.movement.etsr.to)+' ('+fbRkPts(t.movement.etsr.delta)+')</span></div>';
+    if(t.movement.drivers.length){
+      h+='<table class="pq-tbl"><tr><th>component</th><th>from</th><th>to</th><th>moved</th></tr>'
+        +t.movement.drivers.map(function(d){
+          return '<tr><td>'+fbEsc(d.label)+'</td><td class="mono">'+fbRkN(d.from)+'</td><td class="mono">'+fbRkN(d.to)
+            +'</td><td class="mono" style="color:'+(d.delta>0?'var(--pos)':'var(--neg)')+'">'+fbRkPts(d.delta)+'</td></tr>';
+        }).join('')+'</table>';
+    } else h+='<div class="pq-note">no component moved by more than the reporting floor.</div>';
+    h+='<div class="pq-note">'+fbEsc(t.movement.basis)+'</div>';
+  } else h+='<div class="pq-note">'+fbEsc((t.movement&&t.movement.reason)||'no earlier snapshot to difference against')+'</div>';
+
+  /* the rating as it was built */
+  h+='<div class="pq-sec">How the rating was built</div><table class="pq-tbl">'
+    +'<tr><td>weight on this season</td><td class="mono">'+fbRkPct(t.weights.performance)+'</td>'
+    +'<td class="mut" style="font-size:11px">'+fbEsc(t.weights.ramp_basis)+' ('+fbRkN(t.weights.games_used)+' FBS-equivalent games)</td></tr>'
+    +'<tr><td>prior (last season + talent)</td><td class="mono">'+fbRkPts(t.prior.points)+'</td>'
+    +'<td class="mut" style="font-size:11px">carryover coefficient '+fbRkN(t.prior.parts.coefficient,2)
+    +(t.prior.parts.prev_etsr!=null?(', last season '+fbRkPts(t.prior.parts.prev_etsr)):'')
+    +(t.prior.parts.note?(' — '+fbEsc(t.prior.parts.note)):'')+'</td></tr>'
+    +'<tr><td>performance</td><td class="mono">'+fbRkPts(t.performance_points)+'</td>'
+    +'<td class="mut" style="font-size:11px">opponent-adjusted play-level efficiency</td></tr>'
+    +'<tr><td>talent</td><td class="mono">'+fbRkPts(t.talent_points)+'</td>'
+    +'<td class="mut" style="font-size:11px">roster ability, in points</td></tr>'
+    +'<tr><td>home field</td><td class="mono">not included</td>'
+    +'<td class="mut" style="font-size:11px">'+fbEsc(t.home_field.basis)+'</td></tr>'
+    +'</table>';
+
+  /* run defence detail */
+  h+='<div class="pq-sec">Run defense</div>';
+  var rd=t.run_defence_power;
+  if(rd.available){
+    h+='<div class="pq-gate"><span class="pq-state" style="color:'+(rd.score>=65?'var(--pos)':(rd.score>=50?'var(--warn)':'var(--neg)'))+'">'
+      +fbEsc(rd.band)+'</span><span class="mono">'+fbRkN(rd.score)+'/100</span>'
+      +'<span class="mut">contract '+fbRkPct(rd.completeness)+' complete</span>'+fbRkRank(t,'run_defense')+'</div>'
+      +'<table class="pq-tbl"><tr><th>component</th><th>value</th><th>weight</th></tr>'
+      +rd.components.map(function(c){return '<tr><td>'+fbEsc(c.id.replace(/_/g,' '))+(c.absorbed?(' <span class="mut">(carries '+fbEsc(c.absorbed.replace(/_/g,' '))+')</span>'):'')
+        +'</td><td class="mono">'+fbRkN(c.value,2)+'</td><td class="mono">'+fbRkN(c.weight,2)+'</td></tr>';}).join('')
+      +'</table>';
+    if(rd.missing.length)h+='<div class="pq-note"><b>Missing:</b> '+rd.missing.map(function(m){return fbEsc(m.id)+' — '+fbEsc(m.why);}).join('; ')+'</div>';
+    h+='<div class="pq-note"><b>What nobody can see:</b> '+Object.keys(rd.unobservable).map(function(k2){return fbEsc(rd.unobservable[k2]);}).join('; ')+'</div>';
+  } else h+='<div class="pq-note">'+fbEsc(rd.reason)+'</div>';
+
+  /* market, kept in its own box */
+  h+='<div class="pq-sec">Market comparison</div>';
+  if(t.market&&t.market.available){
+    h+='<div class="gd-line"><span class="l">EdgeDesk ETSR</span><span class="v mdl">'+fbRkPts(t.market.etsr)+'</span></div>'
+      +'<div class="gd-line"><span class="l">Market-implied power</span><span class="v">'+fbRkPts(t.market.market_implied)+'</span></div>'
+      +'<div class="gd-line"><span class="l">Difference</span><span class="v">'+fbRkPts(t.market.difference)+' <b>'+fbEsc(t.market.label)+'</b></span></div>'
+      +'<div class="pq-note">'+fbEsc(t.market.basis)+' It is never called an edge: '+fbEsc(t.market.never_call_it)+'</div>';
+  } else h+='<div class="pq-note">'+fbEsc((t.market&&t.market.reason)||'no market-implied power number for this team')+'</div>';
+
+  /* confidence and gates */
+  h+='<div class="pq-sec">Confidence and data quality</div>'
+    +'<div class="gd-line"><span class="l">Confidence</span><span class="v mdl">'+fbRkPct(t.confidence.value)+'</span></div>'
+    +'<div class="pq-grid">';
+  var parts=t.confidence.parts;
+  for(var pk in parts){ if(!parts.hasOwnProperty(pk))continue;
+    var col=parts[pk]>=0.7?'var(--pos)':(parts[pk]>=0.4?'var(--warn)':'var(--neg)');
+    h+='<div><div class="pq-kv"><span class="l">'+fbEsc(pk.replace(/_/g,' '))+'</span><span class="mono">'+fbRkPct(parts[pk])+'</span></div>'
+      +fbPqBar(parts[pk]*100,100,col)+'</div>';
+  }
+  h+='</div><div class="pq-note">'+fbEsc(t.confidence.mix?t.confidence.mix.basis:'')+'</div>';
+  if(t.gates.length){
+    h+='<div class="pq-sec">Warnings</div>';
+    t.gates.forEach(function(g){
+      var col=g.severity==='high'?'var(--neg)':(g.severity==='medium'?'var(--warn)':'var(--dim)');
+      h+='<div class="pq-edge"><span class="pq-chip" style="color:'+col+'">'+fbEsc(g.severity)+'</span>'
+        +'<b>'+fbEsc(g.id.replace(/_/g,' '))+'</b><span style="flex:1;min-width:140px" class="mut">'+fbEsc(g.detail)+'</span>'
+        +(g.duplicates_component?'<span class="mut" style="font-size:11px">explains the score, does not charge it twice</span>':'')+'</div>';
+    });
+  }
+  h+='</div></div>';
+  return h;
+}
+
 function fbRenderBoard(host){
   var ban=$('fbBanner'),ctl=$('fbCtl');
   try{rsMetaRender('football');}catch(_){}
@@ -35835,6 +36480,16 @@ function fbRenderBoard(host){
       else ctl.style.display='none';
     }
     fbP4Render(host);return;
+  }
+  /* Rankings: ETSR and the national board. A committed artifact, rendered.
+     Nothing on this path recomputes a rating in the browser. */
+  if(FB.sport==='rankings'){
+    if(ban){ban.className='flbanner hide';ban.innerHTML='';}
+    if(ctl)ctl.style.display='none';
+    var frk=$('fbFresh');
+    if(frk)frk.textContent=(FB.rk.data&&FB.rk.data.data_as_of)
+      ?('rankings built '+String(FB.rk.data.data_as_of).slice(0,10)):'—';
+    fbRkRender(host);return;
   }
   /* Players: the national player-quality + scheme matchup layer. Separate
      modules, separate committed datasets, separate failure state — a broken

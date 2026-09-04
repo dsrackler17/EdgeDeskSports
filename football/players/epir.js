@@ -228,6 +228,7 @@
       case 'def_dropbacks_faced': return num(st.def_dropbacks_faced);
       case 'def_plays_faced': return num(st.def_plays_faced);
       case 'team_def_games': return num(st.team_def_games);
+      case 'punts': return num(st.box_punts);
       default: return null;
     }
   }
@@ -272,6 +273,21 @@
       /* kept for callers that want a per-opportunity view where the team
          volume is known; not part of any measure contract */
       sack_rate_def:       rate(st.def_sacks, st.def_dropbacks_faced),
+      /* ---- BOX-SCORE ENRICHMENT (football/data/build_box.js) ----
+         Distinct keys from the play-table measures on purpose: v1 must be
+         provably unchanged by this file's existence, and a reader must be able
+         to see which feed a number came from. All of these are gated per
+         season — the columns are only filled in from 2024 onward. */
+      box_tackles_per_game: rate(st.box_tackles, st.team_def_games),
+      box_tfl_per_game:     rate(st.box_tfl, st.team_def_games),
+      box_hurries_per_game: rate(st.box_hurries, st.team_def_games),
+      box_sacks_per_game:   rate(st.box_sacks, st.team_def_games),
+      box_pbu_per_game:     rate(st.box_pbu, st.team_def_games),
+      box_int_per_game:     rate(st.box_ints, st.team_def_games),
+      /* punting: gross, never net — no public feed attributes return yardage
+         against a named punter */
+      punt_average:         rate(st.box_punt_yds, st.box_punts),
+      punts_inside_20_rate: rate(st.box_punts_in20, st.box_punts),
       /* kicking */
       fg_pct:              rate(st.fg_made, st.fg_att),
       fg_pct_long:         rate(st.fg_made_long, st.fg_att_long)
@@ -290,9 +306,15 @@
     if (g === 'WR' || g === 'TE') return (num(st.receptions) || 0) + Math.max(0, (num(st.targets) || 0) - (num(st.receptions) || 0));
     if (g === 'K') return num(st.fg_att) || 0;
     if (CFG.DEFENSE_GROUPS.indexOf(g) >= 0) {
-      return (num(st.def_sacks) || 0) + (num(st.def_int) || 0) + (num(st.def_pbu) || 0)
+      var playSide = (num(st.def_sacks) || 0) + (num(st.def_int) || 0) + (num(st.def_pbu) || 0)
         + (num(st.def_ff) || 0) + (num(st.def_fr) || 0);
+      /* where the box score is present it observes far more of a defender's
+         work than the play table ever did, and volume should say so */
+      var boxSide = (num(st.box_tackles) || 0) + (num(st.box_tfl) || 0) + (num(st.box_hurries) || 0)
+        + (num(st.box_pbu) || 0) + (num(st.box_ints) || 0);
+      return Math.max(playSide, boxSide);
     }
+    if (g === 'P') return num(st.box_punts) || 0;
     return 0;
   }
 
@@ -301,7 +323,8 @@
      Standardising a quarterback against quarterbacks and a corner against
      corners is the whole reason there is no single generic formula here.
      ===================================================================== */
-  function buildBaselines(seasonPlayers, coverage) {
+  function buildBaselines(seasonPlayers, coverage, variant) {
+    var CONTRACTS = CFG.measures ? CFG.measures(variant || 'v1') : CFG.MEASURES;
     var out = {};
     var byGroup = {}, i, p, g;
     for (i = 0; i < seasonPlayers.length; i++) {
@@ -312,7 +335,7 @@
     }
     for (g in byGroup) {
       if (!has(byGroup, g)) continue;
-      var contract = CFG.MEASURES[g] || [];
+      var contract = CONTRACTS[g] || [];
       var stats = {};
       for (var mi = 0; mi < contract.length; mi++) {
         var mdef = contract[mi];
@@ -372,8 +395,19 @@
       basis: 'the group had too few consecutive-season pairs to measure its own reliability, so a declared fallback is used and this rating is marked k_measured:false' };
   }
 
-  function roleBand(share) {
+  function roleBand(share, hasParticipation) {
     if (share == null) return 'UNKNOWN';
+    /* participation-based shares live on a different scale from touch shares —
+       a starting lineman appears in 100% of games but takes 0% of the touches —
+       so they get their own bands rather than being read against v1's. */
+    if (hasParticipation && CFG.PARTICIPATION) {
+      var pb = CFG.PARTICIPATION.bands, j;
+      for (j = 0; j < pb.length; j++) {
+        if (pb[j].min == null) return pb[j].role;
+        if (share >= pb[j].min) return pb[j].role;
+      }
+      return 'UNKNOWN';
+    }
     var bands = CFG.ROLE.bands, i;
     for (i = 0; i < bands.length; i++) {
       if (bands[i].min_share == null) return bands[i].role;
@@ -389,7 +423,8 @@
   function ratePlayer(ps, ctx) {
     ctx = ctx || {};
     var g = ps.group || CFG.group(ps.pos);
-    var contract = CFG.MEASURES[g] || [];
+    var CONTRACTS = CFG.measures ? CFG.measures(ctx.variant || 'v1') : CFG.MEASURES;
+    var contract = CONTRACTS[g] || [];
     var base = (ctx.baselines && ctx.baselines[g]) || null;
     var R = rates(ps);
     var used = [], missing = [], zParts = [], wSum = 0, zSum = 0, oppAdjusted = 0, oppTotal = 0;
@@ -467,22 +502,46 @@
     var wSelf = careerN > 0 ? careerN / (careerN + K.k) : 0;
     var zHat = careerZ == null ? priorZ : (careerZ * wSelf + priorZ * (1 - wSelf));
 
-    /* --- role, from touch share within the group. NOT a snap share. ---
-       When this season has produced no attributed volume for the group yet —
-       week one, or a team the feed has not reached — LAST season's usage is
-       carried forward and SAID to be carried forward. It is not invented and
-       it is not silently treated as unknown either, because previous usage is
-       real evidence about who plays. */
-    var share = null, shareBasis = null;
+    /* --- ROLE (participation v2) ---
+       v1 could only see TOUCH share, which meant every offensive lineman and
+       most defenders came out UNKNOWN: the layer genuinely did not know who
+       played. The box score records an APPEARANCE per player per game, which
+       is direct participation evidence for every position, including the ones
+       with no touches at all.
+
+       An appearance is still NOT a snap: four snaps and seventy both count
+       once. So appearances answer WHO PLAYS and touch share answers HOW MUCH,
+       and the two are combined rather than one being dressed up as the other.
+       Where this season has produced nothing yet, LAST season's usage is
+       carried forward and said to be carried forward. */
     var st = ps.stat || {};
+    var P = CFG.PARTICIPATION || null;
+    var touchShare = null, appearShare = null, share = null, shareBasis = null, shareParts = [];
     if (isNum(num(st.team_group_volume)) && num(st.team_group_volume) > 0 && vol > 0) {
-      share = vol / num(st.team_group_volume);
+      touchShare = vol / num(st.team_group_volume);
+    }
+    var teamGames = num(st.team_games) != null ? num(st.team_games) : num(st.team_def_games);
+    if (P && isNum(num(st.box_games)) && isNum(teamGames) && teamGames >= P.min_team_games) {
+      appearShare = clamp(num(st.box_games) / teamGames, 0, 1);
+    }
+    if (P && (touchShare != null || appearShare != null)) {
+      var wA = appearShare != null ? P.appearance_weight : 0;
+      var wT = touchShare != null ? P.touch_weight : 0;
+      share = ((appearShare || 0) * wA + (touchShare || 0) * wT) / (wA + wT);
+      if (appearShare != null) shareParts.push({ id: 'appearances', value: Math.round(appearShare * 1000) / 1000,
+        w: wA / (wA + wT), basis: 'games this player appeared in the box score for, over his team’s games. Direct participation evidence — NOT a snap count.' });
+      if (touchShare != null) shareParts.push({ id: 'touch_share', value: Math.round(touchShare * 1000) / 1000,
+        w: wT / (wA + wT), basis: 'his share of the position group’s attributed volume this season' });
+      shareBasis = 'expected participation share: ' + shareParts.map(function (x) { return x.id; }).join(' + ')
+        + '. ' + P.basis;
+    } else if (touchShare != null) {
+      share = touchShare;
       shareBasis = 'share of his position group’s attributed volume THIS season. This is TOUCH share, not SNAP share; no public feed carries snap counts.';
     } else if (ps.prior_role && isNum(num(ps.prior_role.share))) {
       share = num(ps.prior_role.share);
       shareBasis = 'carried forward from ' + ps.prior_role.season + ', because this season has not produced enough attributed volume for this group yet. Previous usage, stated as previous usage.';
     }
-    var role = roleBand(share);
+    var role = roleBand(share, appearShare != null);
     var rolePts = 0;
     if (CFG.EPIR_COMPONENTS.role_value.applied && share != null) {
       /* linear in share above the rotation floor, capped. Weak evidence,
@@ -542,7 +601,8 @@
     if (g === 'CB' || g === 'S' || g === 'DB') unmeasured.push(CFG.OBSERVABILITY.coverage_targets.reason);
 
     return {
-      schema: SCHEMA, rating_version: VERSION, config_version: CFG.versions.player_rating,
+      schema: SCHEMA, rating_version: VERSION,
+      variant: ctx.variant || 'v1', config_version: CFG.versions.player_rating,
       key: identity.key(ps), athlete_id: ps.athlete_id == null ? null : String(ps.athlete_id),
       name: ps.name, team: ps.team, team_key: ps.team_key || teamKey(ps.team),
       conference: ps.conference || null,
@@ -563,8 +623,16 @@
       games: num(ps.games),
 
       role: { expected_role: role, share: share == null ? null : Math.round(share * 1000) / 1000,
-        carried_forward: !!(shareBasis && ps.prior_role && share != null && !(vol > 0 && num(st.team_group_volume) > 0)),
-        basis: shareBasis || 'no attributed volume for this player in any season this build read, so his role is UNKNOWN — which is not the same as DEPTH, and is not the same as being bad' },
+        participation_share: appearShare == null ? null : Math.round(appearShare * 1000) / 1000,
+        touch_share: touchShare == null ? null : Math.round(touchShare * 1000) / 1000,
+        parts: shareParts,
+        from_participation: appearShare != null,
+        carried_forward: !!(shareBasis && ps.prior_role && share != null && touchShare == null && appearShare == null),
+        confidence: appearShare != null ? 0.8 : (touchShare != null ? 0.55 : 0.15),
+        confidence_basis: appearShare != null
+          ? 'direct box-score appearances plus touch share'
+          : (touchShare != null ? 'touch share only — no box-score appearances for this player' : 'nothing observed'),
+        basis: shareBasis || 'no attributed volume and no box-score appearance for this player in any season this build read, so his role is UNKNOWN — which is not the same as DEPTH, and is not the same as being bad' },
 
       components: {
         quality: { z_raw: zRaw, z_career: careerZ, z_shrunk: zHat, prior_z: priorZ, prior_source: priorSource,
@@ -598,7 +666,7 @@
      walking seasons forward, which is what keeps a rating leak-free. */
   function rateSeason(seasonPlayers, ctx) {
     ctx = ctx || {};
-    var baselines = ctx.baselines || buildBaselines(seasonPlayers, ctx.coverage);
+    var baselines = ctx.baselines || buildBaselines(seasonPlayers, ctx.coverage, ctx.variant);
     var out = [], i;
     for (i = 0; i < seasonPlayers.length; i++) {
       var p = seasonPlayers[i];
@@ -607,7 +675,7 @@
       out.push(ratePlayer(p, {
         baselines: baselines, params: ctx.params, leagueAllowed: ctx.leagueAllowed,
         coverage: ctx.coverage, season: ctx.season != null ? ctx.season : p.season,
-        as_of: ctx.as_of, career: career
+        as_of: ctx.as_of, career: career, variant: ctx.variant
       }));
     }
     return { ratings: out, baselines: baselines };

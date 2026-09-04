@@ -1,0 +1,630 @@
+{
+ "schema": "edgedesk_feature_status_v1",
+ "generated_at": "2026-09-04T13:57:21.206Z",
+ "rules": {
+  "min_holdout_seasons": 2,
+  "min_holdout_basis": "a single holdout season cannot show that a feature is football rather than that season. Until a second one exists the honest status is CANDIDATE, and a promising effect size does not change that.",
+  "p_max": 0.05,
+  "p_basis": "a paired two-sided test over the per-game absolute errors of the two arms. Not a t-test on the pooled means — the games are the same games and pairing is what makes the comparison honest.",
+  "min_pooled_improvement": 0.02,
+  "min_pooled_basis": "points of spread MAE. Below this the feature is not worth the complexity even if it is real, and at this sample size it is very unlikely to be real.",
+  "max_season_degradation": 0.15,
+  "season_basis": "a feature may lose a holdout season slightly — football is noisy — but losing one by more than 0.15 points of MAE while winning overall is the signature of fitting a season rather than a sport.",
+  "max_brier_degradation": 0.002,
+  "brier_basis": "a spread can improve while the win probabilities get worse. Both are checked, because a research page publishes both.",
+  "require_leakage_clean": true,
+  "leakage_basis": "every arm is built from data that existed before kickoff, and the harness asserts it. An arm whose leakage test did not run is not eligible, however good it looks."
+ },
+ "statuses": [
+  "RESEARCH_ONLY",
+  "CANDIDATE",
+  "VALIDATED",
+  "REJECTED"
+ ],
+ "tune_seasons": [
+  2024
+ ],
+ "holdout_seasons": [
+  2025
+ ],
+ "games_scored": 808,
+ "summary": {
+  "RESEARCH_ONLY": [],
+  "CANDIDATE": [
+   "player_quality_v1",
+   "player_quality_v2",
+   "run_defence_v2",
+   "trench_matchup",
+   "scheme",
+   "etsr",
+   "all_enriched"
+  ],
+  "VALIDATED": [],
+  "REJECTED": []
+ },
+ "validated_count": 0,
+ "features": [
+  {
+   "feature": "player_quality_v1",
+   "status": "CANDIDATE",
+   "may_move_lines": false,
+   "effect_size": 0.014,
+   "effect_units": "points of spread MAE improvement on the holdout",
+   "p_value": 0.0041,
+   "brier_delta": -0.0002,
+   "worst_season": 2025,
+   "worst_season_delta": -0.014,
+   "conditions_passed": [
+    "significance",
+    "season_stability",
+    "calibration",
+    "leakage"
+   ],
+   "conditions_failed": [
+    "holdout_breadth",
+    "pooled_improvement"
+   ],
+   "reasons": [
+    "only 1 holdout season — 2 are required before a feature can be validated, because one season cannot distinguish football from that season",
+    "pooled MAE improved by only 0.014 points, against a 0.02 bar"
+   ],
+   "holdout_results": {
+    "baseline": {
+     "n": 808,
+     "spread_mae": 12.491,
+     "rmse": 15.686,
+     "brier": 0.1782,
+     "feature": "baseline"
+    },
+    "arm": {
+     "n": 808,
+     "spread_mae": 12.477,
+     "rmse": 15.669,
+     "brier": 0.178,
+     "feature": "player_quality_v1",
+     "label": "player quality v1",
+     "coefficient": 0.0514,
+     "coefficients": {
+      "_n": 798,
+      "player_quality_v1": 0.05141199292640856
+     },
+     "tune_n": 798,
+     "paired": {
+      "n": 808,
+      "mean_diff": 0.0142,
+      "t": 2.8709,
+      "p": 0.0041
+     },
+     "per_season": [
+      {
+       "season": 2025,
+       "n": 808,
+       "mae_before": 12.491,
+       "mae_after": 12.477
+      }
+     ],
+     "leakage_clean": true,
+     "version": "team_rating_v1"
+    }
+   },
+   "fitted_coefficient": 0.0514,
+   "date_validated": null,
+   "version": "team_rating_v1",
+   "rules": {
+    "min_holdout_seasons": 2,
+    "min_holdout_basis": "a single holdout season cannot show that a feature is football rather than that season. Until a second one exists the honest status is CANDIDATE, and a promising effect size does not change that.",
+    "p_max": 0.05,
+    "p_basis": "a paired two-sided test over the per-game absolute errors of the two arms. Not a t-test on the pooled means — the games are the same games and pairing is what makes the comparison honest.",
+    "min_pooled_improvement": 0.02,
+    "min_pooled_basis": "points of spread MAE. Below this the feature is not worth the complexity even if it is real, and at this sample size it is very unlikely to be real.",
+    "max_season_degradation": 0.15,
+    "season_basis": "a feature may lose a holdout season slightly — football is noisy — but losing one by more than 0.15 points of MAE while winning overall is the signature of fitting a season rather than a sport.",
+    "max_brier_degradation": 0.002,
+    "brier_basis": "a spread can improve while the win probabilities get worse. Both are checked, because a research page publishes both.",
+    "require_leakage_clean": true,
+    "leakage_basis": "every arm is built from data that existed before kickoff, and the harness asserts it. An arm whose leakage test did not run is not eligible, however good it looks."
+   }
+  },
+  {
+   "feature": "player_quality_v2",
+   "status": "CANDIDATE",
+   "may_move_lines": false,
+   "effect_size": 0.057,
+   "effect_units": "points of spread MAE improvement on the holdout",
+   "p_value": 0.0005,
+   "brier_delta": -0.001,
+   "worst_season": 2025,
+   "worst_season_delta": -0.057,
+   "conditions_passed": [
+    "pooled_improvement",
+    "significance",
+    "season_stability",
+    "calibration",
+    "leakage"
+   ],
+   "conditions_failed": [
+    "holdout_breadth"
+   ],
+   "reasons": [
+    "only 1 holdout season — 2 are required before a feature can be validated, because one season cannot distinguish football from that season"
+   ],
+   "holdout_results": {
+    "baseline": {
+     "n": 808,
+     "spread_mae": 12.491,
+     "rmse": 15.686,
+     "brier": 0.1782,
+     "feature": "baseline"
+    },
+    "arm": {
+     "n": 808,
+     "spread_mae": 12.434,
+     "rmse": 15.624,
+     "brier": 0.1772,
+     "feature": "player_quality_v2",
+     "label": "player quality v2 (box enriched)",
+     "coefficient": 0.1506,
+     "coefficients": {
+      "_n": 798,
+      "player_quality_v2": 0.15060922640828858
+     },
+     "tune_n": 798,
+     "paired": {
+      "n": 808,
+      "mean_diff": 0.057,
+      "t": 3.4719,
+      "p": 0.0005
+     },
+     "per_season": [
+      {
+       "season": 2025,
+       "n": 808,
+       "mae_before": 12.491,
+       "mae_after": 12.434
+      }
+     ],
+     "leakage_clean": true,
+     "version": "player_rating_v2"
+    }
+   },
+   "fitted_coefficient": 0.1506,
+   "date_validated": null,
+   "version": "player_rating_v2",
+   "rules": {
+    "min_holdout_seasons": 2,
+    "min_holdout_basis": "a single holdout season cannot show that a feature is football rather than that season. Until a second one exists the honest status is CANDIDATE, and a promising effect size does not change that.",
+    "p_max": 0.05,
+    "p_basis": "a paired two-sided test over the per-game absolute errors of the two arms. Not a t-test on the pooled means — the games are the same games and pairing is what makes the comparison honest.",
+    "min_pooled_improvement": 0.02,
+    "min_pooled_basis": "points of spread MAE. Below this the feature is not worth the complexity even if it is real, and at this sample size it is very unlikely to be real.",
+    "max_season_degradation": 0.15,
+    "season_basis": "a feature may lose a holdout season slightly — football is noisy — but losing one by more than 0.15 points of MAE while winning overall is the signature of fitting a season rather than a sport.",
+    "max_brier_degradation": 0.002,
+    "brier_basis": "a spread can improve while the win probabilities get worse. Both are checked, because a research page publishes both.",
+    "require_leakage_clean": true,
+    "leakage_basis": "every arm is built from data that existed before kickoff, and the harness asserts it. An arm whose leakage test did not run is not eligible, however good it looks."
+   }
+  },
+  {
+   "feature": "run_defence_v2",
+   "status": "CANDIDATE",
+   "may_move_lines": false,
+   "effect_size": 0.034,
+   "effect_units": "points of spread MAE improvement on the holdout",
+   "p_value": 0.0284,
+   "brier_delta": -0.0004,
+   "worst_season": 2025,
+   "worst_season_delta": -0.034,
+   "conditions_passed": [
+    "pooled_improvement",
+    "significance",
+    "season_stability",
+    "calibration",
+    "leakage"
+   ],
+   "conditions_failed": [
+    "holdout_breadth"
+   ],
+   "reasons": [
+    "only 1 holdout season — 2 are required before a feature can be validated, because one season cannot distinguish football from that season"
+   ],
+   "holdout_results": {
+    "baseline": {
+     "n": 808,
+     "spread_mae": 12.491,
+     "rmse": 15.686,
+     "brier": 0.1782,
+     "feature": "baseline"
+    },
+    "arm": {
+     "n": 808,
+     "spread_mae": 12.457,
+     "rmse": 15.643,
+     "brier": 0.1778,
+     "feature": "run_defence_v2",
+     "label": "run defence power v2",
+     "coefficient": 0.0285,
+     "coefficients": {
+      "_n": 550,
+      "run_defence_v2": 0.02854096097679615
+     },
+     "tune_n": 550,
+     "paired": {
+      "n": 808,
+      "mean_diff": 0.0344,
+      "t": 2.1922,
+      "p": 0.0284
+     },
+     "per_season": [
+      {
+       "season": 2025,
+       "n": 808,
+       "mae_before": 12.491,
+       "mae_after": 12.457
+      }
+     ],
+     "leakage_clean": true,
+     "version": "team_rating_v1"
+    }
+   },
+   "fitted_coefficient": 0.0285,
+   "date_validated": null,
+   "version": "team_rating_v1",
+   "rules": {
+    "min_holdout_seasons": 2,
+    "min_holdout_basis": "a single holdout season cannot show that a feature is football rather than that season. Until a second one exists the honest status is CANDIDATE, and a promising effect size does not change that.",
+    "p_max": 0.05,
+    "p_basis": "a paired two-sided test over the per-game absolute errors of the two arms. Not a t-test on the pooled means — the games are the same games and pairing is what makes the comparison honest.",
+    "min_pooled_improvement": 0.02,
+    "min_pooled_basis": "points of spread MAE. Below this the feature is not worth the complexity even if it is real, and at this sample size it is very unlikely to be real.",
+    "max_season_degradation": 0.15,
+    "season_basis": "a feature may lose a holdout season slightly — football is noisy — but losing one by more than 0.15 points of MAE while winning overall is the signature of fitting a season rather than a sport.",
+    "max_brier_degradation": 0.002,
+    "brier_basis": "a spread can improve while the win probabilities get worse. Both are checked, because a research page publishes both.",
+    "require_leakage_clean": true,
+    "leakage_basis": "every arm is built from data that existed before kickoff, and the harness asserts it. An arm whose leakage test did not run is not eligible, however good it looks."
+   }
+  },
+  {
+   "feature": "trench_matchup",
+   "status": "CANDIDATE",
+   "may_move_lines": false,
+   "effect_size": 0.05,
+   "effect_units": "points of spread MAE improvement on the holdout",
+   "p_value": 0.0101,
+   "brier_delta": -0.0011,
+   "worst_season": 2025,
+   "worst_season_delta": -0.05,
+   "conditions_passed": [
+    "pooled_improvement",
+    "significance",
+    "season_stability",
+    "calibration",
+    "leakage"
+   ],
+   "conditions_failed": [
+    "holdout_breadth"
+   ],
+   "reasons": [
+    "only 1 holdout season — 2 are required before a feature can be validated, because one season cannot distinguish football from that season"
+   ],
+   "holdout_results": {
+    "baseline": {
+     "n": 808,
+     "spread_mae": 12.491,
+     "rmse": 15.686,
+     "brier": 0.1782,
+     "feature": "baseline"
+    },
+    "arm": {
+     "n": 808,
+     "spread_mae": 12.441,
+     "rmse": 15.621,
+     "brier": 0.1771,
+     "feature": "trench_matchup",
+     "label": "trench matchup (line vs front)",
+     "coefficient": 0.0559,
+     "coefficients": {
+      "_n": 798,
+      "trench_matchup": 0.05590240091011372
+     },
+     "tune_n": 798,
+     "paired": {
+      "n": 808,
+      "mean_diff": 0.0507,
+      "t": 2.5734,
+      "p": 0.0101
+     },
+     "per_season": [
+      {
+       "season": 2025,
+       "n": 808,
+       "mae_before": 12.491,
+       "mae_after": 12.441
+      }
+     ],
+     "leakage_clean": true,
+     "version": "team_rating_v1"
+    }
+   },
+   "fitted_coefficient": 0.0559,
+   "date_validated": null,
+   "version": "team_rating_v1",
+   "rules": {
+    "min_holdout_seasons": 2,
+    "min_holdout_basis": "a single holdout season cannot show that a feature is football rather than that season. Until a second one exists the honest status is CANDIDATE, and a promising effect size does not change that.",
+    "p_max": 0.05,
+    "p_basis": "a paired two-sided test over the per-game absolute errors of the two arms. Not a t-test on the pooled means — the games are the same games and pairing is what makes the comparison honest.",
+    "min_pooled_improvement": 0.02,
+    "min_pooled_basis": "points of spread MAE. Below this the feature is not worth the complexity even if it is real, and at this sample size it is very unlikely to be real.",
+    "max_season_degradation": 0.15,
+    "season_basis": "a feature may lose a holdout season slightly — football is noisy — but losing one by more than 0.15 points of MAE while winning overall is the signature of fitting a season rather than a sport.",
+    "max_brier_degradation": 0.002,
+    "brier_basis": "a spread can improve while the win probabilities get worse. Both are checked, because a research page publishes both.",
+    "require_leakage_clean": true,
+    "leakage_basis": "every arm is built from data that existed before kickoff, and the harness asserts it. An arm whose leakage test did not run is not eligible, however good it looks."
+   }
+  },
+  {
+   "feature": "scheme",
+   "status": "CANDIDATE",
+   "may_move_lines": false,
+   "effect_size": 0.01,
+   "effect_units": "points of spread MAE improvement on the holdout",
+   "p_value": 0.6323,
+   "brier_delta": -0.0002,
+   "worst_season": 2025,
+   "worst_season_delta": -0.01,
+   "conditions_passed": [
+    "season_stability",
+    "calibration",
+    "leakage"
+   ],
+   "conditions_failed": [
+    "holdout_breadth",
+    "pooled_improvement",
+    "significance"
+   ],
+   "reasons": [
+    "only 1 holdout season — 2 are required before a feature can be validated, because one season cannot distinguish football from that season",
+    "pooled MAE improved by only 0.010 points, against a 0.02 bar",
+    "paired p = 0.632, above the 0.05 bar"
+   ],
+   "holdout_results": {
+    "baseline": {
+     "n": 808,
+     "spread_mae": 12.491,
+     "rmse": 15.686,
+     "brier": 0.1782,
+     "feature": "baseline"
+    },
+    "arm": {
+     "n": 808,
+     "spread_mae": 12.481,
+     "rmse": 15.683,
+     "brier": 0.178,
+     "feature": "scheme",
+     "label": "scheme style interaction",
+     "coefficient": -1.7961,
+     "coefficients": {
+      "_n": 798,
+      "scheme": -1.796070267212984
+     },
+     "tune_n": 798,
+     "paired": {
+      "n": 808,
+      "mean_diff": 0.0102,
+      "t": 0.4785,
+      "p": 0.6323
+     },
+     "per_season": [
+      {
+       "season": 2025,
+       "n": 808,
+       "mae_before": 12.491,
+       "mae_after": 12.481
+      }
+     ],
+     "leakage_clean": true,
+     "version": "team_rating_v1"
+    }
+   },
+   "fitted_coefficient": -1.7961,
+   "date_validated": null,
+   "version": "team_rating_v1",
+   "rules": {
+    "min_holdout_seasons": 2,
+    "min_holdout_basis": "a single holdout season cannot show that a feature is football rather than that season. Until a second one exists the honest status is CANDIDATE, and a promising effect size does not change that.",
+    "p_max": 0.05,
+    "p_basis": "a paired two-sided test over the per-game absolute errors of the two arms. Not a t-test on the pooled means — the games are the same games and pairing is what makes the comparison honest.",
+    "min_pooled_improvement": 0.02,
+    "min_pooled_basis": "points of spread MAE. Below this the feature is not worth the complexity even if it is real, and at this sample size it is very unlikely to be real.",
+    "max_season_degradation": 0.15,
+    "season_basis": "a feature may lose a holdout season slightly — football is noisy — but losing one by more than 0.15 points of MAE while winning overall is the signature of fitting a season rather than a sport.",
+    "max_brier_degradation": 0.002,
+    "brier_basis": "a spread can improve while the win probabilities get worse. Both are checked, because a research page publishes both.",
+    "require_leakage_clean": true,
+    "leakage_basis": "every arm is built from data that existed before kickoff, and the harness asserts it. An arm whose leakage test did not run is not eligible, however good it looks."
+   }
+  },
+  {
+   "feature": "etsr",
+   "status": "CANDIDATE",
+   "may_move_lines": false,
+   "effect_size": 0.055,
+   "effect_units": "points of spread MAE improvement on the holdout",
+   "p_value": 0.1438,
+   "brier_delta": -0.0008,
+   "worst_season": 2025,
+   "worst_season_delta": -0.055,
+   "conditions_passed": [
+    "pooled_improvement",
+    "season_stability",
+    "calibration",
+    "leakage"
+   ],
+   "conditions_failed": [
+    "holdout_breadth",
+    "significance"
+   ],
+   "reasons": [
+    "only 1 holdout season — 2 are required before a feature can be validated, because one season cannot distinguish football from that season",
+    "paired p = 0.144, above the 0.05 bar"
+   ],
+   "holdout_results": {
+    "baseline": {
+     "n": 808,
+     "spread_mae": 12.491,
+     "rmse": 15.686,
+     "brier": 0.1782,
+     "feature": "baseline"
+    },
+    "arm": {
+     "n": 808,
+     "spread_mae": 12.436,
+     "rmse": 15.583,
+     "brier": 0.1774,
+     "feature": "etsr",
+     "label": "ETSR national rating",
+     "coefficient": 0.1597,
+     "coefficients": {
+      "_n": 798,
+      "etsr": 0.15970544365632552
+     },
+     "tune_n": 798,
+     "paired": {
+      "n": 808,
+      "mean_diff": 0.055,
+      "t": 1.4618,
+      "p": 0.1438
+     },
+     "per_season": [
+      {
+       "season": 2025,
+       "n": 808,
+       "mae_before": 12.491,
+       "mae_after": 12.436
+      }
+     ],
+     "leakage_clean": true,
+     "version": "team_rating_v1"
+    }
+   },
+   "fitted_coefficient": 0.1597,
+   "date_validated": null,
+   "version": "team_rating_v1",
+   "rules": {
+    "min_holdout_seasons": 2,
+    "min_holdout_basis": "a single holdout season cannot show that a feature is football rather than that season. Until a second one exists the honest status is CANDIDATE, and a promising effect size does not change that.",
+    "p_max": 0.05,
+    "p_basis": "a paired two-sided test over the per-game absolute errors of the two arms. Not a t-test on the pooled means — the games are the same games and pairing is what makes the comparison honest.",
+    "min_pooled_improvement": 0.02,
+    "min_pooled_basis": "points of spread MAE. Below this the feature is not worth the complexity even if it is real, and at this sample size it is very unlikely to be real.",
+    "max_season_degradation": 0.15,
+    "season_basis": "a feature may lose a holdout season slightly — football is noisy — but losing one by more than 0.15 points of MAE while winning overall is the signature of fitting a season rather than a sport.",
+    "max_brier_degradation": 0.002,
+    "brier_basis": "a spread can improve while the win probabilities get worse. Both are checked, because a research page publishes both.",
+    "require_leakage_clean": true,
+    "leakage_basis": "every arm is built from data that existed before kickoff, and the harness asserts it. An arm whose leakage test did not run is not eligible, however good it looks."
+   }
+  },
+  {
+   "feature": "all_enriched",
+   "status": "CANDIDATE",
+   "may_move_lines": false,
+   "effect_size": 0.012,
+   "effect_units": "points of spread MAE improvement on the holdout",
+   "p_value": 0.8013,
+   "brier_delta": -0.0006,
+   "worst_season": 2025,
+   "worst_season_delta": -0.012,
+   "conditions_passed": [
+    "season_stability",
+    "calibration",
+    "leakage"
+   ],
+   "conditions_failed": [
+    "holdout_breadth",
+    "pooled_improvement",
+    "significance"
+   ],
+   "reasons": [
+    "only 1 holdout season — 2 are required before a feature can be validated, because one season cannot distinguish football from that season",
+    "pooled MAE improved by only 0.012 points, against a 0.02 bar",
+    "paired p = 0.801, above the 0.05 bar"
+   ],
+   "holdout_results": {
+    "baseline": {
+     "n": 808,
+     "spread_mae": 12.491,
+     "rmse": 15.686,
+     "brier": 0.1782,
+     "feature": "baseline"
+    },
+    "arm": {
+     "n": 808,
+     "spread_mae": 12.479,
+     "rmse": 15.671,
+     "brier": 0.1776,
+     "feature": "all_enriched",
+     "label": "all enriched features jointly",
+     "coefficient": null,
+     "coefficients": {
+      "_n": 550,
+      "player_quality_v2": -0.3068750892768997,
+      "run_defence_v2": 0.02151398083350289,
+      "trench_matchup": 0.11028901380494818,
+      "scheme": -3.6027455984531653
+     },
+     "tune_n": 550,
+     "paired": {
+      "n": 808,
+      "mean_diff": 0.0118,
+      "t": 0.2517,
+      "p": 0.8013
+     },
+     "per_season": [
+      {
+       "season": 2025,
+       "n": 808,
+       "mae_before": 12.491,
+       "mae_after": 12.479
+      }
+     ],
+     "leakage_clean": true,
+     "version": "team_rating_v1"
+    }
+   },
+   "fitted_coefficient": null,
+   "date_validated": null,
+   "version": "team_rating_v1",
+   "rules": {
+    "min_holdout_seasons": 2,
+    "min_holdout_basis": "a single holdout season cannot show that a feature is football rather than that season. Until a second one exists the honest status is CANDIDATE, and a promising effect size does not change that.",
+    "p_max": 0.05,
+    "p_basis": "a paired two-sided test over the per-game absolute errors of the two arms. Not a t-test on the pooled means — the games are the same games and pairing is what makes the comparison honest.",
+    "min_pooled_improvement": 0.02,
+    "min_pooled_basis": "points of spread MAE. Below this the feature is not worth the complexity even if it is real, and at this sample size it is very unlikely to be real.",
+    "max_season_degradation": 0.15,
+    "season_basis": "a feature may lose a holdout season slightly — football is noisy — but losing one by more than 0.15 points of MAE while winning overall is the signature of fitting a season rather than a sport.",
+    "max_brier_degradation": 0.002,
+    "brier_basis": "a spread can improve while the win probabilities get worse. Both are checked, because a research page publishes both.",
+    "require_leakage_clean": true,
+    "leakage_basis": "every arm is built from data that existed before kickoff, and the harness asserts it. An arm whose leakage test did not run is not eligible, however good it looks."
+   }
+  }
+ ],
+ "statement": "NO feature has cleared every promotion condition. Every enrichment in this repository is research: it changes confidence, warnings, explanations and what is shown, and it changes no projected number anywhere.",
+ "how_to_read": "RESEARCH_ONLY is the default and is not a failure — it is the honest state of a football feature that has not yet proved itself out of sample. REJECTED means measured and found harmful. VALIDATED means it earned the right to move a number.",
+ "market_benchmark": {
+  "n": 227,
+  "spread_mae": 11.522
+ },
+ "baseline": {
+  "n": 808,
+  "spread_mae": 12.491,
+  "rmse": 15.686,
+  "brier": 0.1782,
+  "feature": "baseline"
+ }
+}

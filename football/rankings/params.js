@@ -1,0 +1,10 @@
+if(typeof window==='undefined'){globalThis.window=globalThis;}
+/* EdgeDesk National Rankings — MEASURED constants.
+   GENERATED FILE. The league carryover slope is re-measured on every build from
+   the rating chain itself. The points-per-z scalars and the prior ramp are
+   fitted ONLY by football/rankings/validate_rankings.js, and a build preserves
+   whatever that wrote rather than quietly refitting on a schedule — which is
+   how a research layer starts fitting the recent past without anyone deciding
+   to. Weights and contracts live in config.js; nothing here is hand-edited. */
+window.EDRankParams = {"schema":"edgedesk_rankings_params_v1","generated_at":"2026-09-04T13:35:01.048Z","versions":{"talent":"talent_v1","performance":"performance_v1","team_rating":"team_rating_v1","run_defence_power":"run_defence_power_v1","player_rating":"player_rating_v1","scheme_matchup":"scheme_matchup_v1","simulation":"simulation_v1"},"schema_version":"1.0.0","league_carryover":{"pairs":[{"from":2023,"to":2024,"n":133,"slope":0.668,"r2":0.471},{"from":2024,"to":2025,"n":134,"slope":0.76,"r2":0.541},{"from":2025,"to":2026,"n":136,"slope":0.774,"r2":0.954}],"value":0.734,"measured":true,"used_pairs":3,"trend":0.106,"basis":"each consecutive pair of seasons is regressed team-on-team and the mean of the most recent pairs is the league slope. When last season stops predicting this one, this number falls on its own — nobody edits a constant. It is the portal/NIL argument answered with arithmetic."},"calibration":{"measured":false,"talent_points_per_z":{"value":null,"points_applied":false,"reason":"football/rankings/validate_rankings.js has not been run against this build, so no scalar is fitted and the declared fallback in config.js is used"},"performance_points_per_z":{"value":null,"points_applied":false,"reason":"as above"},"prior_ramp_k":{"value":null,"reason":"as above"}},"validation_summary":{"ran":false,"reason":"no walk-forward validation has been run against this build"}};
+if(typeof module!=='undefined'&&module.exports)module.exports=window.EDRankParams;

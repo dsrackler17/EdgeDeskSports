@@ -1,0 +1,148 @@
+{
+ "schema": "edgedesk_box_enrichment_manifest_v1",
+ "generated_at": "2026-09-04T13:52:28.835Z",
+ "seasons": {
+  "2022": {
+   "available": true,
+   "format": "csv.gz",
+   "rows": 40598,
+   "team_games": 1800,
+   "players": 7558,
+   "usable_columns": [
+    "interceptions",
+    "punting",
+    "field_goals",
+    "qbr"
+   ],
+   "failed_columns": [
+    "tackles",
+    "solo_tackles",
+    "tackles_for_loss",
+    "sacks",
+    "passes_defended",
+    "hurries"
+   ]
+  },
+  "2023": {
+   "available": true,
+   "format": "csv.gz",
+   "rows": 57239,
+   "team_games": 1822,
+   "players": 9562,
+   "usable_columns": [
+    "hurries",
+    "interceptions",
+    "punting",
+    "field_goals",
+    "qbr"
+   ],
+   "failed_columns": [
+    "tackles",
+    "solo_tackles",
+    "tackles_for_loss",
+    "sacks",
+    "passes_defended"
+   ]
+  },
+  "2024": {
+   "available": true,
+   "format": "csv.gz",
+   "rows": 78993,
+   "team_games": 1930,
+   "players": 12473,
+   "usable_columns": [
+    "tackles",
+    "solo_tackles",
+    "tackles_for_loss",
+    "sacks",
+    "passes_defended",
+    "hurries",
+    "interceptions",
+    "punting",
+    "field_goals",
+    "qbr"
+   ],
+   "failed_columns": []
+  },
+  "2025": {
+   "available": true,
+   "format": "csv.gz",
+   "rows": 80496,
+   "team_games": 1916,
+   "players": 12755,
+   "usable_columns": [
+    "tackles",
+    "solo_tackles",
+    "tackles_for_loss",
+    "sacks",
+    "passes_defended",
+    "hurries",
+    "interceptions",
+    "punting",
+    "field_goals",
+    "qbr"
+   ],
+   "failed_columns": []
+  }
+ },
+ "current_season": 2025,
+ "gates": {
+  "tackles": {
+   "field": "tackles",
+   "per_team_game_min": 40,
+   "basis": "an FBS team makes 60-70 tackles a game. Below 40 the column is being filled in for some games and not others."
+  },
+  "solo_tackles": {
+   "field": "solo",
+   "per_team_game_min": 20,
+   "basis": "roughly half of all tackles are solo"
+  },
+  "tackles_for_loss": {
+   "field": "tfl",
+   "per_team_game_min": 3,
+   "basis": "an FBS team records 5-6 tackles for loss a game"
+  },
+  "sacks": {
+   "field": "sacks",
+   "per_team_game_min": 1.2,
+   "basis": "an FBS team records about 2 sacks a game"
+  },
+  "passes_defended": {
+   "field": "pbu",
+   "per_team_game_min": 1.8,
+   "basis": "an FBS team records about 3 passes defended a game"
+  },
+  "hurries": {
+   "field": "hurries",
+   "per_team_game_min": 1.2,
+   "basis": "hurries run 2-3 per team-game where the column is filled. This is a PRESSURE SHORT OF A SACK — the thing the player layer used to declare unobservable."
+  },
+  "interceptions": {
+   "field": "ints",
+   "per_team_game_min": 0.55,
+   "basis": "FBS interception rate is around 0.8 per team-game"
+  },
+  "punting": {
+   "field": "punts",
+   "per_team_game_min": 2.5,
+   "basis": "an FBS team punts 4-5 times a game"
+  },
+  "field_goals": {
+   "field": "fg_att",
+   "per_team_game_min": 0.8,
+   "basis": "an FBS team attempts about 1.5 field goals a game"
+  },
+  "qbr": {
+   "field": "qbr_games",
+   "per_team_game_min": 0.5,
+   "basis": "one rated quarterback per team-game is the most there can be"
+  }
+ },
+ "correction": "football/players/config.js previously asserted that tackles, tackles for loss, run stops, pressures short of a sack and punting were not observed in any public feed. They are, in this one, keyed on the same athlete id. That contract has been corrected rather than left standing.",
+ "limits": [
+  "The defensive columns are only usable from 2024 onward — earlier seasons are measured, fail their gate, and are declared missing.",
+  "MISSED TACKLES are still not carried anywhere public, so a tackling-efficiency measure remains impossible.",
+  "A hurry is ESPN’s own charting judgement, not a tracked event, so it is a pressure PROXY and is labelled one.",
+  "The box has no snap counts. Appearances are participation evidence; they are not snaps and are never called snaps."
+ ]
+}

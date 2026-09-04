@@ -52,6 +52,7 @@ const DIR = __dirname;
 const REPO = path.join(DIR, '..', '..');
 const ROSTER_DIR = path.join(DIR, '..', 'rosters');
 const AVAIL_FILE = path.join(DIR, '..', 'availability', 'current.json');
+const BOX_DIR = path.join(DIR, '..', 'data', 'box');
 const B = 'https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main';
 const URL_PSTATS = y => `${B}/player_stats/csv/player_stats_${y}.csv`;
 const URL_ROSTER = y => `${B}/rosters/csv/cfb_rosters_${y}.csv`;
@@ -273,6 +274,39 @@ async function loadRoster(season) {
 }
 
 /* ------------------------------------------------------------------ */
+/* the box-score enrichment (football/data/build_box.js)                */
+/* ------------------------------------------------------------------ *
+ * Optional by design: a season with no box artifact simply has no box
+ * measures, every one of them is DECLARED MISSING on the player, and v1 is
+ * bit-identical to what it was before this feed existed.
+ * ------------------------------------------------------------------ */
+const BOX_COLS = ['games', 'tackles', 'solo', 'tfl', 'sacks', 'pbu', 'hurries', 'ints',
+  'punts', 'punt_yds', 'punts_in20', 'fg_made', 'fg_att', 'qbr', 'qbr_games', 'fum_lost', 'def_td'];
+function loadBox(season) {
+  const j = readJson(path.join(BOX_DIR, `${season}.json`), null);
+  if (!j || !j.players) return { available: false, byKey: {}, coverage: {}, teams: {},
+    reason: `no box-score artifact for ${season} — run football/data/build_box.js. Every box measure is declared missing and v1 is unaffected.` };
+  const byKey = {};
+  for (const k of Object.keys(j.players)) {
+    const row = j.players[k], o = {};
+    for (let i = 0; i < BOX_COLS.length; i++) o[BOX_COLS[i]] = row[i];
+    o.team_key = row[BOX_COLS.length] || null;
+    byKey[k] = o;
+  }
+  /* the box gates are namespaced so they can never collide with the play
+     table's gates of the same name — the two feeds disagree about coverage
+     and both answers have to survive */
+  const coverage = {};
+  const map = { tackles: 'box_tackles', tackles_for_loss: 'box_tfl', hurries: 'box_hurries',
+    sacks: 'box_sacks', passes_defended: 'box_pbu', interceptions: 'box_int', punting: 'box_punting' };
+  for (const src of Object.keys(map)) {
+    if (j.coverage && j.coverage[src]) coverage[map[src]] = j.coverage[src];
+  }
+  return { available: true, byKey, coverage, teams: j.teams || {},
+    source: j.source, season: j.season, generated_at: j.generated_at };
+}
+
+/* ------------------------------------------------------------------ */
 /* the play table                                                       */
 /* ------------------------------------------------------------------ */
 const SUC = CFG.SUCCESS, EXP = CFG.EXPLOSIVE;
@@ -282,6 +316,28 @@ function isSuccess(down, distance, gained) {
   return gained >= need ? 1 : 0;
 }
 
+/* GARBAGE TIME.
+   The conventional score-differential-by-period rule. A play is competitive
+   unless the game is already decided by this much:
+
+     Q1 > 38    Q2 > 28    Q3 > 22    Q4 (and OT) > 16
+
+   ONE IMPRECISION, STATED RATHER THAN HIDDEN: the play table's score columns
+   are the score AFTER the play, so a play that itself scores is judged on the
+   state it created. Over a season that moves a handful of plays per team and it
+   is not worth inventing a pre-play score to fix.
+
+   NOTHING IS DELETED. Every team-game carries BOTH the full aggregate and the
+   competitive-only one, so the effect of the filter is auditable and the
+   dataset can be re-read either way. */
+var GARBAGE_BY_PERIOD = { 1: 38, 2: 28, 3: 22, 4: 16 };
+function isGarbage(period, scoreDiff) {
+  if (period == null || scoreDiff == null) return false;
+  var lim = GARBAGE_BY_PERIOD[period];
+  if (lim == null) lim = GARBAGE_BY_PERIOD[4];      /* overtime uses the fourth-quarter bar */
+  return Math.abs(scoreDiff) > lim;
+}
+
 function blankTG() {
   return {
     plays: 0, rush_att: 0, rush_yds: 0, rush_success: 0, rush_explosive: 0, rush_stuffed: 0,
@@ -289,7 +345,16 @@ function blankTG() {
     sacks_taken: 0, sack_yds: 0, int_thrown: 0, fumbles: 0,
     dropbacks: 0, first_downs: 0,
     early_down_plays: 0, early_down_pass: 0, neutral_plays: 0, neutral_pass: 0,
-    rz_plays: 0, rz_rush: 0, third_plays: 0, third_pass: 0
+    rz_plays: 0, rz_rush: 0, third_plays: 0, third_pass: 0,
+    /* ADDED for the team-rankings performance layer. Additive on purpose: the
+       player layer reads named fields and is unaffected by new ones. */
+    early_down_success: 0,      /* first and second down, the downs a team chooses */
+    third_success: 0,           /* a third down gained the distance — a conversion */
+    rz_success: 0,              /* success inside the opponent 20 */
+    turnovers: 0                /* interceptions thrown + fumbles. See the note in
+                                   performance.js: recoveries are not attributable
+                                   to a side in this feed, so this is a proxy and
+                                   is regressed hard because it barely repeats. */
   };
 }
 
@@ -370,10 +435,25 @@ async function loadPlays(season, sched, opts) {
 
     const gkey = gid + '|' + off;
     let tg = teamGames.get(gkey);
-    if (!tg) { tg = { game_id: gid, week, team: off, team_name: offName, opp: def, opp_name: defName, conference: cell(r, ix.conference), off: blankTG() }; teamGames.set(gkey, tg); }
+    if (!tg) {
+      tg = { game_id: gid, week, team: off, team_name: offName, opp: def, opp_name: defName,
+        conference: cell(r, ix.conference), off: blankTG(), comp: blankTG(), garbage_plays: 0 };
+      teamGames.set(gkey, tg);
+    }
     teamGameSet.add(gkey);
+
+    /* Every counter is written to the FULL aggregate and, when the game is not
+       already decided, to the COMPETITIVE one as well. `T` keeps the existing
+       call sites unchanged; `T2` is the competitive twin, or a throwaway when
+       this play is garbage time. */
+    const period = cellNum(r, ix.period);
+    const diff = (cellNum(r, ix.team_score) == null || cellNum(r, ix.opponent_score) == null)
+      ? null : (cellNum(r, ix.team_score) - cellNum(r, ix.opponent_score));
+    const garbage = isGarbage(period, diff);
+    if (garbage) tg.garbage_plays++;
     const T = tg.off;
-    T.plays++;
+    const T2 = garbage ? blankTG() : tg.comp;
+    T.plays++; T2.plays++;
 
     const rushId = cell(r, ix.rush_player_id);
     const cmpId = cell(r, ix.completion_player_id);
@@ -387,11 +467,15 @@ async function loadPlays(season, sched, opts) {
       const expl = yds >= EXP.rush ? 1 : 0;
       const stuff = yds <= 0 ? 1 : 0;
       const fd = (dist != null && yds >= dist) ? 1 : 0;
-      T.rush_att++; T.rush_yds += yds; T.rush_success += suc || 0; T.rush_explosive += expl; T.rush_stuffed += stuff;
-      T.first_downs += fd;
-      if (down === 1 || down === 2) { T.early_down_plays++; }
-      if (cellNum(r, ix.yards_to_goal) != null && cellNum(r, ix.yards_to_goal) <= 20) { T.rz_plays++; T.rz_rush++; }
-      if (down === 3) T.third_plays++;
+      for (const X of [T, T2]) {
+        X.rush_att++; X.rush_yds += yds; X.rush_success += suc || 0; X.rush_explosive += expl;
+        X.rush_stuffed += stuff; X.first_downs += fd;
+        if (down === 1 || down === 2) { X.early_down_plays++; X.early_down_success += suc || 0; }
+        if (cellNum(r, ix.yards_to_goal) != null && cellNum(r, ix.yards_to_goal) <= 20) {
+          X.rz_plays++; X.rz_rush++; X.rz_success += suc || 0;
+        }
+        if (down === 3) { X.third_plays++; X.third_success += fd; }
+      }
       const p = P(rushId, cell(r, ix.rush_player), off, week);
       add(p, 'rush_att', 1); add(p, 'rush_yds', yds); add(p, 'rush_success', suc || 0);
       add(p, 'rush_explosive', expl); add(p, 'rush_stuffed', stuff); add(p, 'rush_first_downs', fd);
@@ -399,10 +483,12 @@ async function loadPlays(season, sched, opts) {
     }
 
     if (cmpId || incId || intThrownId || sackTakenId) {
-      T.dropbacks++;
-      if (down === 1 || down === 2) { T.early_down_plays++; T.early_down_pass++; }
-      if (down === 3) { T.third_plays++; T.third_pass++; }
-      if (cellNum(r, ix.yards_to_goal) != null && cellNum(r, ix.yards_to_goal) <= 20) T.rz_plays++;
+      for (const X of [T, T2]) {
+        X.dropbacks++;
+        if (down === 1 || down === 2) { X.early_down_plays++; X.early_down_pass++; }
+        if (down === 3) { X.third_plays++; X.third_pass++; }
+        if (cellNum(r, ix.yards_to_goal) != null && cellNum(r, ix.yards_to_goal) <= 20) X.rz_plays++;
+      }
     }
 
     if (cmpId) {
@@ -410,8 +496,13 @@ async function loadPlays(season, sched, opts) {
       const suc = isSuccess(down, dist, yds);
       const expl = yds >= EXP.pass ? 1 : 0;
       const fd = (dist != null && yds >= dist) ? 1 : 0;
-      T.pass_att++; T.pass_cmp++; T.pass_yds += yds; T.pass_success += suc || 0; T.pass_explosive += expl;
-      T.first_downs += fd;
+      for (const X of [T, T2]) {
+        X.pass_att++; X.pass_cmp++; X.pass_yds += yds; X.pass_success += suc || 0;
+        X.pass_explosive += expl; X.first_downs += fd;
+        if (down === 1 || down === 2) X.early_down_success += suc || 0;
+        if (down === 3) X.third_success += fd;
+        if (cellNum(r, ix.yards_to_goal) != null && cellNum(r, ix.yards_to_goal) <= 20) X.rz_success += suc || 0;
+      }
       const q = P(cmpId, cell(r, ix.completion_player), off, week);
       add(q, 'pass_att', 1); add(q, 'pass_cmp', 1); add(q, 'pass_yds', yds);
       add(q, 'pass_success', suc || 0); add(q, 'pass_explosive', expl);
@@ -427,7 +518,7 @@ async function loadPlays(season, sched, opts) {
       }
     }
     if (incId) {
-      T.pass_att++;
+      T.pass_att++; T2.pass_att++;
       const q = P(incId, cell(r, ix.incompletion_player), off, week);
       add(q, 'pass_att', 1); add(q, 'pass_success', 0);
       oppTag(q, 'pass', def, 1);
@@ -439,7 +530,8 @@ async function loadPlays(season, sched, opts) {
       }
     }
     if (intThrownId) {
-      T.pass_att++; T.int_thrown++;
+      T.pass_att++; T.int_thrown++; T.turnovers++;
+      T2.pass_att++; T2.int_thrown++; T2.turnovers++;
       const q = P(intThrownId, cell(r, ix.interception_thrown_player), off, week);
       add(q, 'pass_att', 1); add(q, 'int_thrown', 1); add(q, 'pass_success', 0);
       oppTag(q, 'pass', def, 1);
@@ -447,12 +539,13 @@ async function loadPlays(season, sched, opts) {
     if (sackTakenId) {
       const lost = cellNum(r, ix.sack_taken_stat) || 0;
       T.sacks_taken++; T.sack_yds += lost;
+      T2.sacks_taken++; T2.sack_yds += lost;
       const q = P(sackTakenId, cell(r, ix.sack_taken_player), off, week);
       add(q, 'sacks_taken', 1); add(q, 'sack_yds_taken', lost);
       oppTag(q, 'pass', def, 1);
     }
     const fumId = cell(r, ix.fumble_player_id);
-    if (fumId) { T.fumbles++; add(P(fumId, cell(r, ix.fumble_player), off, week), 'fumbles', 1); }
+    if (fumId) { T.fumbles++; T.turnovers++; T2.fumbles++; T2.turnovers++; add(P(fumId, cell(r, ix.fumble_player), off, week), 'fumbles', 1); }
 
     /* --- defenders. They belong to `opponent`, not `team`. --- */
     const sackId = cell(r, ix.sack_player_id);
@@ -486,6 +579,7 @@ async function loadPlays(season, sched, opts) {
   for (const tg of teamGames.values()) {
     tg.off.neutral_plays = tg.off.early_down_plays;
     tg.off.neutral_pass = tg.off.early_down_pass;
+    if (tg.comp) { tg.comp.neutral_plays = tg.comp.early_down_plays; tg.comp.neutral_pass = tg.comp.early_down_pass; }
   }
 
   return { players, teamGames, counts, missingCols, teamGameCount: teamGameSet.size, season };
@@ -592,6 +686,7 @@ function opponentAdjust(teamGames, fbs, metric) {
 /* build one season's normalised player-seasons                         */
 /* ------------------------------------------------------------------ */
 function normaliseSeason(season, play, roster, prevRoster, sched, adj) {
+  const box = (adj && adj.box) || { available: false, byKey: {} };
   const out = [];
   const teamGroupVolume = new Map();   /* teamKey|group -> volume */
   const teamDefGames = new Map();
@@ -659,6 +754,7 @@ function normaliseSeason(season, play, roster, prevRoster, sched, adj) {
       st.qb_rush_success = st.rush_success || 0;
     }
     st.team_def_games = (teamDefGames.get(m.key) || new Set()).size;
+    st.team_games = st.team_def_games;      /* a team's defence is on the field in every game it plays */
     st.def_plays_faced = 0; st.def_dropbacks_faced = 0;
     const dagg = adj.teamAgg.def.get(m.key);
     if (dagg) { st.def_plays_faced = dagg.plays; st.def_dropbacks_faced = dagg.dropbacks; }
@@ -703,12 +799,43 @@ function normaliseSeason(season, play, roster, prevRoster, sched, adj) {
       identity: 'athlete_id',
       roster: { source: roster.source, in_roster: true },
       games: 0, first_week: null, last_week: null,
-      stat: { team_def_games: (teamDefGames.get(r.team_key) || new Set()).size },
+      stat: { team_def_games: (teamDefGames.get(r.team_key) || new Set()).size,
+        team_games: (teamDefGames.get(r.team_key) || new Set()).size },
       opponent: null, opp_raw: {}, prior_role: null,
       no_attributed_events: true,
       sources: [{ name: roster.source || 'roster', tier: 'public, keyless', detail: 'on the roster; the play table attributed no event to him' }]
     });
   }
+
+  /* box-score enrichment, joined on the SAME stable athlete id the rest of the
+     layer joins on. Nothing here is name-matched. */
+  let boxJoined = 0;
+  for (const rec of out) {
+    const b = box.byKey['a:' + rec.athlete_id];
+    if (!b) continue;
+    boxJoined++;
+    rec.stat.box_games = b.games || 0;
+    rec.stat.box_tackles = b.tackles || 0;
+    rec.stat.box_solo = b.solo || 0;
+    rec.stat.box_tfl = b.tfl || 0;
+    rec.stat.box_sacks = b.sacks || 0;
+    rec.stat.box_pbu = b.pbu || 0;
+    rec.stat.box_hurries = b.hurries || 0;
+    rec.stat.box_ints = b.ints || 0;
+    rec.stat.box_punts = b.punts || 0;
+    rec.stat.box_punt_yds = b.punt_yds || 0;
+    rec.stat.box_punts_in20 = b.punts_in20 || 0;
+    rec.stat.box_fg_made = b.fg_made || 0;
+    rec.stat.box_fg_att = b.fg_att || 0;
+    rec.stat.box_fum_lost = b.fum_lost || 0;
+    /* CONTEXT ONLY. ESPN's adjusted QBR is another organisation's model output
+       and is deliberately not an input to any EdgeDesk rating. */
+    rec.qbr = (b.qbr_games > 0) ? { value: b.qbr, games: b.qbr_games, source: 'ESPN adjusted QBR',
+      used_in_rating: false, basis: 'shown as context. This repo does not build its ratings on another organisation’s rating.' } : null;
+    if (rec.sources) rec.sources.push({ name: 'sportsdataverse ESPN player box', tier: 'public, keyless',
+      detail: 'tackles, TFL, hurries, passes defended, interceptions, punting and appearances, joined on athlete id' });
+  }
+  if (box.available) out._box_joined = boxJoined;
 
   /* group volume shares, for role projection */
   for (const rec of out) {
@@ -762,8 +889,8 @@ function normaliseSeason(season, play, roster, prevRoster, sched, adj) {
 
 module.exports = {
   SEASON, SEASONS_BACK, FCS_KEY,
-  splitLine, headerIndex, parseCsvObjects, isSuccess, blankTG,
-  loadSchedule, loadRoster, loadPlays, coverageGates, espnRosterPositions, refinePositions,
+  splitLine, headerIndex, parseCsvObjects, isSuccess, blankTG, isGarbage, GARBAGE_BY_PERIOD,
+  loadSchedule, loadRoster, loadPlays, coverageGates, espnRosterPositions, refinePositions, loadBox, BOX_COLS,
   teamSeasonAggregates, opponentAdjust, normaliseSeason,
   ADJ_METRICS, RECV_MAP, QBRUSH_MAP, fetchText, digestOf, readJson
 };

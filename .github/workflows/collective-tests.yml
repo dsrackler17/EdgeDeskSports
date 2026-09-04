@@ -36,6 +36,9 @@ on:
       # renders them. The panel suite reads the renderer out of app.html
       # rather than a copy, so a change to either has to be able to trigger it.
       - 'football/players/**'
+      - 'football/rankings/**'
+      - 'football/data/**'
+      - 'football/validation/**'
       - 'tools/football/**'
       # The capture edge function and its suites. Before this, a change to the
       # single function that decides what EdgeDesk calls a bet triggered no CI
@@ -70,6 +73,9 @@ on:
       # renders them. The panel suite reads the renderer out of app.html
       # rather than a copy, so a change to either has to be able to trigger it.
       - 'football/players/**'
+      - 'football/rankings/**'
+      - 'football/data/**'
+      - 'football/validation/**'
       - 'tools/football/**'
       # The capture edge function and its suites. Before this, a change to the
       # single function that decides what EdgeDesk calls a bet triggered no CI
@@ -126,6 +132,19 @@ jobs:
       # the REAL committed datasets — so this holds the thing users see.
       - name: The player quality panel says what it can and cannot see
         run: node tools/football/player_quality_ui.test.js
+
+      # The national rankings, the enrichment layer and the promotion gate that
+      # decides whether any of it is allowed to move a projected number.
+      - name: The rankings and the enrichment obey their own rules
+        run: node football/rankings/rankings.test.js
+
+      - name: The rankings panel shows unranked as unranked and research as research
+        run: node tools/football/rankings_ui.test.js
+
+      # The product hierarchy the chrome claims: Research first and default,
+      # Edges beside it, Faults reachable without a tab of its own.
+      - name: The navigation says what the product is
+        run: node tools/app/navigation.test.js
 
       # The workbook the boards download, rebuilt from a real cleaned file.
       - name: The download is the format the operator cleaned up by hand

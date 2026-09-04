@@ -1,0 +1,22 @@
+{
+  "name": "edgedesk-sports",
+  "version": "1.0.0",
+  "private": true,
+  "description": "EdgeDesk Sports — a static research terminal plus the deterministic football pipelines that feed it. No dependencies: every script here runs on a bare Node install, and the browser reads committed artifacts rather than computing anything.",
+  "license": "UNLICENSED",
+  "engines": { "node": ">=20" },
+  "scripts": {
+    "cfb:sync": "node football/rosters/fetch_rosters.js",
+    "cfb:box": "node football/data/build_box.js",
+    "cfb:players": "node football/players/build_players.js",
+    "cfb:ratings": "node football/rating/build_rating.js",
+    "cfb:rankings": "node football/rankings/build_rankings.js",
+    "cfb:snapshot": "node football/rankings/build_rankings.js",
+    "cfb:validate": "node football/validation/validate_features.js --write",
+    "cfb:validate:players": "node football/players/validate.js",
+    "cfb:rebuild": "npm run cfb:box && npm run cfb:players && npm run cfb:rankings && npm run cfb:test",
+    "cfb:test": "node football/players/players.test.js && node football/rankings/rankings.test.js && node tools/football/player_quality_ui.test.js && node tools/football/rankings_ui.test.js",
+    "cfb:health": "node football/health/daily_check.js",
+    "test": "node football/tests.js && node football/cfb_p4/tests.js && node football/rating/edr.test.js && node football/availability/availability.test.js && node football/injuries/fetch_injuries.test.js && node football/players/players.test.js && node football/rankings/rankings.test.js && node tools/football/player_quality_ui.test.js && node tools/football/rankings_ui.test.js && node tools/app/navigation.test.js && node collective/tests.js && node collective/tests_render.js"
+  }
+}

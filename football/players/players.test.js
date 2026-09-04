@@ -95,7 +95,22 @@ function close(name, a, b, tol) { ok(name, a != null && Math.abs(a - b) <= (tol 
   eq('group: an unknown spelling resolves to nothing, not to ATH', CFG.group('ZZZ'), null);
   ok('group: the offensive line has an EMPTY measure contract on purpose', CFG.MEASURES.OL.length === 0);
   ok('group: and says why', !!CFG.NO_PRODUCTION_FEED.OL);
-  ok('group: punting is declared unobservable', CFG.OBSERVABILITY.punting.observed === false);
+  /* CORRECTED BY THE DATA. This assertion used to read `observed === false`.
+     The ESPN player box carries punts, punt yards and punts inside the twenty
+     for every season checked, so punting is observable, is gated per season
+     like everything else, and punters are rateable. The test now holds the
+     new truth AND that it is gated rather than assumed. */
+  eq('group: punting is observable, and gated', CFG.OBSERVABILITY.punting.observed, 'gated');
+  ok('group: and names the feed that carries it', /player box/i.test(CFG.OBSERVABILITY.punting.source || ''));
+  ok('group: a punter now has a measure contract', (CFG.measures('v2').P || []).length > 0);
+  ok('group: but v1 is unchanged and still has none', (CFG.measures('v1').P || []).length === 0);
+  ok('group: pressures short of a sack are observable and gated', CFG.OBSERVABILITY.pressures.observed === 'gated');
+  ok('group: tackles are observable and gated', CFG.OBSERVABILITY.tackles.observed === 'gated');
+  ok('group: a RUN STOP is still not observable, and says why', CFG.OBSERVABILITY.run_stops.observed === false
+    && /line-to-gain|down and distance/i.test(CFG.OBSERVABILITY.run_stops.reason));
+  ok('group: missed tackles are still not observable', CFG.OBSERVABILITY.missed_tackles.observed === false);
+  ok('group: QBR is ingested but never an input to a rating',
+    CFG.OBSERVABILITY.qbr.observed === true && CFG.OBSERVABILITY.qbr.used_in_rating === false);
   ok('group: snap share is declared unobservable', CFG.OBSERVABILITY.snap_share.observed === false);
   ok('group: EPA is declared not computed', CFG.OBSERVABILITY.epa.observed === false);
 })();

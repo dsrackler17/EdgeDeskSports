@@ -92,14 +92,23 @@ async function main() {
 
   /* ---------------- per-season normalise + rate, walking FORWARD ----------- */
   const careerIndex = {};          /* player key -> [{season, z, n}] from EARLIER seasons only */
+  /* THE CANDIDATE GETS ITS OWN CHAIN. Rating 2026 under v2 off a career index
+     built under v1 would be a hybrid of the two and would tell us nothing about
+     either. Both variants are walked forward independently. */
+  const careerIndexV2 = {};
+  const boxBySeason = {};
   const bySeason = {};
   const coverageBySeason = {};
   const schemeBySeason = {};
   const teamAggBySeason = {};
 
   for (const y of usable) {
-    const cov = B.coverageGates(play[y].counts, play[y].teamGameCount);
+    /* the play-table gates, plus the box-score gates namespaced so the two
+       feeds can disagree about coverage and both answers survive */
+    const box = B.loadBox(y);
+    const cov = Object.assign(B.coverageGates(play[y].counts, play[y].teamGameCount), box.coverage || {});
     coverageBySeason[y] = cov;
+    boxBySeason[y] = box;
     const teamAgg = B.teamSeasonAggregates(play[y].teamGames, sched[y].fbs);
     teamAggBySeason[y] = teamAgg;
     const metrics = {};
@@ -108,7 +117,9 @@ async function main() {
       if (a) metrics[met.id] = a;
     }
     const norm = B.normaliseSeason(y, play[y], roster[y] || { players: {}, count: 0 },
-      roster[y - 1] || null, sched[y], { metrics, teamAgg });
+      roster[y - 1] || null, sched[y], { metrics, teamAgg, box });
+    if (box.available) log(`  ${y}: box score joined to ${norm.players._box_joined || 0} players (${Object.keys(box.coverage).filter(k => box.coverage[k].usable).length} usable columns)`);
+    else log(`  ${y}: ${box.reason}`);
 
     /* merge duplicate rows for one athlete (mid-season transfers, feed dupes) */
     const byKey = new Map();
@@ -144,6 +155,18 @@ async function main() {
     for (const r of rated.ratings) {
       if (!r.key) continue;
       (careerIndex[r.key] = careerIndex[r.key] || []).push({
+        season: y, z: r.components.quality.z_raw, n: r.sample_size, dc: r.data_completeness
+      });
+    }
+    /* the same walk, under the candidate contract */
+    const ratedV2 = EPIR.rateSeason(merged, {
+      coverage: cov, leagueAllowed: norm.leagueAllowed, season: y,
+      careerIndex: careerIndexV2, params: null, as_of: startedAt, variant: 'v2'
+    });
+    bySeason[y].ratingsV2 = ratedV2.ratings;
+    for (const r of ratedV2.ratings) {
+      if (!r.key) continue;
+      (careerIndexV2[r.key] = careerIndexV2[r.key] || []).push({
         season: y, z: r.components.quality.z_raw, n: r.sample_size, dc: r.data_completeness
       });
     }
@@ -228,6 +251,28 @@ async function main() {
   });
   bySeason[cur].ratings = curRated.ratings;
   bySeason[cur].baselines = curRated.baselines;
+
+  /* ---------------- EPIR v2, THE CANDIDATE ----------------
+     Built on every run, canonical on none of them. v2 is v1 plus the box-score
+     columns; whether it ever replaces v1 is decided by the walk-forward in
+     football/validation/ and by nothing else — not by it being newer, and not
+     by it looking better on a Tuesday. */
+  const v2Rated = EPIR.rateSeason(bySeason[cur].players, {
+    coverage: bySeason[cur].coverage, leagueAllowed: bySeason[cur].leagueAllowed,
+    season: cur, careerIndex: careerIndexBefore(careerIndexV2, cur), params, as_of: startedAt,
+    variant: 'v2'
+  });
+  const v2ByKey = {};
+  for (const r of v2Rated.ratings) if (r.key) v2ByKey[r.key] = r;
+  let moved = 0, movedSum = 0, newlyRated = 0;
+  for (const r of curRated.ratings) {
+    const b = v2ByKey[r.key];
+    if (!b) continue;
+    const d = b.epir - r.epir;
+    if (Math.abs(d) >= 0.05) { moved++; movedSum += Math.abs(d); }
+    if (r.measures_used.length === 0 && b.measures_used.length > 0) newlyRated++;
+  }
+  log(`  EPIR v2 candidate: ${moved} players move by 0.05+ (mean |move| ${moved ? (movedSum / moved).toFixed(2) : '0'}), ${newlyRated} players rateable for the first time`);
 
   /* ---------------- availability ---------------- */
   const avail = loadAvailability();
@@ -320,6 +365,18 @@ async function main() {
     availability_records_used: Object.keys(availByKey).length,
     availability_stale_ignored: avail.stale,
     observability: CFG.OBSERVABILITY,
+    candidates: [{ variant: 'v2', version: CFG.versions.player_rating_candidate,
+      file: `candidates/v2-${cur}.json`, status: 'RESEARCH_ONLY',
+      basis: 'EPIR v1 remains canonical. The v2 candidate exists beside it and is promoted only by the walk-forward in football/validation/.' }],
+    box_enrichment: (function () {
+      const b = boxBySeason[cur];
+      return b && b.available
+        ? { available: true, source: b.source, generated_at: b.generated_at,
+            usable_columns: Object.keys(b.coverage).filter(k => b.coverage[k].usable),
+            failed_columns: Object.keys(b.coverage).filter(k => !b.coverage[k].usable),
+            players_joined: bySeason[cur].players._box_joined || 0 }
+        : { available: false, reason: b ? b.reason : 'not loaded' };
+    })(),
     baselines: baselineTable(curRated.baselines, bySeason, usable),
     scheme_league: scheme.league,
     scheme_unknown: CFG.SCHEME.not_derivable,
@@ -435,6 +492,50 @@ async function main() {
   };
   params.validation_summary = priorVal || { ran: false,
     reason: 'no walk-forward validation has been run against this build' };
+  /* the candidate artifact. Separate file, separate version string, and the
+     canonical current.json only NAMES it — nothing downstream picks it up by
+     accident. */
+  fs.mkdirSync(path.join(DIR, 'candidates'), { recursive: true });
+  const v2Players = {};
+  for (const r of v2Rated.ratings) {
+    if (!r.key) continue;
+    const base = curRated.ratings.find ? null : null;
+    v2Players[r.key] = [r.epir, r2(r.confidence), r.sample_size, r.measures_used.length];
+  }
+  const v1ByKey = {};
+  for (const r of curRated.ratings) if (r.key) v1ByKey[r.key] = r;
+  const byGroup = {};
+  for (const r of v2Rated.ratings) {
+    const a = v1ByKey[r.key];
+    if (!a) continue;
+    const g = r.group || 'ATH';
+    const x = byGroup[g] = byGroup[g] || { n: 0, moved: 0, sum_abs: 0, newly_rated: 0, mean_v1: 0, mean_v2: 0 };
+    x.n++; x.mean_v1 += a.epir; x.mean_v2 += r.epir;
+    const d = r.epir - a.epir;
+    if (Math.abs(d) >= 0.05) { x.moved++; x.sum_abs += Math.abs(d); }
+    if (a.measures_used.length === 0 && r.measures_used.length > 0) x.newly_rated++;
+  }
+  for (const g of Object.keys(byGroup)) {
+    const x = byGroup[g];
+    x.mean_v1 = r1(x.mean_v1 / x.n); x.mean_v2 = r1(x.mean_v2 / x.n);
+    x.mean_abs_move = x.moved ? r2(x.sum_abs / x.moved) : 0;
+    delete x.sum_abs;
+  }
+  writeIfChanged(path.join(DIR, 'candidates', `v2-${cur}.json`), JSON.stringify({
+    schema: 'edgedesk_player_candidate_v2',
+    variant: 'v2', version: CFG.versions.player_rating_candidate,
+    canonical_version: CFG.versions.player_rating,
+    season: cur, week, generated_at: startedAt,
+    status: 'RESEARCH_ONLY',
+    status_basis: 'a candidate is research until football/validation/ promotes it. Being newer is not evidence.',
+    what_changed: 'v1 plus the box-score columns the source audit found: tackles, tackles for loss, hurries, passes defended, interceptions and punting — all gated per season, all joined on the same athlete id. Offensive contracts are untouched; ESPN’s adjusted QBR is deliberately excluded because this repo does not build ratings on another organisation’s rating.',
+    by_group: byGroup,
+    coverage: bySeason[cur].coverage,
+    legend: ['epir_v2', 'confidence_v2', 'sample_size', 'measures_scored'],
+    players: v2Players
+  }));
+  log(`  candidate written: candidates/v2-${cur}.json`);
+
   writeIfChanged(OUT_PARAMS, paramsFile(params));
 
   log(`done — ${Object.keys(teams).length} teams, ${curRated.ratings.length} players, week ${week}`);

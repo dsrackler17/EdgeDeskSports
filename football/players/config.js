@@ -97,20 +97,38 @@
    * opponent-adjusted team defence, which IS observable.
    * ------------------------------------------------------------------ */
   var OBSERVABILITY = {
-    /* metric -> how it is obtained and whether it may drive a rating */
-    snap_share:        { observed: false, reason: 'no public college feed publishes snap counts; touch share within the position group is used instead and is labelled as such' },
-    pressures:         { observed: false, reason: 'only completed sacks are attributed; pressures short of a sack are unobserved' },
-    tackles:           { observed: false, reason: 'the play-attribution table carries no tackle, TFL, run-stop or missed-tackle column' },
-    coverage_targets:  { observed: false, reason: 'no defender is attributed to a target, so completion rate allowed cannot be computed per player' },
-    ol_individual:     { observed: false, reason: 'no public feed attributes a block, a pressure allowed or a run lane to a named lineman' },
+    /* metric -> how it is obtained and whether it may drive a rating.
+       A CORRECTION LIVES IN THIS BLOCK. Five of these entries used to read
+       `observed: false` on the strength of an assumption that was not checked
+       hard enough: tackles, tackles for loss, pressures short of a sack,
+       punting and coverage break-ups. The sportsdataverse ESPN player-box
+       release carries all of them, per player per game, keyed on the same
+       athlete id this repo already joins on. They are now ingested by
+       football/data/build_box.js and gated per season, because the columns
+       are only filled in from 2024 onward — which is measured, not assumed. */
+    snap_share:        { observed: false, reason: 'no public college feed publishes snap counts. Box-score APPEARANCES are now ingested and are direct participation evidence, but an appearance is not a snap and is never called one.' },
+    pressures:         { observed: 'gated', since: 2024, source: 'ESPN player box `hurries`',
+      reason: 'a hurry is ESPN’s own charting judgement rather than a tracked event, so it is a pressure PROXY — but it is a real observation and it is no longer treated as absent. Usable from 2024; gated per season.' },
+    tackles:           { observed: 'gated', since: 2024, source: 'ESPN player box `totalTackles` / `soloTackles`',
+      reason: 'usable from 2024 at 62-65 per team-game; before that the column is barely filled in and fails its gate' },
+    tackles_for_loss:  { observed: 'gated', since: 2024, source: 'ESPN player box `tacklesForLoss`',
+      reason: 'usable from 2024 at 5.3 per team-game. The closest public thing to a run stop, and it is labelled as that rather than as one.' },
+    run_stops:         { observed: false, reason: 'a run stop is a tackle at or behind the line-to-gain by DOWN AND DISTANCE, and no public feed joins a tackle to the play state. Tackles for loss are ingested as the nearest observable relative and are not renamed.' },
+    missed_tackles:    { observed: false, reason: 'not carried in any public feed. A tackling-efficiency measure remains impossible and is not approximated.' },
+    coverage_targets:  { observed: false, reason: 'no defender is attributed to a target, so completion rate allowed still cannot be computed per player. Passes defended ARE now observed and are a different, narrower thing.' },
+    ol_individual:     { observed: false, reason: 'no public feed attributes a block, a pressure allowed or a run lane to a named lineman. This remains the largest genuine gap in the layer.' },
     yards_after_contact:{ observed: false, reason: 'not carried in any public college feed' },
-    recruiting_rating: { observed: false, reason: 'no legal, public, keyless recruiting feed is wired in — the adapter exists and the fields stay null rather than being invented' },
-    epa:               { observed: false, reason: 'the play table carries no next-score information, and the expected-points surface this repo once fit is no longer reproducible from public files. Success rate, explosive rate and yards per play are measured directly instead of an EPA being invented' },
-    punting:           { observed: false, reason: 'no punt attribution column exists' },
-    targets:           { observed: 'gated', reason: 'target attribution has season-scale coverage collapses; gated per season' },
-    interceptions:     { observed: 'gated', reason: 'interception attribution has season-scale coverage collapses; gated per season' },
-    pass_breakups:     { observed: 'gated', reason: 'pass-break-up attribution has season-scale coverage collapses; gated per season' },
-    forced_fumbles:    { observed: 'gated', reason: 'forced-fumble attribution has season-scale coverage collapses; gated per season' }
+    recruiting_rating: { observed: false, reason: 'no legal, public, keyless recruiting feed is wired in — every path in cfbfastR-data 404s and CollegeFootballData requires a per-user key whose terms forbid redistributing the data as a committed dataset. The adapter exists and the fields stay null rather than being invented.' },
+    epa:               { observed: false, reason: 'the play-attribution table carries no next-score information, and the expected-points surface this repo once fitted is no longer reproducible from public files. Success rate, explosive rate and yards per play are measured directly instead of an EPA being invented.' },
+    punting:           { observed: 'gated', since: null, source: 'ESPN player box `punts` / `puntYards` / `puntsInside20`',
+      reason: 'punting has been observable in every season checked (4.1-4.8 punts per team-game) and was wrongly declared absent. Punters are now rateable.' },
+    targets:           { observed: 'gated', reason: 'target attribution in the play table has season-scale coverage collapses; gated per season' },
+    interceptions:     { observed: 'gated', reason: 'interception attribution has season-scale coverage collapses; gated per season in both feeds' },
+    pass_breakups:     { observed: 'gated', since: 2024, source: 'ESPN player box `passesDefended`',
+      reason: 'the play table’s break-up column collapses by season; the player box carries passes defended reliably from 2024 and is preferred where both exist' },
+    forced_fumbles:    { observed: 'gated', reason: 'forced-fumble attribution has season-scale coverage collapses; gated per season' },
+    qbr:               { observed: true, source: 'ESPN player box `adjQBR`', used_in_rating: false,
+      reason: 'ESPN’s adjusted QBR is ingested and shown as CONTEXT, and is deliberately NOT an input to any EdgeDesk rating. It is another organisation’s model output, and this repo’s standing rule is that no rating of ours is built on somebody else’s rating.' }
   };
 
   /* Coverage gates. A season's metric is USABLE only if its observed rate per
@@ -228,6 +246,72 @@
     LS: [], RET: [], ATH: []
   };
 
+  /* ------------------------------------------------------------------ *
+   * PLAYER RATING v2 — CANDIDATE, NOT A REPLACEMENT                      *
+   * ------------------------------------------------------------------ *
+   * v2 is v1 plus the box-score columns the audit found: tackles, tackles
+   * for loss, hurries, passes defended and punting. It is built ALONGSIDE v1
+   * on every run and it does not become canonical by existing. Promotion is
+   * football/validation/'s decision and nothing else's — see FEATURE_GATE.
+   *
+   * Three deliberate absences inside v2:
+   *   * ESPN's adjusted QBR is ingested and is NOT here. It is another
+   *     organisation's model output, and this repo does not build its ratings
+   *     on somebody else's rating.
+   *   * Box rushing and receiving are NOT here: the play table already carries
+   *     them with down and distance attached, which is strictly more.
+   *   * The offensive line gains no measure, because the box carries none.
+   *     What it does gain is APPEARANCES, which is the first direct evidence
+   *     this repo has ever had of who actually plays on a line.
+   * ------------------------------------------------------------------ */
+  var BOX_DEF_DEN = 'team_def_games';
+  var MEASURES_V2 = {
+    QB: null, RB: null, WR: null, TE: null, OL: null, K: null,   /* null = identical to v1 */
+    EDGE: [
+      { key: 'box_sacks_per_game',   den: BOX_DEF_DEN, w: 0.32, dir: 1, min_n: 6, gate: 'box_sacks',   basis: 'sacks, now taken from the box score, which fills the column more reliably than the play table does' },
+      { key: 'box_tfl_per_game',     den: BOX_DEF_DEN, w: 0.26, dir: 1, min_n: 6, gate: 'box_tfl',     basis: 'tackles for loss — the nearest public relative of a run stop, and the single most useful new column for a defensive front' },
+      { key: 'box_hurries_per_game', den: BOX_DEF_DEN, w: 0.24, dir: 1, min_n: 6, gate: 'box_hurries', basis: 'PRESSURE SHORT OF A SACK. The player layer used to declare this unobservable; it is observable, and a pass rusher who hurries without finishing is no longer invisible.' },
+      { key: 'box_tackles_per_game', den: BOX_DEF_DEN, w: 0.12, dir: 1, min_n: 6, gate: 'box_tackles', basis: 'volume, which for a front seven is mostly a participation signal and is weighted as one' },
+      { key: 'ff_per_game',      den: BOX_DEF_DEN, w: 0.06, dir: 1, min_n: 8, gate: 'forced_fumbles', basis: 'rare, gated, and shrunk almost to nothing' }
+    ],
+    DL: [
+      { key: 'box_sacks_per_game',   den: BOX_DEF_DEN, w: 0.30, dir: 1, min_n: 6, gate: 'box_sacks',   basis: 'as EDGE; interior sack rates are naturally lower and the baseline is per-group, so that is handled rather than penalised' },
+      { key: 'box_tfl_per_game',     den: BOX_DEF_DEN, w: 0.28, dir: 1, min_n: 6, gate: 'box_tfl',     basis: 'the interior line’s clearest observable output' },
+      { key: 'box_hurries_per_game', den: BOX_DEF_DEN, w: 0.20, dir: 1, min_n: 6, gate: 'box_hurries', basis: 'interior pressure' },
+      { key: 'box_tackles_per_game', den: BOX_DEF_DEN, w: 0.16, dir: 1, min_n: 6, gate: 'box_tackles', basis: 'volume and participation' },
+      { key: 'ff_per_game',      den: BOX_DEF_DEN, w: 0.06, dir: 1, min_n: 8, gate: 'forced_fumbles', basis: 'as EDGE' }
+    ],
+    LB: [
+      { key: 'box_tackles_per_game', den: BOX_DEF_DEN, w: 0.30, dir: 1, min_n: 6, gate: 'box_tackles', basis: 'a linebacker’s primary observable output, and one this repo simply could not see before' },
+      { key: 'box_tfl_per_game',     den: BOX_DEF_DEN, w: 0.24, dir: 1, min_n: 6, gate: 'box_tfl',     basis: 'tackles behind the line — disruption rather than volume' },
+      { key: 'box_sacks_per_game',   den: BOX_DEF_DEN, w: 0.16, dir: 1, min_n: 6, gate: 'box_sacks',   basis: 'blitz production' },
+      { key: 'box_pbu_per_game',     den: BOX_DEF_DEN, w: 0.16, dir: 1, min_n: 6, gate: 'box_pbu',     basis: 'coverage contribution, from the box column rather than the collapsing play-table one' },
+      { key: 'box_hurries_per_game', den: BOX_DEF_DEN, w: 0.14, dir: 1, min_n: 6, gate: 'box_hurries', basis: 'pressure when sent' }
+    ],
+    CB: [
+      { key: 'box_pbu_per_game',     den: BOX_DEF_DEN, w: 0.46, dir: 1, min_n: 6, gate: 'box_pbu',     basis: 'the only coverage event attributed to a defender anywhere public, and now from a column that is actually filled in' },
+      { key: 'box_int_per_game',     den: BOX_DEF_DEN, w: 0.30, dir: 1, min_n: 6, gate: 'box_int',     basis: 'ball production' },
+      { key: 'box_tackles_per_game', den: BOX_DEF_DEN, w: 0.24, dir: 1, min_n: 6, gate: 'box_tackles', basis: 'run support and, for a corner, partly a signal of being thrown at' }
+    ],
+    S: [
+      { key: 'box_tackles_per_game', den: BOX_DEF_DEN, w: 0.30, dir: 1, min_n: 6, gate: 'box_tackles', basis: 'a safety’s run support is a large part of the job and is now visible' },
+      { key: 'box_pbu_per_game',     den: BOX_DEF_DEN, w: 0.30, dir: 1, min_n: 6, gate: 'box_pbu',     basis: 'coverage' },
+      { key: 'box_int_per_game',     den: BOX_DEF_DEN, w: 0.24, dir: 1, min_n: 6, gate: 'box_int',     basis: 'ball production' },
+      { key: 'box_tfl_per_game',     den: BOX_DEF_DEN, w: 0.16, dir: 1, min_n: 6, gate: 'box_tfl',     basis: 'safeties in the box' }
+    ],
+    DB: [
+      { key: 'box_pbu_per_game',     den: BOX_DEF_DEN, w: 0.44, dir: 1, min_n: 6, gate: 'box_pbu',     basis: 'as CB' },
+      { key: 'box_int_per_game',     den: BOX_DEF_DEN, w: 0.28, dir: 1, min_n: 6, gate: 'box_int',     basis: 'as CB' },
+      { key: 'box_tackles_per_game', den: BOX_DEF_DEN, w: 0.28, dir: 1, min_n: 6, gate: 'box_tackles', basis: 'as CB' }
+    ],
+    /* THE PUNTER STOPS BEING UNRATEABLE. v1 shipped an empty contract for P on
+       the stated grounds that no feed attributes a punt. One does. */
+    P: [
+      { key: 'punt_average',     den: 'punts', w: 0.55, dir: 1, min_n: 20, gate: 'box_punting', basis: 'gross yards per punt. Not net — the box carries no return yardage against a named punter — and it is labelled gross.' },
+      { key: 'punts_inside_20_rate', den: 'punts', w: 0.45, dir: 1, min_n: 20, gate: 'box_punting', basis: 'share of punts downed inside the twenty, which is the part of punting a coach actually asks for' }
+    ]
+  };
+
   /* Groups with an empty measure contract, and why. Surfaced verbatim in the
      UI so a zero-information rating never looks like a low rating. */
   var NO_PRODUCTION_FEED = {
@@ -341,6 +425,34 @@
        the group rating in the point estimate. Depth mostly changes VARIANCE,
        which the simulator reads, not the mean. */
     depth_weight_in_mean: 0.25
+  };
+
+  /* ------------------------------------------------------------------ *
+   * PARTICIPATION (role estimation v2)                                   *
+   * ------------------------------------------------------------------ *
+   * v1 could only see TOUCH share, which meant every offensive lineman and
+   * most defenders had role UNKNOWN — the layer had no idea who played. The
+   * box score records an APPEARANCE per player per game, which is direct
+   * participation evidence for EVERY position, including the ones with no
+   * touches at all.
+   *
+   * An appearance is still NOT a snap count and is never called one: a player
+   * who took four snaps and one who took seventy both appear once. So
+   * appearances answer WHO PLAYS and touch share answers HOW MUCH, and the
+   * two are combined rather than one being dressed up as the other.
+   * ------------------------------------------------------------------ */
+  var PARTICIPATION = {
+    appearance_weight: 0.55, touch_weight: 0.45,
+    weight_basis: 'appearances answer "does this player play at all", which is the question v1 could not answer for a lineman; touch share answers "how much of the group’s work is his", which appearances cannot. Neither alone is role.',
+    bands: [
+      { role: 'STARTER',        min: 0.62 },
+      { role: 'HEAVY ROTATION', min: 0.42 },
+      { role: 'ROTATION',       min: 0.18 },
+      { role: 'DEPTH',          min: 0.02 },
+      { role: 'UNKNOWN',        min: null }
+    ],
+    min_team_games: 3,
+    basis: 'expected participation share, on evidence. It is NOT a snap share and the record says so wherever it appears.'
   };
 
   /* Position value: how much a position group moves a football game. Used to
@@ -536,6 +648,7 @@
     version: 'player_rating_v1',
     versions: {
       player_rating: 'player_rating_v1',
+      player_rating_candidate: 'player_rating_v2',
       scheme_matchup: 'scheme_matchup_v1',
       simulation: 'simulation_v1',
       run_gate: 'run_defence_gate_v1'
@@ -550,6 +663,8 @@
     SUCCESS: SUCCESS,
     EXPLOSIVE: EXPLOSIVE,
     MEASURES: MEASURES,
+    MEASURES_V2: MEASURES_V2,
+    PARTICIPATION: PARTICIPATION,
     NO_PRODUCTION_FEED: NO_PRODUCTION_FEED,
     SHRINK: SHRINK,
     EPIR_SCALE: EPIR_SCALE,
@@ -564,6 +679,18 @@
     SIMULATION: SIMULATION,
     LINE_LADDER: LINE_LADDER,
     QUALITY_DIMENSIONS: QUALITY_DIMENSIONS,
+    /* the measure contract for a variant. v2 falls back to v1 group by group,
+       so a group v2 does not change is guaranteed identical rather than
+       accidentally re-specified. */
+    measures: function (variant) {
+      if (variant !== 'v2') return MEASURES;
+      var out = {}, g;
+      for (g in MEASURES) {
+        if (!Object.prototype.hasOwnProperty.call(MEASURES, g)) continue;
+        out[g] = (MEASURES_V2[g] == null) ? MEASURES[g] : MEASURES_V2[g];
+      }
+      return out;
+    },
     group: function (pos) {
       if (pos == null) return null;
       var p = String(pos).toUpperCase().replace(/[^A-Z]/g, '');
