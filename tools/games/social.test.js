@@ -283,6 +283,15 @@ chk('invite tokens come from the CSPRNG', /gen_random_bytes/.test(SQL));
 chk('the client never supplies a user id as proof',
   !/p_user_id|p_uid/.test(SQL));
 
+/* challenging a named member from a group */
+chk('a challenge started from a group names who the link is for',
+  /var VS=param\('vs'\)/.test(H2H) && /Challenge '\+esc\(VS\)/.test(H2H));
+chk('and the share text names them too', /VS\?\(VS\+' — I'\)/.test(H2H));
+chk('but an invite is still a link anyone can open, not a directed message',
+  /there is no way to push a challenge at/.test(H2H));
+chk('the group member row starts that flow',
+  /\/games\/h2h\/\?vs='\+encodeURIComponent/.test(GRP));
+
 /* ── 4. private routes are noindex ─────────────────────────────────────── */
 SOCIAL_PAGES.forEach(([n, p]) => {
   has(p, 'name="robots" content="noindex,nofollow"', n + ' is not indexable');

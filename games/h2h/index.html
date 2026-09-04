@@ -76,6 +76,11 @@
     return m?decodeURIComponent(m[1].replace(/\+/g,' ')):null;
   }
   TOKEN=param('c');
+  /* Set when the challenge was started from a group member row. An invite is a
+     LINK, not a directed message — there is no way to push a challenge at
+     somebody — so this only names who the link is meant for, and shapes the
+     share text. The opponent is still whoever opens it. */
+  var VS=param('vs');
 
   function initials(n){
     return String(n||'?').trim().split(/\s+/).map(function(w){return w[0];})
@@ -165,9 +170,10 @@
     }).join('');
 
     stage.innerHTML='<div class="eyebrow">Head-to-Head</div>'
-      +'<h1 style="font-size:24px;font-family:\'Space Grotesk\',sans-serif">Challenge a friend.<br>Settle it on the field.</h1>'
+      +'<h1 style="font-size:24px;font-family:\'Space Grotesk\',sans-serif">'
+      +(VS?('Challenge '+esc(VS)+'.<br>Settle it on the field.'):'Challenge a friend.<br>Settle it on the field.')+'</h1>'
       +'<p style="color:var(--dim);font-size:14px;margin:10px 0 0">Pick a game, make your call, and send '
-      +'the link. Your pick stays sealed until they make theirs.</p>'
+      +(VS?('the link to '+esc(VS)+'.'):'the link.')+' Your pick stays sealed until they make theirs.</p>'
       +'<div style="margin-top:18px"><div class="eyebrow">The game</div>'
       +'<select id="gamePick" class="btn" style="text-align:left;padding:0 14px" '
       +'aria-label="Choose a matchup">'+opts+'</select></div>'
@@ -284,7 +290,8 @@
       btn.disabled=false;btn.textContent='Create the challenge';
       if(!r.ok){G.toast(r.message||'Could not create the challenge.');return;}
       G.track('h2h_invite_generated',{game_id:ch.game_id,game_slug:ch.slug,
-        game_type:'h2h',mode:DRAFT.mode,research_state:ch.research_state});
+        game_type:'h2h',mode:DRAFT.mode,research_state:ch.research_state,
+        from_group:VS?'member':'direct'});
       renderInvite(r.data.invite_token,ch);
     });
   }
@@ -294,14 +301,14 @@
     stage.className='card reveal';
     stage.innerHTML='<div class="eyebrow">Challenge created</div>'
       +'<div class="invite"><div style="font-family:\'Space Grotesk\',sans-serif;font-size:19px;font-weight:700">'
-      +'Send this to a friend</div>'
+      +(VS?('Send this to '+esc(VS)):'Send this to a friend')+'</div>'
       +'<p style="color:var(--dim);font-size:13.5px;margin:8px 0 0">Your pick is sealed. They cannot see it '
       +'until they make theirs.</p>'
       +'<div class="url" id="inviteUrl">'+esc(url)+'</div>'
       +'<div class="btn-row two"><button class="btn btn-go" id="shareBtn" type="button">Send the challenge</button>'
       +'<button class="btn" id="copyBtn" type="button">Copy link</button></div></div>'
       +'<div class="btn-row"><a class="btn btn-ghost" href="/games/h2h/'+encodeURIComponent(token)+'">View the challenge</a></div>';
-    var text='I challenged you on '+ch.away_team+' vs '+ch.home_team+'.\n\n'
+    var text=(VS?(VS+' — I'):'I')+' challenged you on '+ch.away_team+' vs '+ch.home_team+'.\n\n'
       +'Think you know the game better?\n\nTake the challenge:\n'+url
       +'\n\nEdgeDesk Games\nFree to play. No real-money wagering.';
     function shared(how){
