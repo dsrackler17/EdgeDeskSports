@@ -228,6 +228,15 @@ textarea{min-height:110px;font-family:'JetBrains Mono',monospace;resize:vertical
 .sport{font-size:9px;text-transform:uppercase;letter-spacing:.04em;color:var(--accent);border:1px solid rgba(77,141,255,.4);border-radius:5px;padding:2px 6px}
 .sigtag{font-size:8px;text-transform:uppercase;letter-spacing:.05em;color:var(--warn);border:1px solid rgba(217,154,43,.4);border-radius:4px;padding:2px 5px}
 .wchip{font-size:9px;color:var(--accent);border:1px solid rgba(77,141,255,.4);border-radius:5px;padding:2px 6px}
+.tape-row{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--line,rgba(255,255,255,.06))}
+.tape-row:last-child{border-bottom:0}
+.tape-l{flex:1 1 auto;min-width:0}
+.tape-sel{font-size:12px;font-weight:600;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.tape-s{flex:0 0 auto;display:flex;align-items:center;min-width:120px;justify-content:flex-end}
+.tape-r{flex:0 0 auto;text-align:right;min-width:96px;font-family:'JetBrains Mono',monospace}
+.tape-ev{display:block;font-size:13px;font-weight:600}
+.tape-d{display:block;font-size:9px;letter-spacing:.03em}
+@media(max-width:640px){.tape-s{display:none}.tape-r{min-width:76px}}
 .vtag{font-size:8px;text-transform:uppercase;letter-spacing:.04em;color:var(--pos,#3f9d6d);border:1px solid rgba(63,157,109,.5);border-radius:4px;padding:2px 5px}
 .suspect{font-size:8px;text-transform:uppercase;letter-spacing:.04em;color:var(--neg);border:1px solid rgba(226,96,68,.45);border-radius:4px;padding:2px 5px}
 .ev{margin-left:auto;font-family:'JetBrains Mono',monospace;font-weight:700;font-size:17px;color:var(--pos)}
@@ -2053,6 +2062,11 @@ body.focus .dk-focusnote{display:block}
     <div class="feed" id="feed"><div class="empty">Loading edges…</div></div>
     <div class="engine-sec" id="modelSec"><div class="engine-h"><span class="ebadge model">MODEL <span class="st">★★★★☆</span></span>Model edge</div><div class="engine-sub">Proprietary prediction models vs the market — independent of Pinnacle, <b>unproven</b>, counted nowhere in CLV.</div><div id="modelFeed"><div class="empty">—</div></div></div>
     <div class="engine-sec" id="consensusSec"><div class="engine-h"><span class="ebadge consensus">CONSENSUS <span class="st">★★★★☆</span></span>Consensus edge</div><div class="engine-sub">Cross-book disagreement &amp; outliers from per-book price arrays.</div><div id="consensusFeed"><div class="empty">—</div></div></div>
+    <div class="lead side hide" id="tapeWrap">
+      <h3 id="tapeTitle">▤ The tape — every game capture is pricing</h3>
+      <p class="sidenote" id="tapeSub">One row per game, sharpest side showing, ordered by how much it has moved since the last capture pass. This is <b>not</b> a live ticker: it moves when capture prices, and the freshness stamp on each row says when that was. A row here is a price, not a play — the verdict tag is the same one Today's Desk and the Top 10 use, and it cannot read BET for a line capture did not qualify.</p>
+      <div id="tapeList"></div>
+    </div>
     <div class="lead side hide" id="dailyWrap">
       <h3 id="d5title">☆ Top 5 — wider net · this week</h3>
       <p class="sidenote">The five sharpest lines on the board in your window, every day. When something clears the sharp fair line it shows green as a real edge; when the board is efficient these are simply the closest-to-fair prices, labelled below fair and shown for research, not as plays. Tap + to log one to your CLV ledger.</p>
@@ -6226,8 +6240,193 @@ function renderDaily(){
     return expandItem(e,'d5_'+i,header);
   }).join('');
 }
+
+/* ═══ THE TAPE ═══════════════════════════════════════════════════════════════
+   Every game capture is pricing, one row each, with the edge moving as capture
+   records it.
+
+   WHY THIS IS NOT A LIVE TICKER, AND WHY THE COPY SAYS SO. A stock tape moves
+   because the market prints continuously. This moves when CAPTURE RUNS, which
+   is a cron. Animating it, or calling it "live", would dress a 40-minute-old
+   number as a current one — the same class of lie as showing a stale edge as
+   an opportunity. So every row carries the age of its own last print, and the
+   header says plainly what makes it move.
+
+   WHERE THE DATA COMES FROM. Nothing new is stored and nothing is recomputed.
+   capture already writes one signal_ticks row per priced candidate per pass —
+   `ticks.push(tickRow(c, v, nowIso))` sits OUTSIDE the `if (v.actionable)`
+   block, so the series exists for every game on the board, qualified or not.
+   That is exactly the population a tape is about.
+
+   AND IT IS STILL NOT A LIST OF PLAYS. Showing every game is the point, so the
+   discipline has to come from the label rather than from the filter: every row
+   renders canonicalMarketVerdict(), the same function Today's Desk and the Top
+   10 use, which returns PASS or WATCH for anything capture refused and cannot
+   return BET. Seeing a price and being told to bet it stay different things. */
+window.__TAPE_TICKS = window.__TAPE_TICKS || {};   // sig_key -> [tick] | null (unreadable)
+var TAPE_MAX_GAMES = 60;      // 5 batches of 12; see the URL-length note below
+var TAPE_BATCH = 12;
+
+function tapeKey(e){
+  /* MUST match capture's sigKey byte for byte, trailing pipe included, or every
+     tick lookup silently matches nothing. consKey() is the existing builder and
+     is reused rather than re-derived for exactly that reason. */
+  try{ return consKey(e); }
+  catch(_){ return (e.event_id||'')+'|'+(e.market||'')+'|'+(e.selection||'')+'|'+(e.point!=null?e.point:''); }
+}
+
+/* One row per GAME: the sharpest side capture is currently pricing on it. */
+function tapeRows(){
+  var sport=$('fSport')?$('fSport').value:'';
+  var win=$('fScope')?$('fScope').value:'week';
+  var nowMs=Date.now(), endDay=new Date(); endDay.setHours(23,59,59,999);
+  var horizon=win==='day'?endDay.getTime():nowMs+7*864e5;
+  var seen={}, pool=[];
+  [].concat(window.EDGES||[], window.D5_POOL||[], window.CONS_POOL||[]).forEach(function(e){
+    if(!e||!e.event_id||!e.selection)return;
+    var k=tapeKey(e); if(seen[k])return; seen[k]=1;
+    if(sport&&evSportLabel(e)!==sport)return;
+    var ct=e.commence_time?new Date(e.commence_time).getTime():0;
+    if(!ct||ct>horizon||ct<nowMs-3600e3)return;
+    pool.push(e);
+  });
+  /* Collapse to one row per game, keeping the side with the largest edge. A
+     tape with both sides of the same market on it is two rows saying one thing. */
+  var byGame={};
+  pool.forEach(function(e){
+    var g=e.event_id, cur=byGame[g];
+    if(!cur||((e.edge==null?-9:e.edge)>(cur.edge==null?-9:cur.edge)))byGame[g]=e;
+  });
+  return Object.keys(byGame).map(function(g){return byGame[g];});
+}
+
+/* Batched, cached, and capped. PostgREST puts every value of an `in` filter in
+   the QUERY STRING and a sig_key is 50-70 characters whose pipes encode to %7C,
+   so a big batch becomes a multi-kilobyte URL the gateway rejects as a bare
+   "Bad Request" — nothing fetched, no error worth reading. Twelve is the size
+   the UFC panel already proved safe. */
+async function tapeLoadTicks(rows){
+  var need=rows.map(tapeKey).filter(function(k){return window.__TAPE_TICKS[k]===undefined;});
+  if(!need.length)return false;
+  need=need.slice(0, TAPE_MAX_GAMES);
+  var got=false;
+  for(var i=0;i<need.length;i+=TAPE_BATCH){
+    var batch=need.slice(i,i+TAPE_BATCH);
+    var list=batch.map(function(k){return '%22'+encodeURIComponent(k)+'%22';}).join(',');
+    try{
+      var t=await sbGet('signal_ticks?select=sig_key,created_at,edge,best_dec,n_books&sig_key=in.('+list+')&order=created_at.asc&limit=1500');
+      var by={};
+      (t||[]).forEach(function(x){(by[x.sig_key]=by[x.sig_key]||[]).push(x);});
+      batch.forEach(function(k){window.__TAPE_TICKS[k]=by[k]||[];});
+      got=true;
+    }catch(_){
+      /* A tick table this session cannot read costs the sparkline and nothing
+         else — the current edge still comes from the board row. Recorded as
+         null so the row says "series unavailable" rather than "collecting",
+         which are different problems with different fixes. */
+      batch.forEach(function(k){window.__TAPE_TICKS[k]=null;});
+    }
+  }
+  return got;
+}
+
+function tapeSpark(ys,W,H){
+  var lo=Math.min.apply(null,ys), hi=Math.max.apply(null,ys), span=(hi-lo)||1, n=ys.length;
+  var pts=ys.map(function(y,i){
+    var x=(n===1?W:(i/(n-1))*W);
+    var yy=H-2-((y-lo)/span)*(H-4);
+    return x.toFixed(1)+','+yy.toFixed(1);
+  }).join(' ');
+  var up=ys[n-1]>=ys[0];
+  return '<svg class="dc-spark" width="'+W+'" height="'+H+'" viewBox="0 0 '+W+' '+H+'" aria-hidden="true">'
+    +'<polyline points="'+pts+'" fill="none" stroke="'+(up?'var(--pos)':'var(--neg)')+'" stroke-width="1.5"/></svg>';
+}
+
+function renderTape(){
+  var wrap=$('tapeWrap'), host=$('tapeList');
+  if(!wrap||!host)return;
+  var rows;
+  try{ rows=tapeRows(); }catch(_){ rows=[]; }
+  if(!rows.length){ wrap.classList.add('hide'); return; }
+  wrap.classList.remove('hide');
+
+  var nowMs=Date.now();
+  rows.forEach(function(e){
+    var t=window.__TAPE_TICKS[tapeKey(e)];
+    e.__tape={ ticks:(t===undefined?undefined:t), delta:null };
+    if(t&&t.length>=2){
+      var a=t[t.length-2].edge, b=t[t.length-1].edge;
+      if(a!=null&&b!=null)e.__tape.delta=b-a;
+    }
+  });
+  /* BIGGEST MOVERS FIRST — that is what a tape is for. A row with no series yet
+     sorts on its edge, so a new game is not pinned to the bottom forever. */
+  rows.sort(function(x,y){
+    var dx=Math.abs(x.__tape.delta==null?-1:x.__tape.delta), dy=Math.abs(y.__tape.delta==null?-1:y.__tape.delta);
+    if(dx!==dy)return dy-dx;
+    return (y.edge||0)-(x.edge||0);
+  });
+  var shown=rows.slice(0, TAPE_MAX_GAMES);
+
+  var newest=0;
+  shown.forEach(function(e){ var ls=e.last_seen_at?new Date(e.last_seen_at).getTime():0; if(ls>newest)newest=ls; });
+  if($('tapeTitle'))$('tapeTitle').textContent='▤ The tape — '+rows.length+' game'+(rows.length===1?'':'s')+' capture is pricing';
+
+  host.innerHTML=shown.map(function(e,i){
+    var v=(typeof canonicalMarketVerdict==='function')?canonicalMarketVerdict(e):'PASS';
+    var why=(typeof canonicalVerdictWhy==='function')?canonicalVerdictWhy(e):'';
+    var vTag=(v==='BET'||v==='LEAN')?'<span class="vtag">'+v+'</span>'
+            :v==='WATCH'?'<span class="suspect">watch</span>'
+            :'<span class="suspect">pass</span>';
+    var ed=e.edge, edTxt=(ed==null?'—':((ed>0?'+':'')+(ed*100).toFixed(2)+'%'));
+    var edCol=ed==null?'':(ed>0?' style="color:var(--pos)"':' style="color:var(--neg)"');
+
+    var t=e.__tape.ticks, d=e.__tape.delta, spark='', move='';
+    if(t===undefined){ spark='<span class="note">…</span>'; }
+    else if(t===null){ spark='<span class="note">series unavailable</span>'; }
+    else if(t.length<2){ spark='<span class="note">collecting · '+t.length+' print'+(t.length===1?'':'s')+'</span>'; }
+    else {
+      var ys=t.map(function(r){return (r.edge!=null?r.edge:0)*100;});
+      spark=tapeSpark(ys,120,26);
+    }
+    if(d!=null&&Math.abs(d)>1e-9){
+      var dp=(d*100);
+      move='<span class="tape-d" style="color:var('+(d>0?'--pos':'--neg')+')">'+(d>0?'▲':'▼')+' '+Math.abs(dp).toFixed(2)+'</span>';
+    } else if(d!=null){ move='<span class="tape-d note">flat</span>'; }
+
+    var ls=e.last_seen_at?new Date(e.last_seen_at).getTime():0;
+    var stale=ls&&((nowMs-ls)/60000>=EDGE_MAX_AGE_MIN);
+    var age=ls?('<span class="'+(stale?'suspect':'note')+'">'+ago(ls)+'</span>'):'<span class="note">—</span>';
+
+    return '<div class="tape-row" data-i="'+i+'">'
+      +'<div class="tape-l">'
+        +'<div class="tape-sel">'+vTag+' '+edEsc(selLabel(e))+'</div>'
+        +'<div class="lead-meta">'+edEsc(evSportLabel(e))+' · '+edEsc(mktLabel(e.market))+' · '
+          +edEsc((e.away_team||'')+' @ '+(e.home_team||''))+' · '+edEsc(whenLabel(e.commence_time))
+          +' · '+(e.n_books||0)+' books · priced '+age+'</div>'
+        +((v==='BET'||v==='LEAN')?'':'<div class="lead-meta" style="color:var(--warn)">'+edEsc(why)+'</div>')
+      +'</div>'
+      +'<div class="tape-s">'+spark+'</div>'
+      +'<div class="tape-r"><span class="tape-ev"'+edCol+'>'+edTxt+'</span>'+move+'</div>'
+    +'</div>';
+  }).join('')
+  +(rows.length>shown.length
+    ? '<div class="note" style="margin-top:8px">Showing the '+shown.length+' biggest movers of '+rows.length+' games. The rest are priced and stored; they are held back here because each series is a separate read and a tape that fires hundreds of them would be slower than the thing it is describing.</div>'
+    : '')
+  +'<div class="note" style="margin-top:8px">Last print '+(newest?ago(newest):'unknown')+'. The tape advances when capture runs, not continuously.</div>';
+
+  /* Fetch what is missing, then paint once more. Guarded so a second render
+     cannot re-enter while the first is still in flight. */
+  if(!window.__TAPE_BUSY){
+    window.__TAPE_BUSY=true;
+    tapeLoadTicks(shown).then(function(changed){
+      window.__TAPE_BUSY=false;
+      if(changed)try{ renderTape(); }catch(_){}
+    }).catch(function(){ window.__TAPE_BUSY=false; });
+  }
+}
 window.__d5track=function(i){var e=(window.D5||[])[i];if(e)trackSignal(e,GE.decToAm(e.best_dec));};
-function refreshEdges(){renderEdges();renderDaily();renderModelEngine();renderConsensusEngine();}
+function refreshEdges(){renderEdges();renderDaily();try{renderTape();}catch(_){}renderModelEngine();renderConsensusEngine();}
 $('fSport').onchange=refreshEdges;$('fMinev').oninput=refreshEdges;$('fBooks').onchange=refreshEdges;$('fScope').onchange=refreshEdges;
 
 /* ===== Record (auto-graded) ===== */

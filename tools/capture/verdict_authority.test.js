@@ -230,6 +230,37 @@ const eqs = (d, score) => ({ decision: d, score: score == null ? 70 : score });
   chk('and it states the rule that stopped it',
     /canonicalVerdictWhy/.test(APP.slice(APP.indexOf('var d5v='), APP.indexOf('var d5v=') + 900)));
 
+  /* ── THE TAPE ────────────────────────────────────────────────────────────
+     A row per game for every game capture is pricing. It is the surface most
+     able to turn "here is a price" into "here is a play" by sheer volume, so
+     the discipline is asserted rather than assumed. */
+  chk('the tape reads capture\'s own per-pass series, storing nothing new',
+    /signal_ticks\?select=sig_key,created_at,edge,best_dec,n_books/.test(APP));
+  chk('and batches the key list, because PostgREST puts it in the URL',
+    /var TAPE_BATCH = 12;/.test(APP) && /sig_key=in\.\('\+list\+'\)/.test(APP));
+  chk('the tape builds its key with consKey, so a tick lookup cannot silently miss',
+    /function tapeKey\(e\)\{[\s\S]{0,400}consKey\(e\)/.test(APP));
+  chk('every tape row carries the canonical verdict',
+    /var v=\(typeof canonicalMarketVerdict==='function'\)\?canonicalMarketVerdict\(e\):'PASS';/
+      .test(APP.slice(APP.indexOf('function renderTape'))));
+  chk('an unqualified tape row is tagged pass or watch, never as a play',
+    /v==='WATCH'\?'<span class="suspect">watch<\/span>'/.test(APP)
+    && /'<span class="suspect">pass<\/span>'/.test(APP));
+  chk('and it states capture\'s own reason under the row',
+    /canonicalVerdictWhy/.test(APP.slice(APP.indexOf('function renderTape'),
+                                          APP.indexOf('function renderTape') + 2000)));
+  chk('the tape says plainly that it is not a live ticker',
+    /advances when capture runs, not continuously/.test(APP)
+    && /This is <b>not<\/b> a live ticker/.test(APP));
+  chk('a row with fewer than two prints says collecting rather than drawing a flat line',
+    /else if\(t\.length<2\)\{ spark='<span class="note">collecting/.test(APP));
+  chk('an unreadable tick table is distinguished from an empty one',
+    /series unavailable/.test(APP));
+  chk('the tape is wired into the board refresh cycle',
+    /renderDaily\(\);try\{renderTape\(\);\}catch\(_\)\{\}/.test(APP));
+  chk('and it is capped, with the cap explained rather than silent',
+    /var TAPE_MAX_GAMES = 60;/.test(APP) && /biggest movers of/.test(APP));
+
   /* Grep for anything still deriving a BET from raw inputs. */
   const rawBet = (APP.match(/verdict\s*=\s*'BET'/g) || []).length;
   chk('exactly one place in app.html can still assign a raw BET, and it is gated',
