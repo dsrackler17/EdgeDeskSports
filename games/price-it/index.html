@@ -52,12 +52,14 @@
 <script src="/games/lib/research_state.js"></script>
 <script src="/games/lib/attribution.js"></script>
 <script src="/games/lib/store.js"></script>
+<script src="/games/lib/dynasty.js"></script>
 <script src="/games/games.js"></script>
 <script>
 (function(){
   'use strict';
   var G=window.EDGames,ST=window.EDGamesStore,W=window.EDGamesWeek,
-      CH=window.EDGamesChallenge,SC=window.EDGamesScoring,RS=window.EDGamesResearchState;
+      CH=window.EDGamesChallenge,SC=window.EDGamesScoring,RS=window.EDGamesResearchState,
+      DY=window.EDGamesDynasty;
   var $=function(id){return document.getElementById(id);};
   var stage=$('stage'),after=$('after');
 
@@ -201,6 +203,10 @@
     G.track('price_it_complete',{game_id:ch.game_id,game_slug:ch.slug,game_type:'price_it',
       research_state:ch.research_state,score:stored.score,distance:stored.distance});
     renderReveal(ch,stored);
+    /* the War Room reacts AFTER the reveal has painted: the XP chip, a level,
+       an achievement, a mission — or, on a first game, the room being
+       created. A replayed result never reaches here, so nothing fires twice. */
+    setTimeout(function(){try{G.pulse({game_type:'price_it'});}catch(_){}},600);
   }
 
   function priceCell(k,val,note,cls){
@@ -293,15 +299,30 @@
       +'<div class="s">'+(pi.avg_distance==null?'games':('avg '+pi.avg_distance.toFixed(1)+' pts off'))+'</div></div>'
       +'</div></div>';
 
+    /* the football week's missions, so the next thing to do is one tap away */
+    if(DY){
+      var sum=DY.summary(ST.read()),ms=sum.missions;
+      var open=ms.missions.filter(function(m){return !m.done;});
+      html+='<div class="sec"><div class="card"><div class="sec-h" style="margin-bottom:8px"><h2 style="font-size:15px">This week’s missions</h2>'
+        +'<span class="m">'+ms.done+' of '+ms.total+'</span></div>'
+        +'<div class="missions" style="margin-top:6px">'+ms.missions.slice(0,3).map(function(m){
+          return '<a class="mission'+(m.done?' done':'')+'" href="'+G.esc(m.href)+'">'
+            +'<span class="chk" aria-hidden="true">✓</span><span><div class="t">'+G.esc(m.label)+'</div>'
+            +'<div class="h">'+G.esc(m.how)+'</div></span><span class="p">'+m.progress+'/'+m.target+'</span></a>';
+        }).join('')+'</div>'
+        +'<div class="btn-row"><a class="btn" href="/games/dynasty/">Open my War Room · Level '+sum.level+'</a></div>'
+        +'</div></div>';
+    }
+
     /* The account ask comes only AFTER real engagement — never during a first
        game, and only once. */
     if(ST.engaged()&&!ST.seen('save_prompt')){
       ST.markSeen('save_prompt');
       G.track('save_score_cta',{game_type:'price_it',game_id:ch.game_id});
-      html+='<div class="sec"><div class="card save"><div class="eyebrow">Save your streak</div>'
+      html+='<div class="sec"><div class="card save"><div class="eyebrow">Save your War Room</div>'
         +'<p style="margin:0;color:var(--dim);font-size:14px">Create a free EdgeDesk account to keep your</p>'
-        +'<ul><li>scores</li><li>streak</li><li>history</li><li>leaderboard position</li></ul>'
-        +'<div class="btn-row"><a class="btn" id="doSave" href="#">Save my score</a></div>'
+        +'<ul><li>level and XP</li><li>scores and streak</li><li>achievements</li><li>leaderboard position</li></ul>'
+        +'<div class="btn-row"><a class="btn" id="doSave" href="#">Save my War Room</a></div>'
         +'<div class="ftp" style="margin-top:10px">Your progress stays on this device until you do.</div>'
         +'</div></div>';
     }
@@ -311,6 +332,7 @@
       save.href=G.withAttribution('/app.html',{intent:'save_games_score'})+'#account';
       save.addEventListener('click',function(){
         G.track('signup_start_from_games',{game_type:'price_it',game_id:ch.game_id});
+        G.track('account_save_from_dynasty',{game_type:'price_it',placement:'price_it_after'});
       });
     }
   }

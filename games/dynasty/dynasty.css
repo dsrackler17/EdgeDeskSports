@@ -1,0 +1,111 @@
+/* ===========================================================================
+   EDGEDESK DYNASTY — the War Room page.
+
+   games.css already owns the level header, the XP bar, the stations, the
+   missions and the trophy wall. This file holds only what is specific to
+   this one page: the room scene, the stage ladder, the XP table, the ledger
+   and the "how it works" disclosure.
+
+   Mobile first: the base rules are written for a 320px phone and widened
+   with min-width queries. The scene is CROPPED on a phone (it keeps its
+   scale and shows its centre), never shrunk into an unreadable thumbnail;
+   the functional room on a phone is the stack of stations underneath.
+   =========================================================================== */
+
+/* visually hidden, still read aloud — the scene's text caption */
+.vh{position:absolute!important;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;
+  clip:rect(0,0,0,0);white-space:nowrap;border:0}
+
+/* ── the room card ──────────────────────────────────────────────────────── */
+.room{margin-top:20px}
+.room-grid{display:grid;gap:18px}
+@media(min-width:768px){
+  .room{margin-top:28px}
+  .room-grid{grid-template-columns:minmax(0,5fr) minmax(0,6fr);align-items:start;gap:24px}
+}
+/* the level line is the page's h1; the stage name inside it is a caption,
+   not a heading weight */
+.room h1.lvl .s{font-weight:400}
+.room-blurb{font-size:13.5px;color:var(--dim);line-height:1.55;margin-top:12px}
+.room-scene{position:relative;background:var(--ink);border:1px solid var(--line);border-radius:12px;
+  overflow:hidden}
+.room-scene svg{display:block;width:100%;height:150px}
+@media(min-width:560px){.room-scene svg{height:auto}}
+.room-scene.preview svg{opacity:.55}
+.room-tag{position:absolute;left:10px;top:8px;font-size:10px;font-weight:700;letter-spacing:.12em;
+  text-transform:uppercase;color:var(--dim);background:rgba(11,13,17,.72);padding:3px 7px;
+  border-radius:6px;pointer-events:none}
+.room-cta{margin-top:14px}
+.room-cta p{margin:0;font-size:14px;color:var(--text);line-height:1.5}
+.room-cta .btn-row{margin-top:12px}
+.room-note{font-size:11.5px;color:var(--faint);margin-top:10px;line-height:1.5}
+.room .ftp{margin-top:14px}
+
+/* the one restrained animation in the scene: the market ticker, or on the
+   smaller rooms a monitor cursor. Both stop for players who ask for less
+   motion, as does the XP bar's fill. */
+.tk{stroke-dasharray:22 10 6 10 36 12;animation:tick 6s linear infinite}
+@keyframes tick{to{stroke-dashoffset:-96}}
+.cur{animation:blink 1.2s steps(1) infinite}
+@keyframes blink{50%{opacity:0}}
+@media(prefers-reduced-motion:reduce){
+  .tk,.cur{animation:none}
+  .xp-fill{transition:none}
+}
+/* the page's script adds `still` when the same preference is read in JS */
+.room-scene.still .tk,.room-scene.still .cur{animation:none}
+
+/* ── the stage ladder: the long-term goal, made visible ─────────────────── */
+.ladder{list-style:none;margin:12px 0 0;padding:0;display:flex;flex-wrap:wrap;gap:6px}
+.rung{display:inline-flex;align-items:center;gap:7px;border:1px solid var(--line);
+  background:var(--cell);border-radius:999px;padding:7px 12px;font-size:11.5px;
+  color:var(--faint);white-space:nowrap;min-height:32px}
+.rung b{font-weight:600;color:var(--dim)}
+.rung .l{font-family:'JetBrains Mono',ui-monospace,monospace;font-size:10.5px}
+.rung.past{border-color:var(--line2)}
+.rung.past b{color:var(--text)}
+.rung.past .l{color:var(--val-dim)}
+.rung.on{border-color:var(--val-dim);background:rgba(63,184,131,.1);color:var(--val)}
+.rung.on b,.rung.on .l{color:var(--val)}
+
+/* ── the missions list ──────────────────────────────────────────────────── */
+.mission .t,.mission .h{display:block}
+.week-foot{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;
+  margin-top:12px}
+
+/* ── stations: the loading state of the board ───────────────────────────── */
+.station .sk{display:inline-block;width:60%;height:12px;vertical-align:middle}
+
+/* ── how XP works ───────────────────────────────────────────────────────── */
+.how{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);
+  padding:0 18px;box-shadow:var(--shadow)}
+.how summary{min-height:var(--tap);display:flex;align-items:center;justify-content:space-between;
+  gap:12px;cursor:pointer;font-weight:600;font-size:14px;list-style:none;padding:8px 0;
+  color:var(--text)}
+.how summary::-webkit-details-marker{display:none}
+.how summary::after{content:'›';color:var(--faint);font-size:22px;line-height:1;flex:none;
+  transition:transform .15s ease}
+.how[open] summary::after{transform:rotate(90deg)}
+.how-body{padding:2px 0 18px;color:var(--dim);font-size:13.5px;line-height:1.6}
+.how-body p{margin:12px 0 0}
+.how-body .rule{color:var(--text);font-weight:500}
+.xp-table{width:100%;border-collapse:collapse;font-size:13px;margin-top:6px}
+.xp-table th{text-align:left;font-size:10px;font-weight:700;letter-spacing:.1em;color:var(--faint);
+  text-transform:uppercase;padding:0 4px 8px;border-bottom:1px solid var(--line2)}
+.xp-table th.x{text-align:right}
+.xp-table td{padding:8px 4px;border-bottom:1px solid var(--line);color:var(--dim);vertical-align:top}
+.xp-table tr:last-child td{border-bottom:0}
+.xp-table td.x{text-align:right;font-family:'JetBrains Mono',ui-monospace,monospace;
+  font-variant-numeric:tabular-nums;color:var(--val);font-weight:700;white-space:nowrap}
+.ledger{list-style:none;margin:8px 0 0;padding:0;display:grid;gap:6px}
+.ledger li{display:flex;gap:10px;align-items:baseline;font-size:12.5px;color:var(--dim);
+  background:var(--cell);border:1px solid var(--line);border-radius:9px;padding:8px 11px;min-width:0}
+.ledger .x{font-family:'JetBrains Mono',ui-monospace,monospace;font-variant-numeric:tabular-nums;
+  color:var(--val);font-weight:700;flex:none;min-width:40px}
+.ledger .what{flex:1;min-width:0;overflow-wrap:break-word}
+.ledger .when{color:var(--faint);flex:none;font-size:11.5px}
+.ledger-empty{font-size:12.5px;color:var(--faint);margin-top:8px}
+
+/* ── the research card ──────────────────────────────────────────────────── */
+.research p{margin:0 0 12px;color:var(--dim);font-size:14px;line-height:1.65}
+.research p.faint{color:var(--faint);font-size:12.5px;line-height:1.6;margin-bottom:14px}

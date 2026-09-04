@@ -33,7 +33,24 @@
       price_it: { played: 0, score_total: 0, distance_total: 0, results: [] },
       pick5: { cards: {}, correct: 0, decided: 0 },
       attribution: null,
-      seen: {}
+      seen: {},
+      /* ── the Dynasty layer (games/lib/dynasty.js reads these; nothing here
+         computes XP) ──────────────────────────────────────────────────────
+         events    one row per REAL thing that happened, keyed kind:key and
+                   written once — a replayed page cannot write it twice
+         research  the matchups this player has opened the research for,
+                   one row per game, so "reviewed 10 unique games" is a read
+         drill     Two-Minute Drill runs: one daily run per day (replayed,
+                   never rescored) plus free-play history and a best
+         visits    when this browser was last here, per football week, so a
+                   "returned for another week" is a fact and not a guess
+         dynasty   the last summary the player was SHOWN, so a level-up or an
+                   achievement is celebrated exactly once */
+      events: {},
+      research: { opens: {} },
+      drill: { runs: 0, best: 0, daily: {}, history: [] },
+      visits: { first_at: null, last_at: null, last_day: null, days: 0, weeks: {} },
+      dynasty: { seen: null }
     };
   }
 
@@ -48,8 +65,14 @@
       var o = JSON.parse(raw);
       if (!o || o.v !== VERSION) return memory ? memory : (memory = blank());
       /* defend against a hand-edited or truncated envelope */
-      var b = blank(), k;
+      var b = blank(), k, j;
       for (k in b) if (b.hasOwnProperty(k) && o[k] == null) o[k] = b[k];
+      /* an envelope written before a nested key existed gets that key's
+         default too, so a page never reads `undefined.opens` */
+      ['research', 'drill', 'visits', 'dynasty', 'streak', 'price_it', 'pick5'].forEach(function (grp) {
+        if (!o[grp] || typeof o[grp] !== 'object') o[grp] = b[grp];
+        for (j in b[grp]) if (b[grp].hasOwnProperty(j) && o[grp][j] == null) o[grp][j] = b[grp][j];
+      });
       return o;
     } catch (_) { return memory ? memory : (memory = blank()); }
   }
@@ -250,6 +273,184 @@
     return out;
   }
 
+
+  /* ── the event ledger ────────────────────────────────────────────────────
+     ONE row per real thing that happened, keyed `kind:key`, written ONCE.
+     The Dynasty layer derives XP, missions and achievements by READING this
+     ledger, so the only way to earn anything is for something real to be
+     recorded here — and recording the same thing twice is a no-op, which is
+     what makes a reload, a double-click or a replayed request worth nothing.
+
+     `meta` is small, public-safe context (an opponent's display name, a mode).
+     Returns { recorded: true|false, event }. */
+  function recordEvent(kind, key, meta, ms) {
+    if (!kind || key == null) return { recorded: false, event: null };
+    var id = String(kind) + ':' + String(key);
+    var s = read();
+    if (s.events[id]) return { recorded: false, event: s.events[id] };
+    return update(function (st) {
+      var ev = {
+        kind: String(kind), key: String(key),
+        at: new Date(ms == null ? Date.now() : ms).toISOString(),
+        week: W ? W.weekKey(ms) : null,
+        day: W ? W.dayKey(ms) : null,
+        meta: meta && typeof meta === 'object' ? meta : null
+      };
+      st.events[id] = ev;
+      /* bounded: the ledger only grows with real activity, but localStorage
+         has a ceiling and an old H2H row is worth less than the room */
+      var ids = Object.keys(st.events);
+      if (ids.length > 1500) {
+        ids.sort(function (a, b) { return String(st.events[a].at).localeCompare(String(st.events[b].at)); });
+        ids.slice(0, ids.length - 1500).forEach(function (old) { delete st.events[old]; });
+      }
+      return { recorded: true, event: ev };
+    });
+  }
+
+  function hasEvent(kind, key) { return !!read().events[String(kind) + ':' + String(key)]; }
+
+  /* Every event of one kind, oldest first. */
+  function eventsOf(kind, s) {
+    s = s || read();
+    var out = [], id;
+    for (id in s.events) if (s.events.hasOwnProperty(id) && s.events[id].kind === kind) out.push(s.events[id]);
+    out.sort(function (a, b) { return String(a.at).localeCompare(String(b.at)); });
+    return out;
+  }
+
+  /* ── research opens ──────────────────────────────────────────────────────
+     One row per matchup whose research this player opened. Unique per game,
+     so opening the same page fifty times is one row — "reviewed 10 unique
+     games" cannot be clicked into existence. Returns { first, rec }. */
+  function recordResearchOpen(ch, ms) {
+    if (!ch || ch.game_id == null) return { first: false, rec: null };
+    var gid = String(ch.game_id);
+    var s = read();
+    if (s.research.opens[gid]) return { first: false, rec: s.research.opens[gid] };
+    return update(function (st) {
+      var rec = {
+        game_id: gid, slug: ch.slug || null,
+        home_team: ch.home_team || null, away_team: ch.away_team || null,
+        research_state: ch.research_state || null,
+        at: new Date(ms == null ? Date.now() : ms).toISOString(),
+        week: W ? W.weekKey(ms) : null
+      };
+      st.research.opens[gid] = rec;
+      return { first: true, rec: rec };
+    });
+  }
+
+  function researchOpens(s) {
+    s = s || read();
+    var out = [], k;
+    for (k in s.research.opens) if (s.research.opens.hasOwnProperty(k)) out.push(s.research.opens[k]);
+    out.sort(function (a, b) { return String(a.at).localeCompare(String(b.at)); });
+    return out;
+  }
+
+  /* ── the Two-Minute Drill ────────────────────────────────────────────────
+     A DAILY run is one per day and is replayed, never rescored — the same
+     rule Price It applies per challenge. A FREE run is always recorded (it
+     counts toward the run total and the best) but never toward the weekly
+     score, so the leaderboard number cannot be farmed by playing all night. */
+  function drillDaily(dayKey) { return read().drill.daily[dayKey] || null; }
+
+  function recordDrill(res, ms) {
+    if (!res) return null;
+    var day = res.day || (W ? W.dayKey(ms) : 'all');
+    if (res.mode === 'daily') {
+      var existing = drillDaily(day);
+      if (existing) return existing;
+    }
+    return update(function (s) {
+      var rec = {
+        mode: res.mode === 'daily' ? 'daily' : 'free',
+        day: day,
+        seed: res.seed || null,
+        rounds: res.rounds | 0, correct: res.correct | 0,
+        points: res.points | 0, clock_points: res.clock_points | 0, total: res.total | 0,
+        lives_left: res.lives_left == null ? null : (res.lives_left | 0),
+        clock_left: res.clock_left == null ? null : Math.round(res.clock_left * 10) / 10,
+        ended: res.ended || null,
+        scoring_version: res.scoring_version || null,
+        /* which matchups were in the run, so the reveal can be rebuilt and
+           the research links resolved after a reload */
+        game_ids: Array.isArray(res.game_ids) ? res.game_ids.map(String) : [],
+        misses: Array.isArray(res.misses) ? res.misses.map(String) : [],
+        at: new Date(ms == null ? Date.now() : ms).toISOString(),
+        week: W ? W.weekKey(ms) : null
+      };
+      s.drill.runs++;
+      if (rec.total > (s.drill.best || 0)) s.drill.best = rec.total;
+      if (rec.mode === 'daily') {
+        s.drill.daily[day] = rec;
+        var wk = weekBucket(s, ms);
+        /* ten points per correct answer, so a perfect daily drill is worth
+           one dead-on Price It — comparable, not dominant */
+        wk.drill = (wk.drill || 0) + rec.correct * 10;
+        wk.score += rec.correct * 10;
+        touchStreak(s, ms);
+      } else {
+        s.drill.history.push(rec);
+        if (s.drill.history.length > 100) s.drill.history = s.drill.history.slice(-100);
+      }
+      return rec;
+    });
+  }
+
+  function drillRecord() {
+    var s = read(), days = Object.keys(s.drill.daily).length;
+    return { runs: s.drill.runs, best: s.drill.best, daily_played: days };
+  }
+
+  /* ── visits ──────────────────────────────────────────────────────────────
+     Called once per page view. Records the fact of the visit per football
+     week and per day, and returns what KIND of return this is so the funnel
+     can count real retention (return_1d, return_7d, a new football week)
+     rather than page views. Nothing here awards anything by itself. */
+  function touchVisit(ms) {
+    var now = ms == null ? Date.now() : ms;
+    var s = read(), prev = s.visits.last_at ? Date.parse(s.visits.last_at) : null;
+    var prevDay = s.visits.last_day, today = W ? W.dayKey(now) : 'all';
+    var wk = W ? W.weekKey(now) : 'all';
+    var out = {
+      first: !prev,
+      new_day: prevDay !== today,
+      new_week: !s.visits.weeks[wk],
+      gap_days: (prevDay && W) ? W.dayDiff(prevDay, today) : null,
+      return_1d: false, return_7d: false, return_week: false
+    };
+    if (out.gap_days != null) {
+      out.return_1d = out.gap_days >= 1;
+      out.return_7d = out.gap_days >= 7;
+    }
+    /* a new football week is a return only if an EARLIER week saw play */
+    if (out.new_week) {
+      var k, played = false;
+      for (k in s.weeks) if (s.weeks.hasOwnProperty(k) && k < wk
+        && ((s.weeks[k].price_it | 0) + (s.weeks[k].pick5_cards | 0) + (s.weeks[k].drill | 0)) > 0) played = true;
+      out.return_week = played;
+    }
+    update(function (st) {
+      var iso = new Date(now).toISOString();
+      if (!st.visits.first_at) st.visits.first_at = iso;
+      st.visits.last_at = iso;
+      if (st.visits.last_day !== today) { st.visits.last_day = today; st.visits.days = (st.visits.days | 0) + 1; }
+      if (!st.visits.weeks[wk]) st.visits.weeks[wk] = { first_at: iso, returned: out.return_week };
+    });
+    return out;
+  }
+
+  /* ── the Dynasty "seen" marker ───────────────────────────────────────────
+     The summary the player was last shown. games.js compares the live summary
+     against it to decide what to celebrate, then writes the new one — so a
+     level-up is announced once, on whichever page first notices it. */
+  function dynastySeen() { return read().dynasty.seen; }
+  function markDynastySeen(summary) {
+    return update(function (s) { s.dynasty.seen = summary || null; });
+  }
+
   /* ── attribution ──────────────────────────────────────────────────────────
      GAMES DOES NOT KEEP ITS OWN ATTRIBUTION LEDGER. The landing page already
      runs one — `edgedesk_attribution`, mirrored to an `ed_ref` cookie, handed
@@ -288,7 +489,8 @@
      Deliberately not on the first game: the ask comes after value. */
   function engaged() {
     var s = read();
-    return (s.price_it.played + Object.keys(s.pick5.cards).length) >= 2;
+    return (s.price_it.played + Object.keys(s.pick5.cards).length
+      + Object.keys(s.drill.daily).length) >= 2;
   }
 
   /* Everything an account should inherit, in one object. Whatever accepts it
@@ -297,7 +499,8 @@
   function exportForAccount() {
     var s = read();
     return { v: s.v, created_at: s.created_at, streak: s.streak, weeks: s.weeks,
-      price_it: s.price_it, pick5: s.pick5, attribution: s.attribution };
+      price_it: s.price_it, pick5: s.pick5, attribution: s.attribution,
+      events: s.events, research: s.research, drill: s.drill, visits: s.visits };
   }
 
   function reset() {
@@ -315,7 +518,11 @@
     weeklyScore: weeklyScore, weekHistory: weekHistory,
     captureAttribution: captureAttribution, attribution: attribution,
     seen: seen, markSeen: markSeen, displayName: displayName, setDisplayName: setDisplayName,
-    engaged: engaged, exportForAccount: exportForAccount
+    engaged: engaged, exportForAccount: exportForAccount,
+    recordEvent: recordEvent, hasEvent: hasEvent, eventsOf: eventsOf,
+    recordResearchOpen: recordResearchOpen, researchOpens: researchOpens,
+    drillDaily: drillDaily, recordDrill: recordDrill, drillRecord: drillRecord,
+    touchVisit: touchVisit, dynastySeen: dynastySeen, markDynastySeen: markDynastySeen
   };
   root.EDGamesStore = API;
   if (typeof module !== 'undefined' && module.exports) module.exports = API;
