@@ -161,6 +161,11 @@ jobs:
       - name: Operator controls stay operator-only
         run: node tools/app/operator_gate.test.js
 
+      # The public landing page: what it promises, and what it must never
+      # promise. Runs on index.html and on the artifacts it reads.
+      - name: The landing page sells the product, not an outcome
+        run: node tools/presentation/landing_positioning.test.js
+
       # The workbook the boards download, rebuilt from a real cleaned file.
       - name: The download is the format the operator cleaned up by hand
         run: node tools/collective/app_export.test.js

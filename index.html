@@ -104,6 +104,118 @@ nav{position:sticky;top:0;z-index:40;background:rgba(11,13,17,.84);backdrop-filt
 }
 
 /* ---------- sections ---------- */
+/* ═══ THE PRODUCT AS THE MARKETING ═══════════════════════════════════════
+   The hero card and the sections below reuse the app's own shapes and the
+   palette already defined above: --obs for the model, --val for what is
+   proven, --est for what needs attention. Nothing decorative loads. */
+.lp-instead{display:flex;flex-wrap:wrap;align-items:baseline;gap:7px;margin-top:18px;font-size:13px;color:var(--dim)}
+.lp-instead .k{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--faint,#6b7480)}
+.lp-instead span:not(.k){text-decoration:line-through;text-decoration-color:rgba(226,96,68,.55)}
+.lp-instead i{color:var(--line2);font-style:normal}
+/* the matchup card */
+.lp-gx{padding:12px}
+.lp-gx-hd .m{font-size:16px;font-weight:700;letter-spacing:-.01em}
+.lp-gx-hd .w{font-size:11px;color:var(--dim);margin-top:2px;font-family:'JetBrains Mono',monospace}
+.lp-gx-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(122px,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:9px;overflow:hidden;margin-top:11px}
+.lp-gx-grid .c{background:#0d1117;padding:8px 9px;min-width:0}
+.lp-gx-grid .l{display:block;font-size:9px;letter-spacing:.09em;text-transform:uppercase;color:var(--dim);font-weight:700}
+.lp-gx-grid .v{display:block;font-size:15px;font-weight:700;line-height:1.25;margin-top:3px;font-family:'JetBrains Mono',monospace}
+.lp-gx-grid .v.mdl{color:var(--obs)}.lp-gx-grid .v.warn{color:var(--est)}
+.lp-gx-grid .v.sc{display:flex;align-items:baseline;gap:6px}
+.lp-gx-grid .v.sc i{flex:1 1 auto;font-style:normal;font-size:10.5px;font-family:inherit;font-weight:600;color:var(--dim);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lp-gx-grid .v.sc b{flex:none;font-size:16px}
+.lp-gx-grid .s{display:block;font-size:9.5px;color:var(--dim);line-height:1.4;margin-top:3px}
+.lp-gx-grid .st{display:inline-block;margin-top:4px;font-size:10.5px;font-weight:700;letter-spacing:.06em;border:1px solid var(--line2);border-radius:5px;padding:2px 6px;font-family:'JetBrains Mono',monospace}
+.lp-gx-grid .st.warn{color:var(--est);border-color:rgba(217,164,65,.45)}
+.lp-gx-means{font-size:12px;line-height:1.55;color:var(--text);margin-top:9px;padding:8px 10px;border-radius:8px;border:1px solid var(--line);border-left:3px solid var(--est);background:#0b0e13}
+.lp-gx-means b{display:block;font-size:9px;letter-spacing:.09em;text-transform:uppercase;color:var(--dim);margin-bottom:3px;font-family:'JetBrains Mono',monospace}
+.lp-gx-chk{display:flex;flex-wrap:wrap;gap:4px;align-items:center;margin-top:9px}
+.lp-gx-chk .h{font-size:9px;letter-spacing:.09em;text-transform:uppercase;color:var(--dim);font-weight:700;font-family:'JetBrains Mono',monospace}
+.lp-gx-chk .ck{font-size:10px;border:1px solid var(--line2);border-radius:4px;padding:1px 5px;color:var(--dim);font-family:'JetBrains Mono',monospace;white-space:nowrap}
+.lp-gx-chk .ck.ok{color:var(--val);border-color:rgba(63,184,131,.32)}
+.lp-gx-chk .ck.warn{color:var(--est);border-color:rgba(217,164,65,.32)}
+.lp-gx-chk .ck.neg{color:#e26044;border-color:rgba(226,96,68,.32)}
+.lp-gx-why{margin-top:10px}
+.lp-gx-why .h{display:block;font-size:9px;letter-spacing:.09em;text-transform:uppercase;color:var(--dim);font-weight:700;margin-bottom:5px;font-family:'JetBrains Mono',monospace}
+.lp-gx-why .r{display:grid;grid-template-columns:38px 46px 1fr;gap:8px;align-items:center;font-size:11.5px;margin-bottom:4px}
+.lp-gx-why .p{font-family:'JetBrains Mono',monospace;font-weight:700;color:var(--obs);text-align:right}
+.lp-gx-why .b{height:4px;border-radius:2px;background:var(--line);overflow:hidden}
+.lp-gx-why .b i{display:block;height:100%;background:var(--obs)}
+.lp-gx-why .t{color:var(--dim);line-height:1.4}
+/* before / after */
+.lp-ba{display:grid;grid-template-columns:1fr auto 1fr;gap:var(--sp3,22px);align-items:start;margin-top:26px}
+@media(max-width:760px){.lp-ba{grid-template-columns:1fr}.lp-ba .arrow{transform:rotate(90deg);margin:2px auto}}
+/* the smallest phones: the nav CTA is the widest thing in the bar */
+@media(max-width:360px){nav .btn{padding-left:9px;padding-right:9px;font-size:11.5px}}
+.lp-ba .col h3{font-family:'JetBrains Mono',monospace;font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--dim);margin:0 0 10px}
+.lp-ba .arrow{color:var(--line2);font-size:22px;align-self:center}
+/* the two-column variant with no arrow between; it collapses with the rule
+   above rather than pinning its columns inline, which is what broke 320px */
+.lp-ba.even{grid-template-columns:1fr 1fr;align-items:start}
+@media(max-width:760px){.lp-ba.even{grid-template-columns:1fr}}
+.lp-stack{display:flex;flex-direction:column;gap:5px}
+.lp-stack span{font-size:12.5px;color:var(--dim);padding:6px 10px;border:1px solid var(--line);border-radius:7px;background:#0b0e13}
+.lp-stack.was span{text-decoration:line-through;text-decoration-color:rgba(226,96,68,.5);color:#6b7480}
+.lp-one{border:1px solid rgba(92,157,255,.35);border-radius:11px;padding:16px;background:linear-gradient(180deg,rgba(92,157,255,.07),transparent)}
+.lp-one .big{font-size:19px;font-weight:700;letter-spacing:-.02em}
+.lp-one .lay{display:flex;flex-wrap:wrap;gap:5px;margin-top:12px}
+.lp-one .lay span{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.08em;color:var(--obs);border:1px solid rgba(92,157,255,.3);border-radius:5px;padding:3px 7px}
+/* the breadth grid */
+.lp-get{display:grid;grid-template-columns:repeat(auto-fit,minmax(228px,1fr));gap:10px;margin-top:24px}
+.lp-get .g{border:1px solid var(--line);border-radius:10px;padding:13px 14px;background:#0b0e13}
+.lp-get .g b{display:block;font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--obs);margin-bottom:5px}
+.lp-get .g p{margin:0;font-size:12.5px;line-height:1.5;color:var(--dim)}
+/* two-column contrast */
+.lp-vs{display:grid;grid-template-columns:1fr 1.35fr;gap:var(--sp3,22px);margin-top:24px}
+@media(max-width:760px){.lp-vs{grid-template-columns:1fr}}
+.lp-vs .side{border:1px solid var(--line);border-radius:11px;padding:16px;background:#0b0e13}
+.lp-vs .side.ours{border-color:rgba(92,157,255,.35)}
+.lp-vs .side h3{font-family:'JetBrains Mono',monospace;font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--dim);margin:0 0 11px}
+.lp-vs .side.ours h3{color:var(--obs)}
+.lp-vs .quote{font-size:20px;font-weight:700;color:#6b7480;letter-spacing:-.02em}
+.lp-vs ul{margin:0;padding-left:17px;font-size:13px;line-height:1.75;color:var(--dim)}
+.lp-vs ul b{color:var(--text);font-weight:600}
+/* numbered steps */
+.lp-steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px;margin-top:24px}
+.lp-steps .s{border:1px solid var(--line);border-radius:10px;padding:14px;background:#0b0e13;position:relative}
+.lp-steps .s .n{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--obs);letter-spacing:.1em}
+.lp-steps .s b{display:block;font-size:13.5px;margin:6px 0 6px;letter-spacing:-.01em}
+.lp-steps .s p{margin:0;font-size:12px;line-height:1.5;color:var(--dim)}
+.lp-steps .s .st{display:flex;flex-wrap:wrap;gap:4px;margin-top:8px}
+.lp-steps .s .st i{font-style:normal;font-family:'JetBrains Mono',monospace;font-size:9.5px;letter-spacing:.06em;border:1px solid var(--line2);border-radius:4px;padding:1px 5px;color:var(--dim)}
+/* I don't know */
+.lp-idk{display:grid;grid-template-columns:repeat(auto-fit,minmax(212px,1fr));gap:10px;margin-top:24px}
+.lp-idk .k{border:1px solid var(--line);border-left:3px solid var(--est);border-radius:9px;padding:12px 13px;background:#0b0e13}
+.lp-idk .k b{display:block;font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--est);margin-bottom:5px}
+.lp-idk .k p{margin:0;font-size:12px;line-height:1.5;color:var(--dim)}
+.lp-idk .k p em{font-style:normal;color:var(--text);font-weight:600}
+/* power ratings preview */
+.lp-pr{border:1px solid var(--line);border-radius:11px;padding:16px;background:#0b0e13;max-width:400px}
+.lp-pr .row{display:flex;align-items:baseline;gap:9px;font-size:13.5px;padding:5px 0;border-top:1px solid var(--line)}
+.lp-pr .row:first-of-type{border-top:none}
+.lp-pr .row .n{flex:none;width:16px;color:var(--dim);font-size:11px;font-family:'JetBrains Mono',monospace}
+.lp-pr .row .t{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lp-pr .row .v{flex:none;font-family:'JetBrains Mono',monospace;color:var(--obs)}
+/* the two worked examples */
+.lp-ex{display:grid;grid-template-columns:1fr 1fr;gap:var(--sp3,22px);margin-top:24px}
+@media(max-width:760px){.lp-ex{grid-template-columns:1fr}}
+.lp-ex .e{border:1px solid var(--line);border-radius:11px;padding:16px;background:#0b0e13}
+.lp-ex .e.inv{border-color:rgba(226,96,68,.3)}
+.lp-ex .e.pass{border-color:rgba(63,184,131,.3)}
+.lp-ex .e .g{font-size:14px;font-weight:700;margin-bottom:10px}
+.lp-ex .e .cmp{display:flex;flex-wrap:wrap;gap:14px;font-family:'JetBrains Mono',monospace;font-size:12.5px}
+.lp-ex .e .cmp div span{display:block;font-size:9px;letter-spacing:.09em;text-transform:uppercase;color:var(--dim);font-family:'JetBrains Mono',monospace}
+.lp-ex .e .gap{margin-top:11px;font-size:17px;font-weight:700;font-family:'JetBrains Mono',monospace}
+.lp-ex .e.inv .gap{color:#e26044}.lp-ex .e.pass .gap{color:var(--val)}
+.lp-ex .e .lp-verdict{display:inline-block;margin-top:9px;font-family:'JetBrains Mono',monospace;font-size:10.5px;letter-spacing:.08em;border:1px solid var(--line2);border-radius:5px;padding:2px 7px}
+.lp-ex .e.inv .lp-verdict{color:#e26044;border-color:rgba(226,96,68,.42)}
+.lp-ex .e.pass .lp-verdict{color:var(--val);border-color:rgba(63,184,131,.42)}
+.lp-ex .e p{margin:10px 0 0;font-size:12.5px;line-height:1.55;color:var(--dim)}
+/* personas */
+.lp-who{display:grid;grid-template-columns:repeat(auto-fit,minmax(196px,1fr));gap:9px;margin-top:22px}
+.lp-who .w{border:1px solid var(--line);border-radius:9px;padding:12px 13px;background:#0b0e13}
+.lp-who .w b{display:block;font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.11em;text-transform:uppercase;color:var(--dim);margin-bottom:4px}
+.lp-who .w p{margin:0;font-size:12.5px;line-height:1.5;color:var(--text)}
 section.band{padding:84px 0;border-top:1px solid var(--line)}
 .head{max-width:66ch}
 .head h2{font-size:clamp(27px,3.7vw,40px);line-height:1.08;margin-top:14px;letter-spacing:-.025em}
@@ -429,6 +541,9 @@ input[type=range].edge:active::-webkit-slider-thumb{cursor:grabbing}
 /* the price reveal: recap the loop the visitor just walked, then the number */
 .justsaw{font-family:'JetBrains Mono',monospace;font-size:11.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim);margin-top:16px}
 .pchain{display:flex;flex-wrap:wrap;margin:15px 0 4px;font-family:'JetBrains Mono',monospace;font-size:11.5px;font-weight:600;letter-spacing:.15em;text-transform:uppercase;color:var(--obs)}
+.pincl{list-style:none;margin:14px 0 0;padding:0;display:grid;gap:5px}
+.pincl li{position:relative;padding-left:20px;font-size:12.5px;line-height:1.5;color:var(--dim)}
+.pincl li:before{content:"\2713";position:absolute;left:0;top:0;color:var(--val);font-weight:700}
 .pchain span{padding:4px 15px;position:relative}
 .pchain span:first-child{padding-left:0}
 .pchain span+span::before{content:"\2192";position:absolute;left:-1px;color:var(--line2)}
@@ -894,8 +1009,8 @@ section.band.lp-quiet{padding:56px 0}
 <div class="tbar" aria-hidden="true">
   <div class="wrap tbar-in">
     <span><span class="li"></span><span class="lv">LIVE</span></span>
-    <span>MLB</span><span class="sep">·</span><span>WNBA</span>
-    <span class="hideT sep">·</span><span class="hideT">CFB · CBB SEASONAL</span>
+    <span>NFL</span><span class="sep">·</span><span>FBS</span>
+    <span class="hideT sep">·</span><span class="hideT">RESEARCH THE MATCHUP, THEN PRICE IT</span>
     <span class="sep">·</span><span>RESEARCH PLATFORM, NOT BETTING ADVICE</span>
     <span class="sep">·</span><span>21+</span>
   </div>
@@ -905,83 +1020,289 @@ section.band.lp-quiet{padding:56px 0}
   <div class="wrap nav-in">
     <a class="logo" href="#top"><span class="mk"></span>EdgeDesk <small>Research Terminal</small></a>
     <span class="nav-sp"></span>
-    <a class="nlink hideS" href="#football">Football model</a>
-    <a class="nlink hideS" href="#collective">Collective</a>
-    <a class="nlink hideS lp-nav" href="#engines">Engines</a>
+    <a class="nlink hideS" href="#getyou">Product</a>
+    <a class="nlink hideS" href="#steps">Research</a>
     <a class="nlink hideS" href="#how">How it works</a>
-    <a class="nlink hideS" href="#evidence">Evidence</a>
-    <a class="nlink hideS lp-nav" href="#proof">Proof</a>
     <a class="nlink hideS" href="#record">Record</a>
     <a class="nlink hideS" href="#pricing">Pricing</a>
     <button class="btn ghost" id="navLogin" onclick="openAuth('login')">Log in</button>
     <span class="navprice">7 days free</span>
-    <button class="btn primary" id="navSignup" onclick="startSubscribe()">Start free trial</button>
+    <button class="btn primary" id="navSignup" onclick="startSubscribe()">Start researching</button>
   </div>
 </nav>
 
-<!-- ============================ HERO ============================ -->
+<!-- ============================ HERO ============================
+     The whole product in one glance: what it is, what it replaces, and a
+     real matchup card in the shape the app actually renders. The card's
+     numbers are an illustrative game and say so; the SHAPE is the product.
+     ============================================================= -->
 <header class="hero" id="top">
   <div class="hero-grid-bg"></div>
   <div class="wrap hero-in">
     <div>
-      <div class="hook" id="hook">
-        <span class="hg">&#9971;</span>
-        <span id="hookT"><b>Competitive golfer?</b> You already grade yourself against the field instead of against the scoreboard. <a href="#bridge">That is exactly what this does &darr;</a></span>
+      <span class="ey" id="heroEy"><b>&#9642;</b> Football research terminal &middot; NFL + FBS</span>
+      <h1>Research the matchup.<br><span class="g">Then price it.</span></h1>
+      <p class="sub">One place for the model, the market, the roster, the players, the matchup and everything EdgeDesk still does not know about a football game.</p>
+      <div class="lp-instead">
+        <span class="k">Instead of</span>
+        <span>10 tabs</span><i>&middot;</i><span>5 sites</span><i>&middot;</i><span>a spreadsheet</span><i>&middot;</i><span>and guessing what mattered</span>
       </div>
-      <span class="ey" id="heroEy"><b>&#9642;</b> Sports betting research</span>
-      <h1>Which betting lines are worth a second look <span class="g">&mdash; and which aren't.</span></h1>
-      <p class="sub">EdgeDesk checks what every sportsbook is charging and gives each bet one call &mdash; <b>BET, LEAN, WAIT or PASS</b> &mdash; with the reason in plain English. When the evidence isn't good enough, it says so instead of guessing.</p>
       <div class="cta">
-        <button class="btn primary lg" id="heroStart" onclick="startSubscribe()">Start 7 days free &#8594;</button>
-        <a class="btn ghost lg" href="#how">See how a call works</a>
+        <button class="btn primary lg" id="heroStart" onclick="startSubscribe()">Start researching &#8594;</button>
+        <a class="btn ghost lg" href="#examples">See a live matchup</a>
       </div>
-      <p class="microcta"><b style="color:var(--val)">7-day free trial</b> &middot; then $79.99/month, cancel any time before it ends and you are not charged &middot; 21+</p>
-      <div class="spine">
-        <span class="lbl">Every call carries:</span>
-        <span class="pv val">The reason</span>
-        <span class="pv est">The price limit</span>
-        <span class="pv obs">A public grade</span>
-      </div>
+      <p class="microcta"><b style="color:var(--val)">Research, not picks.</b> NFL + FBS &middot; 7-day free trial, then $79.99/month &middot; 21+</p>
     </div>
 
-    <!-- SHOW THE PRODUCT, DO NOT DESCRIBE IT. This is the real card shape a
-         subscriber sees, in the real product's words. Illustrative game. -->
+    <!-- THE PRODUCT IS THE VISUAL. This is the matchup summary the app
+         renders, in its own words and its own order. -->
     <div class="term" id="heroCard">
       <div class="term-bar">
         <span class="tt"><i></i><i></i><i></i></span>
-        <span class="nm">EdgeDesk &middot; A call, as it actually reads</span>
-        <span class="tag">Illustrative example</span>
+        <span class="nm">EdgeDesk &middot; Game research</span>
+        <span class="tag">Illustrative game</span>
       </div>
-      <div class="hcard">
-        <div class="hcard-top">
-          <div class="hcard-v wait">WAIT</div>
-          <div>
-            <div class="hcard-bet">Fresno State to beat USC</div>
-            <div class="hcard-tk">Moneyline &middot; Fresno State &middot; <b>+1400</b> &middot; DraftKings</div>
-          </div>
+      <div class="lp-gx">
+        <div class="lp-gx-hd">
+          <div class="m">Baylor @ Auburn</div>
+          <div class="w">Sat &middot; 7:30p &middot; Big 12 at SEC</div>
         </div>
-        <p class="hcard-sub">Interesting price. Not confirmed yet.</p>
-
-        <div class="hcard-h">What EdgeDesk found</div>
-        <div class="hcard-cmp">
-          <div><span class="k">Your sportsbook</span><b>+1400</b></div>
-          <div><span class="k">EdgeDesk comparison</span><b>about +1237</b></div>
-          <div><span class="k">Difference</span><b class="acc">Paying more than expected</b></div>
+        <div class="lp-gx-grid">
+          <div class="c"><span class="l">EdgeDesk</span><span class="v mdl">Auburn -9.7</span><span class="s">model</span></div>
+          <div class="c"><span class="l">Market</span><span class="v">Auburn -8.0</span><span class="s">consensus</span></div>
+          <div class="c"><span class="l">Difference</span><span class="v warn">1.7 pts</span><span class="s">model minus market</span></div>
+          <div class="c"><span class="l">Projected score</span><span class="v sc"><i>Auburn</i><b>31</b></span><span class="v sc"><i>Baylor</i><b>21</b></span></div>
+          <div class="c"><span class="l">Win probability</span><span class="v">Auburn 73%</span><span class="s">Baylor 27%</span></div>
+          <div class="c"><span class="l">Research state</span><span class="st warn">REVIEW</span><span class="s">EdgeDesk&rsquo;s own read, not advice</span></div>
+          <div class="c"><span class="l">Data confidence</span><span class="v warn">43%</span><span class="s">of the model&rsquo;s inputs reached it</span></div>
+          <div class="c"><span class="l">Outcome range</span><span class="v">-6 to +26</span><span class="s">p10 to p90 margin</span></div>
         </div>
-
-        <div class="hcard-guard"><span class="k">Read this first</span>
-          <p>Fresno State is a heavy underdog. EdgeDesk is judging the <b>price</b>, not predicting an upset.</p></div>
-
-        <div class="hcard-h">Why wait</div>
-        <p class="hcard-p">EdgeDesk last saw this price 90 minutes ago. Odds move quickly, so it wants a fresh check before trusting it.</p>
-
-        <div class="hcard-lim"><span class="k">Price limit</span> <b>+1237 or better</b>
-          <span class="n">Below that, the value is gone.</span></div>
+        <div class="lp-gx-means"><b>What this means</b>
+          EdgeDesk differs from the market by 1.7 points &mdash; enough to justify deeper research, but the disagreement has not been validated as an edge.</div>
+        <div class="lp-gx-chk"><span class="h">Research check</span>
+          <span class="ck ok">&#10003; model built</span><span class="ck ok">&#10003; market joined</span><span class="ck ok">&#10003; roster loaded</span><span class="ck warn">? availability</span><span class="ck warn">? starting quarterback</span><span class="ck neg">&times; recruiting</span></div>
+        <div class="lp-gx-why"><span class="h">Why EdgeDesk prices it here</span>
+          <div class="r"><span class="p">+4.1</span><span class="b"><i style="width:100%"></i></span><span class="t">Playing at Auburn &mdash; the league-wide home-field number</span></div>
+          <div class="r"><span class="p">+3.4</span><span class="b"><i style="width:83%"></i></span><span class="t">Conference strength differs and the in-season sample is thin</span></div>
+          <div class="r"><span class="p">+2.2</span><span class="b"><i style="width:54%"></i></span><span class="t">Stylistically the matchup favours Auburn</span></div>
+        </div>
       </div>
-      <div class="term-foot">Every call carries the reason, the price limit, and what would make it wrong. Nothing here tells you what to bet.</div>
+      <div class="term-foot">Player quality and scheme are <b>not</b> in that number: neither has cleared validation, so neither moves a projected line. Nothing here tells you what to bet.</div>
     </div>
   </div>
 </header>
+
+<!-- ================== WHAT IT REPLACES ==================
+     The value is not that this information never existed. It is that a
+     reader no longer assembles it by hand on a Saturday morning. -->
+<section class="band" id="compress">
+  <div class="wrap">
+    <div class="head rv">
+      <span class="ey"><b>&#9642;</b> Your Saturday</span>
+      <h2>The information already exists.<br><span class="g">Assembling it is the expensive part.</span></h2>
+      <p>Every number EdgeDesk shows you could be found somewhere else, by you, given enough tabs and enough morning. That is exactly the job it does instead.</p>
+    </div>
+    <div class="lp-ba rv">
+      <div class="col">
+        <h3>Without EdgeDesk</h3>
+        <div class="lp-stack was">
+          <span>An odds screen</span><span>A roster site</span><span>A transfer portal tracker</span>
+          <span>Team stats</span><span>Player stats</span><span>Somebody&rsquo;s power ratings</span>
+          <span>A spreadsheet</span><span>Searching for injury news</span><span>Your notes</span><span>An AI to make sense of it</span>
+        </div>
+      </div>
+      <div class="arrow">&#8594;</div>
+      <div class="col">
+        <h3>With EdgeDesk</h3>
+        <div class="lp-one">
+          <div class="big">Open the matchup.</div>
+          <p class="hcard-p" style="margin:8px 0 0;color:var(--dim);font-size:13px;line-height:1.55">That&rsquo;s the workflow. Every layer below is already on the page, already joined to the game, already saying how much of it is actually known.</p>
+          <div class="lay">
+            <span>MODEL</span><span>MARKET</span><span>ROSTER</span><span>PLAYERS</span>
+            <span>MATCHUPS</span><span>SIMULATION</span><span>UNCERTAINTY</span><span>RECORD</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================== THE BREADTH ================== -->
+<section class="band" id="getyou">
+  <div class="wrap">
+    <div class="head rv">
+      <span class="ey"><b>&#9642;</b> The terminal</span>
+      <h2>What a subscription <span class="g">actually opens.</span></h2>
+      <p>Eleven research layers over NFL and FBS, on one page per game, built here rather than bought in.</p>
+    </div>
+    <div class="lp-get rv">
+      <div class="g"><b>Game research</b><p>Fair spread, projected score, win probability, outcome range and the drivers behind the number.</p></div>
+      <div class="g"><b>Market research</b><p>Model against market, the captured price, the size of the disagreement and the pricing context around it.</p></div>
+      <div class="g"><b>Team research</b><p>Roster continuity, returning production, portal movement in and out, and position groups.</p></div>
+      <div class="g"><b>Player research</b><p>Confidence-aware player ratings across FBS, and team player-quality research built from them.</p></div>
+      <div class="g"><b>Matchup research</b><p>Position-group matchups, scheme tendencies, the run-defence gate and where the advantages sit.</p></div>
+      <div class="g"><b>Power ratings</b><p>EdgeDesk&rsquo;s own team ratings in points against an average FBS team, rebuilt through the season.</p></div>
+      <div class="g"><b>Simulations</b><p>Projected scores, margin distributions, upset probability, cover probability and the range of the game.</p></div>
+      <div class="g"><b>Uncertainty</b><p>Starting-quarterback uncertainty, availability, stale markets, missing inputs and the risk gates over all of it.</p></div>
+      <div class="g"><b>Public record</b><p>What the model said before kickoff, kept next to what happened afterwards.</p></div>
+      <div class="g"><b>Research briefs</b><p>Copy a complete matchup packet as plain text &mdash; for your notes, a writer, or the AI you already use.</p></div>
+      <div class="g"><b>Data quality</b><p>How much of the model&rsquo;s own input contract reached each game, stated per game rather than averaged away.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================== NOT A PICKS SERVICE ================== -->
+<section class="band" id="notpicks">
+  <div class="wrap">
+    <div class="head rv">
+      <span class="ey"><b>&#9642;</b> The difference</span>
+      <h2>You are not paying for <span class="g">somebody else&rsquo;s pick.</span></h2>
+      <p>You are paying for the workspace you reach your own conclusion in.</p>
+    </div>
+    <div class="lp-vs rv">
+      <div class="side">
+        <h3>A picks service</h3>
+        <div class="quote">&ldquo;Take Auburn.&rdquo;</div>
+        <p style="margin:12px 0 0;font-size:12.5px;line-height:1.55;color:var(--dim)">One instruction. No number to check, no reasoning to argue with, and nothing to look at again on Sunday.</p>
+      </div>
+      <div class="side ours">
+        <h3>EdgeDesk</h3>
+        <ul>
+          <li>Here is <b>our price</b>.</li>
+          <li>Here is <b>the market</b>.</li>
+          <li>Here is the <b>projected score</b>.</li>
+          <li>Here is <b>why</b> we price it there.</li>
+          <li>Here is <b>what could make it wrong</b>.</li>
+          <li>Here is <b>what we still do not know</b>.</li>
+          <li>Now decide what the number is worth.</li>
+        </ul>
+      </div>
+    </div>
+    <p class="rv" style="margin-top:22px;font-size:17px;font-weight:600;letter-spacing:-.01em">Research the matchup. Then price it.</p>
+  </div>
+</section>
+
+<!-- ================== THE WORKFLOW ================== -->
+<section class="band" id="steps">
+  <div class="wrap">
+    <div class="head rv">
+      <span class="ey"><b>&#9642;</b> How a matchup reads</span>
+      <h2>Five steps, <span class="g">in the order the page is built.</span></h2>
+    </div>
+    <div class="lp-steps rv">
+      <div class="s"><span class="n">01</span><b>Find the game</b><p>Today&rsquo;s games and the largest model-market disagreements are surfaced for you, with a search over the whole board.</p></div>
+      <div class="s"><span class="n">02</span><b>See the price</b><p>EdgeDesk&rsquo;s spread, the market&rsquo;s spread, the projected score, win probability and the research range around it.</p></div>
+      <div class="s"><span class="n">03</span><b>Understand why</b><p>The model&rsquo;s own drivers with the points it assigned, plus roster continuity, player quality, matchup and simulation.</p></div>
+      <div class="s"><span class="n">04</span><b>Challenge the number</b><p>Availability, the starting quarterback, portal turnover, run-defence risk, missing inputs and what would break the projection.</p></div>
+      <div class="s"><span class="n">05</span><b>Decide for yourself</b><p>EdgeDesk states its own read on the game and stops there. What that is worth is your call, not its call.</p>
+        <div class="st"><i>PASS</i><i>REVIEW</i><i>INVESTIGATE</i><i>THIN DATA</i></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================== THE HONEST PART ================== -->
+<section class="band" id="idk">
+  <div class="wrap">
+    <div class="head rv">
+      <span class="ey"><b>&#9642;</b> Uncertainty, on the page</span>
+      <h2>The model is allowed to say <span class="g">&ldquo;I don&rsquo;t know.&rdquo;</span></h2>
+      <p>Most betting products are built to always produce an answer. EdgeDesk is built to tell you when its answer is not trustworthy yet &mdash; on the game, in the place you would otherwise have trusted it.</p>
+    </div>
+    <div class="lp-idk rv">
+      <div class="k"><b>Unknown quarterback</b><p>No public college feed publishes a starter EdgeDesk trusts. When it does not know, it says so and carries the last known value &mdash; never a guess. <em>Unknown is not healthy.</em></p></div>
+      <div class="k"><b>Missing data</b><p>A column that fails its coverage gate is declared missing league-wide rather than scored as if the events did not happen. <em>Missing is not zero.</em></p></div>
+      <div class="k"><b>Unvalidated layers</b><p>Player quality and scheme have not cleared walk-forward validation, so they move <em>no</em> projected line anywhere in the product. They are labelled research, and they stay there.</p></div>
+      <div class="k"><b>Stale market</b><p>When the only price on file is an old capture, nothing is compared until a fresh quote lands. A gap against a price that no longer exists is not a gap.</p></div>
+      <div class="k"><b>A very large gap</b><p>Past the guard bound, EdgeDesk reads its own number as unsafe rather than as an opportunity. Missing information is the likelier explanation until the gap is explained.</p></div>
+      <div class="k"><b>Thin data</b><p>A projection the model has little confidence in is marked thin and read as provisional &mdash; not as agreement with the market, and not as disagreement either.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================== TWO WORKED EXAMPLES ================== -->
+<section class="band" id="examples">
+  <div class="wrap">
+    <div class="head rv">
+      <span class="ey"><b>&#9642;</b> Two real research states</span>
+      <h2>A big disagreement is a question.<br><span class="g">Not a discovery.</span></h2>
+      <p>Both of these are ordinary results. Neither is a recommendation. Illustrative games, in the product&rsquo;s own words.</p>
+    </div>
+    <div class="lp-ex rv">
+      <div class="e inv">
+        <div class="g">Oklahoma State @ Tulsa</div>
+        <div class="cmp">
+          <div><span>EdgeDesk</span>Tulsa +1.0</div>
+          <div><span>Market</span>Tulsa +11.5</div>
+        </div>
+        <div class="gap">10.5 points apart</div>
+        <span class="lp-verdict">INVESTIGATE</span>
+        <p>EdgeDesk does <b>not</b> call this an edge. A disagreement this size is far more often the model missing something &mdash; a suspension, a starter, a scheme change &mdash; than the market being wrong. The page tells you to go find out which, and shows you which inputs never arrived.</p>
+      </div>
+      <div class="e pass">
+        <div class="g">Tulane @ Duke</div>
+        <div class="cmp">
+          <div><span>EdgeDesk</span>Duke -7.7</div>
+          <div><span>Market</span>Duke -8.5</div>
+        </div>
+        <div class="gap">0.8 points apart</div>
+        <span class="lp-verdict">PASS</span>
+        <p>Nothing to do here, and the page says so plainly. Sometimes the most useful research result is that the market already has the game priced about right &mdash; and a product that never returns that answer is not researching anything.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================== EDGEDESK'S OWN RESEARCH ==================
+     Counts and the board are read from the committed artifacts at runtime,
+     so nothing here can go stale against the product. -->
+<section class="band" id="ours">
+  <div class="wrap">
+    <div class="head rv">
+      <span class="ey"><b>&#9642;</b> Built here, not bought in</span>
+      <h2>More than <span class="g">raw statistics.</span></h2>
+      <p>EdgeDesk computes its own ratings rather than reprinting somebody else&rsquo;s. These load from the same files the product reads.</p>
+    </div>
+    <div class="lp-ba even rv">
+      <div class="col">
+        <h3>EdgeDesk power ratings</h3>
+        <div class="lp-pr" id="lpRatings">
+          <div class="row"><span class="n">&mdash;</span><span class="t" style="color:var(--dim)">loading the current board&hellip;</span></div>
+        </div>
+        <p style="margin:11px 0 0;font-size:12px;color:var(--dim);line-height:1.55">Points against an average FBS team, on a neutral field &mdash; home advantage is <b style="color:var(--text)">not</b> in the number. Not a poll. A pricing input.</p>
+        <div style="margin-top:11px"><button class="btn ghost" onclick="startSubscribe()">View all ratings &#8594;</button></div>
+      </div>
+      <div class="col">
+        <h3>The research underneath</h3>
+        <div class="lp-stack">
+          <span id="lpPlayers">Player ratings across FBS</span>
+          <span id="lpTeams">Every FBS team</span>
+          <span>Roster continuity and returning value</span>
+          <span>Portal movement, in and out</span>
+          <span>Position-group matchup matrix</span>
+          <span>Research fair range per game</span>
+          <span>Risk gates and model drivers</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================== WHO IT IS FOR ================== -->
+<section class="band tight" id="who">
+  <div class="wrap">
+    <div class="head rv">
+      <span class="ey"><b>&#9642;</b> Who opens this</span>
+      <h2>Built for people who <span class="g">were going to do the work anyway.</span></h2>
+    </div>
+    <div class="lp-who rv">
+      <div class="w"><b>Serious bettor</b><p>Research a slate without ten tabs open and a spreadsheet you maintain by hand.</p></div>
+      <div class="w"><b>Creator</b><p>Turn a matchup into content without spending the morning gathering it first.</p></div>
+      <div class="w"><b>Writer / publisher</b><p>Generate a clean matchup brief you can quote, edit and stand behind.</p></div>
+      <div class="w"><b>Model builder</b><p>A second opinion and a market comparison you did not have to build yourself.</p></div>
+      <div class="w"><b>Football nerd</b><p>Go absurdly deep, because this is apparently what we have decided to do with Saturdays.</p></div>
+    </div>
+  </div>
+</section>
 
 <!-- ====================== THE PRICE IS THE DECISION ======================
      The interactive that used to sit in the hero. It is the single clearest
@@ -1614,8 +1935,9 @@ section.band.lp-quiet{padding:56px 0}
   <div class="wrap">
     <div class="head rv">
       <span class="ey">Division of labor</span>
-      <h2>AI that interprets the evidence. Not AI that invents the numbers.</h2>
-      <p>The quantitative work is deterministic and auditable. The model never produces a probability, a fair price, an edge, or a CLV figure &mdash; it reads the packet the engine built and explains what's in it.</p>
+      <h2>Use whatever AI you already use.</h2>
+      <p>EdgeDesk is the research layer, not the thinking layer. Every matchup copies out as a structured plain-text brief &mdash; both numbers, the projected score, the drivers, the counterarguments and what is still missing &mdash; for your notes, a writer, or to paste straight into ChatGPT or Claude and argue with there.</p>
+      <p>Inside the product the same rule holds: the quantitative work is deterministic and auditable, and a language model never produces a probability, a price or a rating. It reads what the engine built and explains what is in it.</p>
     </div>
 
     <div class="ai">
@@ -1850,14 +2172,31 @@ section.band.lp-quiet{padding:56px 0}
 </section>
 
 <!-- ============================ D · PRICING ============================ -->
+<!-- ================== THE CLOSE ================== -->
+<section class="band" id="close">
+  <div class="wrap">
+    <div class="head rv" style="max-width:60ch">
+      <span class="ey"><b>&#9642;</b> The honest pitch</span>
+      <h2>You could do this research <span class="g">yourself.</span></h2>
+      <p style="font-size:18px">The question is whether you want to spend your Saturday doing it.</p>
+      <p>EdgeDesk puts the model, the market, the roster, the players, the matchup, the simulation and the uncertainty on one page, per game, and tells you which parts of it are not yet worth trusting.</p>
+      <p style="font-size:19px;font-weight:600;color:var(--text);letter-spacing:-.015em;margin-top:20px">Research the matchup.<br>Then price it.</p>
+      <div class="cta" style="margin-top:22px">
+        <button class="btn primary lg" onclick="startSubscribe()">Start researching &#8594;</button>
+        <a class="btn ghost lg" href="/record.html">See the public record</a>
+      </div>
+    </div>
+  </div>
+</section>
+
 <section class="band" id="pricing">
   <div class="wrap">
     <div class="head rv">
       <span class="ey">Access</span>
-      <p class="justsaw">You just saw the process.</p>
-      <div class="pchain"><span>Board</span><span>Signal</span><span>Research</span><span>Attack</span><span>Price</span><span>Track</span></div>
+      <p class="justsaw">You just saw the terminal.</p>
+      <div class="pchain"><span>Model</span><span>Market</span><span>Roster</span><span>Players</span><span>Matchup</span><span>Simulation</span><span>Uncertainty</span><span>Record</span></div>
       <h2>That's EdgeDesk.</h2>
-      <p>Not because information is expensive. <b>Because the work of finding, evaluating, challenging and tracking a number is expensive</b> &mdash; and it is the same work, every night, whether or not anything on the board was worth it.</p>
+      <p>Not because the information is expensive. <b>Because finding it, joining it to the game, challenging it and keeping the receipt is expensive</b> &mdash; and it is the same work every Saturday, whether or not the game turned out to be worth it.</p>
     </div>
 
     <div class="buying">
@@ -1893,7 +2232,20 @@ section.band.lp-quiet{padding:56px 0}
         <div class="pprice"><span class="pamt">$79.99</span><span class="pper">/ month, after 7 free days</span></div>
         <p class="pren"><b style="color:var(--val)">7 days free, then $79.99/month.</b> Nothing is charged today. Cancel any time in the trial from Settings &rsaquo; Subscription and you are never billed &mdash; we also email you before it converts. <b style="color:var(--text)">Founding subscribers lock this rate for life.</b></p>
         <p class="pcommit">The price is the commitment to the process, <b>not a promise of profit.</b></p>
-        <button class="btn primary lg authbtn" id="subBtn" onclick="startSubscribe()">Start 7-day free trial</button>
+        <ul class="pincl">
+          <li>Game research &mdash; fair spread, projected score, outcome range</li>
+          <li>Model against market, with the disagreement sized</li>
+          <li>EdgeDesk power ratings, rebuilt through the season</li>
+          <li>Player research across FBS</li>
+          <li>Team and roster research &mdash; continuity, portal, position groups</li>
+          <li>Matchup research and scheme tendencies</li>
+          <li>Simulations, distributions and cover probability</li>
+          <li>Data quality and the uncertainty on every game</li>
+          <li>The public pre-kickoff record</li>
+          <li>Copyable research briefs</li>
+          <li>NFL and FBS, one terminal</li>
+        </ul>
+        <button class="btn primary lg authbtn" id="subBtn" onclick="startSubscribe()">Start researching</button>
         <p class="psub">No charge for 7 days &middot; cancel any time &middot; 21+ &middot; research tool, not betting advice &middot; 1-800-GAMBLER</p>
       </div>
 
@@ -2314,10 +2666,56 @@ function edAudience(){
   /* Make the first line above the fold speak to them too, and say plainly which
      sport the terminal actually prices — a golfer landing on "sports betting
      research terminal" should not have to guess whether golf is in it. */
-  var hk=document.getElementById('hook'); if(hk) hk.classList.add('on');
-  var ey=document.getElementById('heroEy');
-  if(ey) ey.innerHTML='<b>&#9642;</b> Research terminal &middot; golf, MLB, WNBA, CFB, CBB';
+  /* The hero hook and the sport list it rewrote are gone: EdgeDesk is a
+     football research terminal now, and a referred golfer should be told the
+     truth about that rather than shown a sport list the product dropped.
+     The #bridge band above still speaks to them. */
 }
+
+/* ===== THE LANDING PAGE READS THE PRODUCT'S OWN ARTIFACTS =================
+   The power-ratings board and the two counts are NOT written into this page.
+   They are read from the same committed JSON the app reads, so a marketing
+   claim cannot drift away from the product that has to honour it. Two
+   same-origin static reads, no API, no auth, and every failure leaves the
+   honest fallback already in the markup. */
+(function landingArtifacts(){
+  function n(x){ return typeof x === 'number' && isFinite(x) ? x.toLocaleString() : null; }
+  /* ESCAPE, do not strip: stripping turned Texas A&M into "Texas AM" on a
+     page whose whole argument is that it does not distort the product. */
+  function esc(v){ return String(v).replace(/[&<>"]/g, function(c){
+    return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
+
+  fetch('football/rankings/current.json',{cache:'no-cache'})
+    .then(function(r){ if(!r.ok) throw new Error(r.status); return r.json(); })
+    .then(function(j){
+      var host=document.getElementById('lpRatings'); if(!host||!j||!j.teams) return;
+      var teams=[],k;
+      for(k in j.teams){ var t=j.teams[k];
+        if(t && t.rank!=null && t.etsr!=null) teams.push(t); }
+      if(!teams.length) return;                    /* nothing ranked: keep the fallback */
+      teams.sort(function(a,b){ return a.rank-b.rank; });
+      host.innerHTML = teams.slice(0,5).map(function(t){
+        var v=(t.etsr>=0?'+':'')+t.etsr.toFixed(1);
+        return '<div class="row"><span class="n">'+t.rank+'</span>'
+          +'<span class="t">'+esc(String(t.team))+'</span>'
+          +'<span class="v">'+v+'</span></div>';
+      }).join('');
+      var teamEl=document.getElementById('lpTeams');
+      if(teamEl && n(j.team_count)) teamEl.textContent=n(j.team_count)+' FBS teams rated';
+    })
+    .catch(function(){});                           /* the markup already says "loading" */
+
+  fetch('football/players/current.json',{cache:'no-cache'})
+    .then(function(r){ if(!r.ok) throw new Error(r.status); return r.json(); })
+    .then(function(j){
+      var pl=document.getElementById('lpPlayers');
+      if(pl && n(j.player_count)) pl.textContent=n(j.player_count)+' FBS player records rated';
+      var teamEl=document.getElementById('lpTeams');
+      if(teamEl && n(j.team_count) && /Every FBS team/.test(teamEl.textContent))
+        teamEl.textContent=n(j.team_count)+' FBS teams';
+    })
+    .catch(function(){});
+})();
 
 /* ===== LIVE PUBLIC PROOF (reads the same DB the app runs on; self-gates on sample) ===== */
 async function sbGet(q){var r=await fetch(SB_URL+'/rest/v1/'+q,{headers:{apikey:SB_KEY,Authorization:'Bearer '+SB_KEY}});if(!r.ok)throw new Error(r.status);return r.json();}
