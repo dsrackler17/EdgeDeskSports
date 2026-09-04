@@ -53,6 +53,7 @@ declare
   SEC_B   constant text := 'anon-secret-bbbbbbbbbbbbbbbbbbbbbbbbbbbb';
   SEC_X   constant text := 'anon-secret-xxxxxxxxxxxxxxxxxxxxxxxxxxxx';
   v jsonb; tok text; cid uuid; gtok text; n integer; caught text;
+  n_before integer; n_after integer;
 begin
   insert into auth.users (id, email, raw_user_meta_data) values
     (DAVIS,  'davis@example.com',  '{"display_name":"Davis"}'),
@@ -312,6 +313,28 @@ begin
   perform pg_temp.ok('and the sweeper persists it', public.h2h_sweep_expired() >= 1);
   select status into caught from public.game_challenges where invite_token = tok;
   perform pg_temp.ok('after which the stored column agrees', caught = 'EXPIRED');
+
+  -- THE HEALTH PROBE'S PREMISE.
+  -- /games/status/ decides whether the social layer is deployed AND current by
+  -- calling h2h_submit with a token that does not exist. That is only a valid
+  -- probe if two things hold: games_hash runs BEFORE the token lookup (so a
+  -- stale deployment surfaces its error rather than a clean "not found"), and
+  -- nothing is written when the lookup fails. group_preview was the old probe
+  -- and never touched games_hash, so it reported "live" against the very
+  -- deployment that could not create a challenge.
+  perform pg_temp.as_anon();
+  select count(*) into n_before from public.game_challenge_entries;
+  caught := null;
+  begin
+    perform public.h2h_submit('statuscheckdoesnotexist', '{}'::jsonb, 'status check', SEC_X);
+  exception when others then caught := SQLERRM; end;
+  perform pg_temp.ok('the health probe is refused with "no such challenge"',
+    caught is not null and caught ilike '%no such challenge%', 'got ' || coalesce(caught, 'no error'));
+  perform pg_temp.ok('and it reached that point through games_hash, not around it',
+    caught not ilike '%does not exist%', 'got ' || coalesce(caught, 'no error'));
+  select count(*) into n_after from public.game_challenge_entries;
+  perform pg_temp.ok('and the probe wrote nothing', n_before = n_after,
+    n_before || ' -> ' || n_after);
 
 -- ═══ 7. CLAIMING AN ANONYMOUS RECORD ══════════════════════════════════════
 

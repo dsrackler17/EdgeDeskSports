@@ -114,20 +114,48 @@
         'games/data/config.json is written by the build from app.html.')});
       paint();
     }else{
-      S.previewGroup('statuscheckdoesnotexist').then(function(r){
-        /* a deployed backend answers with null for an unknown token; an
-           undeployed one 404s because the function itself is missing */
+      /* PROBE h2h_submit, NOT group_preview.
+         group_preview takes only a token, so it never calls games_hash() and
+         answers "live" just as happily against a stale deployment whose
+         games_hash still calls pgcrypto's digest() — the exact failure that
+         broke challenge creation in production while this page said fine.
+         h2h_submit computes games_hash(p_secret) in its DECLARE block, before
+         it looks the token up, so an unknown token exercises the hash and then
+         raises 'no such challenge' having written nothing. That is a real
+         end-to-end read of the layer people actually use. */
+      S.rpc('h2h_submit',{
+        p_token:'statuscheckdoesnotexist',
+        p_selection:{},
+        p_display_name:'status check',
+        p_secret:'00000000000000000000000000000000'
+      }).then(function(r){
+        var msg=String((r&&(r.message||r.error))||'');
+        var host=esc(cfg.supabase_url.replace(/^https?:\/\//,''));
         if(r.ok){
-          out.push({order:3,html:row('ok','Social layer',
-            'Head-to-Head and Groups are live against '+esc(cfg.supabase_url.replace(/^https?:\/\//,''))+'.')});
+          /* the token does not exist, so a healthy backend cannot succeed */
+          out.push({order:3,html:row('warn','Social layer',
+            'Reachable at '+host+', but the check did not behave as expected.',
+            'A challenge submission against a token that does not exist should be refused.')});
         }else if(r.status===404||r.error==='not_configured'){
           out.push({order:3,html:row('bad','Social layer',
             'The database functions are not deployed, so <b>Head-to-Head and Groups cannot '
             +'be used</b>. Price It and Pick 5 are unaffected.',
             'Apply <code>supabase/games_social.sql</code> to the Supabase project.')});
+        }else if(/does not exist/i.test(msg)&&/digest|function/i.test(msg)){
+          out.push({order:3,html:row('bad','Social layer',
+            'The deployed functions are <b>out of date</b>, so creating or joining a '
+            +'Head-to-Head or a group fails. Price It and Pick 5 are unaffected.',
+            'The database reported: <code>'+esc(msg)+'</code>. Re-apply the CURRENT '
+            +'<code>supabase/games_social.sql</code> from the repository — an older copy '
+            +'is still installed.')});
+        }else if(r.error==='P0002'||/no such challenge/i.test(msg)){
+          /* reached past games_hash and past the token lookup: fully deployed */
+          out.push({order:3,html:row('ok','Social layer',
+            'Head-to-Head and Groups are live against '+host+'.',
+            'Checked end to end: the secret hash and the challenge lookup both answered.')});
         }else{
           out.push({order:3,html:row('warn','Social layer',
-            'Reachable, but the check returned: '+esc(r.message||r.error||'an error')+'.')});
+            'Reachable at '+host+', but the check returned: '+esc(msg||'an error')+'.')});
         }
         paint();
       });
