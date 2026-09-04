@@ -1,8 +1,8 @@
 {
   "schema": "edgedesk_football_health_v1",
-  "generated_at": "2026-09-03T13:47:16.376Z",
+  "generated_at": "2026-09-04T13:42:14.318Z",
   "ok": true,
-  "last_ok_at": "2026-09-03T13:47:16.376Z",
+  "last_ok_at": "2026-09-04T13:42:14.318Z",
   "run": {
     "trigger": "schedule",
     "runner": "github-actions",
@@ -36,21 +36,21 @@
   },
   "lines": {
     "nfl": {
-      "compared": 10,
+      "compared": 15,
       "median_gap": 1.68,
-      "max_gap": 4.82,
+      "max_gap": 5.57,
       "outliers": []
     },
     "p4": {
-      "compared": 19,
+      "compared": 21,
       "median_gap": 4.2,
-      "max_gap": 15.83,
+      "max_gap": 10.53,
       "outliers": [
         {
-          "game": "Massachusetts @ Rutgers",
-          "gap": 15.83,
-          "model": 46.33,
-          "market": 30.5
+          "game": "Oklahoma State @ Tulsa",
+          "gap": 10.53,
+          "model": -0.97,
+          "market": -11.5
         },
         {
           "game": "East Carolina @ Alabama",
@@ -96,19 +96,19 @@
       "id": "nfl_projections",
       "label": "NFL: upcoming slate projects to sane numbers",
       "status": "pass",
-      "detail": "10/10 upcoming games PREDICTED, all inside bounds"
+      "detail": "15/15 upcoming games PREDICTED, all inside bounds"
     },
     {
       "id": "nfl_lines_market",
       "label": "NFL: market lines plausible",
       "status": "pass",
-      "detail": "10 lines inside plausible bounds"
+      "detail": "15 lines inside plausible bounds"
     },
     {
       "id": "nfl_lines",
       "label": "NFL: model vs market line guard",
       "status": "pass",
-      "detail": "median gap 1.68 pts over 10 games, max 4.82"
+      "detail": "median gap 1.68 pts over 15 games, max 5.57"
     },
     {
       "id": "p4_season_window",
@@ -150,42 +150,42 @@
       "id": "p4_lines_src",
       "label": "CFB P4: cfb.lines market source reachable",
       "status": "pass",
-      "detail": "19 of 30 upcoming games have a book number"
+      "detail": "21 of 30 upcoming games have a book number"
     },
     {
       "id": "p4_projections",
       "label": "CFB P4: upcoming slate projects to sane numbers",
       "status": "pass",
-      "detail": "30/30 upcoming P4 games PREDICTED, all inside bounds · roster bundles joined on 19/30"
+      "detail": "30/30 upcoming P4 games PREDICTED, all inside bounds · roster bundles joined on 21/30"
     },
     {
       "id": "p4_lines_market",
       "label": "CFB P4: market lines plausible",
       "status": "pass",
-      "detail": "19 lines inside plausible bounds"
+      "detail": "21 lines inside plausible bounds"
     },
     {
       "id": "p4_lines",
       "label": "CFB P4: model vs market line guard",
       "status": "warn",
-      "detail": "median gap 4.2 pts over 19 games; 2 game(s) beyond 10 pts"
+      "detail": "median gap 4.2 pts over 21 games; 2 game(s) beyond 10 pts"
     }
   ],
   "pipeline_meta": {
-    "daily_check_last_run": "2026-09-03T13:47:16.376Z",
+    "daily_check_last_run": "2026-09-04T13:42:14.318Z",
     "daily_check_last_status": "ok",
-    "engine_tests_last_run": "2026-09-03T13:47:16.376Z",
+    "engine_tests_last_run": "2026-09-04T13:42:14.318Z",
     "engine_tests_last_status": "ok",
-    "nfl_ingest_last_run": "2026-09-03T13:47:16.376Z",
+    "nfl_ingest_last_run": "2026-09-04T13:42:14.318Z",
     "nfl_ingest_last_status": "ok",
     "row_count_nfl_ingest": 0,
-    "p4_ingest_last_run": "2026-09-03T13:47:16.376Z",
+    "p4_ingest_last_run": "2026-09-04T13:42:14.318Z",
     "p4_ingest_last_status": "ok",
     "row_count_p4_ingest": 8,
-    "projection_guard_last_run": "2026-09-03T13:47:16.376Z",
+    "projection_guard_last_run": "2026-09-04T13:42:14.318Z",
     "projection_guard_last_status": "ok",
-    "line_guard_last_run": "2026-09-03T13:47:16.376Z",
+    "line_guard_last_run": "2026-09-04T13:42:14.318Z",
     "line_guard_last_status": "ok",
-    "row_count_line_guard": 29
+    "row_count_line_guard": 36
   }
 }
