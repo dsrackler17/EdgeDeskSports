@@ -76,6 +76,19 @@ same anon key every page ships) can read a close without the live board being
 readable. A live price never leaves through it. The paywall is the live board,
 not the history.
 
+### `close_v7_parity.sql` — label how each close was measured
+Adds `closing_reference_type`, `closing_ref_book`, `closing_n_families`,
+`closing_ref_age_s` and `closing_policy`, and — separately — the six columns
+`close` has always written and that **no file here ever created**
+(`closing_dec`, `closing_book`, `closing_has_sharp`, `closing_n_books`,
+`closing_source`, `closing_at_observed`); they existed only because someone
+added them by hand in the dashboard, so a database rebuilt from this checkout
+had a close job whose every update failed.
+
+Labels every already-closed row `pre-v7-legacy` and touches no measurement, so
+the pre-parity and post-parity populations can be segmented and never averaged.
+Rows still open are left alone. Report rows 1-8 should each say `ok`.
+
 ### `book_quote_ticks.sql` — a stamped history of every book's price
 `book_quotes` is upserted per `(sig_key, book_key)`, so it holds the latest pass
 only and every earlier price at every book was overwritten. This adds a trigger
@@ -108,8 +121,14 @@ would be indistinguishable from a real difference.
 
 It carries its own copy of `devig`, `priceEvent` and `sigKey`, because the
 dashboard bundles only one folder and a `../_shared` import fails the bundle
-silently. The copies have drifted from capture v9 — see
-`functions/capture/README.md` and the audit in `tools/capture/pricer_parity.md`.
+silently. Those copies had drifted from capture v9 in four ways, all fixed in
+`close-v7-parity` and all pinned by `tools/capture/pricer_parity.test.js`; the
+audit is in `tools/capture/pricer_parity.md`.
+
+Run `close_v7_parity.sql` **before** deploying it. close degrades safely without
+it — the new columns are probed and omitted — but until it runs there is no way
+to tell a Pinnacle-anchored close from a consensus one, or a v7 row from a
+pre-parity row.
 
 ### `functions/learn/index.ts` — patterns and calibration
 Pre-registered hypotheses, chronological holdout, Benjamini-Hochberg across the

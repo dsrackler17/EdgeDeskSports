@@ -284,6 +284,58 @@ values ('e1|spreads|A|-3.5','americanfootball_nfl','spreads','A',-3.5, now()-int
   const values = cols.map(([t, c]) => `('${t}','${c}')`).join(',');
   const missing = psql('edt', `-tAc "with w(tbl,col) as (values ${values}) select string_agg(w.tbl||'.'||w.col,',') from w left join information_schema.columns ic on ic.table_schema='public' and ic.table_name=w.tbl and ic.column_name=w.col where ic.column_name is null"`).trim();
   chk('EVERY column capture writes exists after the migration', missing === '', missing);
+
+  /* ── close_v7_parity.sql, against the same real database ────────────────
+     Same three rules, same failure mode: this file also ends in a report, and
+     a reserved word or a typo in it kills that report exactly the way `as check`
+     killed the v9 one. It runs SECOND because it labels rows the v9 migration
+     has already created. */
+  const CLOSE_SQL_PATH = path.join(ROOT, 'supabase', 'close_v7_parity.sql');
+  const CLOSE_SQL = fs.readFileSync(CLOSE_SQL_PATH, 'utf8');
+  const cmig = path.join(HOME, 'close_mig.sql');
+  fs.copyFileSync(CLOSE_SQL_PATH, cmig);
+  if (asPostgres) cp.execSync(`chmod a+r ${cmig}`);
+
+  const CLOSE_ROWS = (CLOSE_SQL.match(/union all\s*select \d+/g) || []).length + 1;
+  chk('the close report has checks to run', CLOSE_ROWS >= 7, CLOSE_ROWS);
+
+  /* Give it something to label: one closed row from a live fetch, one recovered
+     from the tick series, one closed with no CLV at all. */
+  psql('edt', `-q -v ON_ERROR_STOP=1 -c "alter table public.signals add column if not exists closing_source text"`);
+  psql('edt', `-q -v ON_ERROR_STOP=1 -c "update public.signals set closed_at=now(), clv=0.012, closing_source='live' where sig_key='e1|spreads|A|-3.5'"`);
+  psql('edt', `-q -v ON_ERROR_STOP=1 -c "insert into public.signals (sig_key, market, selection, closed_at, clv, closing_source) values ('e3|h2h|C|','h2h','C', now(), 0.004, 'last_tick'), ('e4|h2h|D|','h2h','D', now(), null, 'none')"`);
+
+  const cfirst = psql('edt', `-v ON_ERROR_STOP=1 -f ${cmig}`);
+  chk('close_v7_parity runs to completion against a real postgres', /COMMIT/.test(cfirst));
+  chk('its report EXECUTES', /check_name/.test(cfirst), cfirst.slice(-400));
+  chk('every close report row says ok on the first run',
+    okRows(cfirst) === CLOSE_ROWS && badRows(cfirst) === 0,
+    { ok: okRows(cfirst), want: CLOSE_ROWS, bad: badRows(cfirst), raw: cfirst.slice(-700) });
+  const csecond = psql('edt', `-v ON_ERROR_STOP=1 -f ${cmig}`);
+  chk('and it is idempotent', okRows(csecond) === CLOSE_ROWS && /COMMIT/.test(csecond), okRows(csecond));
+
+  /* The labels: applied once, correctly, and never to a row that is still open. */
+  const clabels = psql('edt', `-tAc "select sig_key||'='||coalesce(closing_policy,'-')||'/'||coalesce(closing_reference_type,'-') from public.signals order by sig_key"`);
+  chk('a live-closed row is labelled pre-v7-legacy with an unknown reference',
+    /e1\|spreads\|A\|-3\.5=pre-v7-legacy\/pre-v7-unknown/.test(clabels), clabels);
+  chk('a tick-recovered row is labelled tick, because that path never had the bug',
+    /e3\|h2h\|C\|=pre-v7-legacy\/tick/.test(clabels), clabels);
+  chk('a row closed with no CLV is labelled none, not given a reference it never had',
+    /e4\|h2h\|D\|=pre-v7-legacy\/none/.test(clabels), clabels);
+  chk('an OPEN row is not labelled — no measurement was invented',
+    /e2\|h2h\|B\|=-\/-/.test(clabels), clabels);
+
+  /* And no measurement was edited. */
+  const untouched = psql('edt', `-tAc "select clv from public.signals where sig_key='e1|spreads|A|-3.5'"`).trim();
+  chk('labelling changed no CLV', untouched === '0.012', untouched);
+
+  /* Every column close v7 writes must exist, same rule as capture's. */
+  const closeWrites = ['closing_reference_type','closing_ref_book','closing_n_families',
+                       'closing_ref_age_s','closing_policy','closing_dec','closing_sharp_fair',
+                       'clv','clv_excluded_reason','closed_at'];
+  const cvalues = closeWrites.map((c) => `('${c}')`).join(',');
+  const cmissing = psql('edt', `-tAc "with w(col) as (values ${cvalues}) select string_agg(w.col,',') from w left join information_schema.columns ic on ic.table_schema='public' and ic.table_name='signals' and ic.column_name=w.col where ic.column_name is null"`).trim();
+  chk('EVERY column close v7 writes exists after both migrations', cmissing === '', cmissing);
 } catch (e) {
   chk('the live migration run completed without throwing', false, String(e.stdout || e.message).slice(0, 900));
 }
