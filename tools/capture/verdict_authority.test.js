@@ -295,6 +295,27 @@ const eqs = (d, score) => ({ decision: d, score: score == null ? 70 : score });
   chk('and the bettable board still drops the zombie',
     /if\(!ls\|\|ls<staleCut\)return false;\s*\/\/ drop zombies capture no longer re-prices/.test(APP));
 
+  /* ── WHICH SURFACES MAY BE GATED, AND WHICH MAY NOT ──────────────────────
+     Gating is for surfaces that answer "what should I bet". Gating a RESEARCH
+     surface deletes the board instead of explaining it: the research queue was
+     re-asserting onlyActionable() over a pool that is no longer gated upstream,
+     which is how a board holding 895 priced selections rendered a queue reading
+     "1 of 895 scanned". Both lists below are asserted by name, so moving a
+     surface between them has to be deliberate. */
+  const gated = (APP.match(/onlyActionable\(/g) || []).length;
+  chk('onlyActionable survives at exactly its definition and the two decision surfaces',
+    gated === 4, gated);
+  chk('the bettable board is still gated',
+    /var _et=filterTradeable\(onlyActionable\(EDGES\)\);/.test(APP));
+  chk('"best opportunities today" is still gated — it is an answer, not a list',
+    /var pool=onlyActionable\(\[\]\.concat\(window\.EDGES\|\|\[\], window\.D5_POOL\|\|\[\]\)\);/.test(APP));
+  chk('the RESEARCH QUEUE is not gated — that line was "1 of 895 scanned"',
+    /var rawPool=\[\]\.concat\(window\.EDGES\|\|\[\], window\.D5_POOL\|\|\[\]\);\s*\n\s*var _ft=/.test(APP));
+  chk('and the stale comment claiming both pools are gated upstream is gone',
+    !/Both source pools are gated on CURRENT actionability at the query/.test(APP));
+  chk('the change report is not gated — it must see what stopped qualifying',
+    /A CHANGE REPORT HAS TO SEE WHAT CHANGED/.test(APP));
+
   /* Grep for anything still deriving a BET from raw inputs. */
   const rawBet = (APP.match(/verdict\s*=\s*'BET'/g) || []).length;
   chk('exactly one place in app.html can still assign a raw BET, and it is gated',
