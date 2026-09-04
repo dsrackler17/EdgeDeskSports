@@ -2301,7 +2301,7 @@ body.focus .dk-focusnote{display:block}
     <div class="flbanner demo" id="fbBanner">Loading football engine&hellip;</div>
     <div id="fbModules">
     <div class="fb-sechd"><span>Research modules</span><span class="r">NFL &middot; FBS</span></div>
-    <div class="stseg fb-seg" id="fbSeg" style="margin-bottom:12px"><button class="on" onclick="fbSetSport('nfl')"><b>NFL</b><small>Matchups</small></button><button onclick="fbSetSport('cfb')"><b>CFB Rosters</b><small>Teams &amp; depth</small></button><button onclick="fbSetSport('p4')"><b>CFB Power 4</b><small>Power ratings</small></button></div>
+    <div class="stseg fb-seg" id="fbSeg" style="margin-bottom:12px"><button class="on" onclick="fbSetSport('nfl')"><b>NFL</b><small>Matchups</small></button><button onclick="fbSetSport('cfb')"><b>CFB Rosters</b><small>Teams &amp; depth</small></button><button onclick="fbSetSport('p4')"><b>CFB Power 4</b><small>Power ratings</small></button><button onclick="fbSetSport('players')"><b>Players</b><small>Quality &amp; matchups</small></button></div>
     <div id="fbCtl" style="display:none;align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap"></div>
     <div id="fbBody"><div class="empty">Loading&hellip;</div></div>
     </div>
@@ -31444,8 +31444,11 @@ window.loadFootball=function(force,signal){
       try{rsMetaRender('football');}catch(_){}
     });
     /* this failure belongs to the NFL/CFB loader only — if the reader is on
-       the Power 4 board, say nothing and let that board render its own state */
-    if(FB.sport==='p4'){try{window.renderFootball();}catch(_){}return;}
+       the Power 4 board or the Players layer, say nothing and let that board
+       render its own state. Both are separate engines over separate data; an
+       nflverse outage taking down a board that never read nflverse is exactly
+       the coupling this module is built to avoid. */
+    if(FB.sport==='p4'||FB.sport==='players'){try{window.renderFootball();}catch(_){}return;}
     try{fbRenderOverview();fbRenderSystem();}catch(_){}
     var b=$('fbBanner');
     if(b){b.className='flbanner demo';b.innerHTML='⛔ Football engine unavailable: '+fbEsc(FB.engineErr)+'. Nothing is shown rather than something invented.';}
@@ -31454,12 +31457,18 @@ window.loadFootball=function(force,signal){
   return FB.loading;
 };
 window.fbSetSport=function(s){
-  var order=['nfl','cfb','p4'];
+  var order=['nfl','cfb','p4','players'];
   FB.sport=(order.indexOf(s)>=0)?s:'nfl';
   var seg=$('fbSeg');if(seg){var bs=seg.querySelectorAll('button');for(var i=0;i<bs.length;i++)bs[i].classList.toggle('on',order[i]===FB.sport);}
   var ctl=$('fbCtl');if(ctl)ctl.style.display=(FB.sport==='nfl'&&FB.at)?'flex':'none';
   /* the Power 4 model is a separate engine + parameter bundle; it loads only
      when someone actually opens it, and it renders its own gates on failure */
+  /* the player quality layer is its own module bundle over its own committed
+     datasets; it loads only when someone opens it and renders its own gate on
+     failure, exactly as the Power 4 board does */
+  if(FB.sport==='players'&&!FB.pq.ready&&!FB.pq._p&&!FB.pq.err){
+    fbPqEnsure().then(function(){window.renderFootball();}).catch(function(){window.renderFootball();});
+  }
   if(FB.sport==='p4'&&!FB.p4.loadedAt&&!FB.p4._loading){
     FB.p4._loading=fbP4LoadGuarded(false).then(function(){FB.p4._loading=null;window.renderFootball();})
       .catch(function(){FB.p4._loading=null;window.renderFootball();});
@@ -32598,7 +32607,9 @@ function fbP4HthHTML(id){
   });
   html+='</div>';
   html+='<div class="gd-modelnote" style="margin-top:6px">Roster construction only: ordered by position value (EdgeDesk view weights, not trained parameters), seniority, returning-vs-portal status and the seed rating of each transfer’s previous program. '
-    +'Group grades = 55% returning share + 45% class-mix experience. Production, snap counts and recruiting stars exist in no public feed — this is NOT a performance ranking, and no model number reads it.</div>';
+    +'Group grades = 55% returning share + 45% class-mix experience. This panel reads NO production at all and is NOT a performance ranking; no model number reads it. '
+    +'<b>Per-player production does exist</b> in cfbfastR’s public play-attribution table — the <b>Player quality &amp; matchup</b> panel on this card rates every player from it, opponent-adjusted and with its own confidence. '
+    +'Snap counts and recruiting ratings still exist in no public feed, and both panels say so.</div>';
   return html;
 }
 
@@ -34127,8 +34138,11 @@ function fbP4Card(u){
         +ex.data_quality.map(function(d){return '<li>'+fbEsc(d.level.replace(/_/g,' '))+': '+fbEsc(d.text)+'</li>';}).join('')+'</ul>';
     }
   }
-  var hth='<div style="margin-top:8px"><button class="btn ghost sm" onclick="fbP4Hth(\''+fbEsc(String(g.game_id))+'\')">Rosters head-to-head</button></div>'
-    +'<div id="p4hth-'+fbEsc(String(g.game_id))+'"></div>';
+  var hth='<div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap">'
+    +'<button class="btn ghost sm" onclick="fbP4Hth(\''+fbEsc(String(g.game_id))+'\')">Rosters head-to-head</button>'
+    +'<button class="btn ghost sm" onclick="fbPqOpen(\''+fbEsc(String(g.game_id))+'\')">Player quality &amp; matchup</button></div>'
+    +'<div id="p4hth-'+fbEsc(String(g.game_id))+'"></div>'
+    +'<div id="pq-'+fbEsc(String(g.game_id))+'"></div>';
   /* EdgeDesk's own read on the two teams, underneath the engine's projection
      and clearly separated from it: the line above is priced by the model, the
      rating below is context the model did not use. */
@@ -34874,6 +34888,929 @@ window.renderFootball=function(){
   fbRenderBoard(host);
   fbAfterRender();
 };
+/* ═══ EDGEDESK PLAYER QUALITY + SCHEME MATCHUP ENGINE ══════════════════════
+   The fourth segment of the Football module, and a panel under every Power 4
+   game card. GLUE ONLY — exactly like the rest of this module.
+
+   Every number on screen comes from the deterministic layer in
+   football/players/: ratings built by build_players.js out of public play
+   attribution, aggregated by units.js, matched by matchup.js, simulated by
+   sim.js with a fixed seed, and calibrated (or refused) by validate.js. This
+   file computes NOTHING of its own. It fetches committed artifacts, calls
+   those modules, and renders what they return — including, loudly, what they
+   could not work out.
+
+   Three things it is built to keep true on screen:
+     * A MISSING NUMBER LOOKS MISSING. Never a zero, never a dash that could be
+       mistaken for one. Every blank carries the reason on hover or in place.
+     * MARKET, MODEL, PLAYER QUALITY and SIMULATION stay four separate columns.
+       The Linemaker view exists to show them disagreeing.
+     * AI MAY EXPLAIN, AI MAY NOT RATE. Nothing here calls a language model,
+       and the panel says so where a reader would reasonably wonder.
+   ═════════════════════════════════════════════════════════════════════════ */
+FB.pq = { manifest:null, index:null, teams:{}, err:null, at:0, _p:null, _ip:null, _tp:{},
+  ready:false, sel:null, player:null, open:{}, sim:{}, assume:{},
+  f:{ q:'', team:'', conf:'', pos:'', role:'', status:'', minConf:0, sort:'epir' } };
+
+var FBPQ_BASE='football/players/';
+function fbPqStyles(){
+  if(document.getElementById('fbPqCss'))return;
+  var s=document.createElement('style');s.id='fbPqCss';
+  s.textContent=
+   '.pq-sec{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--dim);margin:14px 0 6px;font-weight:700}'
+  +'.pq-note{font-size:11.5px;line-height:1.55;color:var(--faint);margin:6px 0}'
+  +'.pq-mx{display:grid;grid-template-columns:62px 1fr 84px 1fr;gap:3px 8px;font-size:12px;align-items:center}'
+  +'.pq-mx .h{font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--dim)}'
+  +'.pq-bar{height:7px;border-radius:4px;background:var(--line,#2a2a2a);position:relative;overflow:hidden}'
+  +'.pq-bar>i{position:absolute;top:0;bottom:0;left:0;border-radius:4px;background:var(--dim)}'
+  +'.pq-edge{display:flex;gap:8px;align-items:baseline;padding:5px 0;border-bottom:1px solid rgba(255,255,255,.05);font-size:12px;flex-wrap:wrap}'
+  +'.pq-edge b{font-weight:600}'
+  +'.pq-chip{display:inline-block;font-size:10px;letter-spacing:.05em;padding:1px 6px;border-radius:9px;border:1px solid currentColor;opacity:.9}'
+  +'.pq-gate{display:flex;gap:10px;align-items:center;flex-wrap:wrap;font-size:12px;margin:4px 0}'
+  +'.pq-state{font-weight:700;letter-spacing:.06em}'
+  +'.pq-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:10px}'
+  +'.pq-kv{display:flex;justify-content:space-between;gap:10px;font-size:12px;padding:3px 0}'
+  +'.pq-kv .l{color:var(--dim)}'
+  +'.pq-tbl{width:100%;border-collapse:collapse;font-size:12px}'
+  +'.pq-tbl th{text-align:left;font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--dim);padding:4px 6px;font-weight:600}'
+  +'.pq-tbl td{padding:4px 6px;border-top:1px solid rgba(255,255,255,.05)}'
+  +'.pq-tbl tr.click{cursor:pointer}'
+  +'.pq-tbl tr.click:hover td{background:rgba(255,255,255,.04)}'
+  +'.pq-miss{color:var(--faint);font-style:italic}'
+  +'.pq-hist{display:flex;align-items:flex-end;gap:1px;height:56px;margin:6px 0}'
+  +'.pq-hist>i{flex:1;background:var(--dim);min-height:1px;border-radius:1px 1px 0 0}'
+  +'.pq-filters{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}'
+  +'.pq-filters input,.pq-filters select{background:transparent;color:inherit;border:1px solid rgba(255,255,255,.15);border-radius:6px;padding:5px 7px;font-size:12px;font-family:inherit}'
+  +'@media(max-width:560px){.pq-mx{grid-template-columns:52px 1fr 64px 1fr;font-size:11px}.pq-tbl{font-size:11px}}';
+  document.head.appendChild(s);
+}
+
+/* ---- loaders: the modules, then the committed artifacts ---- */
+function fbPqEnsure(){
+  if(FB.pq.ready)return Promise.resolve(FB.pq);
+  if(FB.pq._p)return FB.pq._p;
+  fbPqStyles();
+  FB.pq._p=fbScript(FBPQ_BASE+'config.js')
+    .then(function(){return fbScript(FBPQ_BASE+'epir.js');})
+    .then(function(){return fbScript(FBPQ_BASE+'units.js');})
+    .then(function(){return fbScript(FBPQ_BASE+'scheme.js');})
+    .then(function(){return fbScript(FBPQ_BASE+'matchup.js');})
+    .then(function(){return fbScript(FBPQ_BASE+'sim.js');})
+    .then(function(){return fbScript(FBPQ_BASE+'params.js').catch(function(){});})
+    .then(function(){
+      if(!window.EDPlayerRating||!window.EDPlayerMatchup||!window.EDPlayerSim)
+        throw new Error('player modules loaded but globals missing');
+      return fetch(FBPQ_BASE+'current.json',{cache:'no-cache'});
+    })
+    .then(function(r){ if(!r.ok)throw new Error('current.json '+r.status); return r.json(); })
+    .then(function(j){
+      FB.pq.manifest=j;FB.pq.at=Date.now();FB.pq.ready=true;FB.pq.err=null;FB.pq._p=null;
+      return FB.pq;
+    })
+    .catch(function(e){
+      FB.pq.err=String(e&&e.message||e).slice(0,140);FB.pq._p=null;FB.pq.ready=false;
+      throw e;
+    });
+  return FB.pq._p;
+}
+function fbPqIndexLoad(){
+  if(FB.pq.index)return Promise.resolve(FB.pq.index);
+  if(FB.pq._ip)return FB.pq._ip;
+  FB.pq._ip=fetch(FBPQ_BASE+'index.json',{cache:'no-cache'}).then(function(r){
+    if(!r.ok)throw new Error('index '+r.status);return r.json();
+  }).then(function(j){FB.pq.index=j;FB.pq._ip=null;return j;}).catch(function(e){FB.pq._ip=null;throw e;});
+  return FB.pq._ip;
+}
+function fbPqTeam(key){
+  if(!key)return Promise.resolve(null);
+  if(FB.pq.teams[key])return Promise.resolve(FB.pq.teams[key]);
+  if(FB.pq._tp[key])return FB.pq._tp[key];
+  FB.pq._tp[key]=fetch(FBPQ_BASE+'teams/'+encodeURIComponent(key)+'.json',{cache:'no-cache'})
+    .then(function(r){ if(r.status===404)return null; if(!r.ok)throw new Error('team '+r.status); return r.json(); })
+    .then(function(j){FB.pq.teams[key]=j||null;delete FB.pq._tp[key];return j;})
+    .catch(function(e){delete FB.pq._tp[key];return null;});
+  return FB.pq._tp[key];
+}
+
+/* ---- tiny formatters ---- */
+function fbPqN(v,dp){return (v==null||!isFinite(v))?'—':(+v).toFixed(dp==null?1:dp);}
+function fbPqPct(v,dp){return (v==null||!isFinite(v))?'—':((v*100).toFixed(dp==null?0:dp)+'%');}
+function fbPqMiss(reason){return '<span class="pq-miss" title="'+fbEsc(reason||'not available')+'">not available</span>';}
+function fbPqConfChip(c){
+  if(c==null)return '';
+  var col=c>=0.7?'var(--pos)':(c>=0.45?'var(--warn)':'var(--neg)');
+  return '<span class="pq-chip" style="color:'+col+'">'+Math.round(c*100)+'% conf</span>';
+}
+function fbPqBar(v,max,col){
+  var pct=(v==null||!isFinite(v))?0:Math.max(0,Math.min(100,(v/(max||100))*100));
+  return '<span class="pq-bar" style="display:block"><i style="width:'+pct.toFixed(1)+'%'
+    +(col?(';background:'+col):'')+'"></i></span>';
+}
+var FBPQ_GATE_COL={'STRONG':'var(--pos)','STABLE':'var(--pos)','QUESTIONABLE':'var(--warn)',
+  'FRAGILE':'var(--neg)','SEVERE MISMATCH':'var(--neg)','UNKNOWN':'var(--faint)'};
+
+/* ═══ THE GAME PANEL ══════════════════════════════════════════════════════ */
+function fbPqKey(n){
+  try{ return window.EDPlayerRating.teamKey(n); }
+  catch(_){ try{ return fbP4Key(n); }catch(_2){ return null; } }
+}
+window.fbPqOpen=function(gid){
+  var el=document.getElementById('pq-'+gid);if(!el)return;
+  if(el.getAttribute('data-open')){el.innerHTML='';el.removeAttribute('data-open');return;}
+  el.setAttribute('data-open','1');
+  el.innerHTML='<div class="gd-modelnote">Loading the player-quality layer…</div>';
+  var u=null;FB.p4.up.forEach(function(x){if(String(x.g.game_id)===String(gid))u=x;});
+  if(!u){el.innerHTML='<div class="gd-modelnote">That game is not on the board.</div>';return;}
+  fbPqEnsure()
+    /* the Power 4 bundle carries the measured margin table and the total's
+       sigma; the panel is reached from a Power 4 card so it is normally
+       already loaded, and asking again is a no-op. If it cannot load, the
+       simulator degrades to a rounded normal and the panel says so. */
+    .then(function(){return fbP4Ensure().catch(function(){});})
+    .then(function(){
+    return Promise.all([fbPqTeam(fbPqKey(u.g.home_team)),fbPqTeam(fbPqKey(u.g.away_team))]);
+  }).then(function(){
+    var e2=document.getElementById('pq-'+gid);
+    if(e2&&e2.getAttribute('data-open'))e2.innerHTML=fbPqGameHTML(gid);
+  }).catch(function(e){
+    var e2=document.getElementById('pq-'+gid);
+    if(e2)e2.innerHTML='<div class="gd-modelnote">The player-quality layer is unavailable: '
+      +fbEsc(String(e&&e.message||e))+'. Nothing is shown rather than something invented.</div>';
+  });
+};
+window.fbPqSection=function(gid,id){
+  FB.pq.open[gid]=FB.pq.open[gid]||{};
+  FB.pq.open[gid][id]=!FB.pq.open[gid][id];
+  var el=document.getElementById('pq-'+gid);
+  if(el&&el.getAttribute('data-open'))el.innerHTML=fbPqGameHTML(gid);
+};
+/* injury assumptions: mark a projected starter OUT and rerun. The dataset is
+   never mutated — the assumption lives only in this panel and is labelled an
+   assumption everywhere it changes a number. */
+window.fbPqAssume=function(gid,key){
+  var a=FB.pq.assume[gid]=FB.pq.assume[gid]||{};
+  if(a[key])delete a[key];else a[key]={status:'OUT',source:'YOUR ASSUMPTION — not a report'};
+  var el=document.getElementById('pq-'+gid);
+  if(el&&el.getAttribute('data-open'))el.innerHTML=fbPqGameHTML(gid);
+};
+window.fbPqReseed=function(gid){
+  FB.pq.sim[gid]=(FB.pq.sim[gid]||window.EDPlayerConfig.SIMULATION.default_seed)+1;
+  var el=document.getElementById('pq-'+gid);
+  if(el&&el.getAttribute('data-open'))el.innerHTML=fbPqGameHTML(gid);
+};
+
+/* Rebuild both sides' units under the panel's current injury assumptions.
+   Everything else — ratings, scheme, baselines — is read straight off the
+   committed artifacts. */
+function fbPqSides(gid,u){
+  var U=window.EDPlayerUnits,SC=window.EDPlayerScheme;
+  /* the player layer's own key function, not the Power 4 engine's. They are
+     byte-identical by test (players.test.js cross-checks them), and using the
+     local one means this panel does not fall over when it is opened before the
+     Power 4 engine bundle happens to be loaded. */
+  var hk=fbPqKey(u.g.home_team),ak=fbPqKey(u.g.away_team);
+  var H=FB.pq.teams[hk],A=FB.pq.teams[ak];
+  var assume=FB.pq.assume[gid]||{};
+  function side(t,name){
+    if(!t)return {name:name,units:null,scheme:null,missing:true};
+    if(!Object.keys(assume).length)return {name:name,units:t.units,scheme:t.scheme,file:t};
+    /* re-aggregate with the assumption applied; the rating records are the
+       committed ones, only participation changes */
+    var recs=(t.players||[]).map(fbPqExpand);
+    var ctx=t.scheme?SC.unitContext(fbPqSchemeFull(t.scheme)):null;
+    return {name:name,units:U.rateTeam(t.key,t.team,recs,{availability:assume,teamContext:ctx,season:t.season}),
+      scheme:t.scheme,file:t,assumed:true};
+  }
+  return {home:side(H,u.g.home_team),away:side(A,u.g.away_team),hk:hk,ak:ak,assume:assume};
+}
+/* the committed team file stores players compactly; the unit aggregator wants
+   the rating record's shape back. Nothing is recomputed — only renamed. */
+function fbPqExpand(p){
+  return { key:p.k, athlete_id:p.id, name:p.n, team_key:p.t, pos:p.p, group:p.g,
+    epir:p.e, confidence:p.cf, sample_size:p.sn, career_sample:p.cn,
+    data_completeness:p.dc, seasons_observed:p.so, games:p.gm, status:p.st,
+    prior_school:p.ps, height_in:p.ht, weight_lb:p.wt, identity_tier:p.it,
+    role:{expected_role:p.role,share:p.share,carried_forward:!!p.cfwd},
+    _c:p };
+}
+/* the compact scheme block back into the typed shape unitContext expects */
+function fbPqSchemeFull(s){
+  function side(o){var out={},k;for(k in o){if(!o.hasOwnProperty(k))continue;
+    out[k]=(o[k]&&o[k].v!=null)?{available:true,value:o[k].v,z:o[k].z,n:o[k].n,confidence:o[k].c||0.5}
+      :{available:false,reason:(o[k]&&o[k].why)||'not observed'};}
+    return out;}
+  return {offense:side(s.offense||{}),defense:side(s.defense||{}),labels:s.labels||{}};
+}
+
+function fbPqGameHTML(gid){
+  var u=null;FB.p4.up.forEach(function(x){if(String(x.g.game_id)===String(gid))u=x;});
+  if(!u)return '<div class="gd-modelnote">That game is not on the board.</div>';
+  var M=window.EDPlayerMatchup,SI=window.EDPlayerSim,CFGp=window.EDPlayerConfig;
+  var PP=window.EDPlayerParams||null;
+  var S=fbPqSides(gid,u);
+  var open=FB.pq.open[gid]||{};
+  var mf=FB.pq.manifest;
+
+  if(S.home.missing&&S.away.missing){
+    return '<div class="gd-sec" style="margin-top:10px">Player quality</div>'
+      +'<div class="gd-modelnote">Neither team is in the FBS player database, so there is no player-level read for this game. '
+      +'The database covers FBS only; a non-FBS opponent is out of scope, which is not the same as being bad.</div>';
+  }
+
+  /* the existing engine's own projection is the ladder's first rung */
+  var p=FB.p4._proj&&FB.p4._proj[String(u.g.game_id)];
+  if(!p){try{p=window.EDCfbP4.projectGame(fbP4Request(u));}catch(_){p=null;}}
+  var raw=(p&&p.status==='PREDICTED')?p.model.fair_spread:null;
+  var sigma=(p&&p.status==='PREDICTED')?p.model.sigma_margin:null;
+  var fairTotal=(p&&p.status==='PREDICTED')?p.model.fair_total:null;
+  var mkt=(p&&p.market)||{};
+  var P4P=(typeof window!=='undefined'&&window.EDCfbP4Params)||{};
+  var sigmaTotal=(P4P.distributions&&P4P.distributions.sigma_total)||null;
+
+  var mm=M.evaluate({
+    home:{name:u.g.home_team,units:S.home.units,scheme:S.home.scheme?fbPqSchemeFull(S.home.scheme):null},
+    away:{name:u.g.away_team,units:S.away.units,scheme:S.away.scheme?fbPqSchemeFull(S.away.scheme):null},
+    model_market_gap:(raw!=null&&mkt.spread_line!=null)?(raw-mkt.spread_line):null
+  });
+
+  var pmf=null;
+  /* the Power 4 engine's own spread-conditioned margin table is preferred —
+     it carries college football's measured key-number mass and its complete
+     absence of ties. If that engine is not loaded the simulator falls back to
+     a rounded normal AND SAYS SO on screen rather than pretending. */
+  try{ if(raw!=null&&sigma!=null&&window.EDCfbP4&&window.EDCfbP4.dist)pmf=window.EDCfbP4.dist.marginDistribution(raw,sigma); }catch(_){}
+  var seed=FB.pq.sim[gid]||CFGp.SIMULATION.default_seed;
+  var sim=SI.simulate({fair_spread:raw,sigma_margin:sigma,fair_total:fairTotal,sigma_total:sigmaTotal,
+    margin_pmf:pmf,market_spread:mkt.spread_line,market_total:mkt.total_line,seed:seed});
+  var quality=fbPqGameQuality(mf,S,mm);
+  var lad=SI.ladder({raw_model_spread:raw,player_quality_gap:mm.features.player_quality_gap,
+    scheme_gap:mm.features.scheme_gap,params:PP,
+    simulation_spread:(sim.status==='SIMULATED')?sim.margin.median:null,
+    market_spread:mkt.spread_line,data_quality:quality.overall});
+  var sens=SI.sensitivity({spread:(sim.status==='SIMULATED')?sim.margin.median:raw,
+    favourite:sim.favourite,params:PP,groups:fbPqSensGroups(S,sim)});
+  var str=SI.structure(mm,sim,{depth:fbPqDepth(S,sim)});
+
+  var h='<div class="gd-sec" style="margin-top:12px">Player quality &amp; scheme <span class="unproven">RESEARCH</span></div>';
+  if(S.home.missing||S.away.missing){
+    h+='<div class="gd-modelnote">'+fbEsc(S.home.missing?u.g.home_team:u.g.away_team)
+      +' is not in the FBS player database (a non-FBS opponent), so every read below is one-sided and says so. '
+      +'Out of scope is not the same as being bad.</div>';
+  }
+  if(S.assume||Object.keys(S.assume).length){
+    var ks=Object.keys(S.assume);
+    if(ks.length)h+='<div class="flbanner demo" style="margin:6px 0;font-size:11.5px">⚠ '+ks.length
+      +' player'+(ks.length>1?'s are':' is')+' marked OUT by <b>your assumption</b>, not by any report. Every number below has been recomputed under it.'
+      +' <button class="btn ghost sm" onclick="fbPqClearAssume(\''+fbEsc(gid)+'\')">clear</button></div>';
+  }
+
+  /* ---------- 1. OVERVIEW ---------- */
+  h+=fbPqOverview(u,raw,mkt,lad,sim);
+
+  /* ---------- 2. LINEMAKER VIEW ---------- */
+  h+=fbPqSectionHead(gid,'ladder','Linemaker view',open.ladder);
+  if(open.ladder)h+=fbPqLadder(lad,u);
+
+  /* ---------- 3. MATCHUP MATRIX ---------- */
+  h+=fbPqSectionHead(gid,'matrix','Matchup matrix',open.matrix);
+  if(open.matrix)h+=fbPqMatrix(mm,u,gid,S);
+
+  /* ---------- 4. SCHEME EDGES ---------- */
+  h+=fbPqSectionHead(gid,'scheme','Scheme edges',open.scheme);
+  if(open.scheme)h+=fbPqSchemeEdges(mm,S);
+
+  /* ---------- 5. RUN DEFENCE GATE ---------- */
+  h+=fbPqSectionHead(gid,'gate','Run defence gate',open.gate);
+  if(open.gate)h+=fbPqGate(mm);
+
+  /* ---------- 6. KEY PLAYER MATCHUPS ---------- */
+  h+=fbPqSectionHead(gid,'edges','Top matchup edges',open.edges);
+  if(open.edges)h+=fbPqEdgeBoard(mm);
+
+  /* ---------- 7. STRUCTURE ---------- */
+  h+=fbPqSectionHead(gid,'why','What makes this close, what makes it a blow-out',open.why);
+  if(open.why)h+=fbPqWhy(str);
+
+  /* ---------- 8. WHAT BREAKS THE PROJECTION ---------- */
+  h+=fbPqSectionHead(gid,'sens','What breaks the projection',open.sens);
+  if(open.sens)h+=fbPqSens(sens);
+
+  /* ---------- 9. SIMULATION ---------- */
+  h+=fbPqSectionHead(gid,'sim','Simulation distribution',open.sim);
+  if(open.sim)h+=fbPqSim(sim,gid,seed);
+
+  /* ---------- 10. RISK GATES ---------- */
+  h+=fbPqSectionHead(gid,'risk','Risk gates',open.risk);
+  if(open.risk)h+=fbPqRisks(mm);
+
+  /* ---------- 11. INJURY ASSUMPTIONS ---------- */
+  h+=fbPqSectionHead(gid,'assume','Change the injury assumptions and rerun',open.assume);
+  if(open.assume)h+=fbPqAssumeUI(gid,S);
+
+  /* ---------- 12. DATA QUALITY ---------- */
+  h+=fbPqSectionHead(gid,'dq','Data quality',open.dq);
+  if(open.dq)h+=fbPqQuality(quality,mf);
+
+  h+='<div class="pq-note" style="margin-top:10px"><b>How to read this.</b> Everything above is deterministic arithmetic over counted events, '
+   +'with its own confidence and its own gaps named. <b>No language model produced, adjusted or ranked any rating, edge or sentence here.</b> '
+   +'The market appears in exactly one place — beside the ladder — and is an input to nothing.</div>';
+  return h;
+}
+window.fbPqClearAssume=function(gid){FB.pq.assume[gid]={};var el=document.getElementById('pq-'+gid);if(el&&el.getAttribute('data-open'))el.innerHTML=fbPqGameHTML(gid);};
+
+function fbPqSectionHead(gid,id,label,isOpen){
+  return '<div class="gd-line" style="cursor:pointer;border-top:1px solid rgba(255,255,255,.06);padding-top:6px;margin-top:8px" '
+    +'onclick="fbPqSection(\''+fbEsc(gid)+'\',\''+id+'\')"><span class="l"><b>'+(isOpen?'▾':'▸')+' '+fbEsc(label)+'</b></span>'
+    +'<span class="v mut">'+(isOpen?'hide':'show')+'</span></div>';
+}
+
+function fbPqOverview(u,raw,mkt,lad,sim){
+  var h='<div class="pq-grid" style="margin:8px 0">';
+  h+='<div><div class="pq-sec" style="margin-top:0">Projected score</div>';
+  if(sim.status==='SIMULATED'&&sim.scores){
+    h+='<div style="font-size:20px;font-weight:700;line-height:1.25">'+fbEsc(u.g.home_team)+' '+sim.scores.home.median
+      +'<br>'+fbEsc(u.g.away_team)+' '+sim.scores.away.median+'</div>'
+      +'<div class="pq-note">median of '+sim.draws+' simulations, seed '+sim.seed+'</div>';
+  } else if(sim.status==='SIMULATED'){
+    h+='<div class="pq-note">'+fbPqMiss('the projection engine supplied no fair total for this game, so a score line cannot be split out of the margin. The margin distribution below is unaffected.')+'</div>';
+  } else h+='<div class="pq-note">'+fbPqMiss(sim.reason||'the simulator did not run')+'</div>';
+  h+='</div><div><div class="pq-sec" style="margin-top:0">Win probability</div>';
+  if(sim.status==='SIMULATED'){
+    h+='<div class="pq-kv"><span class="l">'+fbEsc(u.g.home_team)+'</span><span>'+fbPqPct(sim.home_win_prob)+'</span></div>'
+      +'<div class="pq-kv"><span class="l">'+fbEsc(u.g.away_team)+'</span><span>'+fbPqPct(sim.away_win_prob)+'</span></div>'
+      +'<div class="pq-kv"><span class="l">one-score game</span><span>'+fbPqPct(sim.one_score_prob)+'</span></div>'
+      +'<div class="pq-kv"><span class="l">21+ point win</span><span>'+fbPqPct(sim.blowout_prob)+'</span></div>'
+      +'<div class="pq-kv"><span class="l">upset</span><span>'+fbPqPct(sim.upset_prob)+'</span></div>';
+    if(sim.cover)h+='<div class="pq-kv"><span class="l">covers '+fbPqN(-sim.cover.line)+'</span><span>'+fbPqPct(sim.cover.home_covers,1)+'</span></div>';
+  } else h+='<div class="pq-note">'+fbPqMiss('no simulation')+'</div>';
+  h+='</div><div><div class="pq-sec" style="margin-top:0">Research fair range</div>';
+  if(lad.available){
+    h+='<div style="font-size:16px;font-weight:700">'+fbEsc(u.g.home_team)+' '+fbPqN(-lad.fair_range.high)+' to '+fbPqN(-lad.fair_range.low)+'</div>'
+      +'<div class="pq-note">'+fbEsc(lad.fair_range.basis)+'</div>';
+    if(lad.market)h+='<div class="pq-kv"><span class="l">market</span><span>'+fbEsc(u.g.home_team)+' '+fbPqN(-lad.market.spread)+'</span></div>';
+  } else h+='<div class="pq-note">'+fbPqMiss(lad.reason)+'</div>';
+  h+='</div></div>';
+  return h;
+}
+
+function fbPqLadder(lad,u){
+  if(!lad.available)return '<div class="pq-note">'+fbPqMiss(lad.reason)+'</div>';
+  var h='<div class="pq-note">Five numbers, kept apart on purpose. The first four are EdgeDesk’s own layers, computed without the market; the fifth is the market. '
+    +'A rung that moves nothing says so, and why.</div><table class="pq-tbl"><tr><th>rung</th><th>line</th><th>moved</th><th>why</th></tr>';
+  lad.steps.forEach(function(s){
+    h+='<tr><td>'+fbEsc(s.label)+'</td><td class="mono">'+fbEsc(u.g.home_team)+' '+fbPqN(-s.spread)+'</td>'
+      +'<td class="mono">'+(s.delta==null?'—':(s.applied?fbPqN(-s.delta):'<span class="pq-miss">0.0</span>'))+'</td>'
+      +'<td class="mut" style="font-size:11px">'+fbEsc(s.applied===false&&s.input!=null?'gap of '+s.input+' matchup points, scalar not applied':(s.basis||''))+'</td></tr>';
+  });
+  h+='</table>';
+  if(lad.notes.length)h+='<ul style="margin:6px 0 0;padding-left:18px;font-size:11.5px;line-height:1.5;color:var(--faint)">'
+    +lad.notes.map(function(n){return '<li>'+fbEsc(n)+'</li>';}).join('')+'</ul>';
+  h+='<div class="gd-line" style="margin-top:8px"><span class="l"><b>Research fair range</b></span>'
+    +'<span class="v mdl">'+fbEsc(u.g.home_team)+' '+fbPqN(-lad.fair_range.high)+' to '+fbPqN(-lad.fair_range.low)+'</span></div>';
+  if(lad.market)h+='<div class="pq-note"><b>'+fbEsc(lad.market.statement)+'</b></div>';
+  return h;
+}
+
+function fbPqMatrix(mm,u,gid,S){
+  var h='<div class="pq-mx"><span class="h"></span><span class="h">'+fbEsc(u.g.home_team)+'</span>'
+    +'<span class="h" style="text-align:center">edge</span><span class="h">'+fbEsc(u.g.away_team)+'</span>';
+  mm.matrix.forEach(function(r){
+    function cell(v,c,side){
+      if(v==null)return '<span class="pq-miss">no rating</span>';
+      return '<span style="display:flex;gap:6px;align-items:center"><b style="min-width:34px">'+fbPqN(v)+'</b>'
+        +'<span style="flex:1">'+fbPqBar(v,100,c>=0.5?'var(--pos)':'var(--warn)')+'</span></span>';
+    }
+    var adv=r.edge==null?'<span class="pq-miss">—</span>'
+      :(r.edge==='EVEN'?'<span class="mut">even</span>'
+        :'<span style="color:var(--warn)">'+(r.edge==='HOME'?'◂ ':'▸ ')+fbPqN(r.margin)+'</span>');
+    h+='<span class="mono" style="color:var(--dim);cursor:pointer" onclick="fbPqGroup(\''+fbEsc(gid)+'\',\''+r.group+'\')">'+r.group+'</span>'
+      +'<span>'+cell(r.home,r.home_confidence)+'</span>'
+      +'<span style="text-align:center">'+adv+'</span>'
+      +'<span>'+cell(r.away,r.away_confidence)+'</span>';
+  });
+  h+='</div>';
+  h+='<div class="pq-note">0-100, where 50 is positional replacement and 12 points is one standard deviation of that position’s own qualified population. '
+    +'Tap a group to see every player in it. A blank row is a group with no rating at all — not a zero.</div>';
+  var gsel=FB.pq.open[gid]&&FB.pq.open[gid]._group;
+  if(gsel)h+=fbPqGroupDetail(gid,gsel,S,u);
+  return h;
+}
+window.fbPqGroup=function(gid,g){
+  FB.pq.open[gid]=FB.pq.open[gid]||{};
+  FB.pq.open[gid]._group=(FB.pq.open[gid]._group===g)?null:g;
+  var el=document.getElementById('pq-'+gid);
+  if(el&&el.getAttribute('data-open'))el.innerHTML=fbPqGameHTML(gid);
+};
+function fbPqGroupDetail(gid,g,S,u){
+  function block(side,name){
+    var un=side.units&&side.units.groups&&side.units.groups[g];
+    var h='<div><div class="pq-sec">'+fbEsc(name)+' '+g+' '+(un&&un.rating!=null?('<b>'+fbPqN(un.rating)+'</b> '+fbPqConfChip(un.confidence)):'')+'</div>';
+    if(!un||un.rating==null)return h+'<div class="pq-note">'+fbPqMiss((un&&un.reason)||'no rating for this group')+'</div></div>';
+    h+='<table class="pq-tbl"><tr><th>player</th><th>EPIR</th><th>conf</th><th>role</th><th>share</th></tr>';
+    (un.projected||[]).forEach(function(p){
+      h+='<tr class="click" onclick="fbPqPlayerCard(\''+fbEsc(p.key)+'\',\''+fbEsc(side.file?side.file.key:'')+'\')">'
+        +'<td>'+fbEsc(p.name||'—')+' <span class="mut">'+fbEsc(p.pos||'')+'</span>'
+        +(p.availability&&p.availability!=='UNKNOWN'&&p.availability!=='ACTIVE'?' <span class="pq-chip" style="color:var(--neg)">'+fbEsc(p.availability)+'</span>':'')+'</td>'
+        +'<td class="mono">'+fbPqN(p.epir)+'</td><td class="mono">'+fbPqPct(p.confidence)+'</td>'
+        +'<td class="mut">'+fbEsc(p.role||'')+'</td><td class="mono">'+fbPqPct(p.effective_weight)+'</td></tr>';
+    });
+    h+='</table>';
+    if(un.production_feed===false)h+='<div class="pq-note">'+fbEsc(un.production_feed_reason||'')+'</div>';
+    if(un.team_context)h+='<div class="pq-note">'+Math.round(un.team_context.weight*100)+'% of this rating comes from the team’s own play-level record: '+fbEsc(un.team_context.basis)+'</div>';
+    h+='<div class="pq-note">starters '+fbPqN(un.starter_quality)+' · depth '+fbPqN(un.depth_quality)
+      +' · continuity '+fbPqPct(un.continuity)+' · experience '+fbPqPct(un.experience)+'</div></div>';
+    return h;
+  }
+  return '<div class="pq-grid" style="margin-top:8px">'+block(S.home,u.g.home_team)+block(S.away,u.g.away_team)+'</div>';
+}
+
+function fbPqSchemeEdges(mm,S){
+  var h='<div class="pq-note">Unit gap × how the two teams’ measured tendencies interact. In <b>matchup points</b> on the 0-100 unit scale — '
+    +'these are deliberately NOT points of spread, and nothing converts them into any.</div>';
+  var any=false;
+  mm.scheme_edges.forEach(function(e){
+    if(!e.available)return;
+    any=true;
+    var col=Math.abs(e.magnitude)>=7?'var(--warn)':'var(--dim)';
+    h+='<div class="pq-edge"><b style="flex:1;min-width:180px">'+fbEsc(e.label)+'</b>'
+      +'<span style="color:'+col+'">'+fbEsc(e.favours)+' +'+fbPqN(Math.abs(e.magnitude))+'</span>'
+      +'<span class="pq-chip" style="color:'+col+'">'+fbEsc(e.band)+'</span>'+fbPqConfChip(e.confidence)+'</div>'
+      +'<div class="pq-note" style="margin:0 0 4px">unit gap '+fbPqN(e.unit_gap)+' × style '+fbPqN(e.style_multiplier,2)
+      +(e.style_applied.length?(' — '+e.style_applied.map(function(a){return fbEsc(a.id.replace(/_/g,' '))+' '+fbPqN(a.points,2);}).join(', ')):'')
+      +(e.style_skipped.length?(' · not applied: '+e.style_skipped.map(function(a){return fbEsc(a.id.replace(/_/g,' '));}).join(', ')):'')+'</div>';
+  });
+  if(!any)h+='<div class="pq-note">No scheme edge could be evaluated for this game.</div>';
+  var un=mm.scheme_edges.filter(function(e){return !e.available;});
+  if(un.length)h+='<div class="pq-note"><b>Not evaluated:</b> '+un.map(function(e){return fbEsc(e.label)+' — '+fbEsc(e.reason);}).join('; ')+'</div>';
+  var CFGp=window.EDPlayerConfig;
+  h+='<div class="pq-note"><b>What a scheme database is supposed to have and this one does not:</b> '
+    +Object.keys(CFGp.SCHEME.not_derivable).map(function(k){return fbEsc(CFGp.SCHEME.not_derivable[k]);}).join('; ')
+    +'. None of it is guessed.</div>';
+  return h;
+}
+
+function fbPqGate(mm){
+  var h='';
+  ['home','away'].forEach(function(side){
+    var g=mm.run_defence_gate[side];
+    var col=FBPQ_GATE_COL[g.state]||'var(--faint)';
+    h+='<div class="pq-gate"><b style="min-width:120px">'+fbEsc(g.team)+'</b>'
+      +'<span class="pq-state" style="color:'+col+'">'+fbEsc(g.state)+'</span>'
+      +(g.score!=null?('<span class="mono">'+fbPqN(g.score)+'/100</span>'):'')
+      +'<span class="mut">contract '+fbPqPct(g.completeness)+' complete</span></div>';
+    if(!g.available){h+='<div class="pq-note">'+fbEsc(g.reason)+'</div>';return;}
+    h+='<table class="pq-tbl"><tr><th>component</th><th>value</th><th>weight</th></tr>';
+    g.components.forEach(function(c){
+      h+='<tr><td>'+fbEsc(c.id.replace(/_/g,' '))+'</td><td class="mono">'+fbPqN(c.value,2)+'</td><td class="mono">'+fbPqN(c.weight,2)+'</td></tr>';
+    });
+    h+='</table>';
+    if(g.missing.length)h+='<div class="pq-note"><b>Missing:</b> '+g.missing.map(function(m){return fbEsc(m.id)+' — '+fbEsc(m.why);}).join('; ')+'</div>';
+    if(g.opponent_note)h+='<div class="pq-note">'+fbEsc(g.opponent_note)+'</div>';
+  });
+  h+='<div class="pq-note">A run defence that can shorten a game is the single most common way a favourite-side handicap dies. '
+    +'This gate is a research state, not a spread adjustment — it downgrades confidence BEFORE the game rather than explaining it afterwards.</div>';
+  return h;
+}
+
+function fbPqEdgeBoard(mm){
+  var h='<table class="pq-tbl"><tr><th>#</th><th>matchup</th><th>edge</th><th>how sure</th></tr>';
+  mm.player_edges.forEach(function(e,i){
+    var col=e.classification==='DIRECT'?'var(--pos)':(e.classification==='LIKELY'?'var(--warn)':'var(--faint)');
+    h+='<tr><td class="mono">'+(i+1)+'</td><td>'+fbEsc(e.label)
+      +'<div class="pq-note" style="margin:2px 0 0">'+e.attackers.map(function(p){return fbEsc(p.name)+' '+fbPqN(p.epir);}).join(', ')
+      +' vs '+e.defenders.map(function(p){return fbEsc(p.name)+' '+fbPqN(p.epir);}).join(', ')+'</div></td>'
+      +'<td class="mono" style="white-space:nowrap">'+fbEsc(e.favours)+' +'+fbPqN(Math.abs(e.magnitude))+'</td>'
+      +'<td><span class="pq-chip" style="color:'+col+'">'+e.classification+'</span> '+fbPqConfChip(e.confidence)
+      +'<div class="pq-note" style="margin:2px 0 0">'+fbEsc(e.classification_why)+'</div></td></tr>';
+  });
+  h+='</table>';
+  if(mm.most_important)h+='<div class="gd-line" style="margin-top:8px"><span class="l"><b>Most important matchup</b></span>'
+    +'<span class="v mdl">'+fbEsc(mm.most_important.label)+' — '+fbEsc(mm.most_important.favours)+' '+fbPqN(Math.abs(mm.most_important.magnitude))+'</span></div>';
+  return h;
+}
+
+function fbPqWhy(str){
+  function list(rows,title,col){
+    return '<div><div class="pq-sec" style="color:'+col+'">'+title+'</div><ul style="margin:0;padding-left:18px;font-size:12px;line-height:1.6">'
+      +rows.map(function(r){return '<li>'+fbEsc(r.text)+(r.evidence?(' <span class="mut">('+fbEsc(r.evidence)+')</span>'):'')+'</li>';}).join('')+'</ul></div>';
+  }
+  return '<div class="pq-grid">'+list(str.why_close,'Why this could stay close','var(--warn)')
+    +list(str.why_blowout,'Why it could blow out','var(--pos)')+'</div>'
+    +'<div class="pq-note">'+fbEsc(str.statement)+'</div>';
+}
+
+function fbPqSens(sens){
+  if(!sens.available)return '<div class="pq-note">'+fbPqMiss(sens.reason)+'</div>';
+  var h='<div class="pq-note">One input moved by one standard deviation of its own measured spread, and the mean recomputed exactly. '
+    +'This is the list of things that have to go differently for the projection to be wrong.</div>'
+    +'<table class="pq-tbl"><tr><th>if…</th><th>fair spread becomes</th><th>moves</th></tr>';
+  sens.probes.forEach(function(p){
+    h+='<tr><td>'+fbEsc(p.label)+'</td>'
+      +'<td class="mono">'+(p.spread==null?fbPqMiss(p.reason):fbPqN(-p.spread))+'</td>'
+      +'<td class="mono">'+(p.delta==null?'—':fbPqN(-p.delta))+'</td></tr>';
+  });
+  h+='</table><div class="pq-note">'+fbEsc(sens.units_note)+'</div>';
+  return h;
+}
+
+function fbPqSim(sim,gid,seed){
+  if(sim.status!=='SIMULATED')return '<div class="pq-note">'+fbPqMiss(sim.reason)+'</div>';
+  var h='<div class="pq-note">'+sim.draws+' simulations, seed <span class="mono">'+seed+'</span>. '
+    +fbEsc(sim.distribution_source)+'. The same seed always produces the same distribution — that is the point of publishing it.'
+    +' <button class="btn ghost sm" onclick="fbPqReseed(\''+fbEsc(gid)+'\')">draw again</button></div>';
+  h+='<table class="pq-tbl"><tr><th></th><th>p10</th><th>p25</th><th>median</th><th>p75</th><th>p90</th></tr>'
+    +'<tr><td>margin</td><td class="mono">'+fbPqN(sim.margin.p10)+'</td><td class="mono">'+fbPqN(sim.margin.p25)+'</td>'
+    +'<td class="mono">'+fbPqN(sim.margin.p50)+'</td><td class="mono">'+fbPqN(sim.margin.p75)+'</td><td class="mono">'+fbPqN(sim.margin.p90)+'</td></tr>';
+  if(sim.total)h+='<tr><td>total</td><td class="mono">'+fbPqN(sim.total.p10)+'</td><td class="mono">'+fbPqN(sim.total.p25)+'</td>'
+    +'<td class="mono">'+fbPqN(sim.total.p50)+'</td><td class="mono">'+fbPqN(sim.total.p75)+'</td><td class="mono">'+fbPqN(sim.total.p90)+'</td></tr>';
+  h+='</table>';
+  if(sim.over)h+='<div class="pq-kv"><span class="l">P(over '+sim.over.line+')</span><span>'+fbPqPct(sim.over.over,1)+'</span></div>';
+  return h;
+}
+
+function fbPqRisks(mm){
+  var real=mm.risk_gates.filter(function(g){return !g.unobservable;});
+  var un=mm.risk_gates.filter(function(g){return g.unobservable;});
+  var h='';
+  if(!real.length)h+='<div class="pq-note">No risk gate fired on the evidence available. That is not the same as no risk.</div>';
+  real.forEach(function(g){
+    var col=g.severity==='high'?'var(--neg)':(g.severity==='medium'?'var(--warn)':'var(--dim)');
+    h+='<div class="pq-edge"><span class="pq-chip" style="color:'+col+'">'+fbEsc(g.severity)+'</span>'
+      +'<b>'+fbEsc(g.label)+'</b>'+(g.team?('<span class="mut">'+fbEsc(g.team)+'</span>'):'')
+      +'<span style="flex:1;min-width:160px" class="mut">'+fbEsc(g.detail)+'</span></div>';
+  });
+  if(un.length)h+='<div class="pq-note"><b>Gates EdgeDesk cannot fire:</b> '
+    +un.map(function(g){return fbEsc(g.label)+' — '+fbEsc(g.detail);}).join('; ')+'</div>';
+  return h;
+}
+
+function fbPqAssumeUI(gid,S){
+  var a=FB.pq.assume[gid]||{};
+  var h='<div class="pq-note">Mark a projected starter out and every number in this panel is recomputed. '
+    +'This changes nothing in the dataset and is labelled <b>your assumption</b> wherever it moves a number.</div>';
+  ['home','away'].forEach(function(side){
+    var t=S[side];
+    if(!t.units)return;
+    h+='<div class="pq-sec">'+fbEsc(t.name)+'</div><div style="display:flex;flex-wrap:wrap;gap:6px">';
+    window.EDPlayerConfig.GROUP_ORDER.forEach(function(g){
+      var un=t.units.groups[g];
+      if(!un||!un.projected||!un.projected.length)return;
+      var p=un.projected[0];
+      if(!p.name)return;
+      var on=!!a[p.key];
+      h+='<button class="btn '+(on?'':'ghost')+' sm" style="font-size:11px'+(on?';color:var(--neg)':'')+'" '
+        +'onclick="fbPqAssume(\''+fbEsc(gid)+'\',\''+fbEsc(p.key)+'\')">'+(on?'OUT · ':'')+g+' '+fbEsc(p.name)+'</button>';
+    });
+    h+='</div>';
+  });
+  return h;
+}
+
+function fbPqGameQuality(mf,S,mm){
+  var dims=JSON.parse(JSON.stringify((mf&&mf.quality&&mf.quality.dimensions)||{}));
+  /* the game's OWN player-data confidence, on top of the league-wide picture */
+  var hc=mm.features.home_confidence,ac=mm.features.away_confidence;
+  dims.player_data=dims.player_data||{value:0,basis:''};
+  dims.player_data={value:Math.round(((hc+ac)/2)*1000)/1000,
+    basis:'the mean player-data confidence of the two rosters actually on the board for this game'};
+  var s=0,c=0,k;
+  for(k in dims){if(!dims.hasOwnProperty(k))continue;s+=dims[k].value;c++;}
+  var overall=c?s/c:0;
+  var warn=[];
+  ['home','away'].forEach(function(side){
+    var t=S[side];
+    if(!t.units)return;
+    var qb=t.units.groups&&t.units.groups.QB;
+    if(!qb||qb.rating==null)warn.push('Simulation confidence reduced: '+t.name+' has no rateable quarterback.');
+    else if(qb.confidence<0.35)warn.push('Simulation confidence reduced: '+t.name+'’s starting quarterback is unconfirmed by production data ('+Math.round(qb.confidence*100)+'% confidence).');
+    if(qb&&qb.availability&&qb.availability.unknown_share>=0.99)warn.push(t.name+'’s quarterback has no availability record at all — UNKNOWN, which is not the same as healthy.');
+  });
+  return {dimensions:dims,overall:Math.round(overall*1000)/1000,warnings:warn};
+}
+
+function fbPqQuality(q,mf){
+  var h='<div class="pq-grid">';
+  var order=window.EDPlayerConfig.QUALITY_DIMENSIONS;
+  order.forEach(function(k){
+    var d=q.dimensions[k];if(!d)return;
+    var col=d.value>=0.7?'var(--pos)':(d.value>=0.4?'var(--warn)':'var(--neg)');
+    h+='<div><div class="pq-kv"><span class="l">'+fbEsc(k.replace(/_/g,' '))+'</span><span class="mono">'+fbPqPct(d.value)+'</span></div>'
+      +fbPqBar(d.value*100,100,col)+'<div class="pq-note">'+fbEsc(d.basis)+'</div></div>';
+  });
+  h+='</div><div class="gd-line" style="margin-top:8px"><span class="l"><b>Overall simulation confidence</b></span>'
+    +'<span class="v mdl">'+fbPqPct(q.overall)+'</span></div>';
+  if(q.warnings.length)h+='<ul style="margin:6px 0 0;padding-left:18px;font-size:12px;line-height:1.55;color:var(--warn)">'
+    +q.warnings.map(function(w){return '<li>'+fbEsc(w)+'</li>';}).join('')+'</ul>';
+  if(mf&&mf.coverage){
+    var bad=[];
+    for(var k2 in mf.coverage){if(mf.coverage.hasOwnProperty(k2)&&mf.coverage[k2].usable===false)bad.push(mf.coverage[k2].reason);}
+    if(bad.length)h+='<div class="pq-note"><b>Feed columns that failed their coverage floor this season:</b><br>'+bad.map(fbEsc).join('<br>')+'</div>';
+  }
+  if(mf&&mf.validation_summary)h+='';
+  return h;
+}
+
+function fbPqDepth(S,sim){
+  function d(t){
+    if(!t.units)return null;
+    var vals=[],g;
+    for(g in t.units.groups){if(!t.units.groups.hasOwnProperty(g))continue;
+      var x=t.units.groups[g];if(x&&x.depth_quality!=null)vals.push(x.depth_quality);}
+    if(!vals.length)return null;
+    return vals.reduce(function(a,b){return a+b;},0)/vals.length;
+  }
+  var hv=d(S.home),av=d(S.away);
+  if(hv==null||av==null)return null;
+  return sim.favourite==='home'?{fav:hv,dog:av}:{fav:av,dog:hv};
+}
+function fbPqSensGroups(S,sim){
+  var out={};
+  function qbDrop(t){
+    if(!t.units)return null;
+    var q=t.units.groups&&t.units.groups.QB;
+    if(!q||!q.projected||q.projected.length<2)return null;
+    return q.projected[0].epir-q.projected[1].epir;
+  }
+  var favT=sim.favourite==='home'?S.home:S.away, dogT=sim.favourite==='home'?S.away:S.home;
+  out.fav_qb_drop=qbDrop(favT); out.dog_qb_drop=qbDrop(dogT);
+  out.fav_ol=favT.units&&favT.units.groups.OL?favT.units.groups.OL.rating:null;
+  out.dog_ol=dogT.units&&dogT.units.groups.OL?dogT.units.groups.OL.rating:null;
+  return out;
+}
+
+/* ═══ THE PLAYER EXPLORER ═════════════════════════════════════════════════ */
+window.fbPqFilter=function(k,v){FB.pq.f[k]=v;window.renderFootball();};
+window.fbPqPlayerCard=function(key,teamKey){
+  FB.pq.player={key:key,team:teamKey||null};
+  if(teamKey&&!FB.pq.teams[teamKey]){fbPqTeam(teamKey).then(function(){window.renderFootball();});}
+  window.renderFootball();
+};
+window.fbPqClosePlayer=function(){FB.pq.player=null;window.renderFootball();};
+
+function fbPqRender(host){
+  if(FB.pq.err){
+    host.innerHTML='<div class="rs-state"><h4>Player quality layer unavailable</h4><p>'+fbEsc(FB.pq.err)
+      +'. Nothing is shown rather than something invented.</p><button onclick="fbSetSport(\'players\')">Try again</button></div>';
+    return;
+  }
+  if(!FB.pq.ready){
+    host.innerHTML='<div class="empty">Loading the player quality layer…</div>';
+    fbPqEnsure().then(function(){return fbPqIndexLoad();}).then(function(){window.renderFootball();})
+      .catch(function(){window.renderFootball();});
+    return;
+  }
+  var mf=FB.pq.manifest;
+  var h='';
+  h+='<div class="mdl-warn" style="margin-bottom:12px"><b>What this is, and what it is not.</b> '
+   +'Every FBS player rated from the only public per-player production feed in college football — cfbfastR’s play-attribution table — '
+   +'joined to the roster by athlete id. <b>It cannot see a snap count, a block, a tackle, a pressure short of a sack, or a recruiting rating</b>, '
+   +'because no public feed carries them, and it says so on every player it cannot see. '
+   +'<b>No language model produced, adjusted or ranked any number here.</b> '
+   +'<span class="mono" style="color:var(--faint)">'+fbEsc(mf.versions.player_rating)+' · season '+mf.season+' week '+mf.week
+   +' · '+mf.player_count+' players · '+mf.team_count+' teams · built '+fbEsc(String(mf.generated_at).slice(0,10))+'</span></div>';
+
+  /* the walk-forward verdict, up front, exactly as the rest of this repo does */
+  var PP=window.EDPlayerParams;
+  if(PP&&PP.validation_summary&&PP.validation_summary.verdict){
+    h+='<div class="flbanner demo" style="margin-bottom:12px;font-size:12px"><b>The record, up front.</b> '
+      +fbEsc(PP.validation_summary.verdict.statement)+' '
+      +(PP.validation_summary.arms?('Holdout '+(PP.validation_summary.holdout||[]).join(', ')
+        +': baseline spread MAE '+fbPqN(PP.validation_summary.arms.baseline.spread_mae,3)
+        +', + player quality '+fbPqN(PP.validation_summary.arms.player.spread_mae,3)
+        +', closing market '+fbPqN(PP.validation_summary.arms.market.spread_mae,3)+'.'):'')
+      +'</div>';
+  }
+
+  /* a player card needs only that player's team file, never the national
+     index — so it renders before the index has finished loading */
+  if(FB.pq.player)return void(host.innerHTML=h+fbPqPlayerHTML());
+
+  if(!FB.pq.index){
+    host.innerHTML=h+'<div class="empty">Loading the national player index…</div>';
+    fbPqIndexLoad().then(function(){window.renderFootball();}).catch(function(e){
+      FB.pq.err='player index: '+String(e&&e.message||e);window.renderFootball();});
+    return;
+  }
+
+  h+=fbPqQualityStrip(mf);
+  h+=fbPqFiltersHTML(mf);
+  h+=fbPqTable();
+  h+=fbPqTeamsHTML(mf);
+  host.innerHTML=h;
+}
+
+function fbPqQualityStrip(mf){
+  var q=mf.quality,h='<div class="pq-sec">Data quality</div><div class="pq-grid">';
+  window.EDPlayerConfig.QUALITY_DIMENSIONS.forEach(function(k){
+    var d=q.dimensions[k];if(!d)return;
+    var col=d.value>=0.7?'var(--pos)':(d.value>=0.4?'var(--warn)':'var(--neg)');
+    h+='<div><div class="pq-kv"><span class="l">'+fbEsc(k.replace(/_/g,' '))+'</span><span class="mono">'+fbPqPct(d.value)+'</span></div>'
+      +fbPqBar(d.value*100,100,col)+'<div class="pq-note">'+fbEsc(d.basis)+'</div></div>';
+  });
+  h+='</div><div class="pq-note"><b>Overall '+fbPqPct(q.overall)+'.</b> '+fbEsc(q.basis)+'</div>';
+  return h;
+}
+
+function fbPqFiltersHTML(mf){
+  var f=FB.pq.f;
+  var confs={},teams={};
+  var T=mf.teams;
+  for(var k in T){if(!T.hasOwnProperty(k))continue;teams[k]=T[k].team;if(T[k].conference)confs[T[k].conference]=1;}
+  function sel(id,label,opts,val){
+    var h='<select onchange="fbPqFilter(\''+id+'\',this.value)"><option value="">'+fbEsc(label)+'</option>';
+    opts.forEach(function(o){h+='<option value="'+fbEsc(o[0])+'"'+(String(val)===String(o[0])?' selected':'')+'>'+fbEsc(o[1])+'</option>';});
+    return h+'</select>';
+  }
+  var teamOpts=Object.keys(teams).sort(function(a,b){return teams[a]<teams[b]?-1:1;}).map(function(k){return [k,teams[k]];});
+  var confOpts=Object.keys(confs).sort().map(function(c){return [c,c];});
+  var posOpts=window.EDPlayerConfig.GROUP_ORDER.map(function(g){return [g,g];});
+  var h='<div class="pq-sec">Player explorer</div><div class="pq-filters">'
+    +'<input placeholder="search a player" value="'+fbEsc(f.q)+'" oninput="fbPqFilter(\'q\',this.value)" style="min-width:160px">'
+    +sel('team','any team',teamOpts,f.team)
+    +sel('conf','any conference',confOpts,f.conf)
+    +sel('pos','any position',posOpts,f.pos)
+    +sel('role','any role',[['STARTER','starter'],['ROTATION','rotation'],['DEPTH','depth'],['UNKNOWN','role unknown']],f.role)
+    +sel('status','any status',[['returning','returning'],['transfer','transfer'],['new','new']],f.status)
+    +sel('minConf','any confidence',[[0.3,'30%+ confidence'],[0.5,'50%+ confidence'],[0.7,'70%+ confidence']],f.minConf)
+    +sel('sort','sort by EPIR',[['epir','EPIR'],['confidence','confidence'],['sample','sample size']],f.sort)
+    +'</div>';
+  return h;
+}
+
+function fbPqTable(){
+  var ix=FB.pq.index,f=FB.pq.f,mf=FB.pq.manifest;
+  var rows=ix.players,out=[],q=String(f.q||'').toLowerCase();
+  var confOf={};
+  for(var k in mf.teams){if(mf.teams.hasOwnProperty(k))confOf[k]=mf.teams[k].conference;}
+  var ROLE={1:'STARTER',2:'ROTATION',3:'DEPTH',0:'UNKNOWN'},ST={1:'returning',2:'transfer',3:'new',0:'unknown'};
+  for(var i=0;i<rows.length;i++){
+    var r=rows[i];
+    if(q&&String(r[1]).toLowerCase().indexOf(q)<0)continue;
+    if(f.team&&r[2]!==f.team)continue;
+    if(f.conf&&confOf[r[2]]!==f.conf)continue;
+    if(f.pos&&r[4]!==f.pos)continue;
+    if(f.role&&ROLE[r[8]]!==f.role)continue;
+    if(f.status&&ST[r[9]]!==f.status)continue;
+    if(f.minConf&&r[6]<+f.minConf)continue;
+    out.push(r);
+  }
+  out.sort(function(a,b){
+    if(f.sort==='confidence')return b[6]-a[6];
+    if(f.sort==='sample')return b[7]-a[7];
+    return b[5]-a[5];
+  });
+  var total=out.length;
+  out=out.slice(0,120);
+  var lowConf=out.filter(function(r){return r[6]<0.4;}).length;
+  var h='<div class="pq-note">'+total+' player'+(total===1?'':'s')+' match. Showing the top '+out.length+'. ';
+  if(lowConf)h+='<b style="color:var(--warn)">'+lowConf+' of them sit below 40% confidence</b> — a 75 at 90% and a 75 at 30% are different statements and this table will not merge them.';
+  h+='</div><table class="pq-tbl"><tr><th>#</th><th>player</th><th>team</th><th>pos</th><th>EPIR</th><th>confidence</th><th>sample</th><th>role</th><th>status</th></tr>';
+  out.forEach(function(r,i){
+    var col=r[6]>=0.7?'var(--pos)':(r[6]>=0.4?'var(--warn)':'var(--neg)');
+    h+='<tr class="click" onclick="fbPqPlayerCard(\''+fbEsc(r[0])+'\',\''+fbEsc(r[2])+'\')">'
+      +'<td class="mono">'+(i+1)+'</td><td>'+fbEsc(r[1])+'</td>'
+      +'<td class="mut">'+fbEsc((mf.teams[r[2]]&&mf.teams[r[2]].team)||r[2])+'</td>'
+      +'<td class="mono">'+fbEsc(r[3]||r[4])+'</td>'
+      +'<td class="mono"><b>'+fbPqN(r[5])+'</b></td>'
+      +'<td class="mono" style="color:'+col+'">'+fbPqPct(r[6])+'</td>'
+      +'<td class="mono">'+r[7]+'</td><td class="mut">'+ROLE[r[8]]+'</td><td class="mut">'+ST[r[9]]+'</td></tr>';
+  });
+  h+='</table>';
+  h+='<div class="pq-note"><b>Sample</b> is attributed events — carries, targets, dropbacks, sacks — <b>not snaps</b>. No public college feed publishes a snap count. '
+   +'A player with a low sample is not a bad player; he is a player this feed cannot see.</div>';
+  return h;
+}
+
+function fbPqTeamsHTML(mf){
+  var rows=[],k;
+  for(k in mf.teams){if(!mf.teams.hasOwnProperty(k))continue;
+    var t=mf.teams[k];rows.push([k,t]);}
+  rows.sort(function(a,b){return (b[1].overall.r||0)-(a[1].overall.r||0);});
+  var h='<div class="pq-sec">Team player quality</div><table class="pq-tbl">'
+    +'<tr><th>#</th><th>team</th><th>overall</th><th>offence</th><th>defence</th><th>value continuity</th><th>roster continuity</th><th>net transfer</th></tr>';
+  rows.slice(0,40).forEach(function(r,i){
+    var t=r[1];
+    h+='<tr class="click" onclick="fbPqFilter(\'team\',\''+fbEsc(r[0])+'\')"><td class="mono">'+(i+1)+'</td><td>'+fbEsc(t.team)+'</td>'
+      +'<td class="mono"><b>'+fbPqN(t.overall.r)+'</b></td><td class="mono">'+fbPqN(t.offense.r)+'</td><td class="mono">'+fbPqN(t.defense.r)+'</td>'
+      +'<td class="mono">'+(t.returning&&t.returning.value_continuity!=null?fbPqPct(t.returning.value_continuity):fbPqMiss(t.returning&&t.returning.reason))+'</td>'
+      +'<td class="mono">'+(t.returning&&t.returning.roster_continuity!=null?fbPqPct(t.returning.roster_continuity):'—')+'</td>'
+      +'<td class="mono">'+(t.transfers&&t.transfers.net_index!=null?fbPqN(t.transfers.net_index):'—')+'</td></tr>';
+  });
+  h+='</table><div class="pq-note"><b>Value continuity and roster continuity are different numbers on purpose.</b> '
+   +'A team can return most of its bodies and little of its production value; the gap between the two columns is the information.</div>';
+  return h;
+}
+
+/* ═══ THE PLAYER CARD ═════════════════════════════════════════════════════ */
+function fbPqPlayerHTML(){
+  var sel=FB.pq.player,t=sel.team?FB.pq.teams[sel.team]:null;
+  var back='<div style="margin-bottom:10px"><button class="btn ghost sm" onclick="fbPqClosePlayer()">← back to the explorer</button></div>';
+  if(!t)return back+'<div class="empty">Loading the player…</div>';
+  var p=null;(t.players||[]).forEach(function(x){if(x.k===sel.key)p=x;});
+  if(!p)return back+'<div class="empty">That player is not in this team’s file.</div>';
+  var L=t.legend||{},CFGp=window.EDPlayerConfig;
+  var col=p.cf>=0.7?'var(--pos)':(p.cf>=0.4?'var(--warn)':'var(--neg)');
+  var h=back+'<div class="mdl-card"><div class="mdl-card-h"><div class="mdl-card-match">'+fbEsc(p.n)+'</div>'
+    +'<div class="mdl-card-when">'+fbEsc(t.team)+' · '+fbEsc(p.p||p.g)+' · '+fbEsc(p.st)
+    +(p.ps?(' from '+fbEsc(p.ps)):'')+(p.ht?(' · '+p.ht+'in'):'')+(p.wt?(' · '+p.wt+'lb'):'')+'</div></div><div style="padding:0 12px 12px">';
+  h+='<div class="pq-grid" style="margin:8px 0">'
+    +'<div><div class="pq-sec" style="margin-top:0">EPIR</div><div style="font-size:30px;font-weight:800;line-height:1">'+fbPqN(p.e)+'</div>'
+    +'<div class="pq-note">0-100. 50 is positional replacement; 12 points is one standard deviation of the '+fbEsc(p.g)+' population.</div></div>'
+    +'<div><div class="pq-sec" style="margin-top:0">Confidence</div><div style="font-size:30px;font-weight:800;line-height:1;color:'+col+'">'+fbPqPct(p.cf)+'</div>'
+    +'<div class="pq-note">'+p.sn+' attributed events this season, '+p.cn+' career (recency-decayed). Completeness '+fbPqPct(p.dc)
+    +(p.dcs&&p.dcs!==t.season?(' from '+p.dcs):'')+'.</div></div>'
+    +'<div><div class="pq-sec" style="margin-top:0">Projected role</div><div style="font-size:18px;font-weight:700">'+fbEsc(p.role)+'</div>'
+    +'<div class="pq-note">'+(p.share!=null?(fbPqPct(p.share)+' of his group’s attributed volume'+(p.cfwd?' — carried forward from last season, because this season has not produced enough volume yet':'')):'no attributed volume, so his role is UNKNOWN — which is not the same as depth, and not the same as bad')+'</div></div>'
+    +'</div>';
+
+  h+='<div class="pq-sec">How the rating was built</div><table class="pq-tbl">'
+    +'<tr><td>quality core</td><td class="mono">'+fbPqN(p.q[9])+' pts</td>'
+    +'<td class="mut" style="font-size:11px">z '+fbPqN(p.q[2],3)+' after shrinking career z '+ (p.q[1]==null?'—':fbPqN(p.q[1],3))
+    +' toward the prior '+fbPqN(p.q[3],2)+' with weight '+fbPqN(p.q[4],3)+' (k='+fbPqN(p.q[5],1)
+    +(p.q[6]?', measured from r='+fbPqN(p.q[7],3)+' over '+p.q[8]+' consecutive-season pairs':', a declared fallback — NOT measured')+')</td></tr>'
+    +'<tr><td>role</td><td class="mono">'+fbPqN(p.rp)+' pts</td><td class="mut" style="font-size:11px">'+fbEsc(CFGp.EPIR_COMPONENTS.role_value.basis)+'</td></tr>'
+    +'<tr><td>experience</td><td class="mono">'+fbPqN(p.xp)+' pts</td><td class="mut" style="font-size:11px">'+p.so+' season'+(p.so===1?'':'s')+' observed in this feed. '+fbEsc(CFGp.EPIR_COMPONENTS.experience_value.basis)+'</td></tr>'
+    +'<tr><td>recruiting prior</td><td class="mono pq-miss">none</td><td class="mut" style="font-size:11px">'+fbEsc(CFGp.OBSERVABILITY.recruiting_rating.reason)+'</td></tr>'
+    +'<tr><td>availability</td><td class="mono">not in EPIR</td><td class="mut" style="font-size:11px">'+fbEsc(CFGp.EPIR_COMPONENTS.availability_adjustment.basis)+'</td></tr>'
+    +'</table>';
+
+  if(p.u&&p.u.length){
+    h+='<div class="pq-sec">What was measured</div><table class="pq-tbl"><tr><th>measure</th><th>value</th><th>opp-adjusted</th><th>n</th><th>z</th><th>weight</th></tr>';
+    p.u.forEach(function(m){
+      h+='<tr><td>'+fbEsc(m[0].replace(/_/g,' '))+'</td><td class="mono">'+fbPqN(m[1],3)+'</td>'
+        +'<td class="mono">'+(m[6]?fbPqN(m[2],3):'<span class="pq-miss">not adjusted</span>')+'</td>'
+        +'<td class="mono">'+m[3]+'</td><td class="mono">'+fbPqN(m[4],2)+'</td><td class="mono">'+fbPqN(m[5],2)+'</td></tr>';
+    });
+    h+='</table>';
+  } else h+='<div class="pq-sec">What was measured</div><div class="pq-note">Nothing. The feed attributed no scoreable event to this player, so his rating is positional replacement with a low confidence — which is a statement about the evidence, not about the player.</div>';
+
+  if(p.m&&p.m.length){
+    h+='<div class="pq-sec">What was missing, and why</div><table class="pq-tbl"><tr><th>measure</th><th>reason</th></tr>';
+    p.m.forEach(function(m){
+      var kind=(L.missing_kinds&&L.missing_kinds[m[1]])||m[1];
+      var extra=(m[1]==='S'&&m[2]!=null)?(' ('+m[2]+' vs the '+m[3]+' needed)'):'';
+      var gate=(m[1]==='G'&&L.coverage_gate_reasons)?fbPqGateReason(m[0],L):'';
+      h+='<tr><td>'+fbEsc(m[0].replace(/_/g,' '))+'</td><td class="mut" style="font-size:11px">'+fbEsc(kind+extra)+(gate?('<br>'+fbEsc(gate)):'')+'</td></tr>';
+    });
+    h+='</table>';
+  }
+
+  /* strengths and weaknesses, straight off the z-scores. No prose model. */
+  if(p.u&&p.u.length){
+    var sorted=p.u.slice().sort(function(a,b){return b[4]-a[4];});
+    var str=sorted.filter(function(m){return m[4]>=0.6;}).slice(0,3);
+    var wk=sorted.filter(function(m){return m[4]<=-0.6;}).slice(-3);
+    h+='<div class="pq-grid">'
+      +'<div><div class="pq-sec">Strengths</div>'+(str.length?('<ul style="margin:0;padding-left:18px;font-size:12px;line-height:1.6">'
+        +str.map(function(m){return '<li>'+fbEsc(m[0].replace(/_/g,' '))+' — '+fbPqN(m[4],2)+' SD above the '+fbEsc(p.g)+' mean</li>';}).join('')+'</ul>')
+        :'<div class="pq-note">nothing sits a clear standard deviation above his position’s mean</div>')+'</div>'
+      +'<div><div class="pq-sec">Weaknesses</div>'+(wk.length?('<ul style="margin:0;padding-left:18px;font-size:12px;line-height:1.6">'
+        +wk.map(function(m){return '<li>'+fbEsc(m[0].replace(/_/g,' '))+' — '+fbPqN(Math.abs(m[4]),2)+' SD below the '+fbEsc(p.g)+' mean</li>';}).join('')+'</ul>')
+        :'<div class="pq-note">nothing sits a clear standard deviation below his position’s mean</div>')+'</div></div>';
+  }
+
+  var hist=(t.history&&t.history[p.k])||null;
+  h+='<div class="pq-sec">Rating history</div>';
+  if(hist&&hist.length>1){
+    h+='<table class="pq-tbl"><tr><th>season</th><th>team</th><th>EPIR</th><th>confidence</th><th>sample</th></tr>';
+    hist.slice().sort(function(a,b){return a[0]-b[0];}).forEach(function(r){
+      h+='<tr><td class="mono">'+r[0]+'</td><td class="mut">'+fbEsc(r[4])+'</td><td class="mono">'+fbPqN(r[1])+'</td>'
+        +'<td class="mono">'+fbPqPct(r[2])+'</td><td class="mono">'+r[3]+'</td></tr>';
+    });
+    h+='</table><div class="pq-note">Point-in-time. A rating is never overwritten: what this player was rated in an earlier season is preserved so a historical simulation uses the number that existed then.</div>';
+  } else h+='<div class="pq-note">This is the first season this feed has seen him.</div>';
+
+  h+='<div class="pq-sec">What nobody can see</div><ul style="margin:0;padding-left:18px;font-size:11.5px;line-height:1.5;color:var(--faint)">'
+   +fbPqUnmeasured(p,L).map(function(x){return '<li>'+fbEsc(x)+'</li>';}).join('')+'</ul>';
+  h+='<div class="pq-sec">Sources</div><div class="pq-note">'
+   +'cfbfastR-data <span class="mono">player_stats_'+t.season+'.csv</span> (play attribution, public and keyless) · '
+   +'cfbfastR-data <span class="mono">cfb_rosters_'+t.season+'.csv</span> (identity, position, measurables) · '
+   +'joined by ESPN athlete id (<span class="mono">'+fbEsc(p.id||'—')+'</span>, join tier <b>'+fbEsc(p.it)+'</b>)'
+   +(p.psrc?(' · position from <span class="mono">'+fbEsc(p.psrc)+'</span>'):'')
+   +' · built '+fbEsc(String(t.generated_at).slice(0,10))+'.</div>';
+  h+='<div class="pq-note"><b>'+fbEsc((L.statement)||'Every number here is arithmetic over counted events.')+'</b></div>';
+  h+='</div></div>';
+  return h;
+}
+function fbPqGateReason(measureKey,L){
+  var g=L.coverage_gate_reasons||{},k;
+  for(k in g){if(!g.hasOwnProperty(k))continue;
+    if(measureKey.indexOf(k.replace(/s$/,''))>=0||k.indexOf(measureKey.split('_')[0])>=0)return g[k];}
+  return '';
+}
+function fbPqUnmeasured(p,L){
+  /* rebuilt from the group and the gates rather than repeated on every player */
+  var CFGp=window.EDPlayerConfig,out=[];
+  out.push(CFGp.OBSERVABILITY.recruiting_rating.reason);
+  out.push(CFGp.OBSERVABILITY.snap_share.reason);
+  if(p.g==='OL')out.push(CFGp.OBSERVABILITY.ol_individual.reason);
+  if(CFGp.DEFENSE_GROUPS.indexOf(p.g)>=0)out.push(CFGp.OBSERVABILITY.tackles.reason);
+  if(p.g==='CB'||p.g==='S'||p.g==='DB')out.push(CFGp.OBSERVABILITY.coverage_targets.reason);
+  if(CFGp.NO_PRODUCTION_FEED[p.g])out.push(CFGp.NO_PRODUCTION_FEED[p.g]);
+  (p.um||[]).forEach(function(x){if(out.indexOf(x)<0)out.push(x);});
+  return out;
+}
+
 function fbRenderBoard(host){
   var ban=$('fbBanner'),ctl=$('fbCtl');
   try{rsMetaRender('football');}catch(_){}
@@ -34898,6 +35835,17 @@ function fbRenderBoard(host){
       else ctl.style.display='none';
     }
     fbP4Render(host);return;
+  }
+  /* Players: the national player-quality + scheme matchup layer. Separate
+     modules, separate committed datasets, separate failure state — a broken
+     player build must never take down the Power 4 board or the NFL board. */
+  if(FB.sport==='players'){
+    if(ban){ban.className='flbanner hide';ban.innerHTML='';}
+    if(ctl)ctl.style.display='none';
+    var frq=$('fbFresh');
+    if(frq)frq.textContent=(FB.pq.manifest&&FB.pq.manifest.generated_at)
+      ?('player ratings built '+String(FB.pq.manifest.generated_at).slice(0,10)):'—';
+    fbPqRender(host);return;
   }
   /* CFB Rosters: the player-level browser over the weekly ESPN sync. It has
      its own loader and does not depend on the NFL/CFB v1 data path at all. */

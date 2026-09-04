@@ -1,0 +1,119 @@
+# EdgeDesk Football — the national player quality + scheme matchup build.
+#
+# Rebuilds every active FBS player's EdgeDesk Player Impact Rating out of the
+# public play-attribution feed, aggregates them into position groups, team
+# units and scheme profiles, and commits the artifacts the research page reads:
+#
+#   football/players/current.json          the league-wide manifest
+#   football/players/index.json            the searchable national index
+#   football/players/teams/<key>.json      per-player provenance, on demand
+#   football/players/snapshots/<season>-wNN.json   POINT-IN-TIME, never rewritten
+#   football/players/params.js             the MEASURED reliability constants
+#
+# WHAT THIS JOB DOES NOT DO: it does not run the walk-forward validator.
+# Recalibrating on a schedule is exactly how a layer quietly starts fitting the
+# recent past, so `calibration.points_applied` only ever changes when a human
+# runs football/players/validate.js and commits the result. The build preserves
+# whatever calibration is already in params.js and never invents one: a params
+# file with no calibration says so, and the layer moves no line.
+#
+# Cadence follows the football week (UTC). Rosters and play attribution both
+# settle after the weekend, so the main rebuild is Tuesday; a Saturday-night run
+# picks the week's games up while they are still interesting.
+name: Player quality build
+
+on:
+  workflow_dispatch:
+    inputs:
+      season:
+        description: 'Season year (default: current, Jan/Feb -> prior year)'
+        required: false
+        default: ''
+      seasons:
+        description: 'How many seasons of history to read (default 4)'
+        required: false
+        default: ''
+  schedule:
+    - cron: '40 8 * * 2'    # Tuesday 08:40 UTC — the week has settled
+    - cron: '40 8 * * 0'    # Sunday  08:40 UTC — Saturday's games have landed
+  push:
+    branches: [main]
+    paths:
+      - 'football/players/config.js'
+      - 'football/players/epir.js'
+      - 'football/players/units.js'
+      - 'football/players/scheme.js'
+      - 'football/players/build_players.js'
+      - 'football/players/run_build.js'
+      - '.github/workflows/player-ratings.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: player-ratings
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      # The suites are offline and gate the write: a build that would commit a
+      # dataset its own rules reject must fail before it writes anything.
+      - name: Player quality suite
+        run: node football/players/players.test.js
+
+      - name: Research page panel suite
+        run: node tools/football/player_quality_ui.test.js
+
+      - name: Build the player ratings
+        run: |
+          node --max-old-space-size=6144 football/players/build_players.js \
+            ${{ github.event.inputs.season && format('--season {0}', github.event.inputs.season) || '' }} \
+            ${{ github.event.inputs.seasons && format('--seasons {0}', github.event.inputs.seasons) || '' }}
+
+      # Re-run the suites against what was actually written. The first pass
+      # proved the code is sound; this proves the DATA is.
+      - name: Re-check the committed datasets
+        run: |
+          node football/players/players.test.js
+          node tools/football/player_quality_ui.test.js
+
+      - name: Sanity-check the build before committing
+        run: |
+          node -e "
+            const m = require('./football/players/current.json');
+            const fail = s => { console.error('REFUSING TO COMMIT: ' + s); process.exit(1); };
+            if (m.schema !== 'edgedesk_player_quality_v1') fail('unexpected schema');
+            if (Object.keys(m.teams).length < 100) fail('only ' + Object.keys(m.teams).length + ' teams — a wrong-shaped dataset');
+            if (!(m.player_count > 8000)) fail('only ' + m.player_count + ' players — a wrong-shaped dataset');
+            if (!m.quality || m.quality.overall == null) fail('no data-quality block');
+            const P = require('./football/players/params.js');
+            if (!P.calibration) fail('params.js lost its calibration block');
+            if (typeof P.calibration.player_points_per_unit.points_applied !== 'boolean')
+              fail('points_applied is not an explicit boolean');
+            console.log('ok — ' + Object.keys(m.teams).length + ' teams, ' + m.player_count + ' players, season ' + m.season + ' week ' + m.week);
+          "
+
+      - name: Commit
+        run: |
+          git config user.name  'github-actions[bot]'
+          git config user.email 'github-actions[bot]@users.noreply.github.com'
+          git add football/players/current.json football/players/index.json \
+                  football/players/params.js football/players/teams \
+                  football/players/snapshots
+          if git diff --cached --quiet; then
+            echo 'nothing changed — quiet day, no commit'
+            exit 0
+          fi
+          SEASON=$(node -p "require('./football/players/current.json').season")
+          WEEK=$(node -p "require('./football/players/current.json').week")
+          git commit -m "player ratings: ${SEASON} week ${WEEK}"
+          git push

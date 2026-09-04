@@ -25,6 +25,15 @@ football/
                 architecture (strength, talent, situation, matchup,
                 uncertainty), its own parameters, and its own backtest against
                 a real CFB line archive. See cfb_p4/README.md.
+
+  players/      the PLAYER QUALITY + SCHEME MATCHUP ENGINE — every active FBS
+                player rated 0-100 with provenance, rolled into position
+                groups, team units, scheme profiles, a matchup engine, a
+                run-defence gate and a seeded head-to-head simulator.
+                It moves NO projection: its own walk-forward says it does not
+                beat the Power 4 rating core out of sample, so it ships with
+                `points_applied:false` and is published as research.
+                See players/README.md.
 ```
 
 ## The honesty contract
@@ -135,6 +144,53 @@ unknown, never zero. What the roster layer can and cannot move is the
 engine's own honest contract: stability, youth, OL and volatility inputs
 and fewer declared unknowns — the mean spread shifts only on per-player
 recruiting stars, which no public feed carries.
+
+## Player quality
+
+`football/players/` answers the question the roster layer above cannot: not
+*how many* players are back, but **who is back, how good they are, and whether
+what they do well attacks what the opponent does badly.**
+
+Every active FBS player carries an **EdgeDesk Player Impact Rating** (0-100,
+where 50 is positional replacement and 12 points is one standard deviation of
+that position's own qualified population), built from cfbfastR's public
+play-attribution table, opponent-adjusted, and shrunk toward the prior by a
+constant `k = n̄(1−r)/r` **measured** from each position group's own observed
+season-to-season reliability. Every rating ships its confidence, its sample,
+its data completeness, every component used and every component missing.
+
+The layer feeds a matchup matrix, scheme edges, a **run-defence gate**, a
+player edge board, a seeded Monte Carlo simulator, a sensitivity analysis and a
+**Linemaker view** that keeps RAW MODEL, PLAYER-ADJUSTED, SCHEME-ADJUSTED,
+SIMULATION and MARKET as five separate numbers. It lives in the Football tab's
+**Players** segment and under every Power 4 game card.
+
+**It changes no projection anywhere in EdgeDesk.** Held out on 2024-2025, the
+player layer moves spread MAE by 0.018 points (paired p = 0.40, and worse in
+2024), so `params.js` ships `points_applied:false` and the Linemaker view shows
+the player and scheme rungs flat on the raw model with the p-value on screen.
+The bar for moving a line is lower holdout MAE **and** a paired test at p<0.05
+**and** an improvement in every holdout season separately; the day the layer
+clears it, `validate.js` flips the flag and the ladder starts moving with no
+code change. Full record: `players/README.md` and `players/report/BACKTEST.md`.
+
+Three things it says out loud rather than hiding: no public feed publishes a
+college snap count (role is touch share, and is labelled as such); no public
+feed attributes a block, a tackle or a pressure short of a sack (so an
+offensive lineman has an EMPTY measure contract and his unit is rated from the
+team's own observed sack and stuff rates instead); and no legal public
+recruiting feed is wired in (the adapter exists, every recruiting field is
+null, and the recruiting data-quality dimension is zero on purpose).
+
+```
+node football/players/build_players.js --season 2026 --seasons 4
+node football/players/players.test.js            # 275 checks
+node tools/football/player_quality_ui.test.js    # 74 checks over the real page
+```
+
+`.github/workflows/player-ratings.yml` rebuilds and commits the datasets twice
+a week in season. It deliberately does NOT run the validator: recalibrating on
+a schedule is how a layer quietly starts fitting the recent past.
 
 ## Regenerating parameters
 
