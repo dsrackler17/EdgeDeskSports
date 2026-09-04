@@ -45,32 +45,58 @@
 
 begin;
 
-create extension if not exists pgcrypto;
-
 -- ── helpers ───────────────────────────────────────────────────────────────
+--
+-- CORE POSTGRES ONLY. NOTHING HERE MAY DEPEND ON pgcrypto.
+--
+-- The first version used pgcrypto's digest() and gen_random_bytes(). On
+-- Supabase pgcrypto is installed in the `extensions` schema, and every
+-- security-definer function below deliberately pins
+-- `search_path = public, pg_temp` — which is correct, and which means pgcrypto
+-- is not on the path. The result was a live failure the moment anyone tried to
+-- create a challenge:
+--
+--     function digest(text, unknown) does not exist
+--
+-- Widening the search_path to reach pgcrypto would be the wrong fix: a pinned
+-- search_path on a definer function is the thing standing between this schema
+-- and privilege escalation. So the dependency is gone instead.
+--
+--   sha256(bytea)       core since PostgreSQL 11
+--   gen_random_uuid()   core since PostgreSQL 13
+--
+-- Both are used below and neither needs an extension.
 
 -- SHA-256 of a bearer secret. The secret itself is never stored.
 create or replace function public.games_hash(p_secret text)
-returns text language sql immutable as $$
+returns text language sql immutable
+set search_path = pg_catalog, pg_temp as $$
   select case
     when p_secret is null or length(p_secret) < 16 then null
-    else encode(digest(p_secret, 'sha256'), 'hex')
+    else encode(sha256(convert_to(p_secret, 'UTF8')), 'hex')
   end;
 $$;
 
--- An opaque, URL-safe invite token. 26 chars of base32-ish alphabet drawn from
--- gen_random_bytes: ~130 bits, so enumeration is not a threat model, it is
--- arithmetic. Ambiguous characters are excluded so a token survives being read
+-- An opaque, URL-safe invite token: 26 characters of a 31-symbol alphabet,
+-- ~128 bits, so enumeration is not a threat model, it is arithmetic.
+-- Ambiguous characters (0/1/l/o) are excluded so a token survives being read
 -- aloud or retyped from a screenshot.
+--
+-- Entropy comes from two v4 UUIDs run through SHA-256 to get uniform bytes —
+-- core functions only, for the reason stated above.
 create or replace function public.games_token(p_len integer default 26)
-returns text language plpgsql volatile as $$
+returns text language plpgsql volatile
+set search_path = pg_catalog, pg_temp as $$
 declare
   alphabet constant text := '23456789abcdefghjkmnpqrstuvwxyz';
+  bytes bytea;
   out text := '';
   i integer;
 begin
+  if p_len is null or p_len < 8 or p_len > 32 then p_len := 26; end if;
+  bytes := sha256(convert_to(gen_random_uuid()::text || gen_random_uuid()::text, 'UTF8'));
   for i in 1..p_len loop
-    out := out || substr(alphabet, 1 + (get_byte(gen_random_bytes(1), 0) % length(alphabet)), 1);
+    out := out || substr(alphabet, 1 + (get_byte(bytes, i - 1) % length(alphabet)), 1);
   end loop;
   return out;
 end;

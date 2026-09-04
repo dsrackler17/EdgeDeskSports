@@ -53,16 +53,26 @@ jobs:
       - name: Suites (before)
         run: npm run games:test
 
-      # THE SERVICE ROLE IS WHAT MAKES THE MARKET APPEAR.
-      # app.html: "every RLS policy keys on auth.uid(), and it is NULL for an
-      # anon bearer". A build has no user, so an anon read of signals or
-      # cfb.lines returns ZERO ROWS rather than an error — and the board ships
-      # with no book numbers, which silently disables Pick 5 and the Spread
-      # challenge. Without the secret the build still succeeds, with a loud
-      # note saying the market is missing and why.
+      # WHICH ROLE READS THE MARKET.
+      #
+      # Measured on run 2 of this workflow, reading as anon:
+      #     cfb.lines  62 rows      signals  0 rows
+      # So anon is enough for the reference table but is gated out of the live
+      # captured quotes, which are the fresher source. The service role gets
+      # both.
+      #
+      # SB_SERVICE_ROLE / SB_URL are the names this repository already uses for
+      # its Supabase credentials — the first version of this step referenced a
+      # SUPABASE_SERVICE_KEY that does not exist, so it silently passed an empty
+      # string and fell back to anon. A missing secret is an empty string in
+      # Actions, never an error, so the name has to be right.
+      #
+      # The build still succeeds without either: it falls back to anon and says
+      # which role it used.
       - name: Build the challenge board
         env:
-          EDGD_SB_SERVICE: ${{ secrets.SUPABASE_SERVICE_KEY }}
+          EDGD_SB_SERVICE: ${{ secrets.SB_SERVICE_ROLE }}
+          EDGD_SB_URL: ${{ secrets.SB_URL }}
         run: node games/build_challenges.js
           ${{ github.event.inputs.season && format('--season {0}', github.event.inputs.season) || '' }}
 
@@ -91,9 +101,9 @@ jobs:
             // must never pass silently.
             if (a.counts.with_market === 0) {
               console.log('::warning::No game on this board carries a book number. Pick 5 and '
-                + 'the Spread challenge will show their empty states. Check that '
-                + 'SUPABASE_SERVICE_KEY is set on this repository — an anon read of signals '
-                + 'and cfb.lines returns zero rows under RLS.');
+                + 'the Spread challenge will show their empty states; Price It is unaffected. '
+                + 'Read the [market] lines in the build step above — they name the row count '
+                + 'from each source and the role used.');
             }
           "
 

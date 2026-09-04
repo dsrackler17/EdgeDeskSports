@@ -64,8 +64,12 @@
   var $=function(id){return document.getElementById(id);};
   var stage=$('stage'),after=$('after');
   var POOL=[],ART=null,TOKEN=null,DRAFT={mode:'spread',game:null,selection:null};
-  /* the same selector bounds Price It uses, from the one place that declares them */
-  var RANGE=G.SPREAD_RANGE,STEP=G.SPREAD_STEP;
+  /* The same selector bounds Price It uses, from the one place that declares
+     them — with a literal fallback, because a browser holding a CACHED
+     games.js from before the constant existed rendered "Baylor -undefined"
+     and a slider that ran to 100. */
+  var RANGE=(G&&typeof G.SPREAD_RANGE==='number')?G.SPREAD_RANGE:42;
+  var STEP=(G&&typeof G.SPREAD_STEP==='number')?G.SPREAD_STEP:0.5;
 
   /* boot() resolves once the social endpoint is configured, so nothing calls an
      RPC against an unconfigured client and reports a false "not deployed". */

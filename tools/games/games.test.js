@@ -587,7 +587,13 @@ chk('no stat label is long enough to ellipsize in a third-width tile',
   [['price it', PRICE], ['head-to-head', fs.readFileSync(G('h2h/index.html'), 'utf8')]]
     .forEach(([n, p]) => {
       chk(n + ' reads the shared range rather than declaring its own',
-        /RANGE\s*=\s*G\.SPREAD_RANGE/.test(p));
+        /G\.SPREAD_RANGE/.test(p));
+      /* A cached games.js from before the constant existed rendered
+         "Baylor -undefined" and a slider that ran to 100. A cross-file
+         constant must degrade to the right number, never to undefined. */
+      chk(n + ' degrades to the literal if a stale games.js lacks the constant',
+        /typeof G\.SPREAD_RANGE==='number'\)\?G\.SPREAD_RANGE:42/.test(p)
+        && /typeof G\.SPREAD_STEP==='number'\)\?G\.SPREAD_STEP:0\.5/.test(p));
       chk(n + ' hardcodes no selector bound',
         !/min="-?\d+" max="\d+"/.test(p) && !/Math\.(min|max)\(-?\d+,\s*\(\+sl\.value\)/.test(p),
         (p.match(/min="-?\d+" max="\d+"/) || p.match(/Math\.(min|max)\(-?\d+,\s*\(\+sl\.value\)/) || [''])[0]);
