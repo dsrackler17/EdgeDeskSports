@@ -468,3 +468,61 @@ beside NFL with no further frontend change.
 
 None. All runtime sources are public and keyless; Supabase reads reuse the
 app's existing token path.
+
+---
+
+## The player quality + scheme matchup layer (`football/players/`)
+
+Added after the sections above and integrated the same way they were: as a
+read-only client-side layer over committed artifacts. **It touches no Edge
+Function, writes nothing to the database, and needs no secret.**
+
+### What it adds to the client
+
+| surface | where | what it reads |
+|---|---|---|
+| **Players** segment | Football tab, fourth segment | `football/players/current.json`, `index.json`, `teams/<key>.json` |
+| **Player quality & matchup** panel | under every Power 4 game card | the same files, plus the Power 4 engine's own projection for the game |
+
+Both lazy-load their module bundle (`config.js`, `epir.js`, `units.js`,
+`scheme.js`, `matchup.js`, `sim.js`, `params.js`) on first open, exactly as the
+Power 4 board loads its own engine.
+
+### The coupling rules it keeps
+
+* **It is a fourth independent engine, not a change to the first three.** A
+  failed nflverse load no longer blanks the Players segment (the loader's
+  failure handler now exempts `players` the way it already exempted `p4`), and
+  a failed player build cannot touch the NFL board, the Power 4 board or the
+  CFB Rosters browser. Each renders its own gate.
+* **It joins on the same team key as everything else.** `EDPlayerRating.teamKey`
+  is byte-identical to `EDCfbP4.normKey`, and `players.test.js` cross-checks
+  them on the names two normalisers actually disagree about (Texas A&M, San
+  José State, Hawai'i). A divergence here would silently lose a team rather
+  than error, which is why it is a test and not a comment.
+* **It prices nothing.** Its walk-forward says it does not beat the Power 4
+  rating core out of sample, so `params.js` ships
+  `calibration.*.points_applied: false` and the Linemaker view renders the
+  player and scheme rungs flat on the raw model with the p-value on screen.
+  No number anywhere else in EdgeDesk changed when this layer landed.
+* **The market never reaches a model number.** MARKET, MODEL, PLAYER QUALITY
+  and SIMULATION are four separately computed columns; the market enters only
+  as a cover probability counted over already-simulated margins.
+
+### Server-side adoption path, if it is ever wanted
+
+Nothing here needs the server. If the layer ever earns `points_applied: true`,
+the natural adoption is the one this document already specifies for the Power 4
+engine: publish the player-adjusted fair line into `model_predictions` under a
+distinct `model_version` (`edgedesk_player_v1`) beside — never instead of — the
+existing rows, so the two records grade separately and the older one keeps its
+own history. Until the walk-forward says so, there is nothing to publish.
+
+### CI
+
+`.github/workflows/player-ratings.yml` rebuilds and commits the datasets twice a
+week in season, gated on both suites before and after the write plus a shape
+check that refuses to commit a wrong-sized dataset. It deliberately does **not**
+run `validate.js`: recalibrating on a schedule is how a research layer quietly
+starts fitting the recent past, so `points_applied` only ever changes when a
+human runs the validator and commits the result.

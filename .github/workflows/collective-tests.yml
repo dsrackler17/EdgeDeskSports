@@ -32,6 +32,11 @@ on:
       - 'football/injuries/**'
       - 'football/availability/**'
       - 'football/rating/**'
+      # The player quality layer's own modules and the app.html panel that
+      # renders them. The panel suite reads the renderer out of app.html
+      # rather than a copy, so a change to either has to be able to trigger it.
+      - 'football/players/**'
+      - 'tools/football/**'
       # The capture edge function and its suites. Before this, a change to the
       # single function that decides what EdgeDesk calls a bet triggered no CI
       # at all — it was not in either path list, because until v9 it was not in
@@ -61,6 +66,11 @@ on:
       - 'football/injuries/**'
       - 'football/availability/**'
       - 'football/rating/**'
+      # The player quality layer's own modules and the app.html panel that
+      # renders them. The panel suite reads the renderer out of app.html
+      # rather than a copy, so a change to either has to be able to trigger it.
+      - 'football/players/**'
+      - 'tools/football/**'
       # The capture edge function and its suites. Before this, a change to the
       # single function that decides what EdgeDesk calls a bet triggered no CI
       # at all — it was not in either path list, because until v9 it was not in
@@ -104,6 +114,18 @@ jobs:
       # fails loudly if the block it slices moves instead of testing nothing.
       - name: The research boards can still post to the Collective
         run: node tools/collective/app_sync.test.js
+
+      # The player quality + scheme matchup layer: the rules its ratings are
+      # not allowed to break (a missing input never becoming a zero, no rating
+      # ever knowing the future, a reproducible simulation, no model call
+      # anywhere in the rating path).
+      - name: The player ratings obey their own rules
+        run: node football/players/players.test.js
+
+      # The research page's player panel, cut out of app.html and run against
+      # the REAL committed datasets — so this holds the thing users see.
+      - name: The player quality panel says what it can and cannot see
+        run: node tools/football/player_quality_ui.test.js
 
       # The workbook the boards download, rebuilt from a real cleaned file.
       - name: The download is the format the operator cleaned up by hand
