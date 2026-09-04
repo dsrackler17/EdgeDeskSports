@@ -151,6 +151,11 @@ jobs:
       - name: The research landing tells the truth in five seconds
         run: node tools/app/research_landing.test.js
 
+      # The matchup page: the research case a reader opens, and what it is
+      # never allowed to imply about an unvalidated layer.
+      - name: The game research card is a research packet, not a tip
+        run: node tools/app/game_research.test.js
+
       # The workbook the boards download, rebuilt from a real cleaned file.
       - name: The download is the format the operator cleaned up by hand
         run: node tools/collective/app_export.test.js
