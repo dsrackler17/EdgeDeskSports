@@ -1,84 +1,112 @@
-# Where `close` and `capture` disagree about what a fair price is
+# `close` and `capture` as the two halves of every CLV
 
-CLV is `entry_decimal x closing_fair - 1`. The entry side comes from
-`capture`'s pricer; the closing side comes from `close`'s. If the two pricers
-do not compute a fair price the same way, the difference lands in every CLV in
-the record and is indistinguishable from market movement.
+CLV is `entry_dec x closing_fair - 1`. The entry side comes from `capture`'s
+pricer; the closing side comes from `close`'s. If the two do not compute a fair
+price the same way, the difference lands in every CLV in the record and is
+indistinguishable from market movement.
 
-`learn` already measured the symptom without being able to name the cause. Its
-`fairDrift()` reading says the realised CLV is flat across every edge band over
+`learn` measured the symptom for months without being able to name the cause.
+Its `fairDrift()` reading says realised CLV is flat across every edge band over
 a constant offset, and that a constant offset is "the size of a de-vig or
 book-set difference between capture and close rather than anything about the
-edge model." The header of `close` records the number: **-2.09%**.
+edge model." `close`'s own header records the number: **-2.09%**.
 
-These are the differences, measured rather than asserted. Reproduce with
-`node tools/capture/pricer_parity.test.js`.
+Four defects were found. All four are fixed in `close-v7-parity`, and
+`tools/capture/pricer_parity.test.js` (56 assertions, in CI) is what keeps them
+fixed — it imports the real `close` module and the real `capture` module and
+compares them, so a divergence is a red build rather than a slow drift in the
+record.
 
 ---
 
-## 1. The reference book. Structural, and the largest of the three.
+## 1. `close` could not reach the reference book at all
 
 | | fetch | Pinnacle reachable? |
 |---|---|---|
-| `capture` v9 | `bookmakers=` (10 keys incl. `pinnacle`), else `regions=us,eu` | yes, either way |
-| `close` v6 | `regions=` with a hardcoded fallback of `us` | **no** |
+| `capture` v9 | `bookmakers=` (10 keys incl. `pinnacle`), else `regions=us,eu` | yes |
+| `close` v6 | `regions=`, hardcoded fallback `"us"`, no bookmaker support | **no** |
 
-`close` has no `CAPTURE_BOOKMAKERS` support at all — its `fetchOdds` only ever
-builds `&regions=`. Pinnacle is an `eu` book, so:
-
-- With `CAPTURE_REGIONS` unset, capture reads `us,eu` and close reads `us`.
-- With `CAPTURE_BOOKMAKERS` set, capture uses the bookmaker list and close
-  still reads `regions=us`.
-
-Either configuration leaves `s.sharp` null on every selection at close, and
-`close/index.ts:174` is
+Pinnacle is an `eu` book, so `s.sharp` was null on every selection of every
+event, and `close/index.ts:174` was
 
 ```ts
 const cons = median(s.fairs), sharp = s.sharp ?? cons, edge = sharp * s.best.dec - 1;
 ```
 
-which is, character for character, the line capture v9's header identifies as
-the v8 root cause: `sharp_fair` silently holding the consensus of the same soft
-books the edge was measured against. capture v9 fixed it. `close` never got the
-fix, so **the entry edge is anchored on Pinnacle and the close is anchored on
-the US soft-book median.** Those are different quantities, and the gap between
-them is a constant offset applied to every graded row.
+character for character the line capture v9's header identifies as the **v8 root
+cause**: the consensus of the same soft books the price was being measured
+against, stored under the name `sharp_fair`. The entry edge was anchored on
+Pinnacle and the close on the US soft-book median.
 
-## 2. `devig` disagrees on an underround book.
+**Fixed.** `close` now reads the same `CAPTURE_BOOKMAKERS`,
+`CAPTURE_REGIONS` (default `us,eu`) and `CAPTURE_REFERENCE_BOOKS` that capture
+reads, so one configuration drives both halves. The substitution is gone: when
+there is no reference the fair is a labelled `robust_consensus`, never a
+consensus wearing the word sharp.
 
-Identical on every overrounded market — max deviation `2.5e-11`, which is
-bisection tolerance, not drift. But when a book's implied probabilities sum
-below 1 there is no margin to remove and no root to solve for:
+## 2. `devig` returned a non-distribution on an underround book
 
-| booksum | capture v9 | close v6 |
-|---|---|---|
-| 1.0477 | `[0.500000, 0.500000]` | `[0.500000, 0.500000]` |
-| **0.9524** | `[0.500000, 0.500000]` | **`[0.352168, 0.352168]`** |
+Identical wherever there was margin to remove — `2.5e-11`, bisection tolerance.
+When the booksum is below 1 there is no root to solve for, and the old `bisect`
+had no way to say so:
 
-capture normalises proportionally, which sums to 1. close returns values summing
-to 0.704 — not a probability distribution. It still passes `decideClose`'s
-`closeFair > 0 && closeFair < 1` gate, so it is stored as a real CLV. On a 1.95
-entry that is a recorded CLV of `-31.4%` where the honest answer is `-2.5%`.
+| booksum | capture v9 | close v6 | close v7 |
+|---|---|---|---|
+| 1.0477 | `[0.500000, 0.500000]` | `[0.500000, 0.500000]` | `[0.500000, 0.500000]` |
+| **0.9524** | `[0.500000, 0.500000]` | **`[0.352168, 0.352168]`** | `[0.500000, 0.500000]` |
 
-## 3. The consensus is built over different populations.
+Summing to 0.704 is not a probability distribution, and it passed
+`decideClose`'s `0 < fair < 1` gate, so it was stored as a real CLV.
 
-`capture` medians over independent book **families** (two brands on one trading
-desk are one opinion) with `trimmedMedian`, and keeps the execution book out of
-its own reference. `close` medians over every bookmaker row the feed returns,
-including the book offering the best price. On tight markets the two agree; the
-gap opens exactly where an edge comes from, which is where it matters.
+**Fixed.** capture's `bisect` (which returns `null` when no root is bracketed)
+and capture's `devig` are copied verbatim. Every output is asserted to sum to 1.
+
+## 3. The consensus was a plain median over bookmaker rows
+
+Several brands on one trading desk voted once per brand, and the book offering
+the best price helped compute the number its own price was judged against.
+
+**Fixed.** One quote per operator family (freshest wins, then best priced),
+`trimmedMedian` rather than `median`, and the best-priced family removed from
+its own fair value — the same three rules capture applies at entry.
+
+## 4. The coherence guard was dead code
+
+`decideClose` reads `o.pin_dec` and `o.pin_opp_dec`. `priceEvent` never set
+them, so `incoherent_close_market` never once fired in the life of the function.
+
+**Fixed.** The reference book's own two sides are carried through, so the
+overround check finally has the data it always asked for.
 
 ---
 
-## What this does NOT establish
+## And one thing the tests found on the way
 
-That fixing any of this makes the record better. It establishes that the record
-currently measures entry and close on different bases, so the -2.09% offset is
-at least partly an artifact of the pipeline rather than a fact about the market.
-How much of it is artifact is not knowable until the two pricers agree.
+Nothing in this repository ever created `closing_dec`, `closing_book`,
+`closing_has_sharp`, `closing_n_books`, `closing_source` or
+`closing_at_observed` — columns `close` writes on **every** run. They exist in
+the live database because they were added by hand in the dashboard. A fresh
+database built from this checkout would have had a close job whose every UPDATE
+failed. `close_v7_parity.sql` now creates them, idempotently, so it is a no-op
+where they already exist.
 
-Changing `close` re-defines CLV for every future row, and the existing rows were
-measured the old way. Any fix has to decide, deliberately, what happens to the
-history — the honest options being a `clv_basis`-style label so the two
-populations are never averaged, or a backfill that recomputes from
-`book_quote_ticks`. That is a decision, not a cleanup.
+---
+
+## What happens to the history
+
+Rows closed before v7 were measured against a different reference. They are
+**labelled, not rewritten**: `close_v7_parity.sql` stamps every already-closed
+row `closing_policy = 'pre-v7-legacy'` and gives it a
+`closing_reference_type` of `tick`, `none` or `pre-v7-unknown`, and touches no
+`clv`, `closing_dec` or `closing_sharp_fair`. Rows still open are left alone
+entirely.
+
+That is the same device `flagged_policy` provides on the flagging side, and it
+exists for the same reason: pooling two definitions of a measurement and
+reporting one number is how the -2.09% stayed invisible for as long as it did.
+Any reader of the record can now segment on `closing_policy` and never average
+across the boundary.
+
+A backfill that recomputes pre-v7 closes from `book_quote_ticks` is possible and
+is **not** done here. It would be a second measurement of the same rows under a
+third definition, and it is a decision rather than a cleanup.

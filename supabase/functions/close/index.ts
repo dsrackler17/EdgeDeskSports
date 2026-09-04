@@ -119,64 +119,310 @@ const json = (o: unknown, status = 200) =>
 const ODDS_KEY = Deno.env.get("ODDS_API_KEY") ?? "";
 const ODDS_BASE = "https://api.the-odds-api.com/v4";
 
-async function fetchOdds(sport: string, regions: string, markets: string) {
-  const u = `${ODDS_BASE}/sports/${sport}/odds/?apiKey=${ODDS_KEY}&regions=${regions}&markets=${markets}&oddsFormat=decimal&dateFormat=iso`;
+/* ── PARITY WITH CAPTURE ─────────────────────────────────────────────────────
+   CLV is entry_dec x closing_fair - 1. capture computes the entry; this file
+   computes the fair. Until v7 the two were not computing the same thing, in
+   four separate ways:
+
+     1. THIS FILE COULD NOT REACH THE REFERENCE BOOK AT ALL. fetchOdds only
+        ever built &regions=, defaulting to "us", and it had no knowledge of
+        CAPTURE_BOOKMAKERS. Pinnacle is an `eu` book, so `s.sharp` was null on
+        every selection of every event, and
+
+            const sharp = s.sharp ?? cons;
+
+        silently substituted the consensus of the same soft books the price was
+        being measured against — character for character the v8 line capture v9
+        was written to delete. The entry edge was anchored on Pinnacle and the
+        close on the US soft-book median: two different quantities, differenced,
+        and stored as CLV. This is the constant offset learn's fairDrift() kept
+        reporting and could not name.
+
+     2. devig() RETURNED A NON-DISTRIBUTION ON AN UNDERROUND BOOK. Shin and
+        power both solve for a parameter that SHRINKS implied probabilities down
+        to a unit sum; when they already sum below 1 there is nothing to shrink
+        and no root exists in either bracket. The old bisect had no way to say
+        so — it returned a midpoint — and the fairs came back summing to 0.704.
+        That still satisfies 0 < fair < 1, so it was stored as a real CLV.
+
+     3. THE CONSENSUS WAS A PLAIN MEDIAN OVER BOOKMAKER ROWS. Several brands on
+        one trading desk voted once each, and the book offering the best price
+        helped compute the number its own price was judged against.
+
+     4. THE COHERENCE GUARD WAS DEAD CODE. decideClose reads o.pin_dec and
+        o.pin_opp_dec; priceEvent never set them, so `incoherent_close_market`
+        has never once fired.
+
+   All four are fixed. The fair is now LABELLED with the rule that produced it
+   (closing_reference_type) and stamped with CLOSE_POLICY, so rows priced by the
+   old code and rows priced by this one can never be averaged into one number.
+   No history is rewritten — close_v7_parity.sql labels the old rows in place.
+
+   THE COPIES BELOW MUST TRACK capture/index.ts. The dashboard bundles one
+   folder, so a ../_shared import fails the bundle silently and leaves the old
+   version serving. tools/capture/pricer_parity.test.js slices this block out of
+   this file and runs it against the real capture module, so a divergence is a
+   red build rather than a slow drift in the record.
+   ────────────────────────────────────────────────────────────────────────── */
+
+const list = (name: string, dflt: string): string[] =>
+  (Deno.env.get(name) ?? dflt).split(",").map((s) => s.trim().toLowerCase()).filter(Boolean);
+
+/* Read the SAME env vars capture reads, so one configuration drives both halves
+   of every CLV. A bookmaker list substitutes for the regions term and reaches
+   Pinnacle for the price of one region-equivalent; without one the default is
+   `us,eu`, which is the corrected default capture v9 ships, NOT the `us` that
+   made the reference book structurally unreachable. */
+const BOOKMAKERS = list("CAPTURE_BOOKMAKERS", "");
+const REGIONS = Deno.env.get("CAPTURE_REGIONS") ?? "us,eu";
+const REFERENCE_BOOKS = list("CAPTURE_REFERENCE_BOOKS", "pinnacle");
+const MARKETS = Deno.env.get("CAPTURE_MARKETS") ?? "h2h,spreads,totals";
+const METHOD = Deno.env.get("DEVIG_METHOD") ?? "shin";
+
+/* How many INDEPENDENT families must remain after the best-priced family is
+   removed before a consensus is allowed to stand in for a missing reference.
+   capture's Tier B asks for 3-4 families total, which leaves a pack of 2-3;
+   this is deliberately at the permissive end of that, because the question here
+   is "can this close be measured at all", not "should this be bet". */
+const MIN_PACK = Number(Deno.env.get("CLOSE_MIN_PACK_FAMILIES") ?? "2");
+
+/* Stamped on every row this build closes. The point is not the string, it is
+   that a reader can segment on it: rows closed before parity were measured
+   against a different reference and must never be averaged with these. */
+export const CLOSE_POLICY = Deno.env.get("CLOSE_POLICY") ?? "close-2026.09.1";
+
+async function fetchOdds(sport: string, markets: string) {
+  const scope = BOOKMAKERS.length
+    ? `bookmakers=${encodeURIComponent(BOOKMAKERS.join(","))}`
+    : `regions=${encodeURIComponent(REGIONS)}`;
+  const u = `${ODDS_BASE}/sports/${sport}/odds/?apiKey=${ODDS_KEY}&${scope}`
+    + `&markets=${encodeURIComponent(markets)}&oddsFormat=decimal&dateFormat=iso`;
   const r = await fetch(u);
   return { data: r.ok ? await r.json() : [], quota: r.headers.get("x-requests-remaining") ?? "", ok: r.ok };
 }
 
-function bisect(f: (x: number) => number, lo: number, hi: number, it = 80) {
+/** Bisection that can say "there is no root here" instead of returning a
+    midpoint that means nothing. Copied from capture. */
+export function bisect(f: (x: number) => number, lo: number, hi: number, it = 80): number | null {
   let fl = f(lo);
-  for (let i = 0; i < it; i++) { const m = (lo + hi) / 2, fm = f(m); if (Math.abs(fm) < 1e-10) return m; if ((fl < 0) === (fm < 0)) { lo = m; fl = fm; } else hi = m; }
+  const fh = f(hi);
+  if (!Number.isFinite(fl) || !Number.isFinite(fh)) return null;
+  if (Math.abs(fl) < 1e-12) return lo;
+  if (Math.abs(fh) < 1e-12) return hi;
+  if ((fl < 0) === (fh < 0)) return null;          // no root in [lo, hi]
+  for (let i = 0; i < it; i++) {
+    const m = (lo + hi) / 2, fm = f(m);
+    if (Math.abs(fm) < 1e-12) return m;
+    if ((fl < 0) === (fm < 0)) { lo = m; fl = fm; } else hi = m;
+  }
   return (lo + hi) / 2;
 }
-export function devig(decs: number[], method = "shin"): number[] {
-  const q = decs.map((d) => 1 / d), S = q.reduce((a, b) => a + b, 0);
-  if (method === "multiplicative") return q.map((x) => x / S);
-  if (method === "power") { const k = bisect((k) => q.reduce((a, x) => a + Math.pow(x, k), 0) - 1, 0.5, 6); return q.map((x) => Math.pow(x, k)); }
-  const fair = (z: number) => q.map((qi) => (Math.sqrt(z * z + 4 * (1 - z) * qi * qi / S) - z) / (2 * (1 - z)));
-  try { const z = bisect((z) => fair(z).reduce((a, b) => a + b, 0) - 1, 1e-6, 0.5); return fair(z); }
-  catch { return q.map((x) => x / S); }
-}
-const median = (a: number[]) => { a = [...a].sort((x, y) => x - y); const n = a.length, h = n >> 1; return n % 2 ? a[h] : (a[h - 1] + a[h]) / 2; };
 
-interface Outcome {
+/** Copied from capture verbatim. Every difference between these two functions
+    is a difference in every CLV, so they are compared in CI. */
+export function devig(decs: number[], method = "shin"): number[] {
+  const q = decs.map((d) => 1 / d);
+  const S = q.reduce((a, b) => a + b, 0);
+  const normalised = () => q.map((x) => x / S);
+  if (!Number.isFinite(S) || S <= 0) return decs.map(() => 0);
+  if (method === "multiplicative") return normalised();
+
+  /* AN UNDERROUND BOOK HAS NO MARGIN TO REMOVE. Both Shin and power solve for a
+     parameter that SHRINKS the implied probabilities down to 1; when they already
+     sum below 1 there is nothing to shrink and no root exists in either bracket.
+     Proportional normalisation is the correct and only honest answer. */
+  if (!(S > 1)) return normalised();
+
+  if (method === "power") {
+    const k = bisect((kk) => q.reduce((a, x) => a + Math.pow(x, kk), 0) - 1, 0.5, 8);
+    if (k == null) return normalised();
+    const out = q.map((x) => Math.pow(x, k));
+    const s2 = out.reduce((a, b) => a + b, 0);
+    if (!Number.isFinite(s2) || s2 <= 0) return normalised();
+    return out.map((x) => x / s2);
+  }
+
+  const fair = (z: number) => q.map((qi) => (Math.sqrt(z * z + 4 * (1 - z) * qi * qi / S) - z) / (2 * (1 - z)));
+  const z = bisect((zz) => fair(zz).reduce((a, b) => a + b, 0) - 1, 1e-9, 0.5);
+  if (z == null) return normalised();
+  const out = fair(z);
+  const s2 = out.reduce((a, b) => a + b, 0);
+  if (!Number.isFinite(s2) || s2 <= 0) return normalised();
+  return out.map((x) => x / s2);
+}
+
+export const median = (a: number[]): number => {
+  const s = [...a].sort((x, y) => x - y);
+  const n = s.length, h = n >> 1;
+  return n % 2 ? s[h] : (s[h - 1] + s[h]) / 2;
+};
+
+/** Drop one value from each tail before taking the middle, when there is enough
+    to afford it. Below five observations this is exactly a median. Copied from
+    capture, because a consensus computed two different ways is two different
+    numbers. */
+export const trimmedMedian = (a: number[]): number => {
+  if (a.length < 5) return median(a);
+  const s = [...a].sort((x, y) => x - y);
+  return median(s.slice(1, s.length - 1));
+};
+
+/* Two brands on one trading desk are ONE opinion however many rows the feed
+   sends. Copied from capture; only operators that are genuinely one desk are
+   listed, because wrongly merging two independent books is a worse error than
+   failing to merge two related ones. */
+export const BOOK_FAMILY: Record<string, string> = {
+  betonlineag: "betonline",
+  lowvig: "betonline",
+  caesars: "caesars",
+  williamhill_us: "caesars",
+  bovada: "bodog",
+  bodog: "bodog",
+};
+function parseJsonEnv<T>(raw: string | undefined, fallback: T): T {
+  if (!raw) return fallback;
+  try { const v = JSON.parse(raw); return (v && typeof v === "object") ? v as T : fallback; }
+  catch { return fallback; }
+}
+const FAMILY_OVERRIDES = parseJsonEnv<Record<string, string>>(
+  Deno.env.get("CAPTURE_FAMILY_OVERRIDES"), {});
+
+export function bookFamily(key: string, overrides: Record<string, string> = FAMILY_OVERRIDES): string {
+  const k = String(key ?? "").toLowerCase();
+  if (overrides && overrides[k]) return overrides[k];
+  return BOOK_FAMILY[k] ?? k;
+}
+
+export interface Outcome {
   event_id: string; sport_key: string; sport_title: string; commence_time: string;
   home_team: string; away_team: string; market: string; selection: string; point: number | null;
-  best_dec: number; best_book: string; sharp_fair: number; consensus_fair: number; edge: number; n_books: number; is_plus_ev: boolean;
+  best_dec: number; best_book: string;
+  /* The closing fair. When reference_type is "sharp" this is the reference
+     book's own de-vigged probability; when it is "robust_consensus" it is the
+     trimmed median of the independent families that are NOT the best-priced
+     one. It is never one silently standing in for the other. */
+  sharp_fair: number | null;
+  reference_type: "sharp" | "robust_consensus" | "none";
+  reference_book: string | null;
+  consensus_fair: number | null;
+  n_books: number; n_families: number; pack_families: number;
   has_sharp: boolean;
+  /* The reference book's own two sides, so decideClose's overround coherence
+     check has the data it has always asked for and never received. */
+  pin_dec: number | null; pin_opp_dec: number | null;
+  ref_age_s: number | null;
 }
 
-/* Exported only so a test can prove this copy prices identically to
-   _shared/oddsapi.ts. An export is inert in a Deno.serve function. */
-export function priceEvent(ev: any, method: string, sharpBook: string): Outcome[] {
+type Q = { book: string; family: string; dec: number; fair: number; ageS: number | null };
+
+/**
+ * Price one event the way capture prices it.
+ *
+ * The reference book is chosen by the PRIORITY ORDER of referenceBooks rather
+ * than by whichever the feed listed first, because an anchor that changes
+ * identity between two runs of the same slate is not an anchor.
+ */
+export function priceEvent(
+  ev: any, method: string, referenceBooks: string[] = REFERENCE_BOOKS, nowMs = Date.now(),
+): Outcome[] {
   const out: Outcome[] = [];
-  const mkts: Record<string, Record<string, any>> = {};
+  const mkts: Record<string, Record<string, {
+    name: string; point: number | null; quotes: Q[];
+    refPair: { dec: number; opp: number } | null;
+  }>> = {};
+
   for (const bk of ev.bookmakers ?? []) {
-    const isSharp = sharpBook && bk.key.toLowerCase().includes(sharpBook);
+    const key = String(bk.key ?? "").toLowerCase();
+    const family = bookFamily(key);
     for (const mk of bk.markets ?? []) {
-      const decs = mk.outcomes.map((o: any) => o.price);
+      const decs = (mk.outcomes ?? []).map((o: any) => o.price);
       if (decs.length < 2 || decs.some((d: number) => !d || d <= 1)) continue;
       const fair = devig(decs, method);
+      /* Market-level last_update where the feed gives one, else the bookmaker's.
+         A missing timestamp is UNKNOWN, never zero: unknown is not young. */
+      const stampRaw = mk.last_update ?? bk.last_update ?? null;
+      const stamp = stampRaw ? Date.parse(String(stampRaw)) : NaN;
+      const ageS = Number.isFinite(stamp) ? Math.max(0, Math.round((nowMs - stamp) / 1000)) : null;
+
       mk.outcomes.forEach((o: any, i: number) => {
         const pt = o.point ?? null;
         const okey = o.name + (pt != null ? "|" + pt : "");
         mkts[mk.key] = mkts[mk.key] ?? {};
-        const slot = mkts[mk.key][okey] ?? (mkts[mk.key][okey] = { name: o.name, point: pt, fairs: [], sharp: null, best: { dec: 0, book: "" } });
-        slot.fairs.push(fair[i]); if (isSharp) slot.sharp = fair[i];
-        if (o.price > slot.best.dec) slot.best = { dec: o.price, book: bk.title };
+        const slot = mkts[mk.key][okey] ?? (mkts[mk.key][okey] = {
+          name: o.name, point: pt, quotes: [], refPair: null,
+        });
+        slot.quotes.push({ book: key, family, dec: o.price, fair: fair[i], ageS });
+        /* Both sides of the reference book's own two-way market, for the
+           overround coherence check. Only meaningful when the market really is
+           two-sided; a three-way market has no single opposite. */
+        if (referenceBooks.includes(key) && decs.length === 2) {
+          slot.refPair = { dec: decs[i], opp: decs[1 - i] };
+        }
       });
     }
   }
+
   for (const mk in mkts) for (const okey in mkts[mk]) {
     const s = mkts[mk][okey];
-    const hasSharp = s.sharp != null;
-    const cons = median(s.fairs), sharp = s.sharp ?? cons, edge = sharp * s.best.dec - 1;
+    if (!s.quotes.length) continue;
+
+    /* One quote per operator family. Where a family has several, the FRESHEST
+       wins, then the best priced, so the family is represented by its most
+       current number. Identical rule to capture. */
+    const byFamily = new Map<string, Q>();
+    for (const q of s.quotes) {
+      const cur = byFamily.get(q.family);
+      if (!cur) { byFamily.set(q.family, q); continue; }
+      const a = q.ageS ?? Number.MAX_SAFE_INTEGER, b = cur.ageS ?? Number.MAX_SAFE_INTEGER;
+      if (a < b || (a === b && q.dec > cur.dec)) byFamily.set(q.family, q);
+    }
+    const indep = [...byFamily.values()];
+    const best = s.quotes.reduce((a, b) => (b.dec > a.dec ? b : a));
+
+    let ref: Q | null = null;
+    for (const rb of referenceBooks) {
+      const q = s.quotes.find((x) => x.book === rb);
+      if (q) { ref = q; break; }
+    }
+
+    let fairProb: number | null = null;
+    let refType: Outcome["reference_type"] = "none";
+    let refAge: number | null = null;
+    let pack = 0;
+
+    if (ref) {
+      fairProb = ref.fair; refType = "sharp"; refAge = ref.ageS;
+    } else {
+      /* THE BEST-PRICE BOOK IS REMOVED FROM ITS OWN FAIR VALUE. Without this,
+         on a four-book market the book being measured supplies a quarter of the
+         number it is measured against. Same rule capture applies at entry. */
+      const packQ = indep.filter((q) => q.family !== best.family);
+      pack = packQ.length;
+      if (pack >= MIN_PACK) {
+        fairProb = trimmedMedian(packQ.map((q) => q.fair));
+        refType = "robust_consensus";
+        /* The age of a consensus is the MEDIAN age of the books that formed it,
+           and a missing age counts as unknown rather than fresh. */
+        const ages = packQ.map((q) => q.ageS).filter((v): v is number => v != null);
+        refAge = ages.length ? median(ages) : null;
+      }
+    }
+
+    const consensus = indep.length ? trimmedMedian(indep.map((q) => q.fair)) : null;
+
     out.push({
-      event_id: ev.id, sport_key: ev.sport_key, sport_title: ev.sport_title, commence_time: ev.commence_time,
-      home_team: ev.home_team, away_team: ev.away_team, market: mk, selection: s.name, point: s.point,
-      best_dec: s.best.dec, best_book: s.best.book, sharp_fair: sharp, consensus_fair: cons, edge,
-      n_books: s.fairs.length, is_plus_ev: edge > 0, has_sharp: hasSharp,
+      event_id: ev.id, sport_key: ev.sport_key, sport_title: ev.sport_title,
+      commence_time: ev.commence_time, home_team: ev.home_team, away_team: ev.away_team,
+      market: mk, selection: s.name, point: s.point,
+      best_dec: best.dec, best_book: best.book,
+      sharp_fair: fairProb, reference_type: refType,
+      reference_book: ref ? ref.book : null,
+      consensus_fair: consensus,
+      n_books: s.quotes.length, n_families: indep.length, pack_families: pack,
+      has_sharp: ref != null,
+      pin_dec: s.refPair ? s.refPair.dec : null,
+      pin_opp_dec: s.refPair ? s.refPair.opp : null,
+      ref_age_s: refAge,
     });
   }
   return out;
@@ -188,10 +434,6 @@ export function priceEvent(ev: any, method: string, sharpBook: string): Outcome[
 export const sigKey = (o: { event_id: string; market: string; selection: string; point: number | null }) =>
   `${o.event_id}|${o.market}|${o.selection}|${o.point ?? ""}`;
 
-const REGIONS = Deno.env.get("CAPTURE_REGIONS") ?? "us";
-const MARKETS = Deno.env.get("CAPTURE_MARKETS") ?? "h2h,spreads,totals";
-const METHOD = Deno.env.get("DEVIG_METHOD") ?? "shin";
-const SHARP = (Deno.env.get("SHARP_BOOK") ?? "pinnacle").toLowerCase();
 const WINDOW_MIN = Number(Deno.env.get("CLOSE_WINDOW_MIN") ?? "35"); // grab close this many min before kickoff
 
 // FIX 1: how far AFTER first pitch a signal is still eligible for a close.
@@ -202,14 +444,15 @@ const GRACE_MIN = Number(Deno.env.get("CLOSE_GRACE_MIN") ?? "180");
    was the reason a backlog older than 12 hours matched neither the pending
    window nor the sweep and sat unclosed forever. There is no upper age limit
    now: past the grace window a row is either recovered from its tick series or
-   written off, and either way it stops hiding. Leaving the env var documented
-   in the summary would imply a threshold that no longer gates anything. */
+   written off, and either way it stops hiding. */
 
 // --- integrity thresholds (env-tunable) ---
 const CLOSE_MAX_DEC = Number(Deno.env.get("CLOSE_MAX_DEC") ?? "30");         // best_dec above this = placeholder, not a price
 const CLOSE_MIN_DEC = Number(Deno.env.get("CLOSE_MIN_DEC") ?? "1.02");       // below this = extreme snap
-const CLOSE_OVR_LO = Number(Deno.env.get("CLOSE_OVR_LO") ?? "0.98");         // pin two-side overround floor (<1.0 impossible = stale/flip)
+const CLOSE_OVR_LO = Number(Deno.env.get("CLOSE_OVR_LO") ?? "0.98");         // reference two-side overround floor (<1.0 impossible = stale/flip)
 const CLOSE_OVR_HI = Number(Deno.env.get("CLOSE_OVR_HI") ?? "1.25");         // ceiling (placeholder market)
+/* Now that the reference book is actually reachable, this means what it says.
+   Under the old fetch it could never have been satisfied by anything. */
 const CLOSE_REQUIRE_SHARP = (Deno.env.get("CLOSE_REQUIRE_SHARP") ?? "false").toLowerCase() === "true";
 
 /* May the sweep permanently write off a straggler it could not recover?
@@ -268,14 +511,23 @@ export function decideClose(
   if (closeDec == null || closeDec < opts.minDec || closeDec > opts.maxDec) {
     return { clv: null, reason: "implausible_close_price" };       // 50 / 77 placeholders, extreme snaps
   }
-  if (closeFair == null || !(closeFair > 0) || !(closeFair < 1)) {
+  /* No reference AND too thin a pack to stand in for one. There is no honest
+     fair here, so there is no CLV. Distinguished from invalid_close_fair
+     because they need different fixes: this one is book coverage, that one is
+     a de-vig that produced something that is not a probability. */
+  if (o.reference_type === "none" || closeFair == null) {
+    return { clv: null, reason: "no_close_reference" };
+  }
+  if (!(closeFair > 0) || !(closeFair < 1)) {
     return { clv: null, reason: "invalid_close_fair" };            // de-vig produced a non-probability
   }
   if (opts.requireSharp && o.has_sharp === false) {
     return { clv: null, reason: "no_sharp_at_close" };             // opt-in: require Pinnacle anchor at close
   }
 
-  // pin two-side overround, only if the pricer surfaced both sides
+  /* Two-side overround on the REFERENCE book. Until v7 priceEvent never set
+     pin_dec/pin_opp_dec, so this guard read undefined and never fired once. It
+     now has the data it always asked for. */
   if (o.pin_dec != null && o.pin_opp_dec != null && o.pin_dec > 1 && o.pin_opp_dec > 1) {
     const overround = 1 / o.pin_dec + 1 / o.pin_opp_dec;
     if (overround < opts.ovrLo || overround > opts.ovrHi) {
@@ -411,6 +663,11 @@ export function tickCloseResult(p: PendingRow, t: TickClose) {
   const entry = entryPrice(p);
   const { clv, reason } = decideClose(entry.dec, {
     best_dec: t.best_dec, sharp_fair: t.sharp_fair,
+    /* The tick's sharp_fair was written by CAPTURE, so it already carries
+       capture's own reference — this path never had the substitution bug. It is
+       labelled "tick" rather than "sharp" because it is the last price we SAW,
+       not the last price that existed, and the two should never be pooled. */
+    reference_type: t.sharp_fair == null ? "none" : "tick",
     has_sharp: null, pin_dec: null, pin_opp_dec: null,
   });
   return { clv, reason, basis: entry.basis };
@@ -437,12 +694,16 @@ async function hasColumn(table: string, col: string): Promise<boolean> {
 
 /** Write a tick-derived close. Shared by the straggler sweep and the pending
     loop so both recover on identical terms and stamp the same basis. */
-async function writeTickClose(p: PendingRow, t: TickClose, nowIso: string, srcCols: boolean) {
+async function writeTickClose(p: PendingRow, t: TickClose, nowIso: string, srcCols: boolean, refCols: boolean) {
   const { clv, reason, basis } = tickCloseResult(p, t);
   const { error } = await db.from("signals").update({
     closing_dec: t.best_dec,
     closing_sharp_fair: t.sharp_fair,
     ...(srcCols ? { closing_source: "last_tick", closing_at_observed: t.at || null } : {}),
+    ...(refCols ? {
+      closing_reference_type: t.sharp_fair == null ? "none" : "tick",
+      closing_policy: CLOSE_POLICY,
+    } : {}),
     clv, clv_excluded_reason: reason, closed_at: nowIso,
   }).eq("sig_key", p.sig_key);
   return { error, clv, reason, basis };
@@ -473,7 +734,7 @@ Deno.serve(async (req) => {
        nothing like this. */
     return json({
       error: "unauthorized",
-      deployed: true, build: "close-v6",
+      deployed: true, build: "close-v7-parity",
       why: envSecret === ""
         ? "CRON_SECRET is not set on this function, so EVERY request is denied — including the scheduled ones. This alone stops the record advancing. Set it in the function's secrets, then send the same value as the x-cron-secret header from the schedule."
         : "CRON_SECRET is set, but this request carried neither a matching x-cron-secret header nor a matching ?secret= parameter.",
@@ -500,6 +761,12 @@ Deno.serve(async (req) => {
   };
 
   const srcCols = await hasColumn("signals", "closing_source");
+  /* The v7 parity columns. Probed, not assumed: writing a column the migration
+     has not added yet fails EVERY update in this function, including the plain
+     live path that worked before, and a function that stops writing because of
+     the order two deploys happened in is a worse failure than the one it was
+     added to fix. */
+  const refCols = await hasColumn("signals", "closing_reference_type");
 
   /* ---- ?probe=1 : read-only. What close can see and what it would do. ----
      Answers the only question worth asking when the record stops moving:
@@ -528,8 +795,24 @@ Deno.serve(async (req) => {
       writeTest = error ? `WRITE FAILED — ${error.message}` : "writes succeed";
     }
     return json({
-      ok: true, build: "close-probe",
-      columns: { closing_source: srcCols ? "present" : "MISSING — run the migration; source labels will be omitted until you do" },
+      ok: true, build: "close-v7-probe",
+      columns: {
+        closing_source: srcCols ? "present" : "MISSING — run the migration; source labels will be omitted until you do",
+        closing_reference_type: refCols ? "present"
+          : "MISSING — run close_v7_parity.sql. Everything else is still written, but until you do there is no way "
+            + "to tell a Pinnacle-anchored close from a consensus one, or a v7 row from a pre-parity row.",
+      },
+      /* The whole point of v7: which books this run can actually see. If
+         reference_books are not inside the scope, every close falls back to a
+         labelled consensus and Tier-A-equivalent CLV is unreachable. */
+      pricing: {
+        scope: BOOKMAKERS.length ? `bookmakers=${BOOKMAKERS.join(",")}` : `regions=${REGIONS}`,
+        reference_books: REFERENCE_BOOKS,
+        reference_reachable: BOOKMAKERS.length
+          ? REFERENCE_BOOKS.some((b) => BOOKMAKERS.includes(b))
+          : REGIONS.split(",").map((r) => r.trim()).includes("eu"),
+        devig_method: METHOD, min_pack_families: MIN_PACK, policy: CLOSE_POLICY,
+      },
       unclosed_total: await count(base()),
       unclosed_past_grace: await count(base().lt("commence_time", graceFloor)),
       unclosed_in_window: await count(base().gte("commence_time", graceFloor).lte("commence_time", horizon)),
@@ -628,7 +911,7 @@ Deno.serve(async (req) => {
   for (const s of staleRows) {
     const t = staleTicks.get(s.sig_key);
     if (!t) { writeOff.push(s.sig_key); continue; }
-    const r = await writeTickClose(s, t, nowIso, srcCols);
+    const r = await writeTickClose(s, t, nowIso, srcCols, refCols);
     if (r.error) { noteError(r.error); writeOff.push(s.sig_key); continue; }
     recoveredStale++;
     if (r.clv != null) staleBasis[r.basis] = (staleBasis[r.basis] ?? 0) + 1;
@@ -678,7 +961,7 @@ Deno.serve(async (req) => {
   const staleBacklog = staleRows.length >= STALE_BATCH;
 
   if (!pending?.length) {
-    return json({ ok: true, build: "close-v6", closed: recoveredStale, priced: recoveredStale - recoveredExcluded,
+    return json({ ok: true, build: "close-v7-parity", closed: recoveredStale, priced: recoveredStale - recoveredExcluded,
       closed_from_last_tick: recoveredStale, swept_missed_window: sweptStale,
       ...(writeOffSkipped ? { would_write_off: writeOffSkipped,
         write_off_skipped: "Nothing was written off — that is irreversible. Set CLOSE_WRITEOFF=true only after close_backfill?diag=1 shows there is nothing to recover." } : {}),
@@ -700,10 +983,10 @@ Deno.serve(async (req) => {
   const providers: Record<string, any> = {};
   for (const sport of sports) {
     try {
-      const { data, ok } = await fetchOdds(sport, REGIONS, MARKETS);
+      const { data, ok } = await fetchOdds(sport, MARKETS);
       if (!ok) { providers[sport] = { ok: false, reason: "provider returned not-ok" }; continue; }
       let priced = 0;
-      for (const ev of data) for (const o of priceEvent(ev, METHOD, SHARP)) { fresh.set(sigKey(o), o); priced++; }
+      for (const ev of data) for (const o of priceEvent(ev, METHOD, REFERENCE_BOOKS, now)) { fresh.set(sigKey(o), o); priced++; }
       fetchOk.add(sport);
       providers[sport] = { ok: true, events: data.length, priced };
     } catch (e) {
@@ -717,6 +1000,7 @@ Deno.serve(async (req) => {
   let priced = recoveredStale - recoveredExcluded;
   const byReason: Record<string, number> = { ...staleReason };
   const basis: Record<string, number> = { ...staleBasis };
+  const refType: Record<string, number> = {};
 
   /* Rows whose sport could not be priced live AND whose event has already
      started are never going to get a live close — the key is gone. Reach for
@@ -733,7 +1017,7 @@ Deno.serve(async (req) => {
       const t = tickClose.get(p.sig_key);
       if (!t) { deferred++; continue; }           // still upcoming, or no ticks: retry next run
       /* A real observed price, just not a live one. */
-      const r = await writeTickClose(p, t, nowIso, srcCols);
+      const r = await writeTickClose(p, t, nowIso, srcCols, refCols);
       if (r.error) { updateErrors++; noteError(r.error); continue; }
       closed++; fromTick++;
       if (r.clv != null) { priced++; basis[r.basis] = (basis[r.basis] ?? 0) + 1; }
@@ -754,6 +1038,17 @@ Deno.serve(async (req) => {
       closing_has_sharp: o?.has_sharp ?? null,
       closing_n_books: o?.n_books ?? null,
       ...(srcCols ? { closing_source: o ? "live" : "none" } : {}),
+      /* WHICH RULE PRODUCED THE FAIR, AND UNDER WHICH POLICY. Without these two
+         a reader cannot tell a Pinnacle-anchored close from a consensus one, or
+         a v7 row from a pre-parity row, and averaging across either boundary is
+         how the -2.09% offset stayed invisible for as long as it did. */
+      ...(refCols ? {
+        closing_reference_type: o?.reference_type ?? null,
+        closing_ref_book: o?.reference_book ?? null,
+        closing_n_families: o?.n_families ?? null,
+        closing_ref_age_s: o?.ref_age_s ?? null,
+        closing_policy: CLOSE_POLICY,
+      } : {}),
       clv,
       clv_excluded_reason: reason,
       closed_at: nowIso,
@@ -761,6 +1056,7 @@ Deno.serve(async (req) => {
 
     if (error) { updateErrors++; noteError(error); continue; }
     closed++;
+    refType[o?.reference_type ?? "line_pulled"] = (refType[o?.reference_type ?? "line_pulled"] ?? 0) + 1;
     /* Counted only once the row is actually WRITTEN, and only for rows that
        really carry a CLV. `priced: closed - excluded` could go negative when
        excluded rows also failed to update, because `excluded` counted attempts
@@ -771,7 +1067,7 @@ Deno.serve(async (req) => {
   }
 
   const summary = {
-    ok: true, build: "close-v6", closed, excluded, priced,
+    ok: true, build: "close-v7-parity", closed, excluded, priced,
     deferred_provider_down: deferred,
     /* The tennis-recovery counters. closed_from_last_tick going UP while
        swept_missed_window falls is the backlog draining; both stuck at zero
@@ -783,6 +1079,13 @@ Deno.serve(async (req) => {
     null_commence_seen: noTime?.length ?? 0,
     ...(staleBacklog ? { stale_backlog_remaining: true } : {}),
     excluded_by_reason: byReason, updateErrors, providers,
+    /* How each stored fair was arrived at. "sharp" is the reference book's own
+       de-vig; "robust_consensus" is the trimmed median of the independent
+       families that are not the best-priced one, and it is a WEAKER close that
+       is labelled rather than silently pooled. A run that is all consensus
+       means the reference book is outside the fetch scope — check
+       ?probe=1 pricing.reference_reachable. */
+    closing_reference: refType, policy: CLOSE_POLICY,
     /* The actual database messages, not just a count of them. A run that
        writes nothing has to be diagnosable from its own output. */
     ...(writeErrors.length ? { write_errors: writeErrors } : {}),
