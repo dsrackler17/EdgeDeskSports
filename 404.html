@@ -24,6 +24,13 @@
   if(p[0]==='games'&&p[1]&&p[2]){
     var g=['price-it','pick-5'].indexOf(p[1])>=0?p[1]:null;
     if(g){location.replace('/games/'+g+'/?g='+encodeURIComponent(p[2])+location.search.replace(/^\?/,'&'));return;}
+    /* the social invite links people actually paste into a group chat:
+         /games/h2h/{token}     -> the challenge
+         /games/groups/{token}  -> the group
+       Both are private pages addressed by an unguessable token; the pages
+       themselves carry noindex. */
+    if(p[1]==='h2h'){location.replace('/games/h2h/?c='+encodeURIComponent(p[2])+location.search.replace(/^\?/,'&'));return;}
+    if(p[1]==='groups'){location.replace('/games/groups/?g='+encodeURIComponent(p[2])+location.search.replace(/^\?/,'&'));return;}
   }
   if(p[0]==='games'){location.replace('/games/');return;}
 })();

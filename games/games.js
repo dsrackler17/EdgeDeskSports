@@ -13,6 +13,7 @@
   'use strict';
 
   var ART = '/games/data/challenges.json';
+  var CFG = '/games/data/config.json';
   var TERMINAL = '/app.html';
   var W = root.EDGamesWeek, ST = root.EDGamesStore,
       CH = root.EDGamesChallenge, SC = root.EDGamesScoring,
@@ -32,7 +33,16 @@
     'next_game_click', 'research_cta_click', 'save_score_cta',
     'signup_start_from_games', 'signup_complete_from_games',
     'pricing_view_from_games', 'checkout_start_from_games',
-    'subscription_complete_from_games'];
+    'subscription_complete_from_games',
+    /* the social layer's viral funnel: one invite created, opened, answered,
+       settled and rematched is the loop the whole product is built around, so
+       every step of it is countable */
+    'h2h_create', 'h2h_invite_generated', 'h2h_invite_open', 'h2h_opponent_submit',
+    'h2h_both_locked', 'h2h_settled', 'h2h_rematch',
+    'group_create', 'group_invite_generated', 'group_invite_open', 'group_join',
+    'group_first_game', 'group_weekly_return',
+    'research_open_from_h2h', 'research_open_from_group',
+    'signup_from_h2h', 'signup_from_group', 'subscription_from_games'];
 
   function track(event, props) {
     var p = props || {}, k;
@@ -222,8 +232,9 @@
       + '<span class="gh-sp"></span>'
       + '<nav class="gh-nav" aria-label="Games">'
       + '<a href="/games/price-it/"' + (current === 'price-it' ? ' aria-current="page"' : '') + '>Price It</a>'
-      + '<a href="/games/pick-5/"' + (current === 'pick-5' ? ' aria-current="page"' : '') + '>Pick 5</a>'
-      + '<a class="gh-only-wide" href="' + esc(withAttribution(TERMINAL)) + '">EdgeDesk</a>'
+      + '<a href="/games/h2h/"' + (current === 'h2h' ? ' aria-current="page"' : '') + '>H2H</a>'
+      + '<a class="gh-only-wide" href="/games/pick-5/"' + (current === 'pick-5' ? ' aria-current="page"' : '') + '>Pick 5</a>'
+      + '<a class="gh-only-wide" href="/games/groups/"' + (current === 'groups' ? ' aria-current="page"' : '') + '>Groups</a>'
       + '</nav></div></header>';
   }
 
@@ -240,7 +251,9 @@
       + 'the model does not beat the closing line. 21+. If gambling is a problem for you, '
       + 'call 1-800-GAMBLER.</div>'
       + '<div class="gf-links">'
-      + '<a href="/">EdgeDesk home</a><a href="' + esc(withAttribution(TERMINAL)) + '">The terminal</a>'
+      + '<a href="/games/">Games home</a><a href="/games/pick-5/">Pick 5</a>'
+      + '<a href="/games/groups/">Groups</a>'
+      + '<a href="' + esc(withAttribution(TERMINAL)) + '">The terminal</a>'
       + '<a href="/terms.html">Terms</a><a href="/privacy.html">Privacy</a>'
       + '<a href="/disclaimer.html">Disclaimer</a>'
       + '</div></div></footer>';
@@ -253,17 +266,43 @@
     if (f) f.outerHTML = footer();
   }
 
+  /* ── the social endpoint ──────────────────────────────────────────────────
+     A tiny committed file the build writes from app.html, so the games pages
+     and the terminal can never point at different Supabase projects. Its
+     absence is not an error: Price It and Pick 5 do not need it, and the social
+     pages say plainly that they are not deployed. */
+  var _cfg = null, _cfgPending = null;
+  function config() {
+    if (_cfg) return Promise.resolve(_cfg);
+    if (_cfgPending) return _cfgPending;
+    _cfgPending = fetch(CFG, { cache: 'no-cache' })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (j) {
+        _cfg = (j && j.supabase_url && j.supabase_anon_key) ? j : null;
+        if (_cfg && root.EDGamesSocial) {
+          root.EDGamesSocial.configure(_cfg.supabase_url, _cfg.supabase_anon_key);
+        }
+        if (_cfg && root.EDGamesLeaderboard) {
+          root.EDGamesLeaderboard.configure(_cfg.supabase_url, _cfg.supabase_anon_key);
+        }
+        return _cfg;
+      })
+      .catch(function () { _cfgPending = null; _cfg = null; return null; });
+    return _cfgPending;
+  }
+
   /* ── page boot ────────────────────────────────────────────────────────── */
   function boot(page) {
     initAttribution();
     mount(page);
     track('games_page_view', { page: page });
+    return config();
   }
 
   var API = {
     ART: ART, TERMINAL: TERMINAL, FUNNEL: FUNNEL,
     track: track, withAttribution: withAttribution, initAttribution: initAttribution,
-    artifact: artifact, researchUrl: researchUrl, openResearch: openResearch,
+    artifact: artifact, config: config, researchUrl: researchUrl, openResearch: openResearch,
     pts: pts, line: line, kickoffLabel: kickoffLabel, esc: esc,
     shareText: shareText, shareUrl: shareUrl, share: share,
     toast: toast, header: header, footer: footer, mount: mount, boot: boot

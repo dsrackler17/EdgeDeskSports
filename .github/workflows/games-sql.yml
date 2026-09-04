@@ -1,0 +1,66 @@
+# EdgeDesk Games — the social layer's SQL, tested against a real PostgreSQL.
+#
+# supabase/games_social.sql is where Head-to-Head answer privacy actually lives:
+# a table no client role may select from, and a security-definer function that
+# decides what may be seen. Reasoning about that is not evidence, so this job
+# applies the shipped file to a real database and attacks it as a client would.
+#
+# The suite SKIPS (and passes) on a machine without PostgreSQL, so `npm test`
+# stays green on a bare Node install. This workflow is where it must not skip.
+name: Games social SQL
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'supabase/games_social.sql'
+      - 'tools/games/sql/**'
+      - 'tools/games/sql_security.test.js'
+      - '.github/workflows/games-sql.yml'
+  pull_request:
+    paths:
+      - 'supabase/games_social.sql'
+      - 'tools/games/sql/**'
+      - 'tools/games/sql_security.test.js'
+
+jobs:
+  sql:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_USER: postgres
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s --health-timeout 5s --health-retries 12
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install the psql client
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends postgresql-client
+
+      - name: Run the social SQL suite
+        env:
+          PGPASSWORD: postgres
+          EDGD_PG: -h 127.0.0.1 -p 5432 -U postgres
+        run: node tools/games/sql_security.test.js | tee sql.log
+
+      # A skip here would mean the guarantee was never tested. On this job that
+      # is a failure, not a pass.
+      - name: Refuse a silent skip
+        run: |
+          if grep -q '^SKIP' sql.log; then
+            echo 'REFUSING: the SQL suite skipped in the job whose whole purpose is to run it'
+            exit 1
+          fi
+          grep -q '^PASS' sql.log

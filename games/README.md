@@ -239,8 +239,137 @@ be any.
 
 ---
 
+---
+
+# The social layer — Head-to-Head and Groups
+
+Price It and Pick 5 give a stranger a reason to play once. Head-to-Head and
+Groups give them a reason to come back, and a reason to bring someone.
+
+Still free to play. No deposits, no balance, no entry fee, no prizes.
+
+## The guarantee this rests on
+
+**In Head-to-Head, your opponent's pick is secret until you both lock.** If the
+second player can read the first player's answer, the game is worthless. So the
+secret does not live in the same table as everything else:
+
+| table | holds | who can read it |
+|---|---|---|
+| `game_challenge_entries` | who is playing, when they submitted, how they did | the players |
+| `game_challenge_selections` | **the prediction** | **nobody — no policy grants read on it at all** |
+
+RLS denies by default, and that table has no policy, permanently. The only
+reader is `h2h_view()`, a security-definer function whose whole reveal rule is
+one predicate:
+
+```sql
+and (v_locked or s.player_slot = v_slot)
+```
+
+A stranger with the link sees the matchup and that someone is waiting. They see
+no prediction, because none is sent — there is no hidden field for a page to
+leak, and nothing to find in the DOM.
+
+`tools/games/sql_security.test.js` applies the real schema to a real PostgreSQL
+and attacks it: as `anon`, as `authenticated`, as the wrong player, with a
+guessed secret, and by reading the tables directly. 102 assertions.
+
+## Identity, and playing before you sign up
+
+The whole growth loop depends on a friend playing before they have an account,
+so an entry may have no `user_id`. Such a player proves who they are with a
+256-bit bearer secret their browser generated; the server stores only its
+SHA-256. Possession is the identity. **A client-supplied user id proves nothing
+anywhere in this schema.**
+
+`h2h_claim()` binds an anonymous entry to an account later, so signing up keeps
+the record that earned the signup.
+
+A signed-in EdgeDesk reader is identified by the same Supabase session the
+terminal already uses — Games adds no auth of its own.
+
+## Modes
+
+| mode | settles on |
+|---|---|
+| **Winner** | who actually won. A tied game is a draw. |
+| **Spread** | the line **snapshotted when the challenge was created**, never a number the market moved to afterwards. A push is a draw. |
+| **Price It** | whoever landed closer to the benchmark, by the published Price It rule. Equal distance is a draw. |
+
+Nobody is called wrong for disagreeing with EdgeDesk. In Price It the benchmark
+is the closing number where one exists, the market otherwise, and EdgeDesk's
+projection only when there is nothing else — and the result names which was used.
+
+## Settlement
+
+`games/settle_h2h.js`, run by `.github/workflows/games-settle.yml` with the
+service role. It reads final scores from the same committed artifact the pages
+read, grades with `games/lib/h2h_grade.js`, and calls `h2h_settle()`.
+
+* **A browser cannot settle anything.** `h2h_settle` is granted to no client role.
+* **Idempotent.** A challenge that already carries a settlement is returned
+  unchanged; replaying the worker cannot alter a result that landed.
+* **Never silently re-graded.** A correction goes through `h2h_correct()`, which
+  writes the old settlement into `game_challenge_corrections` before replacing
+  it. Nothing is quietly fixed.
+
+## Ratings
+
+Ordinary Elo, K=24, everyone starts at 1200 (`games_elo_delta`). An even win is
++12 and an even loss −12; a draw between equals moves nothing.
+
+**Ratings move only between two accounts.** Beating an anonymous opponent moves
+nothing, because otherwise anyone could farm a number by opening their own link
+in a private window.
+
+It is a **game rating** — how well you play this game against other people
+playing it. It is not a measure of betting skill and is never described as one.
+
+## Groups
+
+Private. A stranger holding an invite link gets `group_preview()`: the name, an
+icon and a headcount. **Not who is in it.** The dashboard, the members and the
+standings need membership, enforced in the policy and re-checked in the function.
+
+Standings are kept **separate per game** — Head-to-Head here, Price It and Pick 5
+in their own tables. Three tables anybody can explain beat one nobody can.
+
+The activity feed is a **sports activity feed**: rows are written by the server
+when something real happens, and there is no free-text field anywhere for a
+person to post into. No chat, no DMs, no comments, no followers.
+
+## Routes
+
+| route | file | indexable |
+|---|---|---|
+| `/games/h2h` | `games/h2h/index.html` | **no** |
+| `/games/h2h/{token}` | → `?c={token}` via `404.html` | **no** |
+| `/games/groups` | `games/groups/index.html` | **no** |
+| `/games/groups/{token}` | → `?g={token}` via `404.html` | **no** |
+
+Both routes are `noindex,nofollow`: a challenge is a private page between two
+people and a group is private to its members. The **public** explainer for the
+social layer lives on `/games`, which is crawlable.
+
+## Deploying it
+
+The social layer needs `supabase/games_social.sql` applied to the Supabase
+project. **This repository does not apply it.** Until it is, the H2H and Groups
+pages say so plainly — and Price It and Pick 5 are entirely unaffected.
+
+`games/data/config.json` (written by the build, from `app.html`) carries the
+project URL and public anon key, so the pages and the terminal can never point
+at different projects.
+
 ## Not built, on purpose
 
 Line Move, Survivor, Rank 'Em, Who's Mispriced and bracket challenges are all
 reachable from this architecture — a new game is a new page reading the same
-artifact — but V1 does two things well instead of six things thinly.
+artifact — but V1 does a few things well instead of many things thinly.
+
+Deliberately absent from the social layer, and not by omission: real money,
+cash prizes, paid entry, tokens, virtual currency, loot boxes, bet slips,
+parlays, odds boosting, pay-to-win scoring, open chat, direct messages, public
+posting, comments and follower counts. A subscriber gets **better research**,
+never better scoring.

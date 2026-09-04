@@ -477,7 +477,11 @@ chk('Pick 5 refuses to offer picks it cannot price',
   has(p, 'name="twitter:card"', n + ' carries a Twitter card');
   chk(n + ' has a title', /<title>[^<]{10,}<\/title>/.test(p));
   chk(n + ' has a meta description', /name="description" content="[^"]{40,}"/.test(p));
-  lacks(p, 'noindex', n + ' does not block crawlers');
+  /* the DIRECTIVE, not the word: a comment explaining why other routes are
+     noindex must not read as this page blocking crawlers */
+  chk(n + ' does not block crawlers',
+    !/<meta[^>]+name="robots"[^>]+noindex/i.test(p),
+    (p.match(/<meta[^>]+name="robots"[^>]*>/i) || [''])[0]);
   has(p, 'rel="icon"', n + ' has a tab icon, so a shared link is identifiable');
 });
 

@@ -380,6 +380,28 @@ async function main() {
   var out = ARGS.out || path.join(__dirname, 'data', 'challenges.json');
   fs.mkdirSync(path.dirname(out), { recursive: true });
   fs.writeFileSync(out, JSON.stringify(artifact, null, 1) + '\n');
+
+  /* The social layer's endpoint, READ OUT OF app.html rather than copied into
+     a second place by hand. Both values are already public — the anon key
+     authenticates nothing on its own and RLS governs what it can reach — but
+     having one declared home for them is what stops the games pages drifting
+     onto a stale project after a rotation. */
+  if (!ARGS.out) {
+    var cfg = supabaseConfig();
+    if (cfg) {
+      fs.writeFileSync(path.join(__dirname, 'data', 'config.json'),
+        JSON.stringify({
+          schema: 'edgedesk_games_config_v1',
+          generated_at: artifact.generated_at,
+          supabase_url: cfg.url,
+          supabase_anon_key: cfg.key,
+          source: cfg.src
+        }, null, 1) + '\n');
+      log('[config] endpoint written from ' + cfg.src);
+    } else {
+      log('[config] no Supabase config found — the social layer will report itself undeployed');
+    }
+  }
   log('[write] ' + out + '  ' + playable.length + ' playable challenge(s), '
     + withMarket + ' with a book number');
   try { fs.rmSync(tmp, { recursive: true, force: true }); } catch (_) {}

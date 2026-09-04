@@ -316,3 +316,133 @@ h1,h2,h3{font-family:'Space Grotesk',Inter,sans-serif;margin:0;line-height:1.15}
   background-size:200% 100%;animation:sh 1.2s linear infinite;border-radius:8px;height:14px}
 @keyframes sh{from{background-position:200% 0}to{background-position:-200% 0}}
 .hide{display:none!important}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   THE SOCIAL LAYER — Head-to-Head and Groups.
+
+   Same brand, more heat. A challenge screen is somebody's name against yours,
+   so it leads with the two of you and gets to the decision fast; the invite
+   landing in particular has to read in under ten seconds on a phone opened
+   from a group chat.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── the versus block ───────────────────────────────────────────────────── */
+.vs{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:10px;
+  margin:18px 0 6px}
+.vs-p{text-align:center;min-width:0}
+.vs-av{width:52px;height:52px;border-radius:50%;margin:0 auto 8px;display:grid;place-items:center;
+  font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:19px;
+  background:var(--cell);border:1px solid var(--line2);color:var(--dim)}
+.vs-p.you .vs-av{background:rgba(63,184,131,.14);border-color:var(--val-dim);color:var(--val)}
+.vs-p.win .vs-av{background:rgba(63,184,131,.2);border-color:var(--val);color:var(--val)}
+.vs-p.lose .vs-av{opacity:.6}
+.vs-n{font-weight:700;font-size:14px;overflow-wrap:break-word}
+.vs-s{font-size:11px;color:var(--faint);margin-top:3px}
+.vs-mid{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:12px;
+  letter-spacing:.14em;color:var(--faint)}
+@media(min-width:560px){.vs-av{width:64px;height:64px;font-size:23px}.vs-n{font-size:16px}}
+
+/* ── challenge state ────────────────────────────────────────────────────── */
+.phase{display:inline-flex;align-items:center;gap:7px;border-radius:999px;padding:6px 13px;
+  font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;
+  border:1px solid var(--line2);background:var(--cell);color:var(--dim)}
+.phase .dot{width:7px;height:7px;border-radius:50%;background:currentColor;flex:none}
+.phase.live{color:var(--est);border-color:rgba(217,164,65,.4)}
+.phase.done{color:var(--val);border-color:var(--val-dim)}
+.phase.wait{color:var(--obs);border-color:rgba(92,157,255,.35)}
+.phase.dead{color:var(--faint)}
+
+/* the sealed-answer notice: the product's integrity promise, stated plainly */
+.sealed{display:flex;gap:10px;align-items:flex-start;background:var(--cell);
+  border:1px solid var(--line);border-left:3px solid var(--obs);border-radius:10px;
+  padding:12px 14px;margin-top:14px;font-size:13px;color:var(--dim);line-height:1.55}
+.sealed b{color:var(--text);font-weight:600}
+
+/* ── side picker ────────────────────────────────────────────────────────── */
+.sides{display:grid;gap:10px;margin-top:16px}
+.side{display:flex;align-items:center;justify-content:space-between;gap:12px;
+  min-height:var(--tap);padding:14px 16px;border-radius:12px;border:1px solid var(--line2);
+  background:var(--cell);color:var(--text);font:600 16px 'Inter',sans-serif;cursor:pointer;
+  text-align:left;width:100%;transition:border-color .12s,background .12s}
+.side .ln{font-family:'JetBrains Mono',monospace;color:var(--dim);font-size:15px;flex:none}
+.side[aria-pressed="true"]{border-color:var(--val);background:rgba(63,184,131,.12)}
+.side[aria-pressed="true"] .ln{color:var(--val)}
+.side:disabled{cursor:default}
+
+/* ── mode picker ────────────────────────────────────────────────────────── */
+.modes{display:grid;gap:8px;margin-top:12px}
+@media(min-width:640px){.modes{grid-template-columns:repeat(3,1fr)}}
+.mode{padding:13px 14px;border-radius:12px;border:1px solid var(--line2);background:var(--cell);
+  color:var(--text);cursor:pointer;text-align:left;min-height:var(--tap);width:100%}
+.mode[aria-pressed="true"]{border-color:var(--val);background:rgba(63,184,131,.1)}
+.mode .t{font-weight:700;font-size:14px}
+.mode .b{font-size:12px;color:var(--dim);margin-top:3px;line-height:1.45}
+
+/* ── locked line ────────────────────────────────────────────────────────── */
+.locked-line{display:flex;align-items:center;justify-content:space-between;gap:10px;
+  background:var(--cell);border:1px solid var(--line);border-radius:10px;padding:11px 14px;
+  margin-top:14px;font-size:13px}
+.locked-line .k{font-size:10px;font-weight:700;letter-spacing:.1em;color:var(--faint);
+  text-transform:uppercase}
+.locked-line .v{font-family:'JetBrains Mono',monospace;font-weight:700;color:var(--text)}
+
+/* ── the reveal, two answers side by side ───────────────────────────────── */
+.answers{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px}
+.answer{background:var(--cell);border:1px solid var(--line);border-radius:12px;padding:14px 12px;
+  text-align:center;min-width:0}
+.answer.you{border-color:var(--val-dim);background:rgba(63,184,131,.07)}
+.answer .who{font-size:10.5px;font-weight:700;letter-spacing:.1em;color:var(--faint);
+  text-transform:uppercase;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.answer .pick{font-family:'JetBrains Mono',monospace;font-size:16px;font-weight:700;margin-top:7px;
+  overflow-wrap:break-word}
+.answer .tag{font-size:11px;font-weight:700;margin-top:6px}
+.answer .tag.w{color:var(--val)}
+.answer .tag.l{color:var(--neg)}
+.answer .tag.d{color:var(--dim)}
+@media(min-width:560px){.answer .pick{font-size:19px}}
+
+/* ── invite / share ─────────────────────────────────────────────────────── */
+.invite{background:linear-gradient(180deg,rgba(63,184,131,.1),transparent);
+  border:1px solid var(--val-dim);border-radius:var(--radius);padding:18px}
+.invite .url{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--dim);
+  background:var(--ink);border:1px solid var(--line);border-radius:8px;padding:10px 12px;
+  margin-top:12px;overflow-wrap:break-word;word-break:break-all}
+
+/* ── groups ─────────────────────────────────────────────────────────────── */
+.grp-head{display:flex;align-items:center;gap:12px}
+.grp-emoji{width:46px;height:46px;border-radius:12px;display:grid;place-items:center;
+  font-size:23px;background:var(--cell);border:1px solid var(--line2);flex:none}
+.grp-name{font-family:'Space Grotesk',sans-serif;font-size:21px;font-weight:700;line-height:1.15;
+  overflow-wrap:break-word}
+.grp-meta{font-size:12px;color:var(--faint);margin-top:3px}
+@media(min-width:560px){.grp-name{font-size:26px}}
+
+.members{display:grid;gap:8px;margin-top:12px}
+.member{display:flex;align-items:center;gap:11px;background:var(--cell);border:1px solid var(--line);
+  border-radius:11px;padding:10px 13px;min-height:var(--tap);width:100%;text-align:left;
+  color:var(--text);cursor:pointer;font:inherit}
+.member .av{width:32px;height:32px;border-radius:50%;display:grid;place-items:center;flex:none;
+  background:var(--raised);border:1px solid var(--line2);font-weight:700;font-size:13px;color:var(--dim)}
+.member .nm{font-weight:600;font-size:14px;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis}
+.member .rt{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--faint);flex:none}
+.member .go{color:var(--faint);flex:none}
+.member.me{border-color:var(--val-dim)}
+
+/* ── the activity feed ──────────────────────────────────────────────────── */
+.feed{display:grid;gap:8px;margin-top:12px}
+.act{display:flex;gap:10px;font-size:13.5px;color:var(--dim);line-height:1.5;
+  background:var(--cell);border:1px solid var(--line);border-radius:10px;padding:11px 13px}
+.act .ic{flex:none;width:20px;height:20px;border-radius:6px;display:grid;place-items:center;
+  font-size:11px;background:var(--raised)}
+.act b{color:var(--text);font-weight:600}
+.act .when{color:var(--faint);font-size:11.5px;white-space:nowrap}
+
+/* ── active challenges on the home page ─────────────────────────────────── */
+.active{display:grid;gap:8px}
+.act-row{display:flex;align-items:center;gap:12px;background:var(--panel);border:1px solid var(--line);
+  border-radius:12px;padding:12px 14px;min-height:var(--tap);color:var(--text);width:100%;
+  text-align:left;font:inherit;cursor:pointer}
+.act-row:hover{text-decoration:none;background:var(--cell)}
+.act-row .mu{flex:1;min-width:0;text-align:left;padding:0}
+.act-row .t{font-weight:600;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.act-row .s{font-size:11.5px;color:var(--faint);margin-top:2px}

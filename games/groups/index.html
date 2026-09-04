@@ -1,0 +1,353 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-1PXVBV53FZ"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-1PXVBV53FZ');
+</script>
+<title>Groups | EdgeDesk Games</title>
+<meta name="description" content="Start a private football group with your friends and compete in Price It, Pick 5 and Head-to-Head. Free to play, no real-money wagering.">
+<meta name="theme-color" content="#0b0d11">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230b0d11'/%3E%3Cpath d='M18 6 L23 6 L14 26 L9 26 Z' fill='%233fb883'/%3E%3C/svg%3E">
+<!-- A group is private: its dashboard, its members and its invite link are for
+     the people in it. The whole route is noindex; the public explainer lives
+     on /games. -->
+<meta name="robots" content="noindex,nofollow">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="EdgeDesk Games">
+<meta property="og:title" content="Join my EdgeDesk football group">
+<meta property="og:description" content="Compete in Price It, Pick 5 and Head-to-Head. Free to play, no real-money wagering.">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Join my EdgeDesk football group">
+<meta name="twitter:description" content="Compete in Price It, Pick 5 and Head-to-Head. Free to play.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/games/games.css">
+</head>
+<body>
+<div id="gh"></div>
+
+<main class="wrap">
+  <div class="sec" style="margin-top:20px">
+    <div class="card" id="stage">
+      <div class="eyebrow">Groups</div>
+      <div class="sk" style="width:55%;margin:16px auto"></div>
+      <div class="sk" style="width:35%;margin:10px auto"></div>
+    </div>
+  </div>
+  <div id="after"></div>
+</main>
+
+<div id="gf"></div>
+
+<script src="/games/lib/week.js"></script>
+<script src="/games/lib/scoring.js"></script>
+<script src="/games/lib/challenge.js"></script>
+<script src="/games/lib/research_state.js"></script>
+<script src="/games/lib/attribution.js"></script>
+<script src="/games/lib/store.js"></script>
+<script src="/games/lib/social.js"></script>
+<script src="/games/games.js"></script>
+<script>
+(function(){
+  'use strict';
+  var G=window.EDGames,S=window.EDGamesSocial,W=window.EDGamesWeek;
+  var $=function(id){return document.getElementById(id);};
+  var stage=$('stage'),after=$('after');
+  var TOKEN=null;
+
+  var READY=G.boot('groups');
+
+  function param(k){
+    var m=new RegExp('[?&]'+k+'=([^&]*)').exec(location.search);
+    return m?decodeURIComponent(m[1].replace(/\+/g,' ')):null;
+  }
+  TOKEN=param('g');
+
+  function esc(s){return G.esc(s);}
+  function initials(n){
+    return String(n||'?').trim().split(/\s+/).map(function(w){return w[0];})
+      .join('').slice(0,2).toUpperCase()||'?';
+  }
+  function signInHref(intent){
+    return G.withAttribution('/app.html',{intent:intent||'games_group'})+'#account';
+  }
+
+  function down(msg,extra){
+    stage.innerHTML='<div class="eyebrow">Groups</div><div class="empty">'+esc(msg)
+      +(extra?'<br>'+extra:'')
+      +'<br><a href="/games/">Back to EdgeDesk Games</a></div>';
+  }
+
+  /* ── create ────────────────────────────────────────────────────────────── */
+  function renderCreate(){
+    if(!S.signedIn()){
+      stage.innerHTML='<div class="eyebrow">Groups</div>'
+        +'<h1 style="font-size:23px;font-family:\'Space Grotesk\',sans-serif">Start a group.<br>Settle the season.</h1>'
+        +'<p style="color:var(--dim);font-size:14px;margin:10px 0 0;line-height:1.6">'
+        +'A private league for you and your friends: Price It, Pick 5 and Head-to-Head, with '
+        +'standings that carry across the season.</p>'
+        +'<div class="sealed"><span>👤</span><span>A group needs an account so your standings '
+        +'survive a new phone. <b>Playing does not</b> — Price It, Pick 5 and any challenge sent '
+        +'to you work with no signup at all.</span></div>'
+        +'<div class="btn-row"><a class="btn btn-go" id="signin" href="#">Create a free account</a></div>'
+        +'<div class="btn-row"><a class="btn btn-ghost" href="/games/price-it/">Play without an account</a></div>'
+        +'<div class="ftp" style="text-align:center;margin-top:12px"><b>Free to play</b> · No real-money wagering</div>';
+      var b=$('signin');
+      b.href=signInHref('games_group_create');
+      b.addEventListener('click',function(){G.track('signup_from_group',{stage:'create_gate'});});
+      return;
+    }
+    stage.innerHTML='<div class="eyebrow">New group</div>'
+      +'<h1 style="font-size:23px;font-family:\'Space Grotesk\',sans-serif">Name your group</h1>'
+      +'<div style="margin-top:16px">'
+      +'<input id="gname" class="btn" style="text-align:left;padding:0 14px" maxlength="40"'
+      +' placeholder="The Boys CFB League" aria-label="Group name">'
+      +'</div>'
+      +'<div style="margin-top:10px"><div class="eyebrow">Icon (optional)</div>'
+      +'<div class="chips" id="emojis" style="justify-content:flex-start"></div></div>'
+      +'<div class="btn-row"><button class="btn btn-go" id="make" type="button" disabled>Create group</button></div>'
+      +'<div class="ftp" style="text-align:center;margin-top:12px">Free to play · No entry fee · No prizes</div>';
+    var chosen=null;
+    $('emojis').innerHTML=['🏈','🔥','🏆','⚡','🐐','🧠'].map(function(e){
+      return '<button class="chip" type="button" data-e="'+e+'" style="min-height:40px;font-size:18px">'+e+'</button>';
+    }).join('');
+    Array.prototype.forEach.call($('emojis').querySelectorAll('.chip'),function(b){
+      b.addEventListener('click',function(){
+        chosen=(chosen===b.getAttribute('data-e'))?null:b.getAttribute('data-e');
+        Array.prototype.forEach.call($('emojis').querySelectorAll('.chip'),function(o){
+          o.style.borderColor=(chosen&&o===b)?'var(--val)':'var(--line)';
+        });
+      });
+    });
+    var name=$('gname'),make=$('make');
+    name.addEventListener('input',function(){make.disabled=name.value.trim().length<2;});
+    make.addEventListener('click',function(){
+      make.disabled=true;make.textContent='Creating…';
+      S.createGroup(name.value.trim(),chosen).then(function(r){
+        make.disabled=false;make.textContent='Create group';
+        if(!r.ok){G.toast(r.message||'Could not create the group.');return;}
+        G.track('group_create',{game_type:'group'});
+        G.track('group_invite_generated',{game_type:'group'});
+        location.href='/games/groups/'+encodeURIComponent(r.data.invite_token);
+      });
+    });
+  }
+
+  /* ── preview (an invitee who is not a member yet) ──────────────────────── */
+  function renderPreview(p){
+    stage.className='card reveal';
+    stage.innerHTML='<div class="eyebrow">You’ve been invited</div>'
+      +'<div class="grp-head"><div class="grp-emoji">'+esc(p.emoji||'🏈')+'</div>'
+      +'<div><div class="grp-name">'+esc(p.name)+'</div>'
+      +'<div class="grp-meta">'+p.members+' member'+(p.members===1?'':'s')+'</div></div></div>'
+      +'<p style="color:var(--dim);font-size:14px;margin:16px 0 0;line-height:1.6">'
+      +'A private EdgeDesk Games group. You’ll compete with them in <b>Price It</b>, '
+      +'<b>Pick 5</b> and <b>Head-to-Head</b> — points and bragging rights only.</p>'
+      +(p.full?'<div class="sealed"><span>⚠️</span><span>This group is full.</span></div>':'')
+      +(S.signedIn()
+        ? '<div class="btn-row"><button class="btn btn-go" id="join" type="button"'
+          +(p.full?' disabled':'')+'>Join '+esc(p.name)+'</button></div>'
+        : '<div class="sealed"><span>👤</span><span>Joining a group needs a free account so your '
+          +'standings stick. <b>You can play right now without one.</b></span></div>'
+          +'<div class="btn-row"><a class="btn btn-go" id="signin" href="#">Create a free account</a></div>'
+          +'<div class="btn-row"><a class="btn btn-ghost" href="/games/price-it/">Play Price It first</a></div>')
+      +'<div class="ftp" style="text-align:center;margin-top:12px"><b>Free to play</b> · No real-money wagering</div>';
+    G.track('group_invite_open',{game_type:'group',
+      identity:S.signedIn()?'authenticated':'anonymous'});
+    var j=$('join');
+    if(j)j.addEventListener('click',function(){
+      j.disabled=true;j.textContent='Joining…';
+      S.joinGroup(TOKEN).then(function(r){
+        if(!r.ok){j.disabled=false;j.textContent='Join';G.toast(r.message||'Could not join.');return;}
+        G.track('group_join',{game_type:'group'});
+        load();
+      });
+    });
+    var si=$('signin');
+    if(si){
+      si.href=signInHref('games_group_join');
+      si.addEventListener('click',function(){G.track('signup_from_group',{stage:'invite'});});
+    }
+  }
+
+  /* ── dashboard (a member) ──────────────────────────────────────────────── */
+  function renderDashboard(d){
+    var me=null;
+    (d.members||[]).forEach(function(m){if(m.is_you)me=m;});
+    var stand=d.h2h_standings||[];
+    var pos=null;
+    stand.forEach(function(r,i){if(r.is_you)pos=i+1;});
+
+    stage.className='card reveal';
+    stage.innerHTML='<div class="grp-head"><div class="grp-emoji">'+esc(d.emoji||'🏈')+'</div>'
+      +'<div><div class="grp-name">'+esc(d.name)+'</div>'
+      +'<div class="grp-meta">'+(d.members||[]).length+' member'
+      +((d.members||[]).length===1?'':'s')+' · week of '+esc(W.weekKey())+'</div></div></div>'
+      +'<div class="stats" style="margin-top:16px">'
+      +'<div class="stat"><div class="k">Members</div><div class="v">'+(d.members||[]).length+'</div><div class="s">in the group</div></div>'
+      +'<div class="stat"><div class="k">Your spot</div><div class="v'+(pos?' on':'')+'">'
+      +(pos?('#'+pos):'—')+'</div><div class="s">head-to-head</div></div>'
+      +'<div class="stat"><div class="k">Rating</div><div class="v">'
+      +(me&&me.rating!=null?me.rating:'—')+'</div><div class="s">game rating</div></div>'
+      +'</div>';
+
+    var html='';
+
+    /* head-to-head standings */
+    html+='<div class="sec"><div class="sec-h"><h2>Head-to-Head standings</h2></div><div class="card">';
+    if(!stand.length){
+      html+='<div class="empty">No completed challenges yet.</div>';
+    }else{
+      html+='<table class="lb"><thead><tr><th class="r">#</th><th>Player</th>'
+        +'<th style="text-align:right">W–L–D</th></tr></thead><tbody>'
+        +stand.map(function(r,i){
+          return '<tr'+(r.is_you?' class="me"':'')+'><td class="r">'+(i+1)+'</td>'
+            +'<td>'+esc(r.display_name)+'</td><td class="p">'
+            +r.wins+'–'+r.losses+'–'+r.draws+'</td></tr>';
+        }).join('')+'</tbody></table>'
+        +'<div class="ftp" style="margin-top:10px">Wins in challenges played inside this group. '
+        +'Price It and Pick 5 keep their own standings — one number nobody can explain is worse '
+        +'than three anybody can.</div>';
+    }
+    html+='</div></div>';
+
+    /* members, each of them challengeable */
+    html+='<div class="sec"><div class="sec-h"><h2>Members</h2>'
+      +'<span class="m">tap to challenge</span></div><div class="members">'
+      +(d.members||[]).map(function(m){
+        return '<button class="member'+(m.is_you?' me':'')+'" type="button" data-name="'
+          +esc(m.display_name)+'"'+(m.is_you?' disabled':'')+'>'
+          +'<span class="av">'+esc(initials(m.display_name))+'</span>'
+          +'<span class="nm">'+esc(m.display_name)+(m.is_you?' (you)':'')+'</span>'
+          +'<span class="rt">'+(m.rating!=null?m.rating:'')+'</span>'
+          +(m.is_you?'':'<span class="go">›</span>')+'</button>';
+      }).join('')+'</div></div>';
+
+    /* this week */
+    html+='<div class="sec"><div class="sec-h"><h2>This week</h2></div>'
+      +'<div class="btn-row two"><a class="btn btn-go" href="/games/price-it/">Play Price It</a>'
+      +'<a class="btn" href="/games/pick-5/">Play Pick 5</a></div>'
+      +'<div class="btn-row"><a class="btn" href="/games/h2h/">Start a head-to-head</a></div></div>';
+
+    /* the activity feed — real events only */
+    html+='<div class="sec"><div class="sec-h"><h2>Recent activity</h2></div>';
+    var feed=d.activity||[];
+    if(!feed.length){
+      html+='<div class="card"><div class="empty">Nothing has happened yet. '
+        +'Play a game and it shows up here.</div></div>';
+    }else{
+      html+='<div class="feed">'+feed.map(activityRow).filter(Boolean).join('')+'</div>';
+    }
+    html+='</div>';
+
+    /* invite */
+    var url=S.groupUrl(d.invite_token);
+    html+='<div class="sec"><div class="card invite"><div class="eyebrow">Invite</div>'
+      +'<div style="font-weight:700">Add someone to '+esc(d.name)+'</div>'
+      +'<div class="url">'+esc(url)+'</div>'
+      +'<div class="btn-row two"><button class="btn btn-go" id="shareG" type="button">Send invite</button>'
+      +'<button class="btn" id="copyG" type="button">Copy invite</button></div></div></div>';
+
+    after.innerHTML=html;
+
+    Array.prototype.forEach.call(after.querySelectorAll('.member'),function(b){
+      if(b.disabled)return;
+      b.addEventListener('click',function(){
+        /* pre-fill the opponent by name; the challenge itself is a normal H2H */
+        G.track('h2h_create',{stage:'from_group',game_type:'h2h'});
+        location.href='/games/h2h/?vs='+encodeURIComponent(b.getAttribute('data-name'));
+      });
+    });
+
+    var text='Join my EdgeDesk football group:\n\n'+d.name
+      +'\n\nCompete in Pick 5, Price It, and Head-to-Head.\n\nFree to play:\n'+url;
+    $('shareG').addEventListener('click',function(){
+      G.track('group_invite_generated',{stage:'shared',game_type:'group'});
+      if(navigator.share)navigator.share({title:'EdgeDesk Games',text:text,url:url}).catch(function(){});
+      else doCopy(text,url);
+    });
+    $('copyG').addEventListener('click',function(){
+      G.track('group_invite_generated',{stage:'copied',game_type:'group'});
+      doCopy(text,url);
+    });
+    G.track('group_weekly_return',{game_type:'group',week:W.weekKey()});
+  }
+
+  /* Only real events, rendered from their own fields — there is no free-text
+     field anywhere in this feed for anyone to post into. */
+  function activityRow(a){
+    var when=a.at?timeAgo(Date.parse(a.at)):'';
+    var d=a.detail||{};
+    var body=null,ic='•';
+    if(a.kind==='h2h_settled'){
+      ic='⚔️';
+      body=d.draw
+        ? '<b>'+esc(d.game||'A head-to-head')+'</b> ended in a draw'
+        : '<b>'+esc(a.actor||'Someone')+'</b> beat <b>'+esc(a.subject||'someone')+'</b>'
+          +(d.game?' — '+esc(d.game):'');
+    }else if(a.kind==='group_joined'){
+      ic='👋'; body='<b>'+esc(a.actor||'Someone')+'</b> joined the group';
+    }else if(a.kind==='h2h_created'){
+      ic='⚔️'; body='<b>'+esc(a.actor||'Someone')+'</b> opened a challenge'
+        +(d.game?' on '+esc(d.game):'');
+    }else if(a.kind==='pick5_result'){
+      ic='🏈'; body='<b>'+esc(a.actor||'Someone')+'</b> went '+esc(d.record||'')+' in Pick 5';
+    }else if(a.kind==='price_it_result'){
+      ic='🎯'; body='<b>'+esc(a.actor||'Someone')+'</b> priced '+esc(d.game||'a game')
+        +' within '+esc(String(d.distance||''))+' points';
+    }else if(a.kind==='rank_change'){
+      ic='📈'; body='<b>'+esc(a.actor||'Someone')+'</b> moved to '+esc(d.position||'a new spot');
+    }
+    if(!body)return '';
+    return '<div class="act"><span class="ic">'+ic+'</span><span style="flex:1">'+body+'</span>'
+      +'<span class="when">'+esc(when)+'</span></div>';
+  }
+
+  function timeAgo(t){
+    if(!isFinite(t))return '';
+    var s=Math.max(0,(Date.now()-t)/1000);
+    if(s<90)return 'just now';
+    if(s<3600)return Math.round(s/60)+'m';
+    if(s<86400)return Math.round(s/3600)+'h';
+    return Math.round(s/86400)+'d';
+  }
+
+  function doCopy(text,url){
+    if(navigator.clipboard&&navigator.clipboard.writeText){
+      navigator.clipboard.writeText(text).then(function(){G.toast('Invite copied');},
+        function(){G.toast('Copy this: '+url);});
+    }else G.toast('Copy this: '+url);
+  }
+
+  /* ── boot ──────────────────────────────────────────────────────────────── */
+  function load(){
+    after.innerHTML='';
+    if(!TOKEN){renderCreate();return;}
+    S.previewGroup(TOKEN).then(function(r){
+      if(!r.ok){
+        down(r.error==='not_configured'||r.status===404
+          ? 'Groups need their database applied (supabase/games_social.sql).'
+          : (r.message||'This group could not be loaded.'),
+          '<a href="/games/price-it/">Play Price It</a>');
+        return;
+      }
+      if(!r.data){down('That invite link is not valid any more.');return;}
+      if(!r.data.you_are_member){renderPreview(r.data);return;}
+      S.groupDashboard(TOKEN).then(function(d){
+        if(!d.ok||!d.data){down(d.message||'This group could not be loaded.');return;}
+        renderDashboard(d.data);
+      });
+    });
+  }
+  READY.then(load,load);
+})();
+</script>
+</body>
+</html>
