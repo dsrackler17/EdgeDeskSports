@@ -164,6 +164,12 @@ jobs:
       - name: The landing page sells the product, not an outcome
         run: node tools/presentation/landing_positioning.test.js
 
+      # Every beat above the fold is something the reader operates, the
+      # duplicated sections stay deleted, and nothing animates under
+      # prefers-reduced-motion.
+      - name: The landing page is operable, not a wall of prose
+        run: node tools/presentation/landing_interaction.test.js
+
       # The workbook the boards download, rebuilt from a real cleaned file.
       - name: The download is the format the operator cleaned up by hand
         run: node tools/collective/app_export.test.js
