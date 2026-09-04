@@ -46,6 +46,8 @@
   --warn:var(--est);--border:var(--line);
 }
 *{box-sizing:border-box;margin:0}
+/* a display: rule on a class beats the UA [hidden] rule, so state it once */
+[hidden]{display:none!important}
 html{scroll-behavior:smooth}
 /* the nav is sticky, so anchor targets need to clear it */
 section[id],header[id]{scroll-margin-top:72px}
@@ -131,6 +133,9 @@ nav{position:sticky;top:0;z-index:40;background:rgba(11,13,17,.84);backdrop-filt
 .lp-gx-grid .s{display:block;font-size:9.5px;color:var(--dim);line-height:1.4;margin-top:3px}
 .lp-gx-grid .st{display:inline-block;margin-top:4px;font-size:10.5px;font-weight:700;letter-spacing:.06em;border:1px solid var(--line2);border-radius:5px;padding:2px 6px;font-family:'JetBrains Mono',monospace}
 .lp-gx-grid .st.warn{color:var(--est);border-color:rgba(217,164,65,.45)}
+.lp-gx-grid .st.ok{color:var(--val);border-color:rgba(63,184,131,.45)}
+.lp-gx-grid .st.neg{color:var(--neg);border-color:rgba(226,102,75,.45)}
+.lp-gx-grid .v.neg{color:var(--neg)}
 .lp-gx-means{font-size:12px;line-height:1.55;color:var(--text);margin-top:9px;padding:8px 10px;border-radius:8px;border:1px solid var(--line);border-left:3px solid var(--est);background:#0b0e13}
 .lp-gx-means b{display:block;font-size:9px;letter-spacing:.09em;text-transform:uppercase;color:var(--dim);margin-bottom:3px;font-family:'JetBrains Mono',monospace}
 .lp-gx-chk{display:flex;flex-wrap:wrap;gap:4px;align-items:center;margin-top:9px}
@@ -146,13 +151,27 @@ nav{position:sticky;top:0;z-index:40;background:rgba(11,13,17,.84);backdrop-filt
 .lp-gx-why .b{height:4px;border-radius:2px;background:var(--line);overflow:hidden}
 .lp-gx-why .b i{display:block;height:100%;background:var(--obs)}
 .lp-gx-why .t{color:var(--dim);line-height:1.4}
+/* ── the hero's research-state switcher ─────────────────────────────────
+   Three games, one page. Segmented control, keyboard-operable, and it
+   collapses to a stacked row rather than a scroller at 320px. */
+.lp-sw{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;padding:9px 12px 0}
+.lp-sw button{font:inherit;font-size:11px;font-weight:600;letter-spacing:.02em;color:var(--dim);
+  background:#0d1117;border:1px solid var(--line);border-radius:7px;padding:7px 6px;cursor:pointer;
+  transition:color .18s,border-color .18s,background .18s;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lp-sw button:hover{color:var(--text);border-color:var(--line2)}
+.lp-sw button.on{color:var(--ink);background:var(--obs);border-color:var(--obs)}
+.lp-sw button:focus-visible{outline:2px solid var(--obs);outline-offset:2px}
+#hgChk{display:contents}
+#hgBody{transition:opacity .16s ease-out}
+#hgBody.swap{opacity:.32}
+@media(prefers-reduced-motion:reduce){#hgBody{transition:none}#hgBody.swap{opacity:1}}
+@media(max-width:360px){.lp-sw button{font-size:10px;padding:6px 3px}}
 /* before / after */
 .lp-ba{display:grid;grid-template-columns:1fr auto 1fr;gap:var(--sp3,22px);align-items:start;margin-top:26px}
-@media(max-width:760px){.lp-ba{grid-template-columns:1fr}.lp-ba .arrow{transform:rotate(90deg);margin:2px auto}}
+@media(max-width:760px){.lp-ba{grid-template-columns:1fr}}
 /* the smallest phones: the nav CTA is the widest thing in the bar */
 @media(max-width:360px){nav .btn{padding-left:9px;padding-right:9px;font-size:11.5px}}
 .lp-ba .col h3{font-family:'JetBrains Mono',monospace;font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--dim);margin:0 0 10px}
-.lp-ba .arrow{color:var(--line2);font-size:22px;align-self:center}
 /* the two-column variant with no arrow between; it collapses with the rule
    above rather than pinning its columns inline, which is what broke 320px */
 .lp-ba.even{grid-template-columns:1fr 1fr;align-items:start}
@@ -164,11 +183,159 @@ nav{position:sticky;top:0;z-index:40;background:rgba(11,13,17,.84);backdrop-filt
 .lp-one .big{font-size:19px;font-weight:700;letter-spacing:-.02em}
 .lp-one .lay{display:flex;flex-wrap:wrap;gap:5px;margin-top:12px}
 .lp-one .lay span{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.08em;color:var(--obs);border:1px solid rgba(92,157,255,.3);border-radius:5px;padding:3px 7px}
-/* the breadth grid */
-.lp-get{display:grid;grid-template-columns:repeat(auto-fit,minmax(228px,1fr));gap:10px;margin-top:24px}
-.lp-get .g{border:1px solid var(--line);border-radius:10px;padding:13px 14px;background:#0b0e13}
-.lp-get .g b{display:block;font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--obs);margin-bottom:5px}
-.lp-get .g p{margin:0;font-size:12.5px;line-height:1.5;color:var(--dim)}
+/* ── the pile-up ────────────────────────────────────────────────────────
+   The reader opens the sources themselves. Windows stack in a scrolling
+   column so the section height never jumps as they pile up. */
+.lp-pile{display:grid;grid-template-columns:250px 1fr;gap:20px;margin-top:26px;align-items:start}
+.lp-pile h3{font-family:'JetBrains Mono',monospace;font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--dim);margin:0 0 10px}
+.lp-pile-btns{display:flex;flex-direction:column;gap:5px}
+.lp-pile-btns button{font:inherit;font-size:12.5px;text-align:left;color:var(--dim);background:#0b0e13;border:1px solid var(--line);
+  border-radius:7px;padding:6px 10px;cursor:pointer;transition:color .16s,border-color .16s,opacity .16s}
+.lp-pile-btns button:hover:not([disabled]){color:var(--text);border-color:var(--line2)}
+.lp-pile-btns button[disabled]{cursor:default;opacity:.42;text-decoration:line-through;text-decoration-color:rgba(226,96,68,.55)}
+.lp-pile-btns button:focus-visible{outline:2px solid var(--obs);outline-offset:2px}
+.lp-pile-all{margin-top:9px;width:100%;font-size:12px}
+.lp-pile-count{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.03em;color:var(--dim);margin-bottom:9px;min-height:16px}
+.lp-pile-count b{color:var(--neg)}
+.lp-pile-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:8px;
+  min-height:232px;max-height:232px;overflow-y:auto;align-content:start;padding-right:4px}
+.lp-pile-empty{grid-column:1/-1;align-self:center;text-align:center;font-size:13px;color:var(--faint);line-height:1.6;padding:0 12px}
+.lp-pw{border:1px solid var(--line);border-radius:8px;background:#0d1117;padding:8px 10px;opacity:0;transform:translateY(6px);
+  transition:opacity .22s ease-out,transform .22s ease-out}
+.lp-pw.on{opacity:1;transform:none}
+.lp-pw b{display:block;font-size:12px;font-weight:700;letter-spacing:-.01em}
+.lp-pw span{display:block;font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:var(--faint);margin:2px 0 5px}
+.lp-pw p{font-size:11.5px;line-height:1.5;color:var(--dim)}
+.lp-pile-go{margin-top:11px}
+.lp-pile-go .btn[disabled]{opacity:.4;cursor:default}
+.lp-pile-done{margin-top:26px}
+.lp-pile-done p{margin:8px 0 0;color:var(--dim);font-size:13px;line-height:1.55;max-width:62ch}
+.lp-pile-reset{margin-top:14px}
+@media(prefers-reduced-motion:reduce){.lp-pw{opacity:1;transform:none;transition:none}}
+.lp-pile-all[disabled],.lp-pile-go .btn[disabled]{opacity:.4;cursor:default}
+@media(max-width:760px){
+  .lp-pile{grid-template-columns:1fr;gap:16px}
+  /* stacked, the windows run long — keep the way out above the pile rather
+     than below ten cards of it */
+  .lp-pile-out{display:flex;flex-direction:column}
+  .lp-pile-count{order:1}
+  .lp-pile-go{order:2;margin:0 0 12px}
+  .lp-pile-grid{order:3}
+  .lp-pile-btns{display:grid;grid-template-columns:1fr 1fr;gap:5px}
+  .lp-pile-grid{max-height:none;min-height:0;overflow:visible}
+  .lp-pile-grid:empty{min-height:0}
+}
+@media(max-width:420px){.lp-pile-btns{grid-template-columns:1fr}}
+/* ── the layer picker ───────────────────────────────────────────────────
+   Eleven chips over one panel. The panel is min-height'd so switching
+   layers never moves the page under the reader's cursor. */
+.lp-lyr{margin-top:26px}
+.lp-lyr-pick{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px}
+.lp-lyr-pick button{font:inherit;font-size:12px;font-weight:600;color:var(--dim);background:#0b0e13;border:1px solid var(--line);
+  border-radius:999px;padding:6px 13px;cursor:pointer;transition:color .16s,border-color .16s,background .16s}
+.lp-lyr-pick button:hover{color:var(--text);border-color:var(--line2)}
+.lp-lyr-pick button.on{color:var(--ink);background:var(--obs);border-color:var(--obs)}
+.lp-lyr-pick button:focus-visible{outline:2px solid var(--obs);outline-offset:2px}
+.lp-lyr-panel{padding:16px 17px;min-height:150px}
+.lp-lyr-panel p{font-size:15px;line-height:1.6;color:var(--text);max-width:70ch}
+.lp-lyr-fields{margin-top:14px}
+.lp-lyr-fields .h{display:block;font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:.09em;
+  text-transform:uppercase;color:var(--dim);font-weight:700;margin-bottom:6px}
+.lp-lyr-fields div{display:flex;flex-wrap:wrap;gap:5px}
+details.ss{border-top:1px solid var(--line)}
+details.ss:last-of-type{border-bottom:1px solid var(--line)}
+details.ss summary{list-style:none;cursor:pointer;padding:11px 22px 11px 0;position:relative;
+  font-size:13px;font-weight:600;color:var(--text);line-height:1.5}
+details.ss summary::-webkit-details-marker{display:none}
+details.ss summary::after{content:'+';position:absolute;right:2px;top:9px;font-family:'JetBrains Mono',monospace;
+  font-size:15px;color:var(--dim);transition:transform .18s}
+details.ss[open] summary::after{content:'\2212'}
+details.ss summary:hover{color:var(--obs)}
+details.ss summary:focus-visible{outline:2px solid var(--obs);outline-offset:2px;border-radius:4px}
+details.ss > div{padding:0 0 13px;font-size:12.5px;line-height:1.6;color:var(--dim)}
+details.ss > div button{font:inherit;font-size:12.5px;color:var(--obs);background:none;border:0;padding:0;
+  text-decoration:underline;cursor:pointer}
+@media(prefers-reduced-motion:reduce){details.ss summary::after{transition:none}}
+.lp-idk-rule{margin-top:14px;padding:9px 11px;border:1px solid var(--line);border-left:3px solid var(--est);border-radius:8px;background:#0b0e13}
+.lp-idk-rule .h{display:block;font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:.09em;text-transform:uppercase;color:var(--dim);font-weight:700;margin-bottom:3px}
+.lp-idk-rule span:not(.h){font-size:12.5px;line-height:1.55;color:var(--text)}
+.lp-lyr-fields span.f{font-family:'JetBrains Mono',monospace;font-size:10.5px;letter-spacing:.04em;color:var(--obs);
+  border:1px solid rgba(92,157,255,.3);border-radius:5px;padding:3px 8px;background:rgba(92,157,255,.05)}
+/* ── the five-step walkthrough ───────────────────────────────────────────
+   One game, five readings. The stage is min-height'd to the tallest step
+   so advancing never reflows the page under the reader. */
+.lp-stp{margin-top:26px}
+.lp-stp-rail{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;list-style:none;padding:0;margin:0 0 14px;counter-reset:none}
+.lp-stp-rail li{margin:0}
+.lp-stp-rail button{display:block;width:100%;text-align:left;font:inherit;cursor:pointer;
+  background:transparent;border:0;border-top:2px solid var(--line);padding:8px 2px 0;transition:border-color .25s}
+.lp-stp-rail button .n{display:block;font-family:'JetBrains Mono',monospace;font-size:9.5px;letter-spacing:.12em;color:var(--faint)}
+.lp-stp-rail button .t{display:block;font-size:12.5px;font-weight:600;color:var(--dim);margin-top:2px;line-height:1.35}
+.lp-stp-rail button:hover .t{color:var(--text)}
+.lp-stp-rail button.done{border-top-color:var(--line2)}
+.lp-stp-rail button.on{border-top-color:var(--obs)}
+.lp-stp-rail button.on .n{color:var(--obs)}
+.lp-stp-rail button.on .t{color:var(--text)}
+.lp-stp-rail button:focus-visible{outline:2px solid var(--obs);outline-offset:3px}
+.lp-stp-stage{padding:15px 16px;min-height:290px}
+.lp-stp-what{display:flex;gap:11px;align-items:baseline;margin-bottom:13px}
+.lp-stp-what b{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--obs);flex:none}
+.lp-stp-what span{font-size:15px;font-weight:600;letter-spacing:-.01em;line-height:1.45}
+.lp-stp-body{opacity:1;transition:opacity .18s ease-out}
+.lp-stp-body.swap{opacity:.25}
+.lp-stp-nav{display:flex;gap:8px;margin-top:13px}
+.lp-stp-nav .btn[disabled]{opacity:.4;cursor:default}
+/* the mini board used by step 01 */
+.lp-stp-board{display:grid;gap:4px}
+.lp-stp-board .r{display:grid;grid-template-columns:1fr 76px 76px 92px;gap:9px;align-items:center;
+  font-size:12px;padding:7px 9px;border:1px solid var(--line);border-radius:7px;background:#0d1117}
+.lp-stp-board .r.hd{border:0;background:none;padding:0 9px;font-family:'JetBrains Mono',monospace;font-size:9px;
+  letter-spacing:.09em;text-transform:uppercase;color:var(--faint)}
+.lp-stp-board .r.pick{border-color:rgba(92,157,255,.45);background:rgba(92,157,255,.06)}
+.lp-stp-board .mono{font-family:'JetBrains Mono',monospace}
+.lp-stp-board .gap{font-family:'JetBrains Mono',monospace;font-weight:700}
+.lp-stp-note{margin-top:11px;font-size:12px;line-height:1.55;color:var(--dim)}
+/* ── reading progress ───────────────────────────────────────────────────
+   Two devices, both about orientation rather than decoration: a bar that
+   says how much page is left, and a rail that says which chapter you are
+   in. A reader who can see the end of a page is far likelier to reach it. */
+.lp-prog{position:fixed;top:0;left:0;height:2px;width:100%;z-index:60;background:transparent;pointer-events:none}
+.lp-prog i{display:block;height:100%;width:0;background:var(--obs);transition:width .08s linear}
+@media(prefers-reduced-motion:reduce){.lp-prog i{transition:none}}
+.lp-rail{position:fixed;right:16px;top:50%;transform:translateY(-50%);z-index:55;display:none;
+  flex-direction:column;gap:2px;padding:6px 4px}
+.lp-rail button{position:relative;display:flex;align-items:center;justify-content:flex-end;background:none;border:0;
+  cursor:pointer;padding:4px 2px;font:inherit;color:var(--faint)}
+/* the label is taken out of flow so the rail itself stays dot-width and can
+   never crowd the 1160px content column */
+.lp-rail .lbl{position:absolute;right:calc(100% + 8px);top:50%;transform:translateY(-50%) translateX(4px);
+  font-family:'JetBrains Mono',monospace;font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;
+  opacity:0;transition:opacity .18s,transform .18s;white-space:nowrap;pointer-events:none}
+.lp-rail .dot{width:7px;height:7px;border-radius:50%;border:1px solid var(--line2);background:transparent;
+  flex:none;transition:background .2s,border-color .2s,transform .2s}
+.lp-rail button:hover .lbl,.lp-rail button:focus-visible .lbl{opacity:1;transform:translateY(-50%);color:var(--dim)}
+.lp-rail button:hover .dot{border-color:var(--dim)}
+.lp-rail button.on .dot{background:var(--obs);border-color:var(--obs);transform:scale(1.25)}
+.lp-rail button.on .lbl{color:var(--obs)}
+.lp-rail button:focus-visible{outline:2px solid var(--obs);outline-offset:2px;border-radius:6px}
+@media(min-width:1240px){.lp-rail{display:flex}}
+@media(prefers-reduced-motion:reduce){.lp-rail .lbl,.lp-rail .dot{transition:none}}
+@media(prefers-reduced-motion:reduce){.lp-stp-body{transition:none}.lp-stp-body.swap{opacity:1}}
+@media(max-width:760px){
+  .lp-stp-rail{grid-template-columns:repeat(5,1fr);gap:4px}
+  .lp-stp-rail button .t{display:none}
+  .lp-stp-rail button{padding:9px 2px 11px}
+  .lp-stp-stage{min-height:0}
+  .lp-stp-board .r{grid-template-columns:1fr 64px 70px;gap:6px;font-size:11px}
+  .lp-stp-board .r span:nth-child(4){display:none}
+  .lp-stp-board .r.hd span:nth-child(4){display:none}
+}
+@media(max-width:560px){
+  .lp-lyr-pick{gap:5px}
+  .lp-lyr-pick button{font-size:11px;padding:5px 10px}
+  .lp-lyr-panel{padding:13px 14px;min-height:0}
+  .lp-lyr-panel p{font-size:13.5px}
+}
 /* two-column contrast */
 .lp-vs{display:grid;grid-template-columns:1fr 1.35fr;gap:var(--sp3,22px);margin-top:24px}
 @media(max-width:760px){.lp-vs{grid-template-columns:1fr}}
@@ -187,12 +354,6 @@ nav{position:sticky;top:0;z-index:40;background:rgba(11,13,17,.84);backdrop-filt
 .lp-steps .s p{margin:0;font-size:12px;line-height:1.5;color:var(--dim)}
 .lp-steps .s .st{display:flex;flex-wrap:wrap;gap:4px;margin-top:8px}
 .lp-steps .s .st i{font-style:normal;font-family:'JetBrains Mono',monospace;font-size:9.5px;letter-spacing:.06em;border:1px solid var(--line2);border-radius:4px;padding:1px 5px;color:var(--dim)}
-/* I don't know */
-.lp-idk{display:grid;grid-template-columns:repeat(auto-fit,minmax(212px,1fr));gap:10px;margin-top:24px}
-.lp-idk .k{border:1px solid var(--line);border-left:3px solid var(--est);border-radius:9px;padding:12px 13px;background:#0b0e13}
-.lp-idk .k b{display:block;font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--est);margin-bottom:5px}
-.lp-idk .k p{margin:0;font-size:12px;line-height:1.5;color:var(--dim)}
-.lp-idk .k p em{font-style:normal;color:var(--text);font-weight:600}
 /* power ratings preview */
 .lp-pr{border:1px solid var(--line);border-radius:11px;padding:16px;background:#0b0e13;max-width:400px}
 .lp-pr .row{display:flex;align-items:baseline;gap:9px;font-size:13.5px;padding:5px 0;border-top:1px solid var(--line)}
@@ -200,21 +361,6 @@ nav{position:sticky;top:0;z-index:40;background:rgba(11,13,17,.84);backdrop-filt
 .lp-pr .row .n{flex:none;width:16px;color:var(--dim);font-size:11px;font-family:'JetBrains Mono',monospace}
 .lp-pr .row .t{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .lp-pr .row .v{flex:none;font-family:'JetBrains Mono',monospace;color:var(--obs)}
-/* the two worked examples */
-.lp-ex{display:grid;grid-template-columns:1fr 1fr;gap:var(--sp3,22px);margin-top:24px}
-@media(max-width:760px){.lp-ex{grid-template-columns:1fr}}
-.lp-ex .e{border:1px solid var(--line);border-radius:11px;padding:16px;background:#0b0e13}
-.lp-ex .e.inv{border-color:rgba(226,96,68,.3)}
-.lp-ex .e.pass{border-color:rgba(63,184,131,.3)}
-.lp-ex .e .g{font-size:14px;font-weight:700;margin-bottom:10px}
-.lp-ex .e .cmp{display:flex;flex-wrap:wrap;gap:14px;font-family:'JetBrains Mono',monospace;font-size:12.5px}
-.lp-ex .e .cmp div span{display:block;font-size:9px;letter-spacing:.09em;text-transform:uppercase;color:var(--dim);font-family:'JetBrains Mono',monospace}
-.lp-ex .e .gap{margin-top:11px;font-size:17px;font-weight:700;font-family:'JetBrains Mono',monospace}
-.lp-ex .e.inv .gap{color:#e26044}.lp-ex .e.pass .gap{color:var(--val)}
-.lp-ex .e .lp-verdict{display:inline-block;margin-top:9px;font-family:'JetBrains Mono',monospace;font-size:10.5px;letter-spacing:.08em;border:1px solid var(--line2);border-radius:5px;padding:2px 7px}
-.lp-ex .e.inv .lp-verdict{color:#e26044;border-color:rgba(226,96,68,.42)}
-.lp-ex .e.pass .lp-verdict{color:var(--val);border-color:rgba(63,184,131,.42)}
-.lp-ex .e p{margin:10px 0 0;font-size:12.5px;line-height:1.55;color:var(--dim)}
 /* personas */
 .lp-who{display:grid;grid-template-columns:repeat(auto-fit,minmax(196px,1fr));gap:9px;margin-top:22px}
 .lp-who .w{border:1px solid var(--line);border-radius:9px;padding:12px 13px;background:#0b0e13}
@@ -231,16 +377,6 @@ section.band{padding:84px 0;border-top:1px solid var(--line)}
    a collective here, not on the ninth scroll. Cards are links, so the
    strip doubles as the page's real navigation. */
 .band.tight{padding-top:52px;padding-bottom:52px}
-.stack-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(238px,1fr));gap:14px;margin-top:34px}
-.scard{display:flex;flex-direction:column;gap:7px;padding:19px 18px 17px;background:var(--panel);border:1px solid var(--line);border-radius:12px;transition:border-color .18s,transform .18s,background .18s}
-.scard:hover,.scard:focus-visible{border-color:var(--line2);background:var(--raised);transform:translateY(-2px);outline:none}
-.scard:focus-visible{border-color:var(--obs)}
-.scard .sk{font-family:'JetBrains Mono',monospace;font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--faint)}
-.scard b{font-family:'Space Grotesk',Inter,sans-serif;font-size:16.5px;font-weight:600;color:var(--text);line-height:1.28;letter-spacing:-.01em}
-.scard .sd{font-size:13px;color:var(--dim);line-height:1.62;flex:1}
-.scard .sgo{font-family:'JetBrains Mono',monospace;font-size:10.5px;letter-spacing:.06em;color:var(--obs);margin-top:3px}
-.scard:hover .sgo{color:var(--val)}
-@media(max-width:560px){.stack-grid{gap:10px}.scard{padding:16px 15px 14px}}
 /* ---- football engine: the layer stack, and the Collective wall ----
    Both reuse the page's term/card grammar; only what those two panels
    genuinely need is defined here, prefixed so nothing collides. */
@@ -286,7 +422,6 @@ section.band{padding:84px 0;border-top:1px solid var(--line)}
 .tabs.sub{background:#0b0e13;padding:0 10px}
 .tabs.sub button{border-radius:0;border:none;border-bottom:2px solid transparent;padding:8px 11px;font-size:10px}
 .tabs.sub button[aria-selected=true]{background:transparent;color:var(--obs);border-bottom-color:var(--obs)}
-.mcw .mlk{color:var(--faint);font-family:'JetBrains Mono',monospace;font-size:11.5px}
 .mcw .sb{display:block;color:var(--faint);font-size:11px;margin-top:3px}
 .mcw .chip{display:inline-block;font-family:'JetBrains Mono',monospace;font-size:8.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--faint);border:1px solid var(--line2);border-radius:4px;padding:2px 5px;margin-left:7px;white-space:nowrap}
 .mcw .chip.fnd{color:var(--est);border-color:rgba(217,164,65,.42)}
@@ -310,8 +445,6 @@ h1 .g{background:linear-gradient(92deg,var(--obs),var(--exp));-webkit-background
 .sub b{color:var(--text);font-weight:600}
 .cta{display:flex;gap:12px;margin-top:28px;flex-wrap:wrap}
 .microcta{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--faint);margin-top:18px;letter-spacing:.03em;line-height:1.7}
-.spine{display:flex;gap:8px;flex-wrap:wrap;margin-top:26px;padding-top:22px;border-top:1px solid var(--line)}
-.spine .lbl{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--faint);align-self:center;margin-right:2px}
 @media(max-width:940px){.hero-in{grid-template-columns:1fr;gap:26px}.hero{padding-top:38px}}
 /* THE FIVE-SECOND MOBILE SCREEN. At 375x667 the first viewport has to carry
    what this is, what you get, and one next action — so the headline, the
@@ -323,7 +456,7 @@ h1 .g{background:linear-gradient(92deg,var(--obs),var(--exp));-webkit-background
   .cta{margin-top:18px;gap:9px;flex-wrap:nowrap}
   .cta .btn.lg{padding:12px 14px;font-size:14px;white-space:nowrap;flex:1 1 auto}
   .microcta{margin-top:12px;font-size:10.5px;line-height:1.6}
-  .spine{margin-top:16px;padding-top:14px;gap:6px}
+  
   .hero .ey{font-size:10.5px}
 }
 /* 320px: two nowrap buttons on one row are wider than the viewport, which
@@ -343,36 +476,15 @@ h1 .g{background:linear-gradient(92deg,var(--obs),var(--exp));-webkit-background
 .term-foot{padding:10px 15px;border-top:1px solid var(--line);background:#0e1116;font-family:'JetBrains Mono',monospace;font-size:9.5px;letter-spacing:.05em;color:var(--faint);line-height:1.6}
 
 /* ---------- hero: the product itself, as the reader will meet it ---------- */
-.hcard{padding:16px 18px 18px}
-.hcard-top{display:flex;gap:14px;align-items:baseline;flex-wrap:wrap}
-.hcard-v{font-family:'JetBrains Mono',ui-monospace,monospace;font-weight:800;font-size:26px;letter-spacing:.06em;line-height:1}
-.hcard-v.wait{color:var(--mdl,#9b8cff)}
-.hcard-bet{font-size:20px;font-weight:800;letter-spacing:-.01em;line-height:1.2}
-.hcard-tk{font-family:'JetBrains Mono',ui-monospace,monospace;font-size:12.5px;color:var(--dim);margin-top:3px}
-.hcard-tk b{color:var(--text)}
-.hcard-sub{font-size:15px;color:var(--text);margin:10px 0 0;line-height:1.5}
-.hcard-h{font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--dim);margin:15px 0 5px}
-.hcard-cmp{border:1px solid var(--line);border-radius:10px;overflow:hidden}
-.hcard-cmp>div{display:flex;align-items:baseline;justify-content:space-between;gap:10px;padding:8px 11px;border-bottom:1px solid var(--line)}
-.hcard-cmp>div:last-child{border-bottom:none}
-.hcard-cmp .k{font-size:13px;color:var(--dim)}
-.hcard-cmp b{font-family:'JetBrains Mono',ui-monospace,monospace;font-size:16px;font-weight:800}
-.hcard-cmp b.acc{font-family:inherit;font-size:13.5px;color:var(--val)}
-.hcard-guard{border:1px solid rgba(217,154,43,.4);background:rgba(217,154,43,.08);border-radius:10px;padding:10px 12px;margin-top:13px}
-.hcard-guard .k{display:block;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--est);font-weight:700;margin-bottom:3px}
-.hcard-guard p{margin:0;font-size:13.5px;line-height:1.5}
-.hcard-p{margin:0;font-size:14px;line-height:1.55;color:var(--text)}
-.hcard-lim{margin-top:14px;padding-top:11px;border-top:1px solid var(--line);font-family:'JetBrains Mono',ui-monospace,monospace;font-size:15px;font-weight:800}
-.hcard-lim .k{display:block;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--dim);font-weight:700;margin-bottom:2px}
-.hcard-lim .n{display:block;font-family:inherit;font-size:13px;font-weight:400;color:var(--dim);margin-top:3px}
-@media(max-width:560px){.hcard{padding:14px 14px 16px}.hcard-v{font-size:22px}.hcard-bet{font-size:18px}}
+
 /* ---------- hero demo: the price slider ---------- */
 .demo-body{padding:16px 16px 18px}
 .demo-game{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap;padding-bottom:14px;border-bottom:1px solid var(--line)}
 .demo-game .gn{font-weight:600;font-size:15px}
 .demo-game .gm{font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--faint);letter-spacing:.06em;text-transform:uppercase;margin-top:3px}
 .pgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--line);border:1px solid var(--line);border-radius:11px;overflow:hidden;margin:14px 0 20px}
-.pcell{background:var(--cell);padding:13px 12px}
+.pcell{background:var(--cell);padding:13px 12px;min-width:0}
+@media(max-width:400px){.pcell{padding:11px 8px}.pcell .v{font-size:18px}.pcell .k{font-size:8px}}
 .pcell .k{font-family:'JetBrains Mono',monospace;font-size:8.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--faint);display:block;margin-bottom:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .pcell .v{font-family:'JetBrains Mono',monospace;font-size:23px;font-weight:700;line-height:1;letter-spacing:-.02em}
 .pcell .v.mut{color:var(--dim)}
@@ -418,83 +530,12 @@ input[type=range].edge:active::-webkit-slider-thumb{cursor:grabbing}
 .stepper button i{display:block;font-style:normal;font-size:8.5px;font-weight:400;letter-spacing:.04em;text-transform:none;color:var(--faint);margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 @media(max-width:560px){.stepper button i{display:none}.stepper button{font-size:9.5px;letter-spacing:.08em;padding:13px 4px}}
 .stage{display:none}.stage.on{display:block}
-.scan{display:grid;grid-template-columns:1.12fr .88fr;gap:0}
-@media(max-width:900px){.scan{grid-template-columns:1fr}}
 .board{display:grid;grid-template-columns:repeat(15,1fr);gap:5px;padding:16px;align-content:start}
-.tile{aspect-ratio:1;border-radius:3px;background:#1a1f29;border:1px solid #2a313d;transition:background .4s ease,border-color .4s ease,box-shadow .4s ease;transition-delay:calc(var(--i) * 18ms)}
-.tile.live{background:rgba(92,157,255,.24);border-color:rgba(92,157,255,.7)}
-.tile.gold{background:rgba(63,184,131,.32);border-color:var(--val);box-shadow:0 0 14px rgba(63,184,131,.5)}
 @media(max-width:620px){.board{grid-template-columns:repeat(10,1fr);gap:4px;padding:13px}}
 .rail{display:flex;flex-direction:column;border-left:1px solid var(--line)}
 @media(max-width:900px){.rail{border-left:none;border-top:1px solid var(--line)}}
-.rstep{display:grid;grid-template-columns:auto 1fr;gap:13px;align-items:flex-start;text-align:left;width:100%;padding:13px 16px;background:transparent;border:none;border-bottom:1px solid var(--line);cursor:pointer;font-family:inherit;color:inherit;transition:background .18s,opacity .25s;opacity:.42}
-.rstep:last-child{border-bottom:none}
-.rstep:hover{background:var(--cell);opacity:.85}
-.rstep.on{opacity:1;background:var(--cell)}
-.rstep .rn{font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:700;line-height:1;min-width:2.4ch;color:var(--faint);transition:color .25s}
-.rstep.on .rn{color:var(--obs)}
-.rstep.on.fin .rn{color:var(--val)}
-.rstep .rk{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim);display:block}
-.rstep .rd{font-size:12.5px;color:var(--faint);line-height:1.5;margin-top:4px;display:block}
-.rstep.on .rd{color:var(--dim)}
-.startshere{padding:13px 16px;border-top:1px solid var(--line);background:rgba(63,184,131,.06);font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:var(--val);font-weight:700;opacity:0;transition:opacity .4s}
-.startshere.on{opacity:1}
-.scan-note{margin-top:18px;font-size:14.5px;color:var(--dim);line-height:1.65;max-width:64ch}
-.scan-note b{color:var(--text);font-weight:600}
-/* research / attack / decide stages */
-.stagehd{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:15px 17px;border-bottom:1px solid var(--line);background:#0e1116}
-.stagehd .sg{font-weight:600;font-size:15px}
-.stagehd .sm{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--faint);margin-top:3px}
-.dec{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--line);border:1px solid var(--line);border-radius:11px;overflow:hidden;margin-bottom:14px}
-@media(max-width:620px){.dec{grid-template-columns:1fr}}
-.dc{background:var(--cell);padding:14px 15px}
-.dc .k{font-family:'JetBrains Mono',monospace;font-size:8.5px;letter-spacing:.11em;text-transform:uppercase;color:var(--faint);display:block;margin-bottom:6px}
-.dc .v{font-family:'JetBrains Mono',monospace;font-size:22px;font-weight:700;line-height:1}
-.decbox{border:1px solid rgba(63,184,131,.4);background:rgba(63,184,131,.05);border-radius:12px;padding:15px 16px;margin-bottom:12px}
-.decbox .dh{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.13em;text-transform:uppercase;color:var(--val);font-weight:700;margin-bottom:8px}
-.decbox p{font-size:13.5px;color:var(--dim);line-height:1.6}
-.decbox p b{color:var(--text);font-weight:600}
-.minirow{display:grid;grid-template-columns:1fr auto;gap:12px;align-items:center;padding:11px 13px;border:1px solid var(--line);border-radius:9px;background:var(--cell);margin-bottom:7px}
-.minirow:last-child{margin-bottom:0}
-.minirow .mn{font-size:13px;font-weight:600}
-.minirow .md{font-size:12px;color:var(--dim);line-height:1.5;margin-top:3px}
-.nextline{margin-top:13px;padding-top:12px;border-top:1px solid var(--line);font-family:'JetBrains Mono',monospace;font-size:10.5px;letter-spacing:.06em;color:var(--faint);line-height:1.7}
-.nextline b{color:var(--obs);font-weight:700}
-
-/* ---------- the work disappearing ---------- */
-.wf-tasks{display:flex;flex-wrap:wrap;gap:7px;padding:14px 15px;border-bottom:1px solid var(--line);background:#0e1116}
-.wf-task{font-family:'JetBrains Mono',monospace;font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--dim);background:var(--cell);border:1px solid var(--line2);border-radius:8px;padding:9px 13px;cursor:pointer;transition:.15s}
-.wf-task:hover{border-color:var(--dim);color:var(--text)}
-.wf-task[aria-pressed=true]{border-color:var(--est);color:var(--est);background:rgba(217,164,65,.08)}
-.wf-space{padding:15px;min-height:210px;display:flex;flex-direction:column;justify-content:center}
-.wf-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;width:100%}
-@media(max-width:760px){.wf-grid{grid-template-columns:1fr 1fr}}
-@media(max-width:470px){.wf-grid{grid-template-columns:1fr}}
-.wfw{border:1px solid var(--line2);border-radius:9px;background:var(--cell);overflow:hidden;opacity:0;transform:translateY(10px) scale(.97);transition:opacity .3s ease,transform .45s cubic-bezier(.4,0,.2,1)}
-.wfw.on{opacity:1;transform:none}
-.wfw.gone{opacity:0;transform:translateY(46px) scale(.42)}
-.wfw-h{padding:8px 10px;border-bottom:1px solid var(--line);font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--faint);display:flex;justify-content:space-between;align-items:center;gap:8px}
-.wfw-h b{color:var(--dim);font-weight:600}
-.wfw-b{padding:10px;font-size:11.5px;color:var(--dim);line-height:1.5}
-.wf-empty{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--faint);text-align:center;line-height:1.7}
-.wf-bar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:13px 15px;border-top:1px solid var(--line);background:#0e1116}
-.wf-count{font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--faint);letter-spacing:.05em;flex:1;min-width:170px;line-height:1.6}
-.wf-count b{color:var(--est);font-weight:700}
-.ed-fields{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--line);border:1px solid var(--line);border-radius:11px;overflow:hidden;width:100%}
-@media(max-width:700px){.ed-fields{grid-template-columns:1fr 1fr}.ed-f:last-child{grid-column:1/-1}}
-.ed-f{background:var(--cell);padding:12px 13px;opacity:0;transform:scale(.94);transition:opacity .3s,transform .3s}
-.ed-f.on{opacity:1;transform:none}
-.ed-f .k{font-family:'JetBrains Mono',monospace;font-size:8px;letter-spacing:.11em;text-transform:uppercase;color:var(--faint);display:block;margin-bottom:5px}
-.ed-f .v{font-size:13px;font-weight:600;line-height:1.35;display:block}
-.ed-f .v.num{font-family:'JetBrains Mono',monospace;font-size:15px;font-weight:700}
 /* collapsed until the consolidation lands, so it leaves no void beforehand */
-.punch{font-family:'Space Grotesk',sans-serif;font-size:clamp(21px,3.1vw,31px);font-weight:600;letter-spacing:-.025em;line-height:1.28;max-width:28ch;
-  opacity:0;transform:translateY(10px);max-height:0;margin-top:0;overflow:hidden;
-  transition:opacity .5s,transform .5s,max-height .5s ease,margin-top .5s ease}
-.punch.on{opacity:1;transform:none;max-height:220px;margin-top:30px}
-.punch b{color:var(--obs);font-weight:600}
-.chains{display:grid;grid-template-columns:1.25fr .75fr;gap:14px;margin-top:38px}
-@media(max-width:760px){.chains{grid-template-columns:1fr}}
+
 .chain{border:1px solid var(--line);border-radius:14px;background:var(--panel);padding:19px 20px}
 .chain h4{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.15em;text-transform:uppercase;color:var(--faint);font-weight:600}
 .chain ul{list-style:none;padding:0;margin:12px 0 0}
@@ -507,16 +548,8 @@ input[type=range].edge:active::-webkit-slider-thumb{cursor:grabbing}
 .chain.b h4{color:var(--val)}
 .chain.b li{color:var(--text);font-weight:600;letter-spacing:.11em;font-size:12px;padding-top:6px;padding-bottom:6px}
 .chain .cn{font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--faint);margin-top:14px;padding-top:12px;border-top:1px solid var(--line);line-height:1.6}
-
-/* ---------- attention band ---------- */
-.attn{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:38px}
-@media(max-width:900px){.attn{grid-template-columns:1fr 1fr}}
-@media(max-width:520px){.attn{grid-template-columns:1fr}}
 .an{border:1px solid var(--line);border-radius:14px;background:var(--panel);padding:20px 21px;position:relative;overflow:hidden}
-.an::after{content:"";position:absolute;left:0;top:0;bottom:0;width:2px}
-.an.c1::after{background:var(--obs)}.an.c2::after{background:var(--est)}
-.an.c3::after{background:var(--exp)}.an.c4::after{background:var(--val)}
-.an .aw{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.15em;text-transform:uppercase;color:var(--faint);font-weight:600}
+.an::after{content:"";position:absolute;left:0;top:0;bottom:0;width:2px}.an.c2::after{background:var(--est)}
 .an h3{font-size:16.5px;margin:11px 0 8px}
 .an p{font-size:13px;color:var(--dim);line-height:1.6}
 
@@ -677,30 +710,10 @@ input[type=range].edge:active::-webkit-slider-thumb{cursor:grabbing}
 .pick button{font-size:13.5px;font-weight:600;color:var(--dim);background:var(--panel);border:1px solid var(--line2);border-radius:999px;padding:11px 18px;cursor:pointer;transition:.15s;font-family:inherit}
 .pick button:hover{border-color:var(--dim);color:var(--text)}
 .pick button[aria-pressed=true]{border-color:var(--obs);color:var(--text);background:rgba(92,157,255,.1)}
-.invest{margin-top:16px}
-.irow{display:grid;grid-template-columns:150px 1fr;gap:16px;padding:15px 17px;border-bottom:1px solid var(--line)}
-.irow:last-child{border-bottom:none}
-.irow .ik{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.13em;text-transform:uppercase;color:var(--faint);padding-top:2px}
-.irow .iv{font-size:14px;color:var(--dim);line-height:1.6}
-.irow .iv b{color:var(--text);font-weight:600}
-@media(max-width:700px){.irow{grid-template-columns:1fr;gap:6px}}
 
 /* ---------- ladder ---------- */
 .ladder{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:40px}
 @media(max-width:860px){.ladder{grid-template-columns:1fr}}
-.lc{border:1px solid var(--line);border-radius:14px;background:var(--panel);padding:22px;position:relative;overflow:hidden;transition:.18s}
-.lc:hover{border-color:var(--line2);transform:translateY(-2px)}
-.lc::after{content:"";position:absolute;left:0;top:0;bottom:0;width:2px;background:var(--line2)}
-.lc.d1::after{background:var(--obs)}.lc.d2::after{background:var(--est)}.lc.d3::after{background:var(--val)}
-.lmeter{display:flex;gap:4px;margin-bottom:14px}
-.lmeter i{height:3px;flex:1;border-radius:2px;background:var(--line2)}
-.lc.d1 .lmeter i:nth-child(1){background:var(--obs)}
-.lc.d2 .lmeter i:nth-child(-n+2){background:var(--est)}
-.lc.d3 .lmeter i{background:var(--val)}
-.lc .lw{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.13em;text-transform:uppercase;color:var(--faint)}
-.lc h3{font-size:18px;margin:9px 0 9px}
-.lc p{font-size:13.5px;color:var(--dim);line-height:1.6}
-.lc .lu{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--dim);margin-top:14px;padding-top:13px;border-top:1px solid var(--line);letter-spacing:.03em}
 
 /* ---------- live record (classes the preserved loader injects into) ---------- */
 .record-cols{display:grid;grid-template-columns:1.05fr .95fr;gap:36px;align-items:start;margin-top:36px}
@@ -715,8 +728,6 @@ input[type=range].edge:active::-webkit-slider-thumb{cursor:grabbing}
 .lk .n.pos{color:var(--val)}.lk .n.neg{color:var(--neg)}
 .lk .l{font-size:10px;color:var(--dim);text-transform:uppercase;letter-spacing:.04em;margin-top:3px}
 .lnote{padding:12px 2px 0;font-size:11px;color:var(--faint);font-family:'JetBrains Mono',monospace;line-height:1.6}
-.pbar{height:7px;background:var(--cell);border:1px solid var(--line);border-radius:5px;overflow:hidden;margin:12px 0}
-.pbar>i{display:block;height:100%;background:var(--obs)}
 .relia{width:100%;max-width:320px;margin:6px auto 2px;display:block}
 .rside p{color:var(--dim);font-size:14.5px;margin-top:14px;line-height:1.65}
 .rside p b{color:var(--text);font-weight:600}
@@ -731,10 +742,6 @@ input[type=range].edge:active::-webkit-slider-thumb{cursor:grabbing}
 .pamt{font-size:54px;font-weight:700;letter-spacing:-.035em;line-height:1;font-family:'Space Grotesk',sans-serif}
 .pper{font-size:15px;color:var(--dim)}
 .pren{font-size:12px;color:var(--faint);line-height:1.55;margin-bottom:20px}
-.pfeat{list-style:none;padding:0;margin:0 0 20px}
-.pfeat li{display:flex;gap:10px;font-size:13.5px;color:var(--dim);padding:6px 0;line-height:1.5}
-.pfeat li b{color:var(--text);font-weight:600}
-.pfeat li::before{content:"\2713";color:var(--val);font-weight:700;flex:none}
 .psub{font-size:11px;color:var(--faint);margin-top:12px;text-align:center;line-height:1.55}
 .guar{border:1px solid var(--val);background:rgba(63,184,131,.055);border-radius:16px;padding:24px}
 .guar .gh{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--val);font-weight:700;margin-bottom:12px;display:flex;align-items:center;gap:9px}
@@ -827,7 +834,6 @@ footer{border-top:1px solid var(--line);background:#0a0c10;padding:38px 0 48px}
   border:1px solid rgba(63,184,131,.4);background:rgba(63,184,131,.07);border-radius:11px;
   font-size:13.5px;line-height:1.5;color:var(--text);width:fit-content;max-width:100%}
 .hook.on{display:flex}
-.hook .hg{font-size:15px;flex:none}
 .hook b{font-weight:600}
 .hook a{color:var(--val);font-weight:600;border-bottom:1px solid rgba(63,184,131,.5);white-space:nowrap}
 
@@ -892,60 +898,9 @@ footer{border-top:1px solid var(--line);background:#0a0c10;padding:38px 0 48px}
    The problem, the terminal preview, the three engines, PASS, the proof
    layer, the workflow grid and the "beyond picks" note. Everything reuses
    the page's term/card grammar; only the layout each block needs is here. */
-.lp-two{display:grid;grid-template-columns:.88fr 1.12fr;gap:26px;margin-top:38px;align-items:start}
-@media(max-width:900px){.lp-two{grid-template-columns:1fr;gap:20px}}
-.lp-qs{list-style:none;padding:0;margin:0;border:1px solid var(--line);border-radius:12px;background:var(--panel);overflow:hidden}
-.lp-qs li{display:grid;grid-template-columns:auto 1fr;gap:14px;align-items:baseline;padding:13px 16px;border-bottom:1px solid var(--line);font-family:'JetBrains Mono',monospace;font-size:12.5px;color:var(--text);line-height:1.5}
-.lp-qs li:last-child{border-bottom:none}
-.lp-qs li i{font-style:normal;font-size:10px;color:var(--faint);letter-spacing:.08em}
-.lp-qs-note{margin-top:12px;font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--faint);letter-spacing:.03em;line-height:1.6}
+
 /* the universal research card, in the app's real structure */
-.lp-card{padding:15px 16px 16px}
-.lp-mk{font-family:'JetBrains Mono',monospace;font-size:13.5px;font-weight:700;color:var(--text);letter-spacing:.02em;line-height:1.3}
-.lp-mk small{display:block;font-size:10px;font-weight:500;color:var(--faint);letter-spacing:.09em;text-transform:uppercase;margin-top:4px}
-.lp-lay{display:grid;grid-template-columns:auto 1fr auto;gap:8px 12px;align-items:center;padding:11px 12px;border:1px solid var(--line);border-radius:10px;background:var(--cell);margin-top:10px}
-.lp-lay .lp-b{font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:700;letter-spacing:.11em;text-transform:uppercase;padding:3px 7px;border:1px solid var(--line2);border-radius:4px;color:var(--dim);white-space:nowrap}
-.lp-lay.model .lp-b{color:var(--exp);border-color:rgba(157,123,255,.42)}
-.lp-lay.market .lp-b{color:var(--obs);border-color:rgba(92,157,255,.42)}
-.lp-lay .lp-t{font-size:13px;font-weight:600;color:var(--text);min-width:0}
-.lp-lay .lp-t.wide{grid-column:2/-1}
-.lp-lay .lp-d{grid-column:2/-1;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--faint);line-height:1.6}
-.lp-st{font-family:'JetBrains Mono',monospace;font-size:9.5px;font-weight:700;letter-spacing:.12em;white-space:nowrap;text-transform:uppercase}
-.lp-st.research{color:var(--obs)}.lp-st.watch{color:var(--est)}.lp-st.pass{color:var(--dim)}.lp-st.missed{color:var(--neg)}
-.lp-kv{margin-top:12px;padding-top:11px;border-top:1px solid var(--line)}
-.lp-kv .k{font-family:'JetBrains Mono',monospace;font-size:9.5px;letter-spacing:.13em;text-transform:uppercase;color:var(--faint);display:block;margin-bottom:6px}
-.lp-kv p{font-size:13px;color:var(--dim);line-height:1.6}
-.lp-next{display:flex;flex-wrap:wrap;gap:6px}
-.lp-next span{font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--obs);border:1px solid rgba(92,157,255,.3);border-radius:6px;padding:4px 9px;white-space:nowrap}
-@media(max-width:560px){.lp-lay{grid-template-columns:auto 1fr}.lp-lay .lp-st{grid-column:2;justify-self:start}}
-/* see the terminal: three small panels */
-.lp-three{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:38px;align-items:start}
-@media(max-width:900px){.lp-three{grid-template-columns:1fr}}
-.lp-three .term{border-radius:12px}
-.lp-rows{padding:4px 0}
-.lp-row{display:flex;justify-content:space-between;align-items:baseline;gap:12px;padding:9px 15px;font-family:'JetBrains Mono',monospace;font-size:11.5px;color:var(--dim);border-bottom:1px solid var(--line)}
-.lp-row:last-child{border-bottom:none}
-.lp-row b{color:var(--text);font-weight:700}
-.lp-row b.obs{color:var(--obs)}.lp-row b.val{color:var(--val)}.lp-row b.mut{color:var(--faint)}
-.lp-cap{margin-top:10px;font-size:12.5px;color:var(--faint);line-height:1.55;padding:0 2px}
-.lp-tl{list-style:none;padding:14px 15px 4px;margin:0;display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
-.lp-tl li{position:relative;text-align:center;padding:9px 4px;border:1px solid var(--line);border-radius:8px;background:var(--cell)}
-.lp-tl li+li::before{content:"\2192";position:absolute;left:-10px;top:50%;transform:translateY(-50%);color:var(--line2);font-size:11px}
-.lp-tl .k{font-family:'JetBrains Mono',monospace;font-size:8.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--faint);display:block;margin-bottom:5px}
-.lp-tl .v{font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:700;color:var(--text)}
-.lp-tl .v.mut{color:var(--faint);font-weight:500;font-size:11px}
-.lp-tl li.flag{border-color:rgba(92,157,255,.4)}
-.lp-tl li.cur{border-color:rgba(226,102,75,.4)}
-.lp-tl li.cur .v{color:var(--neg)}
-@media(max-width:560px){.lp-tl{gap:10px;padding:12px 12px 4px}.lp-tl .v{font-size:12px}.lp-tl li+li::before{left:-9px;font-size:9px}}
-.lp-tlx{padding:8px 15px 12px;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--dim);line-height:1.8;letter-spacing:.02em}
-.lp-tlx b{color:var(--text);font-weight:700}
-.lp-tlp{padding:0 15px 15px;font-size:13px;color:var(--dim);line-height:1.6}
-.lp-clean{padding:26px 18px 24px;text-align:center}
-.lp-clean .lp-cl{font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--text);display:inline-flex;align-items:center;gap:8px}
-.lp-clean .lp-cl::before{content:"";width:6px;height:6px;border-radius:2px;background:var(--val)}
-.lp-clean p{font-size:14px;color:var(--text);margin-top:12px;line-height:1.55;max-width:30ch;margin-left:auto;margin-right:auto}
-.lp-clean .lp-sub{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--faint);margin-top:9px;letter-spacing:.03em}
+
 /* three independent engines */
 .lp-eng{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:38px}
 @media(max-width:900px){.lp-eng{grid-template-columns:1fr}}
@@ -957,12 +912,6 @@ footer{border-top:1px solid var(--line);background:#0a0c10;padding:38px 0 48px}
 .lp-e p{font-size:13.5px;color:var(--dim);line-height:1.6}
 .lp-note{margin-top:22px;padding:14px 16px;border:1px dashed var(--line2);border-radius:10px;font-size:13.5px;color:var(--dim);line-height:1.6;max-width:76ch}
 .lp-note b{color:var(--text);font-weight:600}
-/* PASS is a feature */
-.lp-pass{display:grid;grid-template-columns:1.1fr .9fr;gap:28px;margin-top:36px;align-items:start}
-@media(max-width:900px){.lp-pass{grid-template-columns:1fr;gap:22px}}
-.lp-pass-copy p{font-size:15px;color:var(--dim);line-height:1.65;max-width:56ch}
-.lp-pass-copy p+p{margin-top:12px}
-.lp-pass-copy p b{color:var(--text);font-weight:600}
 /* the proof layer */
 .lp-steps{display:flex;flex-wrap:wrap;gap:8px;margin-top:34px;align-items:center;font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.12em;text-transform:uppercase}
 .lp-steps span{padding:8px 13px;border:1px solid var(--line2);border-radius:8px;background:var(--panel);color:var(--text);font-weight:600;white-space:nowrap}
@@ -977,14 +926,6 @@ footer{border-top:1px solid var(--line);background:#0a0c10;padding:38px 0 48px}
 .lp-v p{font-size:13.5px;color:var(--dim);line-height:1.6}
 .lp-vline{margin-top:18px;font-size:14.5px;color:var(--dim);line-height:1.6;max-width:60ch}
 .lp-vline b{color:var(--text);font-weight:600}
-/* research workflow */
-.lp-wf{list-style:none;padding:0;display:grid;grid-template-columns:repeat(6,1fr);gap:1px;background:var(--line);border:1px solid var(--line);border-radius:12px;overflow:hidden;margin-top:34px}
-@media(max-width:900px){.lp-wf{grid-template-columns:repeat(3,1fr)}}
-@media(max-width:560px){.lp-wf{grid-template-columns:repeat(2,1fr)}}
-.lp-w{background:var(--cell);padding:16px 15px 15px;min-width:0}
-.lp-w .n{font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:700;color:var(--faint);line-height:1}
-.lp-w .k{display:block;font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--obs);font-weight:700;margin-top:10px}
-.lp-w p{font-size:12.5px;color:var(--dim);line-height:1.55;margin-top:6px}
 /* built beyond picks: deliberately quieter than the product bands */
 section.band.lp-quiet{padding:56px 0}
 .lp-uses{display:flex;flex-wrap:wrap;gap:6px 0;margin-top:22px;font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim)}
@@ -995,7 +936,7 @@ section.band.lp-quiet{padding:56px 0}
 .lp-contact a{color:var(--obs);border-bottom:1px solid rgba(92,157,255,.45)}
 .lp-contact a:hover{border-bottom-color:var(--obs)}
 /* the two new nav links go first when the bar tightens, before hideS kicks in */
-@media(max-width:1360px){.nlink.lp-nav{display:none}}
+
 
 /* ---------- motion ---------- */
 .rv{opacity:0;transform:translateY(12px);transition:opacity .6s ease-out,transform .6s ease-out}
@@ -1004,11 +945,13 @@ section.band.lp-quiet{padding:56px 0}
   *{animation:none!important;transition:none!important;scroll-behavior:auto!important}
   .rv{opacity:1;transform:none}
   .log .ln,.wl,.verdict{opacity:1;transform:none}
-  .tile{transition-delay:0ms!important}
 }
 </style>
 </head>
 <body>
+
+<div class="lp-prog" aria-hidden="true"><i id="progBar"></i></div>
+<nav class="lp-rail" id="chapRail" aria-label="Page sections"></nav>
 
 <div class="tbar" aria-hidden="true">
   <div class="wrap tbar-in">
@@ -1025,8 +968,7 @@ section.band.lp-quiet{padding:56px 0}
     <a class="logo" href="#top"><span class="mk"></span>EdgeDesk <small>Research Terminal</small></a>
     <span class="nav-sp"></span>
     <a class="nlink hideS" href="#getyou">Product</a>
-    <a class="nlink hideS" href="#steps">Research</a>
-    <a class="nlink hideS" href="#how">How it works</a>
+    <a class="nlink hideS" href="#steps">How it works</a>
     <a class="nlink hideS" href="#record">Record</a>
     <a class="nlink hideS" href="#pricing">Pricing</a>
     <button class="btn ghost" id="navLogin" onclick="openAuth('login')">Log in</button>
@@ -1053,7 +995,7 @@ section.band.lp-quiet{padding:56px 0}
       </div>
       <div class="cta">
         <button class="btn primary lg" id="heroStart" onclick="startSubscribe()">Start researching &#8594;</button>
-        <a class="btn ghost lg" href="#examples">See a live matchup</a>
+        <a class="btn ghost lg" href="#getyou">See what is inside &#8594;</a>
       </div>
       <p class="microcta"><b style="color:var(--val)">Research, not picks.</b> NFL + FBS &middot; 7-day free trial, then $79.99/month &middot; 21+</p>
     </div>
@@ -1066,30 +1008,25 @@ section.band.lp-quiet{padding:56px 0}
         <span class="nm">EdgeDesk &middot; Game research</span>
         <span class="tag">Illustrative game</span>
       </div>
-      <div class="lp-gx">
+
+      <!-- The switcher is the hero's argument: the same page, run on three
+           games, returns three different research states. One of them is
+           "there is nothing here". Data lives in HERO_GAMES in the script. -->
+      <div class="lp-sw" role="tablist" aria-label="Example research states">
+        <button type="button" role="tab" class="on" data-hg="0" aria-selected="true">Model agrees</button>
+        <button type="button" role="tab" data-hg="1" aria-selected="false">Small gap</button>
+        <button type="button" role="tab" data-hg="2" aria-selected="false">Large gap</button>
+      </div>
+
+      <div class="lp-gx" id="hgBody">
         <div class="lp-gx-hd">
-          <div class="m">Baylor @ Auburn</div>
-          <div class="w">Sat &middot; 7:30p &middot; Big 12 at SEC</div>
+          <div class="m" id="hgMatch">&nbsp;</div>
+          <div class="w" id="hgWhen">&nbsp;</div>
         </div>
-        <div class="lp-gx-grid">
-          <div class="c"><span class="l">EdgeDesk</span><span class="v mdl">Auburn -9.7</span><span class="s">model</span></div>
-          <div class="c"><span class="l">Market</span><span class="v">Auburn -8.0</span><span class="s">consensus</span></div>
-          <div class="c"><span class="l">Difference</span><span class="v warn">1.7 pts</span><span class="s">model minus market</span></div>
-          <div class="c"><span class="l">Projected score</span><span class="v sc"><i>Auburn</i><b>31</b></span><span class="v sc"><i>Baylor</i><b>21</b></span></div>
-          <div class="c"><span class="l">Win probability</span><span class="v">Auburn 73%</span><span class="s">Baylor 27%</span></div>
-          <div class="c"><span class="l">Research state</span><span class="st warn">REVIEW</span><span class="s">EdgeDesk&rsquo;s own read, not advice</span></div>
-          <div class="c"><span class="l">Data confidence</span><span class="v warn">43%</span><span class="s">of the model&rsquo;s inputs reached it</span></div>
-          <div class="c"><span class="l">Outcome range</span><span class="v">-6 to +26</span><span class="s">p10 to p90 margin</span></div>
-        </div>
-        <div class="lp-gx-means"><b>What this means</b>
-          EdgeDesk differs from the market by 1.7 points &mdash; enough to justify deeper research, but the disagreement has not been validated as an edge.</div>
-        <div class="lp-gx-chk"><span class="h">Research check</span>
-          <span class="ck ok">&#10003; model built</span><span class="ck ok">&#10003; market joined</span><span class="ck ok">&#10003; roster loaded</span><span class="ck warn">? availability</span><span class="ck warn">? starting quarterback</span><span class="ck neg">&times; recruiting</span></div>
-        <div class="lp-gx-why"><span class="h">Why EdgeDesk prices it here</span>
-          <div class="r"><span class="p">+4.1</span><span class="b"><i style="width:100%"></i></span><span class="t">Playing at Auburn &mdash; the league-wide home-field number</span></div>
-          <div class="r"><span class="p">+3.4</span><span class="b"><i style="width:83%"></i></span><span class="t">Conference strength differs and the in-season sample is thin</span></div>
-          <div class="r"><span class="p">+2.2</span><span class="b"><i style="width:54%"></i></span><span class="t">Stylistically the matchup favours Auburn</span></div>
-        </div>
+        <div class="lp-gx-grid" id="hgGrid"></div>
+        <div class="lp-gx-means"><b>What this means</b><span id="hgMeans"></span></div>
+        <div class="lp-gx-chk"><span class="h">Research check</span><span id="hgChk"></span></div>
+        <div class="lp-gx-why"><span class="h">Why EdgeDesk prices it here</span><div id="hgWhy"></div></div>
       </div>
       <div class="term-foot">Player quality and scheme are <b>not</b> in that number: neither has cleared validation, so neither moves a projected line. Nothing here tells you what to bet.</div>
     </div>
@@ -1104,29 +1041,36 @@ section.band.lp-quiet{padding:56px 0}
     <div class="head rv">
       <span class="ey"><b>&#9642;</b> Your Saturday</span>
       <h2>The information already exists.<br><span class="g">Assembling it is the expensive part.</span></h2>
-      <p>Every number EdgeDesk shows you could be found somewhere else, by you, given enough tabs and enough morning. That is exactly the job it does instead.</p>
+      <p>Every number EdgeDesk shows you could be found somewhere else, by you, given enough tabs and enough morning. Open a few and see how far you get.</p>
     </div>
-    <div class="lp-ba rv">
-      <div class="col">
-        <h3>Without EdgeDesk</h3>
-        <div class="lp-stack was">
-          <span>An odds screen</span><span>A roster site</span><span>A transfer portal tracker</span>
-          <span>Team stats</span><span>Player stats</span><span>Somebody&rsquo;s power ratings</span>
-          <span>A spreadsheet</span><span>Searching for injury news</span><span>Your notes</span><span>An AI to make sense of it</span>
-        </div>
+
+    <!-- THE PILE-UP. Ten real research sources as buttons; each one opens a
+         window describing the work it actually costs. The reader builds the
+         mess themselves, which is the only version of this argument that
+         lands. One button then collapses it into the product. -->
+    <div class="lp-pile rv" id="pile">
+      <div class="lp-pile-src">
+        <h3>Open a source</h3>
+        <div class="lp-pile-btns" id="pileBtns"></div>
+        <button class="btn ghost lp-pile-all" id="pileAll" type="button">Open all ten</button>
       </div>
-      <div class="arrow">&#8594;</div>
-      <div class="col">
-        <h3>With EdgeDesk</h3>
-        <div class="lp-one">
-          <div class="big">Open the matchup.</div>
-          <p class="hcard-p" style="margin:8px 0 0;color:var(--dim);font-size:13px;line-height:1.55">That&rsquo;s the workflow. Every layer below is already on the page, already joined to the game, already saying how much of it is actually known.</p>
-          <div class="lay">
-            <span>MODEL</span><span>MARKET</span><span>ROSTER</span><span>PLAYERS</span>
-            <span>MATCHUPS</span><span>SIMULATION</span><span>UNCERTAINTY</span><span>RECORD</span>
-          </div>
+      <div class="lp-pile-out">
+        <div class="lp-pile-count" id="pileCount"></div>
+        <div class="lp-pile-grid" id="pileGrid">
+          <p class="lp-pile-empty" id="pileEmpty">Nothing open yet. Pick a source on the left &mdash; this is the part of a Saturday nobody counts.</p>
         </div>
+        <div class="lp-pile-go"><button class="btn primary" id="pileGo" type="button" disabled>Open the matchup instead &#8594;</button></div>
       </div>
+    </div>
+
+    <div class="lp-one lp-pile-done" id="pileDone" hidden>
+      <div class="big">One page. Every layer already joined to the game.</div>
+      <p>Ten sources, gathered, reconciled and priced before you arrived &mdash; each one carrying how much of it is actually known. That is the whole product.</p>
+      <div class="lay">
+        <span>MODEL</span><span>MARKET</span><span>ROSTER</span><span>PLAYERS</span>
+        <span>MATCHUPS</span><span>SIMULATION</span><span>UNCERTAINTY</span><span>RECORD</span>
+      </div>
+      <div class="lp-pile-reset"><button class="btn ghost" id="pileReset" type="button">Show me the pile again</button></div>
     </div>
   </div>
 </section>
@@ -1137,20 +1081,25 @@ section.band.lp-quiet{padding:56px 0}
     <div class="head rv">
       <span class="ey"><b>&#9642;</b> The terminal</span>
       <h2>What a subscription <span class="g">actually opens.</span></h2>
-      <p>Eleven research layers over NFL and FBS, on one page per game, built here rather than bought in.</p>
+      <p>Eleven research layers over NFL and FBS, on one page per game, built here rather than bought in. Pick one to see what it puts on the page.</p>
     </div>
-    <div class="lp-get rv">
-      <div class="g"><b>Game research</b><p>Fair spread, projected score, win probability, outcome range and the drivers behind the number.</p></div>
-      <div class="g"><b>Market research</b><p>Model against market, the captured price, the size of the disagreement and the pricing context around it.</p></div>
-      <div class="g"><b>Team research</b><p>Roster continuity, returning production, portal movement in and out, and position groups.</p></div>
-      <div class="g"><b>Player research</b><p>Confidence-aware player ratings across FBS, and team player-quality research built from them.</p></div>
-      <div class="g"><b>Matchup research</b><p>Position-group matchups, scheme tendencies, the run-defence gate and where the advantages sit.</p></div>
-      <div class="g"><b>Power ratings</b><p>EdgeDesk&rsquo;s own team ratings in points against an average FBS team, rebuilt through the season.</p></div>
-      <div class="g"><b>Simulations</b><p>Projected scores, margin distributions, upset probability, cover probability and the range of the game.</p></div>
-      <div class="g"><b>Uncertainty</b><p>Starting-quarterback uncertainty, availability, stale markets, missing inputs and the risk gates over all of it.</p></div>
-      <div class="g"><b>Public record</b><p>What the model said before kickoff, kept next to what happened afterwards.</p></div>
-      <div class="g"><b>Research briefs</b><p>Copy a complete matchup packet as plain text &mdash; for your notes, a writer, or the AI you already use.</p></div>
-      <div class="g"><b>Data quality</b><p>How much of the model&rsquo;s own input contract reached each game, stated per game rather than averaged away.</p></div>
+
+    <!-- LAYER PICKER. Eleven cards nobody reads become eleven things to
+         open. The field chips are the layer's real output, named the way
+         the app names them. Content lives in LAYERS in the script. -->
+    <div class="lp-lyr rv" id="lay">
+      <div class="lp-lyr-pick" id="layPick" role="tablist" aria-label="Research layers"></div>
+      <div class="term lp-lyr-term">
+        <div class="term-bar">
+          <span class="tt"><i></i><i></i><i></i></span>
+          <span class="nm" id="layNm">EdgeDesk &middot; Game research</span>
+          <span class="tag" id="layTag">layer 1 of 11</span>
+        </div>
+        <div class="lp-lyr-panel">
+          <p id="layDesc"></p>
+          <div class="lp-lyr-fields"><span class="h">On the page</span><div id="layFields"></div></div>
+        </div>
+      </div>
     </div>
   </div>
 </section>
@@ -1192,14 +1141,30 @@ section.band.lp-quiet{padding:56px 0}
     <div class="head rv">
       <span class="ey"><b>&#9642;</b> How a matchup reads</span>
       <h2>Five steps, <span class="g">in the order the page is built.</span></h2>
+      <p>Walk one real matchup through the whole read. It advances on its own the first time &mdash; take it over whenever you like.</p>
     </div>
-    <div class="lp-steps rv">
-      <div class="s"><span class="n">01</span><b>Find the game</b><p>Today&rsquo;s games and the largest model-market disagreements are surfaced for you, with a search over the whole board.</p></div>
-      <div class="s"><span class="n">02</span><b>See the price</b><p>EdgeDesk&rsquo;s spread, the market&rsquo;s spread, the projected score, win probability and the research range around it.</p></div>
-      <div class="s"><span class="n">03</span><b>Understand why</b><p>The model&rsquo;s own drivers with the points it assigned, plus roster continuity, player quality, matchup and simulation.</p></div>
-      <div class="s"><span class="n">04</span><b>Challenge the number</b><p>Availability, the starting quarterback, portal turnover, run-defence risk, missing inputs and what would break the projection.</p></div>
-      <div class="s"><span class="n">05</span><b>Decide for yourself</b><p>EdgeDesk states its own read on the game and stops there. What that is worth is your call, not its call.</p>
-        <div class="st"><i>PASS</i><i>REVIEW</i><i>INVESTIGATE</i><i>THIN DATA</i></div></div>
+
+    <!-- THE STEPPER. One game, five readings. Each stage shows the actual
+         slice of the page that step is about, so the sequence teaches the
+         product rather than describing it. Stages live in STAGES below. -->
+    <div class="lp-stp rv" id="stp">
+      <ol class="lp-stp-rail" id="stpRail"></ol>
+      <div class="term lp-stp-term">
+        <div class="term-bar">
+          <span class="tt"><i></i><i></i><i></i></span>
+          <span class="nm">EdgeDesk &middot; Baylor @ Auburn</span>
+          <span class="tag">Illustrative game</span>
+        </div>
+        <div class="lp-stp-stage">
+          <div class="lp-stp-what"><b id="stpN">01</b><span id="stpWhat"></span></div>
+          <div class="lp-stp-body" id="stpBody"></div>
+        </div>
+        <div class="term-foot" id="stpFoot"></div>
+      </div>
+      <div class="lp-stp-nav">
+        <button class="btn ghost" id="stpPrev" type="button">&#8592; Back</button>
+        <button class="btn primary" id="stpNext" type="button">Next step &#8594;</button>
+      </div>
     </div>
   </div>
 </section>
@@ -1210,47 +1175,23 @@ section.band.lp-quiet{padding:56px 0}
     <div class="head rv">
       <span class="ey"><b>&#9642;</b> Uncertainty, on the page</span>
       <h2>The model is allowed to say <span class="g">&ldquo;I don&rsquo;t know.&rdquo;</span></h2>
-      <p>Most betting products are built to always produce an answer. EdgeDesk is built to tell you when its answer is not trustworthy yet &mdash; on the game, in the place you would otherwise have trusted it.</p>
+      <p>Most betting products are built to always produce an answer. EdgeDesk is built to tell you when its answer is not trustworthy yet. Pick a condition to see what it actually does when it hits one.</p>
     </div>
-    <div class="lp-idk rv">
-      <div class="k"><b>Unknown quarterback</b><p>No public college feed publishes a starter EdgeDesk trusts. When it does not know, it says so and carries the last known value &mdash; never a guess. <em>Unknown is not healthy.</em></p></div>
-      <div class="k"><b>Missing data</b><p>A column that fails its coverage gate is declared missing league-wide rather than scored as if the events did not happen. <em>Missing is not zero.</em></p></div>
-      <div class="k"><b>Unvalidated layers</b><p>Player quality and scheme have not cleared walk-forward validation, so they move <em>no</em> projected line anywhere in the product. They are labelled research, and they stay there.</p></div>
-      <div class="k"><b>Stale market</b><p>When the only price on file is an old capture, nothing is compared until a fresh quote lands. A gap against a price that no longer exists is not a gap.</p></div>
-      <div class="k"><b>A very large gap</b><p>Past the guard bound, EdgeDesk reads its own number as unsafe rather than as an opportunity. Missing information is the likelier explanation until the gap is explained.</p></div>
-      <div class="k"><b>Thin data</b><p>A projection the model has little confidence in is marked thin and read as provisional &mdash; not as agreement with the market, and not as disagreement either.</p></div>
-    </div>
-  </div>
-</section>
 
-<!-- ================== TWO WORKED EXAMPLES ================== -->
-<section class="band" id="examples">
-  <div class="wrap">
-    <div class="head rv">
-      <span class="ey"><b>&#9642;</b> Two real research states</span>
-      <h2>A big disagreement is a question.<br><span class="g">Not a discovery.</span></h2>
-      <p>Both of these are ordinary results. Neither is a recommendation. Illustrative games, in the product&rsquo;s own words.</p>
-    </div>
-    <div class="lp-ex rv">
-      <div class="e inv">
-        <div class="g">Oklahoma State @ Tulsa</div>
-        <div class="cmp">
-          <div><span>EdgeDesk</span>Tulsa +1.0</div>
-          <div><span>Market</span>Tulsa +11.5</div>
+    <!-- Six conditions, six behaviours. Each one is a rule that exists in
+         the product, so the panel states the rule rather than a promise. -->
+    <div class="lp-lyr rv" id="idkPick0">
+      <div class="lp-lyr-pick" id="idkPick" role="tablist" aria-label="Uncertainty conditions"></div>
+      <div class="term lp-lyr-term">
+        <div class="term-bar">
+          <span class="tt"><i></i><i></i><i></i></span>
+          <span class="nm" id="idkNm">&nbsp;</span>
+          <span class="tag" id="idkTag">the rule that fires</span>
         </div>
-        <div class="gap">10.5 points apart</div>
-        <span class="lp-verdict">INVESTIGATE</span>
-        <p>EdgeDesk does <b>not</b> call this an edge. A disagreement this size is far more often the model missing something &mdash; a suspension, a starter, a scheme change &mdash; than the market being wrong. The page tells you to go find out which, and shows you which inputs never arrived.</p>
-      </div>
-      <div class="e pass">
-        <div class="g">Tulane @ Duke</div>
-        <div class="cmp">
-          <div><span>EdgeDesk</span>Duke -7.7</div>
-          <div><span>Market</span>Duke -8.5</div>
+        <div class="lp-lyr-panel">
+          <p id="idkDesc"></p>
+          <div class="lp-idk-rule"><span class="h">The rule</span><span id="idkRule"></span></div>
         </div>
-        <div class="gap">0.8 points apart</div>
-        <span class="lp-verdict">PASS</span>
-        <p>Nothing to do here, and the page says so plainly. Sometimes the most useful research result is that the market already has the game priced about right &mdash; and a product that never returns that answer is not researching anything.</p>
       </div>
     </div>
   </div>
@@ -1329,10 +1270,10 @@ section.band.lp-quiet{padding:56px 0}
       <div class="demo-body">
         <div class="demo-game">
           <div>
-            <div class="gn">Reds @ Cubs &middot; Under 8.5</div>
-            <div class="gm">Fewer than 8.5 runs combined &middot; Illustrative game</div>
+            <div class="gn">Baylor @ Auburn &middot; Under 52.5</div>
+            <div class="gm">Fewer than 52.5 points combined &middot; Illustrative game</div>
           </div>
-          <span class="pv obs">22 sportsbooks compared</span>
+          <span class="pv obs">Priced across the market</span>
         </div>
 
         <div class="pgrid">
@@ -1373,219 +1314,6 @@ section.band.lp-quiet{padding:56px 0}
   </div>
 </section>
 
-<!-- ============================ B · BOARD TO DECISION ============================ -->
-<section class="band" id="how">
-  <div class="wrap">
-    <div class="head rv">
-      <span class="ey">From board to decision</span>
-      <h2>Don't research the whole board.</h2>
-      <p>The expensive part of betting was never the subscription. It's the hours spent researching games that never deserved your attention. <b>EdgeDesk decides where your research time is worth spending</b>, assembles the evidence, and then goes looking for reasons it's wrong.</p>
-      <p style="margin-top:12px">Walk the loop yourself. One game, four steps, start to finish.</p>
-    </div>
-
-    <div class="stepper rv" id="stepBar" role="group" aria-label="Research loop steps"></div>
-
-    <div class="term rv" style="margin-top:14px">
-      <div class="term-bar">
-        <span class="tt"><i></i><i></i><i></i></span>
-        <span class="nm" id="stepName">MLB board &middot; 87 markets</span>
-        <span class="tag">Interactive product example</span>
-      </div>
-
-      <!-- STEP 1 · SCAN -->
-      <div class="stage on" id="stg0">
-        <div class="scan">
-          <div class="board" id="scanBoard" aria-hidden="true"></div>
-          <div style="display:flex;flex-direction:column">
-            <div class="rail" id="scanRail" role="group" aria-label="Board narrowing stages"></div>
-            <div class="startshere" id="startsHere">Your research starts here.</div>
-          </div>
-        </div>
-      </div>
-
-      <!-- STEP 2 · RESEARCH -->
-      <div class="stage" id="stg1">
-        <div class="stagehd">
-          <div><div class="sg">Dodgers ML</div><div class="sm">1 of 87 &middot; the only market that earned the work</div></div>
-          <span class="pv obs">Packet assembled</span>
-        </div>
-        <div class="card-b">
-          <div class="minirow"><div><div class="mn">Market</div><div class="md">22 sportsbooks compared, with the house margin taken out. The bet should be priced around +118.</div></div><span class="pv val">Verified</span></div>
-          <div class="minirow"><div><div class="mn">Pitching</div><div class="md">Both starters posted, with season workload and days of rest measured.</div></div><span class="pv val">Verified</span></div>
-          <div class="minirow"><div><div class="mn">Offense</div><div class="md">Lineups submitted; season splits against this handedness attached.</div></div><span class="pv val">Verified</span></div>
-          <div class="minirow"><div><div class="mn">Bullpen</div><div class="md">Three days of usage measured. Day-of availability is not published by either club.</div></div><span class="pv est">Partial</span></div>
-          <div class="minirow"><div><div class="mn">Line movement</div><div class="md">+140 at open, +132 now, every step timestamped.</div></div><span class="pv val">Verified</span></div>
-          <div class="nextline">You did not open seven tabs. The packet was already built when the market cleared the scan.</div>
-        </div>
-      </div>
-
-      <!-- STEP 3 · ATTACK -->
-      <div class="stage" id="stg2">
-        <div class="stagehd">
-          <div><div class="sg">Dodgers ML</div><div class="sm">Adversarial pass &middot; looking for reasons this is wrong</div></div>
-          <span class="pv neg">3 weaknesses</span>
-        </div>
-        <div class="card-b">
-          <div class="minirow"><div><div class="mn">Starter confirmation</div><div class="md">One starter is probable rather than posted. Part of the matchup case rests on a name that has not been announced.</div></div><span class="pv exp">Unconfirmed</span></div>
-          <div class="minirow"><div><div class="mn">Bullpen completeness</div><div class="md">Day-of availability is unavailable for both clubs, so it is left out of the comparison rather than guessed at.</div></div><span class="pv una">Unavailable</span></div>
-          <div class="minirow"><div><div class="mn">Price movement</div><div class="md">+140 to +132 since open. Some of the move you would be following has already happened.</div></div><span class="pv est">Moved</span></div>
-          <div class="nextline">Three real objections, none fatal. <b>Status: research survives</b> &mdash; weakened, and still standing.</div>
-        </div>
-      </div>
-
-      <!-- STEP 4 · DECIDE -->
-      <div class="stage" id="stg3">
-        <div class="stagehd">
-          <div><div class="sg">Dodgers ML</div><div class="sm">The decision, with the threshold attached</div></div>
-          <span class="pv val">Research survives</span>
-        </div>
-        <div class="card-b">
-          <div class="dec">
-            <div class="dc"><span class="k">Current price</span><span class="v" style="color:var(--obs)">+132</span></div>
-            <div class="dc"><span class="k">EdgeDesk comparison</span><span class="v" style="color:var(--dim)">+118</span></div>
-            <div class="dc"><span class="k">Qualifies above</span><span class="v" style="color:var(--val)">+125</span></div>
-          </div>
-          <div class="decbox">
-            <div class="dh">What this actually tells you</div>
-            <p>Not that the Dodgers will win. That <b>at +132 there is something here, and at +124 there isn't</b> &mdash; same game, same research, decision reversed. If the price drifts through +125 before you act, EdgeDesk stops flagging it and tells you why.</p>
-          </div>
-          <div class="nextline">
-            Carried risks: starter confirmation &middot; bullpen completeness &middot; price movement<br>
-            <b>Next: track the closing line.</b> Whatever happens tonight, the number you bought gets graded against where the market finished.
-          </div>
-        </div>
-      </div>
-
-      <div class="term-foot" id="stepFoot">Each square is one market on tonight's board. Illustrative game, real workflow.</div>
-    </div>
-
-    <p class="scan-note rv"><b>That is the whole loop.</b> Nothing in it told you what to bet. It told you where to look, what the evidence said, what could break it, and the exact price at which the answer changes.</p>
-    <p class="teach rv"><b>&#8250;</b> <b>Teaches:</b> the product isn't more information. It's a decision about where your attention goes.</p>
-  </div>
-</section>
-
-<!-- ============================ THE PROBLEM ============================
-     The first thing under the hero: the questions the product asks instead
-     of the answer a picks site sells, next to one research card in the
-     app's real structure. Illustrative, and labelled as such. -->
-<section class="band" id="problem">
-  <div class="wrap">
-    <div class="head rv">
-      <span class="ey"><b>&#9642;</b> The problem</span>
-      <h2>Most betting products tell you what to bet.</h2>
-      <p>EdgeDesk asks different questions.</p>
-    </div>
-    <div class="lp-two rv">
-      <div>
-        <ol class="lp-qs">
-          <li><i>01</i>Where did the price come from?</li>
-          <li><i>02</i>What is the rest of the market charging?</li>
-          <li><i>03</i>Did the line move?</li>
-          <li><i>04</i>Does an independent model agree?</li>
-          <li><i>05</i>How strong is the evidence?</li>
-          <li><i>06</i>Did we get a better price than the market finished at?</li>
-        </ol>
-        <p class="lp-qs-note">Six questions. Every card on the desk has to answer them &mdash; or say plainly that it cannot.</p>
-      </div>
-      <div class="term">
-        <div class="term-bar">
-          <span class="tt"><i></i><i></i><i></i></span>
-          <span class="nm">EdgeDesk &middot; Research card</span>
-          <span class="tag">Illustrative example</span>
-        </div>
-        <div class="lp-card">
-          <div class="lp-mk">ARIZONA +10.5<small>ARI @ LAC &middot; Spread</small></div>
-          <div class="lp-lay model">
-            <span class="lp-b">Model</span>
-            <span class="lp-t wide">Model disagreement</span>
-            <span class="lp-d">Market: LAC &minus;11 &middot; Model: LAC &minus;4.9 &middot; Gap 6.1 pts</span>
-          </div>
-          <div class="lp-lay market">
-            <span class="lp-b">Market</span>
-            <span class="lp-t">Barely better than the market</span>
-            <span class="lp-st watch">Watch</span>
-            <span class="lp-d">Not enough in the price on its own. The model gap is noted, not confirmed.</span>
-          </div>
-          <div class="lp-kv">
-            <span class="k">Why it's here</span>
-            <p>EdgeDesk’s model sees this game very differently from the market, but the price itself is barely better than the rest of the board. One check without the other is not a call.</p>
-          </div>
-          <div class="lp-kv">
-            <span class="k">Research next &rarr;</span>
-            <div class="lp-next"><span>Compare model</span><span>View movement</span><span>Check matchup</span></div>
-          </div>
-        </div>
-        <div class="term-foot">MODEL and MARKET are shown separately on purpose. Neither one is allowed to borrow confidence from the other.</div>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- ============================ SEE THE TERMINAL ============================ -->
-<section class="band" id="terminal">
-  <div class="wrap">
-    <div class="head rv">
-      <span class="ey"><b>&#9642;</b> See the terminal</span>
-      <h2>What deserves attention, and why.</h2>
-      <p>Three surfaces from the desk. The numbers here are illustrative; the live desk reads from the database.</p>
-    </div>
-    <div class="lp-three">
-      <div class="rv">
-        <div class="term">
-          <div class="term-bar">
-            <span class="tt"><i></i><i></i><i></i></span>
-            <span class="nm">Today's desk</span>
-            <span class="tag">Illustrative</span>
-          </div>
-          <div class="lp-rows">
-            <div class="lp-row"><span>Worth reviewing</span><b class="obs">3</b></div>
-            <div class="lp-row"><span>Strengthening</span><b class="val">1</b></div>
-            <div class="lp-row"><span>Market-confirmed moves</span><b>2</b></div>
-            <div class="lp-row"><span>Expired</span><b class="mut">4</b></div>
-            <div class="lp-row"><span>Critical faults</span><b class="mut">0</b></div>
-          </div>
-          <div class="term-foot">Counts are illustrative. Faults are listed here, not hidden.</div>
-        </div>
-        <p class="lp-cap">The desk opens with a summary, not a list of plays. Most nights, most of it is "expired" or "nothing".</p>
-      </div>
-      <div class="rv">
-        <div class="term">
-          <div class="term-bar">
-            <span class="tt"><i></i><i></i><i></i></span>
-            <span class="nm">Market movement</span>
-            <span class="tag">Illustrative</span>
-          </div>
-          <ol class="lp-tl">
-            <li><span class="k">Open</span><span class="v">+116</span></li>
-            <li class="flag"><span class="k">Flag</span><span class="v">+105</span></li>
-            <li class="cur"><span class="k">Current</span><span class="v">&minus;139</span></li>
-            <li><span class="k">Close</span><span class="v mut">pending</span></li>
-          </ol>
-          <div class="lp-tlx">EDGE <b>+8.0%</b> at flag &middot; <b>&minus;5.7%</b> current<br>STATUS <span class="lp-st missed">Missed</span></div>
-          <p class="lp-tlp">The price moved past the point where EdgeDesk saw value. Whatever was here is gone.</p>
-        </div>
-        <p class="lp-cap">The market moved. The card says so, and the flag is graded on the price it was flagged at, not the one you wish you had.</p>
-      </div>
-      <div class="rv">
-        <div class="term">
-          <div class="term-bar">
-            <span class="tt"><i></i><i></i><i></i></span>
-            <span class="nm">Clean board</span>
-            <span class="tag">Illustrative</span>
-          </div>
-          <div class="lp-clean">
-            <span class="lp-cl">Clean board</span>
-            <p>No current market qualifies for stronger action.</p>
-            <div class="lp-sub">Nothing to force right now.</div>
-          </div>
-          <div class="term-foot">A clean board is a result, not an error.</div>
-        </div>
-        <p class="lp-cap">When nothing qualifies, the desk says nothing qualifies. PASS is a valid answer.</p>
-      </div>
-    </div>
-  </div>
-</section>
-
 <!-- ============================ THREE INDEPENDENT ENGINES ============================ -->
 <section class="band" id="engines">
   <div class="wrap">
@@ -1612,84 +1340,6 @@ section.band.lp-quiet{padding:56px 0}
       </article>
     </div>
     <p class="lp-note rv">These three are kept apart on purpose. <b>EdgeDesk never combines them into a single score</b>, and never lets one borrow confidence from another, because agreement manufactured from unrelated systems is not evidence.</p>
-  </div>
-</section>
-
-<!-- ============================ PASS IS A FEATURE ============================ -->
-<section class="band" id="pass">
-  <div class="wrap">
-    <div class="head rv">
-      <span class="ey"><b>&#9642;</b> PASS is a feature</span>
-      <h2>No qualified edge is a valid result.</h2>
-    </div>
-    <div class="lp-pass">
-      <div class="lp-pass-copy rv">
-        <p>Most products are built to produce action. An empty board looks like a broken product, so something always gets pushed forward.</p>
-        <p>EdgeDesk is built the other way. When nothing qualifies, it tells you nothing qualifies, with the count of what it scanned and what it rejected. <b>PASS is a valid answer.</b> Some nights it is the only honest one.</p>
-      </div>
-      <div class="rv">
-        <div class="term">
-          <div class="term-bar">
-            <span class="tt"><i></i><i></i><i></i></span>
-            <span class="nm">Clean board</span>
-            <span class="tag">Illustrative</span>
-          </div>
-          <div class="lp-clean">
-            <span class="lp-cl">No qualified edge</span>
-            <p>No current market qualifies for stronger action.</p>
-            <div class="lp-sub">Nothing to force right now.</div>
-          </div>
-          <div class="lp-rows">
-            <div class="lp-row"><span>Markets scanned</span><b>212</b></div>
-            <div class="lp-row"><span>Rejected</span><b class="mut">212</b></div>
-            <div class="lp-row"><span>Qualified</span><b>0</b></div>
-          </div>
-          <div class="term-foot">Illustrative counts. The live board shows the real ones.</div>
-        </div>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- ============================ WHAT THIS IS ============================
-     Directly under the hero on purpose. A visitor should not have to scroll
-     sixteen sections to learn that there is a football model and a model
-     collective behind this. Each card is the shortest true sentence about a
-     thing that exists, and links to the section that proves it.
-     ===================================================================== -->
-<section class="band tight" id="stack">
-  <div class="wrap">
-    <div class="head rv">
-      <span class="ey"><b>&#9642;</b> What is actually behind this</span>
-      <h2>Football research, all the way down.</h2>
-      <p>Four things run under the terminal. Every one of them publishes what it can prove and what it cannot &mdash; and every one is open below, not behind the paywall.</p>
-    </div>
-    <div class="stack-grid rv">
-      <a class="scard" href="#football">
-        <span class="sk">Our own model</span>
-        <b>NFL &amp; college football engine</b>
-        <span class="sd">Team ratings built from how much each play actually changes the chance of scoring (EPA), adjusted for who they played, plus a quarterback layer and the key numbers. Take a projection apart layer by layer &mdash; and read its held-out record, which says it does not beat the close.</span>
-        <span class="sgo">Pull it apart &rarr;</span>
-      </a>
-      <a class="scard" href="#collective">
-        <span class="sk">The network</span>
-        <b>The Model Collective</b>
-        <span class="sd">Independent modellers, one graded record. Everyone is scored the same way against captured closing lines, never self-reported. See where a room of models leaves the market.</span>
-        <span class="sgo">See the wall &rarr;</span>
-      </a>
-      <a class="scard" href="#how">
-        <span class="sk">The loop</span>
-        <b>Board &rarr; evidence &rarr; attack</b>
-        <span class="sd">Every bet priced against what the rest of the market is charging, the evidence behind each flagged number, then EdgeDesk arguing against its own case before you do.</span>
-        <span class="sgo">Watch it run &rarr;</span>
-      </a>
-      <a class="scard" href="#clv">
-        <span class="sk">The scoreboard</span>
-        <b>Graded on where the price finished</b>
-        <span class="sd">Whether the number you took beat the number the market closed at. The one measure that survives a bad beat, tracked on every pick this site has ever shown.</span>
-        <span class="sgo">See the record &rarr;</span>
-      </a>
-    </div>
   </div>
 </section>
 
@@ -1765,115 +1415,44 @@ section.band.lp-quiet{padding:56px 0}
   </div>
 </section>
 
-<!-- ============================ THE WORK DISAPPEARING ============================ -->
-<section class="band" id="work">
-  <div class="wrap">
-    <div class="head rv">
-      <span class="ey">The part that disappears</span>
-      <h2>Stop opening another tab to answer one question.</h2>
-      <p>You already know this workflow. Sportsbook, then a stats site, then the injury feed, then the weather, then back to compare prices because the number moved while you were reading. Open the tasks below the way you'd open them tonight &mdash; then collapse them.</p>
-    </div>
-
-    <div class="term rv" style="margin-top:36px">
-      <div class="term-bar">
-        <span class="tt"><i></i><i></i><i></i></span>
-        <span class="nm" id="wfName">Manual research &middot; one game</span>
-        <span class="tag">Illustrative workflow</span>
-      </div>
-      <div class="wf-tasks" id="wfTasks" role="group" aria-label="Manual research tasks"></div>
-      <div class="wf-space" id="wfSpace">
-        <div class="wf-grid" id="wfGrid"></div>
-        <div class="wf-empty" id="wfEmpty">Nothing open yet.<br>Start the way you always start.</div>
-        <div class="ed-fields" id="wfFields" style="display:none"></div>
-      </div>
-      <div class="wf-bar">
-        <span class="wf-count" id="wfCount">0 of 7 sources open &middot; every one a separate place to go</span>
-        <button class="btn ghost" id="wfAll" type="button">Open all seven</button>
-        <button class="btn primary" id="wfGo" type="button" disabled>Consolidate into EdgeDesk</button>
-      </div>
-      <div class="term-foot" id="wfFoot">Illustrative example. This is a picture of the workflow, not a measurement of how long it takes you.</div>
-    </div>
-
-    <p class="punch" id="wfPunch">You didn't research everything.<br>You researched <b>what earned your attention.</b></p>
-
-    <div class="chains">
-      <div class="chain a rv">
-        <h4>Without EdgeDesk</h4>
-        <ul>
-          <li>Sportsbook</li><li>Compare prices</li><li>Check pitcher</li><li>Check lineup</li>
-          <li>Check injuries</li><li>Check bullpen</li><li>Check weather</li><li>Check splits</li>
-          <li>Check market movement</li><li>Open more tabs</li><li>Take notes</li><li>Decide</li>
-          <li>Record the bet</li><li>Check the closing line later</li>
-        </ul>
-        <div class="cn">Then do it again tomorrow, from the top, for a board you haven't narrowed yet.</div>
-      </div>
-      <div class="chain b rv">
-        <h4>With EdgeDesk</h4>
-        <ul>
-          <li>Scan</li><li>Research</li><li>Challenge</li><li>Decide</li><li>Track</li><li>Learn</li>
-        </ul>
-        <div class="cn">Same questions. Asked once, in one place, and answered before you sit down.</div>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- ============================ ATTENTION ============================ -->
-<section class="band" id="attention">
-  <div class="wrap">
-    <div class="head rv">
-      <span class="ey">What you're actually short of</span>
-      <h2>Your time is the expensive part.</h2>
-      <p>Nobody loses money because they had too little data. They lose it by spending a finite amount of attention in the wrong places, on the wrong games, at prices they never checked. EdgeDesk is built around that constraint, not around having more numbers than the next tool.</p>
-    </div>
-    <div class="attn">
-      <div class="an c1 rv"><span class="aw">01 &middot; Find</span><h3>Where is there actually something worth investigating?</h3><p>The board answers this before you do. Most nights, most games are not worth a minute.</p></div>
-      <div class="an c2 rv"><span class="aw">02 &middot; Understand</span><h3>What evidence explains the number?</h3><p>The packet is already assembled, and every line in it says how much it can be trusted.</p></div>
-      <div class="an c3 rv"><span class="aw">03 &middot; Challenge</span><h3>What could make the thesis wrong?</h3><p>The objections come to you, instead of arriving after the game as a lesson.</p></div>
-      <div class="an c4 rv"><span class="aw">04 &middot; Track</span><h3>Did the price actually beat the close?</h3><p>Graded automatically, so your process stops being a matter of opinion.</p></div>
-    </div>
-    <p class="scan-note rv" style="margin-top:26px">Stop rebuilding the same research packet every night. <b>Let the board tell you where the work is worth doing.</b></p>
-  </div>
-</section>
-
 <!-- ============================ C · THESIS ATTACK ============================ -->
 <section class="band" id="attack">
   <div class="wrap">
     <div class="head rv">
       <span class="ey">Adversarial research</span>
-      <h2>Don't confirm your bet. Try to break it.</h2>
-      <p>Every research tool you've used is built to help you find reasons to bet. EdgeDesk builds the thesis, then attacks it with everything it has &mdash; because the only bet worth making is one that survived a real attempt to kill it.</p>
+      <h2>Don't confirm the number. Try to break it.</h2>
+      <p>Every research tool you have used is built to help you find reasons to act. EdgeDesk builds the case for its own number, then attacks it with everything it has &mdash; because the only number worth anything is one that survived a real attempt to kill it. Run it yourself.</p>
     </div>
 
     <div class="atk">
       <div class="card rv">
         <div class="card-h">
-          <span class="ct">Thesis &middot; Reds @ Cubs &middot; Under 8.5</span>
+          <span class="ct">The case &middot; Baylor @ Auburn &middot; Auburn &minus;9.7</span>
           <span class="pv obs">Built</span>
         </div>
         <div class="card-b">
           <div class="claim" id="cl1">
             <div>
-              <div class="cn">Favorable price</div>
-              <div class="cd">Offered at &minus;108. Across 22 sportsbooks, with the house margin removed, the same bet prices around &minus;121.</div>
+              <div class="cn">Model&ndash;market gap</div>
+              <div class="cd">EdgeDesk prices Auburn at &minus;9.7 against a market of &minus;8.0. The 1.7-point difference sits well inside the guard bound, so the model reads it as worth a look rather than as an error.</div>
             </div>
             <span class="pv val" id="cl1t">Verified</span>
           </div>
           <div class="claim" id="cl2">
             <div>
-              <div class="cn">Sharp confirmation</div>
-              <div class="cd">Two low-limit-first books moved to the under before the wider market followed.</div>
+              <div class="cn">Home-field support</div>
+              <div class="cd">Auburn is the home side, and the league-wide home-field term is the single largest driver in the model&rsquo;s own breakdown of this game.</div>
             </div>
             <span class="pv val" id="cl2t">Verified</span>
           </div>
           <div class="claim" id="cl3">
             <div>
               <div class="cn">Matchup support</div>
-              <div class="cd">Both projected starters carry above-average ground-ball rates into a park playing neutral tonight.</div>
+              <div class="cd">The position-group matrix leans Auburn on both lines, and roster continuity favours the home side by a clear margin.</div>
             </div>
             <span class="pv val" id="cl3t">Verified</span>
           </div>
-          <button class="btn primary lg atkbtn" id="atkBtn">Attack this thesis</button>
+          <button class="btn primary lg atkbtn" id="atkBtn">Attack this case</button>
         </div>
       </div>
 
@@ -1883,7 +1462,7 @@ section.band.lp-quiet{padding:56px 0}
           <span class="tag mono" style="font-size:8.5px;letter-spacing:.11em;text-transform:uppercase;color:var(--faint);border:1px solid var(--line2);border-radius:5px;padding:3px 7px">Interactive example</span>
         </div>
         <div class="card-b">
-          <div id="atkIdle" class="idle">The thesis is built and it looks good. That is exactly when it is most dangerous.<br><br>Run the attack.</div>
+          <div id="atkIdle" class="idle">The case is built and it looks good. That is exactly when it is most dangerous.<br><br>Run the attack.</div>
           <div class="log" id="atkLog" style="display:none"></div>
           <div id="atkWeak" style="display:none;margin-top:16px"></div>
           <div class="verdict" id="atkVerdict" style="display:none">
@@ -1892,14 +1471,14 @@ section.band.lp-quiet{padding:56px 0}
               <div class="vs" id="vsWeakened">WEAKENED</div>
               <div class="vs" id="vsInvalid">INVALIDATED</div>
             </div>
-            <p class="vconc">Nothing here says the bet is wrong. It says <b>the bet is no longer the one you thought you were making</b> &mdash; not at this price, not with this information. EdgeDesk stops flagging it and tells you why.</p>
+            <p class="vconc">Nothing here says the number is wrong. It says <b>the number is no longer the one you thought you were reading</b> &mdash; not against this price, not on this information. EdgeDesk drops it back to REVIEW and tells you exactly which claim gave way.</p>
             <p class="vconc" style="margin-top:10px"><b>A well-reasoned pass is a correct answer.</b> It is also the one no picks service will ever sell you.</p>
             <button class="btn ghost atkbtn" id="atkReset" style="margin-top:14px">Run it again</button>
           </div>
         </div>
       </div>
     </div>
-    <p class="teach rv"><b>&#8250;</b> <b>Teaches:</b> the machine fights your confirmation bias instead of feeding it.</p>
+    <p class="teach rv"><b>&#8250;</b> <b>Teaches:</b> the model fights your confirmation bias instead of feeding it &mdash; and its own.</p>
   </div>
 </section>
 
@@ -1909,13 +1488,13 @@ section.band.lp-quiet{padding:56px 0}
     <div class="head rv">
       <span class="ey">The research packet</span>
       <h2>Every number has a story.</h2>
-      <p>Behind one flagged price sits the research you'd otherwise do across a dozen tabs. Every line carries a source tier, so you always know the difference between something measured, something estimated, and something nobody actually knows.</p>
+      <p>Behind one game sits the research you would otherwise do across a dozen tabs. Every line carries a source tier, so you always know the difference between something measured, something estimated, and something nobody actually knows. Open any layer.</p>
     </div>
 
     <div class="term rv" style="margin-top:38px">
       <div class="term-bar">
         <span class="tt"><i></i><i></i><i></i></span>
-        <span class="nm">EdgeDesk &middot; Evidence &middot; Reds @ Cubs</span>
+        <span class="nm">EdgeDesk &middot; Evidence &middot; Baylor @ Auburn</span>
         <span class="tag">Interactive example</span>
       </div>
       <div class="tabs" id="evTabs" role="tablist" aria-label="Research categories"></div>
@@ -1989,9 +1568,9 @@ section.band.lp-quiet{padding:56px 0}
   <div class="wrap">
     <div class="head rv">
       <span class="ey">The only scoreboard that isn't luck</span>
-      <h2>Winning tonight doesn't prove your process works. Did you get the better price?</h2>
+      <h2>Winning on Saturday doesn&rsquo;t prove your process works. Did you get the better price?</h2>
       <p><b>The idea in one line:</b> just before a game starts, every sportsbook has settled on its final number. If the price you took was better than that final number, you bought well &mdash; whatever happened in the game.</p>
-      <p>That final number is the market's most accurate price, and beating it is the only signal that exists <b>before</b> results do. Bettors call it <b>closing line value</b>. If you consistently bought a better number than the market settled on, your process is finding something. If you didn't, a winning night was luck wearing a disguise.</p>
+      <p>That final number is the market's most accurate price, and beating it is the only signal that exists <b>before</b> results do. Bettors call it <b>closing line value</b>. If you consistently bought a better number than the market settled on, your process is finding something. If you didn&rsquo;t, a winning Saturday was luck wearing a disguise.</p>
     </div>
 
     <div class="clvpick rv" id="clvPick" role="group" aria-label="Example bets"></div>
@@ -2024,63 +1603,6 @@ section.band.lp-quiet{padding:56px 0}
       </div>
     </div>
     <p class="teach rv"><b>&#8250;</b> <b>Teaches:</b> grade the price, not the result. The price is knowable tonight; the result never was.</p>
-  </div>
-</section>
-
-<!-- ============================ P3 · CASUAL ENTRY ============================ -->
-<section class="band" id="casual">
-  <div class="wrap">
-    <div class="head rv">
-      <span class="ey">Where to start</span>
-      <h2>You don't have to be a professional to use this.</h2>
-      <p>Most people arrive with a bet already in mind. That's a fine place to start &mdash; it just isn't a finished thought. Pick one and see what EdgeDesk would go and look at before you put money on it.</p>
-    </div>
-
-    <div class="pick rv" id="pickBar" role="group" aria-label="What are you looking at?"></div>
-    <div class="term rv invest">
-      <div class="term-bar">
-        <span class="tt"><i></i><i></i><i></i></span>
-        <span class="nm" id="pickName">&nbsp;</span>
-        <span class="tag">What EdgeDesk investigates</span>
-      </div>
-      <div id="pickBody"></div>
-      <div class="term-foot">These are the checks EdgeDesk runs, not a recommendation. It will not tell you whether to take the bet.</div>
-    </div>
-    <p class="scan-note rv" style="margin-top:22px"><b>You didn't need to become a quant.</b> You needed a better way to research the number.</p>
-  </div>
-</section>
-
-<!-- ============================ P3 · THE LADDER ============================ -->
-<section class="band" id="ladder">
-  <div class="wrap">
-    <div class="head rv">
-      <span class="ey">One product, three depths</span>
-      <h2>It grows with you.</h2>
-      <p>The same terminal answers a five-second question and a five-month one. You decide how deep you go; nothing is locked behind a tier.</p>
-    </div>
-    <div class="ladder">
-      <div class="lc d1 rv">
-        <div class="lmeter"><i></i><i></i><i></i></div>
-        <span class="lw">Sports fan</span>
-        <h3>Check a number.</h3>
-        <p>You already know the bet you like. Look up what the market thinks it's actually worth, and whether the price in front of you is better or worse than that.</p>
-        <div class="lu">Time in: 30 seconds</div>
-      </div>
-      <div class="lc d2 rv">
-        <div class="lmeter"><i></i><i></i><i></i></div>
-        <span class="lw">Serious bettor</span>
-        <h3>Research the board.</h3>
-        <p>Run the daily scan, read the full evidence packet on what survives, attack the thesis, and decide with the weak links in front of you instead of behind you.</p>
-        <div class="lu">Time in: one focused hour</div>
-      </div>
-      <div class="lc d3 rv">
-        <div class="lmeter"><i></i><i></i><i></i></div>
-        <span class="lw">Aspiring sharp</span>
-        <h3>Track and validate your process.</h3>
-        <p>Every flagged edge is graded against the close automatically. Over a real sample you stop arguing about whether your reads are good and start reading the answer.</p>
-        <div class="lu">Time in: a season</div>
-      </div>
-    </div>
   </div>
 </section>
 
@@ -2281,7 +1803,7 @@ section.band.lp-quiet{padding:56px 0}
           <div class="tb">
             <div class="th">03 &middot; Hours saved</div>
             <h4>The tabs you didn't open</h4>
-            <p>Market comparison, starters, splits, bullpen state, weather and line history in one panel &mdash; instead of a slate's worth of cross-referencing.</p>
+            <p>Market comparison, roster continuity, player quality, the position-group matchup, the uncertainty and the line history in one panel &mdash; instead of a slate&rsquo;s worth of cross-referencing.</p>
           </div>
         </div>
 
@@ -2300,39 +1822,29 @@ section.band.lp-quiet{padding:56px 0}
           </ul>
         </div>
 
+        <!-- Support answers, collapsed. Every word is still here — it just
+             no longer stands between the reader and the button. -->
         <div class="selfserve rv">
           <h4>Before you email us</h4>
-          <dl>
-            <dt>Confirmation email never arrived.</dt>
-            <dd>Check spam first, then <button type="button" onclick="openAuth('signup')">reopen signup</button> and use the resend link. Nothing is lost &mdash; your checkout resumes where you left off.</dd>
-            <dt>You started the trial and the terminal still says "start trial".</dt>
-            <dd>Activation lands within a minute. <button type="button" onclick="edRecheckSub(this)">Re-check my subscription now</button> &mdash; this reads your live billing status. If it still says inactive after five minutes, email support with the email you signed up under.</dd>
-            <dt>You want to cancel.</dt>
-            <dd>Settings &rsaquo; Subscription inside the app, any time, one click, no conversation and no retention call. <b>Cancel during the 7 days and you are never charged</b>; cancel later and access runs to the end of the period you already paid for. We email you before the trial converts, so nobody here gets billed by forgetting.</dd>
-            <dt>You want to see the results before trusting any of it.</dt>
-            <dd><a class="lnk" href="/record.html">The public record</a> is open &mdash; no account, no login, no paywall. Every flagged edge, graded against the close, including the stretches that look bad.</dd>
-          </dl>
+          <details class="ss">
+            <summary>Confirmation email never arrived.</summary>
+            <div>Check spam first, then <button type="button" onclick="openAuth('signup')">reopen signup</button> and use the resend link. Nothing is lost &mdash; your checkout resumes where you left off.</div>
+          </details>
+          <details class="ss">
+            <summary>You started the trial and the terminal still says &ldquo;start trial&rdquo;.</summary>
+            <div>Activation lands within a minute. <button type="button" onclick="edRecheckSub(this)">Re-check my subscription now</button> &mdash; this reads your live billing status. If it still says inactive after five minutes, email support with the email you signed up under.</div>
+          </details>
+          <details class="ss">
+            <summary>You want to cancel.</summary>
+            <div>Settings &rsaquo; Subscription inside the app, any time, one click, no conversation and no retention call. <b>Cancel during the 7 days and you are never charged</b>; cancel later and access runs to the end of the period you already paid for. We email you before the trial converts, so nobody here gets billed by forgetting.</div>
+          </details>
+          <details class="ss">
+            <summary>You want to see the results before trusting any of it.</summary>
+            <div><a class="lnk" href="/record.html">The public record</a> is open &mdash; no account, no login, no paywall. Every flagged edge, graded against the close, including the stretches that look bad.</div>
+          </details>
         </div>
       </div>
     </div>
-  </div>
-</section>
-
-<!-- ============================ RESEARCH WORKFLOW ============================ -->
-<section class="band" id="workflow">
-  <div class="wrap">
-    <div class="head rv">
-      <span class="ey"><b>&#9642;</b> Research workflow</span>
-      <h2>Six steps. Every night.</h2>
-    </div>
-    <ol class="lp-wf rv">
-      <li class="lp-w"><span class="n">1</span><span class="k">Scan</span><p>Find an unusual price or model disagreement.</p></li>
-      <li class="lp-w"><span class="n">2</span><span class="k">Verify</span><p>Check the benchmark sportsbook, how many books are quoting it, how the price has moved, and whether the data holds up.</p></li>
-      <li class="lp-w"><span class="n">3</span><span class="k">Research</span><p>Study the matchup, roster, stats, model context and news.</p></li>
-      <li class="lp-w"><span class="n">4</span><span class="k">Decide</span><p>PASS, WATCH, or research further.</p></li>
-      <li class="lp-w"><span class="n">5</span><span class="k">Track</span><p>Freeze the price in the Ledger.</p></li>
-      <li class="lp-w"><span class="n">6</span><span class="k">Grade</span><p>Compare the entry against the closing market.</p></li>
-    </ol>
   </div>
 </section>
 
@@ -2413,7 +1925,7 @@ section.band.lp-quiet{padding:56px 0}
   <p class="rv">EdgeDesk finds interesting prices, researches why they're interesting, tries to break the thesis, and tracks whether you beat the close. What you do with that is yours.</p>
   <div class="cta rv">
     <button class="btn primary lg" id="btmLogin" onclick="startSubscribe()">Start 7 days free &#8594;</button>
-    <a class="btn ghost lg" href="#how">Walk through it again</a>
+    <a class="btn ghost lg" href="#steps">Walk through it again</a>
   </div>
   <p class="microcta" style="margin-top:22px">7 days free, then $79.99/month &middot; cancel any time before it converts and you are not charged &middot; 21+ &middot; 1-800-GAMBLER</p>
 </section>
@@ -2428,7 +1940,7 @@ section.band.lp-quiet{padding:56px 0}
     <div>
       <div class="rg">Responsible gambling</div>
       <div>21+ &middot; 1-800-GAMBLER &middot; ncpgambling.org</div>
-      <div style="margin-top:10px"><a href="#how">How it works</a> &middot; <a href="#evidence">Evidence</a> &middot; <a href="#record">Live record</a> &middot; <a href="#pricing">Pricing</a></div>
+      <div style="margin-top:10px"><a href="#steps">How it works</a> &middot; <a href="#evidence">Evidence</a> &middot; <a href="#record">Live record</a> &middot; <a href="#pricing">Pricing</a></div>
       <div style="margin-top:8px"><a href="/terms.html">Terms</a> &middot; <a href="/privacy.html">Privacy</a> &middot; <a href="/disclaimer.html">Disclaimer</a></div>
       <div style="margin-top:10px">Feedback: <a href="mailto:davis@edgedesksports.com">davis@edgedesksports.com</a> &middot; Support: <a href="mailto:support@edgedesksports.com">support@edgedesksports.com</a></div>
       <div style="margin-top:10px;color:var(--faint)">&copy; <span id="yr"></span> Rackler Tech Ventures LLC &middot; 2013 89th St, Lubbock, TX 79423</div>
@@ -3245,6 +2757,491 @@ function decimalFromAmerican(a){ return a<0 ? 1+100/(-a) : 1+a/100; }
 function fmtAm(a){ a=Math.round(a); return (a>0?'+':'−')+Math.abs(a); }
 
 /* ======================================================================
+   0 · HERO · THREE RESEARCH STATES
+   The same research page, run on three games, returns three different
+   answers — and one of them is "there is nothing here". Every number below
+   is an illustrative game, labelled as such in the card's own chrome. No
+   claim is made that these are live prices.
+   ====================================================================== */
+(function heroGames(){
+  var sw=document.querySelector('.lp-sw'); if(!sw) return;
+  var body=document.getElementById('hgBody');
+  var el={match:'hgMatch',when:'hgWhen',grid:'hgGrid',means:'hgMeans',chk:'hgChk',why:'hgWhy'};
+  for(var k in el){ el[k]=document.getElementById(el[k]); if(!el[k]) return; }
+
+  var GAMES=[
+    { match:'Tulane @ Duke', when:'Sat &middot; 3:30p &middot; AAC at ACC',
+      model:'Duke -7.7', market:'Duke -8.5', gap:'0.8 pts', gapTone:'',
+      home:'Duke', hs:27, away:'Tulane', as:19,
+      wp:'Duke 71%', wp2:'Tulane 29%', conf:'68%', confTone:'', range:'-8 to +24',
+      state:'PASS', stateTone:'ok',
+      means:'EdgeDesk and the market are 0.8 points apart. That is agreement. There is nothing here to research further, and the page says so rather than manufacturing a reason to act.',
+      chk:[['ok','model built'],['ok','market joined'],['ok','roster loaded'],['ok','availability'],['ok','starting quarterback'],['warn','recruiting']],
+      why:[['+2.9',100,'Roster continuity strongly favours Duke this season'],['+2.4',83,'Playing at Duke &mdash; the league-wide home-field number'],['+1.8',62,'Position-group matchups lean Duke on both lines']] },
+    { match:'Baylor @ Auburn', when:'Sat &middot; 7:30p &middot; Big 12 at SEC',
+      model:'Auburn -9.7', market:'Auburn -8.0', gap:'1.7 pts', gapTone:'warn',
+      home:'Auburn', hs:31, away:'Baylor', as:21,
+      wp:'Auburn 73%', wp2:'Baylor 27%', conf:'43%', confTone:'warn', range:'-6 to +26',
+      state:'REVIEW', stateTone:'warn',
+      means:'EdgeDesk differs from the market by 1.7 points &mdash; enough to justify deeper research, but the disagreement has not been validated as an edge.',
+      chk:[['ok','model built'],['ok','market joined'],['ok','roster loaded'],['warn','availability'],['warn','starting quarterback'],['neg','recruiting']],
+      why:[['+4.1',100,'Playing at Auburn &mdash; the league-wide home-field number'],['+3.4',83,'Conference strength differs and the in-season sample is thin'],['+2.2',54,'Stylistically the matchup favours Auburn']] },
+    { match:'Oklahoma State @ Tulsa', when:'Sat &middot; 8:00p &middot; Big 12 at AAC',
+      model:'Tulsa +1.0', market:'Tulsa +11.5', gap:'10.5 pts', gapTone:'neg',
+      home:'Tulsa', hs:26, away:'Okla State', as:27,
+      wp:'Okla State 53%', wp2:'Tulsa 47%', conf:'21%', confTone:'neg', range:'-21 to +23',
+      state:'INVESTIGATE', stateTone:'neg',
+      means:'The gap is 10.5 points, past EdgeDesk&rsquo;s own guard bound. A disagreement this size is read as missing information rather than as an opportunity &mdash; the likelier explanation is that something the market already knows never reached the model.',
+      chk:[['ok','model built'],['ok','market joined'],['warn','roster loaded'],['neg','availability'],['neg','starting quarterback'],['neg','recruiting']],
+      why:[['+4.8',100,'Conference strength differs and almost no shared opponents exist'],['+3.6',75,'Roster continuity is unusually low on both sides'],['+2.1',44,'Pace and style stretch the range of plausible scores']] }
+  ];
+
+  function cell(l,v,tone,s){
+    return '<div class="c"><span class="l">'+l+'</span><span class="v'+(tone?' '+tone:'')+'">'+v+'</span>'+
+           (s?'<span class="s">'+s+'</span>':'')+'</div>';
+  }
+  function render(g){
+    el.match.innerHTML=g.match; el.when.innerHTML=g.when;
+    el.grid.innerHTML=
+      cell('EdgeDesk',g.model,'mdl','model')+
+      cell('Market',g.market,'','consensus')+
+      cell('Difference',g.gap,g.gapTone,'model minus market')+
+      '<div class="c"><span class="l">Projected score</span>'+
+        '<span class="v sc"><i>'+g.home+'</i><b>'+g.hs+'</b></span>'+
+        '<span class="v sc"><i>'+g.away+'</i><b>'+g.as+'</b></span></div>'+
+      cell('Win probability',g.wp,'',g.wp2)+
+      '<div class="c"><span class="l">Research state</span><span class="st '+g.stateTone+'">'+g.state+'</span>'+
+        '<span class="s">EdgeDesk&rsquo;s own read, not advice</span></div>'+
+      cell('Data confidence',g.conf,g.confTone,'of the model&rsquo;s inputs reached it')+
+      cell('Outcome range',g.range,'','p10 to p90 margin');
+    el.means.innerHTML=g.means;
+    el.chk.innerHTML=g.chk.map(function(c){
+      var mark=c[0]==='ok'?'&#10003; ':(c[0]==='warn'?'? ':'&times; ');
+      return '<span class="ck '+c[0]+'">'+mark+c[1]+'</span>';
+    }).join('');
+    el.why.innerHTML=g.why.map(function(w){
+      return '<div class="r"><span class="p">'+w[0]+'</span><span class="b"><i style="width:'+w[1]+'%"></i></span>'+
+             '<span class="t">'+w[2]+'</span></div>';
+    }).join('');
+  }
+
+  var btns=[].slice.call(sw.querySelectorAll('button')), cur=0;
+  function go(i){
+    if(i===cur) return;
+    cur=i;
+    btns.forEach(function(b,j){ b.classList.toggle('on',j===i); b.setAttribute('aria-selected',j===i?'true':'false'); });
+    if(REDUCE){ render(GAMES[i]); return; }
+    body.classList.add('swap');
+    setTimeout(function(){ render(GAMES[i]); body.classList.remove('swap'); },140);
+  }
+  btns.forEach(function(b,i){
+    b.addEventListener('click',function(){ go(i); });
+    b.addEventListener('keydown',function(ev){
+      var d = ev.key==='ArrowRight'?1 : ev.key==='ArrowLeft'?-1 : 0;
+      if(!d) return;
+      ev.preventDefault();
+      var n=(i+d+btns.length)%btns.length;
+      btns[n].focus(); go(n);
+    });
+  });
+  render(GAMES[0]);
+})();
+
+/* ======================================================================
+   0b · THE PILE-UP
+   One idea: this is the Saturday you already run, and it collapses into one
+   page. The reader opens the sources themselves — an argument they build is
+   an argument they believe. Every source is a real football research task.
+   ====================================================================== */
+(function pile(){
+  var root=document.getElementById('pile'); if(!root) return;
+  var btnsEl=document.getElementById('pileBtns'), grid=document.getElementById('pileGrid'),
+      empty=document.getElementById('pileEmpty'), count=document.getElementById('pileCount'),
+      allBtn=document.getElementById('pileAll'), goBtn=document.getElementById('pileGo'),
+      done=document.getElementById('pileDone'), reset=document.getElementById('pileReset');
+
+  var SRC=[
+    {k:'An odds screen',        s:'Three books, three tabs', d:'Find the current spread and total, then check whether the number in front of you is the one everybody else is showing.'},
+    {k:'A roster site',         s:'Team site, weekly',        d:'Confirm who is actually on the two-deep this week, and whether last week&rsquo;s starter is still on it.'},
+    {k:'Portal tracker',        s:'Somebody&rsquo;s spreadsheet', d:'Work out how much of last season&rsquo;s production walked out of the building, and how much walked in.'},
+    {k:'Team stats',            s:'Stats site',               d:'Pull offensive and defensive efficiency, then decide by hand how much of it is the schedule and how much is the team.'},
+    {k:'Player stats',          s:'Another stats site',       d:'Look up the quarterback, the front seven and the skill positions &mdash; one page at a time, none of them joined to this game.'},
+    {k:'Power ratings',         s:'Someone else&rsquo;s model',   d:'Find a rating you half-trust, then try to remember what it already includes and what it does not.'},
+    {k:'Injury news',           s:'Search, and hope',         d:'Read three conflicting reports about the same shoulder and guess whether the starter plays.'},
+    {k:'Weather',               s:'Weather app',              d:'Check the forecast at kickoff, then decide for yourself what that wind does to this particular matchup.'},
+    {k:'A spreadsheet',         s:'Yours, from last year',    d:'Type everything you just found into cells, and build the comparison by hand before it goes stale.'},
+    {k:'An AI to make sense of it', s:'A chat window',        d:'Paste in what you gathered and hope it does not invent a probability to fill the gap you left.'}
+  ];
+
+  var wins={}, opened=0, collapsed=false;
+
+  var btns=SRC.map(function(t,i){
+    var b=document.createElement('button');
+    b.type='button'; b.innerHTML=t.k;
+    b.addEventListener('click',function(){ open(i); });
+    btnsEl.appendChild(b);
+    return b;
+  });
+
+  function open(i){
+    if(wins[i]||collapsed) return;
+    var t=SRC[i];
+    var w=document.createElement('div');
+    w.className='lp-pw';
+    w.innerHTML='<b>'+t.k+'</b><span>'+t.s+'</span><p>'+t.d+'</p>';
+    grid.appendChild(w); wins[i]=w; opened++;
+    btns[i].disabled=true;
+    empty.hidden=true;
+    if(REDUCE) w.classList.add('on');
+    else requestAnimationFrame(function(){ w.classList.add('on'); });
+    update();
+  }
+
+  function update(){
+    var n=opened, tail;
+    if(n===0)      tail='this is the part of a Saturday nobody counts';
+    else if(n===1) tail='nine to go, and none of them talks to the others';
+    else if(n<5)   tail='and not one of them is joined to the game yet';
+    else if(n<8)   tail='the line has probably moved while you were reading';
+    else if(n<10)  tail='and you still have to decide what all of it meant';
+    else           tail='now do it again for the next game on the board';
+    count.innerHTML='<b>'+n+'</b> of 10 sources open &middot; '+tail;
+    goBtn.disabled = n<3;
+    allBtn.disabled = n===SRC.length;
+  }
+
+  allBtn.addEventListener('click',function(){
+    SRC.forEach(function(_,i){ open(i); });
+  });
+
+  goBtn.addEventListener('click',function(){
+    collapsed=true;
+    root.hidden=true;
+    done.hidden=false;
+    if(!REDUCE) done.scrollIntoView({block:'nearest',behavior:'smooth'});
+  });
+
+  reset.addEventListener('click',function(){
+    collapsed=false;
+    done.hidden=true; root.hidden=false;
+    grid.innerHTML=''; grid.appendChild(empty); empty.hidden=false;
+    wins={}; opened=0;
+    btns.forEach(function(b){ b.disabled=false; });
+    update();
+    if(!REDUCE) root.scrollIntoView({block:'nearest',behavior:'smooth'});
+  });
+
+  update();
+})();
+
+/* ======================================================================
+   0c · THE LAYER PICKER
+   Eleven research layers. The field chips under each one are that layer's
+   real output, named the way the product names it — so the reader learns
+   the vocabulary here rather than on their first session.
+   ====================================================================== */
+(function layers(){
+  var pick=document.getElementById('layPick'); if(!pick) return;
+  var nm=document.getElementById('layNm'), tag=document.getElementById('layTag'),
+      desc=document.getElementById('layDesc'), fields=document.getElementById('layFields');
+
+  var LAYERS=[
+    {k:'Game research', d:'The fair spread, the projected score, the win probability, the range the game could land in &mdash; and the drivers the model assigned points to, so the number is arguable rather than announced.',
+     f:['EdgeDesk spread','Projected score','Win probability','p10&ndash;p90 margin','Model drivers','Research state']},
+    {k:'Market research', d:'What the market says, when that price was captured, how far EdgeDesk is from it, and whether the quote is fresh enough to compare against at all.',
+     f:['Consensus spread','Captured price','Model minus market','Price age','Stale-market gate']},
+    {k:'Team research', d:'How much of this team is the same team as last season &mdash; continuity, returning production, and everyone the portal moved in each direction.',
+     f:['Roster continuity','Returning production','Portal in / out','Position groups','Snap-weighted returners']},
+    {k:'Player research', d:'Confidence-aware player ratings across FBS, and the team-level player quality built from them. Research only: neither moves a projected line anywhere in the product.',
+     f:['Player rating','Rating confidence','Team player quality','Position-group strength','Coverage per team']},
+    {k:'Matchup research', d:'Where this game is actually won: position group against position group, the scheme tendencies on both sides, and the gates that fire when one side is overmatched.',
+     f:['Position-group matrix','Scheme tendencies','Run-defence gate','Line-of-scrimmage edge','Pace fit']},
+    {k:'Power ratings', d:'EdgeDesk&rsquo;s own team ratings in points against an average FBS team on a neutral field, rebuilt through the season. Not a poll &mdash; a pricing input.',
+     f:['Rating in points','Neutral field','Rebuilt weekly','Rank movement','Conference view']},
+    {k:'Simulations', d:'The game run many times over: the distribution of margins rather than a single number, and what share of those runs land on each side of the market&rsquo;s line.',
+     f:['Projected scores','Margin distribution','Cover probability','Upset probability','Total range']},
+    {k:'Uncertainty', d:'Everything EdgeDesk does not know about this game, stated on the game rather than averaged away &mdash; and the gates that stop it pricing anyway.',
+     f:['Starting-QB unknown','Availability','Stale market','Missing inputs','Guard bound','Thin data']},
+    {k:'Public record', d:'What the model said before kickoff, frozen at capture, kept next to what actually happened. Including the games it got wrong.',
+     f:['Pre-kickoff snapshot','Frozen at capture','What happened','Graded after the fact']},
+    {k:'Research briefs', d:'The whole matchup as plain text &mdash; every layer above, in one block you can paste into your notes, send to a writer, or hand to the AI you already use.',
+     f:['Plain-text packet','Every layer included','Copy to clipboard','Paste anywhere']},
+    {k:'Data quality', d:'How much of the model&rsquo;s own input contract actually reached this game. Stated per game, because an average would hide exactly the games where it matters.',
+     f:['Input contract met','Per-game coverage','Column-level gates','Declared missing']}
+  ];
+
+  var btns=LAYERS.map(function(l,i){
+    var b=document.createElement('button');
+    b.type='button'; b.setAttribute('role','tab'); b.innerHTML=l.k;
+    b.setAttribute('aria-selected', i===0?'true':'false');
+    if(i===0) b.className='on';
+    b.addEventListener('click',function(){ go(i); });
+    b.addEventListener('keydown',function(ev){
+      var d = ev.key==='ArrowRight'?1 : ev.key==='ArrowLeft'?-1 : 0;
+      if(!d) return; ev.preventDefault();
+      var n=(i+d+LAYERS.length)%LAYERS.length;
+      btns[n].focus(); go(n);
+    });
+    pick.appendChild(b);
+    return b;
+  });
+
+  function go(i){
+    var l=LAYERS[i];
+    btns.forEach(function(b,j){ b.classList.toggle('on',j===i); b.setAttribute('aria-selected',j===i?'true':'false'); });
+    nm.innerHTML='EdgeDesk &middot; '+l.k;
+    tag.innerHTML='layer '+(i+1)+' of '+LAYERS.length;
+    desc.innerHTML=l.d;
+    fields.innerHTML=l.f.map(function(f){ return '<span class="f">'+f+'</span>'; }).join('');
+  }
+  go(0);
+})();
+
+/* ======================================================================
+   0d · THE FIVE-STEP WALKTHROUGH
+   One matchup, read five ways, in the order the product builds the page.
+   It self-advances once on first view so a reader who does nothing still
+   sees the whole sequence; any interaction hands them the controls.
+   ====================================================================== */
+(function stepper(){
+  var rail=document.getElementById('stpRail'); if(!rail) return;
+  var nEl=document.getElementById('stpN'), whatEl=document.getElementById('stpWhat'),
+      bodyEl=document.getElementById('stpBody'), footEl=document.getElementById('stpFoot'),
+      prev=document.getElementById('stpPrev'), next=document.getElementById('stpNext'),
+      host=document.getElementById('stp');
+
+  function chk(rows){
+    return '<div class="lp-gx-chk">'+rows.map(function(c){
+      var mark=c[0]==='ok'?'&#10003; ':(c[0]==='warn'?'? ':'&times; ');
+      return '<span class="ck '+c[0]+'">'+mark+c[1]+'</span>';
+    }).join('')+'</div>';
+  }
+  function why(rows){
+    return '<div class="lp-gx-why">'+rows.map(function(w){
+      return '<div class="r"><span class="p">'+w[0]+'</span><span class="b"><i style="width:'+w[1]+'%"></i></span>'+
+             '<span class="t">'+w[2]+'</span></div>';
+    }).join('')+'</div>';
+  }
+
+  var STAGES=[
+    { t:'Find the game',
+      what:'Start from the board, not from a game you already had an opinion about.',
+      foot:'The board is every game on the slate. It is sorted by disagreement, not by how interesting the matchup looks.',
+      html:'<div class="lp-stp-board">'+
+        '<div class="r hd"><span>Matchup</span><span>EdgeDesk</span><span>Market</span><span>Difference</span></div>'+
+        '<div class="r"><span>Tulane @ Duke</span><span class="mono">-7.7</span><span class="mono">-8.5</span><span class="gap">0.8</span></div>'+
+        '<div class="r pick"><span>Baylor @ Auburn</span><span class="mono">-9.7</span><span class="mono">-8.0</span><span class="gap">1.7</span></div>'+
+        '<div class="r"><span>Iowa @ Wisconsin</span><span class="mono">-2.1</span><span class="mono">-3.5</span><span class="gap">1.4</span></div>'+
+        '<div class="r"><span>Okla State @ Tulsa</span><span class="mono">+1.0</span><span class="mono">+11.5</span><span class="gap">10.5</span></div>'+
+        '</div><p class="lp-stp-note">Today&rsquo;s games and the largest model&ndash;market disagreements are surfaced for you, with a search over the whole board. Open Baylor @ Auburn.</p>' },
+
+    { t:'See the price',
+      what:'Two numbers, side by side, and the distance between them.',
+      foot:'The projected score and the range are the model&rsquo;s own output, not a restatement of the market&rsquo;s line.',
+      html:'<div class="lp-gx-grid">'+
+        '<div class="c"><span class="l">EdgeDesk</span><span class="v mdl">Auburn -9.7</span><span class="s">model</span></div>'+
+        '<div class="c"><span class="l">Market</span><span class="v">Auburn -8.0</span><span class="s">consensus</span></div>'+
+        '<div class="c"><span class="l">Difference</span><span class="v warn">1.7 pts</span><span class="s">model minus market</span></div>'+
+        '<div class="c"><span class="l">Projected score</span><span class="v sc"><i>Auburn</i><b>31</b></span><span class="v sc"><i>Baylor</i><b>21</b></span></div>'+
+        '<div class="c"><span class="l">Win probability</span><span class="v">Auburn 73%</span><span class="s">Baylor 27%</span></div>'+
+        '<div class="c"><span class="l">Outcome range</span><span class="v">-6 to +26</span><span class="s">p10 to p90 margin</span></div>'+
+        '</div><p class="lp-stp-note">EdgeDesk&rsquo;s spread, the market&rsquo;s spread, the projected score, the win probability and the research range around all of it.</p>' },
+
+    { t:'Understand why',
+      what:'The model shows its work, with the points it assigned to each driver.',
+      foot:'Every driver is a term the model actually priced. Nothing here is a narrative written after the number.',
+      html:why([['+4.1',100,'Playing at Auburn &mdash; the league-wide home-field number'],
+                ['+3.4',83,'Conference strength differs and the in-season sample is thin'],
+                ['+2.2',54,'Stylistically the matchup favours Auburn']])+
+        '<p class="lp-stp-note">Underneath these sit roster continuity, player quality, the position-group matchup and the simulation &mdash; each one openable, each one saying how much of it is known.</p>' },
+
+    { t:'Challenge the number',
+      what:'Now try to break it. The page hands you the reasons it might be wrong.',
+      foot:'Availability and the starting quarterback are unresolved here, so the 1.7 is read as provisional rather than as an edge.',
+      html:chk([['ok','model built'],['ok','market joined'],['ok','roster loaded'],
+                ['warn','availability'],['warn','starting quarterback'],['neg','recruiting']])+
+        '<p class="lp-stp-note">Availability, the starting quarterback, portal turnover, run-defence risk and every input that never arrived &mdash; stated on this game rather than averaged across the slate. <b>43%</b> of the model&rsquo;s input contract reached it.</p>' },
+
+    { t:'Decide for yourself',
+      what:'EdgeDesk states its own read and stops there.',
+      foot:'A research state is not a recommendation. What the number is worth is your call, and the page never makes it for you.',
+      html:'<div class="lp-gx-grid">'+
+        '<div class="c"><span class="l">Research state</span><span class="st warn">REVIEW</span><span class="s">EdgeDesk&rsquo;s own read, not advice</span></div>'+
+        '<div class="c"><span class="l">Other states</span><span class="v" style="font-size:11px;line-height:1.5">PASS &middot; INVESTIGATE &middot; THIN DATA</span><span class="s">the full vocabulary</span></div>'+
+        '<div class="c"><span class="l">Kept afterwards</span><span class="v" style="font-size:13px">Frozen at capture</span><span class="s">graded against what happened</span></div>'+
+        '</div><p class="lp-stp-note">Whatever you conclude, the model&rsquo;s pre-kickoff number is frozen and kept next to the result &mdash; including the games it got wrong.</p>' }
+  ];
+
+  var cur=-1, auto=null, taken=false;
+
+  var btns=STAGES.map(function(s,i){
+    var li=document.createElement('li');
+    var b=document.createElement('button');
+    b.type='button';
+    b.innerHTML='<span class="n">0'+(i+1)+'</span><span class="t">'+s.t+'</span>';
+    b.addEventListener('click',function(){ takeOver(); go(i); });
+    li.appendChild(b); rail.appendChild(li);
+    return b;
+  });
+
+  function go(i){
+    if(i===cur) return;
+    var was=cur; cur=i;
+    btns.forEach(function(b,j){ b.classList.toggle('on',j===i); b.classList.toggle('done',j<i); });
+    prev.disabled = i===0;
+    next.innerHTML = i===STAGES.length-1 ? 'Start again' : 'Next step &#8594;';
+    function paint(){
+      var s=STAGES[i];
+      nEl.textContent='0'+(i+1);
+      whatEl.innerHTML=s.what;
+      bodyEl.innerHTML=s.html;
+      footEl.innerHTML=s.foot;
+    }
+    if(REDUCE||was<0){ paint(); return; }
+    bodyEl.classList.add('swap');
+    setTimeout(function(){ paint(); bodyEl.classList.remove('swap'); },130);
+  }
+
+  function takeOver(){ taken=true; if(auto){ clearInterval(auto); auto=null; } }
+
+  prev.addEventListener('click',function(){ takeOver(); if(cur>0) go(cur-1); });
+  next.addEventListener('click',function(){ takeOver(); go(cur>=STAGES.length-1 ? 0 : cur+1); });
+
+  go(0);
+
+  /* self-advance once, only if the reader has not touched it */
+  if(!REDUCE && HAS_IO){
+    var io=new IntersectionObserver(function(es){
+      es.forEach(function(e){
+        if(!e.isIntersecting || taken || auto) return;
+        io.disconnect();
+        auto=setInterval(function(){
+          if(taken){ clearInterval(auto); auto=null; return; }
+          if(cur>=STAGES.length-1){ clearInterval(auto); auto=null; return; }
+          go(cur+1);
+        },2300);
+      });
+    },{threshold:.4});
+    io.observe(host);
+  }
+})();
+
+/* ======================================================================
+   0e · READING PROGRESS
+   A bar for how much page is left, and a rail for which chapter you are in.
+   Both exist for one reason: a reader who can see the shape of a page is far
+   likelier to keep going than one scrolling into the dark. Neither device
+   animates under reduced motion, and both are skipped entirely if the page
+   is short enough not to need them.
+   ====================================================================== */
+(function progress(){
+  var bar=document.getElementById('progBar'), rail=document.getElementById('chapRail');
+  if(!bar||!rail) return;
+
+  var CHAPTERS=[
+    ['top','Start'],['compress','Saturday'],['getyou','Terminal'],['steps','How it reads'],
+    ['idk','Uncertainty'],['football','The model'],['collective','Collective'],
+    ['evidence','Evidence'],['record','Record'],['pricing','Access']
+  ];
+
+  var stops=[];
+  CHAPTERS.forEach(function(c){
+    var sec=document.getElementById(c[0]); if(!sec) return;
+    var b=document.createElement('button');
+    b.type='button';
+    b.innerHTML='<span class="lbl">'+c[1]+'</span><span class="dot"></span>';
+    b.setAttribute('aria-label','Jump to '+c[1]);
+    b.addEventListener('click',function(){
+      sec.scrollIntoView({behavior: REDUCE?'auto':'smooth', block:'start'});
+    });
+    rail.appendChild(b);
+    stops.push({sec:sec, btn:b});
+  });
+  if(!stops.length) return;
+
+  var ticking=false, active=-1;
+  function paint(){
+    ticking=false;
+    var doc=document.documentElement;
+    var max=doc.scrollHeight-window.innerHeight;
+    var y=window.pageYOffset||doc.scrollTop||0;
+    bar.style.width = (max>0 ? Math.max(0,Math.min(1,y/max))*100 : 0)+'%';
+
+    /* the active chapter is the last one whose top has passed the upper
+       third of the viewport — the same rule a reader applies by eye */
+    var line=y+window.innerHeight/3, i=0;
+    for(var k=0;k<stops.length;k++){ if(stops[k].sec.offsetTop<=line) i=k; }
+    if(i!==active){
+      if(active>=0) stops[active].btn.classList.remove('on');
+      stops[i].btn.classList.add('on');
+      active=i;
+    }
+  }
+  function onScroll(){ if(!ticking){ ticking=true; requestAnimationFrame(paint); } }
+
+  window.addEventListener('scroll',onScroll,{passive:true});
+  window.addEventListener('resize',onScroll,{passive:true});
+  paint();
+})();
+
+/* ======================================================================
+   0f · WHAT "I DON'T KNOW" ACTUALLY DOES
+   Six conditions the product recognises, and the behaviour each one triggers.
+   The rule line is the enforcement, not the intention — it is what separates
+   this from a disclaimer.
+   ====================================================================== */
+(function idk(){
+  var pick=document.getElementById('idkPick'); if(!pick) return;
+  var nm=document.getElementById('idkNm'), desc=document.getElementById('idkDesc'), rule=document.getElementById('idkRule');
+
+  var COND=[
+    {k:'Unknown quarterback',
+     d:'No public college feed publishes a starting quarterback EdgeDesk trusts for every game. When it does not know, it says so on the game rather than quietly picking the likeliest name.',
+     r:'Unknown is carried as unknown and the last known value is used. Unknown is never treated as healthy, and a guess is never substituted for it.'},
+    {k:'Missing data',
+     d:'A column that fails its coverage gate is not scored as though the events simply did not happen. Zero and absent are different facts, and conflating them is how models quietly go wrong.',
+     r:'The column is declared missing league-wide and left out of the comparison. Missing is not zero.'},
+    {k:'Unvalidated layers',
+     d:'Player quality and scheme are real research and they are genuinely useful to read. Neither has cleared walk-forward validation against held-out games.',
+     r:'Neither moves a projected line anywhere in the product. Both are labelled research, and they stay there until the validation says otherwise.'},
+    {k:'Stale market',
+     d:'A gap measured against a price that no longer exists is not a gap. Market captures age, and an old quote can manufacture a disagreement out of nothing.',
+     r:'Nothing is compared until a fresh quote lands. The age of the captured price is shown next to it.'},
+    {k:'A very large gap',
+     d:'Past a bound set in advance, a disagreement stops being evidence about the market and starts being evidence about the model. The likelier explanation is that something the market knows never reached it.',
+     r:'Beyond the guard bound the game is read as unsafe rather than as an opportunity, and it is flagged for investigation rather than surfaced as a find.'},
+    {k:'Thin data',
+     d:'Early in a season, and for teams with little shared-opponent overlap, the model has very little to stand on. A number produced from almost nothing looks identical to one produced from plenty.',
+     r:'The projection is marked thin and read as provisional &mdash; not as agreement with the market, and not as disagreement either.'}
+  ];
+
+  var btns=COND.map(function(c,i){
+    var b=document.createElement('button');
+    b.type='button'; b.setAttribute('role','tab'); b.innerHTML=c.k;
+    b.setAttribute('aria-selected', i===0?'true':'false');
+    if(i===0) b.className='on';
+    b.addEventListener('click',function(){ go(i); });
+    b.addEventListener('keydown',function(ev){
+      var d = ev.key==='ArrowRight'?1 : ev.key==='ArrowLeft'?-1 : 0;
+      if(!d) return; ev.preventDefault();
+      var n=(i+d+COND.length)%COND.length;
+      btns[n].focus(); go(n);
+    });
+    pick.appendChild(b);
+    return b;
+  });
+
+  function go(i){
+    var c=COND[i];
+    btns.forEach(function(b,j){ b.classList.toggle('on',j===i); b.setAttribute('aria-selected',j===i?'true':'false'); });
+    nm.innerHTML='EdgeDesk &middot; '+c.k;
+    desc.innerHTML=c.d;
+    rule.innerHTML=c.r;
+  }
+  go(0);
+})();
+
+/* ======================================================================
    1 · HERO PRICE SLIDER
    One idea: a bet is good at one price and bad at another. Nothing else.
    ====================================================================== */
@@ -3304,217 +3301,7 @@ function fmtAm(a){ a=Math.round(a); return (a>0?'+':'−')+Math.abs(a); }
   render();
 })();
 
-/* ======================================================================
-   2 · BOARD → DECISION
-   Step 1 is the funnel: 87 markets become one place to look, and each
-   reduction is labelled with what it means operationally, not just how
-   many are left. Steps 2-4 are static panels the stepper reveals.
-   ====================================================================== */
-(function boardToDecision(){
-  var board=document.getElementById('scanBoard'), rail=document.getElementById('scanRail');
-  if(!board||!rail) return;
 
-  /* ---- step 1: the funnel ---- */
-  var TOTAL=87;
-  var STAGES=[
-    {n:87,k:'Full board',  d:'Everything available tonight, priced across the whole book before anyone has an opinion.'},
-    {n:14,k:'Signals',     d:'Worth investigating. Prices that disagree with the rest of the market by more than the usual noise.'},
-    {n:5, k:'Candidates',  d:'Research deserves attention here. These survived the checks for real money behind the price, timing, and how old the number is.'},
-    {n:3, k:'Watching',    d:'Price or information still matters. Fully researched, waiting on a lineup, a total, or a better number.'},
-    {n:1, k:'Strongest',   d:'Start here. The biggest gap on the board between what a sportsbook is charging and what the bet should cost.'}
-  ];
-
-  // deterministic scatter so the survivors look spread out and never re-shuffle
-  var order=[],seed=7;
-  for(var i=0;i<TOTAL;i++){ seed=(seed*1103515245+12345)%2147483648; order.push([i,seed]); }
-  order.sort(function(a,b){return a[1]-b[1];});
-  order=order.map(function(o){return o[0];});
-
-  var tiles=[];
-  var COLS = window.matchMedia('(max-width:620px)').matches ? 10 : 15;
-  for(var j=0;j<TOTAL;j++){
-    var t=document.createElement('span');
-    t.className='tile live'; t.style.setProperty('--i', j%COLS);
-    board.appendChild(t); tiles.push(t);
-  }
-
-  var rbtns=[];
-  STAGES.forEach(function(s,idx){
-    var b=document.createElement('button');
-    b.type='button'; b.className='rstep'+(idx===STAGES.length-1?' fin':'');
-    b.innerHTML='<span class="rn">'+s.n+'</span><span><span class="rk">'+s.k+'</span><span class="rd">'+s.d+'</span></span>';
-    b.addEventListener('click',function(){ stopFunnel(); setFunnel(idx); });
-    rail.appendChild(b); rbtns.push(b);
-  });
-
-  var foot=document.getElementById('stepFoot'), here=document.getElementById('startsHere');
-  var timers=[], funnelPlayed=false;
-  function stopFunnel(){ timers.forEach(clearTimeout); timers=[]; }
-  function setFunnel(k){
-    var keep={}, n=STAGES[k].n, last=(n===1);
-    for(var i=0;i<n;i++) keep[order[i]]=1;
-    tiles.forEach(function(t,i){
-      t.className='tile'+(keep[i]?(last?' gold':' live'):'');
-    });
-    rbtns.forEach(function(b,i){ b.classList.toggle('on', i===k); });
-    here.classList.toggle('on', last);
-    if(step===0) foot.textContent='Each square is one market on tonight’s board. '+STAGES[k].n+' of '+TOTAL+' still in play · '+STAGES[k].k.toLowerCase()+'.';
-  }
-  function playFunnel(){
-    if(funnelPlayed) return; funnelPlayed=true;
-    stopFunnel();
-    STAGES.forEach(function(_,k){ timers.push(setTimeout(function(){ setFunnel(k); }, k*950)); });
-  }
-
-  /* ---- the four-step loop ---- */
-  var STEPS=[
-    {k:'Scan',    i:'87 markets → 1',  name:'MLB board · 87 markets',
-     foot:'Each square is one market on tonight’s board. Illustrative game, real workflow.'},
-    {k:'Research',i:'assemble the packet', name:'Dodgers ML · evidence packet',
-     foot:'Every line carries a source tier. Anything EdgeDesk cannot verify is shown as missing, never filled in.'},
-    {k:'Attack',  i:'try to break it',     name:'Dodgers ML · adversarial pass',
-     foot:'The objections are generated against the thesis, not in support of it. Illustrative example.'},
-    {k:'Decide',  i:'find the threshold',  name:'Dodgers ML · decision',
-     foot:'Illustrative example. EdgeDesk shows the price at which the decision changes. The decision stays yours.'}
-  ];
-  var bar=document.getElementById('stepBar'), nameEl=document.getElementById('stepName');
-  var stages=[0,1,2,3].map(function(i){ return document.getElementById('stg'+i); });
-  var sbtns=[], step=0;
-  STEPS.forEach(function(s,i){
-    var b=document.createElement('button');
-    b.type='button'; b.innerHTML=s.k+'<i>'+s.i+'</i>';
-    b.setAttribute('aria-current', i===0?'true':'false');
-    b.addEventListener('click',function(){ go(i); });
-    bar.appendChild(b); sbtns.push(b);
-  });
-  function go(i){
-    step=i;
-    sbtns.forEach(function(b,j){
-      b.setAttribute('aria-current', j===i?'true':'false');
-      b.classList.toggle('done', j<i);
-    });
-    stages.forEach(function(s,j){ s.classList.toggle('on', j===i); });
-    nameEl.innerHTML=STEPS[i].name;
-    foot.textContent=STEPS[i].foot;
-    if(i===0) playFunnel();
-  }
-
-  if(REDUCE){
-    funnelPlayed=true; setFunnel(STAGES.length-1);
-    rbtns.forEach(function(b){ b.classList.add('on'); });
-  } else if(HAS_IO){
-    setFunnel(0);
-    var io=new IntersectionObserver(function(es){
-      es.forEach(function(e){ if(e.isIntersecting){ io.disconnect(); playFunnel(); } });
-    },{threshold:.3});
-    io.observe(board);
-  } else { playFunnel(); }
-})();
-
-/* ======================================================================
-   3 · THE WORK DISAPPEARING
-   One idea: this is the workflow you already run, and it collapses.
-   ====================================================================== */
-(function workflow(){
-  var tasksEl=document.getElementById('wfTasks'); if(!tasksEl) return;
-  var grid=document.getElementById('wfGrid'), empty=document.getElementById('wfEmpty'),
-      fieldsEl=document.getElementById('wfFields'), countEl=document.getElementById('wfCount'),
-      goBtn=document.getElementById('wfGo'), allBtn=document.getElementById('wfAll'),
-      punch=document.getElementById('wfPunch'), nameEl=document.getElementById('wfName'),
-      footEl=document.getElementById('wfFoot');
-
-  var TASKS=[
-    {k:'Market',       src:'Three books, three tabs', d:'Compare the price you were offered against everywhere else, then work out what it is worth with the vig still in it.'},
-    {k:'Pitching',     src:'Stats site',              d:'Confirm both starters, then go and find workload, rest and whether the last three starts mean anything.'},
-    {k:'Offense',      src:'Another stats site',      d:'Wait for lineups to post, then pull splits against this handedness and adjust for the park.'},
-    {k:'Bullpen',      src:'Box scores, by hand',     d:'Read the last three days of appearances for both clubs and guess at who is available tonight.'},
-    {k:'Weather',      src:'Weather app',             d:'Check temperature, wind speed and direction at first pitch, then decide what that means here.'},
-    {k:'Line movement',src:'Odds screen, refreshed',  d:'Find where the number opened, where it is now, and whether the move you like already happened.'},
-    {k:'Notes',        src:'Wherever you keep them',  d:'Write down what you concluded and the price you took, so that in three weeks it means something.'}
-  ];
-  var FIELDS=[
-    {k:'Price',            v:'+132',                 num:true},
-    {k:'EdgeDesk comparison', v:'+118', num:true},
-    {k:'Edge',             v:'+2.6%',                num:true},
-    {k:'Evidence',         v:'7 sources, tiered'},
-    {k:'Risks',            v:'3 carried, named'},
-    {k:'Thesis attack',    v:'Run · survives'},
-    {k:'Price sensitivity',v:'Qualifies above +125'},
-    {k:'Decision',         v:'Yours to make'},
-    {k:'Grading',          v:'Armed for the close'}
-  ];
-
-  var opened=[], wins={}, done=false;
-
-  TASKS.forEach(function(t,i){
-    var b=document.createElement('button');
-    b.type='button'; b.className='wf-task'; b.textContent=t.k;
-    b.setAttribute('aria-pressed','false');
-    b.addEventListener('click',function(){ if(!done) open(i,b); });
-    tasksEl.appendChild(b);
-  });
-
-  function open(i,btn){
-    if(wins[i]) return;
-    var t=TASKS[i];
-    var w=document.createElement('div');
-    w.className='wfw';
-    w.innerHTML='<div class="wfw-h"><b>'+t.k+'</b><span>'+t.src+'</span></div><div class="wfw-b">'+t.d+'</div>';
-    grid.appendChild(w); wins[i]=w; opened.push(i);
-    btn.setAttribute('aria-pressed','true');
-    empty.style.display='none';
-    requestAnimationFrame(function(){ w.classList.add('on'); });
-    update();
-  }
-  function update(){
-    var n=opened.length;
-    countEl.innerHTML='<b>'+n+'</b> of 7 sources open &middot; '+(n<2
-      ? 'every one a separate place to go'
-      : (n<7 ? 'and the price has probably moved while you were reading'
-             : 'now do it again for the next game on the board'));
-    goBtn.disabled = n<2;
-    if(n===7) allBtn.disabled=true;
-  }
-  allBtn.addEventListener('click',function(){
-    if(done) return;
-    var btns=tasksEl.querySelectorAll('.wf-task');
-    TASKS.forEach(function(_,i){
-      setTimeout(function(){ open(i,btns[i]); }, REDUCE?0:i*110);
-    });
-  });
-
-  goBtn.addEventListener('click',function(){
-    if(done) return; done=true;
-    goBtn.disabled=true; allBtn.disabled=true;
-    goBtn.className='btn spent'; goBtn.textContent='Consolidated';
-    allBtn.style.display='none';
-    tasksEl.querySelectorAll('.wf-task').forEach(function(b){ b.disabled=true; });
-    nameEl.innerHTML='EdgeDesk &middot; one research card';
-    footEl.textContent='Illustrative example. Same questions, asked once. This is a picture of the workflow, not a measurement of how long yours takes.';
-
-    // build the consolidated card up front so it can fade in as the windows leave
-    fieldsEl.innerHTML=FIELDS.map(function(f){
-      return '<div class="ed-f"><span class="k">'+f.k+'</span><span class="v'+(f.num?' num':'')+'">'+f.v+'</span></div>';
-    }).join('');
-
-    var order=opened.slice();
-    order.forEach(function(idx,n){
-      setTimeout(function(){ wins[idx].classList.add('gone'); }, REDUCE?0:n*90);
-    });
-    setTimeout(function(){
-      grid.style.display='none';
-      fieldsEl.style.display='';
-      countEl.innerHTML='<b>1</b> card &middot; every question above, answered in one place';
-      [].slice.call(fieldsEl.children).forEach(function(el,n){
-        setTimeout(function(){ el.classList.add('on'); }, REDUCE?0:n*55);
-      });
-      setTimeout(function(){ punch.classList.add('on'); }, REDUCE?0:620);
-    }, REDUCE?0:(order.length*90+420));
-  });
-
-  if(REDUCE) punch.classList.add('on');
-  update();
-})();
 
 /* ======================================================================
    3 · THESIS ATTACK
@@ -3527,22 +3314,22 @@ function fmtAm(a){ a=Math.round(a); return (a>0?'+':'−')+Math.abs(a); }
       reset=document.getElementById('atkReset');
 
   var PROBES=[
-    {t:'probing price provenance',      r:'MOVED'},
-    {t:'probing starter confirmation',  r:'UNCONFIRMED'},
-    {t:'probing bullpen sample',        r:'INCOMPLETE'},
-    {t:'probing park + weather',        r:'HOLDS', ok:true}
+    {t:'probing price freshness',          r:'MOVED'},
+    {t:'probing starting quarterback',     r:'UNCONFIRMED'},
+    {t:'probing availability report',      r:'INCOMPLETE'},
+    {t:'probing home-field term',          r:'HOLDS', ok:true}
   ];
-  /* Each weakness names the claim it actually undermines. The bullpen gap
-     undermines none of the three — it is an unknown, not a refutation — so it
-     leaves "sharp confirmation" standing. Two of three broken is what makes
-     WEAKENED the honest verdict rather than INVALIDATED. */
+  /* Each weakness names the claim it actually undermines. The availability
+     gap undermines none of the three — it is an unknown, not a refutation —
+     so it leaves the home-field claim standing. Two of three broken is what
+     makes WEAKENED the honest verdict rather than INVALIDATED. */
   var WEAK=[
-    {claim:'cl1', tier:'est', tierText:'Moved', t:'The price has already moved',
-     d:'The move you would be following is the reason the number is gone. The rest of the market has already settled at −121 and the price on offer is chasing it, not leading it.'},
-    {claim:'cl3', tier:'exp', tierText:'Unconfirmed', t:'Starter is not confirmed',
-     d:'One projected starter is probable, not posted. The entire ground-ball argument rests on a name that has not been announced.'},
-    {claim:null,  tier:'una', tierText:'Unavailable', t:'Bullpen state is unknowable',
-     d:'Day-of availability is not published by either club. Two important relievers threw on back-to-back days; whether they can go tonight is left out of the comparison rather than guessed at. This does not break the case — it is a hole in it.'}
+    {claim:'cl1', tier:'est', tierText:'Moved', t:'The gap is measured against a stale price',
+     d:'The captured market number is forty minutes old and the market has since settled at −8.5. Most of the 1.7 points EdgeDesk is pricing against has already closed on its own.'},
+    {claim:'cl3', tier:'exp', tierText:'Unconfirmed', t:'The starting quarterback is not confirmed',
+     d:'No public feed publishes a starter EdgeDesk trusts for this game. The matchup case rests on a name that has not been announced, and the model carries the last known value rather than guessing at a new one.'},
+    {claim:null,  tier:'una', tierText:'Unavailable', t:'Availability is not published',
+     d:'Neither school publishes a participation report. Two starters on the defensive front missed last week; whether they play is left out of the comparison rather than guessed at. This does not break the case — it is a hole in it.'}
   ];
   var timers=[];
   function clear(){ timers.forEach(clearTimeout); timers=[]; }
@@ -4062,43 +3849,47 @@ function fmtAm(a){ a=Math.round(a); return (a>0?'+':'−')+Math.abs(a); }
   };
   var DATA=[
     {k:'Market', rows:[
-      {n:'Priced across 22 books', d:'Every offered price on this total, collected and normalised to one scale.', t:'verified'},
-      {n:'De-vigged fair value −121', d:'The vig removed from the market consensus, which is what the price is actually compared against.', t:'verified'},
-      {n:'Line history −114 → −121 since open', d:'Full movement trail with timestamps, so a stale price is distinguishable from a live one.', t:'verified'},
-      {n:'Sharp-book agreement 4 of 5', d:'Low-limit-first books mostly agree. One is still offering the other side, which weakens the read.', t:'partial'}
-    ]},
-    {k:'Pitching', rows:[
-      {n:'Both starters posted', d:'Confirmed by the clubs, not projected from a rotation guess.', t:'verified'},
-      {n:'Season workload and rest', d:'Innings, pitch counts and days of rest, measured across the full season.', t:'verified'},
-      {n:'Last three starts', d:'Recent form is shown, but three starts is a sample that cannot carry a thesis on its own.', t:'partial'},
-      {n:'Pitch-mix shift flagged', d:'A model noticed a usage change. It has not been validated against outcomes, so it informs nothing quantitative.', t:'unproven'}
-    ]},
-    {k:'Offense', rows:[
-      {n:'Lineups posted', d:'Both batting orders as submitted, not a projection.', t:'verified'},
-      {n:'Splits vs handedness', d:'Team-level performance against this handedness, measured on the season.', t:'verified'},
-      {n:'Park-adjusted run rate', d:'Adjustment applied, but this park’s factor is still built on a partial-season sample.', t:'partial'}
-    ]},
-    {k:'Bullpen', rows:[
-      {n:'Usage over the last three days', d:'Appearances and pitch counts for every arm, measured from box scores.', t:'verified'},
-      {n:'Leverage-weighted quality', d:'Computed, but the leverage weights themselves are estimated rather than observed.', t:'partial'},
-      {n:'Day-of availability', d:'Neither club publishes who is actually available tonight. Nobody outside the clubhouse knows this number.', t:'unavailable',
-       act:'Excluded from fair value. Carried on the edge as a named limitation.'}
-    ]},
-    {k:'Weather', rows:[
-      {n:'Conditions at first pitch', d:'Temperature, wind speed, wind direction and humidity at the venue.', t:'verified'},
-      {n:'In-game forecast shift', d:'Forecast, not observation. Treated as an estimate for the duration of the game.', t:'partial'},
-      {n:'Wind effect on carry, this park', d:'A model relates wind vector to run environment here. It is running and unvalidated, so it moves nothing.', t:'unproven'}
+      {n:'Consensus spread across books', d:'Every offered price on this game, collected and normalised to one scale.', t:'verified'},
+      {n:'Captured price, timestamped', d:'The exact number on file and the moment it was captured, so a stale quote is distinguishable from a live one.', t:'verified'},
+      {n:'Model minus market', d:'The difference EdgeDesk is actually pricing against, stated in points rather than as a rating.', t:'verified'},
+      {n:'Line movement since open', d:'Tracked where a book publishes it. Coverage is not uniform across the FBS slate, so this is partial by construction.', t:'partial'}
     ]},
     {k:'Model', rows:[
-      {n:'Total distribution', d:'The research model produces a distribution. It is experimental and it is not what fair value is built from.', t:'unproven'},
-      {n:'Calibration to date', d:'Being tracked against real outcomes. The sample is still too small to draw a conclusion from.', t:'partial'},
+      {n:'Fair spread and projected score', d:'The model&rsquo;s own output, built from the layers below rather than anchored to the market&rsquo;s number.', t:'verified'},
+      {n:'Margin distribution', d:'Many runs of the game, kept as a distribution rather than collapsed into a single number.', t:'verified'},
+      {n:'Calibration to date', d:'Tracked against real outcomes. The sample is still too small to draw a conclusion from, and it says so.', t:'partial'},
       {n:'Model self-confidence', d:'Reported, and deliberately given no weight in any quantitative field.', t:'unproven'}
     ]},
-    {k:'History', rows:[
-      {n:'Head-to-head this season', d:'Actual results between these clubs, with the caveat that different pitchers threw them.', t:'verified'},
-      {n:'Catcher framing', d:'Estimated from public tracking data, with meaningful error bars.', t:'partial'},
-      {n:'Umpire crew assignment', d:'Not published until game day. The crew’s run environment cannot be read before it exists.', t:'unavailable',
-       act:'No placeholder is substituted. The field stays empty until the assignment posts.'}
+    {k:'Roster', rows:[
+      {n:'Returning production', d:'Snap-weighted returning production on both sides, measured from last season&rsquo;s participation.', t:'verified'},
+      {n:'Portal movement, in and out', d:'Every transfer in each direction, joined to the position group it actually changed.', t:'verified'},
+      {n:'Roster continuity index', d:'Computed from the above. The weighting is an estimate rather than an observation, and is carried as one.', t:'partial'},
+      {n:'Walk-ons and late additions', d:'Not published in any feed EdgeDesk trusts.', t:'unavailable',
+       act:'The field stays empty rather than being filled with a guess.'}
+    ]},
+    {k:'Players', rows:[
+      {n:'Player ratings across FBS', d:'Built here from public play-by-play and participation, with a confidence attached to every one.', t:'verified'},
+      {n:'Rating confidence', d:'How much data stands behind each player&rsquo;s rating, carried with the rating everywhere it appears.', t:'verified'},
+      {n:'Team player quality', d:'Aggregated from the player ratings. It has not cleared walk-forward validation, so it moves no projected line anywhere.', t:'unproven'},
+      {n:'Scheme fit', d:'A research layer, running and unvalidated. Labelled as research wherever it appears, and priced into nothing.', t:'unproven'}
+    ]},
+    {k:'Matchup', rows:[
+      {n:'Position-group matrix', d:'Every group against the group it lines up over, from measured season performance.', t:'verified'},
+      {n:'Run-defence gate', d:'Fires when one front is measurably overmatched, on a threshold set in advance rather than fitted after the fact.', t:'verified'},
+      {n:'Scheme tendencies', d:'Derived from play-by-play. A tendency is a summary of what a team did, not a claim about what it will do.', t:'partial'}
+    ]},
+    {k:'Uncertainty', rows:[
+      {n:'Data confidence, per game', d:'How much of the model&rsquo;s own input contract reached this specific game &mdash; not an average over the slate.', t:'verified'},
+      {n:'Guard bound', d:'The gap past which EdgeDesk reads its own number as unsafe rather than as an opportunity.', t:'verified'},
+      {n:'Starting quarterback', d:'No public college feed publishes a starter EdgeDesk trusts for every game.', t:'unavailable',
+       act:'Unknown is stated as unknown. The last known value is carried, never a guess, and never treated as healthy.'},
+      {n:'Availability report', d:'Most FBS programmes publish nothing comparable to a professional injury report.', t:'unavailable',
+       act:'Excluded from the comparison and carried on the game as a named limitation.'}
+    ]},
+    {k:'Record', rows:[
+      {n:'Pre-kickoff snapshot', d:'What the model said before the game, frozen at capture and never edited afterwards.', t:'verified'},
+      {n:'Result joined afterwards', d:'The final score joined back to the snapshot &mdash; including the games the model got wrong.', t:'verified'},
+      {n:'Sample size to date', d:'The record is real and it is short. It is published at its actual length rather than annualised into something it is not.', t:'partial'}
     ]}
   ];
 
@@ -4149,16 +3940,16 @@ function fmtAm(a){ a=Math.round(a); return (a>0?'+':'−')+Math.abs(a); }
   var qEl=document.getElementById('aiQ'), aEl=document.getElementById('aiA'), pEl=document.getElementById('aiP');
   var QA=[
     {q:'At what price?',
-     a:'Fair value on this total is <b>−121</b>, de-vigged across 22 books. It is offered at −108, so the edge is roughly <b>1.3 points of probability</b>. That edge is gone by −118 and the position is actively bad by −125. Anything worse than −118 and there is nothing here to buy.',
-     p:'Fields read: fair_value, offered_price, edge · Produced by: deterministic engine · Model contribution: wording only'},
+     a:'EdgeDesk compares this total at <b>−121</b> against the market. It is offered at −108, so the difference is roughly <b>1.3 points of probability</b>. That difference is gone by −118 and reverses by −125. Worse than −118 and there is nothing here to look at.',
+     p:'Fields read: comparison_price, offered_price, difference · Produced by: deterministic engine · Model contribution: wording only'},
     {q:'What could make this wrong?',
-     a:'Three things, in order of how much they matter. <b>One starter is projected, not posted</b> — the ground-ball argument depends on that name. <b>Bullpen availability is unavailable</b> for both clubs, and two high-leverage arms threw on back-to-back days. And the sharp move you would be following has <b>already been priced in</b>: fair value re-anchored at −121 before this price appeared.',
-     p:'Fields read: pitching.starters, bullpen.availability(unavailable), market.line_history · No probability was generated for this answer'},
-    {q:'Why is this ranked first?',
-     a:'It is not ranked first because it is most likely to win — nothing on this board is ranked that way. It sits first because it has the <b>largest gap between offered price and de-vigged fair value</b> among positions that also cleared the liquidity and staleness checks. Ranking is a price ordering, not a confidence ordering.',
-     p:'Fields read: edge (all candidates), liquidity_check, staleness_check · Ordering is computed, not inferred'},
+     a:'Three things, in order of how much they matter. <b>The starting quarterback is not confirmed</b> — no feed I trust publishes one for this game, and the matchup case leans on that name. <b>Availability is unpublished</b> by both programmes, and two starters on the defensive front missed last week. And the market has <b>already moved</b>: the comparison re-anchored at −121 before this price appeared.',
+     p:'Fields read: uncertainty.starting_qb(unknown), roster.availability(unavailable), market.line_history · No probability was generated for this answer'},
+    {q:'Why is this game first?',
+     a:'Not because it is most likely to win — nothing on this board is ordered that way. It sits first because it has the <b>largest gap between the market&rsquo;s number and EdgeDesk&rsquo;s</b> among games that also cleared the freshness and data-coverage checks. The ordering is a disagreement ordering, not a confidence ordering.',
+     p:'Fields read: model_minus_market (all games), staleness_check, coverage_check · Ordering is computed, not inferred'},
     {q:'Will this win?',
-     a:'I can’t answer that, and neither can anything else on this page. Nothing in the packet predicts an outcome — it prices one. <b>What I can tell you is whether the number in front of you is better or worse than what the market says it is worth</b>, and after tonight’s close you will be able to see whether it was.',
+     a:'I can’t answer that, and neither can anything else on this page. Nothing in the packet predicts an outcome — it prices one. <b>What I can tell you is whether the number in front of you differs from what EdgeDesk makes it</b>, how much of the model&rsquo;s input actually reached this game, and what would have to be true for the difference to be real.',
      p:'Refused: no field in the packet supports an outcome prediction · This refusal is by design, not a limitation'}
   ];
   var btns=[], timer=null;
@@ -4188,7 +3979,7 @@ function fmtAm(a){ a=Math.round(a); return (a>0?'+':'−')+Math.abs(a); }
 (function clv(){
   var pick=document.getElementById('clvPick'); if(!pick) return;
   var EX=[
-    {label:'Under 8.5', name:'Reds @ Cubs · Under 8.5', entry:-118, close:-124, won:false,
+    {label:'Under 52.5', name:'Baylor @ Auburn · Under 52.5', entry:-118, close:-124, won:false,
      lesson:'<b>Lost the bet. Beat the close.</b> You bought a better number than the market settled on, and the game went the other way anyway. Consistently beating the close is the process-level signal that exists before results do — no outcome is promised by it. This is what a good night looks like on the scoreboard of a bad one.'},
     {label:'Underdog ML', name:'Illustrative game · Underdog moneyline', entry:145, close:138, won:true,
      lesson:'<b>Won the bet and beat the close.</b> The only version where the result and the process agree — and notably, the least informative one. You learn nothing here you did not already know from the price.'},
@@ -4233,61 +4024,6 @@ function fmtAm(a){ a=Math.round(a); return (a>0?'+':'−')+Math.abs(a); }
   show(0);
 })();
 
-/* ======================================================================
-   7 · CASUAL ENTRY PICKER
-   One idea: you already have a bet in mind; here is how to research it.
-   ====================================================================== */
-(function casual(){
-  var bar=document.getElementById('pickBar'); if(!bar) return;
-  var nameEl=document.getElementById('pickName'), body=document.getElementById('pickBody');
-  var ROWS=['Market','Fair value','Price sensitivity','Risks','What would change it'];
-  var PICKS=[
-    {label:'Dodgers ML', name:'A favourite on the moneyline', v:[
-      'Every book’s price on this side, side by side, so you can see whether the number in front of you is the best one available or merely the closest one.',
-      'The vig stripped out of the market consensus, which is the only honest answer to “what is this actually worth”. A favourite is where vig hides best.',
-      'The exact price at which this stops qualifying. Big favourites die fast — twelve cents of price can be the whole difference.',
-      'Starter confirmation, bullpen state after last night, and whether you are following a move that has already happened.',
-      'A posted lineup, a scratched starter, a weather change, or the price drifting past the point where the edge is gone.'
-    ]},
-    {label:'Chiefs −3.5', name:'A spread with a key number nearby', v:[
-      'Where every book has the spread and the price attached to it, including books offering −3 at a worse number.',
-      'The fair spread and the fair price for it, separately — because the half point and the juice are two different purchases.',
-      'What the half point off the key number is actually worth here, and whether the price you are paying for it is more or less than that.',
-      'Injury status on both sides, whether the move you like was sharp or public, and how much of the week’s movement is already gone.',
-      'The line touching 3, a late injury designation, or the price moving enough that buying off the key number stops paying.'
-    ]},
-    {label:'Over 47.5', name:'A total', v:[
-      'Every posted total and the price on each, with the movement trail since open so a stale number is obvious.',
-      'De-vigged fair value on the total, plus how much of the market’s move happened before this price appeared.',
-      'Where the total stops qualifying in both directions — totals are the market where the price matters most and gets watched least.',
-      'Weather at kickoff or first pitch, pace and usage assumptions, and any data the model does not have.',
-      'A wind change, a confirmed absence, or the total moving through a number the market treats as significant.'
-    ]},
-    {label:'A UFC fight', name:'A fight, where the data is thinner', v:[
-      'The full market on both fighters, including the books that price fights last and move most.',
-      'De-vigged fair value on each side. In a two-outcome market the vig is unusually easy to see once removed.',
-      'How quickly the price stops qualifying — fight markets move in large steps, so the window is narrow.',
-      'Thin and unevenly reliable public data. EdgeDesk will show you which of these inputs it cannot verify rather than filling them in.',
-      'A weigh-in miss, a late replacement, or the market re-pricing after a sharp book moves first.'
-    ]}
-  ];
-  var btns=[];
-  PICKS.forEach(function(p,i){
-    var b=document.createElement('button');
-    b.type='button'; b.textContent='I’m looking at ' + p.label; b.setAttribute('aria-pressed','false');
-    b.addEventListener('click',function(){ show(i); });
-    bar.appendChild(b); btns.push(b);
-  });
-  function show(i){
-    var p=PICKS[i];
-    btns.forEach(function(b,j){ b.setAttribute('aria-pressed', j===i?'true':'false'); });
-    nameEl.textContent='EdgeDesk · '+p.name;
-    body.innerHTML=ROWS.map(function(k,j){
-      return '<div class="irow"><div class="ik">'+k+'</div><div class="iv">'+p.v[j]+'</div></div>';
-    }).join('');
-  }
-  show(0);
-})();
 
 /* ======================================================================
    8 · SCROLL REVEALS — subtle, once, and skipped entirely under reduced motion
