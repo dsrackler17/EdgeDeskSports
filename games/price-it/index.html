@@ -64,8 +64,14 @@
   G.boot('price-it');
 
   /* The selector's range, from the one place that declares it (games.js), so
-     the ends, the input bounds and the nudge clamps cannot disagree. */
-  var RANGE=G.SPREAD_RANGE,STEP=G.SPREAD_STEP;
+     the ends, the input bounds and the nudge clamps cannot disagree.
+
+     The literal fallback is not belt-and-braces, it is a bug fix: a browser
+     holding a CACHED games.js from before the constant existed rendered
+     "Baylor -undefined" and a slider that ran to 100. A cross-file constant
+     must degrade to the right number, never to undefined. */
+  var RANGE=(G&&typeof G.SPREAD_RANGE==='number')?G.SPREAD_RANGE:42;
+  var STEP=(G&&typeof G.SPREAD_STEP==='number')?G.SPREAD_STEP:0.5;
 
   var POOL=[],CHAL=null;
 

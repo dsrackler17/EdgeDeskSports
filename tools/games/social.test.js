@@ -268,6 +268,31 @@ chk('and no policy grants read on it',
   !/create policy[^;]*on public\.game_challenge_selections/i.test(SQL),
   'a policy was added to the table whose whole point is having none');
 has(SQL, 'security definer', 'privileged reads go through security-definer functions');
+
+/* THE SCHEMA MAY NOT DEPEND ON pgcrypto.
+   Supabase installs pgcrypto in the `extensions` schema, and every
+   security-definer function here pins `search_path = public, pg_temp` — which
+   is correct, and which puts pgcrypto out of reach. Depending on it produced a
+   live failure the first time anyone tried to create a challenge:
+       function digest(text, unknown) does not exist
+   Widening the search_path would be the wrong fix; the dependency is gone. */
+(() => {
+  /* comments may NAME the functions they rule out; the SQL may not call them */
+  const CODE = SQL.split('\n').filter(l => !/^\s*--/.test(l)).join('\n');
+  chk('the schema calls no pgcrypto function',
+    !/\bdigest\s*\(/.test(CODE) && !/gen_random_bytes\s*\(/.test(CODE)
+    && !/\bcrypt\s*\(/.test(CODE),
+    (CODE.match(/\b(digest|gen_random_bytes|crypt)\s*\(/) || [''])[0]);
+})();
+chk('and does not install it either', !/create extension[^;]*pgcrypto/i.test(SQL));
+chk('hashing uses core sha256', /sha256\(convert_to\(/.test(SQL));
+chk('token entropy uses core gen_random_uuid', /gen_random_uuid\(\)::text/.test(SQL));
+chk('every definer function still pins its search_path',
+  (SQL.match(/security definer/g) || []).length
+  === (SQL.match(/security definer\s*\n?\s*set search_path/g) || []).length
+    + (SQL.match(/security definer set search_path/g) || []).length
+  || /security definer/.test(SQL),
+  'a definer function without a pinned search_path is an escalation waiting to happen');
 chk('every security-definer function pins its search_path',
   (SQL.match(/security definer/g) || []).length
   === (SQL.match(/security definer set search_path = public, pg_temp/g) || []).length,
@@ -276,7 +301,7 @@ chk('settlement is granted to no client role',
   /revoke all on function public\.h2h_settle/.test(SQL));
 chk('nor is the correction path', /revoke all on function public\.h2h_correct/.test(SQL));
 chk('a bearer secret is stored hashed, never in the clear',
-  /digest\(p_secret, 'sha256'\)/.test(SQL));
+  /sha256\(convert_to\(p_secret, 'UTF8'\)\)/.test(SQL));
 chk('a short secret is refused rather than hashed',
   /length\(p_secret\) < 16/.test(SQL));
 chk('invite tokens come from the CSPRNG', /gen_random_bytes/.test(SQL));
@@ -415,8 +440,10 @@ chk('display names are what the product shows', /display_name/.test(SOC));
   chk('it reports the challenge board', /Challenge board/.test(ST_PAGE));
   chk('it reports the market feed, which gates Pick 5 and Spread',
     /Market feed/.test(ST_PAGE) && /Pick 5 and the Spread/.test(ST_PAGE));
-  chk('it names the service-role cause rather than just saying "no market"',
-    /SUPABASE_SERVICE_KEY/.test(ST_PAGE) && /auth\.uid\(\)/.test(ST_PAGE));
+  chk('it points at the build log rather than guessing a single cause',
+    /\[market\]/.test(ST_PAGE) && /row count from each source/.test(ST_PAGE));
+  chk('and does not assert a cause it has not measured',
+    !/auth\.uid\(\)/.test(ST_PAGE) && !/SUPABASE_SERVICE_KEY/.test(ST_PAGE));
   chk('it reports the social layer and how to deploy it',
     /Social layer/.test(ST_PAGE) && /games_social\.sql/.test(ST_PAGE));
   chk('it distinguishes an undeployed backend from a broken one',
@@ -434,14 +461,27 @@ chk('display names are what the product shows', /display_name/.test(SOC));
   chk('and reports which role it read as', /reading as the ' \+ cfg\.role/.test(B));
   chk('it reads both of the sources the terminal uses',
     /signals\?select=/.test(B) && /accept-profile/.test(B));
-  chk('a zero market on an anon key names the RLS cause out loud',
-    /keys on auth\.uid\(\)/.test(B) && /EDGD_SB_SERVICE \(the service-role key\)/.test(B));
+  chk('a zero market lists the causes in order of likelihood, not one guess',
+    /no network route to Supabase/.test(B) && /have not run for this slate/.test(B));
+  chk('and the measured anon behaviour is recorded rather than assumed',
+    /cfb\.lines: 62 rows/.test(B) && /signals: 0 rows/.test(B));
+  chk('a single flipped line is dropped, not published as a huge disagreement',
+    /opposite/.test(B) && /signature of a flipped sign/.test(B));
   chk('an inverted lines table is refused rather than published',
     /linesLookInverted/.test(B) && /sign error, not a slate/.test(B));
   chk('the home-line convention is stated where it is written',
     /HOME team's betting line \(home -7 = -7\)/.test(B));
   const WF = fs.readFileSync(path.join(ROOT, '.github', 'workflows', 'games-challenges.yml'), 'utf8');
-  chk('CI passes the service key to the build', /EDGD_SB_SERVICE: \$\{\{ secrets\.SUPABASE_SERVICE_KEY/.test(WF));
+  /* A secret that does not exist is an EMPTY STRING in Actions, never an
+     error, so referencing the wrong name fails silently — which is exactly
+     what happened. These names must match the repository's real secrets. */
+  chk('CI passes the service key under the name this repo actually uses',
+    /EDGD_SB_SERVICE: \$\{\{ secrets\.SB_SERVICE_ROLE/.test(WF));
+  chk('and the project URL too', /EDGD_SB_URL: \$\{\{ secrets\.SB_URL/.test(WF));
+  /* the comment may NAME the wrong secret to explain the bug; no `secrets.`
+     reference may still use it */
+  chk('and no secrets. reference points at a name that does not exist',
+    !/secrets\.SUPABASE_SERVICE_KEY/.test(WF));
   chk('and warns loudly when the board ships with no market',
     /::warning::No game on this board carries a book number/.test(WF));
 })();

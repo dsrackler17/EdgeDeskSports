@@ -94,10 +94,10 @@
           'No game on the board carries a book number, so <b>Pick 5 and the Spread '
           +'challenge show their empty states</b>. Price It and the Winner and Price It '
           +'challenges are unaffected — they run on EdgeDesk’s own projection.',
-          'The build reads <code>signals</code> and <code>cfb.lines</code>. Every RLS policy '
-          +'keys on <code>auth.uid()</code>, which is null for an anon bearer, so those reads '
-          +'return zero rows unless the build holds the service role. '
-          +'Set <b>SUPABASE_SERVICE_KEY</b> on the repository and re-run the workflow.')});
+          'The build reads <code>signals</code> and <code>cfb.lines</code>. The build log’s '
+          +'<code>[market]</code> lines name the row count from each source and the role used — '
+          +'that is where the cause is. Most often it is a runner with no network route to '
+          +'Supabase, or an ingest that has not run for this slate.')});
       }
       paint();
     }).catch(function(){

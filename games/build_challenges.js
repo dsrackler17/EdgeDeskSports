@@ -116,16 +116,16 @@ function r1(v) { return v == null ? null : Math.round(v * 10) / 10; }
    copied here: the terminal is where they are declared, and a second copy is a
    second thing to get wrong.
    
-   THE KEY MATTERS, AND ANON IS NOT ENOUGH. app.html says it plainly:
+   WHICH ROLE, AND WHAT IT ACTUALLY CHANGES. Measured, not assumed:
    
-       Reads MUST carry the user's access_token, not the anon key: auth.uid()
-       is what every RLS policy keys on, and it is NULL for an anon bearer.
+       anon           cfb.lines: 62 rows.  signals: 0 rows.
+       service role   both, whatever RLS says.
    
-   A build has no user, so it reads with the SERVICE ROLE. Without it every
-   market read comes back as zero rows — not an error, just silence — and the
-   board ships with no book numbers at all, which is exactly what happened the
-   first time. `role` is reported on every run so a board built without a
-   market says so out loud rather than looking like a quiet day. */
+   So anon is enough for cfb.lines but appears to be gated out of `signals`,
+   which is the FRESHER of the two sources. The build therefore prefers the
+   service role and falls back to anon rather than failing — and reports which
+   role it read as on every run, with the row count from each source, so a thin
+   market is attributable instead of mysterious. */
 function supabaseConfig() {
   var url = process.env.EDGD_SB_URL || null;
   var app = null;
@@ -280,6 +280,12 @@ async function fetchLines(games) {
   log('[market] reading as the ' + cfg.role + ' role (config from ' + cfg.src + ')');
 
   var home = {}, totals = {}, mlH = {}, mlA = {}, note = [];
+  /* the model's own line per game, for the sign check below */
+  var model = {};
+  games.forEach(function (g) {
+    var v = g.model_home_line == null || g.model_home_line === '' ? null : +g.model_home_line;
+    if (v != null && isFinite(v)) model[g.game_id] = v;
+  });
 
   /* 1. live captured quotes */
   try {
@@ -311,17 +317,44 @@ async function fetchLines(games) {
   var ids = Object.keys(home);
   if (!ids.length) {
     log('[market] NO BOOK NUMBER ON ANY GAME.');
-    if (cfg.role !== 'service') {
-      log('[market] This build read as the ANON role. app.html states that every RLS');
-      log('[market] policy keys on auth.uid(), which is NULL for an anon bearer, so an');
-      log('[market] anon read of signals or cfb.lines returns zero rows rather than an');
-      log('[market] error. Set EDGD_SB_SERVICE (the service-role key) to read them.');
-    } else {
-      log('[market] Read as the service role and both sources were genuinely empty for');
-      log('[market] this slate — the odds scanner and cfb ingest may not have run yet.');
-    }
+    log('[market] Both sources returned nothing usable. In order of likelihood:');
+    log('[market]   * the build has no network route to Supabase (a sandbox or a');
+    log('[market]     restricted runner) — the per-source lines above will say HTTP 403;');
+    log('[market]   * the odds scanner and cfb ingest have not run for this slate;');
+    if (cfg.role !== 'service')
+      log('[market]   * this build read as ANON — set EDGD_SB_SERVICE to rule RLS out.');
     return null;
   }
+
+  /* ── ONE inverted row ──────────────────────────────────────────────────
+     The whole-table guard below catches a feed that is inverted end to end.
+     It does NOT catch a single bad row, and cfb.lines does produce them: a row
+     that stores the FAVOURITE'S MAGNITUDE rather than the home line arrives
+     with its sign flipped, and one such row published as-is is a 42-point
+     disagreement on a game where the real gap is a point.
+     
+     The signature is specific: the market and EdgeDesk on OPPOSITE SIDES, by
+     more than the engine's own 21-point guard bound. Real disagreement that
+     large is what the INVESTIGATE state exists for and stays on the board; a
+     sign flip is dropped, and the game simply has no market rather than a
+     wrong one. */
+  var GUARD = 21, dropped = [];
+  ids.forEach(function (g) {
+    var mkt = home[g], mdl = model[g];
+    if (mkt == null || mdl == null) return;
+    var opposite = (mkt > 0 && mdl < 0) || (mkt < 0 && mdl > 0);
+    if (opposite && Math.abs(mdl - mkt) >= GUARD) {
+      dropped.push(g + ' (market ' + mkt + ' vs model ' + mdl + ')');
+      delete home[g];
+    }
+  });
+  if (dropped.length) {
+    log('[market] dropped ' + dropped.length + ' line(s) on opposite sides of the model by '
+      + GUARD + '+ points — the signature of a flipped sign, not a disagreement:');
+    dropped.forEach(function (d) { log('[market]   ' + d); });
+  }
+  ids = Object.keys(home);
+  if (!ids.length) { log('[market] nothing survived the sign check'); return null; }
 
   /* refuse an inverted table rather than publishing a board of fake blowouts */
   if (linesLookInverted(ids.map(function (g) { return home[g]; }))) {
@@ -488,7 +521,11 @@ async function main() {
        keyed by the odds feed's own event_id and has to be matched by name */
     var slate = csvObjects(first).map(function (o) {
       return { game_id: o.game_id, home_team: o.home_team,
-        away_team: o.away_team, kickoff: o.kickoff_local };
+        away_team: o.away_team, kickoff: o.kickoff_local,
+        /* the model's line from the market-less first pass, so a book number on
+           the opposite side of it by 21+ points can be recognised as a flipped
+           sign rather than published as a 42-point disagreement */
+        model_home_line: o.model_home_line };
     }).filter(function (g) { return g.game_id; });
     var linesPath = null;
     if (ARGS.market && slate.length) {
