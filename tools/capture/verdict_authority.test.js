@@ -246,9 +246,9 @@ const eqs = (d, score) => ({ decision: d, score: score == null ? 70 : score });
   chk('an unqualified tape row is tagged pass or watch, never as a play',
     /v==='WATCH'\?'<span class="suspect">watch<\/span>'/.test(APP)
     && /'<span class="suspect">pass<\/span>'/.test(APP));
-  chk('and it states capture\'s own reason under the row',
-    /canonicalVerdictWhy/.test(APP.slice(APP.indexOf('function renderTape'),
-                                          APP.indexOf('function renderTape') + 2000)));
+  chk('and it states capture\'s own reason under EVERY row, not only the refused ones',
+    /var why=\(typeof canonicalVerdictWhy==='function'\)\?canonicalVerdictWhy\(e\):'';/.test(APP)
+    && /<div class="lead-meta tape-why">'\+edEsc\(why\)/.test(APP));
   chk('the tape says plainly that it is not a live ticker',
     /advances when capture runs, not continuously/.test(APP)
     && /This is <b>not<\/b> a live ticker/.test(APP));
@@ -260,6 +260,40 @@ const eqs = (d, score) => ({ decision: d, score: score == null ? 70 : score });
     /renderDaily\(\);try\{renderTape\(\);\}catch\(_\)\{\}/.test(APP));
   chk('and it is capped, with the cap explained rather than silent',
     /var TAPE_MAX_GAMES = 60;/.test(APP) && /biggest movers of/.test(APP));
+
+  /* ── THE FIVE-SECOND READ ────────────────────────────────────────────────
+     The slate is ranked by the decision hierarchy and every row states what,
+     why and what to do. The failure mode this guards is the imperative: a row
+     capture refused must never reach a string that tells the reader to act. */
+  chk('the slate ranks by capture\'s decision hierarchy, not by movement',
+    /function tapeRank\(e\)\{/.test(APP)
+    && /if\(v==='BET'\)return 0;/.test(APP)
+    && /if\(e&&e\.qual_reason==='awaiting_confirmation'\)return 2;/.test(APP));
+  chk('and the ranking reads the canonical verdict rather than forming one',
+    /function tapeRank[\s\S]{0,300}canonicalMarketVerdict\(e\)/.test(APP));
+  chk('every row carries an explicit next action',
+    /function tapeAction\(e,v\)\{/.test(APP) && /<div class="tape-do /.test(APP));
+  chk('only a BET or LEAN row can reach an imperative that says to act',
+    /if\(v==='BET'\)return \{t:'Bet it/.test(APP)
+    && /if\(v==='LEAN'\)return \{t:'Lean/.test(APP));
+  chk('awaiting confirmation says hold, never bet',
+    /awaiting_confirmation'\)\s*\n?\s*return \{t:'Hold/.test(APP));
+  chk('a positive but unqualified row says research, and a negative one says skip',
+    /return \{t:'Research \\u00b7 positive but it did not clear'/.test(APP)
+    && /return \{t:'Skip \\u00b7 nothing here to act on'/.test(APP));
+  chk('the header states the one thing to look at, or says plainly that nothing qualifies',
+    /Look here first:/.test(APP) && /Nothing qualifies right now, and that is the answer/.test(APP));
+  chk('and the header is derived from the top row, so it cannot name a row the list lacks',
+    /var t0=shown\[0\], v0=t0\?/.test(APP));
+
+  /* Stale is LABELLED on the research lists and still DROPPED on the board. */
+  chk('the Top 5 no longer deletes a row for being stale',
+    /STALE IS LABELLED HERE, NOT DELETED/.test(APP)
+    && /var ls=e\.last_seen_at\?new Date\(e\.last_seen_at\)\.getTime\(\):0;\s*\n\s*if\(!ls\)return false;/.test(APP));
+  chk('but an undated price is still not a price',
+    /if\(!ls\)return false;/.test(APP));
+  chk('and the bettable board still drops the zombie',
+    /if\(!ls\|\|ls<staleCut\)return false;\s*\/\/ drop zombies capture no longer re-prices/.test(APP));
 
   /* Grep for anything still deriving a BET from raw inputs. */
   const rawBet = (APP.match(/verdict\s*=\s*'BET'/g) || []).length;
