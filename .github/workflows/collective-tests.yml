@@ -146,6 +146,11 @@ jobs:
       - name: The navigation says what the product is
         run: node tools/app/navigation.test.js
 
+      # The default landing page: what a new reader is told in five seconds,
+      # and what the page is not allowed to imply about the model.
+      - name: The research landing tells the truth in five seconds
+        run: node tools/app/research_landing.test.js
+
       # The workbook the boards download, rebuilt from a real cleaned file.
       - name: The download is the format the operator cleaned up by hand
         run: node tools/collective/app_export.test.js
