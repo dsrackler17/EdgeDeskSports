@@ -258,6 +258,35 @@ if (good.json) {
       unknown.length === 0, unknown.join(','));
   });
 
+  /* The suites must run on the pull request, not only after the merge. They
+     used to live solely inside games-challenges.yml, which never fires on a
+     pull_request, so every games PR merged with zero checks and the suites
+     first ran against main — where a failure is already live. */
+  (() => {
+    const runners = files.filter(f => {
+      const src = fs.readFileSync(path.join(WF, f), 'utf8');
+      return src.indexOf('games:test') >= 0 && /^\s*pull_request:/m.test(src);
+    });
+    chk('some workflow runs the games suites on a pull request',
+      runners.length > 0, runners.join(',') || 'none');
+    runners.forEach(f => {
+      const src = fs.readFileSync(path.join(WF, f), 'utf8');
+      const on = src.slice(0, src.search(/^jobs:/m) >= 0 ? src.search(/^jobs:/m) : src.length);
+      const pr = on.slice(on.indexOf('pull_request:'));
+      const cut = pr.search(/\n  [a-z_]+:/);
+      const scope = pr.slice(0, cut >= 0 ? cut : pr.length);
+      /* Read the list ENTRIES, not the block. A path named in a comment is
+         prose, and matching it would let the trigger lose the path while the
+         assertion kept passing — which is exactly what happened first. */
+      const globs = (scope.match(/^\s*-\s*'([^']+)'/gm) || [])
+        .map(l => l.replace(/^\s*-\s*'/, '').replace(/'$/, ''));
+      /* the paths that decide whether it triggers must cover what it tests */
+      ['games/**', 'tools/games/**', 'package.json'].forEach(g => {
+        chk(f + ' triggers on changes to ' + g, globs.indexOf(g) >= 0, globs.join(','));
+      });
+    });
+  })();
+
   ['games-challenges.yml', 'games-settle.yml'].forEach(f => {
     const src = fs.readFileSync(path.join(WF, f), 'utf8');
     chk(f + ' passes the service role to the script',
