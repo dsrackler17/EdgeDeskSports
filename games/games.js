@@ -15,6 +15,18 @@
   var ART = '/games/data/challenges.json';
   var CFG = '/games/data/config.json';
   var TERMINAL = '/app.html';
+
+  /* How far the spread selector travels, each way, in points.
+     
+     Wide enough that a genuine mismatch is inside the range rather than pinned
+     at the end: a Power 4 team hosting an FCS opponent is routinely priced past
+     five touchdowns, and a slider that stops at 28 forces those reads to lie.
+     
+     ONE constant, because it appears in four places on two pages — the two end
+     labels, the input's min/max, and the nudge clamps — and a range that
+     disagrees with its own labels is worse than either value. */
+  var SPREAD_RANGE = 42;
+  var SPREAD_STEP = 0.5;
   var W = root.EDGamesWeek, ST = root.EDGamesStore,
       CH = root.EDGamesChallenge, SC = root.EDGamesScoring,
       RS = root.EDGamesResearchState, AT = root.EDGamesAttribution;
@@ -256,6 +268,9 @@
       + '<a href="' + esc(withAttribution(TERMINAL)) + '">The terminal</a>'
       + '<a href="/terms.html">Terms</a><a href="/privacy.html">Privacy</a>'
       + '<a href="/disclaimer.html">Disclaimer</a>'
+      /* the operator read-out: what is connected right now. Linked from every
+         page because a missing feed is otherwise invisible from the outside. */
+      + '<a href="/games/status/">Status</a>'
       + '</div></div></footer>';
   }
 
@@ -301,6 +316,7 @@
 
   var API = {
     ART: ART, TERMINAL: TERMINAL, FUNNEL: FUNNEL,
+    SPREAD_RANGE: SPREAD_RANGE, SPREAD_STEP: SPREAD_STEP,
     track: track, withAttribution: withAttribution, initAttribution: initAttribution,
     artifact: artifact, config: config, researchUrl: researchUrl, openResearch: openResearch,
     pts: pts, line: line, kickoffLabel: kickoffLabel, esc: esc,

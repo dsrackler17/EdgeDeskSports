@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Status | EdgeDesk Games</title>
+<meta name="description" content="What EdgeDesk Games is connected to right now: the challenge board, the market feed, the social layer and your local record.">
+<meta name="theme-color" content="#0b0d11">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230b0d11'/%3E%3Cpath d='M18 6 L23 6 L14 26 L9 26 Z' fill='%233fb883'/%3E%3C/svg%3E">
+<!-- An operator page, not a product page. -->
+<meta name="robots" content="noindex,nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/games/games.css">
+</head>
+<body>
+<div id="gh"></div>
+
+<main class="wrap">
+  <div class="sec" style="margin-top:20px">
+    <div class="sec-h"><h2>Status</h2><span class="m" id="stamp"></span></div>
+    <p style="margin:0 0 14px;color:var(--dim);font-size:14px;line-height:1.6">
+      What EdgeDesk Games is connected to right now, checked live from this browser.
+      Nothing here is configurable from the page — this is a read-out, so that a
+      missing feed is visible instead of looking like a quiet day.
+    </p>
+    <div id="checks"><div class="card"><div class="sk" style="width:60%;margin:6px 0"></div>
+      <div class="sk" style="width:40%;margin:12px 0"></div></div></div>
+  </div>
+  <div id="detail"></div>
+</main>
+
+<div id="gf"></div>
+
+<script src="/games/lib/week.js"></script>
+<script src="/games/lib/scoring.js"></script>
+<script src="/games/lib/challenge.js"></script>
+<script src="/games/lib/research_state.js"></script>
+<script src="/games/lib/attribution.js"></script>
+<script src="/games/lib/store.js"></script>
+<script src="/games/lib/social.js"></script>
+<script src="/games/games.js"></script>
+<script>
+(function(){
+  'use strict';
+  var G=window.EDGames,S=window.EDGamesSocial,ST=window.EDGamesStore,
+      W=window.EDGamesWeek,CH=window.EDGamesChallenge;
+  var $=function(id){return document.getElementById(id);};
+  var READY=G.boot('status');
+
+  function esc(s){return G.esc(s);}
+  function row(state,title,detail,action){
+    var cls=state==='ok'?'ok':state==='warn'?'warn':state==='bad'?'neg':'mut';
+    var dot=state==='ok'?'Connected':state==='warn'?'Degraded':state==='bad'?'Not connected':'Unknown';
+    return '<div class="card" style="padding:14px 16px">'
+      +'<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">'
+      +'<span class="rs '+cls+'"><span class="dot"></span>'+esc(dot)+'</span>'
+      +'<b style="font-size:14px">'+esc(title)+'</b></div>'
+      +'<div class="rs-means" style="margin-top:8px">'+detail+'</div>'
+      +(action?('<div class="rs-means" style="color:var(--faint);margin-top:6px">'+action+'</div>'):'')
+      +'</div>';
+  }
+
+  function fmt(iso){
+    if(!iso)return 'never';
+    var t=Date.parse(iso);
+    if(!isFinite(t))return esc(String(iso));
+    var age=(Date.now()-t)/36e5;
+    var when=new Date(t).toLocaleString();
+    return esc(when)+' ('+(age<1?'under an hour':Math.round(age)+'h')+' ago)';
+  }
+
+  READY.then(function(cfg){
+    var out=[];
+
+    /* ---- 1. the challenge board ---- */
+    G.artifact().then(function(a){
+      var playable=CH.playable(a.challenges).length;
+      var mkt=a.counts&&a.counts.with_market||0;
+      out.push({order:1,html:row('ok','Challenge board',
+        'Built '+fmt(a.generated_at)+'.<br>'
+        +esc(a.counts.games)+' games read, <b>'+esc(playable)+'</b> playable now, model '
+        +esc(a.model_version||'—')+'.',
+        'Rebuilt daily by the Games challenge board workflow.')});
+
+      /* ---- 2. the market feed — the one that gates Pick 5 and Spread ---- */
+      if(mkt>0){
+        out.push({order:2,html:row('ok','Market feed',
+          '<b>'+esc(mkt)+'</b> of '+esc(playable)+' playable games carry a book number. '
+          +'Pick 5 and the Spread challenge are live.')});
+      }else{
+        out.push({order:2,html:row('bad','Market feed',
+          'No game on the board carries a book number, so <b>Pick 5 and the Spread '
+          +'challenge show their empty states</b>. Price It and the Winner and Price It '
+          +'challenges are unaffected — they run on EdgeDesk’s own projection.',
+          'The build reads <code>signals</code> and <code>cfb.lines</code>. Every RLS policy '
+          +'keys on <code>auth.uid()</code>, which is null for an anon bearer, so those reads '
+          +'return zero rows unless the build holds the service role. '
+          +'Set <b>SUPABASE_SERVICE_KEY</b> on the repository and re-run the workflow.')});
+      }
+      paint();
+    }).catch(function(){
+      out.push({order:1,html:row('bad','Challenge board',
+        'The committed board could not be loaded. Every game is unavailable until it is.')});
+      out.push({order:2,html:row('unknown','Market feed','Cannot tell without the board.')});
+      paint();
+    });
+
+    /* ---- 3. the social layer ---- */
+    if(!cfg){
+      out.push({order:3,html:row('bad','Social layer',
+        'No endpoint is configured in this build, so Head-to-Head and Groups cannot run.',
+        'games/data/config.json is written by the build from app.html.')});
+      paint();
+    }else{
+      S.previewGroup('statuscheckdoesnotexist').then(function(r){
+        /* a deployed backend answers with null for an unknown token; an
+           undeployed one 404s because the function itself is missing */
+        if(r.ok){
+          out.push({order:3,html:row('ok','Social layer',
+            'Head-to-Head and Groups are live against '+esc(cfg.supabase_url.replace(/^https?:\/\//,''))+'.')});
+        }else if(r.status===404||r.error==='not_configured'){
+          out.push({order:3,html:row('bad','Social layer',
+            'The database functions are not deployed, so <b>Head-to-Head and Groups cannot '
+            +'be used</b>. Price It and Pick 5 are unaffected.',
+            'Apply <code>supabase/games_social.sql</code> to the Supabase project.')});
+        }else{
+          out.push({order:3,html:row('warn','Social layer',
+            'Reachable, but the check returned: '+esc(r.message||r.error||'an error')+'.')});
+        }
+        paint();
+      });
+    }
+
+    /* ---- 4. your identity and record ---- */
+    var u=S.signedIn()?S.user():null;
+    out.push({order:4,html:row(u?'ok':'warn','Your account',
+      u?('Signed in as <b>'+esc(S.displayName())+'</b>. Head-to-Head results, ratings and '
+        +'group membership are saved to your account.')
+       :('Not signed in. You can play everything except creating or joining a group; '
+        +'results are kept on this device only.'),
+      u?null:'<a href="'+esc(G.withAttribution('/app.html',{intent:'games_status'}))+'#account">Create a free account</a>')});
+
+    var pi=ST.priceItRecord(),p5=ST.pick5Record();
+    out.push({order:5,html:row(ST.storageWorks()?'ok':'warn','This device',
+      (ST.storageWorks()
+        ? 'Local storage is working, so streaks and history persist here.'
+        : 'This browser is blocking local storage, so nothing is saved between visits.')
+      +'<br>Price It: <b>'+pi.played+'</b> played'
+      +(pi.avg_distance!=null?(' · avg '+pi.avg_distance.toFixed(1)+' pts off'):'')
+      +' · Pick 5: <b>'+(p5.label||'—')+'</b>'
+      +' · week of '+esc(W.weekKey()))});
+
+    function paint(){
+      out.sort(function(a,b){return a.order-b.order;});
+      $('checks').innerHTML=out.map(function(o){return o.html;}).join('');
+      $('stamp').textContent='checked just now';
+    }
+    paint();
+  });
+})();
+</script>
+</body>
+</html>

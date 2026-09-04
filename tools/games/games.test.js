@@ -573,6 +573,29 @@ chk('no stat label is long enough to ellipsize in a third-width tile',
   ((HOME + PRICE + PICK).match(/<div class="k">([^<]*)<\/div>/g) || [])
     .map(m => m.replace(/<[^>]*>/g, '')).filter(t => t.length > 12).join(','));
 
+/* ── the spread selector's range ────────────────────────────────────────
+   It appears in four places on each page that has a selector — both end
+   labels, the input's min/max, and the two nudge clamps — so it is declared
+   once in games.js and read from there. A range that disagrees with its own
+   end labels is worse than either value. */
+(() => {
+  const m = JS.match(/var SPREAD_RANGE = (\d+)/);
+  chk('the selector range is declared once, in the shared runtime', !!m);
+  const R = m ? +m[1] : null;
+  chk('and it is wide enough for a real mismatch', R >= 40, String(R));
+  chk('games.js exports it', /SPREAD_RANGE: SPREAD_RANGE/.test(JS));
+  [['price it', PRICE], ['head-to-head', fs.readFileSync(G('h2h/index.html'), 'utf8')]]
+    .forEach(([n, p]) => {
+      chk(n + ' reads the shared range rather than declaring its own',
+        /RANGE\s*=\s*G\.SPREAD_RANGE/.test(p));
+      chk(n + ' hardcodes no selector bound',
+        !/min="-?\d+" max="\d+"/.test(p) && !/Math\.(min|max)\(-?\d+,\s*\(\+sl\.value\)/.test(p),
+        (p.match(/min="-?\d+" max="\d+"/) || p.match(/Math\.(min|max)\(-?\d+,\s*\(\+sl\.value\)/) || [''])[0]);
+      chk(n + ' labels its ends from the same constant',
+        /−'\+RANGE\+'/.test(p), 'an end label is hardcoded');
+    });
+})();
+
 /* ── 10. analytics ─────────────────────────────────────────────────────── */
 const REQUIRED_EVENTS = ['games_page_view', 'price_it_start', 'price_it_complete',
   'pick5_start', 'pick5_complete', 'result_reveal', 'share_result', 'next_game_click',

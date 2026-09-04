@@ -112,61 +112,233 @@ function txt(x) { var s = String(x == null ? '' : x).trim(); return s || null; }
 function r1(v) { return v == null ? null : Math.round(v * 10) / 10; }
 
 /* --------------------------------------------------------- market lines */
-/* The public anon key and project URL are READ OUT OF app.html rather than
+/* The project URL and the public anon key are READ OUT OF app.html rather than
    copied here: the terminal is where they are declared, and a second copy is a
-   second thing to get wrong. Both are already public — the key is the anon
-   role and RLS governs what it can see. */
+   second thing to get wrong.
+   
+   THE KEY MATTERS, AND ANON IS NOT ENOUGH. app.html says it plainly:
+   
+       Reads MUST carry the user's access_token, not the anon key: auth.uid()
+       is what every RLS policy keys on, and it is NULL for an anon bearer.
+   
+   A build has no user, so it reads with the SERVICE ROLE. Without it every
+   market read comes back as zero rows — not an error, just silence — and the
+   board ships with no book numbers at all, which is exactly what happened the
+   first time. `role` is reported on every run so a board built without a
+   market says so out loud rather than looking like a quiet day. */
 function supabaseConfig() {
-  if (process.env.EDGD_SB_URL && process.env.EDGD_SB_KEY)
-    return { url: process.env.EDGD_SB_URL, key: process.env.EDGD_SB_KEY, src: 'environment' };
-  var app;
-  try { app = fs.readFileSync(path.join(ROOT, 'app.html'), 'utf8'); }
-  catch (e) { return null; }
-  var u = app.match(/SB_URL\s*=\s*"([^"]+)"/);
-  var k = app.match(/SB_KEY\s*=\s*"([^"]+)"/);
-  if (!u || !k) return null;
-  return { url: u[1], key: k[1], src: 'app.html' };
+  var url = process.env.EDGD_SB_URL || null;
+  var app = null;
+  try { app = fs.readFileSync(path.join(ROOT, 'app.html'), 'utf8'); } catch (e) { app = null; }
+  if (!url && app) {
+    var u = app.match(/SB_URL\s*=\s*"([^"]+)"/);
+    url = u ? u[1] : null;
+  }
+  if (!url) return null;
+
+  if (process.env.EDGD_SB_SERVICE)
+    return { url: url, key: process.env.EDGD_SB_SERVICE, role: 'service', src: 'environment' };
+  if (process.env.EDGD_SB_KEY)
+    return { url: url, key: process.env.EDGD_SB_KEY, role: 'anon', src: 'environment' };
+  if (app) {
+    var k = app.match(/SB_KEY\s*=\s*"([^"]+)"/);
+    if (k) return { url: url, key: k[1], role: 'anon', src: 'app.html' };
+  }
+  return null;
 }
 
-/* cfb.lines for a set of game ids -> the CSV shape the exporter's --lines
-   option already understands. Any failure returns null and the build carries
-   on WITHOUT market numbers rather than inventing one. */
-async function fetchLines(gameIds) {
-  var cfg = supabaseConfig();
-  if (!cfg) { log('[market] no Supabase config found — building without book numbers'); return null; }
-  if (typeof fetch !== 'function') { log('[market] no fetch in this runtime'); return null; }
-  var out = [], CHUNK = 120, i;
-  try {
-    for (i = 0; i < gameIds.length; i += CHUNK) {
-      var ids = gameIds.slice(i, i + CHUNK);
-      var q = cfg.url + '/rest/v1/lines?select=game_id,provider,spread,over_under,'
-        + 'home_moneyline,away_moneyline&game_id=in.(' + ids.map(encodeURIComponent).join(',') + ')';
-      var r = await fetch(q, { headers: {
-        apikey: cfg.key, authorization: 'Bearer ' + cfg.key, 'accept-profile': 'cfb' } });
-      if (!r.ok) throw new Error('cfb.lines HTTP ' + r.status);
-      var rows = await r.json();
-      out = out.concat(rows || []);
-    }
-  } catch (e) {
-    log('[market] cfb.lines unreachable (' + (e && e.message) + ') — building without book numbers');
-    return null;
+/* Loose team matching, the way the board does it: lowercase, strip everything
+   that is not a letter or digit, then prefix-match. Feeds name their teams
+   differently enough ("Miami (FL)" / "Miami FL") that exact equality drops
+   real games. */
+function normTeam(s) {
+  return String(s == null ? '' : s).toLowerCase().replace(/[^a-z0-9]/g, '');
+}
+
+/* EVERY HOME TEAM A DOG IS A SIGN ERROR, not a slate.
+   
+   Ported from fbP4SpreadSanity in app.html, and it is not paranoia: cfb.lines
+   carries the home team's BETTING number, so a table filled with positive
+   magnitudes arrives with every line inverted. Nothing downstream can tell —
+   the gaps just come out enormous and every game looks like a huge
+   disagreement. Home teams are favoured in most college games, so a set where
+   nearly all of them are underdogs is refused rather than published. */
+function linesLookInverted(homeLines) {
+  var n = 0, dogs = 0;
+  homeLines.forEach(function (v) {
+    if (v == null || !isFinite(v) || v === 0) return;
+    n++;
+    if (v > 0) dogs++;
+  });
+  if (n < 8) return false;                  /* too few to judge */
+  return (dogs / n) > 0.85;
+}
+
+/* ── the market ────────────────────────────────────────────────────────────
+   EdgeDesk already has two sources for a book number, and the research
+   terminal prefers them in this order, so this does too:
+
+     1. `signals`   the live captured quotes the odds scanner writes. Fresher,
+                    and the only source during the week a game is played.
+     2. `cfb.lines` the ingested reference table. Slower-moving, wider coverage.
+
+   Both are read with whatever role supabaseConfig() found. With the anon key
+   they will almost certainly come back EMPTY rather than erroring, because RLS
+   keys on auth.uid() — which is why every count below is reported, and why a
+   zero on an anon key says so explicitly instead of looking like a quiet day.
+
+   Output is the CSV shape the exporter's own --lines option understands, whose
+   `spread` column is the HOME team's betting line (home -7 = -7). That is the
+   same convention cfb.lines.spread uses, and the negation of the engine's
+   margin convention — getting it backwards inverts every game on the board. */
+
+function sbHeaders(cfg, extra) {
+  var h = { apikey: cfg.key, authorization: 'Bearer ' + cfg.key };
+  if (extra) for (var k in extra) if (extra.hasOwnProperty(k)) h[k] = extra[k];
+  return h;
+}
+
+async function sbGet(cfg, query, headers) {
+  var r = await fetch(cfg.url + '/rest/v1/' + query, { headers: sbHeaders(cfg, headers) });
+  var body = await r.text();
+  if (!r.ok) {
+    var e = new Error('HTTP ' + r.status + (body ? ' ' + body.slice(0, 160) : ''));
+    e.status = r.status;
+    throw e;
   }
-  /* one row per game: prefer a consensus provider, else the first seen */
+  try { return JSON.parse(body); } catch (_) { return []; }
+}
+
+/* Live captured quotes -> { game_id: homeLine }.
+   `signals` is keyed by the odds feed's own event_id, so games are matched the
+   way the board matches them: normalised team names plus a kickoff within a
+   day and a half. A spreads row's `point` for the HOME selection IS the home
+   betting line, which is what we want and what the exporter expects. */
+async function linesFromSignals(cfg, games) {
+  var now = new Date().toISOString();
+  var hi = new Date(Date.now() + 21 * 864e5).toISOString();
+  var rows = await sbGet(cfg,
+    'signals?select=event_id,market,selection,point,home_team,away_team,commence_time'
+    + '&sport_key=eq.americanfootball_ncaaf&market=eq.spreads'
+    + '&commence_time=gte.' + now + '&commence_time=lte.' + hi + '&limit=2000');
+  if (!rows.length) return { lines: {}, rows: 0 };
+
+  var ev = {};
+  rows.forEach(function (r) {
+    (ev[r.event_id] = ev[r.event_id] || { home: r.home_team, away: r.away_team,
+      t: r.commence_time, rows: [] }).rows.push(r);
+  });
+
+  var out = {}, matched = 0;
+  games.forEach(function (g) {
+    var hN = normTeam(g.home_team), aN = normTeam(g.away_team);
+    var kt = Date.parse(String(g.kickoff || '').replace(' ', 'T'));
+    for (var k in ev) {
+      if (!ev.hasOwnProperty(k)) continue;
+      var e = ev[k];
+      if (normTeam(e.home).indexOf(hN) !== 0 && hN.indexOf(normTeam(e.home)) !== 0) continue;
+      if (normTeam(e.away).indexOf(aN) !== 0 && aN.indexOf(normTeam(e.away)) !== 0) continue;
+      var et = Date.parse(e.t);
+      if (isFinite(kt) && isFinite(et) && Math.abs(et - kt) > 36 * 3600e3) continue;
+      for (var i = 0; i < e.rows.length; i++) {
+        var r = e.rows[i];
+        if (normTeam(r.selection) === normTeam(e.home) && r.point != null) {
+          out[g.game_id] = +r.point;    /* the home team's betting line */
+          matched++;
+          break;
+        }
+      }
+      break;
+    }
+  });
+  return { lines: out, rows: rows.length, matched: matched };
+}
+
+/* The ingested reference table -> { game_id: homeLine }. */
+async function linesFromCfbLines(cfg, games) {
+  var ids = games.map(function (g) { return g.game_id; }).filter(Boolean);
+  var out = [], CHUNK = 120, i;
+  for (i = 0; i < ids.length; i += CHUNK) {
+    var chunk = ids.slice(i, i + CHUNK);
+    out = out.concat(await sbGet(cfg,
+      'lines?select=game_id,provider,spread,over_under,home_moneyline,away_moneyline'
+      + '&game_id=in.(' + chunk.map(encodeURIComponent).join(',') + ')',
+      { 'accept-profile': 'cfb' }));
+  }
   var by = {};
   out.forEach(function (l) {
     var cur = by[l.game_id];
     if (!cur || String(l.provider || '').toLowerCase().indexOf('consensus') >= 0) by[l.game_id] = l;
   });
-  var keys = Object.keys(by);
-  if (!keys.length) { log('[market] cfb.lines returned no rows for this slate'); return null; }
+  return { rowsRaw: out.length, by: by };
+}
+
+async function fetchLines(games) {
+  var cfg = supabaseConfig();
+  if (!cfg) { log('[market] no Supabase config found — building without book numbers'); return null; }
+  if (typeof fetch !== 'function') { log('[market] no fetch in this runtime'); return null; }
+  log('[market] reading as the ' + cfg.role + ' role (config from ' + cfg.src + ')');
+
+  var home = {}, totals = {}, mlH = {}, mlA = {}, note = [];
+
+  /* 1. live captured quotes */
+  try {
+    var sig = await linesFromSignals(cfg, games);
+    Object.keys(sig.lines).forEach(function (g) { home[g] = sig.lines[g]; });
+    note.push('signals: ' + sig.rows + ' row(s), ' + Object.keys(sig.lines).length + ' matched');
+  } catch (e) {
+    note.push('signals: ' + ((e && e.message) || 'failed'));
+  }
+
+  /* 2. the reference table, for anything the live feed did not cover */
+  try {
+    var ref = await linesFromCfbLines(cfg, games);
+    var added = 0;
+    Object.keys(ref.by).forEach(function (g) {
+      var l = ref.by[g];
+      if (home[g] == null && l.spread != null) { home[g] = +l.spread; added++; }
+      if (l.over_under != null && totals[g] == null) totals[g] = l.over_under;
+      if (l.home_moneyline != null && mlH[g] == null) mlH[g] = l.home_moneyline;
+      if (l.away_moneyline != null && mlA[g] == null) mlA[g] = l.away_moneyline;
+    });
+    note.push('cfb.lines: ' + ref.rowsRaw + ' row(s), ' + added + ' added');
+  } catch (e) {
+    note.push('cfb.lines: ' + ((e && e.message) || 'failed'));
+  }
+
+  note.forEach(function (n) { log('[market]   ' + n); });
+
+  var ids = Object.keys(home);
+  if (!ids.length) {
+    log('[market] NO BOOK NUMBER ON ANY GAME.');
+    if (cfg.role !== 'service') {
+      log('[market] This build read as the ANON role. app.html states that every RLS');
+      log('[market] policy keys on auth.uid(), which is NULL for an anon bearer, so an');
+      log('[market] anon read of signals or cfb.lines returns zero rows rather than an');
+      log('[market] error. Set EDGD_SB_SERVICE (the service-role key) to read them.');
+    } else {
+      log('[market] Read as the service role and both sources were genuinely empty for');
+      log('[market] this slate — the odds scanner and cfb ingest may not have run yet.');
+    }
+    return null;
+  }
+
+  /* refuse an inverted table rather than publishing a board of fake blowouts */
+  if (linesLookInverted(ids.map(function (g) { return home[g]; }))) {
+    log('[market] REFUSING these lines: ' + ids.length + ' games and nearly every home team');
+    log('[market] is a market underdog, which is a sign error, not a slate. Building');
+    log('[market] without book numbers rather than inverting every game on the board.');
+    return null;
+  }
+
   var csv = ['game_id,spread,over_under,home_moneyline,away_moneyline'];
-  keys.forEach(function (g) {
-    var l = by[g];
-    csv.push([g, l.spread == null ? '' : l.spread, l.over_under == null ? '' : l.over_under,
-      l.home_moneyline == null ? '' : l.home_moneyline,
-      l.away_moneyline == null ? '' : l.away_moneyline].join(','));
+  ids.forEach(function (g) {
+    csv.push([g, home[g],
+      totals[g] == null ? '' : totals[g],
+      mlH[g] == null ? '' : mlH[g],
+      mlA[g] == null ? '' : mlA[g]].join(','));
   });
-  log('[market] ' + keys.length + ' game(s) carry a book number (source: ' + cfg.src + ')');
+  log('[market] ' + ids.length + ' game(s) carry a book number');
   return csv.join('\n') + '\n';
 }
 
@@ -312,10 +484,15 @@ async function main() {
     log('[build] season ' + season + ' — running the canonical Power 4 exporter');
     /* Pass one: no lines, purely to learn which games are on the slate. */
     var first = runExporter(season, null, path.join(tmp, 'slate0.csv'));
-    var ids = csvObjects(first).map(function (o) { return o.game_id; }).filter(Boolean);
+    /* the market matcher needs teams and kickoffs, not just ids: `signals` is
+       keyed by the odds feed's own event_id and has to be matched by name */
+    var slate = csvObjects(first).map(function (o) {
+      return { game_id: o.game_id, home_team: o.home_team,
+        away_team: o.away_team, kickoff: o.kickoff_local };
+    }).filter(function (g) { return g.game_id; });
     var linesPath = null;
-    if (ARGS.market && ids.length) {
-      var lines = await fetchLines(ids);
+    if (ARGS.market && slate.length) {
+      var lines = await fetchLines(slate);
       if (lines) { linesPath = path.join(tmp, 'lines.csv'); fs.writeFileSync(linesPath, lines); }
     }
     /* Pass two: the real slate, with book numbers joined by the exporter. */

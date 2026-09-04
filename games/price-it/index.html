@@ -63,9 +63,9 @@
 
   G.boot('price-it');
 
-  /* The selector's range. 28 points covers every realistic college spread and
-     keeps the slider's travel meaningful on a 320px screen. */
-  var RANGE=28,STEP=0.5;
+  /* The selector's range, from the one place that declares it (games.js), so
+     the ends, the input bounds and the nudge clamps cannot disagree. */
+  var RANGE=G.SPREAD_RANGE,STEP=G.SPREAD_STEP;
 
   var POOL=[],CHAL=null;
 

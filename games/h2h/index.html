@@ -64,6 +64,8 @@
   var $=function(id){return document.getElementById(id);};
   var stage=$('stage'),after=$('after');
   var POOL=[],ART=null,TOKEN=null,DRAFT={mode:'spread',game:null,selection:null};
+  /* the same selector bounds Price It uses, from the one place that declares them */
+  var RANGE=G.SPREAD_RANGE,STEP=G.SPREAD_STEP;
 
   /* boot() resolves once the social endpoint is configured, so nothing calls an
      RPC against an unconfigured client and reports a false "not deployed". */
@@ -227,9 +229,9 @@
         +'<div class="eyebrow">Your line</div>'
         +'<div class="sel-read" aria-live="polite"><div class="sel-line mono" id="rl">'
         +esc(G.line(ch,cur)||'Pick ’em')+'</div></div>'
-        +'<div class="sel-ends"><span>'+esc(ch.away_team)+' −28</span><span>'
-        +esc(ch.home_team)+' −28</span></div>'
-        +'<input class="sel-range" type="range" id="sl" min="-28" max="28" step="0.5" value="'
+        +'<div class="sel-ends"><span>'+esc(ch.away_team)+' −'+RANGE+'</span><span>'
+        +esc(ch.home_team)+' −'+RANGE+'</span></div>'
+        +'<input class="sel-range" type="range" id="sl" min="'+(-RANGE)+'" max="'+RANGE+'" step="'+STEP+'" value="'
         +(-cur)+'" aria-label="Your line for this game, in points">'
         +'<div class="sel-nudge"><button class="nudge" id="dn" type="button" aria-label="Half a point toward '+esc(ch.away_team)+'">−</button>'
         +'<div class="sel-hint">Half-point steps</div>'
@@ -242,8 +244,8 @@
         $('create').disabled=false;
       }
       sl.addEventListener('input',paint);
-      $('dn').addEventListener('click',function(){sl.value=Math.min(28,(+sl.value)+0.5);paint();});
-      $('up').addEventListener('click',function(){sl.value=Math.max(-28,(+sl.value)-0.5);paint();});
+      $('dn').addEventListener('click',function(){sl.value=Math.min(RANGE,(+sl.value)+STEP);paint();});
+      $('up').addEventListener('click',function(){sl.value=Math.max(-RANGE,(+sl.value)-STEP);paint();});
       paint();
       return;
     }
@@ -443,8 +445,8 @@
       return '<div class="sel" style="margin-top:16px">'
         +'<div class="sel-read" aria-live="polite"><div class="sel-line mono" id="rl">Pick ’em</div>'
         +'<div class="sel-who" id="rw">Set the line you think is fair</div></div>'
-        +'<div class="sel-ends"><span>'+esc(ch.away_team)+' −28</span><span>'+esc(ch.home_team)+' −28</span></div>'
-        +'<input class="sel-range" type="range" id="sl" min="-28" max="28" step="0.5" value="0"'
+        +'<div class="sel-ends"><span>'+esc(ch.away_team)+' −'+RANGE+'</span><span>'+esc(ch.home_team)+' −'+RANGE+'</span></div>'
+        +'<input class="sel-range" type="range" id="sl" min="'+(-RANGE)+'" max="'+RANGE+'" step="'+STEP+'" value="0"'
         +' aria-label="Your line for this game, in points">'
         +'<div class="sel-nudge"><button class="nudge" id="dn" type="button" aria-label="Half a point toward '+esc(ch.away_team)+'">−</button>'
         +'<div class="sel-hint">Half-point steps</div>'
@@ -475,8 +477,8 @@
         btn.disabled=false;
       }
       sl.addEventListener('input',paint);
-      $('dn').addEventListener('click',function(){sl.value=Math.min(28,(+sl.value)+0.5);paint();});
-      $('up').addEventListener('click',function(){sl.value=Math.max(-28,(+sl.value)-0.5);paint();});
+      $('dn').addEventListener('click',function(){sl.value=Math.min(RANGE,(+sl.value)+STEP);paint();});
+      $('up').addEventListener('click',function(){sl.value=Math.max(-RANGE,(+sl.value)-STEP);paint();});
       paint();
     }else{
       Array.prototype.forEach.call(document.querySelectorAll('.side'),function(b){
