@@ -2078,6 +2078,11 @@ body.focus .dk-focusnote{display:block}
       <div id="tapeHead" class="tape-head"></div>
       <div id="tapeList"></div>
     </div>
+    <div class="lead side hide" id="fslateWrap">
+      <h3 id="fslateTitle">▦ Football slate</h3>
+      <p class="sidenote">Every scheduled football game in your window, whether or not capture priced it — because a board built only from what capture returned cannot tell you what it missed, and "we looked at the whole slate" is the claim a published card is making. Priced games rank by the same hierarchy as the slate above; unpriced ones sort after and say so.</p>
+      <div id="fslateList"></div>
+    </div>
     <div class="lead side hide" id="dailyWrap">
       <h3 id="d5title">☆ Top 5 — wider net · this week</h3>
       <p class="sidenote">The five sharpest lines on the board in your window, every day. When something clears the sharp fair line it shows green as a real edge; when the board is efficient these are simply the closest-to-fair prices, labelled below fair and shown for research, not as plays. Tap + to log one to your CLV ledger.</p>
@@ -6506,8 +6511,223 @@ function renderTape(){
     }).catch(function(){ window.__TAPE_BUSY=false; });
   }
 }
+
+/* ═══ THE FOOTBALL SLATE ═════════════════════════════════════════════════════
+   Every scheduled game, whether or not capture priced it.
+
+   WHY THE FULL SCHEDULE AND NOT JUST THE PRICED ROWS. A board built only from
+   what capture returned cannot tell you what it MISSED, and "we looked at the
+   whole slate" is the claim a published card is actually making. A game absent
+   from the odds feed and a game with no edge look identical on a board drawn
+   from signals alone; on this one they are different rows with different words.
+
+   THE JOIN IS THE RISK, SO IT IS DELIBERATELY CONSERVATIVE.
+   The schedule says "Kansas"; the odds feed says "Kansas Jayhawks". Normalised
+   those are "kansas" and "kansasjayhawks", so exact equality matches nothing and
+   containment matches too much: "miami" is inside "miamiohredhawks" as happily
+   as it is inside "miamihurricanes". Attaching a Miami (FL) price to a Miami
+   (OH) game is far worse than showing no price at all — it is a wrong number
+   under a real fixture, on a screen someone publishes from.
+
+   So a match requires ALL THREE of:
+     1. both sides match, each by containment in either direction,
+     2. kickoff within SLATE_TOL_H hours, and
+     3. EXACTLY ONE candidate. Two candidates is an ambiguity, and an ambiguity
+        attaches nothing and says so.
+   Unmatched and ambiguous are counted and displayed, never swallowed. A join
+   whose miss rate is invisible is a join nobody can audit. */
+var SLATE_TOL_H = 8;          // kickoff tolerance; feeds disagree by hours, not days
+var SLATE_MAX = 200;
+
+/* RESOLVE A NAME TO A SCHOOL, THEN JOIN ON IDENTITY. NO HEURISTIC SURVIVES.
+
+   Two rules were tried here and both were wrong, in ways the tests caught:
+
+     containment  "usc" sits inside "wisconsinbadgers".
+     prefix       "Kansas" is a prefix of "Kansas State Wildcats" — and so is
+                  Michigan of Michigan State, Florida of Florida State, Ohio of
+                  Ohio State, Washington of Washington State. That is not an
+                  edge case, it is a whole tier of college football, and the
+                  failure is silent and in the worst direction: a Kansas fixture
+                  quietly wearing a Kansas State price.
+
+   The exactly-one-candidate rule below does not save that case either, because
+   it only fires when BOTH fixtures are on the board. If only the State game is
+   priced, the other one takes its number unchallenged.
+
+   So the join stopped guessing. CFB.teams already carries `school`, `mascot`
+   and `abbreviation` — the odds feed's name IS school plus mascot — so an exact
+   index over those three forms turns "Kansas Jayhawks" into the school "Kansas"
+   by lookup rather than by string surgery. A name that is not in the index does
+   not resolve, and a name that resolves to two different schools resolves to
+   neither. Both cases become "unpriced", which is a visible miss instead of an
+   invisible mismatch. */
+function slateTeamIndex(teams){
+  var ix = {};
+  (teams || []).forEach(function(t){
+    if(!t || !t.school) return;
+    var add = function(k){
+      if(!k) return;
+      if(ix[k] !== undefined && ix[k] !== t.school) ix[k] = null;   // collision: resolves to nothing
+      else if(ix[k] === undefined) ix[k] = t.school;
+    };
+    add(nrmTeam(t.school));
+    if(t.mascot) add(nrmTeam(t.school + ' ' + t.mascot));
+    if(t.abbreviation) add(nrmTeam(t.abbreviation));
+  });
+  return ix;
+}
+
+function slateSchool(name, ix){
+  if(!name || !ix) return null;
+  var hit = ix[nrmTeam(name)];
+  return hit || null;                     // undefined (unknown) and null (collision) both fail
+}
+
+/* Both sides must resolve to a school, and the schools must be the same one. */
+function slateTeamHit(a, b, ix){
+  var x = slateSchool(a, ix), y = slateSchool(b, ix);
+  return !!(x && y && x === y);
+}
+
+/* One scheduled game -> the odds event that is unambiguously the same fixture,
+   or null with the reason. Pure, so the rule is testable without a database or
+   a network — which is how both earlier versions of it were caught. */
+function slateMatch(game, events, ix){
+  var gt = game.start_date ? new Date(game.start_date).getTime() : 0;
+  var hits = (events || []).filter(function(ev){
+    if(!slateTeamHit(game.home_team, ev.home_team, ix)) return false;
+    if(!slateTeamHit(game.away_team, ev.away_team, ix)) return false;
+    var et = ev.commence_time ? new Date(ev.commence_time).getTime() : 0;
+    if(!gt || !et) return false;
+    return Math.abs(et - gt) <= SLATE_TOL_H * 3600e3;
+  });
+  if(hits.length === 1) return { ev: hits[0], why: null };
+  if(hits.length === 0) return { ev: null, why: 'unpriced' };
+  /* Two fixtures for one game is a feed problem, not a decision to make. */
+  return { ev: null, why: 'ambiguous' };
+}
+
+/* The odds side, collapsed to one event per event_id carrying its sharpest
+   side — the same collapse the slate above uses, for the same reason. */
+function slateEvents(){
+  var seen = {}, by = {};
+  [].concat(window.EDGES || [], window.D5_POOL || [], window.CONS_POOL || []).forEach(function(e){
+    if(!e || !e.event_id || !e.selection) return;
+    var k = (typeof tapeKey === 'function') ? tapeKey(e) : (e.event_id + '|' + e.market + '|' + e.selection);
+    if(seen[k]) return; seen[k] = 1;
+    var sp = (typeof evSportLabel === 'function') ? evSportLabel(e) : '';
+    /* CFB only. cfb.games IS the college schedule and CFB.teams is the only
+       school index available, so an NFL row could never resolve and would be
+       counted as a miss it is not. Scope it honestly rather than report a
+       match rate that includes fixtures this panel was never holding. */
+    if(sp !== 'CFB') return;
+    var cur = by[e.event_id];
+    if(!cur || ((e.edge == null ? -9 : e.edge) > (cur.edge == null ? -9 : cur.edge))) by[e.event_id] = e;
+  });
+  return Object.keys(by).map(function(k){ return by[k]; });
+}
+
+function renderFootballSlate(){
+  var wrap = $('fslateWrap'), host = $('fslateList');
+  if(!wrap || !host) return;
+
+  var games = (window.CFB && CFB.games) ? CFB.games : [];
+  if(!games.length){ wrap.classList.add('hide'); return; }
+
+  var nowMs = Date.now(), win = $('fScope') ? $('fScope').value : 'week';
+  var endDay = new Date(); endDay.setHours(23, 59, 59, 999);
+  var horizon = win === 'day' ? endDay.getTime() : nowMs + 7 * 864e5;
+
+  var slate = games.filter(function(g){
+    if(g.completed) return false;
+    var t = g.start_date ? new Date(g.start_date).getTime() : 0;
+    return t && t <= horizon && t >= nowMs - 3600e3;
+  });
+  if(!slate.length){ wrap.classList.add('hide'); return; }
+  wrap.classList.remove('hide');
+
+  var events = slateEvents();
+  var teamIx = slateTeamIndex((window.CFB && CFB.teams) ? CFB.teams : []);
+  var priced = 0, unpriced = 0, ambiguous = 0;
+  slate.forEach(function(g){
+    var m = slateMatch(g, events, teamIx);
+    g.__ev = m.ev; g.__why = m.why;
+    if(m.ev) priced++; else if(m.why === 'ambiguous') ambiguous++; else unpriced++;
+  });
+
+  /* Priced games rank by the decision hierarchy, exactly as the slate above
+     does — same function, so the two panels cannot disagree about a game they
+     both hold. Everything capture has not priced sorts after everything it has,
+     by kickoff, because an unpriced game is a thing to notice rather than a
+     thing to act on. */
+  slate.sort(function(a, b){
+    var ra = a.__ev ? ((typeof tapeRank === 'function') ? tapeRank(a.__ev) : 4) : 9;
+    var rb = b.__ev ? ((typeof tapeRank === 'function') ? tapeRank(b.__ev) : 4) : 9;
+    if(ra !== rb) return ra - rb;
+    if(a.__ev && b.__ev) return (b.__ev.edge || 0) - (a.__ev.edge || 0);
+    var ta = a.start_date ? new Date(a.start_date).getTime() : 0;
+    var tb = b.start_date ? new Date(b.start_date).getTime() : 0;
+    return ta - tb;
+  });
+  var shown = slate.slice(0, SLATE_MAX);
+
+  if($('fslateTitle'))
+    $('fslateTitle').textContent = '▦ Football slate — ' + slate.length + ' scheduled, ' + priced + ' priced';
+
+  host.innerHTML = shown.map(function(g){
+    var e = g.__ev, when = g.start_date ? whenLabel(g.start_date) : '—';
+    var meta = edEsc((g.away_team || '') + ' @ ' + (g.home_team || '')) + ' · ' + edEsc(when)
+      + (g.week != null ? ' · wk ' + g.week : '');
+    if(!e){
+      var note = g.__why === 'ambiguous'
+        ? 'Two odds fixtures match this game by name and kickoff. Nothing is attached rather than guess which — a wrong price under a real fixture is worse than none.'
+        : 'Capture has no price on this game. It is on the schedule and not on the board.';
+      return '<div class="tape-row"><div class="tape-l">'
+        + '<div class="tape-sel"><span class="suspect">' + (g.__why === 'ambiguous' ? 'ambiguous' : 'not priced') + '</span> '
+        + edEsc((g.away_team || '') + ' @ ' + (g.home_team || '')) + '</div>'
+        + '<div class="lead-meta">' + edEsc(when) + (g.week != null ? ' · wk ' + g.week : '') + '</div>'
+        + '<div class="lead-meta tape-why">' + note + '</div>'
+        + '<div class="tape-do no">Skip · nothing to read here</div>'
+        + '</div><div class="tape-s"></div><div class="tape-r"><span class="tape-ev note">—</span></div></div>';
+    }
+    var v = (typeof canonicalMarketVerdict === 'function') ? canonicalMarketVerdict(e) : 'PASS';
+    var why = (typeof canonicalVerdictWhy === 'function') ? canonicalVerdictWhy(e) : '';
+    var act = (typeof tapeAction === 'function') ? tapeAction(e, v) : { t: '', k: 'no' };
+    var vTag = (v === 'BET' || v === 'LEAN') ? '<span class="vtag">' + v + '</span>'
+      : v === 'WATCH' ? '<span class="suspect">watch</span>' : '<span class="suspect">pass</span>';
+    var ed = e.edge, edTxt = (ed == null ? '—' : ((ed > 0 ? '+' : '') + (ed * 100).toFixed(2) + '%'));
+    var edCol = ed == null ? '' : (ed > 0 ? ' style="color:var(--pos)"' : ' style="color:var(--neg)"');
+    var ls = e.last_seen_at ? new Date(e.last_seen_at).getTime() : 0;
+    var stale = ls && ((nowMs - ls) / 60000 >= EDGE_MAX_AGE_MIN);
+    return '<div class="tape-row"><div class="tape-l">'
+      + '<div class="tape-sel">' + vTag + ' ' + edEsc(selLabel(e)) + '</div>'
+      + '<div class="lead-meta">' + meta + ' · ' + edEsc(mktLabel(e.market)) + ' · ' + (e.n_books || 0) + ' books'
+      + (ls ? ' · priced <span class="' + (stale ? 'suspect' : 'note') + '">' + ago(ls) + '</span>' : '') + '</div>'
+      + '<div class="lead-meta tape-why">' + edEsc(why) + '</div>'
+      + '<div class="tape-do ' + act.k + '">' + edEsc(act.t) + '</div>'
+      + '</div><div class="tape-s"></div>'
+      + '<div class="tape-r"><span class="tape-ev"' + edCol + '>' + edTxt + '</span></div></div>';
+  }).join('')
+  + '<div class="note" style="margin-top:8px">'
+  + priced + ' of ' + slate.length + ' scheduled games matched a priced fixture'
+  + (ambiguous ? ' · ' + ambiguous + ' ambiguous (two fixtures matched; nothing attached)' : '')
+  + (unpriced ? ' · ' + unpriced + ' carry no price at all' : '')
+  + (slate.length > shown.length ? ' · showing the first ' + shown.length : '')
+  + '. Games are matched on both team names plus kickoff; a game that matches two fixtures attaches nothing rather than guess.</div>';
+}
+
+/* The schedule is a separate table on a separate profile, so it is loaded on
+   demand and cached by loadCFB itself. Failing to load it costs this panel and
+   nothing else — the board above does not depend on it. */
+async function ensureFootballSlate(){
+  try{
+    if(window.CFB && CFB.games && CFB.games.length){ renderFootballSlate(); return; }
+    if(typeof loadCFB === 'function'){ await loadCFB(false); renderFootballSlate(); }
+  }catch(_){ /* panel stays hidden; the board is unaffected */ }
+}
 window.__d5track=function(i){var e=(window.D5||[])[i];if(e)trackSignal(e,GE.decToAm(e.best_dec));};
-function refreshEdges(){renderEdges();renderDaily();try{renderTape();}catch(_){}renderModelEngine();renderConsensusEngine();}
+function refreshEdges(){renderEdges();renderDaily();try{renderTape();}catch(_){}try{ensureFootballSlate();}catch(_){}renderModelEngine();renderConsensusEngine();}
 $('fSport').onchange=refreshEdges;$('fMinev').oninput=refreshEdges;$('fBooks').onchange=refreshEdges;$('fScope').onchange=refreshEdges;
 
 /* ===== Record (auto-graded) ===== */
