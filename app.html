@@ -25379,12 +25379,23 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
        not be ranked here either — the board and the Top 5 were drawing from
        overlapping rows, so filtering one and not the other would have left the
        nonsense visible in the other half of the screen. */
-    /* Both source pools are gated on CURRENT actionability at the query, but a
-       pool built by concatenation cannot inherit a URL filter — re-assert it
-       here so a future change to either source cannot quietly put non-actionable
-       rows back on screen. */
+    /* NOT gated on actionability. The comment that used to sit here said "both
+       source pools are gated at the query" and re-asserted it defensively; that
+       stopped being true when D5_POOL went back to its documented "any sign"
+       contract, and the re-assertion then became the thing emptying this queue.
+       It is why a board holding 895 priced selections rendered a research queue
+       reading "1 of 895 scanned" — the queue was not scanning them, it was
+       throwing them away after the fact.
+
+       This is the RESEARCH queue. Its job is to rank what is worth looking at,
+       and something capture refused is frequently worth looking at — that is
+       the whole reason qual_reason is written on every row rather than only on
+       the qualified ones. Every card it renders already carries a verdict from
+       canonicalMarketVerdict(), which cannot say BET for a row capture refused,
+       so the queue can hold the full board without any of it reading as a play.
+       The two surfaces that answer "what should I bet" — the live board and
+       "best opportunities today" — stay gated. */
     var rawPool=[].concat(window.EDGES||[], window.D5_POOL||[]);
-    if(typeof onlyActionable==='function') rawPool=onlyActionable(rawPool);
     var _ft=(typeof filterTradeable==='function')?filterTradeable(rawPool):{keep:rawPool,dropped:[]};
     var pool=_ft.keep;
     try{ window.__SCAN_DROPPED=_ft.dropped; }catch(_){}
@@ -27603,8 +27614,13 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
         if(!p){ push('a','<p>No research packet on file yet. Run <b>Today\u2019s research</b> first \u2014 there is nothing to compare against.</p>'); return; }
         thinking(true);
         try{ await ensureMlbCore(true); }catch(_){}
+        /* A CHANGE REPORT HAS TO SEE WHAT CHANGED. Gated on actionability this
+           could only ever report movement among rows that already qualify, which
+           silently excludes the most useful answer to "what changed since the
+           last run" — a line that qualified before and does not now, or one that
+           moved most of the way to qualifying. Both are invisible if the pool is
+           filtered to the currently-qualified set first. */
         var pool=[].concat(window.EDGES||[], window.D5_POOL||[]);
-        if(typeof onlyActionable==='function') pool=onlyActionable(pool);
         var by={};
         pool.forEach(function(e){
           if(!e||!e.event_id) return;
