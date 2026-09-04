@@ -542,6 +542,14 @@ chk('the accent is reserved for a score above zero',
   /wk\s*>\s*0\s*\?\s*' on'/.test(HOME + PRICE + PICK));
 chk('a poor Price It score is not tinted as a success',
   PRICE.indexOf("res.score>=60?''") >= 0 && CSS.indexOf('.scorebox .n.off') >= 0);
+/* A third-width stat tile at 390px fits about ten characters before the label
+   ellipsizes. "Weekly score" did not. */
+chk('no stat label is long enough to ellipsize in a third-width tile',
+  (HOME + PRICE + PICK).match(/<div class="k">([^<]*)<\/div>/g) === null
+  || (HOME + PRICE + PICK).match(/<div class="k">([^<]*)<\/div>/g)
+       .every(m => m.replace(/<[^>]*>/g, '').length <= 12),
+  ((HOME + PRICE + PICK).match(/<div class="k">([^<]*)<\/div>/g) || [])
+    .map(m => m.replace(/<[^>]*>/g, '')).filter(t => t.length > 12).join(','));
 
 /* ── 10. analytics ─────────────────────────────────────────────────────── */
 const REQUIRED_EVENTS = ['games_page_view', 'price_it_start', 'price_it_complete',
