@@ -24,7 +24,7 @@ const done = () => { console.log(fail ? `FAILED ${pass} passed, ${fail} failed`
   : `ALL GREEN ${pass} passed, ${fail} failed`); process.exit(fail ? 1 : 0); };
 
 const a = APP.indexOf('var SLATE_TOL_H');
-const b = APP.indexOf('function slateEvents()');
+const b = APP.indexOf('function slateEvents(');
 chk('the matcher is sliceable', a > -1 && b > a, { a, b });
 if (a < 0 || b <= a) done();
 
@@ -161,15 +161,60 @@ chk('and it says the schedule holds it while the board does not',
 chk('an ambiguous game explains why nothing is attached',
   /Nothing is attached rather than guess which/.test(APP));
 chk('a priced row still routes through the canonical verdict',
-  /canonicalMarketVerdict\(e\)/.test(APP.slice(APP.indexOf('function renderFootballSlate'))));
+  /canonicalMarketVerdict\(e\)/.test(APP.slice(APP.indexOf('function slateRowHTML'))));
+chk('and BOTH slates render through the SAME row function, so they cannot disagree',
+  (APP.match(/slateRowHTML\(/g) || []).length === 3
+  && /function slateRowHTML\(e, meta, nowMs, domid\)\{/.test(APP));
 chk('priced games rank by the same hierarchy as the slate above',
   /tapeRank\(a\.__ev\)/.test(APP) && /tapeRank\(b\.__ev\)/.test(APP));
 chk('the match rate is reported rather than swallowed',
   /matched a priced fixture/.test(APP) && /ambiguous \(two fixtures matched; nothing attached\)/.test(APP));
-chk('the slate is CFB only — cfb.games and CFB.teams are the only index there is',
-  /if\(sp !== 'CFB'\) return;/.test(APP));
-chk('and it says why, rather than reporting a match rate over fixtures it never held',
-  /an NFL row could never resolve and would be/.test(APP));
+chk('the JOINED slate is asked for CFB specifically', /slateEvents\('CFB'\)/.test(APP));
+chk('and the NFL slate is asked for NFL', /slateEvents\('NFL'\)/.test(APP));
+
+/* The NFL panel makes a WEAKER completeness claim than the college one, because
+   there is no NFL schedule in this application to join against. That difference
+   has to be visible on the page, or two panels that look alike are quietly
+   asserting different things. */
+chk('the NFL slate does not pretend to a schedule it does not have',
+  /there is no separate NFL schedule in this /.test(APP));
+chk('and it names what a missing NFL game actually means',
+  /the feed missed it rather than that no such game exists/.test(APP));
+chk('the reason the NFL needs no join is recorded, not assumed',
+  /every book prices all of them/.test(APP));
+chk('and the honest route to a real NFL schedule is written down',
+  APP.indexOf('/v4/sports/{sport}/events list it already fetches for free') >= 0);
+
+/* ── CLICK AND PUBLISH ───────────────────────────────────────────────────
+   A slate you can read but not act from is a list you have to re-find
+   everything in. Rows go through expandItem(), which is the Top 10's own
+   mechanism — so the receipt, "Create brief" and "Track to my ledger" are the
+   SAME ones, not a second implementation that can drift. */
+chk('slate rows are expandable, not inert divs',
+  /return expandItem\(e, domid, header\);/.test(APP));
+chk('both slates pass a dom id so each row is individually addressable',
+  /slateRowHTML\(e, meta, nowMs, 'fsl_' \+ i\)/.test(APP)
+  && /slateRowHTML\(e, null, nowMs, 'nfl_' \+ i\)/.test(APP));
+chk('and the publish path is the shared one, not a new one',
+  /it gets THE publish path/.test(APP));
+
+/* ── UNKNOWN IS NOT A VERDICT ────────────────────────────────────────────
+   A row capture judged and refused, and a row capture never spoke about, are
+   different facts. Calling both PASS asserts a judgement that was never made,
+   and makes a board of pre-v9 rows look identical to a board capture rejected. */
+chk('a row with no qualification state returns UNKNOWN, not PASS',
+  /if\(!hasQualState\(e\)\) return 'UNKNOWN';/.test(APP));
+chk('and UNKNOWN is reached BEFORE the PASS branch',
+  APP.indexOf("if(!hasQualState(e)) return 'UNKNOWN';")
+    < APP.indexOf("if(!isActionableSignal(e)) return 'PASS';"));
+chk('UNKNOWN still cannot be BET — it is below every judged row',
+  /if\(v==='UNKNOWN'\)return 5;/.test(APP));
+chk('and it says there is no read rather than implying a refusal',
+  /No read yet \\u00b7 capture has not qualified this row/.test(APP));
+chk('every verdict tag renders the new state',
+  (APP.match(/no read/g) || []).length >= 3);
+chk('the NFL slate still ranks by the same hierarchy',
+  /tapeRank === 'function'\) \? tapeRank\(a\) : 4/.test(APP));
 chk('the join is on resolved school identity, not on string shape',
   /function slateTeamIndex\(teams\)\{/.test(APP)
   && /return !!\(x && y && x === y\);/.test(APP));

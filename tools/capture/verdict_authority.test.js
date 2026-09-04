@@ -140,8 +140,19 @@ const eqs = (d, score) => ({ decision: d, score: score == null ? 70 : score });
     actionable: null, qual_reason: null, qual_tier: null,
     flagged_policy: 'pre-v9-legacy', flagged_tier: null, edge: 0.08,
   });
-  chk('7 · a legacy flagged row is not actionable on the live board', V(legacy) === 'PASS', V(legacy));
-  chk('7 · not even with a strong EQS read', V(legacy, eqs('BET', 95)) === 'PASS');
+  /* A legacy row is UNKNOWN, not PASS, and the distinction is the point: capture
+     never judged this row, so calling it PASS would assert a refusal that never
+     happened — and a whole board of pre-v9 rows would then be indistinguishable
+     from a board capture actually rejected. What must hold either way is that it
+     is not actionable and can never be BET. */
+  chk('7 · a legacy flagged row is not actionable on the live board',
+    ctx.isActionableSignal(legacy) === false && V(legacy) !== 'BET' && V(legacy) !== 'LEAN', V(legacy));
+  chk('7 · not even with a strong EQS read',
+    V(legacy, eqs('BET', 95)) !== 'BET' && V(legacy, eqs('BET', 95)) !== 'LEAN');
+  chk('7 · and it is reported as UNJUDGED rather than as a refusal',
+    V(legacy) === 'UNKNOWN', V(legacy));
+  chk('7 · a row capture DID refuse still reads PASS, so the two never blur',
+    V(row({ actionable: false, qual_reason: 'below_quality_floor', edge: 0.08 })) === 'PASS');
   chk('7 · but its frozen anchor is untouched, so the Record still has it',
     ctx.wasFlaggedSignal(legacy) === true && legacy.flagged_best_dec === 1.95);
   chk('7 · and the app can tell the two apart',

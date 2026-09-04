@@ -2078,6 +2078,11 @@ body.focus .dk-focusnote{display:block}
       <div id="tapeHead" class="tape-head"></div>
       <div id="tapeList"></div>
     </div>
+    <div class="lead side hide" id="nflslateWrap">
+      <h3 id="nflslateTitle">▦ NFL slate</h3>
+      <p class="sidenote">Every NFL game on the board, ranked by the same hierarchy as the slate above. Unlike the college slate there is no separate NFL schedule here to check against, so this is what the odds feed carried — see the note under the list.</p>
+      <div id="nflslateList"></div>
+    </div>
     <div class="lead side hide" id="fslateWrap">
       <h3 id="fslateTitle">▦ Football slate</h3>
       <p class="sidenote">Every scheduled football game in your window, whether or not capture priced it — because a board built only from what capture returned cannot tell you what it missed, and "we looked at the whole slate" is the claim a published card is making. Priced games rank by the same hierarchy as the slate above; unpriced ones sort after and say so.</p>
@@ -5120,6 +5125,15 @@ function canonicalMarketVerdict(e, eqs){
      answer — it is not a refusal, and calling it PASS would hide a candidate
      that is one capture cycle from qualifying. */
   if(e.qual_reason==='awaiting_confirmation') return 'WATCH';
+  /* NO QUALIFICATION STATE IS NOT A VERDICT. A row capture judged and refused,
+     and a row capture has not spoken about, are different facts, and calling
+     both of them PASS asserts a judgement that was never made. It also reads
+     the same on screen, so a board full of pre-v9 rows looks exactly like a
+     board capture rejected — which is what a whole slate of "PASS · not a
+     signal" over "this row was priced before capture v9" actually was.
+     UNKNOWN is not actionable and can never be BET; it is simply honest that
+     there is no read here yet. It resolves on the next capture pass. */
+  if(!hasQualState(e)) return 'UNKNOWN';
   if(!isActionableSignal(e)) return 'PASS';
   /* Capture has allowed it. EQS may now DOWNGRADE and may never upgrade. */
   if(eqs && eqs.decision==='PASS') return 'PASS';
@@ -6254,6 +6268,7 @@ function renderDaily(){
     var d5why=(typeof canonicalVerdictWhy==='function')?canonicalVerdictWhy(e):'';
     var vTag=(d5v==='BET'||d5v==='LEAN')?' <span class="vtag">'+d5v+'</span>'
             :d5v==='WATCH'?' <span class="suspect">watch \u00b7 not confirmed yet</span>'
+            :d5v==='UNKNOWN'?' <span class="note">no read yet</span>'
             :' <span class="suspect">pass \u00b7 not a signal</span>';
     var tags=vTag+(e.edge>0.06?' <span class="suspect">\u26a0 verify</span>':'')+(isTrusted(e.best_book)?'':' <span class="suspect">offshore</span>')+(pos?'':' <span class="suspect">below fair</span>')+ageTag;
     var header='<span class="rank">'+(i+1)+'</span><div class="lead-mid"><div class="lead-sel">'+selLabel(e)+tags+'</div><div class="lead-meta">'+evSportLabel(e)+' \u00b7 '+mktLabel(e.market)+' \u00b7 '+(e.away_team||'')+' @ '+(e.home_team||'')+' \u00b7 '+whenLabel(e.commence_time)+' \u00b7 '+e.best_book+' '+od+'</div>'
@@ -6372,6 +6387,10 @@ function tapeRank(e){
   if(v==='LEAN')return 1;
   if(e&&e.qual_reason==='awaiting_confirmation')return 2;   // one capture from a call
   if((e.edge||0)>0)return 3;                                // came closest, and says why
+  /* A row with no read at all sorts BELOW a row capture actually judged. It is
+     not evidence of anything, and ranking it alongside judged rows would let
+     an absence of information compete with information. */
+  if(v==='UNKNOWN')return 5;
   return 4;
 }
 
@@ -6380,6 +6399,7 @@ function tapeRank(e){
    state — none of these strings can appear on a row capture did not qualify
    except the ones that say not to act. */
 function tapeAction(e,v){
+  if(v==='UNKNOWN')return {t:'No read yet \u00b7 capture has not qualified this row',k:'no'};
   if(v==='BET')return {t:'Bet it \u00b7 '+(e.best_book||'best book')+' '+(GE.fmtPrice?GE.fmtPrice(e.best_dec):e.best_dec),k:'go'};
   if(v==='LEAN')return {t:'Lean \u00b7 smaller stake, no sharp anchor behind it',k:'go'};
   if(e&&e.qual_reason==='awaiting_confirmation')
@@ -6461,6 +6481,7 @@ function renderTape(){
     var why=(typeof canonicalVerdictWhy==='function')?canonicalVerdictWhy(e):'';
     var vTag=(v==='BET'||v==='LEAN')?'<span class="vtag">'+v+'</span>'
             :v==='WATCH'?'<span class="suspect">watch</span>'
+            :v==='UNKNOWN'?'<span class="note">no read</span>'
             :'<span class="suspect">pass</span>';
     var act=tapeAction(e,v);
     var ed=e.edge, edTxt=(ed==null?'—':((ed>0?'+':'')+(ed*100).toFixed(2)+'%'));
@@ -6610,22 +6631,57 @@ function slateMatch(game, events, ix){
 
 /* The odds side, collapsed to one event per event_id carrying its sharpest
    side — the same collapse the slate above uses, for the same reason. */
-function slateEvents(){
+function slateEvents(sport){
   var seen = {}, by = {};
   [].concat(window.EDGES || [], window.D5_POOL || [], window.CONS_POOL || []).forEach(function(e){
     if(!e || !e.event_id || !e.selection) return;
     var k = (typeof tapeKey === 'function') ? tapeKey(e) : (e.event_id + '|' + e.market + '|' + e.selection);
     if(seen[k]) return; seen[k] = 1;
     var sp = (typeof evSportLabel === 'function') ? evSportLabel(e) : '';
-    /* CFB only. cfb.games IS the college schedule and CFB.teams is the only
-       school index available, so an NFL row could never resolve and would be
-       counted as a miss it is not. Scope it honestly rather than report a
-       match rate that includes fixtures this panel was never holding. */
-    if(sp !== 'CFB') return;
+    if(sp !== sport) return;
     var cur = by[e.event_id];
     if(!cur || ((e.edge == null ? -9 : e.edge) > (cur.edge == null ? -9 : cur.edge))) by[e.event_id] = e;
   });
   return Object.keys(by).map(function(k){ return by[k]; });
+}
+
+/* ONE ROW, USED BY BOTH SLATES. Extracted rather than copied: two renderers
+   drifting apart is how a game ends up labelled BET on one panel and PASS on
+   another, which is the exact class of bug the canonical verdict exists to
+   kill. `meta` is the schedule line when a schedule was joined, and null when
+   the odds feed is the only source. */
+function slateRowHTML(e, meta, nowMs, domid){
+  var v = (typeof canonicalMarketVerdict === 'function') ? canonicalMarketVerdict(e) : 'PASS';
+  var why = (typeof canonicalVerdictWhy === 'function') ? canonicalVerdictWhy(e) : '';
+  var act = (typeof tapeAction === 'function') ? tapeAction(e, v) : { t: '', k: 'no' };
+  var vTag = (v === 'BET' || v === 'LEAN') ? '<span class="vtag">' + v + '</span>'
+    : v === 'WATCH' ? '<span class="suspect">watch</span>'
+    : v === 'UNKNOWN' ? '<span class="note">no read</span>' : '<span class="suspect">pass</span>';
+  var ed = e.edge, edTxt = (ed == null ? '—' : ((ed > 0 ? '+' : '') + (ed * 100).toFixed(2) + '%'));
+  var edCol = ed == null ? '' : (ed > 0 ? ' style="color:var(--pos)"' : ' style="color:var(--neg)"');
+  var ls = e.last_seen_at ? new Date(e.last_seen_at).getTime() : 0;
+  var stale = ls && ((nowMs - ls) / 60000 >= EDGE_MAX_AGE_MIN);
+  var line = meta || (edEsc((e.away_team || '') + ' @ ' + (e.home_team || '')) + ' · ' + edEsc(whenLabel(e.commence_time)));
+  var header = '<div class="tape-l">'
+    + '<div class="tape-sel">' + vTag + ' ' + edEsc(selLabel(e)) + '</div>'
+    + '<div class="lead-meta">' + line + ' · ' + edEsc(mktLabel(e.market)) + ' · ' + (e.n_books || 0) + ' books'
+    + (ls ? ' · priced <span class="' + (stale ? 'suspect' : 'note') + '">' + ago(ls) + '</span>' : '') + '</div>'
+    + '<div class="lead-meta tape-why">' + edEsc(why) + '</div>'
+    + '<div class="tape-do ' + act.k + '">' + edEsc(act.t) + '</div>'
+    + '</div><div class="tape-s"></div>'
+    + '<div class="tape-r"><span class="tape-ev"' + edCol + '>' + edTxt + '</span></div>';
+
+  /* A ROW YOU CAN OPEN, AND PUBLISH FROM. expandItem() is what the Top 10 uses:
+     it registers the row in window.RCPT, makes the header a click target, and
+     builds the receipt underneath — which is where "Create brief", "Track this
+     to my ledger", the movement replay and the full evidence already live. So
+     the slate does not get its own publish path, it gets THE publish path, and
+     a brief opened from here is the same brief opened from anywhere else.
+
+     A slate that you can read but not act from is a list you have to re-find
+     everything in. That is the gap this closes. */
+  if(!domid) return '<div class="tape-row">' + header + '</div>';
+  return expandItem(e, domid, header);
 }
 
 function renderFootballSlate(){
@@ -6647,7 +6703,7 @@ function renderFootballSlate(){
   if(!slate.length){ wrap.classList.add('hide'); return; }
   wrap.classList.remove('hide');
 
-  var events = slateEvents();
+  var events = slateEvents('CFB');
   var teamIx = slateTeamIndex((window.CFB && CFB.teams) ? CFB.teams : []);
   var priced = 0, unpriced = 0, ambiguous = 0;
   slate.forEach(function(g){
@@ -6675,7 +6731,7 @@ function renderFootballSlate(){
   if($('fslateTitle'))
     $('fslateTitle').textContent = '▦ Football slate — ' + slate.length + ' scheduled, ' + priced + ' priced';
 
-  host.innerHTML = shown.map(function(g){
+  host.innerHTML = shown.map(function(g, i){
     var e = g.__ev, when = g.start_date ? whenLabel(g.start_date) : '—';
     var meta = edEsc((g.away_team || '') + ' @ ' + (g.home_team || '')) + ' · ' + edEsc(when)
       + (g.week != null ? ' · wk ' + g.week : '');
@@ -6691,23 +6747,7 @@ function renderFootballSlate(){
         + '<div class="tape-do no">Skip · nothing to read here</div>'
         + '</div><div class="tape-s"></div><div class="tape-r"><span class="tape-ev note">—</span></div></div>';
     }
-    var v = (typeof canonicalMarketVerdict === 'function') ? canonicalMarketVerdict(e) : 'PASS';
-    var why = (typeof canonicalVerdictWhy === 'function') ? canonicalVerdictWhy(e) : '';
-    var act = (typeof tapeAction === 'function') ? tapeAction(e, v) : { t: '', k: 'no' };
-    var vTag = (v === 'BET' || v === 'LEAN') ? '<span class="vtag">' + v + '</span>'
-      : v === 'WATCH' ? '<span class="suspect">watch</span>' : '<span class="suspect">pass</span>';
-    var ed = e.edge, edTxt = (ed == null ? '—' : ((ed > 0 ? '+' : '') + (ed * 100).toFixed(2) + '%'));
-    var edCol = ed == null ? '' : (ed > 0 ? ' style="color:var(--pos)"' : ' style="color:var(--neg)"');
-    var ls = e.last_seen_at ? new Date(e.last_seen_at).getTime() : 0;
-    var stale = ls && ((nowMs - ls) / 60000 >= EDGE_MAX_AGE_MIN);
-    return '<div class="tape-row"><div class="tape-l">'
-      + '<div class="tape-sel">' + vTag + ' ' + edEsc(selLabel(e)) + '</div>'
-      + '<div class="lead-meta">' + meta + ' · ' + edEsc(mktLabel(e.market)) + ' · ' + (e.n_books || 0) + ' books'
-      + (ls ? ' · priced <span class="' + (stale ? 'suspect' : 'note') + '">' + ago(ls) + '</span>' : '') + '</div>'
-      + '<div class="lead-meta tape-why">' + edEsc(why) + '</div>'
-      + '<div class="tape-do ' + act.k + '">' + edEsc(act.t) + '</div>'
-      + '</div><div class="tape-s"></div>'
-      + '<div class="tape-r"><span class="tape-ev"' + edCol + '>' + edTxt + '</span></div></div>';
+    return slateRowHTML(e, meta, nowMs, 'fsl_' + i);
   }).join('')
   + '<div class="note" style="margin-top:8px">'
   + priced + ' of ' + slate.length + ' scheduled games matched a priced fixture'
@@ -6715,6 +6755,76 @@ function renderFootballSlate(){
   + (unpriced ? ' · ' + unpriced + ' carry no price at all' : '')
   + (slate.length > shown.length ? ' · showing the first ' + shown.length : '')
   + '. Games are matched on both team names plus kickoff; a game that matches two fixtures attaches nothing rather than guess.</div>';
+}
+
+
+/* ═══ THE NFL SLATE ══════════════════════════════════════════════════════════
+   Every NFL game on the board, and an honest statement of what "every" means.
+
+   WHY THIS ONE IS NOT A JOIN, AND WHY THAT IS NOT A SHORTCUT.
+
+   The college slate exists because cfb.games knows about fixtures the odds feed
+   does not. Week one is mostly FBS teams hosting opponents from outside the set
+   the odds feed carries, so "every scheduled game" and "every priced game" are
+   genuinely different lists, and the gap between them is the finding.
+
+   The NFL has no such gap. Thirty-two teams, about sixteen games a week, and
+   every book prices all of them. There is also no NFL schedule anywhere in this
+   application to join against: the Supabase profiles are cfb, tennis, ufc and
+   wta, the football/ JSON is ratings, injuries and availability, and capture's
+   fetchEvents() keeps only kickoff timestamps and stores nothing. So the odds
+   feed IS the schedule here, and a game missing from it is a feed outage rather
+   than a quiet coverage hole.
+
+   That is a weaker completeness claim than the college panel makes, and the
+   footer says so in those words rather than letting the two panels look alike.
+   Inventing a schedule to match against — deriving one from team names, or
+   assuming sixteen games — would manufacture a denominator nobody measured,
+   which is the failure this whole board is built to avoid.
+
+   If an independent NFL schedule is ever wanted, the honest route is capture
+   storing the /v4/sports/{sport}/events list it already fetches for free, and
+   this panel joining against that. It is a capture change, not a UI one. */
+function renderNflSlate(){
+  var wrap = $('nflslateWrap'), host = $('nflslateList');
+  if(!wrap || !host) return;
+
+  var sportSel = $('fSport') ? $('fSport').value : '';
+  if(sportSel && sportSel !== 'NFL'){ wrap.classList.add('hide'); return; }
+
+  var events = slateEvents('NFL');
+  if(!events.length){ wrap.classList.add('hide'); return; }
+
+  var nowMs = Date.now(), win = $('fScope') ? $('fScope').value : 'week';
+  var endDay = new Date(); endDay.setHours(23, 59, 59, 999);
+  var horizon = win === 'day' ? endDay.getTime() : nowMs + 7 * 864e5;
+
+  var rows = events.filter(function(e){
+    var ct = e.commence_time ? new Date(e.commence_time).getTime() : 0;
+    return ct && ct <= horizon && ct >= nowMs - 3600e3;
+  });
+  if(!rows.length){ wrap.classList.add('hide'); return; }
+  wrap.classList.remove('hide');
+
+  /* Same hierarchy as every other panel, so no two disagree about a game they
+     both hold. */
+  rows.sort(function(a, b){
+    var ra = (typeof tapeRank === 'function') ? tapeRank(a) : 4;
+    var rb = (typeof tapeRank === 'function') ? tapeRank(b) : 4;
+    if(ra !== rb) return ra - rb;
+    return (b.edge || 0) - (a.edge || 0);
+  });
+  var shown = rows.slice(0, SLATE_MAX);
+
+  if($('nflslateTitle'))
+    $('nflslateTitle').textContent = '▦ NFL slate — ' + rows.length + ' game' + (rows.length === 1 ? '' : 's') + ' on the board';
+
+  host.innerHTML = shown.map(function(e, i){ return slateRowHTML(e, null, nowMs, 'nfl_' + i); }).join('')
+    + '<div class="note" style="margin-top:8px">'
+    + rows.length + ' games, taken from the odds feed itself — there is no separate NFL schedule in this '
+    + 'application to check that against, so unlike the college slate this panel cannot tell you about a game '
+    + 'nobody priced. In the NFL that gap is small (every book prices every game), but it is not zero, and a '
+    + 'missing game here means the feed missed it rather than that no such game exists.</div>';
 }
 
 /* The schedule is a separate table on a separate profile, so it is loaded on
@@ -6727,7 +6837,7 @@ async function ensureFootballSlate(){
   }catch(_){ /* panel stays hidden; the board is unaffected */ }
 }
 window.__d5track=function(i){var e=(window.D5||[])[i];if(e)trackSignal(e,GE.decToAm(e.best_dec));};
-function refreshEdges(){renderEdges();renderDaily();try{renderTape();}catch(_){}try{ensureFootballSlate();}catch(_){}renderModelEngine();renderConsensusEngine();}
+function refreshEdges(){renderEdges();renderDaily();try{renderTape();}catch(_){}try{ensureFootballSlate();}catch(_){}try{renderNflSlate();}catch(_){}renderModelEngine();renderConsensusEngine();}
 $('fSport').onchange=refreshEdges;$('fMinev').oninput=refreshEdges;$('fBooks').onchange=refreshEdges;$('fScope').onchange=refreshEdges;
 
 /* ===== Record (auto-graded) ===== */
