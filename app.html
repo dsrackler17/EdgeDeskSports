@@ -129,6 +129,40 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',system-ui,sans-s
   font-size:11.5px;color:var(--faint);line-height:1.5;background:var(--surface)}
 .rs-freshna b{color:var(--dim);font-weight:600}
 /* seven modules: the sub-nav scrolls instead of crushing its labels */
+/* the one line of product philosophy, kept secondary to the research itself */
+.rs-creed{font-size:11.5px;color:var(--faint);line-height:1.5;margin-top:5px;max-width:62ch}
+.rs-creed b{color:var(--dim);font-weight:600}
+/* START HERE — four ways in, all of them existing routes */
+.rs-start{display:flex;gap:6px;margin-top:var(--sp2);overflow-x:auto;scrollbar-width:none}
+.rs-start::-webkit-scrollbar{display:none}
+.rs-start button{flex:0 0 auto;background:var(--bg);border:1px solid var(--border);border-radius:9px;color:var(--dim);font-family:inherit;font-size:11.5px;font-weight:600;padding:9px 10px;cursor:pointer;white-space:nowrap;text-align:center}
+.rs-start button:hover{border-color:var(--accent);color:var(--accent)}
+.rs-start button.pri{color:var(--accent);border-color:rgba(88,133,247,.42)}
+/* RESEARCH A GAME — a compact finder over rows the module already computed */
+.rs-find{position:relative}
+.rs-find input{width:100%;box-sizing:border-box;background:var(--bg);border:1px solid var(--border);border-radius:9px;color:var(--text);font-family:inherit;font-size:12.5px;padding:9px 11px}
+.rs-find input:focus{outline:none;border-color:var(--accent)}
+.rs-find-l{margin-top:6px;display:flex;flex-direction:column;gap:2px;max-height:224px;overflow-y:auto}
+.rs-find-l button{display:flex;align-items:baseline;gap:8px;width:100%;text-align:left;background:none;border:none;border-radius:7px;color:var(--text);font-family:inherit;font-size:12.5px;padding:7px 8px;cursor:pointer}
+.rs-find-l button:hover{background:var(--surface)}
+.rs-find-l .w{margin-left:auto;flex:none;font-size:10.5px;color:var(--faint);font-family:'JetBrains Mono',monospace}
+.rs-find-l .g{flex:none;font-size:9.5px;color:var(--faint);border:1px solid var(--border);border-radius:4px;padding:0 4px}
+.rs-find-n{font-size:11px;color:var(--faint);padding:8px 2px}
+/* the two research previews: power ratings and player quality */
+.rs-prev{display:grid;grid-template-columns:1fr 1fr;gap:var(--sp2)}
+@media(max-width:720px){.rs-prev{grid-template-columns:1fr}}
+.rs-pv-h{display:flex;align-items:baseline;gap:8px;margin-bottom:8px}
+.rs-pv-h .t{font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--dim)}
+.rs-pv-h .s{font-size:10.5px;color:var(--faint)}
+.rs-pv-r{display:flex;align-items:baseline;gap:8px;font-size:12.5px;padding:4px 0;border-top:1px solid var(--border)}
+.rs-pv-r:first-of-type{border-top:none}
+.rs-pv-r .n{flex:none;width:15px;color:var(--faint);font-size:11px;font-family:'JetBrains Mono',monospace}
+.rs-pv-r .m{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rs-pv-r .v{flex:none;font-family:'JetBrains Mono',monospace;color:var(--accent)}
+.rs-pv-k{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:8px}
+.rs-pv-k div{font-size:10.5px;color:var(--faint);line-height:1.35}
+.rs-pv-k b{display:block;font-size:17px;color:var(--text);font-family:'JetBrains Mono',monospace;font-weight:600}
+.rs-pv-note{font-size:10.5px;color:var(--faint);line-height:1.5;margin:8px 0 0}
 .research-sub{overflow-x:auto;scrollbar-width:none}
 .research-sub::-webkit-scrollbar{display:none}
 .research-sub button{flex:0 0 auto;min-width:64px}
@@ -752,6 +786,8 @@ textarea{min-height:110px;font-family:'JetBrains Mono',monospace;resize:vertical
 .fb-sig-grid .c .l{font-size:9px;letter-spacing:.06em;text-transform:uppercase;color:var(--faint);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .fb-sig-grid .c .v{font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:600;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--text)}
 .fb-sig-grid .c .v.mdl{color:var(--mdl)}.fb-sig-grid .c .v.warn{color:var(--warn)}.fb-sig-grid .c .v.neg{color:var(--neg)}.fb-sig-grid .c .v.mut{color:var(--faint)}
+.fb-sig-w{font-size:11.5px;line-height:1.55;color:var(--dim);margin-top:6px;padding-top:6px;border-top:1px dashed var(--border)}
+.fb-sig-w b{display:block;font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--faint);font-weight:700;margin-bottom:2px}
 .fb-sig-n{font-size:11.5px;color:var(--dim);line-height:1.45;margin-top:8px}
 .fb-sig-f{display:flex;align-items:center;gap:8px;margin-top:9px;font-size:10.5px;color:var(--faint);font-family:'JetBrains Mono',monospace;min-width:0}
 .fb-sig-f .ts{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
@@ -2298,7 +2334,7 @@ body.focus .dk-focusnote{display:block}
        Panels keep their original ids so every existing $() lookup and render
        function is untouched; the shell only owns visibility + activation. -->
   <section id="v-research" class="view">
-    <div class="rs-hd"><div class="rs-hd-t"><h2>Research Models <span class="rs-exp">Experimental</span></h2><div class="rs-sub">Understand the game, model, and market.</div></div><span class="spacer"></span>
+    <div class="rs-hd"><div class="rs-hd-t"><h2>EdgeDesk Research <span class="rs-exp">Experimental</span></h2><div class="rs-sub">Understand the game, model, and market.</div><div class="rs-creed"><b>Research, not picks.</b> Model, market, roster and what is still unknown — never a black-box call.</div></div><span class="spacer"></span>
       <button class="rs-tool ic" id="rsSearchBtn" onclick="rsToggleSearch()" title="Search research" aria-label="Search research"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg></button>
       <button class="rs-tool ic" id="rsSavedBtn" onclick="rsToggleSaved()" title="Saved research" aria-label="Saved research"><svg viewBox="0 0 24 24"><path d="M6 3h12v18l-6-4-6 4z"/></svg></button></div>
     <div id="rsSearchWrap" class="rs-srch hide" style="margin-bottom:12px"></div>
@@ -4556,6 +4592,7 @@ function rsTkSig(it){
     +'<div class="fb-sig-m">'+stEsc(it.title)+'</div>'
     +(cells?'<div class="fb-sig-grid">'+cells+'</div>':'')
     +(it.note?'<div class="fb-sig-n">'+it.note+'</div>':'')
+    +(it.why?'<div class="fb-sig-w"><b>Why it matters</b> '+it.why+'</div>':'')
     +'<div class="fb-sig-f"><span class="ts">'+stEsc(it.foot||'')+'</span>'
     +(it.action?'<button class="fb-lnk" onclick="event.stopPropagation();'+it.action.onclick+'">'+stEsc(it.action.label)+'</button>':'')+'</div></div>';
 }
@@ -4642,12 +4679,14 @@ function rsTkScrollTo(el){
 function rsTkSnap(o){
   var defs=(o.defs||[]).map(function(d){return '<b>'+stEsc(d[0])+'</b><span>'+stEsc(d[1])+'</span>';}).join('');
   var open=!!RS_TK_OPEN[o.key+'How'];
-  return '<div class="fb-card"><div class="fb-snap-h"><span class="t">'+stEsc(o.title)+'</span><span class="m">'+stEsc(o.meta||'')+'</span></div>'
+  return '<div class="fb-card">'
+    +(o.title?('<div class="fb-snap-h"><span class="t">'+stEsc(o.title)+'</span><span class="m">'+stEsc(o.meta||'')+'</span></div>'):'')
     +rsTkKpis(o.kpis||[])
     +(defs?'<div class="fb-defs">'+defs+'</div>':'')
     +(o.how?'<button class="fb-how" id="'+o.key+'HowBtn" aria-expanded="'+(open?'true':'false')+'" aria-controls="'+o.key+'HowCol" onclick="rsTkColToggle(\''+o.key+'How\',\'Hide\',\'How this is counted →\')">'+(open?'Hide':'How this is counted →')+'</button>'
       +'<div class="fb-col'+(open?' open':'')+'" id="'+o.key+'HowCol"><div class="fb-howbody">'+o.how+'</div></div>':'')
-    +(o.cta?'<button class="fb-cta" onclick="'+o.cta.onclick+'">'+stEsc(o.cta.label)+' '+RS_TK_ICONS.arrow+'</button>':'')+'</div>';
+    +(o.cta?'<button class="fb-cta" onclick="'+o.cta.onclick+'">'+stEsc(o.cta.label)+' '+RS_TK_ICONS.arrow+'</button>':'')
+    +(o.foot||'')+'</div>';
 }
 /* today section: the top three by priority stay open, the rest fold behind
    "Show N more" — nothing is dropped. Order: data warnings, major
@@ -14759,14 +14798,32 @@ document.addEventListener('click',function(){var m=$('avMenu');if(m)m.classList.
    source has not loaded reads "not loaded", never a reassuring tick. */
 var SH={open:false,health:null,healthErr:null,healthAt:0,pending:null};
 
+/* The single read of football/health.json. Both the football module and this
+   control call it; whichever asks first does the fetch and the other joins the
+   same promise. (A per-caller abort signal is deliberately not plumbed through
+   a shared read — the file is a few KB of committed JSON.) */
+var ED_HEALTH={j:null,err:null,p:null,at:0};
+function edHealthFetch(force){
+  if(ED_HEALTH.j&&!force&&(Date.now()-ED_HEALTH.at)<300000)return Promise.resolve(ED_HEALTH.j);
+  if(ED_HEALTH.p)return ED_HEALTH.p;
+  ED_HEALTH.p=fetch('football/health.json',{cache:'no-store'})
+    .then(function(r){ if(!r.ok)throw new Error('HTTP '+r.status); return r.json(); })
+    .then(function(j){
+      if(!j||j.schema!=='edgedesk_football_health_v1')throw new Error('unrecognised schema');
+      ED_HEALTH.j=j;ED_HEALTH.err=null;ED_HEALTH.at=Date.now();ED_HEALTH.p=null;return j;
+    })
+    .catch(function(e){ ED_HEALTH.err=(e&&e.message)||'unreachable';ED_HEALTH.p=null;throw e; });
+  return ED_HEALTH.p;
+}
+window.edHealthFetch=edHealthFetch;
+
 /* football/health.json is the daily self-check. The football research module
    loads it too; if it already has, we read that rather than fetching twice. */
 function sysHealthLoad(force){
   if(window.FB&&FB.health&&!force){SH.health=FB.health;SH.healthErr=null;return Promise.resolve(SH.health);}
   if(SH.pending)return SH.pending;
   if(SH.health&&!force&&(Date.now()-SH.healthAt)<300000)return Promise.resolve(SH.health);
-  SH.pending=fetch('football/health.json',{cache:'no-store'})
-    .then(function(r){if(!r.ok)throw new Error('HTTP '+r.status);return r.json();})
+  SH.pending=edHealthFetch(force)
     .then(function(j){SH.health=j;SH.healthErr=null;SH.healthAt=Date.now();return j;})
     .catch(function(e){SH.healthErr=(e&&e.message)||'unreachable';return null;})
     .then(function(j){SH.pending=null;try{sysHealthPaint();}catch(_){}return j;});
@@ -31482,12 +31539,8 @@ function fbLoadCfb(signal){
    means the pipeline has not published a run, and the module says so. */
 function fbHealthLoad(signal){
   function attempt(){
-    return fetch('football/health.json',{signal:signal,cache:'no-store'})
-      .then(function(r){if(!r.ok)throw new Error('HTTP '+r.status);return r.json();})
-      .then(function(j){
-        if(!j||j.schema!=='edgedesk_football_health_v1')throw new Error('unrecognised schema');
-        FB.health=j;FB.healthErr=null;
-      });
+    /* the shared read — the header control may already have it in flight */
+    return window.edHealthFetch().then(function(j){ FB.health=j;FB.healthErr=null; });
   }
   /* one retry after a beat — a CDN blip or mid-deploy 404 must not paint the
      board as faulted; a record that is genuinely gone still reports honestly */
@@ -34809,21 +34862,26 @@ function fbTodayItems(rows){
     r=sp[0];
     items.push({k:'Largest spread disagreement',pri:Math.abs(r.gapS)>=2?'major':'notable',r:r,
       cells:[{l:'Model',v:fbHomeLine(r.p.model.fair_spread),c:'mdl'},{l:'Market',v:fbHomeLine(r.mkt.spread_line)},{l:'Difference',v:Math.abs(r.gapS).toFixed(1)+' pts',p:true}],
-      note:'Home line. Model leans '+fbEsc(fbSideOf(r,r.gapS))+' relative to the market'+(Math.abs(r.gapS)>=7?' — at this size, missing information is the likelier explanation':'')+'.'});
+      note:'Home line. Model leans '+fbEsc(fbSideOf(r,r.gapS))+' relative to the market'+(Math.abs(r.gapS)>=7?' — at this size, missing information is the likelier explanation':'')+'.',
+      why:Math.abs(r.gapS)>=7
+        ? 'This is the widest gap on the board, and a gap this size is far more often the model missing something — an injury, a starter, a suspension — than the market being wrong. Open it to find what the model has not been told.'
+        : 'The model and the market are pricing this game differently by '+Math.abs(r.gapS).toFixed(1)+' points. That is a question worth opening, not an edge: the model\u2019s own record does not beat the close.'});
   }
   var tt=ok.filter(function(x){return x.gapT!=null&&!x.stale&&x.p.model.fair_total!=null;}).sort(function(a,b){return Math.abs(b.gapT)-Math.abs(a.gapT);});
   if(tt.length&&Math.abs(tt[0].gapT)>=1){
     r=tt[0];
     items.push({k:'Largest total disagreement',pri:Math.abs(r.gapT)>=2?'major':'notable',r:r,
       cells:[{l:'Model total',v:r.p.model.fair_total.toFixed(1),c:'mdl'},{l:'Market total',v:String(r.mkt.total_line)},{l:'Difference',v:Math.abs(r.gapT).toFixed(1)+' pts',p:true}],
-      note:'Model projects '+(r.gapT>0?'more':'fewer')+' points than the market number.'});
+      note:'Model projects '+(r.gapT>0?'more':'fewer')+' points than the market number.',
+      why:'Totals move on pace, efficiency and weather, and the model reads only the first two. A '+Math.abs(r.gapT).toFixed(1)+'-point gap says look at what it cannot see before believing it.'});
   }
   var mv=ok.filter(function(x){return x.move!=null;}).sort(function(a,b){return Math.abs(b.move)-Math.abs(a.move);});
   if(mv.length&&Math.abs(mv[0].move)>=1){
     r=mv[0];var m=r.mkt.h2h_move;
     items.push({k:'Largest market movement',pri:'notable',r:r,
       cells:[{l:'Home price · opened',v:(m.open*100).toFixed(1)+'%',c:'mut'},{l:'Home price · now',v:(m.now*100).toFixed(1)+'%'},{l:'Movement',v:fbPts(r.move,1)+' pp',p:true}],
-      note:'Implied probability of the home side since first capture'+(m.at?(' ('+fbEsc(ago(Date.parse(m.at)))+')'):'')+'. A market fact, not a model output.'});
+      note:'Implied probability of the home side since first capture'+(m.at?(' ('+fbEsc(ago(Date.parse(m.at)))+')'):'')+'. A market fact, not a model output.',
+      why:'The market changed its mind on this game more than any other. Something moved it; the model did not move with it, because the model cannot see news. Worth knowing what the market learned.'});
   }
   var cf=ok.filter(function(x){return x.winp!=null;}).sort(function(a,b){return Math.abs(b.winp-.5)-Math.abs(a.winp-.5);});
   if(cf.length){
@@ -34832,37 +34890,41 @@ function fbTodayItems(rows){
     items.push({k:'Most decisive projection',pri:'info',r:r,
       cells:[{l:'Model win prob',v:(pr*100).toFixed(0)+'%',c:'mdl',p:true},{l:'Fair moneyline',v:(ml!=null?((ml>0?'+':'')+ml):'—')},
         cons!=null?{l:'Market · no-vig',v:(cons*100).toFixed(0)+'%'}:{l:'Market · no-vig',v:'—',c:'mut'}],
-      note:'Strongest model favourite on the slate: '+fbEsc(fav)+'. Confidence is a property of the projection, not evidence of an edge.'});
+      note:'Strongest model favourite on the slate: '+fbEsc(fav)+'. Confidence is a property of the projection, not evidence of an edge.',
+      why:'Shown because it is the most one-sided projection on the board, which makes it the easiest one to be wrong about loudly. A confident model is not a correct model.'});
   }
   var ft=rows.filter(function(x){return x.fault;});
   if(ft.length){
     r=ft[0];var lim=r.sport==='p4'?FB_GUARD.p4.game:FB_GUARD.nfl.game;
     items.push({k:'Data-quality warning',pri:'neg',cls:'neg',r:r,
       cells:[{l:'Model',v:fbHomeLine(r.p.model.fair_spread),c:'mdl'},{l:'Market',v:fbHomeLine(r.mkt.spread_line)},{l:'Gap',v:Math.abs(r.gapS).toFixed(1)+' pts',c:'neg',p:true}],
-      note:'Home line. Beyond the '+lim+'-pt guard bound: treat as a data fault, not an edge'+(ft.length>1?(' · '+(ft.length-1)+' more game'+(ft.length===2?'':'s')+' flagged on the board'):'')+'.'});
+      note:'Home line. Beyond the '+lim+'-pt guard bound: treat as a data fault, not an edge'+(ft.length>1?(' · '+(ft.length-1)+' more game'+(ft.length===2?'':'s')+' flagged on the board'):'')+'.',
+      why:'A disagreement this far past the guard bound is EdgeDesk telling you its own number is unsafe here. It is shown so it cannot be mistaken for an opportunity — inspect the inputs, do not price it.'});
   }
   var qb=rows.filter(function(x){return x.ok&&x.warn.some(function(w){return /qb/i.test(w);});});
   if(qb.length){
     r=qb[0];var flags=r.warn.filter(function(w){return /qb/i.test(w);});
     items.push({k:'QB adjustment pending',pri:'warn',cls:'warn',r:r,
       cells:[{l:'Games flagged',v:String(qb.length),c:'warn',p:true},{l:'Model',v:fbHomeLine(r.p.model.fair_spread),c:'mdl'},{l:'Market',v:fbHomeLine(r.mkt.spread_line)}],
-      note:'Home line. '+fbEsc(flags.join(' · '))+'. The feed has not published the starter; the QB layer carries the last known value, never a guess.'});
+      note:'Home line. '+fbEsc(flags.join(' · '))+'. The feed has not published the starter; the QB layer carries the last known value, never a guess.',
+      why:'Quarterback is the largest single input the model has, and for '+qb.length+' game'+(qb.length===1?'':'s')+' it does not know who is playing. Unknown is not healthy: read this number as provisional until the starter is published.'});
   }
   var st=rows.filter(function(x){return x.ok&&x.stale;});
   if(st.length&&!ft.length){
     r=st[0];
     items.push({k:'Stale market quote',pri:'warn',cls:'warn',r:r,
       cells:[{l:'Model',v:fbHomeLine(r.p.model.fair_spread),c:'mdl'},{l:'Captured',v:fbHomeLine(r.mkt.spread_line),c:'mut'},{l:'Games affected',v:String(st.length),c:'warn',p:true}],
-      note:'Home line. The only market number on file is an old capture; nothing is compared until a fresh quote joins.'});
+      note:'Home line. The only market number on file is an old capture; nothing is compared until a fresh quote joins.',
+      why:'There is no live market number to disagree with, so any gap shown here is measured against a price that may no longer exist. Missing is not zero — nothing is compared until a fresh quote lands.'});
   }
   return items;
 }
 function fbSignalCardHTML(it){
   var r=it.r,when='';try{when=whenLabel(new Date(r.t).toISOString());}catch(_){}
-  return rsTkSig({k:it.k,cls:it.cls||'',pri:it.pri,tag:fbSportTag(r),title:r.away+' @ '+r.home,cells:it.cells,note:it.note,
+  return rsTkSig({k:it.k,cls:it.cls||'',pri:it.pri,tag:fbSportTag(r),title:r.away+' @ '+r.home,cells:it.cells,note:it.note,why:it.why,
     foot:when+' · model '+ago(FB.at)+' · '+fbMktAge(r),
     onclick:"fbFocusGame('"+edAttrJs(r.sport)+"','"+edAttrJs(r.gid)+"')",
-    action:{label:'Open research',onclick:"fbOpenGame('"+edAttrJs(r.sport)+"','"+edAttrJs(r.gid)+"')"}});
+    action:{label:'Open research',onclick:"fbSigOpen('"+edAttrJs(r.sport)+"','"+edAttrJs(r.gid)+"','"+edAttrJs(it.k)+"')"}});
 }
 /* ---- model vs market: one reusable component ------------------------
    o = { title, game, when, rows:[{l,sub,v,c}], band:{lo,med,hi,mkt,loLabel,hiLabel,centre,bandLabel,medLabel}, foot } */
@@ -35050,27 +35112,189 @@ window.fbSysToggle=function(){
 /* ---- the overview itself ---- */
 var FB_ICONS=RS_TK_ICONS;
 function fbSkeletonHTML(){return rsTkSkel();}
-function fbToolHTML(k,title,desc){return rsTkTool(k,title,desc,"fbToolGo('"+k+"')");}
+function fbToolHTML(k,title,desc){return rsTkTool(k,title,desc,"fbToolOpen('"+k+"')");}
+/* one tracked entry point for the tool cards; routing itself is unchanged */
+window.fbToolOpen=function(k){
+  var ev={market:'research_market_open',game:'research_game_open',ratings:'research_power_ratings_open'}[k];
+  if(ev)edEvent(ev,{surface:'tools'});
+  fbToolGo(k);
+};
+/* ═══ THE RESEARCH LANDING: START HERE, THE FINDER, THE PREVIEWS ═════════
+   Research → Football is the default landing, so this is the first screen a
+   reader sees. Everything below reads state the module has ALREADY computed
+   or a committed artifact the app already ships; none of it fetches a feed of
+   its own, and none of it changes a projected number. */
+
+/* ANALYTICS. gtag is already on the page; this is the only wrapper, and it is
+   a no-op when the tag is blocked or absent. No new provider, no new script. */
+function edEvent(name,params){
+  try{ if(typeof gtag==='function')gtag('event',name,params||{}); }catch(_){}
+}
+window.edEvent=edEvent;
+
+/* ── START HERE ─────────────────────────────────────────────────────────
+   Four ways in, all of them routes that already exist. Deliberately not a
+   wizard: no steps, no numbering, no dismissable tutorial state. */
+function fbStartHereHTML(){
+  return '<div class="rs-start">'
+    +'<button class="pri" onclick="fbStartGo(\'find\')">Find a game</button>'
+    +'<button onclick="fbStartGo(\'today\')">Research today</button>'
+    +'<button onclick="fbStartGo(\'edges\')">Model disagreements</button>'
+    +'<button onclick="fbStartGo(\'ratings\')">Power ratings</button>'
+    +'</div>';
+}
+window.fbStartGo=function(which){
+  if(which==='find'){
+    edEvent('research_game_open',{surface:'start_here'});
+    var c=$('fbFindCard');
+    if(c){try{c.scrollIntoView({behavior:'smooth',block:'center'});}catch(_){}
+      var i=$('fbFindQ');if(i)setTimeout(function(){try{i.focus();}catch(_){}} ,240);}
+    return;
+  }
+  if(which==='today'){
+    edEvent('research_signal_open',{surface:'start_here'});
+    var t=document.querySelector('#fbOverview .fb-today');
+    if(t){try{t.scrollIntoView({behavior:'smooth',block:'center'});}catch(_){}}
+    return;
+  }
+  /* Edges is a separate destination on purpose: Research asks what EdgeDesk
+     knows, Edges asks where it disagrees with the market enough to matter. */
+  if(which==='edges'){edEvent('research_market_open',{surface:'start_here'});show('edges');return;}
+  if(which==='ratings'){edEvent('research_power_ratings_open',{surface:'start_here'});fbSetSport('rankings');return;}
+  if(which==='players'){edEvent('research_player_quality_open',{surface:'preview'});fbSetSport('players');}
+};
+
+/* ── RESEARCH A GAME ────────────────────────────────────────────────────
+   A compact finder over fbGameRows() — the rows the overview already built.
+   No schedule table on the landing page, no second source of truth, and no
+   fetch: if a game is on the board it is findable here by either team. */
+var FB_FIND_N=6;
+function fbFinderHTML(rows,q){
+  q=String(q||'').trim().toLowerCase();
+  var list=(rows||[]).slice().sort(function(a,b){return (a.t||0)-(b.t||0);});
+  if(q)list=list.filter(function(r){
+    return String(r.home||'').toLowerCase().indexOf(q)>=0
+        || String(r.away||'').toLowerCase().indexOf(q)>=0;
+  });
+  var shown=list.slice(0,q?12:FB_FIND_N);
+  var h='<div class="rs-find"><input id="fbFindQ" type="search" autocomplete="off" spellcheck="false"'
+    +' placeholder="Search team or matchup…" aria-label="Search for a game to research"'
+    +' value="'+fbEsc(q)+'" oninput="fbFindInput(this.value)"></div>';
+  if(!list.length){
+    h+='<div class="rs-find-n">'+(q
+      ? 'No game on the board matches “'+fbEsc(q)+'”. The board holds the next '+FB_LOOKAHEAD_D+' days of NFL, plus the Power 4 slate once that board has been opened.'
+      : 'No games inside the next '+FB_LOOKAHEAD_D+' days in the schedule feed.')+'</div>';
+    return h;
+  }
+  h+='<div class="rs-find-l">'+shown.map(function(r){
+    var when='';try{when=whenLabel(new Date(r.t).toISOString());}catch(_){}
+    return '<button onclick="fbFindOpen(\''+edAttrJs(r.sport)+'\',\''+edAttrJs(String(r.gid))+'\')">'
+      +'<span class="g">'+fbEsc(fbSportTag(r))+'</span>'
+      +'<span>'+fbEsc(r.away+' @ '+r.home)+'</span>'
+      +'<span class="w">'+fbEsc(when)+'</span></button>';
+  }).join('')+'</div>';
+  if(!q&&list.length>FB_FIND_N)h+='<div class="rs-find-n">'+(list.length-FB_FIND_N)+' further game'+(list.length-FB_FIND_N===1?'':'s')+' on the board — search to reach one.</div>';
+  return h;
+}
+/* repaint the finder alone, so typing never re-renders the whole overview
+   (and never re-reads a feed) */
+window.fbFindInput=function(v){
+  var c=$('fbFindCard');if(!c)return;
+  var at=null;try{var i=$('fbFindQ');at=i?i.selectionStart:null;}catch(_){}
+  c.innerHTML=fbFinderHTML(fbGameRows(),v);
+  var n=$('fbFindQ');
+  if(n){try{n.focus();if(at!=null)n.setSelectionRange(at,at);}catch(_){}}
+};
+window.fbFindOpen=function(sport,gid){edEvent('research_game_open',{surface:'finder',sport:sport});fbOpenGame(sport,gid);};
+window.fbSigOpen=function(sport,gid,kind){edEvent('research_signal_open',{surface:'today',sport:sport,signal:kind});fbOpenGame(sport,gid);};
+
+/* ── EDGEDESK POWER RATINGS, top five ───────────────────────────────────
+   Read from the committed rankings artifact through the SAME fbRkEnsure()
+   the Rankings segment uses, so opening that segment reuses this fetch
+   rather than repeating it. Never a hardcoded board. */
+function fbRkPreviewHTML(){
+  var d=FB.rk&&FB.rk.data;
+  var h='<div class="fb-card"><div class="rs-pv-h"><span class="t">EdgeDesk power ratings</span>'
+    +'<span class="s">points vs an average FBS team</span></div>';
+  if(!d){
+    h+='<div class="rs-find-n">'+(FB.rk&&FB.rk.err
+      ? 'The rankings artifact did not load ('+fbEsc(FB.rk.err)+'). Nothing is shown rather than something invented.'
+      : 'Loading the committed rankings…')+'</div></div>';
+    return h;
+  }
+  var teams=[];
+  for(var k in d.teams){var t=d.teams[k];if(t&&t.rank!=null&&t.etsr!=null)teams.push(t);}
+  teams.sort(function(a,b){return a.rank-b.rank;});
+  if(!teams.length){
+    h+='<div class="rs-find-n">No team cleared the confidence floor to be ranked this week. Unranked is not a rank of zero.</div></div>';
+    return h;
+  }
+  h+=teams.slice(0,5).map(function(t){
+    return '<div class="rs-pv-r"><span class="n">'+t.rank+'</span><span class="m">'+fbEsc(t.team)+'</span>'
+      +'<span class="v">'+(t.etsr>=0?'+':'')+t.etsr.toFixed(1)+'</span></div>';
+  }).join('');
+  var unranked=0;for(var k2 in d.teams){var t2=d.teams[k2];if(t2&&t2.rank==null)unranked++;}
+  h+='<p class="rs-pv-note">Neutral field — home advantage is <b>not</b> in this number.'
+    +(unranked?(' '+unranked+' team'+(unranked===1?'':'s')+' sit'+(unranked===1?'s':'')+' below the confidence floor and are unranked, not ranked last.'):'')+'</p>';
+  h+='<div class="rs-start" style="margin-top:8px"><button onclick="fbStartGo(\'ratings\')">View all ratings</button></div>';
+  return h+'</div>';
+}
+
+/* ── PLAYER QUALITY ─────────────────────────────────────────────────────
+   Counts only, from the manifest the Players segment already reads. The
+   disclosure is the point of the card, not a footnote: this layer has not
+   cleared the promotion gate and moves no projected number. */
+function fbPqPreviewHTML(){
+  var m=FB.pq&&FB.pq.manifest;
+  var h='<div class="fb-card"><div class="rs-pv-h"><span class="t">Player quality</span>'
+    +'<span class="s">confidence-aware ratings</span></div>';
+  if(!m){
+    h+='<div class="rs-find-n">'+(FB.pq&&FB.pq.err
+      ? 'The player layer did not load ('+fbEsc(FB.pq.err)+').'
+      : 'Loading the committed player ratings…')+'</div></div>';
+    return h;
+  }
+  var rated=m.rated_with_production!=null?m.rated_with_production:null;
+  h+='<div class="rs-pv-k">'
+    +'<div><b>'+fbEsc(String(m.player_count!=null?m.player_count.toLocaleString():'—'))+'</b>FBS players</div>'
+    +'<div><b>'+fbEsc(String(m.team_count!=null?m.team_count:'—'))+'</b>teams</div>'
+    +(rated!=null?('<div><b>'+rated.toLocaleString()+'</b>with attributed production</div>'):'')
+    +'</div>';
+  /* THE DISCLOSURE. A reader must not leave this card believing the spread
+     they see anywhere in EdgeDesk has player ratings inside it. It does not. */
+  h+='<p class="rs-pv-note"><b style="color:var(--warn)">Research only.</b> Player quality has not cleared walk-forward validation, so it moves <b>no</b> projected line anywhere in EdgeDesk. It changes what is shown, explained and warned about — nothing that is priced.</p>';
+  h+='<div class="rs-start" style="margin-top:8px"><button onclick="fbStartGo(\'players\')">Explore players</button></div>';
+  return h+'</div>';
+}
+
+function fbScopeLabel(){
+  var p4on=!!(FB.p4&&FB.p4.loadedAt&&!FB.p4.engineErr),p4loading=!!(FB.p4&&FB.p4._loading&&!FB.p4.loadedAt);
+  return p4on?'NFL + FBS':(p4loading?'NFL · FBS loading':'NFL only');
+}
 function fbOverviewHTML(){
   if(FB.engineErr&&!FB.at){
     return '<div class="rs-state"><h4>Football engine unavailable</h4><p>'+fbEsc(FB.engineErr)+'. Nothing is shown rather than something invented.</p><button onclick="fbRefreshClick()">Try again</button></div>';
   }
   if(!FB.at)return fbSkeletonHTML();
   var rows=fbGameRows(),s=fbSnapshot(rows),items=fbTodayItems(rows).map(function(it){return fbSigItem(it);});
-  var p4on=!!(FB.p4&&FB.p4.loadedAt&&!FB.p4.engineErr),p4loading=!!(FB.p4&&FB.p4._loading&&!FB.p4.loadedAt);
-  var scope='NFL'+(p4on?' + FBS':(p4loading?' · Power 4 loading':' · Power 4 loads on open'));
-  var html=rsTkSnap({title:'Football research',meta:'Updated '+ago(FB.at)+' · '+scope,key:'fbSnap',
+  /* no title: the panel header above already says FOOTBALL, and repeating it
+     cost ~60px of the first screen on a phone. The scope rides the freshness
+     stamp in that header instead (fbRenderFresh). */
+  var html=rsTkSnap({title:'',meta:'',key:'fbSnap',
     kpis:[{n:s.games,l:'Games'},{n:s.cand,l:'Review',c:s.cand?'':'mut'},{n:s.dis,l:'Disagree',c:s.dis?'warn':'mut'},{n:s.faults,l:'Faults',c:s.faults?'neg':'pos'}],
-    defs:[['Review','Projected games with market data joined.'],['Disagree','Model/market gap above the research threshold.'],['Faults','Failed checks or guard-bound violations.']],
     how:'<b>Games</b> are the upcoming NFL games inside the next '+FB_LOOKAHEAD_D+' days, plus the Power 4 slate once that board has been opened. <b>Review</b> requires a PREDICTED projection and a spread or total joined from captured quotes or the reference line. <b>Disagree</b> uses the engine’s own research-lean classification: 2+ pts of disagreement on the spread or total — research attention, unproven by the model’s own record. <b>Faults</b> add failed daily self-checks to games whose model–market gap exceeds the guard bound ('+FB_GUARD.nfl.game+' pts NFL, '+FB_GUARD.p4.game+' pts Power 4).'+(s.warn?(' '+s.warn+' game'+(s.warn===1?'':'s')+' currently carr'+(s.warn===1?'ies':'y')+' a data-quality flag.'):''),
-    cta:{label:'Open football research',onclick:"fbToolGo('game')"}});
+    foot:fbStartHereHTML()});
   html+='<div class="fb-sechd"><span>Today in football</span><span class="r">'+(items.length?(items.length+' signal'+(items.length===1?'':'s')):'quiet')+' · '+fbEsc(ago(FB.at))+'</span></div>';
   html+=rsTkToday(items,'fbToday','<div class="fb-quiet">No major research changes since the last refresh.'+(s.games?'':'<small>No games inside the next '+FB_LOOKAHEAD_D+' days in the schedule feed. Use the week selector on the NFL board to scan any week.</small>')+'</div>');
+  html+='<div class="fb-sechd"><span>Research a game</span><span class="r">'+fbEsc(String(rows.length))+' on the board</span></div>'
+    +'<div class="fb-card" id="fbFindCard">'+fbFinderHTML(rows,'')+'</div>';
+  html+='<div class="fb-sechd"><span>EdgeDesk research</span><span class="r">built here, not bought in</span></div>'
+    +'<div class="rs-prev">'+fbRkPreviewHTML()+fbPqPreviewHTML()+'</div>';
   html+='<div class="fb-sechd"><span>Research tools</span></div><div class="fb-tools">'
-    +fbToolHTML('game','Game research','Projections, cover and total probabilities, QB and rest context.')
-    +fbToolHTML('market','Market research','Captured quotes, consensus, movement and the graded close record.')
-    +fbToolHTML('team','Team research','FBS rosters by position group, class mix and returning production.')
-    +fbToolHTML('ratings','Ratings & models','Power ratings, week-by-week projections and the graded season.')
+    +fbToolHTML('game','Game research','Projection, score distribution, player matchups and what could break the number.')
+    +fbToolHTML('market','Market research','Current price, movement, consensus and closing-line history.')
+    +fbToolHTML('team','Team research','Roster continuity, transfers, position groups and player quality.')
+    +fbToolHTML('ratings','Ratings & models','Power ratings, model methodology and graded performance.')
     +'</div>';
   html+=(window.EDBRIEF?EDBRIEF.deskHTML('football'):'');
   var fr=fbFocusRow(rows);
@@ -35080,12 +35304,31 @@ function fbOverviewHTML(){
 }
 function fbSigItem(it){
   var r=it.r,when='';try{when=whenLabel(new Date(r.t).toISOString());}catch(_){}
-  return {k:it.k,cls:it.cls||'',pri:it.pri,tag:fbSportTag(r),title:r.away+' @ '+r.home,cells:it.cells,note:it.note,
+  return {k:it.k,cls:it.cls||'',pri:it.pri,tag:fbSportTag(r),title:r.away+' @ '+r.home,cells:it.cells,note:it.note,why:it.why,
     foot:when+' · model '+ago(FB.at)+' · '+fbMktAge(r),
     onclick:"fbFocusGame('"+edAttrJs(r.sport)+"','"+edAttrJs(r.gid)+"')",
-    action:{label:'Open research',onclick:"fbOpenGame('"+edAttrJs(r.sport)+"','"+edAttrJs(r.gid)+"')"}};
+    action:{label:'Open research',onclick:"fbSigOpen('"+edAttrJs(r.sport)+"','"+edAttrJs(r.gid)+"','"+edAttrJs(it.k)+"')"}};
 }
-function fbRenderOverview(){var el=$('fbOverview');if(el)el.innerHTML=fbOverviewHTML();}
+function fbRenderOverview(){
+  var el=$('fbOverview');if(el)el.innerHTML=fbOverviewHTML();
+  fbLandingPreviews();
+  if(!FB.ui._landSeen&&FB.at){FB.ui._landSeen=true;edEvent('research_landing_view',{module:'football'});}
+}
+/* ONE fetch each, both of committed artifacts, both shared with the segment
+   that owns them — the preview does not introduce a second source or a second
+   read. The card repaints in place when the artifact lands. */
+function fbLandingPreviews(){
+  try{
+    if(FB.rk&&!FB.rk.data&&!FB.rk.err&&!FB.rk._p)
+      fbRkEnsure().then(fbPaintPreviews,fbPaintPreviews);
+    if(FB.pq&&!FB.pq.manifest&&!FB.pq.err&&!FB.pq._mp)
+      fbPqManifest().then(fbPaintPreviews,fbPaintPreviews);
+  }catch(_){}
+}
+function fbPaintPreviews(){
+  var h=document.querySelector('#fbOverview .rs-prev');
+  if(h)h.innerHTML=fbRkPreviewHTML()+fbPqPreviewHTML();
+}
 function fbRenderSystem(){var el=$('fbSystem');if(!el)return;el.innerHTML=(FB.at||FB.engineErr||FB.health)?fbSystemHTML():'';}
 /* ---- navigation into the boards ---- */
 window.fbFocusGame=function(sport,gid){
@@ -35212,9 +35455,8 @@ function fbPqEnsure(){
     .then(function(){
       if(!window.EDPlayerRating||!window.EDPlayerMatchup||!window.EDPlayerSim)
         throw new Error('player modules loaded but globals missing');
-      return fetch(FBPQ_BASE+'current.json',{cache:'no-cache'});
+      return fbPqManifest();          /* reuses the landing preview's fetch */
     })
-    .then(function(r){ if(!r.ok)throw new Error('current.json '+r.status); return r.json(); })
     .then(function(j){
       FB.pq.manifest=j;FB.pq.at=Date.now();FB.pq.ready=true;FB.pq.err=null;FB.pq._p=null;
       return FB.pq;
@@ -35224,6 +35466,16 @@ function fbPqEnsure(){
       throw e;
     });
   return FB.pq._p;
+}
+/* the manifest on its own: what the landing preview needs, without the engine */
+function fbPqManifest(){
+  if(FB.pq.manifest)return Promise.resolve(FB.pq.manifest);
+  if(FB.pq._mp)return FB.pq._mp;
+  FB.pq._mp=fetch(FBPQ_BASE+'current.json',{cache:'no-cache'})
+    .then(function(r){ if(!r.ok)throw new Error('current.json '+r.status); return r.json(); })
+    .then(function(j){ FB.pq.manifest=j;FB.pq.at=Date.now();FB.pq.err=null;FB.pq._mp=null; return j; })
+    .catch(function(e){ FB.pq.err=String(e&&e.message||e).slice(0,140);FB.pq._mp=null; throw e; });
+  return FB.pq._mp;
 }
 function fbPqIndexLoad(){
   if(FB.pq.index)return Promise.resolve(FB.pq.index);
@@ -36514,7 +36766,7 @@ function fbRenderBoard(host){
   }
   if(FB.engineErr)return;
   if(!FB.at){host.innerHTML='<div class="empty">Loading…</div>';if(ctl)ctl.style.display='none';return;}
-  var fr=$('fbFresh');if(fr)fr.textContent='engine loaded '+ago(FB.at);
+  var fr=$('fbFresh');if(fr)fr.textContent='engine loaded '+ago(FB.at)+' · '+fbScopeLabel();
   if(ban){ban.className='flbanner hide';ban.innerHTML='';}
   /* only the NFL board remains on this path: p4 and the rosters browser
      returned above, and the old CFB v1 matchup board was retired in favour
