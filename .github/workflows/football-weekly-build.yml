@@ -1,0 +1,153 @@
+# EdgeDesk Football — the weekly build.
+#
+# ONE workflow, in dependency order, because the layers genuinely depend on each
+# other and three workflows racing each other to commit the same tree is how you
+# get a Tuesday where the rankings were built on last week's players.
+#
+#   box enrichment  ->  player ratings (+ the v2 candidate)  ->  national
+#   rankings + ETSR  ->  weekly snapshot  ->  tests  ->  one commit
+#
+# NO EDGE FUNCTION IS INVOLVED IN ANY OF IT. Every number is computed here and
+# committed as an artifact; the browser reads the artifact and computes nothing.
+#
+# WHAT THIS JOB DELIBERATELY DOES NOT DO: it does not run the feature
+# walk-forward and it does not recalibrate a weight. Refitting on a schedule is
+# precisely how a research layer starts fitting the recent past without anybody
+# deciding to. Promotion is a human decision made by running
+# `npm run cfb:validate` and committing what it writes.
+name: Football weekly build
+
+on:
+  workflow_dispatch:
+    inputs:
+      season:
+        description: 'Season year (default: current, Jan/Feb -> prior year)'
+        required: false
+        default: ''
+      seasons:
+        description: 'How many seasons of history to read (default 4)'
+        required: false
+        default: ''
+      allow_anomalies:
+        description: 'Publish even if severe anomalies are found (use deliberately)'
+        type: boolean
+        required: false
+        default: false
+  schedule:
+    - cron: '40 9 * * 2'    # Tuesday — the week has settled and rosters have moved
+    - cron: '40 9 * * 0'    # Sunday  — Saturday's games have landed
+  push:
+    branches: [main]
+    paths:
+      - 'football/players/config.js'
+      - 'football/players/epir.js'
+      - 'football/players/units.js'
+      - 'football/players/scheme.js'
+      - 'football/players/build_players.js'
+      - 'football/players/run_build.js'
+      - 'football/data/**'
+      - 'football/rankings/config.js'
+      - 'football/rankings/performance.js'
+      - 'football/rankings/talent.js'
+      - 'football/rankings/etsr.js'
+      - 'football/rankings/build_rankings.js'
+      - '.github/workflows/football-weekly-build.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: football-weekly-build
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      # pyarrow reads the ONE format the season-in-progress box score is
+      # published in. Everything else in this repository runs on a bare Node
+      # install; this is the single dependency and it has a fallback.
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install the parquet reader
+        run: pip install --quiet pyarrow
+
+      # Cache the raw feeds between runs: the play tables are ~55 MB a season
+      # and they do not change once a season is over.
+      - name: Cache raw football feeds
+        uses: actions/cache@v4
+        with:
+          path: .cache/football
+          key: football-feeds-${{ github.run_id }}
+          restore-keys: |
+            football-feeds-
+
+      # The suites gate the write. A build that would commit a dataset its own
+      # rules reject has to fail BEFORE it writes anything.
+      - name: Suites (before)
+        run: npm run cfb:test
+
+      - name: Box-score enrichment
+        run: node football/data/build_box.js --seasons 4 --cache .cache/football
+          ${{ github.event.inputs.season && format('--season {0}', github.event.inputs.season) || '' }}
+
+      - name: Player ratings (v1 canonical, v2 candidate)
+        run: node --max-old-space-size=6144 football/players/build_players.js --cache .cache/football
+          ${{ github.event.inputs.season && format('--season {0}', github.event.inputs.season) || '' }}
+          ${{ github.event.inputs.seasons && format('--seasons {0}', github.event.inputs.seasons) || '' }}
+
+      - name: National rankings and ETSR
+        run: node --max-old-space-size=6144 football/rankings/build_rankings.js --cache .cache/football
+          ${{ github.event.inputs.season && format('--season {0}', github.event.inputs.season) || '' }}
+          ${{ github.event.inputs.seasons && format('--seasons {0}', github.event.inputs.seasons) || '' }}
+          ${{ github.event.inputs.allow_anomalies == 'true' && '--allow-anomalies' || '' }}
+
+      # Re-run against what was actually written. The first pass proved the code
+      # is sound; this proves the DATA is.
+      - name: Suites (after)
+        run: npm run cfb:test
+
+      - name: Refuse to publish a wrong-shaped dataset
+        run: |
+          node -e "
+            const fail = s => { console.error('REFUSING TO COMMIT: ' + s); process.exit(1); };
+            const p = require('./football/players/current.json');
+            if (!(p.player_count > 8000)) fail('only ' + p.player_count + ' players');
+            if (Object.keys(p.teams).length < 100) fail('only ' + Object.keys(p.teams).length + ' teams in the player layer');
+            const r = require('./football/rankings/current.json');
+            if (r.schema !== 'edgedesk_national_rankings_v1') fail('unexpected rankings schema');
+            if (!(r.team_count > 120)) fail('only ' + r.team_count + ' teams ranked');
+            if (r.anomalies.severe > 0) fail(r.anomalies.severe + ' severe anomalies');
+            if (!r.performance_diagnostics.all_converged) fail('the opponent adjustment did not converge');
+            if (r.market.is_input !== false) fail('the market is marked as an input, which it must never be');
+            const reg = require('./football/validation/feature-status.json');
+            const moved = reg.features.filter(f => f.may_move_lines);
+            console.log('ok — ' + r.team_count + ' teams, ' + p.player_count + ' players, '
+              + r.season + ' ' + r.week_label + ', ' + moved.length + ' validated feature(s)');
+          "
+
+      - name: Commit
+        run: |
+          git config user.name  'github-actions[bot]'
+          git config user.email 'github-actions[bot]@users.noreply.github.com'
+          git add football/players/current.json football/players/index.json \
+                  football/players/params.js football/players/teams \
+                  football/players/snapshots football/players/candidates \
+                  football/data/box football/rankings/current.json \
+                  football/rankings/snapshots football/rankings/params.js
+          if git diff --cached --quiet; then
+            echo 'nothing changed — quiet day, no commit'
+            exit 0
+          fi
+          SEASON=$(node -p "require('./football/rankings/current.json').season")
+          WEEK=$(node -p "require('./football/rankings/current.json').week_label")
+          git commit -m "football: ${SEASON} ${WEEK} ratings and rankings"
+          git push
