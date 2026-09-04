@@ -188,7 +188,8 @@
     var stored=ST.recordPriceIt({
       game_id:ch.game_id,slug:ch.slug,home_team:ch.home_team,away_team:ch.away_team,
       user_spread:res.user_spread,edgedesk_spread:res.edgedesk_spread,
-      market_spread:res.market_spread,distance:res.distance,score:res.score,
+      market_spread:res.market_spread,distance:res.distance,
+      distance_to_market:res.distance_to_market,score:res.score,
       benchmark:res.benchmark,scoring_version:res.scoring_version,
       research_state:ch.research_state});
     G.track('price_it_complete',{game_id:ch.game_id,game_slug:ch.slug,game_type:'price_it',

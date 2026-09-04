@@ -131,6 +131,11 @@
         edgedesk_spread: entry.edgedesk_spread,
         market_spread: entry.market_spread == null ? null : entry.market_spread,
         distance: entry.distance,
+        /* the distance to the OTHER benchmark travels with the result too:
+           the reveal shows "you are N points from the current market", and a
+           replayed result must be able to say the same thing rather than
+           quietly dropping a line the first view had */
+        distance_to_market: entry.distance_to_market == null ? null : entry.distance_to_market,
         score: entry.score,
         benchmark: entry.benchmark,
         scoring_version: entry.scoring_version,

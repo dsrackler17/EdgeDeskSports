@@ -150,8 +150,10 @@ const T0 = Date.parse('2026-09-04T18:00:00Z');
 freshStore();
 (() => {
   const rec = ST.recordPriceIt({ game_id: '1', slug: 'a-b', home_team: 'Auburn', away_team: 'Baylor',
-    user_spread: -6.5, edgedesk_spread: -8.2, market_spread: null, distance: 1.7, score: 90,
+    user_spread: -6.5, edgedesk_spread: -8.2, market_spread: -10.5, distance: 1.7,
+    distance_to_market: 4, score: 90,
     benchmark: 'edgedesk', scoring_version: 'price_it_v1' }, T0);
+  eq('and it is the value the scorer produced', rec.distance_to_market, 4);
   eq('a completed challenge is stored', rec.score, 90);
   eq('the result is filed under its football week', rec.week, '2026-09-01');
   eq('a first play starts the streak at one', ST.liveStreak(null, T0), 1);
@@ -164,6 +166,11 @@ freshStore();
   eq('a replay does not inflate the play count', ST.priceItRecord().played, 1);
   eq('a replay does not inflate the weekly score', ST.weeklyScore(T0), 90);
   chk('the stored result is findable by game id', ST.priceItResult('1').score === 90);
+  /* the reveal shows "you are N points from the current market" — a replayed
+     result has to be able to say the same thing, so the distance to the
+     benchmark it did NOT score against is stored too */
+  chk('a stored result carries the distance to the market as well',
+    'distance_to_market' in ST.priceItResult('1'));
   eq('an unplayed challenge has no stored result', ST.priceItResult('nope'), null);
 })();
 
