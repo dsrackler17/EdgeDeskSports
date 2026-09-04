@@ -40,7 +40,28 @@ const TEXT = IDX.replace(/<script[\s\S]*?<\/script>/g, ' ').replace(/<style[\s\S
 /* ======================================================================== */
 /* 1. THE HERO ANSWERS THE FIVE-SECOND QUESTIONS                            */
 /* ======================================================================== */
-const HERO = IDX.slice(IDX.indexOf('<header class="hero"'), IDX.indexOf('</header>'));
+/* Content the reader sees now lives in the page's own script modules as
+   often as in its markup — the hero card, the walkthrough and the
+   uncertainty panel are all rendered from data. Slicing the module by brace
+   matching keeps every assertion pointed at the exact source of the words a
+   reader ends up reading, rather than at whichever half of the file they
+   happen to sit in today. */
+function mod(name) {
+  const i = IDX.indexOf('(function ' + name + '(');
+  if (i < 0) return '';
+  let d = 0, j = i, started = false;
+  for (; j < IDX.length; j++) {
+    const c = IDX[j];
+    if (c === '{') { d++; started = true; }
+    else if (c === '}') { d--; if (started && d === 0) break; }
+  }
+  return IDX.slice(i, j + 1);
+}
+chk('the hero card module is found', mod('heroGames').length > 800);
+chk('the walkthrough module is found', mod('stepper').length > 800);
+chk('the uncertainty module is found', mod('idk').length > 800);
+
+const HERO = IDX.slice(IDX.indexOf('<header class="hero"'), IDX.indexOf('</header>')) + mod('heroGames');
 chk('the hero is found', HERO.length > 500);
 has(HERO, 'Research the matchup.', 'what EdgeDesk does, line one');
 has(HERO, 'Then price it.', 'and line two');
@@ -50,7 +71,7 @@ has(HERO, 'the model, the market, the roster, the players, the matchup', 'the la
 has(HERO, 'Instead of', 'what it replaces is stated');
 ['10 tabs', '5 sites', 'a spreadsheet'].forEach(t => has(HERO, t, 'it replaces ' + t));
 has(HERO, 'Start researching', 'the primary CTA is a research verb');
-has(HERO, 'See a live matchup', 'and a secondary CTA into the product');
+has(HERO, 'See what is inside', 'and a secondary CTA into the product');
 has(HERO, 'Research, not picks.', 'the differentiator is in the hero');
 has(HERO, '$79.99/month', 'and the price is stated plainly');
 lacks(HERO, 'Which betting lines', 'the old cross-sport positioning is gone');
@@ -64,12 +85,22 @@ lacks(IDX, "golf, MLB, WNBA, CFB, CBB", 'and the sport list it rewrote the hero 
  'Win probability', 'Research state', 'Data confidence', 'What this means',
  'Research check', 'Why EdgeDesk prices it here']
   .forEach(f => has(HERO, f, 'the hero card shows "' + f + '"'));
-has(HERO, 'REVIEW', 'and a real research state');
+['PASS', 'REVIEW', 'INVESTIGATE'].forEach(s =>
+  has(HERO, "state:'" + s + "'", 'the hero offers the research state ' + s));
+chk('the hero switcher names all three, so the product does not look like it finds edges everywhere',
+  /Model agrees/.test(HERO) && /Small gap/.test(HERO) && /Large gap/.test(HERO));
+chk('the agreeing game is the one shown first',
+  HERO.indexOf("state:'PASS'") < HERO.indexOf("state:'REVIEW'"));
+has(HERO, 'That is agreement. There is nothing here to research further',
+  'and the PASS game says plainly there is nothing to do');
+has(HERO, 'read as missing information rather than as an opportunity',
+  'while the large gap is a question, not a discovery');
+has(HERO, 'past EdgeDesk&rsquo;s own guard bound', 'named against the guard bound');
 has(HERO, 'Illustrative game', 'and says the game is illustrative');
 chk('the card shows a model number and a market number that differ',
   /Auburn -9\.7/.test(HERO) && /Auburn -8\.0/.test(HERO));
 chk('the research check shows knowns AND unknowns',
-  /ck ok/.test(HERO) && /ck warn/.test(HERO) && /ck neg/.test(HERO));
+  /\['ok',/.test(HERO) && /\['warn',/.test(HERO) && /\['neg',/.test(HERO));
 has(HERO, 'starting quarterback', 'including the quarterback it does not know');
 /* the card must not imply the unvalidated layers price the game */
 has(HERO, 'neither has cleared validation', 'the hero discloses the unvalidated layers');
@@ -159,34 +190,36 @@ chk('the players artifact has the counts the page asks for',
 /* ======================================================================== */
 /* 6. THE HONEST SECTIONS                                                   */
 /* ======================================================================== */
-['compress', 'getyou', 'notpicks', 'steps', 'idk', 'examples', 'ours', 'who', 'close']
+['compress', 'getyou', 'notpicks', 'steps', 'idk', 'ours', 'who', 'close']
   .forEach(id => has(IDX, 'id="' + id + '"', 'the ' + id + ' section exists'));
 /* the workflow never tells a reader to bet */
-const STEPS = IDX.slice(IDX.indexOf('id="steps"'), IDX.indexOf('id="idk"'));
+const STEPS = IDX.slice(IDX.indexOf('id="steps"'), IDX.indexOf('id="idk"')) + mod('stepper');
 ['PASS', 'REVIEW', 'INVESTIGATE', 'THIN DATA'].forEach(v =>
   has(STEPS, v, 'the workflow ends in the state ' + v));
 [/>\s*BET\s*</, /\bLOCK\b/, /\bPLAY\b/].forEach(re =>
   chk('the workflow never says ' + re, !re.test(STEPS)));
 has(STEPS, 'Decide for yourself', 'and the last step hands the decision back');
 /* the model may say I don't know */
-const IDK = IDX.slice(IDX.indexOf('id="idk"'), IDX.indexOf('id="examples"'));
-has(IDK, 'Unknown is not healthy', 'unknown is not healthy');
+const IDK = IDX.slice(IDX.indexOf('id="idk"'), IDX.indexOf('id="ours"')) + mod('idk');
+has(IDK, 'Unknown is never treated as healthy', 'unknown is not healthy');
 has(IDK, 'Missing is not zero', 'missing is not zero');
-has(IDK, 'have not cleared walk-forward validation', 'the unvalidated layers are named');
-has(IDK, 'move <em>no</em> projected line', 'and stated to move no line');
-/* both example states, so the product does not look like it finds edges everywhere */
-const EX = IDX.slice(IDX.indexOf('id="examples"'), IDX.indexOf('id="ours"'));
-has(EX, 'INVESTIGATE', 'the big-disagreement example is INVESTIGATE');
-/* the badges are namespaced: a bare .verdict already belongs to an animated
-   component that starts at opacity 0 and is revealed by JS, so reusing the
-   name rendered both research states invisible */
-chk('the example badges use a namespaced class, not the page\'s animated .verdict',
-  /<span class="lp-verdict">/.test(EX) && !/<span class="verdict">/.test(EX));
-chk('and the animated .verdict component still owns its own name',
-  /\.verdict\{margin-top:16px;opacity:0/.test(IDX));
-has(EX, 'does <b>not</b> call this an edge', 'and is explicitly not called an edge');
-has(EX, 'PASS', 'and a PASS example exists too');
-has(EX, 'priced about right', 'where the market is already right');
+has(IDK, 'cleared walk-forward validation', 'the unvalidated layers are named');
+has(IDK, 'moves a projected line anywhere in the product', 'and stated to move no line');
+has(IDK, 'a guess is never substituted for it', 'and no guess is substituted');
+/* every condition states the RULE that fires, not just the intention —
+   an intention is a disclaimer, a rule is a behaviour */
+chk('each uncertainty condition carries the rule it triggers',
+  (mod('idk').match(/\br:'/g) || []).length === (mod('idk').match(/\bk:'/g) || []).length
+  && (mod('idk').match(/\br:'/g) || []).length >= 6);
+/* The two worked examples became the hero switcher, so the reader meets a
+   PASS and an INVESTIGATE in the first screen rather than eight screens
+   down. The badge class stays namespaced: a bare .verdict belongs to an
+   animated component that starts at opacity 0, and reusing the name once
+   rendered both research states invisible. */
+chk('the research-state badge does not reuse the animated .verdict class',
+  !/<span class="verdict">/.test(IDX) && !/'verdict'/.test(mod('heroGames')));
+chk('the state badge is rendered from the state tone, not hand-written markup',
+  /class="st '\+g\.stateTone\+'"/.test(mod('heroGames')));
 /* not a picks service */
 const NP = IDX.slice(IDX.indexOf('id="notpicks"'), IDX.indexOf('id="steps"'));
 has(NP, 'not paying for', 'the differentiator is stated');
@@ -196,8 +229,13 @@ has(NP, 'Research the matchup. Then price it.', 'and closes on the positioning l
 /* ======================================================================== */
 /* 7. NAVIGATION AND THE CLOSE                                              */
 /* ======================================================================== */
-const NAV = IDX.slice(IDX.indexOf('<nav>'), IDX.indexOf('</nav>'));
-['Product', 'Research', 'How it works', 'Record', 'Pricing'].forEach(l =>
+const NAV = (function () {
+  const a = IDX.indexOf('<nav>');                 /* the site nav; the reading
+     rail above it is <nav class="lp-rail">, so match the bare tag */
+  return a < 0 ? '' : IDX.slice(a, IDX.indexOf('</nav>', a));
+})();
+chk('the site nav is found', NAV.length > 200);
+['Product', 'How it works', 'Record', 'Pricing'].forEach(l =>
   has(NAV, '>' + l + '<', 'the nav offers ' + l));
 has(NAV, 'Start researching', 'and its CTA is a research verb');
 lacks(NAV, 'Engines', 'internal vocabulary is out of the marketing nav');
