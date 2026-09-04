@@ -14,6 +14,7 @@
 <meta name="description" content="Five football games, one side each, one card a week. Free to play, points only, no real-money wagering — with the EdgeDesk research behind every matchup a click away.">
 <link rel="canonical" href="https://edgedesksports.com/games/pick-5">
 <meta name="theme-color" content="#0b0d11">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230b0d11'/%3E%3Cpath d='M18 6 L23 6 L14 26 L9 26 Z' fill='%233fb883'/%3E%3C/svg%3E">
 <meta name="robots" content="index,follow">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="EdgeDesk Games">
@@ -166,8 +167,8 @@
     after.innerHTML='<div class="sec"><div class="stats">'
       +'<div class="stat"><div class="k">Streak</div><div class="v'+(streak?' on':'')+'">'
       +(streak?('🔥 '+streak):'—')+'</div><div class="s">days in a row</div></div>'
-      +'<div class="stat"><div class="k">Weekly score</div><div class="v'+(wk?' on':'')+'">'
-      +(wk||'—')+'</div><div class="s">points this week</div></div>'
+      +'<div class="stat"><div class="k">Weekly score</div><div class="v'+(wk>0?' on':'')+'">'
+      +wk+'</div><div class="s">points this week</div></div>'
       +'<div class="stat"><div class="k">Pick 5 record</div><div class="v">'+(p5.label||'—')
       +'</div><div class="s">all time</div></div>'
       +'</div></div>'

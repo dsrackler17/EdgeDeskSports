@@ -16,6 +16,7 @@
 <meta name="description" content="Play free football pricing and prediction games, compare your read with the market, and explore the research behind the numbers. Free to play, no real-money wagering.">
 <link rel="canonical" href="https://edgedesksports.com/games">
 <meta name="theme-color" content="#0b0d11">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230b0d11'/%3E%3Cpath d='M18 6 L23 6 L14 26 L9 26 Z' fill='%233fb883'/%3E%3C/svg%3E">
 <meta name="robots" content="index,follow">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="EdgeDesk Games">
@@ -146,8 +147,12 @@
     $('stStreak').textContent=streak?('🔥 '+streak):'—';
     $('stStreak').className='v'+(streak?' on':'');
     $('stStreakSub').textContent=streak===1?'day':'days in a row';
-    $('stWeek').textContent=wk?String(wk):'—';
-    $('stWeek').className='v'+(wk?' on':'');
+    /* zero is a real score, not a missing one: a player who has locked a
+       price this week has a weekly score of 0, and showing them a dash reads
+       as "you have not played". Only a week with no plays at all is blank. */
+    var played=pi.played||p5.decided||Object.keys(ST.read().pick5.cards).length;
+    $('stWeek').textContent=played?String(wk):'—';
+    $('stWeek').className='v'+(wk>0?' on':'');
     var bits=[];
     if(pi.played)bits.push('Price It: '+pi.played+' game'+(pi.played===1?'':'s')
       +' · average difference '+pi.avg_distance.toFixed(1)+' pts');

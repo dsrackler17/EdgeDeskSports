@@ -444,7 +444,27 @@ chk('Pick 5 refuses to offer picks it cannot price',
   chk(n + ' has a title', /<title>[^<]{10,}<\/title>/.test(p));
   chk(n + ' has a meta description', /name="description" content="[^"]{40,}"/.test(p));
   lacks(p, 'noindex', n + ' does not block crawlers');
+  has(p, 'rel="icon"', n + ' has a tab icon, so a shared link is identifiable');
 });
+
+/* The context block must stay compact: eight wrapped chips pushed the selector
+   below the fold on a 320px phone, which is the one thing the screen exists
+   for. A labelled comparison of at most four rows replaced them. */
+chk('the matchup context is a compact comparison, not a heap of chips',
+  PRICE.indexOf('contextTable') >= 0 && PRICE.indexOf('class="ctx"') >= 0);
+chk('it compares at most four rows', (PRICE.match(/CTX_ROWS=\[[\s\S]*?\]/) || [''])[0]
+  .split('],[').length <= 4);
+chk('a side EdgeDesk has never rated shows an em dash, never a zero',
+  PRICE.indexOf("'—'") >= 0 && PRICE.indexOf('class="na"') >= 0);
+chk('and the page says so rather than implying the data is complete',
+  PRICE.indexOf('no roster record for one side') >= 0);
+/* Comments are allowed to NAME the thing they exclude; the rendered page is
+   not allowed to show it. Strip block comments before looking. */
+chk('the overall team rating is never rendered — it is nearly the answer',
+  !/etsr|team rating|overall rating/i.test(PRICE.replace(/\/\*[\s\S]*?\*\//g, '')));
+chk('and the artifact does not carry one for the page to leak',
+  !('etsr' in (JSON.parse(fs.readFileSync(G('data/challenges.json'), 'utf8'))
+    .challenges[0].context.home || {})));
 has(HOME, '<title>EdgeDesk Games | Free Football Prediction Games</title>',
   'the home page title is the one the brief specifies');
 ['/games', '/games/price-it', '/games/pick-5'].forEach(u => {
@@ -483,6 +503,18 @@ chk('the layout is written mobile-first (min-width queries only)',
 chk('motion is disabled for players who ask for less of it',
   CSS.indexOf('prefers-reduced-motion') >= 0);
 chk('focus is restyled rather than removed', CSS.indexOf(':focus-visible') >= 0);
+
+/* A weekly score of zero means "you played and scored nothing", which is not
+   the same statement as "you have not played". Rendering 0 as a dash told a
+   player who had just locked a price that they had no week. */
+chk('a weekly score of zero renders as zero, not as a dash',
+  !/\(wk\s*\|\|\s*'—'\)/.test(HOME + PRICE + PICK));
+chk('and only the never-played case is blank on the home page',
+  HOME.indexOf("played?String(wk):'—'") >= 0);
+chk('the accent is reserved for a score above zero',
+  /wk\s*>\s*0\s*\?\s*' on'/.test(HOME + PRICE + PICK));
+chk('a poor Price It score is not tinted as a success',
+  PRICE.indexOf("res.score>=60?''") >= 0 && CSS.indexOf('.scorebox .n.off') >= 0);
 
 /* ── 10. analytics ─────────────────────────────────────────────────────── */
 const REQUIRED_EVENTS = ['games_page_view', 'price_it_start', 'price_it_complete',

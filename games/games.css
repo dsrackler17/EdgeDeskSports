@@ -122,6 +122,26 @@ h1,h2,h3{font-family:'Space Grotesk',Inter,sans-serif;margin:0;line-height:1.15}
 .mu-when{font-size:12.5px;color:var(--dim);margin-top:8px}
 .mu-side{font-size:10.5px;color:var(--faint);letter-spacing:.08em;text-transform:uppercase}
 
+/* ── the matchup context table ───────────────────────────────────────────
+   A three-column comparison rather than a heap of chips. Eight chips wrapped
+   to five lines on a 320px phone and pushed the selector — the whole point of
+   the screen — below the fold. Four labelled rows read faster, invite an
+   actual comparison, and fit. */
+.ctx{width:100%;border-collapse:collapse;margin-top:16px;font-size:12.5px}
+.ctx caption{caption-side:top;font-size:10px;font-weight:700;letter-spacing:.12em;
+  color:var(--faint);text-transform:uppercase;text-align:left;padding-bottom:8px}
+.ctx th,.ctx td{padding:7px 4px;border-bottom:1px solid var(--line)}
+.ctx tbody tr:last-child th,.ctx tbody tr:last-child td{border-bottom:0}
+.ctx thead th{font-size:10.5px;font-weight:700;color:var(--dim);text-align:center;
+  border-bottom:1px solid var(--line2);overflow-wrap:break-word}
+.ctx thead th:first-child{text-align:left}
+.ctx tbody th{font-weight:500;color:var(--faint);text-align:left;white-space:nowrap;
+  font-size:11.5px}
+.ctx td{text-align:center;font-family:'JetBrains Mono',monospace;color:var(--text);
+  font-variant-numeric:tabular-nums}
+.ctx td.na{color:var(--faint);font-family:'Inter',sans-serif}
+.ctx-note{font-size:11px;color:var(--faint);margin-top:8px;text-align:center}
+
 /* ── context chips ──────────────────────────────────────────────────────── */
 .chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:14px;justify-content:center}
 .chip{background:var(--cell);border:1px solid var(--line);border-radius:999px;
@@ -182,6 +202,7 @@ h1,h2,h3{font-family:'Space Grotesk',Inter,sans-serif;margin:0;line-height:1.15}
   line-height:1;color:var(--val);animation:pop .4s cubic-bezier(.2,1.4,.4,1) both}
 @media(min-width:560px){.scorebox .n{font-size:80px}}
 @keyframes pop{from{opacity:0;transform:scale(.7)}to{opacity:1;transform:none}}
+.scorebox .n.off{color:var(--dim)}
 .scorebox .l{font-size:11px;font-weight:700;letter-spacing:.14em;color:var(--faint);
   text-transform:uppercase;margin-top:6px}
 .scorebox .b{font-size:14px;color:var(--text);margin-top:8px;font-weight:600}

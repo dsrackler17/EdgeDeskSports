@@ -14,6 +14,7 @@
 <meta name="description" content="Where would you price this football matchup? Set your line, lock it, then see the market’s number, EdgeDesk’s projection and the research behind it. Free to play, no real-money wagering.">
 <link rel="canonical" href="https://edgedesksports.com/games/price-it">
 <meta name="theme-color" content="#0b0d11">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230b0d11'/%3E%3Cpath d='M18 6 L23 6 L14 26 L9 26 Z' fill='%233fb883'/%3E%3C/svg%3E">
 <meta name="robots" content="index,follow">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="EdgeDesk Games">
@@ -83,24 +84,40 @@
     return {ch:ch,missed:missed};
   }
 
-  /* ---- context chips: canonical roster context, or nothing -------------- */
-  function chips(ch){
-    var out=[];
-    if(ch.neutral_site)out.push('<span class="chip">Neutral site</span>');
-    if(ch.venue)out.push('<span class="chip">'+G.esc(ch.venue)+'</span>');
-    [['away',ch.away_team],['home',ch.home_team]].forEach(function(p){
-      var c=ch.context&&ch.context[p[0]];
-      if(!c)return;
-      if(c.conference)out.push('<span class="chip">'+G.esc(p[1])+' <b>'+G.esc(c.conference)+'</b></span>');
-      if(c.returning_production!=null)
-        out.push('<span class="chip">'+G.esc(p[1])+' returning production <b>'+c.returning_production+'%</b></span>');
-      if(c.qb_continuity!=null)
-        out.push('<span class="chip">'+G.esc(p[1])+' QB continuity <b>'+c.qb_continuity+'%</b></span>');
-      if(c.ol_continuity!=null)
-        out.push('<span class="chip">'+G.esc(p[1])+' OL continuity <b>'+c.ol_continuity+'%</b></span>');
-    });
-    if(!out.length)return '';
-    return '<div class="chips">'+out.join('')+'</div>';
+  /* ---- the matchup context: canonical roster numbers, side by side -------
+     Every value is read from the challenge artifact, which read it from
+     football/rankings/current.json. A side the rankings have never seen shows
+     "—" rather than a zero, and a row where NEITHER side has a number is not
+     rendered at all.
+
+     DELIBERATELY ABSENT: either team's overall rating, which is very nearly
+     the answer to "where would you price this game". Continuity and churn
+     inform the read without resolving it. */
+  var CTX_ROWS=[
+    ['conference','Conference',function(v){return G.esc(v);}],
+    ['returning_production','Returning production',function(v){return v+'%';}],
+    ['qb_continuity','QB continuity',function(v){return v+'%';}],
+    ['ol_continuity','OL continuity',function(v){return v+'%';}]
+  ];
+
+  function contextTable(ch){
+    var A=ch.context&&ch.context.away,H=ch.context&&ch.context.home;
+    if(!A&&!H)return '';
+    var rows=CTX_ROWS.map(function(r){
+      var a=A?A[r[0]]:null,h=H?H[r[0]]:null;
+      if(a==null&&h==null)return '';
+      return '<tr><th scope="row">'+G.esc(r[1])+'</th>'
+        +'<td'+(a==null?' class="na"':'')+'>'+(a==null?'—':r[2](a))+'</td>'
+        +'<td'+(h==null?' class="na"':'')+'>'+(h==null?'—':r[2](h))+'</td></tr>';
+    }).join('');
+    if(!rows)return '';
+    var where=ch.neutral_site?'Neutral site':(ch.venue||'');
+    return '<table class="ctx"><caption>The matchup</caption>'
+      +'<thead><tr><th></th><th scope="col">'+G.esc(ch.away_team)+'</th>'
+      +'<th scope="col">'+G.esc(ch.home_team)+'</th></tr></thead>'
+      +'<tbody>'+rows+'</tbody></table>'
+      +(where?'<div class="ctx-note">'+G.esc(where)+'</div>':'')
+      +((!A||!H)?'<div class="ctx-note">EdgeDesk has no roster record for one side of this game.</div>':'');
   }
 
   /* ---- the play screen -------------------------------------------------- */
@@ -116,7 +133,7 @@
       +'<div class="mu-side">'+(ch.neutral_site?'':'Home')+'</div>'
       +'<div class="mu-when">'+G.esc(G.kickoffLabel(ch.kickoff))+'</div>'
       +'</div>'
-      +chips(ch)
+      +contextTable(ch)
       +'<div class="sel">'
       +'<h2 style="font-size:15px;text-align:center;margin:22px 0 12px">Where would you price this game?</h2>'
       +'<div class="sel-read" aria-live="polite">'
@@ -211,7 +228,9 @@
          res.market_spread==null?'no book number yet':'book')
       +priceCell('EdgeDesk',res.edgedesk_spread==null?null:G.line(ch,res.edgedesk_spread),'model')
       +'</div>'
-      +'<div class="scorebox"><div class="n mono">'+res.score+'</div>'
+      /* the score is tinted by how close the read was. A 0 rendered in the
+         success green reads as congratulation for being 25 points out. */
+      +'<div class="scorebox"><div class="n mono'+(res.score>=60?'':' off')+'">'+res.score+'</div>'
       +'<div class="l">Score vs EdgeDesk</div>'
       +(band?'<div class="b">'+G.esc(band.label)+'</div>':'')+'</div>'
       +'<div class="deltas">'
@@ -260,7 +279,7 @@
     var html='<div class="sec"><div class="stats">'
       +'<div class="stat"><div class="k">Streak</div><div class="v'+(streak?' on':'')+'">'
       +(streak?('🔥 '+streak):'—')+'</div><div class="s">'+(streak===1?'day':'days in a row')+'</div></div>'
-      +'<div class="stat"><div class="k">Weekly score</div><div class="v'+(wk?' on':'')+'">'+(wk||'—')
+      +'<div class="stat"><div class="k">Weekly score</div><div class="v'+(wk>0?' on':'')+'">'+wk
       +'</div><div class="s">points this week</div></div>'
       +'<div class="stat"><div class="k">Price It</div><div class="v">'+pi.played+'</div>'
       +'<div class="s">'+(pi.avg_distance==null?'games':('avg '+pi.avg_distance.toFixed(1)+' pts off'))+'</div></div>'
