@@ -218,6 +218,15 @@ jobs:
       - name: close and capture are compared as the two halves of every CLV
         run: node tools/capture/pricer_parity.test.js
 
+      # The football slate joins a schedule table to the odds feed by team name,
+      # and a wrong join puts a real price under the wrong fixture on a screen
+      # someone publishes from. Two heuristics were tried and both were caught
+      # here: containment matched "usc" inside "wisconsinbadgers", and prefix
+      # matched Kansas to Kansas State. The join is now on resolved school
+      # identity, and these cases are the reason it has to stay that way.
+      - name: the slate never puts a price under the wrong fixture
+        run: node tools/capture/slate_join.test.js
+
       # The backtest harness itself. A backtest is a machine for producing a
       # number nobody can check, so the machine is checked: the leakage guard
       # throws, the folds never look forward, and every metric is verified
