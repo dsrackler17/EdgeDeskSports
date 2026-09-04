@@ -1,28 +1,7 @@
 {
  "schema": "edgedesk_box_enrichment_manifest_v1",
- "generated_at": "2026-09-04T13:52:28.835Z",
+ "generated_at": "2026-09-04T14:54:46.650Z",
  "seasons": {
-  "2022": {
-   "available": true,
-   "format": "csv.gz",
-   "rows": 40598,
-   "team_games": 1800,
-   "players": 7558,
-   "usable_columns": [
-    "interceptions",
-    "punting",
-    "field_goals",
-    "qbr"
-   ],
-   "failed_columns": [
-    "tackles",
-    "solo_tackles",
-    "tackles_for_loss",
-    "sacks",
-    "passes_defended",
-    "hurries"
-   ]
-  },
   "2023": {
    "available": true,
    "format": "csv.gz",
@@ -83,9 +62,29 @@
     "qbr"
    ],
    "failed_columns": []
+  },
+  "2026": {
+   "available": true,
+   "format": "parquet (converted with pyarrow)",
+   "rows": 1689,
+   "team_games": 38,
+   "players": 1407,
+   "usable_columns": [
+    "tackles",
+    "solo_tackles",
+    "tackles_for_loss",
+    "sacks",
+    "passes_defended",
+    "hurries",
+    "interceptions",
+    "punting",
+    "field_goals",
+    "qbr"
+   ],
+   "failed_columns": []
   }
  },
- "current_season": 2025,
+ "current_season": 2026,
  "gates": {
   "tackles": {
    "field": "tackles",
