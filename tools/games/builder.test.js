@@ -287,6 +287,22 @@ if (good.json) {
     });
   })();
 
+  /* Backticks inside a DOUBLE-quoted shell string are command substitution.
+     The missing-credential warning shipped with `signals` written that way, so
+     the runner tried to execute `signals`, printed "command not found", and
+     emitted the annotation with the word silently removed. The step still
+     succeeded — a garbled message is not a failure — which is exactly how it
+     reached main. Single quotes, or no backticks. */
+  files.forEach(f => {
+    const bad = [];
+    fs.readFileSync(path.join(WF, f), 'utf8').split('\n').forEach((line, i) => {
+      if (/^\s*#/.test(line)) return;                 /* a comment is prose */
+      if (/"[^"]*`[^"]*"/.test(line)) bad.push(i + 1);
+    });
+    chk(f + ' has no backticks inside a double-quoted shell string',
+      bad.length === 0, 'line(s) ' + bad.join(','));
+  });
+
   ['games-challenges.yml', 'games-settle.yml'].forEach(f => {
     const src = fs.readFileSync(path.join(WF, f), 'utf8');
     chk(f + ' passes the service role to the script',

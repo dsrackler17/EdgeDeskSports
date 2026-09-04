@@ -66,7 +66,11 @@ jobs:
             echo "::notice::Supabase service credential present." >&2
             echo '- Supabase credential: **service role**' >> "$GITHUB_STEP_SUMMARY"
           else
-            echo "::warning::SB_SERVICE_ROLE / SB_URL are empty in this run. They are not GitHub Actions repository secrets. This run falls back to the anon role: the board still builds, but `signals` (the fresher captured quotes) stays out of reach." >&2
+            # Single-quoted, and no backticks. This line was double-quoted with
+            # `signals` in it, so bash read the backticks as command substitution,
+            # ran 'signals' as a command, and printed the annotation with the word
+            # missing. The step still succeeded, which is how it shipped.
+            echo '::warning::SB_SERVICE_ROLE / SB_URL are empty in this run. They are not GitHub Actions repository secrets. This run falls back to the anon role: the board still builds, but the signals table (the fresher captured quotes) stays out of reach.' >&2
             {
               echo '- Supabase credential: **absent** — `SB_SERVICE_ROLE` and/or `SB_URL` resolved to an empty string.'
               echo '- They must exist as **GitHub Actions repository secrets**; secrets stored in the Supabase dashboard are not visible here.'
