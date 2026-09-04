@@ -130,6 +130,90 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',system-ui,sans-s
 .rs-freshna b{color:var(--dim);font-weight:600}
 /* seven modules: the sub-nav scrolls instead of crushing its labels */
 /* the one line of product philosophy, kept secondary to the research itself */
+/* ═══ GAME RESEARCH CARD ═══ summary, drivers, risk, the two cases ═══════ */
+.gx-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(128px,1fr));gap:1px;background:var(--border);border:1px solid var(--border);border-radius:10px;overflow:hidden;margin:10px 0 0}
+.gx-c{background:var(--surface);padding:9px 10px;min-width:0}
+.gx-c .l{font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--faint);font-weight:700}
+.gx-c .v{font-size:16px;font-weight:700;line-height:1.28;margin-top:3px;font-family:'JetBrains Mono',monospace;word-break:break-word}
+.gx-c .v.mdl{color:var(--accent)}.gx-c .v.ok{color:var(--pos)}.gx-c .v.warn{color:var(--warn)}.gx-c .v.neg{color:var(--neg)}
+.gx-c .v b{font-weight:700}
+.gx-c .s{font-size:10px;color:var(--faint);line-height:1.4;margin-top:3px}
+.gx-sc{display:flex;align-items:baseline;gap:6px;line-height:1.3}
+.gx-sc i{flex:1 1 auto;min-width:0;font-style:normal;font-size:11px;font-weight:600;font-family:inherit;color:var(--dim);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.gx-sc b{flex:none;font-size:17px}
+.gx-miss{color:var(--faint);font-size:12.5px;font-weight:400;font-style:italic}
+.gx-st{display:inline-block;font-size:11.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;border:1px solid var(--border);border-radius:6px;padding:2px 7px}
+.gx-st.ok{color:var(--pos);border-color:rgba(47,180,124,.45)}
+.gx-st.warn{color:var(--warn);border-color:rgba(214,158,60,.45)}
+.gx-st.neg{color:var(--neg);border-color:rgba(226,96,68,.45)}
+.gx-st.mut{color:var(--faint)}
+.gx-means{font-size:12.5px;line-height:1.55;color:var(--text);margin-top:9px;padding:9px 11px;border-radius:9px;border:1px solid var(--border);border-left-width:3px;background:var(--bg)}
+.gx-means.ok{border-left-color:var(--pos)}.gx-means.warn{border-left-color:var(--warn)}
+.gx-means.neg{border-left-color:var(--neg)}.gx-means.mut{border-left-color:var(--border)}
+.gx-means b{display:block;font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--faint);margin-bottom:3px}
+.gx-chk{display:flex;flex-wrap:wrap;gap:5px;align-items:center;margin-top:9px}
+.gx-chk .h{font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--faint);font-weight:700;margin-right:2px}
+.gx-ck{font-size:10.5px;border:1px solid var(--border);border-radius:5px;padding:2px 6px;color:var(--dim);white-space:nowrap;cursor:help}
+.gx-ck.ok{color:var(--pos);border-color:rgba(47,180,124,.32)}
+.gx-ck.warn{color:var(--warn);border-color:rgba(214,158,60,.32)}
+.gx-ck.neg{color:var(--neg);border-color:rgba(226,96,68,.32)}
+.gx-acts{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+.gx-none{font-size:11.5px;color:var(--faint);line-height:1.5;padding:2px 0}
+.gx-foot{font-size:10.5px;color:var(--faint);line-height:1.5;margin-top:8px}
+.gx-foot b{color:var(--dim)}
+/* drivers */
+.gx-drv{display:flex;flex-direction:column;gap:5px}
+.gx-d{display:grid;grid-template-columns:52px 60px 1fr;gap:9px;align-items:center;font-size:12px}
+.gx-d .p{font-family:'JetBrains Mono',monospace;font-weight:700;text-align:right}
+.gx-d .p.pos{color:var(--accent)}.gx-d .p.neg{color:var(--warn)}
+.gx-d .b{height:5px;border-radius:3px;background:var(--border);overflow:hidden}
+.gx-d .b i{display:block;height:100%;background:var(--accent);border-radius:3px}
+.gx-d .t{color:var(--dim);line-height:1.45}
+@media(max-width:560px){.gx-d{grid-template-columns:48px 1fr;row-gap:2px}.gx-d .b{grid-column:1 / -1;order:3}}
+/* risk */
+.gx-rsk{display:flex;flex-direction:column;gap:8px}
+.gx-r{display:flex;gap:9px;align-items:flex-start;font-size:12px;line-height:1.5}
+.gx-r .s{flex:none;width:58px;font-size:9.5px;font-weight:700;letter-spacing:.06em;text-align:center;border-radius:5px;padding:2px 0;border:1px solid var(--border)}
+.gx-r .s.high{color:var(--neg);border-color:rgba(226,96,68,.45)}
+.gx-r .s.medium{color:var(--warn);border-color:rgba(214,158,60,.45)}
+.gx-r .s.low{color:var(--faint)}
+.gx-r .t{color:var(--dim);min-width:0}
+.gx-r .t b{color:var(--text);text-transform:capitalize}
+/* the two cases */
+.gx-two{display:grid;grid-template-columns:1fr 1fr;gap:var(--sp2)}
+@media(max-width:640px){.gx-two{grid-template-columns:1fr}}
+.gx-case-h{font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--dim);font-weight:700;margin-bottom:5px}
+.gx-ul{margin:0;padding-left:16px;font-size:11.5px;line-height:1.55;color:var(--dim)}
+.gx-ul li{margin-bottom:4px}
+/* model vs market scale */
+.gx-scale .bar{position:relative;height:30px;margin:14px 0 4px;border-radius:6px;background:var(--bg);border:1px solid var(--border)}
+.gx-scale .bar i{position:absolute;top:0;bottom:0;display:block}
+.gx-scale .bar i.guard{background:rgba(214,158,60,.10)}
+.gx-scale .bar i.agree{background:rgba(47,180,124,.16);z-index:1}
+.gx-scale .pin{position:absolute;top:-1px;bottom:-1px;width:2px;z-index:2}
+.gx-scale .pin b{position:absolute;top:-13px;left:50%;transform:translateX(-50%);font-size:8.5px;letter-spacing:.07em;font-weight:700;white-space:nowrap}
+.gx-scale .pin.mdl{background:var(--accent)}.gx-scale .pin.mdl b{color:var(--accent)}
+.gx-scale .pin.mkt{background:var(--text)}.gx-scale .pin.mkt b{color:var(--text)}
+.gx-scale-l{display:flex;justify-content:space-between;gap:8px;font-size:10px;color:var(--faint);font-family:'JetBrains Mono',monospace}
+.gx-scale-l .ok{color:var(--pos)}.gx-scale-l .warn{color:var(--warn)}.gx-scale-l .neg{color:var(--neg)}
+/* THE EXPANDED MATCHUP IS NOT A TABLE ROW. The Power 4 board lays its rows on
+   a 692px-minimum grid and scrolls horizontally under that, and the gate that
+   holds the opened card is a child of the same scroller — so on a phone the
+   research packet inherited the board's width and its right-hand half sat off
+   screen. The document never reported overflow because the scrolling happens
+   inside the board, which is why a document-level check missed it. The card
+   sticks to the left edge and sizes against the VIEWPORT instead. */
+[id^="p4gate-"]{position:sticky;left:0;z-index:1}
+[id^="p4gate-"] .mdl-card,[id^="p4gate-"]>div{max-width:min(100%,calc(100vw - 26px));box-sizing:border-box}
+/* collapsible sections */
+.gx-sec{border-top:1px solid var(--border);margin-top:10px}
+.gx-sec-h{display:flex;align-items:baseline;gap:7px;width:100%;background:none;border:none;padding:10px 0 8px;cursor:pointer;font-family:inherit;text-align:left}
+.gx-sec-h .tw{flex:none;color:var(--faint);font-size:10px}
+.gx-sec-h .t{font-size:10.5px;letter-spacing:.07em;text-transform:uppercase;font-weight:700;color:var(--dim)}
+.gx-sec-h .n{margin-left:auto;font-size:10px;color:var(--faint);text-align:right}
+.gx-sec-h:hover .t{color:var(--text)}
+.gx-sec-b{display:none;padding-bottom:4px}
+.gx-sec.open>.gx-sec-b{display:block}
 .rs-creed{font-size:11.5px;color:var(--faint);line-height:1.5;margin-top:5px;max-width:62ch}
 .rs-creed b{color:var(--dim);font-weight:600}
 /* START HERE — four ways in, all of them existing routes */
@@ -34375,6 +34459,385 @@ function fbP4ModelCard(){
   }
   return s;
 }
+/* ═══ THE GAME RESEARCH CARD ═════════════════════════════════════════════
+   A matchup should read like a finished research packet: the price, then why,
+   then what could break it, then the evidence. Everything below is a
+   REARRANGEMENT of numbers the engine already produced for this game — no new
+   model logic, no new feed, no recomputation of a projection, and no state
+   that was not already on `p`.
+
+   The audit this replaced: 33 flat rows and 1,573px of card against a 900px
+   viewport, with the projected score absent, the research state unnamed, and
+   nineteen uncertainty items rendered as three unranked prose lists. */
+
+/* ── THE RESEARCH STATE ─────────────────────────────────────────────────
+   Derived from the engine's OWN thresholds — the research gap and minimum
+   confidence in params, and the guard bound the board already polices — so
+   this names a state the model was already in rather than inventing one. */
+function fbGxState(p){
+  var P=window.EDCfbP4Params||{},MP=P.market||{};
+  var minGap=MP.min_research_gap!=null?MP.min_research_gap:2;
+  var minConf=MP.min_confidence!=null?MP.min_confidence:35;
+  var guard=FB_GUARD.p4.game;
+  var conf=p.scores&&p.scores.confidence!=null?p.scores.confidence:null;
+  var gap=p.market&&p.market.spread_gap!=null?Math.abs(p.market.spread_gap):null;
+  /* THIN DATA outranks everything: a number the model does not trust cannot
+     be in agreement OR in disagreement with anything. */
+  if(conf==null||conf<minConf)
+    return {key:'THIN',label:'Thin data',cls:'neg',
+      means:'EdgeDesk does not have enough reliable information to price this matchup confidently'
+        +(conf!=null?(' — its own confidence in this projection is '+Math.round(conf)+'%, below the '+minConf+'% floor it requires'):'')
+        +'. Read the number as provisional, not as a disagreement with anyone.'};
+  if(gap==null)
+    return {key:'NO_MARKET',label:'No market',cls:'mut',
+      means:'No market number has joined this game yet, so there is nothing to agree or disagree with. '
+        +'The projection stands on its own until a quote lands.'};
+  if(gap>=guard)
+    return {key:'INVESTIGATE',label:'Investigate',cls:'neg',
+      means:'The model and market disagree by '+gap.toFixed(1)+' points, past the '+guard+'-point guard bound. '
+        +'Missing or stale information is more likely than a hidden opportunity until the gap is explained.'};
+  if(gap>=minGap)
+    return {key:'REVIEW',label:'Review',cls:'warn',
+      means:'EdgeDesk differs from the market by '+gap.toFixed(1)+' points, enough to justify deeper research, '
+        +'but the disagreement has not been validated as a betting edge.'};
+  return {key:'PASS',label:'Pass',cls:'ok',
+    means:'EdgeDesk and the market are effectively in agreement — '+gap.toFixed(1)+' points apart, inside the '
+      +minGap+'-point research threshold. There is not enough pricing disagreement to treat this game as a research edge.'};
+}
+
+/* the projected score line, split from the model's OWN spread and total.
+   Where the model published no total there is no score line, and the card
+   says so rather than halving a number it does not have. */
+function fbGxScore(m){
+  if(m.fair_total==null||m.fair_spread==null)return null;
+  return {home:Math.round((m.fair_total+m.fair_spread)/2),
+          away:Math.round((m.fair_total-m.fair_spread)/2)};
+}
+
+/* ── THE SUMMARY ────────────────────────────────────────────────────────
+   Everything the first thirty seconds needs, in one block. */
+function fbGxSummary(u,p,gid){
+  var g=u.g,m=p.model,mk=p.market,st=fbGxState(p),sc=fbGxScore(m);
+  var h=fbEsc(g.home_team),a=fbEsc(g.away_team);
+  var gap=mk&&mk.spread_gap!=null?Math.abs(mk.spread_gap):null;
+  function cell(l,v,cls,sub){
+    return '<div class="gx-c"><div class="l">'+fbEsc(l)+'</div><div class="v '+(cls||'')+'">'+v+'</div>'
+      +(sub?'<div class="s">'+sub+'</div>':'')+'</div>';
+  }
+  var out='<div class="gx-grid">';
+  out+=cell('EdgeDesk',h+' '+fbPts(-m.fair_spread),'mdl','model');
+  out+=cell('Market',mk&&mk.spread_line!=null?(h+' '+fbPts(-mk.spread_line)):'<span class="gx-miss">none joined</span>',
+    '',mk&&mk.spread_line!=null?fbEsc(mk.book||'reference'):'nothing to compare');
+  out+=cell('Difference',gap!=null?(gap.toFixed(1)+' pts'):'<span class="gx-miss">—</span>',
+    gap!=null&&gap>=FB_GUARD.p4.game?'neg':(gap!=null&&gap>=2?'warn':''),
+    gap!=null?'model minus market':'no market number');
+  out+=cell('Projected score',
+    sc?('<span class="gx-sc"><i>'+h+'</i><b>'+sc.home+'</b></span>'
+       +'<span class="gx-sc"><i>'+a+'</i><b>'+sc.away+'</b></span>')
+      :'<span class="gx-miss">no total published</span>',
+    '',sc?'from the model’s own spread and total':'a score line cannot be split without a total');
+  out+=cell('Win probability',h+' '+(m.home_win_prob*100).toFixed(0)+'%','',a+' '+((1-m.home_win_prob)*100).toFixed(0)+'%');
+  out+=cell('Research state','<span class="gx-st '+st.cls+'">'+fbEsc(st.label)+'</span>','',
+    'EdgeDesk’s own read, not advice');
+  var conf=p.scores&&p.scores.confidence!=null?Math.round(p.scores.confidence):null;
+  var ctx=(p.layers&&p.layers.uncertainty&&p.layers.uncertainty.context)||null;
+  var compl=ctx&&ctx.information_missing!=null?Math.round((1-ctx.information_missing)*100):null;
+  out+=cell('Data confidence',conf!=null?(conf+'%'):'<span class="gx-miss">unknown</span>',
+    conf==null?'':(conf>=60?'ok':(conf>=35?'warn':'neg')),
+    compl!=null?(compl+'% of the model’s inputs reached it'):'input coverage not reported');
+  out+='</div>';
+  out+='<div class="gx-means '+st.cls+'"><b>What this means</b> '+fbEsc(st.means)+'</div>';
+  out+=fbGxCheck(u,p);
+  out+='<div class="gx-acts">'
+    +'<button class="btn ghost sm" onclick="fbGxCopy(\''+fbEsc(gid)+'\')" id="gxcp-'+fbEsc(gid)+'">Copy research brief</button>'
+    +(typeof navigator!=='undefined'&&navigator.share
+      ?'<button class="btn ghost sm" onclick="fbGxShare(\''+fbEsc(gid)+'\')">Share research</button>':'')
+    +'</div>';
+  return out;
+}
+
+/* ── RESEARCH CHECK ─────────────────────────────────────────────────────
+   Derived from what actually reached the projection. No invented percentage
+   sits behind any of these: each is a state the engine reported. */
+function fbGxCheckRows(u,p){
+  var L=p.layers||{},mk=p.market||{},rows=[];
+  function st(label,state,note){rows.push({l:label,s:state,n:note||''});}
+  st('model built',p.status==='PREDICTED'?'AVAILABLE':'MISSING');
+  st('market joined',mk.spread_line==null?'MISSING':(mk.stale?'STALE':'AVAILABLE'),
+     mk.spread_line==null?'no quote on file':(mk.book||''));
+  var rh=L.offensive_line&&L.offensive_line.home&&L.offensive_line.home.continuity;
+  var ra=L.offensive_line&&L.offensive_line.away&&L.offensive_line.away.continuity;
+  var rok=(rh&&rh.available!==false)&&(ra&&ra.available!==false);
+  st('roster loaded',rok?'AVAILABLE':((rh&&rh.available!==false)||(ra&&ra.available!==false)?'PARTIAL':'MISSING'));
+  var ih=L.injuries&&L.injuries.home&&L.injuries.home.points, ia=L.injuries&&L.injuries.away&&L.injuries.away.points;
+  var iok=(ih&&ih.available!==false)&&(ia&&ia.available!==false);
+  st('availability',iok?'AVAILABLE':'UNKNOWN',iok?'':'no absence report reached this game');
+  var qh=L.qb&&L.qb.home&&L.qb.home.value, qa=L.qb&&L.qb.away&&L.qb.away.value;
+  st('starting quarterback',(qh&&qh.available!==false)&&(qa&&qa.available!==false)?'AVAILABLE':'UNKNOWN',
+     'no public college depth chart EdgeDesk trusts');
+  st('recruiting','MISSING','no legal public feed exists');
+  /* weather is published under situation, not at the top of layers — reading
+     the wrong path made this row say UNKNOWN even when a forecast had reached
+     the projection. Wrong in the safe direction is still wrong. */
+  var w=L.situation&&L.situation.weather;
+  st('weather',w&&w.available!==false?'AVAILABLE':'UNKNOWN',
+     w&&w.available===false?(w.reason||'no forecast supplied'):'');
+  return rows;
+}
+function fbGxCheck(u,p){
+  var GL={AVAILABLE:['✓','ok'],PARTIAL:['~','warn'],STALE:['~','warn'],UNKNOWN:['?','warn'],MISSING:['×','neg']};
+  return '<div class="gx-chk"><span class="h">Research check</span>'
+    +fbGxCheckRows(u,p).map(function(r){
+      var gl=GL[r.s]||['?','warn'];
+      return '<span class="gx-ck '+gl[1]+'" title="'+fbEsc(r.s+(r.n?' — '+r.n:''))+'">'+gl[0]+' '+fbEsc(r.l)+'</span>';
+    }).join('')+'</div>';
+}
+
+/* ── WHY EDGEDESK PRICES IT HERE ────────────────────────────────────────
+   The engine's own primary drivers, with the points it actually assigned.
+   Nothing that is not allowed to move the line appears here. */
+function fbGxDrivers(p){
+  var ex=p.explanation;
+  if(!ex||!ex.primary_drivers||!ex.primary_drivers.length)
+    return '<div class="gx-none">The engine published no driver breakdown for this projection.</div>';
+  var top=ex.primary_drivers.slice(0,5);
+  var max=0;top.forEach(function(d){max=Math.max(max,Math.abs(d.points||0));});
+  return '<div class="gx-drv">'+top.map(function(d){
+    var pts=d.points||0,w=max?Math.round(Math.abs(pts)/max*100):0;
+    return '<div class="gx-d"><span class="p '+(pts>=0?'pos':'neg')+'">'+fbPts(pts)+'</span>'
+      +'<span class="b"><i style="width:'+w+'%"></i></span>'
+      +'<span class="t">'+fbEsc(d.text)+'</span></div>';
+  }).join('')
+  +'</div><div class="gx-foot">Points are the engine’s own contributions to the projected spread and sum toward it. '
+  +'Player quality and scheme are <b>not</b> here: neither has cleared validation, so neither moves this number.</div>';
+}
+
+/* ── WHY THIS COULD BE WRONG ────────────────────────────────────────────
+   Ranked by how much each factor MEASURABLY widens the outcome range, so the
+   ordering is the model's, not a writer's. An item with no measurement says
+   it is unmeasured rather than being dropped or scored zero. */
+function fbGxRisks(p){
+  var ex=p.explanation||{},L=p.layers||{},items=[];
+  var ctx=(L.uncertainty&&L.uncertainty.context)||null;
+  var miss=ctx&&ctx.information_missing!=null?ctx.information_missing:null;
+  var gap=p.market&&p.market.spread_gap!=null?Math.abs(p.market.spread_gap):null;
+  (ex.counterarguments||[]).forEach(function(c){
+    var w=c.widening_pct,sev;
+    if(w!=null)sev=w>=20?'HIGH':(w>=8?'MEDIUM':'LOW');
+    /* these two carry no widening number, and ranking them MEDIUM by default
+       put the most serious thing the engine can say in the middle of the list */
+    else if(c.key==='information_missing')sev=(miss!=null&&miss>=0.5)?'HIGH':'MEDIUM';
+    else if(c.key==='market_disagreement')sev=(gap!=null&&gap>=FB_GUARD.p4.game)?'HIGH':'MEDIUM';
+    else sev='MEDIUM';
+    items.push({sev:sev,w:w,label:String(c.key||'').replace(/_/g,' '),text:c.text});
+  });
+  var order={HIGH:0,MEDIUM:1,LOW:2};
+  items.sort(function(x,y){return order[x.sev]-order[y.sev]||((y.w||0)-(x.w||0));});
+  return items;
+}
+function fbGxWrong(p){
+  var ex=p.explanation||{},items=fbGxRisks(p);
+  /* the unquantified variables are real and unranked BY NATURE — saying so is
+     the point, and burying them would be the dishonest move */
+  var unp=(ex.unpredictable_variables||[]).slice(0,4);
+  var h='';
+  if(items.length){
+    h+='<div class="gx-rsk">'+items.map(function(i){
+      return '<div class="gx-r"><span class="s '+i.sev.toLowerCase()+'">'+i.sev+'</span>'
+        +'<span class="t"><b>'+fbEsc(i.label)+'</b>'+(i.w!=null?(' <span class="mut">widens the range '+i.w+'%</span>'):' <span class="mut">not quantified</span>')
+        +'<br>'+fbEsc(i.text)+'</span></div>';
+    }).join('')+'</div>';
+  } else h+='<div class="gx-none">The engine raised no counterargument it could measure for this game.</div>';
+  if(unp.length){
+    h+='<div class="gx-foot"><b>Not measured at all.</b> '
+      +unp.map(function(d){return fbEsc(d.item);}).join(' · ')
+      +'. These are unknown, which is not the same as absent — none of them is scored zero.</div>';
+  }
+  return h;
+}
+
+/* ── THE TWO CASES ──────────────────────────────────────────────────────
+   Every bullet maps to a measured state on `p`: a driver the engine sized, a
+   counterargument it raised, or a score it published. No narrative. */
+function fbGxCases(u,p){
+  var g=u.g,m=p.model,ex=p.explanation||{},sc=p.scores||{};
+  var favHome=m.fair_spread>=0,fav=favHome?g.home_team:g.away_team,dog=favHome?g.away_team:g.home_team;
+  var forFav=[],forDog=[];
+  (ex.primary_drivers||[]).forEach(function(d){
+    var pts=d.points||0;
+    if(Math.abs(pts)<0.2)return;
+    /* driver points are home-perspective and sum toward the fair spread, so a
+       driver whose sign runs AGAINST the favourite is an argument for the
+       underdog. Filing every driver under the favourite would have put the
+       model's own dissent on the wrong side of the page. */
+    var favoursHome=pts>0;
+    var side=(favoursHome===favHome)?forFav:forDog;
+    side.push(fbEsc(d.text)+' <span class="mut">('+fbPts(pts)+' pts)</span>');
+  });
+  (ex.counterarguments||[]).forEach(function(c){
+    forDog.push(fbEsc(String(c.text).replace(/^The projection could be wrong because /,'').replace(/^./,function(s){return s.toUpperCase();})));
+  });
+  if(m.sigma_margin!=null)
+    forDog.push('The outcome range is <b>'+m.sigma_margin.toFixed(1)+' points</b> wide at one sigma — p10 '
+      +fbPts(m.p10_margin)+' to p90 '+fbPts(m.p90_margin)+', so a projection of '+fbPts(m.fair_spread)+' still loses outright often.');
+  if(sc.volatility!=null&&sc.volatility_discriminates===false)
+    forDog.push('The volatility index for this game is <span class="mut">not discriminating</span> — it cannot tell this matchup apart from the field, so treat it as no information rather than as calm.');
+  if(!forFav.length&&!forDog.length)return '';
+  return '<div class="gx-two">'
+    +'<div><div class="gx-case-h">Why '+fbEsc(fav)+' can pull away</div>'
+      +(forFav.length?('<ul class="gx-ul">'+forFav.slice(0,4).map(function(x){return '<li>'+x+'</li>';}).join('')+'</ul>')
+        :'<div class="gx-none">No driver the engine sized favours either side by more than a fifth of a point.</div>')+'</div>'
+    +'<div><div class="gx-case-h">Why '+fbEsc(dog)+' can keep it close</div>'
+      +(forDog.length?('<ul class="gx-ul">'+forDog.slice(0,4).map(function(x){return '<li>'+x+'</li>';}).join('')+'</ul>')
+        :'<div class="gx-none">The engine raised nothing measurable against its own number here.</div>')+'</div>'
+    +'</div>';
+}
+
+/* ── MODEL vs MARKET, ON A SCALE ────────────────────────────────────────
+   Deliberately NOT called a confidence interval and NOT drawn as one: the
+   band is the engine's own research threshold and guard bound, which are
+   decision boundaries, not a statement about outcomes. */
+function fbGxScale(u,p){
+  var m=p.model,mk=p.market||{},g=u.g;
+  if(mk.spread_line==null)
+    return '<div class="gx-none">No market number has joined this game, so there is nothing to place beside the model.</div>';
+  var P=window.EDCfbP4Params||{},minGap=(P.market&&P.market.min_research_gap)||2,guard=FB_GUARD.p4.game;
+  var gap=Math.abs(mk.spread_gap),span=Math.max(guard*1.15,gap*1.15);
+  function pos(v){return (50+(v/span)*50);}
+  var mp=pos(0),kp=pos(-mk.spread_gap);
+  var zone=gap>=guard?['past the guard bound','neg']:(gap>=minGap?['inside the research band','warn']:['in agreement','ok']);
+  return '<div class="gx-scale">'
+    +'<div class="bar">'
+      +'<i class="agree" style="left:'+pos(-minGap)+'%;right:'+(100-pos(minGap))+'%"></i>'
+      +'<i class="guard" style="left:'+pos(-guard)+'%;right:'+(100-pos(guard))+'%"></i>'
+      +'<span class="pin mdl" style="left:'+mp+'%"><b>MODEL</b></span>'
+      +'<span class="pin mkt" style="left:'+kp+'%"><b>MARKET</b></span>'
+    +'</div>'
+    +'<div class="gx-scale-l"><span>'+fbEsc(g.home_team)+' '+fbPts(-(m.fair_spread+span))+'</span>'
+      +'<span class="'+zone[1]+'">'+fbEsc(zone[0])+' · '+gap.toFixed(1)+' pts apart</span>'
+      +'<span>'+fbEsc(g.home_team)+' '+fbPts(-(m.fair_spread-span))+'</span></div>'
+    +'<div class="gx-foot">The shaded bands are EdgeDesk’s own decision boundaries — agreement inside '+minGap
+    +' points, a data fault beyond '+guard+'. They describe when EdgeDesk will look harder, <b>not</b> how likely any outcome is, '
+    +'and this is not a confidence interval.</div></div>';
+}
+
+/* ── A COLLAPSIBLE SECTION ──────────────────────────────────────────────
+   Warnings are never behind one of these. */
+var FB_GX_OPEN={};
+function fbGxSec(gid,id,label,body,open,note){
+  if(!body)return '';
+  var k=gid+':'+id,isOpen=FB_GX_OPEN[k]!==undefined?FB_GX_OPEN[k]:!!open;
+  return '<div class="gx-sec'+(isOpen?' open':'')+'" id="gxs-'+fbEsc(k.replace(/[^a-zA-Z0-9]/g,'_'))+'">'
+    +'<button class="gx-sec-h" aria-expanded="'+(isOpen?'true':'false')+'" onclick="fbGxToggle(\''+fbEsc(gid)+'\',\''+id+'\')">'
+      +'<span class="tw">'+(isOpen?'▾':'▸')+'</span><span class="t">'+fbEsc(label)+'</span>'
+      +(note?'<span class="n">'+fbEsc(note)+'</span>':'')+'</button>'
+    +'<div class="gx-sec-b">'+body+'</div></div>';
+}
+window.fbGxToggle=function(gid,id){
+  var k=gid+':'+id;
+  FB_GX_OPEN[k]=!(FB_GX_OPEN[k]!==undefined?FB_GX_OPEN[k]:FB_GX_DEFAULT[id]);
+  var el=document.getElementById('gxs-'+String(k).replace(/[^a-zA-Z0-9]/g,'_'));
+  if(el){el.classList.toggle('open',FB_GX_OPEN[k]);
+    var b=el.querySelector('.gx-sec-h');if(b){b.setAttribute('aria-expanded',String(FB_GX_OPEN[k]));
+      var tw=b.querySelector('.tw');if(tw)tw.textContent=FB_GX_OPEN[k]?'▾':'▸';}}
+};
+var FB_GX_DEFAULT={drivers:true,wrong:true,cases:true,scale:true,detail:false,scores:false,edr:false,quality:false};
+
+/* ── COPY RESEARCH BRIEF ────────────────────────────────────────────────
+   Plain text that stands alone away from this page. No ids, no JSON, no
+   secrets — only what a reader could already see. */
+function fbGxBriefText(u,p){
+  var g=u.g,m=p.model,mk=p.market||{},st=fbGxState(p),sc=fbGxScore(m),ex=p.explanation||{};
+  var L=[],h=g.home_team,a=g.away_team;
+  function line(k,v){L.push(k+': '+v);}
+  L.push('EDGEDESK RESEARCH BRIEF');
+  L.push('');
+  line('Game',a+' @ '+h);
+  var when='';try{when=whenLabel(new Date(u.t).toISOString());}catch(_){}
+  line('Kickoff',when||'unknown');
+  line('Model spread',h+' '+fbPts(-m.fair_spread));
+  line('Market spread',mk.spread_line!=null?(h+' '+fbPts(-mk.spread_line)+' ('+(mk.book||'reference')+')'):'none joined');
+  line('Difference',mk.spread_gap!=null?(Math.abs(mk.spread_gap).toFixed(1)+' pts'):'no market number to compare');
+  line('Projected score',sc?(h+' '+sc.home+', '+a+' '+sc.away+' (from the model spread and total)'):'not available — the model published no total');
+  line('Win probability',h+' '+(m.home_win_prob*100).toFixed(0)+'%, '+a+' '+((1-m.home_win_prob)*100).toFixed(0)+'%');
+  line('Research state',st.label.toUpperCase());
+  line('What this means',st.means);
+  var P=window.EDCfbP4Params||{},minGap=(P.market&&P.market.min_research_gap)||2;
+  line('Research bands','agreement inside '+minGap+' pts; data fault beyond '+FB_GUARD.p4.game+' pts. These are decision boundaries, not a confidence interval.');
+  L.push('');
+  L.push('PRIMARY DRIVERS');
+  (ex.primary_drivers||[]).slice(0,5).forEach(function(d){L.push('  '+fbPts(d.points)+' pts  '+d.text);});
+  if(!(ex.primary_drivers||[]).length)L.push('  none published');
+  L.push('');
+  L.push('COUNTERARGUMENTS — why this number could be wrong');
+  var risks=fbGxRisks(p);
+  risks.forEach(function(r){
+    L.push('  ['+r.sev+'] '+r.text+(r.w!=null?(' (widens the range '+r.w+'%)'):''));
+  });
+  if(!risks.length)L.push('  none the engine could measure');
+  var unp=(ex.unpredictable_variables||[]).map(function(d){return d.item;});
+  if(unp.length){L.push('');L.push('NOT MEASURED AT ALL');L.push('  '+unp.join(', ')+'.');
+    L.push('  Unknown is not the same as absent. None of these is scored zero.');}
+  L.push('');
+  L.push('RESEARCH CHECK');
+  fbGxCheckRows(u,p).forEach(function(r){L.push('  '+r.s.padEnd(10)+r.l+(r.n?('  ('+r.n+')'):''));});
+  var dq=(ex.data_quality||[]);
+  if(dq.length){L.push('');L.push('DATA-QUALITY WARNINGS');
+    dq.forEach(function(d){L.push('  '+String(d.level).replace(/_/g,' ')+': '+d.text);});}
+  /* player quality is named as context and as nothing else */
+  L.push('');
+  L.push('PLAYER-QUALITY CONTEXT');
+  L.push('  The player-quality and scheme layers have not cleared walk-forward validation.');
+  L.push('  They move NO projected number in this brief. They are research context only.');
+  L.push('');
+  L.push('EdgeDesk research context. Research, not picks.');
+  return L.join('\n');
+}
+window.fbGxBriefText=fbGxBriefText;
+window.fbGxState=fbGxState;
+window.fbGxScore=fbGxScore;
+window.fbGxCopy=function(gid){
+  var u=fbGxUnit(gid);if(!u)return;
+  var p=FB.p4._proj&&FB.p4._proj[String(gid)];if(!p||p.status!=='PREDICTED')return;
+  var txt=fbGxBriefText(u,p),btn=$('gxcp-'+gid);
+  function done(ok){ if(!btn)return; var was=btn.textContent;
+    btn.textContent=ok?'Copied':'Copy failed — select the text instead';
+    setTimeout(function(){btn.textContent=was;},1800); }
+  try{
+    if(navigator.clipboard&&navigator.clipboard.writeText)
+      navigator.clipboard.writeText(txt).then(function(){done(true);},function(){done(false);});
+    else{
+      var ta=document.createElement('textarea');ta.value=txt;ta.style.position='fixed';ta.style.opacity='0';
+      document.body.appendChild(ta);ta.select();
+      var ok=false;try{ok=document.execCommand('copy');}catch(_){}
+      document.body.removeChild(ta);done(ok);
+    }
+  }catch(_){done(false);}
+  edEvent('research_brief_copy',{sport:'p4'});
+};
+/* the share card, through whatever share surface the app already ships */
+window.fbGxShare=function(gid){
+  var u=fbGxUnit(gid);if(!u)return;
+  var p=FB.p4._proj&&FB.p4._proj[String(gid)];if(!p||p.status!=='PREDICTED')return;
+  var st=fbGxState(p),m=p.model,mk=p.market||{},sc=fbGxScore(m);
+  var txt=(u.g.away_team+' @ '+u.g.home_team)
+    +' — EdgeDesk '+u.g.home_team+' '+fbPts(-m.fair_spread)
+    +(mk.spread_line!=null?(', market '+u.g.home_team+' '+fbPts(-mk.spread_line)):', no market joined')
+    +(sc?('. Projected '+u.g.home_team+' '+sc.home+'–'+sc.away):'')
+    +'. '+st.label.toUpperCase()+': '+st.means
+    +' EdgeDesk research context. Research, not picks.';
+  edEvent('research_share',{sport:'p4'});
+  try{
+    if(navigator.share)return navigator.share({title:'EdgeDesk research',text:txt}).catch(function(){});
+  }catch(_){}
+  fbGxCopy(gid);
+};
+function fbGxUnit(gid){
+  var out=null;
+  (FB.p4.up||[]).forEach(function(u){if(String(u.g.game_id)===String(gid))out=u;});
+  return out;
+}
+
 function fbP4Card(u){
   var g=u.g,E=window.EDCfbP4;
   var p=FB.p4._proj&&FB.p4._proj[String(g.game_id)];
@@ -34423,24 +34886,22 @@ function fbP4Card(u){
       +'<span style="letter-spacing:2px;color:'+(cpc>=60?'var(--pos)':(cpc>=30?'var(--warn)':'var(--neg)'))+'">'+blocks+'</span>'
       +' <span class="mut">share of the model’s input contract that reached this projection</span></div>';
   }
+  /* THE DEEP SECTION HOLDS ONLY WHAT IS NOT ALREADY ABOVE IT. The drivers, the
+     counterarguments and the unquantified variables now have their own open
+     sections, so rendering them again here would have made a reader read the
+     same three lists twice — the duplication this pass exists to remove. What
+     is left is the engine's own lead sentence and its data-quality notes, and
+     every warning in them is also stated in the always-visible research check. */
   var why='';
   if(ex){
     why+='<div class="gd-modelnote">'+fbEsc(ex.summary)+'</div>';
-    if(ex.primary_drivers.length){
-      why+='<div class="gd-sec">Primary model drivers</div><ol style="margin:0 0 6px;padding-left:18px;font-size:12px;line-height:1.55;color:var(--text)">'
-        +ex.primary_drivers.map(function(d){return '<li>'+fbEsc(d.text)+' <span class="mut">('+fbPts(d.points)+' pts)</span></li>';}).join('')+'</ol>';
-    }
-    if(ex.counterarguments.length){
-      why+='<div class="gd-sec">Counterarguments</div><ol style="margin:0 0 6px;padding-left:18px;font-size:12px;line-height:1.55;color:var(--dim)">'
-        +ex.counterarguments.map(function(d){return '<li>'+fbEsc(d.text)+'</li>';}).join('')+'</ol>';
-    }
-    if(ex.unpredictable_variables.length){
-      why+='<div class="gd-sec">Unpredictable / unquantified</div><ul style="margin:0 0 6px;padding-left:18px;font-size:11.5px;line-height:1.5;color:var(--faint)">'
-        +ex.unpredictable_variables.map(function(d){return '<li><b>'+fbEsc(d.item)+'</b> — '+fbEsc(d.why)+'</li>';}).join('')+'</ul>';
-    }
     if(ex.data_quality.length){
       why+='<div class="gd-sec">Data quality</div><ul style="margin:0;padding-left:18px;font-size:11.5px;line-height:1.5;color:var(--faint)">'
         +ex.data_quality.map(function(d){return '<li>'+fbEsc(d.level.replace(/_/g,' '))+': '+fbEsc(d.text)+'</li>';}).join('')+'</ul>';
+    }
+    if(ex.unpredictable_variables.length){
+      why+='<div class="gd-sec">Unpredictable / unquantified · in full</div><ul style="margin:0;padding-left:18px;font-size:11.5px;line-height:1.5;color:var(--faint)">'
+        +ex.unpredictable_variables.map(function(d){return '<li><b>'+fbEsc(d.item)+'</b> — '+fbEsc(d.why)+'</li>';}).join('')+'</ul>';
     }
   }
   var hth='<div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap">'
@@ -34452,7 +34913,21 @@ function fbP4Card(u){
      and clearly separated from it: the line above is priced by the model, the
      rating below is context the model did not use. */
   var edr=fbEdrGameHTML(g);
-  return '<div class="mdl-card">'+head+'<div style="padding:0 12px 12px">'+L+chips+compl+why+edr+hth+'</div></div>';
+  var gid=String(g.game_id);
+  /* SUMMARY FIRST, THEN WHY, THEN WHAT COULD GO WRONG, THEN THE EVIDENCE.
+     Every block below is the same data the flat list carried; what changed is
+     the order a reader meets it in, and what is open by default. */
+  var body=fbGxSummary(u,p,gid)
+    +fbGxSec(gid,'drivers','Why EdgeDesk prices it here',fbGxDrivers(p),true)
+    +fbGxSec(gid,'wrong','Why this number could be wrong',fbGxWrong(p),true)
+    +fbGxSec(gid,'cases','The case for each side',fbGxCases(u,p),true)
+    +fbGxSec(gid,'scale','Model vs market',fbGxScale(u,p),true)
+    +fbGxSec(gid,'detail','Model and market detail',L,false,'spreads, totals, moneyline, outcome range')
+    +fbGxSec(gid,'scores','Model scores',chips+compl,false,'confidence, volatility, stability')
+    +fbGxSec(gid,'edr','EdgeDesk rating · research context',edr,false,'not the number this line is priced from')
+    +fbGxSec(gid,'quality','Data quality and methodology',why,false,'the engine’s own notes')
+    +hth;
+  return '<div class="mdl-card">'+head+'<div style="padding:0 12px 12px">'+body+'</div></div>';
 }
 function fbP4EdgeTag(cls){
   if(!cls)return '';
