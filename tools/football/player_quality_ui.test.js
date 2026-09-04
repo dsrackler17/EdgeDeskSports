@@ -183,7 +183,9 @@ if (!applied) {
 }
 
 /* the market is never one of the ladder's own rungs */
-const rungs = (ladHtml.match(/<tr><td>([^<]+)<\/td>/g) || []).map(x => x.replace(/<[^>]+>/g, ''));
+/* the rung cell now carries a promotion badge after the label, so read the
+   label as the text before the badge rather than the whole cell */
+const rungs = (ladHtml.match(/<tr><td>([^<]+)/g) || []).map(x => x.replace(/<[^>]+>/g, '').trim());
 chk('the ladder has exactly the four EdgeDesk rungs',
   rungs.indexOf('Raw model') >= 0 && rungs.indexOf('Player-adjusted') >= 0
   && rungs.indexOf('Scheme-adjusted') >= 0 && rungs.indexOf('Simulation') >= 0, rungs.join('|'));
@@ -312,7 +314,7 @@ if (blank) {
 /* 8. THE PAGE STILL WIRES IT UP                                            */
 /* ======================================================================== */
 has(APP, "fbSetSport('players')", 'the Players segment button exists');
-has(APP, "var order=['nfl','cfb','p4','players'];", 'and the segment order carries it');
+has(APP, "var order=['nfl','cfb','p4','players','rankings'];", 'and the segment order carries it');
 has(APP, "fbPqOpen(", 'every Power 4 game card can open the player panel');
 has(APP, "id=\"pq-'", 'and has a mount point for it');
 chk('the existing rosters head-to-head panel is untouched', APP.indexOf('fbP4Hth(') >= 0);
