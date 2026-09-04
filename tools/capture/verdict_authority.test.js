@@ -210,9 +210,25 @@ const eqs = (d, score) => ({ decision: d, score: score == null ? 70 : score });
   chk('and no longer reads the EQS decision directly',
     APP.indexOf("else if(q.decision==='BET')decision='RESEARCH';") < 0);
 
-  /* The Top 5 now applies the same bars as the Top 10 beneath it. */
-  chk('the Top 5 requires actionability, the noise floor and the book minimum',
-    /if\(!isActionableSignal\(e\)\)return false;\s*\n\s*if\(\(e\.edge\|\|0\)<REAL_FLOOR\)return false;\s*\n\s*if\(\(e\.n_books\|\|0\)<MINBOOKS\)return false;/.test(APP));
+  /* THE TOP 5 IS A RESEARCH LIST AND MUST STILL POPULATE ON A DAY WHEN NOTHING
+     QUALIFIES — its own copy promises "when the board is efficient these are
+     simply the closest-to-fair prices ... shown for research, not as plays", and
+     a filter that removes an unqualified row instead of labelling it breaks that
+     promise at exactly the moment the list is the only thing left to look at.
+     So it is NOT gated on actionability. What makes that safe is that every row
+     it renders wears canonicalMarketVerdict(), which cannot say BET for a row
+     capture refused. Seeing is not betting; the label is what separates them. */
+  chk('the Top 5 keeps its liquidity bars',
+    /if\(\(e\.edge\|\|0\)<REAL_FLOOR\)return false;\s*\n\s*if\(\(e\.n_books\|\|0\)<MINBOOKS\)return false;/.test(APP));
+  chk('but does NOT drop a row for being unqualified — it labels it instead',
+    !/if\(!isActionableSignal\(e\)\)return false;/.test(APP));
+  chk('every Top 5 row carries the canonical verdict',
+    /var d5v=\(typeof canonicalMarketVerdict==='function'\)\?canonicalMarketVerdict\(e\):'PASS';/.test(APP));
+  chk('an unqualified Top 5 row is tagged as not a signal, never as a play',
+    /d5v==='WATCH'\?' <span class="suspect">watch/.test(APP)
+    && /' <span class="suspect">pass \\u00b7 not a signal<\/span>'/.test(APP));
+  chk('and it states the rule that stopped it',
+    /canonicalVerdictWhy/.test(APP.slice(APP.indexOf('var d5v='), APP.indexOf('var d5v=') + 900)));
 
   /* Grep for anything still deriving a BET from raw inputs. */
   const rawBet = (APP.match(/verdict\s*=\s*'BET'/g) || []).length;
@@ -231,8 +247,22 @@ const eqs = (d, score) => ({ decision: d, score: score == null ? 70 : score });
   });
   chk('BOARD_FLAG_COLS now resolves to the active column set, so every live pool gets them',
     /var BOARD_FLAG_COLS=BOARD_ACTIVE_COLS;/.test(APP));
+  /* ONLY THE BETTABLE BOARD IS GATED. Two definition sites plus exactly one
+     query: EDGES. The research pools (D5_POOL, CONS_POOL) are deliberately
+     ungated so the terminal still shows the slate on a day when capture
+     qualifies nothing — they are safe because their render paths label rather
+     than authorise. Gating them made every surface blank at once, which reads
+     to a user exactly like a broken board. */
   const liveFilters = (APP.match(/BOARD_ACTIVE_FILTER/g) || []).length;
-  chk('all three live signal pools use it', liveFilters >= 4, liveFilters);
+  chk('BOARD_ACTIVE_FILTER gates the bettable board and nothing else',
+    liveFilters === 3, liveFilters);
+  chk('the research pool is NOT gated, so the terminal is never blank',
+    /THE RESEARCH POOL, AND IT IS DELIBERATELY NOT GATED ON ACTIONABILITY/.test(APP)
+    && /var ft=filterTradeable\(pool\|\|\[\]\);/.test(APP));
+  chk('CONSENSUS is not gated on the MARKET engine\'s verdict either',
+    /window\.CONS_POOL=filterTradeable\(cq\|\|\[\]\)\.keep;/.test(APP));
+  chk('but the bettable board still is',
+    /ACTIVE BOARD \u2014 CURRENTLY ACTIONABLE signals only|ACTIVE BOARD — CURRENTLY ACTIONABLE signals only/.test(APP));
 
   /* Historical reads must NOT have been narrowed. */
   chk('the historical flag filter still exists for the Record and movement reads',
