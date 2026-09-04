@@ -407,6 +407,45 @@ chk('no page renders an email address',
 })();
 chk('display names are what the product shows', /display_name/.test(SOC));
 
+/* ── the status read-out ───────────────────────────────────────────────── */
+(() => {
+  const ST_PAGE = fs.readFileSync(G('status/index.html'), 'utf8');
+  has(ST_PAGE, 'name="robots" content="noindex,nofollow"', 'the status page is not indexable');
+  chk('it is reachable from every page', /\/games\/status\//.test(JS));
+  chk('it reports the challenge board', /Challenge board/.test(ST_PAGE));
+  chk('it reports the market feed, which gates Pick 5 and Spread',
+    /Market feed/.test(ST_PAGE) && /Pick 5 and the Spread/.test(ST_PAGE));
+  chk('it names the service-role cause rather than just saying "no market"',
+    /SUPABASE_SERVICE_KEY/.test(ST_PAGE) && /auth\.uid\(\)/.test(ST_PAGE));
+  chk('it reports the social layer and how to deploy it',
+    /Social layer/.test(ST_PAGE) && /games_social\.sql/.test(ST_PAGE));
+  chk('it distinguishes an undeployed backend from a broken one',
+    /r\.status===404/.test(ST_PAGE));
+  chk('it says plainly what still works when a feed is down',
+    /unaffected/.test(ST_PAGE));
+  chk('it changes nothing — a read-out, not a control panel',
+    !/<input(?![^>]*type="range")/.test(ST_PAGE) && !/rpc\('h2h_create/.test(ST_PAGE));
+})();
+
+/* ── the builder reads the market as a role that can actually see it ───── */
+(() => {
+  const B = fs.readFileSync(G('build_challenges.js'), 'utf8');
+  chk('the builder prefers the service role', /EDGD_SB_SERVICE/.test(B));
+  chk('and reports which role it read as', /reading as the ' \+ cfg\.role/.test(B));
+  chk('it reads both of the sources the terminal uses',
+    /signals\?select=/.test(B) && /accept-profile/.test(B));
+  chk('a zero market on an anon key names the RLS cause out loud',
+    /keys on auth\.uid\(\)/.test(B) && /EDGD_SB_SERVICE \(the service-role key\)/.test(B));
+  chk('an inverted lines table is refused rather than published',
+    /linesLookInverted/.test(B) && /sign error, not a slate/.test(B));
+  chk('the home-line convention is stated where it is written',
+    /HOME team's betting line \(home -7 = -7\)/.test(B));
+  const WF = fs.readFileSync(path.join(ROOT, '.github', 'workflows', 'games-challenges.yml'), 'utf8');
+  chk('CI passes the service key to the build', /EDGD_SB_SERVICE: \$\{\{ secrets\.SUPABASE_SERVICE_KEY/.test(WF));
+  chk('and warns loudly when the board ships with no market',
+    /::warning::No game on this board carries a book number/.test(WF));
+})();
+
 function finish() {
   console.log((fail ? 'FAIL' : 'PASS') + ' | games social | ' + pass + ' passed, ' + fail + ' failed');
   failures.forEach(f => console.log('  × ' + f));
