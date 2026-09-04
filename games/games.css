@@ -61,15 +61,22 @@ h1,h2,h3{font-family:'Space Grotesk',Inter,sans-serif;margin:0;line-height:1.15}
 .gh-nav a{padding:8px 10px;border-radius:8px;font-size:12.5px;font-weight:600;color:var(--dim)}
 .gh-nav a:hover{background:var(--cell);color:var(--text);text-decoration:none}
 .gh-nav a[aria-current]{color:var(--val);background:var(--cell)}
-@media(max-width:420px){.gh-nav a{padding:8px 7px;font-size:12px}}
-/* The narrowest phones still in use (320px). The header is the only row on the
-   page dense enough to overflow there, so it sheds the logo's wordmark and the
-   EdgeDesk link — both of which are reachable elsewhere on the same page —
-   rather than letting the whole document scroll sideways. */
+/* The header is the only row on the page dense enough to overflow, and it got
+   denser when Head-to-Head and Groups arrived: four nav items plus the wordmark
+   is 413px of content on a 390px phone.
+   
+   So it sheds in two stages, and everything it sheds is reachable elsewhere on
+   the same page — Pick 5 and Groups are both in the footer of every page.
+   
+     under 480px   drop the wide-only nav items (Pick 5, Groups)
+     under 380px   also drop the logo's wordmark, leaving the mark and GAMES */
+@media(max-width:479px){
+  .gh-nav a{padding:8px 7px;font-size:12px}
+  .gh-only-wide{display:none}
+}
 @media(max-width:379px){
   .gh-in{gap:8px}
   .gh-word{display:none}
-  .gh-only-wide{display:none}
   .gh-nav a{padding:8px 6px;font-size:11.5px}
   .wrap{padding:0 12px}
 }

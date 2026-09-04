@@ -538,6 +538,17 @@ chk('the layout is written mobile-first (min-width queries only)',
   chk('any max-width query is a narrow-screen refinement, not the base layout',
     maxw.every(m => +m.match(/(\d+)/)[1] <= 480), maxw.join(','));
 })();
+/* The header sheds nav items on narrow screens. Adding Head-to-Head and Groups
+   pushed it to 413px of content on a 390px phone, so the shedding breakpoint
+   has to clear a 390 and a 414 handset, not just a 320 one. */
+(() => {
+  const m = CSS.match(/@media\(max-width:(\d+)px\)\{[^@]*\.gh-only-wide\{display:none\}/);
+  chk('the wide-only nav items are dropped on a phone-sized screen', !!m, 'no rule found');
+  chk('and the breakpoint clears a 414px handset, not only a 320px one',
+    m && +m[1] >= 414, m ? m[1] + 'px' : 'n/a');
+})();
+chk('everything the header sheds is reachable from the footer',
+  /\/games\/pick-5\//.test(JS) && /\/games\/groups\//.test(JS));
 chk('motion is disabled for players who ask for less of it',
   CSS.indexOf('prefers-reduced-motion') >= 0);
 chk('focus is restyled rather than removed', CSS.indexOf(':focus-visible') >= 0);
