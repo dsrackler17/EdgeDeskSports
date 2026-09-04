@@ -87,28 +87,44 @@ function slice(src, start, end, label) {
     /e\.actionable===true\|\|e\.actionable==='true'/.test(poolSrc) && /qual_reason==='ok'/.test(poolSrc),
     poolSrc.slice(0, 500));
 
-  /* ── 3. EVERY ACTIVE-BOARD QUERY CARRIES THE FILTER ───────────────────── */
-  const boardQueries = [
-    ['the Top Edges board', "var _edgesFetched=await sbGet('signals?select="],
-    ['the ranking pool behind the Top 5', 'try{var pool=await sbGet(\'signals?select=event_id,sport_title,sport_key,market,selection,point,best_dec,first_best_dec,sharp_fair,best_book'],
-    ['the consensus-engine pool', "try{var cq=await sbGet('signals?select="],
-  ];
-  boardQueries.forEach(function (qd) {
+  /* ── 3. THE BETTABLE BOARD IS GATED; THE RESEARCH POOLS ARE NOT ────────
+     One query decides what is bettable and it carries the filter. The other two
+     are RESEARCH pools whose whole job is to still show the slate on a day when
+     capture qualifies nothing — gating them made every surface blank at once,
+     which reads to a user exactly like a broken terminal. They are safe not
+     because they are filtered but because their render paths LABEL: every row
+     goes through canonicalMarketVerdict(), which cannot return BET for a row
+     capture refused. Seeing is not betting. */
+  {
+    const i = APP.indexOf("var _edgesFetched=await sbGet('signals?select=");
+    chk('the bettable board query is present', i >= 0);
+    const line = APP.slice(i, APP.indexOf('\n', i));
+    chk('the bettable board filters on CURRENT actionability server-side',
+      line.indexOf('BOARD_ACTIVE_FILTER') >= 0, line.slice(0, 260));
+    chk('and again in memory, because a URL predicate does not survive a concat',
+      APP.indexOf('var _et=filterTradeable(onlyActionable(EDGES));') >= 0);
+  }
+
+  [['the ranking pool behind the Top 5',
+    "try{var pool=await sbGet('signals?select=event_id,sport_title,sport_key,market,selection,point,best_dec,first_best_dec,sharp_fair,best_book"],
+   ['the consensus-engine pool', "try{var cq=await sbGet('signals?select="],
+  ].forEach(function (qd) {
     const i = APP.indexOf(qd[1]);
-    chk('active-board query is present: ' + qd[0], i >= 0);
+    chk('research pool query is present: ' + qd[0], i >= 0);
     if (i < 0) return;
     const line = APP.slice(i, APP.indexOf('\n', i));
-    chk(qd[0] + ' filters on CURRENT actionability server-side', line.indexOf('BOARD_ACTIVE_FILTER') >= 0, line.slice(0, 260));
+    chk(qd[0] + ' is NOT gated on actionability — it must survive an empty board',
+      line.indexOf('BOARD_ACTIVE_FILTER') < 0, line.slice(0, 260));
+    chk(qd[0] + ' still carries the qualification columns, so it can label each row',
+      line.indexOf('BOARD_FLAG_COLS') >= 0, line.slice(0, 260));
   });
 
-  /* And each is ALSO filtered in memory, because a URL predicate does not
-     survive a [].concat() and several pools are built that way. */
-  ['var _et=filterTradeable(onlyActionable(EDGES));',
-   'var ft=filterTradeable(onlyActionable(pool));',
-   'window.CONS_POOL=filterTradeable(onlyActionable(cq)).keep;',
-  ].forEach(function (needle) {
-    chk('in-memory guard present: ' + needle.slice(0, 46), APP.indexOf(needle) >= 0, needle);
-  });
+  chk('the research pools are no longer filtered down to actionable in memory',
+    APP.indexOf('var ft=filterTradeable(onlyActionable(pool));') < 0
+    && APP.indexOf('window.CONS_POOL=filterTradeable(onlyActionable(cq)).keep;') < 0);
+  chk('they are still filtered for TRADEABILITY — an exchange lay is not a price',
+    APP.indexOf('var ft=filterTradeable(pool||[]);') >= 0
+    && APP.indexOf('window.CONS_POOL=filterTradeable(cq||[]).keep;') >= 0);
 
   /* ── 4. THE CONCATENATED POOLS ────────────────────────────────────────── */
   /* The contract says a pool built by concatenation must re-assert the rule.
