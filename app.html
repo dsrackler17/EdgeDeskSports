@@ -14106,6 +14106,34 @@ function prefAllows(e){
 }
 
 /* ---------- auth (real, via the Supabase session already in localStorage) ---------- */
+/* ═══ OPERATOR-ONLY SURFACES ═════════════════════════════════════════════
+   A few controls run EdgeDesk rather than use it — posting this model's slate
+   to the Collective under the operator's own submission key is the whole of it
+   today. A customer has no use for them and should not have to read past them.
+
+   WHAT THIS IS: a product-surface gate. It decides what is drawn.
+   WHAT THIS IS NOT: access control. app.html is a public static file, so the
+   functions behind these buttons still exist in the source for anyone who
+   opens it. The thing that actually stops a customer posting as EdgeDesk is
+   the submission key — asked for once, kept only in the operator's own
+   browser, never part of this page — and whatever the ingest endpoint
+   enforces on it. Do not add anything here that would be unsafe in a
+   customer's hands merely because it is hidden.
+
+   To add an operator, add their account email. Matching is on the signed-in
+   session's email, lowercased and trimmed; nothing a customer can set. */
+var ED_OWNER_EMAILS=['dsrackler@gmail.com'];
+function edIsOwner(){
+  try{
+    var u=edUser();
+    if(!u||!u.email)return false;
+    var e=String(u.email).trim().toLowerCase();
+    for(var i=0;i<ED_OWNER_EMAILS.length;i++)
+      if(String(ED_OWNER_EMAILS[i]).trim().toLowerCase()===e)return true;
+    return false;
+  }catch(_){return false;}
+}
+window.edIsOwner=edIsOwner;
 function edSession(){try{return JSON.parse(localStorage.getItem('edgedesk_session')||'null');}catch(e){return null;}}
 function edUser(){
   var s=edSession(); if(!s||!s.access_token)return null;
@@ -32002,13 +32030,14 @@ function fbCtlHTML(){
     opts+='<option value="'+w.week+'"'+(FB.scope===w.week?' selected':'')+'>'+lbl+'</option>';
   });
   opts+='<option value="season"'+(FB.scope==='season'?' selected':'')+'>Full season</option>';
-  var keyed=fbP4KeyMasked();
+  var op=edIsOwner();                       /* operator-only: see edIsOwner */
+  var keyed=op?fbP4KeyMasked():'';
   return '<select onchange="fbSetScope(this.value)" style="padding:8px 10px;border-radius:9px;border:1px solid rgba(255,255,255,.18);background:transparent;color:var(--fg,#e8eef7);font-size:12.5px">'+opts+'</select>'
     +'<button class="btn ghost sm" onclick="fbXlsxDownload()" title="Board + the raw export, one workbook">Download Excel</button>'
     +'<button class="btn ghost sm" onclick="fbCsvDownload()" title="The raw export on its own, as CSV">CSV (raw)</button>'
-    +'<button class="btn primary sm" onclick="fbNflApiSync()" title="Dry-run, then post this scope as this model\u2019s number on the wall \u2014 replaces what you posted before on any game that has not locked (30 minutes before kickoff)">Sync to Collective (API)</button>'
+    +(op?'<button class="btn primary sm" onclick="fbNflApiSync()" title="Dry-run, then post this scope as this model\u2019s number on the wall \u2014 replaces what you posted before on any game that has not locked (30 minutes before kickoff)">Sync to Collective (API)</button>':'')
     +(keyed?'<span class="ec mut">key '+fbEsc(keyed)+' \u00b7 <a href="#" onclick="fbP4KeyForget();return false;">forget</a></span>':'')
-    +'<div id="fbnflPostOut" class="ec mut" style="flex-basis:100%;margin-top:2px"></div>'
+    +(op?'<div id="fbnflPostOut" class="ec mut" style="flex-basis:100%;margin-top:2px"></div>':'')
     +'<span class="ec mut">picks + grading, one row per game — research export, unproven</span>';
 }
 /* ---- a workbook, written by hand ---------------------------------------
@@ -34130,6 +34159,11 @@ function fbCollectiveReceiptNote(b){
   return html;
 }
 window.fbNflApiSync=async function(){
+  /* the button that reaches this is drawn for an operator only; the guard
+     is here too so a stale render, a deep link or a console call cannot
+     post as EdgeDesk. This is not what makes posting safe — the
+     submission key and the ingest endpoint are (see edIsOwner). */
+  if(!edIsOwner())return;
   var built=fbNflWireRows();
   if(!built.rows.length){
     fbNflPostOut('<span class="ec mut">Nothing to post in this scope'
@@ -34193,6 +34227,11 @@ window.fbNflApiSync=async function(){
    step: the wall shows the latest submission before the lock, so the post
    replaces this model's stored rows on its own. */
 window.fbP4ApiSync=async function(){
+  /* the button that reaches this is drawn for an operator only; the guard
+     is here too so a stale render, a deep link or a console call cannot
+     post as EdgeDesk. This is not what makes posting safe — the
+     submission key and the ingest endpoint are (see edIsOwner). */
+  if(!edIsOwner())return;
   if(!FB.p4.up.length){alert('No Power 4 games on the board to post yet.');return;}
   var bad=fbP4LineSanity();
   if(bad){
@@ -34257,6 +34296,11 @@ window.fbP4ApiSync=async function(){
 /* Dry run, then post — never post without the dry run passing first. The
    receipt is the server's, quoted rather than summarised. */
 window.fbP4ApiPost=async function(live){
+  /* the button that reaches this is drawn for an operator only; the guard
+     is here too so a stale render, a deep link or a console call cannot
+     post as EdgeDesk. This is not what makes posting safe — the
+     submission key and the ingest endpoint are (see edIsOwner). */
+  if(!edIsOwner())return;
   if(!FB.p4.up.length){alert('No Power 4 games on the board to post yet.');return;}
   var bad=fbP4LineSanity();
   if(bad){
@@ -34317,6 +34361,11 @@ window.fbP4ApiPost=async function(live){
 };
 var FBP4_COLLECTIVE_URL='https://edgedesksports.com/collective/#dashboard';
 window.fbP4PostToCollective=function(){
+  /* the button that reaches this is drawn for an operator only; the guard
+     is here too so a stale render, a deep link or a console call cannot
+     post as EdgeDesk. This is not what makes posting safe — the
+     submission key and the ingest endpoint are (see edIsOwner). */
+  if(!edIsOwner())return;
   if(!FB.p4.up.length){alert('No Power 4 games on the board to post yet.');return;}
   /* The Collective's record is public and graded; a slate built on inverted
      lines does not belong on it. The downloads stay available so the numbers
@@ -34341,16 +34390,21 @@ window.fbP4PostToCollective=function(){
 };
 function fbP4CtlHTML(){
   var n=FB.p4.up.length;
-  var keyed=fbP4KeyMasked();
+  /* posting this model's slate to the Collective is how EdgeDesk is RUN, not
+     how it is used — the operator's controls, their key and the paragraph
+     explaining the pipeline are all drawn only for an operator. See
+     edIsOwner: this hides a surface, it is not access control. */
+  var op=edIsOwner();
+  var keyed=op?fbP4KeyMasked():'';
   return '<button class="btn ghost sm" onclick="fbP4XlsxDownload()" title="Board, Drivers and the raw export, one workbook">Download Excel</button>'
     +'<button class="btn ghost sm" onclick="fbP4CsvDownload()" title="The raw export on its own, as CSV">CSV (raw)</button>'
-    +'<button class="btn ghost sm" onclick="fbP4PostToCollective()">Download &amp; open dashboard</button>'
+    +(op?('<button class="btn ghost sm" onclick="fbP4PostToCollective()">Download &amp; open dashboard</button>'
     /* the operator's one-action path: dry run first, then post */
     +'<button class="btn ghost sm" onclick="fbP4ApiPost(false)">Check via API</button>'
     /* the one action: dry run, then post. The latest submission before the
        lock is the one that counts, so nothing is retracted. The separate
        post/retract functions stay callable for surgical use. */
-    +'<button class="btn primary sm" onclick="fbP4ApiSync()" title="Dry-run, then post this board as this model\u2019s number on the wall \u2014 replaces what you posted before on any game that has not locked (30 minutes before kickoff)">Sync to Collective (API)</button>'
+    +'<button class="btn primary sm" onclick="fbP4ApiSync()" title="Dry-run, then post this board as this model\u2019s number on the wall \u2014 replaces what you posted before on any game that has not locked (30 minutes before kickoff)">Sync to Collective (API)</button>'):'')
     +(keyed?'<span class="ec mut">key '+fbEsc(keyed)+' \u00b7 <a href="#" onclick="fbP4KeyForget();return false;">forget</a></span>':'')
     /* a non-default line convention is a standing assumption about the data,
        so it stays on screen once the warning that prompted it has cleared —
@@ -34358,11 +34412,24 @@ function fbP4CtlHTML(){
     +(fbP4LinesConv()==='margin'
       ? '<span class="ec mut">cfb.lines read as <b>margin</b> \u00b7 <a href="#" onclick="fbP4SetLinesConv(\'betting\');return false;">use betting</a></span>'
       : '')
-    +'<div id="fbp4PostOut" class="ec mut" style="flex-basis:100%;margin-top:2px"></div>'
+    +(op?'<div id="fbp4PostOut" class="ec mut" style="flex-basis:100%;margin-top:2px"></div>':'')
     +'<span class="ec mut">'+n+' Power 4 game'+(n===1?'':'s')
     +' · one row per game, same columns as the NFL export · research, unproven</span>'
     +fbP4LineWarnHTML()
-    +'<div class="gd-modelnote" style="flex-basis:100%">'
+    +(op?fbP4PostNoteHTML():fbP4ExportNoteHTML());
+}
+/* what a reader who is NOT running EdgeDesk needs about the two export
+   buttons — and nothing about a pipeline they have no key for */
+function fbP4ExportNoteHTML(){
+  return '<div class="gd-modelnote" style="flex-basis:100%">'
+    +'<b>Taking the board with you.</b> <b>Download Excel</b> hands you a workbook: a <b>Board</b> '
+    +'sheet that is this screen, a <b>Drivers</b> sheet with the model’s reasoning where it has '
+    +'room to be read, and the <b>Raw Export</b> sheet — the full '+FBP4_CSV_HEAD.length
+    +'-column export, unchanged. <b>CSV (raw)</b> is that last sheet on its own. Both are research '
+    +'exports of numbers this engine has not validated against a closing line.</div>';
+}
+function fbP4PostNoteHTML(){
+  return '<div class="gd-modelnote" style="flex-basis:100%">'
     +'<b>Posting to the Collective.</b> Two doors, same pipeline. '
     +'<b>Download Excel</b> hands you a workbook: a <b>Board</b> sheet that is this screen, a '
     +'<b>Drivers</b> sheet with the model\u2019s reasoning where it has room to be read, and the '

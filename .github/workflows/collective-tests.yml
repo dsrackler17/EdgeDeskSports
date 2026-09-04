@@ -156,6 +156,11 @@ jobs:
       - name: The game research card is a research packet, not a tip
         run: node tools/app/game_research.test.js
 
+      # Operator-only surfaces: a customer must never be shown the controls
+      # that post EdgeDesk's own slate to the Collective.
+      - name: Operator controls stay operator-only
+        run: node tools/app/operator_gate.test.js
+
       # The workbook the boards download, rebuilt from a real cleaned file.
       - name: The download is the format the operator cleaned up by hand
         run: node tools/collective/app_export.test.js

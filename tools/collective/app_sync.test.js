@@ -135,6 +135,11 @@ global.fetch = function (url, init) {
   return reply(404, { error: { code: 'not_found', message: 'no route' } });
 };
 
+/* Posting to the Collective is an operator-only surface (see edIsOwner in
+   app.html): the buttons are drawn only for an operator and the handlers
+   refuse anyone else. This suite exercises the operator path, so it says so. */
+global.edIsOwner = () => true;
+
 vm.runInThisContext(sliceApp(), { filename: 'app.html [collective sync]' });
 
 /* The wire builders read a live board. What they return is not the subject
@@ -261,6 +266,19 @@ setup({ answers: [true] });
 await window.fbNflApiSync();
 chk('and a sync after it still posts, still without a retract',
   posts() === 1 && removals() === 0);
+
+/* ---- a customer cannot post, even reaching the handler directly -------- */
+/* The buttons are not drawn for them; this proves the handler itself refuses,
+   so a stale render, a deep link or a console call cannot post as EdgeDesk. */
+global.edIsOwner = () => false;
+setup({ answers: [true] });
+await window.fbNflApiSync();
+chk('a non-operator calling the NFL sync posts nothing', posts() === 0, { posts: posts() });
+chk('and is never even asked to confirm', LOG.confirms.length === 0, { confirms: LOG.confirms.length });
+setup({ answers: [true] });
+await window.fbP4ApiSync();
+chk('a non-operator calling the Power 4 sync posts nothing', posts() === 0, { posts: posts() });
+global.edIsOwner = () => true;   /* back to the operator for anything after */
 
 /* ---- the words the whole product now uses ------------------------------ */
 chk('the sync block never mentions the first-submission slot',
