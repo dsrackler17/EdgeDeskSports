@@ -209,6 +209,15 @@ jobs:
       - name: EQS can downgrade capture and can never upgrade it
         run: node tools/capture/verdict_authority.test.js
 
+      # CLV is entry_dec x closing_fair - 1, and the two halves come from two
+      # different pricers: capture computes the entry, close computes the fair.
+      # Wherever they disagree the difference lands in the record looking exactly
+      # like market movement. This pins the disagreements that exist today —
+      # close cannot reach Pinnacle, and its devig returns a non-distribution on
+      # an underround book — so they cannot widen unnoticed.
+      - name: close and capture are compared as the two halves of every CLV
+        run: node tools/capture/pricer_parity.test.js
+
       # The backtest harness itself. A backtest is a machine for producing a
       # number nobody can check, so the machine is checked: the leakage guard
       # throws, the folds never look forward, and every metric is verified
