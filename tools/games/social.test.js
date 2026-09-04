@@ -450,6 +450,17 @@ chk('display names are what the product shows', /display_name/.test(SOC));
     /r\.status===404/.test(ST_PAGE));
   chk('it says plainly what still works when a feed is down',
     /unaffected/.test(ST_PAGE));
+  /* The probe has to exercise games_hash. group_preview takes only a token, so
+     it never calls it and answered "live" against the very deployment that
+     could not create a challenge — the page said fine while production
+     crashed. h2h_submit hashes in its DECLARE block, before the token lookup,
+     so an unknown token proves the hash works and then writes nothing. */
+  chk('the social probe exercises the secret hash, not just the endpoint',
+    /rpc\('h2h_submit'/.test(ST_PAGE) && !/previewGroup/.test(ST_PAGE));
+  chk('it reads "no such challenge" as healthy — it got past games_hash',
+    /no such challenge/.test(ST_PAGE) && /P0002/.test(ST_PAGE));
+  chk('and names a stale deployment as its own state, distinct from an absent one',
+    /out of date/.test(ST_PAGE) && /does not exist/.test(ST_PAGE));
   chk('it changes nothing — a read-out, not a control panel',
     !/<input(?![^>]*type="range")/.test(ST_PAGE) && !/rpc\('h2h_create/.test(ST_PAGE));
 })();
