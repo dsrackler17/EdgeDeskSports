@@ -1,0 +1,297 @@
+/* ===========================================================================
+   EDGEDESK GAMES — the shared shell.
+
+   Same brand as the research terminal (dark base, the EdgeDesk green, Space
+   Grotesk display / Inter body / JetBrains Mono for numbers) with more air,
+   bigger numbers and stronger feedback, because this is the front door rather
+   than the workbench.
+
+   Deliberately NOT here: anything that reads as a casino. No chips, no reels,
+   no fake currency, no flashing. Energy comes from scale, motion and contrast.
+
+   Mobile first. Every layout rule below is written for 320px and widened with
+   min-width queries, so the narrowest phone is the default rather than the
+   afterthought.
+   =========================================================================== */
+
+:root{
+  --ink:#0b0d11;--panel:#12151b;--raised:#1a1e27;--cell:#161a22;
+  --line:#232935;--line2:#2c333f;
+  --text:#e9edf4;--dim:#8b95a6;--faint:#59626f;
+  --val:#3fb883;            /* the EdgeDesk green */
+  --val-dim:#2b7d59;
+  --neg:#e2664b;--est:#d9a441;--obs:#5c9dff;--exp:#9d7bff;
+  --radius:14px;
+  --shadow:0 1px 0 rgba(255,255,255,.03) inset, 0 8px 30px rgba(0,0,0,.45);
+  --tap:48px;               /* the thumb-friendly minimum, used everywhere */
+}
+
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0;background:var(--ink);color:var(--text);
+  font-family:'Inter',system-ui,-apple-system,sans-serif;
+  font-size:15px;line-height:1.5;
+  -webkit-font-smoothing:antialiased;
+  overflow-x:hidden;                      /* the page body never scrolls sideways */
+}
+a{color:var(--val);text-decoration:none}
+a:hover{text-decoration:underline}
+h1,h2,h3{font-family:'Space Grotesk',Inter,sans-serif;margin:0;line-height:1.15}
+.mono{font-family:'JetBrains Mono',ui-monospace,monospace;font-variant-numeric:tabular-nums}
+
+/* focus is never removed, only restyled — a keyboard player must see where they are */
+:focus-visible{outline:2px solid var(--val);outline-offset:2px;border-radius:6px}
+
+.wrap{max-width:960px;margin:0 auto;padding:0 16px}
+@media(min-width:768px){.wrap{padding:0 24px}}
+
+/* ── header ─────────────────────────────────────────────────────────────── */
+.gh{position:sticky;top:0;z-index:40;background:rgba(11,13,17,.92);
+  backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+.gh-in{display:flex;align-items:center;gap:12px;height:56px}
+.gh-logo{display:flex;align-items:center;gap:8px;font-weight:800;letter-spacing:.06em;
+  font-size:13px;color:var(--text);white-space:nowrap}
+.gh-logo:hover{text-decoration:none}
+.mk{display:inline-block;width:9px;height:15px;background:var(--val);border-radius:2px;
+  transform:skewX(-12deg)}
+.gh-tag{color:var(--val);font-weight:700}
+.gh-sp{flex:1}
+.gh-nav{display:flex;gap:4px}
+.gh-nav a{padding:8px 10px;border-radius:8px;font-size:12.5px;font-weight:600;color:var(--dim)}
+.gh-nav a:hover{background:var(--cell);color:var(--text);text-decoration:none}
+.gh-nav a[aria-current]{color:var(--val);background:var(--cell)}
+@media(max-width:420px){.gh-nav a{padding:8px 7px;font-size:12px}}
+/* The narrowest phones still in use (320px). The header is the only row on the
+   page dense enough to overflow there, so it sheds the logo's wordmark and the
+   EdgeDesk link — both of which are reachable elsewhere on the same page —
+   rather than letting the whole document scroll sideways. */
+@media(max-width:379px){
+  .gh-in{gap:8px}
+  .gh-word{display:none}
+  .gh-only-wide{display:none}
+  .gh-nav a{padding:8px 6px;font-size:11.5px}
+  .wrap{padding:0 12px}
+}
+
+/* ── the free-to-play line, which appears near every entry point ────────── */
+.ftp{font-size:11.5px;color:var(--faint);letter-spacing:.02em}
+.ftp b{color:var(--dim);font-weight:600}
+
+/* ── buttons ────────────────────────────────────────────────────────────── */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  min-height:var(--tap);padding:0 20px;border-radius:12px;border:1px solid var(--line2);
+  background:var(--raised);color:var(--text);font:600 15px 'Inter',sans-serif;
+  cursor:pointer;transition:transform .12s ease,background .12s ease,border-color .12s ease;
+  width:100%;text-align:center}
+.btn:hover{background:var(--cell);text-decoration:none}
+.btn:active{transform:translateY(1px)}
+.btn[disabled]{opacity:.45;cursor:not-allowed}
+.btn-go{background:var(--val);border-color:var(--val);color:#06231a;font-weight:700}
+.btn-go:hover{background:#4ac994;border-color:#4ac994}
+.btn-ghost{background:transparent}
+.btn-row{display:grid;gap:10px;margin-top:14px}
+@media(min-width:560px){.btn-row.two{grid-template-columns:1fr 1fr}}
+
+/* ── cards ──────────────────────────────────────────────────────────────── */
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);
+  padding:18px;box-shadow:var(--shadow)}
+@media(min-width:768px){.card{padding:22px}}
+.card+.card{margin-top:14px}
+.eyebrow{font-size:10.5px;font-weight:700;letter-spacing:.14em;color:var(--faint);
+  text-transform:uppercase;margin-bottom:10px}
+
+/* ── the stat strip (streak / weekly score / rank) ──────────────────────── */
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.stat{background:var(--cell);border:1px solid var(--line);border-radius:12px;
+  padding:12px 10px;text-align:center;min-width:0}
+.stat .k{font-size:10px;font-weight:700;letter-spacing:.1em;color:var(--faint);
+  text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.stat .v{font-family:'Space Grotesk',sans-serif;font-size:26px;font-weight:700;
+  line-height:1.1;margin-top:4px}
+.stat .v.on{color:var(--val)}
+.stat .s{font-size:10.5px;color:var(--faint);margin-top:2px}
+@media(min-width:560px){.stat .v{font-size:32px}}
+
+/* ── the matchup ────────────────────────────────────────────────────────── */
+.mu{text-align:center;padding:4px 0 2px}
+.mu-team{font-family:'Space Grotesk',sans-serif;font-size:24px;font-weight:700;line-height:1.2;
+  overflow-wrap:break-word}
+@media(min-width:560px){.mu-team{font-size:30px}}
+.mu-vs{font-size:11px;font-weight:700;letter-spacing:.18em;color:var(--faint);margin:6px 0}
+.mu-when{font-size:12.5px;color:var(--dim);margin-top:8px}
+.mu-side{font-size:10.5px;color:var(--faint);letter-spacing:.08em;text-transform:uppercase}
+
+/* ── context chips ──────────────────────────────────────────────────────── */
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:14px;justify-content:center}
+.chip{background:var(--cell);border:1px solid var(--line);border-radius:999px;
+  padding:5px 11px;font-size:11.5px;color:var(--dim);white-space:nowrap}
+.chip b{color:var(--text);font-weight:600}
+
+/* ── the spread selector ────────────────────────────────────────────────── */
+.sel{margin-top:20px}
+.sel-read{text-align:center;margin-bottom:6px}
+.sel-line{font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;
+  font-size:34px;font-weight:700;color:var(--val);line-height:1.1}
+@media(min-width:560px){.sel-line{font-size:42px}}
+.sel-who{font-size:12.5px;color:var(--dim);margin-top:4px;min-height:1.2em}
+.sel-ends{display:flex;justify-content:space-between;font-size:11px;color:var(--faint);
+  margin:10px 2px 2px;font-family:'JetBrains Mono',monospace}
+/* the track: a big, forgiving touch target. 44px of height is the hit area even
+   though the visible rail is thin. */
+.sel-range{-webkit-appearance:none;appearance:none;width:100%;height:44px;
+  background:transparent;cursor:pointer;margin:0;display:block;touch-action:pan-y}
+.sel-range::-webkit-slider-runnable-track{height:8px;border-radius:999px;
+  background:linear-gradient(90deg,var(--line2),var(--val-dim),var(--line2))}
+.sel-range::-moz-range-track{height:8px;border-radius:999px;
+  background:linear-gradient(90deg,var(--line2),var(--val-dim),var(--line2))}
+.sel-range::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;
+  width:32px;height:32px;border-radius:50%;background:var(--val);
+  border:3px solid var(--ink);box-shadow:0 2px 10px rgba(63,184,131,.5);margin-top:-12px}
+.sel-range::-moz-range-thumb{width:32px;height:32px;border-radius:50%;background:var(--val);
+  border:3px solid var(--ink);box-shadow:0 2px 10px rgba(63,184,131,.5)}
+/* nudge buttons — the slider alone is fiddly at half-point precision on a phone */
+.sel-nudge{display:grid;grid-template-columns:var(--tap) 1fr var(--tap);gap:10px;
+  align-items:center;margin-top:6px}
+.nudge{min-height:var(--tap);width:100%;border-radius:12px;border:1px solid var(--line2);
+  background:var(--raised);color:var(--text);font:700 20px 'Inter',sans-serif;cursor:pointer}
+.nudge:active{transform:translateY(1px)}
+.sel-hint{font-size:11.5px;color:var(--faint);text-align:center}
+
+/* ── the reveal ─────────────────────────────────────────────────────────── */
+.reveal{animation:rise .34s cubic-bezier(.2,.8,.3,1) both}
+@keyframes rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+@media(prefers-reduced-motion:reduce){
+  .reveal,.pop{animation:none}
+  *{transition:none!important}
+}
+.prices{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:4px}
+.price{background:var(--cell);border:1px solid var(--line);border-radius:12px;
+  padding:12px 8px;text-align:center;min-width:0}
+.price.mine{border-color:var(--val-dim);background:rgba(63,184,131,.07)}
+.price .k{font-size:9.5px;font-weight:700;letter-spacing:.1em;color:var(--faint);
+  text-transform:uppercase}
+.price .v{font-family:'JetBrains Mono',monospace;font-size:17px;font-weight:700;margin-top:6px;
+  overflow-wrap:break-word}
+@media(min-width:560px){.price .v{font-size:20px}.price .k{font-size:10.5px}}
+.price .n{font-size:10px;color:var(--faint);margin-top:3px}
+.price.none .v{color:var(--faint);font-weight:400}
+
+.scorebox{text-align:center;margin:20px 0 4px}
+.scorebox .n{font-family:'Space Grotesk',sans-serif;font-size:64px;font-weight:700;
+  line-height:1;color:var(--val);animation:pop .4s cubic-bezier(.2,1.4,.4,1) both}
+@media(min-width:560px){.scorebox .n{font-size:80px}}
+@keyframes pop{from{opacity:0;transform:scale(.7)}to{opacity:1;transform:none}}
+.scorebox .l{font-size:11px;font-weight:700;letter-spacing:.14em;color:var(--faint);
+  text-transform:uppercase;margin-top:6px}
+.scorebox .b{font-size:14px;color:var(--text);margin-top:8px;font-weight:600}
+
+.deltas{display:grid;gap:8px;margin-top:16px}
+.delta{background:var(--cell);border:1px solid var(--line);border-radius:10px;padding:11px 13px;
+  font-size:13.5px;color:var(--text)}
+.delta b{color:var(--val);font-weight:700}
+
+/* ── research state badge ───────────────────────────────────────────────── */
+.rs{display:inline-flex;align-items:center;gap:7px;border-radius:999px;padding:6px 13px;
+  font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;
+  border:1px solid var(--line2);background:var(--cell)}
+.rs .dot{width:7px;height:7px;border-radius:50%;background:currentColor;flex:none}
+.rs.ok{color:var(--val)}
+.rs.warn{color:var(--est)}
+.rs.neg{color:var(--neg)}
+.rs.mut{color:var(--dim)}
+.rs-means{font-size:12.5px;color:var(--dim);margin-top:10px;line-height:1.55}
+
+/* ── the "why" factor list ──────────────────────────────────────────────── */
+.facts{list-style:none;margin:12px 0 0;padding:0;display:grid;gap:8px}
+.facts li{display:flex;gap:10px;font-size:13.5px;line-height:1.5;color:var(--dim)}
+.facts .s{flex:none;width:18px;height:18px;border-radius:5px;display:grid;place-items:center;
+  font-size:12px;font-weight:800;margin-top:1px}
+.facts .s.p{background:rgba(63,184,131,.16);color:var(--val)}
+.facts .s.m{background:rgba(226,102,75,.16);color:var(--neg)}
+.facts .s.q{background:rgba(139,149,166,.16);color:var(--dim)}
+
+/* ── Pick 5 ─────────────────────────────────────────────────────────────── */
+.p5{display:grid;gap:12px}
+.p5-g{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:14px}
+.p5-h{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-bottom:12px}
+.p5-n{font-size:10.5px;font-weight:700;letter-spacing:.12em;color:var(--faint)}
+.p5-when{font-size:11px;color:var(--faint);white-space:nowrap}
+.p5-picks{display:grid;gap:8px}
+.p5-btn{display:flex;align-items:center;justify-content:space-between;gap:10px;
+  min-height:var(--tap);padding:10px 14px;border-radius:11px;border:1px solid var(--line2);
+  background:var(--cell);color:var(--text);font:600 15px 'Inter',sans-serif;cursor:pointer;
+  text-align:left;width:100%;transition:border-color .12s,background .12s}
+.p5-btn .ln{font-family:'JetBrains Mono',monospace;color:var(--dim);font-size:14px;flex:none}
+.p5-btn[aria-pressed="true"]{border-color:var(--val);background:rgba(63,184,131,.12)}
+.p5-btn[aria-pressed="true"] .ln{color:var(--val)}
+.p5-btn:disabled{cursor:default;opacity:.9}
+.p5-res{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase}
+.p5-res.w{color:var(--val)}.p5-res.l{color:var(--neg)}.p5-res.p{color:var(--dim)}
+.p5-bar{position:sticky;bottom:0;z-index:30;background:rgba(11,13,17,.95);
+  backdrop-filter:blur(10px);border-top:1px solid var(--line);padding:12px 0;
+  padding-bottom:calc(12px + env(safe-area-inset-bottom))}
+.p5-count{text-align:center;font-size:12.5px;color:var(--dim);margin-bottom:8px}
+
+/* ── leaderboard ────────────────────────────────────────────────────────── */
+.lb{width:100%;border-collapse:collapse;font-size:14px}
+.lb th{text-align:left;font-size:10px;font-weight:700;letter-spacing:.1em;color:var(--faint);
+  text-transform:uppercase;padding:0 8px 8px;border-bottom:1px solid var(--line)}
+.lb td{padding:10px 8px;border-bottom:1px solid var(--line)}
+.lb tr:last-child td{border-bottom:0}
+.lb .r{color:var(--faint);width:38px;font-family:'JetBrains Mono',monospace}
+.lb .p{text-align:right;font-family:'JetBrains Mono',monospace;color:var(--val);font-weight:700}
+.lb .me{background:rgba(63,184,131,.07)}
+.empty{text-align:center;color:var(--dim);font-size:13.5px;padding:22px 10px;line-height:1.6}
+
+/* ── how it works ───────────────────────────────────────────────────────── */
+.steps{display:grid;gap:12px;margin-top:14px;counter-reset:s}
+@media(min-width:768px){.steps{grid-template-columns:repeat(3,1fr)}}
+.step{background:var(--cell);border:1px solid var(--line);border-radius:12px;padding:16px}
+.step .n{font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:700;color:var(--val);
+  letter-spacing:.1em}
+.step h3{font-size:15px;margin:8px 0 6px}
+.step p{margin:0;font-size:13px;color:var(--dim);line-height:1.55}
+
+/* ── hero ───────────────────────────────────────────────────────────────── */
+.hero{padding:36px 0 26px;text-align:center}
+@media(min-width:768px){.hero{padding:56px 0 40px}}
+.hero h1{font-size:34px;font-weight:700;letter-spacing:-.02em}
+@media(min-width:560px){.hero h1{font-size:46px}}
+@media(min-width:960px){.hero h1{font-size:56px}}
+.hero .sub{color:var(--val);font-weight:700;font-size:14px;letter-spacing:.02em;margin-top:12px;
+  font-family:'Space Grotesk',sans-serif}
+.hero .lede{color:var(--dim);font-size:15px;margin:12px auto 0;max-width:44ch;line-height:1.6}
+.hero .btn-row{max-width:420px;margin-left:auto;margin-right:auto;margin-top:22px}
+.hero .ftp{margin-top:14px}
+
+/* ── section rhythm ─────────────────────────────────────────────────────── */
+.sec{margin:34px 0}
+@media(min-width:768px){.sec{margin:46px 0}}
+.sec-h{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:14px}
+.sec-h h2{font-size:18px;font-weight:700}
+.sec-h .m{font-size:12px;color:var(--faint);white-space:nowrap}
+
+/* ── the account nudge ──────────────────────────────────────────────────── */
+.save{border:1px solid var(--val-dim);background:linear-gradient(180deg,rgba(63,184,131,.09),transparent)}
+.save ul{margin:10px 0 0;padding-left:18px;color:var(--dim);font-size:13.5px;line-height:1.7}
+
+/* ── toast ──────────────────────────────────────────────────────────────── */
+.toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%);z-index:80;
+  background:var(--raised);border:1px solid var(--line2);border-radius:10px;
+  padding:11px 18px;font-size:13.5px;box-shadow:var(--shadow);
+  opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;max-width:90vw}
+.toast.on{opacity:1;transform:translateX(-50%) translateY(-4px)}
+
+/* ── footer ─────────────────────────────────────────────────────────────── */
+.gf{border-top:1px solid var(--line);margin-top:48px;padding:26px 0 40px;
+  font-size:12px;color:var(--faint);line-height:1.7}
+.gf a{color:var(--dim)}
+.gf .rule{font-weight:600;color:var(--dim)}
+.gf-links{display:flex;flex-wrap:wrap;gap:12px;margin-top:10px}
+
+/* ── skeleton while the artifact loads ──────────────────────────────────── */
+.sk{background:linear-gradient(90deg,var(--cell),var(--raised),var(--cell));
+  background-size:200% 100%;animation:sh 1.2s linear infinite;border-radius:8px;height:14px}
+@keyframes sh{from{background-position:200% 0}to{background-position:-200% 0}}
+.hide{display:none!important}

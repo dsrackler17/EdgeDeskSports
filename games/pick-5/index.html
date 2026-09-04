@@ -1,0 +1,241 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-1PXVBV53FZ"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-1PXVBV53FZ');
+</script>
+<title>Pick 5 | EdgeDesk Games</title>
+<meta name="description" content="Five football games, one side each, one card a week. Free to play, points only, no real-money wagering — with the EdgeDesk research behind every matchup a click away.">
+<link rel="canonical" href="https://edgedesksports.com/games/pick-5">
+<meta name="theme-color" content="#0b0d11">
+<meta name="robots" content="index,follow">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="EdgeDesk Games">
+<meta property="og:url" content="https://edgedesksports.com/games/pick-5">
+<meta property="og:title" content="Pick 5 — five games, five calls, one card a week">
+<meta property="og:description" content="Pick a side in five football games. Points only, free to play, no real-money wagering.">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Pick 5 — five games, five calls, one card a week">
+<meta name="twitter:description" content="Pick a side in five football games. Points only, free to play.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/games/games.css">
+</head>
+<body>
+<div id="gh"></div>
+
+<main class="wrap">
+  <div class="sec" style="margin-top:20px">
+    <div class="sec-h"><h2>Pick 5</h2><span class="m" id="wkNote"></span></div>
+    <p style="margin:0 0 16px;color:var(--dim);font-size:14px;line-height:1.6">
+      Five games. Pick a side in each. Points only — one point per correct side, no wagering,
+      no entry fee and no prizes.
+    </p>
+    <div id="board"><div class="card"><div class="sk" style="width:60%;margin:8px 0"></div>
+      <div class="sk" style="width:40%;margin:12px 0"></div></div></div>
+  </div>
+  <div id="after"></div>
+</main>
+
+<div class="p5-bar hide" id="bar"><div class="wrap">
+  <div class="p5-count" id="count">0 of 5 selected</div>
+  <button class="btn btn-go" id="submit" type="button" disabled>Submit picks</button>
+</div></div>
+
+<div id="gf"></div>
+
+<script src="/games/lib/week.js"></script>
+<script src="/games/lib/scoring.js"></script>
+<script src="/games/lib/challenge.js"></script>
+<script src="/games/lib/research_state.js"></script>
+<script src="/games/lib/store.js"></script>
+<script src="/games/games.js"></script>
+<script>
+(function(){
+  'use strict';
+  var G=window.EDGames,ST=window.EDGamesStore,W=window.EDGamesWeek,
+      CH=window.EDGamesChallenge,SC=window.EDGamesScoring;
+  var $=function(id){return document.getElementById(id);};
+  var board=$('board'),after=$('after'),bar=$('bar');
+  var WEEK=W.weekKey(),GAMES=[],SEL={};
+
+  G.boot('pick-5');
+  $('wkNote').textContent='week of '+WEEK+' · resets in '+W.daysLeft()
+    +' day'+(W.daysLeft()===1?'':'s');
+
+  /* ---- the card --------------------------------------------------------- */
+  function sideLabel(ch,side){
+    /* The spread as each side sees it. market_spread is the HOME line, so the
+       away side is its negation. */
+    var s=ch.market_spread;
+    if(s==null)return '';
+    var v=side==='home'?s:-s;
+    var r=Math.round(v*10)/10;
+    if(r===0)return 'PK';
+    return (r<0?'−':'+')+Math.abs(r).toFixed(1);
+  }
+
+  function gameHTML(ch,i,locked,sel){
+    function btn(side,team){
+      var on=sel&&sel.pick===side;
+      var res=sel&&sel.result;
+      var tag=res==='win'?'<span class="p5-res w">Won</span>'
+        :res==='loss'?'<span class="p5-res l">Lost</span>'
+        :res==='push'?'<span class="p5-res p">Push</span>':'';
+      return '<button class="p5-btn" type="button" data-g="'+G.esc(ch.game_id)+'" data-side="'+side+'"'
+        +' aria-pressed="'+(on?'true':'false')+'"'+(locked?' disabled':'')+'>'
+        +'<span>'+G.esc(team)+'</span>'
+        +'<span class="ln">'+sideLabel(ch,side)+(on&&tag?' ':'')+'</span>'
+        +(on?tag:'')+'</button>';
+    }
+    return '<div class="p5-g">'
+      +'<div class="p5-h"><span class="p5-n">GAME '+(i+1)+'</span>'
+      +'<span class="p5-when">'+G.esc(G.kickoffLabel(ch.kickoff))+'</span></div>'
+      +'<div class="p5-picks">'+btn('away',ch.away_team)+btn('home',ch.home_team)+'</div>'
+      +'<div style="margin-top:10px"><a href="#" class="research" data-g="'+G.esc(ch.game_id)+'"'
+      +' style="font-size:12.5px">Research this game →</a></div>'
+      +'</div>';
+  }
+
+  function paintCount(){
+    var n=Object.keys(SEL).length;
+    $('count').textContent=n+' of '+GAMES.length+' selected';
+    $('submit').disabled=n<GAMES.length;
+  }
+
+  function wire(locked){
+    Array.prototype.forEach.call(board.querySelectorAll('.p5-btn'),function(b){
+      if(locked)return;
+      b.addEventListener('click',function(){
+        var gid=b.getAttribute('data-g'),side=b.getAttribute('data-side');
+        SEL[gid]=side;
+        Array.prototype.forEach.call(board.querySelectorAll('.p5-btn[data-g="'+gid+'"]'),function(o){
+          o.setAttribute('aria-pressed',o===b?'true':'false');
+        });
+        paintCount();
+      });
+    });
+    Array.prototype.forEach.call(board.querySelectorAll('a.research'),function(a){
+      a.addEventListener('click',function(e){
+        e.preventDefault();
+        var gid=a.getAttribute('data-g'),ch=null;
+        GAMES.forEach(function(g){if(String(g.game_id)===gid)ch=g;});
+        if(ch)G.openResearch(ch,'pick5_game');
+      });
+    });
+  }
+
+  /* ---- render ----------------------------------------------------------- */
+  function renderOpen(){
+    board.innerHTML='<div class="p5">'+GAMES.map(function(ch,i){
+      return gameHTML(ch,i,false,SEL[ch.game_id]?{pick:SEL[ch.game_id]}:null);
+    }).join('')+'</div>';
+    wire(false);
+    bar.classList.remove('hide');
+    paintCount();
+    G.track('pick5_start',{game_type:'pick5',week:WEEK,games:GAMES.length});
+  }
+
+  function renderCard(card){
+    var settled=card.selections.filter(function(s){return s.result;}).length;
+    var correct=card.selections.filter(function(s){return s.result==='win';}).length;
+    board.innerHTML=
+      '<div class="card" style="margin-bottom:14px"><div class="eyebrow">Your card</div>'
+      +'<div style="font-family:\'Space Grotesk\',sans-serif;font-size:26px;font-weight:700">'
+      +(settled?(correct+'–'+(settled-correct)):(card.selections.length+' selections locked'))+'</div>'
+      +'<div style="color:var(--dim);font-size:13px;margin-top:6px">'
+      +(settled?'Results so far. The rest settle as the games finish.'
+        :'Locked for the week of '+G.esc(card.week)+'. Results appear as the games finish.')
+      +'</div></div>'
+      +'<div class="p5">'+GAMES.map(function(ch,i){
+        var sel=null;
+        card.selections.forEach(function(s){if(String(s.game_id)===String(ch.game_id))sel=s;});
+        return gameHTML(ch,i,true,sel);
+      }).join('')+'</div>';
+    wire(true);
+    bar.classList.add('hide');
+
+    var streak=ST.liveStreak(),wk=ST.weeklyScore(),p5=ST.pick5Record();
+    after.innerHTML='<div class="sec"><div class="stats">'
+      +'<div class="stat"><div class="k">Streak</div><div class="v'+(streak?' on':'')+'">'
+      +(streak?('🔥 '+streak):'—')+'</div><div class="s">days in a row</div></div>'
+      +'<div class="stat"><div class="k">Weekly score</div><div class="v'+(wk?' on':'')+'">'
+      +(wk||'—')+'</div><div class="s">points this week</div></div>'
+      +'<div class="stat"><div class="k">Pick 5 record</div><div class="v">'+(p5.label||'—')
+      +'</div><div class="s">all time</div></div>'
+      +'</div></div>'
+      +'<div class="sec"><div class="card"><div class="eyebrow">While you wait</div>'
+      +'<p style="margin:0 0 12px;color:var(--dim);font-size:14px">'
+      +'Price one of these matchups yourself, then see how EdgeDesk prices it.</p>'
+      +'<div class="btn-row"><a class="btn btn-go" href="/games/price-it/">Play Price It</a></div>'
+      +'</div></div>';
+  }
+
+  /* ---- submit ----------------------------------------------------------- */
+  $('submit').addEventListener('click',function(){
+    if(Object.keys(SEL).length<GAMES.length)return;
+    var selections=GAMES.map(function(ch){
+      return {game_id:ch.game_id,slug:ch.slug,pick:SEL[ch.game_id],
+        home_team:ch.home_team,away_team:ch.away_team,market_spread:ch.market_spread};
+    });
+    var card=ST.submitPick5(WEEK,selections);
+    G.track('pick5_complete',{game_type:'pick5',week:WEEK,games:GAMES.length});
+    renderCard(card);
+    try{window.scrollTo({top:0,behavior:'smooth'});}catch(_){window.scrollTo(0,0);}
+  });
+
+  /* ---- boot -------------------------------------------------------------- */
+  G.artifact().then(function(a){
+    GAMES=CH.pickFive(a.challenges,WEEK);
+    var card=ST.pick5Card(WEEK);
+    if(!GAMES.length){
+      /* A pick against a spread needs a spread. When no game on the board
+         carries a book number, the card says so instead of offering picks it
+         cannot price. */
+      board.innerHTML='<div class="card"><div class="empty">'
+        +'No game on this week’s board carries a book number yet, so there is nothing to pick '
+        +'against. Pick 5 opens as soon as the market lands.<br>'
+        +'<a href="/games/price-it/">Play Price It in the meantime</a></div></div>';
+      bar.classList.add('hide');
+      return;
+    }
+    /* SETTLE FIRST. A stored card is graded from the final scores the artifact
+       carries, against the line each selection was actually picked at — never
+       against a number the market moved to afterwards, and never from a
+       guess. Games still to be played simply have no score yet and stay open. */
+    if(card&&card.submitted_at&&a.finals){
+      var outcomes={};
+      card.selections.forEach(function(sel){
+        var f=a.finals[String(sel.game_id)];
+        if(!f)return;
+        var r=SC.atsResult(sel.market_spread,f.home_score,f.away_score);
+        if(r)outcomes[String(sel.game_id)]=r;
+      });
+      if(Object.keys(outcomes).length)card=ST.settlePick5(WEEK,outcomes)||card;
+    }
+    if(card&&card.submitted_at){
+      /* the card was built from the games it was submitted against */
+      GAMES=card.selections.map(function(s){
+        return CH.bySlug(a.challenges,s.slug)||{game_id:s.game_id,slug:s.slug,
+          home_team:s.home_team,away_team:s.away_team,market_spread:s.market_spread,kickoff:null};
+      });
+      renderCard(card);
+      return;
+    }
+    renderOpen();
+  }).catch(function(){
+    board.innerHTML='<div class="card"><div class="empty">This week’s card could not be loaded. '
+      +'Check your connection and reload.</div></div>';
+    bar.classList.add('hide');
+  });
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,327 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-1PXVBV53FZ"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-1PXVBV53FZ');
+</script>
+<title>Price It | EdgeDesk Games</title>
+<meta name="description" content="Where would you price this football matchup? Set your line, lock it, then see the market’s number, EdgeDesk’s projection and the research behind it. Free to play, no real-money wagering.">
+<link rel="canonical" href="https://edgedesksports.com/games/price-it">
+<meta name="theme-color" content="#0b0d11">
+<meta name="robots" content="index,follow">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="EdgeDesk Games">
+<meta property="og:url" content="https://edgedesksports.com/games/price-it">
+<meta property="og:title" content="Price It — can you price the matchup?">
+<meta property="og:description" content="Set your line on a real football matchup, then reveal the market, EdgeDesk’s projection and the research behind the number. Free to play.">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Price It — can you price the matchup?">
+<meta name="twitter:description" content="Set your line, lock it, and see how your read compares with the market and with EdgeDesk.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/games/games.css">
+</head>
+<body>
+<div id="gh"></div>
+
+<main class="wrap" id="main">
+  <div class="sec" style="margin-top:20px">
+    <div class="card" id="stage">
+      <div class="eyebrow">Price It</div>
+      <div class="sk" style="width:55%;margin:16px auto"></div>
+      <div class="sk" style="width:35%;margin:10px auto"></div>
+      <div class="sk" style="width:70%;margin:22px auto"></div>
+    </div>
+  </div>
+  <div id="after"></div>
+</main>
+
+<div id="gf"></div>
+
+<script src="/games/lib/week.js"></script>
+<script src="/games/lib/scoring.js"></script>
+<script src="/games/lib/challenge.js"></script>
+<script src="/games/lib/research_state.js"></script>
+<script src="/games/lib/store.js"></script>
+<script src="/games/games.js"></script>
+<script>
+(function(){
+  'use strict';
+  var G=window.EDGames,ST=window.EDGamesStore,W=window.EDGamesWeek,
+      CH=window.EDGamesChallenge,SC=window.EDGamesScoring,RS=window.EDGamesResearchState;
+  var $=function(id){return document.getElementById(id);};
+  var stage=$('stage'),after=$('after');
+
+  G.boot('price-it');
+
+  /* The selector's range. 28 points covers every realistic college spread and
+     keeps the slider's travel meaningful on a 320px screen. */
+  var RANGE=28,STEP=0.5;
+
+  var POOL=[],CHAL=null;
+
+  /* ---- which matchup? ----------------------------------------------------
+     ?g=<slug> from a share link or the home page; otherwise the day's
+     featured challenge. A slug that no longer resolves falls back rather than
+     dead-ending, and says so. */
+  function param(k){
+    var m=new RegExp('[?&]'+k+'=([^&]*)').exec(location.search);
+    return m?decodeURIComponent(m[1].replace(/\+/g,' ')):null;
+  }
+
+  function pick(a){
+    var want=param('g'),ch=want?CH.bySlug(a.challenges,want):null;
+    var missed=!!(want&&!ch);
+    if(!ch)ch=CH.featured(a.challenges,W.dayKey());
+    return {ch:ch,missed:missed};
+  }
+
+  /* ---- context chips: canonical roster context, or nothing -------------- */
+  function chips(ch){
+    var out=[];
+    if(ch.neutral_site)out.push('<span class="chip">Neutral site</span>');
+    if(ch.venue)out.push('<span class="chip">'+G.esc(ch.venue)+'</span>');
+    [['away',ch.away_team],['home',ch.home_team]].forEach(function(p){
+      var c=ch.context&&ch.context[p[0]];
+      if(!c)return;
+      if(c.conference)out.push('<span class="chip">'+G.esc(p[1])+' <b>'+G.esc(c.conference)+'</b></span>');
+      if(c.returning_production!=null)
+        out.push('<span class="chip">'+G.esc(p[1])+' returning production <b>'+c.returning_production+'%</b></span>');
+      if(c.qb_continuity!=null)
+        out.push('<span class="chip">'+G.esc(p[1])+' QB continuity <b>'+c.qb_continuity+'%</b></span>');
+      if(c.ol_continuity!=null)
+        out.push('<span class="chip">'+G.esc(p[1])+' OL continuity <b>'+c.ol_continuity+'%</b></span>');
+    });
+    if(!out.length)return '';
+    return '<div class="chips">'+out.join('')+'</div>';
+  }
+
+  /* ---- the play screen -------------------------------------------------- */
+  function renderPlay(ch,note){
+    stage.innerHTML=
+      '<div class="eyebrow">Price It'+(ch.week!=null?(' · Week '+ch.week):'')+'</div>'
+      +(note?'<div class="ftp" style="text-align:center;margin-bottom:10px">'+G.esc(note)+'</div>':'')
+      +'<div class="mu">'
+      +'<div class="mu-side">'+(ch.neutral_site?'Neutral site':'Away')+'</div>'
+      +'<div class="mu-team">'+G.esc(ch.away_team)+'</div>'
+      +'<div class="mu-vs">VS</div>'
+      +'<div class="mu-team">'+G.esc(ch.home_team)+'</div>'
+      +'<div class="mu-side">'+(ch.neutral_site?'':'Home')+'</div>'
+      +'<div class="mu-when">'+G.esc(G.kickoffLabel(ch.kickoff))+'</div>'
+      +'</div>'
+      +chips(ch)
+      +'<div class="sel">'
+      +'<h2 style="font-size:15px;text-align:center;margin:22px 0 12px">Where would you price this game?</h2>'
+      +'<div class="sel-read" aria-live="polite">'
+      +'<div class="sel-line mono" id="readLine">Pick ’em</div>'
+      +'<div class="sel-who" id="readWho">Move the selector to set your line</div>'
+      +'</div>'
+      +'<div class="sel-ends"><span>'+G.esc(ch.away_team)+' −'+RANGE+'</span>'
+      +'<span>'+G.esc(ch.home_team)+' −'+RANGE+'</span></div>'
+      +'<input class="sel-range" type="range" id="sl" min="'+(-RANGE)+'" max="'+RANGE+'" step="'+STEP+'" value="0"'
+      +' aria-label="Your line for this game, in points" aria-describedby="readWho">'
+      +'<div class="sel-nudge">'
+      +'<button class="nudge" id="dn" type="button" aria-label="Half a point toward '+G.esc(ch.away_team)+'">−</button>'
+      +'<div class="sel-hint">Half-point steps</div>'
+      +'<button class="nudge" id="up" type="button" aria-label="Half a point toward '+G.esc(ch.home_team)+'">+</button>'
+      +'</div>'
+      +'<div class="btn-row"><button class="btn btn-go" id="lock" type="button">Lock my price</button></div>'
+      +'<div class="ftp" style="text-align:center;margin-top:12px"><b>Free to play</b> · No real-money wagering</div>'
+      +'</div>';
+
+    var sl=$('sl');
+    /* The slider's value IS the away-favourite-to-home-favourite axis; the
+       home team's spread is its negation, so sliding right favours the home
+       team the way a reader expects. */
+    function homeSpread(){return -(+sl.value);}
+    function paint(){
+      var v=homeSpread();
+      $('readLine').textContent=G.line(ch,v)||'Pick ’em';
+      $('readWho').textContent=v===0?'Even game — nobody is giving points'
+        :((v<0?ch.home_team:ch.away_team)+' gives '+Math.abs(v).toFixed(1)+' points');
+    }
+    sl.addEventListener('input',paint);
+    function nudge(d){sl.value=Math.max(-RANGE,Math.min(RANGE,(+sl.value)+d));paint();}
+    $('dn').addEventListener('click',function(){nudge(STEP);});   /* toward the away team */
+    $('up').addEventListener('click',function(){nudge(-STEP);});  /* toward the home team */
+    paint();
+
+    G.track('price_it_start',{game_id:ch.game_id,game_slug:ch.slug,game_type:'price_it',
+      research_state:ch.research_state});
+
+    $('lock').addEventListener('click',function(){lock(ch,homeSpread());});
+  }
+
+  /* ---- lock and reveal -------------------------------------------------- */
+  function lock(ch,userSpread){
+    var res=SC.evaluate({userSpread:userSpread,edgedesk:ch.edgedesk_spread,
+      market:ch.market_spread,benchmark:'edgedesk'});
+    if(!res.ok){
+      G.toast('This matchup has no benchmark price to score against.');
+      return;
+    }
+    var stored=ST.recordPriceIt({
+      game_id:ch.game_id,slug:ch.slug,home_team:ch.home_team,away_team:ch.away_team,
+      user_spread:res.user_spread,edgedesk_spread:res.edgedesk_spread,
+      market_spread:res.market_spread,distance:res.distance,score:res.score,
+      benchmark:res.benchmark,scoring_version:res.scoring_version,
+      research_state:ch.research_state});
+    G.track('price_it_complete',{game_id:ch.game_id,game_slug:ch.slug,game_type:'price_it',
+      research_state:ch.research_state,score:stored.score,distance:stored.distance});
+    renderReveal(ch,stored);
+  }
+
+  function priceCell(k,val,note,cls){
+    return '<div class="price '+(cls||'')+(val==null?' none':'')+'">'
+      +'<div class="k">'+G.esc(k)+'</div>'
+      +'<div class="v">'+(val==null?'none joined':G.esc(val))+'</div>'
+      +(note?'<div class="n">'+G.esc(note)+'</div>':'')+'</div>';
+  }
+
+  function factorList(ch){
+    if(!ch.factors||!ch.factors.length)return '';
+    return '<ul class="facts">'+ch.factors.map(function(f){
+      var cls=f.sign==='+'?'p':f.sign==='-'?'m':'q';
+      return '<li><span class="s '+cls+'">'+G.esc(f.sign)+'</span><span>'+G.esc(f.text)+'</span></li>';
+    }).join('')+'</ul>';
+  }
+
+  function renderReveal(ch,res){
+    var st=RS.classify(ch.confidence,ch.spread_gap);
+    var band=SC.band(res.score);
+    var cmpEdge=SC.compare(res.user_spread,res.edgedesk_spread,'EdgeDesk',ch.home_team,ch.away_team);
+    var cmpMkt=res.market_spread==null?null
+      :SC.compare(res.user_spread,res.market_spread,'the market',ch.home_team,ch.away_team);
+
+    stage.className='card reveal';
+    stage.innerHTML=
+      '<div class="eyebrow">Your result</div>'
+      +'<div class="mu"><div class="mu-team" style="font-size:19px">'
+      +G.esc(ch.away_team)+' <span style="color:var(--faint)">vs</span> '+G.esc(ch.home_team)+'</div></div>'
+      +'<div class="prices" style="margin-top:16px">'
+      +priceCell('Your price',G.line(ch,res.user_spread)||'Pick ’em','you','mine')
+      +priceCell('Market',res.market_spread==null?null:G.line(ch,res.market_spread),
+         res.market_spread==null?'no book number yet':'book')
+      +priceCell('EdgeDesk',res.edgedesk_spread==null?null:G.line(ch,res.edgedesk_spread),'model')
+      +'</div>'
+      +'<div class="scorebox"><div class="n mono">'+res.score+'</div>'
+      +'<div class="l">Score vs EdgeDesk</div>'
+      +(band?'<div class="b">'+G.esc(band.label)+'</div>':'')+'</div>'
+      +'<div class="deltas">'
+      +(cmpEdge?'<div class="delta">'+G.esc(cmpEdge)+'</div>':'')
+      +(cmpMkt?'<div class="delta">'+G.esc(cmpMkt)+'</div>':'')
+      +(res.distance_to_market!=null
+        ? '<div class="delta">You are <b>'+res.distance_to_market.toFixed(1)+' points</b> from the current market number.</div>'
+        :'')
+      +'</div>'
+      /* the research state, derived from the engine's own thresholds */
+      +'<div style="margin-top:22px">'
+      +'<div class="eyebrow">EdgeDesk research state</div>'
+      +'<span class="rs '+st.tone+'"><span class="dot"></span>'+G.esc(st.label)+'</span>'
+      +'<div class="rs-means">'+G.esc(st.means)+'</div>'
+      +'<div class="rs-means" style="color:var(--faint)">'+G.esc(RS.invitation(st.key))+'</div>'
+      +'</div>'
+      +(ch.factors&&ch.factors.length
+        ? '<div style="margin-top:22px"><div class="eyebrow">Why EdgeDesk prices it here</div>'+factorList(ch)+'</div>'
+        :'')
+      +'<div class="btn-row two">'
+      +'<button class="btn btn-go" id="doResearch" type="button">Research this matchup →</button>'
+      +'<button class="btn" id="doNext" type="button">Play next matchup</button>'
+      +'</div>'
+      +'<div class="btn-row"><button class="btn btn-ghost" id="doShare" type="button">Share my result</button></div>'
+      +'<div class="ftp" style="text-align:center;margin-top:14px">'
+      +'Scored against EdgeDesk’s projection. Disagreeing with it is not being wrong — and a gap '
+      +'is not a betting edge.</div>';
+
+    G.track('result_reveal',{game_id:ch.game_id,game_slug:ch.slug,game_type:'price_it',
+      research_state:ch.research_state,score:res.score});
+
+    $('doResearch').addEventListener('click',function(){G.openResearch(ch,'reveal');});
+    $('doShare').addEventListener('click',function(){G.share(ch,res);});
+    $('doNext').addEventListener('click',function(){
+      G.track('next_game_click',{game_type:'price_it',game_id:ch.game_id,placement:'reveal'});
+      next(ch);
+    });
+
+    renderAfter(ch);
+    try{window.scrollTo({top:0,behavior:'smooth'});}catch(_){window.scrollTo(0,0);}
+  }
+
+  /* ---- what follows the reveal ------------------------------------------ */
+  function renderAfter(ch){
+    var streak=ST.liveStreak(),wk=ST.weeklyScore(),pi=ST.priceItRecord();
+    var html='<div class="sec"><div class="stats">'
+      +'<div class="stat"><div class="k">Streak</div><div class="v'+(streak?' on':'')+'">'
+      +(streak?('🔥 '+streak):'—')+'</div><div class="s">'+(streak===1?'day':'days in a row')+'</div></div>'
+      +'<div class="stat"><div class="k">Weekly score</div><div class="v'+(wk?' on':'')+'">'+(wk||'—')
+      +'</div><div class="s">points this week</div></div>'
+      +'<div class="stat"><div class="k">Price It</div><div class="v">'+pi.played+'</div>'
+      +'<div class="s">'+(pi.avg_distance==null?'games':('avg '+pi.avg_distance.toFixed(1)+' pts off'))+'</div></div>'
+      +'</div></div>';
+
+    /* The account ask comes only AFTER real engagement — never during a first
+       game, and only once. */
+    if(ST.engaged()&&!ST.seen('save_prompt')){
+      ST.markSeen('save_prompt');
+      G.track('save_score_cta',{game_type:'price_it',game_id:ch.game_id});
+      html+='<div class="sec"><div class="card save"><div class="eyebrow">Save your streak</div>'
+        +'<p style="margin:0;color:var(--dim);font-size:14px">Create a free EdgeDesk account to keep your</p>'
+        +'<ul><li>scores</li><li>streak</li><li>history</li><li>leaderboard position</li></ul>'
+        +'<div class="btn-row"><a class="btn" id="doSave" href="#">Save my score</a></div>'
+        +'<div class="ftp" style="margin-top:10px">Your progress stays on this device until you do.</div>'
+        +'</div></div>';
+    }
+    after.innerHTML=html;
+    var save=$('doSave');
+    if(save){
+      save.href=G.withAttribution('/app.html',{intent:'save_games_score'})+'#account';
+      save.addEventListener('click',function(){
+        G.track('signup_start_from_games',{game_type:'price_it',game_id:ch.game_id});
+      });
+    }
+  }
+
+  /* ---- next matchup ----------------------------------------------------- */
+  function next(current){
+    var live=CH.playable(POOL).filter(function(r){
+      return !ST.priceItResult(r.game_id);
+    });
+    var pickNext=live.length?live[0]:null;
+    if(!pickNext){
+      G.toast('You have priced every matchup on the board. Come back when the next slate builds.');
+      return;
+    }
+    location.href='/games/price-it/?g='+encodeURIComponent(pickNext.slug);
+  }
+
+  /* ---- boot -------------------------------------------------------------- */
+  G.artifact().then(function(a){
+    POOL=a.challenges;
+    var r=pick(a);
+    CHAL=r.ch;
+    if(!CHAL){
+      stage.innerHTML='<div class="empty">No matchup is playable right now. '
+        +'The board refills when the next slate is built.<br>'
+        +'<a href="/games/">Back to EdgeDesk Games</a></div>';
+      return;
+    }
+    /* Already played? Replay the stored result rather than letting the same
+       challenge be scored twice. */
+    var prev=ST.priceItResult(CHAL.game_id);
+    if(prev){renderReveal(CHAL,prev);return;}
+    renderPlay(CHAL,r.missed?'That matchup is no longer on the board — here is today’s.':null);
+  }).catch(function(){
+    stage.innerHTML='<div class="empty">The challenge board could not be loaded. '
+      +'Check your connection and reload.</div>';
+  });
+})();
+</script>
+</body>
+</html>

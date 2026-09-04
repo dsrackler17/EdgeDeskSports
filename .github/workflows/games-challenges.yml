@@ -1,0 +1,96 @@
+# EdgeDesk Games — rebuild the challenge board.
+#
+# The /games pages read ONE committed artifact, games/data/challenges.json,
+# and compute nothing. This job produces it by running the CANONICAL Power 4
+# exporter (football/cfb_p4/export_csv.js) and reshaping its output — there is
+# no second pricing engine anywhere in the games layer, and this workflow is
+# the only thing that writes the artifact.
+#
+# It runs often because a challenge board goes stale fast: kickoffs pass, book
+# numbers land, and a game nobody can still play is not a challenge.
+name: Games challenge board
+
+on:
+  workflow_dispatch:
+    inputs:
+      season:
+        description: 'Season year (default: current, Jan/Feb -> prior year)'
+        required: false
+        default: ''
+  schedule:
+    - cron: '20 11 * * *'   # daily, after the overnight results have settled
+    - cron: '20 23 * * 4'   # Thursday evening, before the weekend slate
+  push:
+    branches: [main]
+    paths:
+      - 'games/build_challenges.js'
+      - 'games/lib/**'
+      - 'football/cfb_p4/export_csv.js'
+      - 'football/cfb_p4/params.js'
+      - 'football/rankings/current.json'
+      - '.github/workflows/games-challenges.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: games-challenges
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      # The suites gate the write, the same way the football build gates its
+      # own: a board that fails its own rules must not reach the site.
+      - name: Suites (before)
+        run: npm run games:test
+
+      - name: Build the challenge board
+        run: node games/build_challenges.js
+          ${{ github.event.inputs.season && format('--season {0}', github.event.inputs.season) || '' }}
+
+      # Prove the DATA, not just the code. build_challenges.js already refuses
+      # to write an empty board; this refuses to COMMIT one that is malformed.
+      - name: Refuse to publish a wrong-shaped board
+        run: |
+          node -e "
+            const fail = s => { console.error('REFUSING TO COMMIT: ' + s); process.exit(1); };
+            const a = require('./games/data/challenges.json');
+            if (a.schema !== 'edgedesk_games_challenges_v1') fail('unexpected schema');
+            if (!Array.isArray(a.challenges) || !a.challenges.length) fail('no challenges');
+            if (!a.model_version) fail('no model version recorded');
+            if (!a.scoring_version) fail('no scoring version recorded');
+            for (const c of a.challenges) {
+              if (c.edgedesk_spread == null) fail(c.game_id + ' has no EdgeDesk price');
+              if (!c.slug) fail(c.game_id + ' has no slug');
+              if (!c.home_team || !c.away_team) fail(c.game_id + ' is missing a team');
+            }
+            const slugs = new Set(a.challenges.map(c => c.slug));
+            if (slugs.size !== a.challenges.length) fail('duplicate slugs on the board');
+            console.log('ok — ' + a.challenges.length + ' challenge(s), '
+              + a.counts.with_market + ' with a book number');
+          "
+
+      - name: Suites (after)
+        run: npm run games:test
+
+      - name: Commit
+        run: |
+          git config user.name  'github-actions[bot]'
+          git config user.email 'github-actions[bot]@users.noreply.github.com'
+          git add games/data/challenges.json
+          if git diff --cached --quiet; then
+            echo 'board unchanged — no commit'
+            exit 0
+          fi
+          N=$(node -p "require('./games/data/challenges.json').challenges.length")
+          git commit -m "games: challenge board (${N} matchups)"
+          git push

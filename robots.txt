@@ -1,0 +1,15 @@
+# EdgeDesk — what crawlers may read.
+#
+# The public surface is the landing page, EdgeDesk Games and the legal pages.
+# The research terminal and the Collective are application shells behind an
+# account: they render nothing useful to a crawler and are not offered.
+User-agent: *
+Allow: /
+Allow: /games
+Allow: /games/
+Disallow: /admin.html
+Disallow: /collective/admin.html
+Disallow: /reset.html
+Disallow: /join/
+
+Sitemap: https://edgedesksports.com/sitemap.xml
