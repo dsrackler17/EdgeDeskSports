@@ -17,6 +17,22 @@
   var p=location.pathname.split('/').filter(Boolean);
   if(p[0]==='join'&&p[1]){location.replace('/collective/join.html?t='+encodeURIComponent(p[1])+location.search.replace(/^\?/,'&').replace(/^&/,'&'));return;}
   if(p[0]==='c'&&p[1]){location.replace('/collective/#/'+encodeURIComponent(p[1]));return;}
+  /* EdgeDesk Games share links: /games/price-it/{slug} -> the real page with
+     the challenge named. The query form is the canonical one (a static host
+     cannot render a per-matchup document), and this keeps the pretty link
+     people actually paste into social working. */
+  if(p[0]==='games'&&p[1]&&p[2]){
+    var g=['price-it','pick-5'].indexOf(p[1])>=0?p[1]:null;
+    if(g){location.replace('/games/'+g+'/?g='+encodeURIComponent(p[2])+location.search.replace(/^\?/,'&'));return;}
+    /* the social invite links people actually paste into a group chat:
+         /games/h2h/{token}     -> the challenge
+         /games/groups/{token}  -> the group
+       Both are private pages addressed by an unguessable token; the pages
+       themselves carry noindex. */
+    if(p[1]==='h2h'){location.replace('/games/h2h/?c='+encodeURIComponent(p[2])+location.search.replace(/^\?/,'&'));return;}
+    if(p[1]==='groups'){location.replace('/games/groups/?g='+encodeURIComponent(p[2])+location.search.replace(/^\?/,'&'));return;}
+  }
+  if(p[0]==='games'){location.replace('/games/');return;}
 })();
 </script>
 <style>
@@ -35,7 +51,7 @@ p{color:var(--dim);font-size:13.5px;line-height:1.6}
   <span style="font-weight:800;letter-spacing:.06em"><span class="mk"></span>EDGEDESK</span>
   <h1>Nothing lives at this address</h1>
   <p>The page may have moved, or the link was truncated.</p>
-  <p><a href="/">EdgeDesk home</a> &middot; <a href="/collective/">The Model Collective</a> &middot; <a href="/app.html">The terminal</a></p>
+  <p><a href="/">EdgeDesk home</a> &middot; <a href="/games/">EdgeDesk Games</a> &middot; <a href="/collective/">The Model Collective</a> &middot; <a href="/app.html">The terminal</a></p>
 </div>
 </body>
 </html>

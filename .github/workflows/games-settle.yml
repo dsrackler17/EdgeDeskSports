@@ -1,0 +1,45 @@
+# EdgeDesk Games — settle Head-to-Head challenges.
+#
+# The trusted half of the social layer. Grading runs here, holding the service
+# role, because h2h_settle() is granted to no client role: a player's browser
+# must never be able to decide who won.
+#
+# Harmless without credentials. On a fork, or before supabase/games_social.sql
+# is applied, the worker exits 0 having done nothing.
+name: Games settle H2H
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Grade but do not write'
+        type: boolean
+        required: false
+        default: false
+  schedule:
+    - cron: '35 8 * * *'     # after the overnight finals have landed
+    - cron: '35 15 * * 0,1'  # Sunday and Monday, once the weekend has settled
+
+concurrency:
+  group: games-settle
+  cancel-in-progress: false
+
+jobs:
+  settle:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      # The grading rules are pure functions and are tested on their own; a
+      # settlement run must not be the first thing that exercises them.
+      - name: Suites
+        run: node tools/games/social.test.js
+
+      - name: Settle
+        env:
+          EDGD_SB_SERVICE: ${{ secrets.SUPABASE_SERVICE_KEY }}
+        run: node games/settle_h2h.js ${{ github.event.inputs.dry_run == 'true' && '--dry-run' || '' }}
