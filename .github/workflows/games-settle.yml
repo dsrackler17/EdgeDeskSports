@@ -39,7 +39,34 @@ jobs:
       - name: Suites
         run: node tools/games/social.test.js
 
+      # A missing secret in Actions is an empty string, never an error, so a
+      # misnamed or unset credential is invisible unless something says so.
+      # This says so, in the run summary, without failing the run: both jobs
+      # are designed to degrade rather than break.
+      - name: Report which credential is present
+        env:
+          EDGD_SB_SERVICE: ${{ secrets.SB_SERVICE_ROLE }}
+          EDGD_SB_URL: ${{ secrets.SB_URL }}
+        run: |
+          if [ -n "$EDGD_SB_SERVICE" ] && [ -n "$EDGD_SB_URL" ]; then
+            echo "::notice::Supabase service credential present." >&2
+            echo '- Supabase credential: **service role**' >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "::warning::SB_SERVICE_ROLE / SB_URL are empty in this run. They are not GitHub Actions repository secrets. This run settles nothing and exits 0." >&2
+            {
+              echo '- Supabase credential: **absent** — `SB_SERVICE_ROLE` and/or `SB_URL` resolved to an empty string.'
+              echo '- They must exist as **GitHub Actions repository secrets**; secrets stored in the Supabase dashboard are not visible here.'
+              echo '- This run settles nothing and exits 0.'
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      # Same credential names as games-challenges.yml. This step previously
+      # named a SUPABASE_SERVICE_KEY that does not exist, and a missing secret
+      # in Actions is an empty string rather than an error, so every run since
+      # this workflow landed took the "no service credentials" branch and
+      # exited 0 having settled nothing. The URL was never passed at all.
       - name: Settle
         env:
-          EDGD_SB_SERVICE: ${{ secrets.SUPABASE_SERVICE_KEY }}
+          EDGD_SB_SERVICE: ${{ secrets.SB_SERVICE_ROLE }}
+          EDGD_SB_URL: ${{ secrets.SB_URL }}
         run: node games/settle_h2h.js ${{ github.event.inputs.dry_run == 'true' && '--dry-run' || '' }}

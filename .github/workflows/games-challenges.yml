@@ -53,6 +53,27 @@ jobs:
       - name: Suites (before)
         run: npm run games:test
 
+      # A missing secret in Actions is an empty string, never an error, so a
+      # misnamed or unset credential is invisible unless something says so.
+      # This says so, in the run summary, without failing the run: both jobs
+      # are designed to degrade rather than break.
+      - name: Report which credential is present
+        env:
+          EDGD_SB_SERVICE: ${{ secrets.SB_SERVICE_ROLE }}
+          EDGD_SB_URL: ${{ secrets.SB_URL }}
+        run: |
+          if [ -n "$EDGD_SB_SERVICE" ] && [ -n "$EDGD_SB_URL" ]; then
+            echo "::notice::Supabase service credential present." >&2
+            echo '- Supabase credential: **service role**' >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "::warning::SB_SERVICE_ROLE / SB_URL are empty in this run. They are not GitHub Actions repository secrets. This run falls back to the anon role: the board still builds, but `signals` (the fresher captured quotes) stays out of reach." >&2
+            {
+              echo '- Supabase credential: **absent** — `SB_SERVICE_ROLE` and/or `SB_URL` resolved to an empty string.'
+              echo '- They must exist as **GitHub Actions repository secrets**; secrets stored in the Supabase dashboard are not visible here.'
+              echo '- This run falls back to the anon role: the board still builds, but `signals` (the fresher captured quotes) stays out of reach.'
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
+
       # WHICH ROLE READS THE MARKET.
       #
       # Measured on run 2 of this workflow, reading as anon:

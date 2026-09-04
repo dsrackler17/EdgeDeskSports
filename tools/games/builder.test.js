@@ -233,6 +233,42 @@ if (good.json) {
     src.indexOf('rankings') >= 0 && src.indexOf('current.json') >= 0);
 })();
 
+/* ---- the workflows name credentials that can actually resolve -------------
+   A missing secret in GitHub Actions is an empty string, never an error. Both
+   games workflows shipped with a `SUPABASE_SERVICE_KEY` that does not exist,
+   so they silently ran without the credential they were written to use — the
+   challenge board read as anon and the settlement job exited 0 having settled
+   nothing. Nothing failed, which is exactly why it went unnoticed. Pin the
+   names to the ones this repository actually uses. ------------------------- */
+(() => {
+  const WF = path.join(ROOT, '.github', 'workflows');
+  const ALLOWED = ['SB_SERVICE_ROLE', 'SB_URL', 'COLLECTIVE_ADMIN_REFRESH_TOKEN', 'GITHUB_TOKEN'];
+  let files = [];
+  try { files = fs.readdirSync(WF).filter(f => /\.ya?ml$/.test(f)); } catch (_) {}
+  chk('the workflow directory could be read', files.length > 0, String(files.length));
+
+  files.forEach(f => {
+    /* strip comments so a name discussed in prose is not read as a reference */
+    const src = fs.readFileSync(path.join(WF, f), 'utf8')
+      .split('\n').map(l => l.replace(/(^|\s)#.*$/, '')).join('\n');
+    const named = (src.match(/secrets\.[A-Za-z_][A-Za-z0-9_]*/g) || [])
+      .map(m => m.slice('secrets.'.length));
+    const unknown = named.filter(n => ALLOWED.indexOf(n) < 0);
+    chk(f + ' references only credentials this repository defines',
+      unknown.length === 0, unknown.join(','));
+  });
+
+  ['games-challenges.yml', 'games-settle.yml'].forEach(f => {
+    const src = fs.readFileSync(path.join(WF, f), 'utf8');
+    chk(f + ' passes the service role to the script',
+      src.indexOf('EDGD_SB_SERVICE: ${{ secrets.SB_SERVICE_ROLE }}') >= 0);
+    chk(f + ' passes the project URL alongside it, so the key is not orphaned',
+      src.indexOf('EDGD_SB_URL: ${{ secrets.SB_URL }}') >= 0);
+    chk(f + ' says out loud when the credential is missing, rather than degrading in silence',
+      src.indexOf('::warning::SB_SERVICE_ROLE') >= 0);
+  });
+})();
+
 try { fs.rmSync(TMP, { recursive: true, force: true }); } catch (_) {}
 console.log((fail ? 'FAIL' : 'PASS') + ' | games builder | ' + pass + ' passed, ' + fail + ' failed');
 failures.forEach(f => console.log('  × ' + f));
