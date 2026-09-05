@@ -1,8 +1,8 @@
 {
   "schema": "edgedesk_football_health_v1",
-  "generated_at": "2026-09-04T13:42:14.318Z",
+  "generated_at": "2026-09-05T12:57:27.933Z",
   "ok": true,
-  "last_ok_at": "2026-09-04T13:42:14.318Z",
+  "last_ok_at": "2026-09-05T12:57:27.933Z",
   "run": {
     "trigger": "schedule",
     "runner": "github-actions",
@@ -36,14 +36,14 @@
   },
   "lines": {
     "nfl": {
-      "compared": 15,
-      "median_gap": 1.68,
+      "compared": 16,
+      "median_gap": 2.05,
       "max_gap": 5.57,
       "outliers": []
     },
     "p4": {
-      "compared": 21,
-      "median_gap": 4.2,
+      "compared": 20,
+      "median_gap": 5.32,
       "max_gap": 10.53,
       "outliers": [
         {
@@ -96,19 +96,19 @@
       "id": "nfl_projections",
       "label": "NFL: upcoming slate projects to sane numbers",
       "status": "pass",
-      "detail": "15/15 upcoming games PREDICTED, all inside bounds"
+      "detail": "16/16 upcoming games PREDICTED, all inside bounds"
     },
     {
       "id": "nfl_lines_market",
       "label": "NFL: market lines plausible",
       "status": "pass",
-      "detail": "15 lines inside plausible bounds"
+      "detail": "16 lines inside plausible bounds"
     },
     {
       "id": "nfl_lines",
       "label": "NFL: model vs market line guard",
       "status": "pass",
-      "detail": "median gap 1.68 pts over 15 games, max 5.57"
+      "detail": "median gap 2.05 pts over 16 games, max 5.57"
     },
     {
       "id": "p4_season_window",
@@ -150,41 +150,41 @@
       "id": "p4_lines_src",
       "label": "CFB P4: cfb.lines market source reachable",
       "status": "pass",
-      "detail": "21 of 30 upcoming games have a book number"
+      "detail": "20 of 30 upcoming games have a book number"
     },
     {
       "id": "p4_projections",
       "label": "CFB P4: upcoming slate projects to sane numbers",
       "status": "pass",
-      "detail": "30/30 upcoming P4 games PREDICTED, all inside bounds · roster bundles joined on 21/30"
+      "detail": "30/30 upcoming P4 games PREDICTED, all inside bounds · roster bundles joined on 20/30"
     },
     {
       "id": "p4_lines_market",
       "label": "CFB P4: market lines plausible",
       "status": "pass",
-      "detail": "21 lines inside plausible bounds"
+      "detail": "20 lines inside plausible bounds"
     },
     {
       "id": "p4_lines",
       "label": "CFB P4: model vs market line guard",
       "status": "warn",
-      "detail": "median gap 4.2 pts over 21 games; 2 game(s) beyond 10 pts"
+      "detail": "median gap 5.32 pts over 20 games; 2 game(s) beyond 10 pts"
     }
   ],
   "pipeline_meta": {
-    "daily_check_last_run": "2026-09-04T13:42:14.318Z",
+    "daily_check_last_run": "2026-09-05T12:57:27.933Z",
     "daily_check_last_status": "ok",
-    "engine_tests_last_run": "2026-09-04T13:42:14.318Z",
+    "engine_tests_last_run": "2026-09-05T12:57:27.933Z",
     "engine_tests_last_status": "ok",
-    "nfl_ingest_last_run": "2026-09-04T13:42:14.318Z",
+    "nfl_ingest_last_run": "2026-09-05T12:57:27.933Z",
     "nfl_ingest_last_status": "ok",
     "row_count_nfl_ingest": 0,
-    "p4_ingest_last_run": "2026-09-04T13:42:14.318Z",
+    "p4_ingest_last_run": "2026-09-05T12:57:27.933Z",
     "p4_ingest_last_status": "ok",
     "row_count_p4_ingest": 8,
-    "projection_guard_last_run": "2026-09-04T13:42:14.318Z",
+    "projection_guard_last_run": "2026-09-05T12:57:27.933Z",
     "projection_guard_last_status": "ok",
-    "line_guard_last_run": "2026-09-04T13:42:14.318Z",
+    "line_guard_last_run": "2026-09-05T12:57:27.933Z",
     "line_guard_last_status": "ok",
     "row_count_line_guard": 36
   }
