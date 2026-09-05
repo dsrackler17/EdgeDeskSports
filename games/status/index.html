@@ -12,7 +12,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/games/games.css?v=20260905a">
+<link rel="stylesheet" href="/games/games.css?v=20260905b">
 </head>
 <body>
 <div id="gh"></div>
@@ -33,14 +33,14 @@
 
 <div id="gf"></div>
 
-<script src="/games/lib/week.js?v=20260905a"></script>
-<script src="/games/lib/scoring.js?v=20260905a"></script>
-<script src="/games/lib/challenge.js?v=20260905a"></script>
-<script src="/games/lib/research_state.js?v=20260905a"></script>
-<script src="/games/lib/attribution.js?v=20260905a"></script>
-<script src="/games/lib/store.js?v=20260905a"></script>
-<script src="/games/lib/social.js?v=20260905a"></script>
-<script src="/games/games.js?v=20260905a"></script>
+<script src="/games/lib/week.js?v=20260905b"></script>
+<script src="/games/lib/scoring.js?v=20260905b"></script>
+<script src="/games/lib/challenge.js?v=20260905b"></script>
+<script src="/games/lib/research_state.js?v=20260905b"></script>
+<script src="/games/lib/attribution.js?v=20260905b"></script>
+<script src="/games/lib/store.js?v=20260905b"></script>
+<script src="/games/lib/social.js?v=20260905b"></script>
+<script src="/games/games.js?v=20260905b"></script>
 <script>
 (function(){
   'use strict';
@@ -161,6 +161,27 @@
       });
     }
 
+    /* ---- 3b. the franchise layer ----
+       franchise_economy() is granted to anon and applies no state, so it is
+       a safe probe: a 404 means supabase/games_franchise.sql is not applied. */
+    if(cfg){
+      S.rpc('franchise_economy',{}).then(function(r){
+        if(r.ok&&r.data&&r.data.version){
+          out.push({order:3.5,html:row('ok','Franchise layer',
+            'Franchises, rosters and the ledger are live ('+esc(r.data.version)+').',
+            'The board is published to the server by the challenge workflow; Pick 5 settles on the server from the settle workflow.')});
+        }else if(r.status===404||r.error==='not_configured'){
+          out.push({order:3.5,html:row('bad','Franchise layer',
+            'The franchise functions are not deployed, so <b>a franchise cannot be founded and no reward is credited</b>. '
+            +'Price It, Pick 5 and the Drill are unaffected — they play and keep their record on this device.',
+            'Apply <code>supabase/games_franchise.sql</code> to the Supabase project, after <code>games_social.sql</code>.')});
+        }else{
+          out.push({order:3.5,html:row('warn','Franchise layer','Reachable, but the check returned: '+esc(r.message||r.error||'an error')+'.')});
+        }
+        paint();
+      });
+    }
+
     /* ---- 4. your identity and record ---- */
     var u=S.signedIn()?S.user():null;
     out.push({order:4,html:row(u?'ok':'warn','Your account',
@@ -168,7 +189,7 @@
         +'group membership are saved to your account.')
        :('Not signed in. You can play everything except creating or joining a group; '
         +'results are kept on this device only.'),
-      u?null:'<a href="'+esc(G.withAttribution('/app.html',{intent:'games_status'}))+'#account">Create a free account</a>')});
+      u?null:'<a href="/games/franchise/?intent=status">Create a free account</a>')});
 
     var pi=ST.priceItRecord(),p5=ST.pick5Record();
     out.push({order:5,html:row(ST.storageWorks()?'ok':'warn','This device',

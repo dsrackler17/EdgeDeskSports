@@ -514,8 +514,13 @@ has(PRICE, "G.pulse({game_type:'price_it'})", 'Price It pulses after a fresh loc
 chk('Price It pulses AFTER the reveal, never on a replay',
   PRICE.indexOf("G.pulse({game_type:'price_it'})") > PRICE.indexOf('renderReveal(ch,stored);'));
 has(PRICE, 'This week’s missions', 'Price It shows the week’s missions after the reveal');
-has(PRICE, 'Save your War Room', 'the account ask is about the War Room');
-has(PRICE, 'account_save_from_dynasty', 'and fires the Dynasty save event');
+/* the account ask became the franchise ask: one sentence with the real
+   numbers the envelope is worth, one button, only after engagement and
+   never for an owner (games.js conversionCard) */
+has(PRICE, "conversionCard('price_it_after')", 'the account ask is the franchise conversion moment');
+has(PRICE, 'save_score_cta', 'and still fires the save event the funnel counts');
+chk('and it never appears for a player who already owns a franchise',
+  /FR\.state\(\)!=='franchise'&&G\.conversionCard/.test(PRICE));
 has(PICK, "G.pulse({game_type:'pick5'})", 'Pick 5 pulses');
 has(H2H, "recordEvent('h2h_locked'", 'Head-to-Head records a locked challenge');
 has(H2H, "recordEvent('h2h_win'", 'and a win');

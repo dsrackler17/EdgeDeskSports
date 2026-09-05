@@ -70,3 +70,13 @@ jobs:
           EDGD_SB_SERVICE: ${{ secrets.SB_SERVICE_ROLE }}
           EDGD_SB_URL: ${{ secrets.SB_URL }}
         run: node games/settle_h2h.js ${{ github.event.inputs.dry_run == 'true' && '--dry-run' || '' }}
+
+      # THE FRANCHISE. Finals land on the server's copy of the board, and
+      # every open Pick 5 selection whose game now has a final is graded and
+      # credited — server-side, idempotent, service role only. Same
+      # credentials, same harmlessness without them.
+      - name: Publish finals and settle franchise Pick 5
+        env:
+          EDGD_SB_SERVICE: ${{ secrets.SB_SERVICE_ROLE }}
+          EDGD_SB_URL: ${{ secrets.SB_URL }}
+        run: node games/publish_board.js --settle ${{ github.event.inputs.dry_run == 'true' && '--dry-run' || '' }}

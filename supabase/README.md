@@ -102,6 +102,33 @@ actionable signals only, since the whole board at every book would be tens of
 thousands of rows per run and the actionable set is exactly the population a
 book-behaviour study is about.
 
+### `games_social.sql` — Head-to-Head and Groups
+The social layer of EdgeDesk Games: challenges whose predictions are sealed
+until both players lock, private groups, Elo ratings and the settlement path
+that only the service role can reach. Tested against a real PostgreSQL by
+`tools/games/sql_security.test.js`. See `games/README.md`.
+
+### `games_franchise.sql` — the franchise layer
+Run **after** `games_social.sql`. One fictional football franchise per
+account: `franchises`, `franchise_seasons`, `game_players` (generated on the
+server from a seed the server derives), `franchise_activity` (one row per real
+thing that happened), `franchise_ledger` (append-only, keyed once per thing,
+the source of every resource total), Pick 5 cards and selections, achievement
+definitions and awards, and `game_board` — a published COPY of
+`games/data/challenges.json` written only by the service role, so Price It is
+scored and Pick 5 settled against the server's numbers and never a browser's.
+RLS is on everywhere with owner-only reads and no client writes; every
+mutation is a security-definer function that derives identity from
+`auth.uid()`. A trigger on `game_challenges` turns a settled Head-to-Head
+into Coach Points without changing `games_social.sql`. Report rows 1–9 should
+each say `ok`. Tested against a real PostgreSQL by
+`tools/games/franchise_sql.test.js`. See `games/README.md`.
+
+Two trusted functions, `game_board_upsert` and `franchise_settle_pick5`, are
+granted to no client role; `games/publish_board.js` calls them from the
+existing games workflows with `SB_SERVICE_ROLE` / `SB_URL`. No new secret is
+needed.
+
 ---
 
 ## Not in this repository

@@ -27,7 +27,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/games/games.css?v=20260905a">
+<link rel="stylesheet" href="/games/games.css?v=20260905b">
 <style>
 /* ── Pick 5, page-local. Mobile first; min-width queries only. ─────────── */
 .p5-lede{margin:0 0 16px;color:var(--dim);font-size:14px;line-height:1.6}
@@ -98,14 +98,17 @@
 
 <div id="gf"></div>
 
-<script src="/games/lib/week.js?v=20260905a"></script>
-<script src="/games/lib/scoring.js?v=20260905a"></script>
-<script src="/games/lib/challenge.js?v=20260905a"></script>
-<script src="/games/lib/research_state.js?v=20260905a"></script>
-<script src="/games/lib/attribution.js?v=20260905a"></script>
-<script src="/games/lib/store.js?v=20260905a"></script>
-<script src="/games/lib/dynasty.js?v=20260905a"></script>
-<script src="/games/games.js?v=20260905a"></script>
+<script src="/games/lib/week.js?v=20260905b"></script>
+<script src="/games/lib/scoring.js?v=20260905b"></script>
+<script src="/games/lib/challenge.js?v=20260905b"></script>
+<script src="/games/lib/research_state.js?v=20260905b"></script>
+<script src="/games/lib/attribution.js?v=20260905b"></script>
+<script src="/games/lib/store.js?v=20260905b"></script>
+<script src="/games/lib/dynasty.js?v=20260905b"></script>
+<script src="/games/lib/social.js?v=20260905b"></script>
+<script src="/games/lib/auth.js?v=20260905b"></script>
+<script src="/games/lib/franchise.js?v=20260905b"></script>
+<script src="/games/games.js?v=20260905b"></script>
 <script>
 /* STALE SCRIPT GUARD. A browser can keep an old games.js or store.js for
    longer than it keeps this page, and a page built for the new library
@@ -115,7 +118,7 @@
    function is missing, say so and offer a fresh load instead of a dead
    screen. */
 (function(){
-  var need=['EDGamesStore.submitPick5','EDGames.pulse'];
+  var need=['EDGamesStore.submitPick5','EDGames.pulse','EDGames.rewardPanel'];
   var miss=need.filter(function(k){var p=k.split('.'),o=window[p[0]];return !o||typeof o[p[1]]!=='function';});
   if(!miss.length)return;
   var host=document.getElementById('stage')||document.querySelector('main');
@@ -129,7 +132,7 @@
 (function(){
   'use strict';
   var G=window.EDGames,ST=window.EDGamesStore,W=window.EDGamesWeek,
-      CH=window.EDGamesChallenge,SC=window.EDGamesScoring;
+      CH=window.EDGamesChallenge,SC=window.EDGamesScoring,FR=window.EDFranchise;
   var $=function(id){return document.getElementById(id);};
   var board=$('board'),after=$('after'),bar=$('bar');
   var WEEK=W.weekKey(),GAMES=[],SEL={},FINALS={};
@@ -311,6 +314,7 @@
         +(t.pushes?'<div class="line">'+cap(nword(t.pushes))+' push'+(t.pushes===1?'':'es')
           +', not counted.</div>':'');
     }
+    h+='<div id="rwSlot"></div>';
     h+='<div class="btn-row"><button class="btn" type="button" id="share">Share my card</button></div>';
     return '<div class="card p5-head'+(fresh?' reveal':'')+'" style="margin-bottom:14px">'+h+'</div>';
   }
@@ -381,7 +385,29 @@
       +'Price one of these matchups yourself, then see how EdgeDesk prices it.</p>'
       +'<div class="btn-row"><a class="btn btn-go" href="/games/price-it/">Play Price It</a>'
       +'<a class="btn btn-ghost" href="/games/h2h/">Play Head-to-Head on one of these</a></div>'
-      +'</div></div>';
+      +'</div></div>'
+      /* the franchise ask, after real engagement, never for an owner */
+      +(ST.engaged()&&FR&&FR.state()!=='franchise'&&G.conversionCard?'<div class="sec">'+G.conversionCard('pick5_after')+'</div>':'');
+    if(G.wireConversion)G.wireConversion();
+  }
+
+  /* THE FRANCHISE. The same five picks go to the server, which snapshots its
+     own line onto each and settles the card from its own finals. */
+  function fileCard(card,fresh){
+    if(!FR||FR.state()!=='franchise'||!card||!card.submitted_at)return;
+    var slot=$('rwSlot');
+    if(slot&&fresh)slot.innerHTML='<div class="rw"><div class="eyebrow">Your franchise</div><div class="rw-line">Filing the card…</div></div>';
+    FR.submitPick5(WEEK,card.selections).then(function(r){
+      var el=$('rwSlot');if(!el)return;
+      if(r&&r.ok&&r.data&&r.data.already&&!fresh){
+        var c=r.data.card||{};
+        el.innerHTML='<div class="rw"><div class="eyebrow">Your franchise</div><div class="rw-line">Card on the books'
+          +(c.decided?' · '+c.correct+'–'+(c.decided-c.correct)+' so far':'')+(c.settled_at?' · settled':'')+'. Each correct side pays the ledger as the games finish.</div></div>';
+        return;
+      }
+      el.innerHTML=G.rewardPanel(r);
+      if(r&&r.ok&&r.data&&!r.data.already)G.track('franchise_reward',{game_type:'pick5',week:WEEK,xp:r.data.rewards.xp,tc:r.data.rewards.tc});
+    });
   }
 
   /* ---- submit ----------------------------------------------------------- */
@@ -394,6 +420,7 @@
     var card=ST.submitPick5(WEEK,selections);
     G.track('pick5_complete',{game_type:'pick5',week:WEEK,games:GAMES.length});
     renderCard(card,true);
+    fileCard(card,true);
     try{window.scrollTo({top:0,behavior:'smooth'});}catch(_){window.scrollTo(0,0);}
     setTimeout(function(){try{G.pulse({game_type:'pick5'});}catch(_){}},600);
   });
@@ -438,6 +465,7 @@
           home_team:s.home_team,away_team:s.away_team,market_spread:s.market_spread,kickoff:null};
       });
       renderCard(card,false);
+      G.franchiseReady().then(function(){fileCard(card,false);});
       return;
     }
     renderOpen();

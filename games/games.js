@@ -30,8 +30,11 @@
   var W = root.EDGamesWeek, ST = root.EDGamesStore,
       CH = root.EDGamesChallenge, SC = root.EDGamesScoring,
       RS = root.EDGamesResearchState, AT = root.EDGamesAttribution,
-      DY = root.EDGamesDynasty;   /* optional: a page without the Dynasty
+      DY = root.EDGamesDynasty,   /* optional: a page without the Dynasty
                                      module still boots, it just has no XP */
+      FR = root.EDFranchise,       /* optional: the franchise layer; a page
+                                     without it is the anonymous game */
+      AU = root.EDGamesAuth;       /* optional: sign-in from inside Games */
 
   /* ── analytics ────────────────────────────────────────────────────────────
      The site already runs Google Analytics 4 (gtag, G-1PXVBV53FZ), declared in
@@ -72,15 +75,31 @@
        whether a result leads to a rematch, and whether a premium look
        follows research use rather than preceding it */
     'first_game_start', 'time_to_first_action', 'rematch', 'challenge_created', 'challenge_accepted',
-    'premium_view_after_research', 'keep_playing_free'];
+    'premium_view_after_research', 'keep_playing_free',
+    /* THE FRANCHISE. One fictional football franchise per account, built by
+       playing the real games. franchise_created is the conversion the whole
+       layer exists for; the rest say whether the franchise brings people
+       back and what they do when they are here. Declared once, here, so a
+       report can count an event the moment a surface emits it. */
+    'franchise_created', 'franchise_home_view', 'franchise_signin', 'franchise_signup', 'franchise_import',
+    'player_view', 'roster_change', 'daily_objective_complete', 'scouting_spent', 'player_scouted',
+    'weekly_game_started', 'weekly_game_completed', 'h2h_franchise_complete', 'achievement_unlocked',
+    'season_complete', 'draft_pick', 'trophy_room_view', 'front_office_view', 'roster_view',
+    'franchise_reward', 'franchise_claimed', 'franchise_signout'];
 
   var _level = null;
   function track(event, props) {
     var p = props || {}, k;
     p.sport = p.sport || 'americanfootball_ncaaf';
     p.surface = 'games';
-    p.identity = 'anonymous';        /* games are anonymous-first; an account
-                                        layer flips this when one exists */
+    /* games are anonymous-first; the account layer flips this when a
+       session exists, and the franchise layer says whether one is owned */
+    var signed = false, owns = false;
+    try { signed = !!(root.EDGamesSocial && root.EDGamesSocial.signedIn()); } catch (_) {}
+    try { owns = !!(FR && FR.hasFranchise()); } catch (_) {}
+    p.identity = signed ? 'authenticated' : 'anonymous';
+    p.has_franchise = owns;
+    if (owns) { try { p.franchise_owner = FR.owner(); } catch (_) {} }
     /* the player's level rides on every event, so retention, invites and
        research use can be read BY level — the question the whole persistent
        layer exists to answer */
@@ -169,6 +188,14 @@
       game_id: ch && ch.game_id, game_slug: ch && ch.slug, game_type: opts.game_type || 'price_it',
       research_state: ch && ch.research_state, placement: where || 'reveal', first_open: first
     });
+    /* the franchise credits a research open too — QUEUED, not sent: the
+       page is about to leave, and a request cut off mid-flight would be
+       neither confirmed nor retried. The next boot replays it; the server
+       keys it once per game. */
+    if (first && FR && ST && ch && ch.game_id != null) {
+      try { if (FR.state() === 'franchise') ST.queueFranchise({ key: 'research:' + ch.game_id,
+        fn: 'franchise_record_research', args: { p_game_id: String(ch.game_id) } }); } catch (_) {}
+    }
     root.location.href = researchUrl(ch);
   }
 
@@ -261,27 +288,67 @@
   }
 
   /* ── chrome ───────────────────────────────────────────────────────────── */
+  /* THE FACILITY. /games is a football organization with rooms, and the
+     header names the rooms rather than the games: HQ, the War Room, Scouting
+     (Price It), Training (the Drill), Game Day (Head-to-Head, and the weekly
+     franchise game when it arrives), the Roster, the League (Groups) and the
+     Front Office. Each room is a real page that already exists or is added
+     with the franchise; nothing is renamed away — Price It is still Price
+     It on its own page.
+
+     `gh-word` and `gh-only-wide` are dropped by CSS on the narrowest phones
+     (under 480px) and `gh-only-wider` below 768px; every dropped room is on
+     the tab bar or in the footer of every page, so nothing becomes
+     unreachable. */
+  var ROOMS = [
+    /* on a phone (under 480px) the wordmark links home, the tab bar carries
+       HQ, Scouting and Training, and every footer carries the rest — so the
+       header keeps only the War Room (with the level badge) and, on a page
+       without a tab bar, Scouting. Measured: the chip, the badge and four
+       rooms overflowed a 390px phone by 60px. */
+    { key: 'home',     href: '/games/',                  label: 'HQ',           tab: 'HQ',    cls: 'gh-home' },
+    { key: 'dynasty',  href: '/games/dynasty/',          label: 'War Room' },
+    { key: 'price-it', href: '/games/price-it/',         label: 'Scouting',     tab: 'Scout', cls: 'gh-scout' },
+    { key: 'drill',    href: '/games/two-minute-drill/', label: 'Training',     tab: 'Train', cls: 'gh-train' },
+    { key: 'h2h',      href: '/games/h2h/',              label: 'Game Day',     tab: 'Game Day', cls: 'gh-only-wide' },
+    { key: 'roster',   href: '/games/roster/',           label: 'Roster',       tab: 'Roster',   cls: 'gh-only-wide' },
+    { key: 'groups',   href: '/games/groups/',           label: 'League',       cls: 'gh-only-wider' },
+    { key: 'franchise', href: '/games/franchise/',       label: 'Front Office', cls: 'gh-only-wider' }
+  ];
   function header(current) {
-    /* `gh-word` and `gh-only-wide` are dropped by CSS on the narrowest phones.
-       At 320px the full logo plus three links overflows the viewport, and a
-       header that scrolls sideways is the first thing a visitor sees go wrong.
-       The EdgeDesk link is the one that goes: it is repeated in the footer of
-       every page, so nothing becomes unreachable. */
+    var nav = ROOMS.map(function (r) {
+      return '<a' + (r.cls ? ' class="' + r.cls + '"' : '') + ' href="' + r.href + '"'
+        + (current === r.key ? ' aria-current="page"' : '') + '>' + r.label
+        /* the level badge is the one piece of status that follows the
+           player onto every page; it rides on the War Room */
+        + (r.key === 'dynasty' ? '<span class="gh-lvl" id="ghLvl" aria-label="your level" hidden></span>' : '')
+        + '</a>';
+    }).join('');
     return '<header class="gh"><div class="wrap gh-in">'
       + '<a class="gh-logo" href="/games/"><span class="mk"></span>'
       + '<span class="gh-word">EDGEDESK </span><span class="gh-tag">GAMES</span></a>'
+      /* the franchise chip: the mark and the abbreviation, once one exists */
+      + '<a class="gh-fr" id="ghFr" href="/games/" hidden aria-label="your franchise"></a>'
       + '<span class="gh-sp"></span>'
-      + '<nav class="gh-nav" aria-label="Games">'
-      /* the War Room is the player's home, so it leads; the level badge is
-         the one piece of status that follows them onto every page */
-      + '<a href="/games/dynasty/"' + (current === 'dynasty' ? ' aria-current="page"' : '') + '>War Room'
-      + '<span class="gh-lvl" id="ghLvl" aria-label="your level" hidden></span></a>'
-      + '<a href="/games/two-minute-drill/"' + (current === 'drill' ? ' aria-current="page"' : '') + '>Drill</a>'
-      + '<a href="/games/price-it/"' + (current === 'price-it' ? ' aria-current="page"' : '') + '>Price It</a>'
-      + '<a class="gh-only-wide" href="/games/h2h/"' + (current === 'h2h' ? ' aria-current="page"' : '') + '>H2H</a>'
-      + '<a class="gh-only-wide" href="/games/pick-5/"' + (current === 'pick-5' ? ' aria-current="page"' : '') + '>Pick 5</a>'
-      + '<a class="gh-only-wide" href="/games/groups/"' + (current === 'groups' ? ' aria-current="page"' : '') + '>Groups</a>'
-      + '</nav></div></header>';
+      + '<nav class="gh-nav" aria-label="The facility">' + nav + '</nav></div></header>';
+  }
+
+  /* THE TAB BAR. On a phone the facility is navigated with a thumb: five
+     rooms, fixed to the bottom, on the pages that carry a `#gt` mount (the
+     Pick 5 card and the Drill run keep their own bottom controls). */
+  var TAB_ICONS = {
+    home: '<path d="M4 11l8-7 8 7v9a1 1 0 01-1 1h-5v-6H10v6H5a1 1 0 01-1-1z"/>',
+    'price-it': '<path d="M12 3a9 9 0 100 18 9 9 0 000-18zm0 4a5 5 0 110 10 5 5 0 010-10zm0 3.5a1.5 1.5 0 100 3 1.5 1.5 0 000-3z"/>',
+    drill: '<path d="M12 2a10 10 0 100 20 10 10 0 000-20zm1 5v5.6l3.5 2-1 1.7L11 13.4V7z"/>',
+    h2h: '<path d="M3 12c0-5 4-9 9-9s9 4 9 9-4 9-9 9-9-4-9-9zm3.2-1.2l3.6 2.4-1.8 2.8 5.2-.4L15 10l-3.4 2.2-2.9-1.9z"/>',
+    roster: '<path d="M8 4a3 3 0 110 6 3 3 0 010-6zm8 1a2.5 2.5 0 110 5 2.5 2.5 0 010-5zM3 19c0-3 2.5-5 5-5s5 2 5 5v1H3zm11 1v-1c0-1.6-.5-3-1.3-4 .6-.3 1.4-.5 2.3-.5 2.3 0 4.5 1.6 4.5 4v1.5z"/>'
+  };
+  function tabs(current) {
+    return '<nav class="gtab" aria-label="Facility">' + ROOMS.filter(function (r) { return r.tab; }).map(function (r) {
+      return '<a href="' + r.href + '"' + (current === r.key ? ' aria-current="page"' : '') + '>'
+        + '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">' + (TAB_ICONS[r.key] || '') + '</svg>'
+        + '<span>' + r.tab + '</span></a>';
+    }).join('') + '</nav>';
   }
 
   /* The responsible-play block. It is not decoration and it is not optional:
@@ -297,10 +364,11 @@
       + 'the model does not beat the closing line. 21+. If gambling is a problem for you, '
       + 'call 1-800-GAMBLER.</div>'
       + '<div class="gf-links">'
-      + '<a href="/games/">Games home</a><a href="/games/dynasty/">War Room</a>'
+      + '<a href="/games/">HQ</a><a href="/games/dynasty/">War Room</a>'
       + '<a href="/games/two-minute-drill/">Two-Minute Drill</a>'
       + '<a href="/games/price-it/">Price It</a><a href="/games/h2h/">Head-to-Head</a>'
       + '<a href="/games/pick-5/">Pick 5</a><a href="/games/groups/">Groups</a>'
+      + '<a href="/games/roster/">Roster</a><a href="/games/franchise/">Front Office</a>'
       + '<a href="' + esc(withAttribution(TERMINAL)) + '">The terminal</a>'
       + '<a href="/terms.html">Terms</a><a href="/privacy.html">Privacy</a>'
       + '<a href="/disclaimer.html">Disclaimer</a>'
@@ -312,9 +380,10 @@
 
   function mount(current) {
     var d = root.document;
-    var h = d.getElementById('gh'), f = d.getElementById('gf');
+    var h = d.getElementById('gh'), f = d.getElementById('gf'), t = d.getElementById('gt');
     if (h) h.outerHTML = header(current);
     if (f) f.outerHTML = footer();
+    if (t) { t.outerHTML = tabs(current); try { d.body.classList.add('has-tabs'); } catch (_) {} }
   }
 
   /* ── the social endpoint ──────────────────────────────────────────────────
@@ -336,6 +405,7 @@
         if (_cfg && root.EDGamesLeaderboard) {
           root.EDGamesLeaderboard.configure(_cfg.supabase_url, _cfg.supabase_anon_key);
         }
+        if (_cfg && AU) AU.configure(_cfg.supabase_url, _cfg.supabase_anon_key);
         return _cfg;
       })
       .catch(function () { _cfgPending = null; _cfg = null; return null; });
@@ -545,7 +615,120 @@
     /* things that happened elsewhere (a research open, a card that settled)
        are celebrated on the next page that loads — after it has painted */
     if (now && !page.match(/^(dynasty)$/)) setTimeout(function () { try { pulse({ boot: true }); } catch (_) {} }, 700);
-    return config();
+    /* the franchise: paint the cached chip at once, then refresh from the
+       server and replay anything it has not confirmed. Pages that need the
+       result wait on EDGames.franchiseReady rather than on config(). */
+    paintFranchise();
+    var ready = config();
+    _franchiseReady = ready.then(function () {
+      if (!FR) return { state: 'anonymous' };
+      return FR.boot().then(function (r) { paintFranchise(); notifyFranchise(r); return r; })
+        .catch(function () { return { state: FR.state() }; });
+    });
+    return ready;
+  }
+
+  /* ── the franchise on every page ─────────────────────────────────────── */
+  var _franchiseReady = null;
+  function franchiseReady() { return _franchiseReady || Promise.resolve({ state: 'anonymous' }); }
+  function paintFranchise() {
+    var d = root.document, el = d.getElementById('ghFr'), snap = null;
+    if (!el || !FR) return;
+    try { snap = FR.snapshot(); } catch (_) {}
+    if (!snap || !snap.franchise) { el.hidden = true; return; }
+    var f = snap.franchise;
+    el.innerHTML = FR.logoSvg(f.logo, 22, f.theme) + '<span class="gh-fr-ab">' + esc(f.abbr) + '</span>';
+    el.setAttribute('style', FR.themeVars(f.theme));
+    el.setAttribute('aria-label', esc((f.city + ' ' + f.name).trim()));
+    el.hidden = false;
+  }
+  function notifyFranchise(r) {
+    try {
+      var d = root.document, ev;
+      if (typeof root.CustomEvent === 'function') ev = new root.CustomEvent('edgames:franchise', { detail: r });
+      else { ev = d.createEvent('CustomEvent'); ev.initCustomEvent('edgames:franchise', false, false, r); }
+      d.dispatchEvent(ev);
+    } catch (_) {}
+  }
+
+  /* THE REWARD PANEL. What the server credited for one real thing, rendered
+     the same way on every reveal: the currencies that moved, and where they
+     went. `r` is the RPC result (or a queued/skipped one); `preview` is the
+     published table's estimate for an anonymous player. */
+  function rewardChips(rw) {
+    var out = '', keys = [['xp', 'XP'], ['sp', 'SP'], ['tc', 'TC'], ['cp', 'CP']], i;
+    for (i = 0; i < keys.length; i++) {
+      var k = keys[i][0], v = rw && rw[k];
+      if (v) out += '<span class="rw-chip rw-' + k + '"><b>+' + esc(v) + '</b> ' + keys[i][1] + '</span>';
+    }
+    return out;
+  }
+  function rewardPanel(r, opts) {
+    opts = opts || {};
+    var snap = null; try { snap = FR ? FR.snapshot() : null; } catch (_) {}
+    var name = snap && snap.franchise ? (snap.franchise.city + ' ' + snap.franchise.name) : null;
+    if (r && r.ok && r.data) {
+      var d = r.data, chips = rewardChips(d.rewards);
+      var ach = (d.achievements && d.achievements.length) ? '<div class="rw-ach">Achievement: <b>'
+        + d.achievements.map(function (id) { return esc(FR && FR.achievementName ? FR.achievementName(id) : id); }).join('</b>, <b>') + '</b></div>' : '';
+      if (d.already) return '<div class="rw"><div class="eyebrow">' + esc(name || 'Your franchise') + '</div>'
+        + '<div class="rw-line">Already on the books — nothing credits twice.</div></div>';
+      return '<div class="rw on"><div class="eyebrow">' + esc(name || 'Your franchise') + '</div>'
+        + '<div class="rw-chips">' + (chips || '<span class="rw-none">No new credit</span>') + '</div>' + ach
+        + (d.totals ? '<div class="rw-line">Level ' + esc(d.totals.level) + ' · ' + esc(fmt(d.totals.xp)) + ' XP · '
+          + esc(fmt(d.totals.scouting_points)) + ' SP · ' + esc(fmt(d.totals.team_credits)) + ' TC</div>' : '')
+        + '</div>';
+    }
+    if (r && r.queued) return '<div class="rw"><div class="eyebrow">' + esc(name || 'Your franchise') + '</div>'
+      + '<div class="rw-line">Saved here. EdgeDesk could not be reached, so this credits the next time you are online.</div></div>';
+    if (r && r.ok === false && r.error === 'not_deployed') return '';
+    if (r && r.ok === false && !r.skipped) return '<div class="rw"><div class="eyebrow">' + esc(name || 'Your franchise') + '</div>'
+      + '<div class="rw-line">' + esc(r.message || 'This could not be credited.') + '</div></div>';
+    return '';
+  }
+  function fmt(n) { n = Math.round(+n || 0); return String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ','); }
+
+  /* THE CONVERSION MOMENT. Only for a player who is not yet a franchise, and
+     only after real engagement (store.engaged): one sentence with the real
+     numbers, one button. The numbers come from the published table over the
+     envelope; the server decides what it can verify at import. */
+  function conversionCard(placement) {
+    if (!FR || !ST) return '';
+    var st = FR.state(), href = '/games/franchise/?intent=' + encodeURIComponent(placement || 'games');
+    if (st === 'not_deployed') return '';
+    /* a franchise that lives on this device alone: the ask is to keep it */
+    if (st === 'franchise') {
+      if (FR.owner() !== 'device') return '';
+      var snap = FR.snapshot(), f = snap && snap.franchise;
+      return '<div class="card conv" data-conv="' + esc(placement || '') + '">'
+        + '<div class="eyebrow">Your franchise</div>'
+        + '<div class="conv-t">The <b>' + esc(f ? f.city + ' ' + f.name : 'franchise') + '</b> live on this device. Save them to a free account to keep them on every phone.</div>'
+        + '<p>Everything they have earned comes with them: the roster, the ledger, the achievements.</p>'
+        + '<div class="btn-row"><a class="btn btn-go" href="' + esc(href + '&save=1') + '" data-conv-go>Save my franchise</a></div>'
+        + '<div class="ftp" style="margin-top:10px">Free to play · No purchase necessary · A new phone or a cleared browser cannot find a device-only franchise.</div>'
+        + '</div>';
+    }
+    /* no franchise yet: found one — no account needed */
+    var pv = FR.preview(ST.read()), w = pv.week, a = pv.all;
+    var use = w.games > 0 ? w : a, scope = w.games > 0 ? 'this week' : 'so far';
+    var line = use.games > 0
+      ? 'You have earned <b>' + fmt(use.xp) + ' XP</b>' + (use.sp ? ' and <b>' + fmt(use.sp) + ' Scouting Points</b>' : '') + ' ' + scope + '. Found your franchise to keep them.'
+      : 'Every Price It, card and drill you play builds a franchise.';
+    return '<div class="card conv" data-conv="' + esc(placement || '') + '">'
+      + '<div class="eyebrow">Your franchise</div>'
+      + '<div class="conv-t">' + line + '</div>'
+      + '<p>One fictional football franchise, yours for good: a roster generated for you, a record, a history. No account needed to start; the games you already play are how it improves.</p>'
+      + '<div class="btn-row"><a class="btn btn-go" href="' + esc(href) + '" data-conv-go>Found my franchise</a></div>'
+      + '<div class="ftp" style="margin-top:10px">Free to play · No purchase necessary · Nothing in the franchise can be bought.</div>'
+      + '</div>';
+  }
+  function wireConversion() {
+    var d = root.document, host = d.querySelector('[data-conv]');
+    if (!host) return;
+    var go = host.querySelector('[data-conv-go]');
+    if (go) go.addEventListener('click', function () {
+      track('signup_start_from_games', { placement: host.getAttribute('data-conv') || '', game_type: 'franchise' });
+    });
   }
 
   var API = {
@@ -557,7 +740,9 @@
     shareText: shareText, shareUrl: shareUrl, share: share,
     toast: toast, header: header, footer: footer, mount: mount, boot: boot,
     pulse: pulse, summaryNow: summaryNow, chip: chip, moment: moment,
-    PRO_AFTER_OPENS: PRO_AFTER_OPENS, proDue: proDue, proMoment: proMoment, wireProMoment: wireProMoment
+    PRO_AFTER_OPENS: PRO_AFTER_OPENS, proDue: proDue, proMoment: proMoment, wireProMoment: wireProMoment,
+    ROOMS: ROOMS, tabs: tabs, franchiseReady: franchiseReady, paintFranchise: paintFranchise,
+    rewardPanel: rewardPanel, rewardChips: rewardChips, conversionCard: conversionCard, wireConversion: wireConversion
   };
   root.EDGames = API;
   if (typeof module !== 'undefined' && module.exports) module.exports = API;

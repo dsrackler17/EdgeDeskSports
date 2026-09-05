@@ -27,7 +27,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/games/games.css?v=20260905a">
+<link rel="stylesheet" href="/games/games.css?v=20260905b">
 </head>
 <body>
 <div id="gh"></div>
@@ -45,16 +45,20 @@
   <div id="after"></div>
 </main>
 
+<div id="gt"></div>
 <div id="gf"></div>
 
-<script src="/games/lib/week.js?v=20260905a"></script>
-<script src="/games/lib/scoring.js?v=20260905a"></script>
-<script src="/games/lib/challenge.js?v=20260905a"></script>
-<script src="/games/lib/research_state.js?v=20260905a"></script>
-<script src="/games/lib/attribution.js?v=20260905a"></script>
-<script src="/games/lib/store.js?v=20260905a"></script>
-<script src="/games/lib/dynasty.js?v=20260905a"></script>
-<script src="/games/games.js?v=20260905a"></script>
+<script src="/games/lib/week.js?v=20260905b"></script>
+<script src="/games/lib/scoring.js?v=20260905b"></script>
+<script src="/games/lib/challenge.js?v=20260905b"></script>
+<script src="/games/lib/research_state.js?v=20260905b"></script>
+<script src="/games/lib/attribution.js?v=20260905b"></script>
+<script src="/games/lib/store.js?v=20260905b"></script>
+<script src="/games/lib/dynasty.js?v=20260905b"></script>
+<script src="/games/lib/social.js?v=20260905b"></script>
+<script src="/games/lib/auth.js?v=20260905b"></script>
+<script src="/games/lib/franchise.js?v=20260905b"></script>
+<script src="/games/games.js?v=20260905b"></script>
 <script>
 /* STALE SCRIPT GUARD. A browser can keep an old games.js or store.js for
    longer than it keeps this page, and a page built for the new library
@@ -64,7 +68,7 @@
    function is missing, say so and offer a fresh load instead of a dead
    screen. */
 (function(){
-  var need=['EDGamesStore.recordPriceIt','EDGamesScoring.classify','EDGames.pulse','EDGames.proMoment'];
+  var need=['EDGamesStore.recordPriceIt','EDGamesScoring.classify','EDGames.pulse','EDGames.proMoment','EDGames.rewardPanel'];
   var miss=need.filter(function(k){var p=k.split('.'),o=window[p[0]];return !o||typeof o[p[1]]!=='function';});
   if(!miss.length)return;
   var host=document.getElementById('stage')||document.querySelector('main');
@@ -79,7 +83,7 @@
   'use strict';
   var G=window.EDGames,ST=window.EDGamesStore,W=window.EDGamesWeek,
       CH=window.EDGamesChallenge,SC=window.EDGamesScoring,RS=window.EDGamesResearchState,
-      DY=window.EDGamesDynasty;
+      DY=window.EDGamesDynasty,FR=window.EDFranchise;
   var $=function(id){return document.getElementById(id);};
   var stage=$('stage'),after=$('after');
 
@@ -95,7 +99,7 @@
   var RANGE=(G&&typeof G.SPREAD_RANGE==='number')?G.SPREAD_RANGE:42;
   var STEP=(G&&typeof G.SPREAD_STEP==='number')?G.SPREAD_STEP:0.5;
 
-  var POOL=[],CHAL=null;
+  var POOL=[],CHAL=null,REWARD=null,REWARD_RES=null;
 
   /* ---- which matchup? ----------------------------------------------------
      ?g=<slug> from a share link or the home page; otherwise the day's
@@ -252,6 +256,23 @@
     G.track('price_it_complete',{game_id:ch.game_id,game_slug:ch.slug,game_type:'price_it',
       research_state:ch.research_state,score:stored.score,distance:stored.distance,
       first:gamesPlayed()===1});
+    /* THE FRANCHISE. The same line goes to the server, which scores it
+       against its own copy of the board and credits the ledger; the reveal
+       shows what came back. Anonymous play records nothing here — the
+       envelope is the record until a franchise exists. */
+    REWARD=null;REWARD_RES=null;
+    if(FR&&FR.state()==='franchise'){
+      REWARD=FR.recordPriceIt(ch.game_id,stored.user_spread).then(function(r){
+        /* the server can answer BEFORE the lock beat ends and the reveal
+           paints its slot; the result is kept, and the reveal paints it */
+        REWARD_RES=r;
+        var slot=$('rwSlot');
+        if(slot)slot.innerHTML=G.rewardPanel(r);
+        if(r&&r.ok&&r.data&&!r.data.already)G.track('franchise_reward',{game_type:'price_it',game_id:ch.game_id,
+          xp:r.data.rewards.xp,sp:r.data.rewards.sp,tc:r.data.rewards.tc,score:r.data.result?r.data.result.score:null});
+        return r;
+      });
+    }
     /* how long a stranger took to get to a first real action, measured from
        the first visit this browser recorded — a product metric, not a timer */
     if(gamesPlayed()===1){
@@ -360,6 +381,12 @@
       +(band?'<div class="b">'+G.esc(band.label)+'</div>':'')+'</div>'
       +(cls?'<div class="cls"><span class="chip '+G.esc(cls.key)+'">'+G.esc(cls.label)+'</span>'
         +'<span class="m">'+G.esc(cls.means)+'</span></div>':'')
+      /* the scouting report: your number, the market, EdgeDesk, the error,
+         the grade — and, for a franchise, what the ledger was credited */
+      +'<div class="deltas" style="margin-top:12px"><div class="delta">Error vs EdgeDesk: <b>'+G.esc(res.distance!=null?res.distance.toFixed(1):'—')+' pts</b>'
+      +(res.distance_to_market!=null?' · vs the market: <b>'+G.esc(res.distance_to_market.toFixed(1))+' pts</b>':'')
+      +(band?' · <b>'+G.esc(band.label)+'</b>':'')+'</div></div>'
+      +'<div id="rwSlot">'+(FR&&FR.state()==='franchise'&&fresh?'<div class="rw"><div class="eyebrow">Your franchise</div><div class="rw-line">Filing the scouting report…</div></div>':'')+'</div>'
       +'<div class="deltas">'
       +(cmpEdge?'<div class="delta">'+G.esc(cmpEdge)+'</div>':'')
       +(cmpMkt?'<div class="delta">'+G.esc(cmpMkt)+'</div>':'')
@@ -386,6 +413,7 @@
 
     G.track('result_reveal',{game_id:ch.game_id,game_slug:ch.slug,game_type:'price_it',
       research_state:ch.research_state,score:res.score});
+    if(REWARD_RES){var rs=$('rwSlot');if(rs)rs.innerHTML=G.rewardPanel(REWARD_RES);}
 
     $('doResearch').addEventListener('click',function(){G.openResearch(ch,'reveal');});
     $('doShare').addEventListener('click',function(){G.share(ch,res);});
@@ -430,28 +458,17 @@
         +'</div></div>';
     }
 
-    /* The account ask comes only AFTER real engagement — never during a first
-       game, and only once. */
-    if(ST.engaged()&&!ST.seen('save_prompt')){
-      ST.markSeen('save_prompt');
-      G.track('save_score_cta',{game_type:'price_it',game_id:ch.game_id});
-      html+='<div class="sec"><div class="card save"><div class="eyebrow">Save your War Room</div>'
-        +'<p style="margin:0;color:var(--dim);font-size:14px">Create a free EdgeDesk account to keep your</p>'
-        +'<ul><li>level and XP</li><li>scores and streak</li><li>achievements</li><li>leaderboard position</li></ul>'
-        +'<div class="btn-row"><a class="btn" id="doSave" href="#">Save my War Room</a></div>'
-        +'<div class="ftp" style="margin-top:10px">Your progress stays on this device until you do.</div>'
-        +'</div></div>';
+    /* The franchise ask comes only AFTER real engagement — never during a
+       first game — and never for a player who already owns one. The card
+       carries the real numbers the envelope is worth; the server decides
+       what it can verify at import. */
+    if(ST.engaged()&&FR&&FR.state()!=='franchise'&&G.conversionCard){
+      if(!ST.seen('save_prompt')){ST.markSeen('save_prompt');G.track('save_score_cta',{game_type:'price_it',game_id:ch.game_id});}
+      html+='<div class="sec">'+G.conversionCard('price_it_after')+'</div>';
     }
     after.innerHTML=html;
     if(G.wireProMoment)G.wireProMoment();
-    var save=$('doSave');
-    if(save){
-      save.href=G.withAttribution('/app.html',{intent:'save_games_score'})+'#account';
-      save.addEventListener('click',function(){
-        G.track('signup_start_from_games',{game_type:'price_it',game_id:ch.game_id});
-        G.track('account_save_from_dynasty',{game_type:'price_it',placement:'price_it_after'});
-      });
-    }
+    if(G.wireConversion)G.wireConversion();
   }
 
   /* ---- next matchup ----------------------------------------------------- */

@@ -27,8 +27,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&family=Press+Start+2P&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/games/games.css?v=20260905a">
-<link rel="stylesheet" href="/games/two-minute-drill/drill.css?v=20260905a">
+<link rel="stylesheet" href="/games/games.css?v=20260905b">
+<link rel="stylesheet" href="/games/two-minute-drill/drill.css?v=20260905b">
 </head>
 <body>
 <div id="gh"></div>
@@ -51,15 +51,18 @@
 
 <div id="gf"></div>
 
-<script src="/games/lib/week.js?v=20260905a"></script>
-<script src="/games/lib/scoring.js?v=20260905a"></script>
-<script src="/games/lib/challenge.js?v=20260905a"></script>
-<script src="/games/lib/research_state.js?v=20260905a"></script>
-<script src="/games/lib/attribution.js?v=20260905a"></script>
-<script src="/games/lib/store.js?v=20260905a"></script>
-<script src="/games/lib/dynasty.js?v=20260905a"></script>
-<script src="/games/lib/drill.js?v=20260905a"></script>
-<script src="/games/games.js?v=20260905a"></script>
+<script src="/games/lib/week.js?v=20260905b"></script>
+<script src="/games/lib/scoring.js?v=20260905b"></script>
+<script src="/games/lib/challenge.js?v=20260905b"></script>
+<script src="/games/lib/research_state.js?v=20260905b"></script>
+<script src="/games/lib/attribution.js?v=20260905b"></script>
+<script src="/games/lib/store.js?v=20260905b"></script>
+<script src="/games/lib/dynasty.js?v=20260905b"></script>
+<script src="/games/lib/drill.js?v=20260905b"></script>
+<script src="/games/lib/social.js?v=20260905b"></script>
+<script src="/games/lib/auth.js?v=20260905b"></script>
+<script src="/games/lib/franchise.js?v=20260905b"></script>
+<script src="/games/games.js?v=20260905b"></script>
 <script>
 /* STALE SCRIPT GUARD. A browser can keep an old games.js or store.js for
    longer than it keeps this page, and a page built for the new library
@@ -69,7 +72,7 @@
    function is missing, say so and offer a fresh load instead of a dead
    screen. */
 (function(){
-  var need=['EDGamesStore.drillDaily','EDGamesStore.recordDrill','EDGamesDrill.build','EDGamesDynasty.summary','EDGames.pulse'];
+  var need=['EDGamesStore.drillDaily','EDGamesStore.recordDrill','EDGamesDrill.build','EDGamesDynasty.summary','EDGames.pulse','EDGames.rewardPanel'];
   var miss=need.filter(function(k){var p=k.split('.'),o=window[p[0]];return !o||typeof o[p[1]]!=='function';});
   if(!miss.length)return;
   var host=document.getElementById('stage')||document.querySelector('main');
@@ -83,7 +86,7 @@
 (function(){
   'use strict';
   var G=window.EDGames,ST=window.EDGamesStore,W=window.EDGamesWeek,
-      CH=window.EDGamesChallenge,RS=window.EDGamesResearchState,DR=window.EDGamesDrill;
+      CH=window.EDGamesChallenge,RS=window.EDGamesResearchState,DR=window.EDGamesDrill,FR=window.EDFranchise;
   var $=function(id){return document.getElementById(id);};
   var stage=$('stage'),after=$('after');
 
@@ -430,6 +433,19 @@
       game_ids:S.run.rounds.map(function(q){return q.game_id;}),misses:res.misses})||res;
     G.track('drill_complete',{mode:S.mode,correct:res.correct,total:res.total,ended:res.ended,
       game_type:'drill',rounds:res.rounds,replay:S.replay});
+    /* THE FRANCHISE. Today's drill, once, to the server — which enforces one
+       per day and sizes the reward, and says plainly it cannot check the
+       answers. Free play and a replayed daily file nothing. */
+    S.reward=null;
+    if(S.mode==='daily'&&!S.replay&&FR&&FR.state()==='franchise'&&S.rec){
+      S.reward=FR.recordDrill({day:day,rounds:S.rec.rounds,correct:S.rec.correct,total:S.rec.total,seed:S.rec.seed}).then(function(r){
+        /* the server can answer before the result screen paints; keep it */
+        S.rewardRes=r;
+        var host=$('rwHost');if(host)host.innerHTML=G.rewardPanel(r);
+        if(r&&r.ok&&r.data&&!r.data.already)G.track('franchise_reward',{game_type:'drill',xp:r.data.rewards.xp,tc:r.data.rewards.tc});
+        return r;
+      });
+    }
     if(ended==='clock'){
       if(S.revealT){clearTimeout(S.revealT);S.revealT=null;}
       renderResult();
@@ -510,6 +526,7 @@
       +(rec.clock_points>0
         ?'<div class="dr-clockpts">+'+fmt(rec.clock_points)+' · '+Math.floor(rec.clock_left)+'s left on the clock</div>':'')
       +(grade?'<div class="px dr-grade">'+G.esc(grade.label)+'</div>':'')
+      +'<div id="rwHost">'+(S.reward?'<div class="rw"><div class="eyebrow">Your franchise</div><div class="rw-line">Filing today’s practice…</div></div>':'')+'</div>'
       +'<div class="dr-best'+(newBest?' new':'')+'">'
       +(newBest?'<span class="px">New best</span>':'Best: '+fmt(best)+' pts')+'</div>'
       +notes
@@ -535,6 +552,7 @@
       +'<div class="ftp" style="text-align:center;margin-top:14px">Scored against EdgeDesk’s numbers. '
       +'A miss is a different read, not a wrong one — and a gap is not a betting edge.</div>';
 
+    if(S.rewardRes){var rh=$('rwHost');if(rh)rh.innerHTML=G.rewardPanel(S.rewardRes);}
     /* the funnel: every miss opens the research on that matchup */
     var btns=stage.querySelectorAll('[data-research]'),i;
     for(i=0;i<btns.length;i++)(function(b){
@@ -583,25 +601,12 @@
      game, and only once. Same block, same rule, as Price It. */
   function renderAfter(){
     var html='';
-    if(ST.engaged()&&!ST.seen('save_prompt')){
-      ST.markSeen('save_prompt');
-      G.track('save_score_cta',{game_type:'drill'});
-      html='<div class="sec"><div class="card save"><div class="eyebrow">Save your streak</div>'
-        +'<p style="margin:0;color:var(--dim);font-size:14px">Create a free EdgeDesk account to keep your</p>'
-        +'<ul><li>scores</li><li>streak</li><li>history</li><li>leaderboard position</li></ul>'
-        +'<div class="btn-row"><a class="btn" id="doSave" href="#">Save my score</a></div>'
-        +'<div class="ftp" style="margin-top:10px">Your progress stays on this device until you do.</div>'
-        +'</div></div>';
+    if(ST.engaged()&&FR&&FR.state()!=='franchise'&&G.conversionCard){
+      if(!ST.seen('save_prompt')){ST.markSeen('save_prompt');G.track('save_score_cta',{game_type:'drill'});}
+      html='<div class="sec">'+G.conversionCard('drill_result')+'</div>';
     }
     after.innerHTML=html;
-    var save=$('doSave');
-    if(save){
-      save.href=G.withAttribution('/app.html',{intent:'save_games_score'})+'#account';
-      save.addEventListener('click',function(){
-        G.track('signup_start_from_games',{game_type:'drill'});
-        G.track('account_save_from_dynasty',{game_type:'drill',placement:'drill_result'});
-      });
-    }
+    if(G.wireConversion)G.wireConversion();
   }
 
   /* ---- boot -------------------------------------------------------------- */

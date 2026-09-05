@@ -18,8 +18,9 @@
     "cfb:test": "node football/players/players.test.js && node football/rankings/rankings.test.js && node tools/football/player_quality_ui.test.js && node tools/football/rankings_ui.test.js",
     "cfb:health": "node football/health/daily_check.js",
     "games:build": "node games/build_challenges.js",
-    "games:test": "node tools/games/games.test.js && node tools/games/dynasty.test.js && node tools/games/drill.test.js && node tools/games/feel.test.js && node tools/games/state_parity.test.js && node tools/games/attribution_parity.test.js && node tools/games/builder.test.js && node tools/games/social.test.js && node tools/games/sql_security.test.js",
-    "games:sql": "node tools/games/sql_security.test.js",
+    "games:test": "node tools/games/games.test.js && node tools/games/dynasty.test.js && node tools/games/drill.test.js && node tools/games/feel.test.js && node tools/games/state_parity.test.js && node tools/games/attribution_parity.test.js && node tools/games/builder.test.js && node tools/games/social.test.js && node tools/games/franchise.test.js && node tools/games/sql_security.test.js && node tools/games/franchise_sql.test.js",
+    "games:publish": "node games/publish_board.js",
+    "games:sql": "node tools/games/sql_security.test.js && node tools/games/franchise_sql.test.js",
     "test": "node football/tests.js && node football/cfb_p4/tests.js && node football/rating/edr.test.js && node football/availability/availability.test.js && node football/injuries/fetch_injuries.test.js && node football/players/players.test.js && node football/rankings/rankings.test.js && node tools/football/player_quality_ui.test.js && node tools/football/rankings_ui.test.js && node tools/app/navigation.test.js && node tools/app/research_landing.test.js && node tools/app/game_research.test.js && node tools/app/operator_gate.test.js && node tools/presentation/landing_positioning.test.js && node tools/presentation/landing_interaction.test.js && node collective/tests.js && node collective/tests_render.js && npm run games:test"
   }
 }

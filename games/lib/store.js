@@ -50,7 +50,16 @@
       research: { opens: {} },
       drill: { runs: 0, best: 0, daily: {}, history: [] },
       visits: { first_at: null, last_at: null, last_day: null, days: 0, weeks: {} },
-      dynasty: { seen: null }
+      dynasty: { seen: null },
+      /* ── the franchise (games/lib/franchise.js) ───────────────────────
+         snapshot   the last home read model the server returned, so the HQ
+                    paints instantly and honestly says how old it is
+         user_id    whose snapshot it is — a different account signing in
+                    on this browser must never see the previous owner's
+         queue      rewards the server has not confirmed yet (offline, or a
+                    request that failed): each is replayed on the next
+                    boot, and every one is idempotent on the server */
+      franchise: { snapshot: null, fetched_at: null, user_id: null, queue: [] }
     };
   }
 
@@ -69,7 +78,7 @@
       for (k in b) if (b.hasOwnProperty(k) && o[k] == null) o[k] = b[k];
       /* an envelope written before a nested key existed gets that key's
          default too, so a page never reads `undefined.opens` */
-      ['research', 'drill', 'visits', 'dynasty', 'streak', 'price_it', 'pick5'].forEach(function (grp) {
+      ['research', 'drill', 'visits', 'dynasty', 'streak', 'price_it', 'pick5', 'franchise'].forEach(function (grp) {
         if (!o[grp] || typeof o[grp] !== 'object') o[grp] = b[grp];
         for (j in b[grp]) if (b[grp].hasOwnProperty(j) && o[grp][j] == null) o[grp][j] = b[grp][j];
       });
@@ -503,6 +512,48 @@
       events: s.events, research: s.research, drill: s.drill, visits: s.visits };
   }
 
+  /* ── the franchise cache and the reward queue ─────────────────────────
+     The server is the source of truth for a franchise; this is the copy the
+     page paints before the network answers. A snapshot belongs to ONE
+     account: reading it for a different (or no) signed-in user returns
+     nothing, so a shared phone never shows the last owner's HQ. */
+  function franchiseSnapshot(userId) {
+    var f = read().franchise;
+    if (!f || !f.snapshot) return null;
+    if (userId && f.user_id && f.user_id !== userId) return null;
+    if (!userId) return null;
+    return f.snapshot;
+  }
+  function franchiseFetchedAt() { return read().franchise.fetched_at || null; }
+  function setFranchiseSnapshot(snapshot, userId, ms) {
+    return update(function (s) {
+      s.franchise.snapshot = snapshot || null;
+      s.franchise.user_id = userId || null;
+      s.franchise.fetched_at = snapshot ? new Date(ms == null ? Date.now() : ms).toISOString() : null;
+    });
+  }
+  function clearFranchise() {
+    return update(function (s) { s.franchise = blank().franchise; });
+  }
+  /* one queued reward per key: a replayed page cannot queue the same thing
+     twice, and the server would refuse it anyway */
+  function queueFranchise(item) {
+    if (!item || !item.key) return false;
+    return update(function (s) {
+      var i, q = s.franchise.queue;
+      for (i = 0; i < q.length; i++) if (q[i].key === item.key) return false;
+      q.push({ key: item.key, fn: item.fn, args: item.args, at: new Date().toISOString() });
+      if (q.length > 200) s.franchise.queue = q.slice(-200);
+      return true;
+    });
+  }
+  function franchiseQueue() { return read().franchise.queue.slice(); }
+  function dequeueFranchise(key) {
+    return update(function (s) {
+      s.franchise.queue = s.franchise.queue.filter(function (q) { return q.key !== key; });
+    });
+  }
+
   function reset() {
     memory = blank();
     try { root.localStorage.removeItem(KEY); } catch (_) {}
@@ -522,7 +573,10 @@
     recordEvent: recordEvent, hasEvent: hasEvent, eventsOf: eventsOf,
     recordResearchOpen: recordResearchOpen, researchOpens: researchOpens,
     drillDaily: drillDaily, recordDrill: recordDrill, drillRecord: drillRecord,
-    touchVisit: touchVisit, dynastySeen: dynastySeen, markDynastySeen: markDynastySeen
+    touchVisit: touchVisit, dynastySeen: dynastySeen, markDynastySeen: markDynastySeen,
+    franchiseSnapshot: franchiseSnapshot, franchiseFetchedAt: franchiseFetchedAt,
+    setFranchiseSnapshot: setFranchiseSnapshot, clearFranchise: clearFranchise,
+    queueFranchise: queueFranchise, franchiseQueue: franchiseQueue, dequeueFranchise: dequeueFranchise
   };
   root.EDGamesStore = API;
   if (typeof module !== 'undefined' && module.exports) module.exports = API;
