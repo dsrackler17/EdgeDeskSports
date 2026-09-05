@@ -35,12 +35,37 @@
      one result this will write over, with the real final. It never
      re-settles anything else, never overwrites, never deletes.
 
-   AUTH
-     COLLECTIVE_ADMIN_REFRESH_TOKEN  a Supabase refresh token for an
-                                     allowlisted admin account (preferred:
-                                     it survives, and rotates itself)
-     COLLECTIVE_ADMIN_ACCESS_TOKEN   a short-lived access token, for a manual
-                                     run when you already have one
+   HOW IT RUNS — three doors, tried in this order
+
+     1. THE DATABASE ITSELF (preferred; how GitHub runs this by itself)
+          EDGD_SB_SERVICE   the service-role key   (secrets.SB_SERVICE_ROLE)
+          EDGD_SB_URL       the project URL        (secrets.SB_URL)
+        The same credential and the same names the games workflows already
+        use. The run reads the schedule off the game_detail view, writes the
+        score and the close onto collective.games, and grades every counting
+        projection on the game by the published rule, all over PostgREST —
+        the door every edge function uses — with no edge function in the
+        path and no token lifted out of a browser session. It reads the
+        table shapes off the database first and writes only the columns
+        that exist; anything it expected and did not find is named in the
+        report as a schema gap, never guessed at.
+
+     2. THE ADMIN FUNCTION (fallback)
+          COLLECTIVE_ADMIN_REFRESH_TOKEN  a Supabase refresh token for an
+                                          allowlisted admin account
+          COLLECTIVE_ADMIN_ACCESS_TOKEN   a short-lived access token
+        POST collective_admin /v1/admin/results, exactly as the admin screen
+        does. Only used when no service credential is present.
+
+     3. THE COMMITTED RECORD (always, with --record <dir>)
+        Whatever the run settled, and every game the Collective already
+        holds a real final for, is written to <dir>/<SPORT>_<season>.json —
+        final score, the Collective's captured close, which feeds agreed —
+        and the workflow commits it. collective/index.html reads that file
+        from its own origin, so the site grades every finished game from the
+        Collective's own settlement whether or not any function was deployed,
+        reachable or written to. No credential is needed for this door.
+
      SUPABASE_ANON_KEY               optional; the public key the site ships
 
    Usage
@@ -48,11 +73,15 @@
      node tools/collective/settle_finals.js --commit        # actually settle
      node tools/collective/settle_finals.js --sport CFB --season 2026
      node tools/collective/settle_finals.js --json          # machine readable
+     node tools/collective/settle_finals.js --commit --record collective/settled
 
    Exit  0 = ran, nothing failed   2 = one or more settles were rejected
          1 = could not run at all (no auth, no network, no games endpoint)
    ========================================================================== */
 'use strict';
+
+const fs = require('fs');
+const path = require('path');
 
 const API = (process.env.COLLECTIVE_API || 'https://iattxbkbufslbauoumga.supabase.co/functions/v1').replace(/\/$/, '');
 const SB_URL = process.env.EDGEDESK_SUPABASE_URL || 'https://iattxbkbufslbauoumga.supabase.co';
@@ -603,10 +632,302 @@ async function capturedClose(sport, gameId, token) {
   } catch (_) { return null; }
 }
 
+/* ---- the database itself ------------------------------------------------
+   THE JOB RUNS ITSELF. Settling used to mean POSTing to collective_admin: an
+   edge function deployed from a dashboard, outside this repository, behind
+   a refresh token lifted out of a browser session — and when that token was
+   never set, the hourly job exited 0 having settled nothing, for weeks. With
+   the service role the repository already holds for its other jobs, this
+   talks to the database directly over PostgREST, the same door every edge
+   function goes through, and does the grading here, by the published rule,
+   where the suite can see it.
+
+   Nothing about the tables is assumed. The run reads the OpenAPI listing
+   PostgREST serves for the collective schema and writes only the columns
+   that are actually there. */
+const DIRECT_GAME_COLS = ['home_score', 'away_score', 'closing_spread', 'closing_total',
+  'closing_home_ml_prob', 'status'];
+const DIRECT_PROJ_READ = ['id', 'model_id', 'game_id', 'pick_side', 'projected_spread',
+  'projected_total', 'proj_home_score', 'proj_away_score', 'home_win_prob', 'is_late',
+  'is_graded_candidate', 'data_origin', 'resolution_status', 'received_at',
+  'pick_result', 'margin_error', 'brier'];
+const DIRECT_GRADE_COLS = ['pick_result', 'margin_error', 'brier'];
+
+function directConfig(env) {
+  env = env || process.env;
+  const key = String(env.EDGD_SB_SERVICE || '').trim();
+  const url = String(env.EDGD_SB_URL || env.EDGEDESK_SUPABASE_URL || SB_URL || '').trim().replace(/\/$/, '');
+  if (!key || !url) return null;
+  return { url, key };
+}
+
+/* table -> [column, ...] from the OpenAPI document PostgREST serves at
+   /rest/v1/ for the schema named in Accept-Profile. */
+function columnsFrom(openapi) {
+  const defs = (openapi && openapi.definitions) || {};
+  const out = {};
+  Object.keys(defs).forEach(t => {
+    out[t] = Object.keys((defs[t] && defs[t].properties) || {});
+  });
+  return out;
+}
+
+function dbClient(cfg, fetchImpl) {
+  const f = fetchImpl || ((...a) => fetch(...a));
+  const H = extra => Object.assign({ apikey: cfg.key, authorization: `Bearer ${cfg.key}` }, extra || {});
+  async function body(res, what) {
+    const t = await res.text();
+    if (!res.ok) throw new Error(`${what} -> ${res.status}: ${String(t).slice(0, 300)}`);
+    return t;
+  }
+  return {
+    async schema() {
+      const res = await f(`${cfg.url}/rest/v1/`, { headers: H({ 'accept-profile': 'collective' }) });
+      return columnsFrom(JSON.parse(await body(res, 'GET /rest/v1/ (schema)')));
+    },
+    async select(rel, query) {
+      const res = await f(`${cfg.url}/rest/v1/${rel}?${query}`, { headers: H({ 'accept-profile': 'collective' }) });
+      const t = await body(res, `GET ${rel}`);
+      return t ? JSON.parse(t) : [];
+    },
+    async patch(rel, query, patch) {
+      const res = await f(`${cfg.url}/rest/v1/${rel}?${query}`, {
+        method: 'PATCH',
+        headers: H({ 'content-profile': 'collective', 'content-type': 'application/json',
+          prefer: 'return=representation' }),
+        body: JSON.stringify(patch),
+      });
+      const t = await body(res, `PATCH ${rel}?${query}`);
+      return t ? JSON.parse(t) : [];
+    },
+  };
+}
+
+/* game_detail is the view every read of the board goes through. Its rows
+   become the exact shape collective_public /v1/games serves, so the matcher
+   is fed the same thing whichever door the run came in by. */
+function gameFromDetail(r) {
+  const hasScore = r.home_score !== null && r.home_score !== undefined;
+  const settled = r.status === 'final' || hasScore;
+  return {
+    game_id: r.game_id, label: r.label || `${r.away} @ ${r.home}`, home: r.home, away: r.away,
+    kickoff_at: r.kickoff_at, status: r.status, week: r.week, season: r.season,
+    result: settled && hasScore
+      ? { home_score: r.home_score, away_score: r.away_score,
+          closing_spread: r.closing_spread === undefined ? null : r.closing_spread,
+          closing_total: r.closing_total === undefined ? null : r.closing_total }
+      : null,
+  };
+}
+
+/* The current season per sport, read off the same views collective_public
+   builds /v1/meta from: in season when today sits inside starts_on..ends_on,
+   else the latest season the Collective holds for the sport. */
+function seasonsFrom(sports, seasons, today) {
+  return (sports || []).map(s => {
+    const mine = (seasons || []).filter(x => x.sport_code === s.code);
+    const live = mine.find(x => x.starts_on <= today && today <= x.ends_on);
+    const latest = mine.slice().sort((a, b) => Number(b.season) - Number(a.season))[0];
+    const pick = live || latest;
+    return { code: s.code, season: pick ? Number(pick.season) : null };
+  }).filter(s => s.season !== null);
+}
+
+/* THE PUBLISHED RULE, the same three numbers collective/index.html computes
+   (atsResult, projectedMargin, the Brier line) — stated here once more
+   because this file runs where the page does not, and pinned by the suite
+   against the page's own fixtures.
+
+     ATS     the side the creator NAMED, against the Collective's captured
+             close: margin + close above zero is the home side covering,
+             below it the road side, exactly zero a push. No pick side, or
+             no close, is no ATS result — a side is never inferred here.
+     Margin  |projected home margin - actual home margin|: projected scores
+             when supplied, else the home-stated spread with its sign turned.
+     Brier   (p_home - outcome)^2. A tie has no winner and no score. */
+function gradeProjection(row, final, closingSpread) {
+  const margin = Number(final.home_score) - Number(final.away_score);
+  const out = { pick_result: null, margin_error: null, brier: null };
+  const side = String(row.pick_side || '').trim().toLowerCase();
+  const close = (closingSpread === null || closingSpread === undefined ||
+    !Number.isFinite(Number(closingSpread))) ? null : Number(closingSpread);
+  if ((side === 'home' || side === 'away') && close !== null) {
+    const covers = margin + close;
+    out.pick_result = covers === 0 ? 'push' : (((side === 'home') === (covers > 0)) ? 'win' : 'loss');
+  }
+  let pm = null;
+  if (row.proj_home_score != null && row.proj_away_score != null) {
+    const d = Number(row.proj_home_score) - Number(row.proj_away_score);
+    if (Number.isFinite(d)) pm = d;
+  }
+  if (pm === null && row.projected_spread != null) {
+    const sp = Number(row.projected_spread);
+    if (Number.isFinite(sp)) pm = -sp;
+  }
+  if (pm !== null) out.margin_error = Math.round(Math.abs(pm - margin) * 100) / 100;
+  if (row.home_win_prob != null && margin !== 0) {
+    const p = Number(row.home_win_prob);
+    if (Number.isFinite(p) && p >= 0 && p <= 1) {
+      const y = margin > 0 ? 1 : 0;
+      out.brier = Math.round((p - y) * (p - y) * 10000) / 10000;
+    }
+  }
+  return out;
+}
+
+/* Which rows on a game are graded: live, resolved, not late, and the one
+   counting row per model — is_graded_candidate where the lock rule has been
+   installed (supabase/lock_rule.sql), else the newest pre-lock row per
+   model. A column the table does not carry is not a filter. */
+function countingRows(rows) {
+  const live = (rows || []).filter(r => {
+    if (r.data_origin != null && String(r.data_origin) !== 'live') return false;
+    if (r.resolution_status != null && String(r.resolution_status) !== 'resolved') return false;
+    if (r.is_late) return false;
+    return true;
+  });
+  const flagged = live.some(r => r.is_graded_candidate !== undefined && r.is_graded_candidate !== null);
+  if (flagged) return live.filter(r => !!r.is_graded_candidate);
+  const newest = {};
+  live.forEach(r => {
+    const k = String(r.model_id);
+    const t = Date.parse(r.received_at || 0) || 0;
+    if (!newest[k] || t >= newest[k].t) newest[k] = { t, r };
+  });
+  return Object.keys(newest).map(k => newest[k].r);
+}
+
+const enc = v => encodeURIComponent(String(v));
+
+/* One game, settled and graded in the database. Returns what it did and
+   what it could not do; throws only when the score itself could not be
+   written, because a game with no score has nothing to grade. */
+async function settleDirect(db, schema, game, final, close) {
+  const gcols = schema.games || [], pcols = schema.projections || [];
+  const gaps = [];
+  const num = v => (v === null || v === undefined || v === '' || !Number.isFinite(Number(v))) ? null : Number(v);
+  const want = {
+    home_score: final.home_score, away_score: final.away_score,
+    closing_spread: close ? num(close.closing_spread) : null,
+    closing_total: close ? num(close.closing_total) : null,
+    closing_home_ml_prob: close ? num(close.closing_home_ml_prob) : null,
+    status: 'final',
+  };
+  const patch = {};
+  DIRECT_GAME_COLS.forEach(c => { if (gcols.indexOf(c) >= 0) patch[c] = want[c]; else gaps.push('games.' + c); });
+  if (!('home_score' in patch) || !('away_score' in patch)) {
+    throw new Error(`collective.games carries no home_score/away_score column (saw: ${gcols.join(', ') || 'nothing'})`);
+  }
+  /* a close the row already holds is never blanked by a run that found none */
+  const had = game.result || {};
+  ['closing_spread', 'closing_total', 'closing_home_ml_prob'].forEach(c => {
+    if (c in patch && patch[c] === null && had[c] !== null && had[c] !== undefined) delete patch[c];
+  });
+  const rows = await db.patch('games', `id=eq.${enc(game.game_id)}`, patch);
+  if (!rows.length) throw new Error(`no collective.games row has id ${game.game_id}`);
+
+  const readCols = DIRECT_PROJ_READ.filter(c => pcols.indexOf(c) >= 0);
+  const gradeCols = DIRECT_GRADE_COLS.filter(c => pcols.indexOf(c) >= 0);
+  DIRECT_GRADE_COLS.forEach(c => { if (pcols.indexOf(c) < 0) gaps.push('projections.' + c); });
+  const out = { game_written: true, graded: 0, candidates: 0, refused: [], gaps, patch };
+  if (!gradeCols.length || readCols.indexOf('id') < 0 || readCols.indexOf('game_id') < 0) return out;
+
+  const all = await db.select('projections', `select=${readCols.join(',')}&game_id=eq.${enc(game.game_id)}`);
+  const closeSpread = 'closing_spread' in patch ? patch.closing_spread : num(had.closing_spread);
+  const rowsToGrade = countingRows(all);
+  out.candidates = rowsToGrade.length;
+  for (const r of rowsToGrade) {
+    const gr = gradeProjection(r, final, closeSpread);
+    const p = {};
+    gradeCols.forEach(c => { p[c] = gr[c]; });
+    try {
+      await db.patch('projections', `id=eq.${enc(r.id)}`, p);
+      out.graded++;
+    } catch (e) {
+      out.refused.push({ projection_id: r.id, detail: e.message });
+    }
+  }
+  return out;
+}
+
+/* ---- the committed record ----------------------------------------------
+   <dir>/<SPORT>_<season>.json: every finished game of the season the
+   Collective holds a real final for, plus every game this run settled, with
+   the final score and the Collective's captured close. collective/index.html
+   reads it from its own origin. It is rewritten only when a game's facts
+   change, so an hourly run that found nothing new commits nothing. */
+const RECORD_SCHEMA = 'edgedesk_collective_settled_v1';
+const RECORD_RULE = 'Each game is graded on the final score against the Collective\'s own captured closing line. ' +
+  'A score comes only from a public feed that carries the game as completed with two integer scores, ' +
+  'agreed by every feed that carries it; 0-0 is never a final. A missing close is null, never invented.';
+
+function recordPath(dir, sport, season) {
+  return path.join(dir, `${String(sport).toUpperCase()}_${season}.json`);
+}
+function loadRecord(file) {
+  try {
+    const r = JSON.parse(fs.readFileSync(file, 'utf8'));
+    return (r && r.games && typeof r.games === 'object') ? r : null;
+  } catch (_) { return null; }
+}
+function sortedObject(o) {
+  const out = {};
+  Object.keys(o).sort().forEach(k => { out[k] = o[k]; });
+  return out;
+}
+function recordEntry(game, final, close, sources) {
+  const num = v => (v === null || v === undefined || v === '' || !Number.isFinite(Number(v))) ? null : Number(v);
+  return {
+    game_id: String(game.game_id),
+    label: game.label, home: game.home, away: game.away,
+    week: game.week == null ? null : Number(game.week),
+    kickoff_at: game.kickoff_at,
+    home_score: Number(final.home_score), away_score: Number(final.away_score),
+    score_source: sources || 'collective',
+    closing_spread: close ? num(close.closing_spread) : null,
+    closing_total: close ? num(close.closing_total) : null,
+    closing_home_ml_prob: close ? num(close.closing_home_ml_prob) : null,
+    close_source: close ? (close.source || 'collective') : null,
+  };
+}
+/* Merge entries into the previous record. settled_at is the first time the
+   record saw the game and is kept; every other field is the newest fact.
+   Returns changed:false, and the previous record untouched, when nothing
+   about any game moved — a timestamp-only diff is not a change. */
+function mergeRecord(prev, sport, season, entries, nowIso) {
+  const games = Object.assign({}, (prev && prev.games) || {});
+  let changed = false;
+  (entries || []).forEach(e => {
+    const id = String(e.game_id);
+    const old = games[id] || null;
+    const next = Object.assign({}, e);
+    delete next.game_id;
+    next.settled_at = (old && old.settled_at) || nowIso;
+    if (isPlaceholderResult(next)) return;         /* never carried, whatever wrote it */
+    const same = old && JSON.stringify(sortedObject(old)) === JSON.stringify(sortedObject(next));
+    if (same) return;
+    games[id] = sortedObject(next);
+    changed = true;
+  });
+  if (!changed && prev && prev.schema === RECORD_SCHEMA) return { record: prev, changed: false };
+  return {
+    changed: true,
+    record: {
+      schema: RECORD_SCHEMA, sport: String(sport).toUpperCase(), season: Number(season),
+      generated_at: nowIso, rule: RECORD_RULE,
+      games: sortedObject(games),
+    },
+  };
+}
+function writeRecord(file, record) {
+  fs.mkdirSync(path.dirname(file), { recursive: true });
+  fs.writeFileSync(file, JSON.stringify(record, null, 1) + '\n');
+}
+
 /* ---- the run ------------------------------------------------------------ */
 
 function parseArgs(argv) {
-  const a = { commit: false, json: false, verify: false, sport: null, season: null, limit: 200 };
+  const a = { commit: false, json: false, verify: false, sport: null, season: null, limit: 200, record: null };
   for (let i = 0; i < argv.length; i++) {
     const v = argv[i];
     if (v === '--commit') a.commit = true;
@@ -615,6 +936,7 @@ function parseArgs(argv) {
     else if (v === '--sport') a.sport = argv[++i];
     else if (v === '--season') a.season = Number(argv[++i]);
     else if (v === '--limit') a.limit = Number(argv[++i]);
+    else if (v === '--record') a.record = argv[++i];
   }
   return a;
 }
@@ -634,21 +956,70 @@ function needsSettling(games, nowMs) {
 async function main() {
   const args = parseArgs(process.argv.slice(2));
   const log = args.json ? () => {} : (...m) => console.log(...m);
-  const report = { checked: 0, settled: 0, skipped: [], failed: [], sources: [],
+  const report = { checked: 0, settled: 0, graded: 0, skipped: [], failed: [], sources: [],
+                   mode: null, schema_gaps: [], record: [],
                    dry_run: !args.commit, verify_only: args.verify };
 
-  /* --verify proves the SOURCES, and needs no admin credential to do it:
-     the game list and whether a game has a result are public. That is the
+  /* --verify proves the SOURCES, and needs no credential to do it: the
+     game list and whether a game has a result are public. That is the
      point -- you can confirm the feeds are live and the matcher agrees
      before you hand this job a key to anything. */
-  const token = args.verify ? null : await accessToken();
-  const meta = await apiGet('collective_public', '/v1/meta', null);
-  let sports = (meta.sports || []).map(s => ({ code: s.code, season: s.season }));
+  let token = null, db = null, schema = null;
+  if (args.verify) {
+    report.mode = 'verify';
+  } else {
+    const direct = directConfig();
+    if (direct) {
+      try {
+        db = dbClient(direct);
+        schema = await db.schema();
+        report.mode = 'direct';
+        log(`[db] service role: collective.games has ${(schema.games || []).length} column(s), ` +
+          `collective.projections ${(schema.projections || []).length}; settling and grading directly.`);
+      } catch (e) {
+        log(`[db] the service credential could not read the schema: ${e.message}`);
+        db = null;
+      }
+    }
+    if (!db) {
+      try {
+        token = await accessToken();
+        report.mode = 'admin';
+        log('[auth] no service credential; settling through collective_admin with the admin token.');
+      } catch (e) {
+        if (!args.record) throw e;
+        report.mode = 'record-only';
+        log(`[auth] ${e.message}`);
+        log('No database credential in this run. The settlement record is still written; the database is not.');
+      }
+    }
+  }
+
+  /* The current season per sport: off the database in direct mode, else
+     off the public meta. */
+  let sports = null;
+  if (db) {
+    try {
+      const [sp, se] = await Promise.all([
+        db.select('sports', 'select=code,name'),
+        db.select('seasons', 'select=sport_code,season,starts_on,ends_on'),
+      ]);
+      sports = seasonsFrom(sp, se, new Date().toISOString().slice(0, 10));
+    } catch (e) {
+      log(`[db] sports/seasons views not readable (${e.message}); using the public meta.`);
+      sports = null;
+    }
+  }
+  if (!sports) {
+    const meta = await apiGet('collective_public', '/v1/meta', null);
+    sports = (meta.sports || []).map(s => ({ code: s.code, season: s.season }));
+  }
   if (args.sport) sports = sports.filter(s => s.code.toUpperCase() === args.sport.toUpperCase());
   if (args.season) sports = sports.map(s => ({ ...s, season: args.season }));
   if (!sports.length) throw new Error(`No sport to settle${args.sport ? ` matching "${args.sport}"` : ''}.`);
 
   const batch = [];
+  const held = {};      /* sport -> every game of the season, as the Collective holds it */
   for (const sp of sports) {
     const kind = FEED[String(sp.code).toUpperCase()];
     if (!kind) {
@@ -656,9 +1027,23 @@ async function main() {
       log(`- ${sp.code}: no finals feed is wired for this sport; skipped rather than guessed at.`);
       continue;
     }
-    const d = await apiGet('collective_public',
-      `/v1/games?sport=${encodeURIComponent(sp.code)}&season=${encodeURIComponent(sp.season)}`, token);
-    const need = needsSettling(d.games, Date.now());
+    let games = null;
+    if (db) {
+      try {
+        games = (await db.select('game_detail',
+          `select=*&sport=eq.${enc(sp.code)}&season=eq.${enc(sp.season)}&order=kickoff_at.asc`)).map(gameFromDetail);
+      } catch (e) {
+        log(`  [db] game_detail not readable (${e.message}); reading the public games feed.`);
+        games = null;
+      }
+    }
+    if (!games) {
+      const d = await apiGet('collective_public',
+        `/v1/games?sport=${encodeURIComponent(sp.code)}&season=${encodeURIComponent(sp.season)}`, token);
+      games = d.games || [];
+    }
+    held[sp.code] = games;
+    const need = needsSettling(games, Date.now());
     const nPlaceholder = need.filter(g => isPlaceholderResult(g.result)).length;
     log(`- ${sp.code} ${sp.season}: ${need.length - nPlaceholder} finished game(s) with no result yet` +
       (nPlaceholder ? `, ${nPlaceholder} settled 0-0 (a placeholder, not a final: settled again with the real score)` : ''));
@@ -696,7 +1081,8 @@ async function main() {
       }
       const close = args.verify ? null : await capturedClose(sp.code, g.game_id, token);
       const body = settleBody(g, fin, close);
-      batch.push({ sport: sp.code, label: g.label, body, meta: fin });
+      batch.push({ sport: sp.code, season: sp.season, game: g, label: g.label, body, meta: fin,
+        close: close ? { ...close, source: 'collective_odds' } : null });
       log(`  ✓ ${g.label}: ${fin.away_score}-${fin.home_score}` +
         `  [${fin.agreed_by.join('+')}${fin.matched_by === 'truncated' ? ', name truncated' : ''}]` +
         (isPlaceholderResult(g.result) ? '  (replacing a 0-0 placeholder)' : '') +
@@ -717,7 +1103,32 @@ async function main() {
       ? '\nNothing to settle.' : '\nNothing matched a final.');
   } else if (!args.commit) {
     log(`\nDry run: ${batch.length} game(s) would settle. Nothing was written. Re-run with --commit.`);
-  } else {
+  } else if (db) {
+    for (const item of batch) {
+      try {
+        const r = await settleDirect(db, schema, item.game, item.meta, item.close);
+        report.settled++;
+        report.graded += r.graded;
+        r.gaps.forEach(gp => { if (report.schema_gaps.indexOf(gp) < 0) report.schema_gaps.push(gp); });
+        log(`  settled ${item.label} — graded ${r.graded} of ${r.candidates} counting projection(s)` +
+          (r.refused.length ? `; ${r.refused.length} grade write(s) refused` : ''));
+        if (r.refused.length) {
+          /* the score stands and the site grades from it; a grade the
+             database would not take is still a failure of this job */
+          report.failed.push({ game_id: item.body.game_id, label: item.label,
+            reason: 'grade_write_refused', detail: r.refused[0].detail, refused: r.refused.length });
+          log(`    ! ${r.refused[0].detail}`);
+        }
+      } catch (e) {
+        report.failed.push({ game_id: item.body.game_id, label: item.label, detail: e.message });
+        log(`  ! ${item.label}: ${e.message}`);
+      }
+    }
+    if (report.schema_gaps.length) {
+      log(`\n  schema gaps (expected, not found, not written): ${report.schema_gaps.join(', ')}`);
+    }
+    log(`\nSettled ${report.settled} of ${batch.length} directly; ${report.graded} projection(s) graded.`);
+  } else if (token) {
     for (const item of batch) {
       try {
         const r = await postResults([item.body], token);
@@ -729,6 +1140,46 @@ async function main() {
       }
     }
     log(`\nSettled ${report.settled} of ${batch.length}.`);
+  } else {
+    log(`\n${batch.length} game(s) have an agreed final and no credential to write them with; ` +
+      'they go into the settlement record only.');
+  }
+
+  /* ---- the record: written whenever asked for, credential or not -------- */
+  if (args.record) {
+    const nowIso = new Date().toISOString();
+    for (const sp of sports) {
+      const games = held[sp.code];
+      if (!games) continue;
+      const entries = [];
+      const settledNow = {};
+      batch.filter(b => b.sport === sp.code).forEach(b => {
+        settledNow[String(b.game.game_id)] = 1;
+        entries.push(recordEntry(b.game, b.meta, b.close, b.meta.agreed_by.join('+')));
+      });
+      /* every game the Collective already holds a real final for; a close it
+         holds none for is asked for by name, the same keyless call the site
+         makes, so the record carries the number the record is graded on */
+      let askedClose = 0;
+      for (const g of games) {
+        if (settledNow[String(g.game_id)] || !g.result || isPlaceholderResult(g.result)) continue;
+        if (!isFinalScore(g.result.home_score) || !isFinalScore(g.result.away_score)) continue;
+        let close = { closing_spread: g.result.closing_spread, closing_total: g.result.closing_total,
+          closing_home_ml_prob: null, source: 'collective' };
+        if ((close.closing_spread === null || close.closing_spread === undefined) && !args.verify && askedClose < 60) {
+          askedClose++;
+          const c = await capturedClose(sp.code, g.game_id, token);
+          if (c) close = { ...c, source: 'collective_odds' };
+        }
+        entries.push(recordEntry(g, g.result, close, 'collective'));
+      }
+      const file = recordPath(args.record, sp.code, sp.season);
+      const merged = mergeRecord(loadRecord(file), sp.code, sp.season, entries, nowIso);
+      if (merged.changed) writeRecord(file, merged.record);
+      const n = Object.keys(merged.record.games).length;
+      report.record.push({ sport: sp.code, season: sp.season, file, games: n, changed: merged.changed });
+      log(`  record ${file}: ${n} settled game(s)${merged.changed ? ', updated' : ', unchanged'}`);
+    }
   }
 
   report.would_settle = batch.map(b => ({ label: b.label, ...b.body }));
@@ -742,6 +1193,9 @@ module.exports = {
   findFinal, findAcrossSources, settleBody, needsSettling, parseCsv,
   normNfl, normCfb, normEspn, espnUrl, compactDate, parseArgs,
   feedTeamKeys, truncationIsAmbiguous,
+  directConfig, columnsFrom, dbClient, gameFromDetail, seasonsFrom, gradeProjection,
+  countingRows, settleDirect,
+  recordPath, loadRecord, recordEntry, mergeRecord, writeRecord, RECORD_SCHEMA,
   FEED, ODDS_LEAGUE,
 };
 
