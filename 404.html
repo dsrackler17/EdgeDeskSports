@@ -32,9 +32,6 @@
     if(p[1]==='h2h'){location.replace('/games/h2h/?c='+encodeURIComponent(p[2])+location.search.replace(/^\?/,'&'));return;}
     if(p[1]==='groups'){location.replace('/games/groups/?g='+encodeURIComponent(p[2])+location.search.replace(/^\?/,'&'));return;}
   }
-  /* the War Room and the Drill are single pages: anything deeper lands on
-     the page itself rather than on the games home */
-  if(p[0]==='games'&&(p[1]==='dynasty'||p[1]==='two-minute-drill')){location.replace('/games/'+p[1]+'/'+location.search);return;}
   if(p[0]==='games'){location.replace('/games/');return;}
 })();
 </script>

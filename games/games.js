@@ -29,9 +29,7 @@
   var SPREAD_STEP = 0.5;
   var W = root.EDGamesWeek, ST = root.EDGamesStore,
       CH = root.EDGamesChallenge, SC = root.EDGamesScoring,
-      RS = root.EDGamesResearchState, AT = root.EDGamesAttribution,
-      DY = root.EDGamesDynasty;   /* optional: a page without the Dynasty
-                                     module still boots, it just has no XP */
+      RS = root.EDGamesResearchState, AT = root.EDGamesAttribution;
 
   /* ── analytics ────────────────────────────────────────────────────────────
      The site already runs Google Analytics 4 (gtag, G-1PXVBV53FZ), declared in
@@ -56,30 +54,14 @@
     'group_create', 'group_invite_generated', 'group_invite_open', 'group_join',
     'group_first_game', 'group_weekly_return',
     'research_open_from_h2h', 'research_open_from_group',
-    'signup_from_h2h', 'signup_from_group', 'subscription_from_games',
-    /* EdgeDesk Dynasty — the persistent layer. A War Room is created by the
-       first real game, levels come from a published XP curve, and every one
-       of these is countable so "does the War Room bring people back" is a
-       report and not a hope. return_* fire from the visit ledger, not from
-       page views: a return is a gap in days, measured. */
-    'dynasty_start', 'war_room_created', 'first_game_complete', 'account_save_from_dynasty',
-    'level_up', 'weekly_mission_complete', 'weekly_mission_set_complete', 'achievement_unlock',
-    'research_open_from_dynasty', 'premium_view_from_dynasty', 'subscription_from_dynasty',
-    'return_1d', 'return_7d', 'return_next_football_week',
-    /* the Two-Minute Drill */
-    'drill_start', 'drill_round', 'drill_complete', 'drill_share', 'research_open_from_drill'];
+    'signup_from_h2h', 'signup_from_group', 'subscription_from_games'];
 
-  var _level = null;
   function track(event, props) {
     var p = props || {}, k;
     p.sport = p.sport || 'americanfootball_ncaaf';
     p.surface = 'games';
     p.identity = 'anonymous';        /* games are anonymous-first; an account
                                         layer flips this when one exists */
-    /* the player's level rides on every event, so retention, invites and
-       research use can be read BY level — the question the whole persistent
-       layer exists to answer */
-    if (_level != null) p.dynasty_level = _level;
     /* the campaign fields come from the SHARED ledger the landing page keeps,
        so a Games event and a subscription record name the same campaign */
     var a = AT ? AT.eventProps() : {};
@@ -144,25 +126,13 @@
   function researchUrl(ch) {
     var frag = '#research/football';
     var q = { game: ch && ch.game_id ? ch.game_id : '', slug: ch && ch.slug ? ch.slug : '' };
-    /* the terminal's router is #research/<module>/<entity>: naming the game
-       in the hash opens THAT matchup's card rather than the whole board, so a
-       reader who tapped "research this matchup" lands on the matchup */
-    if (ch && ch.game_id != null) frag += '/' + encodeURIComponent(String(ch.game_id));
     return withAttribution(TERMINAL, q) + frag;
   }
 
-  /* Opening the research is the funnel's whole point, so it is recorded on
-     the player's record (once per game — a reload is not a review) before
-     the page leaves. The XP for it is celebrated when they come back. */
-  function openResearch(ch, where, opts) {
-    opts = opts || {};
-    var first = false;
-    if (ST && ST.recordResearchOpen && ch) {
-      try { first = !!ST.recordResearchOpen(ch).first; } catch (_) {}
-    }
-    track(opts.event || 'research_cta_click', {
-      game_id: ch && ch.game_id, game_slug: ch && ch.slug, game_type: opts.game_type || 'price_it',
-      research_state: ch && ch.research_state, placement: where || 'reveal', first_open: first
+  function openResearch(ch, where) {
+    track('research_cta_click', {
+      game_id: ch && ch.game_id, game_slug: ch && ch.slug, game_type: 'price_it',
+      research_state: ch && ch.research_state, placement: where || 'reveal'
     });
     root.location.href = researchUrl(ch);
   }
@@ -273,13 +243,8 @@
       + '<span class="gh-word">EDGEDESK </span><span class="gh-tag">GAMES</span></a>'
       + '<span class="gh-sp"></span>'
       + '<nav class="gh-nav" aria-label="Games">'
-      /* the War Room is the player's home, so it leads; the level badge is
-         the one piece of status that follows them onto every page */
-      + '<a href="/games/dynasty/"' + (current === 'dynasty' ? ' aria-current="page"' : '') + '>War Room'
-      + '<span class="gh-lvl" id="ghLvl" aria-label="your level" hidden></span></a>'
-      + '<a href="/games/two-minute-drill/"' + (current === 'drill' ? ' aria-current="page"' : '') + '>Drill</a>'
       + '<a href="/games/price-it/"' + (current === 'price-it' ? ' aria-current="page"' : '') + '>Price It</a>'
-      + '<a class="gh-only-wide" href="/games/h2h/"' + (current === 'h2h' ? ' aria-current="page"' : '') + '>H2H</a>'
+      + '<a href="/games/h2h/"' + (current === 'h2h' ? ' aria-current="page"' : '') + '>H2H</a>'
       + '<a class="gh-only-wide" href="/games/pick-5/"' + (current === 'pick-5' ? ' aria-current="page"' : '') + '>Pick 5</a>'
       + '<a class="gh-only-wide" href="/games/groups/"' + (current === 'groups' ? ' aria-current="page"' : '') + '>Groups</a>'
       + '</nav></div></header>';
@@ -298,10 +263,8 @@
       + 'the model does not beat the closing line. 21+. If gambling is a problem for you, '
       + 'call 1-800-GAMBLER.</div>'
       + '<div class="gf-links">'
-      + '<a href="/games/">Games home</a><a href="/games/dynasty/">War Room</a>'
-      + '<a href="/games/two-minute-drill/">Two-Minute Drill</a>'
-      + '<a href="/games/price-it/">Price It</a><a href="/games/h2h/">Head-to-Head</a>'
-      + '<a href="/games/pick-5/">Pick 5</a><a href="/games/groups/">Groups</a>'
+      + '<a href="/games/">Games home</a><a href="/games/pick-5/">Pick 5</a>'
+      + '<a href="/games/groups/">Groups</a>'
       + '<a href="' + esc(withAttribution(TERMINAL)) + '">The terminal</a>'
       + '<a href="/terms.html">Terms</a><a href="/privacy.html">Privacy</a>'
       + '<a href="/disclaimer.html">Disclaimer</a>'
@@ -344,156 +307,10 @@
   }
 
   /* ── page boot ────────────────────────────────────────────────────────── */
-  /* ── the Dynasty pulse ────────────────────────────────────────────────────
-     Every page calls pulse() after something real happened (and once on boot,
-     for things that happened elsewhere — a research open, a Pick 5 result
-     that settled). It compares the live summary against the one the player
-     was last SHOWN, celebrates exactly what is new, and stores the new
-     marker. So a level-up is announced once, on whichever page first sees it,
-     and a reload announces nothing. */
-  var _pulseHost = null;
-  function pulseHost() {
-    var d = root.document;
-    if (_pulseHost) return _pulseHost;
-    _pulseHost = d.createElement('div');
-    _pulseHost.className = 'pulse';
-    _pulseHost.setAttribute('role', 'status');
-    _pulseHost.setAttribute('aria-live', 'polite');
-    d.body.appendChild(_pulseHost);
-    return _pulseHost;
-  }
-  function chip(html, cls, ms) {
-    var d = root.document, el = d.createElement('div');
-    el.className = 'pulse-chip' + (cls ? ' ' + cls : '');
-    el.innerHTML = html;
-    pulseHost().appendChild(el);
-    setTimeout(function () { el.classList.add('on'); }, 20);
-    setTimeout(function () {
-      el.classList.remove('on');
-      setTimeout(function () { if (el.parentNode) el.parentNode.removeChild(el); }, 400);
-    }, ms || 3600);
-  }
-  /* the one moment that interrupts: a new level (and a new room), or the
-     War Room being created by the first game. Dismissable, keyboard-closable,
-     and it never blocks the page underneath from being scrolled away from. */
-  function moment(o) {
-    var d = root.document, el = d.createElement('div');
-    el.className = 'moment';
-    el.setAttribute('role', 'dialog');
-    el.setAttribute('aria-label', o.title);
-    el.innerHTML = '<div class="moment-card">'
-      + '<div class="eyebrow">' + esc(o.eyebrow || '') + '</div>'
-      + '<div class="moment-title">' + esc(o.title) + '</div>'
-      + (o.sub ? '<div class="moment-sub">' + esc(o.sub) + '</div>' : '')
-      + (o.body ? '<div class="moment-body">' + esc(o.body) + '</div>' : '')
-      + '<div class="btn-row two">'
-      + '<a class="btn btn-go" href="/games/dynasty/">' + esc(o.cta || 'See my War Room') + '</a>'
-      + '<button class="btn" type="button" data-close>' + esc(o.dismiss || 'Keep playing') + '</button>'
-      + '</div></div>';
-    d.body.appendChild(el);
-    function close() { el.classList.remove('on'); setTimeout(function () { if (el.parentNode) el.parentNode.removeChild(el); }, 300); }
-    el.querySelector('[data-close]').addEventListener('click', close);
-    el.addEventListener('click', function (e) { if (e.target === el) close(); });
-    d.addEventListener('keydown', function onKey(e) { if (e.key === 'Escape') { close(); d.removeEventListener('keydown', onKey); } });
-    setTimeout(function () { el.classList.add('on'); try { el.querySelector('.btn-go').focus(); } catch (_) {} }, 20);
-  }
-
-  function summaryNow() {
-    if (!ST || !DY) return null;
-    try { return DY.summary(ST.read()); } catch (_) { return null; }
-  }
-
-  function paintLevel(now) {
-    var d = root.document, b = d.getElementById('ghLvl');
-    if (!b || !now) return;
-    if (now.created) { b.textContent = 'L' + now.level; b.hidden = false; }
-  }
-
-  function pulse(opts) {
-    opts = opts || {};
-    var now = summaryNow();
-    if (!now) return null;
-    _level = now.level;
-    paintLevel(now);
-    var seen = null;
-    try { seen = ST.dynastySeen(); } catch (_) {}
-    var d = DY.diff(seen, now);
-    try { ST.markDynastySeen(DY.marker(now)); } catch (_) {}
-    if (opts.silent) return { now: now, diff: d };
-
-    var i;
-    /* the first look at an envelope that already has history: one moment,
-       no chip storm — the War Room page shows the rest. ON the War Room
-       page there is no moment at all: the room is the moment. */
-    if (d.baseline) {
-      if (now.games >= DY.CREATE_AT && !opts.here) {
-        track('war_room_created', { level: now.level, from: 'history' });
-        moment({ eyebrow: 'EdgeDesk Dynasty', title: 'Your War Room is ready',
-          sub: 'Level ' + now.level + ' · ' + now.title,
-          body: 'Built from the games you have already played here. Every game from now on builds it: levels, missions, achievements.',
-          cta: 'See my War Room', dismiss: 'Keep playing' });
-      }
-      return { now: now, diff: d };
-    }
-    if (d.first_result) {
-      track('first_game_complete', { game_type: opts.game_type || 'unknown' });
-      chip('<b>Nice.</b> <span>Your first EdgeDesk result · +' + d.xp_gained + ' XP</span>', 'xp', 4200);
-      return { now: now, diff: d };
-    }
-    if (d.created) {
-      track('war_room_created', { level: now.level, from: 'play' });
-      if (!opts.here) moment({ eyebrow: 'EdgeDesk Dynasty', title: 'War Room created',
-        sub: 'Level ' + now.level + ' · ' + now.title,
-        body: 'Two games in, you have a record. From here every game builds it: levels, missions, achievements — and a room that changes as you go.',
-        cta: 'See my War Room', dismiss: 'Keep playing' });
-    } else if (d.leveled_up) {
-      track('level_up', { from: d.from_level, to: now.level, stage: now.stage.key });
-      if (opts.here) chip('<b>Level ' + now.level + '</b> <span>' + esc(now.title) + (d.stage_changed ? ' · ' + esc(now.stage.name) : '') + '</span>', 'xp', 5000);
-      else moment({ eyebrow: 'Level up', title: 'Level ' + now.level + ' · ' + now.title,
-        sub: d.stage_changed ? 'Your War Room is now ' + now.stage.name : null,
-        body: d.stage_changed ? now.stage.blurb : (now.next ? now.next.remaining + ' XP to level ' + now.next.level : null),
-        cta: 'See my War Room', dismiss: 'Keep playing' });
-    }
-    if (d.xp_gained > 0 && !d.created)
-      chip('<b>+' + d.xp_gained + ' XP</b>' + (now.next ? ' <span>' + now.next.remaining + ' to level ' + now.next.level + '</span>' : ''), 'xp');
-    /* at most two achievements as chips; the rest fold into one line, and
-       the trophy wall has them all */
-    for (i = 0; i < d.new_achievements.length; i++) {
-      track('achievement_unlock', { achievement: d.new_achievements[i].id });
-      if (i < 2) chip('<b>Achievement</b> <span>' + esc(d.new_achievements[i].name) + '</span>', 'ach', 4200);
-    }
-    if (d.new_achievements.length > 2)
-      chip('<b>+' + (d.new_achievements.length - 2) + ' more</b> <span>on your trophy wall</span>', 'ach', 4200);
-    if (d.missions_newly_done > 0 && !d.set_completed) {
-      track('weekly_mission_complete', { done: now.missions.done, total: now.missions.total });
-      chip('<b>Mission complete</b> <span>' + now.missions.done + ' of ' + now.missions.total + ' this week</span>', 'mis', 4200);
-    }
-    if (d.set_completed) {
-      track('weekly_mission_set_complete', { week: now.missions.week });
-      chip('<b>Weekly badge</b> <span>every mission this week · +' + DY.XP.mission_set + ' XP</span>', 'mis', 5000);
-    }
-    return { now: now, diff: d };
-  }
-
-  /* ── page boot ────────────────────────────────────────────────────────── */
   function boot(page) {
     initAttribution();
     mount(page);
-    /* the visit ledger first, so the page view can say what kind of return
-       this is — a fact from the record, not a guess from a cookie */
-    var v = null;
-    if (ST && ST.touchVisit) { try { v = ST.touchVisit(); } catch (_) {} }
-    var now = summaryNow();
-    if (now) { _level = now.level; paintLevel(now); }
-    track('games_page_view', { page: page, visit: v ? (v.first ? 'first' : v.new_day ? 'new_day' : 'same_day') : 'unknown' });
-    if (v) {
-      if (v.return_1d) track('return_1d', { gap_days: v.gap_days });
-      if (v.return_7d) track('return_7d', { gap_days: v.gap_days });
-      if (v.return_week) track('return_next_football_week', { week: W ? W.weekKey() : null });
-    }
-    /* things that happened elsewhere (a research open, a card that settled)
-       are celebrated on the next page that loads — after it has painted */
-    if (now && !page.match(/^(dynasty)$/)) setTimeout(function () { try { pulse({ boot: true }); } catch (_) {} }, 700);
+    track('games_page_view', { page: page });
     return config();
   }
 
@@ -504,8 +321,7 @@
     artifact: artifact, config: config, researchUrl: researchUrl, openResearch: openResearch,
     pts: pts, line: line, kickoffLabel: kickoffLabel, esc: esc,
     shareText: shareText, shareUrl: shareUrl, share: share,
-    toast: toast, header: header, footer: footer, mount: mount, boot: boot,
-    pulse: pulse, summaryNow: summaryNow, chip: chip, moment: moment
+    toast: toast, header: header, footer: footer, mount: mount, boot: boot
   };
   root.EDGames = API;
   if (typeof module !== 'undefined' && module.exports) module.exports = API;

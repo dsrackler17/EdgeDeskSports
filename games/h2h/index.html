@@ -53,7 +53,6 @@
 <script src="/games/lib/research_state.js"></script>
 <script src="/games/lib/attribution.js"></script>
 <script src="/games/lib/store.js"></script>
-<script src="/games/lib/dynasty.js"></script>
 <script src="/games/lib/social.js"></script>
 <script src="/games/lib/h2h_grade.js"></script>
 <script src="/games/games.js"></script>
@@ -299,12 +298,7 @@
       G.track('h2h_invite_generated',{game_id:ch.game_id,game_slug:ch.slug,
         game_type:'h2h',mode:DRAFT.mode,research_state:ch.research_state,
         from_group:VS?'member':'direct'});
-      /* on the player's record: a challenge created this week is the
-         "challenge a friend" mission, and it is keyed by the token so a
-         re-render can never count it twice */
-      try{ST.recordEvent('h2h_create',r.data.invite_token,{mode:DRAFT.mode,game_id:String(ch.game_id)});}catch(_){}
       renderInvite(r.data.invite_token,ch);
-      setTimeout(function(){try{G.pulse({game_type:'h2h'});}catch(_){}},700);
     });
   }
 
@@ -441,20 +435,6 @@
       game_type:'h2h',mode:ch.mode});
     if(res)G.track('h2h_settled',{game_id:ch.canonical_game_id,game_type:'h2h',mode:ch.mode,
       outcome:ch.your_slot?(ch.your_slot==='a'?oa:ob):'observer'});
-    /* the War Room's H2H board reads the player's own record of challenges
-       they were IN — an observer with the link records nothing. Both rows are
-       keyed by the token, so a reload writes nothing new. */
-    if(ch.your_slot&&ch.invite_token){
-      var opp=ch.your_slot==='a'?b:a, oppName=opp&&opp.display_name?String(opp.display_name).slice(0,40):null;
-      var wrote=false;
-      try{
-        wrote=ST.recordEvent('h2h_locked',ch.invite_token,{opponent:oppName,mode:ch.mode,
-          game_id:String(ch.canonical_game_id||'')}).recorded||wrote;
-        var mineOut=ch.your_slot==='a'?oa:ob;
-        if(res&&mineOut==='win')wrote=ST.recordEvent('h2h_win',ch.invite_token,{opponent:oppName,mode:ch.mode}).recorded||wrote;
-      }catch(_){}
-      if(wrote)setTimeout(function(){try{G.pulse({game_type:'h2h'});}catch(_){}},700);
-    }
   }
 
   function modeExplainer(ch){
@@ -525,7 +505,6 @@
         }
         G.track('h2h_opponent_submit',{game_id:ch.canonical_game_id,game_type:'h2h',
           mode:ch.mode,identity:S.signedIn()?'authenticated':'anonymous'});
-        try{ST.recordEvent('h2h_submit',ch.invite_token,{mode:ch.mode,game_id:String(ch.canonical_game_id||'')});}catch(_){}
         load();
       });
     });
