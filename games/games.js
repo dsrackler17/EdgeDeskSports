@@ -89,7 +89,10 @@
     /* the weekly game (Phase 2): a season opened, the Game Day page seen,
        a result shared. weekly_game_started/completed and season_complete
        are declared above. */
-    'season_started', 'gameday_view', 'game_share'];
+    'season_started', 'gameday_view', 'game_share',
+    /* franchise vs franchise (Phase 3): a challenge issued, its link
+       opened, accepted, completed, shared; the ladder seen */
+    'fc_create', 'fc_invite_open', 'fc_accept', 'fc_complete', 'fc_share', 'ladder_view'];
 
   var _level = null;
   function track(event, props) {
@@ -462,7 +465,7 @@
       + (o.sub ? '<div class="moment-sub">' + esc(o.sub) + '</div>' : '')
       + (o.body ? '<div class="moment-body">' + esc(o.body) + '</div>' : '')
       + '<div class="btn-row two">'
-      + '<a class="btn btn-go" href="/games/dynasty/">' + esc(o.cta || 'See my War Room') + '</a>'
+      + '<a class="btn btn-go" href="' + esc(o.href || '/games/dynasty/') + '">' + esc(o.cta || 'See my War Room') + '</a>'
       + '<button class="btn" type="button" data-close>' + esc(o.dismiss || 'Keep playing') + '</button>'
       + '</div></div>';
     d.body.appendChild(el);

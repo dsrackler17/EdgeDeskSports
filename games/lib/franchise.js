@@ -49,6 +49,11 @@
     weekly_win:    { xp: 60, tc: 60, cp: 2 },
     rival_win:     { xp: 50, cp: 1 },
     season_complete: { xp: 250, tc: 150 },
+    /* franchise vs franchise (Phase 3): a challenge played, won, and won
+       against a team rated five or more higher */
+    fc_played:     { xp: 60, tc: 30 },
+    fc_win:        { xp: 40, tc: 40, cp: 2 },
+    fc_upset:      { xp: 40, cp: 1 },
     import_unverified_price_it: { xp: 50 },
     import_unverified_pick5:    { xp: 75 }
   };
@@ -86,6 +91,9 @@
       case 'weekly_win': return { xp: ECONOMY.weekly_win.xp, tc: ECONOMY.weekly_win.tc, cp: ECONOMY.weekly_win.cp };
       case 'rival_win': return { xp: ECONOMY.rival_win.xp, cp: ECONOMY.rival_win.cp };
       case 'season_complete': return { xp: ECONOMY.season_complete.xp, tc: ECONOMY.season_complete.tc };
+      case 'fc_played': return { xp: ECONOMY.fc_played.xp, tc: ECONOMY.fc_played.tc };
+      case 'fc_win': return { xp: ECONOMY.fc_win.xp, tc: ECONOMY.fc_win.tc, cp: ECONOMY.fc_win.cp };
+      case 'fc_upset': return { xp: ECONOMY.fc_upset.xp, cp: ECONOMY.fc_upset.cp };
     }
     return {};
   }
@@ -195,7 +203,11 @@
     shutout:        { name: 'Shutout' },
     first_season:   { name: 'A Full Season' },
     winning_season: { name: 'Winning Season' },
-    perfect_season: { name: 'Perfect Season' }
+    perfect_season: { name: 'Perfect Season' },
+    fc_first:       { name: 'Exhibition Debut' },
+    fc_first_win:   { name: 'Beat a Friend' },
+    fc_upset:       { name: 'Giant Killer' },
+    fc_three:       { name: 'Three Straight' }
   };
   function achievementName(id) {
     var a = ACHIEVEMENTS[id];
@@ -487,6 +499,42 @@
     return L.join('\n');
   }
 
+  /* ── franchise vs franchise ─────────────────────────────────────────────
+     A challenge is a link; the franchise that opens it plays it at once,
+     on the server. These say the invite, the result and a record plainly. */
+  var LADDER_START = 1500, LADDER_K = 24;
+  function recordLine(r) { r = r || {}; return (r.wins | 0) + '–' + (r.losses | 0) + (r.ties ? '–' + r.ties : ''); }
+  function challengeUrl(token) {
+    var o = (root.location && root.location.origin) || 'https://edgedesksports.com';
+    return o + '/games/gameday/?fc=' + encodeURIComponent(String(token || ''));
+  }
+  /* the invite, as text: who is calling, how good they are, and the door */
+  function challengeInviteText(f, ch) {
+    var me = f ? ((f.city || '') + ' ' + (f.name || '')).trim() : 'My franchise';
+    var L = [];
+    L.push('The ' + me + (f && f.overall != null ? ' (OVR ' + f.overall + (f.record ? ', ' + recordLine(f.record) : '') + ')' : '') + ' challenge your franchise.');
+    if (ch && ch.note) L.push('“' + ch.note + '”');
+    L.push('One game, on the server, from both rosters. No account needed — found a franchise free and play it here:');
+    return L.join('\n');
+  }
+  /* the result, as text, from my side */
+  function challengeShareText(ch) {
+    if (!ch || !ch.me) return '';
+    var me = ((ch.me.city || '') + ' ' + (ch.me.name || '')).trim().toUpperCase(), them = ch.them ? ((ch.them.city || '') + ' ' + (ch.them.name || '')).trim() : 'a franchise';
+    var L = [];
+    if (ch.status === 'FINAL') {
+      L.push(me + ' ' + (ch.score_for | 0) + ', ' + them + ' ' + (ch.score_against | 0) + (ch.ot ? ' (OT)' : ''));
+      L.push('EdgeDesk franchise challenge · neutral field');
+      if (ch.potg && ch.potg.name) L.push('Player of the game: ' + ch.potg.name + ', ' + ch.potg.position + ' — ' + statsLine(ch.potg.position, ch.potg.stats));
+      if (ch.rating_delta != null) L.push('Ladder: ' + (ch.rating_delta > 0 ? '+' : '') + ch.rating_delta);
+    } else {
+      L.push(me + ' challenge ' + them + '.');
+    }
+    L.push('');
+    L.push('EdgeDesk Games');
+    return L.join('\n');
+  }
+
   /* ── the anonymous envelope: what it would be worth, and its payload ──── */
   function arr(v) { return Array.isArray(v) ? v : []; }
   function obj(v) { return v && typeof v === 'object' ? v : {}; }
@@ -671,6 +719,22 @@
   function schedule(number) { return rpc('franchise_schedule', withSecret({ p_number: number == null ? null : (number | 0) })); }
   function game(id) { return rpc('franchise_game', withSecret({ p_game: String(id) })); }
 
+  /* FRANCHISE VS FRANCHISE. The link is the key: peeking works with or
+     without a franchise (the landing must work before one exists);
+     accepting plays the game on the server at once and is never queued. */
+  function challengeCreate(note) { return rpc('franchise_challenge_create', withSecret({ p_note: note || null })); }
+  function challengePeek(token) { return rpc('franchise_challenge_peek', withSecret({ p_token: String(token || '') })); }
+  function challengeAccept(token) {
+    return rpc('franchise_challenge_accept', withSecret({ p_token: String(token || '') })).then(function (r) {
+      if (r.ok && r.data && r.data.totals) touchTotals(r.data.totals);
+      return r;
+    });
+  }
+  function challengeCancel(id) { return rpc('franchise_challenge_cancel', withSecret({ p_id: String(id) })); }
+  function challengesMine(limit) { return rpc('franchise_challenges_mine', withSecret({ p_limit: limit || 20 })); }
+  function ladder(limit) { return rpc('franchise_ladder', withSecret({ p_limit: limit || 25 })); }
+  function h2hContext(token) { return rpc('franchise_h2h_context', { p_token: String(token || '') }); }
+
   /* CLAIM the device's franchise into the account just signed in. Proof is
      the secret; the server refuses if the account already owns one, and
      says so. The cache moves with it. */
@@ -787,6 +851,10 @@
     opponentTitle: opponentTitle, matchupLine: matchupLine, resultLine: resultLine, opensIn: opensIn,
     gamePhase: gamePhase, matchupEdges: matchupEdges, gameShareText: gameShareText,
     startSeason: startSeason, playWeek: playWeek, schedule: schedule, game: game,
+    LADDER_START: LADDER_START, LADDER_K: LADDER_K, recordLine: recordLine, challengeUrl: challengeUrl,
+    challengeInviteText: challengeInviteText, challengeShareText: challengeShareText,
+    challengeCreate: challengeCreate, challengePeek: challengePeek, challengeAccept: challengeAccept, challengeCancel: challengeCancel,
+    challengesMine: challengesMine, ladder: ladder, h2hContext: h2hContext,
     spForScore: spForScore, tcForScore: tcForScore, tcForDrill: tcForDrill, rewardsFor: rewardsFor,
     xpForLevel: xpForLevel, levelFor: levelFor, levelInfo: levelInfo,
     fullName: fullName, keyRatings: keyRatings, isStarter: isStarter, traitOf: traitOf,

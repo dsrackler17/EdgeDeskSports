@@ -74,6 +74,8 @@ declare
   ovr integer; econ jsonb;
   -- the weekly game
   gid uuid; gid2 uuid; seed0 text; opp0 jsonb; t0 timestamptz; box jsonb; box2 jsonb; k integer; w integer; l integer; nn integer;
+  -- franchise vs franchise
+  h2h_tok text; cid2 uuid; cid3 uuid; ra0 integer; rb0 integer; kk integer;
 begin
   insert into auth.users (id, email, raw_user_meta_data) values
     (ALICE, 'alice@example.com', '{"display_name":"Alice"}'),
@@ -1083,5 +1085,240 @@ begin
   v := public.franchise_play_game(fd, t0);
   perform pg_temp.ok('a device-founded franchise had a schedule from its first second and plays on it',
     (v->'game'->>'week')::int = 1 and (v->'game'->>'status') = 'final');
+
+-- ═══ 16. FRANCHISE VS FRANCHISE ═══════════════════════════════════════════
+  h2h_tok := tok;   -- the Alice–Dan Head-to-Head from section 14
+  perform pg_temp.as_owner();
+  perform pg_temp.ok('a settled Head-to-Head between two franchises wrote the rivalry, both ways, once through a correction',
+    (select h2h_wins = 1 and h2h_losses = 0 and h2h_draws = 0 from public.franchise_rivalries where franchise_id = fa and other_id = fb)
+    and (select h2h_losses = 1 and h2h_wins = 0 from public.franchise_rivalries where franchise_id = fb and other_id = fa)
+    and (select h2h_losses = 1 from public.franchise_rivalries where franchise_id = fa and other_id = fd)
+    and (select h2h_wins = 1 from public.franchise_rivalries where franchise_id = fd and other_id = fa));
+  v := public.franchise_h2h_context(h2h_tok);
+  perform pg_temp.ok('a real-game Head-to-Head can name both franchises and the rivalry between them',
+    v->'a'->>'name' = 'Lubbock Outlaws' and v->'b'->>'name' = 'Comets' and v->'b'->>'city' = 'Boise' and (v->'rivalry_a'->>'h2h_losses')::int = 1
+    and not (v::text like '%user_id%') and not (v::text like '%example.com%') and not (v::text like '%anon_hash%'));
+  perform pg_temp.ok('and an unknown token is nothing', public.franchise_h2h_context('nope') is null);
+
+  -- Alice challenges
+  perform pg_temp.as_user(ALICE);
+  v := public.franchise_challenge_create('Bring your best.');
+  tok := v->>'invite_token'; cid := (v->>'id')::uuid;
+  perform pg_temp.ok('a franchise issues a challenge: an open invite, a token, a fortnight, and its own card',
+    (v->>'ok')::boolean and length(tok) = 26 and v->>'status' = 'OPEN' and (v->>'expires_at')::timestamptz > now() + interval '13 days'
+    and v->'challenger'->>'name' = 'Lubbock Outlaws' and v->'challenger' ? 'overall' and v->'challenger' ? 'record' and not (v->'challenger' ? 'xp'));
+  v := public.franchise_challenge_peek(tok);
+  perform pg_temp.ok('the challenger reads their own invite, token included, and cannot accept it',
+    v->>'you' = 'challenger' and (v->>'is_challenger')::boolean and not (v->>'can_accept')::boolean and v->>'invite_token' = tok and v->>'note' = 'Bring your best.');
+  begin
+    perform public.franchise_challenge_accept(tok);
+    perform pg_temp.ok('nor play against themselves', false, 'it played');
+  exception when invalid_parameter_value then
+    perform pg_temp.ok('nor play against themselves', true);
+  end;
+  perform pg_temp.as_anon();
+  v := public.franchise_challenge_peek(tok);
+  perform pg_temp.ok('anyone holding the link sees who is calling — a franchise, never an account — and no token',
+    v->'me'->>'name' = 'Lubbock Outlaws' and v->'invite_token' = 'null'::jsonb and v->'you' = 'null'::jsonb
+    and (v->>'needs_franchise')::boolean and not (v->>'can_accept')::boolean
+    and not (v::text like '%user_id%') and not (v::text like '%example.com%'));
+  perform pg_temp.ok('a guessed link is nothing', public.franchise_challenge_peek('nope') is null);
+  begin
+    perform public.franchise_challenge_accept(tok);
+    perform pg_temp.ok('a link cannot be played without a franchise', false, 'it played');
+  exception when invalid_authorization_specification then
+    perform pg_temp.ok('a link cannot be played without a franchise', true);
+  end;
+  select count(*) into n from public.franchise_challenges;
+  perform pg_temp.ok('anon reads no challenge row', n = 0);
+  perform pg_temp.as_user(CARA);
+  select count(*) into n from public.franchise_challenges;
+  perform pg_temp.ok('nor does a franchise that is not a party to it', n = 0);
+
+  -- Bob accepts, and it is played
+  perform pg_temp.as_user(BOB);
+  v := public.franchise_challenge_peek(tok);
+  perform pg_temp.ok('a franchise holding the link can accept', (v->>'can_accept')::boolean and v->'you' = 'null'::jsonb and not (v->>'needs_franchise')::boolean);
+  perform pg_temp.as_owner();
+  select ladder_rating into ra0 from public.franchises where id = fa;
+  select ladder_rating into rb0 from public.franchises where id = fb;
+  select xp, team_credits, coach_points into xp0, tc0, cp0 from public.franchises where id = fb;
+  select (career_stats->>'games')::int into kk from public.game_players where franchise_id = fa and position = 'QB' and depth = 1;
+  perform pg_temp.ok('the fixture: both start the ladder at 1500 with no games', ra0 = 1500 and rb0 = 1500
+    and (select ladder_games from public.franchises where id = fa) = 0);
+  perform pg_temp.as_user(BOB);
+  v := public.franchise_challenge_accept(tok);
+  perform pg_temp.ok('the challenge is played at once, on the server, and read from the acceptor''s side',
+    (v->>'ok')::boolean and v->'game'->>'status' = 'FINAL' and v->'game'->>'you' = 'opponent'
+    and v->'game'->'them'->>'name' = 'Lubbock Outlaws' and v->'game'->'me'->>'name' = 'Wranglers'
+    and v->'game'->>'sim_version' = 'sim_v1' and v->'game'->>'result' in ('W', 'L', 'T')
+    and ((v->'game'->>'score_for')::int > (v->'game'->>'score_against')::int) = (v->'game'->>'result' = 'W'));
+  box := v->'game'->'box';
+  perform pg_temp.ok('the box carries both sides: my lines and theirs, a player of the game each, quarters that sum to the final, a neutral field',
+    jsonb_array_length(box->'players') >= 22 and jsonb_array_length(box->'their_players') >= 22
+    and box->'potg'->>'name' is not null and box->'their_potg'->>'name' is not null
+    and (select sum(q::int) from jsonb_array_elements_text(box->'quarters'->'for') q) = (box->'final'->>'for')::int
+    and (select sum(q::int) from jsonb_array_elements_text(box->'quarters'->'against') q) = (box->'final'->>'against')::int
+    and (box->>'neutral')::boolean and box->'edges'->'mine'->'prep'->>'version' = 'prep_v1' and box->'edges'->'theirs' ? 'scheme');
+  perform pg_temp.ok('the scoring plays are read from my side, with a running score',
+    (select bool_and(p->>'side' in ('for', 'against') and p ? 'for' and p ? 'against' and p->>'desc' <> '') from jsonb_array_elements(box->'scoring') p));
+  perform pg_temp.ok('the acceptor is paid by the table: 60 XP and 30 TC to play; 40 XP, 40 TC and 2 CP to win',
+    (v->'rewards'->>'xp')::int = 60 + (case when v->'game'->>'result' = 'W' then 40 else 0 end)
+    and (v->'rewards'->>'tc')::int = 30 + (case when v->'game'->>'result' = 'W' then 40 else 0 end)
+    and (v->'rewards'->>'cp')::int = (case when v->'game'->>'result' = 'W' then 2 else 0 end)
+    and (v->'totals'->>'xp')::int = xp0 + (v->'rewards'->>'xp')::int
+    and (v->'totals'->>'coach_points')::int = cp0 + (v->'rewards'->>'cp')::int, (v->'rewards')::text);
+  perform pg_temp.ok('the first challenge is an achievement; the first win only on a win',
+    v->'achievements' ? 'fc_first' and ((v->'game'->>'result' = 'W') = (v->'achievements' ? 'fc_first_win')));
+  begin
+    perform public.franchise_challenge_accept(tok);
+    perform pg_temp.ok('a challenge is played once', false, 'it played again');
+  exception when object_not_in_prerequisite_state then
+    perform pg_temp.ok('a challenge is played once', true);
+  end;
+  perform pg_temp.as_owner();
+  perform pg_temp.ok('the ladder moved for both, zero-sum, by Elo: twelve points between equals, none for a tie',
+    (select sum(ladder_rating) from public.franchises where id in (fa, fb)) = ra0 + rb0
+    and (select ladder_games from public.franchises where id = fa) = 1 and (select ladder_games from public.franchises where id = fb) = 1
+    and (select abs(ladder_rating - ra0) from public.franchises where id = fa) = (case when v->'game'->>'result' = 'T' then 0 else 12 end)
+    and (select rating_delta from public.franchise_challenges where id = cid) = (select ladder_rating - ra0 from public.franchises where id = fa));
+  perform pg_temp.ok('the rivalry record is written both ways, mirrored, beside the Head-to-Head record',
+    (select fc_wins + fc_losses + fc_ties = 1 from public.franchise_rivalries where franchise_id = fa and other_id = fb)
+    and (select r1.fc_wins = r2.fc_losses and r1.fc_losses = r2.fc_wins and r1.fc_ties = r2.fc_ties
+           from public.franchise_rivalries r1, public.franchise_rivalries r2
+          where r1.franchise_id = fa and r1.other_id = fb and r2.franchise_id = fb and r2.other_id = fa)
+    and (select h2h_wins = 1 from public.franchise_rivalries where franchise_id = fa and other_id = fb));
+  perform pg_temp.ok('both ledgers were paid, once, keyed by the challenge',
+    (select count(*) from public.franchise_ledger where kind = 'fc_played' and key = cid::text) = 4
+    and (select count(*) from public.franchise_ledger where kind = 'fc_win' and key = cid::text) = (case when v->'game'->>'result' = 'T' then 0 else 3 end)
+    and (select count(distinct franchise_id) from public.franchise_ledger where kind = 'fc_played' and key = cid::text) = 2);
+  perform pg_temp.ok('careers grew on both sides; the season lines did not — an exhibition is not a season game',
+    (select (career_stats->>'games')::int from public.game_players where franchise_id = fa and position = 'QB' and depth = 1) = kk + 1
+    and (select (career_stats->>'games')::int from public.game_players where franchise_id = fb and position = 'QB' and depth = 1) >= 1
+    and (select bool_and(season_stats = '{}'::jsonb) from public.game_players where franchise_id = fa));
+  select c.box into box2 from public.franchise_challenges c where c.id = cid;
+  perform pg_temp.ok('the stored box adds up on both sides, line for line',
+    pg_temp.box_adds_up(jsonb_build_object('players', box2->'a'->'players', 'team', jsonb_build_object('for', box2->'a'->'team'),
+      'quarters', jsonb_build_object('for', box2->'a'->'quarters', 'against', box2->'b'->'quarters'),
+      'final', jsonb_build_object('for', box2->'a'->'final', 'against', box2->'b'->'final')))
+    and pg_temp.box_adds_up(jsonb_build_object('players', box2->'b'->'players', 'team', jsonb_build_object('for', box2->'b'->'team'),
+      'quarters', jsonb_build_object('for', box2->'b'->'quarters', 'against', box2->'a'->'quarters'),
+      'final', jsonb_build_object('for', box2->'b'->'final', 'against', box2->'a'->'final'))));
+  perform pg_temp.ok('the seed was derived by the server and the token is not in the box', (select c.seed is not null and c.box::text not like '%' || c.invite_token || '%' from public.franchise_challenges c where c.id = cid));
+
+  -- the challenger's side of it
+  perform pg_temp.as_user(ALICE);
+  v2 := public.franchise_challenges_mine();
+  perform pg_temp.ok('the challenger finds the game in their list, from their side, the ladder move sign flipped',
+    jsonb_array_length(v2->'played') = 1 and v2->'played'->0->>'you' = 'challenger'
+    and (v2->'played'->0->>'score_for')::int = (v->'game'->>'score_against')::int
+    and (v2->'played'->0->>'rating_delta')::int = -(v->'game'->>'rating_delta')::int
+    and v2->'played'->0->'them'->>'name' = 'Wranglers' and jsonb_array_length(v2->'open') = 0
+    and (v2->'played'->0->'box') is null);
+  perform pg_temp.ok('the rivalries list names the other franchise, on the field and on the board',
+    v2->'rivalries'->0->'other'->>'id' = fb::text
+    and (v2->'rivalries'->0->>'fc_wins')::int + (v2->'rivalries'->0->>'fc_losses')::int + (v2->'rivalries'->0->>'fc_ties')::int = 1
+    and (v2->'rivalries'->0->>'h2h_wins')::int = 1 and (v2->'record'->>'h2h_wins')::int = 1);
+  v2 := public.franchise_ladder(10);
+  perform pg_temp.ok('the ladder ranks both, best first, and says where I stand',
+    jsonb_array_length(v2->'rows') = 2 and (v2->>'total')::int = 2
+    and (v2->'rows'->0->>'ladder_rating')::int >= (v2->'rows'->1->>'ladder_rating')::int
+    and (v2->'rows'->0->>'rank')::int = 1 and (v2->'me'->>'rank')::int in (1, 2) and (v2->'me'->>'games')::int = 1
+    and (select count(*) from jsonb_array_elements(v2->'rows') r where (r->>'is_you')::boolean) = 1);
+  perform pg_temp.ok('and carries no account', not (v2::text like '%user_id%') and not (v2::text like '%example.com%') and not (v2::text like '%anon_hash%') and not (v2::text like '%"id"%'));
+  v := public.franchise_home();
+  perform pg_temp.ok('home says where I stand and what was last played',
+    (v->'ladder'->>'games')::int = 1 and (v->'ladder'->>'rank')::int in (1, 2) and (v->'challenges'->>'played')::int = 1
+    and v->'challenges'->'last'->'them'->>'name' = 'Wranglers' and (v->'week'->>'fc')::int = 1);
+  perform pg_temp.as_anon();
+  v2 := public.franchise_ladder(10);
+  perform pg_temp.ok('the ladder is public: franchises, never accounts, and no "me" without one',
+    jsonb_array_length(v2->'rows') = 2 and v2->'me' = 'null'::jsonb and not (v2::text like '%user_id%'));
+  perform pg_temp.as_user(CARA);
+  v2 := public.franchise_ladder(10);
+  perform pg_temp.ok('a franchise that has not played a challenge is not on the ladder',
+    (v2->>'total')::int = 2 and v2->'me'->'rank' = 'null'::jsonb and (v2->'me'->>'games')::int = 0);
+
+  -- expiry, cancellation, the cap
+  perform pg_temp.as_user(ALICE);
+  v := public.franchise_challenge_create(null); cid2 := (v->>'id')::uuid; tok := v->>'invite_token';
+  perform pg_temp.as_owner();
+  update public.franchise_challenges set expires_at = now() - interval '1 day' where id = cid2;
+  perform pg_temp.as_user(CARA);
+  perform pg_temp.ok('an expired link says so', public.franchise_challenge_peek(tok)->>'status' = 'EXPIRED' and not (public.franchise_challenge_peek(tok)->>'can_accept')::boolean);
+  begin
+    perform public.franchise_challenge_accept(tok);
+    perform pg_temp.ok('and cannot be played', false, 'it played');
+  exception when object_not_in_prerequisite_state then
+    perform pg_temp.ok('and cannot be played', true);
+  end;
+  perform pg_temp.as_user(ALICE);
+  v := public.franchise_challenge_create(null); cid3 := (v->>'id')::uuid; tok := v->>'invite_token';
+  v := public.franchise_challenge_cancel(cid3);
+  perform pg_temp.ok('the challenger can cancel an open invite', (v->>'cancelled')::boolean and jsonb_array_length(public.franchise_challenges_mine()->'open') = 0);
+  perform pg_temp.as_user(CARA);
+  begin
+    perform public.franchise_challenge_accept(tok);
+    perform pg_temp.ok('a cancelled invite cannot be played', false, 'it played');
+  exception when object_not_in_prerequisite_state then
+    perform pg_temp.ok('a cancelled invite cannot be played', true);
+  end;
+  perform pg_temp.as_user(ALICE);
+  for k in 1..10 loop perform public.franchise_challenge_create(null); end loop;
+  begin
+    perform public.franchise_challenge_create(null);
+    perform pg_temp.ok('ten open invites is the cap', false, 'an eleventh was created');
+  exception when object_not_in_prerequisite_state then
+    perform pg_temp.ok('ten open invites is the cap', true);
+  end;
+  perform pg_temp.ok('the open invites are listed with their tokens',
+    jsonb_array_length(public.franchise_challenges_mine()->'open') = 10
+    and (select bool_and(o->>'invite_token' is not null and o->>'status' = 'OPEN') from jsonb_array_elements(public.franchise_challenges_mine()->'open') o));
+  perform pg_temp.as_owner();
+  update public.franchise_challenges set status = 'CANCELLED' where challenger_id = fa and status = 'OPEN';
+
+  -- the upset: the weaker side beating a team five or more better is paid extra; the stronger side never is
+  update public.game_players set overall = least(99, overall + 8) where franchise_id = fc;
+  select (public.franchise_team_rating(fc)->>'overall')::int - (public.franchise_team_rating(fa)->>'overall')::int into k;
+  perform pg_temp.ok('the upset fixture: Cara is at least five better than Alice', k >= 5, 'gap ' || k);
+  w := 0; l := 0;
+  for k in 1..16 loop
+    perform pg_temp.as_user(ALICE);
+    v := public.franchise_challenge_create(null); tok := v->>'invite_token';
+    perform pg_temp.as_user(CARA);
+    v := public.franchise_challenge_accept(tok);
+    if v->'game'->>'result' = 'L' then w := w + 1; exit; else l := l + 1; end if;
+  end loop;
+  perform pg_temp.as_owner();
+  perform pg_temp.ok('the weaker side wins one eventually', w = 1, 'in ' || (w + l) || ' games');
+  perform pg_temp.ok('the upset is paid to the weaker winner, once, and the Giant Killer is theirs',
+    (select count(*) from public.franchise_ledger where franchise_id = fa and kind = 'fc_upset') = 2
+    and exists (select 1 from public.franchise_achievements where franchise_id = fa and achievement_id = 'fc_upset'));
+  perform pg_temp.ok('the stronger side is never paid an upset',
+    not exists (select 1 from public.franchise_ledger where franchise_id = fc and kind = 'fc_upset')
+    and not exists (select 1 from public.franchise_achievements where franchise_id = fc and achievement_id = 'fc_upset'));
+  perform pg_temp.ok('every one of those games moved the rivalry and the ladder',
+    (select fc_wins + fc_losses + fc_ties from public.franchise_rivalries where franchise_id = fa and other_id = fc) = w + l
+    and (select ladder_games from public.franchises where id = fc) = w + l
+    and (select sum(ladder_rating) from public.franchises where id in (fa, fb, fc)) = 4500);
+
+  -- three straight: two on the record, and a third won
+  update public.game_players set overall = greatest(40, overall - 38) where franchise_id = fc;
+  insert into public.franchise_challenges (challenger_id, opponent_id, status, played_at, week_key, seed, score_challenger, score_opponent, result, box, sim_version, rating_delta)
+  -- stamped NOW, so they are newer than every game above and older than the one about to be played
+  values (fa, fc, 'FINAL', clock_timestamp(), wk, 'fixture', 21, 7, 'W', '{}'::jsonb, 'fixture', 0),
+         (fc, fa, 'FINAL', clock_timestamp() + interval '1 millisecond', wk, 'fixture', 3, 24, 'L', '{}'::jsonb, 'fixture', 0);
+  w := 0;
+  for k in 1..6 loop
+    perform pg_temp.as_user(ALICE);
+    v := public.franchise_challenge_create(null); tok := v->>'invite_token';
+    perform pg_temp.as_user(CARA);
+    v := public.franchise_challenge_accept(tok);
+    if v->'game'->>'result' = 'L' then w := 1; exit; end if;
+  end loop;
+  perform pg_temp.as_owner();
+  perform pg_temp.ok('three straight is an achievement', w = 1 and exists (select 1 from public.franchise_achievements where franchise_id = fa and achievement_id = 'fc_three'));
+  perform pg_temp.ok('a device-owned franchise can be challenged and can challenge, exactly as an account one',
+    (select public.franchise_challenge_peek((select invite_token from public.franchise_challenges where challenger_id = fa order by created_at desc limit 1), SEC_X)) is not null);
 end
 $test$;

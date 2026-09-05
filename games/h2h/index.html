@@ -29,7 +29,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/games/games.css?v=20260905c">
+<link rel="stylesheet" href="/games/games.css?v=20260905d">
 <style>
 /* Head-to-Head only. This page is somebody's name against yours, so the
    headline is the biggest thing on it and the decision is one screen away on
@@ -86,16 +86,18 @@
 
 <div id="gf"></div>
 
-<script src="/games/lib/week.js?v=20260905c"></script>
-<script src="/games/lib/scoring.js?v=20260905c"></script>
-<script src="/games/lib/challenge.js?v=20260905c"></script>
-<script src="/games/lib/research_state.js?v=20260905c"></script>
-<script src="/games/lib/attribution.js?v=20260905c"></script>
-<script src="/games/lib/store.js?v=20260905c"></script>
-<script src="/games/lib/dynasty.js?v=20260905c"></script>
-<script src="/games/lib/social.js?v=20260905c"></script>
-<script src="/games/lib/h2h_grade.js?v=20260905c"></script>
-<script src="/games/games.js?v=20260905c"></script>
+<script src="/games/lib/week.js?v=20260905d"></script>
+<script src="/games/lib/scoring.js?v=20260905d"></script>
+<script src="/games/lib/challenge.js?v=20260905d"></script>
+<script src="/games/lib/research_state.js?v=20260905d"></script>
+<script src="/games/lib/attribution.js?v=20260905d"></script>
+<script src="/games/lib/store.js?v=20260905d"></script>
+<script src="/games/lib/dynasty.js?v=20260905d"></script>
+<script src="/games/lib/social.js?v=20260905d"></script>
+<script src="/games/lib/h2h_grade.js?v=20260905d"></script>
+<script src="/games/lib/auth.js?v=20260905d"></script>
+<script src="/games/lib/franchise.js?v=20260905d"></script>
+<script src="/games/games.js?v=20260905d"></script>
 <script>
 /* STALE SCRIPT GUARD. A browser can keep an old games.js or store.js for
    longer than it keeps this page, and a page built for the new library
@@ -491,7 +493,38 @@
 
   /* ── 2. VIEW / ANSWER ──────────────────────────────────────────────────── */
 
+  /* THE FRANCHISES BEHIND THE NAMES. A Head-to-Head is between two people;
+     when both have franchises, the page says which, with the marks, and
+     the record between the two franchises on the board and on the field.
+     Read after the challenge paints; the settlement is untouched. */
+  var FR=window.EDFranchise,FR_CTX={};
+  function paintFranchiseContext(ch){
+    if(!FR||!ch||!ch.invite_token)return;
+    FR.h2hContext(ch.invite_token).then(function(r){
+      if(!r.ok||!r.data)return;
+      var d=r.data,sides=stage.querySelectorAll('.vs-p');
+      [d.a,d.b].forEach(function(f,i){
+        if(!f||!sides[i]||sides[i].querySelector('.vs-fr'))return;
+        var el=document.createElement('div');el.className='vs-fr';
+        el.innerHTML=FR.logoSvg(f.logo,18,f.theme)+'<span>'+esc(((f.city||'')+' '+(f.name||'')).trim())+' · OVR '+esc(f.overall)+'</span>';
+        sides[i].appendChild(el);
+      });
+      var vs=stage.querySelector('.vs');
+      if(d.a&&d.b&&vs&&!stage.querySelector('.h2h-riv')){
+        var rv=d.rivalry_a||{},line=document.createElement('div');line.className='h2h-riv';
+        line.textContent=((d.a.city||'')+' '+(d.a.name||'')).trim()+' vs '+((d.b.city||'')+' '+(d.b.name||'')).trim()
+          +' · '+(rv.h2h_wins|0)+'–'+(rv.h2h_losses|0)+(rv.h2h_draws?'–'+rv.h2h_draws:'')+' on the board'
+          +((rv.fc_wins|rv.fc_losses|rv.fc_ties)?' · '+(rv.fc_wins|0)+'–'+(rv.fc_losses|0)+(rv.fc_ties?'–'+rv.fc_ties:'')+' on the field':'');
+        vs.parentNode.insertBefore(line,vs.nextSibling);
+        if(ch.settlement&&!FR_CTX[ch.invite_token]){FR_CTX[ch.invite_token]=true;G.track('h2h_franchise_complete',{mode:ch.mode,game_id:ch.canonical_game_id});}
+      }
+    });
+  }
   function renderChallenge(ch){
+    renderChallengeInner(ch);
+    paintFranchiseContext(ch);
+  }
+  function renderChallengeInner(ch){
     painted();
     var p=S.phase(ch),a=S.entry(ch,'a'),b=S.entry(ch,'b');
     var selA=S.selectionOf(ch,'a'),selB=S.selectionOf(ch,'b');
