@@ -28,6 +28,50 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/games/games.css">
+<style>
+/* ── Pick 5, page-local. Mobile first; min-width queries only. ─────────── */
+.p5-lede{margin:0 0 16px;color:var(--dim);font-size:14px;line-height:1.6}
+
+/* the skeleton says what it is waiting for */
+.p5-load-l{font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;
+  color:var(--faint);margin-bottom:12px}
+
+/* rows: compact enough that five of them read as a card on a phone, with the
+   research link kept a full-height tap target rather than a sliver of text */
+.p5-g{padding:12px}
+.p5-h{margin-bottom:10px}
+.p5-when.fin{color:var(--dim);font-weight:600;font-variant-numeric:tabular-nums}
+.p5-foot{margin:2px 0 -6px}
+.p5-foot a{display:inline-flex;align-items:center;min-height:var(--tap);font-size:12.5px;
+  padding:0 2px;margin-left:-2px}
+
+/* the tapped side pops, once, briefly */
+.p5-btn.pop{animation:p5pop .22s cubic-bezier(.2,1.4,.4,1)}
+@keyframes p5pop{0%{transform:scale(1)}45%{transform:scale(1.035)}100%{transform:scale(1)}}
+
+/* the sticky bar: five segments and the count on one row, the button below */
+.p5-prog{display:flex;align-items:center;gap:12px;margin-bottom:8px}
+.p5-prog .p5-count{margin:0;text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
+.p5-prog .p5-count.done{color:var(--val);font-weight:700}
+.p5-strip{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:4px;flex:1;min-width:0}
+.p5-strip i{display:block;height:6px;border-radius:999px;background:var(--line2);
+  transition:background .18s ease}
+.p5-strip i.on{background:var(--val)}
+
+/* the card header: the moment after the card is in, and the running line after that */
+.p5-head .big{font-family:'Space Grotesk',sans-serif;font-size:30px;font-weight:700;line-height:1.1;
+  display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;font-variant-numeric:tabular-nums}
+.p5-head .big .rest{font-family:'Inter',sans-serif;font-size:15px;font-weight:600;color:var(--dim)}
+.p5-head .line{color:var(--dim);font-size:13px;margin-top:6px}
+.p5-head .grade{font-size:15px;font-weight:600;color:var(--text);margin-top:6px}
+.p5-head .btn-row{margin-top:14px}
+@media(min-width:560px){.p5-head .big{font-size:36px}}
+
+@media(prefers-reduced-motion:reduce){
+  .p5-btn.pop{animation:none}
+  .p5-strip i{transition:none}
+}
+</style>
 </head>
 <body>
 <div id="gh"></div>
@@ -35,19 +79,21 @@
 <main class="wrap">
   <div class="sec" style="margin-top:20px">
     <div class="sec-h"><h2>Pick 5</h2><span class="m" id="wkNote"></span></div>
-    <p style="margin:0 0 16px;color:var(--dim);font-size:14px;line-height:1.6">
-      Five games. Pick a side in each. Points only — one point per correct side, no wagering,
-      no entry fee and no prizes.
-    </p>
-    <div id="board"><div class="card"><div class="sk" style="width:60%;margin:8px 0"></div>
+    <p class="p5-lede">Five games. One side each. One point per correct side.</p>
+    <div id="board"><div class="card" role="status" aria-live="polite">
+      <div class="p5-load-l">Loading this week’s card</div>
+      <div class="sk" style="width:60%;margin:8px 0"></div>
       <div class="sk" style="width:40%;margin:12px 0"></div></div></div>
   </div>
   <div id="after"></div>
 </main>
 
 <div class="p5-bar hide" id="bar"><div class="wrap">
-  <div class="p5-count" id="count">0 of 5 selected</div>
-  <button class="btn btn-go" id="submit" type="button" disabled>Submit picks</button>
+  <div class="p5-prog">
+    <div class="p5-strip" id="strip" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>
+    <div class="p5-count" id="count" aria-live="polite">0 / 5 picked</div>
+  </div>
+  <button class="btn btn-go" id="submit" type="button" disabled>Lock my card</button>
 </div></div>
 
 <div id="gf"></div>
@@ -58,6 +104,7 @@
 <script src="/games/lib/research_state.js"></script>
 <script src="/games/lib/attribution.js"></script>
 <script src="/games/lib/store.js"></script>
+<script src="/games/lib/dynasty.js"></script>
 <script src="/games/games.js"></script>
 <script>
 (function(){
@@ -66,11 +113,19 @@
       CH=window.EDGamesChallenge,SC=window.EDGamesScoring;
   var $=function(id){return document.getElementById(id);};
   var board=$('board'),after=$('after'),bar=$('bar');
-  var WEEK=W.weekKey(),GAMES=[],SEL={};
+  var WEEK=W.weekKey(),GAMES=[],SEL={},FINALS={};
+  var REDUCED=false;
+  try{REDUCED=!!(window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches);}
+  catch(_){REDUCED=false;}
 
   G.boot('pick-5');
   $('wkNote').textContent='week of '+WEEK+' · resets in '+W.daysLeft()
     +' day'+(W.daysLeft()===1?'':'s');
+
+  /* ---- words ------------------------------------------------------------ */
+  var WORDS=['no','one','two','three','four','five'];
+  function nword(n){return (n>=0&&n<WORDS.length)?WORDS[n]:String(n);}
+  function cap(s){return s.charAt(0).toUpperCase()+s.slice(1);}
 
   /* ---- the card --------------------------------------------------------- */
   function sideLabel(ch,side){
@@ -82,6 +137,15 @@
     var r=Math.round(v*10)/10;
     if(r===0)return 'PK';
     return (r<0?'−':'+')+Math.abs(r).toFixed(1);
+  }
+
+  /* The final score the artifact carries for this game, or null. Read only —
+     the page never derives a result from it here; settlement happens once, in
+     boot, through SC.atsResult against the line the card was picked at. */
+  function finalOf(ch){
+    var f=FINALS[String(ch.game_id)];
+    if(!f||typeof f.home_score!=='number'||typeof f.away_score!=='number')return null;
+    return f;
   }
 
   function gameHTML(ch,i,locked,sel){
@@ -97,19 +161,52 @@
         +'<span class="ln">'+sideLabel(ch,side)+(on&&tag?' ':'')+'</span>'
         +(on?tag:'')+'</button>';
     }
+    /* the row lists away then home, so the final reads away–home too */
+    var f=finalOf(ch);
+    var when=f?('Final '+f.away_score+'–'+f.home_score):G.kickoffLabel(ch.kickoff);
     return '<div class="p5-g">'
       +'<div class="p5-h"><span class="p5-n">GAME '+(i+1)+'</span>'
-      +'<span class="p5-when">'+G.esc(G.kickoffLabel(ch.kickoff))+'</span></div>'
+      +'<span class="p5-when'+(f?' fin':'')+'">'+G.esc(when)+'</span></div>'
       +'<div class="p5-picks">'+btn('away',ch.away_team)+btn('home',ch.home_team)+'</div>'
-      +'<div style="margin-top:10px"><a href="#" class="research" data-g="'+G.esc(ch.game_id)+'"'
-      +' style="font-size:12.5px">Research this game →</a></div>'
+      +'<div class="p5-foot"><a href="#" class="research" data-g="'+G.esc(ch.game_id)+'">'
+      +'Research this game →</a></div>'
       +'</div>';
   }
 
+  /* ---- progress --------------------------------------------------------- */
   function paintCount(){
-    var n=Object.keys(SEL).length;
-    $('count').textContent=n+' of '+GAMES.length+' selected';
-    $('submit').disabled=n<GAMES.length;
+    var n=Object.keys(SEL).length,total=GAMES.length;
+    var c=$('count');
+    c.textContent=n+' / '+total+' picked';
+    c.className='p5-count'+((total&&n>=total)?' done':'');
+    Array.prototype.forEach.call($('strip').querySelectorAll('i'),function(seg,i){
+      seg.className=i<n?'on':'';
+    });
+    $('submit').disabled=n<total;
+  }
+
+  function stripHTML(n){
+    var s='',i;
+    for(i=0;i<n;i++)s+='<i></i>';
+    return s;
+  }
+
+  /* The sticky bar must never sit on top of the last row's research link, so
+     the board carries the bar's own height as bottom padding while it shows. */
+  function padBoard(){
+    var h=bar.offsetHeight;
+    board.style.paddingBottom=h?(h+'px'):'';
+  }
+  window.addEventListener('resize',padBoard);
+
+  /* a tapped side pops once, briefly; not at all for a player who asked for
+     less motion */
+  function pop(el){
+    if(REDUCED)return;
+    el.classList.remove('pop');
+    void el.offsetWidth;   /* restart the animation if the same side is tapped again */
+    el.classList.add('pop');
+    setTimeout(function(){el.classList.remove('pop');},260);
   }
 
   function wire(locked){
@@ -121,6 +218,7 @@
         Array.prototype.forEach.call(board.querySelectorAll('.p5-btn[data-g="'+gid+'"]'),function(o){
           o.setAttribute('aria-pressed',o===b?'true':'false');
         });
+        pop(b);
         paintCount();
       });
     });
@@ -134,28 +232,111 @@
     });
   }
 
+  /* ---- the card's running state ----------------------------------------- */
+  /* Counted from the selections the store settled, never recomputed here. A
+     push is recorded on its row and counted as nothing, the rule the store
+     applies. 'remaining' is every game with no result yet. */
+  function tally(card){
+    var t={n:card.selections.length,correct:0,losses:0,pushes:0,remaining:0};
+    card.selections.forEach(function(s){
+      if(s.result==='win')t.correct++;
+      else if(s.result==='loss')t.losses++;
+      else if(s.result==='push')t.pushes++;
+      else t.remaining++;
+    });
+    t.decided=t.correct+t.losses;
+    t.started=(t.n-t.remaining)>0;
+    t.done=t.remaining===0;
+    return t;
+  }
+
+  /* Descriptive, never a verdict. A pushed game is not a decision, so a card
+     with a push grades on the games that did decide. */
+  function grade(t){
+    if(t.losses===0&&t.correct===t.n)return 'Perfect card.';
+    if(t.correct>=4)return 'Strong week.';
+    if(t.correct>t.losses)return 'Winning week.';
+    if(t.correct===t.losses)return 'Even week.';
+    if(t.correct>=2)return 'Losing week.';
+    return 'Rough week. Every game has a why.';
+  }
+
+  /* the earliest kickoff on the card, as the runtime labels it; '' if none */
+  function firstKickoff(){
+    var best=null,bestT=Infinity;
+    GAMES.forEach(function(g){
+      if(!g||!g.kickoff)return;
+      var t=Date.parse(String(g.kickoff).replace(' ','T'));
+      if(isFinite(t)&&t<bestT){bestT=t;best=g.kickoff;}
+    });
+    return best?G.kickoffLabel(best):'';
+  }
+
+  function headHTML(card,fresh){
+    var t=tally(card),h,fk;
+    if(!t.started){
+      fk=firstKickoff();
+      h='<div class="eyebrow">Your week is locked</div>'
+        +'<div class="big">'+t.n+' pick'+(t.n===1?'':'s')+' in</div>'
+        +(fk?'<div class="line">First kickoff '+G.esc(fk)+'</div>':'')
+        +'<div class="line">Results appear here as the games finish.</div>';
+    }else if(!t.done){
+      h='<div class="eyebrow">Results so far</div>'
+        +'<div class="big"><span>'+t.correct+'–'+t.losses+'</span> '
+        +'<span class="rest">· '+nword(t.remaining)+' remaining</span></div>'
+        +'<div class="line">The rest settle as the games finish.</div>';
+    }else{
+      h='<div class="eyebrow">Final</div>'
+        +'<div class="big">'+t.correct+'–'+t.losses+'</div>'
+        +'<div class="grade">'+G.esc(grade(t))+'</div>'
+        +(t.pushes?'<div class="line">'+cap(nword(t.pushes))+' push'+(t.pushes===1?'':'es')
+          +', not counted.</div>':'');
+    }
+    h+='<div class="btn-row"><button class="btn" type="button" id="share">Share my card</button></div>';
+    return '<div class="card p5-head'+(fresh?' reveal':'')+'" style="margin-bottom:14px">'+h+'</div>';
+  }
+
+  /* ---- share ------------------------------------------------------------ */
+  /* Native share where the browser has it, the clipboard where it does not,
+     a visible link as the last resort — the same ladder G.share climbs. The
+     text is a record and a question; it claims nothing else. */
+  function shareCard(card){
+    var t=tally(card);
+    var text=t.decided
+      ?(t.correct+'–'+t.losses+' this week on Pick 5.\nCan you beat my card?\nEdgeDesk Games')
+      :('My Pick 5 card is in — '+t.n+' picks.\nCan you beat it?\nEdgeDesk Games');
+    var url=location.origin+'/games/pick-5/';
+    G.track('share_result',{game_type:'pick5',week:WEEK,correct:t.correct,decided:t.decided});
+    if(navigator.share){
+      return navigator.share({title:'EdgeDesk Games',text:text,url:url})
+        .catch(function(){ /* the player dismissed the sheet — not an error */ });
+    }
+    var payload=text+'\n'+url;
+    if(navigator.clipboard&&navigator.clipboard.writeText){
+      return navigator.clipboard.writeText(payload)
+        .then(function(){G.toast('Card copied — paste it anywhere');})
+        .catch(function(){G.toast('Could not copy automatically');});
+    }
+    G.toast('Copy this: '+url);
+    return Promise.resolve();
+  }
+
   /* ---- render ----------------------------------------------------------- */
   function renderOpen(){
     board.innerHTML='<div class="p5">'+GAMES.map(function(ch,i){
       return gameHTML(ch,i,false,SEL[ch.game_id]?{pick:SEL[ch.game_id]}:null);
     }).join('')+'</div>';
     wire(false);
+    $('strip').innerHTML=stripHTML(GAMES.length);
+    $('strip').style.gridTemplateColumns='repeat('+GAMES.length+',minmax(0,1fr))';
     bar.classList.remove('hide');
     paintCount();
+    padBoard();
     G.track('pick5_start',{game_type:'pick5',week:WEEK,games:GAMES.length});
   }
 
-  function renderCard(card){
-    var settled=card.selections.filter(function(s){return s.result;}).length;
-    var correct=card.selections.filter(function(s){return s.result==='win';}).length;
-    board.innerHTML=
-      '<div class="card" style="margin-bottom:14px"><div class="eyebrow">Your card</div>'
-      +'<div style="font-family:\'Space Grotesk\',sans-serif;font-size:26px;font-weight:700">'
-      +(settled?(correct+'–'+(settled-correct)):(card.selections.length+' selections locked'))+'</div>'
-      +'<div style="color:var(--dim);font-size:13px;margin-top:6px">'
-      +(settled?'Results so far. The rest settle as the games finish.'
-        :'Locked for the week of '+G.esc(card.week)+'. Results appear as the games finish.')
-      +'</div></div>'
+  function renderCard(card,fresh){
+    board.innerHTML=headHTML(card,fresh)
       +'<div class="p5">'+GAMES.map(function(ch,i){
         var sel=null;
         card.selections.forEach(function(s){if(String(s.game_id)===String(ch.game_id))sel=s;});
@@ -163,6 +344,9 @@
       }).join('')+'</div>';
     wire(true);
     bar.classList.add('hide');
+    padBoard();
+    var sb=$('share');
+    if(sb)sb.addEventListener('click',function(){shareCard(card);});
 
     var streak=ST.liveStreak(),wk=ST.weeklyScore(),p5=ST.pick5Record();
     after.innerHTML='<div class="sec"><div class="stats">'
@@ -176,7 +360,8 @@
       +'<div class="sec"><div class="card"><div class="eyebrow">While you wait</div>'
       +'<p style="margin:0 0 12px;color:var(--dim);font-size:14px">'
       +'Price one of these matchups yourself, then see how EdgeDesk prices it.</p>'
-      +'<div class="btn-row"><a class="btn btn-go" href="/games/price-it/">Play Price It</a></div>'
+      +'<div class="btn-row"><a class="btn btn-go" href="/games/price-it/">Play Price It</a>'
+      +'<a class="btn btn-ghost" href="/games/h2h/">Play Head-to-Head on one of these</a></div>'
       +'</div></div>';
   }
 
@@ -189,13 +374,15 @@
     });
     var card=ST.submitPick5(WEEK,selections);
     G.track('pick5_complete',{game_type:'pick5',week:WEEK,games:GAMES.length});
-    renderCard(card);
+    renderCard(card,true);
     try{window.scrollTo({top:0,behavior:'smooth'});}catch(_){window.scrollTo(0,0);}
+    setTimeout(function(){try{G.pulse({game_type:'pick5'});}catch(_){}},600);
   });
 
   /* ---- boot -------------------------------------------------------------- */
   G.artifact().then(function(a){
     GAMES=CH.pickFive(a.challenges,WEEK);
+    FINALS=(a.finals&&typeof a.finals==='object')?a.finals:{};
     var card=ST.pick5Card(WEEK);
     if(!GAMES.length){
       /* A pick against a spread needs a spread. When no game on the board
@@ -206,6 +393,7 @@
         +'against. Pick 5 opens as soon as the market lands.<br>'
         +'<a href="/games/price-it/">Play Price It in the meantime</a></div></div>';
       bar.classList.add('hide');
+      padBoard();
       return;
     }
     /* SETTLE FIRST. A stored card is graded from the final scores the artifact
@@ -221,6 +409,8 @@
         if(r)outcomes[String(sel.game_id)]=r;
       });
       if(Object.keys(outcomes).length)card=ST.settlePick5(WEEK,outcomes)||card;
+      /* a side that settled correct is XP the player has not been shown yet */
+      setTimeout(function(){try{G.pulse({game_type:'pick5'});}catch(_){}},900);
     }
     if(card&&card.submitted_at){
       /* the card was built from the games it was submitted against */
@@ -228,7 +418,7 @@
         return CH.bySlug(a.challenges,s.slug)||{game_id:s.game_id,slug:s.slug,
           home_team:s.home_team,away_team:s.away_team,market_spread:s.market_spread,kickoff:null};
       });
-      renderCard(card);
+      renderCard(card,false);
       return;
     }
     renderOpen();
@@ -236,6 +426,7 @@
     board.innerHTML='<div class="card"><div class="empty">This week’s card could not be loaded. '
       +'Check your connection and reload.</div></div>';
     bar.classList.add('hide');
+    padBoard();
   });
 })();
 </script>

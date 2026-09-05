@@ -36,19 +36,57 @@
 
 <main class="wrap">
 
-  <section class="hero">
-    <h1>Free football competition.<br>Real research underneath.</h1>
-    <div class="sub">Price the market. Challenge your friends. See how your read compares.</div>
-    <div class="btn-row two">
-      <a class="btn btn-go" href="/games/price-it/" data-cta="price-it">Price It</a>
-      <a class="btn btn-go" href="/games/h2h/" data-cta="h2h">Challenge a friend</a>
+  <!-- THE FIRST FIVE SECONDS ------------------------------------------------
+       Two heroes, one shown. A cold visitor gets the pitch and one button that
+       starts a real game. A returning player gets their own state — level,
+       what this week still needs, one CONTINUE — and never the pitch again.
+       Which one paints is decided by a two-line inline script that reads the
+       local envelope BEFORE the modules load, so the right hero is the first
+       thing on screen rather than a swap the eye catches. -->
+  <section class="hero" id="heroNew">
+    <div class="eyebrow" style="color:var(--val)">Free to play · today’s Price It</div>
+    <h1>Think you know<br>the line?</h1>
+    <div class="hero-mu" id="heroMu">
+      <div class="hero-load" aria-live="polite">Loading matchup</div>
+    </div>
+    <div class="hero-q">Where would you price it?</div>
+    <div class="btn-row">
+      <a class="btn btn-go btn-big" id="startFree" href="/games/price-it/" data-cta="start-free">Price this game</a>
     </div>
     <div class="btn-row two">
-      <a class="btn" href="/games/pick-5/" data-cta="pick-5">Pick 5</a>
-      <a class="btn" href="/games/groups/" data-cta="groups">Your groups</a>
+      <a class="btn" href="/games/h2h/" data-cta="h2h">Challenge a friend</a>
+      <a class="btn" href="/games/two-minute-drill/" data-cta="drill">Two-Minute Drill</a>
     </div>
     <div class="ftp"><b>Free to play</b> · No signup needed · No real-money wagering</div>
   </section>
+
+  <section class="sec hide" id="heroBack" style="margin-top:22px">
+    <div class="wb">
+      <div class="wb-top">
+        <div>
+          <div class="eyebrow" style="margin-bottom:4px">Welcome back</div>
+          <div class="lvl"><span class="n" id="wbLevel">Level 1</span><span class="t" id="wbTitle">Rookie Analyst</span></div>
+          <div class="s" id="wbStage" style="font-size:12px;color:var(--faint);margin-top:2px"></div>
+        </div>
+        <a class="btn" href="/games/dynasty/" style="width:auto;min-width:140px" data-cta="war-room">Open War Room</a>
+      </div>
+      <div class="xp"><div class="xp-row"><b id="wbXp">0 XP</b><span id="wbNext"></span></div>
+        <div class="xp-bar" role="progressbar" aria-label="progress to the next level" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="wbBar"><div class="xp-fill" id="wbFill"></div></div></div>
+      <div class="wb-week"><div class="eyebrow" style="margin:12px 0 2px">This week</div><ul id="wbList"></ul></div>
+      <div class="btn-row"><a class="btn btn-go btn-big" id="continueBtn" href="/games/price-it/" data-cta="continue">Continue</a></div>
+      <div class="ftp" style="margin-top:10px" id="wbNote"><b>Free to play</b> · No real-money wagering</div>
+    </div>
+  </section>
+  <script>
+  /* Decide the hero before the modules load: a visitor with any completed
+     game on this device is a returning player. Wrapped, because a browser
+     that blocks storage must still see the pitch. */
+  (function(){try{var o=JSON.parse(localStorage.getItem('edgedesk_games_v1')||'null');
+    var played=o&&o.v===1&&(((o.price_it||{}).played|0)>0||Object.keys((o.pick5||{}).cards||{}).length>0
+      ||Object.keys(((o.drill||{}).daily)||{}).length>0);
+    if(played){document.getElementById('heroNew').classList.add('hide');document.getElementById('heroBack').classList.remove('hide');}
+  }catch(_){}})();
+  </script>
 
   <!-- ACTIVE CHALLENGES ---------------------------------------------------
        A returning player's own state comes first: what is waiting on them,
@@ -104,6 +142,27 @@
       <div class="step"><div class="n">03</div><h3>Reveal the market and EdgeDesk</h3>
         <p>See the book’s number, EdgeDesk’s projection, how far your read sat from each — and why EdgeDesk prices it there.</p></div>
     </div>
+  </section>
+
+  <!-- EDGEDESK DYNASTY -----------------------------------------------------
+       The public explainer for the persistent layer: what a War Room is, how it
+       grows, and what it never does. This is the copy a search engine and a
+       cold visitor read; the War Room itself is personal state. -->
+  <section class="sec">
+    <div class="sec-h"><h2>Your War Room grows with every game</h2></div>
+    <div class="steps">
+      <div class="step"><div class="n">01</div><h3>Play real games</h3>
+        <p>Every Price It, Pick 5 card, Two-Minute Drill and Head-to-Head earns XP on a published table. Nothing else does.</p></div>
+      <div class="step"><div class="n">02</div><h3>Level up the room</h3>
+        <p>The Garage becomes the Film Room, the Analytics Lab, Football Operations, Market Command. Levels change how the room looks — never a number.</p></div>
+      <div class="step"><div class="n">03</div><h3>Missions and achievements</h3>
+        <p>Five missions a football week, a trophy wall built from your record, and a research history you can point at.</p></div>
+    </div>
+    <div class="btn-row two" style="margin-top:16px">
+      <a class="btn btn-go" href="/games/dynasty/" data-cta="dynasty-section">See your War Room</a>
+      <a class="btn" href="/games/two-minute-drill/" data-cta="drill-section">Run the Two-Minute Drill</a>
+    </div>
+    <div class="ftp" style="margin-top:12px">XP is research progression, not a betting skill. A subscriber earns exactly the same XP as everyone else.</div>
   </section>
 
   <!-- HEAD-TO-HEAD --------------------------------------------------------
@@ -168,6 +227,8 @@
 <script src="/games/lib/research_state.js"></script>
 <script src="/games/lib/attribution.js"></script>
 <script src="/games/lib/store.js"></script>
+<script src="/games/lib/dynasty.js"></script>
+<script src="/games/lib/drill.js"></script>
 <script src="/games/lib/leaderboard.js"></script>
 <script src="/games/lib/social.js"></script>
 <script src="/games/games.js"></script>
@@ -175,10 +236,50 @@
 (function(){
   'use strict';
   var G=window.EDGames,ST=window.EDGamesStore,W=window.EDGamesWeek,
-      CH=window.EDGamesChallenge,LB=window.EDGamesLeaderboard,S=window.EDGamesSocial;
+      CH=window.EDGamesChallenge,LB=window.EDGamesLeaderboard,S=window.EDGamesSocial,
+      DY=window.EDGamesDynasty,DR=window.EDGamesDrill;
   var $=function(id){return document.getElementById(id);};
 
   var READY=G.boot('home');
+
+  /* ---- welcome back ---------------------------------------------------------
+     Only ever real state. The list is what this football week still needs
+     from the player, and CONTINUE goes to the first thing on it. */
+  var SUM=DY?DY.summary(ST.read()):null;
+  function fmt(n){return String(n).replace(/\B(?=(\d{3})+(?!\d))/g,',');}
+  function paintWelcome(featured){
+    if(!SUM||!SUM.created)return;
+    $('heroNew').classList.add('hide');$('heroBack').classList.remove('hide');
+    $('wbLevel').textContent='Level '+SUM.level;
+    $('wbTitle').textContent=SUM.title;
+    $('wbStage').textContent=SUM.stage.name+(SUM.next_stage?' · next: '+SUM.next_stage.name+' at level '+SUM.next_stage.level:'');
+    $('wbXp').textContent=fmt(SUM.xp)+' XP';
+    $('wbNext').textContent=SUM.next?fmt(SUM.next.remaining)+' to level '+SUM.next.level:'Max level';
+    var pct=SUM.next?SUM.next.pct:100;
+    $('wbBar').setAttribute('aria-valuenow',String(pct));
+    setTimeout(function(){$('wbFill').style.width=pct+'%';},60);
+
+    var today=W.dayKey(),wk=W.weekKey();
+    var priced=featured?!!ST.priceItResult(featured.game_id):false;
+    var drillDone=!!ST.drillDaily(today);
+    var card=ST.pick5Card(wk);
+    var m=SUM.missions;
+    var rows=[],next=null;
+    function row(state,text,href){rows.push({state:state,text:text,href:href});if(state==='todo'&&!next)next=href;}
+    if(featured)row(priced?'on':'todo',priced?'Today’s Price It: done':'Today’s Price It: '+featured.away_team+' vs '+featured.home_team,
+      '/games/price-it/?g='+encodeURIComponent(featured.slug));
+    row(drillDone?'on':'todo',drillDone?'Two-Minute Drill: done today':'Two-Minute Drill: not yet today','/games/two-minute-drill/');
+    row(card&&card.submitted_at?'on':'todo',card&&card.submitted_at?'Pick 5: card submitted':'Pick 5: card open','/games/pick-5/');
+    row(m.complete?'on':(m.done?'todo':'todo'),'Weekly missions: '+m.done+' of '+m.total,'/games/dynasty/');
+    $('wbList').innerHTML=rows.map(function(r){
+      return '<li><span class="dot '+(r.state==='on'?'on':'todo')+'"></span><a href="'+G.esc(r.href)+'" style="color:var(--text)">'+G.esc(r.text)+'</a></li>';
+    }).join('');
+    var c=$('continueBtn');
+    c.href=next||'/games/dynasty/';
+    c.textContent=next?'Continue':'Open War Room';
+    $('wbNote').textContent=ST.storageWorks()?'Saved on this device · Free to play · No real-money wagering':'This session only · Free to play · No real-money wagering';
+  }
+  paintWelcome(null);
 
   /* the campaign rides along on the research link */
   $('openResearch').href=G.withAttribution('/app.html')+'#research/football';
@@ -204,9 +305,12 @@
     $('stWeek').textContent=played?String(wk):'—';
     $('stWeek').className='v'+(wk>0?' on':'');
     var bits=[];
+    if(SUM&&SUM.created)bits.push('Level '+SUM.level+' · '+SUM.title+' · '+fmt(SUM.xp)+' XP');
     if(pi.played)bits.push('Price It: '+pi.played+' game'+(pi.played===1?'':'s')
       +' · average difference '+pi.avg_distance.toFixed(1)+' pts');
     if(p5.label)bits.push('Pick 5: '+p5.label);
+    var dr=ST.drillRecord();
+    if(dr.runs)bits.push('Drill best: '+fmt(dr.best));
     $('stRecords').textContent=bits.length?bits.join('  ·  ')
       :'Play a challenge and your record appears here.';
     $('statNote').textContent=ST.storageWorks()?'saved on this device':'this session only';
@@ -224,6 +328,17 @@
       return;
     }
     var href='/games/price-it/?g='+encodeURIComponent(ch.slug);
+    /* the first game a cold visitor plays is today's matchup, named in the
+       hero itself: the question is the pitch */
+    $('startFree').href=href;
+    $('heroMu').innerHTML='<div class="mu">'
+      +'<div class="mu-side">'+(ch.neutral_site?'Neutral site':'Away')+'</div>'
+      +'<div class="mu-team">'+G.esc(ch.away_team)+'</div>'
+      +'<div class="mu-vs">VS</div>'
+      +'<div class="mu-team">'+G.esc(ch.home_team)+'</div>'
+      +'<div class="mu-side">'+(ch.neutral_site?'':'Home')+'</div>'
+      +'<div class="mu-when">'+G.esc(G.kickoffLabel(ch.kickoff))+'</div></div>';
+    paintWelcome(ch);
     $('todayCard').innerHTML=
       '<div class="eyebrow">Price It</div>'
       +'<div class="mu">'
@@ -241,6 +356,7 @@
         game_slug:ch.slug,research_state:ch.research_state,placement:'home_today'});
     });
   }).catch(function(){
+    $('heroMu').innerHTML='<div class="hero-load">Today’s matchup could not be loaded</div>';
     $('todayCard').innerHTML='<div class="empty">Today’s challenge could not be loaded. '
       +'<a href="/games/price-it/">Open Price It</a> to try again.</div>';
   });
