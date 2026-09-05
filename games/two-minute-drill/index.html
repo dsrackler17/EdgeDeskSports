@@ -1,0 +1,594 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-1PXVBV53FZ"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-1PXVBV53FZ');
+</script>
+<title>Two-Minute Drill | EdgeDesk Games</title>
+<meta name="description" content="Ten rapid-fire questions about real football matchups, two minutes on one clock, three lives. Every answer comes from EdgeDesk’s own numbers, and every miss comes with the why. Free to play, no real-money wagering.">
+<link rel="canonical" href="https://edgedesksports.com/games/two-minute-drill">
+<meta name="theme-color" content="#0b0d11">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230b0d11'/%3E%3Cpath d='M18 6 L23 6 L14 26 L9 26 Z' fill='%233fb883'/%3E%3C/svg%3E">
+<meta name="robots" content="index,follow">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="EdgeDesk Games">
+<meta property="og:url" content="https://edgedesksports.com/games/two-minute-drill">
+<meta property="og:title" content="Two-Minute Drill — ten matchups, two minutes, three lives">
+<meta property="og:description" content="Ten rapid-fire questions about real football matchups, one shared clock, three lives. Every answer from EdgeDesk’s research. Free to play, no real-money wagering.">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Two-Minute Drill — ten matchups, two minutes, three lives">
+<meta name="twitter:description" content="Ten rapid-fire questions about real football matchups, two minutes, three lives. Free to play.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&family=Press+Start+2P&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/games/games.css">
+<link rel="stylesheet" href="/games/two-minute-drill/drill.css">
+</head>
+<body>
+<div id="gh"></div>
+
+<main class="wrap" id="main">
+  <div class="sec" style="margin-top:20px">
+    <div class="card drill crt" id="stage">
+      <div class="dr-attract">
+        <div class="eyebrow">EdgeDesk Games · The arcade</div>
+        <h1 class="px dr-title">TWO-MINUTE<br> DRILL</h1>
+        <div class="dr-sub">10 matchups · 2:00 on the clock · 3 lives</div>
+        <div class="sk" style="width:55%;margin:18px auto"></div>
+        <div class="sk" style="width:70%;margin:14px auto;height:64px"></div>
+        <div class="ftp" style="margin-top:12px"><b>Free to play</b> · No real-money wagering</div>
+      </div>
+    </div>
+  </div>
+  <div id="after"></div>
+</main>
+
+<div id="gf"></div>
+
+<script src="/games/lib/week.js"></script>
+<script src="/games/lib/scoring.js"></script>
+<script src="/games/lib/challenge.js"></script>
+<script src="/games/lib/research_state.js"></script>
+<script src="/games/lib/attribution.js"></script>
+<script src="/games/lib/store.js"></script>
+<script src="/games/lib/dynasty.js"></script>
+<script src="/games/lib/drill.js"></script>
+<script src="/games/games.js"></script>
+<script>
+(function(){
+  'use strict';
+  var G=window.EDGames,ST=window.EDGamesStore,W=window.EDGamesWeek,
+      CH=window.EDGamesChallenge,RS=window.EDGamesResearchState,DR=window.EDGamesDrill;
+  var $=function(id){return document.getElementById(id);};
+  var stage=$('stage'),after=$('after');
+
+  var READY=G.boot('drill');
+
+  /* The page computes no price and asks no question of its own. Every round
+     comes out of games/lib/drill.js, which reads the committed board; this
+     file only runs the clock, paints the cabinet and records what happened. */
+  var POOL=null,LOAD=null;     /* the board, and the one fetch of it */
+  var S=null;                  /* the live run */
+  var CD=null;                 /* the attract screen's countdown */
+  var MUTE_KEY='edgedesk_drill_mute';
+  var REVEAL_MS=1500,DAY_MS=86400000;
+  var HOUR_UTC=(W.BOUNDARY&&W.BOUNDARY.hour_utc!=null)?W.BOUNDARY.hour_utc:7;
+
+  /* ---- small helpers -------------------------------------------------- */
+  function fmt(n){return String(Math.round(n||0)).replace(/\B(?=(\d{3})+(?!\d))/g,',');}
+  function pad2(n){return (n<10?'0':'')+n;}
+  /* m:ss.t from milliseconds left */
+  function clockText(ms){
+    var t=Math.max(0,Math.floor(ms/100)),m=Math.floor(t/600),s=Math.floor((t%600)/10);
+    return m+':'+pad2(s)+'.'+(t%10);
+  }
+  function plural(n,one,many){return n+' '+(n===1?one:many);}
+
+  /* The seed changes at the day boundary week.js declares (07:00 UTC), so
+     "next daily drill in 9h 12m" is a statement about when a new drill
+     exists — never a timer invented to hurry anyone. */
+  function nextBoundaryMs(now){
+    var d=new Date(now);
+    var t=Date.UTC(d.getUTCFullYear(),d.getUTCMonth(),d.getUTCDate(),HOUR_UTC,0,0,0);
+    if(t<=now)t+=DAY_MS;
+    return t;
+  }
+  function untilText(ms){
+    var mins=Math.ceil(ms/60000),h,m;
+    if(mins<1)return 'under a minute';
+    h=Math.floor(mins/60);m=mins%60;
+    return (h?h+'h ':'')+m+'m';
+  }
+
+  /* ---- sound: WebAudio blips, no assets ------------------------------- */
+  /* The context is created inside the START tap (browsers require a gesture)
+     and everything is wrapped: a browser without WebAudio, or a player who
+     turned sound off, simply hears nothing. */
+  var AC=null,muted=false;
+  /* SOUND IS OPT-IN. Off until the player turns it on, and the choice is
+     remembered; a stored '0' is an explicit "on". */
+  try{muted=window.localStorage.getItem(MUTE_KEY)!=='0';}catch(_){muted=true;}
+  function setMuted(v){
+    muted=!!v;
+    try{window.localStorage.setItem(MUTE_KEY,muted?'1':'0');}catch(_){}
+  }
+  function audio(){
+    if(AC)return AC;
+    try{var C=window.AudioContext||window.webkitAudioContext;if(C)AC=new C();}catch(_){AC=null;}
+    return AC;
+  }
+  function tone(ac,f,type,at,dur,vol){
+    var o=ac.createOscillator(),g=ac.createGain();
+    o.type=type;o.frequency.setValueAtTime(f,at);
+    g.gain.setValueAtTime(0.0001,at);
+    g.gain.exponentialRampToValueAtTime(vol,at+0.01);
+    g.gain.exponentialRampToValueAtTime(0.0001,at+dur);
+    o.connect(g);g.connect(ac.destination);
+    o.start(at);o.stop(at+dur+0.02);
+  }
+  /* [frequency, wave, offset s, length s, volume] */
+  var SFX={
+    start:[[440,'square',0,.09,.07],[660,'square',.1,.14,.07]],
+    hit:[[660,'square',0,.06,.06],[990,'square',.06,.1,.06]],
+    miss:[[130,'square',0,.12,.08]],
+    tick:[[880,'triangle',0,.03,.035]],
+    finish:[[523,'square',0,.1,.07],[659,'square',.12,.1,.07],[784,'square',.24,.22,.07]]
+  };
+  function sfx(name){
+    if(muted)return;
+    var ac=audio();if(!ac)return;
+    try{
+      if(ac.state==='suspended')ac.resume();
+      var t=ac.currentTime,L=SFX[name]||[],i;
+      for(i=0;i<L.length;i++)tone(ac,L[i][0],L[i][1],t+L[i][2],L[i][3],L[i][4]);
+    }catch(_){}
+  }
+
+  /* ---- the board ------------------------------------------------------ */
+  function load(){
+    if(POOL)return Promise.resolve(POOL);
+    if(!LOAD)LOAD=G.artifact().then(function(a){POOL=a.challenges;paintBoard();return POOL;})
+      .catch(function(e){LOAD=null;throw e;});
+    return LOAD;
+  }
+  function loadFailed(){
+    stopCountdown();stopClock();S=null;
+    stage.className='card drill crt';
+    stage.innerHTML='<div class="empty">The drill board could not be loaded. '
+      +'Check your connection and reload.</div>';
+    after.innerHTML='';
+  }
+  function paintBoard(){
+    var el=$('board');if(!el||!POOL)return;
+    var n=DR.eligible(POOL,Date.now()).length;
+    el.textContent=n?(plural(n,'matchup','matchups')+' on the board'):'No matchup is playable right now';
+  }
+
+  /* ---- attract ---------------------------------------------------------
+     Painted synchronously, before the board arrives: the first five seconds
+     decide whether anyone plays, and a spinner is not a game. Only the
+     "N matchups on the board" line waits. */
+  function renderAttract(){
+    stopCountdown();stopClock();S=null;
+    var day=W.dayKey(),done=ST.drillDaily(day),free=!!done;
+    stage.className='card drill crt';
+    stage.innerHTML=
+      '<div class="dr-attract">'
+      +'<div class="eyebrow">EdgeDesk Games · The arcade</div>'
+      +'<h1 class="px dr-title">TWO-MINUTE<br> DRILL</h1>'
+      +'<div class="dr-sub">10 matchups · 2:00 on the clock · 3 lives</div>'
+      +'<div class="dr-line">Two options a question, every answer from EdgeDesk’s own numbers. '
+      +'The clock runs through every reveal — read fast.</div>'
+      +'<div class="dr-board" id="board"><span class="sk"></span></div>'
+      +(done
+        ?'<div class="dr-done"><div class="px">Today’s drill: '+done.correct+'/'+done.rounds
+          +' · '+fmt(done.total)+' pts</div><div class="dr-next" id="nextDaily"></div></div>'
+        :'')
+      +'<button class="px dr-start" id="start" type="button" data-mode="'+(free?'free':'daily')+'">'
+      +(free?'FREE PLAY':'PRESS START')+'</button>'
+      +'<div class="ftp" style="margin-top:12px"><b>Free to play</b> · No real-money wagering</div>'
+      +'<div class="dr-line">'+(free
+        ?'Free play is practice: it counts toward your best, not toward your week or your XP.'
+        :'Only today’s drill counts toward your week and your XP. Free play opens after it.')+'</div>'
+      +'<div class="dr-tools"><button class="dr-sound" id="snd" type="button" aria-pressed="'
+      +(muted?'false':'true')+'">Sound: '+(muted?'off':'on')+'</button></div>'
+      +'<div class="dr-line">Keys 1 and 2 answer · Enter continues</div>'
+      +'</div>';
+    after.innerHTML='';
+    paintBoard();
+    if(done)startCountdown();
+    $('start').addEventListener('click',function(){begin(this.getAttribute('data-mode'));});
+    $('snd').addEventListener('click',function(){
+      setMuted(!muted);
+      this.setAttribute('aria-pressed',muted?'false':'true');
+      this.textContent='Sound: '+(muted?'off':'on');
+      if(!muted)sfx('hit');
+    });
+  }
+  function startCountdown(){
+    function paint(){
+      var el=$('nextDaily');if(!el){stopCountdown();return;}
+      el.textContent='Next daily drill in '+untilText(nextBoundaryMs(Date.now())-Date.now());
+    }
+    paint();CD=setInterval(paint,30000);
+  }
+  function stopCountdown(){if(CD){clearInterval(CD);CD=null;}}
+
+  /* START. The sound context is created here, inside the tap. */
+  function begin(mode){
+    sfx('start');
+    var b=$('start');if(b){b.disabled=true;b.textContent='LOADING…';}
+    load().then(function(){startRun(mode);}).catch(loadFailed);
+  }
+
+  /* ---- the run --------------------------------------------------------- */
+  function startRun(mode){
+    stopCountdown();stopClock();
+    var day=W.dayKey();
+    var seed=mode==='daily'?DR.dailySeed(day):DR.freeSeed(day,ST.drillRecord().runs);
+    var run=DR.build(POOL,seed,Date.now());
+    if(!run.rounds.length){
+      stage.className='card drill crt';
+      stage.innerHTML='<div class="empty">No matchup is playable right now. '
+        +'The board refills when the next slate is built.<br>'
+        +'<a href="/games/">Back to EdgeDesk Games</a></div>';
+      return;
+    }
+    var now=Date.now();
+    S={mode:mode,run:run,idx:0,answers:[],lives:DR.LIVES,correct:0,
+       startAt:now,endAt:now+DR.CLOCK_SECONDS*1000,
+       phase:'play',timer:null,revealT:null,revealAt:0,decided:false,lastTick:null,
+       res:null,rec:null,replay:false,prevBest:0};
+    G.track('drill_start',{mode:mode,seed:seed,game_type:'drill',rounds:run.rounds.length});
+    stage.className='card drill crt';
+    stage.innerHTML=hudHtml()
+      +(run.short?'<div class="dr-note">The board only had '
+        +plural(run.rounds.length,'matchup','matchups')+' today.</div>':'')
+      +'<div id="q"></div>';
+    after.innerHTML='';
+    /* elapsed time is always Date.now() minus the start — a throttled tab
+       loses clock rather than gaining it, which is the drill */
+    S.timer=setInterval(tick,100);
+    renderRound();
+    try{window.scrollTo({top:0,behavior:'smooth'});}catch(_){window.scrollTo(0,0);}
+  }
+
+  function hudHtml(){
+    return '<div class="dr-hud" id="hud">'
+      +'<div class="dr-hud-l"><div class="px dr-rd" id="hudRd"></div>'
+      +'<div class="dr-lives" id="hudLives" role="img"></div></div>'
+      +'<div class="px dr-clock" id="hudClock" aria-label="time left">'+clockText(DR.CLOCK_SECONDS*1000)+'</div>'
+      +'<div class="dr-hud-r"><div class="dr-k">Score</div><div class="px dr-sc" id="hudSc">0</div></div>'
+      +'</div>';
+  }
+  function paintHud(){
+    var rd=$('hudRd'),lv=$('hudLives'),sc=$('hudSc'),i,h='';
+    if(rd)rd.textContent='RD '+Math.min(S.idx+1,S.run.rounds.length)+'/'+S.run.rounds.length;
+    if(lv){
+      for(i=0;i<DR.LIVES;i++)h+='<span class="life'+(i<S.lives?' on':'')+'"></span>';
+      lv.innerHTML=h;
+      lv.setAttribute('aria-label',plural(S.lives,'life','lives')+' left');
+    }
+    if(sc)sc.textContent=fmt(S.correct*DR.POINTS_PER_CORRECT);
+  }
+  function paintClock(left){
+    var c=$('hudClock');if(!c)return;
+    c.textContent=clockText(left);
+    c.className='px dr-clock'+(left<=10000?' low':'');
+  }
+  function tick(){
+    if(!S||S.decided)return;
+    var left=S.endAt-Date.now();
+    paintClock(left);
+    if(left<=0){decide('clock');return;}
+    var s=Math.ceil(left/1000);
+    if(s<=10&&s!==S.lastTick){S.lastTick=s;sfx('tick');}
+  }
+  function stopClock(){if(S&&S.timer){clearInterval(S.timer);S.timer=null;}}
+
+  /* ---- one round ------------------------------------------------------- */
+  function optHtml(i,t){
+    return '<button class="opt" id="o'+i+'" type="button">'
+      +'<span class="px opt-k" aria-hidden="true">'+(i+1)+'</span>'
+      +'<span class="opt-t">'+G.esc(t)+'</span></button>';
+  }
+  function renderRound(){
+    var q=S.run.rounds[S.idx];
+    S.phase='play';
+    paintHud();
+    $('q').innerHTML=
+      '<div class="dr-q" aria-live="polite">'
+      +'<span class="px dr-tag">'+G.esc(q.tag)+'</span>'
+      +'<div class="dr-mu">'+G.esc(q.away_team)+' <span class="dr-vs">vs</span> '+G.esc(q.home_team)
+      +(q.kickoff?'<span class="dr-when">'+G.esc(G.kickoffLabel(q.kickoff))+'</span>':'')+'</div>'
+      +'<div class="dr-prompt">'+G.esc(q.prompt)+'</div>'
+      +'</div>'
+      +'<div class="dr-opts">'+optHtml(0,q.options[0])+optHtml(1,q.options[1])+'</div>'
+      +'<div class="px dr-verdict" id="verdict" aria-live="polite"></div>'
+      +'<div id="rv" aria-live="polite"></div>';
+    /* the answering tap must not bubble to the cabinet's "tap anywhere to
+       continue" listener: by the time it got there the round would already
+       be in reveal, and the same tap would skip the why */
+    $('o0').addEventListener('click',function(e){e.stopPropagation();choose(0);});
+    $('o1').addEventListener('click',function(e){e.stopPropagation();choose(1);});
+  }
+
+  function choose(i){
+    if(!S||S.phase!=='play'||S.decided)return;
+    var q=S.run.rounds[S.idx],hit=(i===q.answer);
+    S.answers.push({round:q.round,picked:i});
+    if(hit)S.correct++;else S.lives--;
+    S.phase='reveal';S.revealAt=Date.now();
+    G.track('drill_round',{round:q.round,kind:q.kind,correct:hit,game_id:q.game_id,
+      game_slug:q.slug,game_type:'drill',research_state:q.research_state});
+    sfx(hit?'hit':'miss');
+    /* the last answer settles the run right now, at this clock — the reveal
+       still shows, but the seconds left are the seconds left when the
+       player answered, not when they finished reading */
+    var last=(S.idx+1>=S.run.rounds.length)||S.lives<=0;
+    if(last)decide(S.lives<=0?'lives':'complete');
+    paintHud();
+    renderReveal(q,i,hit,last);
+    S.revealT=setTimeout(advance,last?REVEAL_MS+700:REVEAL_MS);
+  }
+
+  function renderReveal(q,i,hit,last){
+    var mine=$('o'+i),other=$('o'+(1-i)),v=$('verdict');
+    mine.disabled=true;other.disabled=true;
+    mine.className='opt '+(hit?'hit':'miss');
+    other.className='opt '+(hit?'dim':'ans');
+    v.className='px dr-verdict '+(hit?'ok':'no');
+    v.textContent=hit?('+'+DR.POINTS_PER_CORRECT):'MISS · −1 LIFE';
+    $('rv').innerHTML='<div class="dr-rv">'
+      +'<div class="eyebrow">Why</div>'
+      +'<div class="dr-why">'+G.esc(q.why)+'</div>'
+      +(q.teaches?'<div class="dr-teach">'+G.esc(q.teaches)+'</div>':'')
+      +'<div class="btn-row dr-cont"><button class="btn" id="next" type="button">'
+      +(last?'See my result →':'Next →')+'</button></div>'
+      +'<div class="dr-hint">'+(last?'':'Tap anywhere or press Enter · the clock is still running')+'</div>'
+      +'</div>';
+    $('next').addEventListener('click',function(e){e.stopPropagation();advance();});
+  }
+
+  function advance(){
+    if(!S)return;
+    if(S.revealT){clearTimeout(S.revealT);S.revealT=null;}
+    if(S.decided){renderResult();return;}
+    if(S.phase!=='reveal')return;
+    S.idx++;
+    renderRound();
+  }
+
+  /* a tap anywhere on the cabinet continues a reveal; a live link or button
+     is its own action and is left alone */
+  stage.addEventListener('click',function(e){
+    if(!S||S.phase!=='reveal')return;
+    /* a second tap inside a third of a second is a double-tap, not a read */
+    if(Date.now()-S.revealAt<300)return;
+    var t=e.target;
+    while(t&&t!==stage){
+      if(t.tagName==='A'||(t.tagName==='BUTTON'&&!t.disabled))return;
+      t=t.parentNode;
+    }
+    advance();
+  });
+  document.addEventListener('keydown',function(e){
+    if(!S||S.phase==='done')return;
+    var k=e.key,el=e.target;
+    var live=el&&(el.tagName==='A'||el.tagName==='INPUT'||el.tagName==='TEXTAREA'
+      ||(el.tagName==='BUTTON'&&!el.disabled));
+    if(S.phase==='play'){
+      if(k==='1'||k==='ArrowLeft'){e.preventDefault();choose(0);}
+      else if(k==='2'||k==='ArrowRight'){e.preventDefault();choose(1);}
+    }else if(S.phase==='reveal'&&(k==='Enter'||k===' ')&&!live){
+      e.preventDefault();advance();
+    }
+  });
+
+  /* ---- the run ends ----------------------------------------------------
+     drill.js scores it; store.js records it. A daily run already in the
+     book comes back as the ORIGINAL record (replayed, never rescored), and
+     whatever comes back is what gets rendered. */
+  function decide(ended){
+    if(!S||S.decided)return;
+    S.decided=true;
+    var leftMs=ended==='clock'?0:Math.max(0,S.endAt-Date.now());
+    stopClock();
+    paintClock(leftMs);
+    var res=DR.score(S.run,S.answers,leftMs/1000,ended),day=W.dayKey();
+    S.replay=(S.mode==='daily'&&!!ST.drillDaily(day));
+    S.prevBest=ST.drillRecord().best||0;
+    S.res=res;
+    S.rec=ST.recordDrill({mode:S.mode,day:day,seed:S.run.seed,rounds:res.rounds,correct:res.correct,
+      points:res.points,clock_points:res.clock_points,total:res.total,lives_left:res.lives_left,
+      clock_left:res.clock_left,ended:res.ended,scoring_version:res.scoring_version,
+      game_ids:S.run.rounds.map(function(q){return q.game_id;}),misses:res.misses})||res;
+    G.track('drill_complete',{mode:S.mode,correct:res.correct,total:res.total,ended:res.ended,
+      game_type:'drill',rounds:res.rounds,replay:S.replay});
+    if(ended==='clock'){
+      if(S.revealT){clearTimeout(S.revealT);S.revealT=null;}
+      renderResult();
+    }
+  }
+
+  /* ---- the result ------------------------------------------------------ */
+  /* the challenge record behind a round, so the research link and the state
+     badge come from the board rather than from the question */
+  function chalFor(q){
+    return CH.bySlug(POOL,q.slug)||CH.bySlug(POOL,q.game_id)
+      ||{game_id:q.game_id,slug:q.slug,home_team:q.home_team,away_team:q.away_team,
+         research_state:q.research_state};
+  }
+  function rowFor(q){
+    var ch=chalFor(q);
+    var st=(ch.confidence!=null||ch.spread_gap!=null)?RS.classify(ch.confidence,ch.spread_gap):null;
+    return {q:q,ch:ch,st:st,g:(typeof ch.spread_gap==='number')?Math.abs(ch.spread_gap):-1};
+  }
+  function missedRounds(){
+    var out=[],i;
+    for(i=0;i<S.answers.length&&i<S.run.rounds.length;i++)
+      if(S.answers[i].picked!==S.run.rounds[i].answer)out.push(rowFor(S.run.rounds[i]));
+    return out;
+  }
+  /* no misses: the matchup in the run where EdgeDesk and the market sit
+     furthest apart — the one most worth reading, not a hidden edge */
+  function featureRound(){
+    var best=null,i,r;
+    for(i=0;i<S.run.rounds.length;i++){r=rowFor(S.run.rounds[i]);if(!best||r.g>best.g)best=r;}
+    return best;
+  }
+  function stat(k,v,s,on){
+    return '<div class="stat"><div class="k">'+k+'</div><div class="v'+(on?' on':'')+'">'+v
+      +'</div><div class="s">'+s+'</div></div>';
+  }
+  function missHtml(r,i,gap){
+    var q=r.q,st=r.st;
+    return '<div class="dr-miss'+(gap?' gap':'')+'">'
+      +'<div class="dr-miss-top"><span class="px dr-miss-tag">RD '+q.round+' · '+G.esc(q.tag)+'</span>'
+      +(st?'<span class="rs '+st.tone+'"><span class="dot"></span>'+G.esc(st.label)+'</span>':'')+'</div>'
+      +'<div class="dr-miss-mu">'+G.esc(q.away_team)+' vs '+G.esc(q.home_team)+'</div>'
+      +'<div class="dr-miss-q">'+G.esc(q.prompt)+' <b>'+G.esc(q.options[q.answer])+'</b></div>'
+      +'<div class="dr-miss-why">'+G.esc(q.why)+'</div>'
+      +(st?'<div class="dr-miss-inv">'+G.esc(RS.invitation(st.key))+'</div>':'')
+      +'<div class="btn-row"><button class="btn" type="button" data-research="'+i+'">Research this matchup →</button></div>'
+      +'</div>';
+  }
+
+  function renderResult(){
+    if(!S)return;
+    S.phase='done';stopClock();
+    if(S.revealT){clearTimeout(S.revealT);S.revealT=null;}
+    var res=S.res,rec=S.rec||res;
+    var heading=res.ended==='complete'?'DRILL COMPLETE':res.ended==='lives'?'OUT OF LIVES':'CLOCK';
+    var sub=res.ended==='complete'?'All '+res.rounds+' answered'
+      :res.ended==='lives'?'Three misses — the run ends there':'Time expired';
+    var grade=DR.grade(rec),best=ST.drillRecord().best||0;
+    var newBest=!S.replay&&rec.total>S.prevBest&&rec.total>0;
+    var misses=missedRounds(),rows=misses.length?misses:[featureRound()];
+    var first=rows[0];
+    var streak=ST.liveStreak(),wk=ST.weeklyScore(),drec=ST.drillRecord();
+    var notes='';
+    if(S.replay)notes+='<div class="dr-small">Today’s drill was already in the book — the run that counts is shown above.</div>';
+    if(!ST.storageWorks())notes+='<div class="dr-small">This browser is not saving progress — this session only.</div>';
+    notes+='<div class="dr-small">'+(S.mode==='daily'
+      ?'Today’s drill counts toward your week and your XP.'
+      :'Free play counts toward your best, not toward your week or your XP.')+'</div>';
+
+    stage.className='card drill crt reveal';
+    stage.innerHTML=
+      '<div class="eyebrow">Two-Minute Drill · '+(S.mode==='daily'?'Today’s drill':'Free play')+'</div>'
+      +'<h2 class="px dr-res-h">'+heading+'</h2>'
+      +'<div class="dr-res-sub">'+sub+'</div>'
+      +'<div class="px dr-total">'+fmt(rec.total)+'</div>'
+      +'<div class="dr-res-k">points</div>'
+      +'<div class="dr-corr">'+rec.correct+' / '+rec.rounds+' correct</div>'
+      +(rec.clock_points>0
+        ?'<div class="dr-clockpts">+'+fmt(rec.clock_points)+' · '+Math.floor(rec.clock_left)+'s left on the clock</div>':'')
+      +(grade?'<div class="px dr-grade">'+G.esc(grade.label)+'</div>':'')
+      +'<div class="dr-best'+(newBest?' new':'')+'">'
+      +(newBest?'<span class="px">New best</span>':'Best: '+fmt(best)+' pts')+'</div>'
+      +notes
+      +'<div class="stats">'
+      +stat('Streak',streak?('🔥 '+streak):'—',streak===1?'day':'days in a row',!!streak)
+      +stat('This week',wk,'points this week',wk>0)
+      +stat('Drill best',fmt(drec.best),plural(drec.runs,'run','runs'),drec.best>0)
+      +'</div>'
+      +'<div class="dr-sec"><div class="eyebrow">'+(misses.length?'The misses, and why':'Nothing missed — one to read anyway')+'</div>'
+      +'<div class="dr-lede">'+(misses.length
+        ?'A miss is a different read from EdgeDesk’s, not a wrong one. Every one has a why, and the research behind it.'
+        :'The game EdgeDesk and the market disagree on most in your run.')+'</div>'
+      +'<div class="dr-misses">'+rows.map(function(r,i){return missHtml(r,i,!misses.length);}).join('')+'</div></div>'
+      +(first&&first.q.slug
+        ?'<div class="btn-row"><a class="btn btn-ghost" id="doPrice" href="/games/price-it/?g='
+          +encodeURIComponent(first.q.slug)+'">Play Price It on '+G.esc(first.q.away_team+' vs '+first.q.home_team)+'</a></div>'
+        :'')
+      +'<div class="btn-row two">'
+      +'<button class="btn btn-go" id="doFree" type="button">Free play</button>'
+      +'<a class="btn" href="/games/dynasty/">Back to my War Room</a>'
+      +'</div>'
+      +'<div class="btn-row"><button class="btn btn-ghost" id="doShare" type="button">Share my result</button></div>'
+      +'<div class="ftp" style="text-align:center;margin-top:14px">Scored against EdgeDesk’s numbers. '
+      +'A miss is a different read, not a wrong one — and a gap is not a betting edge.</div>';
+
+    /* the funnel: every miss opens the research on that matchup */
+    var btns=stage.querySelectorAll('[data-research]'),i;
+    for(i=0;i<btns.length;i++)(function(b){
+      b.addEventListener('click',function(){
+        var r=rows[+b.getAttribute('data-research')];
+        if(r)G.openResearch(r.ch,'drill_miss',{event:'research_open_from_drill',game_type:'drill'});
+      });
+    })(btns[i]);
+    var price=$('doPrice');
+    if(price)price.addEventListener('click',function(){
+      G.track('next_game_click',{game_type:'drill',game_id:first.q.game_id,game_slug:first.q.slug,placement:'drill_result'});
+    });
+    $('doFree').addEventListener('click',function(){begin('free');});
+    $('doShare').addEventListener('click',shareResult);
+
+    renderAfter();
+    sfx('finish');
+    /* the War Room reacts after the result has painted: an XP chip, or a
+       level-up moment, over the score rather than instead of it */
+    setTimeout(function(){try{G.pulse({game_type:'drill'});}catch(_){}},600);
+    try{window.scrollTo({top:0,behavior:'smooth'});}catch(_){window.scrollTo(0,0);}
+  }
+
+  function shareResult(){
+    var rec=S.rec||S.res;
+    var text='TWO-MINUTE DRILL\n'+rec.correct+' / '+rec.rounds+' · '+fmt(rec.total)+' pts\n'
+      +'Can you beat me?\nEdgeDesk Games';
+    var url=window.location.origin+'/games/two-minute-drill/';
+    G.track('drill_share',{game_type:'drill',mode:S.mode,correct:rec.correct,total:rec.total});
+    if(navigator.share){
+      navigator.share({title:'EdgeDesk Games',text:text,url:url})
+        .catch(function(){/* the player dismissed the sheet — not an error */});
+      return;
+    }
+    var payload=text+'\n'+url;
+    if(navigator.clipboard&&navigator.clipboard.writeText){
+      navigator.clipboard.writeText(payload)
+        .then(function(){G.toast('Result copied — paste it anywhere');})
+        .catch(function(){G.toast('Could not copy automatically');});
+      return;
+    }
+    G.toast('Copy this: '+url);
+  }
+
+  /* The account ask comes only AFTER real engagement — never during a first
+     game, and only once. Same block, same rule, as Price It. */
+  function renderAfter(){
+    var html='';
+    if(ST.engaged()&&!ST.seen('save_prompt')){
+      ST.markSeen('save_prompt');
+      G.track('save_score_cta',{game_type:'drill'});
+      html='<div class="sec"><div class="card save"><div class="eyebrow">Save your streak</div>'
+        +'<p style="margin:0;color:var(--dim);font-size:14px">Create a free EdgeDesk account to keep your</p>'
+        +'<ul><li>scores</li><li>streak</li><li>history</li><li>leaderboard position</li></ul>'
+        +'<div class="btn-row"><a class="btn" id="doSave" href="#">Save my score</a></div>'
+        +'<div class="ftp" style="margin-top:10px">Your progress stays on this device until you do.</div>'
+        +'</div></div>';
+    }
+    after.innerHTML=html;
+    var save=$('doSave');
+    if(save){
+      save.href=G.withAttribution('/app.html',{intent:'save_games_score'})+'#account';
+      save.addEventListener('click',function(){
+        G.track('signup_start_from_games',{game_type:'drill'});
+        G.track('account_save_from_dynasty',{game_type:'drill',placement:'drill_result'});
+      });
+    }
+  }
+
+  /* ---- boot -------------------------------------------------------------- */
+  renderAttract();
+  load().catch(loadFailed);
+})();
+</script>
+</body>
+</html>
