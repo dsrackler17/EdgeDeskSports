@@ -472,7 +472,7 @@ has(HOME, 'Welcome back', 'which says welcome back');
 has(HOME, 'id="continueBtn"', 'with one CONTINUE');
 chk('the returning hero is decided before the modules load',
   HOME.indexOf("localStorage.getItem('edgedesk_games_v1')") > 0
-  && HOME.indexOf("localStorage.getItem('edgedesk_games_v1')") < HOME.indexOf('<script src="/games/lib/week.js">'));
+  && HOME.indexOf("localStorage.getItem('edgedesk_games_v1')") < HOME.indexOf('<script src="/games/lib/week.js'));
 chk('and a browser that blocks storage still sees the pitch',
   /try\{[^}]*edgedesk_games_v1[\s\S]*?catch\(_\)\{\}/.test(HOME));
 has(HOME, '/games/lib/dynasty.js', 'the home page loads the rules');

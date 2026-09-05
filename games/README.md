@@ -48,6 +48,23 @@ two things a number the exporter already wrote says.
 own, and `tools/games/state_parity.test.js` fails if the research state drifts
 from the terminal's.
 
+### Versioned assets
+
+Every `/games` page loads its scripts and stylesheets from URLs that carry
+one version token (`/games/games.js?v=20260905a`). A browser keeps a cached
+`games.js` for as long as it likes, and a page built for a newer library
+dies on the first function the old copy lacks. A new token is a new URL and
+a fresh fetch. **After any change under `games/` that a page depends on:**
+
+```
+node tools/games/bump_assets.js        # stamps today's token on every page
+```
+
+`tools/games/games.test.js` fails if any page carries a different token, or
+loads a games asset bare. Each page also carries a stale-script guard: if a
+required function is missing at load, it shows a reload card instead of a
+dead skeleton.
+
 ### Rebuilding the board
 
 ```
