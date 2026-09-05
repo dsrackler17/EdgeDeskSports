@@ -83,6 +83,11 @@ const DYN = fs.readFileSync(G('dynasty/index.html'), 'utf8');
 const STATUS = fs.readFileSync(G('status/index.html'), 'utf8');
 const OFFICE = fs.readFileSync(G('franchise/index.html'), 'utf8');
 const ROSTER = fs.readFileSync(G('roster/index.html'), 'utf8');
+const GAMEDAY = fs.readFileSync(G('gameday/index.html'), 'utf8');
+const FJS = fs.readFileSync(G('lib/franchise.js'), 'utf8');
+const AUTHJS = fs.readFileSync(G('lib/auth.js'), 'utf8');
+const LANDING = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
+const SQLTEST = fs.readFileSync(path.join(__dirname, 'sql', 'games_franchise.test.sql'), 'utf8');
 const NOTFOUND = fs.readFileSync(path.join(ROOT, '404.html'), 'utf8');
 const SITEMAP = fs.readFileSync(path.join(ROOT, 'sitemap.xml'), 'utf8');
 const README = fs.readFileSync(G('README.md'), 'utf8');
@@ -444,7 +449,8 @@ fresh();
 }).then(() => {
   /* ═══ 8. THE PAGES, THE SHELL, THE COPY ═══════════════════════════════════ */
   [['front office', OFFICE, 'https://edgedesksports.com/games/franchise'],
-   ['roster', ROSTER, 'https://edgedesksports.com/games/roster']].forEach(([n, p, url]) => {
+   ['roster', ROSTER, 'https://edgedesksports.com/games/roster'],
+   ['game day', GAMEDAY, 'https://edgedesksports.com/games/gameday']].forEach(([n, p, url]) => {
     has(p, '<link rel="canonical" href="' + url + '">', n + ' declares its canonical URL');
     has(p, 'name="robots" content="index,follow"', n + ' is crawlable');
     ['og:title', 'og:description', 'og:url'].forEach(k => has(p, 'property="' + k + '"', n + ' carries ' + k));
@@ -466,21 +472,23 @@ fresh();
   });
   has(SITEMAP, 'https://edgedesksports.com/games/franchise<', 'the sitemap lists the Front Office');
   has(SITEMAP, 'https://edgedesksports.com/games/roster<', 'and the roster');
-  has(NOTFOUND, "p[1]==='roster'||p[1]==='franchise'", 'the static host routes the new rooms');
-  chk('the pages exist where the routes claim', fs.existsSync(G('franchise/index.html')) && fs.existsSync(G('roster/index.html')));
+  has(SITEMAP, 'https://edgedesksports.com/games/gameday<', 'and Game Day');
+  has(NOTFOUND, "p[1]==='roster'||p[1]==='franchise'||p[1]==='gameday'", 'the static host routes the new rooms');
+  chk('the pages exist where the routes claim', fs.existsSync(G('franchise/index.html')) && fs.existsSync(G('roster/index.html')) && fs.existsSync(G('gameday/index.html')));
   /* the bumper knows the new pages, so a token bump reaches them */
   const bump = require(path.join(ROOT, 'tools', 'games', 'bump_assets.js'));
-  chk('the asset bumper stamps the new pages', bump.PAGES.some(p => /franchise\/index\.html$/.test(p)) && bump.PAGES.some(p => /roster\/index\.html$/.test(p)));
+  chk('the asset bumper stamps the new pages', bump.PAGES.some(p => /franchise\/index\.html$/.test(p)) && bump.PAGES.some(p => /roster\/index\.html$/.test(p)) && bump.PAGES.some(p => /gameday\/index\.html$/.test(p)));
 
   /* the Front Office */
-  has(OFFICE, "AU.signUp(email,pass,consent)", 'sign-up goes through the games auth module');
-  has(OFFICE, 'I am 21 or older and agree to the', 'the consent affirmation is on the form');
-  has(OFFICE, '/terms.html', 'and links the Terms');
+  has(OFFICE, "G.saveCard(", 'saving goes through the shared one-step form');
+  has(JS, "AU.save(email, pass, consent)", 'which goes through the games auth module');
+  has(JS, 'I am 21 or older and agree to the', 'the consent affirmation is on the form');
+  has(JS, '/terms.html', 'and links the Terms');
   has(OFFICE, 'FR.create(', 'founding calls the server');
   has(OFFICE, 'FR.importHistory(payload)', 'and then imports the anonymous history');
   has(OFFICE, "track('franchise_created'", 'founding is measured');
   has(OFFICE, "track('franchise_import'", 'and so is the import');
-  has(OFFICE, "track('franchise_signup'", 'and sign-up');
+  has(JS, "track(r.mode === 'signin' ? 'franchise_signin' : 'franchise_signup'", 'and sign-up, or the sign-in it fell back to');
   has(OFFICE, 'carryOver()', 'the form says what carries over, in real numbers');
   has(OFFICE, 'No account needed', 'founding needs no account');
   has(OFFICE, 'Save your franchise', 'a device-owned franchise is offered a save, not a sign-up wall');
@@ -562,13 +570,13 @@ fresh();
   ['franchise_created', 'franchise_home_view', 'player_view', 'roster_change', 'daily_objective_complete', 'scouting_spent',
    'player_scouted', 'weekly_game_started', 'weekly_game_completed', 'h2h_franchise_complete', 'achievement_unlocked',
    'season_complete', 'draft_pick', 'trophy_room_view'].forEach(e => chk('the funnel declares ' + e, JS.indexOf("'" + e + "'") >= 0));
-  const ALL = HOME + PRICE + PICK + DRILL + DYN + OFFICE + ROSTER + JS;
+  const ALL = HOME + PRICE + PICK + DRILL + DYN + OFFICE + ROSTER + GAMEDAY + JS;
   ['franchise_created', 'franchise_home_view', 'player_view', 'roster_change', 'roster_view', 'front_office_view', 'franchise_reward', 'franchise_import']
     .forEach(e => chk('and actually fires ' + e, new RegExp("track\\('" + e + "'").test(ALL)));
   chk('no second analytics vendor', !/posthog|mixpanel|segment\.com|amplitude|plausible\.io|fathom/i.test(ALL));
 
   /* the copy rules the rest of Games lives by */
-  const COPY = (OFFICE + ROSTER + FCSS + JS + HOME).replace(/no real-money wagering/gi, '').replace(/<!--[\s\S]*?-->/g, '').replace(/\/\*[\s\S]*?\*\//g, '');
+  const COPY = (OFFICE + ROSTER + GAMEDAY + FCSS + JS + HOME).replace(/no real-money wagering/gi, '').replace(/<!--[\s\S]*?-->/g, '').replace(/\/\*[\s\S]*?\*\//g, '');
   [/guaranteed edge/i, /free money/i, /can'?t lose/i, /sure thing/i, /risk-?free/i, /\bwager\b(?!ing)/i, /\bparlay\b/i,
    /loot box/i, /virtual currency/i, /pay[- ]to[- ]win/i, /\bpack\b(?!s? *, no premium)/i, /premium player/i, /\bjackpot\b/i, /\bcasino\b/i]
     .forEach(re => chk('the franchise copy avoids ' + re, !re.test(COPY.replace(/no packs, no premium players/gi, '')), (COPY.match(re) || [''])[0]));
@@ -615,7 +623,8 @@ fresh();
 
   /* ═══ 10. THE SQL FILE KEEPS THE CONVENTIONS ══════════════════════════════ */
   const TABLES = ['game_board', 'franchises', 'franchise_seasons', 'game_players', 'franchise_activity', 'franchise_ledger',
-    'franchise_pick5_cards', 'franchise_pick5_selections', 'franchise_achievement_defs', 'franchise_achievements'];
+    'franchise_pick5_cards', 'franchise_pick5_selections', 'franchise_achievement_defs', 'franchise_achievements',
+    'franchise_opponents', 'franchise_games'];
   TABLES.forEach(t => {
     has(SQL, 'create table if not exists public.' + t, t + ' is created idempotently');
     has(SQL, 'alter table public.' + t + ' ' + ' '.repeat(Math.max(0, 27 - t.length)) + 'enable row level security', t + ' has row level security on');
@@ -648,6 +657,166 @@ fresh();
   has(README, 'games_franchise.sql', 'the README documents the file');
   has(README, 'economy_v1', 'and the economy version');
   has(fs.readFileSync(path.join(ROOT, 'supabase', 'README.md'), 'utf8'), 'games_franchise.sql', 'and the supabase README lists it');
+
+  /* ═══ 11. THE WEEKLY GAME (PHASE 2) ═══════════════════════════════════════ */
+  /* the simulator's published shape is the SQL's */
+  eq('the simulator is versioned', F.SIM_VERSION, 'sim_v1');
+  has(SQL, "'sim', 'sim_v1'", 'and every box says so');
+  (() => {
+    const m = SQL.match(/franchise_scheme_edges\(\)[\s\S]*?select '(\{[\s\S]*?\})'::jsonb;/);
+    let sqlEdges = null; try { sqlEdges = m && JSON.parse(m[1]); } catch (_) {}
+    chk('the scheme matchup table the client shows is the one the server applies, cell for cell',
+      !!sqlEdges && JSON.stringify(sqlEdges) === JSON.stringify(F.SCHEME_EDGES), m ? m[1].slice(0, 80) : 'not found');
+    chk('every offense and defense in the table is a real identity',
+      Object.keys(F.SCHEME_EDGES).every(o => F.OFFENSES.some(x => x.key === o) && Object.keys(F.SCHEME_EDGES[o]).every(d => F.DEFENSES.some(x => x.key === d))));
+    chk('and no offense nets more than a point across the six defenses',
+      Object.keys(F.SCHEME_EDGES).every(o => Math.abs(Object.keys(F.SCHEME_EDGES[o]).reduce((a, d) => a + F.SCHEME_EDGES[o][d], 0)) <= 1));
+  })();
+  eq('Air Raid into Press Man loses two', F.schemeEdge('air_raid', 'press_man'), -2);
+  eq('an unknown scheme is even', F.schemeEdge('nope', 'zone'), 0);
+  chk('home field and the preparation swing are the SQL\'s numbers', F.HOME_EDGE === 1.5 && F.PREP_SWING === 3
+    && /then 1\.5 else 0 end/.test(SQL) && /\/ 50\.0 \* 3, 2\)/.test(SQL));
+  chk('preparation swings −3 at 0%, 0 at 50%, +3 at 100%, −0.54 at 41%', F.prepAdj(0) === -3 && F.prepAdj(50) === 0 && F.prepAdj(100) === 3 && F.prepAdj(41) === -0.54);
+  /* preparation, prep_v1: the client's worked examples are the ones the SQL suite pins */
+  (() => {
+    const a = F.prep({ price_it: 1, drills: 1, research: 1, price_it_avg_score: 80 });
+    chk('one report, one drill, one open: scouting 33, preparation 41, market IQ 80', a.scouting === 33 && a.preparation === 41 && a.market_iq === 80, JSON.stringify(a));
+    const b = F.prep({ price_it: 3, pick5_submitted: true, drills: 1, research: 2, price_it_avg_score: 80 });
+    chk('everything done: 100 and 100', b.scouting === 100 && b.preparation === 100);
+    has(SQLTEST, 'scouting 33, preparation 41, market IQ 80', 'and the SQL suite asserts the same examples of the server');
+    has(SQL, "'version', 'prep_v1'", 'the server publishes the same version');
+  })();
+  /* the achievements the SQL seeds are the names the client knows */
+  (() => {
+    const rows = {}; let m; const re = /\('([a-z_0-9]+)',\s+'([^']+)',\s+'/g;
+    while ((m = re.exec(SQL))) rows[m[1]] = m[2];
+    ['first_win', 'bragging_rights', 'shutout', 'first_season', 'winning_season', 'perfect_season'].forEach(id =>
+      chk('the SQL seeds ' + id + ' and the client names it the same', rows[id] && F.ACHIEVEMENTS[id] && F.ACHIEVEMENTS[id].name === rows[id].replace(/''/g, "'"), rows[id]));
+  })();
+  eq('a weekly game: 100 XP, 40 TC', F.ECONOMY.weekly_game.xp + '/' + F.ECONOMY.weekly_game.tc, '100/40');
+  eq('a win: 60 XP, 60 TC, 2 CP', [F.ECONOMY.weekly_win.xp, F.ECONOMY.weekly_win.tc, F.ECONOMY.weekly_win.cp].join('/'), '60/60/2');
+  eq('the rival beaten: 50 XP, 1 CP on top', F.ECONOMY.rival_win.xp + '/' + F.ECONOMY.rival_win.cp, '50/1');
+  eq('a season completed: 250 XP, 150 TC', F.ECONOMY.season_complete.xp + '/' + F.ECONOMY.season_complete.tc, '250/150');
+  chk('rewardsFor knows the game lines', F.rewardsFor('weekly_win').cp === 2 && F.rewardsFor('season_complete').xp === 250);
+
+  /* where the season stands, read from the snapshot */
+  (() => {
+    const T = Date.parse('2026-09-09T12:00:00Z');
+    const base = { franchise: { id: 'f' }, season: { status: 'active', number: 1, label: 'Season I', weeks: 8, week: 2 } };
+    const ng = { id: 'g', week: 3, opens_at: '2026-09-12T07:00:00Z', open: false, home: true, rival: false, opponent: { city: 'Bayou', name: 'Marsh Hawks', abbr: 'BAY' } };
+    eq('no snapshot, no phase', F.gamePhase(null), null);
+    eq('a preseason franchise is waiting for its schedule', F.gamePhase({ franchise: {}, season: { status: 'preseason' } }).phase, 'preseason');
+    eq('a complete season waits for the next one', F.gamePhase({ franchise: {}, season: { status: 'complete' } }).phase, 'complete');
+    eq('an active season with no game says so', F.gamePhase(base, T).phase, 'between');
+    const w = F.gamePhase(Object.assign({ next_game: ng }, base), T);
+    chk('a game that opens Saturday is waiting, and says how long', w.phase === 'waiting' && w.opens.label === 'opens in 3 days' && w.game === ng);
+    eq('the same game on Saturday is ready', F.gamePhase(Object.assign({ next_game: ng }, base), Date.parse('2026-09-12T07:00:00Z')).phase, 'ready');
+    eq('and the server\'s open flag is believed', F.gamePhase(Object.assign({ next_game: Object.assign({}, ng, { open: true }) }, base), T).phase, 'ready');
+    eq('the last day counts in hours', F.opensIn('2026-09-12T07:00:00Z', Date.parse('2026-09-11T20:00:00Z')).label, 'opens in 11 hours');
+    eq('a matchup is said the way a schedule says it', F.matchupLine(ng), 'vs Bayou Marsh Hawks');
+    eq('away is at', F.matchupLine(Object.assign({}, ng, { home: false })), 'at Bayou Marsh Hawks');
+    eq('a result is said with the score', F.resultLine({ status: 'final', result: 'W', score_for: 27, score_against: 20, ot: true }), 'W 27–20 (OT)');
+    eq('a scheduled game has no result line', F.resultLine(ng), '');
+  })();
+  /* lines and cards */
+  eq('a quarterback line', F.statsLine('QB', { cmp: 18, att: 27, yds: 288, td: 3, int: 1 }), '18/27, 288 yds, 3 TD, 1 INT');
+  eq('a back line with receiving', F.statsLine('RB', { car: 15, yds: 102, td: 1, rec: 3, rec_yds: 38 }), '15 car, 102 yds, 1 TD, 3 rec, 38 yds');
+  eq('a receiver line', F.statsLine('WR', { rec: 6, yds: 104, td: 1 }), '6 rec, 104 yds, 1 TD');
+  eq('a defender line', F.statsLine('LB', { tkl: 9, sacks: 1, int: 0 }), '9 tkl, 1 sack');
+  eq('a kicker line says PAT, not XP', F.statsLine('K', { fg: 2, fga: 3, xp: 3 }), '2/3 FG, 3 PAT');
+  eq('a punter line averages', F.statsLine('P', { punts: 4, punt_yds: 168 }), '4 punts, 42.0 avg');
+  eq('a career line is the sum of the boxes', F.careerLine({ position: 'WR', career_stats: { rec: 12, yds: 190, td: 2, games: 3 }, acquired_season: 2026 }), '12 rec, 190 yds, 2 TD, 3 GP');
+  eq('a season line is blank until a game is played', F.seasonLine({ position: 'WR', season_stats: {} }), '');
+  chk('the card shows this season once there is one', F.playerCard({ id: 'p', first_name: 'A', last_name: 'B', position: 'RB', jersey: 1, overall: 70, ratings: {}, depth: 1, season_stats: { car: 15, yds: 102, games: 1 } }).indexOf('This season') >= 0
+    && F.playerCard({ id: 'p', first_name: 'A', last_name: 'B', position: 'RB', jersey: 1, overall: 70, ratings: {}, depth: 1 }).indexOf('This season') < 0);
+  (() => {
+    const t = F.gameShareText({ city: 'Lubbock', name: 'Outlaws' },
+      { status: 'final', week: 3, result: 'W', score_for: 27, score_against: 20, home: true, opponent: { city: 'Bayou', name: 'Marsh Hawks' }, potg: { name: 'Cameron Everly', position: 'RB', stats: { car: 15, yds: 102, td: 1 } } },
+      { label: 'Season I', wins: 2, losses: 1 });
+    chk('a shared result is the score, the week, the player of the game and the record — and no claim',
+      /LUBBOCK OUTLAWS 27, Bayou Marsh Hawks 20/.test(t) && /Season I · Week 3/.test(t) && /Cameron Everly, RB — 15 car, 102 yds, 1 TD/.test(t) && /Now 2–1\./.test(t)
+      && /EdgeDesk Games$/.test(t) && !/\b(bet|wager|odds|edge|lock)\b/i.test(t), t);
+  })();
+  /* the client asks, and never decides */
+  has(FJS, "rpc('franchise_play_week', withSecret({}))", 'playing sends nothing but "play" and the identity');
+  chk('a play is never queued — the player must see the result the moment it exists', !/record\('franchise_play_week'/.test(FJS));
+  has(FJS, "rpc('franchise_start_season', withSecret({}))", 'starting a season is the same');
+  has(FJS, "rpc('franchise_schedule', withSecret({ p_number:", 'the schedule is read by season number');
+  has(FJS, "rpc('franchise_game', withSecret({ p_game: String(id) }))", 'and a game by id');
+  chk('the client never simulates', !/function (sim|simulate|drive|possession|playGame)\b/.test(FJS) && !/rpc\('franchise_sim/.test(FJS));
+
+  /* Game Day, the page */
+  has(GAMEDAY, 'FR.playWeek()', 'Game Day plays through the server');
+  has(GAMEDAY, "track('weekly_game_started'", 'and measures the start');
+  has(GAMEDAY, "track('weekly_game_completed'", 'and the result');
+  has(GAMEDAY, "track('season_complete'", 'and a season completed');
+  has(GAMEDAY, "track('season_started'", 'and a season started');
+  has(GAMEDAY, "track('gameday_view'", 'and the view');
+  has(GAMEDAY, "track('game_share'", 'and a share');
+  has(GAMEDAY, 'G.rewardPanel(r)', 'the result shows what the server credited');
+  has(GAMEDAY, 'FR.startSeason()', 'the next season starts on request');
+  has(GAMEDAY, 'FR.schedule()', 'the schedule is read from the server');
+  has(GAMEDAY, 'FR.game(VIEW_GAME)', 'and any past game by its id');
+  has(GAMEDAY, 'Every game is played once', 'the page says a game cannot be replayed');
+  has(GAMEDAY, 'Kicks off Saturday', 'and names Saturday');
+  has(GAMEDAY, 'Player of the game', 'the result names a player of the game');
+  has(GAMEDAY, 'Why it went this way', 'and explains the edges');
+  has(GAMEDAY, "conversionCard('gameday_after')", 'a device franchise is offered the one-step save after a result');
+  has(GAMEDAY, '/games/h2h/', 'Head-to-Head is reached from Game Day');
+  has(GAMEDAY, 'Found my franchise', 'and a visitor without a franchise is shown the door');
+  chk('Game Day never renders a player, a score or an opponent it invented', !/first_name:\s*'/.test(GAMEDAY) && !/score_for:\s*\d/.test(GAMEDAY) && !/opponent:\s*\{\s*city:/.test(GAMEDAY));
+  chk('the pregame lists what would raise preparation, by the published weights', /\+25%/.test(GAMEDAY) && /\+20%/.test(GAMEDAY) && /Math\.round\(40\/3\)/.test(GAMEDAY));
+  /* the HQ answers "who am I playing?" with a name and a mark */
+  has(HOME, 'FR.gamePhase(snap)', 'the HQ reads the phase from the snapshot');
+  has(HOME, 'FR.matchupLine(ng)', 'and names the opponent');
+  has(HOME, 'Saturday’s game is open', 'and says when the game is open');
+  has(HOME, 'Kicks off Saturday', 'or when it opens');
+  chk('an open game is the first thing on today\'s list', HOME.indexOf("'Game Day: play Week '") < HOME.indexOf('File today’s scouting report'));
+  has(HOME, 'snap.prep||FR.prep(wk)', 'the meters use the server\'s preparation when the snapshot carries it');
+  has(HOME, "conversionCard('hq')", 'a device franchise gets the one-step save under the HQ');
+  has(HOME, 'data-cta="hq-gameday"', 'and a door to Game Day');
+  /* the shell */
+  chk('Game Day is the weekly game now, and Head-to-Head is still one click away',
+    require(G('games.js')).ROOMS.some(r => r.key === 'gameday' && r.href === '/games/gameday/' && r.tab === 'Game Day')
+    && !require(G('games.js')).ROOMS.some(r => r.href === '/games/h2h/') && /href="\/games\/h2h\/"/.test(JS));
+  ['gameday_view', 'season_started', 'game_share'].forEach(e => chk('the funnel declares ' + e, JS.indexOf("'" + e + "'") >= 0));
+  ['weekly_game_started', 'weekly_game_completed', 'season_complete', 'season_started', 'gameday_view', 'achievement_unlocked'].forEach(e => chk('Game Day fires ' + e, new RegExp("track\\('" + e + "'").test(GAMEDAY)));
+
+  /* SAVE IT, IN ONE STEP — the same EdgeDesk account as the research terminal */
+  has(JS, 'function saveCard', 'the one-step save form is shared');
+  has(JS, "AU.save(email, pass, consent)", 'and saves through the auth module');
+  has(JS, 'AU.recover(email)', 'with a password reset');
+  has(JS, 'One EdgeDesk account for everything', 'and says it is the one account');
+  chk('a device franchise\'s conversion card IS the form, not a link to one', /if \(FR\.owner\(\) !== 'device'\) return '';[\s\S]*?\+ saveCard\(placement\)/.test(JS));
+  chk('the form is wired wherever a conversion card is', /function wireConversion\(onSaved\) \{[\s\S]*?wireSaveCard\(onSaved\)/.test(JS));
+  chk('sign-up falls back to sign-in when the email already has an account', /function save\(email, password, consent\)[\s\S]*?already has an account[\s\S]*?signIn\(email, password\)/.test(AUTHJS));
+  chk('and a confirmation-mode sign-up that returns no identities is read as an existing account', /identities\.length === 0/.test(AUTHJS) && /r\.ok && r\.existing/.test(AUTHJS));
+  has(AUTHJS, "post('/auth/v1/recover', { email: email })", 'the reset goes through Supabase Auth');
+  chk('consent is recorded only when an account is created, never on the fall-back sign-in', /consent_21plus: true/.test(AUTHJS) && !/signIn\([^)]*consent/.test(AUTHJS));
+  eq('it is the terminal\'s session key', AU.SESSION_KEY, 'edgedesk_session');
+  has(LANDING, "localStorage.getItem('edgedesk_session')", 'which the landing page reads');
+  has(LANDING, 'if(sessionValid()){ openArl(); return; }', 'so a Games account that wants EdgeDesk Pro skips straight to the plan');
+  chk('the office and the HQ both use the shared form', /G\.saveCard\(/.test(OFFICE) && /conversionCard\('hq'\)/.test(HOME));
+  chk('the save form meets the tap minimum and stacks on a phone', /\.save-row input\{min-height:var\(--tap\)/.test(FCSS) && /\.save-row\{display:grid;gap:8px\}/.test(FCSS));
+  chk('the save form never asks for a display name, a phone or a second password', !/confirm.?password|display.?name|phone/i.test(JS.slice(JS.indexOf('function saveCard'), JS.indexOf('function wireSaveCard'))));
+
+  /* the SQL keeps its conventions on the new side */
+  ['franchise_sim(uuid, uuid)', 'franchise_play_game(uuid, timestamptz)', 'franchise_schedule_season(uuid, integer, timestamptz)', 'franchise_sim_lines(jsonb, text, jsonb, jsonb, jsonb, jsonb)', 'franchise_prep(uuid, text)']
+    .forEach(f => chk('the server keeps ' + f.split('(')[0] + ' from every client role', SQL.indexOf('revoke all on function public.' + f + ' from public, anon, authenticated') >= 0));
+  ['franchise_play_week(text)', 'franchise_start_season(text)', 'franchise_schedule(integer, text)', 'franchise_game(uuid, text)']
+    .forEach(f => chk('and opens ' + f.split('(')[0] + ' to anon and authenticated', SQL.indexOf('grant execute on function public.' + f + ' to anon, authenticated') >= 0));
+  chk('the report grew to twelve rows', /select 12, 'the weekly game is open to every franchise/.test(SQL));
+  has(SQL, 'drop constraint if exists franchise_activity_kind_check', 'the activity kinds grow without a rebuild');
+  has(SQL, "(wk::date + 4)::timestamp + interval '7 hours'", 'a game opens on the Saturday of its week at 07:00 UTC');
+  has(SQL, "perform setseed(public.franchise_seed_float(g.seed))", 'the simulator is seeded from the game');
+  has(SQL, 'perform public.franchise_open_season(v_id, 1, now());', 'Season I is scheduled at founding');
+  has(SQL, "for update", 'the franchise row is locked while a game is played');
+  chk('a client sends nothing that changes a result: play and start take the identity and nothing else',
+    /franchise_play_week\(p_secret text default null\)/.test(SQL) && /franchise_start_season\(p_secret text default null\)/.test(SQL)
+    && !/p_score_for|p_result|p_box|p_game_seed/.test(SQL));
+  has(README, 'sim_v1', 'the README documents the simulator version');
+  has(README, 'Saturday at 07:00 UTC', 'and the calendar rule');
+  has(README, 'Save it, in one step', 'and the one-step save');
 
   finish();
 }).catch(e => { fail++; failures.push('suite threw: ' + (e && e.stack || e)); finish(); });

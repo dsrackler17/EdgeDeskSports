@@ -37,6 +37,28 @@ begin
   perform set_config('request.jwt.claim.sub', '', false);
   execute 'reset role';
 end; $$;
+-- a box whose lines add up to its team totals: passing yards to the
+-- receivers, rushing yards to the rushers, touchdowns to the scorers,
+-- completions to the catches, and the final to the quarters
+create or replace function pg_temp.box_adds_up(b jsonb) returns boolean language sql as $$
+  select (select coalesce(sum((p->'stats'->>'yds')::int), 0) from jsonb_array_elements(b->'players') p where p->>'position' in ('WR','TE'))
+       + (select coalesce(sum((p->'stats'->>'rec_yds')::int), 0) from jsonb_array_elements(b->'players') p where p->>'position' = 'RB')
+       = (b->'team'->'for'->>'pass_yds')::int
+     and (select coalesce(sum((p->'stats'->>'rec')::int), 0) from jsonb_array_elements(b->'players') p where p->>'position' in ('WR','TE','RB'))
+       = (select (p->'stats'->>'cmp')::int from jsonb_array_elements(b->'players') p where p->>'position' = 'QB')
+     and (select coalesce(sum((p->'stats'->>'yds')::int), 0) from jsonb_array_elements(b->'players') p where p->>'position' = 'RB')
+       + (select coalesce(sum((p->'stats'->>'rush_yds')::int), 0) from jsonb_array_elements(b->'players') p where p->>'position' = 'QB')
+       = (b->'team'->'for'->>'rush_yds')::int
+     and (select coalesce(sum((p->'stats'->>'td')::int), 0) from jsonb_array_elements(b->'players') p where p->>'position' in ('WR','TE','RB'))
+       + (select coalesce(sum((p->'stats'->>'rec_td')::int), 0) from jsonb_array_elements(b->'players') p where p->>'position' = 'RB')
+       + (select coalesce(sum((p->'stats'->>'rush_td')::int), 0) from jsonb_array_elements(b->'players') p where p->>'position' = 'QB')
+       = (b->'team'->'for'->>'td')::int
+     and (select coalesce(sum((p->'stats'->>'td')::int), 0) from jsonb_array_elements(b->'players') p where p->>'position' = 'QB')
+       = (b->'team'->'for'->>'pass_td')::int
+     and (select sum(q::int) from jsonb_array_elements_text(b->'quarters'->'for') q) = (b->'final'->>'for')::int
+     and (select sum(q::int) from jsonb_array_elements_text(b->'quarters'->'against') q) = (b->'final'->>'against')::int
+     and (select bool_and((p->'stats'->>'yds')::int >= 0 and coalesce((p->'stats'->>'rec')::int, 0) >= 0) from jsonb_array_elements(b->'players') p where p->'stats' ? 'yds');
+$$;
 
 do $test$
 declare
@@ -50,6 +72,8 @@ declare
   v jsonb; v2 jsonb; n integer; caught text; fa uuid; fb uuid; fc uuid; wk text; today text;
   xp0 integer; sp0 integer; tc0 integer; cp0 integer; pid uuid; pid2 uuid; tok text; cid uuid;
   ovr integer; econ jsonb;
+  -- the weekly game
+  gid uuid; gid2 uuid; seed0 text; opp0 jsonb; t0 timestamptz; box jsonb; box2 jsonb; k integer; w integer; l integer; nn integer;
 begin
   insert into auth.users (id, email, raw_user_meta_data) values
     (ALICE, 'alice@example.com', '{"display_name":"Alice"}'),
@@ -207,7 +231,8 @@ begin
   perform pg_temp.ok('a franchise is created and its home read model returned', fa is not null and v->'franchise'->>'name' = 'Lubbock Outlaws');
   perform pg_temp.ok('the abbreviation is upper-cased', v->'franchise'->>'abbr' = 'LBK');
   perform pg_temp.ok('the founder season is this season', (v->'franchise'->>'founded_season')::int = public.games_season_of(now()));
-  perform pg_temp.ok('the season row starts in preseason', v->'season'->>'status' = 'preseason' and (v->'season'->>'wins')::int = 0);
+  perform pg_temp.ok('the season row is Season I, under way from the first second, with no game played',
+    v->'season'->>'status' = 'active' and (v->'season'->>'wins')::int = 0 and (v->'season'->>'losses')::int = 0);
   perform pg_temp.ok('the franchise keeps its own calendar: Season I, eight weeks, week 0, begun in this real season',
     (v->'season'->>'number')::int = 1 and v->'season'->>'label' = 'Season I' and (v->'season'->>'weeks')::int = 8
     and (v->'season'->>'week')::int = 0 and (v->'season'->>'season')::int = public.games_season_of(now()));
@@ -713,7 +738,8 @@ begin
   perform pg_temp.ok('every ledger line names its economy version',
     (select bool_and(economy = 'economy_v1') from public.franchise_ledger));
   perform pg_temp.ok('no ledger line was ever written outside a real record kind',
-    (select bool_and(kind in ('price_it','pick5_card','pick5_correct','pick5_perfect','drill_daily','research_open','h2h_locked','h2h_win','founded'))
+    (select bool_and(kind in ('price_it','pick5_card','pick5_correct','pick5_perfect','drill_daily','research_open','h2h_locked','h2h_win','founded',
+                              'weekly_game','weekly_win','rival_win','season_complete'))
       from public.franchise_ledger));
 
 -- ═══ 14. A TEAM BEFORE AN ACCOUNT ═════════════════════════════════════════
@@ -774,5 +800,288 @@ begin
   perform pg_temp.as_user(ALICE);
   v := public.franchise_claim(SEC_X);
   perform pg_temp.ok('an account that owns a franchise cannot claim another', not (v->>'claimed')::boolean and v->>'reason' = 'account_has_franchise');
+
+-- ═══ 15. THE WEEKLY GAME ══════════════════════════════════════════════════
+  -- the shared rules, on the server
+  perform pg_temp.ok('the scheme matchup is the published table',
+    public.franchise_scheme_edge('air_raid', 'press_man') = -2 and public.franchise_scheme_edge('power_run', 'press_man') = 2
+    and public.franchise_scheme_edge('option', 'zone') = -2 and public.franchise_scheme_edge('pro_style', 'blitz_heavy') = -2
+    and public.franchise_scheme_edge('nope', 'zone') = 0);
+  perform pg_temp.ok('and it is balanced: no offense nets more than a point across the six defenses',
+    (select bool_and(abs((select sum(v.value::numeric) from jsonb_each_text(o.value) v)) <= 1)
+      from jsonb_each(public.franchise_scheme_edges()) o));
+  perform pg_temp.ok('objects of numbers add key by key',
+    public.games_jsonb_sum('{"a":1,"b":2}'::jsonb, '{"b":3,"c":"x"}'::jsonb) = '{"a":1,"b":5,"c":0}'::jsonb
+    and public.games_jsonb_sum(null, '{"g":1}'::jsonb) = '{"g":1}'::jsonb);
+  -- preparation, prep_v1, pinned to the client's worked examples
+  perform pg_temp.as_owner();
+  insert into public.franchise_activity (franchise_id, kind, key, week_key, day_key, detail) values
+    (fb, 'price_it', 'prep-a', '1999-01-05', '1999-01-06', '{"score":80}'),
+    (fb, 'drill_daily', '1999-01-06', '1999-01-05', '1999-01-06', '{}'),
+    (fb, 'research_open', 'prep-r1', '1999-01-05', '1999-01-06', '{}');
+  v := public.franchise_prep(fb, '1999-01-05');
+  perform pg_temp.ok('one report, one drill, one research open: scouting 33, preparation 41, market IQ 80',
+    v->>'version' = 'prep_v1' and (v->>'scouting')::int = 33 and (v->>'preparation')::int = 41 and (v->>'market_iq')::int = 80, v::text);
+  insert into public.franchise_activity (franchise_id, kind, key, week_key, day_key, detail) values
+    (fb, 'price_it', 'prep-b', '1999-01-05', '1999-01-06', '{"score":60}'),
+    (fb, 'price_it', 'prep-c', '1999-01-05', '1999-01-06', '{"score":100}'),
+    (fb, 'pick5_card', '1999-01-05', '1999-01-05', '1999-01-06', '{}'),
+    (fb, 'research_open', 'prep-r2', '1999-01-05', '1999-01-06', '{}');
+  v := public.franchise_prep(fb, '1999-01-05');
+  perform pg_temp.ok('three reports, the card, a drill and two opens: everything at 100',
+    (v->>'scouting')::int = 100 and (v->>'preparation')::int = 100 and (v->>'market_iq')::int = 80, v::text);
+  v := public.franchise_prep(fb, '1999-01-12');
+  perform pg_temp.ok('a week with nothing in it is 0, 0 and no Market IQ',
+    (v->>'scouting')::int = 0 and (v->>'preparation')::int = 0 and v->'market_iq' = 'null'::jsonb);
+  delete from public.franchise_activity where franchise_id = fb and week_key = '1999-01-05';
+
+  -- the schedule, set at founding
+  perform pg_temp.as_user(ALICE);
+  v := public.franchise_schedule();
+  perform pg_temp.ok('Season I was scheduled at founding: eight games, one a week',
+    (v->'season'->>'status') = 'active' and jsonb_array_length(v->'games') = 8
+    and (select bool_and((g->>'week')::int = i) from jsonb_array_elements(v->'games') with ordinality as t(g, i)));
+  perform pg_temp.ok('eight different clubs, and the rival closes the season',
+    (select count(distinct g->'opponent'->>'key') from jsonb_array_elements(v->'games') g) = 8
+    and (v->'games'->7->>'rival')::boolean and not (v->'games'->0->>'rival')::boolean
+    and v->'games'->7->'opponent'->>'key' = v->'rival'->>'key');
+  perform pg_temp.ok('week 1 is this football week, and its game opens on Saturday at 07:00 UTC',
+    v->'games'->0->>'week_key' = wk
+    and (v->'games'->0->>'opens_at')::timestamptz = (((wk::date + 4)::timestamp + interval '7 hours') at time zone 'UTC')
+    and extract(dow from ((v->'games'->0->>'opens_at')::timestamptz at time zone 'UTC')) = 6);
+  perform pg_temp.ok('each week is the next football week',
+    (select bool_and((g->>'week_key') = public.games_week_key(now() + ((i - 1) * interval '7 days')))
+      from jsonb_array_elements(v->'games') with ordinality as t(g, i)));
+  perform pg_temp.ok('opponents are drawn around the team''s own overall: six below to four above, the rival two above',
+    (select bool_and((g->'opponent'->>'overall')::int between ovr - 8 and ovr + 6) from jsonb_array_elements(v->'games') g)
+    and (v->'games'->7->'opponent'->>'overall')::int between ovr + 1 and ovr + 3);
+  perform pg_temp.ok('home and away alternate',
+    (select bool_and((g->>'home')::boolean <> (v->'games'->(i::int)->>'home')::boolean)
+      from jsonb_array_elements(v->'games') with ordinality as t(g, i) where i < 8));
+  perform pg_temp.ok('the schedule carries this week''s preparation and the matchup table',
+    v->'prep'->>'version' = 'prep_v1' and v->'scheme_edges' ? 'air_raid' and (v->'record'->>'wins')::int = 0);
+  perform pg_temp.as_owner();
+  perform pg_temp.ok('every game''s seed was derived by the server from the franchise seed',
+    (select bool_and(g.seed = md5(f.seed || ':game:1:' || g.week)) from public.franchise_games g join public.franchises f on f.id = g.franchise_id where g.franchise_id = fa));
+  perform pg_temp.ok('scheduling again schedules nothing', public.franchise_schedule_season(fa, 1, now()) = 0);
+  perform pg_temp.ok('the opponent pool is fictional clubs with the franchise''s own identity lists',
+    (select count(*) from public.franchise_opponents) = 24
+    and (select bool_and(logo in ('star','bolt','shield','wolf','horn','anchor','arrow','flame','crown','wing','gear','wave','peak','eagle','bull','spear'))
+           from public.franchise_opponents));
+
+  -- the window
+  select id, opens_at into gid, t0 from public.franchise_games where franchise_id = fa and week = 1;
+  begin
+    perform public.franchise_play_game(fa, t0 - interval '1 minute');
+    perform pg_temp.ok('a game cannot be played before its Saturday', false, 'it played');
+  exception when object_not_in_prerequisite_state then
+    perform pg_temp.ok('a game cannot be played before its Saturday', true);
+  end;
+  perform pg_temp.as_anon();
+  begin
+    perform public.franchise_play_week(SEC_X);
+    perform pg_temp.ok('a guessed secret cannot play anyone''s game', false, 'it played');
+  exception when invalid_authorization_specification then
+    perform pg_temp.ok('a guessed secret cannot play anyone''s game', true);
+  end;
+  perform pg_temp.as_user(BOB);
+  perform pg_temp.ok('another account cannot read your game', public.franchise_game(gid) is null
+    and (select count(*) from public.franchise_games) = (select count(*) from public.franchise_games g where g.franchise_id = fb));
+  update public.franchise_games set score_for = 99 where id = gid;
+  perform pg_temp.as_user(ALICE);
+  perform pg_temp.ok('nor edit it, and neither can you',
+    (select score_for is null from public.franchise_games where id = gid));
+  update public.franchise_games set score_for = 99 where id = gid;
+  perform pg_temp.ok('a client cannot write a result', (select score_for is null from public.franchise_games where id = gid));
+
+  -- the simulator is a pure function of the seed and the state of the team
+  perform pg_temp.as_owner();
+  box := public.franchise_sim(fa, gid);
+  box2 := public.franchise_sim(fa, gid);
+  perform pg_temp.ok('the same game simulated twice is the same game', box = box2 and box->>'sim' = 'sim_v1');
+  perform pg_temp.ok('a game is eleven to fourteen possessions a side, four quarters, and a final that is the sum of them',
+    (box->'edges'->>'possessions')::int between 9 and 14
+    and (select sum(q::int) from jsonb_array_elements_text(box->'quarters'->'for') q) = (box->'final'->>'for')::int
+    and (select sum(q::int) from jsonb_array_elements_text(box->'quarters'->'against') q) = (box->'final'->>'against')::int
+    and (box->'team'->'for'->>'points')::int = (box->'final'->>'for')::int);
+  perform pg_temp.ok('every scoring play names a player of yours, and a running score',
+    (select bool_and((p->>'desc') like '%' || (case when p->>'type' = 'FG' then '-yd FG' else 'TD' end) || '%' and (p->'for') is not null)
+      from jsonb_array_elements(box->'scoring') p where p->>'side' = 'for'));
+  perform pg_temp.ok('the box lines add up to the team totals: passing yards to the receivers, rushing to the rushers, touchdowns to the scorers',
+    (select coalesce(sum((p->'stats'->>'yds')::int), 0) from jsonb_array_elements(box->'players') p where p->>'position' in ('WR','TE'))
+      + (select coalesce(sum((p->'stats'->>'rec_yds')::int), 0) from jsonb_array_elements(box->'players') p where p->>'position' = 'RB')
+      = (box->'team'->'for'->>'pass_yds')::int
+    and (select coalesce(sum((p->'stats'->>'yds')::int), 0) from jsonb_array_elements(box->'players') p where p->>'position' = 'RB')
+      + (select coalesce(sum((p->'stats'->>'rush_yds')::int), 0) from jsonb_array_elements(box->'players') p where p->>'position' = 'QB')
+      = (box->'team'->'for'->>'rush_yds')::int
+    and (select coalesce(sum((p->'stats'->>'td')::int), 0) from jsonb_array_elements(box->'players') p where p->>'position' in ('WR','TE','RB'))
+      + (select coalesce(sum((p->'stats'->>'rec_td')::int), 0) from jsonb_array_elements(box->'players') p where p->>'position' = 'RB')
+      + (select coalesce(sum((p->'stats'->>'rush_td')::int), 0) from jsonb_array_elements(box->'players') p where p->>'position' = 'QB')
+      = (box->'team'->'for'->>'td')::int);
+  perform pg_temp.ok('the quarterback''s line is the passing game', 
+    (select (p->'stats'->>'yds')::int = (box->'team'->'for'->>'pass_yds')::int and (p->'stats'->>'att')::int = (box->'team'->'for'->>'pass_plays')::int
+       from jsonb_array_elements(box->'players') p where p->>'position' = 'QB'));
+  perform pg_temp.ok('the edges are stated: home field, this week''s preparation, the scheme matchup, the traits',
+    (box->'edges'->>'home')::numeric = (case when (select home from public.franchise_games where id = gid) then 1.5 else 0 end)
+    and box->'edges'->'prep'->>'version' = 'prep_v1'
+    and (box->'edges'->>'prep_adj')::numeric = round((least(100, (box->'edges'->'prep'->>'preparation')::numeric + 2 * (box->'edges'->'traits'->>'preparation')::numeric) - 50) / 50.0 * 3, 2)
+    and (box->'edges'->>'scheme_offense')::numeric = public.franchise_scheme_edge('air_raid', (select opponent->>'defense' from public.franchise_games where id = gid))
+    and (box->'edges'->'traits'->>'count')::int >= 0);
+  perform pg_temp.ok('this week''s preparation is the one Alice actually did',
+    (box->'edges'->'prep'->>'preparation')::int = (public.franchise_prep(fa, wk)->>'preparation')::int
+    and (box->'edges'->'prep'->>'preparation')::int > 0);
+  perform pg_temp.ok('a player of the game is named, with a line', box->'potg'->>'name' is not null and box->'potg'->'stats' is not null);
+  perform pg_temp.ok('simulating writes nothing', (select status = 'scheduled' and score_for is null from public.franchise_games where id = gid)
+    and (select bool_and(career_stats = '{}'::jsonb) from public.game_players where franchise_id = fa));
+
+  -- the distribution: a much weaker club loses most of the time, a much stronger one wins most of the time
+  select seed, opponent into seed0, opp0 from public.franchise_games where id = gid;
+  w := 0; l := 0; nn := 0;
+  update public.franchise_games set opponent = opponent || '{"offense_r":58,"defense_r":58,"special_r":58}'::jsonb where id = gid;
+  for k in 1..40 loop
+    update public.franchise_games set seed = md5('weak:' || k) where id = gid;
+    box2 := public.franchise_sim(fa, gid);
+    if box2->>'result' = 'W' then w := w + 1; elsif box2->>'result' = 'L' then l := l + 1; end if;
+    if not pg_temp.box_adds_up(box2) then nn := nn + 1; end if;
+  end loop;
+  perform pg_temp.ok('forty games against a 58: at least 28 wins', w >= 28, w || ' wins, ' || l || ' losses');
+  w := 0; l := 0;
+  update public.franchise_games set opponent = opponent || '{"offense_r":88,"defense_r":88,"special_r":85}'::jsonb where id = gid;
+  for k in 1..40 loop
+    update public.franchise_games set seed = md5('strong:' || k) where id = gid;
+    box2 := public.franchise_sim(fa, gid);
+    if box2->>'result' = 'W' then w := w + 1; elsif box2->>'result' = 'L' then l := l + 1; end if;
+    if not pg_temp.box_adds_up(box2) then nn := nn + 1; end if;
+  end loop;
+  perform pg_temp.ok('forty games against an 88: at most 14 wins', w <= 14, w || ' wins, ' || l || ' losses');
+  perform pg_temp.ok('every one of those eighty boxes adds up, line for line', nn = 0, nn || ' did not');
+  update public.franchise_games set seed = seed0, opponent = opp0 where id = gid;
+  perform pg_temp.ok('the game is as it was', public.franchise_sim(fa, gid) = box);
+
+  -- playing week 1, on its Saturday
+  select xp, team_credits, coach_points into xp0, tc0, cp0 from public.franchises where id = fa;
+  v := public.franchise_play_game(fa, t0);
+  perform pg_temp.ok('the game is played, once, and the result is the simulator''s',
+    (v->'game'->>'status') = 'final' and (v->'game'->>'week')::int = 1
+    and (v->'game'->>'score_for')::int = (box->'final'->>'for')::int and (v->'game'->>'score_against')::int = (box->'final'->>'against')::int
+    and v->'game'->>'result' = box->>'result' and v->'game'->>'sim_version' = 'sim_v1');
+  perform pg_temp.ok('the season record moved by exactly one game',
+    (v->'season'->>'week')::int = 1 and (v->'season'->>'wins')::int + (v->'season'->>'losses')::int + (v->'season'->>'ties')::int = 1
+    and (v->'season'->>'points_for')::int = (box->'final'->>'for')::int and not (v->>'season_complete')::boolean);
+  perform pg_temp.ok('playing pays by the table: 100 XP and 40 TC for the game, 60 XP, 60 TC and 2 CP for a win',
+    (v->'rewards'->>'xp')::int = 100 + (case when v->'game'->>'result' = 'W' then 60 else 0 end)
+    and (v->'rewards'->>'tc')::int = 40 + (case when v->'game'->>'result' = 'W' then 60 else 0 end)
+    and (v->'rewards'->>'cp')::int = (case when v->'game'->>'result' = 'W' then 2 else 0 end)
+    and (select xp from public.franchises where id = fa) = xp0 + (v->'rewards'->>'xp')::int
+    and (select coach_points from public.franchises where id = fa) = cp0 + (v->'rewards'->>'cp')::int, (v->'rewards')::text);
+  perform pg_temp.ok('the first win is an achievement, only on a win',
+    (v->'game'->>'result' = 'W') = (v->'achievements' ? 'first_win'));
+  perform pg_temp.ok('the record has the game, keyed by season and week',
+    exists (select 1 from public.franchise_activity where franchise_id = fa and kind = 'weekly_game' and key = '1:1' and week_key = wk)
+    and (select count(*) from public.franchise_ledger where franchise_id = fa and kind = 'weekly_game' and key = '1:1') = 2);
+  perform pg_temp.ok('every starter''s season and career lines grew by the box',
+    (select bool_and((season_stats->>'games')::int = 1 and season_stats = career_stats) from public.game_players
+       where franchise_id = fa and status = 'active' and depth = 1)
+    and (select (career_stats->>'yds')::int from public.game_players where franchise_id = fa and position = 'QB' and depth = 1)
+        = (box->'team'->'for'->>'pass_yds')::int);
+  perform pg_temp.ok('a backup who did not play has no line', (select career_stats = '{}'::jsonb from public.game_players where franchise_id = fa and position = 'QB' and depth = 2));
+
+  -- the next week, and not the one after
+  select id, opens_at into gid2, t0 from public.franchise_games where franchise_id = fa and week = 2;
+  begin
+    perform public.franchise_play_game(fa, t0 - interval '1 day');
+    perform pg_temp.ok('week 2 waits for its own Saturday', false, 'it played');
+  exception when object_not_in_prerequisite_state then
+    perform pg_temp.ok('week 2 waits for its own Saturday', true);
+  end;
+  v := public.franchise_play_game(fa, t0);
+  perform pg_temp.ok('on its Saturday, week 2 is the next game', (v->'game'->>'week')::int = 2 and (v->'season'->>'week')::int = 2);
+  perform pg_temp.ok('a week missed is a game played unprepared, not a game lost',
+    (v->'game'->'prep'->>'preparation')::int = 0 and (v->'game'->>'status') = 'final');
+  perform pg_temp.ok('the ledger pays each week once', (select count(*) from public.franchise_ledger where franchise_id = fa and kind = 'weekly_game') = 4);
+
+  -- the read models
+  perform pg_temp.as_user(ALICE);
+  v := public.franchise_home();
+  perform pg_temp.ok('home names the next game, the last game, this week''s preparation, the record and the rival',
+    (v->'next_game'->>'week')::int = 3 and (v->'last_game'->>'week')::int = 2 and v->'last_game'->'potg'->>'name' is not null
+    and v->'prep'->>'version' = 'prep_v1' and (v->'record'->>'wins')::int + (v->'record'->>'losses')::int + (v->'record'->>'ties')::int = 2
+    and v->'rival'->>'name' is not null and (v->'rival'->>'wins')::int = 0);
+  v := public.franchise_game(gid);
+  perform pg_temp.ok('a game is read back with its box', v->'box'->>'sim' = 'sim_v1' and jsonb_array_length(v->'box'->'players') >= 22);
+  v := public.franchise_schedule();
+  perform pg_temp.ok('the schedule shows two finals and six to come',
+    (select count(*) from jsonb_array_elements(v->'games') g where g->>'status' = 'final') = 2
+    and (select bool_and(g->'box' = 'null'::jsonb) from jsonb_array_elements(v->'games') g));
+  begin
+    perform public.franchise_start_season();
+    perform pg_temp.ok('a season under way is left alone', (select count(*) from public.franchise_seasons where franchise_id = fa) = 1);
+  end;
+
+  -- the rest of the season, each game on its Saturday; then the rollover
+  perform pg_temp.as_owner();
+  for k in 3..8 loop
+    select opens_at into t0 from public.franchise_games where franchise_id = fa and week = k;
+    v := public.franchise_play_game(fa, t0);
+  end loop;
+  perform pg_temp.ok('the eighth game completes the season',
+    (v->>'season_complete')::boolean and v->'season'->>'status' = 'complete' and (v->'season'->>'week')::int = 8
+    and (select completed_at is not null from public.franchise_seasons where franchise_id = fa and number = 1));
+  perform pg_temp.ok('the season''s record is the sum of its games',
+    (select wins from public.franchise_seasons where franchise_id = fa and number = 1)
+      = (select count(*) from public.franchise_games where franchise_id = fa and season_number = 1 and result = 'W')
+    and (select points_for from public.franchise_seasons where franchise_id = fa and number = 1)
+      = (select sum(score_for) from public.franchise_games where franchise_id = fa and season_number = 1));
+  perform pg_temp.ok('a completed season pays 250 XP and 150 TC, once, and is a Full Season',
+    (select count(*) from public.franchise_ledger where franchise_id = fa and kind = 'season_complete' and key = '1') = 2
+    and (select delta from public.franchise_ledger where franchise_id = fa and kind = 'season_complete' and key = '1' and currency = 'xp') = 250
+    and exists (select 1 from public.franchise_achievements where franchise_id = fa and achievement_id = 'first_season'));
+  perform pg_temp.ok('a winning season is an achievement exactly when wins beat losses',
+    (select wins > losses from public.franchise_seasons where franchise_id = fa and number = 1)
+      = exists (select 1 from public.franchise_achievements where franchise_id = fa and achievement_id = 'winning_season'));
+  perform pg_temp.ok('bragging rights come only from beating the rival',
+    (select result = 'W' from public.franchise_games where franchise_id = fa and season_number = 1 and rival)
+      = exists (select 1 from public.franchise_achievements where franchise_id = fa and achievement_id = 'bragging_rights'));
+  perform pg_temp.ok('the rival''s share of the ledger is paid only on a rival win',
+    (select result = 'W' from public.franchise_games where franchise_id = fa and season_number = 1 and rival)
+      = exists (select 1 from public.franchise_ledger where franchise_id = fa and kind = 'rival_win'));
+  begin
+    perform public.franchise_play_game(fa, now() + interval '400 days');
+    perform pg_temp.ok('a complete season has no game to play', false, 'it played');
+  exception when object_not_in_prerequisite_state then
+    perform pg_temp.ok('a complete season has no game to play', true);
+  end;
+  perform pg_temp.ok('careers carry the whole season',
+    (select (career_stats->>'games')::int = 8 from public.game_players where franchise_id = fa and position = 'QB' and depth = 1));
+
+  perform pg_temp.as_user(ALICE);
+  v := public.franchise_home();
+  perform pg_temp.ok('home has no next game and one season on the record',
+    v->'next_game' = 'null'::jsonb and (v->'record'->>'seasons')::int = 1 and v->'season'->>'status' = 'complete');
+  v := public.franchise_start_season();
+  perform pg_temp.ok('Season II starts on request: numbered on, scheduled, under way',
+    (v->>'started')::boolean and (v->>'season_number')::int = 2 and v->'home'->'season'->>'label' = 'Season II'
+    and v->'home'->'season'->>'status' = 'active' and (v->'home'->'next_game'->>'week')::int = 1
+    and (select count(*) from public.franchise_seasons where franchise_id = fa) = 2);
+  perform pg_temp.ok('the season lines reset and the careers do not',
+    (select bool_and(season_stats = '{}'::jsonb) from public.game_players where franchise_id = fa)
+    and (select (career_stats->>'games')::int = 8 from public.game_players where franchise_id = fa and position = 'QB' and depth = 1));
+  perform pg_temp.ok('the rival is for life and closes Season II too',
+    (select opponent_key from public.franchise_games where franchise_id = fa and season_number = 2 and week = 8)
+      = (select rival_key from public.franchises where id = fa)
+    and (select opponent_key from public.franchise_games where franchise_id = fa and season_number = 1 and week = 8)
+      = (select rival_key from public.franchises where id = fa));
+  v := public.franchise_start_season();
+  perform pg_temp.ok('starting again starts nothing', not (v->>'started')::boolean and (v->>'season_number')::int = 2);
+  v := public.franchise_schedule(1);
+  perform pg_temp.ok('a past season can still be read, game by game', v->'season'->>'status' = 'complete'
+    and (select count(*) from jsonb_array_elements(v->'games') g where g->>'status' = 'final') = 8 and jsonb_array_length(v->'seasons') = 2);
+
+  -- a device franchise plays exactly as an account one
+  perform pg_temp.as_owner();
+  select id, opens_at into gid, t0 from public.franchise_games where franchise_id = fd and week = 1;
+  v := public.franchise_play_game(fd, t0);
+  perform pg_temp.ok('a device-founded franchise had a schedule from its first second and plays on it',
+    (v->'game'->>'week')::int = 1 and (v->'game'->>'status') = 'final');
 end
 $test$;

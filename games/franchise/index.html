@@ -27,8 +27,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/games/games.css?v=20260905b">
-<link rel="stylesheet" href="/games/franchise.css?v=20260905b">
+<link rel="stylesheet" href="/games/games.css?v=20260905c">
+<link rel="stylesheet" href="/games/franchise.css?v=20260905c">
 </head>
 <body>
 <div id="gh"></div>
@@ -48,17 +48,17 @@
 <div id="gt"></div>
 <div id="gf"></div>
 
-<script src="/games/lib/week.js?v=20260905b"></script>
-<script src="/games/lib/scoring.js?v=20260905b"></script>
-<script src="/games/lib/challenge.js?v=20260905b"></script>
-<script src="/games/lib/research_state.js?v=20260905b"></script>
-<script src="/games/lib/attribution.js?v=20260905b"></script>
-<script src="/games/lib/store.js?v=20260905b"></script>
-<script src="/games/lib/dynasty.js?v=20260905b"></script>
-<script src="/games/lib/social.js?v=20260905b"></script>
-<script src="/games/lib/auth.js?v=20260905b"></script>
-<script src="/games/lib/franchise.js?v=20260905b"></script>
-<script src="/games/games.js?v=20260905b"></script>
+<script src="/games/lib/week.js?v=20260905c"></script>
+<script src="/games/lib/scoring.js?v=20260905c"></script>
+<script src="/games/lib/challenge.js?v=20260905c"></script>
+<script src="/games/lib/research_state.js?v=20260905c"></script>
+<script src="/games/lib/attribution.js?v=20260905c"></script>
+<script src="/games/lib/store.js?v=20260905c"></script>
+<script src="/games/lib/dynasty.js?v=20260905c"></script>
+<script src="/games/lib/social.js?v=20260905c"></script>
+<script src="/games/lib/auth.js?v=20260905c"></script>
+<script src="/games/lib/franchise.js?v=20260905c"></script>
+<script src="/games/games.js?v=20260905c"></script>
 <script>
 /* STALE SCRIPT GUARD. A browser can keep an old games.js or store.js for
    longer than it keeps this page, and a page built for the new library
@@ -140,70 +140,29 @@
       +'<div class="ftp" style="margin-top:12px"><b>Free to play</b> · No purchase necessary · Nothing here can be bought · 21+</div></div>';
   }
 
-  /* ---- sign in / create account: SAVING the franchise to an account -------
-     A device-owned franchise is claimed into the account the moment it
-     signs in; an account that already owns one keeps it and the page says
-     so. Sign-in is never required to found or to play. */
-  var MODE='signup';
-  function authBlock(){
-    return '<div class="fo-tabs" role="tablist" style="margin-top:14px">'
-      +'<button type="button" role="tab" id="tabUp" aria-selected="'+(MODE==='signup')+'">Create a free account</button>'
-      +'<button type="button" role="tab" id="tabIn" aria-selected="'+(MODE==='signin')+'">Sign in</button></div>'
-      +'<form id="authForm" novalidate>'
-      +'<div class="field"><label for="aEmail">Email</label><input id="aEmail" type="email" autocomplete="email" inputmode="email" required></div>'
-      +'<div class="field"><label for="aPass">Password</label><input id="aPass" type="password" autocomplete="'+(MODE==='signup'?'new-password':'current-password')+'" required minlength="6">'
-      +(MODE==='signup'?'<div class="h">At least 6 characters.</div>':'')+'</div>'
-      +(MODE==='signup'
-        ?'<label class="consent"><input type="checkbox" id="aConsent"><span>I am 21 or older and agree to the '
-          +'<a href="/terms.html" target="_blank" rel="noopener">Terms</a> and <a href="/privacy.html" target="_blank" rel="noopener">Privacy Policy</a>. '
-          +'EdgeDesk Games is free to play with no real-money wagering.</span></label>'
-        :'')
-      +'<div class="msg" id="authMsg" aria-live="polite"></div>'
-      +'<div class="btn-row"><button class="btn btn-go" type="submit" id="authGo">'+(MODE==='signup'?'Create account and continue':'Sign in')+'</button></div>'
-      +'<div class="ftp" style="margin-top:10px;text-align:center">Same EdgeDesk account as the research terminal. No password is stored in this browser.</div>'
-      +'</form>';
-  }
+  /* ---- saving the franchise to an account -------------------------------
+     ONE STEP, the same everywhere (EDGames.saveCard): email, password,
+     the 21+/Terms line, one button. It creates the EdgeDesk account or
+     signs into the one that already has that email, and the device's
+     franchise is claimed into it the moment it signs in. It is the same
+     account the research terminal and a subscription use. Sign-in is
+     never required to found or to play. */
+  function authBlock(placement,cta){return G.saveCard(placement||'front_office',{cta:cta});}
   function wireAuth(rerender){
-    $('tabUp').addEventListener('click',function(){MODE='signup';rerender();});
-    $('tabIn').addEventListener('click',function(){MODE='signin';rerender();});
-    $('authForm').addEventListener('submit',function(e){
-      e.preventDefault();
-      var email=$('aEmail').value.trim(),pass=$('aPass').value,btn=$('authGo');
-      var consent=MODE==='signup'?$('aConsent').checked:true;
-      if(!email||!pass){msg('authMsg','Enter your email and password.');return;}
-      if(MODE==='signup'&&!consent){msg('authMsg','Please confirm you are 21+ and agree to the Terms to continue.');return;}
-      btn.disabled=true;var old=btn.textContent;btn.textContent='…';
-      msg('authMsg','');
-      var p=MODE==='signup'?AU.signUp(email,pass,consent):AU.signIn(email,pass);
-      p.then(function(r){
-        if(!r.ok){msg('authMsg',r.message||'Something went wrong.');btn.disabled=false;btn.textContent=old;return;}
-        if(r.confirm){
-          G.track('franchise_signup',{confirm:true,intent:INTENT});
-          msg('authMsg','Account created. Confirm your email ('+email+'), then come back and sign in to found your franchise.',true);
-          btn.disabled=false;btn.textContent=old;MODE='signin';
-          return;
-        }
-        G.track(MODE==='signup'?'franchise_signup':'franchise_signin',{intent:INTENT});
-        G.track('signup_complete_from_games',{game_type:'franchise',intent:INTENT,mode:MODE});
-        msg('authMsg','Signed in.',true);
-        /* the device's franchise, if there is one, is claimed by boot() */
-        return FR.boot().then(function(b){
-          G.paintFranchise();
-          if(b&&b.claimed){G.track('franchise_claimed',{intent:INTENT});G.toast('Your franchise is saved to your account');}
-          render();
-        });
-      });
+    G.wireSaveCard(function(b){
+      if(b&&b.claimed)G.track('franchise_claimed',{intent:INTENT});
+      rerender();
     });
-    setTimeout(function(){try{$('aEmail').focus();}catch(_){}},50);
+    setTimeout(function(){try{var e=document.querySelector('form[data-save] input[name=email]');if(e)e.focus();}catch(_){}},50);
   }
   /* an account owner who is signed out, or a visitor who wants to sign in
      before founding: the same form, on its own */
   function renderAuth(){
     stage.className='card';
-    stage.innerHTML=explainer()+'<div class="eyebrow" style="margin-top:20px">Sign in</div>'+authBlock()
+    stage.innerHTML=explainer()+'<div class="eyebrow" style="margin-top:20px">Sign in, or create the account</div>'+authBlock('front_office_signin','Sign in or create my account')
       +'<div class="btn-row"><button class="btn btn-ghost" type="button" id="backFound">Or found a franchise without an account</button></div>';
     after.innerHTML='';
-    wireAuth(renderAuth);
+    wireAuth(render);
     $('backFound').addEventListener('click',function(){WANT_AUTH=false;render();});
   }
   var WANT_AUTH=/[?&]save=1/.test(location.search);
@@ -369,11 +328,12 @@
           +'<p style="margin:0;color:var(--dim);font-size:14px;line-height:1.6">The <b style="color:var(--text)">'+esc(f.city+' '+f.name)+'</b> live on this device. '
           +'A new phone or a cleared browser cannot find them. Save them to a free EdgeDesk account and everything they have earned comes along.'
           +(ST.franchiseQueue().length?' <b style="color:var(--est)">'+ST.franchiseQueue().length+' reward'+(ST.franchiseQueue().length===1?'':'s')+' waiting to sync.</b>':'')+'</p>'
-          +authBlock()+'</div></div>'
+          +authBlock('front_office','Save my franchise')+'</div></div>'
         :'<div class="sec"><div class="sec-h"><h2>Account</h2></div><div class="card">'
           +'<p style="margin:0;color:var(--dim);font-size:14px;line-height:1.6">Signed in as <b style="color:var(--text)">'+esc(S.displayName())+'</b>. '
           +'Your franchise, its roster and its ledger are saved to this account.'
           +(ST.franchiseQueue().length?' <b style="color:var(--est)">'+ST.franchiseQueue().length+' reward'+(ST.franchiseQueue().length===1?'':'s')+' waiting to sync.</b>':'')+'</p>'
+          +' The same account opens the research terminal — and if you ever want EdgeDesk Pro, you are already signed in; there is nothing to create, only the plan to pick.'
           +'<div class="btn-row two"><a class="btn" href="'+esc(G.withAttribution('/app.html',{intent:'front_office'}))+'">Open EdgeDesk research</a>'
           +'<button class="btn btn-ghost" type="button" id="doSignOut">Sign out</button></div></div></div>')
       +'<div class="sec"><div class="card"><div class="eyebrow">Share</div>'

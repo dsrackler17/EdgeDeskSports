@@ -119,9 +119,19 @@ definitions and awards, and `game_board` — a published COPY of
 scored and Pick 5 settled against the server's numbers and never a browser's.
 RLS is on everywhere with owner-only reads and no client writes; every
 mutation is a security-definer function that derives identity from
-`auth.uid()`. A trigger on `game_challenges` turns a settled Head-to-Head
-into Coach Points without changing `games_social.sql`. Report rows 1–9 should
-each say `ok`. Tested against a real PostgreSQL by
+`auth.uid()` or the hash of the device secret presented. A trigger on
+`game_challenges` turns a settled Head-to-Head into Coach Points without
+changing `games_social.sql`.
+
+Phase 2 adds the weekly game to the same file: `franchise_opponents` (a
+seeded pool of twenty-four fictional clubs), `franchise_games` (one row per
+scheduled game, the opponent frozen on it, the box written when it is
+played), `franchises.rival_key`, four activity kinds, six achievement rows,
+and the functions `franchise_start_season`, `franchise_play_week`,
+`franchise_schedule` and `franchise_game`. The simulator (`franchise_sim`),
+the scheduler and the writer are internal and granted to no client role.
+Safe to re-run over a Phase 1 installation. Report rows 1–12 should each
+say `ok`. Tested against a real PostgreSQL by
 `tools/games/franchise_sql.test.js`. See `games/README.md`.
 
 Two trusted functions, `game_board_upsert` and `franchise_settle_pick5`, are

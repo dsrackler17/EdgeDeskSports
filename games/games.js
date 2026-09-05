@@ -85,7 +85,11 @@
     'player_view', 'roster_change', 'daily_objective_complete', 'scouting_spent', 'player_scouted',
     'weekly_game_started', 'weekly_game_completed', 'h2h_franchise_complete', 'achievement_unlocked',
     'season_complete', 'draft_pick', 'trophy_room_view', 'front_office_view', 'roster_view',
-    'franchise_reward', 'franchise_claimed', 'franchise_signout'];
+    'franchise_reward', 'franchise_claimed', 'franchise_signout',
+    /* the weekly game (Phase 2): a season opened, the Game Day page seen,
+       a result shared. weekly_game_started/completed and season_complete
+       are declared above. */
+    'season_started', 'gameday_view', 'game_share'];
 
   var _level = null;
   function track(event, props) {
@@ -310,7 +314,8 @@
     { key: 'dynasty',  href: '/games/dynasty/',          label: 'War Room' },
     { key: 'price-it', href: '/games/price-it/',         label: 'Scouting',     tab: 'Scout', cls: 'gh-scout' },
     { key: 'drill',    href: '/games/two-minute-drill/', label: 'Training',     tab: 'Train', cls: 'gh-train' },
-    { key: 'h2h',      href: '/games/h2h/',              label: 'Game Day',     tab: 'Game Day', cls: 'gh-only-wide' },
+    /* Game Day is the weekly franchise game; Head-to-Head lives on it too */
+    { key: 'gameday',  href: '/games/gameday/',          label: 'Game Day',     tab: 'Game Day', cls: 'gh-only-wide' },
     { key: 'roster',   href: '/games/roster/',           label: 'Roster',       tab: 'Roster',   cls: 'gh-only-wide' },
     { key: 'groups',   href: '/games/groups/',           label: 'League',       cls: 'gh-only-wider' },
     { key: 'franchise', href: '/games/franchise/',       label: 'Front Office', cls: 'gh-only-wider' }
@@ -340,7 +345,7 @@
     home: '<path d="M4 11l8-7 8 7v9a1 1 0 01-1 1h-5v-6H10v6H5a1 1 0 01-1-1z"/>',
     'price-it': '<path d="M12 3a9 9 0 100 18 9 9 0 000-18zm0 4a5 5 0 110 10 5 5 0 010-10zm0 3.5a1.5 1.5 0 100 3 1.5 1.5 0 000-3z"/>',
     drill: '<path d="M12 2a10 10 0 100 20 10 10 0 000-20zm1 5v5.6l3.5 2-1 1.7L11 13.4V7z"/>',
-    h2h: '<path d="M3 12c0-5 4-9 9-9s9 4 9 9-4 9-9 9-9-4-9-9zm3.2-1.2l3.6 2.4-1.8 2.8 5.2-.4L15 10l-3.4 2.2-2.9-1.9z"/>',
+    gameday: '<path d="M3 12c0-5 4-9 9-9s9 4 9 9-4 9-9 9-9-4-9-9zm3.2-1.2l3.6 2.4-1.8 2.8 5.2-.4L15 10l-3.4 2.2-2.9-1.9z"/>',
     roster: '<path d="M8 4a3 3 0 110 6 3 3 0 010-6zm8 1a2.5 2.5 0 110 5 2.5 2.5 0 010-5zM3 19c0-3 2.5-5 5-5s5 2 5 5v1H3zm11 1v-1c0-1.6-.5-3-1.3-4 .6-.3 1.4-.5 2.3-.5 2.3 0 4.5 1.6 4.5 4v1.5z"/>'
   };
   function tabs(current) {
@@ -368,6 +373,7 @@
       + '<a href="/games/two-minute-drill/">Two-Minute Drill</a>'
       + '<a href="/games/price-it/">Price It</a><a href="/games/h2h/">Head-to-Head</a>'
       + '<a href="/games/pick-5/">Pick 5</a><a href="/games/groups/">Groups</a>'
+      + '<a href="/games/gameday/">Game Day</a>'
       + '<a href="/games/roster/">Roster</a><a href="/games/franchise/">Front Office</a>'
       + '<a href="' + esc(withAttribution(TERMINAL)) + '">The terminal</a>'
       + '<a href="/terms.html">Terms</a><a href="/privacy.html">Privacy</a>'
@@ -701,11 +707,9 @@
       if (FR.owner() !== 'device') return '';
       var snap = FR.snapshot(), f = snap && snap.franchise;
       return '<div class="card conv" data-conv="' + esc(placement || '') + '">'
-        + '<div class="eyebrow">Your franchise</div>'
-        + '<div class="conv-t">The <b>' + esc(f ? f.city + ' ' + f.name : 'franchise') + '</b> live on this device. Save them to a free account to keep them on every phone.</div>'
-        + '<p>Everything they have earned comes with them: the roster, the ledger, the achievements.</p>'
-        + '<div class="btn-row"><a class="btn btn-go" href="' + esc(href + '&save=1') + '" data-conv-go>Save my franchise</a></div>'
-        + '<div class="ftp" style="margin-top:10px">Free to play · No purchase necessary · A new phone or a cleared browser cannot find a device-only franchise.</div>'
+        + '<div class="eyebrow">Save your franchise</div>'
+        + '<div class="conv-t">The <b>' + esc(f ? f.city + ' ' + f.name : 'franchise') + '</b> live on this device only. An email and a password keeps them on every phone.</div>'
+        + saveCard(placement)
         + '</div>';
     }
     /* no franchise yet: found one — no account needed */
@@ -722,12 +726,84 @@
       + '<div class="ftp" style="margin-top:10px">Free to play · No purchase necessary · Nothing in the franchise can be bought.</div>'
       + '</div>';
   }
-  function wireConversion() {
+  function wireConversion(onSaved) {
     var d = root.document, host = d.querySelector('[data-conv]');
+    wireSaveCard(onSaved);
     if (!host) return;
     var go = host.querySelector('[data-conv-go]');
     if (go) go.addEventListener('click', function () {
       track('signup_start_from_games', { placement: host.getAttribute('data-conv') || '', game_type: 'franchise' });
+    });
+  }
+
+  /* SAVE IT, IN ONE STEP. One form: email, password, the 21+/Terms line,
+     one button. It creates the EdgeDesk account or signs into the one that
+     already has that email — the SAME account the research terminal and a
+     subscription use, so a player who later wants the research is already
+     signed in and only has to pay — and the device's franchise is claimed
+     into it (EDFranchise.boot). Rendered wherever a device-owned franchise
+     is on screen; wired by wireSaveCard. */
+  function saveCard(placement, opts) {
+    opts = opts || {};
+    if (!AU || !FR) return '';
+    return '<form class="save-form" data-save="' + esc(placement || '') + '" novalidate>'
+      + (opts.title ? '<div class="save-t">' + esc(opts.title) + '</div>' : '')
+      + '<div class="save-row">'
+      + '<input type="email" name="email" autocomplete="email" inputmode="email" placeholder="Email" aria-label="Email" required>'
+      + '<input type="password" name="password" autocomplete="new-password" placeholder="Password (6+)" aria-label="Password" minlength="6" required>'
+      + '</div>'
+      + '<label class="consent"><input type="checkbox" name="consent"><span>I am 21 or older and agree to the '
+      + '<a href="/terms.html" target="_blank" rel="noopener">Terms</a> and <a href="/privacy.html" target="_blank" rel="noopener">Privacy Policy</a>.</span></label>'
+      + '<div class="msg" data-save-msg aria-live="polite"></div>'
+      + '<div class="btn-row"><button class="btn btn-go btn-big" type="submit">' + esc(opts.cta || 'Save my franchise') + '</button></div>'
+      + '<div class="ftp save-ftp">One EdgeDesk account for everything — the games, the research terminal, a subscription if you ever want one. '
+      + 'Already have one? Use it here: same email, same password. '
+      + '<button type="button" class="linkish" data-save-forgot>Forgot password?</button></div>'
+      + '</form>';
+  }
+  function wireSaveCard(onSaved) {
+    var d = root.document;
+    Array.prototype.forEach.call(d.querySelectorAll('form[data-save]'), function (form) {
+      if (form.getAttribute('data-wired')) return;
+      form.setAttribute('data-wired', '1');
+      var placement = form.getAttribute('data-save') || '';
+      var msgEl = form.querySelector('[data-save-msg]');
+      function msg(t, ok) { if (msgEl) { msgEl.className = 'msg' + (ok ? ' ok' : ''); msgEl.textContent = t || ''; } }
+      var forgot = form.querySelector('[data-save-forgot]');
+      if (forgot) forgot.addEventListener('click', function () {
+        var email = form.elements.email.value.trim();
+        if (!email) { msg('Enter your email first, then tap Forgot password.'); return; }
+        AU.recover(email).then(function (r) { msg(r.ok ? 'Reset email sent to ' + email + '.' : (r.message || 'Could not send the reset email.'), r.ok); });
+      });
+      form.addEventListener('submit', function (e) {
+        e.preventDefault();
+        var email = form.elements.email.value.trim(), pass = form.elements.password.value, consent = !!form.elements.consent.checked;
+        var btn = form.querySelector('button[type=submit]'), old = btn.textContent;
+        if (!email || !pass) { msg('Enter your email and a password.'); return; }
+        if (pass.length < 6) { msg('Choose a password of at least 6 characters.'); return; }
+        if (!consent) { msg('Please confirm you are 21+ and agree to the Terms to continue.'); return; }
+        track('signup_start_from_games', { placement: placement, game_type: 'franchise' });
+        btn.disabled = true; btn.textContent = '…'; msg('');
+        AU.save(email, pass, consent).then(function (r) {
+          if (!r.ok) { msg(r.message || 'Something went wrong.'); btn.disabled = false; btn.textContent = old; return; }
+          if (r.confirm) {
+            track('franchise_signup', { confirm: true, placement: placement });
+            msg('Account created. Confirm your email (' + email + '), then come back — your franchise is saved the moment you sign in.', true);
+            btn.disabled = false; btn.textContent = old; return;
+          }
+          track(r.mode === 'signin' ? 'franchise_signin' : 'franchise_signup', { placement: placement });
+          track('signup_complete_from_games', { game_type: 'franchise', placement: placement, mode: r.mode });
+          return FR.boot().then(function (b) {
+            paintFranchise();
+            var snap = FR.snapshot(), name = snap && snap.franchise ? snap.franchise.city + ' ' + snap.franchise.name : 'Your franchise';
+            if (b && b.claimed) { track('franchise_claimed', { placement: placement }); toast('Saved — the ' + name + ' are on your account'); }
+            else toast('Signed in');
+            form.innerHTML = '<div class="msg ok">' + esc(name) + ' — saved to ' + esc(email) + '. Same account for the research terminal, whenever you want it.</div>';
+            notifyFranchise(b);
+            if (typeof onSaved === 'function') onSaved(b, r);
+          });
+        });
+      });
     });
   }
 
@@ -742,7 +818,8 @@
     pulse: pulse, summaryNow: summaryNow, chip: chip, moment: moment,
     PRO_AFTER_OPENS: PRO_AFTER_OPENS, proDue: proDue, proMoment: proMoment, wireProMoment: wireProMoment,
     ROOMS: ROOMS, tabs: tabs, franchiseReady: franchiseReady, paintFranchise: paintFranchise,
-    rewardPanel: rewardPanel, rewardChips: rewardChips, conversionCard: conversionCard, wireConversion: wireConversion
+    rewardPanel: rewardPanel, rewardChips: rewardChips, conversionCard: conversionCard, wireConversion: wireConversion,
+    saveCard: saveCard, wireSaveCard: wireSaveCard
   };
   root.EDGames = API;
   if (typeof module !== 'undefined' && module.exports) module.exports = API;

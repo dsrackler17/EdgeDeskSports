@@ -35,7 +35,7 @@
   /* the War Room, the Drill, the Roster and the Front Office are single
      pages: anything deeper lands on the page itself rather than on the games
      home */
-  if(p[0]==='games'&&(p[1]==='dynasty'||p[1]==='two-minute-drill'||p[1]==='roster'||p[1]==='franchise')){location.replace('/games/'+p[1]+'/'+location.search);return;}
+  if(p[0]==='games'&&(p[1]==='dynasty'||p[1]==='two-minute-drill'||p[1]==='roster'||p[1]==='franchise'||p[1]==='gameday')){location.replace('/games/'+p[1]+'/'+location.search);return;}
   if(p[0]==='games'){location.replace('/games/');return;}
 })();
 </script>

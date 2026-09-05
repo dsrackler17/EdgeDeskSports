@@ -128,9 +128,43 @@
           storeSession(r.data);
           return { ok: true, user: S ? S.user() : null };
         }
-        /* no token: email confirmation is on for this project */
-        return { ok: true, confirm: true, user: null };
+        /* no token: email confirmation is on for this project. A user with
+           NO identities is Supabase's way of saying the email is already
+           registered without saying so — the caller can sign in instead. */
+        var u = r.data && (r.data.user || r.data);
+        var existing = !!(u && Array.isArray(u.identities) && u.identities.length === 0);
+        return { ok: true, confirm: !existing, existing: existing, user: null };
       })
+      .catch(function () { return { ok: false, error: 'unreachable', message: 'Could not reach EdgeDesk. Check your connection and try again.' }; });
+  }
+
+  /* SAVE, IN ONE STEP. Try to create the account; if the email already
+     has an EdgeDesk account, sign into it with the same password instead.
+     The player never has to know which door they were meant to use, and
+     it is one account for everything — the games, the research terminal,
+     and a subscription if they ever want one. Consent is recorded only
+     when an account is actually created. Resolves like signUp/signIn,
+     with `mode` saying which happened. */
+  function save(email, password, consent) {
+    return signUp(email, password, consent).then(function (r) {
+      var existing = (!r.ok && r.error === 'auth' && /already has an account/i.test(r.message || '')) || (r.ok && r.existing);
+      if (!existing) { r.mode = 'signup'; return r; }
+      return signIn(email, password).then(function (s) {
+        s.mode = 'signin';
+        if (!s.ok && s.error === 'auth')
+          s.message = 'That email already has an EdgeDesk account, but that is not its password. Try again, or reset it below.';
+        return s;
+      });
+    });
+  }
+
+  /* A password reset email, through Supabase Auth's own flow. */
+  function recover(email) {
+    email = String(email || '').trim();
+    if (!configured()) return Promise.resolve({ ok: false, error: 'not_configured', message: 'Not configured in this build.' });
+    if (!email) return Promise.resolve({ ok: false, error: 'input', message: 'Enter your email first.' });
+    return post('/auth/v1/recover', { email: email })
+      .then(function (r) { return r.ok ? { ok: true } : { ok: false, error: 'auth', status: r.status, message: authMessage(r.data, r.status, 'recover') }; })
       .catch(function () { return { ok: false, error: 'unreachable', message: 'Could not reach EdgeDesk. Check your connection and try again.' }; });
   }
 
@@ -151,7 +185,7 @@
   var API = {
     SESSION_KEY: SESSION_KEY, CONSENT_VERSION: CONSENT_VERSION,
     configure: configure, configured: configured, attrPayload: attrPayload,
-    signIn: signIn, signUp: signUp, signOut: signOut, user: user, signedIn: signedIn,
+    signIn: signIn, signUp: signUp, save: save, recover: recover, signOut: signOut, user: user, signedIn: signedIn,
     authMessage: authMessage
   };
   root.EDGamesAuth = API;

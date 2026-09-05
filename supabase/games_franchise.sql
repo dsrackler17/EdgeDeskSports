@@ -42,6 +42,11 @@
 --   * Scoring. Price It is scored against game_board, never a client-supplied
 --     price. Pick 5 snapshots the board's line at submission and is settled by
 --     the service role from the board's finals.
+--   * The weekly game (Phase 2). The schedule is drawn here from a seed the
+--     server derives; the opponent's strength is frozen on the game row; the
+--     simulator runs here, seeded, from the roster, the scheme, the opponent
+--     and the week's recorded preparation. A client sends "play" and nothing
+--     else. The same game simulated twice is the same game.
 --   * The trust boundary is stated where it is thin: a Two-Minute Drill result
 --     is client-reported (the drill is built in the browser from the same
 --     artifact). The server enforces one per day and the size of the reward;
@@ -169,6 +174,12 @@ set search_path = pg_catalog, pg_temp as $$
     'h2h_locked',    jsonb_build_object('xp', 40, 'cp', 1),
     'h2h_win',       jsonb_build_object('xp', 20, 'cp', 2),
     'founded',       jsonb_build_object('tc', 100),
+    -- the weekly game (Phase 2): playing it, winning it, beating the rival,
+    -- finishing a season
+    'weekly_game',   jsonb_build_object('xp', 100, 'tc', 40),
+    'weekly_win',    jsonb_build_object('xp', 60, 'tc', 60, 'cp', 2),
+    'rival_win',     jsonb_build_object('xp', 50, 'cp', 1),
+    'season_complete', jsonb_build_object('xp', 250, 'tc', 150),
     'import_unverified_price_it', jsonb_build_object('xp', 50),
     'import_unverified_pick5',    jsonb_build_object('xp', 75)
   );
@@ -322,7 +333,8 @@ create table if not exists public.franchise_activity (
   id             bigserial primary key,
   franchise_id   uuid not null references public.franchises (id) on delete cascade,
   kind           text not null check (kind in
-                   ('price_it','pick5_card','pick5_result','drill_daily','research_open','h2h_locked','h2h_win','founded')),
+                   ('price_it','pick5_card','pick5_result','drill_daily','research_open','h2h_locked','h2h_win','founded',
+                    'season_started','weekly_game','weekly_win','season_complete')),
   key            text not null,
   week_key       text not null,
   day_key        text not null,
@@ -407,6 +419,113 @@ create table if not exists public.franchise_achievements (
   primary key (franchise_id, achievement_id)
 );
 
+-- ── THE WEEKLY GAME: the opponent pool and the schedule ──────────────────
+-- Phase 2. A franchise season is eight weekly games against fictional clubs
+-- from a fixed pool, one game per football week, each one simulated on the
+-- server from the roster, the scheme, the opponent and that week's
+-- preparation. Nothing about a game is decided in a browser.
+--
+-- The pool is rows, not a constant, so the Game Day page can show a club's
+-- mark and character without a round trip through code. Every club shares
+-- the franchise's own identity lists, so one set of marks and colours
+-- serves both.
+create table if not exists public.franchise_opponents (
+  key      text primary key,
+  city     text not null,
+  name     text not null,
+  abbr     text not null check (abbr ~ '^[A-Z0-9]{2,4}$'),
+  logo     text not null check (logo in
+             ('star','bolt','shield','wolf','horn','anchor','arrow','flame',
+              'crown','wing','gear','wave','peak','eagle','bull','spear')),
+  theme    text not null check (theme in
+             ('forest','navy','crimson','gold','slate','violet','teal','orange','maroon','black')),
+  offense  text not null check (offense in
+             ('air_raid','spread','pro_style','power_run','option','west_coast')),
+  defense  text not null check (defense in
+             ('four_three','three_four','press_man','zone','blitz_heavy','bend_dont_break')),
+  style    text not null,
+  sort     integer not null default 100
+);
+
+insert into public.franchise_opponents (key, city, name, abbr, logo, theme, offense, defense, style, sort) values
+  ('bayou',      'Bayou',       'Marsh Hawks',  'BAY', 'wing',   'teal',    'spread',     'zone',            'Tempo, and a secondary that reads eyes.',            1),
+  ('iron_ridge', 'Iron Ridge',  'Forgemen',     'IRF', 'gear',   'slate',   'power_run',  'three_four',      'Downhill, two-gap, no apologies.',                   2),
+  ('cape',       'Cape Harbor', 'Gulls',        'CPH', 'wave',   'navy',    'west_coast', 'bend_dont_break', 'Short throws and a long field.',                     3),
+  ('prairie',    'Prairie',     'Bison',        'PRB', 'bull',   'maroon',  'power_run',  'four_three',      'Runs it until you stop it.',                         4),
+  ('summit',     'Summit',      'Peaks',        'SMT', 'peak',   'forest',  'pro_style',  'four_three',      'Play-action from under center.',                     5),
+  ('delta',      'Delta',       'Dukes',        'DLK', 'crown',  'gold',    'air_raid',   'press_man',       'Four wide, and corners on an island.',               6),
+  ('north_fork', 'North Fork',  'Greywolves',   'NFW', 'wolf',   'black',   'option',     'blitz_heavy',     'Reads at the mesh, pressure from everywhere.',       7),
+  ('coal',       'Coal County', 'Miners',       'CCM', 'peak',   'orange',  'power_run',  'three_four',      'Grinds the clock and the line.',                     8),
+  ('salt_flats', 'Salt Flats',  'Anchors',      'SLT', 'anchor', 'navy',    'pro_style',  'zone',            'Patient, balanced, hard to fool.',                   9),
+  ('red_river',  'Red River',   'Outriders',    'RRO', 'spear',  'crimson', 'spread',     'press_man',       'Fast, aggressive, sometimes reckless.',              10),
+  ('lakeshore',  'Lakeshore',   'Voltage',      'LKS', 'bolt',   'violet',  'air_raid',   'zone',            'Throws it fifty times and dares you.',               11),
+  ('canyon',     'Canyon',      'Condors',      'CYN', 'eagle',  'orange',  'west_coast', 'four_three',      'Rhythm passing, sound tackling.',                    12),
+  ('harbor',     'Harbor',      'Wardens',      'HBR', 'shield', 'slate',   'pro_style',  'bend_dont_break', 'Gives you yards, not points.',                       13),
+  ('high_plains','High Plains', 'Stampede',     'HPS', 'horn',   'gold',    'option',     'four_three',      'The quarterback runs. A lot.',                       14),
+  ('bluegrass',  'Bluegrass',   'Blaze',        'BLG', 'star',   'navy',    'spread',     'blitz_heavy',     'Points in bunches, both directions.',                15),
+  ('foundry',    'Foundry',     'Smiths',       'FDR', 'flame',  'crimson', 'air_raid',   'blitz_heavy',     'Chaos on both sides of the ball.',                   16),
+  ('river_bend', 'River Bend',  'Otters',       'RVB', 'wave',   'teal',    'west_coast', 'zone',            'Neat, efficient, rarely beaten badly.',              17),
+  ('granite',    'Granite',     'Guards',       'GRN', 'shield', 'black',   'power_run',  'bend_dont_break', 'Wins 17–13 and likes it.',                           18),
+  ('sunset',     'Sunset',      'Arrows',       'SNS', 'arrow',  'orange',  'spread',     'zone',            'Quick, spread out, a step fast.',                    19),
+  ('timberline', 'Timberline',  'Oxen',         'TMB', 'bull',   'forest',  'pro_style',  'three_four',      'Big up front, patient behind it.',                   20),
+  ('capital',    'Capital',     'Regents',      'CAP', 'crown',  'violet',  'west_coast', 'press_man',       'Composed, precise, and it presses you.',             21),
+  ('estuary',    'Estuary',     'Herons',       'EST', 'wing',   'slate',   'option',     'zone',            'Misdirection, then discipline.',                     22),
+  ('mesa',       'Mesa',        'Monarchs',     'MSA', 'crown',  'maroon',  'air_raid',   'four_three',      'Airs it out in thin air.',                           23),
+  ('frontier',   'Frontier',    'Wranglers',    'FRT', 'horn',   'gold',    'power_run',  'press_man',       'Runs, and dares you to throw.',                      24)
+on conflict (key) do nothing;
+
+-- THE RIVAL. Chosen once, when Season I is scheduled, and kept for life:
+-- every season ends against them, and the rivalry record is permanent.
+alter table public.franchises add column if not exists rival_key text references public.franchise_opponents (key);
+
+-- ONE GAME. Scheduled with the season (the opponent's identity and ratings
+-- frozen at scheduling, so a schedule cannot change under a player), opened
+-- on the Saturday of its football week, and played once. `seed` is derived
+-- by the server; the simulator is a pure function of it and the state of
+-- the roster, which is what makes a result reproducible and unforgeable.
+create table if not exists public.franchise_games (
+  id              uuid primary key default gen_random_uuid(),
+  franchise_id    uuid not null references public.franchises (id) on delete cascade,
+  season_number   integer not null,
+  week            integer not null check (week >= 1),
+  week_key        text not null,          -- the football week the game belongs to
+  opens_at        timestamptz not null,   -- Saturday 07:00 UTC of that week
+  opponent_key    text not null references public.franchise_opponents (key),
+  opponent        jsonb not null,         -- identity + ratings, frozen at scheduling
+  home            boolean not null,
+  rival           boolean not null default false,
+  status          text not null default 'scheduled' check (status in ('scheduled', 'final')),
+  seed            text not null,
+  played_at       timestamptz,
+  score_for       integer,
+  score_against   integer,
+  result          text check (result in ('W', 'L', 'T')),
+  box             jsonb not null default '{}'::jsonb,
+  sim_version     text,
+  created_at      timestamptz not null default now(),
+  unique (franchise_id, season_number, week),
+  foreign key (franchise_id, season_number) references public.franchise_seasons (franchise_id, number) on delete cascade
+);
+
+create index if not exists franchise_games_next on public.franchise_games (franchise_id, season_number, status, week);
+
+-- The record grows kinds with the weekly game. The constraint is replaced by
+-- name (the name Postgres gives an inline column check) so an installation
+-- that applied Phase 1 gets the new kinds without a rebuild.
+alter table public.franchise_activity drop constraint if exists franchise_activity_kind_check;
+alter table public.franchise_activity add constraint franchise_activity_kind_check check (kind in
+  ('price_it','pick5_card','pick5_result','drill_daily','research_open','h2h_locked','h2h_win','founded',
+   'season_started','weekly_game','weekly_win','season_complete'));
+
+insert into public.franchise_achievement_defs (id, name, description, exclusive_season, sort) values
+  ('first_win',       'First Win',       'Your franchise''s first weekly game won.', null, 40),
+  ('bragging_rights', 'Bragging Rights', 'Beat your rival.', null, 41),
+  ('shutout',         'Shutout',         'Held an opponent scoreless.', null, 42),
+  ('first_season',    'A Full Season',   'Completed your first franchise season.', null, 43),
+  ('winning_season',  'Winning Season',  'Finished a season with more wins than losses.', null, 44),
+  ('perfect_season',  'Perfect Season',  'Won every game of a season.', null, 45)
+on conflict (id) do nothing;
+
 -- ===========================================================================
 -- ROW LEVEL SECURITY — deny by default; owners read their own; nobody writes.
 -- ===========================================================================
@@ -468,6 +587,16 @@ create policy franchise_pick5_selections_own on public.franchise_pick5_selection
 
 drop policy if exists franchise_achievements_own on public.franchise_achievements;
 create policy franchise_achievements_own on public.franchise_achievements for select
+  using (public.franchise_is_mine(franchise_id));
+
+alter table public.franchise_opponents         enable row level security;
+alter table public.franchise_games             enable row level security;
+
+drop policy if exists franchise_opponents_read on public.franchise_opponents;
+create policy franchise_opponents_read on public.franchise_opponents for select using (true);
+
+drop policy if exists franchise_games_own on public.franchise_games;
+create policy franchise_games_own on public.franchise_games for select
   using (public.franchise_is_mine(franchise_id));
 
 commit;
@@ -886,6 +1015,10 @@ begin
   perform public.franchise_credit(v_id, 'tc', (public.franchise_economy()->'founded'->>'tc')::int,
     'founded', v_season::text, 'Founding grant');
   perform public.franchise_award(v_id, 'founder_' || v_season::text, v_season);
+
+  -- a team, and a schedule: Season I opens at once, so the HQ can answer
+  -- "who am I playing?" from the first second (franchise_open_season, below)
+  perform public.franchise_open_season(v_id, 1, now());
 
   return public.franchise_home(p_secret);
 end;
@@ -1330,6 +1463,760 @@ begin
 end;
 $$;
 
+commit;
+
+-- ===========================================================================
+-- THE WEEKLY GAME — sim_v1
+--
+-- The franchise's own calendar, and the game that gives a week its stakes.
+--
+-- THE CALENDAR RULE. A franchise season is `weeks` games (eight by default),
+-- one per football week, scheduled all at once when the season opens. Week
+-- w belongs to the football week w − 1 weeks after the opening one, and its
+-- game opens on that week's Saturday at 07:00 UTC — Saturday everywhere in
+-- the United States. A game stays playable until it is played, so a week
+-- missed is not a game lost; but the preparation a game runs on is the
+-- preparation recorded in ITS football week, so a week missed is a game
+-- played unprepared. Real football makes the week richer while it is on;
+-- the franchise season runs on this clock whether or not there is a slate.
+--
+-- THE SIMULATOR is a possession model: eleven to fourteen drives a side,
+-- each one resolved from the offense's effective rating against the
+-- defense's — the team rating, home field (+1.5), that week's preparation
+-- (−3 to +3), the published scheme matchup (−2 to +2), and the starters'
+-- traits. Overtime is up to two rounds, then a tie. It is seeded from the
+-- game's server-derived seed, so the same game simulated twice is the same
+-- game; nothing a client sends changes a result, because a client sends
+-- nothing but "play".
+--
+-- Every function here is internal except franchise_start_season,
+-- franchise_play_week, franchise_schedule and franchise_game.
+-- ===========================================================================
+
+begin;
+
+-- Sum two objects of numbers, key by key. Used for the career and season
+-- lines on a player, and for the team totals in a box score.
+create or replace function public.games_jsonb_sum(p_a jsonb, p_b jsonb)
+returns jsonb language sql immutable
+set search_path = pg_catalog, pg_temp as $$
+  select coalesce((select jsonb_object_agg(k, v) from (
+    select key as k, to_jsonb(sum(val)) as v from (
+      select key, case when jsonb_typeof(value) = 'number' then (value #>> '{}')::numeric else 0 end as val
+        from jsonb_each(coalesce(p_a, '{}'::jsonb))
+      union all
+      select key, case when jsonb_typeof(value) = 'number' then (value #>> '{}')::numeric else 0 end
+        from jsonb_each(coalesce(p_b, '{}'::jsonb))
+    ) u group by key) s), '{}'::jsonb);
+$$;
+
+-- THE SCHEME MATCHUP, published. Offense against defense, in rating points
+-- for the offense: an Air Raid against Press Man loses two, against a
+-- Blitz-Heavy front gains two. Mirrored in games/lib/franchise.js for the
+-- pregame read; a test holds the two equal.
+create or replace function public.franchise_scheme_edges()
+returns jsonb language sql immutable
+set search_path = pg_catalog, pg_temp as $$
+  select '{
+    "air_raid":   {"four_three": 0, "three_four": 0,  "press_man": -2, "zone": 1,  "blitz_heavy": 2,  "bend_dont_break": -1},
+    "spread":     {"four_three": 0, "three_four": -1, "press_man": 1,  "zone": 0,  "blitz_heavy": 1,  "bend_dont_break": -1},
+    "pro_style":  {"four_three": 0, "three_four": 1,  "press_man": 0,  "zone": 1,  "blitz_heavy": -2, "bend_dont_break": 1},
+    "power_run":  {"four_three": 1, "three_four": -2, "press_man": 2,  "zone": 0,  "blitz_heavy": -1, "bend_dont_break": 1},
+    "option":     {"four_three": -1, "three_four": 1, "press_man": 1,  "zone": -2, "blitz_heavy": 1,  "bend_dont_break": 0},
+    "west_coast": {"four_three": 0, "three_four": 0,  "press_man": -1, "zone": -1, "blitz_heavy": 1,  "bend_dont_break": 1}
+  }'::jsonb;
+$$;
+
+create or replace function public.franchise_scheme_edge(p_offense text, p_defense text)
+returns numeric language sql immutable
+set search_path = public, pg_temp as $$
+  select coalesce((public.franchise_scheme_edges() -> p_offense ->> p_defense)::numeric, 0);
+$$;
+
+-- How much of an offense goes through the air, by scheme.
+create or replace function public.franchise_pass_share(p_offense text)
+returns numeric language sql immutable
+set search_path = pg_catalog, pg_temp as $$
+  select case p_offense when 'air_raid' then 0.68 when 'spread' then 0.58 when 'pro_style' then 0.50
+                        when 'power_run' then 0.40 when 'option' then 0.36 when 'west_coast' then 0.60 else 0.50 end;
+$$;
+
+-- How much of the rushing a quarterback carries, by scheme.
+create or replace function public.franchise_qb_rush_share(p_offense text)
+returns numeric language sql immutable
+set search_path = pg_catalog, pg_temp as $$
+  select case p_offense when 'option' then 0.35 when 'spread' then 0.22 when 'air_raid' then 0.06 else 0.10 end;
+$$;
+
+-- PREPARATION, prep_v1 — the server's restatement of EDFranchise.prep. A
+-- read of what the franchise did in ONE football week: three scouting
+-- reports are full Scouting; the card, practice and film complete
+-- Preparation; Market IQ is the average Price It score. Capped at 100 and
+-- never a roster rating — it is the one input to Saturday the week decides.
+create or replace function public.franchise_prep(p_franchise uuid, p_week_key text)
+returns jsonb language plpgsql stable security definer set search_path = public, pg_temp as $$
+declare priced integer; card boolean; drills integer; research integer; avg_score numeric;
+begin
+  select count(*) filter (where kind = 'price_it'), count(*) filter (where kind = 'pick5_card') > 0,
+         count(*) filter (where kind = 'drill_daily'), count(*) filter (where kind = 'research_open'),
+         round(avg((detail->>'score')::numeric) filter (where kind = 'price_it'))
+    into priced, card, drills, research, avg_score
+    from public.franchise_activity where franchise_id = p_franchise and week_key = p_week_key;
+  return jsonb_build_object(
+    'version', 'prep_v1', 'week_key', p_week_key,
+    'scouting', least(100, round(priced / 3.0 * 100))::int,
+    'preparation', least(100, round(40 * least(1, priced / 3.0) + 25 * (case when card then 1 else 0 end)
+                                  + 20 * least(1, drills) + 15 * least(1, research / 2.0)))::int,
+    'market_iq', case when avg_score is null then null else greatest(0, least(100, avg_score))::int end,
+    'counts', jsonb_build_object('price_it', priced, 'pick5_submitted', card, 'drills', drills, 'research', research));
+end;
+$$;
+
+-- What the starters' traits add up to, in the units the simulator reads.
+-- A trait's `effect` is the object the generator wrote; here each kind of
+-- effect is summed across the starting lineup.
+create or replace function public.franchise_trait_effects(p_franchise uuid)
+returns jsonb language sql stable security definer set search_path = public, pg_temp as $$
+  with st as (
+    select p.position, e.key, (e.value)::numeric as v
+    from public.game_players p
+    cross join lateral jsonb_array_elements(p.traits) t
+    cross join lateral jsonb_each_text(t -> 'effect') e
+    where p.franchise_id = p_franchise and p.status = 'active'
+      and p.depth <= case p.position when 'WR' then 3 when 'OL' then 5 when 'DL' then 4 when 'LB' then 3
+                                     when 'CB' then 2 when 'S' then 2 else 1 end
+  )
+  select jsonb_build_object(
+    'offense', coalesce(sum(v) filter (where key in ('pressure_resist','fatigue_resist','breakaway','drop_resist','red_zone','pass_block_anchor','run_block_power')), 0)
+             + coalesce(sum(v) filter (where key = 'chemistry' and position in ('QB','RB','WR','TE','OL')), 0),
+    'defense', coalesce(sum(v) filter (where key in ('edge_rush','run_stop','man_coverage','interception')), 0)
+             + coalesce(sum(v) filter (where key = 'chemistry' and position in ('DL','LB','CB','S')), 0),
+    'special', coalesce(sum(v) filter (where key in ('clutch_kick','punt_placement')), 0),
+    'late_offense', coalesce(sum(v) filter (where key = 'late_game_passing'), 0),
+    'late_defense', coalesce(sum(v) filter (where key = 'late_game_pressure'), 0),
+    'takeaway', coalesce(sum(v) filter (where key = 'interception'), 0),
+    'clutch', coalesce(sum(v) filter (where key = 'clutch_kick'), 0),
+    'edge_rush', coalesce(sum(v) filter (where key = 'edge_rush'), 0),
+    'drop_resist', coalesce(sum(v) filter (where key = 'drop_resist'), 0),
+    'preparation', coalesce(sum(v) filter (where key = 'preparation'), 0),
+    'count', count(*))
+  from st;
+$$;
+
+-- The season row as the pages read it.
+create or replace function public.franchise_season_json(p_franchise uuid, p_number integer)
+returns jsonb language sql stable security definer set search_path = public, pg_temp as $$
+  select jsonb_build_object('number', s.number, 'label', s.label, 'season', s.season, 'status', s.status,
+      'weeks', s.weeks, 'week', s.week, 'wins', s.wins, 'losses', s.losses, 'ties', s.ties,
+      'points_for', s.points_for, 'points_against', s.points_against,
+      'created_at', s.created_at, 'completed_at', s.completed_at)
+  from public.franchise_seasons s where s.franchise_id = p_franchise and s.number = p_number;
+$$;
+
+-- A game as the pages read it. The full box only when asked for.
+create or replace function public.franchise_game_json(p_game uuid, p_full boolean default true)
+returns jsonb language sql stable security definer set search_path = public, pg_temp as $$
+  select jsonb_build_object('id', g.id, 'season_number', g.season_number, 'week', g.week, 'week_key', g.week_key,
+      'opens_at', g.opens_at, 'open', g.opens_at <= now(), 'opponent', g.opponent, 'home', g.home, 'rival', g.rival,
+      'status', g.status, 'played_at', g.played_at, 'score_for', g.score_for, 'score_against', g.score_against,
+      'result', g.result, 'ot', coalesce((g.box->>'ot')::boolean, false), 'potg', g.box->'potg',
+      'prep', g.box->'edges'->'prep', 'sim_version', g.sim_version,
+      'box', case when p_full then g.box else null end)
+  from public.franchise_games g where g.id = p_game;
+$$;
+
+-- SCHEDULE A SEASON. Seven clubs drawn from the pool and the rival to close,
+-- their ratings set around the franchise's own team overall at scheduling
+-- (from six below to four above, shuffled; the rival two above), home and
+-- away alternating from a coin flip. Seeded from the franchise seed and the
+-- season number, so the same franchise always draws the same schedule.
+create or replace function public.franchise_schedule_season(p_franchise uuid, p_number integer, p_now timestamptz default now())
+returns integer language plpgsql security definer set search_path = public, pg_temp as $$
+declare
+  f public.franchises%rowtype; s public.franchise_seasons%rowtype; ovr numeric;
+  keys text[]; k text; w integer; offsets integer[] := array[-6, -3, -1, 0, 1, 2, 4];
+  i integer; j integer; tmp integer; o public.franchise_opponents%rowtype;
+  oovr integer; d integer; spread integer; home boolean; wk text; opens timestamptz; made integer := 0;
+begin
+  select * into f from public.franchises where id = p_franchise for update;
+  if not found then raise exception 'no franchise' using errcode = '22023'; end if;
+  select * into s from public.franchise_seasons where franchise_id = p_franchise and number = p_number;
+  if not found then raise exception 'no such season' using errcode = 'P0002'; end if;
+  if exists (select 1 from public.franchise_games where franchise_id = p_franchise and season_number = p_number) then
+    return 0;
+  end if;
+  perform setseed(public.franchise_seed_float(f.seed || ':season:' || p_number));
+  ovr := (public.franchise_team_rating(p_franchise)->>'overall')::numeric;
+
+  -- the rival, once
+  if f.rival_key is null then
+    select key into k from public.franchise_opponents order by random() limit 1;
+    update public.franchises set rival_key = k, updated_at = now() where id = p_franchise;
+    f.rival_key := k;
+  end if;
+
+  -- the other clubs, distinct, and the offsets shuffled
+  select array_agg(key) into keys
+    from (select key from public.franchise_opponents where key <> f.rival_key order by random() limit s.weeks - 1) q;
+  for i in reverse array_length(offsets, 1)..2 loop
+    j := 1 + floor(random() * i)::int;
+    tmp := offsets[i]; offsets[i] := offsets[j]; offsets[j] := tmp;
+  end loop;
+  home := random() < 0.5;
+
+  for w in 1..s.weeks loop
+    if w = s.weeks then k := f.rival_key; d := 2;
+    else k := keys[w]; d := offsets[((w - 1) % array_length(offsets, 1)) + 1]; end if;
+    select * into o from public.franchise_opponents where key = k;
+    oovr := greatest(45, least(95, round(ovr + d + (random() * 2 - 1))::int));
+    spread := floor(random() * 9)::int - 4;
+    wk := public.games_week_key(p_now + ((w - 1) * interval '7 days'));
+    opens := ((wk::date + 4)::timestamp + interval '7 hours') at time zone 'UTC';
+    insert into public.franchise_games (franchise_id, season_number, week, week_key, opens_at, opponent_key, opponent, home, rival, seed)
+    values (p_franchise, p_number, w, wk, opens, o.key,
+      jsonb_build_object('key', o.key, 'city', o.city, 'name', o.name, 'abbr', o.abbr, 'logo', o.logo, 'theme', o.theme,
+        'offense', o.offense, 'defense', o.defense, 'style', o.style,
+        'overall', oovr, 'offense_r', greatest(40, least(99, oovr + spread)), 'defense_r', greatest(40, least(99, oovr - spread)),
+        'special_r', greatest(40, least(99, oovr + floor(random() * 7)::int - 3))),
+      home, w = s.weeks, md5(f.seed || ':game:' || p_number || ':' || w));
+    home := not home;
+    made := made + 1;
+  end loop;
+  return made;
+end;
+$$;
+
+-- OPEN A SEASON: schedule it, mark it active, record that it began.
+create or replace function public.franchise_open_season(p_franchise uuid, p_number integer, p_now timestamptz default now())
+returns integer language plpgsql security definer set search_path = public, pg_temp as $$
+declare n integer;
+begin
+  n := public.franchise_schedule_season(p_franchise, p_number, p_now);
+  update public.franchise_seasons set status = 'active' where franchise_id = p_franchise and number = p_number and status = 'preseason';
+  insert into public.franchise_activity (franchise_id, kind, key, week_key, day_key, detail, created_at)
+  values (p_franchise, 'season_started', p_number::text, public.games_week_key(p_now), public.games_day_key(p_now),
+          jsonb_build_object('season_number', p_number, 'games', n), p_now)
+  on conflict (franchise_id, kind, key) do nothing;
+  return n;
+end;
+$$;
+
+-- ONE DRIVE. The offense's effective rating against the defense's decides
+-- the odds of a touchdown, a field-goal try, a turnover or a punt; the
+-- kicker's unit decides whether a try is good. Yards and plays are drawn to
+-- fit the outcome, split by the offense's pass share. Returns the drive.
+create or replace function public.franchise_sim_drive(
+  p_off numeric, p_def numeric, p_st numeric, p_pass_share numeric, p_takeaway numeric, p_clutch numeric, p_short_field boolean)
+returns jsonb language plpgsql set search_path = pg_catalog, pg_temp as $$
+declare
+  edge numeric := p_off - p_def; p_td numeric; p_fg numeric; p_to numeric; r numeric := random();
+  outcome text; pts integer := 0; yds integer; plays integer; is_pass boolean; py integer; pp integer;
+begin
+  p_td := greatest(0.05, least(0.45, 0.21 + edge * 0.005 + (case when p_short_field then 0.15 else 0 end)));
+  p_fg := greatest(0.06, least(0.28, 0.15 + edge * 0.003 + (case when p_short_field then 0.12 else 0 end)));
+  p_to := greatest(0.04, least(0.24, 0.12 - edge * 0.003 + p_takeaway));
+  if r < p_td then outcome := 'td'; pts := 7;
+  elsif r < p_td + p_fg then
+    if random() < greatest(0.45, least(0.97, 0.72 + (p_st - 70) * 0.012 + p_clutch)) then outcome := 'fg'; pts := 3;
+    else outcome := 'fg_miss'; end if;
+  elsif r < p_td + p_fg + p_to then outcome := 'turnover';
+  else outcome := 'punt'; end if;
+  yds := case outcome when 'td' then 55 + floor(random() * 31)::int
+                      when 'fg' then 40 + floor(random() * 31)::int
+                      when 'fg_miss' then 35 + floor(random() * 26)::int
+                      when 'turnover' then 8 + floor(random() * 38)::int
+                      else 3 + floor(random() * 33)::int end;
+  plays := case outcome when 'td' then 6 + floor(random() * 5)::int
+                        when 'fg' then 6 + floor(random() * 4)::int
+                        when 'fg_miss' then 5 + floor(random() * 4)::int
+                        when 'turnover' then 3 + floor(random() * 5)::int
+                        else 3 + floor(random() * 4)::int end;
+  is_pass := random() < p_pass_share;
+  py := round(yds * p_pass_share)::int; pp := round(plays * p_pass_share)::int;
+  return jsonb_build_object('outcome', outcome, 'pts', pts, 'yds', yds, 'plays', plays, 'is_pass', is_pass,
+    'pass_yds', py, 'rush_yds', yds - py, 'pass_plays', pp, 'rush_plays', plays - pp);
+end;
+$$;
+
+-- A drive folded into team totals.
+create or replace function public.franchise_drive_totals(p_d jsonb)
+returns jsonb language sql immutable
+set search_path = pg_catalog, pg_temp as $$
+  select jsonb_build_object(
+    'possessions', 1, 'plays', (p_d->>'plays')::int, 'yds', (p_d->>'yds')::int,
+    'pass_yds', (p_d->>'pass_yds')::int, 'rush_yds', (p_d->>'rush_yds')::int,
+    'pass_plays', (p_d->>'pass_plays')::int, 'rush_plays', (p_d->>'rush_plays')::int,
+    'td', case when p_d->>'outcome' = 'td' then 1 else 0 end,
+    'pass_td', case when p_d->>'outcome' = 'td' and (p_d->>'is_pass')::boolean then 1 else 0 end,
+    'rush_td', case when p_d->>'outcome' = 'td' and not (p_d->>'is_pass')::boolean then 1 else 0 end,
+    'fg', case when p_d->>'outcome' = 'fg' then 1 else 0 end,
+    'fga', case when p_d->>'outcome' in ('fg', 'fg_miss') then 1 else 0 end,
+    'turnovers', case when p_d->>'outcome' = 'turnover' then 1 else 0 end,
+    'int', case when p_d->>'outcome' = 'turnover' and (p_d->>'is_pass')::boolean then 1 else 0 end,
+    'punts', case when p_d->>'outcome' = 'punt' then 1 else 0 end,
+    'points', (p_d->>'pts')::int);
+$$;
+
+-- The n-th starter at a position, from the lineup the simulator loaded.
+create or replace function public.franchise_nth(p_players jsonb, p_pos text, p_n integer)
+returns jsonb language sql immutable
+set search_path = pg_catalog, pg_temp as $$
+  select x from jsonb_array_elements(p_players) x
+  where x->>'position' = p_pos
+  order by (x->>'depth')::int, (x->>'overall')::int desc
+  offset greatest(0, p_n - 1) limit 1;
+$$;
+
+-- THE SIMULATOR. Reads the game, the roster, the opponent frozen on the
+-- game, this week's preparation and the starters' traits; plays it; returns
+-- the box. Writes nothing — franchise_play_game does the writing.
+create or replace function public.franchise_sim(p_franchise uuid, p_game uuid)
+returns jsonb language plpgsql security definer set search_path = public, pg_temp as $$
+declare
+  f public.franchises%rowtype; g public.franchise_games%rowtype; rt jsonb; opp jsonb; prep jsonb; tr jsonb; ps jsonb;
+  my_off numeric; my_def numeric; my_st numeric; op_off numeric; op_def numeric; op_st numeric;
+  h_me numeric; h_op numeric; prep_pts numeric; prep_adj numeric; sch_me numeric; sch_op numeric;
+  a_off numeric; a_def numeric; b_off numeric; b_def numeric; late_off numeric; late_def numeric;
+  pass_me numeric; pass_op numeric; qb_share numeric;
+  n integer; i integer; k integer; q integer; d jsonb; who text; ot boolean := false; rnd integer := 0;
+  pts_me integer := 0; pts_op integer := 0; q_me integer[] := '{0,0,0,0,0}'; q_op integer[] := '{0,0,0,0,0}';
+  scoring jsonb := '[]'::jsonb; tot_me jsonb := '{}'::jsonb; tot_op jsonb := '{}'::jsonb; me_first boolean;
+  tally jsonb := '{}'::jsonb; scorer jsonb; passer jsonb; kicker jsonb; r numeric; dist integer; desc_ text;
+  rec_w numeric[] := array[0.30, 0.22, 0.14, 0.16, 0.12, 0.06]; rec_pos text[] := array['WR','WR','WR','TE','RB','WR'];
+  rec_n integer[] := array[1, 2, 3, 1, 1, 4];
+  players jsonb; potg jsonb; result text; short boolean;
+begin
+  select * into f from public.franchises where id = p_franchise;
+  if not found then raise exception 'no franchise' using errcode = '22023'; end if;
+  select * into g from public.franchise_games where id = p_game and franchise_id = p_franchise;
+  if not found then raise exception 'no such game' using errcode = 'P0002'; end if;
+  perform setseed(public.franchise_seed_float(g.seed));
+
+  rt := public.franchise_team_rating(p_franchise);
+  opp := g.opponent;
+  prep := public.franchise_prep(p_franchise, g.week_key);
+  tr := public.franchise_trait_effects(p_franchise);
+  select coalesce(jsonb_agg(jsonb_build_object('id', p.id, 'name', p.first_name || ' ' || p.last_name, 'position', p.position,
+      'jersey', p.jersey, 'depth', p.depth, 'overall', p.overall, 'ratings', p.ratings) order by p.depth, p.overall desc), '[]'::jsonb)
+    into ps from public.game_players p where p.franchise_id = p_franchise and p.status = 'active';
+
+  -- effective ratings
+  my_off := (rt->>'offense')::numeric; my_def := (rt->>'defense')::numeric; my_st := (rt->>'special')::numeric;
+  op_off := (opp->>'offense_r')::numeric; op_def := (opp->>'defense_r')::numeric; op_st := coalesce((opp->>'special_r')::numeric, op_off);
+  h_me := case when g.home then 1.5 else 0 end; h_op := case when g.home then 0 else 1.5 end;
+  prep_pts := least(100, (prep->>'preparation')::numeric + 2 * (tr->>'preparation')::numeric);
+  prep_adj := round((prep_pts - 50) / 50.0 * 3, 2);
+  sch_me := public.franchise_scheme_edge(f.offense, opp->>'defense');
+  sch_op := public.franchise_scheme_edge(opp->>'offense', f.defense);
+  a_off := my_off + h_me + prep_adj + sch_me + 0.25 * (tr->>'offense')::numeric;
+  a_def := my_def + h_me + prep_adj + 0.25 * (tr->>'defense')::numeric;
+  b_off := op_off + h_op + sch_op;
+  b_def := op_def + h_op;
+  late_off := 0.5 * (tr->>'late_offense')::numeric; late_def := 0.5 * (tr->>'late_defense')::numeric;
+  pass_me := public.franchise_pass_share(f.offense); pass_op := public.franchise_pass_share(opp->>'offense');
+  qb_share := public.franchise_qb_rush_share(f.offense);
+  passer := public.franchise_nth(ps, 'QB', 1); kicker := public.franchise_nth(ps, 'K', 1);
+
+  -- possessions a side: tempo by scheme
+  n := 11 + floor(random() * 3)::int;
+  if f.offense in ('air_raid', 'spread') then n := n + 1; end if;
+  if (opp->>'offense') in ('air_raid', 'spread') then n := n + 1; end if;
+  if f.offense in ('power_run', 'option') then n := n - 1; end if;
+  if (opp->>'offense') in ('power_run', 'option') then n := n - 1; end if;
+  n := greatest(9, least(14, n));
+  me_first := random() < 0.5;
+
+  for i in 1..n + 4 loop
+    -- regulation is n possessions a side; then overtime rounds while tied
+    if i > n then
+      exit when pts_me <> pts_op or rnd >= 2;
+      rnd := rnd + 1; ot := true; q := 5; short := true;
+    else
+      q := 1 + ((i - 1) * 4) / n; short := false;
+    end if;
+    for k in 0..1 loop
+      who := case when (k = 0) = me_first then 'me' else 'opp' end;
+      if who = 'me' then
+        d := public.franchise_sim_drive(a_off + case when q >= 4 then late_off else 0 end, b_def, my_st, pass_me, 0,
+               case when q >= 4 then 0.02 * (tr->>'clutch')::numeric else 0 end, short);
+        pts_me := pts_me + (d->>'pts')::int; q_me[q] := q_me[q] + (d->>'pts')::int;
+        tot_me := public.games_jsonb_sum(tot_me, public.franchise_drive_totals(d));
+        if d->>'outcome' = 'td' then
+          if (d->>'is_pass')::boolean then
+            -- a receiver by share
+            r := random(); scorer := null;
+            for j in 1..array_length(rec_w, 1) loop
+              r := r - rec_w[j];
+              if r < 0 then scorer := public.franchise_nth(ps, rec_pos[j], rec_n[j]); exit; end if;
+            end loop;
+            if scorer is null then scorer := public.franchise_nth(ps, 'WR', 1); end if;
+            dist := 1 + floor(random() * 40)::int;
+            desc_ := (passer->>'name') || ' to ' || (scorer->>'name') || ', ' || dist || '-yd TD pass';
+            tally := tally || jsonb_build_object(scorer->>'id', public.games_jsonb_sum(tally->(scorer->>'id'), '{"rec_td":1}'::jsonb));
+            tally := tally || jsonb_build_object(passer->>'id', public.games_jsonb_sum(tally->(passer->>'id'), '{"pass_td":1}'::jsonb));
+          else
+            r := random();
+            scorer := case when r < qb_share then passer when r < qb_share + (1 - qb_share) * 0.8 then public.franchise_nth(ps, 'RB', 1)
+                           else public.franchise_nth(ps, 'RB', 2) end;
+            if scorer is null then scorer := public.franchise_nth(ps, 'RB', 1); end if;
+            dist := 1 + floor(random() * 25)::int;
+            desc_ := (scorer->>'name') || ', ' || dist || '-yd TD run';
+            tally := tally || jsonb_build_object(scorer->>'id', public.games_jsonb_sum(tally->(scorer->>'id'), '{"rush_td":1}'::jsonb));
+          end if;
+          scoring := scoring || jsonb_build_object('q', q, 'side', 'for', 'type', 'TD', 'pts', 7, 'desc', desc_, 'for', pts_me, 'against', pts_op);
+        elsif d->>'outcome' = 'fg' then
+          dist := 20 + floor(random() * 33)::int;
+          scoring := scoring || jsonb_build_object('q', q, 'side', 'for', 'type', 'FG', 'pts', 3,
+            'desc', coalesce(kicker->>'name', 'Field goal') || ', ' || dist || '-yd FG', 'for', pts_me, 'against', pts_op);
+        end if;
+      else
+        d := public.franchise_sim_drive(b_off, a_def + case when q >= 4 then late_def else 0 end, op_st, pass_op,
+               0.01 * (tr->>'takeaway')::numeric, 0, short);
+        pts_op := pts_op + (d->>'pts')::int; q_op[q] := q_op[q] + (d->>'pts')::int;
+        tot_op := public.games_jsonb_sum(tot_op, public.franchise_drive_totals(d));
+        if d->>'outcome' = 'td' then
+          scoring := scoring || jsonb_build_object('q', q, 'side', 'against', 'type', 'TD', 'pts', 7,
+            'desc', (opp->>'name') || ', ' || (d->>'plays') || '-play drive, ' || (case when (d->>'is_pass')::boolean then 'TD pass' else 'TD run' end),
+            'for', pts_me, 'against', pts_op);
+        elsif d->>'outcome' = 'fg' then
+          scoring := scoring || jsonb_build_object('q', q, 'side', 'against', 'type', 'FG', 'pts', 3,
+            'desc', (opp->>'name') || ', field goal', 'for', pts_me, 'against', pts_op);
+        end if;
+      end if;
+    end loop;
+  end loop;
+
+  result := case when pts_me > pts_op then 'W' when pts_me < pts_op then 'L' else 'T' end;
+  players := public.franchise_sim_lines(ps, f.offense, tot_me, tot_op, tally, tr);
+  select p into potg from jsonb_array_elements(players) p order by (p->>'impact')::numeric desc limit 1;
+
+  return jsonb_build_object(
+    'sim', 'sim_v1', 'seed', g.seed, 'home', g.home, 'rival', g.rival, 'week', g.week, 'season_number', g.season_number,
+    'opponent', opp, 'final', jsonb_build_object('for', pts_me, 'against', pts_op), 'result', result, 'ot', ot,
+    'quarters', jsonb_build_object('for', to_jsonb(q_me), 'against', to_jsonb(q_op), 'ot', ot),
+    'scoring', scoring,
+    'team', jsonb_build_object('for', tot_me, 'against', tot_op),
+    'edges', jsonb_build_object('home', h_me, 'prep', prep, 'prep_adj', prep_adj, 'scheme_offense', sch_me, 'scheme_defense', sch_op,
+      'traits', tr, 'offense', round(a_off, 1), 'defense', round(a_def, 1), 'opp_offense', round(b_off, 1), 'opp_defense', round(b_def, 1),
+      'possessions', n),
+    'players', players, 'potg', potg);
+end;
+$$;
+
+-- THE LINES. Team totals and the scoring tally distributed over the
+-- starters by role and share, so a box score adds up to its own team totals
+-- and a card's career line is the sum of its box scores. Returns one entry
+-- per starter: the line the page shows, the increments the record keeps,
+-- and an impact number that names the player of the game.
+create or replace function public.franchise_sim_lines(p_players jsonb, p_offense text, p_me jsonb, p_op jsonb, p_tally jsonb, p_tr jsonb)
+returns jsonb language plpgsql set search_path = public, pg_temp as $$
+declare
+  lines jsonb := '[]'::jsonb; p jsonb; x jsonb; ln jsonb; st jsonb; imp numeric;
+  att integer; cmp integer; pass_yds integer; rush_yds integer; rush_plays integer; cmp_rate numeric;
+  qb_share numeric := public.franchise_qb_rush_share(p_offense);
+  qb_yds integer; rb1_yds integer; rb2_yds integer; qb_car integer; rb1_car integer; rb2_car integer;
+  rec_w numeric[] := array[0.30, 0.22, 0.14, 0.16, 0.12, 0.06]; rec_pos text[] := array['WR','WR','WR','TE','RB','WR'];
+  rec_n integer[] := array[1, 2, 3, 1, 1, 4]; rec_yds integer[] := '{0,0,0,0,0,0}'; rec_cnt integer[] := '{0,0,0,0,0,0}';
+  j integer; ry integer; rc integer;
+  opp_plays integer; opp_pass integer; tkl_total integer; sacks integer; ints integer; sack_rate numeric; dl_prs numeric;
+  tk_pos text[] := array['LB','LB','LB','S','S','CB','CB','DL','DL','DL','DL']; tk_n integer[] := array[1,2,3,1,2,1,2,1,2,3,4];
+  tk_w numeric[] := array[0.16, 0.13, 0.10, 0.11, 0.09, 0.08, 0.07, 0.07, 0.06, 0.05, 0.04];
+  dtally jsonb := '{}'::jsonb; who jsonb; r numeric; i integer; given_tkl integer := 0; tk integer;
+begin
+  att := coalesce((p_me->>'pass_plays')::int, 0); pass_yds := coalesce((p_me->>'pass_yds')::int, 0);
+  rush_yds := coalesce((p_me->>'rush_yds')::int, 0); rush_plays := coalesce((p_me->>'rush_plays')::int, 0);
+  opp_plays := coalesce((p_op->>'plays')::int, 0); opp_pass := coalesce((p_op->>'pass_plays')::int, 0);
+
+  -- the quarterback
+  p := public.franchise_nth(p_players, 'QB', 1);
+  cmp_rate := greatest(0.40, least(0.80, 0.52 + (coalesce((p->'ratings'->>'acc')::int, 70) - 70) / 200.0 + 0.005 * (p_tr->>'drop_resist')::numeric));
+  cmp := round(att * cmp_rate)::int;
+  qb_yds := round(rush_yds * qb_share)::int; qb_car := round(rush_plays * qb_share)::int;
+  rb1_yds := round((rush_yds - qb_yds) * 0.72)::int; rb2_yds := rush_yds - qb_yds - rb1_yds;
+  rb1_car := round((rush_plays - qb_car) * 0.72)::int; rb2_car := rush_plays - qb_car - rb1_car;
+  -- receiving by share, rounded cumulatively (each receiver takes the
+  -- difference of two rounded running totals), so the six lines add up to
+  -- the team's passing yards and completions exactly, whatever the totals
+  declare cum numeric := 0; prev_y integer := 0; prev_c integer := 0; cy integer; cc integer;
+  begin
+    for j in 1..6 loop
+      cum := cum + rec_w[j];
+      if j = 6 then cy := pass_yds; cc := cmp; else cy := round(pass_yds * cum)::int; cc := round(cmp * cum)::int; end if;
+      rec_yds[j] := greatest(0, cy - prev_y); rec_cnt[j] := greatest(0, cc - prev_c);
+      prev_y := cy; prev_c := cc;
+    end loop;
+  end;
+
+  -- the defensive tally: tackles by weight, sacks and interceptions by draw
+  tkl_total := round(opp_plays * 0.85)::int;
+  select coalesce(avg((dl->'ratings'->>'prs')::int), 70) into dl_prs
+    from jsonb_array_elements(p_players) dl where dl->>'position' = 'DL' and (dl->>'depth')::int <= 4;
+  sack_rate := greatest(0.02, least(0.12, 0.055 + (dl_prs - 70) * 0.002 + 0.003 * (p_tr->>'edge_rush')::numeric));
+  sacks := round(opp_pass * sack_rate)::int;
+  ints := coalesce((p_op->>'int')::int, 0);
+  for i in 1..sacks loop
+    r := random();
+    who := case when r < 0.35 then public.franchise_nth(p_players, 'DL', 1) when r < 0.60 then public.franchise_nth(p_players, 'DL', 2)
+                when r < 0.75 then public.franchise_nth(p_players, 'DL', 3) when r < 0.90 then public.franchise_nth(p_players, 'LB', 1)
+                else public.franchise_nth(p_players, 'DL', 4) end;
+    if who is not null then dtally := dtally || jsonb_build_object(who->>'id', public.games_jsonb_sum(dtally->(who->>'id'), '{"sacks":1}'::jsonb)); end if;
+  end loop;
+  for i in 1..ints loop
+    r := random();
+    who := case when r < 0.30 then public.franchise_nth(p_players, 'CB', 1) when r < 0.55 then public.franchise_nth(p_players, 'CB', 2)
+                when r < 0.80 then public.franchise_nth(p_players, 'S', 1) else public.franchise_nth(p_players, 'S', 2) end;
+    if who is not null then dtally := dtally || jsonb_build_object(who->>'id', public.games_jsonb_sum(dtally->(who->>'id'), '{"int":1}'::jsonb)); end if;
+  end loop;
+  for i in 1..array_length(tk_pos, 1) loop
+    who := public.franchise_nth(p_players, tk_pos[i], tk_n[i]);
+    if who is null then continue; end if;
+    tk := case when i = array_length(tk_pos, 1) then tkl_total - given_tkl else round(tkl_total * tk_w[i])::int end;
+    tk := greatest(0, tk); given_tkl := given_tkl + tk;
+    dtally := dtally || jsonb_build_object(who->>'id', public.games_jsonb_sum(dtally->(who->>'id'), jsonb_build_object('tkl', tk)));
+  end loop;
+
+  -- every starter gets a line, and so do the second back and the fourth
+  -- receiver, who carry the ball too
+  for x in select * from jsonb_array_elements(p_players) loop
+    if (x->>'depth')::int > (case x->>'position' when 'WR' then 4 when 'RB' then 2 when 'OL' then 5 when 'DL' then 4 when 'LB' then 3
+                                                   when 'CB' then 2 when 'S' then 2 else 1 end) then continue; end if;
+    st := '{"games":1}'::jsonb; imp := 0;
+    case x->>'position'
+      when 'QB' then
+        st := st || jsonb_build_object('att', att, 'cmp', cmp, 'yds', pass_yds, 'td', coalesce((p_tally->(x->>'id')->>'pass_td')::int, 0),
+                'int', coalesce((p_me->>'int')::int, 0), 'car', qb_car, 'rush_yds', qb_yds, 'rush_td', coalesce((p_tally->(x->>'id')->>'rush_td')::int, 0));
+        imp := pass_yds / 25.0 + (st->>'td')::int * 4 - (st->>'int')::int * 3 + qb_yds / 15.0 + (st->>'rush_td')::int * 4;
+      when 'RB' then
+        j := case when (x->>'depth')::int = 1 then 1 else 2 end;
+        st := st || jsonb_build_object('car', case when j = 1 then rb1_car else rb2_car end, 'yds', case when j = 1 then rb1_yds else rb2_yds end,
+                'td', coalesce((p_tally->(x->>'id')->>'rush_td')::int, 0));
+        if j = 1 then
+          ry := rec_yds[5]; rc := rec_cnt[5];
+          st := st || jsonb_build_object('rec', rc, 'rec_yds', ry, 'rec_td', coalesce((p_tally->(x->>'id')->>'rec_td')::int, 0));
+          imp := (st->>'yds')::int / 12.0 + (st->>'td')::int * 4 + ry / 15.0 + (st->>'rec_td')::int * 4;
+        else
+          imp := (st->>'yds')::int / 12.0 + (st->>'td')::int * 4;
+        end if;
+      when 'WR', 'TE' then
+        j := 0;
+        for i in 1..array_length(rec_pos, 1) loop
+          if rec_pos[i] = x->>'position' and rec_n[i] = (x->>'depth')::int then j := i; exit; end if;
+        end loop;
+        if j = 0 then ry := 0; rc := 0; else ry := rec_yds[j]; rc := rec_cnt[j]; end if;
+        st := st || jsonb_build_object('rec', rc, 'yds', ry, 'td', coalesce((p_tally->(x->>'id')->>'rec_td')::int, 0));
+        imp := ry / 15.0 + (st->>'td')::int * 4;
+      when 'OL' then
+        imp := 0.1;
+      when 'DL', 'LB', 'CB', 'S' then
+        st := st || jsonb_build_object('tkl', coalesce((dtally->(x->>'id')->>'tkl')::int, 0), 'sacks', coalesce((dtally->(x->>'id')->>'sacks')::int, 0),
+                'int', coalesce((dtally->(x->>'id')->>'int')::int, 0));
+        imp := (st->>'tkl')::int * 0.6 + (st->>'sacks')::int * 3.5 + (st->>'int')::int * 4.5;
+      when 'K' then
+        st := st || jsonb_build_object('fg', coalesce((p_me->>'fg')::int, 0), 'fga', coalesce((p_me->>'fga')::int, 0), 'xp', coalesce((p_me->>'td')::int, 0));
+        imp := (st->>'fg')::int * 2 + (case when (st->>'fga')::int > 0 and (st->>'fg')::int = (st->>'fga')::int then 1 else 0 end);
+      when 'P' then
+        st := st || jsonb_build_object('punts', coalesce((p_me->>'punts')::int, 0),
+                'punt_yds', coalesce((p_me->>'punts')::int, 0) * (38 + round((coalesce((x->'ratings'->>'pwr')::int, 70) - 70) * 0.15)::int + floor(random() * 5)::int));
+        imp := 0.2;
+      else
+        imp := 0;
+    end case;
+    lines := lines || jsonb_build_object('id', x->>'id', 'name', x->>'name', 'position', x->>'position', 'jersey', x->'jersey',
+      'depth', x->'depth', 'stats', st, 'impact', round(imp, 2));
+  end loop;
+  return lines;
+end;
+$$;
+
+-- PLAY THE NEXT GAME. The season must be active, the game must have opened,
+-- and it is played exactly once: the franchise row is locked for the
+-- duration, the result is written with the box, every starter's season and
+-- career lines grow by their box, the season's record moves, and the ledger
+-- is credited by the table — once, keyed by season and week. The last game
+-- of the season completes it.
+create or replace function public.franchise_play_game(p_franchise uuid, p_now timestamptz default now())
+returns jsonb language plpgsql security definer set search_path = public, pg_temp as $$
+declare
+  f public.franchises%rowtype; s public.franchise_seasons%rowtype; g public.franchise_games%rowtype;
+  v_box jsonb; pf integer; pa integer; res text; ln jsonb; econ jsonb := public.franchise_economy();
+  v_key text; v_xp integer := 0; v_tc integer := 0; v_cp integer := 0; v_new text[] := '{}'; v_label text; v_done boolean := false;
+begin
+  select * into f from public.franchises where id = p_franchise for update;
+  if not found then raise exception 'no franchise' using errcode = '22023'; end if;
+  select * into s from public.franchise_seasons where franchise_id = p_franchise order by number desc limit 1;
+  if not found or s.status <> 'active' then
+    raise exception 'the season is not under way' using errcode = '55000';
+  end if;
+  select * into g from public.franchise_games
+   where franchise_id = p_franchise and season_number = s.number and status = 'scheduled' order by week limit 1;
+  if not found then raise exception 'no game is scheduled' using errcode = 'P0002'; end if;
+  if g.opens_at > p_now then
+    raise exception 'week % opens on %', g.week, to_char(g.opens_at, 'Dy DD Mon HH24:MI "UTC"') using errcode = '55000';
+  end if;
+
+  v_box := public.franchise_sim(p_franchise, g.id);
+  pf := (v_box->'final'->>'for')::int; pa := (v_box->'final'->>'against')::int; res := v_box->>'result';
+  update public.franchise_games
+     set status = 'final', played_at = p_now, score_for = pf, score_against = pa, result = res, box = v_box, sim_version = v_box->>'sim'
+   where id = g.id;
+  for ln in select * from jsonb_array_elements(v_box->'players') loop
+    update public.game_players
+       set season_stats = public.games_jsonb_sum(season_stats, ln->'stats'),
+           career_stats = public.games_jsonb_sum(career_stats, ln->'stats'),
+           updated_at = p_now
+     where id = (ln->>'id')::uuid and franchise_id = p_franchise;
+  end loop;
+  update public.franchise_seasons
+     set week = g.week, wins = wins + (res = 'W')::int, losses = losses + (res = 'L')::int, ties = ties + (res = 'T')::int,
+         points_for = points_for + pf, points_against = points_against + pa
+   where franchise_id = p_franchise and number = s.number returning * into s;
+
+  v_key := s.number || ':' || g.week;
+  v_label := 'Week ' || g.week || ' ' || (case when g.home then 'vs ' else 'at ' end) || (g.opponent->>'name') || ': ' || res || ' ' || pf || '–' || pa;
+  insert into public.franchise_activity (franchise_id, kind, key, week_key, day_key, detail, created_at)
+  values (p_franchise, 'weekly_game', v_key, g.week_key, public.games_day_key(p_now),
+    jsonb_build_object('game_id', g.id, 'season_number', s.number, 'week', g.week, 'result', res, 'for', pf, 'against', pa,
+      'opponent', g.opponent->>'name', 'rival', g.rival, 'preparation', v_box->'edges'->'prep'->'preparation'), p_now);
+  if public.franchise_credit(p_franchise, 'xp', (econ->'weekly_game'->>'xp')::int, 'weekly_game', v_key, v_label) then
+    v_xp := v_xp + (econ->'weekly_game'->>'xp')::int; end if;
+  if public.franchise_credit(p_franchise, 'tc', (econ->'weekly_game'->>'tc')::int, 'weekly_game', v_key, v_label) then
+    v_tc := v_tc + (econ->'weekly_game'->>'tc')::int; end if;
+
+  if res = 'W' then
+    insert into public.franchise_activity (franchise_id, kind, key, week_key, day_key, detail, created_at)
+    values (p_franchise, 'weekly_win', v_key, g.week_key, public.games_day_key(p_now),
+      jsonb_build_object('game_id', g.id, 'season_number', s.number, 'week', g.week, 'rival', g.rival), p_now);
+    if public.franchise_credit(p_franchise, 'xp', (econ->'weekly_win'->>'xp')::int, 'weekly_win', v_key, v_label) then
+      v_xp := v_xp + (econ->'weekly_win'->>'xp')::int; end if;
+    if public.franchise_credit(p_franchise, 'tc', (econ->'weekly_win'->>'tc')::int, 'weekly_win', v_key, v_label) then
+      v_tc := v_tc + (econ->'weekly_win'->>'tc')::int; end if;
+    if public.franchise_credit(p_franchise, 'cp', (econ->'weekly_win'->>'cp')::int, 'weekly_win', v_key, v_label) then
+      v_cp := v_cp + (econ->'weekly_win'->>'cp')::int; end if;
+    if public.franchise_award(p_franchise, 'first_win', s.season, jsonb_build_object('game_id', g.id)) then v_new := array_append(v_new, 'first_win'); end if;
+    if g.rival then
+      if public.franchise_credit(p_franchise, 'xp', (econ->'rival_win'->>'xp')::int, 'rival_win', v_key, 'Beat the ' || (g.opponent->>'name')) then
+        v_xp := v_xp + (econ->'rival_win'->>'xp')::int; end if;
+      if public.franchise_credit(p_franchise, 'cp', (econ->'rival_win'->>'cp')::int, 'rival_win', v_key, 'Beat the ' || (g.opponent->>'name')) then
+        v_cp := v_cp + (econ->'rival_win'->>'cp')::int; end if;
+      if public.franchise_award(p_franchise, 'bragging_rights', s.season, jsonb_build_object('game_id', g.id)) then v_new := array_append(v_new, 'bragging_rights'); end if;
+    end if;
+    if pa = 0 and public.franchise_award(p_franchise, 'shutout', s.season, jsonb_build_object('game_id', g.id)) then v_new := array_append(v_new, 'shutout'); end if;
+  end if;
+
+  if g.week >= s.weeks then
+    v_done := true;
+    update public.franchise_seasons set status = 'complete', completed_at = p_now
+     where franchise_id = p_franchise and number = s.number returning * into s;
+    insert into public.franchise_activity (franchise_id, kind, key, week_key, day_key, detail, created_at)
+    values (p_franchise, 'season_complete', s.number::text, g.week_key, public.games_day_key(p_now),
+      jsonb_build_object('season_number', s.number, 'wins', s.wins, 'losses', s.losses, 'ties', s.ties,
+        'points_for', s.points_for, 'points_against', s.points_against), p_now);
+    if public.franchise_credit(p_franchise, 'xp', (econ->'season_complete'->>'xp')::int, 'season_complete', s.number::text, s.label || ' complete: ' || s.wins || '–' || s.losses || (case when s.ties > 0 then '–' || s.ties else '' end)) then
+      v_xp := v_xp + (econ->'season_complete'->>'xp')::int; end if;
+    if public.franchise_credit(p_franchise, 'tc', (econ->'season_complete'->>'tc')::int, 'season_complete', s.number::text, s.label || ' complete') then
+      v_tc := v_tc + (econ->'season_complete'->>'tc')::int; end if;
+    if public.franchise_award(p_franchise, 'first_season', s.season, jsonb_build_object('season_number', s.number)) then v_new := array_append(v_new, 'first_season'); end if;
+    if s.wins > s.losses and public.franchise_award(p_franchise, 'winning_season', s.season, jsonb_build_object('season_number', s.number, 'record', s.wins || '-' || s.losses)) then v_new := array_append(v_new, 'winning_season'); end if;
+    if s.losses = 0 and s.ties = 0 and public.franchise_award(p_franchise, 'perfect_season', s.season, jsonb_build_object('season_number', s.number)) then v_new := array_append(v_new, 'perfect_season'); end if;
+  end if;
+
+  return jsonb_build_object('ok', true, 'already', false,
+    'game', public.franchise_game_json(g.id, true),
+    'season', public.franchise_season_json(p_franchise, s.number),
+    'season_complete', v_done,
+    'rewards', jsonb_build_object('xp', v_xp, 'tc', v_tc, 'cp', v_cp),
+    'achievements', to_jsonb(v_new), 'totals', public.franchise_totals(p_franchise));
+end;
+$$;
+
+-- ── the public side of the weekly game ────────────────────────────────────
+
+-- START A SEASON. A franchise still in preseason gets its schedule; a
+-- franchise whose season is complete gets the next one, numbered on, with
+-- the season lines reset and the careers kept. A season under way is left
+-- alone and the answer says so.
+create or replace function public.franchise_start_season(p_secret text default null)
+returns jsonb language plpgsql security definer set search_path = public, pg_temp as $$
+declare
+  v_f uuid := public.franchise_of(p_secret); s public.franchise_seasons%rowtype;
+  v_n integer; v_started boolean := false; v_real integer := public.games_season_of(now());
+begin
+  if v_f is null then raise exception 'create a franchise first' using errcode = '28000'; end if;
+  perform 1 from public.franchises where id = v_f for update;
+  select * into s from public.franchise_seasons where franchise_id = v_f order by number desc limit 1;
+  if not found then raise exception 'no season' using errcode = 'P0002'; end if;
+  if s.status = 'preseason' then
+    perform public.franchise_open_season(v_f, s.number, now());
+    v_n := s.number; v_started := true;
+  elsif s.status = 'complete' then
+    v_n := s.number + 1;
+    insert into public.franchise_seasons (franchise_id, number, label, season, status, weeks)
+    values (v_f, v_n, 'Season ' || public.games_roman(v_n), v_real, 'preseason', s.weeks);
+    update public.game_players set season_stats = '{}'::jsonb, updated_at = now() where franchise_id = v_f;
+    perform public.franchise_open_season(v_f, v_n, now());
+    v_started := true;
+  else
+    v_n := s.number;
+  end if;
+  return jsonb_build_object('ok', true, 'started', v_started, 'season_number', v_n, 'home', public.franchise_home(p_secret));
+end;
+$$;
+
+-- PLAY THIS WEEK'S GAME. The only input is "play".
+create or replace function public.franchise_play_week(p_secret text default null)
+returns jsonb language plpgsql security definer set search_path = public, pg_temp as $$
+declare v_f uuid := public.franchise_of(p_secret);
+begin
+  if v_f is null then raise exception 'create a franchise first' using errcode = '28000'; end if;
+  return public.franchise_play_game(v_f, now());
+end;
+$$;
+
+-- THE SCHEDULE: a season's games with results, every season's record, the
+-- all-time record, the rival and the rivalry, and this week's preparation.
+create or replace function public.franchise_schedule(p_number integer default null, p_secret text default null)
+returns jsonb language plpgsql stable security definer set search_path = public, pg_temp as $$
+declare f public.franchises%rowtype; v_n integer; v_games jsonb; v_seasons jsonb; v_rival jsonb; v_record jsonb;
+begin
+  select * into f from public.franchises where id = public.franchise_of(p_secret);
+  if not found then return null; end if;
+  select coalesce(p_number, max(number)) into v_n from public.franchise_seasons where franchise_id = f.id;
+  select coalesce(jsonb_agg(public.franchise_game_json(g.id, false) order by g.week), '[]'::jsonb) into v_games
+    from public.franchise_games g where g.franchise_id = f.id and g.season_number = v_n;
+  select coalesce(jsonb_agg(public.franchise_season_json(f.id, s.number) order by s.number desc), '[]'::jsonb) into v_seasons
+    from public.franchise_seasons s where s.franchise_id = f.id;
+  select jsonb_build_object('wins', coalesce(sum(wins), 0), 'losses', coalesce(sum(losses), 0), 'ties', coalesce(sum(ties), 0),
+      'points_for', coalesce(sum(points_for), 0), 'points_against', coalesce(sum(points_against), 0), 'seasons', count(*) filter (where status = 'complete'))
+    into v_record from public.franchise_seasons where franchise_id = f.id;
+  select jsonb_build_object('key', o.key, 'city', o.city, 'name', o.name, 'abbr', o.abbr, 'logo', o.logo, 'theme', o.theme,
+      'offense', o.offense, 'defense', o.defense, 'style', o.style,
+      'wins', (select count(*) from public.franchise_games g where g.franchise_id = f.id and g.rival and g.result = 'W'),
+      'losses', (select count(*) from public.franchise_games g where g.franchise_id = f.id and g.rival and g.result = 'L'),
+      'ties', (select count(*) from public.franchise_games g where g.franchise_id = f.id and g.rival and g.result = 'T'))
+    into v_rival from public.franchise_opponents o where o.key = f.rival_key;
+  return jsonb_build_object(
+    'franchise', jsonb_build_object('id', f.id, 'name', f.name, 'city', f.city, 'abbr', f.abbr, 'logo', f.logo, 'theme', f.theme,
+      'offense', f.offense, 'defense', f.defense, 'founded_season', f.founded_season,
+      'owner', case when f.user_id is not null then 'account' else 'device' end),
+    'season', public.franchise_season_json(f.id, v_n), 'games', v_games, 'seasons', v_seasons,
+    'record', v_record, 'rival', v_rival,
+    'prep', public.franchise_prep(f.id, public.games_week_key(now())),
+    'scheme_edges', public.franchise_scheme_edges());
+end;
+$$;
+
+-- ONE GAME, with its box. Yours, or nothing.
+create or replace function public.franchise_game(p_game uuid, p_secret text default null)
+returns jsonb language sql stable security definer set search_path = public, pg_temp as $$
+  select public.franchise_game_json(g.id, true)
+  from public.franchise_games g
+  where g.id = p_game and g.franchise_id = public.franchise_of(p_secret);
+$$;
+
+commit;
+
+begin;
+
 -- ── read models ───────────────────────────────────────────────────────────
 
 -- HOME. Everything the HQ paints, in one call.
@@ -1376,6 +2263,21 @@ begin
     'achievements', v_ach,
     'recent', v_recent,
     'roster_count', (select count(*) from public.game_players where franchise_id = f.id and status = 'active'),
+    -- the weekly game: who is next, what happened last, how prepared this
+    -- week is (the server's number), the all-time record and the rival
+    'next_game', (select public.franchise_game_json(g.id, false) from public.franchise_games g
+                   where g.franchise_id = f.id and g.season_number = (v_ss->>'number')::int and g.status = 'scheduled'
+                   order by g.week limit 1),
+    'last_game', (select public.franchise_game_json(g.id, false) from public.franchise_games g
+                   where g.franchise_id = f.id and g.status = 'final' order by g.played_at desc, g.week desc limit 1),
+    'prep', public.franchise_prep(f.id, v_week),
+    'record', (select jsonb_build_object('wins', coalesce(sum(wins), 0), 'losses', coalesce(sum(losses), 0), 'ties', coalesce(sum(ties), 0),
+                 'seasons', count(*) filter (where status = 'complete')) from public.franchise_seasons where franchise_id = f.id),
+    'rival', (select jsonb_build_object('key', o.key, 'city', o.city, 'name', o.name, 'abbr', o.abbr, 'logo', o.logo, 'theme', o.theme,
+                 'wins', (select count(*) from public.franchise_games g where g.franchise_id = f.id and g.rival and g.result = 'W'),
+                 'losses', (select count(*) from public.franchise_games g where g.franchise_id = f.id and g.rival and g.result = 'L'),
+                 'ties', (select count(*) from public.franchise_games g where g.franchise_id = f.id and g.rival and g.result = 'T'))
+               from public.franchise_opponents o where o.key = f.rival_key),
     'economy', public.franchise_economy()->>'version');
 end;
 $$;
@@ -1610,6 +2512,19 @@ revoke all on function public.franchise_pick5_card(uuid) from public, anon, auth
 revoke all on function public.game_board_upsert(jsonb) from public, anon, authenticated;
 revoke all on function public.franchise_settle_pick5() from public, anon, authenticated;
 revoke all on function public.franchise_on_h2h_settled() from public, anon, authenticated;
+-- the weekly game's internals: the scheduler, the simulator, the writer
+revoke all on function public.franchise_prep(uuid, text) from public, anon, authenticated;
+revoke all on function public.franchise_trait_effects(uuid) from public, anon, authenticated;
+revoke all on function public.franchise_season_json(uuid, integer) from public, anon, authenticated;
+revoke all on function public.franchise_game_json(uuid, boolean) from public, anon, authenticated;
+revoke all on function public.franchise_schedule_season(uuid, integer, timestamptz) from public, anon, authenticated;
+revoke all on function public.franchise_open_season(uuid, integer, timestamptz) from public, anon, authenticated;
+revoke all on function public.franchise_sim_drive(numeric, numeric, numeric, numeric, numeric, numeric, boolean) from public, anon, authenticated;
+revoke all on function public.franchise_drive_totals(jsonb) from public, anon, authenticated;
+revoke all on function public.franchise_nth(jsonb, text, integer) from public, anon, authenticated;
+revoke all on function public.franchise_sim(uuid, uuid) from public, anon, authenticated;
+revoke all on function public.franchise_sim_lines(jsonb, text, jsonb, jsonb, jsonb, jsonb) from public, anon, authenticated;
+revoke all on function public.franchise_play_game(uuid, timestamptz) from public, anon, authenticated;
 
 grant execute on function public.franchise_economy() to anon, authenticated;
 grant execute on function public.games_week_key(timestamptz) to anon, authenticated;
@@ -1650,6 +2565,16 @@ grant execute on function public.franchise_home(text) to anon, authenticated;
 grant execute on function public.franchise_roster(text) to anon, authenticated;
 grant execute on function public.franchise_ledger_recent(integer, text) to anon, authenticated;
 grant execute on function public.franchise_pick5_mine(text, text) to anon, authenticated;
+-- the weekly game: open to anon for the same reason founding is
+grant execute on function public.franchise_scheme_edges() to anon, authenticated;
+grant execute on function public.franchise_scheme_edge(text, text) to anon, authenticated;
+grant execute on function public.franchise_pass_share(text) to anon, authenticated;
+grant execute on function public.franchise_qb_rush_share(text) to anon, authenticated;
+grant execute on function public.games_jsonb_sum(jsonb, jsonb) to anon, authenticated;
+grant execute on function public.franchise_start_season(text) to anon, authenticated;
+grant execute on function public.franchise_play_week(text) to anon, authenticated;
+grant execute on function public.franchise_schedule(integer, text) to anon, authenticated;
+grant execute on function public.franchise_game(uuid, text) to anon, authenticated;
 
 commit;
 
@@ -1659,19 +2584,22 @@ commit;
 select 1 as row, 'franchise tables exist' as what,
   case when (select count(*) from pg_tables where schemaname = 'public' and tablename in
     ('game_board','franchises','franchise_seasons','game_players','franchise_activity','franchise_ledger',
-     'franchise_pick5_cards','franchise_pick5_selections','franchise_achievement_defs','franchise_achievements')) = 10
+     'franchise_pick5_cards','franchise_pick5_selections','franchise_achievement_defs','franchise_achievements',
+     'franchise_opponents','franchise_games')) = 12
     then 'ok' else 'CHECK THIS' end as status
 union all
 select 2, 'row level security is on for every franchise table',
   case when (select count(*) from pg_tables where schemaname = 'public' and rowsecurity and tablename in
     ('game_board','franchises','franchise_seasons','game_players','franchise_activity','franchise_ledger',
-     'franchise_pick5_cards','franchise_pick5_selections','franchise_achievement_defs','franchise_achievements')) = 10
+     'franchise_pick5_cards','franchise_pick5_selections','franchise_achievement_defs','franchise_achievements',
+     'franchise_opponents','franchise_games')) = 12
     then 'ok' else 'CHECK THIS' end
 union all
 select 3, 'no client role may write a franchise table directly',
   case when not exists (select 1 from pg_policies where schemaname = 'public' and cmd <> 'SELECT' and tablename in
     ('game_board','franchises','franchise_seasons','game_players','franchise_activity','franchise_ledger',
-     'franchise_pick5_cards','franchise_pick5_selections','franchise_achievement_defs','franchise_achievements'))
+     'franchise_pick5_cards','franchise_pick5_selections','franchise_achievement_defs','franchise_achievements',
+     'franchise_opponents','franchise_games'))
     then 'ok' else 'CHECK THIS' end
 union all
 select 4, 'the ledger write is reachable by no client role',
@@ -1697,5 +2625,21 @@ select 9, 'a team comes before an account: founding is open to anon, claiming is
   case when has_function_privilege('anon', 'public.franchise_create(text, text, text, text, text, text, text, text)', 'execute')
         and not has_function_privilege('anon', 'public.franchise_claim(text)', 'execute')
         and not has_function_privilege('anon', 'public.franchise_mine()', 'execute')
+    then 'ok' else 'CHECK THIS' end
+union all
+select 10, 'the simulator, the scheduler and the game writer are reachable by no client role',
+  case when not has_function_privilege('anon', 'public.franchise_sim(uuid, uuid)', 'execute')
+        and not has_function_privilege('authenticated', 'public.franchise_sim(uuid, uuid)', 'execute')
+        and not has_function_privilege('authenticated', 'public.franchise_play_game(uuid, timestamptz)', 'execute')
+        and not has_function_privilege('authenticated', 'public.franchise_schedule_season(uuid, integer, timestamptz)', 'execute')
+    then 'ok' else 'CHECK THIS' end
+union all
+select 11, 'the opponent pool is seeded',
+  case when (select count(*) from public.franchise_opponents) >= 24 then 'ok' else 'CHECK THIS' end
+union all
+select 12, 'the weekly game is open to every franchise: play, start a season, read the schedule',
+  case when has_function_privilege('anon', 'public.franchise_play_week(text)', 'execute')
+        and has_function_privilege('anon', 'public.franchise_start_season(text)', 'execute')
+        and has_function_privilege('anon', 'public.franchise_schedule(integer, text)', 'execute')
     then 'ok' else 'CHECK THIS' end
 order by 1;
