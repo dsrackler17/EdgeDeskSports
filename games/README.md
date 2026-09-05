@@ -182,6 +182,8 @@ written before a key existed reads as empty for that key rather than throwing.
 | `/games/pick-5` | `games/pick-5/index.html` | yes |
 | `/games/dynasty` | `games/dynasty/index.html` | yes |
 | `/games/two-minute-drill` | `games/two-minute-drill/index.html` | yes |
+| `/games/franchise` | `games/franchise/index.html` | yes |
+| `/games/roster` | `games/roster/index.html` | yes |
 | `/games/price-it/{slug}` | → `?g={slug}` via `404.html` | no (same page) |
 
 GitHub Pages serves the directories natively. Share links use the pretty
@@ -442,10 +444,11 @@ reachable from this architecture — a new game is a new page reading the same
 artifact — but V1 does a few things well instead of many things thinly.
 
 Deliberately absent from the social layer, and not by omission: real money,
-cash prizes, paid entry, tokens, virtual currency, loot boxes, bet slips,
+cash prizes, paid entry, tokens, purchasable currency, loot boxes, bet slips,
 parlays, odds boosting, pay-to-win scoring, open chat, direct messages, public
 posting, comments and follower counts. A subscriber gets **better research**,
-never better scoring.
+never better scoring. (The franchise layer's resources — XP, Scouting Points,
+Team Credits, Coach Points — are earned only; see *The franchise* below.)
 
 ---
 
@@ -894,3 +897,233 @@ No betting vocabulary, no odds, no money. A miss is a different read, not a
 wrong one, and every miss has a why. A gap between EdgeDesk and the market is a
 reason to read the research, not evidence of an edge — that sentence is in the
 question itself.
+
+
+---
+
+---
+
+# The franchise
+
+## The idea
+
+Build a football dynasty by proving you understand football.
+
+Every account can own **one fictional football franchise**: a city, a name,
+a mark, a colour, an offensive and a defensive identity, and a roster of 38
+fictional players nobody else has. The real EdgeDesk games are how it
+improves. Price It is the scouting department; Pick 5 is the weekly slate;
+the Two-Minute Drill is practice; Head-to-Head is competition. Each one pays
+the franchise in its own resource, by a published table, on the server.
+
+The persistent thing is the point. The record, the players, the ledger and
+the achievements are kept for good, so that a player can eventually say
+"I still have my original EdgeDesk team."
+
+## Phase 1 — what is built
+
+* `/games` is a football facility. The header names the rooms — HQ, War
+  Room, Scouting (Price It), Training (the Drill), Game Day (Head-to-Head),
+  Roster, League (Groups), Front Office — and a phone gets a five-room tab
+  bar under the thumb. Nothing is renamed away: Price It is still Price It on
+  its own page.
+* **HQ** (`/games`): a franchise owner sees the franchise first — name,
+  record, team overall, offense/defense/special, what is next, this week's
+  Scouting, Preparation and Market IQ meters, the objectives, the next
+  reward and the resources. It paints from a cached snapshot before the
+  network answers and says so.
+* **Front Office** (`/games/franchise`): found the franchise — no account
+  needed — carry the anonymous record over, save it to an account (created
+  from inside Games) whenever the player likes, and read the resources, the
+  achievements, the ledger and the account. Share it as text.
+* **Roster** (`/games/roster`): the 38 players as collectible cards, grouped
+  by position with the starters marked, the strongest and weakest groups
+  named, and a lineup change that goes to the server.
+* Price It, Pick 5 and the Drill file their results with the franchise and
+  show what the ledger was credited. Head-to-Head credits through the
+  existing settlement.
+
+## The one rule, again
+
+**The franchise layer computes no price.** `game_board` is a published copy
+of `games/data/challenges.json`, written only by the service role from the
+same workflows that build and settle the board (`games/publish_board.js`).
+The canonical Power 4 exporter remains the only thing that prices a game; the
+server keeps its own copy so that a browser's numbers are never what a reward
+is scored against.
+
+## What is server-authoritative
+
+| thing | where it is decided |
+|---|---|
+| the roster | `franchise_generate_roster()`, from a seed the server derives; the same seed always builds the same 38 players |
+| who is calling | `franchise_of(p_secret)`: the account, or the device secret's hash — never an id a client names |
+| a Price It score | `franchise_record_price_it()`, against the board's EdgeDesk number, by the published `price_it_v1` rule restated in SQL |
+| a Pick 5 card | `franchise_submit_pick5()` snapshots the BOARD's line onto every selection; `franchise_settle_pick5()` (service role) grades from the board's finals |
+| every credit | `franchise_credit()`: one ledger row per (franchise, currency, kind, key); the totals are recomputed from the ledger, never incremented |
+| an achievement | `franchise_award()`: once, and an exclusive one refuses any other season |
+| Head-to-Head | a trigger on `game_challenges.settled_at`, fired by the settlement `games_social.sql` already performs |
+
+**The trust boundary, stated.** A Two-Minute Drill result is client-reported:
+the drill is built and scored in the browser from the same artifact, and the
+server cannot check the answers. It enforces one daily run per day and sizes
+the reward (40 XP, 3 Team Credits per correct answer, at most 30); the
+activity row is marked `verified = false`. A research open is a row the
+client asserts; it is worth 15 XP and capped at ten games a week, the same
+cap the War Room applies.
+
+## The economy — `economy_v1`
+
+Published once, in `franchise_economy()` (SQL) and `EDFranchise.ECONOMY`
+(client). `tools/games/franchise.test.js` fails if the two disagree, number
+for number. Nothing here can be bought: no packs, no premium players, no
+paid resources, and a subscriber earns exactly what anyone else earns.
+
+| real thing | XP | Scouting Points | Team Credits | Coach Points |
+|---|---|---|---|---|
+| Price It, once per game | 50 | 5 + round(score × 0.35) → 100 pays 40, 60 pays 26, 0 pays 5 | 10 + ⌊score ÷ 10⌋ → 100 pays 20 | |
+| Pick 5 card, once per week | 75 | | 25 | |
+| each correct side, as the games finish | 10 | | 15 | |
+| a 5–0 card | 150 | | 200 | |
+| the daily Drill, once per day | 40 | | 3 per correct, max 30 | |
+| a research open, per game, ten a week | 15 | | | |
+| a Head-to-Head settled (an account's or a device's entry) | 40 | | | 1 |
+| a Head-to-Head won | 20 | | | 2 |
+| founding the franchise | | | 100 | |
+
+XP levels the franchise on the War Room's curve (`25 × (L − 1) × (L + 2)`,
+level 30 at 23,200). If any number changes, the version changes and this
+table says what the old rule was.
+
+## A team before an account
+
+Nobody is asked to sign up to get a team. A franchise is founded at once, on
+the server, and owned by an **account** or by the **device secret** the
+social layer already uses for anonymous Head-to-Head play — a 256-bit
+bearer secret the browser generated, of which the server keeps only the
+SHA-256 (`games_hash`). Every franchise function takes an optional
+`p_secret`; a signed-in caller is their account's franchise and nothing
+else, a signed-out caller is the franchise whose hash matches, and a guessed
+secret resolves to nothing. `franchise_claim()` binds a device-owned
+franchise to the account that signs in, so signing up keeps everything that
+earned the signup; an account that already owns one keeps it and the answer
+says so. The home read model carries `owner: 'account' | 'device'`.
+
+The `edgedesk_games_v1` envelope stays the anonymous record of the games
+themselves. The franchise ask appears only after real engagement
+(`store.engaged()`): for a player with no franchise, one sentence with the
+real numbers the envelope is worth (`EDFranchise.preview`) and one button to
+found one; for a device-owned franchise, the ask is to save it to an
+account, because a new phone or a cleared browser cannot find a device-only
+franchise.
+
+Founding imports the envelope through `franchise_import_history()`. The
+rule: credit fully only what the server can check. A Price It on a game that
+has not kicked off is scored exactly as a live one; a Price It on a game
+already played earns XP only, because the browser's timestamp is not
+evidence of when the line was set. A card for a past week is kept as history
+with the card's XP. Drill days are accepted under the drill's own stated
+boundary. Everything is keyed once, so importing twice is importing once.
+
+Signing in is the terminal's Supabase session (`edgedesk_session`), created
+from inside Games by `games/lib/auth.js` against the same Auth endpoints the
+landing page uses, with the same 21+ and Terms consent recorded on the
+account and the same first-touch attribution carried into `user_metadata`.
+Games still adds no identity of its own: an account is the terminal's, and
+a device is the social layer's secret.
+
+## Two calendars
+
+**Real football makes EdgeDesk better; EdgeDesk does not stop existing
+without real football.** So the franchise keeps its own calendar. A
+franchise season is numbered (`franchise_seasons.number`, labelled Season
+I, Season II, …), is a fixed number of weeks (`weeks`, default 8, so a
+player completes several a year), advances on its own clock (`week`), and
+records which real football season it began in (`season`). The HQ shows
+both: *Season I · preseason · 8 weeks* beside *2026 CFB · Week 2 · live
+slate*.
+
+The two engines this leaves room for:
+
+* **the live layer** — while real football is on, the board feeds Price It,
+  Pick 5, the Drill and the week's preparation, and the live week is named
+  on the HQ;
+* **the franchise season** — the weekly simulated game (Phase 2), standings
+  and playoffs, then the offseason: the draft, development, facilities and
+  the summer's shorter events (Phases 4–5). It runs whether or not there is
+  a slate this Saturday, on content the franchise universe generates.
+
+Phase 1 founds Season I in `preseason`, week 0 of 8. Nothing here advances a
+season yet; the model is laid down so that nothing has to be migrated when
+it does.
+
+## The roster
+
+38 players: QB 2, RB 3, WR 5, TE 2, OL 7, DL 6, LB 4, CB 4, S 3, K 1, P 1.
+Each carries four visible ratings for its position, an archetype whose skew
+moves them apart, an overall that is their rounded mean, an age that leans
+young, a development tier (steady, quick, star, superstar), a potential, a
+rarity read off overall and potential, and for some a trait with a stated
+effect for the simulator to come. Careers start empty — the story is written
+from here.
+
+Team overall is a weighted average of the starters:
+offense `.30 QB + .12 RB + .22 WR(3) + .08 TE + .28 OL(5)`,
+defense `.30 DL(4) + .22 LB(3) + .28 CB(2) + .20 S(2)`,
+special `.50 K + .50 P`, overall `.45 offense + .45 defense + .10 special`.
+A founding team lands between 66 and 74, tuned to 68–72; the SQL suite builds
+twenty seeds and refuses any outside the band.
+
+## Deploying it
+
+1. Apply `supabase/games_social.sql` (already required by Head-to-Head).
+2. Apply `supabase/games_franchise.sql`. Its report should print nine `ok`
+   rows. Until it is applied, the Front Office and the Roster say so, and
+   Price It, Pick 5 and the Drill are unaffected.
+3. Nothing else. `games/publish_board.js` runs from the existing
+   `games-challenges.yml` (publishes the board) and `games-settle.yml`
+   (publishes finals and settles Pick 5) with the repository's existing
+   `SB_SERVICE_ROLE` and `SB_URL` secrets. Without them the worker exits 0
+   having done nothing. **No new secret is required.**
+
+`/games/status` probes the layer and names the file to apply.
+
+## Analytics
+
+The existing GA4 property, no second vendor. Added: `franchise_created` ·
+`franchise_home_view` · `franchise_signin` · `franchise_signup` ·
+`franchise_import` · `franchise_claimed` · `franchise_reward` ·
+`front_office_view` · `roster_view` · `player_view` · `roster_change`. Declared for the phases to come:
+`daily_objective_complete` · `scouting_spent` · `player_scouted` ·
+`weekly_game_started` · `weekly_game_completed` · `h2h_franchise_complete` ·
+`achievement_unlocked` · `season_complete` · `draft_pick` ·
+`trophy_room_view`. Every event now carries `identity`
+(`authenticated`/`anonymous`) and `has_franchise`.
+
+## Tests
+
+* `tools/games/franchise.test.js` — the client: the economy pinned to the
+  SQL, the identity lists, the roster plan, the level curve, the store's
+  snapshot scoping and reward queue, the preview and the import payload,
+  player presentation, the client's queue-and-replay behaviour, sign-in, the
+  pages, the shell, the copy rules, the funnel, the worker, and the SQL
+  file's conventions.
+* `tools/games/franchise_sql.test.js` — the SQL, against a real PostgreSQL:
+  the shared rules restated on the server, the board, creation, generator
+  determinism and the founding band, who can read what, Price It scored from
+  the board and replayed for nothing, Pick 5 submitted, settled, and a perfect
+  card paid once, the drill's boundary, the research cap, the depth chart,
+  the import, the Head-to-Head trigger through a correction, and the read
+  models. It skips loudly without Postgres; `games-sql.yml` refuses the skip.
+
+## Not built yet, on purpose
+
+The weekly franchise game and its simulator (Phase 2), franchise
+Head-to-Head context, rivalries and conferences (Phase 3), the Trophy Room
+page, facilities, player development and season rollover (Phase 4), the
+draft and the transfer market (Phase 5). The schema leaves room:
+`franchise_seasons` already holds a founder season in `preseason`,
+`game_players` carries `season_stats` and `career_stats`, traits carry an
+`effect` the simulator will read, and the ledger accepts a negative delta for
+spending. `franchise_activity` is the record every future reward derives
+from.

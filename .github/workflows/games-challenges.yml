@@ -135,6 +135,17 @@ jobs:
       - name: Suites (after)
         run: npm run games:test
 
+      # THE FRANCHISE LAYER reads the same artifact from the server side, so
+      # the board is published to game_board with the service role. Harmless
+      # without the credential or before supabase/games_franchise.sql is
+      # applied: the worker says so and exits 0. It computes no price — every
+      # row it sends is in the artifact this job just built.
+      - name: Publish the board to the franchise layer
+        env:
+          EDGD_SB_SERVICE: ${{ secrets.SB_SERVICE_ROLE }}
+          EDGD_SB_URL: ${{ secrets.SB_URL }}
+        run: node games/publish_board.js
+
       - name: Commit
         run: |
           git config user.name  'github-actions[bot]'

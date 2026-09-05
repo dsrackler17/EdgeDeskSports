@@ -15,14 +15,18 @@ on:
     branches: [main]
     paths:
       - 'supabase/games_social.sql'
+      - 'supabase/games_franchise.sql'
       - 'tools/games/sql/**'
       - 'tools/games/sql_security.test.js'
+      - 'tools/games/franchise_sql.test.js'
       - '.github/workflows/games-sql.yml'
   pull_request:
     paths:
       - 'supabase/games_social.sql'
+      - 'supabase/games_franchise.sql'
       - 'tools/games/sql/**'
       - 'tools/games/sql_security.test.js'
+      - 'tools/games/franchise_sql.test.js'
 
 jobs:
   sql:
@@ -55,12 +59,22 @@ jobs:
           EDGD_PG: -h 127.0.0.1 -p 5432 -U postgres
         run: node tools/games/sql_security.test.js | tee sql.log
 
+      # The franchise layer: rosters, the ledger and every reward, attacked
+      # the same way on the same database.
+      - name: Run the franchise SQL suite
+        env:
+          PGPASSWORD: postgres
+          EDGD_PG: -h 127.0.0.1 -p 5432 -U postgres
+        run: node tools/games/franchise_sql.test.js | tee franchise.log
+
       # A skip here would mean the guarantee was never tested. On this job that
       # is a failure, not a pass.
       - name: Refuse a silent skip
         run: |
-          if grep -q '^SKIP' sql.log; then
-            echo 'REFUSING: the SQL suite skipped in the job whose whole purpose is to run it'
-            exit 1
-          fi
-          grep -q '^PASS' sql.log
+          for f in sql.log franchise.log; do
+            if grep -q '^SKIP' "$f"; then
+              echo "REFUSING: a SQL suite skipped ($f) in the job whose whole purpose is to run it"
+              exit 1
+            fi
+            grep -q '^PASS' "$f"
+          done

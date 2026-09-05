@@ -27,8 +27,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/games/games.css?v=20260905a">
-<link rel="stylesheet" href="/games/dynasty/dynasty.css?v=20260905a">
+<link rel="stylesheet" href="/games/games.css?v=20260905b">
+<link rel="stylesheet" href="/games/franchise.css?v=20260905b">
+<link rel="stylesheet" href="/games/dynasty/dynasty.css?v=20260905b">
 </head>
 <body>
 <div id="gh"></div>
@@ -152,18 +153,21 @@
 
 </main>
 
+<div id="gt"></div>
 <div id="gf"></div>
 
-<script src="/games/lib/week.js?v=20260905a"></script>
-<script src="/games/lib/scoring.js?v=20260905a"></script>
-<script src="/games/lib/challenge.js?v=20260905a"></script>
-<script src="/games/lib/research_state.js?v=20260905a"></script>
-<script src="/games/lib/attribution.js?v=20260905a"></script>
-<script src="/games/lib/store.js?v=20260905a"></script>
-<script src="/games/lib/dynasty.js?v=20260905a"></script>
-<script src="/games/lib/leaderboard.js?v=20260905a"></script>
-<script src="/games/lib/social.js?v=20260905a"></script>
-<script src="/games/games.js?v=20260905a"></script>
+<script src="/games/lib/week.js?v=20260905b"></script>
+<script src="/games/lib/scoring.js?v=20260905b"></script>
+<script src="/games/lib/challenge.js?v=20260905b"></script>
+<script src="/games/lib/research_state.js?v=20260905b"></script>
+<script src="/games/lib/attribution.js?v=20260905b"></script>
+<script src="/games/lib/store.js?v=20260905b"></script>
+<script src="/games/lib/dynasty.js?v=20260905b"></script>
+<script src="/games/lib/leaderboard.js?v=20260905b"></script>
+<script src="/games/lib/social.js?v=20260905b"></script>
+<script src="/games/lib/auth.js?v=20260905b"></script>
+<script src="/games/lib/franchise.js?v=20260905b"></script>
+<script src="/games/games.js?v=20260905b"></script>
 <script>
 /* STALE SCRIPT GUARD. A browser can keep an old games.js or store.js for
    longer than it keeps this page, and a page built for the new library
@@ -187,7 +191,7 @@
 (function(){
   'use strict';
   var G=window.EDGames,ST=window.EDGamesStore,W=window.EDGamesWeek,
-      CH=window.EDGamesChallenge,DY=window.EDGamesDynasty;
+      CH=window.EDGamesChallenge,DY=window.EDGamesDynasty,FR=window.EDFranchise;
   var $=function(id){return document.getElementById(id);};
 
   var READY=G.boot('dynasty');
@@ -378,15 +382,12 @@
 
   /* ---- save your War Room: after real engagement, once ------------------- */
   function paintSave(){
-    if(!(ST.engaged()&&!ST.seen('save_warroom')))return;
-    ST.markSeen('save_warroom');
+    if(!ST.engaged())return;
+    if(FR&&FR.state()==='franchise')return;
+    if(!ST.seen('save_warroom')){ST.markSeen('save_warroom');G.track('account_save_from_dynasty',{level:S.level,game_type:'dynasty'});}
     $('saveSec').classList.remove('hide');
-    var save=$('doSave');
-    save.href=G.withAttribution('/app.html',{intent:'save_war_room'})+'#account';
-    save.addEventListener('click',function(){
-      G.track('account_save_from_dynasty',{level:S.level,game_type:'dynasty'});
-      G.track('signup_start_from_games',{game_type:'dynasty',placement:'war_room'});
-    });
+    $('saveSec').innerHTML=G.conversionCard?G.conversionCard('war_room'):'';
+    if(G.wireConversion)G.wireConversion();
   }
 
   /* ---- this week ----------------------------------------------------------- */
@@ -457,6 +458,19 @@
     html+=station('st-trophy','','Trophy Wall',
       G.esc(S.earned.length+' of '+S.achievements.length+' earned'),
       'Every one read from your record','#trophies');
+    /* the franchise rooms: the roster and the Front Office once a franchise
+       exists; the door to found one until then */
+    var snap=FR?FR.snapshot():null;
+    if(snap&&snap.franchise){
+      html+=station('st-roster','','Roster',G.esc(snap.franchise.city+' '+snap.franchise.name),
+        'Team OVR <b>'+G.esc(snap.rating?snap.rating.overall:'—')+'</b> · '+G.esc(snap.roster_count||38)+' players','/games/roster/');
+      html+=station('st-office','','Front Office','Level '+G.esc(snap.resources?snap.resources.level:1),
+        G.esc(FR.fmt(snap.resources?snap.resources.scouting_points:0))+' SP · '+G.esc(FR.fmt(snap.resources?snap.resources.team_credits:0))+' TC · '
+          +G.esc(FR.fmt(snap.resources?snap.resources.coach_points:0))+' CP','/games/franchise/');
+    }else{
+      html+=station('st-office','','Front Office','Found your franchise',
+        'A roster, a record and a history that are yours for good — built by the games you already play here','/games/franchise/?intent=war_room');
+    }
     $('stations').innerHTML=html;
     /* EdgeDesk Pro, once a week, after three matchups' research this week */
     if(G.proMoment&&$('proSlot')){$('proSlot').innerHTML=G.proMoment('war_room');if(G.wireProMoment)G.wireProMoment();}
@@ -636,6 +650,7 @@
   /* `here`: this page IS the War Room, so a moment that says "see your War
      Room" would be pointing at itself — chips only */
   setTimeout(function(){try{G.pulse({here:true});}catch(_){}},700);
+  document.addEventListener('edgames:franchise',function(){try{paintStations();paintBoard();paintSave();}catch(_){}});
 
   READY.catch(function(){ /* the social endpoint is optional on this page */ });
 })();

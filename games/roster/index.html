@@ -1,0 +1,207 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-1PXVBV53FZ"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-1PXVBV53FZ');
+</script>
+<title>Roster | EdgeDesk Games</title>
+<meta name="description" content="Your franchise's roster: fictional players with ratings, archetypes, traits and careers that are yours to develop. Free to play, no real-money wagering.">
+<link rel="canonical" href="https://edgedesksports.com/games/roster">
+<meta name="theme-color" content="#0b0d11">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230b0d11'/%3E%3Cpath d='M18 6 L23 6 L14 26 L9 26 Z' fill='%233fb883'/%3E%3C/svg%3E">
+<meta name="robots" content="index,follow">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="EdgeDesk Games">
+<meta property="og:url" content="https://edgedesksports.com/games/roster">
+<meta property="og:title" content="Your roster — EdgeDesk Games">
+<meta property="og:description" content="Fictional players with ratings, archetypes, traits and careers, on a franchise that is yours for good.">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Your roster — EdgeDesk Games">
+<meta name="twitter:description" content="Fictional players with ratings, archetypes, traits and careers, on a franchise that is yours for good.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/games/games.css?v=20260905b">
+<link rel="stylesheet" href="/games/franchise.css?v=20260905b">
+</head>
+<body>
+<div id="gh"></div>
+
+<main class="wrap" id="main">
+  <div class="sec" style="margin-top:18px">
+    <div class="card" id="stage">
+      <div class="eyebrow">Roster</div>
+      <div class="sk" style="width:55%;margin:16px 0"></div>
+      <div class="sk" style="width:35%;margin:10px 0"></div>
+      <div class="sk-label" style="text-align:left">Loading the roster</div>
+    </div>
+  </div>
+  <div id="groups"></div>
+  <div id="after"></div>
+</main>
+
+<div id="gt"></div>
+<div id="gf"></div>
+
+<script src="/games/lib/week.js?v=20260905b"></script>
+<script src="/games/lib/scoring.js?v=20260905b"></script>
+<script src="/games/lib/challenge.js?v=20260905b"></script>
+<script src="/games/lib/research_state.js?v=20260905b"></script>
+<script src="/games/lib/attribution.js?v=20260905b"></script>
+<script src="/games/lib/store.js?v=20260905b"></script>
+<script src="/games/lib/dynasty.js?v=20260905b"></script>
+<script src="/games/lib/social.js?v=20260905b"></script>
+<script src="/games/lib/auth.js?v=20260905b"></script>
+<script src="/games/lib/franchise.js?v=20260905b"></script>
+<script src="/games/games.js?v=20260905b"></script>
+<script>
+/* STALE SCRIPT GUARD. A browser can keep an old games.js or store.js for
+   longer than it keeps this page, and a page built for the new library
+   then dies on the first function the old copy lacks — a skeleton that
+   never fills. The asset URLs above carry a version token so that cannot
+   happen from here on; this is the belt for the braces: if a required
+   function is missing, say so and offer a fresh load instead of a dead
+   screen. */
+(function(){
+  var need=['EDFranchise.roster','EDFranchise.playerCard','EDFranchise.setStarter','EDGames.franchiseReady'];
+  var miss=need.filter(function(k){var p=k.split('.'),o=window[p[0]];return !o||typeof o[p[1]]!=='function';});
+  if(!miss.length)return;
+  var host=document.getElementById('stage')||document.querySelector('main');
+  if(host)host.innerHTML='<div class="card"><div class="eyebrow">EdgeDesk Games</div>'
+    +'<div class="empty">This page needs a newer copy of EdgeDesk Games than your browser has kept.<br>'
+    +'<a class="btn btn-go" style="margin-top:14px" href="'+location.pathname+'?fresh='+Date.now()+'">Reload the page</a></div></div>';
+  try{console.warn('stale games scripts: '+miss.join(', '));}catch(_){}
+})();
+</script>
+<script>
+(function(){
+  'use strict';
+  var G=window.EDGames,ST=window.EDGamesStore,FR=window.EDFranchise,S=window.EDGamesSocial;
+  var $=function(id){return document.getElementById(id);};
+  var stage=$('stage'),groupsEl=$('groups'),after=$('after');
+  var esc=G.esc;
+
+  var READY=G.boot('roster');
+  var DATA=null,VIEWED={};
+
+  /* ---- no franchise yet --------------------------------------------------- */
+  function renderEmpty(state){
+    stage.className='card';
+    stage.innerHTML='<div class="fo-hero"><div class="eyebrow">Roster</div>'
+      +'<h1>Thirty-eight players, none of them anyone else’s.</h1>'
+      +'<p>A founding roster is generated when you found your franchise: quarterbacks, backs, receivers, two lines, '
+      +'a secondary and a kicking game, each with four ratings, an archetype, a development tier and, for some, a trait. '
+      +'Team overall lands around 68–72 — enough to play, with plenty to fix.</p>'
+      +'<ul class="fo-list"><li>Scout better in Price It and your Scouting Points rise.</li>'
+      +'<li>Play the week and your Team Credits do.</li><li>Every card, every season, every record stays.</li></ul>'
+      +'<div class="btn-row"><a class="btn btn-go btn-big" href="/games/franchise/?intent=roster" id="goFound">Found my franchise</a></div>'
+      +'<div class="ftp" style="margin-top:12px"><b>Free to play</b> · No account needed to start · Nothing here can be bought</div></div>';
+    groupsEl.innerHTML='';
+    after.innerHTML=state==='not_deployed'
+      ?'<div class="sec"><div class="card"><div class="empty">The franchise layer has not been deployed to this project yet. <a href="/games/status/">Status</a></div></div></div>'
+      :'';
+    var go=$('goFound');
+    if(go)go.addEventListener('click',function(){G.track('signup_start_from_games',{placement:'roster',game_type:'franchise'});});
+  }
+
+  /* ---- the roster --------------------------------------------------------- */
+  function rate(rt){
+    return '<div class="rate">'
+      +'<div class="ovr"><div class="k">Team OVR</div><div class="v">'+esc(rt.overall)+'</div></div>'
+      +'<div><div class="k">Offense</div><div class="v">'+esc(rt.offense)+'</div></div>'
+      +'<div><div class="k">Defense</div><div class="v">'+esc(rt.defense)+'</div></div>'
+      +'<div><div class="k">Special</div><div class="v">'+esc(rt.special)+'</div></div></div>';
+  }
+  function groupHtml(g,rt,weak,strong,open){
+    var val=rt.groups&&rt.groups[g.position]!=null?rt.groups[g.position]:'—';
+    var cls=(weak&&weak.position===g.position)?' pos-weak':(strong&&strong.position===g.position)?' pos-strong':'';
+    var cards=g.players.map(function(p){
+      var actions='';
+      if(!FR.isStarter(p))actions='<button class="btn" type="button" data-start="'+esc(p.id)+'" data-slot="'+g.starters+'">'
+        +'Move into the lineup'+(g.starters>1?' ('+esc(g.position)+g.starters+')':'')+'</button>';
+      return FR.playerCard(p,{actions:actions});
+    }).join('');
+    return '<details class="pos'+cls+'"'+(open?' open':'')+' data-pos="'+esc(g.position)+'">'
+      +'<summary><span class="p">'+esc(g.position)+'</span><span class="n">'+esc(g.name)+' · '+g.players.length+' · '+g.starters+' start'+(g.starters===1?'s':'')+'</span>'
+      +'<span class="r">'+esc(val)+'<small>OVR</small></span></summary>'
+      +'<div class="pc-grid">'+cards+'</div></details>';
+  }
+  function renderRoster(d,fresh){
+    DATA=d;
+    var f=d.franchise,rt=d.rating||{},gs=FR.groups(d.players),weak=FR.weakest(rt),strong=FR.strongest(rt);
+    stage.className='card';
+    stage.setAttribute('style',FR.themeVars(f.theme));
+    stage.innerHTML='<div class="eyebrow">Roster · '+esc(d.players.length)+' players</div>'
+      +'<div class="hq-id">'+FR.logoSvg(f.logo,56,f.theme)
+      +'<div><div class="hq-city">'+esc(f.city)+' · '+esc(f.abbr)+'</div><div class="hq-name">'+esc(f.name)+'</div>'
+      +'<div class="hq-line">'+(strong?'Strongest: <b>'+esc(strong.name)+' '+esc(strong.value)+'</b>':'')
+      +(weak?' · Weakest: <b>'+esc(weak.name)+' '+esc(weak.value)+'</b>':'')+'</div></div></div>'
+      +rate(rt)
+      +'<div class="ftp" style="margin-top:12px">Overall is the mean of a player’s four ratings. Team ratings weight the starters by position; '
+      +'the depth chart decides who starts. Every number here was generated on the server and cannot be edited.</div>';
+
+    var sides=[['offense','Offense','QB, RB, WR, TE, OL'],['defense','Defense','DL, LB, CB, S'],['special','Special teams','K, P']];
+    groupsEl.innerHTML=sides.map(function(sd){
+      var mine=gs.filter(function(g){return g.side===sd[0];});
+      var first=true;
+      return '<div class="side-h"><h2>'+esc(sd[1])+'</h2><span class="m">'+esc(rt[sd[0]]!=null?rt[sd[0]]+' OVR':'')+'</span></div>'
+        +mine.map(function(g){var h=groupHtml(g,rt,weak,strong,first&&sd[0]==='offense');first=false;return h;}).join('');
+    }).join('');
+
+    after.innerHTML='<div class="sec"><div class="card"><div class="eyebrow">Improving it</div>'
+      +'<p style="margin:0;color:var(--dim);font-size:14px;line-height:1.6">Player development, the draft and the transfer market arrive with later seasons. '
+      +'For now the way to a better team is the same as the way to a better read: <a href="/games/price-it/">scout in Price It</a>, '
+      +'<a href="/games/pick-5/">play the week</a>, <a href="/games/two-minute-drill/">run the drill</a>. Your resources are on the '
+      +'<a href="/games/franchise/">Front Office</a> page.</p></div></div>';
+
+    wire();
+    if(fresh)G.track('roster_view',{players:d.players.length,overall:rt.overall,weakest:weak?weak.position:null});
+  }
+  function wire(){
+    groupsEl.addEventListener('click',function(e){
+      var b=e.target.closest?e.target.closest('button[data-start]'):null;
+      if(b){
+        var id=b.getAttribute('data-start'),slot=+b.getAttribute('data-slot')||1;
+        b.disabled=true;b.textContent='Moving…';
+        FR.setStarter(id,slot).then(function(r){
+          if(!r.ok||!r.data){G.toast(r.message||'Could not change the lineup.');b.disabled=false;b.textContent='Move into the lineup';return;}
+          var openPos={};
+          Array.prototype.forEach.call(groupsEl.querySelectorAll('details[open]'),function(d){openPos[d.getAttribute('data-pos')]=true;});
+          renderRoster(r.data,false);
+          Array.prototype.forEach.call(groupsEl.querySelectorAll('details'),function(d){d.open=!!openPos[d.getAttribute('data-pos')];});
+          G.toast('Lineup updated');
+          G.track('roster_change',{player:id,slot:slot,overall:r.data.rating?r.data.rating.overall:null});
+        });
+        return;
+      }
+      var card=e.target.closest?e.target.closest('.pc'):null;
+      if(card){
+        var pid=card.getAttribute('data-player');
+        if(pid&&!VIEWED[pid]){VIEWED[pid]=true;G.track('player_view',{player:pid,position:card.getAttribute('data-position'),depth:card.getAttribute('data-depth')});}
+      }
+    });
+  }
+
+  /* ---- boot --------------------------------------------------------------- */
+  G.franchiseReady().then(function(){
+    var st=FR.state();
+    if(st!=='franchise'){renderEmpty(st);return;}
+    return FR.roster().then(function(r){
+      if(!r.ok||!r.data){
+        stage.innerHTML='<div class="empty">The roster could not be loaded. '+esc(r.message||'Check your connection and reload.')+'</div>';
+        return;
+      }
+      renderRoster(r.data,true);
+    });
+  }).catch(function(){renderEmpty(FR.state());});
+  READY.catch(function(){});
+})();
+</script>
+</body>
+</html>

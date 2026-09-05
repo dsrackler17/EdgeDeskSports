@@ -583,6 +583,7 @@ h1,h2,h3{font-family:'Space Grotesk',Inter,sans-serif;margin:0;line-height:1.15}
 .wb-week .dot{width:8px;height:8px;border-radius:50%;background:var(--line2);flex:none}
 .wb-week .dot.on{background:var(--val)}
 .wb-week .dot.todo{background:var(--est)}
+.wb-week .r{margin-left:auto;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--faint);white-space:nowrap;flex:none}
 
 /* the one big button a cold visitor sees first */
 .btn-big{min-height:60px;font-size:17px;border-radius:14px}
@@ -709,3 +710,67 @@ h1,h2,h3{font-family:'Space Grotesk',Inter,sans-serif;margin:0;line-height:1.15}
   .sides{gap:8px;margin-top:10px}
   .locked-line{margin-top:10px;padding:9px 12px}
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   THE FACILITY — the franchise layer's shell: the rooms in the header, the
+   franchise chip, the thumb tab bar on a phone, the reward panel and the
+   conversion moment. The dark ground and the EdgeDesk green stay; a franchise
+   brings its own accent (`--fr-primary`) only inside its own chip and cards.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* League and the Front Office join the header only on a wide screen; on a
+   phone they live in the tab bar's HQ and in every footer */
+.gh-only-wider{display:none}
+@media(min-width:768px){.gh-only-wider{display:block}}
+
+/* the franchise chip: the mark and the abbreviation, next to the wordmark */
+.gh-fr{display:inline-flex;align-items:center;gap:6px;padding:3px 8px 3px 3px;border-radius:999px;
+  border:1px solid var(--line2);background:var(--cell);color:var(--fr-primary,var(--val));
+  font:800 11px 'Space Grotesk',sans-serif;letter-spacing:.06em;white-space:nowrap}
+.gh-fr:hover{text-decoration:none;border-color:var(--fr-primary,var(--val))}
+.gh-fr[hidden]{display:none}
+.gh-fr .fr-mark{width:22px;height:22px;border-radius:6px}
+/* on a phone the chip is the mark alone, and the header sheds the rooms the
+   tab bar (HQ, Scouting, Training) or the footer already carries: measured
+   at 390px, the chip, the level badge and four rooms overflowed by 60px */
+@media(max-width:479px){
+  .gh-fr .gh-fr-ab{display:none}.gh-fr{padding:3px}
+  .gh-home,.gh-train{display:none}
+  body.has-tabs .gh-scout{display:none}
+}
+
+/* the tab bar: five rooms under the thumb, phones only */
+.gtab{display:none}
+@media(max-width:480px){
+  .gtab{position:fixed;left:0;right:0;bottom:0;z-index:35;display:grid;grid-template-columns:repeat(5,1fr);
+    background:rgba(11,13,17,.96);backdrop-filter:blur(10px);border-top:1px solid var(--line);
+    padding-bottom:env(safe-area-inset-bottom)}
+  .gtab a{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
+    min-height:56px;font-size:10.5px;font-weight:600;color:var(--dim);letter-spacing:.02em}
+  .gtab a:hover{text-decoration:none}
+  .gtab a[aria-current]{color:var(--val)}
+  .gtab svg{width:22px;height:22px;fill:currentColor}
+  body.has-tabs{padding-bottom:calc(64px + env(safe-area-inset-bottom))}
+  body.has-tabs .toast{bottom:calc(76px + env(safe-area-inset-bottom))}
+  body.has-tabs .gf{padding-bottom:20px}
+}
+
+/* the reward panel on a reveal: what the franchise was credited */
+.rw{margin-top:16px;background:var(--cell);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+.rw.on{border-color:var(--val-dim);background:rgba(63,184,131,.06)}
+.rw .eyebrow{margin-bottom:8px}
+.rw-chips{display:flex;flex-wrap:wrap;gap:6px}
+.rw-chip{display:inline-flex;align-items:center;gap:5px;border-radius:999px;padding:5px 11px;
+  font-size:12px;font-weight:600;color:var(--dim);background:var(--panel);border:1px solid var(--line2)}
+.rw-chip b{font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;font-weight:700}
+.rw-xp b{color:var(--val)}.rw-sp b{color:var(--obs)}.rw-tc b{color:var(--est)}.rw-cp b{color:var(--exp)}
+.rw-none{font-size:12.5px;color:var(--faint)}
+.rw-line{font-size:12.5px;color:var(--dim);margin-top:8px;line-height:1.5}
+.rw-ach{font-size:12.5px;color:var(--est);margin-top:8px}
+.rw-ach b{font-weight:700}
+
+/* the conversion moment: one sentence with real numbers, one button */
+.conv{border-color:var(--val-dim);background:linear-gradient(180deg,rgba(63,184,131,.09),transparent)}
+.conv-t{font-family:'Space Grotesk',sans-serif;font-size:18px;font-weight:700;line-height:1.3}
+.conv-t b{color:var(--val)}
+.conv p{margin:8px 0 0;color:var(--dim);font-size:13.5px;line-height:1.55}

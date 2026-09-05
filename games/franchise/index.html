@@ -1,0 +1,435 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-1PXVBV53FZ"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-1PXVBV53FZ');
+</script>
+<title>Front Office | EdgeDesk Games</title>
+<meta name="description" content="Found your fictional football franchise in a minute, no account needed. A roster, a record and a history that are yours for good, built by how well you read real football. Free to play, no real-money wagering.">
+<link rel="canonical" href="https://edgedesksports.com/games/franchise">
+<meta name="theme-color" content="#0b0d11">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230b0d11'/%3E%3Cpath d='M18 6 L23 6 L14 26 L9 26 Z' fill='%233fb883'/%3E%3C/svg%3E">
+<meta name="robots" content="index,follow">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="EdgeDesk Games">
+<meta property="og:url" content="https://edgedesksports.com/games/franchise">
+<meta property="og:title" content="Found your franchise — EdgeDesk Games">
+<meta property="og:description" content="One fictional football franchise, yours for good. The real games you play are how it improves. Free to play.">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Found your franchise — EdgeDesk Games">
+<meta name="twitter:description" content="A roster, a record and a history, built by how well you read real football.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/games/games.css?v=20260905b">
+<link rel="stylesheet" href="/games/franchise.css?v=20260905b">
+</head>
+<body>
+<div id="gh"></div>
+
+<main class="wrap" id="main">
+  <div class="sec" style="margin-top:18px">
+    <div class="card" id="stage">
+      <div class="eyebrow">Front Office</div>
+      <div class="sk" style="width:55%;margin:16px 0"></div>
+      <div class="sk" style="width:35%;margin:10px 0"></div>
+      <div class="sk-label" style="text-align:left">Opening the Front Office</div>
+    </div>
+  </div>
+  <div id="after"></div>
+</main>
+
+<div id="gt"></div>
+<div id="gf"></div>
+
+<script src="/games/lib/week.js?v=20260905b"></script>
+<script src="/games/lib/scoring.js?v=20260905b"></script>
+<script src="/games/lib/challenge.js?v=20260905b"></script>
+<script src="/games/lib/research_state.js?v=20260905b"></script>
+<script src="/games/lib/attribution.js?v=20260905b"></script>
+<script src="/games/lib/store.js?v=20260905b"></script>
+<script src="/games/lib/dynasty.js?v=20260905b"></script>
+<script src="/games/lib/social.js?v=20260905b"></script>
+<script src="/games/lib/auth.js?v=20260905b"></script>
+<script src="/games/lib/franchise.js?v=20260905b"></script>
+<script src="/games/games.js?v=20260905b"></script>
+<script>
+/* STALE SCRIPT GUARD. A browser can keep an old games.js or store.js for
+   longer than it keeps this page, and a page built for the new library
+   then dies on the first function the old copy lacks — a skeleton that
+   never fills. The asset URLs above carry a version token so that cannot
+   happen from here on; this is the belt for the braces: if a required
+   function is missing, say so and offer a fresh load instead of a dead
+   screen. */
+(function(){
+  var need=['EDFranchise.create','EDFranchise.importHistory','EDGamesAuth.signIn','EDGames.franchiseReady','EDGamesStore.franchiseSnapshot'];
+  var miss=need.filter(function(k){var p=k.split('.'),o=window[p[0]];return !o||typeof o[p[1]]!=='function';});
+  if(!miss.length)return;
+  var host=document.getElementById('stage')||document.querySelector('main');
+  if(host)host.innerHTML='<div class="card"><div class="eyebrow">EdgeDesk Games</div>'
+    +'<div class="empty">This page needs a newer copy of EdgeDesk Games than your browser has kept.<br>'
+    +'<a class="btn btn-go" style="margin-top:14px" href="'+location.pathname+'?fresh='+Date.now()+'">Reload the page</a></div></div>';
+  try{console.warn('stale games scripts: '+miss.join(', '));}catch(_){}
+})();
+</script>
+<script>
+(function(){
+  'use strict';
+  var G=window.EDGames,ST=window.EDGamesStore,W=window.EDGamesWeek,S=window.EDGamesSocial,
+      AU=window.EDGamesAuth,FR=window.EDFranchise,DY=window.EDGamesDynasty;
+  var $=function(id){return document.getElementById(id);};
+  var stage=$('stage'),after=$('after');
+  var esc=G.esc,fmt=FR.fmt;
+
+  function param(k){
+    var m=new RegExp('[?&]'+k+'=([^&]*)').exec(location.search);
+    return m?decodeURIComponent(m[1].replace(/\+/g,' ')):null;
+  }
+  var INTENT=param('intent')||'direct';
+
+  var READY=G.boot('franchise');
+  G.track('front_office_view',{intent:INTENT,game_type:'franchise'});
+
+  /* ---- helpers ------------------------------------------------------------ */
+  var MON=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  function dayLabel(iso){
+    var t=Date.parse(String(iso||'').replace(' ','T'));
+    if(!isFinite(t))return '';
+    var d=new Date(t);return d.getDate()+' '+MON[d.getMonth()];
+  }
+  function msg(id,text,ok){var m=$(id);if(!m)return;m.className='msg'+(ok?' ok':'');m.textContent=text||'';}
+  function initials(name){
+    var w=String(name||'').replace(/[^A-Za-z0-9 ]/g,'').trim().split(/\s+/).filter(Boolean);
+    var ab=w.length>=2?w.map(function(x){return x[0];}).join(''):String(w[0]||'').slice(0,3);
+    return ab.toUpperCase().slice(0,4);
+  }
+
+  /* ---- what the anonymous record is worth: the one honest sentence -------- */
+  function carryOver(){
+    var pv=FR.preview(ST.read()),a=pv.all;
+    if(!a.games)return '<p>Nothing to carry over yet — the first Price It, card or drill you play after founding builds it.</p>';
+    var bits=[];
+    if(a.price_it)bits.push(a.price_it+' Price It result'+(a.price_it===1?'':'s'));
+    if(a.cards)bits.push(a.cards+' Pick 5 card'+(a.cards===1?'':'s'));
+    if(a.drills)bits.push(a.drills+' drill'+(a.drills===1?'':'s'));
+    if(a.research)bits.push(a.research+' matchup'+(a.research===1?'':'s')+' reviewed');
+    return '<p>On this device you have '+esc(bits.join(', '))+' — worth up to <b>'+fmt(a.xp)+' XP</b>'
+      +(a.sp?', <b>'+fmt(a.sp)+' Scouting Points</b>':'')+(a.tc?' and <b>'+fmt(a.tc)+' Team Credits</b>':'')
+      +'. Founding your franchise carries it over: everything EdgeDesk can still verify against the board is credited in full, the rest as XP.</p>';
+  }
+
+  /* ---- the explainer, for a visitor with no account ---------------------- */
+  function explainer(){
+    return '<div class="fo-hero"><div class="eyebrow">Front Office</div>'
+      +'<h1>Found your franchise.</h1>'
+      +'<p>One fictional football franchise, yours for good. A roster of players nobody else has, a record, '
+      +'a history — and the real EdgeDesk games you already play are how it improves. '
+      +'<b style="color:var(--text)">No account needed to start.</b> Save it to a free account whenever you like.</p>'
+      +'<ul class="fo-list">'
+      +'<li><b>Price It</b> is your scouting department: the closer your line, the more Scouting Points.</li>'
+      +'<li><b>Pick 5</b> is the weekly slate: every correct side pays, and a 5–0 card is a moment.</li>'
+      +'<li><b>The Two-Minute Drill</b> is practice: daily XP and Team Credits, ninety seconds.</li>'
+      +'<li><b>Head-to-Head</b> is competition: Coach Points for playing, more for winning.</li>'
+      +'</ul>'+carryOver()
+      +'<div class="ftp" style="margin-top:12px"><b>Free to play</b> · No purchase necessary · Nothing here can be bought · 21+</div></div>';
+  }
+
+  /* ---- sign in / create account: SAVING the franchise to an account -------
+     A device-owned franchise is claimed into the account the moment it
+     signs in; an account that already owns one keeps it and the page says
+     so. Sign-in is never required to found or to play. */
+  var MODE='signup';
+  function authBlock(){
+    return '<div class="fo-tabs" role="tablist" style="margin-top:14px">'
+      +'<button type="button" role="tab" id="tabUp" aria-selected="'+(MODE==='signup')+'">Create a free account</button>'
+      +'<button type="button" role="tab" id="tabIn" aria-selected="'+(MODE==='signin')+'">Sign in</button></div>'
+      +'<form id="authForm" novalidate>'
+      +'<div class="field"><label for="aEmail">Email</label><input id="aEmail" type="email" autocomplete="email" inputmode="email" required></div>'
+      +'<div class="field"><label for="aPass">Password</label><input id="aPass" type="password" autocomplete="'+(MODE==='signup'?'new-password':'current-password')+'" required minlength="6">'
+      +(MODE==='signup'?'<div class="h">At least 6 characters.</div>':'')+'</div>'
+      +(MODE==='signup'
+        ?'<label class="consent"><input type="checkbox" id="aConsent"><span>I am 21 or older and agree to the '
+          +'<a href="/terms.html" target="_blank" rel="noopener">Terms</a> and <a href="/privacy.html" target="_blank" rel="noopener">Privacy Policy</a>. '
+          +'EdgeDesk Games is free to play with no real-money wagering.</span></label>'
+        :'')
+      +'<div class="msg" id="authMsg" aria-live="polite"></div>'
+      +'<div class="btn-row"><button class="btn btn-go" type="submit" id="authGo">'+(MODE==='signup'?'Create account and continue':'Sign in')+'</button></div>'
+      +'<div class="ftp" style="margin-top:10px;text-align:center">Same EdgeDesk account as the research terminal. No password is stored in this browser.</div>'
+      +'</form>';
+  }
+  function wireAuth(rerender){
+    $('tabUp').addEventListener('click',function(){MODE='signup';rerender();});
+    $('tabIn').addEventListener('click',function(){MODE='signin';rerender();});
+    $('authForm').addEventListener('submit',function(e){
+      e.preventDefault();
+      var email=$('aEmail').value.trim(),pass=$('aPass').value,btn=$('authGo');
+      var consent=MODE==='signup'?$('aConsent').checked:true;
+      if(!email||!pass){msg('authMsg','Enter your email and password.');return;}
+      if(MODE==='signup'&&!consent){msg('authMsg','Please confirm you are 21+ and agree to the Terms to continue.');return;}
+      btn.disabled=true;var old=btn.textContent;btn.textContent='…';
+      msg('authMsg','');
+      var p=MODE==='signup'?AU.signUp(email,pass,consent):AU.signIn(email,pass);
+      p.then(function(r){
+        if(!r.ok){msg('authMsg',r.message||'Something went wrong.');btn.disabled=false;btn.textContent=old;return;}
+        if(r.confirm){
+          G.track('franchise_signup',{confirm:true,intent:INTENT});
+          msg('authMsg','Account created. Confirm your email ('+email+'), then come back and sign in to found your franchise.',true);
+          btn.disabled=false;btn.textContent=old;MODE='signin';
+          return;
+        }
+        G.track(MODE==='signup'?'franchise_signup':'franchise_signin',{intent:INTENT});
+        G.track('signup_complete_from_games',{game_type:'franchise',intent:INTENT,mode:MODE});
+        msg('authMsg','Signed in.',true);
+        /* the device's franchise, if there is one, is claimed by boot() */
+        return FR.boot().then(function(b){
+          G.paintFranchise();
+          if(b&&b.claimed){G.track('franchise_claimed',{intent:INTENT});G.toast('Your franchise is saved to your account');}
+          render();
+        });
+      });
+    });
+    setTimeout(function(){try{$('aEmail').focus();}catch(_){}},50);
+  }
+  /* an account owner who is signed out, or a visitor who wants to sign in
+     before founding: the same form, on its own */
+  function renderAuth(){
+    stage.className='card';
+    stage.innerHTML=explainer()+'<div class="eyebrow" style="margin-top:20px">Sign in</div>'+authBlock()
+      +'<div class="btn-row"><button class="btn btn-ghost" type="button" id="backFound">Or found a franchise without an account</button></div>';
+    after.innerHTML='';
+    wireAuth(renderAuth);
+    $('backFound').addEventListener('click',function(){WANT_AUTH=false;render();});
+  }
+  var WANT_AUTH=/[?&]save=1/.test(location.search);
+
+  /* ---- found the franchise ----------------------------------------------- */
+  var DRAFT={name:'',city:'',abbr:'',logo:'star',theme:'forest',offense:'air_raid',defense:'four_three',abbrTouched:false};
+  function pickHtml(list,cur,kind){
+    return list.map(function(o){
+      var inner=kind==='logo'?FR.logoSvg(o.key,34,DRAFT.theme):'<span class="sw" style="background:'+esc(o.primary)+'"></span>';
+      return '<button type="button" data-'+kind+'="'+esc(o.key)+'" aria-pressed="'+(cur===o.key)+'" aria-label="'+esc(o.label)+'" title="'+esc(o.label)+'">'+inner+'</button>';
+    }).join('');
+  }
+  function schemeHtml(list,cur,kind){
+    return list.map(function(o){
+      return '<button type="button" data-'+kind+'="'+esc(o.key)+'" aria-pressed="'+(cur===o.key)+'">'
+        +'<div class="t">'+esc(o.label)+'</div><div class="b">'+esc(o.blurb)+'</div></button>';
+    }).join('');
+  }
+  function paintPreview(){
+    var el=$('frPrev');if(!el)return;
+    var title=((DRAFT.city||'Your City')+' '+(DRAFT.name||'Franchise')).trim();
+    el.setAttribute('style',FR.themeVars(DRAFT.theme));
+    el.innerHTML=FR.logoSvg(DRAFT.logo,48,DRAFT.theme)
+      +'<div><div class="ab">'+esc(DRAFT.abbr||initials(DRAFT.name)||'ABR')+'</div><div class="nm">'+esc(title)+'</div></div>';
+    /* the marks take the theme's colours, so they repaint with it */
+    var lp=$('logoPick');if(lp)lp.innerHTML=pickHtml(FR.LOGOS,DRAFT.logo,'logo');
+  }
+  function renderFound(){
+    var u=FR.user();
+    stage.className='card';
+    stage.innerHTML='<div class="fo-hero"><div class="eyebrow">Front Office'+(u?' · '+esc(S.displayName()):'')+'</div>'
+      +'<h1>Name your franchise.</h1>'
+      +'<p>This is the identity your history is written under. Keep it light — a city, a name, a mark, a colour and how you want to play. '
+      +'Your players are generated when you found it.'+(u?'':' <b style="color:var(--text)">No account needed</b> — it lives on this device until you save it.')+'</p></div>'
+      +'<form id="foundForm" novalidate>'
+      +'<div class="field-row">'
+      +'<div class="field"><label for="fCity">City</label><input id="fCity" type="text" maxlength="24" autocomplete="off" placeholder="Lubbock"></div>'
+      +'<div class="field"><label for="fAbbr">Abbreviation</label><input id="fAbbr" type="text" maxlength="4" autocomplete="off" placeholder="LBK" style="text-transform:uppercase"><div class="h">2–4 letters</div></div>'
+      +'</div>'
+      +'<div class="field"><label for="fName">Team name</label><input id="fName" type="text" maxlength="28" autocomplete="off" placeholder="Outlaws"></div>'
+      +'<div class="fr-prev" id="frPrev"></div>'
+      +'<div class="field"><label>Mark</label><div class="pick" id="logoPick">'+pickHtml(FR.LOGOS,DRAFT.logo,'logo')+'</div></div>'
+      +'<div class="field"><label>Colours</label><div class="pick" id="themePick">'+pickHtml(FR.THEMES,DRAFT.theme,'theme')+'</div></div>'
+      +'<div class="field"><label>Offensive identity</label><div class="scheme" id="offPick">'+schemeHtml(FR.OFFENSES,DRAFT.offense,'offense')+'</div></div>'
+      +'<div class="field"><label>Defensive identity</label><div class="scheme" id="defPick">'+schemeHtml(FR.DEFENSES,DRAFT.defense,'defense')+'</div></div>'
+      +'<div class="msg" id="foundMsg" aria-live="polite"></div>'
+      +'<div class="btn-row"><button class="btn btn-go btn-big" type="submit" id="foundGo">Found my franchise</button></div>'
+      +'<div class="ftp" style="margin-top:10px;text-align:center">A founding roster of 38 fictional players, generated for you. Team overall lands around 68–72 — playable, and clearly improvable. Nothing in it can be bought.</div>'
+      +'</form>';
+    after.innerHTML='<div class="sec"><div class="card">'+carryOver().replace('<p>','<div class="eyebrow">Carrying over</div><p style="margin:0;color:var(--dim);font-size:14px;line-height:1.6">')
+      +(u?'<div class="btn-row"><button class="btn btn-ghost" type="button" id="doSignOut">Sign out</button></div>'
+          :'<div class="btn-row"><button class="btn btn-ghost" type="button" id="doSignIn">Already have an EdgeDesk account? Sign in</button></div>')
+      +'</div></div>';
+    paintPreview();
+    $('fCity').addEventListener('input',function(){DRAFT.city=this.value;paintPreview();});
+    $('fName').addEventListener('input',function(){DRAFT.name=this.value;if(!DRAFT.abbrTouched){DRAFT.abbr=initials(this.value);$('fAbbr').value=DRAFT.abbr;}paintPreview();});
+    $('fAbbr').addEventListener('input',function(){DRAFT.abbrTouched=true;DRAFT.abbr=this.value.toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,4);this.value=DRAFT.abbr;paintPreview();});
+    stage.addEventListener('click',function(e){
+      var b=e.target.closest?e.target.closest('button[data-logo],button[data-theme],button[data-offense],button[data-defense]'):null;
+      if(!b)return;
+      ['logo','theme','offense','defense'].forEach(function(k){
+        var v=b.getAttribute('data-'+k);if(v==null)return;
+        DRAFT[k]=v;
+        Array.prototype.forEach.call(stage.querySelectorAll('button[data-'+k+']'),function(o){o.setAttribute('aria-pressed',o===b?'true':'false');});
+      });
+      paintPreview();
+    });
+    if($('doSignOut'))$('doSignOut').addEventListener('click',signOut);
+    if($('doSignIn'))$('doSignIn').addEventListener('click',function(){WANT_AUTH=true;render();});
+    $('foundForm').addEventListener('submit',function(e){
+      e.preventDefault();
+      var name=$('fName').value.trim(),city=$('fCity').value.trim(),abbr=($('fAbbr').value||initials(name)).toUpperCase();
+      if(name.length<2){msg('foundMsg','Give the franchise a name (at least 2 characters).');return;}
+      if(city.length<2){msg('foundMsg','Give the franchise a city.');return;}
+      if(!/^[A-Z0-9]{2,4}$/.test(abbr)){msg('foundMsg','The abbreviation is 2 to 4 letters or digits.');return;}
+      var btn=$('foundGo');btn.disabled=true;btn.textContent='Founding…';msg('foundMsg','');
+      FR.create({name:name,city:city,abbr:abbr,logo:DRAFT.logo,theme:DRAFT.theme,offense:DRAFT.offense,defense:DRAFT.defense})
+        .then(function(r){
+          if(!r.ok){
+            msg('foundMsg',r.message||'Could not found the franchise.');
+            btn.disabled=false;btn.textContent='Found my franchise';
+            if(r.error==='23505'||/already own/i.test(r.message||'')){FR.boot().then(render);}
+            return;
+          }
+          var home=r.data;
+          G.track('franchise_created',{logo:DRAFT.logo,theme:DRAFT.theme,offense:DRAFT.offense,defense:DRAFT.defense,
+            overall:home&&home.rating?home.rating.overall:null,intent:INTENT,game_type:'franchise',
+            owner:home&&home.franchise?home.franchise.owner:null});
+          G.paintFranchise();
+          /* carry the anonymous record over, then say what came across */
+          var payload=FR.historyPayload(ST.read());
+          return FR.importHistory(payload).then(function(ir){
+            var imp=ir.ok&&ir.data?ir.data:null;
+            G.track('franchise_import',{ok:!!imp,price_it:imp&&imp.price_it?imp.price_it.credited:0,
+              xp_only:imp&&imp.price_it?imp.price_it.xp_only:0,cards:imp&&imp.pick5?imp.pick5.history+imp.pick5.live:0,
+              drills:imp&&imp.drill?imp.drill.credited:0});
+            return FR.home().then(function(){
+              renderOffice();
+              G.moment({eyebrow:'Founded',title:city+' '+name,
+                sub:'Team overall '+(home&&home.rating?home.rating.overall:'—')+' · Founder Season '+(home&&home.franchise?home.franchise.founded_season:''),
+                body:'Your roster is generated and your history starts here. Every Price It, card and drill from now on builds it.'
+                  +(imp&&imp.totals?' Carried over: '+fmt(imp.totals.xp)+' XP, '+fmt(imp.totals.scouting_points)+' Scouting Points, '+fmt(imp.totals.team_credits)+' Team Credits.':''),
+                cta:'See my roster',dismiss:'Open the Front Office'});
+              var go=document.querySelector('.moment .btn-go');if(go)go.href='/games/roster/';
+            });
+          });
+        });
+    });
+    setTimeout(function(){try{$('fCity').focus();}catch(_){}},50);
+  }
+
+  /* ---- the Front Office --------------------------------------------------- */
+  function signOut(){
+    AU.signOut().then(function(){FR.forget();G.paintFranchise();G.track('franchise_signout',{});render();});
+  }
+  function resBlock(res){
+    var li=FR.levelInfo(res.xp);
+    return '<div class="xp"><div class="xp-row"><b>Level '+li.level+' · '+fmt(res.xp)+' XP</b><span>'+(li.next?fmt(li.remaining)+' to level '+(li.level+1):'Max level')+'</span></div>'
+      +'<div class="xp-bar" role="progressbar" aria-label="progress to the next level" aria-valuemin="0" aria-valuemax="100" aria-valuenow="'+li.pct+'"><div class="xp-fill" style="width:'+li.pct+'%"></div></div></div>'
+      +'<div class="res">'
+      +'<div class="sp"><div class="k">Scouting</div><div class="v">'+fmt(res.scouting_points)+'</div></div>'
+      +'<div class="tc"><div class="k">Credits</div><div class="v">'+fmt(res.team_credits)+'</div></div>'
+      +'<div class="cp"><div class="k">Coach</div><div class="v">'+fmt(res.coach_points)+'</div></div>'
+      +'</div>'
+      +'<div class="res-note"><b>Scouting Points</b> come from Price It accuracy. <b>Team Credits</b> come from playing. '
+      +'<b>Coach Points</b> come from Head-to-Head. XP levels the franchise. None of them can be bought.</div>';
+  }
+  function renderOffice(){
+    var snap=FR.snapshot();
+    if(!snap||!snap.franchise){renderFound();return;}
+    var f=snap.franchise,id=FR.identity(f),res=snap.resources||{},rt=snap.rating||{},ss=snap.season||{};
+    var u=FR.user();
+    stage.className='card';
+    stage.setAttribute('style',FR.themeVars(f.theme));
+    stage.innerHTML='<div class="eyebrow">Front Office</div>'
+      +'<div class="hq-id">'+FR.logoSvg(f.logo,56,f.theme)
+      +'<div><div class="hq-city">'+esc(f.city)+' · '+esc(f.abbr)+'</div><div class="hq-name">'+esc(f.name)+'</div>'
+      +'<div class="hq-line">'+esc(id.offense?id.offense.label:f.offense)+' offense · '+esc(id.defense?id.defense.label:f.defense)+' defense · Founded '+esc(f.founded_season)+'</div></div>'
+      +'<div class="hq-rec">'+esc((ss.wins|0)+'–'+(ss.losses|0))+'<span class="s">'+esc(ss.status||'preseason')+'</span></div></div>'
+      +'<div class="rate">'
+      +'<div class="ovr"><div class="k">Team OVR</div><div class="v">'+esc(rt.overall!=null?rt.overall:'—')+'</div></div>'
+      +'<div><div class="k">Offense</div><div class="v">'+esc(rt.offense!=null?rt.offense:'—')+'</div></div>'
+      +'<div><div class="k">Defense</div><div class="v">'+esc(rt.defense!=null?rt.defense:'—')+'</div></div>'
+      +'<div><div class="k">Special</div><div class="v">'+esc(rt.special!=null?rt.special:'—')+'</div></div>'
+      +'</div>'
+      +'<div class="btn-row two"><a class="btn btn-go" href="/games/roster/">Open the roster</a><a class="btn" href="/games/">Back to HQ</a></div>';
+
+    var ach=(snap.achievements||[]);
+    var recent=(snap.recent||[]);
+    after.innerHTML=
+      '<div class="sec"><div class="sec-h"><h2>Resources</h2><span class="m">'+esc(FR.ECONOMY_VERSION)+'</span></div><div class="card" id="resCard">'+resBlock(res)+'</div></div>'
+      +'<div class="sec"><div class="sec-h"><h2>Trophy Room</h2><span class="m">'+ach.length+' earned</span></div>'
+      +'<div class="card">'+(ach.length?'<div class="ach">'+ach.map(function(a){
+          return '<div><div class="n">'+esc(a.name)+'</div><div class="d">'+esc(a.description)+'</div>'
+            +'<div class="w">'+esc(dayLabel(a.earned_at))+' · '+esc(a.season)+'</div>'
+            +(a.exclusive_season?'<span class="x">Season exclusive</span>':'')+'</div>';
+        }).join('')+'</div>':'<div class="empty">Nothing on the wall yet. The first Price It your scouting department files is the first one.</div>')
+      +'<div class="ftp" style="margin-top:10px">Every achievement is read from your record on the server. Nothing here is granted.</div></div></div>'
+      +'<div class="sec"><div class="sec-h"><h2>Ledger</h2><span class="m" id="ledgerNote">recent</span></div><div class="card" id="ledgerCard">'
+      +(recent.length?ledgerTable(recent):'<div class="empty">Nothing on the ledger yet.</div>')+'</div></div>'
+      +(f.owner==='device'
+        ?'<div class="sec" id="saveSec"><div class="sec-h"><h2>Save your franchise</h2><span class="m">device only</span></div><div class="card save">'
+          +'<p style="margin:0;color:var(--dim);font-size:14px;line-height:1.6">The <b style="color:var(--text)">'+esc(f.city+' '+f.name)+'</b> live on this device. '
+          +'A new phone or a cleared browser cannot find them. Save them to a free EdgeDesk account and everything they have earned comes along.'
+          +(ST.franchiseQueue().length?' <b style="color:var(--est)">'+ST.franchiseQueue().length+' reward'+(ST.franchiseQueue().length===1?'':'s')+' waiting to sync.</b>':'')+'</p>'
+          +authBlock()+'</div></div>'
+        :'<div class="sec"><div class="sec-h"><h2>Account</h2></div><div class="card">'
+          +'<p style="margin:0;color:var(--dim);font-size:14px;line-height:1.6">Signed in as <b style="color:var(--text)">'+esc(S.displayName())+'</b>. '
+          +'Your franchise, its roster and its ledger are saved to this account.'
+          +(ST.franchiseQueue().length?' <b style="color:var(--est)">'+ST.franchiseQueue().length+' reward'+(ST.franchiseQueue().length===1?'':'s')+' waiting to sync.</b>':'')+'</p>'
+          +'<div class="btn-row two"><a class="btn" href="'+esc(G.withAttribution('/app.html',{intent:'front_office'}))+'">Open EdgeDesk research</a>'
+          +'<button class="btn btn-ghost" type="button" id="doSignOut">Sign out</button></div></div></div>')
+      +'<div class="sec"><div class="card"><div class="eyebrow">Share</div>'
+      +'<p style="margin:0;color:var(--dim);font-size:14px;line-height:1.6">Your franchise card — the name, the mark, the record and the team overall — as text anyone can paste.</p>'
+      +'<div class="btn-row"><button class="btn btn-ghost" type="button" id="doShare">Share my franchise</button></div></div></div>';
+    if($('doSignOut'))$('doSignOut').addEventListener('click',signOut);
+    if(f.owner==='device')wireAuth(renderOffice);
+    $('doShare').addEventListener('click',function(){shareFranchise(snap);});
+    if(snap.franchise)G.track('franchise_home_view',{placement:'front_office',level:res.level,overall:rt.overall});
+    /* the fuller ledger, from the server */
+    FR.ledger(40).then(function(r){
+      if(!r.ok||!r.data||!r.data.length)return;
+      $('ledgerCard').innerHTML=ledgerTable(r.data);
+      $('ledgerNote').textContent='last '+r.data.length;
+    });
+  }
+  function ledgerTable(rows){
+    return '<table class="ledger-t">'+rows.map(function(l){
+      var c=String(l.currency||'').toLowerCase();
+      return '<tr><td class="d '+esc(c)+'">'+(l.delta>0?'+':'')+fmt(l.delta)+' '+esc(c.toUpperCase())+'</td>'
+        +'<td class="w">'+esc(l.label||l.kind)+'</td><td class="t">'+esc(dayLabel(l.at))+'</td></tr>';
+    }).join('')+'</table>';
+  }
+
+  function shareFranchise(snap){
+    var f=snap.franchise,rt=snap.rating||{},ss=snap.season||{},res=snap.resources||{};
+    var text=[(f.city+' '+f.name).toUpperCase(),(ss.wins|0)+'–'+(ss.losses|0)+' · Team OVR '+(rt.overall!=null?rt.overall:'—')+' · Level '+(res.level||1),
+      'Founder Season '+f.founded_season,'','Found yours:','EdgeDesk Games'].join('\n');
+    var url=location.origin+'/games/franchise/';
+    G.track('share_result',{game_type:'franchise',overall:rt.overall});
+    if(navigator.share){return navigator.share({title:'EdgeDesk Games',text:text,url:url}).catch(function(){});}
+    var payload=text+'\n'+url;
+    if(navigator.clipboard&&navigator.clipboard.writeText){
+      return navigator.clipboard.writeText(payload).then(function(){G.toast('Copied — paste it anywhere');}).catch(function(){G.toast('Could not copy automatically');});
+    }
+    G.toast('Copy this: '+url);
+  }
+
+  function renderDown(){
+    stage.className='card';
+    stage.innerHTML=explainer()+'<div class="empty" style="margin-top:14px">The franchise layer has not been deployed to this project yet, so a franchise cannot be founded here. '
+      +'Price It, Pick 5 and the Drill are unaffected.<br><a href="/games/status/">Status</a></div>';
+    after.innerHTML='';
+  }
+
+  /* ---- render ------------------------------------------------------------- */
+  function render(){
+    var st=FR.state();
+    if(st==='not_deployed')renderDown();
+    else if(st==='franchise')renderOffice();
+    else if(WANT_AUTH&&!FR.signedIn())renderAuth();
+    else renderFound();
+  }
+  G.franchiseReady().then(function(){render();}).catch(function(){render();});
+  READY.catch(function(){});
+})();
+</script>
+</body>
+</html>

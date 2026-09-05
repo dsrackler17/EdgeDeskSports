@@ -20,6 +20,9 @@ on:
     paths:
       - 'games/**'
       - 'tools/games/**'
+      # the franchise suite pins the client's economy and identity lists to
+      # the shipped SQL, so a change to the SQL must run it
+      - 'supabase/games_franchise.sql'
       # The suites are invoked through an npm script, so the manifest that
       # defines that script is part of what they depend on. package.json was
       # once merged as invalid JSON and every `npm run` failed until it was
@@ -36,6 +39,7 @@ on:
     paths:
       - 'games/**'
       - 'tools/games/**'
+      - 'supabase/games_franchise.sql'
       - 'package.json'
       - '.github/workflows/games-tests.yml'
   workflow_dispatch:
