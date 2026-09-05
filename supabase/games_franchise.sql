@@ -1934,13 +1934,18 @@ begin
   qb_yds := round(rush_yds * qb_share)::int; qb_car := round(rush_plays * qb_share)::int;
   rb1_yds := round((rush_yds - qb_yds) * 0.72)::int; rb2_yds := rush_yds - qb_yds - rb1_yds;
   rb1_car := round((rush_plays - qb_car) * 0.72)::int; rb2_car := rush_plays - qb_car - rb1_car;
-  -- receiving by share; the third receiver takes what rounding left, so the
-  -- six lines add up to the team's passing yards exactly
-  for j in 1..6 loop
-    if j <> 3 then rec_yds[j] := round(pass_yds * rec_w[j])::int; rec_cnt[j] := round(cmp * rec_w[j])::int; end if;
-  end loop;
-  rec_yds[3] := greatest(0, pass_yds - rec_yds[1] - rec_yds[2] - rec_yds[4] - rec_yds[5] - rec_yds[6]);
-  rec_cnt[3] := greatest(0, cmp - rec_cnt[1] - rec_cnt[2] - rec_cnt[4] - rec_cnt[5] - rec_cnt[6]);
+  -- receiving by share, rounded cumulatively (each receiver takes the
+  -- difference of two rounded running totals), so the six lines add up to
+  -- the team's passing yards and completions exactly, whatever the totals
+  declare cum numeric := 0; prev_y integer := 0; prev_c integer := 0; cy integer; cc integer;
+  begin
+    for j in 1..6 loop
+      cum := cum + rec_w[j];
+      if j = 6 then cy := pass_yds; cc := cmp; else cy := round(pass_yds * cum)::int; cc := round(cmp * cum)::int; end if;
+      rec_yds[j] := greatest(0, cy - prev_y); rec_cnt[j] := greatest(0, cc - prev_c);
+      prev_y := cy; prev_c := cc;
+    end loop;
+  end;
 
   -- the defensive tally: tackles by weight, sacks and interceptions by draw
   tkl_total := round(opp_plays * 0.85)::int;

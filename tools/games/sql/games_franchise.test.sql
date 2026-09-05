@@ -37,6 +37,28 @@ begin
   perform set_config('request.jwt.claim.sub', '', false);
   execute 'reset role';
 end; $$;
+-- a box whose lines add up to its team totals: passing yards to the
+-- receivers, rushing yards to the rushers, touchdowns to the scorers,
+-- completions to the catches, and the final to the quarters
+create or replace function pg_temp.box_adds_up(b jsonb) returns boolean language sql as $$
+  select (select coalesce(sum((p->'stats'->>'yds')::int), 0) from jsonb_array_elements(b->'players') p where p->>'position' in ('WR','TE'))
+       + (select coalesce(sum((p->'stats'->>'rec_yds')::int), 0) from jsonb_array_elements(b->'players') p where p->>'position' = 'RB')
+       = (b->'team'->'for'->>'pass_yds')::int
+     and (select coalesce(sum((p->'stats'->>'rec')::int), 0) from jsonb_array_elements(b->'players') p where p->>'position' in ('WR','TE','RB'))
+       = (select (p->'stats'->>'cmp')::int from jsonb_array_elements(b->'players') p where p->>'position' = 'QB')
+     and (select coalesce(sum((p->'stats'->>'yds')::int), 0) from jsonb_array_elements(b->'players') p where p->>'position' = 'RB')
+       + (select coalesce(sum((p->'stats'->>'rush_yds')::int), 0) from jsonb_array_elements(b->'players') p where p->>'position' = 'QB')
+       = (b->'team'->'for'->>'rush_yds')::int
+     and (select coalesce(sum((p->'stats'->>'td')::int), 0) from jsonb_array_elements(b->'players') p where p->>'position' in ('WR','TE','RB'))
+       + (select coalesce(sum((p->'stats'->>'rec_td')::int), 0) from jsonb_array_elements(b->'players') p where p->>'position' = 'RB')
+       + (select coalesce(sum((p->'stats'->>'rush_td')::int), 0) from jsonb_array_elements(b->'players') p where p->>'position' = 'QB')
+       = (b->'team'->'for'->>'td')::int
+     and (select coalesce(sum((p->'stats'->>'td')::int), 0) from jsonb_array_elements(b->'players') p where p->>'position' = 'QB')
+       = (b->'team'->'for'->>'pass_td')::int
+     and (select sum(q::int) from jsonb_array_elements_text(b->'quarters'->'for') q) = (b->'final'->>'for')::int
+     and (select sum(q::int) from jsonb_array_elements_text(b->'quarters'->'against') q) = (b->'final'->>'against')::int
+     and (select bool_and((p->'stats'->>'yds')::int >= 0 and coalesce((p->'stats'->>'rec')::int, 0) >= 0) from jsonb_array_elements(b->'players') p where p->'stats' ? 'yds');
+$$;
 
 do $test$
 declare
@@ -893,6 +915,7 @@ begin
       + (select coalesce(sum((p->'stats'->>'rush_yds')::int), 0) from jsonb_array_elements(box->'players') p where p->>'position' = 'QB')
       = (box->'team'->'for'->>'rush_yds')::int
     and (select coalesce(sum((p->'stats'->>'td')::int), 0) from jsonb_array_elements(box->'players') p where p->>'position' in ('WR','TE','RB'))
+      + (select coalesce(sum((p->'stats'->>'rec_td')::int), 0) from jsonb_array_elements(box->'players') p where p->>'position' = 'RB')
       + (select coalesce(sum((p->'stats'->>'rush_td')::int), 0) from jsonb_array_elements(box->'players') p where p->>'position' = 'QB')
       = (box->'team'->'for'->>'td')::int);
   perform pg_temp.ok('the quarterback''s line is the passing game', 
@@ -913,12 +936,13 @@ begin
 
   -- the distribution: a much weaker club loses most of the time, a much stronger one wins most of the time
   select seed, opponent into seed0, opp0 from public.franchise_games where id = gid;
-  w := 0; l := 0;
+  w := 0; l := 0; nn := 0;
   update public.franchise_games set opponent = opponent || '{"offense_r":58,"defense_r":58,"special_r":58}'::jsonb where id = gid;
   for k in 1..40 loop
     update public.franchise_games set seed = md5('weak:' || k) where id = gid;
     box2 := public.franchise_sim(fa, gid);
     if box2->>'result' = 'W' then w := w + 1; elsif box2->>'result' = 'L' then l := l + 1; end if;
+    if not pg_temp.box_adds_up(box2) then nn := nn + 1; end if;
   end loop;
   perform pg_temp.ok('forty games against a 58: at least 28 wins', w >= 28, w || ' wins, ' || l || ' losses');
   w := 0; l := 0;
@@ -927,8 +951,10 @@ begin
     update public.franchise_games set seed = md5('strong:' || k) where id = gid;
     box2 := public.franchise_sim(fa, gid);
     if box2->>'result' = 'W' then w := w + 1; elsif box2->>'result' = 'L' then l := l + 1; end if;
+    if not pg_temp.box_adds_up(box2) then nn := nn + 1; end if;
   end loop;
   perform pg_temp.ok('forty games against an 88: at most 14 wins', w <= 14, w || ' wins, ' || l || ' losses');
+  perform pg_temp.ok('every one of those eighty boxes adds up, line for line', nn = 0, nn || ' did not');
   update public.franchise_games set seed = seed0, opponent = opp0 where id = gid;
   perform pg_temp.ok('the game is as it was', public.franchise_sim(fa, gid) = box);
 
