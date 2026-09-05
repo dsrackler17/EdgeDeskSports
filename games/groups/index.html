@@ -52,12 +52,13 @@
 <script src="/games/lib/research_state.js"></script>
 <script src="/games/lib/attribution.js"></script>
 <script src="/games/lib/store.js"></script>
+<script src="/games/lib/dynasty.js"></script>
 <script src="/games/lib/social.js"></script>
 <script src="/games/games.js"></script>
 <script>
 (function(){
   'use strict';
-  var G=window.EDGames,S=window.EDGamesSocial,W=window.EDGamesWeek;
+  var G=window.EDGames,S=window.EDGamesSocial,W=window.EDGamesWeek,ST=window.EDGamesStore;
   var $=function(id){return document.getElementById(id);};
   var stage=$('stage'),after=$('after');
   var TOKEN=null;
@@ -135,6 +136,9 @@
         if(!r.ok){G.toast(r.message||'Could not create the group.');return;}
         G.track('group_create',{game_type:'group'});
         G.track('group_invite_generated',{game_type:'group'});
+        /* on the record before the page leaves; the War Room celebrates it
+           on the next page that loads */
+        try{ST.recordEvent('group_create',r.data.invite_token,{name:name.value.trim().slice(0,40)});}catch(_){}
         location.href='/games/groups/'+encodeURIComponent(r.data.invite_token);
       });
     });
@@ -167,7 +171,9 @@
       S.joinGroup(TOKEN).then(function(r){
         if(!r.ok){j.disabled=false;j.textContent='Join';G.toast(r.message||'Could not join.');return;}
         G.track('group_join',{game_type:'group'});
+        try{ST.recordEvent('group_join',TOKEN,null);}catch(_){}
         load();
+        setTimeout(function(){try{G.pulse({game_type:'group'});}catch(_){}},900);
       });
     });
     var si=$('signin');
