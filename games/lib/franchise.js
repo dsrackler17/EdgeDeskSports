@@ -43,6 +43,12 @@
     h2h_locked:    { xp: 40, cp: 1 },
     h2h_win:       { xp: 20, cp: 2 },
     founded:       { tc: 100 },
+    /* the weekly game (Phase 2): playing it, winning it, beating the
+       rival, finishing a season */
+    weekly_game:   { xp: 100, tc: 40 },
+    weekly_win:    { xp: 60, tc: 60, cp: 2 },
+    rival_win:     { xp: 50, cp: 1 },
+    season_complete: { xp: 250, tc: 150 },
     import_unverified_price_it: { xp: 50 },
     import_unverified_pick5:    { xp: 75 }
   };
@@ -76,6 +82,10 @@
       case 'h2h_locked': return { xp: ECONOMY.h2h_locked.xp, cp: ECONOMY.h2h_locked.cp };
       case 'h2h_win': return { xp: ECONOMY.h2h_win.xp, cp: ECONOMY.h2h_win.cp };
       case 'founded': return { tc: ECONOMY.founded.tc };
+      case 'weekly_game': return { xp: ECONOMY.weekly_game.xp, tc: ECONOMY.weekly_game.tc };
+      case 'weekly_win': return { xp: ECONOMY.weekly_win.xp, tc: ECONOMY.weekly_win.tc, cp: ECONOMY.weekly_win.cp };
+      case 'rival_win': return { xp: ECONOMY.rival_win.xp, cp: ECONOMY.rival_win.cp };
+      case 'season_complete': return { xp: ECONOMY.season_complete.xp, tc: ECONOMY.season_complete.tc };
     }
     return {};
   }
@@ -179,7 +189,13 @@
     market_master: { name: 'Market Master' },
     first_card:    { name: 'First Card' },
     perfect_card:  { name: 'Perfect Card' },
-    first_h2h_win: { name: 'First Head-to-Head' }
+    first_h2h_win: { name: 'First Head-to-Head' },
+    first_win:      { name: 'First Win' },
+    bragging_rights: { name: 'Bragging Rights' },
+    shutout:        { name: 'Shutout' },
+    first_season:   { name: 'A Full Season' },
+    winning_season: { name: 'Winning Season' },
+    perfect_season: { name: 'Perfect Season' }
   };
   function achievementName(id) {
     var a = ACHIEVEMENTS[id];
@@ -192,6 +208,32 @@
     special: { K: 0.50, P: 0.50 },
     overall: { offense: 0.45, defense: 0.45, special: 0.10 }
   };
+
+  /* ── the weekly game, sim_v1 — the published shape of the simulator ────
+     The simulator runs on the server and nowhere else. These are the
+     numbers it publishes so a pregame can say what is in play: home field,
+     how much this week's preparation swings, and the scheme matchup table
+     (offense against defense, in rating points for the offense). The
+     table is pinned to franchise_scheme_edges() by the test suite. */
+  var SIM_VERSION = 'sim_v1';
+  var HOME_EDGE = 1.5;
+  var PREP_SWING = 3;                       /* preparation 0 → −3, 100 → +3 */
+  var SCHEME_EDGES = {
+    air_raid:   { four_three: 0, three_four: 0,  press_man: -2, zone: 1,  blitz_heavy: 2,  bend_dont_break: -1 },
+    spread:     { four_three: 0, three_four: -1, press_man: 1,  zone: 0,  blitz_heavy: 1,  bend_dont_break: -1 },
+    pro_style:  { four_three: 0, three_four: 1,  press_man: 0,  zone: 1,  blitz_heavy: -2, bend_dont_break: 1 },
+    power_run:  { four_three: 1, three_four: -2, press_man: 2,  zone: 0,  blitz_heavy: -1, bend_dont_break: 1 },
+    option:     { four_three: -1, three_four: 1, press_man: 1,  zone: -2, blitz_heavy: 1,  bend_dont_break: 0 },
+    west_coast: { four_three: 0, three_four: 0,  press_man: -1, zone: -1, blitz_heavy: 1,  bend_dont_break: 1 }
+  };
+  function schemeEdge(offense, defense) {
+    var row = SCHEME_EDGES[offense];
+    return row && row[defense] != null ? row[defense] : 0;
+  }
+  function prepAdj(preparation) {
+    var p = Math.max(0, Math.min(100, +preparation || 0));
+    return Math.round(((p - 50) / 50) * PREP_SWING * 100) / 100;
+  }
 
   function esc(s) {
     return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
@@ -207,15 +249,57 @@
   }
   function isStarter(p) { return !!p && (p.depth | 0) >= 1 && (p.depth | 0) <= (STARTERS[p.position] || 1); }
   function traitOf(p) { var t = p && p.traits; return (Array.isArray(t) && t.length) ? t[0] : null; }
+  /* A stat object as one line, by position. The keys are the ones the
+     simulator writes (franchise_sim_lines); a card's career and season
+     lines are the sums of its box scores. */
+  function statsLine(pos, c, o) {
+    c = c || {}; o = o || {};
+    var bits = [];
+    function n(k) { return c[k] == null ? 0 : +c[k] || 0; }
+    switch (pos) {
+      case 'QB':
+        if (c.att != null || c.yds != null) bits.push(n('cmp') + '/' + n('att') + ', ' + fmt(n('yds')) + ' yds');
+        if (n('td')) bits.push(n('td') + ' TD');
+        if (n('int')) bits.push(n('int') + ' INT');
+        if (n('rush_yds') >= 20 || n('rush_td')) bits.push(fmt(n('rush_yds')) + ' rush yds' + (n('rush_td') ? ', ' + n('rush_td') + ' rush TD' : ''));
+        break;
+      case 'RB':
+        if (c.car != null || c.yds != null) bits.push(n('car') + ' car, ' + fmt(n('yds')) + ' yds');
+        if (n('td')) bits.push(n('td') + ' TD');
+        if (n('rec')) bits.push(n('rec') + ' rec, ' + fmt(n('rec_yds')) + ' yds' + (n('rec_td') ? ', ' + n('rec_td') + ' TD' : ''));
+        break;
+      case 'WR': case 'TE':
+        if (c.rec != null || c.yds != null) bits.push(n('rec') + ' rec, ' + fmt(n('yds')) + ' yds');
+        if (n('td')) bits.push(n('td') + ' TD');
+        break;
+      case 'DL': case 'LB': case 'CB': case 'S':
+        if (c.tkl != null) bits.push(n('tkl') + ' tkl');
+        if (n('sacks')) bits.push(n('sacks') + (n('sacks') === 1 ? ' sack' : ' sacks'));
+        if (n('int')) bits.push(n('int') + ' INT');
+        break;
+      case 'K':
+        if (c.fga != null) bits.push(n('fg') + '/' + n('fga') + ' FG');
+        if (n('xp')) bits.push(n('xp') + ' PAT');
+        break;
+      case 'P':
+        if (c.punts != null) bits.push(n('punts') + ' punts' + (n('punts') && c.punt_yds != null ? ', ' + (n('punt_yds') / n('punts')).toFixed(1) + ' avg' : ''));
+        break;
+      case 'OL':
+        if (c.games != null) bits.push('started');
+        break;
+    }
+    if (o.games && c.games != null) bits.push(n('games') + ' GP');
+    return bits.join(', ');
+  }
   function careerLine(p) {
-    var c = (p && p.career_stats) || {}, bits = [];
-    if (c.yds != null) bits.push(fmt(c.yds) + ' YDS');
-    if (c.td != null) bits.push(fmt(c.td) + ' TD');
-    if (c.int != null) bits.push(fmt(c.int) + ' INT');
-    if (c.tkl != null) bits.push(fmt(c.tkl) + ' TKL');
-    if (c.sacks != null) bits.push(fmt(c.sacks) + ' SACKS');
-    if (c.games != null) bits.push(fmt(c.games) + ' GP');
-    return bits.length ? bits.join(' · ') : ('Career begins ' + (p && p.acquired_season ? p.acquired_season : ''));
+    var c = (p && p.career_stats) || {};
+    var line = statsLine(p && p.position, c, { games: true });
+    return line || ('Career begins ' + (p && p.acquired_season ? p.acquired_season : ''));
+  }
+  function seasonLine(p) {
+    var c = (p && p.season_stats) || {};
+    if (c.games == null) return '';
+    return statsLine(p && p.position, c, { games: true });
   }
   function acquiredLine(p) {
     if (!p) return '';
@@ -249,6 +333,7 @@
       + '<div class="pc-meta">Age ' + (p.age | 0) + ' <span class="sep">·</span> POT ' + (p.potential | 0)
       + ' <span class="sep">·</span> ' + esc(DEV_TIERS[p.dev_tier] || p.dev_tier || '') + '</div>'
       + '<div class="pc-acq"><span class="k">Acquired</span>' + esc(acquiredLine(p)) + '</div>'
+      + (seasonLine(p) ? '<div class="pc-career"><span class="k">This season</span>' + esc(seasonLine(p)) + '</div>' : '')
       + '<div class="pc-career"><span class="k">Career</span>' + esc(careerLine(p)) + '</div>'
       + (o.actions ? '<div class="pc-actions">' + o.actions + '</div>' : '')
       + '</article>';
@@ -333,6 +418,73 @@
       + 20 * Math.min(1, drills) + 15 * Math.min(1, research / 2)));
     var iq = week.price_it_avg_score == null ? null : Math.max(0, Math.min(100, Math.round(+week.price_it_avg_score)));
     return { version: PREP_VERSION, scouting: scouting, preparation: preparation, market_iq: iq };
+  }
+
+  /* ── the weekly game, on the client ─────────────────────────────────────
+     Pure reads of the home read model: where the season stands, who is
+     next, when the game opens, and how a result is said. Nothing here
+     decides a result; the server has already decided it or not yet. */
+  function opponentTitle(opp) { opp = opp || {}; return ((opp.city || '') + ' ' + (opp.name || '')).trim(); }
+  function matchupLine(game) { return game ? ((game.home ? 'vs ' : 'at ') + opponentTitle(game.opponent)) : ''; }
+  function resultLine(game) {
+    if (!game || game.status !== 'final') return '';
+    return (game.result || '') + ' ' + (game.score_for | 0) + '–' + (game.score_against | 0) + (game.ot ? ' (OT)' : '');
+  }
+  /* how long until a game opens, said plainly */
+  function opensIn(iso, nowMs) {
+    var t = Date.parse(String(iso || '').replace(' ', 'T')), now = nowMs || Date.now();
+    if (!isFinite(t)) return { ms: 0, days: 0, hours: 0, open: false, label: '' };
+    var ms = t - now;
+    if (ms <= 0) return { ms: 0, days: 0, hours: 0, open: true, label: 'open now' };
+    var hours = Math.ceil(ms / 3600000), days = Math.ceil(ms / 86400000);
+    return { ms: ms, days: days, hours: hours, open: false,
+      label: hours <= 24 ? ('opens in ' + hours + (hours === 1 ? ' hour' : ' hours')) : ('opens in ' + days + ' days') };
+  }
+  /* Where the franchise stands, for a page deciding what to show:
+       'preseason'  the season has no schedule yet (start it)
+       'ready'      the next game has opened — play it
+       'waiting'    the next game opens on its Saturday
+       'complete'   the season is over — start the next one
+       'between'    no game is scheduled (should not happen; say so) */
+  function gamePhase(snap, nowMs) {
+    if (!snap || !snap.franchise) return null;
+    var ss = snap.season || {}, ng = snap.next_game || null, now = nowMs || Date.now();
+    if (ss.status === 'preseason') return { phase: 'preseason', game: null, season: ss };
+    if (ss.status === 'complete') return { phase: 'complete', game: null, season: ss };
+    if (!ng) return { phase: 'between', game: null, season: ss };
+    var o = opensIn(ng.opens_at, now), open = ng.open === true || o.open;
+    return { phase: open ? 'ready' : 'waiting', game: ng, season: ss, opens: o };
+  }
+  /* what a pregame can say about the matchup, from the published numbers */
+  function matchupEdges(f, game, prep) {
+    if (!f || !game || !game.opponent) return null;
+    var opp = game.opponent, p = prep && prep.preparation != null ? prep.preparation : 0;
+    return {
+      home: game.home ? HOME_EDGE : 0,
+      prep: p, prep_adj: prepAdj(p),
+      scheme_offense: schemeEdge(f.offense, opp.defense),
+      scheme_defense: schemeEdge(opp.offense, f.defense),
+      offense: optionOf(OFFENSES, f.offense), defense: optionOf(DEFENSES, f.defense),
+      opp_offense: optionOf(OFFENSES, opp.offense), opp_defense: optionOf(DEFENSES, opp.defense)
+    };
+  }
+  /* the text a result is shared as: factual, no claim */
+  function gameShareText(f, game, season) {
+    if (!f || !game) return '';
+    var me = ((f.city || '') + ' ' + (f.name || '')).trim().toUpperCase(), opp = opponentTitle(game.opponent);
+    var L = [];
+    if (game.status === 'final') {
+      L.push(me + ' ' + (game.score_for | 0) + ', ' + opp + ' ' + (game.score_against | 0) + (game.ot ? ' (OT)' : ''));
+    } else {
+      L.push(me + ' ' + matchupLine(game));
+    }
+    L.push('EdgeDesk ' + ((season && season.label) || 'Season I') + ' · Week ' + (game.week | 0) + (game.rival ? ' · Rivalry game' : ''));
+    if (game.potg && game.potg.name) L.push('Player of the game: ' + game.potg.name + ', ' + game.potg.position + ' — ' + statsLine(game.potg.position, game.potg.stats));
+    if (season && game.status === 'final') L.push('Now ' + (season.wins | 0) + '–' + (season.losses | 0) + (season.ties ? '–' + season.ties : '') + '.');
+    L.push('');
+    L.push('Found yours:');
+    L.push('EdgeDesk Games');
+    return L.join('\n');
   }
 
   /* ── the anonymous envelope: what it would be worth, and its payload ──── */
@@ -500,6 +652,25 @@
   }
   function setStarter(playerId, slot) { return rpc('franchise_set_starter', withSecret({ p_player: playerId, p_slot: slot | 0 })); }
 
+  /* THE WEEKLY GAME. Playing is an action, not a record: it is never
+     queued, because a player must see the result the moment it exists.
+     The server refuses a game that has not opened and plays each exactly
+     once; the snapshot is refreshed from the server afterwards. */
+  function startSeason() {
+    return rpc('franchise_start_season', withSecret({})).then(function (r) {
+      if (r.ok && r.data && r.data.home) remember(r.data.home);
+      return r;
+    });
+  }
+  function playWeek() {
+    return rpc('franchise_play_week', withSecret({})).then(function (r) {
+      if (r.ok && r.data && r.data.totals) touchTotals(r.data.totals);
+      return r;
+    });
+  }
+  function schedule(number) { return rpc('franchise_schedule', withSecret({ p_number: number == null ? null : (number | 0) })); }
+  function game(id) { return rpc('franchise_game', withSecret({ p_game: String(id) })); }
+
   /* CLAIM the device's franchise into the account just signed in. Proof is
      the secret; the server refuses if the account already owns one, and
      says so. The cache moves with it. */
@@ -611,6 +782,11 @@
     ATTR_ORDER: ATTR_ORDER, ATTRS: ATTRS, ATTR_NAMES: ATTR_NAMES, RARITY: RARITY, DEV_TIERS: DEV_TIERS,
     ACHIEVEMENTS: ACHIEVEMENTS, achievementName: achievementName,
     RATING_WEIGHTS: RATING_WEIGHTS, PREP_VERSION: PREP_VERSION,
+    SIM_VERSION: SIM_VERSION, HOME_EDGE: HOME_EDGE, PREP_SWING: PREP_SWING, SCHEME_EDGES: SCHEME_EDGES,
+    schemeEdge: schemeEdge, prepAdj: prepAdj, statsLine: statsLine, seasonLine: seasonLine,
+    opponentTitle: opponentTitle, matchupLine: matchupLine, resultLine: resultLine, opensIn: opensIn,
+    gamePhase: gamePhase, matchupEdges: matchupEdges, gameShareText: gameShareText,
+    startSeason: startSeason, playWeek: playWeek, schedule: schedule, game: game,
     spForScore: spForScore, tcForScore: tcForScore, tcForDrill: tcForDrill, rewardsFor: rewardsFor,
     xpForLevel: xpForLevel, levelFor: levelFor, levelInfo: levelInfo,
     fullName: fullName, keyRatings: keyRatings, isStarter: isStarter, traitOf: traitOf,

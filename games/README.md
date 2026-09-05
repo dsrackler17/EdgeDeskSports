@@ -920,6 +920,64 @@ The persistent thing is the point. The record, the players, the ledger and
 the achievements are kept for good, so that a player can eventually say
 "I still have my original EdgeDesk team."
 
+## Phase 2 — the weekly game (Game Day)
+
+**Make Saturday matter.** Every franchise plays an eight-week season, one
+game a football week, against fictional clubs drawn from a pool of
+twenty-four (`franchise_opponents`), with a rival, chosen once for life, to
+close every season. `/games/gameday` is the room: before Saturday it shows
+who is next, what is in play and how prepared the week is; on Saturday it
+shows one button; afterwards, the result.
+
+* **The calendar rule.** Week *w* of a season belongs to the football week
+  *w − 1* weeks after the one the season opened in, and its game opens on
+  that week's Saturday at 07:00 UTC (Saturday everywhere in the United
+  States). A game stays playable until it is played, so a missed week is
+  not a lost game — but the preparation it runs on is the preparation
+  recorded in ITS football week, so a missed week is a game played
+  unprepared. Season I is scheduled the moment a franchise is founded, so
+  the HQ answers "who am I playing?" from the first second; the next season
+  starts when the player says so (`franchise_start_season`), numbered on,
+  with the season lines reset and the careers kept.
+* **The simulator, `sim_v1`, runs on the server and nowhere else.** A
+  possession model: eleven to fourteen drives a side, each one resolved
+  from the offense's effective rating against the defense's — team rating,
+  home field (+1.5), that week's preparation (−3 at 0% to +3 at 100%), the
+  published scheme matchup (`franchise_scheme_edges()`, −2 to +2, mirrored
+  as `EDFranchise.SCHEME_EDGES` and pinned by a test), and the starters'
+  traits. Overtime is two rounds, then a tie. It is seeded from the game's
+  server-derived seed, so the same game simulated twice is the same game;
+  a client sends "play" and nothing else. The box is stored on the game:
+  quarters, scoring plays that name the scorer, team totals, a line for
+  every starter that adds up to the team totals, and a player of the game.
+  Every starter's `season_stats` and `career_stats` grow by their box, so a
+  card's career line is the sum of its box scores.
+* **Preparation, `prep_v1`, is the server's number now.** `franchise_prep()`
+  restates `EDFranchise.prep` — three scouting reports are full Scouting;
+  the card, practice and film complete Preparation — and both sides are
+  pinned to the same worked examples by their test suites. The HQ and the
+  Game Day page show the server's number when the snapshot carries it.
+* **What it pays** (economy_v1, lines added): playing a game 100 XP and
+  40 TC; winning 60 XP, 60 TC and 2 CP; beating the rival 50 XP and 1 CP on
+  top; completing a season 250 XP and 150 TC. Achievements: First Win,
+  Bragging Rights, Shutout, A Full Season, Winning Season, Perfect Season.
+* **Server-authoritative, restated:** the schedule is drawn from a seed the
+  server derives and the opponent's strength is frozen on the game row;
+  `franchise_play_week()` locks the franchise row, plays the next scheduled
+  game exactly once, refuses a game that has not opened, writes the box and
+  the lines, moves the record and credits the ledger once per season-week.
+  The simulator, the scheduler and the writer are reachable by no client
+  role (report row 10).
+* **Save it, in one step.** Wherever a device-owned franchise is on screen
+  — the HQ, the Front Office, after a Game Day result, after a Price It —
+  one form: email, password, the 21+/Terms line, one button
+  (`EDGames.saveCard`). It creates the EdgeDesk account or, if the email
+  already has one, signs into it with the same password; the device's
+  franchise is claimed into it the moment it signs in. It is the same
+  Supabase account and the same `edgedesk_session` the research terminal
+  and the subscription use, so a player who later wants EdgeDesk Pro is
+  already signed in and only has to pick the plan.
+
 ## Phase 1 — what is built
 
 * `/games` is a football facility. The header names the rooms — HQ, War
@@ -942,6 +1000,10 @@ the achievements are kept for good, so that a player can eventually say
 * Price It, Pick 5 and the Drill file their results with the franchise and
   show what the ledger was credited. Head-to-Head credits through the
   existing settlement.
+* **Game Day** (`/games/gameday`, Phase 2): the weekly franchise game — the
+  matchup, the window, this week's preparation and what is in play; the
+  result with its box score and player of the game; the schedule, the
+  all-time record and the rivalry. Head-to-Head is linked from it.
 
 ## The one rule, again
 
@@ -963,6 +1025,8 @@ is scored against.
 | every credit | `franchise_credit()`: one ledger row per (franchise, currency, kind, key); the totals are recomputed from the ledger, never incremented |
 | an achievement | `franchise_award()`: once, and an exclusive one refuses any other season |
 | Head-to-Head | a trigger on `game_challenges.settled_at`, fired by the settlement `games_social.sql` already performs |
+| the schedule | `franchise_schedule_season()`: eight clubs from the pool, seeded from the franchise seed and the season number; the opponent's ratings frozen on the game row |
+| a game's result | `franchise_sim()`, seeded from the game's server-derived seed, over the roster, the scheme, the opponent and the week's recorded preparation; written once by `franchise_play_game()` |
 
 **The trust boundary, stated.** A Two-Minute Drill result is client-reported:
 the drill is built and scored in the browser from the same artifact, and the
@@ -990,6 +1054,10 @@ paid resources, and a subscriber earns exactly what anyone else earns.
 | a Head-to-Head settled (an account's or a device's entry) | 40 | | | 1 |
 | a Head-to-Head won | 20 | | | 2 |
 | founding the franchise | | | 100 | |
+| a weekly game played (Phase 2) | 100 | | 40 | |
+| a weekly game won | 60 | | 60 | 2 |
+| the rival beaten, on top | 50 | | | 1 |
+| a season completed | 250 | | 150 | |
 
 XP levels the franchise on the War Room's curve (`25 × (L − 1) × (L + 2)`,
 level 30 at 23,200). If any number changes, the version changes and this
@@ -1053,9 +1121,9 @@ The two engines this leaves room for:
   the summer's shorter events (Phases 4–5). It runs whether or not there is
   a slate this Saturday, on content the franchise universe generates.
 
-Phase 1 founds Season I in `preseason`, week 0 of 8. Nothing here advances a
-season yet; the model is laid down so that nothing has to be migrated when
-it does.
+Phase 1 laid the model down; Phase 2 runs it. Season I is scheduled at
+founding and advances one game a football week (see *Phase 2 — the weekly
+game*); the next season starts when the player says so.
 
 ## The roster
 
@@ -1077,9 +1145,12 @@ twenty seeds and refuses any outside the band.
 ## Deploying it
 
 1. Apply `supabase/games_social.sql` (already required by Head-to-Head).
-2. Apply `supabase/games_franchise.sql`. Its report should print nine `ok`
-   rows. Until it is applied, the Front Office and the Roster say so, and
-   Price It, Pick 5 and the Drill are unaffected.
+2. Apply `supabase/games_franchise.sql`. Its report should print twelve
+   `ok` rows. It is safe to re-run over a Phase 1 installation: the new
+   tables, the opponent pool, the new activity kinds and achievement rows
+   are added and nothing existing is rewritten. Until it is applied, the
+   Front Office, the Roster and Game Day say so, and Price It, Pick 5 and
+   the Drill are unaffected.
 3. Nothing else. `games/publish_board.js` runs from the existing
    `games-challenges.yml` (publishes the board) and `games-settle.yml`
    (publishes finals and settles Pick 5) with the repository's existing
@@ -1093,11 +1164,12 @@ twenty seeds and refuses any outside the band.
 The existing GA4 property, no second vendor. Added: `franchise_created` ·
 `franchise_home_view` · `franchise_signin` · `franchise_signup` ·
 `franchise_import` · `franchise_claimed` · `franchise_reward` ·
-`front_office_view` · `roster_view` · `player_view` · `roster_change`. Declared for the phases to come:
-`daily_objective_complete` · `scouting_spent` · `player_scouted` ·
-`weekly_game_started` · `weekly_game_completed` · `h2h_franchise_complete` ·
-`achievement_unlocked` · `season_complete` · `draft_pick` ·
-`trophy_room_view`. Every event now carries `identity`
+`front_office_view` · `roster_view` · `player_view` · `roster_change`.
+Phase 2 fires `gameday_view` · `season_started` · `weekly_game_started` ·
+`weekly_game_completed` · `achievement_unlocked` · `season_complete` ·
+`game_share`. Declared for the phases to come: `daily_objective_complete` ·
+`scouting_spent` · `player_scouted` · `h2h_franchise_complete` ·
+`draft_pick` · `trophy_room_view`. Every event now carries `identity`
 (`authenticated`/`anonymous`) and `has_franchise`.
 
 ## Tests
@@ -1113,17 +1185,24 @@ The existing GA4 property, no second vendor. Added: `franchise_created` ·
   determinism and the founding band, who can read what, Price It scored from
   the board and replayed for nothing, Pick 5 submitted, settled, and a perfect
   card paid once, the drill's boundary, the research cap, the depth chart,
-  the import, the Head-to-Head trigger through a correction, and the read
-  models. It skips loudly without Postgres; `games-sql.yml` refuses the skip.
+  the import, the Head-to-Head trigger through a correction, the read
+  models — and the weekly game: the schedule set at founding, the Saturday
+  window, a guessed secret refused, another account reading nothing, the
+  simulator deterministic and its lines adding up, the preparation read
+  pinned to the client's examples, forty games against a weak club and
+  forty against a strong one, a week paid once, the season completed and
+  the next one started with the careers kept. It skips loudly without
+  Postgres; `games-sql.yml` refuses the skip.
 
 ## Not built yet, on purpose
 
-The weekly franchise game and its simulator (Phase 2), franchise
-Head-to-Head context, rivalries and conferences (Phase 3), the Trophy Room
-page, facilities, player development and season rollover (Phase 4), the
-draft and the transfer market (Phase 5). The schema leaves room:
-`franchise_seasons` already holds a founder season in `preseason`,
-`game_players` carries `season_stats` and `career_stats`, traits carry an
-`effect` the simulator will read, and the ledger accepts a negative delta for
-spending. `franchise_activity` is the record every future reward derives
-from.
+Franchise Head-to-Head context, rivalries between players and conferences
+(Phase 3); the Trophy Room page, facilities, player development, ageing and
+the offseason between seasons (Phase 4); the draft and the transfer market
+(Phase 5); playoffs and standings against other players' franchises. The
+schema leaves room: `franchise_seasons.status` admits `playoffs`, the
+ledger accepts a negative delta for spending, traits with no simulator
+effect yet (Iron Man) are stated as such, and `franchise_activity` is the
+record every future reward derives from. The simulator is versioned
+(`sim_v1`) so a retuned one is a new version and old boxes stay true to the
+rules they were played under.

@@ -227,3 +227,130 @@
 .fo-list li::before{content:'';width:6px;height:6px;border-radius:50%;background:var(--val);flex:none;margin-top:8px}
 
 @media(prefers-reduced-motion:reduce){.meter .fill,.pc{transition:none}}
+
+/* ── GAME DAY (Phase 2) ─────────────────────────────────────────────────── */
+/* the matchup: two marks and the word between them */
+.gd-mu{display:grid;grid-template-columns:1fr auto 1fr;gap:10px;align-items:start;margin-top:14px}
+.gd-side{text-align:center;min-width:0;background:var(--cell);border:1px solid var(--line);border-radius:14px;padding:12px 8px}
+.gd-side .fr-mark{width:56px;height:56px;border-radius:14px}
+.gd-ab{font-family:'Space Grotesk',sans-serif;font-weight:800;font-size:13px;letter-spacing:.12em;color:var(--fr-primary,var(--val));margin-top:6px}
+.gd-nm{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:14px;line-height:1.2;margin-top:2px;overflow-wrap:break-word}
+.gd-ovr{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--dim);margin-top:4px}
+.gd-vs{align-self:center;text-align:center;font-family:'Space Grotesk',sans-serif;font-weight:800;font-size:18px;letter-spacing:.14em;color:var(--faint)}
+.gd-vs span{display:block;font-family:'Inter',sans-serif;font-size:10px;font-weight:700;letter-spacing:.12em;color:var(--faint);margin-top:2px}
+@media(min-width:560px){.gd-side{padding:16px 12px}.gd-side .fr-mark{width:72px;height:72px}.gd-nm{font-size:17px}.gd-vs{font-size:24px}}
+.gd-style{font-size:12.5px;color:var(--dim);text-align:center;margin-top:10px;line-height:1.5}
+.rival-tag{display:inline-block;font-style:normal;font-size:9.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--neg);
+  border:1px solid rgba(226,102,75,.45);border-radius:999px;padding:1px 7px;vertical-align:middle}
+
+/* the window: open, or waiting for Saturday */
+.gd-win{margin-top:14px;background:var(--cell);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+.gd-win.on{border-color:var(--fr-primary,var(--val-dim));background:rgba(63,184,131,.06)}
+.gd-win .t{font-family:'Space Grotesk',sans-serif;font-size:17px;font-weight:700;line-height:1.25}
+.gd-win .s{font-size:12.5px;color:var(--dim);margin-top:4px;line-height:1.5}
+.gd-win .btn-row{margin-top:10px}
+.gd-win .ftp{margin-top:10px;line-height:1.5}
+.gd-last{font-size:12.5px;color:var(--dim);margin-top:14px;line-height:1.5}
+.gd-last b{color:var(--text)}
+
+/* what is in play, and why it went this way */
+.gd-edges{list-style:none;margin:8px 0 0;padding:0;display:grid;gap:6px}
+.gd-edges li{display:grid;grid-template-columns:1fr auto;gap:2px 10px;align-items:baseline;background:var(--cell);border:1px solid var(--line);border-radius:10px;padding:8px 12px;font-size:13px}
+.gd-edges .k{color:var(--text)}
+.gd-edges b{font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;color:var(--dim)}
+.gd-edges b.pos{color:var(--val)}.gd-edges b.neg{color:var(--neg)}
+.gd-edges .s{grid-column:1/-1;font-size:11.5px;color:var(--faint)}
+
+/* between seasons */
+.gd-done{margin-top:14px;background:var(--cell);border:1px solid var(--line);border-radius:12px;padding:14px}
+.gd-done .rec{font-family:'Space Grotesk',sans-serif;font-size:42px;font-weight:700;line-height:1;color:var(--fr-primary,var(--val))}
+.gd-done .t{font-family:'Space Grotesk',sans-serif;font-size:17px;font-weight:700;line-height:1.25;margin-top:6px}
+.gd-done .s{font-size:12.5px;color:var(--dim);margin-top:4px;line-height:1.5}
+
+/* the result */
+.score{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.1fr) minmax(0,1fr);gap:6px;align-items:center;margin-top:14px;background:var(--cell);border:1px solid var(--line);border-radius:14px;padding:12px 6px}
+.score .side{text-align:center;min-width:0}
+.score .side .fr-mark{width:44px;height:44px;border-radius:11px}
+.score .ab{font-family:'Space Grotesk',sans-serif;font-weight:800;font-size:12px;letter-spacing:.12em;color:var(--fr-primary,var(--val));margin-top:4px}
+.score .n{font-family:'Space Grotesk',sans-serif;font-size:34px;font-weight:700;line-height:1;margin-top:2px;font-variant-numeric:tabular-nums}
+.score .res{text-align:center;min-width:0}
+.score .res b{display:block;font-family:'Space Grotesk',sans-serif;font-size:15px;font-weight:800;letter-spacing:.14em}
+.score .res span{display:block;font-size:11px;color:var(--faint);margin-top:4px;line-height:1.3;overflow-wrap:break-word}
+.score.w .res b{color:var(--val)}.score.l .res b{color:var(--neg)}.score.t .res b{color:var(--est)}
+.score.w{border-color:var(--val-dim)}.score.l{border-color:rgba(226,102,75,.4)}
+@media(min-width:560px){.score{grid-template-columns:minmax(0,1fr) minmax(0,auto) minmax(0,1fr);gap:10px;padding:14px 10px}.score .n{font-size:54px}.score .side .fr-mark{width:56px;height:56px}}
+
+.potg{margin-top:12px;background:var(--cell);border:1px solid var(--est);border-radius:12px;padding:12px 14px}
+.potg .k{font-size:10.5px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--est)}
+.potg .n{font-family:'Space Grotesk',sans-serif;font-size:19px;font-weight:700;line-height:1.2;margin-top:3px}
+.potg .n span{font-size:12px;color:var(--faint);font-family:'Inter',sans-serif;font-weight:600;margin-left:4px}
+.potg .l{font-size:13px;color:var(--dim);margin-top:3px;font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums}
+
+.qt{width:100%;border-collapse:collapse;margin-top:12px;font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;font-size:13px}
+.qt th{font-family:'Inter',sans-serif;font-size:10px;font-weight:700;letter-spacing:.1em;color:var(--faint);text-align:center;padding:4px 2px;border-bottom:1px solid var(--line)}
+.qt td{text-align:center;padding:7px 2px;border-bottom:1px solid var(--line)}
+.qt tr:last-child td{border-bottom:0}
+.qt .ab{text-align:left;font-family:'Space Grotesk',sans-serif;font-weight:800;letter-spacing:.1em;font-size:12px}
+.qt .t{font-weight:700;color:var(--text)}
+
+.plays{list-style:none;margin:8px 0 0;padding:0;display:grid;gap:5px}
+.plays li{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:baseline;font-size:13px;padding:7px 10px;border-radius:9px;background:var(--cell);border:1px solid var(--line)}
+.plays li.for{border-left:3px solid var(--fr-primary,var(--val))}
+.plays li.against{border-left:3px solid var(--line2);color:var(--dim)}
+.plays .q{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--faint);width:22px}
+.plays .d{min-width:0;line-height:1.35}
+.plays .sc{font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;font-size:12px;color:var(--faint);white-space:nowrap}
+
+.ts{width:100%;border-collapse:collapse;margin-top:8px;font-size:13px}
+.ts td{padding:7px 4px;border-bottom:1px solid var(--line)}
+.ts tr:last-child td{border-bottom:0}
+.ts .l,.ts .r{font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;font-weight:700;width:64px}
+.ts .r{text-align:right;color:var(--dim)}
+.ts .k{text-align:center;color:var(--faint);font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase}
+
+.lines{list-style:none;margin:8px 0 0;padding:0;display:grid;gap:5px}
+.lines li{display:grid;grid-template-columns:auto 1fr;gap:2px 10px;align-items:baseline;background:var(--cell);border:1px solid var(--line);border-radius:9px;padding:7px 10px;font-size:13px}
+.lines .p{font-family:'Space Grotesk',sans-serif;font-weight:800;font-size:11px;letter-spacing:.1em;color:var(--faint);width:26px}
+.lines .n{font-weight:600}
+.lines .l{grid-column:2;font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;font-size:12px;color:var(--dim)}
+
+/* the schedule */
+.sched{padding:6px 10px}
+.sched-row{display:grid;grid-template-columns:auto auto 1fr auto;gap:10px;align-items:center;min-height:var(--tap);padding:8px 4px;border-bottom:1px solid var(--line);color:var(--text);font-size:13.5px}
+.sched-row:last-child{border-bottom:0}
+a.sched-row:hover{text-decoration:none;background:var(--cell)}
+.sched-row .w{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--faint);width:36px}
+.sched-row .fr-mark{width:26px;height:26px;border-radius:7px}
+.sched-row .o{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sched-row .o small{display:block;font-size:11px;color:var(--faint);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sched-row .r{font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;font-size:12.5px;color:var(--faint);white-space:nowrap;text-align:right}
+.sched-row .r b.w{color:var(--val);width:auto;font-size:12.5px}.sched-row .r b.l{color:var(--neg)}.sched-row .r b.t{color:var(--est)}.sched-row .r b.go{color:var(--val)}
+
+/* the record */
+.hist{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.hist div{background:var(--cell);border:1px solid var(--line);border-radius:12px;padding:10px 6px;text-align:center;min-width:0}
+.hist .k{font-size:9.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--faint);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hist .v{font-family:'Space Grotesk',sans-serif;font-size:24px;font-weight:700;line-height:1.1;margin-top:3px;font-variant-numeric:tabular-nums}
+.gd-rival{display:flex;gap:12px;align-items:center;margin-top:12px;background:var(--cell);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+.gd-rival .fr-mark{width:34px;height:34px;border-radius:9px;flex:none}
+.gd-rival .k{font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--neg)}
+.gd-rival .n{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:16px;line-height:1.2;margin-top:2px}
+.gd-rival .s{font-size:12px;color:var(--dim);margin-top:2px;line-height:1.45}
+
+/* the HQ's next-up with an opponent mark */
+.hq-next .opp{display:flex;align-items:center;gap:10px}
+.hq-next .opp .fr-mark{width:40px;height:40px;border-radius:10px;flex:none}
+.hq-next .st{font-size:12px;margin-top:4px;color:var(--val);font-weight:600}
+.hq-next .st.wait{color:var(--dim);font-weight:500}
+
+/* ── SAVE IT, IN ONE STEP ──────────────────────────────────────────────── */
+.save-form{margin-top:12px}
+.save-t{font-family:'Space Grotesk',sans-serif;font-size:16px;font-weight:700;line-height:1.25;margin-bottom:8px}
+.save-row{display:grid;gap:8px}
+@media(min-width:560px){.save-row{grid-template-columns:1fr 1fr}}
+.save-row input{min-height:var(--tap);border-radius:11px;border:1px solid var(--line2);background:var(--ink);color:var(--text);padding:0 14px;font:500 16px 'Inter',sans-serif;width:100%}
+.save-row input:focus{border-color:var(--val);outline:0}
+.save-form .consent{margin-top:10px}
+.save-form .btn-row{margin-top:10px}
+.save-ftp{margin-top:10px;line-height:1.55}
+.linkish{background:none;border:0;padding:0;color:var(--val);font:inherit;cursor:pointer;text-decoration:underline}

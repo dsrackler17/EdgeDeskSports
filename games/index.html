@@ -29,8 +29,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/games/games.css?v=20260905b">
-<link rel="stylesheet" href="/games/franchise.css?v=20260905b">
+<link rel="stylesheet" href="/games/games.css?v=20260905c">
+<link rel="stylesheet" href="/games/franchise.css?v=20260905c">
 </head>
 <body>
 <div id="gh"></div>
@@ -53,6 +53,7 @@
   <section class="sec hide" id="heroHq" style="margin-top:0">
     <div class="hq" id="hq"></div>
     <div class="hq-note" id="hqNote"></div>
+    <div id="hqSave" style="margin-top:14px"></div>
   </section>
 
   <section class="hero" id="heroNew">
@@ -266,19 +267,19 @@
 <div id="gt"></div>
 <div id="gf"></div>
 
-<script src="/games/lib/week.js?v=20260905b"></script>
-<script src="/games/lib/scoring.js?v=20260905b"></script>
-<script src="/games/lib/challenge.js?v=20260905b"></script>
-<script src="/games/lib/research_state.js?v=20260905b"></script>
-<script src="/games/lib/attribution.js?v=20260905b"></script>
-<script src="/games/lib/store.js?v=20260905b"></script>
-<script src="/games/lib/dynasty.js?v=20260905b"></script>
-<script src="/games/lib/drill.js?v=20260905b"></script>
-<script src="/games/lib/leaderboard.js?v=20260905b"></script>
-<script src="/games/lib/social.js?v=20260905b"></script>
-<script src="/games/lib/auth.js?v=20260905b"></script>
-<script src="/games/lib/franchise.js?v=20260905b"></script>
-<script src="/games/games.js?v=20260905b"></script>
+<script src="/games/lib/week.js?v=20260905c"></script>
+<script src="/games/lib/scoring.js?v=20260905c"></script>
+<script src="/games/lib/challenge.js?v=20260905c"></script>
+<script src="/games/lib/research_state.js?v=20260905c"></script>
+<script src="/games/lib/attribution.js?v=20260905c"></script>
+<script src="/games/lib/store.js?v=20260905c"></script>
+<script src="/games/lib/dynasty.js?v=20260905c"></script>
+<script src="/games/lib/drill.js?v=20260905c"></script>
+<script src="/games/lib/leaderboard.js?v=20260905c"></script>
+<script src="/games/lib/social.js?v=20260905c"></script>
+<script src="/games/lib/auth.js?v=20260905c"></script>
+<script src="/games/lib/franchise.js?v=20260905c"></script>
+<script src="/games/games.js?v=20260905c"></script>
 <script>
 /* STALE SCRIPT GUARD. A browser can keep an old games.js or store.js for
    longer than it keeps this page, and a page built for the new library
@@ -323,7 +324,8 @@
     var snap=FR.snapshot();
     if(!snap||!snap.franchise)return false;
     var f=snap.franchise,id=FR.identity(f),res=snap.resources||{},rt=snap.rating||{},ss=snap.season||{},wk=snap.week||{};
-    var li=FR.levelInfo(res.xp),pr=FR.prep(wk);
+    var li=FR.levelInfo(res.xp),pr=snap.prep||FR.prep(wk);   /* the server's number when it has one */
+    var ph=FR.gamePhase(snap),ng=ph&&ph.game,lg=snap.last_game,rv=snap.rival;
     var today=W.dayKey(),wkKey=W.weekKey();
     var priced=FEATURED?!!ST.priceItResult(FEATURED.game_id):false;
     var drillDone=!!ST.drillDaily(today),card=ST.pick5Card(wkKey);
@@ -333,6 +335,11 @@
        the first thing not yet done today. */
     var rows=[],next=null,nextText=null,nextEarn=null;
     function row(done,text,href,earn,help){rows.push({done:done,text:text,href:href,earn:earn,help:help});if(!done&&!next){next=href;nextText=text;nextEarn=earn;}}
+    /* GAME DAY first: when Saturday's game is open it is the thing to do;
+       between seasons, starting the next one is */
+    if(ph&&ph.phase==='ready')row(false,'Game Day: play Week '+(ng.week|0)+' '+FR.matchupLine(ng),'/games/gameday/','+100 XP · +40 TC · a win +60 XP · +60 TC · +2 CP','Simulated from your roster, your scheme and this week’s preparation.');
+    else if(ph&&ph.phase==='complete')row(false,'Start the next season on Game Day','/games/gameday/','a new schedule','Eight games, one a week, and the rival to close it.');
+    else if(ph&&ph.phase==='preseason')row(false,'Set '+(ss.label||'Season I')+'’s schedule on Game Day','/games/gameday/','a schedule','Eight games, one a week, and a rival for life.');
     if(FEATURED)row(priced,priced?'Scouting report filed: '+FEATURED.away_team+' vs '+FEATURED.home_team:'File today’s scouting report: '+FEATURED.away_team+' vs '+FEATURED.home_team,
       '/games/price-it/?g='+encodeURIComponent(FEATURED.slug),'+50 XP · up to +40 SP · up to +20 TC','Scouting Points reveal prospects. '+(wk.price_it|0)+' of 3 this week.');
     row(drillDone,drillDone?'Practice: today’s drill done':'Practice: run today’s Two-Minute Drill','/games/two-minute-drill/','+40 XP · up to +30 TC','Team Credits pay for upgrades.');
@@ -345,13 +352,27 @@
       +'<div class="hq-name">'+G.esc(f.name)+'</div>'
       +'<div class="hq-line">'+G.esc(id.offense?id.offense.label:f.offense)+' · '+G.esc(id.defense?id.defense.label:f.defense)
       +' · <b>Founder Season '+G.esc(f.founded_season)+'</b></div></div>'
-      +'<div class="hq-rec">'+G.esc((ss.wins|0)+'–'+(ss.losses|0))+'<span class="s">'+G.esc(ss.label||'Season I')+' · '+G.esc(ss.status||'preseason')+'</span></div></div>'
-      /* 1. who am I playing — and the two calendars: the franchise's own
-         season, and the real football week that feeds it */
-      +'<div class="hq-next"><div><div class="k">Next up</div><div class="v">'+(ss.status==='preseason'?'Preseason':'Week '+(ss.week|0)+' of '+(ss.weeks|0))+'</div></div>'
-      +'<div><div class="v" style="font-size:15px">'+(ss.status==='preseason'?'Your first opponent is revealed when '+G.esc(ss.label||'Season I')+'’s schedule is set.':'Game Day is Saturday.')+'</div>'
-      +'<div class="s">Until then, every scouting report, card and drill counts toward this week’s preparation.</div></div></div>'
-      +'<div class="hq-cal"><span><b>'+G.esc(ss.label||'Season I')+'</b> · '+G.esc(ss.status==='preseason'?'preseason':'week '+(ss.week|0)+' of '+(ss.weeks|0))+' · '+(ss.weeks|0)+' weeks</span>'
+      +'<div class="hq-rec">'+G.esc((ss.wins|0)+'–'+(ss.losses|0)+(ss.ties?'–'+ss.ties:''))+'<span class="s">'+G.esc(ss.label||'Season I')+' · '+G.esc(ss.status||'preseason')+'</span></div></div>'
+      /* 1. who am I playing — the opponent by name and mark, when the game
+         opens, and the two calendars: the franchise's own season, and the
+         real football week that feeds it */
+      +'<div class="hq-next">'
+      +(ng
+        ?'<div class="opp">'+FR.logoSvg((ng.opponent||{}).logo,40,(ng.opponent||{}).theme)+'<div><div class="k">Next up · Week '+(ng.week|0)+' of '+(ss.weeks|0)+(ng.rival?' · <span class="rival-tag">Rival</span>':'')+'</div>'
+          +'<div class="v">'+G.esc(FR.matchupLine(ng))+'</div><div class="s">OVR '+G.esc((ng.opponent||{}).overall)+' · '+G.esc((ng.opponent||{}).style||'')+'</div></div></div>'
+          +'<div>'+(ph.phase==='ready'
+            ?'<div class="st">Saturday’s game is open. <a href="/games/gameday/">Play it now</a>.</div>'
+            :'<div class="st wait">Kicks off Saturday · '+G.esc(ph.opens?ph.opens.label:'')+'</div><div class="s">Every scouting report, card and drill this week counts toward it.</div>')
+          +(lg?'<div class="s">Last: <a href="/games/gameday/?game='+G.esc(lg.id)+'"><b>'+G.esc(FR.resultLine(lg))+'</b> '+G.esc(FR.matchupLine(lg))+'</a>'+(lg.potg?' · POTG '+G.esc(lg.potg.name):'')+'</div>':'')+'</div>'
+        :ph&&ph.phase==='complete'
+        ?'<div><div class="k">Complete</div><div class="v">'+G.esc(ss.label||'Season')+' · '+G.esc((ss.wins|0)+'–'+(ss.losses|0)+(ss.ties?'–'+ss.ties:''))+'</div></div>'
+          +'<div><div class="v" style="font-size:15px">The record is on the books.</div><div class="s"><a href="/games/gameday/">Start the next season</a> whenever you like; the careers and the trophies stay.</div></div>'
+        :'<div><div class="k">Next up</div><div class="v">'+(ss.status==='preseason'?'Preseason':'Week '+(ss.week|0)+' of '+(ss.weeks|0))+'</div></div>'
+          +'<div><div class="v" style="font-size:15px">'+(ss.status==='preseason'?'Your first opponent is revealed when '+G.esc(ss.label||'Season I')+'’s schedule is set.':'Game Day is Saturday.')+'</div>'
+          +'<div class="s">Until then, every scouting report, card and drill counts toward this week’s preparation.</div></div>')
+      +'</div>'
+      +'<div class="hq-cal"><span><b>'+G.esc(ss.label||'Season I')+'</b> · '+G.esc(ss.status==='preseason'?'preseason':ss.status==='complete'?'complete':'week '+((ss.week|0)+(ng?1:0))+' of '+(ss.weeks|0))+' · '+(ss.weeks|0)+' weeks'
+      +(rv&&rv.name?' · rival <b>'+G.esc(rv.name)+'</b> '+G.esc((rv.wins|0)+'–'+(rv.losses|0)):'')+'</span>'
       +'<span>'+(LIVE?'<b>'+G.esc(LIVE.season)+' CFB</b> · Week '+G.esc(LIVE.week)+' · live slate':'<b>Live slate</b> · loading')+'</span></div>'
       /* 2. what should I do today, and 3. what do I earn */
       +'<div class="eyebrow" style="margin:16px 0 0">Today</div>'
@@ -382,9 +403,16 @@
       +'<div class="res"><div class="sp"><div class="k">Scouting</div><div class="v">'+G.esc(FR.fmt(res.scouting_points))+'</div></div>'
       +'<div class="tc"><div class="k">Credits</div><div class="v">'+G.esc(FR.fmt(res.team_credits))+'</div></div>'
       +'<div class="cp"><div class="k">Coach</div><div class="v">'+G.esc(FR.fmt(res.coach_points))+'</div></div></div>'
-      +'<div class="btn-row two"><a class="btn" href="/games/roster/" data-cta="hq-roster">Roster</a><a class="btn" href="/games/franchise/" data-cta="hq-office">Front Office</a></div>';
+      +'<div class="btn-row two"><a class="btn" href="/games/gameday/" data-cta="hq-gameday">Game Day</a><a class="btn" href="/games/roster/" data-cta="hq-roster">Roster</a></div>'
+      +'<div class="btn-row"><a class="btn btn-ghost" href="/games/franchise/" data-cta="hq-office">Front Office</a></div>';
     $('hqNote').innerHTML=(cached?'<b>Showing the last copy EdgeDesk sent.</b> Reconnect to refresh. ':'')
       +'Free to play · No real-money wagering · Nothing in the franchise can be bought.';
+    /* a franchise that lives on this device alone: the one form that keeps it */
+    var sv=$('hqSave');
+    if(sv&&!sv.getAttribute('data-done')){
+      if(FR.owner()==='device'){sv.innerHTML=G.conversionCard('hq');G.wireConversion(function(){sv.setAttribute('data-done','1');setTimeout(function(){sv.innerHTML='';},2500);});}
+      else sv.innerHTML='';
+    }
     $('heroNew').classList.add('hide');$('heroBack').classList.add('hide');$('heroHq').classList.remove('hide');
     if(!HQ_TRACKED){HQ_TRACKED=true;G.track('franchise_home_view',{placement:'hq',level:li.level,overall:rt.overall,cached:!!cached});}
     return true;

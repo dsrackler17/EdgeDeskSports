@@ -1,0 +1,397 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-1PXVBV53FZ"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-1PXVBV53FZ');
+</script>
+<title>Game Day | EdgeDesk Games</title>
+<meta name="description" content="Your franchise plays every Saturday. Prepare during the week with real football, then play the game: a possession-by-possession result, a box score, a player of the game and a record that stays. Free to play, no real-money wagering.">
+<link rel="canonical" href="https://edgedesksports.com/games/gameday">
+<meta name="theme-color" content="#0b0d11">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230b0d11'/%3E%3Cpath d='M18 6 L23 6 L14 26 L9 26 Z' fill='%233fb883'/%3E%3C/svg%3E">
+<meta name="robots" content="index,follow">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="EdgeDesk Games">
+<meta property="og:url" content="https://edgedesksports.com/games/gameday">
+<meta property="og:title" content="Game Day — EdgeDesk Games">
+<meta property="og:description" content="Your franchise plays every Saturday. Prepare with real football, then play the game. Free to play.">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Game Day — EdgeDesk Games">
+<meta name="twitter:description" content="Your franchise plays every Saturday. Prepare with real football, then play the game.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/games/games.css?v=20260905c">
+<link rel="stylesheet" href="/games/franchise.css?v=20260905c">
+</head>
+<body>
+<div id="gh"></div>
+
+<main class="wrap" id="main">
+  <!-- GAME DAY ---------------------------------------------------------------
+       The weekly franchise game. Before Saturday: who is next, what is in
+       play, how prepared the week is. On Saturday: one button. After: the
+       result, the box score, the player of the game, what it paid, and the
+       one form that saves it all to an account. Every number here came from
+       the server; nothing on this page decides a result. -->
+  <div class="sec" style="margin-top:18px">
+    <div class="card" id="stage">
+      <div class="eyebrow">Game Day</div>
+      <div class="sk" style="width:55%;margin:16px 0"></div>
+      <div class="sk" style="width:35%;margin:10px 0"></div>
+      <div class="sk-label" style="text-align:left">Loading the week</div>
+    </div>
+  </div>
+  <div id="after"></div>
+</main>
+
+<div id="gt"></div>
+<div id="gf"></div>
+
+<script src="/games/lib/week.js?v=20260905c"></script>
+<script src="/games/lib/scoring.js?v=20260905c"></script>
+<script src="/games/lib/challenge.js?v=20260905c"></script>
+<script src="/games/lib/research_state.js?v=20260905c"></script>
+<script src="/games/lib/attribution.js?v=20260905c"></script>
+<script src="/games/lib/store.js?v=20260905c"></script>
+<script src="/games/lib/dynasty.js?v=20260905c"></script>
+<script src="/games/lib/social.js?v=20260905c"></script>
+<script src="/games/lib/auth.js?v=20260905c"></script>
+<script src="/games/lib/franchise.js?v=20260905c"></script>
+<script src="/games/games.js?v=20260905c"></script>
+<script>
+/* STALE SCRIPT GUARD. A browser can keep an old games.js or franchise.js for
+   longer than it keeps this page, and a page built for the new library then
+   dies on the first function the old copy lacks — a skeleton that never
+   fills. The asset URLs above carry a version token so that cannot happen
+   from here on; this is the belt for the braces: if a required function is
+   missing, say so and offer a fresh load instead of a dead screen. */
+(function(){
+  var need=['EDFranchise.playWeek','EDFranchise.gamePhase','EDFranchise.schedule','EDGames.saveCard','EDGames.franchiseReady'];
+  var miss=need.filter(function(k){var p=k.split('.'),o=window[p[0]];return !o||typeof o[p[1]]!=='function';});
+  if(!miss.length)return;
+  var host=document.getElementById('stage')||document.querySelector('main');
+  if(host)host.innerHTML='<div class="card"><div class="eyebrow">EdgeDesk Games</div>'
+    +'<div class="empty">This page needs a newer copy of EdgeDesk Games than your browser has kept.<br>'
+    +'<a class="btn btn-go" style="margin-top:14px" href="'+location.pathname+'?fresh='+Date.now()+'">Reload the page</a></div></div>';
+  try{console.warn('stale games scripts: '+miss.join(', '));}catch(_){}
+})();
+</script>
+<script>
+(function(){
+  'use strict';
+  var G=window.EDGames,ST=window.EDGamesStore,FR=window.EDFranchise,S=window.EDGamesSocial,W=window.EDGamesWeek;
+  var $=function(id){return document.getElementById(id);};
+  var stage=$('stage'),after=$('after');
+  var esc=G.esc,fmt=FR.fmt;
+  var READY=G.boot('gameday');
+  var SCHED=null,TRACKED=false;
+  var VIEW_GAME=(location.search.match(/[?&]game=([0-9a-f-]{36})/i)||[])[1]||null;
+  var MON=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  var DAYS=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  function dayLabel(iso){
+    var t=Date.parse(String(iso||'').replace(' ','T'));
+    if(!isFinite(t))return '';
+    var d=new Date(t);return DAYS[d.getDay()]+' '+d.getDate()+' '+MON[d.getMonth()];
+  }
+  function mark(f,size){return FR.logoSvg(f.logo,size||44,f.theme);}
+  function title(f){return ((f.city||'')+' '+(f.name||'')).trim();}
+
+  /* ---- no franchise yet --------------------------------------------------- */
+  function renderEmpty(state){
+    stage.className='card';
+    stage.innerHTML='<div class="fo-hero"><div class="eyebrow">Game Day</div>'
+      +'<h1>Every Saturday, a game.</h1>'
+      +'<p>Your franchise plays an eight-week season against fictional clubs, one game a football week. '
+      +'During the week you prepare with the real games — scouting reports, the card, the drill, the film. '
+      +'On Saturday the game is played on the server from your roster, your scheme, your opponent and how prepared the week was: '
+      +'a possession-by-possession result, a box score, a player of the game, and a record that stays.</p>'
+      +'<ul class="fo-list"><li>A rival for life. Every season ends against them.</li>'
+      +'<li>A win pays Team Credits and Coach Points. A season completed pays more.</li>'
+      +'<li>Miss a week and you still play the game — unprepared.</li></ul>'
+      +'<div class="btn-row"><a class="btn btn-go btn-big" href="/games/franchise/?intent=gameday" id="goFound">Found my franchise</a></div>'
+      +'<div class="ftp" style="margin-top:12px"><b>Free to play</b> · No account needed to start · Nothing here can be bought</div></div>';
+    after.innerHTML=state==='not_deployed'
+      ?'<div class="sec"><div class="card"><div class="empty">The franchise layer has not been deployed to this project yet. <a href="/games/status/">Status</a></div></div></div>'
+      :h2hCard();
+    var go=$('goFound');
+    if(go)go.addEventListener('click',function(){G.track('signup_start_from_games',{placement:'gameday',game_type:'franchise'});});
+  }
+
+  /* ---- the pregame -------------------------------------------------------- */
+  function prepList(prep){
+    var c=(prep&&prep.counts)||{},items=[];
+    var priced=c.price_it|0;
+    if(priced<3)items.push({t:'File a scouting report ('+priced+' of 3)',href:'/games/price-it/',w:'+'+Math.round(40/3)+'%'});
+    if(!c.pick5_submitted)items.push({t:'Submit your Pick 5 card',href:'/games/pick-5/',w:'+25%'});
+    if(!(c.drills|0))items.push({t:'Run the Two-Minute Drill',href:'/games/two-minute-drill/',w:'+20%'});
+    if((c.research|0)<2)items.push({t:'Open the research on a matchup ('+(c.research|0)+' of 2)',href:'/games/price-it/',w:'+'+(c.research?'7':'8')+'%'});
+    return items;
+  }
+  function edgeRow(k,v,s){
+    var n=+v||0,cls=n>0?'pos':n<0?'neg':'';
+    return '<li><span class="k">'+esc(k)+'</span><b class="'+cls+'">'+(n>0?'+':'')+esc(n)+'</b><span class="s">'+esc(s||'')+'</span></li>';
+  }
+  function pregame(snap,ph){
+    var f=snap.franchise,g=ph.game,opp=g.opponent||{},ss=snap.season||{};
+    var prep=snap.prep||FR.prep(snap.week||{}),ed=FR.matchupEdges(f,g,prep),todo=prepList(prep);
+    var ready=ph.phase==='ready';
+    return '<div class="eyebrow">Game Day · '+esc(ss.label||'Season I')+' · Week '+esc(g.week)+' of '+esc(ss.weeks||8)+(g.rival?' · <span class="rival-tag">Rivalry game</span>':'')+'</div>'
+      +'<div class="gd-mu">'
+      +'<div class="gd-side" style="'+FR.themeVars(f.theme)+'">'+mark(f,56)+'<div class="gd-ab">'+esc(f.abbr)+'</div><div class="gd-nm">'+esc(title(f))+'</div><div class="gd-ovr">OVR '+esc(snap.rating&&snap.rating.overall!=null?snap.rating.overall:'—')+'</div></div>'
+      +'<div class="gd-vs">'+(g.home?'VS':'AT')+'<span>'+(g.home?'Home':'Away')+'</span></div>'
+      +'<div class="gd-side" style="'+FR.themeVars(opp.theme)+'">'+FR.logoSvg(opp.logo,56,opp.theme)+'<div class="gd-ab">'+esc(opp.abbr)+'</div><div class="gd-nm">'+esc(FR.opponentTitle(opp))+'</div><div class="gd-ovr">OVR '+esc(opp.overall!=null?opp.overall:'—')+'</div></div>'
+      +'</div>'
+      +'<div class="gd-style">'+esc(opp.style||'')+' '+(ed.opp_offense?esc(ed.opp_offense.label)+' offense':'')+(ed.opp_defense?' · '+esc(ed.opp_defense.label)+' defense':'')+'</div>'
+      /* the window */
+      +(ready
+        ?'<div class="gd-win on"><div class="t">Saturday’s game is open.</div>'
+          +'<div class="btn-row"><button class="btn btn-go btn-big" type="button" id="playBtn">Play Week '+esc(g.week)+' · '+esc(FR.matchupLine(g))+'</button></div>'
+          +'<div class="ftp">Simulated on the server from your roster, your scheme, the opponent and this week’s preparation. Every game is played once; nothing can be replayed.</div></div>'
+        :'<div class="gd-win"><div class="t">Kicks off Saturday · '+esc(ph.opens?ph.opens.label:'')+'</div>'
+          +'<div class="s">Until then, every scouting report, card, drill and film session this week counts toward the game.</div></div>')
+      /* what is in play */
+      +'<div class="eyebrow" style="margin-top:16px">This week’s preparation</div>'
+      +'<div class="meter prep" style="margin-top:8px"><div class="k"><span>Preparation</span><b>'+esc(prep.preparation|0)+'%</b></div>'
+      +'<div class="bar"><div class="fill" style="width:'+(prep.preparation|0)+'%"></div></div>'
+      +'<div class="s">Swings the team '+(ed.prep_adj>0?'+':'')+esc(ed.prep_adj)+' rating points on Saturday (from −'+esc(FR.PREP_SWING)+' at 0% to +'+esc(FR.PREP_SWING)+' at 100%).</div></div>'
+      +(todo.length?'<ul class="obj" style="margin-top:8px">'+todo.map(function(t){
+          return '<li><span class="dot todo"></span><a href="'+esc(t.href)+'"><span class="t">'+esc(t.t)+'</span></a><span class="r">'+esc(t.w)+'</span></li>';
+        }).join('')+'</ul>':'<div class="ftp" style="margin-top:8px">The week’s work is done. The rest is Saturday.</div>')
+      +'<div class="eyebrow" style="margin-top:16px">What is in play</div>'
+      +'<ul class="gd-edges">'
+      +edgeRow('Home field',ed.home,g.home?'you are at home':'you are away')
+      +edgeRow((ed.offense?ed.offense.label:f.offense)+' vs their '+(ed.opp_defense?ed.opp_defense.label:opp.defense),ed.scheme_offense,'your offense against their defense')
+      +edgeRow('Their '+(ed.opp_offense?ed.opp_offense.label:opp.offense)+' vs your '+(ed.defense?ed.defense.label:f.defense),-ed.scheme_defense,'your defense against their offense')
+      +edgeRow('Preparation',ed.prep_adj,esc(prep.preparation|0)+'% this week')
+      +'</ul>'
+      +'<div class="ftp" style="margin-top:8px">In rating points, from the published table (sim_v1). Your starters’ traits add on the server; the result explains what applied.</div>'
+      +(snap.last_game?'<div class="gd-last">Last time out: <a href="/games/gameday/?game='+esc(snap.last_game.id)+'"><b>'+esc(FR.resultLine(snap.last_game))+'</b> '+esc(FR.matchupLine(snap.last_game))+'</a>'
+          +(snap.last_game.potg?' · POTG '+esc(snap.last_game.potg.name):'')+'</div>':'');
+  }
+
+  /* ---- between seasons ---------------------------------------------------- */
+  function seasonCard(snap,ph){
+    var ss=snap.season||{},f=snap.franchise,rec=snap.record||{},next=FR.levelInfo?null:null;
+    var nextN=(ss.number|0)+1;
+    if(ph.phase==='preseason'){
+      return '<div class="eyebrow">Game Day · '+esc(ss.label||'Season I')+'</div>'
+        +'<div class="gd-done"><div class="t">'+esc(ss.label||'Season I')+' is ready to be scheduled.</div>'
+        +'<div class="s">Eight games, one a football week, against clubs drawn around your team’s overall — and a rival, for life, to close it.</div></div>'
+        +'<div class="btn-row"><button class="btn btn-go btn-big" type="button" id="startBtn">Set the schedule and start '+esc(ss.label||'Season I')+'</button></div>';
+    }
+    if(ph.phase==='complete'){
+      return '<div class="eyebrow">Game Day · '+esc(ss.label||'Season')+' complete</div>'
+        +'<div class="gd-done"><div class="rec">'+esc((ss.wins|0)+'–'+(ss.losses|0)+(ss.ties?'–'+ss.ties:''))+'</div>'
+        +'<div class="t">'+esc(title(f))+' · '+esc(ss.label)+'</div>'
+        +'<div class="s">'+esc(fmt(ss.points_for))+' scored, '+esc(fmt(ss.points_against))+' allowed'+(rec.seasons?' · '+esc(rec.seasons)+' season'+(rec.seasons===1?'':'s')+' on the record':'')+'</div></div>'
+        +'<div class="btn-row"><button class="btn btn-go btn-big" type="button" id="startBtn">Start Season '+esc(roman(nextN))+'</button></div>'
+        +'<div class="ftp" style="margin-top:10px">The season lines reset; the careers, the record and the trophies stay. A new schedule is drawn around the team as it stands now.</div>';
+    }
+    return '<div class="eyebrow">Game Day</div><div class="empty">No game is scheduled. <a href="/games/status/">Status</a></div>';
+  }
+  function roman(n){var v=[10,9,5,4,1],s=['X','IX','V','IV','I'],o='';for(var i=0;i<v.length;i++){while(n>=v[i]){o+=s[i];n-=v[i];}}return o||'I';}
+
+  /* ---- the result --------------------------------------------------------- */
+  function qtable(box,f,opp){
+    var q1=(box.quarters&&box.quarters['for'])||[],q2=(box.quarters&&box.quarters.against)||[];
+    var ot=!!box.ot,n=ot?5:4,h='<table class="qt"><thead><tr><th></th>';
+    for(var i=0;i<n;i++)h+='<th>'+(i===4?'OT':'Q'+(i+1))+'</th>';
+    h+='<th>T</th></tr></thead><tbody>';
+    function row(ab,q,t){var r='<tr><td class="ab">'+esc(ab)+'</td>';for(var i=0;i<n;i++)r+='<td>'+esc(q[i]|0)+'</td>';return r+'<td class="t">'+esc(t)+'</td></tr>';}
+    h+=row(f.abbr,q1,box['final']['for'])+row(opp.abbr,q2,box['final'].against)+'</tbody></table>';
+    return h;
+  }
+  function teamStats(box){
+    var a=(box.team&&box.team['for'])||{},b=(box.team&&box.team.against)||{};
+    var rows=[['Total yards','yds'],['Passing','pass_yds'],['Rushing','rush_yds'],['Plays','plays'],['Turnovers','turnovers'],['Possessions','possessions']];
+    return '<table class="ts">'+rows.map(function(r){
+      return '<tr><td class="l">'+esc(a[r[1]]|0)+'</td><td class="k">'+esc(r[0])+'</td><td class="r">'+esc(b[r[1]]|0)+'</td></tr>';
+    }).join('')+'</table>';
+  }
+  function lines(box){
+    var ps=(box.players||[]).slice().filter(function(p){return p.position!=='OL'&&(+p.impact||0)>0;})
+      .sort(function(a,b){return (+b.impact||0)-(+a.impact||0);}).slice(0,7);
+    if(!ps.length)return '';
+    return '<ul class="lines">'+ps.map(function(p){
+      return '<li><span class="p">'+esc(p.position)+'</span><span class="n">'+esc(p.name)+'</span><span class="l">'+esc(FR.statsLine(p.position,p.stats))+'</span></li>';
+    }).join('')+'</ul>';
+  }
+  function why(box,f,opp){
+    var e=box.edges||{},tr=e.traits||{},prep=e.prep||{};
+    var rows=[];
+    rows.push(edgeRow('Home field',e.home,box.home?'at home':'away'));
+    rows.push(edgeRow('Preparation',e.prep_adj,(prep.preparation|0)+'% that week'));
+    rows.push(edgeRow((FR.optionOf(FR.OFFENSES,f.offense)||{}).label+' vs their '+(FR.optionOf(FR.DEFENSES,opp.defense)||{}).label,e.scheme_offense,'your offense'));
+    rows.push(edgeRow('Their '+(FR.optionOf(FR.OFFENSES,opp.offense)||{}).label+' vs your '+(FR.optionOf(FR.DEFENSES,f.defense)||{}).label,-(+e.scheme_defense||0),'your defense'));
+    if(tr.count)rows.push(edgeRow('Starters’ traits',Math.round(((+tr.offense||0)+(+tr.defense||0))*0.25*10)/10,tr.count+' traits in the lineup'));
+    return '<ul class="gd-edges">'+rows.join('')+'</ul>'
+      +'<div class="ftp" style="margin-top:8px">Effective ratings on the day: your offense '+esc(e.offense)+' vs their defense '+esc(e.opp_defense)+'; their offense '+esc(e.opp_offense)+' vs your defense '+esc(e.defense)+'. '+esc(e.possessions)+' possessions a side'+(box.ot?', overtime':'')+'. '+esc(box.sim||'sim_v1')+'.</div>';
+  }
+  function resultCard(game,snap,extra){
+    extra=extra||{};
+    var f=snap.franchise,box=game.box||{},opp=game.opponent||{},ss=extra.season||snap.season||{};
+    var res=game.result,cls=res==='W'?'w':res==='L'?'l':'t';
+    var potg=game.potg||box.potg;
+    var plays=(box.scoring||[]);
+    return '<div class="eyebrow">Final · '+esc(ss.label||'Season')+' · Week '+esc(game.week)+(game.rival?' · <span class="rival-tag">Rivalry game</span>':'')+(box.ot?' · Overtime':'')+'</div>'
+      +'<div class="score '+cls+'">'
+      +'<div class="side" style="'+FR.themeVars(f.theme)+'">'+mark(f,44)+'<div class="ab">'+esc(f.abbr)+'</div><div class="n">'+esc(game.score_for|0)+'</div></div>'
+      +'<div class="res"><b>'+(res==='W'?'WIN':res==='L'?'LOSS':'TIE')+'</b><span>'+(game.home?'vs':'at')+' '+esc(FR.opponentTitle(opp))+'</span></div>'
+      +'<div class="side" style="'+FR.themeVars(opp.theme)+'">'+FR.logoSvg(opp.logo,44,opp.theme)+'<div class="ab">'+esc(opp.abbr)+'</div><div class="n">'+esc(game.score_against|0)+'</div></div>'
+      +'</div>'
+      +(extra.rewards||'')
+      +(potg?'<div class="potg"><div class="k">Player of the game</div><div class="n">'+esc(potg.name)+' <span>'+esc(potg.position)+(potg.jersey!=null?' · #'+esc(potg.jersey):'')+'</span></div>'
+        +'<div class="l">'+esc(FR.statsLine(potg.position,potg.stats))+'</div></div>':'')
+      +(box.quarters?qtable(box,f,opp):'')
+      +(plays.length?'<div class="eyebrow" style="margin-top:14px">Scoring</div><ul class="plays">'+plays.map(function(p){
+          return '<li class="'+(p.side==='for'?'for':'against')+'"><span class="q">'+(p.q>4?'OT':'Q'+esc(p.q))+'</span><span class="d">'+esc(p.desc)+'</span><span class="sc">'+esc(p['for'])+'–'+esc(p.against)+'</span></li>';
+        }).join('')+'</ul>':'')
+      +(box.team?'<div class="eyebrow" style="margin-top:14px">Team</div>'+teamStats(box):'')
+      +(box.players?'<div class="eyebrow" style="margin-top:14px">Lines</div>'+lines(box):'')
+      +(box.edges?'<div class="eyebrow" style="margin-top:14px">Why it went this way</div>'+why(box,f,opp):'')
+      +'<div class="btn-row two" style="margin-top:16px"><button class="btn" type="button" id="shareGame">Share the result</button><a class="btn" href="/games/gameday/" id="backGd">Game Day</a></div>';
+  }
+
+  /* ---- the schedule and the history --------------------------------------- */
+  function scheduleSection(sc){
+    var ss=sc.season||{},games=sc.games||[];
+    return '<div class="sec"><div class="sec-h"><h2>'+esc(ss.label||'Season')+'</h2><span class="m">'+esc((ss.wins|0)+'–'+(ss.losses|0)+(ss.ties?'–'+ss.ties:''))+' · '+esc(ss.status||'')+'</span></div>'
+      +'<div class="card sched">'+(games.length?games.map(function(g){
+        var fin=g.status==='final',op=FR.opensIn(g.opens_at);
+        var right=fin?'<b class="'+(g.result==='W'?'w':g.result==='L'?'l':'t')+'">'+esc(FR.resultLine(g))+'</b>'
+          :(op.open?'<b class="go">Ready</b>':'<span>'+esc(dayLabel(g.opens_at))+'</span>');
+        var inner='<span class="w">Wk '+esc(g.week)+'</span>'+FR.logoSvg((g.opponent||{}).logo,26,(g.opponent||{}).theme)
+          +'<span class="o">'+esc(FR.matchupLine(g))+'<small>'+(g.rival?'<i class="rival-tag">Rival</i> · ':'')+'OVR '+esc((g.opponent||{}).overall)+(fin&&g.potg?' · POTG '+esc(g.potg.name):'')+'</small></span>'
+          +'<span class="r">'+right+'</span>';
+        return fin?'<a class="sched-row" href="/games/gameday/?game='+esc(g.id)+'">'+inner+'</a>':'<div class="sched-row">'+inner+'</div>';
+      }).join(''):'<div class="empty">No games scheduled.</div>')+'</div></div>';
+  }
+  function historySection(sc){
+    var rec=sc.record||{},rv=sc.rival||{},seasons=sc.seasons||[];
+    return '<div class="sec"><div class="sec-h"><h2>The record</h2><span class="m">permanent</span></div><div class="card">'
+      +'<div class="hist"><div><div class="k">All time</div><div class="v">'+esc((rec.wins|0)+'–'+(rec.losses|0)+(rec.ties?'–'+rec.ties:''))+'</div></div>'
+      +'<div><div class="k">Seasons</div><div class="v">'+esc(rec.seasons|0)+'</div></div>'
+      +'<div><div class="k">Rivalry</div><div class="v">'+esc((rv.wins|0)+'–'+(rv.losses|0)+(rv.ties?'–'+rv.ties:''))+'</div></div></div>'
+      +(rv.name?'<div class="gd-rival" style="'+FR.themeVars(rv.theme)+'">'+FR.logoSvg(rv.logo,34,rv.theme)+'<div><div class="k">Your rival, for life</div><div class="n">'+esc(FR.opponentTitle(rv))+'</div><div class="s">'+esc(rv.style||'')+' Every season ends against them.</div></div></div>':'')
+      +(seasons.length>1?'<table class="ledger-t" style="margin-top:12px">'+seasons.map(function(s){
+          return '<tr><td class="w">'+esc(s.label)+' <span style="color:var(--faint)">· '+esc(s.season)+'</span></td><td class="d">'+esc((s.wins|0)+'–'+(s.losses|0)+(s.ties?'–'+s.ties:''))+'</td><td class="t">'+esc(s.status)+'</td></tr>';
+        }).join('')+'</table>':'')
+      +'</div></div>';
+  }
+  function h2hCard(){
+    return '<div class="sec"><div class="card"><div class="eyebrow">Head-to-Head</div>'
+      +'<p style="margin:0;color:var(--dim);font-size:14px;line-height:1.6">Play a real person on a real game. Your pick stays sealed until they lock theirs; a settled challenge pays your franchise Coach Points.</p>'
+      +'<div class="btn-row two"><a class="btn btn-go" href="/games/h2h/">Start a challenge</a><a class="btn" href="/games/groups/">Groups</a></div></div></div>';
+  }
+
+  /* ---- render ------------------------------------------------------------- */
+  function renderStage(){
+    var snap=FR.snapshot();
+    if(!snap||!snap.franchise){renderEmpty(FR.state());return;}
+    var ph=FR.gamePhase(snap);
+    stage.className='card gd';
+    stage.setAttribute('style',FR.themeVars(snap.franchise.theme));
+    if(ph.phase==='ready'||ph.phase==='waiting')stage.innerHTML=pregame(snap,ph);
+    else stage.innerHTML=seasonCard(snap,ph);
+    wireStage(snap,ph);
+    if(!TRACKED){TRACKED=true;G.track('gameday_view',{phase:ph.phase,week:ph.game?ph.game.week:null,season:(snap.season||{}).number});}
+  }
+  function renderAfter(){
+    var html='';
+    if(SCHED){html+=scheduleSection(SCHED)+historySection(SCHED);}
+    html+=h2hCard();
+    after.innerHTML=html;
+  }
+  function wireStage(snap,ph){
+    var pb=$('playBtn');
+    if(pb)pb.addEventListener('click',function(){play(pb,snap,ph);});
+    var sb=$('startBtn');
+    if(sb)sb.addEventListener('click',function(){startSeason(sb);});
+  }
+  function play(btn,snap,ph){
+    btn.disabled=true;btn.textContent='Playing…';
+    G.track('weekly_game_started',{week:ph.game.week,season:(snap.season||{}).number,rival:!!ph.game.rival,home:!!ph.game.home,preparation:(snap.prep||{}).preparation});
+    FR.playWeek().then(function(r){
+      if(!r.ok||!r.data||!r.data.game){
+        G.toast(r.message||'The game could not be played. Try again.');
+        btn.disabled=false;btn.textContent='Play Week '+ph.game.week;
+        /* the server said when it opens: repaint from a fresh snapshot */
+        return FR.home().then(renderStage);
+      }
+      var d=r.data,g=d.game;
+      G.track('weekly_game_completed',{week:g.week,season:d.season?d.season.number:null,result:g.result,score_for:g.score_for,score_against:g.score_against,rival:!!g.rival,ot:!!g.ot,xp:d.rewards?d.rewards.xp:null});
+      (d.achievements||[]).forEach(function(id){G.track('achievement_unlocked',{achievement:id,placement:'gameday'});});
+      if(d.season_complete)G.track('season_complete',{season:d.season?d.season.number:null,wins:d.season?d.season.wins:null,losses:d.season?d.season.losses:null});
+      showResult(g,snap,{rewards:G.rewardPanel(r),season:d.season,fresh:true,complete:!!d.season_complete});
+      /* the snapshot and the schedule, refreshed from the server */
+      return FR.home().then(function(){return FR.schedule();}).then(function(s){if(s.ok&&s.data){SCHED=s.data;}renderAfter();});
+    });
+  }
+  function startSeason(btn){
+    btn.disabled=true;btn.textContent='Scheduling…';
+    FR.startSeason().then(function(r){
+      if(!r.ok){G.toast(r.message||'Could not start the season.');btn.disabled=false;btn.textContent='Start the season';return;}
+      if(r.data&&r.data.started){
+        G.track('season_started',{season:r.data.season_number});
+        var h=r.data.home||{},ng=h.next_game;
+        G.toast((h.season?h.season.label:'The season')+' is under way'+(ng?' · Week 1 '+FR.matchupLine(ng):''));
+      }
+      renderStage();
+      return FR.schedule().then(function(s){if(s.ok&&s.data)SCHED=s.data;renderAfter();});
+    });
+  }
+  function showResult(game,snap,extra){
+    stage.className='card gd';
+    stage.setAttribute('style',FR.themeVars(snap.franchise.theme));
+    stage.innerHTML=resultCard(game,snap,extra)
+      +(extra.complete?'<div class="gd-done" style="margin-top:14px"><div class="t">'+esc((extra.season||{}).label||'The season')+' is complete: '+esc(((extra.season||{}).wins|0)+'–'+((extra.season||{}).losses|0))+'.</div>'
+        +'<div class="s">The next one starts whenever you say. The careers and the record stay.</div>'
+        +'<div class="btn-row"><button class="btn btn-go" type="button" id="startBtn">Start the next season</button></div></div>':'')
+      /* the one form that keeps it: only for a franchise that lives on this device */
+      +(extra.fresh&&FR.owner()==='device'?'<div id="gdSave" style="margin-top:14px">'+G.conversionCard('gameday_after')+'</div>':'');
+    var sh=$('shareGame');
+    if(sh)sh.addEventListener('click',function(){shareGame(game,snap,extra.season);});
+    var sb=$('startBtn');
+    if(sb)sb.addEventListener('click',function(){startSeason(sb);});
+    G.wireConversion(function(){var s=$('gdSave');if(s)setTimeout(function(){s.innerHTML='';},2500);});
+    try{window.scrollTo({top:0,behavior:'smooth'});}catch(_){}
+  }
+  function shareGame(game,snap,season){
+    var text=FR.gameShareText(snap.franchise,game,season||snap.season),url=location.origin+'/games/gameday/';
+    G.track('game_share',{week:game.week,result:game.result});
+    if(navigator.share){return navigator.share({title:'EdgeDesk Games',text:text,url:url}).catch(function(){});}
+    var payload=text+'\n'+url;
+    if(navigator.clipboard&&navigator.clipboard.writeText){
+      return navigator.clipboard.writeText(payload).then(function(){G.toast('Copied — paste it anywhere');}).catch(function(){G.toast('Could not copy automatically');});
+    }
+    G.toast('Copy this: '+url);
+  }
+
+  /* ---- boot --------------------------------------------------------------- */
+  G.franchiseReady().then(function(){
+    var st=FR.state();
+    if(st!=='franchise'){renderEmpty(st);return;}
+    renderStage();
+    var loads=[FR.schedule().then(function(s){if(s.ok&&s.data)SCHED=s.data;renderAfter();})];
+    if(VIEW_GAME)loads.push(FR.game(VIEW_GAME).then(function(r){
+      if(r.ok&&r.data){showResult(r.data,FR.snapshot(),{season:null});}
+    }));
+    return Promise.all(loads);
+  }).catch(function(){renderEmpty(FR.state());});
+  document.addEventListener('edgames:franchise',function(){
+    /* a save, a claim or a sign-in changed who is on screen: repaint the
+       schedule's owner line without losing a result being read */
+    if(!$('shareGame'))renderStage();
+  });
+  READY.catch(function(){});
+})();
+</script>
+</body>
+</html>
