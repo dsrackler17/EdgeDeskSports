@@ -102,7 +102,7 @@ globalThis.fetch = async function (url, init) {
 };
 
 /* ---- fixtures ----------------------------------------------------------- */
-const NOW = Date.parse('2026-09-05T12:00:00.000Z');
+const NOW = Date.now();
 const KICK = new Date(NOW + 6 * 3600 * 1000).toISOString();     // 6h out -> "soon" bucket
 const AGO = (s) => new Date(NOW - s * 1000).toISOString();
 
