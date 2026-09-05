@@ -102,6 +102,23 @@ var API=resolveApiBase();
 function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
 function $(id){return document.getElementById(id);}
 function toast(m){var t=document.createElement('div');t.className='toast';t.textContent=m;document.body.appendChild(t);setTimeout(function(){t.remove();},2000);}
+/* A score typed into the results form. An EMPTY box used to post as 0 —
+   the unary plus on an empty string is 0, not NaN — so one click on Settle
+   with nothing typed settled a game 0-0, and the settlement then graded
+   every model on it against a score nobody scored. Empty is NaN here, and
+   only a whole number in a football range is a score. */
+function settleScore(v){
+  var s=String(v==null?'':v).trim();
+  if(!s)return NaN;
+  var n=Number(s);
+  return (isFinite(n)&&Math.floor(n)===n&&n>=0&&n<=200)?n:NaN;
+}
+/* The same rule collective/index.html reads results by: two zeros are the
+   signature of a blank form, never a final. */
+function isPlaceholderResult(r){
+  if(!r||r.home_score==null||r.away_score==null)return false;
+  return Number(r.home_score)===0&&Number(r.away_score)===0;
+}
 function rel(iso){if(!iso)return 'never';var s=(Date.now()-new Date(iso).getTime())/1e3;if(s<5400)return Math.max(1,Math.round(s/60))+'m ago';if(s<172800)return Math.round(s/3600)+'h ago';return Math.round(s/86400)+'d ago';}
 function cents(c){return c==null?'-':'$'+(c/100).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});}
 function copyWire(scope){(scope||document).querySelectorAll('[data-copy]').forEach(function(b){if(b._w)return;b._w=true;b.onclick=function(){var v=$(b.getAttribute('data-copy')).textContent;if(navigator.clipboard)navigator.clipboard.writeText(v).then(function(){toast('Copied');});};});}
@@ -633,9 +650,13 @@ async function secResults(app){
   var SP=await sports();
   if(!RES_SPORT){RES_SPORT=SP[0].code;RES_SEASON=seasonFor(SP,RES_SPORT);}
   var d=await api('/v1/games?sport='+encodeURIComponent(RES_SPORT)+'&season='+encodeURIComponent(RES_SEASON),{fn:'collective_public'});
-  var need=(d.games||[]).filter(function(g){return !g.result&&new Date(g.kickoff_at).getTime()<Date.now();});
+  /* Unsettled past games, plus any settled 0-0: that is the shape of this
+     form submitted with nothing typed in it (see settleScore), not a final,
+     and the fix is to settle the game again with the real score. */
+  var need=(d.games||[]).filter(function(g){return (!g.result||isPlaceholderResult(g.result))&&new Date(g.kickoff_at).getTime()<Date.now();});
   var rows=need.map(function(g,i){
-    return '<tr><td><b>'+esc(g.label)+'</b><br><span class="note">'+new Date(g.kickoff_at).toLocaleString()+'</span></td>'+
+    return '<tr><td><b>'+esc(g.label)+'</b><br><span class="note">'+new Date(g.kickoff_at).toLocaleString()+'</span>'+
+      (isPlaceholderResult(g.result)?'<br><span class="warnnote">Settled 0-0 &mdash; a placeholder, not a final. Every model on it is graded against nothing until it is settled again with the real score.</span>':'')+'</td>'+
       '<td><input id="rH'+i+'" placeholder="home"></td><td><input id="rA'+i+'" placeholder="away"></td>'+
       '<td><input id="rS'+i+'" placeholder="-2.5"></td><td><input id="rT'+i+'" placeholder="47.5"></td><td><input id="rM'+i+'" placeholder="0.62"></td>'+
       '<td id="rC'+i+'" data-g="'+esc(g.game_id)+'"><span class="note">checking&hellip;</span></td>'+
@@ -696,10 +717,12 @@ async function secResults(app){
   app.querySelectorAll('button[data-g]').forEach(function(b){
     b.onclick=async function(){
       var i=b.getAttribute('data-i');
-      var body={results:[{game_id:b.getAttribute('data-g'),home_score:+$('rH'+i).value,away_score:+$('rA'+i).value,
+      var hs=settleScore($('rH'+i).value),as=settleScore($('rA'+i).value);
+      if(isNaN(hs)||isNaN(as)){toast('Scores required: type both final scores as whole numbers');return;}
+      if(hs===0&&as===0){toast('0-0 is not a final. Type the actual score.');return;}
+      var body={results:[{game_id:b.getAttribute('data-g'),home_score:hs,away_score:as,
         closing_spread:$('rS'+i).value===''?null:+$('rS'+i).value,closing_total:$('rT'+i).value===''?null:+$('rT'+i).value,
         closing_home_ml_prob:$('rM'+i).value===''?null:+$('rM'+i).value}]};
-      if(isNaN(body.results[0].home_score)||isNaN(body.results[0].away_score)){toast('Scores required');return;}
       b.disabled=true;
       try{var r=await api('/v1/admin/results',{method:'POST',headers:{'content-type':'application/json'},body:body});toast('Settled. Graded '+(r.graded||0)+' projections.');render();}
       catch(e){toast(e.message);b.disabled=false;}

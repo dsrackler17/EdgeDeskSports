@@ -104,6 +104,38 @@ chk('a game the feed has not completed is skipped',
   S.findFinal(TCU_GAME, UNPLAYED).reason === 'not_final_in_feed');
 chk('a completed row with no score is skipped, never zero-filled',
   S.findFinal(TCU_GAME, [{ ...UNPLAYED[0], completed: true }]).reason === 'feed_row_has_no_score');
+
+/* ---- 0-0 is never a final ------------------------------------------------
+   Two games on the Collective were settled 0-0 — a results form posted with
+   nothing typed in it — and every model was graded against the placeholder.
+   Nothing that reads or writes a final may accept the shape: a feed row that
+   is "completed" at 0-0 is a postponed or canceled game or an unfilled
+   placeholder, and a game the Collective already holds at 0-0 is the one
+   settled result this script is allowed to write over, with the real score. */
+chk('a completed feed row at 0-0 is refused as a placeholder, not settled',
+  S.findFinal(TCU_GAME, [{ ...UNPLAYED[0], completed: true, home_points: '0', away_points: '0' }])
+    .reason === 'zero_zero_placeholder');
+chk('a real shutout still settles',
+  S.findFinal(TCU_GAME, [{ ...UNPLAYED[0], completed: true, home_points: '24', away_points: '0' }]).ok);
+chk('isPlaceholderResult names the shape and nothing else',
+  S.isPlaceholderResult({ home_score: 0, away_score: 0 }) &&
+  S.isPlaceholderResult({ home_score: '0', away_score: '0' }) &&
+  !S.isPlaceholderResult({ home_score: 0, away_score: 7 }) &&
+  !S.isPlaceholderResult({ home_score: null, away_score: null }) &&
+  !S.isPlaceholderResult(null));
+(() => {
+  const now = Date.parse('2026-09-05T12:00:00Z');
+  const games = [
+    { game_id: 'a', kickoff_at: '2026-08-29T16:00:00Z', status: 'final', result: { home_score: 0, away_score: 0 } },
+    { game_id: 'b', kickoff_at: '2026-08-29T16:00:00Z', status: 'final', result: { home_score: 31, away_score: 17 } },
+    { game_id: 'c', kickoff_at: '2026-08-29T16:00:00Z', status: 'scheduled', result: null },
+    { game_id: 'd', kickoff_at: '2026-09-12T16:00:00Z', status: 'scheduled', result: null },
+    { game_id: 'e', kickoff_at: '2026-08-29T16:00:00Z', status: 'postponed', result: { home_score: 0, away_score: 0 } },
+  ];
+  const ids = S.needsSettling(games, now).map(g => g.game_id).join(',');
+  chk('a game settled 0-0 is settled again; a real result, a future game and a postponement are not',
+    ids === 'a,c', { ids });
+})();
 chk('a game the feed does not carry at all is skipped',
   S.findFinal(TCU_GAME, []).reason === 'no_feed_row');
 chk('two rows for one game are refused rather than picked between',
@@ -137,6 +169,16 @@ chk('only unsettled, kicked-off, live games are touched',
 chk('nflverse marks a played game by carrying both scores',
   S.normNfl({ gameday: '2026-09-09', home_team: 'SEA', away_team: 'NE',
     home_score: '24', away_score: '20' }).completed === true);
+/* ESPN's postponed and canceled statuses sit in state "post" with
+   completed:false and both scores "0". Reading the state as corroboration
+   settled a game that was never played, 0-0. */
+chk('an ESPN postponed game is not completed, whatever its state says',
+  !S.espnCompleted({ name: 'STATUS_POSTPONED', state: 'post', completed: false }) &&
+  !S.espnCompleted({ name: 'STATUS_CANCELED', state: 'post', completed: false }) &&
+  !S.espnCompleted({ name: 'STATUS_CANCELED', state: 'post', completed: true }) &&
+  !S.espnCompleted({ name: 'STATUS_FINAL', state: 'post' }) &&
+  S.espnCompleted({ name: 'STATUS_FINAL', state: 'post', completed: true }) &&
+  !S.espnCompleted(null));
 chk('an unplayed nflverse row is not completed',
   S.normNfl({ gameday: '2026-09-09', home_team: 'SEA', away_team: 'NE',
     home_score: '', away_score: '' }).completed === false);

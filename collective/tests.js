@@ -1621,6 +1621,81 @@ if (typeof sandbox.localGrade === 'function') try {
     (function () { var r = G.finalResult(gm({ hs: 30, as: 20, close: null }));
       return r && r.margin === 10 && r.closing_spread === null; })());
 
+  /* ---- a 0-0 "final" is a blank form, not a score --------------------
+     The admin results form posted an EMPTY score box as 0, so one click
+     on Settle with nothing typed settled two games 0-0 and the server
+     graded every model on both: a margin error measured from zero, no ATS
+     result, a record of 0-0-0 over a log of 0-0 finals. */
+  chk('two zeros are a placeholder, never a final',
+    G.finalResult(gm({ hs: 0, as: 0 })) === null
+      && G.isPlaceholderResult({ home_score: 0, away_score: 0 })
+      && G.isPlaceholderResult({ home_score: '0', away_score: '0' })
+      && !G.isPlaceholderResult({ home_score: 0, away_score: 3 })
+      && !G.isPlaceholderResult({ home_score: null, away_score: null })
+      && !G.isPlaceholderResult(null),
+    'the admin form posted an empty score box as 0 and settled two games 0-0');
+  chk('a grade the server wrote against a placeholder is set aside, not shown',
+    (function () {
+      var g = gm({ hs: 0, as: 0 });
+      var mr = { creator_slug: 'a', model_slug: 'b', pick_side: 'home', projected_spread: -32,
+        grade: { pick_result: null, margin_error: 32, brier: null } };
+      var rec = G.modelRecord([g], 'a', 'b');
+      return G.rowGrade(g, mr) === null && rec.graded === 0 && rec.margin_n === 0 && !G.hasRecord(rec);
+    })(), 'a margin error measured from zero is not a margin error');
+  chk('once the real final is found the row is graded on it, by the page',
+    (function () {
+      var g = gm({ hs: 0, as: 0 });
+      g.settled_placeholder = true;
+      g.result = { home_score: 59, away_score: 28, closing_spread: -38.5, closing_total: null, source: 'espn' };
+      var mr = { creator_slug: 'a', model_slug: 'b', pick_side: 'home', projected_spread: -32,
+        grade: { pick_result: null, margin_error: 32, brier: null } };
+      var gr = G.rowGrade(g, mr);
+      return !!gr && gr.source === 'page' && gr.pick_result === 'loss' && near(gr.margin_error, 1);
+    })(), 'USC by 31 into a -38.5 close: the home side lost, and the margin error is 1, not 32');
+  chk('a placeholder still on the wire is not a settled game anywhere on the page',
+    (function () {
+      var g = gm({ hs: 0, as: 0 });
+      return G.placeholderSettled(g) && !G.placeholderSettled(gm({ hs: 30, as: 20 }))
+        && !G.placeholderSettled(gm({ result: null }));
+    })());
+  chk('a record with graded games and no decision in it is not 0-0-0',
+    G.recATSText({ graded: 2, wins: 0, losses: 0, pushes: 0, margin_n: 2 }) === null
+      && /no ATS picks/.test(G.recATSHtml({ graded: 2, wins: 0, losses: 0, pushes: 0 }))
+      && G.recATSText({ graded: 2, wins: 0, losses: 0, pushes: 2 }) === '0-0-2');
+  chk('a server log row that reads 0-0 is recognised as the placeholder',
+    G.placeholderLogRow({ final: '0-0' }) && G.placeholderLogRow({ final: '0 - 0' })
+      && G.placeholderLogRow({ home_score: 0, away_score: 0, final: 'x' })
+      && !G.placeholderLogRow({ final: '10-0' }) && !G.placeholderLogRow({ final: '0-7' })
+      && !G.placeholderLogRow({ final: '48 - 14' }) && !G.placeholderLogRow({}) && !G.placeholderLogRow(null));
+  chk('the server record and log go together, and go when either shows the placeholder',
+    (function () {
+      var d = { record: { graded: 2, wins: 0, losses: 0, pushes: 0, margin_n: 2, margin_mae: 22.25 },
+        recent_graded: [{ final: '0-0', margin_error: 32 }, { final: '0-0', margin_error: 12.5 }] };
+      var byRows = G.serverRecordFor(d, [], 'a', 'b');
+      var g = gm({ hs: 0, as: 0, models: [{ creator_slug: 'a', model_slug: 'b' }] });
+      var byGames = G.serverRecordFor({ record: d.record, recent_graded: [] }, [g], 'a', 'b');
+      var clean = G.serverRecordFor({ record: d.record, recent_graded: [{ final: '48 - 14' }] },
+        [gm({ hs: 48, as: 14 })], 'a', 'b');
+      var other = G.serverRecordFor({ record: d.record, recent_graded: [] }, [g], 'a', 'c');
+      return byRows.placeholders === 2 && byRows.rec === null && byRows.log.length === 0
+        && byGames.placeholders === 1 && byGames.rec === null
+        && clean.placeholders === 0 && clean.rec === d.record && clean.log.length === 1
+        && other.placeholders === 0 && other.rec === d.record;
+    })(), 'a record is only as good as the finals under it');
+  chk('shownRecord sets a server record aside for a model the placeholder was settled against',
+    (function () {
+      var srv = { graded: 2, wins: 0, losses: 0, pushes: 0, margin_n: 2 };
+      var loc = { 'a/b': { graded: 3, wins: 1, losses: 2, pushes: 0, margin_n: 3 } };
+      Object.defineProperty(loc, 'placeholderSettled', { value: { 'a/b': 1 }, enumerable: false });
+      var tainted = G.shownRecord(srv, loc, 'a', 'b');
+      var untouched = G.shownRecord(srv, loc, 'a', 'c');
+      var noLocal = G.shownRecord(srv, (function () {
+        var m = {}; Object.defineProperty(m, 'placeholderSettled', { value: { 'a/b': 1 }, enumerable: false }); return m; })(), 'a', 'b');
+      return tainted.rec === loc['a/b'] && tainted.live === true
+        && untouched.rec === srv && untouched.live === false
+        && noLocal.rec === null && Object.keys(loc).length === 1;
+    })(), 'nothing built on the placeholder is shown, not even as a fallback');
+
   /* ---- the projected margin ------------------------------------------ */
   chk('a home-stated spread is the NEGATION of the projected home margin',
     G.projectedMargin({ projected_spread: -12.5 }) === 12.5
@@ -3896,6 +3971,35 @@ chk('a second upload is not posted under the previous upload\'s week',
     /if\(!dry\)slateStep\(7\)/.test(CODE) && /slateStep\(\(\(c2\.rejected\|\|0\)>0/.test(CODE));
   chk('the receipt is the server\'s counts and says whose clock it printed',
     /Server received/.test(CODE) && /Posted from this device/.test(CODE) && /LAST_RECEIPT=\{/.test(CODE));
+})();
+
+/* =======================================================================
+   THE 0-0 PLACEHOLDER — the admin results form that produced it.
+
+   home_score:+$('rH'+i).value  posts an EMPTY box as 0, because the unary
+   plus on an empty string is 0 and not NaN, so the "Scores required" guard
+   never fired and one click on Settle with nothing typed settled a game
+   0-0. The form has to refuse an empty box, refuse 0-0 outright, and list
+   a game already settled 0-0 so it can be settled again with the score.
+   ======================================================================= */
+(function adminResultsForm() {
+  var ADMIN2 = fs.readFileSync(path.join(HERE, 'admin.html'), 'utf8');
+  chk('the results form refuses an empty score box instead of posting it as 0',
+    /function settleScore\(/.test(ADMIN2) && !/home_score:\+\$\(/.test(ADMIN2)
+      && /Scores required/.test(ADMIN2));
+  chk('and refuses a 0-0 final outright',
+    /0-0 is not a final/.test(ADMIN2));
+  chk('a game settled 0-0 is listed for settling again, and says why',
+    /isPlaceholderResult\(g\.result\)/.test(ADMIN2) && /a placeholder, not a final/.test(ADMIN2));
+  /* the parser itself, lifted out of the page and driven */
+  var m = /function settleScore\(v\)\{[\s\S]*?\n\}/.exec(ADMIN2);
+  var settleScore = null;
+  try { settleScore = m ? new Function(m[0] + '; return settleScore;')() : null; } catch (e) { settleScore = null; }
+  chk('an empty box is NaN, a whole number is a score, and nothing else is',
+    !!settleScore && isNaN(settleScore('')) && isNaN(settleScore('  ')) && isNaN(settleScore(null))
+      && settleScore('31') === 31 && settleScore(' 0 ') === 0 && isNaN(settleScore('17.5'))
+      && isNaN(settleScore('-1')) && isNaN(settleScore('x')) && isNaN(settleScore('999')),
+    { lifted: !!settleScore });
 })();
 
 /* ---- report ------------------------------------------------------------ */

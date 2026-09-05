@@ -29,8 +29,11 @@
      score, and the record is graded against nothing this script made up.
    - Nothing is written without --commit. The default run reports what it
      WOULD settle, which is how you check a matcher you cannot see.
-   - Only games already past kickoff and already unsettled are touched. It
-     never re-settles, never overwrites, never deletes.
+   - Only games already past kickoff and not yet settled are touched — plus
+     a game settled 0-0, which is a results form posted with nothing typed
+     in it rather than a settlement (no football game ends 0-0), and is the
+     one result this will write over, with the real final. It never
+     re-settles anything else, never overwrites, never deletes.
 
    AUTH
      COLLECTIVE_ADMIN_REFRESH_TOKEN  a Supabase refresh token for an
@@ -156,6 +159,15 @@ function isFinalScore(v) {
   const n = Number(v);
   return Number.isFinite(n) && Number.isInteger(n) && n >= 0 && n <= 200;
 }
+/* Two zeros are never a final. A feed row that is "completed" at 0-0 is a
+   postponed or canceled game, or a placeholder the source never filled, and
+   settling it graded every model on the game against a score nobody
+   scored. The same rule the Collective's own pages read results by. */
+function isPlaceholderResult(r) {
+  if (!r || r.home_score === null || r.home_score === undefined ||
+      r.away_score === null || r.away_score === undefined) return false;
+  return Number(r.home_score) === 0 && Number(r.away_score) === 0;
+}
 
 /* Every distinct team the feed knows, by key. Built once per feed so the
    ambiguity check below costs nothing per game. */
@@ -227,6 +239,9 @@ function findFinal(game, feedRows, keys) {
   if (!row.completed) return { ok: false, reason: 'not_final_in_feed' };
   if (!isFinalScore(row.home_points) || !isFinalScore(row.away_points)) {
     return { ok: false, reason: 'feed_row_has_no_score' };
+  }
+  if (Number(row.home_points) === 0 && Number(row.away_points) === 0) {
+    return { ok: false, reason: 'zero_zero_placeholder' };
   }
   /* Named, not hidden -- but only where a confusion was actually POSSIBLE.
      Flagging every truncated name that could denote several schools flags
@@ -339,6 +354,17 @@ function normCfb(r) {
  *
  * Every spelling ESPN knows is carried through, because the Collective stores
  * one truncated name and the join has to survive that. */
+/* ESPN's own word on whether a game was played to the end. Only the
+   `completed` flag counts. State "post" used to be accepted as
+   corroboration, but a postponed or canceled game also sits in state
+   "post" — the date is behind us, the game just never happened — with
+   completed:false and both scores "0", so reading the state settled a game
+   that was never played, 0-0. A status that says the game was not played
+   is refused by name as well, whatever the flag. */
+function espnCompleted(st) {
+  if (!st || st.completed !== true) return false;
+  return !/POSTPONED|CANCEL|SUSPEND|FORFEIT/i.test(String(st.name || ''));
+}
 function normEspn(ev) {
   const comp = (ev && ev.competitions && ev.competitions[0]) || {};
   const st = (comp.status && comp.status.type) || {};
@@ -357,9 +383,9 @@ function normEspn(ev) {
     away_team: (away.team && (away.team.location || away.team.displayName)) || '',
     home_names: names(home), away_names: names(away),
     home_points: score(home), away_points: score(away),
-    /* ESPN says so itself. `completed` is the flag; state "post" is the
-       corroboration. Neither is inferred from the clock or the score. */
-    completed: st.completed === true || String(st.state).toLowerCase() === 'post',
+    /* ESPN says so itself, and only the flag counts: see espnCompleted.
+       Nothing is inferred from the clock or the score. */
+    completed: espnCompleted(st),
     espn_status: st.name || st.description || '',
     source: 'espn',
   };
@@ -594,11 +620,14 @@ function parseArgs(argv) {
 }
 
 /* Which games are this script's business: past kickoff, and not already
-   settled. Both conditions come from the Collective itself, never from a
-   clock this script keeps. */
+   settled — or settled 0-0, which is not a settlement (see
+   isPlaceholderResult) and is written over with the real final. Every
+   condition comes from the Collective itself, never from a clock this
+   script keeps. */
 function needsSettling(games, nowMs) {
   return (games || []).filter(g =>
-    !g.result && g.kickoff_at && Date.parse(g.kickoff_at) < nowMs &&
+    (!g.result || isPlaceholderResult(g.result)) &&
+    g.kickoff_at && Date.parse(g.kickoff_at) < nowMs &&
     g.status !== 'postponed' && g.status !== 'canceled');
 }
 
@@ -630,7 +659,9 @@ async function main() {
     const d = await apiGet('collective_public',
       `/v1/games?sport=${encodeURIComponent(sp.code)}&season=${encodeURIComponent(sp.season)}`, token);
     const need = needsSettling(d.games, Date.now());
-    log(`- ${sp.code} ${sp.season}: ${need.length} finished game(s) with no result yet`);
+    const nPlaceholder = need.filter(g => isPlaceholderResult(g.result)).length;
+    log(`- ${sp.code} ${sp.season}: ${need.length - nPlaceholder} finished game(s) with no result yet` +
+      (nPlaceholder ? `, ${nPlaceholder} settled 0-0 (a placeholder, not a final: settled again with the real score)` : ''));
     if (!need.length) continue;
 
     /* Only the days this slate actually touches -- a Saturday board asks
@@ -668,6 +699,7 @@ async function main() {
       batch.push({ sport: sp.code, label: g.label, body, meta: fin });
       log(`  ✓ ${g.label}: ${fin.away_score}-${fin.home_score}` +
         `  [${fin.agreed_by.join('+')}${fin.matched_by === 'truncated' ? ', name truncated' : ''}]` +
+        (isPlaceholderResult(g.result) ? '  (replacing a 0-0 placeholder)' : '') +
         (fin.needs_review ? '  ⚠ REVIEW: ' + fin.joined : '') +
         (close ? '' : '  (no captured close — settling on the score alone)'));
     }
@@ -706,6 +738,7 @@ async function main() {
 
 module.exports = {
   teamKey, teamsAgree, teamsAgreeAny, namesOf, gameMatches, datesAgree, ymd, isFinalScore,
+  isPlaceholderResult, espnCompleted,
   findFinal, findAcrossSources, settleBody, needsSettling, parseCsv,
   normNfl, normCfb, normEspn, espnUrl, compactDate, parseArgs,
   feedTeamKeys, truncationIsAmbiguous,
