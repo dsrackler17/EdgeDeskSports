@@ -188,7 +188,12 @@ global.sessionValid = () => false;
 
 /* ------------------------------------------------------ per-sport capping */
 function game(sport, i, settled) {
-  const base = Date.parse('2026-09-05T00:00:00Z');
+  /* Anchored to the live clock, as the board() fixture below already is:
+     flatten() decides "upcoming" against Date.now(), so a fixture pinned to
+     a calendar date walked into the past on that date and every upcoming
+     game in it vanished — the check read "college football survives"
+     with 0 college games, on main, for nothing anyone changed. */
+  const base = Date.now();
   return {
     sport, home: sport + 'H' + i, away: sport + 'A' + i,
     label: sport + 'A' + i + ' @ ' + sport + 'H' + i,
