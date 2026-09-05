@@ -4140,16 +4140,7 @@ researchRegister({id:'football',label:'Football',schema:'public',cadenceMs:86400
   render:function(){if(typeof window.renderFootball==='function')window.renderFootball();},
   hasData:function(){return !!(window.FB&&window.FB.at);},
   search:function(q){return [];},
-  /* #research/football/<game_id> opens THAT game's card once the board has
-     painted it — the deep link EdgeDesk Games sends a player down when they
-     tap "research this matchup". The entity is a game id, optionally
-     prefixed "<sport>|"; a bare id is a college game. It rides the same
-     pendingOpen path the Desk's own game links use, so nothing new can
-     drift. entityOpen stays null: the game card is a scroll-and-highlight,
-     not a modal, so Back leaves the module the way it always did. */
-  openEntity:function(id){var s=String(id==null?'':id),p=s.split('|'),sport=p.length>1?p[0]:'ncaaf',gid=p[p.length-1];
-    if(gid&&typeof window.fbOpenGameFromDesk==='function')window.fbOpenGameFromDesk(sport,gid);},
-  closeEntity:null,entityOpen:null,
+  openEntity:null,closeEntity:null,entityOpen:null,
   freshness:function(){return {loadedAt:(window.FB&&window.FB.at)||null,builtAt:(window.FB&&window.FB.builtAt)||null};},
   /* the pipeline ledger (football/health.json pipeline_meta) is rendered by
      the panel's own System Health block, with status colour and row counts,

@@ -58,7 +58,6 @@
 <script src="/games/lib/research_state.js"></script>
 <script src="/games/lib/attribution.js"></script>
 <script src="/games/lib/store.js"></script>
-<script src="/games/lib/dynasty.js"></script>
 <script src="/games/games.js"></script>
 <script>
 (function(){
@@ -192,7 +191,6 @@
     G.track('pick5_complete',{game_type:'pick5',week:WEEK,games:GAMES.length});
     renderCard(card);
     try{window.scrollTo({top:0,behavior:'smooth'});}catch(_){window.scrollTo(0,0);}
-    setTimeout(function(){try{G.pulse({game_type:'pick5'});}catch(_){}},600);
   });
 
   /* ---- boot -------------------------------------------------------------- */
@@ -223,8 +221,6 @@
         if(r)outcomes[String(sel.game_id)]=r;
       });
       if(Object.keys(outcomes).length)card=ST.settlePick5(WEEK,outcomes)||card;
-      /* a side that settled correct is XP the player has not been shown yet */
-      setTimeout(function(){try{G.pulse({game_type:'pick5'});}catch(_){}},900);
     }
     if(card&&card.submitted_at){
       /* the card was built from the games it was submitted against */
