@@ -323,13 +323,13 @@
     stage.innerHTML='<div class="eyebrow">Head-to-Head</div>'
       +'<h1 style="font-size:24px;font-family:\'Space Grotesk\',sans-serif">'
       +(VS?('Challenge '+esc(VS)+'.<br>Settle it on the field.'):'Challenge a friend.<br>Settle it on the field.')+'</h1>'
-      +'<p style="color:var(--dim);font-size:14px;margin:10px 0 0">Pick a game, make your call, and send '
+      +'<p class="h2h-lede">Pick a game, make your call, send '
       +(VS?('the link to '+esc(VS)+'.'):'the link.')+' Your pick stays sealed until they make theirs.</p>'
       +rivalryLine(ser,true)
-      +'<div style="margin-top:18px"><div class="eyebrow">The game</div>'
+      +'<div class="h2h-blk"><div class="eyebrow">The game</div>'
       +'<select id="gamePick" class="btn" style="text-align:left;padding:0 14px" '
       +'aria-label="Choose a matchup">'+opts+'</select></div>'
-      +'<div style="margin-top:18px"><div class="eyebrow">The challenge</div>'
+      +'<div class="h2h-blk"><div class="eyebrow">The challenge</div>'
       +'<div class="modes" id="modes"></div></div>'
       +'<div id="pickHost"></div>'
       +'<div class="btn-row"><button class="btn btn-go" id="create" type="button" disabled>Create the challenge</button></div>'
@@ -399,15 +399,14 @@
       paint();
       return;
     }
-    host.innerHTML='<div style="margin-top:18px"><div class="eyebrow">Your pick</div>'
+    host.innerHTML='<div class="h2h-blk"><div class="eyebrow">Your pick</div>'
       +'<div class="sides">'
       +sideBtn(pseudo,'away',ch.away_team)+sideBtn(pseudo,'home',ch.home_team)
       +'</div></div>'
       +(DRAFT.mode==='spread'&&ch.market_spread!=null
         ? '<div class="locked-line"><span class="k">Locked line</span><span class="v">'
           +esc(G.line(ch,ch.market_spread))+'</span></div>'
-          +'<div class="ftp" style="margin-top:8px">This line is snapshotted now. Your challenge '
-          +'settles against it even if the market moves.</div>'
+          +'<div class="ftp" style="margin-top:6px">Snapshotted now — the challenge settles on this line wherever the market goes.</div>'
         :'');
     Array.prototype.forEach.call(host.querySelectorAll('.side'),function(b){
       b.addEventListener('click',function(){

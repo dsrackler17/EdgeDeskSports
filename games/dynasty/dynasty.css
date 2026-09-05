@@ -26,10 +26,12 @@
 /* the level line is the page's h1; the stage name inside it is a caption,
    not a heading weight */
 .room h1.lvl .s{font-weight:400}
-.room-blurb{font-size:13.5px;color:var(--dim);line-height:1.55;margin-top:12px}
+.room-blurb{font-size:13.5px;color:var(--dim);line-height:1.55;margin-top:8px}
 .room-scene{position:relative;background:var(--ink);border:1px solid var(--line);border-radius:12px;
   overflow:hidden}
-.room-scene svg{display:block;width:100%;height:150px}
+.room-scene svg{display:block;width:100%;height:118px}
+/* on a phone the room is a banner, not the point: the stations under it are.
+   118px keeps the first station inside a 390×844 screen for a returning player. */
 @media(min-width:560px){.room-scene svg{height:auto}}
 .room-scene.preview svg{opacity:.55}
 .room-tag{position:absolute;left:10px;top:8px;font-size:10px;font-weight:700;letter-spacing:.12em;
@@ -56,7 +58,7 @@
 .room-scene.still .tk,.room-scene.still .cur{animation:none}
 
 /* ── the stage ladder: the long-term goal, made visible ─────────────────── */
-.ladder{list-style:none;margin:12px 0 0;padding:0;display:flex;flex-wrap:wrap;gap:6px}
+.ladder{list-style:none;margin:8px 0 0;padding:0;display:flex;flex-wrap:wrap;gap:6px}
 .rung{display:inline-flex;align-items:center;gap:7px;border:1px solid var(--line);
   background:var(--cell);border-radius:999px;padding:7px 12px;font-size:11.5px;
   color:var(--faint);white-space:nowrap;min-height:32px}
