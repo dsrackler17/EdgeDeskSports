@@ -9,22 +9,31 @@
 # (tools/collective/settle_finals.js): it asks the Collective which of its own
 # past games have no result, looks the final up in the SAME public keyless
 # feeds the rest of this repo trusts, offers the Collective's own captured
-# closing line, and POSTs /v1/admin/results.
+# closing line, writes the score, and grades every counting projection on the
+# game by the published rule.
+#
+# IT RUNS ITSELF. The write goes straight to the database over PostgREST with
+# the service role this repository already holds for its other jobs
+# (SB_SERVICE_ROLE / SB_URL, the same names games-settle.yml uses) — no edge
+# function in the path and no token lifted out of a browser session. The job
+# reads the table shapes off the database first and writes only the columns
+# that exist. Whatever it settles, and every game the Collective already holds
+# a real final for, is also written to collective/settled/<SPORT>_<season>.json
+# and COMMITTED: the site reads that file from its own origin, so every
+# finished game is graded on the site whether or not any function was ever
+# deployed or reachable.
 #
 # It never invents a score and never invents a closing line. A game the feed
 # does not carry as completed, with two real scores, is skipped and named in
-# the run log rather than settled on a guess.
+# the run log rather than settled on a guess. 0-0 is never a final.
 #
-# SECRET (one, required to write):
-#   COLLECTIVE_ADMIN_REFRESH_TOKEN  a Supabase refresh token for an
-#     allowlisted admin account. Get it once from a signed-in admin session:
-#       JSON.parse(localStorage.getItem(
-#         Object.keys(localStorage).find(k => k.endsWith('-auth-token'))
-#       )).refresh_token
-#     Without it this workflow still runs `--verify`, which needs no
-#     credential at all: it reports which sources answered, what they carry,
-#     and which games have an agreed final. Nothing is written either way
-#     until the secret exists.
+# SECRETS (GitHub Actions repository secrets, not Supabase dashboard secrets):
+#   SB_SERVICE_ROLE  the project's service-role key   } the door this job
+#   SB_URL           the project URL                   } is written for
+#   COLLECTIVE_ADMIN_REFRESH_TOKEN  optional fallback: with no service
+#     credential the job settles through collective_admin instead, as before.
+#   With none of them the job still runs --verify, still builds the
+#   settlement record, and still commits it. The database is not written.
 name: Settle finished games
 
 on:
@@ -44,41 +53,69 @@ on:
         required: false
         default: ''
       commit:
-        description: 'Actually settle. Unchecked is a dry run.'
+        description: 'Actually settle and publish the record. Unchecked is a dry run.'
         type: boolean
         required: false
         default: false
 
 concurrency:
-  # Two runs settling the same game race each other into the same POST.
+  # Two runs settling the same game race each other into the same write.
   group: settle-finals
   cancel-in-progress: false
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   settle:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v5
+        with:
+          ref: main
 
       - uses: actions/setup-node@v5
         with:
           node-version: '22'
 
-      - name: Matching logic must pass before it is allowed to write
+      - name: Matching and grading logic must pass before it is allowed to write
         run: node tools/collective/settle_finals.test.js
 
       - name: Prove the sources are live before anything is written
         run: node tools/collective/settle_finals.js --verify || true
 
-      - name: Settle
+      # A missing secret in Actions is an empty string, never an error, so a
+      # misnamed or unset credential is invisible unless something says so.
+      # This says so, in the run summary, without failing the run.
+      - name: Report which credential is present
         env:
+          EDGD_SB_SERVICE: ${{ secrets.SB_SERVICE_ROLE }}
+          EDGD_SB_URL: ${{ secrets.SB_URL }}
           COLLECTIVE_ADMIN_REFRESH_TOKEN: ${{ secrets.COLLECTIVE_ADMIN_REFRESH_TOKEN }}
         run: |
-          ARGS=""
+          if [ -n "$EDGD_SB_SERVICE" ] && [ -n "$EDGD_SB_URL" ]; then
+            echo "::notice::Supabase service credential present: settling and grading directly in the database." >&2
+            echo '- Credential: **service role** — the database is written directly; no edge function in the path.' >> "$GITHUB_STEP_SUMMARY"
+          elif [ -n "$COLLECTIVE_ADMIN_REFRESH_TOKEN" ]; then
+            echo '::warning::SB_SERVICE_ROLE / SB_URL are empty in this run; settling through the collective_admin edge function with the admin refresh token instead.' >&2
+            echo '- Credential: **admin refresh token** (fallback) — settled through `collective_admin`. Add `SB_SERVICE_ROLE` and `SB_URL` as GitHub Actions repository secrets to settle directly.' >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo '::warning::SB_SERVICE_ROLE / SB_URL are empty in this run. They are not GitHub Actions repository secrets. The settlement record is still built and committed; the database is not written.' >&2
+            {
+              echo '- Credential: **absent** — `SB_SERVICE_ROLE` and/or `SB_URL` resolved to an empty string.'
+              echo '- They must exist as **GitHub Actions repository secrets**; secrets stored in the Supabase dashboard are not visible here.'
+              echo '- This run still builds and commits `collective/settled/`, which the site grades from. The database is not written.'
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Settle
+        env:
+          EDGD_SB_SERVICE: ${{ secrets.SB_SERVICE_ROLE }}
+          EDGD_SB_URL: ${{ secrets.SB_URL }}
+          COLLECTIVE_ADMIN_REFRESH_TOKEN: ${{ secrets.COLLECTIVE_ADMIN_REFRESH_TOKEN }}
+        run: |
+          ARGS="--record collective/settled"
           # A scheduled run commits. A manual run commits only when asked, so
           # the dry run stays the way you inspect a matcher you cannot see.
           if [ "${{ github.event_name }}" = "schedule" ] || [ "${{ inputs.commit }}" = "true" ]; then
@@ -86,9 +123,28 @@ jobs:
           fi
           if [ -n "${{ inputs.sport }}" ];  then ARGS="$ARGS --sport ${{ inputs.sport }}"; fi
           if [ -n "${{ inputs.season }}" ]; then ARGS="$ARGS --season ${{ inputs.season }}"; fi
-          if [ -z "$COLLECTIVE_ADMIN_REFRESH_TOKEN" ]; then
-            echo "::warning::COLLECTIVE_ADMIN_REFRESH_TOKEN is not set — nothing can be settled."
-            echo "The verify step above still shows which sources answered and what they carry."
+          node tools/collective/settle_finals.js $ARGS
+
+      # The record is the thing the site reads, so it is published even when a
+      # database write above was refused — that failure stays red above, and
+      # the site still grades from the finals this run found.
+      - name: Publish the settlement record
+        if: ${{ !cancelled() && (github.event_name == 'schedule' || inputs.commit == true) }}
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add collective/settled
+          if git diff --cached --quiet; then
+            echo 'settlement record unchanged — nothing to publish'
             exit 0
           fi
-          node tools/collective/settle_finals.js $ARGS
+          N=$(node -e "const fs=require('fs');let n=0;for(const f of fs.readdirSync('collective/settled'))if(f.endsWith('.json'))n+=Object.keys(require('./collective/settled/'+f).games).length;console.log(n)")
+          git commit -m "collective: settlement record (${N} settled games)"
+          # a concurrent push to main loses the race politely, not the record
+          for i in 1 2 3 4; do
+            git push origin main && exit 0
+            git pull --rebase origin main || true
+            sleep $((2 ** i))
+          done
+          echo 'could not push the settlement record after 4 attempts'
+          exit 1

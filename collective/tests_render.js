@@ -1735,6 +1735,75 @@ var S=sandbox;
   S.fetch=realFetchPH;
   S.SEASON_GAMES={};S.LOCALREC={};S.META=null;S.WALLC=null;S.CLOSING={};S.ESPN_DAYS={};S.location.hash='';
 
+  /* ---- THE COMMITTED SETTLEMENT RECORD -----------------------------------
+     The hourly settle job now writes collective/settled/<SPORT>_<season>.json
+     and commits it, and the page reads that file from its own origin
+     before it asks ESPN from the browser or trusts a server grade. With
+     the record in hand, a season whose wire carries no results at all is
+     fully graded without a single feed call, and a 0-0 placeholder the
+     server settled is replaced by the record's real final. */
+  S.SEASON_GAMES={};S.LOCALREC={};S.META=null;S.WALLC=null;S.CLOSING={};S.ESPN_DAYS={};S.SETTLED_REC={};
+  var RECORD={schema:'edgedesk_collective_settled_v1',sport:'CFB',season:2026,generated_at:'2026-09-05T02:00:00Z',
+    rule:'x',games:{
+      '1':{label:'NORTHCAROL @ TCU',home:'TCU',away:'NORTHCAROL',week:1,kickoff_at:'2026-08-29T16:00:00Z',
+           home_score:48,away_score:14,score_source:'espn+cfbfastR',closing_spread:-7.5,closing_total:52.5,
+           closing_home_ml_prob:0.73,close_source:'collective_odds',settled_at:'2026-08-30T00:00:00Z'},
+      '2':{label:'SANJOSESTA @ USC',home:'USC',away:'SANJOSESTA',week:1,kickoff_at:'2026-08-29T20:00:00Z',
+           home_score:59,away_score:28,score_source:'espn',closing_spread:-38.5,closing_total:null,
+           closing_home_ml_prob:null,close_source:'collective_odds',settled_at:'2026-08-30T00:00:00Z'},
+      '3':{label:'NCSTATE @ VIRGINIA',home:'VIRGINIA',away:'NCSTATE',week:1,kickoff_at:'2026-08-29T23:00:00Z',
+           home_score:21,away_score:24,score_source:'espn',closing_spread:-5.5,closing_total:null,
+           closing_home_ml_prob:null,close_source:'collective_odds',settled_at:'2026-08-30T00:00:00Z'}}};
+  var recordAsked=[],espnAskedR=[],closingAskedR=[];
+  var realFetchRec=S.fetch;
+  S.fetch=function(u){
+    var q=String(u);
+    if(/settled\/[A-Z]+_\d{4}\.json/.test(q)){recordAsked.push(q);return reply(/CFB_2026/.test(q)?RECORD:{});}
+    if(q.indexOf('site.api.espn.com')>=0){espnAskedR.push(q);return reply({events:[]});}
+    if(q.indexOf('/closing/')>=0){closingAskedR.push(q);return reply({available:false,reason:'no_pregame_capture'});}
+    return realFetchRec(u);
+  };
+  var BLANKR=GAMES.map(function(g){var c=JSON.parse(JSON.stringify(g));c.result=null;return c;});
+  var filledR=await S.enrichFinals(BLANKR,'CFB',null,2026);
+  chk('the page reads its sport and season\'s record from its own origin',
+    recordAsked.length===1&&/^settled\/CFB_2026\.json$/.test(recordAsked[0]),{asked:recordAsked});
+  chk('every finished game is scored from the record, and no feed is asked',
+    filledR===3&&espnAskedR.length===0&&BLANKR.every(function(g){var r=S.finalResult(g);return r&&r.source==='record';}),
+    {filled:filledR,espn:espnAskedR.length,sources:BLANKR.map(function(g){return (S.finalResult(g)||{}).source;})});
+  chk('the closing line comes with it, so nothing is asked for by name either',
+    closingAskedR.length===0&&S.finalResult(BLANKR[0]).closing_spread===-7.5&&S.finalResult(BLANKR[1]).closing_spread===-38.5,
+    {closing:closingAskedR.length,closes:BLANKR.map(function(g){return (S.finalResult(g)||{}).closing_spread;})});
+  chk('and the record is graded against by the published rule',
+    (function(){
+      var gr=S.rowGrade(BLANKR[0],BLANKR[0].models[3]);   /* blerm on UNC into TCU -7.5: TCU by 34 */
+      var gm2=S.rowGrade(BLANKR[1],BLANKR[1].models[0]);  /* mustbemoose on USC -32 into -38.5: USC by 31 */
+      return gr&&gr.pick_result==='loss'&&gm2&&gm2.pick_result==='loss'&&gm2.margin_error===1;
+    })());
+  chk('a record-sourced score is marked as the Collective\'s settlement, not as the page\'s find',
+    /settled<\/span>/.test(S.scoreSourceMark(BLANKR[0]))&&!/ESPN/.test(S.scoreSourceMark(BLANKR[0])));
+  /* the placeholder the server settled is replaced by the record's final */
+  var PHR=placeholderGames();
+  S.SETTLED_REC={};recordAsked.length=0;
+  var filledPH=await S.enrichFinals(PHR,'CFB',null,2026);
+  /* two of the three fixture games were settled 0-0; the third already
+     carried its real final and is left alone */
+  chk('a 0-0 the server settled is replaced by the record\'s real final and remembered as a placeholder',
+    filledPH===2&&PHR[0].settled_placeholder===true&&PHR[2].settled_placeholder!==true&&S.finalResult(PHR[0]).home===48&&S.placeholderSettled(PHR[0])
+      &&S.rowGrade(PHR[0],PHR[0].models[0]).source==='page'&&S.rowGrade(PHR[0],PHR[0].models[0]).margin_error===21.5,
+    {filled:filledPH,g0:PHR[0].result,grade:S.rowGrade(PHR[0],PHR[0].models[0])});
+  /* a season with no record falls through to ESPN exactly as before */
+  S.SETTLED_REC={};
+  var BLANK27=GAMES.map(function(g){var c=JSON.parse(JSON.stringify(g));c.result=null;c.kickoff_at='2027-08-28T16:00:00Z';return c;});
+  var realNow=Date.now;Date.now=function(){return Date.parse('2027-09-05T00:00:00Z');};
+  try{await S.enrichFinals(BLANK27,'CFB',null,2027);}finally{Date.now=realNow;}
+  chk('a season with no record still asks ESPN, so nothing regresses when the file is not there yet',
+    espnAskedR.length>=1&&/dates=20270828/.test(espnAskedR[0]),{espn:espnAskedR});
+  chk('a season is named for the year it starts in',
+    S.seasonOfKickoff('2026-08-29T16:00:00Z')===2026&&S.seasonOfKickoff('2027-01-10T00:00:00Z')===2026
+      &&S.seasonOfKickoff('2026-05-01T00:00:00Z')===2025&&S.seasonOfKickoff(null)===null&&S.seasonOfKickoff('x')===null);
+  S.fetch=realFetchRec;
+  S.SEASON_GAMES={};S.LOCALREC={};S.META=null;S.WALLC=null;S.CLOSING={};S.ESPN_DAYS={};S.SETTLED_REC={};
+
   /* ---- the model page says who it is before what it did ---------------- */
   S.SEASON_GAMES={};S.LOCALREC={};S.META=null;S.WALLC=null;
   var vm=node();

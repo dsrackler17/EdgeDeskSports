@@ -1923,7 +1923,10 @@ function gradeMark(gr){return liveMark(!!(gr&&gr.source===GRADE_PAGE));}
    carried none. Named on the game, not hidden in a grade. */
 function scoreSourceMark(g){
   var r=finalResult(g);
-  if(!r||r.source!=='espn')return '';
+  if(!r)return '';
+  if(r.source==='record')
+    return ' <span class="pgrade" title="The Collective’s own feed carried no result for this game, so the score and closing line come from the Collective’s committed settlement record — written by its scheduled settle job from the public finals feeds and the Collective’s captured close, and published with this site. Graded here by the published rule; a result the server settles replaces this one.">settled</span>';
+  if(r.source!=='espn')return '';
   return ' <span class="pgrade" title="The Collective’s own feed carried no result for this game, so the score was read from ESPN’s public scoreboard. The closing line is still the Collective’s own captured close, and a result the settlement run writes replaces this one.">ESPN</span>';
 }
 /* An implied pick is a real graded result and a different claim from a
@@ -2467,10 +2470,31 @@ function capturedClose(league,gameId){
    is tried first because it is already in hand and costs nothing; only what
    it cannot answer is asked for by name. Returns how many games gained a
    closing line, so a caller can tell whether a record just changed. */
-async function fillCapturedCloses(games,sportCode,mkt){
+async function fillCapturedCloses(games,sportCode,mkt,season){
   var league=oddsLeagueFor(sportCode);
   if(!league)return 0;
   var need=[],n=0;
+  /* the committed record first: the close the Collective's own settlement
+     run graded the game on, read from this origin */
+  try{
+    var recNeed=(games||[]).filter(function(g){
+      var r0=finalResult(g);
+      return !!r0&&r0.closing_spread==null&&g.game_id!=null;
+    });
+    if(recNeed.length){
+      var entries=await recordEntries(recNeed,sportCode,season);
+      recNeed.forEach(function(g){
+        var e=entries[String(g.game_id)];
+        if(!e||e.closing_spread==null||!g.result)return;
+        var cs=Number(e.closing_spread);
+        if(!isFinite(cs))return;
+        g.result.closing_spread=cs;
+        if(g.result.closing_total==null&&e.closing_total!=null&&isFinite(Number(e.closing_total)))
+          g.result.closing_total=Number(e.closing_total);
+        n++;
+      });
+    }
+  }catch(e){}
   (games||[]).forEach(function(g){
     var r=finalResult(g);
     if(!r||r.closing_spread!=null)return;
@@ -2507,17 +2531,80 @@ async function fillCapturedCloses(games,sportCode,mkt){
   }
   return n;
 }
+/* ---- the Collective's own committed settlement record -------------------
+   collective/settled/<SPORT>_<season>.json is written by the hourly settle
+   job (tools/collective/settle_finals.js, run by GitHub Actions) and
+   committed to this repository: every finished game's final score and the
+   Collective's captured closing line, from the same public feeds and the
+   same captured close the settlement run has always used. It is served from
+   this origin as a static file, so a record here depends on no edge
+   function being deployed, reachable or written — the job runs itself and
+   the site reads what it committed. A game the server has really settled
+   still wins; this fills what the server left blank or settled 0-0, ahead
+   of asking ESPN from the browser. */
+var SETTLED_REC={};
+/* A football season is named for the year it starts in; January's bowl
+   games belong to the season before. Used only when a caller cannot say
+   which season a game is in. */
+function seasonOfKickoff(iso){
+  if(!iso)return null;
+  var d=new Date(iso);
+  if(!isFinite(d.getTime())||d.getTime()<=0)return null;
+  var y=d.getUTCFullYear();
+  return d.getUTCMonth()<5?y-1:y;
+}
+async function settledRecord(sport,season){
+  var code=String(sport||'').toUpperCase();
+  var key=code+'|'+season;
+  if(SETTLED_REC[key]!==undefined)return SETTLED_REC[key];
+  var rec=null;
+  try{
+    var r=await fetch('settled/'+encodeURIComponent(code)+'_'+encodeURIComponent(season)+'.json',{cache:'no-cache'});
+    if(r&&r.ok){
+      var d=await r.json();
+      if(d&&d.games&&typeof d.games==='object')rec=d;
+    }
+  }catch(e){rec=null;}
+  SETTLED_REC[key]=rec;
+  return rec;
+}
+/* The record's entry for each of these games, by game_id, across whatever
+   seasons the games span. Games with no id are not looked up. */
+async function recordEntries(games,sportCode,season){
+  var bySeason={};
+  (games||[]).forEach(function(g){
+    if(!g||g.game_id==null)return;
+    var sn=season!=null?season:seasonOfKickoff(g.kickoff_at);
+    if(sn==null)return;
+    (bySeason[sn]=bySeason[sn]||[]).push(g);
+  });
+  var seasons=Object.keys(bySeason);
+  if(!seasons.length)return {};
+  var recs=await Promise.all(seasons.map(function(sn){
+    return settledRecord(sportCode,sn).catch(function(){return null;});
+  }));
+  var out={};
+  seasons.forEach(function(sn,i){
+    var rec=recs[i];
+    if(!rec)return;
+    bySeason[sn].forEach(function(g){
+      var e=rec.games[String(g.game_id)];
+      if(e)out[String(g.game_id)]=e;
+    });
+  });
+  return out;
+}
 /* Fill in the finished games the wire left blank. Returns how many SCORES
    it filled, so a caller can tell whether anything actually changed; the
    closing-line pass runs on every call either way, because a game the
    server scored and never priced needs one just as much as a game this
    page had to go and find. */
-async function enrichFinals(games,sportCode,mkt){
-  var n=await enrichScores(games,sportCode);
-  try{await fillCapturedCloses(games,sportCode,mkt);}catch(e){}
+async function enrichFinals(games,sportCode,mkt,season){
+  var n=await enrichScores(games,sportCode,season);
+  try{await fillCapturedCloses(games,sportCode,mkt,season);}catch(e){}
   return n;
 }
-async function enrichScores(games,sportCode){
+async function enrichScores(games,sportCode,season){
   var need=(games||[]).filter(function(g){
     if(!g||finalResult(g)!=null)return false;
     var k=new Date(g.kickoff_at||0).getTime();
@@ -2526,6 +2613,32 @@ async function enrichScores(games,sportCode){
     return isFinite(k)&&k>0&&k<Date.now()-3*3600000;
   });
   if(!need.length)return 0;
+  var n=0;
+  /* the committed record first: the Collective's own settlement, and no
+     feed asked or function called to read it */
+  try{
+    var entries=await recordEntries(need,sportCode,season);
+    need.forEach(function(g){
+      var e=g.game_id!=null?entries[String(g.game_id)]:null;
+      if(!e||e.home_score==null||e.away_score==null)return;
+      var hs=Number(e.home_score),as=Number(e.away_score);
+      if(!isFinite(hs)||!isFinite(as))return;
+      /* the record never carries one, and a reader is not the place to
+         trust that */
+      if(isPlaceholderResult({home_score:hs,away_score:as}))return;
+      var prior=isPlaceholderResult(g.result)?g.result:null;
+      if(prior)g.settled_placeholder=true;
+      var cs=e.closing_spread!=null?Number(e.closing_spread):null;
+      var ct=e.closing_total!=null?Number(e.closing_total):null;
+      g.result={home_score:hs,away_score:as,
+        closing_spread:(cs!=null&&isFinite(cs))?cs:((prior&&prior.closing_spread!=null)?prior.closing_spread:null),
+        closing_total:(ct!=null&&isFinite(ct))?ct:((prior&&prior.closing_total!=null)?prior.closing_total:null),
+        source:'record'};
+      n++;
+    });
+  }catch(e){}
+  need=need.filter(function(g){return finalResult(g)==null;});
+  if(!need.length)return n;
   var days={};
   need.forEach(function(g){var d=espnDayKey(g.kickoff_at);if(d)days[d]=1;});
   var lists=await Promise.all(Object.keys(days).map(function(d){
@@ -2533,8 +2646,7 @@ async function enrichScores(games,sportCode){
   }));
   var all=[];
   lists.forEach(function(l){all=all.concat(l||[]);});
-  if(!all.length)return 0;
-  var n=0;
+  if(!all.length)return n;
   need.forEach(function(g){
     var hit=espnMatch(all,g);
     if(!hit)return;
@@ -2595,7 +2707,7 @@ async function seasonGames(sport,season){
   });
   /* Every record on this site is computed from this sweep, so this is the
      one place worth going and finding the scores the wire left out. */
-  try{await enrichFinals(all,sport,await marketBoard());}catch(e){}
+  try{await enrichFinals(all,sport,await marketBoard(),season);}catch(e){}
   /* One week that failed to load is a hole in every record computed from
      this sweep, and caching it for the session makes that hole permanent:
      the reader would see a short record all day and never find out why.
@@ -3034,7 +3146,7 @@ async function renderWall(view){
     var allRows=results[0],board=results[1],act=results[2],mkt=results[3];
     /* the slate on screen, graded: a finished game the wire left blank gets
        its score before a single row is drawn */
-    try{await enrichFinals((board&&board.games)||[],sport.code,mkt);}catch(e){}
+    try{await enrichFinals((board&&board.games)||[],sport.code,mkt,sport.season);}catch(e){}
     var rows=rowsForSport(allRows,sport.code);
     var activeN=rows.filter(function(r){return r.membership==='ACTIVE CONTRIBUTOR';}).length;
     var sportCode=sportLongName(sport.code).toUpperCase()||sport.code;
@@ -3559,7 +3671,7 @@ async function renderModel(view,cs,ms){
     /* Whatever came from the coverage pages has been through no grader at
        all, so give the merged set the same pass every other surface gets.
        The sweep's games already have theirs and are skipped. */
-    try{await enrichFinals(logGames,d.model.sport,mkt);}catch(_){}
+    try{await enrichFinals(logGames,d.model.sport,mkt,snM);}catch(_){}
     /* Calibration off the SAME deduped set, for the same reason: computed
        from the coverage pages alone it was empty on exactly the models whose
        coverage the server had not written yet. */
@@ -3782,7 +3894,7 @@ async function renderBoard(view){
     var q='?sport='+encodeURIComponent(sport.code)+'&season='+sport.season+(BOARD_WEEK?'&week='+BOARD_WEEK:'');
     var both=await Promise.all([api('/v1/games'+q,{auth:true}),marketBoard()]);
     var d=both[0],mkt=both[1];
-    try{await enrichFinals((d&&d.games)||[],sport.code,mkt);}catch(e){}
+    try{await enrichFinals((d&&d.games)||[],sport.code,mkt,sport.season);}catch(e){}
     var cal=weekCalendar(sport.code);
     var wk=sportSwitcherHTML(m)+'<div class="wk"><button class="'+(BOARD_WEEK?'':'on')+'" data-w="">Current</button>';
     for(var i=1;i<=cal.regular;i++)wk+='<button class="'+(BOARD_WEEK===i?'on':'')+'" data-w="'+i+'">W'+i+'</button>';
@@ -3989,7 +4101,7 @@ async function renderMarket(view){
 
     /* the finished games on this page need their scores before the cards are
        built, so a closed market can say what the game did to its close */
-    try{await enrichFinals((board&&board.games)||[],mktSport.code,mkt);}catch(e){}
+    try{await enrichFinals((board&&board.games)||[],mktSport.code,mkt,mktSport.season);}catch(e){}
     /* Models that posted a number on this game, so the market and the models
        sit side by side instead of on two different pages. */
     var modelsByGame={};
