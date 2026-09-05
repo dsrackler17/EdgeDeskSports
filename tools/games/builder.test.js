@@ -40,6 +40,7 @@ function eq(name, got, want) {
 const ROOT = path.join(__dirname, '..', '..');
 const BUILDER = path.join(ROOT, 'games', 'build_challenges.js');
 const FIXTURE = path.join(__dirname, 'fixtures', 'slate_sample.csv');
+const FIXTURE_NOW = '2026-09-04T18:30:00Z';   /* the fixture's generated_at, before its kickoffs */
 const TMP = fs.mkdtempSync(path.join(os.tmpdir(), 'games-builder-test-'));
 
 global.window = global.window || global;
@@ -75,8 +76,11 @@ function writeCsv(cols, rows) {
 
 function build(slatePath, outName) {
   const out = path.join(TMP, outName);
+  /* The fixture is a real slate from 2026-09-04. Its kickoffs are that
+     evening, so the builder is told what day it is: "still ahead" is a fact
+     about the fixture's day, not about the day the suite happens to run. */
   const r = cp.spawnSync(process.execPath,
-    [BUILDER, '--slate', slatePath, '--out', out, '--quiet', '--no-market'],
+    [BUILDER, '--slate', slatePath, '--out', out, '--quiet', '--no-market', '--now', FIXTURE_NOW],
     { encoding: 'utf8' });
   return { status: r.status, stderr: r.stderr || '', out: out,
     json: r.status === 0 && fs.existsSync(out) ? JSON.parse(fs.readFileSync(out, 'utf8')) : null };

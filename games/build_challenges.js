@@ -67,6 +67,12 @@ function parseArgs(argv) {
     else if (k === '--out') a.out = argv[++i];
     else if (k === '--slate') a.slate = argv[++i];   /* a pre-built CSV, for tests */
     else if (k === '--quiet') a.quiet = true;
+    /* the clock the playability rule reads, for tests. A fixture is real
+       exporter output from a real day, and "kickoff still ahead" is a
+       question about THAT day: without this, every fixture becomes an
+       unplayable board the moment its kickoffs pass, and the suite goes red
+       on a calendar date rather than on a change. Production never sets it. */
+    else if (k === '--now') a.now = Date.parse(argv[++i]);
   }
   return a;
 }
@@ -561,7 +567,7 @@ async function main() {
     r.slug = CH.slugFor(r, counts[CH.baseSlug(r.away_team, r.home_team)] > 1);
   });
 
-  var playable = CH.playable(records);
+  var playable = CH.playable(records, isFinite(ARGS.now) ? ARGS.now : undefined);
   if (!playable.length) {
     console.error('REFUSING TO WRITE: no playable challenge in this slate ('
       + records.length + ' game(s) read). The existing artifact is left alone.');
