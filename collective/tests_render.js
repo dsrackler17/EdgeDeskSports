@@ -1614,6 +1614,127 @@ var S=sandbox;
   chk('billing stays closed while config says so',
     /Billing opens soon/.test(va.innerHTML) && !/id="subBtn"/.test(va.innerHTML));
 
+  /* ---- THE 0-0 PLACEHOLDER ----------------------------------------------
+     The admin results form posted an empty score box as 0, so one click on
+     Settle with nothing typed settled North Carolina @ TCU and San José
+     State @ USC 0-0. The server then graded every model on both: a margin
+     error measured from zero, no ATS result because no close was typed
+     either. The model page read "Record (ATS) 0-0-0", a log of two games
+     with FINAL 0-0, and "no ATS picks" over "Ungraded ATS 2" — while the
+     Outright (ML) line beside it, graded on this page from the real
+     finals, read 5-3. Every model's page showed the same two games, and
+     the wall printed 0-0-0 against every model.
+
+     The stub returns exactly that state: the two games settled 0-0 with a
+     server grade on every row, a server record of graded:2 / 0-0-0 for
+     every model, and a recent_graded log of two 0-0 rows. */
+  S.SEASON_GAMES={};S.LOCALREC={};S.META=null;S.WALLC=null;S.CLOSING={};S.ESPN_DAYS={};
+  function placeholderGames(){
+    return GAMES.map(function(g){
+      var c=JSON.parse(JSON.stringify(g));
+      if(c.game_id===1||c.game_id===2){
+        c.result={home_score:0,away_score:0,closing_spread:null,closing_total:null};
+        c.models.forEach(function(mr){
+          mr.grade={pick_result:null,margin_error:Math.abs(mr.projected_spread),brier:null};
+        });
+      }
+      return c;
+    });
+  }
+  var PH_REC={graded:2,wins:0,losses:0,pushes:0,win_pct:null,margin_mae:22.25,margin_n:2,brier:null,brier_n:0};
+  var PH_LOG=[
+    {label:'SANJOSESTA @ USC',week:1,kickoff_at:'2026-08-29T20:00:00Z',pick_side:'home',closing_spread:null,final:'0-0',pick_result:null,margin_error:32,brier:null,movement_n:2},
+    {label:'NORTHCAROL @ TCU',week:1,kickoff_at:'2026-08-29T16:00:00Z',pick_side:'home',closing_spread:null,final:'0-0',pick_result:null,margin_error:12.5,brier:null,movement_n:2}];
+  var realFetchPH=S.fetch;
+  S.fetch=function(u){
+    var q=String(u);
+    if(q.indexOf('site.api.espn.com')>=0)
+      return reply({events:[
+        {competitions:[{status:{type:{completed:true}},competitors:[
+          {homeAway:'home',score:'48',team:{displayName:'TCU Horned Frogs',abbreviation:'TCU'}},
+          {homeAway:'away',score:'14',team:{displayName:'North Carolina Tar Heels',abbreviation:'UNC'}}]}]},
+        {competitions:[{status:{type:{completed:true}},competitors:[
+          {homeAway:'home',score:'59',team:{displayName:'USC Trojans',abbreviation:'USC'}},
+          {homeAway:'away',score:'28',team:{displayName:'San Jose State Spartans',abbreviation:'SJSU'}}]}]}]});
+    if(q.indexOf('/closing/')>=0){
+      var id=decodeURIComponent(q.split('/closing/')[1].split('?')[0]);
+      return reply({available:true,closing_spread:id==='1'?-7.5:-38.5,closing_total:52.5,books:8});
+    }
+    if(q.indexOf('/v1/wall')>=0)
+      return reply({rows:WALL.map(function(r){var c=JSON.parse(JSON.stringify(r));c.record=PH_REC;return c;})});
+    if(q.indexOf('/v1/models/')>=0){
+      var parts=q.split('/v1/models/')[1].split('?')[0].split('/');
+      var wr=WALL.filter(function(x){return x.creator_slug===parts[0];})[0]||WALL[0];
+      return reply({creator:{slug:wr.creator_slug,display_name:wr.creator_name,founding:!!wr.founding},
+        model:{model_slug:wr.model_slug,model_name:wr.model_name,sport:'CFB',description:null},
+        record:PH_REC,recent_graded:PH_LOG,coverage:[],coverage_pct:71});
+    }
+    if(q.indexOf('/v1/games')>=0){
+      var wk=/[?&]week=(\d+)/.exec(q);
+      if(wk&&wk[1]!=='1')return reply({games:[],week:+wk[1],entitled:true});
+      if(/[?&]sport=NFL/.test(q))return reply({games:NFLGAMES,week:1,entitled:true});
+      return reply({games:placeholderGames(),week:1,entitled:true});
+    }
+    return realFetchPH(u);
+  };
+  S.location.hash='#/model/mustbemoose/edgedesk-cfb-p4';
+  var vPH=node();
+  await S.renderModel(vPH,'mustbemoose','edgedesk-cfb-p4');
+  var ph=vPH.innerHTML;
+  chk('the model page does not print the 0-0-0 record the server built on a placeholder',
+    !/0-0-0/.test(ph), {rec:(/Record \(ATS\)[\s\S]{0,200}/.exec(ph)||[])[0]});
+  chk('nor a log of games that finished 0-0',
+    !/>0-0</.test(ph) && !/Ungraded ATS<\/div><div class="v">2</.test(ph),
+    {finals:(ph.match(/<td class="num">[^<]*<\/td>/g)||[]).slice(0,12)});
+  chk('every game is on the log with its real final and a result',
+    (ph.match(/data-res="(win|loss|push)"/g)||[]).length===3 && /14 - 48/.test(ph) && /28 - 59/.test(ph),
+    {rows:(ph.match(/data-res="[a-z]*"/g)||[]),finals:(ph.match(/\d+ - \d+/g)||[])});
+  /* mustbemoose: TCU -12.5 into -7.5 (home, TCU by 34: WIN); USC -32 into
+     -38.5 (home, USC by 31: LOSS); Virginia -2 into -5.5 (home, lost by 3:
+     LOSS). The record is the page's own, and says so. */
+  chk('and the record above it is the page\'s own, graded on those finals and marked',
+    /Record \(ATS\)<\/div><div class="v"><span class="mono">1-2-0<\/span> <span class="pgrade"/.test(ph),
+    {rec:(/Record \(ATS\)[\s\S]{0,220}/.exec(ph)||[])[0]});
+  chk('the page says why the Collective\'s own numbers are not shown',
+    /placeholder<\/b> The Collective/.test(ph) && /2 of this model/.test(ph),
+    {note:(/placeholder<\/b>[\s\S]{0,160}/.exec(ph)||[])[0]});
+  chk('the margin error is measured from the real final, not from zero',
+    !/>32\.0</.test(ph) && !/>22\.3</.test(ph) && /Margin MAE<\/div><div class="v">9\.2</.test(ph),
+    {mae:(/Margin MAE[\s\S]{0,80}/.exec(ph)||[])[0]});
+  /* 0.78 on TCU (won), 0.96 on USC (won), 0.55 on Virginia (lost): 2-1 */
+  chk('the outright record beside it still stands on the real finals',
+    /Outright \(ML\)<\/div><div class="v">2-1/.test(ph),
+    {ml:(/Outright \(ML\)[\s\S]{0,80}/.exec(ph)||[])[0]});
+
+  /* the wall, which printed 0-0-0 against every model from the same records */
+  S.SEASON_GAMES={};S.LOCALREC={};S.META=null;S.WALLC=null;S.CLOSING={};S.ESPN_DAYS={};
+  S.location.hash='';
+  var vWPH=node();
+  await S.renderWall(vWPH);
+  await new Promise(function(r){setTimeout(r,50);});   /* let the season sweep land */
+  var wallPH=vWPH.innerHTML;
+  chk('the wall does not print 0-0-0 against every model',
+    !/0-0-0/.test(wallPH), {sample:(wallPH.match(/[^>]{0,60}0-0-0[^<]{0,60}/g)||[]).slice(0,3)});
+  chk('the wall records are the page\'s own, marked, graded on the real finals',
+    (wallPH.match(/class="pgrade"/g)||[]).length>=4 && /<b>3<\/b> settled/.test(wallPH)
+      && /1-2-0/.test(wallPH),
+    {marks:(wallPH.match(/class="pgrade"/g)||[]).length,settled:(/(<b>\d+<\/b> settled)/.exec(wallPH)||[])[1]});
+  chk('a placeholder is not counted as a settled game on the wall',
+    !/<b>[45]<\/b> settled/.test(wallPH));
+
+  /* the rankings, whose server boards are built on the same settlement */
+  S.SEASON_GAMES={};S.LOCALREC={};S.META=null;S.WALLC=null;S.CLOSING={};S.ESPN_DAYS={};
+  S.location.hash='#rankings';
+  var vRPH=node();
+  await S.renderRankings(vRPH);
+  var rankPH=vRPH.innerHTML;
+  chk('the rankings page grades the season itself while the placeholder stands',
+    !/0-0-0/.test(rankPH) && /1-2-0/.test(rankPH),
+    {zeroes:(rankPH.match(/0-0-0/g)||[]).length});
+
+  S.fetch=realFetchPH;
+  S.SEASON_GAMES={};S.LOCALREC={};S.META=null;S.WALLC=null;S.CLOSING={};S.ESPN_DAYS={};S.location.hash='';
+
   /* ---- the model page says who it is before what it did ---------------- */
   S.SEASON_GAMES={};S.LOCALREC={};S.META=null;S.WALLC=null;
   var vm=node();

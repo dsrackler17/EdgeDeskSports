@@ -639,7 +639,15 @@ function covCell(p){
    margin and Brier numbers are real and stay on screen beside this. */
 var NO_ATS_TITLE='this model submitted no pick side on its graded games, so it has no against-the-spread record — its margin and Brier numbers still count';
 function recATSText(rec){
-  return (rec&&rec.graded)?(rec.wins+'-'+rec.losses+'-'+rec.pushes):null;
+  if(!rec||!rec.graded)return null;
+  /* A count of graded games with no decision in it is not a record. The
+     server counts a margin-only game as graded, so a model whose graded
+     games all lacked a closing line arrived here as graded:2 and printed
+     0-0-0 — "has played and never won" — when it had never been scored
+     against a spread at all. */
+  var w=Number(rec.wins)||0,l=Number(rec.losses)||0,p=Number(rec.pushes)||0;
+  if(w+l+p<=0)return null;
+  return w+'-'+l+'-'+p;
 }
 function recATSHtml(rec,cls){
   var t=recATSText(rec);
@@ -1771,9 +1779,36 @@ function gradableRow(mr){
    other reader on this page already relies on — but a score cannot be final
    before its own kickoff, and grading that shape would put a record on a
    game nobody has played. */
+/* ---- a 0-0 "final" is a blank form, not a score -------------------------
+   The admin results screen posted an EMPTY score box as 0 — the unary plus
+   on an empty string is 0, not NaN — so one click on Settle with nothing
+   typed settled a game 0-0, and the settlement run then graded every model
+   on it: a margin error against a score nobody scored, no ATS result
+   because no close was typed either, a record reading 0-0-0 beside a log
+   of games that read 0-0, and the same two "ungraded" games on every
+   model's page. No football game ends 0-0 (college overtime has made it
+   impossible since 1996; the NFL has not seen one since 1943), so two
+   zeros are the signature of a placeholder, never a final. Every reader of
+   a result goes through finalResult(), which refuses the shape here; the
+   ESPN pass then treats the game as unscored and finds the real final, and
+   the grade the server wrote against the placeholder is set aside with it.
+   Keyed by shape rather than by sport because this page reads football
+   only; a sport where 0-0 is a real result would need this rule scoped to
+   the sports it is true of. */
+function isPlaceholderResult(r){
+  if(!r||r.home_score==null||r.away_score==null)return false;
+  return Number(r.home_score)===0&&Number(r.away_score)===0;
+}
+/* Whether the Collective's own settlement of this game was a placeholder:
+   either the placeholder is still on the wire, or the ESPN pass replaced
+   it and said so. Either way, nothing the server graded on it stands. */
+function placeholderSettled(g){
+  return !!(g&&(g.settled_placeholder===true||isPlaceholderResult(g.result)));
+}
 function finalResult(g){
   var r=g&&g.result;
   if(!r||r.home_score==null||r.away_score==null)return null;
+  if(isPlaceholderResult(r))return null;
   var hs=Number(r.home_score),as=Number(r.away_score);
   if(!isFinite(hs)||!isFinite(as))return null;
   if(g.kickoff_at){
@@ -1864,6 +1899,11 @@ function serverGrade(mr){
    it anyway. */
 function rowGrade(g,mr){
   if(!gradableRow(mr))return null;
+  /* A grade the server computed against a 0-0 placeholder is a grade
+     against nothing: its margin error is the model's own line measured
+     from zero. It is set aside with the placeholder, and the row is graded
+     here from the real final once the ESPN pass has found one. */
+  if(placeholderSettled(g))return localGrade(g,mr);
   return serverGrade(mr)||localGrade(g,mr);
 }
 /* A grade this page computed says so, everywhere it is shown. The claim on
@@ -1906,6 +1946,39 @@ function impliedRecMark(rec){
 function impliedMark(gr){
   if(!gr||!gr.implied)return '';
   return ' <span class="pgrade" title="This creator submitted no pick side on this game, so it is graded on the side their own line implies against the Collective\u2019s captured close — the same comparison the board prints as \u0394 Mkt. A stated pick always takes precedence over this.">implied</span>';
+}
+/* A server log row written against a 0-0 placeholder. The row carries the
+   final as a string ("0-0") and sometimes as two numbers; both shapes are
+   read, and a row that carries neither is not judged. */
+function placeholderLogRow(r){
+  if(!r)return false;
+  if(r.home_score!=null&&r.away_score!=null)
+    return isPlaceholderResult({home_score:r.home_score,away_score:r.away_score});
+  return /^\s*0+\s*[-\u2013\u2014:]\s*0+\s*$/.test(String(r.final==null?'':r.final));
+}
+/* Why the Collective's own numbers are not on the page: said in full, once,
+   wherever a record built on a placeholder was set aside. */
+function placeholderNote(n,whose){
+  if(!n)return '';
+  whose=whose||'this model&rsquo;s';
+  return '<p class="note" style="margin-top:8px"><b class="pgrade">placeholder</b> The Collective&rsquo;s settlement recorded a 0-0 score on '+
+    n+' of '+whose+' game'+(n===1?'':'s')+' &mdash; the shape of a results form submitted with nothing typed in it, not a final. '+
+    'Nothing graded against it is shown. '+(n===1?'That game is':'Those games are')+' graded here from the actual final score against the Collective&rsquo;s captured closing line, by the '+
+    '<a href="#rules">published rule</a>, until the settlement is corrected.</p>';
+}
+/* The server's record and log for one model, set aside together the moment
+   either shows the settlement was a placeholder: a record is only as good
+   as the finals under it. Counted two ways because the season sweep can
+   fail — from the games in hand, and from the server's own log rows. */
+function serverRecordFor(d,games,cs,ms){
+  var phGames=(games||[]).filter(function(g){
+    return placeholderSettled(g)&&(g.models||[]).some(function(mr){
+      return mr&&mr.creator_slug===cs&&mr.model_slug===ms;});
+  }).length;
+  var srvRows=(d&&d.recent_graded)||[];
+  var srvLog=srvRows.filter(function(r){return !placeholderLogRow(r);});
+  var n=Math.max(phGames,srvRows.length-srvLog.length);
+  return {rec:n?null:((d&&d.record)||null),log:n?[]:srvLog,placeholders:n};
 }
 function gradeNote(n){
   if(!n)return '';
@@ -2465,10 +2538,18 @@ async function enrichScores(games,sportCode){
   need.forEach(function(g){
     var hit=espnMatch(all,g);
     if(!hit)return;
+    /* A 0-0 placeholder the server settled is remembered on the game, so
+       the grades written against it stay set aside after it is gone. A
+       closing line typed beside it is still the Collective's own number
+       and is kept; only the score was blank. */
+    var prior=isPlaceholderResult(g.result)?g.result:null;
+    if(prior)g.settled_placeholder=true;
     /* score only: the closing line is the Collective's own and is filled by
        fillCapturedCloses immediately after, from the board or by name */
     g.result={home_score:hit.home,away_score:hit.away,
-      closing_spread:null,closing_total:null,source:'espn'};
+      closing_spread:(prior&&prior.closing_spread!=null)?prior.closing_spread:null,
+      closing_total:(prior&&prior.closing_total!=null)?prior.closing_total:null,
+      source:'espn'};
     n++;
   });
   return n;
@@ -2539,12 +2620,29 @@ var LOCALREC={};
 async function localRecords(sport,season){
   var key=sport+'|'+season;
   if(LOCALREC[key])return LOCALREC[key];
-  var settled=await seasonSettledGames(sport,season);
+  var all=await seasonGames(sport,season);
+  var settled=all.filter(function(g){return finalResult(g)!=null;});
   var map={};
   modelsInGames(settled,null).forEach(function(m){
     map[m.creator_slug+'/'+m.model_slug]=modelRecord(settled,m.creator_slug,m.model_slug);
   });
+  markPlaceholderSettled(map,all);
   LOCALREC[key]=map;
+  return map;
+}
+/* Which models a set of games shows the server settled a 0-0 placeholder
+   against (see isPlaceholderResult), keyed creator/model and attached to a
+   record map so shownRecord() can set the server's record aside for exactly
+   them. Non-enumerable: the map is read as records everywhere else. */
+function markPlaceholderSettled(map,games){
+  var tainted={};
+  (games||[]).forEach(function(g){
+    if(!placeholderSettled(g))return;
+    (g.models||[]).forEach(function(mr){
+      if(mr&&mr.creator_slug&&mr.model_slug)tainted[mr.creator_slug+'/'+mr.model_slug]=1;
+    });
+  });
+  try{Object.defineProperty(map,'placeholderSettled',{value:tainted,enumerable:false});}catch(e){}
   return map;
 }
 /* A record exists when ANY of its three samples does. Gating on the ATS
@@ -2557,9 +2655,16 @@ function hasRecord(r){
     ||r.margin_mae!=null||r.brier!=null));
 }
 function shownRecord(serverRec,localMap,cs,ms){
-  if(hasRecord(serverRec))return {rec:serverRec,live:false};
   var lr=localMap&&localMap[cs+'/'+ms];
+  /* The server's record is set aside when the page can see it was built on
+     a 0-0 placeholder settlement of this model's game (see
+     isPlaceholderResult); the page's own, graded from the real final,
+     stands in its place and is marked. Nothing built on the placeholder is
+     shown, not even as a fallback. */
+  var tainted=!!(localMap&&localMap.placeholderSettled&&localMap.placeholderSettled[cs+'/'+ms]);
+  if(hasRecord(serverRec)&&!tainted)return {rec:serverRec,live:false};
   if(hasRecord(lr))return {rec:lr,live:true};
+  if(tainted)return {rec:null,live:false};
   return {rec:serverRec||null,live:false};
 }
 /* ---- what a reader wants at the top ------------------------------------
@@ -3163,6 +3268,9 @@ async function renderWall(view){
       modelsInGames(wg,null).forEach(function(mm){
         dirLocal[mm.creator_slug+'/'+mm.model_slug]=modelRecord(wg,mm.creator_slug,mm.model_slug);
       });
+      /* the week in hand can already show a placeholder settlement, and a
+         server record built on one must not win the first paint either */
+      markPlaceholderSettled(dirLocal,wg);
     })();
     var body=dirBody();
     if(!paint(view,tok,hd+
@@ -3273,17 +3381,14 @@ async function renderCreator(view,slug){
         });
         if(sn==null)return null;
         return localRecords(mo.sport,sn).then(function(map){
-          var lr=map[c.slug+'/'+mo.model_slug];
-          if(hasRecord(lr))creatorLocal[mo.model_slug]=lr;
+          creatorLocal[mo.model_slug]=shownRecord(mo.record,map,c.slug,mo.model_slug);
         }).catch(function(){});
       }));
     }catch(_){}
     var body='<h2>Verified record</h2>';
     (d.models||[]).forEach(function(mo){
-      var rec=mo.record,recLive=false;
-      if(!hasRecord(rec)&&creatorLocal[mo.model_slug]){
-        rec=creatorLocal[mo.model_slug];recLive=true;
-      }
+      var sr=creatorLocal[mo.model_slug]||shownRecord(mo.record,null,c.slug,mo.model_slug);
+      var rec=sr.rec,recLive=sr.live;
       body+='<h2 style="margin-top:14px;font-size:13.5px">'+esc(mo.model_name)+' <span class="pill">'+esc(mo.sport)+'</span></h2>';
       if(rec){
         body+='<div class="panel"><div class="kv">'+
@@ -3462,6 +3567,15 @@ async function renderModel(view,cs,ms){
       var calPts=calibrationPoints(logGames,cs,ms);
       if(calPts.length){calCal=calibrationBuckets(calPts);calMl=mlOutrightRecord(calPts);}
     }catch(_){calCal=null;calMl=null;}
+    /* A settlement the page can see was a 0-0 placeholder (see
+       isPlaceholderResult) takes the server's record and log for this model
+       off the page together — a margin error measured from zero, no ATS
+       result, 0-0-0 over a log of 0-0 finals — and the same games are
+       graded here from the real final and the captured close, marked as
+       this page's, until the settlement is corrected. */
+    var srv=serverRecordFor(d,logGames,cs,ms);
+    var placeholders=srv.placeholders;
+    rec=srv.rec;
     /* The record the page SHOWS. The Collective's own whenever it has one;
        otherwise the same games graded here, marked as such. Never a blend. */
     var recLive=false;
@@ -3478,8 +3592,8 @@ async function renderModel(view,cs,ms){
       var covLocal=modelCoverage(logGames.filter(function(g){return finalResult(g)!=null;}),cs,ms);
       if(covLocal&&covLocal.pct!=null)covPct=covLocal.pct;
     }
-    var logRows=(d.recent_graded&&d.recent_graded.length)?d.recent_graded:localGameLog(logGames,cs,ms);
-    var logLive=!(d.recent_graded&&d.recent_graded.length)&&logRows.length>0;
+    var logRows=srv.log.length?srv.log:localGameLog(logGames,cs,ms);
+    var logLive=!srv.log.length&&logRows.length>0;
     var head='<h1>'+esc(d.model.model_name)+' <span class="pill">'+esc(d.model.sport)+'</span></h1>'+
       '<p class="lede">by <a href="#/'+esc(d.creator.slug)+'">'+esc(d.creator.display_name)+'</a>'+foundBadge(d.creator)+'</p>';
     /* WHO IS THIS MODEL — the profile facts before any number, so a reader
@@ -3506,7 +3620,7 @@ async function renderModel(view,cs,ms){
       :'<div class="emptybox"><b style="color:var(--text)">Building sample.</b><br>'+
         (lastSub?'This model has submitted projections but no eligible game has been graded yet. ':'This model has not posted a projection yet. ')+
         'Every pick is graded on the actual final score against the Collective&#39;s captured closing line the moment its game is final.</div>';
-    stats='<h2>How it has performed</h2>'+stats;
+    stats='<h2>How it has performed</h2>'+stats+placeholderNote(placeholders);
     /* Model against market, on the games this model has actually posted. A
        difference is only shown where the model published a spread: a pick
        side on its own is not comparable to a market number. */
@@ -3967,10 +4081,14 @@ async function renderRankings(view){
     var rkSport=currentSport(mMeta3);
     /* the Collective's own record, graded from the season's settled games;
        absent early season rather than a panel of zeros */
-    var collStats=null,seasonAll=[],seasonG=[],local=null;
+    var collStats=null,seasonAll=[],seasonG=[],local=null,seasonTainted=false;
     try{
       seasonAll=await seasonGames(rkSport.code,rkSport.season);
       seasonG=seasonAll.filter(function(g){return finalResult(g)!=null;});
+      /* A season the server settled a 0-0 placeholder into has server
+         boards built on it; the page's boards, graded from the real
+         finals, stand in for them until the settlement is corrected. */
+      seasonTainted=seasonAll.some(function(g){return placeholderSettled(g);});
       var cs2=consensusSeasonStats(seasonG);
       if(cs2.ats.w+cs2.ats.l+cs2.ats.push>0||cs2.ml.n>0)collStats=cs2;
       /* Rankings that only ever move when a settlement run finishes are not
@@ -4056,7 +4174,7 @@ async function renderRankings(view){
          reader is actually on. The server's board wins when this page can
          confirm at least one of its rows belongs here — or when it has
          nothing of its own to offer. */
-      if(srv.length&&(!loc.length||srv.some(knownRow)))return {rows:srv,live:false};
+      if(srv.length&&!seasonTainted&&(!loc.length||srv.some(knownRow)))return {rows:srv,live:false};
       return {rows:loc,live:loc.length>0};
     }
     /* Decided once, so the boards and the "not yet ranked" list below them
@@ -4315,16 +4433,21 @@ async function renderPerformance(view){
           return seasonGames(dd.model.sport,sn).catch(function(){return [];});
         }));
         var liveSeen=[];
+        var placeholdersSeen=0;
         var cols=ds.map(function(d,di){
-          var rec=d.record,recLive=false;
           var lg=locals[di]||[];
+          /* the server's record and log, set aside together when the page
+             can see they were built on a 0-0 placeholder settlement */
+          var srvP=serverRecordFor(d,lg,d.creator.slug,d.model.model_slug);
+          placeholdersSeen+=srvP.placeholders;
+          var rec=srvP.rec,recLive=false;
           if(!hasRecord(rec)&&lg.length){
             var lr=modelRecord(lg,d.creator.slug,d.model.model_slug);
             if(hasRecord(lr)){rec=lr;recLive=true;}
           }
           liveSeen.push(recLive);
-          var logRows=(d.recent_graded&&d.recent_graded.length)
-            ?d.recent_graded:localGameLog(lg,d.creator.slug,d.model.model_slug);
+          var logRows=srvP.log.length
+            ?srvP.log:localGameLog(lg,d.creator.slug,d.model.model_slug);
           /* Anything that is not a win or a loss used to fall through to
              'p', so a game with NO against-the-spread result — no captured
              close, or no pick side — was drawn as a push the model never
@@ -4395,6 +4518,7 @@ async function renderPerformance(view){
           }
         }
         out.innerHTML='<div class="duo">'+cols+'</div>'+head2+
+          placeholderNote(placeholdersSeen,'these models&rsquo;')+
           (liveCols?'<p class="note" style="margin-top:10px"><b class="pgrade">live</b> One of these records was graded on this page from the final scores while the Collective&rsquo;s settlement run catches up, and the other was not. Same rule and the same closing lines either way, but a settled record and a page-graded one are not the same sample, so read a close comparison with that in mind.</p>':'')+
           '<p class="note" style="margin-top:10px">Win percentage excludes pushes. Margin MAE is the average error of the projected margin against the final score, lower is better. Brier scores the win probability, lower is better. Minimums for the ranked boards still apply on <a href="#rankings">Rankings</a>.</p>';
       }catch(e){out.innerHTML='<div class="errbox">'+esc(e.message||String(e))+'</div>';}
@@ -6630,7 +6754,20 @@ async function renderCreatorDash(view,me){
     var c=d.creator;
     var mine=wall.filter(function(w){return w.creator_slug===c.slug;});
     var m0=mine[0]||null;
-    var rec=m0&&m0.record;
+    /* The same record every public surface shows, through the same
+       decision: the server's, unless the page can see it was built on a
+       0-0 placeholder settlement, in which case the page's own, marked. */
+    var dashLocal={};
+    try{
+      await Promise.all((d.models||[]).map(function(mo){
+        var sn=null;
+        sportList(mMeta).forEach(function(x){if(sportFamily(x.code)===sportFamily(mo.sport))sn=x.season;});
+        if(sn==null)return null;
+        return localRecords(mo.sport,sn).then(function(map){dashLocal[mo.model_slug]=map;}).catch(function(){});
+      }));
+    }catch(_){}
+    var rec0=m0?shownRecord(m0.record,dashLocal[m0.model_slug],c.slug,m0.model_slug):{rec:null,live:false};
+    var rec=rec0.rec;
     var todays=subs.filter(function(s){return s.data_origin==='live'&&sameDayCT(s.received_at);});
     var season0=(sportList(mMeta)[0]&&sportList(mMeta)[0].season)||new Date().getFullYear();
 
@@ -6661,7 +6798,7 @@ async function renderCreatorDash(view,me){
       '<div class="st"><div class="k">Today&#39;s slate</div><div class="v '+(todays.length?'ok':'warn')+'">'+(todays.length?'Submitted':'Not yet')+'</div></div>'+
       '<div class="st"><div class="k">This week</div><div class="v '+(wkShort?'warn':'ok')+'">'+wkPosted+' / '+PARTICIPATION.min+'</div></div>'+
       '<div class="st"><div class="k">Model</div><div class="v">'+esc(m0?m0.model_name:(d.models[0]?d.models[0].model_name:'-'))+'</div></div>'+
-      '<div class="st"><div class="k">Record</div><div class="v">'+(rec?recATSHtml(rec,''):'building')+'</div></div>'+
+      '<div class="st"><div class="k">Record</div><div class="v">'+(rec?recATSHtml(rec,'')+liveMark(rec0.live):'building')+'</div></div>'+
       '<div class="st"><div class="k">Win %</div><div class="v">'+(rec?fmtPct(rec.win_pct):'-')+'</div></div>'+
       '<div class="st"><div class="k">Coverage</div><div class="v">'+(m0&&m0.coverage_pct!=null?fmtNum(m0.coverage_pct,0)+'%':'-')+'</div></div>'+
       '<div class="st"><div class="k">Last slate</div><div class="v">'+rel(m0?m0.last_submission_at:null)+'</div></div>'+
@@ -6795,11 +6932,11 @@ async function renderCreatorDash(view,me){
     html+='<h2>My model'+(d.models.length>1?'s':'')+'</h2><div class="cards">';
     d.models.forEach(function(mo){
       var w=mine.filter(function(x){return x.model_slug===mo.model_slug;})[0]||{};
-      var wr=w.record;
+      var wsr=shownRecord(w.record,dashLocal[mo.model_slug],c.slug,mo.model_slug),wr=wsr.rec;
       html+='<div class="mcard"><div class="mc-top"><div style="min-width:0"><div class="mc-name">'+esc(mo.model_name)+'</div>'+
         '<div class="mc-sub"><span class="pill">'+esc(mo.sport)+'</span></div></div></div>'+
         (c.description?'<div class="note">'+esc(c.description)+'</div>':'')+
-        '<div class="mc-rec">'+(wr?wr.wins+'-'+wr.losses+'-'+wr.pushes+' &middot; '+fmtPct(wr.win_pct,0)+' &middot; '+wr.graded+' graded':'Building sample &middot; no graded games yet')+'</div>'+
+        '<div class="mc-rec">'+(wr?(recATSText(wr)||'<span class="note" title="'+esc(NO_ATS_TITLE)+'">no ATS picks</span>')+' &middot; '+fmtPct(wr.win_pct,0)+' &middot; '+Math.max(wr.graded||0,wr.margin_n||0,wr.brier_n||0)+' graded'+liveMark(wsr.live):'Building sample &middot; no graded games yet')+'</div>'+
         '<div class="mc-foot"><a href="#/'+esc(c.slug)+'">My public profile</a>'+
         '<a href="#/model/'+esc(c.slug)+'/'+esc(mo.model_slug)+'">View my model &rarr;</a></div></div>';
     });
