@@ -27,7 +27,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/games/games.css">
+<link rel="stylesheet" href="/games/games.css?v=20260905a">
 </head>
 <body>
 <div id="gh"></div>
@@ -47,14 +47,33 @@
 
 <div id="gf"></div>
 
-<script src="/games/lib/week.js"></script>
-<script src="/games/lib/scoring.js"></script>
-<script src="/games/lib/challenge.js"></script>
-<script src="/games/lib/research_state.js"></script>
-<script src="/games/lib/attribution.js"></script>
-<script src="/games/lib/store.js"></script>
-<script src="/games/lib/dynasty.js"></script>
-<script src="/games/games.js"></script>
+<script src="/games/lib/week.js?v=20260905a"></script>
+<script src="/games/lib/scoring.js?v=20260905a"></script>
+<script src="/games/lib/challenge.js?v=20260905a"></script>
+<script src="/games/lib/research_state.js?v=20260905a"></script>
+<script src="/games/lib/attribution.js?v=20260905a"></script>
+<script src="/games/lib/store.js?v=20260905a"></script>
+<script src="/games/lib/dynasty.js?v=20260905a"></script>
+<script src="/games/games.js?v=20260905a"></script>
+<script>
+/* STALE SCRIPT GUARD. A browser can keep an old games.js or store.js for
+   longer than it keeps this page, and a page built for the new library
+   then dies on the first function the old copy lacks — a skeleton that
+   never fills. The asset URLs above carry a version token so that cannot
+   happen from here on; this is the belt for the braces: if a required
+   function is missing, say so and offer a fresh load instead of a dead
+   screen. */
+(function(){
+  var need=['EDGamesStore.recordPriceIt','EDGamesScoring.classify','EDGames.pulse','EDGames.proMoment'];
+  var miss=need.filter(function(k){var p=k.split('.'),o=window[p[0]];return !o||typeof o[p[1]]!=='function';});
+  if(!miss.length)return;
+  var host=document.getElementById('stage')||document.querySelector('main');
+  if(host)host.innerHTML='<div class="card"><div class="eyebrow">EdgeDesk Games</div>'
+    +'<div class="empty">This page needs a newer copy of EdgeDesk Games than your browser has kept.<br>'
+    +'<a class="btn btn-go" style="margin-top:14px" href="'+location.pathname+'?fresh='+Date.now()+'">Reload the page</a></div></div>';
+  try{console.warn('stale games scripts: '+miss.join(', '));}catch(_){}
+})();
+</script>
 <script>
 (function(){
   'use strict';

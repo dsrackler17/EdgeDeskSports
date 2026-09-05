@@ -519,6 +519,34 @@ chk('the games pages exist where the routes claim',
   && fs.existsSync(G('pick-5/index.html')));
 chk('the challenge artifact ships with the site', fs.existsSync(G('data/challenges.json')));
 
+/* ── versioned assets ───────────────────────────────────────────────────
+   A phone opened the new Drill page against a games.js and a store.js it
+   had cached the week before, and sat on a skeleton forever: the page
+   called a store function the old copy did not have. Every local games
+   asset is now loaded from a URL that carries ONE version token, so a new
+   deploy is a new URL and a fresh fetch. tools/games/bump_assets.js
+   rewrites the token; this holds that every page carries the same one and
+   that no games asset is loaded bare. */
+(() => {
+  const bump = require(path.join(ROOT, 'tools', 'games', 'bump_assets.js'));
+  const token = bump.current();
+  chk('the games home declares an asset version token', !!token, 'no ?v= on /games/games.js');
+  bump.PAGES.forEach(p => {
+    const html = fs.readFileSync(p, 'utf8');
+    const refs = html.match(/["']\/games\/[^"'?]+\.(?:js|css)(\?v=[A-Za-z0-9._-]+)?["']/g) || [];
+    chk(path.relative(ROOT, p) + ' loads every games asset with the version token',
+      refs.length > 0 && refs.every(r => r.indexOf('?v=' + token) >= 0),
+      refs.filter(r => r.indexOf('?v=' + token) < 0).join(','));
+    chk(path.relative(ROOT, p) + ' guards against a stale cached library',
+      html.indexOf('STALE SCRIPT GUARD') >= 0 || /status\/index\.html$/.test(p));
+  });
+  chk('the bumper advances the letter on a same-day bump',
+    bump.next(undefined).indexOf(bump.today()) === 0);
+  chk('the bumper stamps bare and stale references alike',
+    bump.stamp('<script src="/games/games.js"></script><link href="/games/games.css?v=old">', 'X')
+      === '<script src="/games/games.js?v=X"></script><link href="/games/games.css?v=X">');
+})();
+
 /* ── 9. mobile first ───────────────────────────────────────────────────── */
 PAGES.forEach(([n, p]) => {
   has(p, 'width=device-width', n + ' is responsive');
