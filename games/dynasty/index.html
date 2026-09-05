@@ -98,6 +98,8 @@
   <section class="sec">
     <div class="sec-h"><h2>Your War Room</h2><span class="m" id="roomNote"></span></div>
     <div class="stations" id="stations"></div>
+    <!-- the premium moment, only after real research use this week -->
+    <div id="proSlot" style="margin-top:12px"></div>
   </section>
 
   <!-- THE TROPHY WALL ------------------------------------------------------ -->
@@ -434,6 +436,8 @@
       G.esc(S.earned.length+' of '+S.achievements.length+' earned'),
       'Every one read from your record','#trophies');
     $('stations').innerHTML=html;
+    /* EdgeDesk Pro, once a week, after three matchups' research this week */
+    if(G.proMoment&&$('proSlot')){$('proSlot').innerHTML=G.proMoment('war_room');if(G.wireProMoment)G.wireProMoment();}
     $('roomNote').textContent=ST.storageWorks()?'saved on this device':'this session only';
 
     $('st-film').addEventListener('click',function(){

@@ -700,6 +700,83 @@ Short, because nothing here is built:
 
 ---
 
+# Game feel — every important action has a payoff
+
+The rules that make a result a moment rather than a row. Each one is a
+pure function or a fixed sequence, so it can be tested and never drifts.
+
+## Price It, as a sequence
+
+1. **The question.** A first-timer's eyebrow reads *Think you know the line?*
+   The week label is for regulars. Under the readout a **lean bar** fills
+   from the centre toward the favoured side and lights that team's name, so
+   the read is visible before it is read; the number bumps on every change;
+   *Reset to pick 'em* is one tap.
+2. **The lock beat.** On lock the price the player set sits alone on the
+   screen — *Your line is in* — for 900 ms (0 ms under reduced motion).
+3. **The reveal, staggered.** Your price, then the market, then EdgeDesk,
+   then the score. Under reduced motion everything is simply there.
+4. **The read.** `EDGamesScoring.classify(user, market, edgedesk)` returns one
+   of four descriptive labels against the market (EdgeDesk when there is no
+   market), versioned `classify_v1`:
+
+   | label | when |
+   |---|---|
+   | Near the market / Near EdgeDesk | within 1.5 points |
+   | Aggressive favourite | more points to the favourite than the reference |
+   | More underdog-friendly | fewer points to the favourite |
+   | Way off consensus | 7 or more points away |
+
+   None of them is a grade. An aggressive read is a read.
+5. **The EdgeDesk snapshot** — the free research, worth reading on its own:
+   the model's number, the market's, the research state, the one key driver
+   (the first factor the exporter wrote), and how the rosters compare on OL
+   continuity, QB continuity and returning production where they differ by
+   five points or more. Then *Research this matchup*. The remaining factors
+   fold under *Why EdgeDesk prices it here*.
+6. **A first result says so.** *Nice. You just created your first EdgeDesk
+   game result* and one line on how the score works. The mission list and
+   the War Room are not shown until the second game (`DYNASTY.CREATE_AT`).
+
+## Head-to-Head, as a person
+
+* The invite landing leads with the name — *Davis challenged you* — then
+  the matchup, the mode, one sealed line, the picker and the lock. Nothing
+  else above the action.
+* Both locked is *Picks are in*, with the kickoff and the series so far.
+* A result is *You win* / *Davis wins* / *Draw*, the series against that
+  opponent, and **Run it back** as the primary action. A loss is never
+  framed as being shown up.
+* **Rivalries** come from the player's own ledger:
+  `EDGamesDynasty.rivalries(state)` reads `h2h_locked`, `h2h_settled`,
+  `h2h_win` and `h2h_draw` rows keyed by invite token; a loss is a settled
+  challenge that was neither a win nor a draw; `streak` is signed. Nothing is
+  counted that the page did not see happen.
+
+## Pick 5, as a ritual
+
+Progress while picking (*3 / 5 picked*), *Lock my card*, then *Your week is
+locked · 5 picks in*; a running line as games settle (*3–1 · one remaining*);
+a final grade that describes the week (*Perfect card*, *Strong week*, *Rough
+week. Every game has a why.*); the final score on each settled row, from the
+artifact.
+
+## The premium moment
+
+EdgeDesk Pro is mentioned **once per football week, only after the player has
+opened the research on three or more matchups that week**
+(`EDGames.PRO_AFTER_OPENS`). The card names what full research adds, links to
+the pricing page with the campaign carried, and has a real *Keep playing
+free* button; either choice is remembered for the week. It appears after a
+Price It reveal and on the War Room. It never appears on a first visit,
+never before value, and the games never need it.
+
+## Measured
+
+`first_game_start`, `time_to_first_action` (seconds from this browser's
+first visit to its first completed game), `rematch`, `premium_view_after_research`,
+`keep_playing_free`, alongside the existing funnel.
+
 # The Two-Minute Drill
 
 ## What it is
@@ -716,6 +793,10 @@ The first round is always the easy one: who EdgeDesk favours, on a matchup
 priced at two touchdowns or more, when the board has one. The first five seconds
 decide whether a cold visitor plays, so round one is a read anybody can make.
 The order stays deterministic — it is the first such game in the seeded shuffle.
+
+Sound is **opt-in**: off until the player turns it on, remembered in
+`localStorage` (`edgedesk_drill_mute`), a few WebAudio blips and no audio
+assets. Nothing plays by default.
 
 ## Every answer is canonical
 

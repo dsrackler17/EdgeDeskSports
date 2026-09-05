@@ -160,6 +160,33 @@
     return { key: 'far', label: 'Way apart' };
   }
 
+  /* ── Where a read sits against the consensus ────────────────────────────
+     A short label for the reveal — "Near market", "Aggressive favourite",
+     "More underdog-friendly", "Way off consensus". Descriptive, never a
+     grade: an aggressive read is a read, and distance from the consensus is
+     not a mistake. Against the MARKET when the game has one, otherwise
+     against EdgeDesk, and the result says which.
+
+     Spreads are the HOME line. A more NEGATIVE user number on a home
+     favourite means the player likes the favourite MORE. */
+  var CLASSIFY_VERSION = 'classify_v1';
+  function classify(userSpread, marketSpread, edgedeskSpread) {
+    var ref = isNum(marketSpread) ? marketSpread : (isNum(edgedeskSpread) ? edgedeskSpread : null);
+    var refLabel = isNum(marketSpread) ? 'the market' : 'EdgeDesk';
+    if (!isNum(userSpread) || !isNum(ref)) return null;
+    var d = distance(userSpread, ref);
+    var out = { version: CLASSIFY_VERSION, against: refLabel, distance: d };
+    if (d <= 1.5) { out.key = 'near'; out.label = 'Near ' + refLabel; out.means = 'Within a field goal of ' + refLabel + '.'; return out; }
+    if (d >= 7) { out.key = 'far'; out.label = 'Way off consensus'; out.means = d.toFixed(1) + ' points from ' + refLabel + '. A very different read — the research is where that gap gets explained.'; return out; }
+    /* which way did the player lean, relative to the reference's favourite? */
+    var favHome = ref < 0;                        /* the reference favours the home side */
+    var moreFav = favHome ? userSpread < ref : userSpread > ref;
+    if (ref === 0) moreFav = Math.abs(userSpread) > 0;   /* a pick'em reference: any lean is a favourite call */
+    if (moreFav) { out.key = 'aggressive'; out.label = 'Aggressive favourite'; out.means = 'You gave the favourite ' + d.toFixed(1) + ' more points than ' + refLabel + '.'; }
+    else { out.key = 'dog'; out.label = 'More underdog-friendly'; out.means = 'You gave the underdog ' + d.toFixed(1) + ' more points than ' + refLabel + '.'; }
+    return out;
+  }
+
   /* ── Pick 5 settlement ──────────────────────────────────────────────────
      Which side covered, from the FINAL SCORE and the spread the card was
      actually submitted against. Deterministic, and it uses the player's own
@@ -189,7 +216,8 @@
     FREE_POINTS: FREE_POINTS, STEP_PENALTY: STEP_PENALTY, MAX_SCORE: MAX_SCORE,
     BENCHMARKS: BENCHMARKS,
     distance: distance, scoreForDistance: scoreForDistance, score: score,
-    evaluate: evaluate, compare: compare, band: band
+    evaluate: evaluate, compare: compare, band: band,
+    CLASSIFY_VERSION: CLASSIFY_VERSION, classify: classify
   };
   root.EDGamesScoring = API;
   if (typeof module !== 'undefined' && module.exports) module.exports = API;

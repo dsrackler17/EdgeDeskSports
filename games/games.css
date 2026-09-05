@@ -596,3 +596,83 @@ h1,h2,h3{font-family:'Space Grotesk',Inter,sans-serif;margin:0;line-height:1.15}
 .hero-mu .mu-vs{margin:4px 0}
 .hero-q{font-family:'Space Grotesk',sans-serif;font-size:17px;font-weight:700;color:var(--text);margin-top:14px}
 .hero-load{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--faint);padding:18px 0 6px}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   GAME FEEL — the lock beat, the staggered reveal, the read, the snapshot.
+   Motion is reserved for the moments that matter: the lock, the reveal, a
+   level, an achievement. Everything else holds still.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* the favourite/underdog readout: which way the player is leaning, and by
+   how much, as a bar that fills from the centre toward the favoured side */
+.lean{position:relative;height:10px;margin:10px 2px 2px;background:var(--cell);
+  border:1px solid var(--line);border-radius:999px;overflow:hidden}
+.lean .mid{position:absolute;left:50%;top:0;bottom:0;width:1px;background:var(--line2)}
+.lean .fill{position:absolute;top:0;bottom:0;background:linear-gradient(90deg,var(--val-dim),var(--val));
+  transition:left .12s ease,width .12s ease}
+.lean-names{display:flex;justify-content:space-between;font-size:11.5px;font-weight:700;
+  color:var(--faint);margin:6px 2px 0}
+.lean-names span{transition:color .12s}
+.lean-names .on{color:var(--val)}
+.sel-line{transition:transform .12s ease}
+.sel-line.bump{transform:scale(1.04)}
+.sel-reset{display:block;margin:8px auto 0;background:none;border:0;color:var(--faint);
+  font:500 12px 'Inter',sans-serif;cursor:pointer;min-height:36px;padding:0 10px}
+.sel-reset:hover{color:var(--dim);text-decoration:underline}
+
+/* the lock beat: the price the player set, alone, for a breath */
+.linein{text-align:center;padding:34px 0 30px;animation:rise .28s ease both}
+.linein .eyebrow{color:var(--val)}
+.linein .ln{font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;
+  font-size:40px;font-weight:700;color:var(--text);line-height:1.1;margin:8px 0 6px}
+.linein .s{font-size:13px;color:var(--dim)}
+@media(min-width:560px){.linein .ln{font-size:52px}}
+
+/* the reveal, staggered: your price, then the market, then EdgeDesk, then
+   the score. Under reduced motion everything is simply there. */
+.reveal .price{animation:rise .32s cubic-bezier(.2,.8,.3,1) both}
+.reveal .price:nth-child(1){animation-delay:.05s}
+.reveal .price:nth-child(2){animation-delay:.35s}
+.reveal .price:nth-child(3){animation-delay:.65s}
+.reveal .scorebox .n{animation-delay:1s}
+.reveal .cls,.reveal .deltas,.reveal .snap{animation:rise .3s ease both;animation-delay:1.15s}
+@media(prefers-reduced-motion:reduce){
+  .reveal .price,.reveal .scorebox .n,.reveal .cls,.reveal .deltas,.reveal .snap,.linein{animation:none}
+}
+
+/* the read: where the price sits against the consensus. Descriptive, never
+   a grade — the chip is neutral and the sentence explains it. */
+.cls{display:flex;flex-direction:column;align-items:center;gap:6px;margin-top:16px;text-align:center}
+.cls .chip{display:inline-flex;align-items:center;gap:7px;border-radius:999px;padding:6px 13px;
+  font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;
+  border:1px solid var(--line2);background:var(--cell);color:var(--text)}
+.cls .chip.near{color:var(--val);border-color:var(--val-dim)}
+.cls .chip.far{color:var(--est);border-color:rgba(217,164,65,.4)}
+.cls .m{font-size:12.5px;color:var(--dim)}
+
+/* the EdgeDesk snapshot: the free research teaser, worth reading on its own */
+.snap{margin-top:22px;background:var(--cell);border:1px solid var(--line);border-radius:12px;padding:14px}
+.snap .eyebrow{margin-bottom:8px}
+.snap-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.snap-k{font-size:9.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--faint)}
+.snap-v{font-family:'JetBrains Mono',monospace;font-size:15px;font-weight:700;margin-top:3px;
+  overflow-wrap:break-word}
+.snap-v.plain{font-family:'Inter',sans-serif;font-size:13.5px;font-weight:500;color:var(--text);line-height:1.5}
+.snap-cell{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px 12px;min-width:0}
+.snap-cell.wide{grid-column:1/-1}
+.snap-how{margin-top:10px;display:grid;gap:6px}
+.snap-how div{display:flex;gap:8px;font-size:13px;color:var(--dim);line-height:1.5}
+.snap-how b{color:var(--text);font-weight:600}
+.snap-how .who{flex:none;width:18px;height:18px;border-radius:5px;display:grid;place-items:center;
+  font-size:11px;font-weight:800;background:rgba(63,184,131,.16);color:var(--val);margin-top:1px}
+.snap-how .who.b{background:rgba(92,157,255,.16);color:var(--obs)}
+.snap .btn-row{margin-top:12px}
+
+/* the premium moment, once a week, after research interest */
+.pro{border-color:var(--obs);background:linear-gradient(180deg,rgba(92,157,255,.08),transparent)}
+.pro .pro-t{font-family:'Space Grotesk',sans-serif;font-size:18px;font-weight:700;line-height:1.25}
+.pro p{margin:8px 0 0;color:var(--dim);font-size:13.5px;line-height:1.55}
+
+/* labelled loading states — a skeleton says what it is waiting for */
+.sk-label{text-align:center;font-size:11px;letter-spacing:.12em;text-transform:uppercase;
+  color:var(--faint);margin-top:12px}

@@ -336,6 +336,60 @@
     });
   }
 
+  /* ── rivalries ───────────────────────────────────────────────────────────
+     Head-to-Head history against each opponent, from the player's own
+     ledger: every challenge where both locked (h2h_locked), the ones they
+     won (h2h_win), the draws (h2h_draw); a loss is a locked, settled
+     challenge that was neither. `streak` is the current run of results
+     against that opponent, signed (+2 = two wins running, −1 = one loss).
+     Sorted by games played. Only real rows, only display names the page
+     actually saw. */
+  function rivalries(s) {
+    s = s || {};
+    var by = {};
+    function bucket(name) {
+      if (!by[name]) by[name] = { opponent: name, played: 0, wins: 0, losses: 0, draws: 0, settled: 0,
+        streak: 0, last_at: null, results: [] };
+      return by[name];
+    }
+    var wins = {}, draws = {};
+    eventsOf(s, 'h2h_win').forEach(function (e) { wins[e.key] = e; });
+    eventsOf(s, 'h2h_draw').forEach(function (e) { draws[e.key] = e; });
+    var settledKeys = {};
+    eventsOf(s, 'h2h_settled').forEach(function (e) { settledKeys[e.key] = e; });
+    eventsOf(s, 'h2h_locked').forEach(function (e) {
+      var name = e.meta && e.meta.opponent;
+      if (!name) return;
+      var r = bucket(name);
+      r.played++;
+      if (!r.last_at || e.at > r.last_at) r.last_at = e.at;
+      var outcome = wins[e.key] ? 'win' : draws[e.key] ? 'draw' : settledKeys[e.key] ? 'loss' : null;
+      if (outcome) { r.settled++; r[outcome === 'win' ? 'wins' : outcome === 'draw' ? 'draws' : 'losses']++; r.results.push({ key: e.key, outcome: outcome, at: e.at }); }
+    });
+    var out = vals(by);
+    out.forEach(function (r) {
+      r.results.sort(byAt);
+      var i, st = 0;
+      for (i = r.results.length - 1; i >= 0; i--) {
+        var o = r.results[i].outcome;
+        if (o === 'draw') break;
+        if (st === 0) st = o === 'win' ? 1 : -1;
+        else if ((st > 0 && o === 'win') || (st < 0 && o === 'loss')) st += st > 0 ? 1 : -1;
+        else break;
+      }
+      r.streak = st;
+      r.record = r.wins + '–' + r.losses + (r.draws ? '–' + r.draws : '');
+    });
+    out.sort(function (a, b) { return (b.played - a.played) || String(b.last_at || '').localeCompare(String(a.last_at || '')); });
+    return out;
+  }
+  function rivalry(s, opponent) {
+    if (!opponent) return null;
+    var list = rivalries(s), i;
+    for (i = 0; i < list.length; i++) if (list[i].opponent === opponent) return list[i];
+    return null;
+  }
+
   /* ── the summary a page renders ─────────────────────────────────────────── */
   function summary(s, nowMs) {
     s = s || {};
@@ -404,7 +458,8 @@
     MAX_LEVEL: MAX_LEVEL, TITLES: TITLES, STAGES: STAGES, MISSIONS: MISSIONS, ACHIEVEMENTS: ACHIEVEMENTS,
     xpForLevel: xpForLevel, levelFor: levelFor, titleFor: titleFor, stageFor: stageFor, nextStage: nextStage,
     ledger: ledger, totalXp: totalXp, missions: missions, missionSet: missionSet,
-    achievements: achievements, summary: summary, diff: diff, marker: marker
+    achievements: achievements, summary: summary, diff: diff, marker: marker,
+    rivalries: rivalries, rivalry: rivalry
   };
   root.EDGamesDynasty = API;
   if (typeof module !== 'undefined' && module.exports) module.exports = API;

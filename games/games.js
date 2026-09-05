@@ -67,7 +67,12 @@
     'research_open_from_dynasty', 'premium_view_from_dynasty', 'subscription_from_dynasty',
     'return_1d', 'return_7d', 'return_next_football_week',
     /* the Two-Minute Drill */
-    'drill_start', 'drill_round', 'drill_complete', 'drill_share', 'research_open_from_drill'];
+    'drill_start', 'drill_round', 'drill_complete', 'drill_share', 'research_open_from_drill',
+    /* game-quality metrics: how fast a stranger gets to a first real action,
+       whether a result leads to a rematch, and whether a premium look
+       follows research use rather than preceding it */
+    'first_game_start', 'time_to_first_action', 'rematch', 'challenge_created', 'challenge_accepted',
+    'premium_view_after_research', 'keep_playing_free'];
 
   var _level = null;
   function track(event, props) {
@@ -207,17 +212,11 @@
      claim that the player has found a bet. */
   function shareText(ch, res) {
     var L = [];
-    L.push('I PRICED IT');
-    L.push('');
-    L.push(ch.away_team + ' vs ' + ch.home_team);
-    L.push('');
-    L.push('My line: ' + (line(ch, res.user_spread) || '—'));
+    L.push('I priced ' + (line(ch, res.user_spread) || (ch.away_team + ' vs ' + ch.home_team + ' as a pick ’em')) + '.');
     if (res.market_spread != null) L.push('Market: ' + line(ch, res.market_spread));
     if (res.edgedesk_spread != null) L.push('EdgeDesk: ' + line(ch, res.edgedesk_spread));
     L.push('');
-    L.push('Score: ' + res.score);
-    L.push('');
-    L.push('Can you price it better?');
+    L.push('How would you price it?');
     L.push('EdgeDesk Games');
     return L.join('\n');
   }
@@ -398,6 +397,58 @@
     setTimeout(function () { el.classList.add('on'); try { el.querySelector('.btn-go').focus(); } catch (_) {} }, 20);
   }
 
+  /* ── the premium moment ───────────────────────────────────────────────────
+     EdgeDesk Pro is the research, and it is mentioned exactly once per
+     football week, only after the player has opened the research on at
+     least PRO_AFTER_OPENS matchups this week — a look at the price after
+     demonstrated interest, never a pitch before value. "Keep playing free"
+     is a real button, and dismissing it is remembered for the week.
+     Returns '' when the moment is not due. */
+  var PRO_AFTER_OPENS = 3;
+  var PRICING = '/#pricing';
+  function proDue() {
+    if (!ST || !W) return false;
+    var wk = W.weekKey(), n = 0;
+    try {
+      ST.researchOpens().forEach(function (o) { if (o.week === wk) n++; });
+      if (ST.seen('pro_moment:' + wk)) return false;
+    } catch (_) { return false; }
+    return n >= PRO_AFTER_OPENS ? n : false;
+  }
+  function proMoment(placement) {
+    var n = proDue();
+    if (!n) return '';
+    return '<div class="card pro" data-pro="' + esc(placement || '') + '">'
+      + '<div class="eyebrow">EdgeDesk research</div>'
+      + '<div class="pro-t">You have opened the research on ' + n + ' matchups this week.</div>'
+      + '<p>Full EdgeDesk research goes further on every one of them: simulations, complete roster and '
+      + 'player context, market research, the model’s own explanations, and the history.</p>'
+      + '<div class="btn-row two">'
+      + '<a class="btn btn-go" href="' + esc(withAttribution(PRICING, { intent: 'pro_after_research', placement: placement || '' })) + '" data-pro-view>View EdgeDesk Pro</a>'
+      + '<button class="btn" type="button" data-pro-free>Keep playing free</button>'
+      + '</div>'
+      + '<div class="ftp" style="margin-top:10px">The games never need it. Pro is the research, not a better score.</div>'
+      + '</div>';
+  }
+  /* attach after the HTML above is in the page */
+  function wireProMoment() {
+    var d = root.document, host = d.querySelector('[data-pro]');
+    if (!host) return;
+    var wk = W ? W.weekKey() : 'all', placement = host.getAttribute('data-pro') || '';
+    track('premium_view_after_research', { placement: placement, shown: true });
+    var view = host.querySelector('[data-pro-view]'), free = host.querySelector('[data-pro-free]');
+    if (view) view.addEventListener('click', function () {
+      try { ST.markSeen('pro_moment:' + wk); } catch (_) {}
+      track('pricing_view_from_games', { placement: placement, after_research: true });
+      track('premium_view_from_dynasty', { placement: placement });
+    });
+    if (free) free.addEventListener('click', function () {
+      try { ST.markSeen('pro_moment:' + wk); } catch (_) {}
+      track('keep_playing_free', { placement: placement });
+      host.classList.add('hide');
+    });
+  }
+
   function summaryNow() {
     if (!ST || !DY) return null;
     try { return DY.summary(ST.read()); } catch (_) { return null; }
@@ -505,7 +556,8 @@
     pts: pts, line: line, kickoffLabel: kickoffLabel, esc: esc,
     shareText: shareText, shareUrl: shareUrl, share: share,
     toast: toast, header: header, footer: footer, mount: mount, boot: boot,
-    pulse: pulse, summaryNow: summaryNow, chip: chip, moment: moment
+    pulse: pulse, summaryNow: summaryNow, chip: chip, moment: moment,
+    PRO_AFTER_OPENS: PRO_AFTER_OPENS, proDue: proDue, proMoment: proMoment, wireProMoment: wireProMoment
   };
   root.EDGames = API;
   if (typeof module !== 'undefined' && module.exports) module.exports = API;
