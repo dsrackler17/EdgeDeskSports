@@ -354,3 +354,64 @@ a.sched-row:hover{text-decoration:none;background:var(--cell)}
 .save-form .btn-row{margin-top:10px}
 .save-ftp{margin-top:10px;line-height:1.55}
 .linkish{background:none;border:0;padding:0;color:var(--val);font:inherit;cursor:pointer;text-decoration:underline}
+
+/* ── FRANCHISE VS FRANCHISE (Phase 3) ───────────────────────────────────── */
+/* the invite landing: who is calling you out */
+.fc-hero{margin-top:14px;display:flex;gap:14px;align-items:center;background:var(--cell);border:1px solid var(--fr-primary,var(--line));border-radius:14px;padding:14px}
+.fc-hero .fr-mark{width:56px;height:56px;border-radius:14px;flex:none}
+.fc-hero .k{font-size:10.5px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--faint)}
+.fc-hero .n{font-family:'Space Grotesk',sans-serif;font-size:22px;font-weight:700;line-height:1.1;margin-top:2px;overflow-wrap:break-word}
+.fc-hero .s{font-size:12.5px;color:var(--dim);margin-top:4px;line-height:1.45;font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums}
+.fc-note{margin-top:10px;font-size:14px;color:var(--text);line-height:1.5;border-left:3px solid var(--fr-primary,var(--val-dim));padding-left:10px}
+
+/* the challenge list: invites out and games played */
+.fcl{list-style:none;margin:8px 0 0;padding:0;display:grid;gap:6px}
+.fcl li{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:10px;align-items:center;min-height:var(--tap);background:var(--cell);border:1px solid var(--line);border-radius:11px;padding:8px 12px;font-size:13.5px}
+.fcl .fr-mark{width:30px;height:30px;border-radius:8px}
+.fcl .o{min-width:0}
+.fcl .o b{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fcl .o small{display:block;font-size:11px;color:var(--faint);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fcl .r{font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;font-size:12.5px;color:var(--faint);white-space:nowrap;text-align:right}
+.fcl .r b.w{color:var(--val)}.fcl .r b.l{color:var(--neg)}.fcl .r b.t{color:var(--est)}
+.fcl .r .d{display:block;font-size:11px}
+.fcl .r .d.up{color:var(--val)}.fcl .r .d.dn{color:var(--neg)}
+.fcl .act{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+.fcl .act .btn{min-height:36px;padding:0 10px;font-size:12px}
+a.fcl-row{color:var(--text)}
+a.fcl-row:hover{text-decoration:none;border-color:var(--line2)}
+
+/* the ladder */
+.ladder{width:100%;border-collapse:collapse;font-size:13.5px;margin-top:8px}
+.ladder th{text-align:left;font-size:10px;font-weight:700;letter-spacing:.1em;color:var(--faint);padding:6px 6px;border-bottom:1px solid var(--line)}
+.ladder td{padding:8px 6px;border-bottom:1px solid var(--line);vertical-align:middle}
+.ladder tr:last-child td{border-bottom:0}
+.ladder .rk{font-family:'JetBrains Mono',monospace;color:var(--faint);width:34px}
+.ladder .fr-mark{width:26px;height:26px;border-radius:7px;vertical-align:middle;margin-right:8px}
+.ladder .nm{min-width:0}
+.ladder .nm small{display:block;font-size:11px;color:var(--faint)}
+.ladder .rt{font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;font-weight:700;text-align:right;white-space:nowrap}
+.ladder .rc{font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;text-align:right;color:var(--dim);white-space:nowrap}
+.ladder tr.me{background:rgba(63,184,131,.07)}
+.ladder-me{font-size:12.5px;color:var(--dim);margin-top:10px;line-height:1.5}
+.ladder-me b{color:var(--text)}
+
+/* rivalries */
+.riv{list-style:none;margin:8px 0 0;padding:0;display:grid;gap:6px}
+.riv li{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center;background:var(--cell);border:1px solid var(--line);border-radius:11px;padding:8px 12px;font-size:13.5px}
+.riv .fr-mark{width:30px;height:30px;border-radius:8px}
+.riv .o b{display:block}
+.riv .o small{display:block;font-size:11px;color:var(--faint)}
+.riv .r{font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;font-size:12.5px;text-align:right;white-space:nowrap;line-height:1.5}
+.riv .r span{display:block;color:var(--faint);font-size:11px}
+
+/* the note field on a new challenge */
+.fc-new{display:grid;gap:8px;margin-top:10px}
+.fc-new input{min-height:var(--tap);border-radius:11px;border:1px solid var(--line2);background:var(--ink);color:var(--text);padding:0 14px;font:500 15px 'Inter',sans-serif;width:100%}
+.fc-new input:focus{border-color:var(--val);outline:0}
+.fc-link{display:grid;gap:8px;margin-top:10px;background:var(--cell);border:1px solid var(--val-dim);border-radius:12px;padding:12px}
+.fc-link .u{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--dim);word-break:break-all}
+
+/* the H2H page: the two franchises behind the two names */
+.vs-fr{display:flex;justify-content:center;align-items:center;gap:6px;margin-top:4px;font-size:11px;color:var(--faint)}
+.vs-fr .fr-mark{width:18px;height:18px;border-radius:5px}
+.h2h-riv{text-align:center;font-size:12px;color:var(--dim);margin-top:8px;font-family:'JetBrains Mono',monospace}

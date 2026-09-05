@@ -1194,15 +1194,64 @@ Phase 2 fires `gameday_view` · `season_started` · `weekly_game_started` ·
   the next one started with the careers kept. It skips loudly without
   Postgres; `games-sql.yml` refuses the skip.
 
+## Phase 3 — franchise vs franchise
+
+**A challenge is a link.** From Game Day a franchise makes a challenge link
+(`franchise_challenge_create`: up to ten open at once, good for fourteen
+days, an optional line to send with it). Anyone holding the link sees who
+is calling them out — the franchise's card: name, mark, overall, record —
+with or without a franchise of their own (`franchise_challenge_peek`; the
+token is the key, and it is returned to nobody but the challenger). A
+visitor without a franchise founds one, no account needed, and the link
+brings them straight back. Whoever accepts plays the game **at once, on
+the server** (`franchise_challenge_accept`): `franchise_sim_versus()` runs
+the same drive model as the season on **both real rosters**, each side's
+own scheme matchup, traits and this week's preparation, on a neutral
+field, seeded from a seed the server derives. The client sends the token
+and nothing else. A challenge is played once.
+
+**What a challenge moves, on both sides.** The ledger, by the table:
+`fc_played` 60 XP and 30 TC; `fc_win` 40 XP, 40 TC and 2 CP; `fc_upset`
+40 XP and 1 CP for beating a franchise rated five or more points higher.
+Achievements: Exhibition Debut, Beat a Friend, Giant Killer, Three
+Straight. Careers grow by the box; the season lines and the season record
+do not — an exhibition is not a season game. The **rivalry record**
+between the two franchises (`franchise_rivalries`, both directions,
+append-only) counts challenges "on the field" beside real-game
+Head-to-Heads "on the board", which the existing settlement trigger now
+writes too. And both move on **the ladder**: ordinary Elo, K = 24, from
+1500, zero-sum.
+
+**The ladder lists franchises, never accounts.** `franchise_ladder()` is
+public and returns a name, a city, a mark, an overall, a record and a
+rating — no id a client could use, no email, no user. A franchise appears
+on it only once it has played a challenge; founding alone puts nobody on
+a public list. Game Day shows the top of it and where you stand.
+
+**Head-to-Head, with the franchises behind the names.** When both players
+in a real-game Head-to-Head have franchises, the page says which, with
+the marks, and the record between the two franchises
+(`franchise_h2h_context`, read by token; `games_social.sql` is untouched).
+A franchise claimed into an account after an anonymous entry still maps
+(`franchises.claimed_hash`).
+
+Report rows 13–15 cover it: the versus simulator and the rivalry writer
+are reachable by no client role; a challenge is open to every franchise;
+the ladder is public and carries no account. The SQL suite plays it
+through: the link read by a stranger and by the challenger, refused for
+oneself, refused without a franchise, accepted once, both sides paid once,
+the rivalry mirrored, the ladder zero-sum, the box adding up on both
+sides, expiry, cancellation, the cap of ten, the upset paid only to the
+weaker winner, and three straight.
+
 ## Not built yet, on purpose
 
-Franchise Head-to-Head context, rivalries between players and conferences
-(Phase 3); the Trophy Room page, facilities, player development, ageing and
+Conferences — a league of friends with standings of its own — and
+playoffs; the Trophy Room page, facilities, player development, ageing and
 the offseason between seasons (Phase 4); the draft and the transfer market
-(Phase 5); playoffs and standings against other players' franchises. The
-schema leaves room: `franchise_seasons.status` admits `playoffs`, the
-ledger accepts a negative delta for spending, traits with no simulator
-effect yet (Iron Man) are stated as such, and `franchise_activity` is the
-record every future reward derives from. The simulator is versioned
-(`sim_v1`) so a retuned one is a new version and old boxes stay true to the
-rules they were played under.
+(Phase 5). The schema leaves room: `franchise_seasons.status` admits
+`playoffs`, the ledger accepts a negative delta for spending, traits with
+no simulator effect yet (Iron Man) are stated as such, and
+`franchise_activity` is the record every future reward derives from. The
+simulator is versioned (`sim_v1`) so a retuned one is a new version and
+old boxes stay true to the rules they were played under.

@@ -87,6 +87,7 @@ const GAMEDAY = fs.readFileSync(G('gameday/index.html'), 'utf8');
 const FJS = fs.readFileSync(G('lib/franchise.js'), 'utf8');
 const AUTHJS = fs.readFileSync(G('lib/auth.js'), 'utf8');
 const LANDING = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
+const H2H = fs.readFileSync(G('h2h/index.html'), 'utf8');
 const SQLTEST = fs.readFileSync(path.join(__dirname, 'sql', 'games_franchise.test.sql'), 'utf8');
 const NOTFOUND = fs.readFileSync(path.join(ROOT, '404.html'), 'utf8');
 const SITEMAP = fs.readFileSync(path.join(ROOT, 'sitemap.xml'), 'utf8');
@@ -813,10 +814,97 @@ fresh();
   has(SQL, "for update", 'the franchise row is locked while a game is played');
   chk('a client sends nothing that changes a result: play and start take the identity and nothing else',
     /franchise_play_week\(p_secret text default null\)/.test(SQL) && /franchise_start_season\(p_secret text default null\)/.test(SQL)
-    && !/p_score_for|p_result|p_box|p_game_seed/.test(SQL));
+    && !/p_score_for\b|p_result\b|p_box\b|p_game_seed/.test(SQL));
   has(README, 'sim_v1', 'the README documents the simulator version');
   has(README, 'Saturday at 07:00 UTC', 'and the calendar rule');
   has(README, 'Save it, in one step', 'and the one-step save');
+
+  /* ═══ 12. FRANCHISE VS FRANCHISE (PHASE 3) ════════════════════════════════ */
+  eq('a challenge played: 60 XP, 30 TC', F.ECONOMY.fc_played.xp + '/' + F.ECONOMY.fc_played.tc, '60/30');
+  eq('a challenge won: 40 XP, 40 TC, 2 CP', [F.ECONOMY.fc_win.xp, F.ECONOMY.fc_win.tc, F.ECONOMY.fc_win.cp].join('/'), '40/40/2');
+  eq('an upset: 40 XP, 1 CP on top', F.ECONOMY.fc_upset.xp + '/' + F.ECONOMY.fc_upset.cp, '40/1');
+  chk('rewardsFor knows the challenge lines', F.rewardsFor('fc_win').cp === 2 && F.rewardsFor('fc_upset').xp === 40 && F.rewardsFor('fc_played').tc === 30);
+  (() => {
+    const rows = {}; let m; const re = /\('([a-z_0-9]+)',\s+'([^']+)',\s+'/g;
+    while ((m = re.exec(SQL))) rows[m[1]] = m[2];
+    ['fc_first', 'fc_first_win', 'fc_upset', 'fc_three'].forEach(id =>
+      chk('the SQL seeds ' + id + ' and the client names it the same', rows[id] && F.ACHIEVEMENTS[id] && F.ACHIEVEMENTS[id].name === rows[id].replace(/''/g, "'"), rows[id]));
+  })();
+  chk('the ladder starts at 1500 with K = 24, the same on both sides', F.LADDER_START === 1500 && F.LADDER_K === 24
+    && /ladder_rating integer not null default 1500/.test(SQL) && /games_elo_delta\(ra, rb, [^)]*, 24\)/.test(SQL));
+  eq('a record is said plainly', F.recordLine({ wins: 3, losses: 1 }), '3–1');
+  eq('with ties when there are any', F.recordLine({ wins: 3, losses: 1, ties: 1 }), '3–1–1');
+  chk('a challenge link is the Game Day page with the token', /^https:\/\/edgedesksports\.com\/games\/gameday\/\?fc=abc$/.test(F.challengeUrl('abc')));
+  (() => {
+    const t = F.challengeInviteText({ city: 'Lubbock', name: 'Outlaws', overall: 72, record: { wins: 3, losses: 1 } }, { note: 'Bring it.' });
+    chk('an invite says who is calling, how good they are, the note, and that no account is needed',
+      /The Lubbock Outlaws \(OVR 72, 3–1\) challenge your franchise\./.test(t) && /“Bring it\.”/.test(t) && /No account needed/.test(t) && !/\b(bet|wager|odds)\b/i.test(t), t);
+    const r = F.challengeShareText({ status: 'FINAL', me: { city: 'Lubbock', name: 'Outlaws' }, them: { city: 'Austin', name: 'Wranglers' }, score_for: 27, score_against: 20, ot: true, rating_delta: 12,
+      potg: { name: 'A B', position: 'RB', stats: { car: 12, yds: 80, td: 1 } } });
+    chk('a shared result is the score, the player of the game and the ladder move — no claim',
+      /LUBBOCK OUTLAWS 27, Austin Wranglers 20 \(OT\)/.test(r) && /neutral field/.test(r) && /A B, RB — 12 car, 80 yds, 1 TD/.test(r) && /Ladder: \+12/.test(r) && /EdgeDesk Games$/.test(r), r);
+    eq('a shared invite that is not final says the matchup', F.challengeShareText({ status: 'OPEN', me: { city: 'Lubbock', name: 'Outlaws' }, them: null }).split('\n')[0], 'LUBBOCK OUTLAWS challenge a franchise.');
+  })();
+  /* the client asks; the link is the key */
+  has(FJS, "rpc('franchise_challenge_create', withSecret({ p_note: note || null }))", 'a challenge is made with a note and the identity');
+  has(FJS, "rpc('franchise_challenge_peek', withSecret({ p_token: String(token || '') }))", 'a link is read by its token');
+  has(FJS, "rpc('franchise_challenge_accept', withSecret({ p_token: String(token || '') }))", 'and accepted by its token, nothing more');
+  chk('accepting is never queued', !/record\('franchise_challenge_accept'/.test(FJS));
+  has(FJS, "rpc('franchise_ladder', withSecret({ p_limit: limit || 25 }))", 'the ladder is read with the identity, for the "me" line');
+  has(FJS, "rpc('franchise_h2h_context', { p_token: String(token || '') })", 'the Head-to-Head context is read by the challenge token alone');
+
+  /* Game Day: challenges, the invite landing, the ladder */
+  has(GAMEDAY, "match(/[?&]fc=([a-z0-9]{8,32})/i)", 'Game Day reads a challenge link');
+  has(GAMEDAY, 'FR.challengePeek(VIEW_FC)', 'and peeks before anything else');
+  has(GAMEDAY, 'FR.challengeAccept(', 'accepting plays through the server');
+  has(GAMEDAY, "track('fc_invite_open'", 'the landing is measured');
+  has(GAMEDAY, "track('fc_accept'", 'and the accept');
+  has(GAMEDAY, "track('fc_complete'", 'and the result');
+  has(GAMEDAY, "track('fc_create'", 'and a challenge made');
+  has(GAMEDAY, "track('fc_share'", 'and a share');
+  has(GAMEDAY, "track('ladder_view'", 'and the ladder seen');
+  has(GAMEDAY, 'Found a franchise and play', 'a visitor without a franchise is shown the door, and the link brings them back');
+  chk('the founding door carries the challenge link back to Game Day', /next='\+encodeURIComponent\('\/games\/gameday\/\?fc='\+VIEW_FC\)/.test(GAMEDAY));
+  has(GAMEDAY, 'Accept and play', 'a franchise holding the link can accept');
+  has(GAMEDAY, 'This is your own link', 'the challenger is told it is their own link, not offered to play themselves');
+  has(GAMEDAY, 'Their lines', 'the result shows their lines too');
+  has(GAMEDAY, 'Franchises only — never accounts', 'the ladder says what it lists');
+  has(GAMEDAY, "conversionCard('fc_after')", 'a device franchise is offered the one-step save after a challenge');
+  has(GAMEDAY, 'Make a challenge link', 'a challenge is made from Game Day');
+  chk('Game Day never invents a franchise, a rating or a rank', !/ladder_rating:\s*\d/.test(GAMEDAY) && !/rank:\s*\d/.test(GAMEDAY) && !/city:\s*'[A-Z]/.test(GAMEDAY));
+  /* the office brings a visitor back to the challenge, and nowhere outside Games */
+  chk('the office accepts a `next` door only inside /games/', /\/\^\\\/games\\\/\[a-z0-9\\-\\\/\]\*/.test(OFFICE) && /href:NEXT\|\|'\/games\/roster\/'/.test(OFFICE));
+  has(JS, "esc(o.href || '/games/dynasty/')", 'and the moment can point anywhere in Games');
+  /* the HQ */
+  has(HOME, "'Rivalry: challenge a friend’s franchise'", 'the HQ offers a challenge as this week’s social objective');
+  has(HOME, "ladder <b>#'", 'and shows the ladder rank');
+  /* Head-to-Head, with the franchises behind the names */
+  has(H2H, 'lib/franchise.js', 'the Head-to-Head page loads the franchise layer');
+  has(H2H, 'FR.h2hContext(ch.invite_token)', 'and reads the franchises behind the two names by the token');
+  has(H2H, "track('h2h_franchise_complete'", 'a settled Head-to-Head between two franchises is measured');
+  chk('the context is painted after the challenge, never instead of it', /function renderChallenge\(ch\)\{\s*renderChallengeInner\(ch\);\s*paintFranchiseContext\(ch\);/.test(H2H));
+  ['fc_create', 'fc_invite_open', 'fc_accept', 'fc_complete', 'fc_share', 'ladder_view'].forEach(e => chk('the funnel declares ' + e, JS.indexOf("'" + e + "'") >= 0));
+  /* the SQL keeps its conventions on the new side */
+  ['franchise_sim_versus(uuid, uuid, text, text)', 'franchise_rivalry_bump(uuid, uuid, text, text)', 'franchise_challenge_json(uuid, uuid)', 'franchise_identity_json(uuid)', 'franchise_sim_score_play(jsonb, jsonb, jsonb, jsonb, numeric, jsonb)']
+    .forEach(f => chk('the server keeps ' + f.split('(')[0] + ' from every client role', SQL.indexOf('revoke all on function public.' + f + ' from public, anon, authenticated') >= 0));
+  ['franchise_challenge_create(text, text)', 'franchise_challenge_peek(text, text)', 'franchise_challenge_accept(text, text)', 'franchise_challenges_mine(integer, text)', 'franchise_ladder(integer, text)', 'franchise_h2h_context(text)']
+    .forEach(f => chk('and opens ' + f.split('(')[0] + ' to anon and authenticated', SQL.indexOf('grant execute on function public.' + f + ' to anon, authenticated') >= 0));
+  chk('the report grew to fifteen rows', /select 15, 'the ladder is public and lists franchises, never accounts'/.test(SQL));
+  chk('a challenge row is readable by its two parties only', /create policy franchise_challenges_party on public\.franchise_challenges for select\s+using \(public\.franchise_is_mine\(challenger_id\) or \(opponent_id is not null and public\.franchise_is_mine\(opponent_id\)\)\)/.test(SQL));
+  chk('the identity a stranger sees carries no account and no resources', /function public\.franchise_identity_json[\s\S]*?\$\$;/.test(SQL)
+    && !/user_id|anon_hash|team_credits|scouting_points/.test(SQL.slice(SQL.indexOf('function public.franchise_identity_json'), SQL.indexOf('$$;', SQL.indexOf('function public.franchise_identity_json')))));
+  chk('a challenge is accepted once: the row is locked and a played one is refused', /where invite_token = p_token for update/.test(SQL) && /this challenge has already been played/.test(SQL));
+  chk('a franchise cannot play itself', /you cannot accept your own challenge/.test(SQL));
+  chk('the seed is the server\'s', /v_seed := md5\(c\.id::text \|\| ':' \|\| clock_timestamp\(\)::text\)/.test(SQL));
+  chk('the versus simulator plays a neutral field with both sides\' preparation', /'neutral', true/.test(SQL) && /prepa := public\.franchise_prep\(p_a, p_week_key\); prepb := public\.franchise_prep\(p_b, p_week_key\)/.test(SQL));
+  chk('the ladder is zero-sum Elo', /db := public\.games_elo_delta\(rb, ra, case res_a when 'W' then 0 when 'L' then 1 else 0\.5 end, 24\)/.test(SQL));
+  (() => {
+    const a = SQL.indexOf('create or replace function public.franchise_challenge_accept('), b = SQL.indexOf('$$;', SQL.indexOf('begin', a));
+    chk('the season record is untouched by an exhibition', a > 0 && b > a && SQL.slice(a, b).indexOf('franchise_seasons') < 0 && SQL.slice(a, b).indexOf('season_stats') < 0
+      && /exhibition is not a season game/.test(SQL.slice(a, b)));
+  })();
+  has(README, 'franchise_sim_versus', 'the README documents the versus simulator');
+  has(README, 'lists franchises, never accounts', 'and the ladder rule');
 
   finish();
 }).catch(e => { fail++; failures.push('suite threw: ' + (e && e.stack || e)); finish(); });

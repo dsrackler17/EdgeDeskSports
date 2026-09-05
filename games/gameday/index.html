@@ -27,8 +27,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/games/games.css?v=20260905c">
-<link rel="stylesheet" href="/games/franchise.css?v=20260905c">
+<link rel="stylesheet" href="/games/games.css?v=20260905d">
+<link rel="stylesheet" href="/games/franchise.css?v=20260905d">
 </head>
 <body>
 <div id="gh"></div>
@@ -54,17 +54,17 @@
 <div id="gt"></div>
 <div id="gf"></div>
 
-<script src="/games/lib/week.js?v=20260905c"></script>
-<script src="/games/lib/scoring.js?v=20260905c"></script>
-<script src="/games/lib/challenge.js?v=20260905c"></script>
-<script src="/games/lib/research_state.js?v=20260905c"></script>
-<script src="/games/lib/attribution.js?v=20260905c"></script>
-<script src="/games/lib/store.js?v=20260905c"></script>
-<script src="/games/lib/dynasty.js?v=20260905c"></script>
-<script src="/games/lib/social.js?v=20260905c"></script>
-<script src="/games/lib/auth.js?v=20260905c"></script>
-<script src="/games/lib/franchise.js?v=20260905c"></script>
-<script src="/games/games.js?v=20260905c"></script>
+<script src="/games/lib/week.js?v=20260905d"></script>
+<script src="/games/lib/scoring.js?v=20260905d"></script>
+<script src="/games/lib/challenge.js?v=20260905d"></script>
+<script src="/games/lib/research_state.js?v=20260905d"></script>
+<script src="/games/lib/attribution.js?v=20260905d"></script>
+<script src="/games/lib/store.js?v=20260905d"></script>
+<script src="/games/lib/dynasty.js?v=20260905d"></script>
+<script src="/games/lib/social.js?v=20260905d"></script>
+<script src="/games/lib/auth.js?v=20260905d"></script>
+<script src="/games/lib/franchise.js?v=20260905d"></script>
+<script src="/games/games.js?v=20260905d"></script>
 <script>
 /* STALE SCRIPT GUARD. A browser can keep an old games.js or franchise.js for
    longer than it keeps this page, and a page built for the new library then
@@ -73,7 +73,7 @@
    from here on; this is the belt for the braces: if a required function is
    missing, say so and offer a fresh load instead of a dead screen. */
 (function(){
-  var need=['EDFranchise.playWeek','EDFranchise.gamePhase','EDFranchise.schedule','EDGames.saveCard','EDGames.franchiseReady'];
+  var need=['EDFranchise.playWeek','EDFranchise.gamePhase','EDFranchise.schedule','EDFranchise.challengeAccept','EDFranchise.ladder','EDGames.saveCard','EDGames.franchiseReady'];
   var miss=need.filter(function(k){var p=k.split('.'),o=window[p[0]];return !o||typeof o[p[1]]!=='function';});
   if(!miss.length)return;
   var host=document.getElementById('stage')||document.querySelector('main');
@@ -91,8 +91,10 @@
   var stage=$('stage'),after=$('after');
   var esc=G.esc,fmt=FR.fmt;
   var READY=G.boot('gameday');
-  var SCHED=null,TRACKED=false;
+  var SCHED=null,MINE=null,LADDER=null,TRACKED=false,LADDER_TRACKED=false;
   var VIEW_GAME=(location.search.match(/[?&]game=([0-9a-f-]{36})/i)||[])[1]||null;
+  /* a franchise challenge link: /games/gameday/?fc=<token> */
+  var VIEW_FC=(location.search.match(/[?&]fc=([a-z0-9]{8,32})/i)||[])[1]||null;
   var MON=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
   var DAYS=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
   function dayLabel(iso){
@@ -102,6 +104,8 @@
   }
   function mark(f,size){return FR.logoSvg(f.logo,size||44,f.theme);}
   function title(f){return ((f.city||'')+' '+(f.name||'')).trim();}
+  /* the founding door, carrying a challenge link back here once founded */
+  function foundHref(){return '/games/franchise/?intent='+(VIEW_FC?'fc':'gameday')+(VIEW_FC?'&next='+encodeURIComponent('/games/gameday/?fc='+VIEW_FC):'');}
 
   /* ---- no franchise yet --------------------------------------------------- */
   function renderEmpty(state){
@@ -115,7 +119,7 @@
       +'<ul class="fo-list"><li>A rival for life. Every season ends against them.</li>'
       +'<li>A win pays Team Credits and Coach Points. A season completed pays more.</li>'
       +'<li>Miss a week and you still play the game — unprepared.</li></ul>'
-      +'<div class="btn-row"><a class="btn btn-go btn-big" href="/games/franchise/?intent=gameday" id="goFound">Found my franchise</a></div>'
+      +'<div class="btn-row"><a class="btn btn-go btn-big" href="'+foundHref()+'" id="goFound">Found my franchise</a></div>'
       +'<div class="ftp" style="margin-top:12px"><b>Free to play</b> · No account needed to start · Nothing here can be bought</div></div>';
     after.innerHTML=state==='not_deployed'
       ?'<div class="sec"><div class="card"><div class="empty">The franchise layer has not been deployed to this project yet. <a href="/games/status/">Status</a></div></div></div>'
@@ -285,6 +289,202 @@
         }).join('')+'</table>':'')
       +'</div></div>';
   }
+  /* ---- franchise vs franchise --------------------------------------------- */
+  function idCard(f,size){
+    if(!f)return '';
+    return '<div class="fc-hero" style="'+FR.themeVars(f.theme)+'">'+mark(f,size||56)
+      +'<div><div class="k">'+esc(f.abbr||'')+' · OVR '+esc(f.overall!=null?f.overall:'—')+(f.level?' · Level '+esc(f.level):'')+'</div>'
+      +'<div class="n">'+esc(title(f))+'</div>'
+      +'<div class="s">'+esc(FR.recordLine(f.record))+' this franchise'+(f.ladder_games?' · ladder '+esc(f.ladder_rating):'')+(f.fc_record&&(f.fc_record.wins|f.fc_record.losses|f.fc_record.ties)?' · challenges '+esc(FR.recordLine(f.fc_record)):'')+'</div></div></div>';
+  }
+  function fcRow(ch){
+    var fin=ch.status==='FINAL',them=ch.them||{};
+    var right=fin?'<b class="'+(ch.result==='W'?'w':ch.result==='L'?'l':'t')+'">'+esc(ch.result+' '+(ch.score_for|0)+'–'+(ch.score_against|0)+(ch.ot?' (OT)':''))+'</b>'
+        +(ch.rating_delta!=null?'<span class="d '+(ch.rating_delta>0?'up':ch.rating_delta<0?'dn':'')+'">'+(ch.rating_delta>0?'+':'')+esc(ch.rating_delta)+' ladder</span>':'')
+      :'';
+    var inner=(them.logo?FR.logoSvg(them.logo,30,them.theme):'<span class="fr-mark" style="width:30px;height:30px;border-radius:8px;background:var(--line)"></span>')
+      +'<span class="o"><b>'+esc(fin?(ch.you==='challenger'?'vs ':'at ')+title(them):'Waiting for a taker')+'</b><small>'+esc(fin?dayLabel(ch.played_at)+(ch.potg?' · POTG '+ch.potg.name:''):('open until '+dayLabel(ch.expires_at)+(ch.note?' · “'+ch.note+'”':'')))+'</small></span>'
+      +(fin?'<span class="r">'+right+'</span>':'<span class="r act"><button class="btn" type="button" data-fc-share>Share</button><button class="btn btn-ghost" type="button" data-fc-cancel aria-label="Withdraw this challenge">✕</button></span>');
+    return fin?'<li><a class="fcl-row" href="/games/gameday/?fc='+esc(ch.invite_token||'')+'" style="display:contents">'+inner+'</a></li>'
+      :'<li data-fc="'+esc(ch.id)+'" data-token="'+esc(ch.invite_token||'')+'">'+inner+'</li>';
+  }
+  function challengesSection(m){
+    m=m||{};
+    var open=m.open||[],played=m.played||[],riv=m.rivalries||[],rec=m.record||{};
+    return '<div class="sec"><div class="sec-h"><h2>Challenges</h2><span class="m">'+esc(FR.recordLine({wins:rec.wins,losses:rec.losses,ties:rec.ties}))+' vs other franchises</span></div>'
+      +'<div class="card">'
+      +'<div class="eyebrow">Challenge a friend’s franchise</div>'
+      +'<p style="margin:6px 0 0;color:var(--dim);font-size:13.5px;line-height:1.55">One game, both rosters, neutral field, played on the server the moment they open the link. Both of you are paid by the table; the rivalry and the ladder move.</p>'
+      +'<div class="fc-new"><input type="text" id="fcNote" maxlength="80" placeholder="A line to send with it (optional)" aria-label="A note for the challenge">'
+      +'<button class="btn btn-go" type="button" id="fcCreate">Make a challenge link</button></div>'
+      +'<div id="fcLink"></div>'
+      +(open.length?'<div class="eyebrow" style="margin-top:14px">Out there · '+open.length+'</div><ul class="fcl">'+open.map(fcRow).join('')+'</ul>':'')
+      +(played.length?'<div class="eyebrow" style="margin-top:14px">Played</div><ul class="fcl">'+played.map(fcRow).join('')+'</ul>':'')
+      +(riv.length?'<div class="eyebrow" style="margin-top:14px">Rivalries</div><ul class="riv">'+riv.map(function(r){
+          var o=r.other||{};
+          return '<li>'+FR.logoSvg(o.logo,30,o.theme)+'<span class="o"><b>'+esc(title(o))+'</b><small>OVR '+esc(o.overall)+' · '+esc(FR.recordLine(o.record))+'</small></span>'
+            +'<span class="r">'+esc((r.fc_wins|0)+'–'+(r.fc_losses|0)+(r.fc_ties?'–'+r.fc_ties:''))+'<span>on the field</span>'
+            +((r.h2h_wins|r.h2h_losses|r.h2h_draws)?esc((r.h2h_wins|0)+'–'+(r.h2h_losses|0)+(r.h2h_draws?'–'+r.h2h_draws:''))+'<span>on the board</span>':'')+'</span></li>';
+        }).join('')+'</ul>':'')
+      +'<div class="ftp" style="margin-top:12px">A challenge pays +60 XP and +30 TC to play, +40 XP, +40 TC and +2 CP to win, and +40 XP, +1 CP for beating a team rated five or more higher. Careers grow; the season record does not.</div>'
+      +'</div></div>';
+  }
+  function ladderSection(l){
+    l=l||{};
+    var rows=l.rows||[],me=l.me;
+    if(!LADDER_TRACKED){LADDER_TRACKED=true;G.track('ladder_view',{rows:rows.length,rank:me?me.rank:null});}
+    return '<div class="sec"><div class="sec-h"><h2>The ladder</h2><span class="m">'+esc(l.total|0)+' franchise'+((l.total|0)===1?'':'s')+'</span></div><div class="card">'
+      +(rows.length?'<table class="ladder"><thead><tr><th class="rk">#</th><th>Franchise</th><th class="rt">Rating</th><th class="rc">W–L</th></tr></thead><tbody>'+rows.map(function(r){
+          return '<tr'+(r.is_you?' class="me"':'')+'><td class="rk">'+esc(r.rank)+'</td><td class="nm">'+FR.logoSvg(r.logo,26,r.theme)+esc(title(r))+'<small>OVR '+esc(r.overall)+' · '+esc(r.ladder_games)+' game'+(r.ladder_games===1?'':'s')+'</small></td>'
+            +'<td class="rt">'+esc(r.ladder_rating)+'</td><td class="rc">'+esc(FR.recordLine(r.fc_record))+'</td></tr>';
+        }).join('')+'</tbody></table>':'<div class="empty">Nobody has played a franchise challenge yet. The first one starts the ladder.</div>')
+      +'<div class="ladder-me">'+(me?(me.rank?'You are <b>#'+esc(me.rank)+'</b> at <b>'+esc(me.rating)+'</b> after '+esc(me.games)+' challenge'+(me.games===1?'':'s')+'.':'You join the ladder when you play your first challenge. Everyone starts at '+esc(FR.LADDER_START)+'.'):'')
+      +' Franchises only — never accounts. Ordinary Elo, K = '+esc(FR.LADDER_K)+'.</div>'
+      +'</div></div>';
+  }
+  function wireChallenges(){
+    var cb=$('fcCreate');
+    if(cb)cb.addEventListener('click',function(){
+      cb.disabled=true;cb.textContent='Making…';
+      var note=($('fcNote')&&$('fcNote').value||'').trim();
+      FR.challengeCreate(note).then(function(r){
+        cb.disabled=false;cb.textContent='Make a challenge link';
+        if(!r.ok||!r.data){G.toast(r.message||'Could not make the challenge.');return;}
+        G.track('fc_create',{note:!!note});
+        var url=FR.challengeUrl(r.data.invite_token);
+        $('fcLink').innerHTML='<div class="fc-link"><div><b>Your challenge link is ready.</b> Send it to anyone; whoever opens it with a franchise plays you at once.</div>'
+          +'<div class="u">'+esc(url)+'</div><div class="btn-row two"><button class="btn btn-go" type="button" data-fc-share data-token="'+esc(r.data.invite_token)+'">Share the link</button><button class="btn" type="button" data-fc-copy data-token="'+esc(r.data.invite_token)+'">Copy</button></div></div>';
+        return FR.challengesMine().then(function(m){if(m.ok&&m.data)MINE=m.data;renderAfter();
+          var again=$('fcLink');if(again)again.innerHTML='<div class="fc-link"><div><b>Your challenge link is ready.</b></div><div class="u">'+esc(url)+'</div><div class="btn-row two"><button class="btn btn-go" type="button" data-fc-share data-token="'+esc(r.data.invite_token)+'">Share the link</button><button class="btn" type="button" data-fc-copy data-token="'+esc(r.data.invite_token)+'">Copy</button></div></div>';});
+      });
+    });
+    after.addEventListener('click',function(e){
+      var t=e.target.closest?e.target.closest('[data-fc-share],[data-fc-copy],[data-fc-cancel]'):null;
+      if(!t)return;
+      var li=t.closest('[data-fc]'),token=t.getAttribute('data-token')||(li&&li.getAttribute('data-token'))||'';
+      if(t.hasAttribute('data-fc-cancel')&&li){
+        t.disabled=true;
+        FR.challengeCancel(li.getAttribute('data-fc')).then(function(r){
+          if(!r.ok){G.toast(r.message||'Could not cancel.');t.disabled=false;return;}
+          G.toast('Challenge withdrawn');
+          return FR.challengesMine().then(function(m){if(m.ok&&m.data)MINE=m.data;renderAfter();});
+        });
+        return;
+      }
+      shareInvite(token,t.hasAttribute('data-fc-copy'));
+    });
+  }
+  function shareInvite(token,copyOnly){
+    var snap=FR.snapshot(),me=MINE&&MINE.me?MINE.me:(snap&&snap.franchise?{city:snap.franchise.city,name:snap.franchise.name,overall:snap.rating?snap.rating.overall:null,record:snap.record}:null);
+    var url=FR.challengeUrl(token),text=FR.challengeInviteText(me,{});
+    G.track('fc_share',{copy:!!copyOnly});
+    if(!copyOnly&&navigator.share){return navigator.share({title:'EdgeDesk Games',text:text,url:url}).catch(function(){});}
+    if(navigator.clipboard&&navigator.clipboard.writeText){return navigator.clipboard.writeText(text+'\n'+url).then(function(){G.toast('Copied — paste it anywhere');}).catch(function(){G.toast('Could not copy automatically');});}
+    G.toast('Copy this: '+url);
+  }
+
+  /* THE INVITE LANDING. A stranger from a group chat, on a phone, must read
+     who is calling them out and answer without scrolling: the challenger's
+     card, one button. No franchise yet? Found one — no account needed — and
+     the link brings them straight back here. */
+  function renderInvite(pk){
+    var snap=FR.snapshot();
+    stage.className='card gd';
+    if(!pk){stage.innerHTML='<div class="eyebrow">Franchise challenge</div><div class="empty">This challenge link is not one EdgeDesk knows. <a href="/games/gameday/">Game Day</a></div>';return;}
+    G.track('fc_invite_open',{status:pk.status,has_franchise:!pk.needs_franchise,is_challenger:!!pk.is_challenger});
+    var me=pk.me||{};
+    if(pk.status==='FINAL'){showChallenge(pk,{});return;}
+    if(pk.status!=='OPEN'){
+      stage.innerHTML='<div class="eyebrow">Franchise challenge</div>'+idCard(me)+'<div class="empty">This challenge '+(pk.status==='EXPIRED'?'expired — a link is good for fourteen days.':'was withdrawn.')+'<br><a href="/games/gameday/">Game Day</a></div>';
+      return;
+    }
+    if(pk.is_challenger){
+      stage.innerHTML='<div class="eyebrow">Your challenge</div>'+idCard(me)+(pk.note?'<div class="fc-note">“'+esc(pk.note)+'”</div>':'')
+        +'<p style="margin:12px 0 0;color:var(--dim);font-size:13.5px;line-height:1.55">This is your own link. Send it to anyone; whoever opens it with a franchise plays you at once, and the result lands here for both of you.</p>'
+        +'<div class="btn-row two"><button class="btn btn-go" type="button" data-fc-share data-token="'+esc(pk.invite_token)+'">Share the link</button><a class="btn" href="/games/gameday/">Game Day</a></div>';
+      stage.addEventListener('click',function(e){var t=e.target.closest?e.target.closest('[data-fc-share]'):null;if(t)shareInvite(t.getAttribute('data-token'),false);});
+      return;
+    }
+    stage.innerHTML='<div class="eyebrow">Franchise challenge</div>'
+      +'<h1 class="h2h-h1" style="font-size:24px;margin:8px 0 0">The '+esc(title(me))+' challenge your franchise</h1>'
+      +idCard(me)+(pk.note?'<div class="fc-note">“'+esc(pk.note)+'”</div>':'')
+      +(pk.needs_franchise
+        ?'<p style="margin:12px 0 0;color:var(--dim);font-size:13.5px;line-height:1.55">You need a franchise to answer — one takes a minute and needs no account. Found one and this link brings you straight back to play.</p>'
+          +'<div class="btn-row"><a class="btn btn-go btn-big" href="'+foundHref()+'" id="goFound">Found a franchise and play</a></div>'
+        :(pk.can_accept
+          ?'<div class="gd-vs" style="margin:12px 0 0">VS</div>'+idCard(snap&&snap.franchise?{city:snap.franchise.city,name:snap.franchise.name,abbr:snap.franchise.abbr,logo:snap.franchise.logo,theme:snap.franchise.theme,overall:snap.rating?snap.rating.overall:null,record:snap.record,ladder_games:snap.ladder?snap.ladder.games:0,ladder_rating:snap.ladder?snap.ladder.rating:null}:null,44)
+            +'<div class="btn-row"><button class="btn btn-go btn-big" type="button" id="fcAccept">Accept and play</button></div>'
+            +'<div class="ftp" style="margin-top:10px">Played on the server the moment you accept: both rosters, both schemes, this week’s preparation on each side, a neutral field. Once.</div>'
+          :'<div class="empty">This challenge cannot be accepted right now.</div>'))
+      +'<div class="ftp" style="margin-top:12px;text-align:center"><b>Free to play</b> · No account needed · No real-money wagering</div>';
+    var ab=$('fcAccept');
+    if(ab)ab.addEventListener('click',function(){acceptChallenge(ab,pk);});
+    var go=$('goFound');
+    if(go)go.addEventListener('click',function(){G.track('signup_start_from_games',{placement:'fc_invite',game_type:'franchise'});});
+  }
+  function acceptChallenge(btn,pk){
+    btn.disabled=true;btn.textContent='Playing…';
+    G.track('fc_accept',{});
+    FR.challengeAccept(pk.invite_token||VIEW_FC).then(function(r){
+      if(!r.ok||!r.data||!r.data.game){
+        G.toast(r.message||'The challenge could not be played.');btn.disabled=false;btn.textContent='Accept and play';
+        return FR.challengePeek(VIEW_FC).then(function(p){renderInvite(p.ok?p.data:null);});
+      }
+      var d=r.data,ch=d.game;
+      G.track('fc_complete',{result:ch.result,score_for:ch.score_for,score_against:ch.score_against,rating_delta:ch.rating_delta,xp:d.rewards?d.rewards.xp:null});
+      (d.achievements||[]).forEach(function(id){G.track('achievement_unlocked',{achievement:id,placement:'fc'});});
+      showChallenge(ch,{rewards:G.rewardPanel(r),fresh:true});
+      return FR.home().then(function(){return Promise.all([FR.challengesMine(),FR.ladder(10)]);}).then(function(rs){
+        if(rs[0].ok&&rs[0].data)MINE=rs[0].data;if(rs[1].ok&&rs[1].data)LADDER=rs[1].data;renderAfter();
+      });
+    });
+  }
+  /* THE RESULT of a challenge, from my side: my lines and theirs. */
+  function showChallenge(ch,extra){
+    extra=extra||{};
+    var snap=FR.snapshot(),me=ch.me||{},them=ch.them||{},box=ch.box||{},res=ch.result,cls=res==='W'?'w':res==='L'?'l':'t';
+    var mine=ch.you!=null;
+    stage.className='card gd';
+    stage.setAttribute('style',FR.themeVars(me.theme));
+    var theirs=(box.their_players||[]).slice().filter(function(p){return p.position!=='OL'&&(+p.impact||0)>0;}).sort(function(a,b){return (+b.impact||0)-(+a.impact||0);}).slice(0,4);
+    stage.innerHTML='<div class="eyebrow">Franchise challenge · final'+(box.ot?' · Overtime':'')+(mine?'':' · as the challenger saw it')+'</div>'
+      +'<div class="score '+cls+'">'
+      +'<div class="side" style="'+FR.themeVars(me.theme)+'">'+mark(me,44)+'<div class="ab">'+esc(me.abbr)+'</div><div class="n">'+esc(ch.score_for|0)+'</div></div>'
+      +'<div class="res"><b>'+(res==='W'?'WIN':res==='L'?'LOSS':'TIE')+'</b><span>vs '+esc(title(them))+'</span>'+(ch.rating_delta!=null?'<span>ladder '+(ch.rating_delta>0?'+':'')+esc(ch.rating_delta)+'</span>':'')+'</div>'
+      +'<div class="side" style="'+FR.themeVars(them.theme)+'">'+mark(them,44)+'<div class="ab">'+esc(them.abbr)+'</div><div class="n">'+esc(ch.score_against|0)+'</div></div>'
+      +'</div>'
+      +(extra.rewards||'')
+      +(box.potg?'<div class="potg"><div class="k">Player of the game · '+esc(me.abbr)+'</div><div class="n">'+esc(box.potg.name)+' <span>'+esc(box.potg.position)+'</span></div><div class="l">'+esc(FR.statsLine(box.potg.position,box.potg.stats))+'</div></div>':'')
+      +(box.their_potg?'<div class="potg" style="border-color:var(--line)"><div class="k" style="color:var(--faint)">Theirs · '+esc(them.abbr)+'</div><div class="n">'+esc(box.their_potg.name)+' <span>'+esc(box.their_potg.position)+'</span></div><div class="l">'+esc(FR.statsLine(box.their_potg.position,box.their_potg.stats))+'</div></div>':'')
+      +(box.quarters?qtable(box,me,them):'')
+      +((box.scoring||[]).length?'<div class="eyebrow" style="margin-top:14px">Scoring</div><ul class="plays">'+box.scoring.map(function(p){
+          return '<li class="'+(p.side==='for'?'for':'against')+'"><span class="q">'+(p.q>4?'OT':'Q'+esc(p.q))+'</span><span class="d">'+esc(p.desc)+'</span><span class="sc">'+esc(p['for'])+'–'+esc(p.against)+'</span></li>';
+        }).join('')+'</ul>':'')
+      +(box.team?'<div class="eyebrow" style="margin-top:14px">Team</div>'+teamStats(box):'')
+      +(box.players?'<div class="eyebrow" style="margin-top:14px">Your lines</div>'+lines(box):'')
+      +(theirs.length?'<div class="eyebrow" style="margin-top:14px">Their lines</div><ul class="lines">'+theirs.map(function(p){
+          return '<li><span class="p">'+esc(p.position)+'</span><span class="n">'+esc(p.name)+'</span><span class="l">'+esc(FR.statsLine(p.position,p.stats))+'</span></li>';
+        }).join('')+'</ul>':'')
+      +(box.edges&&box.edges.mine?'<div class="eyebrow" style="margin-top:14px">Why it went this way</div><ul class="gd-edges">'
+        +edgeRow('Your preparation',box.edges.mine.prep_adj,(box.edges.mine.prep?box.edges.mine.prep.preparation|0:0)+'% this week')
+        +edgeRow('Their preparation',box.edges.theirs?box.edges.theirs.prep_adj:0,(box.edges.theirs&&box.edges.theirs.prep?box.edges.theirs.prep.preparation|0:0)+'% this week')
+        +edgeRow('Your offense vs their defense',box.edges.mine.scheme,'scheme matchup')
+        +edgeRow('Their offense vs your defense',-(+(box.edges.theirs?box.edges.theirs.scheme:0)||0),'scheme matchup')
+        +'</ul><div class="ftp" style="margin-top:8px">Neutral field: no home edge. Effective ratings: your offense '+esc(box.edges.mine.offense)+', your defense '+esc(box.edges.mine.defense)+'; theirs '+esc(box.edges.theirs?box.edges.theirs.offense:'—')+' and '+esc(box.edges.theirs?box.edges.theirs.defense:'—')+'. '+esc(box.sim||'sim_v1')+'.</div>':'')
+      +'<div class="btn-row two" style="margin-top:16px"><button class="btn" type="button" id="shareFc">Share the result</button><a class="btn" href="/games/gameday/">Game Day</a></div>'
+      +(extra.fresh&&FR.owner()==='device'?'<div id="gdSave" style="margin-top:14px">'+G.conversionCard('fc_after')+'</div>':'');
+    var sh=$('shareFc');
+    if(sh)sh.addEventListener('click',function(){
+      var text=FR.challengeShareText(ch),url=location.origin+'/games/gameday/';
+      G.track('fc_share',{result:ch.result});
+      if(navigator.share){return navigator.share({title:'EdgeDesk Games',text:text,url:url}).catch(function(){});}
+      if(navigator.clipboard&&navigator.clipboard.writeText){return navigator.clipboard.writeText(text+'\n'+url).then(function(){G.toast('Copied — paste it anywhere');}).catch(function(){G.toast('Could not copy automatically');});}
+      G.toast('Copy this: '+url);
+    });
+    G.wireConversion(function(){var s=$('gdSave');if(s)setTimeout(function(){s.innerHTML='';},2500);});
+    try{window.scrollTo({top:0,behavior:'smooth'});}catch(_){}
+  }
+
   function h2hCard(){
     return '<div class="sec"><div class="card"><div class="eyebrow">Head-to-Head</div>'
       +'<p style="margin:0;color:var(--dim);font-size:14px;line-height:1.6">Play a real person on a real game. Your pick stays sealed until they lock theirs; a settled challenge pays your franchise Coach Points.</p>'
@@ -305,9 +505,12 @@
   }
   function renderAfter(){
     var html='';
+    if(MINE)html+=challengesSection(MINE);
+    if(LADDER)html+=ladderSection(LADDER);
     if(SCHED){html+=scheduleSection(SCHED)+historySection(SCHED);}
     html+=h2hCard();
     after.innerHTML=html;
+    if(MINE)wireChallenges();
   }
   function wireStage(snap,ph){
     var pb=$('playBtn');
@@ -377,9 +580,21 @@
   /* ---- boot --------------------------------------------------------------- */
   G.franchiseReady().then(function(){
     var st=FR.state();
+    if(VIEW_FC&&st!=='not_deployed'){
+      /* the link is the key: it reads with or without a franchise */
+      return FR.challengePeek(VIEW_FC).then(function(p){
+        renderInvite(p.ok?p.data:null);
+        if(st!=='franchise'){after.innerHTML=h2hCard();return;}
+        return Promise.all([FR.challengesMine(),FR.ladder(10),FR.schedule()]).then(function(rs){
+          if(rs[0].ok&&rs[0].data)MINE=rs[0].data;if(rs[1].ok&&rs[1].data)LADDER=rs[1].data;if(rs[2].ok&&rs[2].data)SCHED=rs[2].data;renderAfter();
+        });
+      });
+    }
     if(st!=='franchise'){renderEmpty(st);return;}
     renderStage();
-    var loads=[FR.schedule().then(function(s){if(s.ok&&s.data)SCHED=s.data;renderAfter();})];
+    var loads=[FR.schedule().then(function(s){if(s.ok&&s.data)SCHED=s.data;renderAfter();}),
+      FR.challengesMine().then(function(m){if(m.ok&&m.data)MINE=m.data;renderAfter();}),
+      FR.ladder(10).then(function(l){if(l.ok&&l.data)LADDER=l.data;renderAfter();})];
     if(VIEW_GAME)loads.push(FR.game(VIEW_GAME).then(function(r){
       if(r.ok&&r.data){showResult(r.data,FR.snapshot(),{season:null});}
     }));
@@ -388,7 +603,7 @@
   document.addEventListener('edgames:franchise',function(){
     /* a save, a claim or a sign-in changed who is on screen: repaint the
        schedule's owner line without losing a result being read */
-    if(!$('shareGame'))renderStage();
+    if(!$('shareGame')&&!$('shareFc')&&!VIEW_FC)renderStage();
   });
   READY.catch(function(){});
 })();

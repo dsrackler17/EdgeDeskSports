@@ -29,8 +29,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/games/games.css?v=20260905c">
-<link rel="stylesheet" href="/games/franchise.css?v=20260905c">
+<link rel="stylesheet" href="/games/games.css?v=20260905d">
+<link rel="stylesheet" href="/games/franchise.css?v=20260905d">
 </head>
 <body>
 <div id="gh"></div>
@@ -267,19 +267,19 @@
 <div id="gt"></div>
 <div id="gf"></div>
 
-<script src="/games/lib/week.js?v=20260905c"></script>
-<script src="/games/lib/scoring.js?v=20260905c"></script>
-<script src="/games/lib/challenge.js?v=20260905c"></script>
-<script src="/games/lib/research_state.js?v=20260905c"></script>
-<script src="/games/lib/attribution.js?v=20260905c"></script>
-<script src="/games/lib/store.js?v=20260905c"></script>
-<script src="/games/lib/dynasty.js?v=20260905c"></script>
-<script src="/games/lib/drill.js?v=20260905c"></script>
-<script src="/games/lib/leaderboard.js?v=20260905c"></script>
-<script src="/games/lib/social.js?v=20260905c"></script>
-<script src="/games/lib/auth.js?v=20260905c"></script>
-<script src="/games/lib/franchise.js?v=20260905c"></script>
-<script src="/games/games.js?v=20260905c"></script>
+<script src="/games/lib/week.js?v=20260905d"></script>
+<script src="/games/lib/scoring.js?v=20260905d"></script>
+<script src="/games/lib/challenge.js?v=20260905d"></script>
+<script src="/games/lib/research_state.js?v=20260905d"></script>
+<script src="/games/lib/attribution.js?v=20260905d"></script>
+<script src="/games/lib/store.js?v=20260905d"></script>
+<script src="/games/lib/dynasty.js?v=20260905d"></script>
+<script src="/games/lib/drill.js?v=20260905d"></script>
+<script src="/games/lib/leaderboard.js?v=20260905d"></script>
+<script src="/games/lib/social.js?v=20260905d"></script>
+<script src="/games/lib/auth.js?v=20260905d"></script>
+<script src="/games/lib/franchise.js?v=20260905d"></script>
+<script src="/games/games.js?v=20260905d"></script>
 <script>
 /* STALE SCRIPT GUARD. A browser can keep an old games.js or store.js for
    longer than it keeps this page, and a page built for the new library
@@ -340,11 +340,13 @@
     if(ph&&ph.phase==='ready')row(false,'Game Day: play Week '+(ng.week|0)+' '+FR.matchupLine(ng),'/games/gameday/','+100 XP · +40 TC · a win +60 XP · +60 TC · +2 CP','Simulated from your roster, your scheme and this week’s preparation.');
     else if(ph&&ph.phase==='complete')row(false,'Start the next season on Game Day','/games/gameday/','a new schedule','Eight games, one a week, and the rival to close it.');
     else if(ph&&ph.phase==='preseason')row(false,'Set '+(ss.label||'Season I')+'’s schedule on Game Day','/games/gameday/','a schedule','Eight games, one a week, and a rival for life.');
+    var lad=snap.ladder||{},chs=snap.challenges||{};
     if(FEATURED)row(priced,priced?'Scouting report filed: '+FEATURED.away_team+' vs '+FEATURED.home_team:'File today’s scouting report: '+FEATURED.away_team+' vs '+FEATURED.home_team,
       '/games/price-it/?g='+encodeURIComponent(FEATURED.slug),'+50 XP · up to +40 SP · up to +20 TC','Scouting Points reveal prospects. '+(wk.price_it|0)+' of 3 this week.');
     row(drillDone,drillDone?'Practice: today’s drill done':'Practice: run today’s Two-Minute Drill','/games/two-minute-drill/','+40 XP · up to +30 TC','Team Credits pay for upgrades.');
     row(!!(card&&card.submitted_at),card&&card.submitted_at?'Weekly slate: card submitted':'Weekly slate: submit your Pick 5 card','/games/pick-5/','+75 XP · +25 TC · +10 XP +15 TC per correct side','Preparation for Saturday.');
     row((wk.research|0)>0,(wk.research|0)>0?'Film: research reviewed this week':'Film: open the research on one matchup','/games/price-it/','+15 XP','Preparation for Saturday.');
+    row((wk.fc|0)>0,(wk.fc|0)>0?'Rivalry: a franchise challenge played this week':'Rivalry: challenge a friend’s franchise','/games/gameday/#challenges','+60 XP · +30 TC · a win +40 XP · +40 TC · +2 CP','Your roster against theirs, on the server. The ladder and the rivalry move.');
     var el=$('hq');
     el.setAttribute('style',FR.themeVars(f.theme));
     el.innerHTML='<div class="hq-id">'+FR.logoSvg(f.logo,56,f.theme)
@@ -372,7 +374,9 @@
           +'<div class="s">Until then, every scouting report, card and drill counts toward this week’s preparation.</div></div>')
       +'</div>'
       +'<div class="hq-cal"><span><b>'+G.esc(ss.label||'Season I')+'</b> · '+G.esc(ss.status==='preseason'?'preseason':ss.status==='complete'?'complete':'week '+((ss.week|0)+(ng?1:0))+' of '+(ss.weeks|0))+' · '+(ss.weeks|0)+' weeks'
-      +(rv&&rv.name?' · rival <b>'+G.esc(rv.name)+'</b> '+G.esc((rv.wins|0)+'–'+(rv.losses|0)):'')+'</span>'
+      +(rv&&rv.name?' · rival <b>'+G.esc(rv.name)+'</b> '+G.esc((rv.wins|0)+'–'+(rv.losses|0)):'')
+      +(lad.games?' · ladder <b>#'+G.esc(lad.rank)+'</b> '+G.esc(lad.rating):'')
+      +(chs.last?' · last challenge <b>'+G.esc(chs.last.result||'')+' '+G.esc((chs.last.score_for|0)+'–'+(chs.last.score_against|0))+'</b> vs '+G.esc((chs.last.them||{}).name||''):'')+'</span>'
       +'<span>'+(LIVE?'<b>'+G.esc(LIVE.season)+' CFB</b> · Week '+G.esc(LIVE.week)+' · live slate':'<b>Live slate</b> · loading')+'</span></div>'
       /* 2. what should I do today, and 3. what do I earn */
       +'<div class="eyebrow" style="margin:16px 0 0">Today</div>'

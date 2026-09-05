@@ -27,8 +27,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/games/games.css?v=20260905c">
-<link rel="stylesheet" href="/games/franchise.css?v=20260905c">
+<link rel="stylesheet" href="/games/games.css?v=20260905d">
+<link rel="stylesheet" href="/games/franchise.css?v=20260905d">
 </head>
 <body>
 <div id="gh"></div>
@@ -48,17 +48,17 @@
 <div id="gt"></div>
 <div id="gf"></div>
 
-<script src="/games/lib/week.js?v=20260905c"></script>
-<script src="/games/lib/scoring.js?v=20260905c"></script>
-<script src="/games/lib/challenge.js?v=20260905c"></script>
-<script src="/games/lib/research_state.js?v=20260905c"></script>
-<script src="/games/lib/attribution.js?v=20260905c"></script>
-<script src="/games/lib/store.js?v=20260905c"></script>
-<script src="/games/lib/dynasty.js?v=20260905c"></script>
-<script src="/games/lib/social.js?v=20260905c"></script>
-<script src="/games/lib/auth.js?v=20260905c"></script>
-<script src="/games/lib/franchise.js?v=20260905c"></script>
-<script src="/games/games.js?v=20260905c"></script>
+<script src="/games/lib/week.js?v=20260905d"></script>
+<script src="/games/lib/scoring.js?v=20260905d"></script>
+<script src="/games/lib/challenge.js?v=20260905d"></script>
+<script src="/games/lib/research_state.js?v=20260905d"></script>
+<script src="/games/lib/attribution.js?v=20260905d"></script>
+<script src="/games/lib/store.js?v=20260905d"></script>
+<script src="/games/lib/dynasty.js?v=20260905d"></script>
+<script src="/games/lib/social.js?v=20260905d"></script>
+<script src="/games/lib/auth.js?v=20260905d"></script>
+<script src="/games/lib/franchise.js?v=20260905d"></script>
+<script src="/games/games.js?v=20260905d"></script>
 <script>
 /* STALE SCRIPT GUARD. A browser can keep an old games.js or store.js for
    longer than it keeps this page, and a page built for the new library
@@ -92,6 +92,8 @@
     return m?decodeURIComponent(m[1].replace(/\+/g,' ')):null;
   }
   var INTENT=param('intent')||'direct';
+  /* where to go once founded: only a games path, never an outside one */
+  var NEXT=(function(){var n=param('next')||'';try{n=decodeURIComponent(n);}catch(_){}return /^\/games\/[a-z0-9\-\/]*(\?[A-Za-z0-9=&_\-]*)?$/.test(n)?n:null;})();
 
   var READY=G.boot('franchise');
   G.track('front_office_view',{intent:INTENT,game_type:'franchise'});
@@ -265,8 +267,7 @@
                 sub:'Team overall '+(home&&home.rating?home.rating.overall:'—')+' · Founder Season '+(home&&home.franchise?home.franchise.founded_season:''),
                 body:'Your roster is generated and your history starts here. Every Price It, card and drill from now on builds it.'
                   +(imp&&imp.totals?' Carried over: '+fmt(imp.totals.xp)+' XP, '+fmt(imp.totals.scouting_points)+' Scouting Points, '+fmt(imp.totals.team_credits)+' Team Credits.':''),
-                cta:'See my roster',dismiss:'Open the Front Office'});
-              var go=document.querySelector('.moment .btn-go');if(go)go.href='/games/roster/';
+                cta:NEXT?'Play the challenge':'See my roster',dismiss:'Open the Front Office',href:NEXT||'/games/roster/'});
             });
           });
         });
