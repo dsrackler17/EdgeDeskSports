@@ -1,0 +1,279 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-1PXVBV53FZ"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-1PXVBV53FZ');
+</script>
+<title>Draft &amp; Market | EdgeDesk Games</title>
+<meta name="description" content="Your franchise's draft class and free agents: scout prospects with the Scouting Points you earn reading real football, draft two a season, sign a veteran with Team Credits. Free to play, no real-money wagering.">
+<link rel="canonical" href="https://edgedesksports.com/games/market">
+<meta name="theme-color" content="#0b0d11">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230b0d11'/%3E%3Cpath d='M18 6 L23 6 L14 26 L9 26 Z' fill='%233fb883'/%3E%3C/svg%3E">
+<meta name="robots" content="index,follow">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="EdgeDesk Games">
+<meta property="og:url" content="https://edgedesksports.com/games/market">
+<meta property="og:title" content="The draft and the market — EdgeDesk Games">
+<meta property="og:description" content="Scout a draft class with the Scouting Points you earn reading real football. Two picks a season, a market of veterans, a roster that is yours to shape.">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="The draft and the market — EdgeDesk Games">
+<meta name="twitter:description" content="Scout a draft class with the Scouting Points you earn reading real football. Two picks a season, a market of veterans, a roster that is yours to shape.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/games/games.css?v=20260905g">
+<link rel="stylesheet" href="/games/franchise.css?v=20260905g">
+</head>
+<body>
+<div id="gh"></div>
+
+<main class="wrap" id="main">
+  <div class="sec" style="margin-top:18px">
+    <div class="card" id="stage">
+      <div class="eyebrow">Draft &amp; Market</div>
+      <div class="sk" style="width:55%;margin:16px 0"></div>
+      <div class="sk" style="width:35%;margin:10px 0"></div>
+      <div class="sk-label" style="text-align:left">Opening the board</div>
+    </div>
+  </div>
+  <div id="rooms"></div>
+</main>
+
+<div id="gt"></div>
+<div id="gf"></div>
+
+<script src="/games/lib/week.js?v=20260905g"></script>
+<script src="/games/lib/scoring.js?v=20260905g"></script>
+<script src="/games/lib/challenge.js?v=20260905g"></script>
+<script src="/games/lib/research_state.js?v=20260905g"></script>
+<script src="/games/lib/attribution.js?v=20260905g"></script>
+<script src="/games/lib/store.js?v=20260905g"></script>
+<script src="/games/lib/dynasty.js?v=20260905g"></script>
+<script src="/games/lib/social.js?v=20260905g"></script>
+<script src="/games/lib/auth.js?v=20260905g"></script>
+<script src="/games/lib/franchise.js?v=20260905g"></script>
+<script src="/games/games.js?v=20260905g"></script>
+<script>
+/* STALE SCRIPT GUARD. A browser can keep an old games.js or store.js for
+   longer than it keeps this page, and a page built for the new library
+   then dies on the first function the old copy lacks — a skeleton that
+   never fills. The asset URLs above carry a version token so that cannot
+   happen from here on; this is the belt for the braces: if a required
+   function is missing, say so and offer a fresh load instead of a dead
+   screen. */
+(function(){
+  var need=['EDFranchise.market','EDFranchise.scout','EDFranchise.draft','EDFranchise.sign','EDFranchise.prospectLine','EDGames.franchiseReady'];
+  var miss=need.filter(function(k){var p=k.split('.'),o=window[p[0]];return !o||typeof o[p[1]]!=='function';});
+  if(!miss.length)return;
+  var host=document.getElementById('stage')||document.querySelector('main');
+  if(host)host.innerHTML='<div class="card"><div class="eyebrow">EdgeDesk Games</div>'
+    +'<div class="empty">This page needs a newer copy of EdgeDesk Games than your browser has kept.<br>'
+    +'<a class="btn btn-go" style="margin-top:14px" href="'+location.pathname+'?fresh='+Date.now()+'">Reload the page</a></div></div>';
+  try{console.warn('stale games scripts: '+miss.join(', '));}catch(_){}
+})();
+</script>
+<script>
+(function(){
+  'use strict';
+  var G=window.EDGames,FR=window.EDFranchise;
+  var $=function(id){return document.getElementById(id);};
+  var stage=$('stage'),rooms=$('rooms');
+  var esc=G.esc,fmt=FR.fmt;
+
+  var READY=G.boot('market');
+  var BOARD=null;
+
+  var MON=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  function dayLabel(iso){
+    var t=Date.parse(String(iso||'').replace(' ','T'));
+    if(!isFinite(t))return '';
+    var d=new Date(t);return d.getDate()+' '+MON[d.getMonth()];
+  }
+
+  /* ---- no franchise yet --------------------------------------------------- */
+  function renderEmpty(state){
+    stage.className='card';
+    stage.innerHTML='<div class="fo-hero"><div class="eyebrow">Draft &amp; Market</div>'
+      +'<h1>Where Scouting Points go.</h1>'
+      +'<p>Every franchise gets a draft class of its own: ten prospects whose true ratings are hidden until a scouting report is bought '
+      +'with the Scouting Points your reads in Price It earn. Two picks a season. A short market of veterans with an asking price in Team Credits. '
+      +'A roster that runs '+FR.MARKET.roster_min+' to '+FR.MARKET.roster_max+' and is yours to shape.</p>'
+      +'<ul class="fo-list"><li>Scout a prospect for '+FR.MARKET.scout_sp+' SP and the range becomes a number.</li>'
+      +'<li>Draft him, or take a chance on one you have not scouted.</li><li>Sign a veteran who can play now, for what he asks.</li></ul>'
+      +'<div class="btn-row"><a class="btn btn-go btn-big" href="/games/franchise/?intent=market" id="goFound">Found my franchise</a></div>'
+      +'<div class="ftp" style="margin-top:12px"><b>Free to play</b> · No account needed to start · Nothing here can be bought</div></div>';
+    rooms.innerHTML=state==='not_deployed'
+      ?'<div class="sec"><div class="card"><div class="empty">The franchise layer has not been deployed to this project yet. <a href="/games/status/">Status</a></div></div></div>'
+      :'';
+    var go=$('goFound');
+    if(go)go.addEventListener('click',function(){G.track('signup_start_from_games',{placement:'market',game_type:'franchise'});});
+  }
+
+  /* ---- the board ---------------------------------------------------------- */
+  function renderStage(b){
+    var snap=FR.snapshot()||{},f=snap.franchise||{},res=b.resources||{},room=FR.rosterRoom(b.roster),w=b.window||{};
+    stage.className='card';
+    stage.setAttribute('style',FR.themeVars(f.theme));
+    stage.innerHTML='<div class="eyebrow">Draft &amp; Market · '+esc(w.label||'')+' window</div>'
+      +'<div class="hq-id">'+FR.logoSvg(f.logo,56,f.theme)
+      +'<div><div class="hq-city">'+esc(f.city||'')+' · '+esc(f.abbr||'')+'</div><div class="hq-name">'+esc(f.name||'')+'</div>'
+      +'<div class="hq-line">'+esc(b.prospects.length)+' prospect'+(b.prospects.length===1?'':'s')+' · '+esc(b.agents.length)+' free agent'+(b.agents.length===1?'':'s')
+      +' · <b>'+esc(b.scouted|0)+' scouted</b></div></div>'
+      +'<div class="hq-rec">'+esc(b.picks|0)+'<span class="s">pick'+((b.picks|0)===1?'':'s')+' left</span></div></div>'
+      +'<div class="mk-sum">'
+      +'<div class="sp"><div class="k">Scouting</div><div class="v">'+esc(fmt(res.scouting_points))+'<small>a report is '+esc(b.rules.scout_sp)+' SP</small></div></div>'
+      +'<div class="tc"><div class="k">Credits</div><div class="v">'+esc(fmt(res.team_credits))+'<small>free agents ask TC</small></div></div>'
+      +'<div><div class="k">Roster</div><div class="v">'+esc(room.active)+'<small>of '+esc(room.max)+' · '+(room.room?room.room+' open':'full')+'</small></div></div>'
+      +'<div><div class="k">Drafted</div><div class="v">'+esc(b.drafted|0)+'<small>this window</small></div></div>'
+      +'</div>'
+      +'<div class="ftp" style="margin-top:12px">Scouting Points come from Price It accuracy; Team Credits from playing. A report reveals a prospect; a pick or a signing is the server’s to place. '
+      +'Nothing here can be bought with money.</div>';
+  }
+  function prospectCard(p,b){
+    var room=FR.rosterRoom(b.roster),known=p.overall!=null;
+    var top='<div class="pc-top"><span class="pc-pos">'+esc(p.position)+'</span><span class="pc-num">'+esc(p.age)+' yrs</span>'
+      +(known?'<span class="pc-tag">Scouted</span>':'<span class="pc-tag off">Unscouted</span>')
+      +(known&&p.rarity?'<span class="pc-rar">'+esc(p.rarity)+'</span>':'')+'</div>';
+    var body;
+    if(known){
+      body='<div class="pc-ovr"><b>'+esc(p.overall)+'</b><span>OVR</span></div>'
+        +'<div class="pc-name">'+esc(FR.fullName(p))+'</div><div class="pc-arch">'+esc(p.archetype||'')+' · potential <b>'+esc(p.potential)+'</b> · '+esc(FR.DEV_TIERS[p.dev_tier]||p.dev_tier||'')+'</div>'
+        +'<div class="pc-attrs">'+FR.keyRatings(p).map(function(a){return '<div class="pc-a"><span class="k">'+esc(a.label)+'</span><b>'+esc(a.value)+'</b></div>';}).join('')+'</div>'
+        +(FR.traitOf(p)?'<div class="pc-line"><b>'+esc(FR.traitOf(p).name)+'</b> · '+esc(FR.traitOf(p).desc||'')+'</div>':'');
+    }else{
+      body='<div class="pc-range"><b>'+esc(p.range?p.range[0]+'–'+p.range[1]:'?')+'</b><span>OVR</span></div>'
+        +'<div class="pc-name">'+esc(FR.fullName(p))+'</div><div class="pc-arch">'+esc(p.archetype||'')+' · potential unknown</div>'
+        +'<div class="pc-hidden"><i></i><i></i><i></i><i></i></div>'
+        +'<div class="pc-line">The ratings, the potential, the tier and any trait are in the report.</div>';
+    }
+    var canScout=!known&&(b.resources.scouting_points|0)>=(b.rules.scout_sp|0);
+    var acts='<div class="pc-actions">'
+      +(!known?(canScout?'<button class="btn btn-go" type="button" data-scout="'+esc(p.id)+'">Scout · '+esc(b.rules.scout_sp)+' SP</button>'
+                        :'<span class="pc-line">Report: '+esc(b.rules.scout_sp)+' SP · '+esc(fmt(b.resources.scouting_points))+' on hand · <a href="/games/price-it/">earn more in Price It</a></span>'):'')
+      +((b.picks|0)>0&&!room.full?'<button class="btn'+(known?' btn-go':'')+'" type="button" data-draft="'+esc(p.id)+'" data-name="'+esc(FR.fullName(p))+'" data-known="'+(known?'1':'0')+'">'+(known?'Draft':'Draft unscouted')+'</button>'
+        :(b.picks|0)>0?'<span class="pc-line">Roster full — release a player on the <a href="/games/roster/">roster</a> to draft.</span>':'')
+      +'</div>';
+    return '<div class="pc'+(known?' pc-scouted':'')+'" data-player="'+esc(p.id)+'">'+top+body+acts+'</div>';
+  }
+  function agentCard(p,b){
+    var room=FR.rosterRoom(b.roster);
+    var top='<div class="pc-top"><span class="pc-pos">'+esc(p.position)+'</span><span class="pc-num">'+esc(p.age)+' yrs</span>'+(p.rarity?'<span class="pc-rar">'+esc(p.rarity)+'</span>':'')+'</div>';
+    var body='<div class="pc-ovr"><b>'+esc(p.overall)+'</b><span>OVR</span></div>'
+      +'<div class="pc-name">'+esc(FR.fullName(p))+'</div><div class="pc-arch">'+esc(p.archetype||'')+' · potential <b>'+esc(p.potential)+'</b> · '+esc(FR.DEV_TIERS[p.dev_tier]||'')+'</div>'
+      +'<div class="pc-attrs">'+FR.keyRatings(p).map(function(a){return '<div class="pc-a"><span class="k">'+esc(a.label)+'</span><b>'+esc(a.value)+'</b></div>';}).join('')+'</div>'
+      +(FR.traitOf(p)?'<div class="pc-line"><b>'+esc(FR.traitOf(p).name)+'</b> · '+esc(FR.traitOf(p).desc||'')+'</div>':'')
+      +'<div class="pc-ask">Asking '+esc(fmt(p.asking))+' TC</div>';
+    var acts='<div class="pc-actions">'
+      +(room.full?'<span class="pc-line">Roster full — release a player on the <a href="/games/roster/">roster</a> to sign.</span>'
+        :p.affordable?'<button class="btn btn-go" type="button" data-sign="'+esc(p.id)+'" data-name="'+esc(FR.fullName(p))+'" data-ask="'+esc(p.asking)+'">Sign · '+esc(fmt(p.asking))+' TC</button>'
+        :'<span class="pc-line">'+esc(fmt(p.asking))+' TC asked · '+esc(fmt(b.resources.team_credits))+' on hand</span>')
+      +'</div>';
+    return '<div class="pc" data-player="'+esc(p.id)+'">'+top+body+acts+'</div>';
+  }
+  function histRow(h){
+    var d=h.detail||{},what={scout:'Report',draft:'Pick',signing:'Signed',release:'Released'}[h.kind]||h.kind;
+    var line=h.kind==='scout'?'-'+esc(d.cost)+' SP':h.kind==='signing'?'-'+esc(fmt(d.cost))+' TC':h.kind==='draft'?'pick '+esc(d.pick):'';
+    return '<li><span class="k">'+esc(what)+'</span><span class="o"><b>'+esc(d.name||'')+'</b><small>'+esc(d.position||'')+(d.overall!=null?' · OVR '+esc(d.overall):'')+(d.potential!=null?' · potential '+esc(d.potential):'')+' · '+esc(dayLabel(h.at))+'</small></span><span class="r">'+line+'</span></li>';
+  }
+  function renderBoard(b,fresh){
+    BOARD=b;
+    renderStage(b);
+    var room=FR.rosterRoom(b.roster);
+    rooms.innerHTML=
+      '<div class="sec"><div class="sec-h"><h2>The draft class</h2><span class="m">'+esc(b.window.label||'')+' · '+esc(b.picks|0)+' pick'+((b.picks|0)===1?'':'s')+' left</span></div>'
+      +(b.prospects.length?'<div class="pc-grid">'+b.prospects.map(function(p){return prospectCard(p,b);}).join('')+'</div>'
+        :'<div class="card"><div class="empty">The class is empty until the next offseason. Every prospect not drafted then was passed over.</div></div>')
+      +'<div class="ftp" style="margin-top:10px">A report is '+esc(b.rules.scout_sp)+' Scouting Points and reveals one prospect for good. Picks are '+esc(b.rules.picks)+' a window and do not carry over. '
+      +'A drafted prospect joins at the bottom of his position’s chart.</div></div>'
+      +'<div class="sec"><div class="sec-h"><h2>Free agents</h2><span class="m">'+esc(b.agents.length)+' on the market</span></div>'
+      +(b.agents.length?'<div class="pc-grid">'+b.agents.map(function(p){return agentCard(p,b);}).join('')+'</div>'
+        :'<div class="card"><div class="empty">Nobody left on the market until the next offseason.</div></div>')
+      +'<div class="ftp" style="margin-top:10px">A free agent hides nothing. He asks '+esc(b.rules.signing.floor)+' TC, or '+esc(b.rules.signing.per_point)+' for every point over '+esc(b.rules.signing.over)+'. '
+      +'The roster runs '+esc(room.min)+' to '+esc(room.max)+'; at '+esc(room.max)+' someone must be released on the <a href="/games/roster/">roster</a> first.</div></div>'
+      +'<div class="sec"><div class="sec-h"><h2>On the record</h2><span class="m">last '+esc((b.history||[]).length)+'</span></div><div class="card">'
+      +((b.history||[]).length?'<ul class="mk-hist">'+b.history.map(histRow).join('')+'</ul>':'<div class="empty">No report, pick, signing or release yet.</div>')
+      +'<div class="ftp" style="margin-top:10px">Every move here is a row on the server: a report and a signing are lines on the ledger, a pick and a release are on the record. Nothing is undone.</div></div></div>';
+    if(fresh)G.track('market_view',{window:b.window.number,picks:b.picks|0,prospects:b.prospects.length,scouted:b.scouted|0,agents:b.agents.length,roster:room.active,game_type:'franchise'});
+  }
+  function reload(){
+    return FR.market().then(function(r){if(r.ok&&r.data)renderBoard(r.data,false);});
+  }
+  function celebrate(d,placement){
+    (d.achievements||[]).forEach(function(id){G.track('achievement_unlocked',{achievement:id,placement:placement});});
+    if(d.achievements&&d.achievements.length){
+      G.moment({eyebrow:'Achievement',title:FR.achievementName(d.achievements[0]),sub:d.player?FR.fullName(d.player)+' · '+FR.prospectLine(d.player):'',
+        body:'On the wall in the Trophy Room, read from your record on the server.',cta:'See the Trophy Room',dismiss:'Back to the board',href:'/games/trophies/'});
+    }
+  }
+  function wire(){
+    rooms.addEventListener('click',function(e){
+      var b=e.target.closest?e.target.closest('button[data-scout],button[data-draft],button[data-sign]'):null;
+      if(!b||!BOARD)return;
+      var id=b.getAttribute('data-scout')||b.getAttribute('data-draft')||b.getAttribute('data-sign');
+      if(b.hasAttribute('data-scout')){
+        b.disabled=true;b.textContent='Scouting…';
+        FR.scout(id).then(function(r){
+          if(!r.ok||!r.data){G.toast(r.message||'The report could not be bought.');return reload();}
+          var d=r.data;
+          G.track('scouting_spent',{sp:d.cost,what:'scout_report',player:id,game_type:'franchise'});
+          G.track('player_scouted',{player:id,position:d.player?d.player.position:null,overall:d.player?d.player.overall:null,potential:d.player?d.player.potential:null,unscouted:d.unscouted});
+          G.toast('Report in: '+FR.fullName(d.player)+' is OVR '+d.player.overall+', potential '+d.player.potential);
+          celebrate(d,'market');
+          return reload();
+        });
+        return;
+      }
+      if(b.hasAttribute('data-draft')){
+        var known=b.getAttribute('data-known')==='1',nm=b.getAttribute('data-name')||'this prospect';
+        if(!known&&!window.confirm('Draft '+nm+' without a report? A pick is not undone.'))return;
+        b.disabled=true;b.textContent='Drafting…';
+        FR.draft(id).then(function(r){
+          if(!r.ok||!r.data){G.toast(r.message||'The pick could not be made.');return reload();}
+          var d=r.data;
+          G.track('draft_pick',{player:id,pick:d.pick,picks_left:d.picks,scouted:known,position:d.player?d.player.position:null,overall:d.player?d.player.overall:null,game_type:'franchise'});
+          G.toast('Pick '+d.pick+': '+FR.fullName(d.player)+', '+d.player.position+' · OVR '+d.player.overall);
+          celebrate(d,'market');
+          return reload();
+        });
+        return;
+      }
+      if(b.hasAttribute('data-sign')){
+        var nm2=b.getAttribute('data-name')||'this player',ask=b.getAttribute('data-ask');
+        if(!window.confirm('Sign '+nm2+' for '+ask+' Team Credits?'))return;
+        b.disabled=true;b.textContent='Signing…';
+        FR.sign(id).then(function(r){
+          if(!r.ok||!r.data){G.toast(r.message||'The signing could not be made.');return reload();}
+          var d=r.data;
+          G.track('free_agent_signed',{player:id,cost:d.cost,position:d.player?d.player.position:null,overall:d.player?d.player.overall:null,game_type:'franchise'});
+          G.toast('Signed: '+FR.fullName(d.player)+' for '+fmt(d.cost)+' TC');
+          celebrate(d,'market');
+          return reload();
+        });
+      }
+    });
+  }
+
+  /* ---- boot --------------------------------------------------------------- */
+  G.franchiseReady().then(function(){
+    var st=FR.state();
+    if(st!=='franchise'){renderEmpty(st);return;}
+    return FR.market().then(function(r){
+      if(!r.ok||!r.data){
+        stage.innerHTML='<div class="empty">The board could not be loaded. '+esc(r.message||'Check your connection and reload.')+'</div>';
+        return;
+      }
+      renderBoard(r.data,true);
+      wire();
+    });
+  }).catch(function(){renderEmpty(FR.state());});
+  READY.catch(function(){});
+})();
+</script>
+</body>
+</html>

@@ -210,7 +210,11 @@
     fc_three:       { name: 'Three Straight' },
     first_upgrade:  { name: 'Groundbreaking' },
     breakout:       { name: 'Breakout' },
-    farewell:       { name: 'Farewell' }
+    farewell:       { name: 'Farewell' },
+    draft_day:      { name: 'Draft Day' },
+    full_scout:     { name: 'Scouted the Class' },
+    gut_call:       { name: 'Gut Call' },
+    first_signing:  { name: 'Open for Business' }
   };
   function achievementName(id) {
     var a = ACHIEVEMENTS[id];
@@ -316,9 +320,10 @@
     if (c.games == null) return '';
     return statsLine(p && p.position, c, { games: true });
   }
+  var SOURCES = { founding_roster: 'Founder roster', offseason_rookie: 'Rookie', draft: 'Drafted', free_agent: 'Free agent' };
   function acquiredLine(p) {
     if (!p) return '';
-    var src = p.acquired_source === 'founding_roster' ? 'Founder roster' : String(p.acquired_source || '').replace(/_/g, ' ');
+    var src = SOURCES[p.acquired_source] || String(p.acquired_source || '').replace(/_/g, ' ');
     return src + (p.acquired_season ? ' · ' + p.acquired_season : '') + (p.acquired_detail && p.acquired_detail !== src ? ' · ' + p.acquired_detail : '');
   }
 
@@ -613,6 +618,38 @@
     return lines.join('\n');
   }
 
+  /* ── THE DRAFT AND THE MARKET (Phase 5) ─────────────────────────────────
+     Mirrors of franchise_market() in the SQL, for display: the client shows
+     a price and a range, the server charges, hides and reveals. Pinned to
+     the SQL by tools/games/franchise.test.js. */
+  var MARKET_VERSION = 'market_v1';
+  var MARKET = { scout_sp: 20, picks: 2, class_size: 10, agents: 6, roster_max: 42, roster_min: 38,
+                 signing: { floor: 100, per_point: 20, over: 55 } };
+  /* a free agent's asking price, as the server sets it */
+  function signingCost(overall) {
+    return Math.max(MARKET.signing.floor, ((overall | 0) - MARKET.signing.over) * MARKET.signing.per_point);
+  }
+  /* what a card says under an unscouted prospect: the range, and that the
+     rest is for sale */
+  function rangeLine(p) {
+    p = obj(p); var r = arr(p.range);
+    return r.length === 2 ? 'OVR ' + r[0] + '–' + r[1] + ' · potential unknown' : '';
+  }
+  /* one line for a prospect or a free agent: position, age, archetype,
+     then what is known */
+  function prospectLine(p) {
+    p = obj(p);
+    var head = [p.position, p.age != null ? p.age : null, p.archetype].filter(function (x) { return x != null && x !== ''; }).join(' · ');
+    if (p.overall == null) return head + (p.range ? ' · ' + rangeLine(p) : '');
+    return head + ' · OVR ' + p.overall + (p.potential != null ? ' · potential ' + p.potential : '')
+      + (p.dev_tier && DEV_TIERS[p.dev_tier] ? ' · ' + DEV_TIERS[p.dev_tier] : '');
+  }
+  /* the roster's room, from the board or the home snapshot */
+  function rosterRoom(m) {
+    m = obj(m); var active = m.active | 0, max = m.max || MARKET.roster_max, min = m.min || MARKET.roster_min;
+    return { active: active, max: max, min: min, room: Math.max(0, max - active), full: active >= max, floor: active <= min };
+  }
+
   function arr(v) { return Array.isArray(v) ? v : []; }
   function obj(v) { return v && typeof v === 'object' ? v : {}; }
   function vals(o) { o = obj(o); var out = [], k; for (k in o) if (o.hasOwnProperty(k)) out.push(o[k]); return out; }
@@ -832,6 +869,22 @@
   }
   function trophies() { return rpc('franchise_trophies', withSecret({})); }
 
+  /* THE DRAFT AND THE MARKET (Phase 5). The board is one read; a report, a
+     pick, a signing and a release each send a player id and the identity
+     and nothing else — the server prices, hides, reveals, counts the picks
+     and holds the roster's ceiling and floor. Never queued: spending and
+     an irreversible cut must see their answer. The snapshot's resources
+     follow the answer. */
+  function market() { return rpc('franchise_market_board', withSecret({})); }
+  function moveThen(r) {
+    if (r.ok && r.data && r.data.totals) touchTotals(r.data.totals);
+    return r;
+  }
+  function scout(playerId) { return rpc('franchise_scout', withSecret({ p_player: String(playerId || '') })).then(moveThen); }
+  function draft(playerId) { return rpc('franchise_draft', withSecret({ p_player: String(playerId || '') })).then(moveThen); }
+  function sign(playerId) { return rpc('franchise_sign', withSecret({ p_player: String(playerId || '') })).then(moveThen); }
+  function release(playerId) { return rpc('franchise_release', withSecret({ p_player: String(playerId || '') })); }
+
   /* CLAIM the device's franchise into the account just signed in. Proof is
      the secret; the server refuses if the account already owns one, and
      says so. The cache moves with it. */
@@ -956,6 +1009,8 @@
     facilityState: facilityState, facilityStates: facilityStates, facilityLine: facilityLine,
     OFFSEASON_VERSION: OFFSEASON_VERSION, RETIRE_AGE: RETIRE_AGE, FADE_AGE: FADE_AGE, FADE_OVERALL: FADE_OVERALL,
     roman: roman, offseasonLine: offseasonLine, trophyShareText: trophyShareText, upgrade: upgrade, trophies: trophies,
+    MARKET_VERSION: MARKET_VERSION, MARKET: MARKET, signingCost: signingCost, rangeLine: rangeLine, prospectLine: prospectLine,
+    rosterRoom: rosterRoom, market: market, scout: scout, draft: draft, sign: sign, release: release,
     spForScore: spForScore, tcForScore: tcForScore, tcForDrill: tcForDrill, rewardsFor: rewardsFor,
     xpForLevel: xpForLevel, levelFor: levelFor, levelInfo: levelInfo,
     fullName: fullName, keyRatings: keyRatings, isStarter: isStarter, traitOf: traitOf,

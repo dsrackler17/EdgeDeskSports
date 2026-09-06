@@ -140,8 +140,16 @@ functions `franchise_challenge_create`, `franchise_challenge_peek`,
 `game_players.retired_season`, three achievement rows, and the functions
 `franchise_upgrade` and `franchise_trophies` (the offseason, the rookie
 generator and the name pools are internal and granted to no client
-role). Safe to re-run over any earlier installation. Report rows 1–17
-should each say `ok`. Tested against a real PostgreSQL by
+role). Phase 5 adds the draft and the market: three player states
+(`prospect`, `free_agent`, `passed`), `game_players.class_season`,
+`scouted` and `asking`, `franchises.draft_picks` and `market_season`,
+four achievement rows, five activity kinds, a tighter read policy on
+`game_players` (no prospect or free agent is readable directly), and the
+functions `franchise_market`, `franchise_market_board`,
+`franchise_scout`, `franchise_draft`, `franchise_sign` and
+`franchise_release` (the generator and the window opener are internal).
+Safe to re-run over any earlier installation. Report rows 1–19 should
+each say `ok`. Tested against a real PostgreSQL by
 `tools/games/franchise_sql.test.js`. See `games/README.md`.
 
 Two trusted functions, `game_board_upsert` and `franchise_settle_pick5`, are

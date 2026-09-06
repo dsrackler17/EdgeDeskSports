@@ -332,6 +332,23 @@ create table if not exists public.game_players (
 -- the franchise season a player retired after (Phase 4); an alumnus keeps
 -- his row, his card and his career line
 alter table public.game_players add column if not exists retired_season integer;
+-- THE DRAFT AND THE MARKET (Phase 5). A prospect is a player of the
+-- franchise who is not on the roster yet: he sits in a window's draft class
+-- with his true ratings hidden until a scouting report is bought with
+-- Scouting Points. A free agent sits on the market with an asking price in
+-- Team Credits. Either joins the roster only through the server
+-- (franchise_draft, franchise_sign); one passed over when the next window
+-- opens is `passed` and stays as a record. The status check is replaced by
+-- name so an earlier installation admits the new states without a rebuild.
+alter table public.game_players drop constraint if exists game_players_status_check;
+alter table public.game_players add constraint game_players_status_check
+  check (status in ('active','injured','retired','released','prospect','free_agent','passed'));
+alter table public.game_players add column if not exists class_season integer;
+alter table public.game_players add column if not exists scouted boolean not null default false;
+alter table public.game_players add column if not exists asking integer;
+alter table public.franchises add column if not exists draft_picks integer not null default 0;
+alter table public.franchises add column if not exists market_season integer;
+create index if not exists game_players_market on public.game_players (franchise_id, status, class_season);
 
 create index if not exists game_players_franchise on public.game_players (franchise_id, position, depth);
 
@@ -345,7 +362,8 @@ create table if not exists public.franchise_activity (
   franchise_id   uuid not null references public.franchises (id) on delete cascade,
   kind           text not null check (kind in
                    ('price_it','pick5_card','pick5_result','drill_daily','research_open','h2h_locked','h2h_win','founded',
-                    'season_started','weekly_game','weekly_win','season_complete','fc_played','fc_win','facility','offseason')),
+                    'season_started','weekly_game','weekly_win','season_complete','fc_played','fc_win','facility','offseason',
+                    'market','scout','draft','signing','release')),
   key            text not null,
   week_key       text not null,
   day_key        text not null,
@@ -532,7 +550,8 @@ create index if not exists franchise_games_next on public.franchise_games (franc
 alter table public.franchise_activity drop constraint if exists franchise_activity_kind_check;
 alter table public.franchise_activity add constraint franchise_activity_kind_check check (kind in
   ('price_it','pick5_card','pick5_result','drill_daily','research_open','h2h_locked','h2h_win','founded',
-   'season_started','weekly_game','weekly_win','season_complete','fc_played','fc_win','facility','offseason'));
+   'season_started','weekly_game','weekly_win','season_complete','fc_played','fc_win','facility','offseason',
+   'market','scout','draft','signing','release'));
 
 insert into public.franchise_achievement_defs (id, name, description, exclusive_season, sort) values
   ('first_win',       'First Win',       'Your franchise''s first weekly game won.', null, 40),
@@ -606,6 +625,13 @@ insert into public.franchise_achievement_defs (id, name, description, exclusive_
   ('farewell',      'Farewell',       'A founding-roster player retired with your franchise.', null, 62)
 on conflict (id) do nothing;
 
+insert into public.franchise_achievement_defs (id, name, description, exclusive_season, sort) values
+  ('draft_day',     'Draft Day',         'Drafted your first prospect.', null, 70),
+  ('full_scout',    'Scouted the Class', 'Bought a scouting report on every prospect in a draft class.', null, 71),
+  ('gut_call',      'Gut Call',          'Drafted a prospect unscouted who turned out to have a potential of 80 or more.', null, 72),
+  ('first_signing', 'Open for Business', 'Signed your first free agent.', null, 73)
+on conflict (id) do nothing;
+
 -- ===========================================================================
 -- ROW LEVEL SECURITY — deny by default; owners read their own; nobody writes.
 -- ===========================================================================
@@ -643,9 +669,12 @@ drop policy if exists franchise_seasons_own on public.franchise_seasons;
 create policy franchise_seasons_own on public.franchise_seasons for select
   using (public.franchise_is_mine(franchise_id));
 
+-- a prospect's true ratings are for sale, so the direct read admits no
+-- prospect and no free agent: the market board (franchise_market_board) is
+-- the only way to look at either, and it shows what has been paid for
 drop policy if exists game_players_own on public.game_players;
 create policy game_players_own on public.game_players for select
-  using (franchise_id is not null and public.franchise_is_mine(franchise_id));
+  using (franchise_id is not null and public.franchise_is_mine(franchise_id) and status not in ('prospect', 'free_agent'));
 
 drop policy if exists franchise_activity_own on public.franchise_activity;
 create policy franchise_activity_own on public.franchise_activity for select
@@ -1129,6 +1158,9 @@ begin
 
   n := public.franchise_generate_roster(v_id, v_seed, v_season);
   if n < 30 then raise exception 'roster generation produced % players', n using errcode = 'P0001'; end if;
+  -- the first draft class and the first free agents, so Scouting Points
+  -- have somewhere to go from the first day (franchise_open_market, below)
+  perform public.franchise_open_market(v_id, 1);
 
   insert into public.franchise_activity (franchise_id, kind, key, week_key, day_key, detail)
   values (v_id, 'founded', v_season::text, public.games_week_key(now()), public.games_day_key(now()),
@@ -2808,9 +2840,25 @@ $$;
 
 -- ONE ROOKIE, at a position, from the same pools as the founding roster,
 -- seeded so the same offseason signs the same player. Rated below the
--- founding backups, young, with room to grow.
+-- founding backups, young, with room to grow. (Phase 5 generalised the
+-- body into franchise_generate_player, which also makes the draft class
+-- and the free agents; this is the rookie's door to it.)
 create or replace function public.franchise_generate_rookie(
   p_franchise uuid, p_pos text, p_depth integer, p_season integer, p_seed text, p_detail text)
+returns uuid language plpgsql security definer set search_path = public, pg_temp as $$
+begin
+  return public.franchise_generate_player(p_franchise, p_pos, p_depth, p_season, p_seed, p_detail, 'rookie', null);
+end;
+$$;
+
+-- ONE GENERATED PLAYER of a kind: a rookie (a little under the founding
+-- backups, young, room to grow), a prospect (anywhere from raw to ready,
+-- with the better development odds — the reason a report is worth buying),
+-- or a free agent (a veteran who can play now, priced by his overall).
+-- Seeded; the same seed makes the same player.
+create or replace function public.franchise_generate_player(
+  p_franchise uuid, p_pos text, p_depth integer, p_season integer, p_seed text, p_detail text,
+  p_kind text default 'rookie', p_class integer default null)
 returns uuid language plpgsql security definer set search_path = public, pg_temp as $$
 declare
   first_names text[] := public.franchise_pool_first_names();
@@ -2827,7 +2875,10 @@ begin
   if p is null then raise exception 'no such position' using errcode = '22023'; end if;
   lo := (p->'nums'->>0)::int; hi := (p->'nums'->>1)::int;
   select min(t::int) into lowest from jsonb_array_elements_text(p->'targets') t;
-  target := lowest - 4 + floor(random() * 7)::int - 3;
+  target := case p_kind
+    when 'prospect'   then lowest - 7 + floor(random() * 11)::int - 5
+    when 'free_agent' then lowest + floor(random() * 11)::int - 1
+    else lowest - 4 + floor(random() * 7)::int - 3 end;
   a := archetypes->p_pos;
   arch := a->(floor(random() * jsonb_array_length(a))::int);
   attrs := '{}'::jsonb;
@@ -2836,9 +2887,14 @@ begin
     attrs := attrs || jsonb_build_object(k, greatest(40, least(99, v)));
   end loop;
   select round(avg(x.value::int))::int into ovr from jsonb_each_text(attrs) x;
-  age := 21 + floor(random() * 3)::int;
+  age := case p_kind when 'prospect' then 21 + floor(random() * 2)::int
+                     when 'free_agent' then 26 + floor(random() * 6)::int
+                     else 21 + floor(random() * 3)::int end;
   r := random();
-  tier := case when r < 0.03 then 'superstar' when r < 0.15 then 'star' when r < 0.40 then 'quick' else 'normal' end;
+  tier := case p_kind
+    when 'prospect'   then (case when r < 0.06 then 'superstar' when r < 0.20 then 'star' when r < 0.45 then 'quick' else 'normal' end)
+    when 'free_agent' then (case when r < 0.05 then 'star' when r < 0.20 then 'quick' else 'normal' end)
+    else (case when r < 0.03 then 'superstar' when r < 0.15 then 'star' when r < 0.40 then 'quick' else 'normal' end) end;
   bump := case tier when 'superstar' then 18 + floor(random() * 9)::int when 'star' then 12 + floor(random() * 9)::int
                     when 'quick' then 6 + floor(random() * 9)::int else 2 + floor(random() * 7)::int end;
   youth := (33 - age) / 12.0;
@@ -2853,9 +2909,14 @@ begin
       tr := tr - 'pos';
     end if;
   end if;
-  -- no name and no number of anyone who ever wore the colors, retired included
-  select coalesce(array_agg(first_name || ' ' || last_name), '{}'), coalesce(array_agg(jersey), '{}')
-    into used_names, used_nums from public.game_players where franchise_id = p_franchise;
+  -- no name of anyone who was ever in the building, prospects and free
+  -- agents included; a number is taken from the roster's unused ones, and
+  -- a prospect or a free agent has none until he joins (franchise_draft
+  -- and franchise_sign give him one)
+  select coalesce(array_agg(first_name || ' ' || last_name), '{}') into used_names
+    from public.game_players where franchise_id = p_franchise;
+  select coalesce(array_agg(jersey), '{}') into used_nums
+    from public.game_players where franchise_id = p_franchise and status = 'active';
   tries := 0;
   loop
     fn := first_names[1 + floor(random() * array_length(first_names, 1))::int];
@@ -2863,19 +2924,23 @@ begin
     exit when not ((fn || ' ' || ln) = any (used_names)) or tries > 20;
     tries := tries + 1;
   end loop;
-  tries := 0;
-  loop
-    num := lo + floor(random() * (hi - lo + 1))::int;
-    exit when not (num = any (used_nums)) or tries > 40;
-    tries := tries + 1;
-  end loop;
+  tries := 0; num := 0;
+  if p_kind not in ('prospect', 'free_agent') then
+    loop
+      num := lo + floor(random() * (hi - lo + 1))::int;
+      exit when not (num = any (used_nums)) or tries > 40;
+      tries := tries + 1;
+    end loop;
+  end if;
   insert into public.game_players
     (franchise_id, first_name, last_name, position, jersey, age, overall, archetype, dev_tier, potential, stamina, chemistry,
-     rarity, ratings, traits, depth, status, acquired_source, acquired_season, acquired_detail)
+     rarity, ratings, traits, depth, status, acquired_source, acquired_season, acquired_detail, class_season, asking)
   values
     (p_franchise, fn, ln, p_pos, num, age, ovr, arch->>'name', tier, pot, 70 + floor(random() * 26)::int, 50,
-     v_rarity, attrs, case when tr is null then '[]'::jsonb else jsonb_build_array(tr) end, p_depth, 'active',
-     'offseason_rookie', p_season, p_detail)
+     v_rarity, attrs, case when tr is null then '[]'::jsonb else jsonb_build_array(tr) end, p_depth,
+     case p_kind when 'prospect' then 'prospect' when 'free_agent' then 'free_agent' else 'active' end,
+     case p_kind when 'prospect' then 'draft' when 'free_agent' then 'free_agent' else 'offseason_rookie' end,
+     p_season, p_detail, p_class, case when p_kind = 'free_agent' then public.franchise_signing_cost(ovr) end)
   returning id into v_id;
   return v_id;
 end;
@@ -2889,7 +2954,7 @@ declare
   f public.franchises%rowtype; pl record; training integer; g integer; growth integer; k text; v integer; newattrs jsonb; ovr integer;
   pot integer; v_rarity text; age_new integer; report jsonb; players jsonb := '[]'::jsonb; retired jsonb := '[]'::jsonb;
   rookies jsonb := '[]'::jsonb; nimp integer := 0; ndec integer := 0; nret integer := 0; rid uuid; v_pos text; d integer; k2 integer;
-  delta integer; retire boolean; big integer := 0; founder_retired boolean := false; v_real integer; existing jsonb;
+  delta integer; retire boolean; big integer := 0; founder_retired boolean := false; v_real integer; existing jsonb; mk jsonb;
 begin
   select * into f from public.franchises where id = p_franchise for update;
   if not found then raise exception 'no franchise' using errcode = '22023'; end if;
@@ -2956,8 +3021,11 @@ begin
     end loop;
   end loop;
 
+  -- the next window: a new draft class, new free agents, the picks renewed
+  mk := public.franchise_open_market(p_franchise, p_from + 1);
+
   report := jsonb_build_object('version', 'offseason_v1', 'after_season', p_from, 'training', training,
-    'players', players, 'retired', retired, 'rookies', rookies,
+    'players', players, 'retired', retired, 'rookies', rookies, 'market', mk,
     'summary', jsonb_build_object('improved', nimp, 'declined', ndec, 'retired', nret, 'signed', jsonb_array_length(rookies), 'biggest', big));
   update public.franchise_seasons set offseason = report where franchise_id = p_franchise and number = p_from;
   insert into public.franchise_activity (franchise_id, kind, key, week_key, day_key, detail)
@@ -3074,6 +3142,332 @@ begin
     'ladder', jsonb_build_object('rating', f.ladder_rating, 'games', f.ladder_games, 'rank', public.franchise_ladder_rank(f.id)),
     'fc_record', (select jsonb_build_object('wins', coalesce(sum(fc_wins), 0), 'losses', coalesce(sum(fc_losses), 0), 'ties', coalesce(sum(fc_ties), 0))
                     from public.franchise_rivalries r where r.franchise_id = f.id));
+end;
+$$;
+
+-- ── THE DRAFT AND THE MARKET — market_v1 ─────────────────────────────────
+-- Where Scouting Points are spent. Every window — founding, and every
+-- offseason — a franchise gets a draft class of its own: prospects whose
+-- true ratings are hidden until a scouting report is bought with Scouting
+-- Points; a number of picks, renewed each window and never banked; and a
+-- short list of free agents with an asking price in Team Credits. The
+-- roster has a ceiling and a floor; at the ceiling a player must be
+-- released before another joins. Everything is generated, priced, hidden
+-- and revealed on the server; the direct read policy on game_players does
+-- not admit a prospect or a free agent at all, so the board is the only
+-- way to look.
+-- A NUMBER for a player joining the roster: the first unused one in his
+-- position's range, walking from a point fixed by the seed.
+create or replace function public.franchise_free_number(p_franchise uuid, p_pos text, p_seed text)
+returns integer language plpgsql stable security definer set search_path = public, pg_temp as $$
+declare p jsonb; lo integer; hi integer; used integer[]; i integer; n integer; size integer;
+begin
+  select x into p from jsonb_array_elements(public.franchise_pool_plan()) x where x->>'pos' = p_pos;
+  lo := coalesce((p->'nums'->>0)::int, 1); hi := coalesce((p->'nums'->>1)::int, 99); size := hi - lo + 1;
+  select coalesce(array_agg(jersey), '{}') into used from public.game_players where franchise_id = p_franchise and status = 'active';
+  for i in 0..(size - 1) loop
+    n := lo + ((abs(hashtext(coalesce(p_seed, ''))) + i) % size);
+    if not (n = any (used)) then return n; end if;
+  end loop;
+  -- every number in the range is worn: the first free one anywhere
+  for n in 1..99 loop
+    if not (n = any (used)) then return n; end if;
+  end loop;
+  return 0;
+end;
+$$;
+
+create or replace function public.franchise_market()
+returns jsonb language sql immutable
+set search_path = pg_catalog, pg_temp as $$
+  select jsonb_build_object(
+    'version', 'market_v1',
+    'scout_sp', 20,
+    'picks', 2,
+    'class_size', 10,
+    'agents', 6,
+    'roster_max', 42,
+    'roster_min', 38,
+    'signing', jsonb_build_object('floor', 100, 'per_point', 20, 'over', 55));
+$$;
+
+-- a free agent's asking price: 100 Team Credits, or 20 for every point over 55
+create or replace function public.franchise_signing_cost(p_overall integer)
+returns integer language sql immutable
+set search_path = pg_catalog, pg_temp as $$
+  select greatest(100, (coalesce(p_overall, 0) - 55) * 20);
+$$;
+
+-- A PROSPECT OR A FREE AGENT AS THE BOARD SHOWS HIM. Unscouted, a prospect
+-- shows his name, position, age and archetype, and an overall RANGE ten
+-- points wide whose placement is fixed per player, so asking twice narrows
+-- nothing. Scouted, or once on the roster, everything. A free agent hides
+-- nothing and carries his asking price.
+create or replace function public.franchise_prospect_json(p public.game_players)
+returns jsonb language plpgsql stable set search_path = public, pg_temp as $$
+declare lo integer; base jsonb; reveal boolean := p.scouted or p.status <> 'prospect';
+begin
+  lo := greatest(40, p.overall - 3 - (abs(hashtext(p.id::text)) % 5));
+  base := jsonb_build_object('id', p.id, 'first_name', p.first_name, 'last_name', p.last_name, 'position', p.position,
+    'age', p.age, 'archetype', p.archetype, 'status', p.status, 'scouted', p.scouted, 'class_season', p.class_season,
+    'acquired_source', p.acquired_source, 'acquired_detail', p.acquired_detail, 'asking', p.asking,
+    'jersey', case when p.status = 'active' then p.jersey end, 'depth', p.depth);
+  if reveal then
+    return base || jsonb_build_object('overall', p.overall, 'potential', p.potential, 'dev_tier', p.dev_tier,
+      'rarity', p.rarity, 'ratings', p.ratings, 'traits', p.traits, 'stamina', p.stamina);
+  end if;
+  return base || jsonb_build_object('range', jsonb_build_array(lo, least(99, lo + 10)), 'overall', null, 'potential', null);
+end;
+$$;
+
+-- OPEN A WINDOW: the class and the market for the season about to be
+-- played, generated once per franchise per window from the founding pools
+-- and seeded from the franchise; the previous window's leftovers are
+-- passed over and kept as a record; the picks are renewed, not banked.
+create or replace function public.franchise_open_market(p_franchise uuid, p_window integer)
+returns jsonb language plpgsql security definer set search_path = public, pg_temp as $$
+declare
+  f public.franchises%rowtype; m jsonb := public.franchise_market(); v_real integer; i integer; pos text; pid uuid;
+  class_pool text[] := array['QB','RB','WR','TE','OL','DL','LB','CB','S','WR','OL','DL'];
+  agent_pool text[] := array['WR','OL','DL','LB','CB','RB','S','TE','QB','K','P','OL'];
+  n_class integer := (m->>'class_size')::int; n_agents integer := (m->>'agents')::int;
+begin
+  select * into f from public.franchises where id = p_franchise for update;
+  if not found then raise exception 'no franchise' using errcode = '22023'; end if;
+  select season into v_real from public.franchise_seasons where franchise_id = p_franchise and number = p_window;
+  v_real := coalesce(v_real, public.games_season_of(now()));
+  update public.game_players set status = 'passed', updated_at = now()
+   where franchise_id = p_franchise and status in ('prospect', 'free_agent') and class_season < p_window;
+  if exists (select 1 from public.franchise_activity where franchise_id = p_franchise and kind = 'market' and key = p_window::text) then
+    return jsonb_build_object('window', p_window, 'opened', false);
+  end if;
+  for i in 1..n_class loop
+    pos := class_pool[1 + ((p_window - 1) * 5 + i - 1) % array_length(class_pool, 1)];
+    pid := public.franchise_generate_player(p_franchise, pos, 0, v_real, f.seed || ':class:' || p_window || ':' || i,
+             'Season ' || public.games_roman(p_window) || ' draft class', 'prospect', p_window);
+  end loop;
+  for i in 1..n_agents loop
+    pos := agent_pool[1 + ((p_window - 1) * 7 + i - 1) % array_length(agent_pool, 1)];
+    pid := public.franchise_generate_player(p_franchise, pos, 0, v_real, f.seed || ':agent:' || p_window || ':' || i,
+             'Free agent, Season ' || public.games_roman(p_window), 'free_agent', p_window);
+  end loop;
+  update public.franchises set draft_picks = (m->>'picks')::int, market_season = p_window, updated_at = now() where id = p_franchise;
+  insert into public.franchise_activity (franchise_id, kind, key, week_key, day_key, detail)
+  values (p_franchise, 'market', p_window::text, public.games_week_key(now()), public.games_day_key(now()),
+          jsonb_build_object('prospects', n_class, 'agents', n_agents, 'picks', (m->>'picks')::int))
+  on conflict (franchise_id, kind, key) do nothing;
+  return jsonb_build_object('window', p_window, 'opened', true, 'prospects', n_class, 'agents', n_agents, 'picks', (m->>'picks')::int);
+end;
+$$;
+
+-- THE BOARD: the class, the market, the picks, the roster's room, what a
+-- report costs, and what the franchise has done here — one read.
+create or replace function public.franchise_market_board(p_secret text default null)
+returns jsonb language plpgsql stable security definer set search_path = public, pg_temp as $$
+declare
+  f public.franchises%rowtype; m jsonb := public.franchise_market(); v_active integer; v_pros jsonb; v_agents jsonb; v_hist jsonb; v_label text;
+begin
+  select * into f from public.franchises where id = public.franchise_of(p_secret);
+  if not found then return null; end if;
+  select count(*) into v_active from public.game_players where franchise_id = f.id and status = 'active';
+  select coalesce(jsonb_agg(public.franchise_prospect_json(p)
+      order by array_position(array['QB','RB','WR','TE','OL','DL','LB','CB','S','K','P'], p.position), p.last_name, p.first_name), '[]'::jsonb)
+    into v_pros from public.game_players p where p.franchise_id = f.id and p.status = 'prospect' and p.class_season = f.market_season;
+  select coalesce(jsonb_agg(public.franchise_prospect_json(p) || jsonb_build_object('affordable', f.team_credits >= p.asking)
+      order by p.overall desc, p.asking desc, p.last_name), '[]'::jsonb)
+    into v_agents from public.game_players p where p.franchise_id = f.id and p.status = 'free_agent' and p.class_season = f.market_season;
+  select coalesce(jsonb_agg(jsonb_build_object('kind', a.kind, 'at', a.created_at, 'detail', a.detail) order by a.created_at desc, a.id desc), '[]'::jsonb)
+    into v_hist from (select * from public.franchise_activity where franchise_id = f.id and kind in ('scout', 'draft', 'signing', 'release')
+                      order by created_at desc, id desc limit 12) a;
+  select label into v_label from public.franchise_seasons where franchise_id = f.id and number = f.market_season;
+  return jsonb_build_object(
+    'version', m->>'version', 'rules', m,
+    'window', jsonb_build_object('number', f.market_season,
+      'label', coalesce(v_label, 'Season ' || public.games_roman(coalesce(f.market_season, 1)))),
+    'picks', f.draft_picks,
+    'roster', jsonb_build_object('active', v_active, 'max', (m->>'roster_max')::int, 'min', (m->>'roster_min')::int,
+      'room', greatest(0, (m->>'roster_max')::int - v_active)),
+    'resources', public.franchise_totals(f.id),
+    'prospects', v_pros, 'agents', v_agents,
+    'scouted', (select count(*) from public.game_players where franchise_id = f.id and status = 'prospect' and class_season = f.market_season and scouted),
+    'drafted', (select count(*) from public.game_players where franchise_id = f.id and acquired_source = 'draft' and class_season = f.market_season and status = 'active'),
+    'history', v_hist);
+end;
+$$;
+
+-- A SCOUTING REPORT. Scouting Points buy the truth about one prospect,
+-- once, as one negative ledger row keyed by the player. A free agent hides
+-- nothing, so there is no report to sell.
+create or replace function public.franchise_scout(p_player uuid, p_secret text default null)
+returns jsonb language plpgsql security definer set search_path = public, pg_temp as $$
+declare
+  v_f uuid := public.franchise_of(p_secret); f public.franchises%rowtype; p public.game_players%rowtype;
+  cost integer := (public.franchise_market()->>'scout_sp')::int; ok boolean; v_new text[] := '{}'; left_n integer;
+begin
+  if v_f is null then raise exception 'found a franchise first' using errcode = '28000'; end if;
+  select * into f from public.franchises where id = v_f for update;
+  select * into p from public.game_players where id = p_player and franchise_id = v_f for update;
+  if not found or p.status <> 'prospect' or p.class_season is distinct from f.market_season then
+    raise exception 'that prospect is not in your draft class' using errcode = 'P0002';
+  end if;
+  if p.scouted then
+    raise exception 'you already have the report on %', p.first_name || ' ' || p.last_name using errcode = '55000';
+  end if;
+  if f.scouting_points < cost then
+    raise exception 'not enough Scouting Points: % needed, % on hand', cost, f.scouting_points using errcode = '55000';
+  end if;
+  ok := public.franchise_credit(v_f, 'sp', -cost, 'scout', p.id::text, 'Scouting report: ' || p.first_name || ' ' || p.last_name);
+  if not ok then raise exception 'that report is already on the books' using errcode = '55000'; end if;
+  update public.game_players set scouted = true, updated_at = now() where id = p.id;
+  insert into public.franchise_activity (franchise_id, kind, key, week_key, day_key, detail)
+  values (v_f, 'scout', p.id::text, public.games_week_key(now()), public.games_day_key(now()),
+          jsonb_build_object('name', p.first_name || ' ' || p.last_name, 'position', p.position, 'overall', p.overall,
+                             'potential', p.potential, 'cost', cost, 'currency', 'sp'))
+  on conflict (franchise_id, kind, key) do nothing;
+  select count(*) into left_n from public.game_players
+   where franchise_id = v_f and status = 'prospect' and class_season = f.market_season and not scouted;
+  if left_n = 0 and public.franchise_award(v_f, 'full_scout', public.games_season_of(now()), jsonb_build_object('window', f.market_season)) then
+    v_new := array_append(v_new, 'full_scout');
+  end if;
+  select * into p from public.game_players where id = p.id;
+  return jsonb_build_object('ok', true, 'player', public.franchise_prospect_json(p), 'cost', cost, 'currency', 'sp',
+    'unscouted', left_n, 'achievements', to_jsonb(v_new), 'totals', public.franchise_totals(v_f));
+end;
+$$;
+
+-- A DRAFT PICK. A prospect from this window's class joins the roster at
+-- the bottom of his position's chart; the pick is spent; the ceiling
+-- holds. Scouted or not — an owner may take a chance.
+create or replace function public.franchise_draft(p_player uuid, p_secret text default null)
+returns jsonb language plpgsql security definer set search_path = public, pg_temp as $$
+declare
+  v_f uuid := public.franchise_of(p_secret); f public.franchises%rowtype; p public.game_players%rowtype;
+  m jsonb := public.franchise_market(); v_active integer; v_depth integer; v_pick integer; v_new text[] := '{}';
+  v_real integer := public.games_season_of(now()); v_label text;
+begin
+  if v_f is null then raise exception 'found a franchise first' using errcode = '28000'; end if;
+  select * into f from public.franchises where id = v_f for update;
+  select * into p from public.game_players where id = p_player and franchise_id = v_f for update;
+  if not found or p.status <> 'prospect' or p.class_season is distinct from f.market_season then
+    raise exception 'that prospect is not in your draft class' using errcode = 'P0002';
+  end if;
+  if f.draft_picks <= 0 then
+    raise exception 'no draft picks left until the next offseason' using errcode = '55000';
+  end if;
+  select count(*) into v_active from public.game_players where franchise_id = v_f and status = 'active';
+  if v_active >= (m->>'roster_max')::int then
+    raise exception 'the roster is full at %: release a player first', (m->>'roster_max')::int using errcode = '55000';
+  end if;
+  select coalesce(max(depth), 0) + 1 into v_depth from public.game_players where franchise_id = v_f and position = p.position and status = 'active';
+  v_pick := (m->>'picks')::int - f.draft_picks + 1;
+  select label into v_label from public.franchise_seasons where franchise_id = v_f and number = f.market_season;
+  update public.game_players
+     set status = 'active', depth = v_depth, acquired_source = 'draft', acquired_season = v_real,
+         jersey = public.franchise_free_number(v_f, p.position, p.id::text),
+         acquired_detail = 'Pick ' || v_pick || ' of the ' || coalesce(v_label, 'Season ' || public.games_roman(f.market_season)) || ' class',
+         updated_at = now()
+   where id = p.id;
+  update public.franchises set draft_picks = draft_picks - 1, updated_at = now() where id = v_f;
+  insert into public.franchise_activity (franchise_id, kind, key, week_key, day_key, detail)
+  values (v_f, 'draft', p.id::text, public.games_week_key(now()), public.games_day_key(now()),
+          jsonb_build_object('name', p.first_name || ' ' || p.last_name, 'position', p.position, 'overall', p.overall,
+                             'potential', p.potential, 'pick', v_pick, 'scouted', p.scouted, 'window', f.market_season))
+  on conflict (franchise_id, kind, key) do nothing;
+  if public.franchise_award(v_f, 'draft_day', v_real, jsonb_build_object('player', p.id, 'pick', v_pick)) then
+    v_new := array_append(v_new, 'draft_day');
+  end if;
+  if not p.scouted and p.potential >= 80
+     and public.franchise_award(v_f, 'gut_call', v_real, jsonb_build_object('player', p.id, 'potential', p.potential)) then
+    v_new := array_append(v_new, 'gut_call');
+  end if;
+  select * into p from public.game_players where id = p.id;
+  return jsonb_build_object('ok', true, 'player', public.franchise_prospect_json(p), 'pick', v_pick, 'picks', f.draft_picks - 1,
+    'roster_active', v_active + 1, 'achievements', to_jsonb(v_new), 'totals', public.franchise_totals(v_f));
+end;
+$$;
+
+-- A SIGNING. A free agent from this window's market joins the roster for
+-- his asking price in Team Credits — one negative ledger row keyed by the
+-- player — at the bottom of his position's chart; the ceiling holds.
+create or replace function public.franchise_sign(p_player uuid, p_secret text default null)
+returns jsonb language plpgsql security definer set search_path = public, pg_temp as $$
+declare
+  v_f uuid := public.franchise_of(p_secret); f public.franchises%rowtype; p public.game_players%rowtype;
+  m jsonb := public.franchise_market(); v_active integer; v_depth integer; ok boolean; v_new text[] := '{}';
+  v_real integer := public.games_season_of(now()); v_label text;
+begin
+  if v_f is null then raise exception 'found a franchise first' using errcode = '28000'; end if;
+  select * into f from public.franchises where id = v_f for update;
+  select * into p from public.game_players where id = p_player and franchise_id = v_f for update;
+  if not found or p.status <> 'free_agent' or p.class_season is distinct from f.market_season then
+    raise exception 'that player is not on your market' using errcode = 'P0002';
+  end if;
+  select count(*) into v_active from public.game_players where franchise_id = v_f and status = 'active';
+  if v_active >= (m->>'roster_max')::int then
+    raise exception 'the roster is full at %: release a player first', (m->>'roster_max')::int using errcode = '55000';
+  end if;
+  if f.team_credits < p.asking then
+    raise exception 'not enough Team Credits: % needed, % on hand', p.asking, f.team_credits using errcode = '55000';
+  end if;
+  ok := public.franchise_credit(v_f, 'tc', -p.asking, 'signing', p.id::text, 'Signed ' || p.first_name || ' ' || p.last_name);
+  if not ok then raise exception 'that signing is already on the books' using errcode = '55000'; end if;
+  select coalesce(max(depth), 0) + 1 into v_depth from public.game_players where franchise_id = v_f and position = p.position and status = 'active';
+  select label into v_label from public.franchise_seasons where franchise_id = v_f and number = f.market_season;
+  update public.game_players
+     set status = 'active', depth = v_depth, acquired_source = 'free_agent', acquired_season = v_real,
+         jersey = public.franchise_free_number(v_f, p.position, p.id::text),
+         acquired_detail = 'Signed as a free agent before ' || coalesce(v_label, 'Season ' || public.games_roman(f.market_season)),
+         updated_at = now()
+   where id = p.id;
+  insert into public.franchise_activity (franchise_id, kind, key, week_key, day_key, detail)
+  values (v_f, 'signing', p.id::text, public.games_week_key(now()), public.games_day_key(now()),
+          jsonb_build_object('name', p.first_name || ' ' || p.last_name, 'position', p.position, 'overall', p.overall,
+                             'cost', p.asking, 'currency', 'tc', 'window', f.market_season))
+  on conflict (franchise_id, kind, key) do nothing;
+  if public.franchise_award(v_f, 'first_signing', v_real, jsonb_build_object('player', p.id, 'cost', p.asking)) then
+    v_new := array_append(v_new, 'first_signing');
+  end if;
+  select * into p from public.game_players where id = p.id;
+  return jsonb_build_object('ok', true, 'player', public.franchise_prospect_json(p), 'cost', p.asking, 'currency', 'tc',
+    'roster_active', v_active + 1, 'achievements', to_jsonb(v_new), 'totals', public.franchise_totals(v_f));
+end;
+$$;
+
+-- A RELEASE. The roster has a floor, and every position keeps at least
+-- its starters; a released player is gone for good. Free, irreversible,
+-- and on the record.
+create or replace function public.franchise_release(p_player uuid, p_secret text default null)
+returns jsonb language plpgsql security definer set search_path = public, pg_temp as $$
+declare
+  v_f uuid := public.franchise_of(p_secret); p public.game_players%rowtype; m jsonb := public.franchise_market();
+  v_active integer; v_at_pos integer; v_starters integer; k integer := 0; r record;
+begin
+  if v_f is null then raise exception 'found a franchise first' using errcode = '28000'; end if;
+  perform 1 from public.franchises where id = v_f for update;
+  select * into p from public.game_players where id = p_player and franchise_id = v_f and status = 'active' for update;
+  if not found then raise exception 'that player is not on your roster' using errcode = 'P0002'; end if;
+  select count(*) into v_active from public.game_players where franchise_id = v_f and status = 'active';
+  if v_active <= (m->>'roster_min')::int then
+    raise exception 'the roster cannot go below %', (m->>'roster_min')::int using errcode = '55000';
+  end if;
+  v_starters := case p.position when 'WR' then 3 when 'OL' then 5 when 'DL' then 4 when 'LB' then 3
+                                when 'CB' then 2 when 'S' then 2 else 1 end;
+  select count(*) into v_at_pos from public.game_players where franchise_id = v_f and position = p.position and status = 'active';
+  if v_at_pos - 1 < v_starters then
+    raise exception 'you need at least % at %', v_starters, p.position using errcode = '55000';
+  end if;
+  update public.game_players set status = 'released', updated_at = now() where id = p.id;
+  for r in select id from public.game_players where franchise_id = v_f and position = p.position and status = 'active' order by depth, overall desc loop
+    k := k + 1;
+    update public.game_players set depth = k where id = r.id;
+  end loop;
+  insert into public.franchise_activity (franchise_id, kind, key, week_key, day_key, detail)
+  values (v_f, 'release', p.id::text, public.games_week_key(now()), public.games_day_key(now()),
+          jsonb_build_object('name', p.first_name || ' ' || p.last_name, 'position', p.position, 'overall', p.overall, 'age', p.age))
+  on conflict (franchise_id, kind, key) do nothing;
+  return jsonb_build_object('ok', true,
+    'released', jsonb_build_object('id', p.id, 'name', p.first_name || ' ' || p.last_name, 'position', p.position, 'overall', p.overall),
+    'roster_active', v_active - 1, 'roster', public.franchise_roster(p_secret));
 end;
 $$;
 
@@ -3239,6 +3633,13 @@ begin
     'ladder', jsonb_build_object('rating', f.ladder_rating, 'games', f.ladder_games, 'rank', public.franchise_ladder_rank(f.id)),
     'facilities', coalesce(f.facilities, '{}'::jsonb),
     'offseason', (select s.offseason - 'players' from public.franchise_seasons s where s.franchise_id = f.id and s.offseason is not null order by s.number desc limit 1),
+    -- the draft and the market: what is on the board and what a report costs
+    'market', jsonb_build_object('window', f.market_season, 'picks', f.draft_picks,
+      'prospects', (select count(*) from public.game_players where franchise_id = f.id and status = 'prospect' and class_season = f.market_season),
+      'unscouted', (select count(*) from public.game_players where franchise_id = f.id and status = 'prospect' and class_season = f.market_season and not scouted),
+      'agents', (select count(*) from public.game_players where franchise_id = f.id and status = 'free_agent' and class_season = f.market_season),
+      'active', (select count(*) from public.game_players where franchise_id = f.id and status = 'active'),
+      'max', (public.franchise_market()->>'roster_max')::int, 'scout_sp', (public.franchise_market()->>'scout_sp')::int),
     'challenges', jsonb_build_object(
       'open', (select count(*) from public.franchise_challenges c where c.challenger_id = f.id and c.status = 'OPEN' and c.expires_at > now()),
       'played', (select count(*) from public.franchise_challenges c where (c.challenger_id = f.id or c.opponent_id = f.id) and c.status = 'FINAL'),
@@ -3516,6 +3917,12 @@ revoke all on function public.franchise_pool_last_names() from public, anon, aut
 revoke all on function public.franchise_pool_plan() from public, anon, authenticated;
 revoke all on function public.franchise_pool_archetypes() from public, anon, authenticated;
 revoke all on function public.franchise_pool_traits() from public, anon, authenticated;
+-- the draft and the market: the generator, the window opener and the
+-- prospect reader are the server's; the board and the four moves are open
+revoke all on function public.franchise_generate_player(uuid, text, integer, integer, text, text, text, integer) from public, anon, authenticated;
+revoke all on function public.franchise_open_market(uuid, integer) from public, anon, authenticated;
+revoke all on function public.franchise_free_number(uuid, text, text) from public, anon, authenticated;
+revoke all on function public.franchise_prospect_json(public.game_players) from public, anon, authenticated;
 
 grant execute on function public.franchise_economy() to anon, authenticated;
 grant execute on function public.games_week_key(timestamptz) to anon, authenticated;
@@ -3578,6 +3985,13 @@ grant execute on function public.franchise_h2h_context(text) to anon, authentica
 grant execute on function public.franchise_facilities() to anon, authenticated;
 grant execute on function public.franchise_upgrade(text, text) to anon, authenticated;
 grant execute on function public.franchise_trophies(text) to anon, authenticated;
+grant execute on function public.franchise_market() to anon, authenticated;
+grant execute on function public.franchise_signing_cost(integer) to anon, authenticated;
+grant execute on function public.franchise_market_board(text) to anon, authenticated;
+grant execute on function public.franchise_scout(uuid, text) to anon, authenticated;
+grant execute on function public.franchise_draft(uuid, text) to anon, authenticated;
+grant execute on function public.franchise_sign(uuid, text) to anon, authenticated;
+grant execute on function public.franchise_release(uuid, text) to anon, authenticated;
 
 commit;
 
@@ -3673,5 +4087,20 @@ select 17, 'facilities are ' || (public.franchise_facilities()->>'version') || '
   case when public.franchise_facilities()->>'version' = 'facilities_v1'
         and has_function_privilege('anon', 'public.franchise_upgrade(text, text)', 'execute')
         and not has_function_privilege('anon', 'public.franchise_credit(uuid, text, integer, text, text, text)', 'execute')
+    then 'ok' else 'CHECK THIS' end
+union all
+select 18, 'the market is ' || (public.franchise_market()->>'version') || ': scouting, the draft and signings are open to every franchise, the generator to no client role',
+  case when public.franchise_market()->>'version' = 'market_v1'
+        and has_function_privilege('anon', 'public.franchise_scout(uuid, text)', 'execute')
+        and has_function_privilege('anon', 'public.franchise_draft(uuid, text)', 'execute')
+        and has_function_privilege('anon', 'public.franchise_sign(uuid, text)', 'execute')
+        and has_function_privilege('anon', 'public.franchise_release(uuid, text)', 'execute')
+        and not has_function_privilege('anon', 'public.franchise_open_market(uuid, integer)', 'execute')
+        and not has_function_privilege('authenticated', 'public.franchise_generate_player(uuid, text, integer, integer, text, text, text, integer)', 'execute')
+    then 'ok' else 'CHECK THIS' end
+union all
+select 19, 'a prospect''s true ratings are read through the board only: the direct policy admits no prospect or free agent',
+  case when exists (select 1 from pg_policies where schemaname = 'public' and tablename = 'game_players' and policyname = 'game_players_own'
+                      and qual like '%prospect%' and qual like '%free_agent%')
     then 'ok' else 'CHECK THIS' end
 order by 1;
