@@ -352,7 +352,9 @@
     /* the trade floor: players change hands inside a conference (Phase 7) */
     { key: 'trades',   href: '/games/trades/',           label: 'Trades',       cls: 'gh-only-wider' },
     /* the coaching staff: where Coach Points go, for a thousand levels (Phase 8) */
-    { key: 'staff',    href: '/games/staff/',            label: 'Staff',        cls: 'gh-only-wider' }
+    { key: 'staff',    href: '/games/staff/',            label: 'Staff',        cls: 'gh-only-wider' },
+    /* the offseason where a ceiling is raised (Phase 10) */
+    { key: 'development', href: '/games/development/',    label: 'Development',  cls: 'gh-only-wider' }
   ];
   function header(current) {
     var nav = ROOMS.map(function (r) {
@@ -411,7 +413,7 @@
       + '<a href="/games/roster/">Roster</a><a href="/games/franchise/">Front Office</a>'
       + '<a href="/games/trophies/">Trophy Room</a><a href="/games/market/">Draft &amp; Market</a>'
       + '<a href="/games/conference/">Conference</a><a href="/games/trades/">Trades</a>'
-      + '<a href="/games/staff/">Staff</a>'
+      + '<a href="/games/staff/">Staff</a><a href="/games/development/">Development</a>'
       + '<a href="' + esc(withAttribution(TERMINAL)) + '">The terminal</a>'
       + '<a href="/terms.html">Terms</a><a href="/privacy.html">Privacy</a>'
       + '<a href="/disclaimer.html">Disclaimer</a>'

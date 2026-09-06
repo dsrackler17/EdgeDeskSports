@@ -100,6 +100,9 @@ declare
   sf uuid;
   -- the scouting department
   scf uuid; scg uuid; sc jsonb; sc2 jsonb; band_lo integer; band_hi integer; wdt integer;
+  -- the development program and the league
+  dvf uuid; dv jsonb; dv2 jsonb; grd jsonb; pot0 integer; ovr0 integer; std0 integer; nslot integer;
+  SEC_DV constant text := 'device-secret-developdevelopdevelopdev';
   SEC_SC constant text := 'device-secret-scoutscoutscoutscoutscout1';
   SEC_SG constant text := 'device-secret-scoutscoutscoutscoutscout2';
   SEC_S constant text := 'device-secret-ssssssssssssssssssssssssssss';
@@ -882,9 +885,23 @@ begin
   perform pg_temp.ok('each week is the next football week',
     (select bool_and((g->>'week_key') = public.games_week_key(now() + ((i - 1) * interval '7 days')))
       from jsonb_array_elements(v->'games') with ordinality as t(g, i)));
-  perform pg_temp.ok('opponents are drawn around the team''s own overall: six below to four above, the rival two above',
-    (select bool_and((g->'opponent'->>'overall')::int between ovr - 8 and ovr + 6) from jsonb_array_elements(v->'games') g)
-    and (v->'games'->7->'opponent'->>'overall')::int between ovr + 1 and ovr + 3);
+  -- BEFORE league_v1 this asserted that every opponent was rated from the
+  -- team's OWN overall, six below to four above. That was the rubber band:
+  -- while it held, improving the roster could not win one extra game. The
+  -- claim now is the opposite one — the clubs have ratings of their own, and
+  -- WHICH of them you play is drawn around your standing.
+  perform pg_temp.ok('opponents are clubs from the league, at their own ratings, drawn around the standing',
+    (select bool_and((g->'opponent'->>'overall')::int between o2.strength - 2 and o2.strength + 2)
+       from jsonb_array_elements(v->'games') g
+       join public.franchise_opponents o2 on o2.key = g->'opponent'->>'key')
+    and (select bool_and((g->'opponent'->>'overall')::int
+           between public.franchise_league_gap(0, 0) + 40 and 99)
+           from jsonb_array_elements(v->'games') g));
+  perform pg_temp.ok('and the slate sits around what that standing faces, with somebody above and somebody below',
+    (select avg((g->'opponent'->>'overall')::int) from jsonb_array_elements(v->'games') g)
+      between 50 + (select standing from public.franchises where id = fa) * 0.40 - 10
+        and 50 + (select standing from public.franchises where id = fa) * 0.40 + 10
+    and (select count(distinct g->'opponent'->>'key') from jsonb_array_elements(v->'games') g) >= 6);
   perform pg_temp.ok('home and away alternate',
     (select bool_and((g->>'home')::boolean <> (v->'games'->(i::int)->>'home')::boolean)
       from jsonb_array_elements(v->'games') with ordinality as t(g, i) where i < 8));
@@ -2457,7 +2474,13 @@ begin
     and (select id = pid from public.game_players p
           where p.franchise_id = fa and p.position = 'QB'
             and public.franchise_is_available(p.status, p.injured_until)
-          order by p.depth, p.overall desc limit 1));
+          order by p.depth, p.overall desc limit 1),
+    'team ' || (public.franchise_team_rating(fa)->>'overall') || ' vs ' || ovr
+      || ' · qb ' || public.franchise_pos_avg(fa, 'QB', 1)::int || ' vs ' || n0
+      || ' · picks ' || coalesce((select (p.id = pid)::text from public.game_players p
+          where p.franchise_id = fa and p.position = 'QB'
+            and public.franchise_is_available(p.status, p.injured_until)
+          order by p.depth, p.overall desc limit 1), 'nobody'));
 
   -- ── the draw itself ─────────────────────────────────────────────────────
   -- the same seed over the same roster draws the same man; the draw WRITES,
@@ -3225,6 +3248,274 @@ begin
   perform pg_temp.ok('and the Front Office carries the grade without a second read',
     (v->'scouting'->>'grade_name') is not null and (v->'market'->>'scout_grade')::int = 100);
   update public.franchises set scouting_points = sp0 where id = scg;
+
+
+-- ═══ 23. THE DEVELOPMENT PROGRAM AND THE LEAGUE ═══════════════════════════
+-- The two halves of one measured problem: a man's ceiling was set at birth,
+-- and the league was rated off your own team overall so that raising it could
+-- not win a game. These assertions defend, hardest first: the schedule no
+-- longer reads your rating; a program raises POTENTIAL and never overall; the
+-- window is shut except between seasons; and no client role grades, lifts or
+-- schedules anything.
+  perform pg_temp.as_owner();
+
+  perform pg_temp.ok('development is development_v1: a cap of fifteen, two places and one a Training Center level',
+    public.franchise_development()->>'version' = 'development_v1'
+    and (public.franchise_development()->>'cap')::int = 15
+    and (public.franchise_development()->>'slots_base')::int = 2);
+  perform pg_temp.ok('the league is league_v1 and every one of the twenty-four clubs carries a rating of its own',
+    public.franchise_league()->>'version' = 'league_v1'
+    and (select count(*) from public.franchise_opponents) = 24
+    and (select count(*) from public.franchise_opponents where strength is null) = 0
+    and (select max(strength) from public.franchise_opponents) >= 85
+    and (select min(strength) from public.franchise_opponents) <= 60);
+
+  -- ── THE LOAD-BEARING ONE ────────────────────────────────────────────────
+  -- While the scheduler read franchise_team_rating(), every opponent was your
+  -- own overall plus a fixed offset, and a better roster could not win one
+  -- extra game. Twelve seasons of A/B measurement proved it.
+  perform pg_temp.ok('the scheduler no longer rates an opponent from your own team overall',
+    (select count(*) from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+      where n.nspname = 'public' and p.proname = 'franchise_schedule_season'
+        and p.prosrc like '%franchise_team_rating%') = 0
+    and (select p.prosrc like '%o.strength%' from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+          where n.nspname = 'public' and p.proname = 'franchise_schedule_season'));
+
+  -- ── the curves ──────────────────────────────────────────────────────────
+  perform pg_temp.ok('a program gives +1 at nothing and +6 at a perfect season, halves at 27 and stops at 30',
+    public.franchise_dev_lift(0, 21) = 1 and public.franchise_dev_lift(100, 21) = 6
+    and public.franchise_dev_lift(100, 27) = 3 and public.franchise_dev_lift(100, 29) = 3
+    and public.franchise_dev_lift(100, 30) = 0 and public.franchise_dev_lift(0, 30) = 0);
+  perform pg_temp.ok('the lift never falls as the grade rises, and never runs off either end',
+    (select bool_and(public.franchise_dev_lift(t.n, 22) <= public.franchise_dev_lift(t.n + 1, 22))
+       from generate_series(0, 99) as t(n))
+    and (select bool_and(public.franchise_dev_lift(t.n, 22) between 1 and 6)
+           from generate_series(-50, 150) as t(n)));
+  perform pg_temp.ok('a place costs more the more a man has already been given, and the climb is priced',
+    public.franchise_dev_cost(0) = 100 and public.franchise_dev_cost(15) = 325
+    and (select bool_and(public.franchise_dev_cost(t.n) < public.franchise_dev_cost(t.n + 1))
+           from generate_series(0, 14) as t(n)));
+  perform pg_temp.ok('par is published for every position a roster can hold, and a deeper slot falls back to the last',
+    (select bool_and(public.franchise_dev_par(t.p, 1) > 0)
+       from unnest(array['QB','RB','WR','TE','OL','DL','LB','CB','S','K','P']) as t(p))
+    and public.franchise_dev_par('WR', 9) = public.franchise_dev_par('WR', 4)
+    and public.franchise_dev_par('nonsense', 1) = 1.0);
+
+  -- ── the standing: results, and nothing else ─────────────────────────────
+  perform pg_temp.ok('beating a club above you is worth more than beating one below',
+    public.franchise_standing_delta('W', 40, 85) > public.franchise_standing_delta('W', 40, 55)
+    and public.franchise_standing_delta('W', 40, 55) >= 1);
+  perform pg_temp.ok('losing to a club BELOW you is what costs; losing to one above costs the floor',
+    public.franchise_standing_delta('L', 40, 55) < public.franchise_standing_delta('L', 40, 85)
+    and public.franchise_standing_delta('L', 40, 85) = -1);
+  perform pg_temp.ok('the rival counts double, either way, and a draw moves nothing',
+    public.franchise_standing_delta('W', 40, 70, true) = 2 * public.franchise_standing_delta('W', 40, 70, false)
+    and public.franchise_standing_delta('L', 40, 60, true) = 2 * public.franchise_standing_delta('L', 40, 60, false)
+    and public.franchise_standing_delta('T', 40, 70) = 0
+    and public.franchise_standing_delta('T', 40, 70, true) = 0);
+  perform pg_temp.ok('a higher standing faces better clubs, always',
+    (select bool_and(public.franchise_league_gap(t.n, 70) >= public.franchise_league_gap(t.n + 1, 70))
+       from generate_series(0, 99) as t(n)));
+
+  -- ── played through, on a real franchise ─────────────────────────────────
+  perform public.game_board_upsert((select jsonb_agg(jsonb_build_object(
+      'game_id', 'dv' || i, 'slug', 'dv' || i, 'season', 2026, 'week', 1,
+      'home_team', 'DH' || i, 'away_team', 'DA' || i,
+      'kickoff', (now() + interval '2 days')::text, 'edgedesk_spread', -7, 'market_spread', -7.5))
+    from generate_series(1, 40) i));
+  v := public.franchise_create('Program', 'Ithaca', 'PRG', 'bolt', 'crimson', 'spread', 'zone', SEC_DV);
+  dvf := (v->'franchise'->>'id')::uuid;
+
+  perform pg_temp.ok('a new franchise starts where the league says it starts',
+    (select standing from public.franchises where id = dvf) = (public.franchise_league()->>'standing_start')::int);
+  perform pg_temp.ok('and its slate is drawn from clubs with ratings of their own, not from its own rating',
+    (select bool_and(g.opponent_key in (select key from public.franchise_opponents))
+       from public.franchise_games g where g.franchise_id = dvf)
+    and (select count(distinct opponent_key) from public.franchise_games where franchise_id = dvf) >= 6);
+
+  -- THE WINDOW IS SHUT while a season is under way
+  select id into pid3 from public.game_players where franchise_id = dvf and status = 'active' and depth = 1 limit 1;
+  perform pg_temp.as_anon();
+  begin
+    perform public.franchise_develop(pid3, SEC_DV);
+    perform pg_temp.ok('a program cannot be bought while a season is under way', false, 'it ran');
+  exception when object_not_in_prerequisite_state then
+    perform pg_temp.ok('a program cannot be bought while a season is under way', true);
+  end;
+  perform pg_temp.as_owner();
+
+  -- play the season out
+  t0 := now();
+  for k in 1..12 loop
+    t0 := t0 + interval '8 days';
+    begin perform public.franchise_play_game(dvf, t0); exception when others then exit; end;
+  end loop;
+  perform pg_temp.ok('the season completed and the standing moved off its start',
+    (select status from public.franchise_seasons where franchise_id = dvf and number = 1) = 'complete',
+    (select status from public.franchise_seasons where franchise_id = dvf and number = 1));
+
+  -- a starter who played every game grades above a man who never dressed
+  select id into pid3 from public.game_players where franchise_id = dvf and status = 'active' and position = 'QB' and depth = 1;
+  select id into pid4 from public.game_players where franchise_id = dvf and status = 'active' order by depth desc limit 1;
+  grd := public.franchise_dev_grade(dvf, pid3, 1);
+  perform pg_temp.ok('the grade is read out of the boxes the simulator already wrote',
+    (grd->>'played')::int > 0 and (grd->>'games')::int > 0 and (grd->>'grade')::int > 0
+    and grd ? 'parts' and (grd->'parts') ? 'available',
+    grd::text);
+  perform pg_temp.ok('a starter who played every game grades above a man who never dressed',
+    (grd->>'grade')::int > (public.franchise_dev_grade(dvf, pid4, 1)->>'grade')::int);
+  perform pg_temp.ok('and a grade never runs off either end',
+    (select bool_and((public.franchise_dev_grade(dvf, p.id, 1)->>'grade')::int between 0 and 100)
+       from public.game_players p where p.franchise_id = dvf and p.status = 'active'));
+
+  -- THE PROGRAM ITSELF. A founding roster is generated with a spread of ages,
+  -- so the man put through it is chosen for ELIGIBILITY rather than assumed:
+  -- picking the starting quarterback found one over the age gate about one
+  -- run in eight, and the refusal escaped as a failure of the wrong thing.
+  perform pg_temp.as_owner();
+  select id into pid3 from public.game_players
+   where franchise_id = dvf and status = 'active'
+     and age <= (public.franchise_development()->>'age_full')::int
+     and developed = 0
+   order by depth, overall desc limit 1;
+  perform pg_temp.ok('there is a man young enough for a program on the roster', pid3 is not null);
+  -- scouting_points is DERIVED from the ledger, so it is credited, not set
+  select scouting_points into sp0 from public.franchises where id = dvf;
+  perform public.franchise_credit(dvf, 'sp', 4000 - sp0, 'test', 'sp:dev', null);
+  select potential, overall, age into pot0, ovr0, n from public.game_players where id = pid3;
+  nslot := public.franchise_dev_slots(dvf);
+  perform pg_temp.as_anon();
+  dv := public.franchise_develop(pid3, SEC_DV);
+  perform pg_temp.as_owner();   -- the rows below are read directly, and RLS hides them from anon
+  perform pg_temp.ok('a program raises POTENTIAL and never overall',
+    (dv->>'ok')::boolean and (dv->>'lift')::int > 0
+    -- a ceiling stops at 99, so the claim is the clamped sum, not the raw one
+    and (select potential from public.game_players where id = pid3) = least(99, pot0 + (dv->>'lift')::int)
+    and (select overall from public.game_players where id = pid3) = ovr0,
+    'lift ' || coalesce(dv->>'lift', 'null') || ' · pot ' || pot0 || ' -> '
+      || coalesce((select potential from public.game_players where id = pid3)::text, 'null')
+      || ' · ovr ' || ovr0 || ' -> '
+      || coalesce((select overall from public.game_players where id = pid3)::text, 'null'));
+  perform pg_temp.ok('it is paid in Scouting Points, at the published price, as one negative ledger row',
+    dv->>'currency' = 'sp' and (dv->>'cost')::int = public.franchise_dev_cost(0)
+    and (select count(*) from public.franchise_ledger where franchise_id = dvf and kind = 'program') = 1
+    and (select delta from public.franchise_ledger where franchise_id = dvf and kind = 'program') = -(dv->>'cost')::int);
+  perform pg_temp.as_anon();
+  begin
+    perform public.franchise_develop(pid3, SEC_DV);
+    perform pg_temp.ok('a man is developed once an offseason', false, 'it ran twice');
+  exception when object_not_in_prerequisite_state then
+    perform pg_temp.ok('a man is developed once an offseason', true);
+  end;
+
+  -- the places run out
+  perform pg_temp.as_owner();
+  -- fill the rest of the places. A refusal here is ordinary (a man over the
+  -- age gate, one already done), so it moves on rather than stopping: what is
+  -- being measured is that the PLACES run out, not that every man qualifies.
+  for pid in select id from public.game_players where franchise_id = dvf and status = 'active'
+             and age <= (public.franchise_development()->>'age_half')::int and id <> pid3 order by depth loop
+    begin perform public.franchise_develop(pid, SEC_DV); exception when others then null; end;
+  end loop;
+  select count(*) into n from public.franchise_activity where franchise_id = dvf and kind = 'program';
+  perform pg_temp.ok('the offseason has as many places as the table says and not one more',
+    n = nslot, n || ' of ' || nslot);
+
+  -- nobody over the age gate, and nobody past the cap
+  perform pg_temp.as_owner();
+  update public.franchise_activity set key = '99:' || split_part(key, ':', 2)
+   where franchise_id = dvf and kind = 'program';      -- free the places for the next assertions
+  update public.game_players set age = 31 where id = pid4;
+  perform pg_temp.as_anon();
+  begin
+    perform public.franchise_develop(pid4, SEC_DV);
+    perform pg_temp.ok('a program does nothing for a man past thirty, and is refused', false, 'it ran');
+  exception when object_not_in_prerequisite_state then
+    perform pg_temp.ok('a program does nothing for a man past thirty, and is refused', true);
+  end;
+  perform pg_temp.as_owner();
+  update public.game_players set age = 22, developed = (public.franchise_development()->>'cap')::int where id = pid4;
+  perform pg_temp.as_anon();
+  begin
+    perform public.franchise_develop(pid4, SEC_DV);
+    perform pg_temp.ok('and nothing for a man already at the cap', false, 'it ran');
+  exception when object_not_in_prerequisite_state then
+    perform pg_temp.ok('and nothing for a man already at the cap', true);
+  end;
+
+  -- a short purse is refused before anything is written
+  perform pg_temp.as_owner();
+  update public.game_players set developed = 0 where id = pid4;
+  select scouting_points into sp0 from public.franchises where id = dvf;
+  perform public.franchise_credit(dvf, 'sp', (public.franchise_dev_cost(0) - 1) - sp0, 'test', 'sp:dev:short', null);
+  perform pg_temp.as_anon();
+  begin
+    perform public.franchise_develop(pid4, SEC_DV);
+    perform pg_temp.ok('a short purse is refused, and the answer says the price', false, 'it ran');
+  exception when object_not_in_prerequisite_state then
+    get stacked diagnostics msg = message_text;
+    perform pg_temp.ok('a short purse is refused, and the answer says the price',
+      msg like '%' || public.franchise_dev_cost(0) || ' needed%', msg);
+  end;
+  perform pg_temp.as_owner();
+  perform pg_temp.ok('and nothing was written by any of those refusals',
+    (select developed from public.game_players where id = pid4) = 0
+    and (select count(*) from public.franchise_ledger where franchise_id = dvf and kind = 'program') = nslot);
+
+  -- ── who may grade, lift and schedule ────────────────────────────────────
+  perform pg_temp.as_anon();
+  perform pg_temp.ok('the tables are public: a page can say what a place costs and what a club rates',
+    (public.franchise_development()->>'version') = 'development_v1'
+    and public.franchise_dev_cost(3) = 145
+    and jsonb_array_length(public.franchise_league()->'clubs') = 24);
+  begin
+    perform public.franchise_dev_grade(dvf, pid3, 1);
+    perform pg_temp.ok('but nobody may grade a season for themselves', false, 'it graded');
+  exception when insufficient_privilege then
+    perform pg_temp.ok('but nobody may grade a season for themselves', true);
+  end;
+  begin
+    perform public.franchise_dev_slots(dvf);
+    perform pg_temp.ok('nor count their own places', false, 'it counted');
+  exception when insufficient_privilege then
+    perform pg_temp.ok('nor count their own places', true);
+  end;
+  begin
+    perform public.franchise_schedule_season(dvf, 9, now());
+    perform pg_temp.ok('nor draw themselves a schedule', false, 'it scheduled');
+  exception when insufficient_privilege then
+    perform pg_temp.ok('nor draw themselves a schedule', true);
+  end;
+  update public.franchises set standing = 100 where id = dvf;
+  get diagnostics n = ROW_COUNT;
+  perform pg_temp.ok('and no client role can write itself a standing: the update reaches no row', n = 0, 'wrote ' || n);
+  update public.game_players set potential = 99, developed = 15 where id = pid4;
+  get diagnostics n = ROW_COUNT;
+  perform pg_temp.ok('nor a ceiling', n = 0, 'wrote ' || n);
+
+  -- ── the board says the same thing the server did ────────────────────────
+  perform pg_temp.as_owner();
+  select scouting_points into sp0 from public.franchises where id = dvf;
+  perform public.franchise_credit(dvf, 'sp', 4000 - sp0, 'test', 'sp:dev:board', null);
+  perform pg_temp.as_anon();
+  dv2 := public.franchise_development_board(SEC_DV);
+  perform pg_temp.ok('the board names the window, the places and every man with what a program would give him',
+    dv2->>'version' = 'development_v1' and (dv2->>'open')::boolean
+    and (dv2->'slots'->>'of')::int = nslot
+    and jsonb_array_length(dv2->'players') > 30
+    and (select bool_and(x ? 'grade' and x ? 'lift' and x ? 'cost' and x ? 'eligible')
+           from jsonb_array_elements(dv2->'players') x));
+  perform pg_temp.ok('and the lift it advertises is the lift the server would give',
+    (select bool_and((x->>'lift')::int
+        = least(public.franchise_dev_lift((x->'grade'->>'grade')::int, (x->>'age')::int),
+                (public.franchise_development()->>'cap')::int - (x->>'developed')::int))
+       from jsonb_array_elements(dv2->'players') x where (x->>'capped')::boolean is false));
+  v := public.franchise_home(SEC_DV);
+  perform pg_temp.ok('and the Front Office carries the standing and whether the window is open',
+    (v->'standing'->>'value')::int between 0 and 100
+    and (v->'development'->>'open')::boolean
+    and (v->'development'->>'version') = 'development_v1');
+  perform pg_temp.as_owner();
 
 end
 $test$;

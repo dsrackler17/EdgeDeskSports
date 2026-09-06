@@ -503,7 +503,24 @@ a.fcl-row:hover{text-decoration:none;border-color:var(--line2)}
 .res-scout .k{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--faint)}
 .res-scout .v{font-family:'Space Grotesk',sans-serif;font-size:16px;font-weight:700;margin-top:3px;color:var(--obs)}
 .res-scout .m{font-size:12.5px;line-height:1.55;color:var(--dim);margin-top:6px}
-.res-scout .m b{color:var(--fg)}
+.res-scout .m b{color:var(--text)}
+/* THE DEVELOPMENT PROGRAM (Phase 10). The grade bar is the whole card: what
+   this man did last season, which is what a program is worth on him. */
+.dv-grade{margin-top:10px}
+.dv-bar{height:6px;border-radius:99px;background:var(--cell);border:1px solid var(--line);overflow:hidden}
+.dv-bar i{display:block;height:100%;background:linear-gradient(90deg,var(--est),var(--val));border-radius:99px}
+.dv-line{font-size:12px;color:var(--dim);margin-top:6px;line-height:1.45}
+.dv-line b{font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;color:var(--text);font-size:13px}
+.pc-pos sub{font-size:9px;opacity:.75;margin-left:1px}
+/* where the franchise stands in the league (league_v1) */
+.lg-stand{background:var(--cell);border:1px solid var(--line);border-left:3px solid var(--exp);
+  border-radius:12px;padding:11px 13px;margin-top:10px}
+.lg-stand .k{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--faint)}
+.lg-stand .v{font-family:'Space Grotesk',sans-serif;font-size:16px;font-weight:700;margin-top:3px;color:var(--exp)}
+.lg-stand .m{font-size:12.5px;line-height:1.55;color:var(--dim);margin-top:6px}
+.lg-stand .m b{color:var(--text)}
+.lg-bar{height:6px;border-radius:99px;background:var(--ink);border:1px solid var(--line);overflow:hidden;margin-top:8px}
+.lg-bar i{display:block;height:100%;background:linear-gradient(90deg,var(--obs),var(--exp));border-radius:99px}
 /* THE SCOUTING DEPARTMENT (Phase 9). Two panels, because they answer two
    different questions — what found THIS class, and what the department is
    now — and reading them as one number is the mistake to prevent. */
@@ -519,7 +536,7 @@ a.fcl-row:hover{text-decoration:none;border-color:var(--line2)}
   font-size:12px;font-weight:500;color:var(--faint);margin-top:3px}
 .sd-fill,.sd-next{font-size:12.5px;line-height:1.55;color:var(--dim);margin-top:8px}
 .sd-next{border-top:1px solid var(--line);padding-top:8px}
-.sd-next b{color:var(--fg)}
+.sd-next b{color:var(--text)}
 .pc-range{position:absolute;right:14px;top:36px;text-align:center}
 .pc-range b{display:block;font-family:'JetBrains Mono',monospace;font-size:17px;font-weight:700;line-height:1.2;color:var(--dim);white-space:nowrap}
 .pc-range span{display:block;font-size:9.5px;font-weight:700;letter-spacing:.14em;color:var(--faint);margin-top:2px}
