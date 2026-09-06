@@ -6162,6 +6162,26 @@ grant execute on function public.franchise_staff_fire(text, text) to anon, authe
 commit;
 
 -- ===========================================================================
+-- WHAT THIS FILE JUST INSTALLED
+--
+-- One row per phase, into the log games_social.sql created. The file is still
+-- the whole deployment and re-running it is still safe; this is the record
+-- that lets a page, the report and a person all ask what a database has and
+-- get the same answer. A database that stops at phase 6 says so.
+-- ===========================================================================
+
+begin;
+select public.games_schema_note('franchise', 1, 'the franchise, the roster, the ledger and the achievements');
+select public.games_schema_note('franchise', 2, 'the weekly game: the schedule, the simulator and the season');
+select public.games_schema_note('franchise', 3, 'franchise vs franchise: challenges, rivalries and the ladder');
+select public.games_schema_note('franchise', 4, 'the offseason, the facilities and the Trophy Room');
+select public.games_schema_note('franchise', 5, 'the draft and the market');
+select public.games_schema_note('franchise', 6, 'conferences and playoffs');
+select public.games_schema_note('franchise', 7, 'injuries, the bowl and trades');
+select public.games_schema_note('franchise', 8, 'the coaching staff');
+commit;
+
+-- ===========================================================================
 -- THE REPORT. Every row should say ok.
 -- ===========================================================================
 select 1 as row, 'franchise tables exist' as what,
@@ -6324,6 +6344,11 @@ select 25, 'trades are ' || (public.franchise_trade_rules()->>'version') || ': o
         and exists (select 1 from pg_policies where schemaname = 'public' and tablename = 'franchise_trades'
                       and cmd = 'SELECT' and qual like '%franchise_is_mine%')
         and not exists (select 1 from pg_policies where schemaname = 'public' and tablename = 'franchise_trades' and cmd <> 'SELECT')
+    then 'ok' else 'CHECK THIS' end
+union all
+select 0, 'the schema log says what this database has: ' ||
+    coalesce('social ' || (public.games_schema()->>'social') || ' · franchise ' || (public.games_schema()->>'franchise'), 'nothing'),
+  case when (public.games_schema()->>'franchise')::int = 8 and (public.games_schema()->>'social')::int >= 1
     then 'ok' else 'CHECK THIS' end
 union all
 select 26, 'the staff is ' || (public.franchise_staff()->>'version') || ': a thousand levels bought with Coach Points, generated and scored by the server',

@@ -31,6 +31,41 @@
   var ST = root.EDGamesStore || (typeof require === 'function' ? require('./store.js') : null);
   var W = root.EDGamesWeek || (typeof require === 'function' ? require('./week.js') : null);
 
+  /* ── THE SCHEMA THIS BUILD EXPECTS ──────────────────────────────────────
+     supabase/games_social.sql and supabase/games_franchise.sql are pasted
+     and re-run rather than migrated, and for eight phases nothing could say
+     WHICH of them a database had: a project three phases behind looked
+     exactly like a current one until a page called a function that was not
+     there. Every phase now records itself in games_schema_log, and this is
+     what the repository expects to find. games_schema() reports what is
+     actually installed; the status page compares the two and names the gap.
+
+     Pinned to the SQL by tools/games/franchise.test.js — a new phase that
+     forgets to record itself, or a number that drifts, goes red.
+
+     The names are the SAME STRINGS the files pass to games_schema_note(),
+     in order, so a database that is behind can be told what it is missing
+     BY NAME rather than by a number nobody can decode. The count is the
+     length of the list, so adding a phase is one line here. */
+  var SCHEMA_PHASES = {
+    social: [
+      'Head-to-Head, Groups, ratings and the activity feed'
+    ],
+    franchise: [
+      'the franchise, the roster, the ledger and the achievements',
+      'the weekly game: the schedule, the simulator and the season',
+      'franchise vs franchise: challenges, rivalries and the ladder',
+      'the offseason, the facilities and the Trophy Room',
+      'the draft and the market',
+      'conferences and playoffs',
+      'injuries, the bowl and trades',
+      'the coaching staff'
+    ]
+  };
+  var SCHEMA = { social: SCHEMA_PHASES.social.length, franchise: SCHEMA_PHASES.franchise.length };
+  /* 'franchise' -> 'supabase/games_franchise.sql' — what to paste to fix a gap */
+  var SCHEMA_FILES = { social: 'supabase/games_social.sql', franchise: 'supabase/games_franchise.sql' };
+
   /* ── the economy, economy_v1 — the same table franchise_economy() returns ── */
   var ECONOMY_VERSION = 'economy_v1';
   var ECONOMY = {
@@ -1174,6 +1209,32 @@
   }
   function staffFire(seat) { return rpc('franchise_staff_fire', withSecret({ p_seat: String(seat || '') })); }
 
+  /* WHAT THIS DATABASE HAS. Open to anon, and safe to call before anything
+     else: it names phases and dates and nothing about anybody. */
+  function schema() { return rpc('games_schema', {}); }
+  /* WHAT IS MISSING between what is installed and what this build wants.
+     Every gap carries the FILE to paste and the NAME of each phase it is
+     short, because "franchise 5" is not an instruction and "the draft and
+     the market — paste supabase/games_franchise.sql" is. */
+  function schemaGap(found) {
+    found = obj(found);
+    var out = [];
+    ['social', 'franchise'].forEach(function (k) {
+      var have = found[k] | 0, want = SCHEMA[k] | 0;
+      if (have < want) {
+        out.push({ layer: k, have: have, want: want, behind: want - have,
+          file: SCHEMA_FILES[k],
+          /* phases have + 1 .. want, named; the list is 0-indexed */
+          missing: SCHEMA_PHASES[k].slice(have, want).map(function (name, i) {
+            return { phase: have + 1 + i, name: name };
+          }) });
+      }
+    });
+    return { ok: out.length === 0, behind: out,
+      /* an old build against a NEWER database is fine and worth not crying about */
+      ahead: (found.franchise | 0) > SCHEMA.franchise || (found.social | 0) > SCHEMA.social };
+  }
+
   /* THE DRAFT AND THE MARKET (Phase 5). The board is one read; a report, a
      pick, a signing and a release each send a player id and the identity
      and nothing else — the server prices, hides, reveals, counts the picks
@@ -1326,6 +1387,8 @@
     TRADE_VERSION: TRADE_VERSION, TRADE: TRADE, tradeSummary: tradeSummary,
     tradePartners: tradePartners, tradesMine: tradesMine, tradeOffer: tradeOffer,
     tradeRespond: tradeRespond, tradeWithdraw: tradeWithdraw,
+    SCHEMA: SCHEMA, SCHEMA_PHASES: SCHEMA_PHASES, SCHEMA_FILES: SCHEMA_FILES,
+    schema: schema, schemaGap: schemaGap,
     STAFF_VERSION: STAFF_VERSION, STAFF: STAFF, staffCost: staffCost, staffCostBetween: staffCostBetween,
     staffAfford: staffAfford, staffEffect: staffEffect, staffGrade: staffGrade,
     staffSpecialtyCount: staffSpecialtyCount, staffSeat: staffSeat, staffLine: staffLine,

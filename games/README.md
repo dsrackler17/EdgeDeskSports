@@ -1163,12 +1163,11 @@ twenty seeds and refuses any outside the band.
 ## Deploying it
 
 1. Apply `supabase/games_social.sql` (already required by Head-to-Head).
-2. Apply `supabase/games_franchise.sql`. Its report should print twelve
-   `ok` rows. It is safe to re-run over a Phase 1 installation: the new
-   tables, the opponent pool, the new activity kinds and achievement rows
-   are added and nothing existing is rewritten. Until it is applied, the
-   Front Office, the Roster and Game Day say so, and Price It, Pick 5 and
-   the Drill are unaffected.
+2. Apply `supabase/games_franchise.sql`. Its report should print **27 `ok`
+   rows**, numbered 0 to 26. It is safe to re-run over any earlier phase: new
+   tables, columns, pool rows and achievement rows are added and nothing
+   existing is rewritten. Until it is applied, the Front Office, the Roster
+   and Game Day say so, and Price It, Pick 5 and the Drill are unaffected.
 3. Nothing else. `games/publish_board.js` runs from the existing
    `games-challenges.yml` (publishes the board) and `games-settle.yml`
    (publishes finals and settles Pick 5) with the repository's existing
@@ -1176,6 +1175,52 @@ twenty seeds and refuses any outside the band.
    having done nothing. **No new secret is required.**
 
 `/games/status` probes the layer and names the file to apply.
+
+### What this database has — `games_schema_log`
+
+Paste-and-re-run is the deployment story here, and it is staying: no runner
+to install, no ordered directory to keep in step, every file safe to run
+again. It had exactly one hole, and it was not idempotency — the suites
+apply every file twice, every run. It was that **nothing could tell you what
+a database had.** A project three phases behind looked identical to a
+current one right up until a page called a function that was not there, and
+`/games/status` had two words for the whole question: deployed, or not.
+
+So every phase of every file now records itself as it applies:
+
+```sql
+select public.games_schema_note('franchise', 8, 'the coaching staff');
+```
+
+One row in `games_schema_log`, keyed `layer.phase`. The **first-applied date
+never moves** — that is when this database got the phase, and it is the
+useful one — while a re-run bumps `reapplied_at` and a run counter, so "when
+did we last paste it" is answerable too. The log is a **record, not a
+runner**: it gates nothing, blocks nothing, and applying a file is still the
+entire deployment.
+
+`games_schema()` is the read model, granted to `anon`, returning phase names
+and dates and nothing about anybody. Its layer keys are not a hard-coded
+list — a layer appears because it recorded itself, so `games_social.sql`
+still knows nothing about the files applied on top of it.
+
+Three places read that record, and all three must agree:
+
+| where | what it does |
+| --- | --- |
+| `/games/status` | a **Database schema** row: what is installed, what this build wants, and — when they differ — the missing phases **by name** and the file to paste |
+| `npm run games:schema` | the same answer in a terminal; `--live` calls `games_schema()` and **exits 1 if the database is behind**, so a deploy check can use it |
+| `games/lib/franchise.js` | `SCHEMA_PHASES`, the client's mirror of the phase names, and `schemaGap()`, which turns a version into an instruction |
+
+The mirror is pinned to the SQL by `tools/games/franchise.test.js` — a new
+phase that forgets to record itself, or a name that drifts between the file
+and the client, goes red. Adding a phase is two lines: the
+`games_schema_note()` call at the end of the SQL, and its name at the end of
+`SCHEMA_PHASES`.
+
+A database applied **before** the log existed has no `games_schema()` at
+all. Both the status page and the tool say exactly that, and say to re-apply
+both files rather than guessing.
 
 ## Analytics
 

@@ -102,6 +102,8 @@ const NOTFOUND = fs.readFileSync(path.join(ROOT, '404.html'), 'utf8');
 const SITEMAP = fs.readFileSync(path.join(ROOT, 'sitemap.xml'), 'utf8');
 const README = fs.readFileSync(G('README.md'), 'utf8');
 const PUB = fs.readFileSync(G('publish_board.js'), 'utf8');
+const SOCIALSQL = fs.readFileSync(path.join(ROOT, 'supabase', 'games_social.sql'), 'utf8');
+const SCHEMATOOL = fs.readFileSync(path.join(__dirname, 'schema.js'), 'utf8');
 
 function fresh() { MEM = {}; ST.reset(); }
 const T0 = Date.parse('2026-09-04T18:00:00Z');   /* Friday, week of 2026-09-01 */
@@ -1549,6 +1551,131 @@ fresh();
   has(README, 'staff_v1', 'the README documents the staff');
   has(README, 'Every tenfold in level is another third of the\ncap', 'and the effect curve');
   has(README, 'a horizon rather than a plan', 'and is honest about the thousand');
+
+  /* ═══ 18. THE SCHEMA LOG ══════════════════════════════════════════════════
+     The files here are pasted and re-run rather than migrated. That is fine
+     and staying — but for eight phases nothing could say WHICH phases a
+     database had, so a project three behind looked exactly like a current
+     one until a page called a function that was not there. Every phase now
+     records itself as it applies, and the three places that name a phase —
+     the SQL, the client mirror and the tool — must agree exactly. These
+     assertions are what makes "the client says franchise 8" trustworthy. */
+
+  /* the log itself lives in the base file, because the base file is applied
+     first and the franchise file needs games_schema_note() to already exist */
+  chk('the schema log is created by the base file, before anything uses it',
+    /create table if not exists public\.games_schema_log \(/.test(SOCIALSQL)
+    && SOCIALSQL.indexOf('create table if not exists public.games_schema_log')
+       < SOCIALSQL.indexOf("games_schema_note('social'"));
+  chk('the log is deny-by-default like every other table here: RLS on, no policy',
+    /alter table public\.games_schema_log enable row level security;/.test(SOCIALSQL)
+    && !/create policy [a-z_]* on public\.games_schema_log/.test(SOCIALSQL));
+  chk('games_schema_note() pins its search_path and is closed to every client role',
+    /create or replace function public\.games_schema_note\([\s\S]*?set search_path = public, pg_temp/.test(SOCIALSQL)
+    && /revoke all on function public\.games_schema_note\(text, integer, text\) from public, anon, authenticated;/.test(SOCIALSQL));
+  chk('games_schema() is the only door, and it is open to anon',
+    /create or replace function public\.games_schema\(\)[\s\S]*?security definer[\s\S]*?set search_path = public, pg_temp/.test(SOCIALSQL)
+    && /grant execute on function public\.games_schema\(\) to anon, authenticated;/.test(SOCIALSQL));
+  /* the first-applied date is the useful one — it must never move on a re-run */
+  chk('a re-run bumps the count and the re-applied date and never moves applied_at',
+    /on conflict \(id\) do update\s+set name = excluded\.name, reapplied_at = now\(\), runs = public\.games_schema_log\.runs \+ 1;/.test(SOCIALSQL)
+    && !/do update[\s\S]{0,300}[^a-z_]applied_at = now\(\)/.test(SOCIALSQL));
+
+  /* EVERY PHASE RECORDS ITSELF. Read the notes out of both files and hold
+     the client's mirror and the tool's reading against them. */
+  const notes = layer => {
+    const src = layer === 'social' ? SOCIALSQL : SQL;
+    const re = /games_schema_note\(\s*'([a-z_]+)'\s*,\s*(\d+)\s*,\s*'((?:[^']|'')*)'\s*\)/g;
+    const out = []; let m;
+    while ((m = re.exec(src))) if (m[1] === layer) out.push({ phase: Number(m[2]), name: m[3].replace(/''/g, "'") });
+    return out.sort((a, b) => a.phase - b.phase);
+  };
+  ['social', 'franchise'].forEach(layer => {
+    const rows = notes(layer);
+    chk(layer + ': every phase records itself, consecutively from 1',
+      rows.length > 0 && rows.every((r, i) => r.phase === i + 1),
+      'read ' + JSON.stringify(rows.map(r => r.phase)));
+    eq(layer + ': the client mirror counts the same phases as the file',
+      F.SCHEMA[layer], rows.length);
+    chk(layer + ': the client names every phase exactly as the file records it',
+      JSON.stringify(F.SCHEMA_PHASES[layer]) === JSON.stringify(rows.map(r => r.name)),
+      'client ' + JSON.stringify(F.SCHEMA_PHASES[layer]) + ' vs sql ' + JSON.stringify(rows.map(r => r.name)));
+  });
+  chk('the franchise notes are applied in one transaction, so a half-run cannot claim a phase',
+    /begin;[\s\S]{0,200}games_schema_note\('franchise', 1,[\s\S]*?games_schema_note\('franchise', 8,[\s\S]{0,80}commit;/.test(SQL));
+  chk('the self-check report opens by saying what this database has',
+    /select 0, 'the schema log says what this database has/.test(SQL));
+
+  /* THE GAP IS AN INSTRUCTION, not a number. A page that says "franchise 6"
+     has told nobody anything; one that names the missing phases and the file
+     to paste has. */
+  chk('a level database reports no gap', F.schemaGap({ social: 1, franchise: F.SCHEMA.franchise }).ok);
+  chk('a database behind by two names both phases and the file to paste', () => {
+    const g = F.schemaGap({ social: 1, franchise: F.SCHEMA.franchise - 2 });
+    return !g.ok && g.behind.length === 1 && g.behind[0].layer === 'franchise'
+      && g.behind[0].behind === 2 && g.behind[0].file === 'supabase/games_franchise.sql'
+      && g.behind[0].missing.length === 2
+      && g.behind[0].missing[0].phase === F.SCHEMA.franchise - 1
+      && g.behind[0].missing[1].name === F.SCHEMA_PHASES.franchise[F.SCHEMA.franchise - 1];
+  });
+  chk('an empty database is behind on both layers, not just the one', () => {
+    const g = F.schemaGap({});
+    return !g.ok && g.behind.length === 2 && g.behind.every(b => b.have === 0 && b.missing.length === b.want);
+  });
+  /* an old build against a newer database is not an error worth shouting */
+  chk('a database AHEAD of this build is not reported as a gap', () => {
+    const g = F.schemaGap({ social: 1, franchise: F.SCHEMA.franchise + 1 });
+    return g.ok && g.ahead === true;
+  });
+  chk('the client asks the database through the one open function',
+    /function schema\(\) \{ return rpc\('games_schema', \{\}\); \}/.test(FJS));
+
+  /* THE STATUS PAGE. This is the page an operator opens when something is
+     wrong, and "deployed / not deployed" was the whole vocabulary it had. */
+  chk('the status page loads the franchise client, so it can compare',
+    /<script src="\/games\/lib\/franchise\.js\?v=/.test(STATUS));
+  /* the page reached for window.EDGamesFranchise once and silently rendered
+     nothing below the market row: the global is EDFranchise */
+  chk('and reaches for the global the library actually publishes',
+    /F=window\.EDFranchise/.test(STATUS) && /root\.EDFranchise = API;/.test(FJS));
+  chk('a database three phases behind is labelled Behind, not Not connected',
+    /'Behind'\)\}\);/.test(STATUS) && /function row\(state,title,detail,action,label\)/.test(STATUS));
+  /* a cached franchise.js must not blank the row or blame the database */
+  chk('a stale library is named as a stale library, and the other rows still draw',
+    /if\(cfg&&\(!F\|\|typeof F\.schema!=='function'\)\)\{/.test(STATUS)
+    && /older copy of <code>\/games\/lib\/franchise\.js<\/code>/.test(STATUS)
+    && /'Stale'\)\}\);/.test(STATUS));
+  chk('a nine-phase gap names the first few and counts the rest',
+    /b\.missing\.slice\(0,3\)/.test(STATUS) && /and '\+esc\(rest\)\+' more'/.test(STATUS));
+  chk('the status page reads the schema and names the gap',
+    /F\.schema\(\)/.test(STATUS) && /F\.schemaGap\(d\)/.test(STATUS)
+    && /Database schema/.test(STATUS) && /show\.map\(function\(m\)\{return esc\(m\.phase\)/.test(STATUS));
+  chk('the status page tells a pre-log database what to do instead of guessing',
+    /before the schema log existed/.test(STATUS) && /Both are safe to run again/.test(STATUS));
+  chk('the status page names the file to paste rather than the phase number alone',
+    /gap\.behind\.map\(function\(b\)\{return '<code>'\+esc\(b\.file\)/.test(STATUS));
+
+  /* THE TOOL. Same record, from a terminal, without opening a browser. */
+  chk('the tool reads the phases out of the SQL rather than a list to remember',
+    /games_schema_note\\\(/.test(SCHEMATOOL) && /fs\.readFileSync\(path\.join\(ROOT, file\)/.test(SCHEMATOOL));
+  chk('the tool applies nothing: it posts to games_schema and reads config only',
+    /rpc\/games_schema/.test(SCHEMATOOL)
+    && !/games_schema_note/.test(SCHEMATOOL.replace(/games_schema_note\\\(/g, ''))
+    && !/service_role/.test(SCHEMATOOL));
+  chk('the tool exits non-zero when the database is behind, so a deploy check can use it',
+    /phase\(s\) missing/.test(SCHEMATOOL) && /return 1;/.test(SCHEMATOOL));
+  chk('the tool agrees with the SQL about what ships', () => {
+    const { execFileSync } = require('child_process');
+    const out = execFileSync(process.execPath, [path.join(__dirname, 'schema.js')], { encoding: 'utf8' });
+    return notes('franchise').every(r => out.indexOf(String(r.phase) + '  ' + r.name) >= 0)
+      && out.indexOf('franchise ' + F.SCHEMA.franchise + '   supabase/games_franchise.sql') >= 0;
+  });
+
+  has(README, 'games_schema_log', 'the README documents the schema log');
+  has(README, 'npm run games:schema', 'and the tool that reads it');
+  chk('the tool has a script name that does not need remembering', () =>
+    JSON.parse(fs.readFileSync(path.join(ROOT, 'package.json'), 'utf8'))
+      .scripts['games:schema'] === 'node tools/games/schema.js');
 
   finish();
 }).catch(e => { fail++; failures.push('suite threw: ' + (e && e.stack || e)); finish(); });

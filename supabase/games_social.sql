@@ -45,6 +45,86 @@
 
 begin;
 
+-- ===========================================================================
+-- THE SCHEMA LOG — what this database has actually had applied to it.
+--
+-- The convention in this directory is a file you PASTE and re-run: no tool,
+-- no ordered migration directory, no state kept outside the database. That
+-- has carried eight phases and it is worth keeping — but it has one hole,
+-- and the hole is not idempotency (the suite applies every file twice, every
+-- run). It is that NOTHING COULD TELL YOU WHAT A DATABASE HAD.
+--
+-- A project three phases behind looked exactly like a current one until a
+-- page called a function that was not there. The status page could say
+-- "deployed" or "not deployed" and nothing in between.
+--
+-- So every phase of every file now writes one row here as it applies. The
+-- log is not a migration runner and does not gate anything: applying a file
+-- is still the whole deployment, and applying it again is still safe. It is
+-- a RECORD, so that a page, a report and a person can all ask the same
+-- question — what is installed here? — and get the same answer.
+--
+--   games_schema_note()   one row per phase, written by the file itself
+--   games_schema()        the read model, open to anon: layers, phases, dates
+-- ===========================================================================
+
+create table if not exists public.games_schema_log (
+  id            text primary key,          -- '<layer>.<phase>', e.g. 'social.1'
+  layer         text not null,             -- which FILE recorded it
+  phase         integer not null check (phase >= 0),
+  name          text not null,
+  applied_at    timestamptz not null default now(),
+  reapplied_at  timestamptz,
+  runs          integer not null default 1
+);
+
+create index if not exists games_schema_log_layer on public.games_schema_log (layer, phase);
+
+alter table public.games_schema_log enable row level security;
+-- no policy: no client role reads this table directly. games_schema() is the
+-- door, and it is a definer function that returns names and dates only.
+
+-- RECORD A PHASE. Called by the file that installs it, as the last thing
+-- that phase does. The first run stamps applied_at and never moves it again
+-- — that date is when this database got the phase, and it is the useful one.
+-- A re-run bumps reapplied_at and the count, so "when did we last paste it"
+-- is answerable too.
+create or replace function public.games_schema_note(
+  p_layer text, p_phase integer, p_name text)
+returns void language plpgsql
+set search_path = public, pg_temp as $$
+begin
+  insert into public.games_schema_log (id, layer, phase, name)
+  values (p_layer || '.' || p_phase, p_layer, p_phase, p_name)
+  on conflict (id) do update
+    set name = excluded.name, reapplied_at = now(), runs = public.games_schema_log.runs + 1;
+end;
+$$;
+
+-- WHAT IS INSTALLED HERE. Open to read: a page that needs a phase this
+-- database does not have should be able to say so precisely instead of
+-- guessing from a 404.
+-- The layer keys are NOT a hard-coded list. This file is the base layer and
+-- knows nothing about the files applied on top of it — a layer appears here
+-- because it recorded itself, and a new one needs no edit here. The fixed
+-- keys are unioned last so a layer could never shadow one.
+create or replace function public.games_schema()
+returns jsonb language sql stable security definer set search_path = public, pg_temp as $$
+  select coalesce((select jsonb_object_agg(t.layer, t.top)
+                     from (select layer, max(phase) as top
+                             from public.games_schema_log group by layer) t), '{}'::jsonb)
+    || jsonb_build_object(
+      'applied_at', (select max(applied_at) from public.games_schema_log),
+      'reapplied_at', (select max(reapplied_at) from public.games_schema_log),
+      'phases', coalesce((select jsonb_agg(jsonb_build_object(
+          'id', l.id, 'layer', l.layer, 'phase', l.phase, 'name', l.name,
+          'applied_at', l.applied_at, 'reapplied_at', l.reapplied_at, 'runs', l.runs)
+          order by l.layer, l.phase) from public.games_schema_log l), '[]'::jsonb));
+$$;
+
+revoke all on function public.games_schema_note(text, integer, text) from public, anon, authenticated;
+grant execute on function public.games_schema() to anon, authenticated;
+
 -- ── helpers ───────────────────────────────────────────────────────────────
 --
 -- CORE POSTGRES ONLY. NOTHING HERE MAY DEPEND ON pgcrypto.
@@ -968,4 +1048,9 @@ grant execute on function public.group_dashboard(text) to authenticated;
 grant execute on function public.games_rating_of(uuid, text) to anon, authenticated;
 grant execute on function public.games_is_member(uuid) to anon, authenticated;
 
+commit;
+
+-- ── what this file just installed ────────────────────────────────────────
+begin;
+select public.games_schema_note('social', 1, 'Head-to-Head, Groups, ratings and the activity feed');
 commit;
