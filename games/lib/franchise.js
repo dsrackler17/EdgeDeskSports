@@ -61,7 +61,8 @@
       'injuries, the bowl and trades',
       'the coaching staff',
       'the scouting department',
-      'the development program and the league'
+      'the development program and the league',
+      'the rank and the packs'
     ]
   };
   var SCHEMA = { social: SCHEMA_PHASES.social.length, franchise: SCHEMA_PHASES.franchise.length };
@@ -922,6 +923,59 @@
     return (seat.grade || staffGrade(seat.level)) + ' · level ' + (seat.level | 0) + ' of ' + STAFF.max_level
       + (seat.effect ? ' · +' + seat.effect + (s.key === 'trainer' ? '' : ' ' + (s.key === 'defense' ? 'defense' : s.key === 'offense' ? 'offense' : 'late game')) : '');
   }
+  /* ── THE RANK AND THE PACKS (Phase 11) ──────────────────────────────────
+     What playing a lot is worth. Everything else in this game is paid for by
+     being GOOD at something — Scouting Points by pricing well, Coach Points
+     by winning, the standing by beating better clubs. Nothing was paid for by
+     turning up, and the number that measured turning up (the franchise level,
+     off XP) decided nothing and stopped at 30.
+
+     The rank counts activity, never caps, and pays in players. Everything
+     here is presentation, pinned to the SQL by tools/games/franchise.test.js.
+     THE SERVER COUNTS, ROLLS AND KEEPS. Nothing is purchasable: a pack is
+     earned by playing and by nothing else. */
+  var RANK_VERSION = 'rank_v1';
+  var PACKS_VERSION = 'packs_v1';
+  var RANKS = {
+    cost_base: 15, cost_step: 3, pack_size: 3, pack_keep: 1,
+    floor_below: 10, edge_base: 2, edge_per_rank: 0.3, edge_max: 14,
+    weights: { weekly_game: 3, bowl_bid: 3, conf_game: 3, fc_played: 2,
+               price_it: 1, drill_daily: 1, research_open: 1,
+               pick5_card: 2, season_complete: 5 }
+  };
+  /* what the next rank costs: 15, and three more every time */
+  function rankCost(rank) { return RANKS.cost_base + RANKS.cost_step * Math.max(0, (rank | 0) - 1); }
+  /* the points it takes to stand at a rank — the sum of every step below it */
+  function rankAt(rank) {
+    var n = Math.max(1, rank | 0), total = 0, r;
+    for (r = 1; r < n; r++) total += rankCost(r);
+    return total;
+  }
+  /* and the rank a pile of points buys */
+  function rankFor(points) {
+    var p = Math.max(0, points | 0), r = 1;
+    while (rankAt(r + 1) <= p) r++;
+    return r;
+  }
+  /* how far above your own team a pack can reach, at a rank */
+  function rankEdge(rank) {
+    return Math.min(RANKS.edge_max,
+      RANKS.edge_base + Math.floor(RANKS.edge_per_rank * Math.max(0, (rank | 0) - 1)));
+  }
+  /* the band a pack would hold for a team of this overall, at this rank */
+  function packBand(teamOverall, rank) {
+    var o = teamOverall | 0, low = Math.max(40, o - RANKS.floor_below);
+    /* a team below the floor would otherwise be handed a ceiling under it */
+    return [low, Math.max(low, Math.min(99, o + rankEdge(rank)))];
+  }
+  /* what one activity is worth toward the next rank */
+  function rankWeight(kind) { return RANKS.weights[kind] || 0; }
+  /* "Rank 12 · 318 of 354" */
+  function rankLine(rep) {
+    rep = obj(rep);
+    return 'Rank ' + (rep.rank | 0) + ' · ' + (rep.points | 0) + ' of ' + (rep.next_at | 0);
+  }
+
   /* ── THE DEVELOPMENT PROGRAM AND THE LEAGUE (Phase 10) ───────────────────
      Measured before it was written. Over ten seasons of a franchise doing
      everything right, team overall went 69 → 71 and the record never moved,
@@ -942,7 +996,7 @@
      tools/games/franchise.test.js. THE SERVER GRADES, LIFTS AND SCHEDULES. */
   var DEVELOPMENT_VERSION = 'development_v1';
   var DEVELOPMENT = {
-    slots_base: 2, cap: 15, cost_base: 100, cost_step: 15,
+    slots_base: 2, slots_per_rank: 10, cap: 15, cost_base: 100, cost_step: 15,
     lift_base: 1, lift_span: 5, age_full: 26, age_half: 29,
     grade: { available: 40, record: 30, impact: 30 }
   };
@@ -959,8 +1013,14 @@
     if ((age | 0) > DEVELOPMENT.age_full) return Math.max(1, Math.floor(raw / 2));
     return raw;
   }
-  /* how many places an offseason has: two, and one per Training Center level */
-  function devSlots(training) { return DEVELOPMENT.slots_base + Math.max(0, Math.min(3, training | 0)); }
+  /* how many places an offseason has: two, one per Training Center level, and
+     one for every ten ranks of having played (rank_v1) — a franchise that has
+     been at it for years has a bigger department, which is what pays for the
+     rebuild when a founding roster ages out together */
+  function devSlots(training, rank) {
+    return DEVELOPMENT.slots_base + Math.max(0, Math.min(3, training | 0))
+      + Math.floor(Math.max(1, rank | 0) / DEVELOPMENT.slots_per_rank);
+  }
   /* "Ever-present on a winning team" — what a grade means, in words */
   function devGradeLine(g) {
     g = obj(g);
@@ -1365,6 +1425,19 @@
      sends a player id and the identity and nothing else — the server grades
      the season out of its own boxes, decides the lift, prices it and takes
      the Scouting Points. Never queued: spending must see its answer. */
+  /* THE RANK AND THE PACKS (Phase 11). The board is one read; opening sends
+     the identity and nothing else, and keeping sends a player id. The server
+     counts the rank, rolls the three men and decides the band. Never queued:
+     opening a pack must see its answer. */
+  function ranks() { return rpc('franchise_rank_board', withSecret({})); }
+  function packOpen() { return rpc('franchise_pack_open', withSecret({})).then(moveThen); }
+  function packKeep(player) {
+    return rpc('franchise_pack_keep', withSecret({ p_player: String(player || '') })).then(moveThen);
+  }
+  /* turn the whole pack down. The rank is spent either way — that is what
+     makes it a decision — but a pack must never be able to block the rest. */
+  function packPass() { return rpc('franchise_pack_pass', withSecret({})).then(moveThen); }
+
   function development() { return rpc('franchise_development_board', withSecret({})); }
   function develop(player) {
     return rpc('franchise_develop', withSecret({ p_player: String(player || '') })).then(moveThen);
@@ -1560,6 +1633,10 @@
     SCHEMA: SCHEMA, SCHEMA_PHASES: SCHEMA_PHASES, SCHEMA_FILES: SCHEMA_FILES,
     schema: schema, schemaGap: schemaGap,
     development: development, develop: develop,
+    RANK_VERSION: RANK_VERSION, PACKS_VERSION: PACKS_VERSION, RANKS: RANKS,
+    rankCost: rankCost, rankAt: rankAt, rankFor: rankFor, rankEdge: rankEdge,
+    packBand: packBand, rankWeight: rankWeight, rankLine: rankLine,
+    ranks: ranks, packOpen: packOpen, packKeep: packKeep, packPass: packPass,
     DEVELOPMENT_VERSION: DEVELOPMENT_VERSION, DEVELOPMENT: DEVELOPMENT,
     devCost: devCost, devLift: devLift, devSlots: devSlots, devGradeLine: devGradeLine,
     LEAGUE_VERSION: LEAGUE_VERSION, LEAGUE: LEAGUE, leagueFacing: leagueFacing, leagueGap: leagueGap,

@@ -1,0 +1,238 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-1PXVBV53FZ"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-1PXVBV53FZ');
+</script>
+<title>Rank &amp; Packs | EdgeDesk Games</title>
+<meta name="description" content="A rank that counts how much you play, and a pack of three players for every rank you reach. Earned by playing and by nothing else — nothing here can be bought. Free to play, no real-money wagering.">
+<link rel="canonical" href="https://edgedesksports.com/games/packs">
+<meta name="theme-color" content="#0b0d11">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230b0d11'/%3E%3Cpath d='M18 6 L23 6 L14 26 L9 26 Z' fill='%233fb883'/%3E%3C/svg%3E">
+<meta name="robots" content="index,follow">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="EdgeDesk Games">
+<meta property="og:url" content="https://edgedesksports.com/games/packs">
+<meta property="og:title" content="Rank &amp; Packs — EdgeDesk Games">
+<meta property="og:description" content="A rank that counts how much you play, and a pack of three players for every rank. Earned by playing, never bought.">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Rank &amp; Packs — EdgeDesk Games">
+<meta name="twitter:description" content="A rank that counts how much you play, and a pack of three players for every rank. Earned by playing, never bought.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/games/games.css?v=20260906l">
+<link rel="stylesheet" href="/games/franchise.css?v=20260906l">
+</head>
+<body>
+<div id="gh"></div>
+
+<main class="wrap" id="main">
+  <div class="sec" style="margin-top:18px">
+    <div class="card" id="stage">
+      <div class="eyebrow">Rank &amp; Packs</div>
+      <div class="sk" style="width:55%;margin:16px 0"></div>
+      <div class="sk" style="width:35%;margin:10px 0"></div>
+      <div class="sk-label" style="text-align:left">Counting what you have played</div>
+    </div>
+  </div>
+  <div id="rooms"></div>
+</main>
+
+<div id="gt"></div>
+<div id="gf"></div>
+
+<script src="/games/lib/week.js?v=20260906l"></script>
+<script src="/games/lib/scoring.js?v=20260906l"></script>
+<script src="/games/lib/challenge.js?v=20260906l"></script>
+<script src="/games/lib/research_state.js?v=20260906l"></script>
+<script src="/games/lib/attribution.js?v=20260906l"></script>
+<script src="/games/lib/store.js?v=20260906l"></script>
+<script src="/games/lib/dynasty.js?v=20260906l"></script>
+<script src="/games/lib/social.js?v=20260906l"></script>
+<script src="/games/lib/auth.js?v=20260906l"></script>
+<script src="/games/lib/franchise.js?v=20260906l"></script>
+<script src="/games/games.js?v=20260906l"></script>
+<script>
+/* STALE SCRIPT GUARD — the same belt every franchise page wears. */
+(function(){
+  var need=['EDFranchise.ranks','EDFranchise.packOpen','EDFranchise.packKeep',
+            'EDFranchise.packPass','EDFranchise.rankEdge','EDFranchise.packBand','EDGames.franchiseReady'];
+  var miss=need.filter(function(k){var p=k.split('.'),o=window[p[0]];return !o||typeof o[p[1]]!=='function';});
+  if(!miss.length)return;
+  var host=document.getElementById('stage')||document.querySelector('main');
+  if(host)host.innerHTML='<div class="card"><div class="eyebrow">EdgeDesk Games</div>'
+    +'<div class="empty">This page needs a newer copy of EdgeDesk Games than your browser has kept.<br>'
+    +'<a class="btn btn-go" style="margin-top:14px" href="'+location.pathname+'?fresh='+Date.now()+'">Reload the page</a></div></div>';
+  try{console.warn('stale games scripts: '+miss.join(', '));}catch(_){}
+})();
+</script>
+<script>
+(function(){
+  'use strict';
+  var G=window.EDGames,FR=window.EDFranchise;
+  var $=function(id){return document.getElementById(id);};
+  var stage=$('stage'),rooms=$('rooms');
+  var esc=G.esc,fmt=FR.fmt;
+  var READY=G.boot('packs');
+  var BOARD=null,BUSY=false;
+
+  /* ---- no franchise yet --------------------------------------------------- */
+  function renderEmpty(state){
+    stage.className='card';
+    stage.innerHTML='<div class="fo-hero"><div class="eyebrow">Rank &amp; Packs</div>'
+      +'<h1>A rank for turning up.</h1>'
+      +'<p>Everything else here is paid for by being <i>good</i> at something — Scouting Points for pricing games well, '
+      +'Coach Points for winning. Your <b>rank</b> is paid for by <b>playing</b>: every game, every price, every drill, '
+      +'every season you see out.</p>'
+      +'<ul class="fo-list"><li>Every rank is a <b>pack</b>: three players, and you keep one.</li>'
+      +'<li>They are drawn around <b>your own team</b> — the floor sits '+FR.RANKS.floor_below+' below your overall, '
+      +'and the ceiling rises with your rank, to <b>+'+FR.RANKS.edge_max+'</b>.</li>'
+      +'<li>The rank <b>never caps</b>. Rank 2 costs '+FR.RANKS.cost_base+' points and each one after costs '+FR.RANKS.cost_step+' more.</li>'
+      +'<li><b>Nothing here can be bought.</b> There is no pack for sale and no way to open one faster with money.</li></ul>'
+      +'<div class="btn-row"><a class="btn btn-go btn-big" href="/games/franchise/?intent=packs" id="goFound">Found my franchise</a></div>'
+      +'<div class="ftp" style="margin-top:12px"><b>Free to play</b> · No account needed to start · Packs are earned by playing and cannot be bought</div></div>';
+    rooms.innerHTML=state==='not_deployed'
+      ?'<div class="sec"><div class="card"><div class="empty">The franchise layer has not been deployed to this project yet. <a href="/games/status/">Status</a></div></div></div>'
+      :'';
+    var go=$('goFound');
+    if(go)go.addEventListener('click',function(){G.track('signup_start_from_games',{placement:'packs',game_type:'franchise'});});
+  }
+
+  /* ---- the rank ----------------------------------------------------------- */
+  function renderStage(b){
+    var snap=FR.snapshot()||{},f=snap.franchise||{},r=b.rank||{},band=b.would_hold||[],room=b.roster||{};
+    var at=r.at|0,next=r.next_at|0,pts=r.points|0;
+    var pct=next>at?Math.max(2,Math.min(100,Math.round(100*(pts-at)/(next-at)))):100;
+    stage.className='card';
+    stage.setAttribute('style',FR.themeVars(f.theme));
+    stage.innerHTML='<div class="eyebrow">Rank &amp; Packs</div>'
+      +'<div class="hq-id">'+FR.logoSvg(f.logo,56,f.theme)
+      +'<div><div class="hq-city">'+esc(f.city||'')+' · '+esc(f.abbr||'')+'</div>'
+      +'<div class="hq-name">'+esc(f.name||'')+'</div>'
+      +'<div class="hq-line">'+esc(r.points|0)+' played · '+esc(r.to_next|0)+' to rank '+esc((r.rank|0)+1)+'</div></div>'
+      +'<div class="hq-rec">'+esc(r.rank|0)+'<span class="s">rank</span></div></div>'
+      +'<div class="xp"><div class="xp-row"><b>Rank '+esc(r.rank|0)+'</b><span>'+esc(pts-at)+' of '+esc(next-at)+' to rank '+esc((r.rank|0)+1)+'</span></div>'
+      +'<div class="xp-bar" role="progressbar" aria-label="progress to the next rank" aria-valuemin="0" aria-valuemax="100" aria-valuenow="'+pct+'">'
+      +'<div class="xp-fill" style="width:'+pct+'%"></div></div></div>'
+      +'<div class="mk-sum">'
+      +'<div class="sp"><div class="k">Packs waiting</div><div class="v">'+esc(r.packs|0)+'<small>one for every rank</small></div></div>'
+      +'<div><div class="k">A pack holds</div><div class="v">'+esc(band[0]|0)+'–'+esc(band[1]|0)+'<small>your team is '+esc(b.team_overall|0)+'</small></div></div>'
+      +'<div><div class="k">Roster</div><div class="v">'+esc(room.active|0)+'<small>of '+esc(room.max|0)+' · '+((room.room|0)?((room.room|0)+' open'):'full')+'</small></div></div>'
+      +'<div><div class="k">From packs</div><div class="v">'+esc((b.kept||[]).length)+'<small>on the roster now</small></div></div>'
+      +'</div>'
+      +'<div class="ftp" style="margin-top:12px">A pack is drawn around <b>your own team</b>, so it is never junk and never a shortcut: '
+      +'the floor is '+esc(FR.RANKS.floor_below)+' under your overall and the ceiling rises with the rank. '
+      +'<b>Earned by playing and by nothing else</b> — there is no pack for sale.</div>';
+  }
+
+  function packCard(p,b){
+    var top='<div class="pc-top"><span class="pc-pos">'+esc(p.position)+'</span><span class="pc-num">'+esc(p.age)+' yrs</span>'
+      +(p.rarity?'<span class="pc-rar">'+esc(p.rarity)+'</span>':'')+'</div>';
+    var body='<div class="pc-ovr"><b>'+esc(p.overall)+'</b><span>OVR</span></div>'
+      +'<div class="pc-name">'+esc(FR.fullName(p))+'</div>'
+      +'<div class="pc-arch">'+esc(p.archetype||'')+' · ceiling <b>'+esc(p.potential)+'</b> · '+esc(FR.DEV_TIERS[p.dev_tier]||p.dev_tier||'')+'</div>'
+      +'<div class="pc-attrs">'+FR.keyRatings(p).map(function(a){return '<div class="pc-a"><span class="k">'+esc(a.label)+'</span><b>'+esc(a.value)+'</b></div>';}).join('')+'</div>'
+      +(FR.traitOf(p)?'<div class="pc-line"><b>'+esc(FR.traitOf(p).name)+'</b> · '+esc(FR.traitOf(p).desc||'')+'</div>':'');
+    var full=(b.roster||{}).room<=0;
+    var acts='<div class="pc-actions">'
+      +(full?'<span class="pc-line">Roster full — release a player on the <a href="/games/roster/">roster</a> to keep him.</span>'
+            :'<button class="btn btn-go" type="button" data-keep="'+esc(p.id)+'" data-name="'+esc(FR.fullName(p))+'">Keep him</button>')
+      +'</div>';
+    return '<div class="pc" data-player="'+esc(p.id)+'">'+top+body+acts+'</div>';
+  }
+
+  function keptRow(p){
+    return '<li><span class="k">R'+esc(p.rank)+'</span><span class="o"><b>'+esc(p.name)+'</b><small>'
+      +esc(p.position)+' · OVR '+esc(p.overall)+' · ceiling '+esc(p.potential)+'</small></span><span class="r"></span></li>';
+  }
+
+  function renderBoard(b,fresh){
+    BOARD=b;
+    renderStage(b);
+    var open=b.open||[],packs=(b.rank||{}).packs|0;
+    rooms.innerHTML=
+      '<div class="sec"><div class="sec-h"><h2>'+(open.length?'On the table':'Open a pack')+'</h2>'
+      +'<span class="m">'+esc(FR.PACKS_VERSION)+'</span></div>'
+      +(open.length
+        ? '<div class="pc-grid">'+open.map(function(p){return packCard(p,b);}).join('')+'</div>'
+          +'<div class="ftp" style="margin-top:10px">Keep <b>one</b>. The other two are passed over — they stay on your record as men you turned down. '
+          +'If none of them is worth a place, <button class="lnk" type="button" id="passPack">turn the whole pack down</button> — '
+          +'the rank is spent either way, but a pack can never block the ones behind it.</div>'
+        : (packs>0
+            ? '<div class="card"><div class="empty" style="padding:22px 12px">'
+              +'<div style="font-size:15px;color:var(--text);margin-bottom:6px"><b>'+esc(packs)+' pack'+(packs===1?'':'s')+' waiting</b></div>'
+              +'Three players drawn between <b>'+esc((b.would_hold||[])[0]|0)+'</b> and <b>'+esc((b.would_hold||[])[1]|0)+'</b> overall.'
+              +'<div class="btn-row" style="justify-content:center"><button class="btn btn-go btn-big" type="button" id="openPack">Open a pack</button></div></div></div>'
+            : '<div class="card"><div class="empty">No pack waiting. '+esc((b.rank||{}).to_next|0)+' more played and rank '
+              +esc(((b.rank||{}).rank|0)+1)+' is yours — a game is worth '+esc(FR.rankWeight('weekly_game'))
+              +', a <a href="/games/price-it/">Price It</a> '+esc(FR.rankWeight('price_it'))
+              +', a season seen out '+esc(FR.rankWeight('season_complete'))+'.</div></div>'))
+      +'</div>'
+      +'<div class="sec"><div class="sec-h"><h2>Kept from packs</h2><span class="m">'+esc((b.kept||[]).length)+'</span></div><div class="card">'
+      +((b.kept||[]).length?'<ul class="mk-hist">'+(b.kept||[]).map(keptRow).join('')+'</ul>'
+        :'<div class="empty">Nobody yet.</div>')
+      +'</div></div>';
+    if(fresh)G.track('packs_view',{rank:(b.rank||{}).rank|0,packs:packs,open:open.length,game_type:'franchise'});
+
+    var pb=$('passPack');
+    if(pb)pb.addEventListener('click',function(){
+      if(BUSY)return; BUSY=true; pb.disabled=true; pb.textContent='Passing…';
+      FR.packPass().then(function(r){
+        BUSY=false;
+        if(!r.ok){G.toast(r.message||'That did not go through');return load(false);}
+        G.track('pack_passed',{passed:(r.data||{}).passed,game_type:'franchise'});
+        G.toast('Pack turned down');
+        G.paintFranchise();
+        load(false);
+      });
+    });
+    var ob=$('openPack');
+    if(ob)ob.addEventListener('click',function(){
+      if(BUSY)return; BUSY=true; ob.disabled=true; ob.textContent='Opening…';
+      FR.packOpen().then(function(r){
+        BUSY=false;
+        if(!r.ok){G.toast(r.message||'That did not go through');return load(false);}
+        var d=r.data||{};
+        G.track('pack_opened',{rank:d.rank,low:(d.range||[])[0],high:(d.range||[])[1],team_overall:d.team_overall,game_type:'franchise'});
+        (d.achievements||[]).forEach(function(a){G.track('achievement_unlocked',{achievement:a,placement:'packs'});});
+        G.paintFranchise();
+        load(false);
+      });
+    });
+    rooms.querySelectorAll('[data-keep]').forEach(function(btn){
+      btn.addEventListener('click',function(){
+        if(BUSY)return; BUSY=true;
+        var id=btn.getAttribute('data-keep'),name=btn.getAttribute('data-name');
+        btn.disabled=true;btn.textContent='Signing…';
+        FR.packKeep(id).then(function(r){
+          BUSY=false;
+          if(!r.ok){G.toast(r.message||'That did not go through');return load(false);}
+          G.track('pack_kept',{player:id,game_type:'franchise'});
+          G.toast(name+' joins the roster');
+          G.paintFranchise();
+          load(false);
+        });
+      });
+    });
+  }
+
+  function load(fresh){
+    return FR.ranks().then(function(r){
+      if(r.ok&&r.data)return renderBoard(r.data,fresh);
+      if(r.status===404||r.error==='not_configured')return renderEmpty('not_deployed');
+      return renderEmpty(null);
+    });
+  }
+
+  READY.then(function(){ return load(true); });
+})();
+</script>
+</body>
+</html>

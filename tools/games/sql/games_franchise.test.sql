@@ -102,6 +102,9 @@ declare
   scf uuid; scg uuid; sc jsonb; sc2 jsonb; band_lo integer; band_hi integer; wdt integer;
   -- the development program and the league
   dvf uuid; dv jsonb; dv2 jsonb; grd jsonb; pot0 integer; ovr0 integer; std0 integer; nslot integer;
+  -- the rank and the packs
+  rkf uuid; rk jsonb; pk jsonb; pk2 jsonb; nlow integer; nhigh integer; nrank integer;
+  SEC_RK constant text := 'device-secret-rankrankrankrankrankrank1';
   SEC_DV constant text := 'device-secret-developdevelopdevelopdev';
   SEC_SC constant text := 'device-secret-scoutscoutscoutscoutscout1';
   SEC_SG constant text := 'device-secret-scoutscoutscoutscoutscout2';
@@ -1992,7 +1995,7 @@ begin
     b is not null and (b->'window'->>'number')::int = 1 and jsonb_array_length(b->'prospects') = 10 and jsonb_array_length(b->'agents') = 6 and (b->>'picks')::int = 2);
   perform pg_temp.as_owner();
   perform pg_temp.ok('the generator, the window and the prospect reader are reachable by no client role; the board and the four moves by both',
-    not has_function_privilege('anon', 'public.franchise_generate_player(uuid, text, integer, integer, text, text, text, integer)', 'execute')
+    not has_function_privilege('anon', 'public.franchise_generate_player(uuid, text, integer, integer, text, text, text, integer, integer)', 'execute')
     and not has_function_privilege('authenticated', 'public.franchise_open_market(uuid, integer)', 'execute')
     and not has_function_privilege('authenticated', 'public.franchise_prospect_json(public.game_players)', 'execute')
     and not has_function_privilege('anon', 'public.franchise_free_number(uuid, text, text)', 'execute')
@@ -3516,6 +3519,267 @@ begin
     and (v->'development'->>'open')::boolean
     and (v->'development'->>'version') = 'development_v1');
   perform pg_temp.as_owner();
+
+
+-- ═══ 24. THE RANK AND THE PACKS ═══════════════════════════════════════════
+-- What turning up is worth. Hardest claims first: a pack costs nothing and
+-- cannot be bought; its advertised band is true; the rank is derived from the
+-- record so it cannot drift; and a pack man is not on the roster until kept.
+  perform pg_temp.as_owner();
+
+  perform pg_temp.ok('the rank is rank_v1 and packs are packs_v1: three men, one kept, never capped',
+    public.franchise_ranks()->>'version' = 'rank_v1'
+    and public.franchise_ranks()->>'pack_version' = 'packs_v1'
+    and (public.franchise_ranks()->>'pack_size')::int = 3
+    and (public.franchise_ranks()->>'pack_keep')::int = 1);
+
+  -- ── the curve ───────────────────────────────────────────────────────────
+  perform pg_temp.ok('rank two costs fifteen and every rank after costs three more',
+    public.franchise_rank_cost(1) = 15 and public.franchise_rank_cost(2) = 18
+    and public.franchise_rank_cost(3) = 21);
+  perform pg_temp.ok('the rank never caps and never gets cheaper',
+    (select bool_and(public.franchise_rank_cost(t.n) < public.franchise_rank_cost(t.n + 1))
+       from generate_series(1, 300) as t(n)));
+  perform pg_temp.ok('the sum of the steps is the points a rank stands on, at every rank to eighty',
+    (select bool_and(public.franchise_rank_at(t.n + 1) - public.franchise_rank_at(t.n)
+                     = public.franchise_rank_cost(t.n))
+       from generate_series(1, 80) as t(n))
+    and public.franchise_rank_at(1) = 0);
+  -- the closed form is the one the read model uses; if it and the sum ever
+  -- disagreed a franchise would be paid the wrong number of packs
+  perform pg_temp.ok('and the closed form buys exactly the rank the steps pay for',
+    (select bool_and(public.franchise_rank_for(public.franchise_rank_at(t.n)) = t.n
+                 and public.franchise_rank_for(public.franchise_rank_at(t.n) - 1) = t.n - 1)
+       from generate_series(2, 80) as t(n))
+    and public.franchise_rank_for(0) = 1 and public.franchise_rank_for(-99) = 1);
+  perform pg_temp.ok('a pack reaches further as the rank rises and stops at fourteen',
+    public.franchise_rank_edge(1) = 2 and public.franchise_rank_edge(1000) = 14
+    and (select bool_and(public.franchise_rank_edge(t.n) <= public.franchise_rank_edge(t.n + 1)
+                     and public.franchise_rank_edge(t.n) between 2 and 14)
+           from generate_series(1, 400) as t(n)));
+
+  -- ── played through ──────────────────────────────────────────────────────
+  perform public.game_board_upsert((select jsonb_agg(jsonb_build_object(
+      'game_id', 'rk' || i, 'slug', 'rk' || i, 'season', 2026, 'week', 1,
+      'home_team', 'RH' || i, 'away_team', 'RA' || i,
+      'kickoff', (now() + interval '2 days')::text, 'edgedesk_spread', -7, 'market_spread', -7.5))
+    from generate_series(1, 40) i));
+  v := public.franchise_create('Rank', 'Tulsa', 'RNK', 'bolt', 'crimson', 'spread', 'zone', SEC_RK);
+  rkf := (v->'franchise'->>'id')::uuid;
+
+  rk := public.franchise_rank_report(rkf);
+  perform pg_temp.ok('a franchise starts at rank one with one pack owed',
+    (rk->>'rank')::int = 1 and (rk->>'packs')::int = 1 and (rk->>'claimed')::int = 0,
+    rk::text);
+
+  -- THE BAND IS TRUE. The generator skews a man's attributes by his
+  -- archetype, which used to pull his overall several points off the number
+  -- the roll was centred on.
+  perform pg_temp.as_anon();
+  pk := public.franchise_pack_open(SEC_RK);
+  nlow := (pk->'range'->>0)::int; nhigh := (pk->'range'->>1)::int;
+  perform pg_temp.ok('a pack is three men, every one inside the band it advertised',
+    jsonb_array_length(pk->'players') = 3
+    and (select bool_and((x->>'overall')::int between nlow and nhigh)
+           from jsonb_array_elements(pk->'players') x),
+    nlow || '-' || nhigh || ' got ' ||
+      (select string_agg(x->>'overall', ',') from jsonb_array_elements(pk->'players') x));
+  perform pg_temp.ok('and the band is drawn around the team, not around the rank alone',
+    nlow = greatest(40, (pk->>'team_overall')::int - (public.franchise_ranks()->>'floor_below')::int)
+    and nhigh = least(99, (pk->>'team_overall')::int + public.franchise_rank_edge((pk->>'rank')::int)));
+
+  perform pg_temp.as_owner();
+  perform pg_temp.ok('the three men are NOT on the roster: they wait on the table',
+    (select count(*) from public.game_players where franchise_id = rkf and status = 'pack') = 3
+    and (select count(*) from public.game_players where franchise_id = rkf and status = 'active') = 38);
+
+  perform pg_temp.as_anon();
+  begin
+    perform public.franchise_pack_open(SEC_RK);
+    perform pg_temp.ok('a second pack cannot be opened over an open one', false, 'it opened');
+  exception when object_not_in_prerequisite_state then
+    perform pg_temp.ok('a second pack cannot be opened over an open one', true);
+  end;
+
+  perform pg_temp.as_owner();
+  select id into pid3 from public.game_players
+   where franchise_id = rkf and status = 'pack' order by overall desc limit 1;
+  select id into pid4 from public.game_players
+   where franchise_id = rkf and status = 'pack' and id <> pid3 limit 1;
+  perform pg_temp.as_anon();
+  pk2 := public.franchise_pack_keep(pid3, SEC_RK);
+  perform pg_temp.ok('keeping one puts him on the roster and passes the other two over',
+    (pk2->>'ok')::boolean and (pk2->>'passed')::int = 2 and (pk2->>'roster_active')::int = 39);
+  perform pg_temp.as_owner();
+  perform pg_temp.ok('he arrived with a number, a place on the chart, and a pack on his record',
+    (select status = 'active' and jersey between 0 and 99 and depth >= 1
+        and acquired_source = 'pack' and pack_rank = 1
+       from public.game_players where id = pid3))
+    ;
+  perform pg_temp.ok('and the men turned down are passed, not gone',
+    (select status = 'passed' from public.game_players where id = pid4)
+    and (select count(*) from public.game_players where franchise_id = rkf and status = 'pack') = 0);
+  perform pg_temp.as_anon();
+  begin
+    perform public.franchise_pack_keep(pid4, SEC_RK);
+    perform pg_temp.ok('a man who was turned down cannot be kept afterwards', false, 'it kept him');
+  exception when no_data_found then
+    perform pg_temp.ok('a man who was turned down cannot be kept afterwards', true);
+  end;
+
+  -- ── the rank is derived, and pays once ──────────────────────────────────
+  perform pg_temp.as_owner();
+  rk := public.franchise_rank_report(rkf);
+  perform pg_temp.ok('the rank paid its pack and now owes none',
+    (rk->>'claimed')::int = 1 and (rk->>'packs')::int = 0);
+  perform pg_temp.as_anon();
+  begin
+    perform public.franchise_pack_open(SEC_RK);
+    perform pg_temp.ok('a rank pays one pack and not two', false, 'it paid twice');
+  exception when object_not_in_prerequisite_state then
+    perform pg_temp.ok('a rank pays one pack and not two', true);
+  end;
+
+  -- playing raises it, and nothing else does
+  perform pg_temp.as_owner();
+  perform public.franchise_start_season(SEC_RK);
+  t0 := now();
+  for k in 1..10 loop
+    begin perform public.franchise_apply_price_it(rkf, 'rk' || k, -7, true, t0); exception when others then null; end;
+    t0 := t0 + interval '8 days';
+    begin perform public.franchise_play_game(rkf, t0); exception when others then null; end;
+  end loop;
+  rk := public.franchise_rank_report(rkf);
+  perform pg_temp.ok('a season of playing is worth several ranks, and the points are the record',
+    (rk->>'rank')::int > 1 and (rk->>'packs')::int >= 1
+    and (rk->>'points')::int = (
+      select coalesce(sum(coalesce((public.franchise_ranks()->'weights'->>a.kind)::int, 0)), 0)
+        from public.franchise_activity a where a.franchise_id = rkf),
+    rk::text);
+  -- SPENDING moves no rank: the currencies and the rank are different things
+  nrank := (rk->>'rank')::int;
+  perform public.franchise_credit(rkf, 'sp', 5000, 'test', 'rk:sp', null);
+  perform public.franchise_credit(rkf, 'tc', 5000, 'test', 'rk:tc', null);
+  perform pg_temp.ok('and no amount of currency moves it',
+    (public.franchise_rank_report(rkf)->>'rank')::int = nrank);
+
+  -- ── a full roster refuses a pack man rather than growing past the cap ───
+  perform pg_temp.as_anon();
+  pk := public.franchise_pack_open(SEC_RK);
+  perform pg_temp.as_owner();
+  -- fill the roster to its ceiling with men who are already on it
+  update public.game_players set status = 'active'
+   where franchise_id = rkf and status = 'released'
+     and (select count(*) from public.game_players q where q.franchise_id = rkf and q.status = 'active')
+         < (public.franchise_market()->>'roster_max')::int;
+  while (select count(*) from public.game_players where franchise_id = rkf and status = 'active')
+        < (public.franchise_market()->>'roster_max')::int loop
+    perform public.franchise_generate_player(rkf, 'WR', 9, 2026, 'filler:' || random()::text, 'filler');
+  end loop;
+  select id into pid3 from public.game_players where franchise_id = rkf and status = 'pack' limit 1;
+  perform pg_temp.as_anon();
+  begin
+    perform public.franchise_pack_keep(pid3, SEC_RK);
+    perform pg_temp.ok('a full roster refuses a pack man', false, 'it signed him');
+  exception when object_not_in_prerequisite_state then
+    perform pg_temp.ok('a full roster refuses a pack man', true);
+  end;
+  perform pg_temp.as_owner();
+  perform pg_temp.ok('and nothing was written by that refusal',
+    (select count(*) from public.game_players where franchise_id = rkf and status = 'pack') = 3
+    and (select count(*) from public.game_players where franchise_id = rkf and status = 'active')
+        = (public.franchise_market()->>'roster_max')::int);
+
+  -- ── who may count, roll and generate ────────────────────────────────────
+  perform pg_temp.as_anon();
+  perform pg_temp.ok('the table is public: a page can say what a rank costs and what a pack would hold',
+    (public.franchise_ranks()->>'version') = 'rank_v1'
+    and public.franchise_rank_cost(5) = 27 and public.franchise_rank_edge(20) = 7);
+  begin
+    perform public.franchise_rank_report(rkf);
+    perform pg_temp.ok('but nobody may count a franchise''s rank by its id', false, 'it counted');
+  exception when insufficient_privilege then
+    perform pg_temp.ok('but nobody may count a franchise''s rank by its id', true);
+  end;
+  begin
+    perform public.franchise_generate_player(rkf, 'QB', 1, 2026, 'forged', 'forged', 'pack', null, 99);
+    perform pg_temp.ok('nor generate themselves a ninety-nine', false, 'it generated');
+  exception when insufficient_privilege then
+    perform pg_temp.ok('nor generate themselves a ninety-nine', true);
+  end;
+  update public.franchises set rank_claimed = 0 where id = rkf;
+  get diagnostics n = ROW_COUNT;
+  perform pg_temp.ok('and no client role can hand itself the packs again: the update reaches no row',
+    n = 0, 'wrote ' || n);
+
+  -- ── the board says what the server did ──────────────────────────────────
+  pk2 := public.franchise_rank_board(SEC_RK);
+  perform pg_temp.ok('the board names the rank, the packs waiting, the band and the men on the table',
+    pk2->>'version' = 'rank_v1' and (pk2->'rank'->>'rank')::int >= 1
+    and jsonb_array_length(pk2->'would_hold') = 2
+    and jsonb_array_length(pk2->'open') = 3
+    and (pk2->'roster'->>'room')::int = 0
+    and jsonb_array_length(pk2->'kept') >= 1);
+  perform pg_temp.as_owner();
+
+  -- ── A PACK CAN NEVER BLOCK THE REST ─────────────────────────────────────
+  -- Sixty seasons of measurement: a pack opened with a full roster could not
+  -- be kept from, and since two packs are never on the table at once it then
+  -- refused every pack after it. There is always a way forward.
+  perform pg_temp.as_anon();
+  pk2 := public.franchise_pack_pass(SEC_RK);
+  perform pg_temp.ok('the whole pack can be turned down', (pk2->>'passed')::int = 3);
+  perform pg_temp.as_owner();
+  perform pg_temp.ok('and the table is clear again',
+    (select count(*) from public.game_players where franchise_id = rkf and status = 'pack') = 0
+    and (select count(*) from public.game_players where franchise_id = rkf and status = 'passed') >= 5);
+  perform pg_temp.as_anon();
+  begin
+    perform public.franchise_pack_pass(SEC_RK);
+    perform pg_temp.ok('passing an empty table is refused rather than pretending', false, 'it passed');
+  exception when no_data_found then
+    perform pg_temp.ok('passing an empty table is refused rather than pretending', true);
+  end;
+  -- the rank was spent either way: passing is a decision, not a free re-roll
+  perform pg_temp.as_owner();
+  rk := public.franchise_rank_report(rkf);
+  perform pg_temp.ok('passing spent the rank: it is a decision, not a re-roll',
+    (rk->>'claimed')::int >= 2);
+  -- and with the table clear, the next pack opens
+  perform pg_temp.as_anon();
+  if (rk->>'packs')::int > 0 then
+    pk := public.franchise_pack_open(SEC_RK);
+    perform pg_temp.ok('with the table clear the next pack opens', jsonb_array_length(pk->'players') = 3);
+  else
+    perform pg_temp.ok('with the table clear the next pack opens', true);
+  end if;
+
+  -- ── THE PRESEASON RE-EARNS THE DEPTH CHART ──────────────────────────────
+  -- The offseason used to compact the chart while preserving whoever was in
+  -- front, so a man acquired at the bottom stayed there for his career and a
+  -- franchise sixty seasons deep started a 59 receiver ahead of a 75.
+  perform pg_temp.as_owner();
+  update public.game_players set status = 'released' where franchise_id = rkf and status = 'active' and position = 'WR';
+  perform public.franchise_generate_player(rkf, 'WR', 1, 2026, 'chart:weak', 'weak', 'rookie', null, 55);
+  perform public.franchise_generate_player(rkf, 'WR', 2, 2026, 'chart:best', 'best', 'rookie', null, 85);
+  perform public.franchise_generate_player(rkf, 'WR', 3, 2026, 'chart:mid',  'mid',  'rookie', null, 70);
+  perform pg_temp.ok('the chart starts in the order they arrived, worst in front',
+    (select overall from public.game_players where franchise_id = rkf and position = 'WR' and status = 'active' and depth = 1) < 60);
+  -- run an offseason over it
+  update public.franchise_seasons set offseason = null where franchise_id = rkf;
+  perform public.franchise_offseason(rkf, (select max(number) from public.franchise_seasons where franchise_id = rkf));
+  perform pg_temp.ok('and after a preseason the best man is starting',
+    (select p.overall from public.game_players p
+      where p.franchise_id = rkf and p.position = 'WR' and p.status = 'active'
+      order by p.depth limit 1)
+    = (select max(q.overall) from public.game_players q
+        where q.franchise_id = rkf and q.position = 'WR' and q.status = 'active'),
+    (select string_agg(p.depth || ':' || p.overall, ' ' order by p.depth) from public.game_players p
+      where p.franchise_id = rkf and p.position = 'WR' and p.status = 'active'));
+  perform pg_temp.ok('the chart is a run of places with no gaps and no ties',
+    (select count(*) = count(distinct depth) and min(depth) = 1 and max(depth) = count(*)
+       from public.game_players where franchise_id = rkf and position = 'WR' and status = 'active'));
+
 
 end
 $test$;
