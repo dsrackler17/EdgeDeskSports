@@ -114,6 +114,19 @@ jobs:
       - name: The record appears when the game ends
         run: node collective/tests_render.js
 
+      # REMOVING A CONTRIBUTOR. The admin screen, driven offline: the panel is a
+      # read, the destructive option is gated on the typed word, and a project
+      # without the migration is told so instead of being offered a 404.
+      - name: A contributor cannot be removed by accident
+        run: node tools/collective/member_removal.test.js
+
+      # The other half, against a REAL PostgreSQL: the authorization, the
+      # foreign-key ordering, the rollback, the audit log and the recalculation
+      # all live in the database, so that is where they have to be proved. The
+      # runner ships PostgreSQL 16; the suite starts its own throwaway cluster.
+      - name: Member removal is admin-only, ordered, atomic and audited
+        run: node tools/collective/member_removal_sql.test.js
+
       # Reads the real functions out of app.html rather than a copy, so it
       # fails loudly if the block it slices moves instead of testing nothing.
       - name: The research boards can still post to the Collective

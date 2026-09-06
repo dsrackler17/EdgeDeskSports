@@ -24,6 +24,8 @@ depends on them, it is listed under *Verify on the server* rather than claimed.
 | Profile editing, slate submission | — | — | — | own only | own only |
 | Creator API key (raw) | — | — | — | shown once on issue / rotate | — |
 | Invite creation, revoke, quarantine, schedule, results, odds ingest | — | — | — | — | write |
+| Member removal preview, member removal, member activity roll | — | — | — | — | write |
+| Admin audit log (`collective.admin_audit_log`) | — | — | — | — | via SQL only |
 | Invite redemption | token holder, signed in | | | | |
 | Billing state | — | own | own | own | — |
 | Internal configuration (`config` table) | — | — | — | — | via SQL only |
@@ -50,6 +52,16 @@ depends on them, it is listed under *Verify on the server* rather than claimed.
   only states it.
 * **Admin** is decided by `collective_admin` against `admin.user_ids`; the
   page shows the caller's user id only after a 403, and only to display.
+* **Member removal is decided in the database, not by the page.**
+  `supabase/collective_member_removal.sql` installs three SECURITY DEFINER
+  routines. The public wrappers take **no acting-user argument** — the actor is
+  `auth.uid()` — so a forged body cannot supply one; `anon` has execute on none
+  of them; a contributor who calls them gets `ok:false forbidden`; a full delete
+  is refused unless the word `DELETE` reaches the server; an admin cannot remove
+  themselves and the last configured admin cannot be removed at all. The whole
+  removal is one transaction, so a failure leaves the contributor and every row
+  they own exactly as they were. Proved against a real PostgreSQL by
+  `tools/collective/member_removal_sql.test.js`, not reasoned about.
 
 ### Enforced client-side only (by design, and harmless)
 
@@ -79,8 +91,14 @@ depends on them, it is listed under *Verify on the server* rather than claimed.
 5. Row-level security on tables read directly with the anon key from **other**
    pages in this repository (`index.html` landing: `sbGet`, `billing_consents`,
    `referrals`, `subscriptions`; `app.html` and `record.html`: `signals`,
-   `feedback`; root `admin.html`). The Collective pages make **no** direct
-   `rest/v1` calls. To list tables without RLS in the relevant schemas:
+   `feedback`; root `admin.html`). The Collective pages make three direct
+   `rest/v1` calls and no others: the member-removal RPCs on `collective/admin.html`
+   (`collective_member_activity`, `collective_member_removal_preview`,
+   `collective_member_remove`), which are functions rather than tables, carry the
+   signed-in admin's own JWT, derive the actor from `auth.uid()`, and are granted
+   to `authenticated` only. Their REST base comes from the same `resolveApiBase()`
+   guard as everything else on the page, so the `?api=` protection covers them
+   too. No Collective page reads or writes a table directly. To list tables without RLS in the relevant schemas:
 
    ```sql
    select n.nspname as schema, c.relname as table, c.relrowsecurity as rls
@@ -93,6 +111,16 @@ depends on them, it is listed under *Verify on the server* rather than claimed.
    `alter table <schema>.<table> enable row level security;` plus a policy for
    the intended public read; nothing in this repository shows one is missing,
    so no migration is shipped blind.
+6. **A removed contributor must stop being served, not only stop posting.**
+   `collective_member_removal.sql` deletes their credentials and installs a
+   trigger that refuses a projection for a removed contributor's model, which is
+   enforcement no deployed function can be out of date about. But
+   `collective_ingest`, `collective_public` and `collective_admin` are not in
+   this repository and do not read `collective.creators.removed_at`, so a
+   membership-only removal still leaves their public profile and dashboard
+   answering. Those three should read `removed_at` when they are next committed;
+   `full_collective_delete` is unaffected, because after it there is nothing left
+   to serve.
 
 ## 2. Findings and changes
 
@@ -150,7 +178,41 @@ monogram only; billing stays off while `billing.enabled` is false.
 * Sport-specific empty states; operating principles and the faith line in the
   footer.
 
-## 4. Known gaps (not invented around)
+## 4. Removing a contributor (September 2026)
+
+An admin-only path to take somebody out of the Collective, added because there
+was none: it was an editor session against production, and the only record of it
+was whatever the person doing it remembered.
+
+* **Two removals, never one.** *Remove from the Collective only* revokes
+  membership and every credential and keeps the history exactly as it stands.
+  *Remove and delete their Collective data* additionally deletes every row under
+  them. The destructive one is a second colour, a second confirmation, and the
+  typed word `DELETE` — checked on the **server**, so the box on the page is a
+  courtesy rather than the guard.
+* **Nothing is deleted by opening the panel.** It is a read: the database counts
+  what a removal would take, per table, and what it would preserve — the games,
+  the other contributors and their rows, the earnings ledger, and the person's
+  EdgeDesk account, which is never touched in either mode.
+* **The creator row is kept in both modes**, stamped with when, by whom and how.
+  A removal you cannot read back off the row is not a removal, and a deleted
+  identity leaves the audit log pointing at nothing.
+* **The source of truth stays the submissions.** `consensus`, `model_records`
+  and `model_coverage_totals` are views, so a deleted contributor stops counting
+  the instant the rows go — not because anything was adjusted, but because there
+  is nothing left to count. Materialized views and rebuild routines are found
+  and run, and the response says which.
+* **Immutable historical snapshots.** This repository shows no such table, so
+  none is assumed. If a deployment has one, it is reached by the same foreign-key
+  walk and **deleted** by default, on the rule in §12 of the brief: leaving a
+  removed contributor inside a number the site still displays as current is the
+  one thing worse than losing the snapshot. An operator who has looked at their
+  own snapshot table and disagrees names it in the config key
+  `collective.member_removal.extra_protected`, and the removal then refuses
+  rather than orphaning it — a preserved child that still points at a deleted
+  parent raises its own foreign key and the whole transaction rolls back.
+
+## 5. Known gaps (not invented around)
 
 * **Model movement timeline.** The games feed carries `movement_n` and the
   latest row only; there is no per-game revision history endpoint. The page

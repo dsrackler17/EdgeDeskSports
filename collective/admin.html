@@ -53,7 +53,50 @@ td input{width:70px;padding:5px 7px;font-family:'JetBrains Mono',monospace;font-
 .raw{font-family:'JetBrains Mono',monospace;font-size:11px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px;white-space:pre-wrap;max-height:160px;overflow:auto;margin-top:6px}
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 @media(max-width:640px){.grid2{grid-template-columns:1fr}}
-.toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:9px 16px;font-size:12.5px;z-index:50}
+.toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:9px 16px;font-size:12.5px;z-index:80;max-width:calc(100vw - 28px);text-align:center}
+.toast.bad{border-color:rgba(226,96,68,.55);color:var(--neg)}
+.toast.good{border-color:rgba(47,180,124,.5)}
+.btn.danger{background:transparent;border-color:rgba(226,96,68,.55);color:var(--neg)}
+.btn.danger.solid{background:var(--neg);border-color:var(--neg);color:#160806;font-weight:700}
+.linkdanger{color:var(--neg);cursor:pointer}
+/* ---- the removal sheet -------------------------------------------------
+   A confirmation is only a safeguard if it is READ, so this is a panel with
+   the numbers in it, not an alert with a verb in it. */
+.mask{position:fixed;inset:0;background:rgba(6,8,11,.72);z-index:60;display:flex;align-items:flex-start;justify-content:center;overflow-y:auto;padding:24px 12px}
+.sheet{background:var(--surface);border:1px solid var(--border);border-radius:12px;width:100%;max-width:620px;margin:auto;padding:16px}
+.sheet h2{margin:0 0 2px;font-size:15px}
+.sheet .close{float:right;color:var(--dim);cursor:pointer;font-size:18px;line-height:1;padding:0 4px}
+.facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;margin:12px 0}
+.facts .f{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px 10px}
+.facts .f .k{color:var(--faint);font-size:9.5px;text-transform:uppercase;letter-spacing:.05em}
+.facts .f .v{font-family:'JetBrains Mono',monospace;font-size:15px;font-weight:700;margin-top:2px}
+.opt{border:1px solid var(--border);border-radius:10px;padding:11px 12px;margin-top:10px;cursor:pointer;background:var(--surface2)}
+.opt.on{border-color:var(--accent)}
+.opt.danger.on{border-color:var(--neg)}
+.opt b{display:block;font-size:13px}
+.opt ul{margin:6px 0 0;padding-left:18px;color:var(--dim);font-size:12px}
+.opt li{margin:2px 0}
+.ledger{font-size:12px;color:var(--dim);margin:4px 0 0}
+.ledger b{color:var(--text)}
+.impact{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
+@media(max-width:560px){.impact{grid-template-columns:1fr}.sheet{padding:13px}}
+.impact .col{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:9px 10px}
+.impact .col.del{border-color:rgba(226,96,68,.4)}
+.impact .col h3{margin:0 0 5px;font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--faint)}
+.impact .col .r{display:flex;justify-content:space-between;gap:10px;font-size:12px;padding:2px 0}
+.impact .col .r span:last-child{font-family:'JetBrains Mono',monospace}
+/* On a phone the members table has to give something up, and it must not be
+   the removal action: a destructive control parked behind a horizontal scroll
+   is a control nobody finds until they scroll past it by accident. Role and
+   Joined go; both are still on the member's own page and in the removal
+   panel, which is where a removal is decided anyway. */
+@media(max-width:700px){
+  #memTable{min-width:0}
+  #memTable .c-role,#memTable .c-joined,#memTable .c-model,#memTable .c-slate{display:none}
+  #memTable .c-inline{display:block}
+  #memTable td,#memTable th{padding:7px 6px;white-space:normal}
+}
+.c-inline{display:none}
 </style>
 </head>
 <body>
@@ -101,7 +144,124 @@ function resolveApiBase(){
 var API=resolveApiBase();
 function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
 function $(id){return document.getElementById(id);}
-function toast(m){var t=document.createElement('div');t.className='toast';t.textContent=m;document.body.appendChild(t);setTimeout(function(){t.remove();},2000);}
+function toast(m,kind){
+  var t=document.createElement('div');
+  t.className='toast'+(kind?' '+kind:'');
+  t.textContent=m;document.body.appendChild(t);
+  setTimeout(function(){t.remove();},kind==='bad'?5200:3200);
+}
+
+/* ---- the database's own door -------------------------------------------
+   Member removal is not an endpoint on collective_admin: it is three
+   SECURITY DEFINER routines installed by supabase/collective_member_removal.sql,
+   called here over PostgREST with the signed-in admin's OWN token. The acting
+   user is auth.uid() inside the database and there is no argument for it, so
+   nothing this page sends can claim to be somebody else. The anon key is the
+   apikey every Supabase client sends; it grants nothing on its own, and anon
+   has execute on none of these.
+
+   The REST base is derived from the SAME resolved API base the rest of this
+   page uses, so the ?api= guard above covers it too and a local override still
+   reaches a local database. */
+function restBase(){
+  var b=String(API||CFG.API||'').replace(/\/+$/,'').replace(/\/functions\/v1$/,'');
+  return (b||CFG.SB_URL)+'/rest/v1';
+}
+async function rpc(fn,args){
+  var s=session();
+  var h={apikey:CFG.SB_ANON,'content-type':'application/json'};
+  if(s&&s.access_token)h['authorization']='Bearer '+s.access_token;
+  var r=await fetch(restBase()+'/rpc/'+fn,{method:'POST',headers:h,body:JSON.stringify(args||{})});
+  var d=null;try{d=await r.json();}catch(e){}
+  if(!r.ok){
+    var e2=new Error((d&&(d.message||d.hint))||('Request failed ('+r.status+')'));
+    e2.status=r.status;
+    /* PGRST202: the function is not in the schema cache. On this project that
+       means one thing: the migration has not been pasted yet. Say so, rather
+       than showing a code nobody can act on. */
+    if(d&&(d.code==='PGRST202'||d.code==='PGRST203'))e2.notInstalled=true;
+    if(r.status===404)e2.notInstalled=true;
+    throw e2;
+  }
+  /* An ok:false body is the routine's own refusal (forbidden, last_admin,
+     confirmation_required). It is data, not a transport failure. */
+  return d;
+}
+var MIGRATION_NOTE='The member-removal routines are not installed on this project yet. '+
+  'Run supabase/collective_member_removal.sql in the Supabase SQL editor, then reload.';
+
+/* ---- what the members list is allowed to say --------------------------
+   The status shown is the one the server already derives (membership), never
+   a second opinion computed here. The only thing added is a fact: a member
+   with zero stored submissions has never posted, and that is worth seeing
+   without opening them. Where the activity roll is unavailable the columns
+   say so and nothing is guessed. */
+function memberStatus(row,act){
+  row=row||{};
+  if(act&&act.removed_at)
+    return {key:'REMOVED',label:'Removed',cls:'dead'};
+  if(act&&act.submissions===0)
+    return {key:'NO SUBMISSIONS',label:'No submissions',cls:'warn'};
+  if(row.membership==='ACTIVE CONTRIBUTOR')return {key:'ACTIVE',label:'Active',cls:'ok'};
+  if(row.membership==='INACTIVE')return {key:'INACTIVE',label:'Inactive',cls:'dead'};
+  return {key:'MEMBER',label:row.membership?String(row.membership):'Member',cls:''};
+}
+/* One activity row per creator, keyed by slug, so a member the roll does not
+   mention reads as unknown rather than as zero. */
+function activityIndex(res){
+  var out={};
+  if(!res||!res.ok||!res.available||!res.rows)return out;
+  res.rows.forEach(function(r){if(r&&r.creator_slug)out[r.creator_slug]=r;});
+  return out;
+}
+function num(n){return (n==null||n==='')?'\u2014':Number(n).toLocaleString('en-US');}
+function shortDate(iso){
+  if(!iso)return '\u2014';
+  var d=new Date(iso);
+  return isNaN(d.getTime())?'\u2014':d.toLocaleDateString();
+}
+/* The sentence shown after a removal. It reports what the SERVER said it did,
+   which is the only number anybody should believe. */
+function removalMessage(res){
+  if(!res)return 'Removed.';
+  if(res.no_op)return 'Already removed. Nothing changed.';
+  var n=Number(res.submissions_deleted||0);
+  if(res.mode==='membership_only')
+    return 'Contributor removed from the Collective. Their submissions and record were kept.';
+  return n===1
+    ? 'Contributor and 1 Collective submission deleted.'
+    : 'Contributor and '+n.toLocaleString('en-US')+' Collective submissions deleted.';
+}
+/* The two columns of the impact panel, built from the preview the database
+   returned. Nothing here is computed in the browser: every number is one the
+   routine counted from real rows. */
+function impactLines(pv,mode){
+  if(!pv||!pv.ok)return {del:[],keep:[]};
+  var c=pv.counts||{},w=pv.will_delete||{},k=pv.will_preserve||{};
+  var del=[],keep=[];
+  if(mode==='full_collective_delete'){
+    del.push(['Collective submissions',c.submissions]);
+    del.push(['graded results',c.graded]);
+    del.push(['pending / ungraded',c.pending]);
+    if(c.quarantined)del.push(['quarantined rows',c.quarantined]);
+    (w.tables||[]).forEach(function(t){
+      if(t.action!=='deleted')return;
+      if(t.table==='projections')return;
+      del.push([t.table.replace(/_/g,' '),t.rows]);
+    });
+  }else{
+    del.push(['submission keys and access grants','revoked']);
+    keep.push(['Collective submissions',c.submissions]);
+    keep.push(['graded results',c.graded]);
+    keep.push(['their model and its record','kept']);
+  }
+  keep.push(['games',k.games]);
+  keep.push(['other contributors',k.other_contributors]);
+  keep.push(['their submissions',k.other_contributor_submissions]);
+  (k.protected_tables||[]).forEach(function(t){keep.push([t.table.replace(/_/g,' '),t.rows]);});
+  keep.push(['their EdgeDesk account','never touched']);
+  return {del:del,keep:keep};
+}
 /* A score typed into the results form. An EMPTY box used to post as 0 —
    the unary plus on an empty string is 0, not NaN — so one click on Settle
    with nothing typed settled a game 0-0, and the settlement then graded
@@ -451,40 +611,74 @@ async function secInvites(app){
   });
 }
 
+var MEM_ACT=null, MEM_ACT_ERR=null, REMOVAL_BUSY=false;
+
+async function loadActivity(force){
+  if(MEM_ACT&&!force)return MEM_ACT;
+  try{ MEM_ACT=activityIndex(await rpc('collective_member_activity',{})); MEM_ACT_ERR=null; }
+  catch(e){ MEM_ACT={}; MEM_ACT_ERR=e.notInstalled?MIGRATION_NOTE:e.message; }
+  return MEM_ACT;
+}
+
 async function secMembers(app,detailSlug){
   var res=await Promise.all([api('/v1/admin/members'),api('/v1/admin/earnings').catch(function(){return null;})]);
   var d=res[0],esum=res[1]&&res[1].summary;
+  var act=await loadActivity();
   var list=d.rows||[];
   if(detailSlug){
     var r=list.filter(function(x){return x.creator_slug===detailSlug;})[0];
-    if(r){memberDetail(app,r,esum);return;}
+    if(r){memberDetail(app,r,esum,act[detailSlug]);return;}
   }
   var rows=list.map(function(r){
-    var srcs=(r.models||[]).map(function(mo){return mo.source_kind?(SRC_LABEL[mo.source_kind]||mo.source_kind):null;}).filter(Boolean);
-    return '<tr data-m="'+esc(r.creator_slug)+'" style="cursor:pointer"><td><b>'+esc(r.display_name)+'</b><br><span class="note mono">'+esc(r.creator_slug)+'</span></td>'+
-      '<td>'+esc((r.models||[]).map(function(mo){return mo.name;}).join(', '))+'</td>'+
-      '<td>'+(r.founding?'<span class="chip warn">&#9733; Founding Member</span>':'<span class="chip">Creator</span>')+'</td>'+
-      '<td>'+esc(r.membership)+(r.account_status!=='active'?' <span class="chip dead">'+esc(r.account_status)+'</span>':'')+'</td>'+
-      '<td class="note">'+esc(srcs.join(', ')||'not set')+'</td>'+
-      '<td class="note">'+rel(r.last_submission_at)+'</td></tr>';
+    var a=act[r.creator_slug]||null;
+    var st=memberStatus(r,a);
+    var removed=!!(a&&a.removed_at);
+    return '<tr data-m="'+esc(r.creator_slug)+'"'+(removed?' style="opacity:.55"':'')+'>'+
+      /* On a phone the Last slate column is hidden, so the number it carries
+         moves here rather than disappearing: it is the one that decides
+         whether somebody is participating. */
+      '<td class="go" style="cursor:pointer"><b>'+esc(r.display_name)+'</b><br><span class="note mono">'+esc(r.creator_slug)+'</span>'+
+        '<span class="note c-inline">last slate '+rel(r.last_submission_at||(a&&a.last_submission_at))+
+        ' · joined '+esc(shortDate(r.joined_at))+'</span></td>'+
+      '<td class="go c-model" style="cursor:pointer">'+esc((r.models||[]).map(function(mo){return mo.name;}).join(', '))+'</td>'+
+      '<td class="c-role">'+(r.founding?'<span class="chip warn">&#9733; Founding</span>':'<span class="chip">Creator</span>')+'</td>'+
+      '<td><span class="chip '+esc(st.cls)+'">'+esc(st.label)+'</span></td>'+
+      '<td class="mono">'+(a?esc(num(a.submissions)):'<span class="note">—</span>')+'</td>'+
+      '<td class="note c-slate">'+rel(r.last_submission_at||(a&&a.last_submission_at))+'</td>'+
+      '<td class="note c-joined">'+esc(shortDate(r.joined_at))+'</td>'+
+      '<td><a class="linkdanger" data-rm="'+esc(r.creator_slug)+'" title="'+
+        (removed?'Already removed. Opening this still offers a full delete of their Collective data.'
+                :'Opens the impact panel. Nothing is deleted by clicking this.')+'">'+
+        (removed?'Removed':'Remove')+'</a></td></tr>';
   }).join('');
   /* The standard this list is read against, next to the list. "Last slate"
      is the column that decides whether somebody is participating, and it
      means nothing without the number it is being judged against. */
   var ACTIVE_NOTE='<p class="note" style="margin:8px 0 0">Active participation is at least '+
-    '<b>3 eligible model projections per week</b> in the member\u2019s declared sport or scope. Members who '+
-    'repeatedly fall short, or miss weeks without communication, may be moved to inactive or removed \u2014 they are '+
+    '<b>3 eligible model projections per week</b> in the member’s declared sport or scope. Members who '+
+    'repeatedly fall short, or miss weeks without communication, may be moved to inactive or removed — they are '+
     'told this on the invite, on the rules page, and by a live count on their own dashboard. <b>Last slate</b> is the '+
-    'column to read it against.</p>';
+    'column to read it against. Status is the one the server derives; <b>No submissions</b> is a fact about stored rows, '+
+    'not a judgement.</p>';
   app.innerHTML='<h1>Members</h1><p class="lede">Everyone in the Collective. Click a member for the full picture: identity, model, source, activity, and economics. Membership status is derived from submissions, never set by hand.</p>'+
-    '<div class="tblwrap"><table><thead><tr><th>Name</th><th>Model</th><th>Role</th><th>Status</th><th>Source</th><th>Last slate</th></tr></thead><tbody>'+
-    (rows||'<tr><td colspan="6" class="note" style="text-align:center;padding:14px">No members yet. Mint an invite under Invites.</td></tr>')+'</tbody></table></div>'+ACTIVE_NOTE;
+    (MEM_ACT_ERR?'<div class="err">Submission counts and removal are unavailable: '+esc(MEM_ACT_ERR)+'</div>':'')+
+    '<div class="tblwrap"><table id="memTable"><thead><tr><th>Name</th><th class="c-model">Model</th><th class="c-role">Role</th><th>Status</th><th>Subs</th><th class="c-slate">Last slate</th><th class="c-joined">Joined</th><th></th></tr></thead><tbody>'+
+    (rows||'<tr><td colspan="8" class="note" style="text-align:center;padding:14px">No members yet. Mint an invite under Invites.</td></tr>')+'</tbody></table></div>'+ACTIVE_NOTE;
   app.querySelectorAll('tr[data-m]').forEach(function(tr){
-    tr.onclick=function(){secMembers(app,tr.getAttribute('data-m'));};
+    tr.querySelectorAll('.go').forEach(function(td){
+      td.onclick=function(){secMembers(app,tr.getAttribute('data-m'));};
+    });
+  });
+  app.querySelectorAll('[data-rm]').forEach(function(a){
+    a.onclick=function(ev){
+      ev.preventDefault();ev.stopPropagation();
+      var slug=a.getAttribute('data-rm');
+      openRemoval(list.filter(function(x){return x.creator_slug===slug;})[0]||{creator_slug:slug},app);
+    };
   });
 }
 
-function memberDetail(app,r,esum){
+function memberDetail(app,r,esum,a){
   var econ;
   if(r.founding&&esum){
     var per=pct(founderSplit(esum,null).per_configured_bps);
@@ -501,32 +695,209 @@ function memberDetail(app,r,esum){
       (mo.source_ref?'<br><span class="note mono" style="font-size:11px">'+esc(mo.source_ref)+'</span>':'')+
       '<br><a href="/collective/#/model/'+esc(r.creator_slug)+'/'+esc(mo.slug)+'" target="_blank" rel="noopener" style="font-size:12px">View model &rarr;</a></div>';
   }).join('')||'<p class="note">No model yet.</p>';
+  var removed=!!(a&&a.removed_at);
   app.innerHTML='<p style="margin:0 0 10px"><a href="#" id="mBack">&larr; All members</a></p>'+
-    '<h1>'+esc(r.display_name)+' '+(r.founding?'<span class="chip warn">&#9733; Founding Member</span>':'<span class="chip">Creator</span>')+'</h1>'+
+    '<h1>'+esc(r.display_name)+' '+(r.founding?'<span class="chip warn">&#9733; Founding Member</span>':'<span class="chip">Creator</span>')+
+      (removed?' <span class="chip dead">Removed</span>':'')+'</h1>'+
     '<p class="lede">'+esc(r.description||'')+'</p>'+
+    (removed?'<div class="panel" style="border-color:rgba(226,96,68,.4)"><b style="color:var(--neg)">Removed from the Collective</b>'+
+      '<p class="note" style="margin:6px 0 0">'+esc(shortDate(a.removed_at))+' · '+
+      esc(a.removal_mode==='full_collective_delete'?'membership revoked and Collective data deleted':'membership revoked, history kept')+
+      '. Their EdgeDesk account was not touched.</p></div>':'')+
     '<div class="grid2">'+
     '<div class="panel"><h2 style="margin:0 0 8px">Identity</h2>'+
       '<div class="note">Slug <span class="mono" style="color:var(--text)">'+esc(r.creator_slug)+'</span></div>'+
-      '<div class="note" style="margin-top:4px">Joined '+new Date(r.joined_at).toLocaleDateString()+'</div>'+
+      '<div class="note" style="margin-top:4px">Joined '+esc(shortDate(r.joined_at))+'</div>'+
       '<div class="note" style="margin-top:4px">Account <b style="color:var(--text)">'+esc(r.account_status)+'</b> &middot; '+esc(r.membership)+'</div>'+
       (r.website_url?'<div class="note" style="margin-top:4px"><a href="'+esc(r.website_url)+'" target="_blank" rel="noopener">'+esc(r.website_url)+'</a></div>':'')+
       '<p style="margin:10px 0 0;font-size:12px"><a href="/collective/#/'+esc(r.creator_slug)+'" target="_blank" rel="noopener">Public profile &rarr;</a></p></div>'+
     '<div class="panel"><h2 style="margin:0 0 8px">Model</h2>'+models+'</div>'+
     '<div class="panel"><h2 style="margin:0 0 8px">Activity</h2>'+
-      '<div class="note">Last slate <b style="color:var(--text)">'+rel(r.last_submission_at)+'</b></div>'+
+      '<div class="note">Last slate <b style="color:var(--text)">'+rel(r.last_submission_at||(a&&a.last_submission_at))+'</b></div>'+
+      '<div class="note" style="margin-top:4px">Submissions stored <b style="color:var(--text)">'+(a?esc(num(a.submissions)):'—')+'</b>'+
+        (a?' · '+esc(num(a.graded))+' graded':'')+'</div>'+
       '<div class="note" style="margin-top:4px">Active keys <span class="mono" style="font-size:11px;color:var(--text)">'+esc((r.key_prefixes||[]).join(', ')||'none')+'</span></div>'+
       '<div class="note" style="margin-top:4px">Embed domains '+esc((r.origins||[]).join(', ')||'none')+'</div></div>'+
     '<div class="panel"><h2 style="margin:0 0 8px">Economics</h2>'+econ+'</div>'+
     '</div>'+
-    '<div style="display:flex;gap:8px;margin-top:6px">'+
+    '<div style="display:flex;gap:8px;margin-top:6px;flex-wrap:wrap">'+
     '<button class="btn" id="mResend">Resend invite</button>'+
-    '</div><p class="note" style="margin-top:8px">Resend mints a fresh invite link prefilled for this member (useful if they need to sign in on a new account). Profile edits belong to the creator, from their own dashboard.</p>';
+    '<button class="btn danger" id="mRemove">Remove contributor</button>'+
+    '</div><p class="note" style="margin-top:8px">Resend mints a fresh invite link prefilled for this member (useful if they need to sign in on a new account). Profile edits belong to the creator, from their own dashboard. Remove opens the impact panel first: nothing is deleted by clicking it.</p>';
   $('mBack').onclick=function(ev){ev.preventDefault();secMembers(app);};
+  $('mRemove').onclick=function(){openRemoval(r,app);};
   $('mResend').onclick=function(){
     IV_PREFILL={display_name:r.display_name,model_name:(r.models[0]||{}).name,
       source_kind:(r.models[0]||{}).source_kind,founding:r.founding};
     SEC='invites';nav();render();
   };
+}
+
+/* ================= removing a contributor =================
+   NOTHING IS DELETED BY OPENING THIS. The panel is a read: it asks the
+   database what a removal would touch and shows the answer, per table, with
+   the row counts the database counted. The admin then picks one of two
+   removals, and the destructive one is refused by the SERVER unless the word
+   DELETE is typed — the box below is a courtesy, not the check. */
+function closeRemoval(){
+  var m=$('rmMask');
+  if(m){m.remove();document.removeEventListener('keydown',removalKeys);}
+}
+function removalKeys(e){ if(e.key==='Escape'&&!REMOVAL_BUSY)closeRemoval(); }
+
+async function openRemoval(row,app){
+  closeRemoval();
+  var slug=row.creator_slug;
+  var mask=document.createElement('div');
+  mask.className='mask';mask.id='rmMask';
+  mask.innerHTML='<div class="sheet" role="dialog" aria-modal="true" aria-label="Remove contributor">'+
+    '<span class="close" id="rmX">&times;</span><h2>Remove contributor</h2>'+
+    '<p class="note" id="rmWho">'+esc(row.display_name||slug)+'</p>'+
+    '<div class="panel note" style="margin:12px 0 0">Reading what this would touch&hellip;</div></div>';
+  mask.onclick=function(e){if(e.target===mask&&!REMOVAL_BUSY)closeRemoval();};
+  document.body.appendChild(mask);
+  document.addEventListener('keydown',removalKeys);
+  $('rmX').onclick=function(){if(!REMOVAL_BUSY)closeRemoval();};
+
+  var pv;
+  try{ pv=await rpc('collective_member_removal_preview',{p_creator_slug:slug}); }
+  catch(e){ pv={ok:false,code:e.notInstalled?'not_installed':'error',message:e.notInstalled?MIGRATION_NOTE:e.message}; }
+  if(!$('rmMask'))return;
+  if(!pv||!pv.ok){
+    $('rmMask').querySelector('.sheet').innerHTML=
+      '<span class="close" id="rmX2">&times;</span><h2>Remove contributor</h2>'+
+      '<div class="err">'+esc((pv&&pv.message)||'The impact could not be read, so nothing is offered here.')+'</div>'+
+      '<button class="btn" id="rmClose2">Close</button>';
+    $('rmX2').onclick=closeRemoval;$('rmClose2').onclick=closeRemoval;
+    return;
+  }
+  renderRemoval(pv,row,app);
+}
+
+function renderRemoval(pv,row,app){
+  var c=pv.creator||{},g=pv.guards||{},cnt=pv.counts||{};
+  var slug=c.slug||row.creator_slug;
+  var mode='membership_only';
+  var sheet=$('rmMask').querySelector('.sheet');
+
+  function optionHTML(){
+    var A='<div class="opt'+(mode==='membership_only'?' on':'')+'" data-mode="membership_only">'+
+      '<b>Remove from the Collective only</b>'+
+      '<ul><li>Membership and access revoked; every submission key and embed domain deleted</li>'+
+      '<li>Every submission, grade and record kept exactly as it stands</li>'+
+      '<li>They can no longer post to the Collective</li>'+
+      '<li>Their EdgeDesk account is untouched</li></ul></div>';
+    var B='<div class="opt danger'+(mode==='full_collective_delete'?' on':'')+'" data-mode="full_collective_delete">'+
+      '<b style="color:var(--neg)">Remove and delete their Collective data</b>'+
+      '<ul><li>Everything above, and every Collective row underneath them is deleted</li>'+
+      '<li>Consensus, calibration, records and leaderboards are recomputed without them</li>'+
+      '<li>Their EdgeDesk account, the earnings ledger, games and market data are untouched</li>'+
+      '<li><b style="color:var(--neg)">This cannot be undone.</b></li></ul></div>';
+    return A+B;
+  }
+  function impactHTML(){
+    var L=impactLines(pv,mode);
+    function col(cls,title,arr){
+      return '<div class="col '+cls+'"><h3>'+title+'</h3>'+arr.map(function(x){
+        return '<div class="r"><span>'+esc(x[0])+'</span><span>'+esc(typeof x[1]==='number'?num(x[1]):(x[1]==null?'—':x[1]))+'</span></div>';
+      }).join('')+'</div>';
+    }
+    return '<div class="impact">'+col('del','Will be deleted',L.del)+col('','Will be preserved',L.keep)+'</div>';
+  }
+  function confirmHTML(){
+    if(mode!=='full_collective_delete')return '';
+    return '<label for="rmType">Type <b class="mono" style="color:var(--neg)">DELETE</b> to confirm</label>'+
+      '<input id="rmType" autocomplete="off" spellcheck="false" placeholder="DELETE">'+
+      '<p class="note" style="margin:6px 0 0">The server checks this word too. A request without it is refused whatever this page sends.</p>';
+  }
+
+  sheet.innerHTML=
+    '<span class="close" id="rmX">&times;</span>'+
+    '<h2>Remove '+esc(c.display_name||row.display_name||slug)+'</h2>'+
+    '<p class="note mono" style="margin:0">'+esc(slug)+
+      ((row.models&&row.models.length)?' · '+esc(row.models.map(function(m){return m.name;}).join(', ')):
+        ((pv.models&&pv.models.length)?' · '+esc(pv.models.map(function(m){return m.name;}).join(', ')):''))+'</p>'+
+    (g.already_removed?'<p class="warnnote" style="margin:8px 0 0">Already removed on '+esc(shortDate(c.removed_at))+
+       '. A membership removal would change nothing; a full delete would still remove the history below.</p>':'')+
+    (g.actor_is_target?'<div class="err" style="margin:10px 0 0">This is your own account. An administrator cannot remove themselves here — ask another administrator.</div>':'')+
+    (g.target_is_admin&&!g.actor_is_target?'<div class="err" style="margin:10px 0 0"><b>This contributor is a Collective administrator.</b> Removing them does not remove their admin rights: those live in the config key <span class="mono">admin.user_ids</span> and have to be changed there as well.'+
+       (g.admin_count<=1?' They are also the ONLY configured administrator, so this removal will be refused.':'')+'</div>':'')+
+    '<div class="facts">'+
+      '<div class="f"><div class="k">Joined</div><div class="v" style="font-size:13px">'+esc(shortDate(c.joined_at))+'</div></div>'+
+      '<div class="f"><div class="k">Submissions</div><div class="v">'+esc(num(cnt.submissions))+'</div></div>'+
+      '<div class="f"><div class="k">Graded</div><div class="v">'+esc(num(cnt.graded))+'</div></div>'+
+      '<div class="f"><div class="k">Pending</div><div class="v">'+esc(num(cnt.pending))+'</div></div>'+
+      (cnt.quarantined?'<div class="f"><div class="k">Quarantined</div><div class="v">'+esc(num(cnt.quarantined))+'</div></div>':'')+
+      '<div class="f"><div class="k">Last slate</div><div class="v" style="font-size:13px">'+esc(rel(cnt.last_submission_at))+'</div></div>'+
+    '</div>'+
+    '<div id="rmOpts">'+optionHTML()+'</div>'+
+    '<div id="rmImpact">'+impactHTML()+'</div>'+
+    '<div id="rmConfirm">'+confirmHTML()+'</div>'+
+    '<div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap">'+
+      '<button class="btn" id="rmCancel">Cancel</button>'+
+      '<button class="btn primary" id="rmGo">Remove from the Collective</button>'+
+    '</div><div id="rmErr"></div>';
+
+  function paint(){
+    $('rmOpts').innerHTML=optionHTML();
+    $('rmImpact').innerHTML=impactHTML();
+    $('rmConfirm').innerHTML=confirmHTML();
+    var go=$('rmGo');
+    go.className='btn '+(mode==='full_collective_delete'?'danger solid':'primary');
+    go.textContent=mode==='full_collective_delete'
+      ? 'Delete '+num(cnt.submissions)+' submission'+(Number(cnt.submissions)===1?'':'s')+' and remove'
+      : 'Remove from the Collective';
+    wire();
+    gate();
+  }
+  function gate(){
+    var go=$('rmGo');
+    var blocked=!!g.actor_is_target||REMOVAL_BUSY;
+    if(mode==='full_collective_delete'){
+      var t=$('rmType');
+      blocked=blocked||!t||t.value.trim()!=='DELETE';
+    }
+    go.disabled=blocked;
+  }
+  function wire(){
+    $('rmOpts').querySelectorAll('.opt').forEach(function(o){
+      o.onclick=function(){mode=o.getAttribute('data-mode');paint();};
+    });
+    var t=$('rmType');if(t)t.oninput=gate;
+  }
+  $('rmX').onclick=function(){if(!REMOVAL_BUSY)closeRemoval();};
+  $('rmCancel').onclick=function(){if(!REMOVAL_BUSY)closeRemoval();};
+  $('rmGo').onclick=async function(){
+    /* One request per click, and one click per removal. A double-click used to
+       be the classic way to run a destructive action twice; the database
+       serializes it too, but the second request should never leave here. */
+    if(REMOVAL_BUSY)return;
+    REMOVAL_BUSY=true;this.disabled=true;var label=this.textContent;this.textContent='Removing…';
+    var res=null,errMsg=null;
+    try{
+      res=await rpc('collective_member_remove',{
+        p_creator_slug:slug,p_mode:mode,
+        p_confirm:mode==='full_collective_delete'?(($('rmType')||{}).value||'').trim():null});
+    }catch(e){ errMsg=e.notInstalled?MIGRATION_NOTE:e.message; }
+    REMOVAL_BUSY=false;
+    if(errMsg||!res||!res.ok){
+      var m=errMsg||(res&&res.message)||'The removal failed. Nothing was changed.';
+      var box=$('rmErr');
+      if(box){box.innerHTML='<div class="err">'+esc(m)+'</div>';}
+      var b=$('rmGo');if(b){b.disabled=false;b.textContent=label;}
+      gate();
+      toast(m,'bad');
+      return;
+    }
+    closeRemoval();
+    toast(removalMessage(res),'good');
+    /* Refresh from the server rather than patching the row in place: the
+       counts on this screen are the database's, and after a removal they have
+       all moved. No hard reload. */
+    MEM_ACT=null;
+    if(app)secMembers(app);
+  };
+  paint();
 }
 
 async function secQuarantine(app){
