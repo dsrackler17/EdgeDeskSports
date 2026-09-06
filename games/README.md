@@ -1163,12 +1163,11 @@ twenty seeds and refuses any outside the band.
 ## Deploying it
 
 1. Apply `supabase/games_social.sql` (already required by Head-to-Head).
-2. Apply `supabase/games_franchise.sql`. Its report should print twelve
-   `ok` rows. It is safe to re-run over a Phase 1 installation: the new
-   tables, the opponent pool, the new activity kinds and achievement rows
-   are added and nothing existing is rewritten. Until it is applied, the
-   Front Office, the Roster and Game Day say so, and Price It, Pick 5 and
-   the Drill are unaffected.
+2. Apply `supabase/games_franchise.sql`. Its report should print **27 `ok`
+   rows**, numbered 0 to 26. It is safe to re-run over any earlier phase: new
+   tables, columns, pool rows and achievement rows are added and nothing
+   existing is rewritten. Until it is applied, the Front Office, the Roster
+   and Game Day say so, and Price It, Pick 5 and the Drill are unaffected.
 3. Nothing else. `games/publish_board.js` runs from the existing
    `games-challenges.yml` (publishes the board) and `games-settle.yml`
    (publishes finals and settles Pick 5) with the repository's existing
@@ -1176,6 +1175,52 @@ twenty seeds and refuses any outside the band.
    having done nothing. **No new secret is required.**
 
 `/games/status` probes the layer and names the file to apply.
+
+### What this database has — `games_schema_log`
+
+Paste-and-re-run is the deployment story here, and it is staying: no runner
+to install, no ordered directory to keep in step, every file safe to run
+again. It had exactly one hole, and it was not idempotency — the suites
+apply every file twice, every run. It was that **nothing could tell you what
+a database had.** A project three phases behind looked identical to a
+current one right up until a page called a function that was not there, and
+`/games/status` had two words for the whole question: deployed, or not.
+
+So every phase of every file now records itself as it applies:
+
+```sql
+select public.games_schema_note('franchise', 8, 'the coaching staff');
+```
+
+One row in `games_schema_log`, keyed `layer.phase`. The **first-applied date
+never moves** — that is when this database got the phase, and it is the
+useful one — while a re-run bumps `reapplied_at` and a run counter, so "when
+did we last paste it" is answerable too. The log is a **record, not a
+runner**: it gates nothing, blocks nothing, and applying a file is still the
+entire deployment.
+
+`games_schema()` is the read model, granted to `anon`, returning phase names
+and dates and nothing about anybody. Its layer keys are not a hard-coded
+list — a layer appears because it recorded itself, so `games_social.sql`
+still knows nothing about the files applied on top of it.
+
+Three places read that record, and all three must agree:
+
+| where | what it does |
+| --- | --- |
+| `/games/status` | a **Database schema** row: what is installed, what this build wants, and — when they differ — the missing phases **by name** and the file to paste |
+| `npm run games:schema` | the same answer in a terminal; `--live` calls `games_schema()` and **exits 1 if the database is behind**, so a deploy check can use it |
+| `games/lib/franchise.js` | `SCHEMA_PHASES`, the client's mirror of the phase names, and `schemaGap()`, which turns a version into an instruction |
+
+The mirror is pinned to the SQL by `tools/games/franchise.test.js` — a new
+phase that forgets to record itself, or a name that drifts between the file
+and the client, goes red. Adding a phase is two lines: the
+`games_schema_note()` call at the end of the SQL, and its name at the end of
+`SCHEMA_PHASES`.
+
+A database applied **before** the log existed has no `games_schema()` at
+all. Both the status page and the tool say exactly that, and say to re-apply
+both files rather than guessing.
 
 ## Analytics
 
@@ -1622,6 +1667,109 @@ into an empty seat and refusing a filled one, a promotion that buys what
 the purse can afford and says it fell short, a coordinator taken to level
 301 for the 4,650 Coach Points the table says it costs, and a firing that
 takes the level with him.
+
+## Phase 9 — the scouting department
+
+`scouting_v1`. **What reading real football well is worth.**
+
+Eight phases in, the two halves of this game touched in exactly one place:
+currency. Price a game and you earn XP, Scouting Points and Team Credits.
+Price it *well* and you earn a few more of each. Nothing in the franchise had
+ever known whether you were any good at it.
+
+The evidence was already in the file. `franchise_prep()` computes three
+numbers every football week. Two of them count **volume** — how many games you
+priced, whether you sent a card, whether you ran a drill — and the simulator
+reads one of those. The third is **Market IQ**, the average Price It score, the
+only measure of *accuracy* anywhere in the schema, and it was computed,
+returned, and read by nothing. Not by the simulator, not by a page. A dead
+stat, and behind it a dead dimension: skill at the real game made you richer
+and never better.
+
+So: a scouting department, graded on how well you actually price games, and
+what it is good at is finding football players.
+
+### The grade
+
+The average Price It score over your **last twenty verified pricings** — not a
+week, because three games is noise, and not all time, because a department is
+what it is doing now. An imported history earns XP and is not evidence, so it
+is not counted.
+
+Short of twenty on the record, the grade is pulled toward a neutral **50** in
+proportion to what is missing:
+
+```
+grade = (average × priced + 50 × (20 − priced)) / 20
+```
+
+A new franchise therefore starts in the middle — not punished for having no
+record, and not an A on one lucky pricing. Five perfect pricings grade 63, not
+100. The twentieth pricing is worth more than the first, which is the point.
+
+| Grade | From | Band | Report | Ceiling | Picks |
+| --- | --- | --- | --- | --- | --- |
+| Unrated | 0 | 18 pts | 28 SP | — | 2 |
+| Regional scout | 40 | 12 pts | 22 SP | — | 2 |
+| Area scout | 55 | 10 pts | 19 SP | +1 | 2 |
+| National scout | 68 | 8 pts | 17 SP | +2 | 2 |
+| Scouting director | 80 | 7 pts | 15 SP | +4 | 2 |
+| War room | 90 | 5 pts | 14 SP | +5 | **3** |
+
+**The ends are chosen so that neutral is the status quo.** At grade 50 the band
+is 11 points and a report is 20 Scouting Points — exactly what every class was
+shown at and every report cost before this phase, and no extra ceiling.
+`scouting_v1` only ever *differentiates*: read games well and you see more for
+less; read them badly and you see less for more; do neither and nothing
+changed.
+
+### What it buys, and when it is decided
+
+Everything is in the draft window, and all of it is decided **once**, when the
+window opens, from the grade standing at that moment:
+
+* **the band** an unscouted prospect is shown in. The true overall is
+  **uniform inside the band** — the rule is in the file and anyone may read
+  it, so the honest thing is for the band to mean exactly what it looks like.
+  The band always contains the truth, so a report never contradicts it;
+* **the price of a report**;
+* **the ceiling of the class** — up to six points of upside. It raises
+  **potential, never overall**: a good department does not make a
+  nineteen-year-old better today, it finds the one who will be. Rarity is
+  restated by the generator's own rule so it does not go stale;
+* **an extra pick**, at the top grade and only there.
+
+Decided once, on purpose. The grade the window opened under is stamped on the
+franchise (`franchises.scout_grade`) and the band on every prospect
+(`game_players.scout_band`), and neither moves again until the next window. A
+class cannot be improved by pricing games after you have seen it, and cannot
+be taken away by a bad week either. The consequence is that **the weeks before
+an offseason are the ones that matter**, which is exactly the habit this is
+meant to reward. The Draft & Market page says both numbers — the department
+that found this class, and the one you have now — because they are different
+questions.
+
+### What it does not touch
+
+Not the simulator, not team overall, not a rating on any player already on the
+roster, not Saturday. Reading real football well decides **who you find**. It
+has never decided, and does not now decide, how the game itself goes — that is
+the roster's and the staff's job.
+
+Only Price It feeds the grade. Pick 5 and the Drill measure real skill too and
+are deliberately left out: Price It is the game where you set a number against
+EdgeDesk's own, and a scouting grade should mean one thing.
+
+A class opened before this phase has no grade, and is shown and priced the way
+it always was.
+
+Report row 27 covers it. The SQL suite walks all four curves step by step (the
+band never widens, the report never cheapens as the grade falls, the lift is
+zero everywhere below neutral), rolls a twenty-game window from perfect to
+terrible, opens the same seeded class under two opposite departments to prove
+the overalls are identical and only the potential differs, and checks at
+**every width from 4 to 20** that the band contains the true overall and is
+exactly as wide as it says.
 
 ## Not built yet, on purpose
 

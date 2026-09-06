@@ -535,4 +535,89 @@ begin
 end;
 $t5$;
 
+-- ═══ 11. THE SCHEMA LOG ═══════════════════════════════════════════════════
+-- The files here are pasted and re-run rather than migrated, and for eight
+-- phases nothing could say WHICH of them a database had. The log is a record,
+-- not a runner: it gates nothing, and re-running a file is still safe. What
+-- these assertions defend is that the record is TRUE — the first-applied date
+-- never moves, a re-run is visible as a re-run, a layer this file has never
+-- heard of still shows up, and no client role can read or forge it.
+do $t6$
+declare v jsonb; a timestamptz; r integer; caught text;
+begin
+  perform pg_temp.as_owner();
+
+  perform pg_temp.ok('the social layer recorded itself',
+    (public.games_schema()->>'social')::int >= 1);
+  perform pg_temp.ok('and recorded what it is, by name',
+    exists (select 1 from public.games_schema_log
+             where id = 'social.1' and name = 'Head-to-Head, Groups, ratings and the activity feed'));
+  perform pg_temp.ok('every phase in the log carries a name and a date',
+    not exists (select 1 from public.games_schema_log where name = '' or applied_at is null));
+
+  -- A RE-RUN IS VISIBLE AS A RE-RUN, and the first-applied date is the one
+  -- that answers "when did this database get this phase" — it must not move.
+  select applied_at, runs into a, r from public.games_schema_log where id = 'social.1';
+  perform public.games_schema_note('social', 1, 'Head-to-Head, Groups, ratings and the activity feed');
+  perform pg_temp.ok('a re-run never moves the first-applied date',
+    (select applied_at from public.games_schema_log where id = 'social.1') = a);
+  perform pg_temp.ok('a re-run counts itself',
+    (select runs from public.games_schema_log where id = 'social.1') = r + 1);
+  perform pg_temp.ok('and stamps when it happened',
+    (select reapplied_at from public.games_schema_log where id = 'social.1') is not null);
+
+  -- THIS FILE IS THE BASE LAYER and knows nothing about what is applied on
+  -- top of it. A layer appears in the read model because it recorded itself.
+  perform public.games_schema_note('a_later_layer', 3, 'something built on top');
+  perform pg_temp.ok('a layer this file has never heard of needs no edit here',
+    (public.games_schema()->>'a_later_layer')::int = 3);
+  delete from public.games_schema_log where layer = 'a_later_layer';
+  perform pg_temp.ok('and leaves nothing behind when it is gone',
+    public.games_schema() ? 'a_later_layer' is false);
+
+  -- the read model carries the detail a page needs, and nothing about anybody
+  v := public.games_schema();
+  perform pg_temp.ok('the read model lists every phase with its dates',
+    jsonb_typeof(v->'phases') = 'array'
+    and jsonb_array_length(v->'phases') = (select count(*) from public.games_schema_log)
+    and (v->'phases'->0) ? 'name' and (v->'phases'->0) ? 'applied_at');
+
+  -- NO CLIENT ROLE READS THE TABLE OR WRITES THE LOG. Supabase grants anon
+  -- select and insert on every table by default, exactly as the shim does, so
+  -- RLS with NO POLICY is the whole defence: the read returns nothing and the
+  -- write is refused. games_schema() is the only door, and it returns names
+  -- and dates.
+  declare n_rows integer; n_seen integer;
+  begin
+    select count(*) into n_rows from public.games_schema_log;
+    perform pg_temp.as_anon();
+    select count(*) into n_seen from public.games_schema_log;
+    perform pg_temp.ok('the log has rows to hide', n_rows > 0);
+    perform pg_temp.ok('an anonymous visitor reads none of them', n_seen = 0, 'saw ' || n_seen);
+  end;
+
+  begin
+    perform pg_temp.as_anon();
+    insert into public.games_schema_log (id, layer, phase, name)
+      values ('forged.1', 'forged', 1, 'a phase that never applied');
+    caught := null;
+  exception when others then caught := SQLERRM; end;
+  perform pg_temp.ok('and cannot write a row into it directly', caught is not null);
+
+  begin
+    perform pg_temp.as_anon();
+    perform public.games_schema_note('forged', 1, 'a phase that never applied');
+    caught := null;
+  exception when others then caught := SQLERRM; end;
+  perform pg_temp.ok('and cannot forge a phase', caught is not null);
+  perform pg_temp.ok('nothing was forged',
+    not exists (select 1 from public.games_schema_log where layer = 'forged'));
+
+  perform pg_temp.as_anon();
+  perform pg_temp.ok('but anon can ask what is installed',
+    (public.games_schema()->>'social')::int >= 1);
+  perform pg_temp.as_owner();
+end;
+$t6$;
+
 select 'PASS | games social SQL' as result;

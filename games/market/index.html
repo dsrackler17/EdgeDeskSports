@@ -27,8 +27,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/games/games.css?v=20260906d">
-<link rel="stylesheet" href="/games/franchise.css?v=20260906d">
+<link rel="stylesheet" href="/games/games.css?v=20260906f">
+<link rel="stylesheet" href="/games/franchise.css?v=20260906f">
 </head>
 <body>
 <div id="gh"></div>
@@ -48,17 +48,17 @@
 <div id="gt"></div>
 <div id="gf"></div>
 
-<script src="/games/lib/week.js?v=20260906d"></script>
-<script src="/games/lib/scoring.js?v=20260906d"></script>
-<script src="/games/lib/challenge.js?v=20260906d"></script>
-<script src="/games/lib/research_state.js?v=20260906d"></script>
-<script src="/games/lib/attribution.js?v=20260906d"></script>
-<script src="/games/lib/store.js?v=20260906d"></script>
-<script src="/games/lib/dynasty.js?v=20260906d"></script>
-<script src="/games/lib/social.js?v=20260906d"></script>
-<script src="/games/lib/auth.js?v=20260906d"></script>
-<script src="/games/lib/franchise.js?v=20260906d"></script>
-<script src="/games/games.js?v=20260906d"></script>
+<script src="/games/lib/week.js?v=20260906f"></script>
+<script src="/games/lib/scoring.js?v=20260906f"></script>
+<script src="/games/lib/challenge.js?v=20260906f"></script>
+<script src="/games/lib/research_state.js?v=20260906f"></script>
+<script src="/games/lib/attribution.js?v=20260906f"></script>
+<script src="/games/lib/store.js?v=20260906f"></script>
+<script src="/games/lib/dynasty.js?v=20260906f"></script>
+<script src="/games/lib/social.js?v=20260906f"></script>
+<script src="/games/lib/auth.js?v=20260906f"></script>
+<script src="/games/lib/franchise.js?v=20260906f"></script>
+<script src="/games/games.js?v=20260906f"></script>
 <script>
 /* STALE SCRIPT GUARD. A browser can keep an old games.js or store.js for
    longer than it keeps this page, and a page built for the new library
@@ -116,6 +116,44 @@
   }
 
   /* ---- the board ---------------------------------------------------------- */
+  /* WHAT A REPORT COSTS ON THIS CLASS. The board carries scout_cost — the
+     price set by the department that found the class (scouting_v1) — and
+     falls back to the flat market_v1 rule for a class opened before Phase 9. */
+  function cost(b){ return (b&&b.scout_cost!=null)?(b.scout_cost|0):(b&&b.rules?b.rules.scout_sp|0:FR.MARKET.scout_sp); }
+
+  /* THE DEPARTMENT, and it is two questions, not one:
+       what found THIS class — fixed, and the reason the cards below look the
+         way they do;
+       what the department is NOW — the grade the NEXT window will open
+         under, and the only reason to price another game before the offseason.
+     When they differ, say so plainly and say what the difference is worth. */
+  function department(b){
+    var d=b.department,now=b.scouting||{},nx=FR.scoutNext(now.score);
+    var live='<div class="sd-now"><div class="k">Right now</div>'
+      +'<div class="v">'+esc(FR.scoutGradeOf(now.score).name)+'<small>'+esc(FR.scoutLine(now))+'</small></div>'
+      +(now.settled?'':'<div class="sd-fill">'+esc(Math.max(0,FR.SCOUTING.window-(now.priced|0)))
+        +' more priced games and the grade is your own — until then it is pulled toward '+esc(FR.SCOUTING.neutral)+'.</div>')
+      +(nx?('<div class="sd-next"><b>'+esc(nx.name)+'</b> at '+esc(nx.at)+', '+esc(nx.need)+' away — '
+        +'a band of '+esc(FR.scoutBand(nx.at))+' points, a report for '+esc(FR.scoutCost(nx.at))+' SP'
+        +(FR.scoutLift(nx.at)>FR.scoutLift(now.score)?', +'+esc(FR.scoutLift(nx.at))+' potential across the class':'')
+        +(nx.at>=FR.SCOUTING.extra_pick?', and a third pick':'')+'.</div>')
+        :'<div class="sd-next">Top grade. Nothing above this.</div>')
+      +'</div>';
+    var found=d?('<div class="sd-found"><div class="k">This class was found by</div>'
+      +'<div class="v">'+esc(d.grade_name)+'<small>'+esc(d.score)+'</small></div>'
+      +'<div class="sd-fill">A band of '+esc(d.band)+' points on every unscouted card, a report for '+esc(d.report_cost)+' SP'
+      +(d.lift>0?', and '+esc(d.lift)+' point'+(d.lift===1?'':'s')+' of potential the department found':', and no extra potential')
+      +'.</div></div>')
+      :'<div class="sd-found"><div class="k">This class was found by</div><div class="v">—<small>before Phase 9</small></div>'
+      +'<div class="sd-fill">Opened before the department existed, so it is shown and priced the way every class used to be.</div></div>';
+    return '<div class="sec"><div class="sec-h"><h2>The scouting department</h2>'
+      +'<span class="m">'+esc(FR.SCOUTING_VERSION)+'</span></div><div class="card sd">'
+      +found+live
+      +'<div class="ftp" style="margin-top:12px">The grade is the average <a href="/games/price-it/">Price It</a> score over your '
+      +'last '+esc(FR.SCOUTING.window)+' games, and it is the server’s to compute. It decides what a class LOOKS like and what it '
+      +'COSTS to look — never how a Saturday goes, and never a rating on anybody already on the roster.</div></div></div>';
+  }
+
   function renderStage(b){
     var snap=FR.snapshot()||{},f=snap.franchise||{},res=b.resources||{},room=FR.rosterRoom(b.roster),w=b.window||{};
     stage.className='card';
@@ -127,7 +165,7 @@
       +' · <b>'+esc(b.scouted|0)+' scouted</b></div></div>'
       +'<div class="hq-rec">'+esc(b.picks|0)+'<span class="s">pick'+((b.picks|0)===1?'':'s')+' left</span></div></div>'
       +'<div class="mk-sum">'
-      +'<div class="sp"><div class="k">Scouting</div><div class="v">'+esc(fmt(res.scouting_points))+'<small>a report is '+esc(b.rules.scout_sp)+' SP</small></div></div>'
+      +'<div class="sp"><div class="k">Scouting</div><div class="v">'+esc(fmt(res.scouting_points))+'<small>a report is '+esc(cost(b))+' SP</small></div></div>'
       +'<div class="tc"><div class="k">Credits</div><div class="v">'+esc(fmt(res.team_credits))+'<small>free agents ask TC</small></div></div>'
       +'<div><div class="k">Roster</div><div class="v">'+esc(room.active)+'<small>of '+esc(room.max)+' · '+(room.room?room.room+' open':'full')+'</small></div></div>'
       +'<div><div class="k">Drafted</div><div class="v">'+esc(b.drafted|0)+'<small>this window</small></div></div>'
@@ -150,12 +188,13 @@
       body='<div class="pc-range"><b>'+esc(p.range?p.range[0]+'–'+p.range[1]:'?')+'</b><span>OVR</span></div>'
         +'<div class="pc-name">'+esc(FR.fullName(p))+'</div><div class="pc-arch">'+esc(p.archetype||'')+' · potential unknown</div>'
         +'<div class="pc-hidden"><i></i><i></i><i></i><i></i></div>'
-        +'<div class="pc-line">The ratings, the potential, the tier and any trait are in the report.</div>';
+        +'<div class="pc-line">'+(p.band?'A '+esc(p.band)+'-point band — the true number is anywhere inside it. ':'')
+        +'The ratings, the potential, the tier and any trait are in the report.</div>';
     }
-    var canScout=!known&&(b.resources.scouting_points|0)>=(b.rules.scout_sp|0);
+    var canScout=!known&&(b.resources.scouting_points|0)>=(cost(b)|0);
     var acts='<div class="pc-actions">'
-      +(!known?(canScout?'<button class="btn btn-go" type="button" data-scout="'+esc(p.id)+'">Scout · '+esc(b.rules.scout_sp)+' SP</button>'
-                        :'<span class="pc-line">Report: '+esc(b.rules.scout_sp)+' SP · '+esc(fmt(b.resources.scouting_points))+' on hand · <a href="/games/price-it/">earn more in Price It</a></span>'):'')
+      +(!known?(canScout?'<button class="btn btn-go" type="button" data-scout="'+esc(p.id)+'">Scout · '+esc(cost(b))+' SP</button>'
+                        :'<span class="pc-line">Report: '+esc(cost(b))+' SP · '+esc(fmt(b.resources.scouting_points))+' on hand · <a href="/games/price-it/">earn more in Price It</a></span>'):'')
       +((b.picks|0)>0&&!room.full?'<button class="btn'+(known?' btn-go':'')+'" type="button" data-draft="'+esc(p.id)+'" data-name="'+esc(FR.fullName(p))+'" data-known="'+(known?'1':'0')+'">'+(known?'Draft':'Draft unscouted')+'</button>'
         :(b.picks|0)>0?'<span class="pc-line">Roster full — release a player on the <a href="/games/roster/">roster</a> to draft.</span>':'')
       +'</div>';
@@ -186,10 +225,11 @@
     renderStage(b);
     var room=FR.rosterRoom(b.roster);
     rooms.innerHTML=
-      '<div class="sec"><div class="sec-h"><h2>The draft class</h2><span class="m">'+esc(b.window.label||'')+' · '+esc(b.picks|0)+' pick'+((b.picks|0)===1?'':'s')+' left</span></div>'
+      department(b)
+      +'<div class="sec"><div class="sec-h"><h2>The draft class</h2><span class="m">'+esc(b.window.label||'')+' · '+esc(b.picks|0)+' pick'+((b.picks|0)===1?'':'s')+' left</span></div>'
       +(b.prospects.length?'<div class="pc-grid">'+b.prospects.map(function(p){return prospectCard(p,b);}).join('')+'</div>'
         :'<div class="card"><div class="empty">The class is empty until the next offseason. Every prospect not drafted then was passed over.</div></div>')
-      +'<div class="ftp" style="margin-top:10px">A report is '+esc(b.rules.scout_sp)+' Scouting Points and reveals one prospect for good. Picks are '+esc(b.rules.picks)+' a window and do not carry over. '
+      +'<div class="ftp" style="margin-top:10px">A report is '+esc(cost(b))+' Scouting Points and reveals one prospect for good. Picks are '+esc(b.rules.picks)+' a window and do not carry over. '
       +'A drafted prospect joins at the bottom of his position’s chart.</div></div>'
       +'<div class="sec"><div class="sec-h"><h2>Free agents</h2><span class="m">'+esc(b.agents.length)+' on the market</span></div>'
       +(b.agents.length?'<div class="pc-grid">'+b.agents.map(function(p){return agentCard(p,b);}).join('')+'</div>'

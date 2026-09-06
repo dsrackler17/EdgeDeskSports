@@ -27,8 +27,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/games/games.css?v=20260906d">
-<link rel="stylesheet" href="/games/franchise.css?v=20260906d">
+<link rel="stylesheet" href="/games/games.css?v=20260906f">
+<link rel="stylesheet" href="/games/franchise.css?v=20260906f">
 </head>
 <body>
 <div id="gh"></div>
@@ -48,17 +48,17 @@
 <div id="gt"></div>
 <div id="gf"></div>
 
-<script src="/games/lib/week.js?v=20260906d"></script>
-<script src="/games/lib/scoring.js?v=20260906d"></script>
-<script src="/games/lib/challenge.js?v=20260906d"></script>
-<script src="/games/lib/research_state.js?v=20260906d"></script>
-<script src="/games/lib/attribution.js?v=20260906d"></script>
-<script src="/games/lib/store.js?v=20260906d"></script>
-<script src="/games/lib/dynasty.js?v=20260906d"></script>
-<script src="/games/lib/social.js?v=20260906d"></script>
-<script src="/games/lib/auth.js?v=20260906d"></script>
-<script src="/games/lib/franchise.js?v=20260906d"></script>
-<script src="/games/games.js?v=20260906d"></script>
+<script src="/games/lib/week.js?v=20260906f"></script>
+<script src="/games/lib/scoring.js?v=20260906f"></script>
+<script src="/games/lib/challenge.js?v=20260906f"></script>
+<script src="/games/lib/research_state.js?v=20260906f"></script>
+<script src="/games/lib/attribution.js?v=20260906f"></script>
+<script src="/games/lib/store.js?v=20260906f"></script>
+<script src="/games/lib/dynasty.js?v=20260906f"></script>
+<script src="/games/lib/social.js?v=20260906f"></script>
+<script src="/games/lib/auth.js?v=20260906f"></script>
+<script src="/games/lib/franchise.js?v=20260906f"></script>
+<script src="/games/games.js?v=20260906f"></script>
 <script>
 /* STALE SCRIPT GUARD. A browser can keep an old games.js or store.js for
    longer than it keeps this page, and a page built for the new library
@@ -280,7 +280,25 @@
   function signOut(){
     AU.signOut().then(function(){FR.forget();G.paintFranchise();G.track('franchise_signout',{});render();});
   }
-  function resBlock(res){
+  /* THE SCOUTING DEPARTMENT (Phase 9), one line. Scouting Points are the
+     VOLUME of your Price It; the grade is the ACCURACY, and it is the thing
+     that decides what next season's draft class looks like. They are
+     different numbers and the page must not let them read as one. */
+  function scoutRow(h){
+    var sc=(h&&h.scouting)||null;
+    if(!sc)return '';
+    var g=FR.scoutGradeOf(sc.score),nx=FR.scoutNext(sc.score);
+    return '<div class="res-scout"><div class="k">Scouting department</div>'
+      +'<div class="v"><b>'+esc(sc.grade_name||g.name)+'</b> · '+esc(sc.score|0)+'</div>'
+      +'<div class="m">'+esc(g.means)+'<br>'
+      +(sc.settled
+        ? 'Your last '+esc(FR.SCOUTING.window)+' priced games, and the grade the next draft window opens under.'
+        : esc(Math.max(0,FR.SCOUTING.window-(sc.priced|0)))+' more priced games and the grade is your own — until then it is pulled toward '+esc(FR.SCOUTING.neutral)+'.')
+      +(nx?(' <b>'+esc(nx.name)+'</b> is '+esc(nx.need)+' away.'):' Top grade.')
+      +'</div></div>';
+  }
+
+  function resBlock(res,h){
     var li=FR.levelInfo(res.xp);
     return '<div class="xp"><div class="xp-row"><b>Level '+li.level+' · '+fmt(res.xp)+' XP</b><span>'+(li.next?fmt(li.remaining)+' to level '+(li.level+1):'Max level')+'</span></div>'
       +'<div class="xp-bar" role="progressbar" aria-label="progress to the next level" aria-valuemin="0" aria-valuemax="100" aria-valuenow="'+li.pct+'"><div class="xp-fill" style="width:'+li.pct+'%"></div></div></div>'
@@ -289,6 +307,7 @@
       +'<div class="tc"><div class="k">Credits</div><div class="v">'+fmt(res.team_credits)+'</div></div>'
       +'<div class="cp"><div class="k">Coach</div><div class="v">'+fmt(res.coach_points)+'</div></div>'
       +'</div>'
+      +scoutRow(h)
       +'<div class="res-note"><b>Scouting Points</b> come from Price It accuracy and buy scouting reports on the <a href="/games/market/">draft class</a>. <b>Team Credits</b> come from playing and build facilities or sign free agents. '
       +'<b>Coach Points</b> come from Head-to-Head and franchise challenges. XP levels the franchise. None of them can be bought.</div>';
   }
@@ -332,7 +351,7 @@
         var d=r.data;
         G.track('facility_upgrade',{facility:key,level:d.level,cost:d.cost,currency:d.currency,game_type:'franchise'});
         (d.achievements||[]).forEach(function(id){G.track('achievement_unlocked',{achievement:id,placement:'front_office'});});
-        if($('resCard'))$('resCard').innerHTML=resBlock(snap.resources||{});
+        if($('resCard'))$('resCard').innerHTML=resBlock(snap.resources||{},snap);
         if($('facCard'))$('facCard').innerHTML=facilitiesBlock(snap);
         G.paintFranchise();
         G.toast(FR.FACILITIES[key].name+' is level '+d.level);
@@ -369,7 +388,7 @@
     var ach=(snap.achievements||[]);
     var recent=(snap.recent||[]);
     after.innerHTML=
-      '<div class="sec"><div class="sec-h"><h2>Resources</h2><span class="m">'+esc(FR.ECONOMY_VERSION)+'</span></div><div class="card" id="resCard">'+resBlock(res)+'</div></div>'
+      '<div class="sec"><div class="sec-h"><h2>Resources</h2><span class="m">'+esc(FR.ECONOMY_VERSION)+'</span></div><div class="card" id="resCard">'+resBlock(res,snap)+'</div></div>'
       +'<div class="sec"><div class="sec-h"><h2>Facilities</h2><span class="m">'+esc(FR.FACILITIES_VERSION)+'</span></div><div class="card" id="facCard">'+facilitiesBlock(snap)+'</div></div>'
       +(snap.offseason?'<div class="sec"><div class="sec-h"><h2>Offseason</h2><span class="m">'+esc(FR.OFFSEASON_VERSION)+'</span></div><div class="card">'
           +'<p style="margin:0;color:var(--dim);font-size:14px;line-height:1.6">'+esc(FR.offseasonLine(snap.offseason))+' The full report — every player’s change, the retired and the rookies — is in the <a href="/games/trophies/">Trophy Room</a>.</p></div></div>':'')

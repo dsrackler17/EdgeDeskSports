@@ -12,7 +12,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/games/games.css?v=20260906d">
+<link rel="stylesheet" href="/games/games.css?v=20260906f">
 </head>
 <body>
 <div id="gh"></div>
@@ -33,26 +33,30 @@
 
 <div id="gf"></div>
 
-<script src="/games/lib/week.js?v=20260906d"></script>
-<script src="/games/lib/scoring.js?v=20260906d"></script>
-<script src="/games/lib/challenge.js?v=20260906d"></script>
-<script src="/games/lib/research_state.js?v=20260906d"></script>
-<script src="/games/lib/attribution.js?v=20260906d"></script>
-<script src="/games/lib/store.js?v=20260906d"></script>
-<script src="/games/lib/social.js?v=20260906d"></script>
-<script src="/games/games.js?v=20260906d"></script>
+<script src="/games/lib/week.js?v=20260906f"></script>
+<script src="/games/lib/scoring.js?v=20260906f"></script>
+<script src="/games/lib/challenge.js?v=20260906f"></script>
+<script src="/games/lib/research_state.js?v=20260906f"></script>
+<script src="/games/lib/attribution.js?v=20260906f"></script>
+<script src="/games/lib/store.js?v=20260906f"></script>
+<script src="/games/lib/social.js?v=20260906f"></script>
+<script src="/games/lib/franchise.js?v=20260906f"></script>
+<script src="/games/games.js?v=20260906f"></script>
 <script>
 (function(){
   'use strict';
   var G=window.EDGames,S=window.EDGamesSocial,ST=window.EDGamesStore,
-      W=window.EDGamesWeek,CH=window.EDGamesChallenge;
+      W=window.EDGamesWeek,CH=window.EDGamesChallenge,F=window.EDFranchise;
   var $=function(id){return document.getElementById(id);};
   var READY=G.boot('status');
 
   function esc(s){return G.esc(s);}
-  function row(state,title,detail,action){
+  /* label overrides the default word for the state: a database that is three
+     phases behind is CONNECTED and wrong, and "Not connected" would send an
+     operator looking at the network instead of at the SQL file. */
+  function row(state,title,detail,action,label){
     var cls=state==='ok'?'ok':state==='warn'?'warn':state==='bad'?'neg':'mut';
-    var dot=state==='ok'?'Connected':state==='warn'?'Degraded':state==='bad'?'Not connected':'Unknown';
+    var dot=label||(state==='ok'?'Connected':state==='warn'?'Degraded':state==='bad'?'Not connected':'Unknown');
     return '<div class="card" style="padding:14px 16px">'
       +'<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">'
       +'<span class="rs '+cls+'"><span class="dot"></span>'+esc(dot)+'</span>'
@@ -106,6 +110,72 @@
       out.push({order:2,html:row('unknown','Market feed','Cannot tell without the board.')});
       paint();
     });
+
+    /* ---- 2.5 the schema log — WHAT IS INSTALLED HERE ----
+       This is the row that explains the two below it. Every phase of every
+       SQL file records itself in games_schema_log as it applies, so a
+       database that is three phases behind says so by name instead of
+       looking identical to a current one until a page calls a function
+       that is not there. games_schema() is granted to anon and returns
+       phase names and dates only. */
+    if(cfg&&(!F||typeof F.schema!=='function')){
+      /* A STALE LIBRARY, not a stale database. This page is the one an
+         operator opens when something is wrong, so it must not go quiet
+         about the row it cannot draw — and it must not blame the SQL for a
+         cached franchise.js. Every other row still renders. */
+      out.push({order:2.5,html:row('warn','Database schema',
+        'This browser is holding an older copy of <code>/games/lib/franchise.js</code> than '
+        +'this page needs, so the installed phases cannot be compared.',
+        '<a href="'+esc(location.pathname)+'?fresh='+Date.now()+'">Reload the page</a>.','Stale')});
+      paint();
+    }else if(cfg){
+      F.schema().then(function(r){
+        if(r.status===404||r.error==='not_configured'){
+          /* the log itself predates this database, so it cannot be asked */
+          out.push({order:2.5,html:row('warn','Database schema',
+            'This database was applied <b>before the schema log existed</b>, so it cannot say '
+            +'which phases it has. Everything may still be current — nothing can confirm it.',
+            'Re-apply <code>supabase/games_social.sql</code> and then '
+            +'<code>supabase/games_franchise.sql</code>. Both are safe to run again, and after '
+            +'that this row reports the real answer.','No log')});
+          return paint();
+        }
+        if(!r.ok||!r.data){
+          out.push({order:2.5,html:row('warn','Database schema',
+            'The schema could not be read: '+esc(r.message||r.error||'an error')+'.')});
+          return paint();
+        }
+        var d=r.data,gap=F.schemaGap(d);
+        var have='social <b>'+esc(d.social|0)+'</b> · franchise <b>'+esc(d.franchise|0)+'</b>';
+        var dates='First applied '+fmt(d.applied_at)
+          +(d.reapplied_at?('<br>Last re-applied '+fmt(d.reapplied_at)):'');
+        if(gap.ok){
+          out.push({order:2.5,html:row('ok','Database schema',
+            'Installed: '+have+' — everything this build expects.<br>'+dates,
+            gap.ahead
+              ? 'The database is AHEAD of this build. Harmless: a newer file was applied than '
+                +'the pages here know about. Deploy the site to catch up.'
+              : null)});
+        }else{
+          /* name the first few by name — enough to recognise what is missing —
+             and count the rest, because a fresh database is short nine phases
+             and nine titles in one sentence is a wall, not an answer. */
+          var what=gap.behind.map(function(b){
+            var show=b.missing.slice(0,3),rest=b.missing.length-show.length;
+            return '<b>'+esc(b.layer)+'</b> is at '+esc(b.have)+', this build wants '
+              +esc(b.want)+' — missing '
+              +show.map(function(m){return esc(m.phase)+') '+esc(m.name);}).join(', ')
+              +(rest>0?(', and '+esc(rest)+' more'):'')+'.';
+          }).join('<br>');
+          out.push({order:2.5,html:row('bad','Database schema',
+            'This database is <b>behind this build</b>, so pages that need a missing phase will '
+            +'fail on a function that is not there.<br>'+what+'<br>'+dates,
+            'Paste and run '+gap.behind.map(function(b){return '<code>'+esc(b.file)+'</code>';}).join(' then ')
+            +' in the Supabase SQL editor. Safe to run again.','Behind')});
+        }
+        paint();
+      });
+    }
 
     /* ---- 3. the social layer ---- */
     if(!cfg){

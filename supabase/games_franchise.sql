@@ -3526,9 +3526,20 @@ $$;
 -- nothing and carries his asking price.
 create or replace function public.franchise_prospect_json(p public.game_players)
 returns jsonb language plpgsql stable set search_path = public, pg_temp as $$
-declare lo integer; base jsonb; reveal boolean := p.scouted or p.status <> 'prospect';
+declare lo integer; hi integer; w integer; base jsonb; reveal boolean := p.scouted or p.status <> 'prospect';
 begin
-  lo := greatest(40, p.overall - 3 - (abs(hashtext(p.id::text)) % 5));
+  /* THE BAND. Its width was stamped on this prospect by the department that
+     found him (scout_band, scouting_v1) and does not move afterwards; a class
+     stays true to the grade it was found under. Eleven is what every class
+     generated before Phase 9 was shown at.
+
+     Inside the band the true overall is UNIFORM — the rule is in this file
+     and anyone may read it, so the honest thing is for the band to mean
+     exactly what it looks like: somewhere in here, nothing narrower implied.
+     The band always contains the truth, so a report never contradicts it. */
+  w := greatest(2, coalesce(p.scout_band, 11));
+  lo := greatest(40, p.overall - (abs(hashtext(p.id::text || ':band')) % w));
+  hi := least(99, lo + w - 1);
   base := jsonb_build_object('id', p.id, 'first_name', p.first_name, 'last_name', p.last_name, 'position', p.position,
     'age', p.age, 'archetype', p.archetype, 'status', p.status, 'scouted', p.scouted, 'class_season', p.class_season,
     'acquired_source', p.acquired_source, 'acquired_detail', p.acquired_detail, 'asking', p.asking,
@@ -3537,7 +3548,7 @@ begin
     return base || jsonb_build_object('overall', p.overall, 'potential', p.potential, 'dev_tier', p.dev_tier,
       'rarity', p.rarity, 'ratings', p.ratings, 'traits', p.traits, 'stamina', p.stamina);
   end if;
-  return base || jsonb_build_object('range', jsonb_build_array(lo, least(99, lo + 10)), 'overall', null, 'potential', null);
+  return base || jsonb_build_object('range', jsonb_build_array(lo, hi), 'band', w, 'overall', null, 'potential', null);
 end;
 $$;
 
@@ -3552,6 +3563,8 @@ declare
   class_pool text[] := array['QB','RB','WR','TE','OL','DL','LB','CB','S','WR','OL','DL'];
   agent_pool text[] := array['WR','OL','DL','LB','CB','RB','S','TE','QB','K','P','OL'];
   n_class integer := (m->>'class_size')::int; n_agents integer := (m->>'agents')::int;
+  /* the department, graded ONCE, here (scouting_v1) */
+  sc jsonb; v_grade integer; v_band integer; v_lift integer; v_picks integer;
 begin
   select * into f from public.franchises where id = p_franchise for update;
   if not found then raise exception 'no franchise' using errcode = '22023'; end if;
@@ -3562,22 +3575,51 @@ begin
   if exists (select 1 from public.franchise_activity where franchise_id = p_franchise and kind = 'market' and key = p_window::text) then
     return jsonb_build_object('window', p_window, 'opened', false);
   end if;
+  /* THE DEPARTMENT, GRADED ONCE. Everything scouting_v1 is worth is decided
+     here, from the grade standing at the moment the window opens, and does
+     not move again until the next one: a class cannot be improved by pricing
+     games after you have seen it, and cannot be taken away by a bad week
+     either. The weeks BEFORE an offseason are the ones that count. */
+  sc := public.franchise_scout_report(p_franchise);
+  v_grade := (sc->>'score')::int;
+  v_band  := (sc->>'band')::int;
+  v_lift  := (sc->>'lift')::int;
+  v_picks := (m->>'picks')::int + case when (sc->>'extra_pick')::boolean then 1 else 0 end;
+
   for i in 1..n_class loop
     pos := class_pool[1 + ((p_window - 1) * 5 + i - 1) % array_length(class_pool, 1)];
     pid := public.franchise_generate_player(p_franchise, pos, 0, v_real, f.seed || ':class:' || p_window || ':' || i,
              'Season ' || public.games_roman(p_window) || ' draft class', 'prospect', p_window);
   end loop;
+  /* WHAT THE DEPARTMENT FOUND: potential, never overall. A good department
+     does not make a nineteen-year-old better today — it finds the one who
+     will be. Rarity is derived from overall and potential, so it is restated
+     here by the same rule the generator used rather than left stale. */
+  update public.game_players
+     set potential = least(99, greatest(overall, potential + v_lift)),
+         scout_band = v_band,
+         rarity = case when overall >= 82 or least(99, greatest(overall, potential + v_lift)) >= 90 then 'elite'
+                       when overall >= 75 or least(99, greatest(overall, potential + v_lift)) >= 84 then 'rare'
+                       when overall >= 68 or least(99, greatest(overall, potential + v_lift)) >= 77 then 'uncommon'
+                       else 'common' end,
+         updated_at = now()
+   where franchise_id = p_franchise and status = 'prospect' and class_season = p_window;
   for i in 1..n_agents loop
     pos := agent_pool[1 + ((p_window - 1) * 7 + i - 1) % array_length(agent_pool, 1)];
     pid := public.franchise_generate_player(p_franchise, pos, 0, v_real, f.seed || ':agent:' || p_window || ':' || i,
              'Free agent, Season ' || public.games_roman(p_window), 'free_agent', p_window);
   end loop;
-  update public.franchises set draft_picks = (m->>'picks')::int, market_season = p_window, updated_at = now() where id = p_franchise;
+  update public.franchises set draft_picks = v_picks, market_season = p_window,
+         scout_grade = v_grade, updated_at = now() where id = p_franchise;
   insert into public.franchise_activity (franchise_id, kind, key, week_key, day_key, detail)
   values (p_franchise, 'market', p_window::text, public.games_week_key(now()), public.games_day_key(now()),
-          jsonb_build_object('prospects', n_class, 'agents', n_agents, 'picks', (m->>'picks')::int))
+          jsonb_build_object('prospects', n_class, 'agents', n_agents, 'picks', v_picks,
+            /* the record of the department that found this class */
+            'scout_grade', v_grade, 'scout_name', sc->>'grade_name', 'band', v_band, 'lift', v_lift,
+            'report_cost', public.franchise_scout_cost(v_grade), 'scouting_version', sc->>'version'))
   on conflict (franchise_id, kind, key) do nothing;
-  return jsonb_build_object('window', p_window, 'opened', true, 'prospects', n_class, 'agents', n_agents, 'picks', (m->>'picks')::int);
+  return jsonb_build_object('window', p_window, 'opened', true, 'prospects', n_class, 'agents', n_agents,
+    'picks', v_picks, 'scouting', sc);
 end;
 $$;
 
@@ -3609,6 +3651,22 @@ begin
     'roster', jsonb_build_object('active', v_active, 'max', (m->>'roster_max')::int, 'min', (m->>'roster_min')::int,
       'room', greatest(0, (m->>'roster_max')::int - v_active)),
     'resources', public.franchise_totals(f.id),
+    /* THE DEPARTMENT, twice, because they are different questions.
+       `department` is the grade THIS CLASS was found under — the band on the
+       cards below, what a report costs, whether the extra pick is there. It
+       is fixed. `scouting` is the grade RIGHT NOW, which is what the next
+       window will open under, and the only reason to price another game
+       before the offseason. */
+    'department', case when f.scout_grade is null then null else jsonb_build_object(
+      'score', f.scout_grade,
+      'grade', public.franchise_scout_grade_of(f.scout_grade)->>'key',
+      'grade_name', public.franchise_scout_grade_of(f.scout_grade)->>'name',
+      'band', public.franchise_scout_band(f.scout_grade),
+      'lift', public.franchise_scout_lift(f.scout_grade),
+      'report_cost', public.franchise_scout_cost(f.scout_grade)) end,
+    'scouting', public.franchise_scout_report(f.id),
+    'scout_cost', case when f.scout_grade is null then (m->>'scout_sp')::int
+                       else public.franchise_scout_cost(f.scout_grade) end,
     'prospects', v_pros, 'agents', v_agents,
     'scouted', (select count(*) from public.game_players where franchise_id = f.id and status = 'prospect' and class_season = f.market_season and scouted),
     'drafted', (select count(*) from public.game_players where franchise_id = f.id and acquired_source = 'draft' and class_season = f.market_season and status = 'active'),
@@ -3623,10 +3681,16 @@ create or replace function public.franchise_scout(p_player uuid, p_secret text d
 returns jsonb language plpgsql security definer set search_path = public, pg_temp as $$
 declare
   v_f uuid := public.franchise_of(p_secret); f public.franchises%rowtype; p public.game_players%rowtype;
-  cost integer := (public.franchise_market()->>'scout_sp')::int; ok boolean; v_new text[] := '{}'; left_n integer;
+  cost integer; ok boolean; v_new text[] := '{}'; left_n integer;
 begin
   if v_f is null then raise exception 'found a franchise first' using errcode = '28000'; end if;
   select * into f from public.franchises where id = v_f for update;
+  /* PRICED BY THE DEPARTMENT THAT FOUND THE CLASS, not by the one you have
+     today: scout_grade was stamped when this window opened and does not move
+     until the next one. A class opened before Phase 9 has no grade, and pays
+     what it always paid. */
+  cost := case when f.scout_grade is null then (public.franchise_market()->>'scout_sp')::int
+               else public.franchise_scout_cost(f.scout_grade) end;
   select * into p from public.game_players where id = p_player and franchise_id = v_f for update;
   if not found or p.status <> 'prospect' or p.class_season is distinct from f.market_season then
     raise exception 'that prospect is not in your draft class' using errcode = 'P0002';
@@ -3995,7 +4059,15 @@ begin
       'unscouted', (select count(*) from public.game_players where franchise_id = f.id and status = 'prospect' and class_season = f.market_season and not scouted),
       'agents', (select count(*) from public.game_players where franchise_id = f.id and status = 'free_agent' and class_season = f.market_season),
       'active', (select count(*) from public.game_players where franchise_id = f.id and status = 'active'),
-      'max', (public.franchise_market()->>'roster_max')::int, 'scout_sp', (public.franchise_market()->>'scout_sp')::int),
+      'max', (public.franchise_market()->>'roster_max')::int,
+      /* what a report costs on THIS class — the grade it was found under, or
+         the flat price for a class opened before Phase 9 */
+      'scout_sp', case when f.scout_grade is null then (public.franchise_market()->>'scout_sp')::int
+                       else public.franchise_scout_cost(f.scout_grade) end,
+      'scout_grade', f.scout_grade),
+    -- the scouting department (Phase 9): how well this franchise is reading
+    -- real games right now, and what the next window would be worth
+    'scouting', public.franchise_scout_report(f.id),
     'challenges', jsonb_build_object(
       'open', (select count(*) from public.franchise_challenges c where c.challenger_id = f.id and c.status = 'OPEN' and c.expires_at > now()),
       'played', (select count(*) from public.franchise_challenges c where (c.challenger_id = f.id or c.opponent_id = f.id) and c.status = 'FINAL'),
@@ -5972,6 +6044,193 @@ $$;
 commit;
 
 -- ===========================================================================
+-- THE SCOUTING DEPARTMENT — Phase 9, scouting_v1
+--
+-- WHAT READING REAL FOOTBALL WELL IS WORTH. Eight phases in, the two halves
+-- of this game touch in exactly one place: currency. Price a game and you
+-- earn XP, Scouting Points and Team Credits. Price it WELL and you earn a
+-- few more of each. Nothing else in the franchise has ever known whether
+-- you were any good at it.
+--
+-- The evidence was already in the file. franchise_prep() computes three
+-- numbers every football week. Two of them count VOLUME — how many games
+-- you priced, whether you sent a card, whether you ran a drill — and the
+-- simulator reads one of those. The third is MARKET IQ, the average Price It
+-- score, the only measure of accuracy anywhere in the schema, and it was
+-- computed, returned, and read by nothing. Not by the simulator, not by a
+-- page. A dead stat, and behind it a dead dimension: skill at the real game
+-- made you richer and never better.
+--
+-- So: a scouting department, graded on how well you actually price games,
+-- and what it is good at is finding football players.
+--
+--   THE GRADE      the average Price It score over your LAST TWENTY verified
+--                  pricings — not a week, because three games is noise, and
+--                  not all time, because a department is what it is doing
+--                  now. Short of twenty on the record, the grade is pulled
+--                  toward a neutral 50 in proportion to what is missing, so
+--                  a new franchise starts in the middle: not punished for
+--                  having no record, and not an A on one lucky pricing.
+--
+--   WHAT IT BUYS   everything it buys is in the draft window, and all of it
+--                  is decided ONCE, when the window opens, from the grade
+--                  standing at that moment:
+--
+--                    the BAND on an unscouted prospect — eighteen points
+--                    wide at the bottom, four at the top. A department that
+--                    reads games well sees more before it pays to look;
+--
+--                    the PRICE of a report — 28 Scouting Points down to 12;
+--
+--                    the CEILING of the class — up to six points of
+--                    POTENTIAL, never of overall. A good department does not
+--                    make a nineteen-year-old better today; it finds the one
+--                    who will be;
+--
+--                    an EXTRA PICK at the top grade, and only there.
+--
+-- DECIDED ONCE, ON PURPOSE. The grade the window opened under is stamped on
+-- the franchise and on the class, and it does not move again until the next
+-- window. A class cannot be improved by pricing games after you have seen
+-- it, and it cannot be taken away by a bad week either. The consequence is
+-- that the weeks BEFORE an offseason are the ones that matter, which is
+-- exactly the habit this is meant to reward.
+--
+-- WHAT IT DOES NOT TOUCH. Not the simulator, not team overall, not a rating
+-- on any player already on the roster, not Saturday. Reading real football
+-- well decides WHO YOU FIND. It has never decided, and does not now decide,
+-- how the game itself goes — that is the roster's and the staff's job.
+--
+-- Only Price It feeds the grade. Pick 5 and the Drill measure real skill too
+-- and are deliberately left out: Price It is the game where you set a number
+-- against EdgeDesk's own, and a scouting grade should mean one thing.
+-- ===========================================================================
+
+begin;
+
+-- the band shown for a prospect nobody has paid to look at, stamped on him
+-- when his class was generated: the class stays true to the department that
+-- found it, however good or bad the department is by the time he is drafted
+alter table public.game_players add column if not exists scout_band integer;
+-- the grade the current window was opened under; null until one is opened
+alter table public.franchises add column if not exists scout_grade integer;
+
+-- THE TABLE. Six grades, and what each is worth, in one place a page can
+-- render without a round trip.
+create or replace function public.franchise_scouting()
+returns jsonb language sql immutable
+set search_path = pg_catalog, pg_temp as $$
+  select jsonb_build_object(
+    'version', 'scouting_v1',
+    'window', 20,          -- the last twenty verified pricings are the record
+    'neutral', 50,         -- and what a franchise short of twenty is pulled toward
+    /* THE ENDS ARE CHOSEN SO THAT NEUTRAL IS THE STATUS QUO. At grade 50 —
+       a franchise with no record at all — the band is 11 points and a report
+       is 20 Scouting Points, which is exactly what every class was shown at
+       and every report cost before this phase. scouting_v1 only ever
+       DIFFERENTIATES: read games well and you see more for less; read them
+       badly and you see less for more; do neither and nothing changed. */
+    'band',    jsonb_build_object('wide', 18, 'tight', 4),
+    'report',  jsonb_build_object('dear', 28, 'cheap', 12),
+    'ceiling', 6,          -- at most six points of POTENTIAL across the class
+    'extra_pick', 90,      -- one more pick, at the top grade and only there
+    'grades', jsonb_build_array(
+      jsonb_build_object('key', 'unrated',  'name', 'Unrated',           'min',  0),
+      jsonb_build_object('key', 'regional', 'name', 'Regional scout',    'min', 40),
+      jsonb_build_object('key', 'area',     'name', 'Area scout',        'min', 55),
+      jsonb_build_object('key', 'national', 'name', 'National scout',    'min', 68),
+      jsonb_build_object('key', 'director', 'name', 'Scouting director', 'min', 80),
+      jsonb_build_object('key', 'war_room', 'name', 'War room',          'min', 90)));
+$$;
+
+-- which grade a number is
+create or replace function public.franchise_scout_grade_of(p_score integer)
+returns jsonb language sql immutable
+set search_path = pg_catalog, pg_temp as $$
+  select g from jsonb_array_elements(public.franchise_scouting()->'grades') g
+   where (g->>'min')::int <= greatest(0, coalesce(p_score, 0))
+   order by (g->>'min')::int desc limit 1;
+$$;
+
+-- THE BAND a prospect is shown in, at a grade. Eighteen points at 0, eleven
+-- at neutral — what every class was shown at before this phase — and four at
+-- the top; a straight line between, and never fewer than four, because a
+-- department that sees the exact number has not scouted anybody, it has read
+-- the answer.
+create or replace function public.franchise_scout_band(p_score integer)
+returns integer language sql immutable
+set search_path = pg_catalog, pg_temp as $$
+  select greatest((public.franchise_scouting()->'band'->>'tight')::int,
+    (public.franchise_scouting()->'band'->>'wide')::int
+    - round(((public.franchise_scouting()->'band'->>'wide')::int
+           - (public.franchise_scouting()->'band'->>'tight')::int)
+           * least(100, greatest(0, coalesce(p_score, 0))) / 100.0)::int);
+$$;
+
+-- WHAT A REPORT COSTS at a grade: 28 Scouting Points down to 12 on the same
+-- straight line, passing through the flat 20 of market_v1 at neutral.
+create or replace function public.franchise_scout_cost(p_score integer)
+returns integer language sql immutable
+set search_path = pg_catalog, pg_temp as $$
+  select greatest((public.franchise_scouting()->'report'->>'cheap')::int,
+    (public.franchise_scouting()->'report'->>'dear')::int
+    - round(((public.franchise_scouting()->'report'->>'dear')::int
+           - (public.franchise_scouting()->'report'->>'cheap')::int)
+           * least(100, greatest(0, coalesce(p_score, 0))) / 100.0)::int);
+$$;
+
+-- HOW MUCH POTENTIAL the department finds: nothing at a neutral grade, up to
+-- six points at the top. Below neutral it finds nothing rather than taking
+-- something away — a bad department is a department that misses, not one
+-- that makes players worse.
+create or replace function public.franchise_scout_lift(p_score integer)
+returns integer language sql immutable
+set search_path = pg_catalog, pg_temp as $$
+  select greatest(0, round((public.franchise_scouting()->>'ceiling')::int
+    * least(100, greatest(0, coalesce(p_score, 0) - (public.franchise_scouting()->>'neutral')::int))
+    / (100.0 - (public.franchise_scouting()->>'neutral')::int))::int);
+$$;
+
+-- THE GRADE ITSELF. The last twenty VERIFIED pricings — an imported history
+-- earns XP and is not evidence of anything, so it is not counted — averaged,
+-- and pulled toward neutral in proportion to how far short of twenty the
+-- record is. Fifteen pricings at 80 grade 72, not 80; the twentieth is worth
+-- more than the first, which is the point.
+create or replace function public.franchise_scout_report(p_franchise uuid)
+returns jsonb language plpgsql stable security definer set search_path = public, pg_temp as $$
+declare
+  cfg jsonb := public.franchise_scouting();
+  n_win integer := (cfg->>'window')::int; neutral integer := (cfg->>'neutral')::int;
+  n_have integer; v_avg numeric; v_score integer; g jsonb; nxt jsonb;
+begin
+  select count(*), avg((detail->>'score')::numeric) into n_have, v_avg from (
+    select detail from public.franchise_activity
+     where franchise_id = p_franchise and kind = 'price_it' and verified
+       and detail ? 'score'
+     order by created_at desc, id desc limit n_win) t;
+  v_score := round((coalesce(v_avg, 0) * n_have + neutral * (n_win - least(n_win, n_have))) / n_win)::int;
+  v_score := greatest(0, least(100, v_score));
+  g := public.franchise_scout_grade_of(v_score);
+  select x into nxt from jsonb_array_elements(cfg->'grades') x
+   where (x->>'min')::int > v_score order by (x->>'min')::int limit 1;
+  return jsonb_build_object(
+    'version', cfg->>'version', 'score', v_score,
+    'grade', g->>'key', 'grade_name', g->>'name',
+    'priced', n_have, 'window', n_win,
+    'raw', case when n_have = 0 then null else round(v_avg)::int end,
+    'settled', n_have >= n_win,
+    'band', public.franchise_scout_band(v_score),
+    'report_cost', public.franchise_scout_cost(v_score),
+    'lift', public.franchise_scout_lift(v_score),
+    'extra_pick', v_score >= (cfg->>'extra_pick')::int,
+    'next', case when nxt is null then null else jsonb_build_object(
+      'name', nxt->>'name', 'at', (nxt->>'min')::int, 'need', (nxt->>'min')::int - v_score) end);
+end;
+$$;
+
+commit;
+
+-- ===========================================================================
 -- GRANTS
 --
 -- Postgres grants EXECUTE on a new function to PUBLIC by default, so every
@@ -6158,7 +6417,38 @@ grant execute on function public.franchise_staff_board(text) to anon, authentica
 grant execute on function public.franchise_staff_hire(text, text) to anon, authenticated;
 grant execute on function public.franchise_staff_promote(text, integer, text) to anon, authenticated;
 grant execute on function public.franchise_staff_fire(text, text) to anon, authenticated;
+-- Phase 9: the scouting table and its four curves are open to read, the way
+-- every other table in this file is. The grade itself is a definer read of
+-- one franchise's own record and is reached through franchise_home() and
+-- franchise_market_board(), which already prove who is asking.
+grant execute on function public.franchise_scouting() to anon, authenticated;
+grant execute on function public.franchise_scout_grade_of(integer) to anon, authenticated;
+grant execute on function public.franchise_scout_band(integer) to anon, authenticated;
+grant execute on function public.franchise_scout_cost(integer) to anon, authenticated;
+grant execute on function public.franchise_scout_lift(integer) to anon, authenticated;
+revoke all on function public.franchise_scout_report(uuid) from public, anon, authenticated;
 
+commit;
+
+-- ===========================================================================
+-- WHAT THIS FILE JUST INSTALLED
+--
+-- One row per phase, into the log games_social.sql created. The file is still
+-- the whole deployment and re-running it is still safe; this is the record
+-- that lets a page, the report and a person all ask what a database has and
+-- get the same answer. A database that stops at phase 6 says so.
+-- ===========================================================================
+
+begin;
+select public.games_schema_note('franchise', 1, 'the franchise, the roster, the ledger and the achievements');
+select public.games_schema_note('franchise', 2, 'the weekly game: the schedule, the simulator and the season');
+select public.games_schema_note('franchise', 3, 'franchise vs franchise: challenges, rivalries and the ladder');
+select public.games_schema_note('franchise', 4, 'the offseason, the facilities and the Trophy Room');
+select public.games_schema_note('franchise', 5, 'the draft and the market');
+select public.games_schema_note('franchise', 6, 'conferences and playoffs');
+select public.games_schema_note('franchise', 7, 'injuries, the bowl and trades');
+select public.games_schema_note('franchise', 8, 'the coaching staff');
+select public.games_schema_note('franchise', 9, 'the scouting department');
 commit;
 
 -- ===========================================================================
@@ -6326,6 +6616,11 @@ select 25, 'trades are ' || (public.franchise_trade_rules()->>'version') || ': o
         and not exists (select 1 from pg_policies where schemaname = 'public' and tablename = 'franchise_trades' and cmd <> 'SELECT')
     then 'ok' else 'CHECK THIS' end
 union all
+select 0, 'the schema log says what this database has: ' ||
+    coalesce('social ' || (public.games_schema()->>'social') || ' · franchise ' || (public.games_schema()->>'franchise'), 'nothing'),
+  case when (public.games_schema()->>'franchise')::int = 9 and (public.games_schema()->>'social')::int >= 1
+    then 'ok' else 'CHECK THIS' end
+union all
 select 26, 'the staff is ' || (public.franchise_staff()->>'version') || ': a thousand levels bought with Coach Points, generated and scored by the server',
   case when public.franchise_staff()->>'version' = 'staff_v1'
         and (public.franchise_staff()->>'max_level')::int = 1000
@@ -6336,5 +6631,30 @@ select 26, 'the staff is ' || (public.franchise_staff()->>'version') || ': a tho
         and has_function_privilege('anon', 'public.franchise_staff_promote(text, integer, text)', 'execute')
         and not has_function_privilege('anon', 'public.franchise_generate_coach(uuid, text, text, integer)', 'execute')
         and not has_function_privilege('authenticated', 'public.franchise_staff_effects(uuid)', 'execute')
+    then 'ok' else 'CHECK THIS' end
+union all
+select 27, 'scouting is ' || (public.franchise_scouting()->>'version') || ': accuracy at real games decides the draft class, and the grade is the server''s to compute',
+  case when public.franchise_scouting()->>'version' = 'scouting_v1'
+        -- the band tightens and the report cheapens as the grade rises, and neither runs past its end
+        and public.franchise_scout_band(0) = 18 and public.franchise_scout_band(100) = 4
+        and public.franchise_scout_cost(0) = 28 and public.franchise_scout_cost(100) = 12
+        -- and a franchise with no record at all gets exactly what market_v1 gave
+        and public.franchise_scout_band(50) = 11
+        and public.franchise_scout_cost(50) = (public.franchise_market()->>'scout_sp')::int
+        -- a department below neutral finds nothing; it never makes a player worse
+        and public.franchise_scout_lift(0) = 0 and public.franchise_scout_lift(50) = 0
+        and public.franchise_scout_lift(100) = 6
+        and public.franchise_scout_grade_of(0)->>'key' = 'unrated'
+        and public.franchise_scout_grade_of(100)->>'key' = 'war_room'
+        -- the class carries the band it was found under, the franchise the grade
+        and exists (select 1 from information_schema.columns
+                     where table_schema = 'public' and table_name = 'game_players' and column_name = 'scout_band')
+        and exists (select 1 from information_schema.columns
+                     where table_schema = 'public' and table_name = 'franchises' and column_name = 'scout_grade')
+        -- the table is public; the franchise's own grade is a definer read
+        and has_function_privilege('anon', 'public.franchise_scouting()', 'execute')
+        and has_function_privilege('anon', 'public.franchise_scout_band(integer)', 'execute')
+        and not has_function_privilege('anon', 'public.franchise_scout_report(uuid)', 'execute')
+        and not has_function_privilege('authenticated', 'public.franchise_scout_report(uuid)', 'execute')
     then 'ok' else 'CHECK THIS' end
 order by 1;
