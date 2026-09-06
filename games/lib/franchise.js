@@ -65,7 +65,8 @@
       'the rank and the packs',
       'the long haul: careers and a building you can staff',
       'the drives you call',
-      'key moments'
+      'key moments',
+      'both sides of the ball'
     ]
   };
   var SCHEMA = { social: SCHEMA_PHASES.social.length, franchise: SCHEMA_PHASES.franchise.length };
@@ -298,13 +299,13 @@
     overall: { offense: 0.45, defense: 0.45, special: 0.10 }
   };
 
-  /* ── the weekly game, sim_v2 — the published shape of the simulator ────
+  /* ── the weekly game, sim_v3 — the published shape of the simulator ────
      The simulator runs on the server and nowhere else. These are the
      numbers it publishes so a pregame can say what is in play: home field,
      how much this week's preparation swings, and the scheme matchup table
      (offense against defense, in rating points for the offense). The
      table is pinned to franchise_scheme_edges() by the test suite. */
-  var SIM_VERSION = 'sim_v2';
+  var SIM_VERSION = 'sim_v3';
   var HOME_EDGE = 1.5;
   var PREP_SWING = 3;                       /* preparation 0 → −3, 100 → +3 */
   var SCHEME_EDGES = {
@@ -1046,6 +1047,88 @@
     var c = m.call ? (snapCall(m.call) || {}).name : null;
     return (c ? c + ' — ' : '') + what + ', ' + (m.me | 0) + '–' + (m.op | 0);
   }
+
+  /* ── BOTH SIDES OF THE BALL (Phase 15) ───────────────────────────────────
+     Measured first, and the measurement was damning: called every possession
+     the same way, a team got 10.95 possessions a side whether it ground the
+     ball out or threw it on every down — identical to two decimal places,
+     because possessions were drawn once before a snap from two scheme labels
+     and a dice roll. And you only ever played half the game.
+
+     THE CLOCK (clock_v1). No set number of plays: sixty minutes, and
+     possessions are what fits inside them. The ball on the ground keeps the
+     clock moving, the ball in the air stops it — so grinding now yields 10.57
+     possessions a side and shooting 12.08, with ranges of 8–13 and 10–15.
+
+     DEFENSE (defense_v1). You call their possessions too. The read is worth
+     about four points of margin either way, and which front is right depends
+     entirely on the team you are playing. */
+  var CLOCK_VERSION = 'clock_v1';
+  var CLOCK = {
+    quarters: 4, quarter_seconds: 900,
+    run_seconds: 38, pass_seconds: 19, score_seconds: 18, change_seconds: 12,
+    nominal_drive: 175, hurry_from: 300, hurry_tempo: 0.62, grind_tempo: 1.15, ot_rounds: 2
+  };
+  /* "Q2 · 2:35" — what the clock says, from seconds left in the game. The
+     quarter is worked out from time ELAPSED, the same way the simulator does
+     it, rather than from time remaining, which gets the opening kickoff
+     wrong. */
+  function clockLine(secsLeft) {
+    var total = CLOCK.quarters * CLOCK.quarter_seconds;
+    var s = Math.max(0, Math.min(total, secsLeft | 0));
+    var q = Math.min(CLOCK.quarters, 1 + Math.floor((total - s) / CLOCK.quarter_seconds));
+    var inQ = s - (CLOCK.quarters - q) * CLOCK.quarter_seconds;
+    var m = Math.floor(inQ / 60), ss = inQ % 60;
+    return { q: q, label: m + ':' + (ss < 10 ? '0' : '') + ss };
+  }
+  /* what a drive costs the clock — the same arithmetic franchise_drive_seconds does */
+  function driveSeconds(plays, passShare, outcome, tempo) {
+    var p = Math.max(1, plays | 0), ps = passShare == null ? 0.5 : +passShare;
+    var t = Math.max(0.4, Math.min(2.0, tempo == null ? 1 : +tempo));
+    var v = p * (ps * CLOCK.pass_seconds + (1 - ps) * CLOCK.run_seconds) * t
+          + (outcome === 'td' || outcome === 'fg' ? CLOCK.score_seconds : CLOCK.change_seconds);
+    return Math.max(12, Math.round(v));
+  }
+
+  /* THE FOUR FRONTS. Each number is split by whether the ball is on the
+     ground or in the air, and weighted by the offense's own pass share —
+     their call already in it. Guess right and you take it away. */
+  var DEFENSE_VERSION = 'defense_v1';
+  var FRONTS = {
+    'default': 'base',
+    calls: [
+      { key: 'stack', name: 'Stack the box',
+        means: 'Crowd the line. Murder on the run — and they can go over the top of it.',
+        td_vs_run: -0.060, td_vs_pass: 0.050, to_vs_run: 0.035, to_vs_pass: -0.020 },
+      { key: 'base', name: 'Base',
+        means: 'Play it honest. What quick play calls.',
+        td_vs_run: 0, td_vs_pass: 0, to_vs_run: 0, to_vs_pass: 0 },
+      { key: 'cover', name: 'Cover deep',
+        means: 'Take the pass away. They can run it down your throat instead.',
+        td_vs_run: 0.050, td_vs_pass: -0.060, to_vs_run: -0.020, to_vs_pass: 0.035 },
+      { key: 'blitz', name: 'Blitz',
+        means: 'Send them. The best chance of taking it away, and of being taken apart.',
+        td_vs_run: 0.030, td_vs_pass: 0.040, to_vs_run: 0.080, to_vs_pass: 0.095 }
+    ]
+  };
+  function frontCall(key) {
+    var out = null, def = null;
+    FRONTS.calls.forEach(function (c) {
+      if (c.key === key) out = c;
+      if (c.key === FRONTS['default']) def = c;
+    });
+    return out || def;
+  }
+  /* which side of the ball a call belongs to — the two tables never share a
+     key, so a call names its own side and the server refuses a wrong one */
+  function callSide(key) {
+    var side = null;
+    SNAPS.calls.forEach(function (c) { if (c.key === key) side = 'off'; });
+    FRONTS.calls.forEach(function (c) { if (c.key === key) side = 'def'; });
+    return side;
+  }
+  /* the table for whichever side of the ball this possession is on */
+  function callsFor(side) { return side === 'def' ? FRONTS.calls : SNAPS.calls; }
 
   function staffSpecialtyCount(level) {
     return Math.min(STAFF.specialty_max, Math.floor(Math.max(1, level | 0) / STAFF.specialty_every));
@@ -1814,6 +1897,9 @@
     CAREER_VERSION: CAREER_VERSION, CAREER: CAREER,
     SNAP_VERSION: SNAP_VERSION, SNAPS: SNAPS, snapCall: snapCall, snapLine: snapLine,
     MOMENT_VERSION: MOMENT_VERSION, MOMENTS: MOMENTS, stake: stake, isKey: isKey,
+    CLOCK_VERSION: CLOCK_VERSION, CLOCK: CLOCK, clockLine: clockLine, driveSeconds: driveSeconds,
+    DEFENSE_VERSION: DEFENSE_VERSION, FRONTS: FRONTS, frontCall: frontCall,
+    callSide: callSide, callsFor: callsFor,
     stakeLine: stakeLine, momentLine: momentLine, gameFinish: gameFinish, reel: reel,
     driveLine: driveLine, gameOpen: gameOpen, gameCall: gameCall,
     rankCoachPoints: rankCoachPoints, staffHireLevel: staffHireLevel,

@@ -685,10 +685,11 @@ fresh();
   /* sim_v2 since Phase 13: a giveaway now hands the other side the ball in
      scoring range, which is what makes a turnover cost anything. Old boxes
      keep saying sim_v1 and stay true to the rules they were played under. */
-  eq('the simulator is versioned', F.SIM_VERSION, 'sim_v2');
-  has(SQL, "'sim', 'sim_v2'", 'and every box says so');
+  eq('the simulator is versioned', F.SIM_VERSION, 'sim_v3');
+  has(SQL, "'sim', 'sim_v3'", 'and every box says so');
   chk('both simulators are the same version, so a challenge is the same football as a Saturday',
-    (SQL.match(/'sim', 'sim_v2'/g) || []).length === 2 && !/'sim', 'sim_v1'/.test(SQL));
+    (SQL.match(/'sim', 'sim_v3'/g) || []).length === 2
+    && !/'sim', 'sim_v1'/.test(SQL) && !/'sim', 'sim_v2'/.test(SQL));
   (() => {
     const m = SQL.match(/franchise_scheme_edges\(\)[\s\S]*?select '(\{[\s\S]*?\})'::jsonb;/);
     let sqlEdges = null; try { sqlEdges = m && JSON.parse(m[1]); } catch (_) {}
@@ -2366,7 +2367,7 @@ fresh();
     /drop function if exists public\.franchise_sim_drive\(numeric, numeric, numeric, numeric, numeric, numeric, boolean\);/.test(SQL));
   chk('the report proves the rule rather than describing it',
     /select 32, 'the game is '/.test(SQL)
-    && /not has_function_privilege\('anon', 'public\.franchise_sim_drive\(numeric, numeric, numeric, numeric, numeric, numeric, boolean, text, numeric, boolean\)', 'execute'\)/.test(SQL.replace(/\s+/g, ' ')));
+    && /not has_function_privilege\('anon', 'public\.franchise_sim_drive\(numeric, numeric, numeric, numeric, numeric, numeric, boolean, text, numeric, boolean, text\)', 'execute'\)/.test(SQL.replace(/\s+/g, ' ')));
 
   /* ONE SIMULATOR, not two. The calls live on the game and franchise_sim
      reads them, so re-running reproduces every drive already played. */
@@ -2376,7 +2377,7 @@ fresh();
     const sim = (SQL.match(/create or replace function public\.franchise_sim\(p_franchise uuid, p_game uuid\)[\s\S]*?\n\$\$;/) || [''])[0];
     return sim.length > 0
       && /calls := coalesce\(g\.calls, '\[\]'::jsonb\);/.test(sim)
-      && /calls->>\(my_drive - 1\)/.test(sim)
+      && /my_call := calls->>\(i - 1\);/.test(sim)
       && /'drives', drives/.test(sim);
   });
   chk('the last call finalises through the door every other game goes through',
@@ -2397,7 +2398,8 @@ fresh();
   chk('Game Day no longer says you never play a down',
     GAMEDAY.indexOf('Simulated on the server from your roster, your scheme, the opponent and this week’s preparation. Every game is played once') < 0);
   chk('the page asks the library for the calls rather than listing its own',
-    /FR\.SNAPS\.calls\.map/.test(GAMEDAY) && /FR\.gameCall\(/.test(GAMEDAY) && /FR\.gameOpen\(\)/.test(GAMEDAY));
+    /FR\.callsFor\(def\?'def':'off'\)\.map/.test(GAMEDAY)
+    && /FR\.gameCall\(/.test(GAMEDAY) && /FR\.gameOpen\(\)/.test(GAMEDAY));
   chk('and the stale-script guard knows the new moves',
     /EDFranchise\.gameOpen/.test(GAMEDAY) && /EDFranchise\.gameCall/.test(GAMEDAY));
   chk('every class the calling stage draws is defined in the stylesheet', () => {
@@ -2464,8 +2466,11 @@ fresh();
     && !F.isKey(F.stake(0, 9)) && !F.isKey(F.stake(21, 1)));
 
   /* THE LOAD-BEARING ONE. This phase reads the game; it does not play it. */
-  chk('the simulator is still sim_v2: nothing here changes how a drive resolves',
-    /'sim', 'sim_v2'/.test(SQL) && !/sim_v3/.test(SQL));
+  /* This asserted "still sim_v2" until Phase 15 put the game on a clock. The
+     claim it was standing for is that the STAKE changes no football, and that
+     is what it asserts now — the number was never the point. */
+  chk('the stake is read off the score, so it can move no football',
+    /v_stake := public\.franchise_stake\(pts_me - pts_op, v_left\);/.test(SQL));
   chk('the stake is computed from the running score, before anything resolves', () => {
     const sim = (SQL.match(/create or replace function public\.franchise_sim\(p_franchise uuid, p_game uuid\)[\s\S]*?\n\$\$;/) || [''])[0];
     /* it must be drawn from pts_me/pts_op, never from a fresh roll */
@@ -2487,8 +2492,9 @@ fresh();
       (SQL.match(/create or replace function public\.franchise_reel[\s\S]*?\n\$\$;/) || [''])[0]));
 
   /* PLAYING IT OUT is quick play for what is left, not a shortcut past it */
-  chk('every possession left is called by the published default',
-    /set calls = coalesce\(calls, '\[\]'::jsonb\) \|\| to_jsonb\(public\.franchise_snaps\(\)->>'default'\)/.test(SQL));
+  chk('every possession left is called by the published default for its own side of the ball',
+    /then public\.franchise_snaps\(\)->>'default'/.test(SQL)
+    && /else public\.franchise_fronts\(\)->>'default' end\)/.test(SQL));
   chk('and it finishes through the same door every other game goes through',
     /return public\.franchise_play_game\(v_f, now\(\)\)\s*\n?\s*\|\| jsonb_build_object\('called', jsonb_array_length\(coalesce\(g\.calls, '\[\]'::jsonb\)\),/.test(SQL));
   chk('the fill cannot spin on a pathological seed',
@@ -2519,12 +2525,132 @@ fresh();
   chk('the report grew to thirty-four rows', /select 33, 'moments are '/.test(SQL));
   chk('the schema log records the phase',
     /games_schema_note\('franchise', 14, 'key moments'\)/.test(SQL));
-  eq('and the client expects it', F.SCHEMA.franchise, 14);
-  chk('and the report checks the same number',
-    /\(public\.games_schema\(\)->>'franchise'\)::int = 14/.test(SQL));
 
   has(README, 'moment_v1', 'the README documents moments');
   has(README, 'The football is not broken', 'and says what the measurement actually found');
+
+  /* ═══ 25. BOTH SIDES OF THE BALL (PHASE 15) ══════════════════════════════
+     Measured first, and damningly: called every possession the same way, a
+     team got 10.95 possessions a side whether it ground the ball out or threw
+     on every down — identical to two decimal places, because possessions were
+     drawn once before a snap from two scheme labels and a dice roll. And you
+     only ever played half the game. */
+  eq('the clock is clock_v1', F.CLOCK_VERSION, 'clock_v1');
+  eq('and the defense is defense_v1', F.DEFENSE_VERSION, 'defense_v1');
+  eq('sixty minutes', F.CLOCK.quarters * F.CLOCK.quarter_seconds, 3600);
+
+  Object.keys(F.CLOCK).forEach(k => chk('the clock rule ' + k + ' matches the SQL',
+    new RegExp("'" + k + "', " + F.CLOCK[k] + "\\b").test(SQL)));
+
+  /* THE POSSESSION COUNT IS GONE. There is a clock instead. */
+  /* scoped to the two simulator bodies: the report row quotes this very
+     string in order to assert its absence, so searching the whole file finds
+     the assertion rather than the code. Assert the code, not the prose. */
+  chk('nothing draws a possession count before kickoff any more', () =>
+    ['franchise_sim\\(p_franchise uuid, p_game uuid\\)', 'franchise_sim_versus'].every(fn => {
+      const body = (SQL.match(new RegExp('create or replace function public\\.' + fn + '[\\s\\S]*?\\n\\$\\$;')) || [''])[0];
+      return body.length > 0 && !/n := 11 \+ floor\(random\(\) \* 3\)::int;/.test(body);
+    }));
+  chk('both simulators run on the clock, so a challenge is the same football as a Saturday',
+    (SQL.match(/while secs_left > 0 and i < 60 loop/g) || []).length === 2);
+  chk('the ball on the ground keeps the clock moving and the ball in the air stops it',
+    F.CLOCK.run_seconds > F.CLOCK.pass_seconds
+    && F.driveSeconds(6, 0.20, 'punt') > F.driveSeconds(6, 0.80, 'punt'));
+  chk('a longer drive costs more clock, and a score costs the kickoff too',
+    F.driveSeconds(10, 0.5, 'punt') > F.driveSeconds(4, 0.5, 'punt')
+    && F.driveSeconds(6, 0.5, 'td') > F.driveSeconds(6, 0.5, 'punt'));
+  chk('a drive always costs something, so the clock can never stall', () => {
+    for (let n = 0; n <= 40; n++) if (F.driveSeconds(n, 0.5, 'punt') <= 0) return false;
+    return true;
+  });
+  chk('the quarter is worked out from time elapsed, so the opening kickoff is Q1',
+    F.clockLine(3600).q === 1 && F.clockLine(3600).label === '15:00'
+    && F.clockLine(0).q === 4
+    /* 1800 left is 1800 elapsed, which is the START of the third quarter */
+    && F.clockLine(1800).q === 3 && F.clockLine(1800).label === '15:00'
+    && F.clockLine(899).q === 4 && F.clockLine(899).label === '14:59');
+
+  /* CLOCK MANAGEMENT IS REAL, and the README says plainly what it does not do */
+  chk('trailing hurries up and leading bleeds it, but only late',
+    /'hurry_tempo', 0.62/.test(SQL) && /'grind_tempo', 1.15/.test(SQL)
+    && F.CLOCK.hurry_tempo < 1 && F.CLOCK.grind_tempo > 1);
+  has(README, 'possessions strictly\nalternate', 'the README says why the clock cannot manufacture a comeback');
+
+  /* THE FOUR FRONTS, pinned number for number */
+  eq('there are four of them', F.FRONTS.calls.length, 4);
+  eq('and quick play is one of them', F.FRONTS['default'], 'base');
+  F.FRONTS.calls.forEach(c => {
+    const blk = (SQL.match(new RegExp("'key', '" + c.key + "'[\\s\\S]{0,400}?'to_vs_pass', [-0-9.]+\\)")) || [''])[0];
+    chk('the front ' + c.key + ' exists in the SQL', blk.length > 0);
+    ['td_vs_run', 'td_vs_pass', 'to_vs_run', 'to_vs_pass'].forEach(k => {
+      chk('and its ' + k + ' matches the client',
+        blk.indexOf("'" + k + "', " + c[k]) >= 0
+        || blk.indexOf("'" + k + "', " + c[k].toFixed(3)) >= 0
+        || blk.indexOf("'" + k + "', " + c[k].toFixed(1)) >= 0);
+    });
+  });
+  chk('nothing takes both the run and the pass away',
+    !F.FRONTS.calls.some(c => c.td_vs_run < 0 && c.td_vs_pass < 0));
+  chk('stacking the box beats the run and loses to the pass',
+    F.frontCall('stack').td_vs_run < 0 && F.frontCall('stack').td_vs_pass > 0);
+  chk('and sitting deep is the other way about',
+    F.frontCall('cover').td_vs_pass < 0 && F.frontCall('cover').td_vs_run > 0);
+  chk('a blitz buys takeaways and pays for them in touchdowns',
+    F.frontCall('blitz').to_vs_pass > 0 && F.frontCall('blitz').to_vs_run > 0
+    && F.frontCall('blitz').td_vs_pass > 0 && F.frontCall('blitz').td_vs_run > 0);
+  chk('Base is the zero row, so quick play plays it honest',
+    ['td_vs_run', 'td_vs_pass', 'to_vs_run', 'to_vs_pass'].every(k => F.frontCall('base')[k] === 0));
+  chk('an unknown front falls back to the default rather than throwing',
+    F.frontCall('nonsense').key === F.FRONTS['default'] && F.frontCall(null).key === 'base');
+  chk('every front says what it means, in English',
+    F.FRONTS.calls.every(c => typeof c.means === 'string' && c.means.length > 20));
+
+  /* A CALL NAMES ITS OWN SIDE, so one meant for the other can be refused */
+  chk('the two tables never share a key',
+    !F.SNAPS.calls.some(o => F.FRONTS.calls.some(d => d.key === o.key)));
+  chk('and a call says which side of the ball it is for',
+    F.callSide('shot') === 'off' && F.callSide('blitz') === 'def' && F.callSide('nonsense') === null);
+  chk('the server refuses a call meant for the other side rather than defaulting it',
+    /if v_side <> v_want then/.test(SQL)
+    && /is not a call for/.test(SQL));
+  chk('and it asks the simulator whose possession it is, because only the seed knows',
+    /v_want := case when \(v_box->'drives'->v_mine->>'mine'\)::boolean then 'off' else 'def' end;/.test(SQL));
+
+  /* THE OPPONENT'S CARD IS NEVER SHOWN */
+  chk('the opponent plays their scheme and their situation, on the server',
+    /create or replace function public\.franchise_ai_call\(p_scheme text, p_gap integer, p_left integer\)/.test(SQL));
+  chk('and no client role can ask what they are about to run',
+    /revoke all on function public\.franchise_ai_call\(text, integer, integer\) from public, anon, authenticated;/.test(SQL));
+  chk('the drive resolver is still out of reach, on either side of the ball',
+    /revoke all on function public\.franchise_sim_drive\(numeric, numeric, numeric, numeric, numeric, numeric, boolean, text, numeric, boolean, text\) from public, anon, authenticated;/.test(SQL));
+
+  ['franchise_clock()', 'franchise_fronts()', 'franchise_front_call(text)', 'franchise_call_side(text)']
+    .forEach(f => chk('the table ' + f.split('(')[0] + ' is open to read',
+      SQL.indexOf('grant execute on function public.' + f + ' to anon, authenticated') >= 0));
+
+  /* the page plays both sides */
+  has(GAMEDAY, 'Your defense', 'Game Day calls the other side of the ball too');
+  has(GAMEDAY, 'have the ball', 'and says whose ball it is');
+  chk('it asks the library which table to show rather than choosing itself',
+    /FR\.callsFor\(def\?'def':'off'\)/.test(GAMEDAY) && /CALLED\.side==='def'/.test(GAMEDAY));
+  chk('the clock is on the board',
+    /FR\.clockLine\(/.test(GAMEDAY) && /class="ck"/.test(GAMEDAY));
+  chk('and the log names both cards after the fact',
+    /They ran /.test(GAMEDAY) && /you played /.test(GAMEDAY) && /FR\.frontCall\(d\.front\)/.test(GAMEDAY));
+  chk('every class the defensive stage draws is defined in the stylesheet',
+    FRCSS.indexOf('.sn-calls.def') >= 0 && FRCSS.indexOf('.sn-who') >= 0
+    && FRCSS.indexOf('.sn-board .mid .ck') >= 0);
+
+  chk('the report grew to thirty-five rows', /select 34, 'the game is '/.test(SQL));
+  chk('the schema log records the phase',
+    /games_schema_note\('franchise', 15, 'both sides of the ball'\)/.test(SQL));
+  eq('and the client expects it', F.SCHEMA.franchise, 15);
+  chk('and the report checks the same number',
+    /\(public\.games_schema\(\)->>'franchise'\)::int = 15/.test(SQL));
+
+  has(README, 'clock_v1', 'the README documents the clock');
+  has(README, 'defense_v1', 'and the fronts');
+  has(README, '10.95', 'and the measurement that made the case for both');
 
   finish();
 }).catch(e => { fail++; failures.push('suite threw: ' + (e && e.stack || e)); finish(); });
